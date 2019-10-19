@@ -41,7 +41,7 @@
 
   known bugs (not missing feature):
     refpack is currently disabled unstable due to packing across CONTs
-    avoidance of scale/rotate/translate is buggy when journal is full
+    avoidance of scale/rotate/translate is buggy when renderstream is full
     sources are not dealy correctly with under transforms
 */
 
@@ -159,7 +159,7 @@ extern "C" {
 #endif
 
 #define CTX_PI               3.141592653589793f
-#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  64 
+#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  36
 
 #ifndef CTX_MAX_FONTS
 #define CTX_MAX_FONTS        3
@@ -200,12 +200,31 @@ typedef enum
 
 typedef struct _Ctx Ctx;
 
+/**
+ * ctx_new:
+ *
+ * Create a new drawing context, without an associated target frame buffer,
+ * use ctx_blit to render the built up renderstream to a framebuffer.
+ */
 Ctx *ctx_new                 (void);
+
+/**
+ * ctx_new_for_framebuffer:
+ *
+ * Create a new drawing context for a framebuffer, rendering happens
+ * immediately.
+ */
 Ctx *ctx_new_for_framebuffer (void *data,
                               int width, int height, int stride,
                               CtxPixelFormat pixel_format);
-Ctx *ctx_new_for_journal     (void *data, size_t length);
-void ctx_free                (Ctx *ctx);
+
+/**
+ * ctx_new_for_renderstream:
+ *
+ * Create a new drawing context for a pre-existing renderstream.
+ */
+Ctx *ctx_new_for_renderstream (void *data, size_t length);
+void ctx_free                  (Ctx *ctx);
 
 /* creates a new context that is 1000 units wide, this
  * context gets mapped to the width of the terminal
@@ -223,8 +242,6 @@ void ctx_blit          (Ctx *ctx,
 /* clears and resets a context */
 void ctx_clear          (Ctx *ctx);
 
-void ctx_fill           (Ctx *ctx);
-void ctx_stroke         (Ctx *ctx);
 void ctx_new_path       (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
 void ctx_restore        (Ctx *ctx);
@@ -263,6 +280,7 @@ void ctx_rel_quad_to    (Ctx *ctx, float cx, float cy,
                          float x, float y);
 void ctx_close_path     (Ctx *ctx);
 
+
 void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void ctx_set_rgba       (Ctx *ctx, float   r, float   g, float   b, float   a);
 void ctx_set_rgb        (Ctx *ctx, float   r, float   g, float   b);
@@ -277,6 +295,9 @@ void ctx_arc            (Ctx  *ctx,
 void ctx_arc_to         (Ctx *ctx, float x1, float y1,
                                    float x2, float y2, float radius);
 void ctx_set_global_alpha   (Ctx *ctx, float global_alpha);
+
+void ctx_fill           (Ctx *ctx);
+void ctx_stroke         (Ctx *ctx);
 
 //void ctx_set_gradient_no     (Ctx *ctx, int no);
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
@@ -325,7 +346,7 @@ void ctx_set_fill_rule (Ctx *ctx, CtxFillRule fill_rule);
 
 void ctx_set_line_cap (Ctx *ctx, CtxLineCap cap);
 
-int ctx_set_journal (Ctx *ctx, void *data, int length);
+int ctx_set_renderstream (Ctx *ctx, void *data, int length);
 
 
 /* these are only needed for clients renderin text, as all text gets
@@ -717,7 +738,7 @@ struct _CtxGState {
   unsigned int             italic:1;
 };
 
-typedef struct _CtxJournal CtxJournal;
+typedef struct _CtxRenderstream CtxRenderstream;
 
 typedef enum {
   CTX_SOURCE_OVER = 1,
@@ -737,7 +758,7 @@ typedef enum {
 
 #define CTX_JOURNAL_DOESNT_OWN_ENTRIES   64
 
-struct _CtxJournal
+struct _CtxRenderstream
 {
   /* should have a list of iterator state initializer. pos, depth and
      history_pos init info for every 1024 entries, will be most needed
@@ -763,7 +784,7 @@ struct _CtxState {
 };
 
 struct _Ctx {
-  CtxJournal        journal;
+  CtxRenderstream        renderstream;
   CtxState          state;
   int               transformation;
 #if CTX_RASTERIZER
@@ -911,7 +932,7 @@ typedef struct CtxIterator
   int         in_history;
   int         history_pos;
   int         history[2]; // XXX: the offset to the history entry would be better
-  CtxJournal *journal;
+  CtxRenderstream *renderstream;
   int         end_pos;
   int         flags;
 
@@ -939,11 +960,11 @@ typedef enum _CtxIteratorFlag CtxIteratorFlag;
 
 static void
 ctx_iterator_init (CtxIterator *iterator,
-                   CtxJournal  *journal,
+                   CtxRenderstream  *renderstream,
                    int          start_pos,
                    int          flags)
 {
-  iterator->journal        = journal;
+  iterator->renderstream        = renderstream;
   iterator->flags          = flags;
   iterator->bitpack_pos    = 0;
   iterator->bitpack_length = 0;
@@ -951,7 +972,7 @@ ctx_iterator_init (CtxIterator *iterator,
   iterator->history[0]     = 0;
   iterator->history[1]     = 0;
   iterator->pos            = start_pos;
-  iterator->end_pos        = journal->count;
+  iterator->end_pos        = renderstream->count;
   iterator->in_history     = -1; // -1 is a marker used for first run
   memset (iterator->bitpack_command, 0, sizeof (iterator->bitpack_command));
 }
@@ -961,7 +982,7 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
   int expand_refpack = iterator->flags & CTX_ITERATOR_EXPAND_REFPACK;
 
   int ret = iterator->pos;
-  CtxEntry *entry = &iterator->journal->entries[ret];
+  CtxEntry *entry = &iterator->renderstream->entries[ret];
   if (iterator->pos >= iterator->end_pos)
     return NULL;
   if (expand_refpack == 0)
@@ -971,7 +992,7 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
     iterator->in_history = 0;
     if (iterator->pos >= iterator->end_pos)
       return NULL;
-    return &iterator->journal->entries[iterator->pos];
+    return &iterator->renderstream->entries[iterator->pos];
   }
 
   if (iterator->in_history > 0)
@@ -979,7 +1000,7 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
     if (iterator->history_pos < iterator->history[1])
     {
       int ret = iterator->history[0] + iterator->history_pos;
-      CtxEntry *hentry = &iterator->journal->entries[ret];
+      CtxEntry *hentry = &iterator->renderstream->entries[ret];
       iterator->history_pos += (ctx_conts_for_entry (hentry) + 1);
 
       if (iterator->history_pos >= iterator->history[1])
@@ -987,7 +1008,7 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
         iterator->in_history = 0;
         iterator->pos += (ctx_conts_for_entry (entry) + 1);
       }
-      return &iterator->journal->entries[ret];
+      return &iterator->renderstream->entries[ret];
     }
   }
 
@@ -996,7 +1017,7 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
     iterator->in_history = 1;
     iterator->history[0] = entry->data.u32[0];
     iterator->history[1] = entry->data.u32[1];
-    CtxEntry *hentry = &iterator->journal->entries[iterator->history[0]];
+    CtxEntry *hentry = &iterator->renderstream->entries[iterator->history[0]];
     iterator->history_pos = 0;
     iterator->history_pos += (ctx_conts_for_entry (hentry) + 1);
     return hentry;
@@ -1009,7 +1030,7 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
 
   if (ret >= iterator->end_pos)
     return NULL;
-  return &iterator->journal->entries[ret];
+  return &iterator->renderstream->entries[ret];
 }
 
 #if CTX_BITPACK
@@ -1202,77 +1223,77 @@ static inline void ctx_interpret_transforms (CtxState *state, CtxEntry *entry, v
 static void ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data);
 static void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
 
-static void ctx_journal_refpack (CtxJournal *journal);
+static void ctx_renderstream_refpack (CtxRenderstream *renderstream);
 static void
-ctx_journal_resize (CtxJournal *journal, int desired_size)
+ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
 {
   int new_size = desired_size;
 
-  ctx_journal_refpack (journal);
-  if (new_size < journal->size)
+  ctx_renderstream_refpack (renderstream);
+  if (new_size < renderstream->size)
     return;
 
   if (new_size < 100)
     new_size = 100;
-  if (new_size < journal->count)
-    new_size = journal->count + 4;
+  if (new_size < renderstream->count)
+    new_size = renderstream->count + 4;
 
   if (new_size >= CTX_MAX_JOURNAL_SIZE)
     new_size = CTX_MAX_JOURNAL_SIZE;
-  if (journal->size == CTX_MAX_JOURNAL_SIZE)
+  if (renderstream->size == CTX_MAX_JOURNAL_SIZE)
     return;
-  ctx_log ("growing journal to %i\n", new_size);
-  if (journal->size)
-    journal->entries = (CtxEntry*)realloc (journal->entries, sizeof (CtxEntry) * new_size);
+  ctx_log ("growing renderstream to %i\n", new_size);
+  if (renderstream->size)
+    renderstream->entries = (CtxEntry*)realloc (renderstream->entries, sizeof (CtxEntry) * new_size);
   else
-    journal->entries = (CtxEntry*)malloc (sizeof (CtxEntry) * new_size);
-  journal->size = new_size;
+    renderstream->entries = (CtxEntry*)malloc (sizeof (CtxEntry) * new_size);
+  renderstream->size = new_size;
 }
 
 int
-ctx_journal_add (CtxJournal *journal, CtxCode code)
+ctx_renderstream_add (CtxRenderstream *renderstream, CtxCode code)
 {
-  int ret = journal->count;
-  if (ret + 1 >= journal->size)
+  int ret = renderstream->count;
+  if (ret + 1 >= renderstream->size)
   {
-    ctx_journal_resize (journal, journal->size + 128 + 128);
-    ret = journal->count;
+    ctx_renderstream_resize (renderstream, renderstream->size + 128 + 128);
+    ret = renderstream->count;
   }
-  if (ret >= journal->size)
+  if (ret >= renderstream->size)
     return -1;
-  journal->entries[ret].code = code;
-  journal->count++;
+  renderstream->entries[ret].code = code;
+  renderstream->count++;
   return ret;
 }
 
 int
-ctx_journal_add_single (CtxJournal *journal, CtxEntry *entry)
+ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
-  int ret = journal->count;
-  if (ret + 1 >= journal->size)
+  int ret = renderstream->count;
+  if (ret + 1 >= renderstream->size)
   {
-    ctx_journal_resize (journal, journal->size * 1.2 + 128);
-    ret = journal->count;
+    ctx_renderstream_resize (renderstream, renderstream->size * 1.2 + 128);
+    ret = renderstream->count;
   }
-  journal->entries[journal->count] = *entry;
-  ret = journal->count;
-  journal->count++;
+  renderstream->entries[renderstream->count] = *entry;
+  ret = renderstream->count;
+  renderstream->count++;
   return ret;
 }
 
 int
-ctx_journal_add_ (CtxJournal *journal, CtxEntry *entry)
+ctx_renderstream_add_ (CtxRenderstream *renderstream, CtxEntry *entry)
 {
   int length = ctx_conts_for_entry (entry) + 1;
   int ret = 0;
   for (int i = 0; i < length; i ++)
   {
-    ret = ctx_journal_add_single (journal, &entry[i]);
+    ret = ctx_renderstream_add_single (renderstream, &entry[i]);
   }
   return ret;
 }
 
-int ctx_set_journal (Ctx *ctx, void *data, int length)
+int ctx_set_renderstream (Ctx *ctx, void *data, int length)
 {
   CtxEntry *entries = (CtxEntry*)data;
   if (length % sizeof (CtxEntry))
@@ -1280,10 +1301,10 @@ int ctx_set_journal (Ctx *ctx, void *data, int length)
     //ctx_log("err\n");
     return -1;
   }
-  ctx->journal.count = 0;
+  ctx->renderstream.count = 0;
   for (int i = 0; i < length / sizeof(CtxEntry); i++)
   {
-    ctx_journal_add_single (&ctx->journal, &entries[i]);
+    ctx_renderstream_add_single (&ctx->renderstream, &entries[i]);
   }
 
   return 0;
@@ -1301,23 +1322,23 @@ ctx_add_data (Ctx *ctx, void *data, int length)
    * verify that it is well-formed up to length?
    *
    * also - it would be very useful to stop processing
-   * upon flush - and do journal resizing.
+   * upon flush - and do renderstream resizing.
    */
-  return ctx_journal_add_ (&ctx->journal, (CtxEntry*)data);
+  return ctx_renderstream_add_ (&ctx->renderstream, (CtxEntry*)data);
 }
 
-int ctx_journal_add_u32 (CtxJournal *journal, CtxCode code, uint32_t u32[2])
+int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code, uint32_t u32[2])
 {
-  int no = ctx_journal_add (journal, code);
+  int no = ctx_renderstream_add (renderstream, code);
   if (no < 0)
     return -1;
-  memcpy (journal->entries[no].data.u32, &u32[0], sizeof(uint32_t) * 2);
+  memcpy (renderstream->entries[no].data.u32, &u32[0], sizeof(uint32_t) * 2);
   return no;
 }
 
-int ctx_journal_add_data (CtxJournal *journal, const void *data, int length)
+int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, int length)
 {
-  int ret = ctx_journal_add (journal, CTX_DATA);
+  int ret = ctx_renderstream_add (renderstream, CTX_DATA);
   if (!data) return -1;
   int length_in_blocks;
   if (length <= 0) length = strlen ((char*)data) + 1;
@@ -1325,20 +1346,20 @@ int ctx_journal_add_data (CtxJournal *journal, const void *data, int length)
   length_in_blocks = length / sizeof (CtxEntry);
   length_in_blocks += (length % sizeof (CtxEntry))?1:0;
 
-  if (journal->count + length_in_blocks + 4 > journal->size)
-    ctx_journal_resize (journal, journal->count * 1.2 + length_in_blocks + 32);
+  if (renderstream->count + length_in_blocks + 4 > renderstream->size)
+    ctx_renderstream_resize (renderstream, renderstream->count * 1.2 + length_in_blocks + 32);
 
-  if (journal->count >= journal->size)
+  if (renderstream->count >= renderstream->size)
     return -1;
-  journal->count += length_in_blocks;
+  renderstream->count += length_in_blocks;
 
-  journal->entries[ret].data.u32[0] = length;
-  journal->entries[ret].data.u32[1] = length_in_blocks;
+  renderstream->entries[ret].data.u32[0] = length;
+  renderstream->entries[ret].data.u32[1] = length_in_blocks;
 
-  memcpy (&journal->entries[ret+1], data, length);
-  {int reverse = ctx_journal_add (journal, CTX_DATA_REV);
-   journal->entries[reverse].data.u32[0] = length;
-   journal->entries[reverse].data.u32[1] = length_in_blocks;
+  memcpy (&renderstream->entries[ret+1], data, length);
+  {int reverse = ctx_renderstream_add (renderstream, CTX_DATA_REV);
+   renderstream->entries[reverse].data.u32[0] = length;
+   renderstream->entries[reverse].data.u32[1] = length_in_blocks;
    /* this reverse marker is needed to be able to do efficient
       front to back traversal
     */
@@ -1489,8 +1510,8 @@ void ctx_clear (Ctx *ctx) {
   if (ctx->renderer == NULL)
 #endif
   {
-    ctx->journal.count = 0;
-    ctx->journal.bitpack_pos = 0;
+    ctx->renderstream.count = 0;
+    ctx->renderstream.bitpack_pos = 0;
   }
   ctx_state_init (&ctx->state);
 }
@@ -1572,19 +1593,19 @@ void ctx_set_font (Ctx *ctx, const char *name)
 void ctx_rotate (Ctx *ctx, float x){
   CTX_PROCESS_F1(CTX_ROTATE, x);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
-    ctx->journal.count--;
+    ctx->renderstream.count--;
 }
 
 void ctx_scale (Ctx *ctx, float x, float y) {
   CTX_PROCESS_F (CTX_SCALE, x, y);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
-    ctx->journal.count--;
+    ctx->renderstream.count--;
 }
 
 void ctx_translate (Ctx *ctx, float x, float y) {
   CTX_PROCESS_F (CTX_TRANSLATE, x, y);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
-    ctx->journal.count--;
+    ctx->renderstream.count--;
 }
 
 void ctx_line_to (Ctx *ctx, float x, float y)
@@ -2100,10 +2121,10 @@ ctx_flush (Ctx *ctx)
 #if 0
   //printf (" \e[?2222h");
 
-  ctx_journal_refpack (&ctx->journal);
-  for (int i = 0; i < ctx->journal.count - 1; i++)
+  ctx_renderstream_refpack (&ctx->renderstream);
+  for (int i = 0; i < ctx->renderstream.count - 1; i++)
   {
-    CtxEntry *entry = &ctx->journal.entries[i];
+    CtxEntry *entry = &ctx->renderstream.entries[i];
     fwrite (entry, 9, 1, stdout);
 #if 0
     uint8_t  *buf = (void*)entry;
@@ -2114,7 +2135,7 @@ ctx_flush (Ctx *ctx)
   printf ("Xx.Xx.Xx.");
   fflush (NULL);
 #endif
-  ctx->journal.count = 0;
+  ctx->renderstream.count = 0;
   ctx_state_init (&ctx->state);
 }
 
@@ -2296,14 +2317,14 @@ pack_s16_args (CtxEntry *entry, int16_t *args, int npairs)
 
 
 static void
-ctx_journal_remove_tiny_curves (CtxJournal *journal, int start_pos)
+ctx_renderstream_remove_tiny_curves (CtxRenderstream *renderstream, int start_pos)
 {
   CtxIterator iterator;
-  if ((journal->flags & CTX_TRANSFORMATION_BITPACK) == 0)
+  if ((renderstream->flags & CTX_TRANSFORMATION_BITPACK) == 0)
     return;
 
-  ctx_iterator_init (&iterator, journal, start_pos, CTX_ITERATOR_FLAT);
-  iterator.end_pos = journal->count - 5;
+  ctx_iterator_init (&iterator, renderstream, start_pos, CTX_ITERATOR_FLAT);
+  iterator.end_pos = renderstream->count - 5;
   CtxEntry *command = NULL;
   while ((command = ctx_iterator_next(&iterator)))
   {
@@ -2327,24 +2348,24 @@ ctx_journal_remove_tiny_curves (CtxJournal *journal, int start_pos)
 }
 
 static void
-ctx_journal_bitpack (CtxJournal *journal, int start_pos)
+ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
 {
   int i = 0;
 
-  if ((journal->flags & CTX_TRANSFORMATION_BITPACK) == 0)
+  if ((renderstream->flags & CTX_TRANSFORMATION_BITPACK) == 0)
     return;
-  ctx_journal_remove_tiny_curves (journal, journal->bitpack_pos);
+  ctx_renderstream_remove_tiny_curves (renderstream, renderstream->bitpack_pos);
 
-  i = journal->bitpack_pos;
+  i = renderstream->bitpack_pos;
 
   if (start_pos > i)
     i = start_pos;
 
-  while (i < journal->count - 4) /* the -4 is to avoid looking past
+  while (i < renderstream->count - 4) /* the -4 is to avoid looking past
                                     initialized data we're not ready
                                     to bitpack yet*/
   {
-    CtxEntry *entry = &journal->entries[i];
+    CtxEntry *entry = &renderstream->entries[i];
 
 #if 1
     if (entry[0].code == CTX_REL_LINE_TO)
@@ -2512,21 +2533,21 @@ ctx_journal_bitpack (CtxJournal *journal, int start_pos)
     i += (ctx_conts_for_entry (entry) + 1);
   }
 
-  int source = journal->bitpack_pos;
-  int target = journal->bitpack_pos;
+  int source = renderstream->bitpack_pos;
+  int target = renderstream->bitpack_pos;
   int removed = 0;
 
   /* remove all nops that have been inserted as part of shortenings
    */
-  while (source < journal->count)
+  while (source < renderstream->count)
   {
-    CtxEntry *sentry = &journal->entries[source];
-    CtxEntry *tentry = &journal->entries[target];
+    CtxEntry *sentry = &renderstream->entries[source];
+    CtxEntry *tentry = &renderstream->entries[target];
 
-    while (sentry->code == CTX_NOP && source < journal->count)
+    while (sentry->code == CTX_NOP && source < renderstream->count)
     {
       source++;
-      sentry = &journal->entries[source];
+      sentry = &renderstream->entries[source];
       removed++;
     }
     if (sentry != tentry)
@@ -2535,9 +2556,9 @@ ctx_journal_bitpack (CtxJournal *journal, int start_pos)
     source ++;
     target ++;
   }
-  journal->count -= removed;
+  renderstream->count -= removed;
 
-  journal->bitpack_pos = journal->count - 4;
+  renderstream->bitpack_pos = renderstream->count - 4;
 }
 
 #endif
@@ -2555,13 +2576,13 @@ ctx_entries_equal (const CtxEntry *a, const CtxEntry *b)
 
 #if CTX_BITPACK_PACKER|CTX_REFPACK
 static int
-ctx_last_history (CtxJournal *journal)
+ctx_last_history (CtxRenderstream *renderstream)
 {
   int last_history = 0;
   int i = 0;
-  while (i < journal->count)
+  while (i < renderstream->count)
   {
-    CtxEntry *entry = &journal->entries[i];
+    CtxEntry *entry = &renderstream->entries[i];
     if (entry->code == CTX_REPEAT_HISTORY)
     {
       last_history = i;
@@ -2576,21 +2597,21 @@ ctx_last_history (CtxJournal *journal)
 #if CTX_REFPACK
 
 static void
-ctx_journal_remove (CtxJournal *journal, int pos, int count)
+ctx_renderstream_remove (CtxRenderstream *renderstream, int pos, int count)
 {
   if (count <= 0)
     return;
-  for (int i = pos; i < journal->count - count; i++)
+  for (int i = pos; i < renderstream->count - count; i++)
   {
-    journal->entries[i] = journal->entries[i+count];
+    renderstream->entries[i] = renderstream->entries[i+count];
   }
-  for (int i = journal->count - count; i < journal->count; i++)
+  for (int i = renderstream->count - count; i < renderstream->count; i++)
   {
-    journal->entries[i].code = CTX_CONT;
-    journal->entries[i].data.f[0] = 0;
-    journal->entries[i].data.f[1] = 0;
+    renderstream->entries[i].code = CTX_CONT;
+    renderstream->entries[i].data.f[0] = 0;
+    renderstream->entries[i].data.f[1] = 0;
   }
-  journal->count = journal->count - count;
+  renderstream->count = renderstream->count - count;
 }
 
 
@@ -2599,8 +2620,8 @@ ctx_journal_remove (CtxJournal *journal, int pos, int count)
  * minimum_length
  */
 static int
-ctx_journal_dedup_search (CtxJournal *dictionary, int d_start, int d_end,
-                          CtxJournal *input,      int i_start, int i_end,
+ctx_renderstream_dedup_search (CtxRenderstream *dictionary, int d_start, int d_end,
+                          CtxRenderstream *input,      int i_start, int i_end,
                           int *match_start,
                           int *match_length,
                           int *input_pos,
@@ -2719,31 +2740,31 @@ ctx_journal_dedup_search (CtxJournal *dictionary, int d_start, int d_end,
 #endif
 
 static void
-ctx_journal_refpack (CtxJournal *journal)
+ctx_renderstream_refpack (CtxRenderstream *renderstream)
 {
 #if CTX_BITPACK_PACKER|CTX_REFPACK
   int last_history;
-  last_history = ctx_last_history (journal);
+  last_history = ctx_last_history (renderstream);
 #endif
 #if CTX_BITPACK_PACKER
-  ctx_journal_bitpack (journal, last_history);
+  ctx_renderstream_bitpack (renderstream, last_history);
 #endif
 #if CTX_REFPACK
   int length_threshold = 4;
 
-  if ((journal->flags & CTX_TRANSFORMATION_REFPACK) == 0)
+  if ((renderstream->flags & CTX_TRANSFORMATION_REFPACK) == 0)
     return;
 
   if (!last_history)
   {
     last_history = 8;
-    if (last_history > journal->count)
-      last_history = journal->count / 2;
+    if (last_history > renderstream->count)
+      last_history = renderstream->count / 2;
   }
 
   int completed = last_history;
 
-  while (completed < journal->count)
+  while (completed < renderstream->count)
   {
     int default_search_window = 128;
     int search_window = default_search_window;
@@ -2752,20 +2773,20 @@ ctx_journal_refpack (CtxJournal *journal)
     int match_length=0;
     int match_input_pos;
 
-    if ((journal->count - completed) < search_window)
-      search_window = journal->count - completed;
+    if ((renderstream->count - completed) < search_window)
+      search_window = renderstream->count - completed;
 
-    while (ctx_journal_dedup_search (
-           journal, 0, completed-1,
-           journal, completed+1, completed+search_window - 2,
+    while (ctx_renderstream_dedup_search (
+           renderstream, 0, completed-1,
+           renderstream, completed+1, completed+search_window - 2,
            &match_start, &match_length, &match_input_pos,
            length_threshold))
     {
-      CtxEntry *ientry = &journal->entries[match_input_pos];
+      CtxEntry *ientry = &renderstream->entries[match_input_pos];
       ientry->code = CTX_REPEAT_HISTORY;
       ientry->data.u32[0]= match_start;
       ientry->data.u32[1]= match_length;
-      ctx_journal_remove (journal, match_input_pos+1, match_length-1);
+      ctx_renderstream_remove (renderstream, match_input_pos+1, match_length-1);
     }
 
     completed += default_search_window;
@@ -3100,9 +3121,9 @@ ctx_init (Ctx *ctx)
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
-  ctx->journal.flags  |= CTX_TRANSFORMATION_BITPACK;
+  ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
 #endif
-  ctx->journal.flags  |= CTX_TRANSFORMATION_REFPACK;
+  ctx->renderstream.flags  |= CTX_TRANSFORMATION_REFPACK;
 #endif
 }
 
@@ -3121,11 +3142,11 @@ ctx_new (void)
 }
 
 void
-ctx_journal_deinit (CtxJournal *journal)
+ctx_renderstream_deinit (CtxRenderstream *renderstream)
 {
-  if (journal->entries && !(journal->flags & CTX_JOURNAL_DOESNT_OWN_ENTRIES))
-    free (journal->entries);
-  journal->entries = NULL;
+  if (renderstream->entries && !(renderstream->flags & CTX_JOURNAL_DOESNT_OWN_ENTRIES))
+    free (renderstream->entries);
+  renderstream->entries = NULL;
 }
 
 #if CTX_RASTERIZER
@@ -3142,7 +3163,7 @@ static void ctx_deinit (Ctx *ctx)
     ctx->renderer = NULL;
   }
 #endif
-  ctx_journal_deinit (&ctx->journal);
+  ctx_renderstream_deinit (&ctx->renderstream);
 }
 
 void ctx_free (Ctx *ctx)
@@ -3153,12 +3174,12 @@ void ctx_free (Ctx *ctx)
   free (ctx);
 }
 
-Ctx *ctx_new_for_journal     (void *data, size_t length)
+Ctx *ctx_new_for_renderstream (void *data, size_t length)
 {
   Ctx *ctx = ctx_new ();
-  ctx->journal.flags |= CTX_JOURNAL_DOESNT_OWN_ENTRIES;
-  ctx->journal.entries = (CtxEntry*)data;
-  ctx->journal.count   = length / sizeof (CtxEntry);
+  ctx->renderstream.flags |= CTX_JOURNAL_DOESNT_OWN_ENTRIES;
+  ctx->renderstream.entries = (CtxEntry*)data;
+  ctx->renderstream.count   = length / sizeof (CtxEntry);
   return ctx;
 }
 
@@ -3223,7 +3244,7 @@ struct _CtxRenderer {
   int      scan_max;
   int      needs_aa;         // count of how many edges implies antialiasing
 
-  CtxJournal edge_list;
+  CtxRenderstream edge_list;
   CtxState  *state;
 
   void      *buf;
@@ -3410,7 +3431,7 @@ static inline int ctx_renderer_add_edge (CtxRenderer *renderer, int x0, int y0, 
   args[2]=x1;
   args[3]=y1;
 
-  return ctx_journal_add_u32 (&renderer->edge_list, CTX_EDGE, (uint32_t*)args);
+  return ctx_renderstream_add_u32 (&renderer->edge_list, CTX_EDGE, (uint32_t*)args);
 }
 
 static void ctx_renderer_poly_to_edges (CtxRenderer *renderer)
@@ -5560,6 +5581,7 @@ ctx_encode_pixels_GRAY8 (CtxRenderer *renderer, int x, void *buf, const uint8_t 
   while (count--)
   {
     pixel[0] = (rgba[0]+rgba[1]+rgba[2])/3;
+         // for internal uses... using only green would work
     pixel+=1;
     rgba +=4;
   }
@@ -5730,7 +5752,7 @@ ctx_b2f_over_RGB565_BS (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *cov
 static void
 ctx_renderer_deinit (CtxRenderer *renderer)
 {
-  ctx_journal_deinit (&renderer->edge_list);
+  ctx_renderstream_deinit (&renderer->edge_list);
 }
 
 static CtxPixelFormatInfo ctx_pixel_formats[]=
@@ -5854,7 +5876,7 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
   ctx_renderer_init (&renderer, &state, data, x, y, width, height,
                      stride, pixel_format);
 
-  ctx_iterator_init (&iterator, &ctx->journal, 0, CTX_ITERATOR_EXPAND_REFPACK|
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
                                                   CTX_ITERATOR_EXPAND_BITPACK);
   while ((entry = ctx_iterator_next(&iterator)))
     ctx_renderer_process (&renderer, entry);
@@ -5895,19 +5917,19 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 #endif
   {
     /* these functions might alter the code and coordinates of
-       command that in the end gets added to the journal
+       command that in the end gets added to the renderstream
      */
     ctx_interpret_style (&ctx->state, entry, ctx);
     ctx_interpret_transforms (&ctx->state, entry, ctx);
     ctx_interpret_pos (&ctx->state, entry, ctx);
-    ctx_journal_add_ (&ctx->journal, entry);
+    ctx_renderstream_add_ (&ctx->renderstream, entry);
 
     if (entry->code == CTX_LOAD_IMAGE)
     {
       /* the image command and its data is submitted as one unit,
        */
-      ctx_journal_add_ (&ctx->journal, entry+1);
-      ctx_journal_add_ (&ctx->journal, entry+2);
+      ctx_renderstream_add_ (&ctx->renderstream, entry+1);
+      ctx_renderstream_add_ (&ctx->renderstream, entry+2);
     }
   }
 }
@@ -6155,7 +6177,7 @@ ctx_cmd_str (Ctx *ctx, const char *commandline)
     case CTX_VOID:
       break;
   }
-  return ctx_journal_add_u32 (&ctx->journal, code, (void*)args_u32);
+  return ctx_renderstream_add_u32 (&ctx->renderstream, code, (void*)args_u32);
 }
 
 static inline void
@@ -6208,7 +6230,7 @@ ctx_do_cb (Ctx *ctx, int do_history,
            void *data)
 {
   CtxIterator iterator;
-  ctx_iterator_init (&iterator, &ctx->journal, 0, CTX_ITERATOR_EXPAND_REFPACK|
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
                                                   CTX_ITERATOR_EXPAND_BITPACK);
   CtxEntry *entry;
   while ((entry = ctx_iterator_next(&iterator)))
@@ -6493,6 +6515,18 @@ ctx_glyph_kern_ctx (Ctx *ctx, CtxFont *font, int unicharA, int unicharB)
   return 0;
 }
 
+static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
+{
+  for (int i = 0; i < font->ctx.length; i++)
+  {
+    CtxEntry *entry = (CtxEntry*)&font->ctx.data[i];
+    if (entry->code == '@' && entry->data.u32[0] == unichar)
+      return i;
+  }
+  return 0;
+}
+
+
 static inline float
 ctx_glyph_width_ctx (Ctx *ctx, CtxFont *font, int unichar)
 {
@@ -6502,6 +6536,9 @@ ctx_glyph_width_ctx (Ctx *ctx, CtxFont *font, int unichar)
   if (unichar >= 'a' && unichar <= 'z')
   {
     start = font->ctx.glyph_pos[unichar-'a'];
+  } else
+  {
+    start = ctx_glyph_find (ctx, font, unichar);
   }
   for (int i = start; i < font->ctx.length; i++)
   {
@@ -6519,9 +6556,9 @@ ctx_glyph_ctx (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
 {
   CtxState *state = &ctx->state;
   CtxIterator iterator;
-  CtxJournal  journal = {(CtxEntry*)font->ctx.data,
-                         font->ctx.length,
-                         font->ctx.length};
+  CtxRenderstream  renderstream = {(CtxEntry*)font->ctx.data,
+                              font->ctx.length,
+                              font->ctx.length};
   float origin_x = state->x;
   float origin_y = state->y;
 
@@ -6540,8 +6577,11 @@ ctx_glyph_ctx (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
   if (unichar >= 'a' && unichar <= 'z')
   {
     start = font->ctx.glyph_pos[unichar-'a'];
+  } else
+  {
+    start = ctx_glyph_find (ctx, font, unichar);
   }
-  ctx_iterator_init (&iterator, &journal, start, CTX_ITERATOR_EXPAND_BITPACK);
+  ctx_iterator_init (&iterator, &renderstream, start, CTX_ITERATOR_EXPAND_BITPACK);
 
   CtxEntry *entry;
 
@@ -6581,6 +6621,22 @@ goto done; // for the last glyph in a font
   return -1;
 }
 
+uint32_t ctx_glyph_no (Ctx *ctx, int no)
+{
+  CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
+  int count = 0;
+  for (int i = 0; i < font->ctx.length; i++)
+  {
+    CtxEntry *entry = (CtxEntry*)&font->ctx.data[i];
+    if (entry->code == '@')
+    {
+      if (count == no) return entry->data.u32[0];
+      count ++;
+    }
+  }
+  return 0;
+}
+
 int
 ctx_load_font_ctx (const char *name, const void *data, int length)
 {
@@ -6600,9 +6656,9 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
 
 #if CTX_GLYPH_CACHE
 
-#define CACHE_ENTRIES   20
+#define CACHE_ENTRIES   60
 #define CACHE_OFFSET_X   0
-#define CACHE_SIZE      27
+#define CACHE_SIZE      29
 #define CACHE_HEIGHT (CACHE_SIZE)
 #define CACHE_WIDTH  (CACHE_SIZE)
 #define CACHE_OFFSET_Y_REL   0.75
@@ -6703,9 +6759,9 @@ ctx_glyph_cached_ctx (Ctx *ctx, int font_no, uint32_t unichar, float font_size, 
   }
 
   float x0 = origin_x;
-  float y0 = origin_y - font_size * CACHE_OFFSET_Y_REL - 1;
+  float y0 = origin_y - font_size * CACHE_OFFSET_Y_REL;
   float x1 = origin_x + font_size;
-  float y1 = origin_y + (font_size - font_size *CACHE_OFFSET_Y_REL) - 1;
+  float y1 = origin_y + (font_size - font_size *CACHE_OFFSET_Y_REL);
 
   ctx_user_to_device (&ctx->state, &x0, &y0);
   ctx_user_to_device (&ctx->state, &x1, &y1);
@@ -6734,57 +6790,6 @@ ctx_glyph_cached_ctx (Ctx *ctx, int font_no, uint32_t unichar, float font_size, 
                              x1-x0);
   }
 
-# if 0
-  float x0 = origin_x;
-  float y0 = origin_y - font_size * CACHE_OFFSET_Y_REL - 1;
-  float x1 = origin_x + font_size;
-  float y1 = origin_y + (font_size - font_size *(CACHE_HEIGHT-CACHE_OFFSET_Y)/CACHE_SIZE   ) - 1;
-
-  ctx_user_to_device (&ctx->state, &x0, &y0);
-  ctx_user_to_device (&ctx->state, &x1, &y1);
-
-  float oversample = CACHE_SIZE / scaled_font_size;
-  int aa = oversample / 2 + 0.5f;
-  x1= (int)x1;
-  y1= (int)y1;
-
-  if (x1 < 0 && x0 <0) return 0;
-  if (y1 < 0 && y0 <0) return 0;
-  if (x1 > ctx->renderer->blit_x + ctx->renderer->blit_width &&
-      x0 > ctx->renderer->blit_x + ctx->renderer->blit_width)
-    return 0;
-  if (y1 > ctx->renderer->blit_y + ctx->renderer->blit_height &&
-      y0 > ctx->renderer->blit_y + ctx->renderer->blit_height)
-    return 0;
-
-
-  for (int y = y0; y < y1 - 1; y++)
-    for (int x = x0; x < x1; x++)
-     {
-       int sum = 0;
-       int count = 0;
-       int u = (x-x0) * CACHE_SIZE / scaled_font_size;
-       int v = (y-y0) * CACHE_SIZE / scaled_font_size;
-
-
-      if (v >= 0 && v < CACHE_SIZE - aa)
-      {
-#if 1
-       for (int j = (v>aa)?-aa:0; j <= ((v<y1-aa)?aa:0); j++)
-       for (int i = (u>aa)?-aa:0; i <= ((u<x1-aa)?aa:0); i++, count++)
-       {
-         if(ctx_cacheglyph [(v+j) * CACHE_WIDTH/8 + (u+i)/8] & (1<<((u+i)%8)))
-           sum ++;
-       }
-      ctx_renderer_pset (ctx->renderer, x, y, sum * 255/count);
-#else
-       if(ctx_cacheglyph [(v) * CACHE_WIDTH/8 + (u)/8] & (1<<((u)%8)))
-        ctx_renderer_pset (ctx->renderer, x, y, 255);
-#endif
-     }
-    }
-#endif
-
   return 0;
 }
 #endif
@@ -6812,8 +6817,8 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
                                                 unichar))
           return ctx_glyph_cached_ctx (ctx, state->gstate.font, unichar,
                                        font_size, scaled_font_size);
+      }
 #endif
-   }
     return ctx_glyph_ctx (ctx, &ctx_fonts[state->gstate.font], unichar, stroke);
 #endif
 #if CTX_FONT_ENGINE_STB
@@ -6935,12 +6940,12 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
   cairo_surface_t *image = NULL;
 
   ctx_state_init (&state);
-  ctx_iterator_init (&iterator, &ctx->journal, 0, CTX_ITERATOR_EXPAND_REFPACK|
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
                                                   CTX_ITERATOR_EXPAND_BITPACK);
 
   while ((entry = ctx_iterator_next (&iterator)))
   {
-    //command_print (NULL, command, &ctx->journal);
+    //command_print (NULL, command, &ctx->renderstream);
     //if (cairo_status (cr)) return;
     switch (entry->code)
     {
