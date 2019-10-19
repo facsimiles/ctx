@@ -617,13 +617,13 @@ struct __attribute__ ((packed)) _CtxEntry
   } data;
 };
 
-#define ctx_arg_float(no) entry[no/2].data.f[no%2]
-#define ctx_arg_u32(no)   entry[no/2].data.u32[no%2]
-#define ctx_arg_s32(no)   entry[no/2].data.s32[no%2]
-#define ctx_arg_u16(no)   entry[no/4].data.u32[no%4]
-#define ctx_arg_s16(no)   entry[no/4].data.s32[no%4]
-#define ctx_arg_u8(no)    entry[no/8].data.u8[no%8]
-#define ctx_arg_s8(no)    entry[no/8].data.s8[no%8]
+#define ctx_arg_float(no) entry[(no)>>1].data.f[(no)&1]
+#define ctx_arg_u32(no)   entry[(no)>>1].data.u32[(no)&1]
+#define ctx_arg_s32(no)   entry[(no)>>1].data.s32[(no)&1]
+#define ctx_arg_u16(no)   entry[(no)>>2].data.u32[(no)&3]
+#define ctx_arg_s16(no)   entry[(no)>>2].data.s32[(no)&3]
+#define ctx_arg_u8(no)    entry[(no)>>3].data.u8[(no)&7]
+#define ctx_arg_s8(no)    entry[(no)>>3].data.s8[(no)&7]
 
 #if CTX_EXTRAS
 
@@ -5393,7 +5393,7 @@ ctx_decode_pixels_GRAY1(CtxRenderer *renderer, int x, const void *buf, uint8_t *
   const uint8_t *pixel = (uint8_t*)buf;
   while (count--)
   {
-    if (*pixel & (x%8))
+    if (*pixel & (x&7))
     {
       rgba[0] = 255;
       rgba[1] = 255;
@@ -5407,7 +5407,7 @@ ctx_decode_pixels_GRAY1(CtxRenderer *renderer, int x, const void *buf, uint8_t *
       rgba[2] = 0;
       rgba[3] = 255;
     }
-    if ((x%8)==7)
+    if ((x&7)==7)
       pixel+=1;
     x++;
     rgba +=4;
@@ -5426,13 +5426,13 @@ ctx_encode_pixels_GRAY1 (CtxRenderer *renderer, int x, void *buf, const uint8_t 
 
     if (gray < 127)
     {
-      *pixel = *pixel & (~(1<< (x%8)));
+      *pixel = *pixel & (~(1<< (x&7)));
     }
     else
     {
-      *pixel = *pixel | (1<< (x%8));
+      *pixel = *pixel | (1<< (x&7));
     }
-    if ((x%8)==7)
+    if ((x&7)==7)
       pixel+=1;
     x++;
     rgba +=4;
@@ -5461,13 +5461,13 @@ ctx_decode_pixels_GRAY2(CtxRenderer *renderer, int x, const void *buf, uint8_t *
   const uint8_t *pixel = (uint8_t*)buf;
   while (count--)
   {
-    int val = (*pixel & (3 << ((x % 4)*2)) ) >> ((x%4)*2);
+    int val = (*pixel & (3 << ((x & 3)<<1)) ) >> ((x&3)<<1);
     val <<= 6;
     rgba[0] = val;
     rgba[1] = val;
     rgba[2] = val;
     rgba[3] = 255;
-    if ((x%4)==3)
+    if ((x&7)==3)
       pixel+=1;
     x++;
     rgba +=4;
@@ -5482,9 +5482,9 @@ ctx_encode_pixels_GRAY2 (CtxRenderer *renderer, int x, void *buf, const uint8_t 
   {
     int val = (rgba[0]+rgba[1]+rgba[2])/3 ;
     val >>= 6;
-    *pixel = *pixel & (~(3 << ((x%4)*2)));
-    *pixel = *pixel | ((val << ((x%4)*2)));
-    if ((x%4)==3)
+    *pixel = *pixel & (~(3 << ((x&3)<<1)));
+    *pixel = *pixel | ((val << ((x&3)<<1)));
+    if ((x&3)==3)
       pixel+=1;
     x++;
     rgba +=4;
@@ -5513,13 +5513,13 @@ ctx_decode_pixels_GRAY4(CtxRenderer *renderer, int x, const void *buf, uint8_t *
   const uint8_t *pixel = (uint8_t*)buf;
   while (count--)
   {
-    int val = (*pixel & (15 << ((x % 2)*4)) ) >> ((x%2)*4);
+    int val = (*pixel & (15 << ((x & 1)<<2)) ) >> ((x&1)<<2);
     val <<= 4;
     rgba[0] = val;
     rgba[1] = val;
     rgba[2] = val;
     rgba[3] = 255;
-    if ((x%2)==1)
+    if ((x&1)==1)
       pixel+=1;
     x++;
     rgba +=4;
@@ -5534,9 +5534,9 @@ ctx_encode_pixels_GRAY4 (CtxRenderer *renderer, int x, void *buf, const uint8_t 
   {
     int val = (rgba[0]+rgba[1]+rgba[2])/3 ;
     val >>= 4;
-    *pixel = *pixel & (~(15 << ((x%2)*4)));
-    *pixel = *pixel | ((val << ((x%2)*4)));
-    if ((x%2)==1)
+    *pixel = *pixel & (~(15 << ((x&1)<<2)));
+    *pixel = *pixel | ((val << ((x&1)<<2)));
+    if ((x&1)==1)
       pixel+=1;
     x++;
     rgba +=4;
