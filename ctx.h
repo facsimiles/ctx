@@ -63,10 +63,13 @@ extern "C" {
 #endif
 
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA      5
+#define CTX_RASTERIZER_AA      8
 #endif
 #ifndef CTX_RASTERIZER_AA2
-#define CTX_RASTERIZER_AA2     2
+#define CTX_RASTERIZER_AA2     4
+#endif
+#ifndef CTX_RASTERIZER_AA3
+#define CTX_RASTERIZER_AA3     4
 #endif
 
 #ifndef CTX_RASTERIZER_AUTOHINT
@@ -1515,11 +1518,10 @@ void ctx_set_line_width (Ctx *ctx, float x) {
 
   /* XXX : ugly hack to normalize the width dependent on the current
            transform, this does not really belong here */
-  x = x * CTX_MAX(CTX_MAX(ctx->state.gstate.transform.m[0][0],
-                          ctx->state.gstate.transform.m[0][1]),
-                  CTX_MAX(ctx->state.gstate.transform.m[1][0],
-                          ctx->state.gstate.transform.m[1][1]));
-
+  x = x * CTX_MAX(CTX_MAX(ctx_fabsf(ctx->state.gstate.transform.m[0][0]),
+                          ctx_fabsf(ctx->state.gstate.transform.m[0][1])),
+                  CTX_MAX(ctx_fabsf(ctx->state.gstate.transform.m[1][0]),
+                          ctx_fabsf(ctx->state.gstate.transform.m[1][1])));
   CTX_PROCESS_F1(CTX_LINE_WIDTH, x);
 }
 
@@ -4242,7 +4244,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
   {
     for (int x = 0; x < count; x++)
     {
-      int cov = coverage[x];
+      int cov = *coverage;;
       if (cov == 255)
       {
         dst[0] = color[0];
@@ -4253,9 +4255,12 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
       else if (cov)
       {
         int ralpha = 255 - ((cov * color[3]) >> 8);
-        for (int c = 0; c < 4; c++)
-          dst[c] = (color[c]*cov + dst[c] * ralpha) >> 8;
+        dst[0] = (color[0]*cov + dst[0] * ralpha) >> 8;
+        dst[1] = (color[1]*cov + dst[1] * ralpha) >> 8;
+        dst[2] = (color[2]*cov + dst[2] * ralpha) >> 8;
+        dst[3] = (color[3]*cov + dst[3] * ralpha) >> 8;
       }
+      coverage++;
       dst+=4;
     }
     return count;
@@ -4268,14 +4273,17 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
   {
     for (int x = 0; x < count; x++)
     {
-      uint8_t cov = coverage[x];
+      uint8_t cov = *coverage;;
       if (cov)
       {
         uint8_t ralpha = 255 - ((cov * color[3]) >> 8);
-        for (int c = 0; c < 4; c++)
-          dst[c] = (color[c]*cov + dst[c] * ralpha) >> 8;
+        dst[0] = (color[0]*cov + dst[0] * ralpha) >> 8;
+        dst[1] = (color[1]*cov + dst[1] * ralpha) >> 8;
+        dst[2] = (color[2]*cov + dst[2] * ralpha) >> 8;
+        dst[3] = (color[3]*cov + dst[3] * ralpha) >> 8;
       }
       dst+=4;
+      coverage++;
     }
   }
   return count;
@@ -4699,8 +4707,8 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding)
     }
     else
     {
-      renderer->scanline += CTX_RASTERIZER_AA2 + 1;
-      ctx_renderer_increment_edges (renderer, CTX_RASTERIZER_AA2 + 1);
+      renderer->scanline += CTX_RASTERIZER_AA3;
+      ctx_renderer_increment_edges (renderer, CTX_RASTERIZER_AA3);
       ctx_renderer_feed_edges (renderer);
       ctx_renderer_discard_edges (renderer);
       ctx_renderer_sort_active_edges (renderer);
@@ -6592,8 +6600,9 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
 
 #if CTX_GLYPH_CACHE
 
-#define CACHE_OFFSET_X 0
-#define CACHE_SIZE   64
+#define CACHE_ENTRIES   20
+#define CACHE_OFFSET_X   0
+#define CACHE_SIZE      27
 #define CACHE_HEIGHT (CACHE_SIZE)
 #define CACHE_WIDTH  (CACHE_SIZE)
 #define CACHE_OFFSET_Y_REL   0.75
@@ -6606,21 +6615,22 @@ ctx_can_do_fast_glyph (CtxState *state,
 {
   CtxMatrix *mat = &state->gstate.transform;
 
-  if (scaled_font_size > (CACHE_SIZE /2))
+  if (scaled_font_size >= CACHE_SIZE)
     return 0;
 
-  if (! (unichar >= ' ' && unichar <= '~')) // at first, only try to cache asc
-    return 0;
+  //if (! (unichar >= ' ' && unichar <= '~')) // at first, only try to cache asc
+  //  return 0;
 
   /* the caching logic can be extended to apply to arbitrary transforms,
    * for now - we only support scaling and translations and not even scalings
    * that flip the framebuffer upside down.
    */
-  if (mat->m[0][1] == 0.0 &&
-      mat->m[1][0] == 0.0 &&
-      mat->m[0][0] > 0.0 &&
-      mat->m[1][1] > 0.0)
+  if (mat->m[0][1] == 0.0f &&
+      mat->m[1][0] == 0.0f &&
+      mat->m[0][0] > 0.0f &&
+      mat->m[1][1] > 0.0f)
    return 1;
+
   return 0;
 }
 
@@ -6629,20 +6639,22 @@ struct _CtxGlyph
   uint32_t time;
   uint32_t unichar;
   int      font_no;
-  uint8_t  bitmap[CACHE_WIDTH/8 * CACHE_HEIGHT];
+  float    font_size;
+  uint8_t  bitmap[CACHE_WIDTH * CACHE_HEIGHT];
 };
 
 typedef struct _CtxGlyph CtxGlyph;
 
-#define CACHE_ENTRIES 20
 
 static CtxGlyph ctx_glyph_cache[CACHE_ENTRIES];
 
 static uint32_t ctx_glyph_time = 0; /// will overflow - glitching with some slow rendering then
 
 static inline int
-ctx_glyph_cached_ctx (Ctx *ctx, uint32_t unichar, float font_size, float scaled_font_size)
+ctx_glyph_cached_ctx (Ctx *ctx, int font_no, uint32_t unichar, float font_size, float scaled_font_size)
 {
+  //font_size = (int) (font_size);
+  //scaled_font_size = (int) (scaled_font_size);
   CtxState *state = &ctx->state;
   uint8_t *ctx_cacheglyph = NULL;
   float origin_x = state->x;
@@ -6654,9 +6666,11 @@ ctx_glyph_cached_ctx (Ctx *ctx, uint32_t unichar, float font_size, float scaled_
   static int hits = 0;
   static int misses = 0;
 
-  for (int i = 0; i < CACHE_ENTRIES; i++)
+  for (int i = 0; i < CACHE_ENTRIES && !ctx_cacheglyph; i++)
   {
-    if (ctx_glyph_cache[i].unichar == unichar)
+    if ((ctx_glyph_cache[i].unichar == unichar) &&
+        (ctx_glyph_cache[i].font_size == scaled_font_size) &&
+        (ctx_glyph_cache[i].font_no == font_no))
     {
       ctx_cacheglyph = &ctx_glyph_cache[i].bitmap[0];
       ctx_glyph_cache[i].time = ctx_glyph_time;
@@ -6671,25 +6685,56 @@ ctx_glyph_cached_ctx (Ctx *ctx, uint32_t unichar, float font_size, float scaled_
     hits ++;
   else
     misses ++;
-  fprintf (stderr, "\r%i / %i\n", hits, misses);
 
   if (!ctx_cacheglyph)
   {
     ctx_cacheglyph = &ctx_glyph_cache[least_recently_used].bitmap[0];
     ctx_glyph_cache[least_recently_used].time = ctx_glyph_time;
     ctx_glyph_cache[least_recently_used].unichar = unichar;
-
-    memset (ctx_cacheglyph, 0, CACHE_HEIGHT*CACHE_WIDTH/8);
-    Ctx *gctx = ctx_new_for_framebuffer (ctx_cacheglyph, CACHE_WIDTH, CACHE_HEIGHT, CACHE_WIDTH/8, CTX_FORMAT_GRAY1);
-    ctx_set_font_size (gctx, CACHE_SIZE);
-    ctx_move_to (gctx, 0, CACHE_OFFSET_Y);
+    ctx_glyph_cache[least_recently_used].font_no = font_no;
+    ctx_glyph_cache[least_recently_used].font_size = scaled_font_size;
+    memset (ctx_cacheglyph, 0, CACHE_HEIGHT*CACHE_WIDTH);
+    Ctx *gctx = ctx_new_for_framebuffer (ctx_cacheglyph, CACHE_WIDTH, CACHE_HEIGHT, CACHE_WIDTH, CTX_FORMAT_GRAY8);
+    ctx_set_font_size (gctx, scaled_font_size);
+    ctx_move_to (gctx, 0, CACHE_OFFSET_Y_REL * scaled_font_size);
     ctx_set_gray (gctx, 1.0);
     ctx_glyph_ctx (gctx, &ctx_fonts[state->gstate.font], unichar, 0);
     ctx_free (gctx);
   }
 
+  float x0 = origin_x;
+  float y0 = origin_y - font_size * CACHE_OFFSET_Y_REL - 1;
+  float x1 = origin_x + font_size;
+  float y1 = origin_y + (font_size - font_size *CACHE_OFFSET_Y_REL) - 1;
 
+  ctx_user_to_device (&ctx->state, &x0, &y0);
+  ctx_user_to_device (&ctx->state, &x1, &y1);
 
+  float ymin = y0;
+
+  if (x1 < 0 && x0 <0) return 0;
+  if (y1 < 0 && y0 <0) return 0;
+  if (x1 > ctx->renderer->blit_x + ctx->renderer->blit_width &&
+      x0 > ctx->renderer->blit_x + ctx->renderer->blit_width)
+    return 0;
+  if (y1 > ctx->renderer->blit_y + ctx->renderer->blit_height &&
+      y0 > ctx->renderer->blit_y + ctx->renderer->blit_height)
+    return 0;
+
+  y1 = CTX_MIN(y1, ctx->renderer->blit_y + ctx->renderer->blit_height-1);
+  x1 = CTX_MIN(x1, ctx->renderer->blit_x + ctx->renderer->blit_width-1);
+
+  if (x1 > x0)
+  for (int y = y0; y < y1 - 1; y++)
+  {
+    ctx_renderer_apply_coverage (ctx->renderer,
+                                 ((uint8_t*)ctx->renderer->buf) + y * ctx->renderer->blit_stride + (int)(x0) * ctx->renderer->format->bpp/8,
+                             x0,
+                             &ctx_cacheglyph[CACHE_WIDTH * (int)(y-ymin)],
+                             x1-x0);
+  }
+
+# if 0
   float x0 = origin_x;
   float y0 = origin_y - font_size * CACHE_OFFSET_Y_REL - 1;
   float x1 = origin_x + font_size;
@@ -6703,14 +6748,14 @@ ctx_glyph_cached_ctx (Ctx *ctx, uint32_t unichar, float font_size, float scaled_
   x1= (int)x1;
   y1= (int)y1;
 
-  if (x1 < 0 && x0 <0) return;
-  if (y1 < 0 && y0 <0) return;
+  if (x1 < 0 && x0 <0) return 0;
+  if (y1 < 0 && y0 <0) return 0;
   if (x1 > ctx->renderer->blit_x + ctx->renderer->blit_width &&
       x0 > ctx->renderer->blit_x + ctx->renderer->blit_width)
-    return;
+    return 0;
   if (y1 > ctx->renderer->blit_y + ctx->renderer->blit_height &&
       y0 > ctx->renderer->blit_y + ctx->renderer->blit_height)
-    return;
+    return 0;
 
 
   for (int y = y0; y < y1 - 1; y++)
@@ -6738,6 +6783,7 @@ ctx_glyph_cached_ctx (Ctx *ctx, uint32_t unichar, float font_size, float scaled_
 #endif
      }
     }
+#endif
 
   return 0;
 }
@@ -6764,7 +6810,7 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
         ctx_user_to_device (&ctx->state, &dummy, &scaled_font_size);
         if ((!stroke) && ctx_can_do_fast_glyph (state, scaled_font_size,
                                                 unichar))
-          return ctx_glyph_cached_ctx (ctx, unichar,
+          return ctx_glyph_cached_ctx (ctx, state->gstate.font, unichar,
                                        font_size, scaled_font_size);
 #endif
    }
