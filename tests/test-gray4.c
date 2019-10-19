@@ -1,10 +1,12 @@
 #include <stdint.h>
 
 #include "ctx-font-regular.h"
+#define CTX_RASTERIZER_AA   5
+#define CTX_RASTERIZER_AA2  2
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 
-#define WIDTH    80
+#define WIDTH    72
 #define HEIGHT   24
 #define STRIDE   WIDTH/2+(WIDTH%2?1:0)
 
@@ -47,6 +49,7 @@ int main (int argc, char **argv)
       int val = (pixels[no] & (15 << ((x % 2)*4)) ) >> ((x%2)*4);
       val = val * 6 / 16;
       if (reverse)val = 5-val;
+      val = CTX_CLAMP(val, 0, 4);
       printf ("%s", utf8_gray_scale[val]);
       if (x % 2 == 1)
         no++;

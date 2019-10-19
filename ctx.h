@@ -70,7 +70,7 @@ extern "C" {
 #endif
 
 #ifndef CTX_RASTERIZER_AUTOHINT
-#define CTX_RASTERIZER_AUTOHINT   1 // should be made dynamic, only works
+#define CTX_RASTERIZER_AUTOHINT   0 // should be made dynamic, only works
                                     // without forced AA
 #endif
 
@@ -135,14 +135,17 @@ extern "C" {
   #define CTX_FONT_ENGINE_STB        0
 #endif
 
-#if CTX_FONT_sgi
-  #define CTX_FONT_ENGINE_MONOBITMAP 1
-#endif
-
 #if CTX_FONT_regular || CTX_FONT_mono || CTX_FONT_bold \
   || CTX_FONT_italic || CTX_FONT_sans || CTX_FONT_serif
 #ifndef CTX_FONT_ENGINE_CTX
   #define CTX_FONT_ENGINE_CTX        1
+#endif
+#endif
+
+
+#ifndef CTX_GLYPH_CACHE
+#if CTX_FONT_ENGINE_CTX
+#define CTX_GLYPH_CACHE 1
 #endif
 #endif
 
@@ -2072,7 +2075,7 @@ void ctx_gradient_add_stop_u8
   ctx_process (ctx, &entry);
 }
 
-void ctx_gradient_add_stop_float
+void ctx_gradient_add_stop
 (Ctx *ctx, float pos, float r, float g, float b, float a)
 {
   int ir = r * 255;
@@ -4823,9 +4826,9 @@ ctx_renderer_rel_quad_to (CtxRenderer *renderer,
                                   x  + renderer->x, y  + renderer->y);
 }
 
-#define LENGTH_OVERSAMPLE 4
+#define LENGTH_OVERSAMPLE 1
 static void
-ctx_renderer_pset (CtxRenderer *renderer, int x, int y)
+ctx_renderer_pset (CtxRenderer *renderer, int x, int y, uint8_t cov)
 {
      // XXX - we avoid rendering here x==0 - to keep with
      //  an off-by one elsewhere
@@ -4838,11 +4841,26 @@ ctx_renderer_pset (CtxRenderer *renderer, int x, int y)
   dst += y * renderer->blit_stride;
   dst += x * renderer->format->bpp / 8;
 
-  renderer->format->to_rgba8 (renderer, x, dst, &pixel[0], 1);
-  for (int c = 0; c < 3; c++)
+  if (!renderer->format->to_rgba8 ||
+      !renderer->format->from_rgba8)
+    return;
+
+  if (cov == 255)
   {
-    pixel[c] = fg_color[c];
+    for (int c = 0; c < 4; c++)
+    {
+      pixel[c] = fg_color[c];
+    }
   }
+  else
+  {
+    renderer->format->to_rgba8 (renderer, x, dst, &pixel[0], 1);
+    for (int c = 0; c < 4; c++)
+    {
+      pixel[c] = ctx_lerp_u8 (pixel[c], fg_color[c], cov);
+    }
+  }
+
   renderer->format->from_rgba8 (renderer, x, dst, &pixel[0], 1);
 }
 
@@ -4899,10 +4917,10 @@ ctx_renderer_stroke_1px (CtxRenderer *renderer)
 
         for (int i = 0; i < len; i++)
         {
-          ctx_renderer_pset (renderer, tx/256, ty/256);
+          ctx_renderer_pset (renderer, tx/256, ty/256, 255);
           tx += dx;
           ty += dy;
-          ctx_renderer_pset (renderer, tx/256, ty/256);
+          ctx_renderer_pset (renderer, tx/256, ty/256, 255);
         }
       }
 
@@ -6525,6 +6543,7 @@ ctx_glyph_ctx (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
     {
       if (entry->code == '@')
       {
+done:
         if (stroke)
           ctx_stroke (ctx);
         else
@@ -6549,6 +6568,7 @@ ctx_glyph_ctx (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
                       font_size / CTX_BAKE_FONT_SIZE);
     }
   }
+goto done; // for the last glyph in a font
   ctx_assert (0);
   return -1;
 }
@@ -6568,104 +6588,158 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
 
 
 #endif
-#if CTX_FONT_ENGINE_MONOBITMAP
 
-static inline float
-ctx_glyph_kern_monobitmap (Ctx *ctx, CtxFont *font, int unicharA, int unicharB)
+
+#if CTX_GLYPH_CACHE
+
+#define CACHE_OFFSET_X 0
+#define CACHE_SIZE   64
+#define CACHE_HEIGHT (CACHE_SIZE)
+#define CACHE_WIDTH  (CACHE_SIZE)
+#define CACHE_OFFSET_Y_REL   0.75
+#define CACHE_OFFSET_Y (CACHE_SIZE * CACHE_OFFSET_Y_REL)
+
+static int
+ctx_can_do_fast_glyph (CtxState *state,
+                       float scaled_font_size,
+                       uint32_t unichar)
 {
-  return 0.0;
+  CtxMatrix *mat = &state->gstate.transform;
+
+  if (scaled_font_size > (CACHE_SIZE /2))
+    return 0;
+
+  if (! (unichar >= ' ' && unichar <= '~')) // at first, only try to cache asc
+    return 0;
+
+  /* the caching logic can be extended to apply to arbitrary transforms,
+   * for now - we only support scaling and translations and not even scalings
+   * that flip the framebuffer upside down.
+   */
+  if (mat->m[0][1] == 0.0 &&
+      mat->m[1][0] == 0.0 &&
+      mat->m[0][0] > 0.0 &&
+      mat->m[1][1] > 0.0)
+   return 1;
+  return 0;
 }
 
-static inline float
-ctx_glyph_width_monobitmap (Ctx *ctx, CtxFont *font, int unichar)
+struct _CtxGlyph
 {
-  return 0.0;
-}
+  uint32_t time;
+  uint32_t unichar;
+  int      font_no;
+  uint8_t  bitmap[CACHE_WIDTH/8 * CACHE_HEIGHT];
+};
+
+typedef struct _CtxGlyph CtxGlyph;
+
+#define CACHE_ENTRIES 20
+
+static CtxGlyph ctx_glyph_cache[CACHE_ENTRIES];
+
+static uint32_t ctx_glyph_time = 0; /// will overflow - glitching with some slow rendering then
 
 static inline int
-ctx_glyph_monobitmap (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
+ctx_glyph_cached_ctx (Ctx *ctx, uint32_t unichar, float font_size, float scaled_font_size)
 {
-#if 0
   CtxState *state = &ctx->state;
-  CtxIterator iterator;
-  CtxJournal  journal = {(CtxEntry*)font->ctx.data,
-                         font->ctx.length,
-                         font->ctx.length};
+  uint8_t *ctx_cacheglyph = NULL;
   float origin_x = state->x;
   float origin_y = state->y;
 
+  int least_recently_used = 0;
+  int least_recently_used_time = 0xffffffff;
+
+  static int hits = 0;
+  static int misses = 0;
+
+  for (int i = 0; i < CACHE_ENTRIES; i++)
+  {
+    if (ctx_glyph_cache[i].unichar == unichar)
+    {
+      ctx_cacheglyph = &ctx_glyph_cache[i].bitmap[0];
+      ctx_glyph_cache[i].time = ctx_glyph_time;
+    }
+    if (least_recently_used_time > ctx_glyph_cache[i].time)
+    {
+      least_recently_used_time = ctx_glyph_cache[i].time;
+      least_recently_used = i;
+    }
+  }
+  if (ctx_cacheglyph)
+    hits ++;
+  else
+    misses ++;
+  fprintf (stderr, "\r%i / %i\n", hits, misses);
+
+  if (!ctx_cacheglyph)
+  {
+    ctx_cacheglyph = &ctx_glyph_cache[least_recently_used].bitmap[0];
+    ctx_glyph_cache[least_recently_used].time = ctx_glyph_time;
+    ctx_glyph_cache[least_recently_used].unichar = unichar;
+
+    memset (ctx_cacheglyph, 0, CACHE_HEIGHT*CACHE_WIDTH/8);
+    Ctx *gctx = ctx_new_for_framebuffer (ctx_cacheglyph, CACHE_WIDTH, CACHE_HEIGHT, CACHE_WIDTH/8, CTX_FORMAT_GRAY1);
+    ctx_set_font_size (gctx, CACHE_SIZE);
+    ctx_move_to (gctx, 0, CACHE_OFFSET_Y);
+    ctx_set_gray (gctx, 1.0);
+    ctx_glyph_ctx (gctx, &ctx_fonts[state->gstate.font], unichar, 0);
+    ctx_free (gctx);
+  }
+
+
+
+  float x0 = origin_x;
+  float y0 = origin_y - font_size * CACHE_OFFSET_Y_REL - 1;
+  float x1 = origin_x + font_size;
+  float y1 = origin_y + (font_size - font_size *(CACHE_HEIGHT-CACHE_OFFSET_Y)/CACHE_SIZE   ) - 1;
+
+  ctx_user_to_device (&ctx->state, &x0, &y0);
+  ctx_user_to_device (&ctx->state, &x1, &y1);
+
+  float oversample = CACHE_SIZE / scaled_font_size;
+  int aa = oversample / 2 + 0.5f;
+  x1= (int)x1;
+  y1= (int)y1;
+
+  if (x1 < 0 && x0 <0) return;
+  if (y1 < 0 && y0 <0) return;
+  if (x1 > ctx->renderer->blit_x + ctx->renderer->blit_width &&
+      x0 > ctx->renderer->blit_x + ctx->renderer->blit_width)
+    return;
+  if (y1 > ctx->renderer->blit_y + ctx->renderer->blit_height &&
+      y0 > ctx->renderer->blit_y + ctx->renderer->blit_height)
+    return;
+
+
+  for (int y = y0; y < y1 - 1; y++)
+    for (int x = x0; x < x1; x++)
+     {
+       int sum = 0;
+       int count = 0;
+       int u = (x-x0) * CACHE_SIZE / scaled_font_size;
+       int v = (y-y0) * CACHE_SIZE / scaled_font_size;
+
+
+      if (v >= 0 && v < CACHE_SIZE - aa)
+      {
 #if 1
-  if (ctx->renderer)
-  {
-    origin_x = ctx->renderer->x;
-    origin_y = ctx->renderer->y;
-  }
-  ctx_current_point (ctx, &origin_x, &origin_y);
+       for (int j = (v>aa)?-aa:0; j <= ((v<y1-aa)?aa:0); j++)
+       for (int i = (u>aa)?-aa:0; i <= ((u<x1-aa)?aa:0); i++, count++)
+       {
+         if(ctx_cacheglyph [(v+j) * CACHE_WIDTH/8 + (u+i)/8] & (1<<((u+i)%8)))
+           sum ++;
+       }
+      ctx_renderer_pset (ctx->renderer, x, y, sum * 255/count);
+#else
+       if(ctx_cacheglyph [(v) * CACHE_WIDTH/8 + (u)/8] & (1<<((u)%8)))
+        ctx_renderer_pset (ctx->renderer, x, y, 255);
 #endif
-
-  int in_glyph = 0;
-  float font_size = state->gstate.font_size;
-  int start = 0;
-  if (unichar >= 'a' && unichar <= 'z')
-  {
-    start = font->ctx.glyph_pos[unichar-'a'];
-  }
-  ctx_iterator_init (&iterator, &journal, start, CTX_ITERATOR_EXPAND_BITPACK);
-
-  CtxEntry *entry;
-
-  while ((entry = ctx_iterator_next (&iterator)))
-  {
-    if (in_glyph)
-    {
-      if (entry->code == '@')
-      {
-        if (stroke)
-          ctx_stroke (ctx);
-        else
-          ctx_fill (ctx);
-        ctx_restore (ctx);
-        return 0;
-      }
-      ctx_process (ctx, entry);
+     }
     }
-    else if (entry->code == '@' && entry->data.u32[0] == unichar)
-    {
-      in_glyph = 1;
-      if (unichar >= 'a' && unichar <= 'z')
-      {
-        font->ctx.glyph_pos[unichar-'a'] = iterator.pos;
-      }
-      ctx_save (ctx);
-      ctx_translate (ctx, origin_x, origin_y);
-      ctx_new_path (ctx);
-      ctx_move_to (ctx, 0, 0);
-      ctx_scale (ctx, font_size / CTX_BAKE_FONT_SIZE,
-                      font_size / CTX_BAKE_FONT_SIZE);
-    }
-  }
-  ctx_assert (0);
-#endif
-  return -1;
-}
 
-
-int
-ctx_load_font_monobitmap (const char *name, int start, int end,
-                          int glyphwidth, int glyphheight,
-                          const uint8_t *data)
-{
-  if (ctx_font_count >= CTX_MAX_FONTS)
-    return -1;
-  ctx_fonts[ctx_font_count].type = 2;
-  ctx_fonts[ctx_font_count].name = strdup (name);
-  ctx_fonts[ctx_font_count].monobitmap.data = data;
-  ctx_fonts[ctx_font_count].monobitmap.gw = glyphwidth;
-  ctx_fonts[ctx_font_count].monobitmap.gh = glyphheight;
-  ctx_fonts[ctx_font_count].monobitmap.start = start;
-  ctx_fonts[ctx_font_count].monobitmap.end = end;
-  ctx_font_count++;
-  return ctx_font_count-1;
+  return 0;
 }
 #endif
 
@@ -6673,19 +6747,32 @@ static inline int
 ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxState *state = &ctx->state;
+
+  // !stroke and if font-size < 50 ensure we've got a cache of this glyph
+  //    then fill through that mask/rle image with implicit aa
+
   switch (ctx_fonts[state->gstate.font].type)
   {
 #if CTX_FONT_ENGINE_CTX
     case 0:
-      return ctx_glyph_ctx (ctx, &ctx_fonts[state->gstate.font], unichar, stroke);
+
+#if CTX_GLYPH_CACHE
+      {
+        float font_size = state->gstate.font_size;
+        float scaled_font_size = font_size;
+        float dummy;
+        ctx_user_to_device (&ctx->state, &dummy, &scaled_font_size);
+        if ((!stroke) && ctx_can_do_fast_glyph (state, scaled_font_size,
+                                                unichar))
+          return ctx_glyph_cached_ctx (ctx, unichar,
+                                       font_size, scaled_font_size);
+#endif
+   }
+    return ctx_glyph_ctx (ctx, &ctx_fonts[state->gstate.font], unichar, stroke);
 #endif
 #if CTX_FONT_ENGINE_STB
     case 1:
       return ctx_glyph_stb (ctx, &ctx_fonts[state->gstate.font].stb.ttf_info, unichar, stroke);
-#endif
-#if CTX_FONT_ENGINE_MONOBITMAP
-    case 2:
-      return ctx_glyph_monobitmap (ctx, &ctx_fonts[state->gstate.font], unichar, stroke);
 #endif
   }
   return -1;
@@ -6705,10 +6792,6 @@ ctx_glyph_width (Ctx *ctx, int unichar)
     case 1:
       return ctx_glyph_width_stb (ctx, &ctx_fonts[state->gstate.font].stb.ttf_info, unichar);
 #endif
-#if CTX_FONT_ENGINE_MONOBITMAP
-    case 2:
-      return ctx_glyph_width_monobitmap (ctx, &ctx_fonts[state->gstate.font], unichar);
-#endif
   }
   return 0.0;
 }
@@ -6726,10 +6809,6 @@ ctx_glyph_kern (Ctx *ctx, int unicharA, int unicharB)
 #if CTX_FONT_ENGINE_STB
     case 1:
       return ctx_glyph_kern_stb (ctx, &ctx_fonts[state->gstate.font].stb.ttf_info, unicharA, unicharB);
-#endif
-#if CTX_FONT_ENGINE_MONOBITMAP
-    case 2:
-      return ctx_glyph_kern_monobitmap (ctx, &ctx_fonts[state->gstate.font], unicharA, unicharB);
 #endif
   }
   return 0.0;
@@ -6756,6 +6835,9 @@ _ctx_text (Ctx        *ctx,
   float x = ctx->state.x;
   float y = ctx->state.y;
   float x0 = x;
+#if CTX_GLYPH_CACHE
+  ctx_glyph_time ++;
+#endif
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
     {
       if (*utf8 == '\n')
@@ -7053,6 +7135,11 @@ static void ctx_setup ()
   static int initialized = 0;
   if (initialized) return;
   initialized = 1;
+
+#if CTX_GLYPH_CACHE
+  memset (ctx_glyph_cache, 0, sizeof (ctx_glyph_cache));
+#endif
+
 #if CTX_FONT_ENGINE_CTX
   ctx_font_count = 0; // oddly - this is needed in arduino
 #if CTX_FONT_regular

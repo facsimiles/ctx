@@ -1,9 +1,11 @@
 #include <stdint.h>
 #include "ctx-font-regular.h"
+#define CTX_RASTERIZER_AA   5
+#define CTX_RASTERIZER_AA2  2
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 
-#define WIDTH    80
+#define WIDTH    72
 #define HEIGHT   24
 #define STRIDE   WIDTH/4+(WIDTH%4?1:0)
 
@@ -24,6 +26,7 @@ int main (int argc, char **argv)
   ctx_gradient_add_stop_u8 (ctx, 1, 255,255,255,255);
   ctx_rectangle (ctx, 0, 0, WIDTH, HEIGHT);
   ctx_fill (ctx);
+
 
   char *utf8 = "2 bits\n4 grays";
   ctx_move_to (ctx, 4, 9);
