@@ -1,43 +1,25 @@
 /* ctx - tiny footprint 2d vector rasterizer context
+ *
+ * Copyright (c) 2019 Øyvind Kolås <pippin@gimp.org>
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies. Funding
+ * of past and future development is welcome, for further information see
+ * https://pippin.gimp.org/funding/
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
 
-  microcontrollers tested on:
-    linux, ESP32 and MAX32666 (dual core Cortex-M4F at 96 MHz)
-
-  Features:
-    Pixel-formats:
-      GRAY1    1bit b/w            - width must be multiple of 8
-      GRAY2    4 level grayscale   - width must be multiple of 4
-      GRAY4    16 level grayscale  - width must be multiple of 2
-      GRAY8    256 level grayscale
-      GRAYA8   256 level grayscale, with 256 level alpha
-      RGBA8
-      BGRA8
-      RGB565
-      RGB565 byteswapped,
-      RGBAF    32bit floating point
-      GRAYF
-
-    Configurable can be compiled with a reduced feature-set for smaller
-    binary size on embedded platforms.
-
-    HTML5 Canvas|PDF|SVG drawing API and capabilities:
-      (rel)move_to, line_to, curve_to, quad_to, arc_to
-      scale, rotate, translate, save, restore, arc, rectangle, fill,
-      line-width, stroke, end-caps, linear and radial gradients,
-      using PNGs as patterns, text.
-
-    Two font-backends, internal - with no overhead, and ttf from in-memory
-    representation using stb_truetype, both driven with the same UTF8 API.
-
-    Negative-width lines get drawn ultrafast 1px wide with bresenham, useful
-    for scopes.
-
-    Compact draw-list/command-stream representation, for low-RAM storage, and
-    network transmission.
-
-    Implements own math and strtod functions using only single precision float.
-
-    Dithering of gradients/images to avoid banding in RGB565
+  work in progress:
+    glyph cache
+    clipping path/rectangle
 
   known bugs (not missing feature):
     refpack is currently disabled unstable due to packing across CONTs
@@ -159,7 +141,7 @@ extern "C" {
 #endif
 
 #define CTX_PI               3.141592653589793f
-#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  36
+#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  48
 
 #ifndef CTX_MAX_FONTS
 #define CTX_MAX_FONTS        3
@@ -802,7 +784,9 @@ struct _CtxFont
     struct { CtxEntry *data; int length; int first_kern;
              /* we've got ~110 bytes to fill to cover as
                 much data as stbtt_fontinfo */
-             int16_t glyph_pos[26]; // for a..z
+             //int16_t glyph_pos[26]; // for a..z
+             int       glyphs; // number of glyphs
+             uint32_t *index;  // index for jumping into data-stream
            } ctx;
 #if CTX_FONT_ENGINE_STB
     struct { stbtt_fontinfo ttf_info; } stb;
@@ -811,11 +795,8 @@ struct _CtxFont
   };
 };
 
-
 static CtxFont ctx_fonts[CTX_MAX_FONTS];
 static int     ctx_font_count = 0;
-
-
 
 void ctx_process (Ctx *ctx, CtxEntry *entry);
 
@@ -6526,6 +6507,15 @@ static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
   return 0;
 }
 
+static int ctx_font_find_glyph (CtxFont *font, uint32_t glyph)
+{
+  for (int i = 0; i < font->ctx.glyphs; i++)
+  {
+    if (font->ctx.index[i * 2] == glyph)
+      return font->ctx.index[i * 2 + 1];
+  }
+  return -1;
+}
 
 static inline float
 ctx_glyph_width_ctx (Ctx *ctx, CtxFont *font, int unichar)
@@ -6533,13 +6523,9 @@ ctx_glyph_width_ctx (Ctx *ctx, CtxFont *font, int unichar)
   CtxState *state = &ctx->state;
   float font_size = state->gstate.font_size;
   int start = 0;
-  if (unichar >= 'a' && unichar <= 'z')
-  {
-    start = font->ctx.glyph_pos[unichar-'a'];
-  } else
-  {
-    start = ctx_glyph_find (ctx, font, unichar);
-  }
+  start = ctx_font_find_glyph (font, unichar);
+  if (start < 0)
+    return 0.0;  // XXX : fallback
   for (int i = start; i < font->ctx.length; i++)
   {
     CtxEntry *entry = (CtxEntry*)&font->ctx.data[i];
@@ -6574,13 +6560,10 @@ ctx_glyph_ctx (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
   int in_glyph = 0;
   float font_size = state->gstate.font_size;
   int start = 0;
-  if (unichar >= 'a' && unichar <= 'z')
-  {
-    start = font->ctx.glyph_pos[unichar-'a'];
-  } else
-  {
-    start = ctx_glyph_find (ctx, font, unichar);
-  }
+  start = ctx_font_find_glyph (font, unichar);
+  if (start < 0)
+    return -1;  // XXX : fallback
+
   ctx_iterator_init (&iterator, &renderstream, start, CTX_ITERATOR_EXPAND_BITPACK);
 
   CtxEntry *entry;
@@ -6604,10 +6587,6 @@ done:
     else if (entry->code == '@' && entry->data.u32[0] == unichar)
     {
       in_glyph = 1;
-      if (unichar >= 'a' && unichar <= 'z')
-      {
-        font->ctx.glyph_pos[unichar-'a'] = iterator.pos;
-      }
       ctx_save (ctx);
       ctx_translate (ctx, origin_x, origin_y);
       ctx_new_path (ctx);
@@ -6625,27 +6604,49 @@ uint32_t ctx_glyph_no (Ctx *ctx, int no)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
   int count = 0;
+  if (no < 0 || no >= font->ctx.glyphs)
+    return 0;
+  return font->ctx.index[no*2];
+}
+
+static void ctx_font_init_ctx (CtxFont *font)
+{
+  /* XXX : it would be better if we baked the index into the
+             */
+  int glyph_count = 0;
   for (int i = 0; i < font->ctx.length; i++)
   {
-    CtxEntry *entry = (CtxEntry*)&font->ctx.data[i];
+    CtxEntry *entry = &font->ctx.data[i];
+    if (entry->code == '@')
+      glyph_count ++;
+  }
+  font->ctx.glyphs = glyph_count;
+  font->ctx.index = malloc (sizeof (uint32_t) * 2 * glyph_count);
+  int no = 0;
+  for (int i = 0; i < font->ctx.length; i++)
+  {
+    CtxEntry *entry = &font->ctx.data[i];
     if (entry->code == '@')
     {
-      if (count == no) return entry->data.u32[0];
-      count ++;
+      font->ctx.index[no*2]   = entry->data.u32[0];
+      font->ctx.index[no*2+1] = i;
+      no++;
     }
   }
-  return 0;
 }
 
 int
 ctx_load_font_ctx (const char *name, const void *data, int length)
 {
+  if (length % sizeof(CtxEntry))
+    return -1;
   if (ctx_font_count >= CTX_MAX_FONTS)
     return -1;
   ctx_fonts[ctx_font_count].type = 0;
   ctx_fonts[ctx_font_count].name = strdup (name);
   ctx_fonts[ctx_font_count].ctx.data = (CtxEntry*)data;
   ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
+  ctx_font_init_ctx (&ctx_fonts[ctx_font_count]);
   ctx_font_count++;
   return ctx_font_count-1;
 }
