@@ -4202,12 +4202,36 @@ static CtxSourceU8 ctx_renderer_get_source_u8 (CtxRenderer *renderer)
   return ctx_sample_source_u8_color;
 }
 
-static int
+#define MASK_ALPHA       (0xff << 24)
+#define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
+#define MASK_RED_BLUE    ((0xff << 16) | (0xff))
+
+static inline void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
+{
+#if 1
+  uint8_t ralpha = 255 - ((cov * src[3]) >> 8);
+  for (int c = 0; c < 4; c++)
+    dst[c] = (src[c]*cov + dst[c] * ralpha) >> 8;
+#else
+  uint32_t s = *((uint32_t*)&src[0]);
+  uint32_t d = *((uint32_t*)&dst[0]);
+  uint32_t sa = (s) >> 24;
+  uint32_t da = (d) >> 24;
+  uint32_t ralpha = 255 - ((cov * sa) >> 8);
+  uint32_t ga =(((((s) & MASK_GREEN_ALPHA)>>8)*cov+((((d) & MASK_GREEN_ALPHA)>>8)* ralpha))) & MASK_GREEN_ALPHA;
+  uint32_t rb =((((s) & MASK_RED_BLUE   )*cov+(((d) & MASK_RED_BLUE) * ralpha) >> 8  )) & MASK_RED_BLUE;
+  *((uint32_t*)dst) = ga | rb;
+#undef MASK_GREEN
+#undef MASK_GREEN_ALPHA
+#undef MASK_RED_BLUE
+#endif
+}
+
+static inline int
 ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
   CtxGState *gstate = &renderer->state->gstate;
-  /*
-   */
+
   uint8_t color[4];
 
   if (gstate->source.type != CTX_SOURCE_COLOR)
@@ -4227,12 +4251,10 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
           color[1] = (color[1] * color[3])>>8;
           color[2] = (color[2] * color[3])>>8;
 
-          uint8_t ralpha = 255 - ((cov * color[3]) >> 8);
-          for (int c = 0; c < 4; c++)
-            dst[c] = (color[c]*cov + dst[c] * ralpha) >> 8;
+          ctx_over_RGBA8 (dst, color, cov);
         }
       }
-      dst+=4;
+      dst += 4;
     }
     return count;
   }
@@ -4247,23 +4269,19 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
     for (int x = 0; x < count; x++)
     {
       int cov = *coverage;;
-      if (cov == 255)
+      if (cov)
       {
-        dst[0] = color[0];
-        dst[1] = color[1];
-        dst[2] = color[2];
-        dst[3] = color[3];
-      }
-      else if (cov)
-      {
-        int ralpha = 255 - ((cov * color[3]) >> 8);
-        dst[0] = (color[0]*cov + dst[0] * ralpha) >> 8;
-        dst[1] = (color[1]*cov + dst[1] * ralpha) >> 8;
-        dst[2] = (color[2]*cov + dst[2] * ralpha) >> 8;
-        dst[3] = (color[3]*cov + dst[3] * ralpha) >> 8;
+        if (cov == 255)
+        {
+          *((uint32_t*)dst) = *((uint32_t*)color);
+        }
+        else
+        {
+          ctx_over_RGBA8 (dst, color, cov);
+        }
       }
       coverage++;
-      dst+=4;
+      dst += 4;
     }
     return count;
   }
@@ -4272,25 +4290,18 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
   color[1] = (color[1] * color[3])>>8;
   color[2] = (color[2] * color[3])>>8;
 
+  for (int x = 0; x < count; x++)
   {
-    for (int x = 0; x < count; x++)
+    uint8_t cov = *coverage;;
+    if (cov)
     {
-      uint8_t cov = *coverage;;
-      if (cov)
-      {
-        uint8_t ralpha = 255 - ((cov * color[3]) >> 8);
-        dst[0] = (color[0]*cov + dst[0] * ralpha) >> 8;
-        dst[1] = (color[1]*cov + dst[1] * ralpha) >> 8;
-        dst[2] = (color[2]*cov + dst[2] * ralpha) >> 8;
-        dst[3] = (color[3]*cov + dst[3] * ralpha) >> 8;
-      }
-      dst+=4;
-      coverage++;
+      ctx_over_RGBA8 (dst, color, cov);
     }
+    dst += 4;
+    coverage++;
   }
   return count;
 }
-
 
 static int
 ctx_b2f_over_RGBA8_convert (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
@@ -4341,61 +4352,58 @@ static int
 ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
   CtxGState *gstate = &renderer->state->gstate;
+
   uint8_t color[4];
 
   if (gstate->source.type != CTX_SOURCE_COLOR)
   {
-    float y = renderer->scanline / CTX_RASTERIZER_AA;
     CtxSourceU8 source = ctx_renderer_get_source_u8 (renderer);
+    float y = renderer->scanline / CTX_RASTERIZER_AA;
     for (int x = 0; x < count; x++)
     {
       uint8_t cov = coverage[x];
       if (cov)
       {
-        uint8_t scolor[4];
-        source (renderer, x0 + x, y, &scolor[0]);
-
-        if (scolor[3])
+        source (renderer, x0 + x, y, &color[0]);
+        if (color[3])
         {
-          color[3] = (scolor[3] * gstate->source.global_alpha)>>8;
-          color[2] = (scolor[0] * color[3])>>8;
-          color[1] = (scolor[1] * color[3])>>8;
-          color[0] = (scolor[2] * color[3])>>8;
-
-          uint8_t ralpha = 255 - ((cov * color[3]) >> 8);
-          for (int c = 0; c < 4; c++)
-            dst[c] = (color[c]*cov + dst[c] * ralpha) >> 8;
+          ctx_swap_red_green (color);
+          color[3] = (color[3] * gstate->source.global_alpha)>>8;
+          color[0] = (color[0] * color[3])>>8;
+          color[1] = (color[1] * color[3])>>8;
+          color[2] = (color[2] * color[3])>>8;
+          ctx_over_RGBA8 (dst, color, cov);
         }
       }
-      dst+=4;
+      dst += 4;
     }
     return count;
   }
 
   color[3] = (gstate->source.color.rgba[3] * gstate->source.global_alpha)>>8;
-  color[0] = gstate->source.color.rgba[2];
+  color[0] = gstate->source.color.rgba[0];
   color[1] = gstate->source.color.rgba[1];
-  color[2] = gstate->source.color.rgba[0];
+  color[2] = gstate->source.color.rgba[2];
+  ctx_swap_red_green (color);
 
   if (color[3] == 255)
   {
     for (int x = 0; x < count; x++)
     {
-      int cov = coverage[x];
-      if (cov == 255)
+      int cov = *coverage;;
+      if (cov)
       {
-        dst[0] = color[0];
-        dst[1] = color[1];
-        dst[2] = color[2];
-        dst[3] = color[3];
+        if (cov == 255)
+        {
+          *((uint32_t*)dst) = *((uint32_t*)color);
+        }
+        else
+        {
+          ctx_over_RGBA8 (dst, color, cov);
+        }
       }
-      else if (cov)
-      {
-        int ralpha = 255 - ((cov * color[3]) >> 8);
-        for (int c = 0; c < 4; c++)
-          dst[c] = (color[c]*cov + dst[c] * ralpha) >> 8;
-      }
-      dst+=4;
+      coverage++;
+      dst += 4;
     }
     return count;
   }
@@ -4407,14 +4415,17 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
   {
     for (int x = 0; x < count; x++)
     {
-      uint8_t cov = coverage[x];
+      uint8_t cov = *coverage;;
       if (cov)
       {
-        uint8_t ralpha = 255 - ((cov * color[3]) >> 8);
-        for (int c = 0; c < 4; c++)
-          dst[c] = (color[c]*cov + dst[c] * ralpha) >> 8;
+        ctx_over_RGBA8 (dst, color, cov);
+
+#undef MASK_GREEN
+#undef MASK_GREEN_ALPHA
+#undef MASK_RED_BLUE
       }
-      dst+=4;
+      dst += 4;
+      coverage++;
     }
   }
   return count;
@@ -6659,7 +6670,7 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
 
 #define CACHE_ENTRIES   60
 #define CACHE_OFFSET_X   0
-#define CACHE_SIZE      29
+#define CACHE_SIZE      28
 #define CACHE_HEIGHT (CACHE_SIZE)
 #define CACHE_WIDTH  (CACHE_SIZE)
 #define CACHE_OFFSET_Y_REL   0.75
@@ -6672,11 +6683,8 @@ ctx_can_do_fast_glyph (CtxState *state,
 {
   CtxMatrix *mat = &state->gstate.transform;
 
-  if (scaled_font_size >= CACHE_SIZE)
+  if (scaled_font_size > CACHE_SIZE)
     return 0;
-
-  //if (! (unichar >= ' ' && unichar <= '~')) // at first, only try to cache asc
-  //  return 0;
 
   /* the caching logic can be extended to apply to arbitrary transforms,
    * for now - we only support scaling and translations and not even scalings
@@ -6781,14 +6789,21 @@ ctx_glyph_cached_ctx (Ctx *ctx, int font_no, uint32_t unichar, float font_size, 
   y1 = CTX_MIN(y1, ctx->renderer->blit_y + ctx->renderer->blit_height-1);
   x1 = CTX_MIN(x1, ctx->renderer->blit_x + ctx->renderer->blit_width-1);
 
+  if (y0 < ctx->renderer->blit_y)
+    y0 = ctx->renderer->blit_y;
+
+  int xoffset = ctx->renderer->blit_x - x0;
+  if (xoffset < 0)
+    xoffset = 0;
+
   if (x1 > x0)
   for (int y = y0; y < y1 - 1; y++)
   {
     ctx_renderer_apply_coverage (ctx->renderer,
-                                 ((uint8_t*)ctx->renderer->buf) + y * ctx->renderer->blit_stride + (int)(x0) * ctx->renderer->format->bpp/8,
-                             x0,
-                             &ctx_cacheglyph[CACHE_WIDTH * (int)(y-ymin)],
-                             x1-x0);
+                                 ((uint8_t*)ctx->renderer->buf) + y * ctx->renderer->blit_stride + (int)(x0 + xoffset) * ctx->renderer->format->bpp/8,
+                             x0 + xoffset,
+                             &ctx_cacheglyph[CACHE_WIDTH * (int)(y-ymin) + xoffset],
+                             x1-x0 - xoffset);
   }
 
   return 0;
