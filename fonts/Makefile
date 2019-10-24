@@ -1,7 +1,8 @@
-all: ctx-fontgen
+all: ctx-font-regular.h \
+	ctx-font-emoji.h
 
 ctx-font-regular.h: ctx-fontgen
-	./ctx-fontgen ttf/DejaVuSans.ttf regular latin1-extra > $@
+	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii > $@
 ctx-font-emoji.h: ctx-fontgen
 	./ctx-fontgen ttf/DejaVuSans.ttf emoji emoji > $@
 

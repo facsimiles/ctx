@@ -1,15 +1,14 @@
 #include <stdint.h>
 #include "ctx-font-regular.h"
-#define CTX_RASTERIZER_AA   5
-#define CTX_RASTERIZER_AA2  2
+
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 
 #define WIDTH    72
 #define HEIGHT   24
-#define STRIDE   WIDTH/4+(WIDTH%4?1:0)
+#define STRIDE   WIDTH/4
 
-uint8_t pixels[STRIDE*HEIGHT];
+static uint8_t pixels[STRIDE*HEIGHT]={0,};
 static char *utf8_gray_scale[]={" ","░","▓","█", NULL};
 
 int main (int argc, char **argv)
@@ -47,7 +46,7 @@ int main (int argc, char **argv)
     {
       int val = (pixels[no] & (3 << ((x % 4)*2)) ) >> ((x%4)*2);
       printf ("%s", utf8_gray_scale[3-val]);
-      if (x % 4 == 3)
+      if ((x % 4) == 3)
         no++;
     }
     printf ("\n");

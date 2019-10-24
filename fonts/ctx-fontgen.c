@@ -10,7 +10,7 @@
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 
-CtxJournal output_font={NULL,};
+CtxRenderstream output_font={NULL,};
 uint32_t glyphs[65536];
 int n_glyphs = 0;
 
@@ -28,20 +28,20 @@ add_glyph (Ctx *ctx, uint32_t glyph)
   if (ctx_glyph (ctx, glyph, 1)) /* we request stroking, since it is better to exclude strokes than fills from bitpacking  */
     return;
   glyphs[n_glyphs++] = glyph;
-  ctx->journal.flags  = CTX_TRANSFORMATION_BITPACK;
-  ctx_journal_refpack (&ctx->journal);
+  ctx->renderstream.flags  = CTX_TRANSFORMATION_BITPACK;
+  ctx_renderstream_refpack (&ctx->renderstream);
 
   char buf[44]={0,0,0,0,0};
   ctx_unichar_to_utf8 (glyph, buf);
   uint32_t args[2] = {glyph, ctx_glyph_width (ctx, glyph) * 256};
-  ctx_journal_add_u32 (&output_font, CTX_DEFINE_GLYPH, args);
+  ctx_renderstream_add_u32 (&output_font, CTX_DEFINE_GLYPH, args);
 
-  for (int i = 2; i < ctx->journal.count - 1; i++)
+  for (int i = 2; i < ctx->renderstream.count - 1; i++)
   {
-    CtxEntry *entry = &ctx->journal.entries[i];
+    CtxEntry *entry = &ctx->renderstream.entries[i];
     args[0] = entry->data.u32[0];
     args[1] = entry->data.u32[1];
-    ctx_journal_add_u32 (&output_font, entry->code, &args[0]);
+    ctx_renderstream_add_u32 (&output_font, entry->code, &args[0]);
   }
 }
 
@@ -99,7 +99,7 @@ int main (int argc, char **argv)
         uint16_t args[4]={glyphs[i],glyphs[j], 0, 0};
         int32_t *iargs = (void*)(&args[0]);
         iargs[1] = kerning * 256;
-        ctx_journal_add_u32 (&output_font, CTX_KERNING_PAIR, (void*)&args[0]);
+        ctx_renderstream_add_u32 (&output_font, CTX_KERNING_PAIR, (void*)&args[0]);
       }
     }
 

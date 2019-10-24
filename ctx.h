@@ -45,17 +45,17 @@ extern "C" {
 #endif
 
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA      8
+#define CTX_RASTERIZER_AA      5
 #endif
 #ifndef CTX_RASTERIZER_AA2
-#define CTX_RASTERIZER_AA2     4
+#define CTX_RASTERIZER_AA2     2
 #endif
 #ifndef CTX_RASTERIZER_AA3
-#define CTX_RASTERIZER_AA3     4
+#define CTX_RASTERIZER_AA3     3
 #endif
 
 #ifndef CTX_RASTERIZER_AUTOHINT
-#define CTX_RASTERIZER_AUTOHINT   0 // should be made dynamic, only works
+#define CTX_RASTERIZER_AUTOHINT   1 // should be made dynamic, only works
                                     // without forced AA
 #endif
 
@@ -712,12 +712,12 @@ struct _CtxGState {
   /* bitfield-pack all the small state-parts */
   //CtxCompositing compositing_mode:4;
   //CtxBlend             blend_mode:4;
-  CtxLineCap             line_cap:2;
-  CtxLineJoin           line_join:2;
-  CtxFillRule           fill_rule:1;
-  unsigned int               font:4;
-  unsigned int               bold:1;
-  unsigned int             italic:1;
+  CtxLineCap      line_cap:2;
+  CtxLineJoin    line_join:2;
+  CtxFillRule    fill_rule:1;
+  unsigned int        font:4;
+  unsigned int        bold:1;
+  unsigned int      italic:1;
 };
 
 typedef struct _CtxRenderstream CtxRenderstream;
@@ -5459,7 +5459,7 @@ ctx_decode_pixels_GRAY2(CtxRenderer *renderer, int x, const void *buf, uint8_t *
     rgba[1] = val;
     rgba[2] = val;
     rgba[3] = 255;
-    if ((x&7)==3)
+    if ((x&3)==3)
       pixel+=1;
     x++;
     rgba +=4;
@@ -6632,7 +6632,7 @@ static void ctx_font_init_ctx (CtxFont *font)
       glyph_count ++;
   }
   font->ctx.glyphs = glyph_count;
-  font->ctx.index = malloc (sizeof (uint32_t) * 2 * glyph_count);
+  font->ctx.index = (uint32_t*)malloc (sizeof (uint32_t) * 2 * glyph_count);
   int no = 0;
   for (int i = 0; i < font->ctx.length; i++)
   {
@@ -6827,7 +6827,7 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
       {
         float font_size = state->gstate.font_size;
         float scaled_font_size = font_size;
-        float dummy;
+        float dummy = 0.0f;
         ctx_user_to_device (&ctx->state, &dummy, &scaled_font_size);
         if ((!stroke) && ctx_can_do_fast_glyph (state, scaled_font_size,
                                                 unichar))

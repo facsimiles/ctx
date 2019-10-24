@@ -8,7 +8,7 @@
 
 #define WIDTH    72
 #define HEIGHT   24
-#define STRIDE   WIDTH/2+(WIDTH%2?1:0)
+#define STRIDE   WIDTH/2
 
 uint8_t pixels[STRIDE*HEIGHT];
 static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
