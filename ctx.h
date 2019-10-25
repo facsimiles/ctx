@@ -134,6 +134,22 @@ extern "C" {
 #endif
 #endif
 
+#if CTX_GLYPH_CACHE
+#ifdef CTX_ENABLE_GRAY8
+#undef CTX_ENABLE_GRAY8
+#endif
+#define CTX_ENABLE_GRAY8  1
+#endif
+
+
+#if CTX_ENABLE_GRAY1 | CTX_ENABLE_GRAY2 | CTX_ENABLE_GRAY4 | CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED | CTX_ENABLE_RGB8
+
+#ifdef CTX_ENABLE_RGBA8
+#define CTX_ENABLE_RGBA8 1
+#endif
+
+#endif
+
 #ifdef CAIRO_H
 #define CTX_CAIRO 1
 #else
@@ -1237,7 +1253,7 @@ ctx_renderstream_add (CtxRenderstream *renderstream, CtxCode code)
   int ret = renderstream->count;
   if (ret + 1 >= renderstream->size)
   {
-    ctx_renderstream_resize (renderstream, renderstream->size + 128 + 128);
+    ctx_renderstream_resize (renderstream, renderstream->size + 128);
     ret = renderstream->count;
   }
   if (ret >= renderstream->size)
@@ -6480,7 +6496,9 @@ ctx_glyph_stb (Ctx *ctx, stbtt_fontinfo *ttf_info, uint32_t unichar, int stroke)
    }
    stbtt_FreeShape (ttf_info, vertices);
    if (stroke)
+   {
      ctx_stroke (ctx);
+   }
    else
      ctx_fill (ctx);
    return 0;
@@ -6829,7 +6847,8 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
         float scaled_font_size = font_size;
         float dummy = 0.0f;
         ctx_user_to_device (&ctx->state, &dummy, &scaled_font_size);
-        if ((!stroke) && ctx_can_do_fast_glyph (state, scaled_font_size,
+        if ((!stroke) && ctx->renderer &&
+            ctx_can_do_fast_glyph (state, scaled_font_size,
                                                 unichar))
           return ctx_glyph_cached_ctx (ctx, state->gstate.font, unichar,
                                        font_size, scaled_font_size);
