@@ -8,8 +8,8 @@ test-output: $(TESTS)
 	@for a in $(TESTS); do echo $$a;./$$a;done > test-output
 clean:
 	rm -f $(TESTS) test-output
-%: %.c ../ctx.h ../fonts/*.h
-	gcc $< -g -o $@ -lm -I.. -I../fonts -O0
-test-size: test-size.c ../ctx.h ../fonts/*.h
-	gcc $< -g -o $@ -lm -I.. -I../fonts -Os
+%: %.c ../ctx.h ../fonts/*.h Makefile
+	gcc $< -g -o $@ -I.. -I../fonts -O0
+test-size: test-size.c ../ctx.h ../fonts/*.h Makefile
+	gcc $< -g -o $@ -I.. -I../fonts -Os
 	strip -s test-size
