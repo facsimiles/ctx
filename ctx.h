@@ -3261,6 +3261,8 @@ struct _CtxRenderer {
   int      scanline;
   int      scan_min;
   int      scan_max;
+  int      col_min;
+  int      col_max;
   int      needs_aa;         // count of how many edges implies antialiasing
 
   CtxRenderstream edge_list;
@@ -3438,15 +3440,25 @@ ctx_renderer_gradient_add_stop (CtxRenderer *renderer, float pos, uint8_t *rgba)
     gradient->n_stops++;
 }
 
-static inline int ctx_renderer_add_edge (CtxRenderer *renderer, int x0, int y0, int x1, int y1)
+static inline int ctx_renderer_add_point (CtxRenderer *renderer, int x1, int y1)
 {
   int16_t args[4];
-  int max_x = renderer->blit_x + renderer->blit_width;
-  if (y1 < renderer->scan_min) renderer->scan_min = y1;
-  if (y1 > renderer->scan_max) renderer->scan_max = y1;
-  if (x0 > max_x && x1 > max_x) return -1;
-  args[0]=x0;
-  args[1]=y0;
+//int max_x = renderer->blit_x + renderer->blit_width;
+//int max_y = renderer->blit_y + renderer->blit_height;
+
+  if (y1 < renderer->scan_min)
+    renderer->scan_min = y1;
+  if (y1 > renderer->scan_max)
+    renderer->scan_max = y1;
+
+  if (x1 < renderer->col_min)
+    renderer->col_min = x1;
+  if (x1 > renderer->col_max)
+    renderer->col_max = x1;
+
+
+  args[0]=0;
+  args[1]=0;
   args[2]=x1;
   args[3]=y1;
 
@@ -3513,7 +3525,7 @@ static inline void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y
     ctx_user_to_device (renderer->state, &tx, &ty);
   }
   tx -= renderer->blit_x;
-  ctx_renderer_add_edge (renderer, 0, 0, tx * CTX_SUBDIV, ty * CTX_RASTERIZER_AA);
+  ctx_renderer_add_point (renderer, tx * CTX_SUBDIV, ty * CTX_RASTERIZER_AA);
   if (!renderer->has_prev)
   {
     if (renderer->uses_transforms)
@@ -4655,6 +4667,7 @@ ctx_renderer_fill_active_edges (CtxRenderer *renderer,
             coverage[first] = CTX_MIN(cov,255);
             first++;
           }
+
           for (int x = first; x < last; x++)
           {
             coverage[x] = 255;
@@ -4665,7 +4678,8 @@ ctx_renderer_fill_active_edges (CtxRenderer *renderer,
             coverage[last] = CTX_MIN(cov,255);
           }
         }
-        if (blit_min + last + 1> renderer->max_x) renderer->max_x = blit_min + last + 1;
+        if (blit_min + last + 1> renderer->max_x)
+          renderer->max_x = blit_min + last + 1;
       }
    }
    t = next_t;
@@ -4688,6 +4702,8 @@ ctx_renderer_reset (CtxRenderer *renderer)
   renderer->scanline = 0;
   renderer->scan_min = 5000;
   renderer->scan_max = -5000;
+  renderer->col_min = 5000;
+  renderer->col_max = -5000;
 }
 
 static inline void
@@ -4699,8 +4715,7 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding)
   int blit_width = renderer->blit_width;
   int blit_max_x = renderer->blit_x + blit_width;
 
-
-
+  //fprintf (stderr, "%i %i|", renderer->col_min, renderer->col_max);
 
   renderer->scan_min -= (renderer->scan_min % CTX_RASTERIZER_AA);
 
@@ -4764,8 +4779,8 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding)
     {
       int minx = renderer->min_x - renderer->blit_x;
       int maxx = renderer->max_x - renderer->blit_x;
-      if (maxx > blit_max_x - 1)
-        maxx = blit_max_x - 1;
+      if (maxx > blit_max_x)
+        maxx = blit_max_x;
       if (minx < maxx)
       {
         ctx_renderer_apply_coverage (renderer,
@@ -4836,6 +4851,14 @@ ctx_renderer_fill (CtxRenderer *renderer)
 #if 1
   if (renderer->scan_min / CTX_RASTERIZER_AA > renderer->blit_y + renderer->blit_height ||
       renderer->scan_max / CTX_RASTERIZER_AA < renderer->blit_y)
+  {
+    ctx_renderer_reset (renderer);
+    return;
+  }
+#endif
+#if 1
+  if (renderer->col_min / CTX_SUBDIV > renderer->blit_x + renderer->blit_width ||
+      renderer->col_max / CTX_SUBDIV < renderer->blit_x)
   {
     ctx_renderer_reset (renderer);
     return;
