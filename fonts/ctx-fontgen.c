@@ -77,6 +77,20 @@ int main (int argc, char **argv)
   for (int glyph = 0; glyph < 256; glyph++) add_glyph (ctx, glyph);
   if (strstr (subsets, "ascii"))
   for (int glyph = 0; glyph < 127; glyph++) add_glyph (ctx, glyph);
+
+
+  if (strstr (subsets, "terminal"))
+  {
+char* string = "☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼! #$%&'()*+,-."
+"⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
+"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■"
+"!#$%&'()*+,-./◆▒␉␌␍␊°±␤␋┘┐┌└┼⎺⎻─⎼⎽├┤┴┬│≤≥π≠£·";
+
+  for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
+    add_glyph (ctx, ctx_utf8_to_unichar (utf8));
+  }
+
+
   if (strstr (subsets, "extras"))
   {
   char *string = "éñŇßæøåÆØÅ€§π…”““”‘’«»©®™·←↑↓→";
