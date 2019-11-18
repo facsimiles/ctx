@@ -4592,6 +4592,9 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
   int blit_max     = renderer->blit_width - 1;
   int parity = 0;
 
+  if (minx == renderer->blit_width)
+    return;
+
   coverage -= minx;
 
 #define CTX_EDGE(no)      renderer->edge_list.entries[renderer->edges[no].index]
@@ -6058,14 +6061,14 @@ ctx_current_point (Ctx *ctx, float *x, float *y)
 
 float ctx_x (Ctx *ctx)
 {
-  float x, y;
+  float x = 0, y = 0;
   ctx_current_point (ctx, &x, &y);
   return x;
 }
 
 float ctx_y (Ctx *ctx)
 {
-  float x, y;
+  float x = 0, y = 0;
   ctx_current_point (ctx, &x, &y);
   return y;
 }
