@@ -63,7 +63,7 @@ extern "C" {
 #endif
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT  256
 
-#define CTX_SUBDIV            8  // changing this changes font-file-format
+#define CTX_SUBDIV            4  // changing this changes font-file-format
 
 #define CTX_BAKE_FONT_SIZE   80
 #define CTX_BITPACK           1
@@ -126,19 +126,11 @@ extern "C" {
 #endif
 #endif
 
-
-#ifndef CTX_GLYPH_CACHE
-#if CTX_FONT_ENGINE_CTX
-#define CTX_GLYPH_CACHE 1
-#endif
-#endif
-
-#if CTX_GLYPH_CACHE
+// forced on for shape cache
 #ifdef CTX_ENABLE_GRAY8
 #undef CTX_ENABLE_GRAY8
 #endif
 #define CTX_ENABLE_GRAY8  1
-#endif
 
 
 #if CTX_ENABLE_GRAY1 | CTX_ENABLE_GRAY2 | CTX_ENABLE_GRAY4 | CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED | CTX_ENABLE_RGB8
@@ -171,7 +163,7 @@ extern "C" {
 #define CTX_EXTRAS  0
 #endif
 
-#define CTX_ASSERT 0
+#define CTX_ASSERT 1
 
 #if CTX_ASSERT==1
 #define ctx_assert(a)  if(!(a)){fprintf(stderr,"%s:%i assertion failed\n", __FUNCTION__, __LINE__);  }
@@ -976,7 +968,7 @@ ctx_iterator_init (CtxIterator *iterator,
                    int          start_pos,
                    int          flags)
 {
-  iterator->renderstream        = renderstream;
+  iterator->renderstream   = renderstream;
   iterator->flags          = flags;
   iterator->bitpack_pos    = 0;
   iterator->bitpack_length = 0;
@@ -1074,7 +1066,7 @@ ctx_iterator_expand_s16_args (CtxIterator *iterator, CtxEntry *entry)
   iterator->bitpack_command[0].code = CTX_CONT;
   iterator->bitpack_command[1].code = CTX_CONT;
   iterator->bitpack_length = 2;
-  iterator->bitpack_pos = 0;
+  iterator->bitpack_pos    = 0;
 }
 #endif
 
@@ -1256,7 +1248,9 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
     return;
   ctx_log ("growing renderstream to %i\n", new_size);
   if (renderstream->size)
+  {
     renderstream->entries = (CtxEntry*)realloc (renderstream->entries, sizeof (CtxEntry) * new_size);
+  }
   else
     renderstream->entries = (CtxEntry*)malloc (sizeof (CtxEntry) * new_size);
   renderstream->size = new_size;
@@ -3279,9 +3273,6 @@ struct _CtxRenderer {
 
   int        uses_transforms;
 
-  int        min_x;
-  int        max_x;
-
   int        blit_x;
   int        blit_y;
   int        blit_width;
@@ -3465,16 +3456,142 @@ static inline int ctx_renderer_add_point (CtxRenderer *renderer, int x1, int y1)
   return ctx_renderstream_add_u32 (&renderer->edge_list, CTX_EDGE, (uint32_t*)args);
 }
 
-static void ctx_renderer_poly_to_edges (CtxRenderer *renderer)
+static uint32_t ctx_shape_time = 0;
+
+/* to get better cache usage-  */
+
+struct _CtxShapeEntry {
+  uint32_t hash;
+  uint16_t width;
+  uint16_t height;
+  uint32_t age;   // time last used
+  uint32_t uses;  // instrumented for longer keep-alive
+  uint8_t  data[];
+};
+
+typedef struct _CtxShapeEntry CtxShapeEntry;
+
+#define CTX_SHAPE_CACHE_DIM      32
+#define CTX_SHAPE_CACHE_ENTRIES  512
+
+#define CTX_SHAPE_CACHE_PRIME1   11111
+#define CTX_SHAPE_CACHE_PRIME2   11111
+#define CTX_SHAPE_CACHE_PRIME3   11111
+#define CTX_SHAPE_CACHE_PRIME4   11111
+
+
+// this needs a max-size
+// and a more agressive freeing when
+// size is about to be exceeded
+
+struct _CtxShapeCache {
+  CtxShapeEntry *entries[CTX_SHAPE_CACHE_ENTRIES];
+  long size;
+};
+
+typedef struct _CtxShapeCache CtxShapeCache;
+
+static CtxShapeCache ctx_cache = {{NULL,}, 0};
+
+static long hits = 0;
+static long misses = 0;
+
+/* this returns the buffer to use for rendering, it always
+   succeeds..
+ */
+static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height, uint32_t time) {
+  int entry_no = hash % CTX_SHAPE_CACHE_ENTRIES;
+  int no = 0;
+  int i;
+
+#if 0
+  int oldest_age = time;
+  int oldest = entry_no;
+#endif
+
+  i = entry_no;
+  if (ctx_cache.entries[i])
+  {
+#if 0
+    if (ctx_cache.entries[i]->age < oldest_age)
+    {
+      oldest_age = ctx_cache.entries[i]->age;
+      oldest = i;
+    }
+#endif
+
+    if (ctx_cache.entries[i]->hash == hash &&
+        ctx_cache.entries[i]->width == width &&
+        ctx_cache.entries[i]->height == height)
+      {
+        ctx_cache.entries[i]->age = time;
+        if (ctx_cache.entries[i]->uses < 1<<30)
+          ctx_cache.entries[i]->uses++;
+        hits ++;
+        return ctx_cache.entries[i];
+      }
+  }
+  misses ++;
+#if 0
+  if (no < slot_size && i < CTX_SHAPE_CACHE_ENTRIES)
+  {
+    if (ctx_cache.entries[i])
+      free (ctx_cache.entries[i]);
+  }
+  else
+  {
+    i = oldest;
+  }
+#endif
+
+  if (ctx_cache.entries[i])
+  {
+    ctx_cache.size -= ctx_cache.entries[i]->width * ctx_cache.entries[i]->height;
+    ctx_cache.size -= sizeof (CtxShapeEntry);
+
+    free (ctx_cache.entries[i]);
+  }
+
+                                // XXX : this 1 one is needed  to silence:
+// ==90718== Invalid write of size 1
+// ==90718==    at 0x1189EF: ctx_renderer_generate_coverage (ctx.h:4786)
+// ==90718==    by 0x118E57: ctx_renderer_rasterize_edges (ctx.h:4907)
+//
+  int size = sizeof(CtxShapeEntry) + width * height + 1;
+  ctx_cache.entries[i] = malloc (size);
+
+  ctx_cache.size += size;
+
+  ctx_cache.entries[i]->age = time;
+  ctx_cache.entries[i]->hash=hash;
+  ctx_cache.entries[i]->width=width;
+  ctx_cache.entries[i]->height=height;
+  ctx_cache.entries[i]->uses = 0;
+  return ctx_cache.entries[i];
+}
+
+static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
 {
+  CtxEntry *entry = &renderer->edge_list.entries[0];
+  uint32_t hash = renderer->edge_list.count;
+
+
+  int ox = entry->data.s16[2];
+  int oy = entry->data.s16[3];
   int16_t x = 0;
   int16_t y = 0;
+
+  hash = (ox % CTX_SUBDIV);
+  hash *= CTX_SHAPE_CACHE_PRIME1;
+  hash += (oy % CTX_RASTERIZER_AA);
+
   for (int i = 0; i < renderer->edge_list.count; i++)
   {
     CtxEntry *entry = &renderer->edge_list.entries[i];
     if (entry->code == CTX_NEW_EDGE)
     {
       entry->code = CTX_EDGE;
+      hash *= CTX_SHAPE_CACHE_PRIME2;
     }
     else
     {
@@ -3484,6 +3601,17 @@ static void ctx_renderer_poly_to_edges (CtxRenderer *renderer)
     x = entry->data.s16[2];
     y = entry->data.s16[3];
 
+    int dx = x-ox;
+    int dy = y-oy;
+
+    ox = x;
+    oy = y;
+
+    hash *= CTX_SHAPE_CACHE_PRIME3;
+    hash += dx;
+    hash *= CTX_SHAPE_CACHE_PRIME4;
+    hash += dy;
+
     if (entry->data.s16[3] < entry->data.s16[1])
     {
        *entry = ctx_s16(CTX_EDGE_FLIPPED,
@@ -3491,6 +3619,7 @@ static void ctx_renderer_poly_to_edges (CtxRenderer *renderer)
                         entry->data.s16[0], entry->data.s16[1]);
     }
   }
+  return hash;
 }
 
 static inline void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y);
@@ -3537,8 +3666,8 @@ static inline void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y
     renderer->has_prev = 1;
   }
   renderer->has_shape = 1;
-  renderer->y = y;
-  renderer->x = x;
+  renderer->y         = y;
+  renderer->x         = x;
 }
 
 static inline float
@@ -4545,7 +4674,7 @@ ctx_associated_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint
   for (int x = 0; x < count; x++)
   {
 
-    float cov    = coverage[x]/255.0f;
+    float cov = coverage[x]/255.0f;
     if (cov != 0.0f)
     {
       if (source)
@@ -4607,9 +4736,6 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
     int x = CTX_EDGE_X(0) / CTX_SUBDIV / CTX_RASTERIZER_EDGE_MULTIPLIER ;
 
     if (x < blit_min) x = blit_min;
-
-    if (x < renderer->min_x)
-      renderer->min_x = x;
   }
 
   for (int t = 0; t < active_edges -1;)
@@ -4627,7 +4753,7 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
 
     if (parity)
     {
-      int x0 = CTX_EDGE_X(t) / CTX_SUBDIV ;
+      int x0 = CTX_EDGE_X(t)      / CTX_SUBDIV ;
       int x1 = CTX_EDGE_X(next_t) / CTX_SUBDIV ;
 
       if ((x0 < x1))
@@ -4684,8 +4810,6 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
           }
         }
 
-        if (blit_min + last + 1> renderer->max_x)
-          renderer->max_x = blit_min + last + 1;
       }
    }
    t = next_t;
@@ -4713,41 +4837,60 @@ ctx_renderer_reset (CtxRenderer *renderer)
 }
 
 static inline void
-ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding)
+ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
+                              CtxShapeEntry *shape)
 {
+  if (shape && 0)
+  {
+    for (int i = 0; i < shape->width * shape->height; i++)
+      shape->data[i] = 255;
+    return;
+  }
   uint8_t *dst = ((uint8_t*)renderer->buf);
   int scan_start = renderer->blit_y * CTX_RASTERIZER_AA;
-  int scan_end =   scan_start + renderer->blit_height * CTX_RASTERIZER_AA;
+  int scan_end   = scan_start + renderer->blit_height * CTX_RASTERIZER_AA;
   int blit_width = renderer->blit_width;
   int blit_max_x = renderer->blit_x + blit_width;
 
   int minx = renderer->col_min / CTX_SUBDIV - renderer->blit_x;
   int maxx = (renderer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - renderer->blit_x;
-
-  if (maxx > blit_max_x)
+  if (!shape && maxx > blit_max_x)
     maxx = blit_max_x;
   //fprintf (stderr, "%i %i|", renderer->col_min, renderer->col_max);
 
-  uint8_t coverage[maxx-minx];
+  uint8_t _coverage[shape?2:maxx-minx];
+  uint8_t *coverage = &_coverage[0];
 
+  if (shape)
+  {
+    coverage = &shape->data[0];
+    //minx = renderer->col_min / CTX_SUBDIV - renderer->blit_x;
+    //blit_max_x = maxx = minx + shape->width;
+    //blit_width = shape->width;
+  }
 
   renderer->scan_min -= (renderer->scan_min % CTX_RASTERIZER_AA);
 
-  if (renderer->scan_min > scan_start)
+  if (shape)
   {
-    dst += (renderer->blit_stride * (renderer->scan_min-scan_start)/CTX_RASTERIZER_AA);
     scan_start = renderer->scan_min;
+    scan_end   = renderer->scan_max;
   }
-  if (renderer->scan_max < scan_end) scan_end = renderer->scan_max;
-
+  else
+  {
+    if (renderer->scan_min > scan_start)
+    {
+      dst += (renderer->blit_stride * (renderer->scan_min-scan_start)/CTX_RASTERIZER_AA);
+      scan_start = renderer->scan_min;
+    }
+    if (renderer->scan_max < scan_end)
+      scan_end = renderer->scan_max;
+  }
   ctx_renderer_sort_edges (renderer);
 
   for (renderer->scanline = scan_start; renderer->scanline < scan_end;)
   {
-    renderer->min_x = blit_width;
-    renderer->max_x = 0;
-
-    memset(coverage, 0, sizeof(coverage));
+    memset(coverage, 0, shape?shape->width:sizeof(_coverage));
 
     ctx_renderer_feed_edges (renderer);
     ctx_renderer_discard_edges (renderer);
@@ -4786,11 +4929,20 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding)
       ctx_renderer_increment_edges (renderer, CTX_RASTERIZER_AA2);
     }
 
-    ctx_assert (maxx>minx);
-    ctx_renderer_apply_coverage (renderer,
-                                 &dst[(minx) * renderer->format->bpp/8],
-                                 minx,
-                                 coverage, maxx-minx);
+    if (maxx>minx)
+    {
+      if (shape == NULL)
+      {
+        ctx_renderer_apply_coverage (renderer,
+                                     &dst[(minx) * renderer->format->bpp/8],
+                                     minx,
+                                     coverage, maxx-minx);
+      }
+    }
+      if (shape)
+      {
+        coverage += shape->width;
+      }
     dst += renderer->blit_stride;
   }
   ctx_renderer_reset (renderer);
@@ -4880,8 +5032,7 @@ ctx_renderer_fill (CtxRenderer *renderer)
         (entry2->data.s16[2] == entry3->data.s16[2])
         )
     {
-      /* also check that there is no subpixel bits.. */
-//      printf ("fast fill rect\n");
+      /* XXX ; also check that there is no subpixel bits.. */
 
       if (ctx_renderer_fill_rect (renderer,
                               entry3->data.s16[2],
@@ -4893,22 +5044,71 @@ ctx_renderer_fill (CtxRenderer *renderer)
         return;
       }
     }
-    else
-    {
-    }
-#if 0
-    ctx_renderer_move_to (renderer, ctx_arg_float(0), ctx_arg_float(1));
-    ctx_renderer_rel_line_to (renderer, ctx_arg_float(2), 0);
-    ctx_renderer_rel_line_to (renderer, 0, ctx_arg_float(3));
-    ctx_renderer_rel_line_to (renderer, -ctx_arg_float(2), 0);
-#endif
   }
 
   ctx_renderer_finish_shape (renderer);
-  ctx_renderer_poly_to_edges (renderer);
-  ctx_renderer_rasterize_edges (renderer, renderer->state->gstate.fill_rule);
-}
+  uint32_t hash = ctx_renderer_poly_to_edges (renderer);
+  int width = (renderer->col_max + (CTX_SUBDIV-1)) / CTX_SUBDIV - renderer->col_min/CTX_SUBDIV;
+  int height = (renderer->scan_max + (CTX_RASTERIZER_AA-1)) / CTX_RASTERIZER_AA - renderer->scan_min / CTX_RASTERIZER_AA;
 
+  if (width * height < CTX_SHAPE_CACHE_DIM * CTX_SHAPE_CACHE_DIM  && width >=1 && height >= 1)
+  {
+    int scan_min = renderer->scan_min;
+    int col_min = renderer->col_min;
+    CtxShapeEntry *shape = ctx_shape_entry_find (hash, width, height, ctx_shape_time++);
+    if (shape->uses == 0)
+    {
+    //for (int i = 0; i < shape->width * shape->height; i++)
+    //  shape->data[i]=110;
+      ctx_renderer_rasterize_edges (renderer, renderer->state->gstate.fill_rule, shape);
+    }
+
+    scan_min -= (scan_min % CTX_RASTERIZER_AA);
+    renderer->scanline = scan_min;
+
+    int y0 = renderer->scanline / CTX_RASTERIZER_AA;
+    int y1 = y0 + shape->height;
+    int x0 = col_min / CTX_SUBDIV;
+
+    int ymin = y0;
+    int x1 = x0 + shape->width;
+    if (x1 >= renderer->blit_x + renderer->blit_width)
+      x1 = renderer->blit_x + renderer->blit_width - 1;
+
+    int xo = 0;
+    if (x0 < renderer->blit_x)
+    {
+      xo = renderer->blit_x - x0;
+      x0 = renderer->blit_x;
+    }
+
+    int ewidth = x1 - x0;
+
+    if (ewidth>0)
+    for (int y = y0; y < y1; y++)
+    {
+    if (y >= renderer->blit_y && (y < renderer->blit_y + renderer->blit_height))
+    {
+      ctx_renderer_apply_coverage (renderer,
+                                 ((uint8_t*)renderer->buf) + (y-renderer->blit_y) * renderer->blit_stride + (int)(x0) * renderer->format->bpp/8,
+                             x0,
+                             &shape->data[shape->width * (int)(y-ymin) + xo],
+                             ewidth);
+    }
+    }
+
+
+    if (shape->uses != 0)
+    {
+      ctx_renderer_reset (renderer);
+    }
+  }
+  else
+  {
+  //fprintf (stderr, "%i %i\n", width, height);
+    ctx_renderer_rasterize_edges (renderer, renderer->state->gstate.fill_rule, NULL);
+  }
+}
 
 static void
 ctx_renderer_arc (CtxRenderer *renderer,
@@ -5124,6 +5324,7 @@ ctx_renderer_stroke (CtxRenderer *renderer)
   float prev_y = 0.0f;
   float half_width_x = renderer->state->gstate.line_width/2;
   float half_width_y = renderer->state->gstate.line_width/2;
+
   if (renderer->state->gstate.line_width <= 0.0f)
   {
     half_width_x = .5;
@@ -5217,8 +5418,8 @@ foo:
          length = ctx_fast_hypotf(dx, dy);
          if (length>0.001f)
          {
-           dx = dx/length * half_width_x;
-           dy = dy/length * half_width_y;
+           dx = dx / length * half_width_x;
+           dy = dy / length * half_width_y;
 
            ctx_renderer_line_to (renderer, prev_x-dy, prev_y+dx);
            ctx_renderer_line_to (renderer, x-dy, y+dx);
@@ -5252,14 +5453,14 @@ foo:
          {
            if (has_prev)
            {
-             ctx_renderer_arc (renderer, x, y, half_width_x, 3.1415*3, 0, 1);
+             ctx_renderer_arc (renderer, x, y, half_width_x, CTX_PI*3, 0, 1);
              ctx_renderer_finish_shape (renderer);
            }
 
            x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
            y = entry->data.s16[1] * 1.0f / CTX_RASTERIZER_AA;
 
-           ctx_renderer_arc (renderer, x, y, half_width_x, 3.1415*3, 0, 1);
+           ctx_renderer_arc (renderer, x, y, half_width_x, CTX_PI*3, 0, 1);
            ctx_renderer_finish_shape (renderer);
          }
 
@@ -5268,7 +5469,7 @@ foo:
          has_prev = 1;
        }
        ctx_renderer_move_to (renderer, x, y);
-       ctx_renderer_arc (renderer, x, y, half_width_x, 3.1415*3, 0, 1);
+       ctx_renderer_arc (renderer, x, y, half_width_x, CTX_PI*3, 0, 1);
        ctx_renderer_finish_shape (renderer);
       break;
     }
@@ -5291,7 +5492,7 @@ foo:
 
          if (entry[1].code == CTX_EDGE)
          {
-           ctx_renderer_arc (renderer, x, y, half_width_x, 3.1415*3, 0, 1);
+           ctx_renderer_arc (renderer, x, y, half_width_x, CTX_PI*3, 0, 1);
            ctx_renderer_finish_shape (renderer);
          }
        }
@@ -5300,7 +5501,7 @@ foo:
   }
 
   ctx_renderer_poly_to_edges    (renderer);
-  ctx_renderer_rasterize_edges (renderer, 1);
+  ctx_renderer_rasterize_edges (renderer, 1, NULL);
 
   renderer->state->gstate.transform = transform_backup;
 }
@@ -6600,7 +6801,7 @@ ctx_glyph_width_stb (Ctx *ctx, stbtt_fontinfo *ttf_info, int unichar)
   float scale = stbtt_ScaleForPixelHeight (ttf_info, font_size);
   int advance, lsb;
   stbtt_GetCodepointHMetrics (ttf_info, unichar, &advance, &lsb);
-  return advance * scale;
+  return (advance * scale);
 }
 
 static inline float
@@ -6726,7 +6927,7 @@ ctx_glyph_width_ctx (Ctx *ctx, CtxFont *font, int unichar)
     CtxEntry *entry = (CtxEntry*)&font->ctx.data[i];
     if (entry->code == '@')
       if (entry->data.u32[0] == unichar)
-        return entry->data.u32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE;
+        return (entry->data.u32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE);
   }
   return 0.0;
 }
@@ -6850,150 +7051,6 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
 #endif
 
 
-#if CTX_GLYPH_CACHE
-
-#define CACHE_ENTRIES   60
-#define CACHE_OFFSET_X   0
-#define CACHE_SIZE      28
-#define CACHE_HEIGHT (CACHE_SIZE)
-#define CACHE_WIDTH  (CACHE_SIZE)
-#define CACHE_OFFSET_Y_REL   0.75
-#define CACHE_OFFSET_Y (CACHE_SIZE * CACHE_OFFSET_Y_REL)
-
-static int
-ctx_can_do_fast_glyph (CtxState *state,
-                       float scaled_font_size,
-                       uint32_t unichar)
-{
-  CtxMatrix *mat = &state->gstate.transform;
-
-  if (scaled_font_size > CACHE_SIZE)
-    return 0;
-
-  /* the caching logic can be extended to apply to arbitrary transforms,
-   * for now - we only support scaling and translations and not even scalings
-   * that flip the framebuffer upside down.
-   */
-  if (mat->m[0][1] == 0.0f &&
-      mat->m[1][0] == 0.0f &&
-      mat->m[0][0] > 0.0f &&
-      mat->m[1][1] > 0.0f)
-   return 1;
-
-  return 0;
-}
-
-struct _CtxGlyph
-{
-  uint32_t time;
-  uint32_t unichar;
-  int      font_no;
-  float    font_size;
-  uint8_t  bitmap[CACHE_WIDTH * CACHE_HEIGHT];
-};
-
-typedef struct _CtxGlyph CtxGlyph;
-
-
-static CtxGlyph ctx_glyph_cache[CACHE_ENTRIES];
-
-static uint32_t ctx_glyph_time = 0; /// will overflow - glitching with some slow rendering then
-
-static inline int
-ctx_glyph_cached_ctx (Ctx *ctx, int font_no, uint32_t unichar, float font_size, float scaled_font_size)
-{
-  //font_size = (int) (font_size);
-  //scaled_font_size = (int) (scaled_font_size);
-  CtxState *state = &ctx->state;
-  uint8_t *ctx_cacheglyph = NULL;
-  float origin_x = state->x;
-  float origin_y = state->y;
-
-  int least_recently_used = 0;
-  int least_recently_used_time = 0xffffffff;
-
-  static int hits = 0;
-  static int misses = 0;
-
-  for (int i = 0; i < CACHE_ENTRIES && !ctx_cacheglyph; i++)
-  {
-    if ((ctx_glyph_cache[i].unichar == unichar) &&
-        (ctx_glyph_cache[i].font_size == scaled_font_size) &&
-        (ctx_glyph_cache[i].font_no == font_no))
-    {
-      ctx_cacheglyph = &ctx_glyph_cache[i].bitmap[0];
-      ctx_glyph_cache[i].time = ctx_glyph_time;
-    }
-    if (least_recently_used_time > ctx_glyph_cache[i].time)
-    {
-      least_recently_used_time = ctx_glyph_cache[i].time;
-      least_recently_used = i;
-    }
-  }
-  if (ctx_cacheglyph)
-    hits ++;
-  else
-    misses ++;
-
-  if (!ctx_cacheglyph)
-  {
-    ctx_cacheglyph = &ctx_glyph_cache[least_recently_used].bitmap[0];
-    ctx_glyph_cache[least_recently_used].time = ctx_glyph_time;
-    ctx_glyph_cache[least_recently_used].unichar = unichar;
-    ctx_glyph_cache[least_recently_used].font_no = font_no;
-    ctx_glyph_cache[least_recently_used].font_size = scaled_font_size;
-    memset (ctx_cacheglyph, 0, CACHE_HEIGHT*CACHE_WIDTH);
-    Ctx *gctx = ctx_new_for_framebuffer (ctx_cacheglyph, CACHE_WIDTH, CACHE_HEIGHT, CACHE_WIDTH, CTX_FORMAT_GRAY8);
-    ctx_set_font_size (gctx, scaled_font_size);
-    ctx_move_to (gctx, 0, CACHE_OFFSET_Y_REL * scaled_font_size);
-    ctx_set_gray (gctx, 1.0);
-    ctx_glyph_ctx (gctx, &ctx_fonts[state->gstate.font], unichar, 0);
-    ctx_free (gctx);
-  }
-
-  float x0 = origin_x;
-  float y0 = origin_y - font_size * CACHE_OFFSET_Y_REL;
-  float x1 = origin_x + font_size;
-  float y1 = origin_y + (font_size - font_size *CACHE_OFFSET_Y_REL);
-
-  ctx_user_to_device (&ctx->state, &x0, &y0);
-  ctx_user_to_device (&ctx->state, &x1, &y1);
-
-  float ymin = y0;
-
-  if (x1 < 0 && x0 <0) return 0;
-  if (y1 < 0 && y0 <0) return 0;
-  if (x1 > ctx->renderer->blit_x + ctx->renderer->blit_width &&
-      x0 > ctx->renderer->blit_x + ctx->renderer->blit_width)
-    return 0;
-  if (y1 > ctx->renderer->blit_y + ctx->renderer->blit_height &&
-      y0 > ctx->renderer->blit_y + ctx->renderer->blit_height)
-    return 0;
-
-  y1 = CTX_MIN(y1, ctx->renderer->blit_y + ctx->renderer->blit_height-1);
-  x1 = CTX_MIN(x1, ctx->renderer->blit_x + ctx->renderer->blit_width-1);
-
-  if (y0 < ctx->renderer->blit_y)
-    y0 = ctx->renderer->blit_y;
-
-  int xoffset = ctx->renderer->blit_x - x0;
-  if (xoffset < 0)
-    xoffset = 0;
-
-  if (x1 > x0)
-  for (int y = y0; y < y1 - 1; y++)
-  {
-    ctx_renderer_apply_coverage (ctx->renderer,
-                                 ((uint8_t*)ctx->renderer->buf) + y * ctx->renderer->blit_stride + (int)(x0 + xoffset) * ctx->renderer->format->bpp/8,
-                             x0 + xoffset,
-                             &ctx_cacheglyph[CACHE_WIDTH * (int)(y-ymin) + xoffset],
-                             x1-x0 - xoffset);
-  }
-
-  return 0;
-}
-#endif
-
 static inline int
 ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
@@ -7007,19 +7064,6 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 #if CTX_FONT_ENGINE_CTX
     case 0:
 
-#if CTX_GLYPH_CACHE
-      {
-        float font_size = state->gstate.font_size;
-        float scaled_font_size = font_size;
-        float dummy = 0.0f;
-        ctx_user_to_device (&ctx->state, &dummy, &scaled_font_size);
-        if ((!stroke) && ctx->renderer &&
-            ctx_can_do_fast_glyph (state, scaled_font_size,
-                                                unichar))
-          return ctx_glyph_cached_ctx (ctx, state->gstate.font, unichar,
-                                       font_size, scaled_font_size);
-      }
-#endif
     return ctx_glyph_ctx (ctx, &ctx_fonts[state->gstate.font], unichar, stroke);
 #endif
 #if CTX_FONT_ENGINE_STB
@@ -7087,9 +7131,6 @@ _ctx_text (Ctx        *ctx,
   float x = ctx->state.x;
   float y = ctx->state.y;
   float x0 = x;
-#if CTX_GLYPH_CACHE
-  ctx_glyph_time ++;
-#endif
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
     {
       if (*utf8 == '\n')
@@ -7586,10 +7627,6 @@ static void ctx_setup ()
   static int initialized = 0;
   if (initialized) return;
   initialized = 1;
-
-#if CTX_GLYPH_CACHE
-  memset (ctx_glyph_cache, 0, sizeof (ctx_glyph_cache));
-#endif
 
 #if CTX_FONT_ENGINE_CTX
   ctx_font_count = 0; // oddly - this is needed in arduino
