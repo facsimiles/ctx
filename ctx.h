@@ -63,11 +63,13 @@ extern "C" {
 #endif
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT  256
 
-#define CTX_SUBDIV            4  // changing this changes font-file-format
+#define CTX_SUBDIV            8  // changing this changes font-file-format
 
 #define CTX_BAKE_FONT_SIZE   80
 #define CTX_BITPACK           1
+#ifndef CTX_REFPACK
 #define CTX_REFPACK           0
+#endif
 
 #ifndef CTX_MATH
 #define CTX_MATH              1  // use internal fast math for sqrt,sin,cos,atan2f etc.
@@ -163,7 +165,7 @@ extern "C" {
 #define CTX_EXTRAS  0
 #endif
 
-#define CTX_ASSERT 1
+#define CTX_ASSERT 0
 
 #if CTX_ASSERT==1
 #define ctx_assert(a)  if(!(a)){fprintf(stderr,"%s:%i assertion failed\n", __FUNCTION__, __LINE__);  }
@@ -188,6 +190,18 @@ typedef enum
 } CtxPixelFormat;
 
 typedef struct _Ctx Ctx;
+
+struct _CtxGlyph
+{
+  uint32_t index;
+  float    x;
+  float    y;
+};
+
+typedef struct _CtxGlyph CtxGlyph;
+
+CtxGlyph *ctx_glyph_allocate (int n_glyphs);
+void      gtx_glyph_free     (CtxGlyph *glyphs);
 
 /**
  * ctx_new:
@@ -215,12 +229,6 @@ Ctx *ctx_new_for_framebuffer (void *data,
 Ctx *ctx_new_for_renderstream (void *data, size_t length);
 void ctx_free                  (Ctx *ctx);
 
-/* creates a new context that is 1000 units wide, this
- * context gets mapped to the width of the terminal
- * rendering the output.
- */
-void ctx_new_stdout    (void);
-
 /* blits the contents of a bare context
  */
 void ctx_blit          (Ctx *ctx,
@@ -230,6 +238,7 @@ void ctx_blit          (Ctx *ctx,
 
 /* clears and resets a context */
 void ctx_clear          (Ctx *ctx);
+void ctx_empty          (Ctx *ctx);
 
 void ctx_new_path       (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
@@ -290,6 +299,7 @@ void ctx_set_global_alpha   (Ctx *ctx, float global_alpha);
 
 void ctx_fill           (Ctx *ctx);
 void ctx_stroke         (Ctx *ctx);
+void ctx_paint          (Ctx *ctx);
 
 //void ctx_set_gradient_no     (Ctx *ctx, int no);
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
@@ -309,6 +319,8 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr);
 
 void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
 
+int
+ctx_add_single (Ctx *ctx, void *entry);
 
 // XXX - this should decode png/jpg/gif header, and make width/height
 //       available to drawing code
@@ -354,6 +366,12 @@ int ctx_set_renderstream (Ctx *ctx, void *data, int length);
  * converted to paths.
  */
 
+void  ctx_glyphs       (Ctx        *ctx,
+                        CtxGlyph   *glyphs,
+                        int         n_glyphs);
+void  ctx_glyphs_stroke (Ctx       *ctx,
+                        CtxGlyph   *glyphs,
+                        int         n_glyphs);
 void  ctx_text         (Ctx        *ctx,
                         const char *string);
 void  ctx_text_stroke  (Ctx        *ctx,
@@ -1272,7 +1290,9 @@ ctx_renderstream_add (CtxRenderstream *renderstream, CtxCode code)
   return ret;
 }
 
-int
+
+
+static int
 ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
   int ret = renderstream->count;
@@ -1285,6 +1305,12 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
   ret = renderstream->count;
   renderstream->count++;
   return ret;
+}
+
+int
+ctx_add_single (Ctx *ctx, void *entry)
+{
+  ctx_renderstream_add_single (&ctx->renderstream, entry);
 }
 
 int
@@ -1445,22 +1471,6 @@ ctx_close_path (Ctx *ctx)
 
 static inline CtxEntry ctx_void (CtxCode code);
 
-#if 0
-void
-ctx_cmd (Ctx *ctx, CtxCode code)
-{
-  CtxEntry command = ctx_void (code);
-  ctx_process (ctx, &command);
-}
-
-void
-ctx_cmd_f (Ctx *ctx, CtxCode code, float arg)
-{
-  CtxEntry command = ctx_f(code, arg, 0.0);
-  ctx_process (ctx, &command);
-}
-#endif
-
 void
 ctx_cmd_ff (Ctx *ctx, CtxCode code, float arg1, float arg2)
 {
@@ -1510,8 +1520,9 @@ void ctx_stroke (Ctx *ctx) {
 }
 
 static void ctx_state_init (CtxState *state);
-void ctx_clear (Ctx *ctx) {
-  CTX_PROCESS_VOID(CTX_CLEAR);
+
+void ctx_empty (Ctx *ctx)
+{
 #if CTX_RASTERIZER
   if (ctx->renderer == NULL)
 #endif
@@ -1519,6 +1530,11 @@ void ctx_clear (Ctx *ctx) {
     ctx->renderstream.count = 0;
     ctx->renderstream.bitpack_pos = 0;
   }
+}
+
+void ctx_clear (Ctx *ctx) {
+  CTX_PROCESS_VOID(CTX_CLEAR);
+  ctx_empty (ctx);
   ctx_state_init (&ctx->state);
 }
 
@@ -1841,8 +1857,6 @@ again:
     }
   }
 }
-
-
 
 void ctx_rel_line_to (Ctx *ctx, float x, float y)
 {
@@ -3203,10 +3217,6 @@ typedef struct CtxEdge {
   int32_t  x;     /* the center-line intersection      */
   int32_t  dx;
   uint16_t index;
-#if 0             // part of experiments to improve rasterizer
-  int32_t  minx;
-  int32_t  maxx;
-#endif
 } CtxEdge;
 
 
@@ -3464,6 +3474,7 @@ struct _CtxShapeEntry {
   uint32_t hash;
   uint16_t width;
   uint16_t height;
+  uint32_t refs;
   uint32_t age;   // time last used
   uint32_t uses;  // instrumented for longer keep-alive
   uint8_t  data[];
@@ -3472,7 +3483,7 @@ struct _CtxShapeEntry {
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
 #define CTX_SHAPE_CACHE_DIM      32
-#define CTX_SHAPE_CACHE_ENTRIES  512
+#define CTX_SHAPE_CACHE_ENTRIES  1024
 
 #define CTX_SHAPE_CACHE_PRIME1   11111
 #define CTX_SHAPE_CACHE_PRIME2   11111
@@ -3524,6 +3535,7 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
         ctx_cache.entries[i]->width == width &&
         ctx_cache.entries[i]->height == height)
       {
+        ctx_cache.entries[i]->refs++;
         ctx_cache.entries[i]->age = time;
         if (ctx_cache.entries[i]->uses < 1<<30)
           ctx_cache.entries[i]->uses++;
@@ -3544,21 +3556,28 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
   }
 #endif
 
-  if (ctx_cache.entries[i])
-  {
-    ctx_cache.size -= ctx_cache.entries[i]->width * ctx_cache.entries[i]->height;
-    ctx_cache.size -= sizeof (CtxShapeEntry);
-
-    free (ctx_cache.entries[i]);
-  }
-
-                                // XXX : this 1 one is needed  to silence:
+// XXX : this 1 one is needed  to silence:
 // ==90718== Invalid write of size 1
 // ==90718==    at 0x1189EF: ctx_renderer_generate_coverage (ctx.h:4786)
 // ==90718==    by 0x118E57: ctx_renderer_rasterize_edges (ctx.h:4907)
 //
   int size = sizeof(CtxShapeEntry) + width * height + 1;
-  ctx_cache.entries[i] = malloc (size);
+  CtxShapeEntry *new_entry = malloc (size);
+  new_entry->refs = 1;
+  if (ctx_cache.entries[i])
+  {
+  
+    CtxShapeEntry *entry = ctx_cache.entries[i];
+    while (entry->refs){};
+    ctx_cache.entries[i] = new_entry;
+    ctx_cache.size -= entry->width * entry->height;
+    ctx_cache.size -= sizeof (CtxShapeEntry);
+    free (entry);
+  }
+  else
+  {
+    ctx_cache.entries[i] = new_entry;
+  }
 
   ctx_cache.size += size;
 
@@ -3568,6 +3587,11 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
   ctx_cache.entries[i]->height=height;
   ctx_cache.entries[i]->uses = 0;
   return ctx_cache.entries[i];
+}
+
+static void ctx_shape_entry_release (CtxShapeEntry *entry)
+{
+  entry->refs--;
 }
 
 static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
@@ -3755,17 +3779,18 @@ ctx_renderer_curve_to (CtxRenderer *renderer,
                        float x1, float y1,
                        float x2, float y2)
 {
-  float ox = renderer->x;
-  float oy = renderer->y;
-
   float tolerance =
      ctx_pow2(renderer->state->gstate.transform.m[0][0]) +
      ctx_pow2(renderer->state->gstate.transform.m[1][1]);
-  tolerance = 1.0f/tolerance;
+
+  float ox = renderer->x;
+  float oy = renderer->y;
 
   ox = renderer->state->x;
   oy = renderer->state->y;
 
+  tolerance = 1.0f/tolerance;
+#if 0 // better skip this while doing in-rasterizer caching
   float maxx = CTX_MAX(x1,x2);
   maxx = CTX_MAX(maxx, ox);
   maxx = CTX_MAX(maxx, x0);
@@ -3790,6 +3815,7 @@ ctx_renderer_curve_to (CtxRenderer *renderer,
     // skip subdivides for things outside
   }
   else
+#endif
   {
     ctx_renderer_bezier_divide (renderer,
                                 ox, oy, x0, y0,
@@ -3899,27 +3925,15 @@ static inline void ctx_renderer_increment_edges (CtxRenderer *renderer, int coun
   for (int i = 0; i < renderer->lingering_edges; i++)
   {
      renderer->lingering[i].x += renderer->lingering[i].dx * count;
-#if 0
-     renderer->lingering[i].minx += renderer->lingering[i].dx * count;
-     renderer->lingering[i].maxx += renderer->lingering[i].dx * count;
-#endif
   }
 
   for (int i = 0; i < renderer->active_edges; i++)
   {
      renderer->edges[i].x += renderer->edges[i].dx * count;
-#if 0
-     renderer->edges[i].minx += renderer->edges[i].dx * count;
-     renderer->edges[i].maxx += renderer->edges[i].dx * count;
-#endif
   }
   for (int i = 0; i < renderer->pending_edges; i++)
   {
      renderer->edges[CTX_MAX_EDGES-1-i].x += renderer->edges[CTX_MAX_EDGES-1-i].dx * count;
-#if 0
-     renderer->edges[CTX_MAX_EDGES-1-i].minx += renderer->edges[CTX_MAX_EDGES-1-i].dx * count;
-     renderer->edges[CTX_MAX_EDGES-1-i].maxx += renderer->edges[CTX_MAX_EDGES-1-i].dx * count;
-#endif
   }
 }
 
@@ -4822,6 +4836,7 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
 static void
 ctx_renderer_reset (CtxRenderer *renderer)
 {
+  renderer->lingering_edges = 0;
   renderer->active_edges = 0;
   renderer->pending_edges = 0;
   renderer->has_shape = 0;
@@ -4858,7 +4873,7 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
     maxx = blit_max_x;
   //fprintf (stderr, "%i %i|", renderer->col_min, renderer->col_max);
 
-  uint8_t _coverage[shape?2:maxx-minx];
+  uint8_t _coverage[shape?2:maxx-minx+1];
   uint8_t *coverage = &_coverage[0];
 
   if (shape)
@@ -5102,6 +5117,7 @@ ctx_renderer_fill (CtxRenderer *renderer)
     {
       ctx_renderer_reset (renderer);
     }
+    ctx_shape_entry_release (shape);
   }
   else
   {
@@ -5155,7 +5171,6 @@ ctx_renderer_arc (CtxRenderer *renderer,
   }
   else
   {
-
     for (float angle = start_angle, i = 0; i < steps; angle += step, i++)
     {
       float xv = x + cosf (angle) * radius;
@@ -5179,6 +5194,9 @@ ctx_renderer_quad_to (CtxRenderer *renderer,
                       float        x,
                       float        y)
 {
+  /* XXX : it is probably cheaper/faster to do quad interpolation directly -
+   *       though it will increase the code-size
+   */
   ctx_renderer_curve_to (renderer,
     (cx * 2 + renderer->x) / 3.0f, (cy * 2 + renderer->y) / 3.0f,
     (cx * 2 + x) / 3.0f,           (cy * 2 + y) / 3.0f,
@@ -5500,8 +5518,15 @@ foo:
     }
   }
 
+#if 0
   ctx_renderer_poly_to_edges    (renderer);
   ctx_renderer_rasterize_edges (renderer, 1, NULL);
+#else
+  CtxFillRule rule_backup = renderer->state->gstate.fill_rule;
+  renderer->state->gstate.fill_rule = CTX_FILL_RULE_WINDING; 
+  ctx_renderer_fill (renderer);
+  renderer->state->gstate.fill_rule = rule_backup;
+#endif
 
   renderer->state->gstate.transform = transform_backup;
 }
@@ -7047,9 +7072,7 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
   return ctx_font_count-1;
 }
 
-
 #endif
-
 
 static inline int
 ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
@@ -7123,6 +7146,30 @@ ctx_text_width (Ctx        *ctx,
 }
 
 static void
+_ctx_glyphs (Ctx        *ctx,
+            CtxGlyph   *glyphs,
+            int         n_glyphs,
+            int         stroke)
+{
+  CtxState *state = &ctx->state;
+  float x = ctx->state.x;
+  float y = ctx->state.y;
+  for (int i = 0; i < n_glyphs; i++)
+    {
+      {
+        uint32_t unichar = glyphs[i].index;
+        ctx_move_to (ctx, glyphs[i].x, glyphs[i].y);
+        ctx_glyph (ctx, unichar, stroke);
+        if (i < n_glyphs - 1)
+        {
+          ctx_glyph_width (ctx, unichar);
+          ctx_glyph_kern (ctx, unichar, glyphs[i].index);
+        }
+      }
+    }
+}
+
+static void
 _ctx_text (Ctx        *ctx,
            const char *string,
            int         stroke)
@@ -7154,13 +7201,40 @@ _ctx_text (Ctx        *ctx,
     }
 }
 
+CtxGlyph *
+ctx_glyph_allocate (int n_glyphs)
+{
+  return malloc (sizeof (CtxGlyph) * n_glyphs);
+}
+void
+gtx_glyph_free     (CtxGlyph *glyphs)
+{
+  free (glyphs);
+}
+
+void
+ctx_glyphs (Ctx        *ctx,
+            CtxGlyph   *glyphs,
+            int         n_glyphs)
+{
+  return _ctx_glyphs (ctx, glyphs, n_glyphs, 0);
+}
+
+void
+ctx_glyphs_stroke (Ctx        *ctx,
+                   CtxGlyph   *glyphs,
+                   int         n_glyphs)
+{
+  return _ctx_glyphs (ctx, glyphs, n_glyphs, 1);
+}
+
+
 void
 ctx_text (Ctx        *ctx,
-           const char *string)
+          const char *string)
 {
   _ctx_text (ctx, string, 0);
 }
-
 
 void
 ctx_text_stroke (Ctx        *ctx,
@@ -7175,13 +7249,13 @@ void
 ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 {
   CtxIterator iterator;
-  CtxState    state;
+ // CtxState    state;
   CtxEntry   *entry;
 
   cairo_pattern_t *pat = NULL;
   cairo_surface_t *image = NULL;
 
-  ctx_state_init (&state);
+//  ctx_state_init (&state);
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
                                                   CTX_ITERATOR_EXPAND_BITPACK);
 
@@ -7440,10 +7514,8 @@ void
 ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 {
   CtxIterator iterator;
-  CtxState    state;
   CtxEntry   *entry;
 
-  ctx_state_init (&state);
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
                                                   CTX_ITERATOR_EXPAND_BITPACK);
 
@@ -7490,6 +7562,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
           ctx_quad_to (d_ctx, cx, cy, x, y);
         }
         break;
+
       case CTX_REL_QUAD_TO:
         {
           float cx = ctx_arg_float(0);
@@ -7522,7 +7595,6 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                        ctx_arg_float(2), ctx_arg_float(3),
                        ctx_arg_float(4), ctx_arg_float(5));
         break;
-
 
       case CTX_SET_RGBA:
         ctx_set_rgba (d_ctx, ctx_arg_u8(0)/255.0,
