@@ -100,6 +100,7 @@ extern "C" {
 #define CTX_ENABLE_RGB8                 1
 #define CTX_ENABLE_RGBA8                1
 #define CTX_ENABLE_BGRA8                1
+#define CTX_ENABLE_RGB332               1
 #define CTX_ENABLE_RGB565               1
 #define CTX_ENABLE_RGB565_BYTESWAPPED   1
 #define CTX_ENABLE_RGBAF                1
@@ -135,7 +136,7 @@ extern "C" {
 #define CTX_ENABLE_GRAY8  1
 
 
-#if CTX_ENABLE_GRAY1 | CTX_ENABLE_GRAY2 | CTX_ENABLE_GRAY4 | CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED | CTX_ENABLE_RGB8
+#if CTX_ENABLE_GRAY1 | CTX_ENABLE_GRAY2 | CTX_ENABLE_GRAY4 | CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED | CTX_ENABLE_RGB8 | CTX_ENABLE_RGB332
 
 #ifdef CTX_ENABLE_RGBA8
 #define CTX_ENABLE_RGBA8 1
@@ -182,6 +183,7 @@ typedef enum
   CTX_FORMAT_BGRA8,
   CTX_FORMAT_RGB565,
   CTX_FORMAT_RGB565_BYTESWAPPED,
+  CTX_FORMAT_RGB332,
   CTX_FORMAT_RGBAF,
   CTX_FORMAT_GRAYF,
   CTX_FORMAT_GRAY1,
@@ -295,7 +297,7 @@ void ctx_arc            (Ctx  *ctx,
                          int   direction);
 void ctx_arc_to         (Ctx *ctx, float x1, float y1,
                                    float x2, float y2, float radius);
-void ctx_set_global_alpha   (Ctx *ctx, float global_alpha);
+void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
 
 void ctx_fill           (Ctx *ctx);
 void ctx_stroke         (Ctx *ctx);
@@ -3219,8 +3221,6 @@ typedef struct CtxEdge {
   uint16_t index;
 } CtxEdge;
 
-
-
 struct _CtxPixelFormatInfo
 {
   CtxPixelFormat pixel_format;
@@ -4982,7 +4982,6 @@ ctx_renderer_fill_rect (CtxRenderer *renderer,
   y1 /= CTX_RASTERIZER_AA;
   y0 /= CTX_RASTERIZER_AA;
 
-
   uint8_t coverage[x1-x0];
   uint8_t *dst = ((uint8_t*)renderer->buf);
   memset (coverage, 0xff, sizeof (coverage));
@@ -5992,6 +5991,78 @@ ctx_encode_pixels_GRAYA8 (CtxRenderer *renderer, int x, void *buf, const uint8_t
 }
 #endif
 
+#if CTX_ENABLE_RGB332
+static inline void
+ctx_332_unpack (uint8_t pixel,
+                uint8_t *red,
+                uint8_t *green,
+                uint8_t *blue)
+{
+  *blue   = (pixel & 3)<<6;
+  *green = ((pixel >> 2) & 7)<<5;
+  *red   = ((pixel >> 5) & 7)<<5;
+  if (*blue > 223) *blue = 255;
+  if (*green > 223) *green = 255;
+  if (*red > 223) *red = 255;
+}
+
+static inline uint8_t
+ctx_332_pack (uint8_t red,
+              uint8_t green,
+              uint8_t blue)
+{
+  uint8_t c = (red >> 5) << 5;
+          c |= (green >> 5) << 2;
+          c |= blue >> 6;
+  return c;
+}
+
+static inline void
+ctx_decode_pixels_RGB332(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+{
+  const uint8_t *pixel = (uint8_t*)buf;
+  while (count--)
+  {
+    ctx_332_unpack (*pixel, &rgba[0], &rgba[1], &rgba[2]);
+    if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
+      rgba[3] = 0;
+    else
+      rgba[3] = 255;
+    pixel+=1;
+    rgba +=4;
+  }
+}
+
+static inline void
+ctx_encode_pixels_RGB332 (CtxRenderer *renderer, int x, void *buf, const uint8_t *rgba, int count)
+{
+  uint8_t *pixel = (uint8_t*)buf;
+  while (count--)
+  {
+    if (rgba[3]==0)
+      pixel[0] = ctx_332_pack (255, 0, 255);
+    else
+      pixel[0] = ctx_332_pack (rgba[0], rgba[1], rgba[2]);
+    pixel+=1;
+    rgba +=4;
+  }
+}
+
+static int
+ctx_b2f_over_RGB332 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
+{
+  int ret;
+  uint8_t pixels[count * 4];
+  ctx_decode_pixels_RGB332 (renderer, x, dst, &pixels[0], count);
+  ret = ctx_b2f_over_RGBA8 (renderer, x, &pixels[0], coverage, count);
+  ctx_encode_pixels_RGB332 (renderer, x, dst, &pixels[0], count);
+  return ret;
+}
+
+
+
+#endif
+
 #if CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED
 
 static inline void
@@ -6169,6 +6240,11 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_GRAYA8
   {CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0,
    ctx_decode_pixels_GRAYA8, ctx_encode_pixels_GRAYA8, ctx_b2f_over_RGBA8_convert},
+#endif
+#if CTX_ENABLE_RGB332
+  {CTX_FORMAT_RGB332, 3, 8, 4, 10, 12,
+   ctx_decode_pixels_RGB332, ctx_encode_pixels_RGB332,
+   ctx_b2f_over_RGB332},
 #endif
 #if CTX_ENABLE_RGB565
   {CTX_FORMAT_RGB565, 3, 16, 4, 32, 64,
