@@ -1280,7 +1280,7 @@ int
 ctx_renderstream_add (CtxRenderstream *renderstream, CtxCode code)
 {
   int ret = renderstream->count;
-  if (ret + 1 >= renderstream->size)
+  if (ret + 6 >= renderstream->size)
   {
     ctx_renderstream_resize (renderstream, renderstream->size + 128);
     ret = renderstream->count;
@@ -1298,7 +1298,7 @@ static int
 ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
   int ret = renderstream->count;
-  if (ret + 1 >= renderstream->size)
+  if (ret + 6 >= renderstream->size)
   {
     ctx_renderstream_resize (renderstream, renderstream->size * 1.2 + 128);
     ret = renderstream->count;
@@ -2563,7 +2563,7 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
   int source = renderstream->bitpack_pos;
   int target = renderstream->bitpack_pos;
   int removed = 0;
-
+#if 1
   /* remove all nops that have been inserted as part of shortenings
    */
   while (source < renderstream->count)
@@ -2584,8 +2584,9 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
     target ++;
   }
   renderstream->count -= removed;
+#endif
 
-  renderstream->bitpack_pos = renderstream->count - 4;
+  renderstream->bitpack_pos = renderstream->count;
 }
 
 #endif
