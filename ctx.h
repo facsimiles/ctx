@@ -16,15 +16,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
-
-  work in progress:
-    clipping path/rectangle
-
-  known bugs (not missing feature):
-    refpack is currently disabled unstable due to packing across CONTs
-    avoidance of scale/rotate/translate is buggy when renderstream is full
-    sources are not dealy correctly with under transforms
-*/
+ */
 
 
 #ifndef CTX_H
@@ -78,8 +70,13 @@ extern "C" {
 #define ctx_log(fmt, ...)
 //#define ctx_log(str, a...) fprintf(stderr, str, ##a)
 
+
+#ifndef CTX_MIN_JOURNAL_SIZE
+#define CTX_MIN_JOURNAL_SIZE   12192
+#endif
+
 #ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   24096
+#define CTX_MAX_JOURNAL_SIZE   18192
 #endif
 
 #if CTX_BITPACK
@@ -1257,8 +1254,8 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
   if (new_size < renderstream->size)
     return;
 
-  if (new_size < 100)
-    new_size = 100;
+  if (new_size < CTX_MIN_JOURNAL_SIZE)
+    new_size = CTX_MIN_JOURNAL_SIZE;
   if (new_size < renderstream->count)
     new_size = renderstream->count + 4;
 
@@ -1282,7 +1279,7 @@ ctx_renderstream_add (CtxRenderstream *renderstream, CtxCode code)
   int ret = renderstream->count;
   if (ret + 6 >= renderstream->size)
   {
-    ctx_renderstream_resize (renderstream, renderstream->size + 128);
+    ctx_renderstream_resize (renderstream, renderstream->size * 2);
     ret = renderstream->count;
   }
   if (ret >= renderstream->size)
@@ -1300,7 +1297,7 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
   int ret = renderstream->count;
   if (ret + 6 >= renderstream->size)
   {
-    ctx_renderstream_resize (renderstream, renderstream->size * 1.2 + 128);
+    ctx_renderstream_resize (renderstream, renderstream->size * 2);
     ret = renderstream->count;
   }
   renderstream->entries[renderstream->count] = *entry;
@@ -2676,9 +2673,6 @@ ctx_renderstream_dedup_search (CtxRenderstream *dictionary, int d_start, int d_e
       {
         len[currRow][j] = len[1 - currRow][j - 1] + 1;
         if (len[currRow][j] > result) {
-
-          // XXX : ensure we're not splittinga CONT
-
           result = len[currRow][j];
           end = i + d_start - result ;
           endpos = j + i_start - result ;
@@ -2696,15 +2690,10 @@ ctx_renderstream_dedup_search (CtxRenderstream *dictionary, int d_start, int d_e
   done:
   if (result >= minimum_length)
   {
-    while (ctx_entries_equal (&dictionary->entries[end+result],
-                              &input->entries[endpos+result]))
-      result++;
-
-  if (end + result >= d_end)
-   {
-     //ctx_log( "happens\n");
-     result = d_end - end - 1;
-   }
+    if (dictionary->entries[end+result + 1].code == CTX_CONT) 
+    {
+      return 0;
+    }
 
     *match_start  = end;
     *match_length = result;
@@ -2794,7 +2783,7 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
 
   while (completed < renderstream->count)
   {
-    int default_search_window = 128;
+    int default_search_window = 512;
     int search_window = default_search_window;
 
     int match_start;
