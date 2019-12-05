@@ -72,11 +72,11 @@ extern "C" {
 
 
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   12192
+#define CTX_MIN_JOURNAL_SIZE   1024
 #endif
 
 #ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   18192
+#define CTX_MAX_JOURNAL_SIZE   8192
 #endif
 
 #if CTX_BITPACK
@@ -1309,7 +1309,7 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 int
 ctx_add_single (Ctx *ctx, void *entry)
 {
-  ctx_renderstream_add_single (&ctx->renderstream, entry);
+  ctx_renderstream_add_single (&ctx->renderstream, (CtxEntry*)entry);
 }
 
 int
@@ -2169,6 +2169,29 @@ ctx_exit (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_EXIT);
 }
 
+static void
+ctx_matrix_inverse (CtxMatrix *m)
+{
+  CtxMatrix t = *m;
+  float invdet, det = m->m[0][0] * m->m[1][1] -
+	              m->m[1][0] * m->m[0][1];
+  if (det > -0.00001f && det < 0.00001f)
+  {
+    m->m[0][0] = m->m[0][1] =
+    m->m[1][0] = m->m[1][1] =
+    m->m[2][0] = m->m[2][1] = 0.0;
+    return;
+  }
+  invdet = 1.0f / det;
+  m->m[0][0] = t.m[1][1] * invdet;
+  m->m[1][0] = -t.m[1][0] * invdet;
+  m->m[2][0] = (t.m[1][0] * t.m[2][1] - t.m[1][1] * t.m[2][0]) * invdet;
+  m->m[0][1] = -t.m[0][1] * invdet;
+  m->m[1][1] = t.m[0][0] * invdet;
+  m->m[2][1] = (t.m[0][1] * t.m[2][0] - t.m[0][0] * t.m[2][1]) * invdet ;
+}
+
+
 static inline void
 ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
 {
@@ -2234,13 +2257,14 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         float y1 = ctx_arg_float(4);
         float r1 = ctx_arg_float(5);
         float t;
+#if 0
         ctx_user_to_device (state, &x0, &y0);
         ctx_user_to_device (state, &x1, &y1);
         t = 0.0f;
         ctx_user_to_device (state, &r0, &t);
         t = 0.0f;
         ctx_user_to_device (state, &r1, &t);
-
+#endif
         state->gstate.source.radial_gradient.x0 = x0;
         state->gstate.source.radial_gradient.y0 = y0;
         state->gstate.source.radial_gradient.r0 = r0;
@@ -2248,7 +2272,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.source.radial_gradient.y1 = y1;
         state->gstate.source.radial_gradient.r1 = r1;
         state->gstate.source.type = CTX_SOURCE_RADIAL_GRADIENT;
-        ctx_matrix_identity (&state->gstate.source.transform);
+        //ctx_matrix_identity (&state->gstate.source.transform);
+        state->gstate.source.transform = state->gstate.transform;
+        ctx_matrix_inverse (&state->gstate.source.transform);
       }
       break;
     case CTX_GRADIENT_NO:
@@ -2289,13 +2315,18 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
 }
 
 static inline void
-_ctx_user_to_device (CtxState *state, float *x, float *y)
+ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 {
-  CtxMatrix m = state->gstate.transform;
   float x_in = *x;
   float y_in = *y;
-  *x = ((x_in * m.m[0][0]) + (y_in * m.m[1][0]) + m.m[2][0]);
-  *y = ((y_in * m.m[1][1]) + (x_in * m.m[0][1]) + m.m[2][1]);
+  *x = ((x_in * m->m[0][0]) + (y_in * m->m[1][0]) + m->m[2][0]);
+  *y = ((y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
+}
+
+static inline void
+_ctx_user_to_device (CtxState *state, float *x, float *y)
+{
+  ctx_matrix_apply_transform (&state->gstate.transform, x, y);
 }
 
 void
@@ -3137,8 +3168,8 @@ ctx_init (Ctx *ctx)
   ctx_state_init (&ctx->state);
 
 #if 1
-  ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
-  ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
+  //ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
+  //ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
   ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
 #endif
@@ -3472,8 +3503,8 @@ struct _CtxShapeEntry {
 
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
-#define CTX_SHAPE_CACHE_DIM      32
-#define CTX_SHAPE_CACHE_ENTRIES  1024
+#define CTX_SHAPE_CACHE_DIM      28
+#define CTX_SHAPE_CACHE_ENTRIES  512
 
 #define CTX_SHAPE_CACHE_PRIME1   11111
 #define CTX_SHAPE_CACHE_PRIME2   11111
@@ -3552,7 +3583,7 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
 // ==90718==    by 0x118E57: ctx_renderer_rasterize_edges (ctx.h:4907)
 //
   int size = sizeof(CtxShapeEntry) + width * height + 1;
-  CtxShapeEntry *new_entry = malloc (size);
+  CtxShapeEntry *new_entry = (CtxShapeEntry*)malloc (size);
   new_entry->refs = 1;
   if (ctx_cache.entries[i])
   {
@@ -4426,7 +4457,11 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
       uint8_t cov = coverage[x];
       if (cov)
       {
-        source (renderer, x0 + x, y, &color[0]);
+	float u = x0 + x;
+	float v = y;
+	ctx_matrix_apply_transform (&gstate->source.transform, &u, &v);
+
+        source (renderer, u, v, &color[0]);
         if (color[3])
         {
           color[3] = (color[3] * gstate->source.global_alpha)>>8;
@@ -4545,7 +4580,10 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
       uint8_t cov = coverage[x];
       if (cov)
       {
-        source (renderer, x0 + x, y, &color[0]);
+	float u = x0 + x;
+	float v = y;
+	ctx_matrix_apply_transform (&gstate->source.transform, &u, &v);
+        source (renderer, u, v, &color[0]);
         if (color[3])
         {
           ctx_swap_red_green (color);
@@ -4636,7 +4674,10 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *c
       if (source)
       {
         uint8_t scolor[4];
-        source (renderer, x0 + x, y, &scolor[0]);
+	float u = x0 + x;
+	float v = y;
+	ctx_matrix_apply_transform (&renderer->state->gstate.source.transform, &u, &v);
+        source (renderer, u, v, &scolor[0]);
 
         gray = ((scolor[0]+scolor[1]+scolor[2])/3.0)/255.0;
         alpha = scolor[3]/255.0 + renderer->state->gstate.source.global_alpha/255.0;
@@ -5571,6 +5612,7 @@ ctx_renderer_load_image (CtxRenderer *renderer, const char *path,
   renderer->state->gstate.source.image.buffer = &renderer->texture[0];
   renderer->state->gstate.source.image.x0 = x;
   renderer->state->gstate.source.image.y0 = y;
+  ctx_matrix_identity (&renderer->state->gstate.source.transform);
 }
 
 static void
@@ -5660,14 +5702,14 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
       break;
 
     case CTX_LINEAR_GRADIENT:
-      ctx_renderer_linear_gradient (renderer,
-                           ctx_arg_float(0), ctx_arg_float(1),
-                           ctx_arg_float(2), ctx_arg_float(3));
+//    ctx_renderer_linear_gradient (renderer,
+//                         ctx_arg_float(0), ctx_arg_float(1),
+//                         ctx_arg_float(2), ctx_arg_float(3));
       break;
     case CTX_RADIAL_GRADIENT:
-      ctx_renderer_radial_gradient (renderer,
-                           ctx_arg_float(0), ctx_arg_float(1), ctx_arg_float(2),
-                           ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
+//    ctx_renderer_radial_gradient (renderer,
+//                         ctx_arg_float(0), ctx_arg_float(1), ctx_arg_float(2),
+//                         ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
       break;
 
     case CTX_ROTATE:
@@ -7270,7 +7312,7 @@ _ctx_text (Ctx        *ctx,
 CtxGlyph *
 ctx_glyph_allocate (int n_glyphs)
 {
-  return malloc (sizeof (CtxGlyph) * n_glyphs);
+  return (CtxGlyph*)malloc (sizeof (CtxGlyph) * n_glyphs);
 }
 void
 gtx_glyph_free     (CtxGlyph *glyphs)
