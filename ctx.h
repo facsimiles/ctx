@@ -76,7 +76,7 @@ extern "C" {
 #endif
 
 #ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   8192
+#define CTX_MAX_JOURNAL_SIZE   81920
 #endif
 
 #if CTX_BITPACK
@@ -695,7 +695,8 @@ struct _CtxBuffer
   int                 free_buf;
 };
 
-void ctx_user_to_device      (CtxState *state, float *x, float *y);
+void ctx_user_to_device          (CtxState *state, float *x, float *y);
+void ctx_user_to_device_distance (CtxState *state, float *x, float *y);
 
 typedef struct _CtxGradient CtxGradient;
 struct _CtxGradient
@@ -2323,17 +2324,21 @@ ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
   *y = ((y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
 }
 
-static inline void
-_ctx_user_to_device (CtxState *state, float *x, float *y)
+void
+ctx_user_to_device (CtxState *state, float *x, float *y)
 {
   ctx_matrix_apply_transform (&state->gstate.transform, x, y);
 }
 
 void
-ctx_user_to_device (CtxState *state, float *x, float *y)
+ctx_user_to_device_distance (CtxState *state, float *x, float *y)
 {
-  _ctx_user_to_device (state, x, y);
+  const CtxMatrix *m = &state->gstate.transform;
+  ctx_matrix_apply_transform (m, x, y);
+  *x -= m->m[2][0];
+  *y -= m->m[2][1];
 }
+
 
 #if CTX_BITPACK_PACKER
 
@@ -2878,7 +2883,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 
         if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
         {
-          _ctx_user_to_device (state, &x, &y);
+          ctx_user_to_device (state, &x, &y);
           ctx_arg_float(0) = x;
           ctx_arg_float(1) = y;
         }
@@ -2894,16 +2899,55 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         float x = ctx_arg_float (0);
         float y = ctx_arg_float (1);
         float r = ctx_arg_float (2);
-        _ctx_user_to_device (state, &x, &y);
+        ctx_user_to_device (state, &x, &y);
         ctx_arg_float(0) = x;
         ctx_arg_float(1) = y;
         y = 0;
-        _ctx_user_to_device (state, &r, &y);
+        ctx_user_to_device_distance (state, &r, &y);
         ctx_arg_float(2) = r;
       }
 
       break;
 
+    case CTX_LINEAR_GRADIENT:
+      {
+        float x = ctx_arg_float (0);
+        float y = ctx_arg_float (1);
+        ctx_user_to_device (state, &x, &y);
+        ctx_arg_float(0) = x;
+        ctx_arg_float(1) = y;
+
+        x = ctx_arg_float (2);
+        y = ctx_arg_float (3);
+        ctx_user_to_device (state, &x, &y);
+        ctx_arg_float(2) = x;
+        ctx_arg_float(3) = y;
+      }
+      break;
+
+    case CTX_RADIAL_GRADIENT:
+      {
+        float x = ctx_arg_float (0);
+        float y = ctx_arg_float (1);
+        float r = ctx_arg_float (2);
+        ctx_user_to_device (state, &x, &y);
+        ctx_arg_float(0) = x;
+        ctx_arg_float(1) = y;
+        y = 0;
+        ctx_user_to_device_distance (state, &r, &y);
+        ctx_arg_float(2) = r;
+
+        x = ctx_arg_float (3);
+        y = ctx_arg_float (4);
+        r = ctx_arg_float (5);
+        ctx_user_to_device (state, &x, &y);
+        ctx_arg_float(3) = x;
+        ctx_arg_float(4) = y;
+        y = 0;
+        ctx_user_to_device_distance (state, &r, &y);
+        ctx_arg_float(5) = r;
+      }
+      break;
 
     case CTX_CURVE_TO:
       if (!state->has_moved) // bit ifft for curveto
@@ -2921,7 +2965,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         {
           float x = entry[c].data.f[0];
           float y = entry[c].data.f[1];
-          _ctx_user_to_device (state, &x, &y);
+          ctx_user_to_device (state, &x, &y);
           entry[c].data.f[0] = x;
           entry[c].data.f[1] = y;
         }
@@ -2945,7 +2989,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         {
           float x = entry[c].data.f[0];
           float y = entry[c].data.f[1];
-          _ctx_user_to_device (state, &x, &y);
+          ctx_user_to_device (state, &x, &y);
           entry[c].data.f[0] = x;
           entry[c].data.f[1] = y;
         }
@@ -2964,7 +3008,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         {
           float x = state->x;
           float y = state->y;
-          _ctx_user_to_device (state, &x, &y);
+          ctx_user_to_device (state, &x, &y);
           entry[c].data.f[0] = x;
           entry[c].data.f[1] = y;
         }
@@ -3168,8 +3212,8 @@ ctx_init (Ctx *ctx)
   ctx_state_init (&ctx->state);
 
 #if 1
-  //ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
-  //ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
+  ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
+  ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
   ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
 #endif
