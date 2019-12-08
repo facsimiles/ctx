@@ -625,7 +625,13 @@ static inline float ctx_fast_hypotf (float x, float y)
 
 typedef struct _CtxEntry CtxEntry;
 
-struct __attribute__ ((packed)) _CtxEntry
+#ifdef _MSC_VER
+  #pragma pack(push,1)
+#else
+  #define PACKED __attribute__ ((__packed__))
+#endif
+
+struct PACKED _CtxEntry
 {
   uint8_t code;
   union {
@@ -638,6 +644,10 @@ struct __attribute__ ((packed)) _CtxEntry
     int32_t  s32[2];
   } data;
 };
+
+#ifdef _MSC_VER
+  #pragma pack(pop)
+#endif
 
 #define ctx_arg_float(no) entry[(no)>>1].data.f[(no)&1]
 #define ctx_arg_u32(no)   entry[(no)>>1].data.u32[(no)&1]
@@ -2258,14 +2268,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         float y1 = ctx_arg_float(4);
         float r1 = ctx_arg_float(5);
         float t;
-#if 0
-        ctx_user_to_device (state, &x0, &y0);
-        ctx_user_to_device (state, &x1, &y1);
-        t = 0.0f;
-        ctx_user_to_device (state, &r0, &t);
-        t = 0.0f;
-        ctx_user_to_device (state, &r1, &t);
-#endif
+
         state->gstate.source.radial_gradient.x0 = x0;
         state->gstate.source.radial_gradient.y0 = y0;
         state->gstate.source.radial_gradient.r0 = r0;
@@ -3196,13 +3199,11 @@ ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data)
 static void
 ctx_state_init (CtxState *state)
 {
-  memset (state, 0, sizeof (CtxState)); // XXX: directly setting the
-                                        // actually involved bits will be
-                                        // faster
+  memset (state, 0, sizeof (CtxState));
   state->gstate.source.global_alpha = 255;
   state->gstate.font_size    = 12;
   state->gstate.line_spacing = 1.0;
-  state->gstate.line_width = 2.0;
+  state->gstate.line_width   = 2.0;
   ctx_matrix_identity (&state->gstate.transform);
 }
 
@@ -3212,8 +3213,8 @@ ctx_init (Ctx *ctx)
   ctx_state_init (&ctx->state);
 
 #if 1
-  ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
-  ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
+  //ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
+  //ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
   ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
 #endif
