@@ -76,7 +76,7 @@ extern "C" {
 #endif
 
 #ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   81920
+#define CTX_MAX_JOURNAL_SIZE   20480
 #endif
 
 #if CTX_BITPACK
@@ -1306,11 +1306,17 @@ static int
 ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
   int ret = renderstream->count;
+
+  if (renderstream->count == CTX_MAX_JOURNAL_SIZE)
+    return ret;
   if (ret + 6 >= renderstream->size)
   {
     ctx_renderstream_resize (renderstream, renderstream->size * 2);
     ret = renderstream->count;
   }
+  if (renderstream->count == CTX_MAX_JOURNAL_SIZE)
+    return ret;
+
   renderstream->entries[renderstream->count] = *entry;
   ret = renderstream->count;
   renderstream->count++;
@@ -2255,7 +2261,8 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.source.linear_gradient.start = start;
         state->gstate.source.linear_gradient.end = end;
         state->gstate.source.type = CTX_SOURCE_LINEAR_GRADIENT;
-        ctx_matrix_identity (&state->gstate.source.transform);
+        state->gstate.source.transform = state->gstate.transform;
+        ctx_matrix_inverse (&state->gstate.source.transform);
       }
       break;
 
@@ -5647,17 +5654,24 @@ ctx_renderer_clip (CtxRenderer *renderer)
 }
 
 static void
-ctx_renderer_load_image (CtxRenderer *renderer, const char *path,
-                         float x, float y)
+ctx_renderer_load_image (CtxRenderer *renderer,
+		         const char  *path,
+                         float x,
+			 float y)
 {
   // decode PNG, put it in image is slot 1,
   // magic width height stride format data
   ctx_buffer_load_png (&renderer->texture[0], path);
   renderer->state->gstate.source.type = CTX_SOURCE_IMAGE;
   renderer->state->gstate.source.image.buffer = &renderer->texture[0];
+
+  ctx_user_to_device (renderer->state, &x, &y);
+
   renderer->state->gstate.source.image.x0 = x;
   renderer->state->gstate.source.image.y0 = y;
-  ctx_matrix_identity (&renderer->state->gstate.source.transform);
+
+  renderer->state->gstate.source.transform = renderer->state->gstate.transform;
+  ctx_matrix_inverse (&renderer->state->gstate.source.transform);
 }
 
 static void
