@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA      2   // 2 is fast, 3 slower 5 is good 15 is 8bit good  32 is 10bit
+#define CTX_RASTERIZER_AA      4   // 2 is fast, 3 slower 5 is good 15 is 8bit good  32 is 10bit
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -58,6 +58,11 @@ extern "C" {
 #define CTX_BITPACK           1
 #ifndef CTX_REFPACK
 #define CTX_REFPACK           0
+#endif
+
+
+#ifndef CTX_SHAPE_CACHE
+#define CTX_SHAPE_CACHE 0
 #endif
 
 #ifndef CTX_MATH
@@ -3513,6 +3518,8 @@ static inline int ctx_renderer_add_point (CtxRenderer *renderer, int x1, int y1)
   return ctx_renderstream_add_u32 (&renderer->edge_list, CTX_EDGE, (uint32_t*)args);
 }
 
+#if CTX_SHAPE_CACHE
+
 static uint32_t ctx_shape_time = 0;
 
 /* to get better cache usage-  */
@@ -3614,11 +3621,11 @@ static void ctx_shape_entry_release (CtxShapeEntry *entry)
 {
   entry->refs--;
 }
+#endif
 
 static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
 {
   CtxEntry *entry = &renderer->edge_list.entries[0];
-  uint32_t hash = renderer->edge_list.count;
 
 
   int ox = entry->data.s16[2];
@@ -3626,9 +3633,12 @@ static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
   int16_t x = 0;
   int16_t y = 0;
 
+#if CTX_SHAPE_CACHE
+  uint32_t hash = renderer->edge_list.count;
   hash = (ox % CTX_SUBDIV);
   hash *= CTX_SHAPE_CACHE_PRIME1;
   hash += (oy % CTX_RASTERIZER_AA);
+#endif
 
   for (int i = 0; i < renderer->edge_list.count; i++)
   {
@@ -3636,7 +3646,9 @@ static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
     if (entry->code == CTX_NEW_EDGE)
     {
       entry->code = CTX_EDGE;
+#if CTX_SHAPE_CACHE
       hash *= CTX_SHAPE_CACHE_PRIME2;
+#endif
     }
     else
     {
@@ -3652,10 +3664,12 @@ static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
     ox = x;
     oy = y;
 
+#if CTX_SHAPE_CACHE
     hash *= CTX_SHAPE_CACHE_PRIME3;
     hash += dx;
     hash *= CTX_SHAPE_CACHE_PRIME4;
     hash += dy;
+#endif
 
     if (entry->data.s16[3] < entry->data.s16[1])
     {
@@ -3664,7 +3678,11 @@ static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
                         entry->data.s16[0], entry->data.s16[1]);
     }
   }
+#if CTX_SHAPE_CACHE
   return hash;
+#else
+  return 0;
+#endif
 }
 
 static inline void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y);
@@ -4931,15 +4949,12 @@ ctx_renderer_reset (CtxRenderer *renderer)
 }
 
 static inline void
-ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
-                              CtxShapeEntry *shape)
+ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
+#if CTX_SHAPE_CACHE
+		              ,CtxShapeEntry *shape
+#endif
+			      )
 {
-  if (shape && 0)
-  {
-    for (int i = 0; i < shape->width * shape->height; i++)
-      shape->data[i] = 255;
-    return;
-  }
   uint8_t *dst = ((uint8_t*)renderer->buf);
   int scan_start = renderer->blit_y * CTX_RASTERIZER_AA;
   int scan_end   = scan_start + renderer->blit_height * CTX_RASTERIZER_AA;
@@ -4948,13 +4963,23 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
 
   int minx = renderer->col_min / CTX_SUBDIV - renderer->blit_x;
   int maxx = (renderer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - renderer->blit_x;
-  if (!shape && maxx > blit_max_x)
+  if (
+#if CTX_SHAPE_CACHE
+		   !shape && 
+#endif
+		  
+		  maxx > blit_max_x)
     maxx = blit_max_x;
   //fprintf (stderr, "%i %i|", renderer->col_min, renderer->col_max);
 
+#if CTX_SHAPE_CACHE
   uint8_t _coverage[shape?2:maxx-minx+1];
+#else
+  uint8_t _coverage[maxx-minx+1];
+#endif
   uint8_t *coverage = &_coverage[0];
 
+#if CTX_SHAPE_CACHE
   if (shape)
   {
     coverage = &shape->data[0];
@@ -4962,15 +4987,18 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
     //blit_max_x = maxx = minx + shape->width;
     //blit_width = shape->width;
   }
+#endif
 
   renderer->scan_min -= (renderer->scan_min % CTX_RASTERIZER_AA);
 
+#if CTX_SHAPE_CACHE
   if (shape)
   {
     scan_start = renderer->scan_min;
     scan_end   = renderer->scan_max;
   }
   else
+#endif
   {
     if (renderer->scan_min > scan_start)
     {
@@ -4984,7 +5012,11 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
 
   for (renderer->scanline = scan_start; renderer->scanline < scan_end;)
   {
-    memset(coverage, 0, shape?shape->width:sizeof(_coverage));
+    memset(coverage, 0, 
+#if CTX_SHAPE_CACHE
+		    shape?shape->width:
+#endif
+		    sizeof(_coverage));
 
     ctx_renderer_feed_edges (renderer);
     ctx_renderer_discard_edges (renderer);
@@ -5030,7 +5062,9 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
 
     if (maxx>minx)
     {
+#if CTX_SHAPE_CACHE
       if (shape == NULL)
+#endif
       {
         ctx_renderer_apply_coverage (renderer,
                                      &dst[(minx) * renderer->format->bpp/8],
@@ -5038,10 +5072,12 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
                                      coverage, maxx-minx);
       }
     }
+#if CTX_SHAPE_CACHE
       if (shape)
       {
         coverage += shape->width;
       }
+#endif
     dst += renderer->blit_stride;
   }
   ctx_renderer_reset (renderer);
@@ -5149,6 +5185,7 @@ ctx_renderer_fill (CtxRenderer *renderer)
   int width = (renderer->col_max + (CTX_SUBDIV-1)) / CTX_SUBDIV - renderer->col_min/CTX_SUBDIV;
   int height = (renderer->scan_max + (CTX_RASTERIZER_AA-1)) / CTX_RASTERIZER_AA - renderer->scan_min / CTX_RASTERIZER_AA;
 
+#if CTX_SHAPE_CACHE
   if (width * height < CTX_SHAPE_CACHE_DIM * CTX_SHAPE_CACHE_DIM  && width >=1 && height >= 1)
   {
     int scan_min = renderer->scan_min;
@@ -5203,9 +5240,14 @@ ctx_renderer_fill (CtxRenderer *renderer)
     ctx_shape_entry_release (shape);
   }
   else
+#endif
   {
   //fprintf (stderr, "%i %i\n", width, height);
-    ctx_renderer_rasterize_edges (renderer, renderer->state->gstate.fill_rule, NULL);
+    ctx_renderer_rasterize_edges (renderer, renderer->state->gstate.fill_rule
+#if CTX_SHAPE_CACHE
+		    , NULL
+#endif
+		    );
   }
 }
 
