@@ -36,24 +36,21 @@ extern "C" {
 #endif
 
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA      5
-#endif
-#ifndef CTX_RASTERIZER_AA2
-#define CTX_RASTERIZER_AA2     2
-#endif
-#ifndef CTX_RASTERIZER_AA3
-#define CTX_RASTERIZER_AA3     3
+#define CTX_RASTERIZER_AA      2   // 2 is fast, 3 slower 5 is good 15 is 8bit good  32 is 10bit
 #endif
 
+#define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
+#define CTX_RASTERIZER_AA3     (CTX_RASTERIZER_AA/2+CTX_RASTERIZER_AA%2)
+
 #ifndef CTX_RASTERIZER_AUTOHINT
-#define CTX_RASTERIZER_AUTOHINT   1 // should be made dynamic, only works
+#define CTX_RASTERIZER_AUTOHINT   0 // should be made dynamic, only works
                                     // without forced AA
 #endif
 
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA 0
+#define CTX_RASTERIZER_FORCE_AA  0
 #endif
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT  96
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    5120
 
 #define CTX_SUBDIV            8  // changing this changes font-file-format
 
@@ -1326,7 +1323,7 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 int
 ctx_add_single (Ctx *ctx, void *entry)
 {
-  ctx_renderstream_add_single (&ctx->renderstream, (CtxEntry*)entry);
+  return ctx_renderstream_add_single (&ctx->renderstream, (CtxEntry*)entry);
 }
 
 int
@@ -2274,7 +2271,6 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         float x1 = ctx_arg_float(3);
         float y1 = ctx_arg_float(4);
         float r1 = ctx_arg_float(5);
-        float t;
 
         state->gstate.source.radial_gradient.x0 = x0;
         state->gstate.source.radial_gradient.y0 = y0;
@@ -3222,7 +3218,7 @@ ctx_init (Ctx *ctx)
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
-  ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
+  //ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
 #endif
   ctx->renderstream.flags  |= CTX_TRANSFORMATION_REFPACK;
 #endif
@@ -3533,8 +3529,8 @@ struct _CtxShapeEntry {
 
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
-#define CTX_SHAPE_CACHE_DIM      48
-#define CTX_SHAPE_CACHE_ENTRIES  1024
+#define CTX_SHAPE_CACHE_DIM      24
+#define CTX_SHAPE_CACHE_ENTRIES  128
 
 #define CTX_SHAPE_CACHE_PRIME1   11111
 #define CTX_SHAPE_CACHE_PRIME2   11121
@@ -3562,25 +3558,11 @@ static long misses = 0;
  */
 static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height, uint32_t time) {
   int entry_no = hash % CTX_SHAPE_CACHE_ENTRIES;
-  int no = 0;
   int i;
-
-#if 0
-  int oldest_age = time;
-  int oldest = entry_no;
-#endif
 
   i = entry_no;
   if (ctx_cache.entries[i])
   {
-#if 0
-    if (ctx_cache.entries[i]->age < oldest_age)
-    {
-      oldest_age = ctx_cache.entries[i]->age;
-      oldest = i;
-    }
-#endif
-
     if (ctx_cache.entries[i]->hash == hash &&
         ctx_cache.entries[i]->width == width &&
         ctx_cache.entries[i]->height == height)
@@ -3594,17 +3576,6 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
       }
   }
   misses ++;
-#if 0
-  if (no < slot_size && i < CTX_SHAPE_CACHE_ENTRIES)
-  {
-    if (ctx_cache.entries[i])
-      free (ctx_cache.entries[i]);
-  }
-  else
-  {
-    i = oldest;
-  }
-#endif
 
 // XXX : this 1 one is needed  to silence:
 // ==90718== Invalid write of size 1
@@ -4499,7 +4470,7 @@ static CtxSourceU8 ctx_renderer_get_source_u8 (CtxRenderer *renderer)
 
 static inline void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
 {
-#if 0
+#if 1
   uint8_t ralpha = 255 - ((cov * src[3]) >> 8);
   for (int c = 0; c < 4; c++)
     dst[c] = (src[c]*cov + dst[c] * ralpha) >> 8;
@@ -4510,7 +4481,7 @@ static inline void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
   uint32_t da = (d) >> 24;
   uint32_t ralpha = 255 - ((cov * sa) >> 8);
   uint32_t ga =(((((s) & MASK_GREEN_ALPHA)>>8)*cov+((((d) & MASK_GREEN_ALPHA)>>8)* ralpha))) & MASK_GREEN_ALPHA;
-  uint32_t rb =((((s) & MASK_RED_BLUE   )*cov+(((d) & MASK_RED_BLUE) * ralpha) >> 8  )) & MASK_RED_BLUE;
+  uint32_t rb =(((((s) & MASK_RED_BLUE   )*cov|(((d) & MASK_RED_BLUE) * ralpha)  )>> 8  )) & MASK_RED_BLUE;
   *((uint32_t*)dst) = ga | rb;
 #undef MASK_GREEN
 #undef MASK_GREEN_ALPHA
@@ -5042,6 +5013,7 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
     }
     else
     {
+#if 1
       renderer->scanline += CTX_RASTERIZER_AA3;
       ctx_renderer_increment_edges (renderer, CTX_RASTERIZER_AA3);
       ctx_renderer_feed_edges (renderer);
@@ -5050,6 +5022,10 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding,
       ctx_renderer_generate_coverage (renderer, minx, coverage, winding, 0);
       renderer->scanline += CTX_RASTERIZER_AA2;
       ctx_renderer_increment_edges (renderer, CTX_RASTERIZER_AA2);
+#else
+      renderer->scanline += CTX_RASTERIZER_AA;
+
+#endif
     }
 
     if (maxx>minx)
