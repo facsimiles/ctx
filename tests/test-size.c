@@ -6,8 +6,6 @@
 
 #define CTX_IMPLEMENTATION
 
-#define CTX_GLYPH_CACHE 0
-
 #include "ctx.h"
 
 #define WIDTH    72

@@ -3533,14 +3533,13 @@ struct _CtxShapeEntry {
 
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
-#define CTX_SHAPE_CACHE_DIM      28
-#define CTX_SHAPE_CACHE_ENTRIES  512
+#define CTX_SHAPE_CACHE_DIM      48
+#define CTX_SHAPE_CACHE_ENTRIES  1024
 
 #define CTX_SHAPE_CACHE_PRIME1   11111
-#define CTX_SHAPE_CACHE_PRIME2   11111
-#define CTX_SHAPE_CACHE_PRIME3   11111
-#define CTX_SHAPE_CACHE_PRIME4   11111
-
+#define CTX_SHAPE_CACHE_PRIME2   11121
+#define CTX_SHAPE_CACHE_PRIME3   11131
+#define CTX_SHAPE_CACHE_PRIME4   11141
 
 // this needs a max-size
 // and a more agressive freeing when
@@ -5775,10 +5774,16 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
 
     case CTX_GRADIENT_NO:
       ctx_renderer_set_gradient_no (renderer, entry[0].data.u8[0]);
+#if CTX_GRADIENT_CACHE
+      ctx_gradient_cache_reset();
+#endif
       break;
 
     case CTX_GRADIENT_CLEAR:
       ctx_renderer_gradient_clear_stops (renderer);
+#if CTX_GRADIENT_CACHE
+      ctx_gradient_cache_reset();
+#endif
       break;
 
     case CTX_GRADIENT_STOP:
