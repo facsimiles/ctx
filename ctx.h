@@ -155,8 +155,8 @@ extern "C" {
 #endif
 #define CTX_MAX_STATES       16
 #define CTX_MAX_EDGES        257
-#define CTX_MAX_GRADIENTS    4
-#define CTX_MAX_TEXTURES     4
+#define CTX_MAX_GRADIENTS    1
+#define CTX_MAX_TEXTURES     1
 #define CTX_MAX_PENDING      128
 
 #ifndef CTX_EXTRAS
@@ -2851,7 +2851,6 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
       ientry->data.u32[1]= match_length;
       ctx_renderstream_remove (renderstream, match_input_pos+1, match_length-1);
     }
-
     completed += default_search_window;
   }
 #endif
@@ -3220,8 +3219,8 @@ ctx_init (Ctx *ctx)
   ctx_state_init (&ctx->state);
 
 #if 1
-  //ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
-  //ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
+  ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
+  ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
   ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
 #endif
@@ -3465,33 +3464,11 @@ ctx_renderer_set_gradient_no (CtxRenderer *renderer, int no)
   renderer->state->gstate.source.gradient_no = no;
 }
 
+#define CTX_GRADIENT_CACHE 1
+#if CTX_GRADIENT_CACHE
 static void
-ctx_renderer_linear_gradient (CtxRenderer *renderer,
-                              float x0, float y0,
-                              float x1, float y1)
-{
-  CtxSource *source = &renderer->state->gstate.source;
-
-  source->linear_gradient.x0 = x0;
-  source->linear_gradient.y0 = y0;
-  source->linear_gradient.x1 = x1;
-  source->linear_gradient.y1 = y1;
-}
-
-static void
-ctx_renderer_radial_gradient (CtxRenderer *renderer,
-                              float x0, float y0,
-                              float r0, float x1,
-                              float y1, float r1)
-{
-  CtxSource *source = &renderer->state->gstate.source;
-  source->radial_gradient.x0 = x0;
-  source->radial_gradient.y0 = y0;
-  source->radial_gradient.x1 = x1;
-  source->radial_gradient.y1 = y1;
-  source->radial_gradient.r0 = r0;
-  source->radial_gradient.r1 = r1;
-}
+ctx_gradient_cache_reset (void);
+#endif
 
 static void
 ctx_renderer_gradient_clear_stops(CtxRenderer *renderer)
@@ -3512,6 +3489,7 @@ ctx_renderer_gradient_add_stop (CtxRenderer *renderer, float pos, uint8_t *rgba)
   stop->rgba[3] = rgba[3];
   if (gradient->n_stops < 15)//we'll keep overwriting the last when out of stops
     gradient->n_stops++;
+
 }
 
 static inline int ctx_renderer_add_point (CtxRenderer *renderer, int x1, int y1)
@@ -4169,6 +4147,27 @@ static inline uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
   return (((((v0)<<8) + (dx) * ((v1) - (v0))))>>8);
 }
 
+#if CTX_GRADIENT_CACHE
+
+#define CTX_GRADIENT_CACHE_ELEMENTS 128
+
+static uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
+
+static void
+ctx_gradient_cache_reset (void)
+{
+  int i;
+  for (int i = 0; i < CTX_GRADIENT_CACHE_ELEMENTS; i++)
+  {
+    ctx_gradient_cache_u8[i][0] = 255;
+    ctx_gradient_cache_u8[i][1] = 2;
+    ctx_gradient_cache_u8[i][2] = 255;
+    ctx_gradient_cache_u8[i][3] = 0;
+  }
+}
+
+#endif
+
 static void
 ctx_sample_gradient_1d_u8 (CtxRenderer *renderer, float v, uint8_t *rgba)
 {
@@ -4179,12 +4178,33 @@ ctx_sample_gradient_1d_u8 (CtxRenderer *renderer, float v, uint8_t *rgba)
   if (v < 0) v = 0;
   if (v > 1) v = 1;
 
+#if CTX_GRADIENT_CACHE
+  int cache_no = v * (CTX_GRADIENT_CACHE_ELEMENTS-1.0f);
+  uint8_t *cache_entry = &ctx_gradient_cache_u8[cache_no][0];
+
+  if (!(cache_entry[0] == 255 &&
+        cache_entry[1] == 2   &&
+        cache_entry[2] == 255 &&
+        cache_entry[3] == 0))
+  {
+    rgba[0] = cache_entry[0];
+    rgba[1] = cache_entry[1];
+    rgba[2] = cache_entry[2];
+    rgba[3] = cache_entry[3];
+    return;
+  }
+#endif
+
   if (g->n_stops == 0)
   {
     rgba[0] = rgba[1] = rgba[2] = v * 255;
     rgba[3] = 255;
     return;
   }
+
+  /* force first and last cached entries to be end points */
+  if (cache_no == 0) v = 0.0f;
+  else if (cache_no == CTX_GRADIENT_CACHE_ELEMENTS-1) v = 1.0f;
 
   CtxGradientStop *stop      = NULL;
   CtxGradientStop *next_stop = &g->stops[0];
@@ -4220,6 +4240,12 @@ ctx_sample_gradient_1d_u8 (CtxRenderer *renderer, float v, uint8_t *rgba)
     for (int c = 0; c < 4; c++)
       rgba[c] = g->stops[g->n_stops-1].rgba[c];
   }
+#if CTX_GRADIENT_CACHE
+  cache_entry[0] = rgba[0];
+  cache_entry[1] = rgba[1];
+  cache_entry[2] = rgba[2];
+  cache_entry[3] = rgba[3];
+#endif
 }
 
 
@@ -5761,14 +5787,14 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
       break;
 
     case CTX_LINEAR_GRADIENT:
-//    ctx_renderer_linear_gradient (renderer,
-//                         ctx_arg_float(0), ctx_arg_float(1),
-//                         ctx_arg_float(2), ctx_arg_float(3));
+#if CTX_GRADIENT_CACHE
+      ctx_gradient_cache_reset();
+#endif
       break;
     case CTX_RADIAL_GRADIENT:
-//    ctx_renderer_radial_gradient (renderer,
-//                         ctx_arg_float(0), ctx_arg_float(1), ctx_arg_float(2),
-//                         ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
+#if CTX_GRADIENT_CACHE
+      ctx_gradient_cache_reset();
+#endif
       break;
 
     case CTX_ROTATE:
@@ -7830,13 +7856,13 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       case CTX_LINEAR_GRADIENT:
         ctx_linear_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
                              ctx_arg_float(2), ctx_arg_float(3));
-        //ctx_gradient_clear_stops (d_ctx);
+        ctx_gradient_clear_stops (d_ctx);
         break;
       case CTX_RADIAL_GRADIENT:
         ctx_radial_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
                                   ctx_arg_float(2), ctx_arg_float(3),
                                   ctx_arg_float(4), ctx_arg_float(5));
-        //ctx_gradient_clear_stops (d_ctx);
+        ctx_gradient_clear_stops (d_ctx);
         break;
       case CTX_GRADIENT_STOP:
         ctx_gradient_add_stop (d_ctx,
