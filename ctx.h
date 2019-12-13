@@ -53,7 +53,7 @@ extern "C" {
 #ifndef CTX_RASTERIZER_FORCE_AA
 #define CTX_RASTERIZER_FORCE_AA 0
 #endif
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT  256
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT  96
 
 #define CTX_SUBDIV            8  // changing this changes font-file-format
 
