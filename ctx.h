@@ -48,7 +48,7 @@ extern "C" {
 #endif
 
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  0
+#define CTX_RASTERIZER_FORCE_AA  1
 #endif
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT    5120
 
@@ -63,6 +63,10 @@ extern "C" {
 
 #ifndef CTX_SHAPE_CACHE
 #define CTX_SHAPE_CACHE 0
+#endif
+
+#ifndef CTX_GRADIENT_CACHE
+#define CTX_GRADIENT_CACHE 1
 #endif
 
 #ifndef CTX_MATH
@@ -150,7 +154,7 @@ extern "C" {
 #endif
 
 #define CTX_PI               3.141592653589793f
-#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  48
+#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  64
 
 #ifndef CTX_MAX_FONTS
 #define CTX_MAX_FONTS        3
@@ -502,6 +506,11 @@ static inline float
 ctx_roundf (float x)
 {
   return ((int) x) + 0.5f;
+}
+static inline float
+ctx_ceilf (float x)
+{
+  return ((int) x) + 0.9999f;
 }
 
 static inline float
@@ -3465,7 +3474,6 @@ ctx_renderer_set_gradient_no (CtxRenderer *renderer, int no)
   renderer->state->gstate.source.gradient_no = no;
 }
 
-#define CTX_GRADIENT_CACHE 1
 #if CTX_GRADIENT_CACHE
 static void
 ctx_gradient_cache_reset (void);
@@ -3537,7 +3545,7 @@ struct _CtxShapeEntry {
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
 #define CTX_SHAPE_CACHE_DIM      24
-#define CTX_SHAPE_CACHE_ENTRIES  128
+#define CTX_SHAPE_CACHE_ENTRIES  256
 
 #define CTX_SHAPE_CACHE_PRIME1   11111
 #define CTX_SHAPE_CACHE_PRIME2   11121
@@ -4150,7 +4158,7 @@ ctx_gradient_cache_reset (void)
     ctx_gradient_cache_u8[i][0] = 255;
     ctx_gradient_cache_u8[i][1] = 2;
     ctx_gradient_cache_u8[i][2] = 255;
-    ctx_gradient_cache_u8[i][3] = 0;
+    ctx_gradient_cache_u8[i][3] = 13;
   }
 }
 
@@ -4170,10 +4178,10 @@ ctx_sample_gradient_1d_u8 (CtxRenderer *renderer, float v, uint8_t *rgba)
   int cache_no = v * (CTX_GRADIENT_CACHE_ELEMENTS-1.0f);
   uint8_t *cache_entry = &ctx_gradient_cache_u8[cache_no][0];
 
-  if (!(cache_entry[0] == 255 &&
-        cache_entry[1] == 2   &&
-        cache_entry[2] == 255 &&
-        cache_entry[3] == 0))
+  if (!(//cache_entry[0] == 255 &&
+        //cache_entry[1] == 2   &&
+        //cache_entry[2] == 255 &&
+        cache_entry[3] == 13))
   {
     rgba[0] = cache_entry[0];
     rgba[1] = cache_entry[1];
@@ -4190,9 +4198,11 @@ ctx_sample_gradient_1d_u8 (CtxRenderer *renderer, float v, uint8_t *rgba)
     return;
   }
 
+#if CTX_GRADIENT_CACHE
   /* force first and last cached entries to be end points */
   if (cache_no == 0) v = 0.0f;
   else if (cache_no == CTX_GRADIENT_CACHE_ELEMENTS-1) v = 1.0f;
+#endif
 
   CtxGradientStop *stop      = NULL;
   CtxGradientStop *next_stop = &g->stops[0];
@@ -4550,10 +4560,10 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
   {
     for (int x = 0; x < count; x++)
     {
-      int cov = *coverage;;
+      int cov = *coverage;
       if (cov)
       {
-        if (cov == 255)
+        if (cov >= 245)
         {
           *((uint32_t*)dst) = *((uint32_t*)color);
         }
@@ -7400,6 +7410,7 @@ _ctx_text (Ctx        *ctx,
       {
         y += ctx->state.gstate.font_size * state->gstate.line_spacing;
         x = x0;
+	x = ctx_ceilf (x);
         ctx_move_to (ctx, x, y);
       }
       else
@@ -7412,6 +7423,7 @@ _ctx_text (Ctx        *ctx,
         {
           x += ctx_glyph_width (ctx, unichar);
           x += ctx_glyph_kern (ctx, unichar, ctx_utf8_to_unichar (next_utf8));
+	  x = ctx_ceilf (x);
         }
       }
     }
