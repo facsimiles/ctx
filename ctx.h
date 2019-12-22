@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA      4   // 2 is fast, 3 slower 5 is good 15 is 8bit good  32 is 10bit
+#define CTX_RASTERIZER_AA      5   // 2 is fast, 3 slower 5 is good 15 is 8bit good  32 is 10bit
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -48,9 +48,9 @@ extern "C" {
 #endif
 
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  1
+#define CTX_RASTERIZER_FORCE_AA  0
 #endif
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    5120
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    512
 
 #define CTX_SUBDIV            8  // changing this changes font-file-format
 
@@ -78,11 +78,11 @@ extern "C" {
 
 
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   1024
+#define CTX_MIN_JOURNAL_SIZE   128
 #endif
 
 #ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   20480
+#define CTX_MAX_JOURNAL_SIZE   1024*8
 #endif
 
 #if CTX_BITPACK
@@ -1285,7 +1285,8 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
     new_size = CTX_MAX_JOURNAL_SIZE;
   if (renderstream->size == CTX_MAX_JOURNAL_SIZE)
     return;
-  ctx_log ("growing renderstream to %i\n", new_size);
+  if (new_size != CTX_MIN_JOURNAL_SIZE)
+    ctx_log ("growing renderstream %p to %i\n", renderstream, new_size);
   if (renderstream->size)
   {
     renderstream->entries = (CtxEntry*)realloc (renderstream->entries, sizeof (CtxEntry) * new_size);
@@ -2820,7 +2821,7 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
   last_history = ctx_last_history (renderstream);
 #endif
 #if CTX_BITPACK_PACKER
-  ctx_renderstream_bitpack (renderstream, last_history);
+    ctx_renderstream_bitpack (renderstream, last_history);
 #endif
 #if CTX_REFPACK
   int length_threshold = 4;
@@ -3232,7 +3233,7 @@ ctx_init (Ctx *ctx)
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
-  //ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
+  ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
 #endif
   ctx->renderstream.flags  |= CTX_TRANSFORMATION_REFPACK;
 #endif
@@ -3544,8 +3545,8 @@ struct _CtxShapeEntry {
 
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
-#define CTX_SHAPE_CACHE_DIM      24
-#define CTX_SHAPE_CACHE_ENTRIES  256
+#define CTX_SHAPE_CACHE_DIM      15
+#define CTX_SHAPE_CACHE_ENTRIES  140
 
 #define CTX_SHAPE_CACHE_PRIME1   11111
 #define CTX_SHAPE_CACHE_PRIME2   11121
@@ -4535,15 +4536,21 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
       {
 	float u = x0 + x;
 	float v = y;
-	ctx_matrix_apply_transform (&gstate->source.transform, &u, &v);
+	//ctx_matrix_apply_transform (&gstate->source.transform, &u, &v);
 
         source (renderer, u, v, &color[0]);
         if (color[3])
         {
-          color[3] = (color[3] * gstate->source.global_alpha)>>8;
-          color[0] = (color[0] * color[3])>>8;
-          color[1] = (color[1] * color[3])>>8;
-          color[2] = (color[2] * color[3])>>8;
+#if 0
+	  if ((gstate->source.global_alpha != 255) ||
+	      (color[3]!=255))
+	  {
+            color[3] = (color[3] * gstate->source.global_alpha)>>8;
+            color[0] = (color[0] * color[3])>>8;
+            color[1] = (color[1] * color[3])>>8;
+            color[2] = (color[2] * color[3])>>8;
+	  }
+#endif
           ctx_over_RGBA8 (dst, color, cov);
         }
       }
@@ -4663,10 +4670,14 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
         if (color[3])
         {
           ctx_swap_red_green (color);
-          color[3] = (color[3] * gstate->source.global_alpha)>>8;
-          color[0] = (color[0] * color[3])>>8;
-          color[1] = (color[1] * color[3])>>8;
-          color[2] = (color[2] * color[3])>>8;
+	  if ((gstate->source.global_alpha != 255 )||
+	      (color[3]!=255))
+	  {
+            color[3] = (color[3] * gstate->source.global_alpha)>>8;
+            color[0] = (color[0] * color[3])>>8;
+            color[1] = (color[1] * color[3])>>8;
+            color[2] = (color[2] * color[3])>>8;
+	  }
           ctx_over_RGBA8 (dst, color, cov);
         }
       }
@@ -4826,6 +4837,10 @@ ctx_renderer_apply_coverage (CtxRenderer *renderer,
                              uint8_t     *coverage,
                              int          count)
 {
+  if (x + count >= renderer->blit_x + renderer->blit_width)
+  {
+    count = renderer->blit_x + renderer->blit_width - x - 1;
+  }
   return renderer->format->crunch (renderer, x, dst, coverage, count);
 }
 
