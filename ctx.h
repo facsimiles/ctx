@@ -31,71 +31,133 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 
-#ifndef CTX_RASTERIZER  // set to 0 before including ctx to disable renderer code
+/* this first part of ctx.h contains definitions that determine which features
+ * are included and their settings, for particular platforms - in particular
+ * microcontrollers ctx might need tuning for different
+ * quality/performance/resource constraints.
+ *
+ * the way to configure ctx is to set these defines, before both including it
+ * as a header and in the file where CTX_IMPLEMENTATION is set to include the
+ * implementation for different featureset and runtime settings.
+ *
+ */
+
+
+#ifndef CTX_RASTERIZER  // set to 0 before to disable renderer code, useful for clients that only
+	                // build journals.
 #define CTX_RASTERIZER 1
 #endif
 
+/* vertical level of supersampling at full/forced AA.
+ *
+ * 1 is none, 2 is faster, 3 is fast 5 is good 15 is best for 8bit  32 is
+ * perhaps a decent max with current code
+ */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA      5   // 2 is fast, 3 slower 5 is good 15 is 8bit good  32 is 10bit
+#define CTX_RASTERIZER_AA      5
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
 #define CTX_RASTERIZER_AA3     (CTX_RASTERIZER_AA/2+CTX_RASTERIZER_AA%2)
 
-#ifndef CTX_RASTERIZER_AUTOHINT
-#define CTX_RASTERIZER_AUTOHINT   0 // should be made dynamic, only works
-                                    // without forced AA
-#endif
 
+/* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
 #define CTX_RASTERIZER_FORCE_AA  0
 #endif
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    512
 
+/* when AA is not forced, the slope below which full AA get enabled.
+ */
+#ifndef CTX_RASTERIZER_AA_SLOPE_LIMIT
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    512
+#endif
+
+/* subpixel-aa coordinates used in BITPACKing of renderstream
+ */
 #define CTX_SUBDIV            8  // changing this changes font-file-format
 
+/* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
+ */
 #define CTX_BAKE_FONT_SIZE   80
+
+/* pack some linetos/curvetos/movetos into denser renderstream indstructions,
+ * permitting more vectors to be stored in the same space.
+ */
+#ifndef CTX_BITPACK
 #define CTX_BITPACK           1
+#endif
+
+/* reference-packing, look for recurring patterns in renderstream and encode
+ * subsequent references as references to prior occurences. (currently slow
+ * and/or broken, thus disabled by default.)
+ */
 #ifndef CTX_REFPACK
 #define CTX_REFPACK           0
 #endif
 
-
+/* whether we have a shape-cache where we keep pre-rasterized bitmaps of commonly
+ * occuring small shapes.
+ */
 #ifndef CTX_SHAPE_CACHE
-#define CTX_SHAPE_CACHE 0
+#define CTX_SHAPE_CACHE    1
 #endif
 
+/* size (in pixels, w*h) that we cache rasterization for
+ */
+#ifndef CTX_SHAPE_CACHE_DIM
+#define CTX_SHAPE_CACHE_DIM      (16*16)
+#endif
+
+/* maximum number of entries in shape cache
+ */
+#ifndef CTX_SHAPE_CACHE_ENTRIES
+#define CTX_SHAPE_CACHE_ENTRIES  160
+#endif
+
+/* implement a chache for gradient rendering; that cuts down the
+ * per-pixel cost for complex gradients
+ */
 #ifndef CTX_GRADIENT_CACHE
 #define CTX_GRADIENT_CACHE 1
 #endif
 
+/* when ctx_math is defined, which it is by default, we use ctx' own
+ * implementations of math functions, instead of relying on math.h
+ * the possible inlining gives us a slight speed-gain, and on
+ * embedded platforms guarantees that we do not do double precision
+ * math.
+ */
 #ifndef CTX_MATH
-#define CTX_MATH              1  // use internal fast math for sqrt,sin,cos,atan2f etc.
+#define CTX_MATH           1  // use internal fast math for sqrt,sin,cos,atan2f etc.
 #endif
 
 #define ctx_log(fmt, ...)
 //#define ctx_log(str, a...) fprintf(stderr, str, ##a)
 
-
+/* the initial journal size - for both rasterizer
+ * edgelist and renderstram.
+ */
 #ifndef CTX_MIN_JOURNAL_SIZE
 #define CTX_MIN_JOURNAL_SIZE   128
 #endif
 
+/* The maximum size we permit the renderstream to grow to
+ */
 #ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   1024*8
+#define CTX_MAX_JOURNAL_SIZE   1024*10
 #endif
 
-#if CTX_BITPACK
-   // should be possible to cut out for more minimal builds
-#ifndef CTX_BITPACK_PACKER
-#define CTX_BITPACK_PACKER 1
-#endif
-#endif
-
+/* whether we dither or not for gradients
+ */
 #ifndef CTX_DITHER
 #define CTX_DITHER 1
 #endif
 
+/* by default ctx includes all pixel formats, on microcontrollers
+ * it can be useful to slim down code and runtime size by only
+ * defining the used formats, set CTX_LIMIT_FORMATS to 1, and
+ * manually add CTX_ENABLE_ flags for each of them.
+ */
 #ifndef CTX_LIMIT_FORMATS
 
 #define CTX_ENABLE_GRAY8                1
@@ -114,9 +176,22 @@ extern "C" {
 
 #endif
 
-#define CTX_RASTERIZER_EDGE_MULTIPLIER    1024
+#define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
+
+/* by including ctx-font-regular.h, or ctx-font-mono.h the
+ * built-in fonts using ctx renderstream encoding is enabled
+ */
+#if CTX_FONT_regular || CTX_FONT_mono || CTX_FONT_bold \
+  || CTX_FONT_italic || CTX_FONT_sans || CTX_FONT_serif
+#ifndef CTX_FONT_ENGINE_CTX
+  #define CTX_FONT_ENGINE_CTX        1
+#endif
+#endif
 
 
+/* If stb_strutype.h is included before ctx.h add integration code for runtime loading
+ * of opentype fonts.
+ */
 #ifdef __STB_INCLUDE_STB_TRUETYPE_H__
   #ifndef CTX_FONT_ENGINE_STB
     #define CTX_FONT_ENGINE_STB      1
@@ -125,28 +200,34 @@ extern "C" {
   #define CTX_FONT_ENGINE_STB        0
 #endif
 
-#if CTX_FONT_regular || CTX_FONT_mono || CTX_FONT_bold \
-  || CTX_FONT_italic || CTX_FONT_sans || CTX_FONT_serif
-#ifndef CTX_FONT_ENGINE_CTX
-  #define CTX_FONT_ENGINE_CTX        1
-#endif
-#endif
-
-// forced on for shape cache
+/* force add format if we have shape cache */
+#if CTX_SHAPE_CACHE
 #ifdef CTX_ENABLE_GRAY8
 #undef CTX_ENABLE_GRAY8
 #endif
 #define CTX_ENABLE_GRAY8  1
+#endif
 
+/* include the bitpack packer, can be opted out of to decrease code size
+ */
+#ifndef CTX_BITPACK_PACKER
+#define CTX_BITPACK_PACKER 1
+#endif
 
+/* enable RGBA8 intermediate format for
+ *the indirectly implemented pixel-formats.
+ */
 #if CTX_ENABLE_GRAY1 | CTX_ENABLE_GRAY2 | CTX_ENABLE_GRAY4 | CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED | CTX_ENABLE_RGB8 | CTX_ENABLE_RGB332
 
 #ifdef CTX_ENABLE_RGBA8
-#define CTX_ENABLE_RGBA8 1
+#undef CTX_ENABLE_RGBA8
 #endif
+#define CTX_ENABLE_RGBA8  1
 
 #endif
 
+/* If cairo.h is included before ctx.h add cairo integration code
+ */
 #ifdef CAIRO_H
 #define CTX_CAIRO 1
 #else
@@ -475,6 +556,9 @@ typedef enum
   CTX_FILL_MOVE_TO              = 'e',
   CTX_REL_QUAD_TO_REL_QUAD_TO   = 'U',
   CTX_REL_QUAD_TO_S16           = 'V',
+
+
+  CTX_SET_PIXEL                 = '9',
 #endif
 
   CTX_FLUSH                     = 0,
@@ -671,7 +755,7 @@ struct PACKED _CtxEntry
 #if CTX_EXTRAS
 
 char *ctx_commands[]={
-"#clip", "|edge", "!fill_edges", "%blit_rect", "rfg", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", NULL
+"#clip", "|edge", "!fill_edges", "%blit_rect", "rfg", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", "set_pixel", NULL
 };
 
 #endif
@@ -1231,7 +1315,6 @@ ctx_iterator_next (CtxIterator *iterator)
       iterator->bitpack_length = 3;
       goto again;
 
-
     default:
       iterator->bitpack_command[0] = *ret;
       iterator->bitpack_pos = 0;
@@ -1275,6 +1358,8 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
   ctx_renderstream_refpack (renderstream);
   if (new_size < renderstream->size)
     return;
+  if (renderstream->size == CTX_MAX_JOURNAL_SIZE)
+    return;
 
   if (new_size < CTX_MIN_JOURNAL_SIZE)
     new_size = CTX_MIN_JOURNAL_SIZE;
@@ -1283,17 +1368,26 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
 
   if (new_size >= CTX_MAX_JOURNAL_SIZE)
     new_size = CTX_MAX_JOURNAL_SIZE;
-  if (renderstream->size == CTX_MAX_JOURNAL_SIZE)
-    return;
   if (new_size != CTX_MIN_JOURNAL_SIZE)
-    ctx_log ("growing renderstream %p to %i\n", renderstream, new_size);
-  if (renderstream->size)
   {
-    renderstream->entries = (CtxEntry*)realloc (renderstream->entries, sizeof (CtxEntry) * new_size);
+    //ctx_log ("growing renderstream %p to %d\n", renderstream, new_size);
+  }
+  if (renderstream->entries)
+  {
+    //printf ("grow %p to %d from %d\n", renderstream, new_size, renderstream->size);
+    CtxEntry * ne =  (CtxEntry*)malloc (sizeof (CtxEntry) * new_size);
+    memcpy (ne, renderstream->entries, renderstream->size * sizeof (CtxEntry));
+    free (renderstream->entries);
+    renderstream->entries = ne;
+    //renderstream->entries = (CtxEntry*)malloc (renderstream->entries, sizeof (CtxEntry) * new_size);
   }
   else
+  {
+    //printf ("allocating for %p %d\n", renderstream, new_size);
     renderstream->entries = (CtxEntry*)malloc (sizeof (CtxEntry) * new_size);
+  }
   renderstream->size = new_size;
+  //printf ("renderstream %p is %d\n", renderstream, renderstream->size);
 }
 
 int
@@ -1312,14 +1406,13 @@ ctx_renderstream_add (CtxRenderstream *renderstream, CtxCode code)
   return ret;
 }
 
-
-
 static int
 ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
   int ret = renderstream->count;
 
-  if (renderstream->count == CTX_MAX_JOURNAL_SIZE)
+  if (renderstream->count == CTX_MAX_JOURNAL_SIZE ||
+      (renderstream->flags & CTX_JOURNAL_DOESNT_OWN_ENTRIES))
     return ret;
   if (ret + 6 >= renderstream->size)
   {
@@ -1362,7 +1455,7 @@ int ctx_set_renderstream (Ctx *ctx, void *data, int length)
     return -1;
   }
   ctx->renderstream.count = 0;
-  for (int i = 0; i < length / sizeof(CtxEntry); i++)
+  for (unsigned int i = 0; i < length / sizeof(CtxEntry); i++)
   {
     ctx_renderstream_add_single (&ctx->renderstream, &entries[i]);
   }
@@ -2104,7 +2197,6 @@ void ctx_set_rgb (Ctx *ctx, float   r, float   g, float   b)
 
 void ctx_set_gray (Ctx *ctx, float gray)
 {
-  /* XXX we'd expect set gray of 0.5 to set 50 gray! */
   ctx_set_rgba (ctx, gray, gray, gray, 1.0f);
 }
 
@@ -2360,7 +2452,6 @@ ctx_user_to_device_distance (CtxState *state, float *x, float *y)
   *y -= m->m[2][1];
 }
 
-
 #if CTX_BITPACK_PACKER
 
 static float
@@ -2396,7 +2487,6 @@ pack_s16_args (CtxEntry *entry, int16_t *args, int npairs)
       args[c*2+d]=entry[c].data.f[d] * CTX_SUBDIV;
 }
 
-
 static void
 ctx_renderstream_remove_tiny_curves (CtxRenderstream *renderstream, int start_pos)
 {
@@ -2410,8 +2500,7 @@ ctx_renderstream_remove_tiny_curves (CtxRenderstream *renderstream, int start_po
   while ((command = ctx_iterator_next(&iterator)))
   {
     /* things smaller than this have probably been scaled down
-       beyond recognition, bailing on the geometry here makes it
-       pack better and is less rendering work
+       beyond recognition, bailing for both better packing and less rasterization work
      */
     if (command[0].code == CTX_REL_CURVE_TO)
     {
@@ -3527,6 +3616,7 @@ static inline int ctx_renderer_add_point (CtxRenderer *renderer, int x1, int y1)
   return ctx_renderstream_add_u32 (&renderer->edge_list, CTX_EDGE, (uint32_t*)args);
 }
 
+float ctx_shape_cache_rate = 0.0;
 #if CTX_SHAPE_CACHE
 
 static uint32_t ctx_shape_time = 0;
@@ -3545,8 +3635,6 @@ struct _CtxShapeEntry {
 
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
-#define CTX_SHAPE_CACHE_DIM      15
-#define CTX_SHAPE_CACHE_ENTRIES  140
 
 #define CTX_SHAPE_CACHE_PRIME1   11111
 #define CTX_SHAPE_CACHE_PRIME2   11121
@@ -3569,12 +3657,23 @@ static CtxShapeCache ctx_cache = {{NULL,}, 0};
 static long hits = 0;
 static long misses = 0;
 
+
 /* this returns the buffer to use for rendering, it always
    succeeds..
  */
 static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height, uint32_t time) {
   int entry_no = hash % CTX_SHAPE_CACHE_ENTRIES;
   int i;
+
+    {
+      static int i = 0;
+      i++;
+      if (i>512)
+      {
+        ctx_shape_cache_rate = hits * 100.0  / (hits+misses);
+	i = 0; hits = 0; misses = 0;
+      }
+    }
 
   i = entry_no;
   if (ctx_cache.entries[i])
@@ -5211,7 +5310,7 @@ ctx_renderer_fill (CtxRenderer *renderer)
   int height = (renderer->scan_max + (CTX_RASTERIZER_AA-1)) / CTX_RASTERIZER_AA - renderer->scan_min / CTX_RASTERIZER_AA;
 
 #if CTX_SHAPE_CACHE
-  if (width * height < CTX_SHAPE_CACHE_DIM * CTX_SHAPE_CACHE_DIM  && width >=1 && height >= 1)
+  if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1)
   {
     int scan_min = renderer->scan_min;
     int col_min = renderer->col_min;
@@ -6427,7 +6526,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 static CtxPixelFormatInfo *
 ctx_pixel_format_info (CtxPixelFormat format)
 {
-  for (int i = 0; i < sizeof (ctx_pixel_formats)/sizeof(ctx_pixel_formats[0]);i++)
+  for (unsigned int i = 0; i < sizeof (ctx_pixel_formats)/sizeof(ctx_pixel_formats[0]);i++)
   {
     if (ctx_pixel_formats[i].pixel_format == format)
     {
@@ -6924,7 +7023,8 @@ ctx_load_font_ttf (Ctx *ctx, const char *name, const uint8_t *ttf_contents)
   if (ctx_font_count >= CTX_MAX_FONTS)
     return -1;
   ctx_fonts[ctx_font_count].type = 1;
-  ctx_fonts[ctx_font_count].name = strdup (name);
+  ctx_fonts[ctx_font_count].name = malloc (strlen (name) + 1);
+  strcpy ((char*)ctx_fonts[ctx_font_count].name, name);
   if (!stbtt_InitFont(&ctx_fonts[ctx_font_count].stb.ttf_info, ttf_contents, 0))
     {
       ctx_log( "Font init failed\n");
@@ -7192,7 +7292,7 @@ ctx_glyph_width_ctx (Ctx *ctx, CtxFont *font, int unichar)
   {
     CtxEntry *entry = (CtxEntry*)&font->ctx.data[i];
     if (entry->code == '@')
-      if (entry->data.u32[0] == unichar)
+      if (entry->data.u32[0] == (unsigned)unichar)
         return (entry->data.u32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE);
   }
   return 0.0;
@@ -7258,7 +7358,6 @@ done:
     }
   }
 goto done; // for the last glyph in a font
-  ctx_assert (0);
   return -1;
 }
 
@@ -7305,7 +7404,8 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
   if (ctx_font_count >= CTX_MAX_FONTS)
     return -1;
   ctx_fonts[ctx_font_count].type = 0;
-  ctx_fonts[ctx_font_count].name = strdup (name);
+  ctx_fonts[ctx_font_count].name = malloc (strlen (name)+1);
+  strcpy ((char*)ctx_fonts[ctx_font_count].name, name);//strdup (name);
   ctx_fonts[ctx_font_count].ctx.data = (CtxEntry*)data;
   ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
   ctx_font_init_ctx (&ctx_fonts[ctx_font_count]);
@@ -7786,14 +7886,14 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
       case CTX_CURVE_TO:
         ctx_curve_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                            ctx_arg_float(2), ctx_arg_float(3),
-                            ctx_arg_float(4), ctx_arg_float(5));
+                             ctx_arg_float(2), ctx_arg_float(3),
+                             ctx_arg_float(4), ctx_arg_float(5));
         break;
 
       case CTX_REL_CURVE_TO:
         ctx_rel_curve_to (d_ctx,ctx_arg_float(0), ctx_arg_float(1),
-                               ctx_arg_float(2), ctx_arg_float(3),
-                               ctx_arg_float(4), ctx_arg_float(5));
+                                ctx_arg_float(2), ctx_arg_float(3),
+                                ctx_arg_float(4), ctx_arg_float(5));
         break;
 
       case CTX_QUAD_TO:
@@ -7835,8 +7935,8 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
       case CTX_ARC:
         ctx_arc (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                       ctx_arg_float(2), ctx_arg_float(3),
-                       ctx_arg_float(4), ctx_arg_float(5));
+                        ctx_arg_float(2), ctx_arg_float(3),
+                        ctx_arg_float(4), ctx_arg_float(5));
         break;
 
       case CTX_SET_RGBA:
@@ -7848,16 +7948,16 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
       case CTX_RECTANGLE:
         ctx_rectangle (d_ctx,ctx_arg_float(0),
-                            ctx_arg_float(1),
-                            ctx_arg_float(2),
-                            ctx_arg_float(3));
+                             ctx_arg_float(1),
+                             ctx_arg_float(2),
+                             ctx_arg_float(3));
         break;
 
       case CTX_BLIT_RECT:
         ctx_rectangle (d_ctx,ctx_arg_s16(0)/CTX_SUBDIV,
-                            ctx_arg_s16(1)/CTX_SUBDIV,
-                            ctx_arg_s16(2)/CTX_SUBDIV,
-                            ctx_arg_s16(3)/CTX_SUBDIV);
+                             ctx_arg_s16(1)/CTX_SUBDIV,
+                             ctx_arg_s16(2)/CTX_SUBDIV,
+                             ctx_arg_s16(3)/CTX_SUBDIV);
         ctx_fill (d_ctx);
         break;
 
@@ -7947,35 +8047,35 @@ static void ctx_setup ()
   ctx_font_count = 0; // oddly - this is needed in arduino
 #if CTX_FONT_regular
   ctx_load_font_ctx ("regular", ctx_font_regular,
-                        sizeof (ctx_font_regular));
+                     sizeof (ctx_font_regular));
 #endif
 #if CTX_FONT_mono
   ctx_load_font_ctx ("mono", ctx_font_mono,
-                        sizeof (ctx_font_mono));
+                     sizeof (ctx_font_mono));
 #endif
 #if CTX_FONT_bold
   ctx_load_font_ctx ("bold", ctx_font_bold,
-                        sizeof (ctx_font_bold));
+                     sizeof (ctx_font_bold));
 #endif
 #if CTX_FONT_italic
   ctx_load_font_ctx ("italic", ctx_font_italic,
-                        sizeof (ctx_font_italic));
+                     sizeof (ctx_font_italic));
 #endif
 #if CTX_FONT_sans
   ctx_load_font_ctx ("sans", ctx_font_sans,
-                        sizeof (ctx_font_sans));
+                     sizeof (ctx_font_sans));
 #endif
 #if CTX_FONT_serif
   ctx_load_font_ctx ("serif", ctx_font_serif,
-                        sizeof (ctx_font_serif));
+                     sizeof (ctx_font_serif));
 #endif
 #if CTX_FONT_symbol
   ctx_load_font_ctx ("symbol", ctx_font_symbol,
-                        sizeof (ctx_font_symbol));
+                     sizeof (ctx_font_symbol));
 #endif
 #if CTX_FONT_emoji
   ctx_load_font_ctx ("emoji", ctx_font_emoji,
-                        sizeof (ctx_font_emoji));
+                     sizeof (ctx_font_emoji));
 #endif
 #endif
 #if CTX_FONT_sgi

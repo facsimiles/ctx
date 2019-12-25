@@ -5,7 +5,7 @@
  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghi
   jklmnopqrstuvwxyz{|}~ ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔ
   ÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ  */
-struct __attribute__ ((packed)) {uint8_t code; uint32_t a; uint32_t b;}
+static const struct __attribute__ ((packed)) {uint8_t code; uint32_t a; uint32_t b;}
 ctx_font_regular[]={
 {'@', 0x00000020, 0x000015d8},/*                 x-advance: 21.843750 */
 {'@', 0x00000021, 0x00001b8c},/*        !        x-advance: 27.546875 */

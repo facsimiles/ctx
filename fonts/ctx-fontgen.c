@@ -151,7 +151,7 @@ char* string = "☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬
 
   printf ("  */\n");
 
-  printf ("struct __attribute__ ((packed)) {uint8_t code; uint32_t a; uint32_t b;}\nctx_font_%s[]={\n", name);
+  printf ("static const struct __attribute__ ((packed)) {uint8_t code; uint32_t a; uint32_t b;}\nctx_font_%s[]={\n", name);
 
   for (int i = 0; i < output_font.count; i++)
   {
