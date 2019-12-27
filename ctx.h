@@ -147,6 +147,18 @@ extern "C" {
 #define CTX_MAX_JOURNAL_SIZE   1024*10
 #endif
 
+
+
+#ifndef CTX_MIN_EDGE_LIST_SIZE
+#define CTX_MIN_EDGE_LIST_SIZE   128
+#endif
+
+/* The maximum size we permit the renderstream to grow to
+ */
+#ifndef CTX_MAX_EDGE_LIST_SIZE
+#define CTX_MAX_EDGE_LIST_SIZE   1024
+#endif
+
 /* whether we dither or not for gradients
  */
 #ifndef CTX_DITHER
@@ -240,6 +252,7 @@ extern "C" {
 #ifndef CTX_MAX_FONTS
 #define CTX_MAX_FONTS        3
 #endif
+
 #define CTX_MAX_STATES       16
 #define CTX_MAX_EDGES        257
 #define CTX_MAX_GRADIENTS    1
@@ -390,7 +403,7 @@ void ctx_paint          (Ctx *ctx);
 //void ctx_set_gradient_no     (Ctx *ctx, int no);
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
 void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
-                                        float x1, float y1, float r1);
+                                    float x1, float y1, float r1);
 void ctx_gradient_clear_stops (Ctx *ctx);
 void ctx_gradient_add_stop    (Ctx *ctx, float pos, float r, float g, float b, float a);
 
@@ -884,7 +897,8 @@ typedef enum {
   CTX_TRANSFORMATION_REFPACK      = 8,
 } CtxTransformation;
 
-#define CTX_JOURNAL_DOESNT_OWN_ENTRIES   64
+#define CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES   64
+#define CTX_RENDERSTREAM_EDGE_LIST            128
 
 struct _CtxRenderstream
 {
@@ -1355,20 +1369,29 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
 {
   int new_size = desired_size;
 
+  int min_size = CTX_MIN_JOURNAL_SIZE;
+  int max_size = CTX_MAX_JOURNAL_SIZE;
+
+  if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
+  {
+    min_size = CTX_MIN_EDGE_LIST_SIZE;
+    max_size = CTX_MAX_EDGE_LIST_SIZE;
+  }
+
   ctx_renderstream_refpack (renderstream);
   if (new_size < renderstream->size)
     return;
-  if (renderstream->size == CTX_MAX_JOURNAL_SIZE)
+  if (renderstream->size == max_size)
     return;
 
-  if (new_size < CTX_MIN_JOURNAL_SIZE)
-    new_size = CTX_MIN_JOURNAL_SIZE;
+  if (new_size < min_size)
+    new_size = min_size;
   if (new_size < renderstream->count)
     new_size = renderstream->count + 4;
 
-  if (new_size >= CTX_MAX_JOURNAL_SIZE)
-    new_size = CTX_MAX_JOURNAL_SIZE;
-  if (new_size != CTX_MIN_JOURNAL_SIZE)
+  if (new_size >= max_size)
+    new_size = max_size;
+  if (new_size != min_size)
   {
     //ctx_log ("growing renderstream %p to %d\n", renderstream, new_size);
   }
@@ -1409,17 +1432,26 @@ ctx_renderstream_add (CtxRenderstream *renderstream, CtxCode code)
 static int
 ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
+  int min_size = CTX_MIN_JOURNAL_SIZE;
+  int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = renderstream->count;
 
-  if (renderstream->count == CTX_MAX_JOURNAL_SIZE ||
-      (renderstream->flags & CTX_JOURNAL_DOESNT_OWN_ENTRIES))
+  if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
+  {
+    min_size = CTX_MIN_EDGE_LIST_SIZE;
+    max_size = CTX_MAX_EDGE_LIST_SIZE;
+  }
+
+  if (renderstream->count >= max_size ||
+      (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES))
     return ret;
   if (ret + 6 >= renderstream->size)
   {
     ctx_renderstream_resize (renderstream, renderstream->size * 2);
     ret = renderstream->count;
   }
-  if (renderstream->count == CTX_MAX_JOURNAL_SIZE)
+  // XXX : investigate corner cases around this
+  if (renderstream->count >= max_size)
     return ret;
 
   renderstream->entries[renderstream->count] = *entry;
@@ -3345,7 +3377,7 @@ ctx_new (void)
 void
 ctx_renderstream_deinit (CtxRenderstream *renderstream)
 {
-  if (renderstream->entries && !(renderstream->flags & CTX_JOURNAL_DOESNT_OWN_ENTRIES))
+  if (renderstream->entries && !(renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES))
     free (renderstream->entries);
   renderstream->entries = NULL;
 }
@@ -3378,7 +3410,7 @@ void ctx_free (Ctx *ctx)
 Ctx *ctx_new_for_renderstream (void *data, size_t length)
 {
   Ctx *ctx = ctx_new ();
-  ctx->renderstream.flags |= CTX_JOURNAL_DOESNT_OWN_ENTRIES;
+  ctx->renderstream.flags |= CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES;
   ctx->renderstream.entries = (CtxEntry*)data;
   ctx->renderstream.count   = length / sizeof (CtxEntry);
   return ctx;
@@ -6540,6 +6572,7 @@ static void
 ctx_renderer_init (CtxRenderer *renderer, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
 {
   memset (renderer, 0, sizeof (CtxRenderer));
+  renderer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   renderer->edge_pos    = 0;
   renderer->state       = state;
   ctx_state_init (renderer->state);
@@ -6582,6 +6615,9 @@ ctx_new_for_framebuffer (void *data, int width, int height,
 //
 static  CtxState    state;
 
+
+/* add an or-able value to pixelformat to indicate vflip+hflip
+ */
 void
 ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
           int stride, CtxPixelFormat pixel_format)
@@ -8005,13 +8041,13 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         break;
       case CTX_LINEAR_GRADIENT:
         ctx_linear_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                             ctx_arg_float(2), ctx_arg_float(3));
+                                    ctx_arg_float(2), ctx_arg_float(3));
         ctx_gradient_clear_stops (d_ctx);
         break;
       case CTX_RADIAL_GRADIENT:
         ctx_radial_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                                  ctx_arg_float(2), ctx_arg_float(3),
-                                  ctx_arg_float(4), ctx_arg_float(5));
+                                    ctx_arg_float(2), ctx_arg_float(3),
+                                    ctx_arg_float(4), ctx_arg_float(5));
         ctx_gradient_clear_stops (d_ctx);
         break;
       case CTX_GRADIENT_STOP:
