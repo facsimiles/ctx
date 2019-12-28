@@ -72,6 +72,10 @@ extern "C" {
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT    512
 #endif
 
+#ifndef CTX_RASTERIZER_ROT180
+#define CTX_RASTERIZER_ROT180 0
+#endif
+
 /* subpixel-aa coordinates used in BITPACKing of renderstream
  */
 #define CTX_SUBDIV            8  // changing this changes font-file-format
@@ -253,11 +257,25 @@ extern "C" {
 #define CTX_MAX_FONTS        3
 #endif
 
+#ifndef CTX_MAX_STATES
 #define CTX_MAX_STATES       16
+#endif
+
+#ifndef CTX_MAX_EDGES
 #define CTX_MAX_EDGES        257
+#endif
+
+#ifndef CTX_MAX_GRADIENTS
 #define CTX_MAX_GRADIENTS    1
+#endif
+
+#ifndef CTX_MAX_TEXTURES
 #define CTX_MAX_TEXTURES     1
+#endif
+
+#ifndef CTX_MAX_PENDING
 #define CTX_MAX_PENDING      128
+#endif
 
 #ifndef CTX_EXTRAS
 #define CTX_EXTRAS  0
@@ -924,6 +942,90 @@ struct _CtxState {
   int       has_moved;
   CtxGradient gradient[CTX_MAX_GRADIENTS];
 };
+#if CTX_RASTERIZER
+
+typedef struct CtxEdge {
+  int32_t  x;     /* the center-line intersection      */
+  int32_t  dx;
+  uint16_t index;
+} CtxEdge;
+
+
+struct _CtxRenderer {
+  /* these should be initialized and used as the bounds for rendering into the
+     buffer as well XXX: not yet in use, and when in use will only be
+     correct for axis aligned clips - proper rasterization of a clipping path
+     would be yet another refinement on top.
+   */
+  int      clip_min_x;
+  int      clip_min_y;
+  int      clip_max_x;
+  int      clip_max_y;
+
+  CtxEdge  lingering[CTX_MAX_EDGES];
+  int      lingering_edges;  // previous half scanline
+
+  CtxEdge  edges[CTX_MAX_EDGES];
+  int      active_edges;
+  int      pending_edges;    // next half scanline
+
+  int      edge_pos;         // where we're at in iterating all edges
+
+  int      scanline;
+  int      scan_min;
+  int      scan_max;
+  int      col_min;
+  int      col_max;
+  int      needs_aa;         // count of how many edges implies antialiasing
+
+  CtxRenderstream edge_list;
+  CtxState  *state;
+
+  void      *buf;
+  float      x;
+  float      y;
+
+  float      first_x;
+  float      first_y;
+  int        has_shape;
+  int        has_prev;
+
+  int        uses_transforms;
+
+  int        blit_x;
+  int        blit_y;
+  int        blit_width;
+  int        blit_height;
+  int        blit_stride;
+
+  CtxBuffer  texture[CTX_MAX_TEXTURES];
+
+  CtxPixelFormatInfo *format;
+};
+
+struct _CtxPixelFormatInfo
+{
+  CtxPixelFormat pixel_format;
+  uint8_t        components; /* number of components */
+  uint8_t        bpp; /* bits  per pixel - for doing offset computations
+                         along with rowstride found elsewhere, if 0 it indicates
+                         1/8  */
+  uint8_t        ebpp; /*effective bytes per pixel - for doing offset
+                         computations, for formats that get converted, the
+                         ebpp of the working space applied */
+  uint8_t        dither_red_blue;
+  uint8_t        dither_green;
+  void     (*to_rgba8)(CtxRenderer *renderer,
+                       int x, const void *buf, uint8_t *rgba, int count);
+  void     (*from_rgba8)(CtxRenderer *renderer,
+                         int x, void *buf, const uint8_t *rgba, int count);
+
+  int      (*crunch)(CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage,
+                     int count);
+};
+
+
+#endif
 
 struct _Ctx {
   CtxRenderstream   renderstream;
@@ -2292,6 +2394,62 @@ void ctx_gradient_add_stop
 #include <stdio.h>
 #include <unistd.h>
 
+#if CTX_RASTERIZER_ROT180
+static void ctx_renderer_rot180 (CtxRenderer *renderer)
+{
+    switch (renderer->format->bpp) {
+#if 0
+      case 8:
+      {
+	uint8_t *head = (uint8_t*)renderer->buf;
+	int       count = renderer->blit_height * renderer->blit_width;
+	uint8_t *tail = head + count - 1;
+	for (int i = 0; i < count/2; i ++)
+            {
+	      uint8_t temp = *head;
+	      *head = *tail;
+	      *tail = temp;
+	      head++;
+	      tail--;
+	    }
+      }
+#endif
+      case 16:
+      {
+	uint16_t *head = (uint16_t*)renderer->buf;
+	int       count = renderer->blit_height * renderer->blit_width;
+	uint16_t *tail = head + count - 1;
+	for (int i = 0; i < count/2; i ++)
+            {
+	      uint16_t temp = *head;
+	      *head = *tail;
+	      *tail = temp;
+	      head++;
+	      tail--;
+	    }
+      }
+      break;
+#if 0
+      case 32:
+      {
+	uint32_t *head = (uint32_t*)renderer->buf;
+	int       count = renderer->blit_height * renderer->blit_width;
+	uint32_t *tail = head + count - 1;
+	for (int i = 0; i < count/2; i ++)
+            {
+	      uint32_t temp = *head;
+	      *head = *tail;
+	      *tail = temp;
+	      head++;
+	      tail--;
+	    }
+      }
+      break;
+#endif
+    }
+  }
+#endif
+
 void
 ctx_flush (Ctx *ctx)
 {
@@ -2312,6 +2470,11 @@ ctx_flush (Ctx *ctx)
   printf ("Xx.Xx.Xx.");
   fflush (NULL);
 #endif
+#if CTX_RASTERIZER_ROT180
+  if (ctx->renderer)
+    ctx_renderer_rot180 (ctx->renderer);
+#endif
+
   ctx->renderstream.count = 0;
   ctx_state_init (&ctx->state);
 }
@@ -3419,84 +3582,6 @@ Ctx *ctx_new_for_renderstream (void *data, size_t length)
 #if CTX_RASTERIZER
 ////////////////////////////////////
 
-typedef struct CtxEdge {
-  int32_t  x;     /* the center-line intersection      */
-  int32_t  dx;
-  uint16_t index;
-} CtxEdge;
-
-struct _CtxPixelFormatInfo
-{
-  CtxPixelFormat pixel_format;
-  uint8_t        components; /* number of components */
-  uint8_t        bpp; /* bits  per pixel - for doing offset computations
-                         along with rowstride found elsewhere, if 0 it indicates
-                         1/8  */
-  uint8_t        ebpp; /*effective bytes per pixel - for doing offset
-                         computations, for formats that get converted, the
-                         ebpp of the working space applied */
-  uint8_t        dither_red_blue;
-  uint8_t        dither_green;
-  void     (*to_rgba8)(CtxRenderer *renderer,
-                       int x, const void *buf, uint8_t *rgba, int count);
-  void     (*from_rgba8)(CtxRenderer *renderer,
-                         int x, void *buf, const uint8_t *rgba, int count);
-
-  int      (*crunch)(CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage,
-                     int count);
-};
-
-struct _CtxRenderer {
-  /* these should be initialized and used as the bounds for rendering into the
-     buffer as well XXX: not yet in use, and when in use will only be
-     correct for axis aligned clips - proper rasterization of a clipping path
-     would be yet another refinement on top.
-   */
-  int      clip_min_x;
-  int      clip_min_y;
-  int      clip_max_x;
-  int      clip_max_y;
-
-  CtxEdge  lingering[CTX_MAX_EDGES];
-  int      lingering_edges;  // previous half scanline
-
-  CtxEdge  edges[CTX_MAX_EDGES];
-  int      active_edges;
-  int      pending_edges;    // next half scanline
-
-  int      edge_pos;         // where we're at in iterating all edges
-
-  int      scanline;
-  int      scan_min;
-  int      scan_max;
-  int      col_min;
-  int      col_max;
-  int      needs_aa;         // count of how many edges implies antialiasing
-
-  CtxRenderstream edge_list;
-  CtxState  *state;
-
-  void      *buf;
-  float      x;
-  float      y;
-
-  float      first_x;
-  float      first_y;
-  int        has_shape;
-  int        has_prev;
-
-  int        uses_transforms;
-
-  int        blit_x;
-  int        blit_y;
-  int        blit_width;
-  int        blit_height;
-  int        blit_stride;
-
-  CtxBuffer  texture[CTX_MAX_TEXTURES];
-
-  CtxPixelFormatInfo *format;
-};
 
 static CtxPixelFormatInfo *
 ctx_pixel_format_info (CtxPixelFormat format);
@@ -6635,6 +6720,10 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
   while ((entry = ctx_iterator_next(&iterator)))
     ctx_renderer_process (renderer, entry);
 
+#if CTX_RASTERIZER_ROT180
+    ctx_renderer_rot180 (renderer);
+#endif
+
   ctx_renderer_deinit (renderer);
   free (renderer);
   free (state);
@@ -7059,7 +7148,7 @@ ctx_load_font_ttf (Ctx *ctx, const char *name, const uint8_t *ttf_contents)
   if (ctx_font_count >= CTX_MAX_FONTS)
     return -1;
   ctx_fonts[ctx_font_count].type = 1;
-  ctx_fonts[ctx_font_count].name = malloc (strlen (name) + 1);
+  ctx_fonts[ctx_font_count].name = (char*)malloc (strlen (name) + 1);
   strcpy ((char*)ctx_fonts[ctx_font_count].name, name);
   if (!stbtt_InitFont(&ctx_fonts[ctx_font_count].stb.ttf_info, ttf_contents, 0))
     {
@@ -7440,7 +7529,7 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
   if (ctx_font_count >= CTX_MAX_FONTS)
     return -1;
   ctx_fonts[ctx_font_count].type = 0;
-  ctx_fonts[ctx_font_count].name = malloc (strlen (name)+1);
+  ctx_fonts[ctx_font_count].name = (char *)malloc (strlen (name)+1);
   strcpy ((char*)ctx_fonts[ctx_font_count].name, name);//strdup (name);
   ctx_fonts[ctx_font_count].ctx.data = (CtxEntry*)data;
   ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
