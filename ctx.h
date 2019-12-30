@@ -151,7 +151,9 @@ extern "C" {
 #define CTX_MAX_JOURNAL_SIZE   1024*10
 #endif
 
-
+#ifndef CTX_RENDERSTREAM_STATIC
+#define CTX_RENDERSTREAM_STATIC 0
+#endif
 
 #ifndef CTX_MIN_EDGE_LIST_SIZE
 #define CTX_MIN_EDGE_LIST_SIZE   128
@@ -1465,10 +1467,26 @@ static inline void ctx_interpret_transforms (CtxState *state, CtxEntry *entry, v
 static void ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data);
 static void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
 
+
 static void ctx_renderstream_refpack (CtxRenderstream *renderstream);
 static void
 ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
 {
+#if CTX_RENDERSTREAM_STATIC
+  if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
+  {
+    static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
+    renderstream->entries = &sbuf[0];
+    renderstream->size = CTX_MAX_EDGE_LIST_SIZE;
+  }
+  else
+  {
+    static CtxEntry sbuf[CTX_MAX_JOURNAL_SIZE];
+    renderstream->entries = &sbuf[0];
+    renderstream->size = CTX_MAX_JOURNAL_SIZE;
+  }
+  ctx_renderstream_refpack (renderstream);
+#else
   int new_size = desired_size;
 
   int min_size = CTX_MIN_JOURNAL_SIZE;
@@ -1513,6 +1531,7 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
   }
   renderstream->size = new_size;
   //printf ("renderstream %p is %d\n", renderstream, renderstream->size);
+  #endif
 }
 
 int
@@ -1534,13 +1553,11 @@ ctx_renderstream_add (CtxRenderstream *renderstream, CtxCode code)
 static int
 ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
-  int min_size = CTX_MIN_JOURNAL_SIZE;
   int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = renderstream->count;
 
   if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
   {
-    min_size = CTX_MIN_EDGE_LIST_SIZE;
     max_size = CTX_MAX_EDGE_LIST_SIZE;
   }
 
@@ -3523,14 +3540,21 @@ ctx_init (Ctx *ctx)
 #endif
 }
 
-
 static void ctx_setup ();
+
+#if CTX_RENDERSTREAM_STATIC
+static Ctx ctx_state;
+#endif
 
 Ctx *
 ctx_new (void)
 {
   ctx_setup ();
+#if CTX_RENDERSTREAM_STATIC
+  Ctx *ctx = &ctx_state; //(Ctx*)malloc (sizeof (Ctx));
+#else
   Ctx *ctx = (Ctx*)malloc (sizeof (Ctx));
+#endif
   memset (ctx, 0, sizeof(Ctx));
   ctx_init (ctx);
 
@@ -3540,8 +3564,10 @@ ctx_new (void)
 void
 ctx_renderstream_deinit (CtxRenderstream *renderstream)
 {
+#if CTX_RENDERSTREAM_STATIC==0
   if (renderstream->entries && !(renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES))
     free (renderstream->entries);
+#endif
   renderstream->entries = NULL;
 }
 
@@ -3567,7 +3593,9 @@ void ctx_free (Ctx *ctx)
   if (!ctx)
     return;
   ctx_deinit (ctx);
+#if CTX_RENDERSTREAM_STATIC==0
   free (ctx);
+#endif
 }
 
 Ctx *ctx_new_for_renderstream (void *data, size_t length)
@@ -3850,15 +3878,14 @@ static void ctx_shape_entry_release (CtxShapeEntry *entry)
 
 static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
 {
-  CtxEntry *entry = &renderer->edge_list.entries[0];
 
-
-  int ox = entry->data.s16[2];
-  int oy = entry->data.s16[3];
   int16_t x = 0;
   int16_t y = 0;
 
 #if CTX_SHAPE_CACHE
+  CtxEntry *entry = &renderer->edge_list.entries[0];
+  int ox = entry->data.s16[2];
+  int oy = entry->data.s16[3];
   uint32_t hash = renderer->edge_list.count;
   hash = (ox % CTX_SUBDIV);
   hash *= CTX_SHAPE_CACHE_PRIME1;
@@ -3883,13 +3910,12 @@ static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
     x = entry->data.s16[2];
     y = entry->data.s16[3];
 
+#if CTX_SHAPE_CACHE
     int dx = x-ox;
     int dy = y-oy;
-
     ox = x;
     oy = y;
 
-#if CTX_SHAPE_CACHE
     hash *= CTX_SHAPE_CACHE_PRIME3;
     hash += dx;
     hash *= CTX_SHAPE_CACHE_PRIME4;
@@ -4369,7 +4395,6 @@ static uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
 static void
 ctx_gradient_cache_reset (void)
 {
-  int i;
   for (int i = 0; i < CTX_GRADIENT_CACHE_ELEMENTS; i++)
   {
     ctx_gradient_cache_u8[i][0] = 255;
@@ -5422,11 +5447,11 @@ ctx_renderer_fill (CtxRenderer *renderer)
   }
 
   ctx_renderer_finish_shape (renderer);
+#if CTX_SHAPE_CACHE
   uint32_t hash = ctx_renderer_poly_to_edges (renderer);
   int width = (renderer->col_max + (CTX_SUBDIV-1)) / CTX_SUBDIV - renderer->col_min/CTX_SUBDIV;
   int height = (renderer->scan_max + (CTX_RASTERIZER_AA-1)) / CTX_RASTERIZER_AA - renderer->scan_min / CTX_RASTERIZER_AA;
 
-#if CTX_SHAPE_CACHE
   if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1)
   {
     int scan_min = renderer->scan_min;
@@ -5481,6 +5506,8 @@ ctx_renderer_fill (CtxRenderer *renderer)
     ctx_shape_entry_release (shape);
   }
   else
+#else
+  ctx_renderer_poly_to_edges (renderer);
 #endif
   {
   //fprintf (stderr, "%i %i\n", width, height);
@@ -6696,11 +6723,6 @@ ctx_new_for_framebuffer (void *data, int width, int height,
   return ctx;
 }
 
-// this blow the stack of ESP32 when stack allocated
-//
-static  CtxState    state;
-
-
 /* add an or-able value to pixelformat to indicate vflip+hflip
  */
 void
@@ -7431,7 +7453,8 @@ ctx_glyph_ctx (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
   CtxIterator iterator;
   CtxRenderstream  renderstream = {(CtxEntry*)font->ctx.data,
                               font->ctx.length,
-                              font->ctx.length};
+                              font->ctx.length, 0, 0};
+
   float origin_x = state->x;
   float origin_y = state->y;
 
@@ -7489,7 +7512,6 @@ goto done; // for the last glyph in a font
 uint32_t ctx_glyph_no (Ctx *ctx, int no)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
-  int count = 0;
   if (no < 0 || no >= font->ctx.glyphs)
     return 0;
   return font->ctx.index[no*2];
@@ -7507,7 +7529,8 @@ static void ctx_font_init_ctx (CtxFont *font)
       glyph_count ++;
   }
   font->ctx.glyphs = glyph_count;
-  font->ctx.index = (uint32_t*)malloc (sizeof (uint32_t) * 2 * glyph_count);
+static uint32_t idx[256];
+  font->ctx.index = &idx[0];//(uint32_t*)malloc (sizeof (uint32_t) * 2 * glyph_count);
   int no = 0;
   for (int i = 0; i < font->ctx.length; i++)
   {
@@ -7529,8 +7552,9 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
   if (ctx_font_count >= CTX_MAX_FONTS)
     return -1;
   ctx_fonts[ctx_font_count].type = 0;
-  ctx_fonts[ctx_font_count].name = (char *)malloc (strlen (name)+1);
-  strcpy ((char*)ctx_fonts[ctx_font_count].name, name);//strdup (name);
+  ctx_fonts[ctx_font_count].name = name;
+  //(char *)malloc (strlen (name)+1);
+  //strcpy ((char*)ctx_fonts[ctx_font_count].name, name);//strdup (name);
   ctx_fonts[ctx_font_count].ctx.data = (CtxEntry*)data;
   ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
   ctx_font_init_ctx (&ctx_fonts[ctx_font_count]);
@@ -7617,9 +7641,9 @@ _ctx_glyphs (Ctx        *ctx,
             int         n_glyphs,
             int         stroke)
 {
-  CtxState *state = &ctx->state;
-  float x = ctx->state.x;
-  float y = ctx->state.y;
+  //CtxState *state = &ctx->state;
+  //float x = ctx->state.x;
+  //float y = ctx->state.y;
   for (int i = 0; i < n_glyphs; i++)
     {
       {
