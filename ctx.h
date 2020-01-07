@@ -72,10 +72,6 @@ extern "C" {
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT    512
 #endif
 
-#ifndef CTX_RASTERIZER_ROT180
-#define CTX_RASTERIZER_ROT180 0
-#endif
-
 /* subpixel-aa coordinates used in BITPACKing of renderstream
  */
 #define CTX_SUBDIV            8  // changing this changes font-file-format
@@ -145,7 +141,8 @@ extern "C" {
 #define CTX_MIN_JOURNAL_SIZE   128
 #endif
 
-/* The maximum size we permit the renderstream to grow to
+/* The maximum size we permit the renderstream to grow to,
+ * the memory used is this number * 9, where 9 is sizeof(CtxEntry)
  */
 #ifndef CTX_MAX_JOURNAL_SIZE
 #define CTX_MAX_JOURNAL_SIZE   1024*10
@@ -277,6 +274,10 @@ extern "C" {
 
 #ifndef CTX_MAX_PENDING
 #define CTX_MAX_PENDING      128
+#endif
+
+#ifndef CTX_FULL_CB
+#define CTX_FULL_CB 0
 #endif
 
 #ifndef CTX_EXTRAS
@@ -431,6 +432,11 @@ void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_
 
 void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
 
+typedef struct _CtxRenderstream CtxRenderstream;
+typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
+
+void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data);
+
 #if CTX_CAIRO
 void
 ctx_render_cairo (Ctx *ctx, cairo_t *cr);
@@ -441,8 +447,6 @@ void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
 int
 ctx_add_single (Ctx *ctx, void *entry);
 
-// XXX - this should decode png/jpg/gif header, and make width/height
-//       available to drawing code
 
 typedef enum
 {
@@ -727,7 +731,7 @@ static inline float ctx_atanf (float x)
 #define acosf(x)    ctx_atanf((sqrtf(1.0f-ctx_pow2(x))/(x)))
 #define atan2f(a,b) ctx_atan2f((a), (b))
 #define sinf(a)     ctx_sinf(a)
-#define cosf(a)     ctx_sinf((a) + CTX_PI/2)
+#define cosf(a)     ctx_sinf((a) + CTX_PI/2.0f)
 #define tanf(a)     (cosf(a)/sinf(a))
 
 #define hypotf(a,b) sqrtf(ctx_pow2(a)+ctx_pow2(b))
@@ -741,8 +745,8 @@ static inline float ctx_atanf (float x)
 
 static inline float ctx_fast_hypotf (float x, float y)
 {
-  if (x<0) x = -x;
-  if (y<0) y = -y;
+  if (x < 0) x = -x;
+  if (y < 0) y = -y;
 
   if (x < y)
     return 0.96f * y + 0.4f * x;
@@ -753,6 +757,10 @@ static inline float ctx_fast_hypotf (float x, float y)
 
 typedef struct _CtxEntry CtxEntry;
 
+/* we only care about the tight packing for this specific
+ * struct, to make sure its size becomes 9bytes -
+ * the pack pragma is also sufficient on recent gcc versions
+ */
 #ifdef _MSC_VER
   #pragma pack(push,1)
 #else
@@ -889,8 +897,8 @@ struct _CtxGState {
   float        line_spacing;
 
   /* bitfield-pack all the small state-parts */
-  //CtxCompositing compositing_mode:4;
-  //CtxBlend             blend_mode:4;
+  //CtxCompositing compositing_mode:2;
+  //CtxBlend             blend_mode:3;
   CtxLineCap      line_cap:2;
   CtxLineJoin    line_join:2;
   CtxFillRule    fill_rule:1;
@@ -899,7 +907,6 @@ struct _CtxGState {
   unsigned int      italic:1;
 };
 
-typedef struct _CtxRenderstream CtxRenderstream;
 
 typedef enum {
   CTX_SOURCE_OVER = 1,
@@ -929,8 +936,14 @@ struct _CtxRenderstream
   CtxEntry *entries;     /* we need to use realloc */
   int       size;
   int       count;
-  int       flags; // BITPACK and REFPACK - to be used on resize
+  uint32_t  flags; // BITPACK and REFPACK - to be used on resize
   int       bitpack_pos;
+#if CTX_FULL_CB
+  int       full_cb_entries;
+  CtxFullCb full_cb;
+  void     *full_cb_data;
+#endif
+
 };
 
 struct _CtxState {
@@ -1025,7 +1038,6 @@ struct _CtxPixelFormatInfo
   int      (*crunch)(CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage,
                      int count);
 };
-
 
 #endif
 
@@ -1555,23 +1567,45 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
   int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = renderstream->count;
+  CtxFullCb full_cb = NULL;
 
   if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
   {
     max_size = CTX_MAX_EDGE_LIST_SIZE;
   }
 
+#if CTX_FULL_CB
+  if (renderstream->full_cb && entry->code == CTX_FILL)
+    {
+       max_size = max_size * 0.80;
+       full_cb = renderstream->full_cb;
+    }
+  
+#endif
+  {
   if (renderstream->count >= max_size ||
       (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES))
     return ret;
+  }
   if (ret + 6 >= renderstream->size)
   {
     ctx_renderstream_resize (renderstream, renderstream->size * 2);
     ret = renderstream->count;
   }
   // XXX : investigate corner cases around this
-  if (renderstream->count >= max_size)
-    return ret;
+  if (renderstream->count >= max_size - 1)
+  {
+#if CTX_FULL_CB
+    if (full_cb)
+    { 
+      full_cb (renderstream, renderstream->full_cb_data);
+    }
+  else
+#endif
+    {
+      return ret;
+    }
+  }
 
   renderstream->entries[renderstream->count] = *entry;
   ret = renderstream->count;
@@ -1664,7 +1698,7 @@ int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, 
   {int reverse = ctx_renderstream_add (renderstream, CTX_DATA_REV);
    renderstream->entries[reverse].data.u32[0] = length;
    renderstream->entries[reverse].data.u32[1] = length_in_blocks;
-   /* this reverse marker is needed to be able to do efficient
+   /* this reverse marker exist to enable more efficient
       front to back traversal
     */
   }
@@ -1879,6 +1913,14 @@ static int ctx_resolve_font (const char *name)
   return 0;
 }
 
+#if CTX_FULL_CB
+void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data)
+{
+  ctx->renderstream.full_cb = cb;
+  ctx->renderstream.full_cb_data = data;
+}
+#endif
+
 void ctx_set_font (Ctx *ctx, const char *name)
 {
   ctx->state.gstate.font = ctx_resolve_font (name);
@@ -1936,11 +1978,19 @@ void ctx_rectangle (Ctx *ctx,
                     float x0, float y0,
                     float w, float h)
 {
+#if 0
+  CtxEntry command[3]={
+     ctx_f (CTX_RECTANGLE, x0, y0),
+     ctx_f (CTX_CONT,      w, h)};
+
+  ctx_process (ctx, command);
+#else
   ctx_move_to (ctx, x0, y0);
   ctx_rel_line_to (ctx, w, 0);
   ctx_rel_line_to (ctx, 0, h);
   ctx_rel_line_to (ctx, -w, 0);
   ctx_close_path (ctx);
+#endif
 }
 
 static int ctx_is_digit (int ch)
@@ -1953,8 +2003,8 @@ static int ctx_is_digit (int ch)
 static float
 ctx_strtof (const char *str, char **endptr)
 {
-  /* not a full strtod replacement, but good enough for what we need,
-     not relying on double math in libraries, and */
+  /* not a complete strtod replacement, but good enough for what we need,
+     not relying on double math in libraries */
   float ret = 0.0f;
   int got_point = 0;
   float divisor = 1.0f;
@@ -2113,8 +2163,8 @@ again:
           if (numbers == 6)
           {
             ctx_curve_to (ctx, number[0], number[1],
-                                number[2], number[3],
-                                number[4], number[5]);
+                               number[2], number[3],
+                               number[4], number[5]);
             s++;
             goto again;
           }
@@ -2411,62 +2461,6 @@ void ctx_gradient_add_stop
 #include <stdio.h>
 #include <unistd.h>
 
-#if CTX_RASTERIZER_ROT180
-static void ctx_renderer_rot180 (CtxRenderer *renderer)
-{
-    switch (renderer->format->bpp) {
-#if 0
-      case 8:
-      {
-	uint8_t *head = (uint8_t*)renderer->buf;
-	int       count = renderer->blit_height * renderer->blit_width;
-	uint8_t *tail = head + count - 1;
-	for (int i = 0; i < count/2; i ++)
-            {
-	      uint8_t temp = *head;
-	      *head = *tail;
-	      *tail = temp;
-	      head++;
-	      tail--;
-	    }
-      }
-#endif
-      case 16:
-      {
-	uint16_t *head = (uint16_t*)renderer->buf;
-	int       count = renderer->blit_height * renderer->blit_width;
-	uint16_t *tail = head + count - 1;
-	for (int i = 0; i < count/2; i ++)
-            {
-	      uint16_t temp = *head;
-	      *head = *tail;
-	      *tail = temp;
-	      head++;
-	      tail--;
-	    }
-      }
-      break;
-#if 0
-      case 32:
-      {
-	uint32_t *head = (uint32_t*)renderer->buf;
-	int       count = renderer->blit_height * renderer->blit_width;
-	uint32_t *tail = head + count - 1;
-	for (int i = 0; i < count/2; i ++)
-            {
-	      uint32_t temp = *head;
-	      *head = *tail;
-	      *tail = temp;
-	      head++;
-	      tail--;
-	    }
-      }
-      break;
-#endif
-    }
-  }
-#endif
-
 void
 ctx_flush (Ctx *ctx)
 {
@@ -2486,10 +2480,6 @@ ctx_flush (Ctx *ctx)
   }
   printf ("Xx.Xx.Xx.");
   fflush (NULL);
-#endif
-#if CTX_RASTERIZER_ROT180
-  if (ctx->renderer)
-    ctx_renderer_rot180 (ctx->renderer);
 #endif
 
   ctx->renderstream.count = 0;
@@ -2749,8 +2739,28 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
   {
     CtxEntry *entry = &renderstream->entries[i];
 
+    if (entry[0].code == CTX_SET_RGBA &&
+        entry[1].code == CTX_MOVE_TO &&
+        entry[2].code == CTX_REL_LINE_TO &&
+        entry[3].code == CTX_REL_LINE_TO &&
+        entry[4].code == CTX_REL_LINE_TO &&
+        entry[5].code == CTX_REL_LINE_TO &&
+        entry[6].code == CTX_FILL &&
+	ctx_fabsf (entry[2].data.f[0] - 1.0f) < 0.02   &&
+	ctx_fabsf (entry[3].data.f[1] - 1.0f) < 0.02)
+    {
+        entry[0].code = CTX_SET_PIXEL;
+	entry[0].data.u16[2] = entry[1].data.f[0];
+	entry[0].data.u16[3] = entry[1].data.f[1];
+        entry[1].code == CTX_NOP;
+        entry[2].code == CTX_NOP;
+        entry[3].code == CTX_NOP;
+        entry[4].code == CTX_NOP;
+        entry[5].code == CTX_NOP;
+        entry[6].code == CTX_NOP;
+    }
 #if 1
-    if (entry[0].code == CTX_REL_LINE_TO)
+    else if (entry[0].code == CTX_REL_LINE_TO)
     {
       if (entry[1].code == CTX_REL_LINE_TO &&
           entry[2].code == CTX_REL_LINE_TO &&
@@ -3188,6 +3198,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
     case CTX_NEW_PATH:
       state->has_moved = 0;
       break;
+
     case CTX_MOVE_TO:
 
     case CTX_LINE_TO:
@@ -3551,7 +3562,7 @@ ctx_new (void)
 {
   ctx_setup ();
 #if CTX_RENDERSTREAM_STATIC
-  Ctx *ctx = &ctx_state; //(Ctx*)malloc (sizeof (Ctx));
+  Ctx *ctx = &ctx_state;
 #else
   Ctx *ctx = (Ctx*)malloc (sizeof (Ctx));
 #endif
@@ -4843,7 +4854,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
   return count;
 }
 
-static int
+static int inline
 ctx_b2f_over_RGBA8_convert (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
 {
   int ret;
@@ -6045,6 +6056,19 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
       ctx_renderer_rel_line_to (renderer, -ctx_arg_float(2), 0);
       break;
 
+    case CTX_SET_PIXEL:
+      {
+      renderer->state->gstate.source.type = CTX_SOURCE_COLOR;
+      for (int i = 0; i < 4; i ++)
+        renderer->state->gstate.source.color.rgba[i] = ctx_arg_u8(i);
+      }
+      ctx_renderer_move_to (renderer, ctx_arg_u16(2), ctx_arg_u16(3));
+      ctx_renderer_rel_line_to (renderer, 1, 0);
+      ctx_renderer_rel_line_to (renderer, 0, 1);
+      ctx_renderer_rel_line_to (renderer, -1, 0);
+      ctx_renderer_fill (renderer);
+      break;
+
     case CTX_BLIT_RECT:
       ctx_renderer_move_to (renderer, ctx_arg_s16(0), ctx_arg_s16(1));
       ctx_renderer_rel_line_to (renderer, ctx_arg_s16(2), 0);
@@ -6739,12 +6763,10 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
 
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
                                                   CTX_ITERATOR_EXPAND_BITPACK);
+
+
   while ((entry = ctx_iterator_next(&iterator)))
     ctx_renderer_process (renderer, entry);
-
-#if CTX_RASTERIZER_ROT180
-    ctx_renderer_rot180 (renderer);
-#endif
 
   ctx_renderer_deinit (renderer);
   free (renderer);
@@ -7453,7 +7475,11 @@ ctx_glyph_ctx (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
   CtxIterator iterator;
   CtxRenderstream  renderstream = {(CtxEntry*)font->ctx.data,
                               font->ctx.length,
-                              font->ctx.length, 0, 0};
+  	  font->ctx.length, 0, 0
+#if CTX_FULL_CB
+		  ,0,0,0
+#endif
+  };
 
   float origin_x = state->x;
   float origin_y = state->y;
@@ -7857,6 +7883,15 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
                             ctx_arg_float(2),
                             ctx_arg_float(3));
         break;
+      case CTX_SET_PIXEL:
+      cairo_set_source_rgba (cr,
+		      ctx_arg_u8(0)/255.0f,
+		      ctx_arg_u8(1)/255.0f,
+		      ctx_arg_u8(2)/255.0f,
+		      ctx_arg_u8(3)/255.0f);
+      cairo_rectangle (cr, ctx_arg_u16(2), ctx_arg_u16(3), 1, 1);
+      cairo_fill (cr);
+	break;
 
       case CTX_BLIT_RECT:
         cairo_rectangle (cr,ctx_arg_s16(0)/CTX_SUBDIV,
@@ -8095,6 +8130,16 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                              ctx_arg_u8(3)/255.0);
         break;
 
+      case CTX_SET_PIXEL:
+        ctx_set_rgba_u8 (d_ctx, 
+	  	      ctx_arg_u8(0),
+		      ctx_arg_u8(1),
+		      ctx_arg_u8(2),
+		      ctx_arg_u8(3));
+      ctx_rectangle (d_ctx, ctx_arg_u16(2), ctx_arg_u16(3), 1, 1);
+      ctx_fill (d_ctx);
+      break;
+
       case CTX_RECTANGLE:
         ctx_rectangle (d_ctx,ctx_arg_float(0),
                              ctx_arg_float(1),
@@ -8233,3 +8278,5 @@ static void ctx_setup ()
 }
 
 #endif
+
+
