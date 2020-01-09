@@ -420,6 +420,8 @@ void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
 void ctx_fill           (Ctx *ctx);
 void ctx_stroke         (Ctx *ctx);
 void ctx_paint          (Ctx *ctx);
+void
+ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 //void ctx_set_gradient_no     (Ctx *ctx, int no);
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
@@ -787,8 +789,8 @@ struct PACKED _CtxEntry
 #define ctx_arg_float(no) entry[(no)>>1].data.f[(no)&1]
 #define ctx_arg_u32(no)   entry[(no)>>1].data.u32[(no)&1]
 #define ctx_arg_s32(no)   entry[(no)>>1].data.s32[(no)&1]
-#define ctx_arg_u16(no)   entry[(no)>>2].data.u32[(no)&3]
-#define ctx_arg_s16(no)   entry[(no)>>2].data.s32[(no)&3]
+#define ctx_arg_u16(no)   entry[(no)>>2].data.u16[(no)&3]
+#define ctx_arg_s16(no)   entry[(no)>>2].data.s16[(no)&3]
 #define ctx_arg_u8(no)    entry[(no)>>3].data.u8[(no)&7]
 #define ctx_arg_s8(no)    entry[(no)>>3].data.s8[(no)&7]
 
@@ -2377,6 +2379,15 @@ void
 ctx_set_rgba_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   CtxEntry command = ctx_u8 (CTX_SET_RGBA, r, g, b, a, 0, 0, 0, 0);
+  ctx_process (ctx, &command);
+}
+
+void
+ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+  CtxEntry command = ctx_u8 (CTX_SET_PIXEL, r, g, b, a, 0, 0, 0, 0);
+  command.data.u16[2]=x;
+  command.data.u16[3]=y;
   ctx_process (ctx, &command);
 }
 
@@ -6012,12 +6023,17 @@ ctx_renderer_set_pixel (CtxRenderer *renderer,
   renderer->state->gstate.source.color.rgba[2] = b;
   renderer->state->gstate.source.color.rgba[3] = a;
 
+#if 1
+  ctx_renderer_pset (renderer, x, y, 255);
+#else
   ctx_renderer_move_to (renderer, x, y);
   ctx_renderer_rel_line_to (renderer, 1, 0);
   ctx_renderer_rel_line_to (renderer, 0, 1);
   ctx_renderer_rel_line_to (renderer, -1, 0);
   ctx_renderer_fill (renderer);
+#endif
 }
+
 static void
 ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
 {
@@ -7912,13 +7928,13 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
                             ctx_arg_float(3));
         break;
       case CTX_SET_PIXEL:
-      cairo_set_source_rgba (cr,
+        cairo_set_source_rgba (cr,
 		      ctx_arg_u8(0)/255.0f,
 		      ctx_arg_u8(1)/255.0f,
 		      ctx_arg_u8(2)/255.0f,
 		      ctx_arg_u8(3)/255.0f);
-      cairo_rectangle (cr, ctx_arg_u16(2), ctx_arg_u16(3), 1, 1);
-      cairo_fill (cr);
+        cairo_rectangle (cr, ctx_arg_u16(2), ctx_arg_u16(3), 1, 1);
+        cairo_fill (cr);
 	break;
 
       case CTX_BLIT_RECT:
@@ -8160,7 +8176,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
       case CTX_SET_PIXEL:
 #if 0
-	 ctx_set_pixel (ctx,
+	 ctx_set_pixel_u8 (ctx,
            ctx_arg_u16(2), ctx_arg_u16(3),
 	  	      ctx_arg_u8(0),
 		      ctx_arg_u8(1),
