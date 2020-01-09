@@ -478,11 +478,10 @@ typedef enum
   CTX_JOIN_MITER
 } CtxLineJoin;
 
-void ctx_set_fill_rule (Ctx *ctx, CtxFillRule fill_rule);
-
-void ctx_set_line_cap (Ctx *ctx, CtxLineCap cap);
-
-int ctx_set_renderstream (Ctx *ctx, void *data, int length);
+void ctx_set_fill_rule      (Ctx *ctx, CtxFillRule fill_rule);
+void ctx_set_line_cap       (Ctx *ctx, CtxLineCap cap);
+int ctx_set_renderstream    (Ctx *ctx, void *data, int length);
+int ctx_append_renderstream (Ctx *ctx, void *data, int length);
 
 
 /* these are only needed for clients renderin text, as all text gets
@@ -1567,45 +1566,48 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
   int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = renderstream->count;
+#if CTX_FULL_CB
   CtxFullCb full_cb = NULL;
+#endif
 
   if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
   {
     max_size = CTX_MAX_EDGE_LIST_SIZE;
   }
 
-#if CTX_FULL_CB
-  if (renderstream->full_cb && entry->code == CTX_FILL)
-    {
-       max_size = max_size * 0.80;
-       full_cb = renderstream->full_cb;
-    }
-  
-#endif
-  {
-  if (renderstream->count >= max_size ||
-      (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES))
-    return ret;
-  }
-  if (ret + 6 >= renderstream->size)
+
+ if (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
+ {
+   return ret;
+ }
+
+  if (ret + 6 >= renderstream->size - 16)
   {
     ctx_renderstream_resize (renderstream, renderstream->size * 2);
-    ret = renderstream->count;
   }
-  // XXX : investigate corner cases around this
-  if (renderstream->count >= max_size - 1)
+
+  if (renderstream->count >= max_size - 16)
   {
 #if CTX_FULL_CB
-    if (full_cb)
-    { 
-      full_cb (renderstream, renderstream->full_cb_data);
-    }
-  else
-#endif
+    if (renderstream->full_cb)
     {
-      return ret;
+      if (ctx_conts_for_entry (entry)==0 &&
+          entry->code != CTX_CONT)
+      {
+         full_cb = renderstream->full_cb;
+         renderstream->full_cb (renderstream, renderstream->full_cb_data);
+	 /* the full_cb is responsible for setting renderstream->count=0 */
+      }
     }
+    else
+    {
+       return 0;
+    }
+#else
+       return 0;
+#endif
   }
+
 
   renderstream->entries[renderstream->count] = *entry;
   ret = renderstream->count;
@@ -2752,12 +2754,12 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         entry[0].code = CTX_SET_PIXEL;
 	entry[0].data.u16[2] = entry[1].data.f[0];
 	entry[0].data.u16[3] = entry[1].data.f[1];
-        entry[1].code == CTX_NOP;
-        entry[2].code == CTX_NOP;
-        entry[3].code == CTX_NOP;
-        entry[4].code == CTX_NOP;
-        entry[5].code == CTX_NOP;
-        entry[6].code == CTX_NOP;
+        entry[1].code = CTX_NOP;
+        entry[2].code = CTX_NOP;
+        entry[3].code = CTX_NOP;
+        entry[4].code = CTX_NOP;
+        entry[5].code = CTX_NOP;
+        entry[6].code = CTX_NOP;
     }
 #if 1
     else if (entry[0].code == CTX_REL_LINE_TO)
@@ -4023,7 +4025,6 @@ ctx_bezier_sample (float x0, float y0,
   *y = ctx_bezier_sample_1d (y0, y1, y2, y3, dt);
 }
 
-/* XXX : pass the constant bits as a vector or pointed to struct? */
 static inline void
 ctx_renderer_bezier_divide (CtxRenderer *renderer,
                             float ox, float oy,
@@ -5997,6 +5998,27 @@ ctx_renderer_load_image (CtxRenderer *renderer,
 }
 
 static void
+ctx_renderer_set_pixel (CtxRenderer *renderer,
+		        uint16_t x,
+		        uint16_t y,
+		        uint8_t r,
+		        uint8_t g,
+		        uint8_t b,
+			uint8_t a)
+{
+  renderer->state->gstate.source.type = CTX_SOURCE_COLOR;
+  renderer->state->gstate.source.color.rgba[0] = r;
+  renderer->state->gstate.source.color.rgba[1] = g;
+  renderer->state->gstate.source.color.rgba[2] = b;
+  renderer->state->gstate.source.color.rgba[3] = a;
+
+  ctx_renderer_move_to (renderer, x, y);
+  ctx_renderer_rel_line_to (renderer, 1, 0);
+  ctx_renderer_rel_line_to (renderer, 0, 1);
+  ctx_renderer_rel_line_to (renderer, -1, 0);
+  ctx_renderer_fill (renderer);
+}
+static void
 ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
 {
   //fprintf (stderr, "%c(%.1f %.1f %i)", entry->code, renderer->x,renderer->y, renderer->has_prev);
@@ -6057,16 +6079,9 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
       break;
 
     case CTX_SET_PIXEL:
-      {
-      renderer->state->gstate.source.type = CTX_SOURCE_COLOR;
-      for (int i = 0; i < 4; i ++)
-        renderer->state->gstate.source.color.rgba[i] = ctx_arg_u8(i);
-      }
-      ctx_renderer_move_to (renderer, ctx_arg_u16(2), ctx_arg_u16(3));
-      ctx_renderer_rel_line_to (renderer, 1, 0);
-      ctx_renderer_rel_line_to (renderer, 0, 1);
-      ctx_renderer_rel_line_to (renderer, -1, 0);
-      ctx_renderer_fill (renderer);
+      ctx_renderer_set_pixel (renderer, ctx_arg_u16 (2), ctx_arg_u16 (3),
+        ctx_arg_u8(0), ctx_arg_u8(1), ctx_arg_u8(2), ctx_arg_u8(3));
+
       break;
 
     case CTX_BLIT_RECT:
@@ -6746,6 +6761,19 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                      data, 0, 0, width, height, stride, pixel_format);
   return ctx;
 }
+
+#if 0
+CtxRenderer *ctx_renderer_new (void *data, int x, int y, int width, int height,
+          int stride, CtxPixelFormat pixel_format)
+{
+  CtxState    *state    = (CtxState*)malloc (sizeof (CtxState));
+  CtxRenderer *renderer = (CtxRenderer*)malloc (sizeof (CtxRenderer));
+  ctx_renderer_init (renderer, state, data, x, y, width, height,
+                     stride, pixel_format);
+  
+}
+#endif
+
 
 /* add an or-able value to pixelformat to indicate vflip+hflip
  */
@@ -8131,13 +8159,22 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         break;
 
       case CTX_SET_PIXEL:
+#if 0
+	 ctx_set_pixel (ctx,
+           ctx_arg_u16(2), ctx_arg_u16(3),
+	  	      ctx_arg_u8(0),
+		      ctx_arg_u8(1),
+		      ctx_arg_u8(2),
+		      ctx_arg_u8(3));
+#else
         ctx_set_rgba_u8 (d_ctx, 
 	  	      ctx_arg_u8(0),
 		      ctx_arg_u8(1),
 		      ctx_arg_u8(2),
 		      ctx_arg_u8(3));
-      ctx_rectangle (d_ctx, ctx_arg_u16(2), ctx_arg_u16(3), 1, 1);
-      ctx_fill (d_ctx);
+        ctx_rectangle (d_ctx, ctx_arg_u16(2), ctx_arg_u16(3), 1, 1);
+        ctx_fill (d_ctx);
+#endif
       break;
 
       case CTX_RECTANGLE:
