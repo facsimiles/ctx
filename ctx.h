@@ -398,7 +398,6 @@ void ctx_rel_quad_to    (Ctx *ctx, float cx, float cy,
                          float x, float y);
 void ctx_close_path     (Ctx *ctx);
 
-
 void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void ctx_set_rgba       (Ctx *ctx, float   r, float   g, float   b, float   a);
 void ctx_set_rgb        (Ctx *ctx, float   r, float   g, float   b);
@@ -680,7 +679,7 @@ ctx_sinf (float x) {
          (x + CTX_PI - 0.00000008742278f) * p1 * x;
 }
 
-static inline float ctx_fmodf(float a, float b)
+static inline float ctx_fmodf (float a, float b)
 {
   float val = a / b;
   return val - ((int)val);
@@ -854,10 +853,10 @@ struct _CtxGradient
 
 struct _CtxSource
 {
+  int type;
   CtxMatrix  transform;
   uint8_t    global_alpha;
   uint8_t    gradient_no;
-  int type;
   union {
     struct {
       uint8_t rgba[4];
@@ -8092,8 +8091,6 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
   while ((entry = ctx_iterator_next (&iterator)))
   {
-    //command_print (NULL, command, &ctx->renderstream);
-    //if (ctx_status (cr)) return;
     switch (entry->code)
     {
       case CTX_LINE_TO:
@@ -8175,22 +8172,12 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         break;
 
       case CTX_SET_PIXEL:
-#if 0
-	 ctx_set_pixel_u8 (ctx,
+	 ctx_set_pixel_u8 (d_ctx,
            ctx_arg_u16(2), ctx_arg_u16(3),
 	  	      ctx_arg_u8(0),
 		      ctx_arg_u8(1),
 		      ctx_arg_u8(2),
 		      ctx_arg_u8(3));
-#else
-        ctx_set_rgba_u8 (d_ctx, 
-	  	      ctx_arg_u8(0),
-		      ctx_arg_u8(1),
-		      ctx_arg_u8(2),
-		      ctx_arg_u8(3));
-        ctx_rectangle (d_ctx, ctx_arg_u16(2), ctx_arg_u16(3), 1, 1);
-        ctx_fill (d_ctx);
-#endif
       break;
 
       case CTX_RECTANGLE:
