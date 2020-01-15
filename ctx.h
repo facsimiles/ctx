@@ -518,7 +518,6 @@ typedef enum
 
   CTX_CLEAR           = '\\',
 
-  CTX_BLIT_RECT       = '%',
   CTX_NOP             = ' ',
 
   CTX_FILL_RULE       = 'f',
@@ -6079,13 +6078,6 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
 
       break;
 
-    case CTX_BLIT_RECT:
-      ctx_renderer_move_to (renderer, ctx_arg_s16(0), ctx_arg_s16(1));
-      ctx_renderer_rel_line_to (renderer, ctx_arg_s16(2), 0);
-      ctx_renderer_rel_line_to (renderer, 0, ctx_arg_s16(3));
-      ctx_renderer_rel_line_to (renderer, -ctx_arg_s16(2), 0);
-      ctx_renderer_fill (renderer);
-      break;
     case CTX_LOAD_IMAGE:
       ctx_renderer_load_image (renderer,
                     (char*)&entry[2].data.u8[0],
@@ -6910,7 +6902,6 @@ ctx_datatype_for_code (CtxCode code)
     case CTX_EDGE:
     case CTX_NEW_EDGE:
     case CTX_EDGE_FLIPPED:
-    case CTX_BLIT_RECT:
       return CTX_S16;
     case CTX_RECTANGLE:
     case CTX_LINE_TO:
@@ -7925,14 +7916,6 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
         cairo_fill (cr);
 	break;
 
-      case CTX_BLIT_RECT:
-        cairo_rectangle (cr,ctx_arg_s16(0)/CTX_SUBDIV,
-                            ctx_arg_s16(1)/CTX_SUBDIV,
-                            ctx_arg_s16(2)/CTX_SUBDIV,
-                            ctx_arg_s16(3)/CTX_SUBDIV);
-        cairo_fill (cr);
-        break;
-
       case CTX_FILL:
         cairo_fill (cr);
         break;
@@ -8173,14 +8156,6 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                               ctx_arg_float(1),
                               ctx_arg_float(2),
                               ctx_arg_float(3));
-        break;
-
-      case CTX_BLIT_RECT:
-        ctx_rectangle (d_ctx, ctx_arg_s16(0)/CTX_SUBDIV,
-                              ctx_arg_s16(1)/CTX_SUBDIV,
-                              ctx_arg_s16(2)/CTX_SUBDIV,
-                              ctx_arg_s16(3)/CTX_SUBDIV);
-        ctx_fill (d_ctx);
         break;
 
       case CTX_FILL:
