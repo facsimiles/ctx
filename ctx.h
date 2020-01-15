@@ -78,7 +78,7 @@ extern "C" {
 
 /* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
  */
-#define CTX_BAKE_FONT_SIZE   80
+#define CTX_BAKE_FONT_SIZE   32
 
 /* pack some linetos/curvetos/movetos into denser renderstream indstructions,
  * permitting more vectors to be stored in the same space.
@@ -99,7 +99,7 @@ extern "C" {
  * occuring small shapes.
  */
 #ifndef CTX_SHAPE_CACHE
-#define CTX_SHAPE_CACHE    1
+#define CTX_SHAPE_CACHE    0
 #endif
 
 /* size (in pixels, w*h) that we cache rasterization for
@@ -796,7 +796,7 @@ struct PACKED _CtxEntry
 #if CTX_EXTRAS
 
 char *ctx_commands[]={
-"#clip", "|edge", "!fill_edges", "%blit_rect", "rfg", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", "set_pixel", NULL
+"#clip", "|edge", "!fill_edges", "%blit_rect", "rset_rgba", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", "set_pixel", NULL
 };
 
 #endif
@@ -1546,41 +1546,21 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
   #endif
 }
 
-int
-ctx_renderstream_add (CtxRenderstream *renderstream, CtxCode code)
-{
-  int ret = renderstream->count;
-  if (ret + 6 >= renderstream->size)
-  {
-    ctx_renderstream_resize (renderstream, renderstream->size * 2);
-    ret = renderstream->count;
-  }
-  if (ret >= renderstream->size)
-    return -1;
-  renderstream->entries[ret].code = code;
-  renderstream->count++;
-  return ret;
-}
-
 static int
 ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 {
   int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = renderstream->count;
-#if CTX_FULL_CB
-  CtxFullCb full_cb = NULL;
-#endif
 
   if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
   {
     max_size = CTX_MAX_EDGE_LIST_SIZE;
   }
 
-
- if (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
- {
-   return ret;
- }
+  if (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
+  {
+    return ret;
+  }
 
   if (ret + 6 >= renderstream->size - 16)
   {
@@ -1595,7 +1575,6 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
       if (ctx_conts_for_entry (entry)==0 &&
           entry->code != CTX_CONT)
       {
-         full_cb = renderstream->full_cb;
          renderstream->full_cb (renderstream, renderstream->full_cb_data);
 	 /* the full_cb is responsible for setting renderstream->count=0 */
       }
@@ -1623,7 +1602,7 @@ ctx_add_single (Ctx *ctx, void *entry)
 }
 
 int
-ctx_renderstream_add_ (CtxRenderstream *renderstream, CtxEntry *entry)
+ctx_renderstream_add_entry (CtxRenderstream *renderstream, CtxEntry *entry)
 {
   int length = ctx_conts_for_entry (entry) + 1;
   int ret = 0;
@@ -1665,21 +1644,24 @@ ctx_add_data (Ctx *ctx, void *data, int length)
    * also - it would be very useful to stop processing
    * upon flush - and do renderstream resizing.
    */
-  return ctx_renderstream_add_ (&ctx->renderstream, (CtxEntry*)data);
+  return ctx_renderstream_add_entry (&ctx->renderstream, (CtxEntry*)data);
 }
 
-int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code, uint32_t u32[2])
+static int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code, uint32_t u32[2])
 {
-  int no = ctx_renderstream_add (renderstream, code);
-  if (no < 0)
-    return -1;
-  memcpy (renderstream->entries[no].data.u32, &u32[0], sizeof(uint32_t) * 2);
-  return no;
+  CtxEntry entry = {code, };
+  entry.data.u32[0] = u32[0];
+  entry.data.u32[1] = u32[1];
+  return ctx_renderstream_add_single (renderstream, &entry);
 }
 
 int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, int length)
 {
-  int ret = ctx_renderstream_add (renderstream, CTX_DATA);
+  CtxEntry entry = {CTX_DATA, };
+  entry.data.u32[0] = 0;
+  entry.data.u32[1] = 0;
+  int ret = ctx_renderstream_add_single (renderstream, &entry);
+
   if (!data) return -1;
   int length_in_blocks;
   if (length <= 0) length = strlen ((char*)data) + 1;
@@ -1698,9 +1680,11 @@ int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, 
   renderstream->entries[ret].data.u32[1] = length_in_blocks;
 
   memcpy (&renderstream->entries[ret+1], data, length);
-  {int reverse = ctx_renderstream_add (renderstream, CTX_DATA_REV);
-   renderstream->entries[reverse].data.u32[0] = length;
-   renderstream->entries[reverse].data.u32[1] = length_in_blocks;
+  {//int reverse = ctx_renderstream_add (renderstream, CTX_DATA_REV);
+   CtxEntry entry = {CTX_DATA_REV, };
+   entry.data.u32[0] = length;
+   entry.data.u32[1] = length_in_blocks;
+   ctx_renderstream_add_single (renderstream, &entry);
    /* this reverse marker exist to enable more efficient
       front to back traversal
     */
@@ -3624,9 +3608,9 @@ void ctx_free (Ctx *ctx)
 Ctx *ctx_new_for_renderstream (void *data, size_t length)
 {
   Ctx *ctx = ctx_new ();
-  ctx->renderstream.flags |= CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES;
-  ctx->renderstream.entries = (CtxEntry*)data;
-  ctx->renderstream.count   = length / sizeof (CtxEntry);
+  ctx->renderstream.flags   |= CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES;
+  ctx->renderstream.entries  = (CtxEntry*)data;
+  ctx->renderstream.count    = length / sizeof (CtxEntry);
   return ctx;
 }
 
@@ -3762,8 +3746,6 @@ ctx_renderer_gradient_add_stop (CtxRenderer *renderer, float pos, uint8_t *rgba)
 static inline int ctx_renderer_add_point (CtxRenderer *renderer, int x1, int y1)
 {
   int16_t args[4];
-//int max_x = renderer->blit_x + renderer->blit_width;
-//int max_y = renderer->blit_y + renderer->blit_height;
 
   if (y1 < renderer->scan_min)
     renderer->scan_min = y1;
@@ -3774,7 +3756,6 @@ static inline int ctx_renderer_add_point (CtxRenderer *renderer, int x1, int y1)
     renderer->col_min = x1;
   if (x1 > renderer->col_max)
     renderer->col_max = x1;
-
 
   args[0]=0;
   args[1]=0;
@@ -5068,7 +5049,6 @@ ctx_associated_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint
 
   for (int x = 0; x < count; x++)
   {
-
     float cov = coverage[x]/255.0f;
     if (cov != 0.0f)
     {
@@ -6868,14 +6848,14 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
     ctx_interpret_style (&ctx->state, entry, ctx);
     ctx_interpret_transforms (&ctx->state, entry, ctx);
     ctx_interpret_pos (&ctx->state, entry, ctx);
-    ctx_renderstream_add_ (&ctx->renderstream, entry);
+    ctx_renderstream_add_entry (&ctx->renderstream, entry);
 
     if (entry->code == CTX_LOAD_IMAGE)
     {
       /* the image command and its data is submitted as one unit,
        */
-      ctx_renderstream_add_ (&ctx->renderstream, entry+1);
-      ctx_renderstream_add_ (&ctx->renderstream, entry+2);
+      ctx_renderstream_add_entry (&ctx->renderstream, entry+1);
+      ctx_renderstream_add_entry (&ctx->renderstream, entry+2);
     }
   }
 }
@@ -6912,6 +6892,7 @@ typedef enum {
   CTX_S32,
   CTX_FLOAT,
   CTX_VOID,
+  CTX_STRING,
 } CtxDataType;
 
 
@@ -6944,7 +6925,6 @@ ctx_datatype_for_code (CtxCode code)
     case CTX_ROTATE:
     case CTX_SCALE:
     case CTX_TRANSLATE:
-    case CTX_TEXT:
     case CTX_CONT:
     case CTX_LINE_WIDTH:
     case CTX_FONT_SIZE:
@@ -6957,6 +6937,8 @@ ctx_datatype_for_code (CtxCode code)
     case CTX_FILL_MOVE_TO:
 #endif
       return CTX_FLOAT;
+    case CTX_TEXT:
+      return CTX_STRING;
     case CTX_LINE_CAP:
     case CTX_FILL_RULE:
     case CTX_LINE_JOIN:
@@ -7019,12 +7001,19 @@ ctx_cmd_str (Ctx *ctx, const char *commandline)
     code = ctx_str_to_command (commandline);
     if (!code)
     {
-      // unknown command
+      fprintf (stderr, "uknown command %s\n", commandline);
       return -1;
     }
   }
 
   while (rest && *rest == ' ') rest++;
+#if 0
+  if (code == CTX_TEXT)
+  {
+    ctx_text (ctx, rest);
+    return 0;
+  }
+#endif
 
   switch (ctx_datatype_for_code (code))
   {
@@ -8141,7 +8130,6 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         }
         break;
 
-      /* rotate/scale/translate does not occur in fully minified data stream */
       case CTX_ROTATE:
         ctx_rotate (d_ctx, ctx_arg_float(0));
         break;
@@ -8173,7 +8161,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
       case CTX_SET_PIXEL:
 	 ctx_set_pixel_u8 (d_ctx,
-           ctx_arg_u16(2), ctx_arg_u16(3),
+                      ctx_arg_u16(2), ctx_arg_u16(3),
 	  	      ctx_arg_u8(0),
 		      ctx_arg_u8(1),
 		      ctx_arg_u8(2),
@@ -8181,17 +8169,17 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       break;
 
       case CTX_RECTANGLE:
-        ctx_rectangle (d_ctx,ctx_arg_float(0),
-                             ctx_arg_float(1),
-                             ctx_arg_float(2),
-                             ctx_arg_float(3));
+        ctx_rectangle (d_ctx, ctx_arg_float(0),
+                              ctx_arg_float(1),
+                              ctx_arg_float(2),
+                              ctx_arg_float(3));
         break;
 
       case CTX_BLIT_RECT:
-        ctx_rectangle (d_ctx,ctx_arg_s16(0)/CTX_SUBDIV,
-                             ctx_arg_s16(1)/CTX_SUBDIV,
-                             ctx_arg_s16(2)/CTX_SUBDIV,
-                             ctx_arg_s16(3)/CTX_SUBDIV);
+        ctx_rectangle (d_ctx, ctx_arg_s16(0)/CTX_SUBDIV,
+                              ctx_arg_s16(1)/CTX_SUBDIV,
+                              ctx_arg_s16(2)/CTX_SUBDIV,
+                              ctx_arg_s16(3)/CTX_SUBDIV);
         ctx_fill (d_ctx);
         break;
 
@@ -8248,6 +8236,12 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                                     ctx_arg_float(4), ctx_arg_float(5));
         ctx_gradient_clear_stops (d_ctx);
         break;
+	// gradient clear is not really needed - if always implied by
+	// setting the gradient source
+      case CTX_GRADIENT_CLEAR:
+        ctx_gradient_clear_stops (d_ctx);
+	break;
+
       case CTX_GRADIENT_STOP:
         ctx_gradient_add_stop (d_ctx,
           ctx_arg_float(0),
