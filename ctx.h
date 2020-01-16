@@ -78,7 +78,7 @@ extern "C" {
 
 /* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
  */
-#define CTX_BAKE_FONT_SIZE   32
+#define CTX_BAKE_FONT_SIZE   90
 
 /* pack some linetos/curvetos/movetos into denser renderstream indstructions,
  * permitting more vectors to be stored in the same space.
@@ -2669,19 +2669,19 @@ find_max_dev (CtxEntry *entry, int nentrys)
 }
 
 static void
-pack_s8_args (CtxEntry *entry, int8_t *args, int npairs)
+pack_s8_args (CtxEntry *entry, int npairs)
 {
   for (int c = 0; c < npairs; c++)
     for (int d = 0; d < 2; d++)
-      args[c*2+d]=entry[c].data.f[d] * CTX_SUBDIV;
+      entry[0].data.s8[c*2+d]=entry[c].data.f[d] * CTX_SUBDIV;
 }
 
 static void
-pack_s16_args (CtxEntry *entry, int16_t *args, int npairs)
+pack_s16_args (CtxEntry *entry, int npairs)
 {
   for (int c = 0; c < npairs; c++)
     for (int d = 0; d < 2; d++)
-      args[c*2+d]=entry[c].data.f[d] * CTX_SUBDIV;
+      entry[0].data.s16[c*2+d]=entry[c].data.f[d] * CTX_SUBDIV;
 }
 
 static void
@@ -2764,13 +2764,11 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 4);
         if (max_dev < 114 / CTX_SUBDIV)
         {
-          int8_t args[8];
-          pack_s8_args (entry, args, 4);
+          pack_s8_args (entry, 4);
           entry[0].code = CTX_REL_LINE_TO_X4;
           entry[1].code = CTX_NOP;
           entry[2].code = CTX_NOP;
           entry[3].code = CTX_NOP;
-          memcpy (&ctx_arg_u8(0), &args[0], 8);
         }
       }
       else if (entry[1].code == CTX_REL_CURVE_TO)
@@ -2778,13 +2776,11 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 4);
         if (max_dev < 114 / CTX_SUBDIV)
         {
-          int8_t args[8];
-          pack_s8_args (entry, args, 4);
+          pack_s8_args (entry, 4);
           entry[0].code = CTX_REL_LINE_TO_REL_CURVE_TO;
           entry[1].code = CTX_NOP;
           entry[2].code = CTX_NOP;
           entry[3].code = CTX_NOP;
-          memcpy (&ctx_arg_u8(0), &args[0], 8);
         }
       }
       else if (entry[1].code == CTX_REL_LINE_TO &&
@@ -2794,13 +2790,11 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 4);
         if (max_dev < 114 / CTX_SUBDIV)
         {
-          int8_t args[8];
-          pack_s8_args (entry, args, 4);
+          pack_s8_args (entry, 4);
           entry[0].code = CTX_REL_LINE_TO_X4;
           entry[1].code = CTX_NOP;
           entry[2].code = CTX_NOP;
           entry[3].code = CTX_NOP;
-          memcpy (&ctx_arg_u8(0), &args[0], 8);
         }
       }
       else if (entry[1].code == CTX_REL_MOVE_TO)
@@ -2808,11 +2802,9 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 2);
         if (max_dev < 31000 / CTX_SUBDIV)
         {
-          int16_t args[8];
-          pack_s16_args (entry, args, 2);
+          pack_s16_args (entry, 2);
           entry[0].code = CTX_REL_LINE_TO_REL_MOVE_TO;
           entry[1].code = CTX_NOP;
-          memcpy (&ctx_arg_u8(0), &args[0], 8);
         }
       }
       else if (entry[1].code == CTX_REL_LINE_TO)
@@ -2820,11 +2812,9 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 2);
         if (max_dev < 31000 / CTX_SUBDIV)
         {
-          int16_t args[4];
-          pack_s16_args (entry, args, 2);
+          pack_s16_args (entry, 2);
           entry[0].code = CTX_REL_LINE_TO_X2;
           entry[1].code = CTX_NOP;
-          memcpy (&ctx_arg_u8(0), &args[0], 8);
         }
       }
     }
@@ -2837,13 +2827,11 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 4);
         if (max_dev < 114 / CTX_SUBDIV)
         {
-          int8_t args[8];
-          pack_s8_args (entry, args, 4);
+          pack_s8_args (entry, 4);
           entry[0].code = CTX_REL_CURVE_TO_REL_LINE_TO;
           entry[1].code = CTX_NOP;
           entry[2].code = CTX_NOP;
           entry[3].code = CTX_NOP;
-          memcpy (&ctx_arg_u8(0), &args[0], 8);
         }
       }
       else if (entry[3].code == CTX_REL_MOVE_TO)
@@ -2851,10 +2839,8 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 4);
         if (max_dev < 114 / CTX_SUBDIV)
         {
-          int8_t args[8];
-          pack_s8_args (entry, args, 4);
+          pack_s8_args (entry, 4);
           entry[0].code = CTX_REL_CURVE_TO_REL_MOVE_TO;
-          memcpy (&ctx_arg_u8(0), &args[0], 8);
           entry[1].code = CTX_NOP;
           entry[2].code = CTX_NOP;
           entry[3].code = CTX_NOP;
@@ -2865,13 +2851,12 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 3);
         if (max_dev < 114 / CTX_SUBDIV)
         {
-          int8_t args[8];
-          pack_s8_args (entry, args, 3);
-          args[6] = args[7] = 0;
+          pack_s8_args (entry, 3);
+          ctx_arg_s8(6) =
+          ctx_arg_s8(7) = 0;
           entry[0].code = CTX_REL_CURVE_TO_REL_LINE_TO;
           entry[1].code = CTX_NOP;
           entry[2].code = CTX_NOP;
-          memcpy (&ctx_arg_u8(0), &args[0], 8);
         }
       }
     }
@@ -2884,13 +2869,11 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 4);
         if (max_dev < 114 / CTX_SUBDIV)
         {
-          int8_t args[8];
-          pack_s8_args (entry, args, 4);
+          pack_s8_args (entry, 4);
           entry[0].code = CTX_REL_QUAD_TO_REL_QUAD_TO;
           entry[1].code = CTX_NOP;
           entry[2].code = CTX_NOP;
           entry[3].code = CTX_NOP;
-          memcpy (&ctx_arg_u8(0), &args[0], 8);
         }
       }
       else
@@ -2898,11 +2881,9 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         float max_dev = find_max_dev (entry, 2);
         if (max_dev < 3100 / CTX_SUBDIV)
         {
-          int16_t args[4];
-          pack_s16_args (entry, args, 2);
+          pack_s16_args (entry, 2);
           entry[0].code = CTX_REL_QUAD_TO_S16;
           entry[1].code = CTX_NOP;
-          memcpy (&entry[0].data.u16[0], &args[0], 8);
         }
       }
     }
