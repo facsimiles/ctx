@@ -1495,8 +1495,8 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
     static CtxEntry sbuf[CTX_MAX_JOURNAL_SIZE];
     renderstream->entries = &sbuf[0];
     renderstream->size = CTX_MAX_JOURNAL_SIZE;
+    ctx_renderstream_refpack (renderstream);
   }
-  ctx_renderstream_refpack (renderstream);
 #else
   int new_size = desired_size;
 
@@ -1508,8 +1508,11 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
     min_size = CTX_MIN_EDGE_LIST_SIZE;
     max_size = CTX_MAX_EDGE_LIST_SIZE;
   }
+  else
+  {
+    ctx_renderstream_refpack (renderstream);
+  }
 
-  ctx_renderstream_refpack (renderstream);
   if (new_size < renderstream->size)
     return;
   if (renderstream->size == max_size)
@@ -1561,12 +1564,12 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
     return ret;
   }
 
-  if (ret + 6 >= renderstream->size - 16)
+  if (ret + 4 >= renderstream->size - 8)
   {
     ctx_renderstream_resize (renderstream, renderstream->size * 2);
   }
 
-  if (renderstream->count >= max_size - 16)
+  if (renderstream->count >= max_size - 8)
   {
 #if CTX_FULL_CB
     if (renderstream->full_cb)
@@ -1586,7 +1589,6 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
        return 0;
 #endif
   }
-
 
   renderstream->entries[renderstream->count] = *entry;
   ret = renderstream->count;
