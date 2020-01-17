@@ -2036,10 +2036,13 @@ void ctx_svg_path (Ctx *ctx, const char *str)
   const char *s;
   int numbers = 0;
   float number[12];
+  float pcx, pcy, cx, cy;
 
   if (!str)
     return;
   ctx_move_to (ctx, 0, 0);
+  cx = 0; cy = 0;
+  pcx = cx; pcy = cy;
 
   s = str;
 again:
@@ -2051,6 +2054,7 @@ again:
     {
       case 'z':
       case 'Z':
+	pcx = cx; pcy = cy;
         ctx_close_path (ctx);
         break;
       case 'm':
@@ -2060,11 +2064,24 @@ again:
       case 'C':
       case 'l':
       case 'L':
+      case 'h':
+      case 'H':
+      case 'v':
+      case 'V':
+      case 's':
+      case 'S':
+      case 'q':
+      case 'Q':
+	 // if (numbers) // eeek - previous command got
+	 // wrong modulo of arguments
          command = *s;
          break;
       case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
       if (*s == '-')
+      {
         number[numbers] = ctx_strtof (s, (char**)&s);
+        s--;
+      }
       else
       {
         number[numbers] = ctx_strtof (s, (char**)&s);
@@ -2075,9 +2092,9 @@ again:
 
       switch (command)
       {
-        case 'a':
+        case 'a': // arc-to
           /* fallthrough */
-        case 'A':
+        case 'A': // arc-to
           if (numbers == 7)
           {
             /// XXX: NYI
@@ -2089,8 +2106,31 @@ again:
           if (numbers == 2)
           {
             ctx_rel_move_to (ctx, number[0], number[1]);
+            cx += number[0];
+            cy += number[1];
+	    pcx = cx; pcy = cy;
             s++;
             command = 'l'; // the default after movetos
+            goto again;
+          }
+          break;
+        case 'h':
+          if (numbers == 1)
+          {
+            ctx_rel_line_to (ctx, number[0], 0.0f);
+            s++;
+            cx += number[0];
+	    pcx = cx; pcy = cy;
+            goto again;
+          }
+          break;
+        case 'v':
+          if (numbers == 1)
+          {
+            ctx_rel_line_to (ctx, 0.0f, number[0]);
+            s++;
+            cy += number[0];
+	    pcx = cx; pcy = cy;
             goto again;
           }
           break;
@@ -2099,6 +2139,9 @@ again:
           {
             ctx_rel_line_to (ctx, number[0], number[1]);
             s++;
+            cx += number[0];
+            cy += number[1];
+	    pcx = cx; pcy = cy;
             goto again;
           }
           break;
@@ -2109,6 +2152,24 @@ again:
                                    number[2], number[3],
                                    number[4], number[5]);
             s++;
+	    pcx = cx + number[2];
+            pcy = cy + number[3];
+            cx += number[4];
+            cy += number[5];
+            goto again;
+          }
+          break;
+        case 's':
+          if (numbers == 4)
+          {
+            ctx_curve_to (ctx, 2 * cx - pcx, 2 * cy - pcy,
+                          number[0] + cx, number[1] + cy,
+                          number[2] + cx, number[3] + cy);
+            pcx = number[0] + cx;
+            pcy = number[1] + cy;
+            cx += number[2];
+            cy += number[3];
+            s++;
             goto again;
           }
           break;
@@ -2116,8 +2177,32 @@ again:
           if (numbers == 2)
           {
             ctx_move_to (ctx, number[0], number[1]);
+	    cx = number[0];
+            cy = number[1];
+            pcx = cx; pcy = cy;
+
             s++;
             command = 'L'; // the default after movetos
+            goto again;
+          }
+          break;
+        case 'H':
+          if (numbers == 1)
+          {
+            ctx_line_to (ctx, number[0], cy);
+            cx = number[0];
+            pcx = cx; pcy = cy;
+            s++;
+            goto again;
+          }
+          break;
+        case 'V':
+          if (numbers == 1)
+          {
+            ctx_line_to (ctx, cx, number[0]);
+            cy = number[0];
+            pcx = cx; pcy = cy;
+            s++;
             goto again;
           }
           break;
@@ -2125,23 +2210,62 @@ again:
           if (numbers == 2)
           {
             ctx_line_to (ctx, number[0], number[1]);
+            cx = number[0];
+            cy = number[1];
+            pcx = cx; pcy = cy;
             s++;
             goto again;
           }
           break;
+
         case 'Q':
           if (numbers == 4)
           {
             ctx_quad_to (ctx, number[0], number[1], number[2], number[3]);
+	    pcx = number[0];
+	    pcy = number[1];
+	    cx = number[2];
+	    cy = number[3];
             s++;
             goto again;
           }
           break;
+
+        case 'T':
+          if (numbers == 2)
+          {
+            pcx = 2 * cx - pcx;
+            pcy = 2 * cx - pcy;
+            ctx_quad_to (ctx, pcx, pcy, number[0], number[1]);
+	    cx = number[0];
+	    cy = number[1];
+            s++;
+            goto again;
+          }
+          break;
+
+        case 't':
+          if (numbers == 2)
+          {
+            pcx = 2 * cx - pcx;
+            pcy = 2 * cx - pcy;
+            ctx_quad_to (ctx, pcx, pcy, cx + number[0], cy + number[1]);
+	    cx += number[0];
+	    cy += number[1];
+            s++;
+            goto again;
+          }
+          break;
+
         case 'q':
           if (numbers == 4)
           {
             ctx_rel_quad_to (ctx, number[0], number[1], number[2], number[3]);
             s++;
+	    pcx = cx + number[0];
+	    pcy = cy + number[1];
+	    cx = cx + number[2];
+	    cy = cy + number[3];
             goto again;
           }
           break;
@@ -2151,10 +2275,32 @@ again:
             ctx_curve_to (ctx, number[0], number[1],
                                number[2], number[3],
                                number[4], number[5]);
+            pcx = number[2];
+            pcy = number[3];
+            cx = number[4];
+            cy = number[5];
             s++;
             goto again;
           }
           break;
+
+        case 'S':
+          if (numbers == 4)
+          {
+            float ax = 2 * cx - pcx;
+            float ay = 2 * cy - pcy;
+            ctx_curve_to (ctx, ax, ay,
+                          number[0], number[1],
+                          number[2], number[3]);
+            pcx = number[0];
+            pcy = number[1];
+            cx = number[2];
+            cy = number[3];
+            s++;
+            goto again;
+          }
+          break;
+
         default:
           ctx_log ("uninterpreted svg path command _%c", *s);
           break;
