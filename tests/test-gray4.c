@@ -1,7 +1,6 @@
 #include <stdint.h>
 
 #include "ctx-font-regular.h"
-#define CTX_RASTERIZER_AA   5
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 

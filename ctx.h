@@ -63,7 +63,7 @@ extern "C" {
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  0
+#define CTX_RASTERIZER_FORCE_AA  1
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
@@ -78,7 +78,7 @@ extern "C" {
 
 /* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
  */
-#define CTX_BAKE_FONT_SIZE   90
+#define CTX_BAKE_FONT_SIZE   60
 
 /* pack some linetos/curvetos/movetos into denser renderstream indstructions,
  * permitting more vectors to be stored in the same space.

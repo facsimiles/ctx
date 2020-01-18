@@ -4,7 +4,6 @@
 #include "stb_image_write.h"
 
 #include "ctx-font-regular.h"
-#define CTX_RASTERIZER_AA   5
 #define CTX_ENABLE_GRAYF                1
 #define CTX_ENABLE_GRAY1                1 //needed for font-cache
 
