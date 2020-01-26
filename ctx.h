@@ -407,6 +407,7 @@ void ctx_current_point  (Ctx *ctx, float *x, float *y);
 float ctx_x             (Ctx *ctx);
 float ctx_y             (Ctx *ctx);
 
+int  ctx_glyph          (Ctx *ctx, uint32_t unichar, int stroke);
 void ctx_arc            (Ctx  *ctx,
                          float x, float y,
                          float radius,
@@ -448,6 +449,11 @@ void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
 int
 ctx_add_single (Ctx *ctx, void *entry);
 
+uint32_t
+ctx_utf8_to_unichar (const char *input);
+
+void
+ctx_parse_str_line (Ctx *ctx, const char *str);
 
 typedef enum
 {
@@ -1564,12 +1570,12 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
     return ret;
   }
 
-  if (ret + 4 >= renderstream->size - 8)
+  if (ret + 8 >= renderstream->size - 20)
   {
     ctx_renderstream_resize (renderstream, renderstream->size * 2);
   }
 
-  if (renderstream->count >= max_size - 8)
+  if (renderstream->count >= max_size - 20)
   {
 #if CTX_FULL_CB
     if (renderstream->full_cb)
@@ -1998,7 +2004,7 @@ ctx_strtof (const char *str, char **endptr)
   float divisor = 1.0f;
   float sign = 1.0f;
 
-  while (*str == ' ' || *str == '\t' || *str =='\n')
+  while (*str && (*str == ' ' || *str == '\t' || *str =='\n'))
     str++;
 
   while (ctx_is_digit (*str) || *str == '.' || *str == '-' || *str == '+')
@@ -2147,7 +2153,7 @@ again:
             goto again;
           }
           break;
-        case 'c':
+	case 'c': /* XXX: code can be compacted by having relative fall through with full */
           if (numbers == 6)
           {
             ctx_rel_curve_to (ctx, number[0], number[1],
@@ -5463,9 +5469,9 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
 #endif
       {
         ctx_renderer_apply_coverage (renderer,
-                                     &dst[(minx) * renderer->format->bpp/8],
+                                     &dst[(minx * renderer->format->bpp)/8],
                                      minx,
-                                     coverage, maxx-minx);
+                                     coverage, maxx-minx + 1);
       }
     }
 #if CTX_SHAPE_CACHE
@@ -5512,7 +5518,7 @@ ctx_renderer_fill_rect (CtxRenderer *renderer,
 
   dst += (y0 - renderer->blit_y) * renderer->blit_stride;
 
-  int width = x1 - x0;
+  int width = x1 - x0 + 1;
   if (width > 0)
   {
     renderer->scanline = y0 * CTX_RASTERIZER_AA;
@@ -5624,7 +5630,7 @@ ctx_renderer_fill (CtxRenderer *renderer)
                                  ((uint8_t*)renderer->buf) + (y-renderer->blit_y) * renderer->blit_stride + (int)(x0) * renderer->format->bpp/8,
                              x0,
                              &shape->data[shape->width * (int)(y-ymin) + xo],
-                             ewidth);
+                             ewidth );
     }
     }
 
@@ -5634,6 +5640,7 @@ ctx_renderer_fill (CtxRenderer *renderer)
       ctx_renderer_reset (renderer);
     }
     ctx_shape_entry_release (shape);
+    return;
   }
   else
 #else
@@ -6329,7 +6336,7 @@ ctx_decode_pixels_GRAY1(CtxRenderer *renderer, int x, const void *buf, uint8_t *
   const uint8_t *pixel = (uint8_t*)buf;
   while (count--)
   {
-    if (*pixel & (x&7))
+    if (*pixel & (1<<(x&7)))
     {
       rgba[0] = 255;
       rgba[1] = 255;
@@ -7104,137 +7111,6 @@ ctx_datatype_for_code (CtxCode code)
  return 0;
 }
 
-int
-ctx_cmd_str (Ctx *ctx, const char *commandline)
-{
-  uint32_t args_u32[2] = {0,};
-  const char *rest;
-  int code = 0;
-  rest = strchr (commandline, ' ');
-
-  if (rest && commandline[1] == ' ')
-  {
-    code = commandline[0];
-  }
-  else
-  {
-    code = ctx_str_to_command (commandline);
-    if (!code)
-    {
-      fprintf (stderr, "uknown command %s\n", commandline);
-      return -1;
-    }
-  }
-
-  while (rest && *rest == ' ') rest++;
-#if 0
-  if (code == CTX_TEXT)
-  {
-    ctx_text (ctx, rest);
-    return 0;
-  }
-#endif
-
-  switch (ctx_datatype_for_code (code))
-  {
-    case CTX_FLOAT:
-      {
-        float *args = (void*)&args_u32[0];
-        args[0] = strtof (rest, (void*)&rest);
-        while (rest && *rest == ' ') rest++;
-        args[1] = strtof (rest, (void*)&rest);
-      }
-      break;
-    case CTX_U32:
-      {
-        uint32_t *args = (void*)&args_u32[0];
-        for (int i = 0; i < 2; i ++)
-        {
-          if (rest)
-          {
-            while (rest && *rest == ' ') rest++;
-            args[i] = atoi (rest);
-            while (rest && (*rest >= '0') && (*rest <= '9')) rest++;
-          }
-        }
-      }
-      break;
-    case CTX_S32:
-      {
-        int32_t *args = (void*)&args_u32[0];
-        for (int i = 0; i < 2; i ++)
-        {
-          if (rest)
-          {
-            while (rest && *rest == ' ') rest++;
-            args[i] = atoi (rest);
-            while (rest && (*rest >= '0') && (*rest <= '9')) rest++;
-          }
-        }
-      }
-      break;
-    case CTX_S16:
-      {
-        int16_t *args = (void*)&args_u32[0];
-        for (int i = 0; i < 4; i ++)
-        {
-          if (rest)
-          {
-            while (rest && *rest == ' ') rest++;
-            args[i] = atoi (rest);
-            while (rest && (*rest >= '0') && (*rest <= '9')) rest++;
-          }
-        }
-      }
-      break;
-    case CTX_U16:
-      {
-        uint16_t *args = (void*)&args_u32[0];
-        for (int i = 0; i < 4; i ++)
-        {
-          if (rest)
-          {
-            while (rest && *rest == ' ') rest++;
-            args[i] = atoi (rest);
-            while (rest && (*rest >= '0') && (*rest <= '9')) rest++;
-          }
-        }
-      }
-      break;
-    case CTX_U8:
-      {
-        uint8_t *args = (void*)&args_u32[0];
-        for (int i = 0; i < 8; i ++)
-        {
-          if (rest)
-          {
-            while (rest && *rest == ' ') rest++;
-            args[i] = atoi (rest);
-            while (rest && (*rest >= '0') && (*rest <= '9')) rest++;
-          }
-        }
-      }
-      break;
-    case CTX_S8:
-      {
-        int8_t *args = (void*)&args_u32[0];
-        for (int i = 0; i < 8; i ++)
-        {
-          if (rest)
-          {
-            while (rest && *rest == ' ') rest++;
-            args[i] = atoi (rest);
-            while (rest && (*rest >= '0') && (*rest <= '9')) rest++;
-          }
-        }
-      }
-      break;
-    case CTX_VOID:
-      break;
-  }
-  return ctx_renderstream_add_u32 (&ctx->renderstream, code, (void*)args_u32);
-}
-
 static inline void
 ctx_entry_print (CtxState *state, CtxEntry *entry, void *data)
 {
@@ -7286,7 +7162,7 @@ ctx_do_cb (Ctx *ctx, int do_history,
 {
   CtxIterator iterator;
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
-                                                  CTX_ITERATOR_EXPAND_BITPACK);
+                                                       CTX_ITERATOR_EXPAND_BITPACK);
   CtxEntry *entry;
   while ((entry = ctx_iterator_next(&iterator)))
   {
@@ -7707,8 +7583,12 @@ static void ctx_font_init_ctx (CtxFont *font)
       glyph_count ++;
   }
   font->ctx.glyphs = glyph_count;
-static uint32_t idx[256];
+#if CTX_RENDERSTREAM_STATIC
+  static uint32_t idx[512];
   font->ctx.index = &idx[0];//(uint32_t*)malloc (sizeof (uint32_t) * 2 * glyph_count);
+#else
+  font->ctx.index = (uint32_t*)malloc (sizeof (uint32_t) * 2 * glyph_count);
+#endif
   int no = 0;
   for (int i = 0; i < font->ctx.length; i++)
   {
@@ -7731,8 +7611,6 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
     return -1;
   ctx_fonts[ctx_font_count].type = 0;
   ctx_fonts[ctx_font_count].name = name;
-  //(char *)malloc (strlen (name)+1);
-  //strcpy ((char*)ctx_fonts[ctx_font_count].name, name);//strdup (name);
   ctx_fonts[ctx_font_count].ctx.data = (CtxEntry*)data;
   ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
   ctx_font_init_ctx (&ctx_fonts[ctx_font_count]);
@@ -7742,7 +7620,7 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
 
 #endif
 
-static inline int
+int
 ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxState *state = &ctx->state;
@@ -7819,20 +7697,12 @@ _ctx_glyphs (Ctx        *ctx,
             int         n_glyphs,
             int         stroke)
 {
-  //CtxState *state = &ctx->state;
-  //float x = ctx->state.x;
-  //float y = ctx->state.y;
   for (int i = 0; i < n_glyphs; i++)
     {
       {
         uint32_t unichar = glyphs[i].index;
         ctx_move_to (ctx, glyphs[i].x, glyphs[i].y);
         ctx_glyph (ctx, unichar, stroke);
-        if (i < n_glyphs - 1)
-        {
-          ctx_glyph_width (ctx, unichar);
-          ctx_glyph_kern (ctx, unichar, glyphs[i].index);
-        }
       }
     }
 }
@@ -7845,6 +7715,7 @@ _ctx_text (Ctx        *ctx,
   CtxState *state = &ctx->state;
   float x = ctx->state.x;
   float y = ctx->state.y;
+  //x = ctx_ceilf (x);
   float x0 = x;
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
     {
@@ -7852,7 +7723,6 @@ _ctx_text (Ctx        *ctx,
       {
         y += ctx->state.gstate.font_size * state->gstate.line_spacing;
         x = x0;
-	x = ctx_ceilf (x);
         ctx_move_to (ctx, x, y);
       }
       else
@@ -7865,7 +7735,6 @@ _ctx_text (Ctx        *ctx,
         {
           x += ctx_glyph_width (ctx, unichar);
           x += ctx_glyph_kern (ctx, unichar, ctx_utf8_to_unichar (next_utf8));
-	  x = ctx_ceilf (x);
         }
       }
     }
@@ -7919,19 +7788,16 @@ void
 ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 {
   CtxIterator iterator;
- // CtxState    state;
   CtxEntry   *entry;
 
   cairo_pattern_t *pat = NULL;
   cairo_surface_t *image = NULL;
 
-//  ctx_state_init (&state);
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
                                                   CTX_ITERATOR_EXPAND_BITPACK);
 
   while ((entry = ctx_iterator_next (&iterator)))
   {
-    //command_print (NULL, command, &ctx->renderstream);
     //if (cairo_status (cr)) return;
     switch (entry->code)
     {
@@ -8129,8 +7995,6 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
           pat = cairo_pattern_create_radial (ctx_arg_float(0), ctx_arg_float(1),
                                              ctx_arg_float(2), ctx_arg_float(3),
                                              ctx_arg_float(4), ctx_arg_float(5));
-//          cairo_pattern_add_color_stop_rgba (pat, 0, 0, 0, 0, 1);
- //         cairo_pattern_add_color_stop_rgba (pat, 1, 1, 1, 1, 1);
           cairo_set_source (cr, pat);
         }
         break;
@@ -8160,6 +8024,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
           cairo_set_source_surface (cr, image, ctx_arg_float(0), ctx_arg_float(1));
         }
         break;
+
       case CTX_TEXT:
       case CTX_CONT:
       case CTX_EDGE:
@@ -8180,6 +8045,159 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
   }
 }
 #endif
+
+void
+ctx_parse_str_line (Ctx *ctx, const char *str)
+{
+  const char *s = str;
+  char name[32];
+  float arg[12];
+  int i = 0;
+  int n_args = 0;
+
+  while (*s && *s == ' ' || *s == '\t') s ++;
+  while (*s && *s != ' ' && *s != '\n' && *s != '\t' && *s != '#' && i<31)
+  {name[i] = *s; name[i+1] = 0; i++;s++;}
+
+  while (*s && *s == ' ' || *s == '\t') s ++;
+  do
+  {
+    if (*s >= '0' && *s <= '9' || *s=='-')
+    {
+      arg[n_args] = ctx_strtof (s, (char**)&s);
+      if (n_args < 10)
+        n_args++;
+    }
+    else
+    {
+       while (*s && *s != ' ' && *s != '\t') s ++;
+    }
+    while (*s && (*s == ' ' || *s == '\t')) s ++;
+  } while (*s && *s != 0 && *s != '\n' && *s != '#');
+
+  if (!strcmp (name, "line_to")) {
+     ctx_line_to (ctx, arg[0], arg[1]);
+  }
+  else if (!strcmp (name, "rel_line_to")) {
+     ctx_rel_line_to (ctx, arg[0], arg[1]);
+  }
+  if (!strcmp (name, "move_to")) {
+     ctx_move_to (ctx, arg[0], arg[1]);
+  }
+  else if (!strcmp (name, "rel_move_to")) {
+     ctx_rel_move_to (ctx, arg[0], arg[1]);
+  }
+  else if (!strcmp (name, "curve_to")) {
+     ctx_curve_to (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+  }
+  else if (!strcmp (name, "rel_curve_to")) {
+     ctx_rel_curve_to (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+  }
+  else if (!strcmp (name, "quad_to")) {
+     ctx_quad_to (ctx, arg[0], arg[1], arg[2], arg[3]);
+  }
+  else if (!strcmp (name, "rel_quad_to")) {
+     ctx_rel_quad_to (ctx, arg[0], arg[1], arg[2], arg[3]);
+  }
+  else if (!strcmp (name, "rotate")) {
+     ctx_rotate (ctx, arg[0]);
+  }
+  else if (!strcmp (name, "scale")) {
+     ctx_scale (ctx, arg[0], arg[1]);
+  }
+  else if (!strcmp (name, "translate")) {
+     ctx_translate (ctx, arg[0], arg[1]);
+  }
+  else if (!strcmp (name, "set_line_width")) {
+     ctx_set_line_width (ctx, arg[0]);
+  }
+  else if (!strcmp (name, "arc")) {
+     ctx_arc (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+  }
+  else if (!strcmp (name, "set_rgba_u8")) {
+     ctx_set_rgba_u8 (ctx, arg[0], arg[1], arg[2], arg[3]);
+  }
+  else if (!strcmp (name, "set_rgba")) {
+     ctx_set_rgba (ctx, arg[0], arg[1], arg[2], arg[3]);
+  }
+  else if (!strcmp (name, "set_pixel_u8")) {
+     ctx_set_pixel_u8 (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+  }
+  else if (!strcmp (name, "rectangle")) {
+     ctx_rectangle (ctx, arg[0], arg[1], arg[2], arg[3]);
+  }
+  else if (!strcmp (name, "fill")) {
+     ctx_fill (ctx);
+  }
+  else if (!strcmp (name, "stroke")) {
+     ctx_stroke(ctx);
+  }
+  else if (!strcmp (name, "identity_matrix")) {
+     ctx_identity_matrix (ctx);
+  }
+  else if (!strcmp (name, "clip")) {
+     ctx_clip(ctx);
+  }
+  else if (!strcmp (name, "new_path")) {
+     ctx_new_path (ctx);
+  }
+  else if (!strcmp (name, "close_path")) {
+     ctx_close_path (ctx);
+  }
+  else if (!strcmp (name, "save")) {
+     ctx_save (ctx);
+  }
+  else if (!strcmp (name, "text")) {
+     const char *s = str;
+     while (*s == ' ' || *s == '\t') s ++;
+     while (*s != ' ' && *s != '\t') s ++;
+     if (*s)
+     ctx_text (ctx, s);
+  }
+  else if (!strcmp (name, "set_font")) {
+     const char *s = str;
+     while (*s == ' ' || *s == '\t') s ++;
+     while (*s != ' ' && *s != '\t') s ++;
+     if (*s)
+     ctx_set_font (ctx, s);
+  }
+  else if (!strcmp (name, "restore")) {
+     ctx_restore (ctx);
+  }
+  else if (!strcmp (name, "clear")) {
+     ctx_clear (ctx);
+  }
+  else if (!strcmp (name, "set_font_size")) {
+     ctx_set_font_size (ctx, arg[0]);
+  }
+  else if (!strcmp (name, "set_line_cap")) {
+     ctx_set_line_cap (ctx, arg[0]);
+  }
+  else if (!strcmp (name, "set_line_join")) {
+     ctx_set_line_join (ctx, arg[0]);
+  }
+  else if (!strcmp (name, "new_path")) {
+     ctx_new_path (ctx);
+  }
+  else if (!strcmp (name, "close_path")) {
+     ctx_close_path (ctx);
+  }
+  else if (!strcmp (name, "linear_gradient")) {
+     ctx_linear_gradient (ctx, arg[0], arg[1], arg[2], arg[3]);
+     ctx_gradient_clear_stops (ctx);
+  }
+  else if (!strcmp (name, "radial_gradient")) {
+     ctx_radial_gradient (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+     ctx_gradient_clear_stops (ctx);
+  }
+  else if (!strcmp (name, "gradient_clear_stops")) {
+     ctx_gradient_clear_stops (ctx);
+  }
+  else if (!strcmp (name, "gradient_add_stop")) {
+     ctx_gradient_add_stop (ctx, arg[0], arg[1], arg[2], arg[3], arg[4]);
+  }
+}
+
 
 void
 ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
