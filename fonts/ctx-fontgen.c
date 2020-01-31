@@ -93,7 +93,9 @@ char* string = "☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬
 
   if (strstr (subsets, "extras"))
   {
-  char *string = "éñÑßæøåö£ÆÖØÅ€§π°üÜ…”““”«»©®™·←↑↓→☣☀☁☂☢☭☮☯☽✉⚙⚠␣²";
+  char *string =
+	
+"éñÑßæøåö£ÆÖØÅ€§π°üÜ…”““”«»©®™·←↑↓→☣☀☁☂☢☭☮☯☽✉⚙⚠␣²◆♥♦♣♠▲▼÷≈±≥≤½¼";
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
     add_glyph (ctx, ctx_utf8_to_unichar (utf8));
   }

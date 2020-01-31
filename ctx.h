@@ -5224,18 +5224,14 @@ ctx_renderer_apply_coverage (CtxRenderer *renderer,
 static void
 ctx_renderer_generate_coverage (CtxRenderer *renderer,
                                 int          minx,
+                                int          maxx,
                                 uint8_t     *coverage,
                                 int          winding,
                                 int          aa)
 {
   int scanline     = renderer->scanline;
   int active_edges = renderer->active_edges;
-  int blit_min     = renderer->blit_x;
-  int blit_max     = renderer->blit_width - 1;
   int parity = 0;
-
-  if (minx == renderer->blit_width)
-    return;
 
   coverage -= minx;
 
@@ -5245,11 +5241,6 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
 #define CTX_EDGE_SLOPE(no) renderer->edges[no].dx
 #define CTX_EDGE_X(no)     (renderer->edges[no].x)
 
-  {
-    int x = CTX_EDGE_X(0) / CTX_SUBDIV / CTX_RASTERIZER_EDGE_MULTIPLIER ;
-
-    if (x < blit_min) x = blit_min;
-  }
 
   for (int t = 0; t < active_edges -1;)
   {
@@ -5273,14 +5264,20 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
       {
         int first = x0 / CTX_RASTERIZER_EDGE_MULTIPLIER;
         int last  = x1 / CTX_RASTERIZER_EDGE_MULTIPLIER;
+#if 0
         if (first < 0)
           first = 0;
-        if (first > blit_max)
-          first = blit_max;
-        if (last > blit_max)
-          last = blit_max;
+        if (first >= maxx-minx)
+          first = maxx-minx;
         if (last < 0)
           last = 0;
+#endif
+        if (first < minx)
+          first = minx;
+        if (last >= maxx)
+          last = maxx;
+	if (first > last)
+	  return;
 
         int graystart = 255-((x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
         int grayend   = (x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff;
@@ -5365,14 +5362,23 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
 
   int minx = renderer->col_min / CTX_SUBDIV - renderer->blit_x;
   int maxx = (renderer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - renderer->blit_x;
+#if 1
   if (
 #if CTX_SHAPE_CACHE
 		   !shape && 
 #endif
 		  
-		  maxx > blit_max_x)
-    maxx = blit_max_x;
-  //fprintf (stderr, "%i %i|", renderer->col_min, renderer->col_max);
+		  maxx > blit_max_x - 1)
+    maxx = blit_max_x - 1;
+#endif
+
+  if (minx < 0)
+    minx = 0;
+  if (minx >= maxx)
+  {
+          ctx_renderer_reset (renderer);
+	  return;
+  }
 
 #if CTX_SHAPE_CACHE
   uint8_t _coverage[shape?2:maxx-minx+1];
@@ -5380,16 +5386,13 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
   uint8_t _coverage[maxx-minx+1];
 #endif
   uint8_t *coverage = &_coverage[0];
-
 #if CTX_SHAPE_CACHE
   if (shape)
   {
     coverage = &shape->data[0];
-    //minx = renderer->col_min / CTX_SUBDIV - renderer->blit_x;
-    //blit_max_x = maxx = minx + shape->width;
-    //blit_width = shape->width;
   }
 #endif
+  ctx_assert (coverage);
 
   renderer->scan_min -= (renderer->scan_min % CTX_RASTERIZER_AA);
 
@@ -5411,6 +5414,8 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
       scan_end = renderer->scan_max;
   }
   ctx_renderer_sort_edges (renderer);
+
+  if (scan_start > scan_end) return;
 
   for (renderer->scanline = scan_start; renderer->scanline < scan_end;)
   {
@@ -5436,7 +5441,7 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
       for (int i = 0; i < CTX_RASTERIZER_AA; i++)
       {
         ctx_renderer_sort_active_edges (renderer);
-        ctx_renderer_generate_coverage (renderer, minx, coverage, winding, 1);
+        ctx_renderer_generate_coverage (renderer, minx, maxx, coverage, winding, 1);
         renderer->scanline ++;
         ctx_renderer_increment_edges (renderer, 1);
         if (i!=CTX_RASTERIZER_AA-1) {
@@ -5453,7 +5458,7 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
       ctx_renderer_feed_edges (renderer);
       ctx_renderer_discard_edges (renderer);
       ctx_renderer_sort_active_edges (renderer);
-      ctx_renderer_generate_coverage (renderer, minx, coverage, winding, 0);
+      ctx_renderer_generate_coverage (renderer, minx, maxx, coverage, winding, 0);
       renderer->scanline += CTX_RASTERIZER_AA2;
       ctx_renderer_increment_edges (renderer, CTX_RASTERIZER_AA2);
 #else
@@ -5471,7 +5476,7 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
         ctx_renderer_apply_coverage (renderer,
                                      &dst[(minx * renderer->format->bpp)/8],
                                      minx,
-                                     coverage, maxx-minx + 1);
+                                     coverage, maxx-minx);
       }
     }
 #if CTX_SHAPE_CACHE
@@ -5493,6 +5498,8 @@ ctx_renderer_fill_rect (CtxRenderer *renderer,
                         int          x1,
                         int          y1)
 {
+  if (x0>x1 || y0>y1) return 1; // XXX : maybe this only happens under
+                                //       memory corruption
   if (x1 % CTX_SUBDIV ||
       x0 % CTX_SUBDIV ||
       y1 % CTX_RASTERIZER_AA ||
@@ -5504,7 +5511,7 @@ ctx_renderer_fill_rect (CtxRenderer *renderer,
   y1 /= CTX_RASTERIZER_AA;
   y0 /= CTX_RASTERIZER_AA;
 
-  uint8_t coverage[x1-x0];
+  uint8_t coverage[x1-x0 + 1];
   uint8_t *dst = ((uint8_t*)renderer->buf);
   memset (coverage, 0xff, sizeof (coverage));
   if (x0 < renderer->blit_x)
