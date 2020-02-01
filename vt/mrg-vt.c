@@ -5,11 +5,9 @@
  *
  * TODO: selection + copy/(bracketed) paste
  *       deal with scroll events
- *       sane API for scrollback
- *       tabs
  *       keyrepeat
  *       alternate screen
- *       256color
+ *       256color still buggy, when used with tv
  *       dim, hidden
  *       overlay with commands for scrollback + fontsize change
  *
@@ -63,8 +61,8 @@
 #define VT_LOG_INPUT    (1<<5)
 #define VT_LOG_ALL       0xff
 
-static int vt_log_mask = 0;
-//static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
+//static int vt_log_mask = 0;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL - VT_LOG_INPUT - VT_LOG_CURSOR;
 //static int vt_log_mask = VT_LOG_ALL;
@@ -89,8 +87,6 @@ static int vt_log_mask = 0;
   #define VT_error(a...) if (vt_log_mask & VT_LOG_ERROR) vt_log ("ERROR",__LINE__, ##a)
 
 #endif
-
-
 
 #include "mmm.h"
 
@@ -344,7 +340,6 @@ static void vtcmd_reset_device (MrgVT *vt, const char *sequence)
   vt->done                   = 0;
   vt->result                 = -1;
   vt->state                  = TERMINAL_STATE_NEUTRAL,
-  vt->commandline            = NULL;
 
   vt->unit_pixels   = 0;
   vt->mouse         = 0;
