@@ -1463,96 +1463,95 @@ static char* charmap[]={
 
 static Sequence sequences[]={
 /*
-  prefix   suffix  command */
-  {"D",      0,   vtcmd_cursor_down_scroll}, /* id:IND index */
-  {"E",      0,   vtcmd_next_line},
-  {"M",      0,   vtcmd_cursor_up_scroll}, /* id:RI reverse index */
+  prefix suffix  command */
+  {"D",   0,  vtcmd_cursor_down_scroll}, /* id:IND index */
+  {"E",   0,  vtcmd_next_line},
+  {"M",   0,  vtcmd_cursor_up_scroll}, /* id:RI reverse index */
 
-  //{"N",    0,   vtcmd_ignore}, /* Set single shift 2 - SS2*/
-  //{"O",    0,   vtcmd_ignore}, /* Set single shift 3 - SS3*/
+  //{"N",  0,   vtcmd_ignore}, /* Set single shift 2 - SS2*/
+  //{"O",  0,   vtcmd_ignore}, /* Set single shift 3 - SS3*/
 
-  {"[",     'A',   vtcmd_cursor_up},   /* id:CUU cursor up */
-  {"[",     'B',   vtcmd_cursor_down}, /* id:CUD cursor down */
-  {"[",     'C',   vtcmd_cursor_forward}, /* id:CUF cursor forward */
-  {"[",     'D',   vtcmd_cursor_backward}, /* id:CUB cursor backward */
-  {"[",     'E',   vtcmd_next_line}, /* id:VPR: Line position forward */
-  {"[",     'F',   vtcmd_cursor_up_and_first_col}, /* id:CPL cursor preceding line */
-  {"[",     'G',   vtcmd_goto_column}, /* id:CHA cursor position absolute */
-  {"[",     'H',   vtcmd_cursor_position}, /*id:CUP cursor position */
-  {"[",     'f',   vtcmd_cursor_position}, /*id:CUP cursor position */
-  {"[",     'I',   vtcmd_insert_n_tabs}, /*id:CHT cursor forward tabulation */
-  {"[",     'J',   vtcmd_erase_in_display}, /*id:ED erase in display */
-  {"[",     'K',   vtcmd_erase_in_line}, /* id:EL erase in line */
-  {"[",     'L',   vtcmd_insert_blank_lines}, /* id:IL insert line */
-  {"[",     'M',   vtcmd_delete_n_lines}, /* id:DL delete line   */
-  {"[",     'P',   vtcmd_delete_n_chars}, /* id:DCH delete character */
-  {"[",     'X',   vtcmd_erase_n_chars}, /* id:ECH erase character */
-  {"[",     'S',   vtcmd_scroll_up}, /* id:SU scroll up */
-  {"[",     'T',   vtcmd_scroll_down}, /* id:SD scroll down */
-  // U - next page
-  // V - previous page
-  {"[",     '^',   vtcmd_scroll_down}, /* muphry alternate from ECMA */
-  {"[",     'Z',   vtcmd_rev_n_tabs}, /* id:CBT cursor backward tabulation */
-  {"[",     '@',   vtcmd_insert_blanks}, /* id:ICH insert character */
+  {"[",  'A', vtcmd_cursor_up},   /* id:CUU cursor up */
+  {"[",  'B', vtcmd_cursor_down}, /* id:CUD cursor down */
+  {"[",  'C', vtcmd_cursor_forward}, /* id:CUF cursor forward */
+  {"[",  'D', vtcmd_cursor_backward}, /* id:CUB cursor backward */
+  {"[",  'E', vtcmd_next_line}, /* id:VPR Line position forward */
+  {"[",  'F', vtcmd_cursor_up_and_first_col}, /* id:CPL cursor preceding line */
+  {"[",  'G', vtcmd_goto_column}, /* id:CHA cursor position absolute */
+  {"[",  'H', vtcmd_cursor_position}, /*id:CUP cursor position */
+  {"[",  'f', vtcmd_cursor_position}, /*id:CUP cursor position */
+  {"[",  'I', vtcmd_insert_n_tabs}, /*id:CHT cursor forward tabulation */
+  {"[",  'J', vtcmd_erase_in_display}, /*id:ED erase in display */
+  {"[",  'K', vtcmd_erase_in_line}, /* id:EL erase in line */
+  {"[",  'L', vtcmd_insert_blank_lines}, /* id:IL insert line */
+  {"[",  'M', vtcmd_delete_n_lines}, /* id:DL delete line   */
+  {"[",  'P', vtcmd_delete_n_chars}, /* id:DCH delete character */
+  {"[",  'X', vtcmd_erase_n_chars}, /* id:ECH erase character */
+  {"[",  'S', vtcmd_scroll_up}, /* id:SU scroll up */
+  {"[",  'T', vtcmd_scroll_down}, /* id:SD scroll down */
+  // U - ext page
+  // V - revious page
+  {"[",  '^', vtcmd_scroll_down}, /* muphry alternate from ECMA */
+  {"[",  'Z', vtcmd_rev_n_tabs}, /* id:CBT cursor backward tabulation */
+  {"[",  '@', vtcmd_insert_blanks}, /* id:ICH insert character */
 
-  {"[",     'a',   vtcmd_cursor_forward}, /* id:HPR character position forward */
-  {"[",     'd',   vtcmd_goto_row}, /*id:VPA line position absolute */
-  {"[",     'e',   vtcmd_cursor_down}, /*id:VPR line position forward */
-  {"[",     'm',   vtcmd_set_style}, /*id:SGR select graphics rendition */
-  {"[",     'r',   vtcmd_set_top_and_bottom_margins}, /*id:DECSTBM set top and bottom margins */
-  {"[",     '`',   vtcmd_goto_column}, /* id:HPA character position absolute */
-  {"[s",     0,    vtcmd_save_cursor_position}, /* id:SCP save cursor position */
-  {"[u",     0,    vtcmd_restore_cursor_position}, /*id:RCP restore cursor position */
+  {"[",  'a', vtcmd_cursor_forward}, /* id:HPR character position forward */
+  {"[",  'd', vtcmd_goto_row}, /*id:VPA line position absolute */
+  {"[",  'e', vtcmd_cursor_down}, /*id:VPR line position forward */
+  {"[",  'm', vtcmd_set_style}, /*id:SGR select graphics rendition */
+  {"[",  'r', vtcmd_set_top_and_bottom_margins}, /*id:DECSTBM set top and bottom margins */
+  {"[",  '`', vtcmd_goto_column}, /* id:HPA character position absolute */
+  {"[s",  0,  vtcmd_save_cursor_position}, /* id:SCP save cursor position */
+  {"[u",  0,  vtcmd_restore_cursor_position}, /*id:RCP restore cursor position */
 
-  /*  [ Z - cursor backward tabulation n tab stops */
+  /*  [ Zcursor backward tabulation n tab stops */
 
-  {"[6n",    0,   vtcmd_cursor_position_report}, /* id:DSR CPR Cursor Position Report  */
-  {"[5n",    0,   vtcmd_status_report}, /*id:DSR device status report */
-  
-  {"[0g",    0,   vtcmd_clear_current_tab},
-  {"[3g",    0,   vtcmd_clear_all_tabs},
+  {"[6n", 0,  vtcmd_cursor_position_report}, /* id:DSR CPR Cursor Position Report  */
+  {"[5n", 0,  vtcmd_status_report}, /*id:DSR device status report */
+  {"[0g", 0,  vtcmd_clear_current_tab},
+  {"[3g", 0,  vtcmd_clear_all_tabs},
 
-  {"[",     'h',  vtcmd_set},   /* id:SM set mode */
-  {"[",     'l',  vtcmd_unset}, /* id:RM reset mode */
-  {"[",     't',  vtcmd_set_t},  // used by vim, for stack of icon/titles
+  {"[",  'h', vtcmd_set},   /* id:SM set mode */
+  {"[",  'l', vtcmd_unset}, /* id:RM reset mode */
+  {"[",  't', vtcmd_set_t},  // used by vim, for stack of icon/titles
 
-  {"7",      0,   vtcmd_save_cursor_position}, /* id:DECSC save cursor */
-  {"8",      0,   vtcmd_restore_cursor_position}, /* id:DECRC restore cursor */
-  {"H",      0,   vtcmd_set_tab_at_current_column}, /* id:HTS character tabulation set */
+  {"7",   0,  vtcmd_save_cursor_position}, /* id:DECSC save cursor */
+  {"8",   0,  vtcmd_restore_cursor_position}, /* id:DECRC restore cursor */
+  {"H",   0,  vtcmd_set_tab_at_current_column}, /* id:HTS character tabulation set */
 
-  {"[0c",  'c',   vtcmd_device_attributes}, /* id:DA device attributes */
-  //{"Z",      0,   vtcmd_device_attributes}, 
+  {"[0c", 'c', vtcmd_device_attributes}, /* id:DA device attributes */
+  //{"Z", 0,  vtcmd_device_attributes}, 
 
-  //{"%G",   0,   vtcmd_set_default_font}, // set_alternate_font
+  //{"%G",0,  vtcmd_set_default_font}, // set_alternate_font
 #if 0
   /* these should set an alternate charset - seem to sometimes be used
    * for getting graphics chars
    */
-  {")0",     0,   vtcmd_set_alternate_font},
-  {")1",     0,   vtcmd_set_alternate_font},
-  {")2",     0,   vtcmd_set_alternate_font},
-  {")A",     0,   vtcmd_set_alternate_font},
-  {")B",     0,   vtcmd_set_alternate_font},
-  {"(1",     0,   vtcmd_set_default_font},
-  {"(2",     0,   vtcmd_set_default_font},
-  {"(A",     0,   vtcmd_set_default_font},
-  {"(B",     0,   vtcmd_set_default_font}, 
+  {")0",  0,   vtcmd_set_alternate_font},
+  {")1",  0,   vtcmd_set_alternate_font},
+  {")2",  0,   vtcmd_set_alternate_font},
+  {")A",  0,   vtcmd_set_alternate_font},
+  {")B",  0,   vtcmd_set_alternate_font},
+  {"(1",  0,   vtcmd_set_default_font},
+  {"(2",  0,   vtcmd_set_default_font},
+  {"(A",  0,   vtcmd_set_default_font},
+  {"(B",  0,   vtcmd_set_default_font}, 
 #endif
   
-  {"[",     'q',  vtcmd_set_led},
-  {"[",     'z',  vtcmd_DECELR}, /* id:DECLL Load LEDs */
+  {"[",  'q',  vtcmd_set_led},
+  {"[",  'z',  vtcmd_DECELR}, /* id:DECLL Load LEDs */
 
-  {"(0",     0,   vtcmd_set_alternate_font},
-  {"(1",     0,   vtcmd_set_default_font},
-  {"(2",     0,   vtcmd_set_default_font},
-  {"(A",     0,   vtcmd_set_default_font},
-  {"(B",     0,   vtcmd_set_default_font}, 
+  {"(0",  0,   vtcmd_set_alternate_font},
+  {"(1",  0,   vtcmd_set_default_font},
+  {"(2",  0,   vtcmd_set_default_font},
+  {"(A",  0,   vtcmd_set_default_font},
+  {"(B",  0,   vtcmd_set_default_font}, 
 
-  {"#8",     0,   vtcmd_screen_alignment_display}, /* id:DECALN Screen alignment display */
-  {"=",      0,   vtcmd_ignore},  // keypad mode change
-  {">",      0,   vtcmd_ignore},  // keypad mode change
-  {"c",      0,   vtcmd_reset_device}, /* id:RIS Reset to initial state */
-  {"[!",    'p',  vtcmd_ignore}, // soft reset?
+  {"#8",  0,   vtcmd_screen_alignment_display}, /* id:DECALN Screen alignment display */
+  {"=",   0,   vtcmd_ignore},  // keypad mode change
+  {">",   0,   vtcmd_ignore},  // keypad mode change
+  {"c",   0,   vtcmd_reset_device}, /* id:RIS Reset to initial state */
+  {"[!", 'p',  vtcmd_ignore}, // soft reset?
 
   {NULL, 0, NULL}
 };
@@ -2830,7 +2829,7 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
 void mrg_vt_poll (MrgVT *vt)
 {
   int count = 0;
-  int sleeps = 445;
+  float sleep = 0.1;
 {
   if (vt->slow_baud)
   {
@@ -2848,6 +2847,7 @@ void mrg_vt_poll (MrgVT *vt)
   {
     unsigned char buf[2048];
     int len;
+    float sleeps = 0.05;
 a:
     len = read(vt->pty, buf, sizeof (buf));
     if (len > 0)
@@ -2860,10 +2860,11 @@ a:
       {
         if (len < sizeof (buf))
         {
-          usleep (300); /*was:100 to give pipe chance to fill  */
-          sleeps --;
+          float time = 0.05;
+          usleep (time*1000 * 1000); /*was:100 to give pipe chance to fill  */
+          sleeps -= time;
         }
-        if (sleeps >= 0 && !vt->done)
+        if (sleeps >= 0.0 && !vt->done)
         goto a;
       }
     }
@@ -3598,13 +3599,10 @@ void vt_ctx_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, flo
   ctx_glyph (ctx, unichar, 0);
   if (bold)
   {
-    ctx_move_to (ctx, x+1, y);
+    ctx_move_to (ctx, x+font_size/50, y);
     ctx_glyph (ctx, unichar, 0);
-    if (font_size > 16)
-    {
-      ctx_move_to (ctx, x-1, y);
-      ctx_glyph (ctx, unichar, 0);
-    }
+    ctx_move_to (ctx, x-font_size/50, y);
+    ctx_glyph (ctx, unichar, 0);
   }
 }
 
