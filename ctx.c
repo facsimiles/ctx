@@ -38,7 +38,7 @@ int parse_main (int argc, char **argv)
 
   printf ("\e[?2222h");
   printf ("%c        ", CTX_CLEAR);
-
+ 
   CtxEntry *entries = *(CtxEntry **)(ctx);
   for (int i = 0; i < count; i++)
   {

@@ -328,7 +328,7 @@ static void vtcmd_reset_device (MrgVT *vt, const char *sequence)
   vt->cstyle         = 0;
   vt->cursor_visible = 1;
   vt->charset = 0;
-  vt->bell = 4;
+  vt->bell = 2;
   vt->saved_x                = 1;
   vt->saved_y                = 1;
   vt->saved_style            = 1;
@@ -2419,7 +2419,8 @@ unsigned int foo_len = 9000;
 
 static void mrg_vt_bell (MrgVT *vt)
 {
-	return;
+  if (vt->bell < 2)
+    return;
   for (int i = 0; i < sizeof (vt_bell_audio); i++)
     terminal_queue_pcm_sample (MuLawDecompressTable[vt_bell_audio[i]] * vt->bell / 8);
 }

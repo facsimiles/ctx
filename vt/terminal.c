@@ -97,6 +97,8 @@ int vt_main(int argc, char **argv)
 {
   int cw = (font_size / line_spacing) + 0.99;
   int ch = font_size;
+  int old_w = 0;
+  int old_h = 0;
   //mmm = mmm_new (font_size * 40, font_size * DEFAULT_ROWS, 0, NULL);
   mmm = mmm_new (cw * DEFAULT_COLS, ch * DEFAULT_ROWS, 0, NULL);
   unsetenv ("MMM_PATH");
@@ -107,7 +109,6 @@ int vt_main(int argc, char **argv)
 
   int i;
   int sleep_time = 10;
-
 
   vt_child = mrg_vt_get_pid (vt);
   signal (SIGCHLD, signal_child);
@@ -124,10 +125,17 @@ int vt_main(int argc, char **argv)
       {
         drawn_rev = mrg_vt_rev (vt);
       audio_task ();
-        mmm_client_check_size (mmm, &width, &height);
-        buffer = mmm_get_buffer_write (mmm, &width, &height, &stride, NULL);
 
+      mmm_client_check_size (mmm, &width, &height);
+
+      if (old_w != width ||  old_h!=height)
+      {
         mrg_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
+	old_w = width;
+	old_h = height;
+      }
+
+        buffer = mmm_get_buffer_write (mmm, &width, &height, &stride, NULL);
 
         Ctx *ctx = ctx_new_for_framebuffer (buffer, width, height, stride, CTX_FORMAT_BGRA8);
 
@@ -135,7 +143,7 @@ int vt_main(int argc, char **argv)
 
         ctx_free (ctx);
         mmm_write_done (mmm, 0, 0, -1, -1);
-      audio_task ();
+        audio_task ();
       }
 
 
@@ -161,12 +169,18 @@ int vt_main(int argc, char **argv)
 	} else if (!strcmp (event, "shift-control--")) {
 	  font_size /= 1.15;
 	  font_size = (int) (font_size);
+	  if (font_size < 5) font_size = 5;
 
           cw = (font_size / line_spacing) + 0.99;
           ch = font_size;
+          mrg_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
 	} else if (!strcmp (event, "shift-control-=")) {
+	  float old = font_size;
 	  font_size *= 1.15;
 	  font_size = (int)(font_size);
+	  if (old == font_size) font_size = old+1;
+	  if (font_size > 200) font_size = 200;
+          mrg_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
 
           cw = (font_size / line_spacing) + 0.99;
           ch = font_size;
