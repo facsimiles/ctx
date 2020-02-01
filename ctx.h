@@ -513,6 +513,7 @@ float ctx_text_width   (Ctx        *ctx,
 int   ctx_load_font_ttf (Ctx *ctx, const char *name, const uint8_t *ttf_contents);
 int   ctx_load_font_ttf_file (Ctx *ctx, const char *name, const char *path);
 
+int ctx_get_renderstream_count (Ctx *ctx);
 
 typedef enum
 {
@@ -607,10 +608,38 @@ typedef enum
   CTX_EXIT                      = 'X',
 } CtxCode;
 
+
+typedef struct _CtxEntry CtxEntry;
+
+/* we only care about the tight packing for this specific
+ * struct, to make sure its size becomes 9bytes -
+ * the pack pragma is also sufficient on recent gcc versions
+ */
+#pragma pack(push,1)
+
+struct _CtxEntry
+{
+  uint8_t code;
+  union {
+    float    f[2];
+    uint8_t  u8[8];
+    int8_t   s8[8];
+    uint16_t u16[4];
+    int16_t  s16[4];
+    uint32_t u32[2];
+    int32_t  s32[2];
+  } data;
+};
+
+#pragma pack(pop)
+
+
 #ifdef __cplusplus
   }
 #endif
 #endif
+
+
 
 #ifdef CTX_IMPLEMENTATION
 
@@ -760,35 +789,6 @@ static inline float ctx_fast_hypotf (float x, float y)
 }
 
 
-typedef struct _CtxEntry CtxEntry;
-
-/* we only care about the tight packing for this specific
- * struct, to make sure its size becomes 9bytes -
- * the pack pragma is also sufficient on recent gcc versions
- */
-#ifdef _MSC_VER
-  #pragma pack(push,1)
-#else
-  #define PACKED __attribute__ ((__packed__))
-#endif
-
-struct PACKED _CtxEntry
-{
-  uint8_t code;
-  union {
-    float    f[2];
-    uint8_t  u8[8];
-    int8_t   s8[8];
-    uint16_t u16[4];
-    int16_t  s16[4];
-    uint32_t u32[2];
-    int32_t  s32[2];
-  } data;
-};
-
-#ifdef _MSC_VER
-  #pragma pack(pop)
-#endif
 
 #define ctx_arg_float(no) entry[(no)>>1].data.f[(no)&1]
 #define ctx_arg_u32(no)   entry[(no)>>1].data.u32[(no)&1]
@@ -1635,6 +1635,11 @@ int ctx_set_renderstream (Ctx *ctx, void *data, int length)
   }
 
   return 0;
+}
+
+int ctx_get_renderstream_count (Ctx *ctx)
+{
+  return ctx->renderstream.count;
 }
 
 int

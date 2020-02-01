@@ -7,7 +7,7 @@ check: test-output
 test-output: $(TESTS)
 	@for a in $(TESTS); do echo $$a;./$$a;done > test-output
 clean:
-	rm -f $(TESTS) test-output
+	rm -f $(TESTS) test-output *.png
 %: %.c ../ctx.h ../fonts/*.h Makefile
 	gcc $< -g -o $@ -I.. -I../fonts -O0
 test-size: test-size.c ../ctx.h ../fonts/*.h Makefile
