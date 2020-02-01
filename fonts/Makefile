@@ -2,6 +2,9 @@ all: ctx-font-regular.h \
 	ctx-font-mono.h \
 	ctx-font-emoji.h
 
+clean:
+	rm -f ctx-font-*.h
+
 ctx-font-regular.h: ctx-fontgen Makefile
 	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras > $@
 ctx-font-mono.h: ctx-fontgen Makefile

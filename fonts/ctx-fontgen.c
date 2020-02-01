@@ -11,6 +11,16 @@
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 
+static int usage(){
+  fprintf (stderr, "tool to generate native ctx embedded font format\n");
+  fprintf (stderr, "\n");
+  fprintf (stderr, "usage: ctx-fontgen <file.ttf> [name [set1-set2-set3]]\n");
+  fprintf (stderr, "\nrecognized sets: latin1, ascii, extra, all, emoji");
+  return -1;
+}
+
+
+
 CtxRenderstream output_font={NULL,};
 uint32_t glyphs[65536];
 int n_glyphs = 0;
@@ -56,9 +66,7 @@ int main (int argc, char **argv)
   path = argv[1];
   if (!path)
   {
-    fprintf (stderr, "usage: ctx-fontgen <file.ttf> [name [set1-set2-set3]]\n");
-    fprintf (stderr, "\nrecognized sets: latin1, ascii, extra, all, emoji");
-    return -1;
+    return usage();
   }
   if (argv[2])
   {
