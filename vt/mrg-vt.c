@@ -439,6 +439,7 @@ void mrg_vt_set_term_size (MrgVT *vt, int icols, int irows)
 
   vt->scroll_top             = 1;
   vt->scroll_bottom          = vt->rows;
+  vt->rev++;
 
   VT_info ("resize %i %i", irows, icols);
 }
@@ -3758,7 +3759,7 @@ void mrg_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     }
   }
 
-  ctx_set_rgba(ctx,1,1,1,1);
+  //ctx_set_rgba(ctx,1,1,1,1);
 
   /* draw terminal lines */
   {
