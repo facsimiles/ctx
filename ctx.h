@@ -250,7 +250,9 @@ extern "C" {
 #endif
 
 #define CTX_PI               3.141592653589793f
-#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  64
+#ifndef CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS
+#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  100
+#endif
 
 #ifndef CTX_MAX_FONTS
 #define CTX_MAX_FONTS        3
