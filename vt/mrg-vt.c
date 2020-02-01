@@ -50,7 +50,6 @@
 #include "ctx.h"
 
 #include "mrg-string.h"
-#include "mrg-list.h"
 #include "mrg-vt.h"
 
 #define VT_LOG_INFO     (1<<0)
@@ -89,6 +88,119 @@ static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
 #endif
 
 #include "mmm.h"
+
+/* barebones linked list */
+
+typedef struct _VtList VtList;
+struct _VtList {
+  void *data;
+  VtList *next;
+};
+
+static inline int vt_list_length (VtList *list)
+{
+  int length = 0;
+  VtList *l;
+  for (l = list; l; l = l->next, length++);
+  return length;
+}
+
+static inline void vt_list_prepend (VtList **list, void *data)
+{
+  VtList *new_=calloc (sizeof (VtList), 1);
+  new_->next= *list;
+  new_->data=data;
+  *list = new_;
+}
+
+static inline void *vt_list_last (VtList *list)
+{
+  if (list)
+    {
+      VtList *last;
+      for (last = list; last->next; last=last->next);
+      return last->data;
+    }
+  return NULL;
+}
+
+static inline void vt_list_append (VtList **list, void *data)
+{
+  VtList *new_= calloc (sizeof (VtList), 1);
+  new_->data=data;
+  if (*list)
+    {
+      VtList *last;
+      for (last = *list; last->next; last=last->next);
+      last->next = new_;
+      return;
+    }
+  *list = new_;
+  return;
+}
+
+static inline void vt_list_remove (VtList **list, void *data)
+{
+  VtList *iter, *prev = NULL;
+  if ((*list)->data == data)
+    {
+      prev = (void*)(*list)->next;
+      free (*list);
+      *list = prev;
+      return;
+    }
+  for (iter = *list; iter; iter = iter->next)
+    if (iter->data == data)
+      {
+        prev->next = iter->next;
+        free (iter);
+        break;
+      }
+    else
+      prev = iter;
+}
+
+static inline VtList *vt_list_nth (VtList *list, int no)
+{
+  while(no-- && list)
+    list = list->next;
+  return list;
+}
+
+static inline VtList *vt_list_find (VtList *list, void *data)
+{
+  for (;list;list=list->next)
+    if (list->data == data)
+      break;
+  return list;
+}
+
+static inline void
+vt_list_insert_before (VtList **list, VtList *sibling,
+                        void *data)
+{
+  if (*list == NULL || *list == sibling)
+    {
+      vt_list_prepend (list, data);
+    }
+  else
+    {
+      VtList *prev = NULL;
+      for (VtList *l = *list; l; l=l->next)
+        {
+          if (l == sibling)
+            break;
+          prev = l;
+        }
+      if (prev) {
+        VtList *new_=calloc(sizeof (VtList), 1);
+        new_->next = sibling;
+        new_->data = data;
+        prev->next=new_;
+      }
+    }
+}
+
 
 typedef enum {
   MRG_VT_STYLE_RESET          = 0,
@@ -179,9 +291,9 @@ struct _MrgVT {
   char      *commandline;
   char      *title;
 
-  MrgList   *scrollback;
+  VtList   *scrollback;
 
-  MrgList   *lines;
+  VtList   *lines;
   int        line_count;
   int        leds[4];
   uint32_t   style[MAX_ROWS][MAX_COLS];
@@ -286,7 +398,7 @@ const char *mrg_vt_get_title (MrgVT *vt)
   return vt->title;
 }
 
-static MrgList *vts = NULL;
+static VtList *vts = NULL;
 
 static void mrg_vt_run_command (MrgVT *vt, const char *command);
 static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence);
@@ -299,7 +411,7 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
   while (vt->lines)
   {
     mrg_string_free (vt->lines->data, 1);
-    mrg_list_remove (&vt->lines, vt->lines->data);
+    vt_list_remove (&vt->lines, vt->lines->data);
     vt_scroll_style (vt, -1);
   }
 
@@ -310,7 +422,7 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
   for (int i=0; i<vt->rows;i++)
   {
     vt->current_line = mrg_string_new_with_size ("", vt->cols * 3);
-    mrg_list_prepend (&vt->lines, vt->current_line);
+    vt_list_prepend (&vt->lines, vt->current_line);
     vt->line_count++;
   }
 }
@@ -386,7 +498,7 @@ MrgVT *mrg_vt_new (const char *command)
 
   vt->ctx = ctx_new ();
 
-  mrg_list_prepend (&vts, vt);
+  vt_list_prepend (&vts, vt);
 
   return vt;
 }
@@ -398,8 +510,8 @@ void mrg_vt_set_mmm (MrgVT *vt, void *mmm)
 
 static int mrg_vt_trimlines (MrgVT *vt, int max)
 {
-  MrgList *chop_point = NULL;
-  MrgList *l;
+  VtList *chop_point = NULL;
+  VtList *l;
   int i;
 
   //max += vt->lines_scrollback; /* needed for scrollback escape */
@@ -417,9 +529,9 @@ static int mrg_vt_trimlines (MrgVT *vt, int max)
 
   while (chop_point)
   {
-    mrg_list_prepend (&vt->scrollback, chop_point->data);
+    vt_list_prepend (&vt->scrollback, chop_point->data);
     //mrg_string_free (chop_point->data, 1);
-    mrg_list_remove (&chop_point, chop_point->data);
+    vt_list_remove (&chop_point, chop_point->data);
     vt->line_count--;
   }
   return 0;
@@ -475,7 +587,7 @@ static void _mrg_vt_move_to (MrgVT *vt, int y, int x)
 
   i = vt->rows - y;
 
-  MrgList *l;
+  VtList *l;
   for (l = vt->lines; l && i >= 1; l = l->next, i--);
   if (l)
   {
@@ -486,7 +598,7 @@ static void _mrg_vt_move_to (MrgVT *vt, int y, int x)
     for (; i > 0; i--)
       {
         vt->current_line = mrg_string_new_with_size ("", vt->cols * 3);
-        mrg_list_append (&vt->lines, vt->current_line);
+        vt_list_append (&vt->lines, vt->current_line);
         vt->line_count++;
       }
   }
@@ -587,7 +699,7 @@ static void vt_scroll (MrgVT *vt, int amount)
       insert_before = vt->scroll_top;
     }
 
-  MrgList *l;
+  VtList *l;
   int i;
 
   for (i=vt->rows, l = vt->lines; i > 0 && l; l=l->next, i--)
@@ -595,7 +707,7 @@ static void vt_scroll (MrgVT *vt, int amount)
     if (i == remove_no)
     {
       string = l->data;
-      mrg_list_remove (&vt->lines, string);
+      vt_list_remove (&vt->lines, string);
 
       break;
     }
@@ -612,7 +724,7 @@ static void vt_scroll (MrgVT *vt, int amount)
 
   if (amount > 0 && vt->scroll_top == 1)
   {
-    mrg_list_append (&vt->lines, string);
+    vt_list_append (&vt->lines, string);
   }
   else
   {
@@ -620,14 +732,14 @@ static void vt_scroll (MrgVT *vt, int amount)
     {
       if (i == insert_before)
       {
-        mrg_list_insert_before (&vt->lines, l, string);
+        vt_list_insert_before (&vt->lines, l, string);
         break;
       }
     }
 
     if (i != insert_before)
     {
-      mrg_list_append (&vt->lines, string);
+      vt_list_append (&vt->lines, string);
     }
   }
 
@@ -841,7 +953,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
       }
       {
-        MrgList *l;
+        VtList *l;
         for (l = vt->lines; l->data != vt->current_line; l = l->next)
         {
           MrgString *buf = l->data;
@@ -860,7 +972,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         }
       }
       {
-        MrgList *l;
+        VtList *l;
         int there_yet = 0;
 
         for (l = vt->lines; l; l = l->next)
@@ -1168,16 +1280,16 @@ static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
   for (int a = 0; a < n; a++)
   {
     int i;
-    MrgList *l;
+    VtList *l;
     MrgString *string = vt->current_line;
     mrg_string_set (string, "");
-    mrg_list_remove (&vt->lines, vt->current_line);
+    vt_list_remove (&vt->lines, vt->current_line);
     for (i=vt->rows, l = vt->lines; l; l=l->next, i--)
     {
       if (i == vt->scroll_bottom)
       {
         vt->current_line = string;
-        mrg_list_insert_before (&vt->lines, l, string);
+        vt_list_insert_before (&vt->lines, l, string);
         break;
       }
     }
@@ -1587,7 +1699,7 @@ static void mrg_vt_line_feed (MrgVT *vt)
     if (vt->lines->data == vt->current_line)
     {
       vt->current_line = mrg_string_new_with_size ("", vt->cols*3);
-      mrg_list_prepend (&vt->lines, vt->current_line);
+      vt_list_prepend (&vt->lines, vt->current_line);
       vt->line_count++;
     }
 
@@ -1607,7 +1719,7 @@ static void mrg_vt_line_feed (MrgVT *vt)
       (vt->cursor_y != vt->scroll_bottom) && 0)
   {
     vt->current_line = mrg_string_new_with_size ("", vt->cols*3);
-    mrg_list_prepend (&vt->lines, vt->current_line);
+    vt_list_prepend (&vt->lines, vt->current_line);
     vt->line_count++;
   }
 
@@ -3053,7 +3165,7 @@ static void signal_child (int signum)
     {
       if (pid)
       {
-        for (MrgList *l = vts; l; l=l->next)
+        for (VtList *l = vts; l; l=l->next)
         {
           MrgVT *vt = l->data;
           if (vt->pid == pid)
@@ -3119,7 +3231,7 @@ void mrg_vt_destroy (MrgVT *vt)
   while (vt->lines)
   {
     mrg_string_free (vt->lines->data, 1);
-    mrg_list_remove (&vt->lines, vt->lines->data);
+    vt_list_remove (&vt->lines, vt->lines->data);
     vt->line_count--;
   }
 
@@ -3128,7 +3240,7 @@ void mrg_vt_destroy (MrgVT *vt)
   if (vt->commandline)
     free (vt->commandline);
 
-  mrg_list_remove (&vts, vt);
+  vt_list_remove (&vts, vt);
 
   kill (vt->pid, 9);
   close (vt->pty);
@@ -3138,12 +3250,12 @@ void mrg_vt_destroy (MrgVT *vt)
 int mrg_vt_get_line_count (MrgVT *vt)
 {
   return vt->line_count;
-  return mrg_list_length (vt->lines);
+  return vt_list_length (vt->lines);
 }
 
 const char *mrg_vt_get_line (MrgVT *vt, int no)
 {
-  MrgList *l= mrg_list_nth (vt->lines, no);
+  VtList *l= vt_list_nth (vt->lines, no);
   MrgString *str;
   if (!l)
     return NULL;
@@ -3675,7 +3787,7 @@ void mrg_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
   ctx_set_font_size (ctx, font_size);
   if (vt->scroll)
   {
-    MrgList *l = vt->scrollback;
+    VtList *l = vt->scrollback;
     int scroll_no = 0;
     ctx_set_rgba (ctx, 1,1,1,1);
     while (l && scroll_no < vt->scroll)
