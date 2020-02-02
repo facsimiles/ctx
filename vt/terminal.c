@@ -75,13 +75,26 @@ void terminal_queue_pcm_sample (int16_t sample)
   pcm_queue[pcm_write_pos++]=sample;
 }
 
-void audio_task ()
+void audio_task (int click)
 {
   int free_frames = mmm_pcm_get_frame_chunk (mmm)+24;
   //int free_frames = mmm_pcm_get_free_frames (mmm);
   int queued = (pcm_write_pos - pcm_read_pos)/2;
   if (free_frames > 3) free_frames --;
   int frames = queued;
+
+#if 0
+  if (click)
+  {
+    // do we need to queue silence at other times for the flow
+    // to work? seem like an mmm bug...
+    //
+    float click_volume = 0.4;
+    int16_t pcm_data[]={-32000 * click_volume,32000 * click_volume,0,0};
+    mmm_pcm_queue (mmm, (int8_t*) pcm_data, 2);
+  }
+#endif
+
   if (frames > free_frames) frames = free_frames;
   if (frames > 0)
   {
@@ -117,7 +130,6 @@ int vt_main(int argc, char **argv)
       if (drawn_rev != ctx_vt_rev (vt))
       {
         drawn_rev = ctx_vt_rev (vt);
-      audio_task ();
 
       mmm_client_check_size (mmm, &width, &height);
 
@@ -136,9 +148,8 @@ int vt_main(int argc, char **argv)
 
         ctx_free (ctx);
         mmm_write_done (mmm, 0, 0, -1, -1);
-        audio_task ();
+        audio_task (0);
       }
-
 
       int got_event = 0;
       while (mmm_has_event (mmm))
@@ -256,7 +267,7 @@ int vt_main(int argc, char **argv)
       }
       if (!got_event)
       {
-      audio_task ();
+        audio_task (0);
         usleep (sleep_time);
         sleep_time *= 1.2;
 
@@ -264,6 +275,7 @@ int vt_main(int argc, char **argv)
           sleep_time = 8000;
         ctx_vt_poll (vt);
       }
+      audio_task (got_event);
   }
   ctx_vt_destroy (vt);
   if (mmm)

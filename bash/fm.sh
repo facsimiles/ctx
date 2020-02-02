@@ -47,17 +47,17 @@ function vt_move_left(){  echo -en "\e[$1D"; } # or  just \b for one
 
 # style
 
-function vt_style_reset(){ echo -en "\e[m"; }
-function vt_bold(){       echo -en "\e[1m"; }
-function vt_unbold(){     echo -en "\e[22m"; } # actually reset style
-function vt_inverse(){    echo -en "\e[7m";  }
-function vt_positive(){  echo -en "\e[27m"; }
+function vt_style_reset(){  echo -en "\e[m"; }
+function vt_bold(){         echo -en "\e[1m"; }
+function vt_unbold(){       echo -en "\e[22m"; } # actually reset style
+function vt_inverse(){      echo -en "\e[7m";  }
+function vt_positive(){     echo -en "\e[27m"; }
 function vt_underline(){    echo -en "\e[4m";  }
 function vt_nounderline(){  echo -en "\e[24m"; }
-function vt_blink(){    echo -en "\e[5m";  }
-function vt_steady(){  echo -en "\e[25m"; }
-function vt_fg(){      echo -en "\e[38;5;$1m"; }
-function vt_bg(){      echo -en "\e[48;5;$1m"; }
+function vt_blink(){        echo -en "\e[5m";  }
+function vt_steady(){       echo -en "\e[25m"; }
+function vt_fg(){           echo -en "\e[38;5;$1m"; }
+function vt_bg(){           echo -en "\e[48;5;$1m"; }
 
 commandline=""
 
@@ -440,6 +440,7 @@ function handle_key()
     "page-down") next_page  ui_dirty=1 ;;
     "up")  previous_item ; ui_dirty=1 ;;
     "down")  next_item ;ui_dirty=1 ;;
+    "control-d") alive=0 ; ;;
     "backspace")  ;;
     "space")  ;;
     *)
@@ -614,12 +615,11 @@ function keyboard_events()
          $'\177'|$'\b')  key=backspace ;;
          $'\001')  key="control-a" ;;
          $'\005')  key="control-e" ;;
+         $'\004')  key="control-d" ;;
 	 $'\n')    key=return ;;
 	 $'\t')    key=tab  ;;
 	 $'\f')    key="control-l" ;;
-         #"ESC[1~") key=home ;;
          "ESC[3~") key=delete;;
-         #"ESC[4~") key=end  ;;
          "ESC[5~") key="page-up"   ;;
          "ESC[6~") key="page-down" ;;
 	  *)       key="$seq"
@@ -651,7 +651,7 @@ function loop(){
 
   audio_length=$(( $audio_length + 1))
 
-  while [ $(($audio_start + $audio_length + $buffer_seconds)) -gt `date +%s` ]; do
+  while [ $alive = 1 ] && [ $(($audio_start + $audio_length + $buffer_seconds)) -gt `date +%s` ]; do
 
     draw_ui
     keyboard_events

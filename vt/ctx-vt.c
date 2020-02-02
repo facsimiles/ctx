@@ -10,14 +10,9 @@
  *       256color still buggy, when used with tv
  *       dim, hidden
  *       overlay with commands for scrollback + fontsize change
+ *       color in scrollback
  *
  * Copyright (c) 2014, 2016, 2018, 2020 Øyvind Kolås <pippin@gimp.org>
- */
-
-/*
- * how to handshake features?
- *
- *   to check for ctx, \e[?7777
  */
 
 #define _BSD_SOURCE
@@ -1133,7 +1128,6 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case MRG_VT_STYLE_FONT3:
     case MRG_VT_STYLE_FONT4:
       break;
-
     case MRG_VT_STYLE_DIM:
       vt->cstyle |= STYLE_DIM;
       break;
@@ -1152,7 +1146,6 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case MRG_VT_STYLE_STRIKETHROUGH_OFF:
       vt->cstyle ^= (vt->cstyle & STYLE_STRIKETHROUGH);
       break;
-
     case MRG_VT_STYLE_BLINK:
       vt->cstyle |= STYLE_BLINK;
       break;
@@ -1468,8 +1461,8 @@ qagain:
     qval = parse_int (sequence, 1);
     switch (qval)
     {
-     case 1:  vt->cursor_key_application = 0; break;
-     case 2:  vt->in_vt52 = 1; break; 
+     case 1:   vt->cursor_key_application = 0; break;
+     case 2:   vt->in_vt52 = 1; break; 
 
      case 3:   vtcmd_reset_to_initial_state (vt, sequence);break; // set 80 col
 
@@ -1477,10 +1470,10 @@ qagain:
      case 6:   vt->origin = 0;
                _ctx_vt_move_to (vt, 1, 1);
 	       break;
-     case 7:    vt->autowrap = 0; break;
-     case 8:    vt->keyrepeat = 0; break;
+     case 7:     vt->autowrap = 0; break;
+     case 8:     vt->keyrepeat = 0; break;
      case 12:   break; // stop_blinking_cursor
-     case 25:   vt->cursor_visible = 0; break;
+     case 25:    vt->cursor_visible = 0; break;
      case 1000:  vt->mouse = 0; break;
      case 1002:  vt->mouse_drag = 0; break;
      case 1003:  vt->mouse_all = 0; break;
@@ -3059,25 +3052,35 @@ static const char *keymap_general[][2]={
   {"down",           "\033[B"},
   {"right",          "\033[C"},
   {"left",           "\033[D"},
+  {"end",            "\033[F"},
+  {"home",           "\033[H"},
 
-  {"shift-up",       "\033[1,2A"},
-  {"shift-down",     "\033[1,2B"},
-  {"shift-right",    "\033[1,2C"},
-  {"shift-left",     "\033[1,2D"},
+  {"shift-up",       "\033[1;2A"},
+  {"shift-down",     "\033[1;2B"},
+  {"shift-right",    "\033[1;2C"},
+  {"shift-left",     "\033[1;2D"},
   {"alt-a",          "\033a"}, // hack to make irssi work
+  {"alt-b",          "\033b"},
+  {"alt-c",          "\033c"},
+  {"alt-d",          "\033d"},
+  {"alt- ",          "\033 "},
 
-  {"alt-up",         "\033[1,3A"},
-  {"alt-down",       "\033[1,3B"},
-  {"alt-right",      "\033[1,3C"},
-  {"alt-left",       "\033[1,3D"},
-  {"alt-shift-up",   "\033[1,4A"},
-  {"alt-shift-down", "\033[1,4B"},
-  {"alt-shift-right","\033[1,4C"},
-  {"alt-shift-left", "\033[1,4D"},
-  {"control-up",     "\033[1,5A"},
-  {"control-down",   "\033[1,5B"},
-  {"control-right",  "\033[1,5C"},
-  {"control-left",   "\033[1,5D"},
+  {"alt-up",         "\033[1;3A"},
+  {"alt-down",       "\033[1;3B"},
+  {"alt-right",      "\033[1;3C"},
+  {"alt-left",       "\033[1;3D"},
+  {"shift-alt-up",   "\033[1;4A"},
+  {"shift-alt-down", "\033[1;4B"},
+  {"shift-alt-right","\033[1;4C"},
+  {"shift-alt-left", "\033[1;4D"},
+  {"control-up",     "\033[1;5A"},
+  {"control-down",   "\033[1;5B"},
+  {"control-right",  "\033[1;5C"},
+  {"control-left",   "\033[1;5D"},
+  {"shift-control-up",    "\033[1;6A"},
+  {"shift-control-down",  "\033[1;6B"},
+  {"shift-control-right", "\033[1;6C"},
+  {"shift-control-left",  "\033[1;6D"},
   {"insert",         "\033[2~"},
   {"delete",         "\033[3~"},
   {"control-delete", "\033[3,5~"},
@@ -3086,6 +3089,7 @@ static const char *keymap_general[][2]={
   {"page-up",        "\033[5~"},
   {"page-down" ,     "\033[6~"},
   {"return",         "\r"},
+  {"shift-tab",      "\eZ"},
   {"shift-return",   "\r"},
   {"control-return", "\r"},
   {"space",          " "},
@@ -3123,8 +3127,6 @@ static const char *keymap_general[][2]={
   {"control-backspace", "\177"},
   {"shift-backspace", "\177"},
   {"shift-tab",      "\033[Z"},
-  {"home",           "\033[1~"},
-  {"end",            "\033[4~"},
   {"F1",             "\033[11~"},
   {"F2",             "\033[12~"},
   {"F3",             "\033[13~"},
