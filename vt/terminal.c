@@ -51,7 +51,7 @@ signal_child (int signum)
       }
       else
       {
-        fprintf (stderr, "q? %li %i\n", pid, vt_child);
+        fprintf (stderr, "q? %i %i\n", pid, vt_child);
       }
     }
     }
@@ -67,15 +67,12 @@ void terminal_queue_pcm_sample (int16_t sample)
 {
   if (pcm_write_pos >= (1<<18)-1)
   {
-    /* 8khz audio is already glitchy, this adds another cyclic glitch where
-     * we reset our buffer instead of being a proper circular buffer XXX */
+    /*  TODO  :  fix cyclic buffer */
     pcm_write_pos = 0;
     pcm_read_pos = 0;
   }
   pcm_queue[pcm_write_pos++]=sample;
   pcm_queue[pcm_write_pos++]=sample;
-
-  int16_t frame[2]={sample, sample};
 }
 
 void audio_task ()
@@ -107,17 +104,13 @@ int vt_main(int argc, char **argv)
   ctx_vt_set_mmm (vt, mmm);
   mmm_pcm_set_sample_rate (mmm, 8000);
 
-  int i;
   int sleep_time = 10;
 
   vt_child = ctx_vt_get_pid (vt);
   signal (SIGCHLD, signal_child);
   while(!do_quit)
   {
-      unsigned int row, col;
-      unsigned char *image;
       unsigned char *buffer;
-      unsigned char *dst;
       int width; int height; int stride;
 
       static long drawn_rev = 0;

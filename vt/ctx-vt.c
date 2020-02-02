@@ -1553,6 +1553,7 @@ static void vtcmd_DECELR (MrgVT *vt, const char *sequence)
   int ps1 = parse_int (sequence, 0);
   int ps2 = 0;
   const char *s = strchr(sequence, ';');
+  if (ps1); // because it is unused
   if (s)
     ps2 = parse_int (s, 0);
   if (ps2 == 1)
@@ -2669,18 +2670,18 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	break;
       case '\n':
         vt->utf8_holding[vt->utf8_pos]=0;
-	if ((!strcmp (vt->utf8_holding, "q"))||
-	    (!strcmp (vt->utf8_holding, "quit"))||
-	    (!strcmp (vt->utf8_holding, "done")))
+	if ((!strcmp ((char*)vt->utf8_holding, "q"))||
+	    (!strcmp ((char*)vt->utf8_holding, "quit"))||
+	    (!strcmp ((char*)vt->utf8_holding, "done")))
 	{
 	  vt->in_ctx_ascii = 0;
 	}
 	else
 	{
-	  if (strlen (vt->utf8_holding) > 2)
+	  if (strlen ((char*)vt->utf8_holding) > 2)
 	  {
 	    VT_info ("gfx: <%s>", vt->utf8_holding);
-	    ctx_parse_str_line (vt->ctx, vt->utf8_holding);
+	    ctx_parse_str_line (vt->ctx, (char*)vt->utf8_holding);
 	  }
 	}
 	vt->utf8_pos=0;
@@ -2768,7 +2769,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
     case 1:
       if ( ! (byte>=0 && byte < 256))
         byte = 255;
-      strcpy (&vt->utf8_holding[0], &charmap_cp437[byte][0]);
+      strcpy ((char *)&vt->utf8_holding[0], &charmap_cp437[byte][0]);
       vt->utf8_expected_bytes = mrg_utf8_len (byte) - 1; // ?
     break;
     default:
@@ -2850,7 +2851,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
              break;
            }
 
-          _ctx_vt_add_str (vt, vt->utf8_holding);
+          _ctx_vt_add_str (vt, (char*)vt->utf8_holding);
 	  }
           break;
       }
@@ -2958,8 +2959,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
 void ctx_vt_poll (MrgVT *vt)
 {
   int count = 0;
-  float sleep = 0.1;
-{
+ {
   if (vt->slow_baud)
   {
     unsigned char buf[24];
@@ -2976,7 +2976,7 @@ void ctx_vt_poll (MrgVT *vt)
   {
     unsigned char buf[2048];
     int len;
-    float sleeps = 0.05;
+    float sleeps = 0.025;
 a:
     len = read(vt->pty, buf, sizeof (buf));
     if (len > 0)
@@ -3744,21 +3744,21 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg)
     switch (no)
     {
       case 0:  r = 0.0; g = 0.0; b = 0.0; break;     // black
-      case 1:  r = 0.8; g =0.25; b =0.15,1.0; break; // red
-      case 2:  r = 0.25; g =0.8; b =0.15,1.0; break; // green
-      case 3:  r = 0.7; g =0.6; b =0.0,1.0; break;   // dark yellow
-      case 4:  r = 0.2; g =0.3; b =1.0,1.0; break;  // blue
-      case 5:  r = 0.8; g =0.0; b =0.7,1.0; break;  // magenta
-      case 6:  r = 0.0; g =0.8; b =0.7,1.0; break;  // cyan
-      case 7:  r = 0.9; g =0.9; b =0.9,1.0; break; // light-gray
-      case 8:  r = 0.8; g =0.8; b =0.8,1.0; break;  // dark gray
-      case 9:  r = 1.0; g =0.5; b =0.5,1.0; break; // bright red
-      case 10: r = 0.5; g =1.0; b =0.5,1.0; break; // bright green
-      case 11: r = 1.0; g =1.0; b =0.5,1.0; break; // bright yellow
-      case 12: r = 0.5; g =0.5; b =1.0,1.0; break; // bright blue
-      case 13: r = 1.0; g =0.5; b =1.0,1.0; break; // bright magenta
-      case 14: r = 0.5; g =1.0; b =1.0,1.0; break; // bright cyan
-      case 15: r = 1.0; g =1.0; b =1.0,1.0; break; // white
+      case 1:  r = 0.8; g =0.25; b =0.15; break; // red
+      case 2:  r = 0.25; g =0.8; b =0.15; break; // green
+      case 3:  r = 0.7; g =0.6; b =0.0; break;   // dark yellow
+      case 4:  r = 0.2; g =0.3; b =1.0; break;  // blue
+      case 5:  r = 0.8; g =0.0; b =0.7; break;  // magenta
+      case 6:  r = 0.0; g =0.8; b =0.7; break;  // cyan
+      case 7:  r = 0.9; g =0.9; b =0.9; break; // light-gray
+      case 8:  r = 0.8; g =0.8; b =0.8; break;  // dark gray
+      case 9:  r = 1.0; g =0.5; b =0.5; break; // bright red
+      case 10: r = 0.5; g =1.0; b =0.5; break; // bright green
+      case 11: r = 1.0; g =1.0; b =0.5; break; // bright yellow
+      case 12: r = 0.5; g =0.5; b =1.0; break; // bright blue
+      case 13: r = 1.0; g =0.5; b =1.0; break; // bright magenta
+      case 14: r = 0.5; g =1.0; b =1.0; break; // bright cyan
+      case 15: r = 1.0; g =1.0; b =1.0; break; // white
     }
     if (bg)
     {
@@ -3771,7 +3771,6 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg)
     }
   } else if (no < 16 + 6*6*6)
   {
-    int r6, g6, b6;
     no = no-16;
     b = (no % 6) / 5.0; no/=6;
     g = (no % 6) / 5.0; no/=6;
@@ -3838,20 +3837,17 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     uint32_t set_style = 9999;
 
     float y = y0 + ch * vt->rows;
+    int prevcol = -1;
 
     for (row = 0; row < count; row ++)
     {
       const char *data = ctx_vt_get_line (vt, row);
       if (data)
       {
-        const char *d = data;
         float x = x0;
-        for (int col = 1; col <= vt->cols; col++) //*d; d = mrg_utf8_skip (d, 1), col++)
+        for (int col = 1; col <= vt->cols; col++)
         {
-          int bold = 0;
-	  int bg_is_nop = 0; // a lot of skipped ctx geometry when the
-	                     // background can cover it
-          //if (vt->style[vt->rows-row][col] != set_style)
+	  int bg_is_nop = 0;
           {
             set_style = vt->style[vt->rows-row][col];
 
@@ -3872,7 +3868,13 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	      if (color == 0)
                 bg_is_nop = 1;
 	      else
-	        vt_ctx_set_color (vt, ctx, color, 1);
+	      {
+		if (color != prevcol)
+		{
+	          vt_ctx_set_color (vt, ctx, color, 1);
+		  prevcol = color;
+		}
+	      }
             }
 
 	    if (!bg_is_nop)
@@ -3888,8 +3890,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     }
   }
 
-  //ctx_set_rgba(ctx,1,1,1,1);
-
   /* draw terminal lines */
   {
     int count = ctx_vt_get_line_count (vt);
@@ -3898,6 +3898,9 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
     float y = y0 + ch * vt->rows;
     int bold = 0; int underline = 0; int strikethrough = 0;
+    int prevcol = -1;
+
+    if (strikethrough); // ignoring unused
 
     for (row = 0; row < count; row ++)
     {
@@ -3927,7 +3930,11 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	      if (color == 0 && !(set_style & STYLE_REVERSE))
 	        color = 15;
 
-	      vt_ctx_set_color (vt, ctx, color, 0);
+	      if (color != prevcol)
+	      {
+	        vt_ctx_set_color (vt, ctx, color, 0);
+		prevcol = color;
+	      }
             }
           }
 

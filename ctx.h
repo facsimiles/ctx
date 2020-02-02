@@ -8079,14 +8079,14 @@ ctx_parse_str_line (Ctx *ctx, const char *str)
   int i = 0;
   int n_args = 0;
 
-  while (*s && *s == ' ' || *s == '\t') s ++;
+  while (*s && (*s == ' ' || *s == '\t')) s ++;
   while (*s && *s != ' ' && *s != '\n' && *s != '\t' && *s != '#' && i<31)
   {name[i] = *s; name[i+1] = 0; i++;s++;}
 
-  while (*s && *s == ' ' || *s == '\t') s ++;
+  while (*s && (*s == ' ' || *s == '\t')) s ++;
   do
   {
-    if (*s >= '0' && *s <= '9' || *s=='-')
+    if (*s >= '0' && (*s <= '9' || *s=='-'))
     {
       arg[n_args] = ctx_strtof (s, (char**)&s);
       if (n_args < 10)

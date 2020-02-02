@@ -12,7 +12,7 @@ clean:
 	make -C fonts clean
 
 ctx: ctx.c vt/*.c ctx.h  Makefile
-	gcc ctx.c vt/*.c -o $@ -g -O2 -I. -Ifonts -Ivt `pkg-config mmm --cflags --libs` -lutil
+	gcc ctx.c vt/*.c -o $@ -g -O2 -I. -Ifonts -Ivt `pkg-config mmm --cflags --libs` -lutil -Wall 
 	strip $@
 	ls -la $@
 ctx.asan: ctx.c vt/*.c ctx.h Makefile
