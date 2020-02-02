@@ -392,10 +392,12 @@ void mrg_string_remove_utf8 (MrgString *string, int pos)
     rest = strdup (p + prev_len);
   }
 
-  memcpy (p, rest, strlen (rest) + 1);
-  string->length -= prev_len;
+  memcpy (p, rest, strlen (rest));
+  string->str[string->length - prev_len - 1] = 0;
+  //string->length -= prev_len;
   free (rest);
 
+  string->length = strlen (string->str);
   string->utf8_length = mrg_utf8_strlen (string->str);
 #endif
 }
