@@ -366,6 +366,7 @@ void ctx_new_path       (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
 void ctx_restore        (Ctx *ctx);
 void ctx_clip           (Ctx *ctx);
+void ctx_identity_matrix (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
 void ctx_set_line_width (Ctx *ctx, float x);
 
@@ -439,6 +440,7 @@ void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
 typedef struct _CtxRenderstream CtxRenderstream;
 typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
 
+void _ctx_set_store_clear (Ctx *ctx);
 void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data);
 
 #if CTX_CAIRO
@@ -929,6 +931,7 @@ typedef enum {
   CTX_TRANSFORMATION_BITPACK      = 4,
 #endif
   CTX_TRANSFORMATION_REFPACK      = 8,
+  CTX_TRANSFORMATION_STORE_CLEAR  = 16,
 } CtxTransformation;
 
 #define CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES   64
@@ -1839,8 +1842,15 @@ void ctx_empty (Ctx *ctx)
   }
 }
 
+void _ctx_set_store_clear (Ctx *ctx)
+{
+  ctx->transformation |= CTX_TRANSFORMATION_STORE_CLEAR;
+}
+
 void ctx_clear (Ctx *ctx) {
   CTX_PROCESS_VOID(CTX_CLEAR);
+  if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
+    return;
   ctx_empty (ctx);
   ctx_state_init (&ctx->state);
 }
@@ -8179,7 +8189,8 @@ ctx_parse_str_line (Ctx *ctx, const char *str)
      ctx_restore (ctx);
   }
   else if (!strcmp (name, "clear")) {
-     ctx_clear (ctx);
+     ctx_clear (ctx); // we want it actually recorded! vs clear done..
+                      // same as mark/unmark
   }
   else if (!strcmp (name, "set_font_size")) {
      ctx_set_font_size (ctx, arg[0]);

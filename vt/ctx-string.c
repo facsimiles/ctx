@@ -32,7 +32,7 @@ static void mrg_string_init (MrgString *string, int initial_size)
   string->allocated_length = initial_size;
   string->length = 0;
   string->utf8_length = 0;
-  string->str = malloc (string->allocated_length);
+  string->str = malloc (string->allocated_length + 1);
   string->str[0]='\0';
 }
 
@@ -236,12 +236,12 @@ void mrg_string_replace_utf8 (MrgString *string, int pos, const char *new_glyph)
 #endif
 
 
-  if (string->length + new_len  > string->allocated_length)
+  if (string->length + new_len >= string->allocated_length)
   {
     char *tmp;
     char *defer;
     string->allocated_length = string->length + new_len;
-    tmp = calloc (string->allocated_length, 1);
+    tmp = calloc (string->allocated_length + 1, 1);
     strcpy (tmp, string->str);
     defer = string->str;
     string->str = tmp;
@@ -257,7 +257,10 @@ void mrg_string_replace_utf8 (MrgString *string, int pos, const char *new_glyph)
   }
   else
   {
-    rest = strdup (p + prev_len);
+    if (p + prev_len >= string->length  + string->str)
+      rest = strdup ("");
+    else
+      rest = strdup (p + prev_len);
   }
 
   memcpy (p, new_glyph, new_len);
@@ -299,7 +302,7 @@ void mrg_string_insert_utf8 (MrgString *string, int pos, const char *new_glyph)
     char *tmp;
     char *defer;
     string->allocated_length = string->length + new_len + 1;
-    tmp = calloc (string->allocated_length, 1);
+    tmp = calloc (string->allocated_length + 1, 1);
     strcpy (tmp, string->str);
     defer = string->str;
     string->str = tmp;

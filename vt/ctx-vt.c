@@ -421,7 +421,7 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
   /* populate lines */
   for (int i=0; i<vt->rows;i++)
   {
-    vt->current_line = mrg_string_new_with_size ("", vt->cols * 3);
+    vt->current_line = mrg_string_new_with_size ("", vt->cols);
     vt_list_prepend (&vt->lines, vt->current_line);
     vt->line_count++;
   }
@@ -597,7 +597,7 @@ static void _ctx_vt_move_to (MrgVT *vt, int y, int x)
   {
     for (; i > 0; i--)
       {
-        vt->current_line = mrg_string_new_with_size ("", vt->cols * 3);
+        vt->current_line = mrg_string_new_with_size ("", vt->cols);
         vt_list_append (&vt->lines, vt->current_line);
         vt->line_count++;
       }
@@ -719,7 +719,7 @@ static void vt_scroll (MrgVT *vt, int amount)
   }
   else
   {
-    string = mrg_string_new_with_size ("", vt->cols * 3);
+    string = mrg_string_new_with_size ("", vt->cols);
   }
 
   if (amount > 0 && vt->scroll_top == 1)
@@ -1712,7 +1712,7 @@ static void ctx_vt_line_feed (MrgVT *vt)
   {
     if (vt->lines->data == vt->current_line)
     {
-      vt->current_line = mrg_string_new_with_size ("", vt->cols*3);
+      vt->current_line = mrg_string_new_with_size ("", vt->cols);
       vt_list_prepend (&vt->lines, vt->current_line);
       vt->line_count++;
     }
@@ -1732,7 +1732,7 @@ static void ctx_vt_line_feed (MrgVT *vt)
   if (vt->lines->data == vt->current_line &&
       (vt->cursor_y != vt->scroll_bottom) && 0)
   {
-    vt->current_line = mrg_string_new_with_size ("", vt->cols*3);
+    vt->current_line = mrg_string_new_with_size ("", vt->cols);
     vt_list_prepend (&vt->lines, vt->current_line);
     vt->line_count++;
   }
@@ -2708,7 +2708,8 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
             vt->utf8_pos = 0;
 	    break;
 	  case CTX_CLEAR:
-            ctx_empty (vt->ctx);
+            //ctx_empty (vt->ctx);
+            ctx_clear (vt->ctx);
 	    break;
 	  default:
             ctx_add_single (vt->ctx, &vt->utf8_holding[0]);
@@ -3829,6 +3830,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     ctx_scale (ctx, factor, factor);
     ctx_render_ctx (vt->ctx, ctx);
     ctx_restore (ctx);
+    //ctx_identity_matrix (ctx); // in case we're screwed by client
   }
   {
     int count = ctx_vt_get_line_count (vt);

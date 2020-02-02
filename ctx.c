@@ -23,6 +23,7 @@ int parse_main (int argc, char **argv)
 {
   char *line = NULL;
   Ctx *ctx = ctx_new ();
+  _ctx_set_store_clear (ctx);
   size_t size;
   while (getline(&line, &size, stdin) != -1) {
      ctx_parse_str_line (ctx, line);
@@ -37,7 +38,7 @@ int parse_main (int argc, char **argv)
   int count = ctx_get_renderstream_count (ctx);
 
   printf ("\e[?2222h");
-  printf ("%c        ", CTX_CLEAR);
+  //printf ("%c        ", CTX_CLEAR);
  
   CtxEntry *entries = *(CtxEntry **)(ctx);
   for (int i = 0; i < count; i++)
