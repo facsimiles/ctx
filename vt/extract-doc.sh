@@ -7,6 +7,7 @@ echo "This text file is generated from the sources."
 
 while IFS= read -r line; do
   id=`echo -n $line | grep -Eow "id:[A-Z]*" | sed s/id://`
+  args=`echo -n $line | grep -Eow "args:[A-Za-z0-9;.]*" | sed s/args://`" "
   description=`echo -n $line | sed s/.*id:[A-Z]*// | sed 's:\*/.*$::'`
   prefix=`echo -n $line | cut -f 1 -d ' ' | sed 's/^ *{"//'  | sed s/\",//`
 
@@ -14,10 +15,10 @@ while IFS= read -r line; do
   if [ $suffix = "0," ]; then
     suffix=''
   else
-    suffix=" args "`echo -n $suffix | sed "s/^ *'//" | sed "s/',//"`
+    suffix=" $args"`echo -n $suffix | sed "s/^ *'//" | sed "s/',//"`
   fi
 
-    echo
-    echo "$id     \e$prefix$suffix"
-    echo "   $description"
+  line="$id $description                                           "
+  line=${line:0:45}"ESC $prefix$suffix"
+  echo "$line"
 done <<< `cat ctx-vt.c | grep  'id:' `
