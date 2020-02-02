@@ -23,6 +23,7 @@ int parse_main (int argc, char **argv)
 {
   char *line = NULL;
   Ctx *ctx = ctx_new ();
+  if (argc &&  argv) {};
   _ctx_set_store_clear (ctx);
   size_t size;
   while (getline(&line, &size, stdin) != -1) {
@@ -63,6 +64,7 @@ int parse_main (int argc, char **argv)
 
 int help_main (int argc, char **argv)
 {
+  if (argc &&  argv){};
   printf ("Usage: ctx [command [command args]]\n\n"
 	  "where command is one of:\n"
 	  " vt    - virtual terminal, running ctx with no args\n    also launches a terminal\n"

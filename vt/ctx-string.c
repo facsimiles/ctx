@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+int ctx_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
+#define mrg_unichar_to_utf8 ctx_unichar_to_utf8
+
 static void mrg_string_init (MrgString *string, int initial_size)
 {
   string->allocated_length = initial_size;
