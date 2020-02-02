@@ -2743,9 +2743,8 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
   }
   else if (vt->in_pcm)
   {
-    if (byte == 0x01) // doctoring all 0x01 samples to be 0x02 doesnt
-	              // significantly change audio - but gives us a way out
-    {
+    if (byte == 0x00) // byte value 0 terminates - replace
+    {                 // any 0s in original data with 1
       vt->in_pcm = 0;
     }
     else

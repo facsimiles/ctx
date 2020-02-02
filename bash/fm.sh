@@ -124,9 +124,9 @@ function prepare_audio(){
   vt_move_to 22 2
   mkdir "$temp_folder" 2> /dev/null
   rm "$temp_folder/"* 2> /dev/null
-  #sox "$1" -t raw -r 8000 -c 1 -e u-law -b 8 - 2>/dev/null |  tr "\001" "\002" > "$temp_folder/audio" || paused=1
+  #sox "$1" -t raw -r 8000 -c 1 -e u-law -b 8 - 2>/dev/null |  tr "\000" "\001" > "$temp_folder/audio" || paused=1
 
-  ffmpeg -i "$1" -ac 1 -ar 8000 -acodec pcm_mulaw -f au - 2>/dev/null | tr "\001" "\002" > "$temp_folder/audio" ||  paused=1
+  ffmpeg -i "$1" -ac 1 -ar 8000 -acodec pcm_mulaw -f au - 2>/dev/null | tr "\000" "\001" > "$temp_folder/audio" ||  paused=1
 
   #split "$temp_folder/audio" "$temp_folder/frag" -b $((8000 * $chunk_seconds)) -d
   # rm "$temp_folder/audio" 2> /dev/null
@@ -643,7 +643,7 @@ function loop(){
      if [ -f $temp_folder/audio ];then
       echo -en "\e[?4444h" # enter audio mode
       dd status=none if=$temp_folder/audio skip=$pos bs=8000 count=1
-      echo -en "\001" # end of audio mode marker
+      echo -en "\000" # end of audio mode marker
       pos=$(($pos+1))
       ui_dirty=2
     fi
