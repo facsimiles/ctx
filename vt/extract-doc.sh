@@ -1,5 +1,10 @@
 #!/bin/bash
 
+echo "Recognized escape sequences, see DEC VT terminal manuals online, as well as "
+echo "https://bjh21.me.uk/all-escapes/all-escapes.txt for a reference of these and more"
+echo ""
+echo "This text file is generated from the sources."
+
 while IFS= read -r line; do
   id=`echo -n $line | grep -Eow "id:[A-Z]*" | sed s/id://`
   description=`echo -n $line | sed s/.*id:[A-Z]*// | sed 's:\*/.*$::'`
@@ -15,4 +20,4 @@ while IFS= read -r line; do
     echo
     echo "$id     \e$prefix$suffix"
     echo "   $description"
-done <<< `cat mrg-vt.c | grep  'id:' `
+done <<< `cat ctx-vt.c | grep  'id:' `

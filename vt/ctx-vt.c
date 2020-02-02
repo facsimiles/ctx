@@ -49,8 +49,8 @@
 
 #include "ctx.h"
 
-#include "mrg-string.h"
-#include "mrg-vt.h"
+#include "ctx-string.h"
+#include "ctx-vt.h"
 
 #define VT_LOG_INFO     (1<<0)
 #define VT_LOG_CURSOR   (1<<1)
@@ -263,7 +263,7 @@ typedef enum {
 
 } MrgVtStyle;
 
-static int mrg_vt_trimlines (MrgVT *vt, int max);
+static int ctx_vt_trimlines (MrgVT *vt, int max);
 
 typedef enum {
   TERMINAL_STATE_NEUTRAL          = 0,
@@ -367,20 +367,20 @@ struct _MrgVT {
   void      *mmm;
 };
 
-void mrg_vt_rev_inc (MrgVT *vt)
+void ctx_vt_rev_inc (MrgVT *vt)
 {
   vt->rev++;
 }
 
-long mrg_vt_rev (MrgVT *vt)
+long ctx_vt_rev (MrgVT *vt)
 {
   return vt->rev;
 }
 
-void mrg_vt_feed_byte (MrgVT *vt, int byte);
+void ctx_vt_feed_byte (MrgVT *vt, int byte);
 static void vtcmd_reset_device (MrgVT *vt, const char *sequence);
 
-static void mrg_vt_set_title (MrgVT *vt, const char *new_title)
+static void ctx_vt_set_title (MrgVT *vt, const char *new_title)
 {
   if (vt->inert) return;
   if (vt->title)
@@ -393,16 +393,16 @@ static void mrg_vt_set_title (MrgVT *vt, const char *new_title)
 #endif
 }
 
-const char *mrg_vt_get_title (MrgVT *vt)
+const char *ctx_vt_get_title (MrgVT *vt)
 {
   return vt->title;
 }
 
 static VtList *vts = NULL;
 
-static void mrg_vt_run_command (MrgVT *vt, const char *command);
+static void ctx_vt_run_command (MrgVT *vt, const char *command);
 static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence);
-static void _mrg_vt_move_to (MrgVT *vt, int y, int x);
+static void _ctx_vt_move_to (MrgVT *vt, int y, int x);
 
 void vt_scroll_style (MrgVT *vt, int amount);
 
@@ -462,14 +462,14 @@ static void vtcmd_reset_device (MrgVT *vt, const char *sequence)
   for (int i = 0; i < MAX_COLS; i++)
     vt->tabs[i] = i % 8 == 0? 1 : 0;
 
-  _mrg_vt_move_to (vt, 1, 1);
+  _ctx_vt_move_to (vt, 1, 1);
 
   if (vt->ctx)
     ctx_clear (vt->ctx);
 }
 
 
-MrgVT *mrg_vt_new (const char *command)
+MrgVT *ctx_vt_new (const char *command)
 {
   MrgVT *vt                  = calloc (sizeof (MrgVT), 1);
   vt->cursor_visible         = 1;
@@ -489,11 +489,11 @@ MrgVT *mrg_vt_new (const char *command)
 
   if (command)
   {
-    mrg_vt_run_command (vt, command);
+    ctx_vt_run_command (vt, command);
     vt->commandline = strdup (command);
   }
 
-  mrg_vt_set_term_size (vt, DEFAULT_COLS, DEFAULT_ROWS);
+  ctx_vt_set_term_size (vt, DEFAULT_COLS, DEFAULT_ROWS);
   vtcmd_reset_device (vt, NULL);
 
   vt->ctx = ctx_new ();
@@ -503,12 +503,12 @@ MrgVT *mrg_vt_new (const char *command)
   return vt;
 }
 
-void mrg_vt_set_mmm (MrgVT *vt, void *mmm)
+void ctx_vt_set_mmm (MrgVT *vt, void *mmm)
 {
   vt->mmm = mmm;
 }
 
-static int mrg_vt_trimlines (MrgVT *vt, int max)
+static int ctx_vt_trimlines (MrgVT *vt, int max)
 {
   VtList *chop_point = NULL;
   VtList *l;
@@ -537,7 +537,7 @@ static int mrg_vt_trimlines (MrgVT *vt, int max)
   return 0;
 }
 
-void mrg_vt_set_term_size (MrgVT *vt, int icols, int irows)
+void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
 {
   struct winsize ws;
   if (vt->rows == irows && vt->cols == icols)
@@ -547,7 +547,7 @@ void mrg_vt_set_term_size (MrgVT *vt, int icols, int irows)
   ws.ws_xpixel = ws.ws_col * 8; // XXX : vt should know pixel-dims
   ws.ws_ypixel = ws.ws_row * 8;
   ioctl(vt->pty, TIOCSWINSZ, &ws);
-  mrg_vt_trimlines (vt, vt->rows);
+  ctx_vt_trimlines (vt, vt->rows);
 
   vt->scroll_top             = 1;
   vt->scroll_bottom          = vt->rows;
@@ -556,7 +556,7 @@ void mrg_vt_set_term_size (MrgVT *vt, int icols, int irows)
   VT_info ("resize %i %i", irows, icols);
 }
 
-static void mrg_vt_argument_buf_reset (MrgVT *vt, const char *start)
+static void ctx_vt_argument_buf_reset (MrgVT *vt, const char *start)
 {
   if (start)
   {
@@ -567,7 +567,7 @@ static void mrg_vt_argument_buf_reset (MrgVT *vt, const char *start)
     vt->argument_buf[vt->argument_buf_len=0]=0;
 }
 
-static inline void mrg_vt_argument_buf_add (MrgVT *vt, int ch)
+static inline void ctx_vt_argument_buf_add (MrgVT *vt, int ch)
 {
   if (vt->argument_buf_len < 62)
   {
@@ -576,7 +576,7 @@ static inline void mrg_vt_argument_buf_add (MrgVT *vt, int ch)
   }
 }
 
-static void _mrg_vt_move_to (MrgVT *vt, int y, int x)
+static void _ctx_vt_move_to (MrgVT *vt, int y, int x)
 {
   int i;
   x = x < 1 ? 1 : (x > vt->cols ? vt->cols : x);
@@ -602,18 +602,18 @@ static void _mrg_vt_move_to (MrgVT *vt, int y, int x)
         vt->line_count++;
       }
   }
-  VT_cursor("%i,%i (_mrg_vt_move_to)", y, x);
+  VT_cursor("%i,%i (_ctx_vt_move_to)", y, x);
 }
 
-static void mrg_vt_line_feed (MrgVT *vt);
+static void ctx_vt_line_feed (MrgVT *vt);
 
-static void _mrg_vt_add_str (MrgVT *vt, const char *str)
+static void _ctx_vt_add_str (MrgVT *vt, const char *str)
 {
   if (vt->cursor_x > vt->cols)
   {
     if (vt->autowrap) {
-      mrg_vt_line_feed (vt);
-      _mrg_vt_move_to (vt, vt->cursor_y, 1); // regardless of crlf mode
+      ctx_vt_line_feed (vt);
+      _ctx_vt_move_to (vt, vt->cursor_y, 1); // regardless of crlf mode
     }
     else
     {
@@ -634,7 +634,7 @@ static void _mrg_vt_add_str (MrgVT *vt, const char *str)
   vt->cursor_x ++;
 }
 
-static void _mrg_vt_backspace (MrgVT *vt)
+static void _ctx_vt_backspace (MrgVT *vt)
 {
   if (vt->current_line)
   {
@@ -656,7 +656,7 @@ static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence)
 
   vt->scroll_top = top;
   vt->scroll_bottom = bottom;
-  _mrg_vt_move_to (vt, top, 1);
+  _ctx_vt_move_to (vt, top, 1);
   VT_cursor ("%i, %i (home)", top, 1);
 }
 
@@ -784,20 +784,20 @@ static void vtcmd_cursor_position (MrgVT *vt, const char *sequence)
   }
 
   VT_cursor("%i %i CUP", y, x);
-  _mrg_vt_move_to (vt, y, x);
+  _ctx_vt_move_to (vt, y, x);
 }
 
 
 static void vtcmd_goto_column (MrgVT *vt, const char *sequence)
 {
   int x = parse_int (sequence, 1);
-  _mrg_vt_move_to (vt, vt->cursor_y, x);
+  _ctx_vt_move_to (vt, vt->cursor_y, x);
 }
 
 static void vtcmd_goto_row (MrgVT *vt, const char *sequence)
 {
   int y = parse_int (sequence, 1);
-  _mrg_vt_move_to (vt, y, vt->cursor_x);
+  _ctx_vt_move_to (vt, y, vt->cursor_x);
 }
 
 static void vtcmd_cursor_forward (MrgVT *vt, const char *sequence)
@@ -805,7 +805,7 @@ static void vtcmd_cursor_forward (MrgVT *vt, const char *sequence)
   int n = parse_int (sequence, 1);
   if (n==0) n = 1;
   for (int i = 0; i < n; i++)
-    _mrg_vt_move_to (vt, vt->cursor_y, vt->cursor_x + 1);
+    _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x + 1);
 }
 
 static void vtcmd_cursor_backward (MrgVT *vt, const char *sequence)
@@ -813,7 +813,7 @@ static void vtcmd_cursor_backward (MrgVT *vt, const char *sequence)
   int n = parse_int (sequence, 1);
   if (n==0) n = 1;
   for (int i = 0; i < n; i++)
-    _mrg_vt_move_to (vt, vt->cursor_y, vt->cursor_x - 1);
+    _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x - 1);
 }
 
 static void vtcmd_cursor_up_scroll (MrgVT *vt, const char *sequence)
@@ -826,11 +826,11 @@ static void vtcmd_cursor_up_scroll (MrgVT *vt, const char *sequence)
     if (vt->cursor_y == vt->scroll_top)
     {
       vt_scroll (vt, 1);
-      _mrg_vt_move_to (vt, vt->scroll_top, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->scroll_top, vt->cursor_x);
     }
     else
     {
-      _mrg_vt_move_to (vt, vt->cursor_y-1, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->cursor_y-1, vt->cursor_x);
     }
   }
 }
@@ -844,11 +844,11 @@ static void vtcmd_cursor_up (MrgVT *vt, const char *sequence)
   {
     if (vt->cursor_y == 1)//vt->scroll_top)
     {
-      //_mrg_vt_move_to (vt, 1, vt->cursor_x);
+      //_ctx_vt_move_to (vt, 1, vt->cursor_x);
     }
     else
     {
-      _mrg_vt_move_to (vt, vt->cursor_y-1, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->cursor_y-1, vt->cursor_x);
     }
   }
 }
@@ -862,11 +862,11 @@ static void vtcmd_cursor_down_scroll (MrgVT *vt, const char *sequence)
     if (vt->cursor_y == vt->scroll_bottom)
     {
       vt_scroll (vt, -1);
-      _mrg_vt_move_to (vt, vt->scroll_bottom, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->scroll_bottom, vt->cursor_x);
     }
     else
     {
-      _mrg_vt_move_to (vt, vt->cursor_y + 1, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->cursor_y + 1, vt->cursor_x);
     }
   }
 }
@@ -879,11 +879,11 @@ static void vtcmd_cursor_down (MrgVT *vt, const char *sequence)
   {
     if (vt->cursor_y >= vt->rows)
     {
-      _mrg_vt_move_to (vt, vt->rows, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->rows, vt->cursor_x);
     }
     else
     {
-      _mrg_vt_move_to (vt, vt->cursor_y + 1, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->cursor_y + 1, vt->cursor_x);
     }
   }
 }
@@ -891,13 +891,13 @@ static void vtcmd_cursor_down (MrgVT *vt, const char *sequence)
 static void vtcmd_next_line (MrgVT *vt, const char *sequence)
 {
   vtcmd_cursor_down_scroll (vt, sequence);
-  _mrg_vt_move_to (vt, vt->cursor_y, 1);
+  _ctx_vt_move_to (vt, vt->cursor_y, 1);
 }
 
 static void vtcmd_cursor_up_and_first_col (MrgVT *vt, const char *sequence)
 {
   vtcmd_cursor_up (vt, sequence);
-  _mrg_vt_move_to (vt, vt->cursor_y, 1);
+  _ctx_vt_move_to (vt, vt->cursor_y, 1);
 }
 
 static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
@@ -996,7 +996,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         int tx = vt->cursor_x;
         int ty = vt->cursor_y;
         vtcmd_clear (vt, "");
-        _mrg_vt_move_to (vt, ty, tx);
+        _ctx_vt_move_to (vt, ty, tx);
       }
       break;
   }
@@ -1006,10 +1006,10 @@ static void vtcmd_screen_alignment_display (MrgVT *vt, const char *sequence)
 {
   for (int y = 1; y <= vt->rows; y++)
   {
-    _mrg_vt_move_to (vt, y, 1);
+    _ctx_vt_move_to (vt, y, 1);
     for (int x = 1; x <= vt->cols; x++)
       {
-        _mrg_vt_add_str (vt, "E");
+        _ctx_vt_add_str (vt, "E");
       }
   }
 }
@@ -1234,7 +1234,20 @@ static void vtcmd_device_attributes (MrgVT *vt, const char *sequence)
   write (vt->pty, buf, strlen(buf));
 }
 
+
 static void vtcmd_save_cursor_position (MrgVT *vt, const char *sequence)
+{
+  vt->saved_x = vt->cursor_x;
+  vt->saved_y = vt->cursor_y;
+}
+
+static void vtcmd_restore_cursor_position (MrgVT *vt, const char *sequence)
+{
+  _ctx_vt_move_to (vt, vt->saved_y, vt->saved_x);
+}
+
+
+static void vtcmd_save_cursor (MrgVT *vt, const char *sequence)
 {
   vt->saved_x       = vt->cursor_x;
   vt->saved_y       = vt->cursor_y;
@@ -1244,14 +1257,15 @@ static void vtcmd_save_cursor_position (MrgVT *vt, const char *sequence)
   vt->saved_autowrap  = vt->autowrap;
 }
 
-static void vtcmd_restore_cursor_position (MrgVT *vt, const char *sequence)
+static void vtcmd_restore_cursor (MrgVT *vt, const char *sequence)
 {
-  _mrg_vt_move_to (vt, vt->saved_y, vt->saved_x);
+  _ctx_vt_move_to (vt, vt->saved_y, vt->saved_x);
   vt->cstyle  = vt->saved_style;
   vt->charset = vt->saved_charset;
   vt->origin  = vt->saved_origin;     // XXX according to vt100 user guide 
   vt->autowrap = vt->saved_autowrap;  // XXX maybe not needed
 }
+
 
 
 
@@ -1293,7 +1307,7 @@ static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
         break;
       }
     }
-    _mrg_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+    _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
     vt_scroll_style (vt, -1);
   }
 }
@@ -1357,7 +1371,7 @@ qagain:
      case 3:   vtcmd_reset_device (vt, sequence);break; // set 132 col
      case 5:   vt->reverse_video = 1; break;
      case 6:   vt->origin = 1;
-               _mrg_vt_move_to (vt, vt->scroll_top, 1);
+               _ctx_vt_move_to (vt, vt->scroll_top, 1);
 	       break;
      case 7:   vt->autowrap = 1; break;
      case 8:   vt->keyrepeat = 1; break;
@@ -1437,7 +1451,7 @@ qagain:
 
      case 5:   vt->reverse_video = 0; break;
      case 6:   vt->origin = 0;
-               _mrg_vt_move_to (vt, 1, 1);
+               _ctx_vt_move_to (vt, 1, 1);
 	       break;
      case 7:    vt->autowrap = 0; break;
      case 8:    vt->keyrepeat = 0; break;
@@ -1482,20 +1496,20 @@ again:
   }
 }
 
-static void _mrg_vt_htab (MrgVT *vt)
+static void _ctx_vt_htab (MrgVT *vt)
 {
   do {
-    //_mrg_vt_add_str (vt, " "); // maybe we want this for setting style
+    //_ctx_vt_add_str (vt, " "); // maybe we want this for setting style
     vt->cursor_x++;
   } while ( ! vt->tabs[vt->cursor_x-1] && vt->cursor_x < vt->cols);
   if (vt->cursor_x > vt->cols)
     vt->cursor_x = vt->cols;
 }
 
-static void _mrg_vt_rev_htab (MrgVT *vt)
+static void _ctx_vt_rev_htab (MrgVT *vt)
 {
   do {
-    //_mrg_vt_add_str (vt, " "); // maybe we want this for setting style
+    //_ctx_vt_add_str (vt, " "); // maybe we want this for setting style
     vt->cursor_x--;
   } while ( ! vt->tabs[vt->cursor_x-1] && vt->cursor_x > 1);
   if (vt->cursor_x < 1)
@@ -1507,7 +1521,7 @@ static void vtcmd_insert_n_tabs (MrgVT *vt, const char *sequence)
   int n = parse_int (sequence, 1);
   while (n--)
   {
-    _mrg_vt_htab (vt);
+    _ctx_vt_htab (vt);
   }
 }
 
@@ -1516,7 +1530,7 @@ static void vtcmd_rev_n_tabs (MrgVT *vt, const char *sequence)
   int n = parse_int (sequence, 1);
   while (n--)
   {
-    _mrg_vt_rev_htab (vt);
+    _ctx_vt_rev_htab (vt);
   }
 }
 
@@ -1577,45 +1591,45 @@ static char* charmap[]={
 static Sequence sequences[]={
 /*
   prefix suffix  command */
-  {"D",   0,  vtcmd_cursor_down_scroll}, /* id:IND index */
+  {"D",   0,  vtcmd_cursor_down_scroll}, /* id:IND Index */
   {"E",   0,  vtcmd_next_line},
-  {"M",   0,  vtcmd_cursor_up_scroll}, /* id:RI reverse index */
+  {"M",   0,  vtcmd_cursor_up_scroll}, /* id:RI Reverse Index */
 
-  //{"N",  0,   vtcmd_ignore}, /* Set single shift 2 - SS2*/
-  //{"O",  0,   vtcmd_ignore}, /* Set single shift 3 - SS3*/
+  //{"N",  0,   vtcmd_ignore}, /* Set Single Shift 2 - SS2*/
+  //{"O",  0,   vtcmd_ignore}, /* Set Single Shift 3 - SS3*/
 
-  {"[",  'A', vtcmd_cursor_up},   /* id:CUU cursor up */
-  {"[",  'B', vtcmd_cursor_down}, /* id:CUD cursor down */
-  {"[",  'C', vtcmd_cursor_forward}, /* id:CUF cursor forward */
-  {"[",  'D', vtcmd_cursor_backward}, /* id:CUB cursor backward */
-  {"[",  'E', vtcmd_next_line}, /* id:VPR Line position forward */
-  {"[",  'F', vtcmd_cursor_up_and_first_col}, /* id:CPL cursor preceding line */
-  {"[",  'G', vtcmd_goto_column}, /* id:CHA cursor position absolute */
-  {"[",  'H', vtcmd_cursor_position}, /*id:CUP cursor position */
-  {"[",  'f', vtcmd_cursor_position}, /*id:CUP cursor position */
-  {"[",  'I', vtcmd_insert_n_tabs}, /*id:CHT cursor forward tabulation */
-  {"[",  'J', vtcmd_erase_in_display}, /*id:ED erase in display */
-  {"[",  'K', vtcmd_erase_in_line}, /* id:EL erase in line */
-  {"[",  'L', vtcmd_insert_blank_lines}, /* id:IL insert line */
-  {"[",  'M', vtcmd_delete_n_lines}, /* id:DL delete line   */
-  {"[",  'P', vtcmd_delete_n_chars}, /* id:DCH delete character */
-  {"[",  'X', vtcmd_erase_n_chars}, /* id:ECH erase character */
-  {"[",  'S', vtcmd_scroll_up}, /* id:SU scroll up */
-  {"[",  'T', vtcmd_scroll_down}, /* id:SD scroll down */
+  {"[",  'A', vtcmd_cursor_up},   /* id:CUU Cursor Up */
+  {"[",  'B', vtcmd_cursor_down}, /* id:CUD Cursor Down */
+  {"[",  'C', vtcmd_cursor_forward}, /* id:CUF Cursor Forward */
+  {"[",  'D', vtcmd_cursor_backward}, /* id:CUB Cursor Backward */
+  {"[",  'E', vtcmd_next_line}, /* id:VPR Vertical Position Relative */
+  {"[",  'F', vtcmd_cursor_up_and_first_col}, /* id:CPL Cursor Previous Line */
+  {"[",  'G', vtcmd_goto_column}, /* id:CHA Cursor Horizontal Absolute */
+  {"[",  'H', vtcmd_cursor_position}, /*id:CUP Cursor Position */
+  {"[",  'f', vtcmd_cursor_position}, /*id:CUP Cursor Position */
+  {"[",  'I', vtcmd_insert_n_tabs}, /*id:CHT Cursor Horizontal Forward Tabulation */
+  {"[",  'J', vtcmd_erase_in_display}, /*id:ED Erase in Display */
+  {"[",  'K', vtcmd_erase_in_line}, /* id:EL Erase in Line */
+  {"[",  'L', vtcmd_insert_blank_lines}, /* id:IL Insert Line */
+  {"[",  'M', vtcmd_delete_n_lines}, /* id:DL Delete Line   */
+  {"[",  'P', vtcmd_delete_n_chars}, /* id:DCH Delete Character */
+  {"[",  'X', vtcmd_erase_n_chars}, /* id:ECH Erase Character */
+  {"[",  'S', vtcmd_scroll_up}, /* id:SU Scroll Up */
+  {"[",  'T', vtcmd_scroll_down}, /* id:SD Scroll Down */
   // U - ext page
   // V - revious page
   {"[",  '^', vtcmd_scroll_down}, /* muphry alternate from ECMA */
-  {"[",  'Z', vtcmd_rev_n_tabs}, /* id:CBT cursor backward tabulation */
-  {"[",  '@', vtcmd_insert_blanks}, /* id:ICH insert character */
+  {"[",  'Z', vtcmd_rev_n_tabs}, /* id:CBT Cursor Backward Tabulation */
+  {"[",  '@', vtcmd_insert_blanks}, /* id:ICH Insert Character */
 
-  {"[",  'a', vtcmd_cursor_forward}, /* id:HPR character position forward */
-  {"[",  'd', vtcmd_goto_row}, /*id:VPA line position absolute */
-  {"[",  'e', vtcmd_cursor_down}, /*id:VPR line position forward */
-  {"[",  'm', vtcmd_set_style}, /*id:SGR select graphics rendition */
-  {"[",  'r', vtcmd_set_top_and_bottom_margins}, /*id:DECSTBM set top and bottom margins */
-  {"[",  '`', vtcmd_goto_column}, /* id:HPA character position absolute */
-  {"[s",  0,  vtcmd_save_cursor_position}, /* id:SCP save cursor position */
-  {"[u",  0,  vtcmd_restore_cursor_position}, /*id:RCP restore cursor position */
+  {"[",  'a', vtcmd_cursor_forward}, /* id:HPR Horizontal Position Relative */
+  {"[",  'e', vtcmd_cursor_down},    /* id:VPR Vertical Position Relative */
+  {"[",  'd', vtcmd_goto_row},       /* id:VPA Vertical Position Absolute  */
+  {"[",  'm', vtcmd_set_style},      /* id:SGR Select Graphics Rendition */
+  {"[",  'r', vtcmd_set_top_and_bottom_margins}, /*id:DECSTBM Set Top and Bottom Margins */
+  {"[",  '`', vtcmd_goto_column},    /* id:HPA Horizontal Position Absolute */
+  {"[s",  0,  vtcmd_save_cursor_position}, /* id:SCP Save Cursor Position */
+  {"[u",  0,  vtcmd_restore_cursor_position}, /*id:RCP Restore Cursor Position */
 
   /*  [ Zcursor backward tabulation n tab stops */
 
@@ -1624,15 +1638,15 @@ static Sequence sequences[]={
   {"[0g", 0,  vtcmd_clear_current_tab},
   {"[3g", 0,  vtcmd_clear_all_tabs},
 
-  {"[",  'h', vtcmd_set},   /* id:SM set mode */
-  {"[",  'l', vtcmd_unset}, /* id:RM reset mode */
+  {"[",  'h', vtcmd_set},   /* id:SM Set Mode */
+  {"[",  'l', vtcmd_unset}, /* id:RM Reset Mode */
   {"[",  't', vtcmd_set_t},  // used by vim, for stack of icon/titles
 
-  {"7",   0,  vtcmd_save_cursor_position}, /* id:DECSC save cursor */
-  {"8",   0,  vtcmd_restore_cursor_position}, /* id:DECRC restore cursor */
-  {"H",   0,  vtcmd_set_tab_at_current_column}, /* id:HTS character tabulation set */
+  {"7",   0,  vtcmd_save_cursor}, /* id:DECSC Save Cursor */
+  {"8",   0,  vtcmd_restore_cursor}, /* id:DECRC Restore Cursor */
+  {"H",   0,  vtcmd_set_tab_at_current_column}, /* id:HTS Horizontal Tab Set */
 
-  {"[0c", 'c', vtcmd_device_attributes}, /* id:DA device attributes */
+  {"[0c", 'c', vtcmd_device_attributes}, /* id:DA Device Attributes */
   //{"Z", 0,  vtcmd_device_attributes}, 
 
   //{"%G",0,  vtcmd_set_default_font}, // set_alternate_font
@@ -1660,10 +1674,10 @@ static Sequence sequences[]={
   {"(A",  0,   vtcmd_set_default_font},
   {"(B",  0,   vtcmd_set_default_font}, 
 
-  {"#8",  0,   vtcmd_screen_alignment_display}, /* id:DECALN Screen alignment display */
+  {"#8",  0,   vtcmd_screen_alignment_display}, /* id:DECALN Screen Alignment Display */
   {"=",   0,   vtcmd_ignore},  // keypad mode change
   {">",   0,   vtcmd_ignore},  // keypad mode change
-  {"c",   0,   vtcmd_reset_device}, /* id:RIS Reset to initial state */
+  {"c",   0,   vtcmd_reset_device}, /* id:RIS Reset to Initial State */
   {"[!", 'p',  vtcmd_ignore}, // soft reset?
 
   {NULL, 0, NULL}
@@ -1692,7 +1706,7 @@ static void handle_sequence (MrgVT *vt, const char *sequence)
   //VT_warning ("unhandled: %c%c%c%c%c%c%c%c%c\n", sequence[0], sequence[1], sequence[2], sequence[3], sequence[4], sequence[5], sequence[6], sequence[7], sequence[8]);
 }
 
-static void mrg_vt_line_feed (MrgVT *vt)
+static void ctx_vt_line_feed (MrgVT *vt)
 {
   if (vt->scroll_top == 1 && vt->scroll_bottom == vt->rows)
   {
@@ -1710,8 +1724,8 @@ static void mrg_vt_line_feed (MrgVT *vt)
       vt_scroll_style (vt, -1);
     }
 
-    _mrg_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
-    mrg_vt_trimlines (vt, vt->rows);
+    _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
+    ctx_vt_trimlines (vt, vt->rows);
     return;
   }
 
@@ -1733,8 +1747,8 @@ static void mrg_vt_line_feed (MrgVT *vt)
     vt->cursor_y++; 
   }
 
-  _mrg_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
-  mrg_vt_trimlines (vt, vt->rows);
+  _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
+  ctx_vt_trimlines (vt, vt->rows);
 }
 
 static short MuLawDecompressTable[256] =
@@ -2529,7 +2543,7 @@ static unsigned char vt_bell_audio[] = {
 };
 unsigned int foo_len = 9000;
 
-static void mrg_vt_bell (MrgVT *vt)
+static void ctx_vt_bell (MrgVT *vt)
 {
   if (vt->bell < 2)
     return;
@@ -2537,7 +2551,7 @@ static void mrg_vt_bell (MrgVT *vt)
     terminal_queue_pcm_sample (MuLawDecompressTable[vt_bell_audio[i]] * vt->bell / 8);
 }
 
-void mrg_vt_feed_byte (MrgVT *vt, int byte)
+void ctx_vt_feed_byte (MrgVT *vt, int byte)
 {
   //fprintf (stderr, "{%i %c}", byte, (byte>31&&byte<=127)?byte:' ');
   //
@@ -2568,16 +2582,16 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
 	   break;
         case 6:    /* ACKnolwedge */
            break;
-        case '\a': /* BELl */ mrg_vt_bell (vt); break;
-        case '\b': /* BS */   _mrg_vt_backspace (vt); break;
-        case '\t': /* HT tab */ _mrg_vt_htab (vt); break;
+        case '\a': /* BELl */ ctx_vt_bell (vt); break;
+        case '\b': /* BS */   _ctx_vt_backspace (vt); break;
+        case '\t': /* HT tab */ _ctx_vt_htab (vt); break;
         case '\v': /* VT vertical tab */
         case '\f': /* VF form feed */
         case '\n': /* LF line ffed */
-          mrg_vt_line_feed (vt);
+          ctx_vt_line_feed (vt);
           break;
         case '\r': /* CR carriage return */
-          _mrg_vt_move_to (vt, vt->cursor_y, 1);
+          _ctx_vt_move_to (vt, vt->cursor_y, 1);
           break;
         case 14: /* SO shift in - alternate charset */
 	  vtcmd_set_alternate_font (vt, ""); // XXX the alternate used here is wrong for vt52 though
@@ -2610,7 +2624,7 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
 	 default:
 	  {
 	    char str[2] = {byte, 0};
-            _mrg_vt_add_str (vt, str);
+            _ctx_vt_add_str (vt, str);
 	  }
 	  break;
 	}
@@ -2625,7 +2639,7 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
 	  case 'D': vtcmd_cursor_backward (vt, " "); break;
 	  case 'F': vtcmd_set_alternate_font (vt, " "); break;
 	  case 'G': vtcmd_set_default_font (vt, " "); break;
-	  case 'H': _mrg_vt_move_to (vt, 1, 1); break;
+	  case 'H': _ctx_vt_move_to (vt, 1, 1); break;
 	  case 'I': vtcmd_cursor_up_scroll (vt, " "); break;
 	  case 'J': vtcmd_erase_in_display (vt, "[0J"); break;
 	  case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
@@ -2636,11 +2650,11 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
         }
 	break;
       case 2:
-	_mrg_vt_move_to (vt, byte - 31, vt->cursor_x);
+	_ctx_vt_move_to (vt, byte - 31, vt->cursor_x);
 	vt->utf8_pos = 3;
 	break;
       case 3:
-	_mrg_vt_move_to (vt, vt->cursor_y, byte - 31);
+	_ctx_vt_move_to (vt, vt->cursor_y, byte - 31);
 	vt->utf8_pos = 0;
 	break;
 
@@ -2778,16 +2792,16 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
 	   break;
         case 6:    /* ACKnolwedge */
            break;
-        case '\a': /* BELl */ mrg_vt_bell (vt); break;
-        case '\b': /* BS */   _mrg_vt_backspace (vt); break;
-        case '\t': /* HT tab */ _mrg_vt_htab (vt); break;
+        case '\a': /* BELl */ ctx_vt_bell (vt); break;
+        case '\b': /* BS */   _ctx_vt_backspace (vt); break;
+        case '\t': /* HT tab */ _ctx_vt_htab (vt); break;
         case '\v': /* VT vertical tab */
         case '\f': /* VF form feed */
         case '\n': /* LF line ffed */
-          mrg_vt_line_feed (vt);
+          ctx_vt_line_feed (vt);
           break;
         case '\r': /* CR carriage return */
-          _mrg_vt_move_to (vt, vt->cursor_y, 1);
+          _ctx_vt_move_to (vt, vt->cursor_y, 1);
           break;
 	case 14: /* SO shift in - alternate charset TODO */
         case 15: /* SI shift out - (back to normal) TODO*/
@@ -2831,11 +2845,11 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
           if (vt->charset)
            if ((vt->utf8_holding[0] > ' ') && (vt->utf8_holding[0] <= '~'))
            {
-             _mrg_vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
+             _ctx_vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
              break;
            }
 
-          _mrg_vt_add_str (vt, vt->utf8_holding);
+          _ctx_vt_add_str (vt, vt->utf8_holding);
 	  }
           break;
       }
@@ -2843,12 +2857,12 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
     case TERMINAL_STATE_GOT_ESC:
       switch (byte)
       {
-          case '\t': _mrg_vt_htab (vt); break;
-          case '\b': _mrg_vt_backspace (vt); break;
+          case '\t': _ctx_vt_htab (vt); break;
+          case '\b': _ctx_vt_backspace (vt); break;
           case '\r': vt->cursor_x = 1; break;
-          case '\v': _mrg_vt_move_to (vt, vt->cursor_y+1, vt->cursor_x); break;
+          case '\v': _ctx_vt_move_to (vt, vt->cursor_y+1, vt->cursor_x); break;
           case '\n':
-          case '\f': mrg_vt_line_feed (vt); break;
+          case '\f': ctx_vt_line_feed (vt); break;
 
 
         case ')':
@@ -2856,7 +2870,7 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
         case '(':
           {
             char tmp[]={byte, '\0'};
-            mrg_vt_argument_buf_reset(vt, tmp);
+            ctx_vt_argument_buf_reset(vt, tmp);
             vt->state = TERMINAL_STATE_GOT_ESC_FOO;
           }
           break;
@@ -2866,14 +2880,14 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
         case '*':
           {
             char tmp[]={byte, '\0'};
-            mrg_vt_argument_buf_reset(vt, tmp);
+            ctx_vt_argument_buf_reset(vt, tmp);
             vt->state = TERMINAL_STATE_GOT_ESC_SEQUENCE;
           }
           break;
         case ']':
           {
             char tmp[]={byte, '\0'};
-            mrg_vt_argument_buf_reset(vt, tmp);
+            ctx_vt_argument_buf_reset(vt, tmp);
             vt->state = TERMINAL_STATE_GOT_ESC_SQRPAREN;
           }
           break;
@@ -2888,14 +2902,14 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
       }
       break;
     case TERMINAL_STATE_GOT_ESC_FOO:
-      mrg_vt_argument_buf_add (vt, byte);
+      ctx_vt_argument_buf_add (vt, byte);
       handle_sequence (vt, vt->argument_buf);
       vt->state = TERMINAL_STATE_NEUTRAL;
       break;
     case TERMINAL_STATE_GOT_ESC_SEQUENCE:
       if (byte >= '@' && byte <= '~')
       {
-        mrg_vt_argument_buf_add (vt, byte);
+        ctx_vt_argument_buf_add (vt, byte);
         handle_sequence (vt, vt->argument_buf);
         vt->state = TERMINAL_STATE_NEUTRAL;
       }
@@ -2903,14 +2917,14 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
       {
         switch (byte)
         {
-          case '\t': _mrg_vt_htab (vt); break;
-          case '\b': _mrg_vt_backspace (vt); break;
+          case '\t': _ctx_vt_htab (vt); break;
+          case '\b': _ctx_vt_backspace (vt); break;
           case '\r': vt->cursor_x = 1; break;
-          case '\v': _mrg_vt_move_to (vt, vt->cursor_y+1, vt->cursor_x); break;
+          case '\v': _ctx_vt_move_to (vt, vt->cursor_y+1, vt->cursor_x); break;
           case '\n':
-          case '\f': mrg_vt_line_feed (vt); break;
+          case '\f': ctx_vt_line_feed (vt); break;
           default:
-            mrg_vt_argument_buf_add (vt, byte);
+            ctx_vt_argument_buf_add (vt, byte);
         }
       }
       break;
@@ -2922,7 +2936,7 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
       // a stray char
       if (byte == '\a' || byte == 27)
       {
-        mrg_vt_set_title (vt, vt->argument_buf + 3);
+        ctx_vt_set_title (vt, vt->argument_buf + 3);
 	if (byte == 27)
         vt->state = TERMINAL_STATE_SWALLOW;
 	else
@@ -2930,7 +2944,7 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
       }
       else
       {
-        mrg_vt_argument_buf_add (vt, byte);
+        ctx_vt_argument_buf_add (vt, byte);
       }
       break;
     case TERMINAL_STATE_SWALLOW:
@@ -2940,7 +2954,7 @@ void mrg_vt_feed_byte (MrgVT *vt, int byte)
   }
 }
 
-void mrg_vt_poll (MrgVT *vt)
+void ctx_vt_poll (MrgVT *vt)
 {
   int count = 0;
   float sleep = 0.1;
@@ -2953,7 +2967,7 @@ void mrg_vt_poll (MrgVT *vt)
     {
       int i;
       for (i = 0; i < len; i++)
-        mrg_vt_feed_byte (vt, buf[i]);
+        ctx_vt_feed_byte (vt, buf[i]);
       count += len;
     }
   }
@@ -2968,7 +2982,7 @@ a:
     {
       int i;
       for (i = 0; i < len; i++)
-        mrg_vt_feed_byte (vt, buf[i]);
+        ctx_vt_feed_byte (vt, buf[i]);
       count += len;
       if (count < 1024 * 512)
       {
@@ -3102,7 +3116,7 @@ static const char *keymap_general[][2]={
   {"F12",            "\033[23~"},
 };
 
-void mrg_vt_feed_keystring (MrgVT *vt, const char *str)
+void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 {
   if (vt->in_vt52)
   {
@@ -3136,7 +3150,7 @@ done:
     write (vt->pty, str, strlen (str));
 }
 
-const char *mrg_vt_find_shell_command (void)
+const char *ctx_vt_find_shell_command (void)
 {
   int i;
   const char *command = NULL;
@@ -3181,7 +3195,7 @@ static void signal_child (int signum)
 static int reaper_started = 0;
 
 
-static void mrg_vt_run_command (MrgVT *vt, const char *command)
+static void ctx_vt_run_command (MrgVT *vt, const char *command)
 {
   struct winsize ws;
   if (!reaper_started)
@@ -3221,12 +3235,12 @@ static void mrg_vt_run_command (MrgVT *vt, const char *command)
   fcntl(vt->pty, F_SETFL, O_NONBLOCK);
 }
 
-const char *mrg_vt_get_commandline (MrgVT *vt)
+const char *ctx_vt_get_commandline (MrgVT *vt)
 {
   return vt->commandline;
 }
 
-void mrg_vt_destroy (MrgVT *vt)
+void ctx_vt_destroy (MrgVT *vt)
 {
   while (vt->lines)
   {
@@ -3247,13 +3261,13 @@ void mrg_vt_destroy (MrgVT *vt)
   free (vt);
 }
 
-int mrg_vt_get_line_count (MrgVT *vt)
+int ctx_vt_get_line_count (MrgVT *vt)
 {
   return vt->line_count;
   return vt_list_length (vt->lines);
 }
 
-const char *mrg_vt_get_line (MrgVT *vt, int no)
+const char *ctx_vt_get_line (MrgVT *vt, int no)
 {
   VtList *l= vt_list_nth (vt->lines, no);
   MrgString *str;
@@ -3263,22 +3277,22 @@ const char *mrg_vt_get_line (MrgVT *vt, int no)
   return str->str;
 }
 
-int mrg_vt_get_cols (MrgVT *vt)
+int ctx_vt_get_cols (MrgVT *vt)
 {
   return vt->cols;
 }
 
-int mrg_vt_get_rows (MrgVT *vt)
+int ctx_vt_get_rows (MrgVT *vt)
 {
   return vt->rows;
 }
 
-int mrg_vt_get_cursor_x (MrgVT *vt)
+int ctx_vt_get_cursor_x (MrgVT *vt)
 {
   return vt->cursor_x;
 }
 
-int mrg_vt_get_cursor_y (MrgVT *vt)
+int ctx_vt_get_cursor_y (MrgVT *vt)
 {
   return vt->cursor_y;
 }
@@ -3771,7 +3785,7 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg)
   ctx_set_rgba (ctx, r, g, b, 1.0f);
 }
 
-void mrg_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, float line_spacing)
+void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, float line_spacing)
 {
   int cw = (font_size / line_spacing) + 0.99;
   int ch = font_size;
@@ -3817,7 +3831,7 @@ void mrg_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     ctx_restore (ctx);
   }
   {
-    int count = mrg_vt_get_line_count (vt);
+    int count = ctx_vt_get_line_count (vt);
     int row = 1;
     uint32_t set_style = 9999;
 
@@ -3825,7 +3839,7 @@ void mrg_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
     for (row = 0; row < count; row ++)
     {
-      const char *data = mrg_vt_get_line (vt, row);
+      const char *data = ctx_vt_get_line (vt, row);
       if (data)
       {
         const char *d = data;
@@ -3876,7 +3890,7 @@ void mrg_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
   /* draw terminal lines */
   {
-    int count = mrg_vt_get_line_count (vt);
+    int count = ctx_vt_get_line_count (vt);
     int row = 1;
     uint32_t set_style = 9999;
 
@@ -3885,7 +3899,7 @@ void mrg_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
     for (row = 0; row < count; row ++)
     {
-      const char *data = mrg_vt_get_line (vt, row);
+      const char *data = ctx_vt_get_line (vt, row);
       if (data)
       {
         const char *d = data;
@@ -3936,8 +3950,8 @@ void mrg_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
   /* draw cursor */
   if (vt->cursor_visible)
   {
-    float cursor_x = mrg_vt_get_cursor_x (vt);
-    float cursor_y = mrg_vt_get_cursor_y (vt);
+    float cursor_x = ctx_vt_get_cursor_x (vt);
+    float cursor_y = ctx_vt_get_cursor_y (vt);
 
     ctx_set_rgba (ctx, 1.0, 0.0, 0.0, 1.0);
     ctx_set_line_width (ctx, 1.0);
@@ -3966,38 +3980,38 @@ void mrg_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
   ctx_restore (ctx);
 }
 
-int mrg_vt_is_done (MrgVT *vt)
+int ctx_vt_is_done (MrgVT *vt)
 {
   return vt->done;
 }
 
-int mrg_vt_get_result (MrgVT *vt)
+int ctx_vt_get_result (MrgVT *vt)
 {
   /* we could block - at least for a while, here..? */
   return vt->result;
 }
 
-void mrg_vt_set_scrollback_lines (MrgVT *vt, int scrollback_lines)
+void ctx_vt_set_scrollback_lines (MrgVT *vt, int scrollback_lines)
 {
   vt->lines_scrollback = scrollback_lines;
 }
 
-int  mrg_vt_get_scrollback_lines (MrgVT *vt)
+int  ctx_vt_get_scrollback_lines (MrgVT *vt)
 {
   return vt->lines_scrollback;
 }
 
-void mrg_vt_set_scroll (MrgVT *vt, int scroll)
+void ctx_vt_set_scroll (MrgVT *vt, int scroll)
 {
   vt->scroll = scroll;
 }
 
-int mrg_vt_get_scroll (MrgVT *vt)
+int ctx_vt_get_scroll (MrgVT *vt)
 {
   return vt->scroll;
 }
 
-void mrg_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
+void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
 {
   static int lastx=-1; // XXX  : need one per vt
   static int lasty=-1;
@@ -4057,7 +4071,7 @@ void mrg_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_
   }
 }
 
-pid_t       mrg_vt_get_pid            (MrgVT *vt)
+pid_t       ctx_vt_get_pid            (MrgVT *vt)
 {
   return vt->pid;
 }

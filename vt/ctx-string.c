@@ -15,8 +15,8 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mrg-string.h"
-#include "mrg-utf8.h"
+#include "ctx-string.h"
+#include "ctx-utf8.h"
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE

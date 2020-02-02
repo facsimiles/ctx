@@ -18,7 +18,7 @@
 #ifndef MRG_STRING_H
 #define MRG_STRING_H
 
-#include "mrg-utf8.h"
+#include "ctx-utf8.h"
 
 typedef struct _MrgString MrgString;
 

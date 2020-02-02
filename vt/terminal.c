@@ -24,7 +24,7 @@
 #include "ctx.h"
 
 
-#include "mrg-vt.h"
+#include "ctx-vt.h"
 
 int   do_quit      = 0;
 float font_size    = 30.0;
@@ -102,15 +102,15 @@ int vt_main(int argc, char **argv)
   //mmm = mmm_new (font_size * 40, font_size * DEFAULT_ROWS, 0, NULL);
   mmm = mmm_new (cw * DEFAULT_COLS, ch * DEFAULT_ROWS, 0, NULL);
   unsetenv ("MMM_PATH");
-  vt = mrg_vt_new (argv[1]?argv[1]:mrg_vt_find_shell_command());
+  vt = ctx_vt_new (argv[1]?argv[1]:ctx_vt_find_shell_command());
 
-  mrg_vt_set_mmm (vt, mmm);
+  ctx_vt_set_mmm (vt, mmm);
   mmm_pcm_set_sample_rate (mmm, 8000);
 
   int i;
   int sleep_time = 10;
 
-  vt_child = mrg_vt_get_pid (vt);
+  vt_child = ctx_vt_get_pid (vt);
   signal (SIGCHLD, signal_child);
   while(!do_quit)
   {
@@ -121,16 +121,16 @@ int vt_main(int argc, char **argv)
       int width; int height; int stride;
 
       static long drawn_rev = 0;
-      if (drawn_rev != mrg_vt_rev (vt))
+      if (drawn_rev != ctx_vt_rev (vt))
       {
-        drawn_rev = mrg_vt_rev (vt);
+        drawn_rev = ctx_vt_rev (vt);
       audio_task ();
 
       mmm_client_check_size (mmm, &width, &height);
 
       if (old_w != width ||  old_h!=height)
       {
-        mrg_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
+        ctx_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
 	old_w = width;
 	old_h = height;
       }
@@ -139,7 +139,7 @@ int vt_main(int argc, char **argv)
 
         Ctx *ctx = ctx_new_for_framebuffer (buffer, width, height, stride, CTX_FORMAT_BGRA8);
 
-        mrg_vt_draw (vt, ctx, 0, 0, font_size, line_spacing);
+        ctx_vt_draw (vt, ctx, 0, 0, font_size, line_spacing);
 
         ctx_free (ctx);
         mmm_write_done (mmm, 0, 0, -1, -1);
@@ -156,16 +156,16 @@ int vt_main(int argc, char **argv)
 	//else
 	       	if (!strcmp (event, "shift-page-up"))
 	{
-	  int new_scroll = mrg_vt_get_scroll (vt) + mrg_vt_get_rows (vt)/2;
+	  int new_scroll = ctx_vt_get_scroll (vt) + ctx_vt_get_rows (vt)/2;
 	  if (new_scroll > 200) new_scroll = 200;
-	  mrg_vt_set_scroll (vt, new_scroll);
-	  mrg_vt_rev_inc (vt);
+	  ctx_vt_set_scroll (vt, new_scroll);
+	  ctx_vt_rev_inc (vt);
 	} else if (!strcmp (event, "shift-page-down"))
 	{
-	  int new_scroll = mrg_vt_get_scroll (vt) - mrg_vt_get_rows (vt)/2;
+	  int new_scroll = ctx_vt_get_scroll (vt) - ctx_vt_get_rows (vt)/2;
 	  if (new_scroll < 0) new_scroll = 0;
-	  mrg_vt_set_scroll (vt, new_scroll);
-	  mrg_vt_rev_inc (vt);
+	  ctx_vt_set_scroll (vt, new_scroll);
+	  ctx_vt_rev_inc (vt);
 	} else if (!strcmp (event, "shift-control--")) {
 	  font_size /= 1.15;
 	  font_size = (int) (font_size);
@@ -173,14 +173,14 @@ int vt_main(int argc, char **argv)
 
           cw = (font_size / line_spacing) + 0.99;
           ch = font_size;
-          mrg_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
+          ctx_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
 	} else if (!strcmp (event, "shift-control-=")) {
 	  float old = font_size;
 	  font_size *= 1.15;
 	  font_size = (int)(font_size);
 	  if (old == font_size) font_size = old+1;
 	  if (font_size > 200) font_size = 200;
-          mrg_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
+          ctx_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
 
           cw = (font_size / line_spacing) + 0.99;
           ch = font_size;
@@ -204,7 +204,7 @@ int vt_main(int argc, char **argv)
 	      if (s)
 	      {
 	        y = atoi (s);
-	        mrg_vt_mouse (vt, VT_MOUSE_MOTION, x/cw + 1, y/ch + 1, x, y);
+	        ctx_vt_mouse (vt, VT_MOUSE_MOTION, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
 	  }
@@ -219,7 +219,7 @@ int vt_main(int argc, char **argv)
 	      if (s)
 	      {
 	        y = atoi (s);
-	        mrg_vt_mouse (vt, VT_MOUSE_PRESS, x/cw + 1, y/ch + 1, x, y);
+	        ctx_vt_mouse (vt, VT_MOUSE_PRESS, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
 	  }
@@ -234,7 +234,7 @@ int vt_main(int argc, char **argv)
 	      if (s)
 	      {
 	        y = atoi (s);
-	        mrg_vt_mouse (vt, VT_MOUSE_DRAG, x/cw + 1, y/ch + 1, x, y);
+	        ctx_vt_mouse (vt, VT_MOUSE_DRAG, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
 	  }
@@ -249,14 +249,14 @@ int vt_main(int argc, char **argv)
 	      if (s)
 	      {
 	        y = atoi (s);
-	        mrg_vt_mouse (vt, VT_MOUSE_RELEASE, x/cw + 1, y/ch + 1, x, y);
+	        ctx_vt_mouse (vt, VT_MOUSE_RELEASE, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
 	  }
 	}
         else
         {
-          mrg_vt_feed_keystring (vt, event);
+          ctx_vt_feed_keystring (vt, event);
           got_event = 1;
         }
         sleep_time = 200;
@@ -269,10 +269,10 @@ int vt_main(int argc, char **argv)
 
         if (sleep_time > 8000)
           sleep_time = 8000;
-        mrg_vt_poll (vt);
+        ctx_vt_poll (vt);
       }
   }
-  mrg_vt_destroy (vt);
+  ctx_vt_destroy (vt);
   if (mmm)
     mmm_destroy (mmm);
   return 0;
