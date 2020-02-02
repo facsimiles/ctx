@@ -369,6 +369,7 @@ function draw_audio () {
 
 function handle_key()
 {
+  key=$1
   if [ x"$1" = x'control-l' ];then
     ui_dirty=1 ; had_command=0; return
   fi
@@ -455,6 +456,9 @@ function handle_key()
         "left") entry_pos=$(($entry_pos-1)) ;
 		if [ $entry_pos -le 0 ]; then entry_pos=0; fi
 		draw_prompt ;;
+        "control-d")
+		if [ "x$entry" = "x" ]; then alive=0 ; fi
+		;;
         "right") entry_pos=$(($entry_pos+1)) ;
 		if [ $entry_pos -ge ${#entry} ]; then entry_pos=${#entry}; fi
 		draw_prompt ;;
@@ -604,21 +608,45 @@ function keyboard_events()
 	  fi
        fi
        case "$seq" in
-	 "ESC")    key=esc   ;;
-         "ESC[A")  key=up    ;;
-	 "ESC[B")  key=down  ;;
-         "ESC[C")  key=right ;;
-         "ESC[D")  key=left  ;;
-         "ESC[H")  key=home ;;
-         "ESC[F")  key=end ;;
-	  ' ')     key=space       ;;
-         $'\177'|$'\b')  key=backspace ;;
-         $'\001')  key="control-a" ;;
-         $'\005')  key="control-e" ;;
-         $'\004')  key="control-d" ;;
+	 "ESC")    key="esc"   ;;
+         "ESC[A")  key="up"    ;;
+	 "ESC[B")  key="down"  ;;
+         "ESC[C")  key="right" ;;
+         "ESC[D")  key="left"  ;;
+         "ESC[H")  key="home" ;;
+         "ESC[F")  key="end" ;;
+         "ESC[Z")  key="shift-tab" ;;
+	  ' ')     key="space"       ;;
+         $'\177'|$'\b')  key="backspace" ;;
+         "ESC"$'\177')   key="alt-backspace" ;;
 	 $'\n')    key=return ;;
 	 $'\t')    key=tab  ;;
-	 $'\f')    key="control-l" ;;
+         $'\001')  key="control-a" ;;
+         $'\002')  key="control-b" ;;
+         $'\003')  key="control-c" ;;
+         $'\004')  key="control-d" ;;
+         $'\005')  key="control-e" ;;
+         $'\006')  key="control-f" ;;
+         $'\007')  key="control-g" ;;
+         $'\010')  key="control-h" ;;
+         $'\011')  key="control-i" ;;
+         $'\012')  key="control-j" ;;
+         $'\013')  key="control-k" ;;
+         $'\014')  key="control-l" ;;
+         $'\015')  key="control-m" ;;
+         $'\016')  key="control-n" ;;
+         $'\017')  key="control-o" ;;
+         $'\020')  key="control-p" ;;
+         $'\021')  key="control-q" ;;
+         $'\022')  key="control-r" ;;
+         $'\023')  key="control-s" ;;
+         $'\024')  key="control-t" ;;
+         $'\025')  key="control-u" ;;
+         $'\026')  key="control-v" ;;
+         $'\027')  key="control-w" ;;
+         $'\030')  key="control-x" ;;
+         $'\031')  key="control-y" ;;
+         $'\032')  key="control-z" ;;
          "ESC[3~") key=delete;;
          "ESC[5~") key="page-up"   ;;
          "ESC[6~") key="page-down" ;;
@@ -685,8 +713,12 @@ ROWS=`echo $dims|sed 's/;.*//'`
 COLS=`echo $dims|sed 's/.*;//'|sed 's/R//'`
 }
 
+function send_ctrl_c(){
+  handle_key "control-c"
+}
+
 function setup(){
-  trap true  SIGINT
+  trap send_ctrl_c SIGINT
   trap true  SIGTERM
 
   if [ -n ""$1 ] && [ -d $1 ]; then
@@ -759,4 +791,3 @@ function main(){
 }
 
 main $*
-
