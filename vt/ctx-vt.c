@@ -95,16 +95,15 @@ struct _VtList {
 static inline int vt_list_length (VtList *list)
 {
   int length = 0;
-  VtList *l;
-  for (l = list; l; l = l->next, length++);
+  for (VtList *l = list; l; l = l->next, length++);
   return length;
 }
 
 static inline void vt_list_prepend (VtList **list, void *data)
 {
   VtList *new_=calloc (sizeof (VtList), 1);
-  new_->next= *list;
-  new_->data=data;
+  new_->next = *list;
+  new_->data = data;
   *list = new_;
 }
 
@@ -196,7 +195,6 @@ vt_list_insert_before (VtList **list, VtList *sibling,
     }
 }
 
-
 typedef enum {
   MRG_VT_STYLE_RESET          = 0,
   MRG_VT_STYLE_BOLD           = 1,
@@ -211,7 +209,6 @@ typedef enum {
   MRG_VT_STYLE_FONT2          = 12,
   MRG_VT_STYLE_FONT3          = 13,
   MRG_VT_STYLE_FONT4          = 14,
-
   MRG_VT_STYLE_BOLD_OFF       = 22,
   MRG_VT_STYLE_DIM_OFF        = 23,
   MRG_VT_STYLE_UNDERSCORE_OFF = 24,
@@ -282,12 +279,6 @@ typedef enum {
   STYLE_STRIKETHROUGH = 1 << 6,
   STYLE_FG_COLOR_SET  = 1 << 7,
   STYLE_BG_COLOR_SET  = 1 << 8,
-
-
-
-
-
-
 } TerminalStyle;
 
 struct _MrgVT {
@@ -1440,38 +1431,64 @@ qagain:
     qval = parse_int (sequence, 1);
     switch (qval)
     {
-     case 1:   vt->cursor_key_application = set; break;
-     case 2:   if (set==0) vt->in_vt52 = 1; break; 
-     case 3:   if (set) vtcmd_reset_to_initial_state (vt, sequence);break; // set 132 col
-     case 5:   vt->reverse_video = set; break;
-     case 6:   vt->origin = set;
-	       if (set)
-                 _ctx_vt_move_to (vt, vt->scroll_top, 1);
-	       else
-                 _ctx_vt_move_to (vt, 1, 1);
-	       break;
-     case 7:   vt->autowrap = set; break;
-     case 8:   vt->keyrepeat = set; break;
-     case 12:  vtcmd_ignore (vt, sequence);break; // start blinking_cursor
-     case 25:  vt->cursor_visible = set; break;
+     case 1: /*MODE;Cursor key mode;Apllication;Cursor;*/
+	       vt->cursor_key_application = set;
+	     break;
+     case 2: if (set==0) vt->in_vt52 = 1;
+	     break; 
+     case 3: /*MODE;Column mode;132 columns;80 columns;*/
+             if (set) vtcmd_reset_to_initial_state (vt, sequence);
+	     break; // set 132 col
+     case 5: /*MODE;Screen mode;Reverse;Normal;*/
+	     vt->reverse_video = set; break;
+     case 6: /*MODE;Origin mode;Relative;Absolute;*/
+	     vt->origin = set;
+	     if (set)
+               _ctx_vt_move_to (vt, vt->scroll_top, 1);
+	     else
+               _ctx_vt_move_to (vt, 1, 1);
+	     break;
+     case 7: /*MODE;Wraparound;On;Off;*/
+	     vt->autowrap = set; break;
+     case 8: /*MODE;Auto repeat;On;Off;*/
+	     vt->keyrepeat = set;
+	     break;
+     case 12:vtcmd_ignore (vt, sequence);break; // start blinking_cursor
+     case 25:/*MODE;Cursor visible;On;Off; */
+	     vt->cursor_visible = set; 
+	     break;
 
-     case 1000:  vt->mouse = set; break;
-     case 1002:  vt->mouse_drag = set; break;
-     case 1003:  vt->mouse_all = set; break;
-     case 1006:  vt->mouse_decimal = set; break;
+     case 1000:/*MODE;Mouse reporting;On;Off;*/
+	     vt->mouse = set;
+	     break;
+     case 1002:/*MODE;Mouse drag;On;Off;*/ 
+	     vt->mouse_drag = set;
+	     break;
+     case 1003:/*MODE;Mouse all;On;Off;*/ 
+	     vt->mouse_all = set; break;
+     case 1006:/*MODE;Mouse decimal;On;Off;*/ 
+	     vt->mouse_decimal = set; break;
      case 47:
      case 1047:
      case 1048:
-     case 1049:  vtcmd_reset_to_initial_state (vt, sequence);break; // alt screen
+     case 1049:
+	   vtcmd_reset_to_initial_state (vt, sequence);break; // alt screen
      case 2004:  vtcmd_ignore (vt, sequence);break; // set_bracketed_paste_mode
 
-     case 4444:  vt->in_pcm=set; break;
+     case 4444:/*MODE;Audio;On;;*/
+           vt->in_pcm=set; break;
 
-     case 2222:  vt->in_ctx=set; break;
-     case 7020:  vt->in_ctx_ascii = set; break;
-     case 2400:  vt->slow_baud = set; break;
-
-     default: VT_warning ("unhandled CSI ? %ih", qval); return;
+     case 2222:/*MODE;Ctx;On;;*/
+           vt->in_ctx=set;
+	   break;
+     case 7020:/*MODE;Ctx ascii;On;;*/
+           vt->in_ctx_ascii = set;
+	   break;
+     case 2400:/*MODE;Slow werial;On;Off;*/
+	   vt->slow_baud = set;
+           break;
+     default:
+	   VT_warning ("unhandled CSI ? %ih", qval); return;
     }
     if (strchr (sequence + 1, ';'))
     {
@@ -1486,9 +1503,12 @@ again:
     val = parse_int (sequence, 1);
     switch (val)
     {
-     case 4:    vt->insert_mode = set; break;
-     case 12:   vt->echo = set; break;
-     case 20:   vt->cr_on_lf = set; break;
+     case 4:/*MODE2;Insert Mode;Insert;Replace; */
+	     vt->insert_mode = set; break;
+     case 12:/*MODE2;Local echo;On;Off; */
+	     vt->echo = set; break;
+     case 20:/*MODE2;CrOnLf;On;Off;*/;
+	     vt->cr_on_lf = set; break;
      default: VT_warning ("unhandled CSI %ih", val); return;
     }
     if (strchr (sequence, ';'))
