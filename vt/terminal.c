@@ -22,7 +22,7 @@
 #define CTX_RASTERIZER_FORCE_AA  0
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
-
+#include "ctx-string.h"
 
 #include "ctx-vt.h"
 
@@ -109,7 +109,6 @@ int vt_main(int argc, char **argv)
   int ch = font_size;
   int old_w = 0;
   int old_h = 0;
-  //mmm = mmm_new (font_size * 40, font_size * DEFAULT_ROWS, 0, NULL);
   mmm = mmm_new (cw * DEFAULT_COLS, ch * DEFAULT_ROWS, 0, NULL);
   unsetenv ("MMM_PATH");
   vt = ctx_vt_new (argv[1]?argv[1]:ctx_vt_find_shell_command());

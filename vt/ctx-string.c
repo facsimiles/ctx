@@ -386,14 +386,15 @@ void mrg_string_remove_utf8 (MrgString *string, int pos)
   if (*p == 0 || *(p+prev_len) == 0)
   {
     rest = strdup("");
+    prev_len = 0;
   }
   else
   {
     rest = strdup (p + prev_len);
   }
 
-  memcpy (p, rest, strlen (rest));
-  string->str[string->length - prev_len - 1] = 0;
+  strcpy (p, rest);//, strlen (rest));
+  string->str[string->length - prev_len] = 0;
   //string->length -= prev_len;
   free (rest);
 

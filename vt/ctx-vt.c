@@ -56,7 +56,7 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = 0;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INPUT | VT_LOG_COMMAND;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL - VT_LOG_INPUT - VT_LOG_CURSOR;
 //static int vt_log_mask = VT_LOG_ALL;
@@ -627,6 +627,9 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
      mrg_string_replace_utf8 (vt->current_line, vt->cursor_x - 1, str);
    }
   vt->cursor_x ++;
+
+  while (vt->current_line->utf8_length > vt->cols)
+     mrg_string_remove_utf8 (vt->current_line, vt->cols);
 }
 
 static void _ctx_vt_backspace (MrgVT *vt)
@@ -1299,10 +1302,12 @@ static void vtcmd_erase_n_chars (MrgVT *vt, const char *sequence)
 static void vtcmd_delete_n_chars (MrgVT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  fprintf (stderr, "[%s]", vt->current_line->str);
   while (n--)
   {
      mrg_string_remove_utf8 (vt->current_line, vt->cursor_x - 1);
   }
+  fprintf (stderr, "[%s]", vt->current_line->str);
 }
 
 static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
@@ -1329,13 +1334,17 @@ static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
   }
 }
 
-static void vtcmd_insert_blanks (MrgVT *vt, const char *sequence)
+static void vtcmd_insert_character (MrgVT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
   while (n--)
   {
      mrg_string_insert_utf8 (vt->current_line, vt->cursor_x - 1, " ");
   }
+  while (vt->current_line->utf8_length > vt->cols)
+     mrg_string_remove_utf8 (vt->current_line, vt->cols);
+
+  // XXX update style
 }
 
 static void vtcmd_scroll_up (MrgVT *vt, const char *sequence)
@@ -1637,7 +1646,7 @@ static Sequence sequences[]={
   // V - previous page
   {"[",  '^', vtcmd_scroll_down}, /* muphry alternate from ECMA */
   {"[",  'Z', vtcmd_rev_n_tabs}, /* args:Pn id:CBT Cursor Backward Tabulation */
-  {"[",  '@', vtcmd_insert_blanks}, /* args:Pn id:ICH Insert Character */
+  {"[",  '@', vtcmd_insert_character}, /* args:Pn id:ICH Insert Character */
 
   {"[",  'a', vtcmd_cursor_forward}, /* args:Pn id:HPR Horizontal Position Relative */
   {"[",  'e', vtcmd_cursor_down},    /* args:Pn id:VPR Vertical Position Relative */
@@ -3073,6 +3082,8 @@ static const char *keymap_general[][2]={
   {"shift-alt-down", "\033[1;4B"},
   {"shift-alt-right","\033[1;4C"},
   {"shift-alt-left", "\033[1;4D"},
+
+  {"control-space",  "\000"},
   {"control-up",     "\033[1;5A"},
   {"control-down",   "\033[1;5B"},
   {"control-right",  "\033[1;5C"},
@@ -3093,7 +3104,6 @@ static const char *keymap_general[][2]={
   {"shift-return",   "\r"},
   {"control-return", "\r"},
   {"space",          " "},
-  {"control-space",  " "},
   {"shift-space",    " "},
   {"control-a",      "\001"},
   {"control-b",      "\002"},
@@ -3162,6 +3172,13 @@ void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
   if (!strcmp (str, "return") && vt->cr_on_lf)
   {
     str = "\r\n";goto done;
+  }
+
+  if (!strcmp (str, "control-space"))
+  {
+    str = "\0\0";
+    write (vt->pty, str, 1);
+    return;
   }
 
   for (int i = 0; i<sizeof (keymap_general)/sizeof(keymap_general[0]); i++)
@@ -3903,7 +3920,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
 	    if (!bg_is_nop)
 	    {
-              ctx_rectangle (ctx, x, y-font_size, font_size/line_spacing, font_size);
+              ctx_rectangle (ctx, x, y-font_size, cw, ch);
               ctx_fill (ctx);
 	    }
           }
