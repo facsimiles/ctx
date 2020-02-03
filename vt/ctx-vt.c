@@ -1553,14 +1553,25 @@ static void vtcmd_rev_n_tabs (MrgVT *vt, const char *sequence)
 
 static void vtcmd_set_led (MrgVT *vt, const char *sequence)
 {
-  for (const char *s = sequence; *s && *s!='q'; s++)
-  switch (*s)
+  int val = 0;
+  for (const char *s = sequence; *s; s++)
   {
-    case '0': vt->leds[0] = vt->leds[1] = vt->leds[2] = vt->leds[3] = 0; break;
-    case '1': vt->leds[0] = 1; break;
-    case '2': vt->leds[1] = 1; break;
-    case '3': vt->leds[2] = 1; break;
-    case '4': vt->leds[3] = 1; break;
+    switch (*s)
+    {
+      case '0': val = 0; break;
+      case '1': val = 1; break;
+      case '2': val = 2; break;
+      case '3': val = 3; break;
+      case '4': val = 4; break;
+      case ';':
+      case 'q':
+	  if (val == 0)
+	    vt->leds[0] = vt->leds[1] = vt->leds[2] = vt->leds[3] = 0;
+	  else
+	    vt->leds[val-1] = 1;
+	  val = 0;
+	  break;
+    }
   }
 }
 
@@ -3857,7 +3868,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
         {
 	  //fprintf (stderr, "\n%p]", ctx_utf8_to_unichar (d));
 	  vt_ctx_glyph (ctx, x, -scroll_no * ch,
-			  
 			  ctx_utf8_to_unichar (d), font_size, line_spacing, 0);
 	  x+=cw;
 	}
