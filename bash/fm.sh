@@ -149,6 +149,11 @@ function prepare_text(){
   viewer=text
 }
 
+function prepare_ansi (){
+  iconv -f cp437 -t utf8 "$1" > $temp_folder/text
+  prepare_text $temp_folder/text
+}
+
 function prepare_directory(){
   ls -sh1 "$1" > $temp_folder/text
   prepare_text $temp_folder/text
@@ -164,6 +169,7 @@ function prepare_file(){
 	duration=5
 	loaded_path="$current_path/$1"
 	loaded_basename=$(basename -- "$loaded_path")
+	loaded_extension="${loaded_basename##*.}"
 
 	if [ -x "`which mimetype`" ] ; then
 	  # external tool is preferable
@@ -174,7 +180,6 @@ function prepare_file(){
 	  elif [ -L "$loaded_path" ]; then
 	    file_mimetype='inode/symbolic-link'
 	  else
-	    loaded_extension="${loaded_basename##*.}"
 	    case "$loaded_extension" in
 	            "json") file_mimetype='application/json' ;;
 	            "html") file_mimetype='text/html' ;;
@@ -197,6 +202,12 @@ function prepare_file(){
 	    esac
 	  fi
 	fi
+	if [ x"$loaded_extension" = x"ANS" ]; then
+	  file_mimetype='text/ansi-art'
+	fi
+	if [ x"$loaded_extension" = x"ASC" ]; then
+	  file_mimetype='text/ansi-art'
+	fi
 	file_mimeclass=`echo -n $file_mimetype | sed 's:/.*::'`
 	file_info=`file "$loaded_path" 2>/dev/null | sed 's/^.*: *//'`
 	#file_info="$loaded_path"
@@ -213,6 +224,10 @@ function prepare_file(){
 	      ;;
 	  "text/html")
  	      prepare_html "$current_path/$1"
+              linenumbers=0
+	      ;;
+	  "text/ansi-art")
+ 	      prepare_ansi "$current_path/$1"
               linenumbers=0
 	      ;;
 	  "application/x-shellscript"|\
@@ -345,6 +360,7 @@ function draw_text ()
     row=$(($row+1))
   done
   vt_wrap
+  echo -en "\e[m"
 }
 
 function draw_audio () {
