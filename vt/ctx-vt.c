@@ -1091,7 +1091,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 2: /* SGR@@Dim@@ */
       vt->cstyle |= STYLE_DIM;
       break; 
-    case 3: /* SGR@@Italic@@ */
+    case 3: /* SGR@@Rotalic@@ */
       vt->cstyle |= STYLE_ITALIC;
       break; 
     case 4: /* SGR@@Underscore@@ */
@@ -1407,17 +1407,16 @@ qagain:
      case 8: /*MODE;Auto repeat;On;Off;*/
 	     vt->keyrepeat = set;
 	     break;
-     case 12:vtcmd_ignore (vt, sequence);break; // start blinking_cursor
+     case 12:vtcmd_ignore (vt, sequence);break; // blinking_cursor
+
      case 25:/*MODE;Cursor visible;On;Off; */
 	     vt->cursor_visible = set; 
 	     break;
 
      case 1000:/*MODE;Mouse reporting;On;Off;*/
-	     vt->mouse = set;
-	     break;
+	     vt->mouse = set; break;
      case 1002:/*MODE;Mouse drag;On;Off;*/ 
-	     vt->mouse_drag = set;
-	     break;
+	     vt->mouse_drag = set; break;
      case 1003:/*MODE;Mouse all;On;Off;*/ 
 	     vt->mouse_all = set; break;
      case 1006:/*MODE;Mouse decimal;On;Off;*/ 
@@ -1461,7 +1460,7 @@ again:
 	     vt->insert_mode = set; break;
      case 12:/*MODE2;Local echo;On;Off; */
 	     vt->echo = set; break;
-     case 20:/*MODE2;CrOnLf;On;Off;*/;
+     case 20:/*MODE2;Carriage Return on LF/Newline;On;Off;*/;
 	     vt->cr_on_lf = set; break;
      default: VT_warning ("unhandled CSI %ih", val); return;
     }
@@ -3763,17 +3762,17 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
     {
       case 0:  r = 0.0; g = 0.0; b = 0.0; break;     // black
       case 1:  r = 0.8; g =0.25; b =0.15; break; // red
-      case 2:  r = 0.25; g =0.8; b =0.15; break; // green
+      case 2:  r = 0.05; g =0.8; b =0.10; break; // green
       case 3:  r = 0.7; g =0.6; b =0.0; break;   // dark yellow
-      case 4:  r = 0.2; g =0.3; b =1.0; break;  // blue
+      case 4:  r = 0.3; g =0.3; b =1.0; break;  // blue
       case 5:  r = 0.8; g =0.0; b =0.7; break;  // magenta
       case 6:  r = 0.0; g =0.8; b =0.7; break;  // cyan
-      case 7:  r = 0.9; g =0.9; b =0.9; break; // light-gray
-      case 8:  r = 0.8; g =0.8; b =0.8; break;  // dark gray
+      case 7:  r = 0.85; g =0.85; b =0.85; break; // light-gray
+      case 8:  r = 0.6; g =0.6; b =0.6; break;  // dark gray
       case 9:  r = 1.0; g =0.5; b =0.5; break; // bright red
       case 10: r = 0.5; g =1.0; b =0.5; break; // bright green
       case 11: r = 1.0; g =1.0; b =0.5; break; // bright yellow
-      case 12: r = 0.5; g =0.5; b =1.0; break; // bright blue
+      case 12: r = 0.5; g =0.55; b =1.0; break; // bright blue
       case 13: r = 1.0; g =0.5; b =1.0; break; // bright magenta
       case 14: r = 0.5; g =1.0; b =1.0; break; // bright cyan
       case 15: r = 1.0; g =1.0; b =1.0; break; // white
@@ -3991,7 +3990,18 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	  //fprintf (stderr, "\n%p]", ctx_utf8_to_unichar (d));
 	  if (!hidden && (blink == 0 || (blink && vt->blink_state)))
 	  {
+	     if (italic)
+	     {
+		ctx_save (ctx);
+		ctx_translate (ctx, x, y);
+		ctx_rotate (ctx, 0.3);
+		ctx_translate (ctx, -x, -y);
+	     }
 	     vt_ctx_glyph (ctx, x, y, ctx_utf8_to_unichar (d), font_size, line_spacing, bold);
+	     if (italic)
+	     {
+		ctx_restore (ctx);
+	     }
 	     if (underline)
 	     {
 	       ctx_new_path (ctx);
