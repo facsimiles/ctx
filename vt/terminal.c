@@ -19,7 +19,7 @@
 #define CTX_SHAPE_CACHE_DIM      64*64
 #define CTX_SHAPE_CACHE_ENTRIES  2048
 #define CTX_RASTERIZER_AA        3
-#define CTX_RASTERIZER_FORCE_AA  0
+#define CTX_RASTERIZER_FORCE_AA  1
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 #include "ctx-string.h"

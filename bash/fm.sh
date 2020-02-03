@@ -200,8 +200,12 @@ function prepare_file(){
 	file_mimeclass=`echo -n $file_mimetype | sed 's:/.*::'`
 	file_info=`file "$loaded_path" 2>/dev/null | sed 's/^.*: *//'`
 	#file_info="$loaded_path"
+
+	file_size=`stat --printf "%s" "$loaded_path"`
+
 	viewer=none
 
+	if [ $file_size -lt 85536 ]; then
 	case $file_mimetype in
 	  "inode/directory"|"inode/mount-point")
  	      prepare_directory "$current_path/$1" 
@@ -212,9 +216,10 @@ function prepare_file(){
               linenumbers=0
 	      ;;
 	  "application/x-shellscript"|\
-	  "application/json")
+	  "application/json"|\
+	  "application/x-yaml")
  	      prepare_text "$current_path/$1"
-              linenumbers=1
+              inenumbers=1
 	      ;;
           *)
 	    case $file_mimeclass in
@@ -226,6 +231,7 @@ function prepare_file(){
           esac 
 	  ;;
         esac
+	fi
 
 }
 

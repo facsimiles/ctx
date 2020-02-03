@@ -56,7 +56,7 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = 0;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INPUT | VT_LOG_COMMAND;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;//:w | VT_LOG_COMMAND;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL - VT_LOG_INPUT - VT_LOG_CURSOR;
 //static int vt_log_mask = VT_LOG_ALL;
@@ -432,11 +432,13 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
 
 #define set_fg_idx(idx) \
     vt->cstyle ^= (vt->cstyle & (255<<16));\
-    vt->cstyle |=  ((idx)<<16) | STYLE_FG_COLOR_SET;
+    vt->cstyle |=  ((idx)<<16);\
+    vt->cstyle |= STYLE_FG_COLOR_SET;
 
 #define set_bg_idx(idx) \
     vt->cstyle ^= (vt->cstyle & (255<<24));\
-    vt->cstyle |= ((idx)<<24) | STYLE_BG_COLOR_SET;
+    vt->cstyle |= ((idx)<<24) ;\
+    vt->cstyle |= STYLE_BG_COLOR_SET;
 
 static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
 {
@@ -1036,9 +1038,7 @@ static int find_idx (int r, int g, int b)
 
 static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
 {
-
   const char *s = sequence;
- 
   if (s[0]) s++;
  
   while (s && *s)
@@ -1071,9 +1071,18 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       int r = 0, g = 0, b = 0;
       s++;
       if (strchr (s, ';'))
+      {
         s = strchr (s, ';');
-      sscanf (s, ";%i;%i;%i", &r, &g, &b);
-      set_fg_idx( find_idx (r,g,b));
+        if (s)
+          sscanf (s, ";%i;%i;%i", &r, &g, &b);
+      }
+      else
+      {
+        s = strchr (s, ':');
+        if (s)
+          sscanf (s, ":%i:%i:%i", &r, &g, &b);
+      }
+      set_fg_idx(find_idx (r,g,b));
     }
     else
     {
@@ -1106,8 +1115,18 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       int r = 0, g = 0, b = 0;
       s++;
       if (strchr (s, ';'))
+      {
         s = strchr (s, ';');
-      sscanf (s, ";%i;%i;%i", &r, &g, &b);
+        if (s)
+          sscanf (s, ";%i;%i;%i", &r, &g, &b);
+      }
+      else
+      {
+        s = strchr (s, ':');
+        if (s)
+          sscanf (s, ":%i:%i:%i", &r, &g, &b);
+      }
+
       set_bg_idx( find_idx (r,g,b));
     }
     else
@@ -1175,10 +1194,9 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       vt->cstyle ^= (vt->cstyle & STYLE_REVERSE);
       break;
     case MRG_VT_STYLE_FG_DEFAULT:
+      //set_fg_idx(vt->reverse_video?16:0);
       set_fg_idx(vt->reverse_video?16:0);
-      
       break;
-
     case MRG_VT_STYLE_FG_BLACK:   set_fg_idx(16); break;
     case MRG_VT_STYLE_FG_RED:     set_fg_idx(1); break;
     case MRG_VT_STYLE_FG_GREEN:   set_fg_idx(2); break;;
@@ -1197,7 +1215,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case MRG_VT_STYLE_FG_WHITE:              set_fg_idx(15); break;;
 
     case MRG_VT_STYLE_BG_DEFAULT:
-      set_bg_idx(vt->reverse_video?16:0);
+      set_bg_idx(vt->reverse_video?15:0);
       break;
 
     case MRG_VT_STYLE_BG_BLACK: set_bg_idx(16); break;
@@ -1434,14 +1452,14 @@ qagain:
 	       break;
      case 7:   vt->autowrap = set; break;
      case 8:   vt->keyrepeat = set; break;
-     case 12:   vtcmd_ignore (vt, sequence);break; // start blinking_cursor
-     case 25:   vt->cursor_visible = set; break;
-      // 47 - alternate buffer
+     case 12:  vtcmd_ignore (vt, sequence);break; // start blinking_cursor
+     case 25:  vt->cursor_visible = set; break;
 
      case 1000:  vt->mouse = set; break;
      case 1002:  vt->mouse_drag = set; break;
      case 1003:  vt->mouse_all = set; break;
      case 1006:  vt->mouse_decimal = set; break;
+     case 47:
      case 1047:
      case 1048:
      case 1049:  vtcmd_reset_to_initial_state (vt, sequence);break; // alt screen
@@ -1539,10 +1557,10 @@ static void vtcmd_set_led (MrgVT *vt, const char *sequence)
   switch (*s)
   {
     case '0': vt->leds[0] = vt->leds[1] = vt->leds[2] = vt->leds[3] = 0; break;
-    case '1': vt->leds[0] = 1;
-    case '2': vt->leds[1] = 1;
-    case '3': vt->leds[2] = 1;
-    case '4': vt->leds[3] = 1;
+    case '1': vt->leds[0] = 1; break;
+    case '2': vt->leds[1] = 1; break;
+    case '3': vt->leds[2] = 1; break;
+    case '4': vt->leds[3] = 1; break;
   }
 }
 
@@ -3777,9 +3795,9 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg)
     {
        if (no != 15)
        {
-         r *= 0.7;
-         g *= 0.7;
-         b *= 0.7;
+         r *= 0.8;
+         g *= 0.8;
+         b *= 0.8;
        }
     }
   } else if (no < 16 + 6*6*6)
@@ -3802,16 +3820,22 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 {
   int cw = (font_size / line_spacing) + 0.99;
   int ch = font_size;
+  int default_bg = 0;
+  int default_fg = 15;
   ctx_save (ctx);
 
   {
      if (vt->reverse_video)
      {
-       ctx_set_rgba (ctx, 0.8, 0.8, 0.8, 1.0);
+       ctx_set_rgba (ctx, 1.0, 1.0, 1.0, 1.0);
+       default_bg = 15;
+       default_fg = 0;
      }
      else
      {
        ctx_set_rgba (ctx, 0.0, 0.0, 0.0, 1.0);
+       default_bg = 0;
+       default_fg = 15;
      }
      ctx_rectangle (ctx, x0, y0, cw * vt->cols, ch * vt->rows);
      ctx_fill (ctx);
@@ -3851,6 +3875,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     ctx_restore (ctx);
     //ctx_identity_matrix (ctx); // in case we're screwed by client
   }
+
+  /* draw background blocks */
   {
     int count = ctx_vt_get_line_count (vt);
     int row = 1;
@@ -3873,7 +3899,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
             {
               int color;
-              if (set_style & STYLE_REVERSE)
+              if (((set_style & STYLE_REVERSE)!=0))
 	      {
                 color = (set_style >> 16) & 255;
 	      }
@@ -3882,12 +3908,17 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
                 color = (set_style >> 24) & 255;
 	      }
 
-	      if (color == 0 && (set_style & STYLE_REVERSE))
-	        color = 15;
-
-	      //if (color == 0)
-              //  bg_is_nop = 1;
-	      //else
+	      if ((set_style & STYLE_BG_COLOR_SET) == 0)
+	      {
+                 if ((set_style & STYLE_REVERSE))
+	           color = default_fg;
+		 else
+	           color = default_bg;
+	      }
+	     
+	      if (color == default_bg)
+		bg_is_nop = 1;
+	      else
 	      {
 		if (color != prevcol)
 		{
@@ -3942,13 +3973,18 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
             {
               int color;
-              if (set_style & STYLE_REVERSE)
+              if (((set_style & STYLE_REVERSE)!=0))
                 color = (set_style >> 24) & 255;
               else
                 color = (set_style >> 16) & 255;
 
-	      if (color == 0 && !(set_style & STYLE_REVERSE))
-	        color = 15;
+	      if ((set_style & STYLE_FG_COLOR_SET) == 0)
+	      {
+                 if ((set_style & STYLE_REVERSE))
+	           color = default_bg;
+		 else
+	           color = default_fg;
+	      }
 
 	      if (color != prevcol)
 	      {
@@ -4006,6 +4042,17 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     ctx_render_ctx (vt->ctx, ctx);
     ctx_restore (ctx);
   }
+
+  for (int i = 0; i < 4; i++)
+  {
+    if (vt->leds[i])
+    {
+       ctx_set_rgba (ctx, .5,1,.5,0.8);
+       ctx_rectangle (ctx, cw * i + cw * 0.25, ch * 0.25, cw/2, ch/2);
+       ctx_fill (ctx);
+    }
+  }
+
   ctx_restore (ctx);
 }
 
