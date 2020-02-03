@@ -195,66 +195,6 @@ vt_list_insert_before (VtList **list, VtList *sibling,
     }
 }
 
-typedef enum {
-  MRG_VT_STYLE_RESET          = 0,
-  MRG_VT_STYLE_BOLD           = 1,
-  MRG_VT_STYLE_DIM            = 2,
-  MRG_VT_STYLE_UNDERSCORE     = 4,
-  MRG_VT_STYLE_BLINK          = 5,
-  MRG_VT_STYLE_REVERSE        = 7,
-  MRG_VT_STYLE_HIDDEN         = 8,
-  MRG_VT_STYLE_STRIKETHROUGH  = 9,
-  MRG_VT_STYLE_FONT0          = 10,
-  MRG_VT_STYLE_FONT1          = 11,
-  MRG_VT_STYLE_FONT2          = 12,
-  MRG_VT_STYLE_FONT3          = 13,
-  MRG_VT_STYLE_FONT4          = 14,
-  MRG_VT_STYLE_BOLD_OFF       = 22,
-  MRG_VT_STYLE_DIM_OFF        = 23,
-  MRG_VT_STYLE_UNDERSCORE_OFF = 24,
-  MRG_VT_STYLE_BLINK_OFF      = 25,
-  MRG_VT_STYLE_REVERSE_OFF    = 27,
-  MRG_VT_STYLE_HIDDEN_OFF     = 28,
-  MRG_VT_STYLE_STRIKETHROUGH_OFF = 29,
-  MRG_VT_STYLE_FG_BLACK       = 30,
-  MRG_VT_STYLE_FG_RED,
-  MRG_VT_STYLE_FG_GREEN,
-  MRG_VT_STYLE_FG_YELLOW,
-  MRG_VT_STYLE_FG_BLUE,
-  MRG_VT_STYLE_FG_MAGENTA,
-  MRG_VT_STYLE_FG_CYAN,
-  MRG_VT_STYLE_FG_LIGHT_GRAY = 37,
-  MRG_VT_STYLE_FG            = 38,
-  MRG_VT_STYLE_FG_DEFAULT    = 39,
-  MRG_VT_STYLE_BG_BLACK      = 40,
-  MRG_VT_STYLE_BG_RED,
-  MRG_VT_STYLE_BG_GREEN,
-  MRG_VT_STYLE_BG_YELLOW,
-  MRG_VT_STYLE_BG_BLUE,
-  MRG_VT_STYLE_BG_MAGENTA,
-  MRG_VT_STYLE_BG_CYAN,
-  MRG_VT_STYLE_BG_LIGHT_GRAY = 47,
-  MRG_VT_STYLE_BG            = 48,
-  MRG_VT_STYLE_BG_DEFAULT    = 49,
-  MRG_VT_STYLE_FG_DARK_GRAY  = 90,
-  MRG_VT_STYLE_FG_LIGHT_RED,
-  MRG_VT_STYLE_FG_LIGHT_GREEN,
-  MRG_VT_STYLE_FG_LIGHT_YELLOW,
-  MRG_VT_STYLE_FG_LIGHT_BLUE,
-  MRG_VT_STYLE_FG_LIGHT_MAGENTA,
-  MRG_VT_STYLE_FG_LIGHT_CYAN,
-  MRG_VT_STYLE_FG_WHITE = 97,
-  MRG_VT_STYLE_BG_DARK_GRAY = 100,
-  MRG_VT_STYLE_BG_LIGHT_RED,
-  MRG_VT_STYLE_BG_LIGHT_GREEN,
-  MRG_VT_STYLE_BG_LIGHT_YELLOW,
-  MRG_VT_STYLE_BG_LIGHT_BLUE,
-  MRG_VT_STYLE_BG_LIGHT_MAGENTA,
-  MRG_VT_STYLE_BG_LIGHT_CYAN,
-  MRG_VT_STYLE_BG_WHITE,
-
-} MrgVtStyle;
-
 static int ctx_vt_trimlines (MrgVT *vt, int max);
 
 typedef enum {
@@ -655,7 +595,7 @@ static void _ctx_vt_backspace (MrgVT *vt)
 static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence)
 {
   int top = 1, bottom = vt->rows;
-  if (strlen (sequence) != 2)
+  if (strlen (sequence) > 2)
   {
     sscanf (sequence, "[%i;%ir", &top, &bottom);
   }
@@ -1037,6 +977,10 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
   int n = parse_int (s - 1, 0); // works until color
 
    // both fg and bg could be set in 256 color mode FIXME
+   //
+  
+   /* S_GR@38@Set forground color@foo bar baz@ */
+
   if (n == 38) // set foreground
   {
     s = strchr (s, ';');
@@ -1046,6 +990,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       return;
     }
     n = parse_int (s, 0);
+    /* SGR@38;5;n@\b256 color index foreground color@where n is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6\n                RGB cube and in the end a grayscale without white and black.@ */
     if (n == 5)
     {
        s++;
@@ -1059,6 +1004,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     }
     else if (n == 2)
     {
+    /* SGR@38;2;50;70;180m@\b24 bit RGB foreground color@The example sets RGB the triplet 50 70 180@fodasdasz@ */
       int r = 0, g = 0, b = 0;
       s++;
       if (strchr (s, ';'))
@@ -1078,10 +1024,11 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     else
     {
       VT_warning ("unhandled %s %i", sequence, n);
+      return;
     }
-    return;
+    return; // we should probably continue, and allow further style set after complex color
   }
-  if (n == 48) // set background
+  else if (n == 48) // set background
   {
     s = strchr (s, ';');
     if (!s)
@@ -1090,6 +1037,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       return;
     }
     n = parse_int (s, 0);
+    /* SGR@48;5;n@\b256 color index background color@where n is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6\n                RGB cube and in the end a grayscale without white and black.@ */
     if (n == 5)
     {
        s++;
@@ -1101,6 +1049,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
        n = parse_int (s, 0);
        set_bg_idx(n);
     }
+    /* SGR@48;2;50;70;180m@\b24 bit RGB background color@The example sets RGB the triplet 50 70 180@ */
     else if (n == 2)
     {
       int r = 0, g = 0, b = 0;
@@ -1123,108 +1072,105 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     else
     {
       VT_warning ("unhandled %s %i", sequence, n);
+      return;
     }
-    return;
+    return; // we should probably continue, and allow further style set after complex color
   }
-
+  else
   switch (n)
   {
-    case MRG_VT_STYLE_RESET:    // clear all style
+    case 0: /* SGR@0@Style reset@@ */
       vt->cstyle = 0;
       break;
-    case MRG_VT_STYLE_BOLD:     // Alternate Intensity ON
+    case 1:  /* SGR@@Bold@@ */
       vt->cstyle ^= STYLE_BOLD;
       break;
-    case MRG_VT_STYLE_BOLD_OFF:
-      vt->cstyle ^= (vt->cstyle & STYLE_BOLD);
-      break;
-    case MRG_VT_STYLE_FONT0:
-      vt->charset = 0;
-      break;
-    case MRG_VT_STYLE_FONT1:
-      vt->charset = 1;
-      break;
-    case MRG_VT_STYLE_FONT2:
-    case MRG_VT_STYLE_FONT3:
-    case MRG_VT_STYLE_FONT4:
-      break;
-    case MRG_VT_STYLE_DIM:
+    case 2: /* SGR@@Dim@@ */
       vt->cstyle |= STYLE_DIM;
-      break;
-    case MRG_VT_STYLE_DIM_OFF:
-      vt->cstyle ^= (vt->cstyle & STYLE_DIM);
-      break;
-    case MRG_VT_STYLE_UNDERSCORE:
+      break; 
+    case 4: /* SGR@@Underscore@@ */
       vt->cstyle |= STYLE_UNDERLINE;
       break;
-    case MRG_VT_STYLE_UNDERSCORE_OFF:
-      vt->cstyle ^= (vt->cstyle & STYLE_UNDERLINE);
-      break;
-    case MRG_VT_STYLE_STRIKETHROUGH:
-      vt->cstyle |= STYLE_STRIKETHROUGH;
-      break;
-    case MRG_VT_STYLE_STRIKETHROUGH_OFF:
-      vt->cstyle ^= (vt->cstyle & STYLE_STRIKETHROUGH);
-      break;
-    case MRG_VT_STYLE_BLINK:
+    case 5: /* SGR@@Blink@@ */
       vt->cstyle |= STYLE_BLINK;
       break;
-    case MRG_VT_STYLE_BLINK_OFF:
-      vt->cstyle ^= (vt->cstyle & STYLE_BLINK);
-      break;
-    case MRG_VT_STYLE_HIDDEN:
-      vt->cstyle |= STYLE_HIDDEN;
-      break;
-    case MRG_VT_STYLE_HIDDEN_OFF:
-      vt->cstyle ^= (vt->cstyle & STYLE_HIDDEN);
-      break;
-    case MRG_VT_STYLE_REVERSE:
+    case 7: /* SGR@@Reverse@@ */
       vt->cstyle |= STYLE_REVERSE;
       break;
-    case MRG_VT_STYLE_REVERSE_OFF:
+    case 8: /* SGR@@Hidden@@ */
+      vt->cstyle |= STYLE_HIDDEN;
+      break;
+    case 9: /* SGR@@Strikethrough@@ */
+      vt->cstyle |= STYLE_STRIKETHROUGH;
+      break;
+    case 10: /* SGR@@Font 0@@ */ vt->charset = 0; break;
+    case 11: /* SGR@@Font 1@@ */ vt->charset = 1; break;
+    case 12: /* SGR@@Font 2(ignored)@@ */ 
+    case 13: /* SGR@@Font 3(ignored)@@ */
+    case 14: /* SGR@@Font 4(ignored)@@ */ break;
+    case 22: /* SGR@@Bold off@@ */
+      vt->cstyle ^= (vt->cstyle & STYLE_BOLD);
+      break;
+    case 23: /* SGR@@Dim off@@ */
+      vt->cstyle ^= (vt->cstyle & STYLE_DIM);
+      break;
+    case 24: /* SGR@@Underscore off@@ */
+      vt->cstyle ^= (vt->cstyle & STYLE_UNDERLINE);
+      break;
+    case 25: /* SGR@@Blink off@@ */
+      vt->cstyle ^= (vt->cstyle & STYLE_BLINK);
+      break;
+    case 27: /* SGR@@Reverse off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_REVERSE);
       break;
-    case MRG_VT_STYLE_FG_DEFAULT:
-      //set_fg_idx(vt->reverse_video?16:0);
-      set_fg_idx(vt->reverse_video?16:0);
+    case 28: /* SGR@@Hidden off@@ */
+      vt->cstyle ^= (vt->cstyle & STYLE_HIDDEN);
       break;
-    case MRG_VT_STYLE_FG_BLACK:   set_fg_idx(16); break;
-    case MRG_VT_STYLE_FG_RED:     set_fg_idx(1); break;
-    case MRG_VT_STYLE_FG_GREEN:   set_fg_idx(2); break;;
-    case MRG_VT_STYLE_FG_YELLOW:  set_fg_idx(3); break;;
-    case MRG_VT_STYLE_FG_BLUE:    set_fg_idx(4); break;;
-    case MRG_VT_STYLE_FG_MAGENTA: set_fg_idx(5); break;;
-    case MRG_VT_STYLE_FG_CYAN:    set_fg_idx(6); break;;
-    case MRG_VT_STYLE_FG_DARK_GRAY:   set_fg_idx(7); break;;
-    case MRG_VT_STYLE_FG_LIGHT_GRAY:  set_fg_idx(8); break;;
-    case MRG_VT_STYLE_FG_LIGHT_RED:    set_fg_idx(9); break;;
-    case MRG_VT_STYLE_FG_LIGHT_GREEN:  set_fg_idx(10); break;;
-    case MRG_VT_STYLE_FG_LIGHT_YELLOW:     set_fg_idx(11); break;;
-    case MRG_VT_STYLE_FG_LIGHT_BLUE:         set_fg_idx(12); break;;
-    case MRG_VT_STYLE_FG_LIGHT_MAGENTA:      set_fg_idx(13); break;;
-    case MRG_VT_STYLE_FG_LIGHT_CYAN:         set_fg_idx(14); break;;
-    case MRG_VT_STYLE_FG_WHITE:              set_fg_idx(15); break;;
+    case 29: /* SGR@@Strikethrough off@@ */
+      vt->cstyle ^= (vt->cstyle & STYLE_STRIKETHROUGH);
+      break;
+    case 30: /* SGR@@black text color@@ */     set_fg_idx(16); break;
+    case 31: /* SGR@@red text color@@ */       set_fg_idx(1); break;
+    case 32: /* SGR@@green text color@@ */     set_fg_idx(2); break;
+    case 33: /* SGR@@yellow text color@@ */    set_fg_idx(3); break;
+    case 34: /* SGR@@blue text color@@ */      set_fg_idx(4); break;
+    case 35: /* SGR@@magenta text color@@ */   set_fg_idx(5); break;
+    case 36: /* SGR@@cyan text color@@ */      set_fg_idx(6); break;
+    case 37: /* SGR@@light gray text color@@ */set_fg_idx(7); break;
+    case 39: /* SGR@@default text color@@ */  
+      set_fg_idx(vt->reverse_video?16:15);
+      // XXX : should we unset the fg part of SGR instead?
+      break;
+    case 40: /* SGR@@black background color@@ */     set_bg_idx(16); break;
+    case 41: /* SGR@@red background color@@ */       set_bg_idx(1); break;
+    case 42: /* SGR@@green background color@@ */     set_bg_idx(2); break;
+    case 43: /* SGR@@yellow background color@@ */    set_bg_idx(3); break;
+    case 44: /* SGR@@blue background color@@ */      set_bg_idx(4); break;
+    case 45: /* SGR@@magenta background color@@ */   set_bg_idx(5); break;
+    case 46: /* SGR@@cyan background color@@ */      set_bg_idx(6); break;
+    case 47: /* SGR@@light gray background color@@ */set_bg_idx(7); break;
 
-    case MRG_VT_STYLE_BG_DEFAULT:
-      set_bg_idx(vt->reverse_video?15:0);
+    case 49: /* SGR@@default background color@@ */  
+      set_bg_idx(vt->reverse_video?15:16);
+      // XXX : should we unset the bg part of SGR instead?
       break;
 
-    case MRG_VT_STYLE_BG_BLACK: set_bg_idx(16); break;
-    case MRG_VT_STYLE_BG_RED: set_bg_idx(1); break;
-    case MRG_VT_STYLE_BG_GREEN: set_bg_idx(2); break;
-    case MRG_VT_STYLE_BG_YELLOW: set_bg_idx(3); break;
-    case MRG_VT_STYLE_BG_BLUE: set_bg_idx(4); break;
-    case MRG_VT_STYLE_BG_MAGENTA: set_bg_idx(5); break;
-    case MRG_VT_STYLE_BG_CYAN: set_bg_idx(6); break;
-    case MRG_VT_STYLE_BG_LIGHT_GRAY: set_bg_idx(7); break;
-    case MRG_VT_STYLE_BG_DARK_GRAY:  set_bg_idx(8); break;
-    case MRG_VT_STYLE_BG_LIGHT_RED: set_bg_idx(9); break;
-    case MRG_VT_STYLE_BG_LIGHT_GREEN: set_bg_idx(10); break;
-    case MRG_VT_STYLE_BG_LIGHT_YELLOW: set_bg_idx(11); break;
-    case MRG_VT_STYLE_BG_LIGHT_BLUE: set_bg_idx(12); break;
-    case MRG_VT_STYLE_BG_LIGHT_MAGENTA: set_bg_idx(13); break;
-    case MRG_VT_STYLE_BG_LIGHT_CYAN: set_bg_idx(14); break;
-    case MRG_VT_STYLE_BG_WHITE: set_bg_idx(15); break;
+    case 90: /* SGR@@dark gray text color@@ */       set_fg_idx(8); break;
+    case 91: /* SGR@@light red text color@@ */       set_fg_idx(9); break;
+    case 92: /* SGR@@light green text color@@ */     set_fg_idx(10); break;
+    case 93: /* SGR@@light yellow text color@@ */    set_fg_idx(11); break;
+    case 94: /* SGR@@light blue text color@@ */      set_fg_idx(12); break;
+    case 95: /* SGR@@light magenta text color@@ */   set_fg_idx(13); break;
+    case 96: /* SGR@@light cyan text color@@ */      set_fg_idx(14); break;
+    case 97: /* SGR@@white text color@@ */           set_fg_idx(15); break;
+    case 100: /* SGR@@dark gray background color@@ */set_bg_idx(8); break;
+    case 101: /* SGR@@light red background color@@ */set_bg_idx(9); break;
+    case 102: /* SGR@@light green background color@@ */set_bg_idx(10); break;
+    case 103: /* SGR@@light yellow background color@@ */set_bg_idx(11); break;
+    case 104: /* SGR@@light blue background color@@ */set_bg_idx(12); break;
+    case 105: /* SGR@@light magenta background color@@ */set_bg_idx(13); break;
+    case 106: /* SGR@@light cyan background color@@ */set_bg_idx(14); break;
+    case 107: /* SGR@@white background color@@ */set_bg_idx(15); break;
 
     default:
       VT_warning ("unhandled style code %i in sequence \\e%s\n", n, sequence);
@@ -1431,10 +1377,11 @@ qagain:
     qval = parse_int (sequence, 1);
     switch (qval)
     {
-     case 1: /*MODE;Cursor key mode;Apllication;Cursor;*/
+     case 1: /*MODE;Cursor key mode;Application;Cursor;*/
 	       vt->cursor_key_application = set;
 	     break;
-     case 2: if (set==0) vt->in_vt52 = 1;
+     case 2: /*MODE;VT52 emulation;;enable; */
+	     if (set==0) vt->in_vt52 = 1;
 	     break; 
      case 3: /*MODE;Column mode;132 columns;80 columns;*/
              if (set) vtcmd_reset_to_initial_state (vt, sequence);
@@ -1484,7 +1431,7 @@ qagain:
      case 7020:/*MODE;Ctx ascii;On;;*/
            vt->in_ctx_ascii = set;
 	   break;
-     case 2400:/*MODE;Slow werial;On;Off;*/
+     case 2400:/*MODE;Slow serial;On;Off;*/
 	   vt->slow_baud = set;
            break;
      default:
@@ -2629,7 +2576,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	   break;
         case 6:    /* ACKnolwedge */
            break;
-        case '\a': /* BELl */ ctx_vt_bell (vt); break;
+        case '\a': /* BELl */ ctx_vt_bell (vt); break;  /* @CTRL@7@Bell@sound the bell@    */
         case '\b': /* BS */   _ctx_vt_backspace (vt); break;
         case '\t': /* HT tab */ _ctx_vt_htab (vt); break;
         case '\v': /* VT vertical tab */
@@ -2667,6 +2614,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	case 29:
 	case 30:
 	case 31:
+	case 127: /* DEL */
 	  break;
 	 default:
 	  {
@@ -2872,6 +2820,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
         case 29: /* GS group separator */
         case 30: /* RS record separator */
         case 31: /* US unit separator */
+	case 127: /* DEL */
           break;
         default:
 	  {
@@ -2913,6 +2862,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
           case '\v': _ctx_vt_move_to (vt, vt->cursor_y+1, vt->cursor_x); break;
           case '\n':
           case '\f': ctx_vt_line_feed (vt); break;
+	  case 127: /* DEL */ break;
 
         case ')':
         case '#':
@@ -2972,6 +2922,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
           case '\v': _ctx_vt_move_to (vt, vt->cursor_y+1, vt->cursor_x); break;
           case '\n':
           case '\f': ctx_vt_line_feed (vt); break;
+          case 127: break;
           default:
             ctx_vt_argument_buf_add (vt, byte);
         }
