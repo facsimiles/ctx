@@ -284,6 +284,10 @@ typedef enum {
   STYLE_BG_COLOR_SET  = 1 << 8,
 
 
+
+
+
+
 } TerminalStyle;
 
 struct _MrgVT {
@@ -450,7 +454,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->saved_x                = 1;
   vt->saved_y                = 1;
   vt->saved_style            = 1;
-  vt->reverse_video          = 0;
+  vt->reverse_video          = 1;
   vt->cstyle = 0;
 
   vt->cursor_key_application = 0;
@@ -928,7 +932,6 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
       break;
     case 1: // clear from beginning to cursor
       {
-        int i;
 	for (int col = 1; col <= vt->cursor_x; col++)
         {
           mrg_string_replace_utf8 (vt->current_line, col-1, " ");
@@ -952,7 +955,7 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
 static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 0);
-  // XXX : should probably also reset style, like in_display
+  // XXX : should aslo reset style
   switch (n)
   {
     case 0: // clear to end of screen
@@ -975,10 +978,9 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
       break;
     case 1: // clear from beginning to cursor
       {
-        int i;
-        for (i = 0; i < vt->cursor_x-1; i++)
+        for (int col = 1; col <= vt->cursor_x; col++)
         {
-          mrg_string_replace_utf8 (vt->current_line, i, " ");
+          mrg_string_replace_utf8 (vt->current_line, col-1, " ");
         }
       }
       {
@@ -1262,10 +1264,21 @@ static void vtcmd_device_status_report (MrgVT *vt, const char *sequence)
 
 static void vtcmd_device_attributes (MrgVT *vt, const char *sequence)
 {
-  char *buf = "\033[?1;6c";          // identify as vt102
+  //char *buf = "\033[?1;2c"; // what rxvt reports
+  //char *buf = "\033[?1;6c"; // VT100 with AVO ang GPO
+  char *buf = "\033[?2c";     // VT102
+  if (!strcmp (sequence, "[>c"))
+	buf="\033[>23;01;1c";
   write (vt->pty, buf, strlen(buf));
 }
 
+static void vtcmd_request_terminal_parameters (MrgVT *vt, const char *sequence)
+{
+  char *buf = "\e[2;1;1;120;120;1;0x";
+  if (!strcmp (sequence, "[1x"))
+    buf = "\e[3;1;1;120;120;1;0x";
+  write (vt->pty, buf, strlen(buf));
+}
 
 static void vtcmd_save_cursor_position (MrgVT *vt, const char *sequence)
 {
@@ -1397,6 +1410,10 @@ static void vtcmd_set_alternate_font (MrgVT *vt, const char *sequence)
 
 static void vtcmd_set_mode (MrgVT *vt, const char *sequence)
 {
+  int set = 1;
+  if (sequence[strlen(sequence)-1]=='l')
+    set = 0;
+
   if (sequence[1]=='?')
   {
     int qval;
@@ -1405,30 +1422,37 @@ qagain:
     qval = parse_int (sequence, 1);
     switch (qval)
     {
-     case 1:   vt->cursor_key_application = 1; break;
-     case 3:   vtcmd_reset_to_initial_state (vt, sequence);break; // set 132 col
-     case 5:   vt->reverse_video = 1; break;
-     case 6:   vt->origin = 1;
-               _ctx_vt_move_to (vt, vt->scroll_top, 1);
+     case 1:   vt->cursor_key_application = set; break;
+     case 2:   if (set==0) vt->in_vt52 = 1; break; 
+     case 3:   if (set) vtcmd_reset_to_initial_state (vt, sequence);break; // set 132 col
+     case 5:   vt->reverse_video = set; break;
+     case 6:   vt->origin = set;
+	       if (set)
+                 _ctx_vt_move_to (vt, vt->scroll_top, 1);
+	       else
+                 _ctx_vt_move_to (vt, 1, 1);
 	       break;
-     case 7:   vt->autowrap = 1; break;
-     case 8:   vt->keyrepeat = 1; break;
+     case 7:   vt->autowrap = set; break;
+     case 8:   vt->keyrepeat = set; break;
      case 12:   vtcmd_ignore (vt, sequence);break; // start blinking_cursor
-     case 25:   vt->cursor_visible = 1; break;
+     case 25:   vt->cursor_visible = set; break;
       // 47 - alternate buffer
 
-     case 1000:  vt->mouse = 1; break;
-     case 1002:  vt->mouse_drag = 1; break;
-     case 1003:  vt->mouse_all = 1; break;
-     case 1006:  vt->mouse_decimal = 1; break;
-     case 1049:  vtcmd_ignore (vt, sequence);break; // save_cursor_go_alternate
+     case 1000:  vt->mouse = set; break;
+     case 1002:  vt->mouse_drag = set; break;
+     case 1003:  vt->mouse_all = set; break;
+     case 1006:  vt->mouse_decimal = set; break;
+     case 1047:
+     case 1048:
+     case 1049:  vtcmd_reset_to_initial_state (vt, sequence);break; // alt screen
      case 2004:  vtcmd_ignore (vt, sequence);break; // set_bracketed_paste_mode
 
-     case 4444:  vt->in_pcm=1; break;
+     case 4444:  vt->in_pcm=set; break;
 
-     case 2222:  vt->in_ctx=1; break;
-     case 7020:  vt->in_ctx_ascii = 1; break;
-     case 2400:  vt->slow_baud = 1; break;
+     case 2222:  vt->in_ctx=set; break;
+     case 7020:  vt->in_ctx_ascii = set; break;
+     case 2400:  vt->slow_baud = set; break;
+
      default: VT_warning ("unhandled CSI ? %ih", qval); return;
     }
     if (strchr (sequence + 1, ';'))
@@ -1444,9 +1468,9 @@ again:
     val = parse_int (sequence, 1);
     switch (val)
     {
-     case 4:    vt->insert_mode = 1; break;
-     case 12:   vt->echo = 1; break;
-     case 20:   vt->cr_on_lf = 1; break;
+     case 4:    vt->insert_mode = set; break;
+     case 12:   vt->echo = set; break;
+     case 20:   vt->cr_on_lf = set; break;
      default: VT_warning ("unhandled CSI %ih", val); return;
     }
     if (strchr (sequence, ';'))
@@ -1468,69 +1492,6 @@ static void vtcmd_set_t (MrgVT *vt, const char *sequence)
   else
   {
     VT_info ("unhandled subsequence %s", sequence);
-  }
-}
-
-
-static void vtcmd_reset_mode (MrgVT *vt, const char *sequence)
-{
-  if (sequence[1]=='?')
-  {
-    int qval;
-    sequence ++;
-qagain:
-    qval = parse_int (sequence, 1);
-    switch (qval)
-    {
-     case 1:   vt->cursor_key_application = 0; break;
-     case 2:   vt->in_vt52 = 1; break; 
-
-     case 3:   vtcmd_reset_to_initial_state (vt, sequence);break; // set 80 col
-
-     case 5:   vt->reverse_video = 0; break;
-     case 6:   vt->origin = 0;
-               _ctx_vt_move_to (vt, 1, 1);
-	       break;
-     case 7:     vt->autowrap = 0; break;
-     case 8:     vt->keyrepeat = 0; break;
-     case 12:   break; // stop_blinking_cursor
-     case 25:    vt->cursor_visible = 0; break;
-     case 1000:  vt->mouse = 0; break;
-     case 1002:  vt->mouse_drag = 0; break;
-     case 1003:  vt->mouse_all = 0; break;
-     //case 1004: break; // focus in/out
-     case 2400:  vt->slow_baud = 0; break;
-     case 1006:  vt->mouse_decimal = 0; break;
-     case 1047:
-     case 1048:
-     case 1049:   vtcmd_reset_to_initial_state (vt, sequence);break; // restore_cursor_go_mainstream
-     case 2004:  vtcmd_ignore (vt, sequence);break; // reset_bracketed_paste_mode
-     default: VT_warning ("unhandled CSI ? %il", qval); return;
-    }
-    if (strchr (sequence + 1, ';'))
-    {
-      sequence = strchr (sequence + 1, ';');
-      goto qagain;
-    }
-  }
-  else
-  {
-    int val;
-again:
-    val = parse_int (sequence, 1);
-    switch (val)
-    {
-      case 4:    vt->insert_mode = 0; break;
-      case 12:   vt->echo = 0; break;
-      case 20:   vt->cr_on_lf = 0; break;
-     default: VT_warning ("unhandled CSI %il", val);
-	      return;
-    }
-    if (strchr (sequence+1, ';'))
-    {
-      sequence = strchr (sequence+1, ';');
-      goto again;
-    }
   }
 }
 
@@ -1675,7 +1636,7 @@ static Sequence sequences[]={
   {"[3g", 0,  vtcmd_clear_all_tabs},    /* id:XXX clear all tabs */
 
   {"[",  'h', vtcmd_set_mode},   /* args:Ps;Ps;.. id:SM Set Mode */
-  {"[",  'l', vtcmd_reset_mode}, /* args:Ps;Ps;..  id:RM Reset Mode */
+  {"[",  'l', vtcmd_set_mode}, /* args:Ps;Ps;..  id:RM Reset Mode */
   {"[",  't', vtcmd_set_t},  // used by vim, for stack of icon/titles
 
   {"7",   0,  vtcmd_save_cursor}, /* id:DECSC Save Cursor */
@@ -1683,6 +1644,7 @@ static Sequence sequences[]={
   {"H",   0,  vtcmd_horizontal_tab_set}, /* id:HTS Horizontal Tab Set */
 
   {"[",  'c', vtcmd_device_attributes}, /* id:DA Device Attributes */
+  {"[",  'x', vtcmd_request_terminal_parameters}, /* id:DA Device Attributes */
   //{"Z", 0,  vtcmd_device_attributes}, 
 
   //{"%G",0,  vtcmd_set_default_font}, // set_alternate_font
@@ -3075,7 +3037,6 @@ static const char *keymap_general[][2]={
   {"left",           "\033[D"},
   {"end",            "\033[F"},
   {"home",           "\033[H"},
-
   {"shift-up",       "\033[1;2A"},
   {"shift-down",     "\033[1;2B"},
   {"shift-right",    "\033[1;2C"},
@@ -3085,7 +3046,6 @@ static const char *keymap_general[][2]={
   {"alt-c",          "\033c"},
   {"alt-d",          "\033d"},
   {"alt- ",          "\033 "},
-
   {"alt-up",         "\033[1;3A"},
   {"alt-down",       "\033[1;3B"},
   {"alt-right",      "\033[1;3C"},
@@ -3094,7 +3054,6 @@ static const char *keymap_general[][2]={
   {"shift-alt-down", "\033[1;4B"},
   {"shift-alt-right","\033[1;4C"},
   {"shift-alt-left", "\033[1;4D"},
-
   {"control-space",  "\000"},
   {"control-up",     "\033[1;5A"},
   {"control-down",   "\033[1;5B"},
@@ -3147,7 +3106,7 @@ static const char *keymap_general[][2]={
   {"tab",            "\t"},
   {"backspace",      "\177"},
   {"control-backspace", "\177"},
-  {"shift-backspace", "\177"},
+  {"shift-backspace","\177"},
   {"shift-tab",      "\033[Z"},
   {"F1",             "\033[11~"},
   {"F2",             "\033[12~"},
@@ -3246,12 +3205,13 @@ static void signal_child (int signum)
     }
 }
 
-static int reaper_started = 0;
 
 
 static void ctx_vt_run_command (MrgVT *vt, const char *command)
 {
   struct winsize ws;
+
+  static int reaper_started = 0;
   if (!reaper_started)
   {
     reaper_started = 1;
@@ -3260,8 +3220,8 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
 
   ws.ws_row = vt->rows;
   ws.ws_col = vt->cols;
-  ws.ws_xpixel = ws.ws_col * 8;
-  ws.ws_ypixel = ws.ws_row * 8;
+  ws.ws_xpixel = ws.ws_col * 8; // XXX this is wrong
+  ws.ws_ypixel = ws.ws_row * 8; // XXX this is wrong
 
   vt->pid = forkpty (&vt->pty, NULL, NULL, &ws);
   if (vt->pid == 0)
