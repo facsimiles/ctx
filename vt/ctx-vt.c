@@ -280,6 +280,10 @@ typedef enum {
   STYLE_BLINK         = 1 << 4,
   STYLE_HIDDEN        = 1 << 5,
   STYLE_STRIKETHROUGH = 1 << 6,
+  STYLE_FG_COLOR_SET  = 1 << 7,
+  STYLE_BG_COLOR_SET  = 1 << 8,
+
+
 } TerminalStyle;
 
 struct _MrgVT {
@@ -422,6 +426,14 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
   }
 }
 
+#define set_fg_idx(idx) \
+    vt->cstyle ^= (vt->cstyle & (255<<16));\
+    vt->cstyle |=  ((idx)<<16) | STYLE_FG_COLOR_SET;
+
+#define set_bg_idx(idx) \
+    vt->cstyle ^= (vt->cstyle & (255<<24));\
+    vt->cstyle |= ((idx)<<24) | STYLE_BG_COLOR_SET;
+
 static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
 {
   VT_info ("reset %s", sequence);
@@ -432,7 +444,6 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->cr_on_lf = 0;
   vtcmd_set_top_and_bottom_margins (vt, "[r");
   vt->autowrap       = 1;
-  vt->cstyle         = 0;
   vt->cursor_visible = 1;
   vt->charset = 0;
   vt->bell = 2;
@@ -440,6 +451,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->saved_y                = 1;
   vt->saved_style            = 1;
   vt->reverse_video          = 0;
+  vt->cstyle = 0;
 
   vt->cursor_key_application = 0;
   vt->argument_buf_len       = 0;
@@ -917,12 +929,12 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
     case 1: // clear from beginning to cursor
       {
         int i;
-        for (i = 0; i < vt->cursor_x-1; i++)
+	for (int col = 1; col <= vt->cursor_x; col++)
         {
-          mrg_string_replace_utf8 (vt->current_line, i, " ");
+          mrg_string_replace_utf8 (vt->current_line, col-1, " ");
         }
 
-	for (int col = 1; col < vt->cursor_x; col++)
+	for (int col = 1; col <= vt->cursor_x; col++)
 	  vt->style[vt->cursor_y][col]=vt->cstyle;
 
         vt->current_line->length = strlen (vt->current_line->str);
@@ -930,7 +942,7 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
       }
       break;
     case 2: // clear entire line
-      for (int col = 1; col < vt->cols; col++)
+      for (int col = 1; col <= vt->cols; col++)
 	  vt->style[vt->cursor_y][col]=vt->cstyle;
       mrg_string_set (vt->current_line, "");
       break;
@@ -1022,13 +1034,6 @@ static int find_idx (int r, int g, int b)
 
 static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
 {
-#define set_fg_idx(idx) \
-    vt->cstyle ^= (vt->cstyle & (255<<8));\
-    vt->cstyle |=  ((idx)<<8);
-
-#define set_bg_idx(idx) \
-    vt->cstyle ^= (vt->cstyle & (255<<16));\
-    vt->cstyle |= ((idx)<<16);
 
   const char *s = sequence;
  
@@ -1167,7 +1172,11 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case MRG_VT_STYLE_REVERSE_OFF:
       vt->cstyle ^= (vt->cstyle & STYLE_REVERSE);
       break;
-    case MRG_VT_STYLE_FG_DEFAULT: set_fg_idx(0);break;
+    case MRG_VT_STYLE_FG_DEFAULT:
+      set_fg_idx(vt->reverse_video?16:0);
+      
+      break;
+
     case MRG_VT_STYLE_FG_BLACK:   set_fg_idx(16); break;
     case MRG_VT_STYLE_FG_RED:     set_fg_idx(1); break;
     case MRG_VT_STYLE_FG_GREEN:   set_fg_idx(2); break;;
@@ -1185,7 +1194,10 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case MRG_VT_STYLE_FG_LIGHT_CYAN:         set_fg_idx(14); break;;
     case MRG_VT_STYLE_FG_WHITE:              set_fg_idx(15); break;;
 
-    case MRG_VT_STYLE_BG_DEFAULT: set_bg_idx(0); break;
+    case MRG_VT_STYLE_BG_DEFAULT:
+      set_bg_idx(vt->reverse_video?16:0);
+      break;
+
     case MRG_VT_STYLE_BG_BLACK: set_bg_idx(16); break;
     case MRG_VT_STYLE_BG_RED: set_bg_idx(1); break;
     case MRG_VT_STYLE_BG_GREEN: set_bg_idx(2); break;
@@ -3833,7 +3845,14 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
   ctx_save (ctx);
 
   {
-     ctx_set_rgba (ctx, 0.0, 0.0, 0.0, 1.0);
+     if (vt->reverse_video)
+     {
+       ctx_set_rgba (ctx, 0.8, 0.8, 0.8, 1.0);
+     }
+     else
+     {
+       ctx_set_rgba (ctx, 0.0, 0.0, 0.0, 1.0);
+     }
      ctx_rectangle (ctx, x0, y0, cw * vt->cols, ch * vt->rows);
      ctx_fill (ctx);
   }
@@ -3896,19 +3915,19 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
               int color;
               if (set_style & STYLE_REVERSE)
 	      {
-                color = (set_style >> 8) & 255;
+                color = (set_style >> 16) & 255;
 	      }
               else
 	      {
-                color = (set_style >> 16) & 255;
+                color = (set_style >> 24) & 255;
 	      }
 
 	      if (color == 0 && (set_style & STYLE_REVERSE))
 	        color = 15;
 
-	      if (color == 0)
-                bg_is_nop = 1;
-	      else
+	      //if (color == 0)
+              //  bg_is_nop = 1;
+	      //else
 	      {
 		if (color != prevcol)
 		{
@@ -3964,9 +3983,9 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
             {
               int color;
               if (set_style & STYLE_REVERSE)
-                color = (set_style >> 16) & 31;
+                color = (set_style >> 24) & 255;
               else
-                color = (set_style >> 8) & 31;
+                color = (set_style >> 16) & 255;
 
 	      if (color == 0 && !(set_style & STYLE_REVERSE))
 	        color = 15;
