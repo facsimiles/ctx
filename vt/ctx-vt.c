@@ -212,13 +212,14 @@ typedef enum {
 typedef enum {
   STYLE_BOLD          = 1 << 0,
   STYLE_DIM           = 1 << 1,
-  STYLE_UNDERLINE     = 1 << 2,
-  STYLE_REVERSE       = 1 << 3,
-  STYLE_BLINK         = 1 << 4,
-  STYLE_HIDDEN        = 1 << 5,
-  STYLE_STRIKETHROUGH = 1 << 6,
-  STYLE_FG_COLOR_SET  = 1 << 7,
-  STYLE_BG_COLOR_SET  = 1 << 8,
+  STYLE_ITALIC        = 1 << 2,
+  STYLE_UNDERLINE     = 1 << 3,
+  STYLE_REVERSE       = 1 << 4,
+  STYLE_BLINK         = 1 << 5,
+  STYLE_HIDDEN        = 1 << 6,
+  STYLE_STRIKETHROUGH = 1 << 7,
+  STYLE_FG_COLOR_SET  = 1 << 8,
+  STYLE_BG_COLOR_SET  = 1 << 9,
 } TerminalStyle;
 
 struct _MrgVT {
@@ -299,6 +300,8 @@ struct _MrgVT {
   int        ctx_pos;  // 1 is graphics above text, 0 or -1 is below text
   Ctx       *ctx;
   void      *mmm;
+
+  int        blink_state;
 };
 
 void ctx_vt_rev_inc (MrgVT *vt)
@@ -1088,6 +1091,9 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 2: /* SGR@@Dim@@ */
       vt->cstyle |= STYLE_DIM;
       break; 
+    case 3: /* SGR@@Italic@@ */
+      vt->cstyle |= STYLE_ITALIC;
+      break; 
     case 4: /* SGR@@Underscore@@ */
       vt->cstyle |= STYLE_UNDERLINE;
       break;
@@ -1110,9 +1116,10 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 14: /* SGR@@Font 4(ignored)@@ */ break;
     case 22: /* SGR@@Bold off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_BOLD);
-      break;
-    case 23: /* SGR@@Dim off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_DIM);
+      break;
+    case 23: /* SGR@@Italic off@@ */
+      vt->cstyle ^= (vt->cstyle & STYLE_ITALIC);
       break;
     case 24: /* SGR@@Underscore off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_UNDERLINE);
@@ -2997,8 +3004,6 @@ a:
     }
   }
 
-  //if (vt->cursor_y > vt->rows) // ?
-  //  vt->cursor_y = vt->rows;
   if (count >0 || vt->done)
   {
 #if 0
@@ -3748,7 +3753,7 @@ void vt_ctx_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, flo
   }
 }
 
-void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg)
+void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
 {
   float r = 0, g = 0, b = 0;
 
@@ -3795,8 +3800,10 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg)
     r = g = b = val;
   }
 
-  ctx_set_rgba (ctx, r, g, b, 1.0f);
+  ctx_set_rgba (ctx, r, g, b, dim?0.5f:1.0f);
 }
+
+static float font_to_cell_scale = 1.0f;
 
 void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, float line_spacing)
 {
@@ -3805,6 +3812,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
   int default_bg = 0;
   int default_fg = 15;
   ctx_save (ctx);
+  int got_blink = 0;
 
   {
      if (vt->reverse_video)
@@ -3824,7 +3832,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
   }
   ctx_translate (ctx, 0.0, ch * vt->scroll);
   ctx_set_font (ctx, "mono");
-  ctx_set_font_size (ctx, font_size);
+  ctx_set_font_size (ctx, font_size * font_to_cell_scale);
   if (vt->scroll)
   {
     VtList *l = vt->scrollback;
@@ -3903,7 +3911,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	      {
 		if (color != prevcol)
 		{
-	          vt_ctx_set_color (vt, ctx, color, 1);
+	          vt_ctx_set_color (vt, ctx, color, 0, 0);
 		  prevcol = color;
 		}
 	      }
@@ -3929,7 +3937,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     uint32_t set_style = 9999;
 
     float y = y0 + ch * vt->rows;
-    int bold = 0; int underline = 0; int strikethrough = 0;
+    int bold = 0; int underline = 0; int strikethrough = 0; int blink = 0; int dim = 0; int italic = 0;
+    int hidden = 0;
     int prevcol = -1;
 
     if (strikethrough); // ignoring unused
@@ -3947,9 +3956,13 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
           {
             set_style = vt->style[vt->rows-row][col];
 
-            bold = 0; underline = 0; strikethrough = 0;
+            bold = underline = strikethrough = blink = hidden = dim = italic = 0;
             if (set_style & STYLE_BOLD) bold = 1;
+            if (set_style & STYLE_DIM) dim = 1;
+            if (set_style & STYLE_HIDDEN) hidden = 1;
+            if (set_style & STYLE_ITALIC) italic = 1;
             if (set_style & STYLE_UNDERLINE) underline = 1;
+            if (set_style & STYLE_BLINK) { blink = 1; got_blink = 1; }
             else if (set_style & STYLE_STRIKETHROUGH) strikethrough = 1;
 
             {
@@ -3967,29 +3980,47 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	           color = default_fg;
 	      }
 
-	      if (color != prevcol)
+	      if (color + dim * 512!= prevcol)
 	      {
-	        vt_ctx_set_color (vt, ctx, color, 0);
-		prevcol = color;
+	        vt_ctx_set_color (vt, ctx, color, 0, dim);
+		prevcol = color + dim * 512;
 	      }
             }
           }
 
 	  //fprintf (stderr, "\n%p]", ctx_utf8_to_unichar (d));
-	  vt_ctx_glyph (ctx, x, y, ctx_utf8_to_unichar (d), font_size, line_spacing, bold);
-	  if (underline)
+	  if (!hidden && (blink == 0 || (blink && vt->blink_state)))
 	  {
-	    ctx_new_path (ctx);
-	    ctx_move_to (ctx, x, y - font_size * 0.07);
-	    ctx_rel_line_to (ctx, cw, 0);
-	    ctx_set_line_width (ctx, font_size * 0.05);
-	    ctx_stroke (ctx);
+	     vt_ctx_glyph (ctx, x, y, ctx_utf8_to_unichar (d), font_size, line_spacing, bold);
+	     if (underline)
+	     {
+	       ctx_new_path (ctx);
+	       ctx_move_to (ctx, x, y - font_size * 0.07);
+	       ctx_rel_line_to (ctx, cw, 0);
+	       ctx_set_line_width (ctx, font_size * 0.05);
+	       ctx_stroke (ctx);
+	     }
+	     if (strikethrough)
+	     {
+	       ctx_new_path (ctx);
+	       ctx_move_to (ctx, x, y - font_size * 0.43);
+	       ctx_rel_line_to (ctx, cw, 0);
+	       ctx_set_line_width (ctx, font_size * 0.05);
+	       ctx_stroke (ctx);
+	     }
+
 	  }
           x+=cw;
         }
         y -= ch;
       }
     }
+  }
+
+  if (got_blink)
+  {
+     vt->blink_state = !vt->blink_state;
+     vt->rev++;
   }
 
 #define MIN(a,b)  ((a)<(b)?(a):(b))
