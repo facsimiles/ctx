@@ -105,13 +105,11 @@ void audio_task (int click)
 
 int vt_main(int argc, char **argv)
 {
-  int cw = (font_size / line_spacing) + 0.99;
-  int ch = font_size;
-  int old_w = 0;
-  int old_h = 0;
-  mmm = mmm_new (cw * DEFAULT_COLS, ch * DEFAULT_ROWS, 0, NULL);
+  int old_w = ((int)(font_size/line_spacing + 0.999)) * DEFAULT_COLS;
+  int old_h = font_size * DEFAULT_ROWS;
+  mmm = mmm_new (old_w, old_h, 0, NULL);
   unsetenv ("MMM_PATH");
-  vt = ctx_vt_new (argv[1]?argv[1]:ctx_vt_find_shell_command());
+  vt = ctx_vt_new (argv[1]?argv[1]:ctx_vt_find_shell_command(), DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
 
   ctx_vt_set_mmm (vt, mmm);
   mmm_pcm_set_sample_rate (mmm, 8000);
@@ -134,7 +132,7 @@ int vt_main(int argc, char **argv)
 
       if (old_w != width ||  old_h!=height)
       {
-        ctx_vt_set_term_size (vt, width / (int)((font_size/line_spacing)+0.99), height / font_size);
+        ctx_vt_set_term_size (vt, width / ctx_vt_cw (vt), height / ctx_vt_ch (vt));
 	old_w = width;
 	old_h = height;
       }
@@ -174,19 +172,17 @@ int vt_main(int argc, char **argv)
 	  font_size = (int) (font_size);
 	  if (font_size < 5) font_size = 5;
 
-          cw = (font_size / line_spacing) + 0.99;
-          ch = font_size;
-          ctx_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
+	  ctx_vt_set_font_size (vt, font_size);
+          ctx_vt_set_term_size (vt, width / ctx_vt_cw (vt), height / ctx_vt_ch (vt));
 	} else if (!strcmp (event, "shift-control-=")) {
 	  float old = font_size;
 	  font_size *= 1.15;
 	  font_size = (int)(font_size);
 	  if (old == font_size) font_size = old+1;
 	  if (font_size > 200) font_size = 200;
-          ctx_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
 
-          cw = (font_size / line_spacing) + 0.99;
-          ch = font_size;
+	  ctx_vt_set_font_size (vt, font_size);
+          ctx_vt_set_term_size (vt, width / ctx_vt_cw (vt), height / ctx_vt_ch (vt));
 	}
 #if 0
         else if (!strcmp (event, "control-q"))
@@ -196,6 +192,8 @@ int vt_main(int argc, char **argv)
 #endif
         else if (!strncmp (event, "mouse-", 5))
 	{
+	  int cw = ctx_vt_cw (vt);
+	  int ch = ctx_vt_ch (vt);
 	  if (!strncmp (event + 6, "motion", 6))
 	  {
             int x = 0, y = 0;

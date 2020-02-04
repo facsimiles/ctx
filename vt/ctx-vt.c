@@ -56,7 +56,7 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = 0;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND ;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;//:w | VT_LOG_COMMAND;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL - VT_LOG_INPUT - VT_LOG_CURSOR;
 //static int vt_log_mask = VT_LOG_ALL;
@@ -297,6 +297,11 @@ struct _MrgVT {
   int        in_pcm;
   int        in_ctx_ascii;
 
+  float      font_size; // should maybe be integer?
+  float      line_spacing; // char-aspect might be better variable to use..?
+  int        cw;
+  int        ch;
+
   int        ctx_pos;  // 1 is graphics above text, 0 or -1 is below text
   Ctx       *ctx;
   void      *mmm;
@@ -415,8 +420,25 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
     ctx_clear (vt->ctx);
 }
 
+static void _ctx_vt_compute_cw_ch (MrgVT *vt)
+{
+  vt->cw = (vt->font_size / vt->line_spacing) + 0.99;
+  vt->ch = vt->font_size;
+}
 
-MrgVT *ctx_vt_new (const char *command)
+void ctx_vt_set_font_size (MrgVT *vt, float font_size)
+{
+  vt->font_size = font_size;
+  _ctx_vt_compute_cw_ch (vt);
+}
+
+void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
+{
+  vt->line_spacing = line_spacing;
+  _ctx_vt_compute_cw_ch (vt);
+}
+
+MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
   MrgVT *vt                  = calloc (sizeof (MrgVT), 1);
   vt->cursor_visible         = 1;
@@ -433,6 +455,10 @@ MrgVT *ctx_vt_new (const char *command)
   vt->result                 = -1;
   vt->state                  = TERMINAL_STATE_NEUTRAL,
   vt->commandline            = NULL;
+  vt->line_spacing           = 1.0;
+  ctx_vt_set_font_size (vt, font_size);
+  ctx_vt_set_line_spacing (vt, line_spacing);
+
 
   if (command)
   {
@@ -440,7 +466,10 @@ MrgVT *ctx_vt_new (const char *command)
     vt->commandline = strdup (command);
   }
 
-  ctx_vt_set_term_size (vt, DEFAULT_COLS, DEFAULT_ROWS);
+  if (cols <= 0) cols = DEFAULT_COLS;
+  if (rows <= 0) cols = DEFAULT_ROWS;
+
+  ctx_vt_set_term_size (vt, cols, rows);
   vtcmd_reset_to_initial_state (vt, NULL);
 
   vt->ctx = ctx_new ();
@@ -449,6 +478,17 @@ MrgVT *ctx_vt_new (const char *command)
 
   return vt;
 }
+
+int         ctx_vt_cw                 (MrgVT *vt)
+{
+  return vt->cw;
+}
+
+int         ctx_vt_ch                 (MrgVT *vt)
+{
+  return vt->ch;
+}
+
 
 void ctx_vt_set_mmm (MrgVT *vt, void *mmm)
 {
@@ -484,6 +524,7 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
   return 0;
 }
 
+
 void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
 {
   struct winsize ws;
@@ -502,6 +543,8 @@ void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
 
   VT_info ("resize %i %i", irows, icols);
 }
+
+
 
 static void ctx_vt_argument_buf_reset (MrgVT *vt, const char *start)
 {
@@ -1285,10 +1328,6 @@ static void vtcmd_restore_cursor (MrgVT *vt, const char *sequence)
   vt->autowrap = vt->saved_autowrap;  // XXX maybe not needed
 }
 
-
-
-
-
 static void vtcmd_erase_n_chars (MrgVT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
@@ -1302,11 +1341,15 @@ static void vtcmd_erase_n_chars (MrgVT *vt, const char *sequence)
 static void vtcmd_delete_n_chars (MrgVT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  int count = n;
   while (n--)
   {
      mrg_string_remove_utf8 (vt->current_line, vt->cursor_x - 1);
      // XXX : update style
   }
+  memmove (&vt->style[vt->cursor_y][vt->cursor_x],
+           &vt->style[vt->cursor_y][vt->cursor_x+count],
+	   (vt->cols - vt->cursor_x - count) * 4);
 }
 
 static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
@@ -1417,7 +1460,14 @@ qagain:
 	     if (set==0) vt->in_vt52 = 1;
 	     break; 
      case 3: /*MODE;Column mode;132 columns;80 columns;*/
-             if (set) vtcmd_reset_to_initial_state (vt, sequence);
+             if (set)
+	     {
+		     vtcmd_reset_to_initial_state (vt, sequence);
+	     }
+	     else
+	     {
+
+	     }
 	     break; // set 132 col
      case 5: /*MODE;Screen mode;Reverse;Normal;*/
 	     vt->reverse_video = set; break;
@@ -1446,11 +1496,12 @@ qagain:
 	     vt->mouse_all = set; break;
      case 1006:/*MODE;Mouse decimal;On;Off;*/ 
 	     vt->mouse_decimal = set; break;
-     case 47:
-     case 1047:
-     case 1048:
-     case 1049:
-	   vtcmd_reset_to_initial_state (vt, sequence);break; // alt screen
+     //case 47:
+     //case 1047:
+     //case 1048:
+     //case 1049:
+	//   vtcmd_reset_to_initial_state (vt, sequence);  
+	   break; // alt screen
      case 2004:  vtcmd_ignore (vt, sequence);break; // set_bracketed_paste_mode
 
      case 4444:/*MODE;Audio;On;;*/
@@ -3361,189 +3412,186 @@ static void draw_braille_bit (Ctx *ctx, float x, float y, float cw, float ch, in
   ctx_fill (ctx);
 }
 
-int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, float line_spacing)
+int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float font_size, float line_spacing)
 {
-  int cw = (font_size / line_spacing) + 0.99;
-  int ch = font_size;
-
   switch (unichar)
   {
      case 0x2594: // UPPER_ONE_EIGHT_BLOCK
       ctx_new_path (ctx);
-      { float factor = 1.0f/2.0f;
-        ctx_rectangle (ctx, x, y - ch, cw, ch * factor);
+      { float factor = 1.0f/8.0f;
+        ctx_rectangle (ctx, x, y - vt->ch, vt->cw, vt->ch * factor);
         ctx_fill (ctx);
       }
       return 0;
      case 0x2581: // LOWER_ONE_EIGHT_BLOCK:
       ctx_new_path (ctx);
-      { float factor = 1.0f/2.0f;
-        ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
+      { float factor = 1.0f/8.0f;
+        ctx_rectangle (ctx, x, y - vt->ch * factor, vt->cw, vt->ch * factor);
         ctx_fill (ctx);
       }
       return 0;
      case 0x2582: // LOWER_ONE_QUARTER_BLOCK:
       ctx_new_path (ctx);
       { float factor = 1.0f/4.0f;
-        ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
+        ctx_rectangle (ctx, x, y - vt->ch * factor, vt->cw, vt->ch * factor);
         ctx_fill (ctx);
       }
       return 0;
      case 0x2583: // LOWER_THREE_EIGHTS_BLOCK:
       ctx_new_path (ctx);
       { float factor = 3.0f/8.0f;
-        ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
+        ctx_rectangle (ctx, x, y - vt->ch * factor, vt->cw, vt->ch * factor);
         ctx_fill (ctx);
       }
       return 0;
      case 0x2585: // LOWER_FIVE_EIGHTS_BLOCK:
       ctx_new_path (ctx);
       { float factor = 5.0f/8.0f;
-        ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
+        ctx_rectangle (ctx, x, y - vt->ch * factor, vt->cw, vt->ch * factor);
         ctx_fill (ctx);
       }
       return 0;
      case 0x2586: // LOWER_THREE_QUARTERS_BLOCK:
       ctx_new_path (ctx);
       { float factor = 3.0f/4.0f;
-        ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
+        ctx_rectangle (ctx, x, y - vt->ch * factor, vt->cw, vt->ch * factor);
         ctx_fill (ctx);
       }
       return 0;
      case 0x2587: // LOWER_SEVEN_EIGHTS_BLOCK:
       ctx_new_path (ctx);
       { float factor = 7.0f/8.0f;
-        ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
+        ctx_rectangle (ctx, x, y - vt->ch * factor, vt->cw, vt->ch * factor);
         ctx_fill (ctx);
       }
       return 0;
      case 0x2589: // LEFT_SEVEN_EIGHTS_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw*7/8, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw*7/8, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x258A: // LEFT_THREE_QUARTERS_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw*3/4, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw*3/4, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x258B: // LEFT_FIVE_EIGHTS_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw*5/8, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw*5/8, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x258D: // LEFT_THREE_EIGHTS_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw*3/8, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw*3/8, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x258E: // LEFT_ONE_QUARTER_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw/4, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/4, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x258F: // LEFT_ONE_EIGHT_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw/8, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/8, vt->ch);
       ctx_fill (ctx);
       return 0;
 
      case 0x258C: // HALF_LEFT_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw/2, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x2590: // HALF_RIGHT_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2, y - ch, cw/2, ch);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch);
       ctx_fill (ctx);
       return 0;
 
      case 0x2595: // VT_RIGHT_ONE_EIGHT_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw*7/8, y - ch, cw/8, ch);
+      ctx_rectangle (ctx, x + vt->cw*7/8, y - vt->ch, vt->cw/8, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x2580: // HALF_UP_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw, ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x2584: // _HALF_DOWN_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch/2, cw, ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw, vt->ch/2);
       ctx_fill (ctx);
       return 0;
 
      case 0x2596: // _QUADRANT LOWER LEFT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch/2, cw/2, ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x2597: // _QUADRANT LOWER RIGHT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x+cw/2, y - ch/2, cw/2, ch/2);
+      ctx_rectangle (ctx, x+vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x2598: // _QUADRANT UPPER LEFT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw/2, ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259D: // _QUADRANT UPPER RIGHT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2, y - ch, cw/2, ch/2);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x2599: // _QUADRANT UPPER LEFT AND LOWER LEFT AND LOWER RIGHT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw/2, ch/2);
-      ctx_rectangle (ctx, x, y - ch/2, cw/2, ch/2);
-      ctx_rectangle (ctx, x+cw/2, y - ch/2, cw/2, ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259A: // _QUADRANT UPPER LEFT AND LOWER RIGHT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw/2, ch/2);
-      ctx_rectangle (ctx, x+cw/2, y - ch/2, cw/2, ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259B: // _QUADRANT UPPER LEFT AND UPPER RIGHT AND LOWER LEFT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw/2, ch/2);
-      ctx_rectangle (ctx, x + cw/2, y - ch, cw/2, ch/2);
-      ctx_rectangle (ctx, x, y - ch/2, cw/2, ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259C: // _QUADRANT UPPER LEFT AND UPPER RIGHT AND LOWER RIGHT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw/2, ch/2);
-      ctx_rectangle (ctx, x + cw/2, y - ch, cw/2, ch/2);
-      ctx_rectangle (ctx, x+cw/2, y - ch/2, cw/2, ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259E: // _QUADRANT UPPER RIGHT AND LOWER LEFT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2, y - ch, cw/2, ch/2);
-      ctx_rectangle (ctx, x, y - ch/2, cw/2, ch/2);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259F: // _QUADRANT UPPER RIGHT AND LOWER LEFT AND LOWER RIGHT
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2, y - ch, cw/2, ch/2);
-      ctx_rectangle (ctx, x, y - ch/2, cw/2, ch/2);
-      ctx_rectangle (ctx, x+cw/2, y - ch/2, cw/2, ch/2);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
+      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
 
      case 0x2588: // FULL_BLOCK:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x2591: // LIGHT_SHADE:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw, vt->ch);
       ctx_save (ctx);
       ctx_set_global_alpha (ctx, 0.25);
       ctx_fill (ctx);
@@ -3551,7 +3599,7 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
       return 0;
      case 0x2592: // MEDIUM_SHADE:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw, vt->ch);
       ctx_save (ctx);
       ctx_set_global_alpha (ctx, 0.5);
       ctx_fill (ctx);
@@ -3559,7 +3607,7 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
       return 0;
      case 0x2593: // DARK SHADE:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch, cw, ch);
+      ctx_rectangle (ctx, x, y - vt->ch, vt->cw, vt->ch);
       ctx_save (ctx);
       ctx_set_global_alpha (ctx, 0.75);
       ctx_fill (ctx);
@@ -3568,106 +3616,106 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
 
      case 0x2500: //VT_BOX_DRAWINGS_LIGHT_HORIZONTAL:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch/2 - ch * 0.1 / 2, cw, ch * 0.1);
+      ctx_rectangle (ctx, x, y - vt->ch/2 - vt->ch * 0.1 / 2, vt->cw, vt->ch * 0.1);
       ctx_fill (ctx);
       return 0;
      case 0x2502: // VT_BOX_DRAWINGS_LIGHT_VERTICAL:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x250c: //VT_BOX_DRAWINGS_LIGHT_DOWN_AND_RIGHT:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2-ch*0.1/2, ch * 0.1, ch/2+ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch/2 - vt->ch*0.1/2, vt->ch * 0.1, vt->ch/2 + vt->ch*0.1);
       ctx_fill (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2-ch*0.1/2, cw/2+ch * 0.1, ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch/2 - vt->ch*0.1/2, vt->cw/2+ vt->ch * 0.1, vt->ch*0.1);
       ctx_fill (ctx);
       return 0;
      case 0x2510: //VT_BOX_DRAWINGS_LIGHT_DOWN_AND_LEFT:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2-ch*0.1/2, ch * 0.1, ch/2+ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch/2 - vt->ch*0.1/2, vt->ch * 0.1, vt->ch/2 + vt->ch*0.1);
       ctx_fill (ctx);
-      ctx_rectangle (ctx, x, y - ch/2-ch*0.1/2, cw/2+ch * 0.1/2, ch*0.1);
+      ctx_rectangle (ctx, x, y - vt->ch/2 - vt->ch*0.1/2, vt->cw/2+ vt->ch * 0.1/2, vt->ch*0.1);
       ctx_fill (ctx);
       return 0;
      case 0x2514: //VT_BOX_DRAWINGS_LIGHT_UP_AND_RIGHT:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch/2+ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch/2+vt->ch*0.1);
       ctx_fill (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2-ch*0.1/2, cw/2+ch * 0.1, ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch/2 - vt->ch*0.1/2, vt->cw/2 + vt->ch * 0.1, vt->ch*0.1);
       ctx_fill (ctx);
       return 0;
      case 0x2518: //VT_BOX_DRAWINGS_LIGHT_UP_AND_LEFT:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch/2+ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch/2+ vt->ch*0.1);
       ctx_fill (ctx);
-      ctx_rectangle (ctx, x, y - ch/2-ch*0.1/2, cw/2+ch * 0.1/2, ch*0.1);
+      ctx_rectangle (ctx, x, y - vt->ch/2-vt->ch*0.1/2, vt->cw/2+vt->ch * 0.1/2, vt->ch*0.1);
 
       ctx_fill (ctx);
       return 0;
      case 0x251C: //VT_BOX_DRAWINGS_LIGHT_VERTICAL_AND_RIGHT:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2-ch*0.1/2, cw/2+ch * 0.1, ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch/2-vt->ch*0.1/2, vt->cw/2+vt->ch * 0.1, vt->ch*0.1);
       ctx_fill (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x2524: //VT_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch);
       ctx_fill (ctx);
-      ctx_rectangle (ctx, x, y - ch/2-ch*0.1/2, cw/2+ch * 0.1/2, ch*0.1);
+      ctx_rectangle (ctx, x, y - vt->ch/2-vt->ch*0.1/2, vt->cw/2+vt->ch * 0.1/2, vt->ch*0.1);
       ctx_fill (ctx);
 
       return 0;
      case 0x252C: // VT_BOX_DRAWINGS_LIGHT_DOWN_AND_HORIZONTAL:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2-ch*0.1/2, ch * 0.1, ch/2+ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch/2-vt->ch*0.1/2, vt->ch * 0.1, vt->ch/2+vt->ch*0.1);
       ctx_fill (ctx);
-      ctx_rectangle (ctx, x, y - ch/2 - ch * 0.1 / 2, cw, ch * 0.1);
+      ctx_rectangle (ctx, x, y - vt->ch/2 - vt->ch * 0.1 / 2, vt->cw, vt->ch * 0.1);
       ctx_fill (ctx);
       return 0;
      case 0x2534: // VT_BOX_DRAWINGS_LIGHT_UP_AND_HORIZONTAL:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch/2 - ch * 0.1 / 2, cw, ch * 0.1);
+      ctx_rectangle (ctx, x, y - vt->ch/2 - vt->ch * 0.1 / 2, vt->cw, vt->ch * 0.1);
       ctx_fill (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch /2+ch*0.1/2);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch /2+vt->ch*0.1/2);
       ctx_fill (ctx);
 
       return 0;
      case 0x253C: // VT_BOX_DRAWINGS_LIGHT_VERTICAL_AND_HORIZONTAL:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - ch/2 - ch * 0.1 / 2, cw, ch * 0.1);
+      ctx_rectangle (ctx, x, y - vt->ch/2 - vt->ch * 0.1 / 2, vt->cw, vt->ch * 0.1);
       ctx_fill (ctx);
-      ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x25E2: // VT_BLACK_LOWER_RIGHT_TRIANGLE:
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
-      ctx_rel_line_to (ctx, cw, -ch);
-      ctx_rel_line_to (ctx, 0, ch);
+      ctx_rel_line_to (ctx, vt->cw, -vt->ch);
+      ctx_rel_line_to (ctx, 0, vt->ch);
       ctx_fill (ctx);
       return 0;
      case 0x25E3: //  VT_BLACK_LOWER_LEFT_TRIANGLE:
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
-      ctx_rel_line_to (ctx, 0, -ch);
-      ctx_rel_line_to (ctx, cw, ch);
+      ctx_rel_line_to (ctx, 0, -vt->ch);
+      ctx_rel_line_to (ctx, vt->cw, vt->ch);
       ctx_fill (ctx);
       return 0;
   case 0x25E4: // tri
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
-      ctx_rel_line_to (ctx, 0, -ch);
-      ctx_rel_line_to (ctx, cw, 0);
+      ctx_rel_line_to (ctx, 0, -vt->ch);
+      ctx_rel_line_to (ctx, vt->cw, 0);
       ctx_fill (ctx);
       return 0;
   case 0x25E5: // tri
       ctx_new_path (ctx);
-      ctx_move_to (ctx, x, y - ch);
-      ctx_rel_line_to (ctx, cw, 0);
-      ctx_rel_line_to (ctx, 0, ch);
+      ctx_move_to (ctx, x, y - vt->ch);
+      ctx_rel_line_to (ctx, vt->cw, 0);
+      ctx_rel_line_to (ctx, 0, vt->ch);
       ctx_fill (ctx);
       return 0;
    case 0x2800: case 0x2801: case 0x2802: case 0x2803: case 0x2804: case 0x2805: case 0x2806: case 0x2807: case 0x2808: case 0x2809: case 0x280A: case 0x280B: case 0x280C: case 0x280D: case 0x280E: case 0x280F: case 0x2810: case 0x2811: case 0x2812: case 0x2813: case 0x2814: case 0x2815: case 0x2816: case 0x2817: case 0x2818: case 0x2819: case 0x281A: case 0x281B: case 0x281C: case 0x281D: case 0x281E: case 0x281F: case 0x2820: case 0x2821: case 0x2822: case 0x2823: case 0x2824: case 0x2825: case 0x2826: case 0x2827: case 0x2828: case 0x2829: case 0x282A: case 0x282B: case 0x282C: case 0x282D: case 0x282E: case 0x282F: case 0x2830: case 0x2831: case 0x2832: case 0x2833: case 0x2834: case 0x2835: case 0x2836: case 0x2837: case 0x2838: case 0x2839: case 0x283A: case 0x283B: case 0x283C: case 0x283D: case 0x283E: case 0x283F:
@@ -3682,7 +3730,7 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
 	{
 	  if (bit_pattern & (1<<bit))
 	  {
-	    draw_braille_bit (ctx, x, y, cw, ch, u, v);
+	    draw_braille_bit (ctx, x, y, vt->cw, vt->ch, u, v);
 	  }
 	  v++;
 	  if (v > 2)
@@ -3697,7 +3745,7 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
 
    case 0x2840: case 0x2841: case 0x2842: case 0x2843: case 0x2844: case 0x2845: case 0x2846: case 0x2847: case 0x2848: case 0x2849: case 0x284A: case 0x284B: case 0x284C: case 0x284D: case 0x284E: case 0x284F: case 0x2850: case 0x2851: case 0x2852: case 0x2853: case 0x2854: case 0x2855: case 0x2856: case 0x2857: case 0x2858: case 0x2859: case 0x285A: case 0x285B: case 0x285C: case 0x285D: case 0x285E: case 0x285F: case 0x2860: case 0x2861: case 0x2862: case 0x2863: case 0x2864: case 0x2865: case 0x2866: case 0x2867: case 0x2868: case 0x2869: case 0x286A: case 0x286B: case 0x286C: case 0x286D: case 0x286E: case 0x286F: case 0x2870: case 0x2871: case 0x2872: case 0x2873: case 0x2874: case 0x2875: case 0x2876: case 0x2877: case 0x2878: case 0x2879: case 0x287A: case 0x287B: case 0x287C: case 0x287D: case 0x287E: case 0x287F:
       ctx_new_path (ctx);
-      draw_braille_bit (ctx, x, y, cw, ch, 0, 3);
+      draw_braille_bit (ctx, x, y, vt->cw, vt->ch, 0, 3);
       {
 	int bit_pattern = unichar - 0x2840;
 	int bit = 0;
@@ -3707,7 +3755,7 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
 	{
 	  if (bit_pattern & (1<<bit))
 	  {
-	    draw_braille_bit (ctx, x, y, cw, ch, u, v);
+	    draw_braille_bit (ctx, x, y, vt->cw, vt->ch, u, v);
 	  }
 	  v++;
 	  if (v > 2)
@@ -3721,7 +3769,7 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
 
    case 0x2880: case 0x2881: case 0x2882: case 0x2883: case 0x2884: case 0x2885: case 0x2886: case 0x2887: case 0x2888: case 0x2889: case 0x288A: case 0x288B: case 0x288C: case 0x288D: case 0x288E: case 0x288F: case 0x2890: case 0x2891: case 0x2892: case 0x2893: case 0x2894: case 0x2895: case 0x2896: case 0x2897: case 0x2898: case 0x2899: case 0x289A: case 0x289B: case 0x289C: case 0x289D: case 0x289E: case 0x289F: case 0x28A0: case 0x28A1: case 0x28A2: case 0x28A3: case 0x28A4: case 0x28A5: case 0x28A6: case 0x28A7: case 0x28A8: case 0x28A9: case 0x28AA: case 0x28AB: case 0x28AC: case 0x28AD: case 0x28AE: case 0x28AF: case 0x28B0: case 0x28B1: case 0x28B2: case 0x28B3: case 0x28B4: case 0x28B5: case 0x28B6: case 0x28B7: case 0x28B8: case 0x28B9: case 0x28BA: case 0x28BB: case 0x28BC: case 0x28BD: case 0x28BE: case 0x28BF:
       ctx_new_path (ctx);
-      draw_braille_bit (ctx, x, y, cw, ch, 1, 3);
+      draw_braille_bit (ctx, x, y, vt->cw, vt->ch, 1, 3);
       {
 	int bit_pattern = unichar - 0x2880;
 	int bit = 0;
@@ -3731,7 +3779,7 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
 	{
 	  if (bit_pattern & (1<<bit))
 	  {
-	    draw_braille_bit (ctx, x, y, cw, ch, u, v);
+	    draw_braille_bit (ctx, x, y, vt->cw, vt->ch, u, v);
 	  }
 	  v++;
 	  if (v > 2)
@@ -3743,8 +3791,8 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
       }
       return 0;
    case 0x28C0: case 0x28C1: case 0x28C2: case 0x28C3: case 0x28C4: case 0x28C5: case 0x28C6: case 0x28C7: case 0x28C8: case 0x28C9: case 0x28CA: case 0x28CB: case 0x28CC: case 0x28CD: case 0x28CE: case 0x28CF: case 0x28D0: case 0x28D1: case 0x28D2: case 0x28D3: case 0x28D4: case 0x28D5: case 0x28D6: case 0x28D7: case 0x28D8: case 0x28D9: case 0x28DA: case 0x28DB: case 0x28DC: case 0x28DD: case 0x28DE: case 0x28DF: case 0x28E0: case 0x28E1: case 0x28E2: case 0x28E3: case 0x28E4: case 0x28E5: case 0x28E6: case 0x28E7: case 0x28E8: case 0x28E9: case 0x28EA: case 0x28EB: case 0x28EC: case 0x28ED: case 0x28EE: case 0x28EF: case 0x28F0: case 0x28F1: case 0x28F2: case 0x28F3: case 0x28F4: case 0x28F5: case 0x28F6: case 0x28F7: case 0x28F8: case 0x28F9: case 0x28FA: case 0x28FB: case 0x28FC: case 0x28FD: case 0x28FE: case 0x28FF:
-      draw_braille_bit (ctx, x, y, cw, ch, 0, 3);
-      draw_braille_bit (ctx, x, y, cw, ch, 1, 3);
+      draw_braille_bit (ctx, x, y, vt->cw, vt->ch, 0, 3);
+      draw_braille_bit (ctx, x, y, vt->cw, vt->ch, 1, 3);
       {
 	int bit_pattern = unichar - 0x28C0;
 	int bit = 0;
@@ -3754,7 +3802,7 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
 	{
 	  if (bit_pattern & (1<<bit))
 	  {
-	    draw_braille_bit (ctx, x, y, cw, ch, u, v);
+	    draw_braille_bit (ctx, x, y, vt->cw, vt->ch, u, v);
 	  }
 	  v++;
 	  if (v > 2)
@@ -3770,11 +3818,11 @@ int vt_special_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, 
   return -1;
 }
 
-void vt_ctx_glyph (Ctx *ctx, float x, float y, int unichar, float font_size, float line_spacing, int bold)
+void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float font_size, float line_spacing, int bold)
 {
   if (unichar == ' ')
     return;
-  if (!vt_special_glyph (ctx, x, y, unichar, font_size, line_spacing))
+  if (!vt_special_glyph (ctx, vt, x, y, unichar, font_size, line_spacing))
     return;
   y -= font_size * 0.2;
   ctx_move_to (ctx, x, y);
@@ -3842,8 +3890,6 @@ static float font_to_cell_scale = 1.0f;
 
 void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, float line_spacing)
 {
-  int cw = (font_size / line_spacing) + 0.99;
-  int ch = font_size;
   int default_bg = 0;
   int default_fg = 15;
   ctx_save (ctx);
@@ -3862,10 +3908,10 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
        default_bg = 0;
        default_fg = 15;
      }
-     ctx_rectangle (ctx, x0, y0, cw * vt->cols, ch * vt->rows);
+     ctx_rectangle (ctx, x0, y0, vt->cw * vt->cols, vt->ch * vt->rows);
      ctx_fill (ctx);
   }
-  ctx_translate (ctx, 0.0, ch * vt->scroll);
+  ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
   ctx_set_font (ctx, "mono");
   ctx_set_font_size (ctx, font_size * font_to_cell_scale);
   if (vt->scroll)
@@ -3885,9 +3931,9 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
       float x = x0;
         for (int col = 1; *d; d = mrg_utf8_skip (d, 1), col++)
         {
-	  vt_ctx_glyph (ctx, x, -scroll_no * ch,
+	  vt_ctx_glyph (ctx, vt, x, -scroll_no * vt->ch,
 			  ctx_utf8_to_unichar (d), font_size, line_spacing, 0);
-	  x+=cw;
+	  x+=vt->cw;
 	}
       l = l->next;
       scroll_no ++;
@@ -3897,7 +3943,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
   if (vt->ctx &&  vt->ctx_pos <= 0)
   {
     ctx_save (ctx);
-    float factor = vt->cols * cw / 1000.0;
+    float factor = vt->cols * vt->cw / 1000.0;
     ctx_scale (ctx, factor, factor);
     ctx_render_ctx (vt->ctx, ctx);
     ctx_restore (ctx);
@@ -3910,7 +3956,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     int row = 1;
     uint32_t set_style = 9999;
 
-    float y = y0 + ch * vt->rows;
+    float y = y0 + vt->ch * vt->rows;
     int prevcol = -1;
 
     for (row = 0; row < count; row ++)
@@ -3958,13 +4004,13 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
 	    if (!bg_is_nop)
 	    {
-              ctx_rectangle (ctx, x, y-font_size, cw, ch);
+              ctx_rectangle (ctx, x, y-font_size, vt->cw, vt->ch);
               ctx_fill (ctx);
 	    }
           }
-          x += cw;
+          x += vt->cw;
         }
-        y -= ch;
+        y -= vt->ch;
       }
     }
   }
@@ -3975,7 +4021,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     int row = 1;
     uint32_t set_style = 9999;
 
-    float y = y0 + ch * vt->rows;
+    float y = y0 + vt->ch * vt->rows;
     int bold = 0; int underline = 0; int strikethrough = 0; int blink = 0; int dim = 0; int italic = 0;
     int hidden = 0;
     int prevcol = -1;
@@ -4037,7 +4083,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 		ctx_rotate (ctx, 0.3);
 		ctx_translate (ctx, -x, -y);
 	     }
-	     vt_ctx_glyph (ctx, x, y, ctx_utf8_to_unichar (d), font_size, line_spacing, bold);
+	     vt_ctx_glyph (ctx, vt, x, y, ctx_utf8_to_unichar (d), font_size, line_spacing, bold);
 	     if (italic)
 	     {
 		ctx_restore (ctx);
@@ -4046,7 +4092,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	     {
 	       ctx_new_path (ctx);
 	       ctx_move_to (ctx, x, y - font_size * 0.07);
-	       ctx_rel_line_to (ctx, cw, 0);
+	       ctx_rel_line_to (ctx, vt->cw, 0);
 	       ctx_set_line_width (ctx, font_size * 0.05);
 	       ctx_stroke (ctx);
 	     }
@@ -4054,15 +4100,15 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	     {
 	       ctx_new_path (ctx);
 	       ctx_move_to (ctx, x, y - font_size * 0.43);
-	       ctx_rel_line_to (ctx, cw, 0);
+	       ctx_rel_line_to (ctx, vt->cw, 0);
 	       ctx_set_line_width (ctx, font_size * 0.05);
 	       ctx_stroke (ctx);
 	     }
 
 	  }
-          x+=cw;
+          x+=vt->cw;
         }
-        y -= ch;
+        y -= vt->ch;
       }
     }
   }
@@ -4084,22 +4130,22 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     ctx_set_line_width (ctx, 1.0);
     ctx_new_path (ctx);
     ctx_rectangle (ctx,
-               x0 + (cursor_x - 1) * cw,
-               y0 + (cursor_y - 1) * ch,
-               cw, ch);
+               x0 + (cursor_x - 1) * vt->cw,
+               y0 + (cursor_y - 1) * vt->ch,
+               vt->cw, vt->ch);
     ctx_stroke(ctx);
     ctx_set_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
     ctx_rectangle (ctx,
-               x0 + (cursor_x - 1) * cw,
-               y0 + (cursor_y - 1) * ch,
-               cw, ch);
+               x0 + (cursor_x - 1) * vt->cw,
+               y0 + (cursor_y - 1) * vt->ch,
+               vt->cw, vt->ch);
     ctx_fill (ctx);
   }
 
   if (vt->ctx &&  vt->ctx_pos == 1)
   {
     ctx_save (ctx);
-    float factor = vt->cols * cw / 1000.0;
+    float factor = vt->cols * vt->cw / 1000.0;
     ctx_scale (ctx, factor, factor);
     ctx_render_ctx (vt->ctx, ctx);
     ctx_restore (ctx);
@@ -4110,7 +4156,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     if (vt->leds[i])
     {
        ctx_set_rgba (ctx, .5,1,.5,0.8);
-       ctx_rectangle (ctx, cw * i + cw * 0.25, ch * 0.25, cw/2, ch/2);
+       ctx_rectangle (ctx, vt->cw * i + vt->cw * 0.25, vt->ch * 0.25, vt->cw/2, vt->ch/2);
        ctx_fill (ctx);
     }
   }
@@ -4173,9 +4219,9 @@ void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_
   {
     case VT_MOUSE_MOTION:
         if (!vt->mouse_all)
-	  return;
+         return;
        if (x==lastx && y==lasty)
-	  return;
+         return;
        lastx = x; lasty = y;
        sprintf (buf, "\e[<35;%i;%iM", x, y);
        break;
@@ -4213,3 +4259,4 @@ pid_t       ctx_vt_get_pid            (MrgVT *vt)
 {
   return vt->pid;
 }
+

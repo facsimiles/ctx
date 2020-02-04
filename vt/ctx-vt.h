@@ -1,7 +1,12 @@
 
 typedef struct _MrgVT MrgVT;
 
-MrgVT      *ctx_vt_new                (const char *commandline);
+MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing);
+
+int         ctx_vt_cw                 (MrgVT *vt);
+int         ctx_vt_ch                 (MrgVT *vt);
+void        ctx_vt_set_font_size      (MrgVT *vt, float font_size);
+void        ctx_vt_set_line_spacing   (MrgVT *vt, float line_spacing);
 
 const char *ctx_vt_find_shell_command (void);
 
