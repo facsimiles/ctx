@@ -183,13 +183,19 @@ int vt_main(int argc, char **argv)
 
 	  ctx_vt_set_font_size (vt, font_size);
           ctx_vt_set_term_size (vt, width / ctx_vt_cw (vt), height / ctx_vt_ch (vt));
+	} else if (!strcmp (event, "shift-control-n")) {
+	  char buf[512];
+	  sprintf (buf, "%s &", argv[0]);
+	  system (buf);
 	}
-#if 0
-        else if (!strcmp (event, "control-q"))
+        else if (!strcmp (event, "shift-control-q"))
         {
           do_quit = 1;
         }
-#endif
+        else if (!strcmp (event, "shift-control-w"))
+        {
+          do_quit = 1;
+        }
         else if (!strncmp (event, "mouse-", 5))
 	{
 	  int cw = ctx_vt_cw (vt);

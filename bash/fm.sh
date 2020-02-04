@@ -202,6 +202,9 @@ function prepare_file(){
 	    esac
 	  fi
 	fi
+	if [ x"$loaded_extension" = x"ans" ]; then
+	  file_mimetype='text/ansi-art'
+	fi
 	if [ x"$loaded_extension" = x"ANS" ]; then
 	  file_mimetype='text/ansi-art'
 	fi
