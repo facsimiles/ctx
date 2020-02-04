@@ -98,6 +98,26 @@ char* string = "☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬
     add_glyph (ctx, ctx_utf8_to_unichar (utf8));
   }
 
+  if (strstr (subsets, "cp437"))
+  {
+char* string = " ☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼!\"#$%&'()*+,-./0123456789:;<=>?"
+"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^,`abcdefghijklmnopqrstuvwxyz{|}~⌂"
+"ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»"
+"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
+"αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■";
+
+  for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
+    add_glyph (ctx, ctx_utf8_to_unichar (utf8));
+  }
+
+  if (strstr (subsets, "vt100"))
+  {
+char* string = 
+" !\"#$%&'()*+,-./0123456789:;<=>? @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_◆▒␉␌␍␊°±␤␋┘┐┌└┼⎺⎻─⎼⎽├┤┴┬│≤≥π≠£· ";
+
+  for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
+    add_glyph (ctx, ctx_utf8_to_unichar (utf8));
+  }
 
   if (strstr (subsets, "extras"))
   {

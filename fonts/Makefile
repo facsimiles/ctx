@@ -8,7 +8,7 @@ clean:
 ctx-font-regular.h: ctx-fontgen Makefile
 	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras > $@
 ctx-font-mono.h: ctx-fontgen Makefile
-	./ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras > $@
+	./ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras-cp437-vt100 > $@
 ctx-font-emoji.h: ctx-fontgen Makefile
 	./ctx-fontgen ttf/DejaVuSans.ttf emoji emoji > $@
 

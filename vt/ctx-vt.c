@@ -390,7 +390,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->saved_x                = 1;
   vt->saved_y                = 1;
   vt->saved_style            = 1;
-  vt->reverse_video          = 1;
+  vt->reverse_video          = 0;
   vt->cstyle = 0;
 
   vt->cursor_key_application = 0;
@@ -559,8 +559,7 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
   if (vt->cursor_x > vt->cols)
   {
     if (vt->autowrap) {
-      ctx_vt_line_feed (vt);
-      _ctx_vt_move_to (vt, vt->cursor_y, 1); // regardless of crlf mode
+      _ctx_vt_move_to (vt, vt->cursor_y+1, 1); // XXX how does this hook up to reflow on resize?
     }
     else
     {
@@ -901,14 +900,20 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
       }
+	for (int col = vt->cursor_x; col <= vt->cols; col++)
+	  vt->style[vt->cursor_y][col]=vt->cstyle;
+
       {
-        VtList *l;
-        for (l = vt->lines; l->data != vt->current_line; l = l->next)
+        VtList *l;int no = vt->rows;
+        for (l = vt->lines; l->data != vt->current_line; l = l->next, no--)
         {
           MrgString *buf = l->data;
           buf->str[0] = 0;
           buf->length = 0;
           buf->utf8_length = 0;
+
+          for (int col = 1; col <= vt->cols; col++)
+	    vt->style[no][col]=vt->cstyle;
         }
       }
       break;
@@ -917,13 +922,15 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         for (int col = 1; col <= vt->cursor_x; col++)
         {
           mrg_string_replace_utf8 (vt->current_line, col-1, " ");
+	  vt->style[vt->cursor_y][col]=vt->cstyle;
         }
       }
       {
         VtList *l;
         int there_yet = 0;
+	int no = vt->rows;
 
-        for (l = vt->lines; l; l = l->next)
+        for (l = vt->lines; l; l = l->next, no--)
         {
           MrgString *buf = l->data;
           if (there_yet)
@@ -931,6 +938,8 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
             buf->str[0] = 0;
             buf->length = 0;
             buf->utf8_length = 0;
+            for (int col = 1; col <= vt->cols; col++)
+	      vt->style[no][col]=vt->cstyle;
           }
           if (buf == vt->current_line)
           {
@@ -1283,18 +1292,17 @@ static void vtcmd_erase_n_chars (MrgVT *vt, const char *sequence)
   while (n--)
   {
      mrg_string_replace_utf8 (vt->current_line, vt->cursor_x - 1 + n, " ");
+     vt->style[vt->cursor_y][vt->cursor_x + n] = vt->cstyle;
   }
 }
 
 static void vtcmd_delete_n_chars (MrgVT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
-  fprintf (stderr, "[%s]", vt->current_line->str);
   while (n--)
   {
      mrg_string_remove_utf8 (vt->current_line, vt->cursor_x - 1);
   }
-  fprintf (stderr, "[%s]", vt->current_line->str);
 }
 
 static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
@@ -1489,8 +1497,8 @@ static void vtcmd_set_t (MrgVT *vt, const char *sequence)
 static void _ctx_vt_htab (MrgVT *vt)
 {
   do {
-    //_ctx_vt_add_str (vt, " "); // maybe we want this for setting style
-    vt->cursor_x++;
+    _ctx_vt_add_str (vt, " "); // maybe we want this for setting style
+    //vt->cursor_x++;
   } while ( ! vt->tabs[vt->cursor_x-1] && vt->cursor_x < vt->cols);
   if (vt->cursor_x > vt->cols)
     vt->cursor_x = vt->cols;
@@ -3242,7 +3250,8 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
     //setenv ("TERM", "ansi", 1);
     //setenv ("TERM", "vt102", 1);
     //setenv ("TERM", "vt100", 1);
-    setenv ("TERM", "xterm", 1);
+    //setenv ("TERM", "xterm", 1);
+    setenv ("TERM", "xterm-256color", 1);
     vt->result = system (command);
     exit(0);
   }

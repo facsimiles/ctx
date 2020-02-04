@@ -18,7 +18,7 @@
 #define CTX_SHAPE_CACHE          1
 #define CTX_SHAPE_CACHE_DIM      64*64
 #define CTX_SHAPE_CACHE_ENTRIES  2048
-#define CTX_RASTERIZER_AA        3
+#define CTX_RASTERIZER_AA        15
 #define CTX_RASTERIZER_FORCE_AA  1
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
@@ -28,7 +28,7 @@
 
 int   do_quit      = 0;
 float font_size    = 30.0;
-float line_spacing = 2.0;
+float line_spacing = 2.1;
 
 static Mmm *mmm = NULL;
 static pid_t vt_child;
