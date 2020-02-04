@@ -56,7 +56,7 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = 0;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;//:w | VT_LOG_COMMAND;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND ;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL - VT_LOG_INPUT - VT_LOG_CURSOR;
 //static int vt_log_mask = VT_LOG_ALL;
@@ -556,10 +556,11 @@ static void ctx_vt_line_feed (MrgVT *vt);
 
 static void _ctx_vt_add_str (MrgVT *vt, const char *str)
 {
-  if (vt->cursor_x > vt->cols)
+  if (vt->cursor_x  > vt->cols)
   {
     if (vt->autowrap) {
-      _ctx_vt_move_to (vt, vt->cursor_y+1, 1); // XXX how does this hook up to reflow on resize?
+	ctx_vt_line_feed (vt);
+       _ctx_vt_move_to (vt, vt->cursor_y, 1);
     }
     else
     {
@@ -567,20 +568,18 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
     }
   }
 
+  vt->style[vt->cursor_y][vt->cursor_x] = vt->cstyle;
   if (vt->insert_mode)
    {
-     vt->style[vt->cursor_y][vt->cursor_x] = vt->cstyle;
      mrg_string_insert_utf8 (vt->current_line, vt->cursor_x - 1, str);
+     while (vt->current_line->utf8_length > vt->cols)
+        mrg_string_remove_utf8 (vt->current_line, vt->cols);
    }
   else
    {
-     vt->style[vt->cursor_y][vt->cursor_x] = vt->cstyle;
      mrg_string_replace_utf8 (vt->current_line, vt->cursor_x - 1, str);
    }
   vt->cursor_x ++;
-
-  while (vt->current_line->utf8_length > vt->cols)
-     mrg_string_remove_utf8 (vt->current_line, vt->cols);
 }
 
 static void _ctx_vt_backspace (MrgVT *vt)
@@ -740,6 +739,7 @@ static void vtcmd_cursor_position (MrgVT *vt, const char *sequence)
 static void vtcmd_horizontal_position_absolute (MrgVT *vt, const char *sequence)
 {
   int x = parse_int (sequence, 1);
+  if (x<=0) x = 1;
   _ctx_vt_move_to (vt, vt->cursor_y, x);
 }
 
@@ -754,7 +754,10 @@ static void vtcmd_cursor_forward (MrgVT *vt, const char *sequence)
   int n = parse_int (sequence, 1);
   if (n==0) n = 1;
   for (int i = 0; i < n; i++)
-    _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x + 1);
+  {
+    vt->cursor_x++;
+  }
+  _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
 }
 
 static void vtcmd_cursor_backward (MrgVT *vt, const char *sequence)
@@ -791,7 +794,7 @@ static void vtcmd_cursor_up (MrgVT *vt, const char *sequence)
 
   for (int i = 0; i < n; i++)
   {
-    if (vt->cursor_y == 1)//vt->scroll_top)
+    if (vt->cursor_y == vt->scroll_top)
     {
       //_ctx_vt_move_to (vt, 1, vt->cursor_x);
     }
@@ -1302,6 +1305,7 @@ static void vtcmd_delete_n_chars (MrgVT *vt, const char *sequence)
   while (n--)
   {
      mrg_string_remove_utf8 (vt->current_line, vt->cursor_x - 1);
+     // XXX : update style
   }
 }
 
@@ -1324,7 +1328,7 @@ static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
         break;
       }
     }
-    _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+    _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x); // updates current_line
     vt_scroll_style (vt, -1);
   }
 }
@@ -1360,11 +1364,25 @@ static void vtcmd_scroll_down (MrgVT *vt, const char *sequence)
 
 static void vtcmd_insert_blank_lines (MrgVT *vt, const char *sequence)
 {
+  /* XXX : this should be inserting blank linkes at the current line -
+           potentially realized via tempory scroll-top/bottom before the scroll call?
+   */
   int n = parse_int (sequence, 1);
   if (n == 0) n = 1;
-  while (n--)
+
   {
-    vt_scroll (vt, 1);
+     int st = vt->scroll_top;
+     int sb = vt->scroll_bottom;
+
+     vt->scroll_top = vt->cursor_y;
+
+     while (n--)
+     {
+       vt_scroll (vt, 1);
+     }
+
+     vt->scroll_top = st;
+     vt->scroll_bottom = sb;
   }
 }
 
@@ -1420,7 +1438,6 @@ qagain:
      case 25:/*MODE;Cursor visible;On;Off; */
 	     vt->cursor_visible = set; 
 	     break;
-
      case 1000:/*MODE;Mouse reporting;On;Off;*/
 	     vt->mouse = set; break;
      case 1002:/*MODE;Mouse drag;On;Off;*/ 
@@ -1445,8 +1462,18 @@ qagain:
      case 7020:/*MODE;Ctx ascii;On;;*/
            vt->in_ctx_ascii = set;
 	   break;
-     case 2400:/*MODE;Slow serial;On;Off;*/
-	   vt->slow_baud = set;
+
+     case 100:/*MODE;Simulate 100 baud;100 baud;unlimited;*/
+	   vt->slow_baud = set ? 100 : 0;
+           break;
+     case 300:/*MODE;Simulate 300 baud;300 baud;unlimited;*/
+	   vt->slow_baud = set ? 300 : 0;
+           break;
+     case 2400:/*MODE;Simulate 2400 baud;2400 baud;unlimited;*/
+	   vt->slow_baud = set ? 2400 : 0;
+           break;
+     case 9600:/*MODE;Simulate 9600 baud;9600 baud;unlimited;*/
+	   vt->slow_baud = set ? 9600 : 0;
            break;
      default:
 	   VT_warning ("unhandled CSI ? %ih", qval); return;
@@ -1497,8 +1524,7 @@ static void vtcmd_set_t (MrgVT *vt, const char *sequence)
 static void _ctx_vt_htab (MrgVT *vt)
 {
   do {
-    _ctx_vt_add_str (vt, " "); // maybe we want this for setting style
-    //vt->cursor_x++;
+    vt->cursor_x++;
   } while ( ! vt->tabs[vt->cursor_x-1] && vt->cursor_x < vt->cols);
   if (vt->cursor_x > vt->cols)
     vt->cursor_x = vt->cols;
@@ -1507,7 +1533,6 @@ static void _ctx_vt_htab (MrgVT *vt)
 static void _ctx_vt_rev_htab (MrgVT *vt)
 {
   do {
-    //_ctx_vt_add_str (vt, " "); // maybe we want this for setting style
     vt->cursor_x--;
   } while ( ! vt->tabs[vt->cursor_x-1] && vt->cursor_x > 1);
   if (vt->cursor_x < 1)
@@ -1705,7 +1730,7 @@ static void handle_sequence (MrgVT *vt, const char *sequence)
         mismatch = 1;
       if (!mismatch)
       {
-	VT_command("%s %c", sequences[i].prefix, sequences[i].suffix);
+	VT_command("%s", sequence);
         sequences[i].vtcmd (vt, sequence);
         return;
       }
@@ -1734,9 +1759,10 @@ static void ctx_vt_line_feed (MrgVT *vt)
 
     _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
     ctx_vt_trimlines (vt, vt->rows);
+//fprintf (stderr, "tp\n");
     return;
   }
-
+//fprintf (stderr, "bot\n");
   if (vt->lines->data == vt->current_line &&
       (vt->cursor_y != vt->scroll_bottom) && 0)
   {
@@ -1745,7 +1771,8 @@ static void ctx_vt_line_feed (MrgVT *vt)
     vt->line_count++;
   }
 
-  if (vt->cursor_y + 1 > vt->scroll_bottom)
+  vt->cursor_y++; 
+  if (vt->cursor_y  > vt->scroll_bottom)
   {
     vt->cursor_y = vt->scroll_bottom;
     vt_scroll (vt, -1);
@@ -2974,7 +3001,7 @@ void ctx_vt_poll (MrgVT *vt)
  {
   if (vt->slow_baud)
   {
-    unsigned char buf[24];
+    unsigned char buf[vt->slow_baud/100];
     int len = read(vt->pty, buf, sizeof(buf));
     if (len > 0)
     {
@@ -3807,7 +3834,7 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
     float val = gray / 24.0f;
     r = g = b = val;
   }
-
+  //r = g = (r * 0.3 +g * 0.7);  // cheap color-blind simulation
   ctx_set_rgba (ctx, r, g, b, dim?0.5f:1.0f);
 }
 
@@ -3845,7 +3872,12 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
   {
     VtList *l = vt->scrollback;
     int scroll_no = 0;
-    ctx_set_rgba (ctx, 1,1,1,1);
+
+    if (vt->reverse_video)
+      ctx_set_rgba (ctx, 0,0,0,1);
+    else
+      ctx_set_rgba (ctx, 1,1,1,1);
+
     while (l && scroll_no < vt->scroll)
     {
       MrgString *str = l->data;
@@ -3853,7 +3885,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
       float x = x0;
         for (int col = 1; *d; d = mrg_utf8_skip (d, 1), col++)
         {
-	  //fprintf (stderr, "\n%p]", ctx_utf8_to_unichar (d));
 	  vt_ctx_glyph (ctx, x, -scroll_no * ch,
 			  ctx_utf8_to_unichar (d), font_size, line_spacing, 0);
 	  x+=cw;

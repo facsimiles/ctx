@@ -134,7 +134,7 @@ int vt_main(int argc, char **argv)
 
       if (old_w != width ||  old_h!=height)
       {
-        ctx_vt_set_term_size (vt, width / (font_size/line_spacing), height / font_size);
+        ctx_vt_set_term_size (vt, width / (int)((font_size/line_spacing)+0.99), height / font_size);
 	old_w = width;
 	old_h = height;
       }
