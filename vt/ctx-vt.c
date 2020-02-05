@@ -768,7 +768,8 @@ static void vtcmd_cursor_forward (MrgVT *vt, const char *sequence)
   {
     vt->cursor_x++;
   }
-  _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+  if (vt->cursor_x > vt->cols)
+    vt->cursor_x = vt->cols;
 }
 
 static void vtcmd_cursor_backward (MrgVT *vt, const char *sequence)
@@ -776,7 +777,11 @@ static void vtcmd_cursor_backward (MrgVT *vt, const char *sequence)
   int n = parse_int (sequence, 1);
   if (n==0) n = 1;
   for (int i = 0; i < n; i++)
-    _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x - 1);
+  {
+    vt->cursor_x--;
+  }
+  if (vt->cursor_x < 1)
+    vt->cursor_x = 1;
 }
 
 static void vtcmd_reverse_index (MrgVT *vt, const char *sequence)
@@ -1530,7 +1535,7 @@ static void vtcmd_set_t (MrgVT *vt, const char *sequence)
 static void _ctx_vt_htab (MrgVT *vt)
 {
   do {
-    vt->cursor_x++;
+    vt->cursor_x ++;
   } while ( ! vt->tabs[vt->cursor_x-1] && vt->cursor_x < vt->cols);
   if (vt->cursor_x > vt->cols)
     vt->cursor_x = vt->cols;
@@ -1765,10 +1770,8 @@ static void ctx_vt_line_feed (MrgVT *vt)
 
     _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
     ctx_vt_trimlines (vt, vt->rows);
-//fprintf (stderr, "tp\n");
     return;
   }
-//fprintf (stderr, "bot\n");
   if (vt->lines->data == vt->current_line &&
       (vt->cursor_y != vt->scroll_bottom) && 0)
   {
@@ -1778,14 +1781,10 @@ static void ctx_vt_line_feed (MrgVT *vt)
   }
 
   vt->cursor_y++; 
-  if (vt->cursor_y  > vt->scroll_bottom)
+  if (vt->cursor_y > vt->scroll_bottom)
   {
     vt->cursor_y = vt->scroll_bottom;
     vt_scroll (vt, -1);
-  }
-  else
-  {
-    vt->cursor_y++; 
   }
 
   _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
