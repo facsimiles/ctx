@@ -38,9 +38,7 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = 0;
-//static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;//:w | VT_LOG_COMMAND;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND | VT_LOG_INPUT;
-//static int vt_log_mask = VT_LOG_ALL - VT_LOG_INPUT - VT_LOG_CURSOR;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
 //static int vt_log_mask = VT_LOG_ALL;
 
 #if 0
@@ -197,10 +195,8 @@ typedef enum {
 struct _MrgVT {
   char      *commandline;
   char      *title;
-
-  VtList   *scrollback;
-
-  VtList   *lines;
+  VtList    *scrollback;
+  VtList    *lines;
   int        line_count;
   int        leds[4];
   uint32_t   style[MAX_ROWS][MAX_COLS];
@@ -1236,7 +1232,8 @@ static void vtcmd_device_attributes (MrgVT *vt, const char *sequence)
 {
   //char *buf = "\033[?1;2c"; // what rxvt reports
   //char *buf = "\033[?1;6c"; // VT100 with AVO ang GPO
-  char *buf = "\033[?2c";     // VT102
+  //char *buf = "\033[?2c";     // VT102
+  char *buf = "\033[?63;14;22c"; 
   if (!strcmp (sequence, "[>c"))
 	buf="\033[>23;01;1c";
   write (vt->pty, buf, strlen(buf));
@@ -1416,7 +1413,7 @@ qagain:
      case 3: /*MODE;Column mode;132 columns;80 columns;*/
              if (set)
 	     {
-		     vtcmd_reset_to_initial_state (vt, sequence);
+	        //vtcmd_reset_to_initial_state (vt, sequence);
 	     }
 	     else
 	     {
@@ -1442,6 +1439,10 @@ qagain:
      case 25:/*MODE;Cursor visible;On;Off; */
 	     vt->cursor_visible = set; 
 	     break;
+     case 437:/*MODE;Encoding/cp437mode;cp437;utf8; */
+	     vt->encoding = set ? 1 : 0;
+	     break;
+
      case 1000:/*MODE;Mouse reporting;On;Off;*/
 	     vt->mouse = set; break;
      case 1002:/*MODE;Mouse drag;On;Off;*/ 
