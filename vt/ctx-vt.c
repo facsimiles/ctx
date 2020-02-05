@@ -1,15 +1,9 @@
-/* utf8 ansi/vt100/rxvt terminal escape code interpretation engine
- *
- * built to be a self-contained engine that is utf8 native providing a
- * simple core API which other interfaces can be built on top of.
+/* utf8 vt100+ansi terminal engine
  *
  * TODO: selection + copy/(bracketed) paste
  *       deal with scroll events
  *       keyrepeat
  *       alternate screen
- *       256color still buggy, when used with tv
- *       dim, hidden
- *       overlay with commands for scrollback + fontsize change
  *       color in scrollback
  *
  * Copyright (c) 2014, 2016, 2018, 2020 Øyvind Kolås <pippin@gimp.org>
@@ -23,12 +17,6 @@
 #include <sys/wait.h>
 #include <errno.h>
 #include <assert.h>
-
-/* TODO:
- *   scrollback
- *   selection, copy + paste
- *   runtime font selection
- */
 
 #include <string.h>
 #include <signal.h>
@@ -161,14 +149,6 @@ static inline VtList *vt_list_nth (VtList *list, int no)
   return list;
 }
 
-static inline VtList *vt_list_find (VtList *list, void *data)
-{
-  for (;list;list=list->next)
-    if (list->data == data)
-      break;
-  return list;
-}
-
 static inline void
 vt_list_insert_before (VtList **list, VtList *sibling,
                         void *data)
@@ -194,8 +174,6 @@ vt_list_insert_before (VtList **list, VtList *sibling,
       }
     }
 }
-
-static int ctx_vt_trimlines (MrgVT *vt, int max);
 
 typedef enum {
   TERMINAL_STATE_NEUTRAL          = 0,
@@ -501,8 +479,6 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
   VtList *l;
   int i;
 
-  //max += vt->lines_scrollback; /* needed for scrollback escape */
-
   if (vt->line_count < max)
     return 0;
 
@@ -524,21 +500,21 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
   return 0;
 }
 
-
 void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
 {
   struct winsize ws;
   if (vt->rows == irows && vt->cols == icols)
     return;
+
   vt->rows = ws.ws_row = irows;
   vt->cols = ws.ws_col = icols;
-  ws.ws_xpixel = ws.ws_col * 8; // XXX : vt should know pixel-dims
-  ws.ws_ypixel = ws.ws_row * 8;
+  ws.ws_xpixel = ws.ws_col * vt->cw;
+  ws.ws_ypixel = ws.ws_row * vt->ch;
   ioctl(vt->pty, TIOCSWINSZ, &ws);
   ctx_vt_trimlines (vt, vt->rows);
 
-  vt->scroll_top             = 1;
-  vt->scroll_bottom          = vt->rows;
+  vt->scroll_top     = 1;
+  vt->scroll_bottom  = vt->rows;
   vt->rev++;
 
   VT_info ("resize %i %i", irows, icols);
@@ -1062,7 +1038,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     }
     else if (n == 2)
     {
-    /* SGR@38;2;50;70;180m@\b24 bit RGB foreground color@The example sets RGB the triplet 50 70 180@fodasdasz@ */
+    /* SGR@38;2;50;70;180m@\b24 bit RGB foreground color@The example sets RGB the triplet 50 70 180@f@ */
       int r = 0, g = 0, b = 0;
       s++;
       if (strchr (s, ';'))
@@ -1084,7 +1060,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       VT_warning ("unhandled %s %i", sequence, n);
       return;
     }
-    return; // we should probably continue, and allow further style set after complex color
+    return; // XXX we should continue, and allow further style set after complex color
   }
   else if (n == 48) // set background
   {
@@ -1132,40 +1108,22 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       VT_warning ("unhandled %s %i", sequence, n);
       return;
     }
-    return; // we should probably continue, and allow further style set after complex color
+    return; // we XXX should continue, and allow further style set after complex color
   }
   else
   switch (n)
   {
-    case 0: /* SGR@0@Style reset@@ */
-      vt->cstyle = 0;
-      break;
-    case 1:  /* SGR@@Bold@@ */
-      vt->cstyle ^= STYLE_BOLD;
-      break;
-    case 2: /* SGR@@Dim@@ */
-      vt->cstyle |= STYLE_DIM;
-      break; 
-    case 3: /* SGR@@Rotalic@@ */
-      vt->cstyle |= STYLE_ITALIC;
-      break; 
-    case 4: /* SGR@@Underscore@@ */
-      vt->cstyle |= STYLE_UNDERLINE;
-      break;
-    case 5: /* SGR@@Blink@@ */
-      vt->cstyle |= STYLE_BLINK;
-      break;
-    case 7: /* SGR@@Reverse@@ */
-      vt->cstyle |= STYLE_REVERSE;
-      break;
-    case 8: /* SGR@@Hidden@@ */
-      vt->cstyle |= STYLE_HIDDEN;
-      break;
-    case 9: /* SGR@@Strikethrough@@ */
-      vt->cstyle |= STYLE_STRIKETHROUGH;
-      break;
-    case 10: /* SGR@@Font 0@@ */ vt->charset = 0; break;
-    case 11: /* SGR@@Font 1@@ */ vt->charset = 1; break;
+    case 0: /* SGR@0@Style reset@@ */ vt->cstyle = 0; break;
+    case 1: /* SGR@@Bold@@ */         vt->cstyle |= STYLE_BOLD; break;
+    case 2: /* SGR@@Dim@@ */          vt->cstyle |= STYLE_DIM; break; 
+    case 3: /* SGR@@Rotalic@@ */      vt->cstyle |= STYLE_ITALIC; break; 
+    case 4: /* SGR@@Underscore@@ */   vt->cstyle |= STYLE_UNDERLINE; break;
+    case 5: /* SGR@@Blink@@ */        vt->cstyle |= STYLE_BLINK; break;
+    case 7: /* SGR@@Reverse@@ */      vt->cstyle |= STYLE_REVERSE; break;
+    case 8: /* SGR@@Hidden@@ */       vt->cstyle |= STYLE_HIDDEN; break;
+    case 9: /* SGR@@Strikethrough@@ */vt->cstyle |= STYLE_STRIKETHROUGH; break;
+    case 10: /* SGR@@Font 0@@ */      vt->charset = 0; break;
+    case 11: /* SGR@@Font 1@@ */      vt->charset = 1; break;
     case 12: /* SGR@@Font 2(ignored)@@ */ 
     case 13: /* SGR@@Font 3(ignored)@@ */
     case 14: /* SGR@@Font 4(ignored)@@ */ break;
@@ -1179,8 +1137,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 24: /* SGR@@Underscore off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_UNDERLINE);
       break;
-    case 25: /* SGR@@Blink off@@ */
-      vt->cstyle ^= (vt->cstyle & STYLE_BLINK);
+    case 25: /* SGR@@Blink off@@ */ vt->cstyle ^= (vt->cstyle & STYLE_BLINK);
       break;
     case 27: /* SGR@@Reverse off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_REVERSE);
@@ -1191,7 +1148,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 29: /* SGR@@Strikethrough off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_STRIKETHROUGH);
       break;
-    case 30: /* SGR@@black text color@@ */     set_fg_idx(16); break;
+    case 30: /* SGR@@black text color@@ */     set_fg_idx(0); break;
     case 31: /* SGR@@red text color@@ */       set_fg_idx(1); break;
     case 32: /* SGR@@green text color@@ */     set_fg_idx(2); break;
     case 33: /* SGR@@yellow text color@@ */    set_fg_idx(3); break;
@@ -1200,10 +1157,10 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 36: /* SGR@@cyan text color@@ */      set_fg_idx(6); break;
     case 37: /* SGR@@light gray text color@@ */set_fg_idx(7); break;
     case 39: /* SGR@@default text color@@ */  
-      set_fg_idx(vt->reverse_video?16:15);
-      // XXX : should we unset the fg part of SGR instead?
+      set_fg_idx(vt->reverse_video?0:15);
+      vt->cstyle ^= (vt->cstyle & STYLE_FG_COLOR_SET);
       break;
-    case 40: /* SGR@@black background color@@ */     set_bg_idx(16); break;
+    case 40: /* SGR@@black background color@@ */     set_bg_idx(0); break;
     case 41: /* SGR@@red background color@@ */       set_bg_idx(1); break;
     case 42: /* SGR@@green background color@@ */     set_bg_idx(2); break;
     case 43: /* SGR@@yellow background color@@ */    set_bg_idx(3); break;
@@ -1213,8 +1170,8 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 47: /* SGR@@light gray background color@@ */set_bg_idx(7); break;
 
     case 49: /* SGR@@default background color@@ */  
-      set_bg_idx(vt->reverse_video?15:16);
-      // XXX : should we unset the bg part of SGR instead?
+      set_bg_idx(vt->reverse_video?15:0);
+      vt->cstyle ^= (vt->cstyle & STYLE_BG_COLOR_SET);
       break;
 
     case 90: /* SGR@@dark gray text color@@ */       set_fg_idx(8); break;
@@ -1225,6 +1182,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 95: /* SGR@@light magenta text color@@ */   set_fg_idx(13); break;
     case 96: /* SGR@@light cyan text color@@ */      set_fg_idx(14); break;
     case 97: /* SGR@@white text color@@ */           set_fg_idx(15); break;
+
     case 100: /* SGR@@dark gray background color@@ */set_bg_idx(8); break;
     case 101: /* SGR@@light red background color@@ */set_bg_idx(9); break;
     case 102: /* SGR@@light green background color@@ */set_bg_idx(10); break;
@@ -1238,7 +1196,6 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       VT_warning ("unhandled style code %i in sequence \\e%s\n", n, sequence);
       return;
 
-#undef set_col
   }
     while(s && *s && *s != ';') s++;
     if (s && *s == ';') s++;
