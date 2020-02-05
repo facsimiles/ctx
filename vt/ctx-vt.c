@@ -1347,7 +1347,8 @@ static void vtcmd_delete_n_chars (MrgVT *vt, const char *sequence)
      mrg_string_remove_utf8 (vt->current_line, vt->cursor_x - 1);
      // XXX : update style
   }
-  memmove (&vt->style[vt->cursor_y][vt->cursor_x],
+  // this is crashy XXX
+  if(0)memmove (&vt->style[vt->cursor_y][vt->cursor_x],
            &vt->style[vt->cursor_y][vt->cursor_x+count],
 	   (vt->cols - vt->cursor_x - count) * 4);
 }
@@ -2637,10 +2638,61 @@ static void ctx_vt_bell (MrgVT *vt)
     terminal_queue_pcm_sample (MuLawDecompressTable[vt_bell_audio[i]] * vt->bell / 8);
 }
 
+/* if the byte is a non-print control character, handle it and return 1
+ * oterhwise return 0*/
+static int _vt_handle_control (MrgVT *vt, int byte)
+{
+  switch (byte)
+  {
+        case '\0':
+        case 1:    /* SOH start of heading */
+        case 2:    /* STX start of text */
+        case 3:    /* ETX end of text */
+        case 4:    /* EOT end of transmission */
+        case 5:    /* ENQuiry */
+        case 6:    /* ACKnolwedge */
+           return 1;
+        case '\a': /* BELl */   ctx_vt_bell (vt); return 1;
+        case '\b': /* BS */     _ctx_vt_backspace (vt); return 1;
+        case '\t': /* HT tab */ _ctx_vt_htab (vt); return 1;
+
+        case '\v': /* VT vertical tab */
+        case '\f': /* VF form feed */
+        case '\n': /* LF line ffed */
+          ctx_vt_line_feed (vt);
+          return 1;
+        case '\r': /* CR carriage return */
+          _ctx_vt_move_to (vt, vt->cursor_y, 1);
+          return 1;
+	case 14: /* SO shift in - alternate charset TODO */
+        case 15: /* SI shift out - (back to normal) TODO*/
+        case 16: /* DLE data link escape */
+        case 17: /* DC1 device control 1 */
+        case 18: /* DC2 device control 2 */
+        case 19: /* DC3 device control 3 */
+        case 20: /* DC4 device control 4 */
+        case 21: /* NAK negative ack */
+        case 22: /* SYNchronous idle */
+        case 23: /* ETB end of trans. blk */
+        case 24: /* CANcel (vt100 aborts sequence) */
+        case 25: /* EM  end of medium */
+        case 26: /* SUBstitute */
+          return 1;
+        case 27: /* ESCape */
+	  return 0;
+          break;
+        case 28: /* FS file separator */
+        case 29: /* GS group separator */
+        case 30: /* RS record separator */
+        case 31: /* US unit separator */
+	case 127: /* DEL */
+          return 1;
+  }
+  return 0;
+}
+
 void ctx_vt_feed_byte (MrgVT *vt, int byte)
 {
-  //fprintf (stderr, "{%i %c}", byte, (byte>31&&byte<=127)?byte:' ');
-  //
   if (byte >= ' ' && byte <= '~')
   {
     VT_input ("%c", byte);
@@ -2656,59 +2708,13 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
     switch (vt->utf8_pos)
     {
       case 0:
+	if (_vt_handle_control (vt, byte) == 0)
 	switch (byte)
 	{
-        case '\0': break;
-        case 1:    /* SOH start of heading */
-        case 2:    /* STX start of text */
-        case 3:    /* ETX end of text */
-        case 4:    /* EOT end of transmission */
-           break;
-        case 5:    /* ENQuiry */
-	   break;
-        case 6:    /* ACKnolwedge */
-           break;
-        case '\a': /* BELl */ ctx_vt_bell (vt); break;  /* @CTRL@7@Bell@sound the bell@    */
-        case '\b': /* BS */   _ctx_vt_backspace (vt); break;
-        case '\t': /* HT tab */ _ctx_vt_htab (vt); break;
-        case '\v': /* VT vertical tab */
-        case '\f': /* VF form feed */
-        case '\n': /* LF line ffed */
-          ctx_vt_line_feed (vt);
-          break;
-        case '\r': /* CR carriage return */
-          _ctx_vt_move_to (vt, vt->cursor_y, 1);
-          break;
-        case 14: /* SO shift in - alternate charset */
-	  vtcmd_set_alternate_font (vt, ""); // XXX the alternate used here is wrong for vt52 though
-
-	  break;
-        case 15: /* SI shift out - (back to normal) */
-	  vtcmd_set_default_font (vt, "");
-
-	  break;
-        case 16: /* DLE data link escape */
-        case 17: /* DC1 device control 1 */
-        case 18: /* DC2 device control 2 */
-        case 19: /* DC3 device control 3 */
-        case 20: /* DC4 device control 4 */
-        case 21: /* NAK negative ack */
-        case 22: /* SYNchronous idle */
-        case 23: /* ETB end of trans. blk */
-        case 24: /* CANcel (vt100 aborts sequence) */
-        case 25: /* EM  end of medium */
-        case 26: /* SUBstitute */
-          break;
-        case 27: /* ESC */
-	  vt->utf8_pos = 1;
-	  break;
-	case 28:
-	case 29:
-	case 30:
-	case 31:
-	case 127: /* DEL */
-	  break;
-	 default:
+          case 27: /* ESC */
+	    vt->utf8_pos = 1;
+	    break;
+	  default:
 	  {
 	    char str[2] = {byte, 0};
             _ctx_vt_add_str (vt, str);
@@ -2867,66 +2873,24 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
   switch (vt->state)
   {
     case TERMINAL_STATE_NEUTRAL:
+
+      if (_vt_handle_control (vt, byte) == 0)
       switch (byte)
       {
-        case '\0': break;
-        case 1:    /* SOH start of heading */
-        case 2:    /* STX start of text */
-        case 3:    /* ETX end of text */
-        case 4:    /* EOT end of transmission */
-           break;
-        case 5:    /* ENQuiry */
-	   break;
-        case 6:    /* ACKnolwedge */
-           break;
-        case '\a': /* BELl */   ctx_vt_bell (vt); break;
-        case '\b': /* BS */     _ctx_vt_backspace (vt); break;
-        case '\t': /* HT tab */ _ctx_vt_htab (vt); break;
-
-        case '\v': /* VT vertical tab */
-        case '\f': /* VF form feed */
-        case '\n': /* LF line ffed */
-          ctx_vt_line_feed (vt);
-          break;
-        case '\r': /* CR carriage return */
-          _ctx_vt_move_to (vt, vt->cursor_y, 1);
-          break;
-	case 14: /* SO shift in - alternate charset TODO */
-        case 15: /* SI shift out - (back to normal) TODO*/
-        case 16: /* DLE data link escape */
-        case 17: /* DC1 device control 1 */
-        case 18: /* DC2 device control 2 */
-        case 19: /* DC3 device control 3 */
-        case 20: /* DC4 device control 4 */
-        case 21: /* NAK negative ack */
-        case 22: /* SYNchronous idle */
-        case 23: /* ETB end of trans. blk */
-        case 24: /* CANcel (vt100 aborts sequence) */
-        case 25: /* EM  end of medium */
-        case 26: /* SUBstitute */
-          break;
         case 27: /* ESCape */
           vt->state = TERMINAL_STATE_GOT_ESC;
           break;
-        case 28: /* FS file separator */
-        case 29: /* GS group separator */
-        case 30: /* RS record separator */
-        case 31: /* US unit separator */
-	case 127: /* DEL */
-          break;
         default:
-	  {
-	  // ensure vt->utf8_holding contains a valid utf8
-
           if (vt->charset)
 	  {
-           if ((vt->utf8_holding[0] > ' ') && (vt->utf8_holding[0] <= '~'))
-           {
-             _ctx_vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
-           }
+            if ((vt->utf8_holding[0] > ' ') && (vt->utf8_holding[0] <= '~'))
+            {
+              _ctx_vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
+            }
 	  }
 	  else
 	  {
+	    // ensure vt->utf8_holding contains a valid utf8
             uint32_t codepoint;
             uint32_t state = 0;
 
@@ -2934,28 +2898,22 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	       utf8_decode(&state, &codepoint, vt->utf8_holding[i]);
 	    if (state != UTF8_ACCEPT)
 	    {
+	      /* otherwise mangle it so that it does */
 	      vt->utf8_holding[0] &= 127;
 	      vt->utf8_holding[1] = 0;
 	      if (vt->utf8_holding[0] == 0)
 	        vt->utf8_holding[0] = 32;
 	    }
-           _ctx_vt_add_str (vt, (char*)vt->utf8_holding);
-	  }
+
+            _ctx_vt_add_str (vt, (char*)vt->utf8_holding);
 	  }
           break;
       }
       break;
     case TERMINAL_STATE_GOT_ESC:
+      if (_vt_handle_control (vt, byte) == 0)
       switch (byte)
       {
-          case '\t': _ctx_vt_htab (vt); break;
-          case '\b': _ctx_vt_backspace (vt); break;
-          case '\r': vt->cursor_x = 1; break;
-          case '\v': _ctx_vt_move_to (vt, vt->cursor_y+1, vt->cursor_x); break;
-          case '\n':
-          case '\f': ctx_vt_line_feed (vt); break;
-	  case 127: /* DEL */ break;
-
         case ')':
         case '#':
         case '(':
@@ -2998,25 +2956,17 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
       vt->state = TERMINAL_STATE_NEUTRAL;
       break;
     case TERMINAL_STATE_GOT_ESC_SEQUENCE:
-      if (byte >= '@' && byte <= '~')
+      if (_vt_handle_control (vt, byte) == 0)
       {
-        ctx_vt_argument_buf_add (vt, byte);
-        handle_sequence (vt, vt->argument_buf);
-        vt->state = TERMINAL_STATE_NEUTRAL;
-      }
-      else
-      {
-        switch (byte)
+        if (byte >= '@' && byte <= '~')
         {
-          case '\t': _ctx_vt_htab (vt); break;
-          case '\b': _ctx_vt_backspace (vt); break;
-          case '\r': vt->cursor_x = 1; break;
-          case '\v': _ctx_vt_move_to (vt, vt->cursor_y+1, vt->cursor_x); break;
-          case '\n':
-          case '\f': ctx_vt_line_feed (vt); break;
-          case 127: break;
-          default:
-            ctx_vt_argument_buf_add (vt, byte);
+          ctx_vt_argument_buf_add (vt, byte);
+          handle_sequence (vt, vt->argument_buf);
+          vt->state = TERMINAL_STATE_NEUTRAL;
+        }
+        else
+        {
+          ctx_vt_argument_buf_add (vt, byte);
         }
       }
       break;
@@ -3131,11 +3081,45 @@ static const char *keymap_general[][2]={
   {"shift-down",     "\033[1;2B"},
   {"shift-right",    "\033[1;2C"},
   {"shift-left",     "\033[1;2D"},
-  {"alt-a",          "\033a"}, // hack to make irssi work
+  {"alt-a",          "\033a"},
   {"alt-b",          "\033b"},
   {"alt-c",          "\033c"},
   {"alt-d",          "\033d"},
+  {"alt-e",          "\033e"},
+  {"alt-f",          "\033f"},
+  {"alt-g",          "\033g"},
+  {"alt-h",          "\033h"},
+  {"alt-i",          "\033i"},
+  {"alt-j",          "\033j"},
+  {"alt-k",          "\033k"},
+  {"alt-l",          "\033l"},
+  {"alt-m",          "\033m"},
+  {"alt-n",          "\033n"},
+  {"alt-o",          "\033o"},
+  {"alt-p",          "\033p"},
+  {"alt-q",          "\033q"},
+  {"alt-r",          "\033r"},
+  {"alt-s",          "\033s"},
+  {"alt-t",          "\033t"},
+  {"alt-u",          "\033u"},
+  {"alt-v",          "\033v"},
+  {"alt-w",          "\033w"},
+  {"alt-x",          "\033x"},
+  {"alt-y",          "\033y"},
+  {"alt-z",          "\033z"},
   {"alt- ",          "\033 "},
+  {"alt-0",          "\0330"},
+  {"alt-1",          "\0331"},
+  {"alt-2",          "\0332"},
+  {"alt-3",          "\0333"},
+  {"alt-4",          "\0334"},
+  {"alt-5",          "\0335"},
+  {"alt-6",          "\0336"},
+  {"alt-7",          "\0337"},
+  {"alt-8",          "\0338"},
+  {"alt-9",          "\0339"},
+  {"alt-return",     "\033\r"},
+  {"alt-backspace",  "\033\177"},
   {"alt-up",         "\033[1;3A"},
   {"alt-down",       "\033[1;3B"},
   {"alt-right",      "\033[1;3C"},
@@ -3250,7 +3234,9 @@ void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 
 done:
   if (strlen (str))
+  {
     write (vt->pty, str, strlen (str));
+  }
 }
 
 const char *ctx_vt_find_shell_command (void)
@@ -3844,22 +3830,22 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
   {
     switch (no)
     {
-      case 0:  r = 0.0; g = 0.0; b = 0.0; break;     // black
-      case 1:  r = 0.8; g =0.25; b =0.15; break; // red
-      case 2:  r = 0.05; g =0.8; b =0.10; break; // green
-      case 3:  r = 0.7; g =0.6; b =0.0; break;   // dark yellow
-      case 4:  r = 0.3; g =0.3; b =1.0; break;  // blue
-      case 5:  r = 0.8; g =0.0; b =0.7; break;  // magenta
-      case 6:  r = 0.0; g =0.8; b =0.7; break;  // cyan
+      case 0:  r = 0.0; g = 0.0; b = 0.0;  break; // black
+      case 1:  r = 0.8; g =0.25; b =0.15;  break; // red
+      case 2:  r = 0.1; g =0.8; b =0.0;    break; // green
+      case 3:  r = 0.7; g =0.6; b =0.0;    break;   // dark yellow
+      case 4:  r = 0.1; g =0.25; b =0.75;  break;  // blue
+      case 5:  r = 0.6; g =0.0; b =0.5;    break;  // magenta
+      case 6:  r = 0.0; g =0.7; b =0.7;    break;  // cyan
       case 7:  r = 0.85; g =0.85; b =0.85; break; // light-gray
-      case 8:  r = 0.6; g =0.6; b =0.6; break;  // dark gray
-      case 9:  r = 1.0; g =0.5; b =0.5; break; // bright red
-      case 10: r = 0.5; g =1.0; b =0.5; break; // bright green
-      case 11: r = 1.0; g =1.0; b =0.5; break; // bright yellow
-      case 12: r = 0.5; g =0.55; b =1.0; break; // bright blue
-      case 13: r = 1.0; g =0.5; b =1.0; break; // bright magenta
-      case 14: r = 0.5; g =1.0; b =1.0; break; // bright cyan
-      case 15: r = 1.0; g =1.0; b =1.0; break; // white
+      case 8:  r = 0.6; g =0.6; b =0.6;    break;  // dark gray
+      case 9:  r = 1.0; g =0.5; b =0.5;    break; // bright red
+      case 10: r = 0.5; g =1.0; b =0.5;    break; // bright green
+      case 11: r = 1.0; g =1.0; b =0.15;   break; // bright yellow
+      case 12: r = 0.5; g =0.55; b =1.0;   break; // bright blue
+      case 13: r = 1.0; g =0.5; b =1.0;    break; // bright magenta
+      case 14: r = 0.5; g =1.0; b =1.0;    break; // bright cyan
+      case 15: r = 1.0; g =1.0; b =1.0;    break; // white
     }
     if (bg)
     {
