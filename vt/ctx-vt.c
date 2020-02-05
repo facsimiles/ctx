@@ -573,8 +573,8 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
   if (vt->cursor_x  > vt->cols)
   {
     if (vt->autowrap) {
-	ctx_vt_line_feed (vt);
-       _ctx_vt_move_to (vt, vt->cursor_y, 1);
+      _ctx_vt_move_to (vt, vt->cursor_y+1, 1);
+      vt->cursor_x = 1;
     }
     else
     {
