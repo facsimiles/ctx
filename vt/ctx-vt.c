@@ -260,7 +260,6 @@ struct _MrgVT {
   int        argument_buf_len;
   int        inert;
 
-  int        idle_poller;
   int        done;
   int        result;
 
@@ -271,14 +270,16 @@ struct _MrgVT {
 
   float      font_size; // should maybe be integer?
   float      line_spacing; // char-aspect might be better variable to use..?
-  int        cw;
-  int        ch;
+  int        cw; // cell width
+  int        ch; // cell height
 
   int        ctx_pos;  // 1 is graphics above text, 0 or -1 is below text
   Ctx       *ctx;
   void      *mmm;
 
   int        blink_state;
+
+  FILE      *log;
 };
 
 void ctx_vt_rev_inc (MrgVT *vt)
@@ -600,6 +601,7 @@ static void _ctx_vt_backspace (MrgVT *vt)
   if (vt->current_line)
   {
     vt->cursor_x --;
+    if (vt->cursor_x == vt->cols) vt->cursor_x--;
     if (vt->cursor_x < 1)
       vt->cursor_x = 1;
     VT_cursor("backspace");
@@ -2642,8 +2644,22 @@ static int _vt_handle_control (MrgVT *vt, int byte)
   return 0;
 }
 
+void ctx_vt_open_log (MrgVT *vt, const char *path)
+{
+  unlink (path);
+  vt->log = fopen (path, "w");
+}
+
 void ctx_vt_feed_byte (MrgVT *vt, int byte)
 {
+  if (vt->log)
+  {
+    char buf[3]="";
+    buf[0]=byte;
+    fwrite (buf, 1, 1, vt->log);
+    fflush (vt->log);
+  }
+
   if (byte > ' ' && byte <= '~')
   {
     VT_input ("%c", byte);

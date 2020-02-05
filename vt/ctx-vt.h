@@ -3,6 +3,8 @@ typedef struct _MrgVT MrgVT;
 
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing);
 
+void ctx_vt_open_log (MrgVT *vt, const char *path);
+
 int         ctx_vt_cw                 (MrgVT *vt);
 int         ctx_vt_ch                 (MrgVT *vt);
 void        ctx_vt_set_font_size      (MrgVT *vt, float font_size);

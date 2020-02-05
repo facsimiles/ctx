@@ -188,6 +188,7 @@ int vt_main(int argc, char **argv)
 	  sprintf (buf, "%s &", argv[0]);
 	  system (buf);
 	} else if (!strcmp (event, "shift-control-r")) {
+	  ctx_vt_open_log (vt, "/tmp/ctx-vt");
 	}
         else if (!strcmp (event, "shift-control-q"))
         {
