@@ -1,11 +1,5 @@
 /* utf8 vt100+ansi terminal engine
  *
- * TODO: selection + copy/(bracketed) paste
- *       deal with scroll events
- *       keyrepeat
- *       alternate screen
- *       color in scrollback
- *
  * Copyright (c) 2014, 2016, 2018, 2020 Øyvind Kolås <pippin@gimp.org>
  */
 
@@ -44,8 +38,8 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = 0;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;//:w | VT_LOG_COMMAND;
-//static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND | VT_LOG_INPUT;
+//static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;//:w | VT_LOG_COMMAND;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL - VT_LOG_INPUT - VT_LOG_CURSOR;
 //static int vt_log_mask = VT_LOG_ALL;
 
@@ -2650,7 +2644,7 @@ static int _vt_handle_control (MrgVT *vt, int byte)
 
 void ctx_vt_feed_byte (MrgVT *vt, int byte)
 {
-  if (byte >= ' ' && byte <= '~')
+  if (byte > ' ' && byte <= '~')
   {
     VT_input ("%c", byte);
   }
@@ -2982,7 +2976,7 @@ a:
       for (i = 0; i < len; i++)
         ctx_vt_feed_byte (vt, buf[i]);
       count += len;
-      if (count < 1024 * 512)
+      if (count < 1024 * 64)
       {
         if (len < sizeof (buf))
         {
@@ -3006,7 +3000,7 @@ a:
    }
   else
    {
-     usleep (150); // was: 125
+     usleep (200);
    }
 }
 }
@@ -3252,14 +3246,14 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
 
   ws.ws_row = vt->rows;
   ws.ws_col = vt->cols;
-  ws.ws_xpixel = ws.ws_col * 8; // XXX this is wrong
-  ws.ws_ypixel = ws.ws_row * 8; // XXX this is wrong
+  ws.ws_xpixel = ws.ws_col * vt->cw;
+  ws.ws_ypixel = ws.ws_row * vt->ch;
 
   vt->pid = forkpty (&vt->pty, NULL, NULL, &ws);
   if (vt->pid == 0)
   {
     int i;
-    for (i = 3; i<768;i++)close(i);/*to be sure xcb is closed*/
+    for (i = 3; i<768;i++)close(i);/*hack, trying to close xcb */
     unsetenv ("TERM");
     unsetenv ("COLUMNS");
     unsetenv ("LINES");
@@ -3311,7 +3305,6 @@ void ctx_vt_destroy (MrgVT *vt)
 int ctx_vt_get_line_count (MrgVT *vt)
 {
   return vt->line_count;
-  return vt_list_length (vt->lines);
 }
 
 const char *ctx_vt_get_line (MrgVT *vt, int no)
@@ -3354,7 +3347,7 @@ static void draw_braille_bit (Ctx *ctx, float x, float y, float cw, float ch, in
   ctx_fill (ctx);
 }
 
-int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float font_size, float line_spacing)
+int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar)
 {
   switch (unichar)
   {
@@ -3484,54 +3477,32 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float 
       ctx_fill (ctx);
       return 0;
      case 0x2599: // _QUADRANT UPPER LEFT AND LOWER LEFT AND LOWER RIGHT
-      ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
+      vt_special_glyph (ctx, vt, x, y, 0x2598);
+      vt_special_glyph (ctx, vt, x, y, 0x2596);
+      vt_special_glyph (ctx, vt, x, y, 0x2597);
       return 0;
      case 0x259A: // _QUADRANT UPPER LEFT AND LOWER RIGHT
-      ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
+      vt_special_glyph (ctx, vt, x, y, 0x2598);
+      vt_special_glyph (ctx, vt, x, y, 0x2597);
       return 0;
      case 0x259B: // _QUADRANT UPPER LEFT AND UPPER RIGHT AND LOWER LEFT
-      ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
+      vt_special_glyph (ctx, vt, x, y, 0x2598);
+      vt_special_glyph (ctx, vt, x, y, 0x259D);
+      vt_special_glyph (ctx, vt, x, y, 0x2596);
       return 0;
      case 0x259C: // _QUADRANT UPPER LEFT AND UPPER RIGHT AND LOWER RIGHT
-      ctx_new_path (ctx);
-      ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
+      vt_special_glyph (ctx, vt, x, y, 0x2598);
+      vt_special_glyph (ctx, vt, x, y, 0x259D);
+      vt_special_glyph (ctx, vt, x, y, 0x2597);
       return 0;
      case 0x259E: // _QUADRANT UPPER RIGHT AND LOWER LEFT
-      ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
+      vt_special_glyph (ctx, vt, x, y, 0x259D);
+      vt_special_glyph (ctx, vt, x, y, 0x2596);
       return 0;
      case 0x259F: // _QUADRANT UPPER RIGHT AND LOWER LEFT AND LOWER RIGHT
-      ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
-      ctx_fill (ctx);
+      vt_special_glyph (ctx, vt, x, y, 0x259D);
+      vt_special_glyph (ctx, vt, x, y, 0x2596);
+      vt_special_glyph (ctx, vt, x, y, 0x2597);
       return 0;
 
      case 0x2588: // FULL_BLOCK:
@@ -3772,7 +3743,7 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float fon
 {
   if (unichar == ' ')
     return;
-  if (!vt_special_glyph (ctx, vt, x, y, unichar, font_size, line_spacing))
+  if (!vt_special_glyph (ctx, vt, x, y, unichar))
     return;
   y -= font_size * 0.2;
   ctx_move_to (ctx, x, y);
@@ -3794,22 +3765,22 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
   {
     switch (no)
     {
-      case 0:  r = 0.0; g = 0.0; b = 0.0;  break; // black
-      case 1:  r = 0.8; g =0.25; b =0.15;  break; // red
-      case 2:  r = 0.1; g =0.8; b =0.0;    break; // green
-      case 3:  r = 0.7; g =0.6; b =0.0;    break;   // dark yellow
-      case 4:  r = 0.1; g =0.25; b =0.75;  break;  // blue
-      case 5:  r = 0.6; g =0.0; b =0.5;    break;  // magenta
-      case 6:  r = 0.0; g =0.7; b =0.7;    break;  // cyan
-      case 7:  r = 0.85; g =0.85; b =0.85; break; // light-gray
-      case 8:  r = 0.6; g =0.6; b =0.6;    break;  // dark gray
-      case 9:  r = 1.0; g =0.5; b =0.5;    break; // bright red
-      case 10: r = 0.5; g =1.0; b =0.5;    break; // bright green
-      case 11: r = 1.0; g =1.0; b =0.15;   break; // bright yellow
-      case 12: r = 0.5; g =0.55; b =1.0;   break; // bright blue
-      case 13: r = 1.0; g =0.5; b =1.0;    break; // bright magenta
-      case 14: r = 0.5; g =1.0; b =1.0;    break; // bright cyan
-      case 15: r = 1.0; g =1.0; b =1.0;    break; // white
+      case 0:  r = 0.0; g =0.0; b =0.0;  break; // black
+      case 1:  r = 0.8; g =0.25;b =0.15; break; // red
+      case 2:  r = 0.1; g =0.8; b =0.0;  break; // green
+      case 3:  r = 0.7; g =0.6; b =0.0;  break; // dark yellow
+      case 4:  r = 0.1; g =0.25;b =0.75; break; // blue
+      case 5:  r = 0.6; g =0.0; b =0.5;  break; // magenta
+      case 6:  r = 0.0; g =0.7; b =0.7;  break; // cyan
+      case 7:  r = 0.85;g =0.85;b =0.85; break; // light-gray
+      case 8:  r = 0.6; g =0.6; b =0.6;  break; // dark gray
+      case 9:  r = 1.0; g =0.5; b =0.5;  break; // bright red
+      case 10: r = 0.5; g =1.0; b =0.5;  break; // bright green
+      case 11: r = 1.0; g =1.0; b =0.15; break; // bright yellow
+      case 12: r = 0.5; g =0.55;b =1.0;  break; // bright blue
+      case 13: r = 1.0; g =0.5; b =1.0;  break; // bright magenta
+      case 14: r = 0.5; g =1.0; b =1.0;  break; // bright cyan
+      case 15: r = 1.0; g =1.0; b =1.0;  break; // white
     }
     if (bg)
     {

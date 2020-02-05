@@ -187,6 +187,7 @@ int vt_main(int argc, char **argv)
 	  char buf[512];
 	  sprintf (buf, "%s &", argv[0]);
 	  system (buf);
+	} else if (!strcmp (event, "shift-control-r")) {
 	}
         else if (!strcmp (event, "shift-control-q"))
         {
