@@ -3187,10 +3187,10 @@ static const char *keymap_general[][2]={
   {"F3",             "\033[13~"},
   {"F4",             "\033[14~"},
   {"F5",             "\033[15~"},
-  {"F6",             "\033[16~"},
-  {"F7",             "\033[17~"},
-  {"F8",             "\033[18~"},
-  {"F9",             "\033[19~"},
+  {"F6",             "\033[17~"},
+  {"F7",             "\033[18~"},
+  {"F8",             "\033[19~"},
+  {"F9",             "\033[20~"},
   {"F10",            "\033[21~"},
   {"F11",            "\033[22~"},
   {"F12",            "\033[23~"},
@@ -3280,7 +3280,6 @@ static void signal_child (int signum)
       }
     }
 }
-
 
 
 static void ctx_vt_run_command (MrgVT *vt, const char *command)
@@ -3481,7 +3480,6 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float 
       ctx_rectangle (ctx, x, y - vt->ch, vt->cw/8, vt->ch);
       ctx_fill (ctx);
       return 0;
-
      case 0x258C: // HALF_LEFT_BLOCK:
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch);
@@ -3492,7 +3490,6 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float 
       ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch);
       ctx_fill (ctx);
       return 0;
-
      case 0x2595: // VT_RIGHT_ONE_EIGHT_BLOCK:
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x + vt->cw*7/8, y - vt->ch, vt->cw/8, vt->ch);
@@ -3532,40 +3529,50 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float 
      case 0x2599: // _QUADRANT UPPER LEFT AND LOWER LEFT AND LOWER RIGHT
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259A: // _QUADRANT UPPER LEFT AND LOWER RIGHT
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259B: // _QUADRANT UPPER LEFT AND UPPER RIGHT AND LOWER LEFT
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259C: // _QUADRANT UPPER LEFT AND UPPER RIGHT AND LOWER RIGHT
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259E: // _QUADRANT UPPER RIGHT AND LOWER LEFT
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
      case 0x259F: // _QUADRANT UPPER RIGHT AND LOWER LEFT AND LOWER RIGHT
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x, y - vt->ch/2, vt->cw/2, vt->ch/2);
+      ctx_fill (ctx);
       ctx_rectangle (ctx, x + vt->cw/2, y - vt->ch/2, vt->cw/2, vt->ch/2);
       ctx_fill (ctx);
       return 0;
@@ -3626,14 +3633,14 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float 
       return 0;
      case 0x2514: //VT_BOX_DRAWINGS_LIGHT_UP_AND_RIGHT:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch/2+vt->ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch/2+vt->ch*0.1/2);
       ctx_fill (ctx);
       ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch/2 - vt->ch*0.1/2, vt->cw/2 + vt->ch * 0.1, vt->ch*0.1);
       ctx_fill (ctx);
       return 0;
      case 0x2518: //VT_BOX_DRAWINGS_LIGHT_UP_AND_LEFT:
       ctx_new_path (ctx);
-      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch/2+ vt->ch*0.1);
+      ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch/2+ vt->ch*0.1/2);
       ctx_fill (ctx);
       ctx_rectangle (ctx, x, y - vt->ch/2-vt->ch*0.1/2, vt->cw/2+vt->ch * 0.1/2, vt->ch*0.1);
 
