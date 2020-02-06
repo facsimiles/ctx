@@ -39,7 +39,7 @@
 
 //static int vt_log_mask = 0;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL;
 
 #if 0
@@ -628,7 +628,7 @@ void vt_scroll_style (MrgVT *vt, int amount)
 {
   if (amount > 0)
   {
-    for (int row = vt->scroll_bottom; row > vt->scroll_top + 1; row--)
+    for (int row = vt->scroll_bottom; row > vt->scroll_top; row--)
       memcpy (&(vt->style[row][0]),
               &(vt->style[row-1][0]),
               sizeof(vt->style[0]));
@@ -650,8 +650,6 @@ static void vt_scroll (MrgVT *vt, int amount)
   MrgString *string = NULL;
   if (amount == 0) amount = 1;
   
-  {
-
   if (amount < 0)
     {
       remove_no = vt->scroll_top;
@@ -709,7 +707,6 @@ static void vt_scroll (MrgVT *vt, int amount)
 
   vt->current_line = string;
   /* not updating line count since we should always remove one and add one */
-  }
 
   vt_scroll_style (vt, amount);
 }
@@ -1368,9 +1365,6 @@ static void vtcmd_scroll_down (MrgVT *vt, const char *sequence)
 
 static void vtcmd_insert_blank_lines (MrgVT *vt, const char *sequence)
 {
-  /* XXX : this should be inserting blank linkes at the current line -
-           potentially realized via tempory scroll-top/bottom before the scroll call?
-   */
   int n = parse_int (sequence, 1);
   if (n == 0) n = 1;
 
@@ -1515,7 +1509,7 @@ again:
 	     vt->cr_on_lf = set; break;
      default: VT_warning ("unhandled CSI %ih", val); return;
     }
-    if (strchr (sequence, ';'))
+    if (strchr (sequence, ';') && sequence[0] != ';')
     {
       sequence = strchr (sequence, ';');
       goto again;
@@ -2953,7 +2947,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       // and in "\e\" rather than just "\e", this would cause
       // a stray char
-      if (byte == '\a' || byte == 27)
+      if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
       {
         ctx_vt_set_title (vt, vt->argument_buf + 3);
 	if (byte == 27)
@@ -3808,6 +3802,7 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
       case 14: r = 0.5; g =1.0; b =1.0;  break; // bright cyan
       case 15: r = 1.0; g =1.0; b =1.0;  break; // white
     }
+#if 0
     if (bg)
     {
        if (no != 15)
@@ -3817,6 +3812,7 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
          b *= 0.8;
        }
     }
+#endif
   } else if (no < 16 + 6*6*6)
   {
     no = no-16;
