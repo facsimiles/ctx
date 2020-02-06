@@ -269,6 +269,8 @@ struct _MrgVT {
   float      line_spacing; // char-aspect might be better variable to use..?
   int        cw; // cell width
   int        ch; // cell height
+  float      scale_x;
+  float      scale_y;
 
   int        ctx_pos;  // 1 is graphics above text, 0 or -1 is below text
   Ctx       *ctx;
@@ -348,6 +350,34 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
     vt->cstyle |= ((idx)<<24) ;\
     vt->cstyle |= STYLE_BG_COLOR_SET;
 
+
+static void _ctx_vt_compute_cw_ch (MrgVT *vt)
+{
+  vt->cw = (vt->font_size / vt->line_spacing * vt->scale_x) + 0.99;
+  vt->ch = vt->font_size;
+}
+
+static void vtcmd_set_132_col (MrgVT  *vt, int set)
+{
+  if (set == 0 && vt->scale_x == 1.0f) return;
+  if (set == 1 && vt->scale_x != 1.0f) return;
+
+  if (set)
+  {
+    vt->scale_x = 80.0/132.0;
+    vt->scale_y = 1.0;
+    _ctx_vt_compute_cw_ch (vt);
+    ctx_vt_set_term_size (vt, vt->cols * 132/80.0, vt->rows);
+  }
+  else
+  {
+    vt->scale_x = 1.0;
+    vt->scale_y = 1.0;
+    _ctx_vt_compute_cw_ch (vt);
+    ctx_vt_set_term_size (vt, vt->cols * 80/132.0, vt->rows);
+  }
+}
+
 static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
 {
   VT_info ("reset %s", sequence);
@@ -361,11 +391,13 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->cursor_visible = 1;
   vt->charset = 0;
   vt->bell = 0;
+  vt->scale_x                = 1.0;
+  vt->scale_y                = 1.0;
   vt->saved_x                = 1;
   vt->saved_y                = 1;
   vt->saved_style            = 1;
   vt->reverse_video          = 0;
-  vt->cstyle = 0;
+  vt->cstyle                 = 0;
 
   vt->cursor_key_application = 0;
   vt->argument_buf_len       = 0;
@@ -380,6 +412,8 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->mouse_all     = 0;
   vt->mouse_decimal = 0;
 
+  _ctx_vt_compute_cw_ch (vt);
+
   for (int i = 0; i < MAX_COLS; i++)
     vt->tabs[i] = i % 8 == 0? 1 : 0;
 
@@ -389,11 +423,6 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
     ctx_clear (vt->ctx);
 }
 
-static void _ctx_vt_compute_cw_ch (MrgVT *vt)
-{
-  vt->cw = (vt->font_size / vt->line_spacing) + 0.99;
-  vt->ch = vt->font_size;
-}
 
 void ctx_vt_set_font_size (MrgVT *vt, float font_size)
 {
@@ -425,6 +454,9 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   vt->state                  = TERMINAL_STATE_NEUTRAL,
   vt->commandline            = NULL;
   vt->line_spacing           = 1.0;
+  vt->scale_x                = 1.0;
+  vt->scale_y                = 1.0;
+
   ctx_vt_set_font_size (vt, font_size);
   ctx_vt_set_line_spacing (vt, line_spacing);
 
@@ -1415,14 +1447,7 @@ qagain:
 	     if (set==0) vt->in_vt52 = 1;
 	     break; 
      case 3: /*MODE;Column mode;132 columns;80 columns;*/
-             if (set)
-	     {
-	        //vtcmd_reset_to_initial_state (vt, sequence);
-	     }
-	     else
-	     {
-
-	     }
+	     vtcmd_set_132_col (vt, set);
 	     break; // set 132 col
      case 5: /*MODE;Screen mode;Reverse;Normal;*/
 	     vt->reverse_video = set; break;
@@ -1660,8 +1685,6 @@ static Sequence sequences[]={
   {"[",  'X', vtcmd_erase_n_chars}, /* args:Pn id:ECH Erase Character */
   {"[",  'S', vtcmd_scroll_up}, /* args:Pn id:SU Scroll Up */
   {"[",  'T', vtcmd_scroll_down}, /* args:Pn id:SD Scroll Down */
-  // U - next page
-  // V - previous page
   {"[",  '^', vtcmd_scroll_down}, /* muphry alternate from ECMA */
   {"[",  'Z', vtcmd_rev_n_tabs}, /* args:Pn id:CBT Cursor Backward Tabulation */
   {"[",  '@', vtcmd_insert_character}, /* args:Pn id:ICH Insert Character */
@@ -3765,6 +3788,15 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float fon
     return;
   if (!vt_special_glyph (ctx, vt, x, y, unichar))
     return;
+
+	     if (vt->scale_x != 1.0)
+	     {
+		ctx_save (ctx);
+		ctx_translate (ctx, x, y);
+		ctx_scale (ctx, vt->scale_x, 1.0);
+		ctx_translate (ctx, -x, -y);
+	     }
+
   y -= font_size * 0.2;
   ctx_move_to (ctx, x, y);
   ctx_glyph (ctx, unichar, 0);
@@ -3775,6 +3807,12 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float fon
     ctx_move_to (ctx, x-font_size/50, y);
     ctx_glyph (ctx, unichar, 0);
   }
+
+  if (vt->scale_x != 1.0)
+  {
+    ctx_restore (ctx);
+  }
+
 }
 
 void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
@@ -3969,12 +4007,10 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     int hidden = 0;
     int prevcol = -1;
 
-    if (strikethrough); // ignoring unused
-
     for (row = 0; row < count; row ++)
     {
       const char *data = ctx_vt_get_line (vt, row);
-      if (data)
+      if (data && y <= (vt->rows - vt->scroll) *  vt->ch)
       {
         const char *d = data;
         float x = x0;
@@ -4016,7 +4052,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
             }
           }
 
-	  //fprintf (stderr, "\n%p]", ctx_utf8_to_unichar (d));
 	  if (!hidden && (blink == 0 || (blink && vt->blink_state)))
 	  {
 	     if (italic)
@@ -4026,6 +4061,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 		ctx_rotate (ctx, 0.3);
 		ctx_translate (ctx, -x, -y);
 	     }
+
 	     vt_ctx_glyph (ctx, vt, x, y, ctx_utf8_to_unichar (d), font_size, line_spacing, bold);
 	     if (italic)
 	     {
@@ -4051,8 +4087,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	  }
           x+=vt->cw;
         }
-        y -= vt->ch;
       }
+      y -= vt->ch;
     }
   }
 

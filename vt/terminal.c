@@ -14,6 +14,8 @@
 #include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
 
+#define CTX_MIN_JOURNAL_SIZE   1024*64
+#define CTX_MAX_JOURNAL_SIZE   CTX_MIN_JOURNAL_SIZE
 #define CTX_GRADIENT_CACHE       1
 #define CTX_SHAPE_CACHE          1
 #define CTX_SHAPE_CACHE_DIM      64*64
