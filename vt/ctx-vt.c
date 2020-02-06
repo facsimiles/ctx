@@ -38,7 +38,8 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = 0;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
+//static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND;
 //static int vt_log_mask = VT_LOG_ALL;
 
 #if 0
@@ -288,7 +289,6 @@ long ctx_vt_rev (MrgVT *vt)
   return vt->rev;
 }
 
-void ctx_vt_feed_byte (MrgVT *vt, int byte);
 static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence);
 
 static void ctx_vt_set_title (MrgVT *vt, const char *new_title)
@@ -360,7 +360,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->autowrap       = 1;
   vt->cursor_visible = 1;
   vt->charset = 0;
-  vt->bell = 2;
+  vt->bell = 0;
   vt->saved_x                = 1;
   vt->saved_y                = 1;
   vt->saved_style            = 1;
@@ -613,6 +613,11 @@ static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence)
   }
   VT_info ("margins: %i %i", top, bottom);
 
+  if (top <1) top = 1;
+  if (top > vt->rows) top = vt->rows;
+  if (bottom > vt->rows) bottom = vt->rows;
+  if (bottom < top) bottom = top;
+
   vt->scroll_top = top;
   vt->scroll_bottom = bottom;
   _ctx_vt_move_to (vt, top, 1);
@@ -623,17 +628,17 @@ void vt_scroll_style (MrgVT *vt, int amount)
 {
   if (amount > 0)
   {
-    for (int row = vt->scroll_bottom; row > vt->scroll_top; row--)
-      memcpy (&vt->style[row][0],
-              &vt->style[row-1][0],
+    for (int row = vt->scroll_bottom; row > vt->scroll_top + 1; row--)
+      memcpy (&(vt->style[row][0]),
+              &(vt->style[row-1][0]),
               sizeof(vt->style[0]));
     memset (vt->style[vt->scroll_top], 0, sizeof (vt->style[0]));
   }
   else
   {
     for (int row = vt->scroll_top; row < vt->scroll_bottom; row++)
-      memcpy (&vt->style[row][0],
-              &vt->style[row+1][0],
+      memcpy (&(vt->style[row][0]),
+              &(vt->style[row+1][0]),
               sizeof(vt->style[0]));
     memset (vt->style[vt->scroll_bottom], 0, sizeof (vt->style[0]));
   }
@@ -2881,6 +2886,8 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
       if (_vt_handle_control (vt, byte) == 0)
       switch (byte)
       {
+        case 27: /* ESCape */
+		break;
         case ')':
         case '#':
         case '(':
@@ -2925,7 +2932,10 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
     case TERMINAL_STATE_GOT_ESC_SEQUENCE:
       if (_vt_handle_control (vt, byte) == 0)
       {
-        if (byte >= '@' && byte <= '~')
+        if (byte == 27)
+	{
+	}
+	else if (byte >= '@' && byte <= '~')
         {
           ctx_vt_argument_buf_add (vt, byte);
           handle_sequence (vt, vt->argument_buf);

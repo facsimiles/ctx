@@ -286,12 +286,6 @@ void mrg_string_insert_utf8 (MrgString *string, int pos, const char *new_glyph)
     new_glyph = tmpg;
   }
 
-  if (pos == old_len)
-  {
-    _mrg_string_append_str (string, new_glyph);
-    return;
-  }
-
   {
     for (int i = old_len; i <= pos; i++)
     {
