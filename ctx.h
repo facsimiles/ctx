@@ -467,8 +467,9 @@ typedef enum
 
 typedef enum
 {
-  CTX_COMPOSITE_SOURCE_OVER
-} CtxCompositing;
+  CTX_COMPOSITE_SOURCE_OVER,
+  CTX_COMPOSITE_SOURCE_COPY
+} CtxCompositingMode;
 
 typedef enum
 {
@@ -491,6 +492,8 @@ typedef enum
 
 void ctx_set_fill_rule      (Ctx *ctx, CtxFillRule fill_rule);
 void ctx_set_line_cap       (Ctx *ctx, CtxLineCap cap);
+void ctx_set_line_join      (Ctx *ctx, CtxLineJoin join);
+void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
 int ctx_set_renderstream    (Ctx *ctx, void *data, int length);
 int ctx_append_renderstream (Ctx *ctx, void *data, int length);
 
@@ -545,6 +548,7 @@ typedef enum
   CTX_LINE_WIDTH      = 'w',
   CTX_LINE_CAP        = 'P',
   CTX_LINE_JOIN       = 'J',
+  CTX_COMPOSITING_MODE= 'I',
 
   CTX_FONT_SIZE       = 'Z',
 
@@ -805,7 +809,7 @@ static inline float ctx_fast_hypotf (float x, float y)
 #if CTX_EXTRAS
 
 char *ctx_commands[]={
-"#clip", "|edge", "!fill_edges", "%blit_rect", "rset_rgba", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", "set_pixel", NULL
+"Icompositing_mode", "#clip", "|edge", "!fill_edges", "%blit_rect", "rset_rgba", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", "set_pixel", NULL
 };
 
 #endif
@@ -906,7 +910,7 @@ struct _CtxGState {
   float        line_spacing;
 
   /* bitfield-pack all the small state-parts */
-  //CtxCompositing compositing_mode:2;
+  CtxCompositingMode compositing_mode:2;
   //CtxBlend             blend_mode:3;
   CtxLineCap      line_cap:2;
   CtxLineJoin    line_join:2;
@@ -916,12 +920,6 @@ struct _CtxGState {
   unsigned int      italic:1;
 };
 
-
-typedef enum {
-  CTX_SOURCE_OVER = 1,
-  CTX_DESTINATION_OVER,
-  CTX_COPY,
-} CtxCompositingMode;
 
 typedef enum {
   CTX_TRANSFORMATION_NONE         = 0,
@@ -2372,6 +2370,12 @@ void ctx_set_line_join (Ctx *ctx, CtxLineJoin join)
   ctx_process (ctx, &command);
 }
 
+void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
+{
+  CtxEntry command = ctx_u8 (CTX_COMPOSITING_MODE, mode, 0, 0, 0, 0, 0, 0, 0);
+  ctx_process (ctx, &command);
+}
+
 void
 ctx_rel_curve_to (Ctx *ctx,
                   float x0, float y0,
@@ -2697,6 +2701,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       break;
     case CTX_LINE_JOIN:
       state->gstate.line_join = (CtxLineJoin)ctx_arg_u8(0);
+      break;
+    case CTX_COMPOSITING_MODE:
+      state->gstate.compositing_mode = (CtxLineJoin)ctx_arg_u8(0);
       break;
     case CTX_GLOBAL_ALPHA:
       state->gstate.source.global_alpha = CTX_CLAMP(ctx_arg_float(0)*255.0,0, 255);
@@ -4892,25 +4899,18 @@ static CtxSourceU8 ctx_renderer_get_source_u8 (CtxRenderer *renderer)
 #define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
-static inline void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
+static void ctx_source_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
 {
-#if 1
+  for (int c = 0; c < 4; c++)
+    dst[c] = src[c];
+}
+
+
+static void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
+{
   uint8_t ralpha = 255 - ((cov * src[3]) >> 8);
   for (int c = 0; c < 4; c++)
     dst[c] = (src[c]*cov + dst[c] * ralpha) >> 8;
-#else
-  uint32_t s = *((uint32_t*)&src[0]);
-  uint32_t d = *((uint32_t*)&dst[0]);
-  uint32_t sa = (s) >> 24;
-  uint32_t da = (d) >> 24;
-  uint32_t ralpha = 255 - ((cov * sa) >> 8);
-  uint32_t ga =(((((s) & MASK_GREEN_ALPHA)>>8)*cov+((((d) & MASK_GREEN_ALPHA)>>8)* ralpha))) & MASK_GREEN_ALPHA;
-  uint32_t rb =(((((s) & MASK_RED_BLUE   )*cov|(((d) & MASK_RED_BLUE) * ralpha)  )>> 8  )) & MASK_RED_BLUE;
-  *((uint32_t*)dst) = ga | rb;
-#undef MASK_GREEN
-#undef MASK_GREEN_ALPHA
-#undef MASK_RED_BLUE
-#endif
 }
 
 static inline int
@@ -4965,7 +4965,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
       int cov = *coverage;
       if (cov)
       {
-        if (cov >= 245)
+        if (cov >= 255)
         {
           *((uint32_t*)dst) = *((uint32_t*)color);
         }
@@ -5081,20 +5081,24 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
     return count;
   }
 
-  color[3] = (gstate->source.color.rgba[3] * gstate->source.global_alpha)>>8;
+  color[3] = gstate->source.color.rgba[3];
+  if (gstate->source.global_alpha != 255)
+  {
+    color[3] = (color[3] * gstate->source.global_alpha)>>8;
+  }
   color[0] = gstate->source.color.rgba[0];
   color[1] = gstate->source.color.rgba[1];
   color[2] = gstate->source.color.rgba[2];
   ctx_swap_red_green (color);
 
-  if (color[3] == 255)
+  if (color[3] >= 255)
   {
     for (int x = 0; x < count; x++)
     {
       int cov = *coverage;;
       if (cov)
       {
-        if (cov == 255)
+        if (cov >= 240)
         {
           *((uint32_t*)dst) = *((uint32_t*)color);
         }
@@ -5619,9 +5623,7 @@ ctx_renderer_fill (CtxRenderer *renderer)
     CtxShapeEntry *shape = ctx_shape_entry_find (hash, width, height, ctx_shape_time++);
     if (shape->uses == 0)
     {
-    //for (int i = 0; i < shape->width * shape->height; i++)
-    //  shape->data[i]=110;
-      ctx_renderer_rasterize_edges (renderer, renderer->state->gstate.fill_rule, shape);
+       ctx_renderer_rasterize_edges (renderer, renderer->state->gstate.fill_rule, shape);
     }
 
     scan_min -= (scan_min % CTX_RASTERIZER_AA);
@@ -7093,6 +7095,7 @@ ctx_datatype_for_code (CtxCode code)
     case CTX_LINE_CAP:
     case CTX_FILL_RULE:
     case CTX_LINE_JOIN:
+    case CTX_COMPOSITING_MODE:
     case CTX_SET_RGBA:
     case CTX_GRADIENT_NO:
       return CTX_U8;
@@ -7983,6 +7986,16 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
         }
         break;
 
+      case CTX_COMPOSITING_MODE:
+	{
+          int cairo_val = CAIRO_OPERATOR_OVER;
+          switch (ctx_arg_u8(0))
+          {
+		  case CTX_COMPOSITE_SOURCE_OVER: cairo_val = CAIRO_OPERATOR_OVER; break;
+		  case CTX_COMPOSITE_SOURCE_COPY: cairo_val = CAIRO_OPERATOR_SOURCE; break;
+          }
+	  cairo_set_operator (cr, cairo_val);
+	}
       case CTX_LINE_JOIN:
         {
           int cairo_val = CAIRO_LINE_JOIN_ROUND;
@@ -8372,6 +8385,11 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       case CTX_LINE_JOIN:
         ctx_set_line_join (d_ctx, (CtxLineJoin)ctx_arg_u8(0));
         break;
+
+      case CTX_COMPOSITING_MODE:
+        ctx_set_compositing_mode (d_ctx, (CtxLineJoin)ctx_arg_u8(0));
+        break;
+
       case CTX_LINEAR_GRADIENT:
         ctx_linear_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
                                     ctx_arg_float(2), ctx_arg_float(3));

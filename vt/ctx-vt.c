@@ -3,6 +3,21 @@
  * Copyright (c) 2014, 2016, 2018, 2020 Øyvind Kolås <pippin@gimp.org>
  */
 
+/*
+ * 40-64 bit / char
+ * 
+ * 8bit / char
+ *
+ *
+ *
+ * 32bit unicode +
+ * 16bit flags   +
+ * 24bit rgb fg  +
+ * 24bit rgb bg  +
+ *
+ */
+
+
 #define _BSD_SOURCE
 #define _DEFAULT_SOURCE
 
@@ -38,8 +53,8 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = 0;
-//static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
+//static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL;
 
 #if 0
@@ -177,8 +192,8 @@ typedef enum {
   TERMINAL_STATE_SWALLOW          = 5,
 } TerminalState;
 
-#define MAX_COLS 200
-#define MAX_ROWS 200
+#define MAX_COLS 400
+#define MAX_ROWS 400
 
 typedef enum {
   STYLE_BOLD          = 1 << 0,
@@ -191,6 +206,7 @@ typedef enum {
   STYLE_STRIKETHROUGH = 1 << 7,
   STYLE_FG_COLOR_SET  = 1 << 8,
   STYLE_BG_COLOR_SET  = 1 << 9,
+  STYLE_NONERASABLE   = 1 << 10   // needed for selective erase
 } TerminalStyle;
 
 struct _MrgVT {
@@ -1595,6 +1611,7 @@ static void vtcmd_rev_n_tabs (MrgVT *vt, const char *sequence)
 static void vtcmd_set_led (MrgVT *vt, const char *sequence)
 {
   int val = 0;
+  fprintf (stderr, "%s\n", sequence);
   for (const char *s = sequence; *s; s++)
   {
     switch (*s)
@@ -3815,12 +3832,26 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float fon
 
 }
 
-void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
+void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold)
 {
   float r = 0, g = 0, b = 0;
 
   if (no < 16)
   {
+
+    if (bold && !vt->reverse_video && no < 8)
+    {
+#if 0
+       r *= 1.5;
+       g *= 1.5;
+       b *= 1.5;
+       if (r > 1.0) r = 1.0;
+       if (g > 1.0) g = 1.0;
+       if (b > 1.0) b = 1.0;
+#endif
+       no+=8;
+    }
+
     switch (no)
     {
       case 0:  r = 0.0; g =0.0; b =0.0;  break; // black
@@ -3840,6 +3871,11 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim)
       case 14: r = 0.5; g =1.0; b =1.0;  break; // bright cyan
       case 15: r = 1.0; g =1.0; b =1.0;  break; // white
     }
+    if (no == 0 && bg == 0 &&  !vt->reverse_video)
+    {
+       r = g = b = 0.15;
+    }
+
 #if 0
     if (bg)
     {
@@ -3889,8 +3925,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
        default_bg = 0;
        default_fg = 15;
      }
-     ctx_rectangle (ctx, x0, y0, vt->cw * vt->cols, vt->ch * vt->rows);
-     ctx_fill (ctx);
+    ctx_rectangle (ctx, x0, y0, vt->cw * vt->cols, vt->ch * vt->rows);
+    ctx_fill (ctx);
   }
   ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
   ctx_set_font (ctx, "mono");
@@ -3977,7 +4013,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	      {
 		if (color != prevcol)
 		{
-	          vt_ctx_set_color (vt, ctx, color, 0, 0);
+	          vt_ctx_set_color (vt, ctx, color, 0, 0, 0);
 		  prevcol = color;
 		}
 	      }
@@ -4046,7 +4082,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
 	      if (color + dim * 512!= prevcol)
 	      {
-	        vt_ctx_set_color (vt, ctx, color, 0, dim);
+	        vt_ctx_set_color (vt, ctx, color, 0, dim, bold);
 		prevcol = color + dim * 512;
 	      }
             }
