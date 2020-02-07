@@ -4129,6 +4129,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
     float cursor_x = ctx_vt_get_cursor_x (vt);
     float cursor_y = ctx_vt_get_cursor_y (vt);
 
+#if 0
     ctx_set_rgba (ctx, 1.0, 0.0, 0.0, 1.0);
     ctx_set_line_width (ctx, 1.0);
     ctx_new_path (ctx);
@@ -4137,6 +4138,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
                y0 + (cursor_y - 1) * vt->ch,
                vt->cw, vt->ch);
     ctx_stroke(ctx);
+#endif
     ctx_set_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
     ctx_rectangle (ctx,
                x0 + (cursor_x - 1) * vt->cw,
