@@ -4040,7 +4040,6 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 {
   ctx_save (ctx);
-  ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
   ctx_set_font (ctx, "mono");
   ctx_set_font_size (ctx, vt->font_size * font_to_cell_scale);
 #if 1
@@ -4049,10 +4048,22 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
     VtList *l = vt->scrollback;
     int scroll_no = 0;
 
+    ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
+		              (vt->rows + 1) * vt->ch);
     if (vt->reverse_video)
-      ctx_set_rgba (ctx, 0,0,0,1);
-    else
+    {
       ctx_set_rgba (ctx, 1,1,1,1);
+      ctx_fill  (ctx);
+      ctx_set_rgba (ctx, 0,0,0,1);
+    }
+    else
+    {
+      ctx_set_rgba (ctx, 0,0,0,1);
+      ctx_fill  (ctx);
+      ctx_set_rgba (ctx, 1,1,1,1);
+    }
+  
+    ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
 
     while (l && scroll_no < vt->scroll)
     {
