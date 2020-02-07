@@ -3806,32 +3806,26 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float fon
   if (!vt_special_glyph (ctx, vt, x, y, unichar))
     return;
 
-	     if (vt->scale_x != 1.0)
-	     {
-		ctx_save (ctx);
-		ctx_translate (ctx, x, y);
-		ctx_scale (ctx, vt->scale_x, 1.0);
-		ctx_translate (ctx, -x, -y);
-	     }
+  ctx_save (ctx);
+  if (vt->scale_x != 1.0)
+  {
+    ctx_translate (ctx, x, y);
+    ctx_scale (ctx, vt->scale_x, 1.0);
+    ctx_translate (ctx, -x, -y);
+  }
 
   y -= font_size * 0.2;
-  ctx_move_to (ctx, x, y);
-  ctx_glyph (ctx, unichar, 0);
 
   if (bold)
   {
-    /* faux bolding by replicating glyph 1/32 the em-size to the side,
-     * works for body text - but not titles.
-     */
-    ctx_move_to (ctx, x+font_size/0, y);
+    ctx_move_to (ctx, x, y);
+    ctx_set_line_width (ctx, font_size/35.0);
     ctx_glyph (ctx, unichar, 1);
   }
 
-  if (vt->scale_x != 1.0)
-  {
-    ctx_restore (ctx);
-  }
-
+  ctx_move_to (ctx, x, y);
+  ctx_glyph (ctx, unichar, 0);
+  ctx_restore (ctx);
 }
 
 void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, int reverse)

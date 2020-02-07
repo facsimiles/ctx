@@ -4949,13 +4949,6 @@ static CtxSourceU8 ctx_renderer_get_source_u8 (CtxRenderer *renderer)
 #define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
-static void ctx_source_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
-{
-  for (int c = 0; c < 4; c++)
-    dst[c] = src[c];
-}
-
-
 static void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
 {
   uint8_t ralpha = 255 - ((cov * src[3]) >> 8);
