@@ -1560,7 +1560,13 @@ again:
 
 static void vtcmd_set_t (MrgVT *vt, const char *sequence)
 {
-  if (sequence[strlen (sequence)-2]==' ') /* DECSWBV */
+  if (!strcmp (sequence, "[14t"))
+  {
+    char buf[128];
+    sprintf (buf, "\e[4;%i;%it", vt->rows * vt->ch, vt->cols * vt->cw);
+    write (vt->pty, buf, strlen (buf));
+  }
+  else if (sequence[strlen (sequence)-2]==' ') /* DECSWBV */
   {
     int val = parse_int (sequence, 0);
     if (val <= 1) vt->bell = 0;
@@ -1722,7 +1728,7 @@ static Sequence sequences[]={
 
   {"[",  'h', vtcmd_set_mode},   /* args:Ps;Ps;.. id:SM Set Mode */
   {"[",  'l', vtcmd_set_mode}, /* args:Ps;Ps;..  id:RM Reset Mode */
-  {"[",  't', vtcmd_set_t},  // used by vim, for stack of icon/titles
+  {"[",  't', vtcmd_set_t}, 
 
   {"7",   0,  vtcmd_save_cursor}, /* id:DECSC Save Cursor */
   {"8",   0,  vtcmd_restore_cursor}, /* id:DECRC Restore Cursor */
@@ -3929,32 +3935,115 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
 static float font_to_cell_scale = 1.1f;
 
 
-void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
+void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
+		       float x0, float y0,
+		       uint64_t style,
+		       uint32_t unichar,
+		       int      bg, int fg)
 {
-  int default_bg = 0;
-  int default_fg = 15;
-  ctx_save (ctx);
-  int got_blink = 0;
+  int color = 0;
+  if (bg)  {
 
+  if (style & STYLE_BG_COLOR_SET)
   {
-     if (vt->reverse_video)
+     if (style & STYLE_REVERSE)
      {
-       ctx_set_rgba (ctx, 1.0, 1.0, 1.0, 1.0);
-       default_bg = 15;
-       default_fg = 0;
+       color = (style >> 16) & 255;
      }
      else
      {
-       ctx_set_rgba (ctx, 0.0, 0.0, 0.0, 1.0);
-       default_bg = 0;
-       default_fg = 15;
+       color = (style >> 24) & 255;
      }
-    ctx_rectangle (ctx, x0, y0, vt->cw * vt->cols, vt->ch * vt->rows);
-    ctx_fill (ctx);
   }
+  else
+  {
+     if ((style & STYLE_REVERSE))
+     {
+       color = 15;
+     }
+     else
+     {
+       color = 0;
+     }
+  }
+
+  vt_ctx_set_color (vt, ctx, color, 1, 0, 0, 0);
+  ctx_rectangle (ctx, x0, y0 - (int)vt->font_size, vt->cw, vt->ch);
+  ctx_fill (ctx);
+
+  }
+
+  if (!fg) return;
+
+  int bold = 0; int underline = 0; int strikethrough = 0; int blink = 0; int dim = 0; int italic = 0; int reverse = 0; int hidden = 0;
+
+  if (style & STYLE_BOLD) bold = 1;
+  if (style & STYLE_DIM) dim = 1;
+  if (style & STYLE_REVERSE) reverse = 1;
+  if (style & STYLE_HIDDEN) hidden = 1;
+  if (style & STYLE_ITALIC) italic = 1;
+  if (style & STYLE_UNDERLINE) underline = 1;
+  if (style & STYLE_BLINK) { blink = 1; vt->rev++ ; }
+  else if (style & STYLE_STRIKETHROUGH) strikethrough = 1;
+
+
+  if ((style & STYLE_FG_COLOR_SET) == 0)
+  {
+     if (reverse)
+       color = 0;
+     else
+       color = 15;
+  }
+  else
+  {
+    if ((style & STYLE_REVERSE)!=0)
+      color = (style >> 24) & 255;
+    else
+      color = (style >> 16) & 255;
+  }
+
+  if (!hidden && (blink == 0 || (blink && vt->blink_state)))
+  {
+    vt_ctx_set_color (vt, ctx, color, 0, dim, bold, reverse);
+    if (italic)
+    {
+      ctx_save (ctx);
+      ctx_translate (ctx, x0, y0);
+      ctx_rotate (ctx, 0.3);
+      ctx_translate (ctx, -x0, -y0);
+    }
+
+    vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold);
+    if (italic)
+    {
+      ctx_restore (ctx);
+    }
+    if (underline)
+    {
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07);
+      ctx_rel_line_to (ctx, vt->cw, 0);
+      ctx_set_line_width (ctx, vt->font_size * (bold?0.075:0.05));
+      ctx_stroke (ctx);
+    }
+    if (strikethrough)
+    {
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43);
+      ctx_rel_line_to (ctx, vt->cw, 0);
+      ctx_set_line_width (ctx, vt->font_size * (bold?0.075:0.05));
+      ctx_stroke (ctx);
+    }
+  }
+}
+
+void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
+{
+  ctx_save (ctx);
   ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
   ctx_set_font (ctx, "mono");
   ctx_set_font_size (ctx, vt->font_size * font_to_cell_scale);
+#if 1
   if (vt->scroll)
   {
     VtList *l = vt->scrollback;
@@ -3980,7 +4069,9 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
       scroll_no ++;
     }
   }
+#endif
 
+#if 0
   if (vt->ctx &&  vt->ctx_pos <= 0)
   {
     ctx_save (ctx);
@@ -3990,173 +4081,34 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
     ctx_restore (ctx);
     ctx_identity_matrix (ctx); // in case we're screwed by client
   }
-
-  /* draw background blocks */
-  {
-    int count = ctx_vt_get_line_count (vt);
-    int row = 1;
-    uint32_t set_style = 9999;
-
-    float y = y0 + vt->ch * vt->rows;
-    int prevcol = -1;
-
-    for (row = 0; row < count; row ++)
-    {
-      const char *data = ctx_vt_get_line (vt, row);
-      if (data)
-      {
-        float x = x0;
-        for (int col = 1; col <= vt->cols; col++)
-        {
-	  int bg_is_nop = 0;
-          {
-            set_style = vt->style[vt->rows-row][col];
-
-            {
-              int color;
-              if (((set_style & STYLE_REVERSE)!=0))
-	      {
-                color = (set_style >> 16) & 255;
-	      }
-              else
-	      {
-                color = (set_style >> 24) & 255;
-	      }
-
-	      if ((set_style & STYLE_BG_COLOR_SET) == 0)
-	      {
-                 if ((set_style & STYLE_REVERSE))
-	           color = default_fg;
-		 else
-	           color = default_bg;
-	      }
-	     
-	      if (color == default_bg)
-		bg_is_nop = 1;
-	      else
-	      {
-		if (color != prevcol)
-		{
-	          vt_ctx_set_color (vt, ctx, color, 0, 0, 0, 0);
-		  prevcol = color;
-		}
-	      }
-            }
-
-	    if (!bg_is_nop)
-	    {
-              ctx_rectangle (ctx, x, y - vt->font_size, vt->cw, vt->ch);
-              ctx_fill (ctx);
-	    }
-          }
-          x += vt->cw;
-        }
-        y -= vt->ch;
-      }
-    }
-  }
+#endif
 
   /* draw terminal lines */
   {
     int count = ctx_vt_get_line_count (vt);
-    int row = 1;
-    uint32_t set_style = 9999;
-
     float y = y0 + vt->ch * vt->rows;
-    int bold = 0; int underline = 0; int strikethrough = 0; int blink = 0; int dim = 0; int italic = 0; int reverse = 0;
-    int hidden = 0;
-    int prevcol = -1;
-
-    for (row = 0; row < count; row ++)
+    for (int row = 0; row < count; row ++)
     {
       const char *data = ctx_vt_get_line (vt, row);
       if (data && y <= (vt->rows - vt->scroll) *  vt->ch)
       {
         const char *d = data;
         float x = x0;
-        for (int col = 1; *d; d = mrg_utf8_skip (d, 1), col++)
+        for (int col = 1; col < vt->cols; col++)
         {
-          if (vt->style[vt->rows-row][col] != set_style)
-          {
-            set_style = vt->style[vt->rows-row][col];
-
-            bold = underline = strikethrough = blink = hidden = dim = italic = reverse = 0;
-            if (set_style & STYLE_BOLD) bold = 1;
-            if (set_style & STYLE_DIM) dim = 1;
-            if (set_style & STYLE_REVERSE) reverse = 1;
-            if (set_style & STYLE_HIDDEN) hidden = 1;
-            if (set_style & STYLE_ITALIC) italic = 1;
-            if (set_style & STYLE_UNDERLINE) underline = 1;
-            if (set_style & STYLE_BLINK) { blink = 1; got_blink = 1; }
-            else if (set_style & STYLE_STRIKETHROUGH) strikethrough = 1;
-
-            {
-              int color;
-              if (((set_style & STYLE_REVERSE)!=0))
-                color = (set_style >> 24) & 255;
-              else
-                color = (set_style >> 16) & 255;
-
-	      if ((set_style & STYLE_FG_COLOR_SET) == 0)
-	      {
-                 if (reverse)
-	           color = default_bg;
-		 else
-	           color = default_fg;
-	      }
-
-	      if (color + dim * 512!= prevcol)
-	      {
-	        vt_ctx_set_color (vt, ctx, color, 0, dim, bold, reverse);
-		prevcol = color + dim * 512;
-	      }
-            }
-          }
-
-	  if (!hidden && (blink == 0 || (blink && vt->blink_state)))
-	  {
-	     if (italic)
-	     {
-		ctx_save (ctx);
-		ctx_translate (ctx, x, y);
-		ctx_rotate (ctx, 0.3);
-		ctx_translate (ctx, -x, -y);
-	     }
-
-	     vt_ctx_glyph (ctx, vt, x, y, ctx_utf8_to_unichar (d), bold);
-	     if (italic)
-	     {
-		ctx_restore (ctx);
-	     }
-	     if (underline)
-	     {
-	       ctx_new_path (ctx);
-	       ctx_move_to (ctx, x, y - vt->font_size * 0.07);
-	       ctx_rel_line_to (ctx, vt->cw, 0);
-	       ctx_set_line_width (ctx, vt->font_size * (bold?0.075:0.05));
-	       ctx_stroke (ctx);
-	     }
-	     if (strikethrough)
-	     {
-	       ctx_new_path (ctx);
-	       ctx_move_to (ctx, x, y - vt->font_size * 0.43);
-	       ctx_rel_line_to (ctx, vt->cw, 0);
-	       ctx_set_line_width (ctx, vt->font_size * (bold?0.075:0.05));
-	       ctx_stroke (ctx);
-	     }
-
-	  }
+          ctx_vt_draw_cell (vt, ctx, x, y,
+                            vt->style[vt->rows-row][col],
+	                    d?ctx_utf8_to_unichar (d):' ', 1, 1);
           x+=vt->cw;
+	  if (d)
+	  {
+            d = mrg_utf8_skip (d, 1);
+	    if (!*d) d = NULL;
+	  }
         }
       }
       y -= vt->ch;
     }
-  }
-
-  if (got_blink)
-  {
-     vt->blink_state = !vt->blink_state;
-     vt->rev++;
   }
 
 #define MIN(a,b)  ((a)<(b)?(a):(b))
