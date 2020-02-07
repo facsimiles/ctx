@@ -108,6 +108,10 @@ extern "C" {
 #define CTX_SHAPE_CACHE_DIM      (16*16)
 #endif
 
+#ifndef CTX_SHAPE_CACHE_MAX_DIM
+#define CTX_SHAPE_CACHE_MAX_DIM  32
+#endif
+
 /* maximum number of entries in shape cache
  */
 #ifndef CTX_SHAPE_CACHE_ENTRIES
@@ -3943,10 +3947,10 @@ struct _CtxShapeEntry {
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
 
-#define CTX_SHAPE_CACHE_PRIME1   11111
-#define CTX_SHAPE_CACHE_PRIME2   11121
-#define CTX_SHAPE_CACHE_PRIME3   11131
-#define CTX_SHAPE_CACHE_PRIME4   11141
+#define CTX_SHAPE_CACHE_PRIME1   13
+#define CTX_SHAPE_CACHE_PRIME2   112
+#define CTX_SHAPE_CACHE_PRIME3   79
+#define CTX_SHAPE_CACHE_PRIME4   79
 
 // this needs a max-size
 // and a more agressive freeing when
@@ -3969,7 +3973,7 @@ static long misses = 0;
    succeeds..
  */
 static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height, uint32_t time) {
-  int entry_no = hash % CTX_SHAPE_CACHE_ENTRIES;
+  int entry_no = ((hash >> 10) ^ (hash & 1023)) % CTX_SHAPE_CACHE_ENTRIES;
   int i;
 
     {
@@ -3996,6 +4000,52 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
         hits ++;
         return ctx_cache.entries[i];
       }
+#if 0
+    else if (i < CTX_SHAPE_CACHE_ENTRIES-2)
+    {
+      if (ctx_cache.entries[i+1])
+      {
+       if (ctx_cache.entries[i+1]->hash == hash &&
+           ctx_cache.entries[i+1]->width == width &&
+           ctx_cache.entries[i+1]->height == height)
+       {
+         ctx_cache.entries[i+1]->refs++;
+         ctx_cache.entries[i+1]->age = time;
+         if (ctx_cache.entries[i+1]->uses < 1<<30)
+           ctx_cache.entries[i+1]->uses++;
+         hits ++;
+         return ctx_cache.entries[i+1];
+       }
+       else if (i < CTX_SHAPE_CACHE_ENTRIES-3)
+       {
+      if (ctx_cache.entries[i+2])
+      {
+       if (ctx_cache.entries[i+2]->hash == hash &&
+           ctx_cache.entries[i+2]->width == width &&
+           ctx_cache.entries[i+2]->height == height)
+       {
+         ctx_cache.entries[i+2]->refs++;
+         ctx_cache.entries[i+2]->age = time;
+         if (ctx_cache.entries[i+2]->uses < 1<<30)
+           ctx_cache.entries[i+2]->uses++;
+         hits ++;
+         return ctx_cache.entries[i+2];
+       }
+      }
+      else
+      {
+        i+=2;
+      }
+
+
+       }
+      }
+      else
+      {
+        i++;
+      }
+    }
+#endif
   }
   misses ++;
 
@@ -5612,11 +5662,15 @@ ctx_renderer_fill (CtxRenderer *renderer)
 
   ctx_renderer_finish_shape (renderer);
 #if CTX_SHAPE_CACHE
+
+
   uint32_t hash = ctx_renderer_poly_to_edges (renderer);
   int width = (renderer->col_max + (CTX_SUBDIV-1)) / CTX_SUBDIV - renderer->col_min/CTX_SUBDIV;
   int height = (renderer->scan_max + (CTX_RASTERIZER_AA-1)) / CTX_RASTERIZER_AA - renderer->scan_min / CTX_RASTERIZER_AA;
 
-  if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1)
+  if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1 
+	&& width < CTX_SHAPE_CACHE_MAX_DIM 
+	&& height < CTX_SHAPE_CACHE_MAX_DIM)
   {
     int scan_min = renderer->scan_min;
     int col_min = renderer->col_min;

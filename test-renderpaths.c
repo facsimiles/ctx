@@ -435,14 +435,21 @@ static void ui (Mrg *mrg, void *data)
 
   //printf ("chunks 60, ctx_blit from render..\n");
   clear();
-  start = ticks ();
   {
     Ctx *dctx = ctx_new ();
     render_test (dctx);
+  start = ticks ();
     //ctx_render_ctx (ctx, dctx);
-    for (int y = 0; y < HEIGHT; y+=60)
+    for (int y = 0; y < HEIGHT-2; y+=HEIGHT/5)
     {
-      ctx_blit (dctx, pixels + y * WIDTH*4, 0, y, WIDTH, 60, WIDTH*4, CTX_FORMAT_BGRA8);
+// 1: 7.3
+// 2: 9.2
+// 3: 11.
+// 4: 12..5
+// 5: 
+// 6: 16
+
+      ctx_blit (dctx, pixels + y * WIDTH*4, 0, y, WIDTH, HEIGHT/5, WIDTH*4, CTX_FORMAT_BGRA8);
     }
     ctx_free (dctx);
   }

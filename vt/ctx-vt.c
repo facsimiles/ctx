@@ -3817,12 +3817,14 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float fon
   y -= font_size * 0.2;
   ctx_move_to (ctx, x, y);
   ctx_glyph (ctx, unichar, 0);
+
   if (bold)
   {
-    ctx_move_to (ctx, x+font_size/50, y);
-    ctx_glyph (ctx, unichar, 0);
-    ctx_move_to (ctx, x-font_size/50, y);
-    ctx_glyph (ctx, unichar, 0);
+    /* faux bolding by replicating glyph 1/32 the em-size to the side,
+     * works for body text - but not titles.
+     */
+    ctx_move_to (ctx, x+font_size/0, y);
+    ctx_glyph (ctx, unichar, 1);
   }
 
   if (vt->scale_x != 1.0)
@@ -3832,14 +3834,14 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float fon
 
 }
 
-void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold)
+void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, int reverse)
 {
   float r = 0, g = 0, b = 0;
 
   if (no < 16)
   {
 
-    if (bold && !vt->reverse_video && no < 8)
+    if (bold && !(vt->reverse_video ^ reverse) && no < 8)
     {
 #if 0
        r *= 1.5;
@@ -3903,7 +3905,7 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold)
   ctx_set_rgba (ctx, r, g, b, dim?0.5f:1.0f);
 }
 
-static float font_to_cell_scale = 1.0f;
+static float font_to_cell_scale = 0.9f;
 
 void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, float line_spacing)
 {
@@ -4013,7 +4015,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	      {
 		if (color != prevcol)
 		{
-	          vt_ctx_set_color (vt, ctx, color, 0, 0, 0);
+	          vt_ctx_set_color (vt, ctx, color, 0, 0, 0, 0);
 		  prevcol = color;
 		}
 	      }
@@ -4039,7 +4041,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     uint32_t set_style = 9999;
 
     float y = y0 + vt->ch * vt->rows;
-    int bold = 0; int underline = 0; int strikethrough = 0; int blink = 0; int dim = 0; int italic = 0;
+    int bold = 0; int underline = 0; int strikethrough = 0; int blink = 0; int dim = 0; int italic = 0; int reverse = 0;
     int hidden = 0;
     int prevcol = -1;
 
@@ -4056,9 +4058,10 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
           {
             set_style = vt->style[vt->rows-row][col];
 
-            bold = underline = strikethrough = blink = hidden = dim = italic = 0;
+            bold = underline = strikethrough = blink = hidden = dim = italic = reverse = 0;
             if (set_style & STYLE_BOLD) bold = 1;
             if (set_style & STYLE_DIM) dim = 1;
+            if (set_style & STYLE_REVERSE) reverse = 1;
             if (set_style & STYLE_HIDDEN) hidden = 1;
             if (set_style & STYLE_ITALIC) italic = 1;
             if (set_style & STYLE_UNDERLINE) underline = 1;
@@ -4074,7 +4077,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
 	      if ((set_style & STYLE_FG_COLOR_SET) == 0)
 	      {
-                 if ((set_style & STYLE_REVERSE))
+                 if (reverse)
 	           color = default_bg;
 		 else
 	           color = default_fg;
@@ -4082,7 +4085,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
 	      if (color + dim * 512!= prevcol)
 	      {
-	        vt_ctx_set_color (vt, ctx, color, 0, dim, bold);
+	        vt_ctx_set_color (vt, ctx, color, 0, dim, bold, reverse);
 		prevcol = color + dim * 512;
 	      }
             }

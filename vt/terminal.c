@@ -16,9 +16,10 @@
 
 #define CTX_GRADIENT_CACHE       1
 #define CTX_SHAPE_CACHE          1
-#define CTX_SHAPE_CACHE_DIM      (64*64)
-#define CTX_SHAPE_CACHE_ENTRIES  (512)
-#define CTX_RASTERIZER_AA        3
+#define CTX_SHAPE_CACHE_MAX_DIM   48
+#define CTX_SHAPE_CACHE_DIM      (48*48)
+#define CTX_SHAPE_CACHE_ENTRIES  (1024)
+#define CTX_RASTERIZER_AA        5
 #define CTX_RASTERIZER_FORCE_AA  1
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
@@ -27,8 +28,8 @@
 #include "ctx-vt.h"
 
 int   do_quit      = 0;
-float font_size    = 30.0;
-float line_spacing = 2.1;
+float font_size    = 32.0;
+float line_spacing = 2.0;
 
 static Mmm *mmm = NULL;
 static pid_t vt_child;
@@ -75,6 +76,8 @@ void terminal_queue_pcm_sample (int16_t sample)
   pcm_queue[pcm_write_pos++]=sample;
 }
 
+extern float ctx_shape_cache_rate;
+
 void audio_task (int click)
 {
   int free_frames = mmm_pcm_get_frame_chunk (mmm)+24;
@@ -94,6 +97,7 @@ void audio_task (int click)
     mmm_pcm_queue (mmm, (int8_t*) pcm_data, 2);
   }
 #endif
+  fprintf (stderr, "%f  \r", ctx_shape_cache_rate);
 
   if (frames > free_frames) frames = free_frames;
   if (frames > 0)
@@ -102,6 +106,7 @@ void audio_task (int click)
     pcm_read_pos += frames*2;
   }
 }
+
 
 int vt_main(int argc, char **argv)
 {
