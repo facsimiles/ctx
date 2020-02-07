@@ -2540,6 +2540,10 @@ void
 ctx_set_rgba_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   CtxEntry command = ctx_u8 (CTX_SET_RGBA, r, g, b, a, 0, 0, 0, 0);
+
+  // XXX turn it into a no-op if the color matches color
+  //     in state
+
   ctx_process (ctx, &command);
 }
 

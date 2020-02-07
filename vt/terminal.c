@@ -146,7 +146,7 @@ int vt_main(int argc, char **argv)
 
         Ctx *ctx = ctx_new_for_framebuffer (buffer, width, height, stride, CTX_FORMAT_BGRA8);
 
-        ctx_vt_draw (vt, ctx, 0, 0, font_size, line_spacing);
+        ctx_vt_draw (vt, ctx, 0, 0);
 
         ctx_free (ctx);
         mmm_write_done (mmm, 0, 0, -1, -1);

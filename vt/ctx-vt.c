@@ -3826,7 +3826,7 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar)
   return -1;
 }
 
-void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float font_size, float line_spacing, int bold)
+void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold)
 {
   if (unichar == ' ')
     return;
@@ -3841,12 +3841,12 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, float fon
     ctx_translate (ctx, -x, -y);
   }
 
-  y -= font_size * 0.2;
+  y -= vt->font_size * 0.2;
 
   if (bold)
   {
     ctx_move_to (ctx, x, y);
-    ctx_set_line_width (ctx, font_size/35.0);
+    ctx_set_line_width (ctx, vt->font_size/35.0);
     ctx_glyph (ctx, unichar, 1);
   }
 
@@ -3926,9 +3926,10 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
   ctx_set_rgba (ctx, r, g, b, dim?0.5f:1.0f);
 }
 
-static float font_to_cell_scale = 0.9f;
+static float font_to_cell_scale = 1.1f;
 
-void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, float line_spacing)
+
+void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 {
   int default_bg = 0;
   int default_fg = 15;
@@ -3953,7 +3954,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
   }
   ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
   ctx_set_font (ctx, "mono");
-  ctx_set_font_size (ctx, font_size * font_to_cell_scale);
+  ctx_set_font_size (ctx, vt->font_size * font_to_cell_scale);
   if (vt->scroll)
   {
     VtList *l = vt->scrollback;
@@ -3972,7 +3973,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
         for (int col = 1; *d; d = mrg_utf8_skip (d, 1), col++)
         {
 	  vt_ctx_glyph (ctx, vt, x, -scroll_no * vt->ch,
-			  ctx_utf8_to_unichar (d), font_size, line_spacing, 0);
+			  ctx_utf8_to_unichar (d), 0);
 	  x+=vt->cw;
 	}
       l = l->next;
@@ -3987,7 +3988,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
     ctx_scale (ctx, factor, factor);
     ctx_render_ctx (vt->ctx, ctx);
     ctx_restore (ctx);
-    //ctx_identity_matrix (ctx); // in case we're screwed by client
+    ctx_identity_matrix (ctx); // in case we're screwed by client
   }
 
   /* draw background blocks */
@@ -4044,7 +4045,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 
 	    if (!bg_is_nop)
 	    {
-              ctx_rectangle (ctx, x, y-font_size, vt->cw, vt->ch);
+              ctx_rectangle (ctx, x, y - vt->font_size, vt->cw, vt->ch);
               ctx_fill (ctx);
 	    }
           }
@@ -4122,7 +4123,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 		ctx_translate (ctx, -x, -y);
 	     }
 
-	     vt_ctx_glyph (ctx, vt, x, y, ctx_utf8_to_unichar (d), font_size, line_spacing, bold);
+	     vt_ctx_glyph (ctx, vt, x, y, ctx_utf8_to_unichar (d), bold);
 	     if (italic)
 	     {
 		ctx_restore (ctx);
@@ -4130,17 +4131,17 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0, float font_size, fl
 	     if (underline)
 	     {
 	       ctx_new_path (ctx);
-	       ctx_move_to (ctx, x, y - font_size * 0.07);
+	       ctx_move_to (ctx, x, y - vt->font_size * 0.07);
 	       ctx_rel_line_to (ctx, vt->cw, 0);
-	       ctx_set_line_width (ctx, font_size * 0.05);
+	       ctx_set_line_width (ctx, vt->font_size * (bold?0.075:0.05));
 	       ctx_stroke (ctx);
 	     }
 	     if (strikethrough)
 	     {
 	       ctx_new_path (ctx);
-	       ctx_move_to (ctx, x, y - font_size * 0.43);
+	       ctx_move_to (ctx, x, y - vt->font_size * 0.43);
 	       ctx_rel_line_to (ctx, vt->cw, 0);
-	       ctx_set_line_width (ctx, font_size * 0.05);
+	       ctx_set_line_width (ctx, vt->font_size * (bold?0.075:0.05));
 	       ctx_stroke (ctx);
 	     }
 

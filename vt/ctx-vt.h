@@ -52,7 +52,7 @@ int         ctx_vt_get_rows             (MrgVT *vt);
 int         ctx_vt_get_cursor_x         (MrgVT *vt);
 int         ctx_vt_get_cursor_y         (MrgVT *vt);
 
-void        ctx_vt_draw                 (MrgVT *vt, Ctx *ctx, double x, double y, float font_size, float line_spacing);
+void        ctx_vt_draw                 (MrgVT *vt, Ctx *ctx, double x, double y);
 void ctx_vt_rev_inc (MrgVT *vt);
 
 typedef enum VtMouseEvent {
