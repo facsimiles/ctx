@@ -210,21 +210,25 @@ typedef enum {
 } TerminalStyle;
 
 struct _MrgVT {
-  char      *commandline;
-  char      *title;
-  VtList    *scrollback;
-  VtList    *lines;
-  int        line_count;
-  int        leds[4];
-  uint32_t   style[MAX_ROWS][MAX_COLS];
-  uint32_t   cstyle;
-  int        debug;
-  int        bell;
-  int        origin;
-  int        charset;
-  int        reverse_video;
-  int        echo;
-  int        slow_baud;
+  char    *commandline;
+  char    *title;
+  VtList  *scrollback;
+  VtList  *lines;
+  int      line_count;
+  int      leds[4];
+  uint64_t style[MAX_ROWS][MAX_COLS]; //  XXX  make live with line
+  uint64_t cstyle;
+
+  uint64_t set_style[MAX_ROWS][MAX_COLS]; // make dynamic
+  uint32_t set_unichar[MAX_ROWS][MAX_COLS];
+
+  int      debug;
+  int      bell;
+  int      origin;
+  int      charset;
+  int      reverse_video;
+  int      echo;
+  int      slow_baud;
 
   TerminalState state;
 
@@ -3932,16 +3936,28 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
   ctx_set_rgba (ctx, r, g, b, dim?0.5f:1.0f);
 }
 
-static float font_to_cell_scale = 1.1f;
+static float font_to_cell_scale = 1.0f;
 
 
 void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
-		       float x0, float y0,
+		       int   row, int col, // pass 0 to force draw - like
+		       float x0, float y0, // for scrollback visible
 		       uint64_t style,
 		       uint32_t unichar,
 		       int      bg, int fg)
 {
   int color = 0;
+
+  if (row && col)
+  {
+    if (vt->set_unichar[row][col] == unichar &&
+        vt->set_style[row][col] == style)
+      return;
+    vt->set_unichar[row][col] = unichar;
+    vt->set_style[row][col] = style;
+  }
+
+
   if (bg)  {
 
   if (style & STYLE_BG_COLOR_SET)
@@ -3966,7 +3982,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
        color = 0;
      }
   }
-
+  ctx_new_path (ctx);
   vt_ctx_set_color (vt, ctx, color, 1, 0, 0, 0);
   ctx_rectangle (ctx, x0, y0 - (int)vt->font_size, vt->cw, vt->ch);
   ctx_fill (ctx);
@@ -4047,7 +4063,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   {
     VtList *l = vt->scrollback;
     int scroll_no = 0;
-
+    ctx_new_path (ctx);
     ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
 		              (vt->rows + 1) * vt->ch);
     if (vt->reverse_video)
@@ -4107,7 +4123,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
         float x = x0;
         for (int col = 1; col < vt->cols; col++)
         {
-          ctx_vt_draw_cell (vt, ctx, x, y,
+          ctx_vt_draw_cell (vt, ctx, vt->rows-row, col, x, y,
                             vt->style[vt->rows-row][col],
 	                    d?ctx_utf8_to_unichar (d):' ', 1, 1);
           x+=vt->cw;
@@ -4126,20 +4142,11 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   /* draw cursor */
   if (vt->cursor_visible)
   {
-    float cursor_x = ctx_vt_get_cursor_x (vt);
-    float cursor_y = ctx_vt_get_cursor_y (vt);
-
-#if 0
-    ctx_set_rgba (ctx, 1.0, 0.0, 0.0, 1.0);
-    ctx_set_line_width (ctx, 1.0);
-    ctx_new_path (ctx);
-    ctx_rectangle (ctx,
-               x0 + (cursor_x - 1) * vt->cw,
-               y0 + (cursor_y - 1) * vt->ch,
-               vt->cw, vt->ch);
-    ctx_stroke(ctx);
-#endif
+    int cursor_x = ctx_vt_get_cursor_x (vt);
+    int cursor_y = ctx_vt_get_cursor_y (vt);
+    vt->set_unichar[cursor_y][cursor_x] = 0;
     ctx_set_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
+    ctx_new_path (ctx);
     ctx_rectangle (ctx,
                x0 + (cursor_x - 1) * vt->cw,
                y0 + (cursor_y - 1) * vt->ch,
