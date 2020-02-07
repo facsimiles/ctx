@@ -192,21 +192,23 @@ typedef enum {
   TERMINAL_STATE_SWALLOW          = 5,
 } TerminalState;
 
-#define MAX_COLS 400
+#define MAX_COLS 400  // should be dynamic
 #define MAX_ROWS 400
 
 typedef enum {
-  STYLE_BOLD          = 1 << 0,
-  STYLE_DIM           = 1 << 1,
-  STYLE_ITALIC        = 1 << 2,
-  STYLE_UNDERLINE     = 1 << 3,
-  STYLE_REVERSE       = 1 << 4,
-  STYLE_BLINK         = 1 << 5,
-  STYLE_HIDDEN        = 1 << 6,
-  STYLE_STRIKETHROUGH = 1 << 7,
-  STYLE_FG_COLOR_SET  = 1 << 8,
-  STYLE_BG_COLOR_SET  = 1 << 9,
-  STYLE_NONERASABLE   = 1 << 10   // needed for selective erase
+  STYLE_BOLD            = 1 << 0,
+  STYLE_DIM             = 1 << 1,
+  STYLE_ITALIC          = 1 << 2,
+  STYLE_UNDERLINE       = 1 << 3,
+  STYLE_REVERSE         = 1 << 4,
+  STYLE_BLINK           = 1 << 5,
+  STYLE_HIDDEN          = 1 << 6,
+  STYLE_STRIKETHROUGH   = 1 << 7,
+  STYLE_FG_COLOR_SET    = 1 << 8,
+  STYLE_BG_COLOR_SET    = 1 << 9,
+  STYLE_FG24_COLOR_SET  = 1 << 10,
+  STYLE_BG24_COLOR_SET  = 1 << 11,
+  STYLE_NONERASABLE   = 1 << 12   // needed for selective erase
 } TerminalStyle;
 
 struct _MrgVT {
@@ -360,14 +362,31 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
   }
 }
 
+#define set_fg_rgb(r, g, b) \
+    vt->cstyle ^= (vt->cstyle & (((1l<<24)-1)<<16));\
+    vt->cstyle |=  ((uint64_t)(r)<<16);\
+    vt->cstyle |=  ((uint64_t)(g)<<(16+8));\
+    vt->cstyle |=  ((uint64_t)(b)<<(16+8+8));\
+    vt->cstyle |= STYLE_FG_COLOR_SET;\
+    vt->cstyle |= STYLE_FG24_COLOR_SET;\
+
+#define set_bg_rgb(r, g, b) \
+    vt->cstyle ^= (vt->cstyle & (((1l<<24)-1)<<40));\
+    vt->cstyle |=  ((uint64_t)(r)<<40);\
+    vt->cstyle |=  ((uint64_t)(g)<<(40+8));\
+    vt->cstyle |=  ((uint64_t)(b)<<(40+8+8));\
+    vt->cstyle |= STYLE_BG_COLOR_SET;\
+    vt->cstyle |= STYLE_BG24_COLOR_SET;\
+
+
 #define set_fg_idx(idx) \
-    vt->cstyle ^= (vt->cstyle & (255<<16));\
+    vt->cstyle ^= (vt->cstyle & (255l<<16));\
     vt->cstyle |=  ((idx)<<16);\
     vt->cstyle |= STYLE_FG_COLOR_SET;
 
 #define set_bg_idx(idx) \
-    vt->cstyle ^= (vt->cstyle & (255<<24));\
-    vt->cstyle |= ((idx)<<24) ;\
+    vt->cstyle ^= (vt->cstyle & (255l<<40));\
+    vt->cstyle |= ((int64_t)(idx)<<40) ;\
     vt->cstyle |= STYLE_BG_COLOR_SET;
 
 
@@ -1044,6 +1063,7 @@ static void vtcmd_screen_alignment_display (MrgVT *vt, const char *sequence)
   }
 }
 
+#if 1
 static int find_idx (int r, int g, int b)
 {
   r = r / 255.0 * 5;
@@ -1051,6 +1071,7 @@ static int find_idx (int r, int g, int b)
   b = b / 255.0 * 5;
   return 16 + r * 6 * 6 + g * 6 + b;
 }
+#endif
 
 static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
 {
@@ -1104,7 +1125,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
         if (s)
           sscanf (s, ":%i:%i:%i", &r, &g, &b);
       }
-      set_fg_idx(find_idx (r,g,b));
+      set_fg_rgb(r,g,b);
     }
     else
     {
@@ -1151,8 +1172,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
         if (s)
           sscanf (s, ":%i:%i:%i", &r, &g, &b);
       }
-
-      set_bg_idx( find_idx (r,g,b));
+      set_bg_rgb(r,g,b);
     }
     else
     {
@@ -3336,6 +3356,7 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
     //setenv ("TERM", "vt100", 1);
     //setenv ("TERM", "xterm", 1);
     setenv ("TERM", "xterm-256color", 1);
+    setenv ("COLORTERM", "truecolor", 1);
     vt->result = system (command);
     exit(0);
   }
@@ -3968,7 +3989,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
      }
      else
      {
-       color = (style >> 24) & 255;
+       color = (style >> 40) & 255;
      }
   }
   else
@@ -3983,7 +4004,20 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
      }
   }
   ctx_new_path (ctx);
-  vt_ctx_set_color (vt, ctx, color, 1, 0, 0, 0);
+  if (style &  STYLE_BG24_COLOR_SET)
+  {
+    uint64_t temp = style >> 40;
+    int r = temp & 0xff;
+    temp >>= 8;
+    int g = temp & 0xff;
+    temp >>= 8;
+    int b = temp & 0xff;
+    ctx_set_rgba_u8 (ctx, r, g, b, 255);
+  }
+  else
+  {
+    vt_ctx_set_color (vt, ctx, color, 1, 0, 0, 0);
+  }
   ctx_rectangle (ctx, x0, y0 - (int)vt->font_size, vt->cw, vt->ch);
   ctx_fill (ctx);
 
@@ -4004,7 +4038,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   else
   {
      if (style & STYLE_REVERSE) 
-      color = (style >> 24) & 255;
+      color = (style >> 40) & 255;
     else
       color = (style >> 16) & 255;
   }
@@ -4013,13 +4047,26 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
       (blink == 0 ||
        (blink && vt->blink_state)))
   {
-    vt_ctx_set_color (vt, ctx, color, 0, (style & STYLE_DIM) != 0, (style & STYLE_BOLD) != 0, (style & STYLE_REVERSE) != 0);
+    if (style & STYLE_FG24_COLOR_SET)
+    {
+      uint64_t temp = style >> 16;
+      int r = temp & 0xff;
+      temp >>= 8;
+      int g = temp & 0xff;
+      temp >>= 8;
+      int b = temp & 0xff;
+      ctx_set_rgba_u8 (ctx, r, g, b, 255);
+    }
+    else
+    {
+      vt_ctx_set_color (vt, ctx, color, 0, (style & STYLE_DIM) != 0, (style & STYLE_BOLD) != 0, (style & STYLE_REVERSE) != 0);
+    }
     if (style & STYLE_ITALIC)
     {
       ctx_save (ctx);
-      ctx_translate (ctx, x0, y0);
+      ctx_translate (ctx, x0 + vt->cw/2, y0 + vt->ch/2);
       ctx_rotate (ctx, 0.3);
-      ctx_translate (ctx, -x0, -y0);
+      ctx_translate (ctx, -x0 + vt->cw/2, -(y0 + vt->ch/2) );
     }
 
     vt_ctx_glyph (ctx, vt, x0, y0, unichar, (style &  STYLE_BOLD) != 0);
