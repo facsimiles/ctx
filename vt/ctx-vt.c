@@ -3595,7 +3595,34 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar)
       ctx_restore (ctx);
       return 0;
 
-     case 0x2500: //VT_BOX_DRAWINGS_LIGHT_HORIZONTAL:
+     case 0x23BA: //HORIZONTAL_SCANLINE-1
+      ctx_new_path (ctx);
+      ctx_rectangle (ctx, x,      y - vt->ch + vt->ch*0.1 - vt->ch * 0.1,
+		          vt->cw, vt->ch * 0.1);
+      ctx_fill (ctx);
+      return 0;
+     case 0x23BB: //HORIZONTAL_SCANLINE-3
+      ctx_new_path (ctx);
+      ctx_rectangle (ctx, x,      y - vt->ch + vt->ch*0.3 - vt->ch * 0.075,
+		          vt->cw, vt->ch * 0.1);
+      ctx_fill (ctx);
+      return 0;
+     case 0x23BC: //HORIZONTAL_SCANLINE-7
+      ctx_new_path (ctx);
+      ctx_rectangle (ctx, x,      y - vt->ch + vt->ch*0.7 - vt->ch * 0.025,
+		          vt->cw, vt->ch * 0.1);
+      ctx_fill (ctx);
+      return 0;
+
+     case 0x23BD: //HORIZONTAL_SCANLINE-9
+      ctx_new_path (ctx);
+      ctx_rectangle (ctx, x,      y - vt->ch + vt->ch*0.9 + vt->ch * 0.0,
+		          vt->cw, vt->ch * 0.1);
+      ctx_fill (ctx);
+      return 0;
+
+
+     case 0x2500: //VT_BOX_DRAWINGS_LIGHT_HORIZONTAL // and scanline 5
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x, y - vt->ch/2 - vt->ch * 0.1 / 2, vt->cw, vt->ch * 0.1);
       ctx_fill (ctx);
