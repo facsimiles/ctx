@@ -58,6 +58,9 @@ function vt_blink(){        echo -en "\e[5m";  }
 function vt_steady(){       echo -en "\e[25m"; }
 function vt_fg(){           echo -en "\e[38;5;$1m"; }
 function vt_bg(){           echo -en "\e[48;5;$1m"; }
+function vt_show_cursor(){  echo -en "\e[?25h"; }
+function vt_hide_cursor(){  echo -en "\e[?25l"; }
+
 
 commandline=""
 
@@ -255,6 +258,7 @@ function prepare_file(){
 
 function draw_ui()
 {
+  vt_hide_cursor
   if [ $ui_dirty != 0 ];then
     if [ $ui_dirty = 2 ]; then
       draw_content
@@ -267,6 +271,7 @@ function draw_ui()
     fi
     ui_dirty=0
   fi
+  vt_show_cursor
 }
 
 function prepare_item(){
@@ -344,13 +349,13 @@ function draw_text ()
   while IFS= read -r line; do
     if [ $row -ge $text_viewer_start ] && [ $row -le $endrow ]; then
       vt_move_to $row 16
-      vt_clear_eol
       if [ $lineno -le $text_lines ]; then
         if [ $linenumbers = 1 ]; then
 	  vt_fg 8
 	  printf "%04d " $lineno
   	  vt_style_reset
 	fi
+        vt_clear_eol
         echo -n "$line" | cut -b $text_col-400
       fi
     fi

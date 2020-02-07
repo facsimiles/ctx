@@ -3990,38 +3990,31 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   }
 
   if (!fg) return;
+  int blink = 0;
 
-  int bold = 0; int underline = 0; int strikethrough = 0; int blink = 0; int dim = 0; int italic = 0; int reverse = 0; int hidden = 0;
-
-  if (style & STYLE_BOLD) bold = 1;
-  if (style & STYLE_DIM) dim = 1;
-  if (style & STYLE_REVERSE) reverse = 1;
-  if (style & STYLE_HIDDEN) hidden = 1;
-  if (style & STYLE_ITALIC) italic = 1;
-  if (style & STYLE_UNDERLINE) underline = 1;
   if (style & STYLE_BLINK) { blink = 1; vt->rev++ ; }
-  else if (style & STYLE_STRIKETHROUGH) strikethrough = 1;
-
 
   if ((style & STYLE_FG_COLOR_SET) == 0)
   {
-     if (reverse)
+     if (style & STYLE_REVERSE) 
        color = 0;
      else
        color = 15;
   }
   else
   {
-    if ((style & STYLE_REVERSE)!=0)
+     if (style & STYLE_REVERSE) 
       color = (style >> 24) & 255;
     else
       color = (style >> 16) & 255;
   }
 
-  if (!hidden && (blink == 0 || (blink && vt->blink_state)))
+  if (!(style &  STYLE_HIDDEN) && 
+      (blink == 0 ||
+       (blink && vt->blink_state)))
   {
-    vt_ctx_set_color (vt, ctx, color, 0, dim, bold, reverse);
-    if (italic)
+    vt_ctx_set_color (vt, ctx, color, 0, (style & STYLE_DIM) != 0, (style & STYLE_BOLD) != 0, (style & STYLE_REVERSE) != 0);
+    if (style & STYLE_ITALIC)
     {
       ctx_save (ctx);
       ctx_translate (ctx, x0, y0);
@@ -4029,25 +4022,25 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
       ctx_translate (ctx, -x0, -y0);
     }
 
-    vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold);
-    if (italic)
+    vt_ctx_glyph (ctx, vt, x0, y0, unichar, (style &  STYLE_BOLD) != 0);
+    if (style & STYLE_ITALIC)
     {
       ctx_restore (ctx);
     }
-    if (underline)
+    if (style & STYLE_UNDERLINE)
     {
       ctx_new_path (ctx);
       ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07);
       ctx_rel_line_to (ctx, vt->cw, 0);
-      ctx_set_line_width (ctx, vt->font_size * (bold?0.075:0.05));
+      ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05));
       ctx_stroke (ctx);
     }
-    if (strikethrough)
+    if (style & STYLE_STRIKETHROUGH)
     {
       ctx_new_path (ctx);
       ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43);
       ctx_rel_line_to (ctx, vt->cw, 0);
-      ctx_set_line_width (ctx, vt->font_size * (bold?0.075:0.05));
+      ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05));
       ctx_stroke (ctx);
     }
   }
@@ -4144,7 +4137,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   {
     int cursor_x = ctx_vt_get_cursor_x (vt);
     int cursor_y = ctx_vt_get_cursor_y (vt);
-    vt->set_unichar[cursor_y][cursor_x] = 0;
+    vt->set_unichar[cursor_y][cursor_x] = 0xfffff;
+    vt->set_style[cursor_y][cursor_x] = 0xffffff;
     ctx_set_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
     ctx_new_path (ctx);
     ctx_rectangle (ctx,
