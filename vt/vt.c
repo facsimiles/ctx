@@ -4356,7 +4356,7 @@ void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_
   }
 }
 
-pid_t       ctx_vt_get_pid            (MrgVT *vt)
+pid_t ctx_vt_get_pid (MrgVT *vt)
 {
   return vt->pid;
 }

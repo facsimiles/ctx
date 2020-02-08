@@ -145,17 +145,6 @@ int vt_string_get_length (VtString *string)
   return string->length;
 }
 
-/* dissolving a string, means destroying it, but returning
- * the string, that should be manually freed.
- */
-char *vt_string_dissolve   (VtString *string)
-{
-  char *ret = string->str;
-  string->str = NULL;
-  free (string);
-  return ret;
-}
-
 void
 vt_string_free (VtString *string, int freealloc)
 {
@@ -164,41 +153,6 @@ vt_string_free (VtString *string, int freealloc)
       vt_string_destroy (string);
     }
   free (string);
-}
-
-void
-vt_string_append_printf (VtString *string, const char *format, ...)
-{
-  va_list ap;
-  size_t needed;
-  char  *buffer;
-  va_start(ap, format);
-  needed = vsnprintf(NULL, 0, format, ap) + 1;
-  buffer = malloc(needed);
-  va_end (ap);
-  va_start(ap, format);
-  vsnprintf(buffer, needed, format, ap);
-  va_end (ap);
-  _vt_string_append_str (string, buffer);
-  free (buffer);
-}
-
-VtString *vt_string_new_printf (const char *format, ...)
-{
-  VtString *string = vt_string_new_with_size ("", 8);
-  va_list ap;
-  size_t needed;
-  char  *buffer;
-  va_start(ap, format);
-  needed = vsnprintf(NULL, 0, format, ap) + 1;
-  buffer = malloc(needed);
-  va_end (ap);
-  va_start(ap, format);
-  vsnprintf(buffer, needed, format, ap);
-  va_end (ap);
-  _vt_string_append_str (string, buffer);
-  free (buffer);
-  return string;
 }
 
 void
@@ -326,44 +280,8 @@ void vt_string_insert_utf8 (VtString *string, int pos, const char *new_glyph)
   string->utf8_length = mrg_utf8_strlen (string->str);
 }
 
-int vt_string_get_utf8_length (VtString  *string)
-{
-  //return mrg_utf8_strlen (string->str);
-  return string->utf8_length;
-}
-
 void vt_string_remove_utf8 (VtString *string, int pos)
 {
-#if 0
-  VtString *new_str = vt_string_new ("");
-
-  int old_len = string->utf8_length;
-
-  {
-    for (int i = old_len; i <= pos; i++)
-    {
-      _vt_string_append_byte (string, ' ');
-      old_len++;
-    }
-  }
-  int n = 0;
-  for (char *p=string->str; *p; p = (void*)mrg_utf8_skip (p), n++)
-  {
-    if (n!=pos)
-    {
-      int len = mrg_utf8_len (*p);
-      for (int i = 0; i < len; i++)
-      vt_string_append_byte (new_str, p[i]);
-    }
-  }
-  free (string->str);
-  string->str=new_string->str;
-  vt_string_free (new_string, 0);
-
-  string->length = strlen (string->str);
-  string->utf8_length = mrg_utf8_strlen (string->str);
-  return;
-#else
   int old_len = string->utf8_length;
 
   {
@@ -387,13 +305,11 @@ void vt_string_remove_utf8 (VtString *string, int pos)
     rest = strdup (p + prev_len);
   }
 
-  strcpy (p, rest);//, strlen (rest));
+  strcpy (p, rest);
   string->str[string->length - prev_len] = 0;
-  //string->length -= prev_len;
   free (rest);
 
   string->length = strlen (string->str);
   string->utf8_length = mrg_utf8_strlen (string->str);
-#endif
 }
 

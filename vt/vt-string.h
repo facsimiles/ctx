@@ -28,27 +28,30 @@ struct _VtString
   int   length;
   int   utf8_length;
   int   allocated_length;
+
+  uint64_t *style;
+  int       style_length;
+
+  void     *ctx; // each line can have an attached ctx context;
+                 // clearing could be brutal enough to unset the context of the current
 }  __attribute((packed));
 
 VtString   *vt_string_new_with_size  (const char *initial, int initial_size);
 VtString   *vt_string_new            (const char *initial);
-VtString   *vt_string_new_printf     (const char *format, ...);
-void         vt_string_free           (VtString  *string, int freealloc);
-char        *vt_string_dissolve       (VtString  *string);
-const char  *vt_string_get            (VtString  *string);
-int          vt_string_get_length     (VtString  *string);
-int          vt_string_get_utf8_length (VtString  *string);
-void         vt_string_set            (VtString  *string, const char *new_string);
-void         vt_string_clear          (VtString  *string);
-void         vt_string_append_str     (VtString  *string, const char *str);
-void         vt_string_append_byte    (VtString  *string, char  val);
-void         vt_string_append_string  (VtString  *string, VtString *string2);
-void         vt_string_append_unichar (VtString  *string, unsigned int unichar);
-void         vt_string_append_data    (VtString  *string, const char *data, int len);
-void         vt_string_append_printf  (VtString  *string, const char *format, ...);
-void         vt_string_replace_utf8   (VtString *string, int pos, const char *new_glyph);
-void         vt_string_insert_utf8    (VtString *string, int pos, const char *new_glyph);
-void         vt_string_remove_utf8    (VtString *string, int pos);
+void        vt_string_free           (VtString *string, int freealloc);
+const char *vt_string_get            (VtString *string);
+int         vt_string_get_length     (VtString *string);
+void        vt_string_set            (VtString *string, const char *new_string);
+void        vt_string_clear          (VtString *string);
+void        vt_string_append_str     (VtString *string, const char *str);
+void        vt_string_append_byte    (VtString *string, char  val);
+void        vt_string_append_string  (VtString *string, VtString *string2);
+void        vt_string_append_unichar (VtString *string, unsigned int unichar);
+void        vt_string_append_data    (VtString *string, const char *data, int len);
+void        vt_string_append_printf  (VtString *string, const char *format, ...);
+void        vt_string_replace_utf8   (VtString *string, int pos, const char *new_glyph);
+void        vt_string_insert_utf8    (VtString *string, int pos, const char *new_glyph);
+void        vt_string_remove_utf8    (VtString *string, int pos);
 
 
 #ifndef TRUE

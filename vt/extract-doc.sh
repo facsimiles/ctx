@@ -26,7 +26,7 @@ while IFS= read -r line; do
   line="$line$description                                           "
   line=${line:0:45}$START"ESC $prefix$suffix"$END
   echo -e "$line"
-done <<< `cat ctx-vt.c | grep  'id:' `
+done <<< `cat vt.c | grep  'id:' `
 
 echo -en "\n\nModes:\n~~~~~~\n\n"
 
@@ -60,7 +60,7 @@ while IFS= read -r line; do
   line="$name$on_label$START$on_esc$END$off_label$START$off_esc$END"
   
   echo -e "$line"
-done <<< `cat ctx-vt.c | grep  'MODE;' `
+done <<< `cat vt.c | grep  'MODE;' `
 
 
 while IFS= read -r line; do
@@ -93,7 +93,7 @@ while IFS= read -r line; do
   
   echo -e "$line"
 
-done <<< `cat ctx-vt.c | grep  'MODE2;' `
+done <<< `cat vt.c | grep  'MODE2;' `
 
 echo
 echo
@@ -116,4 +116,4 @@ while IFS= read -r line; do
     echo -e "                $description"
   fi
 
-done <<< `cat ctx-vt.c | grep  'SGR@' `
+done <<< `cat vt.c | grep  'SGR@' `
