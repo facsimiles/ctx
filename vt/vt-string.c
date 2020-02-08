@@ -15,8 +15,8 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ctx-string.h"
-#include "ctx-utf8.h"
+#include "vt-string.h"
+#include "vt-utf8.h"
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
@@ -30,7 +30,7 @@
 int ctx_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 #define mrg_unichar_to_utf8 ctx_unichar_to_utf8
 
-static void mrg_string_init (MrgString *string, int initial_size)
+static void vt_string_init (VtString *string, int initial_size)
 {
   string->allocated_length = initial_size;
   string->length = 0;
@@ -39,7 +39,7 @@ static void mrg_string_init (MrgString *string, int initial_size)
   string->str[0]='\0';
 }
 
-static void mrg_string_destroy (MrgString *string)
+static void vt_string_destroy (VtString *string)
 {
   if (string->str)
   {
@@ -48,14 +48,14 @@ static void mrg_string_destroy (MrgString *string)
   }
 }
 
-void mrg_string_clear (MrgString *string)
+void vt_string_clear (VtString *string)
 {
   string->length = 0;
   string->utf8_length = 0;
   string->str[string->length]=0;
 }
 
-static inline void _mrg_string_append_byte (MrgString *string, char  val)
+static inline void _vt_string_append_byte (VtString *string, char  val)
 {
   if ((val & 0xC0) != 0x80)
     string->utf8_length++;
@@ -71,12 +71,12 @@ static inline void _mrg_string_append_byte (MrgString *string, char  val)
   string->str[string->length] = '\0';
 }
 
-void mrg_string_append_byte (MrgString *string, char  val)
+void vt_string_append_byte (VtString *string, char  val)
 {
-  _mrg_string_append_byte (string, val);
+  _vt_string_append_byte (string, val);
 }
 
-void mrg_string_append_unichar (MrgString *string, unsigned int unichar)
+void vt_string_append_unichar (VtString *string, unsigned int unichar)
 {
   char *str;
   char utf8[5];
@@ -85,62 +85,62 @@ void mrg_string_append_unichar (MrgString *string, unsigned int unichar)
 
   while (str && *str)
     {
-      _mrg_string_append_byte (string, *str);
+      _vt_string_append_byte (string, *str);
       str++;
     }
 }
 
-static inline void _mrg_string_append_str (MrgString *string, const char *str)
+static inline void _vt_string_append_str (VtString *string, const char *str)
 {
   if (!str) return;
   while (*str)
     {
-      _mrg_string_append_byte (string, *str);
+      _vt_string_append_byte (string, *str);
       str++;
     }
 }
-void mrg_string_append_str (MrgString *string, const char *str)
+void vt_string_append_str (VtString *string, const char *str)
 {
-  _mrg_string_append_str (string, str);
+  _vt_string_append_str (string, str);
 }
 
-MrgString *mrg_string_new_with_size (const char *initial, int initial_size)
+VtString *vt_string_new_with_size (const char *initial, int initial_size)
 {
-  MrgString *string = calloc (sizeof (MrgString), 1);
-  mrg_string_init (string, initial_size);
+  VtString *string = calloc (sizeof (VtString), 1);
+  vt_string_init (string, initial_size);
   if (initial)
-    _mrg_string_append_str (string, initial);
+    _vt_string_append_str (string, initial);
   return string;
 }
 
-MrgString *mrg_string_new (const char *initial)
+VtString *vt_string_new (const char *initial)
 {
-  return mrg_string_new_with_size (initial, 8);
+  return vt_string_new_with_size (initial, 8);
 }
 
-void mrg_string_append_data (MrgString *string, const char *str, int len)
+void vt_string_append_data (VtString *string, const char *str, int len)
 {
   int i;
   for (i = 0; i<len; i++)
-    _mrg_string_append_byte (string, str[i]);
+    _vt_string_append_byte (string, str[i]);
 }
 
-void mrg_string_append_string (MrgString *string, MrgString *string2)
+void vt_string_append_string (VtString *string, VtString *string2)
 {
-  const char *str = mrg_string_get (string2);
+  const char *str = vt_string_get (string2);
   while (str && *str)
     {
-      _mrg_string_append_byte (string, *str);
+      _vt_string_append_byte (string, *str);
       str++;
     }
 }
 
-const char *mrg_string_get (MrgString *string)
+const char *vt_string_get (VtString *string)
 {
   return string->str;
 }
 
-int mrg_string_get_length (MrgString *string)
+int vt_string_get_length (VtString *string)
 {
   return string->length;
 }
@@ -148,7 +148,7 @@ int mrg_string_get_length (MrgString *string)
 /* dissolving a string, means destroying it, but returning
  * the string, that should be manually freed.
  */
-char *mrg_string_dissolve   (MrgString *string)
+char *vt_string_dissolve   (VtString *string)
 {
   char *ret = string->str;
   string->str = NULL;
@@ -157,17 +157,17 @@ char *mrg_string_dissolve   (MrgString *string)
 }
 
 void
-mrg_string_free (MrgString *string, int freealloc)
+vt_string_free (VtString *string, int freealloc)
 {
   if (freealloc)
     {
-      mrg_string_destroy (string);
+      vt_string_destroy (string);
     }
   free (string);
 }
 
 void
-mrg_string_append_printf (MrgString *string, const char *format, ...)
+vt_string_append_printf (VtString *string, const char *format, ...)
 {
   va_list ap;
   size_t needed;
@@ -179,13 +179,13 @@ mrg_string_append_printf (MrgString *string, const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  _mrg_string_append_str (string, buffer);
+  _vt_string_append_str (string, buffer);
   free (buffer);
 }
 
-MrgString *mrg_string_new_printf (const char *format, ...)
+VtString *vt_string_new_printf (const char *format, ...)
 {
-  MrgString *string = mrg_string_new_with_size ("", 8);
+  VtString *string = vt_string_new_with_size ("", 8);
   va_list ap;
   size_t needed;
   char  *buffer;
@@ -196,19 +196,19 @@ MrgString *mrg_string_new_printf (const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  _mrg_string_append_str (string, buffer);
+  _vt_string_append_str (string, buffer);
   free (buffer);
   return string;
 }
 
 void
-mrg_string_set (MrgString *string, const char *new_string)
+vt_string_set (VtString *string, const char *new_string)
 {
-  mrg_string_clear (string);
-  _mrg_string_append_str (string, new_string);
+  vt_string_clear (string);
+  _vt_string_append_str (string, new_string);
 }
 
-void mrg_string_replace_utf8 (MrgString *string, int pos, const char *new_glyph)
+void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
 {
   int new_len = mrg_utf8_len (*new_glyph);
   int old_len = string->utf8_length;
@@ -225,7 +225,7 @@ void mrg_string_replace_utf8 (MrgString *string, int pos, const char *new_glyph)
   {
     for (int i = old_len; i <= pos; i++)
     {
-      _mrg_string_append_byte (string, ' ');
+      _vt_string_append_byte (string, ' ');
       old_len++;
     }
   }
@@ -233,7 +233,7 @@ void mrg_string_replace_utf8 (MrgString *string, int pos, const char *new_glyph)
 #if 1
   if (pos == old_len)
   {
-    _mrg_string_append_str (string, new_glyph);
+    _vt_string_append_str (string, new_glyph);
     return;
   }
 #endif
@@ -275,7 +275,7 @@ void mrg_string_replace_utf8 (MrgString *string, int pos, const char *new_glyph)
   string->utf8_length = mrg_utf8_strlen (string->str);
 }
 
-void mrg_string_insert_utf8 (MrgString *string, int pos, const char *new_glyph)
+void vt_string_insert_utf8 (VtString *string, int pos, const char *new_glyph)
 {
   int new_len = mrg_utf8_len (*new_glyph);
   int old_len = string->utf8_length;
@@ -289,7 +289,7 @@ void mrg_string_insert_utf8 (MrgString *string, int pos, const char *new_glyph)
   {
     for (int i = old_len; i <= pos; i++)
     {
-      _mrg_string_append_byte (string, ' ');
+      _vt_string_append_byte (string, ' ');
       old_len++;
     }
   }
@@ -326,23 +326,23 @@ void mrg_string_insert_utf8 (MrgString *string, int pos, const char *new_glyph)
   string->utf8_length = mrg_utf8_strlen (string->str);
 }
 
-int mrg_string_get_utf8_length (MrgString  *string)
+int vt_string_get_utf8_length (VtString  *string)
 {
   //return mrg_utf8_strlen (string->str);
   return string->utf8_length;
 }
 
-void mrg_string_remove_utf8 (MrgString *string, int pos)
+void vt_string_remove_utf8 (VtString *string, int pos)
 {
 #if 0
-  MrgString *new_str = mrg_string_new ("");
+  VtString *new_str = vt_string_new ("");
 
   int old_len = string->utf8_length;
 
   {
     for (int i = old_len; i <= pos; i++)
     {
-      _mrg_string_append_byte (string, ' ');
+      _vt_string_append_byte (string, ' ');
       old_len++;
     }
   }
@@ -353,12 +353,12 @@ void mrg_string_remove_utf8 (MrgString *string, int pos)
     {
       int len = mrg_utf8_len (*p);
       for (int i = 0; i < len; i++)
-      mrg_string_append_byte (new_str, p[i]);
+      vt_string_append_byte (new_str, p[i]);
     }
   }
   free (string->str);
   string->str=new_string->str;
-  mrg_string_free (new_string, 0);
+  vt_string_free (new_string, 0);
 
   string->length = strlen (string->str);
   string->utf8_length = mrg_utf8_strlen (string->str);
@@ -369,7 +369,7 @@ void mrg_string_remove_utf8 (MrgString *string, int pos)
   {
     for (int i = old_len; i <= pos; i++)
     {
-      _mrg_string_append_byte (string, ' ');
+      _vt_string_append_byte (string, ' ');
       old_len++;
     }
   }

@@ -23,9 +23,8 @@
 #define CTX_RASTERIZER_FORCE_AA  1
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
-#include "ctx-string.h"
-
-#include "ctx-vt.h"
+#include "vt-string.h"
+#include "vt.h"
 
 int   do_quit      = 0;
 float font_size    = 32.0;
