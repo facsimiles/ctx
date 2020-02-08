@@ -218,7 +218,6 @@ struct _MrgVT {
   VtList  *lines;
   int      line_count;
   int      leds[4];
-  uint64_t style[MAX_ROWS][MAX_COLS]; //  XXX  make live with line
   uint64_t cstyle;
 
   uint64_t set_style[MAX_ROWS][MAX_COLS]; // make dynamic
@@ -340,8 +339,6 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command);
 static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence);
 static void _ctx_vt_move_to (MrgVT *vt, int y, int x);
 
-void vt_scroll_style (MrgVT *vt, int amount);
-
 static void vt_cell_cache_reset(MrgVT *vt, int row, int col)
 {
   if (row < 0 || col < 0 || row > vt->rows || col > vt->cols)
@@ -364,7 +361,6 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
   {
     vt_string_free (vt->lines->data, 1);
     vt_list_remove (&vt->lines, vt->lines->data);
-    vt_scroll_style (vt, -1);
   }
 
   vt->lines = NULL;
@@ -670,7 +666,8 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
     }
   }
 
-  vt->style[vt->cursor_y][vt->cursor_x] = vt->cstyle;
+  //vt->style[vt->cursor_y][vt->cursor_x] = vt->cstyle;
+  vt->current_line->style[vt->cursor_x] = vt->cstyle;
   if (vt->insert_mode)
    {
      vt_string_insert_utf8 (vt->current_line, vt->cursor_x - 1, str);
@@ -714,26 +711,6 @@ static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence)
   vt->scroll_bottom = bottom;
   _ctx_vt_move_to (vt, top, 1);
   VT_cursor ("%i, %i (home)", top, 1);
-}
-
-void vt_scroll_style (MrgVT *vt, int amount)
-{
-  if (amount > 0)
-  {
-    for (int row = vt->scroll_bottom; row > vt->scroll_top; row--)
-      memcpy (&(vt->style[row][0]),
-              &(vt->style[row-1][0]),
-              sizeof(vt->style[0]));
-    memset (vt->style[vt->scroll_top], 0, sizeof (vt->style[0]));
-  }
-  else
-  {
-    for (int row = vt->scroll_top; row < vt->scroll_bottom; row++)
-      memcpy (&(vt->style[row][0]),
-              &(vt->style[row+1][0]),
-              sizeof(vt->style[0]));
-    memset (vt->style[vt->scroll_bottom], 0, sizeof (vt->style[0]));
-  }
 }
 
 static void vt_scroll (MrgVT *vt, int amount)
@@ -799,8 +776,6 @@ static void vt_scroll (MrgVT *vt, int amount)
 
   vt->current_line = string;
   /* not updating line count since we should always remove one and add one */
-
-  vt_scroll_style (vt, amount);
 }
 
 typedef struct Sequence {
@@ -973,7 +948,7 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
         char *p = (char*)mrg_utf8_skip (vt->current_line->str, vt->cursor_x-1);
         if (p) *p = 0;
 	for (int col = vt->cursor_x; col <= vt->cols; col++)//vt->current_line->utf8_length; col++)
-	  vt->style[vt->cursor_y][col]=vt->cstyle;
+	  vt->current_line->style[col]=vt->cstyle;
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
       }
@@ -986,7 +961,7 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
         }
 
 	for (int col = 1; col <= vt->cursor_x; col++)
-	  vt->style[vt->cursor_y][col]=vt->cstyle;
+	  vt->current_line->style[col]=vt->cstyle;
 
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str); // should be a nop
@@ -994,7 +969,7 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
       break;
     case 2: // clear entire line
       for (int col = 1; col <= vt->cols; col++)
-	  vt->style[vt->cursor_y][col]=vt->cstyle;
+	  vt->current_line->style[col]=vt->cstyle;
       vt_string_set (vt->current_line, "");
       break;
   }
@@ -1014,7 +989,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
       }
 	for (int col = vt->cursor_x; col <= vt->cols; col++)
-	  vt->style[vt->cursor_y][col]=vt->cstyle;
+	  vt->current_line->style[col]=vt->cstyle;
 
       {
         VtList *l;int no = vt->rows;
@@ -1026,7 +1001,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
           buf->utf8_length = 0;
 
           for (int col = 1; col <= vt->cols; col++)
-	    vt->style[no][col]=vt->cstyle;
+	    buf->style[col]=vt->cstyle;
         }
       }
       break;
@@ -1035,7 +1010,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         for (int col = 1; col <= vt->cursor_x; col++)
         {
           vt_string_replace_utf8 (vt->current_line, col-1, " ");
-	  vt->style[vt->cursor_y][col]=vt->cstyle;
+	  vt->current_line->style[col]=vt->cstyle;
         }
       }
       {
@@ -1052,7 +1027,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
             buf->length = 0;
             buf->utf8_length = 0;
             for (int col = 1; col <= vt->cols; col++)
-	      vt->style[no][col]=vt->cstyle;
+	      buf->style[col]=vt->cstyle;
           }
           if (buf == vt->current_line)
           {
@@ -1386,7 +1361,7 @@ static void vtcmd_erase_n_chars (MrgVT *vt, const char *sequence)
   while (n--)
   {
      vt_string_replace_utf8 (vt->current_line, vt->cursor_x - 1 + n, " ");
-     vt->style[vt->cursor_y][vt->cursor_x + n] = vt->cstyle;
+     vt->current_line->style[vt->cursor_x + n] = vt->cstyle;
   }
 }
 
@@ -1394,15 +1369,10 @@ static void vtcmd_delete_n_chars (MrgVT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
   int count = n;
-  while (n--)
+  while (count--)
   {
-     vt_string_remove_utf8 (vt->current_line, vt->cursor_x - 1);
-     // XXX : update style
+    vt_string_remove_utf8 (vt->current_line, vt->cursor_x - 1);
   }
-  // this is crashy XXX
-  if(0)memmove (&vt->style[vt->cursor_y][vt->cursor_x],
-           &vt->style[vt->cursor_y][vt->cursor_x+count],
-	   (vt->cols - vt->cursor_x - count) * 4);
 }
 
 static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
@@ -1425,7 +1395,6 @@ static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
       }
     }
     _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x); // updates current_line
-    vt_scroll_style (vt, -1);
   }
 }
 
@@ -1857,7 +1826,6 @@ static void ctx_vt_line_feed (MrgVT *vt)
 
     if (vt->cursor_y > vt->scroll_bottom){
       vt->cursor_y = vt->scroll_bottom;
-      vt_scroll_style (vt, -1);
     }
 
     _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
@@ -3105,10 +3073,6 @@ a:
 
   if (count >0 || vt->done)
   {
-#if 0
-    if (vt->mrg)
-      mrg_queue_draw (vt->mrg, NULL);
-#endif
     vt->rev ++;
    }
   else
@@ -3344,7 +3308,6 @@ static void signal_child (int signum)
       }
     }
 }
-
 
 static void ctx_vt_run_command (MrgVT *vt, const char *command)
 {
@@ -4142,7 +4105,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   
     ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
 
-    while (l && scroll_no < vt->scroll)
+    if(0)while (l && scroll_no < vt->scroll)
     {
       VtString *str = l->data;
       const char *d = str->str;
@@ -4175,17 +4138,23 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   {
     int count = ctx_vt_get_line_count (vt);
     float y = y0 + vt->ch * vt->rows;
-    for (int row = 0; row < count; row ++)
+    for (int row = 0; y > -vt->scroll * vt->ch; row ++)
     {
-      const char *data = ctx_vt_get_line (vt, row);
-      if (data && y <= (vt->rows - vt->scroll) *  vt->ch)
+      VtList *l = vt_list_nth (vt->lines, row);
+      if (row >= vt->rows)
       {
+	 l = vt_list_nth (vt->scrollback, row-vt->rows);
+      }
+      if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
+      {
+	VtString *line = l->data;
+        const char *data = line->str;
         const char *d = data;
         float x = x0;
         for (int col = 1; col <= vt->cols; col++)
         {
-          ctx_vt_draw_cell (vt, ctx, vt->rows-row, col, x, y,
-                            vt->style[vt->rows-row][col],
+          ctx_vt_draw_cell (vt, ctx, vt->scroll?0:vt->rows-row, vt->scroll?0:col, x, y,
+                            line->style[col],
 	                    d?ctx_utf8_to_unichar (d):' ', 1, 1);
           x+=vt->cw;
 	  if (d)

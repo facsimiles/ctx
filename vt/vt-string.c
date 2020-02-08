@@ -110,6 +110,10 @@ VtString *vt_string_new_with_size (const char *initial, int initial_size)
   vt_string_init (string, initial_size);
   if (initial)
     _vt_string_append_str (string, initial);
+
+  string->style = calloc (sizeof(uint64_t), initial_size * 2);
+  string->style_size = initial_size * 2;
+
   return string;
 }
 
@@ -152,6 +156,8 @@ vt_string_free (VtString *string, int freealloc)
     {
       vt_string_destroy (string);
     }
+  if (string->style)
+    free (string->style);
   free (string);
 }
 

@@ -30,10 +30,13 @@ struct _VtString
   int   allocated_length;
 
   uint64_t *style;
-  int       style_length;
+  int       style_size;
 
   void     *ctx; // each line can have an attached ctx context;
                  // clearing could be brutal enough to unset the context of the current
+  int       double_width;
+  int       double_height_top;
+  int       double_height_bottom;
 }  __attribute((packed));
 
 VtString   *vt_string_new_with_size  (const char *initial, int initial_size);
