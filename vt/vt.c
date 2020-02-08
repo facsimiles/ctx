@@ -3065,11 +3065,18 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
       // a stray char
       if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
       {
-        ctx_vt_set_title (vt, vt->argument_buf + 3);
-	if (byte == 27)
-        vt->state = TERMINAL_STATE_SWALLOW;
-	else
-        vt->state = TERMINAL_STATE_NEUTRAL;
+	int n = parse_int (vt->argument_buf, 0);
+        switch (n)
+	{
+	  case 0:
+            ctx_vt_set_title (vt, vt->argument_buf + 3);
+	  default:
+	    if (byte == 27)
+              vt->state = TERMINAL_STATE_SWALLOW;
+	    else
+              vt->state = TERMINAL_STATE_NEUTRAL;
+	    break;
+	}
       }
       else
       {
@@ -4159,18 +4166,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
     ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
   }
 
-#if 0
-  if (vt->ctx &&  vt->ctx_pos <= 0)
-  {
-    ctx_save (ctx);
-    float factor = vt->cols * vt->cw / 1000.0;
-    ctx_scale (ctx, factor, factor);
-    ctx_render_ctx (vt->ctx, ctx);
-    ctx_restore (ctx);
-    ctx_identity_matrix (ctx); // in case we're screwed by client
-  }
-#endif
-
   /* draw terminal lines */
   {
     float y = y0 + vt->ch * vt->rows;
@@ -4214,7 +4209,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   { /* draw ctx graphics */
     int got_ctx = 0;
     float y = y0 + vt->ch * vt->rows;
-    for (int row = 0; y > -vt->scroll * vt->ch; row ++)
+    for (int row = 0; y > -(vt->scroll + 8) * vt->ch; row ++)
     {
       VtList *l = vt_list_nth (vt->lines, row);
       if (row >= vt->rows)
