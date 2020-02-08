@@ -4087,7 +4087,9 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   if (!fg) return;
   int blink = 0;
 
-  if (style & STYLE_BLINK) { blink = 1; vt->rev++ ; }
+  if (style & STYLE_BLINK) { blink = 1; vt->rev++ ;
+                  vt->set_style[row][col] = style-1;
+  }
 
   if ((style & STYLE_FG_COLOR_SET) == 0)
   {
@@ -4159,6 +4161,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   ctx_save (ctx);
   ctx_set_font (ctx, "mono");
   ctx_set_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
+
+  vt->blink_state = !vt->blink_state;
 
   if (vt->scroll)
   {
