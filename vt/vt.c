@@ -214,9 +214,10 @@ typedef enum {
 struct _MrgVT {
   char    *commandline;
   char    *title;
-  VtList  *scrollback;
   VtList  *lines;
   int      line_count;
+  VtList  *scrollback;
+  int      scrollback_count;
   int      leds[4];
   uint64_t cstyle;
 
@@ -570,10 +571,12 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
   while (chop_point)
   {
     vt_list_prepend (&vt->scrollback, chop_point->data);
+    vt->scrollback_count ++;
     vt_list_remove (&chop_point, chop_point->data);
     vt->line_count--;
   }
 
+  if (vt->scrollback_count > vt->scrollback_limit + 128)
   {
     VtList *l = vt->scrollback;
     int no = 0;
@@ -593,6 +596,7 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
     {
       vt_string_free (chop_point->data, 1);
       vt_list_remove (&chop_point, chop_point->data);
+      vt->scrollback_count --;
     }
   }
 

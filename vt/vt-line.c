@@ -176,6 +176,12 @@ void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
   int old_len = string->utf8_length;
   char tmpg[3]=" ";
 
+  if (pos == old_len)
+  {
+    _vt_string_append_str (string, new_glyph);
+    return;
+  }
+
   if (new_len <= 1 && new_glyph[0] < 32)
   {
     new_len = 1;
@@ -191,15 +197,6 @@ void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
       old_len++;
     }
   }
-
-#if 1
-  if (pos == old_len)
-  {
-    _vt_string_append_str (string, new_glyph);
-    return;
-  }
-#endif
-
 
   if (string->length + new_len >= string->allocated_length)
   {
@@ -242,16 +239,17 @@ void vt_string_insert_utf8 (VtString *string, int pos, const char *new_glyph)
   int new_len = mrg_utf8_len (*new_glyph);
   int old_len = string->utf8_length;
   char tmpg[3]=" ";
-  if (new_len <= 1 && new_glyph[0] < 32)
-  {
-    tmpg[0]=new_glyph[0]+64;
-    new_glyph = tmpg;
-  }
 
   if (old_len == pos)
   {
     vt_string_append_str (string, new_glyph);
     return;
+  }
+
+  if (new_len <= 1 && new_glyph[0] < 32)
+  {
+    tmpg[0]=new_glyph[0]+64;
+    new_glyph = tmpg;
   }
 
   {
