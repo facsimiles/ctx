@@ -587,6 +587,7 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
     if (l)
     {
       chop_point = l->next;
+      l->next = NULL;
     }
     while (chop_point)
     {
@@ -3956,6 +3957,7 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
 
     switch (no)
     {
+#if 0
       case 0:  r = 0.0; g =0.0; b =0.0;  break; // black
       case 1:  r = 0.8; g =0.25;b =0.15; break; // red
       case 2:  r = 0.1; g =0.8; b =0.0;  break; // green
@@ -3972,10 +3974,30 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
       case 13: r = 1.0; g =0.5; b =1.0;  break; // bright magenta
       case 14: r = 0.5; g =1.0; b =1.0;  break; // bright cyan
       case 15: r = 1.0; g =1.0; b =1.0;  break; // white
+#else
+      /* roughly vt340 color map */
+      case 0:  r = 0.0; g =0.0; b =0.0;  break; // black
+      case 1:  r = 0.60; g =0.26; b =0.26;  break; // bright red
+      case 2: r = 0.33; g =0.60; b =0.33;  break; // bright green
+      case 3: r = 0.60; g =0.60; b =0.33; break; // bright yellow
+      case 4: r = 0.33; g =0.34;b =0.60;  break; // bright blue
+      case 5: r = 0.60; g =0.33; b =0.60;  break; // bright magenta
+      case 6: r = 0.33; g =0.60; b =0.60;  break; // bright cyan
+      case 7:  r = 0.53;g =0.53;b =0.53; break; // light-gray
+      case 8:  r = 0.26; g =0.26; b =0.26;  break; // dark gray
+
+      case 9:  r = 0.8; g =0.13;b =0.13; break; // red
+      case 10:  r = 0.2; g =0.8; b =0.2;  break; // green
+      case 11:  r = 0.8; g =0.8; b =0.3;  break; // dark yellow
+      case 12:  r = 0.2; g =0.2 ;b =0.8;  break; // blue
+      case 13:  r = 0.8; g =0.2; b =0.8;  break; // magenta
+      case 14:  r = 0.2; g =0.8; b =0.8;  break; // cyan
+      case 15: r = 0.8; g =0.8; b =0.8;  break; // white
+#endif
     }
-    if (no == 0 && bg == 0 &&  !vt->reverse_video)
+    if (no == 0 && bg == 1 &&  !vt->reverse_video)
     {
-       r = g = b = 0.15;
+       r = g = b = 0.05;
     }
 
 #if 0
@@ -4062,7 +4084,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   }
   else
   {
-    vt_ctx_set_color (vt, ctx, color, 1, 0, 0, 0);
+    vt_ctx_set_color (vt, ctx, color, style & STYLE_BG_COLOR_SET?1:0, 0, 0, 0);
   }
   ctx_rectangle (ctx, x0, y0 - (int)vt->font_size, vt->cw, vt->ch);
   ctx_fill (ctx);
