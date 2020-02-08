@@ -3096,7 +3096,6 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
 void ctx_vt_poll (MrgVT *vt)
 {
   int count = 0;
- {
   if (vt->slow_baud)
   {
     unsigned char buf[vt->slow_baud/100];
@@ -3139,12 +3138,7 @@ a:
   if (count >0 || vt->done)
   {
     vt->rev ++;
-   }
-  else
-   {
-     usleep (200);
-   }
-}
+  }
 }
 
 /******/

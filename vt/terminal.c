@@ -282,7 +282,7 @@ int vt_main(int argc, char **argv)
 	  // make optional?
 	  ctx_vt_set_scroll (vt, 0);
         }
-        sleep_time = 200;
+        sleep_time = 800;
       }
       if (!got_event)
       {
@@ -290,8 +290,8 @@ int vt_main(int argc, char **argv)
         usleep (sleep_time);
         sleep_time *= 1.2;
 
-        if (sleep_time > 8000)
-          sleep_time = 8000;
+        if (sleep_time > 40000)
+          sleep_time = 40000;
         ctx_vt_poll (vt);
       }
       audio_task (got_event);
