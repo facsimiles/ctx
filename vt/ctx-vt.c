@@ -287,6 +287,7 @@ struct _MrgVT {
   int        in_pcm;
   int        in_ctx_ascii;
 
+  float      font_to_cell_scale;
   float      font_size; // should maybe be integer?
   float      line_spacing; // char-aspect might be better variable to use..?
   int        cw; // cell width
@@ -351,8 +352,9 @@ static void vt_cell_cache_reset(MrgVT *vt, int row, int col)
 
 static void vt_cell_cache_clear (MrgVT *vt)
 {
-  for (int row = 0; row < vt->rows; row++)
-    for (int col = 0; col < vt->cols; col++)
+  // 0 is there as a dummy
+  for (int row = 0; row <= vt->rows; row++)
+    for (int col = 0; col <= vt->cols; col++)
       vt_cell_cache_reset (vt, row, col);
 }
 
@@ -497,6 +499,7 @@ void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
   MrgVT *vt                  = calloc (sizeof (MrgVT), 1);
+  vt->font_to_cell_scale     = 1.0;
   vt->cursor_visible         = 1;
   vt->lines                  = NULL;
   vt->line_count             = 0;
@@ -3882,7 +3885,7 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar)
 
 void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold)
 {
-  if (unichar == ' ')
+  if (unichar <= ' ')
     return;
   if (!vt_special_glyph (ctx, vt, x, y, unichar))
     return;
@@ -3979,8 +3982,6 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
   //r = g = (r * 0.3 +g * 0.7);  // cheap color-blind simulation
   ctx_set_rgba (ctx, r, g, b, dim?0.5f:1.0f);
 }
-
-static float font_to_cell_scale = 1.0f;
 
 
 void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
@@ -4120,7 +4121,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 {
   ctx_save (ctx);
   ctx_set_font (ctx, "mono");
-  ctx_set_font_size (ctx, vt->font_size * font_to_cell_scale);
+  ctx_set_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
 #if 1
   if (vt->scroll)
   {
@@ -4161,7 +4162,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   }
 #endif
 
-#if 0
+#if 1
   if (vt->ctx &&  vt->ctx_pos <= 0)
   {
     ctx_save (ctx);
@@ -4225,6 +4226,9 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
     ctx_scale (ctx, factor, factor);
     ctx_render_ctx (vt->ctx, ctx);
     ctx_restore (ctx);
+
+    // XXX ; query bounds of vt->ctx
+    // xxxx; do same dirtying as cursor
   }
 
   for (int i = 0; i < 4; i++)
@@ -4238,6 +4242,16 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   }
 
   ctx_restore (ctx);
+
+  if (vt->scroll != 0)
+  {
+    vt_cell_cache_clear (vt);
+    ctx_rectangle (ctx, vt->cw * (vt->cols - 1),
+		        0, vt->cw,
+			vt->rows * vt->ch);
+    ctx_set_rgba (ctx, 1, 1, 1, .5);
+    ctx_fill (ctx);
+  }
 }
 
 int ctx_vt_is_done (MrgVT *vt)
@@ -4336,4 +4350,3 @@ pid_t       ctx_vt_get_pid            (MrgVT *vt)
 {
   return vt->pid;
 }
-

@@ -968,6 +968,10 @@ struct _CtxState {
   float     path_start_y;
   int       has_moved;
   CtxGradient gradient[CTX_MAX_GRADIENTS];
+  int       min_x;
+  int       min_y;
+  int       max_x;
+  int       max_y;
 };
 #if CTX_RASTERIZER
 
@@ -3695,6 +3699,10 @@ ctx_state_init (CtxState *state)
   state->gstate.font_size    = 12;
   state->gstate.line_spacing = 1.0;
   state->gstate.line_width   = 2.0;
+  state->min_x = 8192;
+  state->min_y = 8192;
+  state->max_x = -8192;
+  state->max_y = -8192;
   ctx_matrix_identity (&state->gstate.transform);
 }
 
