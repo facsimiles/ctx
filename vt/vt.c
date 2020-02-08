@@ -325,7 +325,7 @@ static void ctx_vt_set_title (MrgVT *vt, const char *new_title)
 
 #if 1
   if (vt->mmm)
-    mmm_set_title (vt->mmm, new_title);
+     mmm_set_title (vt->mmm, new_title);
 #endif
 }
 
@@ -544,7 +544,6 @@ int ctx_vt_ch (MrgVT *vt)
 {
   return vt->ch;
 }
-
 
 void ctx_vt_set_mmm (MrgVT *vt, void *mmm)
 {
@@ -2744,7 +2743,7 @@ void ctx_vt_open_log (MrgVT *vt, const char *path)
   vt->log = fopen (path, "w");
 }
 
-void ctx_vt_feed_byte (MrgVT *vt, int byte)
+static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 {
   if (vt->log)
   {
@@ -3114,7 +3113,7 @@ void ctx_vt_poll (MrgVT *vt)
   }
   else
   {
-    unsigned char buf[2048];
+    unsigned char buf[4096];
     int len;
     float sleeps = 0.025;
 a:
@@ -3125,11 +3124,11 @@ a:
       for (i = 0; i < len; i++)
         ctx_vt_feed_byte (vt, buf[i]);
       count += len;
-      if (count < 1024 * 64)
+      if (count < 1024 * 128)
       {
         if (len < sizeof (buf))
         {
-          float time = 0.005;
+          float time = 0.002;
           usleep (time*1000 * 1000);
           sleeps -= time;
         }

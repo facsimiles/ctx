@@ -27,18 +27,18 @@ void        ctx_vt_feed_keystring     (MrgVT *vt, const char *str);
  * run, but could be used for injecting commands, or
  * output from stored shell commands/sessions to display
  */
-void        ctx_vt_feed_byte          (MrgVT *vt, int byte);
+//void        ctx_vt_feed_byte          (MrgVT *vt, int byte);
 
 #define DEFAULT_SCROLLBACK   2048
 #define DEFAULT_ROWS         24
 #define DEFAULT_COLS         80
 
-const char *ctx_vt_get_commandline    (MrgVT *vt);
-int         ctx_vt_get_line_count     (MrgVT *vt);
+const char *ctx_vt_get_commandline      (MrgVT *vt);
+int         ctx_vt_get_line_count       (MrgVT *vt);
 
-pid_t       ctx_vt_get_pid            (MrgVT *vt);
+pid_t       ctx_vt_get_pid              (MrgVT *vt);
 
-const char *ctx_vt_get_line           (MrgVT *vt, int no);
+const char *ctx_vt_get_line             (MrgVT *vt, int no);
 
 void        ctx_vt_set_scrollback_lines (MrgVT *vt, int scrollback_lines);
 int         ctx_vt_get_scrollback_lines (MrgVT *vt);
@@ -53,7 +53,8 @@ int         ctx_vt_get_cursor_x         (MrgVT *vt);
 int         ctx_vt_get_cursor_y         (MrgVT *vt);
 
 void        ctx_vt_draw                 (MrgVT *vt, Ctx *ctx, double x, double y);
-void ctx_vt_rev_inc (MrgVT *vt);
+
+void        ctx_vt_rev_inc              (MrgVT *vt);
 
 typedef enum VtMouseEvent {
 	VT_MOUSE_MOTION = 0,
@@ -64,5 +65,3 @@ typedef enum VtMouseEvent {
 
 void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y);
 void ctx_vt_set_mmm (MrgVT *vt, void *mmm);
-
-
