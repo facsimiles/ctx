@@ -15,8 +15,7 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "vt-string.h"
-#include "vt-utf8.h"
+#include "vt-line.h"
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
@@ -244,6 +243,12 @@ void vt_string_insert_utf8 (VtString *string, int pos, const char *new_glyph)
   {
     tmpg[0]=new_glyph[0]+64;
     new_glyph = tmpg;
+  }
+
+  if (old_len == pos)
+  {
+    vt_string_append_str (string, new_glyph);
+    return;
   }
 
   {

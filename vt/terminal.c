@@ -23,7 +23,7 @@
 #define CTX_RASTERIZER_FORCE_AA  1
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
-#include "vt-string.h"
+#include "vt-line.h"
 #include "vt.h"
 
 int   do_quit      = 0;

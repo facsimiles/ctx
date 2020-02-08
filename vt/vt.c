@@ -41,7 +41,7 @@
 
 #include "ctx.h"
 
-#include "vt-string.h"
+#include "vt-line.h"
 #include "vt.h"
 
 #define VT_LOG_INFO     (1<<0)
@@ -666,8 +666,7 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
     }
   }
 
-  //vt->style[vt->cursor_y][vt->cursor_x] = vt->cstyle;
-  vt->current_line->style[vt->cursor_x] = vt->cstyle;
+  vt_string_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
   if (vt->insert_mode)
    {
      vt_string_insert_utf8 (vt->current_line, vt->cursor_x - 1, str);
@@ -948,7 +947,7 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
         char *p = (char*)mrg_utf8_skip (vt->current_line->str, vt->cursor_x-1);
         if (p) *p = 0;
 	for (int col = vt->cursor_x; col <= vt->cols; col++)//vt->current_line->utf8_length; col++)
-	  vt->current_line->style[col]=vt->cstyle;
+	  vt_string_set_style (vt->current_line, col - 1, vt->cstyle);
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
       }
@@ -961,7 +960,7 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
         }
 
 	for (int col = 1; col <= vt->cursor_x; col++)
-	  vt->current_line->style[col]=vt->cstyle;
+	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
 
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str); // should be a nop
@@ -969,7 +968,7 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
       break;
     case 2: // clear entire line
       for (int col = 1; col <= vt->cols; col++)
-	  vt->current_line->style[col]=vt->cstyle;
+	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
       vt_string_set (vt->current_line, "");
       break;
   }
@@ -989,7 +988,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
       }
 	for (int col = vt->cursor_x; col <= vt->cols; col++)
-	  vt->current_line->style[col]=vt->cstyle;
+	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
 
       {
         VtList *l;int no = vt->rows;
@@ -1001,7 +1000,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
           buf->utf8_length = 0;
 
           for (int col = 1; col <= vt->cols; col++)
-	    buf->style[col]=vt->cstyle;
+	    vt_string_set_style (buf, col-1, vt->cstyle);
         }
       }
       break;
@@ -1010,7 +1009,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         for (int col = 1; col <= vt->cursor_x; col++)
         {
           vt_string_replace_utf8 (vt->current_line, col-1, " ");
-	  vt->current_line->style[col]=vt->cstyle;
+	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
         }
       }
       {
@@ -1027,7 +1026,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
             buf->length = 0;
             buf->utf8_length = 0;
             for (int col = 1; col <= vt->cols; col++)
-	      buf->style[col]=vt->cstyle;
+	      vt_string_set_style (buf, col-1, vt->cstyle);
           }
           if (buf == vt->current_line)
           {
@@ -1361,7 +1360,7 @@ static void vtcmd_erase_n_chars (MrgVT *vt, const char *sequence)
   while (n--)
   {
      vt_string_replace_utf8 (vt->current_line, vt->cursor_x - 1 + n, " ");
-     vt->current_line->style[vt->cursor_x + n] = vt->cstyle;
+     vt_string_set_style (vt->current_line, vt->cursor_x + n - 1, vt->cstyle);
   }
 }
 
@@ -1373,6 +1372,7 @@ static void vtcmd_delete_n_chars (MrgVT *vt, const char *sequence)
   {
     vt_string_remove_utf8 (vt->current_line, vt->cursor_x - 1);
   }
+  // XXX need style
 }
 
 static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
@@ -4136,7 +4136,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 
   /* draw terminal lines */
   {
-    int count = ctx_vt_get_line_count (vt);
     float y = y0 + vt->ch * vt->rows;
     for (int row = 0; y > -vt->scroll * vt->ch; row ++)
     {
@@ -4153,8 +4152,15 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
         float x = x0;
         for (int col = 1; col <= vt->cols; col++)
         {
-          ctx_vt_draw_cell (vt, ctx, vt->scroll?0:vt->rows-row, vt->scroll?0:col, x, y,
-                            line->style[col],
+	  int r = vt->rows - row;
+	  int c = col;
+	  if (vt->scroll)
+	  {
+	    /* this prevents draw_cell from using cache */
+            r = c = 0;
+	  }
+          ctx_vt_draw_cell (vt, ctx, r, c, x, y,
+                            vt_string_get_style (line, col-1),
 	                    d?ctx_utf8_to_unichar (d):' ', 1, 1);
           x+=vt->cw;
 	  if (d)

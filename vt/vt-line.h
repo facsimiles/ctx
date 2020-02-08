@@ -39,6 +39,22 @@ struct _VtString
   int       double_height_bottom;
 }  __attribute((packed));
 
+
+static inline uint64_t vt_string_get_style (VtString *string, int pos)
+{
+  if (pos < 0 || pos >= string->style_size)
+    return 0;
+  return string->style[pos];
+}
+
+static inline void vt_string_set_style (VtString *string, int pos, uint64_t style)
+{
+  if (pos < 0 || pos >= string->style_size)
+    return;
+  string->style[pos] = style;
+}
+
+
 VtString   *vt_string_new_with_size  (const char *initial, int initial_size);
 VtString   *vt_string_new            (const char *initial);
 void        vt_string_free           (VtString *string, int freealloc);
