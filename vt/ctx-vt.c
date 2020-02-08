@@ -358,7 +358,6 @@ static void vt_cell_cache_clear (MrgVT *vt)
       vt_cell_cache_reset (vt, row, col);
 }
 
-
 static void vtcmd_clear (MrgVT *vt, const char *sequence)
 {
   while (vt->lines)
@@ -397,7 +396,6 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
     vt->cstyle |=  ((uint64_t)(b)<<(40+8+8));\
     vt->cstyle |= STYLE_BG_COLOR_SET;\
     vt->cstyle |= STYLE_BG24_COLOR_SET;\
-
 
 #define set_fg_idx(idx) \
     vt->cstyle ^= (vt->cstyle & (255l<<16));\
@@ -498,29 +496,28 @@ void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
-  MrgVT *vt                  = calloc (sizeof (MrgVT), 1);
-  vt->font_to_cell_scale     = 1.0;
-  vt->cursor_visible         = 1;
-  vt->lines                  = NULL;
-  vt->line_count             = 0;
-  vt->current_line           = NULL;
-  vt->cols                   = 0;
-  vt->rows                   = 0;
-  vt->lines_scrollback       = DEFAULT_SCROLLBACK;
+  MrgVT *vt              = calloc (sizeof (MrgVT), 1);
+  vt->font_to_cell_scale = 1.0;
+  vt->cursor_visible     = 1;
+  vt->lines              = NULL;
+  vt->line_count         = 0;
+  vt->current_line       = NULL;
+  vt->cols               = 0;
+  vt->rows               = 0;
+  vt->lines_scrollback   = DEFAULT_SCROLLBACK;
 
-  vt->argument_buf_len       = 0;
-  vt->argument_buf[0]        = 0;
-  vt->done                   = 0;
-  vt->result                 = -1;
-  vt->state                  = TERMINAL_STATE_NEUTRAL,
-  vt->commandline            = NULL;
-  vt->line_spacing           = 1.0;
-  vt->scale_x                = 1.0;
-  vt->scale_y                = 1.0;
+  vt->argument_buf_len   = 0;
+  vt->argument_buf[0]    = 0;
+  vt->done               = 0;
+  vt->result             = -1;
+  vt->state              = TERMINAL_STATE_NEUTRAL,
+  vt->commandline        = NULL;
+  vt->line_spacing       = 1.0;
+  vt->scale_x            = 1.0;
+  vt->scale_y            = 1.0;
 
   ctx_vt_set_font_size (vt, font_size);
   ctx_vt_set_line_spacing (vt, line_spacing);
-
 
   if (command)
   {
@@ -541,12 +538,12 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   return vt;
 }
 
-int         ctx_vt_cw                 (MrgVT *vt)
+int ctx_vt_cw (MrgVT *vt)
 {
   return vt->cw;
 }
 
-int         ctx_vt_ch                 (MrgVT *vt)
+int ctx_vt_ch (MrgVT *vt)
 {
   return vt->ch;
 }
@@ -1632,7 +1629,7 @@ static void _ctx_vt_htab (MrgVT *vt)
 {
   do {
     vt->cursor_x ++;
-  } while ( ! vt->tabs[vt->cursor_x-1] && vt->cursor_x < vt->cols);
+  } while (vt->cursor_x < vt->cols &&  ! vt->tabs[vt->cursor_x-1]);
   if (vt->cursor_x > vt->cols)
     vt->cursor_x = vt->cols;
 }
@@ -4245,12 +4242,25 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 
   if (vt->scroll != 0)
   {
+    float disp_lines = vt->rows;
+    float tot_lines = vt->line_count + vt_list_length (vt->scrollback);
+
+    float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
+    float win_len = disp_lines / tot_lines;
+
     vt_cell_cache_clear (vt);
-    ctx_rectangle (ctx, vt->cw * (vt->cols - 1),
-		        0, vt->cw,
+    ctx_rectangle (ctx, vt->cw * (vt->cols - 2),
+		        0, 2 * vt->cw,
 			vt->rows * vt->ch);
     ctx_set_rgba (ctx, 1, 1, 1, .5);
     ctx_fill (ctx);
+
+    ctx_rectangle (ctx, vt->cw * (vt->cols - 2 + 0.1),
+		        offset * vt->rows * vt->ch, (2-0.2) * vt->cw,
+			win_len * vt->rows * vt->ch);
+    ctx_set_rgba (ctx, 0, 0, 0, .5);
+    ctx_fill (ctx);
+
   }
 }
 
