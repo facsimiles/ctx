@@ -1510,7 +1510,9 @@ qagain:
 	     vtcmd_set_132_col (vt, set);
 	     break; // set 132 col
      case 5: /*MODE;Screen mode;Reverse;Normal;*/
-	     vt->reverse_video = set; break;
+	     vt->reverse_video = set;
+	     vt_cell_cache_clear (vt);
+	     break;
      case 6: /*MODE;Origin mode;Relative;Absolute;*/
 	     vt->origin = set;
 	     if (set)
@@ -3942,16 +3944,8 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
   if (no < 16)
   {
 
-    if (bold && !(vt->reverse_video ^ reverse) && no < 8)
+    if (bold && no < 8) //&& !(vt->reverse_video ^ reverse) && no < 8)
     {
-#if 0
-       r *= 1.5;
-       g *= 1.5;
-       b *= 1.5;
-       if (r > 1.0) r = 1.0;
-       if (g > 1.0) g = 1.0;
-       if (b > 1.0) b = 1.0;
-#endif
        no+=8;
     }
 
@@ -3976,22 +3970,22 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
       case 15: r = 1.0; g =1.0; b =1.0;  break; // white
 #else
       /* roughly vt340 color map */
-      case 0:  r = 0.0; g =0.0; b =0.0;  break; // black
-      case 1:  r = 0.60; g =0.26; b =0.26;  break; // bright red
+      case 0: r = 0.0; g =0.0; b =0.0;  break; // black
+      case 1: r = 0.60; g =0.26; b =0.26;  break; // bright red
       case 2: r = 0.33; g =0.60; b =0.33;  break; // bright green
       case 3: r = 0.60; g =0.60; b =0.33; break; // bright yellow
-      case 4: r = 0.33; g =0.34;b =0.60;  break; // bright blue
+      case 4: r = 0.33; g =0.34; b =0.60;  break; // bright blue
       case 5: r = 0.60; g =0.33; b =0.60;  break; // bright magenta
       case 6: r = 0.33; g =0.60; b =0.60;  break; // bright cyan
-      case 7:  r = 0.53;g =0.53;b =0.53; break; // light-gray
-      case 8:  r = 0.26; g =0.26; b =0.26;  break; // dark gray
+      case 7:  r = 0.53;g =0.53; b =0.53; break; // light-gray
+      case 8:  r = 0.26; g =0.26;b =0.26;  break; // dark gray
 
       case 9:  r = 0.8; g =0.13;b =0.13; break; // red
-      case 10:  r = 0.2; g =0.8; b =0.2;  break; // green
-      case 11:  r = 0.8; g =0.8; b =0.3;  break; // dark yellow
-      case 12:  r = 0.2; g =0.2 ;b =0.8;  break; // blue
-      case 13:  r = 0.8; g =0.2; b =0.8;  break; // magenta
-      case 14:  r = 0.2; g =0.8; b =0.8;  break; // cyan
+      case 10: r = 0.2; g =0.8; b =0.2;  break; // green
+      case 11: r = 0.8; g =0.8; b =0.3;  break; // dark yellow
+      case 12: r = 0.2; g =0.2; b =0.8;  break; // blue
+      case 13: r = 0.8; g =0.2; b =0.8;  break; // magenta
+      case 14: r = 0.2; g =0.8; b =0.8;  break; // cyan
       case 15: r = 0.8; g =0.8; b =0.8;  break; // white
 #endif
     }
@@ -3999,7 +3993,6 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
     {
        r = g = b = 0.05;
     }
-
 #if 0
     if (bg)
     {
@@ -4062,7 +4055,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   }
   else
   {
-     if ((style & STYLE_REVERSE))
+     if (((style & STYLE_REVERSE)!=0) ^ vt->reverse_video) 
      {
        color = 15;
      }
@@ -4098,14 +4091,14 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
   if ((style & STYLE_FG_COLOR_SET) == 0)
   {
-     if (style & STYLE_REVERSE) 
+     if (((style & STYLE_REVERSE)!=0) ^ vt->reverse_video) 
        color = 0;
      else
        color = 15;
   }
   else
   {
-     if (style & STYLE_REVERSE) 
+     if (((style & STYLE_REVERSE)!=0)) 
       color = (style >> 40) & 255;
     else
       color = (style >> 16) & 255;
