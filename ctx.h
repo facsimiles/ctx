@@ -8158,7 +8158,7 @@ ctx_parse_str_line (Ctx *ctx, const char *str)
   while (*s && (*s == ' ' || *s == '\t')) s ++;
   do
   {
-    if (*s >= '0' && (*s <= '9' || *s=='-'))
+    if ((*s >= '0' && *s <= '9') || *s=='-')
     {
       arg[n_args] = ctx_strtof (s, (char**)&s);
       if (n_args < 10)
