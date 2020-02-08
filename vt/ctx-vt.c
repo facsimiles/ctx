@@ -192,8 +192,8 @@ typedef enum {
   TERMINAL_STATE_SWALLOW          = 5,
 } TerminalState;
 
-#define MAX_COLS 400  // should be dynamic
-#define MAX_ROWS 400
+#define MAX_COLS 200  // should be dynamic
+#define MAX_ROWS 200
 
 typedef enum {
   STYLE_BOLD            = 1 << 0,
@@ -341,6 +341,22 @@ static void _ctx_vt_move_to (MrgVT *vt, int y, int x);
 
 void vt_scroll_style (MrgVT *vt, int amount);
 
+static void vt_cell_cache_reset(MrgVT *vt, int row, int col)
+{
+  if (row < 0 || col < 0 || row > vt->rows || col > vt->cols)
+    return;
+  vt->set_unichar[row][col] = 0xfffff;
+  vt->set_style[row][col] = 0xffffff;
+}
+
+static void vt_cell_cache_clear (MrgVT *vt)
+{
+  for (int row = 0; row < vt->rows; row++)
+    for (int col = 0; col < vt->cols; col++)
+      vt_cell_cache_reset (vt, row, col);
+}
+
+
 static void vtcmd_clear (MrgVT *vt, const char *sequence)
 {
   while (vt->lines)
@@ -360,6 +376,8 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
     vt_list_prepend (&vt->lines, vt->current_line);
     vt->line_count++;
   }
+
+  vt_cell_cache_clear (vt); // should not be needed
 }
 
 #define set_fg_rgb(r, g, b) \
@@ -429,7 +447,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->autowrap       = 1;
   vt->cursor_visible = 1;
   vt->charset = 0;
-  vt->bell = 0;
+  vt->bell = 3;
   vt->scale_x                = 1.0;
   vt->scale_y                = 1.0;
   vt->saved_x                = 1;
@@ -462,17 +480,18 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
     ctx_clear (vt->ctx);
 }
 
-
 void ctx_vt_set_font_size (MrgVT *vt, float font_size)
 {
   vt->font_size = font_size;
   _ctx_vt_compute_cw_ch (vt);
+  vt_cell_cache_clear (vt);
 }
 
 void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 {
   vt->line_spacing = line_spacing;
   _ctx_vt_compute_cw_ch (vt);
+  vt_cell_cache_clear (vt);
 }
 
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
@@ -578,6 +597,8 @@ void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
   vt->scroll_top     = 1;
   vt->scroll_bottom  = vt->rows;
   vt->rev++;
+
+  vt_cell_cache_clear (vt);
 
   VT_info ("resize %i %i", irows, icols);
 }
@@ -1063,7 +1084,7 @@ static void vtcmd_screen_alignment_display (MrgVT *vt, const char *sequence)
   }
 }
 
-#if 1
+#if 0
 static int find_idx (int r, int g, int b)
 {
   r = r / 255.0 * 5;
@@ -1328,12 +1349,14 @@ static void vtcmd_request_terminal_parameters (MrgVT *vt, const char *sequence)
 
 static void vtcmd_save_cursor_position (MrgVT *vt, const char *sequence)
 {
+	fprintf (stderr, "SCP ");
   vt->saved_x = vt->cursor_x;
   vt->saved_y = vt->cursor_y;
 }
 
 static void vtcmd_restore_cursor_position (MrgVT *vt, const char *sequence)
 {
+	fprintf (stderr, "RCP ");
   _ctx_vt_move_to (vt, vt->saved_y, vt->saved_x);
 }
 
@@ -4161,7 +4184,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
       {
         const char *d = data;
         float x = x0;
-        for (int col = 1; col < vt->cols; col++)
+        for (int col = 1; col <= vt->cols; col++)
         {
           ctx_vt_draw_cell (vt, ctx, vt->rows-row, col, x, y,
                             vt->style[vt->rows-row][col],
@@ -4178,14 +4201,14 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
     }
   }
 
+
 #define MIN(a,b)  ((a)<(b)?(a):(b))
   /* draw cursor */
   if (vt->cursor_visible)
   {
     int cursor_x = ctx_vt_get_cursor_x (vt);
     int cursor_y = ctx_vt_get_cursor_y (vt);
-    vt->set_unichar[cursor_y][cursor_x] = 0xfffff;
-    vt->set_style[cursor_y][cursor_x] = 0xffffff;
+    vt_cell_cache_reset (vt, cursor_y, cursor_x);
     ctx_set_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
     ctx_new_path (ctx);
     ctx_rectangle (ctx,
