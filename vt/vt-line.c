@@ -111,8 +111,8 @@ VtString *vt_string_new_with_size (const char *initial, int initial_size)
   if (initial)
     _vt_string_append_str (string, initial);
 
-  string->style = calloc (sizeof(uint64_t), initial_size * 2);
-  string->style_size = initial_size * 2;
+  string->style = calloc (sizeof(uint64_t), initial_size);
+  string->style_size = initial_size;
 
   return string;
 }

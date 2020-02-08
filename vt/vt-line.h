@@ -47,10 +47,20 @@ static inline uint64_t vt_string_get_style (VtString *string, int pos)
   return string->style[pos];
 }
 
+#include <stdlib.h>
+
 static inline void vt_string_set_style (VtString *string, int pos, uint64_t style)
 {
-  if (pos < 0 || pos >= string->style_size)
+  if (pos < 0 || pos >= 512)
     return;
+
+  if (pos >= string->style_size)
+  {
+    int new_size = pos + 16;
+    string->style = realloc (string->style, new_size * sizeof (uint64_t));
+    memset (&string->style[string->style_size], 0, (new_size - string->style_size) * sizeof (uint64_t));
+    string->style_size = new_size;
+  }
   string->style[pos] = style;
 }
 

@@ -192,8 +192,8 @@ typedef enum {
   TERMINAL_STATE_SWALLOW          = 5,
 } TerminalState;
 
-#define MAX_COLS 200  // should be dynamic
-#define MAX_ROWS 200
+#define MAX_COLS 100  // should be dynamic
+#define MAX_ROWS 100
 
 typedef enum {
   STYLE_BOLD            = 1 << 0,
@@ -370,7 +370,7 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
   /* populate lines */
   for (int i=0; i<vt->rows;i++)
   {
-    vt->current_line = vt_string_new_with_size ("", vt->cols);
+    vt->current_line = vt_string_new_with_size ("", vt->cols/4);
     vt_list_prepend (&vt->lines, vt->current_line);
     vt->line_count++;
   }
@@ -667,7 +667,7 @@ static void _ctx_vt_move_to (MrgVT *vt, int y, int x)
   {
     for (; i > 0; i--)
       {
-        vt->current_line = vt_string_new_with_size ("", vt->cols);
+        vt->current_line = vt_string_new_with_size ("", vt->cols/4);
         vt_list_append (&vt->lines, vt->current_line);
         vt->line_count++;
       }
@@ -783,7 +783,7 @@ static void vt_scroll (MrgVT *vt, int amount)
   }
   else
   {
-    string = vt_string_new_with_size ("", vt->cols);
+    string = vt_string_new_with_size ("", vt->cols/4);
   }
 
   if (amount > 0 && vt->scroll_top == 1)
@@ -1850,7 +1850,7 @@ static void ctx_vt_line_feed (MrgVT *vt)
   {
     if (vt->lines->data == vt->current_line)
     {
-      vt->current_line = vt_string_new_with_size ("", vt->cols);
+      vt->current_line = vt_string_new_with_size ("", vt->cols/4);
       vt_list_prepend (&vt->lines, vt->current_line);
       vt->line_count++;
     }
@@ -1868,7 +1868,7 @@ static void ctx_vt_line_feed (MrgVT *vt)
   if (vt->lines->data == vt->current_line &&
       (vt->cursor_y != vt->scroll_bottom) && 0)
   {
-    vt->current_line = vt_string_new_with_size ("", vt->cols);
+    vt->current_line = vt_string_new_with_size ("", vt->cols/4);
     vt_list_prepend (&vt->lines, vt->current_line);
     vt->line_count++;
   }
