@@ -29,7 +29,7 @@ void        ctx_vt_feed_keystring     (MrgVT *vt, const char *str);
  */
 void        ctx_vt_feed_byte          (MrgVT *vt, int byte);
 
-#define DEFAULT_SCROLLBACK   1000
+#define DEFAULT_SCROLLBACK   2048
 #define DEFAULT_ROWS         24
 #define DEFAULT_COLS         80
 

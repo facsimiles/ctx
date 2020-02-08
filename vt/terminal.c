@@ -171,7 +171,6 @@ int vt_main(int argc, char **argv)
 	       	if (!strcmp (event, "shift-page-up"))
 	{
 	  int new_scroll = ctx_vt_get_scroll (vt) + ctx_vt_get_rows (vt)/2;
-	  if (new_scroll > 200) new_scroll = 200;
 	  ctx_vt_set_scroll (vt, new_scroll);
 	  ctx_vt_rev_inc (vt);
 	} else if (!strcmp (event, "shift-page-down"))
@@ -280,6 +279,8 @@ int vt_main(int argc, char **argv)
         {
           ctx_vt_feed_keystring (vt, event);
           got_event = 1;
+	  // make optional?
+	  ctx_vt_set_scroll (vt, 0);
         }
         sleep_time = 200;
       }

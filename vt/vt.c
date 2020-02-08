@@ -270,7 +270,7 @@ struct _MrgVT {
   int        cursor_key_application;
   int        scroll_top;
   int        scroll_bottom;
-  int        lines_scrollback;
+  int        scrollback_limit;
   int        scroll;
 
   char       argument_buf[64];
@@ -500,7 +500,7 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   vt->current_line       = NULL;
   vt->cols               = 0;
   vt->rows               = 0;
-  vt->lines_scrollback   = DEFAULT_SCROLLBACK;
+  vt->scrollback_limit   = DEFAULT_SCROLLBACK;
 
   vt->argument_buf_len   = 0;
   vt->argument_buf[0]    = 0;
@@ -527,7 +527,7 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   ctx_vt_set_term_size (vt, cols, rows);
   vtcmd_reset_to_initial_state (vt, NULL);
 
-  vt->ctx = ctx_new ();
+  //vt->ctx = ctx_new ();
 
   vt_list_prepend (&vts, vt);
 
@@ -570,10 +570,31 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
   while (chop_point)
   {
     vt_list_prepend (&vt->scrollback, chop_point->data);
-    //vt_string_free (chop_point->data, 1);
     vt_list_remove (&chop_point, chop_point->data);
     vt->line_count--;
   }
+
+  {
+    VtList *l = vt->scrollback;
+    int no = 0;
+    while (l && no < vt->scrollback_limit)
+    {
+       l = l->next;
+       no++;
+    }
+
+    chop_point = NULL;
+    if (l)
+    {
+      chop_point = l->next;
+    }
+    while (chop_point)
+    {
+      vt_string_free (chop_point->data, 1);
+      vt_list_remove (&chop_point, chop_point->data);
+    }
+  }
+
   return 0;
 }
 
@@ -652,12 +673,21 @@ static void _ctx_vt_move_to (MrgVT *vt, int y, int x)
 
 static void ctx_vt_line_feed (MrgVT *vt);
 
+static void vt_scroll (MrgVT *vt, int amount);
+
 static void _ctx_vt_add_str (MrgVT *vt, const char *str)
 {
   if (vt->cursor_x  > vt->cols)
   {
     if (vt->autowrap) {
-      _ctx_vt_move_to (vt, vt->cursor_y+1, 1);
+      if (vt->cursor_y == vt->scroll_bottom)
+      {
+        vt_scroll (vt, -1);
+      }
+      else
+      {
+        _ctx_vt_move_to (vt, vt->cursor_y+1, 1);
+      }
       vt->cursor_x = 1;
     }
     else
@@ -1323,31 +1353,28 @@ static void vtcmd_request_terminal_parameters (MrgVT *vt, const char *sequence)
 
 static void vtcmd_save_cursor_position (MrgVT *vt, const char *sequence)
 {
-	fprintf (stderr, "SCP ");
   vt->saved_x = vt->cursor_x;
   vt->saved_y = vt->cursor_y;
 }
 
 static void vtcmd_restore_cursor_position (MrgVT *vt, const char *sequence)
 {
-	fprintf (stderr, "RCP ");
   _ctx_vt_move_to (vt, vt->saved_y, vt->saved_x);
 }
 
 
 static void vtcmd_save_cursor (MrgVT *vt, const char *sequence)
 {
-  vt->saved_x       = vt->cursor_x;
-  vt->saved_y       = vt->cursor_y;
   vt->saved_style   = vt->cstyle;
   vt->saved_charset = vt->charset;
   vt->saved_origin  = vt->origin;
   vt->saved_autowrap  = vt->autowrap;
+  vtcmd_save_cursor_position (vt, sequence);
 }
 
 static void vtcmd_restore_cursor (MrgVT *vt, const char *sequence)
 {
-  _ctx_vt_move_to (vt, vt->saved_y, vt->saved_x);
+  vtcmd_restore_cursor_position (vt, sequence);
   vt->cstyle  = vt->saved_style;
   vt->charset = vt->saved_charset;
   vt->origin  = vt->saved_origin;     // XXX according to vt100 user guide 
@@ -2783,6 +2810,21 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
   }
   else if (vt->in_ctx_ascii)
   {
+    Ctx *ctx = vt->current_line->ctx;
+    if (ctx)
+    {
+      //ctx_clear (ctx);
+    }
+    else
+    {
+      ctx = vt->current_line->ctx = ctx_new ();
+    }
+#if 0
+    ctx_translate (ctx,
+		   0,//(vt->cursor_x-1) * vt->cw,
+		   (vt->cursor_y-1));
+#endif
+
     switch (byte)
     {
       case '\r':
@@ -2800,7 +2842,7 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	  if (strlen ((char*)vt->utf8_holding) > 2)
 	  {
 	    VT_info ("gfx: <%s>", vt->utf8_holding);
-	    ctx_parse_str_line (vt->ctx, (char*)vt->utf8_holding);
+	    ctx_parse_str_line (ctx, (char*)vt->utf8_holding);
 	  }
 	}
 	vt->utf8_pos=0;
@@ -2815,6 +2857,16 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
   }
   else if (vt->in_ctx)
   {
+    Ctx *ctx = vt->current_line->ctx;
+    if (!vt->current_line->ctx)
+    {
+      ctx = vt->current_line->ctx = ctx_new ();
+      ctx_translate (ctx,
+		     (vt->cursor_x-1) * vt->cw * 10,
+		     (vt->cursor_y-1) * vt->ch * 10);
+    }
+
+
     /* we reuse the utf8 holding area from the default code path, and collect
      * 9 bytes at a time
      */
@@ -2829,10 +2881,13 @@ void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	    break;
 	  case CTX_CLEAR:
             //ctx_empty (vt->ctx);
-            ctx_clear (vt->ctx);
+            ctx_clear (ctx);
+            ctx_translate (ctx,
+	  	     (vt->cursor_x-1) * vt->cw * 10,
+		     (vt->cursor_y-1) * vt->ch * 10);
 	    break;
 	  default:
-            ctx_add_single (vt->ctx, &vt->utf8_holding[0]);
+            ctx_add_single (ctx, &vt->utf8_holding[0]);
 	    break;
         }
         vt->utf8_pos = 0;
@@ -4082,11 +4137,9 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   ctx_save (ctx);
   ctx_set_font (ctx, "mono");
   ctx_set_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
-#if 1
+
   if (vt->scroll)
   {
-    VtList *l = vt->scrollback;
-    int scroll_no = 0;
     ctx_new_path (ctx);
     ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
 		              (vt->rows + 1) * vt->ch);
@@ -4104,25 +4157,9 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
     }
   
     ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
-
-    if(0)while (l && scroll_no < vt->scroll)
-    {
-      VtString *str = l->data;
-      const char *d = str->str;
-      float x = x0;
-        for (int col = 1; *d; d = mrg_utf8_skip (d, 1), col++)
-        {
-	  vt_ctx_glyph (ctx, vt, x, -scroll_no * vt->ch,
-			  ctx_utf8_to_unichar (d), 0);
-	  x+=vt->cw;
-	}
-      l = l->next;
-      scroll_no ++;
-    }
   }
-#endif
 
-#if 1
+#if 0
   if (vt->ctx &&  vt->ctx_pos <= 0)
   {
     ctx_save (ctx);
@@ -4174,6 +4211,38 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
     }
   }
 
+  { /* draw ctx graphics */
+    int got_ctx = 0;
+    float y = y0 + vt->ch * vt->rows;
+    for (int row = 0; y > -vt->scroll * vt->ch; row ++)
+    {
+      VtList *l = vt_list_nth (vt->lines, row);
+      if (row >= vt->rows)
+      {
+	 l = vt_list_nth (vt->scrollback, row-vt->rows);
+      }
+      if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
+      {
+	VtString *line = l->data;
+	if (line->ctx)
+	{
+          ctx_save (ctx);
+          ctx_translate (ctx, 0, (vt->rows-row) * (vt->ch -1));
+          //float factor = vt->cols * vt->cw / 1000.0;
+          //ctx_scale (ctx, factor, factor);
+          ctx_render_ctx (line->ctx, ctx);
+          ctx_restore (ctx);
+	  got_ctx = 1;
+	}
+      }
+      y -= vt->ch;
+    }
+    if (got_ctx)
+    {
+      /* if we knew the bounds of rendered ctx data - we can do better */
+      vt_cell_cache_clear (vt);
+    }
+  }
 
 #define MIN(a,b)  ((a)<(b)?(a):(b))
   /* draw cursor */
@@ -4189,18 +4258,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
                y0 + (cursor_y - 1) * vt->ch,
                vt->cw, vt->ch);
     ctx_fill (ctx);
-  }
-
-  if (vt->ctx &&  vt->ctx_pos == 1)
-  {
-    ctx_save (ctx);
-    float factor = vt->cols * vt->cw / 1000.0;
-    ctx_scale (ctx, factor, factor);
-    ctx_render_ctx (vt->ctx, ctx);
-    ctx_restore (ctx);
-
-    // XXX ; query bounds of vt->ctx
-    // xxxx; do same dirtying as cursor
   }
 
   for (int i = 0; i < 4; i++)
@@ -4252,17 +4309,26 @@ int ctx_vt_get_result (MrgVT *vt)
 
 void ctx_vt_set_scrollback_lines (MrgVT *vt, int scrollback_lines)
 {
-  vt->lines_scrollback = scrollback_lines;
+  vt->scrollback_limit = scrollback_lines;
 }
 
 int  ctx_vt_get_scrollback_lines (MrgVT *vt)
 {
-  return vt->lines_scrollback;
+  return vt->scrollback_limit;
 }
 
 void ctx_vt_set_scroll (MrgVT *vt, int scroll)
 {
+  if (vt->scroll == scroll)
+    return;
+
   vt->scroll = scroll;
+
+  if (vt->scroll > vt_list_length (vt->scrollback) )
+    vt->scroll = vt_list_length (vt->scrollback);
+  if (vt->scroll < 0)
+    vt->scroll = 0;
+
   vt_cell_cache_clear (vt);
 }
 
