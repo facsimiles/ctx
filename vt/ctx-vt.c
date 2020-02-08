@@ -4264,6 +4264,7 @@ int  ctx_vt_get_scrollback_lines (MrgVT *vt)
 void ctx_vt_set_scroll (MrgVT *vt, int scroll)
 {
   vt->scroll = scroll;
+  vt_cell_cache_clear (vt);
 }
 
 int ctx_vt_get_scroll (MrgVT *vt)
