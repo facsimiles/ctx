@@ -211,8 +211,10 @@ typedef enum {
   STYLE_NONERASABLE   = 1 << 12   // needed for selective erase
 } TerminalStyle;
 
+
+
+
 struct _MrgVT {
-  char    *commandline;
   char    *title;
   VtList  *lines;
   int      line_count;
@@ -508,7 +510,6 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   vt->done               = 0;
   vt->result             = -1;
   vt->state              = TERMINAL_STATE_NEUTRAL,
-  vt->commandline        = NULL;
   vt->line_spacing       = 1.0;
   vt->scale_x            = 1.0;
   vt->scale_y            = 1.0;
@@ -519,7 +520,6 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   if (command)
   {
     ctx_vt_run_command (vt, command);
-    vt->commandline = strdup (command);
   }
 
   if (cols <= 0) cols = DEFAULT_COLS;
@@ -3415,11 +3415,6 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
   fcntl(vt->pty, F_SETFL, O_NONBLOCK);
 }
 
-const char *ctx_vt_get_commandline (MrgVT *vt)
-{
-  return vt->commandline;
-}
-
 void ctx_vt_destroy (MrgVT *vt)
 {
   while (vt->lines)
@@ -3431,8 +3426,6 @@ void ctx_vt_destroy (MrgVT *vt)
 
   if (vt->ctx)
     ctx_free (vt->ctx);
-  if (vt->commandline)
-    free (vt->commandline);
 
   vt_list_remove (&vts, vt);
 

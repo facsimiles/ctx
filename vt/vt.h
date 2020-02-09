@@ -33,7 +33,6 @@ void        ctx_vt_feed_keystring     (MrgVT *vt, const char *str);
 #define DEFAULT_ROWS         24
 #define DEFAULT_COLS         80
 
-const char *ctx_vt_get_commandline      (MrgVT *vt);
 int         ctx_vt_get_line_count       (MrgVT *vt);
 
 pid_t       ctx_vt_get_pid              (MrgVT *vt);
