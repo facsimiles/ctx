@@ -177,8 +177,7 @@ typedef enum {
   TERMINAL_STATE_SWALLOW          = 5,
 } TerminalState;
 
-#define MAX_COLS 100  // should be dynamic
-#define MAX_ROWS 100
+#define MAX_COLS 2048 // used for tabstops
 
 typedef enum {
   STYLE_BOLD            = 1 << 0,
@@ -193,13 +192,14 @@ typedef enum {
   STYLE_BG_COLOR_SET    = 1 << 9,
   STYLE_FG24_COLOR_SET  = 1 << 10,
   STYLE_BG24_COLOR_SET  = 1 << 11,
-  STYLE_NONERASABLE   = 1 << 12   // needed for selective erase
+  STYLE_NONERASABLE     = 1 << 12  // needed for selective erase
 } TerminalStyle;
 
 typedef struct VtPty {
   int        pty;
   pid_t      pid;
 } VtPty;
+
 
 struct _MrgVT {
   char    *title;
@@ -210,8 +210,8 @@ struct _MrgVT {
   int      leds[4];
   uint64_t cstyle;
 
-  uint64_t set_style[MAX_ROWS][MAX_COLS]; // make dynamic
-  uint32_t set_unichar[MAX_ROWS][MAX_COLS];
+  uint64_t *set_style;
+  uint32_t *set_unichar;
 
   int      debug;
   int      bell;
@@ -380,13 +380,15 @@ static void vt_cell_cache_reset(MrgVT *vt, int row, int col)
 {
   if (row < 0 || col < 0 || row > vt->rows || col > vt->cols)
     return;
-  vt->set_unichar[row][col] = 0xfffff;
-  vt->set_style[row][col] = 0xffffff;
+  vt->set_unichar[row*vt->cols+col] = 0xfffff;
+  vt->set_style[row*vt->cols+col] = 0xffffff;
 }
 
 static void vt_cell_cache_clear (MrgVT *vt)
 {
-  // 0 is there as a dummy
+  if (!vt->set_style)
+    return;
+  // 0 is there as a padding dummy - but it gets used on the next row
   for (int row = 0; row <= vt->rows; row++)
     for (int col = 0; col <= vt->cols; col++)
       vt_cell_cache_reset (vt, row, col);
@@ -656,6 +658,13 @@ void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
   vt->scroll_top     = 1;
   vt->scroll_bottom  = vt->rows;
   vt->rev++;
+
+  if (vt->set_style)
+    free (vt->set_style);
+  if (vt->set_unichar)
+    free (vt->set_unichar);
+  vt->set_style = malloc (((1+vt->rows) * (1+vt->cols)) * sizeof (uint64_t));
+  vt->set_unichar = malloc (((1+vt->rows) * (1+vt->cols)) * sizeof (uint32_t));
 
   vt_cell_cache_clear (vt);
 
@@ -3469,6 +3478,12 @@ void ctx_vt_destroy (MrgVT *vt)
     vt->line_count--;
   }
 
+  if (vt->set_style)
+    free (vt->set_style);
+
+  if (vt->set_unichar)
+    free (vt->set_unichar);
+
   if (vt->ctx)
     ctx_free (vt->ctx);
 
@@ -4097,11 +4112,11 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
   if (row && col)
   {
-    if (vt->set_unichar[row][col] == unichar &&
-        vt->set_style[row][col] == style)
+    if (vt->set_unichar[row*vt->cols+col] == unichar &&
+        vt->set_style[row*vt->cols+col] == style)
       return;
-    vt->set_unichar[row][col] = unichar;
-    vt->set_style[row][col] = style;
+    vt->set_unichar[row*vt->cols+col] = unichar;
+    vt->set_style[row*vt->cols+col] = style;
   }
 
 
@@ -4153,7 +4168,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   int blink = 0;
 
   if (style & STYLE_BLINK) { blink = 1; vt->rev++ ;
-                  vt->set_style[row][col] = style-1;
+                  vt->set_style[row*vt->cols+col] = style-1;
   }
 
   if ((style & STYLE_FG_COLOR_SET) == 0)
