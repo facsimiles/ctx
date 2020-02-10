@@ -667,9 +667,9 @@ function keyboard_events()
          $'\016')  key="control-n" ;;
          $'\017')  key="control-o" ;;
          $'\020')  key="control-p" ;;
-         $'\021')  key="control-q" ;;
+         $'\021')  key="" ;; #control-q" ;;
          $'\022')  key="control-r" ;;
-         $'\023')  key="control-s" ;;
+         $'\023')  key="" ;; #control-s" ;;
          $'\024')  key="control-t" ;;
          $'\025')  key="control-u" ;;
          $'\026')  key="control-v" ;;

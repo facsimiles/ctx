@@ -122,6 +122,7 @@ int vt_main(int argc, char **argv)
   int old_h = font_size * DEFAULT_ROWS;
   mmm = mmm_new (old_w, old_h, 0, NULL);
   unsetenv ("MMM_PATH");
+  setsid();
   vt = ctx_vt_new (argv[1]?argv[1]:ctx_vt_find_shell_command(), DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
 
   ctx_vt_set_mmm (vt, mmm);

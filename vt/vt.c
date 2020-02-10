@@ -3,21 +3,6 @@
  * Copyright (c) 2014, 2016, 2018, 2020 Øyvind Kolås <pippin@gimp.org>
  */
 
-/*
- * 40-64 bit / char
- * 
- * 8bit / char
- *
- *
- *
- * 32bit unicode +
- * 16bit flags   +
- * 24bit rgb fg  +
- * 24bit rgb bg  +
- *
- */
-
-
 #define _BSD_SOURCE
 #define _DEFAULT_SOURCE
 
@@ -211,8 +196,10 @@ typedef enum {
   STYLE_NONERASABLE   = 1 << 12   // needed for selective erase
 } TerminalStyle;
 
-
-
+typedef struct VtPty {
+  int        pty;
+  pid_t      pid;
+} VtPty;
 
 struct _MrgVT {
   char    *title;
@@ -260,8 +247,8 @@ struct _MrgVT {
   int        cols;
   int        rows;
   VtString *current_line;
-  int        pty;
-  pid_t      pid;
+
+
   int        cr_on_lf;
   int        cursor_visible;
   int        saved_x;
@@ -304,7 +291,54 @@ struct _MrgVT {
   int        blink_state;
 
   FILE      *log;
+  ssize_t(*write) (void *serial_obj, const void *buf, size_t count);
+  ssize_t(*read)  (void *serial_obj, void *buf, size_t count);
+  void  (*resize)(void *serial_obj, int cols, int rows, int px_width, int px_height);
+
+  VtPty   vtpty;
 };
+
+static ssize_t vt_write (MrgVT *vt, const void *buf, size_t count)
+{
+  if (!vt->write) return 0;
+  return vt->write (&vt->vtpty, buf, count);
+}
+static ssize_t vt_read (MrgVT *vt, void *buf, size_t count)
+{
+  if (!vt->read) return 0;
+  return vt->read (&vt->vtpty, buf, count);
+}
+static void vt_resize (MrgVT *vt, int cols, int rows, int px_width, int px_height)
+{
+  if (vt->resize)
+   vt->resize (&vt->vtpty, cols, rows, px_width, px_height);
+}
+
+void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
+{
+  VtPty *vtpty = data;
+  struct winsize ws;
+
+  ws.ws_row = rows;
+  ws.ws_col = cols;
+  ws.ws_xpixel = px_width;
+  ws.ws_ypixel = px_height;
+  ioctl(vtpty->pty, TIOCSWINSZ, &ws);
+}
+
+static ssize_t vtpty_write (void *data, const void *buf, size_t count)
+{
+  VtPty *vtpty = data;
+  return write (vtpty->pty, buf, count);
+}
+
+static ssize_t vtpty_read (void  *data, void *buf, size_t count)
+{
+  VtPty *vtpty = data;
+  return read (vtpty->pty, buf, count);
+}
+
+
 
 void ctx_vt_rev_inc (MrgVT *vt)
 {
@@ -496,6 +530,11 @@ void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
   MrgVT *vt              = calloc (sizeof (MrgVT), 1);
+
+  vt->read   = vtpty_read;
+  vt->write  = vtpty_write;
+  vt->resize = vtpty_resize;
+
   vt->font_to_cell_scale = 1.0;
   vt->cursor_visible     = 1;
   vt->lines              = NULL;
@@ -602,17 +641,16 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
   return 0;
 }
 
+
 void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
 {
-  struct winsize ws;
   if (vt->rows == irows && vt->cols == icols)
     return;
 
-  vt->rows = ws.ws_row = irows;
-  vt->cols = ws.ws_col = icols;
-  ws.ws_xpixel = ws.ws_col * vt->cw;
-  ws.ws_ypixel = ws.ws_row * vt->ch;
-  ioctl(vt->pty, TIOCSWINSZ, &ws);
+  vt->rows = irows;
+  vt->cols = icols;
+  vt_resize (vt, vt->cols, vt->rows, vt->cols * vt->cw, vt->rows * vt->ch);
+
   ctx_vt_trimlines (vt, vt->rows);
 
   vt->scroll_top     = 1;
@@ -1326,14 +1364,21 @@ static void vtcmd_cursor_position_report (MrgVT *vt, const char *sequence)
 {
   char buf[64];
   sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->scroll_top - 1):0), vt->cursor_x);
-  write (vt->pty, buf, strlen(buf));
+  vt_write (vt, buf, strlen(buf));
 }
+
+//////////
+//  the sixel-parser should build an image, that in one go gets chopped into
+//  pieces filling in the optional scanline raster data; when stored for scrollback
+//
+//
+//////////
 
 static void vtcmd_device_status_report (MrgVT *vt, const char *sequence)
 {
   char buf[64];
   sprintf (buf, "\033[0n"); // we're always OK :)
-  write (vt->pty, buf, strlen(buf));
+  vt_write (vt, buf, strlen(buf));
 }
 
 static void vtcmd_device_attributes (MrgVT *vt, const char *sequence)
@@ -1344,7 +1389,7 @@ static void vtcmd_device_attributes (MrgVT *vt, const char *sequence)
   char *buf = "\033[?63;14;22c"; 
   if (!strcmp (sequence, "[>c"))
 	buf="\033[>23;01;1c";
-  write (vt->pty, buf, strlen(buf));
+  vt_write (vt, buf, strlen(buf));
 }
 
 static void vtcmd_request_terminal_parameters (MrgVT *vt, const char *sequence)
@@ -1352,7 +1397,7 @@ static void vtcmd_request_terminal_parameters (MrgVT *vt, const char *sequence)
   char *buf = "\e[2;1;1;120;120;1;0x";
   if (!strcmp (sequence, "[1x"))
     buf = "\e[3;1;1;120;120;1;0x";
-  write (vt->pty, buf, strlen(buf));
+  vt_write (vt, buf, strlen(buf));
 }
 
 static void vtcmd_save_cursor_position (MrgVT *vt, const char *sequence)
@@ -1613,7 +1658,7 @@ static void vtcmd_set_t (MrgVT *vt, const char *sequence)
   {
     char buf[128];
     sprintf (buf, "\e[4;%i;%it", vt->rows * vt->ch, vt->cols * vt->cw);
-    write (vt->pty, buf, strlen (buf));
+    vt_write (vt, buf, strlen(buf));
   }
   else if (sequence[strlen (sequence)-2]==' ') /* DECSWBV */
   {
@@ -2797,7 +2842,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	  case 'J': vtcmd_erase_in_display (vt, "[0J"); break;
 	  case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
 	  case 'Y': vt->utf8_pos = 2; break;
-	  case 'Z': write (vt->pty, "\e/Z", 3); break;
+	  case 'Z': vt_write (vt, "\e/Z", 3); break;
 	  case '<': vt->in_vt52 = 0; break;
 	  default: break;
         }
@@ -3102,7 +3147,7 @@ void ctx_vt_poll (MrgVT *vt)
   if (vt->slow_baud)
   {
     unsigned char buf[vt->slow_baud/100];
-    int len = read(vt->pty, buf, sizeof(buf));
+    int len = vt_read(vt, buf, sizeof(buf));
     if (len > 0)
     {
       int i;
@@ -3117,7 +3162,7 @@ void ctx_vt_poll (MrgVT *vt)
     int len;
     float sleeps = 0.025;
 a:
-    len = read(vt->pty, buf, sizeof (buf));
+    len = vt_read(vt, buf, sizeof (buf));
     if (len > 0)
     {
       int i;
@@ -3312,7 +3357,7 @@ void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
   if (!strcmp (str, "control-space"))
   {
     str = "\0\0";
-    write (vt->pty, str, 1);
+    vt_write (vt, str, 1);
     return;
   }
 
@@ -3325,7 +3370,7 @@ void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 done:
   if (strlen (str))
   {
-    write (vt->pty, str, strlen (str));
+    vt_write (vt, str, strlen (str));
   }
 }
 
@@ -3361,7 +3406,7 @@ static void signal_child (int signum)
         for (VtList *l = vts; l; l=l->next)
         {
           MrgVT *vt = l->data;
-          if (vt->pid == pid)
+          if (vt->vtpty.pid == pid)
             {
               vt->done = 1;
               vt->result = status;
@@ -3387,8 +3432,8 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
   ws.ws_xpixel = ws.ws_col * vt->cw;
   ws.ws_ypixel = ws.ws_row * vt->ch;
 
-  vt->pid = forkpty (&vt->pty, NULL, NULL, &ws);
-  if (vt->pid == 0)
+  vt->vtpty.pid = forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
+  if (vt->vtpty.pid == 0)
   {
     int i;
     for (i = 3; i<768;i++)close(i);/*hack, trying to close xcb */
@@ -3408,11 +3453,11 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
     vt->result = system (command);
     exit(0);
   }
-  else if (vt->pid < 0)
+  else if (vt->vtpty.pid < 0)
   {
     VT_error ("forkpty failed (%s)", command);
   }
-  fcntl(vt->pty, F_SETFL, O_NONBLOCK);
+  fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
 }
 
 void ctx_vt_destroy (MrgVT *vt)
@@ -3429,8 +3474,8 @@ void ctx_vt_destroy (MrgVT *vt)
 
   vt_list_remove (&vts, vt);
 
-  kill (vt->pid, 9);
-  close (vt->pty);
+  kill (vt->vtpty.pid, 9);
+  close (vt->vtpty.pty);
   free (vt);
 }
 
@@ -3768,6 +3813,36 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar)
       ctx_rectangle (ctx, x, y - vt->ch/2 - vt->ch * 0.1 / 2, vt->cw, vt->ch * 0.1);
       ctx_fill (ctx);
       ctx_rectangle (ctx, x + vt->cw/2 - vt->ch * 0.1 / 2, y - vt->ch, vt->ch * 0.1, vt->ch);
+      ctx_fill (ctx);
+      return 0;
+     case 0x25C0: // BLACK LEFT-POINTING TRIANGLE
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x, y);
+      ctx_rel_move_to (ctx, 0, -vt->ch/2);
+      ctx_rel_line_to (ctx, vt->cw, -vt->ch/2);
+      ctx_rel_line_to (ctx, 0, vt->ch);
+      ctx_fill (ctx);
+      return 0;
+     case 0x25B6: // BLACK RIGHT-POINTING TRIANGLE
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x, y);
+      ctx_rel_line_to (ctx, 0, -vt->ch);
+      ctx_rel_line_to (ctx, vt->cw, -vt->ch/2);
+      ctx_fill (ctx);
+      return 0;
+     case 0x25B2: // BLACK UP-POINTING TRIANGLE
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x, y);
+      ctx_rel_line_to (ctx, vt->cw/2, -vt->ch);
+      ctx_rel_line_to (ctx, vt->cw/2, vt->ch);
+      ctx_fill (ctx);
+      return 0;
+     case 0x25BC: // BLACK DOWN-POINTING TRIANGLE
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x, y);
+      ctx_rel_move_to (ctx, vt->cw/2, 0);
+      ctx_rel_line_to (ctx, -vt->cw/2, -vt->ch);
+      ctx_rel_line_to (ctx, vt->cw, 0);
       ctx_fill (ctx);
       return 0;
      case 0x25E2: // VT_BLACK_LOWER_RIGHT_TRIANGLE:
@@ -4396,12 +4471,12 @@ void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_
   if (buf[0])
   {
     //fprintf (stderr, "{%s}\n", buf+1);
-    write (vt->pty, buf, strlen (buf));
+    vt_write (vt, buf, strlen (buf));
     fflush (NULL);
   }
 }
 
 pid_t ctx_vt_get_pid (MrgVT *vt)
 {
-  return vt->pid;
+  return vt->vtpty.pid;
 }
