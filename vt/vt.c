@@ -180,13 +180,13 @@ typedef enum {
 #define MAX_COLS 2048 // used for tabstops
 
 typedef enum {
-  STYLE_BOLD            = 1 << 0,
-  STYLE_DIM             = 1 << 1,
-  STYLE_ITALIC          = 1 << 2,
+  STYLE_REVERSE         = 1 << 0,
+  STYLE_BOLD            = 1 << 1,
+  STYLE_BLINK           = 1 << 2,
   STYLE_UNDERLINE       = 1 << 3,
-  STYLE_REVERSE         = 1 << 4,
-  STYLE_BLINK           = 1 << 5,
+  STYLE_DIM             = 1 << 4,
   STYLE_HIDDEN          = 1 << 6,
+  STYLE_ITALIC          = 1 << 5,
   STYLE_STRIKETHROUGH   = 1 << 7,
   STYLE_FG_COLOR_SET    = 1 << 8,
   STYLE_BG_COLOR_SET    = 1 << 9,
@@ -1058,7 +1058,6 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
 static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 0);
-  // XXX : should aslo reset style
   switch (n)
   {
     case 0: // clear to end of screen
@@ -1122,6 +1121,12 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         int ty = vt->cursor_y;
         vtcmd_clear (vt, "");
         _ctx_vt_move_to (vt, ty, tx);
+        for (VtList *l = vt->lines; l; l = l->next)
+	{
+	  VtString *line = l->data;
+          for (int col = 1; col <= vt->cols; col++)
+	    vt_string_set_style (line, col-1, vt->cstyle);
+	}
       }
       break;
   }
@@ -4017,18 +4022,44 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold)
   ctx_restore (ctx);
 }
 
+static uint8_t palettes[][16][3]={
+// based on dec palette, manually copied from docs
+// and converted to float and back, might contain
+// errors
+{{  0,  0,  0}, // 0 - background  black
+ {153, 66, 66}, // 1               bright red
+ { 84,153, 84}, // 2               bright green
+ {153,153, 84}, // 3               bright yellow
+ { 84, 84,153}, // 4               bright blue
+ {153, 84,153}, // 5               bright magenta
+ { 84,153,153}, // 6               bright cyan
+ {135,135,135},// 7                light-gray
+ { 66, 66, 66},// 8                dark gray
+ {204, 33, 33},// 9                red
+ { 51,204, 51},// 10               green
+ {204,204, 76},// 11               dark yellow
+ { 51, 51,204},// 12               blue
+ {204, 51,204},// 13               magenta
+ { 51,204,204},// 14               cyan
+ {204,204,204},// 15 - foreground  white          
+},
+};
+
+
+
 void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, int reverse)
 {
-  float r = 0, g = 0, b = 0;
+  uint8_t r = 0, g = 0, b = 0;
 
-  if (no < 16)
+  if (no < 16 && no >= 0)
   {
 
-    if (bold && no < 8) //&& !(vt->reverse_video ^ reverse) && no < 8)
+    if (!bg && bold && no < 8) //&& !(vt->reverse_video ^ reverse) && no < 8)
     {
        no+=8;
     }
 
+#if 0
     switch (no)
     {
 #if 0
@@ -4069,11 +4100,16 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
       case 15: r = 0.8; g =0.8; b =0.8;  break; // white
 #endif
     }
+#else
+    r = palettes[0][no][0];
+    g = palettes[0][no][1];
+    b = palettes[0][no][2];
+#endif
     if (no == 0 && bg == 1 &&  !vt->reverse_video)
     {
-       r = g = b = 0.05;
+       r = g = b = 20;
     }
-#if 0
+#if 1
     if (bg)
     {
        if (no != 15)
@@ -4087,17 +4123,17 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
   } else if (no < 16 + 6*6*6)
   {
     no = no-16;
-    b = (no % 6) / 5.0; no/=6;
-    g = (no % 6) / 5.0; no/=6;
-    r = (no % 6) / 5.0;
+    b = (no % 6) * 255 / 5; no/=6;
+    g = (no % 6) * 255 / 5; no/=6;
+    r = (no % 6) * 255 / 5;
   } else
   {
     int gray = no - (16 + 6*6*6);
-    float val = gray / 24.0f;
+    float val = gray * 255 / 24;
     r = g = b = val;
   }
   //r = g = (r * 0.3 +g * 0.7);  // cheap color-blind simulation
-  ctx_set_rgba (ctx, r, g, b, dim?0.5f:1.0f);
+  ctx_set_rgba_u8 (ctx, r, g, b, dim?127:255);
 }
 
 
@@ -4108,7 +4144,34 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 		       uint32_t unichar,
 		       int      bg, int fg)
 {
+  int on_white = vt->reverse_video;
+
+  int blink = (style & STYLE_BLINK) != 0;
   int color = 0;
+  int reverse = (style & STYLE_REVERSE) != 0;
+  int bold = (style & STYLE_BOLD) != 0;
+  int dim = (style & STYLE_DIM) != 0;
+
+
+
+  if (blink && vt->blink_state)
+  {
+    if (reverse)
+    {
+      reverse = 0;
+    } else
+    {
+      if (bold)
+      {
+        bold = 0;
+      } else if (dim)
+      {
+	dim = 0;
+      } else {
+	dim = 1;
+      }
+    }
+  }
 
   if (row && col)
   {
@@ -4119,12 +4182,17 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     vt->set_style[row*vt->cols+col] = style;
   }
 
+  /* if we're blinking - mark as such */
+  if (blink) {
+     vt->rev++ ; // forces redraws (albeit too rapidly)
+     vt->set_style[row*vt->cols+col] = style-1;
+  }
 
   if (bg)  {
 
   if (style & STYLE_BG_COLOR_SET)
   {
-     if (style & STYLE_REVERSE)
+     if (reverse)
      {
        color = (style >> 16) & 255;
      }
@@ -4135,7 +4203,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   }
   else
   {
-     if (((style & STYLE_REVERSE)!=0) ^ vt->reverse_video) 
+     if (reverse ^ on_white)
      {
        color = 15;
      }
@@ -4165,30 +4233,29 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   }
 
   if (!fg) return;
-  int blink = 0;
 
-  if (style & STYLE_BLINK) { blink = 1; vt->rev++ ;
-                  vt->set_style[row*vt->cols+col] = style-1;
-  }
+  int italic        = (style & STYLE_ITALIC) != 0;
+  int hidden        = (style & STYLE_HIDDEN) != 0;
+  int strikethrough = (style & STYLE_STRIKETHROUGH) != 0;
+  int underline     = (style & STYLE_UNDERLINE) != 0;
+
 
   if ((style & STYLE_FG_COLOR_SET) == 0)
   {
-     if (((style & STYLE_REVERSE)!=0) ^ vt->reverse_video) 
+     if (reverse ^ vt->reverse_video) 
        color = 0;
      else
        color = 15;
   }
   else
   {
-     if (((style & STYLE_REVERSE)!=0)) 
+     if (reverse) 
       color = (style >> 40) & 255;
     else
       color = (style >> 16) & 255;
   }
 
-  if (!(style &  STYLE_HIDDEN) && 
-      (blink == 0 ||
-       (blink && vt->blink_state)))
+  if (!hidden)
   {
     if (style & STYLE_FG24_COLOR_SET)
     {
@@ -4202,9 +4269,9 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     }
     else
     {
-      vt_ctx_set_color (vt, ctx, color, 0, (style & STYLE_DIM) != 0, (style & STYLE_BOLD) != 0, (style & STYLE_REVERSE) != 0);
+      vt_ctx_set_color (vt, ctx, color, 0, dim, bold, reverse);
     }
-    if (style & STYLE_ITALIC)
+    if (italic)
     {
       ctx_save (ctx);
       ctx_translate (ctx, x0 + vt->cw/2, y0 + vt->ch/2);
@@ -4212,12 +4279,12 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
       ctx_translate (ctx, -x0 + vt->cw/2, -(y0 + vt->ch/2) );
     }
 
-    vt_ctx_glyph (ctx, vt, x0, y0, unichar, (style &  STYLE_BOLD) != 0);
-    if (style & STYLE_ITALIC)
+    vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold);
+    if (italic)
     {
       ctx_restore (ctx);
     }
-    if (style & STYLE_UNDERLINE)
+    if (underline)
     {
       ctx_new_path (ctx);
       ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07);
@@ -4225,7 +4292,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
       ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05));
       ctx_stroke (ctx);
     }
-    if (style & STYLE_STRIKETHROUGH)
+    if (strikethrough)
     {
       ctx_new_path (ctx);
       ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43);
