@@ -142,7 +142,8 @@ int vt_main(int argc, char **argv)
 
 	if (drawn_rev == ctx_vt_rev (vt))
 	{
-		usleep(1000 * 100);
+		if (ctx_vt_has_blink (vt) < 10)
+		  usleep(1000 * 100);
 	}
 
         drawn_rev = ctx_vt_rev (vt);

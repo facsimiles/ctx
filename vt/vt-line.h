@@ -40,7 +40,7 @@ struct _VtString
   float     xscale;
   float     yscale;
   float     y_offset;
-  int       in_scroll_region;
+  int       in_scrolling_region;
 }  __attribute((packed));
 
 
