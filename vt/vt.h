@@ -14,10 +14,11 @@ const char *ctx_vt_find_shell_command (void);
 
 int         ctx_vt_get_result         (MrgVT *vt);
 int         ctx_vt_is_done            (MrgVT *vt);
-void        ctx_vt_poll               (MrgVT *vt);
+int         ctx_vt_poll               (MrgVT *vt, int timeout);
 long        ctx_vt_rev                (MrgVT *vt);
 void        ctx_vt_destroy            (MrgVT *vt);
 void        ctx_vt_set_term_size      (MrgVT *vt, int cols, int rows);
+int ctx_vt_has_blink (MrgVT *vt);
 
 /* this is how mrg/mmm based key-events are fed into the vt engine
  */

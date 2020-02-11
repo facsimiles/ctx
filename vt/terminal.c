@@ -57,11 +57,9 @@ signal_child (int signum)
     }
 }
 
-
 static int16_t pcm_queue[1<<18];
-static int pcm_write_pos = 0;
-static int pcm_read_pos = 0;
-
+static int     pcm_write_pos = 0;
+static int     pcm_read_pos  = 0;
 
 void terminal_queue_pcm_sample (int16_t sample)
 {
@@ -138,18 +136,25 @@ int vt_main(int argc, char **argv)
       int width; int height; int stride;
 
       static long drawn_rev = 0;
-      if (drawn_rev != ctx_vt_rev (vt))
+      if (drawn_rev != ctx_vt_rev (vt) ||
+          ctx_vt_has_blink (vt))
       {
+
+	if (drawn_rev == ctx_vt_rev (vt))
+	{
+		usleep(1000 * 100);
+	}
+
         drawn_rev = ctx_vt_rev (vt);
 
-      mmm_client_check_size (mmm, &width, &height);
+        mmm_client_check_size (mmm, &width, &height);
 
-      if (old_w != width ||  old_h!=height)
-      {
-        ctx_vt_set_term_size (vt, width / ctx_vt_cw (vt), height / ctx_vt_ch (vt));
-	old_w = width;
-	old_h = height;
-      }
+        if (old_w != width ||  old_h!=height)
+        {
+          ctx_vt_set_term_size (vt, width / ctx_vt_cw (vt), height / ctx_vt_ch (vt));
+	  old_w = width;
+	  old_h = height;
+        }
 
         buffer = mmm_get_buffer_write (mmm, &width, &height, &stride, NULL);
 
@@ -288,12 +293,13 @@ int vt_main(int argc, char **argv)
       if (!got_event)
       {
         audio_task (0);
-        usleep (sleep_time);
+        if (ctx_vt_poll (vt, sleep_time))
+	{
+	  sleep_time = 10000;
+	}
         sleep_time *= 1.2;
-
-        if (sleep_time > 40000)
-          sleep_time = 40000;
-        ctx_vt_poll (vt);
+        if (sleep_time > 60000)
+          sleep_time = 60000;
       }
       audio_task (got_event);
   }

@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include <pty.h>
 
@@ -188,11 +189,12 @@ typedef enum {
   STYLE_HIDDEN          = 1 << 6,
   STYLE_ITALIC          = 1 << 5,
   STYLE_STRIKETHROUGH   = 1 << 7,
-  STYLE_FG_COLOR_SET    = 1 << 8,
-  STYLE_BG_COLOR_SET    = 1 << 9,
-  STYLE_FG24_COLOR_SET  = 1 << 10,
-  STYLE_BG24_COLOR_SET  = 1 << 11,
-  STYLE_NONERASABLE     = 1 << 12  // needed for selective erase
+  STYLE_BLINK_FAST      = 1 << 8,
+  STYLE_FG_COLOR_SET    = 1 << 9,
+  STYLE_BG_COLOR_SET    = 1 << 10,
+  STYLE_FG24_COLOR_SET  = 1 << 11,
+  STYLE_BG24_COLOR_SET  = 1 << 12,
+  STYLE_NONERASABLE     = 1 << 13  // needed for selective erase
 } TerminalStyle;
 
 typedef struct VtPty {
@@ -219,7 +221,11 @@ struct _MrgVT {
   int      charset;
   int      reverse_video;
   int      echo;
-  int      slow_baud;
+
+  int      palette_no;
+
+  int      has_blink; // if any of the set characters are blinking
+                      // updated on each draw of the screen
 
   TerminalState state;
 
@@ -293,6 +299,7 @@ struct _MrgVT {
   FILE      *log;
   ssize_t(*write) (void *serial_obj, const void *buf, size_t count);
   ssize_t(*read)  (void *serial_obj, void *buf, size_t count);
+  int    (*waitdata)(void *serial_obj, int timeout);
   void  (*resize)(void *serial_obj, int cols, int rows, int px_width, int px_height);
 
   VtPty   vtpty;
@@ -307,6 +314,11 @@ static ssize_t vt_read (MrgVT *vt, void *buf, size_t count)
 {
   if (!vt->read) return 0;
   return vt->read (&vt->vtpty, buf, count);
+}
+static int vt_waitdata (MrgVT *vt, int timeout)
+{
+  if (!vt->waitdata) return 0;
+  return vt->waitdata (&vt->vtpty, timeout);
 }
 static void vt_resize (MrgVT *vt, int cols, int rows, int px_width, int px_height)
 {
@@ -338,6 +350,29 @@ static ssize_t vtpty_read (void  *data, void *buf, size_t count)
   return read (vtpty->pty, buf, count);
 }
 
+static int vtpty_waitdata (void  *data, int timeout)
+{
+  VtPty *vtpty = data;
+  struct timeval tv;
+  fd_set fdset;
+  FD_ZERO (&fdset);
+  FD_SET(vtpty->pty, &fdset);
+
+  tv.tv_sec = 0;
+  tv.tv_usec = timeout;
+  tv.tv_sec  = timeout / 1000000;
+  tv.tv_usec = timeout % 1000000;
+
+  if (select (vtpty->pty+1, &fdset, NULL, NULL, &tv) == -1){
+    perror("select");
+    return 0;
+  }
+  if (FD_ISSET(vtpty->pty, &fdset))
+  {
+    return 1;
+  }
+  return 0;
+}
 
 
 void ctx_vt_rev_inc (MrgVT *vt)
@@ -533,6 +568,7 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
 {
   MrgVT *vt              = calloc (sizeof (MrgVT), 1);
 
+  vt->waitdata = vtpty_waitdata;
   vt->read   = vtpty_read;
   vt->write  = vtpty_write;
   vt->resize = vtpty_resize;
@@ -1271,6 +1307,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 3: /* SGR@@Rotalic@@ */      vt->cstyle |= STYLE_ITALIC; break; 
     case 4: /* SGR@@Underscore@@ */   vt->cstyle |= STYLE_UNDERLINE; break;
     case 5: /* SGR@@Blink@@ */        vt->cstyle |= STYLE_BLINK; break;
+    case 6: /* SGR@@Blink Fast@@ */   vt->cstyle |= STYLE_BLINK_FAST; break;
     case 7: /* SGR@@Reverse@@ */      vt->cstyle |= STYLE_REVERSE; break;
     case 8: /* SGR@@Hidden@@ */       vt->cstyle |= STYLE_HIDDEN; break;
     case 9: /* SGR@@Strikethrough@@ */vt->cstyle |= STYLE_STRIKETHROUGH; break;
@@ -1289,7 +1326,12 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 24: /* SGR@@Underscore off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_UNDERLINE);
       break;
-    case 25: /* SGR@@Blink off@@ */ vt->cstyle ^= (vt->cstyle & STYLE_BLINK);
+    case 25: /* SGR@@Blink off@@ */
+      vt->cstyle ^= (vt->cstyle & STYLE_BLINK);
+      vt->cstyle ^= (vt->cstyle & STYLE_BLINK_FAST);
+      break;
+    case 26: /* SGR@@Proportioanl @@ */
+      vt->cstyle |= (vt->cstyle & STYLE_PROPORTIONAL);
       break;
     case 27: /* SGR@@Reverse off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_REVERSE);
@@ -1324,6 +1366,10 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 49: /* SGR@@default background color@@ */  
       set_bg_idx(vt->reverse_video?15:0);
       vt->cstyle ^= (vt->cstyle & STYLE_BG_COLOR_SET);
+      break;
+
+    case 50: /* SGR@@Proportional spacing off (return to monospace)  @@ */
+      vt->cstyle ^= (vt->cstyle & STYLE_PROPORTIONAL);
       break;
 
     case 90: /* SGR@@dark gray text color@@ */       set_fg_idx(8); break;
@@ -1622,18 +1668,6 @@ qagain:
            vt->in_ctx_ascii = set;
 	   break;
 
-     case 100:/*MODE;Simulate 100 baud;100 baud;unlimited;*/
-	   vt->slow_baud = set ? 100 : 0;
-           break;
-     case 300:/*MODE;Simulate 300 baud;300 baud;unlimited;*/
-	   vt->slow_baud = set ? 300 : 0;
-           break;
-     case 2400:/*MODE;Simulate 2400 baud;2400 baud;unlimited;*/
-	   vt->slow_baud = set ? 2400 : 0;
-           break;
-     case 9600:/*MODE;Simulate 9600 baud;9600 baud;unlimited;*/
-	   vt->slow_baud = set ? 9600 : 0;
-           break;
      default:
 	   VT_warning ("unhandled CSI ? %ih", qval); return;
     }
@@ -3155,52 +3189,24 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
   }
 }
 
-void ctx_vt_poll (MrgVT *vt)
+int ctx_vt_poll (MrgVT *vt, int timeout)
 {
-  int count = 0;
-  if (vt->slow_baud)
-  {
-    unsigned char buf[vt->slow_baud/100];
-    int len = vt_read(vt, buf, sizeof(buf));
-    if (len > 0)
-    {
-      int i;
-      for (i = 0; i < len; i++)
-        ctx_vt_feed_byte (vt, buf[i]);
-      count += len;
-    }
-  }
-  else
-  {
-    unsigned char buf[4096];
-    int len;
-    float sleeps = 0.025;
-a:
-    len = vt_read(vt, buf, sizeof (buf));
-    if (len > 0)
-    {
-      int i;
-      for (i = 0; i < len; i++)
-        ctx_vt_feed_byte (vt, buf[i]);
-      count += len;
-      if (count < 1024 * 128)
-      {
-        if (len < sizeof (buf))
-        {
-          float time = 0.002;
-          usleep (time*1000 * 1000);
-          sleeps -= time;
-        }
-        if (sleeps >= 0.0 && !vt->done)
-        goto a;
-      }
-    }
-  }
+  unsigned char buf[2048];
 
-  if (count >0 || vt->done)
+  while (timeout > 100 && vt_waitdata (vt, timeout))
   {
-    vt->rev ++;
+    int len = vt_read (vt, buf, sizeof (buf));
+    if (len > 0)
+    {
+      int i;
+      for (i = 0; i < len; i++)
+        ctx_vt_feed_byte (vt, buf[i]);
+      vt->rev ++;
+      return 1;
+    }
+    timeout /= 2;
   }
+  return 0;
 }
 
 /******/
@@ -3363,9 +3369,14 @@ void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
     }
   }
 
-  if (!strcmp (str, "return") && vt->cr_on_lf)
+  if (!strcmp (str, "return"))
   {
-    str = "\r\n";goto done;
+    if (vt->cr_on_lf)
+      str = "\r\n";
+    else
+      str = "\r";
+    
+    goto done;
   }
 
   if (!strcmp (str, "control-space"))
@@ -4022,41 +4033,85 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold)
   ctx_restore (ctx);
 }
 
+//static uint8_t palette[256][3];
+
+/* optimized for ANSI ART - and avoidance of human metamers
+ * among color deficient vision - by distributing and pertubating
+ * until all 64 combinations - sans self application, have
+ * likely to be discernable by humans.
+ */
+
 static uint8_t palettes[][16][3]={
-// based on dec palette, manually copied from docs
-// and converted to float and back, might contain
-// errors
+	{
+ /* */
+ {  0,  0,  0}, // 0 - background (black)
+ {154,  0,  0}, // 1               red
+ {  9,233,  0}, // 2               green
+ {183,186, 44}, // 3               yellow
+ {  0,  0,166}, // 4               blue
+ { 55,  0, 90}, // 5               magenta
+ {  0,146,166}, // 6               cyan
+ {196,196,196},// 7                light-gray
+ { 85, 85, 85},// 8                dark gray
+ {230,150,105},// 9                light red
+ {170,240, 80},// 10               light green
+ {242,242,  0},// 11               light yellow
+ {  0, 40,255},// 12               light blue
+ {204, 62,214},// 13               light magenta
+ { 10,234,254},// 14               light cyan
+ {255,255,255},// 15 - foreground (white)
+	},
+ /* inspired by DEC */
 {{  0,  0,  0}, // 0 - background  black
- {153, 66, 66}, // 1               bright red
- { 84,153, 84}, // 2               bright green
- {153,153, 84}, // 3               bright yellow
- { 84, 84,153}, // 4               bright blue
- {153, 84,153}, // 5               bright magenta
- { 84,153,153}, // 6               bright cyan
- {135,135,135},// 7                light-gray
- { 66, 66, 66},// 8                dark gray
- {204, 33, 33},// 9                red
- { 51,204, 51},// 10               green
- {204,204, 76},// 11               dark yellow
- { 51, 51,204},// 12               blue
- {204, 51,204},// 13               magenta
- { 51,204,204},// 14               cyan
- {204,204,204},// 15 - foreground  white          
+ {150, 10, 10}, // 1               red
+ { 21,133,  0}, // 2               green
+
+ {103,103, 24}, // 3               yellow
+ { 44, 44,153}, // 4               blue
+ {123, 94,183}, // 5               magenta
+
+ { 20,183,193}, // 6               cyan
+
+ {177,177,177},// 7                light-gray
+ {100,100,100},// 8                dark gray
+
+ {244, 39, 39},// 9                light red
+ { 61,224, 81},// 10               light green
+ {255,255,  0},// 11               light yellow
+ { 61, 61,244},// 12               light blue
+ {240, 11,240},// 13               light magenta
+ { 61,234,234},// 14               light cyan
+
+ {255,255,255},// 15 - foreground  white          
 },
 };
 
-
-
-void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, int reverse)
+void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
 {
   uint8_t r = 0, g = 0, b = 0;
 
   if (no < 16 && no >= 0)
   {
-
-    if (!bg && bold && no < 8) //&& !(vt->reverse_video ^ reverse) && no < 8)
+    switch (intensity)
     {
-       no+=8;
+      case 0: no = 0; break;
+      case 1: 
+	   // 15 becomes 7
+	   if (no == 15) no = 8;
+	   else if (no > 8) no -= 8;
+	   break;
+      case 2:
+	   /* give the normal color special treatment, and in really normal
+	    * cirumstances it is the dim variant of foreground that is used
+	    */
+	   if (no == 15) no = 7;
+           break;
+      case 3:
+	   if (no < 8)
+             no += 8;
+           break;
+      default:
+	   break;
     }
 
 #if 0
@@ -4101,24 +4156,9 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
 #endif
     }
 #else
-    r = palettes[0][no][0];
-    g = palettes[0][no][1];
-    b = palettes[0][no][2];
-#endif
-    if (no == 0 && bg == 1 &&  !vt->reverse_video)
-    {
-       r = g = b = 20;
-    }
-#if 1
-    if (bg)
-    {
-       if (no != 15)
-       {
-         r *= 0.8;
-         g *= 0.8;
-         b *= 0.8;
-       }
-    }
+    r = palettes[vt->palette_no][no][0];
+    g = palettes[vt->palette_no][no][1];
+    b = palettes[vt->palette_no][no][2];
 #endif
   } else if (no < 16 + 6*6*6)
   {
@@ -4132,8 +4172,8 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int bg, int dim, int bold, i
     float val = gray * 255 / 24;
     r = g = b = val;
   }
-  //r = g = (r * 0.3 +g * 0.7);  // cheap color-blind simulation
-  ctx_set_rgba_u8 (ctx, r, g, b, dim?127:255);
+
+  ctx_set_rgba_u8 (ctx, r, g, b, 255);
 }
 
 
@@ -4146,15 +4186,142 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 {
   int on_white = vt->reverse_video;
 
-  int blink = (style & STYLE_BLINK) != 0;
   int color = 0;
-  int reverse = (style & STYLE_REVERSE) != 0;
   int bold = (style & STYLE_BOLD) != 0;
   int dim = (style & STYLE_DIM) != 0;
+  int hidden = (style & STYLE_HIDDEN) != 0;
+
+  int bg_intensity = 0;
+  int fg_intensity = 2;
+
+  int reverse = ((style & STYLE_REVERSE) != 0);
+
+  int blink = ((style & STYLE_BLINK) != 0);
+  int blink_fast = ((style & STYLE_BLINK_FAST) != 0);
+ 
+  if (blink_fast)
+  {
+    if (vt->blink_state % 2 == 0)
+      blink = 1;
+    else
+      blink = 0;
+  } else if (blink)
+  {
+    if ((vt->blink_state % 10) < 5)
+      blink = 1;
+    else
+      blink = 0;
+  }
 
 
+/*
+   from the vt100 technical-manual:
+   
+   "Reverse characters [..] normally have dim backgrounds with
+   black characters so that large white spaces have the same impact
+   on the viewer's eye as the smaller brighter white areas of
+   normal characters. Bold and reverse asserted together give a
+   background of normal intensity. Blink applied to nonreverse
+   characters causes them to alternate between their usual
+   intensity and the next lower intensity. (Normal characters vary
+   between normal and dim intensity. Bold characters vary between
+   bright and normal intensity.) Blink applied to a reverse
+   character causes that character to alternate between normal and
+   reverse video representations of that character."
 
-  if (blink && vt->blink_state)
+   This is in contrast with how the truth table appears to be
+   meant used, since it uses a reverse computed as the xor of
+   the global screen reverse and the reverse attribute of the
+   cell.
+
+   To fulfil the more asthethic resulting from implementing the
+   text, and would be useful to show how the on_bright background
+   mode of the vt100 actually displays the vttest.
+
+   */
+
+  if (on_white)
+  {
+  if ((reverse) == 0)
+  {
+     if (bold)
+     {
+       bg_intensity =           2;
+       fg_intensity = blink?1:  0;
+     }
+     else if (dim)
+     {
+       bg_intensity =           2;
+       fg_intensity = blink?2:  1;
+     }
+     else
+     {
+       bg_intensity =           2;
+       fg_intensity = blink?1:  0;
+     }
+  }
+  else
+  {
+     if (bold)
+     {
+       bg_intensity = blink?2:  0;
+       fg_intensity = blink?0:  3;
+     }
+     else if (dim)
+     {
+       bg_intensity = blink?0:  0;
+       fg_intensity = blink?0:  1;
+     }
+     else
+     {
+       bg_intensity = blink?2:  0;
+       fg_intensity = blink?0:  2;
+     }
+  }
+  }
+  else /* bright on dark */
+  {
+  if (reverse == 0)
+  {
+     if (bold)
+     {
+       bg_intensity =           0;
+       fg_intensity = blink?2:  3;
+     }
+     else if (dim)
+     {
+       bg_intensity =           0;
+       fg_intensity = blink?0:  1;
+     }
+     else
+     {
+       bg_intensity =           0;
+       fg_intensity = blink?1:  2;
+     }
+  }
+  else
+  {
+     if (bold)
+     {
+       bg_intensity = blink?0:  2;
+       fg_intensity = blink?3:  0;
+     }
+     else if (dim)
+     {
+       bg_intensity = blink?0:  2;
+       fg_intensity = blink?1:  0;
+     }
+     else
+     {
+       bg_intensity = blink?0:  2;
+       fg_intensity = blink?2:  0;
+     }
+  }
+  }
+
+#if 0
+  /* modification of attributes on blink */
+  if (blink)
   {
     if (reverse)
     {
@@ -4166,12 +4333,15 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
         bold = 0;
       } else if (dim)
       {
-	dim = 0;
-      } else {
+	hidden = 1;
+      } else
+      {
 	dim = 1;
       }
     }
   }
+#endif
+
 
   if (row && col)
   {
@@ -4182,39 +4352,17 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     vt->set_style[row*vt->cols+col] = style;
   }
 
-  /* if we're blinking - mark as such */
-  if (blink) {
-     vt->rev++ ; // forces redraws (albeit too rapidly)
+  if (style & STYLE_BLINK) {
+     //vt->rev++ ; // forces redraws (albeit too rapidly)
      vt->set_style[row*vt->cols+col] = style-1;
   }
 
   if (bg)  {
 
-  if (style & STYLE_BG_COLOR_SET)
-  {
-     if (reverse)
-     {
-       color = (style >> 16) & 255;
-     }
-     else
-     {
-       color = (style >> 40) & 255;
-     }
-  }
-  else
-  {
-     if (reverse ^ on_white)
-     {
-       color = 15;
-     }
-     else
-     {
-       color = 0;
-     }
-  }
   ctx_new_path (ctx);
   if (style &  STYLE_BG24_COLOR_SET)
   {
+    // XXX - this case seem to be missing reverse handling
     uint64_t temp = style >> 40;
     int r = temp & 0xff;
     temp >>= 8;
@@ -4225,7 +4373,27 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   }
   else
   {
-    vt_ctx_set_color (vt, ctx, color, style & STYLE_BG_COLOR_SET?1:0, 0, 0, 0);
+    if (style & STYLE_BG_COLOR_SET)
+    {
+       if (reverse)
+       {
+         color = (style >> 16) & 255;
+       }
+       else
+       {
+         color = (style >> 40) & 255;
+       }
+      bg_intensity = -1;
+    }
+    else
+    {
+      color = 15;
+    }
+
+    vt_ctx_set_color (vt,
+		      ctx,
+		      color,
+		      bg_intensity);
   }
   ctx_rectangle (ctx, x0, y0 - (int)vt->font_size, vt->cw, vt->ch);
   ctx_fill (ctx);
@@ -4235,25 +4403,10 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   if (!fg) return;
 
   int italic        = (style & STYLE_ITALIC) != 0;
-  int hidden        = (style & STYLE_HIDDEN) != 0;
   int strikethrough = (style & STYLE_STRIKETHROUGH) != 0;
   int underline     = (style & STYLE_UNDERLINE) != 0;
 
 
-  if ((style & STYLE_FG_COLOR_SET) == 0)
-  {
-     if (reverse ^ vt->reverse_video) 
-       color = 0;
-     else
-       color = 15;
-  }
-  else
-  {
-     if (reverse) 
-      color = (style >> 40) & 255;
-    else
-      color = (style >> 16) & 255;
-  }
 
   if (!hidden)
   {
@@ -4269,7 +4422,19 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     }
     else
     {
-      vt_ctx_set_color (vt, ctx, color, 0, dim, bold, reverse);
+      if ((style & STYLE_FG_COLOR_SET) == 0)
+      {
+        color = 15;
+      }
+      else
+      {
+        if (reverse) 
+          color = (style >> 40) & 255;
+        else
+          color = (style >> 16) & 255;
+        bg_intensity = -1;
+      }
+      vt_ctx_set_color (vt, ctx, color, fg_intensity);
     }
     if (italic)
     {
@@ -4303,13 +4468,20 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   }
 }
 
+int ctx_vt_has_blink (MrgVT *vt)
+{
+  return vt->has_blink;
+}
+
 void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 {
   ctx_save (ctx);
   ctx_set_font (ctx, "mono");
   ctx_set_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
 
-  vt->blink_state = !vt->blink_state;
+  vt->has_blink = 0;
+
+  vt->blink_state++;
 
   if (vt->scroll)
   {
@@ -4357,9 +4529,13 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 	    /* this prevents draw_cell from using cache */
             r = c = 0;
 	  }
-          ctx_vt_draw_cell (vt, ctx, r, c, x, y,
-                            vt_string_get_style (line, col-1),
-	                    d?ctx_utf8_to_unichar (d):' ', 1, 1);
+	  {
+	    uint64_t style = vt_string_get_style (line, col-1);
+	    uint32_t unichar = d?ctx_utf8_to_unichar (d):' ';
+            if (style & STYLE_BLINK)
+	      vt->has_blink = 1;
+            ctx_vt_draw_cell (vt, ctx, r, c, x, y, style, unichar, 1, 1);
+	  }
           x+=vt->cw;
 	  if (d)
 	  {
