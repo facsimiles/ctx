@@ -519,6 +519,8 @@ void  ctx_text_stroke  (Ctx        *ctx,
 /* return the width of provided string if it had been rendered */
 float ctx_text_width   (Ctx        *ctx,
                         const char *string);
+float
+ctx_glyph_width (Ctx *ctx, int unichar);
 
 
 int   ctx_load_font_ttf (Ctx *ctx, const char *name, const uint8_t *ttf_contents);
@@ -7729,7 +7731,7 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
   return -1;
 }
 
-static inline float
+float
 ctx_glyph_width (Ctx *ctx, int unichar)
 {
   CtxState *state = &ctx->state;

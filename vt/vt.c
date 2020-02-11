@@ -190,11 +190,12 @@ typedef enum {
   STYLE_ITALIC          = 1 << 5,
   STYLE_STRIKETHROUGH   = 1 << 7,
   STYLE_BLINK_FAST      = 1 << 8,
-  STYLE_FG_COLOR_SET    = 1 << 9,
-  STYLE_BG_COLOR_SET    = 1 << 10,
-  STYLE_FG24_COLOR_SET  = 1 << 11,
-  STYLE_BG24_COLOR_SET  = 1 << 12,
-  STYLE_NONERASABLE     = 1 << 13  // needed for selective erase
+  STYLE_PROPORTIONAL    = 1 << 9,
+  STYLE_FG_COLOR_SET    = 1 << 10,
+  STYLE_BG_COLOR_SET    = 1 << 11,
+  STYLE_FG24_COLOR_SET  = 1 << 12,
+  STYLE_BG24_COLOR_SET  = 1 << 13,
+  STYLE_NONERASABLE     = 1 << 14  // needed for selective erase
 } TerminalStyle;
 
 typedef struct VtPty {
@@ -222,6 +223,8 @@ struct _MrgVT {
   int      reverse_video;
   int      echo;
 
+  int      font_is_mono;
+
   int      palette_no;
 
   int      has_blink; // if any of the set characters are blinking
@@ -248,7 +251,7 @@ struct _MrgVT {
   int        autowrap;
   int        utf8_expected_bytes;
   int        utf8_pos;
-  int        cursor_x;
+  float      cursor_x;
   int        cursor_y;
   int        cols;
   int        rows;
@@ -1301,7 +1304,12 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
   else
   switch (n)
   {
-    case 0: /* SGR@0@Style reset@@ */ vt->cstyle = 0; break;
+    case 0: /* SGR@0@Style reset@@ */
+	if (vt->cstyle & STYLE_PROPORTIONAL)
+	  vt->cstyle = STYLE_PROPORTIONAL;
+	else
+	  vt->cstyle = 0;
+	break;
     case 1: /* SGR@@Bold@@ */         vt->cstyle |= STYLE_BOLD; break;
     case 2: /* SGR@@Dim@@ */          vt->cstyle |= STYLE_DIM; break; 
     case 3: /* SGR@@Rotalic@@ */      vt->cstyle |= STYLE_ITALIC; break; 
@@ -1330,8 +1338,8 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       vt->cstyle ^= (vt->cstyle & STYLE_BLINK);
       vt->cstyle ^= (vt->cstyle & STYLE_BLINK_FAST);
       break;
-    case 26: /* SGR@@Proportioanl @@ */
-      vt->cstyle |= (vt->cstyle & STYLE_PROPORTIONAL);
+    case 26: /* SGR@@Proportional spacing @@ */
+      vt->cstyle |= STYLE_PROPORTIONAL;
       break;
     case 27: /* SGR@@Reverse off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_REVERSE);
@@ -1368,7 +1376,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       vt->cstyle ^= (vt->cstyle & STYLE_BG_COLOR_SET);
       break;
 
-    case 50: /* SGR@@Proportional spacing off (return to monospace)  @@ */
+    case 50: /* SGR@@Proportional spacing off @@ */
       vt->cstyle ^= (vt->cstyle & STYLE_PROPORTIONAL);
       break;
 
@@ -1412,18 +1420,18 @@ static void vtcmd_clear_all_tabs (MrgVT *vt, const char *sequence)
 
 static void vtcmd_clear_current_tab (MrgVT *vt, const char *sequence)
 {
-  vt->tabs[vt->cursor_x-1] = 0;
+  vt->tabs[(int)(vt->cursor_x-1)] = 0;
 }
 
 static void vtcmd_horizontal_tab_set (MrgVT *vt, const char *sequence)
 {
-  vt->tabs[vt->cursor_x-1] = 1;
+  vt->tabs[(int)vt->cursor_x-1] = 1;
 }
 
 static void vtcmd_cursor_position_report (MrgVT *vt, const char *sequence)
 {
   char buf[64];
-  sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->scroll_top - 1):0), vt->cursor_x);
+  sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->scroll_top - 1):0), (int)vt->cursor_x);
   vt_write (vt, buf, strlen(buf));
 }
 
@@ -1724,7 +1732,7 @@ static void _ctx_vt_htab (MrgVT *vt)
 {
   do {
     vt->cursor_x ++;
-  } while (vt->cursor_x < vt->cols &&  ! vt->tabs[vt->cursor_x-1]);
+  } while (vt->cursor_x < vt->cols &&  ! vt->tabs[(int)vt->cursor_x-1]);
   if (vt->cursor_x > vt->cols)
     vt->cursor_x = vt->cols;
 }
@@ -1733,7 +1741,7 @@ static void _ctx_vt_rev_htab (MrgVT *vt)
 {
   do {
     vt->cursor_x--;
-  } while ( ! vt->tabs[vt->cursor_x-1] && vt->cursor_x > 1);
+  } while ( ! vt->tabs[(int)vt->cursor_x-1] && vt->cursor_x > 1);
   if (vt->cursor_x < 1)
     vt->cursor_x = 1;
 }
@@ -1754,6 +1762,36 @@ static void vtcmd_rev_n_tabs (MrgVT *vt, const char *sequence)
   {
     _ctx_vt_rev_htab (vt);
   }
+}
+
+static void vtcmd_set_double_width_double_height_top_line
+ (MrgVT *vt, const char *sequence)
+{
+  vt->current_line->double_width = 1;
+  vt->current_line->double_height_top = 1;
+  vt->current_line->double_height_bottom = 0;
+}
+static void vtcmd_set_double_width_double_height_bottom_line
+ (MrgVT *vt, const char *sequence)
+{
+  vt->current_line->double_width = 1;
+  vt->current_line->double_height_top = 0;
+  vt->current_line->double_height_bottom = 1;
+}
+static void vtcmd_set_single_width_single_height_line
+ (MrgVT *vt, const char *sequence)
+{
+  vt->current_line->double_width = 0;
+  vt->current_line->double_height_top = 0;
+  vt->current_line->double_height_bottom = 0;
+}
+static void
+vtcmd_set_double_width_single_height_line
+ (MrgVT *vt, const char *sequence)
+{
+  vt->current_line->double_width = 1;
+  vt->current_line->double_height_top = 0;
+  vt->current_line->double_height_bottom = 0;
 }
 
 static void vtcmd_set_led (MrgVT *vt, const char *sequence)
@@ -1905,6 +1943,11 @@ static Sequence sequences[]={
   {"(A",  0,   vtcmd_set_default_font},
   {"(B",  0,   vtcmd_set_default_font}, 
 
+  {"#3",  0,   vtcmd_set_double_width_double_height_top_line},
+  {"#4",  0,   vtcmd_set_double_width_double_height_bottom_line},
+  {"#5",  0,   vtcmd_set_single_width_single_height_line},
+  {"#6",  0,   vtcmd_set_double_width_single_height_line},
+
   {"#8",  0,   vtcmd_screen_alignment_display}, /* id:DECALN Screen Alignment Display */
   {"=",   0,   vtcmd_ignore},  // keypad mode change
   {">",   0,   vtcmd_ignore},  // keypad mode change
@@ -1934,7 +1977,7 @@ static void handle_sequence (MrgVT *vt, const char *sequence)
       }
     }
   }
-  //VT_warning ("unhandled: %c%c%c%c%c%c%c%c%c\n", sequence[0], sequence[1], sequence[2], sequence[3], sequence[4], sequence[5], sequence[6], sequence[7], sequence[8]);
+  VT_warning ("unhandled: %c%c%c%c%c%c%c%c%c\n", sequence[0], sequence[1], sequence[2], sequence[3], sequence[4], sequence[5], sequence[6], sequence[7], sequence[8]);
 }
 
 static void ctx_vt_line_feed (MrgVT *vt)
@@ -4004,20 +4047,24 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar)
   return -1;
 }
 
-void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold)
+void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold, float scale_x, float scale_y, float offset_y)
 {
   if (unichar <= ' ')
     return;
   if (!vt_special_glyph (ctx, vt, x, y, unichar))
     return;
 
+  scale_x *= vt->scale_x;
+  scale_y *= vt->scale_y;
+
   ctx_save (ctx);
-  if (vt->scale_x != 1.0)
+  if (scale_x != 1.0 || scale_y != 1.0)
   {
     ctx_translate (ctx, x, y);
-    ctx_scale (ctx, vt->scale_x, 1.0);
+    ctx_scale (ctx, scale_x, scale_y);
     ctx_translate (ctx, -x, -y);
   }
+  ctx_translate (ctx, 0, vt->font_size * offset_y);
 
   y -= vt->font_size * 0.2;
 
@@ -4177,12 +4224,15 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
 }
 
 
-void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
-		       int   row, int col, // pass 0 to force draw - like
-		       float x0, float y0, // for scrollback visible
-		       uint64_t style,
-		       uint32_t unichar,
-		       int      bg, int fg)
+float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
+ 		        int   row, int col, // pass 0 to force draw - like
+ 		        float x0, float y0, // for scrollback visible
+		        uint64_t style,
+		        uint32_t unichar,
+		        int      bg, int fg,
+			int      dw, int dh)
+	              // dw is 0 or 1 
+		      // dh is 0 1 or -1  1 is upper -1 is lower
 {
   int on_white = vt->reverse_video;
 
@@ -4190,6 +4240,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   int bold = (style & STYLE_BOLD) != 0;
   int dim = (style & STYLE_DIM) != 0;
   int hidden = (style & STYLE_HIDDEN) != 0;
+  int proportional = (style & STYLE_PROPORTIONAL) != 0;
 
   int bg_intensity = 0;
   int fg_intensity = 2;
@@ -4198,7 +4249,78 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
   int blink = ((style & STYLE_BLINK) != 0);
   int blink_fast = ((style & STYLE_BLINK_FAST) != 0);
- 
+
+  int cw = vt->cw;
+
+  if (proportional)
+  {
+    static int space_count = 0; // non-reentrant XXX
+    if (vt->font_is_mono)
+    {
+      ctx_set_font (ctx, "regular");
+      vt->font_is_mono = 0;
+    }
+    if (unichar == ' ')
+    {
+      space_count++;
+      switch (space_count)
+      {
+	case 0: // doesnt happen
+	case 1:
+          cw = ctx_glyph_width (ctx, unichar);
+	  break;
+	case 2: // this is perhaps where we could try to
+	        // nonintrusively sneek back in with col coords?
+	default: // we're happy with regular spacing
+          break;
+      }
+    }
+    else {
+      space_count = 0;
+      cw = ctx_glyph_width (ctx, unichar);
+    }
+  }
+  else
+  {
+    if (vt->font_is_mono == 0)
+    {
+      ctx_set_font (ctx, "mono");
+      vt->font_is_mono = 1;
+    }
+  }
+
+  float scale_x = 1.0f;
+  float scale_y = 1.0f;
+  float offset_y = 0.0f;
+
+  if (dw)
+  {
+    scale_x = 2.0f;
+  }
+  if (dh)
+  {
+    scale_y = 2.0f;
+  }
+  if (dh == 1)
+  {
+    offset_y = 0.5f;
+  }
+  else if (dh == -1)
+  {
+    offset_y =  0.0f;
+  }
+
+  cw *= scale_x;
+
+  if (row && col && ! proportional && (scale_x == 1.0f))
+  {
+    if (vt->set_unichar[row*vt->cols+col] == unichar &&
+        vt->set_style[row*vt->cols+col] == style)
+      return cw;
+    vt->set_unichar[row*vt->cols+col] = unichar;
+    vt->set_style[row*vt->cols+col] = style;
+  }
+
   if (blink_fast)
   {
     if (vt->blink_state % 2 == 0)
@@ -4239,6 +4361,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
    mode of the vt100 actually displays the vttest.
 
    */
+
 
   if (on_white)
   {
@@ -4342,21 +4465,6 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   }
 #endif
 
-
-  if (row && col)
-  {
-    if (vt->set_unichar[row*vt->cols+col] == unichar &&
-        vt->set_style[row*vt->cols+col] == style)
-      return;
-    vt->set_unichar[row*vt->cols+col] = unichar;
-    vt->set_style[row*vt->cols+col] = style;
-  }
-
-  if (style & STYLE_BLINK) {
-     //vt->rev++ ; // forces redraws (albeit too rapidly)
-     vt->set_style[row*vt->cols+col] = style-1;
-  }
-
   if (bg)  {
 
   ctx_new_path (ctx);
@@ -4395,12 +4503,12 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 		      color,
 		      bg_intensity);
   }
-  ctx_rectangle (ctx, x0, y0 - (int)vt->font_size, vt->cw, vt->ch);
+  ctx_rectangle (ctx, x0, y0 - (int)vt->font_size, cw, vt->ch);
   ctx_fill (ctx);
 
   }
 
-  if (!fg) return;
+  if (!fg) return cw;
 
   int italic        = (style & STYLE_ITALIC) != 0;
   int strikethrough = (style & STYLE_STRIKETHROUGH) != 0;
@@ -4439,12 +4547,17 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     if (italic)
     {
       ctx_save (ctx);
-      ctx_translate (ctx, x0 + vt->cw/2, y0 + vt->ch/2);
+      ctx_translate (ctx, x0 + cw/2, y0 + vt->ch/2);
       ctx_rotate (ctx, 0.3);
-      ctx_translate (ctx, -x0 + vt->cw/2, -(y0 + vt->ch/2) );
+      ctx_translate (ctx, -x0 + cw/2, -(y0 + vt->ch/2) );
     }
 
-    vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold);
+    if (bold || 1)
+    {
+       //scale_x = 1.5;
+       //scale_y = 1.5;
+    }
+    vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold, scale_x, scale_y, offset_y);
     if (italic)
     {
       ctx_restore (ctx);
@@ -4453,7 +4566,7 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     {
       ctx_new_path (ctx);
       ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07);
-      ctx_rel_line_to (ctx, vt->cw, 0);
+      ctx_rel_line_to (ctx, cw, 0);
       ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05));
       ctx_stroke (ctx);
     }
@@ -4461,11 +4574,12 @@ void ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     {
       ctx_new_path (ctx);
       ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43);
-      ctx_rel_line_to (ctx, vt->cw, 0);
+      ctx_rel_line_to (ctx, cw, 0);
       ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05));
       ctx_stroke (ctx);
     }
   }
+  return cw;
 }
 
 int ctx_vt_has_blink (MrgVT *vt)
@@ -4476,12 +4590,22 @@ int ctx_vt_has_blink (MrgVT *vt)
 void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 {
   ctx_save (ctx);
-  ctx_set_font (ctx, "mono");
+  ctx_set_font (ctx, "regular");
+  vt->font_is_mono = 0;
   ctx_set_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
 
   vt->has_blink = 0;
 
   vt->blink_state++;
+  int cursor_x_px = 0;
+  int cursor_y_px = 0;
+  int cursor_w = vt->cw;
+  int cursor_h = vt->ch;
+
+  cursor_x_px = x0 + (vt->cursor_x - 1) * vt->cw;
+  cursor_y_px = y0 + (vt->cursor_y - 1) * vt->ch;
+  cursor_w = vt->cw;
+  cursor_h = vt->ch;
 
   if (vt->scroll)
   {
@@ -4520,29 +4644,60 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
         const char *data = line->str;
         const char *d = data;
         float x = x0;
+	uint64_t style = 0;
+	uint32_t unichar = 0;
         for (int col = 1; col <= vt->cols; col++)
         {
+
 	  int r = vt->rows - row;
 	  int c = col;
+	  int real_cw;
 	  if (vt->scroll)
 	  {
 	    /* this prevents draw_cell from using cache */
             r = c = 0;
 	  }
+	  style = vt_string_get_style (line, col-1);
+	  unichar = d?ctx_utf8_to_unichar (d):' ';
+
+          real_cw=ctx_vt_draw_cell (vt, ctx, r, c, x, y, style, unichar, 1, 1,
+	    line->double_width,
+	    line->double_height_top?1:
+	    line->double_height_bottom?-1:0);
+	  if (r == vt->cursor_y && col == vt->cursor_x)
 	  {
-	    uint64_t style = vt_string_get_style (line, col-1);
-	    uint32_t unichar = d?ctx_utf8_to_unichar (d):' ';
-            if (style & STYLE_BLINK)
-	      vt->has_blink = 1;
-            ctx_vt_draw_cell (vt, ctx, r, c, x, y, style, unichar, 1, 1);
+	    cursor_x_px = x;
 	  }
-          x+=vt->cw;
+
+	  x+=real_cw;
+
+
+          if (style & STYLE_BLINK ||
+              style & STYLE_BLINK_FAST)
+	  {
+	    vt->has_blink = 1;
+            vt->set_style[r*vt->cols+c] = style-1;
+	  }
+          if (style & STYLE_PROPORTIONAL)
+	  {
+            for (int i = 0; i < vt->cols * 2; i++)
+              vt_cell_cache_reset (vt, r, c);
+	  }
+
 	  if (d)
 	  {
             d = mrg_utf8_skip (d, 1);
 	    if (!*d) d = NULL;
 	  }
         }
+	while (x < vt->cols * vt->cw)
+	{
+          x+=ctx_vt_draw_cell (vt, ctx, -1, -1, x, y, style, ' ', 1, 1,
+			  
+	    line->double_width,
+	    line->double_height_top?1:
+	    line->double_height_bottom?-1:0);
+	}
       }
       y -= vt->ch;
     }
@@ -4585,15 +4740,12 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   /* draw cursor */
   if (vt->cursor_visible)
   {
-    int cursor_x = ctx_vt_get_cursor_x (vt);
-    int cursor_y = ctx_vt_get_cursor_y (vt);
-    vt_cell_cache_reset (vt, cursor_y, cursor_x);
+    vt_cell_cache_reset (vt, vt->cursor_y, vt->cursor_x);
     ctx_set_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
     ctx_new_path (ctx);
     ctx_rectangle (ctx,
-               x0 + (cursor_x - 1) * vt->cw,
-               y0 + (cursor_y - 1) * vt->ch,
-               vt->cw, vt->ch);
+               cursor_x_px, cursor_y_px,
+               cursor_w, cursor_h);
     ctx_fill (ctx);
   }
 

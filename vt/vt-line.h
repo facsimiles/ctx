@@ -37,6 +37,10 @@ struct _VtString
   int       double_width;
   int       double_height_top;
   int       double_height_bottom;
+  float     xscale;
+  float     yscale;
+  float     y_offset;
+  int       in_scroll_region;
 }  __attribute((packed));
 
 
