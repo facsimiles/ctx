@@ -1470,46 +1470,6 @@ static void vtcmd_horizontal_tab_set (MrgVT *vt, const char *sequence)
   vt->tabs[(int)vt->cursor_x-1] = 1;
 }
 
-static void vtcmd_cursor_position_report (MrgVT *vt, const char *sequence)
-{
-  char buf[64];
-  sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->scroll_top - 1):0), (int)vt->cursor_x);
-  vt_write (vt, buf, strlen(buf));
-}
-
-//////////
-//  the sixel-parser should build an image, that in one go gets chopped into
-//  pieces filling in the optional scanline raster data; when stored for scrollback
-//
-//
-//////////
-
-static void vtcmd_device_status_report (MrgVT *vt, const char *sequence)
-{
-  char buf[64];
-  sprintf (buf, "\033[0n"); // we're always OK :)
-  vt_write (vt, buf, strlen(buf));
-}
-
-static void vtcmd_device_attributes (MrgVT *vt, const char *sequence)
-{
-  //char *buf = "\033[?1;2c"; // what rxvt reports
-  //char *buf = "\033[?1;6c"; // VT100 with AVO ang GPO
-  //char *buf = "\033[?2c";     // VT102
-  char *buf = "\033[?63;14;22c"; 
-  if (!strcmp (sequence, "[>c"))
-	buf="\033[>23;01;1c";
-  vt_write (vt, buf, strlen(buf));
-}
-
-static void vtcmd_request_terminal_parameters (MrgVT *vt, const char *sequence)
-{
-  char *buf = "\e[2;1;1;120;120;1;0x";
-  if (!strcmp (sequence, "[1x"))
-    buf = "\e[3;1;1;120;120;1;0x";
-  vt_write (vt, buf, strlen(buf));
-}
-
 static void vtcmd_save_cursor_position (MrgVT *vt, const char *sequence)
 {
   vt->saved_x = vt->cursor_x;
@@ -1591,10 +1551,8 @@ static void vtcmd_insert_character (MrgVT *vt, const char *sequence)
   {
      vt_string_insert_utf8 (vt->current_line, vt->cursor_x-1, " ");
   }
-  vt->cursor_x = 1;
   while (vt->current_line->utf8_length > vt->cols)
      vt_string_remove_utf8 (vt->current_line, vt->cols);
-
   // XXX update style
 }
 
@@ -1882,6 +1840,48 @@ static void vtcmd_DECELR (MrgVT *vt, const char *sequence)
 
 }
 
+static void vtcmd_report (MrgVT *vt, const char *sequence)
+{
+  char buf[64]="";
+  if (!strcmp (sequence, "[?15n")) // printer status
+  {
+    sprintf (buf, "\e[?13n"); // no printer
+  }
+  else if (!strcmp (sequence, "[?26n")) // keyboard dialect 
+  {
+    sprintf (buf, "\e[?27;1n"); // north american/ascii
+  }
+  else if (!strcmp (sequence, "[6n")) // DSR cursor position report
+  {
+    sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->scroll_top - 1):0), (int)vt->cursor_x);
+  }
+  else if (!strcmp (sequence, "[5n")) // DSR decide status report
+  {
+    sprintf (buf, "\033[0n"); // we're always OK :)
+  }
+  else if (!strcmp (sequence, "[>c"))
+  {
+    sprintf (buf, "\033[>23;01;1c");
+  }
+  else if (sequence[strlen(sequence)-1]=='c') // device attributes
+  {
+    //buf = "\033[?1;2c"; // what rxvt reports
+    //buf = "\033[?1;6c"; // VT100 with AVO ang GPO
+    //buf = "\033[?2c";     // VT102
+    sprintf (buf, "\033[?63;14;22c");
+  }
+  else if (sequence[strlen(sequence)-1]=='x') // terminal parameters
+  {
+    if (!strcmp (sequence, "[1x"))
+      sprintf (buf, "\e[3;1;1;120;120;1;0x");
+    else
+      sprintf (buf, "\e[2;1;1;120;120;1;0x");
+  }
+
+  if (buf[0])
+    vt_write (vt, buf, strlen(buf));
+}
+
 static char* charmap_cp437[]={
 " ","☺","☻","♥","♦","♣","♠","•","◘","○","◙","♂","♀","♪","♫","☼",
 "►","◄","↕","‼","¶","§","▬","↨","↑","↓","→","←","∟","↔","▲","▼",
@@ -1968,13 +1968,11 @@ static Sequence sequences[]={
   {"[",  'e', vtcmd_cursor_down},    /* args:Pn id:VPR Vertical Position Relative */
   {"[",  'd', vtcmd_goto_row},       /* args:Pn id:VPA Vertical Position Absolute  */
   {"[",  'm', vtcmd_set_graphics_rendition}, /* args:Ps;Ps;.. id:SGR Select Graphics Rendition */
+  {"[",  'n', vtcmd_report},           /* id:DSR CPR Cursor Position Report  */
   {"[",  'r', vtcmd_set_top_and_bottom_margins}, /* args:Pt;Pb id:DECSTBM Set Top and Bottom Margins */
   {"[",  '`', vtcmd_horizontal_position_absolute},  /* args:Pn id:HPA Horizontal Position Absolute */
   {"[s",  0,  vtcmd_save_cursor_position}, /* id:SCP Save Cursor Position */
   {"[u",  0,  vtcmd_restore_cursor_position}, /*id:RCP Restore Cursor Position */
-
-  {"[6n", 0,  vtcmd_cursor_position_report}, /* id:DSR CPR Cursor Position Report  */
-  {"[5n", 0,  vtcmd_device_status_report}, /*id:DSR device status report */
   {"[0g", 0,  vtcmd_clear_current_tab}, /* id:XXX clear current tab */
   {"[3g", 0,  vtcmd_clear_all_tabs},    /* id:XXX clear all tabs */
 
@@ -1986,16 +1984,10 @@ static Sequence sequences[]={
   {"8",   0,  vtcmd_restore_cursor}, /* id:DECRC Restore Cursor */
   {"H",   0,  vtcmd_horizontal_tab_set}, /* id:HTS Horizontal Tab Set */
 
-  {"[",  'c', vtcmd_device_attributes}, /* id:DA Device Attributes */
-  {"[",  'x', vtcmd_request_terminal_parameters}, /* id:DA Device Attributes */
+  {"[",  'c', vtcmd_report}, /* id:DA Device Attributes */
+  {"[",  'x', vtcmd_report}, /* id:DECREQTPARM */
   //{"Z", 0,  vtcmd_device_attributes}, 
-
   //{"%G",0,  vtcmd_set_default_font}, // set_alternate_font
-#if 0
-  /* these should set an alternate charset - seem to sometimes be used
-   * for getting graphics chars
-   */
-#endif
   
   {"[",  'q',  vtcmd_set_led}, /* args:Ps id:DECLL Load LEDs */
   {"[",  'z',  vtcmd_DECELR}, /* id:DECELR set locator res  */
@@ -4962,7 +4954,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 
   }
 
-#define SCROLL_SPEED 0.15;
+#define SCROLL_SPEED 0.25;
 
   if (vt->in_scroll)
   {
