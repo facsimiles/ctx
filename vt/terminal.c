@@ -291,14 +291,16 @@ int vt_main(int argc, char **argv)
         }
         sleep_time = 800;
       }
-      if (!got_event)
+      if (ctx_vt_has_blink (vt) >= 10)
+	sleep_time = 00;
+      if (!got_event && ctx_vt_has_blink (vt) < 10)
       {
         audio_task (0);
         if (ctx_vt_poll (vt, sleep_time))
 	{
-	  sleep_time = 10000;
+	  //sleep_time = 10000;
 	}
-        sleep_time *= 1.2;
+        sleep_time *= 1.05;
         if (sleep_time > 60000)
           sleep_time = 60000;
       }

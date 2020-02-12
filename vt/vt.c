@@ -426,14 +426,20 @@ static void vt_cell_cache_reset(MrgVT *vt, int row, int col)
   vt->set_style[row*vt->cols+col] = 0xffffff;
 }
 
+static void vt_cell_cache_clear_row (MrgVT *vt, int row)
+{
+  if (!vt->set_style)
+    return;
+  for (int col = 0; col <= vt->cols; col++)
+    vt_cell_cache_reset (vt, row, col);
+}
+
 static void vt_cell_cache_clear (MrgVT *vt)
 {
   if (!vt->set_style)
     return;
-  // 0 is there as a padding dummy - but it gets used on the next row
   for (int row = 0; row <= vt->rows; row++)
-    for (int col = 0; col <= vt->cols; col++)
-      vt_cell_cache_reset (vt, row, col);
+    vt_cell_cache_clear_row (vt, row);
 }
 
 static void vtcmd_clear (MrgVT *vt, const char *sequence)
@@ -574,7 +580,7 @@ void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
   MrgVT *vt              = calloc (sizeof (MrgVT), 1);
-  vt->smooth_scroll = 0;
+  vt->smooth_scroll = 1;
   vt->scroll_offset = 0.0;
   vt->waitdata = vtpty_waitdata;
   vt->read   = vtpty_read;
@@ -905,7 +911,7 @@ static void vt_scroll (MrgVT *vt, int amount)
   {
     if (amount < 0)
     {
-      vt->scroll_offset = 0.0;
+      vt->scroll_offset = -1.0;
       vt->in_scroll = -1;
     }
     else
@@ -913,6 +919,7 @@ static void vt_scroll (MrgVT *vt, int amount)
       vt->scroll_offset = 1.0;
       vt->in_scroll = 1;
     }
+    vt_cell_cache_clear (vt);
   }
 }
 
@@ -1572,8 +1579,9 @@ static void vtcmd_insert_character (MrgVT *vt, const char *sequence)
   int n = parse_int (sequence, 1);
   while (n--)
   {
-     vt_string_insert_utf8 (vt->current_line, vt->cursor_x - 1, " ");
+     vt_string_insert_utf8 (vt->current_line, vt->cursor_x-1, " ");
   }
+  vt->cursor_x = 1;
   while (vt->current_line->utf8_length > vt->cols)
      vt_string_remove_utf8 (vt->current_line, vt->cols);
 
@@ -2012,7 +2020,7 @@ static void handle_sequence (MrgVT *vt, const char *sequence)
 
 static void ctx_vt_line_feed (MrgVT *vt)
 {
-  if (vt->scroll_top == 1 && vt->scroll_bottom == vt->rows)
+  if(1)if (vt->scroll_top == 1 && vt->scroll_bottom == vt->rows)
   {
     if (vt->lines->data == vt->current_line)
     {
@@ -3262,34 +3270,53 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
   }
 }
 
+static unsigned char buf[128];
+static int buf_len = 0;
+
 int ctx_vt_poll (MrgVT *vt, int timeout)
 {
-  unsigned char buf[64];
+
   int read_size = sizeof(buf);
   int got_data = 0;
+  int len = 0;
   if (vt->in_scroll)
   {
     return 0;
-    if (vt->in_scroll < -1 ||
-        vt->in_scroll > 1)
-	    return 0;
     read_size = 1;
   }
+  len = buf_len; 
+  if (buf_len) goto b;
 
   while (timeout > 100 && vt_waitdata (vt, timeout))
   {
-    int len = vt_read (vt, buf, read_size);
+    len = vt_read (vt, buf, read_size);
+    b:
     if (len > 0)
     {
       int i;
+      buf_len = 0;
       for (i = 0; i < len; i++)
       {
         uint8_t byte = buf[i];
-	if (byte == '\n' ||
-	    byte == '\r')
-	  vt->in_scroll *= 10;
         ctx_vt_feed_byte (vt, byte);
+	if (vt->in_scroll)
+	{
+
+          int remaining = len - i - 1;
+	  if (remaining > 0)
+	  {
+	  for (int j = 0; j < remaining; j++)
+	  {
+            buf[j] = buf[j+i + 1];
+	  }
+	  buf_len = remaining;
+          got_data+=len;
+          vt->rev ++;
+	  }
+	  return got_data;
+	}
       }
+      buf_len = 0;
       got_data+=len;
       vt->rev ++;
       //return got_data;
@@ -4149,7 +4176,8 @@ static uint8_t palettes[][16][3]={
  {  0,146,166}, // 6               cyan
  {196,196,196},// 7                light-gray
  { 85, 85, 85},// 8                dark gray
- {230,150,105},// 9                light red
+ //{230,150,105},// 9                light red
+ {244, 39, 39},// 9                light red
  {170,240, 80},// 10               light green
  {242,242,  0},// 11               light yellow
  {  0, 40,255},// 12               light blue
@@ -4203,6 +4231,7 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
 	   if (no == 15) no = 7;
            break;
       case 3:
+      case 4:
 	   if (no < 8)
              no += 8;
            break;
@@ -4259,9 +4288,11 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
   } else if (no < 16 + 6*6*6)
   {
     no = no-16;
-    b = (no % 6) * 255 / 5; no/=6;
-    g = (no % 6) * 255 / 5; no/=6;
-    r = (no % 6) * 255 / 5;
+    b = (no % 6) * 255 /5;
+    no/=6;
+    g = (no % 6) * 255 /5;
+    no/=6;
+    r = (no % 6) * 255 /5;
   } else
   {
     int gray = no - (16 + 6*6*6);
@@ -4649,7 +4680,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
 int ctx_vt_has_blink (MrgVT *vt)
 {
-  return vt->has_blink + vt->in_scroll * 10;
+  return vt->has_blink + (!!vt->in_scroll) * 10;
 }
 
 void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
@@ -4703,6 +4734,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
       {
 	 l = vt_list_nth (vt->scrollback, row-vt->rows);
       }
+
+
       if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
       {
 	VtString *line = l->data;
@@ -4711,10 +4744,14 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
         float x = x0;
 	uint64_t style = 0;
 	uint32_t unichar = 0;
+	int r = vt->rows - row;
+	int in_scrolling_region = vt->in_scroll && (r >= vt->scroll_top && r <= vt->scroll_bottom);
+
+	if (line->double_width)
+          vt_cell_cache_clear_row (vt, r);
         for (int col = 1; col <= vt->cols; col++)
         {
 
-	  int r = vt->rows - row;
 	  int c = col;
 	  int real_cw;
 	  if (vt->scroll)
@@ -4729,7 +4766,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 	    line->double_width,
 	    line->double_height_top?1:
 	    line->double_height_bottom?-1:0,
-	    line->in_scrolling_region+1);
+	    in_scrolling_region);
 	  if (r == vt->cursor_y && col == vt->cursor_x)
 	  {
 	    cursor_x_px = x;
@@ -4742,12 +4779,11 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
               style & STYLE_BLINK_FAST)
 	  {
 	    vt->has_blink = 1;
-            vt->set_style[r*vt->cols+c] = style-1;
+            vt_cell_cache_reset (vt, r, c);
 	  }
           if (style & STYLE_PROPORTIONAL)
 	  {
-            for (int i = 0; i < vt->cols * 2; i++)
-              vt_cell_cache_reset (vt, r, c);
+            vt_cell_cache_clear_row (vt, r);
 	  }
 
 	  if (d)
@@ -4763,7 +4799,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 	    line->double_width,
 	    line->double_height_top?1:
 	    line->double_height_bottom?-1:0,
-	    line->in_scrolling_region);
+	    in_scrolling_region);
 	}
       }
       y -= vt->ch;
@@ -4851,27 +4887,30 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 
   }
 
+#define SCROLL_SPEED 0.33334/2;
+
   if (vt->in_scroll)
   {
-    fprintf (stderr, "@!!\n");
     vt_cell_cache_clear (vt);
 
     if (vt->in_scroll<0)
     {
-      vt->scroll_offset += 0.1;
-      if (vt->scroll_offset >= 1.0)
+      vt->scroll_offset += SCROLL_SPEED;
+      if (vt->scroll_offset >= 0.0)
       {
         vt->scroll_offset = 0;
         vt->in_scroll = 0;
+	vt->rev++;
       }
     }
     else
     {
-      vt->scroll_offset -= 0.1;
+      vt->scroll_offset -= SCROLL_SPEED;
       if (vt->scroll_offset <= 0.0)
       {
         vt->scroll_offset = 0;
         vt->in_scroll = 0;
+	vt->rev++;
       }
 
     }

@@ -240,7 +240,7 @@ void vt_string_insert_utf8 (VtString *string, int pos, const char *new_glyph)
   int old_len = string->utf8_length;
   char tmpg[3]=" ";
 
-  if (old_len == pos)
+  if (old_len == pos && 0)
   {
     vt_string_append_str (string, new_glyph);
     return;
@@ -275,7 +275,7 @@ void vt_string_insert_utf8 (VtString *string, int pos, const char *new_glyph)
   char *p = (void*)mrg_utf8_skip (string->str, pos);
   int prev_len = mrg_utf8_len (*p);
   char *rest;
-  if (*p == 0 || *(p+prev_len) == 0)
+  if ((*p == 0 || *(p+prev_len) == 0) && pos != 0)
   {
     rest = strdup("");
   }
