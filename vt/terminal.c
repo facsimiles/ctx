@@ -132,18 +132,21 @@ int vt_main(int argc, char **argv)
   signal (SIGCHLD, signal_child);
   while(!do_quit)
   {
+      long drawn_rev = 0;
       unsigned char *buffer;
       int width; int height; int stride;
 
-      static long drawn_rev = 0;
+      int in_scroll = (ctx_vt_has_blink (vt) >= 10);
+
+
       if (drawn_rev != ctx_vt_rev (vt) ||
-          ctx_vt_has_blink (vt))
+          ctx_vt_has_blink (vt) || in_scroll)
       {
 
 	if (drawn_rev == ctx_vt_rev (vt))
 	{
-		if (ctx_vt_has_blink (vt) < 10)
-		  usleep(1000 * 100);
+	  if (!in_scroll)
+	    usleep(1000 * 100);
 	}
 
         drawn_rev = ctx_vt_rev (vt);
@@ -169,6 +172,7 @@ int vt_main(int argc, char **argv)
       }
 
       int got_event = 0;
+      //if (!in_scroll)
       while (mmm_has_event (mmm))
       {
         const char *event = mmm_get_event (mmm);
@@ -291,18 +295,21 @@ int vt_main(int argc, char **argv)
         }
         sleep_time = 800;
       }
-      if (ctx_vt_has_blink (vt) >= 10)
-	sleep_time = 00;
-      if (!got_event && ctx_vt_has_blink (vt) < 10)
+      if (in_scroll)
+      {
+	sleep_time = 300;
+      }
+      if (!got_event)
       {
         audio_task (0);
+
         if (ctx_vt_poll (vt, sleep_time))
 	{
-	  //sleep_time = 10000;
+	  sleep_time = 500;
 	}
         sleep_time *= 1.05;
-        if (sleep_time > 60000)
-          sleep_time = 60000;
+        if (sleep_time > 6000)
+          sleep_time = 6000;
       }
       audio_task (got_event);
   }

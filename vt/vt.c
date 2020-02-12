@@ -876,12 +876,18 @@ static void vt_scroll (MrgVT *vt, int amount)
 
   if (string)
   {
-    vt_string_set (string, "");
+    if (vt->scroll_top == 1 && vt->scroll_bottom == vt->rows)
+    {
+      vt_list_prepend (&vt->scrollback, string);
+      vt->scrollback_count ++;
+    }
+    else
+    {
+      vt_string_free (string, 1);
+    }
   }
-  else
-  {
-    string = vt_string_new_with_size ("", vt->cols/4);
-  }
+
+  string = vt_string_new_with_size ("", vt->cols/4);
 
   if (amount > 0 && vt->scroll_top == 1)
   {
@@ -1059,9 +1065,9 @@ static void vtcmd_cursor_down (MrgVT *vt, const char *sequence)
   if (n==0) n = 1;
   for (int i = 0; i < n; i++)
   {
-    if (vt->cursor_y >= vt->rows)
+    if (vt->cursor_y >= vt->scroll_bottom)
     {
-      _ctx_vt_move_to (vt, vt->rows, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->scroll_bottom, vt->cursor_x);
     }
     else
     {
@@ -2022,17 +2028,20 @@ static void ctx_vt_line_feed (MrgVT *vt)
 {
   if(1)if (vt->scroll_top == 1 && vt->scroll_bottom == vt->rows)
   {
-    if (vt->lines->data == vt->current_line)
+    if (vt->lines->data == vt->current_line && vt->cursor_y != vt->scroll_bottom)
     {
-      vt->current_line = vt_string_new_with_size ("", vt->cols/4);
+      vt->current_line = vt_string_new_with_size ("", vt->cols);
       vt_list_prepend (&vt->lines, vt->current_line);
       vt->line_count++;
     }
 
-    vt->cursor_y++;
-
-    if (vt->cursor_y > vt->scroll_bottom){
+    if (vt->cursor_y >= vt->scroll_bottom){
       vt->cursor_y = vt->scroll_bottom;
+      vt_scroll (vt, -1);
+    }
+    else
+    {
+      vt->cursor_y++;
     }
 
     _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
@@ -3284,7 +3293,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
   }
 }
 
-static unsigned char buf[128];
+static unsigned char buf[512];
 static int buf_len = 0;
 
 int ctx_vt_poll (MrgVT *vt, int timeout)
@@ -3292,14 +3301,18 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
 
   int read_size = sizeof(buf);
   int got_data = 0;
+  int max_consumed_chars = 200;
   int len = 0;
+#if 1
   if (vt->in_scroll)
   {
-    return 0;
-    read_size = 1;
+    max_consumed_chars = 5;
   }
+#endif
   len = buf_len; 
+  int was_in_scroll = vt->in_scroll;
   if (buf_len) goto b;
+
 
   while (timeout > 100 && vt_waitdata (vt, timeout))
   {
@@ -3313,7 +3326,8 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
       {
         uint8_t byte = buf[i];
         ctx_vt_feed_byte (vt, byte);
-	if (vt->in_scroll)
+	if ((vt->in_scroll && !was_in_scroll )
+	    || (was_in_scroll && i > max_consumed_chars))
 	{
 
           int remaining = len - i - 1;
@@ -4694,7 +4708,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
 int ctx_vt_has_blink (MrgVT *vt)
 {
-  return vt->has_blink + (!!vt->in_scroll) * 10;
+  return vt->has_blink + (vt->in_scroll ?  10 : 0);
 }
 
 void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
@@ -4901,7 +4915,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 
   }
 
-#define SCROLL_SPEED 0.33334/2;
+#define SCROLL_SPEED 0.15;
 
   if (vt->in_scroll)
   {
