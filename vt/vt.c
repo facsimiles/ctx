@@ -2869,9 +2869,23 @@ static int _vt_handle_control (MrgVT *vt, int byte)
         case 2:    /* STX start of text */
         case 3:    /* ETX end of text */
         case 4:    /* EOT end of transmission */
-        case 5:    /* ENQuiry */
         case 6:    /* ACKnolwedge */
            return 1;
+        case 5:    /* ENQuiry */
+	   {
+	     const char *reply = getenv ("TERM_ENQ_REPLY");
+	     if (reply)
+	     {
+	       char *copy = strdup (reply);
+	       for (char *c = copy; *c; c++)
+	       {
+		 if (*c < ' ' || * c > 127) *c = 0;
+	       }
+	       vt_write (vt, reply, strlen (reply));
+	       free (copy);
+	     }
+	   }
+	   return 1;
         case '\a': /* BELl */   ctx_vt_bell (vt); return 1;
         case '\b': /* BS */     _ctx_vt_backspace (vt); return 1;
         case '\t': /* HT tab */ _ctx_vt_htab (vt); return 1;
@@ -2887,9 +2901,9 @@ static int _vt_handle_control (MrgVT *vt, int byte)
 	case 14: /* SO shift in - alternate charset TODO */
         case 15: /* SI shift out - (back to normal) TODO*/
         case 16: /* DLE data link escape */
-        case 17: /* DC1 device control 1 */
+        case 17: /* DC1 device control 1 - XON */ 
         case 18: /* DC2 device control 2 */
-        case 19: /* DC3 device control 3 */
+        case 19: /* DC3 device control 3 - XOFF */
         case 20: /* DC4 device control 4 */
         case 21: /* NAK negative ack */
         case 22: /* SYNchronous idle */
