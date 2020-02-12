@@ -223,7 +223,8 @@ struct _MrgVT {
   int      debug;
   int      bell;
   int      origin;
-  int      charset;
+  int      charset[4];
+  int      shifted_in;
   int      reverse_video;
   int      echo;
 
@@ -529,7 +530,10 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vtcmd_set_top_and_bottom_margins (vt, "[r");
   vt->autowrap       = 1;
   vt->cursor_visible = 1;
-  vt->charset = 0;
+  vt->charset[0] = 0;
+  vt->charset[1] = 0;
+  vt->charset[2] = 0;
+  vt->charset[3] = 0;
   vt->bell = 3;
   vt->scale_x                = 1.0;
   vt->scale_y                = 1.0;
@@ -1351,8 +1355,8 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 7: /* SGR@@Reverse@@ */      vt->cstyle |= STYLE_REVERSE; break;
     case 8: /* SGR@@Hidden@@ */       vt->cstyle |= STYLE_HIDDEN; break;
     case 9: /* SGR@@Strikethrough@@ */vt->cstyle |= STYLE_STRIKETHROUGH; break;
-    case 10: /* SGR@@Font 0@@ */      vt->charset = 0; break;
-    case 11: /* SGR@@Font 1@@ */      vt->charset = 1; break;
+    case 10: /* SGR@@Font 0@@ */      break;//vt->charset = 0; break;
+    case 11: /* SGR@@Font 1@@ */      break;//vt->charset = 1; break;
     case 12: /* SGR@@Font 2(ignored)@@ */ 
     case 13: /* SGR@@Font 3(ignored)@@ */
     case 14: /* SGR@@Font 4(ignored)@@ */ break;
@@ -1521,7 +1525,7 @@ static void vtcmd_restore_cursor_position (MrgVT *vt, const char *sequence)
 static void vtcmd_save_cursor (MrgVT *vt, const char *sequence)
 {
   vt->saved_style   = vt->cstyle;
-  vt->saved_charset = vt->charset;
+  //vt->saved_charset = vt->charset; // probably charset no selected
   vt->saved_origin  = vt->origin;
   vt->saved_autowrap  = vt->autowrap;
   vtcmd_save_cursor_position (vt, sequence);
@@ -1531,7 +1535,7 @@ static void vtcmd_restore_cursor (MrgVT *vt, const char *sequence)
 {
   vtcmd_restore_cursor_position (vt, sequence);
   vt->cstyle  = vt->saved_style;
-  vt->charset = vt->saved_charset;
+  //vt->charset = vt->saved_charset;
   vt->origin  = vt->saved_origin;     // XXX according to vt100 user guide 
   vt->autowrap = vt->saved_autowrap;  // XXX maybe not needed
 }
@@ -1633,12 +1637,12 @@ static void vtcmd_insert_blank_lines (MrgVT *vt, const char *sequence)
 
 static void vtcmd_set_default_font (MrgVT *vt, const char *sequence)
 {
-  vt->charset = 0;
+  vt->charset[0] = 0;
 }
 
 static void vtcmd_set_alternate_font (MrgVT *vt, const char *sequence)
 {
-  vt->charset = 1;
+  vt->charset[0] = 1;
 }
 
 static void vtcmd_set_mode (MrgVT *vt, const char *sequence)
@@ -1896,13 +1900,37 @@ static char* charmap_cp437[]={
 "α","ß","Γ","π","Σ","σ","µ","τ","Φ","Θ","Ω","δ","∞","φ","ε","∩",
 "≡","±","≥","≤","⌠","⌡","÷","≈","°","∙","·","√","ⁿ","²","■"," "};
 
-static char* charmap[]={
+
+static char* charmap_graphics[]={
 " ","!","\"","#","$","%","&","'","(",")","*","+",",","-",".","/","0",
 "1","2","3","4","5","6","7","8","9",":",";","<","=",">","?",
 "@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P",
 "Q","R","S","T","U","V","W","X","Y","Z","[","\\","]","^","_",
 "◆","▒","␉","␌","␍","␊","°","±","␤","␋","┘","┐","┌","└","┼","⎺","⎻",
 "─","⎼","⎽","├","┤","┴","┬","│","≤","≥","π","≠","£","·"," "};
+
+static char* charmap_uk[]={
+" ","!","\"","£","$","%","&","'","(",")","*","+",",","-",".","/","0",
+"1","2","3","4","5","6","7","8","9",":",";","<","=",">","?",
+"@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P",
+"Q","R","S","T","U","V","W","X","Y","Z","[","\\","]","^","_",
+"`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p",
+"q","r","s","t","u","v","w","x","y","z","{","|","}","~"," "};
+
+static char* charmap_ascii[]={
+" ","!","\"","#","$","%","&","'","(",")","*","+",",","-",".","/","0",
+"1","2","3","4","5","6","7","8","9",":",";","<","=",">","?",
+"@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P",
+"Q","R","S","T","U","V","W","X","Y","Z","[","\\","]","^","_",
+"`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p",
+"q","r","s","t","u","v","w","x","y","z","{","|","}","~"," "};
+
+static void vtcmd_set_charmap (MrgVT *vt, const char *sequence)
+{
+  int slot = 0;
+  if (sequence[0] == ')') slot = 1;
+  vt->charset[slot] = sequence[1];
+}
 
 static Sequence sequences[]={
 /*
@@ -1967,25 +1995,21 @@ static Sequence sequences[]={
   /* these should set an alternate charset - seem to sometimes be used
    * for getting graphics chars
    */
-  {")0",  0,   vtcmd_set_alternate_font},
-  {")1",  0,   vtcmd_set_alternate_font},
-  {")2",  0,   vtcmd_set_alternate_font},
-  {")A",  0,   vtcmd_set_alternate_font},
-  {")B",  0,   vtcmd_set_alternate_font},
-  {"(1",  0,   vtcmd_set_default_font},
-  {"(2",  0,   vtcmd_set_default_font},
-  {"(A",  0,   vtcmd_set_default_font},
-  {"(B",  0,   vtcmd_set_default_font}, 
 #endif
   
   {"[",  'q',  vtcmd_set_led}, /* args:Ps id:DECLL Load LEDs */
   {"[",  'z',  vtcmd_DECELR}, /* id:DECELR set locator res  */
 
-  {"(0",  0,   vtcmd_set_alternate_font},
-  {"(1",  0,   vtcmd_set_default_font},
-  {"(2",  0,   vtcmd_set_default_font},
-  {"(A",  0,   vtcmd_set_default_font},
-  {"(B",  0,   vtcmd_set_default_font}, 
+  {"(0",  0,   vtcmd_set_charmap},
+  {"(1",  0,   vtcmd_set_charmap},
+  {"(2",  0,   vtcmd_set_charmap},
+  {"(A",  0,   vtcmd_set_charmap},
+  {"(B",  0,   vtcmd_set_charmap}, 
+  {")0",  0,   vtcmd_set_charmap},
+  {")1",  0,   vtcmd_set_charmap},
+  {")2",  0,   vtcmd_set_charmap},
+  {")A",  0,   vtcmd_set_charmap},
+  {")B",  0,   vtcmd_set_charmap}, 
 
   {"#3",  0,   vtcmd_set_double_width_double_height_top_line},
   {"#4",  0,   vtcmd_set_double_width_double_height_bottom_line},
@@ -2907,8 +2931,12 @@ static int _vt_handle_control (MrgVT *vt, int byte)
         case '\r': /* CR carriage return */
           _ctx_vt_move_to (vt, vt->cursor_y, 1);
           return 1;
-	case 14: /* SO shift in - alternate charset TODO */
-        case 15: /* SI shift out - (back to normal) TODO*/
+	case 14: /* SO shift in - alternate charset */
+	  vt->shifted_in = 1;
+	  return 1;
+        case 15: /* SI shift out - (back to normal) */
+	  vt->shifted_in = 0;
+	  return 1;
         case 16: /* DLE data link escape */
         case 17: /* DC1 device control 1 - XON */ 
         case 18: /* DC2 device control 2 */
@@ -3111,7 +3139,9 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
     // use a special value for termination
   }
 
-  switch (vt->encoding)
+  int encoding = vt->encoding;
+
+  switch (encoding)
   {
     case 0: /* utf8 */
     if (!vt->utf8_expected_bytes)
@@ -3166,8 +3196,21 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           vt->state = TERMINAL_STATE_GOT_ESC;
           break;
         default:
-          if (vt->charset)
+          if (vt->charset[vt->shifted_in] != 0 &&
+	      vt->charset[vt->shifted_in] != 'B')
 	  {
+	    char **charmap;
+	    switch (vt->charset[vt->shifted_in])
+	    { 
+		case 'A': charmap = charmap_uk; break;
+		case 'B': charmap = charmap_ascii; break;
+		case '0': charmap = charmap_graphics; break;
+		case '1': charmap = charmap_cp437; break;
+		case '2': charmap = charmap_graphics; break;
+		default:
+		  charmap = charmap_ascii;
+		  break;
+	    }
             if ((vt->utf8_holding[0] > ' ') && (vt->utf8_holding[0] <= '~'))
             {
               _ctx_vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
@@ -3293,7 +3336,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
   }
 }
 
-static unsigned char buf[512];
+static unsigned char buf[2048];
 static int buf_len = 0;
 
 int ctx_vt_poll (MrgVT *vt, int timeout)
@@ -3301,9 +3344,13 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
 
   int read_size = sizeof(buf);
   int got_data = 0;
-  int max_consumed_chars = 200;
+  int max_consumed_chars = 512;
   int len = 0;
 #if 1
+  if (vt->cursor_visible)
+  {
+    max_consumed_chars = vt->cols;
+  }
   if (vt->in_scroll)
   {
     max_consumed_chars = 5;
@@ -3327,7 +3374,7 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
         uint8_t byte = buf[i];
         ctx_vt_feed_byte (vt, byte);
 	if ((vt->in_scroll && !was_in_scroll )
-	    || (was_in_scroll && i > max_consumed_chars))
+	    || (i > max_consumed_chars))
 	{
 
           int remaining = len - i - 1;
