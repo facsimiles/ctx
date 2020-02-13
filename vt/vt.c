@@ -38,7 +38,7 @@
 #define VT_LOG_INPUT    (1<<5)
 #define VT_LOG_ALL       0xff
 
-//static int vt_log_mask = 0;
+//static int vt_log_mask = VT_LOG_INPUT;
 static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL;
@@ -216,7 +216,6 @@ struct _MrgVT {
 
   uint64_t *set_style;
   uint32_t *set_unichar;
-
   int      in_scroll;
   int      smooth_scroll;
   float    scroll_offset;
@@ -1400,8 +1399,8 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 7: /* SGR@@Reverse@@ */      vt->cstyle |= STYLE_REVERSE; break;
     case 8: /* SGR@@Hidden@@ */       vt->cstyle |= STYLE_HIDDEN; break;
     case 9: /* SGR@@Strikethrough@@ */vt->cstyle |= STYLE_STRIKETHROUGH; break;
-    case 10: /* SGR@@Font 0@@ */      break;//vt->charset = 0; break;
-    case 11: /* SGR@@Font 1@@ */      break;//vt->charset = 1; break;
+    case 10: /* SGR@@Font 0@@ */      break;
+    case 11: /* SGR@@Font 1@@ */      break;
     case 12: /* SGR@@Font 2(ignored)@@ */ 
     case 13: /* SGR@@Font 3(ignored)@@ */
     case 14: /* SGR@@Font 4(ignored)@@ */ break;
@@ -1530,7 +1529,6 @@ static void vtcmd_restore_cursor_position (MrgVT *vt, const char *sequence)
 static void vtcmd_save_cursor (MrgVT *vt, const char *sequence)
 {
   vt->saved_style   = vt->cstyle;
-  //vt->saved_charset = vt->charset; // probably charset no selected
   vt->saved_origin  = vt->origin;
   vtcmd_save_cursor_position (vt, sequence);
 }
@@ -1692,13 +1690,24 @@ qagain:
 	     break;
      case 12:vtcmd_ignore (vt, sequence);break; // blinking_cursor
 
+
+     case 30: // from rxvt - show/hide scrollbar
+	     break;
+
+     case 34: // DECRLM - right to left mode
+	     break;
+
      case 25:/*MODE;Cursor visible;On;Off; */
 	     vt->cursor_visible = set; 
+	     break;
+     case 60: // horizontal cursor coupling
+     case 61: // vertical cursor coupling
 	     break;
 
      case 69:/*MODE;Left right margin mode;On;Off; */
 	     vt->left_right_margin_mode = set; 
 	     break;
+
      case 80:/* DECSDM Sixel scrolling */
 	     break;
 
@@ -1717,9 +1726,13 @@ qagain:
      //case 47:
      //case 1047:
      //case 1048:
-     //case 1049:
+     //case 1049: <- the one to implement
 	//   vtcmd_reset_to_initial_state (vt, sequence);  
 	   break; // alt screen
+     case 1010: // scroll to bottom on tty output (rxvt)
+	   break;
+     case 1011: // scroll to bottom on key press (rxvt)
+	   break;
      case 2004:  vtcmd_ignore (vt, sequence);break; // set_bracketed_paste_mode
 
      case 4444:/*MODE;Audio;On;;*/
@@ -1747,13 +1760,22 @@ qagain:
 again:
     val = parse_int (sequence, 1);
     switch (val)
-    {
+{
+     case 2:/* AM - keyboard action mode */ break;
+     case 3:/*CRM - control representation mode */
+	     /* show control chars? */
+	     break;
      case 4:/*MODE2;Insert Mode;Insert;Replace; */
 	     vt->insert_mode = set; break;
+     case 9: /* interlace mode */
+	     break;
      case 12:/*MODE2;Local echo;On;Off; */
 	     vt->echo = set; break;
      case 20:/*MODE2;Carriage Return on LF/Newline;On;Off;*/;
 	     vt->cr_on_lf = set; break;
+     case 21: // GRCM - whether SGR accumulates or a reset on each command
+	     break;
+
      default: VT_warning ("unhandled CSI %ih", val); return;
     }
     if (strchr (sequence, ';') && sequence[0] != ';')
@@ -1879,6 +1901,12 @@ static void vtcmd_set_led (MrgVT *vt, const char *sequence)
   }
 }
 
+static void vtcmd_char_at_cursor (MrgVT *vt, const char *sequence)
+{
+  char *buf="";
+  vt_write (vt, buf, strlen(buf));
+}
+
 static void vtcmd_DECELR (MrgVT *vt, const char *sequence)
 {
   int ps1 = parse_int (sequence, 0);
@@ -1912,6 +1940,10 @@ static void vtcmd_report (MrgVT *vt, const char *sequence)
   else if (!strcmp (sequence, "[6n")) // DSR cursor position report
   {
     sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->margin_top - 1):0), (int)vt->cursor_x - (vt->origin?(VT_MARGIN_LEFT-1):0));
+  }
+  else if (!strcmp (sequence, "[?6n")) // DECXPR extended cursor position report
+  {
+    sprintf (buf, "\033[?%i;%i;1R", vt->cursor_y - (vt->origin?(vt->margin_top - 1):0), (int)vt->cursor_x - (vt->origin?(VT_MARGIN_LEFT-1):0));
   }
   else if (!strcmp (sequence, "[5n")) // DSR decide status report
   {
@@ -1986,17 +2018,42 @@ static char* charmap_ascii[]={
 static void vtcmd_set_charmap (MrgVT *vt, const char *sequence)
 {
   int slot = 0;
+  int set = sequence[1];
   if (sequence[0] == ')') slot = 1;
-  vt->charset[slot] = sequence[1];
+  if (set == 'G') set = 'B';
+  vt->charset[slot] = set;
 }
+#if 0
+
+CSI Pm ' }    '
+          Insert Ps Column(s) (default = 1) (DECIC), VT420 and up.
+
+CSI Pm ' ~    '
+          Delete Ps Column(s) (default = 1) (DECDC), VT420 and up.
+
+
+in text.  When bracketed paste mode is set, the program will receive:
+   ESC [ 2 0 0 ~ ,
+followed by the pasted text, followed by
+   ESC [ 2 0 1 ~ .
+
+
+   CSI I
+when the terminal gains focus, and CSI O  when it loses focus.
+#endif
 
 static Sequence sequences[]={
 /*
   prefix suffix  command */
+  //{"B",  0,  vtcmd_break_permitted},
+  //{"C",  0,  vtcmd_nobreak_here},
   {"D",  0,  vtcmd_index}, /* id:IND Index */
   {"E",  0,  vtcmd_next_line},
-  {"M",  0,  vtcmd_reverse_index}, /* id:RI Reverse Index */
 
+  //{"I",  0,  vtcmd_char_tabulation_with_justification},
+  //{"K",  0,  PLD partial line down
+  //{"L",  0,  PLU partial line up
+  {"M",  0,  vtcmd_reverse_index}, /* id:RI Reverse Index */
   //{"N",  0,  vtcmd_ignore}, /* Set Single Shift 2 - SS2*/
   //{"O",  0,  vtcmd_ignore}, /* Set Single Shift 3 - SS3*/
 
@@ -2008,7 +2065,6 @@ static Sequence sequences[]={
   {"[",  'F', vtcmd_cursor_preceding_line}, /* args:Pn id:CPL Cursor Preceding Line */
   {"[",  'G', vtcmd_horizontal_position_absolute}, /* args:Pn id:CHA Cursor Horizontal Absolute */
   {"[",  'H', vtcmd_cursor_position}, /* args:Pl;Pc id:CUP Cursor Position */
-  {"[",  'f', vtcmd_cursor_position}, /* args:Pl;Pc id:CUP Cursor Position */
   {"[",  'I', vtcmd_insert_n_tabs}, /* args:Pn id:CHT Cursor Horizontal Forward Tabulation */
   {"[",  'J', vtcmd_erase_in_display}, /* args:Ps id:ED Erase in Display */
   {"[",  'K', vtcmd_erase_in_line}, /* args:Ps id:EL Erase in Line */
@@ -2023,35 +2079,38 @@ static Sequence sequences[]={
   {"[",  '@', vtcmd_insert_character}, /* args:Pn id:ICH Insert Character */
 
   {"[",  'a', vtcmd_cursor_forward}, /* args:Pn id:HPR Horizontal Position Relative */
-  {"[",  'e', vtcmd_cursor_down},    /* args:Pn id:VPR Vertical Position Relative */
+  {"[",  'b', vtcmd_cursor_forward}, /* REP previous char */
+  {"[",  'c', vtcmd_report}, /* id:DA Device Attributes */
   {"[",  'd', vtcmd_goto_row},       /* args:Pn id:VPA Vertical Position Absolute  */
+  {"[",  'e', vtcmd_cursor_down},    /* args:Pn id:VPR Vertical Position Relative */
+  {"[",  'f', vtcmd_cursor_position}, /* args:Pl;Pc id:CUP Cursor Position */
+  {"[0g", 0,  vtcmd_clear_current_tab}, /* id:XXX clear current tab */
+  {"[3g", 0,  vtcmd_clear_all_tabs},    /* id:XXX clear all tabs */
   {"[",  'm', vtcmd_set_graphics_rendition}, /* args:Ps;Ps;.. id:SGR Select Graphics Rendition */
   {"[",  'n', vtcmd_report},           /* id:DSR CPR Cursor Position Report  */
   {"[",  'r', vtcmd_set_top_and_bottom_margins}, /* args:Pt;Pb id:DECSTBM Set Top and Bottom Margins */
-  {"[",  's', vtcmd_set_left_and_right_margins}, /* args:Pl;Pr id:DECSLRM Set Left and Right Margins */
-  {"[",  '`', vtcmd_horizontal_position_absolute},  /* args:Pn id:HPA Horizontal Position Absolute */
   {"[s",  0,  vtcmd_save_cursor_position}, /* id:SCP Save Cursor Position */
   {"[u",  0,  vtcmd_restore_cursor_position}, /*id:RCP Restore Cursor Position */
-  {"[0g", 0,  vtcmd_clear_current_tab}, /* id:XXX clear current tab */
-  {"[3g", 0,  vtcmd_clear_all_tabs},    /* id:XXX clear all tabs */
+  {"[",  's', vtcmd_set_left_and_right_margins}, /* args:Pl;Pr id:DECSLRM Set Left and Right Margins */
+  {"[",  '`', vtcmd_horizontal_position_absolute},  /* args:Pn id:HPA Horizontal Position Absolute */
 
   {"[",  'h', vtcmd_set_mode},   /* args:Ps;Ps;.. id:SM Set Mode */
   {"[",  'l', vtcmd_set_mode}, /* args:Ps;Ps;..  id:RM Reset Mode */
   {"[",  't', vtcmd_set_t}, 
+  {"[",  'q', vtcmd_set_led}, /* args:Ps id:DECLL Load LEDs */
+  {"[",  'x', vtcmd_report}, /* id:DECREQTPARM */
+  {"[",  'z', vtcmd_DECELR}, /* id:DECELR set locator res  */
 
+  {"5",   0,  vtcmd_char_at_cursor}, /* id:DECXMIT */
   {"6",   0,  vtcmd_back_index}, /* id:DECBI Back index */
   {"7",   0,  vtcmd_save_cursor}, /* id:DECSC Save Cursor */
   {"8",   0,  vtcmd_restore_cursor}, /* id:DECRC Restore Cursor */
   {"9",   0,  vtcmd_forward_index}, /* id:DECFI Forward index */
   {"H",   0,  vtcmd_horizontal_tab_set}, /* id:HTS Horizontal Tab Set */
 
-  {"[",  'c', vtcmd_report}, /* id:DA Device Attributes */
-  {"[",  'x', vtcmd_report}, /* id:DECREQTPARM */
   //{"Z", 0,  vtcmd_device_attributes}, 
   //{"%G",0,  vtcmd_set_default_font}, // set_alternate_font
   
-  {"[",  'q',  vtcmd_set_led}, /* args:Ps id:DECLL Load LEDs */
-  {"[",  'z',  vtcmd_DECELR}, /* id:DECELR set locator res  */
 
   {"(0",  0,   vtcmd_set_charmap},
   {"(1",  0,   vtcmd_set_charmap},
@@ -2063,6 +2122,7 @@ static Sequence sequences[]={
   {")2",  0,   vtcmd_set_charmap},
   {")A",  0,   vtcmd_set_charmap},
   {")B",  0,   vtcmd_set_charmap}, 
+  {"%G",  0,   vtcmd_set_charmap}, 
 
   {"#3",  0,   vtcmd_set_double_width_double_height_top_line},
   {"#4",  0,   vtcmd_set_double_width_double_height_bottom_line},
@@ -2977,6 +3037,42 @@ static void ctx_vt_bell (MrgVT *vt)
  * oterhwise return 0*/
 static int _vt_handle_control (MrgVT *vt, int byte)
 {
+    /* the big difference between ANSI-BBS mode and VT100+ mode is that
+     * most C0 characters are printable
+     */
+  if (vt->encoding == 1) // this codepage is for ansi-bbs use
+  switch (byte)
+  {
+        case '\0':
+		return 1;
+        case 1:    /* SOH start of heading */
+        case 2:    /* STX start of text */
+        case 3:    /* ETX end of text */
+        case 4:    /* EOT end of transmission */
+        case 5:    /* ENQuiry */
+        case 6:    /* ACKnolwedge */
+        case '\v': /* VT vertical tab */
+        case '\f': /* VF form feed */
+	case 14: /* SO shift in - alternate charset */
+        case 15: /* SI shift out - (back to normal) */
+        case 16: /* DLE data link escape */
+        case 17: /* DC1 device control 1 - XON */ 
+        case 18: /* DC2 device control 2 */
+        case 19: /* DC3 device control 3 - XOFF */
+        case 20: /* DC4 device control 4 */
+        case 21: /* NAK negative ack */
+        case 22: /* SYNchronous idle */
+        case 23: /* ETB end of trans. blk */
+        case 24: /* CANcel (vt100 aborts sequence) */
+        case 25: /* EM  end of medium */
+        case 26: /* SUB stitute */
+        case 28: /* FS file separator */
+        case 29: /* GS group separator */
+        case 30: /* RS record separator */
+        case 31: /* US unit separator */
+          _ctx_vt_add_str (vt, charmap_cp437[byte]);
+          return 1;
+  }
   switch (byte)
   {
         case '\0':
@@ -3001,7 +3097,7 @@ static int _vt_handle_control (MrgVT *vt, int byte)
 	     }
 	   }
 	   return 1;
-        case '\a': /* BELl */   ctx_vt_bell (vt); return 1;
+        case '\a': /* BELl */    ctx_vt_bell (vt); return 1;
         case '\b': /* BS */     _ctx_vt_backspace (vt); return 1;
         case '\t': /* HT tab */ _ctx_vt_htab (vt); return 1;
 
@@ -3294,7 +3390,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 		  charmap = charmap_ascii;
 		  break;
 	    }
-            if ((vt->utf8_holding[0] > ' ') && (vt->utf8_holding[0] <= '~'))
+            if ((vt->utf8_holding[0] >= ' ') && (vt->utf8_holding[0] <= '~'))
             {
               _ctx_vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
             }
@@ -3626,10 +3722,12 @@ static const char *keymap_general[][2]={
   {"shift-F4",       "\033[?14~"},
   {"shift-F5",       "\033[?15~"},
 
-  {"F1",             "\033[11~"},  // hold screen
-  {"F2",             "\033[12~"},  // print screen
-  {"F3",             "\033[13~"},  // set-up
-  {"F4",             "\033[14~"},  // data/talk
+
+
+  {"F1",             "\033[11~"},  // hold screen   // ESC O P
+  {"F2",             "\033[12~"},  // print screen  //       Q
+  {"F3",             "\033[13~"},  // set-up                 R
+  {"F4",             "\033[14~"},  // data/talk              S
   {"F5",             "\033[15~"},  // break
   {"F6",             "\033[17~"},
   {"F7",             "\033[18~"},
