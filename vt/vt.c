@@ -1698,8 +1698,6 @@ qagain:
 
      case 69:/*MODE;Left right margin mode;On;Off; */
 	     vt->left_right_margin_mode = set; 
-	     // set all lines to single width ,signle hide,
-	     //
 	     break;
      case 80:/* DECSDM Sixel scrolling */
 	     break;
@@ -1828,6 +1826,7 @@ static void vtcmd_set_double_width_double_height_top_line
   vt->current_line->double_width = 1;
   vt->current_line->double_height_top = 1;
   vt->current_line->double_height_bottom = 0;
+  //vt_cell_cache_clear_row (vt, vt->cursor_y);
 }
 static void vtcmd_set_double_width_double_height_bottom_line
  (MrgVT *vt, const char *sequence)
@@ -1835,6 +1834,7 @@ static void vtcmd_set_double_width_double_height_bottom_line
   vt->current_line->double_width = 1;
   vt->current_line->double_height_top = 0;
   vt->current_line->double_height_bottom = 1;
+  //vt_cell_cache_clear_row (vt, vt->cursor_y);
 }
 static void vtcmd_set_single_width_single_height_line
  (MrgVT *vt, const char *sequence)
@@ -1842,6 +1842,7 @@ static void vtcmd_set_single_width_single_height_line
   vt->current_line->double_width = 0;
   vt->current_line->double_height_top = 0;
   vt->current_line->double_height_bottom = 0;
+  //vt_cell_cache_clear_row (vt, vt->cursor_y);
 }
 static void
 vtcmd_set_double_width_single_height_line
@@ -1850,6 +1851,7 @@ vtcmd_set_double_width_single_height_line
   vt->current_line->double_width = 1;
   vt->current_line->double_height_top = 0;
   vt->current_line->double_height_bottom = 0;
+  //vt_cell_cache_clear_row (vt, vt->cursor_y);
 }
 
 static void vtcmd_set_led (MrgVT *vt, const char *sequence)
@@ -1903,9 +1905,13 @@ static void vtcmd_report (MrgVT *vt, const char *sequence)
   {
     sprintf (buf, "\e[?27;1n"); // north american/ascii
   }
+  else if (!strcmp (sequence, "[?25n")) // User Defined Key status
+  {
+    sprintf (buf, "\e[?21n"); // locked
+  }
   else if (!strcmp (sequence, "[6n")) // DSR cursor position report
   {
-    sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->margin_top - 1):0), (int)vt->cursor_x - (vt->origin?(VT_MARGIN_LEFT-1):0);
+    sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->margin_top - 1):0), (int)vt->cursor_x - (vt->origin?(VT_MARGIN_LEFT-1):0));
   }
   else if (!strcmp (sequence, "[5n")) // DSR decide status report
   {
@@ -4498,6 +4504,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   int blink_fast = ((style & STYLE_BLINK_FAST) != 0);
 
   int cw = vt->cw;
+  int ch = vt->ch;
 
   if (proportional)
   {
@@ -4559,7 +4566,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
   if (in_scroll)
   {
-    offset_y -= vt->scroll_offset;
+    offset_y -= vt->scroll_offset / (dh?2:1);
   }
 
 
@@ -4695,29 +4702,6 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   }
   }
 
-#if 0
-  /* modification of attributes on blink */
-  if (blink)
-  {
-    if (reverse)
-    {
-      reverse = 0;
-    } else
-    {
-      if (bold)
-      {
-        bold = 0;
-      } else if (dim)
-      {
-	hidden = 1;
-      } else
-      {
-	dim = 1;
-      }
-    }
-  }
-#endif
-
   if (bg)  {
 
   ctx_new_path (ctx);
@@ -4730,6 +4714,8 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     int g = temp & 0xff;
     temp >>= 8;
     int b = temp & 0xff;
+    if (dh)
+      r= g = b = 30;
     ctx_set_rgba_u8 (ctx, r, g, b, 255);
   }
   else
@@ -4750,15 +4736,21 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     {
       color = 15;
     }
-
     vt_ctx_set_color (vt,
 		      ctx,
 		      color,
 		      bg_intensity);
   }
-  ctx_rectangle (ctx, x0, y0 - vt->ch + vt->ch * offset_y, cw, vt->ch);
-  ctx_fill (ctx);
 
+    if (dh)
+    {
+      ctx_rectangle (ctx, x0, y0 - ch - ch * (vt->scroll_offset), cw, ch);
+    }
+    else
+    {
+      ctx_rectangle (ctx, x0, y0 - ch + ch * offset_y, cw, ch);
+    }
+    ctx_fill (ctx);
   }
 
   if (!fg) return cw;
@@ -4819,7 +4811,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     if (underline)
     {
       ctx_new_path (ctx);
-      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07);
+      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
       ctx_rel_line_to (ctx, cw, 0);
       ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05));
       ctx_stroke (ctx);
@@ -4827,7 +4819,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     if (overline)
     {
       ctx_new_path (ctx);
-      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.94);
+      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.94 - vt->ch * vt->scroll_offset);
       ctx_rel_line_to (ctx, cw, 0);
       ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05));
       ctx_stroke (ctx);
@@ -4835,7 +4827,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     if (strikethrough)
     {
       ctx_new_path (ctx);
-      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43);
+      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43 - vt->ch * vt->scroll_offset);
       ctx_rel_line_to (ctx, cw, 0);
       ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05));
       ctx_stroke (ctx);

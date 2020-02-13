@@ -1,5 +1,24 @@
 #!/bin/bash
 
+
+function vt_move_to(){            echo -en "\e[$1;$2H"; }
+function vt_home(){               echo -en "\e[H"; }
+function vt_wrap(){               echo -en "\e[?7h"; }
+function vt_nowrap(){             echo -en "\e[?7l"; }
+function vt_clear(){              echo -en "\e[2J"; vt_home; }
+function vt_clear_eol(){          echo -en "\e[K"; }
+function vt_move_right(){         echo -en "\e[$1C"; }
+function vt_move_left(){          echo -en "\e[$1D"; } # or  just \b for one
+function vt_margin_tb(){          echo -en "\e[$1;$1r"; } 
+function vt_margin_lr(){          echo -en "\e[$1;$1s"; } 
+function vt_margin_lr_enable(){   echo -en "\e[?59h"; } 
+function vt_margin_lr_disable(){  echo -en "\e[?59h"; } 
+function vt_line_size_2_2_top(){  echo -en "\e#3"; }
+function vt_line_size_2_2_bottom(){  echo -en "\e#4"; }
+function vt_line_size_1_1(){      echo -en "\e#5"; }
+function vt_line_size_2_1(){      echo -en "\e#6"; }
+
+
 START="\e[31m"
 END="\e[m"
 
@@ -117,3 +136,11 @@ while IFS= read -r line; do
   fi
 
 done <<< `cat vt.c | grep  'SGR@' `
+
+vt_line_size_2_2_top
+echo  "Hmmmm :)"
+vt_line_size_2_2_bottom
+echo  "Hmmmm :)"
+vt_line_size_1_1
+
+
