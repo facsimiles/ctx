@@ -186,8 +186,8 @@ typedef enum {
   STYLE_BLINK           = 1 << 2,
   STYLE_UNDERLINE       = 1 << 3,
   STYLE_DIM             = 1 << 4,
-  STYLE_HIDDEN          = 1 << 6,
-  STYLE_ITALIC          = 1 << 5,
+  STYLE_HIDDEN          = 1 << 5,
+  STYLE_ITALIC          = 1 << 6,
   STYLE_STRIKETHROUGH   = 1 << 7,
   STYLE_OVERLINE        = 1 << 8,
   STYLE_BLINK_FAST      = 1 << 9,
@@ -270,10 +270,14 @@ struct _MrgVT {
   uint32_t   saved_style;
   int        saved_charset;
   int        saved_origin;
-  int        saved_autowrap;
   int        cursor_key_application;
-  int        scroll_top;
-  int        scroll_bottom;
+  int        margin_top;
+  int        margin_bottom;
+  int        margin_left;
+  int        margin_right;
+
+  int        left_right_margin_mode;
+
   int        scrollback_limit;
   int        scroll;
 
@@ -312,6 +316,9 @@ struct _MrgVT {
 
   VtPty   vtpty;
 };
+
+#define VT_MARGIN_LEFT  (vt->left_right_margin_mode?vt->margin_left:1)
+#define VT_MARGIN_RIGHT (vt->left_right_margin_mode?vt->margin_right:vt->cols)
 
 static ssize_t vt_write (MrgVT *vt, const void *buf, size_t count)
 {
@@ -417,6 +424,7 @@ static VtList *vts = NULL;
 
 static void ctx_vt_run_command (MrgVT *vt, const char *command);
 static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence);
+static void vtcmd_set_left_and_right_margins (MrgVT *vt, const char *sequence);
 static void _ctx_vt_move_to (MrgVT *vt, int y, int x);
 
 static void vt_cell_cache_reset(MrgVT *vt, int row, int col)
@@ -457,7 +465,7 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
   /* populate lines */
   for (int i=0; i<vt->rows;i++)
   {
-    vt->current_line = vt_string_new_with_size ("", vt->cols/4);
+    vt->current_line = vt_string_new_with_size ("", vt->cols);
     vt_list_prepend (&vt->lines, vt->current_line);
     vt->line_count++;
   }
@@ -500,17 +508,19 @@ static void _ctx_vt_compute_cw_ch (MrgVT *vt)
 
 static void vtcmd_set_132_col (MrgVT  *vt, int set)
 {
+  // this should probably force the window as well
+
   if (set == 0 && vt->scale_x == 1.0f) return;
   if (set == 1 && vt->scale_x != 1.0f) return;
 
-  if (set)
+  if (set) // 132 col
   {
     vt->scale_x = 80.0/132.0;
     vt->scale_y = 1.0;
     _ctx_vt_compute_cw_ch (vt);
     ctx_vt_set_term_size (vt, vt->cols * 132/80.0, vt->rows);
   }
-  else
+  else // 80 col
   {
     vt->scale_x = 1.0;
     vt->scale_y = 1.0;
@@ -528,6 +538,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->encoding = 0;
   vt->cr_on_lf = 0;
   vtcmd_set_top_and_bottom_margins (vt, "[r");
+  vtcmd_set_left_and_right_margins (vt, "[s");
   vt->autowrap       = 1;
   vt->cursor_visible = 1;
   vt->charset[0] = 0;
@@ -561,7 +572,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   for (int i = 0; i < MAX_COLS; i++)
     vt->tabs[i] = i % 8 == 0? 1 : 0;
 
-  _ctx_vt_move_to (vt, 1, 1);
+  _ctx_vt_move_to (vt, vt->margin_top, VT_MARGIN_LEFT);
 
   if (vt->ctx)
     ctx_clear (vt->ctx);
@@ -709,8 +720,10 @@ void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
 
   ctx_vt_trimlines (vt, vt->rows);
 
-  vt->scroll_top     = 1;
-  vt->scroll_bottom  = vt->rows;
+  vt->margin_top     = 1;
+  vt->margin_left    = 1;
+  vt->margin_bottom  = vt->rows;
+  vt->margin_right   = vt->cols;
   vt->rev++;
 
   if (vt->set_style)
@@ -768,7 +781,7 @@ static void _ctx_vt_move_to (MrgVT *vt, int y, int x)
   {
     for (; i > 0; i--)
       {
-        vt->current_line = vt_string_new_with_size ("", vt->cols/4);
+        vt->current_line = vt_string_new_with_size ("", vt->cols);
         vt_list_append (&vt->lines, vt->current_line);
         vt->line_count++;
       }
@@ -782,10 +795,10 @@ static void vt_scroll (MrgVT *vt, int amount);
 
 static void _ctx_vt_add_str (MrgVT *vt, const char *str)
 {
-  if (vt->cursor_x  > vt->cols)
+  if (vt->cursor_x > VT_MARGIN_RIGHT)
   {
     if (vt->autowrap) {
-      if (vt->cursor_y == vt->scroll_bottom)
+      if (vt->cursor_y == vt->margin_bottom)
       {
         vt_scroll (vt, -1);
       }
@@ -793,11 +806,11 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
       {
         _ctx_vt_move_to (vt, vt->cursor_y+1, 1);
       }
-      vt->cursor_x = 1;
+      vt->cursor_x = VT_MARGIN_LEFT;
     }
     else
     {
-      vt->cursor_x = vt->cols;
+      vt->cursor_x = VT_MARGIN_RIGHT;
     }
   }
 
@@ -820,9 +833,9 @@ static void _ctx_vt_backspace (MrgVT *vt)
   if (vt->current_line)
   {
     vt->cursor_x --;
-    if (vt->cursor_x == vt->cols) vt->cursor_x--;
-    if (vt->cursor_x < 1)
-      vt->cursor_x = 1;
+    if (vt->cursor_x == VT_MARGIN_RIGHT) vt->cursor_x--;
+    if (vt->cursor_x < VT_MARGIN_LEFT)
+      vt->cursor_x = VT_MARGIN_LEFT;
     VT_cursor("backspace");
   }
 }
@@ -841,10 +854,30 @@ static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence)
   if (bottom > vt->rows) bottom = vt->rows;
   if (bottom < top) bottom = top;
 
-  vt->scroll_top = top;
-  vt->scroll_bottom = bottom;
-  _ctx_vt_move_to (vt, top, 1);
+  vt->margin_top = top;
+  vt->margin_bottom = bottom;
+  _ctx_vt_move_to (vt, top, VT_MARGIN_LEFT);
   VT_cursor ("%i, %i (home)", top, 1);
+}
+
+static void vtcmd_set_left_and_right_margins (MrgVT *vt, const char *sequence)
+{
+  int left = 1, right = vt->cols;
+  if (strlen (sequence) > 2)
+  {
+    sscanf (sequence, "[%i;%is", &left, &right);
+  }
+  VT_info ("margins: %i %i", left, right);
+
+  if (left <1) left = 1;
+  if (left > vt->cols) left = vt->cols;
+  if (right > vt->cols) right = vt->cols;
+  if (right < left) right = left;
+
+  vt->margin_left = left + 0;
+  vt->margin_right = right - 0;
+  _ctx_vt_move_to (vt, left, vt->margin_left);
+  VT_cursor ("%i, %i (home)", left, 1);
 }
 
 static void vt_scroll (MrgVT *vt, int amount)
@@ -855,13 +888,13 @@ static void vt_scroll (MrgVT *vt, int amount)
   
   if (amount < 0)
     {
-      remove_no = vt->scroll_top;
-      insert_before = vt->scroll_bottom;
+      remove_no = vt->margin_top;
+      insert_before = vt->margin_bottom;
     }
   else
     {
-      remove_no = vt->scroll_bottom;
-      insert_before = vt->scroll_top;
+      remove_no = vt->margin_bottom;
+      insert_before = vt->margin_top;
     }
 
   VtList *l;
@@ -880,7 +913,7 @@ static void vt_scroll (MrgVT *vt, int amount)
 
   if (string)
   {
-    if (vt->scroll_top == 1 && vt->scroll_bottom == vt->rows)
+    if (vt->margin_top == 1 && vt->margin_bottom == vt->rows)
     {
       vt_list_prepend (&vt->scrollback, string);
       vt->scrollback_count ++;
@@ -893,7 +926,7 @@ static void vt_scroll (MrgVT *vt, int amount)
 
   string = vt_string_new_with_size ("", vt->cols/4);
 
-  if (amount > 0 && vt->scroll_top == 1)
+  if (amount > 0 && vt->margin_top == 1)
   {
     vt_list_append (&vt->lines, string);
   }
@@ -963,7 +996,8 @@ static void vtcmd_cursor_position (MrgVT *vt, const char *sequence)
 
   if (vt->origin)
   {
-    y += vt->scroll_top - 1;
+    y += vt->margin_top - 1;
+    x += VT_MARGIN_LEFT - 1;
   }
 
   VT_cursor("%i %i CUP", y, x);
@@ -992,8 +1026,8 @@ static void vtcmd_cursor_forward (MrgVT *vt, const char *sequence)
   {
     vt->cursor_x++;
   }
-  if (vt->cursor_x > vt->cols)
-    vt->cursor_x = vt->cols;
+  if (vt->cursor_x > VT_MARGIN_RIGHT)
+    vt->cursor_x = VT_MARGIN_RIGHT;
 }
 
 static void vtcmd_cursor_backward (MrgVT *vt, const char *sequence)
@@ -1004,8 +1038,8 @@ static void vtcmd_cursor_backward (MrgVT *vt, const char *sequence)
   {
     vt->cursor_x--;
   }
-  if (vt->cursor_x < 1)
-    vt->cursor_x = 1;
+  if (vt->cursor_x < VT_MARGIN_LEFT)
+    vt->cursor_x = VT_MARGIN_LEFT; // should this wrap??
 }
 
 static void vtcmd_reverse_index (MrgVT *vt, const char *sequence)
@@ -1015,10 +1049,10 @@ static void vtcmd_reverse_index (MrgVT *vt, const char *sequence)
 
   for (int i = 0; i < n; i++)
   {
-    if (vt->cursor_y == vt->scroll_top)
+    if (vt->cursor_y == vt->margin_top)
     {
       vt_scroll (vt, 1);
-      _ctx_vt_move_to (vt, vt->scroll_top, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->margin_top, vt->cursor_x);
     }
     else
     {
@@ -1034,7 +1068,7 @@ static void vtcmd_cursor_up (MrgVT *vt, const char *sequence)
 
   for (int i = 0; i < n; i++)
   {
-    if (vt->cursor_y == vt->scroll_top)
+    if (vt->cursor_y == vt->margin_top)
     {
       //_ctx_vt_move_to (vt, 1, vt->cursor_x);
     }
@@ -1045,16 +1079,26 @@ static void vtcmd_cursor_up (MrgVT *vt, const char *sequence)
   }
 }
 
+static void vtcmd_back_index (MrgVT *vt, const char *sequence)
+{
+	// XXX implement
+}
+
+static void vtcmd_forward_index (MrgVT *vt, const char *sequence)
+{
+	// XXX implement
+}
+
 static void vtcmd_index (MrgVT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
   if (n==0) n = 1;
   for (int i = 0; i < n; i++)
   {
-    if (vt->cursor_y == vt->scroll_bottom)
+    if (vt->cursor_y == vt->margin_bottom)
     {
       vt_scroll (vt, -1);
-      _ctx_vt_move_to (vt, vt->scroll_bottom, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->margin_bottom, vt->cursor_x);
     }
     else
     {
@@ -1069,9 +1113,9 @@ static void vtcmd_cursor_down (MrgVT *vt, const char *sequence)
   if (n==0) n = 1;
   for (int i = 0; i < n; i++)
   {
-    if (vt->cursor_y >= vt->scroll_bottom)
+    if (vt->cursor_y >= vt->margin_bottom)
     {
-      _ctx_vt_move_to (vt, vt->scroll_bottom, vt->cursor_x);
+      _ctx_vt_move_to (vt, vt->margin_bottom, vt->cursor_x);
     }
     else
     {
@@ -1083,13 +1127,13 @@ static void vtcmd_cursor_down (MrgVT *vt, const char *sequence)
 static void vtcmd_next_line (MrgVT *vt, const char *sequence)
 {
   vtcmd_index (vt, sequence);
-  _ctx_vt_move_to (vt, vt->cursor_y, 1);
+  _ctx_vt_move_to (vt, vt->cursor_y, VT_MARGIN_LEFT);
 }
 
 static void vtcmd_cursor_preceding_line (MrgVT *vt, const char *sequence)
 {
   vtcmd_cursor_up (vt, sequence);
-  _ctx_vt_move_to (vt, vt->cursor_y, 1);
+  _ctx_vt_move_to (vt, vt->cursor_y, VT_MARGIN_LEFT);
 }
 
 static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
@@ -1102,7 +1146,8 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
       {
         char *p = (char*)mrg_utf8_skip (vt->current_line->str, vt->cursor_x-1);
         if (p) *p = 0;
-	for (int col = vt->cursor_x; col <= vt->cols; col++)//vt->current_line->utf8_length; col++)
+	// XXX : this is chopping lines
+	for (int col = vt->cursor_x; col <= VT_MARGIN_RIGHT; col++)
 	  vt_string_set_style (vt->current_line, col - 1, vt->cstyle);
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
@@ -1110,12 +1155,12 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
       break;
     case 1: // clear from beginning to cursor
       {
-	for (int col = 1; col <= vt->cursor_x; col++)
+	for (int col = VT_MARGIN_LEFT; col <= vt->cursor_x; col++)
         {
           vt_string_replace_utf8 (vt->current_line, col-1, " ");
         }
 
-	for (int col = 1; col <= vt->cursor_x; col++)
+	for (int col = VT_MARGIN_LEFT; col <= vt->cursor_x; col++)
 	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
 
         vt->current_line->length = strlen (vt->current_line->str);
@@ -1123,9 +1168,9 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
       }
       break;
     case 2: // clear entire line
-      for (int col = 1; col <= vt->cols; col++)
+      for (int col = VT_MARGIN_LEFT; col <= VT_MARGIN_RIGHT; col++)
 	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
-      vt_string_set (vt->current_line, "");
+      vt_string_set (vt->current_line, ""); // XXX not all
       break;
   }
 }
@@ -1142,7 +1187,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
       }
-	for (int col = vt->cursor_x; col <= vt->cols; col++)
+	for (int col = vt->cursor_x; col <= VT_MARGIN_RIGHT; col++)
 	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
 
       {
@@ -1487,7 +1532,6 @@ static void vtcmd_save_cursor (MrgVT *vt, const char *sequence)
   vt->saved_style   = vt->cstyle;
   //vt->saved_charset = vt->charset; // probably charset no selected
   vt->saved_origin  = vt->origin;
-  vt->saved_autowrap  = vt->autowrap;
   vtcmd_save_cursor_position (vt, sequence);
 }
 
@@ -1496,8 +1540,7 @@ static void vtcmd_restore_cursor (MrgVT *vt, const char *sequence)
   vtcmd_restore_cursor_position (vt, sequence);
   vt->cstyle  = vt->saved_style;
   //vt->charset = vt->saved_charset;
-  vt->origin  = vt->saved_origin;     // XXX according to vt100 user guide 
-  vt->autowrap = vt->saved_autowrap;  // XXX maybe not needed
+  vt->origin  = vt->saved_origin;
 }
 
 static void vtcmd_erase_n_chars (MrgVT *vt, const char *sequence)
@@ -1533,7 +1576,7 @@ static void vtcmd_delete_n_lines (MrgVT *vt, const char *sequence)
     vt_list_remove (&vt->lines, vt->current_line);
     for (i=vt->rows, l = vt->lines; l; l=l->next, i--)
     {
-      if (i == vt->scroll_bottom)
+      if (i == vt->margin_bottom)
       {
         vt->current_line = string;
         vt_list_insert_before (&vt->lines, l, string);
@@ -1578,18 +1621,18 @@ static void vtcmd_insert_blank_lines (MrgVT *vt, const char *sequence)
   if (n == 0) n = 1;
 
   {
-     int st = vt->scroll_top;
-     int sb = vt->scroll_bottom;
+     int st = vt->margin_top;
+     int sb = vt->margin_bottom;
 
-     vt->scroll_top = vt->cursor_y;
+     vt->margin_top = vt->cursor_y;
 
      while (n--)
      {
        vt_scroll (vt, 1);
      }
 
-     vt->scroll_top = st;
-     vt->scroll_bottom = sb;
+     vt->margin_top = st;
+     vt->margin_bottom = sb;
   }
 }
 
@@ -1638,7 +1681,7 @@ qagain:
      case 6: /*MODE;Origin mode;Relative;Absolute;*/
 	     vt->origin = set;
 	     if (set)
-               _ctx_vt_move_to (vt, vt->scroll_top, 1);
+               _ctx_vt_move_to (vt, vt->margin_top, VT_MARGIN_LEFT);
 	     else
                _ctx_vt_move_to (vt, 1, 1);
 	     break;
@@ -1652,6 +1695,15 @@ qagain:
      case 25:/*MODE;Cursor visible;On;Off; */
 	     vt->cursor_visible = set; 
 	     break;
+
+     case 69:/*MODE;Left right margin mode;On;Off; */
+	     vt->left_right_margin_mode = set; 
+	     // set all lines to single width ,signle hide,
+	     //
+	     break;
+     case 80:/* DECSDM Sixel scrolling */
+	     break;
+
      case 437:/*MODE;Encoding/cp437mode;cp437;utf8; */
 	     vt->encoding = set ? 1 : 0;
 	     break;
@@ -1716,7 +1768,7 @@ again:
 
 static void vtcmd_set_t (MrgVT *vt, const char *sequence)
 {
-  if (!strcmp (sequence, "[14t"))
+  if (!strcmp (sequence, "[14t")) /* request terminal dimensions */
   {
     char buf[128];
     sprintf (buf, "\e[4;%i;%it", vt->rows * vt->ch, vt->cols * vt->cw);
@@ -1738,9 +1790,9 @@ static void _ctx_vt_htab (MrgVT *vt)
 {
   do {
     vt->cursor_x ++;
-  } while (vt->cursor_x < vt->cols &&  ! vt->tabs[(int)vt->cursor_x-1]);
-  if (vt->cursor_x > vt->cols)
-    vt->cursor_x = vt->cols;
+  } while (vt->cursor_x < VT_MARGIN_RIGHT &&  ! vt->tabs[(int)vt->cursor_x-1]);
+  if (vt->cursor_x > VT_MARGIN_RIGHT)
+    vt->cursor_x = VT_MARGIN_RIGHT;
 }
 
 static void _ctx_vt_rev_htab (MrgVT *vt)
@@ -1748,8 +1800,8 @@ static void _ctx_vt_rev_htab (MrgVT *vt)
   do {
     vt->cursor_x--;
   } while ( ! vt->tabs[(int)vt->cursor_x-1] && vt->cursor_x > 1);
-  if (vt->cursor_x < 1)
-    vt->cursor_x = 1;
+  if (vt->cursor_x < VT_MARGIN_LEFT)
+    vt->cursor_x = VT_MARGIN_LEFT;
 }
 
 static void vtcmd_insert_n_tabs (MrgVT *vt, const char *sequence)
@@ -1853,7 +1905,7 @@ static void vtcmd_report (MrgVT *vt, const char *sequence)
   }
   else if (!strcmp (sequence, "[6n")) // DSR cursor position report
   {
-    sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->scroll_top - 1):0), (int)vt->cursor_x);
+    sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin?(vt->margin_top - 1):0), (int)vt->cursor_x - (vt->origin?(VT_MARGIN_LEFT-1):0);
   }
   else if (!strcmp (sequence, "[5n")) // DSR decide status report
   {
@@ -1970,6 +2022,7 @@ static Sequence sequences[]={
   {"[",  'm', vtcmd_set_graphics_rendition}, /* args:Ps;Ps;.. id:SGR Select Graphics Rendition */
   {"[",  'n', vtcmd_report},           /* id:DSR CPR Cursor Position Report  */
   {"[",  'r', vtcmd_set_top_and_bottom_margins}, /* args:Pt;Pb id:DECSTBM Set Top and Bottom Margins */
+  {"[",  's', vtcmd_set_left_and_right_margins}, /* args:Pl;Pr id:DECSLRM Set Left and Right Margins */
   {"[",  '`', vtcmd_horizontal_position_absolute},  /* args:Pn id:HPA Horizontal Position Absolute */
   {"[s",  0,  vtcmd_save_cursor_position}, /* id:SCP Save Cursor Position */
   {"[u",  0,  vtcmd_restore_cursor_position}, /*id:RCP Restore Cursor Position */
@@ -1980,8 +2033,10 @@ static Sequence sequences[]={
   {"[",  'l', vtcmd_set_mode}, /* args:Ps;Ps;..  id:RM Reset Mode */
   {"[",  't', vtcmd_set_t}, 
 
+  {"6",   0,  vtcmd_back_index}, /* id:DECBI Back index */
   {"7",   0,  vtcmd_save_cursor}, /* id:DECSC Save Cursor */
   {"8",   0,  vtcmd_restore_cursor}, /* id:DECRC Restore Cursor */
+  {"9",   0,  vtcmd_forward_index}, /* id:DECFI Forward index */
   {"H",   0,  vtcmd_horizontal_tab_set}, /* id:HTS Horizontal Tab Set */
 
   {"[",  'c', vtcmd_report}, /* id:DA Device Attributes */
@@ -2042,17 +2097,17 @@ static void handle_sequence (MrgVT *vt, const char *sequence)
 
 static void ctx_vt_line_feed (MrgVT *vt)
 {
-  if(1)if (vt->scroll_top == 1 && vt->scroll_bottom == vt->rows)
+  if(1)if (vt->margin_top == 1 && vt->margin_bottom == vt->rows)
   {
-    if (vt->lines->data == vt->current_line && vt->cursor_y != vt->scroll_bottom)
+    if (vt->lines->data == vt->current_line && vt->cursor_y != vt->margin_bottom)
     {
       vt->current_line = vt_string_new_with_size ("", vt->cols);
       vt_list_prepend (&vt->lines, vt->current_line);
       vt->line_count++;
     }
 
-    if (vt->cursor_y >= vt->scroll_bottom){
-      vt->cursor_y = vt->scroll_bottom;
+    if (vt->cursor_y >= vt->margin_bottom){
+      vt->cursor_y = vt->margin_bottom;
       vt_scroll (vt, -1);
     }
     else
@@ -2060,26 +2115,26 @@ static void ctx_vt_line_feed (MrgVT *vt)
       vt->cursor_y++;
     }
 
-    _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
+    _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?VT_MARGIN_LEFT:vt->cursor_x);
     ctx_vt_trimlines (vt, vt->rows);
     return;
   }
   if (vt->lines->data == vt->current_line &&
-      (vt->cursor_y != vt->scroll_bottom) && 0)
+      (vt->cursor_y != vt->margin_bottom) && 0)
   {
-    vt->current_line = vt_string_new_with_size ("", vt->cols/4);
+    vt->current_line = vt_string_new_with_size ("", vt->cols);
     vt_list_prepend (&vt->lines, vt->current_line);
     vt->line_count++;
   }
 
   vt->cursor_y++; 
-  if (vt->cursor_y > vt->scroll_bottom)
+  if (vt->cursor_y > vt->margin_bottom)
   {
-    vt->cursor_y = vt->scroll_bottom;
+    vt->cursor_y = vt->margin_bottom;
     vt_scroll (vt, -1);
   }
 
-  _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?1:vt->cursor_x);
+  _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?VT_MARGIN_LEFT:vt->cursor_x);
   ctx_vt_trimlines (vt, vt->rows);
 }
 
@@ -2122,6 +2177,35 @@ static short MuLawDecompressTable[256] =
 void terminal_queue_pcm_sample (int16_t sample);
 
 static unsigned char vt_bell_audio[] = {
+#if 1
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
+  0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+  0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
+  0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+  0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
+  0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+  0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
+  0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+  0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
+  0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+#else
   0x7e, 0xfe, 0x7e, 0x7d, 0x7e, 0x7e, 0x7e, 0x7d, 0x7e, 0x7e, 0x7e, 0xff,
   0xff, 0xfe, 0xfe, 0x7e, 0xff, 0xfe, 0xfd, 0xfd, 0xfe, 0xfe, 0xfd, 0xfd,
   0xfe, 0xfe, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7d, 0x7d,
@@ -2872,8 +2956,8 @@ static unsigned char vt_bell_audio[] = {
   0xfa, 0x7e, 0xff, 0x7e, 0x76, 0xf9, 0xfd, 0xf9, 0xfe, 0x75, 0xf1, 0x76,
   0x7c, 0xfc, 0x7a, 0xf3, 0x70, 0xfd, 0x7e, 0x7d, 0xf3, 0x70, 0xf7, 0x78,
   0x7e, 0xf9, 0x72, 0xef, 0x77, 0xfc, 0xfd, 0x75, 0xee, 0x72, 0xf7, 0xfb
+#endif
 };
-unsigned int foo_len = 9000;
 
 static void ctx_vt_bell (MrgVT *vt)
 {
@@ -2921,10 +3005,10 @@ static int _vt_handle_control (MrgVT *vt, int byte)
           ctx_vt_line_feed (vt);
           return 1;
         case '\r': /* CR carriage return */
-          _ctx_vt_move_to (vt, vt->cursor_y, 1);
+          _ctx_vt_move_to (vt, vt->cursor_y, VT_MARGIN_LEFT);
           return 1;
 	case 14: /* SO shift in - alternate charset */
-	  vt->shifted_in = 1;
+	  vt->shifted_in = 1;  // XXX not in vt52
 	  return 1;
         case 15: /* SI shift out - (back to normal) */
 	  vt->shifted_in = 0;
@@ -2939,7 +3023,8 @@ static int _vt_handle_control (MrgVT *vt, int byte)
         case 23: /* ETB end of trans. blk */
         case 24: /* CANcel (vt100 aborts sequence) */
         case 25: /* EM  end of medium */
-        case 26: /* SUBstitute */
+        case 26: /* SUB stitute */
+            _ctx_vt_add_str (vt, "¿");  // in vt52? XXX
           return 1;
         case 27: /* ESCape */
 	  return 0;
@@ -3323,6 +3408,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
       break;
     case TERMINAL_STATE_SWALLOW:
       vt->state = TERMINAL_STATE_NEUTRAL;
+      // this better be a \\ so were leaving DCS
       break;
   }
   }
@@ -3521,11 +3607,24 @@ static const char *keymap_general[][2]={
   {"control-backspace", "\177"},
   {"shift-backspace","\177"},
   {"shift-tab",      "\033[Z"},
-  {"F1",             "\033[11~"},
-  {"F2",             "\033[12~"},
-  {"F3",             "\033[13~"},
-  {"F4",             "\033[14~"},
-  {"F5",             "\033[15~"},
+
+  {"control-F1",       "\033[>11~"},
+  {"control-F2",       "\033[>12~"},   
+  {"control-F3",       "\033[>13~"},
+  {"control-F4",       "\033[>14~"},
+  {"control-F5",       "\033[>15~"},
+
+  {"shift-F1",       "\033[?11~"},
+  {"shift-F2",       "\033[?12~"},   
+  {"shift-F3",       "\033[?13~"},
+  {"shift-F4",       "\033[?14~"},
+  {"shift-F5",       "\033[?15~"},
+
+  {"F1",             "\033[11~"},  // hold screen
+  {"F2",             "\033[12~"},  // print screen
+  {"F3",             "\033[13~"},  // set-up
+  {"F4",             "\033[14~"},  // data/talk
+  {"F5",             "\033[15~"},  // break
   {"F6",             "\033[17~"},
   {"F7",             "\033[18~"},
   {"F8",             "\033[19~"},
@@ -4812,7 +4911,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 	uint64_t style = 0;
 	uint32_t unichar = 0;
 	int r = vt->rows - row;
-	int in_scrolling_region = vt->in_scroll && (r >= vt->scroll_top && r <= vt->scroll_bottom);
+	int in_scrolling_region = vt->in_scroll && (r >= vt->margin_top && r <= vt->margin_bottom);
 
 	if (line->double_width)
           vt_cell_cache_clear_row (vt, r);
