@@ -4035,6 +4035,28 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_rectangle (ctx, x + cw/2, y - ch, cw/2, ch);
       ctx_fill (ctx);
       return 0;
+
+     case 0x1fb8f: // VT_RIGHT_SEVEN_EIGHTS_BLOCK:
+      ctx_new_path (ctx);
+      ctx_rectangle (ctx, x + cw*1/8, y - ch, cw*7/8, ch);
+      ctx_fill (ctx);
+      return 0;
+     case 0x1fb8d: // VT_RIGHT_FIVE_EIGHTS_BLOCK:
+      ctx_new_path (ctx);
+      ctx_rectangle (ctx, x + cw*3/8, y - ch, cw*5/8, ch);
+      ctx_fill (ctx);
+      return 0;
+
+     case 0x1fb8b: // VT_RIGHT_ONE_QUARTER_BLOCK:
+      ctx_new_path (ctx);
+      ctx_rectangle (ctx, x + cw*3/4, y - ch, cw/4, ch);
+      ctx_fill (ctx);
+      return 0;
+     case 0x1fb8e: // VT_RIGHT_THREE_QUARTER_BLOCK:
+      ctx_new_path (ctx);
+      ctx_rectangle (ctx, x + cw*1/4, y - ch, cw*3/4, ch);
+      ctx_fill (ctx);
+      return 0;
      case 0x2595: // VT_RIGHT_ONE_EIGHT_BLOCK:
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x + cw*7/8, y - ch, cw/8, ch);
@@ -4233,33 +4255,35 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
       ctx_fill (ctx);
       return 0;
-     case 0x25C0: // BLACK LEFT-POINTING TRIANGLE
-      ctx_new_path (ctx);
-      ctx_move_to (ctx, x, y);
-      ctx_rel_move_to (ctx, 0, -ch/2);
-      ctx_rel_line_to (ctx, cw, -ch/2);
-      ctx_rel_line_to (ctx, 0, ch);
-      ctx_fill (ctx);
-      return 0;
-     case 0x25B6: // BLACK RIGHT-POINTING TRIANGLE
+
+     case 0x1fb70: // left triangular one quarter block
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
       ctx_rel_line_to (ctx, 0, -ch);
-      ctx_rel_line_to (ctx, cw, -ch/2);
+      ctx_rel_line_to (ctx, cw/2, -ch/2);
       ctx_fill (ctx);
       return 0;
-     case 0x25B2: // BLACK UP-POINTING TRIANGLE
+
+     case 0x1fb72: // right triangular one quarter block
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
-      ctx_rel_line_to (ctx, cw/2, -ch);
-      ctx_rel_line_to (ctx, cw/2, ch);
+      ctx_rel_move_to (ctx, cw/2, -ch/2);
+      ctx_rel_line_to (ctx, cw/2, -ch/2);
+      ctx_rel_line_to (ctx, 0, ch);
       ctx_fill (ctx);
       return 0;
-     case 0x25BC: // BLACK DOWN-POINTING TRIANGLE
+     case 0x1fb73: // lower triangular one quarter block
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
-      ctx_rel_move_to (ctx, cw/2, 0);
-      ctx_rel_line_to (ctx, -cw/2, -ch);
+      ctx_rel_line_to (ctx, cw/2, -ch/2);
+      ctx_rel_line_to (ctx, cw/2, ch/2);
+      ctx_fill (ctx);
+      return 0;
+     case 0x1fb71: // upper triangular one quarter block
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x, y);
+      ctx_rel_move_to (ctx, cw/2, -ch/2);
+      ctx_rel_line_to (ctx, -cw/2, -c/2h);
       ctx_rel_line_to (ctx, cw, 0);
       ctx_fill (ctx);
       return 0;
