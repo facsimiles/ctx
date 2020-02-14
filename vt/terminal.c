@@ -142,13 +142,6 @@ int vt_main(int argc, char **argv)
       if (drawn_rev != ctx_vt_rev (vt) ||
           ctx_vt_has_blink (vt) || in_scroll)
       {
-
-	if (drawn_rev == ctx_vt_rev (vt))
-	{
-	  if (!in_scroll)
-	    usleep(1000 * 100);
-	}
-
         drawn_rev = ctx_vt_rev (vt);
 
         mmm_client_check_size (mmm, &width, &height);
@@ -297,19 +290,19 @@ int vt_main(int argc, char **argv)
       }
       if (in_scroll)
       {
-	sleep_time = 300;
+	sleep_time = 400;
       }
       if (!got_event)
       {
         audio_task (0);
-
         if (ctx_vt_poll (vt, sleep_time))
 	{
-	  sleep_time = 500;
+	  if (sleep_time > 25000)
+	    sleep_time = 25000;
 	}
-        sleep_time *= 1.05;
-        if (sleep_time > 6000)
-          sleep_time = 6000;
+        sleep_time *= 1.2;
+        if (sleep_time > 125000)
+          sleep_time = 125000;
       }
       audio_task (got_event);
   }

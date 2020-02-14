@@ -594,7 +594,7 @@ void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
   MrgVT *vt              = calloc (sizeof (MrgVT), 1);
-  vt->smooth_scroll = 1;
+  vt->smooth_scroll = 0;
   vt->scroll_offset = 0.0;
   vt->waitdata = vtpty_waitdata;
   vt->read   = vtpty_read;
@@ -3524,19 +3524,18 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
 
   int read_size = sizeof(buf);
   int got_data = 0;
-  int max_consumed_chars = 512;
+  int max_consumed_chars = 1024;
   int len = 0;
 #if 1
-  if (vt->cursor_visible)
+  if (vt->cursor_visible && vt->smooth_scroll)
   {
     max_consumed_chars = vt->cols;
   }
   if (vt->in_scroll)
   {
-    max_consumed_chars = 5;
+    max_consumed_chars = vt->cols/4;
     // XXX : need a bail condition -
-    // so that we stop receiving
-    // chars if we are scrolling
+    // /// so that we can stop accepting data until autowrap or similar
   }
 #endif
   len = buf_len; 
@@ -4918,16 +4917,12 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     if (italic)
     {
       ctx_save (ctx);
-      ctx_translate (ctx, x0 + cw/2, y0 + vt->ch/2);
-      ctx_rotate (ctx, 0.3);
-      ctx_translate (ctx, -x0 + cw/2, -(y0 + vt->ch/2) );
+      ctx_translate (ctx, (x0 + cw/3), (y0 + vt->ch/2));
+      ctx_scale (ctx, 0.9, 0.9);
+      ctx_rotate (ctx, 0.15);
+      ctx_translate (ctx, -(x0 + cw/3), -(y0 + vt->ch/2) );
     }
 
-    if (bold || 1)
-    {
-       //scale_x = 1.5;
-       //scale_y = 1.5;
-    }
     vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold, scale_x, scale_y, offset_y);
     if (italic)
     {
@@ -5008,11 +5003,20 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   }
 
   /* draw terminal lines */
+
+#if 0
+
+   when in scroll...
+	   first draw things in scrolling region
+   then draw all else,
+
+#endif
+
   {
-    float y = y0 + vt->ch * vt->rows;
-    for (int row = 0; y > (-vt->scroll - 1) * vt->ch; row ++)
+    for (int row = 0; row <= (vt->scroll) + vt->rows; row ++)
     {
       VtList *l = vt_list_nth (vt->lines, row);
+      float y = y0 + vt->ch * (vt->rows - row);
       if (row >= vt->rows)
       {
 	 l = vt_list_nth (vt->scrollback, row-vt->rows);
@@ -5084,7 +5088,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 	    in_scrolling_region);
 	}
       }
-      y -= vt->ch;
     }
   }
 
