@@ -3534,6 +3534,9 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
   if (vt->in_scroll)
   {
     max_consumed_chars = 5;
+    // XXX : need a bail condition -
+    // so that we stop receiving
+    // chars if we are scrolling
   }
 #endif
   len = buf_len; 
@@ -4283,7 +4286,7 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
       ctx_rel_move_to (ctx, cw/2, -ch/2);
-      ctx_rel_line_to (ctx, -cw/2, -c/2h);
+      ctx_rel_line_to (ctx, -cw/2, -ch/2);
       ctx_rel_line_to (ctx, cw, 0);
       ctx_fill (ctx);
       return 0;
@@ -5007,14 +5010,13 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   /* draw terminal lines */
   {
     float y = y0 + vt->ch * vt->rows;
-    for (int row = 0; y > -vt->scroll * vt->ch; row ++)
+    for (int row = 0; y > (-vt->scroll - 1) * vt->ch; row ++)
     {
       VtList *l = vt_list_nth (vt->lines, row);
       if (row >= vt->rows)
       {
 	 l = vt_list_nth (vt->scrollback, row-vt->rows);
       }
-
 
       if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
       {
@@ -5025,7 +5027,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 	uint64_t style = 0;
 	uint32_t unichar = 0;
 	int r = vt->rows - row;
-	int in_scrolling_region = vt->in_scroll && (r >= vt->margin_top && r <= vt->margin_bottom);
+	int in_scrolling_region = vt->in_scroll && ((r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
 
 	if (line->double_width)
           vt_cell_cache_clear_row (vt, r);
@@ -5167,7 +5169,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 
   }
 
-#define SCROLL_SPEED 0.25;
+//#define SCROLL_SPEED 0.25;
+#define SCROLL_SPEED 0.0625;
 
   if (vt->in_scroll)
   {
