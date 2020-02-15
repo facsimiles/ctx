@@ -489,12 +489,14 @@ static void vtcmd_clear (MrgVT *vt, const char *sequence)
     vt->cstyle |= STYLE_BG24_COLOR_SET;\
 
 #define set_fg_idx(idx) \
-    vt->cstyle ^= (vt->cstyle & (255l<<16));\
+    vt->cstyle ^= (vt->cstyle & (((1l<<24)-1)<<16));\
+    vt->cstyle ^= (vt->cstyle & STYLE_FG24_COLOR_SET);\
     vt->cstyle |=  ((idx)<<16);\
     vt->cstyle |= STYLE_FG_COLOR_SET;
 
 #define set_bg_idx(idx) \
-    vt->cstyle ^= (vt->cstyle & (255l<<40));\
+    vt->cstyle ^= (vt->cstyle & (((1l<<24)-1)<<40));\
+    vt->cstyle ^= (vt->cstyle & STYLE_BG24_COLOR_SET);\
     vt->cstyle |= ((int64_t)(idx)<<40) ;\
     vt->cstyle |= STYLE_BG_COLOR_SET;
 
@@ -3157,7 +3159,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
     fflush (vt->log);
   }
 
-  if (byte > ' ' && byte <= '~')
+  if (byte >= ' ' && byte <= '~')
   {
     VT_input ("%c", byte);
   }
@@ -3496,6 +3498,16 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	  case 0:
             ctx_vt_set_title (vt, vt->argument_buf + 3);
 	  default:
+	    if (!strcmp (vt->argument_buf, "]10;?"))
+	    {
+	      char *buf = "\e]10;rgb:ffff/ffff/ffff\e\\";
+	      vt_write (vt, buf, strlen(buf));
+	    }
+	    if (!strcmp (vt->argument_buf, "]11;?"))
+	    {
+	      char *buf = "\e]11;rgb:0000/0000/0000\e\\";
+	      vt_write (vt, buf, strlen(buf));
+	    }
 	    if (byte == 27)
               vt->state = TERMINAL_STATE_SWALLOW;
 	    else
@@ -4584,11 +4596,11 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
   } else if (no < 16 + 6*6*6)
   {
     no = no-16;
-    b = (no % 6) * 255 /5;
-    no/=6;
-    g = (no % 6) * 255 /5;
-    no/=6;
-    r = (no % 6) * 255 /5;
+    b = (no % 6) * 255 / 5;
+    no /= 6;
+    g = (no % 6) * 255 / 5;
+    no /= 6;
+    r = (no % 6) * 255 / 5;
   } else
   {
     int gray = no - (16 + 6*6*6);
@@ -5298,7 +5310,6 @@ void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_
 
   if (buf[0])
   {
-    //fprintf (stderr, "{%s}\n", buf+1);
     vt_write (vt, buf, strlen (buf));
     fflush (NULL);
   }
