@@ -223,6 +223,7 @@ struct _MrgVT {
   int      bell;
   int      origin;
   int      charset[4];
+  int      saved_charset[4];
   int      shifted_in;
   int      reverse_video;
   int      echo;
@@ -267,7 +268,6 @@ struct _MrgVT {
   int        saved_x;
   int        saved_y;
   uint32_t   saved_style;
-  int        saved_charset;
   int        saved_origin;
   int        cursor_key_application;
   int        margin_top;
@@ -1533,14 +1533,17 @@ static void vtcmd_save_cursor (MrgVT *vt, const char *sequence)
   vt->saved_style   = vt->cstyle;
   vt->saved_origin  = vt->origin;
   vtcmd_save_cursor_position (vt, sequence);
+  for (int i = 0; i < 4; i++)
+    vt->saved_charset[i] = vt->charset[i];
 }
 
 static void vtcmd_restore_cursor (MrgVT *vt, const char *sequence)
 {
   vtcmd_restore_cursor_position (vt, sequence);
   vt->cstyle  = vt->saved_style;
-  //vt->charset = vt->saved_charset;
   vt->origin  = vt->saved_origin;
+  for (int i = 0; i < 4; i++)
+    vt->charset[i] = vt->saved_charset[i];
 }
 
 static void vtcmd_erase_n_chars (MrgVT *vt, const char *sequence)
@@ -3499,13 +3502,16 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
             ctx_vt_set_title (vt, vt->argument_buf + 3);
 	  default:
 	    if (!strcmp (vt->argument_buf, "]10;?"))
-	    {
-	      char *buf = "\e]10;rgb:ffff/ffff/ffff\e\\";
+	    { /* request current foreground color, xterm does this to
+	         determine if it can use 256 colors, when this test fails,
+		 it mixes in color 130 together with stock colors
+	       */
+	      char *buf = "\e]10;rgb:ff/ff/ff\e\\";
 	      vt_write (vt, buf, strlen(buf));
 	    }
 	    if (!strcmp (vt->argument_buf, "]11;?"))
 	    {
-	      char *buf = "\e]11;rgb:0000/0000/0000\e\\";
+	      char *buf = "\e]11;rgb:00/00/00\e\\";
 	      vt_write (vt, buf, strlen(buf));
 	    }
 	    if (byte == 27)
@@ -4476,18 +4482,37 @@ static uint8_t palettes[][16][3]={
 	{
  /* */
  {  0,  0,  0}, // 0 - background (black)
- {154,  0,  0}, // 1               red
- {  9,233,  0}, // 2               green
- {183,186, 44}, // 3               yellow
- {  0,  0,166}, // 4               blue
- { 55,  0, 90}, // 5               magenta
- {  0,146,166}, // 6               cyan
+ {165, 15, 21}, // 1               red
+ { 95,130, 10}, // 2               green
+ {205,145, 60}, // 3               yellow
+ { 49,130,189}, // 4               blue
+ {120, 40,160}, // 5               magenta
+ {120,230,230}, // 6               cyan
  {196,196,196},// 7                light-gray
  { 85, 85, 85},// 8                dark gray
- //{230,150,105},// 9                light red
- {244, 39, 39},// 9                light red
+
+ {251,106, 74},// 9                light red
+ {130,215,140},// 10               light green
+ {255,255,  0},// 11               light yellow
+ {107,174,214},// 12               light blue
+ {215,130,160},// 13               light magenta
+ {225,255,245},// 14               light cyan
+ {255,255,255},// 15 - foreground (white)
+	},{
+ /* */
+ {  0,  0,  0}, // 0 - background (black)
+ {160,  0,  0}, // 1               red
+ {  9,233,  0}, // 2               green
+ {220,110, 44}, // 3               yellow
+ {  0,  0,200}, // 4               blue
+ { 90,  0,130}, // 5               magenta
+ {  0,156,180}, // 6               cyan
+ {196,196,196},// 7                light-gray
+ { 85, 85, 85},// 8                dark gray
+
+ {240, 60, 40},// 9                light red
  {170,240, 80},// 10               light green
- {242,242,  0},// 11               light yellow
+ {248,248,  0},// 11               light yellow
  {  0, 40,255},// 12               light blue
  {204, 62,214},// 13               light magenta
  { 10,234,254},// 14               light cyan
@@ -4547,52 +4572,12 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
 	   break;
     }
 
-#if 0
-    switch (no)
-    {
-#if 0
-      case 0:  r = 0.0; g =0.0; b =0.0;  break; // black
-      case 1:  r = 0.8; g =0.25;b =0.15; break; // red
-      case 2:  r = 0.1; g =0.8; b =0.0;  break; // green
-      case 3:  r = 0.7; g =0.6; b =0.0;  break; // dark yellow
-      case 4:  r = 0.1; g =0.25;b =0.75; break; // blue
-      case 5:  r = 0.6; g =0.0; b =0.5;  break; // magenta
-      case 6:  r = 0.0; g =0.7; b =0.7;  break; // cyan
-      case 7:  r = 0.85;g =0.85;b =0.85; break; // light-gray
-      case 8:  r = 0.6; g =0.6; b =0.6;  break; // dark gray
-      case 9:  r = 1.0; g =0.5; b =0.5;  break; // bright red
-      case 10: r = 0.5; g =1.0; b =0.5;  break; // bright green
-      case 11: r = 1.0; g =1.0; b =0.15; break; // bright yellow
-      case 12: r = 0.5; g =0.55;b =1.0;  break; // bright blue
-      case 13: r = 1.0; g =0.5; b =1.0;  break; // bright magenta
-      case 14: r = 0.5; g =1.0; b =1.0;  break; // bright cyan
-      case 15: r = 1.0; g =1.0; b =1.0;  break; // white
-#else
-      /* roughly vt340 color map */
-      case 0: r = 0.0; g =0.0; b =0.0;  break; // black
-      case 1: r = 0.60; g =0.26; b =0.26;  break; // bright red
-      case 2: r = 0.33; g =0.60; b =0.33;  break; // bright green
-      case 3: r = 0.60; g =0.60; b =0.33; break; // bright yellow
-      case 4: r = 0.33; g =0.34; b =0.60;  break; // bright blue
-      case 5: r = 0.60; g =0.33; b =0.60;  break; // bright magenta
-      case 6: r = 0.33; g =0.60; b =0.60;  break; // bright cyan
-      case 7:  r = 0.53;g =0.53; b =0.53; break; // light-gray
-      case 8:  r = 0.26; g =0.26;b =0.26;  break; // dark gray
-
-      case 9:  r = 0.8; g =0.13;b =0.13; break; // red
-      case 10: r = 0.2; g =0.8; b =0.2;  break; // green
-      case 11: r = 0.8; g =0.8; b =0.3;  break; // dark yellow
-      case 12: r = 0.2; g =0.2; b =0.8;  break; // blue
-      case 13: r = 0.8; g =0.2; b =0.8;  break; // magenta
-      case 14: r = 0.2; g =0.8; b =0.8;  break; // cyan
-      case 15: r = 0.8; g =0.8; b =0.8;  break; // white
-#endif
-    }
-#else
-    r = palettes[vt->palette_no][no][0];
-    g = palettes[vt->palette_no][no][1];
-    b = palettes[vt->palette_no][no][2];
-#endif
+    r = (palettes[vt->palette_no][no][0]+
+         palettes[vt->palette_no+1][no][0])/2;
+    g = (palettes[vt->palette_no][no][1]+
+         palettes[vt->palette_no+1][no][1])/2;
+    b = (palettes[vt->palette_no][no][2]+
+         palettes[vt->palette_no+1][no][2])/2;
   } else if (no < 16 + 6*6*6)
   {
     no = no-16;
@@ -4630,6 +4615,9 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   int dim = (style & STYLE_DIM) != 0;
   int hidden = (style & STYLE_HIDDEN) != 0;
   int proportional = (style & STYLE_PROPORTIONAL) != 0;
+
+  int fg_set = (style & STYLE_FG_COLOR_SET) != 0;
+  int bg_set = (style & STYLE_BG_COLOR_SET) != 0;
 
   int bg_intensity = 0;
   int fg_intensity = 2;
@@ -4766,17 +4754,21 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
      if (bold)
      {
        bg_intensity =           2;
-       fg_intensity = blink?1:  0;
+       fg_intensity = blink?1:  3;
      }
      else if (dim)
      {
        bg_intensity =           2;
-       fg_intensity = blink?2:  1;
+       fg_intensity = blink?3:  1;
      }
      else
      {
        bg_intensity =           2;
        fg_intensity = blink?1:  0;
+     }
+     if (fg_set)
+     {
+       fg_intensity = blink?2:3;
      }
   }
   else
@@ -4784,11 +4776,11 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
      if (bold)
      {
        bg_intensity = blink?2:  0;
-       fg_intensity = blink?0:  3;
+       fg_intensity = blink?3:  3;
      }
      else if (dim)
      {
-       bg_intensity = blink?0:  0;
+       bg_intensity = blink?2:  0;
        fg_intensity = blink?0:  1;
      }
      else
