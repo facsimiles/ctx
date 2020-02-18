@@ -214,6 +214,9 @@ struct _MrgVT {
   int      leds[4];
   uint64_t cstyle;
 
+  uint8_t  fg_color[3];
+  uint8_t  bg_color[3];
+
   uint64_t *set_style;
   uint32_t *set_unichar;
   int      in_scroll;
@@ -633,6 +636,15 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   if (rows <= 0) cols = DEFAULT_ROWS;
 
   ctx_vt_set_term_size (vt, cols, rows);
+
+  vt->fg_color[0] = 255;
+  vt->fg_color[1] = 255;
+  vt->fg_color[2] = 255;
+
+  vt->bg_color[0] = 0;
+  vt->bg_color[1] = 0;
+  vt->bg_color[2] = 0;
+
   vtcmd_reset_to_initial_state (vt, NULL);
 
   //vt->ctx = ctx_new ();
@@ -3504,7 +3516,8 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	    if (!strcmp (vt->argument_buf, "]10;?"))
 	    { /* request current foreground color, xterm does this to
 	         determine if it can use 256 colors, when this test fails,
-		 it mixes in color 130 together with stock colors
+		 it still mixes in color 130 together with stock colors
+		 though
 	       */
 	      char *buf = "\e]10;rgb:ff/ff/ff\e\\";
 	      vt_write (vt, buf, strlen(buf));
@@ -3529,6 +3542,8 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
     case TERMINAL_STATE_SWALLOW:
       vt->state = TERMINAL_STATE_NEUTRAL;
       // this better be a \\ so were leaving DCS
+      // XXX check that byte is \\ .. otherwise,
+      //
       break;
   }
   }
@@ -4617,7 +4632,6 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   int proportional = (style & STYLE_PROPORTIONAL) != 0;
 
   int fg_set = (style & STYLE_FG_COLOR_SET) != 0;
-  int bg_set = (style & STYLE_BG_COLOR_SET) != 0;
 
   int bg_intensity = 0;
   int fg_intensity = 2;
@@ -4859,15 +4873,21 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
          color = (style >> 40) & 255;
        }
       bg_intensity = -1;
+
+      vt_ctx_set_color (vt, ctx, color, bg_intensity);
     }
     else
     {
       color = 15;
+      if (reverse ^ on_white)
+        ctx_set_rgba_u8 (ctx, vt->fg_color[0],
+                              vt->fg_color[1],
+                              vt->fg_color[2], 255);
+      else
+        ctx_set_rgba_u8 (ctx, vt->bg_color[0],
+                              vt->bg_color[1],
+                              vt->bg_color[2], 255);
     }
-    vt_ctx_set_color (vt,
-		      ctx,
-		      color,
-		      bg_intensity);
   }
 
     if (dh)
@@ -4907,6 +4927,14 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
       if ((style & STYLE_FG_COLOR_SET) == 0)
       {
         color = 15;
+        if (reverse ^ on_white)
+          ctx_set_rgba_u8 (ctx, vt->bg_color[0],
+                                vt->bg_color[1],
+                                vt->bg_color[2], 255);
+        else
+          ctx_set_rgba_u8 (ctx, vt->fg_color[0],
+                                vt->fg_color[1],
+                                vt->fg_color[2], 255);
       }
       else
       {
@@ -4915,8 +4943,8 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
         else
           color = (style >> 16) & 255;
         bg_intensity = -1;
+        vt_ctx_set_color (vt, ctx, color, fg_intensity);
       }
-      vt_ctx_set_color (vt, ctx, color, fg_intensity);
     }
     if (italic)
     {
