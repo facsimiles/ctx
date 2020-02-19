@@ -37,6 +37,7 @@ struct _VtString
   int       double_width;
   int       double_height_top;
   int       double_height_bottom;
+  int       contains_proportional;
   float     xscale;
   float     yscale;
   float     y_offset;

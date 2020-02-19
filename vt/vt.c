@@ -320,7 +320,22 @@ struct _MrgVT {
 };
 
 #define VT_MARGIN_LEFT  (vt->left_right_margin_mode?vt->margin_left:1)
-#define VT_MARGIN_RIGHT (vt->left_right_margin_mode?vt->margin_right:vt->cols)
+
+
+
+//#define VT_MARGIN_RIGHT (vt->left_right_margin_mode?vt->margin_right:vt->cols)
+static int vt_margin_right (MrgVT *vt)
+{
+  int right = vt->left_right_margin_mode?vt->margin_right:vt->cols;
+
+  if (vt->current_line->contains_proportional)
+  {
+    right *= 1.1;
+  }
+  return right;
+}
+
+#define VT_MARGIN_RIGHT vt_margin_right(vt)
 
 static ssize_t vt_write (MrgVT *vt, const void *buf, size_t count)
 {
@@ -433,8 +448,8 @@ static void vt_cell_cache_reset(MrgVT *vt, int row, int col)
 {
   if (row < 0 || col < 0 || row > vt->rows || col > vt->cols)
     return;
-  vt->set_unichar[row*vt->cols+col] = 0xfffff;
-  vt->set_style[row*vt->cols+col] = 0xffffff;
+  vt->set_unichar[row*vt->cols*2+col] = 0xfffff;
+  vt->set_style[row*vt->cols*2+col] = 0xffffff;
 }
 
 static void vt_cell_cache_clear_row (MrgVT *vt, int row)
@@ -730,6 +745,27 @@ void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
   if (vt->rows == irows && vt->cols == icols)
     return;
 
+  while (irows > vt->rows)
+  {
+    if (vt->scrollback_count)
+    {
+       vt->scrollback_count--;
+       vt_list_append (&vt->lines, vt->scrollback->data);
+       vt_list_remove (&vt->scrollback, vt->scrollback->data);
+    }
+    else
+    {
+       vt_list_append (&vt->lines, vt_string_new_with_size ("", vt->cols));
+    }
+    vt->cursor_y++;
+    vt->rows++;
+  }
+  while (irows < vt->rows)
+  {
+    vt->cursor_y--;
+    vt->rows--;
+  }
+
   vt->rows = irows;
   vt->cols = icols;
   vt_resize (vt, vt->cols, vt->rows, vt->cols * vt->cw, vt->rows * vt->ch);
@@ -746,8 +782,8 @@ void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
     free (vt->set_style);
   if (vt->set_unichar)
     free (vt->set_unichar);
-  vt->set_style = malloc (((1+vt->rows) * (1+vt->cols)) * sizeof (uint64_t));
-  vt->set_unichar = malloc (((1+vt->rows) * (1+vt->cols)) * sizeof (uint32_t));
+  vt->set_style = malloc (((1+vt->rows) * (1+vt->cols*2)) * sizeof (uint64_t));
+  vt->set_unichar = malloc (((1+vt->rows) * (1+vt->cols*2)) * sizeof (uint32_t));
 
 
   VT_info ("resize %i %i", irows, icols);
@@ -810,9 +846,23 @@ static void vt_scroll (MrgVT *vt, int amount);
 
 static void _ctx_vt_add_str (MrgVT *vt, const char *str)
 {
-  if (vt->cursor_x > VT_MARGIN_RIGHT)
+  int logical_margin_right = VT_MARGIN_RIGHT;
+
+  if (vt->cstyle & STYLE_PROPORTIONAL)
+   vt->current_line->contains_proportional = 1;
+
+  // if line contains proportional, then logical margin
+  // right might differ
+
+  if (vt->cursor_x > logical_margin_right)
   {
     if (vt->autowrap) {
+      char capture[128];
+      // if wrap-mode is word, then capture preceding up to space
+      // replace with spaces - if mode is justify .. then go
+      // further back and expand some spaces
+      //
+      // then go to next line
       if (vt->cursor_y == vt->margin_bottom)
       {
         vt_scroll (vt, -1);
@@ -825,7 +875,7 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
     }
     else
     {
-      vt->cursor_x = VT_MARGIN_RIGHT;
+      vt->cursor_x = logical_margin_right;
     }
   }
 
@@ -833,14 +883,14 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
   if (vt->insert_mode)
    {
      vt_string_insert_utf8 (vt->current_line, vt->cursor_x - 1, str);
-     while (vt->current_line->utf8_length > vt->cols)
-        vt_string_remove_utf8 (vt->current_line, vt->cols);
+     while (vt->current_line->utf8_length > logical_margin_right)
+        vt_string_remove_utf8 (vt->current_line, logical_margin_right);
    }
   else
    {
      vt_string_replace_utf8 (vt->current_line, vt->cursor_x - 1, str);
    }
-  vt->cursor_x ++;
+  vt->cursor_x += 1;
 }
 
 static void _ctx_vt_backspace (MrgVT *vt)
@@ -4718,11 +4768,11 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
   if (row && col && ! proportional && (scale_x == 1.0f))
   {
-    if (vt->set_unichar[row*vt->cols+col] == unichar &&
-        vt->set_style[row*vt->cols+col] == style)
+    if (vt->set_unichar[row*vt->cols*2+col] == unichar &&
+        vt->set_style[row*vt->cols*2+col] == style)
       return cw;
-    vt->set_unichar[row*vt->cols+col] = unichar;
-    vt->set_style[row*vt->cols+col] = style;
+    vt->set_unichar[row*vt->cols*2+col] = unichar;
+    vt->set_style[row*vt->cols*2+col] = style;
   }
 
   if (blink_fast)
@@ -5100,7 +5150,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 
 	if (line->double_width)
           vt_cell_cache_clear_row (vt, r);
-        for (int col = 1; col <= vt->cols; col++)
+        for (int col = 1; col <= vt->cols * 1.33 && x < vt->cols * vt->cw; col++)
         {
 
 	  int c = col;
