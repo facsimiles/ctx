@@ -281,7 +281,7 @@ struct _MrgVT {
   int        left_right_margin_mode;
 
   int        scrollback_limit;
-  int        scroll;
+  float      scroll;
 
   char       argument_buf[64];
   uint8_t    tabs[MAX_COLS];
@@ -3576,7 +3576,6 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
   int was_in_scroll = vt->in_scroll;
   if (buf_len) goto b;
 
-
   while (timeout > 100 && vt_waitdata (vt, timeout))
   {
     len = vt_read (vt, buf, read_size);
@@ -5217,8 +5216,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   if (vt->scroll != 0)
   {
     float disp_lines = vt->rows;
-    float tot_lines = vt->line_count + vt_list_length (vt->scrollback);
-
+    float tot_lines = vt->line_count + vt->scrollback_count;
     float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
     float win_len = disp_lines / tot_lines;
 
@@ -5313,6 +5311,15 @@ void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_
 {
   static int lastx=-1; // XXX  : need one per vt
   static int lasty=-1;
+
+  if ((type == VT_MOUSE_DRAG || type == VT_MOUSE_PRESS)
+      && x > vt->cols - 3)
+  {
+    float disp_lines = vt->rows;
+    float tot_lines = vt->line_count + vt->scrollback_count;
+    vt->scroll = tot_lines - disp_lines - (px_y*1.0/(vt->rows * vt->ch))* tot_lines;
+  }
+
 
   char buf[64]="";
   int button_state = 0;
