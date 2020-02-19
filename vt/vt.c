@@ -4496,7 +4496,7 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold,
 static uint8_t palettes[][16][3]={
 	{
  /* */
- {  0,  0,  0}, // 0 - background (black)
+ { 32, 32, 32}, // 0 - background (black)
  {165, 15, 21}, // 1               red
  { 95,130, 10}, // 2               green
  {205,145, 60}, // 3               yellow
@@ -4515,7 +4515,7 @@ static uint8_t palettes[][16][3]={
  {255,255,255},// 15 - foreground (white)
 	},{
  /* */
- {  0,  0,  0}, // 0 - background (black)
+ { 32, 32, 32}, // 0 - background (black)
  {160,  0,  0}, // 1               red
  {  9,233,  0}, // 2               green
  {220,110, 44}, // 3               yellow
@@ -4721,7 +4721,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
   if (blink_fast)
   {
-    if (vt->blink_state % 2 == 0)
+    if ((vt->blink_state % 2) == 0)
       blink = 1;
     else
       blink = 0;
@@ -4878,15 +4878,29 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     }
     else
     {
-      color = 15;
-      if (reverse ^ on_white)
-        ctx_set_rgba_u8 (ctx, vt->fg_color[0],
-                              vt->fg_color[1],
-                              vt->fg_color[2], 255);
-      else
-        ctx_set_rgba_u8 (ctx, vt->bg_color[0],
-                              vt->bg_color[1],
-                              vt->bg_color[2], 255);
+	uint8_t rgb[3]={0,};
+	switch (bg_intensity)
+	{
+	  case 0:
+	    for (int i = 0; i <3 ;i++)
+              rgb[i] = vt->bg_color[i];
+	    break;
+	  case 1:
+	    for (int i = 0; i <3 ;i++)
+              rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5;
+	    break;
+	  case 2:
+	    for (int i = 0; i <3 ;i++)
+              rgb[i] = vt->bg_color[i] * 0.05 + vt->fg_color[i] * 0.95;
+	    break;
+	  case 3:
+	    for (int i = 0; i <3 ;i++)
+	      rgb[i] = vt->fg_color[i];
+	    break;
+	}
+        ctx_set_rgba_u8 (ctx, rgb[0],
+                              rgb[1],
+                              rgb[2], 255);
     }
   }
 
@@ -4908,8 +4922,6 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   int overline      = (style & STYLE_OVERLINE) != 0;
   int underline     = (style & STYLE_UNDERLINE) != 0;
 
-
-
   if (!hidden)
   {
     if (style & STYLE_FG24_COLOR_SET)
@@ -4926,15 +4938,29 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     {
       if ((style & STYLE_FG_COLOR_SET) == 0)
       {
-        color = 15;
-        if (reverse ^ on_white)
-          ctx_set_rgba_u8 (ctx, vt->bg_color[0],
-                                vt->bg_color[1],
-                                vt->bg_color[2], 255);
-        else
-          ctx_set_rgba_u8 (ctx, vt->fg_color[0],
-                                vt->fg_color[1],
-                                vt->fg_color[2], 255);
+	uint8_t rgb[3]={0,};
+
+	switch (fg_intensity)
+	{
+	  case 0:
+	    for (int i = 0; i <3 ;i++)
+              rgb[i] = vt->bg_color[i] * 0.7 + vt->fg_color[i] * 0.3;
+	    break;
+	  case 1:
+	    for (int i = 0; i <3 ;i++)
+              rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5;
+	    break;
+	  case 2:
+	    for (int i = 0; i <3 ;i++)
+              rgb[i] = vt->bg_color[i] * 0.10 + vt->fg_color[i] * 0.90;
+	    break;
+	  case 3:
+	    for (int i = 0; i <3 ;i++)
+              rgb[i] = vt->fg_color[i];
+	}
+        ctx_set_rgba_u8 (ctx, rgb[0],
+                              rgb[1],
+                              rgb[2], 255);
       }
       else
       {
@@ -5003,6 +5029,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   vt->has_blink = 0;
 
   vt->blink_state++;
+  //fprintf (stderr, "{%i}", vt->blink_state);
   int cursor_x_px = 0;
   int cursor_y_px = 0;
   int cursor_w = vt->cw;

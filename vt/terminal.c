@@ -37,7 +37,7 @@
 #include "vt.h"
 
 int   do_quit      = 0;
-float font_size    = 24.0;
+float font_size    = 32.0;
 float line_spacing = 2.0;
 
 static pid_t vt_child;
@@ -121,7 +121,7 @@ void terminal_queue_pcm_sample (int16_t sample)
 }
 
 extern float ctx_shape_cache_rate;
-static float click_volume = 0.05;
+float click_volume = 0.05;
 
 void audio_task (int click)
 {
@@ -481,23 +481,25 @@ int vt_main(int argc, char **argv)
 #endif
 
   int sleep_time = 10;
+  long drawn_rev = 0;
 
   vt_child = ctx_vt_get_pid (vt);
   signal (SIGCHLD, signal_child);
   while(!do_quit)
   {
-      long drawn_rev = 0;
-      int width; int height; int stride;
 
       int in_scroll = (ctx_vt_has_blink (vt) >= 10);
 
 
-      if (drawn_rev != ctx_vt_rev (vt) ||
-          ctx_vt_has_blink (vt) || in_scroll)
+      if ((drawn_rev != ctx_vt_rev (vt)) ||
+          ctx_vt_has_blink (vt) ||
+	  in_scroll)
       {
         drawn_rev = ctx_vt_rev (vt);
 
 #if USE_MMM
+      int width; int height;
+      int stride;
         mmm_client_check_size (mmm, &width, &height);
 
         if (vt_width != width ||  vt_height!=height)
