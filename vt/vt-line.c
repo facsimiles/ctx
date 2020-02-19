@@ -234,6 +234,14 @@ void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
   string->utf8_length = mrg_utf8_strlen (string->str);
 }
 
+uint32_t vt_string_get_unichar (VtString *string, int pos)
+{
+   char *p = (void*)mrg_utf8_skip (string->str, pos);
+   if (!p)
+     return 0;
+   return ctx_utf8_to_unichar (p);
+}
+
 void vt_string_insert_utf8 (VtString *string, int pos, const char *new_glyph)
 {
   int new_len = mrg_utf8_len (*new_glyph);

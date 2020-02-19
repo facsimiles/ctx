@@ -74,6 +74,7 @@ VtString   *vt_string_new_with_size  (const char *initial, int initial_size);
 VtString   *vt_string_new            (const char *initial);
 void        vt_string_free           (VtString *string, int freealloc);
 const char *vt_string_get            (VtString *string);
+uint32_t    vt_string_get_unichar    (VtString *string, int pos);
 int         vt_string_get_length     (VtString *string);
 void        vt_string_set            (VtString *string, const char *new_string);
 void        vt_string_clear          (VtString *string);

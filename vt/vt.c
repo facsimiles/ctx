@@ -331,7 +331,26 @@ static int vt_margin_right (MrgVT *vt)
 
   if (vt->current_line->contains_proportional)
   {
-    right *= 1.1;
+    Ctx *ctx = ctx_new ();
+    ctx_set_font (ctx, "regular");
+    ctx_set_font_size (ctx, vt->font_size);
+    ctx_free (ctx);
+    int x = 0;
+    int pos = 0;
+    while (x <= vt->cols * vt->cw)
+    {
+      if (vt->current_line->style[pos] & STYLE_PROPORTIONAL)
+      {
+	x += ctx_glyph_width (ctx, vt_string_get_unichar (vt->current_line, pos));
+      }
+      else
+      {
+	x += vt->cw;
+      }
+      pos ++;
+    }
+
+    right = pos - 1;
   }
   return right;
 }
