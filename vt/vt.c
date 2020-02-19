@@ -449,6 +449,7 @@ static void vt_cell_cache_clear (MrgVT *vt)
 {
   if (!vt->set_style)
     return;
+  vt->rev++;
   for (int row = 0; row <= vt->rows; row++)
     vt_cell_cache_clear_row (vt, row);
 }
@@ -724,6 +725,7 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
 
 void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
 {
+  vt_cell_cache_clear (vt);
   if (vt->rows == irows && vt->cols == icols)
     return;
 
@@ -746,7 +748,6 @@ void ctx_vt_set_term_size (MrgVT *vt, int icols, int irows)
   vt->set_style = malloc (((1+vt->rows) * (1+vt->cols)) * sizeof (uint64_t));
   vt->set_unichar = malloc (((1+vt->rows) * (1+vt->cols)) * sizeof (uint32_t));
 
-  vt_cell_cache_clear (vt);
 
   VT_info ("resize %i %i", irows, icols);
 }
@@ -3557,16 +3558,16 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
 
   int read_size = sizeof(buf);
   int got_data = 0;
-  int max_consumed_chars = 1024;
+  int max_consumed_chars = 4096;
   int len = 0;
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
   {
-    max_consumed_chars = vt->cols;
+    max_consumed_chars = vt->cols / 2;
   }
   if (vt->in_scroll)
   {
-    max_consumed_chars = vt->cols/4;
+    max_consumed_chars = 0;
     // XXX : need a bail condition -
     // /// so that we can stop accepting data until autowrap or similar
   }
@@ -3609,7 +3610,6 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
       buf_len = 0;
       got_data+=len;
       vt->rev ++;
-      //return got_data;
     }
     timeout /= 2;
   }
@@ -4611,6 +4611,10 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
   ctx_set_rgba_u8 (ctx, r, g, b, 255);
 }
 
+int ctx_vt_keyrepeat (MrgVT *vt)
+{
+  return vt->keyrepeat;
+}
 
 float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
  		        int   row, int col, // pass 0 to force draw - like
@@ -4663,6 +4667,8 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 	  break;
 	case 2: // this is perhaps where we could try to
 	        // nonintrusively sneek back in with col coords?
+		//
+		//
 	default: // we're happy with regular spacing
           break;
       }
@@ -5232,7 +5238,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   }
 
 //#define SCROLL_SPEED 0.25;
-#define SCROLL_SPEED 0.0625;
+#define SCROLL_SPEED 0.05;
 
   if (vt->in_scroll)
   {

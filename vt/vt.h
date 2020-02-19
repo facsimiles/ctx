@@ -12,6 +12,8 @@ void        ctx_vt_set_line_spacing   (MrgVT *vt, float line_spacing);
 
 const char *ctx_vt_find_shell_command (void);
 
+int         ctx_vt_keyrepeat          (MrgVT *vt);
+
 int         ctx_vt_get_result         (MrgVT *vt);
 int         ctx_vt_is_done            (MrgVT *vt);
 int         ctx_vt_poll               (MrgVT *vt, int timeout);

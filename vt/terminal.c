@@ -178,14 +178,16 @@ static void handle_event (const char *event)
 	  if (new_scroll < 0) new_scroll = 0;
 	  ctx_vt_set_scroll (vt, new_scroll);
 	  ctx_vt_rev_inc (vt);
-	} else if (!strcmp (event, "shift-control--")) {
+	} else if (!strcmp (event, "shift-control--") ||
+	           !strcmp (event, "control--")) {
 	  font_size /= 1.15;
 	  font_size = (int) (font_size);
 	  if (font_size < 5) font_size = 5;
 
 	  ctx_vt_set_font_size (vt, font_size);
           ctx_vt_set_term_size (vt, vt_width / ctx_vt_cw (vt), vt_height / ctx_vt_ch (vt));
-	} else if (!strcmp (event, "shift-control-=")) {
+	} else if (!strcmp (event, "shift-control-=") ||
+	           !strcmp (event, "control-=")) {
 	  float old = font_size;
 	  font_size *= 1.15;
 	  font_size = (int)(font_size);
@@ -301,6 +303,9 @@ int mmm_check_events (Mmm *mmm)
       return got_event;
 }
 #elif USE_SDL
+static int key_balance = 0;
+static int key_repeat = 0;
+
 static int sdl_check_events ()
 {
   int got_event = 0;
@@ -315,10 +320,25 @@ static int sdl_check_events ()
         { 
           if (event.window.event == SDL_WINDOWEVENT_RESIZED) 
           { 
-//            host->width  = event.window.data1; 
-  //          host->height = event.window.data2; 
+              int width  = event.window.data1; 
+              int height = event.window.data2; 
     //        host->stride = host->width * host->bpp; 
 	      got_event = 1;
+
+	      if ((height != vt_height) || (width != vt_width))
+	      {
+  SDL_DestroyTexture (texture);
+  texture = SDL_CreateTexture (renderer,
+	SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        width, height);
+  free (pixels);
+  pixels = calloc (width * height, 4);
+  vt_width = width;
+  vt_height = height;
+          ctx_vt_set_term_size (vt, width / ctx_vt_cw (vt), height / ctx_vt_ch (vt));
+	  return 1;
+	      }
           }
 	}
 	break;
@@ -359,7 +379,9 @@ static int sdl_check_events ()
         }
         break;
       case SDL_TEXTINPUT:
-        if (!lctrl && !rctrl) {
+        if (!lctrl && !rctrl && 
+		((ctx_vt_keyrepeat (vt)) || (key_repeat==0))
+              ) {
           const char *name = event.text.text;
           if (!strcmp (name, " ")) name = "space";
 
@@ -369,6 +391,7 @@ static int sdl_check_events ()
         break;
      case SDL_KEYUP:
         {
+	  key_balance--;
           switch (event.key.keysym.sym)
           {
             case SDLK_LCTRL:     lctrl=0;      break;
@@ -380,6 +403,15 @@ static int sdl_check_events ()
         {
           char buf[32] = "";
           char *name = buf;
+	  if (!event.key.repeat)
+	  {
+	    key_balance++;
+	    key_repeat = 0;
+	  }
+	  else
+	  {
+	    key_repeat++;
+	  }
 
           buf[ctx_unichar_to_utf8 (event.key.keysym.sym, (void*)buf)]=0;
 
@@ -409,7 +441,10 @@ static int sdl_check_events ()
             case SDLK_TAB:       name = "tab";      break;
             case SDLK_DELETE:    name = "delete";   break;
             case SDLK_INSERT:    name = "insert";   break;
-            case SDLK_RETURN:    name = "return";   break;
+            case SDLK_RETURN:
+		if (key_repeat == 0) // return never should repeat
+		  name = "return";   // on a DEC like terminal
+		break;
             case SDLK_HOME:      name = "home";     break;
             case SDLK_END:       name = "end";      break;
             case SDLK_PAGEDOWN:  name = "page-down";break;
@@ -441,7 +476,9 @@ static int sdl_check_events ()
             sprintf (buf, "shift-%s", name);
             name = buf;
           }
-            if (strcmp (name, "space"))
+            if (strcmp (name, "space") &&
+		((ctx_vt_keyrepeat (vt)) || (key_repeat==0))
+		)
             {
 	      handle_event (name);
 	      got_event = 1;
@@ -456,7 +493,6 @@ static int sdl_check_events ()
   return got_event;
 }
 #endif
-
 
 
 int vt_main(int argc, char **argv)
