@@ -178,6 +178,13 @@ static void handle_event (const char *event)
 	  if (new_scroll < 0) new_scroll = 0;
 	  ctx_vt_set_scroll (vt, new_scroll);
 	  ctx_vt_rev_inc (vt);
+	} else if (!strcmp (event, "shift-control-v")) {
+	  char *text = SDL_GetClipboardText ();
+	  if (text)
+	  {
+            ctx_vt_paste (vt, text);
+	    free (text);
+	  }
 	} else if (!strcmp (event, "shift-control--") ||
 	           !strcmp (event, "control--")) {
 	  font_size /= 1.15;

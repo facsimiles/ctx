@@ -25,6 +25,7 @@ int ctx_vt_has_blink (MrgVT *vt);
 /* this is how mrg/mmm based key-events are fed into the vt engine
  */
 void        ctx_vt_feed_keystring     (MrgVT *vt, const char *str);
+void ctx_vt_paste (MrgVT *vt, const char *str);
 
 /* not needed when passing a commandline for command to
  * run, but could be used for injecting commands, or

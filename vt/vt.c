@@ -230,6 +230,7 @@ struct _MrgVT {
   int      shifted_in;
   int      reverse_video;
   int      echo;
+  int      bracket_paste;
 
   int      font_is_mono;
 
@@ -556,6 +557,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
     vt->debug = 1;
   vtcmd_clear (vt, sequence);
   vt->encoding = 0;
+  vt->bracket_paste = 0;
   vt->cr_on_lf = 0;
   vtcmd_set_top_and_bottom_margins (vt, "[r");
   vtcmd_set_left_and_right_margins (vt, "[s");
@@ -857,7 +859,7 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
   if (vt->cursor_x > logical_margin_right)
   {
     if (vt->autowrap) {
-      char capture[128];
+      //char capture[128];
       // if wrap-mode is word, then capture preceding up to space
       // replace with spaces - if mode is justify .. then go
       // further back and expand some spaces
@@ -1802,7 +1804,9 @@ qagain:
 	   break;
      case 1011: // scroll to bottom on key press (rxvt)
 	   break;
-     case 2004:  vtcmd_ignore (vt, sequence);break; // set_bracketed_paste_mode
+     case 2004:  // set_bracketed_paste_mode
+	   vt->bracket_paste = set;
+	   break;
 
      case 4444:/*MODE;Audio;On;;*/
            vt->in_pcm=set; break;
@@ -3823,6 +3827,8 @@ static const char *keymap_general[][2]={
   {"F12",            "\033[23~"},
 };
 
+
+
 void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 {
   if (vt->in_vt52)
@@ -3868,6 +3874,19 @@ done:
   if (strlen (str))
   {
     vt_write (vt, str, strlen (str));
+  }
+}
+
+void ctx_vt_paste (MrgVT *vt, const char *str)
+{
+  if (vt->bracket_paste)
+  {
+    vt_write (vt, "\e[200~", 6);
+  }
+  ctx_vt_feed_keystring (vt, str);
+  if (vt->bracket_paste)
+  {
+    vt_write (vt, "\e[201~", 6);
   }
 }
 
