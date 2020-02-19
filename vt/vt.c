@@ -558,6 +558,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->saved_style            = 1;
   vt->reverse_video          = 0;
   vt->cstyle                 = 0;
+  vt->keyrepeat              = 1;
 
   vt->cursor_key_application = 0;
   vt->argument_buf_len       = 0;
