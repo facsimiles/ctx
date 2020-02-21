@@ -258,6 +258,7 @@ struct _MrgVT {
 
   int        insert_mode;
   int        autowrap;
+  int        wordwrap;
   int        utf8_expected_bytes;
   int        utf8_pos;
   float      cursor_x;
@@ -581,6 +582,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vtcmd_set_top_and_bottom_margins (vt, "[r");
   vtcmd_set_left_and_right_margins (vt, "[s");
   vt->autowrap       = 1;
+  vt->wordwrap       = 0;
   vt->cursor_visible = 1;
   vt->charset[0] = 0;
   vt->charset[1] = 0;
@@ -878,12 +880,22 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
   if (vt->cursor_x > logical_margin_right)
   {
     if (vt->autowrap) {
-      //char capture[128];
-      // if wrap-mode is word, then capture preceding up to space
-      // replace with spaces - if mode is justify .. then go
-      // further back and expand some spaces
-      //
-      // then go to next line
+      int chars = 0;
+      int old_x = vt->cursor_x;
+      VtString *old_line = vt->current_line;
+
+      if (vt->wordwrap && str[0] != ' ')
+      {
+        while (vt_string_get_unichar (vt->current_line,
+			      old_x-1-chars)!=' ')
+        {
+	  chars++;
+        }
+        chars--;
+	if (chars > (vt->margin_right - vt->margin_left) * 3 / 2)
+	  chars = 0;
+      }
+
       if (vt->cursor_y == vt->margin_bottom)
       {
         vt_scroll (vt, -1);
@@ -893,6 +905,16 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
         _ctx_vt_move_to (vt, vt->cursor_y+1, 1);
       }
       vt->cursor_x = VT_MARGIN_LEFT;
+      for (int i = 0; i < chars; i++)
+      {
+        vt_string_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
+        vt_string_replace_unichar (vt->current_line, vt->cursor_x - 1, 
+	     vt_string_get_unichar (old_line, old_x-1-chars+i));
+        vt_string_replace_unichar (old_line, old_x-1-chars+i, ' ');
+	vt->cursor_x++;
+      }
+      if (str[0] == ' ')
+	return;
     }
     else
     {
@@ -1826,6 +1848,8 @@ qagain:
      case 2004:  // set_bracketed_paste_mode
 	   vt->bracket_paste = set;
 	   break;
+     case 2020: /*MODE;wordwrap;On;Off;*/
+	     vt->wordwrap = set; break;
 
      case 4444:/*MODE;Audio;On;;*/
            vt->in_pcm=set; break;
@@ -4583,6 +4607,47 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold,
 
 static uint8_t palettes[][16][3]={
 	{
+
+	{0, 0, 0},
+{139, 0, 0},
+{9, 154, 9},
+{255, 137, 113},
+{3, 0, 255},
+{56, 0, 132},
+{0, 111, 111},
+{204, 204, 204},
+{127, 127, 127},
+{255, 33, 0},
+{118, 255, 92},
+{255, 230, 15},
+{1, 122, 255},
+{232, 0, 220},
+{1, 217, 255},
+{255, 255, 255},
+
+
+
+	},
+	{
+
+  {0, 0, 0},
+{191, 0, 0},
+{3, 187, 0},
+{254, 212, 0},
+{0, 0, 255},
+{80, 0, 128},
+{0, 156, 255},
+{166, 166, 166},
+{84, 84, 84},
+{255, 62, 0},
+{85, 255, 143},
+{255, 255, 0},
+{67, 80, 255},
+{243, 70, 255},
+{30, 255, 222},
+{255, 255, 255},
+	},
+	{
  /* */
  { 32, 32, 32}, // 0 - background (black)
  {165, 15, 21}, // 1               red
@@ -4675,12 +4740,9 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
 	   break;
     }
 
-    r = (palettes[vt->palette_no][no][0]+
-         palettes[vt->palette_no+1][no][0])/2;
-    g = (palettes[vt->palette_no][no][1]+
-         palettes[vt->palette_no+1][no][1])/2;
-    b = (palettes[vt->palette_no][no][2]+
-         palettes[vt->palette_no+1][no][2])/2;
+    r = palettes[vt->palette_no][no][0];
+    g = palettes[vt->palette_no][no][1];
+    b = palettes[vt->palette_no][no][2];
   } else if (no < 16 + 6*6*6)
   {
     no = no-16;
@@ -5046,7 +5108,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 	    break;
 	  case 2:
 	    for (int i = 0; i <3 ;i++)
-              rgb[i] = vt->bg_color[i] * 0.10 + vt->fg_color[i] * 0.90;
+              rgb[i] = vt->bg_color[i] * 0.20 + vt->fg_color[i] * 0.80;
 	    break;
 	  case 3:
 	    for (int i = 0; i <3 ;i++)

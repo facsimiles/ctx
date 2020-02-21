@@ -323,6 +323,9 @@ static int sdl_check_events ()
     char buf[64];
     switch (event.type)
     {
+      case SDL_MOUSEWHEEL:
+	 ctx_vt_set_scroll (vt, ctx_vt_get_scroll(vt) + event.wheel.y);
+	 break;
       case SDL_WINDOWEVENT: 
         { 
           if (event.window.event == SDL_WINDOWEVENT_RESIZED) 

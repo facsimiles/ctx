@@ -86,6 +86,7 @@ void        vt_string_append_data    (VtString *string, const char *data, int le
 void        vt_string_append_printf  (VtString *string, const char *format, ...);
 void        vt_string_replace_utf8   (VtString *string, int pos, const char *new_glyph);
 void        vt_string_insert_utf8    (VtString *string, int pos, const char *new_glyph);
+void        vt_string_replace_unichar (VtString *string, int pos, uint32_t unichar);
 void        vt_string_remove_utf8    (VtString *string, int pos);
 
 
