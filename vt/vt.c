@@ -338,7 +338,7 @@ static int vt_margin_right (MrgVT *vt)
     ctx_free (ctx);
     int x = 0;
     int pos = 0;
-    while (x <= vt->cols * vt->cw)
+    while (x <= right * vt->cw)
     {
       if (vt->current_line->style[pos] & STYLE_PROPORTIONAL)
       {
