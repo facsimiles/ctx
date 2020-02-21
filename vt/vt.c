@@ -321,11 +321,40 @@ struct _MrgVT {
   VtPty   vtpty;
 };
 
-#define VT_MARGIN_LEFT  (vt->left_right_margin_mode?vt->margin_left:1)
+//#define VT_MARGIN_LEFT  (vt->left_right_margin_mode?vt->margin_left:1)
 
+static int vt_margin_left (MrgVT *vt)
+{
+  int left = vt->left_right_margin_mode?vt->margin_left:1;
 
+  if (vt->current_line->contains_proportional)
+  {
+    Ctx *ctx = ctx_new ();
+    ctx_set_font (ctx, "regular");
+    ctx_set_font_size (ctx, vt->font_size);
+    ctx_free (ctx);
+    int x = 0;
+    int pos = 0;
+    while (x <= left * vt->cw)
+    {
+      if (vt->current_line->style[pos] & STYLE_PROPORTIONAL)
+      {
+	x += ctx_glyph_width (ctx, vt_string_get_unichar (vt->current_line, pos));
+      }
+      else
+      {
+	x += vt->cw;
+      }
+      pos ++;
+    }
 
-//#define VT_MARGIN_RIGHT (vt->left_right_margin_mode?vt->margin_right:vt->cols)
+    left = pos - 1;
+  }
+  return left;
+}
+
+#define VT_MARGIN_LEFT vt_margin_left(vt)
+
 static int vt_margin_right (MrgVT *vt)
 {
   int right = vt->left_right_margin_mode?vt->margin_right:vt->cols;
@@ -874,9 +903,6 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
   if (vt->cstyle & STYLE_PROPORTIONAL)
    vt->current_line->contains_proportional = 1;
 
-  // if line contains proportional, then logical margin
-  // right might differ
-
   if (vt->cursor_x > logical_margin_right)
   {
     if (vt->autowrap) {
@@ -910,8 +936,11 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
         vt_string_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
         vt_string_replace_unichar (vt->current_line, vt->cursor_x - 1, 
 	     vt_string_get_unichar (old_line, old_x-1-chars+i));
-        vt_string_replace_unichar (old_line, old_x-1-chars+i, ' ');
 	vt->cursor_x++;
+      }
+      for (int i = 0; i < chars; i++)
+      {
+        vt_string_replace_unichar (old_line, old_x-1-chars+i, ' ');
       }
       if (str[0] == ' ')
 	return;
@@ -975,7 +1004,7 @@ static void vtcmd_set_left_and_right_margins (MrgVT *vt, const char *sequence)
   {
     sscanf (sequence, "[%i;%is", &left, &right);
   }
-  VT_info ("margins: %i %i", left, right);
+  VT_info ("hor margins: %i %i", left, right);
 
   if (left <1) left = 1;
   if (left > vt->cols) left = vt->cols;
@@ -984,8 +1013,8 @@ static void vtcmd_set_left_and_right_margins (MrgVT *vt, const char *sequence)
 
   vt->margin_left = left + 0;
   vt->margin_right = right - 0;
-  _ctx_vt_move_to (vt, left, vt->margin_left);
-  VT_cursor ("%i, %i (home)", left, 1);
+  _ctx_vt_move_to (vt, vt->cursor_y, VT_MARGIN_LEFT);
+  //VT_cursor ("%i, %i (home)", left, 1);
 }
 
 static void vt_scroll (MrgVT *vt, int amount)
