@@ -322,8 +322,6 @@ struct _MrgVT {
   VtPty   vtpty;
 };
 
-//#define VT_MARGIN_LEFT  (vt->left_right_margin_mode?vt->margin_left:1)
-
 /* on current line */
 static int vt_col_to_pos (MrgVT *vt, int col)
 {
@@ -597,6 +595,9 @@ static void vtcmd_set_132_col (MrgVT  *vt, int set)
   }
 }
 
+static void ctx_vt_line_feed (MrgVT *vt);
+static void ctx_vt_carriage_return (MrgVT *vt);
+
 static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
 {
   VT_info ("reset %s", sequence);
@@ -644,7 +645,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
     vt->tabs[i] = i % 8 == 0? 1 : 0;
 
   _ctx_vt_move_to (vt, vt->margin_top, vt->cursor_x);
-  vt->cursor_x = VT_MARGIN_LEFT;
+  ctx_vt_carriage_return (vt);
 
   if (vt->ctx)
     ctx_clear (vt->ctx);
@@ -869,6 +870,7 @@ _ctx_vt_move_to (MrgVT *vt, int y, int x)
   x = x < 1 ? 1 : (x > vt->cols ? vt->cols : x);
   y = y < 1 ? 1 : (y > vt->rows ? vt->rows : y);
 
+  vt->at_line_home = 0;
   vt->cursor_x = x;
   vt->cursor_y = y;
 
@@ -892,8 +894,6 @@ _ctx_vt_move_to (MrgVT *vt, int y, int x)
   VT_cursor("%i,%i (_ctx_vt_move_to)", y, x);
 }
 
-static void ctx_vt_line_feed (MrgVT *vt);
-static void ctx_vt_carriage_return (MrgVT *vt);
 
 static void vt_scroll (MrgVT *vt, int amount);
 
@@ -913,8 +913,8 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
 
       if (vt->wordwrap && str[0] != ' ')
       {
-        while (vt_string_get_unichar (vt->current_line,
-			      old_x-1-chars)!=' ')
+        while (old_x-1-chars >1 && vt_string_get_unichar (vt->current_line,
+			           old_x-1-chars)!=' ')
         {
 	  chars++;
         }
@@ -931,7 +931,7 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
       {
         _ctx_vt_move_to (vt, vt->cursor_y+1, 1);
       }
-      vt->cursor_x = VT_MARGIN_LEFT;
+      ctx_vt_carriage_return (vt);
       for (int i = 0; i < chars; i++)
       {
         vt_string_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
@@ -964,6 +964,7 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
      vt_string_replace_utf8 (vt->current_line, vt->cursor_x - 1, str);
    }
   vt->cursor_x += 1;
+  vt->at_line_home = 0;
 }
 
 static void _ctx_vt_backspace (MrgVT *vt)
@@ -973,7 +974,10 @@ static void _ctx_vt_backspace (MrgVT *vt)
     vt->cursor_x --;
     if (vt->cursor_x == VT_MARGIN_RIGHT) vt->cursor_x--;
     if (vt->cursor_x < VT_MARGIN_LEFT)
+    {
       vt->cursor_x = VT_MARGIN_LEFT;
+      vt->at_line_home = 1;
+    }
     VT_cursor("backspace");
   }
 }
@@ -995,7 +999,7 @@ static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence)
   vt->margin_top = top;
   vt->margin_bottom = bottom;
   _ctx_vt_move_to (vt, top, 1);
-  vt->cursor_x = VT_MARGIN_LEFT;
+  ctx_vt_carriage_return (vt);
   VT_cursor ("%i, %i (home)", top, 1);
 }
 static void vtcmd_save_cursor_position (MrgVT *vt, const char *sequence);
@@ -1024,7 +1028,7 @@ static void vtcmd_set_left_and_right_margins (MrgVT *vt, const char *sequence)
   vt->margin_left = left + 0;
   vt->margin_right = right - 0;
   _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
-  vt->cursor_x = VT_MARGIN_LEFT;
+  ctx_vt_carriage_return (vt);
   //VT_cursor ("%i, %i (home)", left, 1);
 }
 
@@ -1188,7 +1192,10 @@ static void vtcmd_cursor_backward (MrgVT *vt, const char *sequence)
     vt->cursor_x--;
   }
   if (vt->cursor_x < VT_MARGIN_LEFT)
+  {
     vt->cursor_x = VT_MARGIN_LEFT; // should this wrap??
+    vt->at_line_home = 1;
+  }
 }
 
 static void vtcmd_reverse_index (MrgVT *vt, const char *sequence)
@@ -1277,6 +1284,7 @@ static void vtcmd_next_line (MrgVT *vt, const char *sequence)
 {
   vtcmd_index (vt, sequence);
   _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+  ctx_vt_carriage_return (vt);
   vt->cursor_x = VT_MARGIN_LEFT;
 }
 
@@ -1836,7 +1844,7 @@ qagain:
 	     if (set)
 	     {
                _ctx_vt_move_to (vt, vt->margin_top, 1);
-               vt->cursor_x = VT_MARGIN_LEFT;
+	       ctx_vt_carriage_return (vt);
 	     }
 	     else
                _ctx_vt_move_to (vt, 1, 1);
@@ -1983,7 +1991,7 @@ static void _ctx_vt_rev_htab (MrgVT *vt)
     vt->cursor_x--;
   } while ( ! vt->tabs[(int)vt->cursor_x-1] && vt->cursor_x > 1);
   if (vt->cursor_x < VT_MARGIN_LEFT)
-    vt->cursor_x = VT_MARGIN_LEFT;
+    ctx_vt_carriage_return (vt);
 }
 
 static void vtcmd_insert_n_tabs (MrgVT *vt, const char *sequence)
@@ -2325,7 +2333,8 @@ static void handle_sequence (MrgVT *vt, const char *sequence)
 
 static void ctx_vt_line_feed (MrgVT *vt)
 {
-  if(1)if (vt->margin_top == 1 && vt->margin_bottom == vt->rows)
+  int was_home = vt->at_line_home;
+  if (vt->margin_top == 1 && vt->margin_bottom == vt->rows)
   {
     if (vt->lines->data == vt->current_line && vt->cursor_y != vt->rows)
     {
@@ -2343,34 +2352,36 @@ static void ctx_vt_line_feed (MrgVT *vt)
       vt->cursor_y++;
     }
 
-    _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
-    if (vt->cr_on_lf)
-      vt->cursor_x = VT_MARGIN_LEFT;
-    ctx_vt_trimlines (vt, vt->rows);
-    return;
   }
-  if (vt->lines->data == vt->current_line &&
-      (vt->cursor_y != vt->margin_bottom) && 0)
+  else
   {
-    vt->current_line = vt_string_new_with_size ("", vt->cols);
-    vt_list_prepend (&vt->lines, vt->current_line);
-    vt->line_count++;
+    if (vt->lines->data == vt->current_line &&
+       (vt->cursor_y != vt->margin_bottom) && 0)
+    {
+      vt->current_line = vt_string_new_with_size ("", vt->cols);
+      vt_list_prepend (&vt->lines, vt->current_line);
+      vt->line_count++;
+    }
+    vt->cursor_y++; 
+    if (vt->cursor_y > vt->margin_bottom)
+    {
+      vt->cursor_y = vt->margin_bottom;
+      vt_scroll (vt, -1);
+    }
   }
-
-  vt->cursor_y++; 
-  if (vt->cursor_y > vt->margin_bottom)
-  {
-    vt->cursor_y = vt->margin_bottom;
-    vt_scroll (vt, -1);
-  }
-
   _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+
   if (vt->cr_on_lf)
-    vt->cursor_x = VT_MARGIN_LEFT;
+    ctx_vt_carriage_return (vt);
+
   ctx_vt_trimlines (vt, vt->rows);
+
+  if (was_home)
+    ctx_vt_carriage_return (vt);
 }
 
-static void ctx_vt_carriage_return (MrgVT *vt)
+static void
+ctx_vt_carriage_return (MrgVT *vt)
 {
   _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
   vt->cursor_x = VT_MARGIN_LEFT;
