@@ -39,7 +39,7 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = VT_LOG_INPUT;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL;
 
@@ -225,6 +225,7 @@ struct _MrgVT {
   int      debug;
   int      bell;
   int      origin;
+  int      at_line_home;
   int      charset[4];
   int      saved_charset[4];
   int      shifted_in;
@@ -323,9 +324,10 @@ struct _MrgVT {
 
 //#define VT_MARGIN_LEFT  (vt->left_right_margin_mode?vt->margin_left:1)
 
-static int vt_margin_left (MrgVT *vt)
+/* on current line */
+static int vt_col_to_pos (MrgVT *vt, int col)
 {
-  int left = vt->left_right_margin_mode?vt->margin_left:1;
+  int pos = col;
 
   if (vt->current_line->contains_proportional)
   {
@@ -334,23 +336,43 @@ static int vt_margin_left (MrgVT *vt)
     ctx_set_font_size (ctx, vt->font_size);
     ctx_free (ctx);
     int x = 0;
-    int pos = 0;
-    while (x <= left * vt->cw)
+    pos = 0;
+    int prev_prop = 0;
+
+    while (x <= col * vt->cw)
     {
       if (vt->current_line->style[pos] & STYLE_PROPORTIONAL)
       {
 	x += ctx_glyph_width (ctx, vt_string_get_unichar (vt->current_line, pos));
+	prev_prop = 1;
       }
       else
       {
-	x += vt->cw;
+	if (prev_prop)
+	{
+	  int new_cw = vt->cw - ((x % vt->cw));
+	  if (new_cw < vt->cw*3/2)
+	    new_cw += vt->cw;
+	  x += new_cw;
+	}
+	else
+	{
+	  x += vt->cw;
+	}
+	prev_prop = 0;
       }
       pos ++;
     }
 
-    left = pos - 1;
+    pos --;
   }
-  return left;
+  return pos;
+}
+
+static int vt_margin_left (MrgVT *vt)
+{
+  int left = vt->left_right_margin_mode?vt->margin_left:1;
+  return vt_col_to_pos (vt, left);
 }
 
 #define VT_MARGIN_LEFT vt_margin_left(vt)
@@ -358,31 +380,7 @@ static int vt_margin_left (MrgVT *vt)
 static int vt_margin_right (MrgVT *vt)
 {
   int right = vt->left_right_margin_mode?vt->margin_right:vt->cols;
-
-  if (vt->current_line->contains_proportional)
-  {
-    Ctx *ctx = ctx_new ();
-    ctx_set_font (ctx, "regular");
-    ctx_set_font_size (ctx, vt->font_size);
-    ctx_free (ctx);
-    int x = 0;
-    int pos = 0;
-    while (x <= right * vt->cw)
-    {
-      if (vt->current_line->style[pos] & STYLE_PROPORTIONAL)
-      {
-	x += ctx_glyph_width (ctx, vt_string_get_unichar (vt->current_line, pos));
-      }
-      else
-      {
-	x += vt->cw;
-      }
-      pos ++;
-    }
-
-    right = pos - 1;
-  }
-  return right;
+  return vt_col_to_pos (vt, right);
 }
 
 #define VT_MARGIN_RIGHT vt_margin_right(vt)
@@ -645,7 +643,8 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   for (int i = 0; i < MAX_COLS; i++)
     vt->tabs[i] = i % 8 == 0? 1 : 0;
 
-  _ctx_vt_move_to (vt, vt->margin_top, VT_MARGIN_LEFT);
+  _ctx_vt_move_to (vt, vt->margin_top, vt->cursor_x);
+  vt->cursor_x = VT_MARGIN_LEFT;
 
   if (vt->ctx)
     ctx_clear (vt->ctx);
@@ -863,7 +862,8 @@ static inline void ctx_vt_argument_buf_add (MrgVT *vt, int ch)
   }
 }
 
-static void _ctx_vt_move_to (MrgVT *vt, int y, int x)
+static void
+_ctx_vt_move_to (MrgVT *vt, int y, int x)
 {
   int i;
   x = x < 1 ? 1 : (x > vt->cols ? vt->cols : x);
@@ -893,6 +893,7 @@ static void _ctx_vt_move_to (MrgVT *vt, int y, int x)
 }
 
 static void ctx_vt_line_feed (MrgVT *vt);
+static void ctx_vt_carriage_return (MrgVT *vt);
 
 static void vt_scroll (MrgVT *vt, int amount);
 
@@ -993,13 +994,22 @@ static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence)
 
   vt->margin_top = top;
   vt->margin_bottom = bottom;
-  _ctx_vt_move_to (vt, top, VT_MARGIN_LEFT);
+  _ctx_vt_move_to (vt, top, 1);
+  vt->cursor_x = VT_MARGIN_LEFT;
   VT_cursor ("%i, %i (home)", top, 1);
 }
+static void vtcmd_save_cursor_position (MrgVT *vt, const char *sequence);
 
 static void vtcmd_set_left_and_right_margins (MrgVT *vt, const char *sequence)
 {
   int left = 1, right = vt->cols;
+
+  if (!vt->left_right_margin_mode)
+  {
+    vtcmd_save_cursor_position (vt, sequence); /* id:SCP Save Cursor Position */
+    return;
+  }
+
   if (strlen (sequence) > 2)
   {
     sscanf (sequence, "[%i;%is", &left, &right);
@@ -1013,7 +1023,8 @@ static void vtcmd_set_left_and_right_margins (MrgVT *vt, const char *sequence)
 
   vt->margin_left = left + 0;
   vt->margin_right = right - 0;
-  _ctx_vt_move_to (vt, vt->cursor_y, VT_MARGIN_LEFT);
+  _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+  vt->cursor_x = VT_MARGIN_LEFT;
   //VT_cursor ("%i, %i (home)", left, 1);
 }
 
@@ -1134,6 +1145,7 @@ static void vtcmd_cursor_position (MrgVT *vt, const char *sequence)
   if (vt->origin)
   {
     y += vt->margin_top - 1;
+    _ctx_vt_move_to (vt, y, vt->cursor_x);
     x += VT_MARGIN_LEFT - 1;
   }
 
@@ -1264,13 +1276,15 @@ static void vtcmd_cursor_down (MrgVT *vt, const char *sequence)
 static void vtcmd_next_line (MrgVT *vt, const char *sequence)
 {
   vtcmd_index (vt, sequence);
-  _ctx_vt_move_to (vt, vt->cursor_y, VT_MARGIN_LEFT);
+  _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+  vt->cursor_x = VT_MARGIN_LEFT;
 }
 
 static void vtcmd_cursor_preceding_line (MrgVT *vt, const char *sequence)
 {
   vtcmd_cursor_up (vt, sequence);
-  _ctx_vt_move_to (vt, vt->cursor_y, VT_MARGIN_LEFT);
+  _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+  vt->cursor_x = VT_MARGIN_LEFT;
 }
 
 static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
@@ -1820,7 +1834,10 @@ qagain:
      case 6: /*MODE;Origin mode;Relative;Absolute;*/
 	     vt->origin = set;
 	     if (set)
-               _ctx_vt_move_to (vt, vt->margin_top, VT_MARGIN_LEFT);
+	     {
+               _ctx_vt_move_to (vt, vt->margin_top, 1);
+               vt->cursor_x = VT_MARGIN_LEFT;
+	     }
 	     else
                _ctx_vt_move_to (vt, 1, 1);
 	     break;
@@ -2234,7 +2251,7 @@ static Sequence sequences[]={
   {"[",  'm', vtcmd_set_graphics_rendition}, /* args:Ps;Ps;.. id:SGR Select Graphics Rendition */
   {"[",  'n', vtcmd_report},           /* id:DSR CPR Cursor Position Report  */
   {"[",  'r', vtcmd_set_top_and_bottom_margins}, /* args:Pt;Pb id:DECSTBM Set Top and Bottom Margins */
-  {"[s",  0,  vtcmd_save_cursor_position}, /* id:SCP Save Cursor Position */
+  // XXX: the save cursor position below conflicts with set left and right margins 
   {"[u",  0,  vtcmd_restore_cursor_position}, /*id:RCP Restore Cursor Position */
   {"[",  's', vtcmd_set_left_and_right_margins}, /* args:Pl;Pr id:DECSLRM Set Left and Right Margins */
   {"[",  '`', vtcmd_horizontal_position_absolute},  /* args:Pn id:HPA Horizontal Position Absolute */
@@ -2310,7 +2327,7 @@ static void ctx_vt_line_feed (MrgVT *vt)
 {
   if(1)if (vt->margin_top == 1 && vt->margin_bottom == vt->rows)
   {
-    if (vt->lines->data == vt->current_line && vt->cursor_y != vt->margin_bottom)
+    if (vt->lines->data == vt->current_line && vt->cursor_y != vt->rows)
     {
       vt->current_line = vt_string_new_with_size ("", vt->cols);
       vt_list_prepend (&vt->lines, vt->current_line);
@@ -2326,7 +2343,9 @@ static void ctx_vt_line_feed (MrgVT *vt)
       vt->cursor_y++;
     }
 
-    _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?VT_MARGIN_LEFT:vt->cursor_x);
+    _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+    if (vt->cr_on_lf)
+      vt->cursor_x = VT_MARGIN_LEFT;
     ctx_vt_trimlines (vt, vt->rows);
     return;
   }
@@ -2345,8 +2364,17 @@ static void ctx_vt_line_feed (MrgVT *vt)
     vt_scroll (vt, -1);
   }
 
-  _ctx_vt_move_to (vt, vt->cursor_y, vt->cr_on_lf?VT_MARGIN_LEFT:vt->cursor_x);
+  _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+  if (vt->cr_on_lf)
+    vt->cursor_x = VT_MARGIN_LEFT;
   ctx_vt_trimlines (vt, vt->rows);
+}
+
+static void ctx_vt_carriage_return (MrgVT *vt)
+{
+  _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
+  vt->cursor_x = VT_MARGIN_LEFT;
+  vt->at_line_home = 1;
 }
 
 static short MuLawDecompressTable[256] =
@@ -3250,9 +3278,10 @@ static int _vt_handle_control (MrgVT *vt, int byte)
         case '\f': /* VF form feed */
         case '\n': /* LF line ffed */
           ctx_vt_line_feed (vt);
+	  // XXX : if we are at left margin, keep it!
           return 1;
         case '\r': /* CR carriage return */
-          _ctx_vt_move_to (vt, vt->cursor_y, VT_MARGIN_LEFT);
+	  ctx_vt_carriage_return (vt);
           return 1;
 	case 14: /* SO shift in - alternate charset */
 	  vt->shifted_in = 1;  // XXX not in vt52
@@ -4829,33 +4858,12 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
   if (proportional)
   {
-    static int space_count = 0; // non-reentrant XXX
     if (vt->font_is_mono)
     {
       ctx_set_font (ctx, "regular");
       vt->font_is_mono = 0;
     }
-    if (unichar == ' ')
-    {
-      space_count++;
-      switch (space_count)
-      {
-	case 0: // doesnt happen
-	case 1:
-          cw = ctx_glyph_width (ctx, unichar);
-	  break;
-	case 2: // this is perhaps where we could try to
-	        // nonintrusively sneek back in with col coords?
-		//
-		//
-	default: // we're happy with regular spacing
-          break;
-      }
-    }
-    else {
-      space_count = 0;
-      cw = ctx_glyph_width (ctx, unichar);
-    }
+    cw = ctx_glyph_width (ctx, unichar);
   }
   else
   {
@@ -4863,6 +4871,14 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     {
       ctx_set_font (ctx, "mono");
       vt->font_is_mono = 1;
+
+      if (col != 1) {
+	int x = x0;
+	int new_cw = cw - ((x % cw));
+	if (new_cw < cw*3/2)
+	  new_cw += cw;
+	cw = new_cw;
+      }
     }
   }
 
@@ -5303,7 +5319,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 	  }
 
 	  x+=real_cw;
-
 
           if (style & STYLE_BLINK ||
               style & STYLE_BLINK_FAST)
