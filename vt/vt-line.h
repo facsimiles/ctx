@@ -42,6 +42,9 @@ struct _VtString
   float     yscale;
   float     y_offset;
   int       in_scrolling_region;
+
+  void     *images[4];
+  int       image_col[4];
 }  __attribute((packed));
 
 

@@ -1,6 +1,21 @@
-/* utf8 vt100+ansi terminal engine
+/* vt2020 - xterm and DEC terminal, with ANSI, utf8, graphics and audio
  *
  * Copyright (c) 2014, 2016, 2018, 2020 Øyvind Kolås <pippin@gimp.org>
+ *
+ * Adhering to the standards with modern extensions.
+ *
+ * Features:
+ *     vt100 - 101 points on scoresheet
+ *     UTF8, cp437
+ *     dim, bold, strikethrough, underline, italic, reverse
+ *     ANSI colors, 256 colors (non-redfinable), 24bit color
+ *     vector graphics
+ *     raster sprites (kitty spec)
+ *     vt320 - horizontal margins
+ *     wordwrap (extension)
+ *     proportional fonts
+ *     BBS/ANSI-art mode
+ *     audio playback
  */
 
 #define _BSD_SOURCE
@@ -22,10 +37,14 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <zlib.h>
 
 #include <pty.h>
 
 #include "ctx.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #include "vt-line.h"
 #include "vt.h"
@@ -188,15 +207,16 @@ typedef enum {
   STYLE_DIM             = 1 << 4,
   STYLE_HIDDEN          = 1 << 5,
   STYLE_ITALIC          = 1 << 6,
-  STYLE_STRIKETHROUGH   = 1 << 7,
-  STYLE_OVERLINE        = 1 << 8,
-  STYLE_BLINK_FAST      = 1 << 9,
-  STYLE_PROPORTIONAL    = 1 << 10,
-  STYLE_FG_COLOR_SET    = 1 << 11,
-  STYLE_BG_COLOR_SET    = 1 << 12,
-  STYLE_FG24_COLOR_SET  = 1 << 13,
-  STYLE_BG24_COLOR_SET  = 1 << 14,
-  STYLE_NONERASABLE     = 1 << 15  // needed for selective erase
+  STYLE_UNDERLINE_VAR   = 1 << 7,
+  STYLE_STRIKETHROUGH   = 1 << 8,
+  STYLE_OVERLINE        = 1 << 9,
+  STYLE_BLINK_FAST      = 1 << 10,
+  STYLE_PROPORTIONAL    = 1 << 11,
+  STYLE_FG_COLOR_SET    = 1 << 12,
+  STYLE_BG_COLOR_SET    = 1 << 13,
+  STYLE_FG24_COLOR_SET  = 1 << 14,
+  STYLE_BG24_COLOR_SET  = 1 << 15,
+  //STYLE_NONERASABLE     = 1 << 16  // needed for selective erase
 } TerminalStyle;
 
 typedef struct VtPty {
@@ -204,41 +224,121 @@ typedef struct VtPty {
   pid_t      pid;
 } VtPty;
 
+typedef struct Image
+{
+  int kitty_format;
+  int width;
+  int height;
+  int id;
+  int size;
+  uint8_t *data;
+} Image;
+
+#define MAX_IMAGES 32
+
+static Image image_db[MAX_IMAGES]={{0,},};
+
+static Image *image_query (int id)
+{
+  for (int i = 0; i < MAX_IMAGES; i++)
+  {
+    Image *image = &image_db[i];
+    if (image->id == id)
+      return image;
+  }
+  return NULL;
+}
+
+static Image *image_add (int width,
+		         int height,
+			 int id,
+			 int format,
+			 int size,
+			 uint8_t *data)
+{
+  // look for id if id is not 0
+  Image *image;
+  for (int i = 0; i < MAX_IMAGES; i++)
+  {
+    image = &image_db[i];
+    if (image->data == NULL)
+      break;
+  }
+
+  if (image->data)
+  {
+     image = &image_db[random()%MAX_IMAGES];
+  }
+
+  if (image->data)
+    free (image->data);
+
+  image->kitty_format = format;
+  image->width  = width;
+  image->height = height;
+  image->id     = id;
+  image->size   = size;
+  image->data   = data;
+
+  return image;
+}
+
+typedef struct GfxState {
+  int action;
+  int id;
+  int buf_width;
+  int buf_height;
+  int format;
+  int compression;
+  int transmission;
+  int multichunk;
+  int buf_size;
+  int x;
+  int y;
+  int w;
+  int h;
+  int x_cell_offset;
+  int y_cell_offset;
+  int columns;
+  int rows;
+  int z_index;
+  int delete;
+
+  uint8_t *data;
+  int   data_size;
+} GfxState;
 
 struct _MrgVT {
-  char    *title;
-  VtList  *lines;
-  int      line_count;
-  VtList  *scrollback;
-  int      scrollback_count;
-  int      leds[4];
-  uint64_t cstyle;
+  char     *title;
+  VtList   *lines;
+  int       line_count;
+  VtList   *scrollback;
+  int       scrollback_count;
+  int       leds[4];
+  uint64_t  cstyle;
 
-  uint8_t  fg_color[3];
-  uint8_t  bg_color[3];
+  uint8_t   fg_color[3];
+  uint8_t   bg_color[3];
 
   uint64_t *set_style;
   uint32_t *set_unichar;
-  int      in_scroll;
-  int      smooth_scroll;
-  float    scroll_offset;
-  int      debug;
-  int      bell;
-  int      origin;
-  int      at_line_home;
-  int      charset[4];
-  int      saved_charset[4];
-  int      shifted_in;
-  int      reverse_video;
-  int      echo;
-  int      bracket_paste;
-
-  int      font_is_mono;
-
-  int      palette_no;
-
-  int      has_blink; // if any of the set characters are blinking
-                      // updated on each draw of the screen
+  int       in_scroll;
+  int       smooth_scroll;
+  float     scroll_offset;
+  int       debug;
+  int       bell;
+  int       origin;
+  int       at_line_home;
+  int       charset[4];
+  int       saved_charset[4];
+  int       shifted_in;
+  int       reverse_video;
+  int       echo;
+  int       bracket_paste;
+  int       font_is_mono;
+  int       palette_no;
+  int       has_blink; // if any of the set characters are blinking
+                       // updated on each draw of the screen
 
   TerminalState state;
 
@@ -286,7 +386,9 @@ struct _MrgVT {
   int        scrollback_limit;
   float      scroll;
 
-  char       argument_buf[64];
+#define MAX_ARGUMENT_BUF_LEN (8192 + 16)
+
+  char       argument_buf[MAX_ARGUMENT_BUF_LEN];
   uint8_t    tabs[MAX_COLS];
   int        argument_buf_len;
   int        inert;
@@ -320,6 +422,8 @@ struct _MrgVT {
   void  (*resize)(void *serial_obj, int cols, int rows, int px_width, int px_height);
 
   VtPty   vtpty;
+
+  GfxState gfx;
 };
 
 /* on current line */
@@ -332,14 +436,13 @@ static int vt_col_to_pos (MrgVT *vt, int col)
     Ctx *ctx = ctx_new ();
     ctx_set_font (ctx, "regular");
     ctx_set_font_size (ctx, vt->font_size);
-    ctx_free (ctx);
     int x = 0;
     pos = 0;
     int prev_prop = 0;
 
     while (x <= col * vt->cw)
     {
-      if (vt->current_line->style[pos] & STYLE_PROPORTIONAL)
+      if (vt_string_get_style (vt->current_line, pos) & STYLE_PROPORTIONAL)
       {
 	x += ctx_glyph_width (ctx, vt_string_get_unichar (vt->current_line, pos));
 	prev_prop = 1;
@@ -363,6 +466,7 @@ static int vt_col_to_pos (MrgVT *vt, int col)
     }
 
     pos --;
+    ctx_free (ctx);
   }
   return pos;
 }
@@ -856,7 +960,7 @@ static void ctx_vt_argument_buf_reset (MrgVT *vt, const char *start)
 
 static inline void ctx_vt_argument_buf_add (MrgVT *vt, int ch)
 {
-  if (vt->argument_buf_len < 62)
+  if (vt->argument_buf_len < MAX_ARGUMENT_BUF_LEN-1)
   {
     vt->argument_buf[vt->argument_buf_len] = ch;
     vt->argument_buf[++vt->argument_buf_len] = 0;
@@ -1553,7 +1657,27 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
     case 1: /* SGR@@Bold@@ */         vt->cstyle |= STYLE_BOLD; break;
     case 2: /* SGR@@Dim@@ */          vt->cstyle |= STYLE_DIM; break; 
     case 3: /* SGR@@Rotalic@@ */      vt->cstyle |= STYLE_ITALIC; break; 
-    case 4: /* SGR@@Underscore@@ */   vt->cstyle |= STYLE_UNDERLINE; break;
+    case 4: /* SGR@@Underscore@@ */
+        if (s[1] == ':')
+	{
+	  switch (s[2])
+	  {
+	     case '0': break;
+	     case '1': vt->cstyle |= STYLE_UNDERLINE;
+		       break;
+	     case '2': vt->cstyle |= STYLE_UNDERLINE|
+	                             STYLE_UNDERLINE_VAR;
+		       break;
+             default:
+	     case '3': vt->cstyle |= STYLE_UNDERLINE_VAR;
+		       break;
+	  }
+	}
+	else
+	{
+	  vt->cstyle |= STYLE_UNDERLINE;
+	}
+	break;
     case 5: /* SGR@@Blink@@ */        vt->cstyle |= STYLE_BLINK; break;
     case 6: /* SGR@@Blink Fast@@ */   vt->cstyle |= STYLE_BLINK_FAST; break;
     case 7: /* SGR@@Reverse@@ */      vt->cstyle |= STYLE_REVERSE; break;
@@ -1572,7 +1696,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       vt->cstyle ^= (vt->cstyle & STYLE_ITALIC);
       break;
     case 24: /* SGR@@Underscore off@@ */
-      vt->cstyle ^= (vt->cstyle & STYLE_UNDERLINE);
+      vt->cstyle ^= (vt->cstyle & (STYLE_UNDERLINE|STYLE_UNDERLINE_VAR));
       break;
     case 25: /* SGR@@Blink off@@ */
       vt->cstyle ^= (vt->cstyle & STYLE_BLINK);
@@ -2092,6 +2216,11 @@ static void vtcmd_DECELR (MrgVT *vt, const char *sequence)
 
 }
 
+static void vtcmd_graphics (MrgVT *vt, const char *sequence)
+{
+  fprintf (stderr, "gfx intro [%s]\n" ,sequence);
+}
+
 static void vtcmd_report (MrgVT *vt, const char *sequence)
 {
   char buf[64]="";
@@ -2219,6 +2348,7 @@ static Sequence sequences[]={
   //{"C",  0,  vtcmd_nobreak_here},
   {"D",  0,  vtcmd_index}, /* id:IND Index */
   {"E",  0,  vtcmd_next_line},
+  {"_", 'G',  vtcmd_graphics},
 
   //{"I",  0,  vtcmd_char_tabulation_with_justification},
   //{"K",  0,  PLD partial line down
@@ -3332,6 +3462,328 @@ void ctx_vt_open_log (MrgVT *vt, const char *path)
   vt->log = fopen (path, "w");
 }
 
+static const char *base64_map="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+static void bin2base64_group (const unsigned char *in, int remaining, char *out)
+{
+  unsigned char digit[4] = {0,0,64,64};
+  int i;
+  digit[0] = in[0] >> 2;
+  digit[1] = ((in[0] & 0x03) << 4) | ((in[1] & 0xf0) >> 4);
+  if (remaining > 1)
+    {
+      digit[2] = ((in[1] & 0x0f) << 2) | ((in[2] & 0xc0) >> 6);
+      if (remaining > 2)
+        digit[3] = ((in[2] & 0x3f));
+    }
+  for (i = 0; i < 4; i++)
+    out[i] = base64_map[digit[i]];
+}
+
+void
+vt_bin2base64 (const void *bin,
+               int         bin_length,
+               char       *ascii)
+{
+  /* this allocation is a hack to ensure we always produce the same result,
+   * regardless of padding data accidentally taken into account.
+   */
+  unsigned char *bin2 = calloc (bin_length + 4, 1);
+  unsigned const char *p = bin2;
+  int i;
+  memcpy (bin2, bin, bin_length);
+  for (i=0; i*3 < bin_length; i++)
+   {
+     int remaining = bin_length - i*3;
+     bin2base64_group (&p[i*3], remaining, &ascii[i*4]);
+   }
+  free (bin2);
+  ascii[i*4]=0;
+}
+
+static unsigned char base64_revmap[255];
+static void base64_revmap_init (void)
+{
+  static int done = 0;
+  if (done)
+    return;
+
+  for (int i = 0; i < 255; i ++)
+    base64_revmap[i]=255;
+  for (int i = 0; i < 64; i ++)
+    base64_revmap[((const unsigned char*)base64_map)[i]]=i;
+  /* include variants used in URI encodings for decoder */
+  base64_revmap['-']=62;
+  base64_revmap['_']=63;
+  base64_revmap['+']=62;
+  base64_revmap['/']=63;
+
+  done = 1;
+}
+
+int
+vt_base642bin (const char    *ascii,
+               int           *length,
+               unsigned char *bin)
+{
+  // XXX : it would be nice to transform this to be able to do
+  //       the conversion in-place, reusing the allocation
+  int i;
+  int charno = 0;
+  int outputno = 0;
+  int carry = 0;
+  base64_revmap_init ();
+  for (i = 0; ascii[i]; i++)
+    {
+      int bits = base64_revmap[((const unsigned char*)ascii)[i]];
+      if (length && outputno > *length)
+        {
+          *length = -1;
+          return -1;
+        }
+      if (bits != 255)
+        {
+          switch (charno % 4)
+            {
+              case 0:
+                carry = bits;
+                break;
+              case 1:
+                bin[outputno] = (carry << 2) | (bits >> 4);
+                outputno++;
+                carry = bits & 15;
+                break;
+              case 2:
+                bin[outputno] = (carry << 4) | (bits >> 2);
+                outputno++;
+                carry = bits & 3;
+                break;
+              case 3:
+                bin[outputno] = (carry << 6) | bits;
+                outputno++;
+                carry = 0;
+                break;
+            }
+          charno++;
+        }
+    }
+  bin[outputno]=0;
+  if (length)
+    *length= outputno;
+  return outputno;
+}
+
+void vt_audio (MrgVT *vt, const char *command)
+{
+  // the simplest form of audio is raw audio
+  //
+  // _Ar=8000,c=2,b=8,e=u
+  //
+  // multiple voices:
+  //   ids to queue
+  //
+  // reusing samples
+  //   .. pitch bend and be able to do a mod player?
+}
+
+void vt_gfx (MrgVT *vt, const char *command)
+{
+  const char *payload = NULL;
+  char key = 0;
+  int  value;
+  int  pos = 1;
+
+  if (vt->gfx.multichunk == 0)
+  {
+    memset (&vt->gfx, 0, sizeof (GfxState));
+    vt->gfx.action='t';
+    vt->gfx.transmission='d';
+  }
+
+  while (command[pos] != ';')
+  {
+    pos ++; // G or ,
+    if (command[pos] == ';') break;
+    key = command[pos]; pos++;
+    if (command[pos] == ';') break;
+    pos ++; // =
+    if (command[pos] == ';') break;
+
+    if (command[pos] >= '0' && command[pos] <= '9')
+      value = atoi(&command[pos]);
+    else
+      value = command[pos];
+    while (command[pos] &&
+           command[pos] != ',' &&
+	   command[pos] != ';') pos++;
+    
+    fprintf (stderr, " %c = %i\n", key, value);
+    switch (key)
+    {
+      case 'a': vt->gfx.action = value; break;
+      case 'i': vt->gfx.id = value; break;
+      case 'S': vt->gfx.buf_size = value; break;
+      case 's': vt->gfx.buf_width = value; break;
+      case 'v': vt->gfx.buf_height = value; break;
+      case 'f': vt->gfx.format = value; break;
+      case 'm': vt->gfx.multichunk = value; break;
+      case 'o': vt->gfx.compression = value; break;
+      case 't': vt->gfx.transmission = value; break;
+      case 'x': vt->gfx.x = value; break;
+      case 'y': vt->gfx.y = value; break;
+      case 'w': vt->gfx.w = value; break;
+      case 'h': vt->gfx.h = value; break;
+      case 'X': vt->gfx.x_cell_offset = value; break;
+      case 'Y': vt->gfx.y_cell_offset = value; break;
+      case 'c': vt->gfx.columns = value; break;
+      case 'r': vt->gfx.rows = value; break;
+      case 'z': vt->gfx.z_index = value; break;
+    }
+  }
+  
+  payload = &command[pos+1];
+
+  {
+     int chunk_size = strlen (payload);
+     int old_size = vt->gfx.data_size;
+     // accumulate incoming data
+     if (vt->gfx.data == NULL)
+     {
+       vt->gfx.data_size = chunk_size;
+       vt->gfx.data = malloc (vt->gfx.data_size + 1);
+     }
+     else
+     {
+       vt->gfx.data_size += chunk_size;
+       vt->gfx.data = realloc (vt->gfx.data, vt->gfx.data_size + 1);
+     }
+     memcpy (vt->gfx.data + old_size, payload, chunk_size);
+     vt->gfx.data[vt->gfx.data_size]=0;
+  }
+
+  if (vt->gfx.multichunk == 0)
+  {
+
+     fprintf (stderr, "size : %i\n", vt->gfx.data_size);
+    if (vt->gfx.transmission != 'd') /* */
+    {
+      char buf[256];
+      sprintf (buf, "\e_Gi=%i;only direct transmission supported\e\\",
+		      vt->gfx.id);
+      vt_write (vt, buf, strlen(buf));
+      if (vt->gfx.data)
+	free (vt->gfx.data);
+      vt->gfx.data_size=0;
+      return;
+    }
+
+    {
+      int bin_length = vt->gfx.data_size;
+      uint8_t *data2 = malloc (vt->gfx.data_size);
+      bin_length = vt_base642bin ((char*)vt->gfx.data,
+                                  &bin_length,
+	  	                  data2);
+      memcpy (vt->gfx.data, data2, bin_length + 1);
+      vt->gfx.data_size = bin_length;
+      free (data2);
+    }
+
+    if (vt->gfx.buf_width)
+    {
+      // implicit buf_size
+      vt->gfx.buf_size = vt->gfx.buf_width * vt->gfx.buf_height *
+	             (vt->gfx.format == 24 ? 3 : 4);
+    }
+
+    if (vt->gfx.compression == 'z')
+    {
+	    //vt->gfx.buf_size)
+      unsigned char *data2 = malloc (vt->gfx.buf_size + 1);
+      /* if a buf size is set (rather compression, but
+       * this works first..) then */
+      unsigned long actual_uncompressed_size = vt->gfx.buf_size;
+      int z_result = uncompress (data2, &actual_uncompressed_size,
+				 vt->gfx.data,
+		                 vt->gfx.data_size);
+      if (z_result != Z_OK)
+      {
+	fprintf (stderr, "zlib trouble\n");
+        if (vt->gfx.data)
+          free (vt->gfx.data);
+        vt->gfx.data = NULL;
+        vt->gfx.data_size=0;
+        return;
+      }
+      free (vt->gfx.data);
+      vt->gfx.data = data2;
+      vt->gfx.data_size = actual_uncompressed_size;
+      vt->gfx.compression = 0;
+    }
+
+    if (vt->gfx.format == 100)
+    {
+      int channels;
+        fprintf (stderr, "hmmm.. :%i\n", vt->gfx.data_size);
+      uint8_t *new_data = stbi_load_from_memory (vt->gfx.data, vt->gfx.data_size, &vt->gfx.buf_width, &vt->gfx.buf_height, &channels, 4);
+
+      if (!new_data)
+      {
+        fprintf (stderr, "image decode error size:%i\n", vt->gfx.data_size);
+        vt->gfx.data = NULL;
+	return;
+      }
+      vt->gfx.format = 32;
+      free (vt->gfx.data);
+      vt->gfx.data = new_data;
+      vt->gfx.data_size= vt->gfx.buf_width * vt->gfx.buf_height * 4;
+    }
+
+  Image *image = NULL;
+  fprintf (stderr, "doing action %c\n", vt->gfx.action);
+  switch (vt->gfx.action)
+  {
+    case 't': // transfer
+    case 'T': // transfer and present
+      switch (vt->gfx.format)
+      {
+	case 24:
+	case 32:
+	  image = image_add (vt->gfx.buf_width, vt->gfx.buf_height, vt->gfx.id,
+			     vt->gfx.format, vt->gfx.data_size, vt->gfx.data);
+          vt->gfx.data = NULL;
+          vt->gfx.data_size=0;
+	  break;
+      }
+      if (vt->gfx.action == 't')
+	break;
+    case 'p': // present 
+      if (image)
+      {
+        int i = 0;
+	for (i = 0; vt->current_line->images[i] && i < 4; i++);
+	if (i >= 4) i = 3;
+	vt->current_line->images[i] = image;
+	vt->current_line->image_col[i] = vt->cursor_x;
+      }
+      break;
+    case 'q': // query
+      if (image_query (vt->gfx.id))
+      {
+        char buf[256];
+        sprintf (buf, "\e_Gi=%i;OK\e\\", vt->gfx.id);
+        vt_write (vt, buf, strlen(buf));
+      }
+      break;
+    case 'd': // delete
+      break;
+  }
+
+    if (vt->gfx.data)
+      free (vt->gfx.data);
+    vt->gfx.data = NULL;
+    vt->gfx.data_size=0;
+  }
+}
+
 static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 {
   if (vt->log)
@@ -3628,6 +4080,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           }
           break;
         case ']':
+        case '_':
           {
             char tmp[]={byte, '\0'};
             ctx_vt_argument_buf_reset(vt, tmp);
@@ -3675,9 +4128,11 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
       // a stray char
       if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
       {
-	int n = parse_int (vt->argument_buf, 0);
-        switch (n)
+	if (vt->argument_buf[0] == ']')
 	{
+	  int n = parse_int (vt->argument_buf, 0);
+          switch (n)
+	  {
 	  case 0:
             ctx_vt_set_title (vt, vt->argument_buf + 3);
 	  default:
@@ -3695,12 +4150,22 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	      char *buf = "\e]11;rgb:00/00/00\e\\";
 	      vt_write (vt, buf, strlen(buf));
 	    }
-	    if (byte == 27)
-              vt->state = TERMINAL_STATE_SWALLOW;
-	    else
-              vt->state = TERMINAL_STATE_NEUTRAL;
 	    break;
+	  }
+	}  else if (vt->argument_buf[0] == '_' &&
+		    vt->argument_buf[1] == 'G')
+	{
+	  vt_gfx (vt, vt->argument_buf);
+	}  else if (vt->argument_buf[0] == '_' &&
+		    vt->argument_buf[1] == 'A')
+	{
+	  vt_audio (vt, vt->argument_buf);
 	}
+
+	if (byte == 27)
+          vt->state = TERMINAL_STATE_SWALLOW;
+	else
+          vt->state = TERMINAL_STATE_NEUTRAL;
       }
       else
       {
@@ -5133,6 +5598,21 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   int strikethrough = (style & STYLE_STRIKETHROUGH) != 0;
   int overline      = (style & STYLE_OVERLINE) != 0;
   int underline     = (style & STYLE_UNDERLINE) != 0;
+  int underline_var = (style & STYLE_UNDERLINE_VAR) != 0;
+  int double_underline = 0;
+  int curved_underline = 0;
+
+  if (underline_var)
+  {
+    if (underline)
+    {
+       double_underline = 1;
+    }
+    else
+    {
+       curved_underline = 1;
+    }
+  }
 
   if (!hidden)
   {
@@ -5198,7 +5678,30 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     {
       ctx_restore (ctx);
     }
-    if (underline)
+    if (curved_underline)
+    {
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
+
+      ctx_rel_line_to (ctx, (cw+2)/3, -vt->ch * 0.05);
+      ctx_rel_line_to (ctx, (cw+2)/3, vt->ch * 0.1);
+      ctx_rel_line_to (ctx, (cw+2)/3, -vt->ch * 0.05);
+      //ctx_rel_line_to (ctx, cw, 0);
+
+      ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04));
+      ctx_stroke (ctx);
+    }
+    else if (double_underline)
+    {
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.130 - vt->ch * vt->scroll_offset);
+      ctx_rel_line_to (ctx, cw, 0);
+      ctx_move_to (ctx, x0, y0 - vt->font_size * 0.030 - vt->ch * vt->scroll_offset);
+      ctx_rel_line_to (ctx, cw, 0);
+      ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04));
+      ctx_stroke (ctx);
+    }
+    else if (underline)
     {
       ctx_new_path (ctx);
       ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
@@ -5356,6 +5859,23 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 	    line->double_height_top?1:
 	    line->double_height_bottom?-1:0,
 	    in_scrolling_region);
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+	  Image *image = line->images[i];
+	  if (image)
+	  {
+	     ctx_save (ctx);
+	     ctx_image_memory (ctx, image->width, image->height, image->kitty_format,
+			     image->data, 
+	      (line->image_col[i]-1) * vt->cw, y);
+       //      ctx_set_rgba_u8 (ctx, 0xff,0,0,0xff);
+	     ctx_rectangle (ctx, line->image_col[i] * vt->cw, y, image->width, image->height);
+	     ctx_fill (ctx);
+	     ctx_restore (ctx);
+	     fprintf (stderr, "draw %ix%i image at col %i\n", image->width, image->height, line->image_col[i]);
+	  }
 	}
       }
     }

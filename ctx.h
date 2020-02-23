@@ -439,6 +439,8 @@ void ctx_gradient_add_stop    (Ctx *ctx, float pos, float r, float g, float b, f
 
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
+void ctx_image_memory (Ctx *ctx, int width, int height, int bpp, uint8_t *pixels, float x, float y);
+
 void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
 
 typedef struct _CtxRenderstream CtxRenderstream;
@@ -545,6 +547,7 @@ typedef enum
 
   CTX_SET_RGBA        = 'r', // u8
   CTX_LOAD_IMAGE      = '6',
+  CTX_LOAD_MEM        = '7',
   CTX_LINEAR_GRADIENT = '1',
   CTX_RADIAL_GRADIENT = '2',
   CTX_GRADIENT_NO     = '3',
@@ -642,6 +645,7 @@ struct _CtxEntry
     int16_t  s16[4];
     uint32_t u32[2];
     int32_t  s32[2];
+    uint64_t u64[1];
   } data;
 };
 
@@ -815,7 +819,7 @@ static inline float ctx_fast_hypotf (float x, float y)
 #if CTX_EXTRAS
 
 char *ctx_commands[]={
-"Icompositing_mode", "#clip", "|edge", "!fill_edges", "%blit_rect", "rset_rgba", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", "set_pixel", NULL
+"Icompositing_mode", "#clip", "|edge", "!fill_edges", "%blit_rect", "rset_rgba", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", "set_pixel", "7load_mem", NULL
 };
 
 #endif
@@ -1187,6 +1191,7 @@ ctx_conts_for_entry (CtxEntry *entry)
     case CTX_LINEAR_GRADIENT:
       return 1;
 
+    case CTX_LOAD_MEM:
     case CTX_RADIAL_GRADIENT:
     case CTX_ARC:
     case CTX_CURVE_TO:
@@ -1456,6 +1461,14 @@ ctx_iterator_next (CtxIterator *iterator)
       goto again;
 
     case CTX_LOAD_IMAGE:
+      iterator->bitpack_command[0] = ret[0];
+      iterator->bitpack_command[1] = ret[1];
+      iterator->bitpack_command[2] = ret[2];
+      iterator->bitpack_pos = 0;
+      iterator->bitpack_length = 3;
+      goto again;
+
+    case CTX_LOAD_MEM:
       iterator->bitpack_command[0] = ret[0];
       iterator->bitpack_command[1] = ret[1];
       iterator->bitpack_command[2] = ret[2];
@@ -1811,6 +1824,20 @@ ctx_cmd_ff (Ctx *ctx, CtxCode code, float arg1, float arg2)
 #define CTX_PROCESS_F(cmd, x, y) do {\
   CtxEntry command = ctx_f(cmd, x, y);\
   ctx_process (ctx, &command);}while(0)
+
+
+void ctx_image_memory (Ctx *ctx, int width, int height, int bpp, uint8_t *pixels, float x, float y)
+{
+  CtxEntry commands[3];
+  commands[0] = ctx_f(CTX_LOAD_MEM, x, y);
+  commands[1].code = CTX_CONT;
+  commands[1].data.u16[0] = width;
+  commands[1].data.u16[1] = height;
+  commands[1].data.u16[2] = bpp;
+  commands[2].code = CTX_CONT;
+  commands[2].data.u64[0] = (uint64_t)pixels;
+  ctx_process (ctx, commands);
+}
 
 void
 ctx_image_path (Ctx *ctx, const char *path, float x, float y)
@@ -4855,9 +4882,9 @@ ctx_sample_source_u8_image_rgb (CtxRenderer *renderer, float x, float y, uint8_t
   int u = x - g->image.x0;
   int v = y - g->image.y0;
 
-  if ( u < 0 || v < 0 ||
-       u >= buffer->width ||
-       v >= buffer->height)
+  if ( (u < 0) || (v < 0) ||
+       (u >= buffer->width-1) ||
+       (v >= buffer->height-1))
   {
     rgba[0] = rgba[1] = rgba[2] = rgba[3] = 0;
   }
@@ -6209,6 +6236,26 @@ ctx_renderer_load_image (CtxRenderer *renderer,
   ctx_matrix_inverse (&renderer->state->gstate.source.transform);
 }
 
+static void ctx_renderer_load_image_memory (CtxRenderer *renderer,
+		                            int width, int height,
+					    int bpp, uint8_t *pixels,
+					    float x, float y)
+{
+  ctx_buffer_deinit (&renderer->texture[0]);
+  ctx_buffer_set_data (&renderer->texture[0], 
+                 pixels, width, height, width * (bpp/8), bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8, 0);
+  renderer->state->gstate.source.type = CTX_SOURCE_IMAGE;
+  renderer->state->gstate.source.image.buffer = &renderer->texture[0];
+
+  ctx_user_to_device (renderer->state, &x, &y);
+
+  renderer->state->gstate.source.image.x0 = x;
+  renderer->state->gstate.source.image.y0 = y;
+
+  renderer->state->gstate.source.transform = renderer->state->gstate.transform;
+  ctx_matrix_inverse (&renderer->state->gstate.source.transform);
+}
+
 static void
 ctx_renderer_set_pixel (CtxRenderer *renderer,
 		        uint16_t x,
@@ -6305,6 +6352,15 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
       ctx_renderer_load_image (renderer,
                     (char*)&entry[2].data.u8[0],
                     ctx_arg_float(0), ctx_arg_float(1));
+      break;
+
+    case CTX_LOAD_MEM:
+      ctx_renderer_load_image_memory (renderer,
+        entry[1].data.u16[0],
+        entry[1].data.u16[1],
+        entry[1].data.u16[2],
+        (void*)entry[2].data.u64[0],
+        ctx_arg_float(0), ctx_arg_float(1));
       break;
 
     case CTX_GRADIENT_NO:
@@ -8143,6 +8199,26 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
   }
 }
 #endif
+#if 0
+typedef struct PdfState {
+  float args[16];
+} PdfState;
+
+static void ctx_pdf_rg (Ctx *ctx, PdfState *pdf_state)
+{
+}
+
+void
+ctx_parse_pdf (Ctx *ctx, const char *pdf)
+{
+  PdfState pdf_state;
+
+  /* naive direct pdf vector data stream decoder, how hard can it be? */
+  
+
+}
+#endif
+
 
 void
 ctx_parse_str_line (Ctx *ctx, const char *str)
