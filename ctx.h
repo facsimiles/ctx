@@ -8208,6 +8208,16 @@ static void ctx_pdf_rg (Ctx *ctx, PdfState *pdf_state)
 {
 }
 
+typedef struct PdfOp
+{
+  const char *op;
+  int args;
+} PdfOp;
+
+PdfOp pdf_ops[]={
+ {"rg", 3, ctx_pdf_rg);
+};
+
 void
 ctx_parse_pdf (Ctx *ctx, const char *pdf)
 {

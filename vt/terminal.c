@@ -11,6 +11,7 @@
 
 #define USE_SDL 1
 #define USE_MMM 0
+#define ENABLE_CLICK 0
 
 #if USE_SDL
 #include <SDL.h>
@@ -61,8 +62,31 @@ int vt_width;
 int vt_height;
 
 #if USE_SDL
+static SDL_AudioDeviceID audio_dev = 0;
+
+#define AUDIO_CHUNK_SIZE 512
+
 void sdl_setup (int width, int height)
 {
+  SDL_AudioSpec spec_want, spec_have;
+
+  spec_want.freq = 8000;
+  spec_want.format = AUDIO_S16;
+  spec_want.channels = 2;
+  spec_want.samples = AUDIO_CHUNK_SIZE;
+  spec_want.callback = NULL;
+
+  if (SDL_Init(SDL_INIT_AUDIO) < 0)
+  {
+    fprintf (stderr, "sdl audio init fail\n");
+  }
+
+  audio_dev = SDL_OpenAudioDevice (NULL, 0, &spec_want, &spec_have, 0);
+  if (!audio_dev){
+    fprintf (stderr, "sdl openaudiodevice fail\n");
+  }
+  SDL_PauseAudioDevice (audio_dev, 0);
+
   window = SDL_CreateWindow("gvt", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   renderer = SDL_CreateRenderer (window, -1, 0);
   //renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
@@ -128,6 +152,9 @@ void audio_task (int click)
 #if USE_MMM
   int free_frames = mmm_pcm_get_frame_chunk (mmm)+24;
   //int free_frames = mmm_pcm_get_free_frames (mmm);
+#elif USE_SDL
+  int free_frames = AUDIO_CHUNK_SIZE - SDL_GetQueuedAudioSize(audio_dev);
+#endif
   int queued = (pcm_write_pos - pcm_read_pos)/2;
   if (free_frames > 6) free_frames -= 4;
   int frames = queued;
@@ -138,10 +165,18 @@ void audio_task (int click)
     if (click)
     {
       int16_t pcm_data[]={-32000 * click_volume,32000 * click_volume,0,0};
+#if USE_MMM
       mmm_pcm_queue (mmm, (int8_t*) pcm_data, 1);
+#elif USE_SDL
+      SDL_QueueAudio (audio_dev, (void*) pcm_data, 4);
+#endif
     }
 
+#if USE_MMM
     mmm_pcm_queue (mmm, (int8_t*)&pcm_queue[pcm_read_pos], frames);
+#elif USE_SDL
+    SDL_QueueAudio (audio_dev, (void*)&pcm_queue[pcm_read_pos], frames * 4);
+#endif
     pcm_read_pos += frames*2;
   }
 #if ENABLE_CLICK
@@ -152,13 +187,22 @@ void audio_task (int click)
     if (click)
     {
       int16_t pcm_data[]={-32000 * click_volume,32000 * click_volume,0,0};
+#if USE_MMM
       mmm_pcm_queue (mmm, (int8_t*) pcm_data, 1);
+#elif USE_SDL
+      SDL_QueueAudio (audio_dev, (void*) pcm_data, 4);
+#endif
     }
 
     if (free_frames > 500)
-    mmm_pcm_queue (mmm, (int8_t*) pcm_silence, 500);
-  }
+    {
+#if USE_MMM
+      mmm_pcm_queue (mmm, (int8_t*) pcm_silence, 500);
+#elif USE_SDL
+      //SDL_QueueAudio (audio_dev, (void*)pcm_silence, 500 * 4);
 #endif
+    }
+  }
 #endif
 }
 
@@ -179,12 +223,14 @@ static void handle_event (const char *event)
 	  ctx_vt_set_scroll (vt, new_scroll);
 	  ctx_vt_rev_inc (vt);
 	} else if (!strcmp (event, "shift-control-v")) {
+#if USE_SDL
 	  char *text = SDL_GetClipboardText ();
 	  if (text)
 	  {
             ctx_vt_paste (vt, text);
 	    free (text);
 	  }
+#endif
 	} else if (!strcmp (event, "shift-control--") ||
 	           !strcmp (event, "control--")) {
 	  font_size /= 1.15;

@@ -16,6 +16,13 @@
  *     proportional fonts
  *     BBS/ANSI-art mode
  *     audio playback
+ *
+ * Todo:
+ *     DECCIR - cursor state report https://vt100.net/docs/vt510-rm/DECCIR.html 
+ *     make absolute positioning take proportional into account
+ *     HTML / PNG / SVG / PDF export of scrollback / screen
+ *     sixels
+ *
  */
 
 #define _BSD_SOURCE
@@ -376,6 +383,7 @@ struct _MrgVT {
   uint32_t   saved_style;
   int        saved_origin;
   int        cursor_key_application;
+  int        key_2017;
   int        margin_top;
   int        margin_bottom;
   int        margin_left;
@@ -716,19 +724,19 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->autowrap       = 1;
   vt->wordwrap       = 0;
   vt->cursor_visible = 1;
-  vt->charset[0] = 0;
-  vt->charset[1] = 0;
-  vt->charset[2] = 0;
-  vt->charset[3] = 0;
-  vt->bell = 3;
-  vt->scale_x                = 1.0;
-  vt->scale_y                = 1.0;
-  vt->saved_x                = 1;
-  vt->saved_y                = 1;
-  vt->saved_style            = 1;
-  vt->reverse_video          = 0;
-  vt->cstyle                 = 0;
-  vt->keyrepeat              = 1;
+  vt->charset[0]     = 0;
+  vt->charset[1]     = 0;
+  vt->charset[2]     = 0;
+  vt->charset[3]     = 0;
+  vt->bell           = 3;
+  vt->scale_x        = 1.0;
+  vt->scale_y        = 1.0;
+  vt->saved_x        = 1;
+  vt->saved_y        = 1;
+  vt->saved_style    = 1;
+  vt->reverse_video  = 0;
+  vt->cstyle         = 0;
+  vt->keyrepeat      = 1;
 
   vt->cursor_key_application = 0;
   vt->argument_buf_len       = 0;
@@ -1948,6 +1956,9 @@ qagain:
      case 1: /*MODE;Cursor key mode;Application;Cursor;*/
                vt->cursor_key_application = set;
              break;
+     case 2017: /*MODE;Cursor key mode;Application;Cursor;*/
+               vt->key_2017 = set;
+             break;
      case 2: /*MODE;VT52 emulation;;enable; */
              if (set==0) vt->in_vt52 = 1;
              break; 
@@ -2079,6 +2090,154 @@ again:
     }
   }
 }
+
+static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
+{
+  char buf[64]="";
+  if (sequence[1]=='?')
+  {
+    int qval;
+    sequence++;
+    qval = parse_int (sequence, 1);
+    switch (qval)
+    {
+     case 1:
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->cursor_key_application?1:2);
+             break;
+     case 2017:
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->key_2017?1:2);
+             break;
+     case 2: /*MODE;VT52 emulation;;enable; */
+             //if (set==0) vt->in_vt52 = 1;
+     case 3: /*MODE;Column mode;132 columns;80 columns;*/
+             //vtcmd_set_132_col (vt, set);
+             sprintf (buf, "\e[?%i;%i$y", qval, 0);
+             break;
+     case 4: 
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->smooth_scroll?1:2);
+             break; 
+
+     case 5: /*MODE;Screen mode;Reverse;Normal;*/
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->reverse_video?1:2);
+             break;
+     case 6: /*MODE;Origin mode;Relative;Absolute;*/
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->origin?1:2);
+             break;
+     case 7: /*MODE;Wraparound;On;Off;*/
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->autowrap?1:2);
+     case 8: /*MODE;Auto repeat;On;Off;*/
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->keyrepeat?1:2);
+             break;
+     //case 12:vtcmd_ignore (vt, sequence);break; // blinking_cursor
+
+
+     case 25:/*MODE;Cursor visible;On;Off; */
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->cursor_visible?1:2);
+             break;
+
+     case 69:/*MODE;Left right margin mode;On;Off; */
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->left_right_margin_mode?1:2);
+             break;
+
+
+     case 437:/*MODE;Encoding/cp437mode;cp437;utf8; */
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->encoding?1:2);
+             break;
+
+     case 1000:/*MODE;Mouse reporting;On;Off;*/
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->mouse?1:2);
+             break;
+     case 1002:/*MODE;Mouse drag;On;Off;*/ 
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->mouse_drag?1:2);
+             break;
+     case 1003:/*MODE;Mouse all;On;Off;*/ 
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->mouse_all?1:2);
+             break;
+     case 1006:/*MODE;Mouse decimal;On;Off;*/ 
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->mouse_decimal?1:2);
+             break;
+     //case 47:
+     //case 1047:
+     //case 1048:
+     //case 1049: <- the one to implement
+        //   vtcmd_reset_to_initial_state (vt, sequence);  
+           break; // alt screen
+     case 2004:  // set_bracketed_paste_mode
+           sprintf (buf, "\e[?%i;%i$y", qval, 
+                    vt->bracket_paste?1:2);
+           break;
+     case 2020: /*MODE;wordwrap;On;Off;*/
+             sprintf (buf, "\e[?%i;%i$y", qval, 
+                      vt->wordwrap?1:2);
+             break;
+     case 1010: // scroll to bottom on tty output (rxvt)
+     case 1011: // scroll to bottom on key press (rxvt)
+
+     case 4444:/*MODE;Audio;On;;*/
+           //vt->in_pcm=set; break;
+     case 2222:/*MODE;Ctx;On;;*/
+           //vt->in_ctx=set;
+     case 7020:/*MODE;Ctx ascii;On;;*/
+           //vt->in_ctx_ascii = set;
+     case 80:/* DECSDM Sixel scrolling */
+     case 30: // from rxvt - show/hide scrollbar
+     case 34: // DECRLM - right to left mode
+     case 60: // horizontal cursor coupling
+     case 61: // vertical cursor coupling
+
+     default:
+           sprintf (buf, "\e[?%i;%i$y", qval, 0);
+           break;
+    }
+  }
+  else
+  {
+    int val;
+    val = parse_int (sequence, 1);
+    switch (val)
+{
+     case 2:/* AM - keyboard action mode */
+           sprintf (buf, "\e[%i;%i$y", val, 0);
+             break;
+     case 3:/*CRM - control representation mode */
+           sprintf (buf, "\e[%i;%i$y", val, 0);
+             break;
+     case 4:/*MODE2;Insert Mode;Insert;Replace; */
+           sprintf (buf, "\e[%i;%i$y", val, vt->insert_mode?1:2);
+             break;
+     case 9: /* interlace mode */
+           sprintf (buf, "\e[%i;%i$y", val, 0);
+             break;
+     case 12:/*MODE2;Local echo;On;Off; */
+           sprintf (buf, "\e[%i;%i$y", val, vt->echo?1:2);
+             break;
+     case 20:/*MODE2;Carriage Return on LF/Newline;On;Off;*/;
+           sprintf (buf, "\e[%i;%i$y", val, vt->cr_on_lf?1:2);
+            break;
+     case 21: // GRCM - whether SGR accumulates or a reset on each command
+     default: 
+           sprintf (buf, "\e[%i;%i$y", val, 0);
+    }
+  }
+
+  if (buf[0])
+    vt_write (vt, buf, strlen(buf));
+}
+
 
 static void vtcmd_set_t (MrgVT *vt, const char *sequence)
 {
@@ -2433,6 +2592,7 @@ static Sequence sequences[]={
   {"=",   0,   vtcmd_ignore},  // keypad mode change
   {">",   0,   vtcmd_ignore},  // keypad mode change
   {"c",   0,   vtcmd_reset_to_initial_state}, /* id:RIS Reset to Initial State */
+  {"[",  'p',  vtcmd_request_mode}, // soft reset?
   {"[!", 'p',  vtcmd_ignore}, // soft reset?
 
   {NULL, 0, NULL}
@@ -3662,18 +3822,13 @@ void vt_gfx (MrgVT *vt, const char *command)
 
   if (vt->gfx.multichunk == 0)
   {
-
-     fprintf (stderr, "size : %i\n", vt->gfx.data_size);
     if (vt->gfx.transmission != 'd') /* */
     {
       char buf[256];
       sprintf (buf, "\e_Gi=%i;only direct transmission supported\e\\",
                       vt->gfx.id);
       vt_write (vt, buf, strlen(buf));
-      if (vt->gfx.data)
-        free (vt->gfx.data);
-      vt->gfx.data_size=0;
-      return;
+      goto cleanup;
     }
 
     {
@@ -3706,12 +3861,9 @@ void vt_gfx (MrgVT *vt, const char *command)
                                  vt->gfx.data_size);
       if (z_result != Z_OK)
       {
-        fprintf (stderr, "zlib trouble\n");
-        if (vt->gfx.data)
-          free (vt->gfx.data);
-        vt->gfx.data = NULL;
-        vt->gfx.data_size=0;
-        return;
+        char buf[256]= "\e_Go=z;zlib error\e\\";
+        vt_write (vt, buf, strlen(buf));
+        goto cleanup;
       }
       free (vt->gfx.data);
       vt->gfx.data = data2;
@@ -3722,14 +3874,13 @@ void vt_gfx (MrgVT *vt, const char *command)
     if (vt->gfx.format == 100)
     {
       int channels;
-        fprintf (stderr, "hmmm.. :%i\n", vt->gfx.data_size);
       uint8_t *new_data = stbi_load_from_memory (vt->gfx.data, vt->gfx.data_size, &vt->gfx.buf_width, &vt->gfx.buf_height, &channels, 4);
 
       if (!new_data)
       {
-        fprintf (stderr, "image decode error size:%i\n", vt->gfx.data_size);
-        vt->gfx.data = NULL;
-        return;
+        char buf[256]= "\e_Gf=100;image decode error\e\\";
+        vt_write (vt, buf, strlen(buf));
+        goto cleanup;
       }
       vt->gfx.format = 32;
       free (vt->gfx.data);
@@ -3738,7 +3889,6 @@ void vt_gfx (MrgVT *vt, const char *command)
     }
 
   Image *image = NULL;
-  fprintf (stderr, "doing action %c\n", vt->gfx.action);
   switch (vt->gfx.action)
   {
     case 't': // transfer
@@ -3755,8 +3905,9 @@ void vt_gfx (MrgVT *vt, const char *command)
       }
       if (vt->gfx.action == 't')
         break;
+      // fallthrough
     case 'p': // present 
-      if (!image)
+      if (!image && vt->gfx.id)
          image = image_query (vt->gfx.id);
 
       if (image)
@@ -3796,71 +3947,72 @@ void vt_gfx (MrgVT *vt, const char *command)
       break;
     case 'd': // delete
       {
-      int row = vt->rows;
+      int row = vt->rows; // probably not right at start of session XXX
       for (VtList *l = vt->lines; l; l = l->next, row --)
       {
         VtString *line = l->data;
         for (int i = 0; i < 4; i ++)
         {
-        int free_resource = 0;
-        int match = 0;
-        if (line->images[i])
-          switch (vt->gfx.delete)
-          {
-         case 'A': free_resource = 1;
-             case 'a': /* all images visible on screen */
-           match = 1;
-               break;
-         case 'I': free_resource = 1;
-             case 'i': /* all images with specified id */
-           if (((Image*)(line->images[i]))->id == vt->gfx.id)
-             match = 1;
-               break;
-         case 'P': free_resource = 1;
-             case 'p': /* all images intersecting cell specified with x and y */
-           if (line->image_col[i] == vt->gfx.x &&
-               row == vt->gfx.y)
-             match = 1;
-               break;
-         case 'Q': free_resource = 1;
-             case 'q': /* all images with specified cell (x), row(y) and z */
-           if (line->image_col[i] == vt->gfx.x &&
-               row == vt->gfx.y)
-             match = 1;
-               break;
-         case 'Y': free_resource = 1;
-             case 'y': /* all images with specified row (y) */
-           if (row == vt->gfx.y)
-             match = 1;
-               break;
-         case 'X': free_resource = 1;
-             case 'x': /* all images with specified column (x) */
-           if (line->image_col[i] == vt->gfx.x)
-             match = 1;
-               break;
-         case 'Z': free_resource = 1;
-             case 'z': /* all images with specified z-index (z) */
-               break;
-          }
-         if (match)
-         {
-            line->images[i] = NULL;
-            if (free_resource)
+          int free_resource = 0;
+          int match = 0;
+          if (line->images[i])
+            switch (vt->gfx.delete)
             {
-               // XXX : NYI
+               case 'A': free_resource = 1;
+               case 'a': /* all images visible on screen */
+                 match = 1;
+                     break;
+               case 'I': free_resource = 1;
+               case 'i': /* all images with specified id */
+                 if (((Image*)(line->images[i]))->id == vt->gfx.id)
+                   match = 1;
+                     break;
+               case 'P': free_resource = 1;
+               case 'p': /* all images intersecting cell specified with x and y */
+                 if (line->image_col[i] == vt->gfx.x &&
+                     row == vt->gfx.y)
+                   match = 1;
+                     break;
+               case 'Q': free_resource = 1;
+               case 'q': /* all images with specified cell (x), row(y) and z */
+                 if (line->image_col[i] == vt->gfx.x &&
+                     row == vt->gfx.y)
+                   match = 1;
+                     break;
+               case 'Y': free_resource = 1;
+               case 'y': /* all images with specified row (y) */
+                 if (row == vt->gfx.y)
+                   match = 1;
+                     break;
+               case 'X': free_resource = 1;
+               case 'x': /* all images with specified column (x) */
+                 if (line->image_col[i] == vt->gfx.x)
+                   match = 1;
+                     break;
+               case 'Z': free_resource = 1;
+               case 'z': /* all images with specified z-index (z) */
+                     break;
             }
-         }
+           if (match)
+           {
+              line->images[i] = NULL;
+              if (free_resource)
+              {
+                 // XXX : NYI
+              }
+           }
+        }
       }
       }
-      }
-
       break;
   }
 
+cleanup:
     if (vt->gfx.data)
       free (vt->gfx.data);
     vt->gfx.data = NULL;
     vt->gfx.data_size=0;
+    vt->gfx.multichunk=0;
   }
 }
 
