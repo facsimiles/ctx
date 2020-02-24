@@ -3781,7 +3781,7 @@ void vt_gfx (MrgVT *vt, const char *command)
 	int down = (image->height + (vt->ch-1))/vt->ch;
 
 	for (int i = 0; i<down - 1; i++)
-	  vtcmd_cursor_down (vt, " ");
+	  vtcmd_index (vt, " ");
 	for (int i = 0; i<right; i++)
 	  vtcmd_cursor_forward (vt, " ");
       }
