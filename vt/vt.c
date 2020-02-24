@@ -3616,10 +3616,10 @@ void vt_gfx (MrgVT *vt, const char *command)
            command[pos] != ',' &&
 	   command[pos] != ';') pos++;
     
-    fprintf (stderr, " %c = %i\n", key, value);
     switch (key)
     {
       case 'a': vt->gfx.action = value; break;
+      case 'd': vt->gfx.delete = value; break;
       case 'i': vt->gfx.id = value; break;
       case 'S': vt->gfx.buf_size = value; break;
       case 's': vt->gfx.buf_width = value; break;
@@ -3756,13 +3756,34 @@ void vt_gfx (MrgVT *vt, const char *command)
       if (vt->gfx.action == 't')
 	break;
     case 'p': // present 
+      if (!image)
+	 image = image_query (vt->gfx.id);
+
       if (image)
       {
         int i = 0;
 	for (i = 0; vt->current_line->images[i] && i < 4; i++);
 	if (i >= 4) i = 3;
+
+	/* this needs a struct and dynamic allocation */
 	vt->current_line->images[i] = image;
 	vt->current_line->image_col[i] = vt->cursor_x;
+	vt->current_line->image_X[i] = vt->gfx.x_cell_offset;
+	vt->current_line->image_Y[i] = vt->gfx.y_cell_offset;
+	vt->current_line->image_x[i] = vt->gfx.x;
+	vt->current_line->image_y[i] = vt->gfx.y;
+	vt->current_line->image_w[i] = vt->gfx.w;
+	vt->current_line->image_h[i] = vt->gfx.h;
+	vt->current_line->image_rows[i] = vt->gfx.rows;
+	vt->current_line->image_cols[i] = vt->gfx.columns;
+
+	int right = (image->width + (vt->cw-1))/vt->cw;
+	int down = (image->height + (vt->ch-1))/vt->ch;
+
+	for (int i = 0; i<down - 1; i++)
+	  vtcmd_cursor_down (vt, " ");
+	for (int i = 0; i<right; i++)
+	  vtcmd_cursor_forward (vt, " ");
       }
       break;
     case 'q': // query
@@ -3774,6 +3795,65 @@ void vt_gfx (MrgVT *vt, const char *command)
       }
       break;
     case 'd': // delete
+      {
+      int row = vt->rows;
+      for (VtList *l = vt->lines; l; l = l->next, row --)
+      {
+	VtString *line = l->data;
+	for (int i = 0; i < 4; i ++)
+	{
+		int free_resource = 0;
+		int match = 0;
+	if (line->images[i])
+      switch (vt->gfx.delete)
+      {
+	 case 'A': free_resource = 1;
+         case 'a': /* all images visible on screen */
+	   match = 1;
+           break;
+	 case 'I': free_resource = 1;
+         case 'i': /* all images with specified id */
+	   if (((Image*)(line->images[i]))->id == vt->gfx.id)
+	     match = 1;
+           break;
+	 case 'P': free_resource = 1;
+         case 'p': /* all images intersecting cell specified with x and y */
+	   if (line->image_col[i] == vt->gfx.x &&
+	       row == vt->gfx.y)
+	     match = 1;
+           break;
+	 case 'Q': free_resource = 1;
+         case 'q': /* all images with specified cell (x), row(y) and z */
+	   if (line->image_col[i] == vt->gfx.x &&
+	       row == vt->gfx.y)
+	     match = 1;
+           break;
+	 case 'Y': free_resource = 1;
+         case 'y': /* all images with specified row (y) */
+	   if (row == vt->gfx.y)
+	     match = 1;
+           break;
+	 case 'X': free_resource = 1;
+         case 'x': /* all images with specified column (x) */
+	   if (line->image_col[i] == vt->gfx.x)
+	     match = 1;
+           break;
+	 case 'Z': free_resource = 1;
+         case 'z': /* all images with specified z-index (z) */
+           break;
+      }
+	 if (match)
+	 {
+	    line->images[i] = NULL;
+	    if (free_resource)
+	    {
+	       // XXX : NYI
+            }
+	 }
+      }
+      }
+      }
+
       break;
   }
 
@@ -4233,8 +4313,9 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
 	  }
 	  buf_len = remaining;
           got_data+=len;
-          vt->rev ++;
-	  }
+          vt->rev ++; // revision should be changed on screen
+	  }  // changes - not data received
+	     // to enable big image transfers and audio without re-render
 	  return got_data;
 	}
       }
@@ -5866,15 +5947,18 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 	  Image *image = line->images[i];
 	  if (image)
 	  {
+	     int u = (line->image_col[i]-1) * vt->cw + line->image_X[i];
+	     int v = y - vt->ch + line->image_y[i];
+
+	     int rows = (image->height + (vt->ch-1))/vt->ch;
 	     ctx_save (ctx);
 	     ctx_image_memory (ctx, image->width, image->height, image->kitty_format,
-			     image->data, 
-	      (line->image_col[i]-1) * vt->cw, y);
-       //      ctx_set_rgba_u8 (ctx, 0xff,0,0,0xff);
-	     ctx_rectangle (ctx, line->image_col[i] * vt->cw, y, image->width, image->height);
+			     image->data, u, v);
+	     ctx_rectangle (ctx, u, v, image->width, image->height);
 	     ctx_fill (ctx);
 	     ctx_restore (ctx);
-	     fprintf (stderr, "draw %ix%i image at col %i\n", image->width, image->height, line->image_col[i]);
+	     for (int row = r; row < r + rows; row++)
+               vt_cell_cache_clear_row (vt, row);
 	  }
 	}
       }

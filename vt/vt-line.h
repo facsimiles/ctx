@@ -45,6 +45,16 @@ struct _VtString
 
   void     *images[4];
   int       image_col[4];
+  int       image_X[4];
+  int       image_Y[4];
+  int       image_rows[4];
+  int       image_cols[4];
+  int       image_x[4];
+  int       image_y[4];
+  int       image_w[4];
+  int       image_h[4];
+
+
 }  __attribute((packed));
 
 
