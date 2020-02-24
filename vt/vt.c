@@ -73,7 +73,7 @@ static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO;
   #define VT_error(str, a...)
 #else
   #define vt_log(domain, line, a...) \
-	do {fprintf (stderr, "%i %s ", line, domain);fprintf(stderr, ##a);fprintf(stderr, "\n");}while(0)
+        do {fprintf (stderr, "%i %s ", line, domain);fprintf(stderr, ##a);fprintf(stderr, "\n");}while(0)
   #define VT_info(a...) if (vt_log_mask & VT_LOG_INFO) vt_log ("INFO  ", __LINE__, ##a)
   #define VT_input(a...) if (vt_log_mask & VT_LOG_INPUT) vt_log ("INPUT ", __LINE__, ##a)
   #define VT_command(a...) if (vt_log_mask & VT_LOG_COMMAND) vt_log ("CMD   ", __LINE__, ##a)
@@ -250,11 +250,11 @@ static Image *image_query (int id)
 }
 
 static Image *image_add (int width,
-		         int height,
-			 int id,
-			 int format,
-			 int size,
-			 uint8_t *data)
+                         int height,
+                         int id,
+                         int format,
+                         int size,
+                         uint8_t *data)
 {
   // look for id if id is not 0
   Image *image;
@@ -353,7 +353,7 @@ struct _MrgVT {
   uint8_t    utf8_holding[64]; /* only 4 needed for utf8 - but it's purpose
                                  is also overloaded for ctx journal command
                                  buffering , and the bigger sizes for the ascii
-				 ctx mode */
+                                 ctx mode */
 
   int        encoding;  // 0 = utf8 1=pc vga 2=ascii
 
@@ -444,23 +444,23 @@ static int vt_col_to_pos (MrgVT *vt, int col)
     {
       if (vt_string_get_style (vt->current_line, pos) & STYLE_PROPORTIONAL)
       {
-	x += ctx_glyph_width (ctx, vt_string_get_unichar (vt->current_line, pos));
-	prev_prop = 1;
+        x += ctx_glyph_width (ctx, vt_string_get_unichar (vt->current_line, pos));
+        prev_prop = 1;
       }
       else
       {
-	if (prev_prop)
-	{
-	  int new_cw = vt->cw - ((x % vt->cw));
-	  if (new_cw < vt->cw*3/2)
-	    new_cw += vt->cw;
-	  x += new_cw;
-	}
-	else
-	{
-	  x += vt->cw;
-	}
-	prev_prop = 0;
+        if (prev_prop)
+        {
+          int new_cw = vt->cw - ((x % vt->cw));
+          if (new_cw < vt->cw*3/2)
+            new_cw += vt->cw;
+          x += new_cw;
+        }
+        else
+        {
+          x += vt->cw;
+        }
+        prev_prop = 0;
       }
       pos ++;
     }
@@ -1018,13 +1018,13 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
       if (vt->wordwrap && str[0] != ' ')
       {
         while (old_x-1-chars >1 && vt_string_get_unichar (vt->current_line,
-			           old_x-1-chars)!=' ')
+                                   old_x-1-chars)!=' ')
         {
-	  chars++;
+          chars++;
         }
         chars--;
-	if (chars > (vt->margin_right - vt->margin_left) * 3 / 2)
-	  chars = 0;
+        if (chars > (vt->margin_right - vt->margin_left) * 3 / 2)
+          chars = 0;
       }
 
       if (vt->cursor_y == vt->margin_bottom)
@@ -1040,15 +1040,15 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
       {
         vt_string_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
         vt_string_replace_unichar (vt->current_line, vt->cursor_x - 1, 
-	     vt_string_get_unichar (old_line, old_x-1-chars+i));
-	vt->cursor_x++;
+             vt_string_get_unichar (old_line, old_x-1-chars+i));
+        vt->cursor_x++;
       }
       for (int i = 0; i < chars; i++)
       {
         vt_string_replace_unichar (old_line, old_x-1-chars+i, ' ');
       }
       if (str[0] == ' ')
-	return;
+        return;
     }
     else
     {
@@ -1341,12 +1341,12 @@ static void vtcmd_cursor_up (MrgVT *vt, const char *sequence)
 
 static void vtcmd_back_index (MrgVT *vt, const char *sequence)
 {
-	// XXX implement
+        // XXX implement
 }
 
 static void vtcmd_forward_index (MrgVT *vt, const char *sequence)
 {
-	// XXX implement
+        // XXX implement
 }
 
 static void vtcmd_index (MrgVT *vt, const char *sequence)
@@ -1409,22 +1409,22 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
       {
         char *p = (char*)mrg_utf8_skip (vt->current_line->str, vt->cursor_x-1);
         if (p) *p = 0;
-	// XXX : this is chopping lines
-	for (int col = vt->cursor_x; col <= VT_MARGIN_RIGHT; col++)
-	  vt_string_set_style (vt->current_line, col - 1, vt->cstyle);
+        // XXX : this is chopping lines
+        for (int col = vt->cursor_x; col <= VT_MARGIN_RIGHT; col++)
+          vt_string_set_style (vt->current_line, col - 1, vt->cstyle);
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
       }
       break;
     case 1: // clear from beginning to cursor
       {
-	for (int col = VT_MARGIN_LEFT; col <= vt->cursor_x; col++)
+        for (int col = VT_MARGIN_LEFT; col <= vt->cursor_x; col++)
         {
           vt_string_replace_utf8 (vt->current_line, col-1, " ");
         }
 
-	for (int col = VT_MARGIN_LEFT; col <= vt->cursor_x; col++)
-	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
+        for (int col = VT_MARGIN_LEFT; col <= vt->cursor_x; col++)
+          vt_string_set_style (vt->current_line, col-1, vt->cstyle);
 
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str); // should be a nop
@@ -1432,7 +1432,7 @@ static void vtcmd_erase_in_line (MrgVT *vt, const char *sequence)
       break;
     case 2: // clear entire line
       for (int col = VT_MARGIN_LEFT; col <= VT_MARGIN_RIGHT; col++)
-	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
+          vt_string_set_style (vt->current_line, col-1, vt->cstyle);
       vt_string_set (vt->current_line, ""); // XXX not all
       break;
   }
@@ -1450,8 +1450,8 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         vt->current_line->length = strlen (vt->current_line->str);
         vt->current_line->utf8_length = mrg_utf8_strlen (vt->current_line->str);
       }
-	for (int col = vt->cursor_x; col <= VT_MARGIN_RIGHT; col++)
-	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
+        for (int col = vt->cursor_x; col <= VT_MARGIN_RIGHT; col++)
+          vt_string_set_style (vt->current_line, col-1, vt->cstyle);
 
       {
         VtList *l;int no = vt->rows;
@@ -1463,7 +1463,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
           buf->utf8_length = 0;
 
           for (int col = 1; col <= vt->cols; col++)
-	    vt_string_set_style (buf, col-1, vt->cstyle);
+            vt_string_set_style (buf, col-1, vt->cstyle);
         }
       }
       break;
@@ -1472,13 +1472,13 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         for (int col = 1; col <= vt->cursor_x; col++)
         {
           vt_string_replace_utf8 (vt->current_line, col-1, " ");
-	  vt_string_set_style (vt->current_line, col-1, vt->cstyle);
+          vt_string_set_style (vt->current_line, col-1, vt->cstyle);
         }
       }
       {
         VtList *l;
         int there_yet = 0;
-	int no = vt->rows;
+        int no = vt->rows;
 
         for (l = vt->lines; l; l = l->next, no--)
         {
@@ -1489,7 +1489,7 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
             buf->length = 0;
             buf->utf8_length = 0;
             for (int col = 1; col <= vt->cols; col++)
-	      vt_string_set_style (buf, col-1, vt->cstyle);
+              vt_string_set_style (buf, col-1, vt->cstyle);
           }
           if (buf == vt->current_line)
           {
@@ -1505,11 +1505,11 @@ static void vtcmd_erase_in_display (MrgVT *vt, const char *sequence)
         vtcmd_clear (vt, "");
         _ctx_vt_move_to (vt, ty, tx);
         for (VtList *l = vt->lines; l; l = l->next)
-	{
-	  VtString *line = l->data;
+        {
+          VtString *line = l->data;
           for (int col = 1; col <= vt->cols; col++)
-	    vt_string_set_style (line, col-1, vt->cstyle);
-	}
+            vt_string_set_style (line, col-1, vt->cstyle);
+        }
       }
       break;
   }
@@ -1649,35 +1649,35 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
   switch (n)
   {
     case 0: /* SGR@0@Style reset@@ */
-	if (vt->cstyle & STYLE_PROPORTIONAL)
-	  vt->cstyle = STYLE_PROPORTIONAL;
-	else
-	  vt->cstyle = 0;
-	break;
+        if (vt->cstyle & STYLE_PROPORTIONAL)
+          vt->cstyle = STYLE_PROPORTIONAL;
+        else
+          vt->cstyle = 0;
+        break;
     case 1: /* SGR@@Bold@@ */         vt->cstyle |= STYLE_BOLD; break;
     case 2: /* SGR@@Dim@@ */          vt->cstyle |= STYLE_DIM; break; 
     case 3: /* SGR@@Rotalic@@ */      vt->cstyle |= STYLE_ITALIC; break; 
     case 4: /* SGR@@Underscore@@ */
         if (s[1] == ':')
-	{
-	  switch (s[2])
-	  {
-	     case '0': break;
-	     case '1': vt->cstyle |= STYLE_UNDERLINE;
-		       break;
-	     case '2': vt->cstyle |= STYLE_UNDERLINE|
-	                             STYLE_UNDERLINE_VAR;
-		       break;
+        {
+          switch (s[2])
+          {
+             case '0': break;
+             case '1': vt->cstyle |= STYLE_UNDERLINE;
+                       break;
+             case '2': vt->cstyle |= STYLE_UNDERLINE|
+                                     STYLE_UNDERLINE_VAR;
+                       break;
              default:
-	     case '3': vt->cstyle |= STYLE_UNDERLINE_VAR;
-		       break;
-	  }
-	}
-	else
-	{
-	  vt->cstyle |= STYLE_UNDERLINE;
-	}
-	break;
+             case '3': vt->cstyle |= STYLE_UNDERLINE_VAR;
+                       break;
+          }
+        }
+        else
+        {
+          vt->cstyle |= STYLE_UNDERLINE;
+        }
+        break;
     case 5: /* SGR@@Blink@@ */        vt->cstyle |= STYLE_BLINK; break;
     case 6: /* SGR@@Blink Fast@@ */   vt->cstyle |= STYLE_BLINK_FAST; break;
     case 7: /* SGR@@Reverse@@ */      vt->cstyle |= STYLE_REVERSE; break;
@@ -1946,101 +1946,101 @@ qagain:
     switch (qval)
     {
      case 1: /*MODE;Cursor key mode;Application;Cursor;*/
-	       vt->cursor_key_application = set;
-	     break;
+               vt->cursor_key_application = set;
+             break;
      case 2: /*MODE;VT52 emulation;;enable; */
-	     if (set==0) vt->in_vt52 = 1;
-	     break; 
+             if (set==0) vt->in_vt52 = 1;
+             break; 
      case 3: /*MODE;Column mode;132 columns;80 columns;*/
-	     vtcmd_set_132_col (vt, set);
-	     break; // set 132 col
+             vtcmd_set_132_col (vt, set);
+             break; // set 132 col
      case 4: /*MODE;Smooth scroll;Smooth;Jump;*/
-	     vt->smooth_scroll = set;
-	     vt_cell_cache_clear (vt);
-	     break; // set 132 col
+             vt->smooth_scroll = set;
+             vt_cell_cache_clear (vt);
+             break; // set 132 col
 
      case 5: /*MODE;Screen mode;Reverse;Normal;*/
-	     vt->reverse_video = set;
-	     vt_cell_cache_clear (vt);
-	     break;
+             vt->reverse_video = set;
+             vt_cell_cache_clear (vt);
+             break;
      case 6: /*MODE;Origin mode;Relative;Absolute;*/
-	     vt->origin = set;
-	     if (set)
-	     {
+             vt->origin = set;
+             if (set)
+             {
                _ctx_vt_move_to (vt, vt->margin_top, 1);
-	       ctx_vt_carriage_return (vt);
-	     }
-	     else
+               ctx_vt_carriage_return (vt);
+             }
+             else
                _ctx_vt_move_to (vt, 1, 1);
-	     break;
+             break;
      case 7: /*MODE;Wraparound;On;Off;*/
-	     vt->autowrap = set; break;
+             vt->autowrap = set; break;
      case 8: /*MODE;Auto repeat;On;Off;*/
-	     vt->keyrepeat = set;
-	     break;
+             vt->keyrepeat = set;
+             break;
      case 12:vtcmd_ignore (vt, sequence);break; // blinking_cursor
 
 
      case 30: // from rxvt - show/hide scrollbar
-	     break;
+             break;
 
      case 34: // DECRLM - right to left mode
-	     break;
+             break;
 
      case 25:/*MODE;Cursor visible;On;Off; */
-	     vt->cursor_visible = set; 
-	     break;
+             vt->cursor_visible = set; 
+             break;
      case 60: // horizontal cursor coupling
      case 61: // vertical cursor coupling
-	     break;
+             break;
 
      case 69:/*MODE;Left right margin mode;On;Off; */
-	     vt->left_right_margin_mode = set; 
-	     break;
+             vt->left_right_margin_mode = set; 
+             break;
 
      case 80:/* DECSDM Sixel scrolling */
-	     break;
+             break;
 
      case 437:/*MODE;Encoding/cp437mode;cp437;utf8; */
-	     vt->encoding = set ? 1 : 0;
-	     break;
+             vt->encoding = set ? 1 : 0;
+             break;
 
      case 1000:/*MODE;Mouse reporting;On;Off;*/
-	     vt->mouse = set; break;
+             vt->mouse = set; break;
      case 1002:/*MODE;Mouse drag;On;Off;*/ 
-	     vt->mouse_drag = set; break;
+             vt->mouse_drag = set; break;
      case 1003:/*MODE;Mouse all;On;Off;*/ 
-	     vt->mouse_all = set; break;
+             vt->mouse_all = set; break;
      case 1006:/*MODE;Mouse decimal;On;Off;*/ 
-	     vt->mouse_decimal = set; break;
+             vt->mouse_decimal = set; break;
      //case 47:
      //case 1047:
      //case 1048:
      //case 1049: <- the one to implement
-	//   vtcmd_reset_to_initial_state (vt, sequence);  
-	   break; // alt screen
+        //   vtcmd_reset_to_initial_state (vt, sequence);  
+           break; // alt screen
      case 1010: // scroll to bottom on tty output (rxvt)
-	   break;
+           break;
      case 1011: // scroll to bottom on key press (rxvt)
-	   break;
+           break;
      case 2004:  // set_bracketed_paste_mode
-	   vt->bracket_paste = set;
-	   break;
+           vt->bracket_paste = set;
+           break;
      case 2020: /*MODE;wordwrap;On;Off;*/
-	     vt->wordwrap = set; break;
+             vt->wordwrap = set; break;
 
      case 4444:/*MODE;Audio;On;;*/
            vt->in_pcm=set; break;
 
      case 2222:/*MODE;Ctx;On;;*/
            vt->in_ctx=set;
-	   break;
+           break;
      case 7020:/*MODE;Ctx ascii;On;;*/
            vt->in_ctx_ascii = set;
-	   break;
+           break;
 
      default:
-	   VT_warning ("unhandled CSI ? %ih", qval); return;
+           VT_warning ("unhandled CSI ? %ih", qval); return;
     }
     if (strchr (sequence + 1, ';'))
     {
@@ -2057,18 +2057,18 @@ again:
 {
      case 2:/* AM - keyboard action mode */ break;
      case 3:/*CRM - control representation mode */
-	     /* show control chars? */
-	     break;
+             /* show control chars? */
+             break;
      case 4:/*MODE2;Insert Mode;Insert;Replace; */
-	     vt->insert_mode = set; break;
+             vt->insert_mode = set; break;
      case 9: /* interlace mode */
-	     break;
+             break;
      case 12:/*MODE2;Local echo;On;Off; */
-	     vt->echo = set; break;
+             vt->echo = set; break;
      case 20:/*MODE2;Carriage Return on LF/Newline;On;Off;*/;
-	     vt->cr_on_lf = set; break;
+             vt->cr_on_lf = set; break;
      case 21: // GRCM - whether SGR accumulates or a reset on each command
-	     break;
+             break;
 
      default: VT_warning ("unhandled CSI %ih", val); return;
     }
@@ -2185,12 +2185,12 @@ static void vtcmd_set_led (MrgVT *vt, const char *sequence)
       case '4': val = 4; break;
       case ';':
       case 'q':
-	  if (val == 0)
-	    vt->leds[0] = vt->leds[1] = vt->leds[2] = vt->leds[3] = 0;
-	  else
-	    vt->leds[val-1] = 1;
-	  val = 0;
-	  break;
+          if (val == 0)
+            vt->leds[0] = vt->leds[1] = vt->leds[2] = vt->leds[3] = 0;
+          else
+            vt->leds[val-1] = 1;
+          val = 0;
+          break;
     }
   }
 }
@@ -2452,7 +2452,7 @@ static void handle_sequence (MrgVT *vt, const char *sequence)
         mismatch = 1;
       if (!mismatch)
       {
-	VT_command("%s", sequence);
+        VT_command("%s", sequence);
         sequences[i].vtcmd (vt, sequence);
         return;
       }
@@ -3358,7 +3358,7 @@ static int _vt_handle_control (MrgVT *vt, int byte)
   switch (byte)
   {
         case '\0':
-		return 1;
+                return 1;
         case 1:    /* SOH start of heading */
         case 2:    /* STX start of text */
         case 3:    /* ETX end of text */
@@ -3367,7 +3367,7 @@ static int _vt_handle_control (MrgVT *vt, int byte)
         case 6:    /* ACKnolwedge */
         case '\v': /* VT vertical tab */
         case '\f': /* VF form feed */
-	case 14: /* SO shift in - alternate charset */
+        case 14: /* SO shift in - alternate charset */
         case 15: /* SI shift out - (back to normal) */
         case 16: /* DLE data link escape */
         case 17: /* DC1 device control 1 - XON */ 
@@ -3397,20 +3397,20 @@ static int _vt_handle_control (MrgVT *vt, int byte)
         case 6:    /* ACKnolwedge */
            return 1;
         case 5:    /* ENQuiry */
-	   {
-	     const char *reply = getenv ("TERM_ENQ_REPLY");
-	     if (reply)
-	     {
-	       char *copy = strdup (reply);
-	       for (char *c = copy; *c; c++)
-	       {
-		 if (*c < ' ' || * c > 127) *c = 0;
-	       }
-	       vt_write (vt, reply, strlen (reply));
-	       free (copy);
-	     }
-	   }
-	   return 1;
+           {
+             const char *reply = getenv ("TERM_ENQ_REPLY");
+             if (reply)
+             {
+               char *copy = strdup (reply);
+               for (char *c = copy; *c; c++)
+               {
+                 if (*c < ' ' || * c > 127) *c = 0;
+               }
+               vt_write (vt, reply, strlen (reply));
+               free (copy);
+             }
+           }
+           return 1;
         case '\a': /* BELl */    ctx_vt_bell (vt); return 1;
         case '\b': /* BS */     _ctx_vt_backspace (vt); return 1;
         case '\t': /* HT tab */ _ctx_vt_htab (vt); return 1;
@@ -3419,17 +3419,17 @@ static int _vt_handle_control (MrgVT *vt, int byte)
         case '\f': /* VF form feed */
         case '\n': /* LF line ffed */
           ctx_vt_line_feed (vt);
-	  // XXX : if we are at left margin, keep it!
+          // XXX : if we are at left margin, keep it!
           return 1;
         case '\r': /* CR carriage return */
-	  ctx_vt_carriage_return (vt);
+          ctx_vt_carriage_return (vt);
           return 1;
-	case 14: /* SO shift in - alternate charset */
-	  vt->shifted_in = 1;  // XXX not in vt52
-	  return 1;
+        case 14: /* SO shift in - alternate charset */
+          vt->shifted_in = 1;  // XXX not in vt52
+          return 1;
         case 15: /* SI shift out - (back to normal) */
-	  vt->shifted_in = 0;
-	  return 1;
+          vt->shifted_in = 0;
+          return 1;
         case 16: /* DLE data link escape */
         case 17: /* DC1 device control 1 - XON */ 
         case 18: /* DC2 device control 2 */
@@ -3444,13 +3444,13 @@ static int _vt_handle_control (MrgVT *vt, int byte)
             _ctx_vt_add_str (vt, "¿");  // in vt52? XXX
           return 1;
         case 27: /* ESCape */
-	  return 0;
+          return 0;
           break;
         case 28: /* FS file separator */
         case 29: /* GS group separator */
         case 30: /* RS record separator */
         case 31: /* US unit separator */
-	case 127: /* DEL */
+        case 127: /* DEL */
           return 1;
   }
   return 0;
@@ -3614,7 +3614,7 @@ void vt_gfx (MrgVT *vt, const char *command)
       value = command[pos];
     while (command[pos] &&
            command[pos] != ',' &&
-	   command[pos] != ';') pos++;
+           command[pos] != ';') pos++;
     
     switch (key)
     {
@@ -3668,10 +3668,10 @@ void vt_gfx (MrgVT *vt, const char *command)
     {
       char buf[256];
       sprintf (buf, "\e_Gi=%i;only direct transmission supported\e\\",
-		      vt->gfx.id);
+                      vt->gfx.id);
       vt_write (vt, buf, strlen(buf));
       if (vt->gfx.data)
-	free (vt->gfx.data);
+        free (vt->gfx.data);
       vt->gfx.data_size=0;
       return;
     }
@@ -3681,7 +3681,7 @@ void vt_gfx (MrgVT *vt, const char *command)
       uint8_t *data2 = malloc (vt->gfx.data_size);
       bin_length = vt_base642bin ((char*)vt->gfx.data,
                                   &bin_length,
-	  	                  data2);
+                                  data2);
       memcpy (vt->gfx.data, data2, bin_length + 1);
       vt->gfx.data_size = bin_length;
       free (data2);
@@ -3691,22 +3691,22 @@ void vt_gfx (MrgVT *vt, const char *command)
     {
       // implicit buf_size
       vt->gfx.buf_size = vt->gfx.buf_width * vt->gfx.buf_height *
-	             (vt->gfx.format == 24 ? 3 : 4);
+                     (vt->gfx.format == 24 ? 3 : 4);
     }
 
     if (vt->gfx.compression == 'z')
     {
-	    //vt->gfx.buf_size)
+            //vt->gfx.buf_size)
       unsigned char *data2 = malloc (vt->gfx.buf_size + 1);
       /* if a buf size is set (rather compression, but
        * this works first..) then */
       unsigned long actual_uncompressed_size = vt->gfx.buf_size;
       int z_result = uncompress (data2, &actual_uncompressed_size,
-				 vt->gfx.data,
-		                 vt->gfx.data_size);
+                                 vt->gfx.data,
+                                 vt->gfx.data_size);
       if (z_result != Z_OK)
       {
-	fprintf (stderr, "zlib trouble\n");
+        fprintf (stderr, "zlib trouble\n");
         if (vt->gfx.data)
           free (vt->gfx.data);
         vt->gfx.data = NULL;
@@ -3729,7 +3729,7 @@ void vt_gfx (MrgVT *vt, const char *command)
       {
         fprintf (stderr, "image decode error size:%i\n", vt->gfx.data_size);
         vt->gfx.data = NULL;
-	return;
+        return;
       }
       vt->gfx.format = 32;
       free (vt->gfx.data);
@@ -3745,45 +3745,45 @@ void vt_gfx (MrgVT *vt, const char *command)
     case 'T': // transfer and present
       switch (vt->gfx.format)
       {
-	case 24:
-	case 32:
-	  image = image_add (vt->gfx.buf_width, vt->gfx.buf_height, vt->gfx.id,
-			     vt->gfx.format, vt->gfx.data_size, vt->gfx.data);
+        case 24:
+        case 32:
+          image = image_add (vt->gfx.buf_width, vt->gfx.buf_height, vt->gfx.id,
+                             vt->gfx.format, vt->gfx.data_size, vt->gfx.data);
           vt->gfx.data = NULL;
           vt->gfx.data_size=0;
-	  break;
+          break;
       }
       if (vt->gfx.action == 't')
-	break;
+        break;
     case 'p': // present 
       if (!image)
-	 image = image_query (vt->gfx.id);
+         image = image_query (vt->gfx.id);
 
       if (image)
       {
         int i = 0;
-	for (i = 0; vt->current_line->images[i] && i < 4; i++);
-	if (i >= 4) i = 3;
+        for (i = 0; vt->current_line->images[i] && i < 4; i++);
+        if (i >= 4) i = 3;
 
-	/* this needs a struct and dynamic allocation */
-	vt->current_line->images[i] = image;
-	vt->current_line->image_col[i] = vt->cursor_x;
-	vt->current_line->image_X[i] = vt->gfx.x_cell_offset;
-	vt->current_line->image_Y[i] = vt->gfx.y_cell_offset;
-	vt->current_line->image_x[i] = vt->gfx.x;
-	vt->current_line->image_y[i] = vt->gfx.y;
-	vt->current_line->image_w[i] = vt->gfx.w;
-	vt->current_line->image_h[i] = vt->gfx.h;
-	vt->current_line->image_rows[i] = vt->gfx.rows;
-	vt->current_line->image_cols[i] = vt->gfx.columns;
+        /* this needs a struct and dynamic allocation */
+        vt->current_line->images[i] = image;
+        vt->current_line->image_col[i] = vt->cursor_x;
+        vt->current_line->image_X[i] = vt->gfx.x_cell_offset;
+        vt->current_line->image_Y[i] = vt->gfx.y_cell_offset;
+        vt->current_line->image_x[i] = vt->gfx.x;
+        vt->current_line->image_y[i] = vt->gfx.y;
+        vt->current_line->image_w[i] = vt->gfx.w;
+        vt->current_line->image_h[i] = vt->gfx.h;
+        vt->current_line->image_rows[i] = vt->gfx.rows;
+        vt->current_line->image_cols[i] = vt->gfx.columns;
 
-	int right = (image->width + (vt->cw-1))/vt->cw;
-	int down = (image->height + (vt->ch-1))/vt->ch;
+        int right = (image->width + (vt->cw-1))/vt->cw;
+        int down = (image->height + (vt->ch-1))/vt->ch;
 
-	for (int i = 0; i<down - 1; i++)
-	  vtcmd_index (vt, " ");
-	for (int i = 0; i<right; i++)
-	  vtcmd_cursor_forward (vt, " ");
+        for (int i = 0; i<down - 1; i++)
+          vtcmd_index (vt, " ");
+        for (int i = 0; i<right; i++)
+          vtcmd_cursor_forward (vt, " ");
       }
       break;
     case 'q': // query
@@ -3799,57 +3799,57 @@ void vt_gfx (MrgVT *vt, const char *command)
       int row = vt->rows;
       for (VtList *l = vt->lines; l; l = l->next, row --)
       {
-	VtString *line = l->data;
-	for (int i = 0; i < 4; i ++)
-	{
-		int free_resource = 0;
-		int match = 0;
-	if (line->images[i])
-      switch (vt->gfx.delete)
-      {
-	 case 'A': free_resource = 1;
-         case 'a': /* all images visible on screen */
-	   match = 1;
-           break;
-	 case 'I': free_resource = 1;
-         case 'i': /* all images with specified id */
-	   if (((Image*)(line->images[i]))->id == vt->gfx.id)
-	     match = 1;
-           break;
-	 case 'P': free_resource = 1;
-         case 'p': /* all images intersecting cell specified with x and y */
-	   if (line->image_col[i] == vt->gfx.x &&
-	       row == vt->gfx.y)
-	     match = 1;
-           break;
-	 case 'Q': free_resource = 1;
-         case 'q': /* all images with specified cell (x), row(y) and z */
-	   if (line->image_col[i] == vt->gfx.x &&
-	       row == vt->gfx.y)
-	     match = 1;
-           break;
-	 case 'Y': free_resource = 1;
-         case 'y': /* all images with specified row (y) */
-	   if (row == vt->gfx.y)
-	     match = 1;
-           break;
-	 case 'X': free_resource = 1;
-         case 'x': /* all images with specified column (x) */
-	   if (line->image_col[i] == vt->gfx.x)
-	     match = 1;
-           break;
-	 case 'Z': free_resource = 1;
-         case 'z': /* all images with specified z-index (z) */
-           break;
-      }
-	 if (match)
-	 {
-	    line->images[i] = NULL;
-	    if (free_resource)
-	    {
-	       // XXX : NYI
+        VtString *line = l->data;
+        for (int i = 0; i < 4; i ++)
+        {
+        int free_resource = 0;
+        int match = 0;
+        if (line->images[i])
+          switch (vt->gfx.delete)
+          {
+         case 'A': free_resource = 1;
+             case 'a': /* all images visible on screen */
+           match = 1;
+               break;
+         case 'I': free_resource = 1;
+             case 'i': /* all images with specified id */
+           if (((Image*)(line->images[i]))->id == vt->gfx.id)
+             match = 1;
+               break;
+         case 'P': free_resource = 1;
+             case 'p': /* all images intersecting cell specified with x and y */
+           if (line->image_col[i] == vt->gfx.x &&
+               row == vt->gfx.y)
+             match = 1;
+               break;
+         case 'Q': free_resource = 1;
+             case 'q': /* all images with specified cell (x), row(y) and z */
+           if (line->image_col[i] == vt->gfx.x &&
+               row == vt->gfx.y)
+             match = 1;
+               break;
+         case 'Y': free_resource = 1;
+             case 'y': /* all images with specified row (y) */
+           if (row == vt->gfx.y)
+             match = 1;
+               break;
+         case 'X': free_resource = 1;
+             case 'x': /* all images with specified column (x) */
+           if (line->image_col[i] == vt->gfx.x)
+             match = 1;
+               break;
+         case 'Z': free_resource = 1;
+             case 'z': /* all images with specified z-index (z) */
+               break;
+          }
+         if (match)
+         {
+            line->images[i] = NULL;
+            if (free_resource)
+            {
+               // XXX : NYI
             }
-	 }
+         }
       }
       }
       }
@@ -3889,48 +3889,48 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
     switch (vt->utf8_pos)
     {
       case 0:
-	if (_vt_handle_control (vt, byte) == 0)
-	switch (byte)
-	{
-          case 27: /* ESC */
-	    vt->utf8_pos = 1;
-	    break;
-	  default:
-	  {
-	    char str[2] = {byte, 0};
-            _ctx_vt_add_str (vt, str);
-	  }
-	  break;
-	}
-	break;
-      case 1:
-	vt->utf8_pos = 0;
+        if (_vt_handle_control (vt, byte) == 0)
         switch (byte)
         {
-	  case 'A': vtcmd_cursor_up (vt, " "); break;
-	  case 'B': vtcmd_cursor_down (vt, " "); break;
-	  case 'C': vtcmd_cursor_forward (vt, " "); break;
-	  case 'D': vtcmd_cursor_backward (vt, " "); break;
-	  case 'F': vtcmd_set_alternate_font (vt, " "); break;
-	  case 'G': vtcmd_set_default_font (vt, " "); break;
-	  case 'H': _ctx_vt_move_to (vt, 1, 1); break;
-	  case 'I': vtcmd_reverse_index (vt, " "); break;
-	  case 'J': vtcmd_erase_in_display (vt, "[0J"); break;
-	  case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
-	  case 'Y': vt->utf8_pos = 2; break;
-	  case 'Z': vt_write (vt, "\e/Z", 3); break;
-	  case '<': vt->in_vt52 = 0; break;
-	  default: break;
+          case 27: /* ESC */
+            vt->utf8_pos = 1;
+            break;
+          default:
+          {
+            char str[2] = {byte, 0};
+            _ctx_vt_add_str (vt, str);
+          }
+          break;
         }
-	break;
+        break;
+      case 1:
+        vt->utf8_pos = 0;
+        switch (byte)
+        {
+          case 'A': vtcmd_cursor_up (vt, " "); break;
+          case 'B': vtcmd_cursor_down (vt, " "); break;
+          case 'C': vtcmd_cursor_forward (vt, " "); break;
+          case 'D': vtcmd_cursor_backward (vt, " "); break;
+          case 'F': vtcmd_set_alternate_font (vt, " "); break;
+          case 'G': vtcmd_set_default_font (vt, " "); break;
+          case 'H': _ctx_vt_move_to (vt, 1, 1); break;
+          case 'I': vtcmd_reverse_index (vt, " "); break;
+          case 'J': vtcmd_erase_in_display (vt, "[0J"); break;
+          case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
+          case 'Y': vt->utf8_pos = 2; break;
+          case 'Z': vt_write (vt, "\e/Z", 3); break;
+          case '<': vt->in_vt52 = 0; break;
+          default: break;
+        }
+        break;
       case 2:
-	_ctx_vt_move_to (vt, byte - 31, vt->cursor_x);
-	vt->utf8_pos = 3;
-	break;
+        _ctx_vt_move_to (vt, byte - 31, vt->cursor_x);
+        vt->utf8_pos = 3;
+        break;
       case 3:
-	_ctx_vt_move_to (vt, vt->cursor_y, byte - 31);
-	vt->utf8_pos = 0;
-	break;
+        _ctx_vt_move_to (vt, vt->cursor_y, byte - 31);
+        vt->utf8_pos = 0;
+        break;
 
     }
     return;
@@ -3948,37 +3948,37 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
     }
 #if 0
     ctx_translate (ctx,
-		   0,//(vt->cursor_x-1) * vt->cw,
-		   (vt->cursor_y-1));
+                   0,//(vt->cursor_x-1) * vt->cw,
+                   (vt->cursor_y-1));
 #endif
 
     switch (byte)
     {
       case '\r':
-	break;
+        break;
       case '\n':
         vt->utf8_holding[vt->utf8_pos]=0;
-	if ((!strcmp ((char*)vt->utf8_holding, "q"))||
-	    (!strcmp ((char*)vt->utf8_holding, "quit"))||
-	    (!strcmp ((char*)vt->utf8_holding, "done")))
-	{
-	  vt->in_ctx_ascii = 0;
-	}
-	else
-	{
-	  if (strlen ((char*)vt->utf8_holding) > 2)
-	  {
-	    VT_info ("gfx: <%s>", vt->utf8_holding);
-	    ctx_parse_str_line (ctx, (char*)vt->utf8_holding);
-	  }
-	}
-	vt->utf8_pos=0;
+        if ((!strcmp ((char*)vt->utf8_holding, "q"))||
+            (!strcmp ((char*)vt->utf8_holding, "quit"))||
+            (!strcmp ((char*)vt->utf8_holding, "done")))
+        {
+          vt->in_ctx_ascii = 0;
+        }
+        else
+        {
+          if (strlen ((char*)vt->utf8_holding) > 2)
+          {
+            VT_info ("gfx: <%s>", vt->utf8_holding);
+            ctx_parse_str_line (ctx, (char*)vt->utf8_holding);
+          }
+        }
+        vt->utf8_pos=0;
         vt->utf8_holding[vt->utf8_pos]=0;
-	break;
+        break;
       default:
         vt->utf8_holding[vt->utf8_pos++]=byte;
         vt->utf8_holding[vt->utf8_pos]=0;
-	break;
+        break;
     }
     return;
   }
@@ -3989,8 +3989,8 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
     {
       ctx = vt->current_line->ctx = ctx_new ();
       ctx_translate (ctx,
-		     (vt->cursor_x-1) * vt->cw * 10,
-		     (vt->cursor_y-1) * vt->ch * 10);
+                     (vt->cursor_x-1) * vt->cw * 10,
+                     (vt->cursor_y-1) * vt->ch * 10);
     }
 
 
@@ -4002,20 +4002,20 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
     {
        switch (vt->utf8_holding[0])
        {
-	  case CTX_EXIT:
+          case CTX_EXIT:
             vt->in_ctx = 0;
             vt->utf8_pos = 0;
-	    break;
-	  case CTX_CLEAR:
+            break;
+          case CTX_CLEAR:
             //ctx_empty (vt->ctx);
             ctx_clear (ctx);
             ctx_translate (ctx,
-	  	     (vt->cursor_x-1) * vt->cw * 10,
-		     (vt->cursor_y-1) * vt->ch * 10);
-	    break;
-	  default:
+                     (vt->cursor_x-1) * vt->cw * 10,
+                     (vt->cursor_y-1) * vt->ch * 10);
+            break;
+          default:
             ctx_add_single (ctx, &vt->utf8_holding[0]);
-	    break;
+            break;
         }
         vt->utf8_pos = 0;
     }
@@ -4093,44 +4093,44 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           break;
         default:
           if (vt->charset[vt->shifted_in] != 0 &&
-	      vt->charset[vt->shifted_in] != 'B')
-	  {
-	    char **charmap;
-	    switch (vt->charset[vt->shifted_in])
-	    { 
-		case 'A': charmap = charmap_uk; break;
-		case 'B': charmap = charmap_ascii; break;
-		case '0': charmap = charmap_graphics; break;
-		case '1': charmap = charmap_cp437; break;
-		case '2': charmap = charmap_graphics; break;
-		default:
-		  charmap = charmap_ascii;
-		  break;
-	    }
+              vt->charset[vt->shifted_in] != 'B')
+          {
+            char **charmap;
+            switch (vt->charset[vt->shifted_in])
+            { 
+                case 'A': charmap = charmap_uk; break;
+                case 'B': charmap = charmap_ascii; break;
+                case '0': charmap = charmap_graphics; break;
+                case '1': charmap = charmap_cp437; break;
+                case '2': charmap = charmap_graphics; break;
+                default:
+                  charmap = charmap_ascii;
+                  break;
+            }
             if ((vt->utf8_holding[0] >= ' ') && (vt->utf8_holding[0] <= '~'))
             {
               _ctx_vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
             }
-	  }
-	  else
-	  {
-	    // ensure vt->utf8_holding contains a valid utf8
+          }
+          else
+          {
+            // ensure vt->utf8_holding contains a valid utf8
             uint32_t codepoint;
             uint32_t state = 0;
 
-  	    for (int i = 0; vt->utf8_holding[i]; i++)
-	       utf8_decode(&state, &codepoint, vt->utf8_holding[i]);
-	    if (state != UTF8_ACCEPT)
-	    {
-	      /* otherwise mangle it so that it does */
-	      vt->utf8_holding[0] &= 127;
-	      vt->utf8_holding[1] = 0;
-	      if (vt->utf8_holding[0] == 0)
-	        vt->utf8_holding[0] = 32;
-	    }
+            for (int i = 0; vt->utf8_holding[i]; i++)
+               utf8_decode(&state, &codepoint, vt->utf8_holding[i]);
+            if (state != UTF8_ACCEPT)
+            {
+              /* otherwise mangle it so that it does */
+              vt->utf8_holding[0] &= 127;
+              vt->utf8_holding[1] = 0;
+              if (vt->utf8_holding[0] == 0)
+                vt->utf8_holding[0] = 32;
+            }
 
             _ctx_vt_add_str (vt, (char*)vt->utf8_holding);
-	  }
+          }
           break;
       }
       break;
@@ -4139,7 +4139,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
       switch (byte)
       {
         case 27: /* ESCape */
-		break;
+                break;
         case ')':
         case '#':
         case '(':
@@ -4186,9 +4186,9 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
       if (_vt_handle_control (vt, byte) == 0)
       {
         if (byte == 27)
-	{
-	}
-	else if (byte >= '@' && byte <= '~')
+        {
+        }
+        else if (byte >= '@' && byte <= '~')
         {
           ctx_vt_argument_buf_add (vt, byte);
           handle_sequence (vt, vt->argument_buf);
@@ -4208,43 +4208,43 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
       // a stray char
       if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
       {
-	if (vt->argument_buf[0] == ']')
-	{
-	  int n = parse_int (vt->argument_buf, 0);
+        if (vt->argument_buf[0] == ']')
+        {
+          int n = parse_int (vt->argument_buf, 0);
           switch (n)
-	  {
-	  case 0:
+          {
+          case 0:
             ctx_vt_set_title (vt, vt->argument_buf + 3);
-	  default:
-	    if (!strcmp (vt->argument_buf, "]10;?"))
-	    { /* request current foreground color, xterm does this to
-	         determine if it can use 256 colors, when this test fails,
-		 it still mixes in color 130 together with stock colors
-		 though
-	       */
-	      char *buf = "\e]10;rgb:ff/ff/ff\e\\";
-	      vt_write (vt, buf, strlen(buf));
-	    }
-	    if (!strcmp (vt->argument_buf, "]11;?"))
-	    {
-	      char *buf = "\e]11;rgb:00/00/00\e\\";
-	      vt_write (vt, buf, strlen(buf));
-	    }
-	    break;
-	  }
-	}  else if (vt->argument_buf[0] == '_' &&
-		    vt->argument_buf[1] == 'G')
-	{
-	  vt_gfx (vt, vt->argument_buf);
-	}  else if (vt->argument_buf[0] == '_' &&
-		    vt->argument_buf[1] == 'A')
-	{
-	  vt_audio (vt, vt->argument_buf);
-	}
+          default:
+            if (!strcmp (vt->argument_buf, "]10;?"))
+            { /* request current foreground color, xterm does this to
+                 determine if it can use 256 colors, when this test fails,
+                 it still mixes in color 130 together with stock colors
+                 though
+               */
+              char *buf = "\e]10;rgb:ff/ff/ff\e\\";
+              vt_write (vt, buf, strlen(buf));
+            }
+            if (!strcmp (vt->argument_buf, "]11;?"))
+            {
+              char *buf = "\e]11;rgb:00/00/00\e\\";
+              vt_write (vt, buf, strlen(buf));
+            }
+            break;
+          }
+        }  else if (vt->argument_buf[0] == '_' &&
+                    vt->argument_buf[1] == 'G')
+        {
+          vt_gfx (vt, vt->argument_buf);
+        }  else if (vt->argument_buf[0] == '_' &&
+                    vt->argument_buf[1] == 'A')
+        {
+          vt_audio (vt, vt->argument_buf);
+        }
 
-	if (byte == 27)
+        if (byte == 27)
           vt->state = TERMINAL_STATE_SWALLOW;
-	else
+        else
           vt->state = TERMINAL_STATE_NEUTRAL;
       }
       else
@@ -4300,24 +4300,24 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
       {
         uint8_t byte = buf[i];
         ctx_vt_feed_byte (vt, byte);
-	if ((vt->in_scroll && !was_in_scroll )
-	    || (i > max_consumed_chars))
-	{
+        if ((vt->in_scroll && !was_in_scroll )
+            || (i > max_consumed_chars))
+        {
 
           int remaining = len - i - 1;
-	  if (remaining > 0)
-	  {
-	  for (int j = 0; j < remaining; j++)
-	  {
+          if (remaining > 0)
+          {
+          for (int j = 0; j < remaining; j++)
+          {
             buf[j] = buf[j+i + 1];
-	  }
-	  buf_len = remaining;
+          }
+          buf_len = remaining;
           got_data+=len;
           vt->rev ++; // revision should be changed on screen
-	  }  // changes - not data received
-	     // to enable big image transfers and audio without re-render
-	  return got_data;
-	}
+          }  // changes - not data received
+             // to enable big image transfers and audio without re-render
+          return got_data;
+        }
       }
       buf_len = 0;
       got_data+=len;
@@ -4698,9 +4698,9 @@ static void draw_braille_bit (Ctx *ctx, float x, float y, float cw, float ch, in
 {
       ctx_new_path (ctx);
   ctx_rectangle (ctx, 0.167 * cw + x + u * cw * 0.5,
-       	     y - ch + 0.1   * ch     + v * ch * 0.25, 
+             y - ch + 0.1   * ch     + v * ch * 0.25, 
 
-    	  0.33 *cw, 0.33 * cw);
+          0.33 *cw, 0.33 * cw);
   ctx_fill (ctx);
 }
 
@@ -4917,26 +4917,26 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
      case 0x23BA: //HORIZONTAL_SCANLINE-1
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x,      y - ch + ch*0.1 - ch * 0.1,
-		          cw, ch * 0.1);
+                          cw, ch * 0.1);
       ctx_fill (ctx);
       return 0;
      case 0x23BB: //HORIZONTAL_SCANLINE-3
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x,      y - ch + ch*0.3 - ch * 0.075,
-		          cw, ch * 0.1);
+                          cw, ch * 0.1);
       ctx_fill (ctx);
       return 0;
      case 0x23BC: //HORIZONTAL_SCANLINE-7
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x,      y - ch + ch*0.7 - ch * 0.025,
-		          cw, ch * 0.1);
+                          cw, ch * 0.1);
       ctx_fill (ctx);
       return 0;
 
      case 0x23BD: //HORIZONTAL_SCANLINE-9
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x,      y - ch + ch*0.9 + ch * 0.0,
-		          cw, ch * 0.1);
+                          cw, ch * 0.1);
       ctx_fill (ctx);
       return 0;
 
@@ -5081,23 +5081,23 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
 
       ctx_new_path (ctx);
       {
-	int bit_pattern = unichar - 0x2800;
-	int bit = 0;
-	int u = 0;
-	int v = 0;
-	for (bit = 0; bit < 6; bit++)
-	{
-	  if (bit_pattern & (1<<bit))
-	  {
-	    draw_braille_bit (ctx, x, y, cw, ch, u, v);
-	  }
-	  v++;
-	  if (v > 2)
-	  {
-	    v = 0;
-	    u++;
-	  }
-	}
+        int bit_pattern = unichar - 0x2800;
+        int bit = 0;
+        int u = 0;
+        int v = 0;
+        for (bit = 0; bit < 6; bit++)
+        {
+          if (bit_pattern & (1<<bit))
+          {
+            draw_braille_bit (ctx, x, y, cw, ch, u, v);
+          }
+          v++;
+          if (v > 2)
+          {
+            v = 0;
+            u++;
+          }
+        }
       }
       ctx_fill (ctx);
       return 0;
@@ -5106,23 +5106,23 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_new_path (ctx);
       draw_braille_bit (ctx, x, y, cw, ch, 0, 3);
       {
-	int bit_pattern = unichar - 0x2840;
-	int bit = 0;
-	int u = 0;
-	int v = 0;
-	for (bit = 0; bit < 6; bit++)
-	{
-	  if (bit_pattern & (1<<bit))
-	  {
-	    draw_braille_bit (ctx, x, y, cw, ch, u, v);
-	  }
-	  v++;
-	  if (v > 2)
-	  {
-	    v = 0;
-	    u++;
-	  }
-	}
+        int bit_pattern = unichar - 0x2840;
+        int bit = 0;
+        int u = 0;
+        int v = 0;
+        for (bit = 0; bit < 6; bit++)
+        {
+          if (bit_pattern & (1<<bit))
+          {
+            draw_braille_bit (ctx, x, y, cw, ch, u, v);
+          }
+          v++;
+          if (v > 2)
+          {
+            v = 0;
+            u++;
+          }
+        }
       }
       return 0;
 
@@ -5130,46 +5130,46 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_new_path (ctx);
       draw_braille_bit (ctx, x, y, cw, ch, 1, 3);
       {
-	int bit_pattern = unichar - 0x2880;
-	int bit = 0;
-	int u = 0;
-	int v = 0;
-	for (bit = 0; bit < 6; bit++)
-	{
-	  if (bit_pattern & (1<<bit))
-	  {
-	    draw_braille_bit (ctx, x, y, cw, ch, u, v);
-	  }
-	  v++;
-	  if (v > 2)
-	  {
-	    v = 0;
-	    u++;
-	  }
-	}
+        int bit_pattern = unichar - 0x2880;
+        int bit = 0;
+        int u = 0;
+        int v = 0;
+        for (bit = 0; bit < 6; bit++)
+        {
+          if (bit_pattern & (1<<bit))
+          {
+            draw_braille_bit (ctx, x, y, cw, ch, u, v);
+          }
+          v++;
+          if (v > 2)
+          {
+            v = 0;
+            u++;
+          }
+        }
       }
       return 0;
    case 0x28C0: case 0x28C1: case 0x28C2: case 0x28C3: case 0x28C4: case 0x28C5: case 0x28C6: case 0x28C7: case 0x28C8: case 0x28C9: case 0x28CA: case 0x28CB: case 0x28CC: case 0x28CD: case 0x28CE: case 0x28CF: case 0x28D0: case 0x28D1: case 0x28D2: case 0x28D3: case 0x28D4: case 0x28D5: case 0x28D6: case 0x28D7: case 0x28D8: case 0x28D9: case 0x28DA: case 0x28DB: case 0x28DC: case 0x28DD: case 0x28DE: case 0x28DF: case 0x28E0: case 0x28E1: case 0x28E2: case 0x28E3: case 0x28E4: case 0x28E5: case 0x28E6: case 0x28E7: case 0x28E8: case 0x28E9: case 0x28EA: case 0x28EB: case 0x28EC: case 0x28ED: case 0x28EE: case 0x28EF: case 0x28F0: case 0x28F1: case 0x28F2: case 0x28F3: case 0x28F4: case 0x28F5: case 0x28F6: case 0x28F7: case 0x28F8: case 0x28F9: case 0x28FA: case 0x28FB: case 0x28FC: case 0x28FD: case 0x28FE: case 0x28FF:
       draw_braille_bit (ctx, x, y, cw, ch, 0, 3);
       draw_braille_bit (ctx, x, y, cw, ch, 1, 3);
       {
-	int bit_pattern = unichar - 0x28C0;
-	int bit = 0;
-	int u = 0;
-	int v = 0;
-	for (bit = 0; bit < 6; bit++)
-	{
-	  if (bit_pattern & (1<<bit))
-	  {
-	    draw_braille_bit (ctx, x, y, cw, ch, u, v);
-	  }
-	  v++;
-	  if (v > 2)
-	  {
-	    v = 0;
-	    u++;
-	  }
-	}
+        int bit_pattern = unichar - 0x28C0;
+        int bit = 0;
+        int u = 0;
+        int v = 0;
+        for (bit = 0; bit < 6; bit++)
+        {
+          if (bit_pattern & (1<<bit))
+          {
+            draw_braille_bit (ctx, x, y, cw, ch, u, v);
+          }
+          v++;
+          if (v > 2)
+          {
+            v = 0;
+            u++;
+          }
+        }
       }
       return 0;
 
@@ -5221,9 +5221,9 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold,
  */
 
 static uint8_t palettes[][16][3]={
-	{
+        {
 
-	{0, 0, 0},
+        {0, 0, 0},
 {139, 0, 0},
 {9, 154, 9},
 {255, 137, 113},
@@ -5242,8 +5242,8 @@ static uint8_t palettes[][16][3]={
 
 
 
-	},
-	{
+        },
+        {
 
   {0, 0, 0},
 {191, 0, 0},
@@ -5261,8 +5261,8 @@ static uint8_t palettes[][16][3]={
 {243, 70, 255},
 {30, 255, 222},
 {255, 255, 255},
-	},
-	{
+        },
+        {
  /* */
  { 32, 32, 32}, // 0 - background (black)
  {165, 15, 21}, // 1               red
@@ -5281,7 +5281,7 @@ static uint8_t palettes[][16][3]={
  {215,130,160},// 13               light magenta
  {225,255,245},// 14               light cyan
  {255,255,255},// 15 - foreground (white)
-	},{
+        },{
  /* */
  { 32, 32, 32}, // 0 - background (black)
  {160,  0,  0}, // 1               red
@@ -5300,7 +5300,7 @@ static uint8_t palettes[][16][3]={
  {204, 62,214},// 13               light magenta
  { 10,234,254},// 14               light cyan
  {255,255,255},// 15 - foreground (white)
-	},
+        },
  /* inspired by DEC */
 {{  0,  0,  0}, // 0 - background  black
  {150, 10, 10}, // 1               red
@@ -5336,23 +5336,23 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
     {
       case 0: no = 0; break;
       case 1: 
-	   // 15 becomes 7
-	   if (no == 15) no = 8;
-	   else if (no > 8) no -= 8;
-	   break;
+           // 15 becomes 7
+           if (no == 15) no = 8;
+           else if (no > 8) no -= 8;
+           break;
       case 2:
-	   /* give the normal color special treatment, and in really normal
-	    * cirumstances it is the dim variant of foreground that is used
-	    */
-	   if (no == 15) no = 7;
+           /* give the normal color special treatment, and in really normal
+            * cirumstances it is the dim variant of foreground that is used
+            */
+           if (no == 15) no = 7;
            break;
       case 3:
       case 4:
-	   if (no < 8)
+           if (no < 8)
              no += 8;
            break;
       default:
-	   break;
+           break;
     }
 
     r = palettes[vt->palette_no][no][0];
@@ -5382,15 +5382,15 @@ int ctx_vt_keyrepeat (MrgVT *vt)
 }
 
 float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
- 		        int   row, int col, // pass 0 to force draw - like
- 		        float x0, float y0, // for scrollback visible
-		        uint64_t style,
-		        uint32_t unichar,
-		        int      bg, int fg,
-			int      dw, int dh,
-			int in_scroll)
-	              // dw is 0 or 1 
-		      // dh is 0 1 or -1  1 is upper -1 is lower
+                        int   row, int col, // pass 0 to force draw - like
+                        float x0, float y0, // for scrollback visible
+                        uint64_t style,
+                        uint32_t unichar,
+                        int      bg, int fg,
+                        int      dw, int dh,
+                        int in_scroll)
+                      // dw is 0 or 1 
+                      // dh is 0 1 or -1  1 is upper -1 is lower
 {
   int on_white = vt->reverse_video;
 
@@ -5430,11 +5430,11 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
       vt->font_is_mono = 1;
 
       if (col != 1) {
-	int x = x0;
-	int new_cw = cw - ((x % cw));
-	if (new_cw < cw*3/2)
-	  new_cw += cw;
-	cw = new_cw;
+        int x = x0;
+        int new_cw = cw - ((x % cw));
+        if (new_cw < cw*3/2)
+          new_cw += cw;
+        cw = new_cw;
       }
     }
   }
@@ -5636,26 +5636,26 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     }
     else
     {
-	uint8_t rgb[3]={0,};
-	switch (bg_intensity)
-	{
-	  case 0:
-	    for (int i = 0; i <3 ;i++)
+        uint8_t rgb[3]={0,};
+        switch (bg_intensity)
+        {
+          case 0:
+            for (int i = 0; i <3 ;i++)
               rgb[i] = vt->bg_color[i];
-	    break;
-	  case 1:
-	    for (int i = 0; i <3 ;i++)
+            break;
+          case 1:
+            for (int i = 0; i <3 ;i++)
               rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5;
-	    break;
-	  case 2:
-	    for (int i = 0; i <3 ;i++)
+            break;
+          case 2:
+            for (int i = 0; i <3 ;i++)
               rgb[i] = vt->bg_color[i] * 0.05 + vt->fg_color[i] * 0.95;
-	    break;
-	  case 3:
-	    for (int i = 0; i <3 ;i++)
-	      rgb[i] = vt->fg_color[i];
-	    break;
-	}
+            break;
+          case 3:
+            for (int i = 0; i <3 ;i++)
+              rgb[i] = vt->fg_color[i];
+            break;
+        }
         ctx_set_rgba_u8 (ctx, rgb[0],
                               rgb[1],
                               rgb[2], 255);
@@ -5711,26 +5711,26 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
     {
       if ((style & STYLE_FG_COLOR_SET) == 0)
       {
-	uint8_t rgb[3]={0,};
+        uint8_t rgb[3]={0,};
 
-	switch (fg_intensity)
-	{
-	  case 0:
-	    for (int i = 0; i <3 ;i++)
+        switch (fg_intensity)
+        {
+          case 0:
+            for (int i = 0; i <3 ;i++)
               rgb[i] = vt->bg_color[i] * 0.7 + vt->fg_color[i] * 0.3;
-	    break;
-	  case 1:
-	    for (int i = 0; i <3 ;i++)
+            break;
+          case 1:
+            for (int i = 0; i <3 ;i++)
               rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5;
-	    break;
-	  case 2:
-	    for (int i = 0; i <3 ;i++)
+            break;
+          case 2:
+            for (int i = 0; i <3 ;i++)
               rgb[i] = vt->bg_color[i] * 0.20 + vt->fg_color[i] * 0.80;
-	    break;
-	  case 3:
-	    for (int i = 0; i <3 ;i++)
+            break;
+          case 3:
+            for (int i = 0; i <3 ;i++)
               rgb[i] = vt->fg_color[i];
-	}
+        }
         ctx_set_rgba_u8 (ctx, rgb[0],
                               rgb[1],
                               rgb[2], 255);
@@ -5840,7 +5840,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   {
     ctx_new_path (ctx);
     ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
-		              (vt->rows + 1) * vt->ch);
+                              (vt->rows + 1) * vt->ch);
     if (vt->reverse_video)
     {
       ctx_set_rgba (ctx, 1,1,1,1);
@@ -5862,7 +5862,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 #if 0
 
    when in scroll...
-	   first draw things in scrolling region
+           first draw things in scrolling region
    then draw all else,
 
 #endif
@@ -5874,93 +5874,93 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
       float y = y0 + vt->ch * (vt->rows - row);
       if (row >= vt->rows)
       {
-	 l = vt_list_nth (vt->scrollback, row-vt->rows);
+         l = vt_list_nth (vt->scrollback, row-vt->rows);
       }
 
       if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
       {
-	VtString *line = l->data;
+        VtString *line = l->data;
         const char *data = line->str;
         const char *d = data;
         float x = x0;
-	uint64_t style = 0;
-	uint32_t unichar = 0;
-	int r = vt->rows - row;
-	int in_scrolling_region = vt->in_scroll && ((r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
+        uint64_t style = 0;
+        uint32_t unichar = 0;
+        int r = vt->rows - row;
+        int in_scrolling_region = vt->in_scroll && ((r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
 
-	if (line->double_width)
+        if (line->double_width)
           vt_cell_cache_clear_row (vt, r);
         for (int col = 1; col <= vt->cols * 1.33 && x < vt->cols * vt->cw; col++)
         {
 
-	  int c = col;
-	  int real_cw;
-	  if (vt->scroll)
-	  {
-	    /* this prevents draw_cell from using cache */
+          int c = col;
+          int real_cw;
+          if (vt->scroll)
+          {
+            /* this prevents draw_cell from using cache */
             r = c = 0;
-	  }
-	  style = vt_string_get_style (line, col-1);
-	  unichar = d?ctx_utf8_to_unichar (d):' ';
+          }
+          style = vt_string_get_style (line, col-1);
+          unichar = d?ctx_utf8_to_unichar (d):' ';
 
           real_cw=ctx_vt_draw_cell (vt, ctx, r, c, x, y, style, unichar, 1, 1,
-	    line->double_width,
-	    line->double_height_top?1:
-	    line->double_height_bottom?-1:0,
-	    in_scrolling_region);
-	  if (r == vt->cursor_y && col == vt->cursor_x)
-	  {
-	    cursor_x_px = x;
-	  }
+            line->double_width,
+            line->double_height_top?1:
+            line->double_height_bottom?-1:0,
+            in_scrolling_region);
+          if (r == vt->cursor_y && col == vt->cursor_x)
+          {
+            cursor_x_px = x;
+          }
 
-	  x+=real_cw;
+          x+=real_cw;
 
           if (style & STYLE_BLINK ||
               style & STYLE_BLINK_FAST)
-	  {
-	    vt->has_blink = 1;
+          {
+            vt->has_blink = 1;
             vt_cell_cache_reset (vt, r, c);
-	  }
+          }
           if (style & STYLE_PROPORTIONAL)
-	  {
+          {
             vt_cell_cache_clear_row (vt, r);
-	  }
+          }
 
-	  if (d)
-	  {
+          if (d)
+          {
             d = mrg_utf8_skip (d, 1);
-	    if (!*d) d = NULL;
-	  }
+            if (!*d) d = NULL;
+          }
         }
-	while (x < vt->cols * vt->cw)
-	{
+        while (x < vt->cols * vt->cw)
+        {
           x+=ctx_vt_draw_cell (vt, ctx, -1, -1, x, y, style, ' ', 1, 1,
-			  
-	    line->double_width,
-	    line->double_height_top?1:
-	    line->double_height_bottom?-1:0,
-	    in_scrolling_region);
-	}
+                          
+            line->double_width,
+            line->double_height_top?1:
+            line->double_height_bottom?-1:0,
+            in_scrolling_region);
+        }
 
-	for (int i = 0; i < 4; i++)
-	{
-	  Image *image = line->images[i];
-	  if (image)
-	  {
-	     int u = (line->image_col[i]-1) * vt->cw + line->image_X[i];
-	     int v = y - vt->ch + line->image_y[i];
+        for (int i = 0; i < 4; i++)
+        {
+          Image *image = line->images[i];
+          if (image)
+          {
+             int u = (line->image_col[i]-1) * vt->cw + line->image_X[i];
+             int v = y - vt->ch + line->image_y[i];
 
-	     int rows = (image->height + (vt->ch-1))/vt->ch;
-	     ctx_save (ctx);
-	     ctx_image_memory (ctx, image->width, image->height, image->kitty_format,
-			     image->data, u, v);
-	     ctx_rectangle (ctx, u, v, image->width, image->height);
-	     ctx_fill (ctx);
-	     ctx_restore (ctx);
-	     for (int row = r; row < r + rows; row++)
+             int rows = (image->height + (vt->ch-1))/vt->ch;
+             ctx_save (ctx);
+             ctx_image_memory (ctx, image->width, image->height, image->kitty_format,
+                             image->data, u, v);
+             ctx_rectangle (ctx, u, v, image->width, image->height);
+             ctx_fill (ctx);
+             ctx_restore (ctx);
+             for (int row = r; row < r + rows; row++)
                vt_cell_cache_clear_row (vt, row);
-	  }
-	}
+          }
+        }
       }
     }
   }
@@ -5973,21 +5973,21 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
       VtList *l = vt_list_nth (vt->lines, row);
       if (row >= vt->rows)
       {
-	 l = vt_list_nth (vt->scrollback, row-vt->rows);
+         l = vt_list_nth (vt->scrollback, row-vt->rows);
       }
       if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
       {
-	VtString *line = l->data;
-	if (line->ctx)
-	{
+        VtString *line = l->data;
+        if (line->ctx)
+        {
           ctx_save (ctx);
           ctx_translate (ctx, 0, (vt->rows-row) * (vt->ch -1));
           //float factor = vt->cols * vt->cw / 1000.0;
           //ctx_scale (ctx, factor, factor);
           ctx_render_ctx (line->ctx, ctx);
           ctx_restore (ctx);
-	  got_ctx = 1;
-	}
+          got_ctx = 1;
+        }
       }
       y -= vt->ch;
     }
@@ -6032,14 +6032,14 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 
     vt_cell_cache_clear (vt);
     ctx_rectangle (ctx, vt->cw * (vt->cols - 2),
-		        0, 2 * vt->cw,
-			vt->rows * vt->ch);
+                        0, 2 * vt->cw,
+                        vt->rows * vt->ch);
     ctx_set_rgba (ctx, 1, 1, 1, .5);
     ctx_fill (ctx);
 
     ctx_rectangle (ctx, vt->cw * (vt->cols - 2 + 0.1),
-		        offset * vt->rows * vt->ch, (2-0.2) * vt->cw,
-			win_len * vt->rows * vt->ch);
+                        offset * vt->rows * vt->ch, (2-0.2) * vt->cw,
+                        win_len * vt->rows * vt->ch);
     ctx_set_rgba (ctx, 0, 0, 0, .5);
     ctx_fill (ctx);
 
@@ -6059,7 +6059,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
       {
         vt->scroll_offset = 0;
         vt->in_scroll = 0;
-	vt->rev++;
+        vt->rev++;
       }
     }
     else
@@ -6069,7 +6069,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
       {
         vt->scroll_offset = 0;
         vt->in_scroll = 0;
-	vt->rev++;
+        vt->rev++;
       }
 
     }
