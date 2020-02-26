@@ -6024,9 +6024,6 @@ static uint8_t palettes[][16][3]={
 {232, 0, 220},
 {1, 217, 255},
 {255, 255, 255},
-
-
-
         },
         {
 
@@ -6465,8 +6462,15 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   int overline      = (style & STYLE_OVERLINE) != 0;
   int underline     = (style & STYLE_UNDERLINE) != 0;
   int underline_var = (style & STYLE_UNDERLINE_VAR) != 0;
+
+  if (dh == 1)
+  {
+    underline = underline_var = 0;
+  }
+
   int double_underline = 0;
   int curved_underline = 0;
+
 
   if (underline_var)
   {
@@ -6491,6 +6495,8 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
       temp >>= 8;
       int b = temp & 0xff;
       ctx_set_rgba_u8 (ctx, r, g, b, 255);
+      if (underline | underline_var)
+        ctx_set_rgba_stroke_u8 (ctx, r, g, b, 255);
     }
     else
     {
@@ -6519,6 +6525,10 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
         ctx_set_rgba_u8 (ctx, rgb[0],
                               rgb[1],
                               rgb[2], 255);
+	if (underline | underline_var)
+          ctx_set_rgba_stroke_u8 (ctx, rgb[0],
+                                  rgb[1],
+                                  rgb[2], 255);
       }
       else
       {
@@ -6856,7 +6866,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
         vt->in_scroll = 0;
         vt->rev++;
       }
-
     }
   }
 }
