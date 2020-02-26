@@ -8,14 +8,17 @@
  *     vt100 - 101 points on scoresheet
  *     UTF8, cp437
  *     dim, bold, strikethrough, underline, italic, reverse
- *     ANSI colors, 256 colors (non-redfinable), 24bit color
- *     vector graphics
+ *     ANSI colors, 256 colors (non-redefineable), 24bit color
+ *     realtime audio transmission
  *     raster sprites (kitty spec)
+ *     vector graphics
  *     vt320 - horizontal margins
- *     wordwrap (extension)
  *     proportional fonts
+ *
  *     BBS/ANSI-art mode
- *     audio playback
+ *
+ * 8bit clean
+ *
  *
  * Todo:
  *     DECCIR - cursor state report https://vt100.net/docs/vt510-rm/DECCIR.html 
@@ -198,7 +201,7 @@ vt_list_insert_before (VtList **list, VtList *sibling,
 typedef enum {
   TERMINAL_STATE_NEUTRAL          = 0,
   TERMINAL_STATE_GOT_ESC          = 1,
-  TERMINAL_STATE_GOT_ESC_SQRPAREN = 2,
+  TERMINAL_STATE_GOT_OSC_OR_APC = 2,
   TERMINAL_STATE_GOT_ESC_SEQUENCE = 3,
   TERMINAL_STATE_GOT_ESC_FOO      = 4,
   TERMINAL_STATE_SWALLOW          = 5,
@@ -290,6 +293,32 @@ static Image *image_add (int width,
   return image;
 }
 
+typedef struct AudioState {
+  int action;
+  int id;
+  int samplerate; // 8000
+  int channels;   // 1
+  int bits;       // 8
+  int type;       // 'u'    u-law  f-loat  s-igned u-nsigned
+
+  int record;     // <- should 
+                  //    request permisson,
+                  //    and if gotten, start streaming
+                  //    audio packets in the incoming direction
+  int encoding;
+  int compression;
+  int transmission;
+  int multichunk;
+
+  int queued_samples;
+  int buf_size;
+  int samples; // should be derived from data_size
+
+  uint8_t *data;
+  int      data_size;
+} AudioState;
+
+
 typedef struct GfxState {
   int action;
   int id;
@@ -366,14 +395,14 @@ struct _MrgVT {
 
   int        insert_mode;
   int        autowrap;
-  int        wordwrap;
+  int        justify;
   int        utf8_expected_bytes;
   int        utf8_pos;
   float      cursor_x;
   int        cursor_y;
   int        cols;
   int        rows;
-  VtString *current_line;
+  VtString  *current_line;
 
 
   int        cr_on_lf;
@@ -424,14 +453,15 @@ struct _MrgVT {
   int        blink_state;
 
   FILE      *log;
-  ssize_t(*write) (void *serial_obj, const void *buf, size_t count);
-  ssize_t(*read)  (void *serial_obj, void *buf, size_t count);
+  ssize_t(*write)(void *serial_obj, const void *buf, size_t count);
+  ssize_t(*read)(void *serial_obj, void *buf, size_t count);
   int    (*waitdata)(void *serial_obj, int timeout);
   void  (*resize)(void *serial_obj, int cols, int rows, int px_width, int px_height);
 
-  VtPty   vtpty;
+  VtPty      vtpty;
 
-  GfxState gfx;
+  GfxState   gfx;
+  AudioState audio;
 };
 
 /* on current line */
@@ -722,7 +752,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vtcmd_set_top_and_bottom_margins (vt, "[r");
   vtcmd_set_left_and_right_margins (vt, "[s");
   vt->autowrap       = 1;
-  vt->wordwrap       = 0;
+  vt->justify        = 0;
   vt->cursor_visible = 1;
   vt->charset[0]     = 0;
   vt->charset[1]     = 0;
@@ -761,6 +791,11 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
 
   if (vt->ctx)
     ctx_clear (vt->ctx);
+
+  vt->audio.bits = 8;
+  vt->audio.channels = 1;
+  vt->audio.type = 'u';
+  vt->audio.samplerate = 8000;
 }
 
 void ctx_vt_set_font_size (MrgVT *vt, float font_size)
@@ -1006,7 +1041,6 @@ _ctx_vt_move_to (MrgVT *vt, int y, int x)
   VT_cursor("%i,%i (_ctx_vt_move_to)", y, x);
 }
 
-
 static void vt_scroll (MrgVT *vt, int amount);
 
 static void _ctx_vt_add_str (MrgVT *vt, const char *str)
@@ -1023,7 +1057,7 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
       int old_x = vt->cursor_x;
       VtString *old_line = vt->current_line;
 
-      if (vt->wordwrap && str[0] != ' ')
+      if (vt->justify && str[0] != ' ')
       {
         while (old_x-1-chars >1 && vt_string_get_unichar (vt->current_line,
                                    old_x-1-chars)!=' ')
@@ -1122,7 +1156,7 @@ static void vtcmd_set_left_and_right_margins (MrgVT *vt, const char *sequence)
 
   if (!vt->left_right_margin_mode)
   {
-    vtcmd_save_cursor_position (vt, sequence); /* id:SCP Save Cursor Position */
+    vtcmd_save_cursor_position (vt, sequence);
     return;
   }
 
@@ -1137,11 +1171,38 @@ static void vtcmd_set_left_and_right_margins (MrgVT *vt, const char *sequence)
   if (right > vt->cols) right = vt->cols;
   if (right < left) right = left;
 
-  vt->margin_left = left + 0;
-  vt->margin_right = right - 0;
+  vt->margin_left = left;
+  vt->margin_right = right;
   _ctx_vt_move_to (vt, vt->cursor_y, vt->cursor_x);
   ctx_vt_carriage_return (vt);
   //VT_cursor ("%i, %i (home)", left, 1);
+}
+
+static inline int parse_int (const char *arg, int def_val)
+{
+  if (!isdigit (arg[1]) || strlen (arg) == 2)
+    return def_val;
+  return atoi (arg+1);
+}
+
+
+static void vtcmd_set_line_home (MrgVT *vt, const char *sequence)
+{
+  int val = parse_int (sequence, 1);
+  char buf[256];
+  vt->left_right_margin_mode = 1;
+  sprintf (buf, "[%i;%it", val, vt->margin_right);
+  vtcmd_set_left_and_right_margins (vt, buf);
+}
+
+static void vtcmd_set_line_limit (MrgVT *vt, const char *sequence)
+{
+  int val = parse_int (sequence, 0);
+  char buf[256];
+  vt->left_right_margin_mode = 1;
+  if (val < vt->margin_left) val = vt->margin_left;
+  sprintf (buf, "[%i;%it", vt->margin_left, val);
+  vtcmd_set_left_and_right_margins (vt, buf);
 }
 
 static void vt_scroll (MrgVT *vt, int amount)
@@ -1234,14 +1295,8 @@ typedef struct Sequence {
   const char *prefix;
   char        suffix;
   void (*vtcmd) (MrgVT *vt, const char *sequence);
+  uint32_t    compat;
 } Sequence;
-
-static inline int parse_int (const char *arg, int def_val)
-{
-  if (!isdigit (arg[1]) || strlen (arg) == 2)
-    return def_val;
-  return atoi (arg+1);
-}
 
 static void vtcmd_cursor_position (MrgVT *vt, const char *sequence)
 {
@@ -2037,8 +2092,9 @@ qagain:
      case 2004:  // set_bracketed_paste_mode
            vt->bracket_paste = set;
            break;
-     case 2020: /*MODE;wordwrap;On;Off;*/
-             vt->wordwrap = set; break;
+
+     //case 2020: /*MODE;wordwrap;On;Off;*/
+     //      vt->wordwrap = set; break; 
 
      case 4444:/*MODE;Audio;On;;*/
            vt->in_pcm=set; break;
@@ -2180,10 +2236,10 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
            sprintf (buf, "\e[?%i;%i$y", qval, 
                     vt->bracket_paste?1:2);
            break;
-     case 2020: /*MODE;wordwrap;On;Off;*/
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->wordwrap?1:2);
-             break;
+     //case 2020: /*MODE;wordwrap;On;Off;*/
+     //        sprintf (buf, "\e[?%i;%i$y", qval, 
+     //                 vt->wordwrap?1:2);
+     //        break;
      case 1010: // scroll to bottom on tty output (rxvt)
      case 1011: // scroll to bottom on key press (rxvt)
 
@@ -2247,6 +2303,9 @@ static void vtcmd_set_t (MrgVT *vt, const char *sequence)
     sprintf (buf, "\e[4;%i;%it", vt->rows * vt->ch, vt->cols * vt->cw);
     vt_write (vt, buf, strlen(buf));
   }
+#if 0
+  {"[", 's',  vtcmd_save_cursor_position, VT100}, /*args:PnSP id:DECSWBV Set warning bell volume */
+#endif
   else if (sequence[strlen (sequence)-2]==' ') /* DECSWBV */
   {
     int val = parse_int (sequence, 0);
@@ -2473,6 +2532,28 @@ static char* charmap_ascii[]={
 "`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p",
 "q","r","s","t","u","v","w","x","y","z","{","|","}","~"," "};
 
+static void vtcmd_justify (MrgVT *vt, const char *sequence)
+{
+  int n = parse_int (vt->argument_buf, 0);
+  switch (n)
+  {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+      vt->justify = n;
+      break;
+    default:
+      vt->justify = 0;
+  }
+  
+}
+
 static void vtcmd_set_charmap (MrgVT *vt, const char *sequence)
 {
   int slot = 0;
@@ -2500,72 +2581,134 @@ followed by the pasted text, followed by
 when the terminal gains focus, and CSI O  when it loses focus.
 #endif
 
+#define COMPAT_FLAG_LEVEL_0   (1<<1)
+#define COMPAT_FLAG_LEVEL_1   (1<<2)
+#define COMPAT_FLAG_LEVEL_2   (1<<3)
+#define COMPAT_FLAG_LEVEL_3   (1<<4)
+#define COMPAT_FLAG_LEVEL_4   (1<<5)
+#define COMPAT_FLAG_LEVEL_5   (1<<6)
+
+#define COMPAT_FLAG_LEVEL_102 (1<<7)
+
+#define COMPAT_FLAG_ANSI      (1<<8)
+#define COMPAT_FLAG_OBSOLETE  (1<<9)
+
+#define COMPAT_FLAG_ANSI_COLOR (1<<10)
+#define COMPAT_FLAG_256_COLOR  (1<<11)
+#define COMPAT_FLAG_24_COLOR   (1<<12)
+
+#define COMPAT_FLAG_MOUSE_REPORT (1<<13)
+
+#define COMPAT_FLAG_AUDIO      (1<<14)
+#define COMPAT_FLAG_GRAPHICS   (1<<15)
+
+#define ANSI    COMPAT_FLAG_ANSI
+#define OBS     COMPAT_FLAG_OBSOLETE
+
+#define VT100   (COMPAT_FLAG_LEVEL_0|COMPAT_FLAG_LEVEL_1)
+#define VT102   (VT100|COMPAT_FLAG_LEVEL_102)
+#define VT200   (VT102|COMPAT_FLAG_LEVEL_2)
+#define VT300   (VT200|COMPAT_FLAG_LEVEL_3)
+#define VT400   (VT300|COMPAT_FLAG_LEVEL_4)
+#define VT220   VT200
+#define VT320   VT300
+
+#define XTERM   (VT400|COMPAT_FLAG_24_COLOR|COMPAT_FLAG_256_COLOR|COMPAT_FLAG_ANSI_COLOR)
+
+#define VT2020  (XTERM|COMPAT_FLAG_GRAPHICS|COMPAT_FLAG_AUDIO)
+
+
 static Sequence sequences[]={
 /*
   prefix suffix  command */
   //{"B",  0,  vtcmd_break_permitted},
   //{"C",  0,  vtcmd_nobreak_here},
-  {"D",  0,  vtcmd_index}, /* id:IND Index */
-  {"E",  0,  vtcmd_next_line},
+  {"D", 0,    vtcmd_index, VT100}, /* args: id:IND Index  */
+  {"E",  0,   vtcmd_next_line},
   {"_", 'G',  vtcmd_graphics},
+  {"H",   0,  vtcmd_horizontal_tab_set, VT100}, /* id:HTS Horizontal Tab Set */
 
   //{"I",  0,  vtcmd_char_tabulation_with_justification},
   //{"K",  0,  PLD partial line down
   //{"L",  0,  PLU partial line up
-  {"M",  0,  vtcmd_reverse_index}, /* id:RI Reverse Index */
+  {"M",  0,   vtcmd_reverse_index, VT100}, /* id:RI Reverse Index */
   //{"N",  0,  vtcmd_ignore}, /* Set Single Shift 2 - SS2*/
   //{"O",  0,  vtcmd_ignore}, /* Set Single Shift 3 - SS3*/
 
-  {"[",  'A', vtcmd_cursor_up},   /* args:Pn    id:CUU Cursor Up */
-  {"[",  'B', vtcmd_cursor_down}, /* args:Pn    id:CUD Cursor Down */
-  {"[",  'C', vtcmd_cursor_forward}, /* args:Pn id:CUF Cursor Forward */
-  {"[",  'D', vtcmd_cursor_backward}, /* args:Pn id:CUB Cursor Backward */
-  {"[",  'E', vtcmd_next_line}, /* args:Pn id:CNL Cursor Next Line */
-  {"[",  'F', vtcmd_cursor_preceding_line}, /* args:Pn id:CPL Cursor Preceding Line */
+
+  /* these need to occur before vtcmd_preceding_line to have precedence */
+  {"[0 F", 0, vtcmd_justify, ANSI}, /* id:JFY disable justification/wordwrap  */
+  {"[1 F", 0, vtcmd_justify, ANSI}, /* id:JFY enable wordwrap  */
+  {"[2 F", 0, vtcmd_justify},
+  {"[3 F", 0, vtcmd_justify},
+  {"[4 F", 0, vtcmd_justify},
+  {"[5 F", 0, vtcmd_justify},
+  {"[6 F", 0, vtcmd_justify},
+  {"[7 F", 0, vtcmd_justify},
+  {"[8 F", 0, vtcmd_justify},
+
+  {"[", 'A', vtcmd_cursor_up, VT100},   /* args:Pn    id:CUU Cursor Up */
+  {"[",  'B', vtcmd_cursor_down, VT100}, /* args:Pn    id:CUD Cursor Down */
+  {"[",  'C', vtcmd_cursor_forward, VT100}, /* args:Pn id:CUF Cursor Forward */
+  {"[",  'D', vtcmd_cursor_backward, VT100}, /* args:Pn id:CUB Cursor Backward */
+  {"[",  'E', vtcmd_next_line, VT100}, /* args:Pn id:CNL Cursor Next Line */
+  {"[",  'F', vtcmd_cursor_preceding_line, VT100}, /* args:Pn id:CPL Cursor Preceding Line */
   {"[",  'G', vtcmd_horizontal_position_absolute}, /* args:Pn id:CHA Cursor Horizontal Absolute */
   {"[",  'H', vtcmd_cursor_position}, /* args:Pl;Pc id:CUP Cursor Position */
   {"[",  'I', vtcmd_insert_n_tabs}, /* args:Pn id:CHT Cursor Horizontal Forward Tabulation */
   {"[",  'J', vtcmd_erase_in_display}, /* args:Ps id:ED Erase in Display */
   {"[",  'K', vtcmd_erase_in_line}, /* args:Ps id:EL Erase in Line */
-  {"[",  'L', vtcmd_insert_blank_lines}, /* args:Pn id:IL Insert Line */
-  {"[",  'M', vtcmd_delete_n_lines}, /* args:Pn id:DL Delete Line   */
-  {"[",  'P', vtcmd_delete_n_chars}, /* args:Pn id:DCH Delete Character */
+  {"[",  'L', vtcmd_insert_blank_lines, VT102}, /* args:Pn id:IL Insert Line */
+  {"[",  'M', vtcmd_delete_n_lines, VT102}, /* args:Pn id:DL Delete Line   */
+  // [ N is EA - Erase in field
+  // [ O is EA - Erase in area
+  {"[",  'P', vtcmd_delete_n_chars, VT102}, /* args:Pn id:DCH Delete Character */
+  // [ Q is SEE - Set editing extent
+  // [ R is CPR - active cursor position report
+  {"[",  'S', vtcmd_scroll_up, VT100}, /* args:Pn id:SU Scroll Up */
+  {"[",  'T', vtcmd_scroll_down, VT100}, /* args:Pn id:SD Scroll Down */
+  {"[",/*SP*/'U', vtcmd_set_line_home},
+  {"[",/*SP*/'V', vtcmd_set_line_limit},
+  // [ W is cursor tabulation control
+  // [ Pn Y  - cursor line tabulation
+  //
   {"[",  'X', vtcmd_erase_n_chars}, /* args:Pn id:ECH Erase Character */
-  {"[",  'S', vtcmd_scroll_up}, /* args:Pn id:SU Scroll Up */
-  {"[",  'T', vtcmd_scroll_down}, /* args:Pn id:SD Scroll Down */
-  {"[",  '^', vtcmd_scroll_down}, /* muphry alternate from ECMA */
   {"[",  'Z', vtcmd_rev_n_tabs}, /* args:Pn id:CBT Cursor Backward Tabulation */
-  {"[",  '@', vtcmd_insert_character}, /* args:Pn id:ICH Insert Character */
+  {"[",  '^', vtcmd_scroll_down}, /* muphry alternate from ECMA */
+  {"[",  '@', vtcmd_insert_character, VT102}, /* args:Pn id:ICH Insert Character */
 
   {"[",  'a', vtcmd_cursor_forward}, /* args:Pn id:HPR Horizontal Position Relative */
   {"[",  'b', vtcmd_cursor_forward}, /* REP previous char */
-  {"[",  'c', vtcmd_report}, /* id:DA Device Attributes */
+  {"[",  'c', vtcmd_report}, /* id:DA args:... Device Attributes */
   {"[",  'd', vtcmd_goto_row},       /* args:Pn id:VPA Vertical Position Absolute  */
   {"[",  'e', vtcmd_cursor_down},    /* args:Pn id:VPR Vertical Position Relative */
-  {"[",  'f', vtcmd_cursor_position}, /* args:Pl;Pc id:CUP Cursor Position */
-  {"[0g", 0,  vtcmd_clear_current_tab}, /* id:XXX clear current tab */
-  {"[3g", 0,  vtcmd_clear_all_tabs},    /* id:XXX clear all tabs */
+  {"[",  'f', vtcmd_cursor_position, VT100}, /* args:Pl;Pc id:CUP Cursor Position */
+  {"[g", 0,   vtcmd_clear_current_tab, VT100}, /* id:TBC clear current tab */
+  {"[0g", 0,  vtcmd_clear_current_tab, VT100}, /* id:TBC clear current tab */
+  {"[3g", 0,  vtcmd_clear_all_tabs, VT100},    /* id:TBC clear all tabs */
   {"[",  'm', vtcmd_set_graphics_rendition}, /* args:Ps;Ps;.. id:SGR Select Graphics Rendition */
-  {"[",  'n', vtcmd_report},           /* id:DSR CPR Cursor Position Report  */
-  {"[",  'r', vtcmd_set_top_and_bottom_margins}, /* args:Pt;Pb id:DECSTBM Set Top and Bottom Margins */
-  // XXX: the save cursor position below conflicts with set left and right margins 
-  {"[u",  0,  vtcmd_restore_cursor_position}, /*id:RCP Restore Cursor Position */
-  {"[",  's', vtcmd_set_left_and_right_margins}, /* args:Pl;Pr id:DECSLRM Set Left and Right Margins */
+  {"[",  'n', vtcmd_report},           /* id:DSR args:... CPR Cursor Position Report  */
+  {"[",  'r', vtcmd_set_top_and_bottom_margins, VT100}, /* args:Pt;Pb id:DECSTBM Set Top and Bottom Margins */
+#if 0
+  // handled by set_left_and_right_margins - in if 0 to be documented
+  {"[s",  0,  vtcmd_save_cursor_position, VT100}, /*id:SCP Save Cursor Position */
+#endif
+  {"[u",  0,  vtcmd_restore_cursor_position, VT100}, /*id:RCP Restore Cursor Position */
+  {"[",  's', vtcmd_set_left_and_right_margins, VT300}, /* args:Pl;Pr id:DECSLRM Set Left and Right Margins */
   {"[",  '`', vtcmd_horizontal_position_absolute},  /* args:Pn id:HPA Horizontal Position Absolute */
 
-  {"[",  'h', vtcmd_set_mode},   /* args:Ps;Ps;.. id:SM Set Mode */
-  {"[",  'l', vtcmd_set_mode}, /* args:Ps;Ps;..  id:RM Reset Mode */
+  {"[",  'h', vtcmd_set_mode, VT100},   /* args:Pn[;...] id:SM Set Mode */
+  {"[",  'l', vtcmd_set_mode, VT100}, /* args:Pn[;...]  id:RM Reset Mode */
   {"[",  't', vtcmd_set_t}, 
-  {"[",  'q', vtcmd_set_led}, /* args:Ps id:DECLL Load LEDs */
+  {"[",  'q', vtcmd_set_led, VT100}, /* args:Ps id:DECLL Load LEDs */
   {"[",  'x', vtcmd_report}, /* id:DECREQTPARM */
   {"[",  'z', vtcmd_DECELR}, /* id:DECELR set locator res  */
 
-  {"5",   0,  vtcmd_char_at_cursor}, /* id:DECXMIT */
-  {"6",   0,  vtcmd_back_index}, /* id:DECBI Back index */
-  {"7",   0,  vtcmd_save_cursor}, /* id:DECSC Save Cursor */
-  {"8",   0,  vtcmd_restore_cursor}, /* id:DECRC Restore Cursor */
-  {"9",   0,  vtcmd_forward_index}, /* id:DECFI Forward index */
-  {"H",   0,  vtcmd_horizontal_tab_set}, /* id:HTS Horizontal Tab Set */
+  {"5",   0,  vtcmd_char_at_cursor, VT300}, /* id:DECXMIT */
+  {"6",   0,  vtcmd_back_index, VT400}, /* id:DECBI Back index */
+  {"7",   0,  vtcmd_save_cursor, VT100}, /* id:DECSC Save Cursor */
+  {"8",   0,  vtcmd_restore_cursor, VT100}, /* id:DECRC Restore Cursor */
+  {"9",   0,  vtcmd_forward_index, VT400}, /* id:DECFI Forward index */
 
   //{"Z", 0,  vtcmd_device_attributes}, 
   //{"%G",0,  vtcmd_set_default_font}, // set_alternate_font
@@ -2583,17 +2726,17 @@ static Sequence sequences[]={
   {")B",  0,   vtcmd_set_charmap}, 
   {"%G",  0,   vtcmd_set_charmap}, 
 
-  {"#3",  0,   vtcmd_set_double_width_double_height_top_line},
-  {"#4",  0,   vtcmd_set_double_width_double_height_bottom_line},
-  {"#5",  0,   vtcmd_set_single_width_single_height_line},
-  {"#6",  0,   vtcmd_set_double_width_single_height_line},
+  {"#3",  0,   vtcmd_set_double_width_double_height_top_line, VT100}, /*id: DECDHL Top half of double-width, double-height line */
+  {"#4",  0,   vtcmd_set_double_width_double_height_bottom_line, VT100}, /*id:DECDHL Bottom half of double-width, double-height line */
+  {"#5",  0,   vtcmd_set_single_width_single_height_line, VT100}, /* id:DECSWL Single-width line */
+  {"#6",  0,   vtcmd_set_double_width_single_height_line, VT100}, /* id:DECDWL Double-width line */
 
-  {"#8",  0,   vtcmd_screen_alignment_display}, /* id:DECALN Screen Alignment Display */
+  {"#8",  0,   vtcmd_screen_alignment_display, VT100}, /* id:DECALN Screen Alignment Display */
   {"=",   0,   vtcmd_ignore},  // keypad mode change
   {">",   0,   vtcmd_ignore},  // keypad mode change
-  {"c",   0,   vtcmd_reset_to_initial_state}, /* id:RIS Reset to Initial State */
+  {"c",   0,   vtcmd_reset_to_initial_state, VT100}, /* id:RIS Reset to Initial State */
   {"[",  'p',  vtcmd_request_mode}, // soft reset?
-  {"[!", 'p',  vtcmd_ignore}, // soft reset?
+  {"[!", 'p',  vtcmd_ignore},       // soft reset?
 
   {NULL, 0, NULL}
 };
@@ -2678,46 +2821,11 @@ ctx_vt_carriage_return (MrgVT *vt)
   vt->at_line_home = 1;
 }
 
-static short MuLawDecompressTable[256] =
-{
-     -32124,-31100,-30076,-29052,-28028,-27004,-25980,-24956,
-     -23932,-22908,-21884,-20860,-19836,-18812,-17788,-16764,
-     -15996,-15484,-14972,-14460,-13948,-13436,-12924,-12412,
-     -11900,-11388,-10876,-10364, -9852, -9340, -8828, -8316,
-      -7932, -7676, -7420, -7164, -6908, -6652, -6396, -6140,
-      -5884, -5628, -5372, -5116, -4860, -4604, -4348, -4092,
-      -3900, -3772, -3644, -3516, -3388, -3260, -3132, -3004,
-      -2876, -2748, -2620, -2492, -2364, -2236, -2108, -1980,
-      -1884, -1820, -1756, -1692, -1628, -1564, -1500, -1436,
-      -1372, -1308, -1244, -1180, -1116, -1052,  -988,  -924,
-       -876,  -844,  -812,  -780,  -748,  -716,  -684,  -652,
-       -620,  -588,  -556,  -524,  -492,  -460,  -428,  -396,
-       -372,  -356,  -340,  -324,  -308,  -292,  -276,  -260,
-       -244,  -228,  -212,  -196,  -180,  -164,  -148,  -132,
-       -120,  -112,  -104,   -96,   -88,   -80,   -72,   -64,
-        -56,   -48,   -40,   -32,   -24,   -16,    -8,     -1,
-      32124, 31100, 30076, 29052, 28028, 27004, 25980, 24956,
-      23932, 22908, 21884, 20860, 19836, 18812, 17788, 16764,
-      15996, 15484, 14972, 14460, 13948, 13436, 12924, 12412,
-      11900, 11388, 10876, 10364,  9852,  9340,  8828,  8316,
-       7932,  7676,  7420,  7164,  6908,  6652,  6396,  6140,
-       5884,  5628,  5372,  5116,  4860,  4604,  4348,  4092,
-       3900,  3772,  3644,  3516,  3388,  3260,  3132,  3004,
-       2876,  2748,  2620,  2492,  2364,  2236,  2108,  1980,
-       1884,  1820,  1756,  1692,  1628,  1564,  1500,  1436,
-       1372,  1308,  1244,  1180,  1116,  1052,   988,   924,
-        876,   844,   812,   780,   748,   716,   684,   652,
-        620,   588,   556,   524,   492,   460,   428,   396,
-        372,   356,   340,   324,   308,   292,   276,   260,
-        244,   228,   212,   196,   180,   164,   148,   132,
-        120,   112,   104,    96,    88,    80,    72,    64,
-         56,    48,    40,    32,    24,    16,     8,     0
-};
 
 void terminal_queue_pcm_sample (int16_t sample);
 
 static unsigned char vt_bell_audio[] = {
-#if 1
+#if 0
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -3499,6 +3607,43 @@ static unsigned char vt_bell_audio[] = {
 #endif
 };
 
+static short MuLawDecompressTable[256] =
+{
+     -32124,-31100,-30076,-29052,-28028,-27004,-25980,-24956,
+     -23932,-22908,-21884,-20860,-19836,-18812,-17788,-16764,
+     -15996,-15484,-14972,-14460,-13948,-13436,-12924,-12412,
+     -11900,-11388,-10876,-10364, -9852, -9340, -8828, -8316,
+      -7932, -7676, -7420, -7164, -6908, -6652, -6396, -6140,
+      -5884, -5628, -5372, -5116, -4860, -4604, -4348, -4092,
+      -3900, -3772, -3644, -3516, -3388, -3260, -3132, -3004,
+      -2876, -2748, -2620, -2492, -2364, -2236, -2108, -1980,
+      -1884, -1820, -1756, -1692, -1628, -1564, -1500, -1436,
+      -1372, -1308, -1244, -1180, -1116, -1052,  -988,  -924,
+       -876,  -844,  -812,  -780,  -748,  -716,  -684,  -652,
+       -620,  -588,  -556,  -524,  -492,  -460,  -428,  -396,
+       -372,  -356,  -340,  -324,  -308,  -292,  -276,  -260,
+       -244,  -228,  -212,  -196,  -180,  -164,  -148,  -132,
+       -120,  -112,  -104,   -96,   -88,   -80,   -72,   -64,
+        -56,   -48,   -40,   -32,   -24,   -16,    -8,     -1,
+      32124, 31100, 30076, 29052, 28028, 27004, 25980, 24956,
+      23932, 22908, 21884, 20860, 19836, 18812, 17788, 16764,
+      15996, 15484, 14972, 14460, 13948, 13436, 12924, 12412,
+      11900, 11388, 10876, 10364,  9852,  9340,  8828,  8316,
+       7932,  7676,  7420,  7164,  6908,  6652,  6396,  6140,
+       5884,  5628,  5372,  5116,  4860,  4604,  4348,  4092,
+       3900,  3772,  3644,  3516,  3388,  3260,  3132,  3004,
+       2876,  2748,  2620,  2492,  2364,  2236,  2108,  1980,
+       1884,  1820,  1756,  1692,  1628,  1564,  1500,  1436,
+       1372,  1308,  1244,  1180,  1116,  1052,   988,   924,
+        876,   844,   812,   780,   748,   716,   684,   652,
+        620,   588,   556,   524,   492,   460,   428,   396,
+        372,   356,   340,   324,   308,   292,   276,   260,
+        244,   228,   212,   196,   180,   164,   148,   132,
+        120,   112,   104,    96,    88,    80,    72,    64,
+         56,    48,    40,    32,    24,    16,     8,     0
+};
+
+
 static void ctx_vt_bell (MrgVT *vt)
 {
   if (vt->bell < 2)
@@ -3732,17 +3877,507 @@ vt_base642bin (const char    *ascii,
   return outputno;
 }
 
+static char a85_alphabet[]=
+{
+'!','"','#','$','%','&','\'','(',')','*',
+'+',',','-','.','/','0','1','2','3','4',
+'5','6','7','8','9',':',';','<','=','>',
+'?','@','A','B','C','D','E','F','G','H',
+'I','J','K','L','M','N','O','P','Q','R',
+'S','T','U','V','W','X','Y','Z','[','\\',
+']','^','_','`','a','b','c','d','e','f',
+'g','h','i','j','k','l','m','n','o','p',
+'q','r','s','t','u'
+};
+
+static char a85_decoder[256]="";
+
+int vt_a85enc (const void *srcp, char *dst, int count)
+{
+  const uint8_t *src = srcp;
+  int out_len = 0;
+  int padding = 4 - (count % 4);
+  for (int i = 0; i < (count+3)/4; i ++)
+  {
+    uint32_t input = 0;
+    for (int j = 0; j < 4; j++)
+    {
+      input = (input << 8);
+      if (i*4+j<count)
+        input += src[i*4+j];
+    }
+
+    int divisor = 85 * 85 * 85 * 85;
+    if (input == 0)
+    {
+        dst[out_len++] = 'z';
+    }
+    else
+    {
+      for (int j = 0; j < 5; j++)
+      {
+        dst[out_len++] = a85_alphabet[(input / divisor) % 85];
+        divisor /= 85;
+      }
+    }
+  }
+  out_len -= padding;
+  dst[out_len++]='~';
+  dst[out_len++]='>';
+  dst[out_len]=0;
+  return out_len;
+}
+
+int vt_a85dec (const char *src, char *dst, int count)
+{
+  if (a85_decoder[0] == 0)
+  {
+    for (int i = 0; i < 85; i++)
+    {
+      a85_decoder[(int)a85_alphabet[i]]=i;
+    }
+  }
+  int out_len = 0;
+  uint32_t val = 0;
+  int k = 0;
+
+  for (int i = 0; i < count; i ++, k++)
+  {
+    val *= 85;
+
+    if (src[i] == '~')
+      break;
+    else if (src[i] == 'z')
+    {
+      for (int j = 0; j < 4; j++)
+        dst[out_len++] = 0;
+      k = 0;
+    }
+    else
+    {
+      val += a85_decoder[(int)src[i]];
+      if (k % 5 == 4)
+      {
+         for (int j = 0; j < 4; j++)
+         {
+           dst[out_len++] = (val & (0xff << 24)) >> 24;
+           val <<= 8;
+         }
+         val = 0;
+      }
+    }
+  }
+  k = k % 5;
+  if (k)
+  {
+    for (int j = k; j < 4; j++)
+    {
+      val += 84;
+      val *= 85;
+    }
+
+    for (int j = 0; j < 4; j++)
+    {
+      dst[out_len++] = (val & (0xff << 24)) >> 24;
+      val <<= 8;
+    }
+    val = 0;
+    out_len -= (5-k);
+  }
+  dst[out_len]=0;
+  return out_len;
+}
+
+
+int vt_a85len (const char *src, int count)
+{
+  int out_len = 0;
+  int k = 0;
+
+  for (int i = 0; i < count; i ++, k++)
+  {
+    if (src[i] == '~')
+      break;
+    else if (src[i] == 'z')
+    {
+      k = 0;
+    }
+  }
+  k = k % 5;
+  if (k)
+  {
+    out_len -= (5-k);
+  }
+  return out_len;
+}
+
+////////////////////////////////////////////////////////
+//
+// audio tty # enables terminal audio device
+//           # for terminals without audio support
+//
+// audio > recording
+//
+// audio < file.au
+// cat file | audio
+//
+//
+//
+
+#if 0
+int main (){
+  //char *input="HelloWorld.asdfa";
+
+  char *input="Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind, that by a perseverance of delight in the continued and indefatigable generation of knowledge, exceeds the short vehemence of any carnal pleasure.....";
+  //char  input[]={0x86, 0x4f, 0xd2, 0x6f, 0xb5, 0x59, 0xf7, 0x5b  };//="HelloWorld";
+  char  encoded[2560]="";
+  char  decoded[2560]="";
+  int   in_len = strlen (input);
+  int   out_len;
+  int   dec_len;
+
+  printf ("input %i: %s\n", in_len, input);
+
+  out_len = vt_a85enc (input, encoded, in_len);
+  printf ("encoded %i: %s\n", out_len, encoded);
+
+#if 1
+  dec_len = vt_a85dec (encoded, decoded, out_len);
+  printf ("decoded %i: %s\n", dec_len, decoded);
+#else
+  /* this would break with many 0 runs, where we compress..  */
+  dec_len = a85dec (encoded, encoded, out_len);
+  printf ("decoded %i: %s\n", dec_len, encoded);
+#endif
+
+  return 0;
+}
+#endif
+
+#if 0
+static int yenc (const char *src, char *dst, int count)
+{
+  int out_len = 0;
+  for (int i = 0; i < count; i ++)
+  {
+    int o = (src[i] + 42) % 256;
+    switch (o)
+    {
+      case 0x00: //null
+      case 0x01:
+      case 0x02:
+      case 0x03:
+      case 0x04:
+      case 0x05:
+      case 0x06: 
+      case 0x07: 
+      //// 8-13
+      case 0x0E:
+      case 0x0F:
+      case 0x10:
+      case 0x11: //xoff
+      case 0x13: //xon
+      case 0x14:
+      case 0x15:
+      case 0x16:
+      case 0x17:
+      case 0x18:
+      case 0x19:
+      case 0x0A: //lf   // than sorry
+      case 0x0D: //cr
+      case 0x1B: //esc
+      case 0x3D: //=
+        dst[out_len++] = '=';
+        o = (o + 64) % 256;
+      default:
+        dst[out_len++] = o;
+        break;
+    }
+  }
+  dst[out_len]=0;
+  return out_len;
+}
+#endif
+
+static int ydec (const void *srcp, void *dstp, int count)
+{
+  const char *src = srcp;
+  char *dst = dstp;
+  int out_len = 0;
+  for (int i = 0; i < count; i ++)
+  {
+    int o = src[i];
+    switch (o)
+    {
+      case '=':
+              i++;
+              o = src[i];
+              o = (o-42-64) % 256;
+              break;
+      case '\n':
+      case '\e':
+      case '\r':
+      case '\0':
+              break;
+      default:
+              o = (o-42) % 256;
+              break;
+    }
+    dst[out_len++] = o;
+  }
+  dst[out_len]=0;
+  return out_len;
+}
+
+#if 0
+int main (){
+  char *input="this is a testæøåÅØ'''\"!:_asdac\n\r";
+  char  encoded[256]="";
+  char  decoded[256]="";
+  int   in_len = strlen (input);
+  int   out_len;
+  int   dec_len;
+
+  printf ("input: %s\n", input);
+
+  out_len = yenc (input, encoded, in_len);
+  printf ("encoded: %s\n", encoded);
+
+  dec_len = ydec (encoded, encoded, out_len);
+
+  printf ("decoded: %s\n", encoded);
+
+  return 0;
+}
+#endif
+
+void terminal_queue_pcm_sample (int16_t sample);
+
 void vt_audio (MrgVT *vt, const char *command)
 {
+  fprintf (stderr, "{%s}", command);
   // the simplest form of audio is raw audio
-  //
   // _Ar=8000,c=2,b=8,e=u
   //
   // multiple voices:
-  //   ids to queue
+  //   ids to queue - store samples as images...
   //
   // reusing samples
   //   .. pitch bend and be able to do a mod player?
+  const char *payload = NULL;
+  char key = 0;
+  int  value;
+  int  pos = 1;
+
+  if (vt->audio.multichunk == 0)
+  {
+    vt->audio.action='t';
+    vt->audio.transmission='d';
+  }
+
+  int report = 0;
+  while (command[pos] != ';')
+  {
+    pos ++; // G or ,
+    if (command[pos] == ';') break;
+    key = command[pos]; pos++;
+    if (command[pos] == ';') break;
+    pos ++; // =
+    if (command[pos] == ';') break;
+
+    if (command[pos] >= '0' && command[pos] <= '9')
+      value = atoi(&command[pos]);
+    else
+      value = command[pos];
+    while (command[pos] &&
+           command[pos] != ',' &&
+           command[pos] != ';') pos++;
+    
+    if (value=='?')
+    {
+      char buf[256];
+      const char *range="";
+      switch (key)
+      {
+	case 'r':range="8000,11025,22050,44100,48000";break;
+	case 'b':range="8,16,32";break;
+	case 'c':range="1";break;
+	case 'T':range="U,s,f";break;
+	case 'e':range="u";break;
+	case 'm':range="0-1";break;
+	case 'o':range="z,0";break;
+	case 't':range="d";break;
+	case 'a':range="";break;
+	default:range="unknown";break;
+      }
+      sprintf (buf, "\e_A;%c=?;%s\e\\", key, range);
+      vt_write (vt, buf, strlen(buf));
+      return;
+    }
+
+    switch (key)
+    {
+      case 'r': vt->audio.samplerate = value; report = 1; break;
+      case 'b': vt->audio.bits = value; report = 1; break;
+      case 'c': vt->audio.channels = value; report = 1; break;
+      case 'a': vt->audio.action = value; report = 1; break;
+      case 'T': vt->audio.type = value; report = 1; break;
+      case 's': vt->audio.samples = value; report = 1; break;
+      case 'e': vt->audio.encoding = value; report = 1; break;
+      case 'm': vt->audio.multichunk = value; report = 1; break;
+      case 'o': vt->audio.compression = value; report = 1; break;
+      case 't': vt->audio.transmission = value; report = 1; break;
+    }
+
+    if (report)
+    {
+      /* we do not support changing these yet */
+      vt->audio.samplerate = 8000;
+      vt->audio.bits = 8;
+      vt->audio.type = 'u';
+      vt->audio.channels = 1;
+    }
+  }
+  
+  payload = &command[pos+1];
+
+  // accumulate incoming data
+  {
+     int chunk_size = strlen (payload);
+     int old_size = vt->audio.data_size;
+     if (vt->audio.data == NULL)
+     {
+       vt->audio.data_size = chunk_size;
+       vt->audio.data = malloc (vt->audio.data_size + 1);
+     }
+     else
+     {
+       vt->audio.data_size += chunk_size;
+       vt->audio.data = realloc (vt->audio.data, vt->audio.data_size + 1);
+     }
+     memcpy (vt->audio.data + old_size, payload, chunk_size);
+     vt->audio.data[vt->audio.data_size]=0;
+  }
+
+  if (vt->audio.multichunk == 0)
+  {
+    if (vt->audio.transmission != 'd') /* */
+    {
+      char buf[256];
+      sprintf (buf, "\e_A;only direct transmission supported\e\\");
+      vt_write (vt, buf, strlen(buf));
+      goto cleanup;
+    }
+
+    switch (vt->audio.encoding)
+    {
+      case 'y':
+	vt->audio.data_size = ydec (vt->audio.data, vt->audio.data, vt->audio.data_size);
+      break;
+      case 'a':
+      {
+        int bin_length = vt->audio.data_size;
+        uint8_t *data2 = malloc ((unsigned int)vt_a85len ((char*)vt->audio.data, vt->audio.data_size));
+        bin_length = vt_a85dec ((char*)vt->audio.data,
+                                (void*)data2,
+                                bin_length);
+        memcpy (vt->audio.data, data2, bin_length + 1);
+        vt->audio.data_size = bin_length;
+        free (data2);
+      }
+      break;
+
+      case 'b':
+      {
+        int bin_length = vt->audio.data_size;
+        uint8_t *data2 = malloc (vt->audio.data_size);
+        bin_length = vt_base642bin ((char*)vt->audio.data,
+                                    &bin_length,
+                                    data2);
+        memcpy (vt->audio.data, data2, bin_length + 1);
+        vt->audio.data_size = bin_length;
+        free (data2);
+      }
+      break;
+    }
+    if (vt->audio.samples)
+    {
+      // implicit buf_size
+      vt->audio.buf_size = vt->audio.samples *
+	                   (vt->audio.bits/8) *
+	                   vt->audio.channels;
+    }
+    else
+    {
+      vt->audio.samples = vt->audio.buf_size /
+                                (vt->audio.bits/8) /
+                                   vt->audio.channels;
+    }
+
+    if (vt->audio.compression == 'z')
+    {
+            //vt->audio.buf_size)
+      unsigned char *data2 = malloc (vt->audio.buf_size + 1);
+      /* if a buf size is set (rather compression, but
+       * this works first..) then */
+      unsigned long actual_uncompressed_size = vt->audio.buf_size;
+      int z_result = uncompress (data2, &actual_uncompressed_size,
+                                 vt->audio.data,
+                                 vt->audio.data_size);
+      if (z_result != Z_OK)
+      {
+        char buf[256]= "\e_Ao=z;zlib error\e\\";
+        vt_write (vt, buf, strlen(buf));
+        goto cleanup;
+      }
+      free (vt->audio.data);
+      vt->audio.data = data2;
+      vt->audio.data_size = actual_uncompressed_size;
+      vt->audio.compression = 0;
+    }
+
+#if 0
+    if (vt->audio.format == 100/* opus */)
+    {
+      int channels;
+      uint8_t *new_data = NULL;//stbi_load_from_memory (vt->audio.data, vt->audio.data_size, &vt->audio.buf_width, &vt->audio.buf_height, &channels, 4);
+
+      if (!new_data)
+      {
+        char buf[256]= "\e_Gf=100;audio decode error\e\\";
+        vt_write (vt, buf, strlen(buf));
+        goto cleanup;
+      }
+      vt->audio.format = 32;
+      free (vt->audio.data);
+      vt->audio.data = new_data;
+      vt->audio.data_size = vt->audio.buf_width * vt->audio.buf_height * 4;
+    }
+#endif
+
+  switch (vt->audio.action)
+  {
+    case 't': // transfer
+       for (int i = 0; i < vt->audio.samples; i++)
+       {
+         terminal_queue_pcm_sample (
+            MuLawDecompressTable[vt->audio.data[i]]);
+       }
+       free (vt->audio.data);
+       vt->audio.data = NULL;
+       vt->audio.data_size=0;
+       break;
+    case 'q': // query
+      break;
+  }
+
+cleanup:
+    if (vt->audio.data)
+      free (vt->audio.data);
+    vt->audio.data = NULL;
+    vt->audio.data_size=0;
+    vt->audio.multichunk=0;
+  }
 }
 
 void vt_gfx (MrgVT *vt, const char *command)
@@ -4176,7 +4811,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
   else if (vt->in_pcm)
   {
     if (byte == 0x00) // byte value 0 terminates - replace
-    {                 // any 0s in original data with 1
+    {                 // any 0s in original raw data with 1
       vt->in_pcm = 0;
     }
     else
@@ -4233,9 +4868,9 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
   }
 
   {
-  switch (vt->state)
-  {
-    case TERMINAL_STATE_NEUTRAL:
+    switch (vt->state)
+    {
+      case TERMINAL_STATE_NEUTRAL:
 
       if (_vt_handle_control (vt, byte) == 0)
       switch (byte)
@@ -4316,7 +4951,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           {
             char tmp[]={byte, '\0'};
             ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_GOT_ESC_SQRPAREN;
+            vt->state = TERMINAL_STATE_GOT_OSC_OR_APC;
           }
           break;
         default:
@@ -4352,13 +4987,12 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
         }
       }
       break;
-    case TERMINAL_STATE_GOT_ESC_SQRPAREN:
-      // XXX: use handle sequence here as well,.. for consistency
-      // /    it seems like OSC (and others according to
+    case TERMINAL_STATE_GOT_OSC_OR_APC:
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       // and in "\e\" rather than just "\e", this would cause
       // a stray char
-      if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
+      //if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
+      if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
       {
         if (vt->argument_buf[0] == ']')
         {
@@ -4372,7 +5006,6 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
             { /* request current foreground color, xterm does this to
                  determine if it can use 256 colors, when this test fails,
                  it still mixes in color 130 together with stock colors
-                 though
                */
               char *buf = "\e]10;rgb:ff/ff/ff\e\\";
               vt_write (vt, buf, strlen(buf));

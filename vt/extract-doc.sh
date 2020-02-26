@@ -28,10 +28,10 @@ echo ""
 echo "This text file is generated from the sources."
 
 while IFS= read -r line; do
-  id=`echo -n $line | grep -Eow "id:[A-Z]*" | sed s/id://`
-  args=`echo -n $line | grep -Eow "args:[A-Za-z0-9;.]*" | sed s/args://`" "
-  description=`echo -n $line | sed s/.*id:[A-Z]*// | sed 's:\*/.*$::'`
-  prefix=`echo -n $line | cut -f 1 -d ' ' | sed 's/^ *{"//'  | sed s/\",//`
+  id=`echo -n "$line" | grep -Eow 'id:[A-Z]*' | sed s/id://`
+  args=`echo -n "$line" | grep -Eow 'args:[A-Za-z0-9;.]*' | sed s/args://`" "
+  description=`echo -n "$line" | sed -e "s/.*id:[A-Z]*//" -e 's:*/.*$::'`
+  prefix=`echo -n "$line" | sed 's/^ *{"//'  | sed s/\",.*//`
 
   suffix=`echo -n $line | cut -f 2 -d ' '`
   if [ $suffix = "0," ]; then
@@ -42,7 +42,7 @@ while IFS= read -r line; do
 
   line="$id           "
   line="${line:0:7}"
-  line="$line$description                                           "
+  line="$line$description                                        "
   line=${line:0:45}$START"ESC $prefix$suffix"$END
   echo -e "$line"
 done <<< `cat vt.c | grep  'id:' `
