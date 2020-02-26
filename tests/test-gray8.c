@@ -31,7 +31,7 @@ int main (int argc, char **argv)
   ctx_move_to (ctx, 10, 9);
   ctx_set_font_size (ctx, 12);
   ctx_set_line_width (ctx, 2);
-  ctx_set_rgba_u8 (ctx, 0, 0, 0, 255);
+  ctx_set_rgba_stroke_u8 (ctx, 0, 0, 0, 255);
   ctx_text_stroke (ctx, utf8);
   ctx_set_rgba_u8 (ctx, 255, 255, 255, 255);
   ctx_move_to (ctx, 10, 9);

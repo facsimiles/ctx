@@ -546,6 +546,7 @@ typedef enum
   CTX_GLOBAL_ALPHA    = 'O',
 
   CTX_SET_RGBA        = 'r', // u8
+  CTX_SET_RGBA_STROKE = '8', // u8
   CTX_LOAD_IMAGE      = '6',
   CTX_LOAD_MEM        = '7',
   CTX_LINEAR_GRADIENT = '1',
@@ -616,7 +617,6 @@ typedef enum
   CTX_FILL_MOVE_TO              = 'e',
   CTX_REL_QUAD_TO_REL_QUAD_TO   = 'U',
   CTX_REL_QUAD_TO_S16           = 'V',
-
 
   CTX_SET_PIXEL                 = '9',
 #endif
@@ -806,8 +806,6 @@ static inline float ctx_fast_hypotf (float x, float y)
     return 0.96f * x + 0.4f * y;
 }
 
-
-
 #define ctx_arg_float(no) entry[(no)>>1].data.f[(no)&1]
 #define ctx_arg_u32(no)   entry[(no)>>1].data.u32[(no)&1]
 #define ctx_arg_s32(no)   entry[(no)>>1].data.s32[(no)&1]
@@ -819,7 +817,7 @@ static inline float ctx_fast_hypotf (float x, float y)
 #if CTX_EXTRAS
 
 char *ctx_commands[]={
-"Icompositing_mode", "#clip", "|edge", "!fill_edges", "%blit_rect", "rset_rgba", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", "set_pixel", "7load_mem", NULL
+"Icompositing_mode", "#clip", "|edge", "!fill_edges", "%blit_rect", "rset_rgba", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "6load_image", "+paint", "set_pixel", "7load_mem", "8set_rgba_stroke", NULL
 };
 
 #endif
@@ -914,7 +912,10 @@ struct _CtxSource
 
 struct _CtxGState {
   CtxMatrix    transform;
+  CtxSource    source_stroke;
   CtxSource    source;
+//define source_stroke source
+
   float        line_width;
   float        font_size;
   float        line_spacing;
@@ -2569,6 +2570,18 @@ ctx_rel_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
   ctx_arc_to (ctx, x1, y1, x2, y2, radius);
 }
 
+
+void
+ctx_set_rgba_stroke_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+  CtxEntry command = ctx_u8 (CTX_SET_RGBA_STROKE, r, g, b, a, 0, 0, 0, 0);
+
+  // XXX turn it into a no-op if the color matches color
+  //     in state
+
+  ctx_process (ctx, &command);
+}
+
 void
 ctx_set_rgba_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
@@ -2611,6 +2624,31 @@ void ctx_set_gray (Ctx *ctx, float gray)
 {
   ctx_set_rgba (ctx, gray, gray, gray, 1.0f);
 }
+
+void ctx_set_rgba_stroke (Ctx *ctx, float r, float g, float b, float a)
+{
+  int ir = r * 255;
+  int ig = g * 255;
+  int ib = b * 255;
+  int ia = a * 255;
+  ir = CTX_CLAMP(ir, 0,255);
+  ig = CTX_CLAMP(ig, 0,255);
+  ib = CTX_CLAMP(ib, 0,255);
+  ia = CTX_CLAMP(ia, 0,255);
+  ctx_set_rgba_stroke_u8 (ctx, ir, ig, ib, ia);
+}
+
+void ctx_set_rgb_stroke (Ctx *ctx, float   r, float   g, float   b)
+{
+  ctx_set_rgba_stroke (ctx, r, g, b, 1.0f);
+}
+
+void ctx_set_gray_stroke (Ctx *ctx, float gray)
+{
+  ctx_set_rgba_stroke (ctx, gray, gray, gray, 1.0f);
+}
+
+
 
 void
 ctx_set_gradient_no (Ctx *ctx, int no)
@@ -2757,6 +2795,13 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       state->gstate.source.type = CTX_SOURCE_COLOR;
       for (int i = 0; i < 4; i ++)
         state->gstate.source.color.rgba[i] = ctx_arg_u8(i);
+      break;
+    case CTX_SET_RGBA_STROKE:
+      //ctx_source_deinit (&state->gstate.source);
+      state->gstate.source_stroke = state->gstate.source;
+      state->gstate.source_stroke.type = CTX_SOURCE_COLOR;
+      for (int i = 0; i < 4; i ++)
+        state->gstate.source_stroke.color.rgba[i] = ctx_arg_u8(i);
       break;
     case CTX_LINEAR_GRADIENT:
       {
@@ -5967,10 +6012,14 @@ foo:
 static void
 ctx_renderer_stroke (CtxRenderer *renderer)
 {
+  CtxSource source_backup = renderer->state->gstate.source;
+  renderer->state->gstate.source = renderer->state->gstate.source_stroke;
+
   if (renderer->state->gstate.line_width <= 0.0f &&
       renderer->state->gstate.line_width > -10.0f)
   {
     ctx_renderer_stroke_1px (renderer);
+    renderer->state->gstate.source = source_backup;
     return;
   }
 
@@ -6168,10 +6217,12 @@ foo:
 #else
   CtxFillRule rule_backup = renderer->state->gstate.fill_rule;
   renderer->state->gstate.fill_rule = CTX_FILL_RULE_WINDING; 
+
   ctx_renderer_fill (renderer);
+
   renderer->state->gstate.fill_rule = rule_backup;
 #endif
-
+  renderer->state->gstate.source = source_backup;
   renderer->state->gstate.transform = transform_backup;
 }
 
@@ -7119,6 +7170,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
     ctx_interpret_style (&ctx->state, entry, ctx);
     ctx_interpret_transforms (&ctx->state, entry, ctx);
     ctx_interpret_pos (&ctx->state, entry, ctx);
+
     ctx_renderstream_add_entry (&ctx->renderstream, entry);
 
     if (entry->code == CTX_LOAD_IMAGE)
@@ -7214,6 +7266,7 @@ ctx_datatype_for_code (CtxCode code)
     case CTX_LINE_JOIN:
     case CTX_COMPOSITING_MODE:
     case CTX_SET_RGBA:
+    case CTX_SET_RGBA_STROKE:
     case CTX_GRADIENT_NO:
       return CTX_U8;
 #if CTX_BITPACK
@@ -8039,6 +8092,14 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
                                    ctx_arg_u8(3)/255.0);
         break;
 
+      case CTX_SET_RGBA_STROKE: // XXX : we need to maintain
+	                        //       state for the two kinds
+        cairo_set_source_rgba (cr, ctx_arg_u8(0)/255.0,
+                                   ctx_arg_u8(1)/255.0,
+                                   ctx_arg_u8(2)/255.0,
+                                   ctx_arg_u8(3)/255.0);
+        break;
+
       case CTX_RECTANGLE:
         cairo_rectangle (cr,ctx_arg_float(0),
                             ctx_arg_float(1),
@@ -8472,6 +8533,13 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                              ctx_arg_u8(1)/255.0,
                              ctx_arg_u8(2)/255.0,
                              ctx_arg_u8(3)/255.0);
+        break;
+
+      case CTX_SET_RGBA_STROKE:
+        ctx_set_rgba_stroke (d_ctx, ctx_arg_u8(0)/255.0,
+                                    ctx_arg_u8(1)/255.0,
+                                    ctx_arg_u8(2)/255.0,
+                                    ctx_arg_u8(3)/255.0);
         break;
 
       case CTX_SET_PIXEL:
