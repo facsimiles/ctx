@@ -8260,33 +8260,185 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
   }
 }
 #endif
-#if 0
+
+#if 1
+
 typedef struct PdfState {
-  float args[16];
+  float args[10];
+  char *strings[10];
 } PdfState;
 
-static void ctx_pdf_rg (Ctx *ctx, PdfState *pdf_state)
+
+typedef struct _PdfOperator PdfOperator;
+
+struct _PdfOperator
 {
+  const char *name;
+  int         args;
+  void (*impl)(PdfState *state, PdfOperator *op);
+};
+
+static void ctx_pdf_nyi (PdfState *state, PdfOperator *op)
+{
+  fprintf (stderr, "PDFop %s NYI\n", op->name);
 }
 
-typedef struct PdfOp
-{
-  const char *op;
-  int args;
-} PdfOp;
+#define ctx_pdf_save_state ctx_pdf_nyi
+#define ctx_pdf_restore_state ctx_pdf_nyi
+#define ctx_pdf_ctm ctx_pdf_nyi
+#define ctx_pdf_linewidth ctx_pdf_nyi
+#define ctx_pdf_linecap ctx_pdf_nyi
+#define ctx_pdf_linejoin ctx_pdf_nyi
+#define ctx_pdf_miterlimit ctx_pdf_nyi
+#define ctx_pdf_dash_pattern ctx_pdf_nyi
+#define ctx_pdf_intent ctx_pdf_nyi
+#define ctx_pdf_flatness ctx_pdf_nyi
 
-PdfOp pdf_ops[]={
- {"rg", 3, ctx_pdf_rg);
+#define ctx_pdf_gs ctx_pdf_nyi
+
+#define ctx_pdf_move_to ctx_pdf_nyi
+#define ctx_pdf_line_to ctx_pdf_nyi
+#define ctx_pdf_curve_to ctx_pdf_nyi
+#define ctx_pdf_curve_to_shared_1_and_2 ctx_pdf_nyi
+#define ctx_pdf_curve_to_shared_2_and_3 ctx_pdf_nyi
+#define ctx_pdf_close_path ctx_pdf_nyi
+
+#define ctx_pdf_retangle ctx_pdf_nyi
+#define ctx_pdf_stroke ctx_pdf_nyi
+#define ctx_pdf_close_and_stroke ctx_pdf_nyi
+#define ctx_pdf_fill ctx_pdf_nyi
+#define ctx_pdf_fill ctx_pdf_nyi
+#define ctx_pdf_fill_even_odd ctx_pdf_nyi
+#define ctx_pdf_fill_and_stroke ctx_pdf_nyi
+#define ctx_pdf_fill_and_stroke_even_odd ctx_pdf_nyi
+#define ctx_pdf_close_fill_and_stroke ctx_pdf_nyi
+#define ctx_pdf_close_fill_and_stroke_even_odd ctx_pdf_nyi
+#define ctx_pdf_drop_path ctx_pdf_nyi
+ 
+#define ctx_pdf_clip_nonzero ctx_pdf_nyi
+#define ctx_pdf_clip_evenodd ctx_pdf_nyi
+
+
+#define ctx_pdf_set_color_space ctx_pdf_nyi
+#define ctx_pdf_set_stroke_color_space ctx_pdf_nyi
+
+#define ctx_pdf_set_color ctx_pdf_nyi
+#define ctx_pdf_set_colornn ctx_pdf_nyi
+
+#define ctx_pdf_set_stroke_color ctx_pdf_nyi  // args depend on 
+                                       // colorspace -
+#define ctx_pdf_set_stroke_colornn ctx_pdf_nyi
+
+#define ctx_pdf_set_gray ctx_pdf_nyi
+#define ctx_pdf_set_rgb ctx_pdf_nyi
+#define ctx_pdf_set_cmyk ctx_pdf_nyi
+#define ctx_pdf_set_stroke_gray ctx_pdf_nyi
+#define ctx_pdf_set_stroke_rgb ctx_pdf_nyi
+#define ctx_pdf_set_stroke_cmyk ctx_pdf_nyi
+
+#define ctx_pdf_begin_text ctx_pdf_nyi
+#define ctx_pdf_end_text ctx_pdf_nyi
+#define ctx_pdf_text_font ctx_pdf_nyi
+#define ctx_pdf_text_move_to ctx_pdf_nyi
+#define ctx_pdf_text_move_to_with_leading ctx_pdf_nyi
+#define ctx_pdf_text_set_matrix ctx_pdf_nyi
+#define ctx_pdf_text_move_to_start_of_next_line ctx_pdf_nyi
+
+#define ctx_pdf_text_render_mode ctx_pdf_nyi
+#define ctx_pdf_text_show ctx_pdf_nyi
+#define ctx_pdf_move_to_next_line_show_string ctx_pdf_nyi
+#define ctx_pdf_move_to_next_line_show_string_with_word_and_char_spacing ctx_pdf_nyi
+#define ctx_pdf_text_show_array ctx_pdf_nyi
+
+#define ctx_pdf_set_char_space ctx_pdf_nyi
+#define ctx_pdf_set_word_space ctx_pdf_nyi
+#define ctx_pdf_set_horizontal_scale ctx_pdf_nyi
+#define ctx_pdf_set_leading ctx_pdf_nyi
+#define ctx_pdf_set_text_rise ctx_pdf_nyi
+
+
+PdfOperator pdf_ops[]={
+ {"q",  0, ctx_pdf_save_state},
+ {"Q",  0, ctx_pdf_restore_state},
+ {"cm", 6, ctx_pdf_ctm},
+ {"w",  1, ctx_pdf_linewidth},
+ {"J",  1, ctx_pdf_linecap},
+ {"j",  1, ctx_pdf_linejoin},
+ {"M",  1, ctx_pdf_miterlimit},
+ {"d",  2, ctx_pdf_dash_pattern},
+ {"ri", 1, ctx_pdf_intent},
+ {"i",  1, ctx_pdf_flatness},
+
+ {"gs", 1, ctx_pdf_gs},
+
+ {"m",  2, ctx_pdf_move_to},
+ {"l",  2, ctx_pdf_line_to},
+ {"c",  6, ctx_pdf_curve_to},
+ {"v",  4, ctx_pdf_curve_to_shared_1_and_2},
+ {"y",  4, ctx_pdf_curve_to_shared_2_and_3},
+ {"h",  0, ctx_pdf_close_path},
+
+ {"re", 4, ctx_pdf_retangle},
+ {"S",  0, ctx_pdf_stroke},
+ {"s",  0, ctx_pdf_close_and_stroke},
+ {"f",  0, ctx_pdf_fill},
+ {"F",  0, ctx_pdf_fill},
+ {"f*", 0, ctx_pdf_fill_even_odd},
+ {"B",  0, ctx_pdf_fill_and_stroke},
+ {"B*", 0, ctx_pdf_fill_and_stroke_even_odd},
+ {"b",  0,  ctx_pdf_close_fill_and_stroke},
+ {"b*", 0, ctx_pdf_close_fill_and_stroke_even_odd},
+ {"n",  0,  ctx_pdf_drop_path},
+ 
+ {"W",  0,  ctx_pdf_clip_nonzero},
+ {"W*", 0, ctx_pdf_clip_evenodd},
+
+
+ {"cs", 1, ctx_pdf_set_color_space},
+ {"CS", 1, ctx_pdf_set_stroke_color_space},
+
+ {"sc",  1,  ctx_pdf_set_color},
+ {"scn", 1, ctx_pdf_set_colornn},
+
+ {"SC", 1,  ctx_pdf_set_stroke_color},  // args depend on 
+                                       // colorspace -
+ {"SCN", 1, ctx_pdf_set_stroke_colornn},
+
+ {"g",  1, ctx_pdf_set_gray},
+ {"rg", 3, ctx_pdf_set_rgb},
+ {"k",  4, ctx_pdf_set_cmyk},
+ {"G",  1, ctx_pdf_set_stroke_gray},
+ {"RG", 3, ctx_pdf_set_stroke_rgb},
+ {"K",  4, ctx_pdf_set_stroke_cmyk},
+
+ {"BT", 0, ctx_pdf_begin_text},
+ {"ET", 0, ctx_pdf_end_text},
+ {"Tf", 2, ctx_pdf_text_font},
+ {"Td", 2, ctx_pdf_text_move_to},
+ {"TD", 2, ctx_pdf_text_move_to_with_leading},
+ {"Tm", 6, ctx_pdf_text_set_matrix},
+ {"T*", 0, ctx_pdf_text_move_to_start_of_next_line},
+
+ {"Tr", 1, ctx_pdf_text_render_mode},
+ {"Tj", 1, ctx_pdf_text_show},
+ {"'",  1, ctx_pdf_move_to_next_line_show_string},
+ {"\"", 3, ctx_pdf_move_to_next_line_show_string_with_word_and_char_spacing},
+ {"TJ", 1, ctx_pdf_text_show_array},
+
+ {"Tc", 1, ctx_pdf_set_char_space},
+ {"Tw", 1, ctx_pdf_set_word_space},
+ {"Tz", 1, ctx_pdf_set_horizontal_scale},
+ {"TL", 1, ctx_pdf_set_leading},
+ {"Ts", 1, ctx_pdf_set_text_rise},
+
 };
 
 void
 ctx_parse_pdf (Ctx *ctx, const char *pdf)
 {
-  PdfState pdf_state;
+  //PdfState pdf_state;
 
   /* naive direct pdf vector data stream decoder, how hard can it be? */
-  
-
 }
 #endif
 

@@ -2025,11 +2025,11 @@ qagain:
              vt_cell_cache_clear (vt);
              break; // set 132 col
 
-     case 5: /*MODE;Screen mode;Reverse;Normal;*/
+     case 5: /*MODE;DECSCNM Screen mode;Reverse;Normal;*/
              vt->reverse_video = set;
              vt_cell_cache_clear (vt);
              break;
-     case 6: /*MODE;Origin mode;Relative;Absolute;*/
+     case 6: /*MODE;DECOM Origin mode;Relative;Absolute;*/
              vt->origin = set;
              if (set)
              {
@@ -2060,8 +2060,11 @@ qagain:
      case 61: // vertical cursor coupling
              break;
 
-     case 69:/*MODE;Left right margin mode;On;Off; */
-             vt->left_right_margin_mode = set; 
+     case 69:/*MODE;DECVSSM Left right margin mode;On;Off; */
+             vt->left_right_margin_mode = set;
+	     if (set)
+	     {
+	     }
              break;
 
      case 80:/* DECSDM Sixel scrolling */
@@ -2089,7 +2092,7 @@ qagain:
            break;
      case 1011: // scroll to bottom on key press (rxvt)
            break;
-     case 2004:  // set_bracketed_paste_mode
+     case 2004:  /* MODE;bracketd paste:On;Off; */
            vt->bracket_paste = set;
            break;
 
@@ -2126,13 +2129,12 @@ again:
      case 3:/*CRM - control representation mode */
              /* show control chars? */
              break;
-     case 4:/*MODE2;Insert Mode;Insert;Replace; */
+     case 4:/*MODE2;IRM Insert Mode;Insert;Replace; */
              vt->insert_mode = set; break;
-     case 9: /* interlace mode */
-             break;
+     case 9: /* interlace mode */ break;
      case 12:/*MODE2;Local echo;On;Off; */
              vt->echo = set; break;
-     case 20:/*MODE2;Carriage Return on LF/Newline;On;Off;*/;
+     case 20:/*MODE2;LNM Carriage Return on LF/Newline;On;Off;*/;
              vt->cr_on_lf = set; break;
      case 21: // GRCM - whether SGR accumulates or a reset on each command
              break;
@@ -2155,86 +2157,27 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
     int qval;
     sequence++;
     qval = parse_int (sequence, 1);
+    int is_set = -1;
     switch (qval)
     {
-     case 1:
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->cursor_key_application?1:2);
-             break;
-     case 2017:
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->key_2017?1:2);
-             break;
+     case 1: is_set = vt->cursor_key_application; break;
+     case 2017: is_set = vt->key_2017; break;
      case 2: /*MODE;VT52 emulation;;enable; */
              //if (set==0) vt->in_vt52 = 1;
-     case 3: /*MODE;Column mode;132 columns;80 columns;*/
-             //vtcmd_set_132_col (vt, set);
-             sprintf (buf, "\e[?%i;%i$y", qval, 0);
-             break;
-     case 4: 
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->smooth_scroll?1:2);
-             break; 
-
-     case 5: /*MODE;Screen mode;Reverse;Normal;*/
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->reverse_video?1:2);
-             break;
-     case 6: /*MODE;Origin mode;Relative;Absolute;*/
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->origin?1:2);
-             break;
-     case 7: /*MODE;Wraparound;On;Off;*/
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->autowrap?1:2);
-     case 8: /*MODE;Auto repeat;On;Off;*/
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->keyrepeat?1:2);
-             break;
-     //case 12:vtcmd_ignore (vt, sequence);break; // blinking_cursor
-
-
-     case 25:/*MODE;Cursor visible;On;Off; */
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->cursor_visible?1:2);
-             break;
-
-     case 69:/*MODE;Left right margin mode;On;Off; */
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->left_right_margin_mode?1:2);
-             break;
-
-
-     case 437:/*MODE;Encoding/cp437mode;cp437;utf8; */
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->encoding?1:2);
-             break;
-
-     case 1000:/*MODE;Mouse reporting;On;Off;*/
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->mouse?1:2);
-             break;
-     case 1002:/*MODE;Mouse drag;On;Off;*/ 
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->mouse_drag?1:2);
-             break;
-     case 1003:/*MODE;Mouse all;On;Off;*/ 
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->mouse_all?1:2);
-             break;
-     case 1006:/*MODE;Mouse decimal;On;Off;*/ 
-             sprintf (buf, "\e[?%i;%i$y", qval, 
-                      vt->mouse_decimal?1:2);
-             break;
-     //case 47:
-     //case 1047:
-     //case 1048:
-     //case 1049: <- the one to implement
-        //   vtcmd_reset_to_initial_state (vt, sequence);  
-           break; // alt screen
-     case 2004:  // set_bracketed_paste_mode
-           sprintf (buf, "\e[?%i;%i$y", qval, 
-                    vt->bracket_paste?1:2);
+     case 3: break;
+     case 4: is_set = vt->smooth_scroll; break; 
+     case 5: is_set = vt->reverse_video; break;
+     case 6: is_set = vt->origin; break;
+     case 7: is_set = vt->autowrap; break;
+     case 8: is_set = vt->keyrepeat; break;
+     case 25:is_set = vt->cursor_visible; break;
+     case 69:is_set = vt->left_right_margin_mode; break;
+     case 437:is_set= vt->encoding; break;
+     case 1000: is_set = vt->mouse; break;
+     case 1002: is_set = vt->mouse_drag; break;
+     case 1003: is_set = vt->mouse_all; break;
+     case 1006: is_set = vt->mouse_decimal; break;
+     case 2004: is_set = vt->bracket_paste; break;
            break;
      //case 2020: /*MODE;wordwrap;On;Off;*/
      //        sprintf (buf, "\e[?%i;%i$y", qval, 
@@ -2256,16 +2199,19 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
      case 61: // vertical cursor coupling
 
      default:
-           sprintf (buf, "\e[?%i;%i$y", qval, 0);
            break;
     }
+    if (is_set >= 0)
+      sprintf (buf, "\e[?%i;%i$y", qval, is_set?1:2);
+    else
+      sprintf (buf, "\e[?%i;%i$y", qval, 0);
   }
   else
   {
     int val;
     val = parse_int (sequence, 1);
     switch (val)
-{
+    {
      case 2:/* AM - keyboard action mode */
            sprintf (buf, "\e[%i;%i$y", val, 0);
              break;
@@ -2646,18 +2592,20 @@ static Sequence sequences[]={
   {"[6 F", 0, vtcmd_justify},
   {"[7 F", 0, vtcmd_justify},
   {"[8 F", 0, vtcmd_justify},
-
+// XXX missing DECIC DECDC  insert and delete column
   {"[", 'A', vtcmd_cursor_up, VT100},   /* args:Pn    id:CUU Cursor Up */
   {"[",  'B', vtcmd_cursor_down, VT100}, /* args:Pn    id:CUD Cursor Down */
   {"[",  'C', vtcmd_cursor_forward, VT100}, /* args:Pn id:CUF Cursor Forward */
   {"[",  'D', vtcmd_cursor_backward, VT100}, /* args:Pn id:CUB Cursor Backward */
+  {"[",  'j', vtcmd_cursor_backward, ANSI}, /* args:Pn id:HPB Horizontal Position Backward */
+  {"[",  'k', vtcmd_cursor_up, ANSI}, /* args:Pn id:VPB Vertical Position Backward */
   {"[",  'E', vtcmd_next_line, VT100}, /* args:Pn id:CNL Cursor Next Line */
   {"[",  'F', vtcmd_cursor_preceding_line, VT100}, /* args:Pn id:CPL Cursor Preceding Line */
   {"[",  'G', vtcmd_horizontal_position_absolute}, /* args:Pn id:CHA Cursor Horizontal Absolute */
-  {"[",  'H', vtcmd_cursor_position}, /* args:Pl;Pc id:CUP Cursor Position */
+  {"[",  'H', vtcmd_cursor_position, VT100}, /* args:Pl;Pc id:CUP Cursor Position */
   {"[",  'I', vtcmd_insert_n_tabs}, /* args:Pn id:CHT Cursor Horizontal Forward Tabulation */
-  {"[",  'J', vtcmd_erase_in_display}, /* args:Ps id:ED Erase in Display */
-  {"[",  'K', vtcmd_erase_in_line}, /* args:Ps id:EL Erase in Line */
+  {"[",  'J', vtcmd_erase_in_display, VT100}, /* args:Ps id:ED Erase in Display */
+  {"[",  'K', vtcmd_erase_in_line, VT100}, /* args:Ps id:EL Erase in Line */
   {"[",  'L', vtcmd_insert_blank_lines, VT102}, /* args:Pn id:IL Insert Line */
   {"[",  'M', vtcmd_delete_n_lines, VT102}, /* args:Pn id:DL Delete Line   */
   // [ N is EA - Erase in field
@@ -2667,8 +2615,8 @@ static Sequence sequences[]={
   // [ R is CPR - active cursor position report
   {"[",  'S', vtcmd_scroll_up, VT100}, /* args:Pn id:SU Scroll Up */
   {"[",  'T', vtcmd_scroll_down, VT100}, /* args:Pn id:SD Scroll Down */
-  {"[",/*SP*/'U', vtcmd_set_line_home},
-  {"[",/*SP*/'V', vtcmd_set_line_limit},
+  {"[",/*SP*/'U', vtcmd_set_line_home, ANSI}, /* args:PnSP id=SLH Set Line Home */
+  {"[",/*SP*/'V', vtcmd_set_line_limit, ANSI},/* args:PnSP id=SLL Set Line Limit */
   // [ W is cursor tabulation control
   // [ Pn Y  - cursor line tabulation
   //
@@ -2677,12 +2625,12 @@ static Sequence sequences[]={
   {"[",  '^', vtcmd_scroll_down}, /* muphry alternate from ECMA */
   {"[",  '@', vtcmd_insert_character, VT102}, /* args:Pn id:ICH Insert Character */
 
-  {"[",  'a', vtcmd_cursor_forward}, /* args:Pn id:HPR Horizontal Position Relative */
-  {"[",  'b', vtcmd_cursor_forward}, /* REP previous char */
+  {"[",  'a', vtcmd_cursor_forward, ANSI}, /* args:Pn id:HPR Horizontal Position Relative */
+  {"[",  'b', vtcmd_cursor_forward, ANSI}, /* REP previous char XXX incomplete */ 
   {"[",  'c', vtcmd_report}, /* id:DA args:... Device Attributes */
   {"[",  'd', vtcmd_goto_row},       /* args:Pn id:VPA Vertical Position Absolute  */
   {"[",  'e', vtcmd_cursor_down},    /* args:Pn id:VPR Vertical Position Relative */
-  {"[",  'f', vtcmd_cursor_position, VT100}, /* args:Pl;Pc id:CUP Cursor Position */
+  {"[",  'f', vtcmd_cursor_position, VT100}, /* args:Pl;Pc id:HVP Cursor Position */
   {"[g", 0,   vtcmd_clear_current_tab, VT100}, /* id:TBC clear current tab */
   {"[0g", 0,  vtcmd_clear_current_tab, VT100}, /* id:TBC clear current tab */
   {"[3g", 0,  vtcmd_clear_all_tabs, VT100},    /* id:TBC clear all tabs */
@@ -2694,8 +2642,8 @@ static Sequence sequences[]={
   {"[s",  0,  vtcmd_save_cursor_position, VT100}, /*id:SCP Save Cursor Position */
 #endif
   {"[u",  0,  vtcmd_restore_cursor_position, VT100}, /*id:RCP Restore Cursor Position */
-  {"[",  's', vtcmd_set_left_and_right_margins, VT300}, /* args:Pl;Pr id:DECSLRM Set Left and Right Margins */
-  {"[",  '`', vtcmd_horizontal_position_absolute},  /* args:Pn id:HPA Horizontal Position Absolute */
+  {"[",  's', vtcmd_set_left_and_right_margins, VT400}, /* args:Pl;Pr id:DECSLRM Set Left and Right Margins */
+  {"[",  '`', vtcmd_horizontal_position_absolute, ANSI},  /* args:Pn id:HPA Horizontal Position Absolute */
 
   {"[",  'h', vtcmd_set_mode, VT100},   /* args:Pn[;...] id:SM Set Mode */
   {"[",  'l', vtcmd_set_mode, VT100}, /* args:Pn[;...]  id:RM Reset Mode */
@@ -4087,7 +4035,7 @@ static int yenc (const char *src, char *dst, int count)
       case 0x0D: //cr
       case 0x1B: //esc
       case 0x3D: //=
-        dst[out_len++] = '=';
+        dst[out_len++] = , VT100'=';
         o = (o + 64) % 256;
       default:
         dst[out_len++] = o;
