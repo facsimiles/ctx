@@ -6943,7 +6943,6 @@ ctx_encode_pixels_RGB565_BS (CtxRenderer *renderer, int x, void *buf, const uint
   }
 }
 
-
 static int
 ctx_b2f_over_RGB565_BS (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
 {
@@ -8264,6 +8263,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 #if 1
 
 typedef struct PdfState {
+  Ctx  *ctx;
   float args[10];
   char *strings[10];
 } PdfState;
@@ -8274,7 +8274,10 @@ typedef struct _PdfOperator PdfOperator;
 struct _PdfOperator
 {
   const char *name;
-  int         args;
+  int         args; // some take variable args - depending
+                    // on other state, then we code them
+		    // as if they take the max number of
+		    // args
   void (*impl)(PdfState *state, PdfOperator *op);
 };
 
@@ -8386,23 +8389,21 @@ PdfOperator pdf_ops[]={
  {"f*", 0, ctx_pdf_fill_even_odd},
  {"B",  0, ctx_pdf_fill_and_stroke},
  {"B*", 0, ctx_pdf_fill_and_stroke_even_odd},
- {"b",  0,  ctx_pdf_close_fill_and_stroke},
+ {"b",  0, ctx_pdf_close_fill_and_stroke},
  {"b*", 0, ctx_pdf_close_fill_and_stroke_even_odd},
- {"n",  0,  ctx_pdf_drop_path},
+ {"n",  0, ctx_pdf_drop_path},
  
- {"W",  0,  ctx_pdf_clip_nonzero},
+ {"W",  0, ctx_pdf_clip_nonzero},
  {"W*", 0, ctx_pdf_clip_evenodd},
-
 
  {"cs", 1, ctx_pdf_set_color_space},
  {"CS", 1, ctx_pdf_set_stroke_color_space},
 
- {"sc",  1,  ctx_pdf_set_color},
- {"scn", 1, ctx_pdf_set_colornn},
-
- {"SC", 1,  ctx_pdf_set_stroke_color},  // args depend on 
-                                       // colorspace -
- {"SCN", 1, ctx_pdf_set_stroke_colornn},
+ {"sc",  4, ctx_pdf_set_color},       // 4 for cmyk // need juggling
+ {"scn", 4, ctx_pdf_set_colornn},     // for g and rgb
+ {"SC",  4, ctx_pdf_set_stroke_color},// args depend on 
+                                      // colorspace -
+ {"SCN", 4, ctx_pdf_set_stroke_colornn},
 
  {"g",  1, ctx_pdf_set_gray},
  {"rg", 3, ctx_pdf_set_rgb},
@@ -8433,12 +8434,788 @@ PdfOperator pdf_ops[]={
 
 };
 
-void
-ctx_parse_pdf (Ctx *ctx, const char *pdf)
+typedef enum {
+  PDF_NULL=0,
+  PDF_BOOLEAN,
+  PDF_FLOAT,
+  PDF_INT,
+  PDF_NAME,
+  PDF_HEXDATA,
+  PDF_OPERATOR,
+  PDF_REFERENCE,
+  PDF_STRING,
+  PDF_STREAM,
+  PDF_ARRAY,
+  PDF_DICT
+} PdfTypes;
+
+typedef struct _PdfVal PdfVal;
+
+/* footprint shrinking ideas:
+ *   short variant of name, op and string - only for 0 terminated
+ *   and for lengths <= 3 ? fitting in an int
+ *
+ *   size can be determined by len.
+ */
+
+struct _PdfVal {
+  int type;
+  union {
+    struct { float  value; } real;
+    struct { int    value; } integer;
+    struct { int    value; } boolean;
+    struct { int  id; int gen; } reference;
+    struct { int len; int size; char *value; } name;
+    struct { int len; int size; char *value; } op;
+    struct { int len; int size; char *value; } string;
+
+    struct { int len; int size; char *value; } hexdata;
+    struct { int len; int size; char *value; } stream;
+    struct { int len; int size; PdfVal **values;      } array;
+    struct { int len; int size; PdfVal **keys_values; } dict;
+  };
+};
+
+PdfVal *pdf_val_new (int type)
 {
+  PdfVal *val = calloc (sizeof (PdfVal), 1);
+  val->type = type;
+  return val;
+}
+
+
+void pdf_val_set_null (PdfVal *val);
+void pdf_val_free (PdfVal *val)
+{
+  if (!val) return;
+  pdf_val_set_null (val);
+  free (val);
+}
+
+void pdf_val_set_null (PdfVal *val)
+{
+  switch (val->type)
+  {
+    case PDF_DICT:
+    case PDF_ARRAY:
+      for (int i = 0; i < val->array.len; i++)
+      {
+        pdf_val_free (val->array.values[i]);
+      }
+      if (val->array.values)
+        free (val->array.values);
+      val->array.len = 0;
+      val->array.size = 0;
+      val->array.values = NULL;
+      break;
+    
+    case PDF_STRING:
+    case PDF_NAME:
+    case PDF_OPERATOR:
+    case PDF_STREAM:
+    case PDF_HEXDATA:
+      if (val->string.value)
+        free (val->string.value);
+      val->string.len = 0;
+      val->string.size = 0;
+      val->string.value = NULL;
+      break;
+  }
+  memset (val, 0, sizeof (PdfVal));
+  val->type = PDF_NULL;
+}
+
+void pdf_val_set_float (PdfVal *val, double value)
+{
+  pdf_val_set_null (val);
+  val->type = PDF_FLOAT;
+  val->real.value = value;
+}
+
+void pdf_val_set_int (PdfVal *val, int value)
+{
+  pdf_val_set_null (val);
+  val->type = PDF_INT;
+  val->integer.value = value;
+}
+
+void pdf_val_set_boolean (PdfVal *val, int value)
+{
+  pdf_val_set_null (val);
+  val->type = PDF_BOOLEAN;
+  val->boolean.value = value;
+}
+
+void pdf_val_string_append_c (PdfVal *val, char v)
+{
+  if (!((val->type == PDF_STRING) ||
+        (val->type == PDF_OPERATOR) ||
+        (val->type == PDF_STREAM) ||
+        (val->type == PDF_NAME)))
+  {
+    pdf_val_set_null (val);
+    val->type = PDF_STRING;
+  }
+  if (val->string.len + 2 > val->string.size)
+  {
+    val->string.size  = val->string.size + 16;
+    val->string.value = realloc (val->string.value, val->string.size + 1);
+  }
+  val->string.value[val->string.len++]=v;
+  val->string.value[val->string.len]=0;
+}
+
+PdfVal *pdf_val_new_string_c (uint8_t c)
+{
+  PdfVal *val = pdf_val_new (PDF_STRING);
+  pdf_val_string_append_c (val, c);
+  return val;
+}
+
+void pdf_val_set_string (PdfVal *val, const char *value)
+{
+  pdf_val_set_null (val);
+  val->type = PDF_STRING;
+  val->string.value = strdup (value);
+  val->string.len = strlen (value);
+  val->string.size = val->string.len + 1;
+}
+
+static inline int pdf_hexdigit (int ch);
+
+
+void pdf_val_array_append (PdfVal *val, PdfVal *child)
+{
+  if (!((val->type == PDF_ARRAY)||
+        (val->type == PDF_DICT)))
+  {
+    pdf_val_set_null (val);
+    val->type = PDF_ARRAY;
+  }
+  if (val->array.len + 1 > val->array.size)
+  {
+    val->array.size = val->array.size + 8;
+    val->array.values = realloc (val->array.values, val->array.size * sizeof (void*));
+  }
+  val->array.values[val->array.len++]=child;
+}
+
+void pdf_val_dict_append (PdfVal *val, PdfVal *key, PdfVal *value)
+{
+  pdf_val_array_append (val, key);
+  pdf_val_array_append (val, value);
+}
+
+PdfVal *
+pdf_dict_get_val (PdfVal *dict, const char *name)
+{
+  for (int i = 0; i < dict->dict.len/2; i++)
+  {
+     PdfVal *key = dict->dict.keys_values[i*2];
+     if (!strcmp (key->string.value, name))
+     {
+        return dict->dict.keys_values[i*2+1];
+     }
+  }
+  return NULL;
+}
+
+static const char *
+pdf_val_get_string (PdfVal *val)
+{
+  if (!val)
+    return NULL;
+  if ((val->type == PDF_STRING) ||
+      (val->type == PDF_NAME) ||
+      (val->type == PDF_OPERATOR))
+  {
+    return val->string.value;
+  }
+  if (val->type == PDF_STREAM)
+  {
+    static char buf[256];
+    buf[0]=0;
+    for (int i = 0; i < val->string.len && i < 16; i++)
+    {
+      int c = val->string.value[i];
+      if ((c<32) || (c>126))
+      {
+	 sprintf (&buf[strlen(buf)], "<%i>", c);
+      }
+      else
+      {
+	 sprintf (&buf[strlen(buf)], "%c", c);
+      }
+    }
+    sprintf (&buf[strlen(buf)], "...");
+    return buf;
+  }
+  return NULL;
+}
+
+#if 0
+static float
+pdf_val_get_float (PdfVal *val)
+{
+  if (!val)
+    return 0.0f;
+  if (val->type == PDF_FLOAT)
+    return val->real.value;
+  if (val->type == PDF_INT)
+    return val->integer.value;
+  return 0.0f;
+}
+#endif
+
+static int
+pdf_val_get_int (PdfVal *val)
+{
+  if (!val)
+    return 0;
+  if (val->type == PDF_INT)
+    return val->integer.value;
+  if (val->type == PDF_FLOAT)
+    return val->real.value;
+  return 0;
+}
+
+int
+pdf_dict_get_int (PdfVal *dict, const char *name)
+{
+  PdfVal *val = pdf_dict_get_val (dict, name);
+  return pdf_val_get_int (val);
+}
+
+void pdf_val_string_to_number (PdfVal *val)
+{
+  if (val->type != PDF_STRING)
+    return;
+  const char *strval=pdf_val_get_string (val);
+  long value_i = strval?strtol (strval, NULL, 10):0.0;
+  double value_d = strval?strtod (strval, NULL):0.0;
+
+  if (strval && strchr (strval, '.'))
+    pdf_val_set_float (val, value_d);
+  else
+    pdf_val_set_int (val, value_i);
+}
+
+void pdf_val_string_to_hexdata (PdfVal *val)
+{
+  if (val->type != PDF_STRING)
+    return;
+  const char *strval=pdf_val_get_string (val);
+  for (int i = 0; i < (val->string.len + 1)/ 2; i++)
+  {
+    int high=pdf_hexdigit(val->string.value[i*2+0]);
+    int low =pdf_hexdigit(val->string.value[i*2+1]);
+    if (low < 0) low = 0;
+    val->string.value[i] = high * 16 + low;
+  }
+  val->string.len = (val->string.len + 1) / 2;
+  val->string.value[val->string.len]=0;
+  //val->type = PDF_HEXDATA;
+  //double value = val->string.value?strtod (val->string.value, NULL):0.0;
+  //pdf_val_set_number (val, value);
+  // NYI XXX
+}
+
+typedef enum {
+  PDF_IN_NEUTRAL=0,
+  PDF_IN_NUMBER,
+  PDF_IN_NAME,
+  PDF_IN_NAME_HEX,
+  PDF_IN_ARRAY,
+  PDF_IN_OPERATOR,
+  PDF_IN_STRING,
+  PDF_IN_STRING_ESCAPEE,
+  PDF_IN_STRING_OCT,
+  PDF_IN_STREAM,
+  PDF_IN_COMMENT,
+  PDF_IN_HEXDATA,
+  PDF_START_DICT_OR_HEXDATA,
+  PDF_IN_DICT,
+  PDF_SWALLOW_CHEVRON,
+} PdfTokens;
+
+static const char *pdf_numeric="-+0123456789.";
+static const char *pdf_special="()<>[]{}/%";
+static const char *pdf_whitespace=" \n\t\r\f";
+
+static inline int is_of_class (int ch, const char *klass)
+{
+  for (int i = 0; klass[i]; i++)
+    if (ch == klass[i])
+      return 1;
+  return 0;
+}
+
+static inline int is_pdf_special (int ch)
+{
+  return is_of_class (ch, pdf_special);
+}
+
+static inline int is_pdf_whitespace (int ch)
+{
+  return is_of_class (ch, pdf_whitespace);
+}
+
+static inline int is_pdf_numeric (int ch)
+{
+  return is_of_class (ch, pdf_numeric);
+}
+
+static inline int pdf_hexdigit (int ch)
+{
+  if (ch >= '0' && ch <= '9')
+  {
+    return ch - '0';
+  }
+  if (ch >= 'a' && ch <= 'f')
+  {
+    return ch - 'a' + 10;
+  }
+  if (ch >= 'A' && ch <= 'F')
+  {
+    return ch - 'A' + 10;
+  }
+  return -1;
+}
+
+#define MAX_DEPTH  64
+
+typedef struct PdfScanner
+{
+  PdfVal        *val[MAX_DEPTH];
+  int            state[MAX_DEPTH];
+  int            depth;
+
+  int            octal;
+  int            octal_count;
+
+  int            paren_balance;
+  int            stream_count;
+
+  PdfVal        *stream;
+
+  int            pos;
+  const uint8_t *data;
+  int            length;
+  PdfVal        *result;
+} PdfScanner;
+
+
+void print_val (PdfVal *val)
+{
+  switch (val->type)
+  {
+     case PDF_NAME:
+       fprintf (stdout, "/%s ", pdf_val_get_string (val));
+       break;
+     case PDF_OPERATOR:
+       fprintf (stdout, "%s ", pdf_val_get_string (val));
+       break;
+     case PDF_REFERENCE:
+       fprintf (stdout, "@%i ", val->reference.id);
+       break;
+     case PDF_STRING:
+       fprintf (stdout, "(%s)", pdf_val_get_string (val));
+       break;
+     case PDF_STREAM:
+       fprintf (stdout, "{%s}", pdf_val_get_string (val));
+       break;
+     case PDF_HEXDATA:
+       fprintf (stdout, "<%s>", pdf_val_get_string (val));
+       break;
+     case PDF_INT:
+       fprintf (stdout, "%i ", val->integer.value);
+       break;
+     case PDF_FLOAT:
+       fprintf (stdout, "%f ", val->real.value);
+       break;
+     case PDF_ARRAY:
+       fprintf (stdout, "\n[");
+       for (int i = 0; i < val->array.len; i ++)
+	       print_val (val->array.values[i]);
+       fprintf (stdout, "]\n");
+       break;
+     case PDF_DICT:
+       fprintf (stdout, "\n<<");
+       for (int i = 0; i < val->array.len/2; i ++)
+           {
+	      print_val (val->array.values[i*2]);
+	      print_val (val->array.values[i*1+1]);
+	   }
+       fprintf (stdout, ">>\n");
+       break;
+  }
+}
+
+void
+ctx_pdf_scan_elem_done (PdfScanner *pdf)
+{
+   PdfVal *value = pdf->val[pdf->depth];
+   PdfVal *target = NULL;
+
+   if (pdf->depth)
+   {
+     if ((pdf->state[pdf->depth-1] == PDF_IN_ARRAY) || 
+         (pdf->state[pdf->depth-1] == PDF_IN_DICT))
+     {
+        target = pdf->val[pdf->depth-1];
+     }
+   }
+   else
+   {
+     target = pdf->result;
+    // print_val (value);
+   }
+
+  if (target)
+  {
+    if (value->type == PDF_OPERATOR &&
+        !strcmp (value->op.value, "true"))
+    {
+       pdf_val_set_boolean (value, 1);
+    }
+    if (value->type == PDF_OPERATOR &&
+        !strcmp (value->op.value, "false"))
+    {
+       pdf_val_set_boolean (value, 0);
+    }
+    if (value->type == PDF_OPERATOR &&
+        !strcmp (value->op.value, "stream"))
+    {
+       pdf->stream_count = 
+	   pdf_dict_get_int (target->array.values[target->array.len-1],
+			     "Length") + 2;
+       pdf->stream = pdf_val_new (PDF_STREAM);
+    }
+    if (value->type == PDF_OPERATOR &&
+        !strcmp (value->op.value, "endstream"))
+    {
+       pdf_val_array_append (target, pdf->stream);
+    }
+
+    if (value->type == PDF_OPERATOR &&
+        !strcmp (value->op.value, "R"))
+    {
+      pdf_val_free (target->array.values[target->array.len-1]);
+      pdf_val_free (value);
+      target->array.len -= 1;
+      target->array.values[target->array.len-1]->type = PDF_REFERENCE;
+    }
+    else
+    {
+      pdf_val_array_append (target, value);
+    }
+  }
+  else
+  {
+    pdf_val_free (value);
+  }
+
+  pdf->val[pdf->depth] = NULL;
+  pdf->state[pdf->depth] = PDF_IN_NEUTRAL;
+}
+
+static void
+ctx_pdf_scan (PdfScanner *pdf)
+{
+  int c = pdf->data[pdf->pos];
+  if (pdf->stream_count>0)
+  {
+    pdf_val_string_append_c (pdf->stream, c);
+    pdf->stream_count--;
+    return;
+  }
+
+  switch (pdf->state[pdf->depth])
+  {
+    case PDF_SWALLOW_CHEVRON:
+      if (c != '>')
+      {
+	 fprintf (stderr, "expected >\n");
+      }
+      pdf->state[pdf->depth] = PDF_IN_NEUTRAL;
+      break;
+    case PDF_IN_COMMENT:
+      if (c =='\n')
+      {
+	 pdf->state[pdf->depth] = PDF_IN_NEUTRAL;
+      }
+      break;
+    case PDF_START_DICT_OR_HEXDATA:
+      if (c == '<')
+      {
+	  pdf->state[pdf->depth] = PDF_IN_DICT;
+	  pdf->val[pdf->depth] = pdf_val_new (PDF_DICT);
+	  pdf->depth++;
+	  pdf->val[pdf->depth] = NULL;
+	  break;
+      }
+      else
+      {
+	  pdf->state[pdf->depth] = PDF_IN_HEXDATA;
+	  pdf->val[pdf->depth] = pdf_val_new(PDF_STRING);
+	  
+      }
+      /* fallthrough */
+    case PDF_IN_HEXDATA:
+      if (is_pdf_whitespace (c))
+      {
+      }
+      if (c == '>')
+      {
+	 pdf_val_string_to_hexdata (pdf->val[pdf->depth]);
+	 pdf->state[pdf->depth] = PDF_IN_NEUTRAL;
+	 ctx_pdf_scan_elem_done (pdf);
+      }
+      else {
+        if (pdf_hexdigit (c) >= 0)
+	  pdf_val_string_append_c (pdf->val[pdf->depth], c);
+      }
+      break;
+    case PDF_IN_NEUTRAL:
+      switch (c)
+      {
+        case '%':
+	  pdf->state[pdf->depth] = PDF_IN_COMMENT;
+          break;
+        case '/':
+	  pdf->state[pdf->depth] = PDF_IN_NAME;
+	  pdf->val[pdf->depth] = pdf_val_new(PDF_STRING);
+          break;
+        case '<':
+	  pdf->state[pdf->depth] = PDF_START_DICT_OR_HEXDATA;
+          break;
+        case '(':
+	  pdf->state[pdf->depth] = PDF_IN_STRING;
+	  pdf->val[pdf->depth] = pdf_val_new(PDF_STRING);
+	  pdf->paren_balance=0;
+	  pdf->paren_balance++;
+          break;
+
+        case '>':
+	  if (pdf->depth && pdf->state[pdf->depth-1] == PDF_IN_DICT)
+	  {
+	    pdf->depth--;
+	    ctx_pdf_scan_elem_done (pdf);
+	    pdf->state[pdf->depth] = PDF_SWALLOW_CHEVRON;
+	  }
+	  else
+	  {
+            fprintf (stderr, "unexpected closing of dict\n");
+	  }
+	  break;
+
+        case ']':
+	  pdf->depth--;
+	  if (pdf->depth <= 0) pdf->depth = 0; // SANITY
+	  if (!(pdf->state[pdf->depth] == PDF_IN_ARRAY))
+	  {
+	    fprintf (stderr, "unexpected closing of array\n");
+	  }
+	  ctx_pdf_scan_elem_done (pdf);
+	  break;
+
+        case '[':
+	  pdf->state[pdf->depth] = PDF_IN_ARRAY;
+	  pdf->val[pdf->depth] = pdf_val_new(PDF_ARRAY);
+	  pdf->depth++;
+	  pdf->state[pdf->depth] = PDF_IN_NEUTRAL;
+	  pdf->val[pdf->depth] = NULL;
+          break;
+	default:
+	  if (is_pdf_whitespace (c))
+	  {
+	  }
+	  else if (is_pdf_numeric (c))
+	  {
+            pdf->state[pdf->depth] = PDF_IN_NUMBER;
+	    pdf->val[pdf->depth] = pdf_val_new_string_c (c);
+	  } else
+	  {
+	    pdf->state[pdf->depth] = PDF_IN_OPERATOR;
+	    pdf->val[pdf->depth] = pdf_val_new_string_c (c);
+	  }
+	  break;
+      }
+      break;
+
+    case PDF_IN_OPERATOR:
+      if (is_pdf_whitespace (c) ||
+          is_pdf_special (c))
+      {
+	 pdf->val[pdf->depth]->type = PDF_OPERATOR;
+	 ctx_pdf_scan_elem_done (pdf);
+         ctx_pdf_scan (pdf);
+      }
+      else
+      {
+	pdf_val_string_append_c (pdf->val[pdf->depth], c);
+      }
+      break;
+
+    case PDF_IN_NAME_HEX:
+      if (pdf_hexdigit (c) >= 1)
+      {
+	pdf->octal *= 16;
+	pdf->octal += pdf_hexdigit (c);
+	pdf->octal_count ++;
+
+	if (pdf->octal_count == 2)
+	{
+          pdf_val_string_append_c (pdf->val[pdf->depth], pdf->octal);
+          pdf->state[pdf->depth] = PDF_IN_NAME;
+	}
+      }
+      else
+      {
+        pdf->state[pdf->depth] = PDF_IN_NAME;
+      }
+      break;
+    case PDF_IN_NAME:
+      if (c == '#')
+      {
+        pdf->state[pdf->depth] = PDF_IN_NAME_HEX;
+	pdf->octal_count = 0;
+	pdf->octal = 0;
+      }
+      else if (is_pdf_whitespace (c) ||
+          is_pdf_special (c))
+      {
+	 pdf->val[pdf->depth]->type = PDF_NAME;
+	 ctx_pdf_scan_elem_done (pdf);
+         ctx_pdf_scan (pdf);
+      }
+      else
+      {
+	pdf_val_string_append_c (pdf->val[pdf->depth], c);
+      }
+      break;
+
+    case PDF_IN_STRING_OCT:
+      switch (c)
+      {
+	case '0':case '1':case '2':case '3': case '4': case '5': case '6': case '7':
+		pdf->octal *= 8;
+		pdf->octal += (c - '0');
+		pdf->octal_count++;
+                c = 0; //
+		if (pdf->octal_count < 2)
+		  break;
+	default:
+          pdf_val_string_append_c (pdf->val[pdf->depth], pdf->octal);
+          pdf->state[pdf->depth] = PDF_IN_STRING;
+	  break;
+      }
+
+      break;
+
+    case PDF_IN_STRING_ESCAPEE:
+      switch (c)
+      {
+	case '0':case '1':case '2':case '3': case '4': case '5': case '6': case '7':
+		pdf->octal *= 8;
+		pdf->octal += (c - '0');
+		pdf->octal_count = 1;
+                pdf->state[pdf->depth] = PDF_IN_STRING_OCT;
+                c = 0; //
+		break;
+        case 'n': c = '\n'; break;
+        case 'r': c = '\r'; break;
+        case 't': c = '\t'; break;
+        case 'b': c = '\b'; break;
+        case 'f': c = '\f'; break;
+        case '(':
+        case ')':
+        case '\\':
+          break;
+	default:
+          c = 0;
+          pdf->state[pdf->depth] = PDF_IN_STRING;
+          break;
+       }
+      if (c)
+      {
+        pdf_val_string_append_c (pdf->val[pdf->depth], '\r');
+        pdf->state[pdf->depth] = PDF_IN_STRING;
+      }
+      break;
+
+    case PDF_IN_STRING:
+      if (c == '\\')
+      {
+	 pdf->state[pdf->depth] = PDF_IN_STRING_ESCAPEE;
+      }
+      else
+      {
+	if (c == '(')
+	{
+	  pdf->paren_balance++;
+          pdf_val_string_append_c (pdf->val[pdf->depth], c);
+	}
+	else if (c == ')')
+	{
+	  pdf->paren_balance--;
+	  if (pdf->paren_balance > 0)
+            pdf_val_string_append_c (pdf->val[pdf->depth], c);
+	  else
+            ctx_pdf_scan_elem_done (pdf);
+	}
+	else if (is_pdf_special (c))
+        {
+          ctx_pdf_scan_elem_done (pdf);
+        }
+        else
+        {
+          pdf_val_string_append_c (pdf->val[pdf->depth], c);
+        }
+      }
+      break;
+
+    case PDF_IN_NUMBER:
+      if (is_pdf_whitespace (c) ||
+          is_pdf_special (c))
+      {
+	 pdf_val_string_to_number (pdf->val[pdf->depth]);
+	 ctx_pdf_scan_elem_done (pdf);
+         ctx_pdf_scan (pdf);
+      }
+      else
+      {
+	pdf_val_string_append_c (pdf->val[pdf->depth], c);
+      }
+      break;
+  }
+}
+
+//
+//
+//
+PdfVal *
+ctx_parse_pdf (Ctx *ctx, const char *pdf_data, int length)
+{
+  PdfScanner pdf;
+  memset (&pdf, 0, sizeof (PdfScanner));
+  pdf.data = (void*) pdf_data;
+  pdf.length = length>0?length:strlen (pdf_data);
+  pdf.result = pdf_val_new (PDF_ARRAY);
+
+  while (pdf.pos < pdf.length)
+  {
+     ctx_pdf_scan (&pdf);
+     pdf.pos++;
+  }
+
+  for (int i = 0; i < pdf.result->array.len; i++)
+    print_val (pdf.result->array.values[i]);
+
   //PdfState pdf_state;
 
   /* naive direct pdf vector data stream decoder, how hard can it be? */
+  return pdf.result;
 }
 #endif
 
