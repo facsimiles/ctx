@@ -8458,21 +8458,22 @@ typedef struct _PdfVal PdfVal;
  *   size can be determined by len.
  */
 
+#define SHORTSTRING_LEN 4  // including \0
+
 struct _PdfVal {
   int type;
   union {
     struct { float  value; } real;
     struct { int    value; } integer;
     struct { int    value; } boolean;
-    struct { int  id; int gen; } reference;
-
+    struct { uint16_t  id; uint16_t gen; PdfVal *resolved;} reference;
+    struct { int len; char *value; } string;
+    struct { int len; char value[SHORTSTRING_LEN]; } short_string;
     struct { int len; char *value; } name;
     struct { int len; char *value; } op;
-    struct { int len; char *value; } string;
     struct { int len; char *value; } hexdata;
-    struct { int len; char *value; } stream;
-
-    struct { int len; PdfVal **values;      } array;
+    struct { int len; const char *value; } stream;
+    struct { int len; PdfVal **values; } array;
     struct { int len; PdfVal **keys_values; } dict;
   };
 };
@@ -8483,7 +8484,6 @@ PdfVal *pdf_val_new (int type)
   val->type = type;
   return val;
 }
-
 
 void pdf_val_set_null (PdfVal *val);
 void pdf_val_free (PdfVal *val)
@@ -8544,7 +8544,7 @@ void pdf_val_set_boolean (PdfVal *val, int value)
 {
   pdf_val_set_null (val);
   val->type = PDF_BOOLEAN;
-  val->boolean.value = value;
+  val->boolean.value = value?1:0;
 }
 
 static inline int
@@ -8554,6 +8554,22 @@ pdf_val_size_for_len (int len, int chunk_size)
   /* return one bigger mod*/
   int size = ((len / chunk_size) + 1) * chunk_size;
   return size;
+}
+
+void pdf_val_set_string (PdfVal *val, const char *value)
+{
+  int old_type = val->type;
+  pdf_val_set_null (val);
+  val->type = PDF_STRING;
+  val->string.value = strdup (value);
+  int len = strlen (value);
+  int new_size = pdf_val_size_for_len (len + 1, 8);
+  val->string.value = realloc (val->string.value, new_size);
+  strcpy (val->string.value, value);
+  val->string.len = len;
+  if ((old_type == PDF_OPERATOR) ||
+      (old_type == PDF_NAME))
+    val->type = old_type;
 }
 
 void pdf_val_string_append_c (PdfVal *val, char v)
@@ -8582,14 +8598,6 @@ PdfVal *pdf_val_new_string_c (uint8_t c)
   PdfVal *val = pdf_val_new (PDF_STRING);
   pdf_val_string_append_c (val, c);
   return val;
-}
-
-void pdf_val_set_string (PdfVal *val, const char *value)
-{
-  pdf_val_set_null (val);
-  val->type = PDF_STRING;
-  val->string.value = strdup (value);
-  val->string.len = strlen (value);
 }
 
 static inline int pdf_hexdigit (int ch);
@@ -8720,6 +8728,7 @@ void pdf_val_string_to_hexdata (PdfVal *val)
     int high = pdf_hexdigit(val->string.value[i*2+0]);
     int low  = pdf_hexdigit(val->string.value[i*2+1]);
     if (low < 0) low = 0;
+    if (high < 0) high = 0;
     val->string.value[i] = high * 16 + low;
   }
   val->string.len = (val->string.len + 1) / 2;
@@ -8814,7 +8823,6 @@ typedef struct PdfScanner
   PdfVal        *result;
 } PdfScanner;
 
-
 void print_val (PdfVal *val)
 {
   switch (val->type)
@@ -8861,6 +8869,20 @@ void print_val (PdfVal *val)
   }
 }
 
+void pdf_add_xref (PdfScanner *pdf, int id, int gen, int offset)
+{
+#if 0
+       fprintf (stderr, "[OBJ: id:%i gen:%i offset:%i %c%c%c%c%c\n",
+		       id, gen, pdf->pos+1,
+		       pdf->data[pdf->pos+1],
+		       pdf->data[pdf->pos+2],
+		       pdf->data[pdf->pos+3],
+		       pdf->data[pdf->pos+4],
+		       pdf->data[pdf->pos+5]
+		       );
+#endif
+}
+
 void
 ctx_pdf_scan_elem_done (PdfScanner *pdf)
 {
@@ -8893,6 +8915,8 @@ ctx_pdf_scan_elem_done (PdfScanner *pdf)
     {
        pdf_val_set_boolean (value, 0);
     }
+
+    /* XXX not permitted in graphics context */
     if (value->type == PDF_OPERATOR &&
         !strcmp (value->op.value, "stream"))
     {
@@ -8901,18 +8925,39 @@ ctx_pdf_scan_elem_done (PdfScanner *pdf)
 			     "Length") + 2;
        pdf->stream_left = pdf->stream_count;
     }
+
     if (value->type == PDF_OPERATOR &&
         !strcmp (value->op.value, "endstream"))
     {
        PdfVal *stream = pdf_val_new (PDF_STREAM);
-       stream->string.value = (void*)pdf->stream_pointer;
-       stream->string.len   = pdf->stream_count;
+       stream->stream.value = pdf->stream_pointer;
+       stream->stream.len   = pdf->stream_count;
        pdf_val_array_append (target, stream);
+    }
+
+    if (value->type == PDF_OPERATOR &&
+        !strcmp (value->op.value, "obj"))
+    {
+       int id = pdf_val_get_int (target->array.values[target->array.len-2]);
+       int gen = pdf_val_get_int (target->array.values[target->array.len-1]);
+
+#if 0
+       fprintf (stderr, "[OBJ: id:%i gen:%i offset:%i %c%c%c%c%c\n",
+		       id, gen, pdf->pos+1,
+		       pdf->data[pdf->pos+1],
+		       pdf->data[pdf->pos+2],
+		       pdf->data[pdf->pos+3],
+		       pdf->data[pdf->pos+4],
+		       pdf->data[pdf->pos+5]
+		       );
+#endif
+       pdf_add_xref (pdf, id, gen, pdf->pos+1);
     }
 
     if (value->type == PDF_OPERATOR &&
         !strcmp (value->op.value, "R"))
     {
+      /* XXX : fixme carry generation */
       pdf_val_free (target->array.values[target->array.len-1]);
       pdf_val_free (value);
       target->array.len -= 1;
