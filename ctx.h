@@ -8465,14 +8465,15 @@ struct _PdfVal {
     struct { int    value; } integer;
     struct { int    value; } boolean;
     struct { int  id; int gen; } reference;
-    struct { int len; int size; char *value; } name;
-    struct { int len; int size; char *value; } op;
-    struct { int len; int size; char *value; } string;
 
-    struct { int len; int size; char *value; } hexdata;
-    struct { int len; int size; char *value; } stream;
-    struct { int len; int size; PdfVal **values;      } array;
-    struct { int len; int size; PdfVal **keys_values; } dict;
+    struct { int len; char *value; } name;
+    struct { int len; char *value; } op;
+    struct { int len; char *value; } string;
+    struct { int len; char *value; } hexdata;
+    struct { int len; char *value; } stream;
+
+    struct { int len; PdfVal **values;      } array;
+    struct { int len; PdfVal **keys_values; } dict;
   };
 };
 
@@ -8505,19 +8506,19 @@ void pdf_val_set_null (PdfVal *val)
       if (val->array.values)
         free (val->array.values);
       val->array.len = 0;
-      val->array.size = 0;
       val->array.values = NULL;
+      break;
+    case PDF_STREAM:
+      // it contains a pointer to to actual data in file
       break;
     
     case PDF_STRING:
     case PDF_NAME:
     case PDF_OPERATOR:
-    case PDF_STREAM:
     case PDF_HEXDATA:
       if (val->string.value)
         free (val->string.value);
       val->string.len = 0;
-      val->string.size = 0;
       val->string.value = NULL;
       break;
   }
@@ -8546,6 +8547,15 @@ void pdf_val_set_boolean (PdfVal *val, int value)
   val->boolean.value = value;
 }
 
+static inline int
+pdf_val_size_for_len (int len, int chunk_size)
+{
+  if (len <= 0) return 0;
+  /* return one bigger mod*/
+  int size = ((len / chunk_size) + 1) * chunk_size;
+  return size;
+}
+
 void pdf_val_string_append_c (PdfVal *val, char v)
 {
   if (!((val->type == PDF_STRING) ||
@@ -8556,10 +8566,12 @@ void pdf_val_string_append_c (PdfVal *val, char v)
     pdf_val_set_null (val);
     val->type = PDF_STRING;
   }
-  if (val->string.len + 2 > val->string.size)
+  int curr_size = pdf_val_size_for_len (val->string.len, 8);
+
+  if (val->string.len + 2 > curr_size)
   {
-    val->string.size  = val->string.size + 16;
-    val->string.value = realloc (val->string.value, val->string.size + 1);
+    int new_size = pdf_val_size_for_len (val->string.len + 1, 8);
+    val->string.value = realloc (val->string.value, new_size);
   }
   val->string.value[val->string.len++]=v;
   val->string.value[val->string.len]=0;
@@ -8578,11 +8590,9 @@ void pdf_val_set_string (PdfVal *val, const char *value)
   val->type = PDF_STRING;
   val->string.value = strdup (value);
   val->string.len = strlen (value);
-  val->string.size = val->string.len + 1;
 }
 
 static inline int pdf_hexdigit (int ch);
-
 
 void pdf_val_array_append (PdfVal *val, PdfVal *child)
 {
@@ -8592,10 +8602,11 @@ void pdf_val_array_append (PdfVal *val, PdfVal *child)
     pdf_val_set_null (val);
     val->type = PDF_ARRAY;
   }
-  if (val->array.len + 1 > val->array.size)
+  int curr_size = pdf_val_size_for_len (val->array.len, 8);
+  if (val->array.len + 2 > curr_size)
   {
-    val->array.size = val->array.size + 8;
-    val->array.values = realloc (val->array.values, val->array.size * sizeof (void*));
+    int new_size = pdf_val_size_for_len (val->array.len + 1, 8);
+    val->array.values = realloc (val->array.values, new_size * sizeof (void*));
   }
   val->array.values[val->array.len++]=child;
 }
@@ -8704,11 +8715,10 @@ void pdf_val_string_to_hexdata (PdfVal *val)
 {
   if (val->type != PDF_STRING)
     return;
-  const char *strval=pdf_val_get_string (val);
-  for (int i = 0; i < (val->string.len + 1)/ 2; i++)
+  for (int i = 0; i < (val->string.len)/ 2; i++)
   {
-    int high=pdf_hexdigit(val->string.value[i*2+0]);
-    int low =pdf_hexdigit(val->string.value[i*2+1]);
+    int high = pdf_hexdigit(val->string.value[i*2+0]);
+    int low  = pdf_hexdigit(val->string.value[i*2+1]);
     if (low < 0) low = 0;
     val->string.value[i] = high * 16 + low;
   }
@@ -8795,8 +8805,8 @@ typedef struct PdfScanner
 
   int            paren_balance;
   int            stream_count;
-
-  PdfVal        *stream;
+  int            stream_left;
+  const uint8_t *stream_pointer;
 
   int            pos;
   const uint8_t *data;
@@ -8889,12 +8899,15 @@ ctx_pdf_scan_elem_done (PdfScanner *pdf)
        pdf->stream_count = 
 	   pdf_dict_get_int (target->array.values[target->array.len-1],
 			     "Length") + 2;
-       pdf->stream = pdf_val_new (PDF_STREAM);
+       pdf->stream_left = pdf->stream_count;
     }
     if (value->type == PDF_OPERATOR &&
         !strcmp (value->op.value, "endstream"))
     {
-       pdf_val_array_append (target, pdf->stream);
+       PdfVal *stream = pdf_val_new (PDF_STREAM);
+       stream->string.value = (void*)pdf->stream_pointer;
+       stream->string.len   = pdf->stream_count;
+       pdf_val_array_append (target, stream);
     }
 
     if (value->type == PDF_OPERATOR &&
@@ -8923,10 +8936,19 @@ static void
 ctx_pdf_scan (PdfScanner *pdf)
 {
   int c = pdf->data[pdf->pos];
-  if (pdf->stream_count>0)
+
+  if (pdf->stream_left>0)
   {
-    pdf_val_string_append_c (pdf->stream, c);
-    pdf->stream_count--;
+    if (pdf->stream_left >= pdf->stream_count-1)
+    {
+      pdf->stream_pointer = &pdf->data[pdf->pos+1];
+    }
+    else
+    {
+      //if (pdf->stream_left>1)
+      //pdf_val_string_append_c (pdf->stream, c);
+    }
+    pdf->stream_left--;
     return;
   }
 
