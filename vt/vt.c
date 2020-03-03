@@ -5751,6 +5751,30 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_fill (ctx);
       return 0;
 
+     // case 0xe0a0: // PowerLine branch
+     // case 0xe0a1: // PowerLine LN
+     // case 0xe0a2: // PowerLine Lock
+
+     case 0xe0b0: // PowerLine left solid
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x, y);
+      ctx_rel_line_to (ctx, 0, -ch);
+      ctx_rel_line_to (ctx, cw, -ch/2);
+      ctx_fill (ctx);
+      return 0;
+//   case 0xe0b1: // PowerLine left line
+
+     case 0xe0b2: // PowerLine Right solid
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x, y);
+      ctx_rel_move_to (ctx, cw, -ch/2);
+      ctx_rel_line_to (ctx, cw, -ch/2);
+      ctx_rel_line_to (ctx, 0, ch);
+      ctx_fill (ctx);
+      return 0;
+
+ //    case 0xe0b1: // PowerLine right line
+
      case 0x1fb70: // left triangular one quarter block
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
