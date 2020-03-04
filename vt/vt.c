@@ -5759,7 +5759,7 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
       ctx_rel_line_to (ctx, 0, -ch);
-      ctx_rel_line_to (ctx, cw, -ch/2);
+      ctx_rel_line_to (ctx, cw, ch/2);
       ctx_fill (ctx);
       return 0;
 //   case 0xe0b1: // PowerLine left line
@@ -5768,7 +5768,7 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
       ctx_rel_move_to (ctx, cw, -ch/2);
-      ctx_rel_line_to (ctx, cw, -ch/2);
+      ctx_rel_line_to (ctx, -cw, -ch/2);
       ctx_rel_line_to (ctx, 0, ch);
       ctx_fill (ctx);
       return 0;
