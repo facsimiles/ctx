@@ -1654,6 +1654,11 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
         if (s)
           sscanf (s, ":%i:%i:%i", &r, &g, &b);
       }
+      for (int i = 0; i < 3; i++)
+	{
+          s++;
+          while (*s >= '0' && *s <='9') s++;
+	}
       set_fg_rgb(r,g,b);
     }
     else
@@ -1682,8 +1687,8 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
          s = strchr (s, ':');
        if (s)
        n = parse_int (s, 0);
-       s++;
        set_bg_idx(n);
+       s++;
        while (*s >= '0' && *s <='9') s++;
     }
     /* SGR@48;2;50;70;180m@\b24 bit RGB background color@The example sets RGB the triplet 50 70 180@ */
@@ -1703,6 +1708,11 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
         if (s)
           sscanf (s, ":%i:%i:%i", &r, &g, &b);
       }
+      for (int i = 0; i < 3; i++)
+	{
+          s++;
+          while (*s >= '0' && *s <='9') s++;
+	}
       set_bg_rgb(r,g,b);
     }
     else
@@ -6014,6 +6024,24 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold,
 
 static uint8_t palettes[][16][3]={
         {
+{0, 0, 0},
+{139, 0, 0},
+{9, 154, 9},
+{255, 137, 113},
+{3, 0, 255},
+{56, 0, 132},
+{0, 111, 111},
+{204, 204, 204},
+{127, 127, 127},
+{255, 33, 0},
+{118, 255, 91},
+{255, 227, 8},
+{1, 122, 255},
+{231, 0, 218},
+{0, 218, 255},
+{255, 255, 255},
+	},{
+
 
         {0, 0, 0},
 {139, 0, 0},
@@ -6449,6 +6477,9 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
         ctx_set_rgba_u8 (ctx, rgb[0],
                               rgb[1],
                               rgb[2], 255);
+        ctx_set_rgba_stroke_u8 (ctx, rgb[0],
+                                rgb[1],
+                                rgb[2], 255);
     }
   }
 
