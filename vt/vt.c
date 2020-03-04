@@ -5751,7 +5751,19 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_fill (ctx);
       return 0;
 
-     // case 0xe0a0: // PowerLine branch
+      case 0xe0a0: // PowerLine branch
+      ctx_save (ctx);
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x+cw/2, y - 0.15 * ch);
+
+      ctx_rel_line_to (ctx, -cw/3, -ch * 0.7);
+      ctx_rel_line_to (ctx, cw/2, 0);
+      ctx_rel_line_to (ctx, -cw/3, ch * 0.7);
+      ctx_set_line_width (ctx, cw * 0.25);
+      ctx_stroke (ctx);
+      ctx_restore (ctx);
+
+      break;
      // case 0xe0a1: // PowerLine LN
      // case 0xe0a2: // PowerLine Lock
 
@@ -5762,18 +5774,37 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_rel_line_to (ctx, cw, ch/2);
       ctx_fill (ctx);
       return 0;
-//   case 0xe0b1: // PowerLine left line
+     case 0xe0b1: // PowerLine left line
+      ctx_save (ctx);
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x, y - ch * 0.1);
+      ctx_rel_line_to (ctx, cw * 0.9, -ch/2 * 0.8);
+      ctx_rel_line_to (ctx, -cw * 0.9, -ch/2 * 0.8);
+      ctx_set_line_width (ctx, cw * 0.2);
+      ctx_stroke (ctx);
+      ctx_restore (ctx);
+      return 0;
 
      case 0xe0b2: // PowerLine Right solid
       ctx_new_path (ctx);
       ctx_move_to (ctx, x, y);
-      ctx_rel_move_to (ctx, cw, -ch/2);
+      ctx_rel_move_to (ctx, cw, 0);
       ctx_rel_line_to (ctx, -cw, -ch/2);
-      ctx_rel_line_to (ctx, 0, ch);
+      ctx_rel_line_to (ctx, cw, -ch/2);
       ctx_fill (ctx);
       return 0;
 
- //    case 0xe0b1: // PowerLine right line
+     case 0xe0b3: // PowerLine right line
+      ctx_save (ctx);
+      ctx_new_path (ctx);
+      ctx_move_to (ctx, x, y - ch * 0.1);
+      ctx_rel_move_to (ctx, cw, 0);
+      ctx_rel_line_to (ctx, -cw * 0.9, -ch/2 * 0.8);
+      ctx_rel_line_to (ctx,  cw * 0.9, ch/2 * 0.8);
+      ctx_set_line_width (ctx, cw * 0.2);
+      ctx_stroke (ctx);
+      ctx_restore (ctx);
+      return 0;
 
      case 0x1fb70: // left triangular one quarter block
       ctx_new_path (ctx);
@@ -6128,6 +6159,7 @@ void vt_ctx_set_color (MrgVT *vt, Ctx *ctx, int no, int intensity)
   }
 
   ctx_set_rgba_u8 (ctx, r, g, b, 255);
+  ctx_set_rgba_stroke_u8 (ctx, r, g, b, 255);
 }
 
 int ctx_vt_keyrepeat (MrgVT *vt)
