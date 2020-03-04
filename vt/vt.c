@@ -1633,7 +1633,9 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
          s = strchr (s, ':');
        if (s)
        n = parse_int (s, 0);
+       s++;
        set_fg_idx(n);
+       while (*s >= '0' && *s <='9') s++;
     }
     else if (n == 2)
     {
@@ -1659,7 +1661,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       VT_warning ("unhandled %s %i", sequence, n);
       return;
     }
-    return; // XXX we should continue, and allow further style set after complex color
+    //return; // XXX we should continue, and allow further style set after complex color
   }
   else if (n == 48) // set background
   {
@@ -1680,7 +1682,9 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
          s = strchr (s, ':');
        if (s)
        n = parse_int (s, 0);
+       s++;
        set_bg_idx(n);
+       while (*s >= '0' && *s <='9') s++;
     }
     /* SGR@48;2;50;70;180m@\b24 bit RGB background color@The example sets RGB the triplet 50 70 180@ */
     else if (n == 2)
@@ -1706,7 +1710,7 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       VT_warning ("unhandled %s %i", sequence, n);
       return;
     }
-    return; // we XXX should continue, and allow further style set after complex color
+    //return; // we XXX should continue, and allow further style set after complex color
   }
   else
   switch (n)
