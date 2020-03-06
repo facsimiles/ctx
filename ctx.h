@@ -405,7 +405,9 @@ void ctx_rel_quad_to    (Ctx *ctx, float cx, float cy,
                          float x, float y);
 void ctx_close_path     (Ctx *ctx);
 
+void ctx_set_rgba_stroke_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void ctx_set_rgba_stroke (Ctx *ctx, float  r, float   g, float   b, float   a);
 void ctx_set_rgba       (Ctx *ctx, float   r, float   g, float   b, float   a);
 void ctx_set_rgb        (Ctx *ctx, float   r, float   g, float   b);
 void ctx_set_gray       (Ctx *ctx, float   gray);
@@ -2137,17 +2139,10 @@ again:
 	 // wrong modulo of arguments
          command = *s;
          break;
+
       case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
-      if (*s == '-')
-      {
-        number[numbers] = ctx_strtof (s, (char**)&s);
-        s--;
-      }
-      else
-      {
-        number[numbers] = ctx_strtof (s, (char**)&s);
-        s--;
-      }
+      number[numbers] = ctx_strtof (s, (char**)&s);
+      s--;
       if (numbers < 11)
         numbers++;
 
@@ -2361,6 +2356,50 @@ again:
             goto again;
           }
           break;
+
+#if 0
+	  M 100 100 l 20 20 40 50 60 60
+		  fill
+		  save
+		  restore
+	case 'F': // ill
+	  break;
+	case 'w': // line_width
+	case 'W': // line_cap
+	case 'y': // line_join
+	case '/': // stroke
+	  break;
+	case '<': // set_rgba
+	  break;
+	case 'i': // set_graya
+	  break;
+	case '_': // save
+	  break;
+	case '^': // restore
+	  break;
+	case 'O': // scale
+	  break;
+	case 'a': // translate
+	  break;
+	case 'o': // transform
+	  break;
+	case '@': // rotate
+	  break;
+	case 'x': // text
+	  break;
+	case 'X': // stroke text
+	  break;
+	case 'N': // font_size
+	  break;
+	case 'n': // set_font
+	  break;
+	case '#': // rectangle
+	  break;
+	  // clip
+	  // add_stop
+	case 'g':  linear_grad
+	case 'G':  radial_grad
+#endif
 
         default:
           ctx_log ("uninterpreted svg path command _%c", *s);
@@ -8333,8 +8372,14 @@ ctx_parse_str_line (Ctx *ctx, const char *str)
   else if (!strcmp (name, "set_rgba_u8")) {
      ctx_set_rgba_u8 (ctx, arg[0], arg[1], arg[2], arg[3]);
   }
+  else if (!strcmp (name, "set_rgba_stroke_u8")) {
+     ctx_set_rgba_stroke_u8 (ctx, arg[0], arg[1], arg[2], arg[3]);
+  }
   else if (!strcmp (name, "set_rgba")) {
      ctx_set_rgba (ctx, arg[0], arg[1], arg[2], arg[3]);
+  }
+  else if (!strcmp (name, "set_rgba_stroke")) {
+     ctx_set_rgba_stroke (ctx, arg[0], arg[1], arg[2], arg[3]);
   }
   else if (!strcmp (name, "set_pixel_u8")) {
      ctx_set_pixel_u8 (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);

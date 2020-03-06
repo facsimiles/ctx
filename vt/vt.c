@@ -391,6 +391,13 @@ struct _MrgVT {
                                  buffering , and the bigger sizes for the ascii
                                  ctx mode */
 
+  float      numbers[12]; /* used by svg parser */
+  int        n_numbers;
+  int        svgp_state;
+  int        decimal;
+  char       command;
+  int        n_args;
+
   int        encoding;  // 0 = utf8 1=pc vga 2=ascii
 
   int        insert_mode;
@@ -2121,6 +2128,13 @@ qagain:
            break;
      case 7020:/*MODE;Ctx ascii;On;;*/
            vt->in_ctx_ascii = set;
+	   if (set)
+	   {
+             vt->command = 'm';
+	     vt->n_numbers = 0;
+	     vt->decimal = 0;
+             vt->utf8_holding[vt->utf8_pos=0]=0;
+	   }
            break;
 
      default:
@@ -4613,6 +4627,768 @@ cleanup:
   }
 }
 
+static void ctx_vt_vt52_feed_byte (MrgVT *vt, int byte)
+{
+  /* in vt52 mode, utf8_pos being non 0 means we got ESC prior */
+  switch (vt->utf8_pos)
+  {
+    case 0:
+      if (_vt_handle_control (vt, byte) == 0)
+      switch (byte)
+      {
+        case 27: /* ESC */
+          vt->utf8_pos = 1;
+          break;
+        default:
+        {
+          char str[2] = {byte, 0};
+          _ctx_vt_add_str (vt, str);
+        }
+        break;
+      }
+      break;
+    case 1:
+      vt->utf8_pos = 0;
+      switch (byte)
+      {
+        case 'A': vtcmd_cursor_up (vt, " "); break;
+        case 'B': vtcmd_cursor_down (vt, " "); break;
+        case 'C': vtcmd_cursor_forward (vt, " "); break;
+        case 'D': vtcmd_cursor_backward (vt, " "); break;
+        case 'F': vtcmd_set_alternate_font (vt, " "); break;
+        case 'G': vtcmd_set_default_font (vt, " "); break;
+        case 'H': _ctx_vt_move_to (vt, 1, 1); break;
+        case 'I': vtcmd_reverse_index (vt, " "); break;
+        case 'J': vtcmd_erase_in_display (vt, "[0J"); break;
+        case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
+        case 'Y': vt->utf8_pos = 2; break;
+        case 'Z': vt_write (vt, "\e/Z", 3); break;
+        case '<': vt->in_vt52 = 0; break;
+        default: break;
+      }
+      break;
+    case 2:
+      _ctx_vt_move_to (vt, byte - 31, vt->cursor_x);
+      vt->utf8_pos = 3;
+      break;
+    case 3:
+      _ctx_vt_move_to (vt, vt->cursor_y, byte - 31);
+      vt->utf8_pos = 0;
+      break;
+
+  }
+}
+
+inline static void ctx_vt_ctx_ascii_feed_byte (MrgVT *vt, int byte)
+{
+  Ctx *ctx = vt->current_line->ctx;
+  if (ctx)
+  {
+    //ctx_clear (ctx);
+  }
+  else
+  {
+    ctx = vt->current_line->ctx = ctx_new ();
+  }
+#if 0
+  ctx_translate (ctx,
+                 0,//(vt->cursor_x-1) * vt->cw,
+                 (vt->cursor_y-1));
+#endif
+
+  switch (byte)
+  {
+    case '\r':
+      break;
+    case '\n':
+      vt->utf8_holding[vt->utf8_pos]=0;
+      if ((!strcmp ((char*)vt->utf8_holding, "q"))||
+          (!strcmp ((char*)vt->utf8_holding, "quit"))||
+          (!strcmp ((char*)vt->utf8_holding, "done")))
+      {
+        vt->in_ctx_ascii = 0;
+      }
+      else
+      {
+        if (strlen ((char*)vt->utf8_holding) > 2)
+        {
+          VT_info ("gfx: <%s>", vt->utf8_holding);
+          ctx_parse_str_line (ctx, (char*)vt->utf8_holding);
+        }
+      }
+      vt->utf8_pos=0;
+      vt->utf8_holding[vt->utf8_pos]=0;
+      break;
+    default:
+      vt->utf8_holding[vt->utf8_pos++]=byte;
+      vt->utf8_holding[vt->utf8_pos]=0;
+      break;
+  }
+  return;
+}
+
+static void ctx_vt_ctx_feed_byte (MrgVT *vt, int byte)
+{
+  Ctx *ctx = vt->current_line->ctx;
+  if (!vt->current_line->ctx)
+  {
+    ctx = vt->current_line->ctx = ctx_new ();
+    ctx_translate (ctx,
+                   (vt->cursor_x-1) * vt->cw * 10,
+                   (vt->cursor_y-1) * vt->ch * 10);
+  }
+
+  /* we reuse the utf8 holding area from the default code path, and collect
+   * 9 bytes at a time
+   */
+  vt->utf8_holding[vt->utf8_pos++]=byte;
+  if (vt->utf8_pos == 9)
+  {
+     switch (vt->utf8_holding[0])
+     {
+        case CTX_EXIT:
+          vt->in_ctx = 0;
+          vt->utf8_pos = 0;
+          break;
+        case CTX_CLEAR:
+          //ctx_empty (vt->ctx);
+          ctx_clear (ctx);
+          ctx_translate (ctx,
+                   (vt->cursor_x-1) * vt->cw * 10,
+                   (vt->cursor_y-1) * vt->ch * 10);
+          break;
+        default:
+          ctx_add_single (ctx, &vt->utf8_holding[0]);
+          break;
+      }
+      vt->utf8_pos = 0;
+  }
+  return;
+}
+
+
+typedef enum {
+  SVGP_NONE = 0,
+  SVGP_ARC_TO       = 'A',
+  SVGP_ARC          = 'B',
+  SVGP_CURVE_TO     = 'C',
+  SVGP_RESTORE      = 'D',
+  SVGP_STROKE       = 'E',
+  SVGP_FILL         = 'F',
+  SVGP_RADIAL_GRADIENT = 'G',
+  SVGP_HOR_LINE_TO  = 'H',
+  SVGP_SET_GRAY     = 'I',
+  SVGP_ROTATE       = 'J',
+                     //K
+  SVGP_LINE_TO      = 'L',
+  SVGP_MOVE_TO      = 'M',
+  SVGP_SET_FONT_SIZE = 'N',
+  SVGP_SCALE         = 'O',
+                     //P
+  SVGP_QUAD_TO      = 'Q',
+  SVGP_SET_RGBA     = 'R',
+  SVGP_SMOOTH_TO    = 'S',
+  SVGP_SMOOTHQ_TO   = 'T',
+  SVGP_CLEAR        = 'U',
+  SVGP_VER_LINE_TO  = 'V',
+  SVGP_SET_LINE_CAP = 'W',
+  SVGP_RECTANGLE    = 'Y',
+  SVGP_EXIT         = 'X',
+
+  SVGP_REL_ARC_TO = 'a',
+  SVGP_CLIP       = 'b',
+  SVGP_REL_CURVE_TO = 'c',
+  SVGP_SAVE       = 'd',
+  SVGP_TRANSLATE  = 'e',
+                    //f
+  SVGP_LINEAR_GRADIENT = 'g',
+  SVGP_REL_HOR_LINE_TO = 'h',
+  SVGP_SET_GRAYA       = 'i',
+                       //j
+		       //k
+  SVGP_REL_LINE_TO     = 'l',
+  SVGP_REL_MOVE_TO     = 'm',
+  SVGP_SET_FONT        = 'n',
+                       //o
+  SVGP_GRADIENT_ADD_STOP = 'p',
+  SVGP_REL_QUAD_TO     = 'q',
+  SVGP_SET_RGB         = 'r',
+  SVGP_REL_SMOOTH_TO   = 's',
+  SVGP_REL_SMOOTHQ_TO  = 't',
+  SVGP_STROKE_TEXT     = 'u',
+  SVGP_REL_VER_LINE_TO = 'v',
+  SVGP_SET_LINE_WIDTH  = 'w',
+  SVGP_TEXT            = 'x',
+  SVGP_SET_LINE_JOIN   = 'y',
+  SVGP_CLOSE_PATH      = 'z',
+
+
+} SvgpCommand;
+
+static int svgp_resolve_command (const uint8_t*str, int *args)
+{
+  int command = 0;
+  uint32_t str_hash = 0;
+
+#define STR(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) (\
+          (((uint32_t)a0))+ \
+          (((uint32_t)a1)*11)+ \
+          (((uint32_t)a2)*11*11)+ \
+          (((uint32_t)a3)*11*11*11)+ \
+          (((uint32_t)a4)*11*11*11*11) + \
+          (((uint32_t)a5)*11*11*11*11*11) + \
+          (((uint32_t)a6)*11*11*11*11*11*11) + \
+          (((uint32_t)a7)*11*11*11*11*11*11*11) + \
+          (((uint32_t)a8)*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)a9)*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)a10)*11*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)a11)*11*11*11*11*11*11*11*11*11*11*11))
+
+/* this doesn't hash strings uniquely - but if there is a collision
+ * the compiler will tell use in the switch, since all the matching
+ * strings are reduced to their integers at compile time
+ */
+
+  {
+    int multiplier = 1;
+    for (int i = 0; str[i] && i < 12; i++)
+    {
+      str_hash = str_hash + str[i] * multiplier;
+      multiplier *= 11;
+    }
+  }
+
+  switch (str_hash)
+  {
+    case 'h': command = SVGP_REL_HOR_LINE_TO; *args = 1; break;
+    case 'H': command = SVGP_HOR_LINE_TO;     *args = 1; break;
+    case 'v': command = SVGP_REL_VER_LINE_TO; *args = 1; break;
+    case 'V': command = SVGP_VER_LINE_TO;     *args = 1; break;
+
+    case 's': command = SVGP_REL_SMOOTH_TO;   *args = 4; break;
+    case 'S': command = SVGP_SMOOTH_TO;       *args = 4; break;
+    case 't': command = SVGP_REL_SMOOTHQ_TO;  *args = 2; break;
+    case 'T': command = SVGP_SMOOTHQ_TO;      *args = 2; break;
+
+    case STR('r','e','l','_','a','r','c','_','t','o',0,0):
+    case 'a': command = SVGP_REL_ARC_TO;      *args = 7; break;
+
+    case STR('a','r','c','_','t','o',0,0,0,0,0,0):
+    case 'A': command = SVGP_ARC_TO;          *args = 7; break;
+
+    case STR('r','e','l','_','m','o','v','e','_','t','o',0):
+    case 'm': command = SVGP_REL_MOVE_TO; *args = 2; break;
+
+    case STR('c','l','o','s','e','_','p','a','t','h',0,0):
+    case 'z': command = SVGP_CLOSE_PATH; *args = 0; break;
+
+    case STR('a','r','c',0,0,0,0,0,0,0,0,0):
+    case 'B': command = SVGP_ARC; *args = 6; break;
+
+    case STR('m','o','v','e','_','t','o',0,0,0,0,0):
+    case 'M': command = SVGP_MOVE_TO; *args = 2; break;
+
+    case STR('r','e','l','_','l','i','n','e','_','t','o',0):
+    case 'l': command = SVGP_REL_LINE_TO; *args = 2; break;
+
+    case STR('l','i','n','e','_','t','o',0,0,0,0,0):
+    case 'L': command = SVGP_LINE_TO; *args = 2; break;
+
+    case STR('r','e','l','_','c','u','r','v','e','_','t','o'):
+    case 'c': command = SVGP_REL_CURVE_TO; *args = 6; break;
+
+    case STR('c','u','r','v','e','_','t','o',0,0,0,0):
+    case 'C': command = SVGP_CURVE_TO; *args = 6; break;
+
+    case STR('r','e','l','_','q','u','a','d','_','t','o',0):
+    case 'q': command = SVGP_REL_QUAD_TO; *args = 4; break;
+
+    case STR('q','u','a','d','_','t','o',0,0,0,0,0):
+    case 'Q': command = SVGP_QUAD_TO; *args = 4; break;
+
+    case STR('f','i','l','l',0,0,0,0,0,0,0,0):
+    case 'F': command = SVGP_FILL; *args = 0; break;
+
+    case STR('c','l','i','p',0,0,0,0,0,0,0,0):
+    case 'b': command = SVGP_CLIP; *args = 0; break;
+
+    case STR('s','a','v','e',0,0,0,0,0,0,0,0):
+    case 'd': command = SVGP_SAVE; *args = 0; break;
+
+    case STR('s','c','a','l','e',0,0,0,0,0,0,0):
+    case 'O': command = SVGP_SCALE; *args = 2; break;
+
+    case STR('r','e','s','t','o','r','e',0,0,0,0,0):
+    case 'D': command = SVGP_RESTORE; *args = 0; break;
+
+    case STR('r','o','t','a','t','e',0,0,0,0,0,0):
+    case 'J': command = SVGP_ROTATE; *args = 1; break;
+
+    case STR('t','e','x','t',0,0,0,0,0,0,0,0):
+    case 'x': command = SVGP_TEXT; *args = 100; break;
+
+    case STR('s','t','r','o','k','e','_','t','e','x','t', 0):
+    case 'u': command = SVGP_STROKE_TEXT; *args = 100; break;
+
+    case STR('s','t','r','o','k','e',0,0,0,0,0,0):
+    case 'E': command = SVGP_STROKE; *args = 0; break;
+
+    case STR('s','e','t','_','l','i','n','e','_','w','i','d'):
+    case 'w': command = SVGP_SET_LINE_WIDTH; *args = 1; break;
+
+    case STR('t','r','a','n','s','l','a','t','e',0,0,0):
+    case 'e': command = SVGP_TRANSLATE; *args = 2; break;
+
+    case STR('s','e','t','_','l','i','n','e','_','j','o','i'):
+    case 'y': command = SVGP_SET_LINE_JOIN; *args = 1; break;
+
+    case STR('s','e','t','_','l','i','n','e','_','c','a','p'):
+    case 'W': command = SVGP_SET_LINE_CAP; *args = 1; break;
+
+    case STR('J','O','I','N','_','B','E','V','E','L',0,0):
+    case STR('B','E','V','E','L',0, 0, 0, 0, 0, 0, 0):
+      command = 1;
+      break;
+
+    case STR('J','O','I','N','_','R','O','U','N','D',0,0):
+    case STR('R','O','U','N','D',0, 0, 0, 0, 0, 0, 0):
+      command = 2;
+      break;
+
+    case STR('J','O','I','N','_','M','I','T','E','R',0,0):
+    case STR('M','I','T','E','R',0, 0, 0, 0, 0, 0, 0):
+      command = 3;
+      break;
+
+    case STR('C','A','P','_','N','O','N','E',0,0,0,0):
+    case STR('N','O','N','E',0 ,0, 0, 0, 0, 0, 0, 0):
+      command = 1;
+      break;
+    case STR('C','A','P','_','R','O','U','N','D',0,0,0):
+      command = 2;
+      break;
+    case STR('C','A','P','_','S','Q','U','A','R','E',0,0):
+    case STR('S','Q','U','A','R','E', 0, 0, 0, 0, 0, 0):
+      command = 3;
+      break;
+
+    case STR('s','e','t','_','r','g','b','a',0,0,0,0):
+    case STR('r','g','b','a',0,0,0,0,0,0,0,0):
+    case 'R': command = SVGP_SET_RGBA; *args = 4; break;
+
+    case STR('s','e','t','_','r','g','b',0,0,0,0,0):
+    case STR('r','g','b',0,0,0,0,0,0,0,0,0):
+    case 'r': command = SVGP_SET_RGB; *args = 3; break;
+
+    case STR('s','e','t','_','g','r','a','y','a',0,0,0):
+    case STR('g','r','a','y','a',0,0,0,0,0,0,0):
+    case 'i': command = SVGP_SET_GRAYA; *args = 2; break;
+
+    case STR('s','e','t','_','g','r','a','y',0,0,0,0):
+    case STR('g','r','a','y',0,0,0,0,0,0,0,0):
+    case 'I': command = SVGP_SET_GRAY; *args = 1; break;
+
+    case STR('r','e','c','t','a','n','g','l','e',0,0,0):
+    case STR('r','e','c','t',0,0,0,0,'e',0,0,0):
+    case 'Y': command = SVGP_RECTANGLE; *args = 4; break;
+
+    case STR('s','e','t','_','f','o','n','t','_','s','i','z'):
+    case 'N': command = SVGP_SET_FONT_SIZE; *args = 1; break;
+
+    case STR('s','e','t','_','f','o','n','t',0,0,0,0):
+    case 'n': command = SVGP_SET_FONT; *args = 100; break;
+
+    case STR('l','i','n','e','a','r','_','g','r','a','d','i'):
+    case 'g': command = SVGP_LINEAR_GRADIENT; *args = 4; break;
+
+    case STR('r','a','d','i','a','l','_','g','r','a','d','i'):
+    case 'G': command = SVGP_RADIAL_GRADIENT; *args = 6; break;
+
+    case STR('g','r','a','d','i','e','n','t','_','a','d','d'):
+    case STR('a','d','d','_','s','t','o','p',0,0,0,0):
+    case 'p': command = SVGP_GRADIENT_ADD_STOP; *args = 5; break;
+
+    case STR('e','x','i','t',0,0,0,0,0,0,0,0):
+    case STR('d','o','n','e',0,0,0,0,0,0,0,0):
+    case 'X': command = SVGP_EXIT; *args = 0; break;
+
+    case STR('c','l','e','a','r',0,0,0,0,0,0,0):
+    case 'U': command = SVGP_CLEAR; *args = 0; break;
+
+#undef STR
+  }
+  return command;
+}
+
+enum {
+  SVGP_NEUTRAL = 0,
+  SVGP_NUMBER,
+  SVGP_NEG_NUMBER,
+  SVGP_WORD,
+  SVGP_STRING1,
+  SVGP_STRING2,
+} SVGP_STATE;
+
+static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
+{
+  SvgpCommand cmd = vt->command;
+
+  if (vt->n_args != 100 &&
+      vt->n_args != vt->n_numbers)
+  {
+    fprintf (stderr, "unexpected args for '%c' expected %i but got %i\n",
+      cmd, vt->n_args, vt->n_numbers);
+  }
+
+  vt->command = SVGP_NONE;
+  switch (cmd)
+  {
+    case SVGP_NONE:
+    case SVGP_FILL: ctx_fill (ctx); break;
+    case SVGP_SAVE: ctx_save (ctx); break;
+    case SVGP_STROKE: ctx_stroke (ctx); break;
+    case SVGP_RESTORE: ctx_restore (ctx); break;
+
+    case SVGP_ARC_TO: break;
+    case SVGP_STROKE_TEXT: break;
+    case SVGP_SMOOTH_TO:
+    case SVGP_SMOOTHQ_TO:
+    case SVGP_VER_LINE_TO:
+    case SVGP_REL_ARC_TO: break;
+    case SVGP_REL_HOR_LINE_TO:
+    case SVGP_REL_VER_LINE_TO:
+    case SVGP_REL_SMOOTH_TO:
+    case SVGP_REL_SMOOTHQ_TO: break;
+
+    case SVGP_ARC: ctx_arc (ctx, vt->numbers[0], vt->numbers[1],
+			    vt->numbers[2], vt->numbers[3],
+			    vt->numbers[4], vt->numbers[5]);
+		   fprintf (stderr, "arc %f %f %f %f %f %f\n",
+                                 vt->numbers[0], vt->numbers[1],
+			    vt->numbers[2], vt->numbers[3],
+			    vt->numbers[4], vt->numbers[5]);
+			break;
+
+    case SVGP_CURVE_TO: ctx_curve_to (ctx, vt->numbers[0], vt->numbers[1],
+					   vt->numbers[2], vt->numbers[3],
+					   vt->numbers[4], vt->numbers[5]);
+		        vt->command = SVGP_CURVE_TO; break;
+    case SVGP_REL_CURVE_TO: ctx_rel_curve_to (ctx, vt->numbers[0], vt->numbers[1],
+					   vt->numbers[2], vt->numbers[3],
+					   vt->numbers[4], vt->numbers[5]);
+		        vt->command = SVGP_REL_CURVE_TO; break;
+
+    case SVGP_HOR_LINE_TO: ctx_line_to (ctx, vt->numbers[0], ctx_y (ctx)); vt->command = SVGP_HOR_LINE_TO; break;
+    case SVGP_LINE_TO: ctx_line_to (ctx, vt->numbers[0], vt->numbers[1]); vt->command = SVGP_LINE_TO; break;
+    case SVGP_MOVE_TO: ctx_move_to (ctx, vt->numbers[0], vt->numbers[1]); vt->command = SVGP_LINE_TO; break;
+    case SVGP_SET_FONT_SIZE: ctx_set_font_size (ctx, vt->numbers[0]); break;
+    case SVGP_SCALE: ctx_scale (ctx, vt->numbers[0], vt->numbers[1]); break;
+    case SVGP_QUAD_TO: ctx_quad_to (ctx, vt->numbers[0], vt->numbers[1],
+				         vt->numbers[2], vt->numbers[3]);
+		       vt->command = SVGP_QUAD_TO; break;
+    case SVGP_REL_QUAD_TO: ctx_rel_quad_to (ctx, vt->numbers[0], vt->numbers[1],
+					    vt->numbers[2], vt->numbers[3]);
+		       vt->command = SVGP_REL_QUAD_TO; break;
+    case SVGP_SET_LINE_CAP: ctx_set_line_cap (ctx, vt->numbers[0]); break;
+    case SVGP_CLIP: ctx_clip (ctx); break;
+
+    case SVGP_TRANSLATE: ctx_translate (ctx, vt->numbers[0], vt->numbers[1]); break;
+    case SVGP_ROTATE: ctx_rotate (ctx, vt->numbers[0]); break;
+    case SVGP_TEXT: ctx_text (ctx, (char*)vt->utf8_holding); break;
+    case SVGP_SET_FONT: ctx_set_font (ctx, (char*)vt->utf8_holding); break;
+    case SVGP_REL_LINE_TO: ctx_rel_line_to (ctx , vt->numbers[0], vt->numbers[1]); break;
+    case SVGP_REL_MOVE_TO: ctx_rel_move_to (ctx , vt->numbers[0], vt->numbers[1]); break;
+    case SVGP_SET_LINE_WIDTH: ctx_set_line_width (ctx, vt->numbers[0]); break;
+    case SVGP_SET_LINE_JOIN: ctx_set_line_join (ctx, vt->numbers[0]); break;
+
+    case SVGP_RECTANGLE: ctx_rectangle (ctx, vt->numbers[0], vt->numbers[1],
+					     vt->numbers[2], vt->numbers[3]); break;
+    case SVGP_LINEAR_GRADIENT: ctx_linear_gradient (ctx, vt->numbers[0], vt->numbers[1],
+					     vt->numbers[2], vt->numbers[3]); break;
+    case SVGP_RADIAL_GRADIENT: break;
+    case SVGP_GRADIENT_ADD_STOP:
+       ctx_gradient_add_stop (ctx, vt->numbers[0], vt->numbers[1], vt->numbers[2], vt->numbers[3], vt->numbers[4]);
+
+    case SVGP_SET_GRAYA:
+       ctx_set_rgba (ctx, vt->numbers[0], vt->numbers[0], vt->numbers[0], vt->numbers[1]);
+       ctx_set_rgba_stroke (ctx, vt->numbers[0], vt->numbers[0], vt->numbers[0], vt->numbers[1]);
+       break;
+    case SVGP_SET_GRAY:
+       ctx_set_rgba (ctx, vt->numbers[0], vt->numbers[0], vt->numbers[0], 1.0f);
+       ctx_set_rgba_stroke (ctx, vt->numbers[0], vt->numbers[0], vt->numbers[0], 1.0f);
+       break;
+    case SVGP_SET_RGBA:
+       ctx_set_rgba (ctx, vt->numbers[0], vt->numbers[1], vt->numbers[2], vt->numbers[3]);
+       ctx_set_rgba_stroke (ctx, vt->numbers[0], vt->numbers[1], vt->numbers[2], vt->numbers[3]);
+       break;
+    case SVGP_SET_RGB:
+       ctx_set_rgba (ctx, vt->numbers[0], vt->numbers[1], vt->numbers[2], 1.0f);
+       ctx_set_rgba_stroke (ctx, vt->numbers[0], vt->numbers[1], vt->numbers[2], 1.0f);
+       break;
+    case SVGP_CLOSE_PATH:
+       ctx_close_path (ctx);
+       break;
+    case SVGP_EXIT:
+       vt->in_ctx = 0;
+       vt->in_ctx_ascii = 0;
+       break;
+    case SVGP_CLEAR:
+       //ctx_empty (vt->ctx);
+       ctx_clear (ctx);
+       ctx_translate (ctx,
+                     (vt->cursor_x-1) * vt->cw * 10,
+                     (vt->cursor_y-1) * vt->ch * 10);
+       break;
+  }
+  vt->n_numbers = 0;
+}
+
+//  ""  and '' utf8 strings with \ escaping..
+
+
+static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
+{
+    Ctx *ctx = vt->current_line->ctx;
+    if (!vt->current_line->ctx)
+    {
+      ctx = vt->current_line->ctx = ctx_new ();
+      ctx_translate (ctx,
+                     (vt->cursor_x-1) * vt->cw * 10,
+                     (vt->cursor_y-1) * vt->ch * 10);
+    }
+
+    switch (vt->svgp_state)
+    {
+      case SVGP_NEUTRAL:
+	switch (byte)
+	{
+	   case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+           case 8: case 11: case 12: case 14: case 15: case 16: case 17:
+	   case 18: case 19: case 20: case 21: case 22: case 23: case 24:
+	   case 25: case 26: case 27: case 28: case 29: case 30: case 31:
+	      break;
+	   case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':
+	      break;
+	   case '\'':
+	      vt->svgp_state = SVGP_STRING1;
+	      vt->utf8_pos = 0;
+	      vt->utf8_holding[0] = 0;
+	      break;
+	   case '"':
+	      vt->svgp_state = SVGP_STRING2;
+	      vt->utf8_pos = 0;
+	      vt->utf8_holding[0] = 0;
+	      break;
+           case '-':
+	      vt->svgp_state = SVGP_NEG_NUMBER;
+	      vt->numbers[vt->n_numbers] = 0;
+	      vt->decimal = 0;
+	      break;
+           case '0': case '1': case '2': case '3': case '4':
+           case '5': case '6': case '7': case '8': case '9':
+	      vt->svgp_state = SVGP_NUMBER;
+	      vt->numbers[vt->n_numbers] = 0;
+	      vt->numbers[vt->n_numbers] += (byte - '0');
+	      vt->decimal = 0;
+	      break;
+           case '.':
+	      vt->svgp_state = SVGP_NUMBER;
+	      vt->numbers[vt->n_numbers] = 0;
+	      vt->decimal = 1;
+	      break;
+	   default:
+	      vt->svgp_state = SVGP_WORD;
+	      vt->utf8_pos = 0;
+              vt->utf8_holding[vt->utf8_pos++]=byte;
+	      if (vt->utf8_pos > 62) vt->utf8_pos = 62;
+	      break;
+	}
+        break;
+      case SVGP_NUMBER:
+      case SVGP_NEG_NUMBER:
+	{
+	  int new_neg = 0;
+	switch (byte)
+	{
+	   case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+           case 8: case 11: case 12: case 14: case 15: case 16: case 17:
+	   case 18: case 19: case 20: case 21: case 22: case 23: case 24:
+	   case 25: case 26: case 27: case 28: case 29: case 30: case 31:
+	      vt->svgp_state = SVGP_NEUTRAL;
+	      break;
+	   case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':
+	      if (vt->svgp_state == SVGP_NEG_NUMBER)
+	        vt->numbers[vt->n_numbers] *= -1;
+
+	      vt->svgp_state = SVGP_NEUTRAL;
+	      break;
+           case '-':
+	      vt->svgp_state = SVGP_NEG_NUMBER;
+	      new_neg = 1;
+	      vt->numbers[vt->n_numbers+1] = 0;
+	      vt->decimal = 0;
+	      break;
+           case '.':
+	      vt->decimal = 1;
+	      break;
+           case '0': case '1': case '2': case '3': case '4':
+           case '5': case '6': case '7': case '8': case '9':
+	      if (vt->decimal)
+	      {
+		vt->decimal *= 10;
+	        vt->numbers[vt->n_numbers] += (byte - '0') / (1.0 * vt->decimal);
+	      }
+	      else
+	      {
+	        vt->numbers[vt->n_numbers] *= 10;
+	        vt->numbers[vt->n_numbers] += (byte - '0');
+	      }
+	      break;
+	   default:
+	      if (vt->svgp_state == SVGP_NEG_NUMBER)
+	        vt->numbers[vt->n_numbers] *= -1;
+	      vt->svgp_state = SVGP_WORD;
+	      vt->utf8_pos = 0;
+              vt->utf8_holding[vt->utf8_pos++]=byte;
+	      break;
+
+	}
+	      if ((vt->svgp_state != SVGP_NUMBER &&
+	           vt->svgp_state != SVGP_NEG_NUMBER) || new_neg)
+	      {
+	         vt->n_numbers ++;
+		 if (vt->n_numbers == vt->n_args)
+		 {
+		   svgp_dispatch_command (vt, ctx);
+		 }
+
+	         if (vt->n_numbers > 10)
+	           vt->n_numbers = 10;
+	      }
+	}
+        break;
+
+      case SVGP_WORD:
+	switch (byte)
+	{
+	   case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+           case 8: case 11: case 12: case 14: case 15: case 16: case 17:
+	   case 18: case 19: case 20: case 21: case 22: case 23: case 24:
+	   case 25: case 26: case 27: case 28: case 29: case 30: case 31:
+
+	   case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':
+	      vt->svgp_state = SVGP_NEUTRAL;
+	      break;
+           case '-':
+	      vt->svgp_state = SVGP_NEG_NUMBER;
+	      vt->numbers[vt->n_numbers] = 0;
+	      vt->decimal = 0;
+	      break;
+           case '0': case '1': case '2': case '3': case '4':
+           case '5': case '6': case '7': case '8': case '9':
+	      vt->svgp_state = SVGP_NUMBER;
+	      vt->numbers[vt->n_numbers] = 0;
+	      vt->numbers[vt->n_numbers] += (byte - '0');
+	      vt->decimal = 0;
+	      break;
+           case '.':
+	      vt->svgp_state = SVGP_NUMBER;
+	      vt->numbers[vt->n_numbers] = 0;
+	      vt->decimal = 1;
+	      break;
+	   default:
+              vt->utf8_holding[vt->utf8_pos++]=byte;
+	      if (vt->utf8_pos > 62) vt->utf8_pos = 62;
+	      break;
+	}
+	if (vt->svgp_state != SVGP_WORD)
+	{
+	  int args = 0;
+	  vt->utf8_holding[vt->utf8_pos]=0;
+	  int command = svgp_resolve_command (vt->utf8_holding, &args);
+
+	  if (command > 0 && command < 5)
+	  {
+	    vt->numbers[vt->n_numbers] = command;
+	    vt->svgp_state = SVGP_NUMBER;
+            ctx_vt_svgp_feed_byte (vt, ',');
+	  }
+	  else if (command > 0)
+	  {
+	     vt->command = command;
+	     vt->n_args = args;
+	     if (args == 0)
+	     {
+		svgp_dispatch_command (vt, ctx);
+	     }
+	  }
+	  else
+	  {
+            /* try to interpret char by char */
+            uint8_t buf[16]=" ";
+	    for (int i = 0; vt->utf8_pos && vt->utf8_holding[i] > ' '; i++)
+	    {
+	       buf[0] = vt->utf8_holding[i];
+	       vt->command = svgp_resolve_command (buf, &args);
+	       if (vt->command > 0)
+	       {
+	         vt->n_args = args;
+	         if (args == 0)
+	         {
+		   svgp_dispatch_command (vt, ctx);
+	         }
+	       }
+	       else
+	       {
+		 fprintf (stderr, "unexpected '%c'\n", buf[0]);
+	       }
+	    }
+	  }
+	  vt->n_numbers = 0;
+	}
+        break;
+
+      case SVGP_STRING1:
+	switch (byte)
+	{
+		// XXX escaping
+	   case '\'':
+	      vt->svgp_state = SVGP_NEUTRAL;
+	      break;
+	   default:
+              vt->utf8_holding[vt->utf8_pos++]=byte;
+              vt->utf8_holding[vt->utf8_pos]=0;
+	      if (vt->utf8_pos > 62) vt->utf8_pos = 62;
+	      break;
+	}
+	if (vt->svgp_state != SVGP_STRING1)
+	{
+	  svgp_dispatch_command (vt, ctx);
+	}
+        break;
+
+      case SVGP_STRING2:
+	switch (byte)
+	{
+		// XXX escaping
+	   case '"':
+	      vt->svgp_state = SVGP_NEUTRAL;
+	      break;
+	   default:
+              vt->utf8_holding[vt->utf8_pos++]=byte;
+              vt->utf8_holding[vt->utf8_pos]=0;
+	      if (vt->utf8_pos > 62) vt->utf8_pos = 62;
+	      break;
+	}
+	if (vt->svgp_state != SVGP_STRING2)
+	{
+	  svgp_dispatch_command (vt, ctx);
+	}
+        break;
+    }
+}
+
+
 static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 {
   if (vt->log)
@@ -4634,140 +5410,17 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 
   if (vt->in_vt52)
   {
-    /* in vt52 mode, utf8_pos being non 0 means we got ESC prior */
-    switch (vt->utf8_pos)
-    {
-      case 0:
-        if (_vt_handle_control (vt, byte) == 0)
-        switch (byte)
-        {
-          case 27: /* ESC */
-            vt->utf8_pos = 1;
-            break;
-          default:
-          {
-            char str[2] = {byte, 0};
-            _ctx_vt_add_str (vt, str);
-          }
-          break;
-        }
-        break;
-      case 1:
-        vt->utf8_pos = 0;
-        switch (byte)
-        {
-          case 'A': vtcmd_cursor_up (vt, " "); break;
-          case 'B': vtcmd_cursor_down (vt, " "); break;
-          case 'C': vtcmd_cursor_forward (vt, " "); break;
-          case 'D': vtcmd_cursor_backward (vt, " "); break;
-          case 'F': vtcmd_set_alternate_font (vt, " "); break;
-          case 'G': vtcmd_set_default_font (vt, " "); break;
-          case 'H': _ctx_vt_move_to (vt, 1, 1); break;
-          case 'I': vtcmd_reverse_index (vt, " "); break;
-          case 'J': vtcmd_erase_in_display (vt, "[0J"); break;
-          case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
-          case 'Y': vt->utf8_pos = 2; break;
-          case 'Z': vt_write (vt, "\e/Z", 3); break;
-          case '<': vt->in_vt52 = 0; break;
-          default: break;
-        }
-        break;
-      case 2:
-        _ctx_vt_move_to (vt, byte - 31, vt->cursor_x);
-        vt->utf8_pos = 3;
-        break;
-      case 3:
-        _ctx_vt_move_to (vt, vt->cursor_y, byte - 31);
-        vt->utf8_pos = 0;
-        break;
-
-    }
+    ctx_vt_vt52_feed_byte (vt, byte);
     return;
   }
   else if (vt->in_ctx_ascii)
   {
-    Ctx *ctx = vt->current_line->ctx;
-    if (ctx)
-    {
-      //ctx_clear (ctx);
-    }
-    else
-    {
-      ctx = vt->current_line->ctx = ctx_new ();
-    }
-#if 0
-    ctx_translate (ctx,
-                   0,//(vt->cursor_x-1) * vt->cw,
-                   (vt->cursor_y-1));
-#endif
-
-    switch (byte)
-    {
-      case '\r':
-        break;
-      case '\n':
-        vt->utf8_holding[vt->utf8_pos]=0;
-        if ((!strcmp ((char*)vt->utf8_holding, "q"))||
-            (!strcmp ((char*)vt->utf8_holding, "quit"))||
-            (!strcmp ((char*)vt->utf8_holding, "done")))
-        {
-          vt->in_ctx_ascii = 0;
-        }
-        else
-        {
-          if (strlen ((char*)vt->utf8_holding) > 2)
-          {
-            VT_info ("gfx: <%s>", vt->utf8_holding);
-            ctx_parse_str_line (ctx, (char*)vt->utf8_holding);
-          }
-        }
-        vt->utf8_pos=0;
-        vt->utf8_holding[vt->utf8_pos]=0;
-        break;
-      default:
-        vt->utf8_holding[vt->utf8_pos++]=byte;
-        vt->utf8_holding[vt->utf8_pos]=0;
-        break;
-    }
+    ctx_vt_svgp_feed_byte (vt, byte);
     return;
   }
   else if (vt->in_ctx)
   {
-    Ctx *ctx = vt->current_line->ctx;
-    if (!vt->current_line->ctx)
-    {
-      ctx = vt->current_line->ctx = ctx_new ();
-      ctx_translate (ctx,
-                     (vt->cursor_x-1) * vt->cw * 10,
-                     (vt->cursor_y-1) * vt->ch * 10);
-    }
-
-
-    /* we reuse the utf8 holding area from the default code path, and collect
-     * 9 bytes at a time
-     */
-    vt->utf8_holding[vt->utf8_pos++]=byte;
-    if (vt->utf8_pos == 9)
-    {
-       switch (vt->utf8_holding[0])
-       {
-          case CTX_EXIT:
-            vt->in_ctx = 0;
-            vt->utf8_pos = 0;
-            break;
-          case CTX_CLEAR:
-            //ctx_empty (vt->ctx);
-            ctx_clear (ctx);
-            ctx_translate (ctx,
-                     (vt->cursor_x-1) * vt->cw * 10,
-                     (vt->cursor_y-1) * vt->ch * 10);
-            break;
-          default:
-            ctx_add_single (ctx, &vt->utf8_holding[0]);
-            break;
-        }
-        vt->utf8_pos = 0;
-    }
+    ctx_vt_ctx_feed_byte (vt, byte);
     return;
   }
   else if (vt->in_pcm)
@@ -4781,7 +5434,6 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
       terminal_queue_pcm_sample (MuLawDecompressTable[byte]);
     }
     return;
-    // use a special value for termination
   }
 
   int encoding = vt->encoding;
@@ -4969,12 +5621,16 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
                  determine if it can use 256 colors, when this test fails,
                  it still mixes in color 130 together with stock colors
                */
-              char *buf = "\e]10;rgb:ff/ff/ff\e\\";
+              char buf[128];
+              sprintf (buf, "\e]10;rgb:%2x/%2x/%2x\e\\",
+			   vt->fg_color[0], vt->fg_color[1], vt->fg_color[2]);
               vt_write (vt, buf, strlen(buf));
             }
             if (!strcmp (vt->argument_buf, "]11;?"))
-            {
-              char *buf = "\e]11;rgb:00/00/00\e\\";
+            {/* request background color */
+              char buf[128];
+              sprintf (buf, "\e]11;rgb:%2x/%2x/%2x\e\\",
+			   vt->bg_color[0], vt->bg_color[1], vt->bg_color[2]);
               vt_write (vt, buf, strlen(buf));
             }
             break;
@@ -5063,6 +5719,8 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
           vt->rev ++; // revision should be changed on screen
           }  // changes - not data received
              // to enable big image transfers and audio without re-render
+	     // currently - such transfers gets serialized and force-interleaved
+	     // with 
           return got_data;
         }
       }
