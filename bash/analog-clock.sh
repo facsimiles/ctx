@@ -20,7 +20,7 @@ set_rgba 1 0.1 0.1 1 ; set_line_width $((radius/40))
 stroke
 set_font_size 35
 m 50,50
-text('fnord');
+text('fnord\nfoo');
 m 90,100
 x 'fnord'
 done "; date +%H:%M:%S ; echo $hour_pos $minute_pos $second_pos; sleep 1; done

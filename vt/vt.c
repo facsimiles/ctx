@@ -4806,7 +4806,7 @@ typedef enum {
   SVGP_REL_CURVE_TO    = 'c', // SVG
   SVGP_SAVE            = 'd',
   SVGP_TRANSLATE       = 'e',
-  //SVP_IDENTITY       = 'f', // NYI
+  //SVP_UNUSED         = 'f', // NYI
   SVGP_LINEAR_GRADIENT = 'g',
   SVGP_REL_HOR_LINE_TO = 'h', // SVG
   //SVGP_IMAGE         = 'i', // NYI
@@ -4825,7 +4825,7 @@ typedef enum {
   SVGP_REL_VER_LINE_TO = 'v', // SVG
   SVGP_SET_LINE_WIDTH  = 'w',
   SVGP_TEXT            = 'x',
-  //SVGP_UNUSED          = 'y',
+  //SVGP_IDENTITY      = 'y', // NYI
   SVGP_CLOSE_PATH      = 'z', // SVG
 
 } SvgpCommand;
@@ -4879,7 +4879,6 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
 
     case STR('s','t','r','o','k','e',0,0,0,0,0,0):
     case 'E': command = SVGP_STROKE; *args = 0; break;
-
 
     case STR('f','i','l','l',0,0,0,0,0,0,0,0):
     case 'F': command = SVGP_FILL; *args = 0; break;
@@ -5010,8 +5009,6 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
     case STR('t','e','x','t',0,0,0,0,0,0,0,0):
     case 'x': command = SVGP_TEXT; *args = 100; break;
 
-
-
     case STR('J','O','I','N','_','B','E','V','E','L',0,0):
     case STR('B','E','V','E','L',0, 0, 0, 0, 0, 0, 0):
       command = 0;
@@ -5080,12 +5077,13 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
 
     case SVGP_ARC_TO: break;
     case SVGP_REL_ARC_TO: break;
-    case SVGP_STROKE_TEXT: break;
+
     case SVGP_SMOOTH_TO:
     case SVGP_SMOOTHQ_TO:
     case SVGP_REL_SMOOTH_TO:
     case SVGP_REL_SMOOTHQ_TO: break;
 
+    case SVGP_STROKE_TEXT: ctx_text_stroke (ctx, (char*)vt->utf8_holding); break;
     case SVGP_VER_LINE_TO: ctx_line_to (ctx, ctx_x (ctx), vt->numbers[0]); vt->command = SVGP_VER_LINE_TO;break;
     case SVGP_HOR_LINE_TO: ctx_line_to (ctx, vt->numbers[0], ctx_y(ctx)); vt->command = SVGP_HOR_LINE_TO;break;
     case SVGP_REL_HOR_LINE_TO: ctx_rel_line_to (ctx, vt->numbers[0], 0.0f); vt->command = SVGP_REL_HOR_LINE_TO; break;
