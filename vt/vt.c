@@ -397,6 +397,8 @@ struct _MrgVT {
   int        decimal;
   char       command;
   int        n_args;
+  float      pcx;
+  float      pcy;
 
   int        encoding;  // 0 = utf8 1=pc vga 2=ascii
 
@@ -4768,11 +4770,6 @@ static void ctx_vt_ctx_feed_byte (MrgVT *vt, int byte)
   return;
 }
 
-// add suffixes to numbers?
-// px is default
-// pv percent vertical  
-// ph percent horizontal
-
 typedef enum {
   SVGP_NONE = 0,
   SVGP_ARC_TO          = 'A',  // SVG, NYI
@@ -5042,6 +5039,8 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
 }
 
 // set_image 320 240 24 dvamlkvml~
+//   set_color_model GRAY, RGB, CMYK, GRAYA, RGBA, CMYKA, DEVICE_N, DEVICE_N_A
+//   set_color 4 1
 
 enum {
   SVGP_NEUTRAL = 0,
@@ -5078,56 +5077,147 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
     case SVGP_ARC_TO: break;
     case SVGP_REL_ARC_TO: break;
 
-    case SVGP_SMOOTH_TO:
-    case SVGP_SMOOTHQ_TO:
     case SVGP_REL_SMOOTH_TO:
-    case SVGP_REL_SMOOTHQ_TO: break;
+        {
+	  float cx = vt->pcx;
+	  float cy = vt->pcy;
+	  float ax = 2 * ctx_x (ctx) - cx;
+	  float ay = 2 * ctx_y (ctx) - cy;
+	  ctx_curve_to (ctx, ax, ay, vt->numbers[0] +  cx, vt->numbers[1] + cy,
+			     vt->numbers[2] + cx, vt->numbers[3] + cy);
+	  vt->pcx = vt->numbers[0] + cx;
+	  vt->pcy = vt->numbers[1] + cy;
+        }
+	break;
+    case SVGP_SMOOTH_TO:
+        {
+	  float ax = 2 * ctx_x (ctx) - vt->pcx;
+	  float ay = 2 * ctx_y (ctx) - vt->pcy;
+	  ctx_curve_to (ctx, ax, ay, vt->numbers[0], vt->numbers[1],
+			     vt->numbers[2], vt->numbers[3]);
+	  vt->pcx = vt->numbers[0];
+	  vt->pcx = vt->numbers[1];
+        }
+        break;
+
+    case SVGP_SMOOTHQ_TO:
+	ctx_quad_to (ctx, vt->pcx, vt->pcy, vt->numbers[0], vt->numbers[1]);
+        break;
+    case SVGP_REL_SMOOTHQ_TO:
+        {
+	  float cx = vt->pcx;
+	  float cy = vt->pcy;
+	  vt->pcx = 2 * ctx_x (ctx) - vt->pcx;
+	  vt->pcy = 2 * ctx_y (ctx) - vt->pcy;
+	  ctx_quad_to (ctx, vt->pcx, vt->pcy, vt->numbers[0] +  cx, vt->numbers[1] + cy);
+        }
+	break;
 
     case SVGP_STROKE_TEXT: ctx_text_stroke (ctx, (char*)vt->utf8_holding); break;
-    case SVGP_VER_LINE_TO: ctx_line_to (ctx, ctx_x (ctx), vt->numbers[0]); vt->command = SVGP_VER_LINE_TO;break;
-    case SVGP_HOR_LINE_TO: ctx_line_to (ctx, vt->numbers[0], ctx_y(ctx)); vt->command = SVGP_HOR_LINE_TO;break;
-    case SVGP_REL_HOR_LINE_TO: ctx_rel_line_to (ctx, vt->numbers[0], 0.0f); vt->command = SVGP_REL_HOR_LINE_TO; break;
-    case SVGP_REL_VER_LINE_TO: ctx_rel_line_to (ctx, 0.0f, vt->numbers[0]); vt->command = SVGP_REL_VER_LINE_TO;break;
+    case SVGP_VER_LINE_TO: ctx_line_to (ctx, ctx_x (ctx), vt->numbers[0]); vt->command = SVGP_VER_LINE_TO;
+	vt->pcx = ctx_x (ctx);
+	vt->pcy = ctx_y (ctx);
+        break;
+    case SVGP_HOR_LINE_TO:
+	ctx_line_to (ctx, vt->numbers[0], ctx_y(ctx)); vt->command = SVGP_HOR_LINE_TO;
+	vt->pcx = ctx_x (ctx);
+	vt->pcy = ctx_y (ctx);
+	break;
+    case SVGP_REL_HOR_LINE_TO: ctx_rel_line_to (ctx, vt->numbers[0], 0.0f); vt->command = SVGP_REL_HOR_LINE_TO;
+	vt->pcx = ctx_x (ctx);
+	vt->pcy = ctx_y (ctx);
+        break;
+    case SVGP_REL_VER_LINE_TO: ctx_rel_line_to (ctx, 0.0f, vt->numbers[0]); vt->command = SVGP_REL_VER_LINE_TO;
+	vt->pcx = ctx_x (ctx);
+	vt->pcy = ctx_y (ctx);
+	break;
 
     case SVGP_ARC: ctx_arc (ctx, vt->numbers[0], vt->numbers[1],
 			    vt->numbers[2], vt->numbers[3],
 			    vt->numbers[4], vt->numbers[5]);
-			break;
+        break;
 
     case SVGP_CURVE_TO: ctx_curve_to (ctx, vt->numbers[0], vt->numbers[1],
 					   vt->numbers[2], vt->numbers[3],
 					   vt->numbers[4], vt->numbers[5]);
-		        vt->command = SVGP_CURVE_TO; break;
-    case SVGP_REL_CURVE_TO: ctx_rel_curve_to (ctx, vt->numbers[0], vt->numbers[1],
+			vt->pcx = vt->numbers[2];
+			vt->pcy = vt->numbers[3];
+		        vt->command = SVGP_CURVE_TO;
+        break;
+    case SVGP_REL_CURVE_TO:
+			vt->pcx = vt->numbers[2] + ctx_x (ctx);
+			vt->pcy = vt->numbers[3] + ctx_y (ctx);
+			
+			ctx_rel_curve_to (ctx, vt->numbers[0], vt->numbers[1],
 					   vt->numbers[2], vt->numbers[3],
 					   vt->numbers[4], vt->numbers[5]);
-		        vt->command = SVGP_REL_CURVE_TO; break;
+		        vt->command = SVGP_REL_CURVE_TO;
+        break;
+    case SVGP_LINE_TO: ctx_line_to (ctx, vt->numbers[0], vt->numbers[1]); vt->command = SVGP_LINE_TO;
+        vt->pcx = vt->numbers[0];
+        vt->pcy = vt->numbers[1];
+        break;
+    case SVGP_MOVE_TO: ctx_move_to (ctx, vt->numbers[0], vt->numbers[1]); vt->command = SVGP_LINE_TO;
+        vt->pcx = vt->numbers[0];
+        vt->pcy = vt->numbers[1];
+        break;
+    case SVGP_SET_FONT_SIZE:
+	ctx_set_font_size (ctx, vt->numbers[0]);
+	break;
+    case SVGP_SCALE:
+	ctx_scale (ctx, vt->numbers[0], vt->numbers[1]);
+	break;
+    case SVGP_QUAD_TO:
+	vt->pcx = vt->numbers[0];
+        vt->pcy = vt->numbers[1];
+        ctx_quad_to (ctx, vt->numbers[0], vt->numbers[1],
+	             vt->numbers[2], vt->numbers[3]);
+        vt->command = SVGP_QUAD_TO;
+	break;
+    case SVGP_REL_QUAD_TO: 
+        vt->pcx = vt->numbers[0] + ctx_x (ctx);
+        vt->pcy = vt->numbers[1] + ctx_y (ctx);
+        ctx_rel_quad_to (ctx, vt->numbers[0], vt->numbers[1],
+        vt->numbers[2], vt->numbers[3]);
+        vt->command = SVGP_REL_QUAD_TO;
+        break;
+    case SVGP_SET_LINE_CAP:
+	ctx_set_line_cap (ctx, vt->numbers[0]);
+	break;
+    case SVGP_CLIP:
+	ctx_clip (ctx);
+        break;
 
-    case SVGP_LINE_TO: ctx_line_to (ctx, vt->numbers[0], vt->numbers[1]); vt->command = SVGP_LINE_TO; break;
-    case SVGP_MOVE_TO: ctx_move_to (ctx, vt->numbers[0], vt->numbers[1]); vt->command = SVGP_LINE_TO; break;
-    case SVGP_SET_FONT_SIZE: ctx_set_font_size (ctx, vt->numbers[0]); break;
-    case SVGP_SCALE: ctx_scale (ctx, vt->numbers[0], vt->numbers[1]); break;
-    case SVGP_QUAD_TO: ctx_quad_to (ctx, vt->numbers[0], vt->numbers[1],
-				         vt->numbers[2], vt->numbers[3]);
-		       vt->command = SVGP_QUAD_TO; break;
-    case SVGP_REL_QUAD_TO: ctx_rel_quad_to (ctx, vt->numbers[0], vt->numbers[1],
-					    vt->numbers[2], vt->numbers[3]);
-		       vt->command = SVGP_REL_QUAD_TO; break;
-    case SVGP_SET_LINE_CAP: ctx_set_line_cap (ctx, vt->numbers[0]); break;
-    case SVGP_CLIP: ctx_clip (ctx); break;
-
-    case SVGP_TRANSLATE: ctx_translate (ctx, vt->numbers[0], vt->numbers[1]); break;
-    case SVGP_ROTATE: ctx_rotate (ctx, vt->numbers[0]); break;
-    case SVGP_TEXT: ctx_text (ctx, (char*)vt->utf8_holding); break;
-    case SVGP_SET_FONT: ctx_set_font (ctx, (char*)vt->utf8_holding); break;
-    case SVGP_REL_LINE_TO: ctx_rel_line_to (ctx , vt->numbers[0], vt->numbers[1]); break;
-    case SVGP_REL_MOVE_TO: ctx_rel_move_to (ctx , vt->numbers[0], vt->numbers[1]); break;
-    case SVGP_SET_LINE_WIDTH: ctx_set_line_width (ctx, vt->numbers[0]); break;
-    case SVGP_SET_LINE_JOIN: ctx_set_line_join (ctx, vt->numbers[0]); break;
-
+    case SVGP_TRANSLATE:
+	ctx_translate (ctx, vt->numbers[0], vt->numbers[1]);
+	break;
+    case SVGP_ROTATE:
+	ctx_rotate (ctx, vt->numbers[0]);
+        break;
+    case SVGP_TEXT: ctx_text (ctx, (char*)vt->utf8_holding);
+        break;
+    case SVGP_SET_FONT: ctx_set_font (ctx, (char*)vt->utf8_holding);
+        break;
+    case SVGP_REL_LINE_TO:
+        ctx_rel_line_to (ctx , vt->numbers[0], vt->numbers[1]);
+        vt->pcx += vt->numbers[0];
+        vt->pcy += vt->numbers[1];
+        break;
+    case SVGP_REL_MOVE_TO:
+	ctx_rel_move_to (ctx , vt->numbers[0], vt->numbers[1]);
+        vt->pcx += vt->numbers[0];
+        vt->pcy += vt->numbers[1];
+        break;
+    case SVGP_SET_LINE_WIDTH:
+        ctx_set_line_width (ctx, vt->numbers[0]);
+        break;
+    case SVGP_SET_LINE_JOIN:
+        ctx_set_line_join (ctx, vt->numbers[0]);
+	break;
     case SVGP_RECTANGLE:
         ctx_rectangle (ctx, vt->numbers[0], vt->numbers[1],
-			    vt->numbers[2], vt->numbers[3]); break;
+			    vt->numbers[2], vt->numbers[3]);
+	break;
     case SVGP_LINEAR_GRADIENT:
 	ctx_linear_gradient (ctx, vt->numbers[0], vt->numbers[1],
                                   vt->numbers[2], vt->numbers[3]);
