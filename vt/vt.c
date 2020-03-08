@@ -199,13 +199,13 @@ vt_list_insert_before (VtList **list, VtList *sibling,
 }
 
 typedef enum {
-  TERMINAL_STATE_NEUTRAL          = 0,
-  TERMINAL_STATE_GOT_ESC          = 1,
-  TERMINAL_STATE_GOT_OSC          = 2,
-  TERMINAL_STATE_GOT_APC          = 3,
-  TERMINAL_STATE_GOT_ESC_SEQUENCE = 4,
-  TERMINAL_STATE_GOT_ESC_FOO      = 5,
-  TERMINAL_STATE_SWALLOW          = 6,
+  TERMINAL_STATE_NEUTRAL      = 0,
+  TERMINAL_STATE_ESC          = 1,
+  TERMINAL_STATE_OSC          = 2,
+  TERMINAL_STATE_APC          = 3,
+  TERMINAL_STATE_ESC_SEQUENCE = 4,
+  TERMINAL_STATE_ESC_FOO      = 5,
+  TERMINAL_STATE_SWALLOW      = 6,
 } TerminalState;
 
 #define MAX_COLS 2048 // used for tabstops
@@ -5688,7 +5688,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
       switch (byte)
       {
         case 27: /* ESCape */
-          vt->state = TERMINAL_STATE_GOT_ESC;
+          vt->state = TERMINAL_STATE_ESC;
           break;
         default:
           if (vt->charset[vt->shifted_in] != 0 &&
@@ -5733,7 +5733,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           break;
       }
       break;
-    case TERMINAL_STATE_GOT_ESC:
+    case TERMINAL_STATE_ESC:
       if (_vt_handle_control (vt, byte) == 0)
       switch (byte)
       {
@@ -5745,7 +5745,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           {
             char tmp[]={byte, '\0'};
             ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_GOT_ESC_FOO;
+            vt->state = TERMINAL_STATE_ESC_FOO;
           }
           break;
         case '[':
@@ -5755,21 +5755,21 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           {
             char tmp[]={byte, '\0'};
             ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_GOT_ESC_SEQUENCE;
+            vt->state = TERMINAL_STATE_ESC_SEQUENCE;
           }
           break;
         case ']':
           {
             char tmp[]={byte, '\0'};
             ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_GOT_OSC;
+            vt->state = TERMINAL_STATE_OSC;
           }
 	  break;
         case '_':
           {
             char tmp[]={byte, '\0'};
             ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_GOT_APC;
+            vt->state = TERMINAL_STATE_APC;
           }
           break;
         default:
@@ -5782,12 +5782,12 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           break;
       }
       break;
-    case TERMINAL_STATE_GOT_ESC_FOO:
+    case TERMINAL_STATE_ESC_FOO:
       ctx_vt_argument_buf_add (vt, byte);
       handle_sequence (vt, vt->argument_buf);
       vt->state = TERMINAL_STATE_NEUTRAL;
       break;
-    case TERMINAL_STATE_GOT_ESC_SEQUENCE:
+    case TERMINAL_STATE_ESC_SEQUENCE:
       if (_vt_handle_control (vt, byte) == 0)
       {
         if (byte == 27)
@@ -5806,7 +5806,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
       }
       break;
 
-    case TERMINAL_STATE_GOT_OSC:
+    case TERMINAL_STATE_OSC:
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       // and in "\e\" rather than just "\e", this would cause
       // a stray char
@@ -5850,7 +5850,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
       }
       break;
 
-    case TERMINAL_STATE_GOT_APC:
+    case TERMINAL_STATE_APC:
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       // and in "\e\" rather than just "\e", this would cause
       // a stray char
