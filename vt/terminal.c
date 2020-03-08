@@ -240,6 +240,8 @@ static void handle_event (const char *event)
 	    free (text);
 	  }
 #endif
+	} else if (!strcmp (event, "shift-control-l")) {
+	  ctx_vt_set_local (vt, !ctx_vt_get_local (vt));
 	} else if (!strcmp (event, "shift-control--") ||
 	           !strcmp (event, "control--")) {
 	  font_size /= 1.15;

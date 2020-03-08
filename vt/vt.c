@@ -353,6 +353,7 @@ struct _MrgVT {
   int       leds[4];
   uint64_t  cstyle;
 
+
   uint8_t   fg_color[3];
   uint8_t   bg_color[3];
 
@@ -401,6 +402,8 @@ struct _MrgVT {
   float      pcy;
 
   int        encoding;  // 0 = utf8 1=pc vga 2=ascii
+
+  int        local_editing; /* terminal operates without pty  */
 
   int        insert_mode;
   int        autowrap;
@@ -6138,7 +6141,15 @@ void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 done:
   if (strlen (str))
   {
-    vt_write (vt, str, strlen (str));
+    if (vt->local_editing)
+    {
+      for (int i = 0; str[i]; i++)
+        ctx_vt_feed_byte (vt, str[i]);
+    }
+    else
+    {
+      vt_write (vt, str, strlen (str));
+    }
   }
 }
 
@@ -7869,6 +7880,16 @@ ctx_vt_get_selection (MrgVT *vt)
   ret = str->str;
   vt_string_free (str, 0);
   return ret;
+}
+
+int ctx_vt_get_local (MrgVT *vt)
+{
+  return vt->local_editing;
+}
+
+void ctx_vt_set_local (MrgVT *vt, int local)
+{
+  vt->local_editing = local;
 }
 
 void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
