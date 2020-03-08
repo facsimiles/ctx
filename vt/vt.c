@@ -5830,11 +5830,135 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	    }
 	    break;
 	  case 11:
-	    {
+	    { /* get background color */
               char buf[128];
               sprintf (buf, "\e]11;rgb:%2x/%2x/%2x\e\\",
 			   vt->bg_color[0], vt->bg_color[1], vt->bg_color[2]);
               vt_write (vt, buf, strlen(buf));
+	    }
+	    break;
+	  case 1337:
+
+	    if (!strncmp (&vt->argument_buf[6], "File=", 5))
+	    {
+	    { /* iTerm2 image protocol */
+	      int width = 0;
+	      int height = 0;
+	      int file_size = 0;
+	      int show_inline = 0;
+	      int preserve_aspect = 1;
+	      char *name = NULL;
+	      char *p = &vt->argument_buf[11];
+	      char key[128]="";
+	      char value[128]="";
+	      int in_key=1;
+
+
+	      for (; *p && *p!=':'; p++)
+	      {
+		if (in_key)
+		{
+		  if (*p == '=')
+	            in_key = 0;
+		  else
+		  {
+	            if (strlen(key) < 124)
+		    {
+	              key[strlen(key)+1] = 0;
+	              key[strlen(key)] = *p;
+		    }
+		  }
+		}
+		else
+		{
+		  if (*p == ';')
+		  {
+	            if (!strcmp (key, "name"))
+		    { name = strdup (value);
+		    } else if (!strcmp (key, "width"))
+		    { 
+		       width = atoi (value);
+		       if (strchr (value, 'x'))
+		       { /* pixels */ }
+		       else if (strchr (value, '%'))
+		       { /* percent */ 
+			 width = width / 100.0 * (vt->cw * vt->cols);
+		       }
+		       else
+		       { /* chars */ width = width * vt->cw; }
+		    } else if (!strcmp (key, "height"))
+		    { 
+		       height = atoi (value);
+		       if (strchr (value, 'x'))
+		       { /* pixels */ }
+		       else if (strchr (value, '%'))
+		       { /* percent */ 
+			 height = height / 100.0 * (vt->ch * vt->rows);
+		       }
+		       else
+		       { /* chars */ height = height * vt->ch; }
+		    } else if (!strcmp (key, "preserveAspectRatio"))
+		    { preserve_aspect = atoi (value);
+		    } else if (!strcmp (key, "inline"))
+		    { show_inline = atoi (value);
+		    }
+	            key[0]=0;
+	            value[0]=0;
+	            in_key = 1;
+		  }
+		  else
+		  {
+	            if (strlen(value) < 124)
+		    {
+	              value[strlen(value)+1] = 0;
+	              value[strlen(value)] = *p;
+		    }
+		  }
+		}
+	      }
+
+	      if (key[0])
+	      { // code-dup
+	            if (!strcmp (key, "name"))
+		    { name = strdup (value);
+		    } else if (!strcmp (key, "width"))
+		    { 
+		       width = atoi (value);
+		       if (strchr (value, 'x'))
+		       { /* pixels */ }
+		       else if (strchr (value, '%'))
+		       { /* percent */ 
+			 width = width / 100.0 * (vt->cw * vt->cols);
+		       }
+		       else
+		       { /* chars */ width = width * vt->cw; }
+		    } else if (!strcmp (key, "height"))
+		    { 
+		       height = atoi (value);
+		       if (strchr (value, 'x'))
+		       { /* pixels */ }
+		       else if (strchr (value, '%'))
+		       { /* percent */ 
+			 height = height / 100.0 * (vt->ch * vt->rows);
+		       }
+		       else
+		       { /* chars */ height = height * vt->ch; }
+		    } else if (!strcmp (key, "preserveAspectRatio"))
+		    { preserve_aspect = atoi (value);
+		    } else if (!strcmp (key, "inline"))
+		    { show_inline = atoi (value);
+		    }
+	      }
+
+	      if (*p == ':')
+	      {
+		p++;
+	      }
+	      fprintf (stderr, "%s %i %i %i %i{%s\n", name?name:"",
+			      width, height, file_size, show_inline,
+			      p);
+
+	    }
 	    }
 	    break;
           default:
