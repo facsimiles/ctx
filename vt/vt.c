@@ -201,10 +201,11 @@ vt_list_insert_before (VtList **list, VtList *sibling,
 typedef enum {
   TERMINAL_STATE_NEUTRAL          = 0,
   TERMINAL_STATE_GOT_ESC          = 1,
-  TERMINAL_STATE_GOT_OSC_OR_APC = 2,
-  TERMINAL_STATE_GOT_ESC_SEQUENCE = 3,
-  TERMINAL_STATE_GOT_ESC_FOO      = 4,
-  TERMINAL_STATE_SWALLOW          = 5,
+  TERMINAL_STATE_GOT_OSC          = 2,
+  TERMINAL_STATE_GOT_APC          = 3,
+  TERMINAL_STATE_GOT_ESC_SEQUENCE = 4,
+  TERMINAL_STATE_GOT_ESC_FOO      = 5,
+  TERMINAL_STATE_SWALLOW          = 6,
 } TerminalState;
 
 #define MAX_COLS 2048 // used for tabstops
@@ -5358,6 +5359,38 @@ static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
 	        vt->numbers[vt->n_numbers] += (byte - '0');
 	      }
 	      break;
+	   case '@':
+	      if (vt->n_numbers % 2 == 0) // even is x coord
+	      {
+	        vt->numbers[vt->n_numbers] *= vt->cw;
+	      }
+	      else
+	      {
+		if (! (vt->command == 'r' && vt->n_numbers > 1))
+	  	  // height of rectangle is avoided,
+		  // XXX for radial gradient there is more complexity here
+		{
+	          vt->numbers[vt->n_numbers] --;
+		}
+
+	        vt->numbers[vt->n_numbers] =
+	          (vt->numbers[vt->n_numbers]) * vt->ch;
+	      }
+	      vt->svgp_state = SVGP_NEUTRAL;
+	      break;
+	   case '%':
+	      if (vt->n_numbers % 2 == 0) // even is x coord
+	      {
+	        vt->numbers[vt->n_numbers] =
+		   vt->numbers[vt->n_numbers] * ((vt->cols * vt->cw)/100.0);
+	      }
+	      else
+	      {
+	        vt->numbers[vt->n_numbers] =
+		   vt->numbers[vt->n_numbers] * ((vt->rows * vt->ch)/100.0);
+	      }
+	      vt->svgp_state = SVGP_NEUTRAL;
+	      break;
 	   default:
 	      if (vt->svgp_state == SVGP_NEG_NUMBER)
 	        vt->numbers[vt->n_numbers] *= -1;
@@ -5726,11 +5759,17 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           }
           break;
         case ']':
+          {
+            char tmp[]={byte, '\0'};
+            ctx_vt_argument_buf_reset(vt, tmp);
+            vt->state = TERMINAL_STATE_GOT_OSC;
+          }
+	  break;
         case '_':
           {
             char tmp[]={byte, '\0'};
             ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_GOT_OSC_OR_APC;
+            vt->state = TERMINAL_STATE_GOT_APC;
           }
           break;
         default:
@@ -5766,15 +5805,14 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
         }
       }
       break;
-    case TERMINAL_STATE_GOT_OSC_OR_APC:
+
+    case TERMINAL_STATE_GOT_OSC:
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       // and in "\e\" rather than just "\e", this would cause
       // a stray char
       //if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
       if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
       {
-        if (vt->argument_buf[0] == ']')
-        {
           int n = parse_int (vt->argument_buf, 0);
           switch (n)
           {
@@ -5800,12 +5838,29 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
             }
             break;
           }
-        }  else if (vt->argument_buf[0] == '_' &&
-                    vt->argument_buf[1] == 'G')
+
+        if (byte == 27)
+          vt->state = TERMINAL_STATE_SWALLOW;
+        else
+          vt->state = TERMINAL_STATE_NEUTRAL;
+      }
+      else
+      {
+        ctx_vt_argument_buf_add (vt, byte);
+      }
+      break;
+
+    case TERMINAL_STATE_GOT_APC:
+      // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
+      // and in "\e\" rather than just "\e", this would cause
+      // a stray char
+      //if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
+      if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
+      {
+        if (vt->argument_buf[1] == 'G') /* graphics - from kitty */
         {
-          vt_gfx (vt, vt->argument_buf);
-        }  else if (vt->argument_buf[0] == '_' &&
-                    vt->argument_buf[1] == 'A')
+          vt_gfx (vt, vt->argument_buf); /* audio */
+        } else if (vt->argument_buf[1] == 'A')
         {
           vt_audio (vt, vt->argument_buf);
         }
