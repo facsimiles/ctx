@@ -620,17 +620,15 @@ long ctx_vt_rev (MrgVT *vt)
 
 static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence);
 
+void terminal_set_title (const char *new_title);
+
 static void ctx_vt_set_title (MrgVT *vt, const char *new_title)
 {
   if (vt->inert) return;
   if (vt->title)
     free (vt->title);
   vt->title = strdup (new_title);
-
-#if 1
-  if (vt->mmm)
-     mmm_set_title (vt->mmm, new_title);
-#endif
+  terminal_set_title (vt->title);
 }
 
 const char *ctx_vt_get_title (MrgVT *vt)
@@ -5818,9 +5816,10 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
           {
           case 0:
             ctx_vt_set_title (vt, vt->argument_buf + 3);
-          default:
-            if (!strcmp (vt->argument_buf, "]10;?"))
-            { /* request current foreground color, xterm does this to
+	    break;
+	  case 10:
+	    {
+              /* request current foreground color, xterm does this to
                  determine if it can use 256 colors, when this test fails,
                  it still mixes in color 130 together with stock colors
                */
@@ -5828,14 +5827,18 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
               sprintf (buf, "\e]10;rgb:%2x/%2x/%2x\e\\",
 			   vt->fg_color[0], vt->fg_color[1], vt->fg_color[2]);
               vt_write (vt, buf, strlen(buf));
-            }
-            if (!strcmp (vt->argument_buf, "]11;?"))
-            {/* request background color */
+	    }
+	    break;
+	  case 11:
+	    {
               char buf[128];
               sprintf (buf, "\e]11;rgb:%2x/%2x/%2x\e\\",
 			   vt->bg_color[0], vt->bg_color[1], vt->bg_color[2]);
               vt_write (vt, buf, strlen(buf));
-            }
+	    }
+	    break;
+          default:
+	    fprintf (stderr, "unhandled OSC %i\n", n);
             break;
           }
 

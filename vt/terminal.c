@@ -87,7 +87,7 @@ void sdl_setup (int width, int height)
   }
   SDL_PauseAudioDevice (audio_dev, 0);
 
-  window = SDL_CreateWindow("gvt", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
+  window = SDL_CreateWindow("vt2020", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   renderer = SDL_CreateRenderer (window, -1, 0);
   //renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
   SDL_StartTextInput ();
@@ -131,6 +131,15 @@ signal_child (int signum)
 static int16_t pcm_queue[1<<18];
 static int     pcm_write_pos = 0;
 static int     pcm_read_pos  = 0;
+
+void terminal_set_title (const char *new_title)
+{
+#if USE_SDL
+   SDL_SetWindowTitle (window, new_title);
+#elif USE_MMM
+   mmm_set_title (mmm, new_title);
+#endif
+}
 
 void terminal_queue_pcm_sample (int16_t sample)
 {
