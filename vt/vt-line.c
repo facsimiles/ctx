@@ -90,6 +90,8 @@ void vt_string_append_unichar (VtString *string, unsigned int unichar)
     }
 }
 
+
+
 static inline void _vt_string_append_str (VtString *string, const char *str)
 {
   if (!str) return;
@@ -99,10 +101,24 @@ static inline void _vt_string_append_str (VtString *string, const char *str)
       str++;
     }
 }
+
+void vt_string_append_utf8char (VtString *string, const char *str)
+{
+  if (!str) return;
+  int len = mrg_utf8_len (*str);
+  for (int i = 0; i < len && *str; i++)
+    {
+      _vt_string_append_byte (string, *str);
+      str++;
+    }
+}
+
 void vt_string_append_str (VtString *string, const char *str)
 {
   _vt_string_append_str (string, str);
 }
+
+
 
 VtString *vt_string_new_with_size (const char *initial, int initial_size)
 {

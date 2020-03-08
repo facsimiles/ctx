@@ -7066,7 +7066,8 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
                         uint32_t unichar,
                         int      bg, int fg,
                         int      dw, int dh,
-                        int in_scroll)
+                        int in_scroll,
+			int in_select)
                       // dw is 0 or 1 
                       // dh is 0 1 or -1  1 is upper -1 is lower
 {
@@ -7083,7 +7084,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   int bg_intensity = 0;
   int fg_intensity = 2;
 
-  int reverse = ((style & STYLE_REVERSE) != 0);
+  int reverse = ((style & STYLE_REVERSE) != 0) ^ in_select;
 
   int blink = ((style & STYLE_BLINK) != 0);
   int blink_fast = ((style & STYLE_BLINK_FAST) != 0);
@@ -7504,6 +7505,11 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
   return cw;
 }
 
+static int select_start_col = 0;
+static int select_start_row = 0;
+static int select_end_col = 0;
+static int select_end_row = 0;
+
 int ctx_vt_has_blink (MrgVT *vt)
 {
   return vt->has_blink + (vt->in_scroll ?  10 : 0);
@@ -7581,6 +7587,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
         uint32_t unichar = 0;
         int r = vt->rows - row;
         int in_scrolling_region = vt->in_scroll && ((r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
+	int got_selection = 0;
 
         if (line->double_width)
           vt_cell_cache_clear_row (vt, r);
@@ -7589,6 +7596,27 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
 
           int c = col;
           int real_cw;
+
+	  int in_selected_region = 0;
+
+	  if (r > select_start_row && r < select_end_row)
+	  {
+	    in_selected_region = 1;
+	  } else if (r == select_start_row)
+	  {
+            if (col >= select_start_col) in_selected_region = 1;
+	    if (r == select_end_row)
+	    {
+	      if (col > select_end_col) in_selected_region = 0;
+	    }
+	  } else if (r == select_end_row)
+	  {
+	    in_selected_region = 1;
+	    if (col > select_end_col) in_selected_region = 0;
+	  }
+
+	  got_selection |= in_selected_region;
+
           if (vt->scroll)
           {
             /* this prevents draw_cell from using cache */
@@ -7601,7 +7629,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
             line->double_width,
             line->double_height_top?1:
             line->double_height_bottom?-1:0,
-            in_scrolling_region);
+            in_scrolling_region,
+	    in_selected_region);
           if (r == vt->cursor_y && col == vt->cursor_x)
           {
             cursor_x_px = x;
@@ -7633,7 +7662,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
             line->double_width,
             line->double_height_top?1:
             line->double_height_bottom?-1:0,
-            in_scrolling_region);
+            in_scrolling_region,
+	    0);
         }
 
         for (int i = 0; i < 4; i++)
@@ -7655,6 +7685,12 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
                vt_cell_cache_clear_row (vt, row);
           }
         }
+
+	if (got_selection)
+	{
+          vt_cell_cache_clear_row (vt, r);
+	}
+
       }
     }
   }
@@ -7810,6 +7846,31 @@ int ctx_vt_get_scroll (MrgVT *vt)
   return vt->scroll;
 }
 
+char *
+ctx_vt_get_selection (MrgVT *vt)
+{
+  VtString *str = vt_string_new ("");
+  char *ret;
+
+  for (int row = select_start_row; row <= select_end_row; row++)
+  {
+    const char *line_str = ctx_vt_get_line (vt, vt->rows - row);
+    int col = 1;
+    for (const char *c = line_str; *c; c = mrg_utf8_skip (c, 1), col ++)
+    {
+      if (row == select_end_row && col > select_end_col)
+	continue;
+      if (row == select_start_row && col < select_start_col)
+	continue;
+      vt_string_append_utf8char (str, c);
+    }
+  }
+  
+  ret = str->str;
+  vt_string_free (str, 0);
+  return ret;
+}
+
 void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
 {
   static int lastx=-1; // XXX  : need one per vt
@@ -7817,18 +7878,47 @@ void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_
 
   if ((type == VT_MOUSE_DRAG || type == VT_MOUSE_PRESS)
       && x > vt->cols - 3)
-  {
+  { /* scrollbar */
     float disp_lines = vt->rows;
     float tot_lines = vt->line_count + vt->scrollback_count;
     vt->scroll = tot_lines - disp_lines - (px_y*1.0/(vt->rows * vt->ch))* tot_lines;
   }
 
-
   char buf[64]="";
   int button_state = 0;
 
   if (!(vt->mouse | vt->mouse_all | vt->mouse_drag))
+  {
+    // regular mouse select, this is incomplete
+    // fully ignorant of scrollback for now
+    //
+    if (type == VT_MOUSE_PRESS)
+    {
+       select_start_col = x;
+       select_start_row = y;
+       select_end_col = x;
+       select_end_row = y;
+    } else if (type == VT_MOUSE_DRAG) {
+
+       select_end_col = x;
+       select_end_row = y;
+
+       if (((select_start_row == select_end_row) &&
+            (select_start_col > select_end_col)) ||
+            (select_start_row > select_end_row))
+       {
+	 int tmp;
+	 tmp = select_start_row;
+	 select_start_row = select_end_row;
+	 select_end_row = tmp;
+	 tmp = select_start_col;
+	 select_start_col = select_end_col;
+	 select_end_col = tmp;
+       }
+    }
+
     return;
+  }
 
   if (type == VT_MOUSE_MOTION)
     button_state = 3;

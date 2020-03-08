@@ -231,6 +231,15 @@ static void handle_event (const char *event)
 	    free (text);
 	  }
 #endif
+	} else if (!strcmp (event, "shift-control-c")) {
+#if USE_SDL
+	  char *text = ctx_vt_get_selection (vt);
+	  if (text)
+	  {
+	    SDL_SetClipboardText (text);
+	    free (text);
+	  }
+#endif
 	} else if (!strcmp (event, "shift-control--") ||
 	           !strcmp (event, "control--")) {
 	  font_size /= 1.15;

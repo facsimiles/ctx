@@ -96,6 +96,8 @@ void        vt_string_append_byte    (VtString *string, char  val);
 void        vt_string_append_string  (VtString *string, VtString *string2);
 void        vt_string_append_unichar (VtString *string, unsigned int unichar);
 void        vt_string_append_data    (VtString *string, const char *data, int len);
+
+void        vt_string_append_utf8char (VtString *string, const char *str);
 void        vt_string_append_printf  (VtString *string, const char *format, ...);
 void        vt_string_replace_utf8   (VtString *string, int pos, const char *new_glyph);
 void        vt_string_insert_utf8    (VtString *string, int pos, const char *new_glyph);

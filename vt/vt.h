@@ -52,6 +52,7 @@ int         ctx_vt_get_scroll           (MrgVT *vt);
 int         ctx_vt_get_cols             (MrgVT *vt);
 int         ctx_vt_get_rows             (MrgVT *vt);
 
+char *      ctx_vt_get_selection        (MrgVT *vt);
 int         ctx_vt_get_cursor_x         (MrgVT *vt);
 int         ctx_vt_get_cursor_y         (MrgVT *vt);
 
