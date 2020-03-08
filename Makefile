@@ -17,4 +17,4 @@ ctx: ctx.c vt/*.[ch] ctx.h  Makefile
 ctx.O1: ctx.c vt/*.[ch] ctx.h  Makefile
 	gcc ctx.c vt/*.c -o $@ -g -O1 -I. -Ifonts -Ivt `pkg-config mmm --cflags --libs` -lutil -Wall -lz -lm
 ctx.asan: ctx.c vt/*.[ch] ctx.h Makefile
-	gcc ctx.c vt/*.c -o $@ -g -O0 -I. -Ifonts -Ivt `pkg-config mmm --cflags --libs sdl2` -lutil -lasan -fsanitize=address -lz -lm
+	gcc -DASANBUILD=1 ctx.c vt/*.c -o $@ -g -O0 -I. -Ifonts -Ivt `pkg-config mmm --cflags --libs sdl2` -lutil -lasan -fsanitize=address -lz -lm

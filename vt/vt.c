@@ -1644,10 +1644,12 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
        else
          s = strchr (s, ':');
        if (s)
-       n = parse_int (s, 0);
-       s++;
-       set_fg_idx(n);
-       while (*s >= '0' && *s <='9') s++;
+       {
+         n = parse_int (s, 0);
+         set_fg_idx(n);
+         s++;
+         while (*s && *s >= '0' && *s <='9') s++;
+       }
     }
     else if (n == 2)
     {
@@ -1668,8 +1670,10 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
       }
       for (int i = 0; i < 3; i++)
 	{
-          s++;
-          while (*s >= '0' && *s <='9') s++;
+          if (*s){
+	    s++;
+            while (*s && *s >= '0' && *s <='9') s++;
+	  }
 	}
       set_fg_rgb(r,g,b);
     }
@@ -1700,8 +1704,11 @@ static void vtcmd_set_graphics_rendition (MrgVT *vt, const char *sequence)
        if (s)
        n = parse_int (s, 0);
        set_bg_idx(n);
-       s++;
-       while (*s >= '0' && *s <='9') s++;
+       if (s)
+       {
+	  s++;
+          while (*s && *s >= '0' && *s <='9') s++;
+       }
     }
     /* SGR@48;2;50;70;180m@\b24 bit RGB background color@The example sets RGB the triplet 50 70 180@ */
     else if (n == 2)
@@ -2742,7 +2749,9 @@ static void handle_sequence (MrgVT *vt, const char *sequence)
       }
     }
   }
+#ifndef ASANBUILD
   VT_warning ("unhandled: %c%c%c%c%c%c%c%c%c\n", sequence[0], sequence[1], sequence[2], sequence[3], sequence[4], sequence[5], sequence[6], sequence[7], sequence[8]);
+#endif
 }
 
 static void ctx_vt_line_feed (MrgVT *vt)
@@ -4686,54 +4695,6 @@ static void ctx_vt_vt52_feed_byte (MrgVT *vt, int byte)
   }
 }
 
-inline static void ctx_vt_ctx_ascii_feed_byte (MrgVT *vt, int byte)
-{
-  Ctx *ctx = vt->current_line->ctx;
-  if (ctx)
-  {
-    //ctx_clear (ctx);
-  }
-  else
-  {
-    ctx = vt->current_line->ctx = ctx_new ();
-  }
-#if 0
-  ctx_translate (ctx,
-                 0,//(vt->cursor_x-1) * vt->cw,
-                 (vt->cursor_y-1));
-#endif
-
-  switch (byte)
-  {
-    case '\r':
-      break;
-    case '\n':
-      vt->utf8_holding[vt->utf8_pos]=0;
-      if ((!strcmp ((char*)vt->utf8_holding, "q"))||
-          (!strcmp ((char*)vt->utf8_holding, "quit"))||
-          (!strcmp ((char*)vt->utf8_holding, "done")))
-      {
-        vt->in_ctx_ascii = 0;
-      }
-      else
-      {
-        if (strlen ((char*)vt->utf8_holding) > 2)
-        {
-          VT_info ("gfx: <%s>", vt->utf8_holding);
-          ctx_parse_str_line (ctx, (char*)vt->utf8_holding);
-        }
-      }
-      vt->utf8_pos=0;
-      vt->utf8_holding[vt->utf8_pos]=0;
-      break;
-    default:
-      vt->utf8_holding[vt->utf8_pos++]=byte;
-      vt->utf8_holding[vt->utf8_pos]=0;
-      break;
-  }
-  return;
-}
-
 static void ctx_vt_ctx_feed_byte (MrgVT *vt, int byte)
 {
   Ctx *ctx = vt->current_line->ctx;
@@ -4758,7 +4719,6 @@ static void ctx_vt_ctx_feed_byte (MrgVT *vt, int byte)
           vt->utf8_pos = 0;
           break;
         case CTX_CLEAR:
-          //ctx_empty (vt->ctx);
           ctx_clear (ctx);
           ctx_translate (ctx,
                    (vt->cursor_x-1) * vt->cw * 10,
@@ -7158,7 +7118,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
 
   cw *= scale_x;
 
-  if (row && col && ! proportional && (scale_x == 1.0f))
+  if (row>0 && col>0 && ! proportional && (scale_x == 1.0f))
   {
     if (vt->set_unichar[row*vt->cols*2+col] == unichar &&
         vt->set_style[row*vt->cols*2+col] == style)
