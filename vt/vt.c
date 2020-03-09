@@ -68,7 +68,8 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = VT_LOG_INPUT;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
+//| VT_LOG_INFO | VT_LOG_COMMAND;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL;
 
@@ -1073,6 +1074,7 @@ _ctx_vt_move_to (MrgVT *vt, int y, int x)
       }
   }
   VT_cursor("%i,%i (_ctx_vt_move_to)", y, x);
+  vt->rev++;
 }
 
 static void vt_scroll (MrgVT *vt, int amount);
@@ -1180,7 +1182,9 @@ static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence)
 
   vt->margin_top = top;
   vt->margin_bottom = bottom;
+#if 0
   _ctx_vt_move_to (vt, top, 1);
+#endif
   ctx_vt_carriage_return (vt);
   VT_cursor ("%i, %i (home)", top, 1);
 }
@@ -2133,12 +2137,16 @@ qagain:
              break;
 
      case 1000:/*MODE;Mouse reporting;On;Off;*/
+	     fprintf (stderr, "%i = %i\n", qval, set);
              vt->mouse = set; break;
      case 1002:/*MODE;Mouse drag;On;Off;*/ 
+	     fprintf (stderr, "%i = %i\n", qval, set);
              vt->mouse_drag = set; break;
      case 1003:/*MODE;Mouse all;On;Off;*/ 
+	     fprintf (stderr, "%i = %i\n", qval, set);
              vt->mouse_all = set; break;
      case 1006:/*MODE;Mouse decimal;On;Off;*/ 
+	     fprintf (stderr, "%i = %i\n", qval, set);
              vt->mouse_decimal = set; break;
      //case 47:
      //case 1047:
