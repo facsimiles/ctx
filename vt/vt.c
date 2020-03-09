@@ -438,9 +438,10 @@ struct _MrgVT {
 
 #define MAX_ARGUMENT_BUF_LEN (8192 + 16)
 
-  char       argument_buf[MAX_ARGUMENT_BUF_LEN];
-  uint8_t    tabs[MAX_COLS];
+  char       *argument_buf;//[MAX_ARGUMENT_BUF_LEN];
   int        argument_buf_len;
+  int        argument_buf_cap;
+  uint8_t    tabs[MAX_COLS];
   int        inert;
 
   int        done;
@@ -843,6 +844,8 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   vt->scrollback_limit   = DEFAULT_SCROLLBACK;
 
   vt->argument_buf_len   = 0;
+  vt->argument_buf_cap   = 64;
+  vt->argument_buf       = malloc (vt->argument_buf_cap);
   vt->argument_buf[0]    = 0;
   vt->done               = 0;
   vt->result             = -1;
@@ -1014,11 +1017,18 @@ static void ctx_vt_argument_buf_reset (MrgVT *vt, const char *start)
 
 static inline void ctx_vt_argument_buf_add (MrgVT *vt, int ch)
 {
-  if (vt->argument_buf_len < MAX_ARGUMENT_BUF_LEN-1)
+  if (vt->argument_buf_len + 1 >= 1024 * 1024 * 2)
+    return; // XXX : perhaps we should bail at 1mb + 1kb ?
+            //       
+  if (vt->argument_buf_len + 1 >=
+      vt->argument_buf_cap)
   {
-    vt->argument_buf[vt->argument_buf_len] = ch;
-    vt->argument_buf[++vt->argument_buf_len] = 0;
+    vt->argument_buf_cap = vt->argument_buf_cap + 512;
+    vt->argument_buf = realloc (vt->argument_buf, vt->argument_buf_cap);
   }
+
+  vt->argument_buf[vt->argument_buf_len] = ch;
+  vt->argument_buf[++vt->argument_buf_len] = 0;
 }
 
 static void
@@ -5954,10 +5964,60 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	      {
 		p++;
 	      }
+
+	      if (0)
 	      fprintf (stderr, "%s %i %i %i %i{%s\n", name?name:"",
 			      width, height, file_size, show_inline,
 			      p);
+Image *image = NULL;
+    	{
+      	  int bin_length = vt->argument_buf_len;
+      	  uint8_t *data2 = malloc (bin_length);
+          bin_length = vt_base642bin ((char*)p,
+                                  &bin_length,
+                                  data2);
+      int channels = 4;
+      int buf_width = 0;
+      int buf_height = 0;
+      uint8_t *new_data = stbi_load_from_memory (data2, bin_length, &buf_width, &buf_height, &channels, 4);
 
+          free (data2);
+      if (new_data)
+      {
+          image = image_add (buf_width, buf_height, 0,
+                             32, buf_width*buf_height*4, new_data);
+      }
+      else
+      {
+	  fprintf (stderr, "image decoding problem\n");
+      }
+        }
+	if (image)
+      {
+        int i = 0;
+        for (i = 0; vt->current_line->images[i] && i < 4; i++);
+        if (i >= 4) i = 3;
+
+        /* this needs a struct and dynamic allocation */
+        vt->current_line->images[i] = image;
+        vt->current_line->image_col[i] = vt->cursor_x;
+        vt->current_line->image_X[i] = 0;//vt->gfx.x_cell_offset;
+        vt->current_line->image_Y[i] = 0;//vt->gfx.y_cell_offset;
+        vt->current_line->image_x[i] = 0;//vt->gfx.x;
+        vt->current_line->image_y[i] = 0;//vt->gfx.y;
+        vt->current_line->image_w[i] = 0;//vt->gfx.w;
+        vt->current_line->image_h[i] = 0;//vt->gfx.h;
+        vt->current_line->image_rows[i] = 0;//vt->gfx.rows;
+        vt->current_line->image_cols[i] = 0;//vt->gfx.columns;
+
+        int right = (image->width + (vt->cw-1))/vt->cw;
+        int down = (image->height + (vt->ch-1))/vt->ch;
+
+        for (int i = 0; i<down - 1; i++)
+          vtcmd_index (vt, " ");
+        for (int i = 0; i<right; i++)
+          vtcmd_cursor_forward (vt, " ");
+      }
 	    }
 	    }
 	    break;
@@ -6411,6 +6471,8 @@ void ctx_vt_destroy (MrgVT *vt)
 
   if (vt->ctx)
     ctx_free (vt->ctx);
+
+  free (vt->argument_buf);
 
   vt_list_remove (&vts, vt);
 
