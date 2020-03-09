@@ -347,6 +347,10 @@ typedef struct GfxState {
 
 struct _MrgVT {
   char     *title;
+
+  VtList   *saved_lines;
+  int       in_alt_screen;
+  int       saved_line_count;
   VtList   *lines;
   int       line_count;
   VtList   *scrollback;
@@ -918,8 +922,15 @@ static int ctx_vt_trimlines (MrgVT *vt, int max)
 
   while (chop_point)
   {
-    vt_list_prepend (&vt->scrollback, chop_point->data);
-    vt->scrollback_count ++;
+    if (vt->in_alt_screen)
+    {
+      vt_string_free (chop_point->data, 1);
+    }
+    else
+    {
+      vt_list_prepend (&vt->scrollback, chop_point->data);
+      vt->scrollback_count ++;
+    }
     vt_list_remove (&chop_point, chop_point->data);
     vt->line_count--;
   }
@@ -2127,7 +2138,49 @@ qagain:
      //case 47:
      //case 1047:
      //case 1048:
-     //case 1049: <- the one to implement
+     case 1049:
+	     if (set)
+	     {
+	       if (vt->in_alt_screen)
+	       {
+	       }
+	       else
+	       {
+                  vtcmd_save_cursor (vt, "");
+		  vt->saved_lines = vt->lines;
+		  vt->saved_line_count = vt->line_count;
+		  vt->line_count = 0;
+		  vt->lines = NULL;
+        vt->current_line = vt_string_new_with_size ("", vt->cols);
+        vt_list_append (&vt->lines, vt->current_line);
+        vt->line_count++;
+
+		  vt->in_alt_screen = 1;
+		  ctx_vt_line_feed (vt);
+  		  _ctx_vt_move_to (vt, 1, 1);
+                  vt_cell_cache_clear (vt);
+	       }
+	     }
+	     else
+	     {
+	       if (vt->in_alt_screen)
+	       {
+                  while (vt->lines)
+		  {
+		     vt_string_free (vt->lines->data, 1);
+		     vt_list_remove (&vt->lines, vt->lines->data);
+		  }
+
+		  vt->line_count = vt->saved_line_count;
+		  vt->lines = vt->saved_lines;
+                  vtcmd_restore_cursor (vt, "");
+		  vt->saved_lines = NULL;
+		  vt->in_alt_screen = 0;
+	       }
+	       else
+	       {
+	       }
+	     }
         //   vtcmd_reset_to_initial_state (vt, sequence);  
            break; // alt screen
      case 1010: // scroll to bottom on tty output (rxvt)
@@ -2159,7 +2212,7 @@ qagain:
            break;
 
      default:
-           VT_warning ("unhandled CSI ? %ih", qval); return;
+           VT_warning ("unhandled CSI ? %i%s", qval, set?"h":"l"); return;
     }
     if (strchr (sequence + 1, ';'))
     {
@@ -2235,12 +2288,19 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
      case 1010: // scroll to bottom on tty output (rxvt)
      case 1011: // scroll to bottom on key press (rxvt)
 
+     case 1049:
+           is_set = vt->in_alt_screen;
+	   break;
+
      case 4444:/*MODE;Audio;On;;*/
-           //vt->in_pcm=set; break;
+           is_set = vt->in_pcm;
+	   break;
      case 2222:/*MODE;Ctx;On;;*/
-           //vt->in_ctx=set;
+           is_set = vt->in_ctx;
+	   break;
      case 7020:/*MODE;Ctx ascii;On;;*/
-           //vt->in_ctx_ascii = set;
+           is_set = vt->in_ctx_ascii;
+	   break;
      case 80:/* DECSDM Sixel scrolling */
      case 30: // from rxvt - show/hide scrollbar
      case 34: // DECRLM - right to left mode
@@ -2768,7 +2828,8 @@ static void ctx_vt_line_feed (MrgVT *vt)
   int was_home = vt->at_line_home;
   if (vt->margin_top == 1 && vt->margin_bottom == vt->rows)
   {
-    if (vt->lines->data == vt->current_line && vt->cursor_y != vt->rows)
+    if (vt->lines == NULL ||
+	(vt->lines->data == vt->current_line && vt->cursor_y != vt->rows))
     {
       vt->current_line = vt_string_new_with_size ("", vt->cols);
       vt_list_prepend (&vt->lines, vt->current_line);
