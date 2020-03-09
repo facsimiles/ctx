@@ -1145,6 +1145,7 @@ static void _ctx_vt_add_str (MrgVT *vt, const char *str)
    }
   vt->cursor_x += 1;
   vt->at_line_home = 0;
+  vt->rev++;
 }
 
 static void _ctx_vt_backspace (MrgVT *vt)
@@ -1160,6 +1161,7 @@ static void _ctx_vt_backspace (MrgVT *vt)
     }
     VT_cursor("backspace");
   }
+  vt->rev++;
 }
 
 static void vtcmd_set_top_and_bottom_margins (MrgVT *vt, const char *sequence)
@@ -2160,8 +2162,9 @@ qagain:
 
 		  vt->in_alt_screen = 1;
 		  ctx_vt_line_feed (vt);
-  		  _ctx_vt_move_to (vt, 1, 1);
                   vt_cell_cache_clear (vt);
+  		  _ctx_vt_move_to (vt, 1, 1);
+                  ctx_vt_carriage_return (vt);
 	       }
 	     }
 	     else
@@ -2529,7 +2532,7 @@ static void vtcmd_report (MrgVT *vt, const char *sequence)
     //buf = "\033[?1;2c"; // what rxvt reports
     //buf = "\033[?1;6c"; // VT100 with AVO ang GPO
     //buf = "\033[?2c";     // VT102
-    sprintf (buf, "\033[?63;14;22c");
+    sprintf (buf, "\033[?63;14;4;22c");
   }
   else if (sequence[strlen(sequence)-1]=='x') // terminal parameters
   {
@@ -2800,6 +2803,7 @@ static Sequence sequences[]={
 static void handle_sequence (MrgVT *vt, const char *sequence)
 {
   int i;
+  vt->rev ++;
   for (i = 0; sequences[i].prefix; i++)
   {
     if (!strncmp (sequence, sequences[i].prefix, strlen(sequences[i].prefix)))
@@ -4856,10 +4860,10 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
 
 
   if (*p == '"') p++;
-  printf ("%i:[%c]%i\n", __LINE__, *p, atoi (p));
+  //printf ("%i:[%c]%i\n", __LINE__, *p, atoi (p));
   for (; *p && *p != ';'; p++);
   if (*p == ';') p ++;
-  printf ("%i:[%c]%i\n", __LINE__, *p, atoi (p));
+  //printf ("%i:[%c]%i\n", __LINE__, *p, atoi (p));
   for (; *p && *p != ';'; p++);
   if (*p == ';') p ++;
   width = atoi (p);
@@ -4905,24 +4909,20 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
         colors[pal_no][2] = atoi (p) * 255 / 100;
         while (*p && *p >= '0' && *p <= '9') p++;
 	p--;
-	fprintf (stderr, "set color %i\n", pal_no);
       }
       else
       {
-	fprintf (stderr, "use color %i\n", pal_no);
 	p--;
       }
 
     }
     else if (*p == '$') // carriage return
     {
-      fprintf (stderr, "[cr]");
       x = 0;
       dst = &pixels[ (4 * width * y)];
     }
     else if (*p == '-') // line feed
       {
-	fprintf (stderr, "[lf]");
 	y += 6;
 	x = 0;
         dst = &pixels[ (4 * width * y)];
@@ -4931,7 +4931,6 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
     {
       p++;
       repeat = atoi (p);
-      fprintf (stderr, "rep %i\n", repeat);
       while (*p && *p >= '0' && *p <= '9') p++;
       p--;
     }
@@ -4972,8 +4971,9 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
           vtcmd_index (vt, " ");
         for (int i = 0; i<right; i++)
           vtcmd_cursor_forward (vt, " ");
+        ctx_vt_line_feed (vt);
+        ctx_vt_carriage_return (vt);
       }
-
 
 }
 
@@ -6380,7 +6380,7 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
           }
           buf_len = remaining;
           got_data+=len;
-          vt->rev ++; // revision should be changed on screen
+          //vt->rev ++; // revision should be changed on screen
           }  // changes - not data received
              // to enable big image transfers and audio without re-render
 	     // currently - such transfers gets serialized and force-interleaved

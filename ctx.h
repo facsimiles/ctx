@@ -6317,12 +6317,13 @@ ctx_renderer_load_image (CtxRenderer *renderer,
   renderer->state->gstate.source.type = CTX_SOURCE_IMAGE;
   renderer->state->gstate.source.image.buffer = &renderer->texture[0];
 
-  ctx_user_to_device (renderer->state, &x, &y);
+  //ctx_user_to_device (renderer->state, &x, &y);
 
-  renderer->state->gstate.source.image.x0 = x;
-  renderer->state->gstate.source.image.y0 = y;
+  renderer->state->gstate.source.image.x0 = 0;
+  renderer->state->gstate.source.image.y0 = 0;
 
   renderer->state->gstate.source.transform = renderer->state->gstate.transform;
+  ctx_matrix_translate (&renderer->state->gstate.source.transform, x, y);
   ctx_matrix_inverse (&renderer->state->gstate.source.transform);
 }
 
@@ -6337,12 +6338,13 @@ static void ctx_renderer_load_image_memory (CtxRenderer *renderer,
   renderer->state->gstate.source.type = CTX_SOURCE_IMAGE;
   renderer->state->gstate.source.image.buffer = &renderer->texture[0];
 
-  ctx_user_to_device (renderer->state, &x, &y);
+  //ctx_user_to_device (renderer->state, &x, &y);
 
-  renderer->state->gstate.source.image.x0 = x;
-  renderer->state->gstate.source.image.y0 = y;
+  renderer->state->gstate.source.image.x0 = 0;
+  renderer->state->gstate.source.image.y0 = 0;
 
   renderer->state->gstate.source.transform = renderer->state->gstate.transform;
+  ctx_matrix_translate (&renderer->state->gstate.source.transform, x, y);
   ctx_matrix_inverse (&renderer->state->gstate.source.transform);
 }
 
