@@ -1270,7 +1270,8 @@ static void vt_scroll (MrgVT *vt, int amount)
 
   if (string)
   {
-    if (vt->margin_top == 1 && vt->margin_bottom == vt->rows)
+    if (!vt->in_alt_screen &&
+        (vt->margin_top == 1 && vt->margin_bottom == vt->rows))
     {
       vt_list_prepend (&vt->scrollback, string);
       vt->scrollback_count ++;
@@ -2281,10 +2282,6 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
      case 1006: is_set = vt->mouse_decimal; break;
      case 2004: is_set = vt->bracket_paste; break;
            break;
-     //case 2020: /*MODE;wordwrap;On;Off;*/
-     //        sprintf (buf, "\e[?%i;%i$y", qval, 
-     //                 vt->wordwrap?1:2);
-     //        break;
      case 1010: // scroll to bottom on tty output (rxvt)
      case 1011: // scroll to bottom on key press (rxvt)
 
