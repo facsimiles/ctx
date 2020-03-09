@@ -246,7 +246,7 @@ typedef struct Image
   uint8_t *data;
 } Image;
 
-#define MAX_IMAGES 32
+#define MAX_IMAGES 128
 
 static Image image_db[MAX_IMAGES]={{0,},};
 
@@ -279,6 +279,7 @@ static Image *image_add (int width,
 
   if (image->data)
   {
+     // not a good eviction strategy
      image = &image_db[random()%MAX_IMAGES];
   }
 
@@ -4440,6 +4441,38 @@ cleanup:
   }
 }
 
+/* the function shared by sixels, kitty mode and iterm2 mode for
+ * doing inline images. it attaches an image to the current line
+ */
+static void display_image (MrgVT *vt, Image *image,
+	int col,
+	float xoffset,
+	float yoffset,
+	int rows,
+	int cols,
+	int subx,
+	int suby,
+	int subw,
+	int subh
+	)
+{
+  int i = 0;
+  for (i = 0; vt->current_line->images[i] && i < 4; i++);
+  if (i >= 4) i = 3;
+
+  /* this needs a struct and dynamic allocation */
+  vt->current_line->images[i] = image;
+  vt->current_line->image_col[i] = vt->cursor_x;
+  vt->current_line->image_X[i] = xoffset;
+  vt->current_line->image_Y[i] = yoffset;
+  vt->current_line->image_subx[i] = subx;
+  vt->current_line->image_suby[i] = suby;
+  vt->current_line->image_subw[i] = subw;
+  vt->current_line->image_subh[i] = subh;
+  vt->current_line->image_rows[i] = rows;
+  vt->current_line->image_cols[i] = cols;
+}
+
 void vt_gfx (MrgVT *vt, const char *command)
 {
   const char *payload = NULL;
@@ -4607,21 +4640,13 @@ void vt_gfx (MrgVT *vt, const char *command)
 
       if (image)
       {
-        int i = 0;
-        for (i = 0; vt->current_line->images[i] && i < 4; i++);
-        if (i >= 4) i = 3;
-
-        /* this needs a struct and dynamic allocation */
-        vt->current_line->images[i] = image;
-        vt->current_line->image_col[i] = vt->cursor_x;
-        vt->current_line->image_X[i] = vt->gfx.x_cell_offset;
-        vt->current_line->image_Y[i] = vt->gfx.y_cell_offset;
-        vt->current_line->image_x[i] = vt->gfx.x;
-        vt->current_line->image_y[i] = vt->gfx.y;
-        vt->current_line->image_w[i] = vt->gfx.w;
-        vt->current_line->image_h[i] = vt->gfx.h;
-        vt->current_line->image_rows[i] = vt->gfx.rows;
-        vt->current_line->image_cols[i] = vt->gfx.columns;
+	display_image (vt, image, vt->cursor_x, vt->gfx.rows, vt->gfx.columns,
+			vt->gfx.x_cell_offset * 1.0 / vt->cw,
+			vt->gfx.y_cell_offset * 1.0 / vt->ch,
+			vt->gfx.x,
+			vt->gfx.y,
+			vt->gfx.w,
+			vt->gfx.h);
 
         int right = (image->width + (vt->cw-1))/vt->cw;
         int down = (image->height + (vt->ch-1))/vt->ch;
@@ -4938,21 +4963,7 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
 
   if (image)
       {
-        int i = 0;
-        for (i = 0; vt->current_line->images[i] && i < 4; i++);
-        if (i >= 4) i = 3;
-
-        /* this needs a struct and dynamic allocation */
-        vt->current_line->images[i] = image;
-        vt->current_line->image_col[i] = vt->cursor_x;
-        vt->current_line->image_X[i] = 0;//vt->gfx.x_cell_offset;
-        vt->current_line->image_Y[i] = 0;//vt->gfx.y_cell_offset;
-        vt->current_line->image_x[i] = 0;//vt->gfx.x;
-        vt->current_line->image_y[i] = 0;//vt->gfx.y;
-        vt->current_line->image_w[i] = 0;//vt->gfx.w;
-        vt->current_line->image_h[i] = 0;//vt->gfx.h;
-        vt->current_line->image_rows[i] = 0;//vt->gfx.rows;
-        vt->current_line->image_cols[i] = 0;//vt->gfx.columns;
+	display_image (vt, image, vt->cursor_x, 0,0, 0.0, 0.0, 0,0,0,0);
 
         int right = (image->width + (vt->cw-1))/vt->cw;
         int down = (image->height + (vt->ch-1))/vt->ch;
@@ -6233,21 +6244,7 @@ Image *image = NULL;
         }
 	if (image)
       {
-        int i = 0;
-        for (i = 0; vt->current_line->images[i] && i < 4; i++);
-        if (i >= 4) i = 3;
-
-        /* this needs a struct and dynamic allocation */
-        vt->current_line->images[i] = image;
-        vt->current_line->image_col[i] = vt->cursor_x;
-        vt->current_line->image_X[i] = 0;//vt->gfx.x_cell_offset;
-        vt->current_line->image_Y[i] = 0;//vt->gfx.y_cell_offset;
-        vt->current_line->image_x[i] = 0;//vt->gfx.x;
-        vt->current_line->image_y[i] = 0;//vt->gfx.y;
-        vt->current_line->image_w[i] = 0;//vt->gfx.w;
-        vt->current_line->image_h[i] = 0;//vt->gfx.h;
-        vt->current_line->image_rows[i] = 0;//vt->gfx.rows;
-        vt->current_line->image_cols[i] = 0;//vt->gfx.columns;
+	display_image (vt, image, vt->cursor_x, 0,0, 0.0, 0.0, 0,0,0,0);
 
         int right = (image->width + (vt->cw-1))/vt->cw;
         int down = (image->height + (vt->ch-1))/vt->ch;
@@ -8146,8 +8143,8 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
           Image *image = line->images[i];
           if (image)
           {
-             int u = (line->image_col[i]-1) * vt->cw + line->image_X[i];
-             int v = y - vt->ch + line->image_y[i];
+             int u = (line->image_col[i]-1) * vt->cw + (line->image_X[i] * vt->cw);
+             int v = y - vt->ch + (line->image_Y[i] * vt->ch);
 
              int rows = (image->height + (vt->ch-1))/vt->ch;
              ctx_save (ctx);

@@ -45,14 +45,14 @@ struct _VtString
 
   void     *images[4];
   int       image_col[4];
-  int       image_X[4];
-  int       image_Y[4];
+  float     image_X[4]; // 0.0 - 1.0 offset in cell
+  float     image_Y[4];
   int       image_rows[4];
   int       image_cols[4];
-  int       image_x[4];
-  int       image_y[4];
-  int       image_w[4];
-  int       image_h[4];
+  int       image_subx[4];
+  int       image_suby[4];
+  int       image_subw[4];
+  int       image_subh[4];
 
 
 }  __attribute((packed));
