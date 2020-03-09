@@ -203,9 +203,10 @@ typedef enum {
   TERMINAL_STATE_ESC          = 1,
   TERMINAL_STATE_OSC          = 2,
   TERMINAL_STATE_APC          = 3,
-  TERMINAL_STATE_ESC_SEQUENCE = 4,
-  TERMINAL_STATE_ESC_FOO      = 5,
-  TERMINAL_STATE_SWALLOW      = 6,
+  TERMINAL_STATE_SIXEL        = 4,
+  TERMINAL_STATE_ESC_SEQUENCE = 5,
+  TERMINAL_STATE_ESC_FOO      = 6,
+  TERMINAL_STATE_SWALLOW      = 7,
 } TerminalState;
 
 #define MAX_COLS 2048 // used for tabstops
@@ -4662,7 +4663,8 @@ void vt_gfx (MrgVT *vt, const char *command)
                    match = 1;
                      break;
                case 'P': free_resource = 1;
-               case 'p': /* all images intersecting cell specified with x and y */
+               case 'p': /* all images intersecting cell
+			    specified with x and y */
                  if (line->image_col[i] == vt->gfx.x &&
                      row == vt->gfx.y)
                    match = 1;
@@ -4799,6 +4801,177 @@ static void ctx_vt_ctx_feed_byte (MrgVT *vt, int byte)
   }
   return;
 }
+
+static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
+{
+  uint8_t colors[256][3];
+  int width = 0;
+  int height = 0;
+  int x = 0;
+  int y = 0;
+  Image *image;
+  uint8_t *pixels = NULL;
+  int repeat = 1;
+  const char *p = sixels;
+  int pal_no = 0;
+
+#if 0
+  for (; *p && *p != ';'; p++);
+  if (*p == ';') p ++;
+  printf ("%i:[%c]%i\n", __LINE__, *p, atoi (p));
+  // should be 0
+  for (; *p && *p != ';'; p++);
+  if (*p == ';') p ++;
+  printf ("%i:[%c]%i\n", __LINE__, *p, atoi (p));
+  // if 1 then transparency is enabled - otherwise use bg color
+  for (; *p && *p != 'q'; p++);
+#endif
+  //for (; *p && *p != '"'; p++);
+  while (*p && *p != '"') p++;
+
+
+  if (*p == '"') p++;
+  printf ("%i:[%c]%i\n", __LINE__, *p, atoi (p));
+  for (; *p && *p != ';'; p++);
+  if (*p == ';') p ++;
+  printf ("%i:[%c]%i\n", __LINE__, *p, atoi (p));
+  for (; *p && *p != ';'; p++);
+  if (*p == ';') p ++;
+  width = atoi (p);
+  for (; *p && *p != ';'; p++);
+  if (*p == ';') p ++;
+  height = atoi (p);
+
+  if (width <= 0 || height <=0)
+    return;
+  if (width * height > 2048 * 2048)
+    return;
+  
+  pixels = calloc (width * (height + 6), 4);
+  image = image_add (width, height, 0,
+                     32, width*height*4, pixels);
+
+  uint8_t *dst = pixels;
+
+  for (; *p; p++)
+  {
+    if (*p == '#')
+    {
+      p++;
+      pal_no = atoi (p);
+      if (pal_no < 0 || pal_no > 255) pal_no = 255;
+
+      while (*p && *p >= '0' && *p <= '9') p++;
+
+      if (*p == ';')
+      {
+        /* define a palette */
+        for (; *p && *p != ';'; p++);
+	if (*p == ';') p ++;
+        // color_model , 2 is rgb
+        for (; *p && *p != ';'; p++);
+	if (*p == ';') p ++;
+        colors[pal_no][0] = atoi (p) * 255 / 100;
+        for (; *p && *p != ';'; p++);
+	if (*p == ';') p ++;
+        colors[pal_no][1] = atoi (p) * 255 / 100;
+        for (; *p && *p != ';'; p++);
+	if (*p == ';') p ++;
+        colors[pal_no][2] = atoi (p) * 255 / 100;
+        while (*p && *p >= '0' && *p <= '9') p++;
+	p--;
+	fprintf (stderr, "set color %i\n", pal_no);
+      }
+      else
+      {
+	fprintf (stderr, "use color %i\n", pal_no);
+	p--;
+      }
+
+    }
+    else if (*p == '$') // carriage return
+    {
+      fprintf (stderr, "[cr]");
+      x = 0;
+      dst = &pixels[ (4 * width * y)];
+    }
+    else if (*p == '-') // line feed
+      {
+	fprintf (stderr, "[lf]");
+	y += 6;
+	x = 0;
+        dst = &pixels[ (4 * width * y)];
+      }
+    else if (*p == '!') // repeat
+    {
+      p++;
+      repeat = atoi (p);
+      fprintf (stderr, "rep %i\n", repeat);
+      while (*p && *p >= '0' && *p <= '9') p++;
+      p--;
+    }
+    else if (*p >= '?' && *p <= '~')/* sixel data */
+    {
+      int sixel = (*p) - '?';
+      if (x + repeat < width && y < height)
+      {
+        for (int bit = 0; bit < 6; bit ++)
+        {
+  	   if ((sixel & (1 << bit)))
+	   {
+             for (int u = 0; u < repeat; u++)
+	     {
+               for (int c = 0; c < 3; c++)
+	       {
+	         dst[(bit * width * 4) + u * 4 + c] = colors[pal_no][c];
+	         dst[(bit * width * 4) + u * 4 + 3] = 255;
+	       }
+	     }
+	   }
+        }
+      }
+      x   += repeat;
+      dst += (repeat * 4);
+      repeat = 1;
+    }
+  }
+
+  if (image)
+      {
+        int i = 0;
+        for (i = 0; vt->current_line->images[i] && i < 4; i++);
+        if (i >= 4) i = 3;
+
+        /* this needs a struct and dynamic allocation */
+        vt->current_line->images[i] = image;
+        vt->current_line->image_col[i] = vt->cursor_x;
+        vt->current_line->image_X[i] = 0;//vt->gfx.x_cell_offset;
+        vt->current_line->image_Y[i] = 0;//vt->gfx.y_cell_offset;
+        vt->current_line->image_x[i] = 0;//vt->gfx.x;
+        vt->current_line->image_y[i] = 0;//vt->gfx.y;
+        vt->current_line->image_w[i] = 0;//vt->gfx.w;
+        vt->current_line->image_h[i] = 0;//vt->gfx.h;
+        vt->current_line->image_rows[i] = 0;//vt->gfx.rows;
+        vt->current_line->image_cols[i] = 0;//vt->gfx.columns;
+
+        int right = (image->width + (vt->cw-1))/vt->cw;
+        int down = (image->height + (vt->ch-1))/vt->ch;
+
+        for (int i = 0; i<down - 1; i++)
+          vtcmd_index (vt, " ");
+        for (int i = 0; i<right; i++)
+          vtcmd_cursor_forward (vt, " ");
+      }
+
+
+}
+
+/* almost all single char uppercase and lowercase ASCII get covered by
+ * serializing the full canvas drawing API to SVG commands, we can still
+ * extend this , with non-printable as well as values >127 .. to encode
+ * new - possibly short keywords that do not have an ascii shorthand
+ */
+
 
 typedef enum {
   SVGP_NONE = 0,
@@ -5824,6 +5997,13 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
             vt->state = TERMINAL_STATE_ESC_SEQUENCE;
           }
           break;
+	case 'P':
+	  {
+            char tmp[]={byte, '\0'};
+            ctx_vt_argument_buf_reset(vt, tmp);
+            vt->state = TERMINAL_STATE_SIXEL;
+	  }
+	  break;
         case ']':
           {
             char tmp[]={byte, '\0'};
@@ -5921,6 +6101,7 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 	      char value[128]="";
 	      int in_key=1;
 
+	      if (preserve_aspect);
 
 	      for (; *p && *p!=':'; p++)
 	      {
@@ -6120,6 +6301,27 @@ Image *image = NULL;
         ctx_vt_argument_buf_add (vt, byte);
       }
       break;
+
+
+    case TERMINAL_STATE_SIXEL:
+      // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
+      // and in "\e\" rather than just "\e", this would cause
+      // a stray char
+      //if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
+      if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
+      {
+	ctx_vt_sixels (vt, vt->argument_buf);
+        if (byte == 27)
+          vt->state = TERMINAL_STATE_SWALLOW;
+        else
+          vt->state = TERMINAL_STATE_NEUTRAL;
+      }
+      else
+      {
+        ctx_vt_argument_buf_add (vt, byte);
+      }
+      break;
+
     case TERMINAL_STATE_SWALLOW:
       vt->state = TERMINAL_STATE_NEUTRAL;
       // this better be a \\ so were leaving DCS
