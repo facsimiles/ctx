@@ -2619,6 +2619,11 @@ static void vtcmd_justify (MrgVT *vt, const char *sequence)
   
 }
 
+static void vtcmd_sixel_related_req (MrgVT *vt, const char *sequence)
+{
+  fprintf (stderr, "it happens!\n");
+}
+
 static void vtcmd_set_charmap (MrgVT *vt, const char *sequence)
 {
   int slot = 0;
@@ -2732,6 +2737,7 @@ static Sequence sequences[]={
   {"[",  'P', vtcmd_delete_n_chars, VT102}, /* args:Pn id:DCH Delete Character */
   // [ Q is SEE - Set editing extent
   // [ R is CPR - active cursor position report
+  {"[?", 'S', vtcmd_sixel_related_req},
   {"[",  'S', vtcmd_scroll_up, VT100}, /* args:Pn id:SU Scroll Up */
   {"[",  'T', vtcmd_scroll_down, VT100}, /* args:Pn id:SD Scroll Down */
   {"[",/*SP*/'U', vtcmd_set_line_home, ANSI}, /* args:PnSP id=SLH Set Line Home */
@@ -5421,7 +5427,12 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
     case SVGP_ROTATE:
 	ctx_rotate (ctx, vt->numbers[0]);
         break;
-    case SVGP_TEXT: ctx_text (ctx, (char*)vt->utf8_holding);
+    case SVGP_TEXT:
+	if (vt->n_numbers == 1)
+	  ctx_rel_move_to (ctx, -vt->numbers[0], 0.0);
+	else
+	  ctx_text (ctx, (char*)vt->utf8_holding);
+        vt->command = SVGP_TEXT;
         break;
     case SVGP_SET_FONT: ctx_set_font (ctx, (char*)vt->utf8_holding);
         break;
@@ -5623,6 +5634,8 @@ static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
 	      }
 	      break;
 	   case '@':
+	      if (vt->svgp_state == SVGP_NEG_NUMBER)
+	        vt->numbers[vt->n_numbers] *= -1;
 	      if (vt->n_numbers % 2 == 0) // even is x coord
 	      {
 	        vt->numbers[vt->n_numbers] *= vt->cw;
@@ -5642,6 +5655,8 @@ static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
 	      vt->svgp_state = SVGP_NEUTRAL;
 	      break;
 	   case '%':
+	      if (vt->svgp_state == SVGP_NEG_NUMBER)
+	        vt->numbers[vt->n_numbers] *= -1;
 	      if (vt->n_numbers % 2 == 0) // even is x coord
 	      {
 	        vt->numbers[vt->n_numbers] =
@@ -5667,7 +5682,7 @@ static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
 	           vt->svgp_state != SVGP_NEG_NUMBER) || new_neg)
 	      {
 	         vt->n_numbers ++;
-		 if (vt->n_numbers == vt->n_args)
+		 if (vt->n_numbers == vt->n_args || vt->n_args == 100)
 		 {
 		   svgp_dispatch_command (vt, ctx);
 		 }
