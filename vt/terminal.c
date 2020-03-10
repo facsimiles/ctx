@@ -53,6 +53,7 @@ static SDL_Texture  *texture;
 static uint8_t      *pixels;
 static int pointer_down[3] = {0,};
 static int lctrl = 0;
+static int lalt = 0;
 static int rctrl = 0;
 #endif
 
@@ -455,7 +456,7 @@ static int sdl_check_events ()
         }
         break;
       case SDL_TEXTINPUT:
-        if (!lctrl && !rctrl && 
+        if (!lctrl && !rctrl && !lalt &&
 		((ctx_vt_keyrepeat (vt)) || (key_repeat==0))
               ) {
           const char *name = event.text.text;
@@ -471,6 +472,7 @@ static int sdl_check_events ()
           switch (event.key.keysym.sym)
           {
             case SDLK_LCTRL:     lctrl=0;      break;
+            case SDLK_LALT:      lalt =0;      break;
             case SDLK_RCTRL:     rctrl=0;      break;
           }
         }
@@ -494,6 +496,7 @@ static int sdl_check_events ()
           switch (event.key.keysym.sym)
           {
             case SDLK_LCTRL:     lctrl=1;      break;
+            case SDLK_LALT:      lalt=1;      break;
             case SDLK_RCTRL:     rctrl=1;      break;
             case SDLK_F1:        name = "F1";       break;
             case SDLK_F2:        name = "F2";       break;
