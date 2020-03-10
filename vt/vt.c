@@ -4864,9 +4864,9 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
   for (; *p && *p != 'q'; p++);
 #endif
   //for (; *p && *p != '"'; p++);
-  while (*p && *p != '"') p++;
+  while (*p && *p != 'q') p++;
 
-
+  if (*p == 'q') p++;
   if (*p == '"') p++;
   //printf ("%i:[%c]%i\n", __LINE__, *p, atoi (p));
   for (; *p && *p != ';'; p++);
@@ -4879,10 +4879,15 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
   if (*p == ';') p ++;
   height = atoi (p);
 
-  if (width <= 0 || height <=0)
-    return;
   if (width * height > 2048 * 2048)
     return;
+
+  if (width <= 0 || height <=0)
+  {
+    width  = 512;  // TODO: use realloc to grow height
+    height = 256;  //       and perhaps a final shrink to
+                   //       conserve resources
+  }
   
   pixels = calloc (width * (height + 6), 4);
   image = image_add (width, height, 0,
@@ -4945,11 +4950,11 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
     else if (*p >= '?' && *p <= '~')/* sixel data */
     {
       int sixel = (*p) - '?';
-      if (x + repeat < width && y < height)
+      if (x + repeat <= width && y < height)
       {
         for (int bit = 0; bit < 6; bit ++)
         {
-  	   if ((sixel & (1 << bit)))
+  	   if (sixel & (1 << bit))
 	   {
              for (int u = 0; u < repeat; u++)
 	     {
