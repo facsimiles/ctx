@@ -7973,6 +7973,7 @@ _ctx_text (Ctx        *ctx,
           x += ctx_glyph_width (ctx, unichar);
           x += ctx_glyph_kern (ctx, unichar, ctx_utf8_to_unichar (next_utf8));
         }
+        ctx_move_to (ctx, x, y);
       }
     }
 }
