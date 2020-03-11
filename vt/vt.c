@@ -7053,6 +7053,13 @@ int vt_special_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int cw, int ch, int
       ctx_rectangle (ctx, x, y - ch/2 - ch * 0.1 / 2, cw, ch * 0.1);
       ctx_fill (ctx);
       return 0;
+
+     case 0x2212: // minus -sign
+      ctx_new_path (ctx);
+      ctx_rectangle (ctx, x + cw * 0.1, y - ch/2 - ch * 0.1 / 2, cw * 0.8, ch * 0.1);
+      ctx_fill (ctx);
+      return 0;
+
      case 0x2502: // VT_BOX_DRAWINGS_LIGHT_VERTICAL:
       ctx_new_path (ctx);
       ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
@@ -7383,6 +7390,28 @@ void vt_ctx_glyph (Ctx *ctx, MrgVT *vt, float x, float y, int unichar, int bold,
  */
 
 static uint8_t palettes[][16][3]={
+	{
+{0, 0, 0},
+{127, 1, 0},
+{27, 125, 23},
+{251, 146, 125},
+{13, 5, 251},
+{54, 0, 127},
+{2, 140, 161},
+{192, 192, 192},
+{96, 96, 96},
+{254, 29, 46},
+{102, 239, 101},
+{253, 241, 13},
+{4, 163, 255},
+{245, 1, 211},
+{3, 210, 255},
+{255, 255, 255},
+},{
+
+
+
+#if 0
         {
 {0, 0, 0},
 {144, 0, 0},
@@ -7401,6 +7430,7 @@ static uint8_t palettes[][16][3]={
 {0, 217, 255},
 {255, 255, 255},
 	},{
+#endif
 
 
         {0, 0, 0},

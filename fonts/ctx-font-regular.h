@@ -4,7 +4,7 @@
 
  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghi
   jklmnopqrstuvwxyz{|}~éñÑßæøåö£ÆÖØÅ€§π°üÜ…”“«»©®™·←↑↓→☣☀☁☂☢☭☮☯☽✉⚙⚠␣²◆♥♦♣♠▲▼
-  ÷≈±≥≤½¼╴╶╵╷┛┓┣╋┳┻┫┗┏┃━⎢⎥  */
+  ÷≈±≥≤½¼╴−╶╵╷┛┓┣╋┳┻┫┗┏┃━⎢⎥  */
 static const struct __attribute__ ((packed)) {uint8_t code; uint32_t a; uint32_t b;}
 ctx_font_regular[]={
 {'@', 0x00000020, 0x00001062},/*                 x-advance: 16.382812 */
@@ -2383,6 +2383,12 @@ ctx_font_regular[]={
 {'l', 0x41800dbf, 0x00000000},/*  rel_line_to */
 {'l', 0x00000000, 0x408a8604},/*  rel_line_to */
 {'l', 0xc1800dbf, 0x00000000},/*  rel_line_to */
+{'@', 0x00002212, 0x00002b30},/*        −        x-advance: 43.187500 */
+{'m', 0x40aec3de, 0xc1926037},/*  rel_move_to */
+{'l', 0x42010f76, 0x00000000},/*  rel_line_to */
+{'l', 0x00000000, 0x4088e9aa},/*  rel_line_to */
+{'l', 0xc2010f76, 0x00000000},/*  rel_line_to */
+{'l', 0x00000000, 0xc088e9aa},/*  rel_line_to */
 {'@', 0x00002576, 0x00001f08},/*        ╶        x-advance: 31.031250 */
 {'m', 0x41780dbf, 0xc178dbec},/*  rel_move_to */
 {'l', 0x00000000, 0xc08a8604},/*  rel_line_to */
