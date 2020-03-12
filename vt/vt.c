@@ -2106,6 +2106,11 @@ qagain:
      case 8: /*MODE;Auto repeat;On;Off;*/
              vt->keyrepeat = set;
              break;
+
+     // 10 - Block DECEDM 
+     // 18 - Print form feed  DECPFF  default off
+     // 19 - Print fullscreen DECPEX  default on
+
      case 12:vtcmd_ignore (vt, sequence);break; // blinking_cursor
 
 
@@ -2137,16 +2142,12 @@ qagain:
              break;
 
      case 1000:/*MODE;Mouse reporting;On;Off;*/
-	     fprintf (stderr, "%i = %i\n", qval, set);
              vt->mouse = set; break;
      case 1002:/*MODE;Mouse drag;On;Off;*/ 
-	     fprintf (stderr, "%i = %i\n", qval, set);
              vt->mouse_drag = set; break;
      case 1003:/*MODE;Mouse all;On;Off;*/ 
-	     fprintf (stderr, "%i = %i\n", qval, set);
              vt->mouse_all = set; break;
      case 1006:/*MODE;Mouse decimal;On;Off;*/ 
-	     fprintf (stderr, "%i = %i\n", qval, set);
              vt->mouse_decimal = set; break;
      //case 47:
      //case 1047:
@@ -2240,8 +2241,8 @@ qagain:
 again:
     val = parse_int (sequence, 1);
     switch (val)
-{
-     case 2:/* AM - keyboard action mode */ break;
+{    case 1:/*GATM - transfer enhanced data */
+     case 2:/*KAM - keyboard action mode */ break;
      case 3:/*CRM - control representation mode */
              /* show control chars? */
              break;
@@ -2253,6 +2254,12 @@ again:
      case 20:/*MODE2;LNM Carriage Return on LF/Newline;On;Off;*/;
              vt->cr_on_lf = set; break;
      case 21: // GRCM - whether SGR accumulates or a reset on each command
+             break;
+     case 32: // WYCRTSAVM - screen saver 
+             break;
+     case 33: // WYSTCURM  - steady cursor
+             break;
+     case 34: // WYULCURM  - underline cursor
              break;
 
      default: VT_warning ("unhandled CSI %ih", val); return;
@@ -4858,6 +4865,7 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
   const char *p = sixels;
   int pal_no = 0;
 
+  fprintf (stderr, "{");
 #if 0
   for (; *p && *p != ';'; p++);
   if (*p == ';') p ++;
@@ -4890,10 +4898,63 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
 
   if (width <= 0 || height <=0)
   {
-    width  = 512;  // TODO: use realloc to grow height
-    height = 256;  //       and perhaps a final shrink to
-                   //       conserve resources
+    width = 0; height = 0;
+
+    // XXX  : a copy paste dry-run
+  for (const char *t=p; *t; t++)
+  {
+    if (*t == '#')
+    {
+      t++;
+      while (*t && *t >= '0' && *t <= '9') t++;
+      if (*t == ';')
+      {
+        for (; *t && *t != ';'; t++);
+	if (*t == ';') t ++;
+        for (; *t && *t != ';'; t++);
+	if (*t == ';') t ++;
+        for (; *t && *t != ';'; t++);
+	if (*t == ';') t ++;
+        for (; *t && *t != ';'; t++);
+	if (*t == ';') t ++;
+        while (*t && *t >= '0' && *t <= '9') t++;
+	t--;
+      }
+      else
+      {
+	t--;
+      }
+
+    }
+    else if (*t == '$') // carriage return
+    {
+      if (x > width) width = x;
+      x = 0;
+    }
+    else if (*t == '-') // line feed
+      {
+	y += 6;
+	x = 0;
+      }
+    else if (*t == '!') // repeat
+    {
+      t++;
+      repeat = atoi (t);
+      while (*t && *t >= '0' && *t <= '9') t++;
+      t--;
+    }
+    else if (*t >= '?' && *t <= '~')/* sixel data */
+    {
+      x += repeat;
+      repeat = 1;
+    }
   }
+
+    height = y;
+  }
+  x = 0;
+  y = 0;
+    fprintf (stderr, "w: %i h:  %i\n", width, height);
   
   pixels = calloc (width * (height + 6), 4);
   image = image_add (width, height, 0,
@@ -4993,7 +5054,8 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
         ctx_vt_line_feed (vt);
         ctx_vt_carriage_return (vt);
       }
-
+  vt->rev++;
+  fprintf (stderr, "}");
 }
 
 /* almost all single char uppercase and lowercase ASCII get covered by
@@ -6365,7 +6427,7 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
 
   int read_size = sizeof(buf);
   int got_data = 0;
-  int max_consumed_chars = 4096;
+  int max_consumed_chars = 65536;
   int len = 0;
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
