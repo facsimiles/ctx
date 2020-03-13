@@ -1037,7 +1037,7 @@ static inline void ctx_vt_argument_buf_add (MrgVT *vt, int ch)
   if (vt->argument_buf_len + 1 >=
       vt->argument_buf_cap)
   {
-    vt->argument_buf_cap = vt->argument_buf_cap + 512;
+    vt->argument_buf_cap = vt->argument_buf_cap * 1.5;
     vt->argument_buf = realloc (vt->argument_buf, vt->argument_buf_cap);
   }
 
@@ -4865,7 +4865,6 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
   const char *p = sixels;
   int pal_no = 0;
 
-  fprintf (stderr, "{");
 #if 0
   for (; *p && *p != ';'; p++);
   if (*p == ';') p ++;
@@ -4954,7 +4953,6 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
   }
   x = 0;
   y = 0;
-    fprintf (stderr, "w: %i h:  %i\n", width, height);
   
   pixels = calloc (width * (height + 6), 4);
   image = image_add (width, height, 0,
@@ -5055,7 +5053,6 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
         ctx_vt_carriage_return (vt);
       }
   vt->rev++;
-  fprintf (stderr, "}");
 }
 
 /* almost all single char uppercase and lowercase ASCII get covered by
@@ -5929,6 +5926,7 @@ static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
 
 static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 {
+#if 0
   if (vt->log)
   {
     char buf[3]="";
@@ -5945,7 +5943,10 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
   {
     VT_input ("<%i>", byte);
   }
-
+#endif
+ 
+  // XXX : make this be a single dispatch function
+  //       that overrides program
   if (vt->in_vt52)
   {
     ctx_vt_vt52_feed_byte (vt, byte);
@@ -6394,7 +6395,6 @@ Image *image = NULL;
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       // and in "\e\" rather than just "\e", this would cause
       // a stray char
-      //if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
       if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
       {
 	ctx_vt_sixels (vt, vt->argument_buf);
@@ -6406,6 +6406,7 @@ Image *image = NULL;
       else
       {
         ctx_vt_argument_buf_add (vt, byte);
+	//fprintf (stderr, "\r%i ", vt->argument_buf_len);
       }
       break;
 
@@ -6413,13 +6414,14 @@ Image *image = NULL;
       vt->state = TERMINAL_STATE_NEUTRAL;
       // this better be a \\ so were leaving DCS
       // XXX check that byte is \\ .. otherwise,
+      // we should be going back to OSC/APC state
       //
       break;
-  }
+    }
   }
 }
 
-static unsigned char buf[2048];
+static unsigned char buf[4096];
 static int buf_len = 0;
 
 int ctx_vt_poll (MrgVT *vt, int timeout)
@@ -6447,7 +6449,9 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
 
   while (timeout > 100 && vt_waitdata (vt, timeout))
   {
+    usleep (timeout / 2);
     len = vt_read (vt, buf, read_size);
+
     b:
     if (len > 0)
     {
@@ -6470,7 +6474,6 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
           }
           buf_len = remaining;
           got_data+=len;
-          //vt->rev ++; // revision should be changed on screen
           }  // changes - not data received
              // to enable big image transfers and audio without re-render
 	     // currently - such transfers gets serialized and force-interleaved
@@ -6798,7 +6801,7 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
   {
     VT_error ("forkpty failed (%s)", command);
   }
-  fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
+  //fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
 }
 
 void ctx_vt_destroy (MrgVT *vt)
@@ -8117,7 +8120,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   vt->has_blink = 0;
 
   vt->blink_state++;
-  //fprintf (stderr, "{%i}", vt->blink_state);
   int cursor_x_px = 0;
   int cursor_y_px = 0;
   int cursor_w = vt->cw;
