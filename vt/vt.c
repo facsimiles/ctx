@@ -98,6 +98,11 @@ static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
 
 /* barebones linked list */
 
+static void ctx_vt_feed_byte (MrgVT *vt, int byte);
+static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte);
+static void ctx_vt_pcm_feed_byte (MrgVT *vt, int byte);
+static void ctx_vt_vt52_feed_byte (MrgVT *vt, int byte);
+
 typedef struct _VtList VtList;
 struct _VtList {
   void *data;
@@ -350,6 +355,7 @@ typedef struct GfxState {
 
 struct _MrgVT {
   char     *title;
+  void    (*feed_byte)(MrgVT *vt, int byte);
 
   VtList   *saved_lines;
   int       in_alt_screen;
@@ -453,11 +459,6 @@ struct _MrgVT {
 
   int        done;
   int        result;
-
-  int        in_vt52;
-  int        in_ctx;
-  int        in_pcm;
-  int        in_ctx_ascii;
 
   float      font_to_cell_scale;
   float      font_size; // should maybe be integer?
@@ -834,6 +835,7 @@ void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
   MrgVT *vt              = calloc (sizeof (MrgVT), 1);
+  vt->feed_byte = ctx_vt_feed_byte;
   vt->smooth_scroll = 0;
   vt->scroll_offset = 0.0;
   vt->waitdata = vtpty_waitdata;
@@ -2077,7 +2079,10 @@ qagain:
                vt->key_2017 = set;
              break;
      case 2: /*MODE;VT52 emulation;;enable; */
-             if (set==0) vt->in_vt52 = 1;
+             if (set==0)
+	     {
+    	       vt->feed_byte = ctx_vt_vt52_feed_byte;
+	     }
              break; 
      case 3: /*MODE;Column mode;132 columns;80 columns;*/
              vtcmd_set_132_col (vt, set);
@@ -2210,15 +2215,14 @@ qagain:
      //      vt->wordwrap = set; break; 
 
      case 4444:/*MODE;Audio;On;;*/
-           vt->in_pcm=set; break;
+	   if (set)
+             vt->feed_byte = ctx_vt_pcm_feed_byte;
+	   break;
 
-     case 2222:/*MODE;Ctx;On;;*/
-           vt->in_ctx=set;
-           break;
      case 7020:/*MODE;Ctx ascii;On;;*/
-           vt->in_ctx_ascii = set;
 	   if (set)
 	   {
+             vt->feed_byte = ctx_vt_svgp_feed_byte;
              vt->command = 'm';
 	     vt->n_numbers = 0;
 	     vt->decimal = 0;
@@ -2310,13 +2314,10 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
 	   break;
 
      case 4444:/*MODE;Audio;On;;*/
-           is_set = vt->in_pcm;
-	   break;
-     case 2222:/*MODE;Ctx;On;;*/
-           is_set = vt->in_ctx;
+           is_set = (vt->feed_byte == ctx_vt_pcm_feed_byte);
 	   break;
      case 7020:/*MODE;Ctx ascii;On;;*/
-           is_set = vt->in_ctx_ascii;
+           is_set = (vt->feed_byte == ctx_vt_svgp_feed_byte);
 	   break;
      case 80:/* DECSDM Sixel scrolling */
      case 30: // from rxvt - show/hide scrollbar
@@ -4798,7 +4799,8 @@ static void ctx_vt_vt52_feed_byte (MrgVT *vt, int byte)
         case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
         case 'Y': vt->utf8_pos = 2; break;
         case 'Z': vt_write (vt, "\e/Z", 3); break;
-        case '<': vt->in_vt52 = 0; break;
+        case '<': vt->feed_byte = ctx_vt_feed_byte;
+	  break;
         default: break;
       }
       break;
@@ -4812,44 +4814,6 @@ static void ctx_vt_vt52_feed_byte (MrgVT *vt, int byte)
       break;
 
   }
-}
-
-static void ctx_vt_ctx_feed_byte (MrgVT *vt, int byte)
-{
-  Ctx *ctx = vt->current_line->ctx;
-  if (!vt->current_line->ctx)
-  {
-    ctx = vt->current_line->ctx = ctx_new ();
-    ctx_translate (ctx,
-                   (vt->cursor_x-1) * vt->cw * 10,
-                   (vt->cursor_y-1) * vt->ch * 10);
-  }
-
-  /* we reuse the utf8 holding area from the default code path, and collect
-   * 9 bytes at a time
-   */
-  vt->utf8_holding[vt->utf8_pos++]=byte;
-  if (vt->utf8_pos == 9)
-  {
-     switch (vt->utf8_holding[0])
-     {
-        case CTX_EXIT:
-          vt->in_ctx = 0;
-          vt->utf8_pos = 0;
-          break;
-        case CTX_CLEAR:
-          ctx_clear (ctx);
-          ctx_translate (ctx,
-                   (vt->cursor_x-1) * vt->cw * 10,
-                   (vt->cursor_y-1) * vt->ch * 10);
-          break;
-        default:
-          ctx_add_single (ctx, &vt->utf8_holding[0]);
-          break;
-      }
-      vt->utf8_pos = 0;
-  }
-  return;
 }
 
 static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
@@ -5573,8 +5537,7 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
        ctx_close_path (ctx);
        break;
     case SVGP_EXIT:
-       vt->in_ctx = 0;
-       vt->in_ctx_ascii = 0;
+       vt->feed_byte = ctx_vt_feed_byte;
        break;
     case SVGP_CLEAR:
        ctx_clear (ctx);
@@ -5924,6 +5887,18 @@ static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
     }
 }
 
+static void ctx_vt_pcm_feed_byte (MrgVT *vt, int byte)
+{
+  if (byte == 0x00) // byte value 0 terminates - replace
+  {                 // any 0s in original raw data with 1
+    vt->feed_byte = ctx_vt_feed_byte;
+  }
+  else
+  {
+    terminal_queue_pcm_sample (MuLawDecompressTable[byte]);
+  }
+}
+
 static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 {
 #if 0
@@ -5945,36 +5920,6 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
   }
 #endif
  
-  // XXX : make this be a single dispatch function
-  //       that overrides program
-  if (vt->in_vt52)
-  {
-    ctx_vt_vt52_feed_byte (vt, byte);
-    return;
-  }
-  else if (vt->in_ctx_ascii)
-  {
-    ctx_vt_svgp_feed_byte (vt, byte);
-    return;
-  }
-  else if (vt->in_ctx)
-  {
-    ctx_vt_ctx_feed_byte (vt, byte);
-    return;
-  }
-  else if (vt->in_pcm)
-  {
-    if (byte == 0x00) // byte value 0 terminates - replace
-    {                 // any 0s in original raw data with 1
-      vt->in_pcm = 0;
-    }
-    else
-    {
-      terminal_queue_pcm_sample (MuLawDecompressTable[byte]);
-    }
-    return;
-  }
-
   int encoding = vt->encoding;
 
   switch (encoding)
@@ -6460,7 +6405,7 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
       for (i = 0; i < len; i++)
       {
         uint8_t byte = buf[i];
-        ctx_vt_feed_byte (vt, byte);
+        vt->feed_byte (vt, byte);
         if ((vt->in_scroll && !was_in_scroll )
             || (i > max_consumed_chars))
         {
@@ -6651,7 +6596,7 @@ static const char *keymap_general[][2]={
 
 void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 {
-  if (vt->in_vt52)
+  if (vt->feed_byte == ctx_vt_vt52_feed_byte)
   {
     for (int i = 0; i<sizeof (keymap_vt52)/sizeof(keymap_vt52[0]); i++)
       if (!strcmp (str, keymap_vt52[i][0]))
@@ -6696,7 +6641,7 @@ done:
     if (vt->local_editing)
     {
       for (int i = 0; str[i]; i++)
-        ctx_vt_feed_byte (vt, str[i]);
+        vt->feed_byte (vt, str[i]);
     }
     else
     {
