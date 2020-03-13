@@ -6369,21 +6369,23 @@ Image *image = NULL;
 static unsigned char buf[4096];
 static int buf_len = 0;
 
+#define MIN(a,b)  ((a)<(b)?(a):(b))
+
 int ctx_vt_poll (MrgVT *vt, int timeout)
 {
 
   int read_size = sizeof(buf);
   int got_data = 0;
-  int max_consumed_chars = 65536;
+  int remaining_chars = 65536;
   int len = 0;
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
   {
-    max_consumed_chars = vt->cols / 2;
+    remaining_chars = vt->cols / 2;
   }
   if (vt->in_scroll)
   {
-    max_consumed_chars = 0;
+    remaining_chars = 0;
     // XXX : need a bail condition -
     // /// so that we can stop accepting data until autowrap or similar
   }
@@ -6392,9 +6394,11 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
   int was_in_scroll = vt->in_scroll;
   if (buf_len) goto b;
 
-  while (timeout > 100 && vt_waitdata (vt, timeout))
+  read_size = MIN(read_size, remaining_chars);
+
+  while (timeout > 100 && remaining_chars > 0 && vt_waitdata (vt, timeout))
   {
-    usleep (timeout / 2);
+    //usleep (timeout / 2);
     len = vt_read (vt, buf, read_size);
 
     b:
@@ -6406,8 +6410,9 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
       {
         uint8_t byte = buf[i];
         vt->feed_byte (vt, byte);
+#if 0
         if ((vt->in_scroll && !was_in_scroll )
-            || (i > max_consumed_chars))
+            || (i > remaining_chars))
         {
 
           int remaining = len - i - 1;
@@ -6425,10 +6430,12 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
 	     // with 
           return got_data;
         }
+#endif
       }
       buf_len = 0;
       got_data+=len;
-      vt->rev ++;
+ //   vt->rev ++;
+      remaining_chars -= len;
     }
     timeout /= 2;
   }
@@ -8267,7 +8274,6 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
     }
   }
 
-#define MIN(a,b)  ((a)<(b)?(a):(b))
   /* draw cursor */
   if (vt->cursor_visible)
   {
