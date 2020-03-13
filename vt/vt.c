@@ -2287,14 +2287,14 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
      case 2: /*MODE;VT52 emulation;;enable; */
              //if (set==0) vt->in_vt52 = 1;
      case 3: break;
-     case 4: is_set = vt->smooth_scroll; break; 
-     case 5: is_set = vt->reverse_video; break;
-     case 6: is_set = vt->origin; break;
-     case 7: is_set = vt->autowrap; break;
-     case 8: is_set = vt->keyrepeat; break;
-     case 25:is_set = vt->cursor_visible; break;
-     case 69:is_set = vt->left_right_margin_mode; break;
-     case 437:is_set= vt->encoding; break;
+     case 4:    is_set = vt->smooth_scroll; break; 
+     case 5:    is_set = vt->reverse_video; break;
+     case 6:    is_set = vt->origin; break;
+     case 7:    is_set = vt->autowrap; break;
+     case 8:    is_set = vt->keyrepeat; break;
+     case 25:   is_set = vt->cursor_visible; break;
+     case 69:   is_set = vt->left_right_margin_mode; break;
+     case 437:  is_set = vt->encoding; break;
      case 1000: is_set = vt->mouse; break;
      case 1002: is_set = vt->mouse_drag; break;
      case 1003: is_set = vt->mouse_all; break;
@@ -2819,18 +2819,14 @@ static Sequence sequences[]={
 
 static void handle_sequence (MrgVT *vt, const char *sequence)
 {
+  int i0 = strlen (sequence)-1;
   int i;
   vt->rev ++;
   for (i = 0; sequences[i].prefix; i++)
   {
     if (!strncmp (sequence, sequences[i].prefix, strlen(sequences[i].prefix)))
     {
-      int i0;
-      int mismatch = 0;
-      i0 = strlen (sequence)-1;
-      if (sequences[i].suffix && (sequence[i0] != sequences[i].suffix))
-        mismatch = 1;
-      if (!mismatch)
+      if (!(sequences[i].suffix && (sequence[i0] != sequences[i].suffix)))
       {
         VT_command("%s", sequence);
         sequences[i].vtcmd (vt, sequence);
@@ -2901,19 +2897,10 @@ ctx_vt_carriage_return (MrgVT *vt)
   vt->at_line_home = 1;
 }
 
-
 void terminal_queue_pcm_sample (int16_t sample);
 
 static unsigned char vt_bell_audio[] = {
-#if 0
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+#if 1
   0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
   0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
   0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
@@ -2924,12 +2911,6 @@ static unsigned char vt_bell_audio[] = {
   0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
   0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
   0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
