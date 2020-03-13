@@ -96,12 +96,20 @@ static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
 
 #include "mmm.h"
 
-/* barebones linked list */
+static void vt_state_neutral (MrgVT *vt, int byte);
+static void vt_state_esc     (MrgVT *vt, int byte);
+static void vt_state_osc     (MrgVT *vt, int byte);
+static void vt_state_apc     (MrgVT *vt, int byte);
+static void vt_state_sixel   (MrgVT *vt, int byte);
+static void vt_state_esc_sequence (MrgVT *vt, int byte);
+static void vt_state_esc_foo      (MrgVT *vt, int byte);
+static void vt_state_swallow      (MrgVT *vt, int byte);
 
-static void ctx_vt_feed_byte (MrgVT *vt, int byte);
-static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte);
-static void ctx_vt_pcm_feed_byte (MrgVT *vt, int byte);
-static void ctx_vt_vt52_feed_byte (MrgVT *vt, int byte);
+static void vt_state_svgp    (MrgVT *vt, int byte);
+static void vt_state_pcm     (MrgVT *vt, int byte);
+static void vt_state_vt52    (MrgVT *vt, int byte);
+
+/* barebones linked list */
 
 typedef struct _VtList VtList;
 struct _VtList {
@@ -794,6 +802,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->done                   = 0;
   vt->result                 = -1;
   vt->state                  = TERMINAL_STATE_NEUTRAL,
+  vt->feed_byte              = vt_state_neutral;
 
   vt->unit_pixels   = 0;
   vt->mouse         = 0;
@@ -835,7 +844,7 @@ void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
   MrgVT *vt              = calloc (sizeof (MrgVT), 1);
-  vt->feed_byte = ctx_vt_feed_byte;
+  vt->feed_byte = vt_state_neutral;
   vt->smooth_scroll = 0;
   vt->scroll_offset = 0.0;
   vt->waitdata = vtpty_waitdata;
@@ -2081,7 +2090,7 @@ qagain:
      case 2: /*MODE;VT52 emulation;;enable; */
              if (set==0)
 	     {
-    	       vt->feed_byte = ctx_vt_vt52_feed_byte;
+    	       vt->feed_byte = vt_state_vt52;
 	     }
              break; 
      case 3: /*MODE;Column mode;132 columns;80 columns;*/
@@ -2216,13 +2225,13 @@ qagain:
 
      case 4444:/*MODE;Audio;On;;*/
 	   if (set)
-             vt->feed_byte = ctx_vt_pcm_feed_byte;
+             vt->feed_byte = vt_state_pcm;
 	   break;
 
      case 7020:/*MODE;Ctx ascii;On;;*/
 	   if (set)
 	   {
-             vt->feed_byte = ctx_vt_svgp_feed_byte;
+             vt->feed_byte = vt_state_svgp;
              vt->command = 'm';
 	     vt->n_numbers = 0;
 	     vt->decimal = 0;
@@ -2314,10 +2323,10 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
 	   break;
 
      case 4444:/*MODE;Audio;On;;*/
-           is_set = (vt->feed_byte == ctx_vt_pcm_feed_byte);
+           is_set = (vt->feed_byte == vt_state_pcm);
 	   break;
      case 7020:/*MODE;Ctx ascii;On;;*/
-           is_set = (vt->feed_byte == ctx_vt_svgp_feed_byte);
+           is_set = (vt->feed_byte == vt_state_svgp);
 	   break;
      case 80:/* DECSDM Sixel scrolling */
      case 30: // from rxvt - show/hide scrollbar
@@ -4763,7 +4772,7 @@ cleanup:
   }
 }
 
-static void ctx_vt_vt52_feed_byte (MrgVT *vt, int byte)
+static void vt_state_vt52 (MrgVT *vt, int byte)
 {
   /* in vt52 mode, utf8_pos being non 0 means we got ESC prior */
   switch (vt->utf8_pos)
@@ -4799,7 +4808,7 @@ static void ctx_vt_vt52_feed_byte (MrgVT *vt, int byte)
         case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
         case 'Y': vt->utf8_pos = 2; break;
         case 'Z': vt_write (vt, "\e/Z", 3); break;
-        case '<': vt->feed_byte = ctx_vt_feed_byte;
+        case '<': vt->feed_byte = vt_state_neutral;
 	  break;
         default: break;
       }
@@ -5537,7 +5546,7 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
        ctx_close_path (ctx);
        break;
     case SVGP_EXIT:
-       vt->feed_byte = ctx_vt_feed_byte;
+       vt->feed_byte = vt_state_neutral;
        break;
     case SVGP_CLEAR:
        ctx_clear (ctx);
@@ -5549,7 +5558,7 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
   vt->n_numbers = 0;
 }
 
-static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
+static void vt_state_svgp (MrgVT *vt, int byte)
 {
     Ctx *ctx = vt->current_line->ctx;
     if (!vt->current_line->ctx)
@@ -5762,7 +5771,7 @@ static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
 	  {
 	    vt->numbers[vt->n_numbers] = command;
 	    vt->svgp_state = SVGP_NUMBER;
-            ctx_vt_svgp_feed_byte (vt, ',');
+            vt_state_svgp (vt, ',');
 	  }
 	  else if (command > 0)
 	  {
@@ -5887,11 +5896,11 @@ static void ctx_vt_svgp_feed_byte (MrgVT *vt, int byte)
     }
 }
 
-static void ctx_vt_pcm_feed_byte (MrgVT *vt, int byte)
+static void vt_state_pcm (MrgVT *vt, int byte)
 {
   if (byte == 0x00) // byte value 0 terminates - replace
   {                 // any 0s in original raw data with 1
-    vt->feed_byte = ctx_vt_feed_byte;
+    vt->feed_byte = vt_state_neutral;
   }
   else
   {
@@ -5899,7 +5908,7 @@ static void ctx_vt_pcm_feed_byte (MrgVT *vt, int byte)
   }
 }
 
-static void ctx_vt_feed_byte (MrgVT *vt, int byte)
+static void vt_state_neutral (MrgVT *vt, int byte)
 {
 #if 0
   if (vt->log)
@@ -5921,7 +5930,6 @@ static void ctx_vt_feed_byte (MrgVT *vt, int byte)
 #endif
  
   int encoding = vt->encoding;
-
   switch (encoding)
   {
     case 0: /* utf8 */
@@ -6367,13 +6375,11 @@ Image *image = NULL;
 }
 
 static unsigned char buf[4096];
-static int buf_len = 0;
 
 #define MIN(a,b)  ((a)<(b)?(a):(b))
 
 int ctx_vt_poll (MrgVT *vt, int timeout)
 {
-
   int read_size = sizeof(buf);
   int got_data = 0;
   int remaining_chars = 65536;
@@ -6390,53 +6396,17 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
     // /// so that we can stop accepting data until autowrap or similar
   }
 #endif
-  len = buf_len; 
-  int was_in_scroll = vt->in_scroll;
-  if (buf_len) goto b;
 
   read_size = MIN(read_size, remaining_chars);
-
-  while (timeout > 100 && remaining_chars > 0 && vt_waitdata (vt, timeout))
+  while (timeout > 100 &&
+	 remaining_chars > 0 &&
+	 vt_waitdata (vt, timeout))
   {
-    //usleep (timeout / 2);
     len = vt_read (vt, buf, read_size);
-
-    b:
-    if (len > 0)
-    {
-      int i;
-      buf_len = 0;
-      for (i = 0; i < len; i++)
-      {
-        uint8_t byte = buf[i];
-        vt->feed_byte (vt, byte);
-#if 0
-        if ((vt->in_scroll && !was_in_scroll )
-            || (i > remaining_chars))
-        {
-
-          int remaining = len - i - 1;
-          if (remaining > 0)
-          {
-          for (int j = 0; j < remaining; j++)
-          {
-            buf[j] = buf[j+i + 1];
-          }
-          buf_len = remaining;
-          got_data+=len;
-          }  // changes - not data received
-             // to enable big image transfers and audio without re-render
-	     // currently - such transfers gets serialized and force-interleaved
-	     // with 
-          return got_data;
-        }
-#endif
-      }
-      buf_len = 0;
-      got_data+=len;
- //   vt->rev ++;
-      remaining_chars -= len;
-    }
+    for (int i = 0; i < len; i++)
+      vt->feed_byte (vt, buf[i]);
+    got_data+=len;
+    remaining_chars -= len;
     timeout /= 2;
   }
   return got_data;
@@ -6603,7 +6573,7 @@ static const char *keymap_general[][2]={
 
 void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 {
-  if (vt->feed_byte == ctx_vt_vt52_feed_byte)
+  if (vt->feed_byte == vt_state_vt52)
   {
     for (int i = 0; i<sizeof (keymap_vt52)/sizeof(keymap_vt52[0]); i++)
       if (!strcmp (str, keymap_vt52[i][0]))
