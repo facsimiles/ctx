@@ -655,8 +655,8 @@ int vt_main(int argc, char **argv)
 
       if (got_event)
       {
-          sleep_time = 800;
-	  drawn_rev = 0;
+          sleep_time = 38000;
+	  //drawn_rev = 0;
       }
       if (in_scroll)
       {

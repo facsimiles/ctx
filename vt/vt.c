@@ -2208,7 +2208,10 @@ qagain:
 
      case 4444:/*MODE;Audio;On;;*/
 	   if (set)
+	   {
              vt->state = vt_state_pcm;
+	     return;
+	   }
 	   break;
 
      case 7020:/*MODE;Ctx ascii;On;;*/
@@ -6216,8 +6219,8 @@ static void vt_state_apc (MrgVT *vt, int byte)
 static void vt_state_esc_foo (MrgVT *vt, int byte)
 {
   ctx_vt_argument_buf_add (vt, byte);
-  handle_sequence (vt, vt->argument_buf);
   vt->state = vt_state_neutral;
+  handle_sequence (vt, vt->argument_buf);
 }
 
 static void vt_state_esc_sequence (MrgVT *vt, int byte)
@@ -6230,8 +6233,8 @@ static void vt_state_esc_sequence (MrgVT *vt, int byte)
     else if (byte >= '@' && byte <= '~')
     {
       ctx_vt_argument_buf_add (vt, byte);
-      handle_sequence (vt, vt->argument_buf);
       vt->state = vt_state_neutral;
+      handle_sequence (vt, vt->argument_buf);
     }
     else
     {
@@ -6280,7 +6283,8 @@ static void vt_state_esc (MrgVT *vt, int byte)
         vt->state = vt_state_osc;
       }
       break;
-    case '_':
+    case '^':  // actually privacy message
+    case '_':  // APC
       {
         char tmp[]={byte, '\0'};
         ctx_vt_argument_buf_reset(vt, tmp);
@@ -6291,8 +6295,8 @@ static void vt_state_esc (MrgVT *vt, int byte)
       {
         char tmp[]={byte, '\0'};
         tmp[0]=byte;
-        handle_sequence (vt, tmp);
         vt->state = vt_state_neutral;
+        handle_sequence (vt, tmp);
       }
       break;
   }
@@ -6355,7 +6359,7 @@ static void vt_state_neutral (MrgVT *vt, int byte)
   }
 }
 
-static unsigned char buf[4096];
+static unsigned char buf[BUFSIZ];
 
 #define MIN(a,b)  ((a)<(b)?(a):(b))
 
@@ -6363,7 +6367,7 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
 {
   int read_size = sizeof(buf);
   int got_data = 0;
-  int remaining_chars = 65536;
+  int remaining_chars = 1024 * 1024;
   int len = 0;
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
@@ -6388,7 +6392,7 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
       vt->state (vt, buf[i]);
     got_data+=len;
     remaining_chars -= len;
-    timeout /= 2;
+    timeout -= 10;
   }
   return got_data;
 }
@@ -6599,7 +6603,9 @@ done:
     if (vt->local_editing)
     {
       for (int i = 0; str[i]; i++)
+      {
         vt->state (vt, str[i]);
+      }
     }
     else
     {
