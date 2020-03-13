@@ -667,15 +667,15 @@ int vt_main(int argc, char **argv)
         audio_task (0);
         if (ctx_vt_poll (vt, sleep_time))
 	{
-	  if (sleep_time > 45000)
-	    sleep_time = 45000;
+	  if (sleep_time > 4500)
+	    sleep_time = 4500;
 	}
 	else
 	{
           sleep_time *= 1.5;
 	}
-        if (sleep_time > 600000)
-          sleep_time = 600000;
+        if (sleep_time > 60000)
+          sleep_time = 60000;
       }
       audio_task (got_event);
   }

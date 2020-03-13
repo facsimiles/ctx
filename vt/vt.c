@@ -212,17 +212,6 @@ vt_list_insert_before (VtList **list, VtList *sibling,
     }
 }
 
-typedef enum {
-  TERMINAL_STATE_NEUTRAL      = 0,
-  TERMINAL_STATE_ESC          = 1,
-  TERMINAL_STATE_OSC          = 2,
-  TERMINAL_STATE_APC          = 3,
-  TERMINAL_STATE_SIXEL        = 4,
-  TERMINAL_STATE_ESC_SEQUENCE = 5,
-  TERMINAL_STATE_ESC_FOO      = 6,
-  TERMINAL_STATE_SWALLOW      = 7,
-} TerminalState;
-
 #define MAX_COLS 2048 // used for tabstops
 
 typedef enum {
@@ -363,7 +352,7 @@ typedef struct GfxState {
 
 struct _MrgVT {
   char     *title;
-  void    (*feed_byte)(MrgVT *vt, int byte);
+  void    (*state)(MrgVT *vt, int byte);
 
   VtList   *saved_lines;
   int       in_alt_screen;
@@ -398,8 +387,6 @@ struct _MrgVT {
   int       palette_no;
   int       has_blink; // if any of the set characters are blinking
                        // updated on each draw of the screen
-
-  TerminalState state;
 
   int unit_pixels;
   int mouse;
@@ -801,8 +788,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->argument_buf[0]        = 0;
   vt->done                   = 0;
   vt->result                 = -1;
-  vt->state                  = TERMINAL_STATE_NEUTRAL,
-  vt->feed_byte              = vt_state_neutral;
+  vt->state                  = vt_state_neutral;
 
   vt->unit_pixels   = 0;
   vt->mouse         = 0;
@@ -844,7 +830,7 @@ void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
   MrgVT *vt              = calloc (sizeof (MrgVT), 1);
-  vt->feed_byte = vt_state_neutral;
+  vt->state = vt_state_neutral;
   vt->smooth_scroll = 0;
   vt->scroll_offset = 0.0;
   vt->waitdata = vtpty_waitdata;
@@ -867,7 +853,6 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   vt->argument_buf[0]    = 0;
   vt->done               = 0;
   vt->result             = -1;
-  vt->state              = TERMINAL_STATE_NEUTRAL,
   vt->line_spacing       = 1.0;
   vt->scale_x            = 1.0;
   vt->scale_y            = 1.0;
@@ -2089,9 +2074,7 @@ qagain:
              break;
      case 2: /*MODE;VT52 emulation;;enable; */
              if (set==0)
-	     {
-    	       vt->feed_byte = vt_state_vt52;
-	     }
+    	       vt->state = vt_state_vt52;
              break; 
      case 3: /*MODE;Column mode;132 columns;80 columns;*/
              vtcmd_set_132_col (vt, set);
@@ -2225,13 +2208,13 @@ qagain:
 
      case 4444:/*MODE;Audio;On;;*/
 	   if (set)
-             vt->feed_byte = vt_state_pcm;
+             vt->state = vt_state_pcm;
 	   break;
 
      case 7020:/*MODE;Ctx ascii;On;;*/
 	   if (set)
 	   {
-             vt->feed_byte = vt_state_svgp;
+             vt->state = vt_state_svgp;
              vt->command = 'm';
 	     vt->n_numbers = 0;
 	     vt->decimal = 0;
@@ -2323,10 +2306,10 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
 	   break;
 
      case 4444:/*MODE;Audio;On;;*/
-           is_set = (vt->feed_byte == vt_state_pcm);
+           is_set = (vt->state == vt_state_pcm);
 	   break;
      case 7020:/*MODE;Ctx ascii;On;;*/
-           is_set = (vt->feed_byte == vt_state_svgp);
+           is_set = (vt->state == vt_state_svgp);
 	   break;
      case 80:/* DECSDM Sixel scrolling */
      case 30: // from rxvt - show/hide scrollbar
@@ -4808,7 +4791,7 @@ static void vt_state_vt52 (MrgVT *vt, int byte)
         case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
         case 'Y': vt->utf8_pos = 2; break;
         case 'Z': vt_write (vt, "\e/Z", 3); break;
-        case '<': vt->feed_byte = vt_state_neutral;
+        case '<': vt->state = vt_state_neutral;
 	  break;
         default: break;
       }
@@ -4821,7 +4804,6 @@ static void vt_state_vt52 (MrgVT *vt, int byte)
       _ctx_vt_move_to (vt, vt->cursor_y, byte - 31);
       vt->utf8_pos = 0;
       break;
-
   }
 }
 
@@ -5033,7 +5015,6 @@ static void ctx_vt_sixels (MrgVT *vt, const char *sixels)
  * extend this , with non-printable as well as values >127 .. to encode
  * new - possibly short keywords that do not have an ascii shorthand
  */
-
 
 typedef enum {
   SVGP_NONE = 0,
@@ -5546,7 +5527,7 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
        ctx_close_path (ctx);
        break;
     case SVGP_EXIT:
-       vt->feed_byte = vt_state_neutral;
+       vt->state = vt_state_neutral;
        break;
     case SVGP_CLEAR:
        ctx_clear (ctx);
@@ -5900,7 +5881,7 @@ static void vt_state_pcm (MrgVT *vt, int byte)
 {
   if (byte == 0x00) // byte value 0 terminates - replace
   {                 // any 0s in original raw data with 1
-    vt->feed_byte = vt_state_neutral;
+    vt->state = vt_state_neutral;
   }
   else
   {
@@ -5908,27 +5889,8 @@ static void vt_state_pcm (MrgVT *vt, int byte)
   }
 }
 
-static void vt_state_neutral (MrgVT *vt, int byte)
+static int vt_decoder_feed (MrgVT *vt, int byte)
 {
-#if 0
-  if (vt->log)
-  {
-    char buf[3]="";
-    buf[0]=byte;
-    fwrite (buf, 1, 1, vt->log);
-    fflush (vt->log);
-  }
-
-  if (byte >= ' ' && byte <= '~')
-  {
-    VT_input ("%c", byte);
-  }
-  else
-  {
-    VT_input ("<%i>", byte);
-  }
-#endif
- 
   int encoding = vt->encoding;
   switch (encoding)
   {
@@ -5949,7 +5911,7 @@ static void vt_state_neutral (MrgVT *vt, int byte)
       }
       else
       {
-        return;
+        return 1;
       }
     }
     else
@@ -5972,142 +5934,16 @@ static void vt_state_neutral (MrgVT *vt, int byte)
       vt->utf8_holding[1] = 0;
     break;
   }
+  return 0;
+}
 
-  {
-    switch (vt->state)
-    {
-      case TERMINAL_STATE_NEUTRAL:
+static void vt_state_swallow (MrgVT *vt, int byte)
+{
+  vt->state = vt_state_neutral;
+}
 
-      if (_vt_handle_control (vt, byte) == 0)
-      switch (byte)
-      {
-        case 27: /* ESCape */
-          vt->state = TERMINAL_STATE_ESC;
-          break;
-        default:
-          if (vt->charset[vt->shifted_in] != 0 &&
-              vt->charset[vt->shifted_in] != 'B')
-          {
-            char **charmap;
-            switch (vt->charset[vt->shifted_in])
-            { 
-                case 'A': charmap = charmap_uk; break;
-                case 'B': charmap = charmap_ascii; break;
-                case '0': charmap = charmap_graphics; break;
-                case '1': charmap = charmap_cp437; break;
-                case '2': charmap = charmap_graphics; break;
-                default:
-                  charmap = charmap_ascii;
-                  break;
-            }
-            if ((vt->utf8_holding[0] >= ' ') && (vt->utf8_holding[0] <= '~'))
-            {
-              _ctx_vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
-            }
-          }
-          else
-          {
-            // ensure vt->utf8_holding contains a valid utf8
-            uint32_t codepoint;
-            uint32_t state = 0;
-
-            for (int i = 0; vt->utf8_holding[i]; i++)
-               utf8_decode(&state, &codepoint, vt->utf8_holding[i]);
-            if (state != UTF8_ACCEPT)
-            {
-              /* otherwise mangle it so that it does */
-              vt->utf8_holding[0] &= 127;
-              vt->utf8_holding[1] = 0;
-              if (vt->utf8_holding[0] == 0)
-                vt->utf8_holding[0] = 32;
-            }
-
-            _ctx_vt_add_str (vt, (char*)vt->utf8_holding);
-          }
-          break;
-      }
-      break;
-    case TERMINAL_STATE_ESC:
-      if (_vt_handle_control (vt, byte) == 0)
-      switch (byte)
-      {
-        case 27: /* ESCape */
-                break;
-        case ')':
-        case '#':
-        case '(':
-          {
-            char tmp[]={byte, '\0'};
-            ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_ESC_FOO;
-          }
-          break;
-        case '[':
-        case '%':
-        case '+':
-        case '*':
-          {
-            char tmp[]={byte, '\0'};
-            ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_ESC_SEQUENCE;
-          }
-          break;
-	case 'P':
-	  {
-            char tmp[]={byte, '\0'};
-            ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_SIXEL;
-	  }
-	  break;
-        case ']':
-          {
-            char tmp[]={byte, '\0'};
-            ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_OSC;
-          }
-	  break;
-        case '_':
-          {
-            char tmp[]={byte, '\0'};
-            ctx_vt_argument_buf_reset(vt, tmp);
-            vt->state = TERMINAL_STATE_APC;
-          }
-          break;
-        default:
-          {
-            char tmp[]={byte, '\0'};
-            tmp[0]=byte;
-            handle_sequence (vt, tmp);
-            vt->state = TERMINAL_STATE_NEUTRAL;
-          }
-          break;
-      }
-      break;
-    case TERMINAL_STATE_ESC_FOO:
-      ctx_vt_argument_buf_add (vt, byte);
-      handle_sequence (vt, vt->argument_buf);
-      vt->state = TERMINAL_STATE_NEUTRAL;
-      break;
-    case TERMINAL_STATE_ESC_SEQUENCE:
-      if (_vt_handle_control (vt, byte) == 0)
-      {
-        if (byte == 27)
-        {
-        }
-        else if (byte >= '@' && byte <= '~')
-        {
-          ctx_vt_argument_buf_add (vt, byte);
-          handle_sequence (vt, vt->argument_buf);
-          vt->state = TERMINAL_STATE_NEUTRAL;
-        }
-        else
-        {
-          ctx_vt_argument_buf_add (vt, byte);
-        }
-      }
-      break;
-
-    case TERMINAL_STATE_OSC:
+static void vt_state_osc (MrgVT *vt, int byte)
+{
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       // and in "\e\" rather than just "\e", this would cause
       // a stray char
@@ -6307,17 +6143,47 @@ Image *image = NULL;
           }
 
         if (byte == 27)
-          vt->state = TERMINAL_STATE_SWALLOW;
+	{
+	  vt->state = vt_state_swallow;
+	}
         else
-          vt->state = TERMINAL_STATE_NEUTRAL;
+	{
+	  vt->state = vt_state_neutral;
+	}
       }
       else
       {
         ctx_vt_argument_buf_add (vt, byte);
       }
-      break;
+}
 
-    case TERMINAL_STATE_APC:
+
+static void vt_state_sixel (MrgVT *vt, int byte)
+{
+      // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
+      // and in "\e\" rather than just "\e", this would cause
+      // a stray char
+      if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
+      {
+	ctx_vt_sixels (vt, vt->argument_buf);
+        if (byte == 27)
+	{
+          vt->state = vt_state_swallow;
+	}
+        else
+	{
+          vt->state = vt_state_neutral;
+	}
+      }
+      else
+      {
+        ctx_vt_argument_buf_add (vt, byte);
+	//fprintf (stderr, "\r%i ", vt->argument_buf_len);
+      }
+}
+
+static void vt_state_apc (MrgVT *vt, int byte)
+{
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       // and in "\e\" rather than just "\e", this would cause
       // a stray char
@@ -6333,44 +6199,159 @@ Image *image = NULL;
         }
 
         if (byte == 27)
-          vt->state = TERMINAL_STATE_SWALLOW;
+	{
+	  vt->state = vt_state_swallow;
+	}
         else
-          vt->state = TERMINAL_STATE_NEUTRAL;
+	{
+	  vt->state = vt_state_neutral;
+	}
       }
       else
       {
         ctx_vt_argument_buf_add (vt, byte);
       }
-      break;
+}
 
+static void vt_state_esc_foo (MrgVT *vt, int byte)
+{
+  ctx_vt_argument_buf_add (vt, byte);
+  handle_sequence (vt, vt->argument_buf);
+  vt->state = vt_state_neutral;
+}
 
-    case TERMINAL_STATE_SIXEL:
-      // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
-      // and in "\e\" rather than just "\e", this would cause
-      // a stray char
-      if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
-      {
-	ctx_vt_sixels (vt, vt->argument_buf);
-        if (byte == 27)
-          vt->state = TERMINAL_STATE_SWALLOW;
-        else
-          vt->state = TERMINAL_STATE_NEUTRAL;
-      }
-      else
-      {
-        ctx_vt_argument_buf_add (vt, byte);
-	//fprintf (stderr, "\r%i ", vt->argument_buf_len);
-      }
-      break;
-
-    case TERMINAL_STATE_SWALLOW:
-      vt->state = TERMINAL_STATE_NEUTRAL;
-      // this better be a \\ so were leaving DCS
-      // XXX check that byte is \\ .. otherwise,
-      // we should be going back to OSC/APC state
-      //
-      break;
+static void vt_state_esc_sequence (MrgVT *vt, int byte)
+{
+  if (_vt_handle_control (vt, byte) == 0)
+  {
+    if (byte == 27)
+    {
     }
+    else if (byte >= '@' && byte <= '~')
+    {
+      ctx_vt_argument_buf_add (vt, byte);
+      handle_sequence (vt, vt->argument_buf);
+      vt->state = vt_state_neutral;
+    }
+    else
+    {
+      ctx_vt_argument_buf_add (vt, byte);
+    }
+  }
+}
+
+static void vt_state_esc (MrgVT *vt, int byte)
+{
+  if (_vt_handle_control (vt, byte) == 0)
+  switch (byte)
+  {
+    case 27: /* ESCape */
+            break;
+    case ')':
+    case '#':
+    case '(':
+      {
+        char tmp[]={byte, '\0'};
+        ctx_vt_argument_buf_reset(vt, tmp);
+        vt->state = vt_state_esc_foo;
+      }
+      break;
+    case '[':
+    case '%':
+    case '+':
+    case '*':
+      {
+        char tmp[]={byte, '\0'};
+        ctx_vt_argument_buf_reset(vt, tmp);
+        vt->state = vt_state_esc_sequence;
+      }
+      break;
+    case 'P':
+      {
+        char tmp[]={byte, '\0'};
+        ctx_vt_argument_buf_reset(vt, tmp);
+        vt->state = vt_state_sixel;
+      }
+      break;
+    case ']':
+      {
+        char tmp[]={byte, '\0'};
+        ctx_vt_argument_buf_reset(vt, tmp);
+        vt->state = vt_state_osc;
+      }
+      break;
+    case '_':
+      {
+        char tmp[]={byte, '\0'};
+        ctx_vt_argument_buf_reset(vt, tmp);
+        vt->state = vt_state_apc;
+      }
+      break;
+    default:
+      {
+        char tmp[]={byte, '\0'};
+        tmp[0]=byte;
+        handle_sequence (vt, tmp);
+        vt->state = vt_state_neutral;
+      }
+      break;
+  }
+}
+
+static void vt_state_neutral (MrgVT *vt, int byte)
+{
+  if (_vt_handle_control (vt, byte) != 0)
+    return;
+
+  switch (byte)
+  {
+    case 27: /* ESCape */
+      vt->state = vt_state_esc;
+      break;
+    default:
+      if (vt_decoder_feed (vt, byte))
+        return;
+
+      if (vt->charset[vt->shifted_in] != 0 &&
+          vt->charset[vt->shifted_in] != 'B')
+      {
+        char **charmap;
+        switch (vt->charset[vt->shifted_in])
+        { 
+            case 'A': charmap = charmap_uk; break;
+            case 'B': charmap = charmap_ascii; break;
+            case '0': charmap = charmap_graphics; break;
+            case '1': charmap = charmap_cp437; break;
+            case '2': charmap = charmap_graphics; break;
+            default:
+              charmap = charmap_ascii;
+              break;
+        }
+        if ((vt->utf8_holding[0] >= ' ') && (vt->utf8_holding[0] <= '~'))
+        {
+          _ctx_vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
+        }
+      }
+      else
+      {
+        // ensure vt->utf8_holding contains a valid utf8
+        uint32_t codepoint;
+        uint32_t state = 0;
+
+        for (int i = 0; vt->utf8_holding[i]; i++)
+           utf8_decode(&state, &codepoint, vt->utf8_holding[i]);
+        if (state != UTF8_ACCEPT)
+        {
+          /* otherwise mangle it so that it does */
+          vt->utf8_holding[0] &= 127;
+          vt->utf8_holding[1] = 0;
+          if (vt->utf8_holding[0] == 0)
+            vt->utf8_holding[0] = 32;
+        }
+
+        _ctx_vt_add_str (vt, (char*)vt->utf8_holding);
+      }
+      break;
   }
 }
 
@@ -6404,7 +6385,7 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
   {
     len = vt_read (vt, buf, read_size);
     for (int i = 0; i < len; i++)
-      vt->feed_byte (vt, buf[i]);
+      vt->state (vt, buf[i]);
     got_data+=len;
     remaining_chars -= len;
     timeout /= 2;
@@ -6573,7 +6554,7 @@ static const char *keymap_general[][2]={
 
 void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 {
-  if (vt->feed_byte == vt_state_vt52)
+  if (vt->state == vt_state_vt52)
   {
     for (int i = 0; i<sizeof (keymap_vt52)/sizeof(keymap_vt52[0]); i++)
       if (!strcmp (str, keymap_vt52[i][0]))
@@ -6618,7 +6599,7 @@ done:
     if (vt->local_editing)
     {
       for (int i = 0; str[i]; i++)
-        vt->feed_byte (vt, str[i]);
+        vt->state (vt, str[i]);
     }
     else
     {
