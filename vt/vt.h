@@ -60,6 +60,7 @@ void        ctx_vt_draw                 (MrgVT *vt, Ctx *ctx, double x, double y
 int         ctx_vt_get_local (MrgVT *vt);
 void        ctx_vt_set_local (MrgVT *vt, int local);
 void        ctx_vt_rev_inc              (MrgVT *vt);
+int ctx_vt_mic (MrgVT *vt);
 
 typedef enum VtMouseEvent {
 	VT_MOUSE_MOTION = 0,

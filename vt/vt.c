@@ -364,6 +364,7 @@ struct _MrgVT {
   int       leds[4];
   uint64_t  cstyle;
 
+  int       mic; // whether to produce mic events
 
   uint8_t   fg_color[3];
   uint8_t   bg_color[3];
@@ -480,6 +481,11 @@ struct _MrgVT {
   GfxState   gfx;
   AudioState audio;
 };
+
+int ctx_vt_mic (MrgVT *vt)
+{
+  return vt->mic;
+}
 
 /* on current line */
 static int vt_col_to_pos (MrgVT *vt, int col)
@@ -2210,8 +2216,10 @@ qagain:
 	   if (set)
 	   {
              vt->state = vt_state_pcm;
-	     return;
 	   }
+	   break;
+     case 4445:/*MODE;Mic;On;;*/
+           vt->mic = set;
 	   break;
 
      case 7020:/*MODE;Ctx ascii;On;;*/
@@ -6432,6 +6440,7 @@ static const char *keymap_general[][2]={
   {"alt-y",          "\033y"},
   {"alt-z",          "\033z"},
   {"alt- ",          "\033 "},
+  {"alt-space",      "\033 "},
   {"alt-0",          "\0330"},
   {"alt-1",          "\0331"},
   {"alt-2",          "\0332"},
@@ -6535,7 +6544,15 @@ static const char *keymap_general[][2]={
   {"F12",            "\033[23~"},
 };
 
-
+void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes)
+{
+  char buf[256];
+  sprintf (buf, "\e[@");
+  vt_write (vt, buf, strlen (buf));
+  vt_write (vt, samples, bytes);
+  buf[0]=0;
+  vt_write (vt, buf, 1);
+}
 
 void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 {

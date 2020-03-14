@@ -157,8 +157,131 @@ void terminal_queue_pcm_sample (int16_t sample)
 extern float ctx_shape_cache_rate;
 float click_volume = 0.05;
 
+void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes);
+
+int mic_enabled = 0;
+int mic_device = 0;
+
+const int cBias = 0x84;
+
+const int cClip = 32635;
+
+/*  https://jonathanhays.me/2018/11/14/mu-law-and-a-law-compression-tutorial/
+ */
+
+static char MuLawCompressTable[256] =
+{
+     0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
+     4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+     5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+     5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
+};
+
+
+
+unsigned char LinearToMuLawSample(int16_t sample)
+{
+     int sign = (sample >> 8) & 0x80;
+     if (sign)
+          sample = (int16_t)-sample;
+
+     if (sample > cClip)
+          sample = cClip;
+
+     sample = (int16_t)(sample + cBias);
+
+     int exponent = (int)MuLawCompressTable[(sample>>7) & 0xFF];
+     int mantissa = (sample >> (exponent+3)) & 0x0F;
+
+     int compressedByte = ~ (sign | (exponent << 4) | mantissa);
+
+     if (compressedByte == 0) /* we hide all 0's in audio data
+                                 it is the end-marker  */
+       compressedByte = 1;
+     return (unsigned char)compressedByte;
+}
+
+#define MIC_BUF_LEN 4096
+
+uint8_t mic_buf[MIC_BUF_LEN];
+int mic_buf_pos = 0;
+
+static void mic_callback(void*  userdata,
+                         Uint8* stream,
+                         int    len)
+{
+  int16_t *sstream = (void*)stream;
+
+  for (int i = 0; i < len/2; i++)
+  {
+    mic_buf[mic_buf_pos++] = LinearToMuLawSample(sstream[i]);
+    if (mic_buf_pos >= MIC_BUF_LEN)
+      mic_buf_pos = 0;
+  }
+
+}
+
 void audio_task (int click)
 {
+  static int foo = 0;
+
+  if (ctx_vt_mic (vt))
+  {
+    if (!mic_enabled)
+    {
+  SDL_AudioSpec spec_want, spec_have;
+
+     if (mic_device == 0)
+     {
+       spec_want.freq = 8000;
+       spec_want.format = AUDIO_S16;
+       spec_want.channels = 1;
+       spec_want.samples = AUDIO_CHUNK_SIZE;
+       spec_want.callback = mic_callback;
+       mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_have, 0);
+     }
+       SDL_PauseAudioDevice(mic_device, 0);
+       mic_enabled = 1;
+    }
+
+    if (mic_buf_pos)
+    {
+      SDL_LockAudioDevice (mic_device);
+      for (int i = 0; i<mic_buf_pos;i++)
+      {
+	if (mic_buf[i] == 0)
+	 mic_buf[i] = 1;
+	//else 
+        // fprintf (stderr, "%i ", mic_buf[i]);
+      }
+      ctx_vt_feed_audio (vt, &mic_buf[0], mic_buf_pos);
+      mic_buf_pos = 0;
+      SDL_UnlockAudioDevice (mic_device);
+    }
+  }
+  else
+  {
+    if (mic_device)
+    {
+      SDL_PauseAudioDevice(mic_device, 1);
+      SDL_CloseAudioDevice(mic_device);
+      mic_device = 0;
+      mic_enabled = 0;
+    }
+  }
+
 #if USE_MMM
   int free_frames = mmm_pcm_get_frame_chunk (mmm)+24;
   //int free_frames = mmm_pcm_get_free_frames (mmm);
