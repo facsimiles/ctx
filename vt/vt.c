@@ -315,9 +315,8 @@ typedef struct AudioState {
   int transmission;
   int multichunk;
 
-  int queued_samples;
   int buf_size;
-  int samples; // should be derived from data_size
+  int frames; // should be derived from data_size
 
   uint8_t *data;
   int      data_size;
@@ -4269,10 +4268,10 @@ void vt_audio (MrgVT *vt, const char *command)
       const char *range="";
       switch (key)
       {
-	case 'r':range="8000,11025,22050,44100,48000";break;
+	case 's':range="8000,11025,22050,44100,48000";break;
 	case 'b':range="8,16,32";break;
 	case 'c':range="1";break;
-	case 'T':range="U,s,f";break;
+	case 'T':range="u,s,f";break;
 	case 'e':range="u";break;
 	case 'm':range="0-1";break;
 	case 'o':range="z,0";break;
@@ -4287,12 +4286,12 @@ void vt_audio (MrgVT *vt, const char *command)
 
     switch (key)
     {
-      case 'r': vt->audio.samplerate = value; report = 1; break;
+      case 's': vt->audio.samplerate = value; report = 1; break;
       case 'b': vt->audio.bits = value; report = 1; break;
       case 'c': vt->audio.channels = value; report = 1; break;
       case 'a': vt->audio.action = value; report = 1; break;
       case 'T': vt->audio.type = value; report = 1; break;
-      case 's': vt->audio.samples = value; report = 1; break;
+      case 'f': vt->audio.frames = value; report = 1; break;
       case 'e': vt->audio.encoding = value; report = 1; break;
       case 'm': vt->audio.multichunk = value; report = 1; break;
       case 'o': vt->audio.compression = value; report = 1; break;
@@ -4370,16 +4369,16 @@ void vt_audio (MrgVT *vt, const char *command)
       }
       break;
     }
-    if (vt->audio.samples)
+    if (vt->audio.frames)
     {
       // implicit buf_size
-      vt->audio.buf_size = vt->audio.samples *
+      vt->audio.buf_size = vt->audio.frames *
 	                   (vt->audio.bits/8) *
 	                   vt->audio.channels;
     }
     else
     {
-      vt->audio.samples = vt->audio.buf_size /
+      vt->audio.frames = vt->audio.buf_size /
                                 (vt->audio.bits/8) /
                                    vt->audio.channels;
     }
@@ -4428,7 +4427,7 @@ void vt_audio (MrgVT *vt, const char *command)
   switch (vt->audio.action)
   {
     case 't': // transfer
-       for (int i = 0; i < vt->audio.samples; i++)
+       for (int i = 0; i < vt->audio.frames; i++)
        {
          terminal_queue_pcm_sample (
             MuLawDecompressTable[vt->audio.data[i]]);
@@ -6541,16 +6540,20 @@ static const char *keymap_general[][2]={
   {"F10",            "\033[21~"},
   {"F11",            "\033[22~"},
   {"F12",            "\033[23~"},
+
+
 };
 
 void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes)
 {
   char buf[256];
-  sprintf (buf, "\e[@");
+  sprintf (buf, "\e[_A;f=%i;", bytes);
   vt_write (vt, buf, strlen (buf));
   vt_write (vt, samples, bytes);
-  buf[0]=0;
-  vt_write (vt, buf, 1);
+  buf[0]='\e';
+  buf[1]='\\';
+  buf[2]='\0';
+  vt_write (vt, buf, 2);
 }
 
 void ctx_vt_feed_keystring (MrgVT *vt, const char *str)

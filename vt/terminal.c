@@ -235,7 +235,7 @@ static void mic_callback(void*  userdata,
 
 void audio_task (int click)
 {
-  static int foo = 0;
+  //static int foo = 0;
 
   if (ctx_vt_mic (vt))
   {
