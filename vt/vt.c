@@ -96,18 +96,17 @@ static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
 
 #include "mmm.h"
 
-static void vt_state_neutral (MrgVT *vt, int byte);
-static void vt_state_esc     (MrgVT *vt, int byte);
-static void vt_state_osc     (MrgVT *vt, int byte);
-static void vt_state_apc     (MrgVT *vt, int byte);
-static void vt_state_sixel   (MrgVT *vt, int byte);
+static void vt_state_neutral      (MrgVT *vt, int byte);
+static void vt_state_esc          (MrgVT *vt, int byte);
+static void vt_state_osc          (MrgVT *vt, int byte);
+static void vt_state_apc          (MrgVT *vt, int byte);
+static void vt_state_sixel        (MrgVT *vt, int byte);
 static void vt_state_esc_sequence (MrgVT *vt, int byte);
 static void vt_state_esc_foo      (MrgVT *vt, int byte);
 static void vt_state_swallow      (MrgVT *vt, int byte);
-
-static void vt_state_svgp    (MrgVT *vt, int byte);
-static void vt_state_pcm     (MrgVT *vt, int byte);
-static void vt_state_vt52    (MrgVT *vt, int byte);
+static void vt_state_svgp         (MrgVT *vt, int byte);
+static void vt_state_pcm          (MrgVT *vt, int byte);
+static void vt_state_vt52         (MrgVT *vt, int byte);
 
 /* barebones linked list */
 
@@ -4228,7 +4227,7 @@ void vt_audio (MrgVT *vt, const char *command)
 {
   fprintf (stderr, "{%s}", command);
   // the simplest form of audio is raw audio
-  // _Ar=8000,c=2,b=8,e=u
+  // _As=8000,c=2,b=8,e=u
   //
   // multiple voices:
   //   ids to queue - store samples as images...
