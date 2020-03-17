@@ -4271,7 +4271,7 @@ void vt_audio (MrgVT *vt, const char *command)
       const char *range="";
       switch (key)
       {
-	case 's':range="8000,11025,22050,44100,48000";break;
+	case 's':range="8000,16000,24000,48000";break;
 	case 'b':range="8,16,32";break;
 	case 'c':range="1";break;
 	case 'T':range="u,s,f";break;
@@ -6492,14 +6492,34 @@ void audio_task (MrgVT *vt, int click)
 
      if (mic_device == 0)
      {
-       spec_want.freq = 8000;
-       spec_want.format = AUDIO_S16;
-       spec_want.channels = 1;
-       spec_want.samples = AUDIO_CHUNK_SIZE;
-       spec_want.callback = mic_callback;
-       mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_have, 0);
-     }
-       SDL_PauseAudioDevice(mic_device, 0);
+       spec_want.freq = vt->audio.samplerate;
+       if (vt->audio.bits == 8 && vt->audio.type == 'u')
+       {
+         spec_want.format = AUDIO_S16;
+         spec_want.channels = 2;
+       }
+       else if (vt->audio.bits == 8 && vt->audio.type == 's')
+       {
+         spec_want.format = AUDIO_S8;
+         spec_want.channels = vt->audio.channels;
+       }
+       else if (vt->audio.bits == 16 && vt->audio.type == 's')
+       {
+         spec_want.format = AUDIO_S16;
+         spec_want.channels = vt->audio.channels;
+       }
+       else
+       {
+         spec_want.format = AUDIO_S16; // XXX  : error
+         spec_want.channels = vt->audio.channels;
+       }
+
+        spec_want.samples = AUDIO_CHUNK_SIZE;
+        spec_want.callback = mic_callback;
+        spec_want.userdata = vt;
+        mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_have, 0);
+      }
+      SDL_PauseAudioDevice(mic_device, 0);
     }
 
     if (mic_buf_pos)
@@ -6539,19 +6559,41 @@ void audio_task (MrgVT *vt, int click)
     {
       SDL_AudioSpec spec_want, spec_have;
 
-      spec_want.freq = 8000;
-      spec_want.format = AUDIO_S16;
-      spec_want.channels = 2;
+       spec_want.freq = vt->audio.samplerate;
+       if (vt->audio.bits == 8 && vt->audio.type == 'u')
+       {
+         spec_want.format = AUDIO_S16;
+         spec_want.channels = 2;
+       }
+       else if (vt->audio.bits == 8 && vt->audio.type == 's')
+       {
+         spec_want.format = AUDIO_S8;
+         spec_want.channels = vt->audio.channels;
+       }
+       else if (vt->audio.bits == 16 && vt->audio.type == 's')
+       {
+         spec_want.format = AUDIO_S16;
+         spec_want.channels = vt->audio.channels;
+       }
+       else
+       {
+         spec_want.format = AUDIO_S16; // XXX  : error
+         spec_want.channels = vt->audio.channels;
+       }
+
       spec_want.samples = AUDIO_CHUNK_SIZE;
       spec_want.callback = NULL;
 
       {
         static int done = 0;
-        if (done ||  SDL_Init(SDL_INIT_AUDIO) < 0)
+	if (!done)
+	{
+        if (SDL_Init(SDL_INIT_AUDIO) < 0)
         {
           fprintf (stderr, "sdl audio init fail\n");
         }
         done = 1;
+	}
       }
 
       speaker_device = SDL_OpenAudioDevice (NULL, 0, &spec_want, &spec_have, 0);
