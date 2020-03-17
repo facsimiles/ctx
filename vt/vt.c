@@ -50,6 +50,7 @@
 #include <zlib.h>
 
 #include <pty.h>
+#include <SDL.h>
 
 #include "ctx.h"
 
@@ -815,6 +816,8 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->audio.channels = 1;
   vt->audio.type = 'u';
   vt->audio.samplerate = 8000;
+  vt->audio.encoding = '0';
+  vt->audio.compression = '0';
 }
 
 void ctx_vt_set_font_size (MrgVT *vt, float font_size)
@@ -4272,14 +4275,14 @@ void vt_audio (MrgVT *vt, const char *command)
 	case 'b':range="8,16,32";break;
 	case 'c':range="1";break;
 	case 'T':range="u,s,f";break;
-	case 'e':range="u";break;
+	case 'e':range="0,b,a,y";break;
 	case 'm':range="0-1";break;
 	case 'o':range="z,0";break;
 	case 't':range="d";break;
-	case 'a':range="";break;
+	case 'a':range="t,q";break;
 	default:range="unknown";break;
       }
-      sprintf (buf, "\e_A;%c=?;%s\e\\", key, range);
+      sprintf (buf, "\e_A%c=?;%s\e\\", key, range);
       vt_write (vt, buf, strlen(buf));
       return;
     }
@@ -4301,10 +4304,44 @@ void vt_audio (MrgVT *vt, const char *command)
     if (report)
     {
       /* we do not support changing these yet */
-      vt->audio.samplerate = 8000;
-      vt->audio.bits = 8;
-      vt->audio.type = 'u';
-      vt->audio.channels = 1;
+      if (vt->audio.samplerate <= 8000)
+      {
+        vt->audio.samplerate = 8000;
+      }
+      else if (vt->audio.samplerate <= 11025)
+      {
+        vt->audio.samplerate = 11025;
+      }
+      else if (vt->audio.samplerate <= 22050)
+      {
+        vt->audio.samplerate = 22050;
+      }
+      else if (vt->audio.samplerate <= 44100)
+      {
+        vt->audio.samplerate = 44100;
+      }
+      else
+      {
+        vt->audio.samplerate = 48000;
+      }
+
+      if (vt->audio.bits != 8 && vt->audio.bits != 16)
+        vt->audio.bits = 8;
+
+      switch (vt->audio.type)
+      {
+	case 'u':
+	case 's':
+	case 'f':
+		break;
+        default:
+		vt->audio.type = 's';
+      }
+
+      if (vt->audio.channels <= 0 ||  vt->audio.channels > 2)
+      {
+	vt->audio.channels = 1;
+      }
     }
   }
   
@@ -4378,32 +4415,12 @@ void vt_audio (MrgVT *vt, const char *command)
     }
     else
     {
+      /* implicit frame count */
       vt->audio.frames = vt->audio.buf_size /
                                 (vt->audio.bits/8) /
                                    vt->audio.channels;
     }
 
-    if (vt->audio.compression == 'z')
-    {
-            //vt->audio.buf_size)
-      unsigned char *data2 = malloc (vt->audio.buf_size + 1);
-      /* if a buf size is set (rather compression, but
-       * this works first..) then */
-      unsigned long actual_uncompressed_size = vt->audio.buf_size;
-      int z_result = uncompress (data2, &actual_uncompressed_size,
-                                 vt->audio.data,
-                                 vt->audio.data_size);
-      if (z_result != Z_OK)
-      {
-        char buf[256]= "\e_Ao=z;zlib error\e\\";
-        vt_write (vt, buf, strlen(buf));
-        goto cleanup;
-      }
-      free (vt->audio.data);
-      vt->audio.data = data2;
-      vt->audio.data_size = actual_uncompressed_size;
-      vt->audio.compression = 0;
-    }
 
 #if 0
     if (vt->audio.format == 100/* opus */)
@@ -4437,6 +4454,15 @@ void vt_audio (MrgVT *vt, const char *command)
        vt->audio.data_size=0;
        break;
     case 'q': // query
+       {
+	 char buf[512];
+         sprintf (buf, "\e_As=%i,b=%i,c=%i,T=%c,e=%c,o=%i,t=%i;OK\e\\",
+      vt->audio.samplerate, vt->audio.bits, vt->audio.channels,
+      vt->audio.type, vt->audio.encoding, vt->audio.compression,
+      vt->audio.transmission);
+
+         vt_write (vt, buf, strlen(buf));
+       }
       break;
   }
 
@@ -6350,12 +6376,221 @@ static unsigned char buf[BUFSIZ];
 
 #define MIN(a,b)  ((a)<(b)?(a):(b))
 
+static SDL_AudioDeviceID audio_dev = 0;
+
+#define AUDIO_CHUNK_SIZE 512
+void setup_sdl_audio ()
+{
+  SDL_AudioSpec spec_want, spec_have;
+  if (audio_dev != 0)
+    return;
+
+  spec_want.freq = 8000;
+  spec_want.format = AUDIO_S16;
+  spec_want.channels = 2;
+  spec_want.samples = AUDIO_CHUNK_SIZE;
+  spec_want.callback = NULL;
+
+  if (SDL_Init(SDL_INIT_AUDIO) < 0)
+  {
+    fprintf (stderr, "sdl audio init fail\n");
+  }
+
+  audio_dev = SDL_OpenAudioDevice (NULL, 0, &spec_want, &spec_have, 0);
+  if (!audio_dev){
+    fprintf (stderr, "sdl openaudiodevice fail\n");
+  }
+  SDL_PauseAudioDevice (audio_dev, 0);
+}
+static int16_t pcm_queue[1<<18];
+static int     pcm_write_pos = 0;
+static int     pcm_read_pos  = 0;
+
+void terminal_queue_pcm_sample (int16_t sample)
+{
+  if (pcm_write_pos >= (1<<18)-1)
+  {
+    /*  TODO  :  fix cyclic buffer */
+    pcm_write_pos = 0;
+    pcm_read_pos  = 0;
+  }
+  pcm_queue[pcm_write_pos++]=sample;
+  pcm_queue[pcm_write_pos++]=sample;
+}
+
+float click_volume = 0.05;
+
+void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes);
+
+int mic_enabled = 0;
+int mic_device = 0;
+
+const int cBias = 0x84;
+
+const int cClip = 32635;
+
+/*  https://jonathanhays.me/2018/11/14/mu-law-and-a-law-compression-tutorial/
+ */
+
+static char MuLawCompressTable[256] =
+{
+     0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
+     4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+     5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+     5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
+};
+
+
+
+unsigned char LinearToMuLawSample(int16_t sample)
+{
+     int sign = (sample >> 8) & 0x80;
+     if (sign)
+          sample = (int16_t)-sample;
+
+     if (sample > cClip)
+          sample = cClip;
+
+     sample = (int16_t)(sample + cBias);
+
+     int exponent = (int)MuLawCompressTable[(sample>>7) & 0xFF];
+     int mantissa = (sample >> (exponent+3)) & 0x0F;
+
+     int compressedByte = ~ (sign | (exponent << 4) | mantissa);
+
+     if (compressedByte == 0) /* we hide all 0's in audio data
+                                 it is the end-marker  */
+       compressedByte = 1;
+     return (unsigned char)compressedByte;
+}
+
+#define MIC_BUF_LEN 4096
+
+uint8_t mic_buf[MIC_BUF_LEN];
+int mic_buf_pos = 0;
+
+static void mic_callback(void*  userdata,
+                         Uint8* stream,
+                         int    len)
+{
+  int16_t *sstream = (void*)stream;
+
+  for (int i = 0; i < len/2; i++)
+  {
+    mic_buf[mic_buf_pos++] = LinearToMuLawSample(sstream[i]);
+    if (mic_buf_pos >= MIC_BUF_LEN)
+      mic_buf_pos = 0;
+  }
+
+}
+
+void audio_task (MrgVT *vt, int click);
+void audio_task (MrgVT *vt, int click)
+{
+  //static int foo = 0;
+  setup_sdl_audio ();
+
+  if (ctx_vt_mic (vt))
+  {
+    if (!mic_enabled)
+    {
+  SDL_AudioSpec spec_want, spec_have;
+
+     if (mic_device == 0)
+     {
+       spec_want.freq = 8000;
+       spec_want.format = AUDIO_S16;
+       spec_want.channels = 1;
+       spec_want.samples = AUDIO_CHUNK_SIZE;
+       spec_want.callback = mic_callback;
+       mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_have, 0);
+     }
+       SDL_PauseAudioDevice(mic_device, 0);
+       mic_enabled = 1;
+    }
+
+    if (mic_buf_pos)
+    {
+      SDL_LockAudioDevice (mic_device);
+      for (int i = 0; i<mic_buf_pos;i++)
+      {
+	if (mic_buf[i] == 0)
+	 mic_buf[i] = 1;
+	//else 
+        // fprintf (stderr, "%i ", mic_buf[i]);
+      }
+      ctx_vt_feed_audio (vt, &mic_buf[0], mic_buf_pos);
+      mic_buf_pos = 0;
+      SDL_UnlockAudioDevice (mic_device);
+    }
+  }
+  else
+  {
+    if (mic_device)
+    {
+      SDL_PauseAudioDevice(mic_device, 1);
+      SDL_CloseAudioDevice(mic_device);
+      mic_device = 0;
+      mic_enabled = 0;
+    }
+  }
+
+  int free_frames = AUDIO_CHUNK_SIZE - SDL_GetQueuedAudioSize(audio_dev);
+  int queued = (pcm_write_pos - pcm_read_pos)/2;
+  if (free_frames > 6) free_frames -= 4;
+  int frames = queued;
+
+  if (frames > free_frames) frames = free_frames;
+  if (frames > 0)
+  {
+    if (click)
+    {
+      int16_t pcm_data[]={-32000 * click_volume,32000 * click_volume,0,0};
+      SDL_QueueAudio (audio_dev, (void*) pcm_data, 4);
+    }
+
+    SDL_QueueAudio (audio_dev, (void*)&pcm_queue[pcm_read_pos], frames * 4);
+    pcm_read_pos += frames*2;
+  }
+#if ENABLE_CLICK
+  else
+  {
+    int16_t pcm_silence[4096]={0,};
+
+    if (click)
+    {
+      int16_t pcm_data[]={-32000 * click_volume,32000 * click_volume,0,0};
+      SDL_QueueAudio (audio_dev, (void*) pcm_data, 4);
+    }
+
+    if (free_frames > 500)
+    {
+      //SDL_QueueAudio (audio_dev, (void*)pcm_silence, 500 * 4);
+    }
+  }
+#endif
+}
+
+
 int ctx_vt_poll (MrgVT *vt, int timeout)
 {
   int read_size = sizeof(buf);
   int got_data = 0;
   int remaining_chars = 1024 * 1024;
   int len = 0;
+  audio_task (vt, 0);
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
   {
