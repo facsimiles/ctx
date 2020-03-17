@@ -6376,32 +6376,9 @@ static unsigned char buf[BUFSIZ];
 
 #define MIN(a,b)  ((a)<(b)?(a):(b))
 
-static SDL_AudioDeviceID audio_dev = 0;
+static SDL_AudioDeviceID speaker_device = 0;
 
 #define AUDIO_CHUNK_SIZE 512
-void setup_sdl_audio ()
-{
-  SDL_AudioSpec spec_want, spec_have;
-  if (audio_dev != 0)
-    return;
-
-  spec_want.freq = 8000;
-  spec_want.format = AUDIO_S16;
-  spec_want.channels = 2;
-  spec_want.samples = AUDIO_CHUNK_SIZE;
-  spec_want.callback = NULL;
-
-  if (SDL_Init(SDL_INIT_AUDIO) < 0)
-  {
-    fprintf (stderr, "sdl audio init fail\n");
-  }
-
-  audio_dev = SDL_OpenAudioDevice (NULL, 0, &spec_want, &spec_have, 0);
-  if (!audio_dev){
-    fprintf (stderr, "sdl openaudiodevice fail\n");
-  }
-  SDL_PauseAudioDevice (audio_dev, 0);
-}
 static int16_t pcm_queue[1<<18];
 static int     pcm_write_pos = 0;
 static int     pcm_read_pos  = 0;
@@ -6422,8 +6399,7 @@ float click_volume = 0.05;
 
 void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes);
 
-int mic_enabled = 0;
-int mic_device = 0;
+int mic_device = 0;   // when non 0 we have an active mic device
 
 const int cBias = 0x84;
 
@@ -6451,8 +6427,6 @@ static char MuLawCompressTable[256] =
      7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
      7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
 };
-
-
 
 unsigned char LinearToMuLawSample(int16_t sample)
 {
@@ -6496,17 +6470,25 @@ static void mic_callback(void*  userdata,
 
 }
 
+
+static long int ticks (void)
+{
+  struct timeval tp;
+  gettimeofday(&tp, NULL);
+  return tp.tv_sec * 1000 + tp.tv_usec / 1000;
+}
+
+static long int silence_start = 0;
+
 void audio_task (MrgVT *vt, int click);
 void audio_task (MrgVT *vt, int click)
 {
-  //static int foo = 0;
-  setup_sdl_audio ();
 
   if (ctx_vt_mic (vt))
   {
-    if (!mic_enabled)
+    if (mic_device == 0)
     {
-  SDL_AudioSpec spec_want, spec_have;
+     SDL_AudioSpec spec_want, spec_have;
 
      if (mic_device == 0)
      {
@@ -6518,7 +6500,6 @@ void audio_task (MrgVT *vt, int click)
        mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_have, 0);
      }
        SDL_PauseAudioDevice(mic_device, 0);
-       mic_enabled = 1;
     }
 
     if (mic_buf_pos)
@@ -6543,11 +6524,10 @@ void audio_task (MrgVT *vt, int click)
       SDL_PauseAudioDevice(mic_device, 1);
       SDL_CloseAudioDevice(mic_device);
       mic_device = 0;
-      mic_enabled = 0;
     }
   }
 
-  int free_frames = AUDIO_CHUNK_SIZE - SDL_GetQueuedAudioSize(audio_dev);
+  int free_frames = AUDIO_CHUNK_SIZE - SDL_GetQueuedAudioSize(speaker_device);
   int queued = (pcm_write_pos - pcm_read_pos)/2;
   if (free_frames > 6) free_frames -= 4;
   int frames = queued;
@@ -6555,32 +6535,45 @@ void audio_task (MrgVT *vt, int click)
   if (frames > free_frames) frames = free_frames;
   if (frames > 0)
   {
-    if (click)
+    if (speaker_device == 0)
     {
-      int16_t pcm_data[]={-32000 * click_volume,32000 * click_volume,0,0};
-      SDL_QueueAudio (audio_dev, (void*) pcm_data, 4);
+      SDL_AudioSpec spec_want, spec_have;
+
+      spec_want.freq = 8000;
+      spec_want.format = AUDIO_S16;
+      spec_want.channels = 2;
+      spec_want.samples = AUDIO_CHUNK_SIZE;
+      spec_want.callback = NULL;
+
+      {
+        static int done = 0;
+        if (done ||  SDL_Init(SDL_INIT_AUDIO) < 0)
+        {
+          fprintf (stderr, "sdl audio init fail\n");
+        }
+        done = 1;
+      }
+
+      speaker_device = SDL_OpenAudioDevice (NULL, 0, &spec_want, &spec_have, 0);
+      if (!speaker_device){
+        fprintf (stderr, "sdl openaudiodevice fail\n");
+      }
+      SDL_PauseAudioDevice (speaker_device, 0);
     }
 
-    SDL_QueueAudio (audio_dev, (void*)&pcm_queue[pcm_read_pos], frames * 4);
+    SDL_QueueAudio (speaker_device, (void*)&pcm_queue[pcm_read_pos], frames * 4);
     pcm_read_pos += frames*2;
+    silence_start = ticks();
   }
-#if ENABLE_CLICK
   else
   {
-    int16_t pcm_silence[4096]={0,};
-
-    if (click)
+    if (speaker_device &&  (ticks() - silence_start >  3000))
     {
-      int16_t pcm_data[]={-32000 * click_volume,32000 * click_volume,0,0};
-      SDL_QueueAudio (audio_dev, (void*) pcm_data, 4);
-    }
-
-    if (free_frames > 500)
-    {
-      //SDL_QueueAudio (audio_dev, (void*)pcm_silence, 500 * 4);
+      SDL_PauseAudioDevice(speaker_device, 1);
+      SDL_CloseAudioDevice(speaker_device);
+      speaker_device = 0;
     }
   }
-#endif
 }
 
 

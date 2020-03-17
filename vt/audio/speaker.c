@@ -33,7 +33,7 @@ signal_int (int signum)
 
 int buffered_samples = 0;
 int sample_rate = 8000;
-int buffer_samples = 1024;
+int buffer_samples = 512;
 int lost_time = 0;
 int lost_start;
 int lost_end;
@@ -57,7 +57,7 @@ int main (int argc, char **argv)
       buffered_samples = 0;
     buffered_samples ++;
 
-    if (buffered_samples > buffer_samples +  slack)
+    if (buffered_samples > slack)
     {
       usleep (1000 * slack * 1000 / sample_rate);
       buffered_samples -= slack;
