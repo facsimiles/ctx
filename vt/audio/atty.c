@@ -24,7 +24,7 @@ static void _nc_noraw (void)
 static void
 nc_at_exit (void)
 {
-  fprintf(stderr, "\033[?4445l");
+  //fprintf(stderr, "\033[?4445l");
   fflush (stderr);
   _nc_noraw();
 }
@@ -65,8 +65,8 @@ at_exit (void)
 {
   //tcdrain(STDIN_FILENO);
   //tcflush(STDIN_FILENO, 1);
-  buf[0]=0;
-  fwrite (buf, 1, 1, stdout);
+  //buf[0]=0;
+  //fwrite (buf, 1, 1, stdout);
   //fprintf(stdout, "\033[?4444l");
   fflush (stdout);
 }
@@ -239,7 +239,6 @@ void atty_speaker (void)
   char audio_packet[4096];
   int  len = 0;
 
-  fprintf(stdout, "\033[?4444h");
   signal (SIGINT, signal_int);
   signal (SIGTERM, signal_int);
   atexit (at_exit);
@@ -250,7 +249,7 @@ void atty_speaker (void)
   {
     audio_packet[len++]=buf[0];
 
-    fwrite (buf, 1, 1, stdout);
+    //fwrite (buf, 1, 1, stdout);
 
     lost_end = ticks();
     lost_time = (lost_end - lost_start);
@@ -260,7 +259,14 @@ void atty_speaker (void)
 
     if (len >  buffer_samples)
     {
+      //fprintf(stdout, "\033_A;");
+      fprintf(stdout, "\033[?4444h");
       fwrite (audio_packet, 1, len, stdout);
+      //fprintf(stdout, "\e\\");
+      //fprintf(stdout, "\e\\");
+      buf[0]=0;
+      fwrite (buf, 1, 1, stdout);
+      fflush (NULL);
       usleep (1000 * ( len * 1000 / sample_rate - (ticks()-lost_end)) );
       len = 0;
     }
