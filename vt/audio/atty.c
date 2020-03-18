@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <sys/time.h>
@@ -8,6 +9,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <termios.h>
+
+int vt_a85enc (const void *srcp, char *dst, int count);
 
 static struct termios orig_attr; /* in order to restore at exit */
 static int    nc_is_raw = 0;
@@ -237,6 +240,7 @@ void atty_status (void)
 void atty_speaker (void)
 {
   char audio_packet[4096];
+  char audio_packet_a85[4096 * 2];
   int  len = 0;
 
   signal (SIGINT, signal_int);
@@ -259,13 +263,14 @@ void atty_speaker (void)
 
     if (len >  buffer_samples)
     {
-      //fprintf(stdout, "\033_A;");
-      fprintf(stdout, "\033[?4444h");
-      fwrite (audio_packet, 1, len, stdout);
+      fprintf(stdout, "\033_A;");
+      //fprintf(stdout, "\033[?4444h");
+      vt_a85enc (audio_packet, audio_packet_a85, len);
+      fwrite (audio_packet_a85, 1, strlen (audio_packet_a85), stdout);
+      fprintf(stdout, "\e\\");
       //fprintf(stdout, "\e\\");
-      //fprintf(stdout, "\e\\");
-      buf[0]=0;
-      fwrite (buf, 1, 1, stdout);
+      //buf[0]=0;
+      //fwrite (buf, 1, 1, stdout);
       fflush (NULL);
       usleep (1000 * ( len * 1000 / sample_rate - (ticks()-lost_end)) );
       len = 0;
@@ -423,4 +428,116 @@ int main (int argc, char **argv)
   }
 
   return 0;
+}
+
+
+static char a85_alphabet[]=
+{
+'!','"','#','$','%','&','\'','(',')','*',
+'+',',','-','.','/','0','1','2','3','4',
+'5','6','7','8','9',':',';','<','=','>',
+'?','@','A','B','C','D','E','F','G','H',
+'I','J','K','L','M','N','O','P','Q','R',
+'S','T','U','V','W','X','Y','Z','[','\\',
+']','^','_','`','a','b','c','d','e','f',
+'g','h','i','j','k','l','m','n','o','p',
+'q','r','s','t','u'
+};
+
+static char a85_decoder[256]="";
+
+int vt_a85enc (const void *srcp, char *dst, int count)
+{
+  const uint8_t *src = srcp;
+  int out_len = 0;
+  int padding = 4 - (count % 4);
+  for (int i = 0; i < (count+3)/4; i ++)
+  {
+    uint32_t input = 0;
+    for (int j = 0; j < 4; j++)
+    {
+      input = (input << 8);
+      if (i*4+j<count)
+        input += src[i*4+j];
+    }
+
+    int divisor = 85 * 85 * 85 * 85;
+    if (input == 0)
+    {
+        dst[out_len++] = 'z';
+    }
+    else
+    {
+      for (int j = 0; j < 5; j++)
+      {
+        dst[out_len++] = a85_alphabet[(input / divisor) % 85];
+        divisor /= 85;
+      }
+    }
+  }
+  out_len -= padding;
+  dst[out_len++]='~';
+  dst[out_len++]='>';
+  dst[out_len]=0;
+  return out_len;
+}
+
+int vt_a85dec (const char *src, char *dst, int count)
+{
+  if (a85_decoder[0] == 0)
+  {
+    for (int i = 0; i < 85; i++)
+    {
+      a85_decoder[(int)a85_alphabet[i]]=i;
+    }
+  }
+  int out_len = 0;
+  uint32_t val = 0;
+  int k = 0;
+
+  for (int i = 0; i < count; i ++, k++)
+  {
+    val *= 85;
+
+    if (src[i] == '~')
+      break;
+    else if (src[i] == 'z')
+    {
+      for (int j = 0; j < 4; j++)
+        dst[out_len++] = 0;
+      k = 0;
+    }
+    else
+    {
+      val += a85_decoder[(int)src[i]];
+      if (k % 5 == 4)
+      {
+         for (int j = 0; j < 4; j++)
+         {
+           dst[out_len++] = (val & (0xff << 24)) >> 24;
+           val <<= 8;
+         }
+         val = 0;
+      }
+    }
+  }
+  k = k % 5;
+  if (k)
+  {
+    for (int j = k; j < 4; j++)
+    {
+      val += 84;
+      val *= 85;
+    }
+
+    for (int j = 0; j < 4; j++)
+    {
+      dst[out_len++] = (val & (0xff << 24)) >> 24;
+      val <<= 8;
+    }
+    val = 0;
+    out_len -= (5-k);
+  }
+  dst[out_len]=0;
+  return out_len;
 }
