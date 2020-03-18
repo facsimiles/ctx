@@ -23,31 +23,46 @@ static void _nc_noraw (void)
   if (nc_is_raw && tcsetattr (tty_fd, TCSAFLUSH, &orig_attr) != -1)
     nc_is_raw = 0;
 }
+int has_data (int fd, int delay_ms);
 
 static void
-nc_at_exit (void)
+at_exit_mic (void)
 {
-  //fprintf(stderr, "\033[?4445l");
-  fflush (stderr);
+  fprintf(stderr, "\033_Am=0;\e\\");
+
+  while (has_data (STDIN_FILENO, 100))
+  {
+    char c;
+    read (STDIN_FILENO, &c, (size_t)1);
+  }
   _nc_noraw();
+  fflush (NULL);
+  usleep (1000 * 100);
 }
 
+static void
+at_exit_speaker (void)
+{
+  //tcdrain(STDIN_FILENO);
+  //tcflush(STDIN_FILENO, 1);
+  //fprintf(stderr, "\033[?4445l");
+  //fprintf(stderr, "\033_Am=0;\e\\");
+  _nc_noraw();
+  fflush (NULL);
+}
 
 static int _nc_raw (void)
 {
   struct termios raw;
+  if (nc_is_raw)
+    return 0;
   if (!isatty (tty_fd))
     return -1;
-  if (!atexit_registered)
-    {
-      atexit (nc_at_exit);
-      atexit_registered = 1;
-    }
   if (tcgetattr (tty_fd, &orig_attr) == -1)
     return -1;
   raw = orig_attr;
   cfmakeraw (&raw);
-  if (tcsetattr (tty_fd, TCSAFLUSH, &raw) < 0)
+  if (tcsetattr (tty_fd, TCSANOW, &raw) < 0)
     return -1;
   nc_is_raw = 1;
   return 0;
@@ -63,20 +78,17 @@ static long int ticks (void)
 
 char buf[2];
 
-static void
-at_exit (void)
+void
+signal_int_speaker (int signum)
 {
-  //tcdrain(STDIN_FILENO);
-  //tcflush(STDIN_FILENO, 1);
-  //buf[0]=0;
-  //fwrite (buf, 1, 1, stdout);
-  //fprintf(stdout, "\033[?4444l");
-  fflush (stdout);
+  at_exit_speaker ();
+  exit (0);
 }
 
 void
-signal_int (int signum)
+signal_int_mic (int signum)
 {
+  at_exit_mic ();
   exit (0);
 }
 
@@ -237,23 +249,22 @@ void atty_status (void)
   fflush (NULL);
 }
 
+void atty_mic (void);
 void atty_speaker (void)
 {
   char audio_packet[4096];
   char audio_packet_a85[4096 * 2];
   int  len = 0;
 
-  signal (SIGINT, signal_int);
-  signal (SIGTERM, signal_int);
-  atexit (at_exit);
+  signal (SIGINT, signal_int_speaker);
+  signal (SIGTERM, signal_int_speaker);
+  atexit (at_exit_speaker);
 
   lost_start = ticks ();
 
   while (fread (buf, 1, 1, stdin) == 1)
   {
     audio_packet[len++]=buf[0];
-
-    //fwrite (buf, 1, 1, stdout);
 
     lost_end = ticks();
     lost_time = (lost_end - lost_start);
@@ -263,15 +274,11 @@ void atty_speaker (void)
 
     if (len >  buffer_samples)
     {
-      fprintf(stdout, "\033_A;");
-      //fprintf(stdout, "\033[?4444h");
+      fwrite ("\033_A;",1, 4, stdout);
       vt_a85enc (audio_packet, audio_packet_a85, len);
       fwrite (audio_packet_a85, 1, strlen (audio_packet_a85), stdout);
-      fprintf(stdout, "\e\\");
-      //fprintf(stdout, "\e\\");
-      //buf[0]=0;
-      //fwrite (buf, 1, 1, stdout);
-      fflush (NULL);
+      fwrite ("\e\\", 1, 2, stdout);
+      fflush (stdout);
       usleep (1000 * ( len * 1000 / sample_rate - (ticks()-lost_end)) );
       len = 0;
     }
@@ -411,7 +418,7 @@ int main (int argc, char **argv)
   switch (action)
   {
     case ACTION_RESET:
-      printf ("\033_As=8000,T=u,b=8,c=1,o=0,e=0;\e\\");
+      printf ("\033_As=8000,T=u,b=8,c=1,o=0,e=a;\e\\");
       fflush (NULL);
       /*  fallthrough */
     case ACTION_STATUS:
@@ -422,9 +429,10 @@ int main (int argc, char **argv)
       atty_readconfig ();
       atty_speaker ();
       break;
-    //case ACTION_MIC:
-    //  atty_mic ();
-    //  break;
+    case ACTION_MIC:
+      atty_readconfig ();
+      atty_mic ();
+      break;
   }
 
   return 0;
@@ -540,4 +548,94 @@ int vt_a85dec (const char *src, char *dst, int count)
   }
   dst[out_len]=0;
   return out_len;
+}
+
+
+#define MIN(a,b) ((a)<(b)?(a):(b))
+
+int in_audio_data = 0;
+
+int iterate (int timeoutms)
+{
+  unsigned char buf[20];
+  int length;
+
+  {
+    int elapsed = 0;
+    int got_event = 0;
+
+    do {
+#define DELAY_MS 100
+      if (!got_event)
+        got_event = has_data (STDIN_FILENO, MIN(DELAY_MS, timeoutms-elapsed));
+      elapsed += MIN(DELAY_MS, timeoutms-elapsed);
+      if (!got_event && timeoutms && elapsed >= timeoutms)
+        return 1;
+    } while (!got_event);
+  }
+
+  if (in_audio_data)
+  {
+    while (read (STDIN_FILENO, &buf[0], 1) != -1)
+    {
+      if (buf[0] == '\e')
+      {
+	in_audio_data = 2;
+      }
+      else if (buf[0] == '\\' &&
+	       in_audio_data == 2)
+      {
+	in_audio_data = 0;
+	return 1;
+      }
+#if 0
+      else if (buf[0] == 0)
+      {
+	in_audio_data = 0;
+	return 1;
+      }
+#endif
+      else
+      {
+	in_audio_data = 1;
+	fprintf (stdout, "%c", buf[0]);
+        fflush (stdout);
+      }
+    }
+    fflush (stdout);
+    return 1;
+  }
+
+  for (length = 0; length < 10; length ++)
+    if (read (STDIN_FILENO, &buf[length], 1) != -1)
+      {
+         if (buf[0] == 3) /*  control-c */
+         {
+           return 0;
+         }
+	 else if (!strncmp ((void*)buf, "\033_A", MIN(length+1,3)))
+         {
+           int semis = 0;
+           while (semis < 2 && read (STDIN_FILENO, &buf[0], 1) != -1)
+	   {
+	     if (buf[0] == ';') semis ++;
+	   }
+	   in_audio_data = 1;
+         }
+      }
+  return 1;
+}
+
+/*  return 0 if stopping */
+int iterate (int timeoutms);
+
+void atty_mic (void)
+{
+  signal(SIGINT,signal_int_mic);
+  signal(SIGTERM,signal_int_mic);
+  fprintf(stderr, "\033_Am=1;\e\\");
+  _nc_raw ();
+  fflush (NULL);
+  while (iterate (1000));
+  at_exit_mic ();
 }

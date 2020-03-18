@@ -314,7 +314,6 @@ typedef struct AudioState {
   int encoding;
   int compression;
   int transmission;
-  int multichunk;
 
   int buf_size;
   int frames; // should be derived from data_size
@@ -4244,11 +4243,8 @@ void vt_audio (MrgVT *vt, const char *command)
   int  value;
   int  pos = 1;
 
-  if (vt->audio.multichunk == 0)
-  {
-    vt->audio.action='t';
-    vt->audio.transmission='d';
-  }
+  vt->audio.action='t';
+  vt->audio.transmission='d';
 
   int configure = 0;
   while (command[pos] != ';')
@@ -4279,7 +4275,6 @@ void vt_audio (MrgVT *vt, const char *command)
 	case 'c':range="1";break;
 	case 'T':range="u,s,f";break;
 	case 'e':range="0,b,a,y";break;
-	case 'm':range="0-1";break;
 	case 'o':range="z,0";break;
 	case 't':range="d";break;
 	case 'a':range="t,q";break;
@@ -4299,9 +4294,17 @@ void vt_audio (MrgVT *vt, const char *command)
       case 'T': vt->audio.type = value; configure = 1; break;
       case 'f': vt->audio.frames = value; configure = 1; break;
       case 'e': vt->audio.encoding = value; configure = 1; break;
-      case 'm': vt->audio.multichunk = value; configure = 1; break;
       case 'o': vt->audio.compression = value; configure = 1; break;
       case 't': vt->audio.transmission = value; configure = 1; break;
+      case 'm': 
+        if (value == 0)
+	{
+	  vt->mic = 0;
+	}
+	else {
+	  vt->mic = 1;
+	}
+	break;
     }
 
     if (configure)
@@ -4368,7 +4371,6 @@ void vt_audio (MrgVT *vt, const char *command)
      vt->audio.data[vt->audio.data_size]=0;
   }
 
-  if (vt->audio.multichunk == 0)
   {
     if (vt->audio.transmission != 'd') /* */
     {
@@ -4533,7 +4535,6 @@ cleanup:
       free (vt->audio.data);
     vt->audio.data = NULL;
     vt->audio.data_size=0;
-    vt->audio.multichunk=0;
   }
 }
 
