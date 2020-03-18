@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <termios.h>
@@ -10,18 +13,17 @@ static struct termios orig_attr; /* in order to restore at exit */
 static int    nc_is_raw = 0;
 static int    atexit_registered = 0;
 
+int tty_fd = STDIN_FILENO;
 
 static void _nc_noraw (void)
 {
-  if (nc_is_raw && tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr) != -1)
+  if (nc_is_raw && tcsetattr (tty_fd, TCSAFLUSH, &orig_attr) != -1)
     nc_is_raw = 0;
 }
 
 static void
 nc_at_exit (void)
 {
-  //tcdrain(STDIN_FILENO);
-  //tcflush(STDIN_FILENO, 1);
   fprintf(stderr, "\033[?4445l");
   fflush (stderr);
   _nc_noraw();
@@ -31,28 +33,20 @@ nc_at_exit (void)
 static int _nc_raw (void)
 {
   struct termios raw;
-  if (!isatty (STDIN_FILENO))
+  if (!isatty (tty_fd))
     return -1;
   if (!atexit_registered)
     {
       atexit (nc_at_exit);
       atexit_registered = 1;
     }
-  if (tcgetattr (STDIN_FILENO, &orig_attr) == -1)
+  if (tcgetattr (tty_fd, &orig_attr) == -1)
     return -1;
-  raw = orig_attr;  /* modify the original mode */
-#if 1
-  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-  raw.c_oflag &= ~(OPOST);
-  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-  raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
-#endif
+  raw = orig_attr;
   cfmakeraw (&raw);
-  if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
+  if (tcsetattr (tty_fd, TCSAFLUSH, &raw) < 0)
     return -1;
   nc_is_raw = 1;
-  //tcdrain(STDIN_FILENO);
-  //tcflush(STDIN_FILENO, 1);
   return 0;
 }
 
@@ -105,16 +99,16 @@ enum {
 
 int action = ACTION_STATUS;
 
-int has_data (int delay_ms)
+int has_data (int fd, int delay_ms)
 {
   struct timeval tv;
   int retval;
   fd_set rfds;
 
   FD_ZERO (&rfds);
-  FD_SET (STDIN_FILENO, &rfds);
+  FD_SET (fd, &rfds);
   tv.tv_sec = 0; tv.tv_usec = delay_ms * 1000;
-  retval = select (1, &rfds, NULL, NULL, &tv);
+  retval = select (fd+1, &rfds, NULL, NULL, &tv);
   return retval == 1 && retval != -1;
 }
 
@@ -125,20 +119,22 @@ const char *terminal_response(void)
   int len = 0;
   fflush (stdout);
 
-  while (has_data (200) && len < BUFSIZ - 2)
+  while (has_data (tty_fd, 200) && len < BUFSIZ - 2)
   {
-    if (read (0, &buf[len++], (size_t)1) != 1)
+    if (read (tty_fd, &buf[len++], (size_t)1) == 1)
     {
-       fprintf (stderr, "uh\n");
+       //fprintf (stderr, "uh\n");
     }
   }
-  buf[len] = 0;
+  buf[--len] = 0;
+  //close (tty);
   return buf;
 }
 
 void atty_readconfig (void)
 {
-  fprintf (stdout, "\033_Aa=q;\e\\");
+  const char *cmd = "\033_Aa=q;\e\\";
+  write (tty_fd, cmd, strlen (cmd));
   const char *ret = terminal_response ();
   if (ret[0])
   {
@@ -186,57 +182,56 @@ void atty_readconfig (void)
 void atty_status (void)
 {
   _nc_noraw ();
-    fprintf (stdout, "samplerate=%i ", sample_rate);
-    fprintf (stdout, "channels=%i ", channels);
-    fprintf (stdout, "bits=%i ", bits);
+  fprintf (stdout, "samplerate=%i ", sample_rate);
+  fprintf (stdout, "channels=%i ", channels);
+  fprintf (stdout, "bits=%i ", bits);
 
-    switch (type)
-    {
-       case 'u':
-          fprintf (stdout, "type=ulaw ");
-	  break;
-       case 's':
-          fprintf (stdout, "type=signed ");
-	  break;
-       case 'f':
-          fprintf (stdout, "type=float ");
-	  break;
-       default:
-          fprintf (stdout, "type=%c ", type);
-	  break;
-    }
+  switch (type)
+  {
+     case 'u':
+        fprintf (stdout, "type=ulaw ");
+        break;
+     case 's':
+        fprintf (stdout, "type=signed ");
+        break;
+     case 'f':
+        fprintf (stdout, "type=float ");
+        break;
+     default:
+        fprintf (stdout, "type=%c ", type);
+        break;
+  }
 
-    switch (encoding)
-    {
-      default:
-      case '0':
-          fprintf (stdout, "encoding=none ");
-	  break;
-      case 'b':
-          fprintf (stdout, "encoding=base64 ");
-	  break;
-      case 'a':
-          fprintf (stdout, "encoding=ascii85 ");
-	  break;
-      case 'y':
-          fprintf (stdout, "encoding=yenc ");
-	  break;
-    }
-    switch (compression)
-    {
-      default:
-          fprintf (stdout, "compression=none");
-	  break;
-      case 'z':
-          fprintf (stdout, "compression=z");
-	  break;
-      case 'o':
-          fprintf (stdout, "compression=opus");
-	  break;
-    }
-    fprintf (stdout, "\n");
-    fflush (NULL);
-    usleep (1000);
+  switch (encoding)
+  {
+    default:
+    case '0':
+        fprintf (stdout, "encoding=none ");
+        break;
+    case 'b':
+        fprintf (stdout, "encoding=base64 ");
+        break;
+    case 'a':
+        fprintf (stdout, "encoding=ascii85 ");
+        break;
+    case 'y':
+        fprintf (stdout, "encoding=yenc ");
+        break;
+  }
+  switch (compression)
+  {
+    default:
+        fprintf (stdout, "compression=none");
+        break;
+    case 'z':
+        fprintf (stdout, "compression=z");
+        break;
+    case 'o':
+        fprintf (stdout, "compression=opus");
+        break;
+  }
+  fprintf (stdout, "\n");
+  fflush (NULL);
 }
 
 void atty_speaker (void)
@@ -267,6 +262,7 @@ void atty_speaker (void)
     {
       fwrite (audio_packet, 1, len, stdout);
       usleep (1000 * ( len * 1000 / sample_rate - (ticks()-lost_end)) );
+      len = 0;
     }
     lost_start = ticks ();
   }
@@ -274,10 +270,16 @@ void atty_speaker (void)
 
 int main (int argc, char **argv)
 {
+  char path[512];
+  sprintf (path, "/proc/%d/fd/1", getppid());
+  tty_fd = open (path, O_RDWR);
+
+#if 1
   if (_nc_raw ())
   {
     fprintf (stdout, "nc raw failed\n");
   }
+#endif
   char config[512]="";
 
   for (int i = 1; argv[i]; i++)
@@ -377,7 +379,7 @@ int main (int argc, char **argv)
       }
       else if (!strcmp (argv[i], "speaker"))
       {
-	action = ACTION_MIC;
+	action = ACTION_SPEAKER;
       }
       else if (!strcmp (argv[i], "--help"))
       {
@@ -399,12 +401,14 @@ int main (int argc, char **argv)
   {
     case ACTION_RESET:
       printf ("\033_As=8000,T=u,b=8,c=1,o=0,e=0;\e\\");
+      fflush (NULL);
       /*  fallthrough */
     case ACTION_STATUS:
       atty_readconfig ();
       atty_status ();
       break;
     case ACTION_SPEAKER:
+      atty_readconfig ();
       atty_speaker ();
       break;
     //case ACTION_MIC:

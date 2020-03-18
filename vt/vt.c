@@ -4303,22 +4303,21 @@ void vt_audio (MrgVT *vt, const char *command)
 
     if (report)
     {
-      /* we do not support changing these yet */
+      /* these are the specific sample rates supported by opus,
+       * instead of enabling anything SDL supports, the initial
+       * implementation limits itself to the opus sample rates
+       */
       if (vt->audio.samplerate <= 8000)
       {
         vt->audio.samplerate = 8000;
       }
-      else if (vt->audio.samplerate <= 11025)
+      else if (vt->audio.samplerate <= 16000)
       {
-        vt->audio.samplerate = 11025;
+        vt->audio.samplerate = 16000;
       }
-      else if (vt->audio.samplerate <= 22050)
+      else if (vt->audio.samplerate <= 24000)
       {
-        vt->audio.samplerate = 22050;
-      }
-      else if (vt->audio.samplerate <= 44100)
-      {
-        vt->audio.samplerate = 44100;
+        vt->audio.samplerate = 24000;
       }
       else
       {
@@ -4333,12 +4332,13 @@ void vt_audio (MrgVT *vt, const char *command)
 	case 'u':
 	case 's':
 	case 'f':
-		break;
+	  break;
         default:
-		vt->audio.type = 's';
+	  vt->audio.type = 's';
       }
 
-      if (vt->audio.channels <= 0 ||  vt->audio.channels > 2)
+      /* onlt 1 and 2 channels supported */
+      if (vt->audio.channels <= 0 || vt->audio.channels > 2)
       {
 	vt->audio.channels = 1;
       }
