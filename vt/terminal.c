@@ -574,7 +574,7 @@ int vt_main(int argc, char **argv)
       }
       else
       {
-        sleep_time *= 1.5;
+        //sleep_time *= 1.5;
       }
       if (sleep_time > 60000)
         sleep_time = 60000;

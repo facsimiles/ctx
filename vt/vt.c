@@ -2911,7 +2911,7 @@ ctx_vt_carriage_return (MrgVT *vt)
 void terminal_queue_pcm (int16_t sample_left, int16_t sample_right);
 
 static unsigned char vt_bell_audio[] = {
-#if 1
+#if 0
   0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
   0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
   0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
@@ -6581,25 +6581,22 @@ void audio_task (MrgVT *vt, int click)
      sdl_audio_init ();
 
        spec_want.freq = vt->audio.samplerate;
+       spec_want.channels = vt->audio.channels;
        if (vt->audio.bits == 8 && vt->audio.type == 'u')
        {
          spec_want.format = AUDIO_S16;
-         spec_want.channels = 2;
        }
        else if (vt->audio.bits == 8 && vt->audio.type == 's')
        {
          spec_want.format = AUDIO_S8;
-         spec_want.channels = vt->audio.channels;
        }
        else if (vt->audio.bits == 16 && vt->audio.type == 's')
        {
          spec_want.format = AUDIO_S16;
-         spec_want.channels = vt->audio.channels;
        }
        else
        {
          spec_want.format = AUDIO_S16; // XXX  : error
-         spec_want.channels = vt->audio.channels;
        }
 
       spec_want.samples = AUDIO_CHUNK_SIZE;
@@ -6693,7 +6690,7 @@ void audio_task (MrgVT *vt, int click)
   }
   else
   {
-    if (speaker_device &&  (ticks() - silence_start >  3000))
+    if (speaker_device &&  (ticks() - silence_start >  2000))
     {
       SDL_PauseAudioDevice(speaker_device, 1);
       SDL_CloseAudioDevice(speaker_device);
@@ -6709,7 +6706,7 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
   int got_data = 0;
   int remaining_chars = 1024 * 1024;
   int len = 0;
-  audio_task (vt, 0);
+    audio_task (vt, 0);
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
   {
@@ -6734,6 +6731,7 @@ int ctx_vt_poll (MrgVT *vt, int timeout)
     got_data+=len;
     remaining_chars -= len;
     timeout -= 10;
+    audio_task (vt, 0);
   }
   return got_data;
 }
