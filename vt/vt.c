@@ -4456,7 +4456,7 @@ void vt_audio (MrgVT *vt, const char *command)
     case 'q': // query
        {
 	 char buf[512];
-         sprintf (buf, "\e_As=%i,b=%i,c=%i,T=%c,e=%c,o=%i,t=%i;OK\e\\",
+         sprintf (buf, "\e_As=%i,b=%i,c=%i,T=%c,e=%c,o=%c,t=%i;OK\e\\",
       vt->audio.samplerate, vt->audio.bits, vt->audio.channels,
       vt->audio.type, vt->audio.encoding, vt->audio.compression,
       vt->audio.transmission);
