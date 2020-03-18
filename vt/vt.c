@@ -817,6 +817,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->audio.samplerate = 8000;
   vt->audio.encoding = 'a';
   vt->audio.compression = '0';
+  vt->mic = 0;
 }
 
 void ctx_vt_set_font_size (MrgVT *vt, float font_size)
@@ -2212,6 +2213,7 @@ qagain:
      //case 2020: /*MODE;wordwrap;On;Off;*/
      //      vt->wordwrap = set; break; 
 
+#if 0
      case 4444:/*MODE;Audio;On;;*/
 	   if (set)
 	   {
@@ -2221,6 +2223,7 @@ qagain:
      case 4445:/*MODE;Mic;On;;*/
            vt->mic = set;
 	   break;
+#endif
 
      case 7020:/*MODE;Ctx ascii;On;;*/
 	   if (set)
@@ -6551,6 +6554,20 @@ static long int ticks (void)
 
 static long int silence_start = 0;
 
+
+static void sdl_audio_init ()
+      {
+        static int done = 0;
+	if (!done)
+	{
+        if (SDL_Init(SDL_INIT_AUDIO) < 0)
+        {
+          fprintf (stderr, "sdl audio init fail\n");
+        }
+        done = 1;
+	}
+      }
+
 void audio_task (MrgVT *vt, int click);
 void audio_task (MrgVT *vt, int click)
 {
@@ -6561,8 +6578,8 @@ void audio_task (MrgVT *vt, int click)
     {
      SDL_AudioSpec spec_want, spec_have;
 
-     if (mic_device == 0)
-     {
+     sdl_audio_init ();
+
        spec_want.freq = vt->audio.samplerate;
        if (vt->audio.bits == 8 && vt->audio.type == 'u')
        {
@@ -6585,11 +6602,12 @@ void audio_task (MrgVT *vt, int click)
          spec_want.channels = vt->audio.channels;
        }
 
-        spec_want.samples = AUDIO_CHUNK_SIZE;
-        spec_want.callback = mic_callback;
-        spec_want.userdata = vt;
-        mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_have, 0);
-      }
+      spec_want.samples = AUDIO_CHUNK_SIZE;
+      spec_want.callback = mic_callback;
+      spec_want.userdata = vt;
+      mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_have, 0);
+      fprintf (stderr, "mic rate:%i\n", spec_have.freq);
+
       SDL_PauseAudioDevice(mic_device, 0);
     }
 
@@ -6627,6 +6645,7 @@ void audio_task (MrgVT *vt, int click)
     if (speaker_device == 0)
     {
       SDL_AudioSpec spec_want, spec_have;
+      sdl_audio_init ();
 
        spec_want.freq = vt->audio.samplerate;
        if (vt->audio.bits == 8 && vt->audio.type == 'u')
@@ -6659,22 +6678,12 @@ void audio_task (MrgVT *vt, int click)
       spec_want.samples = AUDIO_CHUNK_SIZE;
       spec_want.callback = NULL;
 
-      {
-        static int done = 0;
-	if (!done)
-	{
-        if (SDL_Init(SDL_INIT_AUDIO) < 0)
-        {
-          fprintf (stderr, "sdl audio init fail\n");
-        }
-        done = 1;
-	}
-      }
 
       speaker_device = SDL_OpenAudioDevice (NULL, 0, &spec_want, &spec_have, 0);
       if (!speaker_device){
         fprintf (stderr, "sdl openaudiodevice fail\n");
       }
+      fprintf (stderr, "speaker rate:%i\n", spec_have.freq);
       SDL_PauseAudioDevice (speaker_device, 0);
     }
 
