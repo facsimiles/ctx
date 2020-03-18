@@ -836,14 +836,14 @@ void ctx_vt_set_line_spacing (MrgVT *vt, float line_spacing)
 
 MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
-  MrgVT *vt              = calloc (sizeof (MrgVT), 1);
-  vt->state = vt_state_neutral;
+  MrgVT *vt         = calloc (sizeof (MrgVT), 1);
+  vt->state         = vt_state_neutral;
   vt->smooth_scroll = 0;
   vt->scroll_offset = 0.0;
-  vt->waitdata = vtpty_waitdata;
-  vt->read   = vtpty_read;
-  vt->write  = vtpty_write;
-  vt->resize = vtpty_resize;
+  vt->waitdata      = vtpty_waitdata;
+  vt->read          = vtpty_read;
+  vt->write         = vtpty_write;
+  vt->resize        = vtpty_resize;
 
   vt->font_to_cell_scale = 1.0;
   vt->cursor_visible     = 1;
@@ -853,7 +853,6 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   vt->cols               = 0;
   vt->rows               = 0;
   vt->scrollback_limit   = DEFAULT_SCROLLBACK;
-
   vt->argument_buf_len   = 0;
   vt->argument_buf_cap   = 64;
   vt->argument_buf       = malloc (vt->argument_buf_cap);
@@ -4452,7 +4451,6 @@ void vt_audio (MrgVT *vt, const char *command)
   switch (vt->audio.action)
   {
     case 't': // transfer
-
        if (vt->audio.type == 'u') // implied 8bit
        {
 	 if (vt->audio.channels == 2)
@@ -5174,9 +5172,9 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
           (((uint32_t)a10)*11*11*11*11*11*11*11*11*11*11) + \
           (((uint32_t)a11)*11*11*11*11*11*11*11*11*11*11*11))
 
-/* this doesn't hash strings uniquely - but if there is a collision
- * the compiler will tell use in the switch, since all the matching
- * strings are reduced to their integers at compile time
+/* this doesn't hash strings uniquely - but if there is a collision the
+ * compiler would tell us due to collisions in the switch, since all the
+ * matching strings are reduced to their integers at compile time
  */
 
   {
@@ -5333,6 +5331,10 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
 
     case STR('t','e','x','t',0,0,0,0,0,0,0,0):
     case 'x': command = SVGP_TEXT; *args = 100; break;
+
+
+    /* the following words in all caps map to integers 
+    */
 
     case STR('J','O','I','N','_','B','E','V','E','L',0,0):
     case STR('B','E','V','E','L',0, 0, 0, 0, 0, 0, 0):
@@ -6466,17 +6468,12 @@ void terminal_queue_pcm (int16_t sample_left, int16_t sample_right)
   pcm_queue[pcm_write_pos++]=sample_right;
 }
 
-
-
-
 float click_volume = 0.05;
 
 void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes);
-
 int mic_device = 0;   // when non 0 we have an active mic device
 
 const int cBias = 0x84;
-
 const int cClip = 32635;
 
 /*  https://jonathanhays.me/2018/11/14/mu-law-and-a-law-compression-tutorial/
@@ -6484,66 +6481,105 @@ const int cClip = 32635;
 
 static char MuLawCompressTable[256] =
 {
-     0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
-     4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
-     5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
-     5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
-     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
+   0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
+   4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+   5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+   5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+   6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+   6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+   6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+   6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+   7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+   7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+   7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+   7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+   7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+   7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+   7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+   7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
 };
 
 unsigned char LinearToMuLawSample(int16_t sample)
 {
-     int sign = (sample >> 8) & 0x80;
-     if (sign)
-          sample = (int16_t)-sample;
+  int sign = (sample >> 8) & 0x80;
 
-     if (sample > cClip)
-          sample = cClip;
+  if (sign)
+    sample = (int16_t)-sample;
 
-     sample = (int16_t)(sample + cBias);
+  if (sample > cClip)
+    sample = cClip;
 
-     int exponent = (int)MuLawCompressTable[(sample>>7) & 0xFF];
-     int mantissa = (sample >> (exponent+3)) & 0x0F;
+  sample = (int16_t)(sample + cBias);
 
-     int compressedByte = ~ (sign | (exponent << 4) | mantissa);
+  int exponent = (int)MuLawCompressTable[(sample>>7) & 0xFF];
+  int mantissa = (sample >> (exponent+3)) & 0x0F;
 
-     if (compressedByte == 0) /* we hide all 0's in audio data
-                                 it is the end-marker  */
-       compressedByte = 1;
-     return (unsigned char)compressedByte;
+  int compressedByte = ~ (sign | (exponent << 4) | mantissa);
+
+  if (compressedByte == 0) /* we hide all 0's in audio data
+                              it is the end-marker  */
+    compressedByte = 1;
+  return (unsigned char)compressedByte;
 }
 
 #define MIC_BUF_LEN 4096
 
 uint8_t mic_buf[MIC_BUF_LEN];
-int mic_buf_pos = 0;
+int     mic_buf_pos = 0;
 
 static void mic_callback(void*  userdata,
                          Uint8* stream,
                          int    len)
 {
+  MrgVT *vt = userdata;
   int16_t *sstream = (void*)stream;
+  int frames;
+  int channels = vt->audio.channels;
+ 
+  frames = len / 2 / channels;
 
-  for (int i = 0; i < len/2; i++)
+  if (vt->audio.bits == 8)
   {
-    mic_buf[mic_buf_pos++] = LinearToMuLawSample(sstream[i]);
-    if (mic_buf_pos >= MIC_BUF_LEN)
-      mic_buf_pos = 0;
+    if (vt->audio.type == 'u')
+    {
+      for (int i = 0; i < frames; i++)
+      {
+        for (int c = 0; c <  vt->audio.channels; c++)
+        {
+          mic_buf[mic_buf_pos++] = LinearToMuLawSample(sstream[i * channels + c]);
+          if (mic_buf_pos >= MIC_BUF_LEN - 4)
+            mic_buf_pos = 0;
+        }
+      }
+    }
+    else
+    {
+      for (int i = 0; i < frames; i++)
+      {
+        for (int c = 0; c <  vt->audio.channels; c++)
+        {
+          mic_buf[mic_buf_pos++] = (sstream[i * channels + c]) / 256;
+          if (mic_buf_pos >= MIC_BUF_LEN - 4)
+            mic_buf_pos = 0;
+        }
+      }
+    }
   }
+  else
+  {
+    for (int i = 0; i < frames; i++)
+    {
+      for (int c = 0; c <  vt->audio.channels; c++)
+      {
+        *((int16_t*)&mic_buf[mic_buf_pos]) = (sstream[i * channels + c]);
+        mic_buf_pos+=2;
 
+        if (mic_buf_pos >= MIC_BUF_LEN - 4)
+          mic_buf_pos = 0;
+      }
+    }
+  }
 }
-
 
 static long int ticks (void)
 {
@@ -6554,19 +6590,18 @@ static long int ticks (void)
 
 static long int silence_start = 0;
 
-
 static void sdl_audio_init ()
-      {
-        static int done = 0;
-	if (!done)
-	{
-        if (SDL_Init(SDL_INIT_AUDIO) < 0)
-        {
-          fprintf (stderr, "sdl audio init fail\n");
-        }
-        done = 1;
-	}
-      }
+{
+  static int done = 0;
+  if (!done)
+  {
+  if (SDL_Init(SDL_INIT_AUDIO) < 0)
+  {
+    fprintf (stderr, "sdl audio init fail\n");
+  }
+  done = 1;
+  }
+}
 
 void audio_task (MrgVT *vt, int click);
 void audio_task (MrgVT *vt, int click)
@@ -6588,7 +6623,7 @@ void audio_task (MrgVT *vt, int click)
        }
        else if (vt->audio.bits == 8 && vt->audio.type == 's')
        {
-         spec_want.format = AUDIO_S8;
+         spec_want.format = AUDIO_S16;
        }
        else if (vt->audio.bits == 16 && vt->audio.type == 's')
        {
@@ -6611,11 +6646,6 @@ void audio_task (MrgVT *vt, int click)
     if (mic_buf_pos)
     {
       SDL_LockAudioDevice (mic_device);
-      for (int i = 0; i<mic_buf_pos;i++)
-      {
-	if (mic_buf[i] == 0)
-	 mic_buf[i] = 1;
-      }
       ctx_vt_feed_audio (vt, &mic_buf[0], mic_buf_pos);
       mic_buf_pos = 0;
       SDL_UnlockAudioDevice (mic_device);
@@ -6899,12 +6929,17 @@ static const char *keymap_general[][2]={
 void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes)
 {
   char buf[256];
-  sprintf (buf, "\e[_A;f=%i;", bytes);
+  int frames = bytes / (vt->audio.bits/8) / vt->audio.channels;
+  sprintf (buf, "\e[_Af=%i;", frames);
   vt_write (vt, buf, strlen (buf));
-  vt_write (vt, samples, bytes);
+
+  char *encoded = malloc (bytes * 2);
+  vt_a85enc (samples, encoded, bytes);
+  vt_write (vt, encoded, strlen(encoded));
+  free (encoded);
+  //vt_write (vt, samples, bytes);
   buf[0]='\e';
   buf[1]='\\';
-  buf[2]='\0';
   vt_write (vt, buf, 2);
 }
 
