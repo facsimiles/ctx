@@ -106,7 +106,6 @@ static void vt_state_esc_sequence (MrgVT *vt, int byte);
 static void vt_state_esc_foo      (MrgVT *vt, int byte);
 static void vt_state_swallow      (MrgVT *vt, int byte);
 static void vt_state_svgp         (MrgVT *vt, int byte);
-static void vt_state_pcm          (MrgVT *vt, int byte);
 static void vt_state_vt52         (MrgVT *vt, int byte);
 
 /* barebones linked list */
@@ -2317,9 +2316,10 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
      case 1049:
            is_set = vt->in_alt_screen;
 	   break;
-
+#if 0
      case 4444:/*MODE;Audio;On;;*/
            is_set = (vt->state == vt_state_pcm);
+#endif
 	   break;
      case 7020:/*MODE;Ctx ascii;On;;*/
            is_set = (vt->state == vt_state_svgp);
@@ -4026,6 +4026,7 @@ int vt_a85dec (const char *src, char *dst, int count)
       for (int j = 0; j < 4; j++)
         dst[out_len++] = 0;
       k = 0;
+      val = 0; // probably not needed
     }
     else
     {
@@ -4076,12 +4077,31 @@ int vt_a85len (const char *src, int count)
       break;
     else if (src[i] == 'z')
     {
+      out_len+=4;
       k = 0;
+    }
+    else
+    {
+      if (k % 5 == 4)
+      {
+         for (int j = 0; j < 4; j++)
+         {
+	   out_len++;
+         }
+      }
     }
   }
   k = k % 5;
   if (k)
   {
+    for (int j = k; j < 4; j++)
+    {
+    }
+
+    for (int j = 0; j < 4; j++)
+    {
+      out_len++;
+    }
     out_len -= (5-k);
   }
   return out_len;
@@ -4231,7 +4251,6 @@ void terminal_queue_pcm (int16_t sample_left, int16_t sample_right);
 
 void vt_audio (MrgVT *vt, const char *command)
 {
-  //fprintf (stderr, "{%s}", command);
   // the simplest form of audio is raw audio
   // _As=8000,c=2,b=8,e=u
   //
@@ -4353,6 +4372,8 @@ void vt_audio (MrgVT *vt, const char *command)
     }
   }
   
+  if (vt->audio.frames ||  vt->audio.action != 'd')
+  {
   payload = &command[pos+1];
 
   // accumulate incoming data
@@ -4373,7 +4394,6 @@ void vt_audio (MrgVT *vt, const char *command)
      vt->audio.data[vt->audio.data_size]=0;
   }
 
-  {
     if (vt->audio.transmission != 'd') /* */
     {
       char buf[256];
@@ -4390,6 +4410,8 @@ void vt_audio (MrgVT *vt, const char *command)
       case 'a':
       {
         int bin_length = vt->audio.data_size;
+	if (bin_length)
+	{
         uint8_t *data2 = malloc ((unsigned int)vt_a85len ((char*)vt->audio.data, vt->audio.data_size));
         bin_length = vt_a85dec ((char*)vt->audio.data,
                                 (void*)data2,
@@ -4397,6 +4419,7 @@ void vt_audio (MrgVT *vt, const char *command)
         memcpy (vt->audio.data, data2, bin_length + 1);
         vt->audio.data_size = bin_length;
         free (data2);
+	}
       }
       break;
 
@@ -4413,6 +4436,39 @@ void vt_audio (MrgVT *vt, const char *command)
       }
       break;
     }
+
+    switch (vt->audio.compression)
+    {
+      case 'z':
+    {
+	    // XXX  :  relying on user provided input on size here
+	    //         look into making this safer
+            //vt->gfx.buf_size)
+      unsigned long actual_uncompressed_size = vt->audio.frames * vt->audio.bits/8 * vt->audio.channels;
+      unsigned char *data2 = malloc (actual_uncompressed_size);
+      /* if a buf size is set (rather compression, but
+       * this works first..) then */
+      int z_result = uncompress (data2, &actual_uncompressed_size,
+                                 vt->audio.data,
+                                 vt->audio.data_size);
+      if (z_result != Z_OK)
+      {
+        char buf[256]= "\e_Ao=z;zlib error\e\\";
+        vt_write (vt, buf, strlen(buf));
+        goto cleanup;
+      }
+      free (vt->audio.data);
+      vt->audio.data = data2;
+      vt->audio.data_size = actual_uncompressed_size;
+    }
+
+	break;
+      case 'o':
+	break;
+      default:
+	break;
+    }
+
     if (vt->audio.frames)
     {
       // implicit buf_size
@@ -4530,13 +4586,13 @@ void vt_audio (MrgVT *vt, const char *command)
        }
       break;
   }
+  }
 
 cleanup:
     if (vt->audio.data)
       free (vt->audio.data);
     vt->audio.data = NULL;
     vt->audio.data_size=0;
-  }
 }
 
 /* the function shared by sixels, kitty mode and iterm2 mode for
@@ -5961,6 +6017,7 @@ static void vt_state_svgp (MrgVT *vt, int byte)
     }
 }
 
+#if 0
 static void vt_state_pcm (MrgVT *vt, int byte)
 {
   if (byte == 0x00) // byte value 0 terminates - replace
@@ -5973,6 +6030,7 @@ static void vt_state_pcm (MrgVT *vt, int byte)
                         MuLawDecompressTable[byte]);
   }
 }
+#endif
 
 static int vt_decoder_feed (MrgVT *vt, int byte)
 {
@@ -6522,21 +6580,21 @@ unsigned char LinearToMuLawSample(int16_t sample)
   return (unsigned char)compressedByte;
 }
 
-#define MIC_BUF_LEN 4096
+#define MIC_BUF_LEN 8192
 
 uint8_t mic_buf[MIC_BUF_LEN];
 int     mic_buf_pos = 0;
 
-static void mic_callback(void*  userdata,
-                         Uint8* stream,
-                         int    len)
+static void mic_callback(void*     userdata,
+                         uint8_t * stream,
+                         int       len)
 {
   MrgVT *vt = userdata;
   int16_t *sstream = (void*)stream;
   int frames;
   int channels = vt->audio.channels;
  
-  frames = len / 2 / channels;
+  frames = len / 2;
 
   if (vt->audio.bits == 8)
   {
@@ -6544,9 +6602,9 @@ static void mic_callback(void*  userdata,
     {
       for (int i = 0; i < frames; i++)
       {
-        for (int c = 0; c <  vt->audio.channels; c++)
+        for (int c = 0; c < channels; c++)
         {
-          mic_buf[mic_buf_pos++] = LinearToMuLawSample(sstream[i * channels + c]);
+          mic_buf[mic_buf_pos++] = LinearToMuLawSample (sstream[i]);
           if (mic_buf_pos >= MIC_BUF_LEN - 4)
             mic_buf_pos = 0;
         }
@@ -6558,7 +6616,7 @@ static void mic_callback(void*  userdata,
       {
         for (int c = 0; c <  vt->audio.channels; c++)
         {
-          mic_buf[mic_buf_pos++] = (sstream[i * channels + c]) / 256;
+          mic_buf[mic_buf_pos++] = (sstream[i]) / 256;
           if (mic_buf_pos >= MIC_BUF_LEN - 4)
             mic_buf_pos = 0;
         }
@@ -6571,7 +6629,7 @@ static void mic_callback(void*  userdata,
     {
       for (int c = 0; c <  vt->audio.channels; c++)
       {
-        *((int16_t*)&mic_buf[mic_buf_pos]) = (sstream[i * channels + c]);
+        *((int16_t*)&mic_buf[mic_buf_pos]) = (sstream[i]);
         mic_buf_pos+=2;
 
         if (mic_buf_pos >= MIC_BUF_LEN - 4)
@@ -6611,34 +6669,16 @@ void audio_task (MrgVT *vt, int click)
   {
     if (mic_device == 0)
     {
-     SDL_AudioSpec spec_want, spec_have;
+      SDL_AudioSpec spec_want, spec_got;
+      sdl_audio_init ();
 
-     sdl_audio_init ();
-
-       spec_want.freq = vt->audio.samplerate;
-       spec_want.channels = vt->audio.channels;
-       if (vt->audio.bits == 8 && vt->audio.type == 'u')
-       {
-         spec_want.format = AUDIO_S16;
-       }
-       else if (vt->audio.bits == 8 && vt->audio.type == 's')
-       {
-         spec_want.format = AUDIO_S16;
-       }
-       else if (vt->audio.bits == 16 && vt->audio.type == 's')
-       {
-         spec_want.format = AUDIO_S16;
-       }
-       else
-       {
-         spec_want.format = AUDIO_S16; // XXX  : error
-       }
-
-      spec_want.samples = AUDIO_CHUNK_SIZE;
+      spec_want.freq     = vt->audio.samplerate;
+      spec_want.channels = 1;
+      spec_want.format   = AUDIO_S16;
+      spec_want.samples  = AUDIO_CHUNK_SIZE;
       spec_want.callback = mic_callback;
       spec_want.userdata = vt;
-      mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_have, 0);
-      fprintf (stderr, "mic rate:%i\n", spec_have.freq);
+      mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_got, 0);
 
       SDL_PauseAudioDevice(mic_device, 0);
     }
@@ -6671,7 +6711,7 @@ void audio_task (MrgVT *vt, int click)
   {
     if (speaker_device == 0)
     {
-      SDL_AudioSpec spec_want, spec_have;
+      SDL_AudioSpec spec_want, spec_got;
       sdl_audio_init ();
 
        spec_want.freq = vt->audio.samplerate;
@@ -6706,11 +6746,10 @@ void audio_task (MrgVT *vt, int click)
       spec_want.callback = NULL;
 
 
-      speaker_device = SDL_OpenAudioDevice (NULL, 0, &spec_want, &spec_have, 0);
+      speaker_device = SDL_OpenAudioDevice (NULL, 0, &spec_want, &spec_got, 0);
       if (!speaker_device){
         fprintf (stderr, "sdl openaudiodevice fail\n");
       }
-      fprintf (stderr, "speaker rate:%i\n", spec_have.freq);
       SDL_PauseAudioDevice (speaker_device, 0);
     }
 
@@ -6728,7 +6767,6 @@ void audio_task (MrgVT *vt, int click)
     }
   }
 }
-
 
 int ctx_vt_poll (MrgVT *vt, int timeout)
 {
@@ -6933,13 +6971,27 @@ void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes)
   sprintf (buf, "\e[_Af=%i;", frames);
   vt_write (vt, buf, strlen (buf));
 
+  // compress
+
   char *encoded = malloc (bytes * 2);
-  vt_a85enc (samples, encoded, bytes);
+  encoded[0]=0;
+  if (vt->audio.encoding == 'a')
+  {
+    //strcpy (samples, "fnord fnord fnord");
+    //int len =
+    vt_a85enc (samples, encoded, bytes);
+  }
+  else /* if (vt->audio.encoding == 'b')  */
+  {
+    vt_bin2base64 (samples, bytes, encoded);
+  }
   vt_write (vt, encoded, strlen(encoded));
   free (encoded);
+
   //vt_write (vt, samples, bytes);
   buf[0]='\e';
   buf[1]='\\';
+  buf[2]=0;
   vt_write (vt, buf, 2);
 }
 

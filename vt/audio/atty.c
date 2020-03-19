@@ -256,8 +256,8 @@ void atty_status (void)
 void atty_mic (void);
 void atty_speaker (void)
 {
-  char audio_packet[4096];
-  char audio_packet_a85[4096 * 2];
+  char audio_packet[4096 * 4];
+  char audio_packet_a85[4096 * 8];
   int  len = 0;
 
   signal (SIGINT, signal_int_speaker);
@@ -278,8 +278,10 @@ void atty_speaker (void)
 
     if (len >  buffer_samples)
     {
-      fwrite ("\033_A;",1, 4, stdout);
-      vt_a85enc (audio_packet, audio_packet_a85, len);
+      fprintf (stdout, "\033_Af=%i;", len / channels / (bits/8));
+
+      int new_len = vt_a85enc (audio_packet, audio_packet_a85, len);
+      audio_packet_a85[new_len]=0;
       fwrite (audio_packet_a85, 1, strlen (audio_packet_a85), stdout);
       fwrite ("\e\\", 1, 2, stdout);
       fflush (stdout);
@@ -592,12 +594,14 @@ static int iterate (int timeoutms)
       else if (buf[0] == '\\' &&
 	       in_audio_data == 2)
       {
-
 	if (encoding == 'a')
 	{
-	  int len = vt_a85dec (audio_packet, audio_packet, audio_packet_pos);
-	  fwrite (audio_packet, 1, len, stdout);
+          //fprintf (stderr, "[%c%c%c]", audio_packet[0], audio_packet[1], audio_packet[2]);
+          char *temp = malloc (audio_packet_pos);
+	  int len = vt_a85dec (audio_packet, temp, audio_packet_pos);
+	  fwrite (temp, 1, len, stdout);
 	  fflush (stdout);
+	  free (temp);
 	}
 	else
 	if (encoding == 'b')
@@ -616,23 +620,13 @@ static int iterate (int timeoutms)
 	in_audio_data = 0;
 	return 1;
       }
-#if 0
-      else if (buf[0] == 0)
-      {
-	in_audio_data = 0;
-	return 1;
-      }
-#endif
       else
       {
 	in_audio_data = 1;
         audio_packet[audio_packet_pos++] = buf[0];
 	if (audio_packet_pos > 65535) audio_packet_pos = 65535;
-	//fprintf (stdout, "%c", buf[0]);
-        //fflush (stdout);
       }
     }
-    //fflush (stdout);
     return 1;
   }
 
@@ -646,11 +640,12 @@ static int iterate (int timeoutms)
 	 else if (!strncmp ((void*)buf, "\033_A", MIN(length+1,3)))
          {
            int semis = 0;
-           while (semis < 2 && read (STDIN_FILENO, &buf[0], 1) != -1)
+           while (semis < 1 && read (STDIN_FILENO, &buf[0], 1) != -1)
 	   {
 	     if (buf[0] == ';') semis ++;
 	   }
 	   in_audio_data = 1;
+	   return 1;
          }
       }
   return 1;
