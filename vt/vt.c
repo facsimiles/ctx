@@ -6574,9 +6574,9 @@ unsigned char LinearToMuLawSample(int16_t sample)
 
   int compressedByte = ~ (sign | (exponent << 4) | mantissa);
 
-  if (compressedByte == 0) /* we hide all 0's in audio data
-                              it is the end-marker  */
-    compressedByte = 1;
+  //if (compressedByte == 0) /* we hide all 0's in audio data
+  //                            it is the end-marker  */
+  //  compressedByte = 1;
   return (unsigned char)compressedByte;
 }
 
@@ -6593,6 +6593,8 @@ static void mic_callback(void*     userdata,
   int16_t *sstream = (void*)stream;
   int frames;
   int channels = vt->audio.channels;
+
+//  fprintf (stderr, "[%d %d %d %d]", sstream[0], sstream[1], sstream[2], sstream[3]);
  
   frames = len / 2;
 
@@ -6686,7 +6688,7 @@ void audio_task (MrgVT *vt, int click)
     if (mic_buf_pos)
     {
       SDL_LockAudioDevice (mic_device);
-      ctx_vt_feed_audio (vt, &mic_buf[0], mic_buf_pos);
+      ctx_vt_feed_audio (vt, mic_buf, mic_buf_pos);
       mic_buf_pos = 0;
       SDL_UnlockAudioDevice (mic_device);
     }
