@@ -1,3 +1,6 @@
+#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -5,10 +8,12 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <termios.h>
+#include <pty.h>
 
 int vt_a85enc (const void *srcp, char *dst, int count);
 int vt_a85dec (const char *src, char *dst, int count);
@@ -51,6 +56,10 @@ typedef struct _MrgVT MrgVT;
 struct _MrgVT {
   char     *title;
   void    (*state)(MrgVT *vt, int byte);
+  int       rows;
+  int       cols;
+  int       cw;
+  int       ch;
   int       bell;
   int       in_alt_screen;
   int       saved_line_count;
@@ -156,7 +165,7 @@ static long int atty_ticks (void)
   return tp.tv_sec * 1000 + tp.tv_usec / 1000;
 }
 
-char buf[2];
+static unsigned char buf[BUFSIZ];
 
 void
 signal_int_speaker (int signum)
@@ -896,9 +905,518 @@ vt_base642bin (const char    *ascii,
 
 
 
-int atty_engine (void)
+
+
+#include <unistd.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int   do_quit      = 0;
+
+static pid_t vt_child;
+static MrgVT *vt = NULL;
+
+void
+signal_child (int signum)
 {
+  pid_t pid;
+  int   status;
+  while ((pid = waitpid(-1, &status, WNOHANG)) != -1)
+    {
+      if (pid)
+      {
+      if (pid == vt_child)
+      {
+	exit(0);
+        do_quit = 1;
+        return;
+      }
+      else
+      {
+        fprintf (stderr, "child signal ? %i %i\n", pid, vt_child);
+      }
+    }
+    }
+}
+
+
+void terminal_set_title (const char *new_title)
+{
+#if USE_SDL
+   SDL_SetWindowTitle (window, new_title);
+#elif USE_MMM
+   mmm_set_title (mmm, new_title);
+#endif
+}
+
+const char *ctx_vt_find_shell_command (void)
+{
+  int i;
+  const char *command = NULL;
+  struct stat stat_buf;
+  static char *alts[][2] ={
+    {"/bin/bash",     "/bin/bash -i"},
+    {"/usr/bin/bash", "/usr/bin/bash -i"},
+    {"/bin/sh",       "/bin/sh -i"},
+    {"/usr/bin/sh",   "/usr/bin/sh -i"},
+    {NULL, NULL}
+  };
+  for (i = 0; alts[i][0] && !command; i++)
+  {
+    lstat (alts[i][0], &stat_buf);
+    if (S_ISREG(stat_buf.st_mode) || S_ISLNK(stat_buf.st_mode))
+      command = alts[i][1];
+  }
+  return command;
+}
+
+static void vt_state_neutral      (MrgVT *vt, int byte);
+static void vt_state_esc          (MrgVT *vt, int byte);
+static void vt_state_osc          (MrgVT *vt, int byte);
+static void vt_state_apc          (MrgVT *vt, int byte);
+static void vt_state_apc_generic  (MrgVT *vt, int byte);
+static void vt_state_sixel        (MrgVT *vt, int byte);
+static void vt_state_esc_sequence (MrgVT *vt, int byte);
+static void vt_state_esc_foo      (MrgVT *vt, int byte);
+static void vt_state_swallow      (MrgVT *vt, int byte);
+static void vt_state_svgp         (MrgVT *vt, int byte);
+static void vt_state_vt52         (MrgVT *vt, int byte);
+
+void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
+{
+#if 0
+  VtPty *vtpty = data;
+  struct winsize ws;
+
+  ws.ws_row = rows;
+  ws.ws_col = cols;
+  ws.ws_xpixel = px_width;
+  ws.ws_ypixel = px_height;
+  ioctl(vtpty->pty, TIOCSWINSZ, &ws);
+#endif
+}
+
+static ssize_t vtpty_write (void *data, const void *buf, size_t count)
+{
+  VtPty *vtpty = data;
+  return write (vtpty->pty, buf, count);
+}
+
+static ssize_t vtpty_read (void  *data, void *buf, size_t count)
+{
+  VtPty *vtpty = data;
+  return read (vtpty->pty, buf, count);
+}
+
+static int vtpty_waitdata (void  *data, int timeout)
+{
+  VtPty *vtpty = data;
+  struct timeval tv;
+  fd_set fdset;
+  FD_ZERO (&fdset);
+  FD_SET(vtpty->pty, &fdset);
+
+  tv.tv_sec = 0;
+  tv.tv_usec = timeout;
+  tv.tv_sec  = timeout / 1000000;
+  tv.tv_usec = timeout % 1000000;
+
+  if (select (vtpty->pty+1, &fdset, NULL, NULL, &tv) == -1){
+    perror("select");
+    return 0;
+  }
+  if (FD_ISSET(vtpty->pty, &fdset))
+  {
+    return 1;
+  }
   return 0;
 }
 
+static void ctx_vt_run_command (MrgVT *vt, const char *command)
+{
+  struct winsize ws;
+
+  static int reaper_started = 0;
+  if (!reaper_started)
+  {
+    reaper_started = 1;
+    signal (SIGCHLD, signal_child);
+  }
+
+  ws.ws_row = vt->rows;
+  ws.ws_col = vt->cols;
+  ws.ws_xpixel = ws.ws_col * vt->cw;
+  ws.ws_ypixel = ws.ws_row * vt->ch;
+
+  vt->vtpty.pid = forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
+  if (vt->vtpty.pid == 0)
+  {
+    int i;
+    for (i = 3; i<768;i++)close(i);/*hack, trying to close xcb */
+    unsetenv ("TERM");
+    unsetenv ("COLUMNS");
+    unsetenv ("LINES");
+    unsetenv ("TERMCAP");
+    unsetenv ("COLOR_TERM");
+    unsetenv ("COLORTERM");
+    unsetenv ("VTE_VERSION");
+    //setenv ("TERM", "ansi", 1);
+    //setenv ("TERM", "vt102", 1);
+    //setenv ("TERM", "vt100", 1);
+    //setenv ("TERM", "xterm", 1);
+    setenv ("TERM", "xterm-256color", 1);
+    setenv ("COLORTERM", "truecolor", 1);
+    vt->result = system (command);
+    exit(0);
+  }
+  else if (vt->vtpty.pid < 0)
+  {
+    //VT_error ("forkpty failed (%s)", command);
+    fprintf (stderr, "forkpty failed\n");
+  }
+  //fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
+}
+
+static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
+{
+  vt->audio.bits = 8;
+  vt->audio.channels = 1;
+  vt->audio.type = 'u';
+  vt->audio.samplerate = 8000;
+  vt->audio.encoding = 'a';
+  vt->audio.compression = '0';
+  vt->audio.mic = 0;
+}
+
+
+MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
+{
+  MrgVT *vt         = calloc (sizeof (MrgVT), 1);
+  vt->state         = vt_state_neutral;
+  vt->waitdata      = vtpty_waitdata;
+  vt->read          = vtpty_read;
+  vt->write         = vtpty_write;
+  vt->resize        = vtpty_resize;
+
+  vt->argument_buf_len   = 0;
+  vt->argument_buf_cap   = 64;
+  vt->argument_buf       = malloc (vt->argument_buf_cap);
+  vt->argument_buf[0]    = 0;
+  vt->done               = 0;
+  vt->result             = -1;
+
+  if (command)
+  {
+    ctx_vt_run_command (vt, command);
+  }
+
+  if (cols <= 0) cols = 80;
+  if (rows <= 0) cols = 24;
+
+  //ctx_vt_set_term_size (vt, cols, rows);
+
+  vtcmd_reset_to_initial_state (vt, NULL);
+
+  return vt;
+}
+
+int ctx_vt_poll (MrgVT *vt, int timeout)
+{
+  int read_size = sizeof(buf);
+  int got_data = 0;
+  int remaining_chars = 1024 * 1024;
+  int len = 0;
+    audio_task (vt, 0);
+
+
+  while (has_data (STDIN_FILENO, 10))
+  {
+    uint8_t c;
+    read (STDIN_FILENO, &c, (size_t)1);
+    vt_write (vt, &c, 1);
+  }
+
+  read_size = MIN(read_size, remaining_chars);
+  while (timeout > 100 &&
+	 remaining_chars > 0 &&
+	 vt_waitdata (vt, timeout))
+  {
+    len = vt_read (vt, buf, read_size);
+    for (int i = 0; i < len; i++)
+      vt->state (vt, buf[i]);
+    got_data+=len;
+    remaining_chars -= len;
+    timeout -= 10;
+    audio_task (vt, 0);
+  }
+  fflush (NULL);
+  return got_data;
+}
+
+void ctx_vt_destroy (MrgVT *vt)
+{
+  free (vt->argument_buf);
+
+  kill (vt->vtpty.pid, 9);
+  close (vt->vtpty.pty);
+  free (vt);
+}
+
+int atty_engine (void)
+{
+  const char *shell = NULL;
+  _nc_raw ();
+  setsid();
+  vt = ctx_vt_new (shell?shell:ctx_vt_find_shell_command(), 80, 24, 14, 1.0);
+
+  int sleep_time = 2500;
+  long drawn_rev = 0;
+
+  vt_child = vt->vtpty.pid;
+  signal (SIGCHLD, signal_child);
+  while(!do_quit)
+  {
+    ctx_vt_poll (vt, sleep_time);
+  }
+  ctx_vt_destroy (vt);
+  _nc_noraw ();
+  return 0;
+}
+
+static void ctx_vt_argument_buf_reset (MrgVT *vt, const char *start)
+{
+  if (start)
+  {
+    strcpy (vt->argument_buf, start);
+    vt->argument_buf_len = strlen (start);
+  }
+  else
+    vt->argument_buf[vt->argument_buf_len=0]=0;
+}
+
+static inline void ctx_vt_argument_buf_add (MrgVT *vt, int ch)
+{
+  if (vt->argument_buf_len + 1 >= 1024 * 1024 * 2)
+    return; // XXX : perhaps we should bail at 1mb + 1kb ?
+            //       
+  if (vt->argument_buf_len + 1 >=
+      vt->argument_buf_cap)
+  {
+    vt->argument_buf_cap = vt->argument_buf_cap * 1.5;
+    vt->argument_buf = realloc (vt->argument_buf, vt->argument_buf_cap);
+  }
+
+  vt->argument_buf[vt->argument_buf_len] = ch;
+  vt->argument_buf[++vt->argument_buf_len] = 0;
+}
+
+static void vt_state_swallow (MrgVT *vt, int byte)
+{
+  vt->state = vt_state_neutral;
+}
+
+static void vt_state_apc_audio (MrgVT *vt, int byte)
+{
+  if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
+  {
+    vt_audio (vt, vt->argument_buf);
+
+    vt->state = ((byte == 27) ?  vt_state_swallow : vt_state_neutral);
+  }
+  else
+  {
+    ctx_vt_argument_buf_add (vt, byte);
+  }
+}
+
+
+static void vt_state_apc_generic (MrgVT *vt, int byte)
+{
+  if ((byte < 32) && ((byte < 8) || (byte > 13)))
+  {
+    vt->state = ((byte == 27) ?  vt_state_swallow : vt_state_neutral);
+  }
+  else
+  {
+    ctx_vt_argument_buf_add (vt, byte);
+  }
+}
+
+static void vt_state_apc (MrgVT *vt, int byte)
+{
+  if (byte == 'A')
+  {
+    ctx_vt_argument_buf_add (vt, byte);
+    vt->state = vt_state_apc_audio;
+  }
+  else if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
+  {
+    vt->state = ((byte == 27) ?  vt_state_swallow : vt_state_neutral);
+  }
+  else
+  {
+    ctx_vt_argument_buf_add (vt, byte);
+    vt->state = vt_state_apc_generic;
+  }
+}
+
+static void handle_sequence (MrgVT *vt, const char *sequence)
+{
+  printf ("\e%s", sequence);
+}
+
+static void vt_state_esc_foo (MrgVT *vt, int byte)
+{
+  ctx_vt_argument_buf_add (vt, byte);
+  vt->state = vt_state_neutral;
+  handle_sequence (vt, vt->argument_buf);
+}
+
+static void vt_state_esc_sequence (MrgVT *vt, int byte)
+{
+  if (byte < ' ' && byte != 27)
+  {
+    printf ("%c", byte);
+  }
+  else
+  {
+    if (byte == 27)
+    {
+    }
+    else if (byte >= '@' && byte <= '~')
+    {
+      ctx_vt_argument_buf_add (vt, byte);
+      vt->state = vt_state_neutral;
+      handle_sequence (vt, vt->argument_buf);
+    }
+    else
+    {
+      ctx_vt_argument_buf_add (vt, byte);
+    }
+  }
+}
+
+static inline int parse_int (const char *arg, int def_val)
+{
+  if (!isdigit (arg[1]) || strlen (arg) == 2)
+    return def_val;
+  return atoi (arg+1);
+}
+
+
+static void vt_state_osc (MrgVT *vt, int byte)
+{
+      // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
+      // and in "\e\" rather than just "\e", this would cause
+      // a stray char
+      //if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
+      if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
+      {
+          int n = parse_int (vt->argument_buf, 0);
+          switch (n)
+          {
+          case 0:
+        //  ctx_vt_set_title (vt, vt->argument_buf + 3);
+	    break;
+          default:
+	    fprintf (stderr, "unhandled OSC %i\n", n);
+            break;
+          }
+
+        if (byte == 27)
+	{
+	  vt->state = vt_state_swallow;
+	}
+        else
+	{
+	  vt->state = vt_state_neutral;
+	}
+      }
+      else
+      {
+        ctx_vt_argument_buf_add (vt, byte);
+      }
+}
+
+
+static void vt_state_esc (MrgVT *vt, int byte)
+{
+  if (byte < ' ' && byte != 27)
+  {
+    printf ("%c", byte);
+  }
+  else
+  switch (byte)
+  {
+    case 27: /* ESCape */
+            printf ("%c", byte);
+            break;
+    case ')':
+    case '#':
+    case '(':
+      {
+        char tmp[]={byte, '\0'};
+        ctx_vt_argument_buf_reset(vt, tmp);
+        vt->state = vt_state_esc_foo;
+      }
+      break;
+    case '[':
+    case '%':
+    case '+':
+    case '*':
+      {
+        char tmp[]={byte, '\0'};
+        ctx_vt_argument_buf_reset(vt, tmp);
+        vt->state = vt_state_esc_sequence;
+      }
+      break;
+    case ']':
+      {
+        char tmp[]={byte, '\0'};
+        ctx_vt_argument_buf_reset(vt, tmp);
+        vt->state = vt_state_osc;
+      }
+      break;
+    case '^':  // privacy message 
+    case '_':  // APC
+      {
+        char tmp[]={byte, '\0'};
+        ctx_vt_argument_buf_reset(vt, tmp);
+        vt->state = vt_state_apc;
+      }
+      break;
+    default:
+      {
+        char tmp[]={byte, '\0'};
+        tmp[0]=byte;
+        vt->state = vt_state_neutral;
+        handle_sequence (vt, tmp);
+      }
+      break;
+  }
+}
+
+
+static void vt_state_neutral (MrgVT *vt, int byte)
+{
+  if (byte < ' ' && byte != 27)
+  {
+    printf ("%c", byte);
+  }
+  else
+  switch (byte)
+  {
+    case 27: /* ESCape */
+      vt->state = vt_state_esc;
+      break;
+    default:
+      printf ("%c", byte);
+      break;
+  }
+}
 
