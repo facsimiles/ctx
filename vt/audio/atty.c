@@ -1031,6 +1031,16 @@ static int vtpty_waitdata (void  *data, int timeout)
   return 0;
 }
 
+static void vt_resize (int sig)
+{
+  struct winsize ws;
+  if (!vt->vtpty.pty)
+    return;
+  if (ioctl (STDOUT_FILENO, TIOCGWINSZ, &ws) == -1)
+    return;
+  ioctl (vt->vtpty.pty, TIOCGWINSZ, &ws);
+}
+
 static void ctx_vt_run_command (MrgVT *vt, const char *command)
 {
   struct winsize ws;
@@ -1042,10 +1052,8 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
     signal (SIGCHLD, signal_child);
   }
 
-  ws.ws_row = vt->rows;
-  ws.ws_col = vt->cols;
-  ws.ws_xpixel = ws.ws_col * vt->cw;
-  ws.ws_ypixel = ws.ws_row * vt->ch;
+  ioctl (STDOUT_FILENO, TIOCGWINSZ, &ws);
+  signal (SIGWINCH, vt_resize);
 
   vt->vtpty.pid = forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
   if (vt->vtpty.pid == 0)
