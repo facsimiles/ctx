@@ -307,13 +307,13 @@ typedef struct AudioState {
   int bits;       // 8
   int type;       // 'u'    u-law  f-loat  s-igned u-nsigned
 
-  int record;     // <- should 
+  int mic;        // <- should 
                   //    request permisson,
                   //    and if gotten, start streaming
                   //    audio packets in the incoming direction
-  int encoding;
-  int compression;
-  int transmission;
+  int encoding;   // 'a' ascci85 'b' base64
+  int compression; // unused for now, z zlib o opus
+  int transmission; // remove?
 
   int buf_size;
   int frames; // should be derived from data_size
@@ -362,7 +362,7 @@ struct _MrgVT {
   int       leds[4];
   uint64_t  cstyle;
 
-  int       mic; // whether to produce mic events
+  //int       mic; // whether to produce mic events
 
   uint8_t   fg_color[3];
   uint8_t   bg_color[3];
@@ -445,7 +445,7 @@ struct _MrgVT {
 
 #define MAX_ARGUMENT_BUF_LEN (8192 + 16)
 
-  char       *argument_buf;//[MAX_ARGUMENT_BUF_LEN];
+  char       *argument_buf;
   int        argument_buf_len;
   int        argument_buf_cap;
   uint8_t    tabs[MAX_COLS];
@@ -479,11 +479,6 @@ struct _MrgVT {
   GfxState   gfx;
   AudioState audio;
 };
-
-int ctx_vt_mic (MrgVT *vt)
-{
-  return vt->mic;
-}
 
 /* on current line */
 static int vt_col_to_pos (MrgVT *vt, int col)
@@ -817,7 +812,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->audio.samplerate = 8000;
   vt->audio.encoding = 'a';
   vt->audio.compression = '0';
-  vt->mic = 0;
+  vt->audio.mic = 0;
 }
 
 void ctx_vt_set_font_size (MrgVT *vt, float font_size)
@@ -4309,13 +4304,7 @@ void vt_audio (MrgVT *vt, const char *command)
       case 'o': vt->audio.compression = value; configure = 1; break;
       case 't': vt->audio.transmission = value; configure = 1; break;
       case 'm': 
-        if (value == 0)
-	{
-	  vt->mic = 0;
-	}
-	else {
-	  vt->mic = 1;
-	}
+	vt->audio.mic = value?1:0;
 	break;
     }
 
@@ -6322,14 +6311,7 @@ static void vt_state_apc_audio (MrgVT *vt, int byte)
   {
     vt_audio (vt, vt->argument_buf);
 
-    if (byte == 27)
-    {
-      vt->state = vt_state_swallow;
-    }
-    else
-    {
-      vt->state = vt_state_neutral;
-    }
+    vt->state = ((byte == 27) ?  vt_state_swallow : vt_state_neutral);
   }
   else
   {
@@ -6339,31 +6321,26 @@ static void vt_state_apc_audio (MrgVT *vt, int byte)
 
 static void vt_state_apc_generic (MrgVT *vt, int byte)
 {
-      if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
-      {
-        if (vt->argument_buf[1] == 'G') /* graphics - from kitty */
-        {
-          vt_gfx (vt, vt->argument_buf); /* audio */
-        } else if (vt->argument_buf[1] == 'A')
-        {
-          vt_audio (vt, vt->argument_buf);
-        }
+  if ((byte < 32) && ((byte < 8) || (byte > 13)))
+  {
+    if (vt->argument_buf[1] == 'G') /* graphics - from kitty */
+    {
+      vt_gfx (vt, vt->argument_buf);
+    }
+#if 0  // handled in own function
+    else if (vt->argument_buf[1] == 'A')
+    {
+      vt_audio (vt, vt->argument_buf);
+    }
+#endif
 
-        if (byte == 27)
-	{
-	  vt->state = vt_state_swallow;
-	}
-        else
-	{
-	  vt->state = vt_state_neutral;
-	}
-      }
-      else
-      {
-        ctx_vt_argument_buf_add (vt, byte);
-      }
+    vt->state = ((byte == 27) ?  vt_state_swallow : vt_state_neutral);
+  }
+  else
+  {
+    ctx_vt_argument_buf_add (vt, byte);
+  }
 }
-
 
 static void vt_state_apc (MrgVT *vt, int byte)
 {
@@ -6374,14 +6351,7 @@ static void vt_state_apc (MrgVT *vt, int byte)
   }
   else if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
   {
-    if (byte == 27)
-    {
-      vt->state = vt_state_swallow;
-    }
-    else
-    {
-      vt->state = vt_state_neutral;
-    }
+    vt->state = ((byte == 27) ?  vt_state_swallow : vt_state_neutral);
   }
   else
   {
@@ -6457,7 +6427,7 @@ static void vt_state_esc (MrgVT *vt, int byte)
         vt->state = vt_state_osc;
       }
       break;
-    case '^':  // actually privacy message
+    case '^':  // privacy message 
     case '_':  // APC
       {
         char tmp[]={byte, '\0'};
@@ -6701,7 +6671,7 @@ void audio_task (MrgVT *vt, int click);
 void audio_task (MrgVT *vt, int click)
 {
 
-  if (ctx_vt_mic (vt))
+  if (vt->audio.mic)
   {
     if (mic_device == 0)
     {
