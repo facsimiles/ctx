@@ -6977,14 +6977,15 @@ void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes)
   sprintf (buf, "\e[_Af=%i;", frames);
   vt_write (vt, buf, strlen (buf));
 
-  // compress
+  if (vt->audio.compression == 'z')
+  {
+    // compress
+  }
 
   char *encoded = malloc (bytes * 2);
   encoded[0]=0;
   if (vt->audio.encoding == 'a')
   {
-    //strcpy (samples, "fnord fnord fnord");
-    //int len =
     vt_a85enc (samples, encoded, bytes);
   }
   else /* if (vt->audio.encoding == 'b')  */
@@ -8154,7 +8155,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
      if (bold)
      {
        bg_intensity =           2;
-       fg_intensity = blink?1:  3;
+       fg_intensity = blink?1:  0;
      }
      else if (dim)
      {
@@ -8176,7 +8177,7 @@ float ctx_vt_draw_cell (MrgVT *vt, Ctx *ctx,
      if (bold)
      {
        bg_intensity = blink?2:  0;
-       fg_intensity = blink?3:  3;
+       fg_intensity = blink?0:  2;
      }
      else if (dim)
      {
@@ -8723,7 +8724,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
   }
 
 //#define SCROLL_SPEED 0.25;
-#define SCROLL_SPEED 0.05;
+#define SCROLL_SPEED 0.15;
 
   if (vt->in_scroll)
   {
