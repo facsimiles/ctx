@@ -1357,14 +1357,7 @@ void vt_audio (MrgVT *vt, const char *command)
 	break;
     }
 
-    if (audio->frames)
-    {
-      // implicit buf_size
-      audio->buf_size = audio->frames *
-	                   (audio->bits/8) *
-	                   audio->channels;
-    }
-    else
+    if (audio->frames == 0)
     {
       /* implicit frame count */
       audio->frames = audio->data_size /

@@ -304,7 +304,6 @@ static Image *image_add (int width,
 
 typedef struct AudioState {
   int action;
-  int id;
   int samplerate; // 8000
   int channels;   // 1
   int bits;       // 8
@@ -317,8 +316,7 @@ typedef struct AudioState {
   int encoding;   // 'a' ascci85 'b' base64
   int compression; // unused for now, z zlib o opus
 
-  int buf_size;
-  int frames; // should be derived from data_size
+  int frames;
 
   uint8_t *data;
   int      data_size;
