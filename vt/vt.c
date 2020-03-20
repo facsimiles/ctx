@@ -101,6 +101,7 @@ static void vt_state_neutral      (MrgVT *vt, int byte);
 static void vt_state_esc          (MrgVT *vt, int byte);
 static void vt_state_osc          (MrgVT *vt, int byte);
 static void vt_state_apc          (MrgVT *vt, int byte);
+static void vt_state_apc_generic  (MrgVT *vt, int byte);
 static void vt_state_sixel        (MrgVT *vt, int byte);
 static void vt_state_esc_sequence (MrgVT *vt, int byte);
 static void vt_state_esc_foo      (MrgVT *vt, int byte);
@@ -6315,12 +6316,29 @@ static void vt_state_sixel (MrgVT *vt, int byte)
       }
 }
 
-static void vt_state_apc (MrgVT *vt, int byte)
+static void vt_state_apc_audio (MrgVT *vt, int byte)
 {
-      // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
-      // and in "\e\" rather than just "\e", this would cause
-      // a stray char
-      //if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
+  if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
+  {
+    vt_audio (vt, vt->argument_buf);
+
+    if (byte == 27)
+    {
+      vt->state = vt_state_swallow;
+    }
+    else
+    {
+      vt->state = vt_state_neutral;
+    }
+  }
+  else
+  {
+    ctx_vt_argument_buf_add (vt, byte);
+  }
+}
+
+static void vt_state_apc_generic (MrgVT *vt, int byte)
+{
       if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
       {
         if (vt->argument_buf[1] == 'G') /* graphics - from kitty */
@@ -6344,6 +6362,32 @@ static void vt_state_apc (MrgVT *vt, int byte)
       {
         ctx_vt_argument_buf_add (vt, byte);
       }
+}
+
+
+static void vt_state_apc (MrgVT *vt, int byte)
+{
+  if (byte == 'A')
+  {
+    ctx_vt_argument_buf_add (vt, byte);
+    vt->state = vt_state_apc_audio;
+  }
+  else if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
+  {
+    if (byte == 27)
+    {
+      vt->state = vt_state_swallow;
+    }
+    else
+    {
+      vt->state = vt_state_neutral;
+    }
+  }
+  else
+  {
+    ctx_vt_argument_buf_add (vt, byte);
+    vt->state = vt_state_apc_generic;
+  }
 }
 
 static void vt_state_esc_foo (MrgVT *vt, int byte)
