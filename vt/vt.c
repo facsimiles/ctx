@@ -4077,31 +4077,21 @@ int vt_a85len (const char *src, int count)
       break;
     else if (src[i] == 'z')
     {
-      out_len+=4;
+      out_len += 4;
       k = 0;
     }
     else
     {
       if (k % 5 == 4)
       {
-         for (int j = 0; j < 4; j++)
-         {
-	   out_len++;
-         }
+	out_len += 4;
       }
     }
   }
   k = k % 5;
   if (k)
   {
-    for (int j = k; j < 4; j++)
-    {
-    }
-
-    for (int j = 0; j < 4; j++)
-    {
-      out_len++;
-    }
+    out_len += 4;
     out_len -= (5-k);
   }
   return out_len;
