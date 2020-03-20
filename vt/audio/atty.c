@@ -57,24 +57,12 @@ typedef struct _MrgVT MrgVT;
 struct _MrgVT {
   char     *title;
   void    (*state)(MrgVT *vt, int byte);
-  int       rows;
-  int       cols;
-  int       cw;
-  int       ch;
   int       bell;
-  int       in_alt_screen;
-  int       saved_line_count;
-  int       line_count;
-  int       scrollback_count;
-  int       leds[4];
-  uint64_t  cstyle;
 #define MAX_ARGUMENT_BUF_LEN (8192 + 16)
 
   char       *argument_buf;
   int        argument_buf_len;
   int        argument_buf_cap;
-  int        done;
-  int        result;
   ssize_t(*write)(void *serial_obj, const void *buf, size_t count);
   ssize_t(*read)(void *serial_obj, void *buf, size_t count);
   int    (*waitdata)(void *serial_obj, int timeout);
@@ -983,7 +971,6 @@ static void vt_state_swallow      (MrgVT *vt, int byte);
 
 void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
 {
-#if 0
   VtPty *vtpty = data;
   struct winsize ws;
 
@@ -992,7 +979,6 @@ void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
   ws.ws_xpixel = px_width;
   ws.ws_ypixel = px_height;
   ioctl(vtpty->pty, TIOCSWINSZ, &ws);
-#endif
 }
 
 static ssize_t vtpty_write (void *data, const void *buf, size_t count)
@@ -1038,7 +1024,7 @@ static void vt_resize (int sig)
     return;
   if (ioctl (STDOUT_FILENO, TIOCGWINSZ, &ws) == -1)
     return;
-  ioctl (vt->vtpty.pty, TIOCGWINSZ, &ws);
+  vtpty_resize (&vt->vtpty, ws.ws_row, ws.ws_col, ws.ws_xpixel, ws.ws_ypixel);
 }
 
 static void ctx_vt_run_command (MrgVT *vt, const char *command)
@@ -1058,27 +1044,11 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
   vt->vtpty.pid = forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
   if (vt->vtpty.pid == 0)
   {
-    int i;
-    for (i = 3; i<768;i++)close(i);/*hack, trying to close xcb */
-    unsetenv ("TERM");
-    unsetenv ("COLUMNS");
-    unsetenv ("LINES");
-    unsetenv ("TERMCAP");
-    unsetenv ("COLOR_TERM");
-    unsetenv ("COLORTERM");
-    unsetenv ("MrgVTE_VERSION");
-    //setenv ("TERM", "ansi", 1);
-    //setenv ("TERM", "vt102", 1);
-    //setenv ("TERM", "vt100", 1);
-    //setenv ("TERM", "xterm", 1);
-    setenv ("TERM", "xterm-256color", 1);
-    setenv ("COLORTERM", "truecolor", 1);
-    vt->result = system (command);
+    system (command);
     exit(0);
   }
   else if (vt->vtpty.pid < 0)
   {
-    //MrgVT_error ("forkpty failed (%s)", command);
     fprintf (stderr, "forkpty failed\n");
   }
   //fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
@@ -1110,8 +1080,6 @@ MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, flo
   vt->argument_buf_cap   = 64;
   vt->argument_buf       = malloc (vt->argument_buf_cap);
   vt->argument_buf[0]    = 0;
-  vt->done               = 0;
-  vt->result             = -1;
 
   if (command)
   {
