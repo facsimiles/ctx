@@ -12,6 +12,7 @@
 
 int vt_a85enc (const void *srcp, char *dst, int count);
 int vt_a85dec (const char *src, char *dst, int count);
+int vt_a85len (const char *src, int count);
 int vt_base642bin (const char    *ascii,
                    int           *length,
                    unsigned char *bin);
@@ -407,9 +408,11 @@ int main (int argc, char **argv)
       }
       else if (!strcmp (argv[i], "--help"))
       {
-	printf ("Usage: tty [mic|speaker|status|] key=value key=value\n");
+        _nc_noraw();
+	printf ("Usage: tty [mic|speaker] key1=value key2=value\n");
 	printf ("\n");
-	printf ("\n");
+	printf ("If neither mic nor speaker is specified as action, the\n");
+	printf ("currently set keys are printed.\n");
 	return 0;
       }
     }
@@ -556,6 +559,47 @@ int vt_a85dec (const char *src, char *dst, int count)
   return out_len;
 }
 
+int vt_a85len (const char *src, int count)
+{
+  int out_len = 0;
+  int k = 0;
+
+  for (int i = 0; src[i] && i < count; i ++, k++)
+  {
+    if (src[i] == '~')
+      break;
+    else if (src[i] == 'z')
+    {
+      out_len+=4;
+      k = 0;
+    }
+    else
+    {
+      if (k % 5 == 4)
+      {
+         for (int j = 0; j < 4; j++)
+         {
+	   out_len++;
+         }
+      }
+    }
+  }
+  k = k % 5;
+  if (k)
+  {
+    for (int j = k; j < 4; j++)
+    {
+    }
+
+    for (int j = 0; j < 4; j++)
+    {
+      out_len++;
+    }
+    out_len -= (5-k);
+  }
+  return out_len;
+}
+
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
@@ -596,8 +640,7 @@ static int iterate (int timeoutms)
       {
 	if (encoding == 'a')
 	{
-          //fprintf (stderr, "[%c%c%c]", audio_packet[0], audio_packet[1], audio_packet[2]);
-          char *temp = malloc (audio_packet_pos);
+          char *temp = malloc (vt_a85len (audio_packet, audio_packet_pos));
 	  int len = vt_a85dec (audio_packet, temp, audio_packet_pos);
 	  fwrite (temp, 1, len, stdout);
 	  fflush (stdout);

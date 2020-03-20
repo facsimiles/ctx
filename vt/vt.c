@@ -4071,7 +4071,7 @@ int vt_a85len (const char *src, int count)
   int out_len = 0;
   int k = 0;
 
-  for (int i = 0; i < count; i ++, k++)
+  for (int i = 0; src[i] && i < count; i ++, k++)
   {
     if (src[i] == '~')
       break;
@@ -4292,10 +4292,10 @@ void vt_audio (MrgVT *vt, const char *command)
       switch (key)
       {
 	case 's':range="8000,16000,24000,48000";break;
-	case 'b':range="8,16,32";break;
+	case 'b':range="8,16";break;
 	case 'c':range="1";break;
 	case 'T':range="u,s,f";break;
-	case 'e':range="0,b,a,y";break;
+	case 'e':range="b,a";break;
 	case 'o':range="z,0";break;
 	case 't':range="d";break;
 	case 'a':range="t,q";break;
@@ -4577,10 +4577,10 @@ void vt_audio (MrgVT *vt, const char *command)
     case 'q': // query
        {
 	 char buf[512];
-         sprintf (buf, "\e_As=%i,b=%i,c=%i,T=%c,e=%c,o=%c,t=%i;OK\e\\",
+         sprintf (buf, "\e_As=%i,b=%i,c=%i,T=%c,e=%c,o=%c;OK\e\\",
       vt->audio.samplerate, vt->audio.bits, vt->audio.channels,
-      vt->audio.type, vt->audio.encoding, vt->audio.compression,
-      vt->audio.transmission);
+      vt->audio.type, vt->audio.encoding, vt->audio.compression
+      /*vt->audio.transmission*/);
 
          vt_write (vt, buf, strlen(buf));
        }
