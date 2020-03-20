@@ -1,5 +1,34 @@
 #include <SDL.h>
 
+static int ydec (const void *srcp, void *dstp, int count)
+{
+  const char *src = srcp;
+  char *dst = dstp;
+  int out_len = 0;
+  for (int i = 0; i < count; i ++)
+  {
+    int o = src[i];
+    switch (o)
+    {
+      case '=':
+              i++;
+              o = src[i];
+              o = (o-42-64) % 256;
+              break;
+      case '\n':
+      case '\e':
+      case '\r':
+      case '\0':
+              break;
+      default:
+              o = (o-42) % 256;
+              break;
+    }
+    dst[out_len++] = o;
+  }
+  dst[out_len]=0;
+  return out_len;
+}
 
 static SDL_AudioDeviceID speaker_device = 0;
 
@@ -29,8 +58,6 @@ float click_volume = 0.05;
 void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes);
 int mic_device = 0;   // when non 0 we have an active mic device
 
-const int cBias = 0x84;
-const int cClip = 32635;
 
 /*  https://jonathanhays.me/2018/11/14/mu-law-and-a-law-compression-tutorial/
  */
@@ -57,6 +84,8 @@ static char MuLawCompressTable[256] =
 
 unsigned char LinearToMuLawSample(int16_t sample)
 {
+  const int cBias = 0x84;
+  const int cClip = 32635;
   int sign = (sample >> 8) & 0x80;
 
   if (sign)
@@ -78,6 +107,39 @@ unsigned char LinearToMuLawSample(int16_t sample)
   return (unsigned char)compressedByte;
 }
 
+void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes)
+{
+  char buf[256];
+  AudioState *audio = &vt->audio;
+  int frames = bytes / (audio->bits/8) / audio->channels;
+  sprintf (buf, "\e[_Af=%i;", frames);
+  vt_write (vt, buf, strlen (buf));
+
+  if (audio->compression == 'z')
+  {
+    // compress
+  }
+
+  char *encoded = malloc (bytes * 2);
+  encoded[0]=0;
+  if (audio->encoding == 'a')
+  {
+    vt_a85enc (samples, encoded, bytes);
+  }
+  else /* if (audio->encoding == 'b')  */
+  {
+    vt_bin2base64 (samples, bytes, encoded);
+  }
+  vt_write (vt, encoded, strlen(encoded));
+  free (encoded);
+
+  //vt_write (vt, samples, bytes);
+  buf[0]='\e';
+  buf[1]='\\';
+  buf[2]=0;
+  vt_write (vt, buf, 2);
+}
+
 #define MIC_BUF_LEN 8192
 
 uint8_t mic_buf[MIC_BUF_LEN];
@@ -87,18 +149,18 @@ static void mic_callback(void*     userdata,
                          uint8_t * stream,
                          int       len)
 {
-  MrgVT *vt = userdata;
+  AudioState *audio = userdata;
   int16_t *sstream = (void*)stream;
   int frames;
-  int channels = vt->audio.channels;
+  int channels = audio->channels;
 
 //  fprintf (stderr, "[%d %d %d %d]", sstream[0], sstream[1], sstream[2], sstream[3]);
  
   frames = len / 2;
 
-  if (vt->audio.bits == 8)
+  if (audio->bits == 8)
   {
-    if (vt->audio.type == 'u')
+    if (audio->type == 'u')
     {
       for (int i = 0; i < frames; i++)
       {
@@ -114,7 +176,7 @@ static void mic_callback(void*     userdata,
     {
       for (int i = 0; i < frames; i++)
       {
-        for (int c = 0; c <  vt->audio.channels; c++)
+        for (int c = 0; c <  audio->channels; c++)
         {
           mic_buf[mic_buf_pos++] = (sstream[i]) / 256;
           if (mic_buf_pos >= MIC_BUF_LEN - 4)
@@ -127,7 +189,7 @@ static void mic_callback(void*     userdata,
   {
     for (int i = 0; i < frames; i++)
     {
-      for (int c = 0; c <  vt->audio.channels; c++)
+      for (int c = 0; c <  audio->channels; c++)
       {
         *((int16_t*)&mic_buf[mic_buf_pos]) = (sstream[i]);
         mic_buf_pos+=2;
@@ -161,23 +223,23 @@ static void sdl_audio_init ()
   }
 }
 
-void audio_task (MrgVT *vt, int click);
-void audio_task (MrgVT *vt, int click)
+static void audio_task (MrgVT *vt, int click)
 {
+  AudioState *audio = &vt->audio;
 
-  if (vt->audio.mic)
+  if (audio->mic)
   {
     if (mic_device == 0)
     {
       SDL_AudioSpec spec_want, spec_got;
       sdl_audio_init ();
 
-      spec_want.freq     = vt->audio.samplerate;
+      spec_want.freq     = audio->samplerate;
       spec_want.channels = 1;
       spec_want.format   = AUDIO_S16;
       spec_want.samples  = AUDIO_CHUNK_SIZE;
       spec_want.callback = mic_callback;
-      spec_want.userdata = vt;
+      spec_want.userdata = audio;
       mic_device = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0, SDL_TRUE), 1, &spec_want, &spec_got, 0);
 
       SDL_PauseAudioDevice(mic_device, 0);
@@ -214,26 +276,26 @@ void audio_task (MrgVT *vt, int click)
       SDL_AudioSpec spec_want, spec_got;
       sdl_audio_init ();
 
-       spec_want.freq = vt->audio.samplerate;
-       if (vt->audio.bits == 8 && vt->audio.type == 'u')
+       spec_want.freq = audio->samplerate;
+       if (audio->bits == 8 && audio->type == 'u')
        {
          spec_want.format = AUDIO_S16;
          spec_want.channels = 2;
        }
-       else if (vt->audio.bits == 8 && vt->audio.type == 's')
+       else if (audio->bits == 8 && audio->type == 's')
        {
          spec_want.format = AUDIO_S8;
-         spec_want.channels = vt->audio.channels;
+         spec_want.channels = audio->channels;
        }
-       else if (vt->audio.bits == 16 && vt->audio.type == 's')
+       else if (audio->bits == 16 && audio->type == 's')
        {
          spec_want.format = AUDIO_S16;
-         spec_want.channels = vt->audio.channels;
+         spec_want.channels = audio->channels;
        }
        else
        {
          spec_want.format = AUDIO_S16; // XXX  : error
-         spec_want.channels = vt->audio.channels;
+         spec_want.channels = audio->channels;
        }
 
        /* XXX  override it always use s16 stereo as output,
@@ -1093,6 +1155,7 @@ void terminal_queue_pcm (int16_t sample_left, int16_t sample_right);
 
 void vt_audio (MrgVT *vt, const char *command)
 {
+  AudioState *audio = &vt->audio;
   // the simplest form of audio is raw audio
   // _As=8000,c=2,b=8,e=u
   //
@@ -1106,8 +1169,8 @@ void vt_audio (MrgVT *vt, const char *command)
   int  value;
   int  pos = 1;
 
-  vt->audio.action='t';
-  vt->audio.transmission='d';
+  audio->action='t';
+  audio->transmission='d';
 
   int configure = 0;
   while (command[pos] != ';')
@@ -1150,17 +1213,17 @@ void vt_audio (MrgVT *vt, const char *command)
 
     switch (key)
     {
-      case 's': vt->audio.samplerate = value; configure = 1; break;
-      case 'b': vt->audio.bits = value; configure = 1; break;
-      case 'c': vt->audio.channels = value; configure = 1; break;
-      case 'a': vt->audio.action = value; configure = 1; break;
-      case 'T': vt->audio.type = value; configure = 1; break;
-      case 'f': vt->audio.frames = value; configure = 1; break;
-      case 'e': vt->audio.encoding = value; configure = 1; break;
-      case 'o': vt->audio.compression = value; configure = 1; break;
-      case 't': vt->audio.transmission = value; configure = 1; break;
+      case 's': audio->samplerate = value; configure = 1; break;
+      case 'b': audio->bits = value; configure = 1; break;
+      case 'c': audio->channels = value; configure = 1; break;
+      case 'a': audio->action = value; configure = 1; break;
+      case 'T': audio->type = value; configure = 1; break;
+      case 'f': audio->frames = value; configure = 1; break;
+      case 'e': audio->encoding = value; configure = 1; break;
+      case 'o': audio->compression = value; configure = 1; break;
+      case 't': audio->transmission = value; configure = 1; break;
       case 'm': 
-	vt->audio.mic = value?1:0;
+	audio->mic = value?1:0;
 	break;
     }
 
@@ -1170,67 +1233,67 @@ void vt_audio (MrgVT *vt, const char *command)
        * instead of enabling anything SDL supports, the initial
        * implementation limits itself to the opus sample rates
        */
-      if (vt->audio.samplerate <= 8000)
+      if (audio->samplerate <= 8000)
       {
-        vt->audio.samplerate = 8000;
+        audio->samplerate = 8000;
       }
-      else if (vt->audio.samplerate <= 16000)
+      else if (audio->samplerate <= 16000)
       {
-        vt->audio.samplerate = 16000;
+        audio->samplerate = 16000;
       }
-      else if (vt->audio.samplerate <= 24000)
+      else if (audio->samplerate <= 24000)
       {
-        vt->audio.samplerate = 24000;
+        audio->samplerate = 24000;
       }
       else
       {
-        vt->audio.samplerate = 48000;
+        audio->samplerate = 48000;
       }
 
-      if (vt->audio.bits != 8 && vt->audio.bits != 16)
-        vt->audio.bits = 8;
+      if (audio->bits != 8 && audio->bits != 16)
+        audio->bits = 8;
 
-      switch (vt->audio.type)
+      switch (audio->type)
       {
 	case 'u':
 	case 's':
 	case 'f':
 	  break;
         default:
-	  vt->audio.type = 's';
+	  audio->type = 's';
       }
 
       /* onlt 1 and 2 channels supported */
-      if (vt->audio.channels <= 0 || vt->audio.channels > 2)
+      if (audio->channels <= 0 || audio->channels > 2)
       {
-	vt->audio.channels = 1;
+	audio->channels = 1;
       }
     }
   }
   
-  if (vt->audio.frames ||  vt->audio.action != 'd')
+  if (audio->frames ||  audio->action != 'd')
   {
   payload = &command[pos+1];
 
   // accumulate incoming data
   {
      int chunk_size = strlen (payload);
-     int old_size = vt->audio.data_size;
-     if (vt->audio.data == NULL)
+     int old_size = audio->data_size;
+     if (audio->data == NULL)
      {
-       vt->audio.data_size = chunk_size;
-       vt->audio.data = malloc (vt->audio.data_size + 1);
+       audio->data_size = chunk_size;
+       audio->data = malloc (audio->data_size + 1);
      }
      else
      {
-       vt->audio.data_size += chunk_size;
-       vt->audio.data = realloc (vt->audio.data, vt->audio.data_size + 1);
+       audio->data_size += chunk_size;
+       audio->data = realloc (audio->data, audio->data_size + 1);
      }
-     memcpy (vt->audio.data + old_size, payload, chunk_size);
-     vt->audio.data[vt->audio.data_size]=0;
+     memcpy (audio->data + old_size, payload, chunk_size);
+     audio->data[audio->data_size]=0;
   }
 
-    if (vt->audio.transmission != 'd') /* */
+    if (audio->transmission != 'd') /* */
     {
       char buf[256];
       sprintf (buf, "\e_A;only direct transmission supported\e\\");
@@ -1238,22 +1301,22 @@ void vt_audio (MrgVT *vt, const char *command)
       goto cleanup;
     }
 
-    switch (vt->audio.encoding)
+    switch (audio->encoding)
     {
       case 'y':
-	vt->audio.data_size = ydec (vt->audio.data, vt->audio.data, vt->audio.data_size);
+	audio->data_size = ydec (audio->data, audio->data, audio->data_size);
       break;
       case 'a':
       {
-        int bin_length = vt->audio.data_size;
+        int bin_length = audio->data_size;
 	if (bin_length)
 	{
-        uint8_t *data2 = malloc ((unsigned int)vt_a85len ((char*)vt->audio.data, vt->audio.data_size));
-        bin_length = vt_a85dec ((char*)vt->audio.data,
+        uint8_t *data2 = malloc ((unsigned int)vt_a85len ((char*)audio->data, audio->data_size));
+        bin_length = vt_a85dec ((char*)audio->data,
                                 (void*)data2,
                                 bin_length);
-        memcpy (vt->audio.data, data2, bin_length + 1);
-        vt->audio.data_size = bin_length;
+        memcpy (audio->data, data2, bin_length + 1);
+        audio->data_size = bin_length;
         free (data2);
 	}
       }
@@ -1261,41 +1324,41 @@ void vt_audio (MrgVT *vt, const char *command)
 
       case 'b':
       {
-        int bin_length = vt->audio.data_size;
-        uint8_t *data2 = malloc (vt->audio.data_size);
-        bin_length = vt_base642bin ((char*)vt->audio.data,
+        int bin_length = audio->data_size;
+        uint8_t *data2 = malloc (audio->data_size);
+        bin_length = vt_base642bin ((char*)audio->data,
                                     &bin_length,
                                     data2);
-        memcpy (vt->audio.data, data2, bin_length + 1);
-        vt->audio.data_size = bin_length;
+        memcpy (audio->data, data2, bin_length + 1);
+        audio->data_size = bin_length;
         free (data2);
       }
       break;
     }
 
-    switch (vt->audio.compression)
+    switch (audio->compression)
     {
       case 'z':
     {
 	    // XXX  :  relying on user provided input on size here
 	    //         look into making this safer
             //vt->gfx.buf_size)
-      unsigned long actual_uncompressed_size = vt->audio.frames * vt->audio.bits/8 * vt->audio.channels;
+      unsigned long actual_uncompressed_size = audio->frames * audio->bits/8 * audio->channels;
       unsigned char *data2 = malloc (actual_uncompressed_size);
       /* if a buf size is set (rather compression, but
        * this works first..) then */
       int z_result = uncompress (data2, &actual_uncompressed_size,
-                                 vt->audio.data,
-                                 vt->audio.data_size);
+                                 audio->data,
+                                 audio->data_size);
       if (z_result != Z_OK)
       {
         char buf[256]= "\e_Ao=z;zlib error\e\\";
         vt_write (vt, buf, strlen(buf));
         goto cleanup;
       }
-      free (vt->audio.data);
-      vt->audio.data = data2;
-      vt->audio.data_size = actual_uncompressed_size;
+      free (audio->data);
+      audio->data = data2;
+      audio->data_size = actual_uncompressed_size;
     }
 
 	break;
@@ -1305,27 +1368,27 @@ void vt_audio (MrgVT *vt, const char *command)
 	break;
     }
 
-    if (vt->audio.frames)
+    if (audio->frames)
     {
       // implicit buf_size
-      vt->audio.buf_size = vt->audio.frames *
-	                   (vt->audio.bits/8) *
-	                   vt->audio.channels;
+      audio->buf_size = audio->frames *
+	                   (audio->bits/8) *
+	                   audio->channels;
     }
     else
     {
       /* implicit frame count */
-      vt->audio.frames = vt->audio.data_size /
-                                (vt->audio.bits/8) /
-                                   vt->audio.channels;
+      audio->frames = audio->data_size /
+                                (audio->bits/8) /
+                                   audio->channels;
     }
 
 
 #if 0
-    if (vt->audio.format == 100/* opus */)
+    if (audio->format == 100/* opus */)
     {
       int channels;
-      uint8_t *new_data = NULL;//stbi_load_from_memory (vt->audio.data, vt->audio.data_size, &vt->audio.buf_width, &vt->audio.buf_height, &channels, 4);
+      uint8_t *new_data = NULL;//stbi_load_from_memory (audio->data, audio->data_size, &audio->buf_width, &audio->buf_height, &channels, 4);
 
       if (!new_data)
       {
@@ -1333,90 +1396,90 @@ void vt_audio (MrgVT *vt, const char *command)
         vt_write (vt, buf, strlen(buf));
         goto cleanup;
       }
-      vt->audio.format = 32;
-      free (vt->audio.data);
-      vt->audio.data = new_data;
-      vt->audio.data_size = vt->audio.buf_width * vt->audio.buf_height * 4;
+      audio->format = 32;
+      free (audio->data);
+      audio->data = new_data;
+      audio->data_size = audio->buf_width * audio->buf_height * 4;
     }
 #endif
 
-  switch (vt->audio.action)
+  switch (audio->action)
   {
     case 't': // transfer
-       if (vt->audio.type == 'u') // implied 8bit
+       if (audio->type == 'u') // implied 8bit
        {
-	 if (vt->audio.channels == 2)
+	 if (audio->channels == 2)
 	 {
-           for (int i = 0; i < vt->audio.frames; i++)
+           for (int i = 0; i < audio->frames; i++)
            {
-             int val_left = MuLawDecompressTable[vt->audio.data[i*2]];
-             int val_right = MuLawDecompressTable[vt->audio.data[i*2+1]];
+             int val_left = MuLawDecompressTable[audio->data[i*2]];
+             int val_right = MuLawDecompressTable[audio->data[i*2+1]];
              terminal_queue_pcm (val_left, val_right);
            }
 	 }
 	 else
 	 {
-           for (int i = 0; i < vt->audio.frames; i++)
+           for (int i = 0; i < audio->frames; i++)
            {
-             int val = MuLawDecompressTable[vt->audio.data[i]];
+             int val = MuLawDecompressTable[audio->data[i]];
              terminal_queue_pcm (val, val);
            }
 	 }
        }
-       else if (vt->audio.type == 's')
+       else if (audio->type == 's')
        {
-	 if (vt->audio.bits == 8)
+	 if (audio->bits == 8)
 	 {
-	   if (vt->audio.channels == 2)
+	   if (audio->channels == 2)
 	   {
-             for (int i = 0; i < vt->audio.frames; i++)
+             for (int i = 0; i < audio->frames; i++)
              {
-               int val_left = ((int8_t*)(vt->audio.data))[i*2];
-               int val_right = ((int8_t*)(vt->audio.data))[i*2+1];
+               int val_left = ((int8_t*)(audio->data))[i*2];
+               int val_right = ((int8_t*)(audio->data))[i*2+1];
                terminal_queue_pcm (val_left, val_right);
              }
            }
            else
 	   {
-             for (int i = 0; i < vt->audio.frames; i++)
+             for (int i = 0; i < audio->frames; i++)
              {
-               int val = ((int8_t*)(vt->audio.data))[i];
+               int val = ((int8_t*)(audio->data))[i];
                terminal_queue_pcm (val, val);
              }
 	   }
 	 }
 	 else
 	 {
-	   if (vt->audio.channels == 2)
+	   if (audio->channels == 2)
 	   {
-             for (int i = 0; i < vt->audio.frames; i++)
+             for (int i = 0; i < audio->frames; i++)
              {
-               int val_left = ((int16_t*)(vt->audio.data))[i*2];
-               int val_right = ((int16_t*)(vt->audio.data))[i*2+1];
+               int val_left = ((int16_t*)(audio->data))[i*2];
+               int val_right = ((int16_t*)(audio->data))[i*2+1];
                terminal_queue_pcm (val_left, val_right);
              }
            }
            else
 	   {
-             for (int i = 0; i < vt->audio.frames; i++)
+             for (int i = 0; i < audio->frames; i++)
              {
-               int val = ((int16_t*)(vt->audio.data))[i];
+               int val = ((int16_t*)(audio->data))[i];
                terminal_queue_pcm (val, val);
              }
 	   }
 	 }
        }
-       free (vt->audio.data);
-       vt->audio.data = NULL;
-       vt->audio.data_size=0;
+       free (audio->data);
+       audio->data = NULL;
+       audio->data_size=0;
        break;
     case 'q': // query
        {
 	 char buf[512];
          sprintf (buf, "\e_As=%i,b=%i,c=%i,T=%c,e=%c,o=%c;OK\e\\",
-      vt->audio.samplerate, vt->audio.bits, vt->audio.channels,
-      vt->audio.type, vt->audio.encoding, vt->audio.compression
-      /*vt->audio.transmission*/);
+      audio->samplerate, audio->bits, audio->channels,
+      audio->type, audio->encoding, audio->compression
+      /*audio->transmission*/);
 
          vt_write (vt, buf, strlen(buf));
        }
@@ -1425,10 +1488,10 @@ void vt_audio (MrgVT *vt, const char *command)
   }
 
 cleanup:
-    if (vt->audio.data)
-      free (vt->audio.data);
-    vt->audio.data = NULL;
-    vt->audio.data_size=0;
+    if (audio->data)
+      free (audio->data);
+    audio->data = NULL;
+    audio->data_size=0;
 }
 
 static void vt_state_apc_audio (MrgVT *vt, int byte)

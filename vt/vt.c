@@ -2894,45 +2894,15 @@ vt_bin2base64 (const void *bin,
                int         bin_length,
                char       *ascii);
 
-#if 0
-static int ydec (const void *srcp, void *dstp, int count)
-{
-  const char *src = srcp;
-  char *dst = dstp;
-  int out_len = 0;
-  for (int i = 0; i < count; i ++)
-  {
-    int o = src[i];
-    switch (o)
-    {
-      case '=':
-              i++;
-              o = src[i];
-              o = (o-42-64) % 256;
-              break;
-      case '\n':
-      case '\e':
-      case '\r':
-      case '\0':
-              break;
-      default:
-              o = (o-42) % 256;
-              break;
-    }
-    dst[out_len++] = o;
-  }
-  dst[out_len]=0;
-  return out_len;
-}
-#endif
 
-#if 0
+#if 1
 #include "vt-audio.h"
 #else
 
-static void audio_task (MrgVT *vt, int click)
+static void audio_task (AudioState *audio, int click)
 {
 }
+
 static void ctx_vt_bell (MrgVT *vt)
 {
 }
@@ -5503,37 +5473,6 @@ static const char *keymap_general[][2]={
 
 };
 
-void ctx_vt_feed_audio (MrgVT *vt, void *samples, int bytes)
-{
-  char buf[256];
-  int frames = bytes / (vt->audio.bits/8) / vt->audio.channels;
-  sprintf (buf, "\e[_Af=%i;", frames);
-  vt_write (vt, buf, strlen (buf));
-
-  if (vt->audio.compression == 'z')
-  {
-    // compress
-  }
-
-  char *encoded = malloc (bytes * 2);
-  encoded[0]=0;
-  if (vt->audio.encoding == 'a')
-  {
-    vt_a85enc (samples, encoded, bytes);
-  }
-  else /* if (vt->audio.encoding == 'b')  */
-  {
-    vt_bin2base64 (samples, bytes, encoded);
-  }
-  vt_write (vt, encoded, strlen(encoded));
-  free (encoded);
-
-  //vt_write (vt, samples, bytes);
-  buf[0]='\e';
-  buf[1]='\\';
-  buf[2]=0;
-  vt_write (vt, buf, 2);
-}
 
 void ctx_vt_feed_keystring (MrgVT *vt, const char *str)
 {
