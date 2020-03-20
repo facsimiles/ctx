@@ -316,7 +316,6 @@ typedef struct AudioState {
                   //    audio packets in the incoming direction
   int encoding;   // 'a' ascci85 'b' base64
   int compression; // unused for now, z zlib o opus
-  int transmission; // remove?
 
   int buf_size;
   int frames; // should be derived from data_size

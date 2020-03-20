@@ -1170,7 +1170,6 @@ void vt_audio (MrgVT *vt, const char *command)
   int  pos = 1;
 
   audio->action='t';
-  audio->transmission='d';
 
   int configure = 0;
   while (command[pos] != ';')
@@ -1202,7 +1201,6 @@ void vt_audio (MrgVT *vt, const char *command)
 	case 'T':range="u,s,f";break;
 	case 'e':range="b,a";break;
 	case 'o':range="z,0";break;
-	case 't':range="d";break;
 	case 'a':range="t,q";break;
 	default:range="unknown";break;
       }
@@ -1221,7 +1219,6 @@ void vt_audio (MrgVT *vt, const char *command)
       case 'f': audio->frames = value; configure = 1; break;
       case 'e': audio->encoding = value; configure = 1; break;
       case 'o': audio->compression = value; configure = 1; break;
-      case 't': audio->transmission = value; configure = 1; break;
       case 'm': 
 	audio->mic = value?1:0;
 	break;
@@ -1292,14 +1289,6 @@ void vt_audio (MrgVT *vt, const char *command)
      memcpy (audio->data + old_size, payload, chunk_size);
      audio->data[audio->data_size]=0;
   }
-
-    if (audio->transmission != 'd') /* */
-    {
-      char buf[256];
-      sprintf (buf, "\e_A;only direct transmission supported\e\\");
-      vt_write (vt, buf, strlen(buf));
-      goto cleanup;
-    }
 
     switch (audio->encoding)
     {
