@@ -362,8 +362,6 @@ struct _MrgVT {
   int       leds[4];
   uint64_t  cstyle;
 
-  //int       mic; // whether to produce mic events
-
   uint8_t   fg_color[3];
   uint8_t   bg_color[3];
 
@@ -2894,6 +2892,21 @@ vt_bin2base64 (const void *bin,
 
 #if 1
 #include "vt-audio.h"
+
+static void vt_state_apc_audio (MrgVT *vt, int byte)
+{
+  if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
+  {
+    vt_audio (vt, vt->argument_buf);
+
+    vt->state = ((byte == 27) ?  vt_state_swallow : vt_state_neutral);
+  }
+  else
+  {
+    ctx_vt_argument_buf_add (vt, byte);
+  }
+}
+
 #else
 
 static void audio_task (AudioState *audio, int click)

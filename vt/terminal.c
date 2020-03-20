@@ -507,9 +507,7 @@ int vt_main(int argc, char **argv)
   signal (SIGCHLD, signal_child);
   while(!do_quit)
   {
-
       int in_scroll = (ctx_vt_has_blink (vt) >= 10);
-
 
       if ((drawn_rev != ctx_vt_rev (vt)) ||
           ctx_vt_has_blink (vt) ||

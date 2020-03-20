@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <zlib.h>
 
 static int ydec (const void *srcp, void *dstp, int count)
 {
@@ -1142,7 +1143,7 @@ static void ctx_vt_bell (MrgVT *vt)
 {
   if (vt->bell < 2)
     return;
-  for (int i = 0; i < sizeof (vt_bell_audio); i++)
+  for (int i = 0; i < (int)sizeof (vt_bell_audio); i++)
   {
     int16_t val = MuLawDecompressTable[vt_bell_audio[i]] * vt->bell / 8;
     terminal_queue_pcm (val, val);
@@ -1476,18 +1477,5 @@ cleanup:
     audio->data_size=0;
 }
 
-static void vt_state_apc_audio (MrgVT *vt, int byte)
-{
-  if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
-  {
-    vt_audio (vt, vt->argument_buf);
-
-    vt->state = ((byte == 27) ?  vt_state_swallow : vt_state_neutral);
-  }
-  else
-  {
-    ctx_vt_argument_buf_add (vt, byte);
-  }
-}
 
 // YYYYY

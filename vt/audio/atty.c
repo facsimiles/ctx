@@ -21,6 +21,78 @@ vt_bin2base64 (const void *bin,
                int         bin_length,
                char       *ascii);
 
+typedef struct AudioState {
+  int action;
+  int samplerate; // 8000
+  int channels;   // 1
+  int bits;       // 8
+  int type;       // 'u'    u-law  f-loat  s-igned u-nsigned
+
+  int mic;        // <- should 
+                  //    request permisson,
+                  //    and if gotten, start streaming
+                  //    audio packets in the incoming direction
+  int encoding;   // 'a' ascci85 'b' base64
+  int compression; // unused for now, z zlib o opus
+
+  int frames;
+
+  uint8_t *data;
+  int      data_size;
+} AudioState;
+
+typedef struct VtPty {
+  int        pty;
+  pid_t      pid;
+} VtPty;
+
+typedef struct _MrgVT MrgVT;
+
+struct _MrgVT {
+  char     *title;
+  void    (*state)(MrgVT *vt, int byte);
+  int       bell;
+  int       in_alt_screen;
+  int       saved_line_count;
+  int       line_count;
+  int       scrollback_count;
+  int       leds[4];
+  uint64_t  cstyle;
+#define MAX_ARGUMENT_BUF_LEN (8192 + 16)
+
+  char       *argument_buf;
+  int        argument_buf_len;
+  int        argument_buf_cap;
+  int        done;
+  int        result;
+  ssize_t(*write)(void *serial_obj, const void *buf, size_t count);
+  ssize_t(*read)(void *serial_obj, void *buf, size_t count);
+  int    (*waitdata)(void *serial_obj, int timeout);
+  void  (*resize)(void *serial_obj, int cols, int rows, int px_width, int px_height);
+
+  VtPty      vtpty;
+
+  AudioState audio;
+};
+
+static ssize_t vt_write (MrgVT *vt, const void *buf, size_t count)
+{
+  if (!vt->write) return 0;
+  return vt->write (&vt->vtpty, buf, count);
+}
+static ssize_t vt_read (MrgVT *vt, void *buf, size_t count)
+{
+  if (!vt->read) return 0;
+  return vt->read (&vt->vtpty, buf, count);
+}
+static int vt_waitdata (MrgVT *vt, int timeout)
+{
+  if (!vt->waitdata) return 0;
+  return vt->waitdata (&vt->vtpty, timeout);
+}
+
+#include "vt-audio.h"
+
 static struct termios orig_attr; /* in order to restore at exit */
 static int    nc_is_raw = 0;
 
@@ -77,7 +149,7 @@ static int _nc_raw (void)
 }
 
 
-static long int ticks (void)
+static long int atty_ticks (void)
 {
   struct timeval tp;
   gettimeofday(&tp, NULL);
@@ -118,6 +190,7 @@ enum {
   ACTION_RESET,
   ACTION_SPEAKER,
   ACTION_MIC,
+  ACTION_ENGINE,
 };
 
 int action = ACTION_STATUS;
@@ -265,13 +338,13 @@ void atty_speaker (void)
   signal (SIGTERM, signal_int_speaker);
   atexit (at_exit_speaker);
 
-  lost_start = ticks ();
+  lost_start = atty_ticks ();
 
   while (fread (buf, 1, 1, stdin) == 1)
   {
     audio_packet[len++]=buf[0];
 
-    lost_end = ticks();
+    lost_end = atty_ticks();
     lost_time = (lost_end - lost_start);
     buffered_samples -= (sample_rate * lost_time / 1000);
     if (buffered_samples < 0)
@@ -286,12 +359,14 @@ void atty_speaker (void)
       fwrite (audio_packet_a85, 1, strlen (audio_packet_a85), stdout);
       fwrite ("\e\\", 1, 2, stdout);
       fflush (stdout);
-      usleep (1000 * ( len * 1000 / sample_rate - (ticks()-lost_end)) );
+      usleep (1000 * ( len * 1000 / sample_rate - (atty_ticks()-lost_end)) );
       len = 0;
     }
-    lost_start = ticks ();
+    lost_start = atty_ticks ();
   }
 }
+
+int atty_engine (void);
 
 int main (int argc, char **argv)
 {
@@ -402,6 +477,10 @@ int main (int argc, char **argv)
       {
 	action = ACTION_MIC;
       }
+      else if (!strcmp (argv[i], "engine"))
+      {
+	action = ACTION_ENGINE;
+      }
       else if (!strcmp (argv[i], "speaker"))
       {
 	action = ACTION_SPEAKER;
@@ -426,6 +505,10 @@ int main (int argc, char **argv)
 
   switch (action)
   {
+    case ACTION_ENGINE:
+      return atty_engine ();
+      break;
+
     case ACTION_RESET:
       printf ("\033_As=8000,T=u,b=8,c=1,o=0,e=a;\e\\");
       fflush (NULL);
@@ -807,3 +890,15 @@ vt_base642bin (const char    *ascii,
     *length= outputno;
   return outputno;
 }
+
+
+////
+
+
+
+int atty_engine (void)
+{
+  return 0;
+}
+
+
