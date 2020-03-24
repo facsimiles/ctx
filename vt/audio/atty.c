@@ -491,8 +491,7 @@ int main (int argc, char **argv)
         _nc_noraw();
 	printf ("Usage: atty [mic|speaker] key1=value key2=value\n");
 	printf ("\n");
-	printf ("If neither mic nor speaker is specified as action, the\n");
-	printf ("currently set keys are printed.\n");
+	printf ("Run atty alone to activate - or show status\n");
 	return 0;
       }
     }

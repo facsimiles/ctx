@@ -308,13 +308,18 @@ typedef struct AudioState {
   int channels;   // 1
   int bits;       // 8
   int type;       // 'u'    u-law  f-loat  s-igned u-nsigned
+  int buffer_size; // desired size of audiofragment in frames
+                   // (both for feeding SDL and as desired chunking
+                   //  size)
+
 
   int mic;        // <- should 
                   //    request permisson,
                   //    and if gotten, start streaming
                   //    audio packets in the incoming direction
+                  //
   int encoding;   // 'a' ascci85 'b' base64
-  int compression; // unused for now, z zlib o opus
+  int compression; // '0': none , 'z': zlib   'o': opus(reserved)
 
   int frames;
 
@@ -808,6 +813,7 @@ static void vtcmd_reset_to_initial_state (MrgVT *vt, const char *sequence)
   vt->audio.channels = 1;
   vt->audio.type = 'u';
   vt->audio.samplerate = 8000;
+  vt->audio.buffer_size = 512;
   vt->audio.encoding = 'a';
   vt->audio.compression = '0';
   vt->audio.mic = 0;
@@ -3175,14 +3181,17 @@ int vt_a85enc (const void *srcp, char *dst, int count)
 {
   const uint8_t *src = srcp;
   int out_len = 0;
-  int padding = 4 - (count % 4);
+
+  int padding = 4-(count % 4);
+  if (padding == 4) padding = 0;
+
   for (int i = 0; i < (count+3)/4; i ++)
   {
     uint32_t input = 0;
     for (int j = 0; j < 4; j++)
     {
       input = (input << 8);
-      if (i*4+j<count)
+      if (i*4+j<=count)
         input += src[i*4+j];
     }
 
@@ -3200,12 +3209,15 @@ int vt_a85enc (const void *srcp, char *dst, int count)
       }
     }
   }
+
   out_len -= padding;
+
   dst[out_len++]='~';
   dst[out_len++]='>';
   dst[out_len]=0;
   return out_len;
 }
+
 
 int vt_a85dec (const char *src, char *dst, int count)
 {
@@ -3220,7 +3232,7 @@ int vt_a85dec (const char *src, char *dst, int count)
   uint32_t val = 0;
   int k = 0;
 
-  for (int i = 0; i < count; i ++, k++)
+  for (int i = 0; i < count; i ++)
   {
     val *= 85;
 
@@ -3235,15 +3247,19 @@ int vt_a85dec (const char *src, char *dst, int count)
     }
     else
     {
-      val += a85_decoder[(int)src[i]];
-      if (k % 5 == 4)
+      if (src[i] >= '!' && src[i] <= 'u')
       {
-         for (int j = 0; j < 4; j++)
-         {
-           dst[out_len++] = (val & (0xff << 24)) >> 24;
-           val <<= 8;
-         }
-         val = 0;
+        val += a85_decoder[(int)src[i]];
+        if (k % 5 == 4)
+        {
+           for (int j = 0; j < 4; j++)
+           {
+             dst[out_len++] = (val & (0xff << 24)) >> 24;
+             val <<= 8;
+           }
+           val = 0;
+        }
+        k++;
       }
     }
   }
@@ -4479,12 +4495,14 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
 static void vt_state_svgp (MrgVT *vt, int byte)
 {
     Ctx *ctx = vt->current_line->ctx;
-    if (!vt->current_line->ctx)
+    if (!ctx)
     {
       ctx = vt->current_line->ctx = ctx_new ();
-      ctx_translate (ctx,
-                     (vt->cursor_x-1) * vt->cw * 10,
-                     (vt->cursor_y-1) * vt->ch * 10);
+      /* ctx_translate (ctx,
+                     (vt->cursor_x-1) * vt->cw ,
+                     (vt->cursor_y-1) * vt->ch );
+      fprintf (stderr, "made ctx on line %p\n", vt->current_line);
+      */
     }
 
     switch (vt->svgp_state)
@@ -7142,7 +7160,7 @@ void ctx_vt_draw (MrgVT *vt, Ctx *ctx, double x0, double y0)
         if (line->ctx)
         {
           ctx_save (ctx);
-          ctx_translate (ctx, 0, (vt->rows-row) * (vt->ch -1));
+          ctx_translate (ctx, 0, (vt->rows-row) * (vt->ch));
           //float factor = vt->cols * vt->cw / 1000.0;
           //ctx_scale (ctx, factor, factor);
           ctx_render_ctx (line->ctx, ctx);
