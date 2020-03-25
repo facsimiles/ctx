@@ -411,10 +411,13 @@ struct _MrgVT {
   int        n_args;
   float      pcx;
   float      pcy;
+  int        color_components;
+  int        color_model; // 1 gray 3 rgb 4 cmyk
   // text related data
   float      left_margin; // set by last user provided move_to
                           // before text, used by newlines
   float      letter_spacing;
+
   float      word_spacing;
   float      font_stretch;  // horizontal expansion
   float      font_size_adjust;
@@ -3986,25 +3989,24 @@ typedef enum {
   SVGP_RESTORE         = 'D',
   SVGP_STROKE          = 'E',
   SVGP_FILL            = 'F',
-  SVGP_SET_GRAYA       = 'G',
   SVGP_HOR_LINE_TO     = 'H', // SVG
   //SVGP_UNUSED        = 'I',
   SVGP_ROTATE          = 'J',
-  SVGP_SET_CMYKA       = 'K',
+  SVGP_SET_COLOR       = 'K',
   SVGP_LINE_TO         = 'L', // SVG
   SVGP_MOVE_TO         = 'M', // SVG
   SVGP_SET_FONT_SIZE   = 'N',
   SVGP_SCALE           = 'O',
   //SVGP_NEW_PAGE      = 'P', // NYI
   SVGP_QUAD_TO         = 'Q',
-  SVGP_SET_RGBA        = 'R',
+  //SVGP_UNUSED        = 'R',
   SVGP_SMOOTH_TO       = 'S', // SVG
   SVGP_SMOOTHQ_TO      = 'T', // SVG
   SVGP_CLEAR           = 'U',
   SVGP_VER_LINE_TO     = 'V', // SVG
   SVGP_SET_LINE_CAP    = 'W',
   SVGP_EXIT            = 'X',
-  //SVGP_UNUSED        = 'Y',
+  SVGP_SET_COLOR_MODEL = 'Y',
   //                     'Z'  // SVG
   SVGP_REL_ARC_TO      = 'a', // SVG, NYI
   SVGP_CLIP            = 'b', // NYI (int ctx - fully implemented in parser)
@@ -4016,7 +4018,7 @@ typedef enum {
   SVGP_REL_HOR_LINE_TO = 'h', // SVG
   //SVGP_IMAGE         = 'i', // NYI
   SVGP_SET_LINE_JOIN   = 'j',
-  SVGP_GRADIENT_ADD_STOP_CMYKA = 'k',
+  //SVGP_UNUSED        = 'k',
   SVGP_REL_LINE_TO     = 'l', // SVG
   SVGP_REL_MOVE_TO     = 'm', // SVG
   SVGP_SET_FONT        = 'n',
@@ -4034,8 +4036,9 @@ typedef enum {
   SVGP_CLOSE_PATH      = 'z', // SVG
 
 } SvgpCommand;
+static void vt_svgp_set_color_model (MrgVT *vt, int color_model);
 
-static int svgp_resolve_command (const uint8_t*str, int *args)
+static int svgp_resolve_command (MrgVT *vt, const uint8_t*str, int *args)
 {
   int command = -1;
   uint32_t str_hash = 0;
@@ -4088,19 +4091,18 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
     case STR('f','i','l','l',0,0,0,0,0,0,0,0):
     case 'F': command = SVGP_FILL; *args = 0; break;
 
-    case STR('s','e','t','_','g','r','a','y','a',0,0,0):
-    case STR('g','r','a','y','a',0,0,0,0,0,0,0):
-    case 'G': command = SVGP_SET_GRAYA; *args = 2; break;
-
     case STR('h','o','r','_','l','i','n','e','_','t','o',0):
     case 'H': command = SVGP_HOR_LINE_TO;     *args = 1; break;
 
     case STR('r','o','t','a','t','e',0,0,0,0,0,0):
     case 'J': command = SVGP_ROTATE; *args = 1; break;
 
-    case STR('s','e','t','_','c','m','y','k','a',0,0,0):
-    case STR('c','m','y','k','a',0,0,0,0,0,0,0):
-    case 'K': command = SVGP_SET_CMYKA; *args = 5; break;
+    //case STR('c','m','y','k','a',0,0,0,0,0,0,0):
+    case STR('c','o','l','o','r',0,0,0,0,0,0,0):
+    case STR('s','e','t','_','c','o','l','o','r',0,0,0):
+    case 'K': command = SVGP_SET_COLOR;
+      *args = vt->color_components;
+      break;
 
     case STR('l','i','n','e','_','t','o',0,0,0,0,0):
     case 'L': command = SVGP_LINE_TO; *args = 2; break;
@@ -4114,9 +4116,6 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
     case STR('s','c','a','l','e',0,0,0,0,0,0,0):
     case 'O': command = SVGP_SCALE; *args = 2; break;
 
-    case STR('s','e','t','_','r','g','b','a',0,0,0,0):
-    case STR('r','g','b','a',0,0,0,0,0,0,0,0):
-    case 'R': command = SVGP_SET_RGBA; *args = 4; break;
 
     case STR('q','u','a','d','_','t','o',0,0,0,0,0):
     case 'Q': command = SVGP_QUAD_TO; *args = 4; break;
@@ -4133,6 +4132,9 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
     case STR('e','x','i','t',0,0,0,0,0,0,0,0):
     case STR('d','o','n','e',0,0,0,0,0,0,0,0):
     case 'X': command = SVGP_EXIT; *args = 0; break;
+
+    case STR('c','o','l','o','r','_','m','o','d','e','l', 0):
+    case 'Y': command = SVGP_SET_COLOR_MODEL; *args = 1; break;
 
     case STR('v','e','r','_','l','i','n','e','_','t','o',0):
     case 'V': command = SVGP_VER_LINE_TO;     *args = 1; break;
@@ -4184,9 +4186,6 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
     case STR('g','r','a','d','i','e','n','t','_','a','d','d'):
     case STR('a','d','d','_','s','t','o','p',0,0,0,0):
     case 'p': command = SVGP_GRADIENT_ADD_STOP; *args = 5; break;
-
-    case STR('a','d','d','_','s','t','o','p','_','c','m','y'):
-    case 'k': command = SVGP_GRADIENT_ADD_STOP_CMYKA; *args = 6; break;
 
     case STR('r','e','l','_','q','u','a','d','_','t','o',0):
     case 'q': command = SVGP_REL_QUAD_TO; *args = 4; break;
@@ -4240,10 +4239,57 @@ static int svgp_resolve_command (const uint8_t*str, int *args)
     case STR('C','A','P','_','R','O','U','N','D',0,0,0):
       command = 1;
       break;
+
     case STR('C','A','P','_','S','Q','U','A','R','E',0,0):
     case STR('S','Q','U','A','R','E', 0, 0, 0, 0, 0, 0):
       command = 2;
       break;
+
+    case STR('g','r','a','y',0,0,0,0,0,0,0,0):
+      command = SVGP_SET_COLOR;
+      vt_svgp_set_color_model (vt, 1);
+      *args = vt->color_components;
+      break;
+
+    case STR('g','r','a','y','a',0,0,0,0,0,0,0):
+      command = SVGP_SET_COLOR;
+      vt_svgp_set_color_model (vt, 101);
+      *args = vt->color_components;
+      break;
+
+    case STR('r','g','b',0,0,0,0,0,0,0,0,0):
+    //case 'R':
+      command = SVGP_SET_COLOR;
+      vt_svgp_set_color_model (vt, 3);
+      *args = vt->color_components;
+      break;
+
+    case STR('r','g','b','a',0,0,0,0,0,0,0,0):
+      command = SVGP_SET_COLOR;
+      vt_svgp_set_color_model (vt, 103);
+      *args = vt->color_components;
+      break;
+
+    case STR('c','m','y','k',0,0,0,0,0,0,0,0):
+      command = SVGP_SET_COLOR;
+      vt_svgp_set_color_model (vt, 4);
+      *args = vt->color_components;
+      break;
+
+    case STR('c','m','y','k','a',0,0,0,0,0,0,0):
+      command = SVGP_SET_COLOR;
+      vt_svgp_set_color_model (vt, 104);
+      *args = vt->color_components;
+      break;
+
+    case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       command = 1; break;
+    case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     command = 101; break;
+    case STR('G','R','A','Y','A','_', 'A', 0, 0, 0, 0, 0): command = 201; break;
+    case STR('R','G','B',0,0,0, 0, 0, 0, 0, 0, 0):         command = 3; break;
+    case STR('R','G','B','A',0,0, 0, 0, 0, 0, 0, 0):       command = 103; break;
+    case STR('R','G','B','A','_','A', 0, 0, 0, 0, 0, 0):   command = 203; break;
+    case STR('C','M','Y','K',0,0, 0, 0, 0, 0, 0, 0):       command = 4; break;
+    case STR('C','M','Y','K','A','_','A', 0, 0, 0, 0, 0):  command = 104; break;
 
 #undef STR
   }
@@ -4266,6 +4312,14 @@ enum {
   SVGP_STRING2_ESCAPED,
 } SVGP_STATE;
 
+static void vt_svgp_set_color_model (MrgVT *vt, int color_model)
+{
+  vt->color_model      = color_model;
+  vt->color_components = color_model % 100;
+  if (vt->color_model >  99)
+    vt->color_components++;
+}
+
 static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
 {
   SvgpCommand cmd = vt->command;
@@ -4285,6 +4339,70 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
     case SVGP_SAVE: ctx_save (ctx); break;
     case SVGP_STROKE: ctx_stroke (ctx); break;
     case SVGP_RESTORE: ctx_restore (ctx); break;
+
+    case SVGP_SET_COLOR:
+      {
+        float red = 0.0;
+        float green = 0.0;
+        float blue = 0.0;
+        float alpha = 1.0;
+
+        switch (vt->color_model)
+        {
+          case 101: // gray
+            alpha = vt->numbers[1];
+          case 1: // gray
+            red = green = blue = vt->numbers[0];
+          break;
+          case 103: // rgba
+            alpha = vt->numbers[3];
+          case 3: // rgb
+            red = vt->numbers[0];
+            green = vt->numbers[1];
+            blue = vt->numbers[2];
+          break;
+          case 104: // cmyka
+            alpha = vt->numbers[4];
+          case 4: // cmyk
+            red = (1.0-vt->numbers[0]) * (1.0 - vt->numbers[3]);
+            green = (1.0-vt->numbers[1]) * (1.0 - vt->numbers[3]);
+            blue = (1.0-vt->numbers[2]) * (1.0 - vt->numbers[3]);
+          break;
+        }
+        ctx_set_rgba (ctx, red, green, blue, alpha);
+        ctx_set_rgba_stroke (ctx, red, green, blue, alpha);
+      }
+
+      break;
+    case SVGP_SET_COLOR_MODEL:
+      vt_svgp_set_color_model (vt, vt->numbers[0]);
+#if 0
+      switch ((int)vt->numbers[0])
+      {
+        case 1: // gray
+          break;
+        case 3: // rgb
+          break;
+        case 4: // cmyk
+          break;
+        case 16: // devicen1
+          break;
+        case 101: // graya
+          break;
+        case 102: // rgba
+          break;
+        case 104: // cmyka
+          break;
+        case 201: // graya - premul
+          break;
+        case 203: // rgba - premul
+          break;
+        case 204: // cmyka - premul
+          break;
+      }
+#endif
+
+      break;
 
     case SVGP_ARC_TO: break;
     case SVGP_REL_ARC_TO: break;
@@ -4479,47 +4597,6 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
     case SVGP_GRADIENT_ADD_STOP:
        ctx_gradient_add_stop (ctx, vt->numbers[0],
 		              vt->numbers[1], vt->numbers[2], vt->numbers[3], vt->numbers[4]);
-       break;
-    case SVGP_GRADIENT_ADD_STOP_CMYKA:
-       {
-         float c = vt->numbers[1];
-	 float m = vt->numbers[2];
-	 float y = vt->numbers[3];
-	 float k = vt->numbers[4];
-	 c = 1.0 - c;
-	 m = 1.0 - m;
-	 y = 1.0 - y;
-	 k = 1.0 - k;
-	 c*=k;
-	 m*=k;
-	 y*=k;
-         ctx_gradient_add_stop (ctx, vt->numbers[0], c, m, y, vt->numbers[5]);
-       }
-       break;
-    case SVGP_SET_GRAYA:
-       ctx_set_rgba (ctx, vt->numbers[0], vt->numbers[0], vt->numbers[0], vt->numbers[1]);
-       ctx_set_rgba_stroke (ctx, vt->numbers[0], vt->numbers[0], vt->numbers[0], vt->numbers[1]);
-       break;
-    case SVGP_SET_RGBA:
-       ctx_set_rgba (ctx, vt->numbers[0], vt->numbers[1], vt->numbers[2], vt->numbers[3]);
-       ctx_set_rgba_stroke (ctx, vt->numbers[0], vt->numbers[1], vt->numbers[2], vt->numbers[3]);
-       break;
-    case SVGP_SET_CMYKA:
-       {
-         float c = vt->numbers[0];
-	 float m = vt->numbers[1];
-	 float y = vt->numbers[2];
-	 float k = vt->numbers[3];
-	 c = 1.0 - c;
-	 m = 1.0 - m;
-	 y = 1.0 - y;
-	 k = 1.0 - k;
-	 c*=k;
-	 m*=k;
-	 y*=k;
-         ctx_set_rgba (ctx, c, m, y, vt->numbers[4]);
-         ctx_set_rgba_stroke (ctx, c, m, y, vt->numbers[4]);
-       }
        break;
     case SVGP_CLOSE_PATH:
        ctx_close_path (ctx);
@@ -4746,7 +4823,7 @@ static void vt_state_svgp (MrgVT *vt, int byte)
 	{
 	  int args = 0;
 	  vt->utf8_holding[vt->utf8_pos]=0;
-	  int command = svgp_resolve_command (vt->utf8_holding, &args);
+	  int command = svgp_resolve_command (vt, vt->utf8_holding, &args);
 
 	  if (command >= 0 && command < 5)
 	  {
@@ -4770,7 +4847,7 @@ static void vt_state_svgp (MrgVT *vt, int byte)
 	    for (int i = 0; vt->utf8_pos && vt->utf8_holding[i] > ' '; i++)
 	    {
 	       buf[0] = vt->utf8_holding[i];
-	       vt->command = svgp_resolve_command (buf, &args);
+	       vt->command = svgp_resolve_command (vt, buf, &args);
 	       if (vt->command > 0)
 	       {
 	         vt->n_args = args;
