@@ -4293,6 +4293,34 @@ static void vt_svgp_set_color_model (MrgVT *vt, int color_model)
     vt->color_components++;
 }
 
+void vt_svgp_get_color (MrgVT *vt, int offset, float *red, float *green, float *blue, float *alpha)
+{
+  *alpha = 1.0;
+  switch (vt->color_model)
+  {
+    case 101: // gray
+      *alpha = vt->numbers[offset + 1];
+    case 1: // gray
+      *red = *green = *blue = vt->numbers[offset + 0];
+    break;
+    default:
+    case 103: // rgba
+      *alpha = vt->numbers[offset + 3];
+    case 3: // rgb
+      *red = vt->numbers[offset + 0];
+      *green = vt->numbers[offset + 1];
+      *blue = vt->numbers[offset + 2];
+    break;
+    case 104: // cmyka
+      *alpha = vt->numbers[offset + 4];
+    case 4: // cmyk
+      *red = (1.0-vt->numbers[offset + 0]) * (1.0 - vt->numbers[offset + 3]);
+      *green = (1.0-vt->numbers[offset + 1]) * (1.0 - vt->numbers[offset + 3]);
+      *blue = (1.0-vt->numbers[offset + 2]) * (1.0 - vt->numbers[offset + 3]);
+    break;
+  }
+}
+
 static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
 {
   SvgpCommand cmd = vt->command;
@@ -4315,66 +4343,15 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
 
     case SVGP_SET_COLOR:
       {
-        float red = 0.0;
-        float green = 0.0;
-        float blue = 0.0;
-        float alpha = 1.0;
+        float red, green, blue, alpha;
+        vt_svgp_get_color (vt, 0, &red, &green, &blue, &alpha);
 
-        switch (vt->color_model)
-        {
-          case 101: // gray
-            alpha = vt->numbers[1];
-          case 1: // gray
-            red = green = blue = vt->numbers[0];
-          break;
-          case 103: // rgba
-            alpha = vt->numbers[3];
-          case 3: // rgb
-            red = vt->numbers[0];
-            green = vt->numbers[1];
-            blue = vt->numbers[2];
-          break;
-          case 104: // cmyka
-            alpha = vt->numbers[4];
-          case 4: // cmyk
-            red = (1.0-vt->numbers[0]) * (1.0 - vt->numbers[3]);
-            green = (1.0-vt->numbers[1]) * (1.0 - vt->numbers[3]);
-            blue = (1.0-vt->numbers[2]) * (1.0 - vt->numbers[3]);
-          break;
-        }
         ctx_set_rgba (ctx, red, green, blue, alpha);
         ctx_set_rgba_stroke (ctx, red, green, blue, alpha);
       }
-
       break;
     case SVGP_SET_COLOR_MODEL:
       vt_svgp_set_color_model (vt, vt->numbers[0]);
-#if 0
-      switch ((int)vt->numbers[0])
-      {
-        case 1: // gray
-          break;
-        case 3: // rgb
-          break;
-        case 4: // cmyk
-          break;
-        case 16: // devicen1
-          break;
-        case 101: // graya
-          break;
-        case 102: // rgba
-          break;
-        case 104: // cmyka
-          break;
-        case 201: // graya - premul
-          break;
-        case 203: // rgba - premul
-          break;
-        case 204: // cmyka - premul
-          break;
-      }
-#endif
-
       break;
 
     case SVGP_ARC_TO: break;
@@ -4517,13 +4494,18 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
               *next_nl = 0;
             }
 
-            /* do our own layouting on a per-word basis? */
+            /* do our own layouting on a per-word basis?, to get justified
+             * margins? then we'd want explict margins rather than the
+             * implicit ones from move_to's .. making move_to work within
+             * margins.
+             */
 	    ctx_text (ctx, c);
 
             if (next_nl)
             {
               // do the newline thing here
-              ctx_move_to (ctx, vt->left_margin, ctx_y (ctx) +  ctx_get_font_size (ctx));
+              ctx_move_to (ctx, vt->left_margin, ctx_y (ctx) + 
+                                ctx_get_font_size (ctx));
               c = next_nl + 1;
             }
             else
@@ -4568,8 +4550,12 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
                                   vt->numbers[4], vt->numbers[5]);
 	break;
     case SVGP_GRADIENT_ADD_STOP:
-       ctx_gradient_add_stop (ctx, vt->numbers[0],
-		              vt->numbers[1], vt->numbers[2], vt->numbers[3], vt->numbers[4]);
+      {
+        float red, green, blue, alpha;
+        vt_svgp_get_color (vt, 1, &red, &green, &blue, &alpha);
+
+        ctx_gradient_add_stop (ctx, vt->numbers[0], red, green, blue, alpha);
+      }
        break;
     case SVGP_CLOSE_PATH:
        ctx_close_path (ctx);
@@ -5743,8 +5729,8 @@ static void ctx_vt_run_command (MrgVT *vt, const char *command)
     //setenv ("TERM", "ansi", 1);
     //setenv ("TERM", "vt102", 1);
     //setenv ("TERM", "vt100", 1);
-    //setenv ("TERM", "xterm", 1);
-    setenv ("TERM", "xterm-256color", 1);
+    //setenv ("TERM", "xterm-256color", 1);
+    setenv ("TERM", "xterm", 1);
     setenv ("COLORTERM", "truecolor", 1);
     vt->result = system (command);
     exit(0);
