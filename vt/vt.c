@@ -411,6 +411,16 @@ struct _MrgVT {
   int        n_args;
   float      pcx;
   float      pcy;
+  // text related data
+  float      left_margin; // set by last user provided move_to
+                          // before text, used by newlines
+  float      letter_spacing;
+  float      word_spacing;
+  float      font_stretch;  // horizontal expansion
+  float      font_size_adjust;
+  // font-variant
+  // font-weight
+  // text-decoration
 
   int        encoding;  // 0 = utf8 1=pc vga 2=ascii
 
@@ -2328,6 +2338,9 @@ static void vtcmd_request_mode (MrgVT *vt, const char *sequence)
     val = parse_int (sequence, 1);
     switch (val)
     {
+     case 1:
+           sprintf (buf, "\e[%i;%i$y", val, 0);
+           break;
      case 2:/* AM - keyboard action mode */
            sprintf (buf, "\e[%i;%i$y", val, 0);
              break;
@@ -4352,13 +4365,18 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
 					   vt->numbers[4], vt->numbers[5]);
 		        vt->command = SVGP_REL_CURVE_TO;
         break;
-    case SVGP_LINE_TO: ctx_line_to (ctx, vt->numbers[0], vt->numbers[1]); vt->command = SVGP_LINE_TO;
+    case SVGP_LINE_TO:
+        ctx_line_to (ctx, vt->numbers[0], vt->numbers[1]);
+        vt->command = SVGP_LINE_TO;
         vt->pcx = vt->numbers[0];
         vt->pcy = vt->numbers[1];
         break;
-    case SVGP_MOVE_TO: ctx_move_to (ctx, vt->numbers[0], vt->numbers[1]); vt->command = SVGP_LINE_TO;
+    case SVGP_MOVE_TO:
+        ctx_move_to (ctx, vt->numbers[0], vt->numbers[1]);
+        vt->command = SVGP_LINE_TO;
         vt->pcx = vt->numbers[0];
         vt->pcy = vt->numbers[1];
+        vt->left_margin = vt->pcx;
         break;
     case SVGP_SET_FONT_SIZE:
 	ctx_set_font_size (ctx, vt->numbers[0]);
@@ -4395,9 +4413,35 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
         break;
     case SVGP_TEXT:
 	if (vt->n_numbers == 1)
-	  ctx_rel_move_to (ctx, -vt->numbers[0], 0.0);
+	  ctx_rel_move_to (ctx, -vt->numbers[0], 0.0);  //  XXX : scale by font(size)
 	else
-	  ctx_text (ctx, (char*)vt->utf8_holding);
+        {
+          char *copy = strdup ((char*)vt->utf8_holding);
+          char *c;
+          for (c = copy; c; )
+          {
+            char *next_nl = strchr (c, '\n');
+            if (next_nl)
+            {
+              *next_nl = 0;
+            }
+
+            /* do our own layouting on a per-word basis? */
+	    ctx_text (ctx, c);
+
+            if (next_nl)
+            {
+              // do the newline thing here
+              ctx_move_to (ctx, vt->left_margin, ctx_y (ctx) +  ctx_get_font_size (ctx));
+              c = next_nl + 1;
+            }
+            else
+            {
+              c = NULL;
+            }
+          }
+          free (copy);
+        }
         vt->command = SVGP_TEXT;
         break;
     case SVGP_SET_FONT: ctx_set_font (ctx, (char*)vt->utf8_holding);
@@ -4411,6 +4455,7 @@ static void svgp_dispatch_command (MrgVT *vt, Ctx *ctx)
 	ctx_rel_move_to (ctx , vt->numbers[0], vt->numbers[1]);
         vt->pcx += vt->numbers[0];
         vt->pcy += vt->numbers[1];
+        vt->left_margin = ctx_x (ctx);
         break;
     case SVGP_SET_LINE_WIDTH:
         ctx_set_line_width (ctx, vt->numbers[0]);
@@ -5080,6 +5125,8 @@ Image *image = NULL;
 	    }
 	    }
 	    break;
+          case 104:
+            break;
           default:
 	    fprintf (stderr, "unhandled OSC %i\n", n);
             break;

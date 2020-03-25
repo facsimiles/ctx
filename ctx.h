@@ -382,6 +382,7 @@ void ctx_set_line_width (Ctx *ctx, float x);
                                              1px wide dab based stroker*/
 
 void ctx_set_font_size  (Ctx *ctx, float x);
+float ctx_get_font_size  (Ctx *ctx);
 void ctx_set_font       (Ctx *ctx, const char *font);
 void ctx_scale          (Ctx *ctx, float x, float y);
 void ctx_translate      (Ctx *ctx, float x, float y);
@@ -968,19 +969,19 @@ struct _CtxRenderstream
 };
 
 struct _CtxState {
-  CtxGState gstate;
-  CtxGState gstate_stack[CTX_MAX_STATES];
-  int       gstate_no;
-  float     x;
-  float     y;
-  float     path_start_x;
-  float     path_start_y;
-  int       has_moved;
+  CtxGState   gstate;
+  CtxGState   gstate_stack[CTX_MAX_STATES];
+  int         gstate_no;
+  float       x;
+  float       y;
+  float       path_start_x;
+  float       path_start_y;
+  int         has_moved;
   CtxGradient gradient[CTX_MAX_GRADIENTS];
-  int       min_x;
-  int       min_y;
-  int       max_x;
-  int       max_y;
+  int         min_x;
+  int         min_y;
+  int         max_x;
+  int         max_y;
 };
 #if CTX_RASTERIZER
 
@@ -1930,6 +1931,11 @@ void ctx_set_global_alpha (Ctx *ctx, float global_alpha)
 
 void ctx_set_font_size (Ctx *ctx, float x) {
   CTX_PROCESS_F1(CTX_FONT_SIZE, x);
+}
+
+float ctx_get_font_size  (Ctx *ctx)
+{
+  return ctx->state.gstate.font_size;
 }
 
 static int _ctx_resolve_font (const char *name)
@@ -7959,7 +7965,7 @@ _ctx_text (Ctx        *ctx,
       if (*utf8 == '\n')
       {
         y += ctx->state.gstate.font_size * state->gstate.line_spacing;
-        x = x0;
+        x = x0; 
         ctx_move_to (ctx, x, y);
       }
       else
