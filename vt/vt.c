@@ -4040,7 +4040,6 @@ static void vt_svgp_set_color_model (MrgVT *vt, int color_model);
 
 static int svgp_resolve_command (MrgVT *vt, const uint8_t*str, int *args)
 {
-  int command = -1;
   uint32_t str_hash = 0;
 
 #define STR(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) (\
@@ -4074,226 +4073,200 @@ static int svgp_resolve_command (MrgVT *vt, const uint8_t*str, int *args)
   switch (str_hash)
   {
     case STR('a','r','c','_','t','o',0,0,0,0,0,0):
-    case 'A': command = SVGP_ARC_TO;          *args = 7; break;
+    case 'A': *args = 7; return SVGP_ARC_TO;
 
     case STR('a','r','c',0,0,0,0,0,0,0,0,0):
-    case 'B': command = SVGP_ARC; *args = 6; break;
+    case 'B': *args = 6; return SVGP_ARC;
 
     case STR('c','u','r','v','e','_','t','o',0,0,0,0):
-    case 'C': command = SVGP_CURVE_TO; *args = 6; break;
+    case 'C': *args = 6; return SVGP_CURVE_TO;
 
     case STR('r','e','s','t','o','r','e',0,0,0,0,0):
-    case 'D': command = SVGP_RESTORE; *args = 0; break;
+    case 'D': *args = 0; return SVGP_RESTORE;
 
     case STR('s','t','r','o','k','e',0,0,0,0,0,0):
-    case 'E': command = SVGP_STROKE; *args = 0; break;
+    case 'E': *args = 0; return SVGP_STROKE;
 
     case STR('f','i','l','l',0,0,0,0,0,0,0,0):
-    case 'F': command = SVGP_FILL; *args = 0; break;
+    case 'F': *args = 0; return SVGP_FILL;
 
     case STR('h','o','r','_','l','i','n','e','_','t','o',0):
-    case 'H': command = SVGP_HOR_LINE_TO;     *args = 1; break;
+    case 'H': *args = 1; return SVGP_HOR_LINE_TO;
 
     case STR('r','o','t','a','t','e',0,0,0,0,0,0):
-    case 'J': command = SVGP_ROTATE; *args = 1; break;
+    case 'J': *args = 1; return SVGP_ROTATE;
 
-    //case STR('c','m','y','k','a',0,0,0,0,0,0,0):
     case STR('c','o','l','o','r',0,0,0,0,0,0,0):
     case STR('s','e','t','_','c','o','l','o','r',0,0,0):
-    case 'K': command = SVGP_SET_COLOR;
-      *args = vt->color_components;
-      break;
+    case 'K': *args = vt->color_components; return SVGP_SET_COLOR;
 
     case STR('l','i','n','e','_','t','o',0,0,0,0,0):
-    case 'L': command = SVGP_LINE_TO; *args = 2; break;
+    case 'L': *args = 2; return SVGP_LINE_TO;
 
     case STR('m','o','v','e','_','t','o',0,0,0,0,0):
-    case 'M': command = SVGP_MOVE_TO; *args = 2; break;
+    case 'M': *args = 2; return SVGP_MOVE_TO;
 
     case STR('s','e','t','_','f','o','n','t','_','s','i','z'):
-    case 'N': command = SVGP_SET_FONT_SIZE; *args = 1; break;
+    case 'N': *args = 1; return SVGP_SET_FONT_SIZE;
 
     case STR('s','c','a','l','e',0,0,0,0,0,0,0):
-    case 'O': command = SVGP_SCALE; *args = 2; break;
-
+    case 'O': *args = 2; return SVGP_SCALE;
 
     case STR('q','u','a','d','_','t','o',0,0,0,0,0):
-    case 'Q': command = SVGP_QUAD_TO; *args = 4; break;
+    case 'Q': *args = 4; return SVGP_QUAD_TO;
 
     case STR('s','m','o','o','t','h','_','t','o',0,0,0):
-    case 'S': command = SVGP_SMOOTH_TO;       *args = 4; break;
+    case 'S': *args = 4; return SVGP_SMOOTH_TO;
 
     case STR('s','m','o','o','t','h','_','q','u','a','d','_'):
-    case 'T': command = SVGP_SMOOTHQ_TO;      *args = 2; break;
+    case 'T': *args = 2; return SVGP_SMOOTHQ_TO;
 
     case STR('c','l','e','a','r',0,0,0,0,0,0,0):
-    case 'U': command = SVGP_CLEAR; *args = 0; break;
+    case 'U': *args = 0; return SVGP_CLEAR;
 
     case STR('e','x','i','t',0,0,0,0,0,0,0,0):
     case STR('d','o','n','e',0,0,0,0,0,0,0,0):
-    case 'X': command = SVGP_EXIT; *args = 0; break;
+    case 'X': *args = 0; return SVGP_EXIT;
 
     case STR('c','o','l','o','r','_','m','o','d','e','l', 0):
-    case 'Y': command = SVGP_SET_COLOR_MODEL; *args = 1; break;
+    case 'Y': *args = 1; return SVGP_SET_COLOR_MODEL;
 
     case STR('v','e','r','_','l','i','n','e','_','t','o',0):
-    case 'V': command = SVGP_VER_LINE_TO;     *args = 1; break;
+    case 'V': *args = 1; return SVGP_VER_LINE_TO;
 
     case STR('s','e','t','_','l','i','n','e','_','c','a','p'):
     case STR('c','a','p',0,0,0,0,0,0,0,0,0):
-    case 'W': command = SVGP_SET_LINE_CAP; *args = 1; break;
+    case 'W': *args = 1; return SVGP_SET_LINE_CAP;
 
     case STR('c','l','o','s','e','_','p','a','t','h',0,0):
-    case 'Z':case 'z': command = SVGP_CLOSE_PATH; *args = 0; break;
+    case 'Z':case 'z': *args = 0; return SVGP_CLOSE_PATH;
 
     case STR('r','e','l','_','a','r','c','_','t','o',0,0):
-    case 'a': command = SVGP_REL_ARC_TO;      *args = 7; break;
+    case 'a': *args = 7; return SVGP_REL_ARC_TO;
 
     case STR('c','l','i','p',0,0,0,0,0,0,0,0):
-    case 'b': command = SVGP_CLIP; *args = 0; break;
+    case 'b': *args = 0; return SVGP_CLIP;
 
     case STR('r','e','l','_','c','u','r','v','e','_','t','o'):
-    case 'c': command = SVGP_REL_CURVE_TO; *args = 6; break;
+    case 'c': *args = 6; return SVGP_REL_CURVE_TO;
 
     case STR('s','a','v','e',0,0,0,0,0,0,0,0):
-    case 'd': command = SVGP_SAVE; *args = 0; break;
+    case 'd': *args = 0; return SVGP_SAVE;
 
     case STR('t','r','a','n','s','l','a','t','e',0,0,0):
-    case 'e': command = SVGP_TRANSLATE; *args = 2; break;
+    case 'e': *args = 2; return SVGP_TRANSLATE;
 
     case STR('l','i','n','e','a','r','_','g','r','a','d','i'):
-    case 'g': command = SVGP_LINEAR_GRADIENT; *args = 4; break;
+    case 'g': *args = 4; return SVGP_LINEAR_GRADIENT;
 
     case STR('r','e','l','_','h','o','r','_','l','i','n','e'):
-    case 'h': command = SVGP_REL_HOR_LINE_TO; *args = 1; break;
+    case 'h': *args = 1; return SVGP_REL_HOR_LINE_TO;
 
     case STR('s','e','t','_','l','i','n','e','_','j','o','i'):
     case STR('j','o','i','n',0,0,0,0,0,0,0,0):
-    case 'j': command = SVGP_SET_LINE_JOIN; *args = 1; break;
+    case 'j': *args = 1; return SVGP_SET_LINE_JOIN;
 
     case STR('r','e','l','_','l','i','n','e','_','t','o',0):
-    case 'l': command = SVGP_REL_LINE_TO; *args = 2; break;
+    case 'l': *args = 2; return SVGP_REL_LINE_TO;
 
     case STR('r','e','l','_','m','o','v','e','_','t','o',0):
-    case 'm': command = SVGP_REL_MOVE_TO; *args = 2; break;
+    case 'm': *args = 2; return SVGP_REL_MOVE_TO;
 
     case STR('s','e','t','_','f','o','n','t',0,0,0,0):
-    case 'n': command = SVGP_SET_FONT; *args = 100; break;
+    case 'n': *args = 100; return SVGP_SET_FONT;
 
     case STR('r','a','d','i','a','l','_','g','r','a','d','i'):
-    case 'o': command = SVGP_RADIAL_GRADIENT; *args = 6; break;
+    case 'o': *args = 6; return SVGP_RADIAL_GRADIENT;
 
     case STR('g','r','a','d','i','e','n','t','_','a','d','d'):
     case STR('a','d','d','_','s','t','o','p',0,0,0,0):
-    case 'p': command = SVGP_GRADIENT_ADD_STOP; *args = 5; break;
+    case 'p': *args = 5; return SVGP_GRADIENT_ADD_STOP;
 
     case STR('r','e','l','_','q','u','a','d','_','t','o',0):
-    case 'q': command = SVGP_REL_QUAD_TO; *args = 4; break;
+    case 'q': *args = 4; return SVGP_REL_QUAD_TO;
 
     case STR('r','e','c','t','a','n','g','l','e',0,0,0):
     case STR('r','e','c','t',0,0,0,0,'e',0,0,0):
-    case 'r': command = SVGP_RECTANGLE; *args = 4; break;
+    case 'r': *args = 4; return SVGP_RECTANGLE;
 
     case STR('r','e','l','_','s','m','o','o','t','h','_','t'):
-    case 's': command = SVGP_REL_SMOOTH_TO;   *args = 4; break;
+    case 's': *args = 4; return SVGP_REL_SMOOTH_TO;
 
     case STR('r','e','l','_','s','m','o','o','t','h','_','q'):
-    case 't': command = SVGP_REL_SMOOTHQ_TO;  *args = 2; break;
+    case 't': *args = 2; return SVGP_REL_SMOOTHQ_TO;
 
     case STR('s','t','r','o','k','e','_','t','e','x','t', 0):
-    case 'u': command = SVGP_STROKE_TEXT; *args = 100; break;
+    case 'u': *args = 100; return SVGP_STROKE_TEXT;
 
     case STR('r','e','l','_','v','e','r','_','l','i','n','e'):
-    case 'v': command = SVGP_REL_VER_LINE_TO; *args = 1; break;
+    case 'v': *args = 1;
+      return SVGP_REL_VER_LINE_TO;
 
     case STR('s','e','t','_','l','i','n','e','_','w','i','d'):
     case STR('l','i','n','e','_','w','i','d','t','h',0,0):
-    case 'w': command = SVGP_SET_LINE_WIDTH; *args = 1; break;
+    case 'w': *args = 1;
+      return SVGP_SET_LINE_WIDTH;
 
     case STR('t','e','x','t',0,0,0,0,0,0,0,0):
-    case 'x': command = SVGP_TEXT; *args = 100; break;
-
-
-    /* the following words in all caps map to integers 
-    */
-
-    case STR('J','O','I','N','_','B','E','V','E','L',0,0):
-    case STR('B','E','V','E','L',0, 0, 0, 0, 0, 0, 0):
-      command = 0;
-      break;
-
-    case STR('J','O','I','N','_','R','O','U','N','D',0,0):
-    case STR('R','O','U','N','D',0, 0, 0, 0, 0, 0, 0):
-      command = 1;
-      break;
-
-    case STR('J','O','I','N','_','M','I','T','E','R',0,0):
-    case STR('M','I','T','E','R',0, 0, 0, 0, 0, 0, 0):
-      command = 2;
-      break;
-
-    case STR('C','A','P','_','N','O','N','E',0,0,0,0):
-    case STR('N','O','N','E',0 ,0, 0, 0, 0, 0, 0, 0):
-      command = 0;
-      break;
-    case STR('C','A','P','_','R','O','U','N','D',0,0,0):
-      command = 1;
-      break;
-
-    case STR('C','A','P','_','S','Q','U','A','R','E',0,0):
-    case STR('S','Q','U','A','R','E', 0, 0, 0, 0, 0, 0):
-      command = 2;
-      break;
+    case 'x': *args = 100;
+      return SVGP_TEXT;
 
     case STR('g','r','a','y',0,0,0,0,0,0,0,0):
-      command = SVGP_SET_COLOR;
       vt_svgp_set_color_model (vt, 1);
       *args = vt->color_components;
-      break;
+      return SVGP_SET_COLOR;
 
     case STR('g','r','a','y','a',0,0,0,0,0,0,0):
-      command = SVGP_SET_COLOR;
       vt_svgp_set_color_model (vt, 101);
       *args = vt->color_components;
-      break;
+      return SVGP_SET_COLOR;
 
     case STR('r','g','b',0,0,0,0,0,0,0,0,0):
-    //case 'R':
-      command = SVGP_SET_COLOR;
       vt_svgp_set_color_model (vt, 3);
       *args = vt->color_components;
-      break;
+      return SVGP_SET_COLOR;
 
     case STR('r','g','b','a',0,0,0,0,0,0,0,0):
-      command = SVGP_SET_COLOR;
       vt_svgp_set_color_model (vt, 103);
       *args = vt->color_components;
-      break;
+      return SVGP_SET_COLOR;
 
     case STR('c','m','y','k',0,0,0,0,0,0,0,0):
-      command = SVGP_SET_COLOR;
       vt_svgp_set_color_model (vt, 4);
       *args = vt->color_components;
-      break;
+      return SVGP_SET_COLOR;
 
     case STR('c','m','y','k','a',0,0,0,0,0,0,0):
-      command = SVGP_SET_COLOR;
       vt_svgp_set_color_model (vt, 104);
       *args = vt->color_components;
-      break;
+      return SVGP_SET_COLOR;
 
-    case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       command = 1; break;
-    case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     command = 101; break;
-    case STR('G','R','A','Y','A','_', 'A', 0, 0, 0, 0, 0): command = 201; break;
-    case STR('R','G','B',0,0,0, 0, 0, 0, 0, 0, 0):         command = 3; break;
-    case STR('R','G','B','A',0,0, 0, 0, 0, 0, 0, 0):       command = 103; break;
-    case STR('R','G','B','A','_','A', 0, 0, 0, 0, 0, 0):   command = 203; break;
-    case STR('C','M','Y','K',0,0, 0, 0, 0, 0, 0, 0):       command = 4; break;
-    case STR('C','M','Y','K','A','_','A', 0, 0, 0, 0, 0):  command = 104; break;
+    /* the following words in all caps map to integer constants
+    */
+    case STR('J','O','I','N','_','B','E','V','E','L',0,0):
+    case STR('B','E','V','E','L',0, 0, 0, 0, 0, 0, 0):     return 0;
+    case STR('J','O','I','N','_','R','O','U','N','D',0,0):
+    case STR('R','O','U','N','D',0, 0, 0, 0, 0, 0, 0):     return 1;
+    case STR('J','O','I','N','_','M','I','T','E','R',0,0):
+    case STR('M','I','T','E','R',0, 0, 0, 0, 0, 0, 0):     return 2;
+    case STR('C','A','P','_','N','O','N','E',0,0,0,0):
+    case STR('N','O','N','E',0 ,0, 0, 0, 0, 0, 0, 0):      return 0;
+    case STR('C','A','P','_','R','O','U','N','D',0,0,0):   return 1;
+    case STR('C','A','P','_','S','Q','U','A','R','E',0,0):
+    case STR('S','Q','U','A','R','E', 0, 0, 0, 0, 0, 0):   return 2;
+
+    case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       return 1; break;
+    case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     return 101; break;
+    case STR('G','R','A','Y','A','_', 'A', 0, 0, 0, 0, 0): return 201; break;
+    case STR('R','G','B',0,0,0, 0, 0, 0, 0, 0, 0):         return 3; break;
+    case STR('R','G','B','A',0,0, 0, 0, 0, 0, 0, 0):       return 103; break;
+    case STR('R','G','B','A','_','A', 0, 0, 0, 0, 0, 0):   return 203; break;
+    case STR('C','M','Y','K',0,0, 0, 0, 0, 0, 0, 0):       return 4; break;
+    case STR('C','M','Y','K','A','_','A', 0, 0, 0, 0, 0):  return 104; break;
 
 #undef STR
   }
-  return command;
+  return -1;
 }
 
 // set_image 320 240 24 dvamlkvml~
