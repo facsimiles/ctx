@@ -1,66 +1,66 @@
 
-typedef struct _MrgVT MrgVT;
+typedef struct _VT VT;
 
-MrgVT *ctx_vt_new (const char *command, int cols, int rows, float font_size, float line_spacing);
+VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing);
 
-void ctx_vt_open_log (MrgVT *vt, const char *path);
+void vt_open_log (VT *vt, const char *path);
 
-int         ctx_vt_cw                 (MrgVT *vt);
-int         ctx_vt_ch                 (MrgVT *vt);
-void        ctx_vt_set_font_size      (MrgVT *vt, float font_size);
-void        ctx_vt_set_line_spacing   (MrgVT *vt, float line_spacing);
+int         vt_cw                 (VT *vt);
+int         vt_ch                 (VT *vt);
+void        vt_set_font_size      (VT *vt, float font_size);
+void        vt_set_line_spacing   (VT *vt, float line_spacing);
 
-const char *ctx_vt_find_shell_command (void);
+const char *vt_find_shell_command (void);
 
-int         ctx_vt_keyrepeat          (MrgVT *vt);
+int         vt_keyrepeat          (VT *vt);
 
-int         ctx_vt_get_result         (MrgVT *vt);
-int         ctx_vt_is_done            (MrgVT *vt);
-int         ctx_vt_poll               (MrgVT *vt, int timeout);
-long        ctx_vt_rev                (MrgVT *vt);
-void        ctx_vt_destroy            (MrgVT *vt);
-void        ctx_vt_set_term_size      (MrgVT *vt, int cols, int rows);
-int ctx_vt_has_blink (MrgVT *vt);
+int         vt_get_result         (VT *vt);
+int         vt_is_done            (VT *vt);
+int         vt_poll               (VT *vt, int timeout);
+long        vt_rev                (VT *vt);
+void        vt_destroy            (VT *vt);
+void        vt_set_term_size      (VT *vt, int cols, int rows);
+int vt_has_blink (VT *vt);
 
 /* this is how mrg/mmm based key-events are fed into the vt engine
  */
-void        ctx_vt_feed_keystring     (MrgVT *vt, const char *str);
-void ctx_vt_paste (MrgVT *vt, const char *str);
+void        vt_feed_keystring     (VT *vt, const char *str);
+void vt_paste (VT *vt, const char *str);
 
 /* not needed when passing a commandline for command to
  * run, but could be used for injecting commands, or
  * output from stored shell commands/sessions to display
  */
-//void        ctx_vt_feed_byte          (MrgVT *vt, int byte);
+//void        vt_feed_byte          (VT *vt, int byte);
 
 #define DEFAULT_SCROLLBACK   2048
 #define DEFAULT_ROWS         24
 #define DEFAULT_COLS         80
 
-int         ctx_vt_get_line_count       (MrgVT *vt);
+int         vt_get_line_count       (VT *vt);
 
-pid_t       ctx_vt_get_pid              (MrgVT *vt);
+pid_t       vt_get_pid              (VT *vt);
 
-const char *ctx_vt_get_line             (MrgVT *vt, int no);
+const char *vt_get_line             (VT *vt, int no);
 
-void        ctx_vt_set_scrollback_lines (MrgVT *vt, int scrollback_lines);
-int         ctx_vt_get_scrollback_lines (MrgVT *vt);
+void        vt_set_scrollback_lines (VT *vt, int scrollback_lines);
+int         vt_get_scrollback_lines (VT *vt);
 
-void        ctx_vt_set_scroll           (MrgVT *vt, int scroll);
-int         ctx_vt_get_scroll           (MrgVT *vt);
+void        vt_set_scroll           (VT *vt, int scroll);
+int         vt_get_scroll           (VT *vt);
 
-int         ctx_vt_get_cols             (MrgVT *vt);
-int         ctx_vt_get_rows             (MrgVT *vt);
+int         vt_get_cols             (VT *vt);
+int         vt_get_rows             (VT *vt);
 
-char *      ctx_vt_get_selection        (MrgVT *vt);
-int         ctx_vt_get_cursor_x         (MrgVT *vt);
-int         ctx_vt_get_cursor_y         (MrgVT *vt);
+char *      vt_get_selection        (VT *vt);
+int         vt_get_cursor_x         (VT *vt);
+int         vt_get_cursor_y         (VT *vt);
 
-void        ctx_vt_draw                 (MrgVT *vt, Ctx *ctx, double x, double y);
-int         ctx_vt_get_local (MrgVT *vt);
-void        ctx_vt_set_local (MrgVT *vt, int local);
-void        ctx_vt_rev_inc              (MrgVT *vt);
-int ctx_vt_mic (MrgVT *vt);
+void        vt_draw                 (VT *vt, Ctx *ctx, double x, double y);
+int         vt_get_local (VT *vt);
+void        vt_set_local (VT *vt, int local);
+void        vt_rev_inc              (VT *vt);
+int vt_mic (VT *vt);
 
 typedef enum VtMouseEvent {
 	VT_MOUSE_MOTION = 0,
@@ -69,5 +69,5 @@ typedef enum VtMouseEvent {
 	VT_MOUSE_RELEASE,
 } VtMouseEvent;
 
-void ctx_vt_mouse (MrgVT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y);
-void ctx_vt_set_mmm (MrgVT *vt, void *mmm);
+void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y);
+void vt_set_mmm (VT *vt, void *mmm);

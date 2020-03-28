@@ -42,7 +42,7 @@ float font_size    = 32.0;
 float line_spacing = 2.0;
 
 static pid_t vt_child;
-static MrgVT *vt = NULL;
+static VT *vt = NULL;
 
 #if USE_MMM
 static Mmm *mmm = NULL;
@@ -128,27 +128,27 @@ static void handle_event (const char *event)
 	//else
 	if (!strcmp (event, "shift-page-up"))
 	{
-	  int new_scroll = ctx_vt_get_scroll (vt) + ctx_vt_get_rows (vt)/2;
-	  ctx_vt_set_scroll (vt, new_scroll);
-	  ctx_vt_rev_inc (vt);
+	  int new_scroll = vt_get_scroll (vt) + vt_get_rows (vt)/2;
+	  vt_set_scroll (vt, new_scroll);
+	  vt_rev_inc (vt);
 	} else if (!strcmp (event, "shift-page-down"))
 	{
-	  int new_scroll = ctx_vt_get_scroll (vt) - ctx_vt_get_rows (vt)/2;
+	  int new_scroll = vt_get_scroll (vt) - vt_get_rows (vt)/2;
 	  if (new_scroll < 0) new_scroll = 0;
-	  ctx_vt_set_scroll (vt, new_scroll);
-	  ctx_vt_rev_inc (vt);
+	  vt_set_scroll (vt, new_scroll);
+	  vt_rev_inc (vt);
 	} else if (!strcmp (event, "shift-control-v")) {
 #if USE_SDL
 	  char *text = SDL_GetClipboardText ();
 	  if (text)
 	  {
-            ctx_vt_paste (vt, text);
+            vt_paste (vt, text);
 	    free (text);
 	  }
 #endif
 	} else if (!strcmp (event, "shift-control-c")) {
 #if USE_SDL
-	  char *text = ctx_vt_get_selection (vt);
+	  char *text = vt_get_selection (vt);
 	  if (text)
 	  {
 	    SDL_SetClipboardText (text);
@@ -156,15 +156,15 @@ static void handle_event (const char *event)
 	  }
 #endif
 	} else if (!strcmp (event, "shift-control-l")) {
-	  ctx_vt_set_local (vt, !ctx_vt_get_local (vt));
+	  vt_set_local (vt, !vt_get_local (vt));
 	} else if (!strcmp (event, "shift-control--") ||
 	           !strcmp (event, "control--")) {
 	  font_size /= 1.15;
 	  font_size = (int) (font_size);
 	  if (font_size < 5) font_size = 5;
 
-	  ctx_vt_set_font_size (vt, font_size);
-          ctx_vt_set_term_size (vt, vt_width / ctx_vt_cw (vt), vt_height / ctx_vt_ch (vt));
+	  vt_set_font_size (vt, font_size);
+          vt_set_term_size (vt, vt_width / vt_cw (vt), vt_height / vt_ch (vt));
 	} else if (!strcmp (event, "shift-control-=") ||
 	           !strcmp (event, "control-=")) {
 	  float old = font_size;
@@ -173,8 +173,8 @@ static void handle_event (const char *event)
 	  if (old == font_size) font_size = old+1;
 	  if (font_size > 200) font_size = 200;
 
-	  ctx_vt_set_font_size (vt, font_size);
-          ctx_vt_set_term_size (vt, vt_width / ctx_vt_cw (vt), vt_height / ctx_vt_ch (vt));
+	  vt_set_font_size (vt, font_size);
+          vt_set_term_size (vt, vt_width / vt_cw (vt), vt_height / vt_ch (vt));
 	} else if (!strcmp (event, "shift-control-n")) {
 	  pid_t pid;
 	  if ((pid=fork())==0)
@@ -185,7 +185,7 @@ static void handle_event (const char *event)
 	    exit(0);
 	  }
 	} else if (!strcmp (event, "shift-control-r")) {
-	  ctx_vt_open_log (vt, "/tmp/ctx-vt");
+	  vt_open_log (vt, "/tmp/ctx-vt");
 	}
         else if (!strcmp (event, "shift-control-q"))
         {
@@ -197,8 +197,8 @@ static void handle_event (const char *event)
         }
         else if (!strncmp (event, "mouse-", 5))
 	{
-	  int cw = ctx_vt_cw (vt);
-	  int ch = ctx_vt_ch (vt);
+	  int cw = vt_cw (vt);
+	  int ch = vt_ch (vt);
 	  if (!strncmp (event + 6, "motion", 6))
 	  {
             int x = 0, y = 0;
@@ -210,7 +210,7 @@ static void handle_event (const char *event)
 	      if (s)
 	      {
 	        y = atoi (s);
-	        ctx_vt_mouse (vt, VT_MOUSE_MOTION, x/cw + 1, y/ch + 1, x, y);
+	        vt_mouse (vt, VT_MOUSE_MOTION, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
 	  }
@@ -225,7 +225,7 @@ static void handle_event (const char *event)
 	      if (s)
 	      {
 	        y = atoi (s);
-	        ctx_vt_mouse (vt, VT_MOUSE_PRESS, x/cw + 1, y/ch + 1, x, y);
+	        vt_mouse (vt, VT_MOUSE_PRESS, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
 	  }
@@ -240,7 +240,7 @@ static void handle_event (const char *event)
 	      if (s)
 	      {
 	        y = atoi (s);
-	        ctx_vt_mouse (vt, VT_MOUSE_DRAG, x/cw + 1, y/ch + 1, x, y);
+	        vt_mouse (vt, VT_MOUSE_DRAG, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
 	  }
@@ -255,16 +255,16 @@ static void handle_event (const char *event)
 	      if (s)
 	      {
 	        y = atoi (s);
-	        ctx_vt_mouse (vt, VT_MOUSE_RELEASE, x/cw + 1, y/ch + 1, x, y);
+	        vt_mouse (vt, VT_MOUSE_RELEASE, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
 	  }
 	}
         else
         {
-          ctx_vt_feed_keystring (vt, event);
+          vt_feed_keystring (vt, event);
 	  // make optional?
-	  ctx_vt_set_scroll (vt, 0);
+	  vt_set_scroll (vt, 0);
         }
 }
 
@@ -296,7 +296,7 @@ static int sdl_check_events ()
     switch (event.type)
     {
       case SDL_MOUSEWHEEL:
-	 ctx_vt_set_scroll (vt, ctx_vt_get_scroll(vt) + event.wheel.y);
+	 vt_set_scroll (vt, vt_get_scroll(vt) + event.wheel.y);
 	 break;
       case SDL_WINDOWEVENT: 
         { 
@@ -318,7 +318,7 @@ static int sdl_check_events ()
   pixels = calloc (width * height, 4);
   vt_width = width;
   vt_height = height;
-          ctx_vt_set_term_size (vt, width / ctx_vt_cw (vt), height / ctx_vt_ch (vt));
+          vt_set_term_size (vt, width / vt_cw (vt), height / vt_ch (vt));
 	  return 1;
 	      }
           }
@@ -362,7 +362,7 @@ static int sdl_check_events ()
         break;
       case SDL_TEXTINPUT:
         if (!lctrl && !rctrl && !lalt &&
-		((ctx_vt_keyrepeat (vt)) || (key_repeat==0))
+		((vt_keyrepeat (vt)) || (key_repeat==0))
               ) {
           const char *name = event.text.text;
           if (!strcmp (name, " ")) name = "space";
@@ -461,7 +461,7 @@ static int sdl_check_events ()
             name = buf;
           }
             if (strcmp (name, "space") &&
-		((ctx_vt_keyrepeat (vt)) || (key_repeat==0))
+		((vt_keyrepeat (vt)) || (key_repeat==0))
 		)
             {
 	      handle_event (name);
@@ -493,27 +493,27 @@ int vt_main(int argc, char **argv)
   sdl_setup (vt_width, vt_height);
 #endif
   setsid();
-  vt = ctx_vt_new (argv[1]?argv[1]:ctx_vt_find_shell_command(), DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
+  vt = vt_new (argv[1]?argv[1]:vt_find_shell_command(), DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
 
 #if USE_MMM
-  ctx_vt_set_mmm (vt, mmm);
+  vt_set_mmm (vt, mmm);
   mmm_pcm_set_sample_rate (mmm, 8000);
 #endif
 
   int sleep_time = 10;
   long drawn_rev = 0;
 
-  vt_child = ctx_vt_get_pid (vt);
+  vt_child = vt_get_pid (vt);
   signal (SIGCHLD, signal_child);
   while(!do_quit)
   {
-      int in_scroll = (ctx_vt_has_blink (vt) >= 10);
+      int in_scroll = (vt_has_blink (vt) >= 10);
 
-      if ((drawn_rev != ctx_vt_rev (vt)) ||
-          ctx_vt_has_blink (vt) ||
+      if ((drawn_rev != vt_rev (vt)) ||
+          vt_has_blink (vt) ||
 	  in_scroll)
       {
-        drawn_rev = ctx_vt_rev (vt);
+        drawn_rev = vt_rev (vt);
 
 #if USE_MMM
       int width; int height;
@@ -522,7 +522,7 @@ int vt_main(int argc, char **argv)
 
         if (vt_width != width ||  vt_height!=height)
         {
-          ctx_vt_set_term_size (vt, width / ctx_vt_cw (vt), height / ctx_vt_ch (vt));
+          vt_set_term_size (vt, width / vt_cw (vt), height / vt_ch (vt));
 	  vt_width = width;
 	  vt_height = height;
 	  drawn_rev = 0;
@@ -532,7 +532,7 @@ int vt_main(int argc, char **argv)
 #endif
         Ctx *ctx = ctx_new_for_framebuffer (pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
 
-        ctx_vt_draw (vt, ctx, 0, 0);
+        vt_draw (vt, ctx, 0, 0);
 
         ctx_free (ctx);
 
@@ -565,7 +565,7 @@ int vt_main(int argc, char **argv)
 	sleep_time = 400;
       }
 
-      if (ctx_vt_poll (vt, sleep_time))
+      if (vt_poll (vt, sleep_time))
       {
         if (sleep_time > 4500)
           sleep_time = 4500;
@@ -577,7 +577,7 @@ int vt_main(int argc, char **argv)
       if (sleep_time > 60000)
         sleep_time = 60000;
   }
-  ctx_vt_destroy (vt);
+  vt_destroy (vt);
 #if USE_MMM
   if (mmm)
     mmm_destroy (mmm);
