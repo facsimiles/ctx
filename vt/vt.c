@@ -2182,11 +2182,10 @@ qagain:
 		  vt->lines = NULL;
                   for (int i = 0; i <  vt->rows; i++)
                   {
-        vt->current_line = vt_string_new_with_size ("", vt->cols);
-        vt_list_append (&vt->lines, vt->current_line);
-        vt->line_count++;
+                    vt->current_line = vt_string_new_with_size ("", vt->cols);
+                    vt_list_append (&vt->lines, vt->current_line);
+                    vt->line_count++;
                   }
-
 		  vt->in_alt_screen = 1;
 		  vt_line_feed (vt);
                   vt_cell_cache_clear (vt);

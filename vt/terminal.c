@@ -560,8 +560,7 @@ int vt_main(int argc, char **argv)
 
       if (got_event)
       {
-          sleep_time = 4500;
-	  //drawn_rev = 0;
+          sleep_time = 200;
       }
       if (in_scroll)
       {
@@ -570,12 +569,12 @@ int vt_main(int argc, char **argv)
 
       if (vt_poll (vt, sleep_time))
       {
-        if (sleep_time > 4500)
-          sleep_time = 4500;
+        if (sleep_time > 2500)
+          sleep_time = 2500;
       }
       else
       {
-        //sleep_time *= 1.5;
+        sleep_time *= 1.5;
       }
       if (sleep_time > 60000)
         sleep_time = 60000;
