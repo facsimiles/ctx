@@ -119,6 +119,7 @@ void terminal_set_title (const char *new_title)
 }
 
 
+long drawn_rev = 0;
 extern float ctx_shape_cache_rate;
 
 static void handle_event (const char *event)
@@ -228,6 +229,7 @@ static void handle_event (const char *event)
 	        vt_mouse (vt, VT_MOUSE_PRESS, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
+            drawn_rev = 0;
 	  }
 	  else if (!strncmp (event + 6, "drag", 4))
 	  {
@@ -243,6 +245,7 @@ static void handle_event (const char *event)
 	        vt_mouse (vt, VT_MOUSE_DRAG, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
+            drawn_rev = 0;
 	  }
 	  else if (!strncmp (event + 6, "release", 7))
 	  {
@@ -258,6 +261,7 @@ static void handle_event (const char *event)
 	        vt_mouse (vt, VT_MOUSE_RELEASE, x/cw + 1, y/ch + 1, x, y);
 	      }
 	    }
+            drawn_rev = 0;
 	  }
 	}
         else
@@ -501,7 +505,6 @@ int vt_main(int argc, char **argv)
 #endif
 
   int sleep_time = 10;
-  long drawn_rev = 0;
 
   vt_child = vt_get_pid (vt);
   signal (SIGCHLD, signal_child);
