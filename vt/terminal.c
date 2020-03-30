@@ -551,7 +551,14 @@ int vt_main(int argc, char **argv)
 #elif USE_SDL
     
 
-    SDL_UpdateTexture(texture, &dirty, (void*)pixels + sizeof(Uint32) * (vt_width * dirty.y + dirty.x) , vt_width * sizeof (Uint32));
+#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
+    SDL_UpdateTexture(texture,
+                    &dirty,
+                    (void*)pixels + sizeof(Uint32) * (vt_width * dirty.y + dirty.x) , vt_width * sizeof (Uint32));
+#else
+    SDL_UpdateTexture(texture, NULL,
+                      (void*)pixels, vt_width * sizeof (Uint32));
+#endif
 
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
