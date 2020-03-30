@@ -381,6 +381,7 @@ void ctx_set_line_width (Ctx *ctx, float x);
                                              could be replaced with fast
                                              1px wide dab based stroker*/
 
+void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height);
 void ctx_set_font_size  (Ctx *ctx, float x);
 float ctx_get_font_size  (Ctx *ctx);
 void ctx_set_font       (Ctx *ctx, const char *font);
@@ -1001,6 +1002,7 @@ struct _CtxState {
   int         max_x;
   int         max_y;
 };
+
 #if CTX_RASTERIZER
 
 typedef struct CtxEdge {
@@ -1118,6 +1120,31 @@ struct _CtxFont
 
 static CtxFont ctx_fonts[CTX_MAX_FONTS];
 static int     ctx_font_count = 0;
+
+void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height)
+{
+  if ((ctx->state.min_x > ctx->state.max_x) ||
+      (ctx->state.min_y > ctx->state.max_y))
+  {
+    if (x) *x = 0;
+    if (y) *y = 0;
+    if (width) *width = 0;
+    if (height) *height = 0;
+    return;
+  }
+  if (ctx->state.min_x < 0)
+    ctx->state.min_x = 0;
+  if (ctx->state.min_y < 0)
+    ctx->state.min_y = 0;
+
+
+  if (x) *x = ctx->state.min_x;
+  if (y) *y = ctx->state.min_y;
+  if (width) *width = ctx->state.max_x - ctx->state.min_x;
+  if (height) *height = ctx->state.max_y - ctx->state.min_y;
+
+  //fprintf (stderr, "%i %i %ix%i\n", *x, *y, *width, *height);
+}
 
 void ctx_process (Ctx *ctx, CtxEntry *entry);
 
@@ -5875,6 +5902,18 @@ ctx_renderer_fill (CtxRenderer *renderer)
     return;
   }
 #endif
+
+  if (renderer->state->min_x > renderer->col_min / CTX_SUBDIV)
+    renderer->state->min_x = renderer->col_min / CTX_SUBDIV;
+  if (renderer->state->max_x < renderer->col_max / CTX_SUBDIV)
+    renderer->state->max_x = renderer->col_max / CTX_SUBDIV;
+
+  if (renderer->state->min_y > renderer->scan_min / CTX_RASTERIZER_AA)
+    renderer->state->min_y = renderer->scan_min / CTX_RASTERIZER_AA;
+  if (renderer->state->max_y < renderer->scan_max / CTX_RASTERIZER_AA)
+    renderer->state->max_y = renderer->scan_max / CTX_RASTERIZER_AA;
+
+
 
   if (renderer->edge_list.count == 4)
   {
