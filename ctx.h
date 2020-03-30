@@ -275,7 +275,7 @@ extern "C" {
 #endif
 
 #ifndef CTX_MAX_TEXTURES
-#define CTX_MAX_TEXTURES     1
+#define CTX_MAX_TEXTURES     16
 #endif
 
 #ifndef CTX_MAX_PENDING
@@ -442,6 +442,13 @@ void ctx_gradient_add_stop    (Ctx *ctx, float pos, float r, float g, float b, f
 
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
+void ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
+                       uint8_t *pixels,
+                       void (*freefunc)(void *pixels, void *user_data),
+                       void *user_data);
+
+void ctx_texture (Ctx *ctx, int id, float x, float y);
+
 void ctx_image_memory (Ctx *ctx, int width, int height, int bpp, uint8_t *pixels, float x, float y);
 
 void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
@@ -552,11 +559,13 @@ typedef enum
   CTX_SET_RGBA_STROKE = '8', // u8
   CTX_LOAD_IMAGE      = '6',
   CTX_LOAD_MEM        = '7',
+  CTX_TEXTURE         = 'W',
   CTX_LINEAR_GRADIENT = '1',
   CTX_RADIAL_GRADIENT = '2',
   CTX_GRADIENT_NO     = '3',
   CTX_GRADIENT_CLEAR  = '4',
   CTX_GRADIENT_STOP   = '5',
+
 
   CTX_LINE_WIDTH      = 'w',
   CTX_LINE_CAP        = 'P',
@@ -862,7 +871,8 @@ struct _CtxBuffer
   int                 height;
   int                 stride;
   CtxPixelFormatInfo *format;
-  int                 free_buf;
+  void (*free_func) (void *pixels, void *user_data);
+  void               *user_data;
 };
 
 void ctx_user_to_device          (CtxState *state, float *x, float *y);
@@ -1465,6 +1475,13 @@ ctx_iterator_next (CtxIterator *iterator)
       iterator->bitpack_length = 3;
       goto again;
 
+    case CTX_TEXTURE:
+      iterator->bitpack_command[0] = ret[0];
+      iterator->bitpack_command[1] = ret[1];
+      iterator->bitpack_pos = 0;
+      iterator->bitpack_length = 2;
+      goto again;
+
     case CTX_LOAD_IMAGE:
       iterator->bitpack_command[0] = ret[0];
       iterator->bitpack_command[1] = ret[1];
@@ -1830,6 +1847,16 @@ ctx_cmd_ff (Ctx *ctx, CtxCode code, float arg1, float arg2)
   CtxEntry command = ctx_f(cmd, x, y);\
   ctx_process (ctx, &command);}while(0)
 
+
+void ctx_texture (Ctx *ctx, int id, float x, float y)
+{
+  CtxEntry commands[2];
+  commands[0] = ctx_u32(CTX_TEXTURE, id, 0);
+  commands[1].code = CTX_CONT;
+  commands[1].data.f[0] = x;
+  commands[1].data.f[1] = y;
+  ctx_process (ctx, commands);
+}
 
 void ctx_image_memory (Ctx *ctx, int width, int height, int bpp, uint8_t *pixels, float x, float y)
 {
@@ -2849,6 +2876,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       for (int i = 0; i < 4; i ++)
         state->gstate.source_stroke.color.rgba[i] = ctx_arg_u8(i);
       break;
+    //case CTX_TEXTURE:
+    //  state->gstate.source.type = CTX_SOURCE_
+    //  break;
     case CTX_LINEAR_GRADIENT:
       {
         float x0 = ctx_arg_float(0);
@@ -3926,34 +3956,39 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
                           void *data, int width, int height,
                           int stride,
                           CtxPixelFormat pixel_format,
-                          int free_buf)
+                       void (*freefunc)(void *pixels, void *user_data),
+                       void *user_data)
 {
-  if (buffer->free_buf)
-    free (buffer->data);
+  if (buffer->free_func)
+    buffer->free_func (buffer->data, buffer->user_data);
   buffer->data = data;
   buffer->width = width;
   buffer->height = height;
   buffer->stride = stride;
   buffer->format = ctx_pixel_format_info (pixel_format);
-  buffer->free_buf = free_buf;
+  buffer->free_func = freefunc;
+  buffer->user_data = user_data;
 }
 
 CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     int stride,
                                     CtxPixelFormat pixel_format,
-                                    int free_buf)
+                       void (*freefunc)(void *pixels, void *user_data),
+                       void *user_data)
 {
   CtxBuffer *buffer = ctx_buffer_new ();
-  ctx_buffer_set_data (buffer, data, width, height, stride, pixel_format, free_buf);
+  ctx_buffer_set_data (buffer, data, width, height, stride, pixel_format,
+                       freefunc, user_data);
   return buffer;
 }
 
 void ctx_buffer_deinit (CtxBuffer *buffer)
 {
-  if (buffer->free_buf)
-    free (buffer->data);
+  if (buffer->free_func)
+    buffer->free_func (buffer->data, buffer->user_data);
   buffer->data = NULL;
-  buffer->free_buf = 0;
+  buffer->free_func = NULL;
+  buffer->user_data  = NULL;
 }
 
 void ctx_buffer_free (CtxBuffer *buffer)
@@ -3963,8 +3998,8 @@ void ctx_buffer_free (CtxBuffer *buffer)
 }
 
 /* load the png into the buffer */
-int ctx_buffer_load_png (CtxBuffer *buffer,
-                          const char *path)
+static int ctx_buffer_load_png (CtxBuffer *buffer,
+                                const char *path)
 {
   ctx_buffer_deinit (buffer);
 
@@ -3996,11 +4031,29 @@ int ctx_buffer_load_png (CtxBuffer *buffer,
       buffer->format = ctx_pixel_format_info (CTX_FORMAT_RGBA8);
       break;
   }
-  buffer->free_buf = 1;
+  buffer->free_func = (void*)free;
+  buffer->user_data = NULL;
   return 0;
 #else
   return -1;
 #endif
+}
+
+void ctx_texture_load (Ctx *ctx, int id, const char *path)
+{
+  if (id < 0 || id >= CTX_MAX_TEXTURES) id = 0;
+  ctx_buffer_load_png (&ctx->texture[id], path);
+}
+
+void ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
+                       uint8_t *pixels,
+                       void (*freefunc)(void *pixels, void *user_data),
+                       void *user_data)
+{
+  if (id < 0 || id >= CTX_MAX_TEXTURES) id = 0;
+  ctx_buffer_deinit (&ctx->texture[id]);
+  ctx_buffer_set_data (&ctx->texture[id], 
+     pixels, width, height, width * (bpp/8), bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8, freefunc, user_data);
 }
 
 static void
@@ -6313,16 +6366,14 @@ ctx_renderer_clip (CtxRenderer *renderer)
 }
 
 static void
-ctx_renderer_load_image (CtxRenderer *renderer,
-		         const char  *path,
-                         float x,
-			 float y)
+ctx_renderer_set_texture (CtxRenderer *renderer,
+		          int   no,
+                          float x,
+			  float y)
 {
-  // decode PNG, put it in image is slot 1,
-  // magic width height stride format data
-  ctx_buffer_load_png (&renderer->ctx->texture[0], path);
+  if (no < 0 || no >= CTX_MAX_TEXTURES) no = 0;
   renderer->state->gstate.source.type = CTX_SOURCE_IMAGE;
-  renderer->state->gstate.source.image.buffer = &renderer->ctx->texture[0];
+  renderer->state->gstate.source.image.buffer = &renderer->ctx->texture[no];
 
   //ctx_user_to_device (renderer->state, &x, &y);
 
@@ -6334,6 +6385,18 @@ ctx_renderer_load_image (CtxRenderer *renderer,
   ctx_matrix_inverse (&renderer->state->gstate.source.transform);
 }
 
+static void
+ctx_renderer_load_image (CtxRenderer *renderer,
+		         const char  *path,
+                         float x,
+			 float y)
+{
+  // decode PNG, put it in image is slot 1,
+  // magic width height stride format data
+  ctx_buffer_load_png (&renderer->ctx->texture[0], path);
+  ctx_renderer_set_texture (renderer, 0, x, y);
+}
+
 static void ctx_renderer_load_image_memory (CtxRenderer *renderer,
 		                            int width, int height,
 					    int bpp, uint8_t *pixels,
@@ -6341,7 +6404,7 @@ static void ctx_renderer_load_image_memory (CtxRenderer *renderer,
 {
   ctx_buffer_deinit (&renderer->ctx->texture[0]);
   ctx_buffer_set_data (&renderer->ctx->texture[0], 
-                 pixels, width, height, width * (bpp/8), bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8, 0);
+                 pixels, width, height, width * (bpp/8), bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8, NULL, NULL);
   renderer->state->gstate.source.type = CTX_SOURCE_IMAGE;
   renderer->state->gstate.source.image.buffer = &renderer->ctx->texture[0];
 
@@ -6445,6 +6508,11 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
       ctx_renderer_set_pixel (renderer, ctx_arg_u16 (2), ctx_arg_u16 (3),
         ctx_arg_u8(0), ctx_arg_u8(1), ctx_arg_u8(2), ctx_arg_u8(3));
 
+      break;
+
+    case CTX_TEXTURE:
+      ctx_renderer_set_texture (renderer, ctx_arg_u32(0),
+                                          ctx_arg_float(2), ctx_arg_float(3));
       break;
 
     case CTX_LOAD_IMAGE:
