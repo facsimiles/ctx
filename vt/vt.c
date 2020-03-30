@@ -3987,7 +3987,6 @@ static void svgp_dispatch_command (VT *vt, Ctx *ctx)
         vt_svgp_get_color (vt, 0, &red, &green, &blue, &alpha);
 
         ctx_set_rgba (ctx, red, green, blue, alpha);
-        ctx_set_rgba_stroke (ctx, red, green, blue, alpha);
       }
       break;
     case SVGP_SET_COLOR_MODEL:
@@ -6224,7 +6223,6 @@ void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity)
   }
 
   ctx_set_rgba_u8 (ctx, r, g, b, 255);
-  ctx_set_rgba_stroke_u8 (ctx, r, g, b, 255);
 }
 
 int vt_keyrepeat (VT *vt)
@@ -6511,9 +6509,6 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
         ctx_set_rgba_u8 (ctx, rgb[0],
                               rgb[1],
                               rgb[2], 255);
-        ctx_set_rgba_stroke_u8 (ctx, rgb[0],
-                                rgb[1],
-                                rgb[2], 255);
     }
   }
 
@@ -6568,8 +6563,6 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
       temp >>= 8;
       int b = temp & 0xff;
       ctx_set_rgba_u8 (ctx, r, g, b, 255);
-      if (underline | underline_var | strikethrough | overline)
-        ctx_set_rgba_stroke_u8 (ctx, r, g, b, 255);
     }
     else
     {
@@ -6598,10 +6591,6 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
         ctx_set_rgba_u8 (ctx, rgb[0],
                               rgb[1],
                               rgb[2], 255);
-	if (underline | underline_var | strikethrough | overline)
-          ctx_set_rgba_stroke_u8 (ctx, rgb[0],
-                                  rgb[1],
-                                  rgb[2], 255);
       }
       else
       {
