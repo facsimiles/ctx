@@ -6690,6 +6690,7 @@ int vt_has_blink (VT *vt)
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
+  int image_id = 0;
   ctx_save (ctx);
   ctx_set_font (ctx, "regular");
   vt->font_is_mono = 0;
@@ -6848,14 +6849,13 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 
              int rows = (image->height + (vt->ch-1))/vt->ch;
              ctx_save (ctx);
-             ctx_image_memory (ctx, image->width, image->height, image->kitty_format,
-                             image->data, u, v);
-             
-             //ctx_texture_define ctx, id, w, h, stride, format data
-             // || function to load a raw image buffer
-             // || into an image id slot
-             //ctx_image_no ctx, id, u, v
-             // image into a slot
+
+             // we give each texture a unique-id - if we use more ids than
+             // there is, ctx will alias the first image.
+             ctx_texture_init (ctx, image_id, image->width, image->height, image->kitty_format,
+                               image->data, NULL, NULL);
+             ctx_texture (ctx, image_id, u, v);
+             image_id ++;
 
              ctx_rectangle (ctx, u, v, image->width, image->height);
              ctx_fill (ctx);
@@ -6954,7 +6954,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   }
 
 //#define SCROLL_SPEED 0.25;
-#define SCROLL_SPEED 0.15;
+#define SCROLL_SPEED 0.2;
 
   if (vt->in_scroll)
   {

@@ -442,10 +442,19 @@ void ctx_gradient_add_stop    (Ctx *ctx, float pos, float r, float g, float b, f
 
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-void ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
-                       uint8_t *pixels,
-                       void (*freefunc)(void *pixels, void *user_data),
-                       void *user_data);
+/*ctx_texture_init:
+ *
+ * return value: the actual id assigned, if id is out of range - or later
+ * when -1 as id will mean auto-assign.
+ */
+int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
+                      uint8_t *pixels,
+                      void (*freefunc)(void *pixels, void *user_data),
+                      void *user_data);
+int ctx_texture_load        (Ctx *ctx, int id, const char *path);
+int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length);
+
+void ctx_texture_release (Ctx *ctx, int id);
 
 void ctx_texture (Ctx *ctx, int id, float x, float y);
 
@@ -1851,6 +1860,7 @@ ctx_cmd_ff (Ctx *ctx, CtxCode code, float arg1, float arg2)
 void ctx_texture (Ctx *ctx, int id, float x, float y)
 {
   CtxEntry commands[2];
+  if (id < 0) return;
   commands[0] = ctx_u32(CTX_TEXTURE, id, 0);
   commands[1].code = CTX_CONT;
   commands[1].data.f[0] = x;
@@ -4039,21 +4049,100 @@ static int ctx_buffer_load_png (CtxBuffer *buffer,
 #endif
 }
 
-void ctx_texture_load (Ctx *ctx, int id, const char *path)
+void ctx_texture_release (Ctx *ctx, int id)
 {
-  if (id < 0 || id >= CTX_MAX_TEXTURES) id = 0;
-  ctx_buffer_load_png (&ctx->texture[id], path);
+  if (id < 0 || id >= CTX_MAX_TEXTURES)
+     return;
+  ctx_buffer_deinit (&ctx->texture[id]);
 }
 
-void ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
+static int ctx_allocate_texture_id (Ctx *ctx, int id)
+{
+  if (id < 0 || id >= CTX_MAX_TEXTURES)
+  {
+    for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
+      if (ctx->texture[i].data == NULL)
+        return i;
+    return -1; // eeek
+  }
+  return id;
+}
+
+/* load the png into the buffer */
+static int ctx_buffer_load_memory (CtxBuffer *buffer,
+                                   const char *data,
+                                   int length)
+{
+  ctx_buffer_deinit (buffer);
+
+#ifdef UPNG_H
+  upng_t *upng = upng_new_from_bytes (data, length);
+  int components;
+  if (upng == NULL)
+    return -1;
+  upng_header (upng);
+  upng_decode (upng);
+  components = upng_get_components (upng);
+  buffer->width = upng_get_width (upng);
+  buffer->height = upng_get_height (upng);
+  buffer->data = upng_steal_buffer (upng);
+  upng_free (upng);
+  buffer->stride = buffer->width * components;
+  switch (components)
+  {
+    case 1:
+      buffer->format = ctx_pixel_format_info (CTX_FORMAT_GRAY8);
+      break;
+    case 2:
+      buffer->format = ctx_pixel_format_info (CTX_FORMAT_GRAYA8);
+      break;
+    case 3:
+      buffer->format = ctx_pixel_format_info (CTX_FORMAT_RGB8);
+      break;
+    case 4:
+      buffer->format = ctx_pixel_format_info (CTX_FORMAT_RGBA8);
+      break;
+  }
+  buffer->free_func = (void*)free;
+  buffer->user_data = NULL;
+  return 0;
+#else
+  return -1;
+#endif
+}
+
+int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length)
+{
+  id = ctx_allocate_texture_id (ctx, id);
+  if (id < 0)
+    return id;
+  if (ctx_buffer_load_memory (&ctx->texture[id], data, length))
+    return -1;
+  return id;
+}
+
+int ctx_texture_load (Ctx *ctx, int id, const char *path)
+{
+  id = ctx_allocate_texture_id (ctx, id);
+  if (id < 0)
+    return id;
+  if (ctx_buffer_load_png (&ctx->texture[id], path))
+    return -1;
+  return id;
+}
+
+int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
                        uint8_t *pixels,
                        void (*freefunc)(void *pixels, void *user_data),
                        void *user_data)
 {
-  if (id < 0 || id >= CTX_MAX_TEXTURES) id = 0;
+  id = ctx_allocate_texture_id (ctx, id);
+  if (id < 0)
+    return id;
   ctx_buffer_deinit (&ctx->texture[id]);
   ctx_buffer_set_data (&ctx->texture[id], 
      pixels, width, height, width * (bpp/8), bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8, freefunc, user_data);
+  return id;
 }
 
 static void
