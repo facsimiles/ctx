@@ -6568,7 +6568,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
       temp >>= 8;
       int b = temp & 0xff;
       ctx_set_rgba_u8 (ctx, r, g, b, 255);
-      if (underline | underline_var)
+      if (underline | underline_var | strikethrough | overline)
         ctx_set_rgba_stroke_u8 (ctx, r, g, b, 255);
     }
     else
@@ -6598,7 +6598,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
         ctx_set_rgba_u8 (ctx, rgb[0],
                               rgb[1],
                               rgb[2], 255);
-	if (underline | underline_var)
+	if (underline | underline_var | strikethrough | overline)
           ctx_set_rgba_stroke_u8 (ctx, rgb[0],
                                   rgb[1],
                                   rgb[2], 255);
