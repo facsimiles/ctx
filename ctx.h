@@ -1021,6 +1021,7 @@ struct _CtxRenderer {
 
   CtxRenderstream edge_list;
   CtxState  *state;
+  Ctx       *ctx;
 
   void      *buf;
   float      x;
@@ -1039,7 +1040,6 @@ struct _CtxRenderer {
   int        blit_height;
   int        blit_stride;
 
-  CtxBuffer  texture[CTX_MAX_TEXTURES];
 
   CtxPixelFormatInfo *format;
 };
@@ -1074,6 +1074,7 @@ struct _Ctx {
   CtxRenderer      *renderer;
 #endif
   int               transformation;
+  CtxBuffer         texture[CTX_MAX_TEXTURES];
 };
 
 typedef struct _CtxFont CtxFont;
@@ -6319,9 +6320,9 @@ ctx_renderer_load_image (CtxRenderer *renderer,
 {
   // decode PNG, put it in image is slot 1,
   // magic width height stride format data
-  ctx_buffer_load_png (&renderer->texture[0], path);
+  ctx_buffer_load_png (&renderer->ctx->texture[0], path);
   renderer->state->gstate.source.type = CTX_SOURCE_IMAGE;
-  renderer->state->gstate.source.image.buffer = &renderer->texture[0];
+  renderer->state->gstate.source.image.buffer = &renderer->ctx->texture[0];
 
   //ctx_user_to_device (renderer->state, &x, &y);
 
@@ -6338,11 +6339,11 @@ static void ctx_renderer_load_image_memory (CtxRenderer *renderer,
 					    int bpp, uint8_t *pixels,
 					    float x, float y)
 {
-  ctx_buffer_deinit (&renderer->texture[0]);
-  ctx_buffer_set_data (&renderer->texture[0], 
+  ctx_buffer_deinit (&renderer->ctx->texture[0]);
+  ctx_buffer_set_data (&renderer->ctx->texture[0], 
                  pixels, width, height, width * (bpp/8), bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8, 0);
   renderer->state->gstate.source.type = CTX_SOURCE_IMAGE;
-  renderer->state->gstate.source.image.buffer = &renderer->texture[0];
+  renderer->state->gstate.source.image.buffer = &renderer->ctx->texture[0];
 
   //ctx_user_to_device (renderer->state, &x, &y);
 
@@ -7083,12 +7084,13 @@ ctx_pixel_format_info (CtxPixelFormat format)
 }
 
 static void
-ctx_renderer_init (CtxRenderer *renderer, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
+ctx_renderer_init (CtxRenderer *renderer, Ctx *ctx, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
 {
   memset (renderer, 0, sizeof (CtxRenderer));
   renderer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   renderer->edge_pos    = 0;
   renderer->state       = state;
+  renderer->ctx         = ctx;
   ctx_state_init (renderer->state);
   renderer->buf         = data;
   renderer->blit_x      = x;
@@ -7107,7 +7109,7 @@ ctx_new_for_buffer (CtxBuffer *buffer)
   Ctx *ctx = ctx_new ();
 
   ctx->renderer = (CtxRenderer*)malloc (sizeof (CtxRenderer));
-  ctx_renderer_init (ctx->renderer, &ctx->state,
+  ctx_renderer_init (ctx->renderer, ctx, &ctx->state,
                      buffer->data, 0, 0, buffer->width, buffer->height,
                      buffer->stride, buffer->format->pixel_format);
   return ctx;
@@ -7120,7 +7122,7 @@ ctx_new_for_framebuffer (void *data, int width, int height,
 {
   Ctx *ctx = ctx_new ();
   ctx->renderer = (CtxRenderer*)malloc (sizeof (CtxRenderer));
-  ctx_renderer_init (ctx->renderer, &ctx->state,
+  ctx_renderer_init (ctx->renderer, ctx, &ctx->state,
                      data, 0, 0, width, height, stride, pixel_format);
   return ctx;
 }
@@ -7149,7 +7151,7 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
   CtxState    *state    = (CtxState*)malloc (sizeof (CtxState));
   CtxRenderer *renderer = (CtxRenderer*)malloc (sizeof (CtxRenderer));
 
-  ctx_renderer_init (renderer, state, data, x, y, width, height,
+  ctx_renderer_init (renderer, ctx, state, data, x, y, width, height,
                      stride, pixel_format);
 
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|

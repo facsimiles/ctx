@@ -6850,6 +6850,13 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
              ctx_save (ctx);
              ctx_image_memory (ctx, image->width, image->height, image->kitty_format,
                              image->data, u, v);
+             
+             //ctx_texture_define ctx, id, w, h, stride, format data
+             // || function to load a raw image buffer
+             // || into an image id slot
+             //ctx_image_no ctx, id, u, v
+             // image into a slot
+
              ctx_rectangle (ctx, u, v, image->width, image->height);
              ctx_fill (ctx);
              ctx_restore (ctx);
