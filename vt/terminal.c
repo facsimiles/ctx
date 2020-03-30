@@ -518,6 +518,10 @@ int vt_main(int argc, char **argv)
       {
         drawn_rev = vt_rev (vt);
 
+#if USE_SDL
+        SDL_Rect dirty;
+#endif
+
 #if USE_MMM
       int width; int height;
       int stride;
@@ -537,12 +541,17 @@ int vt_main(int argc, char **argv)
 
         vt_draw (vt, ctx, 0, 0);
 
+#if USE_SDL
+        ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
+#endif
         ctx_free (ctx);
 
 #if USE_MMM
         mmm_write_done (mmm, 0, 0, -1, -1);
 #elif USE_SDL
-    SDL_UpdateTexture(texture, NULL, (void*)pixels, vt_width * sizeof (Uint32));
+    
+
+    SDL_UpdateTexture(texture, &dirty, (void*)pixels + sizeof(Uint32) * (vt_width * dirty.y + dirty.x) , vt_width * sizeof (Uint32));
 
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
