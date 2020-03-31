@@ -7052,13 +7052,24 @@ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
 {
   static int lastx=-1; // XXX  : need one per vt
   static int lasty=-1;
+  static int scrollbar_down = 0;
 
   if ((type == VT_MOUSE_DRAG || type == VT_MOUSE_PRESS)
-      && x > vt->cols - 3)
+      && (x > vt->cols - 3 || scrollbar_down))
   { /* scrollbar */
     float disp_lines = vt->rows;
     float tot_lines = vt->line_count + vt->scrollback_count;
     vt->scroll = tot_lines - disp_lines - (px_y*1.0/(vt->rows * vt->ch))* tot_lines;
+    if (type == VT_MOUSE_PRESS)
+    {
+      scrollbar_down = 1;
+      SDL_CaptureMouse (1);
+    }
+  }
+  if (scrollbar_down && type == VT_MOUSE_RELEASE)
+  {
+    scrollbar_down = 0;
+    SDL_CaptureMouse (0);
   }
 
   char buf[64]="";
