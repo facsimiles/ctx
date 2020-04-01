@@ -68,8 +68,7 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = VT_LOG_INPUT;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;
-//| VT_LOG_INFO | VT_LOG_COMMAND;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;// | VT_LOG_INFO | VT_LOG_COMMAND;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL;
 
@@ -372,7 +371,7 @@ struct _VT {
 
   uint64_t *set_style;
   uint32_t *set_unichar;
-  int       in_scroll;
+  int       in_smooth_scroll;
   int       smooth_scroll;
   float     scroll_offset;
   int       debug;
@@ -1335,12 +1334,12 @@ static void vt_scroll (VT *vt, int amount)
     if (amount < 0)
     {
       vt->scroll_offset = -1.0;
-      vt->in_scroll = -1;
+      vt->in_smooth_scroll = -1;
     }
     else
     {
       vt->scroll_offset = 1.0;
-      vt->in_scroll = 1;
+      vt->in_smooth_scroll = 1;
     }
     vt_cell_cache_clear (vt);
   }
@@ -2144,9 +2143,6 @@ qagain:
 
      case 69:/*MODE;DECVSSM Left right margin mode;On;Off; */
              vt->left_right_margin_mode = set;
-	     if (set)
-	     {
-	     }
              break;
 
      case 80:/* DECSDM Sixel scrolling */
@@ -2823,8 +2819,8 @@ static Sequence sequences[]={
   {"=",   0,   vtcmd_ignore},  // keypad mode change
   {">",   0,   vtcmd_ignore},  // keypad mode change
   {"c",   0,   vtcmd_reset_to_initial_state, VT100}, /* id:RIS Reset to Initial State */
-  {"[",  'p',  vtcmd_request_mode}, // soft reset?
   {"[!", 'p',  vtcmd_ignore},       // soft reset?
+  {"[",  'p',  vtcmd_request_mode}, // soft reset?
 
   {NULL, 0, NULL}
 };
@@ -5039,7 +5035,7 @@ int vt_poll (VT *vt, int timeout)
   {
     remaining_chars = vt->cols / 2;
   }
-  if (vt->in_scroll)
+  if (vt->in_smooth_scroll)
   {
     remaining_chars = 0;
     // XXX : need a bail condition -
@@ -6009,7 +6005,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
   }
   ctx_translate (ctx, 0, vt->font_size * offset_y);
 
-  y -= vt->font_size * 0.2;
+  y -= vt->font_size * 0.22;
 
   if (bold)
   {
@@ -6237,7 +6233,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
                         uint32_t unichar,
                         int      bg, int fg,
                         int      dw, int dh,
-                        int in_scroll,
+                        int in_smooth_scroll,
 			int in_select)
                       // dw is 0 or 1 
                       // dh is 0 1 or -1  1 is upper -1 is lower
@@ -6310,7 +6306,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
     offset_y =  0.0f;
   }
 
-  if (in_scroll)
+  if (in_smooth_scroll)
   {
     offset_y -= vt->scroll_offset / (dh?2:1);
   }
@@ -6674,7 +6670,7 @@ static int select_end_row = 0;
 
 int vt_has_blink (VT *vt)
 {
-  return vt->has_blink + (vt->in_scroll ?  10 : 0);
+  return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
 }
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
@@ -6748,7 +6744,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
         uint64_t style = 0;
         uint32_t unichar = 0;
         int r = vt->rows - row;
-        int in_scrolling_region = vt->in_scroll && ((r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
+        int in_scrolling_region = vt->in_smooth_scroll && ((r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
 	int got_selection = 0;
 
         if (line->double_width)
@@ -6945,17 +6941,17 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 //#define SCROLL_SPEED 0.25;
 #define SCROLL_SPEED 0.2;
 
-  if (vt->in_scroll)
+  if (vt->in_smooth_scroll)
   {
     vt_cell_cache_clear (vt);
 
-    if (vt->in_scroll<0)
+    if (vt->in_smooth_scroll<0)
     {
       vt->scroll_offset += SCROLL_SPEED;
       if (vt->scroll_offset >= 0.0)
       {
         vt->scroll_offset = 0;
-        vt->in_scroll = 0;
+        vt->in_smooth_scroll = 0;
         vt->rev++;
       }
     }
@@ -6965,7 +6961,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       if (vt->scroll_offset <= 0.0)
       {
         vt->scroll_offset = 0;
-        vt->in_scroll = 0;
+        vt->in_smooth_scroll = 0;
         vt->rev++;
       }
     }
@@ -7065,6 +7061,7 @@ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
       scrollbar_down = 1;
       SDL_CaptureMouse (1);
     }
+    vt->rev++;
   }
   if (scrollbar_down && type == VT_MOUSE_RELEASE)
   {

@@ -551,7 +551,13 @@ int vt_main(int argc, char **argv)
 #elif USE_SDL
     
 
-#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
+#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
+    dirty.w ++;
+    dirty.h ++;
+    if (dirty.x + dirty.w > vt_width)
+            dirty.w = vt_width - dirty.x;
+    if (dirty.y + dirty.h > vt_height)
+            dirty.h = vt_height - dirty.y;
     SDL_UpdateTexture(texture,
                     &dirty,
                     (void*)pixels + sizeof(Uint32) * (vt_width * dirty.y + dirty.x) , vt_width * sizeof (Uint32));
@@ -580,7 +586,7 @@ int vt_main(int argc, char **argv)
       }
       if (in_scroll)
       {
-	sleep_time = 400;
+	sleep_time = 200;
       }
 
       if (vt_poll (vt, sleep_time))
