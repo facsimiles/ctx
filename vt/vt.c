@@ -68,7 +68,7 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = VT_LOG_INPUT;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;// | VT_LOG_INFO | VT_LOG_COMMAND;
+static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;// | VT_LOG_COMMAND;// | VT_LOG_INFO | VT_LOG_COMMAND;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL;
 
@@ -887,9 +887,9 @@ VT *vt_new (const char *command, int cols, int rows, float font_size, float line
 
   vt_set_term_size (vt, cols, rows);
 
-  vt->fg_color[0] = 255;
-  vt->fg_color[1] = 255;
-  vt->fg_color[2] = 255;
+  vt->fg_color[0] = 216;
+  vt->fg_color[1] = 216;
+  vt->fg_color[2] = 216;
 
   vt->bg_color[0] = 0;
   vt->bg_color[1] = 0;
@@ -5029,7 +5029,7 @@ int vt_poll (VT *vt, int timeout)
   int got_data = 0;
   int remaining_chars = 1024 * 1024;
   int len = 0;
-    audio_task (vt, 0);
+    //audio_task (vt, 0);
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
   {
@@ -5054,7 +5054,7 @@ int vt_poll (VT *vt, int timeout)
     got_data+=len;
     remaining_chars -= len;
     timeout -= 10;
-    audio_task (vt, 0);
+    //audio_task (vt, 0);
   }
   return got_data;
 }
@@ -6028,25 +6028,68 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
  */
 
 static uint8_t palettes[][16][3]={
-	{
-{0, 0, 0},
-{127, 1, 0},
-{27, 125, 23},
-{251, 146, 125},
-{13, 5, 251},
-{54, 0, 127},
-{2, 140, 161},
-{192, 192, 192},
-{96, 96, 96},
-{254, 29, 46},
-{102, 239, 101},
-{253, 241, 13},
-{4, 163, 255},
-{245, 1, 211},
-{3, 210, 255},
-{255, 255, 255},
-},{
 
+        {
+{0, 0, 0},
+{127, 5, 33},
+{72, 160, 75},
+{163, 96, 0},
+{10, 10, 170},
+{145, 49, 190},
+{50, 130, 174},
+{167, 167, 167},
+{88, 88, 88},
+{255, 155, 130},
+{90, 245, 160},
+{255, 230, 0},
+{0, 0, 255},
+{222, 144, 242},
+{142, 208, 253},
+{255, 255, 255},
+
+        },
+
+{
+
+{0, 0, 0},
+{127, 0, 0},
+{90, 209, 88},
+{136, 109, 0},
+{3, 9, 235},
+{90, 4, 150},
+{43, 111, 150},
+{178, 178, 178},
+{87, 87, 87},
+{193, 122, 99},
+{110, 254, 174},
+{255, 200, 0},
+{10, 126, 254},
+{146, 155, 249},
+{184, 208, 254},
+{255, 255, 255},
+
+        },{
+{0, 0, 0},
+{147, 53, 38},
+{30, 171, 82},
+{188, 153, 0},
+{32, 71, 193},
+{236, 49, 188},
+{42, 182, 253},
+{149, 149, 149},
+{73, 73, 73},
+{210, 36, 0},
+{96, 239, 97},
+{247, 240, 2},
+{93, 11, 249},
+{222, 42, 255},
+{11, 227, 255},
+{233, 235, 235},
+},
+
+
+ {{0, 0, 0},{97, 27, 0},{129, 180, 0},{127, 100, 0},{44, 15, 255},{135, 10, 167},{20, 133, 164},{174, 174, 174},{71, 71, 71},{167, 114, 90},{162, 214, 127},{255, 251, 83},{118, 77, 253},{192, 121, 255},{14, 217, 255},{255, 255, 255},
+},{
 
 
 #if 0
@@ -6394,7 +6437,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
      if (bold)
      {
        bg_intensity = blink?2:  0;
-       fg_intensity = blink?0:  2;
+       fg_intensity = blink?0:  3;
      }
      else if (dim)
      {
@@ -6595,6 +6638,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
         else
           color = (style >> 16) & 255;
         bg_intensity = -1;
+       
         vt_ctx_set_color (vt, ctx, color, fg_intensity);
       }
     }
@@ -7056,6 +7100,7 @@ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
     float disp_lines = vt->rows;
     float tot_lines = vt->line_count + vt->scrollback_count;
     vt->scroll = tot_lines - disp_lines - (px_y*1.0/(vt->rows * vt->ch))* tot_lines;
+    if (vt->scroll < 0) vt->scroll = 0.01;
     if (type == VT_MOUSE_PRESS)
     {
       scrollbar_down = 1;
