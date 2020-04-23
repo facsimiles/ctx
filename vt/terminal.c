@@ -68,8 +68,8 @@ void sdl_setup (int width, int height)
 {
 
   window = SDL_CreateWindow("vt2020", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
-  renderer = SDL_CreateRenderer (window, -1, 0);
-  //renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
+  //renderer = SDL_CreateRenderer (window, -1, 0);
+  renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
   SDL_StartTextInput ();
   texture = SDL_CreateTexture (renderer,
 	SDL_PIXELFORMAT_ARGB8888,
@@ -96,6 +96,7 @@ signal_child (int signum)
       {
       if (pid == vt_child)
       {
+        fprintf (stderr, "bailing due to signal %i %i\n", pid, vt_child);
 	exit(0);
         do_quit = 1;
         return;
@@ -507,10 +508,13 @@ int vt_main(int argc, char **argv)
   int sleep_time = 10;
 
   vt_child = vt_get_pid (vt);
-  signal (SIGCHLD, signal_child);
+  //signal (SIGCHLD, signal_child);
   while(!do_quit)
   {
       int in_scroll = (vt_has_blink (vt) >= 10);
+
+      if (kill (vt_child, 0) != 0)
+        do_quit = 1;
 
       if ((drawn_rev != vt_rev (vt)) ||
           vt_has_blink (vt) ||
@@ -551,7 +555,7 @@ int vt_main(int argc, char **argv)
 #elif USE_SDL
     
 
-#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
+#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
     dirty.w ++;
     dirty.h ++;
     if (dirty.x + dirty.w > vt_width)
