@@ -66,7 +66,6 @@ int vt_height;
 
 void sdl_setup (int width, int height)
 {
-
   window = SDL_CreateWindow("vt2020", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   //renderer = SDL_CreateRenderer (window, -1, 0);
   renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
@@ -84,31 +83,6 @@ void mmm_setup (int width, int height)
   unsetenv ("MMM_PATH");
 }
 #endif
-
-void
-signal_child (int signum)
-{
-  pid_t pid;
-  int   status;
-  while ((pid = waitpid(-1, &status, WNOHANG)) != -1)
-    {
-      if (pid)
-      {
-      if (pid == vt_child)
-      {
-        fprintf (stderr, "bailing due to signal %i %i\n", pid, vt_child);
-	exit(0);
-        do_quit = 1;
-        return;
-      }
-      else
-      {
-        fprintf (stderr, "child signal ? %i %i\n", pid, vt_child);
-      }
-    }
-    }
-}
-
 
 void terminal_set_title (const char *new_title)
 {
@@ -508,7 +482,6 @@ int vt_main(int argc, char **argv)
   int sleep_time = 10;
 
   vt_child = vt_get_pid (vt);
-  //signal (SIGCHLD, signal_child);
   while(!do_quit)
   {
       int in_scroll = (vt_has_blink (vt) >= 10);

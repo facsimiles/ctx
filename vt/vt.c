@@ -6028,8 +6028,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
  */
 
 static uint8_t palettes[][16][3]={
-
-        {
+{
 {0, 0, 0},
 {127, 5, 33},
 {72, 160, 75},
