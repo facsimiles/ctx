@@ -484,10 +484,11 @@ int vt_main(int argc, char **argv)
   vt_child = vt_get_pid (vt);
   while(!do_quit)
   {
-      int in_scroll = (vt_has_blink (vt) >= 10);
+     int in_scroll = (vt_has_blink (vt) >= 10);
 
-      if (kill (vt_child, 0) != 0)
-        do_quit = 1;
+     if (vt_is_done (vt))
+       do_quit = 1;
+          
 
       if ((drawn_rev != vt_rev (vt)) ||
           vt_has_blink (vt) ||

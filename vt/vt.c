@@ -5056,6 +5056,15 @@ int vt_poll (VT *vt, int timeout)
     timeout -= 10;
     //audio_task (vt, 0);
   }
+
+  if (got_data < 0)
+  {
+     if (kill (vt->vtpty.pid, 0) != 0)
+     {
+       vt->done = 1;
+     }
+  }
+
   return got_data;
 }
 
@@ -5312,37 +5321,11 @@ const char *vt_find_shell_command (void)
   return command;
 }
 
-static void signal_child (int signum)
-{
-  pid_t pid;
-  int   status;
-  while ((pid = waitpid (-1, &status, WNOHANG)) != -1)
-    {
-      if (pid)
-      {
-        for (VtList *l = vts; l; l=l->next)
-        {
-          VT *vt = l->data;
-          if (vt->vtpty.pid == pid)
-            {
-              vt->done = 1;
-              vt->result = status;
-            }
-        }
-      }
-    }
-}
-
 static void vt_run_command (VT *vt, const char *command)
 {
   struct winsize ws;
 
-  static int reaper_started = 0;
-  if (!reaper_started)
-  {
-    reaper_started = 1;
-    signal (SIGCHLD, signal_child);
-  }
+  signal(SIGCHLD,SIG_IGN);
 
   ws.ws_row = vt->rows;
   ws.ws_col = vt->cols;
@@ -5367,7 +5350,9 @@ static void vt_run_command (VT *vt, const char *command)
     //setenv ("TERM", "xterm-256color", 1);
     setenv ("TERM", "xterm", 1);
     setenv ("COLORTERM", "truecolor", 1);
-    vt->result = system (command);
+    execlp ("/bin/bash", "/bin/bash", NULL);
+    //vt->result = system (command);
+    vt->done = 1;
     exit(0);
   }
   else if (vt->vtpty.pid < 0)
