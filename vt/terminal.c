@@ -66,7 +66,7 @@ int vt_height;
 
 void sdl_setup (int width, int height)
 {
-  window = SDL_CreateWindow("vt2020", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
+  window = SDL_CreateWindow("vectty", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   //renderer = SDL_CreateRenderer (window, -1, 0);
   renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
   SDL_StartTextInput ();
@@ -75,6 +75,7 @@ void sdl_setup (int width, int height)
         SDL_TEXTUREACCESS_STREAMING,
         width, height);
   pixels = calloc (width * height, 4);
+  SDL_EnableScreenSaver ();
 }
 #elif USE_MMM
 void mmm_setup (int width, int height)

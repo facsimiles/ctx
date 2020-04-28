@@ -5029,7 +5029,7 @@ int vt_poll (VT *vt, int timeout)
   int got_data = 0;
   int remaining_chars = 1024 * 1024;
   int len = 0;
-    //audio_task (vt, 0);
+    audio_task (vt, 0);
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
   {
@@ -5054,7 +5054,7 @@ int vt_poll (VT *vt, int timeout)
     got_data+=len;
     remaining_chars -= len;
     timeout -= 10;
-    //audio_task (vt, 0);
+    audio_task (vt, 0);
   }
 
   if (got_data < 0)
@@ -5351,8 +5351,9 @@ static void vt_run_command (VT *vt, const char *command)
     setenv ("TERM", "xterm", 1);
     setenv ("COLORTERM", "truecolor", 1);
     execlp ("/bin/bash", "/bin/bash", NULL);
-    //vt->result = system (command);
-    vt->done = 1;
+    
+    //system (command);
+    //vt->done = 1;
     exit(0);
   }
   else if (vt->vtpty.pid < 0)
