@@ -6303,7 +6303,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
       ctx_set_font (ctx, "mono");
       vt->font_is_mono = 1;
 
-      if (col != 1) {
+      if (col > 1) {
         int x = x0;
         int new_cw = cw - ((x % cw));
         if (new_cw < cw*3/2)
@@ -6706,7 +6706,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
   int image_id = 0;
   ctx_save (ctx);
-  ctx_set_font (ctx, "regular");
+  ctx_set_font (ctx, "mono");
   vt->font_is_mono = 0;
   ctx_set_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
 
