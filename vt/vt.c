@@ -5321,11 +5321,33 @@ const char *vt_find_shell_command (void)
   return command;
 }
 
+static void signal_child (int signum)
+{
+  pid_t pid;
+  int   status;
+  if ((pid = waitpid (-1, &status, WNOHANG)) != -1)
+    {
+      if (pid)
+      {
+        for (VtList *l = vts; l; l=l->next)
+        {
+          VT *vt = l->data;
+          if (vt->vtpty.pid == pid)
+            {
+              vt->done = 1;
+              vt->result = status;
+            }
+        }
+      }
+    }
+}
+
+
 static void vt_run_command (VT *vt, const char *command)
 {
   struct winsize ws;
 
-  signal(SIGCHLD,SIG_IGN);
+  signal(SIGCHLD,signal_child);
 
   ws.ws_row = vt->rows;
   ws.ws_col = vt->cols;
