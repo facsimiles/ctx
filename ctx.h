@@ -544,8 +544,8 @@ float
 ctx_glyph_width (Ctx *ctx, int unichar);
 
 
-int   ctx_load_font_ttf (Ctx *ctx, const char *name, const uint8_t *ttf_contents);
-int   ctx_load_font_ttf_file (Ctx *ctx, const char *name, const char *path);
+int   ctx_load_font_ttf (const char *name, const uint8_t *ttf_contents);
+int   ctx_load_font_ttf_file (const char *name, const char *path);
 
 int ctx_get_renderstream_count (Ctx *ctx);
 
@@ -7608,7 +7608,7 @@ file_get_contents (const char     *path,
 }
 
 int
-ctx_load_font_ttf (Ctx *ctx, const char *name, const uint8_t *ttf_contents)
+ctx_load_font_ttf (const char *name, const uint8_t *ttf_contents)
 {
   if (ctx_font_count >= CTX_MAX_FONTS)
     return -1;
@@ -7625,7 +7625,7 @@ ctx_load_font_ttf (Ctx *ctx, const char *name, const uint8_t *ttf_contents)
 }
 
 int
-ctx_load_font_ttf_file (Ctx *ctx, const char *name, const char *path)
+ctx_load_font_ttf_file (const char *name, const char *path)
 {
   uint8_t *contents = NULL;
   long length = 0;
@@ -7635,7 +7635,7 @@ ctx_load_font_ttf_file (Ctx *ctx, const char *name, const char *path)
     ctx_log( "File load failed\n");
     return -1;
   }
-  return ctx_load_font_ttf (ctx, name, contents);
+  return ctx_load_font_ttf (name, contents);
 }
 
 #endif
@@ -8875,6 +8875,15 @@ static void ctx_setup ()
 #if CTX_FONT_sgi
   ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
 #endif
+
+#if DEJAVU_SANS_MONO
+  ctx_load_font_ttf ("mono", ttf_DejaVuSansMono_ttf);
+#endif
+#if DEJAVU_SANS
+  ctx_load_font_ttf ("regular", ttf_DejaVuSansMono_ttf);
+#endif
+
+
 }
 
 #endif

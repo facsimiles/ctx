@@ -74,7 +74,7 @@ int main (int argc, char **argv)
     if (argv[3])
      subsets = argv[3];
   }
-  ctx_load_font_ttf_file (ctx, "import", argv[1]);
+  ctx_load_font_ttf_file ("import", argv[1]);
   ctx = ctx_new ();
   ctx_set_font (ctx, "import");
 

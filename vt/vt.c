@@ -5198,19 +5198,17 @@ static const char *keymap_general[][2]={
   {"shift-backspace","\177"},
   {"shift-tab",      "\033[Z"},
 
-  {"control-F1",       "\033[>11~"},
-  {"control-F2",       "\033[>12~"},   
-  {"control-F3",       "\033[>13~"},
-  {"control-F4",       "\033[>14~"},
-  {"control-F5",       "\033[>15~"},
+  {"control-F1",     "\033[>11~"},
+  {"control-F2",     "\033[>12~"},   
+  {"control-F3",     "\033[>13~"},
+  {"control-F4",     "\033[>14~"},
+  {"control-F5",     "\033[>15~"},
 
   {"shift-F1",       "\033[?11~"},
   {"shift-F2",       "\033[?12~"},   
   {"shift-F3",       "\033[?13~"},
   {"shift-F4",       "\033[?14~"},
   {"shift-F5",       "\033[?15~"},
-
-
 
   {"F1",             "\033[11~"},  // hold screen   // ESC O P
   {"F2",             "\033[12~"},  // print screen  //       Q
