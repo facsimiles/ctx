@@ -6862,9 +6862,10 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
             if (!*d) d = NULL;
           }
         }
+#if 0
         while (x < vt->cols * vt->cw)
         {
-          x+=vt_draw_cell (vt, ctx, -1, -1, x, y, style, ' ', 1, 1,
+          x+=vt_draw_cell (vt, ctx, -1, -1, x, y, style, '-', 1, 1,
                           
             line->double_width,
             line->double_height_top?1:
@@ -6872,6 +6873,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
             in_scrolling_region,
 	    0);
         }
+#endif
 
         for (int i = 0; i < 4; i++)
         {

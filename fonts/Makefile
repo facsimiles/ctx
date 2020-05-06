@@ -20,7 +20,7 @@ DejaVuSansMono.h: Makefile
 
 DejaVuSans.h: Makefile
 	xxd -i ttf/DejaVuSans.ttf > DejaVuSans.h
-	echo '#define DEJAVU_SANS_MONO 1' >> DejaVuSans.h
+	echo '#define DEJAVU_SANS 1' >> DejaVuSans.h
 
 
 %: %.c ../ctx.h

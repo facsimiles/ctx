@@ -520,9 +520,22 @@ int vt_main(int argc, char **argv)
 
         pixels = mmm_get_buffer_write (mmm, &width, &height, &stride, NULL);
 #endif
+#if 0
+        // XXX this works for initial line in started shell
+        // but falls apart when bottom is reached, 
+        // needs investigation, this is the code path that
+        // can be turned into threaded rendering.
+        Ctx *ctx = ctx_new ();
+        vt_draw (vt, ctx, 0, 0);
+        ctx_blit (ctx, pixels, 0,0, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
+#else
+        // render directlty to framebuffer in immediate mode - skips
+        // creation of renderstream.
+
         Ctx *ctx = ctx_new_for_framebuffer (pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
 
         vt_draw (vt, ctx, 0, 0);
+#endif
 
 #if USE_SDL
         ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);

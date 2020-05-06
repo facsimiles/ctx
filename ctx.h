@@ -8880,7 +8880,7 @@ static void ctx_setup ()
   ctx_load_font_ttf ("mono", ttf_DejaVuSansMono_ttf);
 #endif
 #if DEJAVU_SANS
-  ctx_load_font_ttf ("regular", ttf_DejaVuSansMono_ttf);
+  ctx_load_font_ttf ("regular", ttf_DejaVuSans_ttf);
 #endif
 
 
