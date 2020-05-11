@@ -354,6 +354,7 @@ typedef struct GfxState {
 
 typedef struct _SvgP SvgP;
 struct _SvgP {
+  Ctx       *ctx;
   int        state;
   uint8_t    holding[64];
   int        pos;
@@ -366,6 +367,18 @@ struct _SvgP {
   float      pcy;
   int        color_components;
   int        color_model; // 1 gray 3 rgb 4 cmyk
+  float      left_margin; // set by last user provided move_to
+                          // before text, used by newlines
+
+  int        cw; // cell width
+  int        ch; // cell height
+  int        cursor_x;
+  int        cursor_y;
+  int        cols;
+  int        rows;
+
+  void (*exit)(void *exit_data);
+  void *exit_data;
 };
 
 struct _VT {
@@ -423,8 +436,6 @@ struct _VT {
 
   SvgP       svgp;
   // text related data
-  float      left_margin; // set by last user provided move_to
-                          // before text, used by newlines
   float      letter_spacing;
 
   float      word_spacing;
@@ -2077,6 +2088,12 @@ static void vtcmd_set_alternate_font (VT *vt, const char *sequence)
   vt->charset[0] = 1;
 }
 
+static void vt_svgp_exit (void *data)
+{
+  VT *vt = data;
+  vt->state = vt_state_neutral;
+}
+
 static void vtcmd_set_mode (VT *vt, const char *sequence)
 {
   int set = 1;
@@ -2233,11 +2250,24 @@ qagain:
      case 7020:/*MODE;Ctx ascii;On;;*/
 	   if (set)
 	   {
-             vt->state = vt_state_svgp;
+             vt->svgp.ctx = vt->current_line->ctx;
+             if (!vt->svgp.ctx)
+             {
+               vt->svgp.ctx = vt->current_line->ctx = ctx_new ();
+             }
+             vt->svgp.cursor_x = vt->cursor_x;
+             vt->svgp.cursor_y = vt->cursor_y;
+             vt->svgp.cw = vt->cw;
+             vt->svgp.ch = vt->ch;
+             vt->svgp.cols = vt->cols;
+             vt->svgp.rows = vt->rows;
              vt->svgp.command = 'm';
 	     vt->svgp.n_numbers = 0;
 	     vt->svgp.decimal = 0;
              vt->svgp.holding[vt->utf8_pos=0]=0;
+             vt->svgp.exit = vt_svgp_exit;
+             vt->svgp.exit_data = vt;
+             vt->state = vt_state_svgp;
 	   }
            break;
 
@@ -3680,9 +3710,9 @@ typedef enum {
   SVGP_CLOSE_PATH      = 'z', // SVG
 
 } SvgpCommand;
-static void vt_svgp_set_color_model (VT *vt, int color_model);
+static void vt_svgp_set_color_model (SvgP *svgp, int color_model);
 
-static int svgp_resolve_command (VT *vt, const uint8_t*str, int *args)
+static int svgp_resolve_command (SvgP *svgp, const uint8_t*str, int *args)
 {
   uint32_t str_hash = 0;
 
@@ -3700,9 +3730,9 @@ static int svgp_resolve_command (VT *vt, const uint8_t*str, int *args)
           (((uint32_t)a10)*11*11*11*11*11*11*11*11*11*11) + \
           (((uint32_t)a11)*11*11*11*11*11*11*11*11*11*11*11))
 
-/* this doesn't hash strings uniquely - but if there is a collision the
- * compiler would tell us due to collisions in the switch, since all the
- * matching strings are reduced to their integers at compile time
+/* The compiler will give us an error in the switch if there are duplicate
+ * hashes as duplicate case values, since all the matching strings are reduced
+ * to their integers at compile time
  */
 
   {
@@ -3742,7 +3772,7 @@ static int svgp_resolve_command (VT *vt, const uint8_t*str, int *args)
 
     case STR('c','o','l','o','r',0,0,0,0,0,0,0):
     case STR('s','e','t','_','c','o','l','o','r',0,0,0):
-    case 'K': *args = vt->svgp.color_components; return SVGP_SET_COLOR;
+    case 'K': *args = svgp->color_components; return SVGP_SET_COLOR;
 
     case STR('l','i','n','e','_','t','o',0,0,0,0,0):
     case 'L': *args = 2; return SVGP_LINE_TO;
@@ -3856,33 +3886,33 @@ static int svgp_resolve_command (VT *vt, const uint8_t*str, int *args)
       return SVGP_TEXT;
 
     case STR('g','r','a','y',0,0,0,0,0,0,0,0):
-      vt_svgp_set_color_model (vt, 1);
-      *args = vt->svgp.color_components;
+      vt_svgp_set_color_model (svgp, 1);
+      *args = svgp->color_components;
       return SVGP_SET_COLOR;
 
     case STR('g','r','a','y','a',0,0,0,0,0,0,0):
-      vt_svgp_set_color_model (vt, 101);
-      *args = vt->svgp.color_components;
+      vt_svgp_set_color_model (svgp, 101);
+      *args = svgp->color_components;
       return SVGP_SET_COLOR;
 
     case STR('r','g','b',0,0,0,0,0,0,0,0,0):
-      vt_svgp_set_color_model (vt, 3);
-      *args = vt->svgp.color_components;
+      vt_svgp_set_color_model (svgp, 3);
+      *args = svgp->color_components;
       return SVGP_SET_COLOR;
 
     case STR('r','g','b','a',0,0,0,0,0,0,0,0):
-      vt_svgp_set_color_model (vt, 103);
-      *args = vt->svgp.color_components;
+      vt_svgp_set_color_model (svgp, 103);
+      *args = svgp->color_components;
       return SVGP_SET_COLOR;
 
     case STR('c','m','y','k',0,0,0,0,0,0,0,0):
-      vt_svgp_set_color_model (vt, 4);
-      *args = vt->svgp.color_components;
+      vt_svgp_set_color_model (svgp, 4);
+      *args = svgp->color_components;
       return SVGP_SET_COLOR;
 
     case STR('c','m','y','k','a',0,0,0,0,0,0,0):
-      vt_svgp_set_color_model (vt, 104);
-      *args = vt->svgp.color_components;
+      vt_svgp_set_color_model (svgp, 104);
+      *args = svgp->color_components;
       return SVGP_SET_COLOR;
 
     /* the following words in all caps map to integer constants
@@ -3913,9 +3943,6 @@ static int svgp_resolve_command (VT *vt, const uint8_t*str, int *args)
   return -1;
 }
 
-// set_image 320 240 24 dvamlkvml~
-//   set_color_model GRAY, RGB, CMYK, GRAYA, RGBA, CMYKA, DEVICE_N, DEVICE_N_A
-//   set_color 4 1
 
 enum {
   SVGP_NEUTRAL = 0,
@@ -3929,54 +3956,58 @@ enum {
   SVGP_STRING2_ESCAPED,
 } SVGP_STATE;
 
-static void vt_svgp_set_color_model (VT *vt, int color_model)
+static void vt_svgp_set_color_model (SvgP *svgp, int color_model)
 {
-  vt->svgp.color_model      = color_model;
-  vt->svgp.color_components = color_model % 100;
-  if (vt->svgp.color_model >  99)
-    vt->svgp.color_components++;
+  svgp->color_model      = color_model;
+  svgp->color_components = color_model % 100;
+  if (svgp->color_model >  99)
+    svgp->color_components++;
 }
 
-void vt_svgp_get_color (VT *vt, int offset, float *red, float *green, float *blue, float *alpha)
+void vt_svgp_get_color (SvgP *svgp, int offset, float *red, float *green, float *blue, float *alpha)
 {
   *alpha = 1.0;
-  switch (vt->svgp.color_model)
+  switch (svgp->color_model)
   {
     case 101: // gray
-      *alpha = vt->svgp.numbers[offset + 1];
+      *alpha = svgp->numbers[offset + 1];
     case 1: // gray
-      *red = *green = *blue = vt->svgp.numbers[offset + 0];
+      *red = *green = *blue = svgp->numbers[offset + 0];
     break;
     default:
     case 103: // rgba
-      *alpha = vt->svgp.numbers[offset + 3];
+      *alpha = svgp->numbers[offset + 3];
     case 3: // rgb
-      *red = vt->svgp.numbers[offset + 0];
-      *green = vt->svgp.numbers[offset + 1];
-      *blue = vt->svgp.numbers[offset + 2];
+      *red = svgp->numbers[offset + 0];
+      *green = svgp->numbers[offset + 1];
+      *blue = svgp->numbers[offset + 2];
     break;
     case 104: // cmyka
-      *alpha = vt->svgp.numbers[offset + 4];
+      *alpha = svgp->numbers[offset + 4];
     case 4: // cmyk
-      *red = (1.0-vt->svgp.numbers[offset + 0]) * (1.0 - vt->svgp.numbers[offset + 3]);
-      *green = (1.0-vt->svgp.numbers[offset + 1]) * (1.0 - vt->svgp.numbers[offset + 3]);
-      *blue = (1.0-vt->svgp.numbers[offset + 2]) * (1.0 - vt->svgp.numbers[offset + 3]);
+      *red = (1.0-svgp->numbers[offset + 0]) *
+               (1.0 - svgp->numbers[offset + 3]);
+      *green = (1.0-svgp->numbers[offset + 1]) *
+                 (1.0 - svgp->numbers[offset + 3]);
+      *blue = (1.0-svgp->numbers[offset + 2]) *
+                 (1.0 - svgp->numbers[offset + 3]);
     break;
   }
 }
 
-static void svgp_dispatch_command (VT *vt, Ctx *ctx)
+static void svgp_dispatch_command (SvgP *svgp)
 {
-  SvgpCommand cmd = vt->svgp.command;
+  SvgpCommand cmd = svgp->command;
+  Ctx *ctx = svgp->ctx;
 
-  if (vt->svgp.n_args != 100 &&
-      vt->svgp.n_args != vt->svgp.n_numbers)
+  if (svgp->n_args != 100 &&
+      svgp->n_args != svgp->n_numbers)
   {
     fprintf (stderr, "unexpected args for '%c' expected %i but got %i\n",
-      cmd, vt->svgp.n_args, vt->svgp.n_numbers);
+      cmd, svgp->n_args, svgp->n_numbers);
   }
 
-  vt->svgp.command = SVGP_NONE;
+  svgp->command = SVGP_NONE;
   switch (cmd)
   {
     case SVGP_NONE:
@@ -3988,13 +4019,13 @@ static void svgp_dispatch_command (VT *vt, Ctx *ctx)
     case SVGP_SET_COLOR:
       {
         float red, green, blue, alpha;
-        vt_svgp_get_color (vt, 0, &red, &green, &blue, &alpha);
+        vt_svgp_get_color (svgp, 0, &red, &green, &blue, &alpha);
 
         ctx_set_rgba (ctx, red, green, blue, alpha);
       }
       break;
     case SVGP_SET_COLOR_MODEL:
-      vt_svgp_set_color_model (vt, vt->svgp.numbers[0]);
+      vt_svgp_set_color_model (svgp, svgp->numbers[0]);
       break;
 
     case SVGP_ARC_TO: break;
@@ -4002,132 +4033,132 @@ static void svgp_dispatch_command (VT *vt, Ctx *ctx)
 
     case SVGP_REL_SMOOTH_TO:
         {
-	  float cx = vt->svgp.pcx;
-	  float cy = vt->svgp.pcy;
+	  float cx = svgp->pcx;
+	  float cy = svgp->pcy;
 	  float ax = 2 * ctx_x (ctx) - cx;
 	  float ay = 2 * ctx_y (ctx) - cy;
-	  ctx_curve_to (ctx, ax, ay, vt->svgp.numbers[0] +  cx, vt->svgp.numbers[1] + cy,
-			     vt->svgp.numbers[2] + cx, vt->svgp.numbers[3] + cy);
-	  vt->svgp.pcx = vt->svgp.numbers[0] + cx;
-	  vt->svgp.pcy = vt->svgp.numbers[1] + cy;
+	  ctx_curve_to (ctx, ax, ay, svgp->numbers[0] +  cx, svgp->numbers[1] + cy,
+			     svgp->numbers[2] + cx, svgp->numbers[3] + cy);
+	  svgp->pcx = svgp->numbers[0] + cx;
+	  svgp->pcy = svgp->numbers[1] + cy;
         }
 	break;
     case SVGP_SMOOTH_TO:
         {
-	  float ax = 2 * ctx_x (ctx) - vt->svgp.pcx;
-	  float ay = 2 * ctx_y (ctx) - vt->svgp.pcy;
-	  ctx_curve_to (ctx, ax, ay, vt->svgp.numbers[0], vt->svgp.numbers[1],
-			     vt->svgp.numbers[2], vt->svgp.numbers[3]);
-	  vt->svgp.pcx = vt->svgp.numbers[0];
-	  vt->svgp.pcx = vt->svgp.numbers[1];
+	  float ax = 2 * ctx_x (ctx) - svgp->pcx;
+	  float ay = 2 * ctx_y (ctx) - svgp->pcy;
+	  ctx_curve_to (ctx, ax, ay, svgp->numbers[0], svgp->numbers[1],
+			     svgp->numbers[2], svgp->numbers[3]);
+	  svgp->pcx = svgp->numbers[0];
+	  svgp->pcx = svgp->numbers[1];
         }
         break;
 
     case SVGP_SMOOTHQ_TO:
-	ctx_quad_to (ctx, vt->svgp.pcx, vt->svgp.pcy, vt->svgp.numbers[0], vt->svgp.numbers[1]);
+	ctx_quad_to (ctx, svgp->pcx, svgp->pcy, svgp->numbers[0], svgp->numbers[1]);
         break;
     case SVGP_REL_SMOOTHQ_TO:
         {
-	  float cx = vt->svgp.pcx;
-	  float cy = vt->svgp.pcy;
-	  vt->svgp.pcx = 2 * ctx_x (ctx) - vt->svgp.pcx;
-	  vt->svgp.pcy = 2 * ctx_y (ctx) - vt->svgp.pcy;
-	  ctx_quad_to (ctx, vt->svgp.pcx, vt->svgp.pcy, vt->svgp.numbers[0] +  cx, vt->svgp.numbers[1] + cy);
+	  float cx = svgp->pcx;
+	  float cy = svgp->pcy;
+	  svgp->pcx = 2 * ctx_x (ctx) - svgp->pcx;
+	  svgp->pcy = 2 * ctx_y (ctx) - svgp->pcy;
+	  ctx_quad_to (ctx, svgp->pcx, svgp->pcy, svgp->numbers[0] +  cx, svgp->numbers[1] + cy);
         }
 	break;
 
-    case SVGP_STROKE_TEXT: ctx_text_stroke (ctx, (char*)vt->svgp.holding); break;
-    case SVGP_VER_LINE_TO: ctx_line_to (ctx, ctx_x (ctx), vt->svgp.numbers[0]); vt->svgp.command = SVGP_VER_LINE_TO;
-	vt->svgp.pcx = ctx_x (ctx);
-	vt->svgp.pcy = ctx_y (ctx);
+    case SVGP_STROKE_TEXT: ctx_text_stroke (ctx, (char*)svgp->holding); break;
+    case SVGP_VER_LINE_TO: ctx_line_to (ctx, ctx_x (ctx), svgp->numbers[0]); svgp->command = SVGP_VER_LINE_TO;
+	svgp->pcx = ctx_x (ctx);
+	svgp->pcy = ctx_y (ctx);
         break;
     case SVGP_HOR_LINE_TO:
-	ctx_line_to (ctx, vt->svgp.numbers[0], ctx_y(ctx)); vt->svgp.command = SVGP_HOR_LINE_TO;
-	vt->svgp.pcx = ctx_x (ctx);
-	vt->svgp.pcy = ctx_y (ctx);
+	ctx_line_to (ctx, svgp->numbers[0], ctx_y(ctx)); svgp->command = SVGP_HOR_LINE_TO;
+	svgp->pcx = ctx_x (ctx);
+	svgp->pcy = ctx_y (ctx);
 	break;
-    case SVGP_REL_HOR_LINE_TO: ctx_rel_line_to (ctx, vt->svgp.numbers[0], 0.0f); vt->svgp.command = SVGP_REL_HOR_LINE_TO;
-	vt->svgp.pcx = ctx_x (ctx);
-	vt->svgp.pcy = ctx_y (ctx);
+    case SVGP_REL_HOR_LINE_TO: ctx_rel_line_to (ctx, svgp->numbers[0], 0.0f); svgp->command = SVGP_REL_HOR_LINE_TO;
+	svgp->pcx = ctx_x (ctx);
+	svgp->pcy = ctx_y (ctx);
         break;
-    case SVGP_REL_VER_LINE_TO: ctx_rel_line_to (ctx, 0.0f, vt->svgp.numbers[0]); vt->svgp.command = SVGP_REL_VER_LINE_TO;
-	vt->svgp.pcx = ctx_x (ctx);
-	vt->svgp.pcy = ctx_y (ctx);
+    case SVGP_REL_VER_LINE_TO: ctx_rel_line_to (ctx, 0.0f, svgp->numbers[0]); svgp->command = SVGP_REL_VER_LINE_TO;
+	svgp->pcx = ctx_x (ctx);
+	svgp->pcy = ctx_y (ctx);
 	break;
 
-    case SVGP_ARC: ctx_arc (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1],
-			    vt->svgp.numbers[2], vt->svgp.numbers[3],
-			    vt->svgp.numbers[4], vt->svgp.numbers[5]);
+    case SVGP_ARC: ctx_arc (ctx, svgp->numbers[0], svgp->numbers[1],
+			    svgp->numbers[2], svgp->numbers[3],
+			    svgp->numbers[4], svgp->numbers[5]);
         break;
 
-    case SVGP_CURVE_TO: ctx_curve_to (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1],
-					   vt->svgp.numbers[2], vt->svgp.numbers[3],
-					   vt->svgp.numbers[4], vt->svgp.numbers[5]);
-			vt->svgp.pcx = vt->svgp.numbers[2];
-			vt->svgp.pcy = vt->svgp.numbers[3];
-		        vt->svgp.command = SVGP_CURVE_TO;
+    case SVGP_CURVE_TO: ctx_curve_to (ctx, svgp->numbers[0], svgp->numbers[1],
+					   svgp->numbers[2], svgp->numbers[3],
+					   svgp->numbers[4], svgp->numbers[5]);
+			svgp->pcx = svgp->numbers[2];
+			svgp->pcy = svgp->numbers[3];
+		        svgp->command = SVGP_CURVE_TO;
         break;
     case SVGP_REL_CURVE_TO:
-			vt->svgp.pcx = vt->svgp.numbers[2] + ctx_x (ctx);
-			vt->svgp.pcy = vt->svgp.numbers[3] + ctx_y (ctx);
+			svgp->pcx = svgp->numbers[2] + ctx_x (ctx);
+			svgp->pcy = svgp->numbers[3] + ctx_y (ctx);
 			
-			ctx_rel_curve_to (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1],
-					   vt->svgp.numbers[2], vt->svgp.numbers[3],
-					   vt->svgp.numbers[4], vt->svgp.numbers[5]);
-		        vt->svgp.command = SVGP_REL_CURVE_TO;
+			ctx_rel_curve_to (ctx, svgp->numbers[0], svgp->numbers[1],
+					   svgp->numbers[2], svgp->numbers[3],
+					   svgp->numbers[4], svgp->numbers[5]);
+		        svgp->command = SVGP_REL_CURVE_TO;
         break;
     case SVGP_LINE_TO:
-        ctx_line_to (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1]);
-        vt->svgp.command = SVGP_LINE_TO;
-        vt->svgp.pcx = vt->svgp.numbers[0];
-        vt->svgp.pcy = vt->svgp.numbers[1];
+        ctx_line_to (ctx, svgp->numbers[0], svgp->numbers[1]);
+        svgp->command = SVGP_LINE_TO;
+        svgp->pcx = svgp->numbers[0];
+        svgp->pcy = svgp->numbers[1];
         break;
     case SVGP_MOVE_TO:
-        ctx_move_to (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1]);
-        vt->svgp.command = SVGP_LINE_TO;
-        vt->svgp.pcx = vt->svgp.numbers[0];
-        vt->svgp.pcy = vt->svgp.numbers[1];
-        vt->left_margin = vt->svgp.pcx;
+        ctx_move_to (ctx, svgp->numbers[0], svgp->numbers[1]);
+        svgp->command = SVGP_LINE_TO;
+        svgp->pcx = svgp->numbers[0];
+        svgp->pcy = svgp->numbers[1];
+        svgp->left_margin = svgp->pcx;
         break;
     case SVGP_SET_FONT_SIZE:
-	ctx_set_font_size (ctx, vt->svgp.numbers[0]);
+	ctx_set_font_size (ctx, svgp->numbers[0]);
 	break;
     case SVGP_SCALE:
-	ctx_scale (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1]);
+	ctx_scale (ctx, svgp->numbers[0], svgp->numbers[1]);
 	break;
     case SVGP_QUAD_TO:
-	vt->svgp.pcx = vt->svgp.numbers[0];
-        vt->svgp.pcy = vt->svgp.numbers[1];
-        ctx_quad_to (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1],
-	             vt->svgp.numbers[2], vt->svgp.numbers[3]);
-        vt->svgp.command = SVGP_QUAD_TO;
+	svgp->pcx = svgp->numbers[0];
+        svgp->pcy = svgp->numbers[1];
+        ctx_quad_to (ctx, svgp->numbers[0], svgp->numbers[1],
+	             svgp->numbers[2], svgp->numbers[3]);
+        svgp->command = SVGP_QUAD_TO;
 	break;
     case SVGP_REL_QUAD_TO: 
-        vt->svgp.pcx = vt->svgp.numbers[0] + ctx_x (ctx);
-        vt->svgp.pcy = vt->svgp.numbers[1] + ctx_y (ctx);
-        ctx_rel_quad_to (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1],
-        vt->svgp.numbers[2], vt->svgp.numbers[3]);
-        vt->svgp.command = SVGP_REL_QUAD_TO;
+        svgp->pcx = svgp->numbers[0] + ctx_x (ctx);
+        svgp->pcy = svgp->numbers[1] + ctx_y (ctx);
+        ctx_rel_quad_to (ctx, svgp->numbers[0], svgp->numbers[1],
+        svgp->numbers[2], svgp->numbers[3]);
+        svgp->command = SVGP_REL_QUAD_TO;
         break;
     case SVGP_SET_LINE_CAP:
-	ctx_set_line_cap (ctx, vt->svgp.numbers[0]);
+	ctx_set_line_cap (ctx, svgp->numbers[0]);
 	break;
     case SVGP_CLIP:
 	ctx_clip (ctx);
         break;
 
     case SVGP_TRANSLATE:
-	ctx_translate (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1]);
+	ctx_translate (ctx, svgp->numbers[0], svgp->numbers[1]);
 	break;
     case SVGP_ROTATE:
-	ctx_rotate (ctx, vt->svgp.numbers[0]);
+	ctx_rotate (ctx, svgp->numbers[0]);
         break;
     case SVGP_TEXT:
-	if (vt->svgp.n_numbers == 1)
-	  ctx_rel_move_to (ctx, -vt->svgp.numbers[0], 0.0);  //  XXX : scale by font(size)
+	if (svgp->n_numbers == 1)
+	  ctx_rel_move_to (ctx, -svgp->numbers[0], 0.0);  //  XXX : scale by font(size)
 	else
         {
-          char *copy = strdup ((char*)vt->svgp.holding);
+          char *copy = strdup ((char*)svgp->holding);
           char *c;
           for (c = copy; c; )
           {
@@ -4146,8 +4177,7 @@ static void svgp_dispatch_command (VT *vt, Ctx *ctx)
 
             if (next_nl)
             {
-              // do the newline thing here
-              ctx_move_to (ctx, vt->left_margin, ctx_y (ctx) + 
+              ctx_move_to (ctx, svgp->left_margin, ctx_y (ctx) + 
                                 ctx_get_font_size (ctx));
               c = next_nl + 1;
             }
@@ -4158,402 +4188,397 @@ static void svgp_dispatch_command (VT *vt, Ctx *ctx)
           }
           free (copy);
         }
-        vt->svgp.command = SVGP_TEXT;
+        svgp->command = SVGP_TEXT;
         break;
-    case SVGP_SET_FONT: ctx_set_font (ctx, (char*)vt->svgp.holding);
+    case SVGP_SET_FONT: ctx_set_font (ctx, (char*)svgp->holding);
         break;
     case SVGP_REL_LINE_TO:
-        ctx_rel_line_to (ctx , vt->svgp.numbers[0], vt->svgp.numbers[1]);
-        vt->svgp.pcx += vt->svgp.numbers[0];
-        vt->svgp.pcy += vt->svgp.numbers[1];
+        ctx_rel_line_to (ctx , svgp->numbers[0], svgp->numbers[1]);
+        svgp->pcx += svgp->numbers[0];
+        svgp->pcy += svgp->numbers[1];
         break;
     case SVGP_REL_MOVE_TO:
-	ctx_rel_move_to (ctx , vt->svgp.numbers[0], vt->svgp.numbers[1]);
-        vt->svgp.pcx += vt->svgp.numbers[0];
-        vt->svgp.pcy += vt->svgp.numbers[1];
-        vt->left_margin = ctx_x (ctx);
+	ctx_rel_move_to (ctx , svgp->numbers[0], svgp->numbers[1]);
+        svgp->pcx += svgp->numbers[0];
+        svgp->pcy += svgp->numbers[1];
+        svgp->left_margin = ctx_x (ctx);
         break;
     case SVGP_SET_LINE_WIDTH:
-        ctx_set_line_width (ctx, vt->svgp.numbers[0]);
+        ctx_set_line_width (ctx, svgp->numbers[0]);
         break;
     case SVGP_SET_LINE_JOIN:
-        ctx_set_line_join (ctx, vt->svgp.numbers[0]);
+        ctx_set_line_join (ctx, svgp->numbers[0]);
 	break;
     case SVGP_RECTANGLE:
-        ctx_rectangle (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1],
-			    vt->svgp.numbers[2], vt->svgp.numbers[3]);
+        ctx_rectangle (ctx, svgp->numbers[0], svgp->numbers[1],
+			    svgp->numbers[2], svgp->numbers[3]);
 	break;
     case SVGP_LINEAR_GRADIENT:
-	ctx_linear_gradient (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1],
-                                  vt->svgp.numbers[2], vt->svgp.numbers[3]);
+	ctx_linear_gradient (ctx, svgp->numbers[0], svgp->numbers[1],
+                                  svgp->numbers[2], svgp->numbers[3]);
 	break;
     case SVGP_RADIAL_GRADIENT:
-	ctx_radial_gradient (ctx, vt->svgp.numbers[0], vt->svgp.numbers[1],
-                                  vt->svgp.numbers[2], vt->svgp.numbers[3],
-                                  vt->svgp.numbers[4], vt->svgp.numbers[5]);
+	ctx_radial_gradient (ctx, svgp->numbers[0], svgp->numbers[1],
+                                  svgp->numbers[2], svgp->numbers[3],
+                                  svgp->numbers[4], svgp->numbers[5]);
 	break;
     case SVGP_GRADIENT_ADD_STOP:
       {
         float red, green, blue, alpha;
-        vt_svgp_get_color (vt, 1, &red, &green, &blue, &alpha);
+        vt_svgp_get_color (svgp, 1, &red, &green, &blue, &alpha);
 
-        ctx_gradient_add_stop (ctx, vt->svgp.numbers[0], red, green, blue, alpha);
+        ctx_gradient_add_stop (ctx, svgp->numbers[0], red, green, blue, alpha);
       }
        break;
     case SVGP_CLOSE_PATH:
        ctx_close_path (ctx);
        break;
     case SVGP_EXIT:
-       vt->state = vt_state_neutral;
+       if (svgp->exit)
+         svgp->exit (svgp->exit_data);
        break;
     case SVGP_CLEAR:
        ctx_clear (ctx);
        ctx_translate (ctx,
-                     (vt->cursor_x-1) * vt->cw * 10,
-                     (vt->cursor_y-1) * vt->ch * 10);
+                     (svgp->cursor_x-1) * svgp->cw * 10,
+                     (svgp->cursor_y-1) * svgp->ch * 10);
        break;
   }
-  vt->svgp.n_numbers = 0;
+  svgp->n_numbers = 0;
+}
+
+static void svgp_feed_byte (SvgP *svgp, int byte)
+{
+  switch (svgp->state)
+  {
+    case SVGP_NEUTRAL:
+      switch (byte)
+      {
+         case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+         case 8: case 11: case 12: case 14: case 15: case 16: case 17:
+         case 18: case 19: case 20: case 21: case 22: case 23: case 24:
+         case 25: case 26: case 27: case 28: case 29: case 30: case 31:
+            break;
+         case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
+         case '{':case '}':
+            break;
+         case '#':
+            svgp->state = SVGP_COMMENT;
+            break;
+         case '\'':
+            svgp->state = SVGP_STRING1;
+            svgp->pos = 0;
+            svgp->holding[0] = 0;
+            break;
+         case '"':
+            svgp->state = SVGP_STRING2;
+            svgp->pos = 0;
+            svgp->holding[0] = 0;
+            break;
+         case '-':
+            svgp->state = SVGP_NEG_NUMBER;
+            svgp->numbers[svgp->n_numbers] = 0;
+            svgp->decimal = 0;
+            break;
+         case '0': case '1': case '2': case '3': case '4':
+         case '5': case '6': case '7': case '8': case '9':
+            svgp->state = SVGP_NUMBER;
+            svgp->numbers[svgp->n_numbers] = 0;
+            svgp->numbers[svgp->n_numbers] += (byte - '0');
+            svgp->decimal = 0;
+            break;
+         case '.':
+            svgp->state = SVGP_NUMBER;
+            svgp->numbers[svgp->n_numbers] = 0;
+            svgp->decimal = 1;
+            break;
+         default:
+            svgp->state = SVGP_WORD;
+            svgp->pos = 0;
+            svgp->holding[svgp->pos++]=byte;
+            if (svgp->pos > 62) svgp->pos = 62;
+            break;
+      }
+      break;
+    case SVGP_NUMBER:
+    case SVGP_NEG_NUMBER:
+      {
+        int new_neg = 0;
+        switch (byte)
+        {
+           case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+           case 8: case 11: case 12: case 14: case 15: case 16: case 17:
+           case 18: case 19: case 20: case 21: case 22: case 23: case 24:
+           case 25: case 26: case 27: case 28: case 29: case 30: case 31:
+              svgp->state = SVGP_NEUTRAL;
+              break;
+           case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
+           case '{':case '}':
+              if (svgp->state == SVGP_NEG_NUMBER)
+                svgp->numbers[svgp->n_numbers] *= -1;
+    
+              svgp->state = SVGP_NEUTRAL;
+              break;
+           case '#':
+              svgp->state = SVGP_COMMENT;
+              break;
+           case '-':
+              svgp->state = SVGP_NEG_NUMBER;
+              new_neg = 1;
+              svgp->numbers[svgp->n_numbers+1] = 0;
+              svgp->decimal = 0;
+              break;
+           case '.':
+              svgp->decimal = 1;
+              break;
+           case '0': case '1': case '2': case '3': case '4':
+           case '5': case '6': case '7': case '8': case '9':
+              if (svgp->decimal)
+              {
+        	      svgp->decimal *= 10;
+                svgp->numbers[svgp->n_numbers] += (byte - '0') / (1.0 * svgp->decimal);
+              }
+              else
+              {
+                svgp->numbers[svgp->n_numbers] *= 10;
+                svgp->numbers[svgp->n_numbers] += (byte - '0');
+              }
+              break;
+           case '@':
+              if (svgp->state == SVGP_NEG_NUMBER)
+                svgp->numbers[svgp->n_numbers] *= -1;
+              if (svgp->n_numbers % 2 == 0) // even is x coord
+              {
+                svgp->numbers[svgp->n_numbers] *= svgp->cw;
+              }
+              else
+              {
+        	  if (! (svgp->command == 'r' && svgp->n_numbers > 1))
+                  // height of rectangle is avoided,
+                  // XXX for radial gradient there is more complexity here
+        	  {
+                  svgp->numbers[svgp->n_numbers] --;
+        	  }
+
+                svgp->numbers[svgp->n_numbers] =
+                  (svgp->numbers[svgp->n_numbers]) * svgp->ch;
+              }
+              svgp->state = SVGP_NEUTRAL;
+          break;
+           case '%':
+              if (svgp->state == SVGP_NEG_NUMBER)
+                svgp->numbers[svgp->n_numbers] *= -1;
+              if (svgp->n_numbers % 2 == 0) // even means x coord
+              {
+                svgp->numbers[svgp->n_numbers] =
+        	   svgp->numbers[svgp->n_numbers] * ((svgp->cols * svgp->cw)/100.0);
+              }
+              else
+              {
+                svgp->numbers[svgp->n_numbers] =
+        	   svgp->numbers[svgp->n_numbers] * ((svgp->rows * svgp->ch)/100.0);
+              }
+              svgp->state = SVGP_NEUTRAL;
+              break;
+           default:
+              if (svgp->state == SVGP_NEG_NUMBER)
+                svgp->numbers[svgp->n_numbers] *= -1;
+              svgp->state = SVGP_WORD;
+              svgp->pos = 0;
+              svgp->holding[svgp->pos++]=byte;
+              break;
+    
+        }
+        if ((svgp->state != SVGP_NUMBER &&
+             svgp->state != SVGP_NEG_NUMBER) || new_neg)
+        {
+                 svgp->n_numbers ++;
+        	 if (svgp->n_numbers == svgp->n_args || svgp->n_args == 100)
+        	 {
+        	   svgp_dispatch_command (svgp);
+        	 }
+    
+                 if (svgp->n_numbers > 10)
+                   svgp->n_numbers = 10;
+        }
+      }
+      break;
+
+    case SVGP_WORD:
+      switch (byte)
+      {
+         case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+         case 8: case 11: case 12: case 14: case 15: case 16: case 17:
+         case 18: case 19: case 20: case 21: case 22: case 23: case 24:
+         case 25: case 26: case 27: case 28: case 29: case 30: case 31:
+
+         case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
+         case '{':case '}':
+            svgp->state = SVGP_NEUTRAL;
+            break;
+         case '#':
+            svgp->state = SVGP_COMMENT;
+            break;
+         case '-':
+            svgp->state = SVGP_NEG_NUMBER;
+            svgp->numbers[svgp->n_numbers] = 0;
+            svgp->decimal = 0;
+            break;
+         case '0': case '1': case '2': case '3': case '4':
+         case '5': case '6': case '7': case '8': case '9':
+            svgp->state = SVGP_NUMBER;
+            svgp->numbers[svgp->n_numbers] = 0;
+            svgp->numbers[svgp->n_numbers] += (byte - '0');
+            svgp->decimal = 0;
+            break;
+         case '.':
+            svgp->state = SVGP_NUMBER;
+            svgp->numbers[svgp->n_numbers] = 0;
+            svgp->decimal = 1;
+            break;
+         default:
+            svgp->holding[svgp->pos++]=byte;
+            if (svgp->pos > 62) svgp->pos = 62;
+            break;
+      }
+      if (svgp->state != SVGP_WORD)
+      {
+        int args = 0;
+        svgp->holding[svgp->pos]=0;
+        int command = svgp_resolve_command (svgp, svgp->holding, &args);
+
+        if (command >= 0 && command < 5)
+        {
+          svgp->numbers[svgp->n_numbers] = command;
+          svgp->state = SVGP_NUMBER;
+          svgp_feed_byte (svgp, ',');
+        }
+        else if (command > 0)
+        {
+           svgp->command = command;
+           svgp->n_args = args;
+           if (args == 0)
+           {
+      	     svgp_dispatch_command (svgp);
+           }
+        }
+        else
+        {
+          /* interpret char by char */
+          uint8_t buf[16]=" ";
+          for (int i = 0; svgp->pos && svgp->holding[i] > ' '; i++)
+          {
+             buf[0] = svgp->holding[i];
+             svgp->command = svgp_resolve_command (svgp, buf, &args);
+             if (svgp->command > 0)
+             {
+               svgp->n_args = args;
+               if (args == 0)
+               {
+      	         svgp_dispatch_command (svgp);
+               }
+             }
+             else
+             {
+               fprintf (stderr, "unhandled command '%c'\n", buf[0]);
+             }
+          }
+        }
+        svgp->n_numbers = 0;
+      }
+      break;
+
+    case SVGP_STRING1:
+      switch (byte)
+      {
+         case '\\':
+            svgp->state = SVGP_STRING1_ESCAPED;
+            break;
+         case '\'':
+            svgp->state = SVGP_NEUTRAL;
+            break;
+         default:
+            svgp->holding[svgp->pos++]=byte;
+            svgp->holding[svgp->pos]=0;
+            if (svgp->pos > 62) svgp->pos = 62;
+            break;
+      }
+      if (svgp->state != SVGP_STRING1)
+      {
+        svgp_dispatch_command (svgp);
+      }
+      break;
+    case SVGP_STRING1_ESCAPED:
+      switch (byte)
+      {
+         case '0': byte = '\0'; break;
+         case 'b': byte = '\b'; break;
+         case 'f': byte = '\f'; break;
+         case 'n': byte = '\n'; break;
+         case 'r': byte = '\r'; break;
+         case 't': byte = '\t'; break;
+         case 'v': byte = '\v'; break;
+         default: break;
+      }
+      svgp->holding[svgp->pos++]=byte;
+      svgp->holding[svgp->pos]=0;
+      if (svgp->pos > 62) svgp->pos = 62;
+      svgp->state = SVGP_STRING1;
+      break;
+    case SVGP_STRING2_ESCAPED:
+      switch (byte)
+      {
+         case '0': byte = '\0'; break;
+         case 'b': byte = '\b'; break;
+         case 'f': byte = '\f'; break;
+         case 'n': byte = '\n'; break;
+         case 'r': byte = '\r'; break;
+         case 't': byte = '\t'; break;
+         case 'v': byte = '\v'; break;
+         default: break;
+      }
+      svgp->holding[svgp->pos++]=byte;
+      svgp->holding[svgp->pos]=0;
+      if (svgp->pos > 62) svgp->pos = 62;
+      svgp->state = SVGP_STRING2;
+      break;
+
+    case SVGP_STRING2:
+      switch (byte)
+      {
+         case '\\':
+            svgp->state = SVGP_STRING2_ESCAPED;
+            break;
+         case '"':
+            svgp->state = SVGP_NEUTRAL;
+            break;
+         default:
+            svgp->holding[svgp->pos++]=byte;
+            svgp->holding[svgp->pos]=0;
+            if (svgp->pos > 62) svgp->pos = 62;
+            break;
+      }
+      if (svgp->state != SVGP_STRING2)
+      {
+        svgp_dispatch_command (svgp);
+      }
+      break;
+    case SVGP_COMMENT:
+      switch (byte)
+      {
+        case '\r':
+        case '\n':
+          svgp->state = SVGP_NEUTRAL;
+        default:
+          break;
+      }
+      break;
+  }
 }
 
 static void vt_state_svgp (VT *vt, int byte)
 {
-    Ctx *ctx = vt->current_line->ctx;
-    if (!ctx)
-    {
-      ctx = vt->current_line->ctx = ctx_new ();
-      /* ctx_translate (ctx,
-                     (vt->cursor_x-1) * vt->cw ,
-                     (vt->cursor_y-1) * vt->ch );
-      fprintf (stderr, "made ctx on line %p\n", vt->current_line);
-      */
-    }
-
-    switch (vt->svgp.state)
-    {
-      case SVGP_NEUTRAL:
-	switch (byte)
-	{
-	   case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-           case 8: case 11: case 12: case 14: case 15: case 16: case 17:
-	   case 18: case 19: case 20: case 21: case 22: case 23: case 24:
-	   case 25: case 26: case 27: case 28: case 29: case 30: case 31:
-	      break;
-	   case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
-	   case '{':case '}':
-	      break;
-	   case '#':
-	      vt->svgp.state = SVGP_COMMENT;
-	      break;
-	   case '\'':
-	      vt->svgp.state = SVGP_STRING1;
-	      vt->svgp.pos = 0;
-	      vt->svgp.holding[0] = 0;
-	      break;
-	   case '"':
-	      vt->svgp.state = SVGP_STRING2;
-	      vt->svgp.pos = 0;
-	      vt->svgp.holding[0] = 0;
-	      break;
-           case '-':
-	      vt->svgp.state = SVGP_NEG_NUMBER;
-	      vt->svgp.numbers[vt->svgp.n_numbers] = 0;
-	      vt->svgp.decimal = 0;
-	      break;
-           case '0': case '1': case '2': case '3': case '4':
-           case '5': case '6': case '7': case '8': case '9':
-	      vt->svgp.state = SVGP_NUMBER;
-	      vt->svgp.numbers[vt->svgp.n_numbers] = 0;
-	      vt->svgp.numbers[vt->svgp.n_numbers] += (byte - '0');
-	      vt->svgp.decimal = 0;
-	      break;
-           case '.':
-	      vt->svgp.state = SVGP_NUMBER;
-	      vt->svgp.numbers[vt->svgp.n_numbers] = 0;
-	      vt->svgp.decimal = 1;
-	      break;
-	   default:
-	      vt->svgp.state = SVGP_WORD;
-	      vt->svgp.pos = 0;
-              vt->svgp.holding[vt->svgp.pos++]=byte;
-	      if (vt->svgp.pos > 62) vt->svgp.pos = 62;
-	      break;
-	}
-        break;
-      case SVGP_NUMBER:
-      case SVGP_NEG_NUMBER:
-	{
-	  int new_neg = 0;
-	switch (byte)
-	{
-	   case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-           case 8: case 11: case 12: case 14: case 15: case 16: case 17:
-	   case 18: case 19: case 20: case 21: case 22: case 23: case 24:
-	   case 25: case 26: case 27: case 28: case 29: case 30: case 31:
-	      vt->svgp.state = SVGP_NEUTRAL;
-	      break;
-	   case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
-	   case '{':case '}':
-	      if (vt->svgp.state == SVGP_NEG_NUMBER)
-	        vt->svgp.numbers[vt->svgp.n_numbers] *= -1;
-
-	      vt->svgp.state = SVGP_NEUTRAL;
-	      break;
-	   case '#':
-	      vt->svgp.state = SVGP_COMMENT;
-	      break;
-           case '-':
-	      vt->svgp.state = SVGP_NEG_NUMBER;
-	      new_neg = 1;
-	      vt->svgp.numbers[vt->svgp.n_numbers+1] = 0;
-	      vt->svgp.decimal = 0;
-	      break;
-           case '.':
-	      vt->svgp.decimal = 1;
-	      break;
-           case '0': case '1': case '2': case '3': case '4':
-           case '5': case '6': case '7': case '8': case '9':
-	      if (vt->svgp.decimal)
-	      {
-		vt->svgp.decimal *= 10;
-	        vt->svgp.numbers[vt->svgp.n_numbers] += (byte - '0') / (1.0 * vt->svgp.decimal);
-	      }
-	      else
-	      {
-	        vt->svgp.numbers[vt->svgp.n_numbers] *= 10;
-	        vt->svgp.numbers[vt->svgp.n_numbers] += (byte - '0');
-	      }
-	      break;
-	   case '@':
-	      if (vt->svgp.state == SVGP_NEG_NUMBER)
-	        vt->svgp.numbers[vt->svgp.n_numbers] *= -1;
-	      if (vt->svgp.n_numbers % 2 == 0) // even is x coord
-	      {
-	        vt->svgp.numbers[vt->svgp.n_numbers] *= vt->cw;
-	      }
-	      else
-	      {
-		if (! (vt->svgp.command == 'r' && vt->svgp.n_numbers > 1))
-	  	  // height of rectangle is avoided,
-		  // XXX for radial gradient there is more complexity here
-		{
-	          vt->svgp.numbers[vt->svgp.n_numbers] --;
-		}
-
-	        vt->svgp.numbers[vt->svgp.n_numbers] =
-	          (vt->svgp.numbers[vt->svgp.n_numbers]) * vt->ch;
-	      }
-	      vt->svgp.state = SVGP_NEUTRAL;
-	      break;
-	   case '%':
-	      if (vt->svgp.state == SVGP_NEG_NUMBER)
-	        vt->svgp.numbers[vt->svgp.n_numbers] *= -1;
-	      if (vt->svgp.n_numbers % 2 == 0) // even means x coord
-	      {
-	        vt->svgp.numbers[vt->svgp.n_numbers] =
-		   vt->svgp.numbers[vt->svgp.n_numbers] * ((vt->cols * vt->cw)/100.0);
-	      }
-	      else
-	      {
-	        vt->svgp.numbers[vt->svgp.n_numbers] =
-		   vt->svgp.numbers[vt->svgp.n_numbers] * ((vt->rows * vt->ch)/100.0);
-	      }
-	      vt->svgp.state = SVGP_NEUTRAL;
-	      break;
-	   default:
-	      if (vt->svgp.state == SVGP_NEG_NUMBER)
-	        vt->svgp.numbers[vt->svgp.n_numbers] *= -1;
-	      vt->svgp.state = SVGP_WORD;
-	      vt->svgp.pos = 0;
-              vt->svgp.holding[vt->svgp.pos++]=byte;
-	      break;
-
-	}
-	      if ((vt->svgp.state != SVGP_NUMBER &&
-	           vt->svgp.state != SVGP_NEG_NUMBER) || new_neg)
-	      {
-	         vt->svgp.n_numbers ++;
-		 if (vt->svgp.n_numbers == vt->svgp.n_args || vt->svgp.n_args == 100)
-		 {
-		   svgp_dispatch_command (vt, ctx);
-		 }
-
-	         if (vt->svgp.n_numbers > 10)
-	           vt->svgp.n_numbers = 10;
-	      }
-	}
-        break;
-
-      case SVGP_WORD:
-	switch (byte)
-	{
-	   case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-           case 8: case 11: case 12: case 14: case 15: case 16: case 17:
-	   case 18: case 19: case 20: case 21: case 22: case 23: case 24:
-	   case 25: case 26: case 27: case 28: case 29: case 30: case 31:
-
-	   case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
-	   case '{':case '}':
-	      vt->svgp.state = SVGP_NEUTRAL;
-	      break;
-	   case '#':
-	      vt->svgp.state = SVGP_COMMENT;
-	      break;
-           case '-':
-	      vt->svgp.state = SVGP_NEG_NUMBER;
-	      vt->svgp.numbers[vt->svgp.n_numbers] = 0;
-	      vt->svgp.decimal = 0;
-	      break;
-           case '0': case '1': case '2': case '3': case '4':
-           case '5': case '6': case '7': case '8': case '9':
-	      vt->svgp.state = SVGP_NUMBER;
-	      vt->svgp.numbers[vt->svgp.n_numbers] = 0;
-	      vt->svgp.numbers[vt->svgp.n_numbers] += (byte - '0');
-	      vt->svgp.decimal = 0;
-	      break;
-           case '.':
-	      vt->svgp.state = SVGP_NUMBER;
-	      vt->svgp.numbers[vt->svgp.n_numbers] = 0;
-	      vt->svgp.decimal = 1;
-	      break;
-	   default:
-              vt->svgp.holding[vt->svgp.pos++]=byte;
-	      if (vt->svgp.pos > 62) vt->svgp.pos = 62;
-	      break;
-	}
-	if (vt->svgp.state != SVGP_WORD)
-	{
-	  int args = 0;
-	  vt->svgp.holding[vt->svgp.pos]=0;
-	  int command = svgp_resolve_command (vt, vt->svgp.holding, &args);
-
-	  if (command >= 0 && command < 5)
-	  {
-	    vt->svgp.numbers[vt->svgp.n_numbers] = command;
-	    vt->svgp.state = SVGP_NUMBER;
-            vt_state_svgp (vt, ',');
-	  }
-	  else if (command > 0)
-	  {
-	     vt->svgp.command = command;
-	     vt->svgp.n_args = args;
-	     if (args == 0)
-	     {
-		svgp_dispatch_command (vt, ctx);
-	     }
-	  }
-	  else
-	  {
-            /* interpret char by char */
-            uint8_t buf[16]=" ";
-	    for (int i = 0; vt->svgp.pos && vt->svgp.holding[i] > ' '; i++)
-	    {
-	       buf[0] = vt->svgp.holding[i];
-	       vt->svgp.command = svgp_resolve_command (vt, buf, &args);
-	       if (vt->svgp.command > 0)
-	       {
-	         vt->svgp.n_args = args;
-	         if (args == 0)
-	         {
-		   svgp_dispatch_command (vt, ctx);
-	         }
-	       }
-	       else
-	       {
-		 fprintf (stderr, "unhandled command '%c'\n", buf[0]);
-	       }
-	    }
-	  }
-	  vt->svgp.n_numbers = 0;
-	}
-        break;
-
-      case SVGP_STRING1:
-	switch (byte)
-	{
-	   case '\\':
-	      vt->svgp.state = SVGP_STRING1_ESCAPED;
-	      break;
-	   case '\'':
-	      vt->svgp.state = SVGP_NEUTRAL;
-	      break;
-	   default:
-              vt->svgp.holding[vt->svgp.pos++]=byte;
-              vt->svgp.holding[vt->svgp.pos]=0;
-	      if (vt->svgp.pos > 62) vt->svgp.pos = 62;
-	      break;
-	}
-	if (vt->svgp.state != SVGP_STRING1)
-	{
-	  svgp_dispatch_command (vt, ctx);
-	}
-        break;
-      case SVGP_STRING1_ESCAPED:
-	switch (byte)
-	{
-	   case '0': byte = '\0'; break;
-	   case 'b': byte = '\b'; break;
-	   case 'f': byte = '\f'; break;
-	   case 'n': byte = '\n'; break;
-	   case 'r': byte = '\r'; break;
-	   case 't': byte = '\t'; break;
-	   case 'v': byte = '\v'; break;
-	   default: break;
-	}
-        vt->svgp.holding[vt->svgp.pos++]=byte;
-        vt->svgp.holding[vt->svgp.pos]=0;
-	if (vt->svgp.pos > 62) vt->svgp.pos = 62;
-	vt->svgp.state = SVGP_STRING1;
-        break;
-      case SVGP_STRING2_ESCAPED:
-	switch (byte)
-	{
-	   case '0': byte = '\0'; break;
-	   case 'b': byte = '\b'; break;
-	   case 'f': byte = '\f'; break;
-	   case 'n': byte = '\n'; break;
-	   case 'r': byte = '\r'; break;
-	   case 't': byte = '\t'; break;
-	   case 'v': byte = '\v'; break;
-	   default: break;
-	}
-        vt->svgp.holding[vt->svgp.pos++]=byte;
-        vt->svgp.holding[vt->svgp.pos]=0;
-	if (vt->svgp.pos > 62) vt->svgp.pos = 62;
-	vt->svgp.state = SVGP_STRING2;
-        break;
-
-      case SVGP_STRING2:
-	switch (byte)
-	{
-	   case '\\':
-	      vt->svgp.state = SVGP_STRING2_ESCAPED;
-	      break;
-	   case '"':
-	      vt->svgp.state = SVGP_NEUTRAL;
-	      break;
-	   default:
-              vt->svgp.holding[vt->svgp.pos++]=byte;
-              vt->svgp.holding[vt->svgp.pos]=0;
-	      if (vt->svgp.pos > 62) vt->svgp.pos = 62;
-	      break;
-	}
-	if (vt->svgp.state != SVGP_STRING2)
-	{
-	  svgp_dispatch_command (vt, ctx);
-	}
-        break;
-      case SVGP_COMMENT:
-	switch (byte)
-	{
-	  case '\r':
-	  case '\n':
-	    vt->svgp.state = SVGP_NEUTRAL;
-	  default:
-	    break;
-	}
-	break;
-    }
+  svgp_feed_byte (&vt->svgp, byte);
 }
 
 static int vt_decoder_feed (VT *vt, int byte)
@@ -4681,7 +4706,8 @@ static void vt_state_osc (VT *vt, int byte)
 		  if (*p == ';')
 		  {
 	            if (!strcmp (key, "name"))
-		    { name = strdup (value);
+		    {
+                       name = strdup (value);
 		    } else if (!strcmp (key, "width"))
 		    { 
 		       width = atoi (value);
