@@ -204,8 +204,6 @@ char* string =
     }
     else
     {
-      printf ("/*  %s ", ctx_command_name (entry->code));
-    printf ("*/");
     }
     printf ("\n");
   }

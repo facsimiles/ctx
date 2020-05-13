@@ -606,30 +606,31 @@ typedef enum
   CTX_IDENTITY         = 'y',
   CTX_CLOSE_PATH       = 'z',
   CTX_NEW_PATH         = '_',
-  CTX_SET_RGBA         = '*', // u8
 
+  // non-alphabetic chars that get filtered out when parsing
+  // are used for internal purposes
   //
+  // unused:  . , : backslash ! # $ % ^ = { } < > ? 
+  CTX_SET_RGBA         = '*', // u8
   CTX_PAINT            = '+',
-
   CTX_GRADIENT_NO      = '&',
   CTX_GRADIENT_CLEAR   = '/',
-  CTX_NOP             = ' ',
-  CTX_NEW_EDGE        = '~',
-  CTX_EDGE            = '|',
-  CTX_EDGE_FLIPPED    = '`',
-  CTX_REPEAT_HISTORY  = ']', //
+  CTX_NOP              = ' ',
+  CTX_NEW_EDGE         = '~',
+  CTX_EDGE             = '|',
+  CTX_EDGE_FLIPPED     = '`',
 
-  CTX_CONT            = ';',
-  CTX_DATA            = '(', // size,  size-in-entries
-  CTX_DATA_REV        = ')', // reverse traversal data marker
-  CTX_DEFINE_GLYPH    = '@',
-  CTX_KERNING_PAIR    = '[',
-
-  // move-to
-  // follwed by path definitions - relative to a move-to
+  CTX_REPEAT_HISTORY   = ']', //
+  CTX_CONT             = ';',
+  CTX_DATA             = '(', // size,  size-in-entries
+  CTX_DATA_REV         = ')', // reverse traversal data marker
+  CTX_DEFINE_GLYPH     = '@',
+  CTX_KERNING_PAIR     = '[',
 
   /* optimizations that reduce the number of entries used,
-   * not visible outside the draw-stream compression
+   * not visible outside the draw-stream compression -
+   * these are using values that would mean numbers in an
+   * SVG path.
    */
 #if CTX_BITPACK
   CTX_REL_LINE_TO_X4            = '0',
@@ -642,7 +643,7 @@ typedef enum
   CTX_FILL_MOVE_TO              = '7',
   CTX_REL_QUAD_TO_REL_QUAD_TO   = '8',
   CTX_REL_QUAD_TO_S16           = '9',
-  CTX_SET_PIXEL                 = '^',
+  CTX_SET_PIXEL                 = '-',
 #endif
 
 } CtxCode;
@@ -854,14 +855,6 @@ static inline float ctx_fast_hypotf (float x, float y)
 #define ctx_arg_s16(no)   entry[(no)>>2].data.s16[(no)&3]
 #define ctx_arg_u8(no)    entry[(no)>>3].data.u8[(no)&7]
 #define ctx_arg_s8(no)    entry[(no)>>3].data.s8[(no)&7]
-
-#if CTX_EXTRAS
-
-char *ctx_commands[]={
-"Icompositing_mode", "#clip", "|edge", "!fill_edges", "%blit_rect", "rset_rgba", "Ggstate", ";cont", "ddata", "Lline_to", "Mmove_to", "Ccurve_to", "lrel_line_to", "mrel_move_to", "crel_curve_to", "Ttranslate", "Rrotate", "Sscale", "(save", ")restore", "Ffill", "[rectangle", "sstroke", "hhistory", "ttext", "wlinewidth", "Zfontsize", "pnew_path", "zclose_path", "iidentity", "_rel_line_to_x4", "~rel_line_to_rel_curve_to", "&rel_curve_to_rel_line_to", "?rel_curve_rel_move_to", "\"rel_line_to_x2", "/move_to_rel_line_to", "^rel_line_to_rel_move_to", "`edge_flipped", "\\clear", "efill_move_to", " nop", "0new_edge", "Aarc", "Oglobal_alpha", "Qquad_to", "qrel_quad_to", "Urel_quad_to_rel_quad_to", "Vrel_quad_to_s16", "Kkerning", "Pline_cap", "Ffill_rule", "/linear_gradient", "Xexit", "Wtexture", "+paint", "set_pixel", NULL, // "8set_rgba_stroke", NULL
-};
-
-#endif
 
 typedef struct _CtxRenderer CtxRenderer;
 typedef struct _CtxGState CtxGState;
@@ -7403,25 +7396,6 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 /****  end of engine ****/
 
 #if CTX_EXTRAS
-
-static inline int ctx_str_to_command (const char *commandline)
-{
-  int command = 0;
-  for (int i = 0; ctx_commands[i]; i++)
-    if (!strncmp (commandline, ctx_commands[i]+1, strlen (ctx_commands[i]+1)))
-    {
-      return ctx_commands[i][0];
-    }
-  return command;
-}
-
-static inline const char *ctx_command_name (int command)
-{
-  for (int i = 0; ctx_commands[i]; i++)
-    if (ctx_commands[i][0] == command)
-      return ctx_commands[i]+1;
-  return NULL;
-}
 
 typedef enum {
   CTX_S8,
