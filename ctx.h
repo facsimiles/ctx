@@ -9403,6 +9403,13 @@ static void ctxp_dispatch_command (CtxP *ctxp)
   ctxp->n_numbers = 0;
 }
 
+static void ctxp_holding_append (CtxP *ctxp, int byte)
+{
+  ctxp->holding[ctxp->pos++]=byte;
+  if (ctxp->pos > sizeof(ctxp->holding)-2)
+    ctxp->pos = sizeof(ctxp->holding)-2;
+}
+
 void ctxp_feed_byte (CtxP *ctxp, int byte)
 {
   switch (ctxp->state)
@@ -9451,8 +9458,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
          default:
             ctxp->state = CTX_WORD;
             ctxp->pos = 0;
-            ctxp->holding[ctxp->pos++]=byte;
-            if (ctxp->pos > 62) ctxp->pos = 62;
+            ctxp_holding_append (ctxp, byte);
             break;
       }
       break;
@@ -9541,9 +9547,8 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
                 ctxp->numbers[ctxp->n_numbers] *= -1;
               ctxp->state = CTX_WORD;
               ctxp->pos = 0;
-              ctxp->holding[ctxp->pos++]=byte;
+              ctxp_holding_append (ctxp, byte);
               break;
-    
         }
         if ((ctxp->state != CTX_NUMBER &&
              ctxp->state != CTX_NEG_NUMBER) || new_neg)
@@ -9593,8 +9598,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
             ctxp->decimal = 1;
             break;
          default:
-            ctxp->holding[ctxp->pos++]=byte;
-            if (ctxp->pos > 62) ctxp->pos = 62;
+            ctxp_holding_append (ctxp, byte);
             break;
       }
       if (ctxp->state != CTX_WORD)
@@ -9651,9 +9655,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
             ctxp->state = CTX_NEUTRAL;
             break;
          default:
-            ctxp->holding[ctxp->pos++]=byte;
-            ctxp->holding[ctxp->pos]=0;
-            if (ctxp->pos > 62) ctxp->pos = 62;
+            ctxp_holding_append (ctxp, byte);
             break;
       }
       if (ctxp->state != CTX_STRING1)
@@ -9673,9 +9675,8 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
          case 'v': byte = '\v'; break;
          default: break;
       }
-      ctxp->holding[ctxp->pos++]=byte;
-      ctxp->holding[ctxp->pos]=0;
-      if (ctxp->pos > 62) ctxp->pos = 62;
+      ctxp_holding_append (ctxp, byte);
+
       ctxp->state = CTX_STRING1;
       break;
     case CTX_STRING2_ESCAPED:
@@ -9690,9 +9691,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
          case 'v': byte = '\v'; break;
          default: break;
       }
-      ctxp->holding[ctxp->pos++]=byte;
-      ctxp->holding[ctxp->pos]=0;
-      if (ctxp->pos > 62) ctxp->pos = 62;
+      ctxp_holding_append (ctxp, byte);
       ctxp->state = CTX_STRING2;
       break;
 
@@ -9706,9 +9705,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
             ctxp->state = CTX_NEUTRAL;
             break;
          default:
-            ctxp->holding[ctxp->pos++]=byte;
-            ctxp->holding[ctxp->pos]=0;
-            if (ctxp->pos > 62) ctxp->pos = 62;
+            ctxp_holding_append (ctxp, byte);
             break;
       }
       if (ctxp->state != CTX_STRING2)
@@ -9729,4 +9726,3 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
   }
 }
 #endif
-
