@@ -13,3 +13,4 @@ clean:
 test-size: test-size.c ../ctx.h ../fonts/*.h Makefile
 	gcc $< -g -o $@ -I.. -I../fonts -Os
 	strip -s test-size
+	strip -x test-size

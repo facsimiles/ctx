@@ -8655,6 +8655,163 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
   }
 }
 
+static void
+ctx_print_entry_u8 (FILE *stream, CtxEntry *entry, int args)
+{
+
+  fprintf (stream, "%c", entry->code);
+  for (int i = 0; i <  args; i ++)
+  {
+    if (i>0)
+      fprintf (stream, " ");
+    fprintf (stream, "%i", ctx_arg_u8(i));
+  }
+}
+
+static void
+ctx_print_entry (FILE *stream, CtxEntry *entry, int args)
+{
+  fprintf (stream, "%c", entry->code);
+  for (int i = 0; i <  args; i ++)
+  {
+    char temp[128];
+    sprintf (temp, "%0.10f", ctx_arg_float (i));
+    int j;
+    for (j = 0; temp[j]; j++)
+      if (j == ',') temp[j] = '.';
+    j--;
+    if (j>0)
+    while (temp[j] == '0')
+    {
+      temp[j]=0;j--;
+    }
+    if (i>0 && temp[0]!='-')
+      fprintf (stream, " ");
+    fprintf (stream, "%s", temp);
+  }
+}
+
+void
+ctx_render_stream (Ctx *ctx, FILE *stream)
+{
+  /* skip  */
+  CtxIterator iterator;
+  CtxEntry   *entry;
+
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
+                     CTX_ITERATOR_EXPAND_BITPACK);
+
+  while ((entry = ctx_iterator_next (&iterator)))
+  {
+    switch (entry->code)
+    {
+      case CTX_LINE_TO:
+      case CTX_REL_LINE_TO:
+      case CTX_SCALE:
+      case CTX_TRANSLATE:
+      case CTX_MOVE_TO:
+      case CTX_REL_MOVE_TO:
+        ctx_print_entry (stream, entry, 2);
+        break;
+
+      case CTX_CURVE_TO:
+      case CTX_REL_CURVE_TO:
+      case CTX_ARC:
+      case CTX_RADIAL_GRADIENT:
+        ctx_print_entry (stream, entry, 6);
+        break;
+
+      case CTX_QUAD_TO:
+      case CTX_RECTANGLE:
+      case CTX_REL_QUAD_TO:
+      case CTX_LINEAR_GRADIENT:
+        ctx_print_entry (stream, entry, 4);
+        break;
+
+      case CTX_SET_FONT_SIZE:
+      case CTX_ROTATE:
+      case CTX_LINE_WIDTH:
+        ctx_print_entry (stream, entry, 1);
+        break;
+
+
+      case CTX_SET_RGBA:
+        fprintf (stream, "rgba %.3f %.3f %.3f %.3f\n",
+                             ctx_arg_u8(0)/255.0,
+                             ctx_arg_u8(1)/255.0,
+                             ctx_arg_u8(2)/255.0,
+                             ctx_arg_u8(3)/255.0);
+        break;
+
+#if 0
+      case CTX_SET_RGBA_STROKE:
+        ctx_set_rgba_stroke (d_ctx, ctx_arg_u8(0)/255.0,
+                                    ctx_arg_u8(1)/255.0,
+                                    ctx_arg_u8(2)/255.0,
+                                    ctx_arg_u8(3)/255.0);
+        break;
+#endif
+
+      case CTX_SET_PIXEL:
+#if 0
+         ctx_set_pixel_u8 (d_ctx,
+                      ctx_arg_u16(2), ctx_arg_u16(3),
+                      ctx_arg_u8(0),
+                      ctx_arg_u8(1),
+                      ctx_arg_u8(2),
+                      ctx_arg_u8(3));
+#endif
+      break;
+
+
+        // XXX  gradient clear is not really needed - if always implied by
+      case CTX_GRADIENT_CLEAR:
+      case CTX_FILL:
+      case CTX_STROKE:
+      case CTX_IDENTITY:
+      case CTX_CLIP:
+      case CTX_NEW_PATH:
+      case CTX_CLOSE_PATH:
+      case CTX_SAVE:
+      case CTX_RESTORE:
+        ctx_print_entry (stream, entry, 0);
+        break;
+
+      case CTX_SET_LINE_CAP:
+        ctx_print_entry_u8 (stream, entry, 1);
+        //ctx_set_line_cap (d_ctx, (CtxLineCap)ctx_arg_u8(0)); //YYY
+        break;
+
+      case CTX_SET_LINE_JOIN:
+        ctx_print_entry_u8 (stream, entry, 1);
+        //ctx_set_line_join (d_ctx, (CtxLineJoin)ctx_arg_u8(0));//YYY
+        break;
+
+      case CTX_COMPOSITING_MODE:
+        ctx_print_entry_u8 (stream, entry, 1);
+        //ctx_set_compositing_mode (d_ctx, (CtxLineJoin)ctx_arg_u8(0));
+        break;
+
+      case CTX_GRADIENT_STOP:
+        fprintf (stream, "%c%.3f %3.f %.3f %.3f %.3f\n", entry->code,
+          ctx_arg_float(0),
+          ctx_arg_u8(4)/255.0,
+          ctx_arg_u8(5)/255.0,
+          ctx_arg_u8(6)/255.0,
+          ctx_arg_u8(7)/255.0);
+        break;
+
+      case CTX_TEXT:
+      case CTX_CONT:
+      case CTX_EDGE:
+      case CTX_DATA:
+      case CTX_DATA_REV:
+      case CTX_FLUSH:
+      case CTX_REPEAT_HISTORY:
+        break;
+    }
+  }
+}
 
 static void ctx_setup ()
 {
@@ -8665,51 +8822,42 @@ static void ctx_setup ()
 #if CTX_FONT_ENGINE_CTX
   ctx_font_count = 0; // oddly - this is needed in arduino
 #if CTX_FONT_regular
-  ctx_load_font_ctx ("regular", ctx_font_regular,
-                     sizeof (ctx_font_regular));
+  ctx_load_font_ctx ("regular", ctx_font_regular, sizeof (ctx_font_regular));
 #endif
 #if CTX_FONT_mono
-  ctx_load_font_ctx ("mono", ctx_font_mono,
-                     sizeof (ctx_font_mono));
+  ctx_load_font_ctx ("mono", ctx_font_mono, sizeof (ctx_font_mono));
 #endif
 #if CTX_FONT_bold
-  ctx_load_font_ctx ("bold", ctx_font_bold,
-                     sizeof (ctx_font_bold));
+  ctx_load_font_ctx ("bold", ctx_font_bold, sizeof (ctx_font_bold));
 #endif
 #if CTX_FONT_italic
-  ctx_load_font_ctx ("italic", ctx_font_italic,
-                     sizeof (ctx_font_italic));
+  ctx_load_font_ctx ("italic", ctx_font_italic, sizeof (ctx_font_italic));
 #endif
 #if CTX_FONT_sans
-  ctx_load_font_ctx ("sans", ctx_font_sans,
-                     sizeof (ctx_font_sans));
+  ctx_load_font_ctx ("sans", ctx_font_sans, sizeof (ctx_font_sans));
 #endif
 #if CTX_FONT_serif
-  ctx_load_font_ctx ("serif", ctx_font_serif,
-                     sizeof (ctx_font_serif));
+  ctx_load_font_ctx ("serif", ctx_font_serif, sizeof (ctx_font_serif));
 #endif
 #if CTX_FONT_symbol
-  ctx_load_font_ctx ("symbol", ctx_font_symbol,
-                     sizeof (ctx_font_symbol));
+  ctx_load_font_ctx ("symbol", ctx_font_symbol, sizeof (ctx_font_symbol));
 #endif
 #if CTX_FONT_emoji
-  ctx_load_font_ctx ("emoji", ctx_font_emoji,
-                     sizeof (ctx_font_emoji));
+  ctx_load_font_ctx ("emoji", ctx_font_emoji, sizeof (ctx_font_emoji));
 #endif
 #endif
 #if CTX_FONT_sgi
   ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
 #endif
-
 #if DEJAVU_SANS_MONO
   ctx_load_font_ttf ("mono", ttf_DejaVuSansMono_ttf);
 #endif
 #if DEJAVU_SANS
   ctx_load_font_ttf ("regular", ttf_DejaVuSans_ttf);
 #endif
-
-
 }
+
+#if CTXP
 
 /* ctx parser, */
 
@@ -9724,4 +9872,6 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
       break;
   }
 }
+#endif
+
 #endif

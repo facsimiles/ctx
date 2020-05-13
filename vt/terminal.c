@@ -22,13 +22,14 @@
 #include "mmm-pset.h"
 #endif
 
-//#include "ctx-font-regular.h"
-//#include "ctx-font-mono.h"
-#include "DejaVuSansMono.h"
-#include "DejaVuSans.h"
+#include "ctx-font-regular.h"
+#include "ctx-font-mono.h"
+//#include "DejaVuSansMono.h"
+//#include "DejaVuSans.h"
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
+#define CTXP                     1
 #define CTX_GRADIENT_CACHE       1
 #define CTX_SHAPE_CACHE          1
 #define CTX_SHAPE_CACHE_MAX_DIM  48
