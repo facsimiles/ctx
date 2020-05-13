@@ -500,16 +500,16 @@ typedef enum
 
 typedef enum
 {
-  CTX_CAP_NONE,
-  CTX_CAP_ROUND,
-  CTX_CAP_SQUARE
+  CTX_CAP_NONE   = 0,
+  CTX_CAP_ROUND  = 1,
+  CTX_CAP_SQUARE = 2
 } CtxLineCap;
 
 typedef enum
 {
-  CTX_JOIN_BEVEL,
-  CTX_JOIN_ROUND,
-  CTX_JOIN_MITER
+  CTX_JOIN_BEVEL = 0,
+  CTX_JOIN_ROUND = 1,
+  CTX_JOIN_MITER = 2
 } CtxLineJoin;
 
 void ctx_set_fill_rule      (Ctx *ctx, CtxFillRule fill_rule);
@@ -570,7 +570,7 @@ typedef enum
   CTX_SCALE            = 'O', // float, float
   CTX_NEW_PAGE         = 'P', // NYI, float, float
   CTX_QUAD_TO          = 'Q',
-  // R - UNUSED  // media-box/rect?
+  CTX_MEDIA_BOX        = 'R', //%
   CTX_SMOOTH_TO        = 'S', //%
   CTX_SMOOTHQ_TO       = 'T', //%
   CTX_CLEAR            = 'U',
@@ -606,14 +606,13 @@ typedef enum
   CTX_IDENTITY         = 'y',
   CTX_CLOSE_PATH       = 'z',
   CTX_NEW_PATH         = '_',
-
   CTX_SET_RGBA         = '*', // u8
 
   //
   CTX_PAINT            = '+',
+
   CTX_GRADIENT_NO      = '&',
   CTX_GRADIENT_CLEAR   = '/',
-
   CTX_NOP             = ' ',
   CTX_NEW_EDGE        = '~',
   CTX_EDGE            = '|',
@@ -626,8 +625,8 @@ typedef enum
   CTX_DEFINE_GLYPH    = '@',
   CTX_KERNING_PAIR    = '[',
 
-    // move-to
-    // follwed by path definitions - relative to a move-to
+  // move-to
+  // follwed by path definitions - relative to a move-to
 
   /* optimizations that reduce the number of entries used,
    * not visible outside the draw-stream compression
@@ -681,8 +680,7 @@ struct _CtxEntry
 #endif
 
 typedef struct _CtxP CtxP;
-void
-ctxp_init (CtxP *ctxp,
+CtxP *ctxp_new (
   Ctx       *ctx,
   int        cw,
   int        ch,
@@ -691,37 +689,9 @@ ctxp_init (CtxP *ctxp,
   int        cols,
   int        rows,
   void (*exit)(void *exit_data),
-  void *exit_data
-          );
+  void *exit_data);
+void ctxp_free (CtxP *ctxp);
 void ctxp_feed_byte (CtxP *ctxp, int byte);
-struct _CtxP {
-  Ctx       *ctx;
-  int        state;
-  uint8_t    holding[64];
-  int        pos;
-  float      numbers[12]; /* used by svg parser */
-  int        n_numbers;
-  int        decimal;
-  char       command;
-  int        n_args;
-  float      pcx;
-  float      pcy;
-  int        color_components;
-  int        color_model; // 1 gray 3 rgb 4 cmyk
-  float      left_margin; // set by last user provided move_to
-                          // before text, used by newlines
-
-  int        cw; // cell width
-  int        ch; // cell height
-  int        cursor_x;
-  int        cursor_y;
-  int        cols;
-  int        rows;
-
-  void (*exit)(void *exit_data);
-  void *exit_data;
-};
-
 
 #ifdef CTX_IMPLEMENTATION
 
@@ -8770,7 +8740,35 @@ static void ctx_setup ()
 
 /* ctx parser, */
 
-void
+struct _CtxP {
+  Ctx       *ctx;
+  int        state;
+  uint8_t    holding[64];
+  int        pos;
+  float      numbers[12]; /* used by svg parser */
+  int        n_numbers;
+  int        decimal;
+  char       command;
+  int        n_args;
+  float      pcx;
+  float      pcy;
+  int        color_components;
+  int        color_model; // 1 gray 3 rgb 4 cmyk
+  float      left_margin; // set by last user provided move_to
+                          // before text, used by newlines
+
+  int        cw; // cell width
+  int        ch; // cell height
+  int        cursor_x;
+  int        cursor_y;
+  int        cols;
+  int        rows;
+
+  void (*exit)(void *exit_data);
+  void *exit_data;
+};
+
+static void
 ctxp_init (CtxP *ctxp,
   Ctx       *ctx,
   int        cw,
@@ -8799,6 +8797,33 @@ ctxp_init (CtxP *ctxp,
   ctxp->decimal = 0;
   ctxp->pos = 0;
   ctxp->holding[ctxp->pos=0]=0;
+}
+
+CtxP *ctxp_new (
+  Ctx       *ctx,
+  int        cw,
+  int        ch,
+  int        cursor_x,
+  int        cursor_y,
+  int        cols,
+  int        rows,
+  void (*exit)(void *exit_data),
+  void *exit_data)
+{
+  CtxP *ctxp = calloc (sizeof (CtxP), 1);
+  ctxp_init (ctxp,
+  ctx,
+  cw,
+  ch,
+  cursor_x,
+  cursor_y,
+  cols,
+  rows, exit, exit_data);
+  return ctxp;
+}
+void ctxp_free (CtxP *ctxp)
+{
+  free (ctxp);
 }
 
 static void ctxp_set_color_model (CtxP *ctxp, int color_model);
@@ -8855,6 +8880,9 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str, int *args)
     case STR('f','i','l','l',0,0,0,0,0,0,0,0):
     case 'F': *args = 0; return CTX_FILL;
 
+    case STR('g','l','o','b','a','l','_','a','l','p','h','a'):
+    case 'G': *args = 1; return CTX_GLOBAL_ALPHA;
+
     case STR('h','o','r','_','l','i','n','e','_','t','o',0):
     case 'H': *args = 1; return CTX_HOR_LINE_TO;
 
@@ -8877,8 +8905,14 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str, int *args)
     case STR('s','c','a','l','e',0,0,0,0,0,0,0):
     case 'O': *args = 2; return CTX_SCALE;
 
+    case STR('n','e','w','_','p','a','g','e',0,0,0,0):
+    case 'P': *args = 0; return CTX_NEW_PAGE;
+
     case STR('q','u','a','d','_','t','o',0,0,0,0,0):
     case 'Q': *args = 4; return CTX_QUAD_TO;
+
+    case STR('m','e','d','d','i','a','_','b','o','x',0,0):
+    case 'R': *args = 4; return CTX_MEDIA_BOX;
 
     case STR('s','m','o','o','t','h','_','t','o',0,0,0):
     case 'S': *args = 4; return CTX_SMOOTH_TO;
@@ -8889,6 +8923,13 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str, int *args)
     case STR('c','l','e','a','r',0,0,0,0,0,0,0):
     case 'U': *args = 0; return CTX_CLEAR;
 
+    case STR('v','e','r','_','l','i','n','e','_','t','o',0):
+    case 'V': *args = 1; return CTX_VER_LINE_TO;
+
+    case STR('s','e','t','_','l','i','n','e','_','c','a','p'):
+    case STR('c','a','p',0,0,0,0,0,0,0,0,0):
+    case 'W': *args = 1; return CTX_LINE_CAP;
+
     case STR('e','x','i','t',0,0,0,0,0,0,0,0):
     case STR('d','o','n','e',0,0,0,0,0,0,0,0):
     case 'X': *args = 0; return CTX_EXIT;
@@ -8896,12 +8937,7 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str, int *args)
     case STR('c','o','l','o','r','_','m','o','d','e','l', 0):
     case 'Y': *args = 1; return CTX_SET_COLOR_MODEL;
 
-    case STR('v','e','r','_','l','i','n','e','_','t','o',0):
-    case 'V': *args = 1; return CTX_VER_LINE_TO;
 
-    case STR('s','e','t','_','l','i','n','e','_','c','a','p'):
-    case STR('c','a','p',0,0,0,0,0,0,0,0,0):
-    case 'W': *args = 1; return CTX_LINE_CAP;
 
     case STR('c','l','o','s','e','_','p','a','t','h',0,0):
     case 'Z':case 'z': *args = 0; return CTX_CLOSE_PATH;
@@ -9029,16 +9065,16 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str, int *args)
     /* the following words in all caps map to integer constants
     */
     case STR('J','O','I','N','_','B','E','V','E','L',0,0):
-    case STR('B','E','V','E','L',0, 0, 0, 0, 0, 0, 0):     return 0;
+    case STR('B','E','V','E','L',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_BEVEL;
     case STR('J','O','I','N','_','R','O','U','N','D',0,0):
-    case STR('R','O','U','N','D',0, 0, 0, 0, 0, 0, 0):     return 1;
+    case STR('R','O','U','N','D',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_ROUND;
     case STR('J','O','I','N','_','M','I','T','E','R',0,0):
-    case STR('M','I','T','E','R',0, 0, 0, 0, 0, 0, 0):     return 2;
+    case STR('M','I','T','E','R',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_MITER;
     case STR('C','A','P','_','N','O','N','E',0,0,0,0):
-    case STR('N','O','N','E',0 ,0, 0, 0, 0, 0, 0, 0):      return 0;
-    case STR('C','A','P','_','R','O','U','N','D',0,0,0):   return 1;
+    case STR('N','O','N','E',0 ,0, 0, 0, 0, 0, 0, 0):      return CTX_CAP_NONE;
+    case STR('C','A','P','_','R','O','U','N','D',0,0,0):   return CTX_CAP_ROUND;
     case STR('C','A','P','_','S','Q','U','A','R','E',0,0):
-    case STR('S','Q','U','A','R','E', 0, 0, 0, 0, 0, 0):   return 2;
+    case STR('S','Q','U','A','R','E', 0, 0, 0, 0, 0, 0):   return CTX_CAP_SQUARE;
 
     case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       return 1; break;
     case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     return 101; break;
@@ -9077,6 +9113,19 @@ static void ctxp_set_color_model (CtxP *ctxp, int color_model)
   if (ctxp->color_model >  99)
     ctxp->color_components++;
 }
+
+enum {
+  CTX_GRAY   = 1,
+  CTX_GRAYA = 101,
+  CTX_RGB   = 3,
+  CTX_RGBA  = 103,
+  CTX_CMYK  = 4,
+  CTX_CMYKA = 104,
+  CTX_LAB   = 5,
+  CTX_LABA = 105,
+  CTX_LCH   = 6,
+  CTX_LCHA  = 106,
+} CtxColorModel;
 
 void ctxp_get_color (CtxP *ctxp, int offset, float *red, float *green, float *blue, float *alpha)
 {

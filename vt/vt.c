@@ -406,7 +406,7 @@ struct _VT {
   int        utf8_pos;
 
 
-  CtxP       svgp;
+  CtxP      *ctxp;
   // text related data
   float      letter_spacing;
 
@@ -2060,10 +2060,12 @@ static void vtcmd_set_alternate_font (VT *vt, const char *sequence)
   vt->charset[0] = 1;
 }
 
-static void vt_svgp_exit (void *data)
+static void vt_ctx_exit (void *data)
 {
   VT *vt = data;
   vt->state = vt_state_neutral;
+  ctxp_free (vt->ctxp);
+  vt->ctxp = NULL;
 }
 
 static void vtcmd_set_mode (VT *vt, const char *sequence)
@@ -2226,9 +2228,8 @@ qagain:
              {
                vt->current_line->ctx = ctx_new ();
              }
-             ctxp_init (&vt->svgp,
-                        vt->current_line->ctx,
-                        vt->cw, vt->ch, vt->cursor_x, vt->cursor_y, vt->cols, vt->rows, vt_svgp_exit, vt);
+             vt->ctxp = ctxp_new (vt->current_line->ctx,
+                        vt->cw, vt->ch, vt->cursor_x, vt->cursor_y, vt->cols, vt->rows, vt_ctx_exit, vt);
              vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
              vt->state = vt_state_ctx;
 	   }
@@ -3618,7 +3619,7 @@ static void vt_sixels (VT *vt, const char *sixels)
 
 static void vt_state_ctx (VT *vt, int byte)
 {
-  ctxp_feed_byte (&vt->svgp, byte);
+  ctxp_feed_byte (vt->ctxp, byte);
 }
 
 static int vt_decoder_feed (VT *vt, int byte)
