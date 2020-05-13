@@ -2229,7 +2229,9 @@ qagain:
                vt->current_line->ctx = ctx_new ();
              }
              vt->ctxp = ctxp_new (vt->current_line->ctx,
-                        vt->cw, vt->ch, vt->cursor_x, vt->cursor_y, vt->cols, vt->rows, vt_ctx_exit, vt);
+                        vt->cols * vt->cw, vt->rows * vt->ch,
+                        vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
+                        vt_ctx_exit, vt);
              vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
              vt->state = vt_state_ctx;
 	   }
