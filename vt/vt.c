@@ -4576,6 +4576,9 @@ static void svgp_feed_byte (SvgP *svgp, int byte)
   }
 }
 
+
+
+
 static void vt_state_svgp (VT *vt, int byte)
 {
   svgp_feed_byte (&vt->svgp, byte);

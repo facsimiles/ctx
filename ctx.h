@@ -1878,21 +1878,12 @@ void ctx_texture (Ctx *ctx, int id, float x, float y)
   ctx_process (ctx, commands);
 }
 
-#if 0
 void
 ctx_image_path (Ctx *ctx, const char *path, float x, float y)
 {
-  int pathlen = strlen (path);
-  CtxEntry commands[1 + 2 + pathlen/8];
-  memset (commands, 0, sizeof (commands));
-  commands[0] = ctx_f(CTX_LOAD_IMAGE, x, y);
-  commands[1].code = CTX_DATA;
-  commands[1].data.u32[0] = pathlen;
-  commands[1].data.u32[1] = pathlen/9+1;
-  strcpy ((char*)&commands[2].data.u8[0], path);
-  ctx_process (ctx, commands);
+  int id = ctx_texture_load (ctx, -1, path);
+  ctx_texture (ctx, id, x, y);
 }
-#endif
 
 void ctx_paint(Ctx *ctx) {
   CTX_PROCESS_VOID(CTX_PAINT);
@@ -4120,7 +4111,9 @@ int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length)
   if (id < 0)
     return id;
   if (ctx_buffer_load_memory (&ctx->texture[id], data, length))
+  {
     return -1;
+  }
   return id;
 }
 
@@ -4130,7 +4123,9 @@ int ctx_texture_load (Ctx *ctx, int id, const char *path)
   if (id < 0)
     return id;
   if (ctx_buffer_load_png (&ctx->texture[id], path))
+  {
     return -1;
+  }
   return id;
 }
 
@@ -6476,6 +6471,12 @@ ctx_renderer_set_texture (CtxRenderer *renderer,
 			  float y)
 {
   if (no < 0 || no >= CTX_MAX_TEXTURES) no = 0;
+
+  if (renderer->ctx->texture[no].data == NULL)
+  {
+    ctx_log ("failed setting texture %i\n", no);
+    return;
+  }
   renderer->state->gstate.source.type = CTX_SOURCE_IMAGE;
   renderer->state->gstate.source.image.buffer = &renderer->ctx->texture[no];
 
