@@ -8801,6 +8801,21 @@ void ctxp_free (CtxP *ctxp)
 }
 
 static void ctxp_set_color_model (CtxP *ctxp, int color_model);
+enum {
+  CTX_GRAY   = 1,
+  CTX_GRAYA = 101,
+  CTX_GRAYA_A = 201,
+  CTX_RGB   = 3,
+  CTX_RGBA  = 103,
+  CTX_RGBA_A  = 203,
+  CTX_CMYK  = 4,
+  CTX_CMYKA = 104,
+  CTX_CMYKA_A = 204,
+  CTX_LAB   = 5,
+  CTX_LABA = 105,
+  CTX_LCH   = 6,
+  CTX_LCHA  = 106,
+} CtxColorModel;
 
 static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str, int *args)
 {
@@ -8987,47 +9002,47 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str, int *args)
       return CTX_TEXT;
 
     case STR('g','r','a','y',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 1);
+      ctxp_set_color_model (ctxp, CTX_GRAY);
       *args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('g','r','a','y','a',0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 101);
+      ctxp_set_color_model (ctxp, CTX_GRAYA);
       *args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('r','g','b',0,0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 3);
+      ctxp_set_color_model (ctxp, CTX_RGB);
       *args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('r','g','b','a',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 103);
+      ctxp_set_color_model (ctxp, CTX_RGBA);
       *args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('c','m','y','k',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 4);
+      ctxp_set_color_model (ctxp, CTX_CMYK);
       *args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('l','a','b',0,0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 5);
+      ctxp_set_color_model (ctxp, CTX_LAB);
       *args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('l','a','b','a',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 105);
+      ctxp_set_color_model (ctxp, CTX_LABA);
       *args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('l','c','h',0,0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 6);
+      ctxp_set_color_model (ctxp, CTX_LCH);
       *args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('l','c','h','a',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 106);
+      ctxp_set_color_model (ctxp, CTX_LCHA);
       *args = ctxp->color_components;
       return CTX_SET_COLOR;
 
@@ -9050,18 +9065,19 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str, int *args)
     case STR('C','A','P','_','S','Q','U','A','R','E',0,0):
     case STR('S','Q','U','A','R','E', 0, 0, 0, 0, 0, 0):   return CTX_CAP_SQUARE;
 
-    case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       return 1; break;
-    case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     return 101; break;
-    case STR('G','R','A','Y','A','_', 'A', 0, 0, 0, 0, 0): return 201; break;
-    case STR('R','G','B',0,0,0, 0, 0, 0, 0, 0, 0):         return 3; break;
-    case STR('R','G','B','A',0,0, 0, 0, 0, 0, 0, 0):       return 103; break;
-    case STR('R','G','B','A','_','A', 0, 0, 0, 0, 0, 0):   return 203; break;
-    case STR('C','M','Y','K',0,0, 0, 0, 0, 0, 0, 0):       return 4; break;
-    case STR('C','M','Y','K','A','_','A', 0, 0, 0, 0, 0):  return 104; break;
-    case STR('L','A','B',0,0,0, 0, 0, 0, 0, 0, 0):       return 5; break;
-    case STR('L','A','B','A',0,'_','A', 0, 0, 0, 0, 0):  return 105; break;
-    case STR('L','C','H',0,0,0, 0, 0, 0, 0, 0, 0):       return 6; break;
-    case STR('L','C','H','A',0,'_','A', 0, 0, 0, 0, 0):  return 106; break;
+    case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       return CTX_GRAY; break;
+    case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     return CTX_GRAYA; break;
+    case STR('G','R','A','Y','A','_', 'A', 0, 0, 0, 0, 0): return CTX_GRAYA_A; break;
+    case STR('R','G','B',0,0,0, 0, 0, 0, 0, 0, 0):         return CTX_RGB; break;
+    case STR('R','G','B','A',0,0, 0, 0, 0, 0, 0, 0):       return CTX_RGBA; break;
+    case STR('R','G','B','A','_','A', 0, 0, 0, 0, 0, 0):   return CTX_RGBA_A; break;
+    case STR('C','M','Y','K',0,0, 0, 0, 0, 0, 0, 0):       return CTX_CMYK; break;
+    case STR('C','M','Y','K','A',0,0, 0, 0, 0, 0, 0):      return CTX_CMYKA; break;
+    case STR('C','M','Y','K','A','_','A', 0, 0, 0, 0, 0):  return CTX_CMYKA_A; break;
+    case STR('L','A','B',0,0,0, 0, 0, 0, 0, 0, 0):       return CTX_LAB; break;
+    case STR('L','A','B','A',0,'_','A', 0, 0, 0, 0, 0):  return CTX_LABA; break;
+    case STR('L','C','H',0,0,0, 0, 0, 0, 0, 0, 0):       return CTX_LCH; break;
+    case STR('L','C','H','A',0,'_','A', 0, 0, 0, 0, 0):  return CTX_LCHA; break;
 
 #undef STR
   }
@@ -9088,40 +9104,32 @@ static void ctxp_set_color_model (CtxP *ctxp, int color_model)
     ctxp->color_components++;
 }
 
-enum {
-  CTX_GRAY   = 1,
-  CTX_GRAYA = 101,
-  CTX_RGB   = 3,
-  CTX_RGBA  = 103,
-  CTX_CMYK  = 4,
-  CTX_CMYKA = 104,
-  CTX_LAB   = 5,
-  CTX_LABA = 105,
-  CTX_LCH   = 6,
-  CTX_LCHA  = 106,
-} CtxColorModel;
 
 void ctxp_get_color (CtxP *ctxp, int offset, float *red, float *green, float *blue, float *alpha)
 {
   *alpha = 1.0;
   switch (ctxp->color_model)
   {
-    case 101: // gray
+    case CTX_GRAYA:
       *alpha = ctxp->numbers[offset + 1];
-    case 1: // gray
+    case CTX_GRAY:
       *red = *green = *blue = ctxp->numbers[offset + 0];
     break;
     default:
-    case 103: // rgba
+    case CTX_LABA: // NYI
+    case CTX_LCHA: // NYI
+    case CTX_RGBA: // rgba
       *alpha = ctxp->numbers[offset + 3];
-    case 3: // rgb
+    case CTX_LAB: // NYI
+    case CTX_LCH: // NYI
+    case CTX_RGB: // rgb
       *red = ctxp->numbers[offset + 0];
       *green = ctxp->numbers[offset + 1];
       *blue = ctxp->numbers[offset + 2];
     break;
-    case 104: // cmyka
+    case CTX_CMYKA: // cmyka
       *alpha = ctxp->numbers[offset + 4];
-    case 4: // cmyk
+    case CTX_CMYK: // cmyk
       *red = (1.0-ctxp->numbers[offset + 0]) *
                (1.0 - ctxp->numbers[offset + 3]);
       *green = (1.0-ctxp->numbers[offset + 1]) *
@@ -9129,12 +9137,6 @@ void ctxp_get_color (CtxP *ctxp, int offset, float *red, float *green, float *bl
       *blue = (1.0-ctxp->numbers[offset + 2]) *
                  (1.0 - ctxp->numbers[offset + 3]);
     break;
-
-    case 105: // LabA
-    case 5:   // Lab
-    case 106: // LchA
-    case 6:   // Lch
-      break;
     //
   }
 }
@@ -9719,7 +9721,5 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
       break;
   }
 }
-
-
 #endif
 
