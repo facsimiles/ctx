@@ -685,8 +685,8 @@ CtxP *ctxp_new (
   Ctx       *ctx,
   int        width,
   int        height,
-  int        cw,
-  int        ch,
+  float      cell_width,
+  float      cell_height,
   int        cursor_x,
   int        cursor_y,
   void (*exit)(void *exit_data),
@@ -8716,7 +8716,7 @@ static void ctx_setup ()
 struct _CtxP {
   Ctx       *ctx;
   int        state;
-  uint8_t    holding[64];
+  uint8_t    holding[1024];
   int        pos;
   float      numbers[12]; /* used by svg parser */
   int        n_numbers;
@@ -8730,12 +8730,12 @@ struct _CtxP {
   float      left_margin; // set by last user provided move_to
                           // before text, used by newlines
 
-  int        cw; // cell width
-  int        ch; // cell height
-  int        cursor_x;
-  int        cursor_y;
   int        width;
   int        height;
+  float      cell_width;
+  float      cell_height;
+  int        cursor_x;
+  int        cursor_y;
 
   void (*exit)(void *exit_data);
   void *exit_data;
@@ -8746,8 +8746,8 @@ ctxp_init (CtxP *ctxp,
   Ctx       *ctx,
   int        width,
   int        height,
-  int        cw,
-  int        ch,
+  float      cell_width,
+  float      cell_height,
   int        cursor_x,
   int        cursor_y,
   void (*exit)(void *exit_data),
@@ -8755,14 +8755,13 @@ ctxp_init (CtxP *ctxp,
           )
 {
   ctxp->ctx = ctx;
-  ctxp->cw = cw; // cell width
-  ctxp->ch = ch; // cell height
+  ctxp->cell_width = cell_width;
+  ctxp->cell_height = cell_height;
   ctxp->cursor_x = cursor_x;
   ctxp->cursor_y = cursor_y;
-  ctxp->width = width;
-  ctxp->height= height;
-
-  ctxp->exit = exit;
+  ctxp->width    = width;
+  ctxp->height   = height;
+  ctxp->exit     = exit;
   ctxp->exit_data = exit_data;
 
   ctxp->command = 'm';
@@ -8776,23 +8775,19 @@ CtxP *ctxp_new (
   Ctx       *ctx,
   int        width,
   int        height,
-  int        cw,
-  int        ch,
+  float      cell_width,
+  float      cell_height,
   int        cursor_x,
   int        cursor_y,
   void (*exit)(void *exit_data),
   void *exit_data)
 {
   CtxP *ctxp = calloc (sizeof (CtxP), 1);
-  ctxp_init (ctxp,
-  ctx,
-  width,
-  height,
-  cw,
-  ch,
-  cursor_x,
-  cursor_y,
-  exit, exit_data);
+  ctxp_init (ctxp, ctx,
+             width, height,
+             cell_width, cell_height,
+             cursor_x, cursor_y,
+             exit, exit_data);
   return ctxp;
 }
 void ctxp_free (CtxP *ctxp)
@@ -9401,8 +9396,8 @@ static void ctxp_dispatch_command (CtxP *ctxp)
     case CTX_CLEAR:
        ctx_clear (ctx);
        ctx_translate (ctx,
-                     (ctxp->cursor_x-1) * ctxp->cw * 10,
-                     (ctxp->cursor_y-1) * ctxp->ch * 10);
+                     (ctxp->cursor_x-1) * ctxp->cell_width * 1.0,
+                     (ctxp->cursor_y-1) * ctxp->cell_height * 1.0);
        break;
   }
   ctxp->n_numbers = 0;
@@ -9510,7 +9505,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
                 ctxp->numbers[ctxp->n_numbers] *= -1;
               if (ctxp->n_numbers % 2 == 0) // even is x coord
               {
-                ctxp->numbers[ctxp->n_numbers] *= ctxp->cw;
+                ctxp->numbers[ctxp->n_numbers] *= ctxp->cell_width;
               }
               else
               {
@@ -9522,7 +9517,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
                   }
 
                 ctxp->numbers[ctxp->n_numbers] =
-                  (ctxp->numbers[ctxp->n_numbers]) * ctxp->ch;
+                  (ctxp->numbers[ctxp->n_numbers]) * ctxp->cell_height;
               }
               ctxp->state = CTX_NEUTRAL;
           break;
