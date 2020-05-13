@@ -11,7 +11,7 @@ clean:
 	make -C tests clean
 	make -C fonts clean
 
-ctxvt: ctx.c vt/*.[ch] ctx.h svgp.h  Makefile
+ctxvt: ctx.c vt/*.[ch] ctx.h  Makefile
 	gcc ctx.c vt/*.c -o $@ -g -I. -Ifonts -Ivt `pkg-config mmm sdl2 --cflags --libs` -lutil -Wall  -lz -lm
 
 ctxvt.O1: ctx.c vt/*.[ch] ctx.h  Makefile

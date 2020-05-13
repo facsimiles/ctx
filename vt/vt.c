@@ -2226,7 +2226,8 @@ qagain:
              {
                vt->current_line->ctx = ctx_new ();
              }
-             ctxp_init (&vt->svgp, vt->current_line->ctx,
+             ctxp_init (&vt->svgp,
+                        vt->current_line->ctx,
                         vt->cw, vt->ch, vt->cursor_x, vt->cursor_y, vt->cols, vt->rows, vt_svgp_exit, vt);
              vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
              vt->state = vt_state_ctx;

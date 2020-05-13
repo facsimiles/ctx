@@ -559,19 +559,18 @@ typedef enum
   CTX_RESTORE          = 'D',
   CTX_STROKE           = 'E',
   CTX_FILL             = 'F',
-  // G - UNUSED
+  CTX_GLOBAL_ALPHA     = 'G',
   CTX_HOR_LINE_TO      = 'H', // %
   CTX_COMPOSITING_MODE = 'I',
   CTX_ROTATE           = 'J', // float
   CTX_SET_COLOR        = 'K', // u8
-  CTX_SET_RGBA         = '*', // u8
   CTX_LINE_TO          = 'L', // float x, y
   CTX_MOVE_TO          = 'M', // float x, y
   CTX_FONT_SIZE        = 'N',
   CTX_SCALE            = 'O', // float, float
-  //CTX_NEW_PAGE       = 'P', // float, float
+  CTX_NEW_PAGE         = 'P', // NYI, float, float
   CTX_QUAD_TO          = 'Q',
-  // R - UNUSED
+  // R - UNUSED  // media-box/rect?
   CTX_SMOOTH_TO        = 'S', //%
   CTX_SMOOTHQ_TO       = 'T', //%
   CTX_CLEAR            = 'U',
@@ -590,7 +589,7 @@ typedef enum
   CTX_REL_HOR_LINE_TO  = 'h', // %
   CTX_TEXTURE          = 'i',
   CTX_LINE_JOIN        = 'j',
-  CTX_KERNING_PAIR     = 'k',
+  CTX_FILL_RULE        = 'k',
   CTX_REL_LINE_TO      = 'l', // float x, y
   CTX_REL_MOVE_TO      = 'm', // float x, y
   CTX_SET_FONT         = 'n', // as used by text parser
@@ -606,26 +605,26 @@ typedef enum
   CTX_TEXT             = 'x', // x, y - followed by "" in CTX_DATA
   CTX_IDENTITY         = 'y',
   CTX_CLOSE_PATH       = 'z',
+  CTX_NEW_PATH         = '_',
 
-  CTX_NEW_PATH         = ']',
-  CTX_FILL_RULE       = '[',
-  CTX_GLOBAL_ALPHA    = '#',
+  CTX_SET_RGBA         = '*', // u8
 
   //
-  CTX_GRADIENT_NO      = '3',
-  CTX_GRADIENT_CLEAR   = '4',
+  CTX_PAINT            = '+',
+  CTX_GRADIENT_NO      = '&',
+  CTX_GRADIENT_CLEAR   = '/',
 
   CTX_NOP             = ' ',
-  CTX_NEW_EDGE        = '0',
+  CTX_NEW_EDGE        = '~',
   CTX_EDGE            = '|',
   CTX_EDGE_FLIPPED    = '`',
-  CTX_REPEAT_HISTORY  = '2', //
+  CTX_REPEAT_HISTORY  = ']', //
 
-  CTX_CONT             = ';',
-  CTX_DATA             = '(', // size,  size-in-entries
-  CTX_DATA_REV         = ')', // reverse traversal data marker
-  CTX_PAINT            = '+',
-  CTX_DEFINE_GLYPH     = '@',
+  CTX_CONT            = ';',
+  CTX_DATA            = '(', // size,  size-in-entries
+  CTX_DATA_REV        = ')', // reverse traversal data marker
+  CTX_DEFINE_GLYPH    = '@',
+  CTX_KERNING_PAIR    = '[',
 
     // move-to
     // follwed by path definitions - relative to a move-to
@@ -634,18 +633,17 @@ typedef enum
    * not visible outside the draw-stream compression
    */
 #if CTX_BITPACK
-  CTX_REL_LINE_TO_X4            = '_',
-  CTX_REL_LINE_TO_REL_CURVE_TO  = '~',
-  CTX_REL_CURVE_TO_REL_LINE_TO  = '&',
-  CTX_REL_CURVE_TO_REL_MOVE_TO  = '?',
-  CTX_REL_LINE_TO_X2            = '"',
-  CTX_MOVE_TO_REL_LINE_TO       = '/',
-  CTX_REL_LINE_TO_REL_MOVE_TO   = '^',
-  CTX_FILL_MOVE_TO              = '6',
-  CTX_REL_QUAD_TO_REL_QUAD_TO   = '7',
-  CTX_REL_QUAD_TO_S16           = '8',
-
-  CTX_SET_PIXEL                 = '9',
+  CTX_REL_LINE_TO_X4            = '0',
+  CTX_REL_LINE_TO_REL_CURVE_TO  = '1',
+  CTX_REL_CURVE_TO_REL_LINE_TO  = '2',
+  CTX_REL_CURVE_TO_REL_MOVE_TO  = '3',
+  CTX_REL_LINE_TO_X2            = '4',
+  CTX_MOVE_TO_REL_LINE_TO       = '5',
+  CTX_REL_LINE_TO_REL_MOVE_TO   = '6',
+  CTX_FILL_MOVE_TO              = '7',
+  CTX_REL_QUAD_TO_REL_QUAD_TO   = '8',
+  CTX_REL_QUAD_TO_S16           = '9',
+  CTX_SET_PIXEL                 = '^',
 #endif
 
 } CtxCode;
@@ -738,24 +736,31 @@ struct _CtxP {
 static inline float
 ctx_floorf (float x)
 {
-  return ((int) x);
+  int i = (int)x;
+  return i - ( i > x );
 }
 
+static inline float
+ctx_ceilf (float x)
+{
+  int i = (int) -x;
+  return - (i - ( i > x ));
+}
 static inline float
 ctx_roundf (float x)
 {
   return ((int) x) + 0.5f;
 }
-static inline float
-ctx_ceilf (float x)
-{
-  return ((int) x) + 0.9999f;
-}
 
 static inline float
 ctx_fabsf (float x)
 {
-  return (x < 0.0f) ? -x : x;
+  union {
+    float f;
+    uint32_t i;
+  } u = { x };
+  u.i &= 0x7fffffff;
+  return u.f;
 }
 
 static inline float
