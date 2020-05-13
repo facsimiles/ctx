@@ -7831,7 +7831,7 @@ ctx_glyph_kern_ctx (Ctx *ctx, CtxFont *font, int unicharA, int unicharB)
     {
       if (font->ctx.first_kern == 0) font->ctx.first_kern = i;
       if (entry->data.u16[0] == unicharA && entry->data.u16[1] == unicharB)
-        return entry->data.s32[2] / 255.0 * font_size / CTX_BAKE_FONT_SIZE;
+        return entry->data.s32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE;
     }
   }
   if (font->ctx.first_kern == 0)
@@ -9100,7 +9100,6 @@ static void ctxp_set_color_model (CtxP *ctxp, int color_model)
   if (ctxp->color_model >  99)
     ctxp->color_components++;
 }
-
 
 void ctxp_get_color (CtxP *ctxp, int offset, float *red, float *green, float *blue, float *alpha)
 {
