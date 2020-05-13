@@ -561,11 +561,10 @@ typedef enum
   CTX_FILL             = 'F',
   // G - UNUSED
   CTX_HOR_LINE_TO      = 'H', // %
-  // I - UNUSED
+  CTX_COMPOSITING_MODE = 'I',
   CTX_ROTATE           = 'J', // float
   CTX_SET_COLOR        = 'K', // u8
-  CTX_SET_RGBA        = '*', // u8
-  // SET_COLOR
+  CTX_SET_RGBA         = '*', // u8
   CTX_LINE_TO          = 'L', // float x, y
   CTX_MOVE_TO          = 'M', // float x, y
   CTX_FONT_SIZE        = 'N',
@@ -581,15 +580,15 @@ typedef enum
   CTX_EXIT             = 'X',
   CTX_SET_COLOR_MODEL  = 'Y', // %
   // Z - SVG?
-  CTX_REL_ARC_TO      = 'b', // %
-  CTX_CLIP            = 'b',
+  CTX_REL_ARC_TO       = 'a', // %
+  CTX_CLIP             = 'b',
   CTX_REL_CURVE_TO     = 'c', // float x, y, followed by two ; with rest of coords
   CTX_SAVE             = 'd',
   CTX_TRANSLATE        = 'e', // float, float
   CTX_LINEAR_GRADIENT  = 'f',
   CTX_GLYPH            = 'g', // unichar, fontsize
   CTX_REL_HOR_LINE_TO  = 'h', // %
-  // IMAGE
+  CTX_TEXTURE          = 'i',
   CTX_LINE_JOIN        = 'j',
   CTX_KERNING_PAIR     = 'k',
   CTX_REL_LINE_TO      = 'l', // float x, y
@@ -611,17 +610,12 @@ typedef enum
   CTX_NEW_PATH         = ']',
   CTX_FILL_RULE       = '[',
   CTX_GLOBAL_ALPHA    = '#',
-  //CTX_SET_RGBA_STROKE = '8', // u8
-  //CTX_UNUSED          = '6',
-  //CTX_UNUSED          = '7',
+
   //
-  CTX_COMPOSITING_MODE = 'I',
-  CTX_TEXTURE          = '5',
   CTX_GRADIENT_NO      = '3',
   CTX_GRADIENT_CLEAR   = '4',
 
   CTX_NOP             = ' ',
-  //CTX_STATE            = 'G', // graphics state follows in CTX_DATA
   CTX_NEW_EDGE        = '0',
   CTX_EDGE            = '|',
   CTX_EDGE_FLIPPED    = '`',
@@ -7535,7 +7529,6 @@ ctx_datatype_for_code (CtxCode code)
     case CTX_FLUSH:
     case CTX_FILL:
     case CTX_CLIP:
-    //case CTX_STATE:
     case CTX_SAVE:
     case CTX_RESTORE:
     case CTX_NEW_PATH:
@@ -8500,7 +8493,6 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
       case CTX_DATA:
       case CTX_DATA_REV:
       case CTX_FLUSH:
-      //case CTX_STATE:
       case CTX_REPEAT_HISTORY:
         break;
     }
@@ -8709,7 +8701,6 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       case CTX_DATA:
       case CTX_DATA_REV:
       case CTX_FLUSH:
-      //case CTX_STATE:
       case CTX_REPEAT_HISTORY:
         break;
     }
