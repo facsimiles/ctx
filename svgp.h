@@ -68,12 +68,12 @@ typedef enum {
   SVGP_REL_CURVE_TO    = 'c', // SVG
   SVGP_SAVE            = 'd',
   SVGP_TRANSLATE       = 'e',
-  //SVP_UNUSED         = 'f', // NYI
-  SVGP_LINEAR_GRADIENT = 'g',
+  SVGP_LINEAR_GRADIENT = 'f',
+  //SVP_UNUSED         = 'g', // -- for glyph
   SVGP_REL_HOR_LINE_TO = 'h', // SVG
   //SVGP_IMAGE         = 'i', // NYI
   SVGP_SET_LINE_JOIN   = 'j',
-  //SVGP_UNUSED        = 'k',
+  //SVGP_UNUSED        = 'k', // -- for kerning pair?
   SVGP_REL_LINE_TO     = 'l', // SVG
   SVGP_REL_MOVE_TO     = 'm', // SVG
   SVGP_SET_FONT        = 'n',
@@ -212,7 +212,7 @@ static int svgp_resolve_command (SvgP *svgp, const uint8_t*str, int *args)
     case 'e': *args = 2; return SVGP_TRANSLATE;
 
     case STR('l','i','n','e','a','r','_','g','r','a','d','i'):
-    case 'g': *args = 4; return SVGP_LINEAR_GRADIENT;
+    case 'f': *args = 4; return SVGP_LINEAR_GRADIENT;
 
     case STR('r','e','l','_','h','o','r','_','l','i','n','e'):
     case 'h': *args = 1; return SVGP_REL_HOR_LINE_TO;

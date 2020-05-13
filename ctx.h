@@ -548,80 +548,93 @@ int ctx_get_renderstream_count (Ctx *ctx);
 
 typedef enum
 {
-  CTX_CLIP            = '#',
-  CTX_NEW_EDGE        = '0',
-  CTX_EDGE            = '|',
-  CTX_EDGE_FLIPPED    = '`',
-  CTX_REPEAT_HISTORY  = 'h', //
 
-  CTX_CLEAR           = '\\',
+  // items marked with % are currently only for the parser
+  // for instance for svg compatibility or simulated/converted color spaces
+  // not the serialization/internal render stream
+  CTX_FLUSH            = 0,
+  CTX_ARC_TO           = 'A', // %
+  CTX_ARC              = 'B',
+  CTX_CURVE_TO         = 'C', // float x, y, followed by two ; with rest of coords
+  CTX_RESTORE          = 'D',
+  CTX_STROKE           = 'E',
+  CTX_FILL             = 'F',
+  // G - UNUSED
+  CTX_HOR_LINE_TO      = 'H', // %
+  // I - UNUSED
+  CTX_ROTATE           = 'J', // float
+  CTX_SET_COLOR        = 'K', // u8
+  CTX_SET_RGBA        = '*', // u8
+  // SET_COLOR
+  CTX_LINE_TO          = 'L', // float x, y
+  CTX_MOVE_TO          = 'M', // float x, y
+  CTX_FONT_SIZE        = 'N',
+  CTX_SCALE            = 'O', // float, float
+  //CTX_NEW_PAGE       = 'P', // float, float
+  CTX_QUAD_TO          = 'Q',
+  // R - UNUSED
+  CTX_SMOOTH_TO        = 'S', //%
+  CTX_SMOOTHQ_TO       = 'T', //%
+  CTX_CLEAR            = 'U',
+  CTX_VER_LINE_TO      = 'V', // %
+  CTX_LINE_CAP         = 'W',
+  CTX_EXIT             = 'X',
+  CTX_SET_COLOR_MODEL  = 'Y', // %
+  // Z - SVG?
+  CTX_REL_ARC_TO      = 'b', // %
+  CTX_CLIP            = 'b',
+  CTX_REL_CURVE_TO     = 'c', // float x, y, followed by two ; with rest of coords
+  CTX_SAVE             = 'd',
+  CTX_TRANSLATE        = 'e', // float, float
+  CTX_LINEAR_GRADIENT  = 'f',
+  CTX_GLYPH            = 'g', // unichar, fontsize
+  CTX_REL_HOR_LINE_TO  = 'h', // %
+  // IMAGE
+  CTX_LINE_JOIN        = 'j',
+  CTX_KERNING_PAIR     = 'k',
+  CTX_REL_LINE_TO      = 'l', // float x, y
+  CTX_REL_MOVE_TO      = 'm', // float x, y
+  CTX_SET_FONT         = 'n', // as used by text parser
+  CTX_RADIAL_GRADIENT  = 'o',
+  CTX_GRADIENT_STOP    = 'p',
+  CTX_REL_QUAD_TO      = 'q',
+  CTX_RECTANGLE        = 'r',
+  CTX_REL_SMOOTH_TO    = 's', // %
+  CTX_REL_SMOOTHQ_TO   = 't', // %
+  CTX_STROKE_TEXT      = 'u', // %
+  CTX_REL_VER_LINE_TO  = 'v',
+  CTX_LINE_WIDTH       = 'w',
+  CTX_TEXT             = 'x', // x, y - followed by "" in CTX_DATA
+  CTX_IDENTITY         = 'y',
+  CTX_CLOSE_PATH       = 'z',
 
-  CTX_NOP             = ' ',
-
-  CTX_FILL_RULE       = 'f',
-  CTX_GLOBAL_ALPHA    = 'O',
-
-  CTX_SET_RGBA        = 'r', // u8
+  CTX_NEW_PATH         = ']',
+  CTX_FILL_RULE       = '[',
+  CTX_GLOBAL_ALPHA    = '#',
   //CTX_SET_RGBA_STROKE = '8', // u8
   //CTX_UNUSED          = '6',
   //CTX_UNUSED          = '7',
-  CTX_TEXTURE          = 'W',
-  CTX_LINEAR_GRADIENT  = '1',
-  CTX_RADIAL_GRADIENT  = '2',
+  //
+  CTX_COMPOSITING_MODE = 'I',
+  CTX_TEXTURE          = '5',
   CTX_GRADIENT_NO      = '3',
   CTX_GRADIENT_CLEAR   = '4',
-  CTX_GRADIENT_STOP    = '5',
 
-  CTX_LINE_WIDTH       = 'w',
-  CTX_LINE_CAP         = 'P',
-  CTX_LINE_JOIN        = 'J',
-  CTX_COMPOSITING_MODE = 'I',
-
-  CTX_FONT_SIZE        = 'Z',
-
-
-  CTX_STATE            = 'G', // graphics state follows in CTX_DATA
+  CTX_NOP             = ' ',
+  //CTX_STATE            = 'G', // graphics state follows in CTX_DATA
+  CTX_NEW_EDGE        = '0',
+  CTX_EDGE            = '|',
+  CTX_EDGE_FLIPPED    = '`',
+  CTX_REPEAT_HISTORY  = '2', //
 
   CTX_CONT             = ';',
-  CTX_DATA             = 'd', // size,  size-in-entries
-  CTX_DATA_REV         = 'D', // reverse traversal data marker
-
-  CTX_NEW_PATH         = 'p',
-  CTX_CLOSE_PATH       = 'z',
-  CTX_RECTANGLE        = '[',
-  CTX_MOVE_TO          = 'M', // float x, y
-  CTX_LINE_TO          = 'L', // float x, y
-  CTX_CURVE_TO         = 'C', // float x, y, followed by two ; with rest of coords
-  CTX_QUAD_TO          = 'Q',
-  CTX_REL_MOVE_TO      = 'm', // float x, y
-  CTX_REL_LINE_TO      = 'l', // float x, y
-  CTX_REL_CURVE_TO     = 'c', // float x, y, followed by two ; with rest of coords
-  CTX_REL_QUAD_TO      = 'q',
-  CTX_ARC              = 'A',
-
-  CTX_IDENTITY         = 'i',
-  CTX_TRANSLATE        = 'T', // float, float
-  CTX_ROTATE           = 'R', // float
-  CTX_SCALE            = 'S', // float, float
-
-  CTX_SAVE             = '(',
-  CTX_RESTORE          = ')',
-
-  CTX_FILL             = 'F',
-  CTX_STROKE           = 's',
+  CTX_DATA             = '(', // size,  size-in-entries
+  CTX_DATA_REV         = ')', // reverse traversal data marker
   CTX_PAINT            = '+',
-
-  CTX_KERNING_PAIR     = 'K',
   CTX_DEFINE_GLYPH     = '@',
 
-  CTX_GLYPH            = 'g', // unichar, fontsize
     // move-to
     // follwed by path definitions - relative to a move-to
-
-  CTX_TEXT             = 't', // x, y - followed by "" in CTX_DATA
-
-  CTX_FLUSH                     = 0,
-  CTX_EXIT                      = 'X',
 
   /* optimizations that reduce the number of entries used,
    * not visible outside the draw-stream compression
@@ -634,9 +647,9 @@ typedef enum
   CTX_REL_LINE_TO_X2            = '"',
   CTX_MOVE_TO_REL_LINE_TO       = '/',
   CTX_REL_LINE_TO_REL_MOVE_TO   = '^',
-  CTX_FILL_MOVE_TO              = 'e',
-  CTX_REL_QUAD_TO_REL_QUAD_TO   = 'U',
-  CTX_REL_QUAD_TO_S16           = 'V',
+  CTX_FILL_MOVE_TO              = '6',
+  CTX_REL_QUAD_TO_REL_QUAD_TO   = '7',
+  CTX_REL_QUAD_TO_S16           = '8',
 
   CTX_SET_PIXEL                 = '9',
 #endif
@@ -7522,7 +7535,7 @@ ctx_datatype_for_code (CtxCode code)
     case CTX_FLUSH:
     case CTX_FILL:
     case CTX_CLIP:
-    case CTX_STATE:
+    //case CTX_STATE:
     case CTX_SAVE:
     case CTX_RESTORE:
     case CTX_NEW_PATH:
@@ -8487,7 +8500,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
       case CTX_DATA:
       case CTX_DATA_REV:
       case CTX_FLUSH:
-      case CTX_STATE:
+      //case CTX_STATE:
       case CTX_REPEAT_HISTORY:
         break;
     }
@@ -8696,7 +8709,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       case CTX_DATA:
       case CTX_DATA_REV:
       case CTX_FLUSH:
-      case CTX_STATE:
+      //case CTX_STATE:
       case CTX_REPEAT_HISTORY:
         break;
     }
