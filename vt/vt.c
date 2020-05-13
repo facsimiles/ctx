@@ -381,6 +381,37 @@ struct _SvgP {
   void *exit_data;
 };
 
+void
+svgp_init (SvgP *svgp,
+  Ctx       *ctx,
+  int        cw,
+  int        ch,
+  int        cursor_x,
+  int        cursor_y,
+  int        cols,
+  int        rows,
+  void (*exit)(void *exit_data),
+  void *exit_data
+          )
+{
+  svgp->ctx = ctx;
+  svgp->cw = cw; // cell width
+  svgp->ch = ch; // cell height
+  svgp->cursor_x = cursor_x;
+  svgp->cursor_y = cursor_y;
+  svgp->cols = cols;
+  svgp->rows = rows;
+
+  svgp->exit = exit;
+  svgp->exit_data = exit_data;
+
+  svgp->command = 'm';
+  svgp->n_numbers = 0;
+  svgp->decimal = 0;
+  svgp->pos = 0;
+  svgp->holding[svgp->pos=0]=0;
+}
+
 struct _VT {
   char     *title;
   void    (*state)(VT *vt, int byte);
@@ -2250,23 +2281,13 @@ qagain:
      case 7020:/*MODE;Ctx ascii;On;;*/
 	   if (set)
 	   {
-             vt->svgp.ctx = vt->current_line->ctx;
-             if (!vt->svgp.ctx)
+             if (!vt->current_line->ctx)
              {
-               vt->svgp.ctx = vt->current_line->ctx = ctx_new ();
+               vt->current_line->ctx = ctx_new ();
              }
-             vt->svgp.cursor_x = vt->cursor_x;
-             vt->svgp.cursor_y = vt->cursor_y;
-             vt->svgp.cw = vt->cw;
-             vt->svgp.ch = vt->ch;
-             vt->svgp.cols = vt->cols;
-             vt->svgp.rows = vt->rows;
-             vt->svgp.command = 'm';
-	     vt->svgp.n_numbers = 0;
-	     vt->svgp.decimal = 0;
-             vt->svgp.holding[vt->utf8_pos=0]=0;
-             vt->svgp.exit = vt_svgp_exit;
-             vt->svgp.exit_data = vt;
+             svgp_init (&vt->svgp, vt->current_line->ctx,
+                        vt->cw, vt->ch, vt->cursor_x, vt->cursor_y, vt->cols, vt->rows, vt_svgp_exit, vt);
+             vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
              vt->state = vt_state_svgp;
 	   }
            break;
