@@ -108,7 +108,7 @@ static void vt_state_sixel        (VT *vt, int byte);
 static void vt_state_esc_sequence (VT *vt, int byte);
 static void vt_state_esc_foo      (VT *vt, int byte);
 static void vt_state_swallow      (VT *vt, int byte);
-static void vt_state_svgp         (VT *vt, int byte);
+static void vt_state_ctx          (VT *vt, int byte);
 static void vt_state_vt52         (VT *vt, int byte);
 
 /* barebones linked list */
@@ -406,7 +406,7 @@ struct _VT {
   int        utf8_pos;
 
 
-  SvgP       svgp;
+  CtxP       svgp;
   // text related data
   float      letter_spacing;
 
@@ -2226,10 +2226,10 @@ qagain:
              {
                vt->current_line->ctx = ctx_new ();
              }
-             svgp_init (&vt->svgp, vt->current_line->ctx,
+             ctxp_init (&vt->svgp, vt->current_line->ctx,
                         vt->cw, vt->ch, vt->cursor_x, vt->cursor_y, vt->cols, vt->rows, vt_svgp_exit, vt);
              vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
-             vt->state = vt_state_svgp;
+             vt->state = vt_state_ctx;
 	   }
            break;
 
@@ -2317,7 +2317,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
 	   break;
 	   break;
      case 7020:/*MODE;Ctx ascii;On;;*/
-           is_set = (vt->state == vt_state_svgp);
+           is_set = (vt->state == vt_state_ctx);
 	   break;
      case 80:/* DECSDM Sixel scrolling */
      case 30: // from rxvt - show/hide scrollbar
@@ -3615,9 +3615,9 @@ static void vt_sixels (VT *vt, const char *sixels)
 
 
 
-static void vt_state_svgp (VT *vt, int byte)
+static void vt_state_ctx (VT *vt, int byte)
 {
-  svgp_feed_byte (&vt->svgp, byte);
+  ctxp_feed_byte (&vt->svgp, byte);
 }
 
 static int vt_decoder_feed (VT *vt, int byte)
