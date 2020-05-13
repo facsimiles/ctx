@@ -27,7 +27,9 @@ int parse_main (int argc, char **argv)
   _ctx_set_store_clear (ctx);
   size_t size;
   while (getline(&line, &size, stdin) != -1) {
-     ctx_parse_str_line (ctx, line);
+     //
+     //ctx_parse_str_line (ctx, line);
+     // XXX : use svgp
   }
 
   struct termios termios_original;

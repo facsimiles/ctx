@@ -481,9 +481,6 @@ ctx_add_single (Ctx *ctx, void *entry);
 uint32_t
 ctx_utf8_to_unichar (const char *input);
 
-void
-ctx_parse_str_line (Ctx *ctx, const char *str);
-
 typedef enum
 {
   CTX_FILL_RULE_EVEN_ODD,
@@ -678,6 +675,47 @@ struct _CtxEntry
 #endif
 #endif
 
+typedef struct _SvgP SvgP;
+void
+svgp_init (SvgP *svgp,
+  Ctx       *ctx,
+  int        cw,
+  int        ch,
+  int        cursor_x,
+  int        cursor_y,
+  int        cols,
+  int        rows,
+  void (*exit)(void *exit_data),
+  void *exit_data
+          );
+void svgp_feed_byte (SvgP *svgp, int byte);
+struct _SvgP {
+  Ctx       *ctx;
+  int        state;
+  uint8_t    holding[64];
+  int        pos;
+  float      numbers[12]; /* used by svg parser */
+  int        n_numbers;
+  int        decimal;
+  char       command;
+  int        n_args;
+  float      pcx;
+  float      pcy;
+  int        color_components;
+  int        color_model; // 1 gray 3 rgb 4 cmyk
+  float      left_margin; // set by last user provided move_to
+                          // before text, used by newlines
+
+  int        cw; // cell width
+  int        ch; // cell height
+  int        cursor_x;
+  int        cursor_y;
+  int        cols;
+  int        rows;
+
+  void (*exit)(void *exit_data);
+  void *exit_data;
+};
 
 
 #ifdef CTX_IMPLEMENTATION
@@ -8464,172 +8502,6 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 }
 #endif
 
-
-
-void
-ctx_parse_str_line (Ctx *ctx, const char *str)
-{
-  const char *s = str;
-  char name[32];
-  float arg[12];
-  int i = 0;
-  int n_args = 0;
-
-  while (*s && (*s == ' ' || *s == '\t')) s ++;
-  while (*s && *s != ' ' && *s != '\n' && *s != '\t' && *s != '#' && i<31)
-  {name[i] = *s; name[i+1] = 0; i++;s++;}
-
-  while (*s && (*s == ' ' || *s == '\t')) s ++;
-  do
-  {
-    if ((*s >= '0' && *s <= '9') || *s=='-')
-    {
-      arg[n_args] = ctx_strtof (s, (char**)&s);
-      if (n_args < 10)
-        n_args++;
-    }
-    else
-    {
-       while (*s && *s != ' ' && *s != '\t') s ++;
-    }
-    while (*s && (*s == ' ' || *s == '\t')) s ++;
-  } while (*s && *s != 0 && *s != '\n' && *s != '#');
-
-  if (!strcmp (name, "line_to")) {
-     ctx_line_to (ctx, arg[0], arg[1]);
-  }
-  else if (!strcmp (name, "rel_line_to")) {
-     ctx_rel_line_to (ctx, arg[0], arg[1]);
-  }
-  if (!strcmp (name, "move_to")) {
-     ctx_move_to (ctx, arg[0], arg[1]);
-  }
-  else if (!strcmp (name, "rel_move_to")) {
-     ctx_rel_move_to (ctx, arg[0], arg[1]);
-  }
-  else if (!strcmp (name, "curve_to")) {
-     ctx_curve_to (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
-  }
-  else if (!strcmp (name, "rel_curve_to")) {
-     ctx_rel_curve_to (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
-  }
-  else if (!strcmp (name, "quad_to")) {
-     ctx_quad_to (ctx, arg[0], arg[1], arg[2], arg[3]);
-  }
-  else if (!strcmp (name, "rel_quad_to")) {
-     ctx_rel_quad_to (ctx, arg[0], arg[1], arg[2], arg[3]);
-  }
-  else if (!strcmp (name, "rotate")) {
-     ctx_rotate (ctx, arg[0]);
-  }
-  else if (!strcmp (name, "scale")) {
-     ctx_scale (ctx, arg[0], arg[1]);
-  }
-  else if (!strcmp (name, "translate")) {
-     ctx_translate (ctx, arg[0], arg[1]);
-  }
-  else if (!strcmp (name, "set_line_width")) {
-     ctx_set_line_width (ctx, arg[0]);
-  }
-  else if (!strcmp (name, "arc")) {
-     ctx_arc (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
-  }
-  else if (!strcmp (name, "set_rgba_u8")) {
-     ctx_set_rgba_u8 (ctx, arg[0], arg[1], arg[2], arg[3]);
-  }
-#if 0
-  else if (!strcmp (name, "set_rgba_stroke_u8")) {
-     ctx_set_rgba_stroke_u8 (ctx, arg[0], arg[1], arg[2], arg[3]);
-  }
-#endif
-  else if (!strcmp (name, "set_rgba")) {
-     ctx_set_rgba (ctx, arg[0], arg[1], arg[2], arg[3]);
-  }
-#if 0
-  else if (!strcmp (name, "set_rgba_stroke")) {
-     ctx_set_rgba_stroke (ctx, arg[0], arg[1], arg[2], arg[3]);
-  }
-#endif
-  else if (!strcmp (name, "set_pixel_u8")) {
-     ctx_set_pixel_u8 (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
-  }
-  else if (!strcmp (name, "rectangle")) {
-     ctx_rectangle (ctx, arg[0], arg[1], arg[2], arg[3]);
-  }
-  else if (!strcmp (name, "fill")) {
-     ctx_fill (ctx);
-  }
-  else if (!strcmp (name, "stroke")) {
-     ctx_stroke(ctx);
-  }
-  else if (!strcmp (name, "identity_matrix")) {
-     ctx_identity_matrix (ctx);
-  }
-  else if (!strcmp (name, "clip")) {
-     ctx_clip(ctx);
-  }
-  else if (!strcmp (name, "new_path")) {
-     ctx_new_path (ctx);
-  }
-  else if (!strcmp (name, "close_path")) {
-     ctx_close_path (ctx);
-  }
-  else if (!strcmp (name, "save")) {
-     ctx_save (ctx);
-  }
-  else if (!strcmp (name, "text")) {
-     const char *s = str;
-     while (*s == ' ' || *s == '\t') s ++;
-     while (*s != ' ' && *s != '\t') s ++;
-     if (*s)
-     ctx_text (ctx, s);
-  }
-  else if (!strcmp (name, "set_font")) {
-     const char *s = str;
-     while (*s == ' ' || *s == '\t') s ++;
-     while (*s != ' ' && *s != '\t') s ++;
-     if (*s)
-     ctx_set_font (ctx, s);
-  }
-  else if (!strcmp (name, "restore")) {
-     ctx_restore (ctx);
-  }
-  else if (!strcmp (name, "clear")) {
-     ctx_clear (ctx); // we want it actually recorded! vs clear done..
-                      // same as mark/unmark
-  }
-  else if (!strcmp (name, "set_font_size")) {
-     ctx_set_font_size (ctx, arg[0]);
-  }
-  else if (!strcmp (name, "set_line_cap")) {
-     ctx_set_line_cap (ctx, arg[0]);
-  }
-  else if (!strcmp (name, "set_line_join")) {
-     ctx_set_line_join (ctx, arg[0]);
-  }
-  else if (!strcmp (name, "new_path")) {
-     ctx_new_path (ctx);
-  }
-  else if (!strcmp (name, "close_path")) {
-     ctx_close_path (ctx);
-  }
-  else if (!strcmp (name, "linear_gradient")) {
-     ctx_linear_gradient (ctx, arg[0], arg[1], arg[2], arg[3]);
-     ctx_gradient_clear_stops (ctx);
-  }
-  else if (!strcmp (name, "radial_gradient")) {
-     ctx_radial_gradient (ctx, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
-     ctx_gradient_clear_stops (ctx);
-  }
-  else if (!strcmp (name, "gradient_clear_stops")) {
-     ctx_gradient_clear_stops (ctx);
-  }
-  else if (!strcmp (name, "gradient_add_stop")) {
-     ctx_gradient_add_stop (ctx, arg[0], arg[1], arg[2], arg[3], arg[4]);
-  }
-}
-
-
 void
 ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 {
@@ -8887,6 +8759,6 @@ static void ctx_setup ()
 
 }
 
+#include "svgp.h"
 #endif
-
 
