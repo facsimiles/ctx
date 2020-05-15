@@ -74,6 +74,16 @@ int help_main (int argc, char **argv)
   return 0;
 }
 
+
+//  ctx API
+//    nchanterm + ctx APIs
+//      braille
+//      sixels
+//      ctx
+//
+//
+
+
 int vt_main (int argc, char **argv);
 
 int main (int argc, char **argv)
