@@ -4524,11 +4524,10 @@ int vt_get_cursor_y (VT *vt)
 
 static void draw_braille_bit (Ctx *ctx, float x, float y, float cw, float ch, int u, int v)
 {
-      ctx_new_path (ctx);
+  ctx_new_path (ctx);
   ctx_rectangle (ctx, 0.167 * cw + x + u * cw * 0.5,
-             y - ch + 0.080 * ch     + v * ch * 0.25, 
-
-          0.33 *cw, 0.33 * cw);
+                      y - ch + 0.080 * ch + v * ch * 0.25, 
+                      0.33 *cw, 0.33 * cw);
   ctx_fill (ctx);
 }
 

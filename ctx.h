@@ -1968,12 +1968,14 @@ void ctx_set_line_width (Ctx *ctx, float x) {
   CTX_PROCESS_F1(CTX_LINE_WIDTH, x);
 }
 
-void ctx_set_global_alpha (Ctx *ctx, float global_alpha)
+void
+ctx_set_global_alpha (Ctx *ctx, float global_alpha)
 {
   CTX_PROCESS_F1(CTX_SET_GLOBAL_ALPHA, global_alpha);
 }
 
-void ctx_set_font_size (Ctx *ctx, float x) {
+void
+ctx_set_font_size (Ctx *ctx, float x) {
   CTX_PROCESS_F1(CTX_SET_FONT_SIZE, x);
 }
 
@@ -2020,12 +2022,14 @@ void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data)
 }
 #endif
 
-void ctx_set_font (Ctx *ctx, const char *name)
+void
+ctx_set_font (Ctx *ctx, const char *name)
 {
   ctx->state.gstate.font = ctx_resolve_font (name);
 }
 
-void ctx_identity_matrix (Ctx *ctx)
+void
+ctx_identity_matrix (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_IDENTITY);
 }
@@ -8353,13 +8357,13 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 
       case CTX_SET_LINE_CAP:
         {
-        int cairo_val = CAIRO_LINE_CAP_SQUARE;
-        switch (ctx_arg_u8(0))
-        {
-          case CTX_CAP_ROUND: cairo_val = CAIRO_LINE_CAP_ROUND; break;
-          case CTX_CAP_SQUARE: cairo_val = CAIRO_LINE_CAP_SQUARE; break;
-          case CTX_CAP_NONE: cairo_val = CAIRO_LINE_CAP_BUTT; break;
-        }
+          int cairo_val = CAIRO_LINE_CAP_SQUARE;
+          switch (ctx_arg_u8(0))
+          {
+            case CTX_CAP_ROUND:  cairo_val = CAIRO_LINE_CAP_ROUND;  break;
+            case CTX_CAP_SQUARE: cairo_val = CAIRO_LINE_CAP_SQUARE; break;
+            case CTX_CAP_NONE:   cairo_val = CAIRO_LINE_CAP_BUTT;   break;
+          }
           cairo_set_line_cap (cr, cairo_val);
         }
         break;
@@ -8369,8 +8373,8 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
           int cairo_val = CAIRO_OPERATOR_OVER;
           switch (ctx_arg_u8(0))
           {
-                  case CTX_COMPOSITE_SOURCE_OVER: cairo_val = CAIRO_OPERATOR_OVER; break;
-                  case CTX_COMPOSITE_SOURCE_COPY: cairo_val = CAIRO_OPERATOR_SOURCE; break;
+            case CTX_COMPOSITE_SOURCE_OVER: cairo_val = CAIRO_OPERATOR_OVER; break;
+            case CTX_COMPOSITE_SOURCE_COPY: cairo_val = CAIRO_OPERATOR_SOURCE; break;
           }
           cairo_set_operator (cr, cairo_val);
         }
@@ -8442,8 +8446,8 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
         }
         break;
 #endif
-
       case CTX_TEXT:
+
       case CTX_CONT:
       case CTX_EDGE:
       case CTX_DATA:
@@ -8833,38 +8837,38 @@ static void ctx_setup ()
 #if CTX_FONT_ENGINE_CTX
   ctx_font_count = 0; // oddly - this is needed in arduino
 #if CTX_FONT_regular
-  ctx_load_font_ctx ("regular", ctx_font_regular, sizeof (ctx_font_regular));
+  ctx_load_font_ctx ("regular-ctx", ctx_font_regular, sizeof (ctx_font_regular));
 #endif
 #if CTX_FONT_mono
-  ctx_load_font_ctx ("mono", ctx_font_mono, sizeof (ctx_font_mono));
+  ctx_load_font_ctx ("mono-ctx", ctx_font_mono, sizeof (ctx_font_mono));
 #endif
 #if CTX_FONT_bold
-  ctx_load_font_ctx ("bold", ctx_font_bold, sizeof (ctx_font_bold));
+  ctx_load_font_ctx ("bold-ctx", ctx_font_bold, sizeof (ctx_font_bold));
 #endif
 #if CTX_FONT_italic
-  ctx_load_font_ctx ("italic", ctx_font_italic, sizeof (ctx_font_italic));
+  ctx_load_font_ctx ("italic-ctx", ctx_font_italic, sizeof (ctx_font_italic));
 #endif
 #if CTX_FONT_sans
-  ctx_load_font_ctx ("sans", ctx_font_sans, sizeof (ctx_font_sans));
+  ctx_load_font_ctx ("sans-ctx", ctx_font_sans, sizeof (ctx_font_sans));
 #endif
 #if CTX_FONT_serif
-  ctx_load_font_ctx ("serif", ctx_font_serif, sizeof (ctx_font_serif));
+  ctx_load_font_ctx ("serif-ctx", ctx_font_serif, sizeof (ctx_font_serif));
 #endif
 #if CTX_FONT_symbol
-  ctx_load_font_ctx ("symbol", ctx_font_symbol, sizeof (ctx_font_symbol));
+  ctx_load_font_ctx ("symbol-ctx", ctx_font_symbol, sizeof (ctx_font_symbol));
 #endif
 #if CTX_FONT_emoji
-  ctx_load_font_ctx ("emoji", ctx_font_emoji, sizeof (ctx_font_emoji));
+  ctx_load_font_ctx ("emoji-ctx", ctx_font_emoji, sizeof (ctx_font_emoji));
 #endif
 #endif
 #if CTX_FONT_sgi
   ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
 #endif
 #if DEJAVU_SANS_MONO
-  ctx_load_font_ttf ("mono", ttf_DejaVuSansMono_ttf);
+  ctx_load_font_ttf ("mono-ttf", ttf_DejaVuSansMono_ttf);
 #endif
 #if DEJAVU_SANS
-  ctx_load_font_ttf ("regular", ttf_DejaVuSans_ttf);
+  ctx_load_font_ttf ("regular-ttf", ttf_DejaVuSans_ttf);
 #endif
 }
 
