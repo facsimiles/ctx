@@ -411,7 +411,7 @@ static int sdl_check_events ()
             case SDLK_DELETE:    name = "delete";   break;
             case SDLK_INSERT:    name = "insert";   break;
             case SDLK_RETURN:
-		if (key_repeat == 0) // return never should repeat
+		//if (key_repeat == 0) // return never should repeat
 		  name = "return";   // on a DEC like terminal
 		break;
             case SDLK_HOME:      name = "home";     break;
