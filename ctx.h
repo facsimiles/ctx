@@ -466,12 +466,15 @@ typedef struct _CtxRenderstream CtxRenderstream;
 typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
 
 void _ctx_set_store_clear (Ctx *ctx);
+void _ctx_set_transformation (Ctx *ctx, int transformation);
 void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data);
 
 #if CTX_CAIRO
 void
 ctx_render_cairo (Ctx *ctx, cairo_t *cr);
 #endif
+
+void ctx_render_stream (Ctx *ctx, FILE *stream);
 
 void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
 
@@ -3873,11 +3876,15 @@ ctx_state_init (CtxState *state)
   ctx_matrix_identity (&state->gstate.transform);
 }
 
+void _ctx_set_transformation (Ctx *ctx, int transformation)
+{
+  ctx->transformation = transformation;
+}
+
 static void
 ctx_init (Ctx *ctx)
 {
   ctx_state_init (&ctx->state);
-
 #if 1
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
@@ -8676,7 +8683,7 @@ ctx_print_entry (FILE *stream, CtxEntry *entry, int args)
   for (int i = 0; i <  args; i ++)
   {
     char temp[128];
-    sprintf (temp, "%0.10f", ctx_arg_float (i));
+    sprintf (temp, "%0.4f", ctx_arg_float (i));
     int j;
     for (j = 0; temp[j]; j++)
       if (j == ',') temp[j] = '.';
@@ -8686,6 +8693,8 @@ ctx_print_entry (FILE *stream, CtxEntry *entry, int args)
     {
       temp[j]=0;j--;
     }
+    if (temp[j]=='.')
+      temp[j]='\0';
     if (i>0 && temp[0]!='-')
       fprintf (stream, " ");
     fprintf (stream, "%s", temp);
@@ -8699,7 +8708,8 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
   CtxIterator iterator;
   CtxEntry   *entry;
 
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
+                     CTX_ITERATOR_EXPAND_REFPACK|
                      CTX_ITERATOR_EXPAND_BITPACK);
 
   while ((entry = ctx_iterator_next (&iterator)))
@@ -8734,7 +8744,6 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
       case CTX_LINE_WIDTH:
         ctx_print_entry (stream, entry, 1);
         break;
-
 
       case CTX_SET_RGBA:
         fprintf (stream, "rgba %.3f %.3f %.3f %.3f\n",
@@ -8812,6 +8821,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         break;
     }
   }
+  fprintf (stream, "\n");
 }
 
 static void ctx_setup ()
