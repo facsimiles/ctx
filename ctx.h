@@ -1526,6 +1526,15 @@ ctx_iterator_next (CtxIterator *iterator)
       iterator->bitpack_length = 3;
       goto again;
 
+    case CTX_TEXT:
+    case CTX_SET_FONT:
+      iterator->bitpack_command[0] = ret[0];
+      iterator->bitpack_command[1] = ret[1];
+      iterator->bitpack_command[2] = ret[2];
+      iterator->bitpack_pos = 0;
+      iterator->bitpack_length = 3;
+      goto again;
+
     case CTX_TEXTURE:
       iterator->bitpack_command[0] = ret[0];
       iterator->bitpack_command[1] = ret[1];
@@ -2025,7 +2034,19 @@ void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data)
 void
 ctx_set_font (Ctx *ctx, const char *name)
 {
+#if 0
+  int namelen = strlen (name);
+  CtxEntry commands[1 + 2 + namelen/8];
+  memset (commands, 0, sizeof (commands));
+  commands[0] = ctx_f(CTX_SET_FONT, 0, 0);
+  commands[1].code = CTX_DATA;
+  commands[1].data.u32[0] = namelen;
+  commands[1].data.u32[1] = namelen/9+1;
+  strcpy ((char*)&commands[2].data.u8[0], name);
+  ctx_process (ctx, commands);
+#else
   ctx->state.gstate.font = ctx_resolve_font (name);
+#endif
 }
 
 void
@@ -5522,12 +5543,12 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *c
 static int
 ctx_associated_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  int   components = 4;  // this makes it mostly adapted to become
-                         // a generalized floating point ver..
-                         // for components == 1-4 assume RGB color source
-                         // for more components - use alternate generic
-                         // source setting, which permits operation with
-                         // non RGB color models.
+  int components = 4;  // this makes it mostly adapted to become
+                       // a generalized floating point ver..
+                       // for components == 1-4 assume RGB color source
+                       // for more components - use alternate generic
+                       // source setting, which permits operation with
+                       // non RGB color models.
   float *dst_f = (float*)dst;
   float y = renderer->scanline / CTX_RASTERIZER_AA;
   const uint8_t *color = renderer->state->gstate.source.color.rgba;
@@ -6035,6 +6056,12 @@ ctx_renderer_fill (CtxRenderer *renderer)
 #endif
                     );
   }
+}
+
+static inline void
+ctx_renderer_text (CtxRenderer *renderer, const char *string)
+{
+  fprintf (stderr, "should render text [%s]\n", string);
 }
 
 static void
@@ -6674,6 +6701,10 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
 
     case CTX_STROKE:
       ctx_renderer_stroke (renderer);
+      break;
+
+    case CTX_TEXT:
+      ctx_renderer_text (renderer, "foo");
       break;
 
     case CTX_PAINT:
@@ -7406,169 +7437,6 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 
 /****  end of engine ****/
 
-#if CTX_EXTRAS
-
-typedef enum {
-  CTX_S8,
-  CTX_U8,
-  CTX_U16,
-  CTX_S16,
-  CTX_U32,
-  CTX_S32,
-  CTX_FLOAT,
-  CTX_VOID,
-  CTX_STRING,
-} CtxDataType;
-
-
-static inline CtxDataType
-ctx_datatype_for_code (CtxCode code)
-{
-  switch (code)
-  {
-#if CTX_BITPACK
-    case CTX_REL_LINE_TO_X2:
-    case CTX_MOVE_TO_REL_LINE_TO:
-    case CTX_REL_LINE_TO_REL_MOVE_TO:
-    case CTX_REL_QUAD_TO_S16:
-#endif
-    case CTX_EDGE:
-    case CTX_NEW_EDGE:
-    case CTX_EDGE_FLIPPED:
-      return CTX_S16;
-    case CTX_RECTANGLE:
-    case CTX_LINE_TO:
-    case CTX_REL_LINE_TO:
-    case CTX_MOVE_TO:
-    case CTX_QUAD_TO:
-    case CTX_REL_QUAD_TO:
-    case CTX_REL_MOVE_TO:
-    case CTX_CURVE_TO:
-    case CTX_SET_GLOBAL_ALPHA:
-    case CTX_REL_CURVE_TO:
-    case CTX_ROTATE:
-    case CTX_SCALE:
-    case CTX_TRANSLATE:
-    case CTX_CONT:
-    case CTX_LINE_WIDTH:
-    case CTX_SET_FONT_SIZE:
-    case CTX_ARC:
-    //case CTX_LOAD_IMAGE:
-    case CTX_LINEAR_GRADIENT:
-    case CTX_RADIAL_GRADIENT:
-    case CTX_GRADIENT_STOP:
-#if CTX_BITPACK
-    case CTX_FILL_MOVE_TO:
-#endif
-      return CTX_FLOAT;
-    case CTX_TEXT:
-      return CTX_STRING;
-    case CTX_SET_LINE_CAP:
-    case CTX_FILL_RULE:
-    case CTX_SET_LINE_JOIN:
-    case CTX_COMPOSITING_MODE:
-    case CTX_SET_RGBA:
-    //case CTX_SET_RGBA_STROKE:
-    case CTX_GRADIENT_NO:
-      return CTX_U8;
-#if CTX_BITPACK
-    case CTX_REL_LINE_TO_X4:
-    case CTX_REL_LINE_TO_REL_CURVE_TO:
-    case CTX_REL_CURVE_TO_REL_LINE_TO:
-    case CTX_REL_CURVE_TO_REL_MOVE_TO:
-    case CTX_REL_QUAD_TO_REL_QUAD_TO:
-      return CTX_S8;
-#endif
-    case CTX_DATA:
-    case CTX_DATA_REV:
-    case CTX_DEFINE_GLYPH:
-    case CTX_GLYPH:
-      return CTX_U32;
-    case CTX_KERNING_PAIR:
-      return CTX_U16;
-    case CTX_FLUSH:
-    case CTX_FILL:
-    case CTX_CLIP:
-    case CTX_SAVE:
-    case CTX_RESTORE:
-    case CTX_NEW_PATH:
-    case CTX_CLOSE_PATH:
-    case CTX_IDENTITY:
-    case CTX_CLEAR:
-    case CTX_STROKE:
-    case CTX_NOP:
-    case CTX_GRADIENT_CLEAR:
-    case CTX_EXIT:
-      return CTX_VOID;
-
-    case CTX_REPEAT_HISTORY:
-      return CTX_U32;
-
-    //case CTX_SETPNG:
-  }
- return 0;
-}
-
-static inline void
-ctx_entry_print (CtxState *state, CtxEntry *entry, void *data)
-{
-  //if(ctx_command_name (entry->code))
-  //  ctx_log( "%s", ctx_command_name (entry->code));
-  //else
-    ctx_log( "[%i / %c]", entry->code, entry->code);
-
-  switch (ctx_datatype_for_code (entry->code))
-  {
-    case CTX_VOID:
-      break;
-    case CTX_FLOAT:
-     for (int n = 0; n < 2; n++)
-       ctx_log( " %f", entry->data.f[n]);
-     break;
-    case CTX_U32:
-     for (int n = 0; n < 2; n++)
-       ctx_log( " %lu", (long unsigned int)entry->data.u32[n]);
-     break;
-    case CTX_S32:
-     for (int n = 0; n < 2; n++)
-       ctx_log( " %d", (int)entry->data.s32[n]);
-     break;
-    case CTX_U16:
-     for (int n = 0; n < 4; n++)
-       ctx_log( " %d", entry->data.u16[n]);
-     break;
-    case CTX_S16:
-     for (int n = 0; n < 4; n++)
-       ctx_log( " %d", entry->data.s16[n]);
-     break;
-    case CTX_U8:
-     for (int n = 0; n < 8; n++)
-       ctx_log( " %d", entry->data.u8[n]);
-     break;
-    case CTX_S8:
-     for (int n = 0; n < 8; n++)
-       ctx_log( " %i", entry->data.s8[n]);
-     break;
-  }
-  ctx_log( "\n");
-}
-
-static inline void
-ctx_do_cb (Ctx *ctx, int do_history,
-           void (*cb)(CtxState *state, CtxEntry *entry, void *data),
-           void *data)
-{
-  CtxIterator iterator;
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
-                                                       CTX_ITERATOR_EXPAND_BITPACK);
-  CtxEntry *entry;
-  while ((entry = ctx_iterator_next(&iterator)))
-  {
-    cb (&ctx->state, entry, data);
-  }
-}
-#endif
-
 #if CTX_FONT_ENGINE_STB
 
 static int
@@ -8171,7 +8039,19 @@ void
 ctx_text (Ctx        *ctx,
           const char *string)
 {
+#if 1
   _ctx_text (ctx, string, 0);
+#else
+  int stringlen = strlen (string);
+  CtxEntry commands[1 + 2 + stringlen/8];
+  memset (commands, 0, sizeof (commands));
+  commands[0] = ctx_f(CTX_TEXT, 0, 0);
+  commands[1].code = CTX_DATA;
+  commands[1].data.u32[0] = stringlen;
+  commands[1].data.u32[1] = stringlen/9+1;
+  strcpy ((char*)&commands[2].data.u8[0], string);
+  ctx_process (ctx, commands);
+#endif
 }
 
 void
@@ -8816,6 +8696,14 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         break;
 
       case CTX_TEXT:
+        fprintf (stream, "text [%s]\n",
+                    (char*)&entry[2].data.u8[0]);
+        break;
+      case CTX_SET_FONT:
+        fprintf (stream, "set_font [%s]\n",
+                    (char*)&entry[2].data.u8[0]);
+        break;
+
       case CTX_CONT:
       case CTX_EDGE:
       case CTX_DATA:
@@ -9472,6 +9360,11 @@ static void ctxp_dispatch_command (CtxP *ctxp)
     case CTX_ROTATE:
         ctx_rotate (ctx, ctxp->numbers[0]);
         break;
+
+    case CTX_SET_FONT:
+        ctx_set_font (ctx, (char*)ctxp->holding);
+        break;
+
     case CTX_TEXT:
         if (ctxp->n_numbers == 1)
           ctx_rel_move_to (ctx, -ctxp->numbers[0], 0.0);  //  XXX : scale by font(size)
@@ -9508,9 +9401,6 @@ static void ctxp_dispatch_command (CtxP *ctxp)
           free (copy);
         }
         ctxp->command = CTX_TEXT;
-        break;
-    case CTX_SET_FONT:
-        ctx_set_font (ctx, (char*)ctxp->holding);
         break;
     case CTX_REL_LINE_TO:
         ctx_rel_line_to (ctx , ctxp->numbers[0], ctxp->numbers[1]);
