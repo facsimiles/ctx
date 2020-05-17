@@ -557,53 +557,53 @@ typedef enum
   // for instance for svg compatibility or simulated/converted color spaces
   // not the serialization/internal render stream
   CTX_FLUSH            = 0,
-  CTX_ARC_TO           = 'A', // %
+  CTX_ARC_TO           = 'A', // SVG %
   CTX_ARC              = 'B',
-  CTX_CURVE_TO         = 'C', // float x, y, followed by two ; with rest of coords
+  CTX_CURVE_TO         = 'C', // SVG float x, y, followed by two ; with rest of coords
   CTX_RESTORE          = 'D',
   CTX_STROKE           = 'E',
   CTX_FILL             = 'F',
   CTX_SET_GLOBAL_ALPHA = 'G',
-  CTX_HOR_LINE_TO      = 'H', // %
+  CTX_HOR_LINE_TO      = 'H', // SVG %
   CTX_COMPOSITING_MODE = 'I',
   CTX_ROTATE           = 'J', // float
   CTX_SET_COLOR        = 'K', // u8
-  CTX_LINE_TO          = 'L', // float x, y
-  CTX_MOVE_TO          = 'M', // float x, y
+  CTX_LINE_TO          = 'L', // SVG float x, y
+  CTX_MOVE_TO          = 'M', // SVG float x, y
   CTX_SET_FONT_SIZE    = 'N',
   CTX_SCALE            = 'O', // float, float
-  CTX_NEW_PAGE         = 'P', // NYI, float, float
-  CTX_QUAD_TO          = 'Q',
-  CTX_MEDIA_BOX        = 'R', //%
-  CTX_SMOOTH_TO        = 'S', //%
-  CTX_SMOOTHQ_TO       = 'T', //%
+  CTX_NEW_PAGE         = 'P', // NYI
+  CTX_QUAD_TO          = 'Q', // SVG
+  CTX_MEDIA_BOX        = 'R', //
+  CTX_SMOOTH_TO        = 'S', // SVG %
+  CTX_SMOOTHQ_TO       = 'T', // SVG %
   CTX_CLEAR            = 'U',
-  CTX_VER_LINE_TO      = 'V', // %
+  CTX_VER_LINE_TO      = 'V', // SVG %
   CTX_SET_LINE_CAP     = 'W',
   CTX_EXIT             = 'X',
-  CTX_SET_COLOR_MODEL  = 'Y', // %
+  CTX_SET_COLOR_MODEL  = 'Y', //
   // Z - SVG?
-  CTX_REL_ARC_TO       = 'a', // %
+  CTX_REL_ARC_TO       = 'a', // SVG %
   CTX_CLIP             = 'b',
-  CTX_REL_CURVE_TO     = 'c', // float x, y, followed by two ; with rest of coords
+  CTX_REL_CURVE_TO     = 'c', // SVG 
   CTX_SAVE             = 'd',
   CTX_TRANSLATE        = 'e', // float, float
   CTX_LINEAR_GRADIENT  = 'f',
   CTX_GLYPH            = 'g', // unichar, fontsize
-  CTX_REL_HOR_LINE_TO  = 'h', // %
+  CTX_REL_HOR_LINE_TO  = 'h', // SVG %
   CTX_TEXTURE          = 'i',
   CTX_SET_LINE_JOIN    = 'j',
   CTX_FILL_RULE        = 'k',
-  CTX_REL_LINE_TO      = 'l', // float x, y
-  CTX_REL_MOVE_TO      = 'm', // float x, y
+  CTX_REL_LINE_TO      = 'l', // SVG
+  CTX_REL_MOVE_TO      = 'm', // SVG
   CTX_SET_FONT         = 'n', // as used by text parser
   CTX_RADIAL_GRADIENT  = 'o',
   CTX_GRADIENT_STOP    = 'p',
   CTX_REL_QUAD_TO      = 'q',
   CTX_RECTANGLE        = 'r',
-  CTX_REL_SMOOTH_TO    = 's', // %
-  CTX_REL_SMOOTHQ_TO   = 't', // %
-  CTX_STROKE_TEXT      = 'u', // %
+  CTX_REL_SMOOTH_TO    = 's', // SVG
+  CTX_REL_SMOOTHQ_TO   = 't', // SVG
+  CTX_STROKE_TEXT      = 'u', //
   CTX_REL_VER_LINE_TO  = 'v',
   CTX_LINE_WIDTH       = 'w',
   CTX_TEXT             = 'x', // x, y - followed by "" in CTX_DATA
@@ -6703,6 +6703,10 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
       ctx_renderer_stroke (renderer);
       break;
 
+    case CTX_SET_FONT:
+      //ctx_renderer_text (renderer, "foo");
+      break;
+
     case CTX_TEXT:
       ctx_renderer_text (renderer, "foo");
       break;
@@ -7423,8 +7427,9 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 
     ctx_renderstream_add_entry (&ctx->renderstream, entry);
 
-#if 0
-    if (entry->code == CTX_LOAD_IMAGE)
+#if 1
+    if (entry->code == CTX_TEXT ||
+        entry->code == CTX_SET_FONT)
     {
       /* the image command and its data is submitted as one unit,
        */
