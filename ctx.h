@@ -630,6 +630,7 @@ typedef enum
   CTX_DATA_REV         = ')', // reverse traversal data marker
   CTX_DEFINE_GLYPH     = '@',
   CTX_KERNING_PAIR     = '[',
+  CTX_SET_PIXEL        = '-',
 
   /* optimizations that reduce the number of entries used,
    * not visible outside the draw-stream compression -
@@ -647,7 +648,6 @@ typedef enum
   CTX_FILL_MOVE_TO              = '7',
   CTX_REL_QUAD_TO_REL_QUAD_TO   = '8',
   CTX_REL_QUAD_TO_S16           = '9',
-  CTX_SET_PIXEL                 = '-',
 #endif
 
 } CtxCode;
@@ -1528,9 +1528,8 @@ ctx_iterator_next (CtxIterator *iterator)
 
     case CTX_TEXT:
     case CTX_SET_FONT:
-      iterator->bitpack_command[0] = ret[0];
-      iterator->bitpack_command[1] = ret[1];
-      iterator->bitpack_command[2] = ret[2];
+      for (int i = 0; i < 6; i++)
+        iterator->bitpack_command[i] = ret[i];
       iterator->bitpack_pos = 0;
       iterator->bitpack_length = 3;
       goto again;
@@ -3036,6 +3035,7 @@ ctx_user_to_device_distance (CtxState *state, float *x, float *y)
 
 #if CTX_BITPACK_PACKER
 
+#if CTX_BITPACK
 static float
 find_max_dev (CtxEntry *entry, int nentrys)
 {
@@ -3068,7 +3068,9 @@ pack_s16_args (CtxEntry *entry, int npairs)
     for (int d = 0; d < 2; d++)
       entry[0].data.s16[c*2+d]=entry[c].data.f[d] * CTX_SUBDIV;
 }
+#endif
 
+#if CTX_BITPACK
 static void
 ctx_renderstream_remove_tiny_curves (CtxRenderstream *renderstream, int start_pos)
 {
@@ -3098,10 +3100,12 @@ ctx_renderstream_remove_tiny_curves (CtxRenderstream *renderstream, int start_po
     }
   }
 }
+#endif
 
 static void
 ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
 {
+#if CTX_BITPACK
   int i = 0;
 
   if ((renderstream->flags & CTX_TRANSFORMATION_BITPACK) == 0)
@@ -3289,8 +3293,7 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
   int source = renderstream->bitpack_pos;
   int target = renderstream->bitpack_pos;
   int removed = 0;
-#if 1
-  /* remove all nops that have been inserted as part of shortenings
+  /* remove nops that have been inserted as part of shortenings
    */
   while (source < renderstream->count)
   {
@@ -3310,9 +3313,9 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
     target ++;
   }
   renderstream->count -= removed;
-#endif
 
   renderstream->bitpack_pos = renderstream->count;
+#endif
 }
 
 #endif
@@ -8055,6 +8058,7 @@ ctx_text (Ctx        *ctx,
   commands[1].data.u32[0] = stringlen;
   commands[1].data.u32[1] = stringlen/9+1;
   strcpy ((char*)&commands[2].data.u8[0], string);
+  ((char*)(&commands[2].data.u8[0]))[stringlen]=0;
   ctx_process (ctx, commands);
 #endif
 }
@@ -9477,6 +9481,7 @@ static void ctxp_dispatch_command (CtxP *ctxp)
 static void ctxp_holding_append (CtxP *ctxp, int byte)
 {
   ctxp->holding[ctxp->pos++]=byte;
+  ctxp->holding[ctxp->pos]=0;
   if (ctxp->pos > sizeof(ctxp->holding)-2)
     ctxp->pos = sizeof(ctxp->holding)-2;
 }
