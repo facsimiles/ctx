@@ -1528,10 +1528,14 @@ ctx_iterator_next (CtxIterator *iterator)
 
     case CTX_TEXT:
     case CTX_SET_FONT:
-      for (int i = 0; i < 6; i++)
-        iterator->bitpack_command[i] = ret[i];
       iterator->bitpack_pos = 0;
       iterator->bitpack_length = 3;
+
+      iterator->bitpack_pos += (ctx_conts_for_entry (ret) + 1);
+      iterator->bitpack_length = 0;
+      return ret;
+
+      ///
       goto again;
 
     case CTX_TEXTURE:
@@ -8047,7 +8051,7 @@ void
 ctx_text (Ctx        *ctx,
           const char *string)
 {
-#if 1
+#if 2
   _ctx_text (ctx, string, 0);
 #else
   int stringlen = strlen (string);
@@ -8570,6 +8574,26 @@ ctx_print_entry_u8 (FILE *stream, CtxEntry *entry, int args)
 }
 
 static void
+ctx_print_escaped_string (FILE *stream, const char *string)
+{
+  if (!string | !stream) return;
+  for (int i = 0; string[i]; i++)
+  {
+    switch (string[i])
+    {
+      case '"':
+        fprintf (stream, "\\\"");
+        break;
+      case '\\':
+        fprintf (stream, "\\\\");
+        break;
+      default:
+        fprintf (stream, "%c", string[i]);
+    }
+  }
+}
+
+static void
 ctx_print_entry (FILE *stream, CtxEntry *entry, int args)
 {
   fprintf (stream, "%c", entry->code);
@@ -8705,12 +8729,10 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         break;
 
       case CTX_TEXT:
-        fprintf (stream, "text [%s]\n",
-                    (char*)&entry[2].data.u8[0]);
-        break;
       case CTX_SET_FONT:
-        fprintf (stream, "set_font [%s]\n",
-                    (char*)&entry[2].data.u8[0]);
+        fprintf (stream, "%c\"", entry->code);
+        ctx_print_escaped_string (stream, (char*)&entry[2].data.u8[0]);
+        fprintf (stream, "\"");
         break;
 
       case CTX_CONT:
