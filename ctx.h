@@ -48,6 +48,8 @@ extern "C" {
 #define CTX_RASTERIZER 1
 #endif
 
+#define BACKEND_TEXT 0
+
 /* vertical level of supersampling at full/forced AA.
  *
  * 1 is none, 2 is faster, 3 is fast 5 is good 15 is best for 8bit  32 is
@@ -1113,10 +1115,22 @@ struct _Ctx {
   CtxBuffer         texture[CTX_MAX_TEXTURES];
 };
 
+
 typedef struct _CtxFont CtxFont;
+
+typedef struct _CtxFontEngine CtxFontEngine;
+
+struct _CtxFontEngine
+{
+   CtxFont *(*load_file)   (const char *name, const char *path);
+   CtxFont *(*load_memory) (const char *name, const char *data, int length);
+   float (*glyph_width)    (CtxFont *font, int unichar);
+   float (*glyph_kern)     (CtxFont *font, int unicharA, int unicharB);
+};
 
 struct _CtxFont
 {
+  CtxFontEngine *engine;
   const char *name;
   int type; // 0 ctx    1 stb    2 monobitmap
   union {
@@ -2034,10 +2048,11 @@ void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data)
 }
 #endif
 
+
 void
 ctx_set_font (Ctx *ctx, const char *name)
 {
-#if 0
+#if BACKEND_TEXT
   int namelen = strlen (name);
   CtxEntry commands[1 + 2 + namelen/8];
   memset (commands, 0, sizeof (commands));
@@ -6071,6 +6086,12 @@ ctx_renderer_text (CtxRenderer *renderer, const char *string)
   fprintf (stderr, "should render text [%s]\n", string);
 }
 
+static inline void
+ctx_renderer_set_font (CtxRenderer *renderer, const char *string)
+{
+  fprintf (stderr, "should set font [%s]\n", string);
+}
+
 static void
 ctx_renderer_arc (CtxRenderer *renderer,
                   float        x,
@@ -6711,11 +6732,12 @@ ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
       break;
 
     case CTX_SET_FONT:
-      //ctx_renderer_text (renderer, "foo");
+
+      ctx_renderer_set_font (renderer, (char*)&entry[2].data.u8[0]);
       break;
 
     case CTX_TEXT:
-      ctx_renderer_text (renderer, "foo");
+      ctx_renderer_text (renderer, (char*)&entry[2].data.u8[0]);
       break;
 
     case CTX_PAINT:
@@ -7449,6 +7471,9 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 
 /****  end of engine ****/
 
+
+
+
 #if CTX_FONT_ENGINE_STB
 
 static int
@@ -7633,6 +7658,7 @@ ctx_utf8_to_unichar (const char *input)
   return 0;
 }
 
+
 #if CTX_FONT_ENGINE_STB
 
 static inline float
@@ -7773,17 +7799,16 @@ ctx_glyph_width_ctx (Ctx *ctx, CtxFont *font, int unichar)
   return 0.0;
 }
 
-
 static inline int
 ctx_glyph_ctx (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
 {
   CtxState *state = &ctx->state;
   CtxIterator iterator;
   CtxRenderstream  renderstream = {(CtxEntry*)font->ctx.data,
-                              font->ctx.length,
-          font->ctx.length, 0, 0
+                                              font->ctx.length,
+                                              font->ctx.length, 0, 0
 #if CTX_FULL_CB
-                  ,0,0,0
+                                              ,0,0,0
 #endif
   };
 
@@ -8051,9 +8076,7 @@ void
 ctx_text (Ctx        *ctx,
           const char *string)
 {
-#if 2
-  _ctx_text (ctx, string, 0);
-#else
+#if BACKEND_TEXT
   int stringlen = strlen (string);
   CtxEntry commands[1 + 2 + stringlen/8];
   memset (commands, 0, sizeof (commands));
@@ -8064,6 +8087,8 @@ ctx_text (Ctx        *ctx,
   strcpy ((char*)&commands[2].data.u8[0], string);
   ((char*)(&commands[2].data.u8[0]))[stringlen]=0;
   ctx_process (ctx, commands);
+#else
+  _ctx_text (ctx, string, 0);
 #endif
 }
 
@@ -8586,6 +8611,9 @@ ctx_print_escaped_string (FILE *stream, const char *string)
         break;
       case '\\':
         fprintf (stream, "\\\\");
+        break;
+      case '\n':
+        fprintf (stream, "\\n");
         break;
       default:
         fprintf (stream, "%c", string[i]);
