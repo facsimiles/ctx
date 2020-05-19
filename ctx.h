@@ -547,7 +547,7 @@ float
 ctx_glyph_width (Ctx *ctx, int unichar);
 
 
-int   ctx_load_font_ttf (const char *name, const uint8_t *ttf_contents);
+int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 int   ctx_load_font_ttf_file (const char *name, const char *path);
 
 int ctx_get_renderstream_count (Ctx *ctx);
@@ -1122,10 +1122,11 @@ typedef struct _CtxFontEngine CtxFontEngine;
 
 struct _CtxFontEngine
 {
-   CtxFont *(*load_file)   (const char *name, const char *path);
-   CtxFont *(*load_memory) (const char *name, const char *data, int length);
-   float (*glyph_width)    (CtxFont *font, int unichar);
-   float (*glyph_kern)     (CtxFont *font, int unicharA, int unicharB);
+   int   (*load_file)   (const char *name, const char *path);
+   int   (*load_memory) (const char *name, const void *data, int length);
+   int   (*glyph)       (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke);
+   float (*glyph_width) (CtxFont *font, Ctx *ctx, uint32_t unichar);
+   float (*glyph_kern)  (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB);
 };
 
 struct _CtxFont
@@ -1542,15 +1543,8 @@ ctx_iterator_next (CtxIterator *iterator)
 
     case CTX_TEXT:
     case CTX_SET_FONT:
-      iterator->bitpack_pos = 0;
-      iterator->bitpack_length = 3;
-
-      iterator->bitpack_pos += (ctx_conts_for_entry (ret) + 1);
       iterator->bitpack_length = 0;
       return ret;
-
-      ///
-      goto again;
 
     case CTX_TEXTURE:
       iterator->bitpack_command[0] = ret[0];
@@ -7471,15 +7465,10 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 
 /****  end of engine ****/
 
-
-
-
-#if CTX_FONT_ENGINE_STB
-
 static int
-file_get_contents (const char     *path,
-                   unsigned char **contents,
-                   long           *length)
+_ctx_file_get_contents (const char     *path,
+                        unsigned char **contents,
+                        long           *length)
 {
   FILE *file;
   long  size;
@@ -7516,39 +7505,6 @@ file_get_contents (const char     *path,
   buffer[size] = 0;
   return 0;
 }
-
-int
-ctx_load_font_ttf (const char *name, const uint8_t *ttf_contents)
-{
-  if (ctx_font_count >= CTX_MAX_FONTS)
-    return -1;
-  ctx_fonts[ctx_font_count].type = 1;
-  ctx_fonts[ctx_font_count].name = (char*)malloc (strlen (name) + 1);
-  strcpy ((char*)ctx_fonts[ctx_font_count].name, name);
-  if (!stbtt_InitFont(&ctx_fonts[ctx_font_count].stb.ttf_info, ttf_contents, 0))
-    {
-      ctx_log( "Font init failed\n");
-      return -1;
-    }
-  ctx_font_count ++;
-  return ctx_font_count-1;
-}
-
-int
-ctx_load_font_ttf_file (const char *name, const char *path)
-{
-  uint8_t *contents = NULL;
-  long length = 0;
-  file_get_contents (path, &contents, &length);
-  if (!contents)
-  {
-    ctx_log( "File load failed\n");
-    return -1;
-  }
-  return ctx_load_font_ttf (name, contents);
-}
-
-#endif
 
 
 static inline int ctx_utf8_len (const unsigned char first_byte)
@@ -7658,12 +7614,59 @@ ctx_utf8_to_unichar (const char *input)
   return 0;
 }
 
-
 #if CTX_FONT_ENGINE_STB
+static float
+ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar);
+static float
+ctx_glyph_kern_stb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB);
+static inline int
+ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke);
+
+CtxFontEngine ctx_font_engine_stb = {
+   ctx_load_font_ttf_file,
+   ctx_load_font_ttf,
+   ctx_glyph_stb,
+   ctx_glyph_width_stb,
+   ctx_glyph_kern_stb,
+};
+
+
+int
+ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
+{
+  if (ctx_font_count >= CTX_MAX_FONTS)
+    return -1;
+  ctx_fonts[ctx_font_count].type = 1;
+  ctx_fonts[ctx_font_count].name = (char*)malloc (strlen (name) + 1);
+  strcpy ((char*)ctx_fonts[ctx_font_count].name, name);
+  if (!stbtt_InitFont(&ctx_fonts[ctx_font_count].stb.ttf_info, ttf_contents, 0))
+    {
+      ctx_log( "Font init failed\n");
+      return -1;
+    }
+  ctx_fonts[ctx_font_count].engine = &ctx_font_engine_stb;
+  ctx_font_count ++;
+  return ctx_font_count-1;
+}
+
+int
+ctx_load_font_ttf_file (const char *name, const char *path)
+{
+  uint8_t *contents = NULL;
+  long length = 0;
+  _ctx_file_get_contents (path, &contents, &length);
+  if (!contents)
+  {
+    ctx_log( "File load failed\n");
+    return -1;
+  }
+  return ctx_load_font_ttf (name, contents, length);
+}
 
 static inline float
-ctx_glyph_width_stb (Ctx *ctx, stbtt_fontinfo *ttf_info, int unichar)
+ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
+  stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
   float font_size = ctx->state.gstate.font_size;
   float scale = stbtt_ScaleForPixelHeight (ttf_info, font_size);
   int advance, lsb;
@@ -7672,16 +7675,18 @@ ctx_glyph_width_stb (Ctx *ctx, stbtt_fontinfo *ttf_info, int unichar)
 }
 
 static inline float
-ctx_glyph_kern_stb (Ctx *ctx, stbtt_fontinfo *ttf_info, int unicharA, int unicharB)
+ctx_glyph_kern_stb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
 {
+  stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
   float font_size = ctx->state.gstate.font_size;
   float scale = stbtt_ScaleForPixelHeight (ttf_info, font_size);
   return stbtt_GetCodepointKernAdvance (ttf_info, unicharA, unicharB) * scale;
 }
 
 static inline int
-ctx_glyph_stb (Ctx *ctx, stbtt_fontinfo *ttf_info, uint32_t unichar, int stroke)
+ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
+  stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
   if (stbtt_FindGlyphIndex (ttf_info, unichar)==0)
     return -1;
 
@@ -7736,7 +7741,7 @@ ctx_glyph_stb (Ctx *ctx, stbtt_fontinfo *ttf_info, uint32_t unichar, int stroke)
 #if CTX_FONT_ENGINE_CTX
 
 static inline float
-ctx_glyph_kern_ctx (Ctx *ctx, CtxFont *font, int unicharA, int unicharB)
+ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
 {
   float font_size = ctx->state.gstate.font_size;
   if (font->ctx.first_kern == -1)
@@ -7781,7 +7786,7 @@ static int ctx_font_find_glyph (CtxFont *font, uint32_t glyph)
 }
 
 static inline float
-ctx_glyph_width_ctx (Ctx *ctx, CtxFont *font, int unichar)
+ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
   CtxState *state = &ctx->state;
   float font_size = state->gstate.font_size;
@@ -7800,7 +7805,7 @@ ctx_glyph_width_ctx (Ctx *ctx, CtxFont *font, int unichar)
 }
 
 static inline int
-ctx_glyph_ctx (Ctx *ctx, CtxFont *font, uint32_t unichar, int stroke)
+ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxState *state = &ctx->state;
   CtxIterator iterator;
@@ -7876,7 +7881,7 @@ uint32_t ctx_glyph_no (Ctx *ctx, int no)
 
 static void ctx_font_init_ctx (CtxFont *font)
 {
-  /* XXX : it would be better if we baked the index into the
+  /* XXX : it would be better if we baked the index into the font/file?
              */
   int glyph_count = 0;
   for (int i = 0; i < font->ctx.length; i++)
@@ -7906,6 +7911,19 @@ static void ctx_font_init_ctx (CtxFont *font)
 }
 
 int
+ctx_load_font_ctx (const char *name, const void *data, int length);
+int
+ctx_load_font_ctx_file (const char *name, const char *path);
+
+CtxFontEngine ctx_font_engine_ctx = {
+   ctx_load_font_ctx_file,
+   ctx_load_font_ctx,
+   ctx_glyph_ctx,
+   ctx_glyph_width_ctx,
+   ctx_glyph_kern_ctx,
+};
+
+int
 ctx_load_font_ctx (const char *name, const void *data, int length)
 {
   if (length % sizeof(CtxEntry))
@@ -7917,69 +7935,51 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
   ctx_fonts[ctx_font_count].ctx.data = (CtxEntry*)data;
   ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
   ctx_font_init_ctx (&ctx_fonts[ctx_font_count]);
+  ctx_fonts[ctx_font_count].engine = &ctx_font_engine_ctx;
   ctx_font_count++;
   return ctx_font_count-1;
 }
 
+int
+ctx_load_font_ctx_file (const char *name, const char *path)
+{
+  uint8_t *contents = NULL;
+  long length = 0;
+  _ctx_file_get_contents (path, &contents, &length);
+  if (!contents)
+  {
+    ctx_log( "File load failed\n");
+    return -1;
+  }
+  return ctx_load_font_ctx (name, contents, length);
+}
 #endif
 
 int
 ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxState *state = &ctx->state;
-
-  // !stroke and if font-size < 50 ensure we've got a cache of this glyph
-  //    then fill through that mask/rle image with implicit aa
-
-  switch (ctx_fonts[state->gstate.font].type)
-  {
-#if CTX_FONT_ENGINE_CTX
-    case 0:
-
-    return ctx_glyph_ctx (ctx, &ctx_fonts[state->gstate.font], unichar, stroke);
-#endif
-#if CTX_FONT_ENGINE_STB
-    case 1:
-      return ctx_glyph_stb (ctx, &ctx_fonts[state->gstate.font].stb.ttf_info, unichar, stroke);
-#endif
-  }
-  return -1;
+  return ctx_fonts[state->gstate.font].engine->glyph (
+             &ctx_fonts[state->gstate.font], ctx,
+             unichar, stroke);
 }
 
 float
 ctx_glyph_width (Ctx *ctx, int unichar)
 {
   CtxState *state = &ctx->state;
-  switch (ctx_fonts[state->gstate.font].type)
-  {
-#if CTX_FONT_ENGINE_CTX
-    case 0:
-      return ctx_glyph_width_ctx (ctx, &ctx_fonts[state->gstate.font], unichar);
-#endif
-#if CTX_FONT_ENGINE_STB
-    case 1:
-      return ctx_glyph_width_stb (ctx, &ctx_fonts[state->gstate.font].stb.ttf_info, unichar);
-#endif
-  }
-  return 0.0;
+  return ctx_fonts[state->gstate.font].engine->glyph_width (
+             &ctx_fonts[state->gstate.font], ctx,
+             unichar);
 }
 
 static inline float
 ctx_glyph_kern (Ctx *ctx, int unicharA, int unicharB)
 {
   CtxState *state = &ctx->state;
-  switch (ctx_fonts[state->gstate.font].type)
-  {
-#if CTX_FONT_ENGINE_CTX
-    case 0:
-      return ctx_glyph_kern_ctx (ctx, &ctx_fonts[state->gstate.font], unicharA, unicharB);
-#endif
-#if CTX_FONT_ENGINE_STB
-    case 1:
-      return ctx_glyph_kern_stb (ctx, &ctx_fonts[state->gstate.font].stb.ttf_info, unicharA, unicharB);
-#endif
-  }
-  return 0.0;
+  return ctx_fonts[state->gstate.font].engine->glyph_kern (
+             &ctx_fonts[state->gstate.font], ctx,
+             unicharA, unicharB);
 }
 
 float
@@ -7995,10 +7995,10 @@ ctx_text_width (Ctx        *ctx,
 }
 
 static void
-_ctx_glyphs (Ctx        *ctx,
-            CtxGlyph   *glyphs,
-            int         n_glyphs,
-            int         stroke)
+_ctx_glyphs (Ctx     *ctx,
+            CtxGlyph *glyphs,
+            int       n_glyphs,
+            int       stroke)
 {
   for (int i = 0; i < n_glyphs; i++)
     {
