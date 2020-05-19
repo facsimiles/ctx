@@ -48,7 +48,7 @@ extern "C" {
 #define CTX_RASTERIZER 1
 #endif
 
-#define BACKEND_TEXT 0
+#define BACKEND_TEXT 1
 
 /* vertical level of supersampling at full/forced AA.
  *
@@ -2059,6 +2059,11 @@ void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data)
 }
 #endif
 
+void
+_ctx_set_font (Ctx *ctx, const char *name)
+{
+  ctx->state.gstate.font = ctx_resolve_font (name);
+}
 
 void
 ctx_set_font (Ctx *ctx, const char *name)
@@ -2074,7 +2079,7 @@ ctx_set_font (Ctx *ctx, const char *name)
   strcpy ((char*)&commands[2].data.u8[0], name);
   ctx_process (ctx, commands);
 #else
-  ctx->state.gstate.font = ctx_resolve_font (name);
+  _ctx_set_font (ctx, name);
 #endif
 }
 
@@ -6091,16 +6096,22 @@ ctx_renderer_fill (CtxRenderer *renderer)
   }
 }
 
+static void
+_ctx_text (Ctx        *ctx,
+           const char *string,
+           int         stroke);
 static inline void
 ctx_renderer_text (CtxRenderer *renderer, const char *string)
 {
-  fprintf (stderr, "should render text [%s]\n", string);
+  _ctx_text (renderer->ctx, string, 0 );
 }
 
+void
+_ctx_set_font (Ctx *ctx, const char *name);
 static inline void
-ctx_renderer_set_font (CtxRenderer *renderer, const char *string)
+ctx_renderer_set_font (CtxRenderer *renderer, const char *font_name)
 {
-  fprintf (stderr, "should set font [%s]\n", string);
+  _ctx_set_font (renderer->ctx, font_name);
 }
 
 static void
