@@ -6621,8 +6621,9 @@ ctx_renderer_set_pixel (CtxRenderer *renderer,
 }
 
 static void
-ctx_renderer_process (CtxRenderer *renderer, CtxEntry *entry)
+ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
 {
+  CtxRenderer *renderer = ctx->renderer;
   //fprintf (stderr, "%c(%.1f %.1f %i)", entry->code, renderer->x,renderer->y, renderer->has_prev);
   switch (entry->code)
   {
@@ -7404,8 +7405,14 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
                                                   CTX_ITERATOR_EXPAND_BITPACK);
 
 
+  /* this is not re-entrant, a different way of permitting
+   * renderer to use itself as ctx target is needed via some hook
+   * in ctx_process()
+   */
+  ctx->renderer = renderer;
   while ((entry = ctx_iterator_next(&iterator)))
-    ctx_renderer_process (renderer, entry);
+    ctx_renderer_process (ctx, entry);
+  ctx->renderer = NULL;
 
   ctx_renderer_deinit (renderer);
   free (renderer);
@@ -7453,7 +7460,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 #if CTX_RASTERIZER
   if (ctx->renderer)
   {
-    ctx_renderer_process (ctx->renderer, entry);
+    ctx_renderer_process (ctx, entry);
   }
   else
 #endif
