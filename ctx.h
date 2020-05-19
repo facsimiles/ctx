@@ -48,7 +48,9 @@ extern "C" {
 #define CTX_RASTERIZER 1
 #endif
 
-#define BACKEND_TEXT 1
+#ifndef CTX_BACKEND_TEXT
+#define CTX_BACKEND_TEXT 1
+#endif
 
 /* vertical level of supersampling at full/forced AA.
  *
@@ -2068,7 +2070,7 @@ _ctx_set_font (Ctx *ctx, const char *name)
 void
 ctx_set_font (Ctx *ctx, const char *name)
 {
-#if BACKEND_TEXT
+#if CTX_BACKEND_TEXT
   int namelen = strlen (name);
   CtxEntry commands[1 + 2 + namelen/8];
   memset (commands, 0, sizeof (commands));
@@ -6103,7 +6105,7 @@ _ctx_text (Ctx        *ctx,
 static inline void
 ctx_renderer_text (CtxRenderer *renderer, const char *string)
 {
-  _ctx_text (renderer->ctx, string, 0 );
+  _ctx_text (renderer->ctx, string, 0);
 }
 
 void
@@ -7990,11 +7992,22 @@ ctx_load_font_ctx_file (const char *name, const char *path)
 }
 #endif
 
+
 int
-ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
+_ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
   return font->engine->glyph (font, ctx, unichar, stroke);
+}
+
+int
+ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
+{
+#if CTX_BACKEND_TEXT
+  return 0;
+#else
+  return _ctx_glyph (ctx, unichar, stroke);
+#endif
 }
 
 float
@@ -8061,7 +8074,7 @@ _ctx_text (Ctx        *ctx,
       {
         uint32_t unichar = ctx_utf8_to_unichar (utf8);
         ctx_move_to (ctx, x, y);
-        ctx_glyph (ctx, unichar, stroke);
+        _ctx_glyph (ctx, unichar, stroke);
         const char *next_utf8 = ctx_utf8_skip (utf8, 1);
         if (next_utf8)
         {
@@ -8105,7 +8118,7 @@ void
 ctx_text (Ctx        *ctx,
           const char *string)
 {
-#if BACKEND_TEXT
+#if CTX_BACKEND_TEXT
   int stringlen = strlen (string);
   CtxEntry commands[1 + 2 + stringlen/8];
   memset (commands, 0, sizeof (commands));
