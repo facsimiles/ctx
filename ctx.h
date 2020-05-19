@@ -654,6 +654,21 @@ typedef enum
 
 } CtxCode;
 
+typedef enum {
+  CTX_GRAY   = 1,
+  CTX_GRAYA = 101,
+  CTX_GRAYA_A = 201,
+  CTX_RGB   = 3,
+  CTX_RGBA  = 103,
+  CTX_RGBA_A  = 203,
+  CTX_CMYK  = 4,
+  CTX_CMYKA = 104,
+  CTX_CMYKA_A = 204,
+  CTX_LAB   = 5,
+  CTX_LABA = 105,
+  CTX_LCH   = 6,
+  CTX_LCHA  = 106,
+} CtxColorModel;
 
 typedef struct _CtxEntry CtxEntry;
 
@@ -924,6 +939,7 @@ struct _CtxSource
     } color;
     struct {
       uint8_t rgba[4]; // shares data with set color
+      uint8_t pad;
       float x0;
       float y0;
       CtxBuffer *buffer;
@@ -951,14 +967,15 @@ struct _CtxSource
 };
 
 struct _CtxGState {
-  CtxMatrix    transform;
+  CtxMatrix     transform;
 //CtxSource    source_stroke;
-  CtxSource    source;
+  CtxSource     source;
+  CtxColorModel color_model;
 //define source_stroke source
 
-  float        line_width;
-  float        font_size;
-  float        line_spacing;
+  float         line_width;
+  float         font_size;
+  float         line_spacing;
 
   /* bitfield-pack all the small state-parts */
   CtxCompositingMode compositing_mode:2;
@@ -1106,11 +1123,11 @@ struct _CtxPixelFormatInfo
 #endif
 
 struct _Ctx {
-  CtxRenderstream   renderstream;
-  CtxState          state;
 #if CTX_RASTERIZER
   CtxRenderer      *renderer;
 #endif
+  CtxRenderstream   renderstream;
+  CtxState          state;
   int               transformation;
   CtxBuffer         texture[CTX_MAX_TEXTURES];
 };
@@ -7958,28 +7975,22 @@ ctx_load_font_ctx_file (const char *name, const char *path)
 int
 ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
-  CtxState *state = &ctx->state;
-  return ctx_fonts[state->gstate.font].engine->glyph (
-             &ctx_fonts[state->gstate.font], ctx,
-             unichar, stroke);
+  CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
+  return font->engine->glyph (font, ctx, unichar, stroke);
 }
 
 float
 ctx_glyph_width (Ctx *ctx, int unichar)
 {
-  CtxState *state = &ctx->state;
-  return ctx_fonts[state->gstate.font].engine->glyph_width (
-             &ctx_fonts[state->gstate.font], ctx,
-             unichar);
+  CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
+  return font->engine->glyph_width (font, ctx, unichar);
 }
 
 static inline float
 ctx_glyph_kern (Ctx *ctx, int unicharA, int unicharB)
 {
-  CtxState *state = &ctx->state;
-  return ctx_fonts[state->gstate.font].engine->glyph_kern (
-             &ctx_fonts[state->gstate.font], ctx,
-             unicharA, unicharB);
+  CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
+  return font->engine->glyph_kern (font, ctx, unicharA, unicharB);
 }
 
 float
@@ -8906,21 +8917,6 @@ void ctxp_free (CtxP *ctxp)
 }
 
 static void ctxp_set_color_model (CtxP *ctxp, int color_model);
-enum {
-  CTX_GRAY   = 1,
-  CTX_GRAYA = 101,
-  CTX_GRAYA_A = 201,
-  CTX_RGB   = 3,
-  CTX_RGBA  = 103,
-  CTX_RGBA_A  = 203,
-  CTX_CMYK  = 4,
-  CTX_CMYKA = 104,
-  CTX_CMYKA_A = 204,
-  CTX_LAB   = 5,
-  CTX_LABA = 105,
-  CTX_LCH   = 6,
-  CTX_LCHA  = 106,
-} CtxColorModel;
 
 static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str)
 {
