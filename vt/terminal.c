@@ -29,6 +29,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
+#define CTX_BACKEND_TEXT         1
 #define CTXP                     1
 #define CTX_BITPACK_PACKER       0
 #define CTX_GRADIENT_CACHE       1

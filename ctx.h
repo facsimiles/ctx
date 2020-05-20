@@ -877,6 +877,7 @@ static inline float ctx_fast_hypotf (float x, float y)
 #define ctx_arg_s16(no)   entry[(no)>>2].data.s16[(no)&3]
 #define ctx_arg_u8(no)    entry[(no)>>3].data.u8[(no)&7]
 #define ctx_arg_s8(no)    entry[(no)>>3].data.s8[(no)&7]
+#define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
 
 typedef struct _CtxRenderer CtxRenderer;
 typedef struct _CtxGState CtxGState;
@@ -6076,7 +6077,6 @@ ctx_renderer_fill (CtxRenderer *renderer)
     }
     }
 
-
     if (shape->uses != 0)
     {
       ctx_renderer_reset (renderer);
@@ -6098,14 +6098,22 @@ ctx_renderer_fill (CtxRenderer *renderer)
   }
 }
 
+static int _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke);
+static inline void
+ctx_renderer_glyph (CtxRenderer *renderer, uint32_t unichar, int stroke)
+{
+  _ctx_glyph (renderer->ctx, unichar, stroke);
+}
+
 static void
 _ctx_text (Ctx        *ctx,
            const char *string,
-           int         stroke);
+           int         stroke,
+           int         visible);
 static inline void
 ctx_renderer_text (CtxRenderer *renderer, const char *string)
 {
-  _ctx_text (renderer->ctx, string, 0);
+  _ctx_text (renderer->ctx, string, 0, 1);
 }
 
 void
@@ -6633,6 +6641,7 @@ ctx_renderer_set_pixel (CtxRenderer *renderer,
 #endif
 }
 
+
 static void
 ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
 {
@@ -6707,8 +6716,7 @@ ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
 
 #if 0
     case CTX_LOAD_IMAGE:
-      ctx_renderer_load_image (renderer,
-                    (char*)&entry[2].data.u8[0],
+      ctx_renderer_load_image (renderer, ctx_arg_string(),
                     ctx_arg_float(0), ctx_arg_float(1));
       break;
 #endif
@@ -6758,11 +6766,15 @@ ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
 
     case CTX_SET_FONT:
 
-      ctx_renderer_set_font (renderer, (char*)&entry[2].data.u8[0]);
+      ctx_renderer_set_font (renderer, ctx_arg_string());
       break;
 
     case CTX_TEXT:
-      ctx_renderer_text (renderer, (char*)&entry[2].data.u8[0]);
+      ctx_renderer_text (renderer, ctx_arg_string());
+      break;
+
+    case CTX_GLYPH:
+      ctx_renderer_glyph (renderer, entry[0].data.u32[0], entry[0].data.u8[4]);
       break;
 
     case CTX_PAINT:
@@ -8004,7 +8016,12 @@ int
 ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
 #if CTX_BACKEND_TEXT
-  return 0;
+  CtxEntry commands[1];
+  memset (commands, 0, sizeof (commands));
+  commands[0] = ctx_u32(CTX_GLYPH, unichar, 0);
+  commands[0].data.u8[4] = stroke;
+  ctx_process (ctx, commands);
+  return 0; // XXX is return value used?
 #else
   return _ctx_glyph (ctx, unichar, stroke);
 #endif
@@ -8055,12 +8072,12 @@ _ctx_glyphs (Ctx     *ctx,
 static void
 _ctx_text (Ctx        *ctx,
            const char *string,
-           int         stroke)
+           int         stroke,
+           int         visible)
 {
   CtxState *state = &ctx->state;
   float x = ctx->state.x;
   float y = ctx->state.y;
-  //x = ctx_ceilf (x);
   float x0 = x;
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
     {
@@ -8068,23 +8085,31 @@ _ctx_text (Ctx        *ctx,
       {
         y += ctx->state.gstate.font_size * state->gstate.line_spacing;
         x = x0; 
-        ctx_move_to (ctx, x, y);
+        if (visible)
+          ctx_move_to (ctx, x, y);
       }
       else
       {
         uint32_t unichar = ctx_utf8_to_unichar (utf8);
-        ctx_move_to (ctx, x, y);
-        _ctx_glyph (ctx, unichar, stroke);
+        if (visible)
+        {
+          ctx_move_to (ctx, x, y);
+          _ctx_glyph (ctx, unichar, stroke);
+        }
         const char *next_utf8 = ctx_utf8_skip (utf8, 1);
         if (next_utf8)
         {
           x += ctx_glyph_width (ctx, unichar);
           x += ctx_glyph_kern (ctx, unichar, ctx_utf8_to_unichar (next_utf8));
         }
-        ctx_move_to (ctx, x, y);
+        if (visible)
+          ctx_move_to (ctx, x, y);
       }
     }
+  if (!visible)
+    ctx_move_to (ctx, x, y);
 }
+
 
 CtxGlyph *
 ctx_glyph_allocate (int n_glyphs)
@@ -8129,8 +8154,9 @@ ctx_text (Ctx        *ctx,
   strcpy ((char*)&commands[2].data.u8[0], string);
   ((char*)(&commands[2].data.u8[0]))[stringlen]=0;
   ctx_process (ctx, commands);
+  _ctx_text (ctx, string, 0, 0);
 #else
-  _ctx_text (ctx, string, 0);
+  _ctx_text (ctx, string, 0, 1);
 #endif
 }
 
@@ -8138,7 +8164,7 @@ void
 ctx_text_stroke (Ctx        *ctx,
                  const char *string)
 {
-  _ctx_text (ctx, string, 1);
+  _ctx_text (ctx, string, 1, 1);
 }
 
 #if CTX_CAIRO
@@ -8401,12 +8427,15 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
             cairo_pattern_destroy (pat);
             pat = NULL;
           }
-          image = cairo_image_surface_create_from_png ((char*)&entry[2].data.u8[0]);
+          image = cairo_image_surface_create_from_png (ctx_arg_string());
           cairo_set_source_surface (cr, image, ctx_arg_float(0), ctx_arg_float(1));
         }
         break;
 #endif
       case CTX_TEXT:
+         /* XXX: implement some linebreaking/wrap behavior here */
+         cairo_show_text (cr, ctx_arg_string ());
+        break;
 
       case CTX_CONT:
       case CTX_EDGE:
@@ -8434,7 +8463,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
   CtxEntry   *entry;
 
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
-                                                  CTX_ITERATOR_EXPAND_BITPACK);
+                     CTX_ITERATOR_EXPAND_BITPACK);
 
   while ((entry = ctx_iterator_next (&iterator)))
   {
@@ -8616,6 +8645,11 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         break;
 
       case CTX_TEXT:
+         ctx_text (d_ctx, ctx_arg_string ());
+        break;
+      case CTX_GLYPH:
+         ctx_glyph (d_ctx, ctx_arg_u32(0), ctx_arg_u8(4));
+        break;
       case CTX_CONT:
       case CTX_EDGE:
       case CTX_DATA:
@@ -8775,18 +8809,9 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         break;
 
       case CTX_SET_LINE_CAP:
-        ctx_print_entry_u8 (stream, entry, 1);
-        //ctx_set_line_cap (d_ctx, (CtxLineCap)ctx_arg_u8(0)); //YYY
-        break;
-
       case CTX_SET_LINE_JOIN:
-        ctx_print_entry_u8 (stream, entry, 1);
-        //ctx_set_line_join (d_ctx, (CtxLineJoin)ctx_arg_u8(0));//YYY
-        break;
-
       case CTX_COMPOSITING_MODE:
         ctx_print_entry_u8 (stream, entry, 1);
-        //ctx_set_compositing_mode (d_ctx, (CtxLineJoin)ctx_arg_u8(0));
         break;
 
       case CTX_GRADIENT_STOP:
@@ -8800,8 +8825,9 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
 
       case CTX_TEXT:
       case CTX_SET_FONT:
+
         fprintf (stream, "%c\"", entry->code);
-        ctx_print_escaped_string (stream, (char*)&entry[2].data.u8[0]);
+        ctx_print_escaped_string (stream, ctx_arg_string());
         fprintf (stream, "\"");
         break;
 
@@ -9471,7 +9497,7 @@ static void ctxp_dispatch_command (CtxP *ctxp)
              * implicit ones from move_to's .. making move_to work within
              * margins.
              */
-            ctx_text (ctx, c);
+            _ctx_text (ctx, c, 0, 1);
 
             if (next_nl)
             {
