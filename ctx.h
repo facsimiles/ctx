@@ -439,7 +439,6 @@ void ctx_paint          (Ctx *ctx);
 void
 ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-//void ctx_set_gradient_no     (Ctx *ctx, int no);
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
 void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
                                     float x1, float y1, float r1);
@@ -618,10 +617,9 @@ typedef enum
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
   //
-  // unused:  . , : backslash ! # $ % ^ = { } < > ? 
+  // unused:  . , : backslash ! # $ % ^ = { } < > ? &
   CTX_SET_RGBA         = '*', // u8
   CTX_PAINT            = '~',
-  CTX_GRADIENT_NO      = '&',
   CTX_GRADIENT_CLEAR   = '/',
   CTX_NOP              = ' ',
   CTX_NEW_EDGE         = '+',
@@ -935,7 +933,6 @@ struct _CtxSource
   int type;
   CtxMatrix  transform;
   uint8_t    global_alpha;
-  uint8_t    gradient_no;
   union {
     struct {
       uint8_t rgba[4];
@@ -2804,13 +2801,6 @@ void ctx_set_gray_stroke (Ctx *ctx, float gray)
 #endif
 
 void
-ctx_set_gradient_no (Ctx *ctx, int no)
-{
-  CtxEntry entry = ctx_s32 (CTX_GRADIENT_NO, no, 0);
-  ctx_process (ctx, &entry);
-}
-
-void
 ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1)
 {
   CtxEntry command[2]={
@@ -3009,9 +2999,6 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.source.transform = state->gstate.transform;
         ctx_matrix_inverse (&state->gstate.source.transform);
       }
-      break;
-    case CTX_GRADIENT_NO:
-      state->gstate.source.gradient_no = ctx_arg_u8(0);
       break;
   }
 }
@@ -4229,13 +4216,6 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
   return id;
 }
 
-static void
-ctx_renderer_set_gradient_no (CtxRenderer *renderer, int no)
-{
-  if (no < 0 || no >= CTX_MAX_GRADIENTS) no = 0;
-  renderer->state->gstate.source.gradient_no = no;
-}
-
 #if CTX_GRADIENT_CACHE
 static void
 ctx_gradient_cache_reset (void);
@@ -4244,13 +4224,13 @@ ctx_gradient_cache_reset (void);
 static void
 ctx_renderer_gradient_clear_stops(CtxRenderer *renderer)
 {
-  renderer->state->gradient[renderer->state->gstate.source.gradient_no].n_stops = 0;
+  renderer->state->gradient[0].n_stops = 0;
 }
 
 static void
 ctx_renderer_gradient_add_stop (CtxRenderer *renderer, float pos, uint8_t *rgba)
 {
-  CtxGradient *gradient = &renderer->state->gradient[renderer->state->gstate.source.gradient_no];
+  CtxGradient *gradient = &renderer->state->gradient[0];
 
   CtxGradientStop *stop = &gradient->stops[gradient->n_stops];
   stop->pos = pos;
@@ -4980,7 +4960,7 @@ ctx_sample_gradient_1d_u8 (CtxRenderer *renderer, float v, uint8_t *rgba)
 {
   /* caching a 512 long gradient - and sampling with nearest neighbor
      will be much faster.. */
-  CtxGradient *g = &renderer->state->gradient[renderer->state->gstate.source.gradient_no];
+  CtxGradient *g = &renderer->state->gradient[0];
 
   if (v < 0) v = 0;
   if (v > 1) v = 1;
@@ -6721,13 +6701,6 @@ ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
       break;
 #endif
 
-    case CTX_GRADIENT_NO:
-      ctx_renderer_set_gradient_no (renderer, entry[0].data.u8[0]);
-#if CTX_GRADIENT_CACHE
-      ctx_gradient_cache_reset();
-#endif
-      break;
-
     case CTX_GRADIENT_CLEAR:
       ctx_renderer_gradient_clear_stops (renderer);
 #if CTX_GRADIENT_CACHE
@@ -8433,8 +8406,8 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
         break;
 #endif
       case CTX_TEXT:
-         /* XXX: implement some linebreaking/wrap behavior here */
-         cairo_show_text (cr, ctx_arg_string ());
+        /* XXX: implement some linebreaking/wrap behavior here */
+        cairo_show_text (cr, ctx_arg_string ());
         break;
 
       case CTX_CONT:
@@ -8467,8 +8440,19 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
   while ((entry = ctx_iterator_next (&iterator)))
   {
-    switch (entry->code)
+    switch ((CtxCode)(entry->code))
     {
+      case CTX_ARC_TO:
+        ctx_arc_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
+                           ctx_arg_float(1), ctx_arg_float(2),
+                           ctx_arg_float(3));
+        break;
+      case CTX_REL_ARC_TO:
+        ctx_rel_arc_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
+                               ctx_arg_float(1), ctx_arg_float(2),
+                               ctx_arg_float(3));
+        break;
+
       case CTX_LINE_TO:
         ctx_line_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
         break;
@@ -8519,6 +8503,9 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
       case CTX_ROTATE:
         ctx_rotate (d_ctx, ctx_arg_float(0));
+        break;
+      case CTX_SET_GLOBAL_ALPHA:
+        ctx_set_global_alpha (d_ctx, ctx_arg_float(0));
         break;
 
       case CTX_SCALE:
@@ -8577,6 +8564,12 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       case CTX_STROKE:
         ctx_stroke (d_ctx);
         break;
+      case CTX_CLEAR:
+        ctx_clear (d_ctx);
+        break;
+      case CTX_NEW_PAGE:
+        //ctx_new_page (d_ctx);
+        break;
 
       case CTX_IDENTITY:
         ctx_identity_matrix (d_ctx);
@@ -8604,6 +8597,10 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
       case CTX_SET_FONT_SIZE:
         ctx_set_font_size (d_ctx, ctx_arg_float(0));
+        break;
+
+      case CTX_FILL_RULE:
+        ctx_set_fill_rule (d_ctx, (CtxFillRule)ctx_arg_u8(0));
         break;
 
       case CTX_SET_LINE_CAP:
@@ -8644,6 +8641,9 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
           ctx_arg_u8(7)/255.0);
         break;
 
+      case CTX_SET_FONT:
+         ctx_set_font (d_ctx, ctx_arg_string ());
+        break;
       case CTX_TEXT:
          ctx_text (d_ctx, ctx_arg_string ());
         break;
