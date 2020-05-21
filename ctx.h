@@ -8440,7 +8440,8 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
   while ((entry = ctx_iterator_next (&iterator)))
   {
-    switch ((CtxCode)(entry->code))
+    //switch ((CtxCode)(entry->code))
+    switch (entry->code)
     {
       case CTX_ARC_TO:
         ctx_arc_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
