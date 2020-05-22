@@ -610,7 +610,7 @@ typedef enum
   CTX_RECTANGLE        = 'r',
   CTX_REL_SMOOTH_TO    = 's', // SVG
   CTX_REL_SMOOTHQ_TO   = 't', // SVG
-  CTX_STROKE_TEXT      = 'u', //
+  CTX_TEXT_STROKE      = 'u', //
   CTX_REL_VER_LINE_TO  = 'v',
   CTX_LINE_WIDTH       = 'w',
   CTX_TEXT             = 'x', // x, y - followed by "" in CTX_DATA
@@ -8142,7 +8142,21 @@ void
 ctx_text_stroke (Ctx        *ctx,
                  const char *string)
 {
+#if CTX_BACKEND_TEXT
+  int stringlen = strlen (string);
+  CtxEntry commands[1 + 2 + stringlen/8];
+  memset (commands, 0, sizeof (commands));
+  commands[0] = ctx_f(CTX_TEXT, 0, 0);
+  commands[1].code = CTX_DATA;
+  commands[1].data.u32[0] = stringlen;
+  commands[1].data.u32[1] = stringlen/9+1;
+  strcpy ((char*)&commands[2].data.u8[0], string);
+  ((char*)(&commands[2].data.u8[0]))[stringlen]=0;
+  ctx_process (ctx, commands);
+  _ctx_text (ctx, string, 1, 0);
+#else
   _ctx_text (ctx, string, 1, 1);
+#endif
 }
 
 #if CTX_CAIRO
@@ -9155,8 +9169,8 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str)
     case STR('r','e','l','_','s','m','o','o','t','h','_','q'):
     case 't': ctxp->n_args = 2; return CTX_REL_SMOOTHQ_TO;
 
-    case STR('s','t','r','o','k','e','_','t','e','x','t', 0):
-    case 'u': ctxp->n_args = 100; return CTX_STROKE_TEXT;
+    case STR('t','e','x','t','_','s','t','r','o','k','e', 0):
+    case 'u': ctxp->n_args = 100; return CTX_TEXT_STROKE;
 
     case STR('r','e','l','_','v','e','r','_','l','i','n','e'):
     case 'v': ctxp->n_args = 1;
@@ -9290,8 +9304,8 @@ void ctxp_get_color (CtxP *ctxp, int offset, float *red, float *green, float *bl
       *red = *green = *blue = ctxp->numbers[offset + 0];
     break;
     default:
-    case CTX_LABA: // NYI
-    case CTX_LCHA: // NYI
+    case CTX_LABA: // NYI - needs RGB profile
+    case CTX_LCHA: // NYI - needs RGB profile
     case CTX_RGBA:
       *alpha = ctxp->numbers[offset + 3];
     case CTX_LAB: // NYI
@@ -9397,8 +9411,8 @@ static void ctxp_dispatch_command (CtxP *ctxp)
           ctx_quad_to (ctx, ctxp->pcx, ctxp->pcy, ctxp->numbers[0] +  cx, ctxp->numbers[1] + cy);
         }
         break;
-    case CTX_STROKE_TEXT:
-        ctx_text_stroke (ctx, (char*)ctxp->holding);
+    case CTX_TEXT_STROKE:
+        _ctx_text (ctx, (void*)ctxp->holding, 1, 1);
         break;
     case CTX_VER_LINE_TO: ctx_line_to (ctx, ctx_x (ctx), ctxp->numbers[0]); ctxp->command = CTX_VER_LINE_TO;
         ctxp->pcx = ctx_x (ctx);
