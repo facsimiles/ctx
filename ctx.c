@@ -11,6 +11,9 @@
 // since it has the biggest need for tuning
 #include "ctx.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 // ctx should be a busy box like wrapper
 // for mmm-terminal, ctx ascii-to-ctx converter
 // ctx-to-ascii converter
@@ -143,8 +146,8 @@ int main (int argc, char **argv)
 {
   const char *source_path = NULL;
   const char *dest_path = NULL;
-  int width = 640;
-  int height = 480;
+  int width = 320;
+  int height = 320;
   int cols = 80;
   int rows = 24;
 
@@ -500,6 +503,19 @@ int main (int argc, char **argv)
          printf ("\n");
        }
      }
+  }
+
+  if (!strcmp (get_suffix (dest_path), ".png"))
+  {
+     int stride = width * 4;
+     uint8_t pixels[stride*height];
+
+     Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBA8);
+     memset (pixels, 0, sizeof (pixels));
+     ctx_render_ctx (ctx, dctx);
+     ctx_free (dctx);
+
+     stbi_write_png (dest_path, width, height, 4, pixels, stride);
   }
 
   ctx_free (ctx);
