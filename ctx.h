@@ -8835,7 +8835,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         break;
 
       case CTX_GRADIENT_STOP:
-        fprintf (stream, "%c%.3f %3.f %.3f %.3f %.3f\n", entry->code,
+        fprintf (stream, "%c%.3f %.3f %.3f %.3f %.3f\n", entry->code,
           ctx_arg_float(0),
           ctx_arg_u8(4)/255.0,
           ctx_arg_u8(5)/255.0,
@@ -8900,10 +8900,10 @@ static void ctx_setup ()
   ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
 #endif
 #if DEJAVU_SANS_MONO
-  ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf);
+  ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf, ttf_DejaVuSansMono_ttf_len);
 #endif
 #if DEJAVU_SANS
-  ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf);
+  ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf, ttf_DejaVuSans_ttf_len);
 #endif
 }
 
@@ -9607,9 +9607,9 @@ static void ctxp_dispatch_command (CtxP *ctxp)
 static void ctxp_holding_append (CtxP *ctxp, int byte)
 {
   ctxp->holding[ctxp->pos++]=byte;
-  ctxp->holding[ctxp->pos]=0;
   if (ctxp->pos > sizeof(ctxp->holding)-2)
     ctxp->pos = sizeof(ctxp->holding)-2;
+  ctxp->holding[ctxp->pos]=0;
 }
 
 void ctxp_feed_byte (CtxP *ctxp, int byte)
@@ -9860,7 +9860,8 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
             ctxp_holding_append (ctxp, byte);
             break;
       }
-      if (ctxp->state != CTX_STRING1)
+      if (ctxp->state != CTX_STRING1 &&
+          ctxp->state != CTX_STRING1_ESCAPED)
       {
         ctxp_dispatch_command (ctxp);
       }
@@ -9910,7 +9911,8 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
             ctxp_holding_append (ctxp, byte);
             break;
       }
-      if (ctxp->state != CTX_STRING2)
+      if (ctxp->state != CTX_STRING2 &&
+          ctxp->state != CTX_STRING2_ESCAPED)
       {
         ctxp_dispatch_command (ctxp);
       }
