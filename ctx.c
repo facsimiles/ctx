@@ -68,9 +68,9 @@ int help_main (int argc, char **argv)
 {
   if (argc &&  argv){};
   printf ("Usage: ctx [command [command args]]\n\n"
-	  "where command is one of:\n"
-	  " vt    - virtual terminal, running ctx with no args\n    also launches a terminal\n"
-	  " parse - parse ascii, and generate ctx on stdout\n");
+          "where command is one of:\n"
+          " vt    - virtual terminal, running ctx with no args\n    also launches a terminal\n"
+          " parse - parse ascii, and generate ctx on stdout\n");
   return 0;
 }
 
@@ -194,6 +194,19 @@ int main (int argc, char **argv)
       }
     }
   }
+  if (dest_path)
+  {
+  if (!strcmp (dest_path, "1bit"))
+  {
+     width = 158; height = 120; cols = width/6; rows = height / 2;
+  }
+  if (!strcmp (dest_path, "2bit") ||
+      !strcmp (dest_path, "4bit") ||
+      !strcmp (dest_path, "8bit"))
+  {
+     width = 72; height = 24; cols = width/3; rows = height/3;
+  }
+  }
   
 #if 0
   fprintf (stderr, "%s [%s]\n", source_path, get_suffix (source_path));
@@ -222,6 +235,10 @@ int main (int argc, char **argv)
        free (contents);
      }
   }
+  else
+  {
+     fprintf (stderr, "unhandled input suffix\n");exit(-1);
+  }
 
   if (!dest_path)
   {
@@ -229,11 +246,150 @@ int main (int argc, char **argv)
      exit (0);
   }
 
+  if (!strcmp (dest_path, "1bit"))
+  {
+    int reverse = 0;
+    int stride = width/8+(width%8?:0);
+    uint8_t pixels[stride*height];
+    Ctx *dctx = ctx_new_for_framebuffer (&pixels[0],
+                                         width, height, stride,
+                                         CTX_FORMAT_GRAY1);
+    memset (pixels, 0, sizeof (pixels));
+    ctx_render_ctx (ctx, dctx);
+    ctx_free (dctx);
+    for (int row = 0; row < height/4; row++)
+    {
+      for (int col = 0; col < width /2; col++)
+      {
+        int unicode = 0;
+        int bitno = 0;
+        for (int x = 0; x < 2; x++)
+          for (int y = 0; y < 3; y++)
+          {
+            int no = (row * 4 + y) * stride + (col*2+x)/8;
+            int set = pixels[no] & (1<< ((col * 2 + x) % 8));
+            if (reverse) set = !set;
+             if (set)
+               unicode |=  (1<<(bitno));
+            bitno++;
+          }
+        {
+           int x = 0; int y = 3;
+           int no = (row * 4 + y) * stride + (col*2+x)/8;
+           int setA = pixels[no] & (1<< ((col * 2 + x) % 8));
+           no = (row * 4 + y) * stride + (col*2+x+1)/8;
+           int setB = pixels[no] & (1<< (   (col * 2 + x + 1) % 8));
+           if (reverse) setA = !setA;
+           if (reverse) setB = !setB;
+           if (setA != 0 && setB==0)
+             unicode += 0x2840;
+           else if (setA == 0 && setB)
+             unicode += 0x2880;
+           else if ((setA != 0) && (setB != 0))
+             unicode += 0x28C0;
+           else
+             unicode += 0x2800;
+          uint8_t utf8[5];
+          utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
+          printf ("%s", utf8);
+        }
+      }
+      printf ("\n");
+    }
+  }
+
+  if (!strcmp (dest_path, "2bit"))
+  {
+     int reverse = 1;
+     int stride = width/4;
+     uint8_t pixels[stride*height];
+     static char *utf8_gray_scale[]={" ","░","▓","█", NULL};
+
+     Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAY2);
+     memset (pixels, 0, sizeof (pixels));
+     ctx_render_ctx (ctx, dctx);
+     ctx_free (dctx);
+
+    int no = 0;
+    for (int y= 0; y < height; y++)
+    {
+      no = y * stride;
+      for (int x = 0; x < width; x++)
+      {
+        int val = (pixels[no] & (3 << ((x % 4)*2)) ) >> ((x%4)*2);
+        if (reverse)
+          printf ("%s", utf8_gray_scale[val]);
+        else
+          printf ("%s", utf8_gray_scale[3-val]);
+        if ((x % 4) == 3)
+          no++;
+      }
+      printf ("\n");
+    }
+  }
+
+  if (!strcmp (dest_path, "4bit"))
+  {
+     int reverse = 1;
+     int stride = width/2;
+     uint8_t pixels[stride*height];
+     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
+
+     Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAY4);
+     memset (pixels, 0, sizeof (pixels));
+     ctx_render_ctx (ctx, dctx);
+     ctx_free (dctx);
+
+    int no = 0;
+    for (int y= 0; y < height; y++)
+    {
+      no = y * stride;
+      for (int x = 0; x < width; x++)
+      {
+        int val = (pixels[no] & (15 << ((x % 2)*4)) ) >> ((x%2)*4);
+        val = val * 6 / 16;
+        if (reverse)val = 5-val;
+          val = CTX_CLAMP(val, 0, 4);
+        printf ("%s", utf8_gray_scale[val]);
+        if (x % 2 == 1)
+          no++;
+      }
+      printf ("\n");
+    }
+  }
+
+  if (!strcmp (dest_path, "8bit"))
+  {
+     int reverse = 1;
+     int stride = width;
+     uint8_t pixels[stride*height];
+     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
+
+     Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAY8);
+     memset (pixels, 0, sizeof (pixels));
+     ctx_render_ctx (ctx, dctx);
+     ctx_free (dctx);
+
+     int no = 0;
+     for (int y= 0; y < height; y++)
+     {
+       for (int x = 0; x < width; x++, no++)
+       {
+          int val = (int)CTX_CLAMP(pixels[no]/255.0*6.0, 0, 5);
+          if (reverse)
+            val = 5-val;
+          printf ("%s", utf8_gray_scale[val]);
+       }
+       printf ("\n");
+    }
+  }
+
   ctx_free (ctx);
   exit (0);
 
   if (!strcmp (argv[1], "parse"))
     return parse_main (argc - 1, argv + 1);
+
   if (!strcmp (argv[1], "--help"))
     return help_main (argc - 1, argv + 1);
 

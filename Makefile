@@ -4,7 +4,7 @@ check:
 	make -C tests check
 
 test-renderpaths: test-renderpaths.c ctx.h fonts/*.h Makefile
-	gcc $< -o $@ -g -O2 `pkg-config mrg --cflags --libs` -Ifonts 
+	gcc $< -o $@ -g -ofast-math -O3 -march=native `pkg-config mrg --cflags --libs` -Ifonts 
 
 clean:
 	rm -f test-renderpaths ctx ctx.asan ctx.O1

@@ -48,8 +48,10 @@ extern "C" {
 #define CTX_RASTERIZER 1
 #endif
 
+/* experimental feature, not fully working - where text rendering happens
+ * closer to rasterizer. Positions are screwed up in playback  */
 #ifndef CTX_BACKEND_TEXT
-#define CTX_BACKEND_TEXT 1
+#define CTX_BACKEND_TEXT 0
 #endif
 
 /* vertical level of supersampling at full/forced AA.
@@ -486,6 +488,8 @@ ctx_add_single (Ctx *ctx, void *entry);
 
 uint32_t
 ctx_utf8_to_unichar (const char *input);
+int ctx_unichar_to_utf8 (uint32_t  ch,
+                         uint8_t  *dest);
 
 typedef enum
 {
@@ -715,11 +719,12 @@ CtxP *ctxp_new (
 void ctxp_free (CtxP *ctxp);
 void ctxp_feed_byte (CtxP *ctxp, int byte);
 
+#define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
+
 #ifdef CTX_IMPLEMENTATION
 
 #define CTX_MAX(a,b) ((a)>(b)?(a):(b))
 #define CTX_MIN(a,b) ((a)<(b)?(a):(b))
-#define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
 
 #define ctx_pow2(a) ((a)*(a))
 
@@ -8853,7 +8858,7 @@ static void ctx_setup ()
 #if CTX_FONT_ENGINE_CTX
   ctx_font_count = 0; // oddly - this is needed in arduino
 #if CTX_FONT_regular
-  ctx_load_font_ctx ("regular-ctx", ctx_font_regular, sizeof (ctx_font_regular));
+  ctx_load_font_ctx ("sans-ctx", ctx_font_regular, sizeof (ctx_font_regular));
 #endif
 #if CTX_FONT_mono
   ctx_load_font_ctx ("mono-ctx", ctx_font_mono, sizeof (ctx_font_mono));
@@ -8881,10 +8886,10 @@ static void ctx_setup ()
   ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
 #endif
 #if DEJAVU_SANS_MONO
-  ctx_load_font_ttf ("mono-ttf", ttf_DejaVuSansMono_ttf);
+  ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf);
 #endif
 #if DEJAVU_SANS
-  ctx_load_font_ttf ("regular-ttf", ttf_DejaVuSans_ttf);
+  ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf);
 #endif
 }
 
@@ -8980,6 +8985,9 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str)
 {
   uint32_t str_hash = 0;
 
+  if (str[0] == 'c' && str[1] == 't' && str[2] == 'x' && str[3] == '_')
+    str += 4;
+
   /* we hash strings to numbers */
   {
     int multiplier = 1;
@@ -9061,7 +9069,7 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str)
     case STR('q','u','a','d','_','t','o',0,0,0,0,0):
     case 'Q': ctxp->n_args = 4; return CTX_QUAD_TO;
 
-    case STR('m','e','d','d','i','a','_','b','o','x',0,0):
+    case STR('m','e','d','i','a','_','b','o','x',0,0,0):
     case 'R': ctxp->n_args = 4; return CTX_MEDIA_BOX;
 
     case STR('s','m','o','o','t','h','_','t','o',0,0,0):
