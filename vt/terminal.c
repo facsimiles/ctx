@@ -23,8 +23,8 @@
 #endif
 
 //#include "ctx-font-regular.h"
-#include "ctx-font-mono.h"
-//#include "DejaVuSansMono.h"
+//#include "ctx-font-mono.h"
+#include "DejaVuSansMono.h"
 //#include "DejaVuSans.h"
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"

@@ -4727,7 +4727,6 @@ static inline void ctx_renderer_sort_edges (CtxRenderer *renderer)
          sizeof (CtxEntry), ctx_compare_edges);
 }
 
-
 static inline void ctx_renderer_discard_edges (CtxRenderer *renderer)
 {
   for (int i = 0; i < renderer->active_edges; i++)
@@ -9154,7 +9153,8 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str)
 
     case STR('g','r','a','d','i','e','n','t','_','a','d','d'):
     case STR('a','d','d','_','s','t','o','p',0,0,0,0):
-    case 'p': ctxp->n_args = 5; return CTX_GRADIENT_STOP;
+    case 'p': ctxp->n_args = 1 + ctxp->color_components;
+              return CTX_GRADIENT_STOP;
 
     case STR('r','e','l','_','q','u','a','d','_','t','o',0):
     case 'q': ctxp->n_args = 4; return CTX_REL_QUAD_TO;
