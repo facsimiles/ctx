@@ -883,9 +883,9 @@ static inline float ctx_fast_hypotf (float x, float y)
 #define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
 
 typedef struct _CtxRenderer CtxRenderer;
-typedef struct _CtxGState CtxGState;
-typedef struct _CtxState CtxState;
-typedef struct _CtxMatrix CtxMatrix;
+typedef struct _CtxGState   CtxGState;
+typedef struct _CtxState    CtxState;
+typedef struct _CtxMatrix   CtxMatrix;
 struct _CtxMatrix
 {
   float m[3][2]; // use 3x3 matrix or fixed point instead?
@@ -984,7 +984,7 @@ struct _CtxGState {
 
   /* bitfield-pack all the small state-parts */
   CtxCompositingMode compositing_mode:2;
-  //CtxBlend             blend_mode:3;
+  //CtxBlend    blend_mode:3;
   CtxLineCap      line_cap:2;
   CtxLineJoin    line_join:2;
   CtxFillRule    fill_rule:1;
@@ -1050,7 +1050,6 @@ typedef struct CtxEdge {
   int32_t  dx;
   uint16_t index;
 } CtxEdge;
-
 
 struct _CtxRenderer {
   /* these should be initialized and used as the bounds for rendering into the
