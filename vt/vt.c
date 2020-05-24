@@ -2901,8 +2901,7 @@ static void vt_line_feed (VT *vt)
     vt_carriage_return (vt);
 }
 
-#include "a85.h"
-#include "base64.h"
+#include "vt-encodings.h"
 
 #if 1
 #include "vt-audio.h"

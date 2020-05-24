@@ -1,0 +1,21 @@
+{
+  "name": "ctx",
+  "version": "0.0.0",
+  "keywords": "graphics",
+  "description": "2D vector drawing context/rasterizer",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://"
+  },
+  "authors":
+  [
+    {
+        "name": "pippin",
+        "email": "pippin@gimp.org",
+        "maintainer": true
+    }
+  ],
+  "frameworks": "arduino",
+  "platforms": "espressif8266, espressif32"
+}

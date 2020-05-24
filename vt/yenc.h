@@ -29,7 +29,6 @@ static int ydec (const void *srcp, void *dstp, int count)
   return out_len;
 }
 
-
 static int yenc (const char *src, char *dst, int count)
 {
   int out_len = 0;
