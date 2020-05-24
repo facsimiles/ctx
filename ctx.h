@@ -9288,15 +9288,15 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str)
 }
 
 enum {
-  CTX_NEUTRAL = 0,
-  CTX_NUMBER,
-  CTX_NEG_NUMBER,
-  CTX_WORD,
-  CTX_COMMENT,
-  CTX_STRING1,
-  CTX_STRING2,
-  CTX_STRING1_ESCAPED,
-  CTX_STRING2_ESCAPED,
+  CTX_PARSER_NEUTRAL = 0,
+  CTX_PARSER_NUMBER,
+  CTX_PARSER_NEGATIVE_NUMBER,
+  CTX_PARSER_WORD,
+  CTX_PARSER_COMMENT,
+  CTX_PARSER_STRING_APOS,
+  CTX_PARSER_STRING_QUOT,
+  CTX_PARSER_STRING_APOS_ESCAPED,
+  CTX_PARSER_STRING_QUOT_ESCAPED,
 } CTX_STATE;
 
 static void ctxp_set_color_model (CtxP *ctxp, int color_model)
@@ -9706,7 +9706,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
 {
   switch (ctxp->state)
   {
-    case CTX_NEUTRAL:
+    case CTX_PARSER_NEUTRAL:
       switch (byte)
       {
          case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
@@ -9718,44 +9718,44 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
          case '{':case '}':
             break;
          case '#':
-            ctxp->state = CTX_COMMENT;
+            ctxp->state = CTX_PARSER_COMMENT;
             break;
          case '\'':
-            ctxp->state = CTX_STRING1;
+            ctxp->state = CTX_PARSER_STRING_APOS;
             ctxp->pos = 0;
             ctxp->holding[0] = 0;
             break;
          case '"':
-            ctxp->state = CTX_STRING2;
+            ctxp->state = CTX_PARSER_STRING_QUOT;
             ctxp->pos = 0;
             ctxp->holding[0] = 0;
             break;
          case '-':
-            ctxp->state = CTX_NEG_NUMBER;
+            ctxp->state = CTX_PARSER_NEGATIVE_NUMBER;
             ctxp->numbers[ctxp->n_numbers] = 0;
             ctxp->decimal = 0;
             break;
          case '0': case '1': case '2': case '3': case '4':
          case '5': case '6': case '7': case '8': case '9':
-            ctxp->state = CTX_NUMBER;
+            ctxp->state = CTX_PARSER_NUMBER;
             ctxp->numbers[ctxp->n_numbers] = 0;
             ctxp->numbers[ctxp->n_numbers] += (byte - '0');
             ctxp->decimal = 0;
             break;
          case '.':
-            ctxp->state = CTX_NUMBER;
+            ctxp->state = CTX_PARSER_NUMBER;
             ctxp->numbers[ctxp->n_numbers] = 0;
             ctxp->decimal = 1;
             break;
          default:
-            ctxp->state = CTX_WORD;
+            ctxp->state = CTX_PARSER_WORD;
             ctxp->pos = 0;
             ctxp_holding_append (ctxp, byte);
             break;
       }
       break;
-    case CTX_NUMBER:
-    case CTX_NEG_NUMBER:
+    case CTX_PARSER_NUMBER:
+    case CTX_PARSER_NEGATIVE_NUMBER:
       {
         int new_neg = 0;
         switch (byte)
@@ -9764,20 +9764,20 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
            case 8: case 11: case 12: case 14: case 15: case 16: case 17:
            case 18: case 19: case 20: case 21: case 22: case 23: case 24:
            case 25: case 26: case 27: case 28: case 29: case 30: case 31:
-              ctxp->state = CTX_NEUTRAL;
+              ctxp->state = CTX_PARSER_NEUTRAL;
               break;
            case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
            case '{':case '}':
-              if (ctxp->state == CTX_NEG_NUMBER)
+              if (ctxp->state == CTX_PARSER_NEGATIVE_NUMBER)
                 ctxp->numbers[ctxp->n_numbers] *= -1;
     
-              ctxp->state = CTX_NEUTRAL;
+              ctxp->state = CTX_PARSER_NEUTRAL;
               break;
            case '#':
-              ctxp->state = CTX_COMMENT;
+              ctxp->state = CTX_PARSER_COMMENT;
               break;
            case '-':
-              ctxp->state = CTX_NEG_NUMBER;
+              ctxp->state = CTX_PARSER_NEGATIVE_NUMBER;
               new_neg = 1;
               ctxp->numbers[ctxp->n_numbers+1] = 0;
               ctxp->decimal = 0;
@@ -9799,7 +9799,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
               }
               break;
            case '@': // cells
-              if (ctxp->state == CTX_NEG_NUMBER)
+              if (ctxp->state == CTX_PARSER_NEGATIVE_NUMBER)
                 ctxp->numbers[ctxp->n_numbers] *= -1;
               if (ctxp->n_numbers % 2 == 0) // even is x coord
               {
@@ -9817,10 +9817,10 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
                 ctxp->numbers[ctxp->n_numbers] =
                   (ctxp->numbers[ctxp->n_numbers]) * ctxp->cell_height;
               }
-              ctxp->state = CTX_NEUTRAL;
+              ctxp->state = CTX_PARSER_NEUTRAL;
           break;
            case '%': // percent of width/height
-              if (ctxp->state == CTX_NEG_NUMBER)
+              if (ctxp->state == CTX_PARSER_NEGATIVE_NUMBER)
                 ctxp->numbers[ctxp->n_numbers] *= -1;
               if (ctxp->n_numbers % 2 == 0) // even means x coord
               {
@@ -9832,18 +9832,18 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
                 ctxp->numbers[ctxp->n_numbers] =
                    ctxp->numbers[ctxp->n_numbers] * ((ctxp->height)/100.0);
               }
-              ctxp->state = CTX_NEUTRAL;
+              ctxp->state = CTX_PARSER_NEUTRAL;
               break;
            default:
-              if (ctxp->state == CTX_NEG_NUMBER)
+              if (ctxp->state == CTX_PARSER_NEGATIVE_NUMBER)
                 ctxp->numbers[ctxp->n_numbers] *= -1;
-              ctxp->state = CTX_WORD;
+              ctxp->state = CTX_PARSER_WORD;
               ctxp->pos = 0;
               ctxp_holding_append (ctxp, byte);
               break;
         }
-        if ((ctxp->state != CTX_NUMBER &&
-             ctxp->state != CTX_NEG_NUMBER) || new_neg)
+        if ((ctxp->state != CTX_PARSER_NUMBER &&
+             ctxp->state != CTX_PARSER_NEGATIVE_NUMBER) || new_neg)
         {
           ctxp->n_numbers ++;
           if (ctxp->n_numbers == ctxp->n_args || ctxp->n_args == 100)
@@ -9857,7 +9857,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
       }
       break;
 
-    case CTX_WORD:
+    case CTX_PARSER_WORD:
       switch (byte)
       {
          case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
@@ -9867,25 +9867,25 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
 
          case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
          case '{':case '}':
-            ctxp->state = CTX_NEUTRAL;
+            ctxp->state = CTX_PARSER_NEUTRAL;
             break;
          case '#':
-            ctxp->state = CTX_COMMENT;
+            ctxp->state = CTX_PARSER_COMMENT;
             break;
          case '-':
-            ctxp->state = CTX_NEG_NUMBER;
+            ctxp->state = CTX_PARSER_NEGATIVE_NUMBER;
             ctxp->numbers[ctxp->n_numbers] = 0;
             ctxp->decimal = 0;
             break;
          case '0': case '1': case '2': case '3': case '4':
          case '5': case '6': case '7': case '8': case '9':
-            ctxp->state = CTX_NUMBER;
+            ctxp->state = CTX_PARSER_NUMBER;
             ctxp->numbers[ctxp->n_numbers] = 0;
             ctxp->numbers[ctxp->n_numbers] += (byte - '0');
             ctxp->decimal = 0;
             break;
          case '.':
-            ctxp->state = CTX_NUMBER;
+            ctxp->state = CTX_PARSER_NUMBER;
             ctxp->numbers[ctxp->n_numbers] = 0;
             ctxp->decimal = 1;
             break;
@@ -9893,7 +9893,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
             ctxp_holding_append (ctxp, byte);
             break;
       }
-      if (ctxp->state != CTX_WORD)
+      if (ctxp->state != CTX_PARSER_WORD)
       {
         ctxp->holding[ctxp->pos]=0;
         int command = ctxp_resolve_command (ctxp, ctxp->holding);
@@ -9901,7 +9901,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
         if (command >= 0 && command < 5)
         {
           ctxp->numbers[ctxp->n_numbers] = command;
-          ctxp->state = CTX_NUMBER;
+          ctxp->state = CTX_PARSER_NUMBER;
           ctxp_feed_byte (ctxp, ',');
         }
         else if (command > 0)
@@ -9937,26 +9937,26 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
       }
       break;
 
-    case CTX_STRING1:
+    case CTX_PARSER_STRING_APOS:
       switch (byte)
       {
          case '\\':
-            ctxp->state = CTX_STRING1_ESCAPED;
+            ctxp->state = CTX_PARSER_STRING_APOS_ESCAPED;
             break;
          case '\'':
-            ctxp->state = CTX_NEUTRAL;
+            ctxp->state = CTX_PARSER_NEUTRAL;
             break;
          default:
             ctxp_holding_append (ctxp, byte);
             break;
       }
-      if (ctxp->state != CTX_STRING1 &&
-          ctxp->state != CTX_STRING1_ESCAPED)
+      if (ctxp->state != CTX_PARSER_STRING_APOS &&
+          ctxp->state != CTX_PARSER_STRING_APOS_ESCAPED)
       {
         ctxp_dispatch_command (ctxp);
       }
       break;
-    case CTX_STRING1_ESCAPED:
+    case CTX_PARSER_STRING_APOS_ESCAPED:
       switch (byte)
       {
          case '0': byte = '\0'; break;
@@ -9970,9 +9970,9 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
       }
       ctxp_holding_append (ctxp, byte);
 
-      ctxp->state = CTX_STRING1;
+      ctxp->state = CTX_PARSER_STRING_APOS;
       break;
-    case CTX_STRING2_ESCAPED:
+    case CTX_PARSER_STRING_QUOT_ESCAPED:
       switch (byte)
       {
          case '0': byte = '\0'; break;
@@ -9985,34 +9985,34 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
          default: break;
       }
       ctxp_holding_append (ctxp, byte);
-      ctxp->state = CTX_STRING2;
+      ctxp->state = CTX_PARSER_STRING_QUOT;
       break;
 
-    case CTX_STRING2:
+    case CTX_PARSER_STRING_QUOT:
       switch (byte)
       {
          case '\\':
-            ctxp->state = CTX_STRING2_ESCAPED;
+            ctxp->state = CTX_PARSER_STRING_QUOT_ESCAPED;
             break;
          case '"':
-            ctxp->state = CTX_NEUTRAL;
+            ctxp->state = CTX_PARSER_NEUTRAL;
             break;
          default:
             ctxp_holding_append (ctxp, byte);
             break;
       }
-      if (ctxp->state != CTX_STRING2 &&
-          ctxp->state != CTX_STRING2_ESCAPED)
+      if (ctxp->state != CTX_PARSER_STRING_QUOT &&
+          ctxp->state != CTX_PARSER_STRING_QUOT_ESCAPED)
       {
         ctxp_dispatch_command (ctxp);
       }
       break;
-    case CTX_COMMENT:
+    case CTX_PARSER_COMMENT:
       switch (byte)
       {
         case '\r':
         case '\n':
-          ctxp->state = CTX_NEUTRAL;
+          ctxp->state = CTX_PARSER_NEUTRAL;
         default:
           break;
       }
