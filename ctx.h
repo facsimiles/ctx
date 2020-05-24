@@ -1,6 +1,6 @@
 /* ctx - tiny footprint 2d vector rasterizer context
  *
- * Copyright (c) 2019 Øyvind Kolås <pippin@gimp.org>
+ * Copyright (c) 2019, 2020 Øyvind Kolås <pippin@gimp.org>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -1564,6 +1564,7 @@ ctx_iterator_next (CtxIterator *iterator)
       goto again;
 
     case CTX_TEXT:
+    case CTX_TEXT_STROKE:
     case CTX_SET_FONT:
       iterator->bitpack_length = 0;
       return ret;
@@ -7482,6 +7483,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 
 #if 1
     if (entry->code == CTX_TEXT ||
+        entry->code == CTX_TEXT_STROKE ||
         entry->code == CTX_SET_FONT)
     {
       /* the image command and its data is submitted as one unit,
@@ -8670,6 +8672,9 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       case CTX_TEXT:
          ctx_text (d_ctx, ctx_arg_string ());
         break;
+      case CTX_TEXT_STROKE:
+         ctx_text_stroke (d_ctx, ctx_arg_string ());
+        break;
       case CTX_GLYPH:
          ctx_glyph (d_ctx, ctx_arg_u32(0), ctx_arg_u8(4));
         break;
@@ -8721,13 +8726,10 @@ ctx_print_escaped_string (FILE *stream, const char *string)
 }
 
 static void
-ctx_print_entry (FILE *stream, CtxEntry *entry, int args)
+ctx_print_float (FILE *stream, float val)
 {
-  fprintf (stream, "%c", entry->code);
-  for (int i = 0; i <  args; i ++)
-  {
     char temp[128];
-    sprintf (temp, "%0.4f", ctx_arg_float (i));
+    sprintf (temp, "%0.5f", val);
     int j;
     for (j = 0; temp[j]; j++)
       if (j == ',') temp[j] = '.';
@@ -8739,10 +8741,21 @@ ctx_print_entry (FILE *stream, CtxEntry *entry, int args)
     }
     if (temp[j]=='.')
       temp[j]='\0';
-    if (i>0 && temp[0]!='-')
-      fprintf (stream, " ");
     fprintf (stream, "%s", temp);
+}
+
+static void
+ctx_print_entry (FILE *stream, CtxEntry *entry, int args)
+{
+  fprintf (stream, "%c", entry->code);
+  for (int i = 0; i <  args; i ++)
+  {
+    float val = ctx_arg_float (i);
+    if (i>0 && val >= 0.0f)
+      fprintf (stream, " ");
+    ctx_print_float (stream, val);
   }
+ //fprintf (stream, "\n");
 }
 
 void
@@ -8790,11 +8803,13 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         break;
 
       case CTX_SET_RGBA:
-        fprintf (stream, "rgba %.3f %.3f %.3f %.3f\n",
-                             ctx_arg_u8(0)/255.0,
-                             ctx_arg_u8(1)/255.0,
-                             ctx_arg_u8(2)/255.0,
-                             ctx_arg_u8(3)/255.0);
+        fprintf (stream, "rgba");
+        for (int c = 0; c < 4; c++)
+        {
+          if (c)
+            fprintf (stream, " ");
+          ctx_print_float (stream, ctx_arg_u8(c)/255.0);
+        }
         break;
 
 #if 0
@@ -8838,15 +8853,17 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         break;
 
       case CTX_GRADIENT_STOP:
-        fprintf (stream, "%c%.3f %.3f %.3f %.3f %.3f\n", entry->code,
-          ctx_arg_float(0),
-          ctx_arg_u8(4)/255.0,
-          ctx_arg_u8(5)/255.0,
-          ctx_arg_u8(6)/255.0,
-          ctx_arg_u8(7)/255.0);
+        fprintf (stream, "%c", entry->code);
+        for (int c = 0; c < 4; c++)
+        {
+          if (c)
+            fprintf (stream, " ");
+          ctx_print_float (stream, ctx_arg_u8(4+c)/255.0);
+        }
         break;
 
       case CTX_TEXT:
+      case CTX_TEXT_STROKE:
       case CTX_SET_FONT:
 
         fprintf (stream, "%c\"", entry->code);
@@ -9422,9 +9439,6 @@ static void ctxp_dispatch_command (CtxP *ctxp)
           ctx_quad_to (ctx, ctxp->pcx, ctxp->pcy, ctxp->numbers[0] +  cx, ctxp->numbers[1] + cy);
         }
         break;
-    case CTX_TEXT_STROKE:
-        _ctx_text (ctx, (void*)ctxp->holding, 1, 1);
-        break;
     case CTX_VER_LINE_TO: ctx_line_to (ctx, ctx_x (ctx), ctxp->numbers[0]); ctxp->command = CTX_VER_LINE_TO;
         ctxp->pcx = ctx_x (ctx);
         ctxp->pcy = ctx_y (ctx);
@@ -9511,6 +9525,7 @@ static void ctxp_dispatch_command (CtxP *ctxp)
         ctx_set_font (ctx, (char*)ctxp->holding);
         break;
 
+    case CTX_TEXT_STROKE:
     case CTX_TEXT:
         if (ctxp->n_numbers == 1)
           ctx_rel_move_to (ctx, -ctxp->numbers[0], 0.0);  //  XXX : scale by font(size)
@@ -9531,7 +9546,10 @@ static void ctxp_dispatch_command (CtxP *ctxp)
              * implicit ones from move_to's .. making move_to work within
              * margins.
              */
-            ctx_text (ctx, c);
+            if (cmd == CTX_TEXT_STROKE)
+              ctx_text_stroke (ctx, c);
+            else
+              ctx_text (ctx, c);
 
             if (next_nl)
             {
@@ -9546,7 +9564,10 @@ static void ctxp_dispatch_command (CtxP *ctxp)
           }
           free (copy);
         }
-        ctxp->command = CTX_TEXT;
+        if (cmd == CTX_TEXT_STROKE)
+          ctxp->command = CTX_TEXT_STROKE;
+        else
+          ctxp->command = CTX_TEXT;
         break;
     case CTX_REL_LINE_TO:
         ctx_rel_line_to (ctx , ctxp->numbers[0], ctxp->numbers[1]);
