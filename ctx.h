@@ -705,8 +705,8 @@ struct _CtxEntry
 #endif
 #endif
 
-typedef struct _CtxP CtxP;
-CtxP *ctxp_new (
+typedef struct _CtxParser CtxParser;
+CtxParser *ctx_parser_new (
   Ctx       *ctx,
   int        width,
   int        height,
@@ -716,8 +716,8 @@ CtxP *ctxp_new (
   int        cursor_y,
   void (*exit)(void *exit_data),
   void *exit_data);
-void ctxp_free (CtxP *ctxp);
-void ctxp_feed_byte (CtxP *ctxp, int byte);
+void ctx_parser_free (CtxParser *ctxp);
+void ctx_parser_feed_byte (CtxParser *ctxp, int byte);
 
 #define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
 
@@ -8959,7 +8959,7 @@ static void ctx_setup ()
 
 /* ctx parser, */
 
-struct _CtxP {
+struct _CtxParser {
   Ctx       *ctx;
   int        state;
   uint8_t    holding[1024];
@@ -8988,7 +8988,7 @@ struct _CtxP {
 };
 
 static void
-ctxp_init (CtxP *ctxp,
+ctx_parser_init (CtxParser *ctxp,
   Ctx       *ctx,
   int        width,
   int        height,
@@ -9018,7 +9018,7 @@ ctxp_init (CtxP *ctxp,
   ctxp->holding[ctxp->pos=0]=0;
 }
 
-CtxP *ctxp_new (
+CtxParser *ctx_parser_new (
   Ctx       *ctx,
   int        width,
   int        height,
@@ -9029,22 +9029,22 @@ CtxP *ctxp_new (
   void (*exit)(void *exit_data),
   void *exit_data)
 {
-  CtxP *ctxp = calloc (sizeof (CtxP), 1);
-  ctxp_init (ctxp, ctx,
+  CtxParser *ctxp = calloc (sizeof (CtxParser), 1);
+  ctx_parser_init (ctxp, ctx,
              width, height,
              cell_width, cell_height,
              cursor_x, cursor_y,
              exit, exit_data);
   return ctxp;
 }
-void ctxp_free (CtxP *ctxp)
+void ctx_parser_free (CtxParser *ctxp)
 {
   free (ctxp);
 }
 
-static void ctxp_set_color_model (CtxP *ctxp, int color_model);
+static void ctx_parser_set_color_model (CtxParser *ctxp, int color_model);
 
-static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str)
+static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
 {
   uint32_t str_hash = str[0];
   if (str[0] && str[1])
@@ -9150,52 +9150,52 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str)
      * instead of in the one-char handler, using return instead of break
      */
     case STR('g','r','a','y',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, CTX_GRAY);
+      ctx_parser_set_color_model (ctxp, CTX_GRAY);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('g','r','a','y','a',0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, CTX_GRAYA);
+      ctx_parser_set_color_model (ctxp, CTX_GRAYA);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('r','g','b',0,0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, CTX_RGB);
+      ctx_parser_set_color_model (ctxp, CTX_RGB);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('r','g','b','a',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, CTX_RGBA);
+      ctx_parser_set_color_model (ctxp, CTX_RGBA);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('c','m','y','k',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, CTX_CMYK);
+      ctx_parser_set_color_model (ctxp, CTX_CMYK);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('l','a','b',0,0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, CTX_LAB);
+      ctx_parser_set_color_model (ctxp, CTX_LAB);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('l','a','b','a',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, CTX_LABA);
+      ctx_parser_set_color_model (ctxp, CTX_LABA);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('l','c','h',0,0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, CTX_LCH);
+      ctx_parser_set_color_model (ctxp, CTX_LCH);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('l','c','h','a',0,0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, CTX_LCHA);
+      ctx_parser_set_color_model (ctxp, CTX_LCHA);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
     case STR('c','m','y','k','a',0,0,0,0,0,0,0):
-      ctxp_set_color_model (ctxp, 104);
+      ctx_parser_set_color_model (ctxp, 104);
       ctxp->n_args = ctxp->color_components;
       return CTX_SET_COLOR;
 
@@ -9299,7 +9299,7 @@ enum {
   CTX_PARSER_STRING_QUOT_ESCAPED,
 } CTX_STATE;
 
-static void ctxp_set_color_model (CtxP *ctxp, int color_model)
+static void ctx_parser_set_color_model (CtxParser *ctxp, int color_model)
 {
   ctxp->color_model      = color_model;
   ctxp->color_components = color_model % 100;
@@ -9307,7 +9307,7 @@ static void ctxp_set_color_model (CtxP *ctxp, int color_model)
     ctxp->color_components++;
 }
 
-static void ctxp_get_color_rgba (CtxP *ctxp, int offset, float *red, float *green, float *blue, float *alpha)
+static void ctx_parser_get_color_rgba (CtxParser *ctxp, int offset, float *red, float *green, float *blue, float *alpha)
 {
   /* this is the function that fetches colors from the input, 
    * we should here transform to the context's color-space
@@ -9349,10 +9349,10 @@ static void ctxp_get_color_rgba (CtxP *ctxp, int offset, float *red, float *gree
   }
 }
 
-void ctxp_get_color_graya (CtxP *ctxp, int offset, float *gray, float *alpha)
+void ctx_parser_get_color_graya (CtxParser *ctxp, int offset, float *gray, float *alpha)
 {
   float red, green, blue, temp_alpha;
-  ctxp_get_color_rgba (ctxp, offset, &red, &green, &blue, &temp_alpha);
+  ctx_parser_get_color_rgba (ctxp, offset, &red, &green, &blue, &temp_alpha);
   if (alpha)
   {
     *alpha = temp_alpha;
@@ -9360,7 +9360,7 @@ void ctxp_get_color_graya (CtxP *ctxp, int offset, float *gray, float *alpha)
   *gray = (red + green + blue) / 3;
 }
 
-void ctxp_get_color_cmyka (CtxP *ctxp, int offset, float *cyan, float *magenta, float *yellow, float *key, float *alpha)
+void ctx_parser_get_color_cmyka (CtxParser *ctxp, int offset, float *cyan, float *magenta, float *yellow, float *key, float *alpha)
 {
   /* this is the function that fetches colors from the input, 
    * we should here transform to the context's color-space
@@ -9414,7 +9414,7 @@ void ctxp_get_color_cmyka (CtxP *ctxp, int offset, float *cyan, float *magenta, 
   }
 }
 
-static void ctxp_dispatch_command (CtxP *ctxp)
+static void ctx_parser_dispatch_command (CtxParser *ctxp)
 {
   CtxCode cmd = ctxp->command;
   Ctx *ctx = ctxp->ctx;
@@ -9438,13 +9438,13 @@ static void ctxp_dispatch_command (CtxP *ctxp)
     case CTX_SET_COLOR:
       {
         float red, green, blue, alpha;
-        ctxp_get_color_rgba (ctxp, 0, &red, &green, &blue, &alpha);
+        ctx_parser_get_color_rgba (ctxp, 0, &red, &green, &blue, &alpha);
 
         ctx_set_rgba (ctx, red, green, blue, alpha);
       }
       break;
     case CTX_SET_COLOR_MODEL:
-      ctxp_set_color_model (ctxp, ctxp->numbers[0]);
+      ctx_parser_set_color_model (ctxp, ctxp->numbers[0]);
       break;
     case CTX_ARC_TO: 
       ctx_arc_to (ctx, 
@@ -9666,7 +9666,7 @@ static void ctxp_dispatch_command (CtxP *ctxp)
     case CTX_GRADIENT_STOP:
       {
         float red, green, blue, alpha;
-        ctxp_get_color_rgba (ctxp, 1, &red, &green, &blue, &alpha);
+        ctx_parser_get_color_rgba (ctxp, 1, &red, &green, &blue, &alpha);
 
         ctx_gradient_add_stop (ctx, ctxp->numbers[0], red, green, blue, alpha);
       }
@@ -9694,7 +9694,7 @@ static void ctxp_dispatch_command (CtxP *ctxp)
   ctxp->n_numbers = 0;
 }
 
-static void ctxp_holding_append (CtxP *ctxp, int byte)
+static void ctx_parser_holding_append (CtxParser *ctxp, int byte)
 {
   ctxp->holding[ctxp->pos++]=byte;
   if (ctxp->pos > sizeof(ctxp->holding)-2)
@@ -9702,7 +9702,7 @@ static void ctxp_holding_append (CtxP *ctxp, int byte)
   ctxp->holding[ctxp->pos]=0;
 }
 
-void ctxp_feed_byte (CtxP *ctxp, int byte)
+void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
 {
   switch (ctxp->state)
   {
@@ -9750,7 +9750,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
          default:
             ctxp->state = CTX_PARSER_WORD;
             ctxp->pos = 0;
-            ctxp_holding_append (ctxp, byte);
+            ctx_parser_holding_append (ctxp, byte);
             break;
       }
       break;
@@ -9839,7 +9839,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
                 ctxp->numbers[ctxp->n_numbers] *= -1;
               ctxp->state = CTX_PARSER_WORD;
               ctxp->pos = 0;
-              ctxp_holding_append (ctxp, byte);
+              ctx_parser_holding_append (ctxp, byte);
               break;
         }
         if ((ctxp->state != CTX_PARSER_NUMBER &&
@@ -9848,7 +9848,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
           ctxp->n_numbers ++;
           if (ctxp->n_numbers == ctxp->n_args || ctxp->n_args == 100)
           {
-            ctxp_dispatch_command (ctxp);
+            ctx_parser_dispatch_command (ctxp);
           }
     
           if (ctxp->n_numbers > 10)
@@ -9890,26 +9890,26 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
             ctxp->decimal = 1;
             break;
          default:
-            ctxp_holding_append (ctxp, byte);
+            ctx_parser_holding_append (ctxp, byte);
             break;
       }
       if (ctxp->state != CTX_PARSER_WORD)
       {
         ctxp->holding[ctxp->pos]=0;
-        int command = ctxp_resolve_command (ctxp, ctxp->holding);
+        int command = ctx_parser_resolve_command (ctxp, ctxp->holding);
 
         if (command >= 0 && command < 5)
         {
           ctxp->numbers[ctxp->n_numbers] = command;
           ctxp->state = CTX_PARSER_NUMBER;
-          ctxp_feed_byte (ctxp, ',');
+          ctx_parser_feed_byte (ctxp, ',');
         }
         else if (command > 0)
         {
            ctxp->command = command;
            if (ctxp->n_args == 0)
            {
-             ctxp_dispatch_command (ctxp);
+             ctx_parser_dispatch_command (ctxp);
            }
         }
         else
@@ -9919,12 +9919,12 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
           for (int i = 0; ctxp->pos && ctxp->holding[i] > ' '; i++)
           {
              buf[0] = ctxp->holding[i];
-             ctxp->command = ctxp_resolve_command (ctxp, buf);
+             ctxp->command = ctx_parser_resolve_command (ctxp, buf);
              if (ctxp->command > 0)
              {
                if (ctxp->n_args == 0)
                {
-                 ctxp_dispatch_command (ctxp);
+                 ctx_parser_dispatch_command (ctxp);
                }
              }
              else
@@ -9947,13 +9947,13 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
             ctxp->state = CTX_PARSER_NEUTRAL;
             break;
          default:
-            ctxp_holding_append (ctxp, byte);
+            ctx_parser_holding_append (ctxp, byte);
             break;
       }
       if (ctxp->state != CTX_PARSER_STRING_APOS &&
           ctxp->state != CTX_PARSER_STRING_APOS_ESCAPED)
       {
-        ctxp_dispatch_command (ctxp);
+        ctx_parser_dispatch_command (ctxp);
       }
       break;
     case CTX_PARSER_STRING_APOS_ESCAPED:
@@ -9968,7 +9968,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
          case 'v': byte = '\v'; break;
          default: break;
       }
-      ctxp_holding_append (ctxp, byte);
+      ctx_parser_holding_append (ctxp, byte);
 
       ctxp->state = CTX_PARSER_STRING_APOS;
       break;
@@ -9984,7 +9984,7 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
          case 'v': byte = '\v'; break;
          default: break;
       }
-      ctxp_holding_append (ctxp, byte);
+      ctx_parser_holding_append (ctxp, byte);
       ctxp->state = CTX_PARSER_STRING_QUOT;
       break;
 
@@ -9998,13 +9998,13 @@ void ctxp_feed_byte (CtxP *ctxp, int byte)
             ctxp->state = CTX_PARSER_NEUTRAL;
             break;
          default:
-            ctxp_holding_append (ctxp, byte);
+            ctx_parser_holding_append (ctxp, byte);
             break;
       }
       if (ctxp->state != CTX_PARSER_STRING_QUOT &&
           ctxp->state != CTX_PARSER_STRING_QUOT_ESCAPED)
       {
-        ctxp_dispatch_command (ctxp);
+        ctx_parser_dispatch_command (ctxp);
       }
       break;
     case CTX_PARSER_COMMENT:

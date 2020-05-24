@@ -232,14 +232,14 @@ int main (int argc, char **argv)
      _file_get_contents (source_path, &contents, &length);
      if (contents)
      {
-       CtxP *ctxp = ctxp_new (ctx, width, height, width/cols, height/rows, 1, 1, NULL, NULL);
+       CtxParser *ctxp = ctx_parser_new (ctx, width, height, width/cols, height/rows, 1, 1, NULL, NULL);
 
        for (int i = 0; contents[i]; i++)
        {
-         ctxp_feed_byte (ctxp, contents[i]);
+         ctx_parser_feed_byte (ctxp, contents[i]);
        }
 
-       ctxp_free (ctxp);
+       ctx_parser_free (ctxp);
        free (contents);
      }
   }

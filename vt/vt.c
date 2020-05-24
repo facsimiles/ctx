@@ -406,7 +406,7 @@ struct _VT {
   int        utf8_pos;
 
 
-  CtxP      *ctxp;
+  CtxParser *ctxp;
   // text related data
   float      letter_spacing;
 
@@ -2064,7 +2064,7 @@ static void vt_ctx_exit (void *data)
 {
   VT *vt = data;
   vt->state = vt_state_neutral;
-  ctxp_free (vt->ctxp);
+  ctx_parser_free (vt->ctxp);
   vt->ctxp = NULL;
 }
 
@@ -2228,7 +2228,7 @@ qagain:
              {
                vt->current_line->ctx = ctx_new ();
              }
-             vt->ctxp = ctxp_new (vt->current_line->ctx,
+             vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                         vt->cols * vt->cw, vt->rows * vt->ch,
                         vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
                         vt_ctx_exit, vt);
@@ -3615,13 +3615,9 @@ static void vt_sixels (VT *vt, const char *sixels)
   vt->rev++;
 }
 
-
-
-
-
 static void vt_state_ctx (VT *vt, int byte)
 {
-  ctxp_feed_byte (vt->ctxp, byte);
+  ctx_parser_feed_byte (vt->ctxp, byte);
 }
 
 static int vt_decoder_feed (VT *vt, int byte)
