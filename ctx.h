@@ -3317,6 +3317,28 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         entry[1].code = CTX_NOP;
     }
 #endif
+#if 1
+    else if (entry[0].code == CTX_MOVE_TO &&
+             entry[1].code == CTX_MOVE_TO &&
+             entry[2].code == CTX_MOVE_TO)
+    {
+        entry[0] = entry[2];
+        entry[0].code = CTX_MOVE_TO;
+        entry[1].code = CTX_NOP;
+        entry[2].code = CTX_NOP;
+    }
+#endif
+#if 1
+    else if ((entry[0].code == CTX_MOVE_TO &&
+              entry[1].code == CTX_MOVE_TO) ||
+            (entry[0].code == CTX_REL_MOVE_TO &&
+             entry[1].code == CTX_MOVE_TO))
+    {
+        entry[0] = entry[1];
+        entry[0].code = CTX_MOVE_TO;
+        entry[1].code = CTX_NOP;
+    }
+#endif
 
     i += (ctx_conts_for_entry (entry) + 1);
   }
@@ -8988,7 +9010,7 @@ ctxp_init (CtxP *ctxp,
   ctxp->height   = height;
   ctxp->exit     = exit;
   ctxp->exit_data = exit_data;
-
+  ctxp->color_model = CTX_RGBA;
   ctxp->command = 'm';
   ctxp->n_numbers = 0;
   ctxp->decimal = 0;
