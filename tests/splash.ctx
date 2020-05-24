@@ -1,0 +1,72 @@
+linear_gradient 0 0 80% 0
+gradient_add_stop 0 0 0 0 1
+gradient_add_stop 1 1 1 1 1
+rectangle 0 0 100% 100%
+fill
+
+rgba 0.1 0.3 0.2 1
+move_to 3% 11%
+set_font_size 11%
+text "Lorem ipsum dolor
+sit amet, consectetur
+adipiscing elit, sed
+do eiusmod tempor
+incididunt ut labore et
+dolore magna aliqua. Ut
+enim ad minim veniam, quis
+nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+
+rgb 1 0 0
+arc 6% 12% 5% 0 6.2 0
+fill
+rgb 0 1 0
+arc 6% 40% 5% 0 6.2 0
+fill
+rgb 0 0 1
+arc 6% 66% 5% 0 6.2 0
+fill
+gray 0.5
+arc 6% 90% 5% 0 6.2 0
+fill
+
+cmyk 1 0 0 0
+arc 16% 12% 5% 0 6.4 0
+fill
+cmyk 0 1 0 0
+arc 16% 40% 5% 0 6.4 0
+fill
+cmyk 0 0 1 0
+arc 16% 66% 5% 0 6.4 0
+fill
+cmyk 1 0 0 .5
+arc 16% 90% 5% 0 6.4 0
+fill
+
+save
+rotate -0.25
+set_font_size 30%
+
+move_to 10% 100%
+set_line_width 4%
+rgba 1 1 .8 1
+cap ROUND
+join 
+text_stroke "ctx"
+
+rgba 0.1 0.2 0.3 1
+move_to 10% 100%
+text "ctx"
+restore
+
+new_path # why is this needed?
+radial_gradient 50% 6% 1% 50% 6% 25%
+gradient_add_stop 0 0 0 0 1
+gradient_add_stop 1 1 1 1 1
+
+rectangle 25% 4% 50% 10%
+fill
+
+move_to 25% 20%
+rgb 1 0 0
+text "foo\nbar"
+
