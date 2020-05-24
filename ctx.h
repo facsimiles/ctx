@@ -9350,6 +9350,17 @@ static void ctxp_get_color_rgba (CtxP *ctxp, int offset, float *red, float *gree
   }
 }
 
+void ctxp_get_color_graya (CtxP *ctxp, int offset, float *gray, float *alpha)
+{
+  float red, green, blue, temp_alpha;
+  ctxp_get_color_rgba (ctxp, offset, &red, &green, &blue, &temp_alpha);
+  if (alpha)
+  {
+    *alpha = temp_alpha;
+  }
+  *gray = (red + green + blue) / 3;
+}
+
 void ctxp_get_color_cmyka (CtxP *ctxp, int offset, float *cyan, float *magenta, float *yellow, float *key, float *alpha)
 {
   /* this is the function that fetches colors from the input, 
