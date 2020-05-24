@@ -379,6 +379,12 @@ void ctx_clip           (Ctx *ctx);
 void ctx_identity_matrix (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
 void ctx_set_line_width (Ctx *ctx, float x);
+void ctx_set_transform  (Ctx *ctx, float a, float b,  // hscale, hskew
+                                   float c, float d,  // vskew,  vscale
+                                   float e, float f); // htran,  vtran
+void ctx_get_transform  (Ctx *ctx, float *a, float *b,
+                                   float *c, float *d,
+                                   float *e, float *f);
 
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0
@@ -631,6 +637,7 @@ typedef enum
   CTX_EDGE_FLIPPED     = '`',
 
   CTX_REPEAT_HISTORY   = ']', //
+  CTX_SET_TRANSFORM    = '^',
   CTX_CONT             = ';',
   CTX_DATA             = '(', // size,  size-in-entries
   CTX_DATA_REV         = ')', // reverse traversal data marker
@@ -1200,6 +1207,14 @@ void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height)
 void ctx_process (Ctx *ctx, CtxEntry *entry);
 
 static inline void
+ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f)
+{
+  matrix->m[0][0] = a; matrix->m[0][1] = b;
+  matrix->m[1][0] = c; matrix->m[1][1] = d;
+  matrix->m[2][0] = e; matrix->m[2][1] = f;
+}
+
+static inline void
 ctx_matrix_identity (CtxMatrix *matrix)
 {
   matrix->m[0][0] = 1.0f; matrix->m[0][1] = 0.0f;
@@ -1296,6 +1311,7 @@ ctx_conts_for_entry (CtxEntry *entry)
     case CTX_ARC:
     case CTX_CURVE_TO:
     case CTX_REL_CURVE_TO:
+    case CTX_SET_TRANSFORM:
       return 2;
     case CTX_RECTANGLE:
     case CTX_REL_QUAD_TO:
@@ -2091,6 +2107,31 @@ void
 ctx_identity_matrix (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_IDENTITY);
+}
+
+void
+ctx_set_transform (Ctx *ctx, float a, float b,  // hscale, hskew
+                             float c, float d,  // vskew,  vscale
+                             float e, float f)  // htran,  vtran
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_TRANSFORM, a, b),
+     ctx_f (CTX_CONT,          c, d),
+     ctx_f (CTX_CONT,          e, f)};
+  ctx_process (ctx, command);
+}
+
+void
+ctx_get_transform  (Ctx *ctx, float *a, float *b,
+                              float *c, float *d,
+                              float *e, float *f)
+{
+  if (a) *a = ctx->state.gstate.transform.m[0][0];
+  if (b) *b = ctx->state.gstate.transform.m[0][1];
+  if (c) *c = ctx->state.gstate.transform.m[1][0];
+  if (d) *d = ctx->state.gstate.transform.m[1][1];
+  if (e) *e = ctx->state.gstate.transform.m[2][0];
+  if (f) *f = ctx->state.gstate.transform.m[2][1];
 }
 
 void ctx_rotate (Ctx *ctx, float x){
@@ -3034,6 +3075,12 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
       break;
     case CTX_ROTATE:
       ctx_matrix_rotate (&state->gstate.transform, ctx_arg_float(0));
+      break;
+    case CTX_SET_TRANSFORM:
+      ctx_matrix_set (&state->gstate.transform,
+                        ctx_arg_float(0), ctx_arg_float(1),
+                        ctx_arg_float(2), ctx_arg_float(3),
+                        ctx_arg_float(4), ctx_arg_float(5));
       break;
   }
 }
