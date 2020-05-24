@@ -35,7 +35,7 @@ static int ydec (const void *srcp, void *dstp, int count)
               o = (o-42-64) % 256;
               break;
       case '\n':
-      case '\e':
+      case '\033':
       case '\r':
       case '\0':
               break;
@@ -137,7 +137,7 @@ void vt_feed_audio (VT *vt, void *samples, int bytes)
     int z_result = compress (data, &len, samples, len);
     if (z_result != Z_OK)
     {
-      char buf[256]= "\e_Ao=z;zlib error2\e\\";
+      char buf[256]= "\033_Ao=z;zlib error2\033\\";
       vt_write (vt, buf, strlen(buf));
       data = samples;
     }
@@ -158,7 +158,7 @@ void vt_feed_audio (VT *vt, void *samples, int bytes)
     bin2base64 (data, bytes, encoded);
   }
 
-  sprintf (buf, "\e[_Af=%i;", frames);
+  sprintf (buf, "\033[_Af=%i;", frames);
   vt_write (vt, buf, strlen (buf));
   vt_write (vt, encoded, strlen(encoded));
   free (encoded);
@@ -167,7 +167,7 @@ void vt_feed_audio (VT *vt, void *samples, int bytes)
     free (data);
 
   //vt_write (vt, samples, bytes);
-  buf[0]='\e';
+  buf[0]='\033';
   buf[1]='\\';
   buf[2]=0;
   vt_write (vt, buf, 2);
@@ -1243,7 +1243,7 @@ void vt_audio (VT *vt, const char *command)
         case 'a':range="t,q";break;
         default:range="unknown";break;
       }
-      sprintf (buf, "\e_A%c=?;%s\e\\", key, range);
+      sprintf (buf, "\033_A%c=?;%s\033\\", key, range);
       vt_write (vt, buf, strlen(buf));
       return;
     }
@@ -1514,7 +1514,7 @@ void vt_audio (VT *vt, const char *command)
     case 'q': // query
        {
          char buf[512];
-         sprintf (buf, "\e_As=%i,b=%i,c=%i,T=%c,B=%i,e=%c,o=%c;OK\e\\",
+         sprintf (buf, "\033_As=%i,b=%i,c=%i,T=%c,B=%i,e=%c,o=%c;OK\033\\",
       audio->samplerate, audio->bits, audio->channels, audio->type,
       audio->buffer_size,
       audio->encoding?audio->encoding:'0',

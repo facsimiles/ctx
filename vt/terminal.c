@@ -561,7 +561,7 @@ int vt_main(int argc, char **argv)
             dirty.h = vt_height - dirty.y;
     SDL_UpdateTexture(texture,
                     &dirty,
-                    (void*)pixels + sizeof(Uint32) * (vt_width * dirty.y + dirty.x) , vt_width * sizeof (Uint32));
+                    (uint8_t*)pixels + sizeof(Uint32) * (vt_width * dirty.y + dirty.x) , vt_width * sizeof (Uint32));
 #else
     SDL_UpdateTexture(texture, NULL,
                       (void*)pixels, vt_width * sizeof (Uint32));

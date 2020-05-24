@@ -15,10 +15,9 @@ static int usage(){
   fprintf (stderr, "tool to generate native ctx embedded font format\n");
   fprintf (stderr, "\n");
   fprintf (stderr, "usage: ctx-fontgen <file.ttf> [name [set1-set2-set3]]\n");
-  fprintf (stderr, "\nrecognized sets: latin1, ascii, extra, all, emoji");
+  fprintf (stderr, "\nrecognized sets: latin1, ascii, extra, all, emoji\n");
   return -1;
 }
-
 
 
 CtxRenderstream output_font={NULL,};
@@ -58,6 +57,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
 
 int main (int argc, char **argv)
 {
+  int binary = 0;
   const char *path;
   const char *name = "regular";
   const char *subsets = "latin1";
@@ -77,6 +77,9 @@ int main (int argc, char **argv)
   ctx_load_font_ttf_file ("import", argv[1]);
   ctx = ctx_new ();
   ctx_set_font (ctx, "import");
+
+  if (strstr (subsets, "binary"))
+    binary=1;
 
   if (strstr (subsets, "all"))
   for (int glyph = 0; glyph < 65536*8; glyph++) add_glyph (ctx, glyph);
@@ -150,6 +153,8 @@ char* string =
 
   ctx_free (ctx);
 
+  if (!binary)
+  {
   printf ("/* this is a ctx encoded font based on %s */\n", basename (argv[1]));
   printf ("/* CTX_SUBDIV:%i  CTX_BAKE_FONT_SIZE:%i */\n", CTX_SUBDIV, CTX_BAKE_FONT_SIZE);
 
@@ -209,6 +214,16 @@ char* string =
   }
   printf ("};\n");
   printf ("#define CTX_FONT_%s 1\n", name);
+  }
+  else
+  {
+  for (int i = 0; i < output_font.count; i++)
+  {
+    CtxEntry *entry = &output_font.entries[i];
+    for (int c = 0; c <  sizeof (CtxEntry); c++)
+      printf ("%c",((uint8_t*)(entry))[c]);
+  }
+  }
 
   return 0;
 }

@@ -720,11 +720,10 @@ void ctx_parser_free (CtxParser *ctxp);
 void ctx_parser_feed_byte (CtxParser *ctxp, int byte);
 
 #define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
-
-#ifdef CTX_IMPLEMENTATION
-
 #define CTX_MAX(a,b) ((a)>(b)?(a):(b))
 #define CTX_MIN(a,b) ((a)<(b)?(a):(b))
+
+#ifdef CTX_IMPLEMENTATION
 
 #define ctx_pow2(a) ((a)*(a))
 
@@ -1786,7 +1785,7 @@ ctx_add_data (Ctx *ctx, void *data, int length)
 
 static int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code, uint32_t u32[2])
 {
-  CtxEntry entry = {code, };
+  CtxEntry entry = {code, {{0},}};
   entry.data.u32[0] = u32[0];
   entry.data.u32[1] = u32[1];
   return ctx_renderstream_add_single (renderstream, &entry);
@@ -1794,7 +1793,7 @@ static int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code
 
 int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, int length)
 {
-  CtxEntry entry = {CTX_DATA, };
+  CtxEntry entry = {CTX_DATA, {{0},}};
   entry.data.u32[0] = 0;
   entry.data.u32[1] = 0;
   int ret = ctx_renderstream_add_single (renderstream, &entry);
@@ -1818,7 +1817,7 @@ int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, 
 
   memcpy (&renderstream->entries[ret+1], data, length);
   {//int reverse = ctx_renderstream_add (renderstream, CTX_DATA_REV);
-   CtxEntry entry = {CTX_DATA_REV, };
+   CtxEntry entry = {CTX_DATA_REV, {{0},}};
    entry.data.u32[0] = length;
    entry.data.u32[1] = length_in_blocks;
    ctx_renderstream_add_single (renderstream, &entry);
@@ -2930,7 +2929,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       state->gstate.line_join = (CtxLineJoin)ctx_arg_u8(0);
       break;
     case CTX_COMPOSITING_MODE:
-      state->gstate.compositing_mode = (CtxLineJoin)ctx_arg_u8(0);
+      state->gstate.compositing_mode = (CtxCompositingMode)ctx_arg_u8(0);
       break;
     case CTX_SET_GLOBAL_ALPHA:
       state->gstate.source.global_alpha = CTX_CLAMP(ctx_arg_float(0)*255.0,0, 255);
@@ -3546,6 +3545,8 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
 #if CTX_BITPACK_PACKER|CTX_REFPACK
   int last_history;
   last_history = ctx_last_history (renderstream);
+#else
+  if (renderstream){};
 #endif
 #if CTX_BITPACK_PACKER
     ctx_renderstream_bitpack (renderstream, last_history);
@@ -4139,6 +4140,7 @@ static int ctx_buffer_load_png (CtxBuffer *buffer,
   buffer->user_data = NULL;
   return 0;
 #else
+  if (path){};
   return -1;
 #endif
 }
@@ -4201,6 +4203,7 @@ static int ctx_buffer_load_memory (CtxBuffer *buffer,
   buffer->user_data = NULL;
   return 0;
 #else
+  if (data && length){};
   return -1;
 #endif
 }
@@ -5267,6 +5270,7 @@ ctx_sample_source_u8_linear_gradient (CtxRenderer *renderer, float x, float y, u
 #endif
 }
 
+
 static void
 ctx_sample_source_u8_color (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
 {
@@ -5404,7 +5408,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
   return count;
 }
 
-static int inline
+static inline int
 ctx_b2f_over_RGBA8_convert (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
 {
   int ret;
@@ -8131,7 +8135,7 @@ ctx_glyphs (Ctx        *ctx,
             CtxGlyph   *glyphs,
             int         n_glyphs)
 {
-  return _ctx_glyphs (ctx, glyphs, n_glyphs, 0);
+  _ctx_glyphs (ctx, glyphs, n_glyphs, 0);
 }
 
 void
@@ -8139,7 +8143,7 @@ ctx_glyphs_stroke (Ctx        *ctx,
                    CtxGlyph   *glyphs,
                    int         n_glyphs)
 {
-  return _ctx_glyphs (ctx, glyphs, n_glyphs, 1);
+  _ctx_glyphs (ctx, glyphs, n_glyphs, 1);
 }
 
 
@@ -8658,7 +8662,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         break;
 
       case CTX_COMPOSITING_MODE:
-        ctx_set_compositing_mode (d_ctx, (CtxLineJoin)ctx_arg_u8(0));
+        ctx_set_compositing_mode (d_ctx, (CtxCompositingMode)ctx_arg_u8(0));
         break;
 
       case CTX_LINEAR_GRADIENT:
@@ -9321,7 +9325,7 @@ static void ctx_parser_get_color_rgba (CtxParser *ctxp, int offset, float *red, 
       *alpha = ctxp->numbers[offset + 1];
     case CTX_GRAY:
       *red = *green = *blue = ctxp->numbers[offset + 0];
-    break;
+      break;
     default:
     case CTX_LABA: // NYI - needs RGB profile
     case CTX_LCHA: // NYI - needs RGB profile
@@ -9697,7 +9701,7 @@ static void ctx_parser_dispatch_command (CtxParser *ctxp)
 static void ctx_parser_holding_append (CtxParser *ctxp, int byte)
 {
   ctxp->holding[ctxp->pos++]=byte;
-  if (ctxp->pos > sizeof(ctxp->holding)-2)
+  if (ctxp->pos > (int)sizeof(ctxp->holding)-2)
     ctxp->pos = sizeof(ctxp->holding)-2;
   ctxp->holding[ctxp->pos]=0;
 }

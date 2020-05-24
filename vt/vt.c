@@ -68,19 +68,19 @@
 #define VT_LOG_ALL       0xff
 
 //static int vt_log_mask = VT_LOG_INPUT;
-static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;// | VT_LOG_COMMAND;// | VT_LOG_INFO | VT_LOG_COMMAND;
+//static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;// | VT_LOG_COMMAND;// | VT_LOG_INFO | VT_LOG_COMMAND;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL;
 
-#if 0
+#if 1
   #define vt_log(domain, fmt, ...)
 
-  #define VT_input(str, a...)
-  #define VT_info(str, a...)
-  #define VT_command(str, a...)
-  #define VT_cursor(str, a...)
-  #define VT_warning(str, a...)
-  #define VT_error(str, a...)
+  #define VT_input(str, ...)
+  #define VT_info(str, ...)
+  #define VT_command(str, ...)
+  #define VT_cursor(str, ...)
+  #define VT_warning(str, ...)
+  #define VT_error(str, ...)
 #else
   #define vt_log(domain, line, a...) \
         do {fprintf (stderr, "%i %s ", line, domain);fprintf(stderr, ##a);fprintf(stderr, "\n");}while(0)
@@ -1896,7 +1896,7 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
     case 107: /* SGR@@white background color@@ */set_bg_idx(15); break;
 
     default:
-      VT_warning ("unhandled style code %i in sequence \\e%s\n", n, sequence);
+      VT_warning ("unhandled style code %i in sequence \\033%s\n", n, sequence);
       return;
 
   }
@@ -2331,9 +2331,9 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
            break;
     }
     if (is_set >= 0)
-      sprintf (buf, "\e[?%i;%i$y", qval, is_set?1:2);
+      sprintf (buf, "\033[?%i;%i$y", qval, is_set?1:2);
     else
-      sprintf (buf, "\e[?%i;%i$y", qval, 0);
+      sprintf (buf, "\033[?%i;%i$y", qval, 0);
   }
   else
   {
@@ -2342,29 +2342,29 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
     switch (val)
     {
      case 1:
-           sprintf (buf, "\e[%i;%i$y", val, 0);
+           sprintf (buf, "\033[%i;%i$y", val, 0);
            break;
      case 2:/* AM - keyboard action mode */
-           sprintf (buf, "\e[%i;%i$y", val, 0);
+           sprintf (buf, "\033[%i;%i$y", val, 0);
              break;
      case 3:/*CRM - control representation mode */
-           sprintf (buf, "\e[%i;%i$y", val, 0);
+           sprintf (buf, "\033[%i;%i$y", val, 0);
              break;
      case 4:/*MODE2;Insert Mode;Insert;Replace; */
-           sprintf (buf, "\e[%i;%i$y", val, vt->insert_mode?1:2);
+           sprintf (buf, "\033[%i;%i$y", val, vt->insert_mode?1:2);
              break;
      case 9: /* interlace mode */
-           sprintf (buf, "\e[%i;%i$y", val, 0);
+           sprintf (buf, "\033[%i;%i$y", val, 0);
              break;
      case 12:/*MODE2;Local echo;On;Off; */
-           sprintf (buf, "\e[%i;%i$y", val, vt->echo?1:2);
+           sprintf (buf, "\033[%i;%i$y", val, vt->echo?1:2);
              break;
      case 20:/*MODE2;Carriage Return on LF/Newline;On;Off;*/;
-           sprintf (buf, "\e[%i;%i$y", val, vt->cr_on_lf?1:2);
+           sprintf (buf, "\033[%i;%i$y", val, vt->cr_on_lf?1:2);
             break;
      case 21: // GRCM - whether SGR accumulates or a reset on each command
      default: 
-           sprintf (buf, "\e[%i;%i$y", val, 0);
+           sprintf (buf, "\033[%i;%i$y", val, 0);
     }
   }
 
@@ -2378,7 +2378,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   if (!strcmp (sequence, "[14t")) /* request terminal dimensions */
   {
     char buf[128];
-    sprintf (buf, "\e[4;%i;%it", vt->rows * vt->ch, vt->cols * vt->cw);
+    sprintf (buf, "\033[4;%i;%it", vt->rows * vt->ch, vt->cols * vt->cw);
     vt_write (vt, buf, strlen(buf));
   }
 #if 0
@@ -2502,7 +2502,7 @@ static void vtcmd_DECELR (VT *vt, const char *sequence)
   int ps1 = parse_int (sequence, 0);
   int ps2 = 0;
   const char *s = strchr(sequence, ';');
-  if (ps1); // because it is unused
+  if (ps1){/* unused */};
   if (s)
     ps2 = parse_int (s, 0);
   if (ps2 == 1)
@@ -2522,15 +2522,15 @@ static void vtcmd_report (VT *vt, const char *sequence)
   char buf[64]="";
   if (!strcmp (sequence, "[?15n")) // printer status
   {
-    sprintf (buf, "\e[?13n"); // no printer
+    sprintf (buf, "\033[?13n"); // no printer
   }
   else if (!strcmp (sequence, "[?26n")) // keyboard dialect 
   {
-    sprintf (buf, "\e[?27;1n"); // north american/ascii
+    sprintf (buf, "\033[?27;1n"); // north american/ascii
   }
   else if (!strcmp (sequence, "[?25n")) // User Defined Key status
   {
-    sprintf (buf, "\e[?21n"); // locked
+    sprintf (buf, "\033[?21n"); // locked
   }
   else if (!strcmp (sequence, "[6n")) // DSR cursor position report
   {
@@ -2558,9 +2558,9 @@ static void vtcmd_report (VT *vt, const char *sequence)
   else if (sequence[strlen(sequence)-1]=='x') // terminal parameters
   {
     if (!strcmp (sequence, "[1x"))
-      sprintf (buf, "\e[3;1;1;120;120;1;0x");
+      sprintf (buf, "\033[3;1;1;120;120;1;0x");
     else
-      sprintf (buf, "\e[2;1;1;120;120;1;0x");
+      sprintf (buf, "\033[2;1;1;120;120;1;0x");
   }
 
   if (buf[0])
@@ -2997,7 +2997,7 @@ static int _vt_handle_control (VT *vt, int byte)
              if (reply)
              {
                char *copy = strdup (reply);
-               for (char *c = copy; *c; c++)
+               for (uint8_t *c = (uint8_t*)copy; *c; c++)
                {
                  if (*c < ' ' || * c > 127) *c = 0;
                }
@@ -3173,7 +3173,7 @@ void vt_gfx (VT *vt, const char *command)
     if (vt->gfx.transmission != 'd') /* */
     {
       char buf[256];
-      sprintf (buf, "\e_Gi=%i;only direct transmission supported\e\\",
+      sprintf (buf, "\033_Gi=%i;only direct transmission supported\033\\",
                       vt->gfx.id);
       vt_write (vt, buf, strlen(buf));
       goto cleanup;
@@ -3209,7 +3209,7 @@ void vt_gfx (VT *vt, const char *command)
                                  vt->gfx.data_size);
       if (z_result != Z_OK)
       {
-        char buf[256]= "\e_Go=z;zlib error\e\\";
+        char buf[256]= "\033_Go=z;zlib error\033\\";
         vt_write (vt, buf, strlen(buf));
         goto cleanup;
       }
@@ -3226,7 +3226,7 @@ void vt_gfx (VT *vt, const char *command)
 
       if (!new_data)
       {
-        char buf[256]= "\e_Gf=100;image decode error\e\\";
+        char buf[256]= "\033_Gf=100;image decode error\033\\";
         vt_write (vt, buf, strlen(buf));
         goto cleanup;
       }
@@ -3281,7 +3281,7 @@ void vt_gfx (VT *vt, const char *command)
       if (image_query (vt->gfx.id))
       {
         char buf[256];
-        sprintf (buf, "\e_Gi=%i;OK\e\\", vt->gfx.id);
+        sprintf (buf, "\033_Gi=%i;OK\033\\", vt->gfx.id);
         vt_write (vt, buf, strlen(buf));
       }
       break;
@@ -3301,38 +3301,38 @@ void vt_gfx (VT *vt, const char *command)
                case 'A': free_resource = 1;
                case 'a': /* all images visible on screen */
                  match = 1;
-                     break;
+                 break;
                case 'I': free_resource = 1;
                case 'i': /* all images with specified id */
                  if (((Image*)(line->images[i]))->id == vt->gfx.id)
                    match = 1;
-                     break;
+                 break;
                case 'P': free_resource = 1;
                case 'p': /* all images intersecting cell
 			    specified with x and y */
                  if (line->image_col[i] == vt->gfx.x &&
                      row == vt->gfx.y)
                    match = 1;
-                     break;
+                 break;
                case 'Q': free_resource = 1;
                case 'q': /* all images with specified cell (x), row(y) and z */
                  if (line->image_col[i] == vt->gfx.x &&
                      row == vt->gfx.y)
                    match = 1;
-                     break;
+                 break;
                case 'Y': free_resource = 1;
                case 'y': /* all images with specified row (y) */
                  if (row == vt->gfx.y)
                    match = 1;
-                     break;
+                 break;
                case 'X': free_resource = 1;
                case 'x': /* all images with specified column (x) */
                  if (line->image_col[i] == vt->gfx.x)
                    match = 1;
-                     break;
+                 break;
                case 'Z': free_resource = 1;
                case 'z': /* all images with specified z-index (z) */
-                     break;
+                 break;
             }
            if (match)
            {
@@ -3392,7 +3392,7 @@ static void vt_state_vt52 (VT *vt, int byte)
         case 'J': vtcmd_erase_in_display (vt, "[0J"); break;
         case 'K': vtcmd_erase_in_line (vt, "[0K"); break;
         case 'Y': vt->utf8_pos = 2; break;
-        case 'Z': vt_write (vt, "\e/Z", 3); break;
+        case 'Z': vt_write (vt, "\033/Z", 3); break;
         case '<': vt->state = vt_state_neutral;
 	  break;
         default: break;
@@ -3673,7 +3673,7 @@ static void vt_state_swallow (VT *vt, int byte)
 static void vt_state_osc (VT *vt, int byte)
 {
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
-      // and in "\e\" rather than just "\e", this would cause
+      // and in "\033\" rather than just "\033", this would cause
       // a stray char
       //if (byte == '\a' || byte == 27 || byte == 0 || byte < 32)
       if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
@@ -3691,7 +3691,7 @@ static void vt_state_osc (VT *vt, int byte)
                  it still mixes in color 130 together with stock colors
                */
               char buf[128];
-              sprintf (buf, "\e]10;rgb:%2x/%2x/%2x\e\\",
+              sprintf (buf, "\033]10;rgb:%2x/%2x/%2x\033\\",
 			   vt->fg_color[0], vt->fg_color[1], vt->fg_color[2]);
               vt_write (vt, buf, strlen(buf));
 	    }
@@ -3699,7 +3699,7 @@ static void vt_state_osc (VT *vt, int byte)
 	  case 11:
 	    { /* get background color */
               char buf[128];
-              sprintf (buf, "\e]11;rgb:%2x/%2x/%2x\e\\",
+              sprintf (buf, "\033]11;rgb:%2x/%2x/%2x\033\\",
 			   vt->bg_color[0], vt->bg_color[1], vt->bg_color[2]);
               vt_write (vt, buf, strlen(buf));
 	    }
@@ -3720,7 +3720,7 @@ static void vt_state_osc (VT *vt, int byte)
 	      char value[128]="";
 	      int in_key=1;
 
-	      if (preserve_aspect);
+	      if (preserve_aspect){}; /* XXX : NYI */
 
 	      for (; *p && *p!=':'; p++)
 	      {
@@ -3892,7 +3892,7 @@ Image *image = NULL;
 static void vt_state_sixel (VT *vt, int byte)
 {
       // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
-      // and in "\e\" rather than just "\e", this would cause
+      // and in "\033\" rather than just "\033", this would cause
       // a stray char
       if ((byte < 32) && ( (byte < 8) || (byte > 13)) )
       {
@@ -4230,7 +4230,7 @@ static const char *keymap_general[][2]={
   {"page-up",        "\033[5~"},
   {"page-down" ,     "\033[6~"},
   {"return",         "\r"},
-  {"shift-tab",      "\eZ"},
+  {"shift-tab",      "\033Z"},
   {"shift-return",   "\r"},
   {"control-return", "\r"},
   {"space",          " "},
@@ -4301,7 +4301,7 @@ void vt_feed_keystring (VT *vt, const char *str)
 {
   if (vt->state == vt_state_vt52)
   {
-    for (int i = 0; i<sizeof (keymap_vt52)/sizeof(keymap_vt52[0]); i++)
+    for (unsigned int i = 0; i<sizeof (keymap_vt52)/sizeof(keymap_vt52[0]); i++)
       if (!strcmp (str, keymap_vt52[i][0]))
         { str = keymap_vt52[i][1]; goto done; }
   }
@@ -4309,7 +4309,7 @@ void vt_feed_keystring (VT *vt, const char *str)
   {
     if (vt->cursor_key_application)
     {
-      for (int i = 0; i<sizeof (keymap_application)/sizeof(keymap_application[0]); i++)
+      for (unsigned int i = 0; i<sizeof (keymap_application)/sizeof(keymap_application[0]); i++)
         if (!strcmp (str, keymap_application[i][0]))
          { str = keymap_application[i][1]; goto done; }
     }
@@ -4332,7 +4332,7 @@ void vt_feed_keystring (VT *vt, const char *str)
     return;
   }
 
-  for (int i = 0; i<sizeof (keymap_general)/sizeof(keymap_general[0]); i++)
+  for (unsigned int i = 0; i<sizeof (keymap_general)/sizeof(keymap_general[0]); i++)
   if (!strcmp (str, keymap_general[i][0]))
     { str = keymap_general[i][1];
       break;
@@ -4359,12 +4359,12 @@ void vt_paste (VT *vt, const char *str)
 {
   if (vt->bracket_paste)
   {
-    vt_write (vt, "\e[200~", 6);
+    vt_write (vt, "\033[200~", 6);
   }
   vt_feed_keystring (vt, str);
   if (vt->bracket_paste)
   {
-    vt_write (vt, "\e[201~", 6);
+    vt_write (vt, "\033[201~", 6);
   }
 }
 
@@ -6243,7 +6243,7 @@ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
        if (x==lastx && y==lasty)
          return;
        lastx = x; lasty = y;
-       sprintf (buf, "\e[<35;%i;%iM", x, y);
+       sprintf (buf, "\033[<35;%i;%iM", x, y);
        break;
     case VT_MOUSE_RELEASE:
        if (vt->mouse_decimal == 0)
@@ -6262,10 +6262,10 @@ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
 
   if (vt->mouse_decimal)
   {
-    sprintf (buf, "\e[<%i;%i;%i%c", button_state, x, y, type == VT_MOUSE_RELEASE?'m':'M');
+    sprintf (buf, "\033[<%i;%i;%i%c", button_state, x, y, type == VT_MOUSE_RELEASE?'m':'M');
   }
   else
-    sprintf (buf, "\e[M%c%c%c", button_state + 32, x + 32, y + 32);
+    sprintf (buf, "\033[M%c%c%c", button_state + 32, x + 32, y + 32);
 
   if (buf[0])
   {

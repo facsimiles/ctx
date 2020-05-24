@@ -43,7 +43,7 @@ int parse_main (int argc, char **argv)
   tcsetattr(0, TCSANOW, &termios_set);
   int count = ctx_get_renderstream_count (ctx);
 
-  printf ("\e[?2222h");
+  printf ("\033[?2222h");
   //printf ("%c        ", CTX_CLEAR);
  
   CtxEntry *entries = *(CtxEntry **)(ctx);
@@ -257,7 +257,7 @@ int main (int argc, char **argv)
   if (!strcmp (dest_path, "GRAY1"))
   {
     int reverse = 0;
-    int stride = width/8+(width%8?:0);
+    int stride = width/8+(width%8?1:0);
     uint8_t pixels[stride*height];
     Ctx *dctx = ctx_new_for_framebuffer (&pixels[0],
                                          width, height, stride,

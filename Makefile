@@ -11,10 +11,10 @@ clean:
 	make -C examples clean
 
 ctx: ctx.c vt/*.[ch] ctx.h  Makefile
-	gcc ctx.c vt/*.c -o $@ -g -I. -Ifonts -Ivt -mtune=native -march=native `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -lm
+	$(CC) ctx.c vt/*.c -o $@ -g -I. -Ifonts -Ivt -mtune=native -march=native `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -lm -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers
 
-ctx.O1: ctx.c vt/*.[ch] ctx.h  Makefile
-	gcc ctx.c vt/*.c -o $@ -g -O1 -I. -Ifonts -Ivt `pkg-config sdl2 --cflags --libs` -lutil -Wall -lz -lm
+ctx.O1: ctx.c vt/*.[ch] ctx.h  Makefile 
+	$(CC) ctx.c vt/*.c -o $@ -g -O1 -I. -Ifonts -Ivt `pkg-config sdl2 --cflags --libs` -lutil -Wall -lz -lm
 ctx.asan: ctx.c vt/*.[ch] ctx.h Makefile
-	gcc -DASANBUILD=1 ctx.c vt/*.c -o $@ -g -O0 -I. -Ifonts -Ivt `pkg-config --cflags --libs sdl2` -lutil -lasan -fsanitize=address -lz -lm
+	$(CC) -DASANBUILD=1 ctx.c vt/*.c -o $@ -g -O0 -I. -Ifonts -Ivt `pkg-config --cflags --libs sdl2` -lutil -lasan -fsanitize=address -lz -lm
 

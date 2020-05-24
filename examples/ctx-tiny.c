@@ -4,7 +4,6 @@
 #define CTXP 1
 #define CTX_LIMIT_FORMATS
 #define CTX_ENABLE_RGBA8                1
-
 #define CTX_IMPLEMENTATION
 
 #include "ctx.h"
