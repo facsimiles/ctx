@@ -2,7 +2,7 @@ all: pre ctx-tiny ctx post ctx-tiny ctx-tiny-static-musl
 pre:
 	make -C fonts
 post:
-	make -C examples
+	make -C tests
 
 
 clean:
