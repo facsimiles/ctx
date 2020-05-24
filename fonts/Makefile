@@ -1,11 +1,13 @@
 all: ctx-font-regular.h \
 	ctx-font-mono.h \
 	ctx-font-emoji.h \
+	0xA000-Mono.h \
 	DejaVuSans.h \
+	Vera.h \
 	DejaVuSansMono.h \
 
 clean:
-	rm -f ctx-font-*.h
+	rm -f ctx-font-*.h 0xA000-*.g Deja*.h Vera*.h
 
 ctx-font-regular.h: ctx-fontgen Makefile
 	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras > $@
@@ -22,6 +24,14 @@ DejaVuSans.h: Makefile
 	xxd -i ttf/DejaVuSans.ttf > DejaVuSans.h
 	echo '#define DEJAVU_SANS 1' >> DejaVuSans.h
 
+
+Vera.h: Makefile
+	xxd -i ttf/Vera.ttf > Vera.h
+	echo '#define VERA 1' >> Vera.h
+
+0xA000-Mono.h: Makefile
+	xxd -i ttf/0xA000-Mono.ttf > 0xA000-Mono.h
+	echo '#define XA000_MONO 1' >> 0xA000-Mono.h
 
 %: %.c ../ctx.h
 	gcc $< -o $@ -lm -I.. -I../fonts

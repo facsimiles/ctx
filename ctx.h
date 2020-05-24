@@ -8904,6 +8904,13 @@ static void ctx_setup ()
 #if DEJAVU_SANS
   ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf, ttf_DejaVuSans_ttf_len);
 #endif
+#if VERA
+  ctx_load_font_ttf ("sans-Vera", ttf_Vera_ttf, ttf_Vera_ttf_len);
+#endif
+
+#if XA000_MONO
+  ctx_load_font_ttf ("mono-0xA000", ttf_0xA000_Mono_ttf, ttf_0xA000_Mono_ttf_len);
+#endif
 }
 
 #if CTXP

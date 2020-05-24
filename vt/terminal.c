@@ -22,10 +22,12 @@
 #include "mmm-pset.h"
 #endif
 
-//#include "ctx-font-regular.h"
-//#include "ctx-font-mono.h"
-#include "DejaVuSansMono.h"
+#include "ctx-font-regular.h"
+#include "ctx-font-mono.h"
+//#include "DejaVuSansMono.h"
 //#include "DejaVuSans.h"
+//#include "0xA000-Mono.h"
+//#include "Vera.h"
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
