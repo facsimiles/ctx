@@ -2,8 +2,8 @@
 #include <sys/time.h>
 #include <mrg.h>
 
-#define UPNG_IMPLEMENTATION
-#include "upng.h"
+//#define UPNG_IMPLEMENTATION
+//#include "upng.h"
 //#define CTX_FULL_CB 1
 //#define STB_TRUETYPE_IMPLEMENTATION
 //#include "stb_truetype.h"

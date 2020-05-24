@@ -113,24 +113,22 @@ int main(int argc, char **argv)
 
   while(!do_quit)
   {
-        SDL_Rect dirty;
+    SDL_Rect dirty;
 
-        Ctx *ctx = ctx_new_for_framebuffer (pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
+    Ctx *ctx = ctx_new_for_framebuffer (pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
 
-        ctx_rectangle (ctx, 20, 30, 100, 100);
-        ctx_set_rgba (ctx, 1, 1, 1, 1);
-        ctx_fill (ctx);
-        ctx_set_font_size (ctx, height * 0.1);
-        ctx_move_to (ctx, width * 0.3, height * 0.4);
-        ctx_text (ctx, "hello SDL2\n");
-        ctx_set_rgba (ctx, 1, 1, 1, 1);
+    ctx_rectangle (ctx, 20, 30, 100, 100);
+    ctx_set_rgba (ctx, 1, 1, 1, 1);
+    ctx_fill (ctx);
+    ctx_set_font_size (ctx, height * 0.1);
+    ctx_move_to (ctx, width * 0.3, height * 0.4);
+    ctx_text (ctx, "hello SDL2\n");
+    ctx_set_rgba (ctx, 1, 1, 1, 1);
 
-        ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
-        ctx_free (ctx);
+    ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
+    ctx_free (ctx);
 
-    
-
-#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
+#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
     dirty.w ++;
     dirty.h ++;
     if (dirty.x + dirty.w > width)

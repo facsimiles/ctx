@@ -93,8 +93,6 @@ static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;// | VT_LOG_COMMAND;// | 
 
 #endif
 
-#include "mmm.h"
-
 #ifndef MIN
 #define MIN(a,b)  ((a)<(b)?(a):(b))
 #endif

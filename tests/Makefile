@@ -8,7 +8,7 @@ TESTS=$(TESTS_GRAY1) $(TESTS_GRAY4) $(TESTS_GRAY8)
 all:  $(TESTS) check
 
 check:
-	for a in $(TESTS); do diff -u $$a reference/$$a ; done
+	@for a in $(TESTS); do diff -u $$a reference/$$a ; done
 clean:
 	for a in $(TESTS); do rm -rf $$a;done
 
