@@ -4737,7 +4737,7 @@ ctx_renderer_curve_to (CtxRenderer *renderer,
                                 ox, oy, x0, y0,
                                 x1, y1, x2, y2,
                                 ox, oy, x2, y2,
-                                0.0, 1.0, 0, tolerance);
+                                0.0f, 1.0f, 0.0f, tolerance);
   }
   ctx_renderer_line_to (renderer, x2, y2);
 }
@@ -7414,7 +7414,6 @@ ctx_renderer_init (CtxRenderer *renderer, Ctx *ctx, CtxState *state, void *data,
 {
   memset (renderer, 0, sizeof (CtxRenderer));
   renderer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
-  renderer->edge_pos    = 0;
   renderer->state       = state;
   renderer->ctx         = ctx;
   ctx_state_init (renderer->state);
@@ -9014,6 +9013,8 @@ struct _CtxParser {
   Ctx       *ctx;
   int        state;
   uint8_t    holding[1024];
+  int        line; /*  for error reporting */
+  int        col;  /*  for error reporting */
   int        pos;
   float      numbers[12]; /* used by svg parser */
   int        n_numbers;
@@ -9051,6 +9052,7 @@ ctx_parser_init (CtxParser *ctxp,
   void *exit_data
           )
 {
+  ctxp->line         = 1;
   ctxp->ctx         = ctx;
   ctxp->cell_width  = cell_width;
   ctxp->cell_height = cell_height;
@@ -9063,10 +9065,14 @@ ctx_parser_init (CtxParser *ctxp,
   ctxp->color_model = CTX_RGBA;
   ctxp->color_components = 4;
   ctxp->command     = 'm';
+#if 0  // nulled out is done by calloc, and this
+       // consumes code space
+  ctxp->col         = 0;
   ctxp->n_numbers   = 0;
   ctxp->decimal     = 0;
   ctxp->pos         = 0;
   ctxp->holding[ctxp->pos=0]=0;
+#endif
 }
 
 CtxParser *ctx_parser_new (
@@ -9473,8 +9479,9 @@ static void ctx_parser_dispatch_command (CtxParser *ctxp)
   if (ctxp->n_args != 100 &&
       ctxp->n_args != ctxp->n_numbers)
   {
-    fprintf (stderr, "unexpected args for '%c' expected %i but got %i\n",
-      cmd, ctxp->n_args, ctxp->n_numbers);
+    fprintf (stderr, "ctx:%i:%i '%c' got %i args, expect %i\n",
+      ctxp->line, ctxp->col,
+      cmd, ctxp->n_numbers, ctxp->n_args);
   }
 
   ctxp->command = CTX_NOP;
@@ -9755,6 +9762,11 @@ static void ctx_parser_holding_append (CtxParser *ctxp, int byte)
 
 void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
 {
+  switch (byte)
+  {
+    case '\n': ctxp->col=0; ctxp->line++; break;
+    default: ctxp->col++;
+  }
   switch (ctxp->state)
   {
     case CTX_PARSER_NEUTRAL:
