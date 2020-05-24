@@ -51,7 +51,7 @@ extern "C" {
 /* experimental feature, not fully working - where text rendering happens
  * closer to rasterizer. Positions are screwed up in playback  */
 #ifndef CTX_BACKEND_TEXT
-#define CTX_BACKEND_TEXT 0
+#define CTX_BACKEND_TEXT 1
 #endif
 
 /* vertical level of supersampling at full/forced AA.
@@ -1122,7 +1122,7 @@ struct _CtxPixelFormatInfo
                          int x, void *buf, const uint8_t *rgba, int count);
 
   int      (*crunch)(CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage,
-                     int count);
+                 int count);
 };
 
 #endif
@@ -6095,9 +6095,9 @@ _ctx_text (Ctx        *ctx,
            int         stroke,
            int         visible);
 static inline void
-ctx_renderer_text (CtxRenderer *renderer, const char *string)
+ctx_renderer_text (CtxRenderer *renderer, const char *string, int stroke)
 {
-  _ctx_text (renderer->ctx, string, 0, 1);
+  _ctx_text (renderer->ctx, string, stroke, 1);
 }
 
 void
@@ -6747,7 +6747,11 @@ ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
       break;
 
     case CTX_TEXT:
-      ctx_renderer_text (renderer, ctx_arg_string());
+      ctx_renderer_text (renderer, ctx_arg_string(), 0);
+      break;
+
+    case CTX_TEXT_STROKE:
+      ctx_renderer_text (renderer, ctx_arg_string(), 1);
       break;
 
     case CTX_GLYPH:
@@ -8124,7 +8128,7 @@ ctx_text (Ctx        *ctx,
   int stringlen = strlen (string);
   CtxEntry commands[1 + 2 + stringlen/8];
   memset (commands, 0, sizeof (commands));
-  commands[0] = ctx_f(CTX_TEXT, 0, 0);
+  commands[0] = ctx_u8(CTX_TEXT, 0, 0,0,0,0,0,0,0);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = stringlen;
   commands[1].data.u32[1] = stringlen/9+1;
@@ -8145,7 +8149,7 @@ ctx_text_stroke (Ctx        *ctx,
   int stringlen = strlen (string);
   CtxEntry commands[1 + 2 + stringlen/8];
   memset (commands, 0, sizeof (commands));
-  commands[0] = ctx_f(CTX_TEXT, 0, 0);
+  commands[0] = ctx_u8(CTX_TEXT_STROKE, 1, 0,0,0,0,0,0,0);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = stringlen;
   commands[1].data.u32[1] = stringlen/9+1;
@@ -9527,7 +9531,7 @@ static void ctxp_dispatch_command (CtxP *ctxp)
              * implicit ones from move_to's .. making move_to work within
              * margins.
              */
-            _ctx_text (ctx, c, 0, 1);
+            ctx_text (ctx, c);
 
             if (next_nl)
             {

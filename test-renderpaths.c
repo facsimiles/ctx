@@ -9,6 +9,7 @@
 //#include "stb_truetype.h"
 #include "ctx-font-regular.h"
 
+#define CTX_BACKEND_TEXT 1
 //#define CTX_MAX_JOURNAL_SIZE 1024 * 15
 //#define CTX_MIN_JOURNAL_SIZE CTX_MAX_JOURNAL_SIZE 
 #define CTX_SHAPE_CACHE 0
