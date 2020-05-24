@@ -4,8 +4,6 @@ pre:
 post:
 	make -C examples
 
-test-renderpaths: test-renderpaths.c ctx.h fonts/*.h Makefile
-	gcc $< -o $@ -g -ofast-math -O3 -march=native -mtune=native `pkg-config mrg --cflags --libs` -Ifonts 
 
 clean:
 	rm -f test-renderpaths ctx ctx.asan ctx.O1 ctx-tiny ctx-tiny-static-musl

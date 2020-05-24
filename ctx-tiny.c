@@ -1,6 +1,7 @@
 #include <stdint.h>
 
-#include "ctx-font-regular.h"
+#include "ctx-font-ascii.h"
+#define CTXP 1
 #define CTX_LIMIT_FORMATS
 #define CTX_ENABLE_RGBA8                1
 
@@ -47,6 +48,16 @@ int main (int argc, char **argv)
       no+=4;
     }
     printf ("\n");
+  }
+  {
+       CtxParser *ctxp = ctx_parser_new (ctx, WIDTH, HEIGHT, WIDTH/20, HEIGHT/20, 1, 1, NULL, NULL);
+
+       for (int i = 0; i<3; i++)
+       {
+         ctx_parser_feed_byte (ctxp, ' ');
+       }
+
+       ctx_parser_free (ctxp);
   }
   ctx_free (ctx);
 

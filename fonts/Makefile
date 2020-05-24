@@ -1,4 +1,5 @@
 all: ctx-font-regular.h \
+	ctx-font-ascii.h \
 	ctx-font-mono.h \
 	ctx-font-emoji.h \
 	0xA000-Mono.h \
@@ -8,6 +9,9 @@ all: ctx-font-regular.h \
 
 clean:
 	rm -f ctx-font-*.h 0xA000-*.g Deja*.h Vera*.h
+
+ctx-font-ascii.h: ctx-fontgen Makefile
+	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii > $@
 
 ctx-font-regular.h: ctx-fontgen Makefile
 	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras > $@
