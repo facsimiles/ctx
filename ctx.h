@@ -9011,6 +9011,7 @@ ctxp_init (CtxP *ctxp,
   ctxp->exit        = exit;
   ctxp->exit_data   = exit_data;
   ctxp->color_model = CTX_RGBA;
+  ctxp->color_components = 4;
   ctxp->command     = 'm';
   ctxp->n_numbers   = 0;
   ctxp->decimal     = 0;
@@ -9283,6 +9284,7 @@ static int ctxp_resolve_command (CtxP *ctxp, const uint8_t*str)
     case 'x': ctxp->n_args = 100; return CTX_TEXT;
     case 'y': ctxp->n_args = 0; return CTX_IDENTITY;
   }
+
   return -1;
 }
 
