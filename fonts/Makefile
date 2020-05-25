@@ -6,17 +6,33 @@ all: ctx-font-regular.h \
 	DejaVuSans.h \
 	Vera.h \
 	DejaVuSansMono.h \
+	\
+	ctxf/regular.ctxf \
+	ctxf/mono.ctxf \
+	ctxf/emoji.ctxf \
+	ctxf/ascii.ctxf
 
 clean:
 	rm -f ctx-font-*.h 0xA000-*.g Deja*.h Vera*.h
 
+
+ctxf/ascii.ctxf: ctx-fontgen Makefile
+	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii binary > $@
 ctx-font-ascii.h: ctx-fontgen Makefile
 	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii > $@
 
+ctxf/regular.ctxf: ctx-fontgen Makefile
+	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras binary > $@
 ctx-font-regular.h: ctx-fontgen Makefile
 	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras > $@
+
+ctxf/mono.ctxf: ctx-fontgen Makefile
+	./ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras-cp437-vt100 binary > $@
 ctx-font-mono.h: ctx-fontgen Makefile
 	./ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras-cp437-vt100 > $@
+
+ctxf/emoji.ctxf: ctx-fontgen Makefile
+	./ctx-fontgen ttf/DejaVuSans.ttf emoji emoji binary > $@
 ctx-font-emoji.h: ctx-fontgen Makefile
 	./ctx-fontgen ttf/DejaVuSans.ttf emoji emoji > $@
 
@@ -27,7 +43,6 @@ DejaVuSansMono.h: Makefile
 DejaVuSans.h: Makefile
 	xxd -i ttf/DejaVuSans.ttf > DejaVuSans.h
 	echo '#define DEJAVU_SANS 1' >> DejaVuSans.h
-
 
 Vera.h: Makefile
 	xxd -i ttf/Vera.ttf > Vera.h

@@ -73,13 +73,12 @@ int main (int argc, char **argv)
     name = argv[2];
     if (argv[3])
      subsets = argv[3];
+    if (argv[4] &&  !strcmp(argv[4], "binary"))
+     binary=1;
   }
   ctx_load_font_ttf_file ("import", argv[1]);
   ctx = ctx_new ();
   ctx_set_font (ctx, "import");
-
-  if (strstr (subsets, "binary"))
-    binary=1;
 
   if (strstr (subsets, "all"))
   for (int glyph = 0; glyph < 65536*8; glyph++) add_glyph (ctx, glyph);
