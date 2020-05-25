@@ -332,7 +332,7 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 
 #ifndef CTX_RASTERIZER  // set to 0 before to disable renderer code, useful for clients that only
                         // build journals.
-#define CTX_RASTERIZER 1
+#define CTX_RASTERIZER   1
 #endif
 
 /* experimental feature, not fully working - where text rendering happens
@@ -776,26 +776,7 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte);
 
 #if CTX_MATH
 
-static inline float
-ctx_floorf (float x)
-{
-  int i = (int)x;
-  return i - ( i > x );
-}
-
-static inline float
-ctx_ceilf (float x)
-{
-  int i = (int) -x;
-  return - (i - ( i > x ));
-}
-static inline float
-ctx_roundf (float x)
-{
-  return ((int) x) + 0.5f;
-}
-
-static inline float
+static float
 ctx_fabsf (float x)
 {
   union {
@@ -806,7 +787,7 @@ ctx_fabsf (float x)
   return u.f;
 }
 
-static inline float
+static float
 ctx_invsqrtf(float x)
 {
    void *foo = &x;
@@ -820,7 +801,7 @@ ctx_invsqrtf(float x)
    return x;
 }
 
-static inline float
+static float
 ctx_sinf (float x) {
   /* source : http://mooooo.ooo/chebyshev-sine-approximation/ */
   while (x < -CTX_PI)
@@ -843,12 +824,6 @@ ctx_sinf (float x) {
   float p1  = p3*x2  + coeffs[0];
   return (x - CTX_PI + 0.00000008742278f) *
          (x + CTX_PI - 0.00000008742278f) * p1 * x;
-}
-
-static inline float ctx_fmodf (float a, float b)
-{
-  float val = a / b;
-  return val - ((int)val);
 }
 
 static float ctx_atan2f (float y, float x)
@@ -881,15 +856,13 @@ static float ctx_atan2f (float y, float x)
   return atan;
 }
 
-static inline float ctx_atanf (float x)
+static float ctx_atanf (float x)
 {
   return ctx_atan2f (x, 1.0f);
   //
   //return CTX_PI/4 * x - x * (ctx_fabsf(x) - 1.0f) * (0.2447f + 0.0663f * ctx_fabsf(x));
 }
 
-#define roundf(x)   ctx_roundf(x)
-#define fmodf(a)    ctx_fmodf(a)
 #define sqrtf(a)    (1.0f/ctx_invsqrtf(a))
 #define atanf(a)    ctx_atanf(a)
 #define asinf(x)    ctx_atanf((x)/(ctx_sqrtf(1.0f-ctx_pow2(x))))
@@ -908,7 +881,7 @@ static inline float ctx_atanf (float x)
 
 #endif
 
-static inline float ctx_fast_hypotf (float x, float y)
+static float ctx_fast_hypotf (float x, float y)
 {
   if (x < 0) x = -x;
   if (y < 0) y = -y;
@@ -1256,7 +1229,7 @@ void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height)
 
 void ctx_process (Ctx *ctx, CtxEntry *entry);
 
-static inline void
+static void
 ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f)
 {
   matrix->m[0][0] = a; matrix->m[0][1] = b;
@@ -1264,7 +1237,7 @@ ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, 
   matrix->m[2][0] = e; matrix->m[2][1] = f;
 }
 
-static inline void
+static void
 ctx_matrix_identity (CtxMatrix *matrix)
 {
   matrix->m[0][0] = 1.0f; matrix->m[0][1] = 0.0f;
@@ -1272,7 +1245,7 @@ ctx_matrix_identity (CtxMatrix *matrix)
   matrix->m[2][0] = 0.0f; matrix->m[2][1] = 0.0f;
 }
 
-static inline void
+static void
 ctx_matrix_multiply (CtxMatrix       *result,
                      const CtxMatrix *t,
                      const CtxMatrix *s)
@@ -1287,7 +1260,7 @@ ctx_matrix_multiply (CtxMatrix       *result,
   *result = r;
 }
 
-static inline void
+static void
 ctx_matrix_translate (CtxMatrix *matrix, float x, float y)
 {
   CtxMatrix transform;
@@ -1298,7 +1271,7 @@ ctx_matrix_translate (CtxMatrix *matrix, float x, float y)
   ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
-static inline void
+static void
 ctx_matrix_scale (CtxMatrix *matrix, float x, float y)
 {
   CtxMatrix transform;
@@ -1309,7 +1282,7 @@ ctx_matrix_scale (CtxMatrix *matrix, float x, float y)
   ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
-static inline void
+static void
 ctx_matrix_rotate (CtxMatrix *matrix, float angle)
 {
   CtxMatrix transform;
@@ -1322,7 +1295,8 @@ ctx_matrix_rotate (CtxMatrix *matrix, float angle)
   ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
-static inline void
+#if 0
+static void
 ctx_matrix_skew_x (CtxMatrix *matrix, float angle)
 {
   CtxMatrix transform;
@@ -1334,7 +1308,7 @@ ctx_matrix_skew_x (CtxMatrix *matrix, float angle)
   ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
-static inline void
+static void
 ctx_matrix_skew_y (CtxMatrix *matrix, float angle)
 {
   CtxMatrix transform;
@@ -1345,8 +1319,9 @@ ctx_matrix_skew_y (CtxMatrix *matrix, float angle)
 
   ctx_matrix_multiply (matrix, &transform, matrix);
 }
+#endif
 
-static inline int
+static int
 ctx_conts_for_entry (CtxEntry *entry)
 {
   switch (entry->code)
@@ -1422,7 +1397,7 @@ ctx_iterator_init (CtxIterator *iterator,
   iterator->pos            = start_pos;
   iterator->end_pos        = renderstream->count;
   iterator->in_history     = -1; // -1 is a marker used for first run
-  memset (iterator->bitpack_command, 0, sizeof (iterator->bitpack_command));
+  bzero (iterator->bitpack_command, sizeof (iterator->bitpack_command));
 }
 
 static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
@@ -1666,8 +1641,8 @@ ctx_gstate_pop (CtxState *state)
   state->gstate_no--;
 }
 
-static inline void ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data);
-static inline void ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data);
+static void ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data);
+static void ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data);
 static void ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data);
 static void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
 
@@ -1892,7 +1867,7 @@ int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, 
   return ret;
 }
 
-static inline CtxEntry
+static CtxEntry
 ctx_void (CtxCode code)
 {
   CtxEntry command;
@@ -1911,7 +1886,7 @@ ctx_f (CtxCode code, float x, float y)
   return command;
 }
 
-static inline CtxEntry
+static CtxEntry
 ctx_u32 (CtxCode code, uint32_t x, uint32_t y)
 {
   CtxEntry command = ctx_void (code);
@@ -1920,7 +1895,8 @@ ctx_u32 (CtxCode code, uint32_t x, uint32_t y)
   return command;
 }
 
-static inline CtxEntry
+#if 0
+static CtxEntry
 ctx_s32 (CtxCode code, int32_t x, int32_t y)
 {
   CtxEntry command = ctx_void (code);
@@ -1928,8 +1904,9 @@ ctx_s32 (CtxCode code, int32_t x, int32_t y)
   command.data.s32[1] = y;
   return command;
 }
+#endif
 
-static inline CtxEntry
+static CtxEntry
 ctx_s16 (CtxCode code, int x0, int y0, int x1, int y1)
 {
   CtxEntry command = ctx_void (code);
@@ -1940,7 +1917,7 @@ ctx_s16 (CtxCode code, int x0, int y0, int x1, int y1)
   return command;
 }
 
-static inline CtxEntry
+static CtxEntry
 ctx_u8 (CtxCode code,
    uint8_t a, uint8_t b, uint8_t c, uint8_t d,
    uint8_t e, uint8_t f, uint8_t g, uint8_t h)
@@ -2133,7 +2110,7 @@ ctx_set_font (Ctx *ctx, const char *name)
 #if CTX_BACKEND_TEXT
   int namelen = strlen (name);
   CtxEntry commands[1 + 2 + namelen/8];
-  memset (commands, 0, sizeof (commands));
+  bzero (commands, sizeof (commands));
   commands[0] = ctx_f(CTX_SET_FONT, 0, 0);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = namelen;
@@ -3111,7 +3088,8 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
 
 #endif
 
-static inline int
+#if CTX_REFPACK
+static int
 ctx_entries_equal (const CtxEntry *a, const CtxEntry *b)
 {
   if (!a || !b) return 0;
@@ -3121,6 +3099,7 @@ ctx_entries_equal (const CtxEntry *a, const CtxEntry *b)
           a->data.u32[0] == b->data.u32[0] &&
           a->data.u32[1] == b->data.u32[1]);
 }
+#endif
 
 #if CTX_BITPACK_PACKER|CTX_REFPACK
 static int
@@ -3685,7 +3664,7 @@ ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data)
 static void
 ctx_state_init (CtxState *state)
 {
-  memset (state, 0, sizeof (CtxState));
+  bzero (state, sizeof (CtxState));
   state->gstate.source.global_alpha = 255;
   state->gstate.font_size    = 12;
   state->gstate.line_spacing = 1.0;
@@ -3731,7 +3710,7 @@ ctx_new (void)
 #else
   Ctx *ctx = (Ctx*)malloc (sizeof (Ctx));
 #endif
-  memset (ctx, 0, sizeof(Ctx));
+  bzero (ctx, sizeof(Ctx));
   ctx_init (ctx);
 
   return ctx;
@@ -3793,7 +3772,7 @@ ctx_pixel_format_info (CtxPixelFormat format);
 CtxBuffer *ctx_buffer_new (void)
 {
   CtxBuffer *buffer = (CtxBuffer*)malloc (sizeof (CtxBuffer));
-  memset (buffer, 0, sizeof (CtxBuffer));
+  bzero (buffer, sizeof (CtxBuffer));
   return buffer;
 }
 
@@ -4013,7 +3992,7 @@ ctx_renderer_gradient_add_stop (CtxRenderer *renderer, float pos, uint8_t *rgba)
 
 }
 
-static inline int ctx_renderer_add_point (CtxRenderer *renderer, int x1, int y1)
+static int ctx_renderer_add_point (CtxRenderer *renderer, int x1, int y1)
 {
   int16_t args[4];
 
@@ -4256,7 +4235,7 @@ static uint32_t ctx_renderer_poly_to_edges (CtxRenderer *renderer)
 #endif
 }
 
-static inline void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y);
+static void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y);
 
 static void ctx_renderer_finish_shape (CtxRenderer *renderer)
 {
@@ -4267,7 +4246,7 @@ static void ctx_renderer_finish_shape (CtxRenderer *renderer)
   }
 }
 
-static inline void ctx_renderer_move_to (CtxRenderer *renderer, float x, float y)
+static void ctx_renderer_move_to (CtxRenderer *renderer, float x, float y)
 {
   renderer->x        = x;
   renderer->y        = y;
@@ -4276,7 +4255,7 @@ static inline void ctx_renderer_move_to (CtxRenderer *renderer, float x, float y
   renderer->has_prev = 0;
 }
 
-static inline void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y)
+static void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y)
 {
   float tx = x;
   float ty = y;
@@ -4304,13 +4283,13 @@ static inline void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y
   renderer->x         = x;
 }
 
-static inline float
+static float
 ctx_lerpf (float v0, float v1, float dx)
 {
   return v0 + (v1-v0) * dx;
 }
 
-static inline float
+static float
 ctx_bezier_sample_1d (float x0, float x1, float x2, float x3, float dt)
 {
   float ab   = ctx_lerpf (x0, x1, dt);
@@ -4321,7 +4300,7 @@ ctx_bezier_sample_1d (float x0, float x1, float x2, float x3, float dt)
   return ctx_lerpf (abbc, bccd, dt);
 }
 
-static inline void
+static void
 ctx_bezier_sample (float x0, float y0,
                    float x1, float y1,
                    float x2, float y2,
@@ -4332,7 +4311,7 @@ ctx_bezier_sample (float x0, float y0,
   *y = ctx_bezier_sample_1d (y0, y1, y2, y3, dt);
 }
 
-static inline void
+static void
 ctx_renderer_bezier_divide (CtxRenderer *renderer,
                             float ox, float oy,
                             float x0, float y0,
@@ -4382,7 +4361,7 @@ ctx_renderer_bezier_divide (CtxRenderer *renderer,
                                         tolerance);
 }
 
-static inline void
+static void
 ctx_renderer_curve_to (CtxRenderer *renderer,
                        float x0, float y0,
                        float x1, float y1,
@@ -4435,7 +4414,7 @@ ctx_renderer_curve_to (CtxRenderer *renderer,
   ctx_renderer_line_to (renderer, x2, y2);
 }
 
-static inline void
+static void
 ctx_renderer_rel_move_to (CtxRenderer *renderer, float x, float y)
 {
   if (x == 0.f && y == 0.f)
@@ -4445,7 +4424,7 @@ ctx_renderer_rel_move_to (CtxRenderer *renderer, float x, float y)
   ctx_renderer_move_to (renderer, x, y);
 }
 
-static inline void
+static void
 ctx_renderer_rel_line_to (CtxRenderer *renderer, float x, float y)
 {
   if (x== 0.f && y==0.f)
@@ -4455,7 +4434,7 @@ ctx_renderer_rel_line_to (CtxRenderer *renderer, float x, float y)
   ctx_renderer_line_to (renderer, x, y);
 }
 
-static inline void
+static void
 ctx_renderer_rel_curve_to (CtxRenderer *renderer,
                             float x0, float y0, float x1, float y1, float x2, float y2)
 {
@@ -4486,13 +4465,13 @@ static int ctx_compare_edges (const void *ap, const void *bp)
   return xcompare;
 }
 
-static inline void ctx_renderer_sort_edges (CtxRenderer *renderer)
+static void ctx_renderer_sort_edges (CtxRenderer *renderer)
 {
   qsort (&renderer->edge_list.entries[0], renderer->edge_list.count,
          sizeof (CtxEntry), ctx_compare_edges);
 }
 
-static inline void ctx_renderer_discard_edges (CtxRenderer *renderer)
+static void ctx_renderer_discard_edges (CtxRenderer *renderer)
 {
   for (int i = 0; i < renderer->active_edges; i++)
   {
@@ -4528,7 +4507,7 @@ static inline void ctx_renderer_discard_edges (CtxRenderer *renderer)
   }
 }
 
-static inline void ctx_renderer_increment_edges (CtxRenderer *renderer, int count)
+static void ctx_renderer_increment_edges (CtxRenderer *renderer, int count)
 {
   for (int i = 0; i < renderer->lingering_edges; i++)
   {
@@ -4553,7 +4532,7 @@ static inline void ctx_renderer_increment_edges (CtxRenderer *renderer, int coun
    again feed_edges until middle of scanline if doing non-AA
    or directly render when doing AA
 */
-static inline void ctx_renderer_feed_edges (CtxRenderer *renderer)
+static void ctx_renderer_feed_edges (CtxRenderer *renderer)
 {
   int miny;
   for (int i = 0; i < renderer->pending_edges; i++)
@@ -4699,7 +4678,7 @@ static void ctx_renderer_sort_active_edges (CtxRenderer *renderer)
 #endif
 }
 
-static inline uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
+static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 {
   return (((((v0)<<8) + (dx) * ((v1) - (v0))))>>8);
 }
@@ -5064,7 +5043,7 @@ static void ctx_over_RGBA8 (uint8_t * restrict dst, uint8_t * restrict src , uin
     dst[c] = (src[c]*cov + dst[c] * ralpha) >> 8;
 }
 
-static inline int
+static int
 ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t * restrict dst, uint8_t *restrict coverage, int count)
 {
   CtxGState *gstate = &renderer->state->gstate;
@@ -5148,7 +5127,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t * restrict dst, uint8
   return count;
 }
 
-static inline int
+static int
 ctx_b2f_over_RGBA8_convert (CtxRenderer *renderer, int x, uint8_t *restrict dst, uint8_t *restrict coverage, int count)
 {
   int ret;
@@ -5173,7 +5152,7 @@ ctx_swap_red_green (uint8_t *rgba)
   *buf = green_alpha | red | blue;
 }
 
-static inline void
+static void
 ctx_decode_pixels_BGRA8(CtxRenderer *renderer, int x, const void *restrict buf, uint8_t *restrict rgba, int count)
 {
   uint32_t *srci = (uint32_t*)buf;
@@ -5187,7 +5166,7 @@ ctx_decode_pixels_BGRA8(CtxRenderer *renderer, int x, const void *restrict buf, 
   }
 }
 
-static inline void
+static void
 ctx_encode_pixels_BGRA8 (CtxRenderer *renderer, int x, void *restrict buf, const uint8_t *restrict rgba, int count)
 {
   ctx_decode_pixels_BGRA8(renderer, x, rgba, (uint8_t*)buf, count);
@@ -5379,7 +5358,7 @@ ctx_associated_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint
 }
 #endif
 
-static inline int
+static int
 ctx_renderer_apply_coverage (CtxRenderer *renderer,
                              uint8_t     *dst,
                              int          x,
@@ -5519,7 +5498,7 @@ ctx_renderer_reset (CtxRenderer *renderer)
   renderer->col_max = -5000;
 }
 
-static inline void
+static void
 ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
 #if CTX_SHAPE_CACHE
                               ,CtxShapeEntry *shape
@@ -5591,7 +5570,7 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
 
   for (renderer->scanline = scan_start; renderer->scanline < scan_end;)
   {
-    memset(coverage, 0, 
+    bzero (coverage,
 #if CTX_SHAPE_CACHE
                     shape?shape->width:
 #endif
@@ -6828,9 +6807,9 @@ ctx_332_unpack (uint8_t pixel,
   *blue   = (pixel & 3)<<6;
   *green = ((pixel >> 2) & 7)<<5;
   *red   = ((pixel >> 5) & 7)<<5;
-  if (*blue > 223) *blue = 255;
+  if (*blue > 223)  *blue  = 255;
   if (*green > 223) *green = 255;
-  if (*red > 223) *red = 255;
+  if (*red > 223)   *red   = 255;
 }
 
 static inline uint8_t
@@ -6838,9 +6817,9 @@ ctx_332_pack (uint8_t red,
               uint8_t green,
               uint8_t blue)
 {
-  uint8_t c = (red >> 5) << 5;
+  uint8_t c  = (red >> 5) << 5;
           c |= (green >> 5) << 2;
-          c |= blue >> 6;
+          c |= (blue >> 6);
   return c;
 }
 
@@ -6885,8 +6864,6 @@ ctx_b2f_over_RGB332 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *covera
   ctx_encode_pixels_RGB332 (renderer, x, dst, &pixels[0], count);
   return ret;
 }
-
-
 
 #endif
 
@@ -7017,7 +6994,6 @@ ctx_b2f_over_RGB565_BS (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *cov
   return ret;
 }
 
-
 #endif
 
 static void
@@ -7101,7 +7077,7 @@ ctx_pixel_format_info (CtxPixelFormat format)
 static void
 ctx_renderer_init (CtxRenderer *renderer, Ctx *ctx, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
 {
-  memset (renderer, 0, sizeof (CtxRenderer));
+  bzero (renderer, sizeof (CtxRenderer));
   renderer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   renderer->state       = state;
   renderer->ctx         = ctx;
@@ -7314,7 +7290,7 @@ static inline int ctx_utf8_len (const unsigned char first_byte)
   return 1;
 }
 
-static inline const char *ctx_utf8_skip (const char *s, int utf8_length)
+static const char *ctx_utf8_skip (const char *s, int utf8_length)
 {
    int count;
    if (!s)
@@ -7329,6 +7305,7 @@ static inline const char *ctx_utf8_skip (const char *s, int utf8_length)
    return s;
 }
 
+//  XXX  :  unused
 static inline int ctx_utf8_strlen (const char *s)
 {
    int count;
@@ -7413,7 +7390,7 @@ static float
 ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar);
 static float
 ctx_glyph_kern_stb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB);
-static inline int
+static int
 ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke);
 
 CtxFontEngine ctx_font_engine_stb = {
@@ -7461,7 +7438,7 @@ ctx_load_font_ttf_file (const char *name, const char *path)
 }
 #endif
 
-static inline float
+static float
 ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
@@ -7472,7 +7449,7 @@ ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
   return (advance * scale);
 }
 
-static inline float
+static float
 ctx_glyph_kern_stb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
@@ -7481,7 +7458,7 @@ ctx_glyph_kern_stb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
   return stbtt_GetCodepointKernAdvance (ttf_info, unicharA, unicharB) * scale;
 }
 
-static inline int
+static int
 ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
@@ -7495,9 +7472,7 @@ ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   float scale    = stbtt_ScaleForPixelHeight (ttf_info, font_size);;
 
   stbtt_vertex *vertices = NULL;
-  int num_verts;
-
-  num_verts = stbtt_GetCodepointShape (ttf_info, unichar, &vertices);
+  int num_verts = stbtt_GetCodepointShape (ttf_info, unichar, &vertices);
 
   for (int i = 0; i < num_verts; i++)
   {
@@ -7538,7 +7513,7 @@ ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 
 #if CTX_FONT_ENGINE_CTX
 
-static inline float
+static float
 ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
 {
   float font_size = ctx->state.gstate.font_size;
@@ -7566,7 +7541,7 @@ static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
   for (int i = 0; i < font->ctx.length; i++)
   {
     CtxEntry *entry = (CtxEntry*)&font->ctx.data[i];
-    if (entry->code == '@' && entry->data.u32[0] == unichar)
+    if (entry->code == CTX_DEFINE_GLYPH && entry->data.u32[0] == unichar)
       return i;
   }
   return 0;
@@ -7583,26 +7558,27 @@ static int ctx_font_find_glyph (CtxFont *font, uint32_t glyph)
   return -1;
 }
 
-static inline float
+static float
 ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
   CtxState *state = &ctx->state;
   float font_size = state->gstate.font_size;
-  int start = 0;
-  start = ctx_font_find_glyph (font, unichar);
+  int   start     = ctx_font_find_glyph (font, unichar);
+
   if (start < 0)
     return 0.0;  // XXX : fallback
+
   for (int i = start; i < font->ctx.length; i++)
   {
     CtxEntry *entry = (CtxEntry*)&font->ctx.data[i];
-    if (entry->code == '@')
+    if (entry->code == CTX_DEFINE_GLYPH)
       if (entry->data.u32[0] == (unsigned)unichar)
         return (entry->data.u32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE);
   }
   return 0.0;
 }
 
-static inline int
+static int
 ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxState *state = &ctx->state;
@@ -7618,14 +7594,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   float origin_x = state->x;
   float origin_y = state->y;
 
-#if 0
-  if (ctx->renderer)
-  {
-    origin_x = ctx->renderer->x;
-    origin_y = ctx->renderer->y;
-  }
   ctx_current_point (ctx, &origin_x, &origin_y);
-#endif
 
   int in_glyph = 0;
   float font_size = state->gstate.font_size;
@@ -7642,7 +7611,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   {
     if (in_glyph)
     {
-      if (entry->code == '@')
+      if (entry->code == CTX_DEFINE_GLYPH)
       {
 done:
         if (stroke)
@@ -7654,7 +7623,7 @@ done:
       }
       ctx_process (ctx, entry);
     }
-    else if (entry->code == '@' && entry->data.u32[0] == unichar)
+    else if (entry->code == CTX_DEFINE_GLYPH && entry->data.u32[0] == unichar)
     {
       in_glyph = 1;
       ctx_save (ctx);
@@ -7685,7 +7654,7 @@ static void ctx_font_init_ctx (CtxFont *font)
   for (int i = 0; i < font->ctx.length; i++)
   {
     CtxEntry *entry = &font->ctx.data[i];
-    if (entry->code == '@')
+    if (entry->code == CTX_DEFINE_GLYPH)
       glyph_count ++;
   }
   font->ctx.glyphs = glyph_count;
@@ -7699,7 +7668,7 @@ static void ctx_font_init_ctx (CtxFont *font)
   for (int i = 0; i < font->ctx.length; i++)
   {
     CtxEntry *entry = &font->ctx.data[i];
-    if (entry->code == '@')
+    if (entry->code == CTX_DEFINE_GLYPH)
     {
       font->ctx.index[no*2]   = entry->data.u32[0];
       font->ctx.index[no*2+1] = i;
@@ -7772,7 +7741,7 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
 #if CTX_BACKEND_TEXT
   CtxEntry commands[1];
-  memset (commands, 0, sizeof (commands));
+  bzero (commands, sizeof (commands));
   commands[0] = ctx_u32(CTX_GLYPH, unichar, 0);
   commands[0].data.u8[4] = stroke;
   ctx_process (ctx, commands);
@@ -7789,7 +7758,7 @@ ctx_glyph_width (Ctx *ctx, int unichar)
   return font->engine->glyph_width (font, ctx, unichar);
 }
 
-static inline float
+static float
 ctx_glyph_kern (Ctx *ctx, int unicharA, int unicharB)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
@@ -7901,7 +7870,7 @@ ctx_text (Ctx        *ctx,
 #if CTX_BACKEND_TEXT
   int stringlen = strlen (string);
   CtxEntry commands[1 + 2 + stringlen/8];
-  memset (commands, 0, sizeof (commands));
+  bzero (commands, sizeof (commands));
   commands[0] = ctx_u8(CTX_TEXT, 0, 0,0,0,0,0,0,0);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = stringlen;
@@ -7922,7 +7891,7 @@ ctx_text_stroke (Ctx        *ctx,
 #if CTX_BACKEND_TEXT
   int stringlen = strlen (string);
   CtxEntry commands[1 + 2 + stringlen/8];
-  memset (commands, 0, sizeof (commands));
+  bzero (commands, sizeof (commands));
   commands[0] = ctx_u8(CTX_TEXT_STROKE, 1, 0,0,0,0,0,0,0);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = stringlen;
@@ -8797,7 +8766,8 @@ CtxParser *ctx_parser_new (
   void (*exit)(void *exit_data),
   void *exit_data)
 {
-  CtxParser *ctxp = calloc (sizeof (CtxParser), 1);
+  CtxParser *ctxp = malloc (sizeof (CtxParser));
+  bzero (ctxp, sizeof (CtxParser));
   ctx_parser_init (ctxp, ctx,
              width, height,
              cell_width, cell_height,
