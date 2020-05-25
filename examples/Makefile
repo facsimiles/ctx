@@ -6,7 +6,7 @@ mmm: mmm.c ../ctx.h  Makefile
 sdl2: sdl2.c ../ctx.h
 	$(CC) $< -o $@ -I.. -I../fonts `pkg-config --cflags --libs sdl2` -lm -Wall
 test-renderpaths: test-renderpaths.c ../ctx.h ../fonts/*.h
-	gcc $< -o $@ -g -O3 -march=native -mtune=native `pkg-config mrg --cflags --libs` -I../fonts  -I..
+	gcc $< -o $@ -g -O3 -march=native -mtune=native `pkg-config mrg --cflags --libs` -I../fonts  -I.. -msse3
 
 ctx-tiny: ctx-tiny.c ../ctx.h ../fonts/*.h Makefile
 	$(CC) $< -o $@ -I.. -I../fonts -Os

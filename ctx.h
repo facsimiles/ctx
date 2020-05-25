@@ -528,6 +528,31 @@ typedef enum
   CTX_CAP_SQUARE = 2
 } CtxLineCap;
 
+typedef enum
+{
+  CTX_TEXT_BASELINE_ALPHABETIC = 0,
+  CTX_TEXT_BASELINE_TOP,
+  CTX_TEXT_BASELINE_HANGING,
+  CTX_TEXT_BASELINE_MIDDLE,
+  CTX_TEXT_BASELINE_IDEOGRAPHIC,
+  CTX_TEXT_BASELINE_BOTTOM
+} CtxTextBaseline;
+
+typedef enum
+{
+  CTX_TEXT_ALIGN_START = 0,
+  CTX_TEXT_ALIGN_END,
+  CTX_TEXT_ALIGN_CENTER,
+  CTX_TEXT_ALIGN_LEFT,
+  CTX_TEXT_ALIGN_RIGHT
+} CtxTextAlign;
+
+typedef enum
+{
+  CTX_TEXT_DIRECTION_INHERIT = 0,
+  CTX_TEXT_DIRECTION_LTR,
+  CTX_TEXT_DIRECTION_RTL
+} CtxTextDirection;
 
 void ctx_set_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
 void ctx_set_line_cap         (Ctx *ctx, CtxLineCap cap);
@@ -606,7 +631,7 @@ typedef enum
   CTX_REL_HOR_LINE_TO  = 'h', // SVG %
   CTX_TEXTURE          = 'i',
   CTX_SET_LINE_JOIN    = 'j',
-  CTX_FILL_RULE        = 'k',
+  CTX_SET_FILL_RULE    = 'k',
   CTX_REL_LINE_TO      = 'l', // SVG
   CTX_REL_MOVE_TO      = 'm', // SVG
   CTX_SET_FONT         = 'n', // as used by text parser
@@ -620,7 +645,7 @@ typedef enum
   CTX_REL_VER_LINE_TO  = 'v',
   CTX_LINE_WIDTH       = 'w',
   CTX_TEXT             = 'x', // x, y - followed by "" in CTX_DATA
-  CTX_IDENTITY         = 'y',
+  CTX_IDENTITY         = 'y', // < can be achieved with set_transform
   CTX_CLOSE_PATH       = 'z',
   CTX_NEW_PATH         = '_',
 
@@ -994,9 +1019,19 @@ struct _CtxGState {
   CtxLineCap      line_cap:2;
   CtxLineJoin    line_join:2;
   CtxFillRule    fill_rule:1;
-  unsigned int        font:4;
+  CtxTextBaseline text_baseline:3;
+  CtxTextAlign    text_align:3;
+  CtxTextDirection text_direction:2;
+  unsigned int        font:5;
   unsigned int        bold:1;
   unsigned int      italic:1;
+  float         shadow_blur;
+  float         shadow_x;
+  float         shadow_y;
+
+  //CtxSource   shadow_source;
+  //CtxColor    shadow_color;
+
 };
 
 
@@ -2586,7 +2621,7 @@ void ctx_set_line_cap (Ctx *ctx, CtxLineCap cap)
 
 void ctx_set_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
 {
-  CtxEntry command = ctx_u8 (CTX_FILL_RULE, fill_rule, 0, 0, 0, 0, 0, 0, 0);
+  CtxEntry command = ctx_u8 (CTX_SET_FILL_RULE, fill_rule, 0, 0, 0, 0, 0, 0, 0);
   ctx_process (ctx, &command);
 }
 
@@ -2958,7 +2993,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
     case CTX_SET_LINE_CAP:
       state->gstate.line_cap = (CtxLineCap)ctx_arg_u8(0);
       break;
-    case CTX_FILL_RULE:
+    case CTX_SET_FILL_RULE:
       state->gstate.fill_rule = (CtxFillRule)ctx_arg_u8(0);
       break;
     case CTX_SET_LINE_JOIN:
@@ -8690,7 +8725,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         ctx_set_font_size (d_ctx, ctx_arg_float(0));
         break;
 
-      case CTX_FILL_RULE:
+      case CTX_SET_FILL_RULE:
         ctx_set_fill_rule (d_ctx, (CtxFillRule)ctx_arg_u8(0));
         break;
 
@@ -8790,6 +8825,9 @@ ctx_print_escaped_string (FILE *stream, const char *string)
     }
   }
 }
+
+// shadowColor shadowBlur shadowOffsetX shadowOffsetY
+//
 
 static void
 ctx_print_float (FILE *stream, float val)
@@ -9168,7 +9206,8 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('d','o','n','e',0,0,0,0,0,0,0,0): str_hash = 'X'; break;
     case STR('c','o','l','o','r','_','m','o','d','e','l', 0): str_hash ='Y'; break;
     case STR('c','l','o','s','e','_','p','a','t','h',0,0): str_hash ='z'; break;
-    case STR('n','e','w','_','p','a','t','h',0,0,0,0): str_hash ='_'; break;
+    case STR('n','e','w','_','p','a','t','h',0,0,0,0): 
+    case STR('b','e','g','i','n','_','p','a','t','h',0,0): str_hash ='_'; break;
 
     case STR('r','e','l','_','a','r','c','_','t','o',0,0): str_hash = 'a'; break;
     case STR('c','l','i','p',0,0,0,0,0,0,0,0): str_hash = 'b'; break;
@@ -9179,6 +9218,10 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('r','e','l','_','h','o','r','_','l','i','n','e'): str_hash = 'h'; break;
     case STR('s','e','t','_','l','i','n','e','_','j','o','i'):
     case STR('j','o','i','n',0,0,0,0,0,0,0,0): str_hash = 'j'; break;
+
+    case STR('f','i','l','l','_','r','u','l','e',0,0,0): 
+    case STR('s','e','t','_','f','i','l','l','_','r','u','l'): str_hash = 'k'; break;
+
     case STR('r','e','l','_','l','i','n','e','_','t','o',0): str_hash = 'l'; break;
     case STR('r','e','l','_','m','o','v','e','_','t','o',0): str_hash = 'm'; break;
     case STR('s','e','t','_','f','o','n','t',0,0,0,0): str_hash = 'n'; break;
@@ -9197,6 +9240,7 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('t','e','x','t',0,0,0,0,0,0,0,0): str_hash = 'x'; break;
     case STR('i','d','e','n','t','i','t','y','_','m','a','t'):
     case STR('i','d','e','n','t','i','t','y',0,0,0,0): str_hash = 'y'; break;
+    case STR('s','e','t','_','t','r','a','n','s','f','o','r'): str_hash = '^'; break;
 
     /* strings are handled directly here,
      * instead of in the one-char handler, using return instead of break
@@ -9311,6 +9355,7 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case 'Y': ctxp->n_args = 1; return CTX_SET_COLOR_MODEL;
     case 'Z':case 'z': ctxp->n_args = 0; return CTX_CLOSE_PATH;
     case '_': ctxp->n_args = 0; return CTX_NEW_PATH;
+    case '^': ctxp->n_args = 0; return CTX_SET_TRANSFORM;
     case 'a': ctxp->n_args = 5; return CTX_REL_ARC_TO;
     case 'b': ctxp->n_args = 0; return CTX_CLIP;
     case 'c': ctxp->n_args = 6; return CTX_REL_CURVE_TO;
@@ -9319,6 +9364,7 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case 'f': ctxp->n_args = 4; return CTX_LINEAR_GRADIENT;
     case 'h': ctxp->n_args = 1; return CTX_REL_HOR_LINE_TO;
     case 'j': ctxp->n_args = 1; return CTX_SET_LINE_JOIN;
+    case 'k': ctxp->n_args = 1; return CTX_SET_FILL_RULE;
     case 'l': ctxp->n_args = 2; return CTX_REL_LINE_TO;
     case 'm': ctxp->n_args = 2; return CTX_REL_MOVE_TO;
     case 'n': ctxp->n_args = 100; return CTX_SET_FONT;
@@ -9567,27 +9613,32 @@ static void ctx_parser_dispatch_command (CtxParser *ctxp)
         ctxp->pcx = ctx_x (ctx);
         ctxp->pcy = ctx_y (ctx);
         break;
-
-    case CTX_ARC: ctx_arc (ctx, ctxp->numbers[0], ctxp->numbers[1],
-                            ctxp->numbers[2], ctxp->numbers[3],
-                            ctxp->numbers[4], ctxp->numbers[5]);
+    case CTX_ARC:
+        ctx_arc (ctx, ctxp->numbers[0], ctxp->numbers[1],
+                      ctxp->numbers[2], ctxp->numbers[3],
+                      ctxp->numbers[4], ctxp->numbers[5]);
         break;
-
-    case CTX_CURVE_TO: ctx_curve_to (ctx, ctxp->numbers[0], ctxp->numbers[1],
-                                           ctxp->numbers[2], ctxp->numbers[3],
-                                           ctxp->numbers[4], ctxp->numbers[5]);
-                        ctxp->pcx = ctxp->numbers[2];
-                        ctxp->pcy = ctxp->numbers[3];
-                        ctxp->command = CTX_CURVE_TO;
+    case CTX_SET_TRANSFORM:
+        ctx_set_transform (ctx, ctxp->numbers[0], ctxp->numbers[1],
+                                ctxp->numbers[2], ctxp->numbers[3],
+                                ctxp->numbers[4], ctxp->numbers[5]);
+        break;
+    case CTX_CURVE_TO:
+        ctx_curve_to (ctx, ctxp->numbers[0], ctxp->numbers[1],
+                           ctxp->numbers[2], ctxp->numbers[3],
+                           ctxp->numbers[4], ctxp->numbers[5]);
+        ctxp->pcx = ctxp->numbers[2];
+        ctxp->pcy = ctxp->numbers[3];
+        ctxp->command = CTX_CURVE_TO;
         break;
     case CTX_REL_CURVE_TO:
-                        ctxp->pcx = ctxp->numbers[2] + ctx_x (ctx);
-                        ctxp->pcy = ctxp->numbers[3] + ctx_y (ctx);
+        ctxp->pcx = ctxp->numbers[2] + ctx_x (ctx);
+        ctxp->pcy = ctxp->numbers[3] + ctx_y (ctx);
                         
-                        ctx_rel_curve_to (ctx, ctxp->numbers[0], ctxp->numbers[1],
-                                           ctxp->numbers[2], ctxp->numbers[3],
-                                           ctxp->numbers[4], ctxp->numbers[5]);
-                        ctxp->command = CTX_REL_CURVE_TO;
+        ctx_rel_curve_to (ctx, ctxp->numbers[0], ctxp->numbers[1],
+                               ctxp->numbers[2], ctxp->numbers[3],
+                               ctxp->numbers[4], ctxp->numbers[5]);
+        ctxp->command = CTX_REL_CURVE_TO;
         break;
     case CTX_LINE_TO:
         ctx_line_to (ctx, ctxp->numbers[0], ctxp->numbers[1]);
@@ -9631,11 +9682,9 @@ static void ctx_parser_dispatch_command (CtxParser *ctxp)
     case CTX_ROTATE:
         ctx_rotate (ctx, ctxp->numbers[0]);
         break;
-
     case CTX_SET_FONT:
         ctx_set_font (ctx, (char*)ctxp->holding);
         break;
-
     case CTX_TEXT_STROKE:
     case CTX_TEXT:
         if (ctxp->n_numbers == 1)
