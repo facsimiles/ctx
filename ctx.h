@@ -8478,7 +8478,7 @@ ctx_print_entry_u8 (FILE *stream, CtxEntry *entry, int args)
   for (int i = 0; i <  args; i ++)
   {
     if (i>0)
-      fprintf (stream, " ");
+      fwrite (" ", 1, 1, stream);
     fprintf (stream, "%i", ctx_arg_u8(i));
   }
 }
@@ -8589,11 +8589,11 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         break;
 
       case CTX_SET_RGBA:
-        fprintf (stream, "rgba");
+        fwrite ("rgba", 4, 1, stream);
         for (int c = 0; c < 4; c++)
         {
           if (c)
-            fprintf (stream, " ");
+            fwrite (" ", 1, 1, stream);
           ctx_print_float (stream, ctx_arg_u8(c)/255.0);
         }
         break;
@@ -8642,11 +8642,11 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         break;
 
       case CTX_GRADIENT_STOP:
-        fprintf (stream, "%c", entry->code);
+        fwrite (&entry->code, 1, 1, stream);
         for (int c = 0; c < 4; c++)
         {
           if (c)
-            fprintf (stream, " ");
+            fwrite ("  ", 1, 1, stream);
           ctx_print_float (stream, ctx_arg_u8(4+c)/255.0);
         }
         break;
