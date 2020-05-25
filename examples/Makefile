@@ -1,3 +1,5 @@
+SMALL_CFLAGS=-Os -s  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-asynchronous-unwind-tables -fno-unwind-tables -fmerge-all-constants -fno-ident -mfpmath=387 -mfancy-math-387  -fsingle-precision-constant -Wl,--hash-style=gnu,--build-id=none  -fno-unroll-loops 
+
 all: ctx-tiny ctx-small sdl2 mmm test-renderpaths ctx-tiny ctx-tiny-static-musl  ctx-small-static-musl ctx-tiny-musl
 clean:
 	rm -rf mmm sdl2 ctx-tiny ctx-tiny-static-musl test-renderpaths ctx-small ctx-small-static-musl ctx-tiny-musl
@@ -9,26 +11,23 @@ test-renderpaths: test-renderpaths.c ../ctx.h ../fonts/*.h
 	gcc $< -o $@ -g -O3 -march=native -mtune=native `pkg-config mrg --cflags --libs` -I../fonts  -I.. -msse3
 
 ctx-tiny: ctx-tiny.c ../ctx.h ../fonts/*.h Makefile
-	$(CC) $< -o $@ -I.. -I../fonts -Os
-	strip -s -x $@
-	ls -slab $@
+	$(CC) $< -o $@ -I.. -I../fonts $(SMALL_CFLAGS)
+	@ls -slab $@
 
 ctx-tiny-musl: ctx-tiny.c ../ctx.h ../fonts/*.h Makefile
-	musl-gcc $< -o $@ -I.. -I../fonts -Os
-	strip -s -x $@
-	ls -slab $@
+	musl-gcc $< -o $@ -I.. -I../fonts $(SMALL_CFLAGS)
+	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
+	@ls -slab $@
 
 ctx-tiny-static-musl: ctx-tiny.c ../ctx.h ../fonts/*.h Makefile
-	musl-gcc $< -o $@ -I.. -I../fonts -Os -static
-	strip -s -x $@
-	ls -slab $@
+	musl-gcc $< -o $@ -I.. -I../fonts -static $(SMALL_CFLAGS)
+	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
+	@ls -slab $@
 
 ctx-small: ctx-small.c ../ctx.h ../fonts/*.h Makefile
-	$(CC) $< -o $@ -I.. -I../fonts -Os
-	strip -s -x $@
-	ls -slab $@
+	$(CC) $< -o $@ -I.. -I../fonts $(SMALL_CFLAGS)
+	@ls -slab $@
 
 ctx-small-static-musl: ctx-small.c ../ctx.h ../fonts/*.h Makefile
-	musl-gcc $< -o $@ -I.. -I../fonts -Os -static
-	strip -s -x $@
-	ls -slab $@
+	musl-gcc $< -o $@ -I.. -I../fonts -static $(SMALL_CFLAGS)
+	@ls -slab $@

@@ -2637,6 +2637,12 @@ void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
   ctx_process (ctx, &command);
 }
 
+void ctx_set_text_align (Ctx *ctx, CtxTextAlign text_align)
+{
+  //CtxEntry command = ctx_u8 (CTX_SET_TEXT_ALIGN, text_align, 0, 0, 0, 0, 0, 0, 0);
+  //ctx_process (ctx, &command);
+}
+
 void
 ctx_rel_curve_to (Ctx *ctx,
                   float x0, float y0,
@@ -5394,7 +5400,7 @@ static CtxSourceU8 ctx_renderer_get_source_u8 (CtxRenderer *renderer)
 #define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
-static void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
+static void ctx_over_RGBA8 (uint8_t * restrict dst, uint8_t * restrict src , uint8_t cov)
 {
   uint8_t ralpha = 255 - ((cov * src[3]) >> 8);
   for (int c = 0; c < 4; c++)
@@ -5402,7 +5408,7 @@ static void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
 }
 
 static inline int
-ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t * restrict dst, uint8_t *restrict coverage, int count)
 {
   CtxGState *gstate = &renderer->state->gstate;
 
@@ -5486,7 +5492,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
 }
 
 static inline int
-ctx_b2f_over_RGBA8_convert (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
+ctx_b2f_over_RGBA8_convert (CtxRenderer *renderer, int x, uint8_t *restrict dst, uint8_t *restrict coverage, int count)
 {
   int ret;
   uint8_t pixels[count * 4];
@@ -5511,7 +5517,7 @@ ctx_swap_red_green (uint8_t *rgba)
 }
 
 static inline void
-ctx_decode_pixels_BGRA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_decode_pixels_BGRA8(CtxRenderer *renderer, int x, const void *restrict buf, uint8_t *restrict rgba, int count)
 {
   uint32_t *srci = (uint32_t*)buf;
   uint32_t *dsti = (uint32_t*)rgba;
@@ -5525,13 +5531,13 @@ ctx_decode_pixels_BGRA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *
 }
 
 static inline void
-ctx_encode_pixels_BGRA8 (CtxRenderer *renderer, int x, void *buf, const uint8_t *rgba, int count)
+ctx_encode_pixels_BGRA8 (CtxRenderer *renderer, int x, void *restrict buf, const uint8_t *restrict rgba, int count)
 {
   ctx_decode_pixels_BGRA8(renderer, x, rgba, (uint8_t*)buf, count);
 }
 
 static int
-ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *restrict dst, uint8_t *restrict coverage, int count)
 {
   CtxGState *gstate = &renderer->state->gstate;
 
@@ -5629,7 +5635,7 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *covera
 
 #if CTX_ENABLE_GRAYF
 static int
-ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, uint8_t *restrict coverage, int count)
 {
   float *dst_f = (float*)dst;
   float y = renderer->scanline / CTX_RASTERIZER_AA;
