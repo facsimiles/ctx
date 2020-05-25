@@ -1,4 +1,4 @@
-SMALL_CFLAGS=-Os -s  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-asynchronous-unwind-tables -fno-unwind-tables -fmerge-all-constants -fno-ident -mfpmath=387 -mfancy-math-387  -fsingle-precision-constant -Wl,--hash-style=gnu,--build-id=none  -fno-unroll-loops 
+SMALL_CFLAGS=-Os -s  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu
 
 all: ctx-tiny ctx-small sdl2 mmm test-renderpaths ctx-tiny ctx-tiny-static-musl  ctx-small-static-musl ctx-tiny-musl
 clean:
