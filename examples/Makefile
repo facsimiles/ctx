@@ -1,7 +1,7 @@
 all: ctx-tiny ctx-small sdl2 mmm test-renderpaths ctx-tiny ctx-tiny-static-musl  ctx-small-static-musl ctx-tiny-musl
 clean:
 	rm -rf mmm sdl2 ctx-tiny ctx-tiny-static-musl test-renderpaths ctx-small ctx-small-static-musl ctx-tiny-musl
-mmm: mmm.c ../ctx.h
+mmm: mmm.c ../ctx.h  Makefile
 	$(CC) $< -o $@ -I.. -I../fonts `pkg-config --cflags --libs mmm` -Wall
 sdl2: sdl2.c ../ctx.h
 	$(CC) $< -o $@ -I.. -I../fonts `pkg-config --cflags --libs sdl2` -lm -Wall

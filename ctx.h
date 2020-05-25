@@ -370,7 +370,6 @@ void ctx_blit          (Ctx *ctx,
 
 /* clears and resets a context */
 void ctx_clear          (Ctx *ctx);
-void ctx_empty          (Ctx *ctx);
 
 void ctx_new_path       (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
@@ -440,6 +439,7 @@ void ctx_arc            (Ctx  *ctx,
 void ctx_arc_to         (Ctx *ctx, float x1, float y1,
                                    float x2, float y2, float radius);
 void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
+float ctx_get_global_alpha (Ctx *ctx);
 
 void ctx_fill           (Ctx *ctx);
 void ctx_stroke         (Ctx *ctx);
@@ -529,12 +529,12 @@ typedef enum
 } CtxLineCap;
 
 
-void ctx_set_fill_rule      (Ctx *ctx, CtxFillRule fill_rule);
-void ctx_set_line_cap       (Ctx *ctx, CtxLineCap cap);
-void ctx_set_line_join      (Ctx *ctx, CtxLineJoin join);
+void ctx_set_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
+void ctx_set_line_cap         (Ctx *ctx, CtxLineCap cap);
+void ctx_set_line_join        (Ctx *ctx, CtxLineJoin join);
 void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
-int ctx_set_renderstream    (Ctx *ctx, void *data, int length);
-int ctx_append_renderstream (Ctx *ctx, void *data, int length);
+int ctx_set_renderstream      (Ctx *ctx, void *data, int length);
+int ctx_append_renderstream   (Ctx *ctx, void *data, int length);
 
 
 /* these are only needed for clients renderin text, as all text gets
@@ -1855,7 +1855,7 @@ ctx_void (CtxCode code)
   return command;
 }
 
-static inline CtxEntry
+static CtxEntry
 ctx_f (CtxCode code, float x, float y)
 {
   CtxEntry command = ctx_void (code);
@@ -1914,13 +1914,6 @@ ctx_close_path (Ctx *ctx)
     ctx_line_to (ctx, ctx->state.path_start_x, ctx->state.path_start_y);
 }
 
-void
-ctx_cmd_ff (Ctx *ctx, CtxCode code, float arg1, float arg2)
-{
-  CtxEntry command = ctx_f(code, arg1, arg2);
-  ctx_process (ctx, &command);
-}
-
 #define CTX_PROCESS_VOID(cmd) do {\
   CtxEntry command = ctx_void (cmd); \
   ctx_process (ctx, &command);}while(0) \
@@ -1943,9 +1936,7 @@ void ctx_texture (Ctx *ctx, int id, float x, float y)
   CtxEntry commands[2];
   if (id < 0) return;
   commands[0] = ctx_u32(CTX_TEXTURE, id, 0);
-  commands[1].code = CTX_CONT;
-  commands[1].data.f[0] = x;
-  commands[1].data.f[1] = y;
+  commands[1] = ctx_f (CTX_CONT, x, y);
   ctx_process (ctx, commands);
 }
 
@@ -1969,7 +1960,7 @@ void ctx_stroke (Ctx *ctx) {
 
 static void ctx_state_init (CtxState *state);
 
-void ctx_empty (Ctx *ctx)
+static void ctx_empty (Ctx *ctx)
 {
 #if CTX_RASTERIZER
   if (ctx->renderer == NULL)
@@ -2027,6 +2018,12 @@ void
 ctx_set_global_alpha (Ctx *ctx, float global_alpha)
 {
   CTX_PROCESS_F1(CTX_SET_GLOBAL_ALPHA, global_alpha);
+}
+
+float
+ctx_get_global_alpha (Ctx *ctx)
+{
+ return ctx->state.gstate.source.global_alpha;
 }
 
 void
@@ -2665,14 +2662,14 @@ void ctx_arc (Ctx  *ctx,
   ctx_process (ctx, command);
 }
 
-static inline int ctx_coords_equal (float x1, float y1, float x2, float y2, float tol)
+static int ctx_coords_equal (float x1, float y1, float x2, float y2, float tol)
 {
   float dx = x2 - x1;
   float dy = y2 - y1;
   return dx*dx + dy*dy < tol*tol;
 }
 
-static inline float
+static float
 ctx_point_seg_dist_sq(float x, float y,
                       float vx, float vy, float wx, float wy)
 {
@@ -2688,7 +2685,7 @@ ctx_point_seg_dist_sq(float x, float y,
   return ctx_pow2(x-ix) + ctx_pow2(y-iy);
 }
 
-static inline void
+static void
 ctx_normalize (float *x, float* y)
 {
   float length = hypotf((*x), (*y));
@@ -2950,7 +2947,7 @@ ctx_matrix_inverse (CtxMatrix *m)
 }
 
 
-static inline void
+static void
 ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
 {
   switch (entry->code)
@@ -3046,7 +3043,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
   }
 }
 
-static inline void
+static void
 ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
 {
   switch (entry->code)
@@ -3083,7 +3080,7 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
   }
 }
 
-static inline void
+static void
 ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 {
   float x_in = *x;
@@ -9990,7 +9987,7 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
              }
              else
              {
-               fprintf (stderr, "unhandled command '%c'\n", buf[0]);
+               ctx_log ("unhandled command '%c'\n", buf[0]);
              }
           }
         }
@@ -10006,15 +10003,11 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
             break;
          case '\'':
             ctxp->state = CTX_PARSER_NEUTRAL;
+            ctx_parser_dispatch_command (ctxp);
             break;
          default:
             ctx_parser_holding_append (ctxp, byte);
             break;
-      }
-      if (ctxp->state != CTX_PARSER_STRING_APOS &&
-          ctxp->state != CTX_PARSER_STRING_APOS_ESCAPED)
-      {
-        ctx_parser_dispatch_command (ctxp);
       }
       break;
     case CTX_PARSER_STRING_APOS_ESCAPED:
@@ -10057,15 +10050,11 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
             break;
          case '"':
             ctxp->state = CTX_PARSER_NEUTRAL;
+            ctx_parser_dispatch_command (ctxp);
             break;
          default:
             ctx_parser_holding_append (ctxp, byte);
             break;
-      }
-      if (ctxp->state != CTX_PARSER_STRING_QUOT &&
-          ctxp->state != CTX_PARSER_STRING_QUOT_ESCAPED)
-      {
-        ctx_parser_dispatch_command (ctxp);
       }
       break;
     case CTX_PARSER_COMMENT:
