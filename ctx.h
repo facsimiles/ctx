@@ -1914,8 +1914,6 @@ ctx_close_path (Ctx *ctx)
     ctx_line_to (ctx, ctx->state.path_start_x, ctx->state.path_start_y);
 }
 
-static inline CtxEntry ctx_void (CtxCode code);
-
 void
 ctx_cmd_ff (Ctx *ctx, CtxCode code, float arg1, float arg2)
 {
