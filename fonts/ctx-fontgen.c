@@ -19,7 +19,6 @@ static int usage(){
   return -1;
 }
 
-
 CtxRenderstream output_font={NULL,};
 uint32_t glyphs[65536];
 int n_glyphs = 0;

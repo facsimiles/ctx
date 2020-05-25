@@ -31,17 +31,304 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 
-/* this first part of ctx.h contains definitions that determine which features
- * are included and their settings, for particular platforms - in particular
- * microcontrollers ctx might need tuning for different
- * quality/performance/resource constraints.
+
+typedef enum
+{
+  CTX_FORMAT_GRAY8,
+  CTX_FORMAT_GRAYA8,
+  CTX_FORMAT_RGB8,
+  CTX_FORMAT_RGBA8,
+  CTX_FORMAT_BGRA8,
+  CTX_FORMAT_RGB565,
+  CTX_FORMAT_RGB565_BYTESWAPPED,
+  CTX_FORMAT_RGB332,
+  CTX_FORMAT_RGBAF,
+  CTX_FORMAT_GRAYF,
+  CTX_FORMAT_GRAY1,
+  CTX_FORMAT_GRAY2,
+  CTX_FORMAT_GRAY4
+} CtxPixelFormat;
+
+typedef struct _Ctx Ctx;
+
+struct _CtxGlyph
+{
+  uint32_t index;
+  float    x;
+  float    y;
+};
+
+typedef struct _CtxGlyph CtxGlyph;
+
+CtxGlyph *ctx_glyph_allocate (int n_glyphs);
+void      gtx_glyph_free     (CtxGlyph *glyphs);
+
+/**
+ * ctx_new:
+ *
+ * Create a new drawing context, without an associated target frame buffer,
+ * use ctx_blit to render the built up renderstream to a framebuffer.
+ */
+Ctx *ctx_new                 (void);
+
+/**
+ * ctx_new_for_framebuffer:
+ *
+ * Create a new drawing context for a framebuffer, rendering happens
+ * immediately.
+ */
+Ctx *ctx_new_for_framebuffer (void *data,
+                              int width, int height, int stride,
+                              CtxPixelFormat pixel_format);
+
+/**
+ * ctx_new_for_renderstream:
+ *
+ * Create a new drawing context for a pre-existing renderstream.
+ */
+Ctx *ctx_new_for_renderstream (void *data, size_t length);
+void ctx_free                  (Ctx *ctx);
+
+/* blits the contents of a bare context
+ */
+void ctx_blit          (Ctx *ctx,
+                        void *data, int x, int y,
+                        int width, int height, int stride,
+                        CtxPixelFormat pixel_format);
+
+/* clears and resets a context */
+void ctx_clear          (Ctx *ctx);
+
+void ctx_new_path       (Ctx *ctx);
+void ctx_save           (Ctx *ctx);
+void ctx_restore        (Ctx *ctx);
+void ctx_clip           (Ctx *ctx);
+void ctx_identity_matrix (Ctx *ctx);
+void ctx_rotate         (Ctx *ctx, float x);
+void ctx_set_line_width (Ctx *ctx, float x);
+void ctx_set_transform  (Ctx *ctx, float a, float b,  // hscale, hskew
+                                   float c, float d,  // vskew,  vscale
+                                   float e, float f); // htran,  vtran
+void ctx_get_transform  (Ctx *ctx, float *a, float *b,
+                                   float *c, float *d,
+                                   float *e, float *f);
+
+#define CTX_LINE_WIDTH_HAIRLINE -1000.0
+#define CTX_LINE_WIDTH_ALIASED  -1.0
+
+#define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line,
+                                         could be replaced with fast
+                                         1px wide dab based stroker*/
+
+void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height);
+void ctx_set_font_size  (Ctx *ctx, float x);
+float ctx_get_font_size  (Ctx *ctx);
+void ctx_set_font       (Ctx *ctx, const char *font);
+void ctx_scale          (Ctx *ctx, float x, float y);
+void ctx_translate      (Ctx *ctx, float x, float y);
+void ctx_line_to        (Ctx *ctx, float x, float y);
+void ctx_move_to        (Ctx *ctx, float x, float y);
+void ctx_curve_to       (Ctx *ctx, float cx0, float cy0,
+                         float cx1, float cy1,
+                         float x, float y);
+void ctx_quad_to        (Ctx *ctx, float cx, float cy,
+                         float x, float y);
+void ctx_rectangle      (Ctx *ctx,
+                         float x0, float y0,
+                         float w, float h);
+void ctx_rel_line_to    (Ctx *ctx, float x, float y);
+void ctx_rel_move_to    (Ctx *ctx, float x, float y);
+void ctx_rel_curve_to   (Ctx *ctx,
+                         float x0, float y0,
+                         float x1, float y1,
+                         float x2, float y2);
+void ctx_rel_quad_to    (Ctx *ctx, float cx, float cy,
+                         float x, float y);
+void ctx_close_path     (Ctx *ctx);
+
+
+//void ctx_set_rgba_stroke_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+//void ctx_set_rgba_stroke (Ctx *ctx, float  r, float   g, float   b, float   a);
+void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
+void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
+void ctx_set_gray       (Ctx *ctx, float gray);
+
+void ctx_current_point  (Ctx *ctx, float *x, float *y);
+float ctx_x             (Ctx *ctx);
+float ctx_y             (Ctx *ctx);
+
+int  ctx_glyph          (Ctx *ctx, uint32_t unichar, int stroke);
+void ctx_arc            (Ctx  *ctx,
+                         float x, float y,
+                         float radius,
+                         float angle1, float angle2,
+                         int   direction);
+void ctx_arc_to         (Ctx *ctx, float x1, float y1,
+                                   float x2, float y2, float radius);
+void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
+float ctx_get_global_alpha (Ctx *ctx);
+
+void ctx_fill           (Ctx *ctx);
+void ctx_stroke         (Ctx *ctx);
+void ctx_paint          (Ctx *ctx);
+void
+ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
+void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
+                                    float x1, float y1, float r1);
+void ctx_gradient_clear_stops (Ctx *ctx);
+void ctx_gradient_add_stop    (Ctx *ctx, float pos, float r, float g, float b, float a);
+
+void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+/*ctx_texture_init:
+ *
+ * return value: the actual id assigned, if id is out of range - or later
+ * when -1 as id will mean auto-assign.
+ */
+int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
+                      uint8_t *pixels,
+                      void (*freefunc)(void *pixels, void *user_data),
+                      void *user_data);
+int ctx_texture_load        (Ctx *ctx, int id, const char *path);
+int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length);
+
+void ctx_texture_release (Ctx *ctx, int id);
+
+void ctx_texture (Ctx *ctx, int id, float x, float y);
+
+void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
+
+typedef struct _CtxRenderstream CtxRenderstream;
+typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
+
+void _ctx_set_store_clear (Ctx *ctx);
+void _ctx_set_transformation (Ctx *ctx, int transformation);
+void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data);
+
+/* If cairo.h is included before ctx.h add cairo integration code
+ */
+#ifdef CAIRO_H
+#define CTX_CAIRO 1
+#else
+#define CTX_CAIRO 0
+#endif
+
+#if CTX_CAIRO
+void
+ctx_render_cairo (Ctx *ctx, cairo_t *cr);
+#endif
+
+void ctx_render_stream (Ctx *ctx, FILE *stream);
+
+void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
+
+int
+ctx_add_single (Ctx *ctx, void *entry);
+
+uint32_t
+ctx_utf8_to_unichar (const char *input);
+int ctx_unichar_to_utf8 (uint32_t  ch,
+                         uint8_t  *dest);
+
+typedef enum
+{
+  CTX_FILL_RULE_EVEN_ODD,
+  CTX_FILL_RULE_WINDING
+} CtxFillRule;
+
+typedef enum
+{
+  CTX_COMPOSITE_SOURCE_OVER,
+  CTX_COMPOSITE_SOURCE_COPY
+} CtxCompositingMode;
+
+typedef enum
+{
+  CTX_BLEND_NORMAL
+} CtxBlend;
+
+typedef enum
+{
+  CTX_JOIN_BEVEL = 0,
+  CTX_JOIN_ROUND = 1,
+  CTX_JOIN_MITER = 2
+} CtxLineJoin;
+
+typedef enum
+{
+  CTX_CAP_NONE   = 0,
+  CTX_CAP_ROUND  = 1,
+  CTX_CAP_SQUARE = 2
+} CtxLineCap;
+
+typedef enum
+{
+  CTX_TEXT_BASELINE_ALPHABETIC = 0,
+  CTX_TEXT_BASELINE_TOP,
+  CTX_TEXT_BASELINE_HANGING,
+  CTX_TEXT_BASELINE_MIDDLE,
+  CTX_TEXT_BASELINE_IDEOGRAPHIC,
+  CTX_TEXT_BASELINE_BOTTOM
+} CtxTextBaseline;
+
+typedef enum
+{
+  CTX_TEXT_ALIGN_START = 0,
+  CTX_TEXT_ALIGN_END,
+  CTX_TEXT_ALIGN_CENTER,
+  CTX_TEXT_ALIGN_LEFT,
+  CTX_TEXT_ALIGN_RIGHT
+} CtxTextAlign;
+
+typedef enum
+{
+  CTX_TEXT_DIRECTION_INHERIT = 0,
+  CTX_TEXT_DIRECTION_LTR,
+  CTX_TEXT_DIRECTION_RTL
+} CtxTextDirection;
+
+void ctx_set_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
+void ctx_set_line_cap         (Ctx *ctx, CtxLineCap cap);
+void ctx_set_line_join        (Ctx *ctx, CtxLineJoin join);
+void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
+int ctx_set_renderstream      (Ctx *ctx, void *data, int length);
+int ctx_append_renderstream   (Ctx *ctx, void *data, int length);
+
+
+/* these are only needed for clients renderin text, as all text gets
+ * converted to paths.
+ */
+
+void  ctx_glyphs       (Ctx        *ctx,
+                        CtxGlyph   *glyphs,
+                        int         n_glyphs);
+void  ctx_glyphs_stroke (Ctx       *ctx,
+                        CtxGlyph   *glyphs,
+                        int         n_glyphs);
+void  ctx_text         (Ctx        *ctx,
+                        const char *string);
+void  ctx_text_stroke  (Ctx        *ctx,
+                        const char *string);
+/* return the width of provided string if it had been rendered */
+float ctx_text_width   (Ctx        *ctx,
+                        const char *string);
+float ctx_glyph_width (Ctx *ctx, int unichar);
+
+int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
+
+
+/* definitions that determine which features are included and their settings,
+ * for particular platforms - in particular microcontrollers ctx might need
+ * tuning for different quality/performance/resource constraints.
  *
  * the way to configure ctx is to set these defines, before both including it
  * as a header and in the file where CTX_IMPLEMENTATION is set to include the
  * implementation for different featureset and runtime settings.
  *
  */
-
 
 #ifndef CTX_RASTERIZER  // set to 0 before to disable renderer code, useful for clients that only
                         // build journals.
@@ -129,6 +416,10 @@ extern "C" {
  */
 #ifndef CTX_GRADIENT_CACHE
 #define CTX_GRADIENT_CACHE 1
+#endif
+
+#ifndef CTX_FONTS_FROM_FILE
+#define CTX_FONTS_FROM_FILE 1
 #endif
 
 /* when ctx_math is defined, which it is by default, we use ctx' own
@@ -251,13 +542,6 @@ extern "C" {
 
 #endif
 
-/* If cairo.h is included before ctx.h add cairo integration code
- */
-#ifdef CAIRO_H
-#define CTX_CAIRO 1
-#else
-#define CTX_CAIRO 0
-#endif
 
 #define CTX_PI               3.141592653589793f
 #ifndef CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS
@@ -304,285 +588,10 @@ extern "C" {
 #define ctx_assert(a)
 #endif
 
-typedef enum
-{
-  CTX_FORMAT_GRAY8,
-  CTX_FORMAT_GRAYA8,
-  CTX_FORMAT_RGB8,
-  CTX_FORMAT_RGBA8,
-  CTX_FORMAT_BGRA8,
-  CTX_FORMAT_RGB565,
-  CTX_FORMAT_RGB565_BYTESWAPPED,
-  CTX_FORMAT_RGB332,
-  CTX_FORMAT_RGBAF,
-  CTX_FORMAT_GRAYF,
-  CTX_FORMAT_GRAY1,
-  CTX_FORMAT_GRAY2,
-  CTX_FORMAT_GRAY4
-} CtxPixelFormat;
 
-typedef struct _Ctx Ctx;
-
-struct _CtxGlyph
-{
-  uint32_t index;
-  float    x;
-  float    y;
-};
-
-typedef struct _CtxGlyph CtxGlyph;
-
-CtxGlyph *ctx_glyph_allocate (int n_glyphs);
-void      gtx_glyph_free     (CtxGlyph *glyphs);
-
-/**
- * ctx_new:
- *
- * Create a new drawing context, without an associated target frame buffer,
- * use ctx_blit to render the built up renderstream to a framebuffer.
- */
-Ctx *ctx_new                 (void);
-
-/**
- * ctx_new_for_framebuffer:
- *
- * Create a new drawing context for a framebuffer, rendering happens
- * immediately.
- */
-Ctx *ctx_new_for_framebuffer (void *data,
-                              int width, int height, int stride,
-                              CtxPixelFormat pixel_format);
-
-/**
- * ctx_new_for_renderstream:
- *
- * Create a new drawing context for a pre-existing renderstream.
- */
-Ctx *ctx_new_for_renderstream (void *data, size_t length);
-void ctx_free                  (Ctx *ctx);
-
-/* blits the contents of a bare context
- */
-void ctx_blit          (Ctx *ctx,
-                        void *data, int x, int y,
-                        int width, int height, int stride,
-                        CtxPixelFormat pixel_format);
-
-/* clears and resets a context */
-void ctx_clear          (Ctx *ctx);
-
-void ctx_new_path       (Ctx *ctx);
-void ctx_save           (Ctx *ctx);
-void ctx_restore        (Ctx *ctx);
-void ctx_clip           (Ctx *ctx);
-void ctx_identity_matrix (Ctx *ctx);
-void ctx_rotate         (Ctx *ctx, float x);
-void ctx_set_line_width (Ctx *ctx, float x);
-void ctx_set_transform  (Ctx *ctx, float a, float b,  // hscale, hskew
-                                   float c, float d,  // vskew,  vscale
-                                   float e, float f); // htran,  vtran
-void ctx_get_transform  (Ctx *ctx, float *a, float *b,
-                                   float *c, float *d,
-                                   float *e, float *f);
-
-#define CTX_LINE_WIDTH_HAIRLINE -1000.0
-#define CTX_LINE_WIDTH_ALIASED  -1.0
-
-#define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line,
-                                         could be replaced with fast
-                                         1px wide dab based stroker*/
-
-void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height);
-void ctx_set_font_size  (Ctx *ctx, float x);
-float ctx_get_font_size  (Ctx *ctx);
-void ctx_set_font       (Ctx *ctx, const char *font);
-void ctx_scale          (Ctx *ctx, float x, float y);
-void ctx_translate      (Ctx *ctx, float x, float y);
-void ctx_line_to        (Ctx *ctx, float x, float y);
-void ctx_move_to        (Ctx *ctx, float x, float y);
-void ctx_curve_to       (Ctx *ctx, float cx0, float cy0,
-                         float cx1, float cy1,
-                         float x, float y);
-void ctx_quad_to        (Ctx *ctx, float cx, float cy,
-                         float x, float y);
-void ctx_rectangle      (Ctx *ctx,
-                         float x0, float y0,
-                         float w, float h);
-void ctx_rel_line_to    (Ctx *ctx, float x, float y);
-void ctx_rel_move_to    (Ctx *ctx, float x, float y);
-void ctx_rel_curve_to   (Ctx *ctx,
-                         float x0, float y0,
-                         float x1, float y1,
-                         float x2, float y2);
-void ctx_rel_quad_to    (Ctx *ctx, float cx, float cy,
-                         float x, float y);
-void ctx_close_path     (Ctx *ctx);
-
-
-//void ctx_set_rgba_stroke_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-//void ctx_set_rgba_stroke (Ctx *ctx, float  r, float   g, float   b, float   a);
-void ctx_set_rgba       (Ctx *ctx, float   r, float   g, float   b, float   a);
-void ctx_set_rgb        (Ctx *ctx, float   r, float   g, float   b);
-void ctx_set_gray       (Ctx *ctx, float   gray);
-
-void ctx_current_point  (Ctx *ctx, float *x, float *y);
-float ctx_x             (Ctx *ctx);
-float ctx_y             (Ctx *ctx);
-
-int  ctx_glyph          (Ctx *ctx, uint32_t unichar, int stroke);
-void ctx_arc            (Ctx  *ctx,
-                         float x, float y,
-                         float radius,
-                         float angle1, float angle2,
-                         int   direction);
-void ctx_arc_to         (Ctx *ctx, float x1, float y1,
-                                   float x2, float y2, float radius);
-void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
-float ctx_get_global_alpha (Ctx *ctx);
-
-void ctx_fill           (Ctx *ctx);
-void ctx_stroke         (Ctx *ctx);
-void ctx_paint          (Ctx *ctx);
-void
-ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-
-void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
-void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
-                                    float x1, float y1, float r1);
-void ctx_gradient_clear_stops (Ctx *ctx);
-void ctx_gradient_add_stop    (Ctx *ctx, float pos, float r, float g, float b, float a);
-
-void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-
-/*ctx_texture_init:
- *
- * return value: the actual id assigned, if id is out of range - or later
- * when -1 as id will mean auto-assign.
- */
-int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
-                      uint8_t *pixels,
-                      void (*freefunc)(void *pixels, void *user_data),
-                      void *user_data);
-int ctx_texture_load        (Ctx *ctx, int id, const char *path);
-int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length);
-
-void ctx_texture_release (Ctx *ctx, int id);
-
-void ctx_texture (Ctx *ctx, int id, float x, float y);
-
-void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
-
-typedef struct _CtxRenderstream CtxRenderstream;
-typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
-
-void _ctx_set_store_clear (Ctx *ctx);
-void _ctx_set_transformation (Ctx *ctx, int transformation);
-void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data);
-
-#if CTX_CAIRO
-void
-ctx_render_cairo (Ctx *ctx, cairo_t *cr);
-#endif
-
-void ctx_render_stream (Ctx *ctx, FILE *stream);
-
-void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
-
-int
-ctx_add_single (Ctx *ctx, void *entry);
-
-uint32_t
-ctx_utf8_to_unichar (const char *input);
-int ctx_unichar_to_utf8 (uint32_t  ch,
-                         uint8_t  *dest);
-
-typedef enum
-{
-  CTX_FILL_RULE_EVEN_ODD,
-  CTX_FILL_RULE_WINDING
-} CtxFillRule;
-
-typedef enum
-{
-  CTX_COMPOSITE_SOURCE_OVER,
-  CTX_COMPOSITE_SOURCE_COPY
-} CtxCompositingMode;
-
-typedef enum
-{
-  CTX_BLEND_NORMAL
-} CtxBlend;
-
-typedef enum
-{
-  CTX_JOIN_BEVEL = 0,
-  CTX_JOIN_ROUND = 1,
-  CTX_JOIN_MITER = 2
-} CtxLineJoin;
-
-typedef enum
-{
-  CTX_CAP_NONE   = 0,
-  CTX_CAP_ROUND  = 1,
-  CTX_CAP_SQUARE = 2
-} CtxLineCap;
-
-typedef enum
-{
-  CTX_TEXT_BASELINE_ALPHABETIC = 0,
-  CTX_TEXT_BASELINE_TOP,
-  CTX_TEXT_BASELINE_HANGING,
-  CTX_TEXT_BASELINE_MIDDLE,
-  CTX_TEXT_BASELINE_IDEOGRAPHIC,
-  CTX_TEXT_BASELINE_BOTTOM
-} CtxTextBaseline;
-
-typedef enum
-{
-  CTX_TEXT_ALIGN_START = 0,
-  CTX_TEXT_ALIGN_END,
-  CTX_TEXT_ALIGN_CENTER,
-  CTX_TEXT_ALIGN_LEFT,
-  CTX_TEXT_ALIGN_RIGHT
-} CtxTextAlign;
-
-typedef enum
-{
-  CTX_TEXT_DIRECTION_INHERIT = 0,
-  CTX_TEXT_DIRECTION_LTR,
-  CTX_TEXT_DIRECTION_RTL
-} CtxTextDirection;
-
-void ctx_set_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
-void ctx_set_line_cap         (Ctx *ctx, CtxLineCap cap);
-void ctx_set_line_join        (Ctx *ctx, CtxLineJoin join);
-void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
-int ctx_set_renderstream      (Ctx *ctx, void *data, int length);
-int ctx_append_renderstream   (Ctx *ctx, void *data, int length);
-
-
-/* these are only needed for clients renderin text, as all text gets
- * converted to paths.
- */
-
-void  ctx_glyphs       (Ctx        *ctx,
-                        CtxGlyph   *glyphs,
-                        int         n_glyphs);
-void  ctx_glyphs_stroke (Ctx       *ctx,
-                        CtxGlyph   *glyphs,
-                        int         n_glyphs);
-void  ctx_text         (Ctx        *ctx,
-                        const char *string);
-void  ctx_text_stroke  (Ctx        *ctx,
-                        const char *string);
-/* return the width of provided string if it had been rendered */
-float ctx_text_width   (Ctx        *ctx,
-                        const char *string);
-float ctx_glyph_width (Ctx *ctx, int unichar);
-
-int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
+#if CTX_FONTS_FROM_FILE
 int   ctx_load_font_ttf_file (const char *name, const char *path);
+#endif
 
 int ctx_get_renderstream_count (Ctx *ctx);
 
@@ -661,8 +670,8 @@ typedef enum
   //
   // unused:  . , : backslash ! # $ % ^ { } < > ? &
   CTX_SET_RGBA         = '*', // u8
-  CTX_PAINT            = '~',
   CTX_GRADIENT_CLEAR   = '/',
+  CTX_PAINT            = '~',
   CTX_NOP              = ' ',
   CTX_NEW_EDGE         = '+',
   CTX_EDGE             = '|',
@@ -1188,7 +1197,9 @@ typedef struct _CtxFontEngine CtxFontEngine;
 
 struct _CtxFontEngine
 {
+#if CTX_FONTS_FROM_FILE
    int   (*load_file)   (const char *name, const char *path);
+#endif
    int   (*load_memory) (const char *name, const void *data, int length);
    int   (*glyph)       (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke);
    float (*glyph_width) (CtxFont *font, Ctx *ctx, uint32_t unichar);
@@ -1339,6 +1350,7 @@ static inline int
 ctx_conts_for_entry (CtxEntry *entry)
 {
   switch (entry->code)
+  //switch ((CtxCode)(cmd))  //  XXX  should be exhaustive
   {
     case CTX_DATA:
       return entry->data.u32[1];
@@ -1526,6 +1538,7 @@ ctx_iterator_next (CtxIterator *iterator)
 #if CTX_BITPACK
   if (ret && expand_bitpack)
   switch (ret->code)
+  //switch ((CtxCode)(ret->code))
   {
     case CTX_REL_CURVE_TO_REL_LINE_TO:
       ctx_iterator_expand_s8_args (iterator, ret);
@@ -1599,6 +1612,7 @@ ctx_iterator_next (CtxIterator *iterator)
     case CTX_LINEAR_GRADIENT:
     case CTX_QUAD_TO:
     case CTX_REL_QUAD_TO:
+    case CTX_TEXTURE:
       iterator->bitpack_command[0] = ret[0];
       iterator->bitpack_command[1] = ret[1];
       iterator->bitpack_pos = 0;
@@ -1609,6 +1623,7 @@ ctx_iterator_next (CtxIterator *iterator)
     case CTX_RADIAL_GRADIENT:
     case CTX_CURVE_TO:
     case CTX_REL_CURVE_TO:
+    case CTX_SET_TRANSFORM:
       iterator->bitpack_command[0] = ret[0];
       iterator->bitpack_command[1] = ret[1];
       iterator->bitpack_command[2] = ret[2];
@@ -1621,13 +1636,6 @@ ctx_iterator_next (CtxIterator *iterator)
     case CTX_SET_FONT:
       iterator->bitpack_length = 0;
       return ret;
-
-    case CTX_TEXTURE:
-      iterator->bitpack_command[0] = ret[0];
-      iterator->bitpack_command[1] = ret[1];
-      iterator->bitpack_pos = 0;
-      iterator->bitpack_length = 2;
-      goto again;
 
     default:
       iterator->bitpack_command[0] = *ret;
@@ -2283,6 +2291,12 @@ void ctx_set_text_baseline (Ctx *ctx, CtxTextBaseline text_baseline)
   ctx_process (ctx, &command);
 }
 
+void ctx_set_text_direction (Ctx *ctx, CtxTextDirection text_direction)
+{
+  CtxEntry command = ctx_u8 (CTX_SET_TEXT_DIRECTION, text_direction, 0, 0, 0, 0, 0, 0, 0);
+  ctx_process (ctx, &command);
+}
+
 void
 ctx_rel_curve_to (Ctx *ctx,
                   float x0, float y0,
@@ -2540,12 +2554,6 @@ ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0, float x1, float y1,
   ctx_process (ctx, command);
 }
 
-void
-ctx_gradient_clear_stops(Ctx *ctx)
-{
-  CTX_PROCESS_VOID (CTX_GRADIENT_CLEAR);
-}
-
 void ctx_gradient_add_stop_u8
 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
@@ -2653,6 +2661,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       break;
     case CTX_SET_TEXT_BASELINE:
       state->gstate.text_baseline = (CtxTextBaseline)ctx_arg_u8(0);
+      break;
+    case CTX_SET_TEXT_DIRECTION:
+      state->gstate.text_direction = (CtxTextDirection)ctx_arg_u8(0);
       break;
     case CTX_SET_GLOBAL_ALPHA:
       state->gstate.source.global_alpha = CTX_CLAMP(ctx_arg_float(0)*255.0,0, 255);
@@ -6462,11 +6473,7 @@ ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
 
     case CTX_GRADIENT_CLEAR:
       ctx_renderer_gradient_clear_stops (renderer);
-#if CTX_GRADIENT_CACHE
-      ctx_gradient_cache_reset();
-#endif
       break;
-
     case CTX_GRADIENT_STOP:
       ctx_renderer_gradient_add_stop (renderer, ctx_arg_float(0),
                                                &ctx_arg_u8(4));
@@ -7250,6 +7257,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 
 /****  end of engine ****/
 
+#if CTX_FONTS_FROM_FILE
 static int
 _ctx_file_get_contents (const char     *path,
                         unsigned char **contents,
@@ -7290,6 +7298,7 @@ _ctx_file_get_contents (const char     *path,
   buffer[size] = 0;
   return 0;
 }
+#endif
 
 
 static inline int ctx_utf8_len (const unsigned char first_byte)
@@ -7408,7 +7417,9 @@ static inline int
 ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke);
 
 CtxFontEngine ctx_font_engine_stb = {
+#if CTX_FONTS_FROM_FILE
    ctx_load_font_ttf_file,
+#endif
    ctx_load_font_ttf,
    ctx_glyph_stb,
    ctx_glyph_width_stb,
@@ -7434,6 +7445,7 @@ ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
   return ctx_font_count-1;
 }
 
+#if CTX_FONTS_FROM_FILE
 int
 ctx_load_font_ttf_file (const char *name, const char *path)
 {
@@ -7447,6 +7459,7 @@ ctx_load_font_ttf_file (const char *name, const char *path)
   }
   return ctx_load_font_ttf (name, contents, length);
 }
+#endif
 
 static inline float
 ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
@@ -7697,11 +7710,15 @@ static void ctx_font_init_ctx (CtxFont *font)
 
 int
 ctx_load_font_ctx (const char *name, const void *data, int length);
+#if CTX_FONTS_FROM_FILE
 int
 ctx_load_font_ctx_file (const char *name, const char *path);
+#endif
 
 CtxFontEngine ctx_font_engine_ctx = {
+#if CTX_FONTS_FROM_FILE
    ctx_load_font_ctx_file,
+#endif
    ctx_load_font_ctx,
    ctx_glyph_ctx,
    ctx_glyph_width_ctx,
@@ -7725,6 +7742,7 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
   return ctx_font_count-1;
 }
 
+#if CTX_FONTS_FROM_FILE
 int
 ctx_load_font_ctx_file (const char *name, const char *path)
 {
@@ -7738,6 +7756,7 @@ ctx_load_font_ctx_file (const char *name, const char *path)
   }
   return ctx_load_font_ctx (name, contents, length);
 }
+#endif
 #endif
 
 
@@ -7917,6 +7936,12 @@ ctx_text_stroke (Ctx        *ctx,
 #endif
 }
 
+void
+ctx_gradient_clear_stops (Ctx *ctx)
+{
+   CTX_PROCESS_VOID (CTX_GRADIENT_CLEAR);
+}
+
 #if CTX_CAIRO
 
 void
@@ -7935,6 +7960,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
   {
     //if (cairo_status (cr)) return;
     switch (entry->code)
+    //switch ((CtxCode)(entry->code))
     {
       case CTX_LINE_TO:
         cairo_line_to (cr, ctx_arg_float(0), ctx_arg_float(1));
@@ -8234,35 +8260,28 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                                ctx_arg_float(1), ctx_arg_float(2),
                                ctx_arg_float(3));
         break;
-
       case CTX_LINE_TO:
         ctx_line_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
         break;
-
       case CTX_REL_LINE_TO:
         ctx_rel_line_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
         break;
-
       case CTX_MOVE_TO:
         ctx_move_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
         break;
-
       case CTX_REL_MOVE_TO:
         ctx_rel_move_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
         break;
-
       case CTX_CURVE_TO:
         ctx_curve_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
                              ctx_arg_float(2), ctx_arg_float(3),
                              ctx_arg_float(4), ctx_arg_float(5));
         break;
-
       case CTX_REL_CURVE_TO:
         ctx_rel_curve_to (d_ctx,ctx_arg_float(0), ctx_arg_float(1),
                                 ctx_arg_float(2), ctx_arg_float(3),
                                 ctx_arg_float(4), ctx_arg_float(5));
         break;
-
       case CTX_QUAD_TO:
         {
           float cx = ctx_arg_float(0);
@@ -8340,64 +8359,40 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                               ctx_arg_float(3));
         break;
 
-      case CTX_FILL:   ctx_fill (d_ctx);   break;
-      case CTX_STROKE: ctx_stroke (d_ctx); break;
-      case CTX_CLEAR:  ctx_clear (d_ctx);  break;
+      case CTX_FILL:    ctx_fill (d_ctx);   break;
+      case CTX_STROKE:  ctx_stroke (d_ctx); break;
+      case CTX_CLEAR:   ctx_clear (d_ctx);  break;
       case CTX_NEW_PAGE:
         //ctx_new_page (d_ctx);
         break;
-
-      case CTX_IDENTITY:
-        ctx_identity_matrix (d_ctx);
+      case CTX_SET_TRANSFORM:
+        ctx_set_transform (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
+                           ctx_arg_float(2), ctx_arg_float(3),
+                           ctx_arg_float(4), ctx_arg_float(5));
         break;
 
-      case CTX_CLIP:
-        ctx_clip (d_ctx);
-        break;
-
-      case CTX_NEW_PATH:
-        ctx_new_path (d_ctx);
-        break;
-
-      case CTX_CLOSE_PATH:
-        ctx_close_path (d_ctx);
-        break;
-
-      case CTX_SAVE:
-        ctx_save (d_ctx);
-        break;
-
-      case CTX_RESTORE:
-        ctx_restore (d_ctx);
-        break;
-
-      case CTX_SET_FONT_SIZE:
-        ctx_set_font_size (d_ctx, ctx_arg_float(0));
-        break;
-
+      case CTX_IDENTITY:      ctx_identity_matrix (d_ctx);                break;
+      case CTX_CLIP:          ctx_clip (d_ctx);                           break;                  
+      case CTX_NEW_PATH:      ctx_new_path (d_ctx);                       break;
+      case CTX_CLOSE_PATH:    ctx_close_path (d_ctx);                     break;
+      case CTX_SAVE:          ctx_save (d_ctx);                           break;
+      case CTX_RESTORE:       ctx_restore (d_ctx);                        break;
+      case CTX_SET_FONT_SIZE: ctx_set_font_size (d_ctx, ctx_arg_float(0));break;
       case CTX_SET_FILL_RULE:
-        ctx_set_fill_rule (d_ctx, (CtxFillRule)ctx_arg_u8(0));
-        break;
-
+        ctx_set_fill_rule (d_ctx, (CtxFillRule)ctx_arg_u8(0));            break;
       case CTX_SET_LINE_CAP:
-        ctx_set_line_cap (d_ctx, (CtxLineCap)ctx_arg_u8(0));
-        break;
-
+        ctx_set_line_cap (d_ctx, (CtxLineCap)ctx_arg_u8(0));              break;
       case CTX_SET_LINE_JOIN:
-        ctx_set_line_join (d_ctx, (CtxLineJoin)ctx_arg_u8(0));
-        break;
-
+        ctx_set_line_join (d_ctx, (CtxLineJoin)ctx_arg_u8(0));            break;
       case CTX_SET_COMPOSITING_MODE:
         ctx_set_compositing_mode (d_ctx, (CtxCompositingMode)ctx_arg_u8(0));
         break;
-
       case CTX_SET_TEXT_ALIGN:
-        ctx_set_text_align (d_ctx, (CtxTextAlign)ctx_arg_u8(0));
-        break;
+        ctx_set_text_align (d_ctx, (CtxTextAlign)ctx_arg_u8(0)); break;
       case CTX_SET_TEXT_BASELINE:
-        ctx_set_text_baseline (d_ctx, (CtxTextBaseline)ctx_arg_u8(0));
-        break;
-
+        ctx_set_text_baseline (d_ctx, (CtxTextBaseline)ctx_arg_u8(0)); break;
+      case CTX_SET_TEXT_DIRECTION:
+        ctx_set_text_direction (d_ctx, (CtxTextDirection)ctx_arg_u8(0)); break;
       case CTX_LINEAR_GRADIENT:
         ctx_linear_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
                                     ctx_arg_float(2), ctx_arg_float(3));
@@ -8407,11 +8402,6 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         ctx_radial_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
                                     ctx_arg_float(2), ctx_arg_float(3),
                                     ctx_arg_float(4), ctx_arg_float(5));
-        ctx_gradient_clear_stops (d_ctx);
-        break;
-        // gradient clear is not really needed - if always implied by
-        // setting the gradient source
-      case CTX_GRADIENT_CLEAR:
         ctx_gradient_clear_stops (d_ctx);
         break;
 
@@ -8424,18 +8414,11 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
           ctx_arg_u8(7)/255.0);
         break;
 
-      case CTX_SET_FONT:
-         ctx_set_font (d_ctx, ctx_arg_string ());
-        break;
-      case CTX_TEXT:
-         ctx_text (d_ctx, ctx_arg_string ());
-        break;
-      case CTX_TEXT_STROKE:
-         ctx_text_stroke (d_ctx, ctx_arg_string ());
-        break;
-      case CTX_GLYPH:
-         ctx_glyph (d_ctx, ctx_arg_u32(0), ctx_arg_u8(4));
-        break;
+      case CTX_SET_FONT:    ctx_set_font (d_ctx, ctx_arg_string ());    break;
+      case CTX_TEXT:        ctx_text (d_ctx, ctx_arg_string ());        break;
+      case CTX_TEXT_STROKE: ctx_text_stroke (d_ctx, ctx_arg_string ()); break;
+      case CTX_GLYPH:       ctx_glyph (d_ctx, ctx_arg_u32(0), ctx_arg_u8(4));
+         break;
       case CTX_CONT:
       case CTX_EDGE:
       case CTX_DATA:
@@ -8457,6 +8440,7 @@ static void _ctx_get_mnemonic(int code, uint8_t *ret)
     case CTX_SET_COMPOSITING_MODE: ret[1]='m';break;
     case CTX_SET_TEXT_ALIGN:       ret[1]='t';break;
     case CTX_SET_TEXT_BASELINE:    ret[1]='b';break;
+    case CTX_SET_TEXT_DIRECTION:   ret[1]='d';break;
     case CTX_SET_FONT_SIZE:        ret[1]='f';break;
     case CTX_SET_LINE_JOIN:        ret[1]='j';break;
     case CTX_SET_LINE_CAP:         ret[1]='c';break;
@@ -8558,6 +8542,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
   while ((entry = ctx_iterator_next (&iterator)))
   {
     switch (entry->code)
+    //switch ((CtxCode)(entry->code))
     {
       case CTX_LINE_TO:
       case CTX_REL_LINE_TO:
@@ -8568,10 +8553,15 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
         ctx_print_entry (stream, entry, 2);
         break;
 
+      case CTX_ARC_TO:
+        ctx_print_entry (stream, entry, 5);
+        break;
+
       case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
       case CTX_ARC:
       case CTX_RADIAL_GRADIENT:
+      case CTX_SET_TRANSFORM:
         ctx_print_entry (stream, entry, 6);
         break;
 
@@ -8579,12 +8569,15 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
       case CTX_RECTANGLE:
       case CTX_REL_QUAD_TO:
       case CTX_LINEAR_GRADIENT:
+      case CTX_MEDIA_BOX:
         ctx_print_entry (stream, entry, 4);
         break;
 
       case CTX_SET_FONT_SIZE:
       case CTX_ROTATE:
       case CTX_SET_LINE_WIDTH:
+      case CTX_VER_LINE_TO:
+      case CTX_HOR_LINE_TO:
         ctx_print_entry (stream, entry, 1);
         break;
 
@@ -8619,9 +8612,8 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
       break;
 
 
-        // XXX  gradient clear is not really needed - if always implied by
-      case CTX_GRADIENT_CLEAR:
       case CTX_FILL:
+      case CTX_CLEAR:
       case CTX_STROKE:
       case CTX_IDENTITY:
       case CTX_CLIP:
@@ -8634,6 +8626,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
 
       case CTX_SET_TEXT_ALIGN:
       case CTX_SET_TEXT_BASELINE:
+      case CTX_SET_TEXT_DIRECTION:
       case CTX_SET_FILL_RULE:
       case CTX_SET_LINE_CAP:
       case CTX_SET_LINE_JOIN:
@@ -8723,7 +8716,7 @@ static void ctx_setup ()
 #endif
 }
 
-#if CTXP
+#if CTX_PARSER
 
 /* ctx parser, */
 
@@ -8824,8 +8817,9 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
   uint32_t str_hash = str[0];
   if (str[0] && str[1])
   {
-    /* trim ctx_ prefix */
-    if (str[0] == 'c' && str[1] == 't' && str[2] == 'x' && str[3] == '_')
+    /* trim ctx_ and CTX_ prefix */
+    if ((str[0] == 'c' && str[1] == 't' && str[2] == 'x' && str[3] == '_')||
+        (str[0] == 'C' && str[1] == 'T' && str[2] == 'X' && str[3] == '_'))
       str += 4;
 
     /* hash strings to numbers */
@@ -8939,6 +8933,10 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('s','e','t','_','t','e','x','t','_','b','a','s'):
       ctxp->n_args=1; return CTX_SET_TEXT_BASELINE;
 
+    case STR('=','d',0,0,0,0,0,0,0,0,0,0):
+    case STR('s','e','t','_','t','e','x','t','_','d','i','r'):
+      ctxp->n_args=1; return CTX_SET_TEXT_DIRECTION;
+
     case STR('=','j',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','l','i','n','e','_','j','o','i'):
     case STR('j','o','i','n',0,0,0,0,0,0,0,0):
@@ -9024,6 +9022,24 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('C','A','P','_','R','O','U','N','D',0,0,0):   return CTX_CAP_ROUND;
     case STR('C','A','P','_','S','Q','U','A','R','E',0,0):
     case STR('S','Q','U','A','R','E', 0, 0, 0, 0, 0, 0):   return CTX_CAP_SQUARE;
+
+    case STR('S','T','A','R','T',0, 0, 0, 0, 0, 0, 0):
+    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'S'):
+      return CTX_TEXT_ALIGN_START; break;
+    case STR('E','N','D',0,0,0, 0, 0, 0, 0, 0, 0):
+    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'E'):
+      return CTX_TEXT_ALIGN_END; break;
+    case STR('L','E','F','T',0,0, 0, 0, 0, 0, 0, 0):
+    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'L'):
+      return CTX_TEXT_ALIGN_LEFT; break;
+    case STR('R','I','G','H','T',0, 0, 0, 0, 0, 0, 0):
+    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'R'):
+      return CTX_TEXT_ALIGN_RIGHT; break;
+    case STR('C','E','N','T','E','R', 0, 0, 0, 0, 0, 0):
+    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'C'):
+      return CTX_TEXT_ALIGN_CENTER; break;
+
+
     case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       return CTX_GRAY; break;
     case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     return CTX_GRAYA; break;
     case STR('G','R','A','Y','A','_', 'A', 0, 0, 0, 0, 0): return CTX_GRAYA_A; break;
@@ -9081,7 +9097,7 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case 'n': ctxp->n_args = 100; return CTX_SET_FONT;
     case 'o': ctxp->n_args = 6; return CTX_RADIAL_GRADIENT;
     case 'p': ctxp->n_args = 1 + ctxp->color_components;
-              return CTX_GRADIENT_STOP;
+      return CTX_GRADIENT_STOP;
     case 'q': ctxp->n_args = 4; return CTX_REL_QUAD_TO;
     case 'r': ctxp->n_args = 4; return CTX_RECTANGLE;
     case 's': ctxp->n_args = 4; return CTX_REL_SMOOTH_TO;
@@ -9231,25 +9247,30 @@ static void ctx_parser_dispatch_command (CtxParser *ctxp)
   if (ctxp->n_args != 100 &&
       ctxp->n_args != ctxp->n_numbers)
   {
-    fprintf (stderr, "ctx:%i:%i '%c' got %i args, expect %i\n",
+#if 0
+    fprintf (stderr, "ctx:%i:%i %c got %i instead of %i args\n",
       ctxp->line, ctxp->col,
       cmd, ctxp->n_numbers, ctxp->n_args);
+#else
+    ctx_log ("ctx:%i:%i %c got %i instead of %i args\n",
+      ctxp->line, ctxp->col,
+      cmd, ctxp->n_numbers, ctxp->n_args);
+#endif
   }
 
   ctxp->command = CTX_NOP;
   switch (cmd)
   {
-    default: break;
-    case CTX_FILL: ctx_fill (ctx); break;
-    case CTX_SAVE: ctx_save (ctx); break;
-    case CTX_STROKE: ctx_stroke (ctx); break;
+    default: break; // to silence warnings about missing ones
+    case CTX_FILL:    ctx_fill (ctx);    break;
+    case CTX_SAVE:    ctx_save (ctx);    break;
+    case CTX_STROKE:  ctx_stroke (ctx);  break;
     case CTX_RESTORE: ctx_restore (ctx); break;
 
     case CTX_SET_COLOR:
       {
         float red, green, blue, alpha;
         ctx_parser_get_color_rgba (ctxp, 0, &red, &green, &blue, &alpha);
-
         ctx_set_rgba (ctx, red, green, blue, alpha);
       }
       break;
@@ -9459,6 +9480,21 @@ static void ctx_parser_dispatch_command (CtxParser *ctxp)
         break;
     case CTX_SET_LINE_CAP:
         ctx_set_line_cap (ctx, ctxp->numbers[0]);
+        break;
+    case CTX_SET_COMPOSITING_MODE:
+        ctx_set_compositing_mode (ctx, ctxp->numbers[0]);
+        break;
+    case CTX_SET_FILL_RULE:
+        ctx_set_fill_rule (ctx, ctxp->numbers[0]);
+        break;
+    case CTX_SET_TEXT_ALIGN:
+        ctx_set_text_align (ctx, ctxp->numbers[0]);
+        break;
+    case CTX_SET_TEXT_BASELINE:
+        ctx_set_text_baseline (ctx, ctxp->numbers[0]);
+        break;
+    case CTX_SET_TEXT_DIRECTION:
+        ctx_set_text_direction (ctx, ctxp->numbers[0]);
         break;
     case CTX_IDENTITY:
         ctx_identity_matrix (ctx);

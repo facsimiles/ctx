@@ -2,7 +2,8 @@
 
 #include "ctx-font-ascii.h"
 #define CTX_LIMIT_FORMATS
-#define CTX_ENABLE_RGBA8                1
+#define CTX_ENABLE_RGBA8    1
+#define CTX_FONTS_FROM_FILE 0 /* leaves out code */
 #define CTX_IMPLEMENTATION
 
 #include "ctx.h"
