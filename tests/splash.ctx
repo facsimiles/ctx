@@ -46,11 +46,11 @@ save
 rotate -0.25
 set_font_size 30%
 
+cap ROUND
+join ROUND
 move_to 10% 100%
 set_line_width 4%
 rgba 1 1 .8 1
-cap ROUND
-join 
 text_stroke "ctx"
 
 rgba 0.1 0.2 0.3 1
@@ -63,7 +63,7 @@ radial_gradient 50% 6% 1% 50% 6% 25%
 gradient_add_stop 0 0 0 0 1
 gradient_add_stop 1 1 1 1 1
 
-rectangle 25% 4% 50% 10%
+rectangle 25% 4% 50% 40%
 fill
 
 move_to 25% 20%

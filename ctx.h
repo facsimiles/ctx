@@ -601,14 +601,11 @@ typedef enum
   CTX_RESTORE          = 'D',
   CTX_STROKE           = 'E',
   CTX_FILL             = 'F',
-  CTX_SET_GLOBAL_ALPHA = 'G',
   CTX_HOR_LINE_TO      = 'H', // SVG %
-  CTX_COMPOSITING_MODE = 'I',
   CTX_ROTATE           = 'J', // float
   CTX_SET_COLOR        = 'K', // u8
   CTX_LINE_TO          = 'L', // SVG float x, y
   CTX_MOVE_TO          = 'M', // SVG float x, y
-  CTX_SET_FONT_SIZE    = 'N',
   CTX_SCALE            = 'O', // float, float
   CTX_NEW_PAGE         = 'P', // NYI
   CTX_QUAD_TO          = 'Q', // SVG
@@ -617,7 +614,6 @@ typedef enum
   CTX_SMOOTHQ_TO       = 'T', // SVG %
   CTX_CLEAR            = 'U',
   CTX_VER_LINE_TO      = 'V', // SVG %
-  CTX_SET_LINE_CAP     = 'W',
   CTX_EXIT             = 'X',
   CTX_SET_COLOR_MODEL  = 'Y', //
   // Z - SVG?
@@ -630,7 +626,6 @@ typedef enum
   CTX_GLYPH            = 'g', // unichar, fontsize
   CTX_REL_HOR_LINE_TO  = 'h', // SVG %
   CTX_TEXTURE          = 'i',
-  CTX_SET_LINE_JOIN    = 'j',
   CTX_SET_FILL_RULE    = 'k',
   CTX_REL_LINE_TO      = 'l', // SVG
   CTX_REL_MOVE_TO      = 'm', // SVG
@@ -643,16 +638,26 @@ typedef enum
   CTX_REL_SMOOTHQ_TO   = 't', // SVG
   CTX_TEXT_STROKE      = 'u', //
   CTX_REL_VER_LINE_TO  = 'v',
-  CTX_LINE_WIDTH       = 'w',
   CTX_TEXT             = 'x', // x, y - followed by "" in CTX_DATA
   CTX_IDENTITY         = 'y', // < can be achieved with set_transform
   CTX_CLOSE_PATH       = 'z',
-  CTX_NEW_PATH         = '_',
+  CTX_NEW_PATH         = 'N',
+
+  /* these commands have single byte binary representations,
+   * but are two chars in text, values below 9 are used for
+   * low integers of enum values. and can thus not be used here
+   */
+  CTX_SET_GLOBAL_ALPHA = 8,  // =a
+  CTX_COMPOSITING_MODE = 9,  // =c
+  CTX_SET_FONT_SIZE    = 10, // =f
+  CTX_SET_LINE_JOIN    = 11, // =j
+  CTX_SET_LINE_CAP     = 12, // =c
+  CTX_SET_LINE_WIDTH   = 13, // =w
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
   //
-  // unused:  . , : backslash ! # $ % ^ = { } < > ? &
+  // unused:  . , : backslash ! # $ % ^ { } < > ? &
   CTX_SET_RGBA         = '*', // u8
   CTX_PAINT            = '~',
   CTX_GRADIENT_CLEAR   = '/',
@@ -2046,7 +2051,7 @@ void ctx_set_line_width (Ctx *ctx, float x) {
                           ctx_fabsf(ctx->state.gstate.transform.m[0][1])),
                   CTX_MAX(ctx_fabsf(ctx->state.gstate.transform.m[1][0]),
                           ctx_fabsf(ctx->state.gstate.transform.m[1][1])));
-  CTX_PROCESS_F1(CTX_LINE_WIDTH, x);
+  CTX_PROCESS_F1(CTX_SET_LINE_WIDTH, x);
 }
 
 void
@@ -2993,7 +2998,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
 {
   switch (entry->code)
   {
-    case CTX_LINE_WIDTH:
+    case CTX_SET_LINE_WIDTH:
       state->gstate.line_width = ctx_arg_float(0);
       break;
     case CTX_SET_LINE_CAP:
@@ -8361,7 +8366,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
         cairo_translate (cr, ctx_arg_float(0), ctx_arg_float(1));
         break;
 
-      case CTX_LINE_WIDTH:
+      case CTX_SET_LINE_WIDTH:
         cairo_set_line_width (cr, ctx_arg_float(0));
         break;
 
@@ -8648,7 +8653,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         ctx_translate (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
         break;
 
-      case CTX_LINE_WIDTH:
+      case CTX_SET_LINE_WIDTH:
         ctx_set_line_width (d_ctx, ctx_arg_float(0));
         break;
 
@@ -8908,7 +8913,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
 
       case CTX_SET_FONT_SIZE:
       case CTX_ROTATE:
-      case CTX_LINE_WIDTH:
+      case CTX_SET_LINE_WIDTH:
         ctx_print_entry (stream, entry, 1);
         break;
 
@@ -9190,14 +9195,12 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('r','e','s','t','o','r','e',0,0,0,0,0):   str_hash = 'D'; break;
     case STR('s','t','r','o','k','e',0,0,0,0,0,0):     str_hash = 'E'; break;
     case STR('f','i','l','l',0,0,0,0,0,0,0,0):         str_hash = 'F'; break;
-    case STR('g','l','o','b','a','l','_','a','l','p','h','a'): str_hash = 'G'; break;
     case STR('h','o','r','_','l','i','n','e','_','t','o',0): str_hash = 'H'; break;
     case STR('r','o','t','a','t','e',0,0,0,0,0,0):     str_hash = 'J'; break;
     case STR('c','o','l','o','r',0,0,0,0,0,0,0):
     case STR('s','e','t','_','c','o','l','o','r',0,0,0): str_hash = 'K'; break;
     case STR('l','i','n','e','_','t','o',0,0,0,0,0):   str_hash = 'L'; break;
     case STR('m','o','v','e','_','t','o',0,0,0,0,0):   str_hash = 'M'; break;
-    case STR('s','e','t','_','f','o','n','t','_','s','i','z'): str_hash = 'N'; break;
     case STR('s','c','a','l','e',0,0,0,0,0,0,0): str_hash = 'O'; break;
     case STR('n','e','w','_','p','a','g','e',0,0,0,0): str_hash = 'P'; break;
     case STR('q','u','a','d','_','t','o',0,0,0,0,0): str_hash = 'Q'; break;
@@ -9206,14 +9209,12 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('s','m','o','o','t','h','_','q','u','a','d','_'): str_hash = 'T'; break;
     case STR('c','l','e','a','r',0,0,0,0,0,0,0): str_hash = 'U'; break;
     case STR('v','e','r','_','l','i','n','e','_','t','o',0): str_hash = 'V'; break;
-    case STR('s','e','t','_','l','i','n','e','_','c','a','p'):
-    case STR('c','a','p',0,0,0,0,0,0,0,0,0): str_hash = 'W'; break;
     case STR('e','x','i','t',0,0,0,0,0,0,0,0):
     case STR('d','o','n','e',0,0,0,0,0,0,0,0): str_hash = 'X'; break;
     case STR('c','o','l','o','r','_','m','o','d','e','l', 0): str_hash ='Y'; break;
     case STR('c','l','o','s','e','_','p','a','t','h',0,0): str_hash ='z'; break;
     case STR('n','e','w','_','p','a','t','h',0,0,0,0): 
-    case STR('b','e','g','i','n','_','p','a','t','h',0,0): str_hash ='_'; break;
+    case STR('b','e','g','i','n','_','p','a','t','h',0,0): str_hash ='N'; break;
 
     case STR('r','e','l','_','a','r','c','_','t','o',0,0): str_hash = 'a'; break;
     case STR('c','l','i','p',0,0,0,0,0,0,0,0): str_hash = 'b'; break;
@@ -9222,8 +9223,6 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('t','r','a','n','s','l','a','t','e',0,0,0): str_hash = 'e'; break;
     case STR('l','i','n','e','a','r','_','g','r','a','d','i'): str_hash = 'f'; break;
     case STR('r','e','l','_','h','o','r','_','l','i','n','e'): str_hash = 'h'; break;
-    case STR('s','e','t','_','l','i','n','e','_','j','o','i'):
-    case STR('j','o','i','n',0,0,0,0,0,0,0,0): str_hash = 'j'; break;
 
     case STR('f','i','l','l','_','r','u','l','e',0,0,0): 
     case STR('s','e','t','_','f','i','l','l','_','r','u','l'): str_hash = 'k'; break;
@@ -9241,12 +9240,34 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('r','e','l','_','s','m','o','o','t','h','_','q'): str_hash = 't'; break;
     case STR('t','e','x','t','_','s','t','r','o','k','e', 0): str_hash = 'u'; break;
     case STR('r','e','l','_','v','e','r','_','l','i','n','e'): str_hash = 'v'; break;
-    case STR('s','e','t','_','l','i','n','e','_','w','i','d'):
-    case STR('l','i','n','e','_','w','i','d','t','h',0,0): str_hash = 'w'; break;
     case STR('t','e','x','t',0,0,0,0,0,0,0,0): str_hash = 'x'; break;
     case STR('i','d','e','n','t','i','t','y','_','m','a','t'):
     case STR('i','d','e','n','t','i','t','y',0,0,0,0): str_hash = 'y'; break;
     case STR('s','e','t','_','t','r','a','n','s','f','o','r'): str_hash = '^'; break;
+
+
+    case STR('=','f',0,0,0,0,0,0,0,0,0,0):
+    case STR('s','e','t','_','f','o','n','t','_','s','i','z'):
+      ctxp->n_args=1; return CTX_SET_FONT_SIZE;
+
+    case STR('=','j',0,0,0,0,0,0,0,0,0,0):
+    case STR('s','e','t','_','l','i','n','e','_','j','o','i'):
+    case STR('j','o','i','n',0,0,0,0,0,0,0,0):
+      ctxp->n_args=1; return CTX_SET_LINE_JOIN;
+
+    case STR('=','c',0,0,0,0,0,0,0,0,0,0):
+    case STR('s','e','t','_','l','i','n','e','_','c','a','p'):
+    case STR('c','a','p',0,0,0,0,0,0,0,0,0):
+      ctxp->n_args=1; return CTX_SET_LINE_CAP;
+
+    case STR('=','w',0,0,0,0,0,0,0,0,0,0):
+    case STR('l','i','n','e','_','w','i','d','t','h',0,0):
+    case STR('s','e','t','_','l','i','n','e','_','w','i','d'):
+      ctxp->n_args=1; return CTX_SET_LINE_WIDTH;
+    case STR('=','a',0,0,0,0,0,0,0,0,0,0):
+    case STR('g','l','o','b','a','l','_','a','l','p','h','a'):
+    case STR('s','e','t','_','g','l','o','b','a','l','_','a'):
+      ctxp->n_args=1; return CTX_SET_GLOBAL_ALPHA;
 
     /* strings are handled directly here,
      * instead of in the one-char handler, using return instead of break
@@ -9347,7 +9368,6 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case 'K': ctxp->n_args = ctxp->color_components; return CTX_SET_COLOR;
     case 'L': ctxp->n_args = 2; return CTX_LINE_TO;
     case 'M': ctxp->n_args = 2; return CTX_MOVE_TO;
-    case 'N': ctxp->n_args = 1; return CTX_SET_FONT_SIZE;
     case 'P': ctxp->n_args = 0; return CTX_NEW_PAGE;
     case 'O': ctxp->n_args = 2; return CTX_SCALE;
     case 'Q': ctxp->n_args = 4; return CTX_QUAD_TO;
@@ -9360,7 +9380,7 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case 'X': ctxp->n_args = 0; return CTX_EXIT;
     case 'Y': ctxp->n_args = 1; return CTX_SET_COLOR_MODEL;
     case 'Z':case 'z': ctxp->n_args = 0; return CTX_CLOSE_PATH;
-    case '_': ctxp->n_args = 0; return CTX_NEW_PATH;
+    case 'N': ctxp->n_args = 0; return CTX_NEW_PATH;
     case '^': ctxp->n_args = 0; return CTX_SET_TRANSFORM;
     case 'a': ctxp->n_args = 5; return CTX_REL_ARC_TO;
     case 'b': ctxp->n_args = 0; return CTX_CLIP;
@@ -9383,7 +9403,7 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case 't': ctxp->n_args = 2; return CTX_REL_SMOOTHQ_TO;
     case 'u': ctxp->n_args = 100; return CTX_TEXT_STROKE;
     case 'v': ctxp->n_args = 1; return CTX_REL_VER_LINE_TO;
-    case 'w': ctxp->n_args = 1; return CTX_LINE_WIDTH;
+    case 'w': ctxp->n_args = 1; return CTX_SET_LINE_WIDTH;
     case 'x': ctxp->n_args = 100; return CTX_TEXT;
     case 'y': ctxp->n_args = 0; return CTX_IDENTITY;
   }
@@ -9746,7 +9766,7 @@ static void ctx_parser_dispatch_command (CtxParser *ctxp)
         ctxp->pcy += ctxp->numbers[1];
         ctxp->left_margin = ctx_x (ctx);
         break;
-    case CTX_LINE_WIDTH:
+    case CTX_SET_LINE_WIDTH:
         ctx_set_line_width (ctx, ctxp->numbers[0]);
         break;
     case CTX_SET_LINE_JOIN:
@@ -9827,7 +9847,7 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
          case 18: case 19: case 20: case 21: case 22: case 23: case 24:
          case 25: case 26: case 27: case 28: case 29: case 30: case 31:
             break;
-         case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
+         case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':
          case '{':case '}':
             break;
          case '#':
@@ -9879,7 +9899,7 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
            case 25: case 26: case 27: case 28: case 29: case 30: case 31:
               ctxp->state = CTX_PARSER_NEUTRAL;
               break;
-           case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
+           case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':
            case '{':case '}':
               if (ctxp->state == CTX_PARSER_NEGATIVE_NUMBER)
                 ctxp->numbers[ctxp->n_numbers] *= -1;
@@ -9978,7 +9998,7 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
          case 18: case 19: case 20: case 21: case 22: case 23: case 24:
          case 25: case 26: case 27: case 28: case 29: case 30: case 31:
 
-         case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
+         case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':
          case '{':case '}':
             ctxp->state = CTX_PARSER_NEUTRAL;
             break;
@@ -10011,7 +10031,7 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
         ctxp->holding[ctxp->pos]=0;
         int command = ctx_parser_resolve_command (ctxp, ctxp->holding);
 
-        if (command >= 0 && command < 5)
+        if (command >= 0 && command < 5) // special case low enum values
         {
           ctxp->numbers[ctxp->n_numbers] = command;
           ctxp->state = CTX_PARSER_NUMBER;

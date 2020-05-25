@@ -11,7 +11,7 @@ clean:
 	make -C examples clean
 
 ctx: ctx.c vt/*.[ch] ctx.h  Makefile
-	$(CC) ctx.c vt/*.c -O3 -o $@ -g -I. -Ifonts -Ivt -mtune=native -march=native `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -lm -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers
+	$(CC) ctx.c vt/*.c -O2 -o $@ -g -I. -Ifonts -Ivt -mtune=native -march=native `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -lm -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers
 
 ctx.O1: ctx.c vt/*.[ch] ctx.h  Makefile 
 	$(CC) ctx.c vt/*.c -o $@ -g -O1 -I. -Ifonts -Ivt `pkg-config sdl2 --cflags --libs` -lutil -Wall -lz -lm
