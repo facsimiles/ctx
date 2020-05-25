@@ -9523,10 +9523,29 @@ static void ctx_parser_holding_append (CtxParser *ctxp, int byte)
 
 void ctxp_parser_transform_percent (CtxParser *ctxp, CtxCode code, int arg_no, float *value)
 {
-  if (arg_no % 2 == 0) // even means x coord
-    *value  *= ((ctxp->width)/100.0);
-  else
-    *value *= ((ctxp->height)/100.0);
+  int big = ctxp->width;
+  int small = ctxp->height;
+
+  if (big < small)
+  {
+    small = ctxp->width;
+    big   = ctxp->height;
+  }
+
+  switch (code)
+  {
+    default: // even means x coord
+      if (arg_no % 2 == 0)
+        *value  *= ((ctxp->width)/100.0);
+      else
+        *value *= ((ctxp->height)/100.0);
+      break;
+    case CTX_SET_FONT_SIZE:
+    case CTX_SET_LINE_WIDTH:
+        *value *= small/100.0;
+
+      break;
+  }
 }
 
 void ctxp_parser_transform_cell (CtxParser *ctxp, CtxCode code, int arg_no, float *value)
