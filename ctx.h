@@ -654,17 +654,17 @@ typedef enum
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
-  CTX_SET_GLOBAL_ALPHA = 8,  // =a
-  CTX_SET_COMPOSITING_MODE = 9,  // =c
-  CTX_SET_FONT_SIZE    = 10, // =f
-  CTX_SET_LINE_JOIN    = 11, // =j
-  CTX_SET_LINE_CAP     = 12, // =c
-  CTX_SET_LINE_WIDTH   = 13, // =w
-  CTX_SET_FILL_RULE    = 14, // =r
-  CTX_SET_TEXT_ALIGN   = 15, // =t
-  CTX_SET_TEXT_BASELINE= 16, // =b
-  CTX_SET_TEXT_DIRECTION=17, // =d
-  CTX_SET_MITER_LIMIT   =18, // =m
+  CTX_SET_GLOBAL_ALPHA = 10,  // =a
+  CTX_SET_COMPOSITING_MODE = 11,  // =c
+  CTX_SET_FONT_SIZE    = 12, // =f
+  CTX_SET_LINE_JOIN    = 13, // =j
+  CTX_SET_LINE_CAP     = 14, // =c
+  CTX_SET_LINE_WIDTH   = 15, // =w
+  CTX_SET_FILL_RULE    = 16, // =r
+  CTX_SET_TEXT_ALIGN   = 17, // =t
+  CTX_SET_TEXT_BASELINE= 18, // =b
+  CTX_SET_TEXT_DIRECTION=19, // =d
+  CTX_SET_MITER_LIMIT   =20, // =m
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
@@ -7880,6 +7880,28 @@ _ctx_text (Ctx        *ctx,
       break;
   }
   float y = ctx->state.y;
+  float baseline_offset = 0.0f;
+  switch (state->gstate.text_baseline)
+  {
+    case CTX_TEXT_BASELINE_HANGING:
+            /* XXX : this is a crude attempt  */
+      baseline_offset = ctx->state.gstate.font_size * 0.55;
+      break;
+    case CTX_TEXT_BASELINE_TOP:
+            /* XXX : this is a crude attempt  */
+      baseline_offset = ctx->state.gstate.font_size * 0.7;
+      break;
+    case CTX_TEXT_BASELINE_BOTTOM:
+      baseline_offset = -ctx->state.gstate.font_size * 0.1;
+      break;
+    case CTX_TEXT_BASELINE_ALPHABETIC:
+    case CTX_TEXT_BASELINE_IDEOGRAPHIC:
+      baseline_offset = 0.0f;
+      break;
+    case CTX_TEXT_BASELINE_MIDDLE:
+      baseline_offset = ctx->state.gstate.font_size * 0.3;
+      break;
+  }
   float x0 = x;
 
           
@@ -7898,7 +7920,7 @@ _ctx_text (Ctx        *ctx,
         uint32_t unichar = ctx_utf8_to_unichar (utf8);
         if (visible)
         {
-          ctx_move_to (ctx, x, y);
+          ctx_move_to (ctx, x, y + baseline_offset);
           _ctx_glyph (ctx, unichar, stroke);
         }
         const char *next_utf8 = ctx_utf8_skip (utf8, 1);
@@ -9240,6 +9262,18 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'C'):
       return CTX_TEXT_ALIGN_CENTER; break;
 
+    case STR('T','O','P',0,0,0, 0, 0, 0, 0, 0, 0):
+      return CTX_TEXT_BASELINE_TOP; break;
+    case STR('B','O','T','T','O','M', 0, 0, 0, 0, 0, 0):
+      return CTX_TEXT_BASELINE_BOTTOM; break;
+    case STR('M','I','D','D','L', 'E',0, 0, 0, 0, 0, 0):
+      return CTX_TEXT_BASELINE_MIDDLE; break;
+    case STR('A','L','P','H','A', 'B','E', 'T', 'I', 'C', 0, 0):
+      return CTX_TEXT_BASELINE_ALPHABETIC; break;
+    case STR('H','A','N','G','I', 'N','G', 0, 0, 0, 0, 0):
+      return CTX_TEXT_BASELINE_HANGING; break;
+    case STR('I','D','E','O','G','R','A','P','H','I','C', 0):
+      return CTX_TEXT_BASELINE_IDEOGRAPHIC; break;
 
     case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       return CTX_GRAY; break;
     case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     return CTX_GRAYA; break;
@@ -10065,7 +10099,7 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
         ctxp->holding[ctxp->pos]=0;
         int command = ctx_parser_resolve_command (ctxp, ctxp->holding);
 
-        if (command >= 0 && command < 5) // special case low enum values
+        if (command >= 0 && command < 10) // special case low enum values
         {
           ctxp->numbers[ctxp->n_numbers] = command;
           ctxp->state = CTX_PARSER_NUMBER;

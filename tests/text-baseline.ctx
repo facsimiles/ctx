@@ -1,0 +1,39 @@
+linear_gradient 0 0 80% 0
+gradient_add_stop 0 0 0 0 1
+gradient_add_stop 0.5 0.5 0.5 0.5 1
+rectangle 0 0 100% 100%
+fill
+
+rgba 1 0 0 0.5
+move_to 0% 50%
+line_to 100% 50%
+set_line_width 2%
+stroke
+
+rgb 1 1 1
+
+set_font_size 20%
+move_to 0% 50%
+set_text_baseline TOP
+text "Top"
+
+move_to 15% 50%
+set_text_baseline BOTTOM
+text "Bottom"
+
+move_to 30% 50%
+set_text_baseline MIDDLE
+text "Middle"
+
+move_to 45% 50%
+set_text_baseline ALPHABETIC
+text "Alphabetic"
+
+move_to 60% 50%
+set_text_baseline HANGING
+text "Hanging"
+
+move_to 75% 50%
+set_text_baseline IDEOGRAPHIC
+text "Ideographic"
+
