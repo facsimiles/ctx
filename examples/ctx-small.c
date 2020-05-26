@@ -4,7 +4,10 @@
 #define CTX_PARSER                      1
 #define CTX_LIMIT_FORMATS
 #define CTX_ENABLE_RGBA8                1
+#define CTX_GRADIENT_CACHE              0
+#define CTX_BITPACK_PACKER              0 /*  leave out code */
 #define CTX_FONTS_FROM_FILE             0 /* leaves out code */
+
 #define CTX_IMPLEMENTATION
 
 #include "ctx.h"
@@ -12,10 +15,9 @@
 #define WIDTH    72
 #define HEIGHT   24
 
-uint8_t pixels[WIDTH*HEIGHT*4];
-
 int main (int argc, char **argv)
 {
+  uint8_t *pixels = malloc (WIDTH*HEIGHT*4);
   Ctx *ctx = ctx_new_for_framebuffer (
     pixels, WIDTH, HEIGHT, WIDTH*4,
     CTX_FORMAT_RGBA8);
@@ -27,7 +29,11 @@ int main (int argc, char **argv)
   ctx_rectangle (ctx, 0, 0, 80, 24);
   ctx_fill (ctx);
 
+#ifndef REALLY_TINY
   char *utf8 = "tinytest\necho foobaz\n";
+#else
+  char *utf8 = "";
+#endif
   ctx_move_to (ctx, 10, 9);
   ctx_set_font_size (ctx, 12);
   ctx_set_line_width (ctx, 2);
@@ -37,6 +43,7 @@ int main (int argc, char **argv)
   ctx_move_to (ctx, 10, 9);
   ctx_text (ctx, utf8);
 
+#ifndef REALLY_TINY
   static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
   int no = 0;
   no=0;
@@ -49,6 +56,7 @@ int main (int argc, char **argv)
     }
     printf ("\n");
   }
+#endif
   {
        CtxParser *ctxp = ctx_parser_new (ctx, WIDTH, HEIGHT, WIDTH/20, HEIGHT/20, 1, 1, NULL, NULL);
 
@@ -60,6 +68,6 @@ int main (int argc, char **argv)
        ctx_parser_free (ctxp);
   }
   ctx_free (ctx);
-
+  free (pixels);
   return 0;
 }

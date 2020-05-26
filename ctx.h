@@ -703,6 +703,7 @@ typedef enum
   CTX_REL_QUAD_TO_S16           = '9',
 #endif
 
+  CTX_SET_PARAM = '=', // prefix for two char conversions
 } CtxCode;
 
 typedef enum {
@@ -869,6 +870,7 @@ static float ctx_atanf (float x)
 #define acosf(x)    ctx_atanf((sqrtf(1.0f-ctx_pow2(x))/(x)))
 #define atan2f(a,b) ctx_atan2f((a), (b))
 #define sinf(a)     ctx_sinf(a)
+#define fabsf(a)    ctx_fabsf(a)
 #define cosf(a)     ctx_sinf((a) + CTX_PI/2.0f)
 #define tanf(a)     (cosf(a)/sinf(a))
 
@@ -2031,10 +2033,10 @@ void ctx_set_line_width (Ctx *ctx, float x) {
 
   /* XXX : ugly hack to normalize the width dependent on the current
            transform, this does not really belong here */
-  x = x * CTX_MAX(CTX_MAX(ctx_fabsf(ctx->state.gstate.transform.m[0][0]),
-                          ctx_fabsf(ctx->state.gstate.transform.m[0][1])),
-                  CTX_MAX(ctx_fabsf(ctx->state.gstate.transform.m[1][0]),
-                          ctx_fabsf(ctx->state.gstate.transform.m[1][1])));
+  x = x * CTX_MAX(CTX_MAX(fabsf(ctx->state.gstate.transform.m[0][0]),
+                          fabsf(ctx->state.gstate.transform.m[0][1])),
+                  CTX_MAX(fabsf(ctx->state.gstate.transform.m[1][0]),
+                          fabsf(ctx->state.gstate.transform.m[1][1])));
   CTX_PROCESS_F1(CTX_SET_LINE_WIDTH, x);
 }
 
@@ -8504,7 +8506,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
 #endif
   {
   uint8_t name[3];
-  name[0]='=';
+  name[0]=CTX_SET_PARAM;
   name[2]='\0';
   switch (code)
   {
@@ -9018,47 +9020,47 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR('i','d','e','n','t','i','t','y',0,0,0,0): str_hash = 'y'; break;
     case STR('s','e','t','_','t','r','a','n','s','f','o','r'): str_hash = 'W'; break;
 
-    case STR('=','m',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'m',0,0,0,0,0,0,0,0,0,0):
     case STR('c','o','m','p','o','s','i','t','i','n','g','m'): 
     case STR('s','e','t','_','c','o','m','p','o','s','i','t'): 
       ctxp->n_args=1; return CTX_SET_COMPOSITING_MODE;
 
-    case STR('=','r',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'r',0,0,0,0,0,0,0,0,0,0):
     case STR('f','i','l','l','_','r','u','l','e',0,0,0): 
     case STR('s','e','t','_','f','i','l','l','_','r','u','l'):
       ctxp->n_args=1; return CTX_SET_FILL_RULE;
 
-    case STR('=','f',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'f',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','f','o','n','t','_','s','i','z'):
       ctxp->n_args=1; return CTX_SET_FONT_SIZE;
 
-    case STR('=','t',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'t',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','t','e','x','t','_','a','l','i'):
       ctxp->n_args=1; return CTX_SET_TEXT_ALIGN;
 
-    case STR('=','b',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'b',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','t','e','x','t','_','b','a','s'):
       ctxp->n_args=1; return CTX_SET_TEXT_BASELINE;
 
-    case STR('=','d',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'d',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','t','e','x','t','_','d','i','r'):
       ctxp->n_args=1; return CTX_SET_TEXT_DIRECTION;
 
-    case STR('=','j',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'j',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','l','i','n','e','_','j','o','i'):
     case STR('j','o','i','n',0,0,0,0,0,0,0,0):
       ctxp->n_args=1; return CTX_SET_LINE_JOIN;
 
-    case STR('=','c',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'c',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','l','i','n','e','_','c','a','p'):
     case STR('c','a','p',0,0,0,0,0,0,0,0,0):
       ctxp->n_args=1; return CTX_SET_LINE_CAP;
 
-    case STR('=','w',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'w',0,0,0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','w','i','d','t','h',0,0):
     case STR('s','e','t','_','l','i','n','e','_','w','i','d'):
       ctxp->n_args=1; return CTX_SET_LINE_WIDTH;
-    case STR('=','a',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_PARAM,'a',0,0,0,0,0,0,0,0,0,0):
     case STR('g','l','o','b','a','l','_','a','l','p','h','a'):
     case STR('s','e','t','_','g','l','o','b','a','l','_','a'):
       ctxp->n_args=1; return CTX_SET_GLOBAL_ALPHA;
@@ -10079,6 +10081,25 @@ void ctx_parser_feed_byte (CtxParser *ctxp, int byte)
       break;
   }
 }
+#endif
+
+#if CTX_MATH
+
+#undef sqrtf
+#undef atanf
+#undef asinf
+#undef acosf
+#undef atan2f
+#undef sinf
+#undef fabsf
+#undef cosf
+#undef tanf
+#undef hypotf
+
+#else
+
+#include <math.h>
+
 #endif
 
 #endif

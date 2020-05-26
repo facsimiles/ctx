@@ -11,23 +11,23 @@ test-renderpaths: test-renderpaths.c ../ctx.h ../fonts/*.h
 	gcc $< -o $@ -g -O3 -march=native -mtune=native `pkg-config mrg --cflags --libs` -I../fonts  -I.. -msse3
 
 ctx-tiny: ctx-tiny.c ../ctx.h ../fonts/*.h Makefile
-	$(CC) $< -o $@ -I.. -I../fonts $(SMALL_CFLAGS)
+	$(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 	@ls -slab $@
 
 ctx-tiny-musl: ctx-tiny.c ../ctx.h ../fonts/*.h Makefile
-	musl-gcc $< -o $@ -I.. -I../fonts $(SMALL_CFLAGS)
+	musl-gcc $(SMALL_CFLAGS)  $< -o $@ -I.. -I../fonts
 	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
 	@ls -slab $@
 
 ctx-tiny-static-musl: ctx-tiny.c ../ctx.h ../fonts/*.h Makefile
-	musl-gcc $< -o $@ -I.. -I../fonts -static $(SMALL_CFLAGS)
+	musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static
 	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
 	@ls -slab $@
 
 ctx-small: ctx-small.c ../ctx.h ../fonts/*.h Makefile
-	$(CC) $< -o $@ -I.. -I../fonts $(SMALL_CFLAGS)
+	$(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 	@ls -slab $@
 
 ctx-small-static-musl: ctx-small.c ../ctx.h ../fonts/*.h Makefile
-	musl-gcc $< -o $@ -I.. -I../fonts -static $(SMALL_CFLAGS)
+	musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static
 	@ls -slab $@
