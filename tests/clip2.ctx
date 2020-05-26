@@ -1,11 +1,11 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
 rgb 0 0 0
-set_line_width 10%
+line_width=10%
 arc 50% 50% 30% 0.0 6.2 0
 clip
 
-set_line_width 5%
+line_width=5%
 rgb 1 0 0
 new_path
 move_to 0% 0%

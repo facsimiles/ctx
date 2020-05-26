@@ -1,14 +1,14 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
 rgb 0 0 0
-set_line_width 10%
+line_width= 10%
 
 move_to 10% 50%
 curve_to 45% 90% 75% 10% 90% 50%
 
 stroke
 rgb 1 0 0
-set_line_width 5%
+line_width= 5%
 new_path
 move_to 10% 50%
 line_to 45% 90%

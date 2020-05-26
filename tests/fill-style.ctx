@@ -1,6 +1,6 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
-set_line_width 5%
+line_width=5%
 
 rectangle 5% 5% 90% 30%
 close_path

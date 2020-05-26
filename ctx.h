@@ -645,6 +645,7 @@ typedef enum
   CTX_REL_SMOOTHQ_TO   = 't', // SVG
   CTX_TEXT_STROKE      = 'u', //
   CTX_REL_VER_LINE_TO  = 'v',
+  CTX_SET_PARAM        = 'w', 
   CTX_TEXT             = 'x', // x, y - followed by "" in CTX_DATA
   CTX_IDENTITY         = 'y', // < can be achieved with set_transform
   CTX_CLOSE_PATH       = 'z',
@@ -654,23 +655,24 @@ typedef enum
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
-  CTX_SET_GLOBAL_ALPHA = 10,  // =a
-  CTX_SET_COMPOSITING_MODE = 11,  // =c
-  CTX_SET_FONT_SIZE    = 12, // =f
-  CTX_SET_LINE_JOIN    = 13, // =j
-  CTX_SET_LINE_CAP     = 14, // =c
-  CTX_SET_LINE_WIDTH   = 15, // =w
-  CTX_SET_FILL_RULE    = 16, // =r
-  CTX_SET_TEXT_ALIGN   = 17, // =t
-  CTX_SET_TEXT_BASELINE= 18, // =b
-  CTX_SET_TEXT_DIRECTION=19, // =d
-  CTX_SET_MITER_LIMIT   =20, // =m
+  CTX_SET_GLOBAL_ALPHA = 10,  // wa
+  CTX_SET_COMPOSITING_MODE = 11,  // wc
+  CTX_SET_FONT_SIZE    = 12, // wf
+  CTX_SET_LINE_JOIN    = 13, // wj
+  CTX_SET_LINE_CAP     = 14, // wc
+  CTX_SET_LINE_WIDTH   = 15, // ww
+  CTX_SET_FILL_RULE    = 16, // wr
+  CTX_SET_TEXT_ALIGN   = 17, // wt
+  CTX_SET_TEXT_BASELINE= 18, // wb
+  CTX_SET_TEXT_DIRECTION=19, // wd
+  CTX_SET_MITER_LIMIT   =20, // wm
+
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
   //
   // unused:  . , : backslash ! # $ % ^ { } < > ? &
-  CTX_SET_RGBA         = '*', // u8
+  CTX_SET_RGBA_U8      = '*', // u8
   CTX_GRADIENT_CLEAR   = '/',
   CTX_PAINT            = '~',
   CTX_NOP              = ' ',
@@ -704,7 +706,6 @@ typedef enum
   CTX_REL_QUAD_TO_S16           = '9',
 #endif
 
-  CTX_SET_PARAM = '=', // prefix for two char conversions
 } CtxCode;
 
 typedef enum {
@@ -2455,7 +2456,7 @@ ctx_set_rgba_stroke_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 void
 ctx_set_rgba_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-  CtxEntry command = ctx_u8 (CTX_SET_RGBA, r, g, b, a, 0, 0, 0, 0);
+  CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
 
   // XXX turn it into a no-op if the color matches color
   //     in state
@@ -2660,7 +2661,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
     case CTX_SET_MITER_LIMIT:
       state->gstate.miter_limit = ctx_arg_float(0);
       break;
-    case CTX_SET_RGBA:
+    case CTX_SET_RGBA_U8:
       //ctx_source_deinit (&state->gstate.source);
       state->gstate.source.type = CTX_SOURCE_COLOR;
       for (int i = 0; i < 4; i ++)
@@ -2881,7 +2882,7 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
   {
     CtxEntry *entry = &renderstream->entries[i];
 
-    if (entry[0].code == CTX_SET_RGBA &&
+    if (entry[0].code == CTX_SET_RGBA_U8 &&
         entry[1].code == CTX_MOVE_TO &&
         entry[2].code == CTX_REL_LINE_TO &&
         entry[3].code == CTX_REL_LINE_TO &&
@@ -8402,7 +8403,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                         ctx_arg_float(4), ctx_arg_float(5));
         break;
 
-      case CTX_SET_RGBA:
+      case CTX_SET_RGBA_U8:
         ctx_set_rgba (d_ctx, ctx_arg_u8(0)/255.0,
                              ctx_arg_u8(1)/255.0,
                              ctx_arg_u8(2)/255.0,
@@ -8782,7 +8783,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
         ctx_print_entry (stream, formatter, &indent, entry, 1);
         break;
 
-      case CTX_SET_RGBA:
+      case CTX_SET_RGBA_U8:
         if (formatter)
         {
           _ctx_indent (stream, indent);
@@ -9137,38 +9138,46 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
     case STR(CTX_SET_PARAM,'f',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','f','o','n','t','_','s','i','z'):
+    case STR('f','o','n','t','_','s','i','z','e',0,0,0):
       parser->n_args=1; return CTX_SET_FONT_SIZE;
 
     case STR(CTX_SET_PARAM,'l',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','m','i','t','e','r','_','l','i'):
+    case STR('m','i','t','e','r','_','l','i','m','i','t',0):
       parser->n_args=1; return CTX_SET_MITER_LIMIT;
 
     case STR(CTX_SET_PARAM,'t',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','t','e','x','t','_','a','l','i'):
+    case STR('t','e','x','t','_','a','l','i','g','n',0, 0):
       parser->n_args=1; return CTX_SET_TEXT_ALIGN;
 
     case STR(CTX_SET_PARAM,'b',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','t','e','x','t','_','b','a','s'):
+    case STR('t','e','x','t','_','b','a','s','e','l','i','n'):
       parser->n_args=1; return CTX_SET_TEXT_BASELINE;
 
     case STR(CTX_SET_PARAM,'d',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','t','e','x','t','_','d','i','r'):
+    case STR('t','e','x','t','_','d','i','r','e','c','t','i'):
       parser->n_args=1; return CTX_SET_TEXT_DIRECTION;
 
     case STR(CTX_SET_PARAM,'j',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','l','i','n','e','_','j','o','i'):
     case STR('j','o','i','n',0,0,0,0,0,0,0,0):
+    case STR('l','i','n','e','_','j','o','i','n',0,0,0):
       parser->n_args=1; return CTX_SET_LINE_JOIN;
 
     case STR(CTX_SET_PARAM,'c',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','l','i','n','e','_','c','a','p'):
     case STR('c','a','p',0,0,0,0,0,0,0,0,0):
+    case STR('l','i','n','e','_','c','a','p',0,0,0,0):
       parser->n_args=1; return CTX_SET_LINE_CAP;
 
     case STR(CTX_SET_PARAM,'w',0,0,0,0,0,0,0,0,0,0):
-    case STR('l','i','n','e','_','w','i','d','t','h',0,0):
     case STR('s','e','t','_','l','i','n','e','_','w','i','d'):
+    case STR('l','i','n','e','_','w','i','d','t','h',0,0):
       parser->n_args=1; return CTX_SET_LINE_WIDTH;
+
     case STR(CTX_SET_PARAM,'a',0,0,0,0,0,0,0,0,0,0):
     case STR('g','l','o','b','a','l','_','a','l','p','h','a'):
     case STR('s','e','t','_','g','l','o','b','a','l','_','a'):
@@ -9896,7 +9905,7 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
         *value *= parser->cell_height;
       }
       break;
-    default: // even means x coord
+    default: // even means x coord odd means y coord
       *value *= (arg_no%2==0)?parser->cell_width:parser->cell_height;
       break;
   }
@@ -9920,7 +9929,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
          case 25: case 26: case 27: case 28: case 29: case 30: case 31:
             break;
          case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':
-         case '{':case '}':
+         case '{':case '}':case '=':
             break;
          case '#':
             parser->state = CTX_PARSER_COMMENT;
@@ -9972,7 +9981,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
               parser->state = CTX_PARSER_NEUTRAL;
               break;
            case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':
-           case '{':case '}':
+           case '{':case '}':case '=':
               if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
                 parser->numbers[parser->n_numbers] *= -1;
     
@@ -10050,7 +10059,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
          case 18: case 19: case 20: case 21: case 22: case 23: case 24:
          case 25: case 26: case 27: case 28: case 29: case 30: case 31:
 
-         case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':
+         case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
          case '{':case '}':
             parser->state = CTX_PARSER_NEUTRAL;
             break;

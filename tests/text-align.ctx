@@ -32,5 +32,5 @@ set_text_align left
 text "left"
 
 move_to 50% 100%
-set_text_align right
+text_align=right
 text "right"
