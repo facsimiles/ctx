@@ -664,6 +664,7 @@ typedef enum
   CTX_SET_TEXT_ALIGN   = 15, // =t
   CTX_SET_TEXT_BASELINE= 16, // =b
   CTX_SET_TEXT_DIRECTION=17, // =d
+  CTX_SET_MITER_LIMIT   =18, // =m
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
@@ -999,6 +1000,7 @@ struct _CtxGState {
   CtxColorModel color_model;
 //define source_stroke source
   float         line_width;
+  float         miter_limit;
   float         font_size;
   float         line_spacing;
   /* bitfield-pack all the small state-parts */
@@ -1013,9 +1015,9 @@ struct _CtxGState {
   unsigned int        font:5;
   unsigned int        bold:1;
   unsigned int      italic:1;
-  float         shadow_blur;
-  float         shadow_x;
-  float         shadow_y;
+  float          shadow_blur;
+  float             shadow_x;
+  float             shadow_y;
 
   //CtxSource   shadow_source;
   //CtxColor    shadow_color;
@@ -2057,6 +2059,11 @@ ctx_set_font_size (Ctx *ctx, float x) {
   CTX_PROCESS_F1(CTX_SET_FONT_SIZE, x);
 }
 
+void
+ctx_set_miter_limit (Ctx *ctx, float limit) {
+  CTX_PROCESS_F1(CTX_SET_MITER_LIMIT, limit);
+}
+
 float ctx_get_font_size  (Ctx *ctx)
 {
   return ctx->state.gstate.font_size;
@@ -2649,6 +2656,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       break;
     case CTX_SET_FONT_SIZE:
       state->gstate.font_size = ctx_arg_float(0);
+      break;
+    case CTX_SET_MITER_LIMIT:
+      state->gstate.miter_limit = ctx_arg_float(0);
       break;
     case CTX_SET_RGBA:
       //ctx_source_deinit (&state->gstate.source);
@@ -8156,6 +8166,9 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
       case CTX_SET_FONT_SIZE:
         cairo_set_font_size (cr, ctx_arg_float(0));
         break;
+      case CTX_SET_MITER_LIMIT:
+        cairo_set_miter_limit (cr, ctx_arg_float(0));
+        break;
 
       case CTX_SET_LINE_CAP:
         {
@@ -8418,6 +8431,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       case CTX_SAVE:          ctx_save (d_ctx);                           break;
       case CTX_RESTORE:       ctx_restore (d_ctx);                        break;
       case CTX_SET_FONT_SIZE: ctx_set_font_size (d_ctx, ctx_arg_float(0));break;
+      case CTX_SET_MITER_LIMIT: ctx_set_miter_limit (d_ctx, ctx_arg_float(0));break;
       case CTX_SET_FILL_RULE:
         ctx_set_fill_rule (d_ctx, (CtxFillRule)ctx_arg_u8(0));            break;
       case CTX_SET_LINE_CAP:
@@ -8556,6 +8570,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
       case CTX_SET_TEXT_BASELINE:    name="set_text_baseline";break;
       case CTX_SET_TEXT_DIRECTION:   name="set_text_direction";break;
       case CTX_SET_FONT_SIZE:        name="set_font_size";break;
+      case CTX_SET_MITER_LIMIT:      name="set_miter_limit";break;
       case CTX_SET_LINE_JOIN:        name="set_line_join";break;
       case CTX_SET_LINE_CAP:         name="set_line_cap";break;
       case CTX_SET_LINE_WIDTH:       name="set_line_width";break;
@@ -8587,6 +8602,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
     case CTX_SET_TEXT_BASELINE:    name[1]='b';break;
     case CTX_SET_TEXT_DIRECTION:   name[1]='d';break;
     case CTX_SET_FONT_SIZE:        name[1]='f';break;
+    case CTX_SET_MITER_LIMIT:      name[1]='l';break;
     case CTX_SET_LINE_JOIN:        name[1]='j';break;
     case CTX_SET_LINE_CAP:         name[1]='c';break;
     case CTX_SET_LINE_WIDTH:       name[1]='w';break;
@@ -8736,6 +8752,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
         break;
 
       case CTX_SET_FONT_SIZE:
+      case CTX_SET_MITER_LIMIT:
       case CTX_ROTATE:
       case CTX_SET_LINE_WIDTH:
       case CTX_VER_LINE_TO:
@@ -9104,6 +9121,10 @@ static int ctx_parser_resolve_command (CtxParser *ctxp, const uint8_t*str)
     case STR(CTX_SET_PARAM,'f',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','f','o','n','t','_','s','i','z'):
       ctxp->n_args=1; return CTX_SET_FONT_SIZE;
+
+    case STR(CTX_SET_PARAM,'l',0,0,0,0,0,0,0,0,0,0):
+    case STR('s','e','t','_','m','i','t','e','r','_','l','i'):
+      ctxp->n_args=1; return CTX_SET_MITER_LIMIT;
 
     case STR(CTX_SET_PARAM,'t',0,0,0,0,0,0,0,0,0,0):
     case STR('s','e','t','_','t','e','x','t','_','a','l','i'):
@@ -9568,6 +9589,9 @@ static void ctx_parser_dispatch_command (CtxParser *ctxp)
     case CTX_SET_FONT_SIZE:
         ctx_set_font_size (ctx, ctxp->numbers[0]);
         break;
+    case CTX_SET_MITER_LIMIT:
+        ctx_set_miter_limit (ctx, ctxp->numbers[0]);
+        break;
     case CTX_SCALE:
         ctx_scale (ctx, ctxp->numbers[0], ctxp->numbers[1]);
         break;
@@ -9763,6 +9787,7 @@ static void ctxp_parser_transform_percent (CtxParser *ctxp, CtxCode code, int ar
 
       break;
     case CTX_SET_FONT_SIZE:
+    case CTX_SET_MITER_LIMIT:
     case CTX_SET_LINE_WIDTH:
       {
         *value *= (small/100.0);
@@ -9823,6 +9848,7 @@ static void ctxp_parser_transform_cell (CtxParser *ctxp, CtxCode code, int arg_n
 
       break;
     case CTX_SET_FONT_SIZE:
+    case CTX_SET_MITER_LIMIT:
     case CTX_SET_LINE_WIDTH:
       {
         *value *= small;
