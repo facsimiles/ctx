@@ -709,19 +709,20 @@ typedef enum
 } CtxCode;
 
 typedef enum {
-  CTX_GRAY   = 1,
-  CTX_GRAYA = 101,
+  CTX_GRAY = 1,
+  CTX_RGB  = 3,
+  CTX_CMYK = 4,
+  CTX_LAB  = 5,
+  CTX_LCH  = 6,
+
+  CTX_GRAYA   = 101,
   CTX_GRAYA_A = 201,
-  CTX_RGB   = 3,
-  CTX_RGBA  = 103,
+  CTX_RGBA    = 103,
   CTX_RGBA_A  = 203,
-  CTX_CMYK  = 4,
-  CTX_CMYKA = 104,
+  CTX_CMYKA   = 104,
   CTX_CMYKA_A = 204,
-  CTX_LAB   = 5,
-  CTX_LABA = 105,
-  CTX_LCH   = 6,
-  CTX_LCHA  = 106,
+  CTX_LABA    = 105,
+  CTX_LCHA    = 106,
 } CtxColorModel;
 
 typedef struct _CtxEntry CtxEntry;
@@ -960,10 +961,12 @@ struct _CtxSource
 {
   int type;
   CtxMatrix  transform;
-  uint8_t    global_alpha;
   union {
     struct {
       uint8_t rgba[4];
+      float   raw[5];      // up to 5 components
+      uint8_t color_model; // color model of set color
+      uint8_t valid_rgba;  // rgba is valid for context
     } color;
     struct {
       uint8_t rgba[4]; // shares data with set color
@@ -1000,6 +1003,7 @@ struct _CtxGState {
   CtxSource     source;
   CtxColorModel color_model;
 //define source_stroke source
+  uint8_t       global_alpha;
   float         line_width;
   float         miter_limit;
   float         font_size;
@@ -2052,7 +2056,7 @@ ctx_set_global_alpha (Ctx *ctx, float global_alpha)
 float
 ctx_get_global_alpha (Ctx *ctx)
 {
- return ctx->state.gstate.source.global_alpha;
+ return ctx->state.gstate.global_alpha;
 }
 
 void
@@ -2653,7 +2657,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       state->gstate.text_direction = (CtxTextDirection)ctx_arg_u8(0);
       break;
     case CTX_SET_GLOBAL_ALPHA:
-      state->gstate.source.global_alpha = CTX_CLAMP(ctx_arg_float(0)*255.0,0, 255);
+      state->gstate.global_alpha = CTX_CLAMP(ctx_arg_float(0)*255.0,0, 255);
       break;
     case CTX_SET_FONT_SIZE:
       state->gstate.font_size = ctx_arg_float(0);
@@ -3678,7 +3682,7 @@ static void
 ctx_state_init (CtxState *state)
 {
   bzero (state, sizeof (CtxState));
-  state->gstate.source.global_alpha = 255;
+  state->gstate.global_alpha = 255;
   state->gstate.font_size    = 12;
   state->gstate.line_spacing = 1.0;
   state->gstate.line_width   = 2.0;
@@ -5096,7 +5100,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t * restrict dst, uint8
     }
     return count;
   }
-  color[3] = (gstate->source.color.rgba[3] * gstate->source.global_alpha)>>8;
+  color[3] = (gstate->source.color.rgba[3] * gstate->global_alpha)>>8;
   color[0] = gstate->source.color.rgba[0];
   color[1] = gstate->source.color.rgba[1];
   color[2] = gstate->source.color.rgba[2];
@@ -5208,10 +5212,10 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *restrict dst, uint8_
         if (color[3])
         {
           ctx_swap_red_green (color);
-          if ((gstate->source.global_alpha != 255 )||
+          if ((gstate->global_alpha != 255 )||
               (color[3]!=255))
           {
-            color[3] = (color[3] * gstate->source.global_alpha)>>8;
+            color[3] = (color[3] * gstate->global_alpha)>>8;
             color[0] = (color[0] * color[3])>>8;
             color[1] = (color[1] * color[3])>>8;
             color[2] = (color[2] * color[3])>>8;
@@ -5225,9 +5229,9 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *restrict dst, uint8_
   }
 
   color[3] = gstate->source.color.rgba[3];
-  if (gstate->source.global_alpha != 255)
+  if (gstate->global_alpha != 255)
   {
-    color[3] = (color[3] * gstate->source.global_alpha)>>8;
+    color[3] = (color[3] * gstate->global_alpha)>>8;
   }
   color[0] = gstate->source.color.rgba[0];
   color[1] = gstate->source.color.rgba[1];
@@ -5290,7 +5294,7 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, u
   float y = renderer->scanline / CTX_RASTERIZER_AA;
   const uint8_t *color = renderer->state->gstate.source.color.rgba;
   float gray = (color[0]+color[1]+color[2])/3.0/255.0;
-  float alpha = color[3]/255.0 + renderer->state->gstate.source.global_alpha/255.0;
+  float alpha = color[3]/255.0 + renderer->state->gstate.global_alpha/255.0;
 
   CtxSourceU8 source = ctx_renderer_get_source_u8 (renderer);
   if (source == ctx_sample_source_u8_color) source = NULL;
@@ -5309,7 +5313,7 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, u
         source (renderer, u, v, &scolor[0]);
 
         gray = ((scolor[0]+scolor[1]+scolor[2])/3.0)/255.0;
-        alpha = scolor[3]/255.0 + renderer->state->gstate.source.global_alpha/255.0;
+        alpha = scolor[3]/255.0 + renderer->state->gstate.global_alpha/255.0;
       }
 
       float ralpha = 1.0f - alpha * cov/255.0;
@@ -5357,7 +5361,7 @@ ctx_associated_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint
         for (int c = 0; c < components; c++)
           color_f[c]=scolor[c]/255.0f;  // XXX ; lacks gamma
 
-        color_f[3] *= (scolor[components-1] * renderer->state->gstate.source.global_alpha/255.0f);
+        color_f[3] *= (scolor[components-1] * renderer->state->gstate.global_alpha/255.0f);
         for (int c = 0; c < components-1; c++)
           color_f[c] *= color_f[components-1];
       }
@@ -9029,12 +9033,19 @@ static void ctx_parser_set_color_model (CtxParser *parser, int color_model);
 
 static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 {
-  uint32_t str_hash = str[0];
+//#define LOWER(a) (a|32)  // this causes collisions, not sure if we want
+#define LOWER(a) (a)
+  uint32_t str_hash = LOWER(str[0]);
+
   if (str[0] && str[1])
   {
     /* trim ctx_ and CTX_ prefix */
     if ((str[0] == 'c' && str[1] == 't' && str[2] == 'x' && str[3] == '_')||
         (str[0] == 'C' && str[1] == 'T' && str[2] == 'X' && str[3] == '_'))
+    {
+      str += 4;
+    }
+    if ((str[0] == 's' && str[1] == 'e' && str[2] == 't' && str[3] == '_'))
       str += 4;
 
     /* hash strings to numbers */
@@ -9043,29 +9054,29 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
       str_hash = 0;
       for (int i = 0; str[i] && i < 12; i++)
       {
-        str_hash = str_hash + str[i] * multiplier;
+        str_hash = str_hash + LOWER(str[i]) * multiplier;
         multiplier *= 11;
       }
     }
 
 /* And let the compiler determine numbers for the parser
- * directly, if the hash causes collisions in the corpus
+ * directly, if the hash causes collisions in the vocabulary
  * we can tweak the hash until it doesn't, for now multiplying
  * by 11 works.
  */
 #define STR(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) (\
-          (((uint32_t)a0))+ \
-          (((uint32_t)a1)*11)+ \
-          (((uint32_t)a2)*11*11)+ \
-          (((uint32_t)a3)*11*11*11)+ \
-          (((uint32_t)a4)*11*11*11*11) + \
-          (((uint32_t)a5)*11*11*11*11*11) + \
-          (((uint32_t)a6)*11*11*11*11*11*11) + \
-          (((uint32_t)a7)*11*11*11*11*11*11*11) + \
-          (((uint32_t)a8)*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)a9)*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)a10)*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)a11)*11*11*11*11*11*11*11*11*11*11*11))
+          (((uint32_t)LOWER(a0))+ \
+          (((uint32_t)LOWER(a1))*11)+ \
+          (((uint32_t)LOWER(a2))*11*11)+ \
+          (((uint32_t)LOWER(a3))*11*11*11)+ \
+          (((uint32_t)LOWER(a4))*11*11*11*11) + \
+          (((uint32_t)LOWER(a5))*11*11*11*11*11) + \
+          (((uint32_t)LOWER(a6))*11*11*11*11*11*11) + \
+          (((uint32_t)LOWER(a7))*11*11*11*11*11*11*11) + \
+          (((uint32_t)LOWER(a8))*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)LOWER(a9))*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)LOWER(a10))*11*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)LOWER(a11))*11*11*11*11*11*11*11*11*11*11*11)))
 
   switch (str_hash)
   {
@@ -9080,8 +9091,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('f','i','l','l',0,0,0,0,0,0,0,0):         str_hash = 'F'; break;
     case STR('h','o','r','_','l','i','n','e','_','t','o',0): str_hash = 'H'; break;
     case STR('r','o','t','a','t','e',0,0,0,0,0,0):     str_hash = 'J'; break;
-    case STR('c','o','l','o','r',0,0,0,0,0,0,0):
-    case STR('s','e','t','_','c','o','l','o','r',0,0,0): str_hash = 'K'; break;
+    case STR('c','o','l','o','r',0,0,0,0,0,0,0):       str_hash = 'K'; break;
     case STR('l','i','n','e','_','t','o',0,0,0,0,0):   str_hash = 'L'; break;
     case STR('m','o','v','e','_','t','o',0,0,0,0,0):   str_hash = 'M'; break;
     case STR('s','c','a','l','e',0,0,0,0,0,0,0): str_hash = 'O'; break;
@@ -9110,7 +9120,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
     case STR('r','e','l','_','l','i','n','e','_','t','o',0): str_hash = 'l'; break;
     case STR('r','e','l','_','m','o','v','e','_','t','o',0): str_hash = 'm'; break;
-    case STR('s','e','t','_','f','o','n','t',0,0,0,0): str_hash = 'n'; break;
+    case STR('f','o','n','t',0,0,0,0,0,0,0,0): str_hash = 'n'; break;
     case STR('r','a','d','i','a','l','_','g','r','a','d','i'): str_hash = 'o'; break;
     case STR('g','r','a','d','i','e','n','t','_','a','d','d'):
     case STR('a','d','d','_','s','t','o','p',0,0,0,0): str_hash = 'p'; break;
@@ -9124,63 +9134,52 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('t','e','x','t',0,0,0,0,0,0,0,0): str_hash = 'x'; break;
     case STR('i','d','e','n','t','i','t','y','_','m','a','t'):
     case STR('i','d','e','n','t','i','t','y',0,0,0,0): str_hash = 'y'; break;
-    case STR('s','e','t','_','t','r','a','n','s','f','o','r'): str_hash = 'W'; break;
+    case STR('t','r','a','n','s','f','o','r','m',0,0,0): str_hash = 'W'; break;
 
     case STR(CTX_SET_PARAM,'m',0,0,0,0,0,0,0,0,0,0):
     case STR('c','o','m','p','o','s','i','t','i','n','g','m'): 
-    case STR('s','e','t','_','c','o','m','p','o','s','i','t'): 
       parser->n_args=1; return CTX_SET_COMPOSITING_MODE;
 
     case STR(CTX_SET_PARAM,'r',0,0,0,0,0,0,0,0,0,0):
     case STR('f','i','l','l','_','r','u','l','e',0,0,0): 
-    case STR('s','e','t','_','f','i','l','l','_','r','u','l'):
       parser->n_args=1; return CTX_SET_FILL_RULE;
 
     case STR(CTX_SET_PARAM,'f',0,0,0,0,0,0,0,0,0,0):
-    case STR('s','e','t','_','f','o','n','t','_','s','i','z'):
     case STR('f','o','n','t','_','s','i','z','e',0,0,0):
       parser->n_args=1; return CTX_SET_FONT_SIZE;
 
     case STR(CTX_SET_PARAM,'l',0,0,0,0,0,0,0,0,0,0):
-    case STR('s','e','t','_','m','i','t','e','r','_','l','i'):
     case STR('m','i','t','e','r','_','l','i','m','i','t',0):
       parser->n_args=1; return CTX_SET_MITER_LIMIT;
 
     case STR(CTX_SET_PARAM,'t',0,0,0,0,0,0,0,0,0,0):
-    case STR('s','e','t','_','t','e','x','t','_','a','l','i'):
     case STR('t','e','x','t','_','a','l','i','g','n',0, 0):
       parser->n_args=1; return CTX_SET_TEXT_ALIGN;
 
     case STR(CTX_SET_PARAM,'b',0,0,0,0,0,0,0,0,0,0):
-    case STR('s','e','t','_','t','e','x','t','_','b','a','s'):
     case STR('t','e','x','t','_','b','a','s','e','l','i','n'):
       parser->n_args=1; return CTX_SET_TEXT_BASELINE;
 
     case STR(CTX_SET_PARAM,'d',0,0,0,0,0,0,0,0,0,0):
-    case STR('s','e','t','_','t','e','x','t','_','d','i','r'):
     case STR('t','e','x','t','_','d','i','r','e','c','t','i'):
       parser->n_args=1; return CTX_SET_TEXT_DIRECTION;
 
     case STR(CTX_SET_PARAM,'j',0,0,0,0,0,0,0,0,0,0):
-    case STR('s','e','t','_','l','i','n','e','_','j','o','i'):
     case STR('j','o','i','n',0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','j','o','i','n',0,0,0):
       parser->n_args=1; return CTX_SET_LINE_JOIN;
 
     case STR(CTX_SET_PARAM,'c',0,0,0,0,0,0,0,0,0,0):
-    case STR('s','e','t','_','l','i','n','e','_','c','a','p'):
     case STR('c','a','p',0,0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','c','a','p',0,0,0,0):
       parser->n_args=1; return CTX_SET_LINE_CAP;
 
     case STR(CTX_SET_PARAM,'w',0,0,0,0,0,0,0,0,0,0):
-    case STR('s','e','t','_','l','i','n','e','_','w','i','d'):
     case STR('l','i','n','e','_','w','i','d','t','h',0,0):
       parser->n_args=1; return CTX_SET_LINE_WIDTH;
 
     case STR(CTX_SET_PARAM,'a',0,0,0,0,0,0,0,0,0,0):
     case STR('g','l','o','b','a','l','_','a','l','p','h','a'):
-    case STR('s','e','t','_','g','l','o','b','a','l','_','a'):
       parser->n_args=1; return CTX_SET_GLOBAL_ALPHA;
 
     /* strings are handled directly here,
@@ -9283,6 +9282,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('L','C','H','A',0,'_','A', 0, 0, 0, 0, 0):    return CTX_LCHA; break;
 
 #undef STR
+#undef LOWER
   }
   }
 

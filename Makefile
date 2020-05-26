@@ -1,5 +1,6 @@
 all: pre ctx post
 pre:
+	make -C tools
 	make -C fonts
 post:
 	make -C tests

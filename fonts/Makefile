@@ -13,28 +13,28 @@ all: ctx-font-regular.h \
 	ctxf/ascii.ctxf
 
 clean:
-	rm -f ctx-font-*.h Deja*.h Vera*.h
+	rm -f *.h 
 
 
-ctxf/ascii.ctxf: ctx-fontgen Makefile
-	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii binary > $@
-ctx-font-ascii.h: ctx-fontgen Makefile
-	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii > $@
+ctxf/ascii.ctxf: Makefile
+	../tools/ctx-fontgen ttf/DejaVuSans.ttf regular ascii binary > $@
+ctx-font-ascii.h: Makefile
+	../tools/ctx-fontgen ttf/DejaVuSans.ttf regular ascii > $@
 
-ctxf/regular.ctxf: ctx-fontgen Makefile
-	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras binary > $@
-ctx-font-regular.h: ctx-fontgen Makefile
-	./ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras > $@
+ctxf/regular.ctxf: Makefile
+	../tools/ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras binary > $@
+ctx-font-regular.h: Makefile
+	../tools/ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras > $@
 
-ctxf/mono.ctxf: ctx-fontgen Makefile
-	./ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras-cp437-vt100 binary > $@
-ctx-font-mono.h: ctx-fontgen Makefile
-	./ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras-cp437-vt100 > $@
+ctxf/mono.ctxf: Makefile
+	../tools/ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras-cp437-vt100 binary > $@
+ctx-font-mono.h: Makefile
+	../tools/ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras-cp437-vt100 > $@
 
-ctxf/emoji.ctxf: ctx-fontgen Makefile
-	./ctx-fontgen ttf/DejaVuSans.ttf emoji emoji binary > $@
-ctx-font-emoji.h: ctx-fontgen Makefile
-	./ctx-fontgen ttf/DejaVuSans.ttf emoji emoji > $@
+ctxf/emoji.ctxf: Makefile
+	../tools/ctx-fontgen ttf/DejaVuSans.ttf emoji emoji binary > $@
+ctx-font-emoji.h: Makefile
+	../tools/ctx-fontgen ttf/DejaVuSans.ttf emoji emoji > $@
 
 DejaVuSansMono.h: Makefile
 	xxd -i ttf/DejaVuSansMono.ttf > DejaVuSansMono.h
