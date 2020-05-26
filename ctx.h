@@ -7856,8 +7856,24 @@ _ctx_text (Ctx        *ctx,
 {
   CtxState *state = &ctx->state;
   float x = ctx->state.x;
+  switch (state->gstate.text_align)
+  {
+    case CTX_TEXT_ALIGN_START:
+    case CTX_TEXT_ALIGN_LEFT:
+      break;
+    case CTX_TEXT_ALIGN_CENTER:
+      x -= ctx_text_width (ctx, string)/2;
+      break;
+    case CTX_TEXT_ALIGN_END:
+    case CTX_TEXT_ALIGN_RIGHT:
+      x -= ctx_text_width (ctx, string);
+      break;
+  }
   float y = ctx->state.y;
   float x0 = x;
+
+          
+
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
     {
       if (*utf8 == '\n')
