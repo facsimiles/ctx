@@ -1,6 +1,10 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 rgb 0 0 0
 
+set_font_size 1@
+move_to 1@ 1@
+text "this text is in 1@ units"
+
 set_font_size 4
 move_to 5% 30%
 text "4"
@@ -67,33 +71,33 @@ move_to 65% 70%
 text "30%"
 
 
+set_font_size 0.5@
+move_to 5% 90%
+text "0.5@"
 set_font_size 1@
 move_to 10% 90%
 text "1@"
 set_font_size 2@
 move_to 20% 90%
 text "2@"
-set_font_size 3@
+set_font_size 2.5@
 move_to 30% 90%
-text "3@"
-set_font_size 4@
+text "2.5@"
+set_font_size 3@
 move_to 40% 90%
-text "4@"
-set_font_size 5@
+text "3@"
+set_font_size 3.5@
 move_to 50% 90%
-text "5@"
-set_font_size 6@
+text "3.5@"
+set_font_size 4@
 move_to 60% 90%
-text "6@"
-set_font_size 7@
+text "4@"
+set_font_size 4.5@
 move_to 70% 90%
-text "7@"
-set_font_size 8@
-move_to 80% 90%
-text "8@"
-set_font_size 9@
+text "4.5@"
+set_font_size 5@
 move_to 90% 90%
-text "9@"
+text "5@"
 
 
 

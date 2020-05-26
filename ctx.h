@@ -8928,6 +8928,9 @@ static void ctx_setup ()
 #if VERA
   ctx_load_font_ttf ("sans-Vera", ttf_Vera_ttf, ttf_Vera_ttf_len);
 #endif
+#if UNSCII_16
+  ctx_load_font_ttf ("mono-unscii16", ttf_unscii_16_ttf, ttf_unscii_16_ttf_len);
+#endif
 
 #if XA000_MONO
   ctx_load_font_ttf ("mono-0xA000", ttf_0xA000_Mono_ttf, ttf_0xA000_Mono_ttf_len);

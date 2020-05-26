@@ -148,8 +148,8 @@ int main (int argc, char **argv)
   const char *dest_path = NULL;
   int width = 512;
   int height = 384;
-  int cols = 80;
-  int rows = 24;
+  int cols = 40;
+  int rows = 20;
 
   if (!argv[1])
     return vt_main (argc, argv);
@@ -201,7 +201,13 @@ int main (int argc, char **argv)
   {
   if (!strcmp (dest_path, "GRAY1"))
   {
-     width = 158; height = 80; cols = width/3; rows = height / 4;
+    width = 158; height = 80;
+
+    cols = width/8; rows = 4; //height/30;
+    if (height > 200)
+    {
+      cols = width/16; rows = height/16;
+    }
   }
   if (!strcmp (dest_path, "GRAY2") ||
       !strcmp (dest_path, "GRAY4") ||
@@ -212,7 +218,9 @@ int main (int argc, char **argv)
       !strcmp (dest_path, "CMYK8")
       )
   {
-     width = 78; height = 24; cols = width/3; rows = height/3;
+     width = 78; height = 24;
+      
+     cols = width/6; rows = height/6;
   }
   }
   
