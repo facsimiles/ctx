@@ -1019,7 +1019,10 @@ struct _CtxGState {
 
   //CtxSource   shadow_source;
   //CtxColor    shadow_color;
-
+  int        clip_min_x;
+  int        clip_min_y;
+  int        clip_max_x;
+  int        clip_max_y;
 };
 
 
@@ -1086,10 +1089,7 @@ struct _CtxRenderer {
      correct for axis aligned clips - proper rasterization of a clipping path
      would be yet another refinement on top.
    */
-  int      clip_min_x;
-  int      clip_min_y;
-  int      clip_max_x;
-  int      clip_max_y;
+  CtxBuffer *clip_buffer; // NYI
 
   CtxEdge  lingering[CTX_MAX_EDGES];
   int      lingering_edges;  // previous half scanline
@@ -5525,6 +5525,15 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
     maxx = blit_max_x - 1;
 #endif
 
+#if 1
+    if (renderer->state->gstate.clip_min_x>
+        minx)
+         minx = renderer->state->gstate.clip_min_x;
+    if (renderer->state->gstate.clip_max_x <
+        maxx)
+         maxx = renderer->state->gstate.clip_max_x;
+#endif
+
   if (minx < 0)
     minx = 0;
   if (minx >= maxx)
@@ -5566,6 +5575,12 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
     if (renderer->scan_max < scan_end)
       scan_end = renderer->scan_max;
   }
+
+  if (renderer->state->gstate.clip_min_y * CTX_RASTERIZER_AA > scan_start )
+    scan_start = renderer->state->gstate.clip_min_y * CTX_RASTERIZER_AA;
+  if (renderer->state->gstate.clip_max_y *  CTX_RASTERIZER_AA < scan_end)
+    scan_end = renderer->state->gstate.clip_max_y * CTX_RASTERIZER_AA;
+
   ctx_renderer_sort_edges (renderer);
 
   if (scan_start > scan_end) return;
@@ -5783,14 +5798,36 @@ ctx_renderer_fill (CtxRenderer *renderer)
 
     int ymin = y0;
     int x1 = x0 + shape->width;
-    if (x1 >= renderer->blit_x + renderer->blit_width)
-      x1 = renderer->blit_x + renderer->blit_width - 1;
+    int clip_x_min = renderer->blit_x;
+    int clip_x_max = renderer->blit_x + renderer->blit_width - 1;
+    int clip_y_min = renderer->blit_y;
+    int clip_y_max = renderer->blit_y + renderer->blit_height - 1;
+
+#if 0
+    if (renderer->state->gstate.clip_min_x>
+        clip_x_min)
+            clip_x_min = renderer->state->gstate.clip_min_x;
+    if (renderer->state->gstate.clip_max_x <
+        clip_x_max)
+            clip_x_max = renderer->state->gstate.clip_max_x;
+#endif
+#if 0
+    if (renderer->state->gstate.clip_min_y>
+        clip_y_min)
+            clip_y_min = renderer->state->gstate.clip_min_y;
+    if (renderer->state->gstate.clip_max_y <
+        clip_y_max)
+            clip_y_max = renderer->state->gstate.clip_max_y;
+#endif
+
+    if (x1 >= clip_x_max)
+      x1 = clip_x_max;
 
     int xo = 0;
-    if (x0 < renderer->blit_x)
+    if (x0 < clip_x_min)
     {
-      xo = renderer->blit_x - x0;
-      x0 = renderer->blit_x;
+      xo = clip_x_min - x0;
+      x0 = clip_x_min;
     }
 
     int ewidth = x1 - x0;
@@ -5798,7 +5835,7 @@ ctx_renderer_fill (CtxRenderer *renderer)
     if (ewidth>0)
     for (int y = y0; y < y1; y++)
     {
-    if (y >= renderer->blit_y && (y < renderer->blit_y + renderer->blit_height))
+    if ((y >= clip_y_min) && (y <= clip_y_max))
     {
       ctx_renderer_apply_coverage (renderer,
                                  ((uint8_t*)renderer->buf) + (y-renderer->blit_y) * renderer->blit_stride + (int)(x0) * renderer->format->bpp/8,
@@ -6269,7 +6306,10 @@ foo:
 static void
 ctx_renderer_clip (CtxRenderer *renderer)
 {
-  // XXX render to temporary 8bit gray, convert to RLE mask
+  // XXX
+  //  keep a rectangular clip/scissors rect
+  //  optionally keep a 1 2 4 8 or f graybuffer
+  //////
 
   int count = renderer->edge_list.count;
 
@@ -6288,22 +6328,29 @@ ctx_renderer_clip (CtxRenderer *renderer)
     {
       prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
       prev_y = entry->data.s16[1] * 1.0f / CTX_RASTERIZER_AA;
+      if (prev_x < minx) minx = prev_x;
+      if (prev_y < miny) miny = prev_y;
+      if (prev_x > maxx) maxx = prev_x;
+      if (prev_y > maxy) maxy = prev_y;
     }
     x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
     y = entry->data.s16[3] * 1.0f / CTX_RASTERIZER_AA;
 
     if (x < minx) minx = x;
-    if (prev_x < minx) minx = prev_x;
     if (y < miny) miny = y;
-    if (prev_y < miny) miny = prev_y;
     if (x > maxx) maxx = x;
-    if (prev_x > maxx) maxx = prev_x;
     if (y > maxy) maxy = y;
-    if (prev_y > maxy) maxy = prev_y;
-
-    prev_x = x;
-    prev_y = y;
   }
+
+  if (minx > renderer->state->gstate.clip_min_x)
+    renderer->state->gstate.clip_min_x = minx;
+  if (miny > renderer->state->gstate.clip_min_y)
+    renderer->state->gstate.clip_min_y = miny;
+  if (maxx < renderer->state->gstate.clip_max_x)
+    renderer->state->gstate.clip_max_x = maxx;
+  if (maxy < renderer->state->gstate.clip_max_y)
+    renderer->state->gstate.clip_max_y = maxy;
+  ctx_renderer_reset (renderer);
 }
 
 static void
@@ -7089,6 +7136,12 @@ ctx_renderer_init (CtxRenderer *renderer, Ctx *ctx, CtxState *state, void *data,
   renderer->blit_y      = y;
   renderer->blit_width  = width;
   renderer->blit_height = height;
+
+  renderer->state->gstate.clip_min_x  = x;
+  renderer->state->gstate.clip_min_y  = y;
+  renderer->state->gstate.clip_max_x  = x + width - 1;
+  renderer->state->gstate.clip_max_y  = y + height - 1;
+
   renderer->blit_stride = stride;
   renderer->scan_min    = 5000;
   renderer->scan_max    = -5000;
@@ -8428,8 +8481,10 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
   {
     const char *name = NULL;
     _ctx_indent (stream, *indent);
-    switch ((CtxCode)code)
+    //switch ((CtxCode)code)
+    switch (code)
     {
+      case CTX_SET_PARAM:            name="set_param";break;
       case CTX_SET_COLOR:            name="set_color";break;
       case CTX_SET_COLOR_MODEL:      name="set_color_model";break;
       case CTX_DEFINE_GLYPH:         name="define_glyph";break;
