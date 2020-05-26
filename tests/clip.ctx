@@ -1,0 +1,10 @@
+rgb 1 1 1 rectangle 0 0 100% 100% fill
+
+rectangle 30% 30% 20% 20%
+clip
+rgb 0 0 0
+arc 50% 50% 30% 0 6.2 0
+fill
+
+
+

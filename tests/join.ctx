@@ -1,0 +1,21 @@
+rgb 1 1 1 rectangle 0 0 100% 100% fill
+
+rgb 0 0 0
+set_line_width 13%
+
+move_to 25% 7% line_to 50% 40% line_to 75% 7%
+set_line_join NONE
+stroke
+
+translate 0 24%
+move_to 25% 7% line_to 50% 40% line_to 75% 7%
+set_line_join SQUARE
+stroke
+
+translate 0 24%
+move_to 25% 7% line_to 50% 40% line_to 75% 7%
+set_line_join ROUND
+stroke
+
+
+

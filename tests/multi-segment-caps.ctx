@@ -1,0 +1,15 @@
+rgb 1 1 1 rectangle 0 0 100% 100% fill
+
+rgb 0 0 0
+set_line_width 10%
+
+move_to 25% 30% line_to 75% 30%
+move_to 25% 50% line_to 75% 50%
+move_to 25% 70% line_to 75% 70%
+
+set_line_cap ROUND
+
+stroke
+
+
+

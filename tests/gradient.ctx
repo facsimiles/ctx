@@ -1,0 +1,14 @@
+linear_gradient 0 0 0 100%
+gradient_add_stop 0 0 0 0 1
+gradient_add_stop 1 1 1 1 1
+rectangle 0 0 100% 100%
+fill
+
+new_path # why is this needed?
+radial_gradient 45% 40% 10% 40% 40% 50%
+gradient_add_stop 0 1 1 1 1
+gradient_add_stop 1 0 0 0 1
+
+arc 50% 50% 30% 0 6.3 0
+
+fill
