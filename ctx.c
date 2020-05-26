@@ -250,7 +250,7 @@ int main (int argc, char **argv)
 
   if (!dest_path)
   {
-     ctx_render_stream (ctx, stdout);
+     ctx_render_stream (ctx, stdout, 1);
      exit (0);
   }
 

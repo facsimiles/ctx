@@ -221,7 +221,7 @@ void
 ctx_render_cairo (Ctx *ctx, cairo_t *cr);
 #endif
 
-void ctx_render_stream (Ctx *ctx, FILE *stream);
+void ctx_render_stream (Ctx *ctx, FILE *stream, int formatter);
 
 void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
 
@@ -8399,34 +8399,140 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
   }
 }
 
-static void _ctx_get_mnemonic(int code, uint8_t *ret)
+typedef enum CtxFormatter {
+  CTX_FORMATTER_COMPACT=0,
+  CTX_FORMATTER_VERBOSE
+} CtxFormatter;
+
+static void _ctx_print_endcmd (FILE *stream, int formatter)
 {
-  ret[0]='=';
-  ret[2]='\0';
-  switch (code)
+  if (formatter)
   {
-    case CTX_SET_GLOBAL_ALPHA:     ret[1]='a';break;
-    case CTX_SET_COMPOSITING_MODE: ret[1]='m';break;
-    case CTX_SET_TEXT_ALIGN:       ret[1]='t';break;
-    case CTX_SET_TEXT_BASELINE:    ret[1]='b';break;
-    case CTX_SET_TEXT_DIRECTION:   ret[1]='d';break;
-    case CTX_SET_FONT_SIZE:        ret[1]='f';break;
-    case CTX_SET_LINE_JOIN:        ret[1]='j';break;
-    case CTX_SET_LINE_CAP:         ret[1]='c';break;
-    case CTX_SET_LINE_WIDTH:       ret[1]='w';break;
-    case CTX_SET_FILL_RULE:        ret[1]='r';break;
-    default:
-     ret[0] = code; ret[1] = 0;
-                                   break;
+    fwrite (");\n", 3, 1, stream);
   }
 }
 
-static void
-ctx_print_entry_u8 (FILE *stream, CtxEntry *entry, int args)
+static void _ctx_indent (FILE *stream, int level)
 {
+    for (int i = 0; i < level; i++)
+      fwrite ("  ", 1, 2, stream);
+}
+
+static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
+{
+#define CTX_VERBOSE_NAMES 1
+#if CTX_VERBOSE_NAMES
+  if (formatter)
+  {
+    const char *name = NULL;
+    _ctx_indent (stream, *indent);
+    switch ((CtxCode)code)
+    {
+      case CTX_SET_COLOR:            name="set_color";break;
+      case CTX_SET_COLOR_MODEL:      name="set_color_model";break;
+      case CTX_DEFINE_GLYPH:         name="define_glyph";break;
+      case CTX_SET_PIXEL:            name="set_pixel";break;
+      case CTX_SET_GLOBAL_ALPHA:     name="set_global_alpha";break;
+      case CTX_TEXT:                 name="text";break;
+      case CTX_TEXT_STROKE:          name="text_stroke";break;
+      case CTX_SAVE:                 name="save";break;
+      case CTX_RESTORE:              name="restore";break;
+      case CTX_RECTANGLE:            name="rectangle";break;
+      case CTX_LINEAR_GRADIENT:      name="linear_gradient";break;
+      case CTX_RADIAL_GRADIENT:      name="radial_gradient";break;
+      case CTX_GRADIENT_STOP:        name="gradient_add_stop";break;
+      case CTX_MEDIA_BOX:            name="media_box";break;
+      case CTX_MOVE_TO:              name="move_to";break;
+      case CTX_LINE_TO:              name="line_to";break;
+      case CTX_NEW_PATH:             name="new_path";break;
+      case CTX_REL_MOVE_TO:          name="rel_move_to";break;
+      case CTX_REL_LINE_TO:          name="rel_line_to";break;
+      case CTX_FILL:                 name="fill";break;
+      case CTX_EXIT:                 name="exit";break;
+      case CTX_SET_TRANSFORM:        name="set_transform";break;
+      case CTX_REL_ARC_TO:           name="rel_arc_to";break;
+      case CTX_GLYPH:                name="glyph";break;
+      case CTX_TEXTURE:              name="texture";break;
+      case CTX_IDENTITY:             name="identity";break;
+      case CTX_CLOSE_PATH:           name="close_path";break;
+      case CTX_FLUSH:                name="flush";break;
+      case CTX_CLEAR:                name="clear";break;
+      case CTX_SET_FONT:             name="set_font";break;
+      case CTX_STROKE:               name="stroke";break;
+      case CTX_CLIP:                 name="clip";break;
+      case CTX_ARC:                  name="arc";break;
+      case CTX_SCALE:                name="scale";break;
+      case CTX_TRANSLATE:            name="translate";break;
+      case CTX_ROTATE:               name="rotate";break;
+      case CTX_ARC_TO:               name="arc_to";break;
+      case CTX_CURVE_TO:             name="curve_to";break;
+      case CTX_REL_CURVE_TO:         name="rel_curve_to";break;
+      case CTX_REL_QUAD_TO:          name="rel_quad_to";break;
+      case CTX_QUAD_TO:              name="quad_to";break;
+      case CTX_SMOOTH_TO:            name="smooth_to";break;
+      case CTX_REL_SMOOTH_TO:        name="rel_smooth_to";break;
+      case CTX_SMOOTHQ_TO:           name="smoothq_to";break;
+      case CTX_REL_SMOOTHQ_TO:       name="rel_smoothq_to";break;
+      case CTX_NEW_PAGE:             name="new_page";break;
+      case CTX_HOR_LINE_TO:          name="hor_line_to";break;
+      case CTX_VER_LINE_TO:          name="ver_line_to";break;
+      case CTX_REL_HOR_LINE_TO:      name="rel_hor_line_to";break;
+      case CTX_REL_VER_LINE_TO:      name="rel_ver_line_to";break;
+      case CTX_SET_COMPOSITING_MODE: name="set_compositing_mode";break;
+      case CTX_SET_TEXT_ALIGN:       name="set_text_align";break;
+      case CTX_SET_TEXT_BASELINE:    name="set_text_baseline";break;
+      case CTX_SET_TEXT_DIRECTION:   name="set_text_direction";break;
+      case CTX_SET_FONT_SIZE:        name="set_font_size";break;
+      case CTX_SET_LINE_JOIN:        name="set_line_join";break;
+      case CTX_SET_LINE_CAP:         name="set_line_cap";break;
+      case CTX_SET_LINE_WIDTH:       name="set_line_width";break;
+      case CTX_SET_FILL_RULE:        name="set_fill_rule";break;
+    }
+    if (name)
+    {
+      fwrite (name, 1, strlen((char*)name), stream);
+      fwrite (" (", 1, 2, stream);
+
+      if (code == CTX_SAVE)
+        (*indent)++;
+      else if (code == CTX_RESTORE)
+        (*indent)--;
+      return;
+    }
+  }
+
+#endif
+  {
   uint8_t name[3];
-  _ctx_get_mnemonic(entry->code, name);
+  name[0]='=';
+  name[2]='\0';
+  switch (code)
+  {
+    case CTX_SET_GLOBAL_ALPHA:     name[1]='a';break;
+    case CTX_SET_COMPOSITING_MODE: name[1]='m';break;
+    case CTX_SET_TEXT_ALIGN:       name[1]='t';break;
+    case CTX_SET_TEXT_BASELINE:    name[1]='b';break;
+    case CTX_SET_TEXT_DIRECTION:   name[1]='d';break;
+    case CTX_SET_FONT_SIZE:        name[1]='f';break;
+    case CTX_SET_LINE_JOIN:        name[1]='j';break;
+    case CTX_SET_LINE_CAP:         name[1]='c';break;
+    case CTX_SET_LINE_WIDTH:       name[1]='w';break;
+    case CTX_SET_FILL_RULE:        name[1]='r';break;
+    default:
+     name[0] = code; name[1] = 0;
+    break;
+  }
   fwrite (name, 1, strlen((char*)name), stream);
+   if (formatter)
+    fwrite (" (", 1, 2, stream);
+  }
+
+}
+
+static void
+ctx_print_entry_u8 (FILE *stream, int formatter, int *indent, CtxEntry *entry, int args)
+{
+  _ctx_print_name (stream, entry->code, formatter, indent);
 
   for (int i = 0; i <  args; i ++)
   {
@@ -8434,6 +8540,7 @@ ctx_print_entry_u8 (FILE *stream, CtxEntry *entry, int args)
       fwrite (" ", 1, 1, stream);
     fprintf (stream, "%i", ctx_arg_u8(i));
   }
+  _ctx_print_endcmd (stream, formatter);
 }
 
 static void
@@ -8482,25 +8589,38 @@ ctx_print_float (FILE *stream, float val)
 }
 
 static void
-ctx_print_entry (FILE *stream, CtxEntry *entry, int args)
+ctx_print_entry (FILE *stream, int formatter, int *indent, CtxEntry *entry, int args)
 {
-  uint8_t name[3];
-  _ctx_get_mnemonic(entry->code, name);
-  fwrite (name, 1, strlen((char*)name), stream);
+  _ctx_print_name (stream, entry->code, formatter, indent);
 
   for (int i = 0; i <  args; i ++)
   {
     float val = ctx_arg_float (i);
     if (i>0 && val >= 0.0f)
-      fwrite ("  ", 1, 1, stream);
+    {
+      switch (formatter)
+      {
+        case CTX_FORMATTER_VERBOSE:
+          fwrite (", ", 2, 1, stream);
+          break;
+        case CTX_FORMATTER_COMPACT:
+          if (val >= 0.0f)
+            fwrite (" ", 1, 1, stream);
+          break;
+        default:
+          fwrite (" ", 1, 1, stream);
+          break;
+      }
+    }
     ctx_print_float (stream, val);
   }
+  _ctx_print_endcmd (stream, formatter);
 }
 
 void
-ctx_render_stream (Ctx *ctx, FILE *stream)
+ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
 {
-  /* skip  */
+  int indent = 0;
   CtxIterator iterator;
   CtxEntry   *entry;
 
@@ -8519,11 +8639,11 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
       case CTX_TRANSLATE:
       case CTX_MOVE_TO:
       case CTX_REL_MOVE_TO:
-        ctx_print_entry (stream, entry, 2);
+        ctx_print_entry (stream, formatter, &indent, entry, 2);
         break;
 
       case CTX_ARC_TO:
-        ctx_print_entry (stream, entry, 5);
+        ctx_print_entry (stream, formatter, &indent, entry, 5);
         break;
 
       case CTX_CURVE_TO:
@@ -8531,7 +8651,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
       case CTX_ARC:
       case CTX_RADIAL_GRADIENT:
       case CTX_SET_TRANSFORM:
-        ctx_print_entry (stream, entry, 6);
+        ctx_print_entry (stream, formatter, &indent, entry, 6);
         break;
 
       case CTX_QUAD_TO:
@@ -8539,7 +8659,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
       case CTX_REL_QUAD_TO:
       case CTX_LINEAR_GRADIENT:
       case CTX_MEDIA_BOX:
-        ctx_print_entry (stream, entry, 4);
+        ctx_print_entry (stream, formatter, &indent, entry, 4);
         break;
 
       case CTX_SET_FONT_SIZE:
@@ -8547,17 +8667,31 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
       case CTX_SET_LINE_WIDTH:
       case CTX_VER_LINE_TO:
       case CTX_HOR_LINE_TO:
-        ctx_print_entry (stream, entry, 1);
+        ctx_print_entry (stream, formatter, &indent, entry, 1);
         break;
 
       case CTX_SET_RGBA:
-        fwrite ("rgba", 4, 1, stream);
+        if (formatter)
+        {
+          _ctx_indent (stream, indent);
+          fwrite ("rgba (", 6, 1, stream);
+        }
+        else
+        {
+          fwrite ("rgba (", 5, 1, stream);
+        }
         for (int c = 0; c < 4; c++)
         {
           if (c)
-            fwrite (" ", 1, 1, stream);
+          {
+            if (formatter == CTX_FORMATTER_VERBOSE)
+              fwrite (", ", 2, 1, stream);
+            else
+              fwrite (" ", 1, 1, stream);
+          }
           ctx_print_float (stream, ctx_arg_u8(c)/255.0);
         }
+        _ctx_print_endcmd (stream, formatter);
         break;
 
 #if 0
@@ -8590,7 +8724,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
       case CTX_CLOSE_PATH:
       case CTX_SAVE:
       case CTX_RESTORE:
-        ctx_print_entry (stream, entry, 0);
+        ctx_print_entry (stream, formatter, &indent, entry, 0);
         break;
 
       case CTX_SET_TEXT_ALIGN:
@@ -8600,26 +8734,29 @@ ctx_render_stream (Ctx *ctx, FILE *stream)
       case CTX_SET_LINE_CAP:
       case CTX_SET_LINE_JOIN:
       case CTX_SET_COMPOSITING_MODE:
-        ctx_print_entry_u8 (stream, entry, 1);
+        ctx_print_entry_u8 (stream, formatter, &indent, entry, 1);
         break;
 
       case CTX_GRADIENT_STOP:
-        fwrite (&entry->code, 1, 1, stream);
+        _ctx_print_name (stream, entry->code, formatter, &indent);
         for (int c = 0; c < 4; c++)
         {
           if (c)
             fwrite ("  ", 1, 1, stream);
           ctx_print_float (stream, ctx_arg_u8(4+c)/255.0);
         }
+        _ctx_print_endcmd (stream, formatter);
         break;
 
       case CTX_TEXT:
       case CTX_TEXT_STROKE:
       case CTX_SET_FONT:
 
-        fprintf (stream, "%c\"", entry->code);
+        _ctx_print_name (stream, entry->code, formatter, &indent);
+        fprintf (stream, "\"");
         ctx_print_escaped_string (stream, ctx_arg_string());
         fprintf (stream, "\"");
+        _ctx_print_endcmd (stream, formatter);
         break;
 
       case CTX_CONT:
@@ -9521,16 +9658,8 @@ static void ctx_parser_holding_append (CtxParser *ctxp, int byte)
   ctxp->holding[ctxp->pos]=0;
 }
 
-void ctxp_parser_transform_percent (CtxParser *ctxp, CtxCode code, int arg_no, float *value)
+static void ctxp_parser_transform_percent (CtxParser *ctxp, CtxCode code, int arg_no, float *value)
 {
-  int big = ctxp->width;
-  int small = ctxp->height;
-
-  if (big < small)
-  {
-    small = ctxp->width;
-    big   = ctxp->height;
-  }
 
   switch (code)
   {
@@ -9542,13 +9671,22 @@ void ctxp_parser_transform_percent (CtxParser *ctxp, CtxCode code, int arg_no, f
       break;
     case CTX_SET_FONT_SIZE:
     case CTX_SET_LINE_WIDTH:
-        *value *= small/100.0;
+      {
+        int big   = ctxp->width;
+        int small = ctxp->height;
 
+        if (big < small)
+        {
+          small = ctxp->width;
+          big   = ctxp->height;
+        }
+        *value *= small/100.0;
+      }
       break;
   }
 }
 
-void ctxp_parser_transform_cell (CtxParser *ctxp, CtxCode code, int arg_no, float *value)
+static void ctxp_parser_transform_cell (CtxParser *ctxp, CtxCode code, int arg_no, float *value)
 {
   if (arg_no % 2 == 0) // even is x coord
   {
