@@ -1,9 +1,9 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 rgb 0 0 0
 
-set_font_size 1@
+set_font_size 1.6@
 move_to 1@ 1@
-text "1@ units"
+text "1.6@ units"
 
 
 set_font_size 2@
@@ -13,4 +13,13 @@ text "2@ units"
 set_font_size 3@
 move_to 1@ 4@
 text "3@ units"
+
+set_font_size 1.5@
+move_to 1@ 9@
+move_to 1@ 18@
+text "18"
+move_to 1@ 19@
+text "19"
+move_to 1@ 20@
+text "20"
 

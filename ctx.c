@@ -148,8 +148,8 @@ int main (int argc, char **argv)
   const char *dest_path = NULL;
   int width = 512;
   int height = 384;
-  int cols = 40;
-  int rows = 20;
+  float cols = 40;
+  float rows = 20;
 
   if (!argv[1])
     return vt_main (argc, argv);
@@ -203,7 +203,7 @@ int main (int argc, char **argv)
   {
     width = 158; height = 80;
 
-    cols = width/8; rows = 4; //height/30;
+    cols = 24; rows = 2;
     if (height > 200)
     {
       cols = width/16; rows = height/16;

@@ -1,9 +1,9 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 rgb 0 0 0
 
-set_font_size 1@
+set_font_size 1.5@
 move_to 1@ 1@
-text "this text is in 1@ units"
+text "this text is in 1.5@ units"
 
 set_font_size 4
 move_to 5% 30%
