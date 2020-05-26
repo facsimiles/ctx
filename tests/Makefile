@@ -7,6 +7,9 @@ TESTS=$(TESTS_GRAY1) $(TESTS_GRAY4) $(TESTS_GRAY8)
 
 all:  $(TESTS) check
 
+update-reference:
+	cp *.gray* reference
+
 check:
 	@for a in $(TESTS); do diff -u reference/$$a $$a ; done
 clean:

@@ -17,29 +17,29 @@ enim ad minim veniam, quis
 nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
 
 rgb 1 0 0
-arc 6% 12% 5% 0 6.2 0
+arc 6% 12% 10% 0 6.2 0
 fill
 rgb 0 1 0
-arc 6% 40% 5% 0 6.2 0
+arc 6% 40% 10% 0 6.2 0
 fill
 rgb 0 0 1
-arc 6% 66% 5% 0 6.2 0
+arc 6% 66% 10% 0 6.2 0
 fill
 gray 0.5
-arc 6% 90% 5% 0 6.2 0
+arc 6% 90% 10% 0 6.2 0
 fill
 
 cmyk 1 0 0 0
-arc 16% 12% 5% 0 6.4 0
+arc 16% 12% 10% 0 6.4 0
 fill
 cmyk 0 1 0 0
-arc 16% 40% 5% 0 6.4 0
+arc 16% 40% 10% 0 6.4 0
 fill
 cmyk 0 0 1 0
-arc 16% 66% 5% 0 6.4 0
+arc 16% 66% 10% 0 6.4 0
 fill
 cmyk 1 0 0 .5
-arc 16% 90% 5% 0 6.4 0
+arc 16% 90% 10% 0 6.4 0
 fill
 
 rgba 0 0 0 1

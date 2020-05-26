@@ -9660,48 +9660,128 @@ static void ctx_parser_holding_append (CtxParser *ctxp, int byte)
 
 static void ctxp_parser_transform_percent (CtxParser *ctxp, CtxCode code, int arg_no, float *value)
 {
+  int big   = ctxp->width;
+  int small = ctxp->height;
+  if (big < small)
+  {
+    small = ctxp->width;
+    big   = ctxp->height;
+  }
 
   switch (code)
   {
+    case CTX_RADIAL_GRADIENT:
+    case CTX_ARC:
+      switch (arg_no)
+      {
+        case 0:
+        case 3:
+          *value *= (ctxp->width/100.0);
+          break;
+        case 1:
+        case 4:
+          *value *= (ctxp->height/100.0);
+          break;
+        case 2:
+        case 5:
+          *value *= small/100.0;
+          break;
+      }
+
+      break;
+    case CTX_SET_FONT_SIZE:
+    case CTX_SET_LINE_WIDTH:
+      {
+        *value *= (small/100.0);
+      }
+      break;
+
+    case CTX_ARC_TO:
+    case CTX_REL_ARC_TO:
+      if (arg_no > 3)
+      {
+        *value *= (small/100.0);
+      }
+      else
+      {
+        if (arg_no % 2 == 0)
+          *value  *= ((ctxp->width)/100.0);
+        else
+          *value *= ((ctxp->height)/100.0);
+      }
+      break;
+
     default: // even means x coord
       if (arg_no % 2 == 0)
         *value  *= ((ctxp->width)/100.0);
       else
         *value *= ((ctxp->height)/100.0);
       break;
-    case CTX_SET_FONT_SIZE:
-    case CTX_SET_LINE_WIDTH:
-      {
-        int big   = ctxp->width;
-        int small = ctxp->height;
 
-        if (big < small)
-        {
-          small = ctxp->width;
-          big   = ctxp->height;
-        }
-        *value *= small/100.0;
-      }
-      break;
   }
 }
 
 static void ctxp_parser_transform_cell (CtxParser *ctxp, CtxCode code, int arg_no, float *value)
 {
-  if (arg_no % 2 == 0) // even is x coord
-  {
-    *value *= ctxp->cell_width;
-  }
-  else
-  {
-    if (! (ctxp->command == 'r' && arg_no > 1))
-    // height of rectangle is avoided,
-    // XXX for radial gradient there is more complexity here
-    {
-      ctxp->numbers[ctxp->n_numbers] --;
-    }
+  float small = ctxp->cell_width;
+  if (small > ctxp->cell_height)
+    small = ctxp->cell_height;
 
-    *value *= ctxp->cell_height;
+  switch (code)
+  {
+
+    case CTX_RADIAL_GRADIENT:
+    case CTX_ARC:
+      switch (arg_no)
+      {
+        case 0:
+        case 3:
+          *value *= ctxp->cell_width;
+          break;
+        case 1:
+        case 4:
+          *value *= ctxp->cell_height;
+          break;
+        case 2:
+        case 5:
+          *value *= small;
+          break;
+      }
+
+      break;
+    case CTX_SET_FONT_SIZE:
+    case CTX_SET_LINE_WIDTH:
+      {
+        *value *= small;
+      }
+      break;
+
+    case CTX_ARC_TO:
+    case CTX_REL_ARC_TO:
+      if (arg_no > 3)
+      {
+        *value *= small;
+      }
+      else
+      {
+        *value *= (arg_no%2==0)?ctxp->cell_width:ctxp->cell_height;
+      }
+      break;
+
+    case CTX_RECTANGLE:
+
+      if (arg_no % 2 == 0) // even is x coord
+        *value *= ctxp->cell_width;
+      else
+      {
+         if (!(arg_no > 1))
+           ctxp->numbers[ctxp->n_numbers] --;
+        *value *= ctxp->cell_height;
+      }
+      break;
+    default: // even means x coord
+      *value *= (arg_no%2==0)?ctxp->cell_width:ctxp->cell_height;
+      break;
   }
 }
 
