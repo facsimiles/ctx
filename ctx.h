@@ -1011,25 +1011,25 @@ struct _CtxGState {
   /* bitfield-pack all the small state-parts */
   CtxCompositingMode compositing_mode:2;
   //CtxBlend    blend_mode:3;
-  CtxLineCap      line_cap:2;
-  CtxLineJoin    line_join:2;
-  CtxFillRule    fill_rule:1;
-  CtxTextBaseline text_baseline:3;
-  CtxTextAlign    text_align:3;
-  CtxTextDirection text_direction:2;
-  unsigned int        font:5;
-  unsigned int        bold:1;
-  unsigned int      italic:1;
-  float          shadow_blur;
-  float             shadow_x;
-  float             shadow_y;
+  CtxLineCap                 line_cap:2;
+  CtxLineJoin               line_join:2;
+  CtxFillRule               fill_rule:1;
+  CtxTextBaseline       text_baseline:3;
+  CtxTextAlign             text_align:3;
+  CtxTextDirection     text_direction:2;
+  unsigned int                   font:6;
+  unsigned int                   bold:1;
+  unsigned int                 italic:1;
+  float                   shadow_blur;
+  float                      shadow_x;
+  float                      shadow_y;
 
   //CtxSource   shadow_source;
   //CtxColor    shadow_color;
-  int        clip_min_x;
-  int        clip_min_y;
-  int        clip_max_x;
-  int        clip_max_y;
+  int                      clip_min_x;
+  int                      clip_min_y;
+  int                      clip_max_x;
+  int                      clip_max_y;
 };
 
 
@@ -2248,43 +2248,43 @@ void ctx_rel_move_to (Ctx *ctx, float x, float y)
 
 void ctx_set_line_cap (Ctx *ctx, CtxLineCap cap)
 {
-  CtxEntry command = ctx_u8 (CTX_SET_LINE_CAP, cap, 0, 0, 0, 0, 0, 0, 0);
+  CtxEntry command = ctx_u8 (CTX_SET_LINE_CAP, cap,0,0,0,0,0,0,0);
   ctx_process (ctx, &command);
 }
 
 void ctx_set_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
 {
-  CtxEntry command = ctx_u8 (CTX_SET_FILL_RULE, fill_rule, 0, 0, 0, 0, 0, 0, 0);
+  CtxEntry command = ctx_u8 (CTX_SET_FILL_RULE, fill_rule,0,0,0,0,0,0,0);
   ctx_process (ctx, &command);
 }
 
 void ctx_set_line_join (Ctx *ctx, CtxLineJoin join)
 {
-  CtxEntry command = ctx_u8 (CTX_SET_LINE_JOIN, join, 0, 0, 0, 0, 0, 0, 0);
+  CtxEntry command = ctx_u8 (CTX_SET_LINE_JOIN, join,0,0,0,0,0,0,0);
   ctx_process (ctx, &command);
 }
 
 void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
 {
-  CtxEntry command = ctx_u8 (CTX_SET_COMPOSITING_MODE, mode, 0, 0, 0, 0, 0, 0, 0);
+  CtxEntry command = ctx_u8 (CTX_SET_COMPOSITING_MODE, mode,0,0,0,0,0,0,0);
   ctx_process (ctx, &command);
 }
 
 void ctx_set_text_align (Ctx *ctx, CtxTextAlign text_align)
 {
-  CtxEntry command = ctx_u8 (CTX_SET_TEXT_ALIGN, text_align, 0, 0, 0, 0, 0, 0, 0);
+  CtxEntry command = ctx_u8 (CTX_SET_TEXT_ALIGN, text_align,0,0,0,0,0,0,0);
   ctx_process (ctx, &command);
 }
 
 void ctx_set_text_baseline (Ctx *ctx, CtxTextBaseline text_baseline)
 {
-  CtxEntry command = ctx_u8 (CTX_SET_TEXT_BASELINE, text_baseline, 0, 0, 0, 0, 0, 0, 0);
+  CtxEntry command = ctx_u8 (CTX_SET_TEXT_BASELINE, text_baseline,0,0,0,0,0,0,0);
   ctx_process (ctx, &command);
 }
 
 void ctx_set_text_direction (Ctx *ctx, CtxTextDirection text_direction)
 {
-  CtxEntry command = ctx_u8 (CTX_SET_TEXT_DIRECTION, text_direction, 0, 0, 0, 0, 0, 0, 0);
+  CtxEntry command = ctx_u8 (CTX_SET_TEXT_DIRECTION, text_direction,0,0,0,0,0,0,0);
   ctx_process (ctx, &command);
 }
 
