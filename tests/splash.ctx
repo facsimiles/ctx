@@ -60,8 +60,8 @@ save
 rotate -0.25
 set_font_size 80%
 
-cap ROUND
-join ROUND
+cap round
+join round
 move_to 5% 100%
 set_line_width 4%
 rgba 1 1 .8 1

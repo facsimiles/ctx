@@ -9229,45 +9229,34 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
     /* words in all caps map mapping to low integer/enum constants
     */
-    case STR('J','O','I','N','_','B','E','V','E','L',0,0):
-    case STR('B','E','V','E','L',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_BEVEL;
-    case STR('J','O','I','N','_','R','O','U','N','D',0,0):
-    case STR('R','O','U','N','D',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_ROUND;
-    case STR('J','O','I','N','_','M','I','T','E','R',0,0):
-    case STR('M','I','T','E','R',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_MITER;
-    case STR('C','A','P','_','N','O','N','E',0,0,0,0):
-    case STR('N','O','N','E',0 ,0, 0, 0, 0, 0, 0, 0):      return CTX_CAP_NONE;
-    case STR('C','A','P','_','R','O','U','N','D',0,0,0):   return CTX_CAP_ROUND;
-    case STR('C','A','P','_','S','Q','U','A','R','E',0,0):
-    case STR('S','Q','U','A','R','E', 0, 0, 0, 0, 0, 0):   return CTX_CAP_SQUARE;
+    case STR('b','e','v','e','l',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_BEVEL;
+    case STR('r','o','u','n','d',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_ROUND;
+    case STR('m','i','t','e','r',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_MITER;
+    case STR('n','o','n','e', 0 ,0, 0, 0, 0, 0, 0, 0):      return CTX_CAP_NONE;
+    case STR('s','q','u','a','r','e', 0, 0, 0, 0, 0, 0):   return CTX_CAP_SQUARE;
 
-    case STR('S','T','A','R','T',0, 0, 0, 0, 0, 0, 0):
-    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'S'):
+    case STR('s','t','a','r','t',0, 0, 0, 0, 0, 0, 0):
       return CTX_TEXT_ALIGN_START; break;
-    case STR('E','N','D',0,0,0, 0, 0, 0, 0, 0, 0):
-    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'E'):
+    case STR('e','n','d',0,0,0, 0, 0, 0, 0, 0, 0):
       return CTX_TEXT_ALIGN_END; break;
-    case STR('L','E','F','T',0,0, 0, 0, 0, 0, 0, 0):
-    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'L'):
+    case STR('l','e','f','t',0,0, 0, 0, 0, 0, 0, 0):
       return CTX_TEXT_ALIGN_LEFT; break;
-    case STR('R','I','G','H','T',0, 0, 0, 0, 0, 0, 0):
-    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'R'):
+    case STR('r','i','g','h','t',0, 0, 0, 0, 0, 0, 0):
       return CTX_TEXT_ALIGN_RIGHT; break;
-    case STR('C','E','N','T','E','R', 0, 0, 0, 0, 0, 0):
-    case STR('T','E','X','T','_','A', 'L', 'I', 'G', 'N', '_', 'C'):
+    case STR('c','e','n','t','e','r', 0, 0, 0, 0, 0, 0):
       return CTX_TEXT_ALIGN_CENTER; break;
 
-    case STR('T','O','P',0,0,0, 0, 0, 0, 0, 0, 0):
+    case STR('t','o','p',0,0,0, 0, 0, 0, 0, 0, 0):
       return CTX_TEXT_BASELINE_TOP; break;
-    case STR('B','O','T','T','O','M', 0, 0, 0, 0, 0, 0):
+    case STR('b','o','t','t','o','m', 0, 0, 0, 0, 0, 0):
       return CTX_TEXT_BASELINE_BOTTOM; break;
-    case STR('M','I','D','D','L', 'E',0, 0, 0, 0, 0, 0):
+    case STR('m','i','d','d','l', 'e',0, 0, 0, 0, 0, 0):
       return CTX_TEXT_BASELINE_MIDDLE; break;
-    case STR('A','L','P','H','A', 'B','E', 'T', 'I', 'C', 0, 0):
+    case STR('a','l','p','h','a', 'b','e', 't', 'i', 'c', 0, 0):
       return CTX_TEXT_BASELINE_ALPHABETIC; break;
-    case STR('H','A','N','G','I', 'N','G', 0, 0, 0, 0, 0):
+    case STR('h','a','n','g','i', 'n','g', 0, 0, 0, 0, 0):
       return CTX_TEXT_BASELINE_HANGING; break;
-    case STR('I','D','E','O','G','R','A','P','H','I','C', 0):
+    case STR('i','d','e','o','g','r','a','p','h','i','c', 0):
       return CTX_TEXT_BASELINE_IDEOGRAPHIC; break;
 
     case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       return CTX_GRAY; break;

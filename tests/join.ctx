@@ -4,17 +4,17 @@ rgb 0 0 0
 set_line_width 13%
 
 move_to 25% 7% line_to 50% 40% line_to 75% 7%
-set_line_join NONE
+set_line_join none
 stroke
 
 translate 0 24%
 move_to 25% 7% line_to 50% 40% line_to 75% 7%
-set_line_join SQUARE
+set_line_join square
 stroke
 
 translate 0 24%
 move_to 25% 7% line_to 50% 40% line_to 75% 7%
-set_line_join ROUND
+set_line_join round
 stroke
 
 

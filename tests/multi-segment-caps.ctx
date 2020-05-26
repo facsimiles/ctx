@@ -7,7 +7,7 @@ move_to 25% 30% line_to 75% 30%
 move_to 25% 50% line_to 75% 50%
 move_to 25% 70% line_to 75% 70%
 
-set_line_cap ROUND
+set_line_cap round
 
 stroke
 

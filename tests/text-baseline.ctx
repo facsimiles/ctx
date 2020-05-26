@@ -14,26 +14,26 @@ rgb 1 1 1
 
 set_font_size 20%
 move_to 0% 50%
-set_text_baseline TOP
+set_text_baseline top
 text "Top"
 
 move_to 15% 50%
-set_text_baseline BOTTOM
+set_text_baseline bottom
 text "Bottom"
 
 move_to 30% 50%
-set_text_baseline MIDDLE
+set_text_baseline middle
 text "Middle"
 
 move_to 45% 50%
-set_text_baseline ALPHABETIC
+set_text_baseline alphabetic
 text "Alphabetic"
 
 move_to 60% 50%
-set_text_baseline HANGING
+set_text_baseline hanging
 text "Hanging"
 
 move_to 75% 50%
-set_text_baseline IDEOGRAPHIC
+set_text_baseline ideographic
 text "Ideographic"
 

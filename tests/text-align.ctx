@@ -15,22 +15,22 @@ rgb 1 1 1
 
 set_font_size 24%
 move_to 50% 20%
-set_text_align START
+set_text_align start
 text "start"
 
 move_to 50% 40%
 
-set_text_align CENTER
+set_text_align center
 text "center"
 
 move_to 50% 60%
-set_text_align END
+set_text_align end
 text "end"
 
 move_to 50% 80%
-set_text_align LEFT
+set_text_align left
 text "left"
 
 move_to 50% 100%
-set_text_align RIGHT
+set_text_align right
 text "right"
