@@ -3,6 +3,8 @@
 #include "ctx-font-ascii.h"
 #define CTX_LIMIT_FORMATS
 #define CTX_ENABLE_RGBA8    1
+#define CTX_PARSER          0
+#define CTX_FORMATTER       0
 #define CTX_BITPACK_PACKER  0
 #define CTX_GRADIENT_CACHE  0
 #define CTX_FONTS_FROM_FILE 0 /* leaves out code */

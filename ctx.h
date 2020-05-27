@@ -7921,7 +7921,7 @@ _ctx_text (Ctx        *ctx,
       baseline_offset = 0.0f;
       break;
     case CTX_TEXT_BASELINE_MIDDLE:
-      baseline_offset = ctx->state.gstate.font_size * 0.3;
+      baseline_offset = ctx->state.gstate.font_size * 0.25;
       break;
   }
   float x0 = x;
