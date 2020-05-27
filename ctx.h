@@ -972,19 +972,23 @@ struct _CtxGradient
   int n_stops;
 };
 
-struct _CtxSource
+typedef struct _CtxColor CtxColor;
+struct _CtxColor
 {
-  int type;
-  CtxMatrix  transform;
-  union {
-    struct {
       uint8_t rgba[4];
       uint8_t cmyka[5];
       float   raw[5];      // up to 5 components, most useful for readback?
       uint8_t color_model; // or quicker bail on equal color?
       uint8_t valid_rgba;  // to skip reconversion?
       uint8_t valid_cmyka;  // to skip reconversion?
-    } color;
+};
+
+struct _CtxSource
+{
+  int type;
+  CtxMatrix  transform;
+  union {
+    CtxColor color;
     struct {
       uint8_t rgba[4];     // shares data with set color
       uint8_t pad;
@@ -1093,7 +1097,10 @@ struct _CtxState {
   int         min_y;
   int         max_x;
   int         max_y;
-  CtxGradient gradient; /* we keep only one gradient */
+  CtxGradient gradient; /* we keep only one gradient,
+                           this goes icky with multiple
+                           restores - it should really be part of
+                           graphics state.. XXX */
 
   int16_t     gstate_no;
   CtxGState   gstate;
@@ -1116,7 +1123,7 @@ struct _CtxRenderer {
    */
   //CtxBuffer *clip_buffer; // NYI
 
-  CtxEdge  lingering[CTX_MAX_LINGERING_EDGES]; // XXX < do not need this many lingering!
+  CtxEdge  lingering[CTX_MAX_LINGERING_EDGES];
   int      lingering_edges;  // previous half scanline
 
   CtxEdge  edges[CTX_MAX_EDGES];
@@ -4286,7 +4293,7 @@ static void ctx_renderer_move_to (CtxRenderer *renderer, float x, float y)
   renderer->y        = y;
   renderer->first_x  = x;
   renderer->first_y  = y;
-  renderer->has_prev = 0;
+  renderer->has_prev = -1;
 }
 
 static void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y)
@@ -4302,7 +4309,7 @@ static void ctx_renderer_line_to (CtxRenderer *renderer, float x, float y)
   }
   tx -= renderer->blit_x;
   ctx_renderer_add_point (renderer, tx * CTX_SUBDIV, ty * CTX_RASTERIZER_AA);
-  if (!renderer->has_prev)
+  if (renderer->has_prev<=0)
   {
     if (renderer->uses_transforms)
       ctx_user_to_device (renderer->state, &ox, &oy);
@@ -5942,6 +5949,14 @@ ctx_renderer_arc (CtxRenderer *renderer,
   float step = CTX_PI*2.0/full_segments;
   int steps;
 
+  if (end_angle == start_angle)
+  {
+    ctx_renderer_line_to (renderer, x + cosf (end_angle) * radius,
+                          y + sinf (end_angle) * radius);
+    return;
+  }
+
+#if 0
   if ((!anticlockwise && (end_angle - start_angle >= CTX_PI*2)) ||
      ((anticlockwise && (start_angle - end_angle >= CTX_PI*2))))
   {
@@ -5949,23 +5964,25 @@ ctx_renderer_arc (CtxRenderer *renderer,
     steps = full_segments - 1;
   }
   else
+#endif
   {
+    steps = (end_angle - start_angle) / (CTX_PI*2) * full_segments;
     if (anticlockwise)
-    {
-      steps = full_segments - (end_angle - start_angle) / (CTX_PI*2) * full_segments;
-    }
-    else
-      steps = (end_angle - start_angle) / (CTX_PI*2) * full_segments;
+      steps = full_segments - steps;;
   }
 
   if (anticlockwise) step = step * -1;
 
   int first = 1;
 
-  if (steps == 0 || (anticlockwise && steps == full_segments))
+  if (steps == 0 || steps==full_segments -1  || (anticlockwise && steps == full_segments))
   {
-    ctx_renderer_line_to (renderer, x + cosf (end_angle) * radius,
-                                    y + sinf (end_angle) * radius);
+      float xv = x + cosf (start_angle) * radius;
+      float yv = y + sinf (start_angle) * radius;
+      if (first && !renderer->has_prev)
+        ctx_renderer_move_to (renderer, xv, yv);
+      
+      first = 0;
   }
   else
   {
@@ -5980,9 +5997,9 @@ ctx_renderer_arc (CtxRenderer *renderer,
       first = 0;
     }
 
+  }
     ctx_renderer_line_to (renderer, x + cosf (end_angle) * radius,
                           y + sinf (end_angle) * radius);
-  }
 }
 
 static void
