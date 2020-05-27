@@ -1003,7 +1003,7 @@ struct _CtxSource
 
 struct _CtxGState {
   CtxMatrix     transform;
-  CtxSource     source_stroke;
+  //CtxSource     source_stroke;
   CtxSource     source;
   CtxColorModel color_model;
   uint8_t       global_alpha;
@@ -1015,15 +1015,14 @@ struct _CtxGState {
   float         shadow_blur;
   float         shadow_x;
   float         shadow_y;
-
   //CtxSource   shadow_source;
   //CtxColor    shadow_color;
-  int                      clip_min_x;
-  int                      clip_min_y;
-  int                      clip_max_x;
-  int                      clip_max_y;
+  int16_t       clip_min_x;
+  int16_t       clip_min_y;
+  int16_t       clip_max_x;
+  int16_t       clip_max_y;
 
-  /* bitfield-pack all the small state-parts */
+  /* bitfield-pack small state-parts */
   CtxCompositingMode compositing_mode:2;
   CtxBlend                 blend_mode:3;
   CtxLineCap                 line_cap:2;
@@ -1073,17 +1072,17 @@ struct _CtxRenderstream
 
 struct _CtxState {
   CtxGState   gstate;
-  int         gstate_no;
+  int16_t     gstate_no;
+  int         has_moved:1;
   float       x;
   float       y;
   float       path_start_x;
   float       path_start_y;
-  int         has_moved;
-  CtxGradient gradient[CTX_MAX_GRADIENTS];
   int         min_x;
   int         min_y;
   int         max_x;
   int         max_y;
+  CtxGradient gradient[CTX_MAX_GRADIENTS];
   CtxGState   gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
 
@@ -1117,7 +1116,6 @@ struct _CtxRenderer {
   int      scan_max;
   int      col_min;
   int      col_max;
-  int      needs_aa;         // count of how many edges implies antialiasing
 
   CtxRenderstream edge_list;
   CtxState  *state;
@@ -1132,14 +1130,14 @@ struct _CtxRenderer {
   int        has_shape;
   int        has_prev;
 
-  int        uses_transforms;
+  int8_t     needs_aa; // count of how many edges implies antialiasing
+  int        uses_transforms:1;
 
-  int        blit_x;
-  int        blit_y;
-  int        blit_width;
-  int        blit_height;
-  int        blit_stride;
-
+  int16_t    blit_x;
+  int16_t    blit_y;
+  int16_t    blit_width;
+  int16_t    blit_height;
+  int16_t    blit_stride;
 
   CtxPixelFormatInfo *format;
 };
@@ -1147,7 +1145,7 @@ struct _CtxRenderer {
 struct _CtxPixelFormatInfo
 {
   CtxPixelFormat pixel_format;
-  uint8_t        components; /* number of components */
+  uint8_t        components:4; /* number of components */
   uint8_t        bpp; /* bits  per pixel - for doing offset computations
                          along with rowstride found elsewhere, if 0 it indicates
                          1/8  */
@@ -7213,10 +7211,10 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
 {
   CtxIterator iterator;
   CtxEntry   *entry;
-  CtxState    *state    = (CtxState*)malloc (sizeof (CtxState));
+//  CtxState    *state    = (CtxState*)malloc (sizeof (CtxState));
   CtxRenderer *renderer = (CtxRenderer*)malloc (sizeof (CtxRenderer));
 
-  ctx_renderer_init (renderer, ctx, state, data, x, y, width, height,
+  ctx_renderer_init (renderer, ctx, &ctx->state, data, x, y, width, height,
                      stride, pixel_format);
 
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
@@ -7234,7 +7232,7 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
 
   ctx_renderer_deinit (renderer);
   free (renderer);
-  free (state);
+  //free (state);
 }
 #endif
 
