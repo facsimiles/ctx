@@ -553,11 +553,15 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #endif
 
 #ifndef CTX_MAX_STATES
-#define CTX_MAX_STATES       16
+#define CTX_MAX_STATES       10
 #endif
 
 #ifndef CTX_MAX_EDGES
 #define CTX_MAX_EDGES        257
+#endif
+
+#ifndef CTX_MAX_LINGERING_EDGES
+#define CTX_MAX_LINGERING_EDGES 32
 #endif
 
 #ifndef CTX_MAX_GRADIENTS
@@ -964,12 +968,12 @@ struct _CtxSource
   union {
     struct {
       uint8_t rgba[4];
-      float   raw[5];      // up to 5 components
-      uint8_t color_model; // color model of set color
-      uint8_t valid_rgba;  // rgba is valid for context
+      float   raw[5];      // up to 5 components, most useful for readback?
+      uint8_t color_model; // or quicker bail on equal color?
+      uint8_t valid_rgba;  // to skip reconversion?
     } color;
     struct {
-      uint8_t rgba[4]; // shares data with set color
+      uint8_t rgba[4];     // shares data with set color
       uint8_t pad;
       float x0;
       float y0;
@@ -999,18 +1003,29 @@ struct _CtxSource
 
 struct _CtxGState {
   CtxMatrix     transform;
-//CtxSource    source_stroke;
+  CtxSource     source_stroke;
   CtxSource     source;
   CtxColorModel color_model;
-//define source_stroke source
   uint8_t       global_alpha;
   float         line_width;
   float         miter_limit;
   float         font_size;
   float         line_spacing;
+
+  float         shadow_blur;
+  float         shadow_x;
+  float         shadow_y;
+
+  //CtxSource   shadow_source;
+  //CtxColor    shadow_color;
+  int                      clip_min_x;
+  int                      clip_min_y;
+  int                      clip_max_x;
+  int                      clip_max_y;
+
   /* bitfield-pack all the small state-parts */
   CtxCompositingMode compositing_mode:2;
-  //CtxBlend    blend_mode:3;
+  CtxBlend                 blend_mode:3;
   CtxLineCap                 line_cap:2;
   CtxLineJoin               line_join:2;
   CtxFillRule               fill_rule:1;
@@ -1020,16 +1035,6 @@ struct _CtxGState {
   unsigned int                   font:6;
   unsigned int                   bold:1;
   unsigned int                 italic:1;
-  float                   shadow_blur;
-  float                      shadow_x;
-  float                      shadow_y;
-
-  //CtxSource   shadow_source;
-  //CtxColor    shadow_color;
-  int                      clip_min_x;
-  int                      clip_min_y;
-  int                      clip_max_x;
-  int                      clip_max_y;
 };
 
 
@@ -1068,7 +1073,6 @@ struct _CtxRenderstream
 
 struct _CtxState {
   CtxGState   gstate;
-  CtxGState   gstate_stack[CTX_MAX_STATES];
   int         gstate_no;
   float       x;
   float       y;
@@ -1080,6 +1084,7 @@ struct _CtxState {
   int         min_y;
   int         max_x;
   int         max_y;
+  CtxGState   gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
 
 #if CTX_RASTERIZER
@@ -1096,9 +1101,9 @@ struct _CtxRenderer {
      correct for axis aligned clips - proper rasterization of a clipping path
      would be yet another refinement on top.
    */
-  CtxBuffer *clip_buffer; // NYI
+  //CtxBuffer *clip_buffer; // NYI
 
-  CtxEdge  lingering[CTX_MAX_EDGES];
+  CtxEdge  lingering[CTX_MAX_LINGERING_EDGES]; // XXX < do not need this many lingering!
   int      lingering_edges;  // previous half scanline
 
   CtxEdge  edges[CTX_MAX_EDGES];
@@ -4495,7 +4500,7 @@ static void ctx_renderer_discard_edges (CtxRenderer *renderer)
     if (renderer->edge_list.entries[renderer->edges[i].index].data.s16[3] < renderer->scanline
 )
     {
-       if (renderer->lingering_edges + 1 < CTX_MAX_EDGES)
+       if (renderer->lingering_edges + 1 < CTX_MAX_LINGERING_EDGES)
        {
          renderer->lingering[renderer->lingering_edges] =
            renderer->edges[i];
@@ -8126,7 +8131,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
         break;
 
 
-      case CTX_SET_RGBA:
+      case CTX_SET_RGBA_U8:
         cairo_set_source_rgba (cr, ctx_arg_u8(0)/255.0,
                                    ctx_arg_u8(1)/255.0,
                                    ctx_arg_u8(2)/255.0,
@@ -8682,9 +8687,6 @@ ctx_print_escaped_string (FILE *stream, const char *string)
   }
 }
 
-// shadowColor shadowBlur shadowOffsetX shadowOffsetY
-//
-
 static void
 ctx_print_float (FILE *stream, float val)
 {
@@ -9132,7 +9134,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('t','e','x','t','_','s','t','r','o','k','e', 0): str_hash = 'u'; break;
     case STR('r','e','l','_','v','e','r','_','l','i','n','e'): str_hash = 'v'; break;
     case STR('t','e','x','t',0,0,0,0,0,0,0,0): str_hash = 'x'; break;
-    case STR('i','d','e','n','t','i','t','y','_','m','a','t'):
     case STR('i','d','e','n','t','i','t','y',0,0,0,0): str_hash = 'y'; break;
     case STR('t','r','a','n','s','f','o','r','m',0,0,0): str_hash = 'W'; break;
 
