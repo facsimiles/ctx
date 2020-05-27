@@ -1,8 +1,8 @@
 SMALL_CFLAGS=-Os -s  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu
 
-all: ctx-tiny ctx-small sdl2 mmm test-renderpaths ctx-tiny ctx-tiny-static-musl  ctx-small-static-musl ctx-tiny-musl
+all: ctx-tiny ctx-small sdl2 mmm test-renderpaths ctx-tiny ctx-tiny-static-musl  ctx-small-static-musl ctx-tiny-musl ctx-small-musl
 clean:
-	rm -rf mmm sdl2 ctx-tiny ctx-tiny-static-musl test-renderpaths ctx-small ctx-small-static-musl ctx-tiny-musl
+	rm -rf mmm sdl2 ctx-tiny ctx-tiny-static-musl test-renderpaths ctx-small ctx-small-static-musl ctx-tiny-musl ctx-small-musl
 mmm: mmm.c ../ctx.h  Makefile
 	$(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs mmm` -Wall
 sdl2: sdl2.c ../ctx.h
@@ -12,6 +12,12 @@ test-renderpaths: test-renderpaths.c ../ctx.h ../fonts/*.h
 
 ctx-tiny: ctx-tiny.c ../ctx.h ../fonts/*.h Makefile
 	$(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
+	@ls -slab $@
+
+
+ctx-small-musl: ctx-small.c ../ctx.h ../fonts/*.h Makefile
+	musl-gcc $(SMALL_CFLAGS)  $< -o $@ -I.. -I../fonts
+	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
 	@ls -slab $@
 
 ctx-tiny-musl: ctx-tiny.c ../ctx.h ../fonts/*.h Makefile

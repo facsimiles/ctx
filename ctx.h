@@ -679,6 +679,9 @@ typedef enum
   CTX_SET_RGBA_U8      = '*', // u8
   CTX_GRADIENT_CLEAR   = '/',
   CTX_PAINT            = '~',
+  CTX_BITPIX           = 'I', // x, y, width, height, scale
+  CTX_BITPIX_DATA      = 'j', //
+
   CTX_NOP              = ' ',
   CTX_NEW_EDGE         = '+',
   CTX_EDGE             = '|',
@@ -968,9 +971,11 @@ struct _CtxSource
   union {
     struct {
       uint8_t rgba[4];
+      uint8_t cmyka[5];
       float   raw[5];      // up to 5 components, most useful for readback?
       uint8_t color_model; // or quicker bail on equal color?
       uint8_t valid_rgba;  // to skip reconversion?
+      uint8_t valid_cmyka;  // to skip reconversion?
     } color;
     struct {
       uint8_t rgba[4];     // shares data with set color

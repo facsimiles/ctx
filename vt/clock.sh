@@ -8,14 +8,14 @@ second_pos=`bc <<<"scale=3;($(date +%S|sed 's/^0//')/60.0+0.75)*3.14152*2"`
 echo -ne "\e[H\e[?7020h  # go home, enter vector mode on current line
 clear                    # clear prior vector contents of line
 arc($cx, $cy, $radius%, 0.0, 6.4, 0);    # (,){} and ; are treated as white space
-set_line_width $facew%
+line_width=$facew%
 stroke  
-set_line_cap(ROUND);
+cap=round
 move_to $cx $cy
 arc $cx $cy $(($radius * 80 / 100))% $minute_pos $minute_pos 0
 M $cx $cy                # where matching, the SVG d short-names can be used
 arc $cx $cy $(($radius * 66 / 200))% $hour_pos $hour_pos 0
-rgba(1,1,1,0.5); set_line_width $hourw%
+rgba(1,1,1,0.5); line_width=$hourw%
 stroke  
 move_to $cx $cy
 arc $cx $cy $((radius * 80 / 100))%  $second_pos $second_pos 0
