@@ -34,6 +34,7 @@
 
 #define CTX_BACKEND_TEXT         1
 #define CTX_PARSER               1
+#define CTX_FORMATTER            1
 #define CTX_BITPACK_PACKER       0
 #define CTX_GRADIENT_CACHE       1
 #define CTX_SHAPE_CACHE          1

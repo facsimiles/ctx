@@ -146,8 +146,8 @@ int main (int argc, char **argv)
 {
   const char *source_path = NULL;
   const char *dest_path = NULL;
-  int width = 512;
-  int height = 384;
+  int width =  400;
+  int height = 300;
   float cols = 40;
   float rows = 20;
 

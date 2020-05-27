@@ -422,6 +422,14 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #define CTX_FONTS_FROM_FILE 1
 #endif
 
+#ifndef CTX_FORMATTER 
+#define CTX_FORMATTER 0
+#endif
+
+#ifndef CTX_PARSER
+#define CTX_PARSER 0
+#endif
+
 /* when ctx_math is defined, which it is by default, we use ctx' own
  * implementations of math functions, instead of relying on math.h
  * the possible inlining gives us a slight speed-gain, and on
@@ -1076,8 +1084,6 @@ struct _CtxRenderstream
 };
 
 struct _CtxState {
-  CtxGState   gstate;
-  int16_t     gstate_no;
   int         has_moved:1;
   float       x;
   float       y;
@@ -1087,7 +1093,10 @@ struct _CtxState {
   int         min_y;
   int         max_x;
   int         max_y;
-  CtxGradient gradient[CTX_MAX_GRADIENTS];
+  CtxGradient gradient; /* we keep only one gradient */
+
+  int16_t     gstate_no;
+  CtxGState   gstate;
   CtxGState   gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
 
@@ -3998,13 +4007,13 @@ ctx_gradient_cache_reset (void);
 static void
 ctx_renderer_gradient_clear_stops(CtxRenderer *renderer)
 {
-  renderer->state->gradient[0].n_stops = 0;
+  renderer->state->gradient.n_stops = 0;
 }
 
 static void
 ctx_renderer_gradient_add_stop (CtxRenderer *renderer, float pos, uint8_t *rgba)
 {
-  CtxGradient *gradient = &renderer->state->gradient[0];
+  CtxGradient *gradient = &renderer->state->gradient;
 
   CtxGradientStop *stop = &gradient->stops[gradient->n_stops];
   stop->pos = pos;
@@ -4733,7 +4742,7 @@ ctx_sample_gradient_1d_u8 (CtxRenderer *renderer, float v, uint8_t *rgba)
 {
   /* caching a 512 long gradient - and sampling with nearest neighbor
      will be much faster.. */
-  CtxGradient *g = &renderer->state->gradient[0];
+  CtxGradient *g = &renderer->state->gradient;
 
   if (v < 0) v = 0;
   if (v > 1) v = 1;
@@ -8519,6 +8528,62 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
   }
 }
 
+static void ctx_setup ()
+{
+  static int initialized = 0;
+  if (initialized) return;
+  initialized = 1;
+
+#if CTX_FONT_ENGINE_CTX
+  ctx_font_count = 0; // oddly - this is needed in arduino
+#if CTX_FONT_regular
+  ctx_load_font_ctx ("sans-ctx", ctx_font_regular, sizeof (ctx_font_regular));
+#endif
+#if CTX_FONT_mono
+  ctx_load_font_ctx ("mono-ctx", ctx_font_mono, sizeof (ctx_font_mono));
+#endif
+#if CTX_FONT_bold
+  ctx_load_font_ctx ("bold-ctx", ctx_font_bold, sizeof (ctx_font_bold));
+#endif
+#if CTX_FONT_italic
+  ctx_load_font_ctx ("italic-ctx", ctx_font_italic, sizeof (ctx_font_italic));
+#endif
+#if CTX_FONT_sans
+  ctx_load_font_ctx ("sans-ctx", ctx_font_sans, sizeof (ctx_font_sans));
+#endif
+#if CTX_FONT_serif
+  ctx_load_font_ctx ("serif-ctx", ctx_font_serif, sizeof (ctx_font_serif));
+#endif
+#if CTX_FONT_symbol
+  ctx_load_font_ctx ("symbol-ctx", ctx_font_symbol, sizeof (ctx_font_symbol));
+#endif
+#if CTX_FONT_emoji
+  ctx_load_font_ctx ("emoji-ctx", ctx_font_emoji, sizeof (ctx_font_emoji));
+#endif
+#endif
+#if CTX_FONT_sgi
+  ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
+#endif
+#if DEJAVU_SANS_MONO
+  ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf, ttf_DejaVuSansMono_ttf_len);
+#endif
+#if DEJAVU_SANS
+  ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf, ttf_DejaVuSans_ttf_len);
+#endif
+#if VERA
+  ctx_load_font_ttf ("sans-Vera", ttf_Vera_ttf, ttf_Vera_ttf_len);
+#endif
+#if UNSCII_16
+  ctx_load_font_ttf ("mono-unscii16", ttf_unscii_16_ttf, ttf_unscii_16_ttf_len);
+#endif
+
+#if XA000_MONO
+  ctx_load_font_ttf ("mono-0xA000", ttf_0xA000_Mono_ttf, ttf_0xA000_Mono_ttf_len);
+#endif
+}
+
+#if CTX_FORMATTER
+
 typedef enum CtxFormatter {
   CTX_FORMATTER_COMPACT=0,
   CTX_FORMATTER_VERBOSE
@@ -8893,59 +8958,9 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
   fprintf (stream, "\n");
 }
 
-static void ctx_setup ()
-{
-  static int initialized = 0;
-  if (initialized) return;
-  initialized = 1;
-
-#if CTX_FONT_ENGINE_CTX
-  ctx_font_count = 0; // oddly - this is needed in arduino
-#if CTX_FONT_regular
-  ctx_load_font_ctx ("sans-ctx", ctx_font_regular, sizeof (ctx_font_regular));
-#endif
-#if CTX_FONT_mono
-  ctx_load_font_ctx ("mono-ctx", ctx_font_mono, sizeof (ctx_font_mono));
-#endif
-#if CTX_FONT_bold
-  ctx_load_font_ctx ("bold-ctx", ctx_font_bold, sizeof (ctx_font_bold));
-#endif
-#if CTX_FONT_italic
-  ctx_load_font_ctx ("italic-ctx", ctx_font_italic, sizeof (ctx_font_italic));
-#endif
-#if CTX_FONT_sans
-  ctx_load_font_ctx ("sans-ctx", ctx_font_sans, sizeof (ctx_font_sans));
-#endif
-#if CTX_FONT_serif
-  ctx_load_font_ctx ("serif-ctx", ctx_font_serif, sizeof (ctx_font_serif));
-#endif
-#if CTX_FONT_symbol
-  ctx_load_font_ctx ("symbol-ctx", ctx_font_symbol, sizeof (ctx_font_symbol));
-#endif
-#if CTX_FONT_emoji
-  ctx_load_font_ctx ("emoji-ctx", ctx_font_emoji, sizeof (ctx_font_emoji));
-#endif
-#endif
-#if CTX_FONT_sgi
-  ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
-#endif
-#if DEJAVU_SANS_MONO
-  ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf, ttf_DejaVuSansMono_ttf_len);
-#endif
-#if DEJAVU_SANS
-  ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf, ttf_DejaVuSans_ttf_len);
-#endif
-#if VERA
-  ctx_load_font_ttf ("sans-Vera", ttf_Vera_ttf, ttf_Vera_ttf_len);
-#endif
-#if UNSCII_16
-  ctx_load_font_ttf ("mono-unscii16", ttf_unscii_16_ttf, ttf_unscii_16_ttf_len);
 #endif
 
-#if XA000_MONO
-  ctx_load_font_ttf ("mono-0xA000", ttf_0xA000_Mono_ttf, ttf_0xA000_Mono_ttf_len);
-#endif
-}
+/* the parser comes in the end, nothing in ctx knows about the parser  */
 
 #if CTX_PARSER
 
@@ -9658,6 +9673,11 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           ctx_rel_move_to (ctx, -parser->numbers[0], 0.0);  //  XXX : scale by font(size)
         else
         {
+          /* XXX : we are doing an allocation here, we do not want to
+           *       do allocations, or at least make them smaller,
+           *       keeping a temporary line we build up, to configurable
+           *       ~512byte fixed length seems better.
+           */
           char *copy = strdup ((char*)parser->holding);
           char *c;
           for (c = copy; c; )
