@@ -1967,14 +1967,6 @@ ctx_u8 (CtxCode code,
   return command;
 }
 
-void
-ctx_close_path (Ctx *ctx)
-{
-  if  (ctx->state.path_start_x != ctx->state.x ||
-       ctx->state.path_start_y != ctx->state.y)
-    ctx_line_to (ctx, ctx->state.path_start_x, ctx->state.path_start_y);
-}
-
 #define CTX_PROCESS_VOID(cmd) do {\
   CtxEntry command = ctx_void (cmd); \
   ctx_process (ctx, &command);}while(0) \
@@ -1990,6 +1982,12 @@ ctx_close_path (Ctx *ctx)
 #define CTX_PROCESS_F(cmd, x, y) do {\
   CtxEntry command = ctx_f(cmd, x, y);\
   ctx_process (ctx, &command);}while(0)
+
+void
+ctx_close_path (Ctx *ctx)
+{
+  CTX_PROCESS_VOID(CTX_CLOSE_PATH);
+}
 
 
 void ctx_texture (Ctx *ctx, int id, float x, float y)
@@ -5950,8 +5948,13 @@ ctx_renderer_arc (CtxRenderer *renderer,
 
   if (end_angle == start_angle)
   {
+//    if (renderer->has_prev!=0)
     ctx_renderer_line_to (renderer, x + cosf (end_angle) * radius,
                           y + sinf (end_angle) * radius);
+//    else
+//    ctx_renderer_move_to (renderer, x + cosf (end_angle) * radius,
+//                          y + sinf (end_angle) * radius);
+
     return;
   }
 
@@ -5979,7 +5982,7 @@ ctx_renderer_arc (CtxRenderer *renderer,
   {
       float xv = x + cosf (start_angle) * radius;
       float yv = y + sinf (start_angle) * radius;
-      if (first && !renderer->has_prev)
+      if (!renderer->has_prev)
         ctx_renderer_move_to (renderer, xv, yv);
       
       first = 0;
@@ -7930,9 +7933,6 @@ _ctx_text (Ctx        *ctx,
       break;
   }
   float x0 = x;
-
-          
-
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
     {
       if (*utf8 == '\n')
