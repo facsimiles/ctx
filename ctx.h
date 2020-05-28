@@ -640,7 +640,6 @@ typedef enum
   CTX_VER_LINE_TO      = 'V', // SVG %
   CTX_SET_TRANSFORM    = 'W',
   CTX_EXIT             = 'X',
-  CTX_SET_COLOR_MODEL  = 'Y', //
   // Z - SVG?
   CTX_REL_ARC_TO       = 'a', // SVG %
   CTX_CLIP             = 'b',
@@ -8613,7 +8612,6 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
     {
       case CTX_SET_PARAM:            name="set_param";break;
       case CTX_SET_COLOR:            name="set_color";break;
-      case CTX_SET_COLOR_MODEL:      name="set_color_model";break;
       case CTX_DEFINE_GLYPH:         name="define_glyph";break;
       case CTX_SET_PIXEL:            name="set_pixel";break;
       case CTX_SET_GLOBAL_ALPHA:     name="set_global_alpha";break;
@@ -8720,11 +8718,66 @@ ctx_print_entry_u8 (FILE *stream, int formatter, int *indent, CtxEntry *entry, i
 {
   _ctx_print_name (stream, entry->code, formatter, indent);
 
+
   for (int i = 0; i <  args; i ++)
   {
+    int val = ctx_arg_u8(i);
     if (i>0)
       fwrite (" ", 1, 1, stream);
-    fprintf (stream, "%i", ctx_arg_u8(i));
+#if CTX_VERBOSE_NAMES
+    if (formatter)
+    {
+      const char *str = NULL;
+      switch (entry->code)
+      {
+        case CTX_SET_TEXT_BASELINE:
+          switch (val)
+          {
+            case CTX_TEXT_BASELINE_ALPHABETIC:  str = "alphabetic";   break;
+            case CTX_TEXT_BASELINE_TOP:         str = "top";  break;
+            case CTX_TEXT_BASELINE_BOTTOM:      str = "bottom";  break;
+            case CTX_TEXT_BASELINE_HANGING:     str = "hanging";    break;
+            case CTX_TEXT_BASELINE_MIDDLE:      str = "middle"; break;
+            case CTX_TEXT_BASELINE_IDEOGRAPHIC: str = "ideographic"; break;
+          }
+          break;
+        case CTX_SET_TEXT_ALIGN:
+          switch (val)
+          {
+            case CTX_TEXT_ALIGN_LEFT:   str = "left";   break;
+            case CTX_TEXT_ALIGN_RIGHT:  str = "right";  break;
+            case CTX_TEXT_ALIGN_START:  str = "start";  break;
+            case CTX_TEXT_ALIGN_END:    str = "end";    break;
+            case CTX_TEXT_ALIGN_CENTER: str = "center"; break;
+          }
+          break;
+        case CTX_SET_LINE_CAP:
+          switch (val)
+          {
+            case CTX_CAP_NONE:     str = "none";   break;
+            case CTX_CAP_ROUND:    str = "round";  break;
+            case CTX_CAP_SQUARE:   str = "square"; break;
+          }
+          break;
+        case CTX_SET_LINE_JOIN:
+          switch (val)
+          {
+            case CTX_JOIN_MITER:    str = "miter";   break;
+            case CTX_JOIN_ROUND:    str = "round";  break;
+            case CTX_JOIN_BEVEL:    str = "bevel"; break;
+          }
+          break;
+      }
+      if (str)
+        fprintf (stream, "%s", str);
+      else
+        fprintf (stream, "%i", val);
+    }
+    else
+#endif
+    {
+      fprintf (stream, "%i", val);
+    }
   }
   _ctx_print_endcmd (stream, formatter);
 }
@@ -9283,6 +9336,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('i','d','e','o','g','r','a','p','h','i','c', 0):
       return CTX_TEXT_BASELINE_IDEOGRAPHIC; break;
 
+#if 0
     case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       return CTX_GRAY; break;
     case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     return CTX_GRAYA; break;
     case STR('G','R','A','Y','A','_', 'A', 0, 0, 0, 0, 0): return CTX_GRAYA_A; break;
@@ -9296,6 +9350,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('L','A','B','A',0,'_','A', 0, 0, 0, 0, 0):    return CTX_LABA; break;
     case STR('L','C','H',0,0,0, 0, 0, 0, 0, 0, 0):         return CTX_LCH; break;
     case STR('L','C','H','A',0,'_','A', 0, 0, 0, 0, 0):    return CTX_LCHA; break;
+#endif
 
 #undef STR
 #undef LOWER
@@ -9327,7 +9382,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case 'V': parser->n_args = 1; return CTX_VER_LINE_TO;
     case 'W': parser->n_args = 0; return CTX_SET_TRANSFORM;
     case 'X': parser->n_args = 0; return CTX_EXIT;
-    case 'Y': parser->n_args = 1; return CTX_SET_COLOR_MODEL;
     case 'Z':case 'z': parser->n_args = 0; return CTX_CLOSE_PATH;
     case 'a': parser->n_args = 5; return CTX_REL_ARC_TO;
     case 'b': parser->n_args = 0; return CTX_CLIP;
@@ -9517,9 +9571,6 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_parser_get_color_rgba (parser, 0, &red, &green, &blue, &alpha);
         ctx_set_rgba (ctx, red, green, blue, alpha);
       }
-      break;
-    case CTX_SET_COLOR_MODEL:
-      ctx_parser_set_color_model (parser, parser->numbers[0]);
       break;
     case CTX_ARC_TO: 
       ctx_arc_to (ctx, 
