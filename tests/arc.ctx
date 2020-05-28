@@ -4,8 +4,7 @@ rgb 0 0 0
 line_width= 10%
 arc 50% 50% 30% 0.785375 3.1415 0
 stroke
-
-line_width= 5%
+line_width= 2%
 rgb 1 0 0
 new_path
 move_to 50% 50%

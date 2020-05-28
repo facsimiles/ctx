@@ -48,7 +48,7 @@ index.html: $(TESTS_CTX) Makefile
 	  echo "<td><pre>" >> $@; \
 	  cat $$a.ctx >> $@; \
 	  echo "</pre></td>" >> $@;\
-	  echo "<td><img class='side' src='png/$$a.png'/></td>" >> $@; \
+	  echo "<td><a href='png/$$a.png'><img class='side' src='png/$$a.png'/></a></td>" >> $@; \
 	  echo "</tr>" >> $@; \
 	done
 	echo "</table>" >> $@
