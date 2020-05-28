@@ -13,12 +13,12 @@ stroke
 
 rgb 1 1 1
 
-set_font_size 24%
+set_font_size 1@
 move_to 50% 20%
 set_text_align start
 text "start"
 
-move_to 50% 40%
+move_to 50% 37%
 
 set_text_align center
 text "center"
@@ -27,10 +27,11 @@ move_to 50% 60%
 set_text_align end
 text "end"
 
-move_to 50% 80%
+move_to 50% 77%
 set_text_align left
 text "left"
 
-move_to 50% 100%
+move_to 50% 95%
 text_align=right
 text "right"
+

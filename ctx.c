@@ -146,12 +146,12 @@ int main (int argc, char **argv)
 {
   const char *source_path = NULL;
   const char *dest_path = NULL;
-  int width =  640;
-  int height = 480;
-  //int width =  400;
-  //int height = 300;
-  float cols = 40;
-  float rows = 20;
+  //int width =  512;
+  //int height = 512;
+  int width =  160;
+  int height = 80;
+  float cols = 30;
+  float rows = 5;
 
   if (!argv[1])
     return vt_main (argc, argv);
@@ -165,22 +165,34 @@ int main (int argc, char **argv)
       if (!strcmp ( argv[i], "--width"))
       {
          if (argv[i+1])
+         {
            width = atoi(argv[i+1]);
+           i++;
+         }
       }
       if (!strcmp ( argv[i], "--height"))
       {
          if (argv[i+1])
+         {
            height = atoi(argv[i+1]);
+           i++;
+         }
       }
       if (!strcmp ( argv[i], "--cols"))
       {
          if (argv[i+1])
+         {
            cols = atoi(argv[i+1]);
+           i++;
+         }
       }
       if (!strcmp ( argv[i], "--rows"))
       {
          if (argv[i+1])
+         {
            rows = atoi(argv[i+1]);
+           i++;
+         }
       }
     }
     else
@@ -199,17 +211,22 @@ int main (int argc, char **argv)
       }
     }
   }
+
+  cols = width / (height / rows);
+
   if (dest_path)
   {
   if (!strcmp (dest_path, "GRAY1"))
   {
     width = 158; height = 80;
 
-    cols = 24; rows = 2;
+    rows = 3;
+    cols = 24;
     if (height > 200)
     {
       cols = width/16; rows = height/16;
     }
+    cols = width / (height / rows);
   }
   if (!strcmp (dest_path, "GRAY2") ||
       !strcmp (dest_path, "GRAY4") ||
@@ -221,8 +238,9 @@ int main (int argc, char **argv)
       )
   {
      width = 78; height = 24;
-      
-     cols = width/6; rows = height/6;
+     rows = 2.4;
+     cols = width/6; 
+     cols = width / (height / rows);
   }
   }
   

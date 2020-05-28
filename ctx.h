@@ -343,11 +343,15 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 
 /* vertical level of supersampling at full/forced AA.
  *
- * 1 is none, 2 is faster, 3 is fast 5 is good 15 is best for 8bit  32 is
+ * 1 is none, 2 is faster, 3 is fast 5 is good 15 is best for 8bit  51 is
+ *
+ *
+ * valid values:
+ * 1 2 3 5 15 17 51 85
  * perhaps a decent max with current code
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA      5
+#define CTX_RASTERIZER_AA      15
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -356,7 +360,7 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  1
+#define CTX_RASTERIZER_FORCE_AA  0
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
@@ -367,11 +371,13 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 
 /* subpixel-aa coordinates used in BITPACKing of renderstream
  */
-#define CTX_SUBDIV            8  // changing this changes font-file-format
+#define CTX_SUBDIV           32 // changing this changes font-file-format
 
+// 8    12 68 40 24
+// 16   12 68 40 24
 /* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
  */
-#define CTX_BAKE_FONT_SIZE   60
+#define CTX_BAKE_FONT_SIZE   256
 
 /* pack some linetos/curvetos/movetos into denser renderstream indstructions,
  * permitting more vectors to be stored in the same space.
@@ -3730,10 +3736,10 @@ ctx_init (Ctx *ctx)
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
-  ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
+  ctx->renderstream.flags |= CTX_TRANSFORMATION_BITPACK;
 #endif
 #if CTX_REFPACK
-  ctx->renderstream.flags  |= CTX_TRANSFORMATION_REFPACK;
+  ctx->renderstream.flags |= CTX_TRANSFORMATION_REFPACK;
 #endif
 #endif
 }
@@ -4421,7 +4427,7 @@ ctx_renderer_curve_to (CtxRenderer *renderer,
   oy = renderer->state->y;
 
   tolerance = 1.0f/tolerance;
-#if 0 // better skip this while doing in-rasterizer caching
+#if 0 // skipping this to preserve hashes
   float maxx = CTX_MAX(x1,x2);
   maxx = CTX_MAX(maxx, ox);
   maxx = CTX_MAX(maxx, x0);
@@ -4492,7 +4498,6 @@ ctx_renderer_rel_curve_to (CtxRenderer *renderer,
 
   ctx_renderer_curve_to (renderer, x0, y0, x1, y1, x2, y2);
 }
-
 
 static int ctx_compare_edges (const void *ap, const void *bp)
 {
@@ -4650,8 +4655,8 @@ static void ctx_renderer_feed_edges (CtxRenderer *renderer)
         if (! (miny <= renderer->scanline))
         {
           /* it is a pending edge - we add it to the end of the array
-             and keep a different count for items stored here, similar
-             to how heap and stack grows against each other
+             and keep a different count for items stored here, like
+             a heap and stack growing against each other
           */
           renderer->edges[CTX_MAX_EDGES-1-renderer->pending_edges] =
             renderer->edges[no];
@@ -5969,6 +5974,7 @@ ctx_renderer_arc (CtxRenderer *renderer,
 #endif
   {
     steps = (end_angle - start_angle) / (CTX_PI*2) * full_segments;
+    //if (steps < 0) steps += full_segments;
     if (anticlockwise)
       steps = full_segments - steps;;
   }
@@ -9921,7 +9927,7 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
     case CTX_SET_MITER_LIMIT:
     case CTX_SET_LINE_WIDTH:
       {
-        *value *= small;
+        *value *= parser->cell_height;
       }
       break;
 

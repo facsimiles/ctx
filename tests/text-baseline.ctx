@@ -5,35 +5,37 @@ rectangle 0 0 100% 100%
 fill
 
 rgba 1 0 0 0.5
-move_to 0% 50%
-line_to 100% 50%
+move_to 0% 33%
+line_to 100% 33%
+move_to 0% 66%
+line_to 100% 66%
 set_line_width 2%
 stroke
 
 rgb 1 1 1
 
 set_font_size 20%
-move_to 0% 50%
+move_to 2% 33%
 set_text_baseline top
 text "Top"
 
-move_to 15% 50%
+move_to 2% 66%
 set_text_baseline bottom
 text "Bottom"
 
-move_to 30% 50%
+move_to 70% 33%
 set_text_baseline middle
 text "Middle"
 
-move_to 45% 50%
+move_to 2% 33%
 set_text_baseline alphabetic
 text "Alphabetic"
 
-move_to 60% 50%
+move_to 30% 66%
 set_text_baseline hanging
 text "Hanging"
 
-move_to 75% 50%
+move_to 55% 66%
 set_text_baseline ideographic
 text "Ideographic"
 
