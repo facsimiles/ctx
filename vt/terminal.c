@@ -43,6 +43,7 @@
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
 #define CTX_RASTERIZER_AA        5
 #define CTX_RASTERIZER_FORCE_AA  1
+#define CTX_MATH                 0
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 #include "vt-line.h"

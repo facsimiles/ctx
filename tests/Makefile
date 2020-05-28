@@ -5,15 +5,16 @@ TEST_NAMES  = $(patsubst %.ctx, %, $(TESTS_CTX))
 TESTS_GRAY1= $(patsubst %.ctx, gray1/%, $(TESTS_CTX))
 TESTS_GRAY8= $(patsubst %.ctx, gray8/%, $(TESTS_CTX))
 TESTS_PNG  = $(patsubst %.ctx, png/%.png, $(TESTS_CTX))
+TESTS_PPNG  = $(patsubst %.ctx, png-80x160/%.png, $(TESTS_CTX))
 TESTS_LPNG  = $(patsubst %.ctx, png-640x480/%.png, $(TESTS_CTX))
 TESTS_LBPNG  = $(patsubst %.ctx, png-640x480b/%.png, $(TESTS_CTX))
 
-TESTS=$(TESTS_GRAY1) $(TESTS_PNG) $(TESTS_GRAY8)  $(TESTS_LPNG) $(TESTS_LBPNG)
+TESTS=$(TESTS_GRAY1) $(TESTS_PNG) $(TESTS_GRAY8)  $(TESTS_LPNG) $(TESTS_LBPNG) $(TESTS_PPNG)
 
 all: index.html pre $(TESTS) check
 
 pre:
-	@mkdir -p png gray1 gray8 reference/gray1 reference/gray8 png-640x480 png-640x480b
+	@mkdir -p png gray1 gray8 reference/gray1 reference/gray8 png-640x480 png-640x480b png-80x160
 
 
 webupdate:
@@ -62,6 +63,7 @@ index.html: $(TESTS_CTX) Makefile
 	  cat $$a.ctx >> $@; \
 	  echo "</pre></td>" >> $@;\
 	  echo "<td><a href='png/$$a.png'><img class='side' src='png/$$a.png'/></a></td>" >> $@; \
+	  echo "<td><a href='png-80x160/$$a.png'><img class='side' src='png-80x160/$$a.png'/></a></td>" >> $@; \
 	  echo "<td><a href='png-640x480/$$a.png'><img class='side' src='png-640x480/$$a.png'/></a>" >> $@; \
 	  echo "<td><a href='png-640x480b/$$a.png'><img class='side' src='png-640x480b/$$a.png'/></a>" >> $@; \
 	  echo "</td></tr>" >> $@; \
@@ -76,7 +78,9 @@ clean:
 gray1/%: %.ctx ../ctx 
 	../ctx $< GRAY1 > $@
 png/%.png: %.ctx ../ctx 
-	../ctx $< $@
+	../ctx $< $@ --width 160 --height 80
+png-80x160/%.png: %.ctx ../ctx 
+	../ctx $< $@ --width 80 --height 160 --rows 10
 png-640x480/%.png: %.ctx ../ctx 
 	../ctx $< $@ --width 640 --height 480
 png-640x480b/%.png: %.ctx ../ctx 

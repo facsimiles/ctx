@@ -15,7 +15,7 @@ stroke
 
 rgb 1 1 1
 
-set_font_size 1.5@
+set_font_size 1.2@
 move_to 50% 50%
 set_text_align center
 set_text_baseline middle

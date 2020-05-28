@@ -58,6 +58,5 @@ int main (int argc, char **argv)
 #endif
   ctx_free (ctx);
   free (pixels);
-
   return 0;
 }

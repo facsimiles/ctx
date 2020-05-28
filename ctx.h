@@ -348,10 +348,9 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
  *
  * valid values:
  * 1 2 3 5 15 17 51 85
- * perhaps a decent max with current code
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA      15
+#define CTX_RASTERIZER_AA       5
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -371,7 +370,7 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 
 /* subpixel-aa coordinates used in BITPACKing of renderstream
  */
-#define CTX_SUBDIV           32 // changing this changes font-file-format
+#define CTX_SUBDIV            8 // changing this changes font-file-format
 
 // 8    12 68 40 24
 // 16   12 68 40 24
