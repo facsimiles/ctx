@@ -15,6 +15,12 @@ all: index.html pre $(TESTS) check
 pre:
 	@mkdir -p png gray1 gray8 reference/gray1 reference/gray8 png-640x480 png-640x480b
 
+
+webupdate:
+	cat index.html | sed 's/.*script.*//' > tmp
+	mv tmp index.html
+	cp -R * ~/pgo/ctx/tests
+
 update-reference:
 	cp gray1/* reference/gray1
 	cp gray8/* reference/gray8

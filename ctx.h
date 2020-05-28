@@ -692,7 +692,6 @@ typedef enum
   // unused:  . , : backslash ! # $ % ^ { } < > ? &
   CTX_SET_RGBA_U8      = '*', // u8
   CTX_GRADIENT_CLEAR   = '/',
-  CTX_PAINT            = '~',
   CTX_BITPIX           = 'I', // x, y, width, height, scale
   CTX_BITPIX_DATA      = 'j', //
 
@@ -2008,10 +2007,6 @@ ctx_image_path (Ctx *ctx, const char *path, float x, float y)
 {
   int id = ctx_texture_load (ctx, -1, path);
   ctx_texture (ctx, id, x, y);
-}
-
-void ctx_paint(Ctx *ctx) {
-  CTX_PROCESS_VOID(CTX_PAINT);
 }
 
 void ctx_fill (Ctx *ctx) {
@@ -3377,7 +3372,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
        break;
     case CTX_CLIP:
     case CTX_FILL:
-    case CTX_PAINT:
     case CTX_STROKE:
     case CTX_NEW_PATH:
       state->has_moved = 0;
@@ -3635,7 +3629,6 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
     case CTX_CLIP:
     case CTX_NEW_PATH:
     case CTX_FILL:
-    case CTX_PAINT:
     case CTX_STROKE:
       state->has_moved = 0;
       break;
@@ -6605,18 +6598,6 @@ ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
       ctx_renderer_glyph (renderer, entry[0].data.u32[0], entry[0].data.u8[4]);
       break;
 
-    case CTX_PAINT:
-      {
-        float x = renderer->blit_x;
-        float y = renderer->blit_y;
-        float w = renderer->blit_width;
-        float h = renderer->blit_height;
-        ctx_renderer_move_to (renderer, x, y);
-        ctx_renderer_rel_line_to (renderer, w, 0);
-        ctx_renderer_rel_line_to (renderer, 0, h);
-        ctx_renderer_rel_line_to (renderer, -w, 0);
-      }
-      /* fallthrough */
     case CTX_FILL:
       ctx_renderer_fill (renderer);
       break;
