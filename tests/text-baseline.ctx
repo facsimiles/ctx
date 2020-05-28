@@ -14,7 +14,7 @@ stroke
 
 rgb 1 1 1
 
-set_font_size 20%
+set_font_size 1@
 move_to 2% 33%
 set_text_baseline top
 text "Top"
