@@ -1436,6 +1436,7 @@ ctx_iterator_init (CtxIterator *iterator,
 
 static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
 {
+#if CTX_REFPACK
   int expand_refpack = iterator->flags & CTX_ITERATOR_EXPAND_REFPACK;
 
   int ret = iterator->pos;
@@ -1488,6 +1489,20 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
   if (ret >= iterator->end_pos)
     return NULL;
   return &iterator->renderstream->entries[ret];
+#else
+  int ret = iterator->pos;
+  CtxEntry *entry = &iterator->renderstream->entries[ret];
+  if (ret >= iterator->end_pos)
+    return NULL;
+  {
+    if (iterator->in_history == 0)
+      iterator->pos += (ctx_conts_for_entry (entry) + 1);
+    iterator->in_history = 0;
+    if (iterator->pos >= iterator->end_pos)
+      return NULL;
+    return &iterator->renderstream->entries[iterator->pos];
+  }
+#endif
 }
 
 #if CTX_BITPACK
