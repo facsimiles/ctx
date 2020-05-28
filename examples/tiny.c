@@ -23,9 +23,6 @@ int main (int argc, char **argv)
     pixels, WIDTH, HEIGHT, WIDTH*4,
     CTX_FORMAT_RGBA8);
 
-  for (int i = 0; i < WIDTH*HEIGHT*4; i++)
-    pixels[i] = 0;
-
 #ifndef REALLY_TINY
   char *utf8 = "tinytest\necho foobaz\n";
 #else
@@ -48,11 +45,8 @@ int main (int argc, char **argv)
   no=0;
   for (int y= 0; y < HEIGHT; y++)
   {
-    for (int x = 0; x < WIDTH; x++)
-    {
+    for (int x = 0; x < WIDTH; x++, no+=4)
       printf ("%s", utf8_gray_scale[5-(int)CTX_CLAMP(pixels[no+1]/255.0*6.0, 0, 5)]);
-      no+=4;
-    }
     printf ("\n");
   }
 #endif
