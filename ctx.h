@@ -2917,8 +2917,8 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         entry[4].code == CTX_REL_LINE_TO &&
         entry[5].code == CTX_REL_LINE_TO &&
         entry[6].code == CTX_FILL &&
-        ctx_fabsf (entry[2].data.f[0] - 1.0f) < 0.02   &&
-        ctx_fabsf (entry[3].data.f[1] - 1.0f) < 0.02)
+        ctx_fabsf (entry[2].data.f[0] - 1.0f) < 0.02f &&
+        ctx_fabsf (entry[3].data.f[1] - 1.0f) < 0.02f)
     {
         entry[0].code = CTX_SET_PIXEL;
         entry[0].data.u16[2] = entry[1].data.f[0];
@@ -3188,8 +3188,10 @@ ctx_renderstream_remove (CtxRenderstream *renderstream, int pos, int count)
  * minimum_length
  */
 static int
-ctx_renderstream_dedup_search (CtxRenderstream *dictionary, int d_start, int d_end,
-                          CtxRenderstream *input,      int i_start, int i_end,
+ctx_renderstream_dedup_search (CtxRenderstream *dictionary,
+                          int d_start, int d_end,
+                          CtxRenderstream *input,
+                          int i_start, int i_end,
                           int *match_start,
                           int *match_length,
                           int *input_pos,
@@ -3355,7 +3357,6 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
 #endif
 }
 
-
 static void
 ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 {
@@ -3481,7 +3482,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
       }
       break;
 
-
     case CTX_QUAD_TO:
       if (!state->has_moved) // bit ifft for curveto
       {
@@ -3505,7 +3505,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
       }
       break;
 
-
     case CTX_REL_MOVE_TO:
     case CTX_REL_LINE_TO:
       state->x += ctx_arg_float(0);
@@ -3527,6 +3526,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
           entry->code = CTX_LINE_TO;
       }
       break;
+
     case CTX_REL_CURVE_TO:
       {
         float nx = state->x + ctx_arg_float (4);
@@ -3710,10 +3710,10 @@ ctx_state_init (CtxState *state)
   state->gstate.font_size    = 12;
   state->gstate.line_spacing = 1.0;
   state->gstate.line_width   = 2.0;
-  state->min_x = 8192;
-  state->min_y = 8192;
-  state->max_x = -8192;
-  state->max_y = -8192;
+  state->min_x               = 8192;
+  state->min_y               = 8192;
+  state->max_x               = -8192;
+  state->max_y               = -8192;
   ctx_matrix_identity (&state->gstate.transform);
 }
 
@@ -3732,7 +3732,9 @@ ctx_init (Ctx *ctx)
 #if CTX_BITPACK
   ctx->renderstream.flags  |= CTX_TRANSFORMATION_BITPACK;
 #endif
+#if CTX_REFPACK
   ctx->renderstream.flags  |= CTX_TRANSFORMATION_REFPACK;
+#endif
 #endif
 }
 
@@ -5102,7 +5104,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t * restrict dst, uint8
       {
         float u = x0 + x;
         float v = y;
-        //ctx_matrix_apply_transform (&gstate->source.transform, &u, &v);
+        ctx_matrix_apply_transform (&gstate->source.transform, &u, &v);
 
         source (renderer, u, v, &color[0]);
         if (color[3])

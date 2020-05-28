@@ -146,10 +146,10 @@ int main (int argc, char **argv)
 {
   const char *source_path = NULL;
   const char *dest_path = NULL;
+  int width =  640;
+  int height = 480;
   //int width =  400;
   //int height = 300;
-  int width =  400;
-  int height = 300;
   float cols = 40;
   float rows = 20;
 
