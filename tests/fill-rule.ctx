@@ -21,7 +21,7 @@ close_path
 rgb 0 0 0
 stroke
 
-translate 0 44%
+translate 0 50%
 fillrule winding
 rectangle 5% 5% 90% 30%
 close_path
