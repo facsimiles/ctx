@@ -1095,8 +1095,6 @@ struct _CtxState {
   int         has_moved:1;
   float       x;
   float       y;
-  float       path_start_x;
-  float       path_start_y;
   int         min_x;
   int         min_y;
   int         max_x;
@@ -3383,8 +3381,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         state->y = y;
         if (!state->has_moved || entry->code == CTX_MOVE_TO)
         {
-          state->path_start_x = state->x;
-          state->path_start_y = state->y;
           state->has_moved = 1;
         }
 
@@ -3459,8 +3455,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
     case CTX_CURVE_TO:
       if (!state->has_moved) // bit ifft for curveto
       {
-        state->path_start_x = state->x;
-        state->path_start_y = state->y;
         state->has_moved = 1;
       }
       state->x = ctx_arg_float (4);
@@ -3482,8 +3476,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
     case CTX_QUAD_TO:
       if (!state->has_moved) // bit ifft for curveto
       {
-        state->path_start_x = state->x;
-        state->path_start_y = state->y;
         state->has_moved = 1;
       }
       state->x = ctx_arg_float (2);
@@ -3637,8 +3629,6 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
         state->y = y;
         if (!state->has_moved)
         {
-          state->path_start_x = state->x;
-          state->path_start_y = state->y;
           state->has_moved = 1;
         }
      }
@@ -3649,8 +3639,6 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
 
       if (!state->has_moved)
       {
-        state->path_start_x = state->x;
-        state->path_start_y = state->y;
         state->has_moved = 1;
       }
       break;
@@ -3660,8 +3648,6 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
 
       if (!state->has_moved)
       {
-        state->path_start_x = state->x;
-        state->path_start_y = state->y;
         state->has_moved = 1;
       }
       break;
@@ -6471,6 +6457,19 @@ ctx_renderer_set_pixel (CtxRenderer *renderer,
 #endif
 }
 
+static void
+ctx_renderer_rectangle (CtxRenderer *renderer,
+                        float x,
+                        float y,
+                        float width,
+                        float height)
+{
+  ctx_renderer_move_to (renderer, x, y);
+  ctx_renderer_rel_line_to (renderer, width, 0);
+  ctx_renderer_rel_line_to (renderer, 0, height);
+  //ctx_renderer_rel_line_to (renderer, -width, 0);
+  ctx_renderer_finish_shape (renderer);
+}
 
 static void
 ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
@@ -6527,10 +6526,8 @@ ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
       break;
 
     case CTX_RECTANGLE:
-      ctx_renderer_move_to (renderer, ctx_arg_float(0), ctx_arg_float(1));
-      ctx_renderer_rel_line_to (renderer, ctx_arg_float(2), 0);
-      ctx_renderer_rel_line_to (renderer, 0, ctx_arg_float(3));
-      ctx_renderer_rel_line_to (renderer, -ctx_arg_float(2), 0);
+      ctx_renderer_rectangle (renderer, ctx_arg_float(0), ctx_arg_float(1),
+                                        ctx_arg_float(2), ctx_arg_float(3));
       break;
 
     case CTX_SET_PIXEL:
@@ -8448,17 +8445,12 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       case CTX_SET_PIXEL:
          ctx_set_pixel_u8 (d_ctx,
                       ctx_arg_u16(2), ctx_arg_u16(3),
-                      ctx_arg_u8(0),
-                      ctx_arg_u8(1),
-                      ctx_arg_u8(2),
-                      ctx_arg_u8(3));
+                      ctx_arg_u8(0),ctx_arg_u8(1),ctx_arg_u8(2),ctx_arg_u8(3));
       break;
 
       case CTX_RECTANGLE:
-        ctx_rectangle (d_ctx, ctx_arg_float(0),
-                              ctx_arg_float(1),
-                              ctx_arg_float(2),
-                              ctx_arg_float(3));
+        ctx_rectangle (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
+                              ctx_arg_float(2), ctx_arg_float(3));
         break;
 
       case CTX_FILL:    ctx_fill (d_ctx);   break;
