@@ -141,3 +141,13 @@ arc 0% 0% 30% 0 6.3 0
 fill
 restore
 
+save
+translate 20% 60%
+scale 0.15 0.15
+radial_gradient -5% -10% 10% 40% 40% 50%
+gradient_add_stop 0 1 1 1 1
+gradient_add_stop 1 0 0 0 1
+new_path
+arc 0% 0% 30% 0 6.3 0
+fill
+restore

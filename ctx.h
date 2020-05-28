@@ -8767,6 +8767,13 @@ ctx_print_entry_u8 (FILE *stream, int formatter, int *indent, CtxEntry *entry, i
             case CTX_JOIN_BEVEL:    str = "bevel"; break;
           }
           break;
+        case CTX_SET_FILL_RULE:
+          switch (val)
+          {
+            case CTX_FILL_RULE_WINDING: str = "winding"; break;
+            case CTX_FILL_RULE_EVEN_ODD: str = "evenodd"; break;
+          }
+          break;
       }
       if (str)
         fprintf (stream, "%s", str);
@@ -9306,6 +9313,10 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
     /* words in all caps map mapping to low integer/enum constants
     */
+    case STR('w','i','n','d','i','n', 'g', 0, 0, 0, 0, 0):  return CTX_FILL_RULE_WINDING;
+    case STR('e','v','e','n','o','d', 'd', 0, 0, 0, 0, 0):  return CTX_FILL_RULE_EVEN_ODD;
+    case STR('e','v','e','n','_','o','d', 'd', 0, 0, 0, 0):  return CTX_FILL_RULE_EVEN_ODD;
+
     case STR('b','e','v','e','l',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_BEVEL;
     case STR('r','o','u','n','d',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_ROUND;
     case STR('m','i','t','e','r',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_MITER;

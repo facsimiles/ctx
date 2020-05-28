@@ -1,12 +1,13 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
 line_width=5%
+fillrule evenodd
 
 rectangle 5% 5% 90% 30%
 close_path
 arc 30% 30% 15% 0.0 6.3 0
 close_path
-arc 70% 30% 15% 0.0 6.3 1
+arc 70% 30% 15% 0.0 -6.3 1
 rgb 0 1 0
 fill
 new_path
@@ -15,8 +16,27 @@ rectangle 5% 5% 90% 30%
 close_path
 arc 30% 30% 15% 0.0 6.3 0
 close_path
-arc 70% 30% 15% 0.0 6.3 1
+arc 70% 30% 15% 0.0 -6.3 1
 close_path
 rgb 0 0 0
 stroke
 
+translate 0 44%
+fillrule winding
+rectangle 5% 5% 90% 30%
+close_path
+arc 30% 30% 15% 0.0 6.3 0
+close_path
+arc 70% 30% 15% 0.0 -6.3 1
+rgb 0 1 1
+fill
+new_path
+
+rectangle 5% 5% 90% 30%
+close_path
+arc 30% 30% 15% 0.0 6.3 0
+close_path
+arc 70% 30% 15% 0.0 -6.3 1
+close_path
+rgb 0 0 0
+stroke
