@@ -1,0 +1,19 @@
+rgb 1 1 1 rectangle 0 0 100% 100% fill
+
+rgb 0 0 0
+line_width= 10
+
+move_to 50% 10
+rel_line_to 40 0
+rel_arc_to  20 0 20 20 20
+rel_line_to 0 40
+rel_arc_to  0 20 -20 20 20
+rel_line_to -40 0
+rel_arc_to  -20 0 -20 -20 20
+rel_line_to 0 -40
+rel_arc_to  0 -20 20 -20 20
+rel_line_to 40
+
+fill
+
+
