@@ -376,7 +376,7 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 // 16   12 68 40 24
 /* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
  */
-#define CTX_BAKE_FONT_SIZE   80
+#define CTX_BAKE_FONT_SIZE   160
 
 /* pack some linetos/curvetos/movetos into denser renderstream indstructions,
  * permitting more vectors to be stored in the same space.

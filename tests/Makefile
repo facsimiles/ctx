@@ -9,9 +9,10 @@ TESTS_PPNG  = $(patsubst %.ctx, png-80x160/%.png, $(TESTS_CTX))
 TESTS_LPNG  = $(patsubst %.ctx, png-640x480/%.png, $(TESTS_CTX))
 TESTS_LBPNG  = $(patsubst %.ctx, png-640x480b/%.png, $(TESTS_CTX))
 
-TESTS=$(TESTS_GRAY1) $(TESTS_PNG) $(TESTS_GRAY8)  $(TESTS_LPNG) $(TESTS_LBPNG) $(TESTS_PPNG)
+TESTS=$(TESTS_GRAY1) $(TESTS_PNG) $(TESTS_GRAY8)
 
 all: index.html pre $(TESTS) check
+png: $(TESTS_LPNG)  $(TESTS_PPNG)  $(TESTS_LBPNG)
 
 pre:
 	@mkdir -p png gray1 gray8 reference/gray1 reference/gray8 png-640x480 png-640x480b png-80x160
@@ -27,7 +28,9 @@ update-reference:
 	cp gray8/* reference/gray8
 
 check: 
-	@for a in $(TESTS_GRAY1) $(TESTS_GRAY8); do diff -u reference/$$a $$a && echo $$a OK; done
+	@for a in $(TESTS_GRAY1) $(TESTS_GRAY8); do \
+	  diff -u reference/$$a $$a ; true;  \
+	done
 
 index.html: $(TESTS_CTX) Makefile
 	echo "<html><head><title></title>" > $@

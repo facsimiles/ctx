@@ -1,6 +1,9 @@
 SMALL_CFLAGS=-Os -s  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto
 #SMALL_CFLAGS=-O2 -fomit-frame-pointer
 
+report: tiny small baseline musl-static-tiny musl-static-small musl-static-baseline
+	(cd ../tools; ./size-report.sh)
+
 all: tiny small sdl2 mmm test-renderpaths musl-static-tiny musl-static-small musl-static-baseline
 clean:
 	rm -rf mmm sdl2 tiny small musl-static-tiny musl-static-small musl-static-baseline test-renderpaths
