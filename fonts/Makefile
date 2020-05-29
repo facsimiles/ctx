@@ -10,7 +10,12 @@ all: ctx-font-regular.h \
 	ctxf/regular.ctxf \
 	ctxf/mono.ctxf \
 	ctxf/emoji.ctxf \
-	ctxf/ascii.ctxf
+	ctxf/ascii.ctxf \
+	Roboto-Bold.h \
+	Roboto-Light.h \
+	Roboto-Regular.h \
+	NotoEmoji-Regular.h
+
 
 clean:
 	rm -f *.h 
@@ -43,6 +48,22 @@ DejaVuSansMono.h: Makefile
 DejaVuSans.h: Makefile
 	xxd -i ttf/DejaVuSans.ttf > DejaVuSans.h
 	echo '#define DEJAVU_SANS 1' >> DejaVuSans.h
+
+Roboto-Bold.h: Makefile
+	xxd -i ttf/Roboto-Bold.ttf > $@
+	echo '#define ROBOTO_BOLD 1' >> $@
+
+Roboto-Light.h: Makefile
+	xxd -i ttf/Roboto-Light.ttf > $@
+	echo '#define ROBOTO_LIGHT 1' >> $@
+
+Roboto-Regular.h: Makefile
+	xxd -i ttf/Roboto-Regular.ttf > $@
+	echo '#define ROBOTO_REGULAR 1' >> $@
+
+NotoEmoji-Regular.h: Makefile
+	xxd -i ttf/NotoEmoji-Regular.ttf > $@
+	echo '#define NOTO_EMOJI_REGULAR 1' >> $@
 
 Vera.h: Makefile
 	xxd -i ttf/Vera.ttf > Vera.h

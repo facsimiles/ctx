@@ -376,7 +376,7 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 // 16   12 68 40 24
 /* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
  */
-#define CTX_BAKE_FONT_SIZE   256
+#define CTX_BAKE_FONT_SIZE   80
 
 /* pack some linetos/curvetos/movetos into denser renderstream indstructions,
  * permitting more vectors to be stored in the same space.
@@ -8587,6 +8587,18 @@ static void ctx_setup ()
 #if DEJAVU_SANS_MONO
   ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf, ttf_DejaVuSansMono_ttf_len);
 #endif
+#if NOTO_EMOJI_REGULAR
+  ctx_load_font_ttf ("sans-NotoEmoji_Regular", ttf_NotoEmoji_Regular_ttf, ttf_NotoEmoji_Regular_ttf_len);
+#endif
+#if ROBOTO_LIGHT
+  ctx_load_font_ttf ("sans-Roboto_Light", ttf_Roboto_Light_ttf, ttf_Roboto_Light_ttf_len);
+#endif
+#if ROBOTO_REGULAR
+  ctx_load_font_ttf ("sans-Roboto_Regular", ttf_Roboto_Regular_ttf, ttf_Roboto_Regular_ttf_len);
+#endif
+#if ROBOTO_BOLD
+  ctx_load_font_ttf ("sans-Roboto_Bold", ttf_Roboto_Bold_ttf, ttf_Roboto_Bold_ttf_len);
+#endif
 #if DEJAVU_SANS
   ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf, ttf_DejaVuSans_ttf_len);
 #endif
@@ -9128,6 +9140,119 @@ CtxParser *ctx_parser_new (
 void ctx_parser_free (CtxParser *parser)
 {
   free (parser);
+}
+
+static int ctx_arguments_for_code (CtxCode code)
+{
+  switch (code)
+  {
+  case CTX_SAVE:
+  case CTX_IDENTITY:
+  case CTX_CLOSE_PATH:
+  case CTX_NEW_PATH:
+  case CTX_CLEAR:
+  case CTX_FLUSH:
+  case CTX_RESTORE:
+  case CTX_STROKE:
+  case CTX_FILL:
+  case CTX_NEW_PAGE:
+  case CTX_CLIP:
+  case CTX_EXIT:
+    return 0;
+  case CTX_SET_GLOBAL_ALPHA:
+  case CTX_SET_COMPOSITING_MODE:
+  case CTX_SET_FONT_SIZE:
+  case CTX_SET_LINE_JOIN:
+  case CTX_SET_LINE_CAP:
+  case CTX_SET_LINE_WIDTH:
+  case CTX_SET_FILL_RULE:
+  case CTX_SET_TEXT_ALIGN:
+  case CTX_SET_TEXT_BASELINE:
+  case CTX_SET_TEXT_DIRECTION:
+  case CTX_SET_MITER_LIMIT:
+  case CTX_REL_VER_LINE_TO:
+  case CTX_REL_HOR_LINE_TO:
+  case CTX_HOR_LINE_TO:
+  case CTX_VER_LINE_TO:
+  case CTX_SET_FONT:
+  case CTX_ROTATE:
+    return 1;
+  case CTX_TRANSLATE:
+  case CTX_REL_SMOOTHQ_TO:
+  case CTX_LINE_TO:
+  case CTX_MOVE_TO:
+  case CTX_SCALE:
+  case CTX_REL_LINE_TO:
+  case CTX_REL_MOVE_TO:
+  case CTX_SMOOTHQ_TO:
+  case CTX_GLYPH: // glyph and is_stroke
+    return 2;
+  case CTX_LINEAR_GRADIENT:
+  case CTX_REL_QUAD_TO:
+  case CTX_QUAD_TO:
+  case CTX_RECTANGLE:
+  case CTX_REL_SMOOTH_TO:
+  case CTX_MEDIA_BOX:
+  case CTX_SMOOTH_TO:
+    return 4;
+  case CTX_ARC_TO:
+  case CTX_REL_ARC_TO:
+    return 5;
+  case CTX_ARC:
+  case CTX_CURVE_TO:
+  case CTX_REL_CURVE_TO:
+  case CTX_SET_TRANSFORM:
+  case CTX_RADIAL_GRADIENT:
+    return 6;
+  case CTX_TEXT_STROKE:
+  case CTX_TEXT: // special case
+    return 100; /* 100 is a special value,
+                   which means string|number accepted
+                 */
+
+  //case CTX_SET_PARAM:
+  case CTX_SET_COLOR:
+    return 200;  /* 200 means number of components */
+  case CTX_GRADIENT_STOP:
+    return 201;  /* 201 means number of components+1 */
+
+    default:
+#if 0
+  case CTX_TEXTURE:
+  CTX_SET_RGBA_U8
+  CTX_GRADIENT_CLEAR
+  CTX_BITPIX
+  CTX_BITPIX_DATA
+  CTX_NOP
+  CTX_NEW_EDGE
+  CTX_EDGE
+  CTX_EDGE_FLIPPED
+  CTX_REPEAT_HISTORY
+  CTX_CONT
+  CTX_DATA
+  CTX_DATA_REV
+  CTX_DEFINE_GLYPH
+  CTX_KERNING_PAIR
+  CTX_SET_PIXEL
+  CTX_REL_LINE_TO_X4
+  CTX_REL_LINE_TO_REL_CURVE_TO
+  CTX_REL_CURVE_TO_REL_LINE_TO
+  CTX_REL_CURVE_TO_REL_MOVE_TO
+  CTX_REL_LINE_TO_X2
+  CTX_MOVE_TO_REL_LINE_TO
+  CTX_REL_LINE_TO_REL_MOVE_TO
+  CTX_FILL_MOVE_TO
+  CTX_REL_QUAD_TO_REL_QUAD_TO
+  CTX_REL_QUAD_TO_S16
+#endif
+            return -1;
+  }
+}
+
+static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
+{
+  parser->n_args = ctx_arguments_for_code (code);
+  return code;
 }
 
 static void ctx_parser_set_color_model (CtxParser *parser, int color_model);
