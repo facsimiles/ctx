@@ -992,16 +992,203 @@ struct _CtxGradient
   int n_stops;
 };
 
+#define CTX_HAS_RGBA_U8   (1<<0)
+#define CTX_HAS_RGBA      (1<<1)
+#define CTX_HAS_CMYKA_U8  (1<<2)
+#define CTX_HAS_CMYKA     (1<<3)
+#define CTX_HAS_GRAYA     (1<<4)
+#define CTX_HAS_GRAYA_U8  (1<<5)
+#define CTX_HAS_LABA      ((1<<6) | CTX_HAS_GRAYA)
+
 typedef struct _CtxColor CtxColor;
 struct _CtxColor
 {
-      uint8_t rgba[4];
-      uint8_t cmyka[5];
-      float   raw[5];      // up to 5 components, most useful for readback?
-      uint8_t color_model; // or quicker bail on equal color?
-      uint8_t valid_rgba;  // to skip reconversion?
-      uint8_t valid_cmyka;  // to skip reconversion?
+  // void *babl_space;
+  uint8_t rgba[4];
+  uint8_t cmyka[5];
+  uint8_t got_types;
+/* colors need only be converted by the raserizer */
+  float   red;
+  float   green;
+  float   blue;
+  float   alpha;
+
+  float   cyan;
+  float   magenta;
+  float   yellow;
+  float   key;
+
+  float   l;
+  float   a;
+  float   b;
+
+  uint8_t l_u8;
 };
+
+
+static void ctx_color_set_rgba_u8 (CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+  color->got_types = CTX_HAS_RGBA_U8;
+  color->rgba[0] = r;
+  color->rgba[1] = g;
+  color->rgba[2] = b;
+  color->rgba[3] = a;
+}
+
+static void ctx_color_set_rgba_u8_ (CtxColor *color, const uint8_t *in)
+{
+  ctx_color_set_rgba_u8 (color, in[0], in[1], in[2], in[3]);
+}
+
+static void ctx_color_set_graya (CtxColor *color, const float *in)
+{
+  color->got_types = CTX_HAS_GRAYA;
+  color->l = in[0];
+  color->alpha = in[1];
+}
+
+static void ctx_color_set_rgba (CtxColor *color, const float *in)
+{
+  color->got_types = CTX_HAS_RGBA;
+  color->red = in[0];
+  color->green = in[1];
+  color->blue = in[2];
+  color->alpha = in[3];
+}
+
+static void ctx_color_set_cmyk (CtxColor *color, const float *in)
+{
+  color->got_types = CTX_HAS_CMYKA;
+  color->cyan = in[0];
+  color->magenta = in[1];
+  color->yellow = in[2];
+  color->key = in[3];
+  color->alpha = in[4];
+}
+
+static void ctx_color_get_rgba (CtxColor *color, float *out)
+{
+  // if not valid
+  //   make be valid and cache valid state
+  if (!(color->got_types & CTX_HAS_RGBA))
+  {
+    if (CTX_HAS_RGBA_U8)
+    {
+      color->red    = color->rgba[0]/255.0f;
+      color->green  = color->rgba[1]/255.0f;
+      color->blue   = color->rgba[2]/255.0f;
+      color->alpha  = color->rgba[3]/255.0f;
+    }
+    else if (CTX_HAS_CMYKA)
+    {
+      color->red    = (1.0f-color->cyan) * (1.0-color->key);
+      color->green  = (1.0f-color->magenta) * (1.0-color->key);
+      color->blue   = (1.0f-color->yellow) * (1.0-color->key);
+    }
+    else if (CTX_HAS_GRAYA)
+    {
+      color->red    = 
+      color->green  =
+      color->blue   = color->l;
+    }
+    color->got_types |= CTX_HAS_RGBA;
+  }
+  out[0] = color->red;
+  out[1] = color->green;
+  out[2] = color->blue;
+  out[3] = color->alpha;
+}
+
+static void ctx_color_get_graya (CtxColor *color, float *out)
+{
+  if (!(color->got_types & CTX_HAS_GRAYA))
+  {
+    float rgba[4];
+    ctx_color_get_rgba (color, rgba);
+    color->l = (rgba[0] + rgba[1] + rgba[2])/3.0f; // XXX
+    color->got_types |= CTX_HAS_GRAYA;
+  }
+  out[0] = color->l;
+  out[1] = color->alpha;
+}
+
+static void ctx_color_get_cmyka (CtxColor *color, float *out)
+{
+  if (!(color->got_types & CTX_HAS_CMYKA))
+  {
+    float rgba[4];
+    float key;
+    ctx_color_get_rgba (color, rgba);
+    color->cyan = 1.0f - rgba[0];
+    color->magenta = 1.0f - rgba[1];
+    color->yellow = 1.0f - rgba[2];
+    key = CTX_MIN (color->cyan, CTX_MIN (color->yellow, color->magenta));
+    color->key = key;
+    if (color->key < 1.0f)
+    {
+      color->cyan = (color->cyan - key) / (1.0f - key);
+      color->magenta = (color->magenta - key) / (1.0f - key);
+      color->yellow = (color->yellow - key) / (1.0f - key);
+    }
+    else
+    {
+      color->cyan = color->magenta = color->yellow = 0.0f;
+    }
+    color->alpha = rgba[3];
+
+    color->got_types |= CTX_HAS_CMYKA;
+  }
+  out[0] = color->red;
+  out[1] = color->green;
+  out[2] = color->blue;
+  out[3] = color->alpha;
+}
+
+static void ctx_color_get_rgba_u8 (CtxColor *color, uint8_t *out)
+{
+  if (!(color->got_types & CTX_HAS_RGBA_U8))
+  {
+    float rgba[4];
+    ctx_color_get_rgba (color, rgba);
+    for (int i = 0; i < 4; i ++)
+      color->rgba[i] = rgba[i] * 255.99f;
+    color->got_types |= CTX_HAS_RGBA_U8;
+  }
+  out[0] = color->rgba[0];
+  out[1] = color->rgba[1];
+  out[2] = color->rgba[2];
+  out[3] = color->rgba[3];
+}
+
+static void ctx_color_get_graya_u8 (CtxColor *color, uint8_t *out)
+{
+  if (!(color->got_types & CTX_HAS_GRAYA_U8))
+  {
+    float graya[2];
+    ctx_color_get_graya (color, graya);
+    color->l_u8 = graya[0] * 255.99f;
+    color->rgba[3] = graya[1] * 255.99f;
+    color->got_types |= CTX_HAS_GRAYA_U8;
+  }
+  out[0] = color->l_u8;
+  out[1] = color->rgba[3];
+}
+
+static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
+{
+  if (!(color->got_types & CTX_HAS_CMYKA_U8))
+  {
+    float cmyka[5];
+    ctx_color_get_cmyka (color, cmyka);
+    for (int i = 0; i < 5; i ++)
+      color->cmyka[i] = cmyka[i] * 255.99f;
+    color->got_types |= CTX_HAS_CMYKA_U8;
+  }
+  out[0] = color->cmyka[0];
+  out[1] = color->cmyka[1];
+  out[2] = color->cmyka[2];
+  out[3] = color->cmyka[3];
+}
 
 struct _CtxSource
 {
@@ -2707,8 +2894,13 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
     case CTX_SET_RGBA_U8:
       //ctx_source_deinit (&state->gstate.source);
       state->gstate.source.type = CTX_SOURCE_COLOR;
-      for (int i = 0; i < 4; i ++)
-        state->gstate.source.color.rgba[i] = ctx_arg_u8(i);
+      ctx_color_set_rgba_u8 (&state->gstate.source.color,
+                             ctx_arg_u8(0),
+                             ctx_arg_u8(1),
+                             ctx_arg_u8(2),
+                             ctx_arg_u8(3));
+      //for (int i = 0; i < 4; i ++)
+      //  state->gstate.source.color.rgba[i] = ctx_arg_u8(i);
       break;
 #if 0
     case CTX_SET_RGBA_STROKE:
@@ -5037,10 +5229,7 @@ static void
 ctx_sample_source_u8_color (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
 {
   CtxSource *g = &renderer->state->gstate.source;
-  rgba[0] = g->color.rgba[0];
-  rgba[1] = g->color.rgba[1];
-  rgba[2] = g->color.rgba[2];
-  rgba[3] = g->color.rgba[3];
+  ctx_color_get_rgba_u8 (&g->color, rgba);
 }
 
 typedef void (*CtxSourceU8)(CtxRenderer *renderer, float x, float y, uint8_t *rgba);
@@ -5126,10 +5315,8 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t * restrict dst, uint8
     }
     return count;
   }
-  color[3] = (gstate->source.color.rgba[3] * gstate->global_alpha)>>8;
-  color[0] = gstate->source.color.rgba[0];
-  color[1] = gstate->source.color.rgba[1];
-  color[2] = gstate->source.color.rgba[2];
+  ctx_color_get_rgba_u8 (&gstate->source.color, color);
+  color[3] = (color[3] * gstate->global_alpha)>>8;
 
   if (color[3] == 255)
   {
@@ -5254,14 +5441,11 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *restrict dst, uint8_
     return count;
   }
 
-  color[3] = gstate->source.color.rgba[3];
+  ctx_color_get_rgba_u8 (&gstate->source.color, color);
   if (gstate->global_alpha != 255)
   {
     color[3] = (color[3] * gstate->global_alpha)>>8;
   }
-  color[0] = gstate->source.color.rgba[0];
-  color[1] = gstate->source.color.rgba[1];
-  color[2] = gstate->source.color.rgba[2];
   ctx_swap_red_green (color);
 
   if (color[3] >= 255)
@@ -5318,9 +5502,12 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, u
 {
   float *dst_f = (float*)dst;
   float y = renderer->scanline / CTX_RASTERIZER_AA;
-  const uint8_t *color = renderer->state->gstate.source.color.rgba;
-  float gray = (color[0]+color[1]+color[2])/3.0/255.0;
-  float alpha = color[3]/255.0 + renderer->state->gstate.global_alpha/255.0;
+  float graya[2];
+ 
+  ctx_color_get_graya (&renderer->state->gstate.source.color, graya);
+
+  float gray = graya[0];
+  float alpha = graya[1];
 
   CtxSourceU8 source = ctx_renderer_get_source_u8 (renderer);
   if (source == ctx_sample_source_u8_color) source = NULL;
@@ -5337,8 +5524,8 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, u
         float v = y;
         ctx_matrix_apply_transform (&renderer->state->gstate.source.transform, &u, &v);
         source (renderer, u, v, &scolor[0]);
-
-        gray = ((scolor[0]+scolor[1]+scolor[2])/3.0)/255.0;
+        // XXX - we need generic sources for gray and cmyk
+        gray = ((scolor[0]+scolor[1]+scolor[2])/3.0)/255.0; 
         alpha = scolor[3]/255.0 + renderer->state->gstate.global_alpha/255.0;
       }
 
