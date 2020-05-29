@@ -1,4 +1,4 @@
-SMALL_CFLAGS=-Os -s  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu
+SMALL_CFLAGS=-Os -s  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto
 #SMALL_CFLAGS=-O2 -fomit-frame-pointer
 
 all: tiny small sdl2 mmm test-renderpaths musl-static-tiny musl-static-small musl-static-baseline
