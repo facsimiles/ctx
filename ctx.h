@@ -5362,7 +5362,7 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, u
 
 #if CTX_ENABLE_RGBAF
 static int
-ctx_associated_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+ctx_associated_rgba_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
   int components = 4;  // this makes it mostly adapted to become
                        // a generalized floating point ver..
@@ -5372,23 +5372,17 @@ ctx_associated_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint
                        // non RGB color models.
   float *dst_f = (float*)dst;
   float y = renderer->scanline / CTX_RASTERIZER_AA;
-  const uint8_t *color = renderer->state->gstate.source.color.rgba;
-  float color_f[components];
-  for (int c = 0; c < components; c++)
-    color_f[c]=color[c]/255.0f;  // XXX ; lacks gamma
-  color_f[components-1] *= (renderer->state->gstate.source.color.rgba[3]/255.0f);
-  for (int c = 0; c < components-1; c++)
-    color_f[c] *= color_f[components-1];
 
   CtxSourceU8 source = ctx_renderer_get_source_u8 (renderer);
   if (source == ctx_sample_source_u8_color) source = NULL;
 
-  for (int x = 0; x < count; x++)
+  if (source)
   {
-    float cov = coverage[x]/255.0f;
-    if (cov != 0.0f)
+    float color_f[components];
+    for (int x = 0; x < count; x++)
     {
-      if (source)
+      float cov = coverage[x]/255.0f;
+      if (cov != 0.0f)
       {
         uint8_t scolor[4];
         source (renderer, x0 + x, y, &scolor[0]);
@@ -5398,12 +5392,34 @@ ctx_associated_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint
         color_f[3] *= (scolor[components-1] * renderer->state->gstate.global_alpha/255.0f);
         for (int c = 0; c < components-1; c++)
           color_f[c] *= color_f[components-1];
+
+        float ralpha = 1.0f - color_f[components-1] * cov;
+        for (int c = 0; c < components; c++)
+          dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
       }
-      float ralpha = 1.0f - color_f[components-1] * cov;
-      for (int c = 0; c < components; c++)
-        dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
+      dst_f += components;
     }
-    dst_f += components;
+  }
+  else
+  {
+    const uint8_t *color = renderer->state->gstate.source.color.rgba;
+    float color_f[components];
+    for (int c = 0; c < components; c++)
+      color_f[c]=color[c]/255.0f;  // XXX ; lacks gamma
+    color_f[components-1] *= (renderer->state->gstate.source.color.rgba[3]/255.0f);
+    for (int c = 0; c < components-1; c++)
+      color_f[c] *= color_f[components-1];
+    for (int x = 0; x < count; x++)
+    {
+      float cov = coverage[x]/255.0f;
+      if (cov != 0.0f)
+      {
+        float ralpha = 1.0f - color_f[components-1] * cov;
+        for (int c = 0; c < components; c++)
+          dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
+      }
+      dst_f += components;
+    }
   }
   return count;
 }
@@ -7131,7 +7147,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #endif
 #if CTX_ENABLE_RGBAF
   {CTX_FORMAT_RGBAF, 4, 128, 4 * 4, 0, 0,
-   NULL, NULL, ctx_associated_float_b2f_over },
+   NULL, NULL, ctx_associated_rgba_float_b2f_over },
 #endif
 #if CTX_ENABLE_RGB8
   {CTX_FORMAT_RGB8, 3, 24, 4, 0, 0,
