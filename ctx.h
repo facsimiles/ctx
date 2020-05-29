@@ -801,7 +801,7 @@ ctx_memset (void *ptr, uint8_t val, int length)
 {
   uint8_t *p = ptr;
   for (int i = 0; i < length; i ++)
-    *p = val;
+    p[i] = val;
 }
 
 #if CTX_MATH
@@ -8738,7 +8738,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
 }
 
 static void
-ctx_print_entry_u8 (FILE *stream, int formatter, int *indent, CtxEntry *entry, int args)
+ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry, int args)
 {
   _ctx_print_name (stream, entry->code, formatter, indent);
 
@@ -9002,7 +9002,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
       case CTX_SET_LINE_CAP:
       case CTX_SET_LINE_JOIN:
       case CTX_SET_COMPOSITING_MODE:
-        ctx_print_entry_u8 (stream, formatter, &indent, entry, 1);
+        ctx_print_entry_enum (stream, formatter, &indent, entry, 1);
         break;
 
       case CTX_GRADIENT_STOP:
