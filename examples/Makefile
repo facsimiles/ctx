@@ -1,5 +1,5 @@
-#SMALL_CFLAGS=-Os  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto
-SMALL_CFLAGS=-O3 -fomit-frame-pointer -flto
+SMALL_CFLAGS=-Os  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto
+#SMALL_CFLAGS=-O3 -fomit-frame-pointer -flto
 
 report: tiny small baseline musl-static-tiny musl-static-small musl-static-baseline
 	(cd ../tools; ./size-report.sh)
