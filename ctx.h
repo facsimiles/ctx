@@ -797,11 +797,11 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte);
 #define ctx_pow2(a) ((a)*(a))
 
 static void
-ctx_bzero (void *ptr, int length)
+ctx_memset (void *ptr, uint8_t val, int length)
 {
   uint8_t *p = ptr;
   for (int i = 0; i < length; i ++)
-    *p = 0;
+    *p = val;
 }
 
 #if CTX_MATH
@@ -1439,7 +1439,7 @@ ctx_iterator_init (CtxIterator *iterator,
   iterator->pos            = start_pos;
   iterator->end_pos        = renderstream->count;
   iterator->in_history     = -1; // -1 is a marker used for first run
-  ctx_bzero (iterator->bitpack_command, sizeof (iterator->bitpack_command));
+  ctx_memset (iterator->bitpack_command, 0, sizeof (iterator->bitpack_command));
 }
 
 static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
@@ -2166,7 +2166,7 @@ ctx_set_font (Ctx *ctx, const char *name)
 #if CTX_BACKEND_TEXT
   int namelen = strlen (name);
   CtxEntry commands[1 + 2 + namelen/8];
-  ctx_bzero (commands, sizeof (commands));
+  ctx_memset (commands, 0, sizeof (commands));
   commands[0] = ctx_f(CTX_SET_FONT, 0, 0);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = namelen;
@@ -3709,7 +3709,7 @@ ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data)
 static void
 ctx_state_init (CtxState *state)
 {
-  ctx_bzero (state, sizeof (CtxState));
+  ctx_memset (state, 0, sizeof (CtxState));
   state->gstate.global_alpha = 255;
   state->gstate.font_size    = 12;
   state->gstate.line_spacing = 1.0;
@@ -3757,7 +3757,7 @@ ctx_new (void)
 #else
   Ctx *ctx = (Ctx*)malloc (sizeof (Ctx));
 #endif
-  ctx_bzero (ctx, sizeof(Ctx));
+  ctx_memset (ctx, 0, sizeof(Ctx));
   ctx_init (ctx);
 
   return ctx;
@@ -3819,7 +3819,7 @@ ctx_pixel_format_info (CtxPixelFormat format);
 CtxBuffer *ctx_buffer_new (void)
 {
   CtxBuffer *buffer = (CtxBuffer*)malloc (sizeof (CtxBuffer));
-  ctx_bzero (buffer, sizeof (CtxBuffer));
+  ctx_memset (buffer, 0, sizeof (CtxBuffer));
   return buffer;
 }
 
@@ -5631,7 +5631,7 @@ ctx_renderer_rasterize_edges (CtxRenderer *renderer, int winding
 
   for (renderer->scanline = scan_start; renderer->scanline < scan_end;)
   {
-    ctx_bzero (coverage,
+    ctx_memset (coverage, 0,
 #if CTX_SHAPE_CACHE
                     shape?shape->width:
 #endif
@@ -5725,8 +5725,7 @@ ctx_renderer_fill_rect (CtxRenderer *renderer,
 
   uint8_t coverage[x1-x0 + 1];
   uint8_t *dst = ((uint8_t*)renderer->buf);
-  for (int i = 0; i < sizeof (coverage); i++)
-    coverage[i] = 0xff; /* compiled equivalent to memset*/
+  ctx_memset (coverage, 0xff, sizeof (coverage));
 
   if (x0 < renderer->blit_x)
     x0 = renderer->blit_x;
@@ -7187,7 +7186,7 @@ ctx_pixel_format_info (CtxPixelFormat format)
 static void
 ctx_renderer_init (CtxRenderer *renderer, Ctx *ctx, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
 {
-  ctx_bzero (renderer, sizeof (CtxRenderer));
+  ctx_memset (renderer, 0, sizeof (CtxRenderer));
   renderer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   renderer->state       = state;
   renderer->ctx         = ctx;
@@ -7857,7 +7856,7 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
 #if CTX_BACKEND_TEXT
   CtxEntry commands[1];
-  ctx_bzero (commands, sizeof (commands));
+  ctx_memset (commands, 0, sizeof (commands));
   commands[0] = ctx_u32(CTX_GLYPH, unichar, 0);
   commands[0].data.u8[4] = stroke;
   ctx_process (ctx, commands);
@@ -8021,7 +8020,7 @@ ctx_text (Ctx        *ctx,
 #if CTX_BACKEND_TEXT
   int stringlen = strlen (string);
   CtxEntry commands[1 + 2 + stringlen/8];
-  ctx_bzero (commands, sizeof (commands));
+  ctx_memset (commands, 0, sizeof (commands));
   commands[0] = ctx_u8(CTX_TEXT, 0, 0,0,0,0,0,0,0);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = stringlen;
@@ -8042,7 +8041,7 @@ ctx_text_stroke (Ctx        *ctx,
 #if CTX_BACKEND_TEXT
   int stringlen = strlen (string);
   CtxEntry commands[1 + 2 + stringlen/8];
-  ctx_bzero (commands, sizeof (commands));
+  ctx_memset (commands, 0, sizeof (commands));
   commands[0] = ctx_u8(CTX_TEXT_STROKE, 1, 0,0,0,0,0,0,0);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = stringlen;
@@ -9091,7 +9090,7 @@ ctx_parser_init (CtxParser *parser,
   void *exit_data
           )
 {
-  ctx_bzero (parser, sizeof (CtxParser));
+  ctx_memset (parser, 0, sizeof (CtxParser));
   parser->line             = 1;
   parser->ctx              = ctx;
   parser->cell_width       = cell_width;
