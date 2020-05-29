@@ -677,17 +677,17 @@ typedef enum
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
-  CTX_SET_GLOBAL_ALPHA = 10,  // wa
-  CTX_SET_COMPOSITING_MODE = 11,  // wc
-  CTX_SET_FONT_SIZE    = 12, // wf
-  CTX_SET_LINE_JOIN    = 13, // wj
-  CTX_SET_LINE_CAP     = 14, // wc
-  CTX_SET_LINE_WIDTH   = 15, // ww
-  CTX_SET_FILL_RULE    = 16, // wr
-  CTX_SET_TEXT_ALIGN   = 17, // wt
-  CTX_SET_TEXT_BASELINE= 18, // wb
-  CTX_SET_TEXT_DIRECTION=19, // wd
-  CTX_SET_MITER_LIMIT   =20, // wm
+  CTX_SET_GLOBAL_ALPHA     = 10, // wa
+  CTX_SET_COMPOSITING_MODE = 11, // wc
+  CTX_SET_FONT_SIZE        = 12, // wf
+  CTX_SET_LINE_JOIN        = 13, // wj
+  CTX_SET_LINE_CAP         = 14, // wc
+  CTX_SET_LINE_WIDTH       = 15, // ww
+  CTX_SET_FILL_RULE        = 16, // wr
+  CTX_SET_TEXT_ALIGN       = 17, // wt
+  CTX_SET_TEXT_BASELINE    = 18, // wb
+  CTX_SET_TEXT_DIRECTION   = 19, // wd
+  CTX_SET_MITER_LIMIT      = 20, // wm
 
 
   // non-alphabetic chars that get filtered out when parsing
@@ -10029,9 +10029,42 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                  (1.0 - parser->numbers[offset + 3]);
         }
 #endif
+        switch (parser->color_model)
+        {
+          case CTX_GRAY:
+            ctx_set_gray (ctx, parser->numbers[0]);
+                  break;
+          case CTX_GRAYA:
+            ctx_set_rgba (ctx, parser->numbers[0], parser->numbers[0], parser->numbers[0], parser->numbers[1]);
+                  break;
+          case CTX_RGB:
+            ctx_set_rgb (ctx, parser->numbers[0],
+                               parser->numbers[1],
+                               parser->numbers[2]);
+                  break;
+          case CTX_CMYK:
+            ctx_set_cmyk (ctx, parser->numbers[0],
+                               parser->numbers[1],
+                               parser->numbers[2],
+                               parser->numbers[3]);
+                  break;
+          case CTX_CMYKA:
+            ctx_set_cmyka (ctx, parser->numbers[0],
+                                parser->numbers[1],
+                                parser->numbers[2],
+                                parser->numbers[3],
+                                parser->numbers[4]);
+                  break;
+          case CTX_RGBA:
+            ctx_set_rgba (ctx, parser->numbers[0],
+                               parser->numbers[1],
+                               parser->numbers[2],
+                               parser->numbers[3]);
+                  break;
+        }
 
-        ctx_parser_get_color_rgba (parser, 0, &red, &green, &blue, &alpha);
-        ctx_set_rgba (ctx, red, green, blue, alpha);
+//        ctx_parser_get_color_rgba (parser, 0, &red, &green, &blue, &alpha);
+//        ctx_set_rgba (ctx, red, green, blue, alpha);
       }
       break;
     case CTX_ARC_TO: 
