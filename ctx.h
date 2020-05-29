@@ -9252,6 +9252,14 @@ static int ctx_arguments_for_code (CtxCode code)
 static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
 {
   parser->n_args = ctx_arguments_for_code (code);
+  if (parser->n_args >= 200)
+  {
+    parser->n_args = (parser->n_args % 100) + parser->color_components;
+  }
+  else if (parser->n_args >= 100)
+  {
+    parser->n_args = (parser->n_args % 100);
+  }
   return code;
 }
 
@@ -9259,12 +9267,12 @@ static void ctx_parser_set_color_model (CtxParser *parser, int color_model);
 
 static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 {
-//#define LOWER(a) (a|32)  // this causes collisions, not sure if we want
-#define LOWER(a) (a)
-  uint32_t str_hash = LOWER(str[0]);
+  uint32_t str_hash = str[0];
 
   if (str[0] && str[1])
   {
+ // #define LOWER(a) (a|32)  // this causes collisions, not sure if we want
+#define LOWER(a) (a)
     /* trim ctx_ and CTX_ prefix */
     if ((str[0] == 'c' && str[1] == 't' && str[2] == 'x' && str[3] == '_')||
         (str[0] == 'C' && str[1] == 'T' && str[2] == 'X' && str[3] == '_'))
@@ -9363,102 +9371,92 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
     case STR(CTX_SET_PARAM,'m',0,0,0,0,0,0,0,0,0,0):
     case STR('c','o','m','p','o','s','i','t','i','n','g','m'): 
-      parser->n_args=1; return CTX_SET_COMPOSITING_MODE;
+      return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
 
     case STR(CTX_SET_PARAM,'r',0,0,0,0,0,0,0,0,0,0):
     case STR('f','i','l','l','_','r','u','l','e',0,0,0): 
-      parser->n_args=1; return CTX_SET_FILL_RULE;
+      return ctx_parser_set_command (parser, CTX_SET_FILL_RULE);
 
     case STR(CTX_SET_PARAM,'f',0,0,0,0,0,0,0,0,0,0):
     case STR('f','o','n','t','_','s','i','z','e',0,0,0):
-      parser->n_args=1; return CTX_SET_FONT_SIZE;
+      return ctx_parser_set_command (parser, CTX_SET_FONT_SIZE);
 
     case STR(CTX_SET_PARAM,'l',0,0,0,0,0,0,0,0,0,0):
     case STR('m','i','t','e','r','_','l','i','m','i','t',0):
-      parser->n_args=1; return CTX_SET_MITER_LIMIT;
+      return ctx_parser_set_command (parser, CTX_SET_MITER_LIMIT);
 
     case STR(CTX_SET_PARAM,'t',0,0,0,0,0,0,0,0,0,0):
     case STR('t','e','x','t','_','a','l','i','g','n',0, 0):
-      parser->n_args=1; return CTX_SET_TEXT_ALIGN;
+      return ctx_parser_set_command (parser, CTX_SET_TEXT_ALIGN);
 
     case STR(CTX_SET_PARAM,'b',0,0,0,0,0,0,0,0,0,0):
     case STR('t','e','x','t','_','b','a','s','e','l','i','n'):
-      parser->n_args=1; return CTX_SET_TEXT_BASELINE;
+      return ctx_parser_set_command (parser, CTX_SET_TEXT_BASELINE);
 
     case STR(CTX_SET_PARAM,'d',0,0,0,0,0,0,0,0,0,0):
     case STR('t','e','x','t','_','d','i','r','e','c','t','i'):
-      parser->n_args=1; return CTX_SET_TEXT_DIRECTION;
+      return ctx_parser_set_command (parser, CTX_SET_TEXT_DIRECTION);
 
     case STR(CTX_SET_PARAM,'j',0,0,0,0,0,0,0,0,0,0):
     case STR('j','o','i','n',0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','j','o','i','n',0,0,0):
-      parser->n_args=1; return CTX_SET_LINE_JOIN;
+      return ctx_parser_set_command (parser, CTX_SET_LINE_JOIN);
 
     case STR(CTX_SET_PARAM,'c',0,0,0,0,0,0,0,0,0,0):
     case STR('c','a','p',0,0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','c','a','p',0,0,0,0):
-      parser->n_args=1; return CTX_SET_LINE_CAP;
+      return ctx_parser_set_command (parser, CTX_SET_LINE_CAP);
 
     case STR(CTX_SET_PARAM,'w',0,0,0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','w','i','d','t','h',0,0):
-      parser->n_args=1; return CTX_SET_LINE_WIDTH;
+      return ctx_parser_set_command (parser, CTX_SET_LINE_WIDTH);
 
     case STR(CTX_SET_PARAM,'a',0,0,0,0,0,0,0,0,0,0):
     case STR('g','l','o','b','a','l','_','a','l','p','h','a'):
-      parser->n_args=1; return CTX_SET_GLOBAL_ALPHA;
+      return ctx_parser_set_command (parser, CTX_SET_GLOBAL_ALPHA);
 
     /* strings are handled directly here,
      * instead of in the one-char handler, using return instead of break
      */
     case STR('g','r','a','y',0,0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_GRAY);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('g','r','a','y','a',0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_GRAYA);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('r','g','b',0,0,0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_RGB);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('r','g','b','a',0,0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_RGBA);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('c','m','y','k',0,0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_CMYK);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('l','a','b',0,0,0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_LAB);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('l','a','b','a',0,0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_LABA);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('l','c','h',0,0,0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_LCH);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('l','c','h','a',0,0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_LCHA);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('c','m','y','k','a',0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, 104);
-      parser->n_args = parser->color_components;
-      return CTX_SET_COLOR;
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     /* words in all caps map mapping to low integer/enum constants
     */
@@ -9495,22 +9493,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
       return CTX_TEXT_BASELINE_HANGING; break;
     case STR('i','d','e','o','g','r','a','p','h','i','c', 0):
       return CTX_TEXT_BASELINE_IDEOGRAPHIC; break;
-
-#if 0
-    case STR('G','R','A','Y',0,0, 0, 0, 0, 0, 0, 0):       return CTX_GRAY; break;
-    case STR('G','R','A','Y','A',0, 0, 0, 0, 0, 0, 0):     return CTX_GRAYA; break;
-    case STR('G','R','A','Y','A','_', 'A', 0, 0, 0, 0, 0): return CTX_GRAYA_A; break;
-    case STR('R','G','B',0,0,0, 0, 0, 0, 0, 0, 0):         return CTX_RGB; break;
-    case STR('R','G','B','A',0,0, 0, 0, 0, 0, 0, 0):       return CTX_RGBA; break;
-    case STR('R','G','B','A','_','A', 0, 0, 0, 0, 0, 0):   return CTX_RGBA_A; break;
-    case STR('C','M','Y','K',0,0, 0, 0, 0, 0, 0, 0):       return CTX_CMYK; break;
-    case STR('C','M','Y','K','A',0,0, 0, 0, 0, 0, 0):      return CTX_CMYKA; break;
-    case STR('C','M','Y','K','A','_','A', 0, 0, 0, 0, 0):  return CTX_CMYKA_A; break;
-    case STR('L','A','B',0,0,0, 0, 0, 0, 0, 0, 0):         return CTX_LAB; break;
-    case STR('L','A','B','A',0,'_','A', 0, 0, 0, 0, 0):    return CTX_LABA; break;
-    case STR('L','C','H',0,0,0, 0, 0, 0, 0, 0, 0):         return CTX_LCH; break;
-    case STR('L','C','H','A',0,'_','A', 0, 0, 0, 0, 0):    return CTX_LCHA; break;
-#endif
 
 #undef STR
 #undef LOWER
