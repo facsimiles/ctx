@@ -1241,8 +1241,7 @@ struct _CtxFont
                 much data as stbtt_fontinfo */
              //int16_t glyph_pos[26]; // for a..z
              int       glyphs; // number of glyphs
-             uint32_t *index;  // index for jumping into data-stream
-                               // maybe this index can be shared with stb?
+             uint32_t *index;
            } ctx;
 #if CTX_FONT_ENGINE_STB
     struct { stbtt_fontinfo ttf_info;
@@ -1536,9 +1535,9 @@ ctx_iterator_expand_s8_args (CtxIterator *iterator, CtxEntry *entry)
       iterator->bitpack_command[cno].data.f[d] =
          entry->data.s8[no] * 1.0f / CTX_SUBDIV;
 
-  iterator->bitpack_command[0].code = CTX_CONT;
-  iterator->bitpack_command[1].code = CTX_CONT;
-  iterator->bitpack_command[2].code = CTX_CONT;
+  iterator->bitpack_command[0].code = 
+  iterator->bitpack_command[1].code =
+  iterator->bitpack_command[2].code =
   iterator->bitpack_command[3].code = CTX_CONT;
   iterator->bitpack_length = 4;
   iterator->bitpack_pos = 0;
@@ -1611,9 +1610,9 @@ ctx_iterator_next (CtxIterator *iterator)
 
     case CTX_REL_LINE_TO_X4:
       ctx_iterator_expand_s8_args (iterator, ret);
-      iterator->bitpack_command[0].code = CTX_REL_LINE_TO;
-      iterator->bitpack_command[1].code = CTX_REL_LINE_TO;
-      iterator->bitpack_command[2].code = CTX_REL_LINE_TO;
+      iterator->bitpack_command[0].code =
+      iterator->bitpack_command[1].code =
+      iterator->bitpack_command[2].code =
       iterator->bitpack_command[3].code = CTX_REL_LINE_TO;
       goto again;
 
@@ -1624,13 +1623,13 @@ ctx_iterator_next (CtxIterator *iterator)
 
     case CTX_REL_QUAD_TO_REL_QUAD_TO:
       ctx_iterator_expand_s8_args (iterator, ret);
-      iterator->bitpack_command[0].code = CTX_REL_QUAD_TO;
+      iterator->bitpack_command[0].code =
       iterator->bitpack_command[2].code = CTX_REL_QUAD_TO;
       goto again;
 
     case CTX_REL_LINE_TO_X2:
       ctx_iterator_expand_s16_args (iterator, ret);
-      iterator->bitpack_command[0].code = CTX_REL_LINE_TO;
+      iterator->bitpack_command[0].code =
       iterator->bitpack_command[1].code = CTX_REL_LINE_TO;
       goto again;
 
@@ -1696,7 +1695,7 @@ ctx_iterator_next (CtxIterator *iterator)
 static void
 ctx_gstate_push (CtxState *state)
 {
-  if (state->gstate_no +1 >= CTX_MAX_STATES)
+  if (state->gstate_no + 1 >= CTX_MAX_STATES)
     return;
   state->gstate_stack[state->gstate_no] = state->gstate;
   state->gstate_no++;
@@ -2004,6 +2003,10 @@ ctx_u8 (CtxCode code,
   CtxEntry command = ctx_void (cmd); \
   ctx_process (ctx, &command);}while(0) \
 
+#define CTX_PROCESS_F(cmd, x, y) do {\
+  CtxEntry command = ctx_f(cmd, x, y);\
+  ctx_process (ctx, &command);}while(0)
+
 #define CTX_PROCESS_F1(cmd, x) do {\
   CtxEntry command = ctx_f(cmd, x, 0);\
   ctx_process (ctx, &command);}while(0)
@@ -2012,9 +2015,10 @@ ctx_u8 (CtxCode code,
   CtxEntry command = ctx_u32(cmd, x, y);\
   ctx_process (ctx, &command);}while(0)
 
-#define CTX_PROCESS_F(cmd, x, y) do {\
-  CtxEntry command = ctx_f(cmd, x, y);\
+#define CTX_PROCESS_U8(cmd, x) do {\
+  CtxEntry command = ctx_u8(cmd, x,0,0,0,0,0,0,0);\
   ctx_process (ctx, &command);}while(0)
+
 
 void
 ctx_close_path (Ctx *ctx)
@@ -2301,46 +2305,26 @@ void ctx_rel_move_to (Ctx *ctx, float x, float y)
   CTX_PROCESS_F (CTX_REL_MOVE_TO,x,y);
 }
 
-void ctx_set_line_cap (Ctx *ctx, CtxLineCap cap)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_LINE_CAP, cap,0,0,0,0,0,0,0);
-  ctx_process (ctx, &command);
+void ctx_set_line_cap (Ctx *ctx, CtxLineCap cap) {
+  CTX_PROCESS_U8 (CTX_SET_LINE_CAP, cap);
 }
-
-void ctx_set_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_FILL_RULE, fill_rule,0,0,0,0,0,0,0);
-  ctx_process (ctx, &command);
+void ctx_set_fill_rule (Ctx *ctx, CtxFillRule fill_rule) {
+  CTX_PROCESS_U8 (CTX_SET_FILL_RULE, fill_rule);
 }
-
-void ctx_set_line_join (Ctx *ctx, CtxLineJoin join)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_LINE_JOIN, join,0,0,0,0,0,0,0);
-  ctx_process (ctx, &command);
+void ctx_set_line_join (Ctx *ctx, CtxLineJoin join) {
+  CTX_PROCESS_U8 (CTX_SET_LINE_JOIN, join);
 }
-
-void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_COMPOSITING_MODE, mode,0,0,0,0,0,0,0);
-  ctx_process (ctx, &command);
+void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode) {
+  CTX_PROCESS_U8 (CTX_SET_COMPOSITING_MODE, mode);
 }
-
-void ctx_set_text_align (Ctx *ctx, CtxTextAlign text_align)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_TEXT_ALIGN, text_align,0,0,0,0,0,0,0);
-  ctx_process (ctx, &command);
+void ctx_set_text_align (Ctx *ctx, CtxTextAlign text_align) {
+  CTX_PROCESS_U8 (CTX_SET_TEXT_ALIGN, text_align);
 }
-
-void ctx_set_text_baseline (Ctx *ctx, CtxTextBaseline text_baseline)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_TEXT_BASELINE, text_baseline,0,0,0,0,0,0,0);
-  ctx_process (ctx, &command);
+void ctx_set_text_baseline (Ctx *ctx, CtxTextBaseline text_baseline) {
+  CTX_PROCESS_U8 (CTX_SET_TEXT_BASELINE, text_baseline);
 }
-
-void ctx_set_text_direction (Ctx *ctx, CtxTextDirection text_direction)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_TEXT_DIRECTION, text_direction,0,0,0,0,0,0,0);
-  ctx_process (ctx, &command);
+void ctx_set_text_direction (Ctx *ctx, CtxTextDirection text_direction) {
+  CTX_PROCESS_U8 (CTX_SET_TEXT_DIRECTION, text_direction);
 }
 
 void
@@ -2665,7 +2649,7 @@ ctx_matrix_inverse (CtxMatrix *m)
   CtxMatrix t = *m;
   float invdet, det = m->m[0][0] * m->m[1][1] -
                       m->m[1][0] * m->m[0][1];
-  if (det > -0.00001f && det < 0.00001f)
+  if (det > -0.0000001f && det < 0.0000001f)
   {
     m->m[0][0] = m->m[0][1] =
     m->m[1][0] = m->m[1][1] =
