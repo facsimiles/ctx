@@ -633,7 +633,7 @@ typedef enum
   CTX_FILL             = 'F',
   CTX_HOR_LINE_TO      = 'H', // SVG %
   CTX_ROTATE           = 'J', // float
-  CTX_SET_COLOR        = 'K', // u8
+  CTX_SET_COLOR        = 'K', //              [ byte, entries       ] 
   CTX_LINE_TO          = 'L', // SVG float x, y
   CTX_MOVE_TO          = 'M', // SVG float x, y
   CTX_SCALE            = 'O', // float, float
@@ -1042,30 +1042,44 @@ static void ctx_color_set_rgba_u8_ (CtxColor *color, const uint8_t *in)
   ctx_color_set_rgba_u8 (color, in[0], in[1], in[2], in[3]);
 }
 
-static void ctx_color_set_graya (CtxColor *color, const float *in)
+static void ctx_color_set_graya (CtxColor *color, float gray, float alpha)
 {
   color->got_types = CTX_HAS_GRAYA;
-  color->l = in[0];
-  color->alpha = in[1];
+  color->l = gray;
+  color->alpha = alpha;
+}
+static void ctx_color_set_graya_ (CtxColor *color, const float *in)
+{
+  return ctx_color_set_graya (color, in[0], in[1]);
 }
 
-static void ctx_color_set_rgba (CtxColor *color, const float *in)
+static void ctx_color_set_rgba (CtxColor *color, float r, float g, float b, float a)
 {
   color->got_types = CTX_HAS_RGBA;
-  color->red = in[0];
-  color->green = in[1];
-  color->blue = in[2];
-  color->alpha = in[3];
+  color->red = r;
+  color->green = g;
+  color->blue = b;
+  color->alpha = a;
 }
 
-static void ctx_color_set_cmyk (CtxColor *color, const float *in)
+static void ctx_color_set_rgba_ (CtxColor *color, const float *in)
+{
+  ctx_color_set_rgba (color, in[0], in[1], in[2], in[3]);
+}
+
+static void ctx_color_set_cmyka (CtxColor *color, float c, float m, float y, float k, float a)
 {
   color->got_types = CTX_HAS_CMYKA;
-  color->cyan = in[0];
-  color->magenta = in[1];
-  color->yellow = in[2];
-  color->key = in[3];
-  color->alpha = in[4];
+  color->cyan = c;
+  color->magenta = m;
+  color->yellow = y;
+  color->key = k;
+  color->alpha = a;
+}
+
+static void ctx_color_set_cmyka_ (CtxColor *color, const float *in)
+{
+  ctx_color_set_cmyka (color, in[0], in[1], in[2], in[3], in[3]);
 }
 
 static void ctx_color_get_rgba (CtxColor *color, float *out)
@@ -1581,6 +1595,7 @@ ctx_conts_for_entry (CtxEntry *entry)
     case CTX_CURVE_TO:
     case CTX_REL_CURVE_TO:
     case CTX_SET_TRANSFORM:
+    case CTX_SET_COLOR:
       return 2;
     case CTX_RECTANGLE:
     case CTX_REL_QUAD_TO:
@@ -1853,6 +1868,7 @@ ctx_iterator_next (CtxIterator *iterator)
       goto again;
 
     case CTX_ARC:
+    case CTX_SET_COLOR:
     case CTX_RADIAL_GRADIENT:
     case CTX_CURVE_TO:
     case CTX_REL_CURVE_TO:
@@ -2707,6 +2723,7 @@ ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_
 
 void ctx_set_rgba (Ctx *ctx, float r, float g, float b, float a)
 {
+#if 0
   int ir = r * 255;
   int ig = g * 255;
   int ib = b * 255;
@@ -2716,6 +2733,13 @@ void ctx_set_rgba (Ctx *ctx, float r, float g, float b, float a)
   ib = CTX_CLAMP(ib, 0,255);
   ia = CTX_CLAMP(ia, 0,255);
   ctx_set_rgba_u8 (ctx, ir, ig, ib, ia);
+#else
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_RGBA, 0.0f),
+     ctx_f (CTX_CONT, r, g),
+     ctx_f (CTX_CONT, b, a)};
+  ctx_process (ctx, command);
+#endif
 }
 
 void ctx_set_rgb (Ctx *ctx, float   r, float   g, float   b)
@@ -2725,10 +2749,14 @@ void ctx_set_rgb (Ctx *ctx, float   r, float   g, float   b)
 
 void ctx_set_gray (Ctx *ctx, float gray)
 {
-  ctx_set_rgba (ctx, gray, gray, gray, 1.0f);
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_GRAY, 0.0f),
+     ctx_f (CTX_CONT, gray, 0.0f),
+     ctx_f (CTX_CONT, 0.0f, 0.0f)};
+  ctx_process (ctx, command);
 }
 
-void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k)
+void ctx_set_cmyk (Ctx *ctx, float c, float m, float y, float k)
 {
   CtxEntry command[3]={
      ctx_f (CTX_SET_COLOR, CTX_CMYKA, 1.0f),
@@ -2911,6 +2939,33 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
     case CTX_SET_MITER_LIMIT:
       state->gstate.miter_limit = ctx_arg_float(0);
       break;
+    case CTX_SET_COLOR:
+      {
+        CtxColor *color = &state->gstate.source.color;
+        state->gstate.source.type = CTX_SOURCE_COLOR;
+        switch ((int)ctx_arg_float(0)){
+          case CTX_RGB:
+            ctx_color_set_rgba (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), 1.0f);
+          break;
+        case CTX_RGBA:
+            ctx_color_set_rgba (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
+          break;
+        case CTX_CMYKA:
+            ctx_color_set_cmyka (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), ctx_arg_float(1));
+        break;
+          case CTX_CMYK:
+            ctx_color_set_cmyka (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), 1.0);
+          break;
+        case CTX_GRAYA:
+          ctx_color_set_graya (color, ctx_arg_float(2), ctx_arg_float(3));
+          break;
+        case CTX_GRAY:
+          ctx_color_set_graya (color, ctx_arg_float(2), 1.0f);
+          break;
+      }
+      }
+      break;
+
     case CTX_SET_RGBA_U8:
       //ctx_source_deinit (&state->gstate.source);
       state->gstate.source.type = CTX_SOURCE_COLOR;
@@ -8760,6 +8815,41 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                              ctx_arg_u8(1)/255.0,
                              ctx_arg_u8(2)/255.0,
                              ctx_arg_u8(3)/255.0);
+        break;
+
+
+      case CTX_SET_COLOR:
+        switch ((int)ctx_arg_float(0))
+        {
+          case CTX_RGBA:
+           ctx_set_rgba (d_ctx, ctx_arg_float(2),
+                                ctx_arg_float(3),
+                                ctx_arg_float(4),
+                                ctx_arg_float(5));
+           break;
+          case CTX_GRAY:
+           ctx_set_gray (d_ctx, ctx_arg_float(2));
+           break;
+          case CTX_RGB:
+           ctx_set_rgb (d_ctx, ctx_arg_float(2),
+                               ctx_arg_float(3),
+                               ctx_arg_float(4));
+           break;
+          case CTX_CMYKA:
+           ctx_set_cmyka (d_ctx, ctx_arg_float(2),
+                                 ctx_arg_float(3),
+                                 ctx_arg_float(4),
+                                 ctx_arg_float(5),
+                                 ctx_arg_float(1));
+           break;
+          case CTX_CMYK:
+           ctx_set_cmyka (d_ctx, ctx_arg_float(2),
+                                 ctx_arg_float(3),
+                                 ctx_arg_float(4),
+                                 ctx_arg_float(5),
+                                 1.0f);
+           break;
+        }
         break;
 
 #if 0
