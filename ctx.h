@@ -153,6 +153,8 @@ void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
 void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
 void ctx_set_gray       (Ctx *ctx, float gray);
+void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k);
+void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a);
 
 void ctx_current_point  (Ctx *ctx, float *x, float *y);
 float ctx_x             (Ctx *ctx);
@@ -2724,6 +2726,24 @@ void ctx_set_rgb (Ctx *ctx, float   r, float   g, float   b)
 void ctx_set_gray (Ctx *ctx, float gray)
 {
   ctx_set_rgba (ctx, gray, gray, gray, 1.0f);
+}
+
+void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_CMYKA, 1.0f),
+     ctx_f (CTX_CONT, c, m),
+     ctx_f (CTX_CONT, y, k)};
+  ctx_process (ctx, command);
+}
+
+void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_CMYKA, a),
+     ctx_f (CTX_CONT, c, m),
+     ctx_f (CTX_CONT, y, k)};
+  ctx_process (ctx, command);
 }
 
 #if 0
@@ -9884,6 +9904,42 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
     case CTX_SET_COLOR:
       {
         float red, green, blue, alpha;
+
+#if 0
+        switch (parser->color_model)
+        {
+          case CTX_GRAYA:
+             ctx_set
+      *alpha = parser->numbers[offset + 1];
+    case CTX_GRAY:
+      *red = *green = *blue = parser->numbers[offset + 0];
+      break;
+    default:
+    case CTX_LABA: // NYI - needs RGB profile
+    case CTX_LCHA: // NYI - needs RGB profile
+    case CTX_RGBA:
+      *alpha = parser->numbers[offset + 3];
+    case CTX_LAB: // NYI
+    case CTX_LCH: // NYI
+    case CTX_RGB:
+      *red = parser->numbers[offset + 0];
+      *green = parser->numbers[offset + 1];
+      *blue = parser->numbers[offset + 2];
+    break;
+
+    case CTX_CMYKA:
+      *alpha = parser->numbers[offset + 4];
+    case CTX_CMYK:
+      /* should use profile instead  */
+      *red = (1.0-parser->numbers[offset + 0]) *
+               (1.0 - parser->numbers[offset + 3]);
+      *green = (1.0-parser->numbers[offset + 1]) *
+                 (1.0 - parser->numbers[offset + 3]);
+      *blue = (1.0-parser->numbers[offset + 2]) *
+                 (1.0 - parser->numbers[offset + 3]);
+        }
+#endif
+
         ctx_parser_get_color_rgba (parser, 0, &red, &green, &blue, &alpha);
         ctx_set_rgba (ctx, red, green, blue, alpha);
       }
