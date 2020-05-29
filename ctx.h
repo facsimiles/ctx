@@ -597,6 +597,10 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #define CTX_EXTRAS  0
 #endif
 
+#ifndef CTX_RENDER_CTX
+#define CTX_RENDER_CTX  1
+#endif
+
 #define CTX_ASSERT 0
 
 #if CTX_ASSERT==1
@@ -1238,6 +1242,7 @@ struct _CtxFont
              //int16_t glyph_pos[26]; // for a..z
              int       glyphs; // number of glyphs
              uint32_t *index;  // index for jumping into data-stream
+                               // maybe this index can be shared with stb?
            } ctx;
 #if CTX_FONT_ENGINE_STB
     struct { stbtt_fontinfo ttf_info;
@@ -7808,8 +7813,6 @@ uint32_t ctx_glyph_no (Ctx *ctx, int no)
 
 static void ctx_font_init_ctx (CtxFont *font)
 {
-  /* XXX : it would be better if we baked the index into the font/file?
-             */
   int glyph_count = 0;
   for (int i = 0; i < font->ctx.length; i++)
   {
@@ -7979,11 +7982,11 @@ _ctx_text (Ctx        *ctx,
   switch (state->gstate.text_baseline)
   {
     case CTX_TEXT_BASELINE_HANGING:
-            /* XXX : this is a crude attempt  */
+            /* XXX : crude */
       baseline_offset = ctx->state.gstate.font_size * 0.55;
       break;
     case CTX_TEXT_BASELINE_TOP:
-            /* XXX : this is a crude attempt  */
+            /* XXX : crude */
       baseline_offset = ctx->state.gstate.font_size * 0.7;
       break;
     case CTX_TEXT_BASELINE_BOTTOM:
@@ -8104,6 +8107,72 @@ void
 ctx_gradient_clear_stops (Ctx *ctx)
 {
    CTX_PROCESS_VOID (CTX_GRADIENT_CLEAR);
+}
+
+static void ctx_setup ()
+{
+  static int initialized = 0;
+  if (initialized) return;
+  initialized = 1;
+
+#if CTX_FONT_ENGINE_CTX
+  ctx_font_count = 0; // oddly - this is needed in arduino
+#if CTX_FONT_regular
+  ctx_load_font_ctx ("sans-ctx", ctx_font_regular, sizeof (ctx_font_regular));
+#endif
+#if CTX_FONT_mono
+  ctx_load_font_ctx ("mono-ctx", ctx_font_mono, sizeof (ctx_font_mono));
+#endif
+#if CTX_FONT_bold
+  ctx_load_font_ctx ("bold-ctx", ctx_font_bold, sizeof (ctx_font_bold));
+#endif
+#if CTX_FONT_italic
+  ctx_load_font_ctx ("italic-ctx", ctx_font_italic, sizeof (ctx_font_italic));
+#endif
+#if CTX_FONT_sans
+  ctx_load_font_ctx ("sans-ctx", ctx_font_sans, sizeof (ctx_font_sans));
+#endif
+#if CTX_FONT_serif
+  ctx_load_font_ctx ("serif-ctx", ctx_font_serif, sizeof (ctx_font_serif));
+#endif
+#if CTX_FONT_symbol
+  ctx_load_font_ctx ("symbol-ctx", ctx_font_symbol, sizeof (ctx_font_symbol));
+#endif
+#if CTX_FONT_emoji
+  ctx_load_font_ctx ("emoji-ctx", ctx_font_emoji, sizeof (ctx_font_emoji));
+#endif
+#endif
+#if CTX_FONT_sgi
+  ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
+#endif
+#if DEJAVU_SANS_MONO
+  ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf, ttf_DejaVuSansMono_ttf_len);
+#endif
+#if NOTO_EMOJI_REGULAR
+  ctx_load_font_ttf ("sans-NotoEmoji_Regular", ttf_NotoEmoji_Regular_ttf, ttf_NotoEmoji_Regular_ttf_len);
+#endif
+#if ROBOTO_LIGHT
+  ctx_load_font_ttf ("sans-Roboto_Light", ttf_Roboto_Light_ttf, ttf_Roboto_Light_ttf_len);
+#endif
+#if ROBOTO_REGULAR
+  ctx_load_font_ttf ("sans-Roboto_Regular", ttf_Roboto_Regular_ttf, ttf_Roboto_Regular_ttf_len);
+#endif
+#if ROBOTO_BOLD
+  ctx_load_font_ttf ("sans-Roboto_Bold", ttf_Roboto_Bold_ttf, ttf_Roboto_Bold_ttf_len);
+#endif
+#if DEJAVU_SANS
+  ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf, ttf_DejaVuSans_ttf_len);
+#endif
+#if VERA
+  ctx_load_font_ttf ("sans-Vera", ttf_Vera_ttf, ttf_Vera_ttf_len);
+#endif
+#if UNSCII_16
+  ctx_load_font_ttf ("mono-unscii16", ttf_unscii_16_ttf, ttf_unscii_16_ttf_len);
+#endif
+
+#if XA000_MONO
+  ctx_load_font_ttf ("mono-0xA000", ttf_0xA000_Mono_ttf, ttf_0xA000_Mono_ttf_len);
+#endif
 }
 
 #if CTX_CAIRO
@@ -8403,6 +8472,8 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 }
 #endif
 
+#if CTX_RENDER_CTX 
+
 void
 ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 {
@@ -8592,72 +8663,8 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
     }
   }
 }
-
-static void ctx_setup ()
-{
-  static int initialized = 0;
-  if (initialized) return;
-  initialized = 1;
-
-#if CTX_FONT_ENGINE_CTX
-  ctx_font_count = 0; // oddly - this is needed in arduino
-#if CTX_FONT_regular
-  ctx_load_font_ctx ("sans-ctx", ctx_font_regular, sizeof (ctx_font_regular));
-#endif
-#if CTX_FONT_mono
-  ctx_load_font_ctx ("mono-ctx", ctx_font_mono, sizeof (ctx_font_mono));
-#endif
-#if CTX_FONT_bold
-  ctx_load_font_ctx ("bold-ctx", ctx_font_bold, sizeof (ctx_font_bold));
-#endif
-#if CTX_FONT_italic
-  ctx_load_font_ctx ("italic-ctx", ctx_font_italic, sizeof (ctx_font_italic));
-#endif
-#if CTX_FONT_sans
-  ctx_load_font_ctx ("sans-ctx", ctx_font_sans, sizeof (ctx_font_sans));
-#endif
-#if CTX_FONT_serif
-  ctx_load_font_ctx ("serif-ctx", ctx_font_serif, sizeof (ctx_font_serif));
-#endif
-#if CTX_FONT_symbol
-  ctx_load_font_ctx ("symbol-ctx", ctx_font_symbol, sizeof (ctx_font_symbol));
-#endif
-#if CTX_FONT_emoji
-  ctx_load_font_ctx ("emoji-ctx", ctx_font_emoji, sizeof (ctx_font_emoji));
-#endif
-#endif
-#if CTX_FONT_sgi
-  ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
-#endif
-#if DEJAVU_SANS_MONO
-  ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf, ttf_DejaVuSansMono_ttf_len);
-#endif
-#if NOTO_EMOJI_REGULAR
-  ctx_load_font_ttf ("sans-NotoEmoji_Regular", ttf_NotoEmoji_Regular_ttf, ttf_NotoEmoji_Regular_ttf_len);
-#endif
-#if ROBOTO_LIGHT
-  ctx_load_font_ttf ("sans-Roboto_Light", ttf_Roboto_Light_ttf, ttf_Roboto_Light_ttf_len);
-#endif
-#if ROBOTO_REGULAR
-  ctx_load_font_ttf ("sans-Roboto_Regular", ttf_Roboto_Regular_ttf, ttf_Roboto_Regular_ttf_len);
-#endif
-#if ROBOTO_BOLD
-  ctx_load_font_ttf ("sans-Roboto_Bold", ttf_Roboto_Bold_ttf, ttf_Roboto_Bold_ttf_len);
-#endif
-#if DEJAVU_SANS
-  ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf, ttf_DejaVuSans_ttf_len);
-#endif
-#if VERA
-  ctx_load_font_ttf ("sans-Vera", ttf_Vera_ttf, ttf_Vera_ttf_len);
-#endif
-#if UNSCII_16
-  ctx_load_font_ttf ("mono-unscii16", ttf_unscii_16_ttf, ttf_unscii_16_ttf_len);
 #endif
 
-#if XA000_MONO
-  ctx_load_font_ttf ("mono-0xA000", ttf_0xA000_Mono_ttf, ttf_0xA000_Mono_ttf_len);
-#endif
-}
 
 #if CTX_FORMATTER
 
@@ -8843,8 +8850,8 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
         case CTX_SET_LINE_JOIN:
           switch (val)
           {
-            case CTX_JOIN_MITER:    str = "miter";   break;
-            case CTX_JOIN_ROUND:    str = "round";  break;
+            case CTX_JOIN_MITER:    str = "miter"; break;
+            case CTX_JOIN_ROUND:    str = "round"; break;
             case CTX_JOIN_BEVEL:    str = "bevel"; break;
           }
           break;
