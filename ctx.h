@@ -5581,13 +5581,13 @@ ctx_associated_rgba_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst,
   }
   else
   {
-    const uint8_t *color = renderer->state->gstate.source.color.rgba;
     float color_f[components];
-    for (int c = 0; c < components; c++)
-      color_f[c]=color[c]/255.0f;  // XXX ; lacks gamma
-    color_f[components-1] *= (renderer->state->gstate.source.color.rgba[3]/255.0f);
-    for (int c = 0; c < components-1; c++)
+
+    ctx_color_get_rgba (&renderer->state->gstate.source.color, color_f);
+
+    for (int c = 0; c < components-1; c++) // associate alpha
       color_f[c] *= color_f[components-1];
+
     for (int x = 0; x < count; x++)
     {
       float cov = coverage[x]/255.0f;
@@ -6247,7 +6247,9 @@ ctx_renderer_pset (CtxRenderer *renderer, int x, int y, uint8_t cov)
   if (x <= 0 || y < 0 || x >= renderer->blit_width ||
                          y >= renderer->blit_height)
     return;
-  uint8_t *fg_color = renderer->state->gstate.source.color.rgba;
+  uint8_t fg_color[4];
+  ctx_color_get_rgba_u8 (&renderer->state->gstate.source.color, fg_color);
+
   uint8_t pixel[4];
   uint8_t *dst = ((uint8_t*)renderer->buf);
   dst += y * renderer->blit_stride;
@@ -6664,10 +6666,7 @@ ctx_renderer_set_pixel (CtxRenderer *renderer,
                         uint8_t a)
 {
   renderer->state->gstate.source.type = CTX_SOURCE_COLOR;
-  renderer->state->gstate.source.color.rgba[0] = r;
-  renderer->state->gstate.source.color.rgba[1] = g;
-  renderer->state->gstate.source.color.rgba[2] = b;
-  renderer->state->gstate.source.color.rgba[3] = a;
+  ctx_color_set_rgba_u8 (&renderer->state->gstate.source.color, r, g, b, a);
 
 #if 1
   ctx_renderer_pset (renderer, x, y, 255);
