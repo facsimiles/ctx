@@ -743,9 +743,6 @@ typedef enum
   CTX_REL_QUAD_TO_REL_QUAD_TO   = '8',
   CTX_REL_QUAD_TO_S16           = '9',
 #endif
-
-
-
 } CtxCode;
 
 typedef enum {
@@ -1057,10 +1054,12 @@ static void ctx_color_set_rgba_u8 (CtxColor *color, uint8_t r, uint8_t g, uint8_
   color->rgba[3] = a;
 }
 
+#if 0
 static void ctx_color_set_rgba_u8_ (CtxColor *color, const uint8_t *in)
 {
   ctx_color_set_rgba_u8 (color, in[0], in[1], in[2], in[3]);
 }
+#endif
 
 static void ctx_color_set_graya (CtxColor *color, float gray, float alpha)
 {
@@ -1068,10 +1067,12 @@ static void ctx_color_set_graya (CtxColor *color, float gray, float alpha)
   color->l = gray;
   color->alpha = alpha;
 }
+#if 0
 static void ctx_color_set_graya_ (CtxColor *color, const float *in)
 {
   return ctx_color_set_graya (color, in[0], in[1]);
 }
+#endif
 
 static void ctx_color_set_rgba (CtxColor *color, float r, float g, float b, float a)
 {
@@ -1082,10 +1083,12 @@ static void ctx_color_set_rgba (CtxColor *color, float r, float g, float b, floa
   color->alpha = a;
 }
 
+#if 0
 static void ctx_color_set_rgba_ (CtxColor *color, const float *in)
 {
   ctx_color_set_rgba (color, in[0], in[1], in[2], in[3]);
 }
+#endif
 
 #if CTX_ENABLE_CMYK
 static void ctx_color_set_cmyka (CtxColor *color, float c, float m, float y, float k, float a)
@@ -1098,10 +1101,13 @@ static void ctx_color_set_cmyka (CtxColor *color, float c, float m, float y, flo
   color->alpha = a;
 }
 
+#if 0
 static void ctx_color_set_cmyka_ (CtxColor *color, const float *in)
 {
   ctx_color_set_cmyka (color, in[0], in[1], in[2], in[3], in[4]);
 }
+#endif
+
 #endif
 
 static void ctx_color_get_rgba (CtxColor *color, float *out)
@@ -1186,6 +1192,7 @@ static void ctx_color_get_cmyka (CtxColor *color, float *out)
   out[4] = color->alpha;
 }
 
+#if 0
 static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
 {
   if (!(color->got_types & CTX_HAS_CMYKA_U8))
@@ -1201,6 +1208,8 @@ static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
   out[2] = color->cmyka[2];
   out[3] = color->cmyka[3];
 }
+#endif
+
 
 #endif
 
@@ -1220,6 +1229,7 @@ static void ctx_color_get_rgba_u8 (CtxColor *color, uint8_t *out)
   out[3] = color->rgba[3];
 }
 
+#if 0
 static void ctx_color_get_graya_u8 (CtxColor *color, uint8_t *out)
 {
   if (!(color->got_types & CTX_HAS_GRAYA_U8))
@@ -1233,6 +1243,7 @@ static void ctx_color_get_graya_u8 (CtxColor *color, uint8_t *out)
   out[0] = color->l_u8;
   out[1] = color->rgba[3];
 }
+#endif
 
 
 struct _CtxSource
@@ -9553,7 +9564,6 @@ static int ctx_arguments_for_code (CtxCode code)
   case CTX_VER_LINE_TO:
   case CTX_SET_FONT:
   case CTX_ROTATE:
-  case CTX_DEFUN:
     return 1;
   case CTX_TRANSLATE:
   case CTX_REL_SMOOTHQ_TO:
@@ -9594,6 +9604,8 @@ static int ctx_arguments_for_code (CtxCode code)
   case CTX_GRADIENT_STOP:
     return 201;  /* 201 means number of components+1 */
 
+  case CTX_DEFUN: /* special interpretation   */
+    return 300;
     default:
 #if 0
   case CTX_TEXTURE:
@@ -9694,8 +9706,11 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
   switch (str_hash)
   {
+#define CTX_ENABLE_DEFUN 1
+#if CTX_ENABLE_DEFUN
     case STR('d','e','f','u','n',0,0,0,0,0,0,0): str_hash = CTX_DEFUN; break;
     case STR('e','n','d','f','u','n',0,0,0,0,0,0): str_hash = CTX_ENDFUN; break;
+#endif
 
     /* first a list of mappings to one_char hashes, handled in a
      * separate fast path switch without hashing
@@ -10402,6 +10417,54 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
   }
 }
 
+static void ctx_parser_word_done (CtxParser *parser)
+{
+  parser->holding[parser->pos]=0;
+  int command = ctx_parser_resolve_command (parser, parser->holding);
+
+  if (command >= 0 && command < 10) // special case low enum values
+  {
+    parser->numbers[parser->n_numbers] = command;
+    parser->state = CTX_PARSER_NUMBER;
+    ctx_parser_feed_byte (parser, ',');
+  }
+  else if (command > 0)
+  {
+     parser->command = command;
+     if (parser->n_args == 0)
+     {
+       ctx_parser_dispatch_command (parser);
+     }
+  }
+  else
+  {
+    /* interpret char by char */
+    uint8_t buf[16]=" ";
+    for (int i = 0; parser->pos && parser->holding[i] > ' '; i++)
+    {
+       buf[0] = parser->holding[i];
+       parser->command = ctx_parser_resolve_command (parser, buf);
+       if (parser->command > 0)
+       {
+         if (parser->n_args == 0)
+         {
+           ctx_parser_dispatch_command (parser);
+         }
+       }
+       else
+       {
+         ctx_log ("unhandled command '%c'\n", buf[0]);
+       }
+    }
+  }
+  parser->n_numbers = 0;
+}
+
+static void ctx_parser_string_done (CtxParser *parser)
+{
+  ctx_parser_dispatch_command (parser);
+}
+
 void ctx_parser_feed_byte (CtxParser *parser, int byte)
 {
   switch (byte)
@@ -10580,45 +10643,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
       }
       if (parser->state != CTX_PARSER_WORD)
       {
-        parser->holding[parser->pos]=0;
-        int command = ctx_parser_resolve_command (parser, parser->holding);
-
-        if (command >= 0 && command < 10) // special case low enum values
-        {
-          parser->numbers[parser->n_numbers] = command;
-          parser->state = CTX_PARSER_NUMBER;
-          ctx_parser_feed_byte (parser, ',');
-        }
-        else if (command > 0)
-        {
-           parser->command = command;
-           if (parser->n_args == 0)
-           {
-             ctx_parser_dispatch_command (parser);
-           }
-        }
-        else
-        {
-          /* interpret char by char */
-          uint8_t buf[16]=" ";
-          for (int i = 0; parser->pos && parser->holding[i] > ' '; i++)
-          {
-             buf[0] = parser->holding[i];
-             parser->command = ctx_parser_resolve_command (parser, buf);
-             if (parser->command > 0)
-             {
-               if (parser->n_args == 0)
-               {
-                 ctx_parser_dispatch_command (parser);
-               }
-             }
-             else
-             {
-               ctx_log ("unhandled command '%c'\n", buf[0]);
-             }
-          }
-        }
-        parser->n_numbers = 0;
+        ctx_parser_word_done (parser);
       }
       break;
 
@@ -10630,7 +10655,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
             break;
          case '\'':
             parser->state = CTX_PARSER_NEUTRAL;
-            ctx_parser_dispatch_command (parser);
+            ctx_parser_string_done (parser);
             break;
          default:
             ctx_parser_holding_append (parser, byte);
@@ -10677,7 +10702,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
             break;
          case '"':
             parser->state = CTX_PARSER_NEUTRAL;
-            ctx_parser_dispatch_command (parser);
+            ctx_parser_string_done (parser);
             break;
          default:
             ctx_parser_holding_append (parser, byte);
