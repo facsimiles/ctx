@@ -46,7 +46,8 @@ typedef enum
   CTX_FORMAT_GRAYF,
   CTX_FORMAT_GRAY1,
   CTX_FORMAT_GRAY2,
-  CTX_FORMAT_GRAY4
+  CTX_FORMAT_GRAY4,
+  CTX_FORMAT_CMYKAF
 } CtxPixelFormat;
 
 typedef struct _Ctx Ctx;
@@ -493,6 +494,12 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 
 #ifndef CTX_ENABLE_CMYK
 #define CTX_ENABLE_CMYK  1
+#endif
+
+#if CTX_ENABLE_CMYK
+#ifndef CTX_ENABLE_CMYKAF
+#define CTX_ENABLE_CMYKAF 1
+#endif
 #endif
 
 /* by default ctx includes all pixel formats, on microcontrollers
@@ -5145,7 +5152,7 @@ ctx_sample_gradient_1d_u8 (CtxRenderer *renderer, float v, uint8_t *rgba)
 
 
 static void
-ctx_sample_source_u8_image (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_image (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
 {
   CtxSource *g = &renderer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
@@ -5211,7 +5218,7 @@ static inline void ctx_dither_rgba_u8 (uint8_t *rgba, int x, int y, int dither_r
 #endif
 
 static void
-ctx_sample_source_u8_image_rgba (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_image_rgba (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
 {
   CtxSource *g = &renderer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
@@ -5242,7 +5249,7 @@ ctx_sample_source_u8_image_rgba (CtxRenderer *renderer, float x, float y, uint8_
 }
 
 static void
-ctx_sample_source_u8_image_1bit (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_image_1bit (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
 {
   CtxSource *g = &renderer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
@@ -5275,7 +5282,7 @@ ctx_sample_source_u8_image_1bit (CtxRenderer *renderer, float x, float y, uint8_
 }
 
 static void
-ctx_sample_source_u8_image_rgb (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_image_rgb (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
 {
   CtxSource *g = &renderer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
@@ -5308,7 +5315,7 @@ ctx_sample_source_u8_image_rgb (CtxRenderer *renderer, float x, float y, uint8_t
 
 
 static void
-ctx_sample_source_u8_radial_gradient (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_radial_gradient (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
 {
   CtxSource *g = &renderer->state->gstate.source;
   float v = 0.0f;
@@ -5332,7 +5339,7 @@ ctx_sample_source_u8_radial_gradient (CtxRenderer *renderer, float x, float y, u
 
 
 static void
-ctx_sample_source_u8_linear_gradient (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_linear_gradient (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
 {
   CtxSource *g = &renderer->state->gstate.source;
   float v = (((g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
@@ -5349,7 +5356,7 @@ ctx_sample_source_u8_linear_gradient (CtxRenderer *renderer, float x, float y, u
 
 
 static void
-ctx_sample_source_u8_color (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_color (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
 {
   CtxSource *g = &renderer->state->gstate.source;
   ctx_color_get_rgba_u8 (&g->color, rgba);
@@ -5357,7 +5364,7 @@ ctx_sample_source_u8_color (CtxRenderer *renderer, float x, float y, uint8_t *rg
 
 typedef void (*CtxSourceU8)(CtxRenderer *renderer, float x, float y, uint8_t *rgba);
 
-static CtxSourceU8 ctx_renderer_get_source_u8 (CtxRenderer *renderer)
+static CtxSourceU8 ctx_renderer_get_source_rgba_u8 (CtxRenderer *renderer)
 {
   CtxGState *gstate = &renderer->state->gstate;
   CtxBuffer *buffer = gstate->source.image.buffer;
@@ -5367,24 +5374,24 @@ static CtxSourceU8 ctx_renderer_get_source_u8 (CtxRenderer *renderer)
       switch (buffer->format->bpp)
       {
         case 1:
-          return ctx_sample_source_u8_image_1bit;
+          return ctx_sample_source_rgba_u8_image_1bit;
         //case 2:
-        //  return ctx_sample_source_u8_image_2bit;
+        //  return ctx_sample_source_rgba_u8_image_2bit;
         case 24:
-          return ctx_sample_source_u8_image_rgb;
+          return ctx_sample_source_rgba_u8_image_rgb;
         case 32:
-          return ctx_sample_source_u8_image_rgba;
+          return ctx_sample_source_rgba_u8_image_rgba;
         default:
-          return ctx_sample_source_u8_image;
+          return ctx_sample_source_rgba_u8_image;
       }
     case CTX_SOURCE_COLOR:
-      return ctx_sample_source_u8_color;
+      return ctx_sample_source_rgba_u8_color;
     case CTX_SOURCE_LINEAR_GRADIENT:
-      return ctx_sample_source_u8_linear_gradient;
+      return ctx_sample_source_rgba_u8_linear_gradient;
     case CTX_SOURCE_RADIAL_GRADIENT:
-      return ctx_sample_source_u8_radial_gradient;
+      return ctx_sample_source_rgba_u8_radial_gradient;
   }
-  return ctx_sample_source_u8_color;
+  return ctx_sample_source_rgba_u8_color;
 }
 
 #define MASK_ALPHA       (0xff << 24)
@@ -5407,7 +5414,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t * restrict dst, uint8
 
   if (gstate->source.type != CTX_SOURCE_COLOR)
   {
-    CtxSourceU8 source = ctx_renderer_get_source_u8 (renderer);
+    CtxSourceU8 source = ctx_renderer_get_source_rgba_u8 (renderer);
     float y = renderer->scanline / CTX_RASTERIZER_AA;
     for (int x = 0; x < count; x++)
     {
@@ -5534,7 +5541,7 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *restrict dst, uint8_
 
   if (gstate->source.type != CTX_SOURCE_COLOR)
   {
-    CtxSourceU8 source = ctx_renderer_get_source_u8 (renderer);
+    CtxSourceU8 source = ctx_renderer_get_source_rgba_u8 (renderer);
     float y = renderer->scanline / CTX_RASTERIZER_AA;
     for (int x = 0; x < count; x++)
     {
@@ -5632,8 +5639,8 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, u
   float gray = graya[0];
   float alpha = graya[1];
 
-  CtxSourceU8 source = ctx_renderer_get_source_u8 (renderer);
-  if (source == ctx_sample_source_u8_color) source = NULL;
+  CtxSourceU8 source = ctx_renderer_get_source_rgba_u8 (renderer);
+  if (source == ctx_sample_source_rgba_u8_color) source = NULL;
 
   for (int x = 0; x < count; x++)
   {
@@ -5675,8 +5682,8 @@ ctx_associated_rgba_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst,
   float *dst_f = (float*)dst;
   float y = renderer->scanline / CTX_RASTERIZER_AA;
 
-  CtxSourceU8 source = ctx_renderer_get_source_u8 (renderer);
-  if (source == ctx_sample_source_u8_color) source = NULL;
+  CtxSourceU8 source = ctx_renderer_get_source_rgba_u8 (renderer);
+  if (source == ctx_sample_source_rgba_u8_color) source = NULL;
 
   if (source)
   {
@@ -5687,6 +5694,71 @@ ctx_associated_rgba_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst,
       if (cov != 0.0f)
       {
         uint8_t scolor[4];
+        source (renderer, x0 + x, y, &scolor[0]);
+        for (int c = 0; c < components; c++)
+          color_f[c]=scolor[c]/255.0f;  // XXX ; lacks gamma handling
+
+        color_f[3] *= (scolor[components-1] * renderer->state->gstate.global_alpha/255.0f);
+        for (int c = 0; c < components-1; c++)
+          color_f[c] *= color_f[components-1];
+
+        float ralpha = 1.0f - color_f[components-1] * cov;
+        for (int c = 0; c < components; c++)
+          dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
+      }
+      dst_f += components;
+    }
+  }
+  else
+  {
+    float color_f[components];
+
+    ctx_color_get_rgba (&renderer->state->gstate.source.color, color_f);
+
+    for (int c = 0; c < components-1; c++) // associate alpha
+      color_f[c] *= color_f[components-1];
+
+    for (int x = 0; x < count; x++)
+    {
+      float cov = coverage[x]/255.0f;
+      if (cov != 0.0f)
+      {
+        float ralpha = 1.0f - color_f[components-1] * cov;
+        for (int c = 0; c < components; c++)
+          dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
+      }
+      dst_f += components;
+    }
+  }
+  return count;
+}
+#endif
+
+#if CTX_ENABLE_CMYKAF
+static int
+ctx_associated_cmyka_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+{
+  int components = 5;  // this makes it mostly adapted to become
+                       // a generalized floating point ver..
+                       // for components == 1-4 assume RGB color source
+                       // for more components - use alternate generic
+                       // source setting, which permits operation with
+                       // non RGB color models.
+  float *dst_f = (float*)dst;
+  float y = renderer->scanline / CTX_RASTERIZER_AA;
+
+  CtxSourceU8 source = ctx_renderer_get_source_rgba_u8 (renderer);
+  if (source == ctx_sample_source_rgba_u8_color) source = NULL;
+
+  if (source)
+  {
+    float color_f[components];
+    for (int x = 0; x < count; x++)
+    {
+      float cov = coverage[x]/255.0f;
+      if (cov != 0.0f)
+      {
+        uint8_t scolor[5];
         source (renderer, x0 + x, y, &scolor[0]);
         for (int c = 0; c < components; c++)
           color_f[c]=scolor[c]/255.0f;  // XXX ; lacks gamma handling
@@ -7435,9 +7507,14 @@ ctx_renderer_deinit (CtxRenderer *renderer)
 
 static CtxPixelFormatInfo ctx_pixel_formats[]=
 {
-  // format      ,comp,bitperpx, effective_bytes_per_pixel
   {CTX_FORMAT_RGBA8, 4, 32, 4, 0, 0,
   NULL, NULL, ctx_b2f_over_RGBA8 },
+
+#if CTX_ENABLE_CMYKAF
+  {CTX_FORMAT_CMYKAF, 5, 160, 4 * 5, 0, 0,
+   NULL, NULL, ctx_associated_cmyka_float_b2f_over },
+#endif
+
 #if CTX_ENABLE_BGRA8
   {CTX_FORMAT_BGRA8, 4, 32, 4, 0, 0,
    ctx_decode_pixels_BGRA8, ctx_encode_pixels_BGRA8, ctx_b2f_over_BGRA8 },
