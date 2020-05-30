@@ -2906,27 +2906,10 @@ ctx_rel_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
   ctx_arc_to (ctx, x1, y1, x2, y2, radius);
 }
 
-#if 0
-void
-ctx_set_rgba_stroke_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_RGBA_STROKE, r, g, b, a, 0, 0, 0, 0);
-
-  // XXX turn it into a no-op if the color matches color
-  //     in state
-
-  ctx_process (ctx, &command);
-}
-#endif
-
 void
 ctx_set_rgba_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
-
-  // XXX turn it into a no-op if the color matches color
-  //     in state
-
   ctx_process (ctx, &command);
 }
 
@@ -2991,32 +2974,6 @@ void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
 }
 #endif
 
-#if 0
-void ctx_set_rgba_stroke (Ctx *ctx, float r, float g, float b, float a)
-{
-  int ir = r * 255;
-  int ig = g * 255;
-  int ib = b * 255;
-  int ia = a * 255;
-  ir = CTX_CLAMP(ir, 0,255);
-  ig = CTX_CLAMP(ig, 0,255);
-  ib = CTX_CLAMP(ib, 0,255);
-  ia = CTX_CLAMP(ia, 0,255);
-  ctx_set_rgba_stroke_u8 (ctx, ir, ig, ib, ia);
-}
-
-void ctx_set_rgb_stroke (Ctx *ctx, float   r, float   g, float   b)
-{
-  ctx_set_rgba_stroke (ctx, r, g, b, 1.0f);
-}
-
-void ctx_set_gray_stroke (Ctx *ctx, float gray)
-{
-  ctx_set_rgba_stroke (ctx, gray, gray, gray, 1.0f);
-}
-
-#endif
-
 void
 ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1)
 {
@@ -3067,8 +3024,6 @@ ctx_exit (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_EXIT);
 }
 
-//////////////////
-
 #include <stdio.h>
 #include <unistd.h>
 
@@ -3096,6 +3051,8 @@ ctx_flush (Ctx *ctx)
   ctx->renderstream.count = 0;
   ctx_state_init (&ctx->state);
 }
+
+////////////////////////////////////////
 
 static void
 ctx_matrix_inverse (CtxMatrix *m)
@@ -4321,11 +4278,11 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
 {
   if (buffer->free_func)
     buffer->free_func (buffer->data, buffer->user_data);
-  buffer->data = data;
-  buffer->width = width;
-  buffer->height = height;
-  buffer->stride = stride;
-  buffer->format = ctx_pixel_format_info (pixel_format);
+  buffer->data      = data;
+  buffer->width     = width;
+  buffer->height    = height;
+  buffer->stride    = stride;
+  buffer->format    = ctx_pixel_format_info (pixel_format);
   buffer->free_func = freefunc;
   buffer->user_data = user_data;
 }
@@ -5699,7 +5656,7 @@ ctx_swap_red_green (uint8_t *rgba)
 }
 
 static void
-ctx_decode_pixels_BGRA8(CtxRenderer *renderer, int x, const void *restrict buf, uint8_t *restrict rgba, int count)
+ctx_BGRA8_to_RGBA8(CtxRenderer *renderer, int x, const void *restrict buf, uint8_t *restrict rgba, int count)
 {
   uint32_t *srci = (uint32_t*)buf;
   uint32_t *dsti = (uint32_t*)rgba;
@@ -5715,7 +5672,7 @@ ctx_decode_pixels_BGRA8(CtxRenderer *renderer, int x, const void *restrict buf, 
 static void
 ctx_RGBA8_to_BGRA8 (CtxRenderer *renderer, int x, const uint8_t *restrict rgba, void *restrict buf, int count)
 {
-  ctx_decode_pixels_BGRA8(renderer, x, rgba, (uint8_t*)buf, count);
+  ctx_BGRA8_to_RGBA8 (renderer, x, rgba, (uint8_t*)buf, count);
 }
 
 static int
@@ -5969,6 +5926,8 @@ ctx_associated_cmyka_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst
   return count;
 }
 
+#endif
+
 #if CTX_ENABLE_CMYKA8
 
 static void
@@ -6078,8 +6037,6 @@ ctx_b2f_over_CMYK8 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
   ctx_CMYKAF_to_CMYK8 (renderer, &pixels[0], dst, count);
   return ret;
 }
-#endif
-
 #endif
 
 static int
@@ -7320,7 +7277,7 @@ ctx_renderer_process (Ctx *ctx, CtxEntry *entry)
 #if CTX_ENABLE_RGB8
 
 static inline void
-ctx_decode_pixels_RGB8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_RGB8_to_RGBA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint8_t *pixel = (const uint8_t*)buf;
   while (count--)
@@ -7352,7 +7309,7 @@ ctx_RGBA8_to_RGB8 (CtxRenderer *renderer, int x, const uint8_t *rgba, void *buf,
 
 #if CTX_ENABLE_GRAY1
 static inline void
-ctx_decode_pixels_GRAY1(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_GRAY1_to_RGBA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint8_t *pixel = (uint8_t*)buf;
   while (count--)
@@ -7408,7 +7365,7 @@ ctx_b2f_over_GRAY1 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
 {
   int ret;
   uint8_t pixels[count * 4];
-  ctx_decode_pixels_GRAY1 (renderer, x, dst, &pixels[0], count);
+  ctx_GRAY1_to_RGBA8 (renderer, x, dst, &pixels[0], count);
   ret = ctx_b2f_over_RGBA8 (renderer, x, &pixels[0], coverage, count);
   ctx_RGBA8_to_GRAY1 (renderer, x, &pixels[0], dst, count);
   return ret;
@@ -7417,10 +7374,9 @@ ctx_b2f_over_GRAY1 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
 
 #endif
 
-
 #if CTX_ENABLE_GRAY2
 static inline void
-ctx_decode_pixels_GRAY2(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_GRAY2_to_RGBA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint8_t *pixel = (uint8_t*)buf;
   while (count--)
@@ -7460,7 +7416,7 @@ ctx_b2f_over_GRAY2 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
 {
   int ret;
   uint8_t pixels[count * 4];
-  ctx_decode_pixels_GRAY2 (renderer, x, dst, &pixels[0], count);
+  ctx_GRAY2_to_RGBA8 (renderer, x, dst, &pixels[0], count);
   ret = ctx_b2f_over_RGBA8 (renderer, x, &pixels[0], coverage, count);
   ctx_RGBA8_to_GRAY2 (renderer, x, &pixels[0], dst, count);
   return ret;
@@ -7469,7 +7425,7 @@ ctx_b2f_over_GRAY2 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
 
 #if CTX_ENABLE_GRAY4
 static inline void
-ctx_decode_pixels_GRAY4(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_GRAY4_to_RGBA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint8_t *pixel = (uint8_t*)buf;
   while (count--)
@@ -7509,7 +7465,7 @@ ctx_b2f_over_GRAY4 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
 {
   int ret;
   uint8_t pixels[count * 4];
-  ctx_decode_pixels_GRAY4 (renderer, x, dst, &pixels[0], count);
+  ctx_GRAY4_to_RGBA8 (renderer, x, dst, &pixels[0], count);
   ret = ctx_b2f_over_RGBA8 (renderer, x, &pixels[0], coverage, count);
   ctx_RGBA8_to_GRAY4 (renderer, x, &pixels[0], dst, count);
   return ret;
@@ -7518,7 +7474,7 @@ ctx_b2f_over_GRAY4 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
 
 #if CTX_ENABLE_GRAY8
 static inline void
-ctx_decode_pixels_GRAY8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_GRAY8_to_RGBA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint8_t *pixel = (uint8_t*)buf;
   while (count--)
@@ -7548,7 +7504,7 @@ ctx_RGBA8_to_GRAY8 (CtxRenderer *renderer, int x, const uint8_t *rgba, void *buf
 
 #if CTX_ENABLE_GRAYA8
 static inline void
-ctx_decode_pixels_GRAYA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_GRAYA8_to_RGBA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint8_t *pixel = (const uint8_t*)buf;
   while (count--)
@@ -7603,7 +7559,7 @@ ctx_332_pack (uint8_t red,
 }
 
 static inline void
-ctx_decode_pixels_RGB332(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_RGB332_to_RGBA8 (CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint8_t *pixel = (uint8_t*)buf;
   while (count--)
@@ -7638,7 +7594,7 @@ ctx_b2f_over_RGB332 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *covera
 {
   int ret;
   uint8_t pixels[count * 4];
-  ctx_decode_pixels_RGB332 (renderer, x, dst, &pixels[0], count);
+  ctx_RGB332_to_RGBA8 (renderer, x, dst, &pixels[0], count);
   ret = ctx_b2f_over_RGBA8 (renderer, x, &pixels[0], coverage, count);
   ctx_RGBA8_to_RGB332 (renderer, x, &pixels[0], dst, count);
   return ret;
@@ -7683,10 +7639,9 @@ ctx_565_pack (uint8_t red,
 }
 #endif
 
-
 #if CTX_ENABLE_RGB565
 static inline void
-ctx_decode_pixels_RGB565(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_RGB565_to_RGBA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint16_t *pixel = (uint16_t*)buf;
   while (count--)
@@ -7721,7 +7676,7 @@ ctx_b2f_over_RGB565 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *covera
 {
   int ret;
   uint8_t pixels[count * 4];
-  ctx_decode_pixels_RGB565 (renderer, x, dst, &pixels[0], count);
+  ctx_RGB565_to_RGBA8 (renderer, x, dst, &pixels[0], count);
   ret = ctx_b2f_over_RGBA8 (renderer, x, &pixels[0], coverage, count);
   ctx_RGBA8_to_RGB565 (renderer, x, &pixels[0], dst, count);
   return ret;
@@ -7731,7 +7686,7 @@ ctx_b2f_over_RGB565 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *covera
 
 #if CTX_ENABLE_RGB565_BYTESWAPPED
 static inline void
-ctx_decode_pixels_RGB565_BS(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_RGB565_BS_to_RGBA8(CtxRenderer *renderer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint16_t *pixel = (uint16_t*)buf;
   while (count--)
@@ -7766,7 +7721,7 @@ ctx_b2f_over_RGB565_BS (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *cov
 {
   int ret;
   uint8_t pixels[count * 4];
-  ctx_decode_pixels_RGB565_BS (renderer, x, dst, &pixels[0], count);
+  ctx_RGB565_BS_to_RGBA8 (renderer, x, dst, &pixels[0], count);
   ret = ctx_b2f_over_RGBA8 (renderer, x, &pixels[0], coverage, count);
   ctx_RGBA8_to_RGB565_BS (renderer, x, &pixels[0], dst, count);
   return ret;
@@ -7787,7 +7742,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 
 #if CTX_ENABLE_BGRA8
   {CTX_FORMAT_BGRA8, 4, 32, 4, 0, 0,
-   ctx_decode_pixels_BGRA8, ctx_RGBA8_to_BGRA8, ctx_b2f_over_BGRA8 },
+   ctx_BGRA8_to_RGBA8, ctx_RGBA8_to_BGRA8, ctx_b2f_over_BGRA8 },
 #endif
 #if CTX_ENABLE_GRAYF
   {CTX_FORMAT_GRAYF, 1, 32, 4, 0, 0,
@@ -7799,41 +7754,41 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #endif
 #if CTX_ENABLE_RGB8
   {CTX_FORMAT_RGB8, 3, 24, 4, 0, 0,
-   ctx_decode_pixels_RGB8, ctx_RGBA8_to_RGB8, ctx_b2f_over_RGBA8_convert},
+   ctx_RGB8_to_RGBA8, ctx_RGBA8_to_RGB8, ctx_b2f_over_RGBA8_convert},
 #endif
 #if CTX_ENABLE_GRAY1
   {CTX_FORMAT_GRAY1, 1, 1, 4, 1, 1,
-   ctx_decode_pixels_GRAY1, ctx_RGBA8_to_GRAY1, ctx_b2f_over_GRAY1},
+   ctx_GRAY1_to_RGBA8, ctx_RGBA8_to_GRAY1, ctx_b2f_over_GRAY1},
 #endif
 #if CTX_ENABLE_GRAY2
   {CTX_FORMAT_GRAY2, 1, 2, 4, 4, 4,
-   ctx_decode_pixels_GRAY2, ctx_RGBA8_to_GRAY2, ctx_b2f_over_GRAY2},
+   ctx_GRAY2_to_RGBA8, ctx_RGBA8_to_GRAY2, ctx_b2f_over_GRAY2},
 #endif
 #if CTX_ENABLE_GRAY4
   {CTX_FORMAT_GRAY4, 1, 4, 4, 16, 16,
-   ctx_decode_pixels_GRAY4, ctx_RGBA8_to_GRAY4, ctx_b2f_over_GRAY4},
+   ctx_GRAY4_to_RGBA8, ctx_RGBA8_to_GRAY4, ctx_b2f_over_GRAY4},
 #endif
 #if CTX_ENABLE_GRAY8
   {CTX_FORMAT_GRAY8, 1, 8, 4, 0, 0,
-   ctx_decode_pixels_GRAY8, ctx_RGBA8_to_GRAY8, ctx_b2f_over_RGBA8_convert},
+   ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_b2f_over_RGBA8_convert},
 #endif
 #if CTX_ENABLE_GRAYA8
   {CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0,
-   ctx_decode_pixels_GRAYA8, ctx_RGBA8_to_GRAYA8, ctx_b2f_over_RGBA8_convert},
+   ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_b2f_over_RGBA8_convert},
 #endif
 #if CTX_ENABLE_RGB332
   {CTX_FORMAT_RGB332, 3, 8, 4, 10, 12,
-   ctx_decode_pixels_RGB332, ctx_RGBA8_to_RGB332,
+   ctx_RGB332_to_RGBA8, ctx_RGBA8_to_RGB332,
    ctx_b2f_over_RGB332},
 #endif
 #if CTX_ENABLE_RGB565
   {CTX_FORMAT_RGB565, 3, 16, 4, 32, 64,
-   ctx_decode_pixels_RGB565, ctx_RGBA8_to_RGB565,
+   ctx_RGB565_to_RGBA8, ctx_RGBA8_to_RGB565,
    ctx_b2f_over_RGB565},
 #endif
 #if CTX_ENABLE_RGB565_BYTESWAPPED
   {CTX_FORMAT_RGB565_BYTESWAPPED, 3, 16, 4, 32, 64,
-   ctx_decode_pixels_RGB565_BS,
+   ctx_RGB565_BS_to_RGBA8,
    ctx_RGBA8_to_RGB565_BS,
    ctx_b2f_over_RGB565_BS},
 #endif
