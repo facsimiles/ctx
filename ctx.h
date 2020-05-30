@@ -120,32 +120,33 @@ void ctx_get_transform  (Ctx *ctx, float *a, float *b,
                                          could be replaced with fast
                                          1px wide dab based stroker*/
 
-void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height);
-void ctx_set_font_size  (Ctx *ctx, float x);
-float ctx_get_font_size  (Ctx *ctx);
-void ctx_set_font       (Ctx *ctx, const char *font);
-void ctx_scale          (Ctx *ctx, float x, float y);
-void ctx_translate      (Ctx *ctx, float x, float y);
-void ctx_line_to        (Ctx *ctx, float x, float y);
-void ctx_move_to        (Ctx *ctx, float x, float y);
-void ctx_curve_to       (Ctx *ctx, float cx0, float cy0,
-                         float cx1, float cy1,
-                         float x, float y);
-void ctx_quad_to        (Ctx *ctx, float cx, float cy,
-                         float x, float y);
-void ctx_rectangle      (Ctx *ctx,
-                         float x0, float y0,
-                         float w, float h);
-void ctx_rel_line_to    (Ctx *ctx, float x, float y);
-void ctx_rel_move_to    (Ctx *ctx, float x, float y);
-void ctx_rel_curve_to   (Ctx *ctx,
-                         float x0, float y0,
-                         float x1, float y1,
-                         float x2, float y2);
-void ctx_rel_quad_to    (Ctx *ctx, float cx, float cy,
-                         float x, float y);
-void ctx_close_path     (Ctx *ctx);
+void  ctx_dirty_rect     (Ctx *ctx, int *x, int *y, int *width, int *height);
 
+void  ctx_set_font_size  (Ctx *ctx, float x);
+void  ctx_set_font       (Ctx *ctx, const char *font);
+void  ctx_scale          (Ctx *ctx, float x, float y);
+void  ctx_translate      (Ctx *ctx, float x, float y);
+void  ctx_line_to        (Ctx *ctx, float x, float y);
+void  ctx_move_to        (Ctx *ctx, float x, float y);
+void  ctx_curve_to       (Ctx *ctx, float cx0, float cy0,
+                          float cx1, float cy1,
+                          float x, float y);
+void  ctx_quad_to        (Ctx *ctx, float cx, float cy,
+                          float x, float y);
+void  ctx_rectangle      (Ctx *ctx,
+                          float x0, float y0,
+                          float w, float h);
+void  ctx_rel_line_to    (Ctx *ctx, float x, float y);
+void  ctx_rel_move_to    (Ctx *ctx, float x, float y);
+void  ctx_rel_curve_to   (Ctx *ctx,
+                          float x0, float y0,
+                          float x1, float y1,
+                          float x2, float y2);
+void  ctx_rel_quad_to    (Ctx *ctx, float cx, float cy,
+                          float x, float y);
+void  ctx_close_path     (Ctx *ctx);
+
+float ctx_get_font_size  (Ctx *ctx);
 
 //void ctx_set_rgba_stroke_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -154,10 +155,13 @@ void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
 void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
 void ctx_set_gray       (Ctx *ctx, float gray);
 
-#if YYY
 void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k);
 void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a);
-#endif
+
+void ctx_get_rgba       (Ctx *ctx, float *rgba);
+void ctx_get_cmyka      (Ctx *ctx, float *cmyka);
+void ctx_get_graya      (Ctx *ctx, float *ya);
+
 
 void ctx_current_point  (Ctx *ctx, float *x, float *y);
 float ctx_x             (Ctx *ctx);
@@ -1603,6 +1607,24 @@ ctx_matrix_skew_y (CtxMatrix *matrix, float angle)
 }
 #endif
 
+void
+ctx_get_rgba (Ctx *ctx, float *rgba)
+{
+  ctx_color_get_rgba (&ctx->state.gstate.source.color, rgba);
+}
+#if CTX_ENABLE_CMYK
+void
+ctx_get_cmyka (Ctx *ctx, float *cmyka)
+{
+  ctx_color_get_cmyka (&ctx->state.gstate.source.color, cmyka);
+}
+#endif
+void
+ctx_get_graya (Ctx *ctx, float *ya)
+{
+  ctx_color_get_graya (&ctx->state.gstate.source.color, ya);
+}
+
 static int
 ctx_conts_for_entry (CtxEntry *entry)
 {
@@ -1611,10 +1633,8 @@ ctx_conts_for_entry (CtxEntry *entry)
   {
     case CTX_DATA:
       return entry->data.u32[1];
-
     case CTX_LINEAR_GRADIENT:
       return 1;
-
     case CTX_RADIAL_GRADIENT:
     case CTX_ARC:
     case CTX_CURVE_TO:
@@ -9978,7 +9998,6 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
               float m = arg(1);
               float y = arg(2);
               float k = arg(3);
-              float r,g,b;
               float r = (1.0f-c) * (1.0f-k);
               float g = (1.0f-m) * (1.0f-k);
               float b = (1.0f-y) * (1.0f-k);
