@@ -1024,8 +1024,10 @@ struct _CtxColor
   float   blue;
   float   alpha;
   float   l;
+#if CTX_ENABLE_LAB   // NYI
   float   a;
   float   b;
+#endif
 
   uint8_t l_u8;
 #if CTX_ENABLE_CMYK
@@ -1169,11 +1171,29 @@ static void ctx_color_get_cmyka (CtxColor *color, float *out)
 
     color->got_types |= CTX_HAS_CMYKA;
   }
-  out[0] = color->red;
-  out[1] = color->green;
-  out[2] = color->blue;
-  out[3] = color->alpha;
+  out[0] = color->cyan;
+  out[1] = color->magenta;
+  out[2] = color->yellow;
+  out[3] = color->key;
+  out[4] = color->alpha;
 }
+
+static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
+{
+  if (!(color->got_types & CTX_HAS_CMYKA_U8))
+  {
+    float cmyka[5];
+    ctx_color_get_cmyka (color, cmyka);
+    for (int i = 0; i < 5; i ++)
+      color->cmyka[i] = cmyka[i] * 255.99f;
+    color->got_types |= CTX_HAS_CMYKA_U8;
+  }
+  out[0] = color->cmyka[0];
+  out[1] = color->cmyka[1];
+  out[2] = color->cmyka[2];
+  out[3] = color->cmyka[3];
+}
+
 #endif
 
 static void ctx_color_get_rgba_u8 (CtxColor *color, uint8_t *out)
@@ -1206,23 +1226,6 @@ static void ctx_color_get_graya_u8 (CtxColor *color, uint8_t *out)
   out[1] = color->rgba[3];
 }
 
-#if CTX_ENABLE_CMYK
-static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
-{
-  if (!(color->got_types & CTX_HAS_CMYKA_U8))
-  {
-    float cmyka[5];
-    ctx_color_get_cmyka (color, cmyka);
-    for (int i = 0; i < 5; i ++)
-      color->cmyka[i] = cmyka[i] * 255.99f;
-    color->got_types |= CTX_HAS_CMYKA_U8;
-  }
-  out[0] = color->cmyka[0];
-  out[1] = color->cmyka[1];
-  out[2] = color->cmyka[2];
-  out[3] = color->cmyka[3];
-}
-#endif
 
 struct _CtxSource
 {
