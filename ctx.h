@@ -5152,8 +5152,9 @@ ctx_sample_gradient_1d_u8 (CtxRenderer *renderer, float v, uint8_t *rgba)
 
 
 static void
-ctx_sample_source_rgba_u8_image (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_image (CtxRenderer *renderer, float x, float y, void *out)
 {
+  uint8_t *rgba = out;
   CtxSource *g = &renderer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
   ctx_assert (renderer);
@@ -5218,8 +5219,9 @@ static inline void ctx_dither_rgba_u8 (uint8_t *rgba, int x, int y, int dither_r
 #endif
 
 static void
-ctx_sample_source_rgba_u8_image_rgba (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_image_rgba (CtxRenderer *renderer, float x, float y, void *out)
 {
+  uint8_t *rgba = out;
   CtxSource *g = &renderer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
   ctx_assert (renderer);
@@ -5249,8 +5251,9 @@ ctx_sample_source_rgba_u8_image_rgba (CtxRenderer *renderer, float x, float y, u
 }
 
 static void
-ctx_sample_source_rgba_u8_image_1bit (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_image_1bit (CtxRenderer *renderer, float x, float y, void *out)
 {
+  uint8_t *rgba = out;
   CtxSource *g = &renderer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
   ctx_assert (renderer);
@@ -5282,8 +5285,9 @@ ctx_sample_source_rgba_u8_image_1bit (CtxRenderer *renderer, float x, float y, u
 }
 
 static void
-ctx_sample_source_rgba_u8_image_rgb (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_image_rgb (CtxRenderer *renderer, float x, float y, void *out)
 {
+  uint8_t *rgba = out;
   CtxSource *g = &renderer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
   ctx_assert (renderer);
@@ -5315,8 +5319,9 @@ ctx_sample_source_rgba_u8_image_rgb (CtxRenderer *renderer, float x, float y, ui
 
 
 static void
-ctx_sample_source_rgba_u8_radial_gradient (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_radial_gradient (CtxRenderer *renderer, float x, float y, void *out)
 {
+  uint8_t *rgba = out;
   CtxSource *g = &renderer->state->gstate.source;
   float v = 0.0f;
   if (g->radial_gradient.r0 == 0.0f ||
@@ -5339,8 +5344,9 @@ ctx_sample_source_rgba_u8_radial_gradient (CtxRenderer *renderer, float x, float
 
 
 static void
-ctx_sample_source_rgba_u8_linear_gradient (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_linear_gradient (CtxRenderer *renderer, float x, float y, void *out)
 {
+  uint8_t *rgba = out;
   CtxSource *g = &renderer->state->gstate.source;
   float v = (((g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
             g->linear_gradient.length) -
@@ -5356,13 +5362,14 @@ ctx_sample_source_rgba_u8_linear_gradient (CtxRenderer *renderer, float x, float
 
 
 static void
-ctx_sample_source_rgba_u8_color (CtxRenderer *renderer, float x, float y, uint8_t *rgba)
+ctx_sample_source_rgba_u8_color (CtxRenderer *renderer, float x, float y, void *out)
 {
+  uint8_t *rgba = out;
   CtxSource *g = &renderer->state->gstate.source;
   ctx_color_get_rgba_u8 (&g->color, rgba);
 }
 
-typedef void (*CtxSourceU8)(CtxRenderer *renderer, float x, float y, uint8_t *rgba);
+typedef void (*CtxSourceU8)(CtxRenderer *renderer, float x, float y, void *out);
 
 static CtxSourceU8 ctx_renderer_get_source_rgba_u8 (CtxRenderer *renderer)
 {
