@@ -3,6 +3,7 @@
 #include "ctx-font-ascii.h"
 #define CTX_PARSER          1
 #define CTX_FORMATTER       0
+#define CTX_ENABLE_CMYK     0
 #define CTX_BITPACK_PACKER  0
 #define CTX_GRADIENT_CACHE  0
 #define CTX_FONTS_FROM_FILE 0 /* leaves out code */

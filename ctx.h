@@ -1169,26 +1169,33 @@ static void ctx_color_get_cmyka (CtxColor *color, float *out)
 {
   if (!(color->got_types & CTX_HAS_CMYKA))
   {
-    float rgba[4];
-    float key;
-    ctx_color_get_rgba (color, rgba);
-    color->cyan = 1.0f - rgba[0];
-    color->magenta = 1.0f - rgba[1];
-    color->yellow = 1.0f - rgba[2];
-    key = CTX_MIN (color->cyan, CTX_MIN (color->yellow, color->magenta));
-    color->key = key;
-    if (color->key < 1.0f)
+    if (color->got_types & CTX_HAS_GRAYA)
     {
-      color->cyan = (color->cyan - key) / (1.0f - key);
-      color->magenta = (color->magenta - key) / (1.0f - key);
-      color->yellow = (color->yellow - key) / (1.0f - key);
+      color->cyan = color->magenta = color->yellow = 0.0;
+      color->key = color->l;
     }
     else
     {
-      color->cyan = color->magenta = color->yellow = 0.0f;
+      float rgba[4];
+      float key;
+      ctx_color_get_rgba (color, rgba);
+      color->cyan = 1.0f - rgba[0];
+      color->magenta = 1.0f - rgba[1];
+      color->yellow = 1.0f - rgba[2];
+      key = CTX_MIN (color->cyan, CTX_MIN (color->yellow, color->magenta));
+      color->key = key;
+      if (color->key < 1.0f)
+      {
+        color->cyan = (color->cyan - key) / (1.0f - key);
+        color->magenta = (color->magenta - key) / (1.0f - key);
+        color->yellow = (color->yellow - key) / (1.0f - key);
+      }
+      else
+      {
+        color->cyan = color->magenta = color->yellow = 0.0f;
+      }
+      color->alpha = rgba[3];
     }
-    color->alpha = rgba[3];
-
     color->got_types |= CTX_HAS_CMYKA;
   }
   out[0] = color->cyan;
@@ -5403,16 +5410,6 @@ static CtxSourceU8 ctx_renderer_get_source_rgba_u8 (CtxRenderer *renderer)
   return ctx_sample_source_rgba_u8_color;
 }
 
-static void
-ctx_sample_source_cmyka_f_color (CtxRenderer *renderer, float x, float y, void *out)
-{
-  ctx_color_get_cmyka (&renderer->state->gstate.source.color, out);
-}
-
-static CtxSourceU8 ctx_renderer_get_source_cmykaf (CtxRenderer *renderer)
-{
-  return ctx_sample_source_cmyka_f_color;
-}
 
 #define MASK_ALPHA       (0xff << 24)
 #define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
@@ -5693,56 +5690,49 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, u
 static int
 ctx_associated_rgba_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  int components = 4;  // this makes it mostly adapted to become
-                       // a generalized floating point ver..
-                       // for components == 1-4 assume RGB color source
-                       // for more components - use alternate generic
-                       // source setting, which permits operation with
-                       // non RGB color models.
-  float *dst_f = (float*)dst;
-  float y = renderer->scanline / CTX_RASTERIZER_AA;
+          int components = 4;  // this makes it mostly adapted to become
+                               // a generalized floating point ver..
+                               // for components == 1-4 assume RGB color source
+                               // for more components - use alternate generic
+                               // source setting, which permits operation with
+                               // non RGB color models.
+          float *dst_f = (float*)dst;
+          float y = renderer->scanline / CTX_RASTERIZER_AA;
 
-  CtxSourceU8 source = ctx_renderer_get_source_rgba_u8 (renderer);
-  if (source == ctx_sample_source_rgba_u8_color) source = NULL;
+          CtxSourceU8 source = ctx_renderer_get_source_rgba_u8 (renderer);
+          float color_f[components];
 
-  if (source)
+  if (source == ctx_sample_source_rgba_u8_color)
   {
-    float color_f[components];
-    for (int x = 0; x < count; x++)
-    {
-      float cov = coverage[x]/255.0f;
-      if (cov != 0.0f)
-      {
-        uint8_t scolor[4];
-        source (renderer, x0 + x, y, &scolor[0]);
-        for (int c = 0; c < components; c++)
-          color_f[c]=scolor[c]/255.0f;  // XXX ; lacks gamma handling
+    uint8_t scolor[4];
+    ctx_sample_source_rgba_u8_color (renderer, x0, y, &scolor[0]);
+    for (int c = 0; c < components; c++)
+      color_f[c]=scolor[c]/255.0f;  // XXX color
 
-        color_f[components-1] *= (renderer->state->gstate.global_alpha_u8/255.0f);
-        for (int c = 0; c < components-1; c++)
-          color_f[c] *= color_f[components-1];
-
-        float ralpha = 1.0f - color_f[components-1] * cov;
-        for (int c = 0; c < components; c++)
-          dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
-      }
-      dst_f += components;
-    }
-  }
-  else
-  {
-    float color_f[components];
-
-    ctx_color_get_rgba (&renderer->state->gstate.source.color, color_f);
-
-    for (int c = 0; c < components-1; c++) // associate alpha
+    color_f[components-1] *= renderer->state->gstate.global_alpha_f;
+    for (int c = 0; c < components-1; c++)
       color_f[c] *= color_f[components-1];
+    source = NULL;
+  }
 
+  {
     for (int x = 0; x < count; x++)
     {
       float cov = coverage[x]/255.0f;
       if (cov != 0.0f)
       {
+        if (source)
+        {
+          uint8_t scolor[4];
+          source (renderer, x0 + x, y, &scolor[0]);
+          for (int c = 0; c < components; c++)
+            color_f[c]=scolor[c]/255.0f;  // XXX ; lacks gamma handling
+
+          color_f[components-1] *= renderer->state->gstate.global_alpha_f;
+          for (int c = 0; c < components-1; c++)
+            color_f[c] *= color_f[components-1];
+        }
+
         float ralpha = 1.0f - color_f[components-1] * cov;
         for (int c = 0; c < components; c++)
           dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
@@ -5755,15 +5745,23 @@ ctx_associated_rgba_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst,
 #endif
 
 #if CTX_ENABLE_CMYKAF
+
+static void
+ctx_sample_source_cmyka_f_color (CtxRenderer *renderer, float x, float y, void *out)
+{
+  // XXX : only solid color implemented for now
+  ctx_color_get_cmyka (&renderer->state->gstate.source.color, out);
+}
+
+static CtxSourceU8 ctx_renderer_get_source_cmykaf (CtxRenderer *renderer)
+{
+  return ctx_sample_source_cmyka_f_color;
+}
+
 static int
 ctx_associated_cmyka_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  int components = 5;  // this makes it mostly adapted to become
-                       // a generalized floating point ver..
-                       // for components == 1-4 assume RGB color source
-                       // for more components - use alternate generic
-                       // source setting, which permits operation with
-                       // non RGB color models.
+  int components = 5;
   float *dst_f = (float*)dst;
   float y = renderer->scanline / CTX_RASTERIZER_AA;
   CtxSourceU8 source = ctx_renderer_get_source_cmykaf (renderer);
@@ -5798,6 +5796,18 @@ ctx_associated_cmyka_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst
   }
   return count;
 }
+
+static int
+ctx_b2f_over_CMYKA8 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
+{
+  int ret;
+  uint8_t pixels[count * 4];
+  //ctx_decode_pixels_GRAY1 (renderer, x, dst, &pixels[0], count);
+  ret = ctx_associated_cmyka_float_b2f_over (renderer, x, &pixels[0], coverage, count);
+  //ctx_encode_pixels_GRAY1 (renderer, x, dst, &pixels[0], count);
+  return ret;
+}
+
 #endif
 
 static int
