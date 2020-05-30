@@ -1009,29 +1009,34 @@ struct _CtxGradient
   int n_stops;
 };
 
-#define CTX_HAS_RGBA_U8   (1<<0)
-#define CTX_HAS_RGBA      (1<<1)
+#define CTX_VALID_RGBA_U8   (1<<0)
+#define CTX_VALID_RGBA      (1<<1)
 #if CTX_ENABLE_CMYK
-#define CTX_HAS_CMYKA_U8  (1<<2)
-#define CTX_HAS_CMYKA     (1<<3)
+#define CTX_VALID_CMYKA_U8  (1<<2)
+#define CTX_VALID_CMYKA     (1<<3)
 #endif
-#define CTX_HAS_GRAYA     (1<<4)
-#define CTX_HAS_GRAYA_U8  (1<<5)
-#define CTX_HAS_LABA      ((1<<6) | CTX_HAS_GRAYA)
+#define CTX_VALID_GRAYA     (1<<4)
+#define CTX_VALID_GRAYA_U8  (1<<5)
+#define CTX_VALID_LABA      ((1<<6) | CTX_VALID_GRAYA)
+
+//_ctx_target_space (ctx, icc);
+//_ctx_space (ctx);
+
 
 typedef struct _CtxColor CtxColor;
 struct _CtxColor
 {
-  // void *babl_space;
   uint8_t rgba[4];
-  uint8_t got_types;
-/* colors need only be converted by the raserizer */
+  uint8_t original; // the bitmask of the originally set color
+  uint8_t valid;    // bitmask of which members contain valid
+                    // values, gets denser populated as more
+                    // formats are requested from a set color.
   float   red;
   float   green;
   float   blue;
   float   alpha;
-  float   l;
-#if CTX_ENABLE_LAB   // NYI
+  float   l;        // luminance and gray
+#if CTX_ENABLE_LAB  // NYI
   float   a;
   float   b;
 #endif
@@ -1044,12 +1049,22 @@ struct _CtxColor
   float   yellow;
   float   key;
 #endif 
-};
 
+#if CTX_ENABLE_CM
+  void   *space;   // a babl_space when not direct
+  // cmyk values are presumed to always be in
+  // ICC space and the color values set are not
+  // influenced by color management. RGB values
+  // however are.
+  float   cm_red;
+  float   cm_green;
+  float   cm_blue;
+#endif
+};
 
 static void ctx_color_set_rgba_u8 (CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-  color->got_types = CTX_HAS_RGBA_U8;
+  color->original = color->valid = CTX_VALID_RGBA_U8;
   color->rgba[0] = r;
   color->rgba[1] = g;
   color->rgba[2] = b;
@@ -1065,7 +1080,7 @@ static void ctx_color_set_rgba_u8_ (CtxColor *color, const uint8_t *in)
 
 static void ctx_color_set_graya (CtxColor *color, float gray, float alpha)
 {
-  color->got_types = CTX_HAS_GRAYA;
+  color->original = color->valid = CTX_VALID_GRAYA;
   color->l = gray;
   color->alpha = alpha;
 }
@@ -1078,10 +1093,10 @@ static void ctx_color_set_graya_ (CtxColor *color, const float *in)
 
 static void ctx_color_set_rgba (CtxColor *color, float r, float g, float b, float a)
 {
-  color->got_types = CTX_HAS_RGBA;
-  color->red = r;
+  color->original = color->valid = CTX_VALID_RGBA;
+  color->red   = r;
   color->green = g;
-  color->blue = b;
+  color->blue  = b;
   color->alpha = a;
 }
 
@@ -1095,12 +1110,12 @@ static void ctx_color_set_rgba_ (CtxColor *color, const float *in)
 #if CTX_ENABLE_CMYK
 static void ctx_color_set_cmyka (CtxColor *color, float c, float m, float y, float k, float a)
 {
-  color->got_types = CTX_HAS_CMYKA;
-  color->cyan = c;
+  color->original = color->valid = CTX_VALID_CMYKA;
+  color->cyan    = c;
   color->magenta = m;
-  color->yellow = y;
-  color->key = k;
-  color->alpha = a;
+  color->yellow  = y;
+  color->key     = k;
+  color->alpha   = a;
 }
 
 #if 0
@@ -1114,11 +1129,9 @@ static void ctx_color_set_cmyka_ (CtxColor *color, const float *in)
 
 static void ctx_color_get_rgba (CtxColor *color, float *out)
 {
-  // if not valid
-  //   make be valid and cache valid state
-  if (!(color->got_types & CTX_HAS_RGBA))
+  if (!(color->valid & CTX_VALID_RGBA))
   {
-    if (color->got_types & CTX_HAS_RGBA_U8)
+    if (color->valid & CTX_VALID_RGBA_U8)
     {
       color->red    = color->rgba[0]/255.0f;
       color->green  = color->rgba[1]/255.0f;
@@ -1126,20 +1139,20 @@ static void ctx_color_get_rgba (CtxColor *color, float *out)
       color->alpha  = color->rgba[3]/255.0f;
     }
 #if CTX_ENABLE_CMYK
-    else if (color->got_types & CTX_HAS_CMYKA)
+    else if (color->valid & CTX_VALID_CMYKA)
     {
       color->red    = (1.0f-color->cyan) * (1.0-color->key);
       color->green  = (1.0f-color->magenta) * (1.0-color->key);
       color->blue   = (1.0f-color->yellow) * (1.0-color->key);
     }
 #endif
-    else if (color->got_types & CTX_HAS_GRAYA)
+    else if (color->valid & CTX_VALID_GRAYA)
     {
       color->red    = 
       color->green  =
       color->blue   = color->l;
     }
-    color->got_types |= CTX_HAS_RGBA;
+    color->valid |= CTX_VALID_RGBA;
   }
   out[0] = color->red;
   out[1] = color->green;
@@ -1149,12 +1162,12 @@ static void ctx_color_get_rgba (CtxColor *color, float *out)
 
 static void ctx_color_get_graya (CtxColor *color, float *out)
 {
-  if (!(color->got_types & CTX_HAS_GRAYA))
+  if (!(color->valid & CTX_VALID_GRAYA))
   {
     float rgba[4];
     ctx_color_get_rgba (color, rgba);
     color->l = (rgba[0] + rgba[1] + rgba[2])/3.0f; // XXX
-    color->got_types |= CTX_HAS_GRAYA;
+    color->valid |= CTX_VALID_GRAYA;
   }
   out[0] = color->l;
   out[1] = color->alpha;
@@ -1163,9 +1176,9 @@ static void ctx_color_get_graya (CtxColor *color, float *out)
 #if CTX_ENABLE_CMYK
 static void ctx_color_get_cmyka (CtxColor *color, float *out)
 {
-  if (!(color->got_types & CTX_HAS_CMYKA))
+  if (!(color->valid & CTX_VALID_CMYKA))
   {
-    if (color->got_types & CTX_HAS_GRAYA)
+    if (color->valid & CTX_VALID_GRAYA)
     {
       color->cyan = color->magenta = color->yellow = 0.0;
       color->key = color->l;
@@ -1192,7 +1205,7 @@ static void ctx_color_get_cmyka (CtxColor *color, float *out)
       }
       color->alpha = rgba[3];
     }
-    color->got_types |= CTX_HAS_CMYKA;
+    color->valid |= CTX_VALID_CMYKA;
   }
   out[0] = color->cyan;
   out[1] = color->magenta;
@@ -1204,13 +1217,13 @@ static void ctx_color_get_cmyka (CtxColor *color, float *out)
 #if 0
 static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
 {
-  if (!(color->got_types & CTX_HAS_CMYKA_U8))
+  if (!(color->valid & CTX_VALID_CMYKA_U8))
   {
     float cmyka[5];
     ctx_color_get_cmyka (color, cmyka);
     for (int i = 0; i < 5; i ++)
       color->cmyka[i] = cmyka[i] * 255.99f;
-    color->got_types |= CTX_HAS_CMYKA_U8;
+    color->valid |= CTX_VALID_CMYKA_U8;
   }
   out[0] = color->cmyka[0];
   out[1] = color->cmyka[1];
@@ -1224,13 +1237,13 @@ static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
 
 static void ctx_color_get_rgba_u8 (CtxColor *color, uint8_t *out)
 {
-  if (!(color->got_types & CTX_HAS_RGBA_U8))
+  if (!(color->valid & CTX_VALID_RGBA_U8))
   {
     float rgba[4];
     ctx_color_get_rgba (color, rgba);
     for (int i = 0; i < 4; i ++)
       color->rgba[i] = rgba[i] * 255.99f;
-    color->got_types |= CTX_HAS_RGBA_U8;
+    color->valid |= CTX_VALID_RGBA_U8;
   }
   out[0] = color->rgba[0];
   out[1] = color->rgba[1];
@@ -1241,13 +1254,13 @@ static void ctx_color_get_rgba_u8 (CtxColor *color, uint8_t *out)
 #if 0
 static void ctx_color_get_graya_u8 (CtxColor *color, uint8_t *out)
 {
-  if (!(color->got_types & CTX_HAS_GRAYA_U8))
+  if (!(color->valid & CTX_VALID_GRAYA_U8))
   {
     float graya[2];
     ctx_color_get_graya (color, graya);
     color->l_u8 = graya[0] * 255.99f;
     color->rgba[3] = graya[1] * 255.99f;
-    color->got_types |= CTX_HAS_GRAYA_U8;
+    color->valid |= CTX_VALID_GRAYA_U8;
   }
   out[0] = color->l_u8;
   out[1] = color->rgba[3];
@@ -1262,7 +1275,7 @@ struct _CtxSource
   union {
     CtxColor color;
     struct {
-      uint8_t rgba[4];     // shares data with set color
+      uint8_t rgba[4]; // shares data with set color
       uint8_t pad;
       float x0;
       float y0;
@@ -1292,7 +1305,7 @@ struct _CtxSource
 
 struct _CtxGState {
   CtxMatrix     transform;
-  //CtxSource     source_stroke;
+  //CtxSource   source_stroke;
   CtxSource     source;
   CtxColorModel color_model;
   uint8_t       global_alpha_u8;
@@ -1313,19 +1326,18 @@ struct _CtxGState {
   int16_t       clip_max_y;
 
   /* bitfield-pack small state-parts */
-  CtxCompositingMode compositing_mode:2;
-  CtxBlend                 blend_mode:3;
-  CtxLineCap                 line_cap:2;
-  CtxLineJoin               line_join:2;
-  CtxFillRule               fill_rule:1;
-  CtxTextBaseline       text_baseline:3;
-  CtxTextAlign             text_align:3;
-  CtxTextDirection     text_direction:2;
-  unsigned int                   font:6;
-  unsigned int                   bold:1;
-  unsigned int                 italic:1;
+  CtxCompositingMode  compositing_mode:2;
+  CtxBlend                  blend_mode:3;
+  CtxLineCap                  line_cap:2;
+  CtxLineJoin                line_join:2;
+  CtxFillRule                fill_rule:1;
+  CtxTextBaseline        text_baseline:3;
+  CtxTextAlign              text_align:3;
+  CtxTextDirection      text_direction:2;
+  unsigned int                    font:6;
+  unsigned int                    bold:1;
+  unsigned int                  italic:1;
 };
-
 
 typedef enum {
   CTX_TRANSFORMATION_NONE         = 0,
@@ -6468,7 +6480,7 @@ ctx_renderer_arc (CtxRenderer *renderer,
 
   if (end_angle == start_angle)
   {
-//    if (renderer->has_prev!=0)
+//  if (renderer->has_prev!=0)
     ctx_renderer_line_to (renderer, x + cosf (end_angle) * radius,
                           y + sinf (end_angle) * radius);
 //    else
