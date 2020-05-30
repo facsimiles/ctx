@@ -819,8 +819,6 @@ void ctx_parser_free (CtxParser *parser);
 void ctx_parser_feed_byte (CtxParser *parser, int byte);
 
 #define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
-#define CTX_MAX(a,b) ((a)>(b)?(a):(b))
-#define CTX_MIN(a,b) ((a)<(b)?(a):(b))
 
 #ifdef CTX_IMPLEMENTATION
 
@@ -834,10 +832,6 @@ ctx_memset (void *ptr, uint8_t val, int length)
 }
 
 #define ctx_pow2(a) ((a)*(a))
-#if CTX_MATH
-  /* a tiny self contained c math library containing what we need,
-   * defined in terms of sqrt(x) sinf and atan2f
-   */
 static float
 ctx_minf (float a, float b)
 {
@@ -853,6 +847,10 @@ ctx_maxf (float a, float b)
     return a;
   return b;
 }
+#if CTX_MATH
+  /* a tiny self contained c math library containing what we need,
+   * defined in terms of sqrt(x) sinf and atan2f
+   */
 
 static float
 ctx_fabsf (float x)
@@ -935,11 +933,10 @@ static float ctx_atan2f (float y, float x)
 }
 
 #define sqrtf(a)     (1.0f/ctx_invsqrtf(a))
+#define hypotf(a,b)  sqrtf(ctx_pow2(a)+ctx_pow2(b))
 #define sinf(a)      ctx_sinf(a)
 #define fabsf(a)     ctx_fabsf(a)
 #define atan2f(a,b)  ctx_atan2f((a), (b))
-
-#define hypotf(a,b)  sqrtf(ctx_pow2(a)+ctx_pow2(b))
 
 /* define more trig based on having sqrt, sin and atan2 */
 #define atanf(a)     atan2f((a), 1.0f)
@@ -1207,7 +1204,7 @@ static void ctx_color_get_cmyka (CtxColor *color, float *out)
       color->cyan = 1.0f - rgba[0];
       color->magenta = 1.0f - rgba[1];
       color->yellow = 1.0f - rgba[2];
-      key = CTX_MIN (color->cyan, CTX_MIN (color->yellow, color->magenta));
+      key = ctx_minf(color->cyan, ctx_minf(color->yellow, color->magenta));
       color->key = key;
       if (color->key < 1.0f)
       {
@@ -2398,9 +2395,9 @@ void ctx_set_line_width (Ctx *ctx, float x) {
 
   /* XXX : ugly hack to normalize the width dependent on the current
            transform, this does not really belong here */
-  x = x * CTX_MAX(CTX_MAX(fabsf(ctx->state.gstate.transform.m[0][0]),
+  x = x * ctx_maxf(ctx_maxf(fabsf(ctx->state.gstate.transform.m[0][0]),
                           fabsf(ctx->state.gstate.transform.m[0][1])),
-                  CTX_MAX(fabsf(ctx->state.gstate.transform.m[1][0]),
+                  ctx_maxf(fabsf(ctx->state.gstate.transform.m[1][0]),
                           fabsf(ctx->state.gstate.transform.m[1][1])));
   CTX_PROCESS_F1(CTX_SET_LINE_WIDTH, x);
 }
@@ -2702,7 +2699,7 @@ ctx_point_seg_dist_sq(float x, float y,
     return ctx_pow2(x-vx) + ctx_pow2(y-vy);
 
   float t = ((x - vx) * (wx - vx) + (y - vy) * (wy - vy)) / l2;
-  t = CTX_MAX(0, CTX_MIN(1, t));
+  t = ctx_maxf(0, ctx_minf(1, t));
   float ix = vx + t * (wx - vx);
   float iy = vy + t * (wy - vy);
 
@@ -4789,18 +4786,18 @@ ctx_renderer_curve_to (CtxRenderer *renderer,
 
   tolerance = 1.0f/tolerance;
 #if 0 // skipping this to preserve hashes
-  float maxx = CTX_MAX(x1,x2);
-  maxx = CTX_MAX(maxx, ox);
-  maxx = CTX_MAX(maxx, x0);
-  float maxy = CTX_MAX(y1,y2);
-  maxy = CTX_MAX(maxy, oy);
-  maxy = CTX_MAX(maxy, y0);
-  float minx = CTX_MIN(x1,x2);
-  minx = CTX_MIN(minx, ox);
-  minx = CTX_MIN(minx, x0);
-  float miny = CTX_MIN(y1,y2);
-  miny = CTX_MIN(miny, oy);
-  miny = CTX_MIN(miny, y0);
+  float maxx = ctx_maxf(x1,x2);
+  maxx = ctx_maxf(maxx, ox);
+  maxx = ctx_maxf(maxx, x0);
+  float maxy = ctx_maxf(y1,y2);
+  maxy = ctx_maxf(maxy, oy);
+  maxy = ctx_maxf(maxy, y0);
+  float minx = ctx_minf(x1,x2);
+  minx = ctx_minf(minx, ox);
+  minx = ctx_minf(minx, x0);
+  float miny = ctx_minf(y1,y2);
+  miny = ctx_minf(miny, oy);
+  miny = ctx_minf(miny, y0);
 
   if (tolerance == 1.0f &&
       (
@@ -6027,17 +6024,17 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
           if ((first!=last) && graystart)
           {
             int cov = coverage[first] + graystart / CTX_RASTERIZER_AA;
-            coverage[first] = CTX_MIN(cov,255);
+            coverage[first] = ctx_minf(cov,255);
             first++;
           }
           for (int x = first; x < last; x++)
           {
             int cov = coverage[x] + 255 / CTX_RASTERIZER_AA;
-            coverage[x] = CTX_MIN(cov,255);
+            coverage[x] = ctx_minf(cov,255);
           }
           if (grayend) {
             int cov = coverage[last] + grayend / CTX_RASTERIZER_AA;
-            coverage[last] = CTX_MIN(cov,255);
+            coverage[last] = ctx_minf(cov,255);
           }
         }
         else
@@ -6045,7 +6042,7 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
           if ((first!=last) && graystart)
           {
             int cov = coverage[first] + graystart;
-            coverage[first] = CTX_MIN(cov,255);
+            coverage[first] = ctx_minf(cov,255);
             first++;
           }
 
@@ -6056,7 +6053,7 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
           if (grayend)
           {
             int cov = coverage[last] + grayend;
-            coverage[last] = CTX_MIN(cov,255);
+            coverage[last] = ctx_minf(cov,255);
           }
         }
 
@@ -6657,7 +6654,7 @@ ctx_renderer_stroke_1px (CtxRenderer *renderer)
       int dx = x - prev_x;
       int dy = y - prev_y;
 
-      int length = CTX_MAX(abs(dx), abs(dy));
+      int length = ctx_maxf(abs(dx), abs(dy));
 
       if (length)
       {
