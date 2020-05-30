@@ -497,12 +497,6 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #define CTX_ENABLE_CMYK  1
 #endif
 
-#if CTX_ENABLE_CMYK
-#ifndef CTX_ENABLE_CMYKAF
-#define CTX_ENABLE_CMYKAF 1
-#endif
-#endif
-
 /* by default ctx includes all pixel formats, on microcontrollers
  * it can be useful to slim down code and runtime size by only
  * defining the used formats, set CTX_LIMIT_FORMATS to 1, and
