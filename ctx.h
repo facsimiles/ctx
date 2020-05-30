@@ -2900,6 +2900,14 @@ void ctx_gradient_add_stop
   ctx_gradient_add_stop_u8 (ctx, pos, ir, ig, ib, ia);
 }
 
+void
+ctx_exit (Ctx *ctx)
+{
+  CTX_PROCESS_VOID (CTX_EXIT);
+}
+
+//////////////////
+
 #include <stdio.h>
 #include <unistd.h>
 
@@ -2926,12 +2934,6 @@ ctx_flush (Ctx *ctx)
 
   ctx->renderstream.count = 0;
   ctx_state_init (&ctx->state);
-}
-
-void
-ctx_exit (Ctx *ctx)
-{
-  CTX_PROCESS_VOID (CTX_EXIT);
 }
 
 static void
@@ -3639,7 +3641,6 @@ ctx_renderstream_dedup_search (CtxRenderstream *dictionary,
   return 0;
 #endif
 }
-
 #endif
 
 static void
@@ -4335,6 +4336,14 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
      pixels, width, height, width * (bpp/8), bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8, freefunc, user_data);
   return id;
 }
+
+void
+ctx_gradient_clear_stops (Ctx *ctx)
+{
+   CTX_PROCESS_VOID (CTX_GRADIENT_CLEAR);
+}
+
+
 
 #if CTX_GRADIENT_CACHE
 static void
@@ -6289,8 +6298,6 @@ ctx_renderer_fill (CtxRenderer *renderer)
   if (renderer->state->max_y < renderer->scan_max / CTX_RASTERIZER_AA)
     renderer->state->max_y = renderer->scan_max / CTX_RASTERIZER_AA;
 
-
-
   if (renderer->edge_list.count == 4)
   {
     CtxEntry *entry0 = &renderer->edge_list.entries[0];
@@ -7716,6 +7723,7 @@ ctx_renderer_init (CtxRenderer *renderer, Ctx *ctx, CtxState *state, void *data,
   renderer->format = ctx_pixel_format_info (pixel_format);
 }
 
+
 Ctx *
 ctx_new_for_buffer (CtxBuffer *buffer)
 {
@@ -7822,6 +7830,7 @@ float ctx_y (Ctx *ctx)
   return y;
 }
 
+
 void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
@@ -7855,6 +7864,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 #endif
   }
 }
+
 
 /****  end of engine ****/
 
@@ -8582,12 +8592,6 @@ ctx_text_stroke (Ctx        *ctx,
 #else
   _ctx_text (ctx, string, 1, 1);
 #endif
-}
-
-void
-ctx_gradient_clear_stops (Ctx *ctx)
-{
-   CTX_PROCESS_VOID (CTX_GRADIENT_CLEAR);
 }
 
 static void ctx_setup ()
@@ -10560,23 +10564,20 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
     case CTX_ARC:
       switch (arg_no)
       {
-        case 0:
-        case 3:
+        case 0: case 3:
           *value *= parser->cell_width;
           break;
-        case 1:
-        case 4:
+        case 1: case 4:
           *value *= parser->cell_height;
           break;
-        case 2:
-        case 5:
-          *value *= small;
+        case 2: case 5:
+          *value *= small; // use height?
           break;
       }
 
       break;
-    case CTX_SET_FONT_SIZE:
     case CTX_SET_MITER_LIMIT:
+    case CTX_SET_FONT_SIZE:
     case CTX_SET_LINE_WIDTH:
       {
         *value *= parser->cell_height;
@@ -10596,13 +10597,12 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
       break;
 
     case CTX_RECTANGLE:
-
-      if (arg_no % 2 == 0) // even is x coord
+      if (arg_no % 2 == 0)
         *value *= parser->cell_width;
       else
       {
          if (!(arg_no > 1))
-           parser->numbers[parser->n_numbers] --;
+           parser->numbers[parser->n_numbers] --; // XXX ?
         *value *= parser->cell_height;
       }
       break;
@@ -10745,7 +10745,8 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
               parser->numbers[parser->n_numbers+1] = 0;
               parser->decimal = 0;
               break;
-           case '.':
+           case '.': 
+              //if (parser->decimal) // TODO permit .13.32.43 to equivalent to .12 .32 .43
               parser->decimal = 1;
               break;
            case '0': case '1': case '2': case '3': case '4':
@@ -10807,7 +10808,6 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
          case 8: case 11: case 12: case 14: case 15: case 16: case 17:
          case 18: case 19: case 20: case 21: case 22: case 23: case 24:
          case 25: case 26: case 27: case 28: case 29: case 30: case 31:
-
          case ' ':case '\t':case '\r':case '\n':case ';':case ',':case '(':case ')':case '=':
          case '{':case '}':
             parser->state = CTX_PARSER_NEUTRAL;
