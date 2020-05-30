@@ -576,7 +576,14 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #undef CTX_ENABLE_RGBA8
 #endif
 #define CTX_ENABLE_RGBA8  1
+#endif
 
+/* enable cmykf which is cmyk intermediate format
+ */
+#ifdef CTX_ENABLE_CMYK8|CTX_ENABLE_CMYKA8
+#undef CTX_ENABLE_CMYKF
+#endif
+#define CTX_ENABLE_CMYKF  1
 #endif
 
 
@@ -586,31 +593,27 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #endif
 
 #ifndef CTX_MAX_FONTS
-#define CTX_MAX_FONTS        3
+#define CTX_MAX_FONTS           3
 #endif
 
 #ifndef CTX_MAX_STATES
-#define CTX_MAX_STATES       10
+#define CTX_MAX_STATES          10
 #endif
 
 #ifndef CTX_MAX_EDGES
-#define CTX_MAX_EDGES        257
+#define CTX_MAX_EDGES           257
 #endif
 
 #ifndef CTX_MAX_LINGERING_EDGES
 #define CTX_MAX_LINGERING_EDGES 32
 #endif
 
-#ifndef CTX_MAX_GRADIENTS
-#define CTX_MAX_GRADIENTS    1
-#endif
-
 #ifndef CTX_MAX_TEXTURES
-#define CTX_MAX_TEXTURES     16
+#define CTX_MAX_TEXTURES        16
 #endif
 
 #ifndef CTX_MAX_PENDING
-#define CTX_MAX_PENDING      128
+#define CTX_MAX_PENDING         128
 #endif
 
 #ifndef CTX_FULL_CB
@@ -752,12 +755,12 @@ typedef enum
 } CtxCode;
 
 typedef enum {
-  CTX_GRAY = 1,
-  CTX_RGB  = 3,
+  CTX_GRAY        = 1,
+  CTX_RGB         = 3,
   CTX_RGB_DEVICE  = 4,
-  CTX_CMYK = 5,
-  CTX_LAB  = 6,
-  CTX_LCH  = 7,
+  CTX_CMYK        = 5,
+  CTX_LAB         = 6,
+  CTX_LCH         = 7,
 
   CTX_GRAYA          = 101,
   CTX_GRAYA_A        = 201,
@@ -776,7 +779,7 @@ typedef enum {
   //
 } CtxColorModel;
 
-static int ctx_color_model_get_components (CtxColorModel model)
+static inline int ctx_color_model_get_components (CtxColorModel model)
 {
    switch (model)
    {
@@ -1184,6 +1187,36 @@ static void ctx_color_set_rgba_ (CtxColor *color, const float *in)
 }
 #endif
 
+static void ctx_cmyk_to_rgb (float c, float m, float y, float k, float *r, float *g, float *b)
+{
+  *r = (1.0f-c) * (1.0f-k);
+  *g = (1.0f-m) * (1.0f-k);
+  *b = (1.0f-y) * (1.0f-k);
+}
+
+static void ctx_rgb_to_cmyk (float r, float g, float b,
+                             float *c_out, float *m_out, float *y_out, float *k_out)
+{
+  float c = 1.0f - r;
+  float m = 1.0f - g;
+  float y = 1.0f - b;
+  float k = ctx_minf(c, ctx_minf(y, m));
+  if (k < 1.0f)
+  {
+    c = (c - k) / (1.0f - k);
+    m = (m - k) / (1.0f - k);
+    y = (y - k) / (1.0f - k);
+  }
+  else
+  {
+    c = m = y = 0.0f;
+  }
+  *c_out = c;
+  *m_out = m;
+  *y_out = y;
+  *k_out = k;
+}
+
 #if CTX_ENABLE_CMYK
 static void ctx_color_set_cmyka (CtxColor *color, float c, float m, float y, float k, float a)
 {
@@ -1226,9 +1259,10 @@ static void ctx_color_get_rgba_device (CtxColor *color, float *out)
 #if CTX_ENABLE_CMYK
     else if (color->valid & CTX_VALID_CMYKA)
     {
-      color->device_red   = (1.0f-color->cyan) * (1.0-color->key);
-      color->device_green = (1.0f-color->magenta) * (1.0-color->key);
-      color->device_blue  = (1.0f-color->yellow) * (1.0-color->key);
+      ctx_cmyk_to_rgb (color->cyan, color->magenta, color->yellow, color->key,
+                       &color->device_red,
+                       &color->device_green,
+                       &color->device_blue);
     }
 #endif
     else if (color->valid & CTX_VALID_GRAYA)
@@ -1294,23 +1328,9 @@ static void ctx_color_get_cmyka (CtxColor *color, float *out)
     else
     {
       float rgba[4];
-      float key;
       ctx_color_get_rgba (color, rgba);
-      color->cyan = 1.0f - rgba[0];
-      color->magenta = 1.0f - rgba[1];
-      color->yellow = 1.0f - rgba[2];
-      key = ctx_minf(color->cyan, ctx_minf(color->yellow, color->magenta));
-      color->key = key;
-      if (color->key < 1.0f)
-      {
-        color->cyan = (color->cyan - key) / (1.0f - key);
-        color->magenta = (color->magenta - key) / (1.0f - key);
-        color->yellow = (color->yellow - key) / (1.0f - key);
-      }
-      else
-      {
-        color->cyan = color->magenta = color->yellow = 0.0f;
-      }
+      ctx_rgb_to_cmyk (rgba[0], rgba[1], rgba[2],
+                       &color->cyan, &color->magenta, &color->yellow, &color->key);
       color->alpha = rgba[3];
     }
     color->valid |= CTX_VALID_CMYKA;
@@ -10298,11 +10318,7 @@ static void ctx_parser_set_color_model (CtxParser *parser, int color_model)
 
 static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red, float *green, float *blue, float *alpha)
 {
-  /* this is the function that fetches colors from the input, 
-   * we should here transform to the context's color-space
-   *
-   */
-
+  /* XXX - this function is to be deprecated */
   *alpha = 1.0;
   switch (parser->color_model)
   {
@@ -10385,14 +10401,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           case CTX_CMYK:
           case CTX_CMYKA:
             {
-              float c = arg(0);
-              float m = arg(1);
-              float y = arg(2);
-              float k = arg(3);
-              float r = (1.0f-c) * (1.0f-k);
-              float g = (1.0f-m) * (1.0f-k);
-              float b = (1.0f-y) * (1.0f-k);
-              float a = 1.0f;
+              float r,g,b,a = 1.0f;
+              ctx_cmyk_to_rgb (arg(0), arg(1), arg(2), arg(3), &r, &g, &b);
               if (parser->color_model == CTX_CMYKA)
                 a = arg(4);
               ctx_set_rgba (ctx, r, g, b, a);
