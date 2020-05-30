@@ -839,6 +839,22 @@ ctx_memset (void *ptr, uint8_t val, int length)
    * defined in terms of sqrt(x) sinf and atan2f
    */
 static float
+ctx_minf (float a, float b)
+{
+  if (a < b)
+    return a;
+  return b;
+}
+
+static float
+ctx_maxf (float a, float b)
+{
+  if (a > b)
+    return a;
+  return b;
+}
+
+static float
 ctx_fabsf (float x)
 {
   union {
@@ -2716,7 +2732,7 @@ ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
 
   if (!ctx->state.has_moved)
     return;
-
+#if 0
   // Handle degenerate cases.
   if (ctx_coords_equal (x0,y0, x1,y1, 0.5f) ||
       ctx_coords_equal (x1,y1, x2,y2, 0.5f) ||
@@ -2725,6 +2741,7 @@ ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
         ctx_line_to (ctx, x1,y1);
         return;
       }
+#endif
 
   // Calculate tangential circle to lines (x0,y0)-(x1,y1) and (x1,y1)-(x2,y2).
   dx0 = x0-x1;
@@ -2735,11 +2752,12 @@ ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
   ctx_normalize(&dx1,&dy1);
   a = acosf(dx0*dx1 + dy0*dy1);
   d = radius / tanf(a/2.0f);
-
+#if 1
   if (d > 10000.0f) {
     ctx_line_to (ctx, x1, y1);
     return;
   }
+#endif
   if ((dx1*dy0 - dx0*dy1) > 0.0f) {
     cx = x1 + dx0*d + dy0*radius;
     cy = y1 + dy0*d + -dx0*radius;
@@ -3272,8 +3290,8 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         entry[4].code == CTX_REL_LINE_TO &&
         entry[5].code == CTX_REL_LINE_TO &&
         entry[6].code == CTX_FILL &&
-        ctx_fabsf (entry[2].data.f[0] - 1.0f) < 0.02f &&
-        ctx_fabsf (entry[3].data.f[1] - 1.0f) < 0.02f)
+        fabsf (entry[2].data.f[0] - 1.0f) < 0.02f &&
+        fabsf (entry[3].data.f[1] - 1.0f) < 0.02f)
     {
         entry[0].code = CTX_SET_PIXEL;
         entry[0].data.u16[2] = entry[1].data.f[0];
