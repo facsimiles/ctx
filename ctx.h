@@ -153,8 +153,11 @@ void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
 void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
 void ctx_set_gray       (Ctx *ctx, float gray);
+
+#if YYY
 void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k);
 void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a);
+#endif
 
 void ctx_current_point  (Ctx *ctx, float *x, float *y);
 float ctx_x             (Ctx *ctx);
@@ -484,6 +487,10 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #define CTX_DITHER 1
 #endif
 
+#ifndef CTX_ENABLE_CMYK
+#define CTX_ENABLE_CMYK  1
+#endif
+
 /* by default ctx includes all pixel formats, on microcontrollers
  * it can be useful to slim down code and runtime size by only
  * defining the used formats, set CTX_LIMIT_FORMATS to 1, and
@@ -530,6 +537,7 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #else
   #define CTX_FONT_ENGINE_STB        0
 #endif
+
 
 /* force add format if we have shape cache */
 #if CTX_SHAPE_CACHE
@@ -996,8 +1004,10 @@ struct _CtxGradient
 
 #define CTX_HAS_RGBA_U8   (1<<0)
 #define CTX_HAS_RGBA      (1<<1)
+#if CTX_ENABLE_CMYK
 #define CTX_HAS_CMYKA_U8  (1<<2)
 #define CTX_HAS_CMYKA     (1<<3)
+#endif
 #define CTX_HAS_GRAYA     (1<<4)
 #define CTX_HAS_GRAYA_U8  (1<<5)
 #define CTX_HAS_LABA      ((1<<6) | CTX_HAS_GRAYA)
@@ -1007,24 +1017,24 @@ struct _CtxColor
 {
   // void *babl_space;
   uint8_t rgba[4];
-  uint8_t cmyka[5];
   uint8_t got_types;
 /* colors need only be converted by the raserizer */
   float   red;
   float   green;
   float   blue;
   float   alpha;
-
-  float   cyan;
-  float   magenta;
-  float   yellow;
-  float   key;
-
   float   l;
   float   a;
   float   b;
 
   uint8_t l_u8;
+#if CTX_ENABLE_CMYK
+  uint8_t cmyka[5];
+  float   cyan;
+  float   magenta;
+  float   yellow;
+  float   key;
+#endif 
 };
 
 
@@ -1067,6 +1077,7 @@ static void ctx_color_set_rgba_ (CtxColor *color, const float *in)
   ctx_color_set_rgba (color, in[0], in[1], in[2], in[3]);
 }
 
+#if CTX_ENABLE_CMYK
 static void ctx_color_set_cmyka (CtxColor *color, float c, float m, float y, float k, float a)
 {
   color->got_types = CTX_HAS_CMYKA;
@@ -1081,6 +1092,7 @@ static void ctx_color_set_cmyka_ (CtxColor *color, const float *in)
 {
   ctx_color_set_cmyka (color, in[0], in[1], in[2], in[3], in[4]);
 }
+#endif
 
 static void ctx_color_get_rgba (CtxColor *color, float *out)
 {
@@ -1095,12 +1107,14 @@ static void ctx_color_get_rgba (CtxColor *color, float *out)
       color->blue   = color->rgba[2]/255.0f;
       color->alpha  = color->rgba[3]/255.0f;
     }
+#if CTX_ENABLE_CMYK
     else if (color->got_types & CTX_HAS_CMYKA)
     {
       color->red    = (1.0f-color->cyan) * (1.0-color->key);
       color->green  = (1.0f-color->magenta) * (1.0-color->key);
       color->blue   = (1.0f-color->yellow) * (1.0-color->key);
     }
+#endif
     else if (color->got_types & CTX_HAS_GRAYA)
     {
       color->red    = 
@@ -1128,6 +1142,7 @@ static void ctx_color_get_graya (CtxColor *color, float *out)
   out[1] = color->alpha;
 }
 
+#if CTX_ENABLE_CMYK
 static void ctx_color_get_cmyka (CtxColor *color, float *out)
 {
   if (!(color->got_types & CTX_HAS_CMYKA))
@@ -1159,6 +1174,7 @@ static void ctx_color_get_cmyka (CtxColor *color, float *out)
   out[2] = color->blue;
   out[3] = color->alpha;
 }
+#endif
 
 static void ctx_color_get_rgba_u8 (CtxColor *color, uint8_t *out)
 {
@@ -1190,6 +1206,7 @@ static void ctx_color_get_graya_u8 (CtxColor *color, uint8_t *out)
   out[1] = color->rgba[3];
 }
 
+#if CTX_ENABLE_CMYK
 static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
 {
   if (!(color->got_types & CTX_HAS_CMYKA_U8))
@@ -1205,6 +1222,7 @@ static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
   out[2] = color->cmyka[2];
   out[3] = color->cmyka[3];
 }
+#endif
 
 struct _CtxSource
 {
@@ -2744,6 +2762,7 @@ void ctx_set_gray (Ctx *ctx, float gray)
   ctx_process (ctx, command);
 }
 
+#if CTX_ENABLE_CMYK
 void ctx_set_cmyk (Ctx *ctx, float c, float m, float y, float k)
 {
   CtxEntry command[3]={
@@ -2761,6 +2780,7 @@ void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
      ctx_f (CTX_CONT, y, k)};
   ctx_process (ctx, command);
 }
+#endif
 
 #if 0
 void ctx_set_rgba_stroke (Ctx *ctx, float r, float g, float b, float a)
@@ -2938,12 +2958,14 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         case CTX_RGBA:
             ctx_color_set_rgba (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
           break;
+#if CTX_ENABLE_CMYK
         case CTX_CMYKA:
             ctx_color_set_cmyka (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), ctx_arg_float(1));
         break;
           case CTX_CMYK:
             ctx_color_set_cmyka (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), 1.0);
           break;
+#endif
         case CTX_GRAYA:
           ctx_color_set_graya (color, ctx_arg_float(2), ctx_arg_float(3));
           break;
@@ -8829,6 +8851,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                                ctx_arg_float(3),
                                ctx_arg_float(4));
            break;
+#if CTX_ENABLE_CMYK
           case CTX_CMYKA:
            ctx_set_cmyka (d_ctx, ctx_arg_float(2),
                                  ctx_arg_float(3),
@@ -8843,6 +8866,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                                  ctx_arg_float(5),
                                  1.0f);
            break;
+#endif
         }
         break;
 
@@ -9910,6 +9934,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       cmd, parser->n_numbers, parser->n_args);
 #endif
   }
+#define arg(a)  (parser->numbers[a])
 
   parser->command = CTX_NOP;
   switch (cmd)
@@ -9925,29 +9950,52 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         switch (parser->color_model)
         {
           case CTX_GRAY:
-            ctx_set_gray (ctx, parser->numbers[0]);
+            ctx_set_gray (ctx, arg(0));
             break;
           case CTX_GRAYA:
-            ctx_set_rgba (ctx, parser->numbers[0], parser->numbers[0], parser->numbers[0], parser->numbers[1]);
+            ctx_set_rgba (ctx, arg(0), parser->numbers[0], parser->numbers[0], parser->numbers[1]);
             break;
           case CTX_RGB:
-            ctx_set_rgb (ctx, parser->numbers[0],
+            ctx_set_rgb (ctx, arg(0),
                                parser->numbers[1],
                                parser->numbers[2]);
             break;
+#if CTX_ENABLE_CMYK
           case CTX_CMYK:
-            ctx_set_cmyk (ctx, parser->numbers[0],
+            ctx_set_cmyk (ctx, arg(0),
                                parser->numbers[1],
                                parser->numbers[2],
                                parser->numbers[3]);
             break;
           case CTX_CMYKA:
-            ctx_set_cmyka (ctx, parser->numbers[0],
+            ctx_set_cmyka (ctx, arg(0),
                                 parser->numbers[1],
                                 parser->numbers[2],
                                 parser->numbers[3],
                                 parser->numbers[4]);
             break;
+#else
+          /* when there is no cmyk support at all in renderer
+           * do a naive mapping to RGB on input.
+           */
+          case CTX_CMYK:
+          case CTX_CMYKA:
+            {
+              float c = arg(0);
+              float m = arg(1);
+              float y = arg(2);
+              float k = arg(3);
+              float r,g,b;
+              float r = (1.0f-c) * (1.0f-k);
+              float g = (1.0f-m) * (1.0f-k);
+              float b = (1.0f-y) * (1.0f-k);
+              float a = 1.0f;
+              if (parser->color_model == CTX_CMYKA)
+                a = arg(4);
+              ctx_set_rgba (ctx, r, g, b, a);
+            }
+            break;
+#endif
           case CTX_RGBA:
             ctx_set_rgba (ctx, parser->numbers[0],
                                parser->numbers[1],
