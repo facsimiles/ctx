@@ -154,6 +154,7 @@ float ctx_get_font_size  (Ctx *ctx);
 void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 //void ctx_set_rgba_stroke (Ctx *ctx, float  r, float   g, float   b, float   a);
 void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
+void ctx_set_rgba_device(Ctx *ctx, float r, float g, float b, float a);
 void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
 void ctx_set_gray       (Ctx *ctx, float gray);
 
@@ -161,6 +162,7 @@ void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k);
 void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a);
 
 void ctx_get_rgba       (Ctx *ctx, float *rgba);
+void ctx_get_rgba_device(Ctx *ctx, float *rgba);
 void ctx_get_cmyka      (Ctx *ctx, float *cmyka);
 void ctx_get_graya      (Ctx *ctx, float *ya);
 
@@ -752,24 +754,56 @@ typedef enum
 typedef enum {
   CTX_GRAY = 1,
   CTX_RGB  = 3,
-  CTX_CMYK = 4,
-  CTX_LAB  = 5,
-  CTX_LCH  = 6,
+  CTX_RGB_DEVICE  = 4,
+  CTX_CMYK = 5,
+  CTX_LAB  = 6,
+  CTX_LCH  = 7,
 
-  CTX_GRAYA   = 101,
-  CTX_GRAYA_A = 201,
-  CTX_RGBA    = 103,
-  CTX_RGBA_A  = 203,
-  CTX_CMYKA   = 104,
-  CTX_CMYKA_A = 204,
-  CTX_LABA    = 105,
-  CTX_LCHA    = 106,
+  CTX_GRAYA          = 101,
+  CTX_GRAYA_A        = 201,
+  CTX_RGBA           = 103,
+  CTX_RGBA_A         = 203,
+  CTX_RGBA_DEVICE    = 104,
+  CTX_RGBA_A_DEVICE  = 204,
+  CTX_CMYKA          = 105,
+  CTX_CMYKA_A        = 205,
+  CTX_LABA           = 106,
+  CTX_LCHA           = 107,
 
   // RGB  device and  RGB  ?
   // 
   //
   //
 } CtxColorModel;
+
+static int ctx_color_model_get_components (CtxColorModel model)
+{
+   switch (model)
+   {
+     case CTX_GRAY:
+             return 1;
+     case CTX_GRAYA:
+     case CTX_GRAYA_A:
+             return 1;
+     case CTX_RGB:
+     case CTX_LAB:
+     case CTX_LCH:
+     case CTX_RGB_DEVICE:
+             return 3;
+     case CTX_CMYK:
+     case CTX_LABA:
+     case CTX_LCHA:
+     case CTX_RGBA:
+     case CTX_RGBA_DEVICE:
+     case CTX_RGBA_A:
+     case CTX_RGBA_A_DEVICE:
+             return 4;
+     case CTX_CMYKA:
+     case CTX_CMYKA_A:
+             return 5;
+   }
+   return 0;
+}
 
 typedef struct _CtxEntry CtxEntry;
 
@@ -1130,6 +1164,19 @@ static void ctx_color_set_rgba (CtxColor *color, float r, float g, float b, floa
   color->alpha        = a;
 }
 
+static void ctx_color_set_rgba_device (CtxColor *color, float r, float g, float b, float a)
+{
+#if CTX_ENABLE_CM
+  color->original = color->valid = CTX_VALID_RGBA_DEVICE;
+  color->device_red   = r;
+  color->device_green = g;
+  color->device_blue  = b;
+  color->alpha        = a;
+#else
+  ctx_color_set_rgba (color, r, g, b, a);
+#endif
+}
+
 #if 0
 static void ctx_color_set_rgba_ (CtxColor *color, const float *in)
 {
@@ -1197,7 +1244,6 @@ static void ctx_color_get_rgba_device (CtxColor *color, float *out)
   out[2] = color->device_blue;
   out[3] = color->alpha;
 }
-
 
 static void ctx_color_get_rgba (CtxColor *color, float *out)
 {
@@ -1704,6 +1750,13 @@ ctx_get_rgba (Ctx *ctx, float *rgba)
 {
   ctx_color_get_rgba (&ctx->state.gstate.source.color, rgba);
 }
+
+void
+ctx_get_rgba_device (Ctx *ctx, float *rgba)
+{
+  ctx_color_get_rgba_device (&ctx->state.gstate.source.color, rgba);
+}
+
 #if CTX_ENABLE_CMYK
 void
 ctx_get_cmyka (Ctx *ctx, float *cmyka)
@@ -2775,7 +2828,7 @@ ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
 
   if (!ctx->state.has_moved)
     return;
-#if 0
+if(0){
   // Handle degenerate cases.
   if (ctx_coords_equal (x0,y0, x1,y1, 0.5f) ||
       ctx_coords_equal (x1,y1, x2,y2, 0.5f) ||
@@ -2784,7 +2837,7 @@ ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
         ctx_line_to (ctx, x1,y1);
         return;
       }
-#endif
+}
 
   // Calculate tangential circle to lines (x0,y0)-(x1,y1) and (x1,y1)-(x2,y2).
   dx0 = x0-x1;
@@ -2858,6 +2911,15 @@ ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_
   command.data.u16[2]=x;
   command.data.u16[3]=y;
   ctx_process (ctx, &command);
+}
+
+void ctx_set_rgba_device (Ctx *ctx, float r, float g, float b, float a)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_RGBA_DEVICE, 0.0f),
+     ctx_f (CTX_CONT, r, g),
+     ctx_f (CTX_CONT, b, a)};
+  ctx_process (ctx, command);
 }
 
 void ctx_set_rgba (Ctx *ctx, float r, float g, float b, float a)
@@ -3081,6 +3143,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           break;
         case CTX_RGBA:
             ctx_color_set_rgba (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
+          break;
+        case CTX_RGBA_DEVICE:
+            ctx_color_set_rgba_device (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
           break;
 #if CTX_ENABLE_CMYK
         case CTX_CMYKA:
@@ -9134,6 +9199,12 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
       case CTX_SET_COLOR:
         switch ((int)ctx_arg_float(0))
         {
+          case CTX_RGBA_DEVICE:
+           ctx_set_rgba_device (d_ctx, ctx_arg_float(2),
+                                       ctx_arg_float(3),
+                                       ctx_arg_float(4),
+                                       ctx_arg_float(5));
+           break;
           case CTX_RGBA:
            ctx_set_rgba (d_ctx, ctx_arg_float(2),
                                 ctx_arg_float(3),
@@ -10132,8 +10203,16 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
       ctx_parser_set_color_model (parser, CTX_RGBA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
+    case STR('d','r','g','b','a',0,0,0,0,0,0,0):
+      ctx_parser_set_color_model (parser, CTX_RGBA_DEVICE);
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
+
     case STR('c','m','y','k',0,0,0,0,0,0,0,0):
       ctx_parser_set_color_model (parser, CTX_CMYK);
+      return ctx_parser_set_command (parser, CTX_SET_COLOR);
+
+    case STR('c','m','y','k','a',0,0,0,0,0,0,0):
+      ctx_parser_set_color_model (parser, CTX_CMYKA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     case STR('l','a','b',0,0,0,0,0,0,0,0,0):
@@ -10152,9 +10231,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
       ctx_parser_set_color_model (parser, CTX_LCHA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
-    case STR('c','m','y','k','a',0,0,0,0,0,0,0):
-      ctx_parser_set_color_model (parser, 104);
-      return ctx_parser_set_command (parser, CTX_SET_COLOR);
 
     /* words in all caps map mapping to low integer/enum constants
     */
@@ -10217,9 +10293,7 @@ enum {
 static void ctx_parser_set_color_model (CtxParser *parser, int color_model)
 {
   parser->color_model      = color_model;
-  parser->color_components = color_model % 100;
-  if (parser->color_model >  99)
-    parser->color_components++;
+  parser->color_components = ctx_color_model_get_components (color_model);
 }
 
 static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red, float *green, float *blue, float *alpha)
@@ -10327,6 +10401,12 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 #endif
           case CTX_RGBA:
             ctx_set_rgba (ctx, arg(0), arg(1), arg(2), arg(3));
+            break;
+          case CTX_RGB_DEVICE:
+            ctx_set_rgba_device (ctx, arg(0), arg(1), arg(2), 1.0);
+            break;
+          case CTX_RGBA_DEVICE:
+            ctx_set_rgba_device (ctx, arg(0), arg(1), arg(2), arg(3));
             break;
         }
       }
