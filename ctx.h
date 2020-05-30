@@ -46,6 +46,8 @@ typedef enum
   CTX_FORMAT_GRAY1,
   CTX_FORMAT_GRAY2,
   CTX_FORMAT_GRAY4,
+  CTX_FORMAT_CMYK8,
+  CTX_FORMAT_CMYKA8,
   CTX_FORMAT_CMYKAF
 } CtxPixelFormat;
 
@@ -521,7 +523,9 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #define CTX_ENABLE_GRAY1                1
 #define CTX_ENABLE_GRAY2                1
 #define CTX_ENABLE_GRAY4                1
+#define CTX_ENABLE_CMYK8                1
 #define CTX_ENABLE_CMYKA8               1
+#define CTX_ENABLE_CMYKAF               1
 
 #endif
 
@@ -548,7 +552,6 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #else
   #define CTX_FONT_ENGINE_STB        0
 #endif
-
 
 /* force add format if we have shape cache */
 #if CTX_SHAPE_CACHE
@@ -614,12 +617,8 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #define CTX_FULL_CB 0
 #endif
 
-#ifndef CTX_EXTRAS
-#define CTX_EXTRAS  0
-#endif
-
 #ifndef CTX_RENDER_CTX
-#define CTX_RENDER_CTX  1
+#define CTX_RENDER_CTX       1
 #endif
 
 #define CTX_ASSERT 0
@@ -825,7 +824,6 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte);
 
 #ifdef CTX_IMPLEMENTATION
 
-#define ctx_pow2(a) ((a)*(a))
 
 static void
 ctx_memset (void *ptr, uint8_t val, int length)
@@ -835,8 +833,11 @@ ctx_memset (void *ptr, uint8_t val, int length)
     p[i] = val;
 }
 
+#define ctx_pow2(a) ((a)*(a))
 #if CTX_MATH
-
+  /* a tiny self contained c math library containing what we need,
+   * defined in terms of sqrt(x) sinf and atan2f
+   */
 static float
 ctx_fabsf (float x)
 {
@@ -902,7 +903,7 @@ static float ctx_atan2f (float y, float x)
   if ( ctx_fabsf( z ) < 1.0f )
   {
     atan = z/(1.0f + 0.28f*z*z);
-    if ( x < 0.0f )
+    if (x < 0.0f)
     {
       if ( y < 0.0f )
         return atan - CTX_PI;
@@ -917,25 +918,19 @@ static float ctx_atan2f (float y, float x)
   return atan;
 }
 
-static float ctx_atanf (float x)
-{
-  return ctx_atan2f (x, 1.0f);
-  //
-  //return CTX_PI/4 * x - x * (ctx_fabsf(x) - 1.0f) * (0.2447f + 0.0663f * ctx_fabsf(x));
-}
+#define sqrtf(a)     (1.0f/ctx_invsqrtf(a))
+#define sinf(a)      ctx_sinf(a)
+#define fabsf(a)     ctx_fabsf(a)
+#define atan2f(a,b)  ctx_atan2f((a), (b))
 
-#define sqrtf(a)    (1.0f/ctx_invsqrtf(a))
-#define atanf(a)    ctx_atanf(a)
-#define asinf(x)    ctx_atanf((x)/(ctx_sqrtf(1.0f-ctx_pow2(x))))
-#define acosf(x)    ctx_atanf((sqrtf(1.0f-ctx_pow2(x))/(x)))
-#define atan2f(a,b) ctx_atan2f((a), (b))
-#define sinf(a)     ctx_sinf(a)
-#define fabsf(a)    ctx_fabsf(a)
-#define cosf(a)     ctx_sinf((a) + CTX_PI/2.0f)
-#define tanf(a)     (cosf(a)/sinf(a))
+#define hypotf(a,b)  sqrtf(ctx_pow2(a)+ctx_pow2(b))
 
-#define hypotf(a,b) sqrtf(ctx_pow2(a)+ctx_pow2(b))
-
+/* define more trig based on having sqrt, sin and atan2 */
+#define atanf(a)     atan2f((a), 1.0f)
+#define asinf(x)     atanf((x)*(ctxinv_sqrtf(1.0f-ctx_pow2(x))))
+#define acosf(x)     atanf((sqrtf(1.0f-ctx_pow2(x))/(x)))
+#define cosf(a)      sinf((a) + CTX_PI/2.0f)
+#define tanf(a)      (cosf(a)/sinf(a))
 
 #else
 
@@ -5750,8 +5745,11 @@ ctx_associated_rgba_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst,
 static void
 ctx_sample_source_cmyka_f_color (CtxRenderer *renderer, float x, float y, void *out)
 {
+  float *cmyka = out;
   // XXX : only solid color implemented for now
   ctx_color_get_cmyka (&renderer->state->gstate.source.color, out);
+  for (int i = 0; i < 4; i ++)
+    cmyka[i] *= cmyka[4];
 }
 
 static CtxSourceU8 ctx_renderer_get_source_cmykaf (CtxRenderer *renderer)
@@ -5842,6 +5840,21 @@ ctx_CMYKAF_to_CMYKA8 (CtxRenderer *renderer, float *src, uint8_t *dst, int count
   }
 }
 
+static int
+ctx_b2f_over_CMYKA8 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
+{
+  int ret;
+  float pixels[count * 5];
+
+  ctx_CMYKA8_to_CMYKAF (renderer, dst, &pixels[0], count);
+  ret = ctx_associated_cmyka_float_b2f_over (renderer, x, (uint8_t*)&pixels[0], coverage, count);
+  ctx_CMYKAF_to_CMYKA8 (renderer, &pixels[0], dst, count);
+  return ret;
+}
+#endif
+
+#if CTX_ENABLE_CMYK8
+
 static void
 ctx_CMYK8_to_CMYKAF (CtxRenderer *renderer, uint8_t *src, float *dst, int count)
 {
@@ -5882,14 +5895,14 @@ ctx_CMYKAF_to_CMYK8 (CtxRenderer *renderer, float *src, uint8_t *dst, int count)
 }
 
 static int
-ctx_b2f_over_CMYKA8 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
+ctx_b2f_over_CMYK8 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
 {
   int ret;
   float pixels[count * 5];
 
-  ctx_CMYKA8_to_CMYKAF (renderer, dst, &pixels[0], count);
+  ctx_CMYK8_to_CMYKAF (renderer, dst, &pixels[0], count);
   ret = ctx_associated_cmyka_float_b2f_over (renderer, x, (uint8_t*)&pixels[0], coverage, count);
-  ctx_CMYKAF_to_CMYKA8 (renderer, &pixels[0], dst, count);
+  ctx_CMYKAF_to_CMYK8 (renderer, &pixels[0], dst, count);
   return ret;
 }
 #endif
@@ -7279,10 +7292,7 @@ ctx_b2f_over_GRAY2 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
   ctx_encode_pixels_GRAY2 (renderer, x, dst, &pixels[0], count);
   return ret;
 }
-
-
 #endif
-
 
 #if CTX_ENABLE_GRAY4
 static inline void
@@ -7331,10 +7341,7 @@ ctx_b2f_over_GRAY4 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
   ctx_encode_pixels_GRAY4 (renderer, x, dst, &pixels[0], count);
   return ret;
 }
-
-
 #endif
-
 
 #if CTX_ENABLE_GRAY8
 static inline void
@@ -7547,7 +7554,6 @@ ctx_b2f_over_RGB565 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *covera
   return ret;
 }
 
-
 #endif
 
 #if CTX_ENABLE_RGB565_BYTESWAPPED
@@ -7606,14 +7612,6 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {CTX_FORMAT_RGBA8, 4, 32, 4, 0, 0,
   NULL, NULL, ctx_b2f_over_RGBA8 },
 
-#if CTX_ENABLE_CMYKAF
-  {CTX_FORMAT_CMYKAF, 5, 160, 4 * 5, 0, 0,
-   NULL, NULL, ctx_associated_cmyka_float_b2f_over },
-#endif
-#if CTX_ENABLE_CMYKA8
-  {CTX_FORMAT_CMYKAF, 5, 32, 4 * 5, 0, 0,
-   NULL, NULL, ctx_b2f_over_CMYKA8},
-#endif
 #if CTX_ENABLE_BGRA8
   {CTX_FORMAT_BGRA8, 4, 32, 4, 0, 0,
    ctx_decode_pixels_BGRA8, ctx_encode_pixels_BGRA8, ctx_b2f_over_BGRA8 },
@@ -7665,6 +7663,18 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
    ctx_decode_pixels_RGB565_BS,
    ctx_encode_pixels_RGB565_BS,
    ctx_b2f_over_RGB565_BS},
+#endif
+#if CTX_ENABLE_CMYKAF
+  {CTX_FORMAT_CMYKAF, 5, 160, 4 * 5, 0, 0,
+   NULL, NULL, ctx_associated_cmyka_float_b2f_over },
+#endif
+#if CTX_ENABLE_CMYKA8
+  {CTX_FORMAT_CMYKA8, 5, 40, 4 * 5, 0, 0,
+   NULL, NULL, ctx_b2f_over_CMYKA8},
+#endif
+#if CTX_ENABLE_CMYK8
+  {CTX_FORMAT_CMYK8, 5, 32, 4 * 5, 0, 0,
+   NULL, NULL, ctx_b2f_over_CMYK8},
 #endif
 };
 
@@ -7729,6 +7739,8 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                      data, 0, 0, width, height, stride, pixel_format);
   return ctx;
 }
+
+// ctx_new_for_stream (FILE *stream);
 
 #if 0
 CtxRenderer *ctx_renderer_new (void *data, int x, int y, int width, int height,
@@ -10334,43 +10346,50 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           ctx_rel_move_to (ctx, -parser->numbers[0], 0.0);  //  XXX : scale by font(size)
         else
         {
-          /* XXX : we are doing an allocation here, we do not want to
-           *       do allocations, or at least make them smaller,
-           *       keeping a temporary line we build up, to configurable
-           *       ~512byte fixed length seems better.
-           */
-          char *copy = strdup ((char*)parser->holding);
-          char *c;
-          for (c = copy; c; )
+          if (strchr (parser->holding, '\n'))
           {
-            char *next_nl = strchr (c, '\n');
-            if (next_nl)
-            {
-              *next_nl = 0;
-            }
-
-            /* do our own layouting on a per-word basis?, to get justified
-             * margins? then we'd want explict margins rather than the
-             * implicit ones from move_to's .. making move_to work within
-             * margins.
+            /* XXX : instead of a strdup, having a linebuffer would be better
              */
-            if (cmd == CTX_TEXT_STROKE)
-              ctx_text_stroke (ctx, c);
-            else
-              ctx_text (ctx, c);
+            char *copy = strdup ((char*)parser->holding);
+            char *c;
+            for (c = copy; c; )
+            {
+              char *next_nl = strchr (c, '\n');
+              if (next_nl)
+              {
+                *next_nl = 0;
+              }
 
-            if (next_nl)
-            {
-              ctx_move_to (ctx, parser->left_margin, ctx_y (ctx) + 
-                                ctx_get_font_size (ctx));
-              c = next_nl + 1;
+              /* do our own layouting on a per-word basis?, to get justified
+               * margins? then we'd want explict margins rather than the
+               * implicit ones from move_to's .. making move_to work within
+               * margins.
+               */
+              if (cmd == CTX_TEXT_STROKE)
+                ctx_text_stroke (ctx, c);
+              else
+                ctx_text (ctx, c);
+
+              if (next_nl)
+              {
+                ctx_move_to (ctx, parser->left_margin, ctx_y (ctx) + 
+                                  ctx_get_font_size (ctx));
+                c = next_nl + 1;
+              }
+              else
+              {
+                c = NULL;
+              }
             }
-            else
-            {
-              c = NULL;
-            }
+            free (copy);
           }
-          free (copy);
+          else
+          {
+            if (cmd == CTX_TEXT_STROKE)
+              ctx_text_stroke (ctx, parser->holding);
+            else
+              ctx_text (ctx, parser->holding);
+          }
         }
         if (cmd == CTX_TEXT_STROKE)
           parser->command = CTX_TEXT_STROKE;
