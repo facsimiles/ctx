@@ -521,6 +521,7 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #define CTX_ENABLE_GRAY1                1
 #define CTX_ENABLE_GRAY2                1
 #define CTX_ENABLE_GRAY4                1
+#define CTX_ENABLE_CMYKA8               1
 
 #endif
 
@@ -5797,16 +5798,101 @@ ctx_associated_cmyka_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst
   return count;
 }
 
+#if CTX_ENABLE_CMYKA8
+
+static void
+ctx_CMYKA8_to_CMYKAF (CtxRenderer *renderer, uint8_t *src, float *dst, int count)
+{
+  for (int i = 0; i < count; i ++)
+  {
+     dst[0] = (255-src[0])/255.0f;
+     dst[1] = (255-src[1])/255.0f;
+     dst[2] = (255-src[2])/255.0f;
+     dst[3] = (255-src[3])/255.0f;
+     dst[4] = src[1];
+
+     for (int c = 0; c < 4; c++)
+       dst[c] *= dst[4];
+     src += 5;
+     dst += 5;
+  }
+}
+static void
+ctx_CMYKAF_to_CMYKA8 (CtxRenderer *renderer, float *src, uint8_t *dst, int count)
+{
+  for (int i = 0; i < count; i ++)
+  {
+     float c = src[0]; float m = src[1]; float y = src[2]; float k = src[3];
+     float a = src[4];
+
+     if (a != 0.0f && a != 1.0f)
+     {
+        float recip = 1.0f/a;
+        c *= recip; m *= recip; y *= recip; k *= recip;
+     }
+     c = 1.0 - c; m = 1.0 - m; y = 1.0 - y; k = 1.0 - k;
+     dst[0] = c * 255.99;
+     dst[1] = m * 255.99;
+     dst[2] = y * 255.99;
+     dst[3] = k * 255.99;
+     dst[4] = a * 255.99;
+
+     src += 5;
+     dst += 5;
+  }
+}
+
+static void
+ctx_CMYK8_to_CMYKAF (CtxRenderer *renderer, uint8_t *src, float *dst, int count)
+{
+  for (int i = 0; i < count; i ++)
+  {
+     dst[0] = (255-src[0])/255.0f;
+     dst[1] = (255-src[1])/255.0f;
+     dst[2] = (255-src[2])/255.0f;
+     dst[3] = (255-src[3])/255.0f;
+     dst[4] = 1.0f;
+     src += 4;
+     dst += 5;
+  }
+}
+static void
+ctx_CMYKAF_to_CMYK8 (CtxRenderer *renderer, float *src, uint8_t *dst, int count)
+{
+  for (int i = 0; i < count; i ++)
+  {
+     float c = src[0]; float m = src[1]; float y = src[2]; float k = src[3];
+     float a = src[4];
+
+     if (a != 0.0f && a != 1.0f)
+     {
+        float recip = 1.0f/a;
+        c *= recip; m *= recip; y *= recip; k *= recip;
+     }
+     c = 1.0 - c; m = 1.0 - m; y = 1.0 - y; k = 1.0 - k;
+
+     dst[0] = c * 255.99;
+     dst[1] = m * 255.99;
+     dst[2] = y * 255.99;
+     dst[3] = k * 255.99;
+
+     src += 5;
+     dst += 4;
+  }
+}
+
 static int
 ctx_b2f_over_CMYKA8 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverage, int count)
 {
   int ret;
-  uint8_t pixels[count * 4];
-  //ctx_decode_pixels_GRAY1 (renderer, x, dst, &pixels[0], count);
-  ret = ctx_associated_cmyka_float_b2f_over (renderer, x, &pixels[0], coverage, count);
-  //ctx_encode_pixels_GRAY1 (renderer, x, dst, &pixels[0], count);
+  float pixels[count * 5];
+
+  ctx_CMYKA8_to_CMYKAF (renderer, dst, &pixels[0], count);
+  ret = ctx_associated_cmyka_float_b2f_over (renderer, x, (uint8_t*)&pixels[0], coverage, count);
+  ctx_CMYKAF_to_CMYKA8 (renderer, &pixels[0], dst, count);
   return ret;
 }
+#endif
 
 #endif
 
@@ -7524,7 +7610,10 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {CTX_FORMAT_CMYKAF, 5, 160, 4 * 5, 0, 0,
    NULL, NULL, ctx_associated_cmyka_float_b2f_over },
 #endif
-
+#if CTX_ENABLE_CMYKA8
+  {CTX_FORMAT_CMYKAF, 5, 32, 4 * 5, 0, 0,
+   NULL, NULL, ctx_b2f_over_CMYKA8},
+#endif
 #if CTX_ENABLE_BGRA8
   {CTX_FORMAT_BGRA8, 4, 32, 4, 0, 0,
    ctx_decode_pixels_BGRA8, ctx_encode_pixels_BGRA8, ctx_b2f_over_BGRA8 },
