@@ -9931,52 +9931,80 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     /* first a list of mappings to one_char hashes, handled in a
      * separate fast path switch without hashing
      */
+    case STR('a','r','c','T','o',0,0,0,0,0,0,0):
     case STR('a','r','c','_','t','o',0,0,0,0,0,0):             ret = CTX_ARC_TO; break;
     case STR('a','r','c',0,0,0,0,0,0,0,0,0):                   ret = CTX_ARC; break;
+    case STR('c','u','r','v','e','T','o',0,0,0,0,0):
     case STR('c','u','r','v','e','_','t','o',0,0,0,0):         ret = CTX_CURVE_TO; break;
     case STR('r','e','s','t','o','r','e',0,0,0,0,0):           ret = CTX_RESTORE; break;
     case STR('s','t','r','o','k','e',0,0,0,0,0,0):             ret = CTX_STROKE; break;
     case STR('f','i','l','l',0,0,0,0,0,0,0,0):                 ret = CTX_FILL; break;
+    case STR('h','o','r','L','i','n','e','T','o',0,0,0):
     case STR('h','o','r','_','l','i','n','e','_','t','o',0):   ret = CTX_HOR_LINE_TO; break;
     case STR('r','o','t','a','t','e',0,0,0,0,0,0):             ret = CTX_ROTATE; break;
     case STR('c','o','l','o','r',0,0,0,0,0,0,0):               ret = CTX_SET_COLOR; break;
+    case STR('l','i','n','e','T','o',0,0,0,0,0,0):
     case STR('l','i','n','e','_','t','o',0,0,0,0,0):           ret = CTX_LINE_TO; break;
+    case STR('m','o','v','e','T','o',0,0,0,0,0,0):
     case STR('m','o','v','e','_','t','o',0,0,0,0,0):           ret = CTX_MOVE_TO; break;
+
     case STR('s','c','a','l','e',0,0,0,0,0,0,0):               ret = CTX_SCALE; break;
+    case STR('n','e','w','P','a','g','e',0,0,0,0,0):
     case STR('n','e','w','_','p','a','g','e',0,0,0,0):         ret = CTX_NEW_PAGE; break;
+    case STR('q','u','a','d','T','o',0,0,0,0,0,0):
     case STR('q','u','a','d','_','t','o',0,0,0,0,0):           ret = CTX_QUAD_TO; break;
+    case STR('m','e','d','i','a','B','o','x',0,0,0,0):
     case STR('m','e','d','i','a','_','b','o','x',0,0,0):       ret = CTX_MEDIA_BOX; break;
     case STR('s','m','o','o','t','h','_','t','o',0,0,0):       ret = CTX_SMOOTH_TO; break;
+    case STR('s','m','o','o','t','h','Q','u','a','d','T','o'):
     case STR('s','m','o','o','t','h','_','q','u','a','d','_'): ret = CTX_SMOOTHQ_TO; break;
     case STR('c','l','e','a','r',0,0,0,0,0,0,0):               ret = CTX_CLEAR; break;
+    case STR('v','e','r','l','i','n','e','t','o',0,0,0):
     case STR('v','e','r','_','l','i','n','e','_','t','o',0):   ret = CTX_VER_LINE_TO; break;
     case STR('e','x','i','t',0,0,0,0,0,0,0,0):
     case STR('d','o','n','e',0,0,0,0,0,0,0,0):                 ret = CTX_EXIT; break;
+    case STR('c','l','o','s','e','P','a','t','h',0,0,0):
     case STR('c','l','o','s','e','_','p','a','t','h',0,0):     ret =  CTX_CLOSE_PATH; break;
+
+    case STR('n','e','w','P','a','t','h',0,0,0,0,0): 
     case STR('n','e','w','_','p','a','t','h',0,0,0,0): 
+    case STR('b','e','g','i','n','P','a','t','h',0,0,0):
     case STR('b','e','g','i','n','_','p','a','t','h',0,0):     ret =  CTX_NEW_PATH; break;
 
+    case STR('r','e','l','A','r','c','T','o',0,0,0,0):
     case STR('r','e','l','_','a','r','c','_','t','o',0,0):     ret = CTX_REL_ARC_TO; break;
     case STR('c','l','i','p',0,0,0,0,0,0,0,0):                 ret = CTX_CLIP; break;
+    case STR('r','e','l','C','u','r','v','e','T','o',0,0):
     case STR('r','e','l','_','c','u','r','v','e','_','t','o'): ret = CTX_REL_CURVE_TO; break;
     case STR('s','a','v','e',0,0,0,0,0,0,0,0):                 ret = CTX_SAVE; break;
     case STR('t','r','a','n','s','l','a','t','e',0,0,0):       ret = CTX_TRANSLATE; break;
+    case STR('l','i','n','e','a','r','G','r','a','d','i','e'):
     case STR('l','i','n','e','a','r','_','g','r','a','d','i'): ret = CTX_LINEAR_GRADIENT; break;
+
+    case STR('r','e','l','H','o','r','L','i','n','e','T','o'):
     case STR('r','e','l','_','h','o','r','_','l','i','n','e'): ret = CTX_REL_HOR_LINE_TO; break;
 
-
+    case STR('r','e','l','L','i','n','e','T','o',0,0,0):
     case STR('r','e','l','_','l','i','n','e','_','t','o',0):   ret = CTX_REL_LINE_TO; break;
+    case STR('r','e','l','M','o','v','e','T','o',0,0,0):
     case STR('r','e','l','_','m','o','v','e','_','t','o',0):   ret = CTX_REL_MOVE_TO; break;
     case STR('f','o','n','t',0,0,0,0,0,0,0,0):                 ret = CTX_SET_FONT; break;
     case STR('r','a','d','i','a','l','_','g','r','a','d','i'): ret = CTX_RADIAL_GRADIENT;  break;
     case STR('g','r','a','d','i','e','n','t','_','a','d','d'):
+    case STR('g','r','a','d','i','e','n','t','A','d','d','S'):
+    case STR('a','d','d','S','t','o','p',0,0,0,0,0):           ret = CTX_GRADIENT_STOP; break;
     case STR('a','d','d','_','s','t','o','p',0,0,0,0):         ret = CTX_GRADIENT_STOP; break;
+    case STR('r','e','l','Q','u','a','d','T','o',0,0,0):
     case STR('r','e','l','_','q','u','a','d','_','t','o',0):   ret = CTX_REL_QUAD_TO; break;
     case STR('r','e','c','t','a','n','g','l','e',0,0,0):
     case STR('r','e','c','t',0,0,0,0,'e',0,0,0):               ret = CTX_RECTANGLE; break;
+    case STR('r','e','l','S','m','o','o','t','h','T','o',0): 
     case STR('r','e','l','_','s','m','o','o','t','h','_','t'): ret = CTX_REL_SMOOTH_TO; break;
+    case STR('r','e','l','S','m','o','o','t','h','q','T','o'):
     case STR('r','e','l','_','s','m','o','o','t','h','_','q'): ret = CTX_REL_SMOOTHQ_TO; break;
+    case STR('t','e','x','t','s','t','r','o','k','e', 0, 0):
     case STR('t','e','x','t','_','s','t','r','o','k','e', 0):  ret = CTX_TEXT_STROKE; break;
+    case STR('r','e','l','V','e','r','L','i','n','e','T','o'):
     case STR('r','e','l','_','v','e','r','_','l','i','n','e'): ret = CTX_REL_VER_LINE_TO; break;
     case STR('t','e','x','t',0,0,0,0,0,0,0,0):                 ret = CTX_TEXT; break;
     case STR('i','d','e','n','t','i','t','y',0,0,0,0):         ret = CTX_IDENTITY; break;
@@ -9989,31 +10017,38 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
     case STR(CTX_SET_PARAM,'r',0,0,0,0,0,0,0,0,0,0):
     case STR('f','i','l','l','_','r','u','l','e',0,0,0): 
+    case STR('f','i','l','l','R','u','l','e',0,0,0,0): 
       return ctx_parser_set_command (parser, CTX_SET_FILL_RULE);
 
     case STR(CTX_SET_PARAM,'f',0,0,0,0,0,0,0,0,0,0):
     case STR('f','o','n','t','_','s','i','z','e',0,0,0):
+    case STR('f','o','n','t','s','i','z','e',0,0,0,0):
       return ctx_parser_set_command (parser, CTX_SET_FONT_SIZE);
 
     case STR(CTX_SET_PARAM,'l',0,0,0,0,0,0,0,0,0,0):
     case STR('m','i','t','e','r','_','l','i','m','i','t',0):
+    case STR('m','i','t','e','r','l','i','m','i','t',0,0):
       return ctx_parser_set_command (parser, CTX_SET_MITER_LIMIT);
 
     case STR(CTX_SET_PARAM,'t',0,0,0,0,0,0,0,0,0,0):
     case STR('t','e','x','t','_','a','l','i','g','n',0, 0):
+    case STR('t','e','x','t','a','l','i','g','n',0, 0, 0):
       return ctx_parser_set_command (parser, CTX_SET_TEXT_ALIGN);
 
     case STR(CTX_SET_PARAM,'b',0,0,0,0,0,0,0,0,0,0):
     case STR('t','e','x','t','_','b','a','s','e','l','i','n'):
+    case STR('t','e','x','t','b','a','s','e','l','i','n','e'):
       return ctx_parser_set_command (parser, CTX_SET_TEXT_BASELINE);
 
     case STR(CTX_SET_PARAM,'d',0,0,0,0,0,0,0,0,0,0):
     case STR('t','e','x','t','_','d','i','r','e','c','t','i'):
+    case STR('t','e','x','t','D','i','r','e','c','t','i','o'):
       return ctx_parser_set_command (parser, CTX_SET_TEXT_DIRECTION);
 
     case STR(CTX_SET_PARAM,'j',0,0,0,0,0,0,0,0,0,0):
     case STR('j','o','i','n',0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','j','o','i','n',0,0,0):
+    case STR('l','i','n','e','j','o','i','n',0,0,0,0):
       return ctx_parser_set_command (parser, CTX_SET_LINE_JOIN);
 
     case STR(CTX_SET_PARAM,'c',0,0,0,0,0,0,0,0,0,0):
@@ -10075,8 +10110,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     /* words in all caps map mapping to low integer/enum constants
     */
     case STR('w','i','n','d','i','n', 'g', 0, 0, 0, 0, 0):  return CTX_FILL_RULE_WINDING;
-    case STR('e','v','e','n','o','d', 'd', 0, 0, 0, 0, 0):  return CTX_FILL_RULE_EVEN_ODD;
-    case STR('e','v','e','n','_','o','d', 'd', 0, 0, 0, 0):  return CTX_FILL_RULE_EVEN_ODD;
+    case STR('e','v','e','n','o','d', 'd', 0, 0, 0, 0, 0): 
+    case STR('e','v','e','n','_','o','d', 'd', 0, 0, 0, 0): return CTX_FILL_RULE_EVEN_ODD;
 
     case STR('b','e','v','e','l',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_BEVEL;
     case STR('r','o','u','n','d',0, 0, 0, 0, 0, 0, 0):     return CTX_JOIN_ROUND;
@@ -10376,7 +10411,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           ctx_rel_move_to (ctx, -parser->numbers[0], 0.0);  //  XXX : scale by font(size)
         else
         {
-          if (strchr (parser->holding, '\n'))
+          if (strchr ((char*)parser->holding, '\n'))
           {
             /* XXX : instead of a strdup, having a linebuffer would be better
              */
@@ -10416,9 +10451,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           else
           {
             if (cmd == CTX_TEXT_STROKE)
-              ctx_text_stroke (ctx, parser->holding);
+              ctx_text_stroke (ctx, (char*)parser->holding);
             else
-              ctx_text (ctx, parser->holding);
+              ctx_text (ctx, (char*)parser->holding);
           }
         }
         if (cmd == CTX_TEXT_STROKE)
