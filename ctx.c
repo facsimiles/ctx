@@ -232,6 +232,7 @@ int main (int argc, char **argv)
       !strcmp (dest_path, "GRAY4") ||
       !strcmp (dest_path, "GRAY8") ||
       !strcmp (dest_path, "GRAYF") ||
+      !strcmp (dest_path, "CMYKAF") ||
       !strcmp (dest_path, "RGB8") ||
       !strcmp (dest_path, "RGBA8") ||
       !strcmp (dest_path, "CMYK8")
@@ -444,6 +445,35 @@ int main (int argc, char **argv)
        }
        printf ("\n");
     }
+  }
+
+  if (!strcmp (dest_path, "CMYKAF"))
+  {
+     int reverse = 0;
+     int stride = width * 4 * 5;
+     float pixels[stride*height];
+     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
+
+     Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_CMYKAF);
+     memset (pixels, 0, sizeof (pixels));
+     ctx_render_ctx (ctx, dctx);
+     ctx_free (dctx);
+
+     for (int c = 0; c < 5; c++)
+     {
+     int no = 0;
+     for (int y= 0; y < height; y++)
+     {
+       for (int x = 0; x < width; x++, no+=5)
+       {
+          int val = (int)CTX_CLAMP((pixels[no+c]*6.0), 0, 5);
+          if (reverse)
+            val = 5-val;
+          printf ("%s", utf8_gray_scale[val]);
+       }
+       printf ("\n");
+     }
+     }
   }
 
   if (!strcmp (dest_path, "RGBA8"))

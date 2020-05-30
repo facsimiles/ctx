@@ -31,7 +31,6 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 
-
 typedef enum
 {
   CTX_FORMAT_GRAY8,
@@ -1293,7 +1292,8 @@ struct _CtxGState {
   //CtxSource     source_stroke;
   CtxSource     source;
   CtxColorModel color_model;
-  uint8_t       global_alpha;
+  uint8_t       global_alpha_u8;
+  float         global_alpha_f;
   float         line_width;
   float         miter_limit;
   float         font_size;
@@ -2383,7 +2383,7 @@ ctx_set_global_alpha (Ctx *ctx, float global_alpha)
 float
 ctx_get_global_alpha (Ctx *ctx)
 {
- return ctx->state.gstate.global_alpha;
+ return ctx->state.gstate.global_alpha_f;
 }
 
 void
@@ -2984,7 +2984,8 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       state->gstate.text_direction = (CtxTextDirection)ctx_arg_u8(0);
       break;
     case CTX_SET_GLOBAL_ALPHA:
-      state->gstate.global_alpha = CTX_CLAMP(ctx_arg_float(0)*255.0,0, 255);
+      state->gstate.global_alpha_u8 = CTX_CLAMP(ctx_arg_float(0)*255.0,0, 255);
+      state->gstate.global_alpha_f = ctx_arg_float(0);
       break;
     case CTX_SET_FONT_SIZE:
       state->gstate.font_size = ctx_arg_float(0);
@@ -4029,7 +4030,8 @@ static void
 ctx_state_init (CtxState *state)
 {
   ctx_memset (state, 0, sizeof (CtxState));
-  state->gstate.global_alpha = 255;
+  state->gstate.global_alpha_u8 = 255;
+  state->gstate.global_alpha_f = 1.0;
   state->gstate.font_size    = 12;
   state->gstate.line_spacing = 1.0;
   state->gstate.line_width   = 2.0;
@@ -5401,6 +5403,17 @@ static CtxSourceU8 ctx_renderer_get_source_rgba_u8 (CtxRenderer *renderer)
   return ctx_sample_source_rgba_u8_color;
 }
 
+static void
+ctx_sample_source_cmyka_f_color (CtxRenderer *renderer, float x, float y, void *out)
+{
+  ctx_color_get_cmyka (&renderer->state->gstate.source.color, out);
+}
+
+static CtxSourceU8 ctx_renderer_get_source_cmykaf (CtxRenderer *renderer)
+{
+  return ctx_sample_source_cmyka_f_color;
+}
+
 #define MASK_ALPHA       (0xff << 24)
 #define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
@@ -5453,7 +5466,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t * restrict dst, uint8
     return count;
   }
   ctx_color_get_rgba_u8 (&gstate->source.color, color);
-  color[3] = (color[3] * gstate->global_alpha)>>8;
+  color[3] = (color[3] * gstate->global_alpha_u8)>>8;
 
   if (color[3] == 255)
   {
@@ -5562,10 +5575,10 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *restrict dst, uint8_
         if (color[3])
         {
           ctx_swap_red_green (color);
-          if ((gstate->global_alpha != 255 )||
+          if ((gstate->global_alpha_u8 != 255 )||
               (color[3]!=255))
           {
-            color[3] = (color[3] * gstate->global_alpha)>>8;
+            color[3] = (color[3] * gstate->global_alpha_u8)>>8;
             color[0] = (color[0] * color[3])>>8;
             color[1] = (color[1] * color[3])>>8;
             color[2] = (color[2] * color[3])>>8;
@@ -5579,9 +5592,9 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *restrict dst, uint8_
   }
 
   ctx_color_get_rgba_u8 (&gstate->source.color, color);
-  if (gstate->global_alpha != 255)
+  if (gstate->global_alpha_u8 != 255)
   {
-    color[3] = (color[3] * gstate->global_alpha)>>8;
+    color[3] = (color[3] * gstate->global_alpha_u8)>>8;
   }
   ctx_swap_red_green (color);
 
@@ -5663,7 +5676,7 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, u
         source (renderer, u, v, &scolor[0]);
         // XXX - we need generic sources for gray and cmyk
         gray = ((scolor[0]+scolor[1]+scolor[2])/3.0)/255.0; 
-        alpha = scolor[3]/255.0 + renderer->state->gstate.global_alpha/255.0;
+        alpha = scolor[3]/255.0 + renderer->state->gstate.global_alpha_u8/255.0;
       }
 
       float ralpha = 1.0f - alpha * cov/255.0;
@@ -5705,7 +5718,7 @@ ctx_associated_rgba_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst,
         for (int c = 0; c < components; c++)
           color_f[c]=scolor[c]/255.0f;  // XXX ; lacks gamma handling
 
-        color_f[3] *= (scolor[components-1] * renderer->state->gstate.global_alpha/255.0f);
+        color_f[components-1] *= (renderer->state->gstate.global_alpha_u8/255.0f);
         for (int c = 0; c < components-1; c++)
           color_f[c] *= color_f[components-1];
 
@@ -5753,54 +5766,35 @@ ctx_associated_cmyka_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *dst
                        // non RGB color models.
   float *dst_f = (float*)dst;
   float y = renderer->scanline / CTX_RASTERIZER_AA;
-
-  CtxSourceU8 source = ctx_renderer_get_source_rgba_u8 (renderer);
-  if (source == ctx_sample_source_rgba_u8_color) source = NULL;
-
-  if (source)
+  CtxSourceU8 source = ctx_renderer_get_source_cmykaf (renderer);
+  float color_f[components];
+  if (source == ctx_sample_source_cmyka_f_color)
   {
-    float color_f[components];
-    for (int x = 0; x < count; x++)
-    {
-      float cov = coverage[x]/255.0f;
-      if (cov != 0.0f)
-      {
-        uint8_t scolor[5];
-        source (renderer, x0 + x, y, &scolor[0]);
-        for (int c = 0; c < components; c++)
-          color_f[c]=scolor[c]/255.0f;  // XXX ; lacks gamma handling
+    source (renderer, x0, y, color_f);
+    color_f[components-1] *= renderer->state->gstate.global_alpha_f;
+    for (int c = 0; c < components-1; c++)
+      color_f[c] *= color_f[components-1];
+    source = NULL;
+  }
 
-        color_f[3] *= (scolor[components-1] * renderer->state->gstate.global_alpha/255.0f);
+  for (int x = 0; x < count; x++)
+  {
+    float cov = coverage[x]/255.0f;
+    if (cov != 0.0f)
+    {
+      if (source)
+      {
+        source (renderer, x0 + x, y, color_f);
+        color_f[components-1] *= renderer->state->gstate.global_alpha_f;
         for (int c = 0; c < components-1; c++)
           color_f[c] *= color_f[components-1];
-
-        float ralpha = 1.0f - color_f[components-1] * cov;
-        for (int c = 0; c < components; c++)
-          dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
       }
-      dst_f += components;
+
+      float ralpha = 1.0f - color_f[components-1] * cov;
+      for (int c = 0; c < components; c++)
+        dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
     }
-  }
-  else
-  {
-    float color_f[components];
-
-    ctx_color_get_rgba (&renderer->state->gstate.source.color, color_f);
-
-    for (int c = 0; c < components-1; c++) // associate alpha
-      color_f[c] *= color_f[components-1];
-
-    for (int x = 0; x < count; x++)
-    {
-      float cov = coverage[x]/255.0f;
-      if (cov != 0.0f)
-      {
-        float ralpha = 1.0f - color_f[components-1] * cov;
-        for (int c = 0; c < components; c++)
-          dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha;
-      }
-      dst_f += components;
-    }
+    dst_f += components;
   }
   return count;
 }
@@ -5839,7 +5833,6 @@ ctx_renderer_generate_coverage (CtxRenderer *renderer,
 #define CTX_EDGE_YMAX(no) CTX_EDGE(no).data.s16[3]
 #define CTX_EDGE_SLOPE(no) renderer->edges[no].dx
 #define CTX_EDGE_X(no)     (renderer->edges[no].x)
-
 
   for (int t = 0; t < active_edges -1;)
   {
