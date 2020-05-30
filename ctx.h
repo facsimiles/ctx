@@ -497,6 +497,10 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 #define CTX_ENABLE_CMYK  1
 #endif
 
+#ifndef CTX_ENABLE_CM
+#define CTX_ENABLE_CM  1
+#endif
+
 /* by default ctx includes all pixel formats, on microcontrollers
  * it can be useful to slim down code and runtime size by only
  * defining the used formats, set CTX_LIMIT_FORMATS to 1, and
@@ -770,7 +774,8 @@ typedef enum {
 typedef struct _CtxEntry CtxEntry;
 
 /* we only care about the tight packing for this specific
- * struct, to make sure its size becomes 9bytes -
+ * structx as we do indexing across members in arrays of it,
+ * to make sure its size becomes 9bytes -
  * the pack pragma is also sufficient on recent gcc versions
  */
 #pragma pack(push,1)
@@ -786,9 +791,22 @@ struct _CtxEntry
     int16_t  s16[4];
     uint32_t u32[2];
     int32_t  s32[2];
-    uint64_t u64[1];
+    uint64_t u64[1]; // unused
   } data;
 };
+
+/* access macros for nth argument of a given type when packed into
+ * an CtxEntry pointer in current code context
+ */
+#define ctx_arg_float(no) entry[(no)>>1].data.f[(no)&1]
+#define ctx_arg_u64(no)   entry[(no)].data.u64[0]
+#define ctx_arg_u32(no)   entry[(no)>>1].data.u32[(no)&1]
+#define ctx_arg_s32(no)   entry[(no)>>1].data.s32[(no)&1]
+#define ctx_arg_u16(no)   entry[(no)>>2].data.u16[(no)&3]
+#define ctx_arg_s16(no)   entry[(no)>>2].data.s16[(no)&3]
+#define ctx_arg_u8(no)    entry[(no)>>3].data.u8[(no)&7]
+#define ctx_arg_s8(no)    entry[(no)>>3].data.s8[(no)&7]
+#define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
 
 #pragma pack(pop)
 
@@ -816,7 +834,6 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte);
 
 #ifdef CTX_IMPLEMENTATION
 
-
 static void
 ctx_memset (void *ptr, uint8_t val, int length)
 {
@@ -825,7 +842,12 @@ ctx_memset (void *ptr, uint8_t val, int length)
     p[i] = val;
 }
 
-#define ctx_pow2(a) ((a)*(a))
+static float
+ctx_pow2 (float a)
+{
+  return a * a;
+}
+
 static float
 ctx_minf (float a, float b)
 {
@@ -841,10 +863,8 @@ ctx_maxf (float a, float b)
     return a;
   return b;
 }
+
 #if CTX_MATH
-  /* a tiny self contained c math library containing what we need,
-   * defined in terms of sqrt(x) sinf and atan2f
-   */
 
 static float
 ctx_fabsf (float x)
@@ -956,14 +976,6 @@ static float ctx_fast_hypotf (float x, float y)
     return 0.96f * x + 0.4f * y;
 }
 
-#define ctx_arg_float(no) entry[(no)>>1].data.f[(no)&1]
-#define ctx_arg_u32(no)   entry[(no)>>1].data.u32[(no)&1]
-#define ctx_arg_s32(no)   entry[(no)>>1].data.s32[(no)&1]
-#define ctx_arg_u16(no)   entry[(no)>>2].data.u16[(no)&3]
-#define ctx_arg_s16(no)   entry[(no)>>2].data.s16[(no)&3]
-#define ctx_arg_u8(no)    entry[(no)>>3].data.u8[(no)&7]
-#define ctx_arg_s8(no)    entry[(no)>>3].data.s8[(no)&7]
-#define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
 
 typedef struct _CtxRenderer CtxRenderer;
 typedef struct _CtxGState   CtxGState;
@@ -971,7 +983,7 @@ typedef struct _CtxState    CtxState;
 typedef struct _CtxMatrix   CtxMatrix;
 struct _CtxMatrix
 {
-  float m[3][2]; // use 3x3 matrix or fixed point instead?
+  float m[3][2];
 };
 
 typedef struct _CtxSource CtxSource;
@@ -980,7 +992,8 @@ typedef struct _CtxGradientStop CtxGradientStop;
 
 struct _CtxGradientStop
 {
-  float   pos;      // use integer instead?
+  float   pos;
+  // XXX use CtxColor instead
   uint8_t rgba[4];
 };
 
@@ -1016,15 +1029,18 @@ struct _CtxGradient
   int n_stops;
 };
 
-#define CTX_VALID_RGBA_U8   (1<<0)
-#define CTX_VALID_RGBA      (1<<1)
-#if CTX_ENABLE_CMYK
-#define CTX_VALID_CMYKA_U8  (1<<2)
-#define CTX_VALID_CMYKA     (1<<3)
+#define CTX_VALID_RGBA_U8     (1<<0)
+#define CTX_VALID_RGBA_DEVICE (1<<1)
+#if CTX_ENABLE_CM
+#define CTX_VALID_RGBA        (1<<2)
 #endif
-#define CTX_VALID_GRAYA     (1<<4)
-#define CTX_VALID_GRAYA_U8  (1<<5)
-#define CTX_VALID_LABA      ((1<<6) | CTX_VALID_GRAYA)
+#if CTX_ENABLE_CMYK
+#define CTX_VALID_CMYKA_U8    (1<<3)
+#define CTX_VALID_CMYKA       (1<<4)
+#endif
+#define CTX_VALID_GRAYA       (1<<5)
+#define CTX_VALID_GRAYA_U8    (1<<6)
+#define CTX_VALID_LABA        ((1<<7) | CTX_VALID_GRAYA)
 
 //_ctx_target_space (ctx, icc);
 //_ctx_space (ctx);
@@ -1038,9 +1054,9 @@ struct _CtxColor
   uint8_t valid;    // bitmask of which members contain valid
                     // values, gets denser populated as more
                     // formats are requested from a set color.
-  float   red;
-  float   green;
-  float   blue;
+  float   device_red;
+  float   device_green;
+  float   device_blue;
   float   alpha;
   float   l;        // luminance and gray
 #if CTX_ENABLE_LAB  // NYI
@@ -1062,7 +1078,7 @@ struct _CtxColor
   // cmyk values are presumed to always be in
   // ICC space and the color values set are not
   // influenced by color management. RGB values
-  // however are.
+  // however are. will lose prefix
   float   cm_red;
   float   cm_green;
   float   cm_blue;
@@ -1100,11 +1116,18 @@ static void ctx_color_set_graya_ (CtxColor *color, const float *in)
 
 static void ctx_color_set_rgba (CtxColor *color, float r, float g, float b, float a)
 {
+#if CTX_ENABLE_CM
   color->original = color->valid = CTX_VALID_RGBA;
-  color->red   = r;
-  color->green = g;
-  color->blue  = b;
-  color->alpha = a;
+  color->cm_red   = r;
+  color->cm_green = g;
+  color->cm_blue  = b;
+#else
+  color->original = color->valid = CTX_VALID_RGBA_DEVICE;
+  color->device_red   = r;
+  color->device_green = g;
+  color->device_blue  = b;
+#endif
+  color->alpha        = a;
 }
 
 #if 0
@@ -1134,37 +1157,69 @@ static void ctx_color_set_cmyka_ (CtxColor *color, const float *in)
 
 #endif
 
-static void ctx_color_get_rgba (CtxColor *color, float *out)
+static void ctx_color_get_rgba_device (CtxColor *color, float *out)
 {
-  if (!(color->valid & CTX_VALID_RGBA))
+  if (!(color->valid & CTX_VALID_RGBA_DEVICE))
   {
+#if CTX_ENABLE_CM
+    if (color->valid & CTX_VALID_RGBA)
+    {
+      color->device_red   = color->cm_red;
+      color->device_green = color->cm_green;
+      color->device_blue  = color->cm_blue;
+    } else
+#endif
     if (color->valid & CTX_VALID_RGBA_U8)
     {
-      color->red    = color->rgba[0]/255.0f;
-      color->green  = color->rgba[1]/255.0f;
-      color->blue   = color->rgba[2]/255.0f;
+      color->device_red   = color->rgba[0]/255.0f;
+      color->device_green = color->rgba[1]/255.0f;
+      color->device_blue  = color->rgba[2]/255.0f;
       color->alpha  = color->rgba[3]/255.0f;
     }
 #if CTX_ENABLE_CMYK
     else if (color->valid & CTX_VALID_CMYKA)
     {
-      color->red    = (1.0f-color->cyan) * (1.0-color->key);
-      color->green  = (1.0f-color->magenta) * (1.0-color->key);
-      color->blue   = (1.0f-color->yellow) * (1.0-color->key);
+      color->device_red   = (1.0f-color->cyan) * (1.0-color->key);
+      color->device_green = (1.0f-color->magenta) * (1.0-color->key);
+      color->device_blue  = (1.0f-color->yellow) * (1.0-color->key);
     }
 #endif
     else if (color->valid & CTX_VALID_GRAYA)
     {
-      color->red    = 
-      color->green  =
-      color->blue   = color->l;
+      color->device_red    = 
+      color->device_green  =
+      color->device_blue   = color->l;
+    }
+    color->valid |= CTX_VALID_RGBA_DEVICE;
+  }
+  out[0] = color->device_red;
+  out[1] = color->device_green;
+  out[2] = color->device_blue;
+  out[3] = color->alpha;
+}
+
+
+static void ctx_color_get_rgba (CtxColor *color, float *out)
+{
+#if CTX_ENABLE_CM
+  if (!(color->valid & CTX_VALID_RGBA))
+  {
+    ctx_color_get_rgba_device (color, out);
+    if (color->valid & CTX_VALID_RGBA_DEVICE)
+    {
+      color->cm_red   = color->device_red;
+      color->cm_green = color->device_green;
+      color->cm_blue  = color->device_blue;
     }
     color->valid |= CTX_VALID_RGBA;
   }
-  out[0] = color->red;
-  out[1] = color->green;
-  out[2] = color->blue;
+  out[0] = color->cm_red;
+  out[1] = color->cm_green;
+  out[2] = color->cm_blue;
   out[3] = color->alpha;
+#else
+  ctx_color_get_rgba_device (color, out);
+#endif
 }
 
 static void ctx_color_get_graya (CtxColor *color, float *out)
@@ -1172,7 +1227,7 @@ static void ctx_color_get_graya (CtxColor *color, float *out)
   if (!(color->valid & CTX_VALID_GRAYA))
   {
     float rgba[4];
-    ctx_color_get_rgba (color, rgba);
+    ctx_color_get_rgba_device (color, rgba);
     color->l = (rgba[0] + rgba[1] + rgba[2])/3.0f; // XXX
     color->valid |= CTX_VALID_GRAYA;
   }
