@@ -697,6 +697,8 @@ typedef enum
   CTX_SET_TEXT_DIRECTION   = 19, // wd
   CTX_SET_MITER_LIMIT      = 20, // wm
 
+  CTX_DEFUN  = 21,
+  CTX_ENDFUN = 22,
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
@@ -737,6 +739,8 @@ typedef enum
   CTX_REL_QUAD_TO_REL_QUAD_TO   = '8',
   CTX_REL_QUAD_TO_S16           = '9',
 #endif
+
+
 
 } CtxCode;
 
@@ -9529,6 +9533,7 @@ static int ctx_arguments_for_code (CtxCode code)
   case CTX_VER_LINE_TO:
   case CTX_SET_FONT:
   case CTX_ROTATE:
+  case CTX_DEFUN:
     return 1;
   case CTX_TRANSLATE:
   case CTX_REL_SMOOTHQ_TO:
@@ -9669,6 +9674,9 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
   switch (str_hash)
   {
+    case STR('d','e','f','u','n',0,0,0,0,0,0,0): str_hash = CTX_DEFUN; break;
+    case STR('e','n','d','f','u','n',0,0,0,0,0,0): str_hash = CTX_ENDFUN; break;
+
     /* first a list of mappings to one_char hashes, handled in a
      * separate fast path switch without hashing
      */
@@ -9927,15 +9935,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
   if (parser->n_args != 100 &&
       parser->n_args != parser->n_numbers)
   {
-#if 0
-    fprintf (stderr, "ctx:%i:%i %c got %i instead of %i args\n",
-      parser->line, parser->col,
-      cmd, parser->n_numbers, parser->n_args);
-#else
     ctx_log ("ctx:%i:%i %c got %i instead of %i args\n",
       parser->line, parser->col,
       cmd, parser->n_numbers, parser->n_args);
-#endif
   }
 #define arg(a)  (parser->numbers[a])
 
@@ -9956,27 +9958,15 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
             ctx_set_gray (ctx, arg(0));
             break;
           case CTX_GRAYA:
-            ctx_set_rgba (ctx, arg(0), parser->numbers[0], parser->numbers[0], parser->numbers[1]);
+            ctx_set_rgba (ctx, arg(0), arg(0), arg(0), arg(1));
             break;
           case CTX_RGB:
-            ctx_set_rgb (ctx, arg(0),
-                               parser->numbers[1],
-                               parser->numbers[2]);
-            break;
+            ctx_set_rgb (ctx, arg(0), arg(1), arg(2)); break;
 #if CTX_ENABLE_CMYK
           case CTX_CMYK:
-            ctx_set_cmyk (ctx, arg(0),
-                               parser->numbers[1],
-                               parser->numbers[2],
-                               parser->numbers[3]);
-            break;
+            ctx_set_cmyk (ctx, arg(0), arg(1), arg(2), arg(3)); break;
           case CTX_CMYKA:
-            ctx_set_cmyka (ctx, arg(0),
-                                parser->numbers[1],
-                                parser->numbers[2],
-                                parser->numbers[3],
-                                parser->numbers[4]);
-            break;
+            ctx_set_cmyka (ctx, arg(0), arg(1), arg(2), arg(3), arg(4)); break;
 #else
           /* when there is no cmyk support at all in renderer
            * do a naive mapping to RGB on input.
@@ -10000,29 +9990,16 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
             break;
 #endif
           case CTX_RGBA:
-            ctx_set_rgba (ctx, parser->numbers[0],
-                               parser->numbers[1],
-                               parser->numbers[2],
-                               parser->numbers[3]);
+            ctx_set_rgba (ctx, arg(0), arg(1), arg(2), arg(3));
             break;
         }
       }
       break;
     case CTX_ARC_TO: 
-      ctx_arc_to (ctx, 
-          parser->numbers[0],
-          parser->numbers[1],
-          parser->numbers[2],
-          parser->numbers[3],
-          parser->numbers[4]);
+      ctx_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4));
       break;
     case CTX_REL_ARC_TO:
-      ctx_rel_arc_to (ctx, 
-          parser->numbers[0],
-          parser->numbers[1],
-          parser->numbers[2],
-          parser->numbers[3],
-          parser->numbers[4]);
+      ctx_rel_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4));
       break;
     case CTX_REL_SMOOTH_TO:
         {
@@ -10030,25 +10007,25 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           float cy = parser->pcy;
           float ax = 2 * ctx_x (ctx) - cx;
           float ay = 2 * ctx_y (ctx) - cy;
-          ctx_curve_to (ctx, ax, ay, parser->numbers[0] +  cx, parser->numbers[1] + cy,
-                             parser->numbers[2] + cx, parser->numbers[3] + cy);
-          parser->pcx = parser->numbers[0] + cx;
-          parser->pcy = parser->numbers[1] + cy;
+          ctx_curve_to (ctx, ax, ay, arg(0) +  cx, arg(1) + cy,
+                             arg(2) + cx, arg(3) + cy);
+          parser->pcx = arg(0) + cx;
+          parser->pcy = arg(1) + cy;
         }
         break;
     case CTX_SMOOTH_TO:
         {
           float ax = 2 * ctx_x (ctx) - parser->pcx;
           float ay = 2 * ctx_y (ctx) - parser->pcy;
-          ctx_curve_to (ctx, ax, ay, parser->numbers[0], parser->numbers[1],
-                             parser->numbers[2], parser->numbers[3]);
-          parser->pcx = parser->numbers[0];
-          parser->pcx = parser->numbers[1];
+          ctx_curve_to (ctx, ax, ay, arg(0), arg(1),
+                             arg(2), arg(3));
+          parser->pcx = arg(0);
+          parser->pcx = arg(1);
         }
         break;
 
     case CTX_SMOOTHQ_TO:
-        ctx_quad_to (ctx, parser->pcx, parser->pcy, parser->numbers[0], parser->numbers[1]);
+        ctx_quad_to (ctx, parser->pcx, parser->pcy, arg(0), arg(1));
         break;
     case CTX_REL_SMOOTHQ_TO:
         {
@@ -10056,97 +10033,87 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           float cy = parser->pcy;
           parser->pcx = 2 * ctx_x (ctx) - parser->pcx;
           parser->pcy = 2 * ctx_y (ctx) - parser->pcy;
-          ctx_quad_to (ctx, parser->pcx, parser->pcy, parser->numbers[0] +  cx, parser->numbers[1] + cy);
+          ctx_quad_to (ctx, parser->pcx, parser->pcy, arg(0) +  cx, arg(1) + cy);
         }
         break;
-    case CTX_VER_LINE_TO: ctx_line_to (ctx, ctx_x (ctx), parser->numbers[0]); parser->command = CTX_VER_LINE_TO;
+    case CTX_VER_LINE_TO: ctx_line_to (ctx, ctx_x (ctx), arg(0)); parser->command = CTX_VER_LINE_TO;
         parser->pcx = ctx_x (ctx);
         parser->pcy = ctx_y (ctx);
         break;
     case CTX_HOR_LINE_TO:
-        ctx_line_to (ctx, parser->numbers[0], ctx_y(ctx)); parser->command = CTX_HOR_LINE_TO;
+        ctx_line_to (ctx, arg(0), ctx_y(ctx)); parser->command = CTX_HOR_LINE_TO;
         parser->pcx = ctx_x (ctx);
         parser->pcy = ctx_y (ctx);
         break;
-    case CTX_REL_HOR_LINE_TO: ctx_rel_line_to (ctx, parser->numbers[0], 0.0f); parser->command = CTX_REL_HOR_LINE_TO;
+    case CTX_REL_HOR_LINE_TO: ctx_rel_line_to (ctx, arg(0), 0.0f); parser->command = CTX_REL_HOR_LINE_TO;
         parser->pcx = ctx_x (ctx);
         parser->pcy = ctx_y (ctx);
         break;
-    case CTX_REL_VER_LINE_TO: ctx_rel_line_to (ctx, 0.0f, parser->numbers[0]); parser->command = CTX_REL_VER_LINE_TO;
+    case CTX_REL_VER_LINE_TO: ctx_rel_line_to (ctx, 0.0f, arg(0)); parser->command = CTX_REL_VER_LINE_TO;
         parser->pcx = ctx_x (ctx);
         parser->pcy = ctx_y (ctx);
         break;
     case CTX_ARC:
-        ctx_arc (ctx, parser->numbers[0], parser->numbers[1],
-                      parser->numbers[2], parser->numbers[3],
-                      parser->numbers[4], parser->numbers[5]);
+        ctx_arc (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5));
         break;
     case CTX_SET_TRANSFORM:
-        ctx_set_transform (ctx, parser->numbers[0], parser->numbers[1],
-                                parser->numbers[2], parser->numbers[3],
-                                parser->numbers[4], parser->numbers[5]);
+        ctx_set_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5));
         break;
     case CTX_CURVE_TO:
-        ctx_curve_to (ctx, parser->numbers[0], parser->numbers[1],
-                           parser->numbers[2], parser->numbers[3],
-                           parser->numbers[4], parser->numbers[5]);
-        parser->pcx = parser->numbers[2];
-        parser->pcy = parser->numbers[3];
+        ctx_curve_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5));
+        parser->pcx = arg(2);
+        parser->pcy = arg(3);
         parser->command = CTX_CURVE_TO;
         break;
     case CTX_REL_CURVE_TO:
-        parser->pcx = parser->numbers[2] + ctx_x (ctx);
-        parser->pcy = parser->numbers[3] + ctx_y (ctx);
+        parser->pcx = arg(2) + ctx_x (ctx);
+        parser->pcy = arg(3) + ctx_y (ctx);
                         
-        ctx_rel_curve_to (ctx, parser->numbers[0], parser->numbers[1],
-                               parser->numbers[2], parser->numbers[3],
-                               parser->numbers[4], parser->numbers[5]);
+        ctx_rel_curve_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5));
         parser->command = CTX_REL_CURVE_TO;
         break;
     case CTX_LINE_TO:
-        ctx_line_to (ctx, parser->numbers[0], parser->numbers[1]);
+        ctx_line_to (ctx, arg(0), arg(1));
         parser->command = CTX_LINE_TO;
-        parser->pcx = parser->numbers[0];
-        parser->pcy = parser->numbers[1];
+        parser->pcx = arg(0);
+        parser->pcy = arg(1);
         break;
     case CTX_MOVE_TO:
-        ctx_move_to (ctx, parser->numbers[0], parser->numbers[1]);
+        ctx_move_to (ctx, arg(0), arg(1));
         parser->command = CTX_LINE_TO;
-        parser->pcx = parser->numbers[0];
-        parser->pcy = parser->numbers[1];
+        parser->pcx = arg(0);
+        parser->pcy = arg(1);
         parser->left_margin = parser->pcx;
         break;
     case CTX_SET_FONT_SIZE:
-        ctx_set_font_size (ctx, parser->numbers[0]);
+        ctx_set_font_size (ctx, arg(0));
         break;
     case CTX_SET_MITER_LIMIT:
-        ctx_set_miter_limit (ctx, parser->numbers[0]);
+        ctx_set_miter_limit (ctx, arg(0));
         break;
     case CTX_SCALE:
-        ctx_scale (ctx, parser->numbers[0], parser->numbers[1]);
+        ctx_scale (ctx, arg(0), arg(1));
         break;
     case CTX_QUAD_TO:
-        parser->pcx = parser->numbers[0];
-        parser->pcy = parser->numbers[1];
-        ctx_quad_to (ctx, parser->numbers[0], parser->numbers[1],
-                     parser->numbers[2], parser->numbers[3]);
+        parser->pcx = arg(0);
+        parser->pcy = arg(1);
+        ctx_quad_to (ctx, arg(0), arg(1), arg(2), arg(3));
         parser->command = CTX_QUAD_TO;
         break;
     case CTX_REL_QUAD_TO: 
-        parser->pcx = parser->numbers[0] + ctx_x (ctx);
-        parser->pcy = parser->numbers[1] + ctx_y (ctx);
-        ctx_rel_quad_to (ctx, parser->numbers[0], parser->numbers[1],
-        parser->numbers[2], parser->numbers[3]);
+        parser->pcx = arg(0) + ctx_x (ctx);
+        parser->pcy = arg(1) + ctx_y (ctx);
+        ctx_rel_quad_to (ctx, arg(0), arg(1), arg(2), arg(3));
         parser->command = CTX_REL_QUAD_TO;
         break;
     case CTX_CLIP:
         ctx_clip (ctx);
         break;
     case CTX_TRANSLATE:
-        ctx_translate (ctx, parser->numbers[0], parser->numbers[1]);
+        ctx_translate (ctx, arg(0), arg(1));
         break;
     case CTX_ROTATE:
-        ctx_rotate (ctx, parser->numbers[0]);
+        ctx_rotate (ctx, arg(0));
         break;
     case CTX_SET_FONT:
         ctx_set_font (ctx, (char*)parser->holding);
@@ -10201,66 +10168,62 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           parser->command = CTX_TEXT;
         break;
     case CTX_REL_LINE_TO:
-        ctx_rel_line_to (ctx , parser->numbers[0], parser->numbers[1]);
-        parser->pcx += parser->numbers[0];
-        parser->pcy += parser->numbers[1];
+        ctx_rel_line_to (ctx , arg(0), arg(1));
+        parser->pcx += arg(0);
+        parser->pcy += arg(1);
         break;
     case CTX_REL_MOVE_TO:
-        ctx_rel_move_to (ctx , parser->numbers[0], parser->numbers[1]);
-        parser->pcx += parser->numbers[0];
-        parser->pcy += parser->numbers[1];
+        ctx_rel_move_to (ctx , arg(0), arg(1));
+        parser->pcx += arg(0);
+        parser->pcy += arg(1);
         parser->left_margin = ctx_x (ctx);
         break;
     case CTX_SET_LINE_WIDTH:
-        ctx_set_line_width (ctx, parser->numbers[0]);
+        ctx_set_line_width (ctx, arg(0));
         break;
     case CTX_SET_LINE_JOIN:
-        ctx_set_line_join (ctx, parser->numbers[0]);
+        ctx_set_line_join (ctx, arg(0));
         break;
     case CTX_SET_LINE_CAP:
-        ctx_set_line_cap (ctx, parser->numbers[0]);
+        ctx_set_line_cap (ctx, arg(0));
         break;
     case CTX_SET_COMPOSITING_MODE:
-        ctx_set_compositing_mode (ctx, parser->numbers[0]);
+        ctx_set_compositing_mode (ctx, arg(0));
         break;
     case CTX_SET_FILL_RULE:
-        ctx_set_fill_rule (ctx, parser->numbers[0]);
+        ctx_set_fill_rule (ctx, arg(0));
         break;
     case CTX_SET_TEXT_ALIGN:
-        ctx_set_text_align (ctx, parser->numbers[0]);
+        ctx_set_text_align (ctx, arg(0));
         break;
     case CTX_SET_TEXT_BASELINE:
-        ctx_set_text_baseline (ctx, parser->numbers[0]);
+        ctx_set_text_baseline (ctx, arg(0));
         break;
     case CTX_SET_TEXT_DIRECTION:
-        ctx_set_text_direction (ctx, parser->numbers[0]);
+        ctx_set_text_direction (ctx, arg(0));
         break;
     case CTX_IDENTITY:
         ctx_identity_matrix (ctx);
         break;
     case CTX_RECTANGLE:
-        ctx_rectangle (ctx, parser->numbers[0], parser->numbers[1],
-                            parser->numbers[2], parser->numbers[3]);
+        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3));
         break;
     case CTX_LINEAR_GRADIENT:
-       ctx_linear_gradient (ctx, parser->numbers[0], parser->numbers[1],
-                                 parser->numbers[2], parser->numbers[3]);
+       ctx_linear_gradient (ctx, arg(0), arg(1), arg(2), arg(3));
        break;
     case CTX_RADIAL_GRADIENT:
-        ctx_radial_gradient (ctx, parser->numbers[0], parser->numbers[1],
-                                  parser->numbers[2], parser->numbers[3],
-                                  parser->numbers[4], parser->numbers[5]);
+        ctx_radial_gradient (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5));
       break;
     case CTX_GRADIENT_STOP:
       {
         float red, green, blue, alpha;
         ctx_parser_get_color_rgba (parser, 1, &red, &green, &blue, &alpha);
 
-        ctx_gradient_add_stop (ctx, parser->numbers[0], red, green, blue, alpha);
+        ctx_gradient_add_stop (ctx, arg(0), red, green, blue, alpha);
       }
       break;
     case CTX_SET_GLOBAL_ALPHA:
-      ctx_set_global_alpha (ctx, parser->numbers[0]);
+      ctx_set_global_alpha (ctx, arg(0));
       break;
     case CTX_NEW_PATH:
        ctx_new_path (ctx);
@@ -10279,6 +10242,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                      (parser->cursor_y-1) * parser->cell_height * 1.0);
        break;
   }
+#undef arg
   parser->n_numbers = 0;
 }
 
