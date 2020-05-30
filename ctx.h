@@ -580,7 +580,14 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 
 /* enable cmykf which is cmyk intermediate format
  */
-#ifdef CTX_ENABLE_CMYK8|CTX_ENABLE_CMYKA8
+#ifdef CTX_ENABLE_CMYK8
+#ifdef CTX_ENABLE_CMYKF
+#undef CTX_ENABLE_CMYKF
+#endif
+#define CTX_ENABLE_CMYKF  1
+#endif
+#ifdef CTX_ENABLE_CMYKA8
+#ifdef CTX_ENABLE_CMYKF
 #undef CTX_ENABLE_CMYKF
 #endif
 #define CTX_ENABLE_CMYKF  1
@@ -755,28 +762,25 @@ typedef enum
 } CtxCode;
 
 typedef enum {
-  CTX_GRAY        = 1,
-  CTX_RGB         = 3,
-  CTX_RGB_DEVICE  = 4,
-  CTX_CMYK        = 5,
-  CTX_LAB         = 6,
-  CTX_LCH         = 7,
+  CTX_GRAY         = 1,
+  CTX_RGB          = 3,
+  CTX_RGB_DEVICE   = 4,
+  CTX_CMYK         = 5,
+  CTX_LAB          = 6,
+  CTX_LCH          = 7,
 
   CTX_GRAYA          = 101,
-  CTX_GRAYA_A        = 201,
   CTX_RGBA           = 103,
-  CTX_RGBA_A         = 203,
   CTX_RGBA_DEVICE    = 104,
-  CTX_RGBA_A_DEVICE  = 204,
   CTX_CMYKA          = 105,
-  CTX_CMYKA_A        = 205,
   CTX_LABA           = 106,
   CTX_LCHA           = 107,
+  CTX_GRAYA_A        = 201,
+  CTX_RGBA_A         = 203,
+  CTX_RGBA_A_DEVICE  = 204,
+  CTX_CMYKA_A        = 205,
 
   // RGB  device and  RGB  ?
-  // 
-  //
-  //
 } CtxColorModel;
 
 static inline int ctx_color_model_get_components (CtxColorModel model)
@@ -1103,7 +1107,7 @@ struct _CtxColor
 
   uint8_t l_u8;
 #if CTX_ENABLE_CMYK
-  uint8_t cmyka[5];
+  //uint8_t cmyka[5];
   float   cyan;
   float   magenta;
   float   yellow;
@@ -1116,9 +1120,9 @@ struct _CtxColor
   // ICC space and the color values set are not
   // influenced by color management. RGB values
   // however are. will lose prefix
-  float   cm_red;
-  float   cm_green;
-  float   cm_blue;
+  float   red;
+  float   green;
+  float   blue;
 #endif
 };
 
@@ -1155,9 +1159,9 @@ static void ctx_color_set_rgba (CtxColor *color, float r, float g, float b, floa
 {
 #if CTX_ENABLE_CM
   color->original = color->valid = CTX_VALID_RGBA;
-  color->cm_red   = r;
-  color->cm_green = g;
-  color->cm_blue  = b;
+  color->red   = r;
+  color->green = g;
+  color->blue  = b;
 #else
   color->original = color->valid = CTX_VALID_RGBA_DEVICE;
   color->device_red   = r;
@@ -1187,6 +1191,9 @@ static void ctx_color_set_rgba_ (CtxColor *color, const float *in)
 }
 #endif
 
+/* the baseline conversions we have whether CMYK support is enabled or not,
+ * providing an effort at right rendering
+ */
 static void ctx_cmyk_to_rgb (float c, float m, float y, float k, float *r, float *g, float *b)
 {
   *r = (1.0f-c) * (1.0f-k);
@@ -1244,9 +1251,9 @@ static void ctx_color_get_rgba_device (CtxColor *color, float *out)
 #if CTX_ENABLE_CM
     if (color->valid & CTX_VALID_RGBA)
     {
-      color->device_red   = color->cm_red;
-      color->device_green = color->cm_green;
-      color->device_blue  = color->cm_blue;
+      color->device_red   = color->red;
+      color->device_green = color->green;
+      color->device_blue  = color->blue;
     } else
 #endif
     if (color->valid & CTX_VALID_RGBA_U8)
@@ -1287,15 +1294,15 @@ static void ctx_color_get_rgba (CtxColor *color, float *out)
     ctx_color_get_rgba_device (color, out);
     if (color->valid & CTX_VALID_RGBA_DEVICE)
     {
-      color->cm_red   = color->device_red;
-      color->cm_green = color->device_green;
-      color->cm_blue  = color->device_blue;
+      color->red   = color->device_red;
+      color->green = color->device_green;
+      color->blue  = color->device_blue;
     }
     color->valid |= CTX_VALID_RGBA;
   }
-  out[0] = color->cm_red;
-  out[1] = color->cm_green;
-  out[2] = color->cm_blue;
+  out[0] = color->red;
+  out[1] = color->green;
+  out[2] = color->blue;
   out[3] = color->alpha;
 #else
   ctx_color_get_rgba_device (color, out);
