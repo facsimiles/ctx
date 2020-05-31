@@ -156,7 +156,7 @@ void  ctx_close_path     (Ctx *ctx);
 float ctx_get_font_size  (Ctx *ctx);
 
 //void ctx_set_rgba_stroke_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-void ctx_set_rgba_u8    (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void ctx_set_RGBA8      (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 //void ctx_set_rgba_stroke (Ctx *ctx, float  r, float   g, float   b, float   a);
 void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
 void ctx_set_rgba_device(Ctx *ctx, float r, float g, float b, float a);
@@ -1299,7 +1299,7 @@ struct _CtxState {
   CtxGState   gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
 
-static void ctx_color_set_rgba_u8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+static void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   color->original = color->valid = CTX_VALID_RGBA_U8;
   color->rgba[0] = r;
@@ -1312,9 +1312,9 @@ static void ctx_color_set_rgba_u8 (CtxState *state, CtxColor *color, uint8_t r, 
 }
 
 #if 0
-static void ctx_color_set_rgba_u8_ (CtxColor *color, const uint8_t *in)
+static void ctx_color_set_RGBA8_ (CtxColor *color, const uint8_t *in)
 {
-  ctx_color_set_rgba_u8 (color, in[0], in[1], in[2], in[3]);
+  ctx_color_set_RGBA8 (color, in[0], in[1], in[2], in[3]);
 }
 #endif
 
@@ -1567,7 +1567,7 @@ static void ctx_color_get_cmyka_u8 (CtxState *state, CtxColor *color, uint8_t *o
 #endif
 #endif
 
-static void ctx_color_get_rgba_u8 (CtxState *state, CtxColor *color, uint8_t *out)
+static void ctx_color_get_RGBA8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (!(color->valid & CTX_VALID_RGBA_U8))
   {
@@ -2566,7 +2566,7 @@ ctx_image_path (Ctx *ctx, const char *path, float x, float y)
 }
 
 void
-ctx_set_rgba_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+ctx_set_RGBA8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
   ctx_process (ctx, &command);
@@ -3297,11 +3297,11 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
     case CTX_SET_RGBA_U8:
       //ctx_source_deinit (&state->gstate.source);
       state->gstate.source.type = CTX_SOURCE_COLOR;
-      ctx_color_set_rgba_u8 (state, &state->gstate.source.color,
-                             ctx_arg_u8(0),
-                             ctx_arg_u8(1),
-                             ctx_arg_u8(2),
-                             ctx_arg_u8(3));
+      ctx_color_set_RGBA8 (state, &state->gstate.source.color,
+                           ctx_arg_u8(0),
+                           ctx_arg_u8(1),
+                           ctx_arg_u8(2),
+                           ctx_arg_u8(3));
       //for (int i = 0; i < 4; i ++)
       //  state->gstate.source.color.rgba[i] = ctx_arg_u8(i);
       break;
@@ -5406,25 +5406,25 @@ ctx_sample_gradient_1d_u8 (CtxRasterizer *rasterizer, float v, uint8_t *rgba)
   }
   if (stop == NULL && next_stop)
   {
-    ctx_color_get_rgba_u8 (rasterizer->state, &(next_stop->color), rgba);
+    ctx_color_get_RGBA8 (rasterizer->state, &(next_stop->color), rgba);
   }
   else if (stop && next_stop == NULL)
   {
-    ctx_color_get_rgba_u8 (rasterizer->state, &(stop->color), rgba);
+    ctx_color_get_RGBA8 (rasterizer->state, &(stop->color), rgba);
   }
   else if (stop && next_stop)
   {
     uint8_t stop_rgba[4];
     uint8_t next_rgba[4];
-    ctx_color_get_rgba_u8 (rasterizer->state, &(stop->color), stop_rgba);
-    ctx_color_get_rgba_u8 (rasterizer->state, &(next_stop->color), next_rgba);
+    ctx_color_get_RGBA8 (rasterizer->state, &(stop->color), stop_rgba);
+    ctx_color_get_RGBA8 (rasterizer->state, &(next_stop->color), next_rgba);
     int dx = (v - stop->pos) * 255 / (next_stop->pos - stop->pos);
     for (int c = 0; c < 4; c++)
       rgba[c] = ctx_lerp_u8 (stop_rgba[c], next_rgba[c], dx);
   }
   else
   {
-    ctx_color_get_rgba_u8 (rasterizer->state, &(g->stops[g->n_stops-1].color), rgba);
+    ctx_color_get_RGBA8 (rasterizer->state, &(g->stops[g->n_stops-1].color), rgba);
   }
 #if CTX_GRADIENT_CACHE
   cache_entry[0] = rgba[0];
@@ -5503,6 +5503,15 @@ static inline void ctx_dither_rgba_u8 (uint8_t *rgba, int x, int y, int dither_r
 #endif
 
 static void
+ctx_RGBA8_associate_alpha (uint8_t *rgba)
+{
+  rgba[0] = (rgba[0] * rgba[3])>>8;
+  rgba[1] = (rgba[1] * rgba[3])>>8;
+  rgba[2] = (rgba[2] * rgba[3])>>8;
+}
+
+
+static void
 ctx_sample_source_rgba_u8_image_rgba (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   uint8_t *rgba = out;
@@ -5532,6 +5541,7 @@ ctx_sample_source_rgba_u8_image_rgba (CtxRasterizer *rasterizer, float x, float 
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
                                   rasterizer->format->dither_green);
 #endif
+  ctx_RGBA8_associate_alpha (rgba);
 }
 
 static void
@@ -5601,7 +5611,6 @@ ctx_sample_source_rgba_u8_image_rgb (CtxRasterizer *rasterizer, float x, float y
 #endif
 }
 
-
 static void
 ctx_sample_source_rgba_u8_radial_gradient (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
@@ -5624,6 +5633,7 @@ ctx_sample_source_rgba_u8_radial_gradient (CtxRasterizer *rasterizer, float x, f
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
                                   rasterizer->format->dither_green);
 #endif
+  ctx_RGBA8_associate_alpha (rgba);
 }
 
 
@@ -5642,6 +5652,7 @@ ctx_sample_source_rgba_u8_linear_gradient (CtxRasterizer *rasterizer, float x, f
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
                                   rasterizer->format->dither_green);
 #endif
+  ctx_RGBA8_associate_alpha (rgba);
 }
 
 
@@ -5650,7 +5661,8 @@ ctx_sample_source_rgba_u8_color (CtxRasterizer *rasterizer, float x, float y, vo
 {
   uint8_t *rgba = out;
   CtxSource *g = &rasterizer->state->gstate.source;
-  ctx_color_get_rgba_u8 (rasterizer->state, &g->color, rgba);
+  ctx_color_get_RGBA8 (rasterizer->state, &g->color, rgba);
+  ctx_RGBA8_associate_alpha (rgba);
 }
 
 typedef void (*CtxSourceU8)(CtxRasterizer *rasterizer, float x, float y, void *out);
@@ -5737,7 +5749,7 @@ ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t * restrict dst, u
     }
     return count;
   }
-  ctx_color_get_rgba_u8 (rasterizer->state, &gstate->source.color, color);
+  ctx_color_get_RGBA8 (rasterizer->state, &gstate->source.color, color);
   color[3] = (color[3] * gstate->global_alpha_u8)>>8;
 
   if (color[3] == 255)
@@ -5863,7 +5875,7 @@ ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *restrict dst, ui
     return count;
   }
 
-  ctx_color_get_rgba_u8 (rasterizer->state, &gstate->source.color, color);
+  ctx_color_get_RGBA8 (rasterizer->state, &gstate->source.color, color);
   if (gstate->global_alpha_u8 != 255)
   {
     color[3] = (color[3] * gstate->global_alpha_u8)>>8;
@@ -6027,8 +6039,12 @@ ctx_sample_source_cmyka_f_color (CtxRasterizer *rasterizer, float x, float y, vo
   float *cmyka = out;
   // XXX : only solid color implemented for now
   ctx_color_get_cmyka (rasterizer->state, &rasterizer->state->gstate.source.color, out);
+
+  // RGBW instead of CMYK, and premultiply
   for (int i = 0; i < 4; i ++)
-    cmyka[i] *= cmyka[4];
+  {
+    cmyka[i] = (1.0f - cmyka[i]) * cmyka[4];
+  }
 }
 
 static CtxSourceU8 ctx_rasterizer_get_source_cmykaf (CtxRasterizer *rasterizer)
@@ -6831,7 +6847,7 @@ ctx_rasterizer_pset (CtxRasterizer *rasterizer, int x, int y, uint8_t cov)
                          y >= rasterizer->blit_height)
     return;
   uint8_t fg_color[4];
-  ctx_color_get_rgba_u8 (rasterizer->state, &rasterizer->state->gstate.source.color, fg_color);
+  ctx_color_get_RGBA8 (rasterizer->state, &rasterizer->state->gstate.source.color, fg_color);
 
   uint8_t pixel[4];
   uint8_t *dst = ((uint8_t*)rasterizer->buf);
@@ -7249,7 +7265,7 @@ ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
                         uint8_t a)
 {
   rasterizer->state->gstate.source.type = CTX_SOURCE_COLOR;
-  ctx_color_set_rgba_u8 (rasterizer->state, &rasterizer->state->gstate.source.color, r, g, b, a);
+  ctx_color_set_RGBA8 (rasterizer->state, &rasterizer->state->gstate.source.color, r, g, b, a);
 
 #if 1
   ctx_rasterizer_pset (rasterizer, x, y, 255);
