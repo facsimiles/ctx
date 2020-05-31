@@ -1816,32 +1816,6 @@ ctx_matrix_skew_y (CtxMatrix *matrix, float angle)
 }
 #endif
 
-void
-ctx_get_rgba (Ctx *ctx, float *rgba)
-{
-  ctx_color_get_rgba (&(ctx->state), &ctx->state.gstate.source.color, rgba);
-}
-
-void
-ctx_get_rgba_device (Ctx *ctx, float *rgba)
-{
-  ctx_color_get_rgba_device (&(ctx->state), &ctx->state.gstate.source.color, rgba);
-}
-
-#if CTX_ENABLE_CMYK
-void
-ctx_get_cmyka (Ctx *ctx, float *cmyka)
-{
-  ctx_color_get_cmyka (&(ctx->state), &ctx->state.gstate.source.color, cmyka);
-}
-#endif
-void
-ctx_get_graya (Ctx *ctx, float *ya)
-{
-  ctx_color_get_graya (&(ctx->state), &ctx->state.gstate.source.color, ya);
-}
-
-
 static int
 ctx_conts_for_entry (CtxEntry *entry)
 {
@@ -2499,6 +2473,32 @@ ctx_close_path (Ctx *ctx)
   CTX_PROCESS_VOID(CTX_CLOSE_PATH);
 }
 
+void
+ctx_get_rgba (Ctx *ctx, float *rgba)
+{
+  ctx_color_get_rgba (&(ctx->state), &ctx->state.gstate.source.color, rgba);
+}
+
+void
+ctx_get_rgba_device (Ctx *ctx, float *rgba)
+{
+  ctx_color_get_rgba_device (&(ctx->state), &ctx->state.gstate.source.color, rgba);
+}
+
+#if CTX_ENABLE_CMYK
+void
+ctx_get_cmyka (Ctx *ctx, float *cmyka)
+{
+  ctx_color_get_cmyka (&(ctx->state), &ctx->state.gstate.source.color, cmyka);
+}
+#endif
+void
+ctx_get_graya (Ctx *ctx, float *ya)
+{
+  ctx_color_get_graya (&(ctx->state), &ctx->state.gstate.source.color, ya);
+}
+//YYY
+
 #if CTX_ENABLE_CM
 void
 ctx_set_device_space (Ctx *ctx, int device_space)
@@ -2534,6 +2534,119 @@ ctx_image_path (Ctx *ctx, const char *path, float x, float y)
   int id = ctx_texture_load (ctx, -1, path);
   ctx_texture (ctx, id, x, y);
 }
+
+void
+ctx_set_rgba_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+  CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
+  ctx_process (ctx, &command);
+}
+
+void
+ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+  CtxEntry command = ctx_u8 (CTX_SET_PIXEL, r, g, b, a, 0, 0, 0, 0);
+  command.data.u16[2]=x;
+  command.data.u16[3]=y;
+  ctx_process (ctx, &command);
+}
+
+void ctx_set_rgba_device (Ctx *ctx, float r, float g, float b, float a)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_RGBA_DEVICE, 0.0f),
+     ctx_f (CTX_CONT, r, g),
+     ctx_f (CTX_CONT, b, a)};
+  ctx_process (ctx, command);
+}
+
+void ctx_set_rgba (Ctx *ctx, float r, float g, float b, float a)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_RGBA, 0.0f),
+     ctx_f (CTX_CONT, r, g),
+     ctx_f (CTX_CONT, b, a)};
+  ctx_process (ctx, command);
+}
+
+void ctx_set_rgb (Ctx *ctx, float   r, float   g, float   b)
+{
+  ctx_set_rgba (ctx, r, g, b, 1.0f);
+}
+
+void ctx_set_gray (Ctx *ctx, float gray)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_GRAY, 0.0f),
+     ctx_f (CTX_CONT, gray, 1.0f),
+     ctx_f (CTX_CONT, 0.0f, 0.0f)};
+  ctx_process (ctx, command);
+}
+
+#if CTX_ENABLE_CMYK
+void ctx_set_cmyk (Ctx *ctx, float c, float m, float y, float k)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_CMYKA, 1.0f),
+     ctx_f (CTX_CONT, c, m),
+     ctx_f (CTX_CONT, y, k)};
+  ctx_process (ctx, command);
+}
+
+void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_CMYKA, a),
+     ctx_f (CTX_CONT, c, m),
+     ctx_f (CTX_CONT, y, k)};
+  ctx_process (ctx, command);
+}
+#endif
+
+void
+ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1)
+{
+  CtxEntry command[2]={
+     ctx_f (CTX_LINEAR_GRADIENT, x0, y0),
+     ctx_f (CTX_CONT, x1, y1)};
+  ctx_process (ctx, command);
+}
+
+void
+ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0, float x1, float y1, float r1)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_RADIAL_GRADIENT, x0, y0),
+     ctx_f (CTX_CONT, r0, x1),
+     ctx_f (CTX_CONT, y1, r1)};
+  ctx_process (ctx, command);
+}
+
+void ctx_gradient_add_stop_u8
+(Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+  CtxEntry entry = ctx_f (CTX_GRADIENT_STOP, pos, 0);
+  entry.data.u8[4+0] = r;
+  entry.data.u8[4+1] = g;
+  entry.data.u8[4+2] = b;
+  entry.data.u8[4+3] = a;
+  ctx_process (ctx, &entry);
+}
+
+void ctx_gradient_add_stop
+(Ctx *ctx, float pos, float r, float g, float b, float a)
+{
+  int ir = r * 255;
+  int ig = g * 255;
+  int ib = b * 255;
+  int ia = a * 255;
+  ir = CTX_CLAMP(ir, 0,255);
+  ig = CTX_CLAMP(ig, 0,255);
+  ib = CTX_CLAMP(ib, 0,255);
+  ia = CTX_CLAMP(ia, 0,255);
+  ctx_gradient_add_stop_u8 (ctx, pos, ir, ig, ib, ia);
+}
+
 
 void ctx_fill (Ctx *ctx) {
   CTX_PROCESS_VOID(CTX_FILL);
@@ -2917,7 +3030,9 @@ ctx_normalize (float *x, float* y)
 void
 ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
 {
-  /* from nanovg */
+  /* from nanovg - but not quite working ; uncertain if arc or wrong
+   * transfusion is the cause.
+   */
   float x0 = ctx->state.x;
   float y0 = ctx->state.y;
   float dx0,dy0, dx1,dy1, a, d, cx,cy, a0,a1;
@@ -2978,118 +3093,6 @@ ctx_rel_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
 }
 
 void
-ctx_set_rgba_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
-  ctx_process (ctx, &command);
-}
-
-void
-ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-  CtxEntry command = ctx_u8 (CTX_SET_PIXEL, r, g, b, a, 0, 0, 0, 0);
-  command.data.u16[2]=x;
-  command.data.u16[3]=y;
-  ctx_process (ctx, &command);
-}
-
-void ctx_set_rgba_device (Ctx *ctx, float r, float g, float b, float a)
-{
-  CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_RGBA_DEVICE, 0.0f),
-     ctx_f (CTX_CONT, r, g),
-     ctx_f (CTX_CONT, b, a)};
-  ctx_process (ctx, command);
-}
-
-void ctx_set_rgba (Ctx *ctx, float r, float g, float b, float a)
-{
-  CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_RGBA, 0.0f),
-     ctx_f (CTX_CONT, r, g),
-     ctx_f (CTX_CONT, b, a)};
-  ctx_process (ctx, command);
-}
-
-void ctx_set_rgb (Ctx *ctx, float   r, float   g, float   b)
-{
-  ctx_set_rgba (ctx, r, g, b, 1.0f);
-}
-
-void ctx_set_gray (Ctx *ctx, float gray)
-{
-  CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_GRAY, 0.0f),
-     ctx_f (CTX_CONT, gray, 1.0f),
-     ctx_f (CTX_CONT, 0.0f, 0.0f)};
-  ctx_process (ctx, command);
-}
-
-#if CTX_ENABLE_CMYK
-void ctx_set_cmyk (Ctx *ctx, float c, float m, float y, float k)
-{
-  CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_CMYKA, 1.0f),
-     ctx_f (CTX_CONT, c, m),
-     ctx_f (CTX_CONT, y, k)};
-  ctx_process (ctx, command);
-}
-
-void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
-{
-  CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_CMYKA, a),
-     ctx_f (CTX_CONT, c, m),
-     ctx_f (CTX_CONT, y, k)};
-  ctx_process (ctx, command);
-}
-#endif
-
-void
-ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1)
-{
-  CtxEntry command[2]={
-     ctx_f (CTX_LINEAR_GRADIENT, x0, y0),
-     ctx_f (CTX_CONT, x1, y1)};
-  ctx_process (ctx, command);
-}
-
-void
-ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0, float x1, float y1, float r1)
-{
-  CtxEntry command[3]={
-     ctx_f (CTX_RADIAL_GRADIENT, x0, y0),
-     ctx_f (CTX_CONT, r0, x1),
-     ctx_f (CTX_CONT, y1, r1)};
-  ctx_process (ctx, command);
-}
-
-void ctx_gradient_add_stop_u8
-(Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-  CtxEntry entry = ctx_f (CTX_GRADIENT_STOP, pos, 0);
-  entry.data.u8[4+0] = r;
-  entry.data.u8[4+1] = g;
-  entry.data.u8[4+2] = b;
-  entry.data.u8[4+3] = a;
-  ctx_process (ctx, &entry);
-}
-
-void ctx_gradient_add_stop
-(Ctx *ctx, float pos, float r, float g, float b, float a)
-{
-  int ir = r * 255;
-  int ig = g * 255;
-  int ib = b * 255;
-  int ia = a * 255;
-  ir = CTX_CLAMP(ir, 0,255);
-  ig = CTX_CLAMP(ig, 0,255);
-  ib = CTX_CLAMP(ib, 0,255);
-  ia = CTX_CLAMP(ia, 0,255);
-  ctx_gradient_add_stop_u8 (ctx, pos, ir, ig, ib, ia);
-}
-
-void
 ctx_exit (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_EXIT);
@@ -3146,7 +3149,6 @@ ctx_matrix_inverse (CtxMatrix *m)
   m->m[1][1] = t.m[0][0] * invdet;
   m->m[2][1] = (t.m[0][1] * t.m[2][0] - t.m[0][0] * t.m[2][1]) * invdet ;
 }
-
 
 static void
 ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
