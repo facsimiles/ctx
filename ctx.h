@@ -8004,13 +8004,11 @@ float ctx_y (Ctx *ctx)
 void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
-#if CTX_RASTERIZER
   if (ctx->render_func)
   {
-    ctx->render_func (ctx, entry);
+    ctx->render_func (ctx->renderer, entry);
   }
   else
-#endif
   {
     /* these functions might alter the code and coordinates of
        command that in the end gets added to the renderstream
