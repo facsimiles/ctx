@@ -716,9 +716,12 @@ typedef enum
   CTX_SET_TEXT_BASELINE    = 18, // wb
   CTX_SET_TEXT_DIRECTION   = 19, // wd
   CTX_SET_MITER_LIMIT      = 20, // wm
+  CTX_SET_DEVICE_SPACE     = 21,
+  CTX_SET_RGB_SPACE        = 22,
 
-  CTX_DEFUN  = 21,
-  CTX_ENDFUN = 22,
+
+  CTX_DEFUN  = 23,
+  CTX_ENDFUN = 24,
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
@@ -919,7 +922,7 @@ ctx_fabsf (float x)
 }
 
 static float
-ctx_invsqrtf(float x)
+ctx_invsqrtf (float x)
 {
    void *foo = &x;
    float xhalf = 0.5f * x;
@@ -1114,7 +1117,7 @@ struct _CtxColor
 #endif 
 
 #if CTX_ENABLE_CM
-  void   *space;   // a babl_space when not direct
+  int     space;   // a babl_space when not direct
   // cmyk values are presumed to always be in
   // ICC space and the color values set are not
   // influenced by color management. RGB values
@@ -1458,6 +1461,9 @@ struct _CtxGState {
   int16_t       clip_max_x;
   int16_t       clip_max_y;
 
+  int           device_space; // XXX should be babl spaces
+  int           rgb_space;
+
   /* bitfield-pack small state-parts */
   CtxCompositingMode  compositing_mode:2;
   CtxBlend                  blend_mode:3;
@@ -1795,6 +1801,7 @@ ctx_get_graya (Ctx *ctx, float *ya)
 {
   ctx_color_get_graya (&ctx->state.gstate.source.color, ya);
 }
+
 
 static int
 ctx_conts_for_entry (CtxEntry *entry)
@@ -2447,6 +2454,17 @@ ctx_close_path (Ctx *ctx)
   CTX_PROCESS_VOID(CTX_CLOSE_PATH);
 }
 
+void
+ctx_set_device_space (Ctx *ctx, int device_space)
+{
+  CTX_PROCESS_U8(CTX_SET_DEVICE_SPACE, device_space);
+}
+
+void
+ctx_set_rgb_space (Ctx *ctx, int device_space)
+{
+  CTX_PROCESS_U8(CTX_SET_RGB_SPACE, device_space);
+}
 
 void ctx_texture (Ctx *ctx, int id, float x, float y)
 {
@@ -4156,14 +4174,14 @@ ctx_state_init (CtxState *state)
 {
   ctx_memset (state, 0, sizeof (CtxState));
   state->gstate.global_alpha_u8 = 255;
-  state->gstate.global_alpha_f = 1.0;
-  state->gstate.font_size    = 12;
-  state->gstate.line_spacing = 1.0;
-  state->gstate.line_width   = 2.0;
-  state->min_x               = 8192;
-  state->min_y               = 8192;
-  state->max_x               = -8192;
-  state->max_y               = -8192;
+  state->gstate.global_alpha_f  = 1.0;
+  state->gstate.font_size       = 12;
+  state->gstate.line_spacing    = 1.0;
+  state->gstate.line_width      = 2.0;
+  state->min_x                  = 8192;
+  state->min_y                  = 8192;
+  state->max_x                  = -8192;
+  state->max_y                  = -8192;
   ctx_matrix_identity (&state->gstate.transform);
 }
 
@@ -9161,6 +9179,13 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                              ctx_arg_u8(3)/255.0);
         break;
 
+      case CTX_SET_RGB_SPACE:
+        ctx_set_rgb_space (d_ctx, ctx_arg_u8(0));
+        break;
+
+      case CTX_SET_DEVICE_SPACE:
+        ctx_set_device_space (d_ctx, ctx_arg_u8(0));
+        break;
 
       case CTX_SET_COLOR:
         switch ((int)ctx_arg_float(0))
@@ -9866,6 +9891,8 @@ static int ctx_arguments_for_code (CtxCode code)
   case CTX_VER_LINE_TO:
   case CTX_SET_FONT:
   case CTX_ROTATE:
+  case CTX_SET_RGB_SPACE:
+  case CTX_SET_DEVICE_SPACE:
     return 1;
   case CTX_TRANSLATE:
   case CTX_REL_SMOOTHQ_TO:
@@ -10092,6 +10119,15 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
                                                            // XXX: make it apply instead of set
 
     case STR(CTX_SET_PARAM,'m',0,0,0,0,0,0,0,0,0,0):
+
+    case STR('r','g','b','_','s','p','a','c','e',0,0,0): 
+    case STR('r','g','b','S','p','a','c','e',0,0,0,0): 
+      return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
+
+    case STR('d','e','v','i','c','e','_','s','p','a','c','e'): 
+    case STR('d','e','v','i','c','e','S','p','a','c','e',0): 
+      return ctx_parser_set_command (parser, CTX_SET_DEVICE_SPACE);
+
     case STR('c','o','m','p','o','s','i','t','i','e',0,0): 
     case STR('c','o','m','p','o','s','i','t','i','n','g','_'): 
     case STR('c','o','m','p','o','s','i','t','i','n','g','M'): 
@@ -10330,6 +10366,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
     case CTX_SAVE:    ctx_save (ctx);    break;
     case CTX_STROKE:  ctx_stroke (ctx);  break;
     case CTX_RESTORE: ctx_restore (ctx); break;
+
+    case CTX_SET_DEVICE_SPACE: ctx_set_device_space (ctx, arg(0)); break;
+    case CTX_SET_RGB_SPACE: ctx_set_rgb_space (ctx, arg(0)); break;
 
     case CTX_SET_COLOR:
       {
