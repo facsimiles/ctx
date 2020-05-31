@@ -1129,8 +1129,6 @@ struct _CtxColor
 #endif
 };
 
-
-
 struct _CtxSource
 {
   int type;
@@ -2309,7 +2307,7 @@ ctx_renderstream_add_entry (CtxRenderstream *renderstream, CtxEntry *entry)
   return ret;
 }
 
-int ctx_set_renderstream (Ctx *ctx, void *data, int length)
+int ctx_append_renderstream (Ctx *ctx, void *data, int length)
 {
   CtxEntry *entries = (CtxEntry*)data;
   if (length % sizeof (CtxEntry))
@@ -2317,12 +2315,18 @@ int ctx_set_renderstream (Ctx *ctx, void *data, int length)
     //ctx_log("err\n");
     return -1;
   }
-  ctx->renderstream.count = 0;
   for (unsigned int i = 0; i < length / sizeof(CtxEntry); i++)
   {
     ctx_renderstream_add_single (&ctx->renderstream, &entries[i]);
   }
 
+  return 0;
+}
+
+int ctx_set_renderstream (Ctx *ctx, void *data, int length)
+{
+  ctx->renderstream.count = 0;
+  ctx_append_renderstream (ctx, data, length);
   return 0;
 }
 
@@ -3694,7 +3698,7 @@ ctx_renderstream_remove (CtxRenderstream *renderstream, int pos, int count)
   }
   for (int i = renderstream->count - count; i < renderstream->count; i++)
   {
-    renderstream->entries[i].code = CTX_CONT;
+    renderstream->entries[i].code      = CTX_CONT;
     renderstream->entries[i].data.f[0] = 0;
     renderstream->entries[i].data.f[1] = 0;
   }
