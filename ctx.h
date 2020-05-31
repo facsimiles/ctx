@@ -772,6 +772,45 @@ typedef enum
 #endif
 } CtxCode;
 
+/* we only care about the tight packing for this specific
+ * structx as we do indexing across members in arrays of it,
+ * to make sure its size becomes 9bytes -
+ * the pack pragma is also sufficient on recent gcc versions
+ */
+#pragma pack(push,1)
+
+struct _CtxEntry
+{
+  uint8_t code;       // radical idea pack the code into first floats
+                      // least significant bits
+  union {
+    float    f[2];
+    uint8_t  u8[8];
+    int8_t   s8[8];
+    uint16_t u16[4];
+    int16_t  s16[4];
+    uint32_t u32[2];
+    int32_t  s32[2];
+    uint64_t u64[1]; // unused
+  } data;
+};
+
+/* access macros for nth argument of a given type when packed into
+ * an CtxEntry pointer in current code context
+ */
+#define ctx_arg_float(no) entry[(no)>>1].data.f[(no)&1]
+#define ctx_arg_u64(no)   entry[(no)].data.u64[0]
+#define ctx_arg_u32(no)   entry[(no)>>1].data.u32[(no)&1]
+#define ctx_arg_s32(no)   entry[(no)>>1].data.s32[(no)&1]
+#define ctx_arg_u16(no)   entry[(no)>>2].data.u16[(no)&3]
+#define ctx_arg_s16(no)   entry[(no)>>2].data.s16[(no)&3]
+#define ctx_arg_u8(no)    entry[(no)>>3].data.u8[(no)&7]
+#define ctx_arg_s8(no)    entry[(no)>>3].data.s8[(no)&7]
+#define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
+
+#pragma pack(pop)
+
+
 typedef enum {
   CTX_GRAY           = 1,
   CTX_RGB            = 3,
@@ -820,44 +859,6 @@ static inline int ctx_color_model_get_components (CtxColorModel model)
    }
    return 0;
 }
-
-/* we only care about the tight packing for this specific
- * structx as we do indexing across members in arrays of it,
- * to make sure its size becomes 9bytes -
- * the pack pragma is also sufficient on recent gcc versions
- */
-#pragma pack(push,1)
-
-struct _CtxEntry
-{
-  uint8_t code;       // radical idea pack the code into first floats
-                      // least significant bits
-  union {
-    float    f[2];
-    uint8_t  u8[8];
-    int8_t   s8[8];
-    uint16_t u16[4];
-    int16_t  s16[4];
-    uint32_t u32[2];
-    int32_t  s32[2];
-    uint64_t u64[1]; // unused
-  } data;
-};
-
-/* access macros for nth argument of a given type when packed into
- * an CtxEntry pointer in current code context
- */
-#define ctx_arg_float(no) entry[(no)>>1].data.f[(no)&1]
-#define ctx_arg_u64(no)   entry[(no)].data.u64[0]
-#define ctx_arg_u32(no)   entry[(no)>>1].data.u32[(no)&1]
-#define ctx_arg_s32(no)   entry[(no)>>1].data.s32[(no)&1]
-#define ctx_arg_u16(no)   entry[(no)>>2].data.u16[(no)&3]
-#define ctx_arg_s16(no)   entry[(no)>>2].data.s16[(no)&3]
-#define ctx_arg_u8(no)    entry[(no)>>3].data.u8[(no)&7]
-#define ctx_arg_s8(no)    entry[(no)>>3].data.s8[(no)&7]
-#define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
-
-#pragma pack(pop)
 
 
 #ifdef __cplusplus
