@@ -74,6 +74,7 @@ void      gtx_glyph_free     (CtxGlyph *glyphs);
  */
 Ctx *ctx_new (void);
 
+
 /**
  * ctx_new_for_framebuffer:
  *
@@ -333,6 +334,10 @@ float ctx_glyph_width (Ctx *ctx, int unichar);
 
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 
+typedef struct _CtxEntry CtxEntry;
+void ctx_set_renderer (Ctx *ctx,
+                       void (*render)(void *user_data, CtxEntry *entry),
+                       void *user_data);
 
 /* definitions that determine which features are included and their settings,
  * for particular platforms - in particular microcontrollers ctx might need
@@ -815,8 +820,6 @@ static inline int ctx_color_model_get_components (CtxColorModel model)
    }
    return 0;
 }
-
-typedef struct _CtxEntry CtxEntry;
 
 /* we only care about the tight packing for this specific
  * structx as we do indexing across members in arrays of it,
@@ -1523,7 +1526,6 @@ static void ctx_color_get_cmyka_u8 (CtxState *state, CtxColor *color, uint8_t *o
   out[3] = color->cmyka[3];
 }
 #endif
-
 #endif
 
 static void ctx_color_get_rgba_u8 (CtxState *state, CtxColor *color, uint8_t *out)
@@ -4255,6 +4257,14 @@ static void ctx_setup ();
 static Ctx ctx_state;
 #endif
 
+void ctx_set_renderer (Ctx *ctx,
+                       void (*render)(void *user_data, CtxEntry *entry),
+                       void *user_data)
+{
+  ctx->render_func = render;
+  ctx->renderer = user_data;
+}
+
 Ctx *
 ctx_new (void)
 {
@@ -4291,7 +4301,8 @@ static void ctx_deinit (Ctx *ctx)
   {
     ctx_rasterizer_deinit (ctx->renderer);
     free (ctx->renderer);
-    ctx->renderer = NULL;
+    ctx->renderer    = NULL;
+    ctx->render_func = NULL;
   }
 #endif
   ctx_renderstream_deinit (&ctx->renderstream);
@@ -7903,8 +7914,7 @@ ctx_new_for_buffer (CtxBuffer *buffer)
   ctx_rasterizer_init (rasterizer, ctx, &ctx->state,
                      buffer->data, 0, 0, buffer->width, buffer->height,
                      buffer->stride, buffer->format->pixel_format);
-  ctx->renderer = rasterizer;
-  ctx->render_func = ctx_rasterizer_process;
+  ctx_set_renderer (ctx, ctx_rasterizer_process, rasterizer);
   return ctx;
 }
 
@@ -7916,9 +7926,8 @@ ctx_new_for_framebuffer (void *data, int width, int height,
   Ctx *ctx = ctx_new ();
   CtxRasterizer *rasterizer = (CtxRasterizer*)malloc (sizeof (CtxRasterizer));
   ctx_rasterizer_init (rasterizer, ctx, &ctx->state,
-                     data, 0, 0, width, height, stride, pixel_format);
-  ctx->renderer = rasterizer;
-  ctx->render_func = ctx_rasterizer_process;
+                       data, 0, 0, width, height, stride, pixel_format);
+  ctx_set_renderer (ctx, ctx_rasterizer_process, rasterizer);
   return ctx;
 }
 
@@ -7949,7 +7958,7 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
    * but saves memory, this should be made configurable at compile-time
    */
   ctx_rasterizer_init (rasterizer, ctx, &ctx->state, data, x, y, width, height,
-                     stride, pixel_format);
+                       stride, pixel_format);
 
   {
     CtxIterator iterator;
@@ -9659,11 +9668,161 @@ ctx_print_entry (FILE *stream, int formatter, int *indent, CtxEntry *entry, int 
   _ctx_print_endcmd (stream, formatter);
 }
 
+static void
+ctx_stream_process (void *user_data, CtxEntry *entry)
+{
+  void **user_data_array = user_data;
+  FILE *stream    = user_data_array[0];
+  int   formatter = (size_t)(user_data_array[1]);
+  int  *indent    = (void*)&user_data_array[2];
+
+  switch (entry->code)
+  //switch ((CtxCode)(entry->code))
+  {
+    case CTX_LINE_TO:
+    case CTX_REL_LINE_TO:
+    case CTX_SCALE:
+    case CTX_TRANSLATE:
+    case CTX_MOVE_TO:
+    case CTX_REL_MOVE_TO:
+      ctx_print_entry (stream, formatter, indent, entry, 2);
+      break;
+
+    case CTX_ARC_TO:
+      ctx_print_entry (stream, formatter, indent, entry, 5);
+      break;
+
+    case CTX_CURVE_TO:
+    case CTX_REL_CURVE_TO:
+    case CTX_ARC:
+    case CTX_RADIAL_GRADIENT:
+    case CTX_SET_TRANSFORM:
+      ctx_print_entry (stream, formatter, indent, entry, 6);
+      break;
+
+    case CTX_QUAD_TO:
+    case CTX_RECTANGLE:
+    case CTX_REL_QUAD_TO:
+    case CTX_LINEAR_GRADIENT:
+    case CTX_MEDIA_BOX:
+      ctx_print_entry (stream, formatter, indent, entry, 4);
+      break;
+
+    case CTX_SET_FONT_SIZE:
+    case CTX_SET_MITER_LIMIT:
+    case CTX_ROTATE:
+    case CTX_SET_LINE_WIDTH:
+    case CTX_VER_LINE_TO:
+    case CTX_HOR_LINE_TO:
+      ctx_print_entry (stream, formatter, indent, entry, 1);
+      break;
+
+    case CTX_SET_RGBA_U8:
+      if (formatter)
+      {
+        _ctx_indent (stream, *indent);
+        fwrite ("rgba (", 6, 1, stream);
+      }
+      else
+      {
+        fwrite ("rgba (", 5, 1, stream);
+      }
+      for (int c = 0; c < 4; c++)
+      {
+        if (c)
+        {
+          if (formatter == CTX_FORMATTER_VERBOSE)
+            fwrite (", ", 2, 1, stream);
+          else
+            fwrite (" ", 1, 1, stream);
+        }
+        ctx_print_float (stream, ctx_arg_u8(c)/255.0);
+      }
+      _ctx_print_endcmd (stream, formatter);
+      break;
+
+#if 0
+    case CTX_SET_RGBA_STROKE:
+      ctx_set_rgba_stroke (d_ctx, ctx_arg_u8(0)/255.0,
+                                  ctx_arg_u8(1)/255.0,
+                                  ctx_arg_u8(2)/255.0,
+                                  ctx_arg_u8(3)/255.0);
+      break;
+#endif
+
+    case CTX_SET_PIXEL:
+#if 0
+       ctx_set_pixel_u8 (d_ctx,
+                    ctx_arg_u16(2), ctx_arg_u16(3),
+                    ctx_arg_u8(0),
+                    ctx_arg_u8(1),
+                    ctx_arg_u8(2),
+                    ctx_arg_u8(3));
+#endif
+    break;
+
+
+    case CTX_FILL:
+    case CTX_CLEAR:
+    case CTX_STROKE:
+    case CTX_IDENTITY:
+    case CTX_CLIP:
+    case CTX_NEW_PATH:
+    case CTX_CLOSE_PATH:
+    case CTX_SAVE:
+    case CTX_RESTORE:
+      ctx_print_entry (stream, formatter, indent, entry, 0);
+      break;
+
+    case CTX_SET_TEXT_ALIGN:
+    case CTX_SET_TEXT_BASELINE:
+    case CTX_SET_TEXT_DIRECTION:
+    case CTX_SET_FILL_RULE:
+    case CTX_SET_LINE_CAP:
+    case CTX_SET_LINE_JOIN:
+    case CTX_SET_COMPOSITING_MODE:
+      ctx_print_entry_enum (stream, formatter, indent, entry, 1);
+      break;
+
+    case CTX_GRADIENT_STOP:
+      _ctx_print_name (stream, entry->code, formatter, indent);
+      for (int c = 0; c < 4; c++)
+      {
+        if (c)
+          fwrite ("  ", 1, 1, stream);
+        ctx_print_float (stream, ctx_arg_u8(4+c)/255.0);
+      }
+      _ctx_print_endcmd (stream, formatter);
+      break;
+
+    case CTX_TEXT:
+    case CTX_TEXT_STROKE:
+    case CTX_SET_FONT:
+
+      _ctx_print_name (stream, entry->code, formatter, indent);
+      fprintf (stream, "\"");
+      ctx_print_escaped_string (stream, ctx_arg_string());
+      fprintf (stream, "\"");
+      _ctx_print_endcmd (stream, formatter);
+      break;
+
+    case CTX_CONT:
+    case CTX_EDGE:
+    case CTX_DATA:
+    case CTX_DATA_REV:
+    case CTX_FLUSH:
+    case CTX_REPEAT_HISTORY:
+      break;
+  }
+}
+
+
 void
 ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
 {
   int indent = 0;
   CtxIterator iterator;
+  void *user_data[3]={stream, formatter, NULL};
   CtxEntry   *entry;
 
   ctx_iterator_init (&iterator, &ctx->renderstream, 0,
@@ -9671,148 +9830,11 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
                      CTX_ITERATOR_EXPAND_BITPACK);
 
   while ((entry = ctx_iterator_next (&iterator)))
-  {
-    switch (entry->code)
-    //switch ((CtxCode)(entry->code))
-    {
-      case CTX_LINE_TO:
-      case CTX_REL_LINE_TO:
-      case CTX_SCALE:
-      case CTX_TRANSLATE:
-      case CTX_MOVE_TO:
-      case CTX_REL_MOVE_TO:
-        ctx_print_entry (stream, formatter, &indent, entry, 2);
-        break;
-
-      case CTX_ARC_TO:
-        ctx_print_entry (stream, formatter, &indent, entry, 5);
-        break;
-
-      case CTX_CURVE_TO:
-      case CTX_REL_CURVE_TO:
-      case CTX_ARC:
-      case CTX_RADIAL_GRADIENT:
-      case CTX_SET_TRANSFORM:
-        ctx_print_entry (stream, formatter, &indent, entry, 6);
-        break;
-
-      case CTX_QUAD_TO:
-      case CTX_RECTANGLE:
-      case CTX_REL_QUAD_TO:
-      case CTX_LINEAR_GRADIENT:
-      case CTX_MEDIA_BOX:
-        ctx_print_entry (stream, formatter, &indent, entry, 4);
-        break;
-
-      case CTX_SET_FONT_SIZE:
-      case CTX_SET_MITER_LIMIT:
-      case CTX_ROTATE:
-      case CTX_SET_LINE_WIDTH:
-      case CTX_VER_LINE_TO:
-      case CTX_HOR_LINE_TO:
-        ctx_print_entry (stream, formatter, &indent, entry, 1);
-        break;
-
-      case CTX_SET_RGBA_U8:
-        if (formatter)
-        {
-          _ctx_indent (stream, indent);
-          fwrite ("rgba (", 6, 1, stream);
-        }
-        else
-        {
-          fwrite ("rgba (", 5, 1, stream);
-        }
-        for (int c = 0; c < 4; c++)
-        {
-          if (c)
-          {
-            if (formatter == CTX_FORMATTER_VERBOSE)
-              fwrite (", ", 2, 1, stream);
-            else
-              fwrite (" ", 1, 1, stream);
-          }
-          ctx_print_float (stream, ctx_arg_u8(c)/255.0);
-        }
-        _ctx_print_endcmd (stream, formatter);
-        break;
-
-#if 0
-      case CTX_SET_RGBA_STROKE:
-        ctx_set_rgba_stroke (d_ctx, ctx_arg_u8(0)/255.0,
-                                    ctx_arg_u8(1)/255.0,
-                                    ctx_arg_u8(2)/255.0,
-                                    ctx_arg_u8(3)/255.0);
-        break;
-#endif
-
-      case CTX_SET_PIXEL:
-#if 0
-         ctx_set_pixel_u8 (d_ctx,
-                      ctx_arg_u16(2), ctx_arg_u16(3),
-                      ctx_arg_u8(0),
-                      ctx_arg_u8(1),
-                      ctx_arg_u8(2),
-                      ctx_arg_u8(3));
-#endif
-      break;
-
-
-      case CTX_FILL:
-      case CTX_CLEAR:
-      case CTX_STROKE:
-      case CTX_IDENTITY:
-      case CTX_CLIP:
-      case CTX_NEW_PATH:
-      case CTX_CLOSE_PATH:
-      case CTX_SAVE:
-      case CTX_RESTORE:
-        ctx_print_entry (stream, formatter, &indent, entry, 0);
-        break;
-
-      case CTX_SET_TEXT_ALIGN:
-      case CTX_SET_TEXT_BASELINE:
-      case CTX_SET_TEXT_DIRECTION:
-      case CTX_SET_FILL_RULE:
-      case CTX_SET_LINE_CAP:
-      case CTX_SET_LINE_JOIN:
-      case CTX_SET_COMPOSITING_MODE:
-        ctx_print_entry_enum (stream, formatter, &indent, entry, 1);
-        break;
-
-      case CTX_GRADIENT_STOP:
-        _ctx_print_name (stream, entry->code, formatter, &indent);
-        for (int c = 0; c < 4; c++)
-        {
-          if (c)
-            fwrite ("  ", 1, 1, stream);
-          ctx_print_float (stream, ctx_arg_u8(4+c)/255.0);
-        }
-        _ctx_print_endcmd (stream, formatter);
-        break;
-
-      case CTX_TEXT:
-      case CTX_TEXT_STROKE:
-      case CTX_SET_FONT:
-
-        _ctx_print_name (stream, entry->code, formatter, &indent);
-        fprintf (stream, "\"");
-        ctx_print_escaped_string (stream, ctx_arg_string());
-        fprintf (stream, "\"");
-        _ctx_print_endcmd (stream, formatter);
-        break;
-
-      case CTX_CONT:
-      case CTX_EDGE:
-      case CTX_DATA:
-      case CTX_DATA_REV:
-      case CTX_FLUSH:
-      case CTX_REPEAT_HISTORY:
-        break;
-    }
-  }
+          ctx_stream_process (user_data, entry);
   fprintf (stream, "\n");
 }
+
+
 
 #endif
 
