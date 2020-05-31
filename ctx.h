@@ -4590,7 +4590,7 @@ ctx_state_gradient_clear_stops(CtxState *state)
 }
 
 static void
-ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, uint8_t *rgba)
+ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *rgba)
 {
   CtxGradient *gradient = &rasterizer->state->gradient;
 
@@ -7354,9 +7354,14 @@ ctx_rasterizer_process (void *user_data, CtxEntry *entry)
       break;
 #endif
     case CTX_GRADIENT_STOP:
+      {
+      float rgba[4]={ctx_arg_u8(4)/255.0f,
+                     ctx_arg_u8(4+1)/255.0f,
+                     ctx_arg_u8(4+2)/255.0f,
+                     ctx_arg_u8(4+3)/255.0f};
       ctx_rasterizer_gradient_add_stop (rasterizer,
-                                        ctx_arg_float(0),
-                                        &ctx_arg_u8(4));
+                                        ctx_arg_float(0), rgba);
+      }
       break;
 
     case CTX_LINEAR_GRADIENT:
