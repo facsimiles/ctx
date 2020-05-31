@@ -31,6 +31,9 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 
+/* The pixel formats supported as render targets
+ */
+
 typedef enum
 {
   CTX_FORMAT_GRAY8,
@@ -312,11 +315,9 @@ void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
 int ctx_set_renderstream      (Ctx *ctx, void *data, int length);
 int ctx_append_renderstream   (Ctx *ctx, void *data, int length);
 
-
-/* these are only needed for clients renderin text, as all text gets
+/* these are only needed for clients rendering text, as all text gets
  * converted to paths.
  */
-
 void  ctx_glyphs       (Ctx        *ctx,
                         CtxGlyph   *glyphs,
                         int         n_glyphs);
@@ -330,7 +331,7 @@ void  ctx_text_stroke  (Ctx        *ctx,
 /* return the width of provided string if it had been rendered */
 float ctx_text_width   (Ctx        *ctx,
                         const char *string);
-float ctx_glyph_width (Ctx *ctx, int unichar);
+float ctx_glyph_width  (Ctx *ctx, int unichar);
 
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 
@@ -394,6 +395,8 @@ void ctx_set_renderer (Ctx *ctx,
 // 8    12 68 40 24
 // 16   12 68 40 24
 /* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
+ *
+ * changing this also changes font file format
  */
 #define CTX_BAKE_FONT_SIZE   160
 
@@ -416,7 +419,7 @@ void ctx_set_renderer (Ctx *ctx,
  * occuring small shapes.
  */
 #ifndef CTX_SHAPE_CACHE
-#define CTX_SHAPE_CACHE    0
+#define CTX_SHAPE_CACHE       0
 #endif
 
 /* size (in pixels, w*h) that we cache rasterization for
@@ -654,47 +657,53 @@ int ctx_get_renderstream_count (Ctx *ctx);
 
 typedef enum
 {
-
   // items marked with % are currently only for the parser
   // for instance for svg compatibility or simulated/converted color spaces
   // not the serialization/internal render stream
-  CTX_FLUSH            =   0,
-  CTX_ARC_TO           = 'A', // SVG %
-  CTX_ARC              = 'B',
-  CTX_CURVE_TO         = 'C', // SVG float x, y, followed by two ; with rest of coords
-  CTX_RESTORE          = 'D',
-  CTX_STROKE           = 'E',
-  CTX_FILL             = 'F',
-  CTX_HOR_LINE_TO      = 'H', // SVG %
-  CTX_ROTATE           = 'J', // float
-  CTX_SET_COLOR        = 'K', //              [ byte, entries       ] 
-  CTX_LINE_TO          = 'L', // SVG float x, y
-  CTX_MOVE_TO          = 'M', // SVG float x, y
-  CTX_SCALE            = 'O', // float, float
-  CTX_NEW_PAGE         = 'P', // NYI
-  CTX_QUAD_TO          = 'Q', // SVG
-  CTX_MEDIA_BOX        = 'R', //
-  CTX_SMOOTH_TO        = 'S', // SVG %
-  CTX_SMOOTHQ_TO       = 'T', // SVG %
-  CTX_CLEAR            = 'U',
-  CTX_VER_LINE_TO      = 'V', // SVG %
-  CTX_SET_TRANSFORM    = 'W',
-  CTX_EXIT             = 'X',
+  // 
+  // where numbers is suffixed it means the arguments are 32bit floats
+  // following in the positions of this item and in CTX_CONT items following
+  // to contain those in positions beyond the capacity of the initial item.
+  //
+  CTX_FLUSH            = 0,
+  CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius - numbers
+  CTX_ARC              = 'B', // x y radius angle1 angle2 direction - numbers
+  CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y - numbers
+  CTX_RESTORE          = 'G', // 
+  CTX_STROKE           = 'E', //
+  CTX_FILL             = 'F', //
+  CTX_HOR_LINE_TO      = 'H', // x - number
+  CTX_ROTATE           = 'J', // radians - number
+  CTX_SET_COLOR        = 'K', // [ byte, entries       ] variable length 
+  CTX_LINE_TO          = 'L', // x y - numbers
+  CTX_MOVE_TO          = 'M', // x y - numbers
+  CTX_NEW_PATH         = 'N',
+  CTX_SCALE            = 'O', // xscale yscale - numbers
+  CTX_NEW_PAGE         = 'P', // - NYI
+  CTX_QUAD_TO          = 'Q', // cx cy x y - numbers
+  CTX_MEDIA_BOX        = 'R', // x y width height - numbers
+  CTX_SMOOTH_TO        = 'S', // cx cy x y - numbers
+  CTX_SMOOTHQ_TO       = 'T', // x y - numbers
+  CTX_CLEAR            = 'U', //
+  CTX_VER_LINE_TO      = 'V', // y - number
+  CTX_SET_TRANSFORM    = 'W', // a b c d e f - numbers
+  CTX_EXIT             = 'X', //
   // Z - SVG?
   CTX_REL_ARC_TO       = 'a', // SVG %
   CTX_CLIP             = 'b',
   CTX_REL_CURVE_TO     = 'c', // SVG 
-  CTX_SAVE             = 'd',
+  CTX_SAVE             = 'g',
   CTX_TRANSLATE        = 'e', // float, float
   CTX_LINEAR_GRADIENT  = 'f',
-  CTX_GLYPH            = 'g', // unichar, fontsize
   CTX_REL_HOR_LINE_TO  = 'h', // SVG %
   CTX_TEXTURE          = 'i',
+  CTX_GLYPH            = 'k', // unichar, fontsize
   CTX_REL_LINE_TO      = 'l', // SVG
   CTX_REL_MOVE_TO      = 'm', // SVG
   CTX_SET_FONT         = 'n', // as used by text parser
   CTX_RADIAL_GRADIENT  = 'o',
   CTX_GRADIENT_STOP    = 'p',
+  // D I j  d
   CTX_REL_QUAD_TO      = 'q',
   CTX_RECTANGLE        = 'r',
   CTX_REL_SMOOTH_TO    = 's', // SVG
@@ -705,7 +714,6 @@ typedef enum
   CTX_TEXT             = 'x', // x, y - followed by "" in CTX_DATA
   CTX_IDENTITY         = 'y', // < can be achieved with set_transform
   CTX_CLOSE_PATH       = 'z',
-  CTX_NEW_PATH         = 'N',
 
   /* these commands have single byte binary representations,
    * but are two chars in text, values below 9 are used for
@@ -6115,10 +6123,10 @@ ctx_b2f_over_CMYK8 (CtxRasterizer *rasterizer, int x, uint8_t *dst, uint8_t *cov
 
 static int
 ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
-                             uint8_t     *dst,
-                             int          x,
-                             uint8_t     *coverage,
-                             int          count)
+                               uint8_t       *dst,
+                               int            x,
+                               uint8_t       *coverage,
+                               int            count)
 {
   if (x + count >= rasterizer->blit_x + rasterizer->blit_width)
   {
@@ -6129,11 +6137,11 @@ ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
 
 static void
 ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
-                                int          minx,
-                                int          maxx,
-                                uint8_t     *coverage,
-                                int          winding,
-                                int          aa)
+                                  int            minx,
+                                  int            maxx,
+                                  uint8_t       *coverage,
+                                  int            winding,
+                                  int            aa)
 {
   int scanline     = rasterizer->scanline;
   int active_edges = rasterizer->active_edges;
@@ -8488,8 +8496,10 @@ static void ctx_font_init_ctx (CtxFont *font)
   }
   font->ctx.glyphs = glyph_count;
 #if CTX_RENDERSTREAM_STATIC
-  static uint32_t idx[512];
-  font->ctx.index = &idx[0];//(uint32_t*)malloc (sizeof (uint32_t) * 2 * glyph_count);
+  static uint32_t idx[512]; // one might have to adjust this for
+                            // larger fonts XXX
+                            // should probably be made a #define
+  font->ctx.index = &idx[0];
 #else
   font->ctx.index = (uint32_t*)malloc (sizeof (uint32_t) * 2 * glyph_count);
 #endif
