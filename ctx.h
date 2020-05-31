@@ -7943,32 +7943,25 @@ void
 ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
           int stride, CtxPixelFormat pixel_format)
 {
-  CtxIterator iterator;
-  CtxEntry   *entry;
-//  CtxState    *state    = (CtxState*)malloc (sizeof (CtxState));
-//  we reuse the state of ctx instead.
   CtxRasterizer *rasterizer = (CtxRasterizer*)malloc (sizeof (CtxRasterizer));
 
+  /* we borrow the state of ctx, this makes us non-thradable,
+   * but saves memory, this should be made configurable at compile-time
+   */
   ctx_rasterizer_init (rasterizer, ctx, &ctx->state, data, x, y, width, height,
                      stride, pixel_format);
 
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
-                                                  CTX_ITERATOR_EXPAND_BITPACK);
-
-  /* this is not re-entrant, a different way of permitting
-   * rasterizer to use itself as ctx target is needed via some hook
-   * in ctx_process()
-   */
-  ctx->renderer = rasterizer;
-  ctx->render_func = ctx_rasterizer_process;
-  while ((entry = ctx_iterator_next(&iterator)))
-    ctx_rasterizer_process (ctx->renderer, entry);
-  ctx->renderer = NULL;
-  ctx->render_func = NULL;
+  {
+    CtxIterator iterator;
+    CtxEntry   *entry;
+    ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
+                                                         CTX_ITERATOR_EXPAND_BITPACK);
+    while ((entry = ctx_iterator_next(&iterator)))
+      ctx_rasterizer_process (rasterizer, entry);
+  }
 
   ctx_rasterizer_deinit (rasterizer);
   free (rasterizer);
-  //free (state);
 }
 #endif
 
