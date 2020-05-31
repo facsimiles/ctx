@@ -23,7 +23,7 @@ int main (int argc, char **argv)
   printf ("CTX_MAX_EDGES %d\n", CTX_MAX_EDGES);
 
   printf ("sizeof(CtxRasterizer) = %li\n",      sizeof(CtxRasterizer));
-  printf ("sizeof(Ctx) (includes state) = %li\n", sizeof(Ctx));
+  printf ("sizeof(Ctx) = %li\n", sizeof(Ctx));
   printf ("sizeof(CtxParser) = %li\n",            sizeof(CtxParser));
   printf ("\n");
   printf ("sizeof(CtxState) = %li\n",             sizeof(CtxState));

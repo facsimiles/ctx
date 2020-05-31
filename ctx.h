@@ -439,7 +439,7 @@ void ctx_set_renderer (Ctx *ctx,
  * per-pixel cost for complex gradients
  */
 #ifndef CTX_GRADIENT_CACHE
-#define CTX_GRADIENT_CACHE 1
+#define CTX_GRADIENT_CACHE  1
 #endif
 
 #ifndef CTX_FONTS_FROM_FILE
@@ -8835,25 +8835,23 @@ static void ctx_setup ()
 
 #if CTX_CAIRO
 
-
-
-void
-ctx_render_cairo (Ctx *ctx, cairo_t *cr)
+typedef struct _CtxCairo CtxCairo;
+struct
+_CtxCairo
 {
-  CtxIterator iterator;
-  CtxEntry   *entry;
+  Ctx *ctx;
+  cairo_t *cr;
+  cairo_pattern_t *pat;
+  cairo_surface_t *image;
 
-  cairo_pattern_t *pat = NULL;
-  cairo_surface_t *image = NULL;
+};
 
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
-                                                  CTX_ITERATOR_EXPAND_BITPACK);
+static void
+ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
+{
+  cairo_t *cr = ctx_cairo->cr;
 
-  while ((entry = ctx_iterator_next (&iterator)))
-  {
-    //if (cairo_status (cr)) return;
-    switch (entry->code)
-    //switch ((CtxCode)(entry->code))
+  switch (entry->code)
     {
       case CTX_LINE_TO:
         cairo_line_to (cr, ctx_arg_float(0), ctx_arg_float(1));
@@ -9052,35 +9050,35 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 
       case CTX_LINEAR_GRADIENT:
         {
-          if (pat)
+          if (ctx_cairo->pat)
           {
-            cairo_pattern_destroy (pat);
-            pat = NULL;
+            cairo_pattern_destroy (ctx_cairo->pat);
+            ctx_cairo->pat = NULL;
           }
-          pat = cairo_pattern_create_linear (ctx_arg_float(0), ctx_arg_float(1),
-                                             ctx_arg_float(2), ctx_arg_float(3));
-          cairo_pattern_add_color_stop_rgba (pat, 0, 0, 0, 0, 1);
-          cairo_pattern_add_color_stop_rgba (pat, 1, 1, 1, 1, 1);
-          cairo_set_source (cr, pat);
+          ctx_cairo->pat = cairo_pattern_create_linear (ctx_arg_float(0), ctx_arg_float(1),
+                                                        ctx_arg_float(2), ctx_arg_float(3));
+          cairo_pattern_add_color_stop_rgba (ctx_cairo->pat, 0, 0, 0, 0, 1);
+          cairo_pattern_add_color_stop_rgba (ctx_cairo->pat, 1, 1, 1, 1, 1);
+          cairo_set_source (cr, ctx_cairo->pat);
         }
         break;
 
       case CTX_RADIAL_GRADIENT:
         {
-          if (pat)
+          if (ctx_cairo->pat)
           {
-            cairo_pattern_destroy (pat);
-            pat = NULL;
+            cairo_pattern_destroy (ctx_cairo->pat);
+            ctx_cairo->pat = NULL;
           }
-          pat = cairo_pattern_create_radial (ctx_arg_float(0), ctx_arg_float(1),
+          ctx_cairo->pat = cairo_pattern_create_radial (ctx_arg_float(0), ctx_arg_float(1),
                                              ctx_arg_float(2), ctx_arg_float(3),
                                              ctx_arg_float(4), ctx_arg_float(5));
-          cairo_set_source (cr, pat);
+          cairo_set_source (cr, ctx_cairo->pat);
         }
         break;
 
       case CTX_GRADIENT_STOP:
-        cairo_pattern_add_color_stop_rgba (pat,
+        cairo_pattern_add_color_stop_rgba (ctx_cairo->pat,
           ctx_arg_float(0),
           ctx_arg_u8(4)/255.0,
           ctx_arg_u8(5)/255.0,
@@ -9121,21 +9119,47 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
       case CTX_REPEAT_HISTORY:
         break;
     }
-  }
-  if (pat)
-    cairo_pattern_destroy (pat);
-  if (image)
-  {
-    cairo_surface_destroy (image);
-    image = NULL;
-  }
+}
+
+void
+ctx_render_cairo (Ctx *ctx, cairo_t *cr)
+{
+  CtxIterator iterator;
+  CtxEntry   *entry;
+  CtxCairo    ctx_cairo = {ctx, cr, NULL, NULL};
+
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
+                                                  CTX_ITERATOR_EXPAND_BITPACK);
+
+  while ((entry = ctx_iterator_next (&iterator)))
+          ctx_cairo_process (&ctx_cairo, entry);
+
+  if (ctx_cairo.pat)
+    cairo_pattern_destroy (ctx_cairo.pat);
+  if (ctx_cairo.image)
+    cairo_surface_destroy (ctx_cairo.image);
 }
 #endif
 
-#if CTX_RENDER_CTX 
-
 void
 ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
+{
+  CtxIterator iterator;
+  CtxEntry   *entry;
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
+                     CTX_ITERATOR_EXPAND_BITPACK);
+  while ((entry = ctx_iterator_next (&iterator)))
+    ctx_process (d_ctx, entry);
+}
+
+#if CTX_RENDER_CTX 
+
+#if 0
+/*  This is a much more roundabout way of doing the above function.
+ */
+
+void
+ctx_render_ctx_api (Ctx *ctx, Ctx *d_ctx)
 {
   CtxIterator iterator;
   CtxEntry   *entry;
@@ -9145,8 +9169,8 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
   while ((entry = ctx_iterator_next (&iterator)))
   {
-    //switch ((CtxCode)(entry->code))
-    switch (entry->code)
+    switch ((CtxCode)(entry->code))
+    //switch (entry->code)
     {
       case CTX_ARC_TO:
         ctx_arc_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
@@ -9383,6 +9407,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
     }
   }
 }
+#endif
 #endif
 
 
@@ -9816,7 +9841,6 @@ ctx_stream_process (void *user_data, CtxEntry *entry)
   }
 }
 
-
 void
 ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
 {
@@ -9833,7 +9857,6 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
           ctx_stream_process (user_data, entry);
   fprintf (stream, "\n");
 }
-
 
 
 #endif
