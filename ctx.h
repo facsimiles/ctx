@@ -196,7 +196,6 @@ ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
 void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
                                     float x1, float y1, float r1);
-void ctx_gradient_clear_stops (Ctx *ctx);
 void ctx_gradient_add_stop    (Ctx *ctx, float pos, float r, float g, float b, float a);
 
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -741,10 +740,9 @@ typedef enum
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
   //
-  // unused:  . , : backslash ! # $ % ^ { } < > ? &
+  // unused:  . , : backslash ! # $ % ^ { } < > ? & /
   CTX_SET_RGBA_U8      = '*', // u8 - for compactness
                               //  sets device RGBA u8
-  CTX_GRADIENT_CLEAR   = '/',
   CTX_BITPIX           = 'I', // x, y, width, height, scale
   CTX_BITPIX_DATA      = 'j', //
 
@@ -4526,21 +4524,15 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
   return id;
 }
 
-void
-ctx_gradient_clear_stops (Ctx *ctx)
-{
-   CTX_PROCESS_VOID (CTX_GRADIENT_CLEAR);
-}
-
 #if CTX_GRADIENT_CACHE
 static void
 ctx_gradient_cache_reset (void);
 #endif
 
 static void
-ctx_rasterizer_gradient_clear_stops(CtxRasterizer *rasterizer)
+ctx_state_gradient_clear_stops(CtxState *state)
 {
-  rasterizer->state->gradient.n_stops = 0;
+  state->gradient.n_stops = 0;
 }
 
 static void
@@ -7309,9 +7301,6 @@ ctx_rasterizer_process (void *user_data, CtxEntry *entry)
                     ctx_arg_float(0), ctx_arg_float(1));
       break;
 #endif
-    case CTX_GRADIENT_CLEAR:
-      ctx_rasterizer_gradient_clear_stops (rasterizer);
-      break;
     case CTX_GRADIENT_STOP:
       ctx_rasterizer_gradient_add_stop (rasterizer,
                                         ctx_arg_float(0),
@@ -7322,11 +7311,13 @@ ctx_rasterizer_process (void *user_data, CtxEntry *entry)
 #if CTX_GRADIENT_CACHE
       ctx_gradient_cache_reset();
 #endif
+      ctx_state_gradient_clear_stops (rasterizer->state);
       break;
     case CTX_RADIAL_GRADIENT:
 #if CTX_GRADIENT_CACHE
       ctx_gradient_cache_reset();
 #endif
+      ctx_state_gradient_clear_stops (rasterizer->state);
       break;
 
     case CTX_ROTATE:
@@ -9175,6 +9166,9 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 }
 #endif
 
+#if CTX_RENDER_CTX 
+
+#if 1
 void
 ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 {
@@ -9186,9 +9180,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
     ctx_process (d_ctx, entry);
 }
 
-#if CTX_RENDER_CTX 
-
-#if 0
+#else
 /*  This is a much more roundabout way of doing the above function.
  */
 
@@ -9408,13 +9400,11 @@ ctx_render_ctx_api (Ctx *ctx, Ctx *d_ctx)
       case CTX_LINEAR_GRADIENT:
         ctx_linear_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
                                     ctx_arg_float(2), ctx_arg_float(3));
-        ctx_gradient_clear_stops (d_ctx);
         break;
       case CTX_RADIAL_GRADIENT:
         ctx_radial_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
                                     ctx_arg_float(2), ctx_arg_float(3),
                                     ctx_arg_float(4), ctx_arg_float(5));
-        ctx_gradient_clear_stops (d_ctx);
         break;
 
       case CTX_GRADIENT_STOP:
