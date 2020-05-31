@@ -5047,10 +5047,49 @@ static int ctx_compare_edges (const void *ap, const void *bp)
   return xcompare;
 }
 
+static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
+{
+  CtxEntry pivot = A[(high+low)/2];
+  int i = low;
+  int j = high;
+
+  while (i <= j)
+  {
+    while (ctx_compare_edges (&A[i], &pivot)<0) i ++;
+    while (ctx_compare_edges (&pivot, &A[j])<0) j --;
+
+    if (i <= j)
+      {
+        CtxEntry tmp = A[i]; A[i] = A[j]; A[j] = tmp;
+        i++;
+        j--;
+      }
+  }
+  return i;
+}
+
+static void ctx_edge_qsort (CtxEntry *entries, int low, int high)
+{
+  {
+    int p = ctx_edge_qsort_partition (entries, low, high);
+    if (low < p -1 )
+      ctx_edge_qsort (entries, low, p - 1);
+    if (low < high)
+      ctx_edge_qsort (entries, p, high);
+  }
+}
+
 static void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 {
+#if 0
   qsort (&rasterizer->edge_list.entries[0], rasterizer->edge_list.count,
          sizeof (CtxEntry), ctx_compare_edges);
+#else
+  if (rasterizer->edge_list.count > 1)
+  {
+    ctx_edge_qsort (&(rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
+  }
+#endif
 }
 
 static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
@@ -8221,7 +8260,6 @@ CtxFontEngine ctx_font_engine_stb = {
    ctx_glyph_kern_stb,
 };
 
-
 int
 ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 {
@@ -9855,7 +9893,6 @@ ctx_stream_process (void *user_data, CtxEntry *entry)
 void
 ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
 {
-  int indent = 0;
   CtxIterator iterator;
   void *user_data[3]={stream, formatter, NULL};
   CtxEntry   *entry;
@@ -10453,6 +10490,18 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
   }
 }
 
+static char *ctx_strchr (const char *haystack, char needle)
+{
+  const char *p = haystack;
+  while (*p && *p != needle)
+  {
+    p++;
+  }
+  if (*p == needle)
+    return (char*)p;
+  return NULL;
+}
+
 static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
@@ -10655,7 +10704,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         {
           for (char *c = (char*)parser->holding; c; )
           {
-            char *next_nl = strchr (c, '\n');
+            char *next_nl = ctx_strchr (c, '\n');
             if (next_nl)
               *next_nl = 0;
 
