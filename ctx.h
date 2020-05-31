@@ -1382,6 +1382,28 @@ static void ctx_color_set_cmyka_ (CtxColor *color, const float *in)
 
 #endif
 
+#if CTX_ENABLE_CM
+
+static void ctx_rgb_user_to_device (CtxState *state, float rin, float gin, float bin,
+                                    float *rout, float *gout, float *bout)
+{
+  /* babl plug-in point */
+  *rout = rin;
+  *gout = gin;
+  *bout = bin;
+}
+
+static void ctx_rgb_device_to_user (CtxState *state, float rin, float gin, float bin,
+                                    float *rout, float *gout, float *bout)
+{
+  /* babl plug-in point */
+  *rout = rin;
+  *gout = gin;
+  *bout = bin;
+}
+#endif
+
+
 static void ctx_color_get_rgba_device (CtxState *state, CtxColor *color, float *out)
 {
   if (!(color->valid & CTX_VALID_RGBA_DEVICE))
@@ -1389,9 +1411,8 @@ static void ctx_color_get_rgba_device (CtxState *state, CtxColor *color, float *
 #if CTX_ENABLE_CM
     if (color->valid & CTX_VALID_RGBA)
     {
-      color->device_red   = color->red;
-      color->device_green = color->green;
-      color->device_blue  = color->blue;
+      ctx_rgb_user_to_device (state, color->red, color->green, color->blue,
+         &(color->device_red), &(color->device_green), &(color->device_blue));
     } else
 #endif
     if (color->valid & CTX_VALID_RGBA_U8)
@@ -1432,9 +1453,8 @@ static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
     ctx_color_get_rgba_device (state, color, out);
     if (color->valid & CTX_VALID_RGBA_DEVICE)
     {
-      color->red   = color->device_red;
-      color->green = color->device_green;
-      color->blue  = color->device_blue;
+      ctx_rgb_device_to_user (state, color->device_red, color->device_green, color->device_blue,
+                              &(color->red), &(color->green), &(color->blue));
     }
     color->valid |= CTX_VALID_RGBA;
   }
@@ -10568,49 +10588,33 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           ctx_rel_move_to (ctx, -parser->numbers[0], 0.0);  //  XXX : scale by font(size)
         else
         {
-          if (strchr ((char*)parser->holding, '\n'))
+          for (char c = (char*)parser->holding; c; )
           {
-            /* XXX : instead of a strdup, having a linebuffer would be better
+            char *next_nl = strchr (c, '\n');
+            if (next_nl)
+              *next_nl = 0;
+
+            /* do our own layouting on a per-word basis?, to get justified
+             * margins? then we'd want explict margins rather than the
+             * implicit ones from move_to's .. making move_to work within
+             * margins.
              */
-            char *copy = strdup ((char*)parser->holding);
-            char *c;
-            for (c = copy; c; )
-            {
-              char *next_nl = strchr (c, '\n');
-              if (next_nl)
-              {
-                *next_nl = 0;
-              }
-
-              /* do our own layouting on a per-word basis?, to get justified
-               * margins? then we'd want explict margins rather than the
-               * implicit ones from move_to's .. making move_to work within
-               * margins.
-               */
-              if (cmd == CTX_TEXT_STROKE)
-                ctx_text_stroke (ctx, c);
-              else
-                ctx_text (ctx, c);
-
-              if (next_nl)
-              {
-                ctx_move_to (ctx, parser->left_margin, ctx_y (ctx) + 
-                                  ctx_get_font_size (ctx));
-                c = next_nl + 1;
-              }
-              else
-              {
-                c = NULL;
-              }
-            }
-            free (copy);
-          }
-          else
-          {
             if (cmd == CTX_TEXT_STROKE)
-              ctx_text_stroke (ctx, (char*)parser->holding);
+              ctx_text_stroke (ctx, c);
             else
-              ctx_text (ctx, (char*)parser->holding);
+              ctx_text (ctx, c);
+
+            if (next_nl)
+            {
+              *next_nl = '\n'; // swap it newline back in
+              ctx_move_to (ctx, parser->left_margin, ctx_y (ctx) + 
+                                ctx_get_font_size (ctx));
+              c = next_nl + 1;
+            }
+            else
+            {
+              c = NULL;
+            }
           }
         }
         if (cmd == CTX_TEXT_STROKE)
