@@ -4237,6 +4237,8 @@ static void
 ctx_init (Ctx *ctx)
 {
   ctx_state_init (&ctx->state);
+  ctx->render_func = NULL;
+  ctx->renderer = NULL;
 #if 1
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
@@ -8004,11 +8006,13 @@ float ctx_y (Ctx *ctx)
 void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
+#if CTX_RASTERIZER
   if (ctx->render_func)
   {
-    ctx->render_func (ctx->renderer, entry);
+    ctx->render_func (ctx, entry);
   }
   else
+#endif
   {
     /* these functions might alter the code and coordinates of
        command that in the end gets added to the renderstream
