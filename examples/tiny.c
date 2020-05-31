@@ -39,7 +39,7 @@ int main (int argc, char **argv)
   ctx_set_line_width (ctx, 2);
   ctx_set_rgba (ctx, 0, 0, 0, 1);
   ctx_text_stroke (ctx, utf8);
-  ctx_set_RGBA8 (ctx, 255, 255, 255, 255);
+  ctx_set_rgba8 (ctx, 255, 255, 255, 255);
   ctx_move_to (ctx, 10, 9);
   ctx_text (ctx, utf8);
 #ifndef REALLY_TINY

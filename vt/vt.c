@@ -5335,7 +5335,7 @@ void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity)
     r = g = b = val;
   }
 
-  ctx_set_RGBA8 (ctx, r, g, b, 255);
+  ctx_set_rgba8 (ctx, r, g, b, 255);
 }
 
 int vt_keyrepeat (VT *vt)
@@ -5579,7 +5579,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
     int b = temp & 0xff;
     if (dh)
       r= g = b = 30;
-    ctx_set_RGBA8 (ctx, r, g, b, 255);
+    ctx_set_rgba8 (ctx, r, g, b, 255);
   }
   else
   {
@@ -5619,7 +5619,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
               rgb[i] = vt->fg_color[i];
             break;
         }
-        ctx_set_RGBA8 (ctx, rgb[0],
+        ctx_set_rgba8 (ctx, rgb[0],
                             rgb[1],
                             rgb[2], 255);
     }
@@ -5675,7 +5675,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
       int g = temp & 0xff;
       temp >>= 8;
       int b = temp & 0xff;
-      ctx_set_RGBA8 (ctx, r, g, b, 255);
+      ctx_set_rgba8 (ctx, r, g, b, 255);
     }
     else
     {
@@ -5701,7 +5701,7 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
             for (int i = 0; i <3 ;i++)
               rgb[i] = vt->fg_color[i];
         }
-        ctx_set_RGBA8 (ctx, rgb[0],
+        ctx_set_rgba8 (ctx, rgb[0],
                               rgb[1],
                               rgb[2], 255);
       }
