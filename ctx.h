@@ -3913,8 +3913,8 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
 #endif
 }
 
-/* refactor to only do transformation, then regular codepaths
- * applies transformed entry XXX
+/*
+ * this transforms the contents of entry according to ctx->transformation
  */
 static void
 ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
@@ -3925,28 +3925,10 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 
   switch (entry->code)
   {
-    case CTX_CLEAR:
-       ctx_state_init (state);
-       break;
-    case CTX_CLIP:
-    case CTX_FILL:
-    case CTX_STROKE:
-    case CTX_NEW_PATH:
-      state->has_moved = 0;
-      break;
-
     case CTX_MOVE_TO:
-
     case CTX_LINE_TO:
       { float x = ctx_arg_float(0);
         float y = ctx_arg_float(1);
-        state->x = x;
-        state->y = y;
-        if (!state->has_moved || entry->code == CTX_MOVE_TO)
-        {
-          state->has_moved = 1;
-        }
-
         if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
         {
           ctx_user_to_device (state, &x, &y);
@@ -3957,9 +3939,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
      break;
 
     case CTX_ARC:
-      state->x = ctx_arg_float (0) + cosf (ctx_arg_float (4)) * ctx_arg_float (2);
-      state->y = ctx_arg_float (1) + sinf (ctx_arg_float (4)) * ctx_arg_float (2);
-
       if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
       {
         float x = ctx_arg_float (0);
@@ -4016,13 +3995,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
       break;
 
     case CTX_CURVE_TO:
-      if (!state->has_moved) // bit ifft for curveto
-      {
-        state->has_moved = 1;
-      }
-      state->x = ctx_arg_float (4);
-      state->y = ctx_arg_float (5);
-
       if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
       {
         for (int c = 0; c < 3; c ++)
@@ -4037,13 +4009,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
       break;
 
     case CTX_QUAD_TO:
-      if (!state->has_moved) // bit ifft for curveto
-      {
-        state->has_moved = 1;
-      }
-      state->x = ctx_arg_float (2);
-      state->y = ctx_arg_float (3);
-
       if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
       {
         for (int c = 0; c < 2; c ++)
@@ -4059,9 +4024,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 
     case CTX_REL_MOVE_TO:
     case CTX_REL_LINE_TO:
-      state->x += ctx_arg_float(0);
-      state->y += ctx_arg_float(1);
-
       if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
       {
         for (int c = 0; c < 1; c ++)
@@ -4088,16 +4050,14 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         {
           for (int c = 0; c < 3; c ++)
           {
-            float x = state->x + entry[c].data.f[0];
-            float y = state->y + entry[c].data.f[1];
+            float x = nx + entry[c].data.f[0];
+            float y = ny + entry[c].data.f[1];
             ctx_user_to_device (state, &x, &y);
             entry[c].data.f[0] = x;
             entry[c].data.f[1] = y;
           }
           entry->code = CTX_CURVE_TO;
         }
-        state->x = nx;
-        state->y = ny;
       }
       break;
 
@@ -4110,16 +4070,14 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         {
           for (int c = 0; c < 2; c ++)
           {
-            float x = state->x + entry[c].data.f[0];
-            float y = state->y + entry[c].data.f[1];
+            float x = nx + entry[c].data.f[0];
+            float y = ny + entry[c].data.f[1];
             ctx_user_to_device (state, &x, &y);
             entry[c].data.f[0] = x;
             entry[c].data.f[1] = y;
           }
           entry->code = CTX_QUAD_TO;
         }
-        state->x = nx;
-        state->y = ny;
       }
       break;
   }
@@ -4243,7 +4201,6 @@ ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data)
       (((Ctx*)(data))->transformation & CTX_TRANSFORMATION_RELATIVE))
   {
      ctx_interpret_pos_transform (state, entry, data);
-     return;
   }
   ctx_interpret_pos_bare (state, entry, data);
 }
