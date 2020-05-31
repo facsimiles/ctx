@@ -140,6 +140,13 @@ void  ctx_curve_to       (Ctx *ctx, float cx0, float cy0,
                           float x, float y);
 void  ctx_quad_to        (Ctx *ctx, float cx, float cy,
                           float x, float y);
+void ctx_arc            (Ctx  *ctx,
+                         float x, float y,
+                         float radius,
+                         float angle1, float angle2,
+                         int   direction);
+void ctx_arc_to         (Ctx *ctx, float x1, float y1,
+                                   float x2, float y2, float radius);
 void  ctx_rectangle      (Ctx *ctx,
                           float x0, float y0,
                           float w, float h);
@@ -198,6 +205,15 @@ void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
                                     float x1, float y1, float r1);
 void ctx_gradient_add_stop    (Ctx *ctx, float pos, float r, float g, float b, float a);
 
+void  ctx_quad_to        (Ctx *ctx, float cx, float cy,
+                          float x, float y);
+void ctx_arc            (Ctx  *ctx,
+                         float x, float y,
+                         float radius,
+                         float angle1, float angle2,
+                         int   direction);
+void ctx_arc_to         (Ctx *ctx, float x1, float y1,
+                                   float x2, float y2, float radius);
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 /*ctx_texture_init:
@@ -671,78 +687,77 @@ typedef enum
   // for instance for svg compatibility or simulated/converted color spaces
   // not the serialization/internal render stream
   // 
-  // where numbers is suffixed it means the arguments are 32bit floats
-  // following in the positions of this item and in CTX_CONT items following
-  // to contain those in positions beyond the capacity of the initial item.
+  // unless specified, the arguments expected are 32bit float numbers.
   //
   CTX_FLUSH            = 0,
-  CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius - numbers
-  CTX_ARC              = 'B', // x y radius angle1 angle2 direction - numbers
-  CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y - numbers
+  CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius 
+  CTX_ARC              = 'B', // x y radius angle1 angle2 direction 
+  CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y 
   CTX_RESTORE          = 'G', // 
   CTX_STROKE           = 'E', //
   CTX_FILL             = 'F', //
-  CTX_HOR_LINE_TO      = 'H', // x - number
-  CTX_ROTATE           = 'J', // radians - number
-  CTX_SET_COLOR        = 'K', // [ byte, entries       ] variable length 
-  CTX_LINE_TO          = 'L', // x y - numbers
-  CTX_MOVE_TO          = 'M', // x y - numbers
+  CTX_HOR_LINE_TO      = 'H', // x 
+  CTX_ROTATE           = 'J', // radians 
+  CTX_SET_COLOR        = 'K', // model, c1 c2 c3 ca - has a variable set of
+                              // arguments.
+  CTX_LINE_TO          = 'L', // x y 
+  CTX_MOVE_TO          = 'M', // x y 
   CTX_NEW_PATH         = 'N',
-  CTX_SCALE            = 'O', // xscale yscale - numbers
+  CTX_SCALE            = 'O', // xscale yscale 
   CTX_NEW_PAGE         = 'P', // - NYI
-  CTX_QUAD_TO          = 'Q', // cx cy x y - numbers
-  CTX_MEDIA_BOX        = 'R', // x y width height - numbers
-  CTX_SMOOTH_TO        = 'S', // cx cy x y - numbers
-  CTX_SMOOTHQ_TO       = 'T', // x y - numbers
+  CTX_QUAD_TO          = 'Q', // cx cy x y 
+  CTX_MEDIA_BOX        = 'R', // x y width height 
+  CTX_SMOOTH_TO        = 'S', // cx cy x y 
+  CTX_SMOOTHQ_TO       = 'T', // x y 
   CTX_CLEAR            = 'U', //
-  CTX_VER_LINE_TO      = 'V', // y - number
-  CTX_SET_TRANSFORM    = 'W', // a b c d e f - numbers
+  CTX_VER_LINE_TO      = 'V', // y 
+  CTX_SET_TRANSFORM    = 'W', // a b c d e f 
   CTX_EXIT             = 'X', //
   // Z - SVG?
-  CTX_REL_ARC_TO       = 'a', // SVG %
+  CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius 
   CTX_CLIP             = 'b',
-  CTX_REL_CURVE_TO     = 'c', // SVG 
+  CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y 
   CTX_SAVE             = 'g',
-  CTX_TRANSLATE        = 'e', // float, float
-  CTX_LINEAR_GRADIENT  = 'f',
-  CTX_REL_HOR_LINE_TO  = 'h', // SVG %
+  CTX_TRANSLATE        = 'e', // x y 
+  CTX_LINEAR_GRADIENT  = 'f', // x1 y1 x2 y2 
+  CTX_REL_HOR_LINE_TO  = 'h', // x 
   CTX_TEXTURE          = 'i',
-  CTX_GLYPH            = 'k', // unichar, fontsize
-  CTX_REL_LINE_TO      = 'l', // SVG
-  CTX_REL_MOVE_TO      = 'm', // SVG
+  CTX_SET_KEY          = 'k', // - used together with another char to identify a key to set
+  CTX_REL_LINE_TO      = 'l', // x y 
+  CTX_REL_MOVE_TO      = 'm', // x y 
   CTX_SET_FONT         = 'n', // as used by text parser
-  CTX_RADIAL_GRADIENT  = 'o',
-  CTX_GRADIENT_STOP    = 'p',
-  // D I j  d
-  CTX_REL_QUAD_TO      = 'q',
-  CTX_RECTANGLE        = 'r',
-  CTX_REL_SMOOTH_TO    = 's', // SVG
-  CTX_REL_SMOOTHQ_TO   = 't', // SVG
-  CTX_TEXT_STROKE      = 'u', //
-  CTX_REL_VER_LINE_TO  = 'v',
-  CTX_SET_PARAM        = 'w', 
-  CTX_TEXT             = 'x', // x, y - followed by "" in CTX_DATA
-  CTX_IDENTITY         = 'y', // < can be achieved with set_transform
-  CTX_CLOSE_PATH       = 'z',
+  CTX_RADIAL_GRADIENT  = 'o', // x1 y1 radius1 x2 y2 radius2 
+  CTX_GRADIENT_STOP    = 'p', //   , count depends on current color model
+  CTX_REL_QUAD_TO      = 'q', // cx cy x y 
+  CTX_RECTANGLE        = 'r', // x y width height 
+  CTX_REL_SMOOTH_TO    = 's', // cx cy x y 
+  CTX_REL_SMOOTHQ_TO   = 't', // x y 
+  CTX_TEXT_STROKE      = 'u', // string - utf8 string
+  CTX_REL_VER_LINE_TO  = 'v', // y 
+  CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
+  CTX_IDENTITY         = 'y', // 
+  CTX_GLYPH            = 'w', // unichar fontsize 
+  CTX_CLOSE_PATH       = 'z', //
 
   /* these commands have single byte binary representations,
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
-  CTX_SET_GLOBAL_ALPHA     = 10, // wa
-  CTX_SET_COMPOSITING_MODE = 11, // wc
-  CTX_SET_FONT_SIZE        = 12, // wf
-  CTX_SET_LINE_JOIN        = 13, // wj
-  CTX_SET_LINE_CAP         = 14, // wc
-  CTX_SET_LINE_WIDTH       = 15, // ww
-  CTX_SET_FILL_RULE        = 16, // wr
-  CTX_SET_TEXT_ALIGN       = 17, // wt
-  CTX_SET_TEXT_BASELINE    = 18, // wb
-  CTX_SET_TEXT_DIRECTION   = 19, // wd
-  CTX_SET_MITER_LIMIT      = 20, // wm
-  CTX_SET_DEVICE_SPACE     = 21,
-  CTX_SET_RGB_SPACE        = 22,
-  CTX_SET_CMYK_SPACE       = 23,
+  CTX_SET_GLOBAL_ALPHA     = 10, // ka alpha - default=1.0
+  CTX_SET_COMPOSITING_MODE = 11, // kc mode - u8 , default=0
+  CTX_SET_FONT_SIZE        = 12, // kf size - float, default=?
+  CTX_SET_LINE_JOIN        = 13, // kj join - u8 , default=0
+  CTX_SET_LINE_CAP         = 14, // kc cap - u8, default = 0
+  CTX_SET_LINE_WIDTH       = 15, // kw width, default = 2.0
+  CTX_SET_FILL_RULE        = 16, // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
+  CTX_SET_TEXT_ALIGN       = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
+  CTX_SET_TEXT_BASELINE    = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
+  CTX_SET_TEXT_DIRECTION   = 19, // kd
+  CTX_SET_MITER_LIMIT      = 20, // km limit - float, default = 0.0
+
+  CTX_SET_DEVICE_SPACE     = 21, // hacks integer for now
+  CTX_SET_RGB_SPACE        = 22, //
+  CTX_SET_CMYK_SPACE       = 23, //
 
 
   CTX_DEFUN  = 24,
@@ -752,23 +767,26 @@ typedef enum
   // are used for internal purposes
   //
   // unused:  . , : backslash ! # $ % ^ { } < > ? & /
-  CTX_SET_RGBA_U8      = '*', // u8 - for compactness
-                              //  sets device RGBA u8
+  //          D   d
+  //
+  //
+  CTX_CONT             = ';', // - contains data from preceding code
+  CTX_SET_RGBA_U8      = '*', // r g b a - u8 
+  // NYI
   CTX_BITPIX           = 'I', // x, y, width, height, scale
   CTX_BITPIX_DATA      = 'j', //
 
-  CTX_NOP              = ' ',
-  CTX_NEW_EDGE         = '+',
-  CTX_EDGE             = '|',
-  CTX_EDGE_FLIPPED     = '`',
+  CTX_NOP              = ' ', //
+  CTX_NEW_EDGE         = '+', // x0 y0 x1 y1 - s16
+  CTX_EDGE             = '|', // x0 y0 x1 y1 - s16
+  CTX_EDGE_FLIPPED     = '`', // x0 y0 x1 y1 - s16
 
   CTX_REPEAT_HISTORY   = ']', //
-  CTX_CONT             = ';',
-  CTX_DATA             = '(', // size,  size-in-entries
+  CTX_DATA             = '(', // size size-in-entries - u32
   CTX_DATA_REV         = ')', // reverse traversal data marker
-  CTX_DEFINE_GLYPH     = '@',
-  CTX_KERNING_PAIR     = '[',
-  CTX_SET_PIXEL        = '-',
+  CTX_DEFINE_GLYPH     = '@', // unichar width - u32
+  CTX_KERNING_PAIR     = '[', // glA glB kerning, glA and glB in u16 kerning in s32
+  CTX_SET_PIXEL        = '-', // r g b a x y - u8 for rgba, and u16 for x,y
 
   /* optimizations that reduce the number of entries used,
    * not visible outside the draw-stream compression -
@@ -776,16 +794,16 @@ typedef enum
    * SVG path.
    */
 #if CTX_BITPACK
-  CTX_REL_LINE_TO_X4            = '0',
-  CTX_REL_LINE_TO_REL_CURVE_TO  = '1',
-  CTX_REL_CURVE_TO_REL_LINE_TO  = '2',
-  CTX_REL_CURVE_TO_REL_MOVE_TO  = '3',
-  CTX_REL_LINE_TO_X2            = '4',
-  CTX_MOVE_TO_REL_LINE_TO       = '5',
-  CTX_REL_LINE_TO_REL_MOVE_TO   = '6',
-  CTX_FILL_MOVE_TO              = '7',
-  CTX_REL_QUAD_TO_REL_QUAD_TO   = '8',
-  CTX_REL_QUAD_TO_S16           = '9',
+  CTX_REL_LINE_TO_X4            = '0', // x1 y1 x2 y2 x3 y3 x4 y4   -- s8
+  CTX_REL_LINE_TO_REL_CURVE_TO  = '1', // x1 y1 cx1 cy1 cx2 cy2 x y -- s8
+  CTX_REL_CURVE_TO_REL_LINE_TO  = '2', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
+  CTX_REL_CURVE_TO_REL_MOVE_TO  = '3', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
+  CTX_REL_LINE_TO_X2            = '4', // x1 y1 x2 y2 -- s16
+  CTX_MOVE_TO_REL_LINE_TO       = '5', // x1 y1 x2 y2 -- s16
+  CTX_REL_LINE_TO_REL_MOVE_TO   = '6', // x1 y1 x2 y2 -- s16
+  CTX_FILL_MOVE_TO              = '7', // x y
+  CTX_REL_QUAD_TO_REL_QUAD_TO   = '8', // cx1 x1 cy1 y1 cx1 x2 cy1 y1 -- s8
+  CTX_REL_QUAD_TO_S16           = '9', // cx1 cy1 x y                 - s16
 #endif
 } CtxCode;
 
@@ -812,6 +830,45 @@ struct _CtxEntry
   } data;
 };
 
+typedef struct _CtxUnion CtxUnion;
+struct _CtxUnion
+{
+  uint8_t code;       // radical idea pack the code into first floats
+  union {
+    struct {float scalex; float scaley;}       scale;
+    struct {float x; float y;}                 rel_move_to;
+    struct {float x; float y;}                 rel_line_to;
+    struct {float cx1; float cy1;
+      uint8_t pad0;float cx2; float cy2;
+      uint8_t pad1;float x;float y;}           rel_curve_to;
+    struct move_to {float x; float y;}         move_to;
+    struct line_to {float x; float y;}         line_to;
+    struct {float cx1; float cy1;
+      uint8_t pad0;float cx2; float cy2;
+      uint8_t pad1;float x;float y;}           curve_to;
+    struct {float x1; float y1;
+      uint8_t pad0;float r1; float x2;
+      uint8_t pad1;float y2; float r2;
+    } radial_gradient;
+    struct {float x1; float y1;
+      uint8_t pad0;float x2; float y2;} linear_gradient;
+    struct {float x; float y;
+      uint8_t pad0;float width; float height;} rectangle;
+    struct {uint8_t rgba[4];
+      uint16_t x;uint16_t y;} set_pixel;
+    struct {float cx; float cy;
+      uint8_t pad0;float x; float y;} quad_to;
+    struct {float x; float y;
+      uint8_t pad0;float radius; float angle1;
+      uint8_t pad1;float angle2; float direction;} arc;
+    struct {float x1; float y1;
+      uint8_t pad0;float x2; float y2;
+      uint8_t pad1;float radius;} arc_to;
+  };
+};
+
+#pragma pack(pop)
+
 /* access macros for nth argument of a given type when packed into
  * an CtxEntry pointer in current code context
  */
@@ -824,9 +881,6 @@ struct _CtxEntry
 #define ctx_arg_u8(no)    entry[(no)>>3].data.u8[(no)&7]
 #define ctx_arg_s8(no)    entry[(no)>>3].data.s8[(no)&7]
 #define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
-
-#pragma pack(pop)
-
 
 typedef enum {
   CTX_GRAY           = 1,
@@ -3985,6 +4039,7 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
 static void
 ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 {
+  CtxUnion *ue = (CtxUnion*)entry;
   float start_x = state->x;
   float start_y = state->y;
   int had_moved = state->has_moved;
@@ -3993,8 +4048,8 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
   {
     case CTX_MOVE_TO:
     case CTX_LINE_TO:
-      { float x = ctx_arg_float(0);
-        float y = ctx_arg_float(1);
+      { float x = ue->line_to.x;
+        float y = ue->line_to.y;
         if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
         {
           ctx_user_to_device (state, &x, &y);
@@ -4007,56 +4062,30 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
     case CTX_ARC:
       if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
       {
-        float x = ctx_arg_float (0);
-        float y = ctx_arg_float (1);
-        float r = ctx_arg_float (2);
-        ctx_user_to_device (state, &x, &y);
-        ctx_arg_float(0) = x;
-        ctx_arg_float(1) = y;
-        y = 0;
-        ctx_user_to_device_distance (state, &r, &y);
-        ctx_arg_float(2) = r;
+        float temp;
+        ctx_user_to_device (state, &ue->arc.x, &ue->arc.y);
+        temp = 0;
+        ctx_user_to_device_distance (state, &ue->arc.radius, &temp);
       }
 
       break;
 
     case CTX_LINEAR_GRADIENT:
-      {
-        float x = ctx_arg_float (0);
-        float y = ctx_arg_float (1);
-        ctx_user_to_device (state, &x, &y);
-        ctx_arg_float(0) = x;
-        ctx_arg_float(1) = y;
-
-        x = ctx_arg_float (2);
-        y = ctx_arg_float (3);
-        ctx_user_to_device (state, &x, &y);
-        ctx_arg_float(2) = x;
-        ctx_arg_float(3) = y;
-      }
+      ctx_user_to_device (state, &ue->linear_gradient.x1, &ue->linear_gradient.y1);
+      ctx_user_to_device (state, &ue->linear_gradient.x2, &ue->linear_gradient.y2);
       break;
 
     case CTX_RADIAL_GRADIENT:
       {
-        float x = ctx_arg_float (0);
-        float y = ctx_arg_float (1);
-        float r = ctx_arg_float (2);
-        ctx_user_to_device (state, &x, &y);
-        ctx_arg_float(0) = x;
-        ctx_arg_float(1) = y;
-        y = 0;
-        ctx_user_to_device_distance (state, &r, &y);
-        ctx_arg_float(2) = r;
+        float temp;
 
-        x = ctx_arg_float (3);
-        y = ctx_arg_float (4);
-        r = ctx_arg_float (5);
-        ctx_user_to_device (state, &x, &y);
-        ctx_arg_float(3) = x;
-        ctx_arg_float(4) = y;
-        y = 0;
-        ctx_user_to_device_distance (state, &r, &y);
-        ctx_arg_float(5) = r;
+        ctx_user_to_device (state, &ue->radial_gradient.x1, &ue->radial_gradient.y1);
+        temp = 0;
+        ctx_user_to_device_distance (state, &ue->radial_gradient.r1, &temp);
+        ctx_user_to_device (state, &ue->radial_gradient.x2, &ue->radial_gradient.y2);
+        temp = 0;
+        ctx_user_to_device_distance (state, &ue->radial_gradient.r2, &temp);
+
       }
       break;
 
@@ -7311,6 +7340,7 @@ ctx_rasterizer_process (void *user_data, CtxEntry *entry)
   //CtxRasterizer *rasterizer = ctx->renderer;
   CtxRasterizer *rasterizer = user_data;
   //Ctx *ctx = rasterizer->ctx;
+  CtxUnion *ue = (CtxUnion*)entry;
 
   //fprintf (stderr, "%c(%.1f %.1f %i)", entry->code, rasterizer->x,rasterizer->y, rasterizer->has_prev);
   switch (entry->code)
@@ -7368,8 +7398,11 @@ ctx_rasterizer_process (void *user_data, CtxEntry *entry)
       break;
 
     case CTX_SET_PIXEL:
-      ctx_rasterizer_set_pixel (rasterizer, ctx_arg_u16 (2), ctx_arg_u16 (3),
-        ctx_arg_u8(0), ctx_arg_u8(1), ctx_arg_u8(2), ctx_arg_u8(3));
+      ctx_rasterizer_set_pixel (rasterizer, ue->set_pixel.x, ue->set_pixel.y,
+                                            ue->set_pixel.rgba[0],
+                                            ue->set_pixel.rgba[1],
+                                            ue->set_pixel.rgba[2],
+                                            ue->set_pixel.rgba[3]);
       break;
 
     case CTX_TEXTURE:
@@ -8960,20 +8993,21 @@ _CtxCairo
 static void
 ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
 {
+  CtxUnion *ue = (CtxUnion*)entry;
   cairo_t *cr = ctx_cairo->cr;
 
   switch (entry->code)
     {
       case CTX_LINE_TO:
-        cairo_line_to (cr, ctx_arg_float(0), ctx_arg_float(1));
+        cairo_line_to (cr, ue->line_to.x, ue->line_to.y);
         break;
 
       case CTX_REL_LINE_TO:
-        cairo_rel_line_to (cr, ctx_arg_float(0), ctx_arg_float(1));
+        cairo_rel_line_to (cr, ue->rel_line_to.x, ue->rel_line_to.y);
         break;
 
       case CTX_MOVE_TO:
-        cairo_move_to (cr, ctx_arg_float(0), ctx_arg_float(1));
+        cairo_move_to (cr, ue->move_to.x, ue->move_to.y);
         break;
 
       case CTX_REL_MOVE_TO:
@@ -9046,8 +9080,8 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
                          ctx_arg_float(4));
         else
           cairo_arc_negative (cr, ctx_arg_float(0), ctx_arg_float(1),
-                              ctx_arg_float(2), ctx_arg_float(3),
-                              ctx_arg_float(4));
+                                  ctx_arg_float(2), ctx_arg_float(3),
+                                  ctx_arg_float(4));
         break;
 
 
@@ -9069,10 +9103,8 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
 #endif
 
       case CTX_RECTANGLE:
-        cairo_rectangle (cr,ctx_arg_float(0),
-                            ctx_arg_float(1),
-                            ctx_arg_float(2),
-                            ctx_arg_float(3));
+        cairo_rectangle (cr, ue->rectangle.x, ue->rectangle.y,
+                             ue->rectangle.width, ue->rectangle.height);
         break;
       case CTX_SET_PIXEL:
         cairo_set_source_rgba (cr, ctx_u8_to_float (ctx_arg_u8(0)),
@@ -9229,6 +9261,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
       case CTX_REPEAT_HISTORY:
         break;
     }
+  ctx_process (ctx_cairo->ctx, entry);
 }
 
 void
@@ -9236,7 +9269,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 {
   CtxIterator iterator;
   CtxEntry   *entry;
-  CtxCairo    ctx_cairo = {ctx, cr, NULL, NULL};
+  CtxCairo    ctx_cairo = {ctx_new(), cr, NULL, NULL};
 
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
                                                   CTX_ITERATOR_EXPAND_BITPACK);
@@ -9248,6 +9281,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
     cairo_pattern_destroy (ctx_cairo.pat);
   if (ctx_cairo.image)
     cairo_surface_destroy (ctx_cairo.image);
+  ctx_free (ctx_cairo.ctx);
 }
 #endif
 
@@ -9558,7 +9592,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
     //switch ((CtxCode)code)
     switch (code)
     {
-      case CTX_SET_PARAM:            name="set_param";break;
+      case CTX_SET_KEY:            name="set_param";break;
       case CTX_SET_COLOR:            name="set_color";break;
       case CTX_DEFINE_GLYPH:         name="define_glyph";break;
       case CTX_SET_PIXEL:            name="set_pixel";break;
@@ -9635,7 +9669,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
 #endif
   {
   uint8_t name[3];
-  name[0]=CTX_SET_PARAM;
+  name[0]=CTX_SET_KEY;
   name[2]='\0';
   switch (code)
   {
@@ -10135,7 +10169,7 @@ static int ctx_arguments_for_code (CtxCode code)
                    which means string|number accepted
                  */
 
-  //case CTX_SET_PARAM:
+  //case CTX_SET_KEY:
   case CTX_SET_COLOR:
     return 200;  /* 200 means number of components */
   case CTX_GRADIENT_STOP:
@@ -10326,7 +10360,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('t','r','a','n','s','f','o','r','m',0,0,0):       ret = CTX_SET_TRANSFORM; break;
                                                            // XXX: make it apply instead of set
 
-    case STR(CTX_SET_PARAM,'m',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'m',0,0,0,0,0,0,0,0,0,0):
 
     case STR('r','g','b','_','s','p','a','c','e',0,0,0): 
     case STR('r','g','b','S','p','a','c','e',0,0,0,0): 
@@ -10345,54 +10379,54 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('c','o','m','p','o','s','i','t','i','n','g','M'): 
       return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
 
-    case STR(CTX_SET_PARAM,'r',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'r',0,0,0,0,0,0,0,0,0,0):
     case STR('f','i','l','l','_','r','u','l','e',0,0,0): 
     case STR('f','i','l','l','R','u','l','e',0,0,0,0): 
       return ctx_parser_set_command (parser, CTX_SET_FILL_RULE);
 
-    case STR(CTX_SET_PARAM,'f',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'f',0,0,0,0,0,0,0,0,0,0):
     case STR('f','o','n','t','_','s','i','z','e',0,0,0):
     case STR('f','o','n','t','S','i','z','e',0,0,0,0):
       return ctx_parser_set_command (parser, CTX_SET_FONT_SIZE);
 
-    case STR(CTX_SET_PARAM,'l',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'l',0,0,0,0,0,0,0,0,0,0):
     case STR('m','i','t','e','r','_','l','i','m','i','t',0):
     case STR('m','i','t','e','r','L','i','m','i','t',0,0):
       return ctx_parser_set_command (parser, CTX_SET_MITER_LIMIT);
 
-    case STR(CTX_SET_PARAM,'t',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'t',0,0,0,0,0,0,0,0,0,0):
     case STR('t','e','x','t','_','a','l','i','g','n',0, 0):
     case STR('t','e','x','t','A','l','i','g','n',0, 0, 0):
       return ctx_parser_set_command (parser, CTX_SET_TEXT_ALIGN);
 
-    case STR(CTX_SET_PARAM,'b',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'b',0,0,0,0,0,0,0,0,0,0):
     case STR('t','e','x','t','_','b','a','s','e','l','i','n'):
     case STR('t','e','x','t','B','a','s','e','l','i','n','e'):
       return ctx_parser_set_command (parser, CTX_SET_TEXT_BASELINE);
 
-    case STR(CTX_SET_PARAM,'d',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'d',0,0,0,0,0,0,0,0,0,0):
     case STR('t','e','x','t','_','d','i','r','e','c','t','i'):
     case STR('t','e','x','t','D','i','r','e','c','t','i','o'):
       return ctx_parser_set_command (parser, CTX_SET_TEXT_DIRECTION);
 
-    case STR(CTX_SET_PARAM,'j',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'j',0,0,0,0,0,0,0,0,0,0):
     case STR('j','o','i','n',0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','j','o','i','n',0,0,0):
     case STR('l','i','n','e','J','o','i','n',0,0,0,0):
       return ctx_parser_set_command (parser, CTX_SET_LINE_JOIN);
 
-    case STR(CTX_SET_PARAM,'c',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'c',0,0,0,0,0,0,0,0,0,0):
     case STR('c','a','p',0,0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','c','a','p',0,0,0,0):
     case STR('l','i','n','e','C','a','p',0,0,0,0,0):
       return ctx_parser_set_command (parser, CTX_SET_LINE_CAP);
 
-    case STR(CTX_SET_PARAM,'w',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'w',0,0,0,0,0,0,0,0,0,0):
     case STR('l','i','n','e','_','w','i','d','t','h',0,0):
     case STR('l','i','n','e','W','i','d','t','h',0,0,0):
       return ctx_parser_set_command (parser, CTX_SET_LINE_WIDTH);
 
-    case STR(CTX_SET_PARAM,'a',0,0,0,0,0,0,0,0,0,0):
+    case STR(CTX_SET_KEY,'a',0,0,0,0,0,0,0,0,0,0):
     case STR('g','l','o','b','a','l','_','a','l','p','h','a'):
     case STR('g','l','o','b','a','l','A','l','p','h','a',0):
       return ctx_parser_set_command (parser, CTX_SET_GLOBAL_ALPHA);
