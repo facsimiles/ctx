@@ -763,13 +763,12 @@ typedef enum
 } CtxCode;
 
 typedef enum {
-  CTX_GRAY         = 1,
-  CTX_RGB          = 3,
-  CTX_RGB_DEVICE   = 4,
-  CTX_CMYK         = 5,
-  CTX_LAB          = 6,
-  CTX_LCH          = 7,
-
+  CTX_GRAY           = 1,
+  CTX_RGB            = 3,
+  CTX_RGB_DEVICE     = 4,
+  CTX_CMYK           = 5,
+  CTX_LAB            = 6,
+  CTX_LCH            = 7,
   CTX_GRAYA          = 101,
   CTX_RGBA           = 103,
   CTX_RGBA_DEVICE    = 104,
@@ -780,7 +779,6 @@ typedef enum {
   CTX_RGBA_A         = 203,
   CTX_RGBA_A_DEVICE  = 204,
   CTX_CMYKA_A        = 205,
-
   // RGB  device and  RGB  ?
 } CtxColorModel;
 
@@ -1605,6 +1603,7 @@ struct _CtxPixelFormatInfo
 struct _Ctx {
 #if CTX_RASTERIZER
   CtxRenderer      *renderer;
+  void             *renderer_user_data;
 #endif
   CtxRenderstream   renderstream;
   CtxState          state;
@@ -7370,8 +7369,6 @@ ctx_b2f_over_GRAY1 (CtxRenderer *renderer, int x, uint8_t *dst, uint8_t *coverag
   ctx_RGBA8_to_GRAY1 (renderer, x, &pixels[0], dst, count);
   return ret;
 }
-
-
 #endif
 
 #if CTX_ENABLE_GRAY2
@@ -7901,7 +7898,6 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
                                                   CTX_ITERATOR_EXPAND_BITPACK);
 
-
   /* this is not re-entrant, a different way of permitting
    * renderer to use itself as ctx target is needed via some hook
    * in ctx_process()
@@ -7916,7 +7912,6 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
   //free (state);
 }
 #endif
-
 
 void
 ctx_current_point (Ctx *ctx, float *x, float *y)
@@ -7950,7 +7945,6 @@ float ctx_y (Ctx *ctx)
   ctx_current_point (ctx, &x, &y);
   return y;
 }
-
 
 void
 ctx_process (Ctx *ctx, CtxEntry *entry)
