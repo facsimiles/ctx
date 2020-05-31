@@ -922,6 +922,27 @@ ctx_maxf (float a, float b)
   return b;
 }
 
+static void ctx_strcpy (char *dst, const char *src)
+{
+  int i = 0;
+  for (i = 0; src[i]; i++)
+   dst[i] = src[i];
+  dst[i] = 0;
+}
+
+static char *ctx_strchr (const char *haystack, char needle)
+{
+  const char *p = haystack;
+  while (*p && *p != needle)
+  {
+    p++;
+  }
+  if (*p == needle)
+    return (char*)p;
+  return NULL;
+}
+
+
 #if CTX_MATH
 
 static float
@@ -2793,7 +2814,7 @@ ctx_set_font (Ctx *ctx, const char *name)
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = namelen;
   commands[1].data.u32[1] = namelen/9+1;
-  strcpy ((char*)&commands[2].data.u8[0], name);
+  ctx_strcpy ((char*)&commands[2].data.u8[0], name);
   ctx_process (ctx, commands);
 #else
   _ctx_set_font (ctx, name);
@@ -8274,7 +8295,7 @@ ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
     return -1;
   ctx_fonts[ctx_font_count].type = 1;
   ctx_fonts[ctx_font_count].name = (char*)malloc (strlen (name) + 1);
-  strcpy ((char*)ctx_fonts[ctx_font_count].name, name);
+  ctx_strcpy ((char*)ctx_fonts[ctx_font_count].name, name);
   if (!stbtt_InitFont(&ctx_fonts[ctx_font_count].stb.ttf_info, ttf_contents, 0))
     {
       ctx_log( "Font init failed\n");
@@ -8793,7 +8814,7 @@ ctx_text (Ctx        *ctx,
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = stringlen;
   commands[1].data.u32[1] = stringlen/9+1;
-  strcpy ((char*)&commands[2].data.u8[0], string);
+  ctx_strcpy ((char*)&commands[2].data.u8[0], string);
   ((char*)(&commands[2].data.u8[0]))[stringlen]=0;
   ctx_process (ctx, commands);
   _ctx_text (ctx, string, 0, 0);
@@ -8814,7 +8835,7 @@ ctx_text_stroke (Ctx        *ctx,
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = stringlen;
   commands[1].data.u32[1] = stringlen/9+1;
-  strcpy ((char*)&commands[2].data.u8[0], string);
+  ctx_strcpy ((char*)&commands[2].data.u8[0], string);
   ((char*)(&commands[2].data.u8[0]))[stringlen]=0;
   ctx_process (ctx, commands);
   _ctx_text (ctx, string, 1, 0);
@@ -10495,18 +10516,6 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
                  (1.0 - parser->numbers[offset + 3]);
     break;
   }
-}
-
-static char *ctx_strchr (const char *haystack, char needle)
-{
-  const char *p = haystack;
-  while (*p && *p != needle)
-  {
-    p++;
-  }
-  if (*p == needle)
-    return (char*)p;
-  return NULL;
 }
 
 static void ctx_parser_dispatch_command (CtxParser *parser)
