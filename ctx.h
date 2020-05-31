@@ -71,7 +71,7 @@ void      gtx_glyph_free     (CtxGlyph *glyphs);
  * Create a new drawing context, without an associated target frame buffer,
  * use ctx_blit to render the built up renderstream to a framebuffer.
  */
-Ctx *ctx_new                 (void);
+Ctx *ctx_new (void);
 
 /**
  * ctx_new_for_framebuffer:
@@ -7887,11 +7887,11 @@ Ctx *
 ctx_new_for_buffer (CtxBuffer *buffer)
 {
   Ctx *ctx = ctx_new ();
-
-  ctx->renderer = (CtxRenderer*)malloc (sizeof (CtxRenderer));
-  ctx_renderer_init (ctx->renderer, ctx, &ctx->state,
+  CtxRenderer *renderer = (CtxRenderer*)malloc (sizeof (CtxRenderer));
+  ctx_renderer_init (renderer, ctx, &ctx->state,
                      buffer->data, 0, 0, buffer->width, buffer->height,
                      buffer->stride, buffer->format->pixel_format);
+  ctx->renderer = renderer;
   return ctx;
 }
 
@@ -7901,9 +7901,10 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                          CtxPixelFormat pixel_format)
 {
   Ctx *ctx = ctx_new ();
-  ctx->renderer = (CtxRenderer*)malloc (sizeof (CtxRenderer));
-  ctx_renderer_init (ctx->renderer, ctx, &ctx->state,
+  CtxRenderer *renderer = (CtxRenderer*)malloc (sizeof (CtxRenderer));
+  ctx_renderer_init (renderer, ctx, &ctx->state,
                      data, 0, 0, width, height, stride, pixel_format);
+  ctx->renderer = renderer;
   return ctx;
 }
 
