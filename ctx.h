@@ -3892,6 +3892,9 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
 #endif
 }
 
+/* refactor to only do transformation, then regular codepaths
+ * applies transformed entry XXX
+ */
 static void
 ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 {
@@ -4208,6 +4211,7 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
       state->x += ctx_arg_float(2);
       state->y += ctx_arg_float(3);
       break;
+    // XXX missing some smooths
   }
 }
 
@@ -7331,8 +7335,9 @@ ctx_rasterizer_process (void *user_data, CtxEntry *entry)
       ctx_rasterizer_gradient_clear_stops (rasterizer);
       break;
     case CTX_GRADIENT_STOP:
-      ctx_rasterizer_gradient_add_stop (rasterizer, ctx_arg_float(0),
-                                               &ctx_arg_u8(4));
+      ctx_rasterizer_gradient_add_stop (rasterizer,
+                                        ctx_arg_float(0),
+                                        &ctx_arg_u8(4));
       break;
 
     case CTX_LINEAR_GRADIENT:
@@ -9896,7 +9901,7 @@ void
 ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
 {
   CtxIterator iterator;
-  void *user_data[3]={stream, formatter, NULL};
+  void *user_data[3]={stream, (void*)(size_t)(formatter), NULL};
   CtxEntry   *entry;
 
   ctx_iterator_init (&iterator, &ctx->renderstream, 0,
