@@ -531,9 +531,12 @@ void ctx_set_renderer (Ctx *ctx,
 #define CTX_ENABLE_GRAY1                1
 #define CTX_ENABLE_GRAY2                1
 #define CTX_ENABLE_GRAY4                1
+
+#if CTX_ENABLE_CMYK
 #define CTX_ENABLE_CMYK8                1
 #define CTX_ENABLE_CMYKA8               1
 #define CTX_ENABLE_CMYKAF               1
+#endif
 
 #endif
 
@@ -600,6 +603,14 @@ void ctx_set_renderer (Ctx *ctx,
 #endif
 #define CTX_ENABLE_CMYKF  1
 #endif
+
+#ifdef CTX_ENABLE_CMYKF8
+#ifdef CTX_ENABLE_CMYK
+#undef CTX_ENABLE_CMYK
+#endif
+#define CTX_ENABLE_CMYK  1
+#endif
+
 
 
 #define CTX_PI               3.141592653589793f
@@ -1086,6 +1097,7 @@ typedef struct _CtxColor CtxColor;
 struct _CtxColor
 {
   uint8_t rgba[4];
+  uint8_t l_u8;
   uint8_t original; // the bitmask of the originally set color
   uint8_t valid;    // bitmask of which members contain valid
                     // values, gets denser populated as more
@@ -1099,10 +1111,7 @@ struct _CtxColor
   float   a;
   float   b;
 #endif
-
-  uint8_t l_u8;
 #if CTX_ENABLE_CMYK
-  //uint8_t cmyka[5];
   float   cyan;
   float   magenta;
   float   yellow;
@@ -1349,7 +1358,7 @@ static void ctx_color_set_rgba_device (CtxState *state, CtxColor *color, float r
   color->alpha        = a;
   color->space = state->gstate.device_space;
 #else
-  ctx_color_set_rgba (color, r, g, b, a);
+  ctx_color_set_rgba (state, color, r, g, b, a);
 #endif
 }
 
@@ -1495,7 +1504,7 @@ static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
   out[2] = color->blue;
   out[3] = color->alpha;
 #else
-  ctx_color_get_rgba_device (ctx, color, out);
+  ctx_color_get_rgba_device (state, color, out);
 #endif
 }
 
@@ -9326,15 +9335,21 @@ ctx_render_ctx_api (Ctx *ctx, Ctx *d_ctx)
         break;
 
       case CTX_SET_RGB_SPACE:
+#if CTX_ENABLE_CM
         ctx_set_rgb_space (d_ctx, ctx_arg_u8(0));
+#endif
         break;
 
       case CTX_SET_CMYK_SPACE:
+#if CTX_ENABLE_CM
         ctx_set_cmyk_space (d_ctx, ctx_arg_u8(0));
+#endif
         break;
 
       case CTX_SET_DEVICE_SPACE:
+#if CTX_ENABLE_CM
         ctx_set_device_space (d_ctx, ctx_arg_u8(0));
+#endif
         break;
 
       case CTX_SET_COLOR:
@@ -10531,9 +10546,11 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
     case CTX_STROKE:  ctx_stroke (ctx);  break;
     case CTX_RESTORE: ctx_restore (ctx); break;
 
+#if CTX_ENABLE_CM
     case CTX_SET_DEVICE_SPACE: ctx_set_device_space (ctx, arg(0)); break;
     case CTX_SET_RGB_SPACE: ctx_set_rgb_space (ctx, arg(0)); break;
     case CTX_SET_CMYK_SPACE: ctx_set_cmyk_space (ctx, arg(0)); break;
+#endif
 
     case CTX_SET_COLOR:
       {

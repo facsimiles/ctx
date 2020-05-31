@@ -4,8 +4,9 @@
 #define CTX_MAX_JOURNAL_SIZE 4096000
 #define CTX_BACKEND_TEXT 0
 #define CTX_PARSER       1
-#define CTX_ENABLE_CMYK  1
-#define CTX_GLYPH_CACHE 1
+#define CTX_GLYPH_CACHE  1
+#define CTX_ENABLE_CMYK  0
+#define CTX_ENABLE_CM    0
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 #include <sys/time.h>
