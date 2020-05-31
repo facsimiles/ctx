@@ -1637,11 +1637,9 @@ struct _CtxPixelFormatInfo
 #endif
   
 struct _Ctx {
-#if CTX_RASTERIZER
-  void (*render_func)(Ctx *ctx, CtxEntry *entry);
   void             *renderer;
-  void             *renderer_user_data;
-#endif
+  void (*render_func)(void *renderer, CtxEntry *entry);
+
   CtxRenderstream   renderstream;
   CtxState          state;
   int               transformation;
@@ -4350,7 +4348,8 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
   buffer->user_data = user_data;
 }
 
-static void ctx_rasterizer_process (Ctx *ctx, CtxEntry *entry);
+static void
+ctx_rasterizer_process (void *user_data, CtxEntry *entry);
 
 CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     int stride,
@@ -7191,9 +7190,12 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
 }
 
 static void
-ctx_rasterizer_process (Ctx *ctx, CtxEntry *entry)
+ctx_rasterizer_process (void *user_data, CtxEntry *entry)
 {
-  CtxRasterizer *rasterizer = ctx->renderer;
+  //CtxRasterizer *rasterizer = ctx->renderer;
+  CtxRasterizer *rasterizer = user_data;
+  //Ctx *ctx = rasterizer->ctx;
+
   //fprintf (stderr, "%c(%.1f %.1f %i)", entry->code, rasterizer->x,rasterizer->y, rasterizer->has_prev);
   switch (entry->code)
   {
@@ -7960,7 +7962,7 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
   ctx->renderer = rasterizer;
   ctx->render_func = ctx_rasterizer_process;
   while ((entry = ctx_iterator_next(&iterator)))
-    ctx_rasterizer_process (ctx, entry);
+    ctx_rasterizer_process (ctx->renderer, entry);
   ctx->renderer = NULL;
   ctx->render_func = NULL;
 
@@ -8006,13 +8008,11 @@ float ctx_y (Ctx *ctx)
 void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
-#if CTX_RASTERIZER
   if (ctx->render_func)
   {
-    ctx->render_func (ctx, entry);
+    ctx->render_func (ctx->renderer, entry);
   }
   else
-#endif
   {
     /* these functions might alter the code and coordinates of
        command that in the end gets added to the renderstream
