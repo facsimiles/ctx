@@ -1129,280 +1129,6 @@ struct _CtxColor
 #endif
 };
 
-static void ctx_color_set_rgba_u8 (CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-  color->original = color->valid = CTX_VALID_RGBA_U8;
-  color->rgba[0] = r;
-  color->rgba[1] = g;
-  color->rgba[2] = b;
-  color->rgba[3] = a;
-}
-
-#if 0
-static void ctx_color_set_rgba_u8_ (CtxColor *color, const uint8_t *in)
-{
-  ctx_color_set_rgba_u8 (color, in[0], in[1], in[2], in[3]);
-}
-#endif
-
-static void ctx_color_set_graya (CtxColor *color, float gray, float alpha)
-{
-  color->original = color->valid = CTX_VALID_GRAYA;
-  color->l = gray;
-  color->alpha = alpha;
-}
-#if 0
-static void ctx_color_set_graya_ (CtxColor *color, const float *in)
-{
-  return ctx_color_set_graya (color, in[0], in[1]);
-}
-#endif
-
-static void ctx_color_set_rgba (CtxColor *color, float r, float g, float b, float a)
-{
-#if CTX_ENABLE_CM
-  color->original = color->valid = CTX_VALID_RGBA;
-  color->red   = r;
-  color->green = g;
-  color->blue  = b;
-#else
-  color->original = color->valid = CTX_VALID_RGBA_DEVICE;
-  color->device_red   = r;
-  color->device_green = g;
-  color->device_blue  = b;
-#endif
-  color->alpha        = a;
-}
-
-static void ctx_color_set_rgba_device (CtxColor *color, float r, float g, float b, float a)
-{
-#if CTX_ENABLE_CM
-  color->original = color->valid = CTX_VALID_RGBA_DEVICE;
-  color->device_red   = r;
-  color->device_green = g;
-  color->device_blue  = b;
-  color->alpha        = a;
-#else
-  ctx_color_set_rgba (color, r, g, b, a);
-#endif
-}
-
-#if 0
-static void ctx_color_set_rgba_ (CtxColor *color, const float *in)
-{
-  ctx_color_set_rgba (color, in[0], in[1], in[2], in[3]);
-}
-#endif
-
-/* the baseline conversions we have whether CMYK support is enabled or not,
- * providing an effort at right rendering
- */
-static void ctx_cmyk_to_rgb (float c, float m, float y, float k, float *r, float *g, float *b)
-{
-  *r = (1.0f-c) * (1.0f-k);
-  *g = (1.0f-m) * (1.0f-k);
-  *b = (1.0f-y) * (1.0f-k);
-}
-
-static void ctx_rgb_to_cmyk (float r, float g, float b,
-                             float *c_out, float *m_out, float *y_out, float *k_out)
-{
-  float c = 1.0f - r;
-  float m = 1.0f - g;
-  float y = 1.0f - b;
-  float k = ctx_minf(c, ctx_minf(y, m));
-  if (k < 1.0f)
-  {
-    c = (c - k) / (1.0f - k);
-    m = (m - k) / (1.0f - k);
-    y = (y - k) / (1.0f - k);
-  }
-  else
-  {
-    c = m = y = 0.0f;
-  }
-  *c_out = c;
-  *m_out = m;
-  *y_out = y;
-  *k_out = k;
-}
-
-#if CTX_ENABLE_CMYK
-static void ctx_color_set_cmyka (CtxColor *color, float c, float m, float y, float k, float a)
-{
-  color->original = color->valid = CTX_VALID_CMYKA;
-  color->cyan    = c;
-  color->magenta = m;
-  color->yellow  = y;
-  color->key     = k;
-  color->alpha   = a;
-}
-
-#if 0
-static void ctx_color_set_cmyka_ (CtxColor *color, const float *in)
-{
-  ctx_color_set_cmyka (color, in[0], in[1], in[2], in[3], in[4]);
-}
-#endif
-
-#endif
-
-static void ctx_color_get_rgba_device (CtxColor *color, float *out)
-{
-  if (!(color->valid & CTX_VALID_RGBA_DEVICE))
-  {
-#if CTX_ENABLE_CM
-    if (color->valid & CTX_VALID_RGBA)
-    {
-      color->device_red   = color->red;
-      color->device_green = color->green;
-      color->device_blue  = color->blue;
-    } else
-#endif
-    if (color->valid & CTX_VALID_RGBA_U8)
-    {
-      color->device_red   = color->rgba[0]/255.0f;
-      color->device_green = color->rgba[1]/255.0f;
-      color->device_blue  = color->rgba[2]/255.0f;
-      color->alpha  = color->rgba[3]/255.0f;
-    }
-#if CTX_ENABLE_CMYK
-    else if (color->valid & CTX_VALID_CMYKA)
-    {
-      ctx_cmyk_to_rgb (color->cyan, color->magenta, color->yellow, color->key,
-                       &color->device_red,
-                       &color->device_green,
-                       &color->device_blue);
-    }
-#endif
-    else if (color->valid & CTX_VALID_GRAYA)
-    {
-      color->device_red    = 
-      color->device_green  =
-      color->device_blue   = color->l;
-    }
-    color->valid |= CTX_VALID_RGBA_DEVICE;
-  }
-  out[0] = color->device_red;
-  out[1] = color->device_green;
-  out[2] = color->device_blue;
-  out[3] = color->alpha;
-}
-
-static void ctx_color_get_rgba (CtxColor *color, float *out)
-{
-#if CTX_ENABLE_CM
-  if (!(color->valid & CTX_VALID_RGBA))
-  {
-    ctx_color_get_rgba_device (color, out);
-    if (color->valid & CTX_VALID_RGBA_DEVICE)
-    {
-      color->red   = color->device_red;
-      color->green = color->device_green;
-      color->blue  = color->device_blue;
-    }
-    color->valid |= CTX_VALID_RGBA;
-  }
-  out[0] = color->red;
-  out[1] = color->green;
-  out[2] = color->blue;
-  out[3] = color->alpha;
-#else
-  ctx_color_get_rgba_device (color, out);
-#endif
-}
-
-static void ctx_color_get_graya (CtxColor *color, float *out)
-{
-  if (!(color->valid & CTX_VALID_GRAYA))
-  {
-    float rgba[4];
-    ctx_color_get_rgba_device (color, rgba);
-    color->l = (rgba[0] + rgba[1] + rgba[2])/3.0f; // XXX
-    color->valid |= CTX_VALID_GRAYA;
-  }
-  out[0] = color->l;
-  out[1] = color->alpha;
-}
-
-#if CTX_ENABLE_CMYK
-static void ctx_color_get_cmyka (CtxColor *color, float *out)
-{
-  if (!(color->valid & CTX_VALID_CMYKA))
-  {
-    if (color->valid & CTX_VALID_GRAYA)
-    {
-      color->cyan = color->magenta = color->yellow = 0.0;
-      color->key = color->l;
-    }
-    else
-    {
-      float rgba[4];
-      ctx_color_get_rgba (color, rgba);
-      ctx_rgb_to_cmyk (rgba[0], rgba[1], rgba[2],
-                       &color->cyan, &color->magenta, &color->yellow, &color->key);
-      color->alpha = rgba[3];
-    }
-    color->valid |= CTX_VALID_CMYKA;
-  }
-  out[0] = color->cyan;
-  out[1] = color->magenta;
-  out[2] = color->yellow;
-  out[3] = color->key;
-  out[4] = color->alpha;
-}
-
-#if 0
-static void ctx_color_get_cmyka_u8 (CtxColor *color, uint8_t *out)
-{
-  if (!(color->valid & CTX_VALID_CMYKA_U8))
-  {
-    float cmyka[5];
-    ctx_color_get_cmyka (color, cmyka);
-    for (int i = 0; i < 5; i ++)
-      color->cmyka[i] = cmyka[i] * 255.99f;
-    color->valid |= CTX_VALID_CMYKA_U8;
-  }
-  out[0] = color->cmyka[0];
-  out[1] = color->cmyka[1];
-  out[2] = color->cmyka[2];
-  out[3] = color->cmyka[3];
-}
-#endif
-
-#endif
-
-static void ctx_color_get_rgba_u8 (CtxColor *color, uint8_t *out)
-{
-  if (!(color->valid & CTX_VALID_RGBA_U8))
-  {
-    float rgba[4];
-    ctx_color_get_rgba (color, rgba);
-    for (int i = 0; i < 4; i ++)
-      color->rgba[i] = rgba[i] * 255.99f;
-    color->valid |= CTX_VALID_RGBA_U8;
-  }
-  out[0] = color->rgba[0];
-  out[1] = color->rgba[1];
-  out[2] = color->rgba[2];
-  out[3] = color->rgba[3];
-}
-
-#if 0
-static void ctx_color_get_graya_u8 (CtxColor *color, uint8_t *out)
-{
-  if (!(color->valid & CTX_VALID_GRAYA_U8))
-  {
-    float graya[2];
-    ctx_color_get_graya (color, graya);
-    color->l_u8 = graya[0] * 255.99f;
-    color->rgba[3] = graya[1] * 255.99f;
-    color->valid |= CTX_VALID_GRAYA_U8;
-  }
-  out[0] = color->l_u8;
-  out[1] = color->rgba[3];
-}
-#endif
 
 
 struct _CtxSource
@@ -1532,6 +1258,287 @@ struct _CtxState {
   CtxGState   gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
 
+static void ctx_color_set_rgba_u8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+  color->original = color->valid = CTX_VALID_RGBA_U8;
+  color->rgba[0] = r;
+  color->rgba[1] = g;
+  color->rgba[2] = b;
+  color->rgba[3] = a;
+#if CTX_ENABLE_CM
+  color->space = state->gstate.device_space;
+#endif
+}
+
+#if 0
+static void ctx_color_set_rgba_u8_ (CtxColor *color, const uint8_t *in)
+{
+  ctx_color_set_rgba_u8 (color, in[0], in[1], in[2], in[3]);
+}
+#endif
+
+static void ctx_color_set_graya (CtxState *state, CtxColor *color, float gray, float alpha)
+{
+  color->original = color->valid = CTX_VALID_GRAYA;
+  color->l = gray;
+  color->alpha = alpha;
+}
+#if 0
+static void ctx_color_set_graya_ (CtxColor *color, const float *in)
+{
+  return ctx_color_set_graya (color, in[0], in[1]);
+}
+#endif
+
+static void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a)
+{
+#if CTX_ENABLE_CM
+  color->original = color->valid = CTX_VALID_RGBA;
+  color->red      = r;
+  color->green    = g;
+  color->blue     = b;
+  color->space    = state->gstate.rgb_space;
+#else
+  color->original     = color->valid = CTX_VALID_RGBA_DEVICE;
+  color->device_red   = r;
+  color->device_green = g;
+  color->device_blue  = b;
+#endif
+  color->alpha        = a;
+}
+
+static void ctx_color_set_rgba_device (CtxState *state, CtxColor *color, float r, float g, float b, float a)
+{
+#if CTX_ENABLE_CM
+  color->original     = color->valid = CTX_VALID_RGBA_DEVICE;
+  color->device_red   = r;
+  color->device_green = g;
+  color->device_blue  = b;
+  color->alpha        = a;
+  color->space = state->gstate.device_space;
+#else
+  ctx_color_set_rgba (color, r, g, b, a);
+#endif
+}
+
+#if 0
+static void ctx_color_set_rgba_ (CtxState *state, CtxColor *color, const float *in)
+{
+  ctx_color_set_rgba (color, in[0], in[1], in[2], in[3]);
+}
+#endif
+
+/* the baseline conversions we have whether CMYK support is enabled or not,
+ * providing an effort at right rendering
+ */
+static void ctx_cmyk_to_rgb (float c, float m, float y, float k, float *r, float *g, float *b)
+{
+  *r = (1.0f-c) * (1.0f-k);
+  *g = (1.0f-m) * (1.0f-k);
+  *b = (1.0f-y) * (1.0f-k);
+}
+
+static void ctx_rgb_to_cmyk (float r, float g, float b,
+                             float *c_out, float *m_out, float *y_out, float *k_out)
+{
+  float c = 1.0f - r;
+  float m = 1.0f - g;
+  float y = 1.0f - b;
+  float k = ctx_minf(c, ctx_minf(y, m));
+  if (k < 1.0f)
+  {
+    c = (c - k) / (1.0f - k);
+    m = (m - k) / (1.0f - k);
+    y = (y - k) / (1.0f - k);
+  }
+  else
+  {
+    c = m = y = 0.0f;
+  }
+  *c_out = c;
+  *m_out = m;
+  *y_out = y;
+  *k_out = k;
+}
+
+#if CTX_ENABLE_CMYK
+static void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a)
+{
+  color->original = color->valid = CTX_VALID_CMYKA;
+  color->cyan    = c;
+  color->magenta = m;
+  color->yellow  = y;
+  color->key     = k;
+  color->alpha   = a;
+  color->space = state->gstate.cmyk_space;
+}
+
+#if 0
+static void ctx_color_set_cmyka_ (CtxColor *color, const float *in)
+{
+  ctx_color_set_cmyka (color, in[0], in[1], in[2], in[3], in[4]);
+}
+#endif
+
+#endif
+
+static void ctx_color_get_rgba_device (CtxState *state, CtxColor *color, float *out)
+{
+  if (!(color->valid & CTX_VALID_RGBA_DEVICE))
+  {
+#if CTX_ENABLE_CM
+    if (color->valid & CTX_VALID_RGBA)
+    {
+      color->device_red   = color->red;
+      color->device_green = color->green;
+      color->device_blue  = color->blue;
+    } else
+#endif
+    if (color->valid & CTX_VALID_RGBA_U8)
+    {
+      color->device_red   = color->rgba[0]/255.0f;
+      color->device_green = color->rgba[1]/255.0f;
+      color->device_blue  = color->rgba[2]/255.0f;
+      color->alpha  = color->rgba[3]/255.0f;
+    }
+#if CTX_ENABLE_CMYK
+    else if (color->valid & CTX_VALID_CMYKA)
+    {
+      ctx_cmyk_to_rgb (color->cyan, color->magenta, color->yellow, color->key,
+                       &color->device_red,
+                       &color->device_green,
+                       &color->device_blue);
+    }
+#endif
+    else if (color->valid & CTX_VALID_GRAYA)
+    {
+      color->device_red    = 
+      color->device_green  =
+      color->device_blue   = color->l;
+    }
+    color->valid |= CTX_VALID_RGBA_DEVICE;
+  }
+  out[0] = color->device_red;
+  out[1] = color->device_green;
+  out[2] = color->device_blue;
+  out[3] = color->alpha;
+}
+
+static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
+{
+#if CTX_ENABLE_CM
+  if (!(color->valid & CTX_VALID_RGBA))
+  {
+    ctx_color_get_rgba_device (state, color, out);
+    if (color->valid & CTX_VALID_RGBA_DEVICE)
+    {
+      color->red   = color->device_red;
+      color->green = color->device_green;
+      color->blue  = color->device_blue;
+    }
+    color->valid |= CTX_VALID_RGBA;
+  }
+  out[0] = color->red;
+  out[1] = color->green;
+  out[2] = color->blue;
+  out[3] = color->alpha;
+#else
+  ctx_color_get_rgba_device (ctx, color, out);
+#endif
+}
+
+static void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
+{
+  if (!(color->valid & CTX_VALID_GRAYA))
+  {
+    float rgba[4];
+    ctx_color_get_rgba_device (state, color, rgba);
+    color->l = (rgba[0] + rgba[1] + rgba[2])/3.0f; // XXX
+    color->valid |= CTX_VALID_GRAYA;
+  }
+  out[0] = color->l;
+  out[1] = color->alpha;
+}
+
+#if CTX_ENABLE_CMYK
+static void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out)
+{
+  if (!(color->valid & CTX_VALID_CMYKA))
+  {
+    if (color->valid & CTX_VALID_GRAYA)
+    {
+      color->cyan = color->magenta = color->yellow = 0.0;
+      color->key = color->l;
+    }
+    else
+    {
+      float rgba[4];
+      ctx_color_get_rgba (state, color, rgba);
+      ctx_rgb_to_cmyk (rgba[0], rgba[1], rgba[2],
+                       &color->cyan, &color->magenta, &color->yellow, &color->key);
+      color->alpha = rgba[3];
+    }
+    color->valid |= CTX_VALID_CMYKA;
+  }
+  out[0] = color->cyan;
+  out[1] = color->magenta;
+  out[2] = color->yellow;
+  out[3] = color->key;
+  out[4] = color->alpha;
+}
+
+#if 0
+static void ctx_color_get_cmyka_u8 (CtxState *state, CtxColor *color, uint8_t *out)
+{
+  if (!(color->valid & CTX_VALID_CMYKA_U8))
+  {
+    float cmyka[5];
+    ctx_color_get_cmyka (color, cmyka);
+    for (int i = 0; i < 5; i ++)
+      color->cmyka[i] = cmyka[i] * 255.99f;
+    color->valid |= CTX_VALID_CMYKA_U8;
+  }
+  out[0] = color->cmyka[0];
+  out[1] = color->cmyka[1];
+  out[2] = color->cmyka[2];
+  out[3] = color->cmyka[3];
+}
+#endif
+
+#endif
+
+static void ctx_color_get_rgba_u8 (CtxState *state, CtxColor *color, uint8_t *out)
+{
+  if (!(color->valid & CTX_VALID_RGBA_U8))
+  {
+    float rgba[4];
+    ctx_color_get_rgba (state, color, rgba);
+    for (int i = 0; i < 4; i ++)
+      color->rgba[i] = rgba[i] * 255.99f;
+    color->valid |= CTX_VALID_RGBA_U8;
+  }
+  out[0] = color->rgba[0];
+  out[1] = color->rgba[1];
+  out[2] = color->rgba[2];
+  out[3] = color->rgba[3];
+}
+
+#if 0
+static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
+{
+  if (!(color->valid & CTX_VALID_GRAYA_U8))
+  {
+    float graya[2];
+    ctx_color_get_graya (ctx, color, graya);
+    color->l_u8 = graya[0] * 255.99f;
+    color->rgba[3] = graya[1] * 255.99f;
+    color->valid |= CTX_VALID_GRAYA_U8;
+  }
+  out[0] = color->l_u8;
+  out[1] = color->rgba[3];
+}
+#endif
+
 #if CTX_RASTERIZER
 
 typedef struct CtxEdge {
@@ -1548,14 +1555,13 @@ struct _CtxRenderer {
    */
   //CtxBuffer *clip_buffer; // NYI
 
-  CtxEdge  lingering[CTX_MAX_LINGERING_EDGES];
   int      lingering_edges;  // previous half scanline
+  CtxEdge  lingering[CTX_MAX_LINGERING_EDGES];
 
-  CtxEdge  edges[CTX_MAX_EDGES];
   int      active_edges;
   int      pending_edges;    // next half scanline
-
   int      edge_pos;         // where we're at in iterating all edges
+  CtxEdge  edges[CTX_MAX_EDGES];
 
   int      scanline;
   int      scan_min;
@@ -1568,7 +1574,7 @@ struct _CtxRenderer {
   Ctx       *ctx;
 
   void      *buf;
-  float      x;
+  float      x;  // < redundant? use state instead?
   float      y;
 
   float      first_x;
@@ -1784,26 +1790,26 @@ ctx_matrix_skew_y (CtxMatrix *matrix, float angle)
 void
 ctx_get_rgba (Ctx *ctx, float *rgba)
 {
-  ctx_color_get_rgba (&ctx->state.gstate.source.color, rgba);
+  ctx_color_get_rgba (&(ctx->state), &ctx->state.gstate.source.color, rgba);
 }
 
 void
 ctx_get_rgba_device (Ctx *ctx, float *rgba)
 {
-  ctx_color_get_rgba_device (&ctx->state.gstate.source.color, rgba);
+  ctx_color_get_rgba_device (&(ctx->state), &ctx->state.gstate.source.color, rgba);
 }
 
 #if CTX_ENABLE_CMYK
 void
 ctx_get_cmyka (Ctx *ctx, float *cmyka)
 {
-  ctx_color_get_cmyka (&ctx->state.gstate.source.color, cmyka);
+  ctx_color_get_cmyka (&(ctx->state), &ctx->state.gstate.source.color, cmyka);
 }
 #endif
 void
 ctx_get_graya (Ctx *ctx, float *ya)
 {
-  ctx_color_get_graya (&ctx->state.gstate.source.color, ya);
+  ctx_color_get_graya (&(ctx->state), &ctx->state.gstate.source.color, ya);
 }
 
 
@@ -3152,42 +3158,27 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.source.type = CTX_SOURCE_COLOR;
         switch ((int)ctx_arg_float(0)){
           case CTX_RGB:
-            ctx_color_set_rgba (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), 1.0f);
-#if CTX_ENABLE_CM
-            color->space = state->gstate.rgb_space;
-#endif
+            ctx_color_set_rgba (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), 1.0f);
           break;
         case CTX_RGBA:
-            ctx_color_set_rgba (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
-#if CTX_ENABLE_CM
-            color->space = state->gstate.rgb_space;
-#endif
+            ctx_color_set_rgba (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
           break;
         case CTX_RGBA_DEVICE:
-            ctx_color_set_rgba_device (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
-#if CTX_ENABLE_CM
-            color->space = state->gstate.device_space;
-#endif
+            ctx_color_set_rgba_device (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
           break;
 #if CTX_ENABLE_CMYK
         case CTX_CMYKA:
-            ctx_color_set_cmyka (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), ctx_arg_float(1));
-#if CTX_ENABLE_CM
-            color->space = state->gstate.cmyk_space;
-#endif
+            ctx_color_set_cmyka (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), ctx_arg_float(1));
         break;
           case CTX_CMYK:
-            ctx_color_set_cmyka (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), 1.0);
-#if CTX_ENABLE_CM
-            color->space = state->gstate.cmyk_space;
-#endif
+            ctx_color_set_cmyka (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), 1.0);
           break;
 #endif
         case CTX_GRAYA:
-          ctx_color_set_graya (color, ctx_arg_float(2), ctx_arg_float(3));
+          ctx_color_set_graya (state, color, ctx_arg_float(2), ctx_arg_float(3));
           break;
         case CTX_GRAY:
-          ctx_color_set_graya (color, ctx_arg_float(2), 1.0f);
+          ctx_color_set_graya (state, color, ctx_arg_float(2), 1.0f);
           break;
       }
       }
@@ -3196,14 +3187,11 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
     case CTX_SET_RGBA_U8:
       //ctx_source_deinit (&state->gstate.source);
       state->gstate.source.type = CTX_SOURCE_COLOR;
-      ctx_color_set_rgba_u8 (&state->gstate.source.color,
+      ctx_color_set_rgba_u8 (state, &state->gstate.source.color,
                              ctx_arg_u8(0),
                              ctx_arg_u8(1),
                              ctx_arg_u8(2),
                              ctx_arg_u8(3));
-#if CTX_ENABLE_CM
-      state->gstate.source.color.space = state->gstate.device_space;
-#endif
       //for (int i = 0; i < 4; i ++)
       //  state->gstate.source.color.rgba[i] = ctx_arg_u8(i);
       break;
@@ -5546,7 +5534,7 @@ ctx_sample_source_rgba_u8_color (CtxRenderer *renderer, float x, float y, void *
 {
   uint8_t *rgba = out;
   CtxSource *g = &renderer->state->gstate.source;
-  ctx_color_get_rgba_u8 (&g->color, rgba);
+  ctx_color_get_rgba_u8 (renderer->state, &g->color, rgba);
 }
 
 typedef void (*CtxSourceU8)(CtxRenderer *renderer, float x, float y, void *out);
@@ -5633,7 +5621,7 @@ ctx_b2f_over_RGBA8 (CtxRenderer *renderer, int x0, uint8_t * restrict dst, uint8
     }
     return count;
   }
-  ctx_color_get_rgba_u8 (&gstate->source.color, color);
+  ctx_color_get_rgba_u8 (renderer->state, &gstate->source.color, color);
   color[3] = (color[3] * gstate->global_alpha_u8)>>8;
 
   if (color[3] == 255)
@@ -5759,7 +5747,7 @@ ctx_b2f_over_BGRA8 (CtxRenderer *renderer, int x0, uint8_t *restrict dst, uint8_
     return count;
   }
 
-  ctx_color_get_rgba_u8 (&gstate->source.color, color);
+  ctx_color_get_rgba_u8 (renderer->state, &gstate->source.color, color);
   if (gstate->global_alpha_u8 != 255)
   {
     color[3] = (color[3] * gstate->global_alpha_u8)>>8;
@@ -5822,7 +5810,7 @@ ctx_gray_float_b2f_over (CtxRenderer *renderer, int x0, uint8_t *restrict dst, u
   float y = renderer->scanline / CTX_RASTERIZER_AA;
   float graya[2];
  
-  ctx_color_get_graya (&renderer->state->gstate.source.color, graya);
+  ctx_color_get_graya (renderer->state, &renderer->state->gstate.source.color, graya);
 
   float gray = graya[0];
   float alpha = graya[1];
@@ -5922,7 +5910,7 @@ ctx_sample_source_cmyka_f_color (CtxRenderer *renderer, float x, float y, void *
 {
   float *cmyka = out;
   // XXX : only solid color implemented for now
-  ctx_color_get_cmyka (&renderer->state->gstate.source.color, out);
+  ctx_color_get_cmyka (renderer->state, &renderer->state->gstate.source.color, out);
   for (int i = 0; i < 4; i ++)
     cmyka[i] *= cmyka[4];
 }
@@ -6727,7 +6715,7 @@ ctx_renderer_pset (CtxRenderer *renderer, int x, int y, uint8_t cov)
                          y >= renderer->blit_height)
     return;
   uint8_t fg_color[4];
-  ctx_color_get_rgba_u8 (&renderer->state->gstate.source.color, fg_color);
+  ctx_color_get_rgba_u8 (renderer->state, &renderer->state->gstate.source.color, fg_color);
 
   uint8_t pixel[4];
   uint8_t *dst = ((uint8_t*)renderer->buf);
@@ -7145,7 +7133,7 @@ ctx_renderer_set_pixel (CtxRenderer *renderer,
                         uint8_t a)
 {
   renderer->state->gstate.source.type = CTX_SOURCE_COLOR;
-  ctx_color_set_rgba_u8 (&renderer->state->gstate.source.color, r, g, b, a);
+  ctx_color_set_rgba_u8 (renderer->state, &renderer->state->gstate.source.color, r, g, b, a);
 
 #if 1
   ctx_renderer_pset (renderer, x, y, 255);
