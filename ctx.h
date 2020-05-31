@@ -53,7 +53,8 @@ typedef enum
 
 typedef struct _Ctx Ctx;
 
-struct _CtxGlyph
+struct
+_CtxGlyph
 {
   uint32_t index;
   float    x;
@@ -1634,9 +1635,10 @@ struct _CtxPixelFormatInfo
 };
 
 #endif
-
+  
 struct _Ctx {
 #if CTX_RASTERIZER
+  void (*render_func)(Ctx *ctx, CtxEntry *entry);
   void             *renderer;
   void             *renderer_user_data;
 #endif
@@ -4345,6 +4347,8 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
   buffer->free_func = freefunc;
   buffer->user_data = user_data;
 }
+
+static void ctx_rasterizer_process (Ctx *ctx, CtxEntry *entry);
 
 CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     int stride,
@@ -7896,6 +7900,7 @@ ctx_new_for_buffer (CtxBuffer *buffer)
                      buffer->data, 0, 0, buffer->width, buffer->height,
                      buffer->stride, buffer->format->pixel_format);
   ctx->renderer = rasterizer;
+  ctx->render_func = ctx_rasterizer_process;
   return ctx;
 }
 
@@ -7909,6 +7914,7 @@ ctx_new_for_framebuffer (void *data, int width, int height,
   ctx_rasterizer_init (rasterizer, ctx, &ctx->state,
                      data, 0, 0, width, height, stride, pixel_format);
   ctx->renderer = rasterizer;
+  ctx->render_func = ctx_rasterizer_process;
   return ctx;
 }
 
@@ -7936,6 +7942,7 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
   CtxIterator iterator;
   CtxEntry   *entry;
 //  CtxState    *state    = (CtxState*)malloc (sizeof (CtxState));
+//  we reuse the state of ctx instead.
   CtxRasterizer *rasterizer = (CtxRasterizer*)malloc (sizeof (CtxRasterizer));
 
   ctx_rasterizer_init (rasterizer, ctx, &ctx->state, data, x, y, width, height,
@@ -7949,9 +7956,11 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
    * in ctx_process()
    */
   ctx->renderer = rasterizer;
+  ctx->render_func = ctx_rasterizer_process;
   while ((entry = ctx_iterator_next(&iterator)))
     ctx_rasterizer_process (ctx, entry);
   ctx->renderer = NULL;
+  ctx->render_func = NULL;
 
   ctx_rasterizer_deinit (rasterizer);
   free (rasterizer);
@@ -7996,9 +8005,9 @@ void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
 #if CTX_RASTERIZER
-  if (ctx->renderer)
+  if (ctx->render_func)
   {
-    ctx_rasterizer_process (ctx, entry);
+    ctx->render_func (ctx, entry);
   }
   else
 #endif
