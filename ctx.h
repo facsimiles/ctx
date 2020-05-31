@@ -10842,6 +10842,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
               ctx_move_to (ctx, parser->left_margin, ctx_y (ctx) + 
                                 ctx_get_font_size (ctx));
               c = next_nl + 1;
+              if (c[0] == 0)
+                c = NULL;
             }
             else
             {
