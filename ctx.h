@@ -2757,16 +2757,60 @@ float ctx_get_font_size  (Ctx *ctx)
   return ctx->state.gstate.font_size;
 }
 
+static int ctx_strcmp (const char *a, const char *b)
+{
+  int i;
+  for (i = 0; a[i] && b[i]; a++, b++)
+     if (a[0] != b[0])
+       return 1;
+  if (a[0] == 0 && b[0] == 0) return 0;
+  return 1;
+}
+
+static int ctx_strncmp (const char *a, const char *b, size_t n)
+{
+  int i;
+  for (i = 0; a[i] && b[i] && i < n; a++, b++)
+     if (a[0] != b[0])
+       return 1;
+  return 0;
+}
+
+static int ctx_strlen (const char *s)
+{
+  int len = 0;
+  for (;*s;s++)len++;
+  return len;
+}
+
+static char *ctx_strstr (const char *h, const char *n)
+{
+  int needle_len = ctx_strlen (n);
+  int found = 0;
+  if (n[0]==0)
+    return (char*)h;
+  while (h)
+  {
+    h = ctx_strchr (h, n[0]);
+    if (!h)
+      return NULL;
+    if (!ctx_strncmp (h, n, needle_len))
+      return (char*)h;
+    h++;
+  }
+  return NULL;
+}
+
 static int _ctx_resolve_font (const char *name)
 {
   for (int i = 0; i < ctx_font_count; i ++)
   {
-    if (!strcmp (ctx_fonts[i].name, name))
+    if (!ctx_strcmp (ctx_fonts[i].name, name))
       return i;
   }
   for (int i = 0; i < ctx_font_count; i ++)
   {
-    if (strstr (ctx_fonts[i].name, name))
+    if (ctx_strstr (ctx_fonts[i].name, name))
       return i;
   }
   return -1;
@@ -2777,7 +2821,7 @@ static int ctx_resolve_font (const char *name)
   int ret = _ctx_resolve_font (name);
   if (ret >= 0)
     return ret;
-  if (!strcmp (name, "regular"))
+  if (!ctx_strcmp (name, "regular"))
   {
     int ret = _ctx_resolve_font ("sans");
     if (ret >= 0) return ret;
