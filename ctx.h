@@ -718,10 +718,11 @@ typedef enum
   CTX_SET_MITER_LIMIT      = 20, // wm
   CTX_SET_DEVICE_SPACE     = 21,
   CTX_SET_RGB_SPACE        = 22,
+  CTX_SET_CMYK_SPACE       = 23,
 
 
-  CTX_DEFUN  = 23,
-  CTX_ENDFUN = 24,
+  CTX_DEFUN  = 24,
+  CTX_ENDFUN = 25,
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
@@ -1461,8 +1462,11 @@ struct _CtxGState {
   int16_t       clip_max_x;
   int16_t       clip_max_y;
 
-  int           device_space; // XXX should be babl spaces
+#if CTX_ENABLE_CM
+  int           device_space;
   int           rgb_space;
+  int           cmyk_space;
+#endif
 
   /* bitfield-pack small state-parts */
   CtxCompositingMode  compositing_mode:2;
@@ -2454,6 +2458,7 @@ ctx_close_path (Ctx *ctx)
   CTX_PROCESS_VOID(CTX_CLOSE_PATH);
 }
 
+#if CTX_ENABLE_CM
 void
 ctx_set_device_space (Ctx *ctx, int device_space)
 {
@@ -2465,6 +2470,13 @@ ctx_set_rgb_space (Ctx *ctx, int device_space)
 {
   CTX_PROCESS_U8(CTX_SET_RGB_SPACE, device_space);
 }
+
+void
+ctx_set_cmyk_space (Ctx *ctx, int device_space)
+{
+  CTX_PROCESS_U8(CTX_SET_CMYK_SPACE, device_space);
+}
+#endif
 
 void ctx_texture (Ctx *ctx, int id, float x, float y)
 {
@@ -3141,19 +3153,34 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         switch ((int)ctx_arg_float(0)){
           case CTX_RGB:
             ctx_color_set_rgba (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), 1.0f);
+#if CTX_ENABLE_CM
+            color->space = state->gstate.rgb_space;
+#endif
           break;
         case CTX_RGBA:
             ctx_color_set_rgba (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
+#if CTX_ENABLE_CM
+            color->space = state->gstate.rgb_space;
+#endif
           break;
         case CTX_RGBA_DEVICE:
             ctx_color_set_rgba_device (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
+#if CTX_ENABLE_CM
+            color->space = state->gstate.device_space;
+#endif
           break;
 #if CTX_ENABLE_CMYK
         case CTX_CMYKA:
             ctx_color_set_cmyka (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), ctx_arg_float(1));
+#if CTX_ENABLE_CM
+            color->space = state->gstate.cmyk_space;
+#endif
         break;
           case CTX_CMYK:
             ctx_color_set_cmyka (color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), 1.0);
+#if CTX_ENABLE_CM
+            color->space = state->gstate.cmyk_space;
+#endif
           break;
 #endif
         case CTX_GRAYA:
@@ -3174,6 +3201,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
                              ctx_arg_u8(1),
                              ctx_arg_u8(2),
                              ctx_arg_u8(3));
+#if CTX_ENABLE_CM
+      state->gstate.source.color.space = state->gstate.device_space;
+#endif
       //for (int i = 0; i < 4; i ++)
       //  state->gstate.source.color.rgba[i] = ctx_arg_u8(i);
       break;
@@ -3233,7 +3263,6 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.source.radial_gradient.y1 = y1;
         state->gstate.source.radial_gradient.r1 = r1;
         state->gstate.source.type = CTX_SOURCE_RADIAL_GRADIENT;
-        //ctx_matrix_identity (&state->gstate.source.transform);
         state->gstate.source.transform = state->gstate.transform;
         ctx_matrix_inverse (&state->gstate.source.transform);
       }
@@ -4408,10 +4437,10 @@ static int ctx_buffer_load_memory (CtxBuffer *buffer,
     return -1;
   upng_header (upng);
   upng_decode (upng);
-  components = upng_get_components (upng);
-  buffer->width = upng_get_width (upng);
+  components     = upng_get_components (upng);
+  buffer->width  = upng_get_width (upng);
   buffer->height = upng_get_height (upng);
-  buffer->data = upng_steal_buffer (upng);
+  buffer->data   = upng_steal_buffer (upng);
   upng_free (upng);
   buffer->stride = buffer->width * components;
   switch (components)
@@ -4481,8 +4510,6 @@ ctx_gradient_clear_stops (Ctx *ctx)
 {
    CTX_PROCESS_VOID (CTX_GRADIENT_CLEAR);
 }
-
-
 
 #if CTX_GRADIENT_CACHE
 static void
@@ -9183,6 +9210,10 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
         ctx_set_rgb_space (d_ctx, ctx_arg_u8(0));
         break;
 
+      case CTX_SET_CMYK_SPACE:
+        ctx_set_cmyk_space (d_ctx, ctx_arg_u8(0));
+        break;
+
       case CTX_SET_DEVICE_SPACE:
         ctx_set_device_space (d_ctx, ctx_arg_u8(0));
         break;
@@ -9892,6 +9923,7 @@ static int ctx_arguments_for_code (CtxCode code)
   case CTX_SET_FONT:
   case CTX_ROTATE:
   case CTX_SET_RGB_SPACE:
+  case CTX_SET_CMYK_SPACE:
   case CTX_SET_DEVICE_SPACE:
     return 1;
   case CTX_TRANSLATE:
@@ -10123,6 +10155,10 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('r','g','b','_','s','p','a','c','e',0,0,0): 
     case STR('r','g','b','S','p','a','c','e',0,0,0,0): 
       return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
+
+    case STR('c','m','y','k','_','s','p','a','c','e',0,0): 
+    case STR('c','m','y','k','S','p','a','c','e',0,0,0): 
+      return ctx_parser_set_command (parser, CTX_SET_CMYK_SPACE);
 
     case STR('d','e','v','i','c','e','_','s','p','a','c','e'): 
     case STR('d','e','v','i','c','e','S','p','a','c','e',0): 
@@ -10369,6 +10405,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 
     case CTX_SET_DEVICE_SPACE: ctx_set_device_space (ctx, arg(0)); break;
     case CTX_SET_RGB_SPACE: ctx_set_rgb_space (ctx, arg(0)); break;
+    case CTX_SET_CMYK_SPACE: ctx_set_cmyk_space (ctx, arg(0)); break;
 
     case CTX_SET_COLOR:
       {
