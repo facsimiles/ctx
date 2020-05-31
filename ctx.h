@@ -10588,7 +10588,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           ctx_rel_move_to (ctx, -parser->numbers[0], 0.0);  //  XXX : scale by font(size)
         else
         {
-          for (char c = (char*)parser->holding; c; )
+          for (char *c = (char*)parser->holding; c; )
           {
             char *next_nl = strchr (c, '\n');
             if (next_nl)
