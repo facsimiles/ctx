@@ -1065,46 +1065,6 @@ struct _CtxMatrix
 
 typedef struct _CtxSource CtxSource;
 
-typedef struct _CtxGradientStop CtxGradientStop;
-
-struct _CtxGradientStop
-{
-  float   pos;
-  // XXX use CtxColor instead
-  uint8_t rgba[4];
-};
-
-enum {
-  CTX_SOURCE_COLOR = 0,
-  CTX_SOURCE_IMAGE,
-  CTX_SOURCE_LINEAR_GRADIENT,
-  CTX_SOURCE_RADIAL_GRADIENT,
-};
-
-typedef struct _CtxPixelFormatInfo CtxPixelFormatInfo;
-
-typedef struct _CtxBuffer CtxBuffer;
-
-struct _CtxBuffer
-{
-  void               *data;
-  int                 width;
-  int                 height;
-  int                 stride;
-  CtxPixelFormatInfo *format;
-  void (*free_func) (void *pixels, void *user_data);
-  void               *user_data;
-};
-
-void ctx_user_to_device          (CtxState *state, float *x, float *y);
-void ctx_user_to_device_distance (CtxState *state, float *x, float *y);
-
-typedef struct _CtxGradient CtxGradient;
-struct _CtxGradient
-{
-  CtxGradientStop stops[16];
-  int n_stops;
-};
 
 #define CTX_VALID_RGBA_U8     (1<<0)
 #define CTX_VALID_RGBA_DEVICE (1<<1)
@@ -1159,6 +1119,48 @@ struct _CtxColor
   float   green;
   float   blue;
 #endif
+};
+
+typedef struct _CtxGradientStop CtxGradientStop;
+
+struct _CtxGradientStop
+{
+  float   pos;
+  // XXX use CtxColor instead
+//  uint8_t rgba[4];
+  CtxColor color;
+};
+
+enum {
+  CTX_SOURCE_COLOR = 0,
+  CTX_SOURCE_IMAGE,
+  CTX_SOURCE_LINEAR_GRADIENT,
+  CTX_SOURCE_RADIAL_GRADIENT,
+};
+
+typedef struct _CtxPixelFormatInfo CtxPixelFormatInfo;
+
+typedef struct _CtxBuffer CtxBuffer;
+
+struct _CtxBuffer
+{
+  void               *data;
+  int                 width;
+  int                 height;
+  int                 stride;
+  CtxPixelFormatInfo *format;
+  void (*free_func) (void *pixels, void *user_data);
+  void               *user_data;
+};
+
+void ctx_user_to_device          (CtxState *state, float *x, float *y);
+void ctx_user_to_device_distance (CtxState *state, float *x, float *y);
+
+typedef struct _CtxGradient CtxGradient;
+struct _CtxGradient
+{
+  CtxGradientStop stops[16];
+  int n_stops;
 };
 
 struct _CtxSource
@@ -2769,7 +2771,7 @@ static int ctx_strcmp (const char *a, const char *b)
 
 static int ctx_strncmp (const char *a, const char *b, size_t n)
 {
-  int i;
+  size_t i;
   for (i = 0; a[i] && b[i] && i < n; a++, b++)
      if (a[0] != b[0])
        return 1;
@@ -2786,7 +2788,6 @@ static int ctx_strlen (const char *s)
 static char *ctx_strstr (const char *h, const char *n)
 {
   int needle_len = ctx_strlen (n);
-  int found = 0;
   if (n[0]==0)
     return (char*)h;
   while (h)
@@ -4586,10 +4587,7 @@ ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, uint8_t 
 
   CtxGradientStop *stop = &gradient->stops[gradient->n_stops];
   stop->pos = pos;
-  stop->rgba[0] = rgba[0];
-  stop->rgba[1] = rgba[1];
-  stop->rgba[2] = rgba[2];
-  stop->rgba[3] = rgba[3];
+  ctx_color_set_rgba (rasterizer->state, &(stop->color), rgba[0], rgba[1], rgba[2], rgba[3]);
   if (gradient->n_stops < 15)//we'll keep overwriting the last when out of stops
     gradient->n_stops++;
 
@@ -5399,24 +5397,25 @@ ctx_sample_gradient_1d_u8 (CtxRasterizer *rasterizer, float v, uint8_t *rgba)
   }
   if (stop == NULL && next_stop)
   {
-    for (int c = 0; c < 4; c++)
-      rgba[c] = next_stop->rgba[c];
+    ctx_color_get_rgba_u8 (rasterizer->state, &(next_stop->color), rgba);
   }
   else if (stop && next_stop == NULL)
   {
-    for (int c = 0; c < 4; c++)
-      rgba[c] = stop->rgba[c];
+    ctx_color_get_rgba_u8 (rasterizer->state, &(stop->color), rgba);
   }
   else if (stop && next_stop)
   {
+    uint8_t stop_rgba[4];
+    uint8_t next_rgba[4];
+    ctx_color_get_rgba_u8 (rasterizer->state, &(stop->color), stop_rgba);
+    ctx_color_get_rgba_u8 (rasterizer->state, &(next_stop->color), next_rgba);
     int dx = (v - stop->pos) * 255 / (next_stop->pos - stop->pos);
     for (int c = 0; c < 4; c++)
-      rgba[c] = ctx_lerp_u8 (stop->rgba[c], next_stop->rgba[c], dx);
+      rgba[c] = ctx_lerp_u8 (stop_rgba[c], next_rgba[c], dx);
   }
   else
   {
-    for (int c = 0; c < 4; c++)
-      rgba[c] = g->stops[g->n_stops-1].rgba[c];
+    ctx_color_get_rgba_u8 (rasterizer->state, &(g->stops[g->n_stops-1].color), rgba);
   }
 #if CTX_GRADIENT_CACHE
   cache_entry[0] = rgba[0];
