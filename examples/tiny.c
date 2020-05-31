@@ -4,6 +4,7 @@
 #define CTX_LIMIT_FORMATS
 #define CTX_ENABLE_RGBA8    1
 #define CTX_ENABLE_CMYK     0
+#define CTX_ENABLE_CM       0
 #define CTX_PARSER          0
 #define CTX_DITHER          0 // implied by limit formats and only rgba being anbled, but we're explicit
 #define CTX_FORMATTER       0
@@ -38,7 +39,7 @@ int main (int argc, char **argv)
   ctx_set_line_width (ctx, 2);
   ctx_set_rgba (ctx, 0, 0, 0, 1);
   ctx_text_stroke (ctx, utf8);
-  ctx_set_rgba_u8 (ctx, 255, 255, 255, 255);
+  ctx_set_RGBA8 (ctx, 255, 255, 255, 255);
   ctx_move_to (ctx, 10, 9);
   ctx_text (ctx, utf8);
 #ifndef REALLY_TINY

@@ -1299,6 +1299,20 @@ struct _CtxState {
   CtxGState   gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
 
+static uint8_t ctx_float_to_u8 (float val_f)
+{
+  int val_i = val_f * 255.999;
+  if (val_i < 0) return 0;
+  else if (val_i > 255) return 255;
+  return val_i;
+}
+
+static float ctx_u8_to_float (uint8_t val_u8)
+{
+  float val_f = val_u8 / 255.0;
+  return val_f;
+}
+
 static void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   color->original = color->valid = CTX_VALID_RGBA_U8;
@@ -1458,10 +1472,10 @@ static void ctx_color_get_rgba_device (CtxState *state, CtxColor *color, float *
 #endif
     if (color->valid & CTX_VALID_RGBA_U8)
     {
-      color->device_red   = color->rgba[0]/255.0f;
-      color->device_green = color->rgba[1]/255.0f;
-      color->device_blue  = color->rgba[2]/255.0f;
-      color->alpha  = color->rgba[3]/255.0f;
+      color->device_red   = ctx_u8_to_float (color->rgba[0]);
+      color->device_green = ctx_u8_to_float (color->rgba[1]);
+      color->device_blue  = ctx_u8_to_float (color->rgba[2]);
+      color->alpha        = ctx_u8_to_float (color->rgba[3]);
     }
 #if CTX_ENABLE_CMYK
     else if (color->valid & CTX_VALID_CMYKA)
@@ -1556,7 +1570,7 @@ static void ctx_color_get_cmyka_u8 (CtxState *state, CtxColor *color, uint8_t *o
     float cmyka[5];
     ctx_color_get_cmyka (color, cmyka);
     for (int i = 0; i < 5; i ++)
-      color->cmyka[i] = cmyka[i] * 255.99f;
+      color->cmyka[i] = ctx_float_to_u8 (cmyka[i]);
     color->valid |= CTX_VALID_CMYKA_U8;
   }
   out[0] = color->cmyka[0];
@@ -1574,7 +1588,7 @@ static void ctx_color_get_RGBA8 (CtxState *state, CtxColor *color, uint8_t *out)
     float rgba[4];
     ctx_color_get_rgba (state, color, rgba);
     for (int i = 0; i < 4; i ++)
-      color->rgba[i] = rgba[i] * 255.99f;
+      color->rgba[i] = ctx_float_to_u8 (rgba[i]);
     color->valid |= CTX_VALID_RGBA_U8;
   }
   out[0] = color->rgba[0];
@@ -1590,8 +1604,8 @@ static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *o
   {
     float graya[2];
     ctx_color_get_graya (ctx, color, graya);
-    color->l_u8 = graya[0] * 255.99f;
-    color->rgba[3] = graya[1] * 255.99f;
+    color->l_u8 = ctx_float_to_u8 (graya[0]);
+    color->rgba[3] = ctx_float_to_u8 (graya[1]);
     color->valid |= CTX_VALID_GRAYA_U8;
   }
   out[0] = color->l_u8;
@@ -3253,7 +3267,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       state->gstate.text_direction = (CtxTextDirection)ctx_arg_u8(0);
       break;
     case CTX_SET_GLOBAL_ALPHA:
-      state->gstate.global_alpha_u8 = CTX_CLAMP(ctx_arg_float(0)*255.0,0, 255);
+      state->gstate.global_alpha_u8 = ctx_float_to_u8(ctx_arg_float(0));
       state->gstate.global_alpha_f = ctx_arg_float(0);
       break;
     case CTX_SET_FONT_SIZE:
@@ -5959,8 +5973,9 @@ ctx_gray_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *restrict ds
         ctx_matrix_apply_transform (&rasterizer->state->gstate.source.transform, &u, &v);
         source (rasterizer, u, v, &scolor[0]);
         // XXX - we need generic sources for gray and cmyk
-        gray = ((scolor[0]+scolor[1]+scolor[2])/3.0)/255.0; 
-        alpha = scolor[3]/255.0 + rasterizer->state->gstate.global_alpha_u8/255.0;
+        gray =  ctx_u8_to_float ((scolor[0]+scolor[1]+scolor[2])/3.0);
+        alpha = ctx_u8_to_float(scolor[3]) *
+                rasterizer->state->gstate.global_alpha_f;
       }
 
       float ralpha = 1.0f - alpha * cov/255.0;
@@ -5994,7 +6009,7 @@ ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *
     uint8_t scolor[4];
     ctx_sample_source_rgba_u8_color (rasterizer, x0, y, &scolor[0]);
     for (int c = 0; c < components; c++)
-      color_f[c]=scolor[c]/255.0f;  // XXX color
+      color_f[c]=ctx_u8_to_float (scolor[c]);  // XXX color
 
     color_f[components-1] *= rasterizer->state->gstate.global_alpha_f;
     for (int c = 0; c < components-1; c++)
@@ -6005,7 +6020,7 @@ ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *
   {
     for (int x = 0; x < count; x++)
     {
-      float cov = coverage[x]/255.0f;
+      float cov = ctx_u8_to_float (coverage[x]);
       if (cov != 0.0f)
       {
         if (source)
@@ -6013,7 +6028,7 @@ ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *
           uint8_t scolor[4];
           source (rasterizer, x0 + x, y, &scolor[0]);
           for (int c = 0; c < components; c++)
-            color_f[c]=scolor[c]/255.0f;  // XXX ; lacks gamma handling
+            color_f[c]=ctx_u8_to_float (scolor[c]);  // XXX ; lacks gamma handling
 
           color_f[components-1] *= rasterizer->state->gstate.global_alpha_f;
           for (int c = 0; c < components-1; c++)
@@ -6071,7 +6086,7 @@ ctx_associated_cmyka_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t 
 
   for (int x = 0; x < count; x++)
   {
-    float cov = coverage[x]/255.0f;
+    float cov = ctx_u8_to_float (coverage[x]);
     if (cov != 0.0f)
     {
       if (source)
@@ -6100,11 +6115,9 @@ ctx_CMYKA8_to_CMYKAF (CtxRasterizer *rasterizer, uint8_t *src, float *dst, int c
 {
   for (int i = 0; i < count; i ++)
   {
-     dst[0] = (255-src[0])/255.0f;
-     dst[1] = (255-src[1])/255.0f;
-     dst[2] = (255-src[2])/255.0f;
-     dst[3] = (255-src[3])/255.0f;
-     dst[4] = src[1];
+     for (int c = 0; c < 4; c ++)
+       dst[c] = ctx_u8_to_float ((255-src[c]));
+     dst[4] = ctx_u8_to_float (src[4]);
 
      for (int c = 0; c < 4; c++)
        dst[c] *= dst[4];
@@ -6126,11 +6139,11 @@ ctx_CMYKAF_to_CMYKA8 (CtxRasterizer *rasterizer, float *src, uint8_t *dst, int c
         c *= recip; m *= recip; y *= recip; k *= recip;
      }
      c = 1.0 - c; m = 1.0 - m; y = 1.0 - y; k = 1.0 - k;
-     dst[0] = c * 255.99;
-     dst[1] = m * 255.99;
-     dst[2] = y * 255.99;
-     dst[3] = k * 255.99;
-     dst[4] = a * 255.99;
+     dst[0] = ctx_float_to_u8 (c);
+     dst[1] = ctx_float_to_u8 (m);
+     dst[2] = ctx_float_to_u8 (y);
+     dst[3] = ctx_float_to_u8 (k);
+     dst[4] = ctx_float_to_u8 (a);
 
      src += 5;
      dst += 5;
@@ -6157,10 +6170,10 @@ ctx_CMYK8_to_CMYKAF (CtxRasterizer *rasterizer, uint8_t *src, float *dst, int co
 {
   for (int i = 0; i < count; i ++)
   {
-     dst[0] = (255-src[0])/255.0f;
-     dst[1] = (255-src[1])/255.0f;
-     dst[2] = (255-src[2])/255.0f;
-     dst[3] = (255-src[3])/255.0f;
+     dst[0] = ctx_u8_to_float(255-src[0]);
+     dst[1] = ctx_u8_to_float(255-src[1]);
+     dst[2] = ctx_u8_to_float(255-src[2]);
+     dst[3] = ctx_u8_to_float(255-src[3]);
      dst[4] = 1.0f;
      src += 4;
      dst += 5;
@@ -6181,10 +6194,10 @@ ctx_CMYKAF_to_CMYK8 (CtxRasterizer *rasterizer, float *src, uint8_t *dst, int co
      }
      c = 1.0 - c; m = 1.0 - m; y = 1.0 - y; k = 1.0 - k;
 
-     dst[0] = c * 255.99;
-     dst[1] = m * 255.99;
-     dst[2] = y * 255.99;
-     dst[3] = k * 255.99;
+     dst[0] = ctx_float_to_u8 (c);
+     dst[1] = ctx_float_to_u8 (m);
+     dst[2] = ctx_float_to_u8 (y);
+     dst[3] = ctx_float_to_u8 (k);
 
      src += 5;
      dst += 4;
@@ -7371,10 +7384,10 @@ ctx_rasterizer_process (void *user_data, CtxEntry *entry)
 #endif
     case CTX_GRADIENT_STOP:
       {
-      float rgba[4]={ctx_arg_u8(4)/255.0f,
-                     ctx_arg_u8(4+1)/255.0f,
-                     ctx_arg_u8(4+2)/255.0f,
-                     ctx_arg_u8(4+3)/255.0f};
+      float rgba[4]={ctx_u8_to_float (ctx_arg_u8(4)),
+                     ctx_u8_to_float (ctx_arg_u8(4+1)),
+                     ctx_u8_to_float (ctx_arg_u8(4+2)),
+                     ctx_u8_to_float (ctx_arg_u8(4+3))};
       ctx_rasterizer_gradient_add_stop (rasterizer,
                                         ctx_arg_float(0), rgba);
       }
@@ -9039,10 +9052,10 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
 
 
       case CTX_SET_RGBA_U8:
-        cairo_set_source_rgba (cr, ctx_arg_u8(0)/255.0,
-                                   ctx_arg_u8(1)/255.0,
-                                   ctx_arg_u8(2)/255.0,
-                                   ctx_arg_u8(3)/255.0);
+        cairo_set_source_rgba (cr, ctx_u8_to_float (ctx_arg_u8(0)),
+                                   ctx_u8_to_float (ctx_arg_u8(1)),
+                                   ctx_u8_to_float (ctx_arg_u8(2)),
+                                   ctx_u8_to_float (ctx_arg_u8(3)));
         break;
 
 #if 0
@@ -9062,11 +9075,10 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
                             ctx_arg_float(3));
         break;
       case CTX_SET_PIXEL:
-        cairo_set_source_rgba (cr,
-                      ctx_arg_u8(0)/255.0f,
-                      ctx_arg_u8(1)/255.0f,
-                      ctx_arg_u8(2)/255.0f,
-                      ctx_arg_u8(3)/255.0f);
+        cairo_set_source_rgba (cr, ctx_u8_to_float (ctx_arg_u8(0)),
+                                   ctx_u8_to_float (ctx_arg_u8(1)),
+                                   ctx_u8_to_float (ctx_arg_u8(2)),
+                                   ctx_u8_to_float (ctx_arg_u8(3)));
         cairo_rectangle (cr, ctx_arg_u16(2), ctx_arg_u16(3), 1, 1);
         cairo_fill (cr);
         break;
@@ -9178,10 +9190,10 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
       case CTX_GRADIENT_STOP:
         cairo_pattern_add_color_stop_rgba (ctx_cairo->pat,
           ctx_arg_float(0),
-          ctx_arg_u8(4)/255.0,
-          ctx_arg_u8(5)/255.0,
-          ctx_arg_u8(6)/255.0,
-          ctx_arg_u8(7)/255.0);
+          ctx_u8_to_float (ctx_arg_u8(4)),
+          ctx_u8_to_float (ctx_arg_u8(5)),
+          ctx_u8_to_float (ctx_arg_u8(6)),
+          ctx_u8_to_float (ctx_arg_u8(7)));
 
         break;
         // XXX  implement TEXTURE
@@ -9349,10 +9361,10 @@ ctx_render_ctx_api (Ctx *ctx, Ctx *d_ctx)
         break;
 
       case CTX_SET_RGBA_U8:
-        ctx_set_rgba (d_ctx, ctx_arg_u8(0)/255.0,
-                             ctx_arg_u8(1)/255.0,
-                             ctx_arg_u8(2)/255.0,
-                             ctx_arg_u8(3)/255.0);
+        ctx_set_rgba (d_ctx, ctx_u8_to_float (ctx_arg_u8(0)),
+                             ctx_u8_to_float (ctx_arg_u8(1)),
+                             ctx_u8_to_float (ctx_arg_u8(2)),
+                             ctx_u8_to_float (ctx_arg_u8(3)));
         break;
 
       case CTX_SET_RGB_SPACE:
@@ -9489,10 +9501,10 @@ ctx_render_ctx_api (Ctx *ctx, Ctx *d_ctx)
       case CTX_GRADIENT_STOP:
         ctx_gradient_add_stop (d_ctx,
           ctx_arg_float(0),
-          ctx_arg_u8(4)/255.0,
-          ctx_arg_u8(5)/255.0,
-          ctx_arg_u8(6)/255.0,
-          ctx_arg_u8(7)/255.0);
+          ctx_u8_to_float (ctx_arg_u8(4)),
+          ctx_u8_to_float (ctx_arg_u8(5)),
+          ctx_u8_to_float (ctx_arg_u8(6)),
+          ctx_u8_to_float (ctx_arg_u8(7)));
         break;
 
       case CTX_SET_FONT:    ctx_set_font (d_ctx, ctx_arg_string ());    break;
@@ -9864,7 +9876,7 @@ ctx_stream_process (void *user_data, CtxEntry *entry)
           else
             fwrite (" ", 1, 1, stream);
         }
-        ctx_print_float (stream, ctx_arg_u8(c)/255.0);
+        ctx_print_float (stream, ctx_u8_to_float (ctx_arg_u8(c)));
       }
       _ctx_print_endcmd (stream, formatter);
       break;
@@ -9918,7 +9930,7 @@ ctx_stream_process (void *user_data, CtxEntry *entry)
       {
         if (c)
           fwrite ("  ", 1, 1, stream);
-        ctx_print_float (stream, ctx_arg_u8(4+c)/255.0);
+        ctx_print_float (stream, ctx_u8_to_float (ctx_arg_u8(4+c)));
       }
       _ctx_print_endcmd (stream, formatter);
       break;
