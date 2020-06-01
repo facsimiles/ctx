@@ -697,7 +697,7 @@ typedef enum
   // 
   // unless specified, the arguments expected are 32bit float numbers.
   //
-  CTX_FLUSH            = 0,
+  CTX_FLUSH            = '\0',
   CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius 
   CTX_ARC              = 'B', // x y radius angle1 angle2 direction 
   CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y 
@@ -1021,7 +1021,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte);
 static void
 ctx_memset (void *ptr, uint8_t val, int length)
 {
-  uint8_t *p = ptr;
+  uint8_t *p = (uint8_t*)ptr;
   for (int i = 0; i < length; i ++)
     p[i] = val;
 }
@@ -4388,7 +4388,7 @@ static Ctx ctx_state;
 void ctx_set_renderer (Ctx  *ctx,
                        void *user_data)
 {
-  CtxRasterizer *rasterizer = user_data;
+  CtxRasterizer *rasterizer = (CtxRasterizer*)user_data;
   if (!user_data)
      return;
   ctx->render_func = rasterizer->render_func;
@@ -4429,7 +4429,7 @@ static void ctx_deinit (Ctx *ctx)
 #if CTX_RASTERIZER
   if (ctx->renderer)
   {
-    ctx_rasterizer_deinit (ctx->renderer);
+    ctx_rasterizer_deinit ((CtxRasterizer*)ctx->renderer);
     free (ctx->renderer);
     ctx->renderer    = NULL;
     ctx->render_func = NULL;
@@ -5580,7 +5580,7 @@ ctx_fragment_gradient_1d_RGBAF (CtxRasterizer *rasterizer, float x, float y, flo
 static void
 ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  uint8_t *rgba = out;
+  uint8_t *rgba = (uint8_t*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
   ctx_assert (rasterizer);
@@ -5664,7 +5664,7 @@ ctx_RGBAF_associate_alpha (float *rgba)
 static void
 ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  uint8_t *rgba = out;
+  uint8_t *rgba = (uint8_t*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
   ctx_assert (rasterizer);
@@ -5697,7 +5697,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
 static void
 ctx_fragment_image_gray1_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  uint8_t *rgba = out;
+  uint8_t *rgba = (uint8_t*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
   ctx_assert (rasterizer);
@@ -5731,7 +5731,7 @@ ctx_fragment_image_gray1_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
 static void
 ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  uint8_t *rgba = out;
+  uint8_t *rgba = (uint8_t*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
   ctx_assert (rasterizer);
@@ -5764,7 +5764,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void
 static void
 ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  uint8_t *rgba = out;
+  uint8_t *rgba = (uint8_t*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = 0.0f;
   if (g->radial_gradient.r0 == 0.0f ||
@@ -5789,7 +5789,7 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 static void
 ctx_fragment_radial_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  float *rgba = out;
+  float *rgba = (float*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = 0.0f;
   if (g->radial_gradient.r0 == 0.0f ||
@@ -5810,7 +5810,7 @@ ctx_fragment_radial_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
 static void
 ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  uint8_t *rgba = out;
+  uint8_t *rgba = (uint8_t*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = (((g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
             g->linear_gradient.length) -
@@ -5828,7 +5828,7 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 static void
 ctx_fragment_linear_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  float *rgba = out;
+  float *rgba = (float*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = (((g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
             g->linear_gradient.length) -
@@ -5841,7 +5841,7 @@ ctx_fragment_linear_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
 static void
 ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  uint8_t *rgba = out;
+  uint8_t *rgba = (uint8_t*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   ctx_color_get_rgba8 (rasterizer->state, &g->color, rgba);
 //ctx_RGBA8_associate_alpha (rgba);
@@ -5850,7 +5850,7 @@ ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
 static void
 ctx_fragment_color_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  float *rgba = out;
+  float *rgba = (float*)out;
   CtxSource *g = &rasterizer->state->gstate.source;
   ctx_color_get_rgba (rasterizer->state, &g->color, rgba);
   ctx_RGBAF_associate_alpha (rgba);
@@ -5858,7 +5858,7 @@ ctx_fragment_color_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out
 
 static void ctx_fragment_image_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  float *outf = out;
+  float *outf = (float*)out;
   uint8_t rgba[4];
   CtxGState *gstate = &rasterizer->state->gstate;
   CtxBuffer *buffer = gstate->source.image.buffer;
@@ -5922,7 +5922,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
-static void ctx_over_RGBA8 (uint8_t * restrict dst, uint8_t * restrict src , uint8_t cov)
+static void ctx_over_RGBA8 (uint8_t * dst, uint8_t *src , uint8_t cov)
 {
   uint8_t ralpha = 255 - ((cov * src[3]) >> 8);
   for (int c = 0; c < 4; c++)
@@ -5930,7 +5930,7 @@ static void ctx_over_RGBA8 (uint8_t * restrict dst, uint8_t * restrict src , uin
 }
 
 static int
-ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t * restrict dst, uint8_t *restrict coverage, int count)
+ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
 
@@ -6006,7 +6006,7 @@ ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t * restrict dst, u
 }
 
 static int
-ctx_b2f_over_RGBA8_convert (CtxRasterizer *rasterizer, int x, uint8_t *restrict dst, uint8_t *restrict coverage, int count)
+ctx_b2f_over_RGBA8_convert (CtxRasterizer *rasterizer, int x, uint8_t * dst, uint8_t * coverage, int count)
 {
   int ret;
   uint8_t pixels[count * 4];
@@ -6031,7 +6031,7 @@ ctx_swap_red_green (uint8_t *rgba)
 }
 
 static void
-ctx_BGRA8_to_RGBA8(CtxRasterizer *rasterizer, int x, const void *restrict buf, uint8_t *restrict rgba, int count)
+ctx_BGRA8_to_RGBA8(CtxRasterizer *rasterizer, int x, const void * buf, uint8_t * rgba, int count)
 {
   uint32_t *srci = (uint32_t*)buf;
   uint32_t *dsti = (uint32_t*)rgba;
@@ -6045,13 +6045,13 @@ ctx_BGRA8_to_RGBA8(CtxRasterizer *rasterizer, int x, const void *restrict buf, u
 }
 
 static void
-ctx_RGBA8_to_BGRA8 (CtxRasterizer *rasterizer, int x, const uint8_t *restrict rgba, void *restrict buf, int count)
+ctx_RGBA8_to_BGRA8 (CtxRasterizer *rasterizer, int x, const uint8_t * rgba, void * buf, int count)
 {
   ctx_BGRA8_to_RGBA8 (rasterizer, x, rgba, (uint8_t*)buf, count);
 }
 
 static int
-ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *restrict dst, uint8_t *restrict coverage, int count)
+ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t * dst, uint8_t * coverage, int count)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
 
@@ -6140,7 +6140,7 @@ ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *restrict dst, ui
 
 #if CTX_ENABLE_GRAYF
 static int
-ctx_gray_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *restrict dst, uint8_t *restrict coverage, int count)
+ctx_gray_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t * dst, uint8_t * coverage, int count)
 {
   float *dst_f = (float*)dst;
   float y = rasterizer->scanline / CTX_RASTERIZER_AA;
@@ -6271,7 +6271,6 @@ ctx_fragment_color_CMYKAF (CtxRasterizer *rasterizer, float x, float y, void *ou
 static CtxFragment ctx_rasterizer_get_fragment_CMYKAF (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
-  CtxBuffer *buffer = gstate->source.image.buffer;
   switch (gstate->source.type)
   {
     case CTX_SOURCE_COLOR:
@@ -7519,7 +7518,7 @@ static void
 ctx_rasterizer_process (void *user_data, CtxEntry *entry)
 {
   //CtxRasterizer *rasterizer = ctx->renderer;
-  CtxRasterizer *rasterizer = user_data;
+  CtxRasterizer *rasterizer = (CtxRasterizer*)user_data;
   //Ctx *ctx = rasterizer->ctx;
   CtxCommand *c = (CtxCommand*)entry;
 
@@ -8229,7 +8228,8 @@ ctx_new_for_buffer (CtxBuffer *buffer)
 {
   Ctx *ctx = ctx_new ();
   ctx_set_renderer (ctx,
-  ctx_rasterizer_init (malloc(sizeof(CtxRasterizer)), ctx, &ctx->state,
+  ctx_rasterizer_init ((CtxRasterizer*)malloc(sizeof(CtxRasterizer)),
+                       ctx, &ctx->state,
                        buffer->data, 0, 0, buffer->width, buffer->height,
                        buffer->stride, buffer->format->pixel_format));
   return ctx;
@@ -8242,8 +8242,9 @@ ctx_new_for_framebuffer (void *data, int width, int height,
 {
   Ctx *ctx = ctx_new ();
   ctx_set_renderer (ctx, 
-  ctx_rasterizer_init (malloc(sizeof(CtxRasterizer)), ctx, &ctx->state,
-                       data, 0, 0, width, height, stride, pixel_format));
+  ctx_rasterizer_init ((CtxRasterizer*)malloc(sizeof(CtxRasterizer)),
+                       ctx, &ctx->state, data, 0, 0, width, height,
+                       stride, pixel_format));
   return ctx;
 }
 
