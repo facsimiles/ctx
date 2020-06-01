@@ -24,6 +24,9 @@ tiny: tiny.c ../ctx.h ../fonts/*.h Makefile
 small: small.c ../ctx.h ../fonts/*.h Makefile
 	$(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
+full: full.c ../ctx.h ../fonts/*.h Makefile
+	$(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
+	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
 
 musl-static-small: small.c ../ctx.h ../fonts/*.h Makefile
 	musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static
