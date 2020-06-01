@@ -23,10 +23,10 @@
 #endif
 
 #include "ctx-font-regular.h"
-//
+#include "ctx-font-mono.h"
+
 //#include "Roboto-Regular.h"
 
-#include "ctx-font-mono.h"
 //#include "DejaVuSansMono.h"
 //#include "DejaVuSans.h"
 //#include "0xA000-Mono.h"
@@ -45,8 +45,8 @@
 #define CTX_SHAPE_CACHE_MAX_DIM  48
 #define CTX_SHAPE_CACHE_DIM      (48*48)
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
-#define CTX_RASTERIZER_AA        5
-#define CTX_RASTERIZER_FORCE_AA  1
+//#define CTX_RASTERIZER_AA        5
+//#define CTX_RASTERIZER_FORCE_AA  1
 #define CTX_MATH                 0
 #define CTX_IMPLEMENTATION
 #include "ctx.h"

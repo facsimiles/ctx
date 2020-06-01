@@ -417,7 +417,7 @@ void ctx_set_renderer (Ctx *ctx,
 
 /* subpixel-aa coordinates used in BITPACKing of renderstream
  */
-#define CTX_SUBDIV            8 // changing this changes font-file-format
+#define CTX_SUBDIV             8 // changing this changes font-file-format
 
 // 8    12 68 40 24
 // 16   12 68 40 24
@@ -425,7 +425,7 @@ void ctx_set_renderer (Ctx *ctx,
  *
  * changing this also changes font file format
  */
-#define CTX_BAKE_FONT_SIZE   160
+#define CTX_BAKE_FONT_SIZE    160
 
 /* pack some linetos/curvetos/movetos into denser renderstream indstructions,
  * permitting more vectors to be stored in the same space.
