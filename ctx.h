@@ -1348,17 +1348,9 @@ struct _CtxGState {
   float         line_width;
   float         miter_limit;
   float         font_size;
-  float         line_spacing;
+  int           keydb_pos;
 
-
-
-#if 0
-  float         shadow_blur;
-  float         shadow_x;
-  float         shadow_y;
-#endif
-
-  //CtxColor    shadow_color;
+  //CtxColor    shadow_color; // color_r color_g color_b color_a ???
   int16_t       clip_min_x;
   int16_t       clip_min_y;
   int16_t       clip_max_x;
@@ -1376,9 +1368,6 @@ struct _CtxGState {
   CtxLineCap                  line_cap:2;
   CtxLineJoin                line_join:2;
   CtxFillRule                fill_rule:1;
-  CtxTextBaseline        text_baseline:3;
-  CtxTextAlign              text_align:3;
-  CtxTextDirection      text_direction:2;
   unsigned int                    font:6;
   unsigned int                    bold:1;
   unsigned int                  italic:1;
@@ -1426,6 +1415,8 @@ struct _CtxKeyDbEntry {
   //union { float f[1]; uint8_t u8[4]; }value;
 };
 
+
+
 static uint32_t ctx_strhash (const char *str, int case_insensitive)
 {
   #define CTX_TO_LOWER(a) ( (((a)>='A')&&((a)<='Z') )?(a)+32:(a))
@@ -1445,7 +1436,6 @@ static uint32_t ctx_strhash (const char *str, int case_insensitive)
   return str_hash;
 }
 
-
 struct _CtxState {
   int           has_moved:1;
   float         x;
@@ -1463,6 +1453,100 @@ struct _CtxState {
   CtxGState     gstate;
   CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
+
+
+/* We use the preprocessor to compute case invariant hashes
+ * of strings directly, if there is collisions in our vocabulary
+ * the compiler tells us.
+ */
+#define CTX_STRH(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) (\
+          (((uint32_t)CTX_TO_LOWER(a0))+ \
+          (((uint32_t)CTX_TO_LOWER(a1))*11)+ \
+          (((uint32_t)CTX_TO_LOWER(a2))*11*11)+ \
+          (((uint32_t)CTX_TO_LOWER(a3))*11*11*11)+ \
+          (((uint32_t)CTX_TO_LOWER(a4))*11*11*11*11) + \
+          (((uint32_t)CTX_TO_LOWER(a5))*11*11*11*11*11) + \
+          (((uint32_t)CTX_TO_LOWER(a6))*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_TO_LOWER(a7))*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_TO_LOWER(a8))*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_TO_LOWER(a9))*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_TO_LOWER(a10))*11*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_TO_LOWER(a11))*11*11*11*11*11*11*11*11*11*11*11)))
+
+#define CTX_STRHash(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) (\
+          (((uint32_t)(a0))+ \
+          (((uint32_t)(a1))*11)+ \
+          (((uint32_t)(a2))*11*11)+ \
+          (((uint32_t)(a3))*11*11*11)+ \
+          (((uint32_t)(a4))*11*11*11*11) + \
+          (((uint32_t)(a5))*11*11*11*11*11) + \
+          (((uint32_t)(a6))*11*11*11*11*11*11) + \
+          (((uint32_t)(a7))*11*11*11*11*11*11*11) + \
+          (((uint32_t)(a8))*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)(a9))*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)(a10))*11*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)(a11))*11*11*11*11*11*11*11*11*11*11*11)))
+
+#define STR CTX_STRH
+
+#define CTX_arc            CTX_STRH('a','r','c',0,0,0,0,0,0,0,0,0)
+#define CTX_arcTo          CTX_STRH('a','r','c','T','o',0,0,0,0,0,0,0)
+#define CTX_arc_to         CTX_STRH('a','r','c','_','t','o',0,0,0,0,0,0)
+#define CTX_smooth_quad_to CTX_STRH('s','m','o','o','t','h','_','q','u','a','d','_')
+#define CTX_restore        CTX_STRH('r','e','s','t','o','r','e',0,0,0,0,0)
+#define CTX_save           CTX_STRH('s','a','v','e',0,0,0,0,0,0,0,0)
+#define CTX_curveTo        CTX_STRH('c','u','r','v','e','T','o',0,0,0,0,0)
+#define CTX_curve_to       CTX_STRH('c','u','r','v','e','_','t','o',0,0,0,0)
+#define CTX_stroke         CTX_STRH('s','t','r','o','k','e',0,0,0,0,0,0)
+#define CTX_fill           CTX_STRH('f','i','l','l',0,0,0,0,0,0,0,0)
+#define CTX_horLineTo      CTX_STRH('h','o','r','L','i','n','e','T','o',0,0,0)
+#define CTX_hor_line_to    CTX_STRH('h','o','r','_','l','i','n','e','_','t','o',0)
+#define CTX_rotate         CTX_STRH('r','o','t','a','t','e',0,0,0,0,0,0)
+#define CTX_color          CTX_STRH('c','o','l','o','r',0,0,0,0,0,0,0)
+#define CTX_lineTo         CTX_STRH('l','i','n','e','T','o',0,0,0,0,0,0)
+#define CTX_line_spacing   CTX_STRH('l','i','n','e','_','s','p','a','c','i','n','g')
+#define CTX_line_to        CTX_STRH('l','i','n','e','_','t','o',0,0,0,0,0)
+#define CTX_moveTo         CTX_STRH('m','o','v','e','T','o',0,0,0,0,0,0)
+#define CTX_move_to        CTX_STRH('m','o','v','e','_','t','o',0,0,0,0,0)
+#define CTX_scale          CTX_STRH('s','c','a','l','e',0,0,0,0,0,0,0)
+#define CTX_text_align     CTX_STRH('t','e','x','t','_','a','l','i','g','n',0, 0)
+#define CTX_text_direction CTX_STRH('t','e','x','t','_','d','i','r','e','c','t','i')
+#define CTX_text_baseline  CTX_STRH('t','e','x','t','_','b','a','s','e','l','i','n')
+
+
+#define CTX_new_state      CTX_STRH('n','e','w','_','s','t','a','t','e',0,0,0)
+
+static void ctx_state_set (CtxState *state, uint32_t hash, float value)
+{
+  if (hash != CTX_new_state)
+  {
+    for (int i = state->gstate.keydb_pos-1;
+         state->keydb[i].key != CTX_new_state && i >=0;
+         i--)
+    {
+      if (state->keydb[i].key == hash)
+        {
+          state->keydb[i].value = value;
+          return;
+        }
+    }
+  }
+  if (state->gstate.keydb_pos >= CTX_MAX_KEYDB)
+     return;
+  state->keydb[state->gstate.keydb_pos].key = hash;
+  state->keydb[state->gstate.keydb_pos].value = value;
+  state->gstate.keydb_pos++;
+}
+
+static float ctx_state_get (CtxState *state, uint32_t hash)
+{
+  for (int i = state->gstate.keydb_pos-1; i>=0; i--)
+  {
+    if (state->keydb[i].key == hash)
+     return state->keydb[i].value;
+  }
+  return -0.0;
+}
 
 static uint8_t ctx_float_to_u8 (float val_f)
 {
@@ -2293,6 +2377,7 @@ ctx_gstate_push (CtxState *state)
     return;
   state->gstate_stack[state->gstate_no] = state->gstate;
   state->gstate_no++;
+  ctx_state_set (state, CTX_new_state, 0.0);
 }
 
 static void
@@ -3360,13 +3445,13 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       state->gstate.compositing_mode = (CtxCompositingMode)ctx_arg_u8(0);
       break;
     case CTX_SET_TEXT_ALIGN:
-      state->gstate.text_align = (CtxTextAlign)ctx_arg_u8(0);
+      ctx_state_set (state, CTX_text_align, ctx_arg_u8(0));
       break;
     case CTX_SET_TEXT_BASELINE:
-      state->gstate.text_baseline = (CtxTextBaseline)ctx_arg_u8(0);
+      ctx_state_set (state, CTX_text_baseline, ctx_arg_u8(0));
       break;
     case CTX_SET_TEXT_DIRECTION:
-      state->gstate.text_direction = (CtxTextDirection)ctx_arg_u8(0);
+      ctx_state_set (state, CTX_text_direction, ctx_arg_u8(0));
       break;
     case CTX_SET_GLOBAL_ALPHA:
       state->gstate.global_alpha_u8 = ctx_float_to_u8(ctx_arg_float(0));
@@ -4162,8 +4247,8 @@ ctx_state_init (CtxState *state)
   state->gstate.global_alpha_u8 = 255;
   state->gstate.global_alpha_f  = 1.0;
   state->gstate.font_size       = 12;
-  state->gstate.line_spacing    = 1.0;
   state->gstate.line_width      = 2.0;
+  ctx_state_set (state, CTX_line_spacing, 1.0f);
   state->min_x                  = 8192;
   state->min_y                  = 8192;
   state->max_x                  = -8192;
@@ -8754,7 +8839,9 @@ _ctx_text (Ctx        *ctx,
 {
   CtxState *state = &ctx->state;
   float x = ctx->state.x;
-  switch (state->gstate.text_align)
+
+  switch((int)ctx_state_get (state, CTX_text_align))
+  //switch (state->gstate.text_align)
   {
     case CTX_TEXT_ALIGN_START:
     case CTX_TEXT_ALIGN_LEFT:
@@ -8769,7 +8856,7 @@ _ctx_text (Ctx        *ctx,
   }
   float y = ctx->state.y;
   float baseline_offset = 0.0f;
-  switch (state->gstate.text_baseline)
+  switch ((int)ctx_state_get (state, CTX_text_baseline))
   {
     case CTX_TEXT_BASELINE_HANGING:
             /* XXX : crude */
@@ -8795,7 +8882,7 @@ _ctx_text (Ctx        *ctx,
     {
       if (*utf8 == '\n')
       {
-        y += ctx->state.gstate.font_size * state->gstate.line_spacing;
+        y += ctx->state.gstate.font_size * ctx_state_get (state, CTX_line_spacing);
         x = x0; 
         if (visible)
           ctx_move_to (ctx, x, y);
@@ -10211,23 +10298,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
     str_hash = ctx_strhash ((char*)str, 1);
 
-/* We use the preprocessor to compute case invariant hashes
- * of strings directly, if there is collisions in our vocabulary
- * the compiler tells us.
- */
-#define STR(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) (\
-          (((uint32_t)CTX_TO_LOWER(a0))+ \
-          (((uint32_t)CTX_TO_LOWER(a1))*11)+ \
-          (((uint32_t)CTX_TO_LOWER(a2))*11*11)+ \
-          (((uint32_t)CTX_TO_LOWER(a3))*11*11*11)+ \
-          (((uint32_t)CTX_TO_LOWER(a4))*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a5))*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a6))*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a7))*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a8))*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a9))*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a10))*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a11))*11*11*11*11*11*11*11*11*11*11*11)))
 
   switch (str_hash)
   {
@@ -10240,23 +10310,24 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     /* first a list of mappings to one_char hashes, handled in a
      * separate fast path switch without hashing
      */
-    case STR('a','r','c','T','o',0,0,0,0,0,0,0):
-    case STR('a','r','c','_','t','o',0,0,0,0,0,0):             ret = CTX_ARC_TO; break;
-    case STR('a','r','c',0,0,0,0,0,0,0,0,0):                   ret = CTX_ARC; break;
-    case STR('c','u','r','v','e','T','o',0,0,0,0,0):
-    case STR('c','u','r','v','e','_','t','o',0,0,0,0):         ret = CTX_CURVE_TO; break;
-    case STR('r','e','s','t','o','r','e',0,0,0,0,0):           ret = CTX_RESTORE; break;
-    case STR('s','t','r','o','k','e',0,0,0,0,0,0):             ret = CTX_STROKE; break;
-    case STR('f','i','l','l',0,0,0,0,0,0,0,0):                 ret = CTX_FILL; break;
-    case STR('h','o','r','L','i','n','e','T','o',0,0,0):
-    case STR('h','o','r','_','l','i','n','e','_','t','o',0):   ret = CTX_HOR_LINE_TO; break;
-    case STR('r','o','t','a','t','e',0,0,0,0,0,0):             ret = CTX_ROTATE; break;
-    case STR('c','o','l','o','r',0,0,0,0,0,0,0):               ret = CTX_SET_COLOR; break;
-    case STR('l','i','n','e','T','o',0,0,0,0,0,0):
-    case STR('l','i','n','e','_','t','o',0,0,0,0,0):           ret = CTX_LINE_TO; break;
-    case STR('m','o','v','e','T','o',0,0,0,0,0,0):
-    case STR('m','o','v','e','_','t','o',0,0,0,0,0):           ret = CTX_MOVE_TO; break;
-    case STR('s','c','a','l','e',0,0,0,0,0,0,0):               ret = CTX_SCALE; break;
+    case CTX_arcTo:
+    case CTX_arc_to:     ret = CTX_ARC_TO; break;
+    case CTX_arc:        ret = CTX_ARC;    break;
+    case CTX_curveTo:
+    case CTX_curve_to:   ret = CTX_CURVE_TO; break;
+    case CTX_restore:    ret = CTX_RESTORE;  break;
+    case CTX_stroke:     ret = CTX_STROKE; break;
+    case CTX_fill:       ret = CTX_FILL; break;
+    case CTX_hor_line_to:
+    case CTX_horLineTo:  ret = CTX_HOR_LINE_TO; break;
+    case CTX_rotate:     ret = CTX_ROTATE; break;
+    case CTX_color:      ret = CTX_SET_COLOR; break;
+    case CTX_line_to:
+    case CTX_lineTo:     ret = CTX_LINE_TO; break;
+    case CTX_move_to:
+    case CTX_moveTo:     ret = CTX_MOVE_TO; break;
+    case CTX_scale:      ret = CTX_SCALE; break;
+
     case STR('n','e','w','P','a','g','e',0,0,0,0,0):
     case STR('n','e','w','_','p','a','g','e',0,0,0,0):         ret = CTX_NEW_PAGE; break;
     case STR('q','u','a','d','T','o',0,0,0,0,0,0):
@@ -10265,7 +10336,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case STR('m','e','d','i','a','_','b','o','x',0,0,0):       ret = CTX_MEDIA_BOX; break;
     case STR('s','m','o','o','t','h','_','t','o',0,0,0):       ret = CTX_SMOOTH_TO; break;
     case STR('s','m','o','o','t','h','Q','u','a','d','T','o'):
-    case STR('s','m','o','o','t','h','_','q','u','a','d','_'): ret = CTX_SMOOTHQ_TO; break;
+    case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
     case STR('c','l','e','a','r',0,0,0,0,0,0,0):               ret = CTX_CLEAR; break;
     case STR('v','e','r','l','i','n','e','t','o',0,0,0):
     case STR('v','e','r','_','l','i','n','e','_','t','o',0):   ret = CTX_VER_LINE_TO; break;
@@ -10350,7 +10421,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
       return ctx_parser_set_command (parser, CTX_SET_MITER_LIMIT);
 
     case STR(CTX_SET_KEY,'t',0,0,0,0,0,0,0,0,0,0):
-    case STR('t','e','x','t','_','a','l','i','g','n',0, 0):
+    case CTX_text_align:
     case STR('t','e','x','t','A','l','i','g','n',0, 0, 0):
       return ctx_parser_set_command (parser, CTX_SET_TEXT_ALIGN);
 
