@@ -830,8 +830,13 @@ struct _CtxEntry
   } data;
 };
 
-/* below is a different representation, permitting
- * named access to argument of different commands
+#define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
+/* The below union maps out the storage types and locations
+ * for data in the API.
+ *
+ * using accessor functions or CtxEntry directly produces
+ * equivalent code, the union is more readable and permits
+ * refactoring and documentation in one place.
  */
 typedef struct _CtxCommand CtxCommand;
 struct _CtxCommand
@@ -843,14 +848,31 @@ struct _CtxCommand
       uint8_t code;float scalex; float scaley;
     } scale;
     struct {
-      uint8_t code;float x; float y;
+            // XXX : the pads can fill the tole of data
+            // and thus remove one entry per string!!
+      uint8_t code;float pad; float pad2;
+      uint8_t code_data;uint32_t stringlen; uint32_t blocklen;
+      uint8_t code_cont;uint8_t utf8[8]; /* XXX :: and continues */
+    } text;
+    struct {
+      uint8_t code;float pad; float pad2;
+      uint8_t code_data;uint32_t stringlen; uint32_t blocklen;
+      uint8_t code_cont;uint8_t utf8[8]; /* XXX :: and continues */
+    } text_stroke;
+    struct {
+      uint8_t code;float pad; float pad2;
+      uint8_t code_data;uint32_t stringlen; uint32_t blocklen;
+      uint8_t code_cont;uint8_t utf8[8]; /* XXX :: and continues */
+    } set_font;
+    struct {
+      uint8_t code;float x;float y;
     } rel_move_to;
     struct {
-      uint8_t code;float x; float y;
+      uint8_t code;float x;float y;
     } rel_line_to;
     struct {
-      uint8_t code;float cx1; float cy1;
-      uint8_t pad0;float cx2; float cy2;
+      uint8_t code;float cx1;float cy1;
+      uint8_t pad0;float cx2;float cy2;
       uint8_t pad1;float x;float y;
     } rel_curve_to;
     struct {
@@ -897,7 +919,6 @@ struct _CtxCommand
       uint8_t pad0; float x2; float y2;
       uint8_t pad1; float radius;}
     arc_to;
-
     /* some format specific generic accesors:  */
     struct {uint8_t code; float x0; float y0;
             uint8_t pad0; float x1; float y1;
@@ -1322,16 +1343,21 @@ struct _CtxGState {
   CtxSource     source;
   CtxColorModel color_model;
   uint8_t       global_alpha_u8;
+
   float         global_alpha_f;
   float         line_width;
   float         miter_limit;
   float         font_size;
   float         line_spacing;
 
+
+
+#if 0
   float         shadow_blur;
   float         shadow_x;
   float         shadow_y;
-  //CtxSource   shadow_source;
+#endif
+
   //CtxColor    shadow_color;
   int16_t       clip_min_x;
   int16_t       clip_min_y;
@@ -1387,23 +1413,30 @@ struct _CtxRenderstream
 CtxRenderstream *ctx_copy_path      (Ctx *ctx);
 CtxRenderstream *ctx_copy_path_flat (Ctx *ctx);
 
+#define CTX_MAX_KEYDB 32
+
+typedef struct _CtxKeyDbEntry CtxKeyDbEntry;
+struct _CtxKeyDbEntry {
+  uint32_t key;
+  union { float f[1]; uint8_t u8[4]; }value;
+};
 
 struct _CtxState {
-  int         has_moved:1;
-  float       x;
-  float       y;
-  int         min_x;
-  int         min_y;
-  int         max_x;
-  int         max_y;
-  CtxGradient gradient; /* we keep only one gradient,
+  int           has_moved:1;
+  float         x;
+  float         y;
+  int           min_x;
+  int           min_y;
+  int           max_x;
+  int           max_y;
+  CtxKeyDbEntry keydb[CTX_MAX_KEYDB];
+  CtxGradient   gradient; /* we keep only one gradient,
                            this goes icky with multiple
                            restores - it should really be part of
                            graphics state.. XXX */
-
-  int16_t     gstate_no;
-  CtxGState   gstate;
-  CtxGState   gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
+  int16_t       gstate_no;
+  CtxGState     gstate;
+  CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
 
 static uint8_t ctx_float_to_u8 (float val_f)
@@ -2052,14 +2085,12 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
   CtxEntry *entry = &iterator->renderstream->entries[ret];
   if (ret >= iterator->end_pos)
     return NULL;
-  {
-    if (iterator->in_history == 0)
-      iterator->pos += (ctx_conts_for_entry (entry) + 1);
-    iterator->in_history = 0;
-    if (iterator->pos >= iterator->end_pos)
-      return NULL;
-    return &iterator->renderstream->entries[iterator->pos];
-  }
+  if (iterator->in_history == 0)
+    iterator->pos += (ctx_conts_for_entry (entry) + 1);
+  iterator->in_history = 0;
+  if (iterator->pos >= iterator->end_pos)
+    return NULL;
+  return &iterator->renderstream->entries[iterator->pos];
 }
 
 #if CTX_BITPACK
@@ -2547,6 +2578,31 @@ ctx_u8 (CtxCode code,
   CtxEntry command = ctx_u8(cmd, x,0,0,0,0,0,0,0);\
   ctx_process (ctx, &command);}while(0)
 
+static void
+ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string)
+{
+#if 0
+  int stringlen = strlen (string);
+  CtxCommand command = {{code}};
+  command.set_font.code_data = CTX_DATA;
+  command.set_font.code_cont = CTX_CONT;
+  command.set_font.stringlen = stringlen;
+  command.set_font.blocklen  = stringlen/9+1;
+  ctx_strcpy ((char*)&(command.set_font.utf8[0]), string);
+  ctx_process (ctx, &command.entry);
+#else
+  int stringlen = strlen (string);
+  CtxEntry commands[1 + 2 + stringlen/8];
+  ctx_memset (commands, 0, sizeof (commands));
+  commands[0] = ctx_u8(code, 0, 0,0,0,0,0,0,0);
+  commands[1].code = CTX_DATA;
+  commands[1].data.u32[0] = stringlen;
+  commands[1].data.u32[1] = stringlen/9+1;
+  ctx_strcpy ((char*)&commands[2].data.u8[0], string);
+  ((char*)(&commands[2].data.u8[0]))[stringlen]=0;
+  ctx_process (ctx, commands);
+#endif
+}
 
 void
 ctx_close_path (Ctx *ctx)
@@ -2897,19 +2953,12 @@ _ctx_set_font (Ctx *ctx, const char *name)
   ctx->state.gstate.font = ctx_resolve_font (name);
 }
 
+
 void
 ctx_set_font (Ctx *ctx, const char *name)
 {
 #if CTX_BACKEND_TEXT
-  int namelen = strlen (name);
-  CtxEntry commands[1 + 2 + namelen/8];
-  ctx_memset (commands, 0, sizeof (commands));
-  commands[0] = ctx_f(CTX_SET_FONT, 0, 0);
-  commands[1].code = CTX_DATA;
-  commands[1].data.u32[0] = namelen;
-  commands[1].data.u32[1] = namelen/9+1;
-  ctx_strcpy ((char*)&commands[2].data.u8[0], name);
-  ctx_process (ctx, commands);
+  ctx_process_cmd_str (ctx, CTX_SET_FONT, name);
 #else
   _ctx_set_font (ctx, name);
 #endif
@@ -8782,16 +8831,7 @@ ctx_text (Ctx        *ctx,
           const char *string)
 {
 #if CTX_BACKEND_TEXT
-  int stringlen = strlen (string);
-  CtxEntry commands[1 + 2 + stringlen/8];
-  ctx_memset (commands, 0, sizeof (commands));
-  commands[0] = ctx_u8(CTX_TEXT, 0, 0,0,0,0,0,0,0);
-  commands[1].code = CTX_DATA;
-  commands[1].data.u32[0] = stringlen;
-  commands[1].data.u32[1] = stringlen/9+1;
-  ctx_strcpy ((char*)&commands[2].data.u8[0], string);
-  ((char*)(&commands[2].data.u8[0]))[stringlen]=0;
-  ctx_process (ctx, commands);
+  ctx_process_cmd_str (ctx, CTX_TEXT, string);
   _ctx_text (ctx, string, 0, 0);
 #else
   _ctx_text (ctx, string, 0, 1);
@@ -8803,16 +8843,7 @@ ctx_text_stroke (Ctx        *ctx,
                  const char *string)
 {
 #if CTX_BACKEND_TEXT
-  int stringlen = strlen (string);
-  CtxEntry commands[1 + 2 + stringlen/8];
-  ctx_memset (commands, 0, sizeof (commands));
-  commands[0] = ctx_u8(CTX_TEXT_STROKE, 1, 0,0,0,0,0,0,0);
-  commands[1].code = CTX_DATA;
-  commands[1].data.u32[0] = stringlen;
-  commands[1].data.u32[1] = stringlen/9+1;
-  ctx_strcpy ((char*)&commands[2].data.u8[0], string);
-  ((char*)(&commands[2].data.u8[0]))[stringlen]=0;
-  ctx_process (ctx, commands);
+  ctx_process_cmd_str (ctx, CTX_TEXT_STROKE, string);
   _ctx_text (ctx, string, 1, 0);
 #else
   _ctx_text (ctx, string, 1, 1);
