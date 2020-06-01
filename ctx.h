@@ -10017,10 +10017,10 @@ ctx_print_entry (FILE *stream, int formatter, int *indent, CtxEntry *entry, int 
 static void
 ctx_stream_process (void *user_data, CtxEntry *entry)
 {
-  void **user_data_array = user_data;
-  FILE *stream    = user_data_array[0];
+  void **user_data_array = (void**)user_data;
+  FILE *stream    = (FILE*)user_data_array[0];
   int   formatter = (size_t)(user_data_array[1]);
-  int  *indent    = (void*)&user_data_array[2];
+  int  *indent    = (int*)&user_data_array[2];
 
   switch (entry->code)
   //switch ((CtxCode)(entry->code))
