@@ -10197,7 +10197,7 @@ struct _CtxParser {
   float      numbers[12]; /* used by svg parser */
   int        n_numbers;
   int        decimal;
-  char       command;
+  CtxCode    command;
   int        n_args;
   float      pcx;
   float      pcy;
@@ -10243,7 +10243,7 @@ ctx_parser_init (CtxParser *parser,
   parser->exit_data        = exit_data;
   parser->color_model      = CTX_RGBA;
   parser->color_components = 4;
-  parser->command          = 'm';
+  parser->command          = CTX_MOVE_TO;
   return parser;
 }
 
@@ -10258,7 +10258,7 @@ CtxParser *ctx_parser_new (
   void (*exit)(void *exit_data),
   void *exit_data)
 {
-  return ctx_parser_init (malloc (sizeof(CtxParser)),
+  return ctx_parser_init ((CtxParser*)malloc (sizeof(CtxParser)),
              ctx,
              width, height,
              cell_width, cell_height,
@@ -10398,7 +10398,7 @@ static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
   return code;
 }
 
-static void ctx_parser_set_color_model (CtxParser *parser, int color_model);
+static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_model);
 
 static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 {
@@ -10703,7 +10703,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
   }
 
   /* handling single char, and ret = foo; break;  in cases above*/
-  return ctx_parser_set_command (parser, ret);
+  return ctx_parser_set_command (parser, (CtxCode)ret);
 }
 
 enum {
@@ -10718,7 +10718,7 @@ enum {
   CTX_PARSER_STRING_QUOT_ESCAPED,
 } CTX_STATE;
 
-static void ctx_parser_set_color_model (CtxParser *parser, int color_model)
+static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_model)
 {
   parser->color_model      = color_model;
   parser->color_components = ctx_color_model_get_components (color_model);
@@ -11015,25 +11015,25 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_set_line_width (ctx, arg(0));
         break;
     case CTX_SET_LINE_JOIN:
-        ctx_set_line_join (ctx, arg(0));
+        ctx_set_line_join (ctx, (CtxLineJoin)arg(0));
         break;
     case CTX_SET_LINE_CAP:
-        ctx_set_line_cap (ctx, arg(0));
+        ctx_set_line_cap (ctx, (CtxLineCap)arg(0));
         break;
     case CTX_SET_COMPOSITING_MODE:
-        ctx_set_compositing_mode (ctx, arg(0));
+        ctx_set_compositing_mode (ctx, (CtxCompositingMode)arg(0));
         break;
     case CTX_SET_FILL_RULE:
-        ctx_set_fill_rule (ctx, arg(0));
+        ctx_set_fill_rule (ctx, (CtxFillRule)arg(0));
         break;
     case CTX_SET_TEXT_ALIGN:
-        ctx_set_text_align (ctx, arg(0));
+        ctx_set_text_align (ctx, (CtxTextAlign)arg(0));
         break;
     case CTX_SET_TEXT_BASELINE:
-        ctx_set_text_baseline (ctx, arg(0));
+        ctx_set_text_baseline (ctx, (CtxTextBaseline)arg(0));
         break;
     case CTX_SET_TEXT_DIRECTION:
-        ctx_set_text_direction (ctx, arg(0));
+        ctx_set_text_direction (ctx, (CtxTextDirection)arg(0));
         break;
     case CTX_IDENTITY:
         ctx_identity_matrix (ctx);
@@ -11225,7 +11225,7 @@ static void ctx_parser_word_done (CtxParser *parser)
   }
   else if (command > 0)
   {
-     parser->command = command;
+     parser->command = (CtxCode)command;
      if (parser->n_args == 0)
      {
        ctx_parser_dispatch_command (parser);
@@ -11238,7 +11238,7 @@ static void ctx_parser_word_done (CtxParser *parser)
     for (int i = 0; parser->pos && parser->holding[i] > ' '; i++)
     {
        buf[0] = parser->holding[i];
-       parser->command = ctx_parser_resolve_command (parser, buf);
+       parser->command = (CtxCode)ctx_parser_resolve_command (parser, buf);
        if (parser->command > 0)
        {
          if (parser->n_args == 0)
