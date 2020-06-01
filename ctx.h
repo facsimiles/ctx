@@ -434,14 +434,6 @@ void ctx_set_renderer (Ctx *ctx,
 #define CTX_BITPACK           1
 #endif
 
-/* reference-packing, look for recurring patterns in renderstream and encode
- * subsequent references as references to prior occurences. (currently slow
- * and/or broken, thus disabled by default.)
- */
-#ifndef CTX_REFPACK
-#define CTX_REFPACK           0
-#endif
-
 /* whether we have a shape-cache where we keep pre-rasterized bitmaps of commonly
  * occuring small shapes.
  */
@@ -1373,7 +1365,6 @@ typedef enum {
 #if CTX_BITPACK
   CTX_TRANSFORMATION_BITPACK      = 4,
 #endif
-  CTX_TRANSFORMATION_REFPACK      = 8,
   CTX_TRANSFORMATION_STORE_CLEAR  = 16,
 } CtxTransformation;
 
@@ -1389,7 +1380,7 @@ struct _CtxRenderstream
   CtxEntry *entries;     /* we need to use realloc */
   int       count;
   int       size;
-  uint32_t  flags; // BITPACK and REFPACK - to be used on resize
+  uint32_t  flags; // BITPACK - to be used on resize
   int       bitpack_pos;
 };
 
@@ -2031,10 +2022,8 @@ typedef struct CtxIterator
 enum _CtxIteratorFlag
 {
   CTX_ITERATOR_FLAT           = 0,
-  CTX_ITERATOR_EXPAND_REFPACK = 1,
   CTX_ITERATOR_EXPAND_BITPACK = 2,
-  CTX_ITERATOR_DEFAULTS       = CTX_ITERATOR_EXPAND_REFPACK |
-                                CTX_ITERATOR_EXPAND_BITPACK
+  CTX_ITERATOR_DEFAULTS       = CTX_ITERATOR_EXPAND_BITPACK
 };
 typedef enum _CtxIteratorFlag CtxIteratorFlag;
 
@@ -2059,60 +2048,6 @@ ctx_iterator_init (CtxIterator *iterator,
 
 static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
 {
-#if CTX_REFPACK
-  int expand_refpack = iterator->flags & CTX_ITERATOR_EXPAND_REFPACK;
-
-  int ret = iterator->pos;
-  CtxEntry *entry = &iterator->renderstream->entries[ret];
-  if (iterator->pos >= iterator->end_pos)
-    return NULL;
-  if (expand_refpack == 0)
-  {
-    if (iterator->in_history == 0)
-      iterator->pos += (ctx_conts_for_entry (entry) + 1);
-    iterator->in_history = 0;
-    if (iterator->pos >= iterator->end_pos)
-      return NULL;
-    return &iterator->renderstream->entries[iterator->pos];
-  }
-
-  if (iterator->in_history > 0)
-  {
-    if (iterator->history_pos < iterator->history[1])
-    {
-      int ret = iterator->history[0] + iterator->history_pos;
-      CtxEntry *hentry = &iterator->renderstream->entries[ret];
-      iterator->history_pos += (ctx_conts_for_entry (hentry) + 1);
-
-      if (iterator->history_pos >= iterator->history[1])
-      {
-        iterator->in_history = 0;
-        iterator->pos += (ctx_conts_for_entry (entry) + 1);
-      }
-      return &iterator->renderstream->entries[ret];
-    }
-  }
-
-  if (entry->code == CTX_REPEAT_HISTORY)
-  {
-    iterator->in_history = 1;
-    iterator->history[0] = entry->data.u32[0];
-    iterator->history[1] = entry->data.u32[1];
-    CtxEntry *hentry = &iterator->renderstream->entries[iterator->history[0]];
-    iterator->history_pos = 0;
-    iterator->history_pos += (ctx_conts_for_entry (hentry) + 1);
-    return hentry;
-  }
-  else
-  {
-    iterator->pos += (ctx_conts_for_entry (entry) + 1);
-    iterator->in_history = 0;
-  }
-
-  if (ret >= iterator->end_pos)
-    return NULL;
-  return &iterator->renderstream->entries[ret];
-#else
   int ret = iterator->pos;
   CtxEntry *entry = &iterator->renderstream->entries[ret];
   if (ret >= iterator->end_pos)
@@ -2125,7 +2060,6 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
       return NULL;
     return &iterator->renderstream->entries[iterator->pos];
   }
-#endif
 }
 
 #if CTX_BITPACK
@@ -3846,20 +3780,7 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
 
 #endif
 
-#if CTX_REFPACK
-static int
-ctx_entries_equal (const CtxEntry *a, const CtxEntry *b)
-{
-  if (!a || !b) return 0;
-  if (a->code == CTX_REPEAT_HISTORY)
-    return 0;
-  return (a->code == b->code &&
-          a->data.u32[0] == b->data.u32[0] &&
-          a->data.u32[1] == b->data.u32[1]);
-}
-#endif
-
-#if CTX_BITPACK_PACKER|CTX_REFPACK
+#if CTX_BITPACK_PACKER
 static int
 ctx_last_history (CtxRenderstream *renderstream)
 {
@@ -3879,148 +3800,10 @@ ctx_last_history (CtxRenderstream *renderstream)
 #endif
 
 
-#if CTX_REFPACK
-
-static void
-ctx_renderstream_remove (CtxRenderstream *renderstream, int pos, int count)
-{
-  if (count <= 0)
-    return;
-  for (int i = pos; i < renderstream->count - count; i++)
-  {
-    renderstream->entries[i] = renderstream->entries[i+count];
-  }
-  for (int i = renderstream->count - count; i < renderstream->count; i++)
-  {
-    renderstream->entries[i].code      = CTX_CONT;
-    renderstream->entries[i].data.f[0] = 0;
-    renderstream->entries[i].data.f[1] = 0;
-  }
-  renderstream->count = renderstream->count - count;
-}
-
-
-
-/* find first match of input in dicitonary equal to or larger than
- * minimum_length
- */
-static int
-ctx_renderstream_dedup_search (CtxRenderstream *dictionary,
-                          int d_start, int d_end,
-                          CtxRenderstream *input,
-                          int i_start, int i_end,
-                          int *match_start,
-                          int *match_length,
-                          int *input_pos,
-                          int  minimum_length)
-{
-#if 1
-  int m = d_end - d_start + 1;
-  int n = i_end - i_start + 1;
-  int result = 0;
-  int end;
-  int endpos;
-
-  int len[2][n];
-  int currRow = 0;
-
-  for (int i = 0; i <= m; i++) {
-    CtxEntry *ientry = &dictionary->entries[d_start + i - 1];
-    for (int j= 0; j <= n; j++) {
-      CtxEntry *jentry = &input->entries[i_start + j - 1];
-      if (i == 0 || j == 0) {
-        len[currRow][j] = 0;
-      }
-      else if (ctx_entries_equal (jentry, ientry))
-      {
-        len[currRow][j] = len[1 - currRow][j - 1] + 1;
-        if (len[currRow][j] > result) {
-          result = len[currRow][j];
-          end = i + d_start - result ;
-          endpos = j + i_start - result ;
-          if (result >= minimum_length)
-            goto done; // re-check the hit might be even better!
-        }
-      }
-      else {
-        len[currRow][j] = 0;
-      }
-    }
-    currRow = 1 - currRow;
-  }
-
-  done:
-  if (result >= minimum_length)
-  {
-    if (dictionary->entries[end+result + 1].code == CTX_CONT) 
-    {
-      return 0;
-    }
-
-    *match_start  = end;
-    *match_length = result;
-    *input_pos    = endpos;
-    return 1;
-  }
-
-  return 0;
-#else
-  int i = i_start;
-  int longest = 0;
-  int longest_length = 0;
-  int longest_pos = 0;
-  while (i < input->count)
-  {
-    CtxEntry *ientry = &input->entries[i];
-    for (int j = 0; j < i - longest_length; )
-    {
-       CtxEntry *jentry = &dictionary->entries[j];
-       int matches = 0;
-       int mismatch = 0;
-
-       for (int offset = 0; (!mismatch) && j+offset < i; offset++)
-       {
-         if (jentry[offset].code != CTX_REPEAT_HISTORY &&
-             ctx_entries_equal (&jentry[offset], &ientry[offset]))
-          {
-            matches++;
-          }
-         else
-          {
-            mismatch = 1;
-          }
-       }
-       if (matches > longest_length)
-       {
-         longest_pos = i;
-         longest_length = matches;
-         longest = j;
-       }
-       if (longest_length >= minimum_length)
-         goto done;
-       j += (ctx_conts_for_command (jcommand) + 1);
-    }
-    i += (ctx_conts_for_command (icommand) + 1);
-  }
-
-  done:
-  if (longest_length >= minimum_length)
-  {
-    *match_start  = longest;
-    *match_length = longest_length;
-    *input_pos = longest_pos;
-
-    return 1;
-  }
-  return 0;
-#endif
-}
-#endif
-
 static void
 ctx_renderstream_refpack (CtxRenderstream *renderstream)
 {
-#if CTX_BITPACK_PACKER|CTX_REFPACK
+#if CTX_BITPACK_PACKER
   int last_history;
   last_history = ctx_last_history (renderstream);
 #else
@@ -4028,48 +3811,6 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
 #endif
 #if CTX_BITPACK_PACKER
     ctx_renderstream_bitpack (renderstream, last_history);
-#endif
-#if CTX_REFPACK
-  int length_threshold = 4;
-
-  if ((renderstream->flags & CTX_TRANSFORMATION_REFPACK) == 0)
-    return;
-
-  if (!last_history)
-  {
-    last_history = 8;
-    if (last_history > renderstream->count)
-      last_history = renderstream->count / 2;
-  }
-
-  int completed = last_history;
-
-  while (completed < renderstream->count)
-  {
-    int default_search_window = 512;
-    int search_window = default_search_window;
-
-    int match_start;
-    int match_length=0;
-    int match_input_pos;
-
-    if ((renderstream->count - completed) < search_window)
-      search_window = renderstream->count - completed;
-
-    while (ctx_renderstream_dedup_search (
-           renderstream, 0, completed-1,
-           renderstream, completed+1, completed+search_window - 2,
-           &match_start, &match_length, &match_input_pos,
-           length_threshold))
-    {
-      CtxEntry *ientry = &renderstream->entries[match_input_pos];
-      ientry->code = CTX_REPEAT_HISTORY;
-      ientry->data.u32[0]= match_start;
-      ientry->data.u32[1]= match_length;
-      ctx_renderstream_remove (renderstream, match_input_pos+1, match_length-1);
-    }
-    completed += default_search_window;
-  }
 #endif
 }
 
@@ -4372,9 +4113,6 @@ ctx_init (Ctx *ctx)
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
   ctx->renderstream.flags |= CTX_TRANSFORMATION_BITPACK;
-#endif
-#if CTX_REFPACK
-  ctx->renderstream.flags |= CTX_TRANSFORMATION_REFPACK;
 #endif
 #endif
 }
@@ -8280,8 +8018,7 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
   {
     CtxIterator iterator;
     CtxEntry   *entry;
-    ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
-                                                         CTX_ITERATOR_EXPAND_BITPACK);
+    ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_BITPACK);
     while ((entry = ctx_iterator_next(&iterator)))
       ctx_rasterizer_process (rasterizer, entry);
   }
@@ -9443,8 +9180,8 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
   CtxEntry   *entry;
   CtxCairo    ctx_cairo = {ctx_new(), cr, NULL, NULL};
 
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
-                                                  CTX_ITERATOR_EXPAND_BITPACK);
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
+                     CTX_ITERATOR_EXPAND_BITPACK);
 
   while ((entry = ctx_iterator_next (&iterator)))
           ctx_cairo_process (&ctx_cairo, entry);
@@ -9465,7 +9202,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 {
   CtxIterator iterator;
   CtxEntry   *entry;
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0, 
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ((entry = ctx_iterator_next (&iterator)))
     ctx_process (d_ctx, entry);
@@ -9481,7 +9218,7 @@ ctx_render_ctx_api (Ctx *ctx, Ctx *d_ctx)
   CtxIterator iterator;
   CtxEntry   *entry;
 
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_REFPACK|
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
 
   while ((entry = ctx_iterator_next (&iterator)))
@@ -10170,7 +9907,6 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
   CtxEntry   *entry;
 
   ctx_iterator_init (&iterator, &ctx->renderstream, 0,
-                     CTX_ITERATOR_EXPAND_REFPACK|
                      CTX_ITERATOR_EXPAND_BITPACK);
 
   while ((entry = ctx_iterator_next (&iterator)))
