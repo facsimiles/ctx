@@ -51,7 +51,23 @@ typedef enum
   CTX_FORMAT_GRAY4,
   CTX_FORMAT_CMYK8,
   CTX_FORMAT_CMYKA8,
-  CTX_FORMAT_CMYKAF
+  CTX_FORMAT_CMYKAF,
+  CTX_FORMAT_DEVICEN1,
+  CTX_FORMAT_DEVICEN2,
+  CTX_FORMAT_DEVICEN3,
+  CTX_FORMAT_DEVICEN4,
+  CTX_FORMAT_DEVICEN5,
+  CTX_FORMAT_DEVICEN6,
+  CTX_FORMAT_DEVICEN7,
+  CTX_FORMAT_DEVICEN8,
+  CTX_FORMAT_DEVICEN9,
+  CTX_FORMAT_DEVICEN10,
+  CTX_FORMAT_DEVICEN11,
+  CTX_FORMAT_DEVICEN12,
+  CTX_FORMAT_DEVICEN13,
+  CTX_FORMAT_DEVICEN14,
+  CTX_FORMAT_DEVICEN15,
+  CTX_FORMAT_DEVICEN16
 } CtxPixelFormat;
 
 typedef struct _Ctx Ctx;
@@ -113,9 +129,9 @@ void ctx_clip           (Ctx *ctx);
 void ctx_identity_matrix (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
 void ctx_set_line_width (Ctx *ctx, float x);
-void ctx_set_transform  (Ctx *ctx, float a, float b,  // hscale, hskew
-                                   float c, float d,  // vskew,  vscale
-                                   float e, float f); // htran,  vtran
+void ctx_set_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
+                                   float c,  float d,  // vskew,  vscale
+                                   float e,  float f); // htran,  vtran
 void ctx_get_transform  (Ctx *ctx, float *a, float *b,
                                    float *c, float *d,
                                    float *e, float *f);
@@ -169,15 +185,12 @@ void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
 void ctx_set_device_rgba(Ctx *ctx, float r, float g, float b, float a);
 void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
 void ctx_set_gray       (Ctx *ctx, float gray);
-
 void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k);
 void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a);
-
 void ctx_get_rgba       (Ctx *ctx, float *rgba);
 void ctx_get_device_rgba(Ctx *ctx, float *rgba);
 void ctx_get_cmyka      (Ctx *ctx, float *cmyka);
 void ctx_get_graya      (Ctx *ctx, float *ya);
-
 
 void ctx_current_point  (Ctx *ctx, float *x, float *y);
 float ctx_x             (Ctx *ctx);
@@ -352,8 +365,7 @@ int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 
 typedef struct _CtxEntry CtxEntry;
 void ctx_set_renderer (Ctx *ctx,
-                       void (*render)(void *user_data, CtxEntry *entry),
-                       void *user_data);
+                       void *renderer);
 
 /* definitions that determine which features are included and their settings,
  * for particular platforms - in particular microcontrollers ctx might need
@@ -829,66 +841,88 @@ struct _CtxEntry
 /* below is a different representation, permitting
  * named access to argument of different commands
  */
-typedef struct _CtxUnion CtxUnion;
-struct _CtxUnion
+typedef struct _CtxCommand CtxCommand;
+struct _CtxCommand
 {
-  uint8_t code;       // radical idea pack the code into first floats
   union {
-    struct {float scalex; float scaley;}
-    scale;
-
-    struct {float x; float y;}
-    rel_move_to;
-
-    struct {float x; float y;}
-    rel_line_to;
-
-    struct {float cx1; float cy1;
+    uint8_t  code;
+    CtxEntry entry;
+    struct {uint8_t code;float scalex; float scaley;
+    } scale;
+    struct {uint8_t code;float x; float y;
+    } rel_move_to;
+    struct {uint8_t code;float x; float y;
+    } rel_line_to;
+    struct {uint8_t code;float cx1; float cy1;
+            uint8_t pad0;float cx2; float cy2;
+            uint8_t pad1;float x;float y;
+    } rel_curve_to;
+    struct {
+       uint8_t code;float x; float y;
+    } move_to;
+    struct {
+       uint8_t code;float x; float y;
+    } line_to;
+    struct {
+      uint8_t code; float cx1; float cy1;
       uint8_t pad0;float cx2; float cy2;
-      uint8_t pad1;float x;float y;}
-    rel_curve_to;
-
-    struct move_to {float x; float y;}
-    move_to;
-
-    struct line_to {float x; float y;}
-    line_to;
-
-    struct {float cx1; float cy1;
-      uint8_t pad0;float cx2; float cy2;
-      uint8_t pad1;float x;float y;}
-    curve_to;
-
-    struct {float x1; float y1;
+      uint8_t pad1;float x;float y;
+    } curve_to;
+    struct {
+      uint8_t code; float x1; float y1;
       uint8_t pad0;float r1; float x2;
-      uint8_t pad1;float y2; float r2;}
-    radial_gradient;
-
-    struct {float x1; float y1;
-      uint8_t pad0;float x2; float y2;}
-    linear_gradient;
-
-    struct {float x; float y;
-      uint8_t pad0;float width; float height;}
-    rectangle;
-
-    struct {uint8_t rgba[4];
-      uint16_t x;uint16_t y;}
-    set_pixel;
-
-    struct {float cx; float cy;
-      uint8_t pad0;float x; float y;}
-    quad_to;
-
-    struct {float x; float y;
+      uint8_t pad1;float y2; float r2;
+    } radial_gradient;
+    struct {
+      uint8_t code; float x1; float y1;
+      uint8_t pad0;float x2; float y2;
+    } linear_gradient;
+    struct {uint8_t code; float x; float y;
+      uint8_t pad0;float width; float height;
+    } rectangle;
+    struct {
+      uint8_t code; uint8_t rgba[4]; uint16_t x;uint16_t y;
+    } set_pixel;
+    struct {
+      uint8_t code; float cx; float cy;
+      uint8_t pad0;float x; float y;
+    } quad_to;
+    struct {
+      uint8_t code; float cx; float cy;
+      uint8_t pad0;float x; float y;
+    } rel_quad_to;
+    struct {
+      uint8_t code; float x; float y;
       uint8_t pad0;float radius; float angle1;
       uint8_t pad1;float angle2; float direction;}
     arc;
-
-    struct {float x1; float y1;
-      uint8_t pad0;float x2; float y2;
-      uint8_t pad1;float radius;}
+    struct {
+      uint8_t code; float x1; float y1;
+      uint8_t pad0; float x2; float y2;
+      uint8_t pad1; float radius;}
     arc_to;
+
+    /* some format specific generic accesors:  */
+    struct {uint8_t code; float x0; float y0;
+            uint8_t pad0; float x1; float y1;
+            uint8_t pad1; float x2; float y2;
+            uint8_t pad2; float x3; float y3;
+            uint8_t pad3; float x4; float y4;
+    } c;
+    struct {uint8_t code; float a0; float a1;
+            uint8_t pad0; float a2; float a3;
+            uint8_t pad1; float a4; float a5;
+            uint8_t pad2; float a6; float a7;
+            uint8_t pad3; float a8; float a9;
+    } f;
+    struct {uint8_t code; uint8_t a0; uint8_t a1; uint8_t a2; uint8_t a3; uint8_t a4; uint8_t a5; uint8_t a6; uint8_t a7;
+            uint8_t pad0; uint8_t a8; uint8_t a9; uint8_t a10; uint8_t a11; uint8_t a12; uint8_t a13; uint8_t a14; uint8_t a15;
+            uint8_t pad1; uint8_t a16; uint8_t a17; uint8_t a18; uint8_t a19; uint8_t a20; uint8_t a21; uint8_t a22; uint8_t a23;
+    } u8;
+    struct {uint8_t code; int8_t a0; int8_t a1; int8_t a2; int8_t a3; int8_t a4; int8_t a5; int8_t a6; int8_t a7;
+            uint8_t pad0; int8_t a8; int8_t a9; int8_t a10; int8_t a11; int8_t a12; int8_t a13; int8_t a14; int8_t a15;
+            uint8_t pad1; int8_t a16; int8_t a17; int8_t a18; int8_t a19; int8_t a20; int8_t a21; int8_t a22; int8_t a23;
+    } s8;
   };
 };
 
@@ -1349,11 +1383,15 @@ struct _CtxRenderstream
      with wire-protocol and reuse of data from preceding frame.
    */
   CtxEntry *entries;     /* we need to use realloc */
-  int       size;
   int       count;
+  int       size;
   uint32_t  flags; // BITPACK and REFPACK - to be used on resize
   int       bitpack_pos;
 };
+
+CtxRenderstream *ctx_copy_path      (Ctx *ctx);
+CtxRenderstream *ctx_copy_path_flat (Ctx *ctx);
+
 
 struct _CtxState {
   int         has_moved:1;
@@ -1696,6 +1734,9 @@ typedef struct CtxEdge {
 } CtxEdge;
 
 struct _CtxRasterizer {
+  void (*render_func)(void *renderer, CtxEntry *entry);
+
+
   /* these should be initialized and used as the bounds for rendering into the
      buffer as well XXX: not yet in use, and when in use will only be
      correct for axis aligned clips - proper rasterization of a clipping path
@@ -4034,7 +4075,7 @@ ctx_renderstream_refpack (CtxRenderstream *renderstream)
 static void
 ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 {
-  CtxUnion *ue = (CtxUnion*)entry;
+  CtxCommand *c = (CtxCommand*)entry;
   float start_x = state->x;
   float start_y = state->y;
   int had_moved = state->has_moved;
@@ -4043,8 +4084,8 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
   {
     case CTX_MOVE_TO:
     case CTX_LINE_TO:
-      { float x = ue->line_to.x;
-        float y = ue->line_to.y;
+      { float x = c->c.x0;
+        float y = c->c.y0;
         if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
         {
           ctx_user_to_device (state, &x, &y);
@@ -4058,28 +4099,28 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
       if ((((Ctx*)(data))->transformation & CTX_TRANSFORMATION_SCREEN_SPACE))
       {
         float temp;
-        ctx_user_to_device (state, &ue->arc.x, &ue->arc.y);
+        ctx_user_to_device (state, &c->arc.x, &c->arc.y);
         temp = 0;
-        ctx_user_to_device_distance (state, &ue->arc.radius, &temp);
+        ctx_user_to_device_distance (state, &c->arc.radius, &temp);
       }
 
       break;
 
     case CTX_LINEAR_GRADIENT:
-      ctx_user_to_device (state, &ue->linear_gradient.x1, &ue->linear_gradient.y1);
-      ctx_user_to_device (state, &ue->linear_gradient.x2, &ue->linear_gradient.y2);
+      ctx_user_to_device (state, &c->linear_gradient.x1, &c->linear_gradient.y1);
+      ctx_user_to_device (state, &c->linear_gradient.x2, &c->linear_gradient.y2);
       break;
 
     case CTX_RADIAL_GRADIENT:
       {
         float temp;
 
-        ctx_user_to_device (state, &ue->radial_gradient.x1, &ue->radial_gradient.y1);
+        ctx_user_to_device (state, &c->radial_gradient.x1, &c->radial_gradient.y1);
         temp = 0;
-        ctx_user_to_device_distance (state, &ue->radial_gradient.r1, &temp);
-        ctx_user_to_device (state, &ue->radial_gradient.x2, &ue->radial_gradient.y2);
+        ctx_user_to_device_distance (state, &c->radial_gradient.r1, &temp);
+        ctx_user_to_device (state, &c->radial_gradient.x2, &c->radial_gradient.y2);
         temp = 0;
-        ctx_user_to_device_distance (state, &ue->radial_gradient.r2, &temp);
+        ctx_user_to_device_distance (state, &c->radial_gradient.r2, &temp);
 
       }
       break;
@@ -4340,11 +4381,13 @@ static void ctx_setup ();
 static Ctx ctx_state;
 #endif
 
-void ctx_set_renderer (Ctx *ctx,
-                       void (*render)(void *user_data, CtxEntry *entry),
+void ctx_set_renderer (Ctx  *ctx,
                        void *user_data)
 {
-  ctx->render_func = render;
+  CtxRasterizer *rasterizer = user_data;
+  if (!user_data)
+     return;
+  ctx->render_func = rasterizer->render_func;
   ctx->renderer = user_data;
 }
 
@@ -5390,7 +5433,7 @@ ctx_gradient_cache_reset (void)
 #endif
 
 static void
-ctx_sample_gradient_1d_u8 (CtxRasterizer *rasterizer, float v, uint8_t *rgba)
+ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float v, uint8_t *rgba)
 {
   /* caching a 512 long gradient - and sampling with nearest neighbor
      will be much faster.. */
@@ -5474,7 +5517,7 @@ ctx_sample_gradient_1d_u8 (CtxRasterizer *rasterizer, float v, uint8_t *rgba)
 
 
 static void
-ctx_sample_source_rgba_u8_image (CtxRasterizer *rasterizer, float x, float y, void *out)
+ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   uint8_t *rgba = out;
   CtxSource *g = &rasterizer->state->gstate.source;
@@ -5550,7 +5593,7 @@ ctx_RGBA8_associate_alpha (uint8_t *rgba)
 
 
 static void
-ctx_sample_source_rgba_u8_image_rgba (CtxRasterizer *rasterizer, float x, float y, void *out)
+ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   uint8_t *rgba = out;
   CtxSource *g = &rasterizer->state->gstate.source;
@@ -5583,7 +5626,7 @@ ctx_sample_source_rgba_u8_image_rgba (CtxRasterizer *rasterizer, float x, float 
 }
 
 static void
-ctx_sample_source_rgba_u8_image_1bit (CtxRasterizer *rasterizer, float x, float y, void *out)
+ctx_fragment_image_gray1_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   uint8_t *rgba = out;
   CtxSource *g = &rasterizer->state->gstate.source;
@@ -5617,7 +5660,7 @@ ctx_sample_source_rgba_u8_image_1bit (CtxRasterizer *rasterizer, float x, float 
 }
 
 static void
-ctx_sample_source_rgba_u8_image_rgb (CtxRasterizer *rasterizer, float x, float y, void *out)
+ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   uint8_t *rgba = out;
   CtxSource *g = &rasterizer->state->gstate.source;
@@ -5650,7 +5693,7 @@ ctx_sample_source_rgba_u8_image_rgb (CtxRasterizer *rasterizer, float x, float y
 }
 
 static void
-ctx_sample_source_rgba_u8_radial_gradient (CtxRasterizer *rasterizer, float x, float y, void *out)
+ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   uint8_t *rgba = out;
   CtxSource *g = &rasterizer->state->gstate.source;
@@ -5665,7 +5708,7 @@ ctx_sample_source_rgba_u8_radial_gradient (CtxRasterizer *rasterizer, float x, f
     v = (v - g->radial_gradient.r0) /
         (g->radial_gradient.r1 - g->radial_gradient.r0);
   }
-  ctx_sample_gradient_1d_u8 (rasterizer, v, rgba);
+  ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, rgba);
 
 #if CTX_DITHER
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -5676,7 +5719,7 @@ ctx_sample_source_rgba_u8_radial_gradient (CtxRasterizer *rasterizer, float x, f
 
 
 static void
-ctx_sample_source_rgba_u8_linear_gradient (CtxRasterizer *rasterizer, float x, float y, void *out)
+ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   uint8_t *rgba = out;
   CtxSource *g = &rasterizer->state->gstate.source;
@@ -5684,7 +5727,7 @@ ctx_sample_source_rgba_u8_linear_gradient (CtxRasterizer *rasterizer, float x, f
             g->linear_gradient.length) -
             g->linear_gradient.start) /
                 (g->linear_gradient.end - g->linear_gradient.start);
-  ctx_sample_gradient_1d_u8 (rasterizer, v, rgba);
+  ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, rgba);
 
 #if CTX_DITHER
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -5695,7 +5738,7 @@ ctx_sample_source_rgba_u8_linear_gradient (CtxRasterizer *rasterizer, float x, f
 
 
 static void
-ctx_sample_source_rgba_u8_color (CtxRasterizer *rasterizer, float x, float y, void *out)
+ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   uint8_t *rgba = out;
   CtxSource *g = &rasterizer->state->gstate.source;
@@ -5703,9 +5746,9 @@ ctx_sample_source_rgba_u8_color (CtxRasterizer *rasterizer, float x, float y, vo
   ctx_RGBA8_associate_alpha (rgba);
 }
 
-typedef void (*CtxSourceU8)(CtxRasterizer *rasterizer, float x, float y, void *out);
+typedef void (*CtxSourceFragment)(CtxRasterizer *rasterizer, float x, float y, void *out);
 
-static CtxSourceU8 ctx_rasterizer_get_source_rgba_u8 (CtxRasterizer *rasterizer)
+static CtxSourceFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   CtxBuffer *buffer = gstate->source.image.buffer;
@@ -5715,24 +5758,24 @@ static CtxSourceU8 ctx_rasterizer_get_source_rgba_u8 (CtxRasterizer *rasterizer)
       switch (buffer->format->bpp)
       {
         case 1:
-          return ctx_sample_source_rgba_u8_image_1bit;
+          return ctx_fragment_image_gray1_RGBA8;
         //case 2:
         //  return ctx_sample_source_rgba_u8_image_2bit;
         case 24:
-          return ctx_sample_source_rgba_u8_image_rgb;
+          return ctx_fragment_image_rgb8_RGBA8;
         case 32:
-          return ctx_sample_source_rgba_u8_image_rgba;
+          return ctx_fragment_image_rgba8_RGBA8;
         default:
-          return ctx_sample_source_rgba_u8_image;
+          return ctx_fragment_image_RGBA8;
       }
     case CTX_SOURCE_COLOR:
-      return ctx_sample_source_rgba_u8_color;
+      return ctx_fragment_color_RGBA8;
     case CTX_SOURCE_LINEAR_GRADIENT:
-      return ctx_sample_source_rgba_u8_linear_gradient;
+      return ctx_fragment_linear_gradient_RGBA8;
     case CTX_SOURCE_RADIAL_GRADIENT:
-      return ctx_sample_source_rgba_u8_radial_gradient;
+      return ctx_fragment_radial_gradient_RGBA8;
   }
-  return ctx_sample_source_rgba_u8_color;
+  return ctx_fragment_color_RGBA8;
 }
 
 
@@ -5756,7 +5799,7 @@ ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t * restrict dst, u
 
   if (gstate->source.type != CTX_SOURCE_COLOR)
   {
-    CtxSourceU8 source = ctx_rasterizer_get_source_rgba_u8 (rasterizer);
+    CtxSourceFragment source = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
     float y = rasterizer->scanline / CTX_RASTERIZER_AA;
     for (int x = 0; x < count; x++)
     {
@@ -5883,7 +5926,7 @@ ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *restrict dst, ui
 
   if (gstate->source.type != CTX_SOURCE_COLOR)
   {
-    CtxSourceU8 source = ctx_rasterizer_get_source_rgba_u8 (rasterizer);
+    CtxSourceFragment source = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
     float y = rasterizer->scanline / CTX_RASTERIZER_AA;
     for (int x = 0; x < count; x++)
     {
@@ -5981,8 +6024,8 @@ ctx_gray_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *restrict ds
   float gray = graya[0];
   float alpha = graya[1];
 
-  CtxSourceU8 source = ctx_rasterizer_get_source_rgba_u8 (rasterizer);
-  if (source == ctx_sample_source_rgba_u8_color) source = NULL;
+  CtxSourceFragment source = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
+  if (source == ctx_fragment_color_RGBA8) source = NULL;
 
   for (int x = 0; x < count; x++)
   {
@@ -6016,22 +6059,17 @@ ctx_gray_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *restrict ds
 static int
 ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-          int components = 4;  // this makes it mostly adapted to become
-                               // a generalized floating point ver..
-                               // for components == 1-4 assume RGB color source
-                               // for more components - use alternate generic
-                               // source setting, which permits operation with
-                               // non RGB color models.
-          float *dst_f = (float*)dst;
-          float y = rasterizer->scanline / CTX_RASTERIZER_AA;
+  int components = 4;
+  float *dst_f = (float*)dst;
+  float y = rasterizer->scanline / CTX_RASTERIZER_AA;
 
-          CtxSourceU8 source = ctx_rasterizer_get_source_rgba_u8 (rasterizer);
-          float color_f[components];
+  CtxSourceFragment source = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
+  float color_f[components];
 
-  if (source == ctx_sample_source_rgba_u8_color)
+  if (source == ctx_fragment_color_RGBA8)
   {
     uint8_t scolor[4];
-    ctx_sample_source_rgba_u8_color (rasterizer, x0, y, &scolor[0]);
+    ctx_fragment_color_RGBA8 (rasterizer, x0, y, &scolor[0]);
     for (int c = 0; c < components; c++)
       color_f[c]=ctx_u8_to_float (scolor[c]);  // XXX color
 
@@ -6086,7 +6124,7 @@ ctx_sample_source_cmyka_f_color (CtxRasterizer *rasterizer, float x, float y, vo
   }
 }
 
-static CtxSourceU8 ctx_rasterizer_get_source_cmykaf (CtxRasterizer *rasterizer)
+static CtxSourceFragment ctx_rasterizer_get_fragment_CMYKAF (CtxRasterizer *rasterizer)
 {
   return ctx_sample_source_cmyka_f_color;
 }
@@ -6097,7 +6135,7 @@ ctx_associated_cmyka_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t 
   int components = 5;
   float *dst_f = (float*)dst;
   float y = rasterizer->scanline / CTX_RASTERIZER_AA;
-  CtxSourceU8 source = ctx_rasterizer_get_source_cmykaf (rasterizer);
+  CtxSourceFragment source = ctx_rasterizer_get_fragment_CMYKAF (rasterizer);
   float color_f[components];
   if (source == ctx_sample_source_cmyka_f_color)
   {
@@ -7335,69 +7373,62 @@ ctx_rasterizer_process (void *user_data, CtxEntry *entry)
   //CtxRasterizer *rasterizer = ctx->renderer;
   CtxRasterizer *rasterizer = user_data;
   //Ctx *ctx = rasterizer->ctx;
-  CtxUnion *ue = (CtxUnion*)entry;
+  CtxCommand *c = (CtxCommand*)entry;
 
   //fprintf (stderr, "%c(%.1f %.1f %i)", entry->code, rasterizer->x,rasterizer->y, rasterizer->has_prev);
-  switch (entry->code)
+  switch (c->code)
   {
     case CTX_LINE_TO:
-      ctx_rasterizer_line_to (rasterizer, ctx_arg_float(0), ctx_arg_float(1));
+      ctx_rasterizer_line_to (rasterizer, c->c.x0, c->c.y0);
       break;
 
     case CTX_REL_LINE_TO:
-      ctx_rasterizer_rel_line_to (rasterizer, ctx_arg_float(0), ctx_arg_float(1));
+      ctx_rasterizer_rel_line_to (rasterizer, c->c.x0, c->c.y0);
       break;
 
     case CTX_MOVE_TO:
-      ctx_rasterizer_move_to (rasterizer, ctx_arg_float(0), ctx_arg_float(1));
+      ctx_rasterizer_move_to (rasterizer, c->c.x0, c->c.y0);
       break;
 
     case CTX_REL_MOVE_TO:
-      ctx_rasterizer_rel_move_to (rasterizer, ctx_arg_float(0), ctx_arg_float(1));
+      ctx_rasterizer_rel_move_to (rasterizer, c->c.x0, c->c.y0);
       break;
 
     case CTX_CURVE_TO:
-      ctx_rasterizer_curve_to (rasterizer, ctx_arg_float(0), ctx_arg_float(1),
-                                       ctx_arg_float(2), ctx_arg_float(3),
-                                       ctx_arg_float(4), ctx_arg_float(5));
+      ctx_rasterizer_curve_to (rasterizer, c->c.x0, c->c.y0,
+                                           c->c.x1, c->c.y1,
+                                           c->c.x2, c->c.y2);
       break;
 
     case CTX_REL_CURVE_TO:
-      ctx_rasterizer_rel_curve_to (rasterizer,
-                                 ctx_arg_float(0), ctx_arg_float(1),
-                                 ctx_arg_float(2), ctx_arg_float(3),
-                                 ctx_arg_float(4), ctx_arg_float(5));
+      ctx_rasterizer_rel_curve_to (rasterizer, c->c.x0, c->c.y0,
+                                               c->c.x1, c->c.y1,
+                                               c->c.x2, c->c.y2);
       break;
 
     case CTX_QUAD_TO:
-      ctx_rasterizer_quad_to (rasterizer, ctx_arg_float(0), ctx_arg_float(1),
-                                      ctx_arg_float(2), ctx_arg_float(3));
+      ctx_rasterizer_quad_to (rasterizer, c->c.x0, c->c.y0, c->c.x1, c->c.y1);
       break;
 
     case CTX_REL_QUAD_TO:
-      ctx_rasterizer_rel_quad_to (rasterizer,
-                                ctx_arg_float(0), ctx_arg_float(1),
-                                ctx_arg_float(2), ctx_arg_float(3));
+      ctx_rasterizer_rel_quad_to (rasterizer, c->c.x0, c->c.y0, c->c.x1, c->c.y1);
       break;
 
     case CTX_ARC:
-      ctx_rasterizer_arc (rasterizer,
-                        ctx_arg_float(0), ctx_arg_float(1),
-                        ctx_arg_float(2), ctx_arg_float(3),
-                        ctx_arg_float(4), ctx_arg_float(5));
+      ctx_rasterizer_arc (rasterizer, c->arc.x, c->arc.y, c->arc.radius, c->arc.angle1, c->arc.angle2, c->arc.direction);
       break;
 
     case CTX_RECTANGLE:
-      ctx_rasterizer_rectangle (rasterizer, ctx_arg_float(0), ctx_arg_float(1),
-                                        ctx_arg_float(2), ctx_arg_float(3));
+      ctx_rasterizer_rectangle (rasterizer, c->rectangle.x, c->rectangle.y,
+                                    c->rectangle.width, c->rectangle.height);
       break;
 
     case CTX_SET_PIXEL:
-      ctx_rasterizer_set_pixel (rasterizer, ue->set_pixel.x, ue->set_pixel.y,
-                                            ue->set_pixel.rgba[0],
-                                            ue->set_pixel.rgba[1],
-                                            ue->set_pixel.rgba[2],
-                                            ue->set_pixel.rgba[3]);
+      ctx_rasterizer_set_pixel (rasterizer, c->set_pixel.x, c->set_pixel.y,
+                                            c->set_pixel.rgba[0],
+                                            c->set_pixel.rgba[1],
+                                            c->set_pixel.rgba[2],
+                                            c->set_pixel.rgba[3]);
       break;
 
     case CTX_TEXTURE:
@@ -8018,10 +8049,11 @@ ctx_pixel_format_info (CtxPixelFormat format)
   return NULL;
 }
 
-static void
+static CtxRasterizer *
 ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
 {
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer));
+  rasterizer->render_func = ctx_rasterizer_process;
   rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
@@ -8041,18 +8073,17 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, void 
   rasterizer->scan_min    = 5000;
   rasterizer->scan_max    = -5000;
   rasterizer->format = ctx_pixel_format_info (pixel_format);
+  return rasterizer;
 }
-
 
 Ctx *
 ctx_new_for_buffer (CtxBuffer *buffer)
 {
   Ctx *ctx = ctx_new ();
-  CtxRasterizer *rasterizer = (CtxRasterizer*)malloc (sizeof (CtxRasterizer));
-  ctx_rasterizer_init (rasterizer, ctx, &ctx->state,
-                     buffer->data, 0, 0, buffer->width, buffer->height,
-                     buffer->stride, buffer->format->pixel_format);
-  ctx_set_renderer (ctx, ctx_rasterizer_process, rasterizer);
+  ctx_set_renderer (ctx,
+  ctx_rasterizer_init (malloc(sizeof(CtxRasterizer)), ctx, &ctx->state,
+                       buffer->data, 0, 0, buffer->width, buffer->height,
+                       buffer->stride, buffer->format->pixel_format));
   return ctx;
 }
 
@@ -8062,10 +8093,9 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                          CtxPixelFormat pixel_format)
 {
   Ctx *ctx = ctx_new ();
-  CtxRasterizer *rasterizer = (CtxRasterizer*)malloc (sizeof (CtxRasterizer));
-  ctx_rasterizer_init (rasterizer, ctx, &ctx->state,
-                       data, 0, 0, width, height, stride, pixel_format);
-  ctx_set_renderer (ctx, ctx_rasterizer_process, rasterizer);
+  ctx_set_renderer (ctx, 
+  ctx_rasterizer_init (malloc(sizeof(CtxRasterizer)), ctx, &ctx->state,
+                       data, 0, 0, width, height, stride, pixel_format));
   return ctx;
 }
 
@@ -8975,6 +9005,7 @@ typedef struct _CtxCairo CtxCairo;
 struct
 _CtxCairo
 {
+  void (*render_func)(void *ctx_cairo, CtxEntry *entry);
   Ctx *ctx;
   cairo_t *cr;
   cairo_pattern_t *pat;
@@ -8991,15 +9022,15 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
   switch (entry->code)
     {
       case CTX_LINE_TO:
-        cairo_line_to (cr, ue->line_to.x, ue->line_to.y);
+        cairo_line_to (cr, c->line_to.x, c->line_to.y);
         break;
 
       case CTX_REL_LINE_TO:
-        cairo_rel_line_to (cr, ue->rel_line_to.x, ue->rel_line_to.y);
+        cairo_rel_line_to (cr, c->rel_line_to.x, c->rel_line_to.y);
         break;
 
       case CTX_MOVE_TO:
-        cairo_move_to (cr, ue->move_to.x, ue->move_to.y);
+        cairo_move_to (cr, c->move_to.x, c->move_to.y);
         break;
 
       case CTX_REL_MOVE_TO:
@@ -9095,8 +9126,8 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
 #endif
 
       case CTX_RECTANGLE:
-        cairo_rectangle (cr, ue->rectangle.x, ue->rectangle.y,
-                             ue->rectangle.width, ue->rectangle.height);
+        cairo_rectangle (cr, c->rectangle.x, c->rectangle.y,
+                             c->rectangle.width, c->rectangle.height);
         break;
       case CTX_SET_PIXEL:
         cairo_set_source_rgba (cr, ctx_u8_to_float (ctx_arg_u8(0)),
