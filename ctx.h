@@ -1413,13 +1413,38 @@ struct _CtxRenderstream
 CtxRenderstream *ctx_copy_path      (Ctx *ctx);
 CtxRenderstream *ctx_copy_path_flat (Ctx *ctx);
 
-#define CTX_MAX_KEYDB 32
+#define CTX_MAX_KEYDB 64
 
+// the keydb consists of keys set to floating point values,
+// that might also be interpreted as integers for enums.
+//
+// the hash
 typedef struct _CtxKeyDbEntry CtxKeyDbEntry;
 struct _CtxKeyDbEntry {
   uint32_t key;
-  union { float f[1]; uint8_t u8[4]; }value;
+  float value;
+  //union { float f[1]; uint8_t u8[4]; }value;
 };
+
+static uint32_t ctx_strhash (const char *str, int case_insensitive)
+{
+  #define CTX_TO_LOWER(a) ( (((a)>='A')&&((a)<='Z') )?(a)+32:(a))
+  uint32_t str_hash = 0;
+  /* hash string to number */
+  {
+    int multiplier = 1;
+    for (int i = 0; str[i] && i < 12; i++)
+    {
+      if (case_insensitive)
+        str_hash = str_hash + CTX_TO_LOWER(str[i]) * multiplier;
+      else
+        str_hash = str_hash + (str[i]) * multiplier;
+      multiplier *= 11;
+    }
+  }
+  return str_hash;
+}
+
 
 struct _CtxState {
   int           has_moved:1;
@@ -10173,9 +10198,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
   if (str[0] && str[1])
   {
-    uint32_t str_hash = 0;
-  #define CTX_TO_LOWER(a) ( (((a)>='A')&&((a)<='Z') )?(a)+32:(a))  // this causes collisions, not sure if we want
-  //#define CTX_TO_LOWER(a) (a)
+    uint32_t str_hash;
+
     /* trim ctx_ and CTX_ prefix */
     if ((str[0] == 'c' && str[1] == 't' && str[2] == 'x' && str[3] == '_')||
         (str[0] == 'C' && str[1] == 'T' && str[2] == 'X' && str[3] == '_'))
@@ -10185,15 +10209,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     if ((str[0] == 's' && str[1] == 'e' && str[2] == 't' && str[3] == '_'))
       str += 4;
 
-    /* hash string to number */
-    {
-      int multiplier = 1;
-      for (int i = 0; str[i] && i < 12; i++)
-      {
-        str_hash = str_hash + CTX_TO_LOWER(str[i]) * multiplier;
-        multiplier *= 11;
-      }
-    }
+    str_hash = ctx_strhash ((char*)str, 1);
 
 /* We use the preprocessor to compute case invariant hashes
  * of strings directly, if there is collisions in our vocabulary
