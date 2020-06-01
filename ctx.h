@@ -847,15 +847,19 @@ struct _CtxCommand
   union {
     uint8_t  code;
     CtxEntry entry;
-    struct {uint8_t code;float scalex; float scaley;
+    struct {
+      uint8_t code;float scalex; float scaley;
     } scale;
-    struct {uint8_t code;float x; float y;
+    struct {
+      uint8_t code;float x; float y;
     } rel_move_to;
-    struct {uint8_t code;float x; float y;
+    struct {
+      uint8_t code;float x; float y;
     } rel_line_to;
-    struct {uint8_t code;float cx1; float cy1;
-            uint8_t pad0;float cx2; float cy2;
-            uint8_t pad1;float x;float y;
+    struct {
+      uint8_t code;float cx1; float cy1;
+      uint8_t pad0;float cx2; float cy2;
+      uint8_t pad1;float x;float y;
     } rel_curve_to;
     struct {
        uint8_t code;float x; float y;
