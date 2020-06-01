@@ -189,9 +189,18 @@ char* string =
   for (int i = 0; i < output_font.count; i++)
   {
     CtxEntry *entry = &output_font.entries[i];
-    printf ("{'%c', 0x%08x, 0x%08x},", entry->code,
+    if (entry->code > 32 && entry->code < 127)
+    {
+      printf ("{'%c', 0x%08x, 0x%08x},", entry->code,
+                                         entry->data.u32[0],
+                                         entry->data.u32[1]);
+    }
+    else
+    {
+      printf ("{%i, 0x%08x, 0x%08x},", entry->code,
                                        entry->data.u32[0],
                                        entry->data.u32[1]);
+    }
     if (entry->code == '@')
     {
        char buf[44]={0,0,0,0,0};
