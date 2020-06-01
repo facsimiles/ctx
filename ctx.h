@@ -658,10 +658,6 @@ void ctx_set_renderer (Ctx *ctx,
 #define CTX_MAX_PENDING         128
 #endif
 
-#ifndef CTX_FULL_CB
-#define CTX_FULL_CB 0
-#endif
-
 #ifndef CTX_RENDER_CTX
 #define CTX_RENDER_CTX       1
 #endif
@@ -1357,11 +1353,6 @@ struct _CtxRenderstream
   int       count;
   uint32_t  flags; // BITPACK and REFPACK - to be used on resize
   int       bitpack_pos;
-#if CTX_FULL_CB
-  int       full_cb_entries;
-  CtxFullCb full_cb;
-  void     *full_cb_data;
-#endif
 };
 
 struct _CtxState {
@@ -2376,23 +2367,7 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 
   if (renderstream->count >= max_size - 20)
   {
-#if CTX_FULL_CB
-    if (renderstream->full_cb)
-    {
-      if (ctx_conts_for_entry (entry)==0 &&
-          entry->code != CTX_CONT)
-      {
-         renderstream->full_cb (renderstream, renderstream->full_cb_data);
-         /* the full_cb is responsible for setting renderstream->count=0 */
-      }
-    }
-    else
-    {
-       return 0;
-    }
-#else
-       return 0;
-#endif
+    return 0;
   }
 
   renderstream->entries[renderstream->count] = *entry;
@@ -2936,14 +2911,6 @@ static int ctx_resolve_font (const char *name)
   }
   return 0;
 }
-
-#if CTX_FULL_CB
-void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data)
-{
-  ctx->renderstream.full_cb = cb;
-  ctx->renderstream.full_cb_data = data;
-}
-#endif
 
 void
 _ctx_set_font (Ctx *ctx, const char *name)
@@ -8586,9 +8553,6 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   CtxRenderstream  renderstream = {(CtxEntry*)font->ctx.data,
                                               font->ctx.length,
                                               font->ctx.length, 0, 0
-#if CTX_FULL_CB
-                                              ,0,0,0
-#endif
   };
 
   float origin_x = state->x;
