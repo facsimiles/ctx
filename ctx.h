@@ -211,6 +211,7 @@ void ctx_arc_to           (Ctx *ctx, float x1, float y1,
 void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
 float ctx_get_global_alpha (Ctx *ctx);
 
+void ctx_preserve       (Ctx *ctx);
 void ctx_fill           (Ctx *ctx);
 void ctx_stroke         (Ctx *ctx);
 void ctx_paint          (Ctx *ctx);
@@ -384,10 +385,12 @@ typedef enum
   CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius 
   CTX_ARC              = 'B', // x y radius angle1 angle2 direction 
   CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y 
-  CTX_RESTORE          = 'G', // 
+
   CTX_STROKE           = 'E', //
   CTX_FILL             = 'F', //
+  CTX_RESTORE          = 'G', // 
   CTX_HOR_LINE_TO      = 'H', // x 
+
   CTX_ROTATE           = 'J', // radians 
   CTX_SET_COLOR        = 'K', // model, c1 c2 c3 ca - has a variable set of
                               // arguments.
@@ -404,15 +407,18 @@ typedef enum
   CTX_VER_LINE_TO      = 'V', // y 
   CTX_APPLY_TRANSFORM  = 'W', // a b c d e f - for set_transform combine with identity
   CTX_EXIT             = 'X', //
-  // Z - SVG?
+
+  CTX_CLOSE_PATH2      = 'Z', //
   CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius 
   CTX_CLIP             = 'b',
   CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y 
-  CTX_SAVE             = 'g',
+
   CTX_TRANSLATE        = 'e', // x y 
   CTX_LINEAR_GRADIENT  = 'f', // x1 y1 x2 y2 
+  CTX_SAVE             = 'g',
   CTX_REL_HOR_LINE_TO  = 'h', // x 
   CTX_TEXTURE          = 'i',
+
   CTX_SET_KEY          = 'k', // - used together with another char to identify a key to set
   CTX_REL_LINE_TO      = 'l', // x y 
   CTX_REL_MOVE_TO      = 'm', // x y 
@@ -425,11 +431,11 @@ typedef enum
   CTX_REL_SMOOTHQ_TO   = 't', // x y 
   CTX_TEXT_STROKE      = 'u', // string - utf8 string
   CTX_REL_VER_LINE_TO  = 'v', // y 
+  CTX_GLYPH            = 'w', // unichar fontsize 
   CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
   CTX_IDENTITY         = 'y', // 
-  CTX_GLYPH            = 'w', // unichar fontsize 
   CTX_CLOSE_PATH       = 'z', //
-  CTX_CLOSE_PATH2      = 'Z', //
+  CTX_PRESERVE         = 'd', // - make the following fill, stroke or clip leave the path
 
   /* these commands have single byte binary representations,
    * but are two chars in text, values below 9 are used for
@@ -451,7 +457,6 @@ typedef enum
   CTX_SET_RGB_SPACE        = 22, //
   CTX_SET_CMYK_SPACE       = 23, //
 
-
   CTX_DEFUN  = 24,
   CTX_ENDFUN = 25,
 
@@ -459,7 +464,7 @@ typedef enum
   // are used for internal purposes
   //
   // unused:  . , : backslash ! # $ % ^ { } < > ? & /
-  //          D   d
+  //          D d j i Y
   //
   //
   CTX_CONT             = '\0', // - contains args from preceding entry
@@ -1961,8 +1966,6 @@ static void ctx_rgb_device_to_user (CtxState *state, float rin, float gin, float
   *gout = gin;
   *bout = bin;
 }
-
-
 #endif
 
 
@@ -2161,10 +2164,10 @@ struct _CtxRasterizer {
 
   float      first_x;
   float      first_y;
-  int        has_shape;
-  int        has_prev;
-
   int8_t     needs_aa; // count of how many edges implies antialiasing
+  int        has_shape:2;
+  int        has_prev:2;
+
   int        uses_transforms:1;
 
   int16_t    blit_x;
@@ -3219,6 +3222,9 @@ void ctx_gradient_add_stop
   ctx_gradient_add_stop_u8 (ctx, pos, ir, ig, ib, ia);
 }
 
+void ctx_preserve (Ctx *ctx) {
+  CTX_PROCESS_VOID(CTX_PRESERVE);
+}
 void ctx_fill (Ctx *ctx) {
   CTX_PROCESS_VOID(CTX_FILL);
 }
@@ -10799,10 +10805,11 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
   switch (cmd)
   {
     default: break; // to silence warnings about missing ones
-    case CTX_FILL:    ctx_fill (ctx);    break;
-    case CTX_SAVE:    ctx_save (ctx);    break;
-    case CTX_STROKE:  ctx_stroke (ctx);  break;
-    case CTX_RESTORE: ctx_restore (ctx); break;
+    case CTX_PRESERVE: ctx_preserve (ctx); break;
+    case CTX_FILL:    ctx_fill (ctx);      break;
+    case CTX_SAVE:    ctx_save (ctx);      break;
+    case CTX_STROKE:  ctx_stroke (ctx);    break;
+    case CTX_RESTORE: ctx_restore (ctx);   break;
 
 #if CTX_ENABLE_CM
     case CTX_SET_DEVICE_SPACE: ctx_set_device_space (ctx, arg(0)); break;
