@@ -552,6 +552,28 @@ _CtxCommand
       uint8_t code_cont;uint8_t utf8[8]; /* .. and continues */
     } set_font;
     struct {
+      uint8_t code;float model; float r;
+      uint8_t pad1;float g;float b;
+      uint8_t pad2;float a;
+    } rgba;
+    struct {
+      uint8_t code;float model; float c;
+      uint8_t pad1;float m;float y;
+      uint8_t pad2;float k;float a;
+    } cmyka;
+    struct {
+      uint8_t code;float model; float g;
+      uint8_t pad1;float a;
+    } graya;
+    struct {
+      uint8_t code;float model; float c0;
+      uint8_t pad1;float c1;float c2;
+      uint8_t pad2;float c3;float c4;
+      uint8_t pad3;float c5;float c6;
+      uint8_t pad4;float c7;float c8;
+      uint8_t pad5;float c9;float c10;
+    } set_color;
+    struct {
       uint8_t code;float x;float y;
     } rel_move_to;
     struct {
@@ -662,8 +684,10 @@ _CtxCommand
 };
 
 typedef struct _CtxIterator CtxIterator;
-CtxCommand *
-ctx_iterator_next (CtxIterator *iterator);
+CtxCommand *ctx_iterator_next (CtxIterator *iterator);
+
+CtxIterator *
+ctx_current_path (Ctx *ctx);
 
 
 /* definitions that determine which features are included and their settings,
@@ -773,6 +797,10 @@ ctx_iterator_next (CtxIterator *iterator);
 
 #ifndef CTX_PARSER
 #define CTX_PARSER 0
+#endif
+
+#ifndef CTX_CURRENT_PATH
+#define CTX_CURRENT_PATH 0
 #endif
 
 #ifndef CTX_XML
@@ -1010,13 +1038,13 @@ int ctx_get_renderstream_count (Ctx *ctx);
 typedef enum {
   CTX_GRAY           = 1,
   CTX_RGB            = 3,
-  CTX_RGB_DEVICE     = 4,
+  CTX_DRGB     = 4,
   CTX_CMYK           = 5,
   CTX_LAB            = 6,
   CTX_LCH            = 7,
   CTX_GRAYA          = 101,
   CTX_RGBA           = 103,
-  CTX_RGBA_DEVICE    = 104,
+  CTX_DRGBA    = 104,
   CTX_CMYKA          = 105,
   CTX_LABA           = 106,
   CTX_LCHA           = 107,
@@ -1039,13 +1067,13 @@ static inline int ctx_color_model_get_components (CtxColorModel model)
      case CTX_RGB:
      case CTX_LAB:
      case CTX_LCH:
-     case CTX_RGB_DEVICE:
+     case CTX_DRGB:
              return 3;
      case CTX_CMYK:
      case CTX_LABA:
      case CTX_LCHA:
      case CTX_RGBA:
-     case CTX_RGBA_DEVICE:
+     case CTX_DRGBA:
      case CTX_RGBA_A:
      case CTX_RGBA_A_DEVICE:
              return 4;
@@ -1461,13 +1489,15 @@ typedef enum {
 
 #define CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES   64
 #define CTX_RENDERSTREAM_EDGE_LIST            128
+#define CTX_RENDERSTREAM_CURRENT_PATH         256
+// BITPACK
 
 struct _CtxRenderstream
 {
-  CtxEntry *entries;     /* we need to use realloc */
+  CtxEntry *entries;
   int       count;
   int       size;
-  uint32_t  flags;        // BITPACK - to be used on resize
+  uint32_t  flags;        
   int       bitpack_pos;  // stream is bitpacked up to this offset
 };
 
@@ -2080,8 +2110,6 @@ typedef struct CtxEdge {
 
 struct _CtxRasterizer {
   void (*render_func)(void *renderer, CtxCommand *entry);
-
-
   /* these should be initialized and used as the bounds for rendering into the
      buffer as well XXX: not yet in use, and when in use will only be
      correct for axis aligned clips - proper rasterization of a clipping path
@@ -2089,19 +2117,19 @@ struct _CtxRasterizer {
    */
   //CtxBuffer *clip_buffer; // NYI
 
-  int      lingering_edges;  // previous half scanline
-  CtxEdge  lingering[CTX_MAX_LINGERING_EDGES];
+  int        lingering_edges;  // previous half scanline
+  CtxEdge    lingering[CTX_MAX_LINGERING_EDGES];
 
-  int      active_edges;
-  int      pending_edges;    // next half scanline
-  int      edge_pos;         // where we're at in iterating all edges
-  CtxEdge  edges[CTX_MAX_EDGES];
+  int        active_edges;
+  int        pending_edges;    // next half scanline
+  int        edge_pos;         // where we're at in iterating all edges
+  CtxEdge    edges[CTX_MAX_EDGES];
 
-  int      scanline;
-  int      scan_min;
-  int      scan_max;
-  int      col_min;
-  int      col_max;
+  int        scanline;
+  int        scan_min;
+  int        scan_max;
+  int        col_min;
+  int        col_max;
 
   CtxRenderstream edge_list;
   CtxState  *state;
@@ -2141,12 +2169,12 @@ struct _CtxPixelFormatInfo
   uint8_t        dither_red_blue;
   uint8_t        dither_green;
 
-  void     (*to_comp)(CtxRasterizer *r,
+  void         (*to_comp)(CtxRasterizer *r,
                       int x, const void *src, uint8_t *comp, int count);
-  void     (*from_comp)(CtxRasterizer *r,
+  void         (*from_comp)(CtxRasterizer *r,
                       int x, const uint8_t *comp, void *dst, int count);
-  int      (*crunch)(CtxRasterizer *r, int x, uint8_t *dst, uint8_t *coverage,
-                  int count);
+  int          (*crunch)(CtxRasterizer *r, int x, uint8_t *dst, uint8_t *coverage,
+                      int count);
 };
 
 #endif
@@ -2161,22 +2189,24 @@ _CtxIterator
   int              flags;
 
   int              bitpack_pos;
-  int              bitpack_length; // if non 0 bitpack is active
-  CtxEntry         bitpack_command[6];
+  int              bitpack_length;     // if non 0 bitpack is active
+  CtxEntry         bitpack_command[6]; // the command returned to the
+                                       // user if unpacking is needed.
 };
   
 struct
 _Ctx {
-  void            *renderer;
+  void           *renderer;
   void (*render_func)     (void *renderer, CtxCommand *entry);
   void (*renderer_destory)(void *renderer);
-
-  CtxRenderstream   renderstream; /* current path is always accumulated here
-                                   */
-  CtxState          state;        /**/
-  int               transformation;
-  CtxIterator       iterator; // handed out for current path
-  CtxBuffer         texture[CTX_MAX_TEXTURES];
+  CtxRenderstream renderstream;
+  CtxState        state;        /**/
+  int             transformation;
+  CtxBuffer       texture[CTX_MAX_TEXTURES];
+#if CTX_CURRENT_PATH
+  CtxRenderstream current_path; // possibly transformed coordinates !
+  CtxIterator     current_path_iterator;
+#endif
 };
 
 static float ctx_get (Ctx *ctx, uint32_t hash)
@@ -2402,10 +2432,10 @@ enum _CtxIteratorFlag
 typedef enum _CtxIteratorFlag CtxIteratorFlag;
 
 static void
-ctx_iterator_init (CtxIterator *iterator,
+ctx_iterator_init (CtxIterator      *iterator,
                    CtxRenderstream  *renderstream,
-                   int          start_pos,
-                   int          flags)
+                   int               start_pos,
+                   int               flags)
 {
   iterator->renderstream   = renderstream;
   iterator->flags          = flags;
@@ -2430,6 +2460,17 @@ static CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
     return NULL;
   return &iterator->renderstream->entries[iterator->pos];
 }
+
+#if CTX_CURRENT_PATH
+CtxIterator *
+ctx_current_path (Ctx *ctx)
+{
+  CtxIterator *iterator = &ctx->current_path_iterator;
+
+  ctx_iterator_init (iterator, &ctx->current_path, 0, CTX_ITERATOR_EXPAND_BITPACK);
+  return iterator;
+}
+#endif
 
 #if CTX_BITPACK
 static void
@@ -2457,7 +2498,7 @@ ctx_iterator_expand_s16_args (CtxIterator *iterator, CtxEntry *entry)
     for (int d = 0; d < 2; d++, no++)
       iterator->bitpack_command[cno].data.f[d] = entry->data.s16[no] * 1.0f /
          CTX_SUBDIV;
-  iterator->bitpack_command[0].code = CTX_CONT;
+  iterator->bitpack_command[0].code =
   iterator->bitpack_command[1].code = CTX_CONT;
   iterator->bitpack_length = 2;
   iterator->bitpack_pos    = 0;
@@ -2493,7 +2534,7 @@ ctx_iterator_next (CtxIterator *iterator)
     case CTX_REL_CURVE_TO_REL_LINE_TO:
       ctx_iterator_expand_s8_args (iterator, ret);
       iterator->bitpack_command[0].code = CTX_REL_CURVE_TO;
-      iterator->bitpack_command[1].code = CTX_CONT;
+      iterator->bitpack_command[1].code =
       iterator->bitpack_command[2].code = CTX_CONT;
       iterator->bitpack_command[3].code = CTX_REL_LINE_TO;
 
@@ -2624,7 +2665,7 @@ static void ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data);
 static void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
 
 
-static void ctx_renderstream_refpack (CtxRenderstream *renderstream);
+static void ctx_renderstream_compact (CtxRenderstream *renderstream);
 static void
 ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
 {
@@ -2635,12 +2676,18 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
     renderstream->entries = &sbuf[0];
     renderstream->size = CTX_MAX_EDGE_LIST_SIZE;
   }
+  else if (renderstream->flags & CTX_RENDERSTREAM_CURRENT_PATH)
+  {
+    static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
+    renderstream->entries = &sbuf[0];
+    renderstream->size = CTX_MAX_EDGE_LIST_SIZE;
+  }
   else
   {
     static CtxEntry sbuf[CTX_MAX_JOURNAL_SIZE];
     renderstream->entries = &sbuf[0];
     renderstream->size = CTX_MAX_JOURNAL_SIZE;
-    ctx_renderstream_refpack (renderstream);
+    ctx_renderstream_compact (renderstream);
   }
 #else
   int new_size = desired_size;
@@ -2653,9 +2700,14 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
     min_size = CTX_MIN_EDGE_LIST_SIZE;
     max_size = CTX_MAX_EDGE_LIST_SIZE;
   }
+  else if (renderstream->flags & CTX_RENDERSTREAM_CURRENT_PATH)
+  {
+    min_size = CTX_MIN_EDGE_LIST_SIZE;
+    max_size = CTX_MAX_EDGE_LIST_SIZE;
+  }
   else
   {
-    ctx_renderstream_refpack (renderstream);
+    ctx_renderstream_compact (renderstream);
   }
 
   if (new_size < renderstream->size)
@@ -2700,6 +2752,10 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
   int ret = renderstream->count;
 
   if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
+  {
+    max_size = CTX_MAX_EDGE_LIST_SIZE;
+  }
+  else if (renderstream->flags & CTX_RENDERSTREAM_CURRENT_PATH)
   {
     max_size = CTX_MAX_EDGE_LIST_SIZE;
   }
@@ -3001,7 +3057,7 @@ void ctx_texture (Ctx *ctx, int id, float x, float y)
   CtxEntry commands[2];
   if (id < 0) return;
   commands[0] = ctx_u32(CTX_TEXTURE, id, 0);
-  commands[1] = ctx_f (CTX_CONT, x, y);
+  commands[1] = ctx_f  (CTX_CONT, x, y);
   ctx_process (ctx, commands);
 }
 
@@ -3031,18 +3087,18 @@ ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_
 void ctx_set_device_rgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_RGBA_DEVICE, 0.0f),
-     ctx_f (CTX_CONT, r, g),
-     ctx_f (CTX_CONT, b, a)};
+     ctx_f (CTX_SET_COLOR, CTX_DRGBA, r),
+     ctx_f (CTX_CONT, g, b),
+     ctx_f (CTX_CONT, a, 0)};
   ctx_process (ctx, command);
 }
 
 void ctx_set_rgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_RGBA, 0.0f),
-     ctx_f (CTX_CONT, r, g),
-     ctx_f (CTX_CONT, b, a)};
+     ctx_f (CTX_SET_COLOR, CTX_RGBA, r),
+     ctx_f (CTX_CONT, g, b),
+     ctx_f (CTX_CONT, a, 0)};
   ctx_process (ctx, command);
 }
 
@@ -3054,8 +3110,8 @@ void ctx_set_rgb (Ctx *ctx, float   r, float   g, float   b)
 void ctx_set_gray (Ctx *ctx, float gray)
 {
   CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_GRAY, 0.0f),
-     ctx_f (CTX_CONT, gray, 1.0f),
+     ctx_f (CTX_SET_COLOR, CTX_GRAY, gray),
+     ctx_f (CTX_CONT, 1.0f, 0.0f),
      ctx_f (CTX_CONT, 0.0f, 0.0f)};
   ctx_process (ctx, command);
 }
@@ -3064,18 +3120,18 @@ void ctx_set_gray (Ctx *ctx, float gray)
 void ctx_set_cmyk (Ctx *ctx, float c, float m, float y, float k)
 {
   CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_CMYKA, 1.0f),
-     ctx_f (CTX_CONT, c, m),
-     ctx_f (CTX_CONT, y, k)};
+     ctx_f (CTX_SET_COLOR, CTX_CMYKA, c),
+     ctx_f (CTX_CONT, m, y),
+     ctx_f (CTX_CONT, k, 1.0f)};
   ctx_process (ctx, command);
 }
 
 void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
 {
   CtxEntry command[3]={
-     ctx_f (CTX_SET_COLOR, CTX_CMYKA, a),
-     ctx_f (CTX_CONT, c, m),
-     ctx_f (CTX_CONT, y, k)};
+     ctx_f (CTX_SET_COLOR, CTX_CMYKA, c),
+     ctx_f (CTX_CONT, m, y),
+     ctx_f (CTX_CONT, k, a)};
   ctx_process (ctx, command);
 }
 #endif
@@ -3621,7 +3677,7 @@ ctx_flush (Ctx *ctx)
 #if 0
   //printf (" \e[?2222h");
 
-  ctx_renderstream_refpack (&ctx->renderstream);
+  ctx_renderstream_compact (&ctx->renderstream);
   for (int i = 0; i < ctx->renderstream.count - 1; i++)
   {
     CtxEntry *entry = &ctx->renderstream.entries[i];
@@ -3667,6 +3723,7 @@ ctx_matrix_invert (CtxMatrix *m)
 static void
 ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
 {
+  CtxCommand *c = (CtxCommand*)entry;
   switch (entry->code)
   {
     case CTX_SET_LINE_WIDTH:
@@ -3709,27 +3766,27 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.source.type = CTX_SOURCE_COLOR;
         switch ((int)ctx_arg_float(0)){
           case CTX_RGB:
-            ctx_color_set_rgba (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), 1.0f);
+            ctx_color_set_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, 1.0f);
           break;
         case CTX_RGBA:
-            ctx_color_set_rgba (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
+            ctx_color_set_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
           break;
-        case CTX_RGBA_DEVICE:
-            ctx_color_set_device_rgba (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5));
+        case CTX_DRGBA:
+            ctx_color_set_device_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
           break;
 #if CTX_ENABLE_CMYK
         case CTX_CMYKA:
-            ctx_color_set_cmyka (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), ctx_arg_float(1));
+            ctx_color_set_cmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
         break;
           case CTX_CMYK:
-            ctx_color_set_cmyka (state, color, ctx_arg_float(2), ctx_arg_float(3), ctx_arg_float(4), ctx_arg_float(5), 1.0);
+            ctx_color_set_cmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, 1.0f);
           break;
 #endif
         case CTX_GRAYA:
-          ctx_color_set_graya (state, color, ctx_arg_float(2), ctx_arg_float(3));
+          ctx_color_set_graya (state, color, c->graya.g, c->graya.a);
           break;
         case CTX_GRAY:
-          ctx_color_set_graya (state, color, ctx_arg_float(2), 1.0f);
+          ctx_color_set_graya (state, color, c->graya.g, 1.0f);
           break;
       }
       }
@@ -4201,7 +4258,7 @@ ctx_last_history (CtxRenderstream *renderstream)
 
 
 static void
-ctx_renderstream_refpack (CtxRenderstream *renderstream)
+ctx_renderstream_compact (CtxRenderstream *renderstream)
 {
 #if CTX_BITPACK_PACKER
   int last_history;
@@ -4508,6 +4565,7 @@ ctx_init (Ctx *ctx)
   ctx_state_init (&ctx->state);
   ctx->render_func = NULL;
   ctx->renderer = NULL;
+  ctx->current_path.flags |= CTX_RENDERSTREAM_CURRENT_PATH;
 #if 1
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
@@ -7737,7 +7795,6 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
                                         ctx_arg_float(0), rgba);
       }
       break;
-
     case CTX_LINEAR_GRADIENT:
 #if CTX_GRADIENT_CACHE
       ctx_gradient_cache_reset();
@@ -8462,9 +8519,59 @@ float ctx_y (Ctx *ctx)
   return y;
 }
 
+static int ctx_code_is_path (CtxCode code)
+{
+  switch (code)
+  {
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+static int ctx_code_clears_path (CtxCode code)
+{
+  switch (code)
+  {
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
+#if CTX_CURRENT_PATH
+  switch (entry->code)
+  {
+    case CTX_TEXT:
+    case CTX_CLIP:
+    case CTX_NEW_PATH:
+    case CTX_FILL:
+    case CTX_STROKE:
+     ctx->current_path.count = 0;
+     break;
+    case CTX_LINE_TO:
+    case CTX_MOVE_TO:
+    case CTX_QUAD_TO:
+    case CTX_SMOOTH_TO:
+    case CTX_SMOOTHQ_TO:
+    case CTX_REL_QUAD_TO:
+    case CTX_REL_SMOOTH_TO:
+    case CTX_REL_SMOOTHQ_TO:
+    case CTX_CURVE_TO:
+    case CTX_REL_CURVE_TO:
+    case CTX_ARC:
+    case CTX_ARC_TO:
+    case CTX_REL_ARC_TO:
+      ctx_renderstream_add_entry (&ctx->current_path, entry);
+      break;
+    default:
+     break;
+  }
+#endif
+
   if (ctx->render_func)
   {
     ctx->render_func (ctx->renderer, (CtxCommand*)entry);
@@ -9580,9 +9687,6 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 }
 #endif
 
-#if CTX_RENDER_CTX 
-
-#if 1
 void
 ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 {
@@ -9593,267 +9697,6 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
   while ((command = ctx_iterator_next (&iterator)))
     ctx_process (d_ctx, &command->entry);
 }
-
-#else
-/*  This is a much more roundabout way of doing the above function.
- */
-
-void
-ctx_render_ctx_api (Ctx *ctx, Ctx *d_ctx)
-{
-  CtxIterator iterator;
-  CtxEntry   *entry;
-
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
-                     CTX_ITERATOR_EXPAND_BITPACK);
-
-  while ((entry = ctx_iterator_next (&iterator)))
-  {
-    switch ((CtxCode)(entry->code))
-    //switch (entry->code)
-    {
-      case CTX_ARC_TO:
-        ctx_arc_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                           ctx_arg_float(1), ctx_arg_float(2),
-                           ctx_arg_float(3));
-        break;
-      case CTX_REL_ARC_TO:
-        ctx_rel_arc_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                               ctx_arg_float(1), ctx_arg_float(2),
-                               ctx_arg_float(3));
-        break;
-      case CTX_LINE_TO:
-        ctx_line_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
-        break;
-      case CTX_REL_LINE_TO:
-        ctx_rel_line_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
-        break;
-      case CTX_MOVE_TO:
-        ctx_move_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
-        break;
-      case CTX_REL_MOVE_TO:
-        ctx_rel_move_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
-        break;
-      case CTX_CURVE_TO:
-        ctx_curve_to (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                             ctx_arg_float(2), ctx_arg_float(3),
-                             ctx_arg_float(4), ctx_arg_float(5));
-        break;
-      case CTX_REL_CURVE_TO:
-        ctx_rel_curve_to (d_ctx,ctx_arg_float(0), ctx_arg_float(1),
-                                ctx_arg_float(2), ctx_arg_float(3),
-                                ctx_arg_float(4), ctx_arg_float(5));
-        break;
-      case CTX_QUAD_TO:
-        {
-          float cx = ctx_arg_float(0);
-          float cy = ctx_arg_float(1);
-          float  x = ctx_arg_float(2);
-          float  y = ctx_arg_float(3);
-          ctx_quad_to (d_ctx, cx, cy, x, y);
-        }
-        break;
-
-      case CTX_REL_QUAD_TO:
-        {
-          float cx = ctx_arg_float(0);
-          float cy = ctx_arg_float(1);
-          float  x = ctx_arg_float(2);
-          float  y = ctx_arg_float(3);
-          ctx_rel_quad_to (d_ctx, cx, cy, x, y);
-        }
-        break;
-
-      case CTX_ROTATE:
-        ctx_rotate (d_ctx, ctx_arg_float(0));
-        break;
-      case CTX_SET_GLOBAL_ALPHA:
-        ctx_set_global_alpha (d_ctx, ctx_arg_float(0));
-        break;
-
-      case CTX_SCALE:
-        ctx_scale (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
-        break;
-
-      case CTX_TRANSLATE:
-        ctx_translate (d_ctx, ctx_arg_float(0), ctx_arg_float(1));
-        break;
-
-      case CTX_SET_LINE_WIDTH:
-        ctx_set_line_width (d_ctx, ctx_arg_float(0));
-        break;
-
-      case CTX_ARC:
-        ctx_arc (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                        ctx_arg_float(2), ctx_arg_float(3),
-                        ctx_arg_float(4), ctx_arg_float(5));
-        break;
-
-      case CTX_SET_RGBA_U8:
-        ctx_set_rgba (d_ctx, ctx_u8_to_float (ctx_arg_u8(0)),
-                             ctx_u8_to_float (ctx_arg_u8(1)),
-                             ctx_u8_to_float (ctx_arg_u8(2)),
-                             ctx_u8_to_float (ctx_arg_u8(3)));
-        break;
-
-      case CTX_SET_RGB_SPACE:
-#if CTX_ENABLE_CM
-        ctx_set_rgb_space (d_ctx, ctx_arg_u8(0));
-#endif
-        break;
-
-      case CTX_SET_CMYK_SPACE:
-#if CTX_ENABLE_CM
-        ctx_set_cmyk_space (d_ctx, ctx_arg_u8(0));
-#endif
-        break;
-
-      case CTX_SET_DEVICE_SPACE:
-#if CTX_ENABLE_CM
-        ctx_set_device_space (d_ctx, ctx_arg_u8(0));
-#endif
-        break;
-
-      case CTX_SET_COLOR:
-        switch ((int)ctx_arg_float(0))
-        {
-          case CTX_RGBA_DEVICE:
-           ctx_set_device_rgba (d_ctx, ctx_arg_float(2),
-                                       ctx_arg_float(3),
-                                       ctx_arg_float(4),
-                                       ctx_arg_float(5));
-           break;
-          case CTX_RGBA:
-           ctx_set_rgba (d_ctx, ctx_arg_float(2),
-                                ctx_arg_float(3),
-                                ctx_arg_float(4),
-                                ctx_arg_float(5));
-           break;
-          case CTX_GRAY:
-           ctx_set_gray (d_ctx, ctx_arg_float(2));
-           break;
-          case CTX_GRAYA:
-           ctx_set_rgba (d_ctx, ctx_arg_float(2),
-                                ctx_arg_float(2),
-                                ctx_arg_float(2),
-                                ctx_arg_float(3));
-           break;
-          case CTX_RGB:
-           ctx_set_rgb (d_ctx, ctx_arg_float(2),
-                               ctx_arg_float(3),
-                               ctx_arg_float(4));
-           break;
-#if CTX_ENABLE_CMYK
-          case CTX_CMYKA:
-           ctx_set_cmyka (d_ctx, ctx_arg_float(2),
-                                 ctx_arg_float(3),
-                                 ctx_arg_float(4),
-                                 ctx_arg_float(5),
-                                 ctx_arg_float(1));
-           break;
-          case CTX_CMYK:
-           ctx_set_cmyka (d_ctx, ctx_arg_float(2),
-                                 ctx_arg_float(3),
-                                 ctx_arg_float(4),
-                                 ctx_arg_float(5),
-                                 1.0f);
-           break;
-#endif
-        }
-        break;
-
-#if 0
-      case CTX_SET_RGBA_STROKE:
-        ctx_set_rgba_stroke (d_ctx, ctx_arg_u8(0)/255.0,
-                                    ctx_arg_u8(1)/255.0,
-                                    ctx_arg_u8(2)/255.0,
-                                    ctx_arg_u8(3)/255.0);
-        break;
-#endif
-
-      case CTX_SET_PIXEL:
-         ctx_set_pixel_u8 (d_ctx,
-                      ctx_arg_u16(2), ctx_arg_u16(3),
-                      ctx_arg_u8(0),ctx_arg_u8(1),ctx_arg_u8(2),ctx_arg_u8(3));
-      break;
-
-      case CTX_RECTANGLE:
-        ctx_rectangle (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                              ctx_arg_float(2), ctx_arg_float(3));
-        break;
-
-      case CTX_FILL:    ctx_fill (d_ctx);   break;
-      case CTX_STROKE:  ctx_stroke (d_ctx); break;
-      case CTX_CLEAR:   ctx_clear (d_ctx);  break;
-      case CTX_NEW_PAGE:
-        //ctx_new_page (d_ctx);
-        break;
-      case CTX_SET_TRANSFORM:
-        ctx_set_transform (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                           ctx_arg_float(2), ctx_arg_float(3),
-                           ctx_arg_float(4), ctx_arg_float(5));
-        break;
-
-      case CTX_IDENTITY:      ctx_identity_matrix (d_ctx);                break;
-      case CTX_CLIP:          ctx_clip (d_ctx);                           break;                  
-      case CTX_NEW_PATH:      ctx_new_path (d_ctx);                       break;
-      case CTX_CLOSE_PATH:    ctx_close_path (d_ctx);                     break;
-      case CTX_SAVE:          ctx_save (d_ctx);                           break;
-      case CTX_RESTORE:       ctx_restore (d_ctx);                        break;
-      case CTX_SET_FONT_SIZE: ctx_set_font_size (d_ctx, ctx_arg_float(0));break;
-      case CTX_SET_MITER_LIMIT: ctx_set_miter_limit (d_ctx, ctx_arg_float(0));break;
-      case CTX_SET_FILL_RULE:
-        ctx_set_fill_rule (d_ctx, (CtxFillRule)ctx_arg_u8(0));            break;
-      case CTX_SET_LINE_CAP:
-        ctx_set_line_cap (d_ctx, (CtxLineCap)ctx_arg_u8(0));              break;
-      case CTX_SET_LINE_JOIN:
-        ctx_set_line_join (d_ctx, (CtxLineJoin)ctx_arg_u8(0));            break;
-      case CTX_SET_COMPOSITING_MODE:
-        ctx_set_compositing_mode (d_ctx, (CtxCompositingMode)ctx_arg_u8(0));
-        break;
-      case CTX_SET_TEXT_ALIGN:
-        ctx_set_text_align (d_ctx, (CtxTextAlign)ctx_arg_u8(0)); break;
-      case CTX_SET_TEXT_BASELINE:
-        ctx_set_text_baseline (d_ctx, (CtxTextBaseline)ctx_arg_u8(0)); break;
-      case CTX_SET_TEXT_DIRECTION:
-        ctx_set_text_direction (d_ctx, (CtxTextDirection)ctx_arg_u8(0)); break;
-      case CTX_LINEAR_GRADIENT:
-        ctx_linear_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                                    ctx_arg_float(2), ctx_arg_float(3));
-        break;
-      case CTX_RADIAL_GRADIENT:
-        ctx_radial_gradient (d_ctx, ctx_arg_float(0), ctx_arg_float(1),
-                                    ctx_arg_float(2), ctx_arg_float(3),
-                                    ctx_arg_float(4), ctx_arg_float(5));
-        break;
-
-      case CTX_GRADIENT_STOP:
-        ctx_gradient_add_stop (d_ctx,
-          ctx_arg_float(0),
-          ctx_u8_to_float (ctx_arg_u8(4)),
-          ctx_u8_to_float (ctx_arg_u8(5)),
-          ctx_u8_to_float (ctx_arg_u8(6)),
-          ctx_u8_to_float (ctx_arg_u8(7)));
-        break;
-
-      case CTX_SET_FONT:    ctx_set_font (d_ctx, ctx_arg_string ());    break;
-      case CTX_TEXT:        ctx_text (d_ctx, ctx_arg_string ());        break;
-      case CTX_TEXT_STROKE: ctx_text_stroke (d_ctx, ctx_arg_string ()); break;
-      case CTX_GLYPH:       ctx_glyph (d_ctx, ctx_arg_u32(0), ctx_arg_u8(4));
-         break;
-      case CTX_CONT:
-      case CTX_EDGE:
-      case CTX_DATA:
-      case CTX_DATA_REV:
-      case CTX_FLUSH:
-      case CTX_REPEAT_HISTORY:
-        break;
-    }
-  }
-}
-#endif
-#endif
-
 
 #if CTX_FORMATTER
 
@@ -10138,9 +9981,9 @@ ctx_print_entry (FILE *stream, int formatter, int *indent, CtxEntry *entry, int 
 }
 
 static void
-ctx_stream_process (void *user_data, CtxCommand *command)
+ctx_stream_process (void *user_data, CtxCommand *c)
 {
-  CtxEntry *entry = &command->entry;
+  CtxEntry *entry = &c->entry;
   void **user_data_array = (void**)user_data;
   FILE *stream    = (FILE*)user_data_array[0];
   int   formatter = (size_t)(user_data_array[1]);
@@ -10191,7 +10034,33 @@ ctx_stream_process (void *user_data, CtxCommand *command)
       if (formatter)
       {
         _ctx_indent (stream, *indent);
-        fprintf (stream, "set_color %i\n", command->u8.a0 );
+        switch ((int)c->set_color.model)
+        {
+          case CTX_GRAY:
+            fprintf (stream, "gray %.4f\n", c->graya.g);
+            break;
+          case CTX_GRAYA:
+            fprintf (stream, "graya %.4f %.4f\n", c->graya.a, c->graya.a);
+            break;
+          case CTX_RGB:
+            fprintf (stream, "rgb %.4f %.4f %.4f\n", c->rgba.r, c->rgba.g, c->rgba.b);
+            break;
+          case CTX_RGBA:
+            fprintf (stream, "rgba %.4f %.4f %.4f %.4f\n", c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+            break;
+          case CTX_CMYK:
+            fprintf (stream, "cmyk %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
+            break;
+          case CTX_CMYKA:
+            fprintf (stream, "cmyk %.4f %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
+            break;
+          case CTX_DRGB:
+            fprintf (stream, "drgb %.4f %.4f %.4f\n", c->rgba.r, c->rgba.g, c->rgba.b);
+            break;
+          case CTX_DRGBA:
+            fprintf (stream, "drgba %.4f %.4f %.4f %.4f\n", c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+            break;
+        }
       }
       else
       {
@@ -10728,13 +10597,13 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
       ctx_parser_set_color_model (parser, CTX_RGB);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
     case CTX_drgb:
-      ctx_parser_set_color_model (parser, CTX_RGB_DEVICE);
+      ctx_parser_set_color_model (parser, CTX_DRGB);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
     case CTX_rgba:
       ctx_parser_set_color_model (parser, CTX_RGBA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
     case CTX_drgba:
-      ctx_parser_set_color_model (parser, CTX_RGBA_DEVICE);
+      ctx_parser_set_color_model (parser, CTX_DRGBA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
     case CTX_cmyk:
       ctx_parser_set_color_model (parser, CTX_CMYK);
@@ -10908,10 +10777,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           case CTX_RGBA:
             ctx_set_rgba (ctx, arg(0), arg(1), arg(2), arg(3));
             break;
-          case CTX_RGB_DEVICE:
+          case CTX_DRGB:
             ctx_set_device_rgba (ctx, arg(0), arg(1), arg(2), 1.0);
             break;
-          case CTX_RGBA_DEVICE:
+          case CTX_DRGBA:
             ctx_set_device_rgba (ctx, arg(0), arg(1), arg(2), arg(3));
             break;
         }

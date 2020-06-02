@@ -38,7 +38,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
     return;
   glyphs[n_glyphs++] = glyph;
   ctx->renderstream.flags  = CTX_TRANSFORMATION_BITPACK;
-  ctx_renderstream_refpack (&ctx->renderstream);
+  ctx_renderstream_compact (&ctx->renderstream);
 
   char buf[44]={0,0,0,0,0};
   ctx_unichar_to_utf8 (glyph, buf);
