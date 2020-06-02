@@ -1479,7 +1479,7 @@ struct _CtxState {
           (((uint32_t)CTX_NORMALIZE(a10))*11*11*11*11*11*11*11*11*11*11) + \
           (((uint32_t)CTX_NORMALIZE(a11))*11*11*11*11*11*11*11*11*11*11*11) + \
           (((uint32_t)CTX_NORMALIZE(a12))*11*11*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a13))*11*11*11*11*11*11*11*11*11*11*11*11)))
+          (((uint32_t)CTX_NORMALIZE(a13))*11*11*11*11*11*11*11*11*11*11*11*11*11)))
 
 #define CTX_STRHash(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13) (\
           (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a0))+ \
