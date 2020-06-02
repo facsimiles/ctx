@@ -368,6 +368,304 @@ typedef struct _CtxEntry CtxEntry;
 void ctx_set_renderer (Ctx *ctx,
                        void *renderer);
 
+
+typedef enum
+{
+  // items marked with % are currently only for the parser
+  // for instance for svg compatibility or simulated/converted color spaces
+  // not the serialization/internal render stream
+  // 
+  // unless specified, the arguments expected are 32bit float numbers.
+  //
+  CTX_FLUSH            = ';',
+  CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius 
+  CTX_ARC              = 'B', // x y radius angle1 angle2 direction 
+  CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y 
+  CTX_RESTORE          = 'G', // 
+  CTX_STROKE           = 'E', //
+  CTX_FILL             = 'F', //
+  CTX_HOR_LINE_TO      = 'H', // x 
+  CTX_ROTATE           = 'J', // radians 
+  CTX_SET_COLOR        = 'K', // model, c1 c2 c3 ca - has a variable set of
+                              // arguments.
+  CTX_LINE_TO          = 'L', // x y 
+  CTX_MOVE_TO          = 'M', // x y 
+  CTX_NEW_PATH         = 'N',
+  CTX_SCALE            = 'O', // xscale yscale 
+  CTX_NEW_PAGE         = 'P', // - NYI
+  CTX_QUAD_TO          = 'Q', // cx cy x y 
+  CTX_MEDIA_BOX        = 'R', // x y width height 
+  CTX_SMOOTH_TO        = 'S', // cx cy x y 
+  CTX_SMOOTHQ_TO       = 'T', // x y 
+  CTX_CLEAR            = 'U', //
+  CTX_VER_LINE_TO      = 'V', // y 
+  CTX_SET_TRANSFORM    = 'W', // a b c d e f 
+  CTX_EXIT             = 'X', //
+  // Z - SVG?
+  CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius 
+  CTX_CLIP             = 'b',
+  CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y 
+  CTX_SAVE             = 'g',
+  CTX_TRANSLATE        = 'e', // x y 
+  CTX_LINEAR_GRADIENT  = 'f', // x1 y1 x2 y2 
+  CTX_REL_HOR_LINE_TO  = 'h', // x 
+  CTX_TEXTURE          = 'i',
+  CTX_SET_KEY          = 'k', // - used together with another char to identify a key to set
+  CTX_REL_LINE_TO      = 'l', // x y 
+  CTX_REL_MOVE_TO      = 'm', // x y 
+  CTX_SET_FONT         = 'n', // as used by text parser
+  CTX_RADIAL_GRADIENT  = 'o', // x1 y1 radius1 x2 y2 radius2 
+  CTX_GRADIENT_STOP    = 'p', //   , count depends on current color model
+  CTX_REL_QUAD_TO      = 'q', // cx cy x y 
+  CTX_RECTANGLE        = 'r', // x y width height 
+  CTX_REL_SMOOTH_TO    = 's', // cx cy x y 
+  CTX_REL_SMOOTHQ_TO   = 't', // x y 
+  CTX_TEXT_STROKE      = 'u', // string - utf8 string
+  CTX_REL_VER_LINE_TO  = 'v', // y 
+  CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
+  CTX_IDENTITY         = 'y', // 
+  CTX_GLYPH            = 'w', // unichar fontsize 
+  CTX_CLOSE_PATH       = 'z', //
+
+  /* these commands have single byte binary representations,
+   * but are two chars in text, values below 9 are used for
+   * low integers of enum values. and can thus not be used here
+   */
+  CTX_SET_GLOBAL_ALPHA     = 10, // ka alpha - default=1.0
+  CTX_SET_COMPOSITING_MODE = 11, // kc mode - u8 , default=0
+  CTX_SET_FONT_SIZE        = 12, // kf size - float, default=?
+  CTX_SET_LINE_JOIN        = 13, // kj join - u8 , default=0
+  CTX_SET_LINE_CAP         = 14, // kc cap - u8, default = 0
+  CTX_SET_LINE_WIDTH       = 15, // kw width, default = 2.0
+  CTX_SET_FILL_RULE        = 16, // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
+  CTX_SET_TEXT_ALIGN       = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
+  CTX_SET_TEXT_BASELINE    = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
+  CTX_SET_TEXT_DIRECTION   = 19, // kd
+  CTX_SET_MITER_LIMIT      = 20, // km limit - float, default = 0.0
+
+  CTX_SET_DEVICE_SPACE     = 21, // hacks integer for now
+  CTX_SET_RGB_SPACE        = 22, //
+  CTX_SET_CMYK_SPACE       = 23, //
+
+
+  CTX_DEFUN  = 24,
+  CTX_ENDFUN = 25,
+
+  // non-alphabetic chars that get filtered out when parsing
+  // are used for internal purposes
+  //
+  // unused:  . , : backslash ! # $ % ^ { } < > ? & /
+  //          D   d
+  //
+  //
+  CTX_CONT             = '\0', // - contains args from preceding entry
+  CTX_SET_RGBA_U8      = '*', // r g b a - u8 
+  // NYI
+  CTX_BITPIX           = 'I', // x, y, width, height, scale
+  CTX_BITPIX_DATA      = 'j', //
+
+  CTX_NOP              = ' ', //
+  CTX_NEW_EDGE         = '+', // x0 y0 x1 y1 - s16
+  CTX_EDGE             = '|', // x0 y0 x1 y1 - s16
+  CTX_EDGE_FLIPPED     = '`', // x0 y0 x1 y1 - s16
+
+  CTX_REPEAT_HISTORY   = ']', //
+  CTX_DATA             = '(', // size size-in-entries - u32
+  CTX_DATA_REV         = ')', // reverse traversal data marker
+                              // needed to be able to do backwards
+                              // traversal
+  CTX_DEFINE_GLYPH     = '@', // unichar width - u32
+  CTX_KERNING_PAIR     = '[', // glA glB kerning, glA and glB in u16 kerning in s32
+  CTX_SET_PIXEL        = '-', // r g b a x y - u8 for rgba, and u16 for x,y
+
+  /* optimizations that reduce the number of entries used,
+   * not visible outside the draw-stream compression -
+   * these are using values that would mean numbers in an
+   * SVG path.
+   */
+  CTX_REL_LINE_TO_X4            = '0', // x1 y1 x2 y2 x3 y3 x4 y4   -- s8
+  CTX_REL_LINE_TO_REL_CURVE_TO  = '1', // x1 y1 cx1 cy1 cx2 cy2 x y -- s8
+  CTX_REL_CURVE_TO_REL_LINE_TO  = '2', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
+  CTX_REL_CURVE_TO_REL_MOVE_TO  = '3', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
+  CTX_REL_LINE_TO_X2            = '4', // x1 y1 x2 y2 -- s16
+  CTX_MOVE_TO_REL_LINE_TO       = '5', // x1 y1 x2 y2 -- s16
+  CTX_REL_LINE_TO_REL_MOVE_TO   = '6', // x1 y1 x2 y2 -- s16
+  CTX_FILL_MOVE_TO              = '7', // x y
+  CTX_REL_QUAD_TO_REL_QUAD_TO   = '8', // cx1 x1 cy1 y1 cx1 x2 cy1 y1 -- s8
+  CTX_REL_QUAD_TO_S16           = '9', // cx1 cy1 x y                 - s16
+} CtxCode;
+
+/* we only care about the tight packing for this specific
+ * structx as we do indexing across members in arrays of it,
+ * to make sure its size becomes 9bytes -
+ * the pack pragma is also sufficient on recent gcc versions
+ */
+#pragma pack(push,1)
+struct
+_CtxEntry
+{
+  uint8_t code;
+  union {
+    float    f[2];
+    uint8_t  u8[8];
+    int8_t   s8[8];
+    uint16_t u16[4];
+    int16_t  s16[4];
+    uint32_t u32[2];
+    int32_t  s32[2];
+    uint64_t u64[1]; // unused
+  } data; // 9bytes long, we're favoring compactness and correctness
+          // over performance. By sacrificing float precision, zeroing
+          // first 8bit of f[0] would permit 8bytes long and better
+          // aglinment and cacheline behavior.
+};
+typedef struct _CtxCommand CtxCommand;
+struct
+_CtxCommand
+{
+  union {
+    uint8_t  code;
+    CtxEntry entry;
+    struct {
+      uint8_t code;float scalex; float scaley;
+    } scale;
+    struct {
+      uint8_t code;uint32_t stringlen; uint32_t blocklen;
+      uint8_t cont;uint8_t data[8]; /* ... and continues */
+    } data;
+    struct {
+      uint8_t code;uint32_t stringlen; uint32_t blocklen;
+    } data_rev;
+    struct {
+      uint8_t code;float pad; float pad2;
+      uint8_t code_data;uint32_t stringlen; uint32_t blocklen;
+      uint8_t code_cont;uint8_t utf8[8]; /* .. and continues */
+    } text;
+    struct {
+      uint8_t code;float pad; float pad2;
+      uint8_t code_data;uint32_t stringlen; uint32_t blocklen;
+      uint8_t code_cont;uint8_t utf8[8]; /* .. and continues */
+    } text_stroke;
+    struct {
+      uint8_t code;float pad; float pad2;
+      uint8_t code_data;uint32_t stringlen; uint32_t blocklen;
+      uint8_t code_cont;uint8_t utf8[8]; /* .. and continues */
+    } set_font;
+    struct {
+      uint8_t code;float x;float y;
+    } rel_move_to;
+    struct {
+      uint8_t code;float x;float y;
+    } rel_line_to;
+    struct {
+       uint8_t code;float x; float y;
+    } line_to;
+    struct {
+      uint8_t code;float cx1;float cy1;
+      uint8_t pad0;float cx2;float cy2;
+      uint8_t pad1;float x;float y;
+    } rel_curve_to;
+    struct {
+       uint8_t code;float x; float y;
+    } move_to;
+    struct {
+      uint8_t code; float cx1; float cy1;
+      uint8_t pad0;float cx2; float cy2;
+      uint8_t pad1;float x;float y;
+    } curve_to;
+    struct {
+      uint8_t code; float x1; float y1;
+      uint8_t pad0;float r1; float x2;
+      uint8_t pad1;float y2; float r2;
+    } radial_gradient;
+    struct {
+      uint8_t code; float x1; float y1;
+      uint8_t pad0;float x2; float y2;
+    } linear_gradient;
+    struct {uint8_t code; float x; float y;
+      uint8_t pad0;float width; float height;
+    } rectangle;
+    struct {
+      uint8_t code; uint8_t rgba[4]; uint16_t x;uint16_t y;
+    } set_pixel;
+    struct {
+      uint8_t code; float cx; float cy;
+      uint8_t pad0;float x; float y;
+    } quad_to;
+    struct {
+      uint8_t code; float cx; float cy;
+      uint8_t pad0;float x; float y;
+    } rel_quad_to;
+    struct {
+      uint8_t code; float x; float y;
+      uint8_t pad0;float radius; float angle1;
+      uint8_t pad1;float angle2; float direction;}
+    arc;
+    struct {
+      uint8_t code; float x1; float y1;
+      uint8_t pad0; float x2; float y2;
+      uint8_t pad1; float radius;}
+    arc_to;
+    /* some format specific generic accesors:  */
+    struct {uint8_t code; float x0; float y0;
+            uint8_t pad0; float x1; float y1;
+            uint8_t pad1; float x2; float y2;
+            uint8_t pad2; float x3; float y3;
+            uint8_t pad3; float x4; float y4;
+    } c;
+    struct {uint8_t code; float a0; float a1;
+            uint8_t pad0; float a2; float a3;
+            uint8_t pad1; float a4; float a5;
+            uint8_t pad2; float a6; float a7;
+            uint8_t pad3; float a8; float a9;
+    } f;
+    struct {uint8_t code; uint32_t a0; uint32_t a1;
+            uint8_t pad0; uint32_t a2; uint32_t a3;
+            uint8_t pad1; uint32_t a4; uint32_t a5;
+            uint8_t pad2; uint32_t a6; uint32_t a7;
+            uint8_t pad3; uint32_t a8; uint32_t a9;
+    } u32;
+    struct {uint8_t code; uint64_t a0;
+            uint8_t pad0; uint64_t a1;
+            uint8_t pad1; uint64_t a2;
+            uint8_t pad2; uint64_t a3;
+            uint8_t pad3; uint64_t a4;
+    } u64;
+    struct {uint8_t code; int32_t a0; int32_t a1;
+            uint8_t pad0; int32_t a2; int32_t a3;
+            uint8_t pad1; int32_t a4; int32_t a5;
+            uint8_t pad2; int32_t a6; int32_t a7;
+            uint8_t pad3; int32_t a8; int32_t a9;
+    } s32;
+    struct {uint8_t code; int16_t a0; int16_t a1; int16_t a2; int16_t a3;
+            uint8_t pad0; int16_t a4; int16_t a5; int16_t a6; int16_t a7;
+            uint8_t pad1; int16_t a8; int16_t a9; int16_t a10; int16_t a11;
+            uint8_t pad2; int16_t a12; int16_t a13; int16_t a14; int16_t a15;
+            uint8_t pad3; int16_t a16; int16_t a17; int16_t a18; int16_t a19;
+    } s16;
+    struct {uint8_t code; uint16_t a0; uint16_t a1; uint16_t a2; uint16_t a3;
+            uint8_t pad0; uint16_t a4; uint16_t a5; uint16_t a6; uint16_t a7;
+            uint8_t pad1; uint16_t a8; uint16_t a9; uint16_t a10; uint16_t a11;
+            uint8_t pad2; uint16_t a12; uint16_t a13; uint16_t a14; uint16_t a15;
+            uint8_t pad3; uint16_t a16; uint16_t a17; uint16_t a18; uint16_t a19;
+    } u16;
+    struct {uint8_t code; uint8_t a0; uint8_t a1; uint8_t a2; uint8_t a3; uint8_t a4; uint8_t a5; uint8_t a6; uint8_t a7;
+            uint8_t pad0; uint8_t a8; uint8_t a9; uint8_t a10; uint8_t a11; uint8_t a12; uint8_t a13; uint8_t a14; uint8_t a15;
+            uint8_t pad1; uint8_t a16; uint8_t a17; uint8_t a18; uint8_t a19; uint8_t a20; uint8_t a21; uint8_t a22; uint8_t a23;
+    } u8;
+    struct {uint8_t code; int8_t a0; int8_t a1; int8_t a2; int8_t a3; int8_t a4; int8_t a5; int8_t a6; int8_t a7;
+            uint8_t pad0; int8_t a8; int8_t a9; int8_t a10; int8_t a11; int8_t a12; int8_t a13; int8_t a14; int8_t a15;
+            uint8_t pad1; int8_t a16; int8_t a17; int8_t a18; int8_t a19; int8_t a20; int8_t a21; int8_t a22; int8_t a23;
+    } s8;
+  };
+  CtxEntry next_entry; // also pads size of CtxCommand slightly.
+};
+
+typedef struct _CtxIterator CtxIterator;
+CtxCommand *
+ctx_iterator_next (CtxIterator *iterator);
+
+
 /* definitions that determine which features are included and their settings,
  * for particular platforms - in particular microcontrollers ctx might need
  * tuning for different quality/performance/resource constraints.
@@ -686,293 +984,13 @@ int   ctx_load_font_ttf_file (const char *name, const char *path);
 
 int ctx_get_renderstream_count (Ctx *ctx);
 
-typedef enum
-{
-  // items marked with % are currently only for the parser
-  // for instance for svg compatibility or simulated/converted color spaces
-  // not the serialization/internal render stream
-  // 
-  // unless specified, the arguments expected are 32bit float numbers.
-  //
-  CTX_FLUSH            = '\0',
-  CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius 
-  CTX_ARC              = 'B', // x y radius angle1 angle2 direction 
-  CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y 
-  CTX_RESTORE          = 'G', // 
-  CTX_STROKE           = 'E', //
-  CTX_FILL             = 'F', //
-  CTX_HOR_LINE_TO      = 'H', // x 
-  CTX_ROTATE           = 'J', // radians 
-  CTX_SET_COLOR        = 'K', // model, c1 c2 c3 ca - has a variable set of
-                              // arguments.
-  CTX_LINE_TO          = 'L', // x y 
-  CTX_MOVE_TO          = 'M', // x y 
-  CTX_NEW_PATH         = 'N',
-  CTX_SCALE            = 'O', // xscale yscale 
-  CTX_NEW_PAGE         = 'P', // - NYI
-  CTX_QUAD_TO          = 'Q', // cx cy x y 
-  CTX_MEDIA_BOX        = 'R', // x y width height 
-  CTX_SMOOTH_TO        = 'S', // cx cy x y 
-  CTX_SMOOTHQ_TO       = 'T', // x y 
-  CTX_CLEAR            = 'U', //
-  CTX_VER_LINE_TO      = 'V', // y 
-  CTX_SET_TRANSFORM    = 'W', // a b c d e f 
-  CTX_EXIT             = 'X', //
-  // Z - SVG?
-  CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius 
-  CTX_CLIP             = 'b',
-  CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y 
-  CTX_SAVE             = 'g',
-  CTX_TRANSLATE        = 'e', // x y 
-  CTX_LINEAR_GRADIENT  = 'f', // x1 y1 x2 y2 
-  CTX_REL_HOR_LINE_TO  = 'h', // x 
-  CTX_TEXTURE          = 'i',
-  CTX_SET_KEY          = 'k', // - used together with another char to identify a key to set
-  CTX_REL_LINE_TO      = 'l', // x y 
-  CTX_REL_MOVE_TO      = 'm', // x y 
-  CTX_SET_FONT         = 'n', // as used by text parser
-  CTX_RADIAL_GRADIENT  = 'o', // x1 y1 radius1 x2 y2 radius2 
-  CTX_GRADIENT_STOP    = 'p', //   , count depends on current color model
-  CTX_REL_QUAD_TO      = 'q', // cx cy x y 
-  CTX_RECTANGLE        = 'r', // x y width height 
-  CTX_REL_SMOOTH_TO    = 's', // cx cy x y 
-  CTX_REL_SMOOTHQ_TO   = 't', // x y 
-  CTX_TEXT_STROKE      = 'u', // string - utf8 string
-  CTX_REL_VER_LINE_TO  = 'v', // y 
-  CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
-  CTX_IDENTITY         = 'y', // 
-  CTX_GLYPH            = 'w', // unichar fontsize 
-  CTX_CLOSE_PATH       = 'z', //
 
-  /* these commands have single byte binary representations,
-   * but are two chars in text, values below 9 are used for
-   * low integers of enum values. and can thus not be used here
-   */
-  CTX_SET_GLOBAL_ALPHA     = 10, // ka alpha - default=1.0
-  CTX_SET_COMPOSITING_MODE = 11, // kc mode - u8 , default=0
-  CTX_SET_FONT_SIZE        = 12, // kf size - float, default=?
-  CTX_SET_LINE_JOIN        = 13, // kj join - u8 , default=0
-  CTX_SET_LINE_CAP         = 14, // kc cap - u8, default = 0
-  CTX_SET_LINE_WIDTH       = 15, // kw width, default = 2.0
-  CTX_SET_FILL_RULE        = 16, // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
-  CTX_SET_TEXT_ALIGN       = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
-  CTX_SET_TEXT_BASELINE    = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
-  CTX_SET_TEXT_DIRECTION   = 19, // kd
-  CTX_SET_MITER_LIMIT      = 20, // km limit - float, default = 0.0
-
-  CTX_SET_DEVICE_SPACE     = 21, // hacks integer for now
-  CTX_SET_RGB_SPACE        = 22, //
-  CTX_SET_CMYK_SPACE       = 23, //
-
-
-  CTX_DEFUN  = 24,
-  CTX_ENDFUN = 25,
-
-  // non-alphabetic chars that get filtered out when parsing
-  // are used for internal purposes
-  //
-  // unused:  . , : backslash ! # $ % ^ { } < > ? & /
-  //          D   d
-  //
-  //
-  CTX_CONT             = ';', // - contains data from preceding code
-  CTX_SET_RGBA_U8      = '*', // r g b a - u8 
-  // NYI
-  CTX_BITPIX           = 'I', // x, y, width, height, scale
-  CTX_BITPIX_DATA      = 'j', //
-
-  CTX_NOP              = ' ', //
-  CTX_NEW_EDGE         = '+', // x0 y0 x1 y1 - s16
-  CTX_EDGE             = '|', // x0 y0 x1 y1 - s16
-  CTX_EDGE_FLIPPED     = '`', // x0 y0 x1 y1 - s16
-
-  CTX_REPEAT_HISTORY   = ']', //
-  CTX_DATA             = '(', // size size-in-entries - u32
-  CTX_DATA_REV         = ')', // reverse traversal data marker
-  CTX_DEFINE_GLYPH     = '@', // unichar width - u32
-  CTX_KERNING_PAIR     = '[', // glA glB kerning, glA and glB in u16 kerning in s32
-  CTX_SET_PIXEL        = '-', // r g b a x y - u8 for rgba, and u16 for x,y
-
-  /* optimizations that reduce the number of entries used,
-   * not visible outside the draw-stream compression -
-   * these are using values that would mean numbers in an
-   * SVG path.
-   */
-#if CTX_BITPACK
-  CTX_REL_LINE_TO_X4            = '0', // x1 y1 x2 y2 x3 y3 x4 y4   -- s8
-  CTX_REL_LINE_TO_REL_CURVE_TO  = '1', // x1 y1 cx1 cy1 cx2 cy2 x y -- s8
-  CTX_REL_CURVE_TO_REL_LINE_TO  = '2', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
-  CTX_REL_CURVE_TO_REL_MOVE_TO  = '3', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
-  CTX_REL_LINE_TO_X2            = '4', // x1 y1 x2 y2 -- s16
-  CTX_MOVE_TO_REL_LINE_TO       = '5', // x1 y1 x2 y2 -- s16
-  CTX_REL_LINE_TO_REL_MOVE_TO   = '6', // x1 y1 x2 y2 -- s16
-  CTX_FILL_MOVE_TO              = '7', // x y
-  CTX_REL_QUAD_TO_REL_QUAD_TO   = '8', // cx1 x1 cy1 y1 cx1 x2 cy1 y1 -- s8
-  CTX_REL_QUAD_TO_S16           = '9', // cx1 cy1 x y                 - s16
-#endif
-} CtxCode;
-
-/* we only care about the tight packing for this specific
- * structx as we do indexing across members in arrays of it,
- * to make sure its size becomes 9bytes -
- * the pack pragma is also sufficient on recent gcc versions
- */
-#pragma pack(push,1)
-
-struct
-_CtxEntry
-{
-  uint8_t code;       // radical idea pack the code into first floats
-                      // least significant bits
-  union {
-    float    f[2];
-    uint8_t  u8[8];
-    int8_t   s8[8];
-    uint16_t u16[4];
-    int16_t  s16[4];
-    uint32_t u32[2];
-    int32_t  s32[2];
-    uint64_t u64[1]; // unused
-  } data;
-};
 
 #define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
-/* The below union maps out the storage types and locations
- * for data in the API.
- *
- * using accessor functions or CtxEntry directly produces
- * equivalent code, the union is more readable and permits
- * refactoring and documentation in one place.
+
+
+/* The above should be public API
  */
-typedef struct _CtxCommand CtxCommand;
-struct
-_CtxCommand
-{
-  union {
-    uint8_t  code;
-    CtxEntry entry;
-    struct {
-      uint8_t code;float scalex; float scaley;
-    } scale;
-    struct {
-            // XXX : the pads can fill the tole of data
-            // and thus remove one entry per string!!
-      uint8_t code;float pad; float pad2;
-      uint8_t code_data;uint32_t stringlen; uint32_t blocklen;
-      uint8_t code_cont;uint8_t utf8[8]; /* XXX :: and continues */
-    } text;
-    struct {
-      uint8_t code;float pad; float pad2;
-      uint8_t code_data;uint32_t stringlen; uint32_t blocklen;
-      uint8_t code_cont;uint8_t utf8[8]; /* XXX :: and continues */
-    } text_stroke;
-    struct {
-      uint8_t code;float pad; float pad2;
-      uint8_t code_data;uint32_t stringlen; uint32_t blocklen;
-      uint8_t code_cont;uint8_t utf8[8]; /* XXX :: and continues */
-    } set_font;
-    struct {
-      uint8_t code;float x;float y;
-    } rel_move_to;
-    struct {
-      uint8_t code;float x;float y;
-    } rel_line_to;
-    struct {
-      uint8_t code;float cx1;float cy1;
-      uint8_t pad0;float cx2;float cy2;
-      uint8_t pad1;float x;float y;
-    } rel_curve_to;
-    struct {
-       uint8_t code;float x; float y;
-    } move_to;
-    struct {
-       uint8_t code;float x; float y;
-    } line_to;
-    struct {
-      uint8_t code; float cx1; float cy1;
-      uint8_t pad0;float cx2; float cy2;
-      uint8_t pad1;float x;float y;
-    } curve_to;
-    struct {
-      uint8_t code; float x1; float y1;
-      uint8_t pad0;float r1; float x2;
-      uint8_t pad1;float y2; float r2;
-    } radial_gradient;
-    struct {
-      uint8_t code; float x1; float y1;
-      uint8_t pad0;float x2; float y2;
-    } linear_gradient;
-    struct {uint8_t code; float x; float y;
-      uint8_t pad0;float width; float height;
-    } rectangle;
-    struct {
-      uint8_t code; uint8_t rgba[4]; uint16_t x;uint16_t y;
-    } set_pixel;
-    struct {
-      uint8_t code; float cx; float cy;
-      uint8_t pad0;float x; float y;
-    } quad_to;
-    struct {
-      uint8_t code; float cx; float cy;
-      uint8_t pad0;float x; float y;
-    } rel_quad_to;
-    struct {
-      uint8_t code; float x; float y;
-      uint8_t pad0;float radius; float angle1;
-      uint8_t pad1;float angle2; float direction;}
-    arc;
-    struct {
-      uint8_t code; float x1; float y1;
-      uint8_t pad0; float x2; float y2;
-      uint8_t pad1; float radius;}
-    arc_to;
-    /* some format specific generic accesors:  */
-    struct {uint8_t code; float x0; float y0;
-            uint8_t pad0; float x1; float y1;
-            uint8_t pad1; float x2; float y2;
-            uint8_t pad2; float x3; float y3;
-            uint8_t pad3; float x4; float y4;
-    } c;
-    struct {uint8_t code; float a0; float a1;
-            uint8_t pad0; float a2; float a3;
-            uint8_t pad1; float a4; float a5;
-            uint8_t pad2; float a6; float a7;
-            uint8_t pad3; float a8; float a9;
-    } f;
-    struct {uint8_t code; uint32_t a0; uint32_t a1;
-            uint8_t pad0; uint32_t a2; uint32_t a3;
-            uint8_t pad1; uint32_t a4; uint32_t a5;
-            uint8_t pad2; uint32_t a6; uint32_t a7;
-            uint8_t pad3; uint32_t a8; uint32_t a9;
-    } u32;
-    struct {uint8_t code; int32_t a0; int32_t a1;
-            uint8_t pad0; int32_t a2; int32_t a3;
-            uint8_t pad1; int32_t a4; int32_t a5;
-            uint8_t pad2; int32_t a6; int32_t a7;
-            uint8_t pad3; int32_t a8; int32_t a9;
-    } s32;
-    struct {uint8_t code; int16_t a0; int16_t a1; int16_t a2; int16_t a3;
-            uint8_t pad0; int16_t a4; int16_t a5; int16_t a6; int16_t a7;
-            uint8_t pad1; int16_t a8; int16_t a9; int16_t a10; int16_t a11;
-            uint8_t pad2; int16_t a12; int16_t a13; int16_t a14; int16_t a15;
-            uint8_t pad3; int16_t a16; int16_t a17; int16_t a18; int16_t a19;
-    } s16;
-    struct {uint8_t code; uint16_t a0; uint16_t a1; uint16_t a2; uint16_t a3;
-            uint8_t pad0; uint16_t a4; uint16_t a5; uint16_t a6; uint16_t a7;
-            uint8_t pad1; uint16_t a8; uint16_t a9; uint16_t a10; uint16_t a11;
-            uint8_t pad2; uint16_t a12; uint16_t a13; uint16_t a14; uint16_t a15;
-            uint8_t pad3; uint16_t a16; uint16_t a17; uint16_t a18; uint16_t a19;
-    } u16;
-    struct {uint8_t code; uint8_t a0; uint8_t a1; uint8_t a2; uint8_t a3; uint8_t a4; uint8_t a5; uint8_t a6; uint8_t a7;
-            uint8_t pad0; uint8_t a8; uint8_t a9; uint8_t a10; uint8_t a11; uint8_t a12; uint8_t a13; uint8_t a14; uint8_t a15;
-            uint8_t pad1; uint8_t a16; uint8_t a17; uint8_t a18; uint8_t a19; uint8_t a20; uint8_t a21; uint8_t a22; uint8_t a23;
-    } u8;
-    struct {uint8_t code; int8_t a0; int8_t a1; int8_t a2; int8_t a3; int8_t a4; int8_t a5; int8_t a6; int8_t a7;
-            uint8_t pad0; int8_t a8; int8_t a9; int8_t a10; int8_t a11; int8_t a12; int8_t a13; int8_t a14; int8_t a15;
-            uint8_t pad1; int8_t a16; int8_t a17; int8_t a18; int8_t a19; int8_t a20; int8_t a21; int8_t a22; int8_t a23;
-    } s8;
-  };
-};
 
 #pragma pack(pop)
 
@@ -2132,16 +2150,32 @@ struct _CtxPixelFormatInfo
 };
 
 #endif
+
+struct
+_CtxIterator
+{
+  int              pos;
+  int              in_history;
+  CtxRenderstream *renderstream;
+  int              end_pos;
+  int              flags;
+
+  int              bitpack_pos;
+  int              bitpack_length; // if non 0 bitpack is active
+  CtxEntry         bitpack_command[6];
+};
   
 struct
 _Ctx {
-  void                    *renderer;
+  void            *renderer;
   void (*render_func)     (void *renderer, CtxCommand *entry);
   void (*renderer_destory)(void *renderer);
 
-  CtxRenderstream   renderstream;
-  CtxState          state;
+  CtxRenderstream   renderstream; /* current path is always accumulated here
+                                   */
+  CtxState          state;        /**/
   int               transformation;
+  CtxIterator       iterator; // handed out for current path
   CtxBuffer         texture[CTX_MAX_TEXTURES];
 };
 
@@ -2155,6 +2189,11 @@ static inline int ctx_get_int (Ctx *ctx, uint32_t hash)
 }
 static void ctx_set (Ctx *ctx, uint32_t hash, float value)
 {
+  // XXX : how to handle strings:
+  //         use a range of nans or similar
+  //         to be an index of a string-table
+  //         keep string-table index in state like keydb to
+  //         grow with stack
   ctx_state_set (&ctx->state, hash, value);
 }
 
@@ -2345,18 +2384,7 @@ ctx_conts_for_entry (CtxEntry *entry)
   }
 }
 
-typedef struct CtxIterator
-{
-  int         pos;
-  int         in_history;
-  CtxRenderstream *renderstream;
-  int         end_pos;
-  int         flags;
 
-  int         bitpack_pos;
-  int         bitpack_length; // if non 0 bitpack is active
-  CtxEntry    bitpack_command[6];
-} CtxIterator;
 
 
 /* the iterator - should decode bitpacked data as well -
@@ -2436,7 +2464,7 @@ ctx_iterator_expand_s16_args (CtxIterator *iterator, CtxEntry *entry)
 }
 #endif
 
-static CtxCommand *
+CtxCommand *
 ctx_iterator_next (CtxIterator *iterator)
 {
   CtxEntry *ret;
@@ -2799,7 +2827,8 @@ int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, 
    entry.data.u32[1] = length_in_blocks;
    ctx_renderstream_add_single (renderstream, &entry);
    /* this reverse marker exist to enable more efficient
-      front to back traversal
+      front to back traversal, can be ignored in other
+      direction, is this needed after string setters as well?
     */
   }
 
@@ -10162,7 +10191,7 @@ ctx_stream_process (void *user_data, CtxCommand *command)
       if (formatter)
       {
         _ctx_indent (stream, *indent);
-        fprintf (stream, "set_color %i\n", command->u32.a0 );
+        fprintf (stream, "set_color %i\n", command->u8.a0 );
       }
       else
       {
