@@ -1169,18 +1169,41 @@ static float ctx_atan2f (float y, float x)
   return atan;
 }
 
-#define sqrtf(a)     (1.0f/ctx_invsqrtf(a))
-#define hypotf(a,b)  sqrtf(ctx_pow2(a)+ctx_pow2(b))
-#define sinf(a)      ctx_sinf(a)
-#define fabsf(a)     ctx_fabsf(a)
-#define atan2f(a,b)  ctx_atan2f((a), (b))
+static float ctx_sqrtf (float a)
+{
+  return 1.0f/ctx_invsqrtf(a);
+}
 
+static float ctx_hypotf (float a, float b)
+{
+  return ctx_sqrtf(ctx_pow2(a)+ctx_pow2(b));
+}
+
+static float ctx_atanf (float a)
+{
+  return ctx_atan2f((a), 1.0f);
+}
+
+static float ctx_asinf (float x)
+{
+  return ctx_atanf((x)*(ctx_invsqrtf(1.0f-ctx_pow2(x))));
+}
+
+static float ctx_acosf (float x)
+{
+  return ctx_atanf((ctx_sqrtf(1.0f-ctx_pow2(x))/(x)));
+}
+
+static float ctx_cosf (float a)
+{
+  return ctx_sinf((a) + CTX_PI/2.0f);
+}
+
+static float ctx_tanf (float a)
+{
+  return (ctx_cosf(a)/ctx_sinf(a));
+}
 /* define more trig based on having sqrt, sin and atan2 */
-#define atanf(a)     atan2f((a), 1.0f)
-#define asinf(x)     atanf((x)*(ctxinv_sqrtf(1.0f-ctx_pow2(x))))
-#define acosf(x)     atanf((sqrtf(1.0f-ctx_pow2(x))/(x)))
-#define cosf(a)      sinf((a) + CTX_PI/2.0f)
-#define tanf(a)      (cosf(a)/sinf(a))
 
 #else
 
@@ -1270,8 +1293,6 @@ typedef struct _CtxGradientStop CtxGradientStop;
 struct _CtxGradientStop
 {
   float   pos;
-  // XXX use CtxColor instead
-//  uint8_t rgba[4];
   CtxColor color;
 };
 
@@ -1630,11 +1651,11 @@ struct _CtxState {
 #define CTX_right        CTX_STRH('r','i','g','h','t',0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_center       CTX_STRH('c','e','n','t','e','r', 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_top          CTX_STRH('t','o','p',0,0,0, 0, 0, 0, 0, 0, 0,0,0)
-#define CTX_bottom       CTX_STRH('b','o','t','t','o','m', 0, 0, 0, 0, 0, 0,0,0)
-#define CTX_middle       CTX_STRH('m','i','d','d','l', 'e',0, 0, 0, 0, 0, 0,0,0)
-#define CTX_alphabetic   CTX_STRH('a','l','p','h','a', 'b','e', 't', 'i', 'c', 0, 0,0,0)
-#define CTX_hanging      CTX_STRH('h','a','n','g','i', 'n','g', 0, 0, 0, 0, 0,0,0)
-#define CTX_ideographic  CTX_STRH('i','d','e','o','g','r','a','p','h','i','c', 0,0,0)
+#define CTX_bottom       CTX_STRH('b','o','t','t','o','m',0,0,0,0,0,0,0,0)
+#define CTX_middle       CTX_STRH('m','i','d','d','l','e',0, 0, 0, 0, 0, 0,0,0)
+#define CTX_alphabetic   CTX_STRH('a','l','p','h','a','b','e','t','i','c',0,0,0,0)
+#define CTX_hanging      CTX_STRH('h','a','n','g','i','n','g',0,0,0,0,0,0,0)
+#define CTX_ideographic  CTX_STRH('i','d','e','o','g','r','a','p','h','i','c',0,0,0)
 #define CTX_gray         CTX_STRH('g','r','a','y',0,0,0,0,0,0,0,0,0,0)
 #define CTX_graya        CTX_STRH('g','r','a','y','a',0,0,0,0,0,0,0,0,0)
 #define CTX_rgb          CTX_STRH('r','g','b',0,0,0,0,0,0,0,0,0,0,0)
@@ -1648,98 +1669,7 @@ struct _CtxState {
 #define CTX_lch          CTX_STRH('l','c','h',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_lcha         CTX_STRH('l','c','h','a',0,0,0,0,0,0,0,0,0,0)
 
-#if 0
-/* SVG XML/CSS */
-
-#define CTX_fontFamily   CTX_STRH('f','o','n','t','_','f','a','m','i','l','y', 0)
-#define CTX_fill_color   CTX_STRH('f','i','l','l','_','c','o','l','o','r',0,0)
-#define CTX_stroke_width CTX_STRH('s','t','r','o','k','e','_','w','i','d','t','h')
-#define CTX_stroke_color CTX_STRH('s','t','r','o','k','e','_','c','o','l','o','r')
-#define CTX_stroke_linecap CTX_STRH('s','t','r','o','k','e','_','l','i','n','e','c')
-#define CTX_stroke_miterlimit CTX_STRH('s','t','r','o','k','e','_','m','i','t','e','r')
-#define CTX_stroke_linejoin CTX_STRH('s','t','r','o','k','e','_','l','i','n','e','j')
-#define CTX_background_color CTX_STRH('b','a','c','k','g','r','o','u','n','d','_','c')
-#define CTX_background     CTX_STRH('b','a','c','k','g','r','o','u','n','d',0,0)
-
-#define CTX_link         CTX_STRH('l','i','n','k',0,0,0,0,0,0,0,0)
-#define CTX_meta         CTX_STRH('m','e','t','a',0,0,0,0,0,0,0,0)
-#define CTX_span         CTX_STRH('s','p','a','n',0,0,0,0,0,0,0,0)
-#define CTX_input        CTX_STRH('i','n','p','u','t',0,0,0,0,0,0,0)
-#define CTX_img          CTX_STRH('i','m','g',0,0,0,0,0,0,0,0,0)
-#define CTX_div          CTX_STRH('d','i','v',0,0,0,0,0,0,0,0,0)
-#define CTX_br           CTX_STRH('b','r',0,0,0,0,0,0,0,0,0,0)
-#define CTX_hr           CTX_STRH('h','r',0,0,0,0,0,0,0,0,0,0)
-#define CTX_a            CTX_STRH('a',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_p            CTX_STRH('p',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_table        CTX_STRH('t','a','b','l','e',0,0,0,0,0,0,0)
-#define CTX_matrix       CTX_STRH('m','a','t','r','i','x',0,0,0,0,0,0)
-#define CTX_td           CTX_STRH('t','d',0,0,0,0,0,0,0,0,0,0)
-#define CTX_tr           CTX_STRH('t','r',0,0,0,0,0,0,0,0,0,0)
-#define CTX_th           CTX_STRH('t','h',0,0,0,0,0,0,0,0,0,0)
-#define CTX_li           CTX_STRH('l','i',0,0,0,0,0,0,0,0,0,0)
-#define CTX_id           CTX_STRH('i','d',0,0,0,0,0,0,0,0,0,0)
-#define CTX_dd           CTX_STRH('d','d',0,0,0,0,0,0,0,0,0,0)
-#define CTX_dt           CTX_STRH('d','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_dl           CTX_STRH('d','l',0,0,0,0,0,0,0,0,0,0)
-#define CTX_ul           CTX_STRH('u','l',0,0,0,0,0,0,0,0,0,0)
-#define CTX_src          CTX_STRH('s','r','c',0,0,0,0,0,0,0,0,0)
-#define CTX_style        CTX_STRH('s','t','y','l','e',0,0,0,0,0,0,0)
-#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0)
-#define CTX_polygon      CTX_STRH('p','o','l','y','g','o','n',0,0,0,0,0)
-#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0)
-#define CTX_class        CTX_STRH('c','l','a','s','s',0,0,0,0,0,0,0)
-#define CTX_href         CTX_STRH('h','r','e','f',0,0,0,0,0,0,0,0)
-#define CTX_path         CTX_STRH('p','a','t','h',0,0,0,0,0,0,0,0)
-#define CTX_x            CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_y            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_d            CTX_STRH('d',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_g            CTX_STRH('g',0,0,0,0,0,0,0,0,0,0,0)
-
-#if 0
-#define CTX_shy          CTX_STRH('s','h','y',0,0,0,0,0,0,0,0,0)
-#define CTX_nbsp         CTX_STRH('n','b','s','p',0,0,0,0,0,0,0,0)
-#define CTX_lt           CTX_STRH('l','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_gt           CTX_STRH('g','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_trade        CTX_STRH('t','r','a','d','e',0,0,0,0,0,0,0)
-#define CTX_copy         CTX_STRH('c','o','p','y',0,0,0,0,0,0,0,0)
-#define CTX_middot       CTX_STRH('m','i','d','d','o','t',0,0,0,0,0,0)
-#define CTX_bull         CTX_STRH('b','u','l','l',0,0,0,0,0,0,0,0)
-#define CTX_Oslash       CTX_STRH('O','s','l','a','s','h',0,0,0,0,0,0)
-#define CTX_Oslash       CTX_STRH('O','s','l','a','s','h',0,0,0,0,0,0)
-#define CTX_hellip       CTX_STRH('h','e','l','l','i','p',0,0,0,0,0,0)
-#define CTX_aring        CTX_STRH('a','r','i','n','g',0,0,0,0,0,0,0)
-#define CTX_Aring        CTX_STRH('A','r','i','n','g',0,0,0,0,0,0,0)
-#define CTX_aelig        CTX_STRH('a','e','l','i','g',0,0,0,0,0,0,0)
-#define CTX_AElig        CTX_STRH('A','E','l','i','g',0,0,0,0,0,0,0)
-#define CTX_Aelig        CTX_STRH('A','E','l','i','g',0,0,0,0,0,0,0)
-#define CTX_laquo        CTX_STRH('l','a','q','u','o',0,0,0,0,0,0,0)
-#define CTX_raquo        CTX_STRH('r','a','q','u','o',0,0,0,0,0,0,0)
-#define CTX_reg          CTX_STRH('r','e','g',0,0,0,0,0,0,0,0,0)
-#define CTX_deg          CTX_STRH('d','e','g',0,0,0,0,0,0,0,0,0)
-#define CTX_plusmn       CTX_STRH('p','l','u','s','m','n',0,0,0,0,0,0)
-#define CTX_sup2         CTX_STRH('s','u','p','2',0,0,0,0,0,0,0,0)
-#define CTX_sup3         CTX_STRH('s','u','p','3',0,0,0,0,0,0,0,0)
-#define CTX_sup1         CTX_STRH('s','u','p','1',0,0,0,0,0,0,0,0)
-#define CTX_ordm         CTX_STRH('o','r','d','m',0,0,0,0,0,0,0,0)
-#define CTX_para         CTX_STRH('p','a','r','a',0,0,0,0,0,0,0,0)
-#define CTX_cedil        CTX_STRH('c','e','d','i','l',0,0,0,0,0,0,0)
-#define CTX_amp          CTX_STRH('a','m','p',0,0,0,0,0,0,0,0,0)
-#define CTX_mdash        CTX_STRH('m','d','a','s','h',0,0,0,0,0,0,0)
-#define CTX_apos         CTX_STRH('a','p','o','s',0,0,0,0,0,0,0,0)
-#define CTX_quot         CTX_STRH('q','u','o','t',0,0,0,0,0,0,0,0)
-#define CTX_iexcl        CTX_STRH('i','e','x','c','l',0,0,0,0,0,0,0)
-#define CTX_cent         CTX_STRH('c','e','n','t',0,0,0,0,0,0,0,0)
-#define CTX_pound        CTX_STRH('p','o','u','n','d',0,0,0,0,0,0,0)
-#define CTX_euro         CTX_STRH('e','u','r','o',0,0,0,0,0,0,0,0)
-#define CTX_yen          CTX_STRH('y','e','n',0,0,0,0,0,0,0,0,0)
-#define CTX_curren       CTX_STRH('c','u','r','r','e','n',0,0,0,0,0,0)
-#define CTX_sect         CTX_STRH('s','e','c','t',0,0,0,0,0,0,0,0)
-#define CTX_phi          CTX_STRH('p','h','i',0,0,0,0,0,0,0,0,0)
-#define CTX_omega        CTX_STRH('o','m','e','g','a',0,0,0,0,0,0,0)
-#define CTX_alpha        CTX_STRH('a','l','p','h','a',0,0,0,0,0,0,0)
-
-#endif
-#endif
+// some core scg bits
 #define CTX_display      CTX_STRH('d','i','s','p','l','a','y',0,0,0,0,0,0,0)
 #define CTX_padding_bottom CTX_STRH('p','a','d','d','i','n','g','_','b','o','t','t','o','m')
 #define CTX_float        CTX_STRH('f','l','o','a','t',0,0,0,0,0,0,0,0,0)
@@ -2323,8 +2253,8 @@ static void
 ctx_matrix_rotate (CtxMatrix *matrix, float angle)
 {
   CtxMatrix transform;
-  float val_sin = sinf (angle);
-  float val_cos = cosf (angle);
+  float val_sin = ctx_sinf (angle);
+  float val_cos = ctx_cosf (angle);
   transform.m[0][0] =  val_cos; transform.m[0][1] = val_sin;
   transform.m[1][0] = -val_sin; transform.m[1][1] = val_cos;
   transform.m[2][0] =     0.0f; transform.m[2][1] = 0.0f;
@@ -2337,7 +2267,7 @@ static void
 ctx_matrix_skew_x (CtxMatrix *matrix, float angle)
 {
   CtxMatrix transform;
-  float val_tan = tanf (angle);
+  float val_tan = ctx_tanf (angle);
   transform.m[0][0] =    1.0f; transform.m[0][1] = 0.0f;
   transform.m[1][0] = val_tan; transform.m[1][1] = 1.0f;
   transform.m[2][0] =    0.0f; transform.m[2][1] = 0.0f;
@@ -2349,7 +2279,7 @@ static void
 ctx_matrix_skew_y (CtxMatrix *matrix, float angle)
 {
   CtxMatrix transform;
-  float val_tan = tanf (angle);
+  float val_tan = ctx_tanf (angle);
   transform.m[0][0] =    1.0f; transform.m[0][1] = val_tan;
   transform.m[1][0] =    0.0f; transform.m[1][1] = 1.0f;
   transform.m[2][0] =    0.0f; transform.m[2][1] = 0.0f;
@@ -3196,10 +3126,10 @@ void ctx_set_line_width (Ctx *ctx, float x) {
 
   /* XXX : ugly hack to normalize the width dependent on the current
            transform, this does not really belong here */
-  x = x * ctx_maxf(ctx_maxf(fabsf(ctx->state.gstate.transform.m[0][0]),
-                          fabsf(ctx->state.gstate.transform.m[0][1])),
-                  ctx_maxf(fabsf(ctx->state.gstate.transform.m[1][0]),
-                          fabsf(ctx->state.gstate.transform.m[1][1])));
+  x = x * ctx_maxf(ctx_maxf(ctx_fabsf(ctx->state.gstate.transform.m[0][0]),
+                          ctx_fabsf(ctx->state.gstate.transform.m[0][1])),
+                  ctx_maxf(ctx_fabsf(ctx->state.gstate.transform.m[1][0]),
+                          ctx_fabsf(ctx->state.gstate.transform.m[1][1])));
   CTX_PROCESS_F1(CTX_SET_LINE_WIDTH, x);
 }
 
@@ -3548,7 +3478,7 @@ ctx_point_seg_dist_sq(float x, float y,
 static void
 ctx_normalize (float *x, float* y)
 {
-  float length = hypotf((*x), (*y));
+  float length = ctx_hypotf((*x), (*y));
   if (length > 1e-6f)
   {
     float r = 1.0f / length;
@@ -3588,8 +3518,8 @@ if(0){
   dy1 = y2-y1;
   ctx_normalize(&dx0,&dy0);
   ctx_normalize(&dx1,&dy1);
-  a = acosf(dx0*dx1 + dy0*dy1);
-  d = radius / tanf(a/2.0f);
+  a = ctx_acosf(dx0*dx1 + dy0*dy1);
+  d = radius / ctx_tanf(a/2.0f);
 #if 1
   if (d > 10000.0f) {
     ctx_line_to (ctx, x1, y1);
@@ -3599,14 +3529,14 @@ if(0){
   if ((dx1*dy0 - dx0*dy1) > 0.0f) {
     cx = x1 + dx0*d + dy0*radius;
     cy = y1 + dy0*d + -dx0*radius;
-    a0 = atan2f(dx0, -dy0);
-    a1 = atan2f(-dx1, dy1);
+    a0 = ctx_atan2f(dx0, -dy0);
+    a1 = ctx_atan2f(-dx1, dy1);
     dir = 0;
   } else {
     cx = x1 + dx0*d + -dy0*radius;
     cy = y1 + dy0*d + dx0*radius;
-    a0 = atan2f(-dx0, dy0);
-    a1 = atan2f(dx1, -dy1);
+    a0 = ctx_atan2f(-dx0, dy0);
+    a1 = ctx_atan2f(dx1, -dy1);
     dir = 1;
    }
    ctx_arc (ctx, cx, cy, radius, a0, a1, dir);
@@ -3785,7 +3715,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         ctx_user_to_device (state, &x0, &y0);
         ctx_user_to_device (state, &x1, &y1);
 
-        length = hypotf (x1-x0,y1-y0);
+        length = ctx_hypotf (x1-x0,y1-y0);
         dx = (x1-x0) / length;
         dy = (y1-y0) / length;
         start = (x0 * dx + y0 * dy) / length;
@@ -3983,8 +3913,8 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
         entry[4].code == CTX_REL_LINE_TO &&
         entry[5].code == CTX_REL_LINE_TO &&
         entry[6].code == CTX_FILL &&
-        fabsf (entry[2].data.f[0] - 1.0f) < 0.02f &&
-        fabsf (entry[3].data.f[1] - 1.0f) < 0.02f)
+        ctx_fabsf (entry[2].data.f[0] - 1.0f) < 0.02f &&
+        ctx_fabsf (entry[3].data.f[1] - 1.0f) < 0.02f)
     {
         entry[0].code = CTX_SET_PIXEL;
         entry[0].data.u16[2] = entry[1].data.f[0];
@@ -4464,8 +4394,8 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
       }
       break;
     case CTX_ARC:
-      state->x = ctx_arg_float (0) + cosf (ctx_arg_float (4)) * ctx_arg_float (2);
-      state->y = ctx_arg_float (1) + sinf (ctx_arg_float (4)) * ctx_arg_float (2);
+      state->x = ctx_arg_float (0) + ctx_cosf (ctx_arg_float (4)) * ctx_arg_float (2);
+      state->y = ctx_arg_float (1) + ctx_sinf (ctx_arg_float (4)) * ctx_arg_float (2);
       break;
 
     case CTX_REL_MOVE_TO:
@@ -5926,7 +5856,7 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   }
   else
   {
-    v = hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
+    v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
     v = (v - g->radial_gradient.r0) /
         (g->radial_gradient.r1 - g->radial_gradient.r0);
   }
@@ -5951,7 +5881,7 @@ ctx_fragment_radial_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
   }
   else
   {
-    v = hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
+    v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
     v = (v - g->radial_gradient.r0) /
         (g->radial_gradient.r1 - g->radial_gradient.r0);
   }
@@ -7130,11 +7060,11 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
   if (end_angle == start_angle)
   {
 //  if (rasterizer->has_prev!=0)
-    ctx_rasterizer_line_to (rasterizer, x + cosf (end_angle) * radius,
-                          y + sinf (end_angle) * radius);
+    ctx_rasterizer_line_to (rasterizer, x + ctx_cosf (end_angle) * radius,
+                          y + ctx_sinf (end_angle) * radius);
 //    else
-//    ctx_rasterizer_move_to (rasterizer, x + cosf (end_angle) * radius,
-//                          y + sinf (end_angle) * radius);
+//    ctx_rasterizer_move_to (rasterizer, x + ctx_cosf (end_angle) * radius,
+//                          y + ctx_sinf (end_angle) * radius);
 
     return;
   }
@@ -7161,8 +7091,8 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
 
   if (steps == 0 || steps==full_segments -1  || (anticlockwise && steps == full_segments))
   {
-      float xv = x + cosf (start_angle) * radius;
-      float yv = y + sinf (start_angle) * radius;
+      float xv = x + ctx_cosf (start_angle) * radius;
+      float yv = y + ctx_sinf (start_angle) * radius;
       if (!rasterizer->has_prev)
         ctx_rasterizer_move_to (rasterizer, xv, yv);
       
@@ -7172,8 +7102,8 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
   {
     for (float angle = start_angle, i = 0; i < steps; angle += step, i++)
     {
-      float xv = x + cosf (angle) * radius;
-      float yv = y + sinf (angle) * radius;
+      float xv = x + ctx_cosf (angle) * radius;
+      float yv = y + ctx_sinf (angle) * radius;
       if (first && !rasterizer->has_prev)
         ctx_rasterizer_move_to (rasterizer, xv, yv);
       else
@@ -7182,8 +7112,8 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
     }
 
   }
-    ctx_rasterizer_line_to (rasterizer, x + cosf (end_angle) * radius,
-                          y + sinf (end_angle) * radius);
+    ctx_rasterizer_line_to (rasterizer, x + ctx_cosf (end_angle) * radius,
+                          y + ctx_sinf (end_angle) * radius);
 }
 
 static void
@@ -11600,24 +11530,5 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
 #endif
 
 #include "svg.h"
-
-#if CTX_MATH
-
-#undef sqrtf
-#undef atanf
-#undef asinf
-#undef acosf
-#undef atan2f
-#undef sinf
-#undef fabsf
-#undef cosf
-#undef tanf
-#undef hypotf
-
-#else
-
-#include <math.h>
-
-#endif
 
 #endif
