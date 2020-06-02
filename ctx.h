@@ -126,85 +126,85 @@ void ctx_new_path       (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
 void ctx_restore        (Ctx *ctx);
 void ctx_clip           (Ctx *ctx);
-void ctx_identity_matrix (Ctx *ctx);
+void ctx_identity       (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
 void ctx_set_line_width (Ctx *ctx, float x);
-void ctx_set_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
+void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                                    float c,  float d,  // vskew,  vscale
                                    float e,  float f); // htran,  vtran
 void ctx_get_transform  (Ctx *ctx, float *a, float *b,
                                    float *c, float *d,
                                    float *e, float *f);
 
-
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0
+#define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line */
 
-#define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line,
-                                         could be replaced with fast
-                                         1px wide dab based stroker*/
+void  ctx_dirty_rect      (Ctx *ctx, int *x, int *y, int *width, int *height);
 
-void  ctx_dirty_rect     (Ctx *ctx, int *x, int *y, int *width, int *height);
+void  ctx_set_font_size   (Ctx *ctx, float x);
+void  ctx_set_font        (Ctx *ctx, const char *font);
+void  ctx_scale           (Ctx *ctx, float x, float y);
+void  ctx_translate       (Ctx *ctx, float x, float y);
+void  ctx_line_to         (Ctx *ctx, float x, float y);
+void  ctx_move_to         (Ctx *ctx, float x, float y);
+void  ctx_curve_to        (Ctx *ctx, float cx0, float cy0,
+                           float cx1, float cy1,
+                           float x, float y);
+void  ctx_quad_to         (Ctx *ctx, float cx, float cy,
+                           float x, float y);
+void  ctx_arc             (Ctx  *ctx,
+                           float x, float y,
+                           float radius,
+                           float angle1, float angle2,
+                           int   direction);
+void  ctx_arc_to          (Ctx *ctx, float x1, float y1,
+                           float x2, float y2, float radius);
+void  ctx_rectangle       (Ctx *ctx,
+                           float x0, float y0,
+                           float w, float h);
+void  ctx_rel_line_to     (Ctx *ctx, float x, float y);
+void  ctx_rel_move_to     (Ctx *ctx, float x, float y);
+void  ctx_rel_curve_to    (Ctx *ctx,
+                           float x0, float y0,
+                           float x1, float y1,
+                           float x2, float y2);
+void  ctx_rel_quad_to     (Ctx *ctx, float cx, float cy,
+                           float x, float y);
+void  ctx_close_path      (Ctx *ctx);
 
-void  ctx_set_font_size  (Ctx *ctx, float x);
-void  ctx_set_font       (Ctx *ctx, const char *font);
-void  ctx_scale          (Ctx *ctx, float x, float y);
-void  ctx_translate      (Ctx *ctx, float x, float y);
-void  ctx_line_to        (Ctx *ctx, float x, float y);
-void  ctx_move_to        (Ctx *ctx, float x, float y);
-void  ctx_curve_to       (Ctx *ctx, float cx0, float cy0,
-                          float cx1, float cy1,
-                          float x, float y);
-void  ctx_quad_to        (Ctx *ctx, float cx, float cy,
-                          float x, float y);
-void ctx_arc            (Ctx  *ctx,
-                         float x, float y,
-                         float radius,
-                         float angle1, float angle2,
-                         int   direction);
-void ctx_arc_to         (Ctx *ctx, float x1, float y1,
-                                   float x2, float y2, float radius);
-void  ctx_rectangle      (Ctx *ctx,
-                          float x0, float y0,
-                          float w, float h);
-void  ctx_rel_line_to    (Ctx *ctx, float x, float y);
-void  ctx_rel_move_to    (Ctx *ctx, float x, float y);
-void  ctx_rel_curve_to   (Ctx *ctx,
-                          float x0, float y0,
-                          float x1, float y1,
-                          float x2, float y2);
-void  ctx_rel_quad_to    (Ctx *ctx, float cx, float cy,
-                          float x, float y);
-void  ctx_close_path     (Ctx *ctx);
+float ctx_get_font_size   (Ctx *ctx);
 
-float ctx_get_font_size  (Ctx *ctx);
+void ctx_set_rgba         (Ctx *ctx, float r, float g, float b, float a);
+void ctx_get_rgba         (Ctx *ctx, float *rgba);
 
-//void ctx_set_rgba_stroke_u8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-void ctx_set_rgba8      (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-//void ctx_set_rgba_stroke (Ctx *ctx, float  r, float   g, float   b, float   a);
-void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
-void ctx_set_device_rgba(Ctx *ctx, float r, float g, float b, float a);
-void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
-void ctx_set_gray       (Ctx *ctx, float gray);
-void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k);
-void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a);
-void ctx_get_rgba       (Ctx *ctx, float *rgba);
-void ctx_get_device_rgba(Ctx *ctx, float *rgba);
-void ctx_get_cmyka      (Ctx *ctx, float *cmyka);
-void ctx_get_graya      (Ctx *ctx, float *ya);
 
-void ctx_current_point  (Ctx *ctx, float *x, float *y);
-float ctx_x             (Ctx *ctx);
-float ctx_y             (Ctx *ctx);
 
-int  ctx_glyph          (Ctx *ctx, uint32_t unichar, int stroke);
-void ctx_arc            (Ctx  *ctx,
-                         float x, float y,
-                         float radius,
-                         float angle1, float angle2,
-                         int   direction);
-void ctx_arc_to         (Ctx *ctx, float x1, float y1,
-                                   float x2, float y2, float radius);
+void ctx_set_rgba8        (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+void ctx_set_drgba        (Ctx *ctx, float r, float g, float b, float a);
+
+void ctx_set_rgb          (Ctx *ctx, float r, float g, float b);
+void ctx_set_gray         (Ctx *ctx, float gray);
+void ctx_set_cmyk         (Ctx *ctx, float c, float m, float y, float k);
+void ctx_set_cmyka        (Ctx *ctx, float c, float m, float y, float k, float a);
+void ctx_get_drgba        (Ctx *ctx, float *rgba);
+void ctx_get_cmyka        (Ctx *ctx, float *cmyka);
+void ctx_get_graya        (Ctx *ctx, float *ya);
+
+
+void ctx_current_point    (Ctx *ctx, float *x, float *y);
+float ctx_x               (Ctx *ctx);
+float ctx_y               (Ctx *ctx);
+
+int  ctx_glyph            (Ctx *ctx, uint32_t unichar, int stroke);
+void ctx_arc              (Ctx  *ctx,
+                           float x, float y,
+                           float radius,
+                           float angle1, float angle2,
+                           int   direction);
+void ctx_arc_to           (Ctx *ctx, float x1, float y1,
+                           float x2, float y2, float radius);
 void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
 float ctx_get_global_alpha (Ctx *ctx);
 
@@ -399,7 +399,7 @@ typedef enum
   CTX_SMOOTHQ_TO       = 'T', // x y 
   CTX_CLEAR            = 'U', //
   CTX_VER_LINE_TO      = 'V', // y 
-  CTX_SET_TRANSFORM    = 'W', // a b c d e f 
+  CTX_APPLY_TRANSFORM  = 'W', // a b c d e f - for set_transform combine with identity
   CTX_EXIT             = 'X', //
   // Z - SVG?
   CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius 
@@ -426,6 +426,7 @@ typedef enum
   CTX_IDENTITY         = 'y', // 
   CTX_GLYPH            = 'w', // unichar fontsize 
   CTX_CLOSE_PATH       = 'z', //
+  CTX_CLOSE_PATH2      = 'Z', //
 
   /* these commands have single byte binary representations,
    * but are two chars in text, values below 9 are used for
@@ -1849,7 +1850,7 @@ static void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float
   color->alpha        = a;
 }
 
-static void ctx_color_set_device_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a)
+static void ctx_color_set_drgba (CtxState *state, CtxColor *color, float r, float g, float b, float a)
 {
 #if CTX_ENABLE_CM
   color->original     = color->valid = CTX_VALID_RGBA_DEVICE;
@@ -1946,7 +1947,7 @@ static void ctx_rgb_device_to_user (CtxState *state, float rin, float gin, float
 #endif
 
 
-static void ctx_color_get_device_rgba (CtxState *state, CtxColor *color, float *out)
+static void ctx_color_get_drgba (CtxState *state, CtxColor *color, float *out)
 {
   if (!(color->valid & CTX_VALID_RGBA_DEVICE))
   {
@@ -1992,7 +1993,7 @@ static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
 #if CTX_ENABLE_CM
   if (!(color->valid & CTX_VALID_RGBA))
   {
-    ctx_color_get_device_rgba (state, color, out);
+    ctx_color_get_drgba (state, color, out);
     if (color->valid & CTX_VALID_RGBA_DEVICE)
     {
       ctx_rgb_device_to_user (state, color->device_red, color->device_green, color->device_blue,
@@ -2005,7 +2006,7 @@ static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
   out[2] = color->blue;
   out[3] = color->alpha;
 #else
-  ctx_color_get_device_rgba (state, color, out);
+  ctx_color_get_drgba (state, color, out);
 #endif
 }
 
@@ -2014,7 +2015,7 @@ static void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
   if (!(color->valid & CTX_VALID_GRAYA))
   {
     float rgba[4];
-    ctx_color_get_device_rgba (state, color, rgba);
+    ctx_color_get_drgba (state, color, rgba);
     color->l = (rgba[0] + rgba[1] + rgba[2])/3.0f; // XXX
     color->valid |= CTX_VALID_GRAYA;
   }
@@ -2295,7 +2296,7 @@ void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height)
 
 void ctx_process (Ctx *ctx, CtxEntry *entry);
 
-static void
+static void // XXX unused
 ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f)
 {
   matrix->m[0][0] = a; matrix->m[0][1] = b;
@@ -2401,7 +2402,7 @@ ctx_conts_for_entry (CtxEntry *entry)
     case CTX_ARC:
     case CTX_CURVE_TO:
     case CTX_REL_CURVE_TO:
-    case CTX_SET_TRANSFORM:
+    case CTX_APPLY_TRANSFORM:
     case CTX_SET_COLOR:
       return 2;
     case CTX_RECTANGLE:
@@ -2615,7 +2616,7 @@ ctx_iterator_next (CtxIterator *iterator)
     case CTX_RADIAL_GRADIENT:
     case CTX_CURVE_TO:
     case CTX_REL_CURVE_TO:
-    case CTX_SET_TRANSFORM:
+    case CTX_APPLY_TRANSFORM:
       iterator->bitpack_command[0] = ret[0];
       iterator->bitpack_command[1] = ret[1];
       iterator->bitpack_command[2] = ret[2];
@@ -3013,9 +3014,9 @@ ctx_get_rgba (Ctx *ctx, float *rgba)
 }
 
 void
-ctx_get_device_rgba (Ctx *ctx, float *rgba)
+ctx_get_drgba (Ctx *ctx, float *rgba)
 {
-  ctx_color_get_device_rgba (&(ctx->state), &ctx->state.gstate.source.color, rgba);
+  ctx_color_get_drgba (&(ctx->state), &ctx->state.gstate.source.color, rgba);
 }
 
 #if CTX_ENABLE_CMYK
@@ -3084,7 +3085,7 @@ ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_
   ctx_process (ctx, &command);
 }
 
-void ctx_set_device_rgba (Ctx *ctx, float r, float g, float b, float a)
+void ctx_set_drgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]={
      ctx_f (CTX_SET_COLOR, CTX_DRGBA, r),
@@ -3361,20 +3362,20 @@ ctx_set_font (Ctx *ctx, const char *name)
 }
 
 void
-ctx_identity_matrix (Ctx *ctx)
+ctx_identity (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_IDENTITY);
 }
 
 void
-ctx_set_transform (Ctx *ctx, float a, float b,  // hscale, hskew
-                             float c, float d,  // vskew,  vscale
-                             float e, float f)  // htran,  vtran
+ctx_apply_transform (Ctx *ctx, float a, float b,  // hscale, hskew
+                               float c, float d,  // vskew,  vscale
+                               float e, float f)  // htran,  vtran
 {
   CtxEntry command[3]={
-     ctx_f (CTX_SET_TRANSFORM, a, b),
-     ctx_f (CTX_CONT,          c, d),
-     ctx_f (CTX_CONT,          e, f)};
+     ctx_f (CTX_APPLY_TRANSFORM, a, b),
+     ctx_f (CTX_CONT,            c, d),
+     ctx_f (CTX_CONT,            e, f)};
   ctx_process (ctx, command);
 }
 
@@ -3391,16 +3392,25 @@ ctx_get_transform  (Ctx *ctx, float *a, float *b,
   if (f) *f = ctx->state.gstate.transform.m[2][1];
 }
 
+void ctx_apply_matrix (Ctx *ctx, CtxMatrix *matrix)
+{
+  ctx_apply_transform (ctx,
+        matrix->m[0][0], matrix->m[0][1],
+        matrix->m[1][0], matrix->m[1][1],
+        matrix->m[2][0], matrix->m[2][1]);
+}
+
 void ctx_get_matrix (Ctx *ctx, CtxMatrix *matrix)
 {
   *matrix = ctx->state.gstate.transform;
 }
 
-void ctx_transform (Ctx *ctx, CtxMatrix *matrix)
+void ctx_set_matrix (Ctx *ctx, CtxMatrix *matrix)
 {
-        //  AXXX XXX XXX
-  //*matrix = ctx->state.gstate.transform;
+  ctx_identity (ctx);
+  ctx_apply_matrix (ctx, matrix);
 }
+
 void ctx_rotate (Ctx *ctx, float x){
   CTX_PROCESS_F1(CTX_ROTATE, x);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
@@ -3600,6 +3610,9 @@ ctx_normalize (float *x, float* y)
 void
 ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
 {
+  // XXX : should partially move into rasterizer to preserve comand
+  //       even if an arc preserves all geometry, just to ensure roundtripping
+  //       of data
   /* from nanovg - but not quite working ; uncertain if arc or wrong
    * transfusion is the cause.
    */
@@ -3772,7 +3785,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
             ctx_color_set_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
           break;
         case CTX_DRGBA:
-            ctx_color_set_device_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+            ctx_color_set_drgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
           break;
 #if CTX_ENABLE_CMYK
         case CTX_CMYKA:
@@ -3894,11 +3907,23 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
     case CTX_ROTATE:
       ctx_matrix_rotate (&state->gstate.transform, ctx_arg_float(0));
       break;
-    case CTX_SET_TRANSFORM:
+    case CTX_APPLY_TRANSFORM:
+      {
+        CtxMatrix m;
+        ctx_matrix_set (&m,
+                        ctx_arg_float(0), ctx_arg_float(1),
+                        ctx_arg_float(2), ctx_arg_float(3),
+                        ctx_arg_float(4), ctx_arg_float(5));
+
+        ctx_matrix_multiply (&state->gstate.transform,
+                             &state->gstate.transform, &m); // XXX verify order
+      }
+#if 0
       ctx_matrix_set (&state->gstate.transform,
                         ctx_arg_float(0), ctx_arg_float(1),
                         ctx_arg_float(2), ctx_arg_float(3),
                         ctx_arg_float(4), ctx_arg_float(5));
+#endif
       break;
   }
 }
@@ -4565,13 +4590,14 @@ ctx_init (Ctx *ctx)
   ctx_state_init (&ctx->state);
   ctx->render_func = NULL;
   ctx->renderer = NULL;
+#if CTX_CURRENT_PATH
   ctx->current_path.flags |= CTX_RENDERSTREAM_CURRENT_PATH;
-#if 1
+#endif
+
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_SCREEN_SPACE;
   ctx->transformation |= (CtxTransformation)CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
   ctx->renderstream.flags |= CTX_TRANSFORMATION_BITPACK;
-#endif
 #endif
 }
 
@@ -8519,26 +8545,6 @@ float ctx_y (Ctx *ctx)
   return y;
 }
 
-static int ctx_code_is_path (CtxCode code)
-{
-  switch (code)
-  {
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-static int ctx_code_clears_path (CtxCode code)
-{
-  switch (code)
-  {
-      return 1;
-    default:
-      return 0;
-  }
-}
-
 void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
@@ -9751,7 +9757,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
       case CTX_REL_LINE_TO:          name="rel_line_to";break;
       case CTX_FILL:                 name="fill";break;
       case CTX_EXIT:                 name="exit";break;
-      case CTX_SET_TRANSFORM:        name="set_transform";break;
+      case CTX_APPLY_TRANSFORM:        name="set_transform";break;
       case CTX_REL_ARC_TO:           name="rel_arc_to";break;
       case CTX_GLYPH:                name="glyph";break;
       case CTX_TEXTURE:              name="texture";break;
@@ -10009,7 +10015,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
     case CTX_REL_CURVE_TO:
     case CTX_ARC:
     case CTX_RADIAL_GRADIENT:
-    case CTX_SET_TRANSFORM:
+    case CTX_APPLY_TRANSFORM:
       ctx_print_entry (stream, formatter, indent, entry, 6);
       break;
 
@@ -10337,7 +10343,7 @@ static int ctx_arguments_for_code (CtxCode code)
   case CTX_ARC:
   case CTX_CURVE_TO:
   case CTX_REL_CURVE_TO:
-  case CTX_SET_TRANSFORM:
+  case CTX_APPLY_TRANSFORM:
   case CTX_RADIAL_GRADIENT:
     return 6;
   case CTX_TEXT_STROKE:
@@ -10510,7 +10516,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
     case CTX_text:           ret = CTX_TEXT; break;
     case CTX_identity:       ret = CTX_IDENTITY; break;
-    case CTX_transform:      ret = CTX_SET_TRANSFORM; break;
+    case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
                                                            // XXX: make it apply instead of set
 
     case STR(CTX_SET_KEY,'m',0,0,0,0,0,0,0,0,0,0,0,0):
@@ -10652,6 +10658,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
       ret = str_hash;
   }
   }
+  if (ret == CTX_CLOSE_PATH2)
+    ret = CTX_CLOSE_PATH;
 
   /* handling single char, and ret = foo; break;  in cases above*/
   return ctx_parser_set_command (parser, (CtxCode)ret);
@@ -10778,10 +10786,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
             ctx_set_rgba (ctx, arg(0), arg(1), arg(2), arg(3));
             break;
           case CTX_DRGB:
-            ctx_set_device_rgba (ctx, arg(0), arg(1), arg(2), 1.0);
+            ctx_set_drgba (ctx, arg(0), arg(1), arg(2), 1.0);
             break;
           case CTX_DRGBA:
-            ctx_set_device_rgba (ctx, arg(0), arg(1), arg(2), arg(3));
+            ctx_set_drgba (ctx, arg(0), arg(1), arg(2), arg(3));
             break;
         }
       }
@@ -10847,8 +10855,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
     case CTX_ARC:
         ctx_arc (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5));
         break;
-    case CTX_SET_TRANSFORM:
-        ctx_set_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5));
+    case CTX_APPLY_TRANSFORM:
+        ctx_apply_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5));
         break;
     case CTX_CURVE_TO:
         ctx_curve_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5));
@@ -10987,7 +10995,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_set_text_direction (ctx, (CtxTextDirection)arg(0));
         break;
     case CTX_IDENTITY:
-        ctx_identity_matrix (ctx);
+        ctx_identity (ctx);
         break;
     case CTX_RECTANGLE:
         ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3));

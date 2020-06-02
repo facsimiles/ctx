@@ -7150,7 +7150,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
             width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
-        ctx_identity_matrix (mrg_cr (mrg));
+        ctx_identity (mrg_cr (mrg));
         ctx_scale (mrg_cr(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
         html->state->floats = 0;
 
@@ -8468,7 +8468,7 @@ void mrg_xml_render (Mrg *mrg,
             {
               CtxMatrix matrix;
               mrg_parse_transform (mrg, &matrix, transform);
-              ctx_transform (mrg_cr (mrg), &matrix);
+              ctx_apply_matrix (mrg_cr (mrg), &matrix);
             }
         }
 
