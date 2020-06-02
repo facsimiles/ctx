@@ -136,6 +136,7 @@ void ctx_get_transform  (Ctx *ctx, float *a, float *b,
                                    float *c, float *d,
                                    float *e, float *f);
 
+
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0
 
@@ -474,6 +475,10 @@ void ctx_set_renderer (Ctx *ctx,
 
 #ifndef CTX_PARSER
 #define CTX_PARSER 0
+#endif
+
+#ifndef CTX_XML
+#define CTX_XML 1
 #endif
 
 /* when ctx_math is defined, which it is by default, we use ctx' own
@@ -1419,7 +1424,8 @@ struct _CtxKeyDbEntry {
 
 static uint32_t ctx_strhash (const char *str, int case_insensitive)
 {
-  #define CTX_TO_LOWER(a) ( (((a)>='A')&&((a)<='Z') )?(a)+32:(a))
+  #define CTX_NORMALIZE(a)             (((a)=='-')?'_':(a))
+  #define CTX_NORMALIZE_CASEFOLDED(a)  (((a)=='-')?'_':( (((a)>='A')&&((a)<='Z') )?(a)+32:(a)))
   uint32_t str_hash = 0;
   /* hash string to number */
   {
@@ -1427,9 +1433,9 @@ static uint32_t ctx_strhash (const char *str, int case_insensitive)
     for (int i = 0; str[i] && i < 12; i++)
     {
       if (case_insensitive)
-        str_hash = str_hash + CTX_TO_LOWER(str[i]) * multiplier;
+        str_hash = str_hash + CTX_NORMALIZE_CASEFOLDED(str[i]) * multiplier;
       else
-        str_hash = str_hash + (str[i]) * multiplier;
+        str_hash = str_hash + CTX_NORMALIZE(str[i]) * multiplier;
       multiplier *= 11;
     }
   }
@@ -1460,32 +1466,32 @@ struct _CtxState {
  * the compiler tells us.
  */
 #define CTX_STRH(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) (\
-          (((uint32_t)CTX_TO_LOWER(a0))+ \
-          (((uint32_t)CTX_TO_LOWER(a1))*11)+ \
-          (((uint32_t)CTX_TO_LOWER(a2))*11*11)+ \
-          (((uint32_t)CTX_TO_LOWER(a3))*11*11*11)+ \
-          (((uint32_t)CTX_TO_LOWER(a4))*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a5))*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a6))*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a7))*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a8))*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a9))*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a10))*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_TO_LOWER(a11))*11*11*11*11*11*11*11*11*11*11*11)))
+          (((uint32_t)CTX_NORMALIZE(a0))+ \
+          (((uint32_t)CTX_NORMALIZE(a1))*11)+ \
+          (((uint32_t)CTX_NORMALIZE(a2))*11*11)+ \
+          (((uint32_t)CTX_NORMALIZE(a3))*11*11*11)+ \
+          (((uint32_t)CTX_NORMALIZE(a4))*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE(a5))*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE(a6))*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE(a7))*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE(a8))*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE(a9))*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE(a10))*11*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE(a11))*11*11*11*11*11*11*11*11*11*11*11)))
 
 #define CTX_STRHash(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) (\
-          (((uint32_t)(a0))+ \
-          (((uint32_t)(a1))*11)+ \
-          (((uint32_t)(a2))*11*11)+ \
-          (((uint32_t)(a3))*11*11*11)+ \
-          (((uint32_t)(a4))*11*11*11*11) + \
-          (((uint32_t)(a5))*11*11*11*11*11) + \
-          (((uint32_t)(a6))*11*11*11*11*11*11) + \
-          (((uint32_t)(a7))*11*11*11*11*11*11*11) + \
-          (((uint32_t)(a8))*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)(a9))*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)(a10))*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)(a11))*11*11*11*11*11*11*11*11*11*11*11)))
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a0))+ \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a1))*11)+ \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a2))*11*11)+ \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a3))*11*11*11)+ \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a4))*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a5))*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a6))*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a7))*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a8))*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a9))*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a10))*11*11*11*11*11*11*11*11*11*11) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a11))*11*11*11*11*11*11*11*11*11*11*11)))
 
 #define STR CTX_STRH
 
@@ -1510,10 +1516,12 @@ struct _CtxState {
 #define CTX_lineTo       CTX_STRH('l','i','n','e','T','o',0,0,0,0,0,0)
 #define CTX_line_spacing CTX_STRH('l','i','n','e','_','s','p','a','c','i','n','g')
 #define CTX_line_to      CTX_STRH('l','i','n','e','_','t','o',0,0,0,0,0)
+#define CTX_line_height  CTX_STRH('l','i','n','e','_','h','e','i','h','t',0,0)
 #define CTX_moveTo       CTX_STRH('m','o','v','e','T','o',0,0,0,0,0,0)
 #define CTX_move_to      CTX_STRH('m','o','v','e','_','t','o',0,0,0,0,0)
 #define CTX_scale        CTX_STRH('s','c','a','l','e',0,0,0,0,0,0,0)
 #define CTX_text_align   CTX_STRH('t','e','x','t','_','a','l','i','g','n',0, 0)
+#define CTX_text_indent  CTX_STRH('t','e','x','t','_','i','n','d','e','n','t', 0)
 #define CTX_text_direction CTX_STRH('t','e','x','t','_','d','i','r','e','c','t','i')
 #define CTX_text_baseline CTX_STRH('t','e','x','t','_','b','a','s','e','l','i','n')
 #define CTX_new_state    CTX_STRH('n','e','w','_','s','t','a','t','e',0,0,0)
@@ -1724,11 +1732,26 @@ struct _CtxState {
 #define CTX_omega        CTX_STRH('o','m','e','g','a',0,0,0,0,0,0,0)
 #define CTX_alpha        CTX_STRH('a','l','p','h','a',0,0,0,0,0,0,0)
 
+#define CTX_display      CTX_STRH('d','i','s','p','l','a','y',0,0,0,0,0)
+#define CTX_padding_bottom CTX_STRH('p','a','d','d','i','n','g','_','b','o','t','t')
+#define CTX_float        CTX_STRH('f','l','o','a','t',0,0,0,0,0,0,0)
+
+static float ctx_state_get (CtxState *state, uint32_t hash)
+{
+  for (int i = state->gstate.keydb_pos-1; i>=0; i--)
+  {
+    if (state->keydb[i].key == hash)
+     return state->keydb[i].value;
+  }
+  return -0.0;
+}
 
 static void ctx_state_set (CtxState *state, uint32_t hash, float value)
 {
   if (hash != CTX_new_state)
   {
+    if (ctx_state_get (state, hash) == value)
+      return;
     for (int i = state->gstate.keydb_pos-1;
          state->keydb[i].key != CTX_new_state && i >=0;
          i--)
@@ -1747,15 +1770,6 @@ static void ctx_state_set (CtxState *state, uint32_t hash, float value)
   state->gstate.keydb_pos++;
 }
 
-static float ctx_state_get (CtxState *state, uint32_t hash)
-{
-  for (int i = state->gstate.keydb_pos-1; i>=0; i--)
-  {
-    if (state->keydb[i].key == hash)
-     return state->keydb[i].value;
-  }
-  return -0.0;
-}
 
 static uint8_t ctx_float_to_u8 (float val_f)
 {
@@ -2161,6 +2175,20 @@ struct _Ctx {
   int               transformation;
   CtxBuffer         texture[CTX_MAX_TEXTURES];
 };
+
+static float ctx_get (Ctx *ctx, uint32_t hash)
+{
+  return ctx_state_get (&ctx->state, hash);
+}
+static int ctx_get_int (Ctx *ctx, uint32_t hash)
+{
+  return ctx_state_get (&ctx->state, hash);
+}
+static void ctx_set (Ctx *ctx, uint32_t hash, float value)
+{
+  ctx_state_set (&ctx->state, hash, value);
+}
+
 
 typedef struct _CtxFont       CtxFont;
 typedef struct _CtxFontEngine CtxFontEngine;
@@ -3314,6 +3342,16 @@ ctx_get_transform  (Ctx *ctx, float *a, float *b,
   if (f) *f = ctx->state.gstate.transform.m[2][1];
 }
 
+void ctx_get_matrix (Ctx *ctx, CtxMatrix *matrix)
+{
+  *matrix = ctx->state.gstate.transform;
+}
+
+void ctx_transform (Ctx *ctx, CtxMatrix *matrix)
+{
+        //  AXXX XXX XXX
+  //*matrix = ctx->state.gstate.transform;
+}
 void ctx_rotate (Ctx *ctx, float x){
   CTX_PROCESS_F1(CTX_ROTATE, x);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
@@ -3612,7 +3650,7 @@ ctx_flush (Ctx *ctx)
 ////////////////////////////////////////
 
 static void
-ctx_matrix_inverse (CtxMatrix *m)
+ctx_matrix_invert (CtxMatrix *m)
 {
   CtxMatrix t = *m;
   float invdet, det = m->m[0][0] * m->m[1][1] -
@@ -3751,7 +3789,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.source.linear_gradient.end = end;
         state->gstate.source.type = CTX_SOURCE_LINEAR_GRADIENT;
         state->gstate.source.transform = state->gstate.transform;
-        ctx_matrix_inverse (&state->gstate.source.transform);
+        ctx_matrix_invert (&state->gstate.source.transform);
       }
       break;
 
@@ -3772,7 +3810,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.source.radial_gradient.r1 = r1;
         state->gstate.source.type = CTX_SOURCE_RADIAL_GRADIENT;
         state->gstate.source.transform = state->gstate.transform;
-        ctx_matrix_inverse (&state->gstate.source.transform);
+        ctx_matrix_invert (&state->gstate.source.transform);
       }
       break;
   }
@@ -7566,7 +7604,7 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
 
   rasterizer->state->gstate.source.transform = rasterizer->state->gstate.transform;
   ctx_matrix_translate (&rasterizer->state->gstate.source.transform, x, y);
-  ctx_matrix_inverse (&rasterizer->state->gstate.source.transform);
+  ctx_matrix_invert (&rasterizer->state->gstate.source.transform);
 }
 
 #if 0
@@ -11552,1122 +11590,8 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
 }
 #endif
 
-/*
- * Copyright (c) 2002, 2003, Øyvind Kolås <pippin@hodefoting.com>
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- */
+#include "svg.h"
 
-#ifndef XMLTOK_H
-#define XMLTOK_H
-
-#include <stdio.h>
-
-#define inbufsize 4096
-
-typedef struct _MrgXml MrgXml;
-
-enum
-{
-  t_none = 0,
-  t_whitespace,
-  t_prolog,
-  t_dtd,
-  t_comment,
-  t_word,
-  t_tag,
-  t_closetag,
-  t_closeemptytag,
-  t_endtag,
-  t_att = 10,
-  t_val,
-  t_eof,
-  t_entity,
-  t_error
-};
-
-MrgXml *xmltok_new (FILE * file_in);
-MrgXml *xmltok_buf_new (char *membuf);
-void    xmltok_free (MrgXml *t);
-int     xmltok_lineno (MrgXml *t);
-int     xmltok_get (MrgXml *t, char **data, int *pos);
-
-#endif /*XMLTOK_H */
-
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
-
-
-/* mrg - MicroRaptor Gui
- * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
- */
-
-#ifndef MRG_STRING_H
-#define MRG_STRING_H
-
-typedef struct _MrgString MrgString;
-
-struct _MrgString
-{
-  char *str;
-  int   length;
-  int   utf8_length;
-  int   allocated_length;
-}  __attribute((packed));
-
-MrgString   *mrg_string_new_with_size  (const char *initial, int initial_size);
-MrgString   *mrg_string_new            (const char *initial);
-MrgString   *mrg_string_new_printf     (const char *format, ...);
-void         mrg_string_free           (MrgString  *string, int freealloc);
-char        *mrg_string_dissolve       (MrgString  *string);
-const char  *mrg_string_get            (MrgString  *string);
-int          mrg_string_get_length     (MrgString  *string);
-int          mrg_string_get_utf8_length (MrgString  *string);
-void         mrg_string_set            (MrgString  *string, const char *new_string);
-void         mrg_string_clear          (MrgString  *string);
-void         mrg_string_append_str     (MrgString  *string, const char *str);
-void         mrg_string_append_byte    (MrgString  *string, char  val);
-void         mrg_string_append_string  (MrgString  *string, MrgString *string2);
-void         mrg_string_append_unichar (MrgString  *string, unsigned int unichar);
-void         mrg_string_append_data    (MrgString  *string, const char *data, int len);
-void         mrg_string_append_printf  (MrgString  *string, const char *format, ...);
-void         mrg_string_replace_utf8   (MrgString *string, int pos, const char *new_glyph);
-void         mrg_string_insert_utf8    (MrgString *string, int pos, const char *new_glyph);
-void         mrg_string_remove_utf8    (MrgString *string, int pos);
-
-
-/* mrg - MicroRaptor Gui
- * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
- */
-
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-static void mrg_string_init (MrgString *string, int initial_size)
-{
-  string->allocated_length = initial_size;
-  string->length = 0;
-  string->utf8_length = 0;
-  string->str = malloc (string->allocated_length);
-  string->str[0]='\0';
-}
-
-static void mrg_string_destroy (MrgString *string)
-{
-  if (string->str)
-  {
-    free (string->str);
-    string->str = NULL;
-  }
-}
-
-void mrg_string_clear (MrgString *string)
-{
-  string->length = 0;
-  string->utf8_length = 0;
-  string->str[string->length]=0;
-}
-
-static inline void _mrg_string_append_byte (MrgString *string, char  val)
-{
-  if ((val & 0xC0) != 0x80)
-    string->utf8_length++;
-  if (string->length + 1 >= string->allocated_length)
-    {
-      char *old = string->str;
-      string->allocated_length *= 2;
-      string->str = malloc (string->allocated_length);
-      memcpy (string->str, old, string->allocated_length/2);
-      free (old);
-    }
-  string->str[string->length++] = val;
-  string->str[string->length] = '\0';
-}
-void mrg_string_append_byte (MrgString *string, char  val)
-{
-  _mrg_string_append_byte (string, val);
-}
-
-void mrg_string_append_unichar (MrgString *string, unsigned int unichar)
-{
-  char *str;
-  char utf8[5];
-  utf8[ctx_unichar_to_utf8 (unichar, (unsigned char*)utf8)]=0;
-  str = utf8;
-
-  while (str && *str)
-    {
-      _mrg_string_append_byte (string, *str);
-      str++;
-    }
-}
-
-static inline void _mrg_string_append_str (MrgString *string, const char *str)
-{
-  if (!str) return;
-  while (*str)
-    {
-      _mrg_string_append_byte (string, *str);
-      str++;
-    }
-}
-void mrg_string_append_str (MrgString *string, const char *str)
-{
-  _mrg_string_append_str (string, str);
-}
-
-MrgString *mrg_string_new_with_size (const char *initial, int initial_size)
-{
-  MrgString *string = calloc (sizeof (MrgString), 1);
-  mrg_string_init (string, initial_size);
-  if (initial)
-    _mrg_string_append_str (string, initial);
-  return string;
-}
-
-MrgString *mrg_string_new (const char *initial)
-{
-  return mrg_string_new_with_size (initial, 8);
-}
-
-void mrg_string_append_data (MrgString *string, const char *str, int len)
-{
-  int i;
-  for (i = 0; i<len; i++)
-    _mrg_string_append_byte (string, str[i]);
-}
-
-void mrg_string_append_string (MrgString *string, MrgString *string2)
-{
-  const char *str = mrg_string_get (string2);
-  while (str && *str)
-    {
-      _mrg_string_append_byte (string, *str);
-      str++;
-    }
-}
-
-const char *mrg_string_get (MrgString *string)
-{
-  return string->str;
-}
-
-int mrg_string_get_length (MrgString *string)
-{
-  return string->length;
-}
-
-/* dissolving a string, means destroying it, but returning
- * the string, that should be manually freed.
- */
-char *mrg_string_dissolve   (MrgString *string)
-{
-  char *ret = string->str;
-  string->str = NULL;
-  free (string);
-  return ret;
-}
-
-void
-mrg_string_free (MrgString *string, int freealloc)
-{
-  if (freealloc)
-    {
-      mrg_string_destroy (string);
-    }
-  free (string);
-}
-
-void
-mrg_string_append_printf (MrgString *string, const char *format, ...)
-{
-  va_list ap;
-  size_t needed;
-  char  *buffer;
-  va_start(ap, format);
-  needed = vsnprintf(NULL, 0, format, ap) + 1;
-  buffer = malloc(needed);
-  va_end (ap);
-  va_start(ap, format);
-  vsnprintf(buffer, needed, format, ap);
-  va_end (ap);
-  _mrg_string_append_str (string, buffer);
-  free (buffer);
-}
-
-MrgString *mrg_string_new_printf (const char *format, ...)
-{
-  MrgString *string = mrg_string_new_with_size ("", 8);
-  va_list ap;
-  size_t needed;
-  char  *buffer;
-  va_start(ap, format);
-  needed = vsnprintf(NULL, 0, format, ap) + 1;
-  buffer = malloc(needed);
-  va_end (ap);
-  va_start(ap, format);
-  vsnprintf(buffer, needed, format, ap);
-  va_end (ap);
-  _mrg_string_append_str (string, buffer);
-  free (buffer);
-  return string;
-}
-
-void
-mrg_string_set (MrgString *string, const char *new_string)
-{
-  mrg_string_clear (string);
-  _mrg_string_append_str (string, new_string);
-}
-
-
-
-#ifndef __MRG_LIST__
-#define  __MRG_LIST__
-
-#include <stdlib.h>
-
-/* The whole mrg_list implementation is in the header and will be inlined
- * wherever it is used.
- */
-
-typedef struct _MrgList MrgList;
-  struct _MrgList {void *data;MrgList *next;
-  void (*freefunc)(void *data, void *freefunc_data);
-  void *freefunc_data;
-}
-;
-
-static inline void mrg_list_prepend_full (MrgList **list, void *data,
-    void (*freefunc)(void *data, void *freefunc_data),
-    void *freefunc_data)
-{
-  MrgList *new_=calloc (sizeof (MrgList), 1);
-  new_->next=*list;
-  new_->data=data;
-  new_->freefunc=freefunc;
-  new_->freefunc_data = freefunc_data;
-  *list = new_;
-}
-
-static inline int mrg_list_length (MrgList *list)
-{
-  int length = 0;
-  MrgList *l;
-  for (l = list; l; l = l->next, length++);
-  return length;
-}
-
-static inline void mrg_list_prepend (MrgList **list, void *data)
-{
-  MrgList *new_=calloc (sizeof (MrgList), 1);
-  new_->next= *list;
-  new_->data=data;
-  *list = new_;
-}
-
-static inline void *mrg_list_last (MrgList *list)
-{
-  if (list)
-    {
-      MrgList *last;
-      for (last = list; last->next; last=last->next);
-      return last->data;
-    }
-  return NULL;
-}
-
-static inline void mrg_list_append_full (MrgList **list, void *data,
-    void (*freefunc)(void *data, void *freefunc_data),
-    void *freefunc_data)
-{
-  MrgList *new_= calloc (sizeof (MrgList), 1);
-  new_->data=data;
-  new_->freefunc = freefunc;
-  new_->freefunc_data = freefunc_data;
-  if (*list)
-    {
-      MrgList *last;
-      for (last = *list; last->next; last=last->next);
-      last->next = new_;
-      return;
-    }
-  *list = new_;
-  return;
-}
-
-static inline void mrg_list_append (MrgList **list, void *data)
-{
-  mrg_list_append_full (list, data, NULL, NULL);
-}
-
-static inline void mrg_list_remove (MrgList **list, void *data)
-{
-  MrgList *iter, *prev = NULL;
-  if ((*list)->data == data)
-    {
-      if ((*list)->freefunc)
-        (*list)->freefunc ((*list)->data, (*list)->freefunc_data);
-      prev = (void*)(*list)->next;
-      free (*list);
-      *list = prev;
-      return;
-    }
-  for (iter = *list; iter; iter = iter->next)
-    if (iter->data == data)
-      {
-        if (iter->freefunc)
-          iter->freefunc (iter->data, iter->freefunc_data);
-        prev->next = iter->next;
-        free (iter);
-        break;
-      }
-    else
-      prev = iter;
-}
-
-static inline void mrg_list_free (MrgList **list)
-{
-  while (*list)
-    mrg_list_remove (list, (*list)->data);
-}
-
-static inline MrgList *mrg_list_nth (MrgList *list, int no)
-{
-  while(no-- && list)
-    list = list->next;
-  return list;
-}
-
-static inline MrgList *mrg_list_find (MrgList *list, void *data)
-{
-  for (;list;list=list->next)
-    if (list->data == data)
-      break;
-  return list;
-}
-
-void mrg_list_sort (MrgList **list,
-    int(*compare)(const void *a, const void *b, void *userdata),
-    void *userdata);
-
-static inline void
-mrg_list_insert_before (MrgList **list, MrgList *sibling,
-                        void *data)
-{
-  if (*list == NULL || *list == sibling)
-    {
-      mrg_list_prepend (list, data);
-    }
-  else
-    {
-      MrgList *prev = NULL;
-      for (MrgList *l = *list; l; l=l->next)
-        {
-          if (l == sibling)
-            break;
-          prev = l;
-        }
-      if (prev) {
-        MrgList *new_=calloc(sizeof (MrgList), 1);
-        new_->next = sibling;
-        new_->data = data;
-        prev->next=new_;
-      }
-    }
-}
-
-static inline void
-mrg_list_insert_sorted (MrgList **list, void *data,
-                       int(*compare)(const void *a, const void *b, void *userdata),
-                       void *userdata)
-{
-  mrg_list_prepend (list, data);
-  mrg_list_sort (list, compare, userdata);
-}
-
-static inline void
-mrg_list_reverse (MrgList **list)
-{
-  MrgList *new_ = NULL;
-  MrgList *l;
-  for (l = *list; l; l=l->next)
-    mrg_list_prepend (&new_, l->data);
-  mrg_list_free (list);
-  *list = new_;
-}
-
-#endif
-
-static MrgList *interns = NULL;
-
-const char * mrg_intern_string (const char *str)
-{
-  MrgList *i;
-  for (i = interns; i; i = i->next)
-  {
-    if (!strcmp (i->data, str))
-      return i->data;
-  }
-  str = strdup (str);
-  mrg_list_append (&interns, (void*)str);
-  return str;
-}
-
-void mrg_string_replace_utf8 (MrgString *string, int pos, const char *new_glyph)
-{
-  int new_len = ctx_utf8_len (*new_glyph);
-  int old_len = string->utf8_length;
-  char tmpg[3]=" ";
-  if (new_len <= 1 && new_glyph[0] < 32)
-  {
-    tmpg[0]=new_glyph[0]+64;
-    new_glyph = tmpg;
-  }
-
-  if (pos == old_len)
-  {
-    _mrg_string_append_str (string, new_glyph);
-    return;
-  }
-
-  {
-    for (int i = old_len; i <= pos; i++)
-    {
-      _mrg_string_append_byte (string, ' ');
-      old_len++;
-    }
-  }
-
-  if (string->length + new_len  > string->allocated_length)
-  {
-    char *tmp;
-    char *defer;
-    string->allocated_length = string->length + new_len;
-    tmp = calloc (string->allocated_length, 1);
-    strcpy (tmp, string->str);
-    defer = string->str;
-    string->str = tmp;
-    free (defer);
-  }
-
-  char *p = (void*)ctx_utf8_skip (string->str, pos);
-  int prev_len = ctx_utf8_len (*p);
-  char *rest;
-  if (*p == 0 || *(p+prev_len) == 0)
-  {
-    rest = strdup("");
-  }
-  else
-  {
-    rest = strdup (p + prev_len);
-  }
-
-  memcpy (p, new_glyph, new_len);
-  memcpy (p + new_len, rest, strlen (rest) + 1);
-  string->length += new_len;
-  string->length -= prev_len;
-  free (rest);
-
-  string->utf8_length = ctx_utf8_strlen (string->str);
-}
-
-void mrg_string_insert_utf8 (MrgString *string, int pos, const char *new_glyph)
-{
-  int new_len = ctx_utf8_len (*new_glyph);
-  int old_len = string->utf8_length;
-  char tmpg[3]=" ";
-  if (new_len <= 1 && new_glyph[0] < 32)
-  {
-    tmpg[0]=new_glyph[0]+64;
-    new_glyph = tmpg;
-  }
-
-  if (pos == old_len)
-  {
-    _mrg_string_append_str (string, new_glyph);
-    return;
-  }
-
-  {
-    for (int i = old_len; i <= pos; i++)
-    {
-      _mrg_string_append_byte (string, ' ');
-      old_len++;
-    }
-  }
-
-  if (string->length + new_len + 1  > string->allocated_length)
-  {
-    char *tmp;
-    char *defer;
-    string->allocated_length = string->length + new_len + 1;
-    tmp = calloc (string->allocated_length, 1);
-    strcpy (tmp, string->str);
-    defer = string->str;
-    string->str = tmp;
-    free (defer);
-  }
-
-  char *p = (void*)ctx_utf8_skip (string->str, pos);
-  int prev_len = ctx_utf8_len (*p);
-  char *rest;
-  if (*p == 0 || *(p+prev_len) == 0)
-  {
-    rest = strdup("");
-  }
-  else
-  {
-    rest = strdup (p);
-  }
-
-  memcpy (p, new_glyph, new_len);
-  memcpy (p + new_len, rest, strlen (rest) + 1);
-  string->length += new_len;
-  free (rest);
-
-  string->utf8_length = ctx_utf8_strlen (string->str);
-}
-
-int mrg_string_get_utf8_length (MrgString  *string)
-{
-  //return mrg_utf8_strlen (string->str);
-  return string->utf8_length;
-}
-
-void mrg_string_remove_utf8 (MrgString *string, int pos)
-{
-  int old_len = string->utf8_length;
-
-  {
-    for (int i = old_len; i <= pos; i++)
-    {
-      _mrg_string_append_byte (string, ' ');
-      old_len++;
-    }
-  }
-
-  char *p = (void*)ctx_utf8_skip (string->str, pos);
-  int prev_len = ctx_utf8_len (*p);
-  char *rest;
-  if (*p == 0 || *(p+prev_len) == 0)
-  {
-    rest = strdup("");
-  }
-  else
-  {
-    rest = strdup (p + prev_len);
-  }
-
-  memcpy (p, rest, strlen (rest) + 1);
-  string->length -= prev_len;
-  free (rest);
-
-  string->utf8_length = ctx_utf8_strlen (string->str);
-}
-
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#endif
-
-struct _MrgXml
-{
-  FILE     *file_in;
-  int       state;
-  MrgString *curdata;
-  MrgString *curtag;
-  int       c;
-  int       c_held;
-
-  unsigned char *inbuf;
-  int       inbuflen;
-  int       inbufpos;
-
-  int       line_no;
-};
-
-enum
-{
-  s_null = 0,
-  s_start,
-  s_tag,
-  s_tagnamestart,
-  s_tagname,
-  s_tagnamedone,
-  s_intag,
-  s_attstart,
-  s_attname,
-  s_attdone,
-  s_att,
-  s_atteq,
-  s_eqquot,
-  s_eqvalstart,
-  s_eqapos,
-  s_eqaposval,
-  s_eqaposvaldone,
-  s_eqval,
-  s_eqvaldone,
-  s_eqquotval,
-  s_eqquotvaldone,
-  s_tagend,
-  s_empty,
-  s_inempty,
-  s_emptyend,
-  s_whitespace,
-  s_whitespacedone,
-  s_entitystart,
-  s_entity,
-  s_entitydone,
-  s_word,
-  s_worddone,
-  s_tagclose,
-  s_tagclosenamestart,
-  s_tagclosename,
-  s_tagclosedone,
-  s_tagexcl,
-  s_commentdash1,
-  s_commentdash2,
-  s_incomment,
-  s_commentenddash1,
-  s_commentenddash2,
-  s_commentdone,
-  s_dtd,
-  s_prolog,
-  s_prologq,
-  s_prologdone,
-  s_eof,
-  s_error
-};
-
-char     *c_ws = " \n\r\t";
-
-enum
-{
-  c_nil = 0,
-  c_eat = 1,                    /* request that another char be used for the next state */
-  c_store = 2                   /* store the current char in the output buffer */
-};
-
-typedef struct
-{
-  int       state;
-  char     *chars;
-  unsigned char r_start;
-  unsigned char r_end;
-  int       next_state;
-  int       resetbuf;
-  int       charhandling;
-  int       return_type;        /* if set return current buf, with type set to the type */
-}
-state_entry;
-
-#define max_entries 20
-
-static state_entry state_table[s_error][max_entries];
-
-static void
-a (int state,
-   char *chars,
-   unsigned char r_start,
-   unsigned char r_end, int charhandling, int next_state)
-{
-  int       no = 0;
-
-  while (state_table[state][no].state != s_null)
-    no++;
-  state_table[state][no].state = state;
-  state_table[state][no].r_start = r_start;
-  if (chars)
-    state_table[state][no].chars = strdup (chars);
-  state_table[state][no].r_end = r_end;
-  state_table[state][no].charhandling = charhandling;
-  state_table[state][no].next_state = next_state;
-}
-
-static void
-r (int state, int return_type, int next_state)
-{
-  state_table[state][0].state = state;
-  state_table[state][0].return_type = return_type;
-  state_table[state][0].next_state = next_state;
-}
-
-/* *INDENT-OFF* */
-
-static void
-init_statetable (void) {
-    static int inited=0;
-    if(inited)
-        return;
-    inited=1;
-    memset(state_table,0,sizeof(state_table));
-    a(s_start,        "<",    0,0,            c_eat,            s_tag);
-    a(s_start,        c_ws,    0,0,            c_eat+c_store,    s_whitespace);
-    a(s_start,        "&",    0,0,            c_eat,            s_entitystart);
-    a(s_start,        NULL,    0,255,            c_eat+c_store,    s_word);
-
-    a(s_tag,        c_ws,    0,0,            c_eat,            s_tag);
-    a(s_tag,        "/",    0,0,            c_eat,            s_tagclose);
-    a(s_tag,        "!",    0,0,            c_eat,            s_tagexcl);
-    a(s_tag,        "?",    0,0,            c_eat,            s_prolog);
-    a(s_tag,        NULL,    0,255,            c_eat+c_store,    s_tagnamestart);
-
-    a(s_tagclose,    NULL,    0,255,            c_eat+c_store,    s_tagclosenamestart);
-    a(s_tagclosenamestart,    ">",    0,0,    c_eat,            s_tagclosedone);
-    a(s_tagclosenamestart,    NULL,    0,255,    c_eat+c_store,    s_tagclosename);
-    a(s_tagclosename,    ">",    0,0,        c_eat,            s_tagclosedone);
-    a(s_tagclosename,    NULL,    0,255,        c_eat+c_store,    s_tagclosename);
-    r(s_tagclosedone,    t_closetag,                            s_start);
-
-    a(s_whitespace,        c_ws,    0,0,        c_eat+c_store,    s_whitespace);
-    a(s_whitespace,        NULL,    0,255,        c_nil,            s_whitespacedone);
-    r(s_whitespacedone,    t_whitespace,                        s_start);
-
-    a(s_entitystart,";",    0,0,            c_eat,            s_entitydone);
-    a(s_entitystart,NULL,    0,255,            c_eat+c_store,    s_entity);
-    a(s_entity,        ";",    0,0,            c_eat,            s_entitydone);
-    a(s_entity,NULL,        0,255,            c_eat+c_store,    s_entity);
-    r(s_entitydone,    t_entity,                                s_start);
-
-    a(s_word,        c_ws,    0,0,            c_nil,            s_worddone);
-    a(s_word,        "<&",    0,0,            c_nil,            s_worddone);
-    a(s_word,        NULL,    0,255,            c_eat+c_store,    s_word);
-    r(s_worddone,    t_word,                                    s_start);
-
-    a(s_tagnamestart,c_ws,    0,0,            c_nil,            s_tagnamedone);
-    a(s_tagnamestart,    "/>",    0,0,        c_nil,            s_tagnamedone);
-    a(s_tagnamestart,NULL,    0,255,            c_eat+c_store,    s_tagname);
-    a(s_tagname,    c_ws,    0,0,            c_nil,            s_tagnamedone);
-    a(s_tagname,    "/>",    0,0,            c_nil,            s_tagnamedone);
-    a(s_tagname,    NULL,    0,255,            c_eat+c_store,    s_tagname);
-    r(s_tagnamedone,    t_tag,                                s_intag);
-
-    a(s_intag,        c_ws,    0,0,            c_eat,            s_intag);
-    a(s_intag,        ">",    0,0,            c_eat,            s_tagend);
-    a(s_intag,        "/",    0,0,            c_eat,            s_empty);
-    a(s_intag,        NULL,    0,255,            c_eat+c_store,    s_attstart);
-
-    a(s_attstart,    c_ws,    0,0,            c_eat,            s_attdone);
-    a(s_attstart,    "=/>",    0,0,            c_nil,            s_attdone);
-    a(s_attstart,    NULL,    0,255,            c_eat+c_store,    s_attname);
-    a(s_attname,    "=/>",    0,0,            c_nil,            s_attdone);
-    a(s_attname,    c_ws,    0,0,            c_eat,            s_attdone);
-    a(s_attname,    NULL,    0,255,            c_eat+c_store,    s_attname);
-    r(s_attdone,    t_att,                                    s_att);
-    a(s_att,        c_ws,    0,0,            c_eat,            s_att);
-    a(s_att,        "=",    0,0,            c_eat,            s_atteq);
-    a(s_att,        NULL,    0,255,            c_eat,            s_intag);
-    a(s_atteq,        "'",    0,0,            c_eat,            s_eqapos);
-    a(s_atteq,        "\"",    0,0,            c_eat,            s_eqquot);
-    a(s_atteq,        c_ws,    0,0,            c_eat,            s_atteq);
-    a(s_atteq,        NULL,    0,255,            c_nil,            s_eqval);
-
-    a(s_eqapos,        "'",    0,0,            c_eat,            s_eqaposvaldone);
-    a(s_eqapos,        NULL,    0,255,            c_eat+c_store,    s_eqaposval);
-    a(s_eqaposval,        "'",    0,0,        c_eat,            s_eqaposvaldone);
-    a(s_eqaposval,        NULL,    0,255,        c_eat+c_store,    s_eqaposval);
-    r(s_eqaposvaldone,    t_val,                                    s_intag);
-
-    a(s_eqquot,        "\"",    0,0,            c_eat,            s_eqquotvaldone);
-    a(s_eqquot,        NULL,    0,255,            c_eat+c_store,    s_eqquotval);
-    a(s_eqquotval,        "\"",    0,0,        c_eat,            s_eqquotvaldone);
-    a(s_eqquotval,        NULL,    0,255,        c_eat+c_store,    s_eqquotval);
-    r(s_eqquotvaldone,    t_val,                                    s_intag);
-
-    a(s_eqval,        c_ws,    0,0,            c_nil,            s_eqvaldone);
-    a(s_eqval,        "/>",    0,0,            c_nil,            s_eqvaldone);
-    a(s_eqval,        NULL,    0,255,            c_eat+c_store,    s_eqval);
-
-    r(s_eqvaldone,    t_val,                                    s_intag);
-
-    r(s_tagend,        t_endtag,                s_start);
-
-    r(s_empty,              t_endtag,                               s_inempty);
-    a(s_inempty,        ">",0,0,                c_eat,            s_emptyend);
-    a(s_inempty,        NULL,0,255,                c_eat,            s_inempty);
-    r(s_emptyend,    t_closeemptytag,                        s_start);
-
-    a(s_prolog,        "?",0,0,                c_eat,            s_prologq);
-    a(s_prolog,        NULL,0,255,                c_eat+c_store,    s_prolog);
-
-    a(s_prologq,    ">",0,0,                c_eat,            s_prologdone);
-    a(s_prologq,    NULL,0,255,                c_eat+c_store,    s_prolog);
-    r(s_prologdone,    t_prolog,                s_start);
-
-    a(s_tagexcl,    "-",0,0,                c_eat,            s_commentdash1);
-    a(s_tagexcl,    "D",0,0,                c_nil,            s_dtd);
-    a(s_tagexcl,    NULL,0,255,                c_eat,            s_start);
-
-    a(s_commentdash1,    "-",0,0,                c_eat,            s_commentdash2);
-    a(s_commentdash1,    NULL,0,255,                c_eat,            s_error);
-
-    a(s_commentdash2,    "-",0,0,                c_eat,            s_commentenddash1);
-    a(s_commentdash2,    NULL,0,255,                c_eat+c_store,    s_incomment);
-
-    a(s_incomment   ,    "-",0,0,                c_eat,            s_commentenddash1);
-    a(s_incomment   ,    NULL,0,255,                c_eat+c_store,    s_incomment);
-
-    a(s_commentenddash1,    "-",0,0,            c_eat,            s_commentenddash2);
-    a(s_commentenddash1,    NULL,0,255,            c_eat+c_store,    s_incomment);
-
-    a(s_commentenddash2,    ">",0,0,            c_eat,            s_commentdone);
-    a(s_commentenddash2,    NULL,0,255,            c_eat+c_store,    s_incomment);
-
-    r(s_commentdone,    t_comment,                s_start);
-
-}
-
-/* *INDENT-ON* */
-
-static int
-is_oneof (char c, char *chars)
-{
-  while (*chars)
-    {
-      if (c == *chars)
-        return 1;
-      chars++;
-    }
-  return 0;
-}
-
-static int
-nextchar (MrgXml *t)
-{
-  int       ret;
-
-  if (t->file_in)
-    {
-      if (t->inbufpos >= t->inbuflen)
-        {
-          t->inbuflen = fread (t->inbuf, 1, inbufsize, t->file_in);
-          t->inbufpos = 0;
-          if (!t->inbuflen)
-            return -1;
-        }
-
-      ret = (int) t->inbuf[t->inbufpos++];
-
-      if (ret == '\n')
-        t->line_no++;
-    }
-  else
-    {
-      if (t->inbufpos >= t->inbuflen)
-        {
-          return -1;
-        }
-      ret = (int) t->inbuf[t->inbufpos++];
-      if (ret == '\n')
-        t->line_no++;
-    }
-  return ret;
-}
-
-int
-xmltok_get (MrgXml *t, char **data, int *pos)
-{
-  state_entry *s;
-
-  init_statetable ();
-  mrg_string_clear (t->curdata);
-  while (1)
-    {
-      if (!t->c_held)
-        {
-          t->c = nextchar (t);
-          if (t->c == -1)
-          {
-            if (pos)*pos = t->inbufpos;
-            return t_eof;
-          }
-          t->c_held = 1;
-        }
-      if (t->state == s_dtd)
-        {     /* FIXME: should make better code for skipping DTD */
-
-          /*            int angle = 0; */
-          int       squote = 0;
-          int       dquote = 0;
-          int       abracket = 1;
-
-          /*            int sbracket = 0; */
-
-          mrg_string_append_byte (t->curdata, t->c);
-
-          while (abracket)
-            {
-              switch (t->c = nextchar (t))
-                {
-                case -1:
-                  return t_eof;
-                case '<':
-                  if ((!squote) && (!dquote))
-                    abracket++;
-                  mrg_string_append_byte (t->curdata, t->c);
-                  break;
-                case '>':
-                  if ((!squote) && (!dquote))
-                    abracket--;
-                  if (abracket)
-                    mrg_string_append_byte (t->curdata, t->c);
-                  break;
-                case '"':
-                case '\'':
-                case '[':
-                case ']':
-                default:
-                  mrg_string_append_byte (t->curdata, t->c);
-                  break;
-                }
-            }
-          t->c_held = 0;
-          t->state = s_start;
-
-          if (pos)*pos = t->inbufpos;
-          return t_dtd;
-        }
-      s = &state_table[t->state][0];
-      while (s->state)
-        {
-          if (s->return_type != t_none)
-            {
-              *data = (char *) mrg_string_get (t->curdata);
-              t->state = s->next_state;
-              if (s->return_type == t_tag)
-                mrg_string_set (t->curtag, mrg_string_get (t->curdata));
-              if (s->return_type == t_endtag)
-                *data = (char *) mrg_string_get (t->curtag);
-              if (s->return_type == t_closeemptytag)
-                *data = (char *) mrg_string_get (t->curtag);
-              if (pos)
-                *pos = t->inbufpos;
-              return s->return_type;
-            }
-          if ((s->chars && is_oneof (t->c, s->chars))
-              || ((s->r_start + s->r_end)
-                  && (t->c >= s->r_start && t->c <= s->r_end)))
-            {
-              if (s->charhandling & c_store)
-                {
-                  mrg_string_append_byte (t->curdata, t->c);
-                }
-              if (s->charhandling & c_eat)
-                {
-                  t->c_held = 0;
-                }
-              t->state = s->next_state;
-              break;
-            }
-          s++;
-        }
-    }
-  if (pos)
-    *pos = t->inbufpos;
-  return t_eof;
-}
-
-MrgXml *
-xmltok_new (FILE * file_in)
-{
-  MrgXml *ret;
-
-  ret = calloc (1, sizeof (MrgXml));
-  ret->file_in = file_in;
-  ret->state = s_start;
-  ret->curtag = mrg_string_new ("");
-  ret->curdata = mrg_string_new ("");
-  ret->inbuf = calloc (1, inbufsize);
-  return ret;
-}
-
-MrgXml *
-xmltok_buf_new (char *membuf)
-{
-  MrgXml *ret;
-
-  ret = calloc (1, sizeof (MrgXml));
-  ret->file_in = NULL;
-  ret->state = s_start;
-  ret->curtag = mrg_string_new ("");
-  ret->curdata = mrg_string_new ("");
-  ret->inbuf = (void*)membuf;
-  ret->inbuflen = strlen (membuf);
-  ret->inbufpos = 0;
-  return ret;
-}
-
-void
-xmltok_free (MrgXml *t)
-{
-  mrg_string_free (t->curtag, 1);
-  mrg_string_free (t->curdata, 1);
-
-  if (t->file_in)
-    {
-      /*        fclose (t->file_in); */
-      free (t->inbuf);
-    }
-  free (t);
-}
-
-char     *empty_tags[] = {
-  "img", "IMG", "br", "BR", "hr", "HR", "META", "meta", "link", "LINK",
-  NULL
-};
-
-char     *endomission_tags[] = {
-  "li", "LI", "p", "P", "td", "TD", "tr", "TR", NULL
-};
-
-int
-xmltok_lineno (MrgXml *t)
-{
-  return t->line_no;
-}
 
 #if CTX_MATH
 
