@@ -441,7 +441,7 @@ int main (int argc, char **argv)
      long length;
      _file_get_contents (source_path, &contents, &length);
 
-     mrg_print_xml (mrg, contents);
+     mrg_print_xml (mrg, (char*)contents);
      
   }
   else if (!strcmp (get_suffix (source_path), ".ctx"))

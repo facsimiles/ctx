@@ -1419,15 +1419,11 @@ typedef enum {
 
 struct _CtxRenderstream
 {
-  /* should have a list of iterator state initializer. pos, depth and
-     history_pos init info for every 1024 entries, will be most needed
-     with wire-protocol and reuse of data from preceding frame.
-   */
   CtxEntry *entries;     /* we need to use realloc */
   int       count;
   int       size;
-  uint32_t  flags; // BITPACK - to be used on resize
-  int       bitpack_pos;
+  uint32_t  flags;        // BITPACK - to be used on resize
+  int       bitpack_pos;  // stream is bitpacked up to this offset
 };
 
 CtxRenderstream *ctx_copy_path      (Ctx *ctx);
@@ -2324,8 +2320,6 @@ typedef struct CtxIterator
 {
   int         pos;
   int         in_history;
-  int         history_pos;
-  int         history[2]; // XXX: the offset to the history entry would be better
   CtxRenderstream *renderstream;
   int         end_pos;
   int         flags;
@@ -2360,9 +2354,6 @@ ctx_iterator_init (CtxIterator *iterator,
   iterator->flags          = flags;
   iterator->bitpack_pos    = 0;
   iterator->bitpack_length = 0;
-  iterator->history_pos    = 0;
-  iterator->history[0]     = 0;
-  iterator->history[1]     = 0;
   iterator->pos            = start_pos;
   iterator->end_pos        = renderstream->count;
   iterator->in_history     = -1; // -1 is a marker used for first run
