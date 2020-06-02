@@ -1489,32 +1489,141 @@ struct _CtxState {
 
 #define STR CTX_STRH
 
-#define CTX_arc            CTX_STRH('a','r','c',0,0,0,0,0,0,0,0,0)
-#define CTX_arcTo          CTX_STRH('a','r','c','T','o',0,0,0,0,0,0,0)
-#define CTX_arc_to         CTX_STRH('a','r','c','_','t','o',0,0,0,0,0,0)
+
+// these get reduced to integer constants at compiletime kept together it
+// they do not add noise to the code where they are used
+//
+#define CTX_arc          CTX_STRH('a','r','c',0,0,0,0,0,0,0,0,0)
+#define CTX_arcTo        CTX_STRH('a','r','c','T','o',0,0,0,0,0,0,0)
+#define CTX_arc_to       CTX_STRH('a','r','c','_','t','o',0,0,0,0,0,0)
 #define CTX_smooth_quad_to CTX_STRH('s','m','o','o','t','h','_','q','u','a','d','_')
-#define CTX_restore        CTX_STRH('r','e','s','t','o','r','e',0,0,0,0,0)
-#define CTX_save           CTX_STRH('s','a','v','e',0,0,0,0,0,0,0,0)
-#define CTX_curveTo        CTX_STRH('c','u','r','v','e','T','o',0,0,0,0,0)
-#define CTX_curve_to       CTX_STRH('c','u','r','v','e','_','t','o',0,0,0,0)
-#define CTX_stroke         CTX_STRH('s','t','r','o','k','e',0,0,0,0,0,0)
-#define CTX_fill           CTX_STRH('f','i','l','l',0,0,0,0,0,0,0,0)
-#define CTX_horLineTo      CTX_STRH('h','o','r','L','i','n','e','T','o',0,0,0)
-#define CTX_hor_line_to    CTX_STRH('h','o','r','_','l','i','n','e','_','t','o',0)
-#define CTX_rotate         CTX_STRH('r','o','t','a','t','e',0,0,0,0,0,0)
-#define CTX_color          CTX_STRH('c','o','l','o','r',0,0,0,0,0,0,0)
-#define CTX_lineTo         CTX_STRH('l','i','n','e','T','o',0,0,0,0,0,0)
-#define CTX_line_spacing   CTX_STRH('l','i','n','e','_','s','p','a','c','i','n','g')
-#define CTX_line_to        CTX_STRH('l','i','n','e','_','t','o',0,0,0,0,0)
-#define CTX_moveTo         CTX_STRH('m','o','v','e','T','o',0,0,0,0,0,0)
-#define CTX_move_to        CTX_STRH('m','o','v','e','_','t','o',0,0,0,0,0)
-#define CTX_scale          CTX_STRH('s','c','a','l','e',0,0,0,0,0,0,0)
-#define CTX_text_align     CTX_STRH('t','e','x','t','_','a','l','i','g','n',0, 0)
+#define CTX_restore      CTX_STRH('r','e','s','t','o','r','e',0,0,0,0,0)
+#define CTX_save         CTX_STRH('s','a','v','e',0,0,0,0,0,0,0,0)
+#define CTX_curveTo      CTX_STRH('c','u','r','v','e','T','o',0,0,0,0,0)
+#define CTX_curve_to     CTX_STRH('c','u','r','v','e','_','t','o',0,0,0,0)
+#define CTX_stroke       CTX_STRH('s','t','r','o','k','e',0,0,0,0,0,0)
+#define CTX_fill         CTX_STRH('f','i','l','l',0,0,0,0,0,0,0,0)
+#define CTX_horLineTo    CTX_STRH('h','o','r','L','i','n','e','T','o',0,0,0)
+#define CTX_hor_line_to  CTX_STRH('h','o','r','_','l','i','n','e','_','t','o',0)
+#define CTX_rotate       CTX_STRH('r','o','t','a','t','e',0,0,0,0,0,0)
+#define CTX_color        CTX_STRH('c','o','l','o','r',0,0,0,0,0,0,0)
+#define CTX_lineTo       CTX_STRH('l','i','n','e','T','o',0,0,0,0,0,0)
+#define CTX_line_spacing CTX_STRH('l','i','n','e','_','s','p','a','c','i','n','g')
+#define CTX_line_to      CTX_STRH('l','i','n','e','_','t','o',0,0,0,0,0)
+#define CTX_moveTo       CTX_STRH('m','o','v','e','T','o',0,0,0,0,0,0)
+#define CTX_move_to      CTX_STRH('m','o','v','e','_','t','o',0,0,0,0,0)
+#define CTX_scale        CTX_STRH('s','c','a','l','e',0,0,0,0,0,0,0)
+#define CTX_text_align   CTX_STRH('t','e','x','t','_','a','l','i','g','n',0, 0)
 #define CTX_text_direction CTX_STRH('t','e','x','t','_','d','i','r','e','c','t','i')
-#define CTX_text_baseline  CTX_STRH('t','e','x','t','_','b','a','s','e','l','i','n')
+#define CTX_text_baseline CTX_STRH('t','e','x','t','_','b','a','s','e','l','i','n')
+#define CTX_new_state    CTX_STRH('n','e','w','_','s','t','a','t','e',0,0,0)
+#define CTX_newPage      CTX_STRH('n','e','w','P','a','g','e',0,0,0,0,0)
+#define CTX_new_page     CTX_STRH('n','e','w','_','p','a','g','e',0,0,0,0)
+#define CTX_quadTo       CTX_STRH('q','u','a','d','T','o',0,0,0,0,0,0)
+#define CTX_quad_to      CTX_STRH('q','u','a','d','_','t','o',0,0,0,0,0)
+#define CTX_mediaBox     CTX_STRH('m','e','d','i','a','B','o','x',0,0,0,0)
+#define CTX_media_box    CTX_STRH('m','e','d','i','a','_','b','o','x',0,0,0)
+#define CTX_smooth_to    CTX_STRH('s','m','o','o','t','h','_','t','o',0,0,0)
+#define CTX_smoothTo     CTX_STRH('s','m','o','o','t','h','T','o',0,0,0,0)
+#define CTX_smoothQuadTo CTX_STRH('s','m','o','o','t','h','Q','u','a','d','T','o')
+#define CTX_clear        CTX_STRH('c','l','e','a','r',0,0,0,0,0,0,0)
+#define CTX_verLineTo    CTX_STRH('v','e','r','L','i','n','e','T','o',0,0,0)
+#define CTX_ver_line_to  CTX_STRH('v','e','r','_','l','i','n','e','_','t','o',0)
+#define CTX_exit         CTX_STRH('e','x','i','t',0,0,0,0,0,0,0,0)
+#define CTX_done         CTX_STRH('d','o','n','e',0,0,0,0,0,0,0,0)
+#define CTX_closePath    CTX_STRH('c','l','o','s','e','P','a','t','h',0,0,0)
+#define CTX_close_path   CTX_STRH('c','l','o','s','e','_','p','a','t','h',0,0)
+#define CTX_newPath      CTX_STRH('n','e','w','P','a','t','h',0,0,0,0,0)
+#define CTX_new_path     CTX_STRH('n','e','w','_','p','a','t','h',0,0,0,0)
+#define CTX_beginPath    CTX_STRH('b','e','g','i','n','P','a','t','h',0,0,0)
+#define CTX_begin_path   CTX_STRH('b','e','g','i','n','_','p','a','t','h',0,0)
+#define CTX_relArcTo     CTX_STRH('r','e','l','A','r','c','T','o',0,0,0,0)
+#define CTX_rel_arc_to   CTX_STRH('r','e','l','_','a','r','c','_','t','o',0,0)
+#define CTX_clip         CTX_STRH('c','l','i','p',0,0,0,0,0,0,0,0)
+#define CTX_relCurveTo   CTX_STRH('r','e','l','C','u','r','v','e','T','o',0,0)
+#define CTX_rel_curve_to CTX_STRH('r','e','l','_','c','u','r','v','e','_','t','o')
+#define CTX_save         CTX_STRH('s','a','v','e',0,0,0,0,0,0,0,0)
+#define CTX_translate    CTX_STRH('t','r','a','n','s','l','a','t','e',0,0,0)
+#define CTX_linearGradient CTX_STRH('l','i','n','e','a','r','G','r','a','d','i','e')
+#define CTX_linear_gradient CTX_STRH('l','i','n','e','a','r','_','g','r','a','d','i')
+#define CTX_relHorLineTo CTX_STRH('r','e','l','H','o','r','L','i','n','e','T','o')
+#define CTX_rel_hor_line_to CTX_STRH('r','e','l','_','h','o','r','_','l','i','n','e')
+#define CTX_relLineTo    CTX_STRH('r','e','l','L','i','n','e','T','o',0,0,0)
+#define CTX_rel_line_to  CTX_STRH('r','e','l','_','l','i','n','e','_','t','o',0)
+#define CTX_relMoveTo    CTX_STRH('r','e','l','M','o','v','e','T','o',0,0,0)
+#define CTX_rel_move_to  CTX_STRH('r','e','l','_','m','o','v','e','_','t','o',0)
+#define CTX_font         CTX_STRH('f','o','n','t',0,0,0,0,0,0,0,0)
+#define CTX_radial_gradient CTX_STRH('r','a','d','i','a','l','_','g','r','a','d','i')
+#define CTX_radialGradient CTX_STRH('r','a','d','i','a','l',,'G','r','a','d','i','e')
+#define CTX_gradient_add_stop CTX_STRH('g','r','a','d','i','e','n','t','_','a','d','d')
+#define CTX_gradientAddStop CTX_STRH('g','r','a','d','i','e','n','t','A','d','d','S')
+#define CTX_addStop      CTX_STRH('a','d','d','S','t','o','p',0,0,0,0,0)
+#define CTX_add_stop     CTX_STRH('a','d','d','_','s','t','o','p',0,0,0,0)   
+#define CTX_relQuadTo    CTX_STRH('r','e','l','Q','u','a','d','T','o',0,0,0)
+#define CTX_rel_quad_to  CTX_STRH('r','e','l','_','q','u','a','d','_','t','o',0)
+#define CTX_rectangle    CTX_STRH('r','e','c','t','a','n','g','l','e',0,0,0)
+#define CTX_rect         CTX_STRH('r','e','c','t',0,0,0,0,'e',0,0,0)
+#define CTX_relSmoothTo  CTX_STRH('r','e','l','S','m','o','o','t','h','T','o',0)
+#define CTX_rel_smooth_to CTX_STRH('r','e','l','_','s','m','o','o','t','h','_','t')
+#define CTX_relSmoothqTo CTX_STRH('r','e','l','S','m','o','o','t','h','q','T','o')
+#define CTX_rel_smoothq_to CTX_STRH('r','e','l','_','s','m','o','o','t','h','_','q')
+#define CTX_textStroke   CTX_STRH('t','e','x','t','S','t','r','o','k','e', 0, 0)
+#define CTX_text_stroke  CTX_STRH('t','e','x','t','_','s','t','r','o','k','e', 0)
+#define CTX_relVerLineTo CTX_STRH('r','e','l','V','e','r','L','i','n','e','T','o')
+#define CTX_rel_ver_line_to CTX_STRH('r','e','l','_','v','e','r','_','l','i','n','e')
+#define CTX_text         CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0)
+#define CTX_identity     CTX_STRH('i','d','e','n','t','i','t','y',0,0,0,0)
+#define CTX_transform    CTX_STRH('t','r','a','n','s','f','o','r','m',0,0,0)
+#define CTX_rgb_space    CTX_STRH('r','g','b','_','s','p','a','c','e',0,0,0)
+#define CTX_rgbSpace     CTX_STRH('r','g','b','S','p','a','c','e',0,0,0,0)
+#define CTX_cmyk_space   CTX_STRH('c','m','y','k','_','s','p','a','c','e',0,0)
+#define CTX_cmykSpace    CTX_STRH('c','m','y','k','S','p','a','c','e',0,0,0)
+#define CTX_device_space CTX_STRH('d','e','v','i','c','e','_','s','p','a','c','e')
+#define CTX_deviceSpace  CTX_STRH('d','e','v','i','c','e','S','p','a','c','e',0)
+#define CTX_composite    CTX_STRH('c','o','m','p','o','s','i','t','i','e',0,0)
+#define CTX_compositing_mode CTX_STRH('c','o','m','p','o','s','i','t','i','n','g','_')
+#define CTX_compositingMode CTX_STRH('c','o','m','p','o','s','i','t','i','n','g','M')
+#define CTX_fill_rule    CTX_STRH('f','i','l','l','_','r','u','l','e',0,0,0)
+#define CTX_fillRule     CTX_STRH('f','i','l','l','R','u','l','e',0,0,0,0)
+#define CTX_font_size    CTX_STRH('f','o','n','t','_','s','i','z','e',0,0,0)
+#define CTX_fontSize     CTX_STRH('f','o','n','t','S','i','z','e',0,0,0,0)
+#define CTX_miter_limit  CTX_STRH('m','i','t','e','r','_','l','i','m','i','t',0)
+#define CTX_miterLimit   CTX_STRH('m','i','t','e','r','L','i','m','i','t',0,0)
+#define CTX_textAlign    CTX_STRH('t','e','x','t','A','l','i','g','n',0, 0, 0)
+#define CTX_text_baseline CTX_STRH('t','e','x','t','_','b','a','s','e','l','i','n')
+#define CTX_textBaseline CTX_STRH('t','e','x','t','B','a','s','e','l','i','n','e')
+#define CTX_text_direction CTX_STRH('t','e','x','t','_','d','i','r','e','c','t','i')
+#define CTX_textDirection CTX_STRH('t','e','x','t','D','i','r','e','c','t','i','o')
+#define CTX_join         CTX_STRH('j','o','i','n',0,0,0,0,0,0,0,0)
+#define CTX_line_join    CTX_STRH('l','i','n','e','_','j','o','i','n',0,0,0)
+#define CTX_lineJoin     CTX_STRH('l','i','n','e','J','o','i','n',0,0,0,0)
+#define CTX_cap          CTX_STRH('c','a','p',0,0,0,0,0,0,0,0,0)
+#define CTX_line_cap     CTX_STRH('l','i','n','e','_','c','a','p',0,0,0,0)
+#define CTX_lineCap      CTX_STRH('l','i','n','e','C','a','p',0,0,0,0,0)
+#define CTX_line_width   CTX_STRH('l','i','n','e','_','w','i','d','t','h',0,0)
+#define CTX_lineWidth    CTX_STRH('l','i','n','e','W','i','d','t','h',0,0,0)
+#define CTX_global_alpha CTX_STRH('g','l','o','b','a','l','_','a','l','p','h','a')
+#define CTX_globalAlpha  CTX_STRH('g','l','o','b','a','l','A','l','p','h','a',0)
+#define CTX_winding      CTX_STRH('w','i','n','d','i','n', 'g', 0, 0, 0, 0, 0)
+#define CTX_evenOdd      CTX_STRH('e','v','e','n','O','d', 'd', 0, 0, 0, 0, 0)
+#define CTX_even_odd     CTX_STRH('e','v','e','n','_','o','d', 'd', 0, 0, 0, 0)
+#define CTX_bevel        CTX_STRH('b','e','v','e','l',0, 0, 0, 0, 0, 0, 0)
+#define CTX_round        CTX_STRH('r','o','u','n','d',0, 0, 0, 0, 0, 0, 0)
+#define CTX_miter        CTX_STRH('m','i','t','e','r',0, 0, 0, 0, 0, 0, 0)
+#define CTX_none         CTX_STRH('n','o','n','e', 0 ,0, 0, 0, 0, 0, 0, 0)
+#define CTX_square       CTX_STRH('s','q','u','a','r','e', 0, 0, 0, 0, 0, 0)
+#define CTX_start        CTX_STRH('s','t','a','r','t',0, 0, 0, 0, 0, 0, 0)
+#define CTX_end          CTX_STRH('e','n','d',0,0,0, 0, 0, 0, 0, 0, 0)
+#define CTX_left         CTX_STRH('l','e','f','t',0,0, 0, 0, 0, 0, 0, 0)
+#define CTX_right        CTX_STRH('r','i','g','h','t',0, 0, 0, 0, 0, 0, 0)
+#define CTX_center       CTX_STRH('c','e','n','t','e','r', 0, 0, 0, 0, 0, 0)
+#define CTX_top          CTX_STRH('t','o','p',0,0,0, 0, 0, 0, 0, 0, 0)
+#define CTX_bottom       CTX_STRH('b','o','t','t','o','m', 0, 0, 0, 0, 0, 0)
+#define CTX_middle       CTX_STRH('m','i','d','d','l', 'e',0, 0, 0, 0, 0, 0)
+#define CTX_alphabetic   CTX_STRH('a','l','p','h','a', 'b','e', 't', 'i', 'c', 0, 0)
+#define CTX_hanging      CTX_STRH('h','a','n','g','i', 'n','g', 0, 0, 0, 0, 0)
+#define CTX_ideographic  CTX_STRH('i','d','e','o','g','r','a','p','h','i','c', 0)
 
-
-#define CTX_new_state      CTX_STRH('n','e','w','_','s','t','a','t','e',0,0,0)
 
 static void ctx_state_set (CtxState *state, uint32_t hash, float value)
 {
@@ -9644,7 +9753,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
     //switch ((CtxCode)code)
     switch (code)
     {
-      case CTX_SET_KEY:            name="set_param";break;
+      case CTX_SET_KEY:              name="set_param";break;
       case CTX_SET_COLOR:            name="set_color";break;
       case CTX_DEFINE_GLYPH:         name="define_glyph";break;
       case CTX_SET_PIXEL:            name="set_pixel";break;
@@ -10281,7 +10390,7 @@ static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_m
 
 static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 {
-  uint32_t ret = str[0];
+  uint32_t ret = str[0]; /* if it is single char it already is the CtxCode */
 
   if (str[0] && str[1])
   {
@@ -10303,10 +10412,11 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
   {
 #define CTX_ENABLE_DEFUN 1
 #if CTX_ENABLE_DEFUN
-    case STR('d','e','f','u','n',0,0,0,0,0,0,0): ret = CTX_DEFUN; break;
-    case STR('e','n','d','f','u','n',0,0,0,0,0,0): ret = CTX_ENDFUN; break;
+#define CTX_defun  CTX_STRH('d','e','f','u','n',0,0,0,0,0,0,0)
+#define CTX_endfun CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0)
+    case CTX_defun: ret = CTX_DEFUN; break;
+    case CTX_endfun: ret = CTX_ENDFUN; break;
 #endif
-
     /* first a list of mappings to one_char hashes, handled in a
      * separate fast path switch without hashing
      */
@@ -10327,134 +10437,134 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case CTX_move_to:
     case CTX_moveTo:     ret = CTX_MOVE_TO; break;
     case CTX_scale:      ret = CTX_SCALE; break;
-
-    case STR('n','e','w','P','a','g','e',0,0,0,0,0):
-    case STR('n','e','w','_','p','a','g','e',0,0,0,0):         ret = CTX_NEW_PAGE; break;
-    case STR('q','u','a','d','T','o',0,0,0,0,0,0):
-    case STR('q','u','a','d','_','t','o',0,0,0,0,0):           ret = CTX_QUAD_TO; break;
-    case STR('m','e','d','i','a','B','o','x',0,0,0,0):
-    case STR('m','e','d','i','a','_','b','o','x',0,0,0):       ret = CTX_MEDIA_BOX; break;
-    case STR('s','m','o','o','t','h','_','t','o',0,0,0):       ret = CTX_SMOOTH_TO; break;
-    case STR('s','m','o','o','t','h','Q','u','a','d','T','o'):
+    case CTX_new_page:
+    case CTX_newPage: ret = CTX_NEW_PAGE; break;
+    case CTX_quad_to:
+    case CTX_quadTo:  ret = CTX_QUAD_TO; break;
+    case CTX_media_box:
+    case CTX_mediaBox: ret = CTX_MEDIA_BOX; break;
+    case CTX_smoothTo:
+    case CTX_smooth_to:   ret = CTX_SMOOTH_TO; break;
+    case CTX_smoothQuadTo:
     case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
-    case STR('c','l','e','a','r',0,0,0,0,0,0,0):               ret = CTX_CLEAR; break;
-    case STR('v','e','r','l','i','n','e','t','o',0,0,0):
-    case STR('v','e','r','_','l','i','n','e','_','t','o',0):   ret = CTX_VER_LINE_TO; break;
-    case STR('e','x','i','t',0,0,0,0,0,0,0,0):
-    case STR('d','o','n','e',0,0,0,0,0,0,0,0):                 ret = CTX_EXIT; break;
-    case STR('c','l','o','s','e','P','a','t','h',0,0,0):
-    case STR('c','l','o','s','e','_','p','a','t','h',0,0):     ret =  CTX_CLOSE_PATH; break;
-    case STR('n','e','w','P','a','t','h',0,0,0,0,0): 
-    case STR('n','e','w','_','p','a','t','h',0,0,0,0): 
-    case STR('b','e','g','i','n','P','a','t','h',0,0,0):
-    case STR('b','e','g','i','n','_','p','a','t','h',0,0):     ret =  CTX_NEW_PATH; break;
-    case STR('r','e','l','A','r','c','T','o',0,0,0,0):
-    case STR('r','e','l','_','a','r','c','_','t','o',0,0):     ret = CTX_REL_ARC_TO; break;
-    case STR('c','l','i','p',0,0,0,0,0,0,0,0):                 ret = CTX_CLIP; break;
-    case STR('r','e','l','C','u','r','v','e','T','o',0,0):
-    case STR('r','e','l','_','c','u','r','v','e','_','t','o'): ret = CTX_REL_CURVE_TO; break;
-    case STR('s','a','v','e',0,0,0,0,0,0,0,0):                 ret = CTX_SAVE; break;
-    case STR('t','r','a','n','s','l','a','t','e',0,0,0):       ret = CTX_TRANSLATE; break;
-    case STR('l','i','n','e','a','r','G','r','a','d','i','e'):
-    case STR('l','i','n','e','a','r','_','g','r','a','d','i'): ret = CTX_LINEAR_GRADIENT; break;
-    case STR('r','e','l','H','o','r','L','i','n','e','T','o'):
-    case STR('r','e','l','_','h','o','r','_','l','i','n','e'): ret = CTX_REL_HOR_LINE_TO; break;
-    case STR('r','e','l','L','i','n','e','T','o',0,0,0):
-    case STR('r','e','l','_','l','i','n','e','_','t','o',0):   ret = CTX_REL_LINE_TO; break;
-    case STR('r','e','l','M','o','v','e','T','o',0,0,0):
-    case STR('r','e','l','_','m','o','v','e','_','t','o',0):   ret = CTX_REL_MOVE_TO; break;
-    case STR('f','o','n','t',0,0,0,0,0,0,0,0):                 ret = CTX_SET_FONT; break;
-    case STR('r','a','d','i','a','l','_','g','r','a','d','i'): ret = CTX_RADIAL_GRADIENT;  break;
-    case STR('g','r','a','d','i','e','n','t','_','a','d','d'):
-    case STR('g','r','a','d','i','e','n','t','A','d','d','S'):
-    case STR('a','d','d','S','t','o','p',0,0,0,0,0):           ret = CTX_GRADIENT_STOP; break;
-    case STR('a','d','d','_','s','t','o','p',0,0,0,0):         ret = CTX_GRADIENT_STOP; break;
-    case STR('r','e','l','Q','u','a','d','T','o',0,0,0):
-    case STR('r','e','l','_','q','u','a','d','_','t','o',0):   ret = CTX_REL_QUAD_TO; break;
-    case STR('r','e','c','t','a','n','g','l','e',0,0,0):
-    case STR('r','e','c','t',0,0,0,0,'e',0,0,0):               ret = CTX_RECTANGLE; break;
-    case STR('r','e','l','S','m','o','o','t','h','T','o',0): 
-    case STR('r','e','l','_','s','m','o','o','t','h','_','t'): ret = CTX_REL_SMOOTH_TO; break;
-    case STR('r','e','l','S','m','o','o','t','h','q','T','o'):
-    case STR('r','e','l','_','s','m','o','o','t','h','_','q'): ret = CTX_REL_SMOOTHQ_TO; break;
-    case STR('t','e','x','t','S','t','r','o','k','e', 0, 0):
-    case STR('t','e','x','t','_','s','t','r','o','k','e', 0):  ret = CTX_TEXT_STROKE; break;
-    case STR('r','e','l','V','e','r','L','i','n','e','T','o'):
-    case STR('r','e','l','_','v','e','r','_','l','i','n','e'): ret = CTX_REL_VER_LINE_TO; break;
-    case STR('t','e','x','t',0,0,0,0,0,0,0,0):                 ret = CTX_TEXT; break;
-    case STR('i','d','e','n','t','i','t','y',0,0,0,0):         ret = CTX_IDENTITY; break;
-    case STR('t','r','a','n','s','f','o','r','m',0,0,0):       ret = CTX_SET_TRANSFORM; break;
+    case CTX_clear:          ret = CTX_CLEAR; break;
+    case CTX_verLineTo:
+    case CTX_ver_line_to:    ret = CTX_VER_LINE_TO; break;
+    case CTX_exit:
+    case CTX_done:           ret = CTX_EXIT; break;
+    case CTX_close_path:
+    case CTX_closePath:      ret =  CTX_CLOSE_PATH; break;
+    case CTX_new_path:
+    case CTX_begin_path:
+    case CTX_beginPath:
+    case CTX_newPath:        ret =  CTX_NEW_PATH; break;
+    case CTX_rel_arc_to:
+    case CTX_relArcTo:       ret = CTX_REL_ARC_TO; break;
+    case CTX_clip:           ret = CTX_CLIP; break;
+    case CTX_rel_curve_to:
+    case CTX_relCurveTo:     ret = CTX_REL_CURVE_TO; break;
+    case CTX_save:           ret = CTX_SAVE; break;
+    case CTX_translate:      ret = CTX_TRANSLATE; break;
+    case CTX_linear_gradient:
+    case CTX_linearGradient: ret = CTX_LINEAR_GRADIENT; break;
+    case CTX_rel_hor_line_to:
+    case CTX_relHorLineTo:   ret = CTX_REL_HOR_LINE_TO; break;
+    case CTX_rel_line_to:
+    case CTX_relLineTo:      ret = CTX_REL_LINE_TO; break;
+    case CTX_relMoveTo:
+    case CTX_rel_move_to:    ret = CTX_REL_MOVE_TO; break;
+    case CTX_font:           ret = CTX_SET_FONT; break;
+    case CTX_radial_gradient:ret = CTX_RADIAL_GRADIENT;  break;
+    case CTX_gradient_add_stop:
+    case CTX_gradientAddStop:
+    case CTX_addStop:
+    case CTX_add_stop:       ret = CTX_GRADIENT_STOP; break;
+    case CTX_rel_quad_to:
+    case CTX_relQuadTo:      ret = CTX_REL_QUAD_TO; break;
+    case CTX_rectangle:
+    case CTX_rect:           ret = CTX_RECTANGLE; break;
+    case CTX_rel_smooth_to:
+    case CTX_relSmoothTo:    ret = CTX_REL_SMOOTH_TO; break;
+    case CTX_relSmoothqTo:
+    case CTX_rel_smoothq_to: ret = CTX_REL_SMOOTHQ_TO; break;
+    case CTX_text_stroke:
+    case CTX_textStroke:     ret = CTX_TEXT_STROKE; break;
+    case CTX_rel_ver_line_to:
+    case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
+    case CTX_text:           ret = CTX_TEXT; break;
+    case CTX_identity:       ret = CTX_IDENTITY; break;
+    case CTX_transform:      ret = CTX_SET_TRANSFORM; break;
                                                            // XXX: make it apply instead of set
 
     case STR(CTX_SET_KEY,'m',0,0,0,0,0,0,0,0,0,0):
 
-    case STR('r','g','b','_','s','p','a','c','e',0,0,0): 
-    case STR('r','g','b','S','p','a','c','e',0,0,0,0): 
+    case CTX_rgb_space:
+    case CTX_rgbSpace:
       return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
 
-    case STR('c','m','y','k','_','s','p','a','c','e',0,0): 
-    case STR('c','m','y','k','S','p','a','c','e',0,0,0): 
+    case CTX_cmykSpace:
+    case CTX_cmyk_space:
       return ctx_parser_set_command (parser, CTX_SET_CMYK_SPACE);
 
-    case STR('d','e','v','i','c','e','_','s','p','a','c','e'): 
-    case STR('d','e','v','i','c','e','S','p','a','c','e',0): 
+    case CTX_device_space:
+    case CTX_deviceSpace:
       return ctx_parser_set_command (parser, CTX_SET_DEVICE_SPACE);
 
-    case STR('c','o','m','p','o','s','i','t','i','e',0,0): 
-    case STR('c','o','m','p','o','s','i','t','i','n','g','_'): 
-    case STR('c','o','m','p','o','s','i','t','i','n','g','M'): 
+    case CTX_composite:
+    case CTX_compositing_mode:
+    case CTX_compositingMode:
       return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
 
     case STR(CTX_SET_KEY,'r',0,0,0,0,0,0,0,0,0,0):
-    case STR('f','i','l','l','_','r','u','l','e',0,0,0): 
-    case STR('f','i','l','l','R','u','l','e',0,0,0,0): 
+    case CTX_fill_rule:
+    case CTX_fillRule:
       return ctx_parser_set_command (parser, CTX_SET_FILL_RULE);
 
     case STR(CTX_SET_KEY,'f',0,0,0,0,0,0,0,0,0,0):
-    case STR('f','o','n','t','_','s','i','z','e',0,0,0):
-    case STR('f','o','n','t','S','i','z','e',0,0,0,0):
+    case CTX_font_size:
+    case CTX_fontSize:
       return ctx_parser_set_command (parser, CTX_SET_FONT_SIZE);
 
     case STR(CTX_SET_KEY,'l',0,0,0,0,0,0,0,0,0,0):
-    case STR('m','i','t','e','r','_','l','i','m','i','t',0):
-    case STR('m','i','t','e','r','L','i','m','i','t',0,0):
+    case CTX_miter_limit:
+    case CTX_miterLimit:
       return ctx_parser_set_command (parser, CTX_SET_MITER_LIMIT);
 
     case STR(CTX_SET_KEY,'t',0,0,0,0,0,0,0,0,0,0):
     case CTX_text_align:
-    case STR('t','e','x','t','A','l','i','g','n',0, 0, 0):
+    case CTX_textAlign:
       return ctx_parser_set_command (parser, CTX_SET_TEXT_ALIGN);
 
     case STR(CTX_SET_KEY,'b',0,0,0,0,0,0,0,0,0,0):
-    case STR('t','e','x','t','_','b','a','s','e','l','i','n'):
-    case STR('t','e','x','t','B','a','s','e','l','i','n','e'):
+    case CTX_textBaseline:
+    case CTX_text_baseline:
       return ctx_parser_set_command (parser, CTX_SET_TEXT_BASELINE);
 
     case STR(CTX_SET_KEY,'d',0,0,0,0,0,0,0,0,0,0):
-    case STR('t','e','x','t','_','d','i','r','e','c','t','i'):
-    case STR('t','e','x','t','D','i','r','e','c','t','i','o'):
+    case CTX_textDirection:
+    case CTX_text_direction:
       return ctx_parser_set_command (parser, CTX_SET_TEXT_DIRECTION);
 
     case STR(CTX_SET_KEY,'j',0,0,0,0,0,0,0,0,0,0):
-    case STR('j','o','i','n',0,0,0,0,0,0,0,0):
-    case STR('l','i','n','e','_','j','o','i','n',0,0,0):
-    case STR('l','i','n','e','J','o','i','n',0,0,0,0):
+    case CTX_join:
+    case CTX_line_join:
+    case CTX_lineJoin:
       return ctx_parser_set_command (parser, CTX_SET_LINE_JOIN);
 
     case STR(CTX_SET_KEY,'c',0,0,0,0,0,0,0,0,0,0):
-    case STR('c','a','p',0,0,0,0,0,0,0,0,0):
-    case STR('l','i','n','e','_','c','a','p',0,0,0,0):
-    case STR('l','i','n','e','C','a','p',0,0,0,0,0):
+    case CTX_cap:
+    case CTX_line_cap:
+    case CTX_lineCap:
       return ctx_parser_set_command (parser, CTX_SET_LINE_CAP);
 
     case STR(CTX_SET_KEY,'w',0,0,0,0,0,0,0,0,0,0):
-    case STR('l','i','n','e','_','w','i','d','t','h',0,0):
-    case STR('l','i','n','e','W','i','d','t','h',0,0,0):
+    case CTX_line_width:
+    case CTX_lineWidth:
       return ctx_parser_set_command (parser, CTX_SET_LINE_WIDTH);
 
     case STR(CTX_SET_KEY,'a',0,0,0,0,0,0,0,0,0,0):
-    case STR('g','l','o','b','a','l','_','a','l','p','h','a'):
-    case STR('g','l','o','b','a','l','A','l','p','h','a',0):
+    case CTX_global_alpha:
+    case CTX_globalAlpha:
       return ctx_parser_set_command (parser, CTX_SET_GLOBAL_ALPHA);
 
     /* strings are handled directly here,
@@ -10511,43 +10621,25 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
 
     /* words that correspond to low integer constants
     */
-    case STR('w','i','n','d','i','n', 'g', 0, 0, 0, 0, 0):
-       return CTX_FILL_RULE_WINDING;
-    case STR('e','v','e','n','O','d', 'd', 0, 0, 0, 0, 0): 
-    case STR('e','v','e','n','_','o','d', 'd', 0, 0, 0, 0):
-       return CTX_FILL_RULE_EVEN_ODD;
-    case STR('b','e','v','e','l',0, 0, 0, 0, 0, 0, 0):
-       return CTX_JOIN_BEVEL;
-    case STR('r','o','u','n','d',0, 0, 0, 0, 0, 0, 0): 
-       return CTX_JOIN_ROUND;
-    case STR('m','i','t','e','r',0, 0, 0, 0, 0, 0, 0):  
-       return CTX_JOIN_MITER;
-    case STR('n','o','n','e', 0 ,0, 0, 0, 0, 0, 0, 0):  
-       return CTX_CAP_NONE;
-    case STR('s','q','u','a','r','e', 0, 0, 0, 0, 0, 0):
-      return CTX_CAP_SQUARE;
-    case STR('s','t','a','r','t',0, 0, 0, 0, 0, 0, 0):
-      return CTX_TEXT_ALIGN_START;
-    case STR('e','n','d',0,0,0, 0, 0, 0, 0, 0, 0):
-      return CTX_TEXT_ALIGN_END;
-    case STR('l','e','f','t',0,0, 0, 0, 0, 0, 0, 0):
-      return CTX_TEXT_ALIGN_LEFT;
-    case STR('r','i','g','h','t',0, 0, 0, 0, 0, 0, 0):
-      return CTX_TEXT_ALIGN_RIGHT;
-    case STR('c','e','n','t','e','r', 0, 0, 0, 0, 0, 0):
-      return CTX_TEXT_ALIGN_CENTER;
-    case STR('t','o','p',0,0,0, 0, 0, 0, 0, 0, 0):
-      return CTX_TEXT_BASELINE_TOP;
-    case STR('b','o','t','t','o','m', 0, 0, 0, 0, 0, 0):
-      return CTX_TEXT_BASELINE_BOTTOM;
-    case STR('m','i','d','d','l', 'e',0, 0, 0, 0, 0, 0):
-      return CTX_TEXT_BASELINE_MIDDLE;
-    case STR('a','l','p','h','a', 'b','e', 't', 'i', 'c', 0, 0):
-      return CTX_TEXT_BASELINE_ALPHABETIC;
-    case STR('h','a','n','g','i', 'n','g', 0, 0, 0, 0, 0):
-      return CTX_TEXT_BASELINE_HANGING;
-    case STR('i','d','e','o','g','r','a','p','h','i','c', 0):
-      return CTX_TEXT_BASELINE_IDEOGRAPHIC;
+    case CTX_winding: return CTX_FILL_RULE_WINDING;
+    case CTX_evenOdd:
+    case CTX_even_odd: return CTX_FILL_RULE_EVEN_ODD;
+    case CTX_bevel: return CTX_JOIN_BEVEL;
+    case CTX_round: return CTX_JOIN_ROUND;
+    case CTX_miter: return CTX_JOIN_MITER;
+    case CTX_none: return CTX_CAP_NONE;
+    case CTX_square: return CTX_CAP_SQUARE;
+    case CTX_start: return CTX_TEXT_ALIGN_START;
+    case CTX_end: return CTX_TEXT_ALIGN_END;
+    case CTX_left: return CTX_TEXT_ALIGN_LEFT;
+    case CTX_right: return CTX_TEXT_ALIGN_RIGHT;
+    case CTX_center: return CTX_TEXT_ALIGN_CENTER;
+    case CTX_top: return CTX_TEXT_BASELINE_TOP;
+    case CTX_bottom: return CTX_TEXT_BASELINE_BOTTOM;
+    case CTX_middle: return CTX_TEXT_BASELINE_MIDDLE;
+    case CTX_alphabetic: return CTX_TEXT_BASELINE_ALPHABETIC;
+    case CTX_hanging: return CTX_TEXT_BASELINE_HANGING;
+    case CTX_ideographic: return CTX_TEXT_BASELINE_IDEOGRAPHIC;
 
 #undef STR
 #undef LOWER
