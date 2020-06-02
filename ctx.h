@@ -1206,9 +1206,14 @@ static float ctx_tanf (float a)
 /* define more trig based on having sqrt, sin and atan2 */
 
 #else
-
 #include <math.h>
-
+static float ctx_fabsf (float x)           { return fabsf(x); }
+static float ctx_sinf (float x)            { return sinf(x); }
+static float ctx_atan2f (float y, float x) { return atan2f (y, x); }
+static float ctx_hypotf (float a, float b) { return hypotf (a, b); }
+static float ctx_acosf (float a)           { return acosf (a); }
+static float ctx_cosf (float a)            { return cosf (a); }
+static float ctx_tanf (float a)            { return tanf (a); }
 #endif
 
 static float ctx_fast_hypotf (float x, float y)
