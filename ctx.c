@@ -5,11 +5,36 @@
 #include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
 
-//#define CTX_IMPLEMENTATION 1
+//#include "Roboto-Regular.h"
+
+//#include "DejaVuSansMono.h"
+//#include "DejaVuSans.h"
+//#include "0xA000-Mono.h"
+//#include "unscii-16.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "../tools/stb_truetype.h"
+
+#define CTX_BACKEND_TEXT         1
+#define CTX_PARSER               1
+#define CTX_FORMATTER            1
+#define CTX_BITPACK_PACKER       0
+#define CTX_GRADIENT_CACHE       1
+#define CTX_ENABLE_CMYK          1
+#define CTX_SHAPE_CACHE          1
+#define CTX_SHAPE_CACHE_MAX_DIM  48
+#define CTX_SHAPE_CACHE_DIM      (48*48)
+#define CTX_SHAPE_CACHE_ENTRIES  (512)
+//#define CTX_RASTERIZER_AA        5
+//#define CTX_RASTERIZER_FORCE_AA  1
+#define CTX_MATH                 0
+
+#define CTX_IMPLEMENTATION 1
 //
 // we let the vt contain the implementation
 // since it has the biggest need for tuning
 #include "ctx.h"
+#include "svg.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -411,13 +436,15 @@ int main (int argc, char **argv)
       !strcmp (get_suffix (source_path), ".svg")||
       !strcmp (get_suffix (source_path), ".xml"))
   {
+     Mrg *mrg = mrg_new (ctx, width, height);
      unsigned char *contents = NULL;
      long length;
      _file_get_contents (source_path, &contents, &length);
 
+     mrg_print_xml (mrg, contents);
      
   }
-  if (!strcmp (get_suffix (source_path), ".ctx"))
+  else if (!strcmp (get_suffix (source_path), ".ctx"))
   {
      unsigned char *contents = NULL;
      long length;

@@ -11534,6 +11534,5 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
 }
 #endif
 
-#include "svg.h"
 
 #endif

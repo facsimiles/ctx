@@ -22,33 +22,6 @@
 #include "mmm-pset.h"
 #endif
 
-#include "ctx-font-regular.h"
-#include "ctx-font-mono.h"
-
-//#include "Roboto-Regular.h"
-
-//#include "DejaVuSansMono.h"
-//#include "DejaVuSans.h"
-//#include "0xA000-Mono.h"
-//#include "unscii-16.h"
-
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "../tools/stb_truetype.h"
-
-#define CTX_BACKEND_TEXT         1
-#define CTX_PARSER               1
-#define CTX_FORMATTER            1
-#define CTX_BITPACK_PACKER       0
-#define CTX_GRADIENT_CACHE       1
-#define CTX_ENABLE_CMYK          1
-#define CTX_SHAPE_CACHE          1
-#define CTX_SHAPE_CACHE_MAX_DIM  48
-#define CTX_SHAPE_CACHE_DIM      (48*48)
-#define CTX_SHAPE_CACHE_ENTRIES  (512)
-//#define CTX_RASTERIZER_AA        5
-//#define CTX_RASTERIZER_FORCE_AA  1
-#define CTX_MATH                 0
-#define CTX_IMPLEMENTATION
 #include "ctx.h"
 #include "vt-line.h"
 #include "vt.h"
