@@ -819,7 +819,8 @@ typedef enum
  */
 #pragma pack(push,1)
 
-struct _CtxEntry
+struct
+_CtxEntry
 {
   uint8_t code;       // radical idea pack the code into first floats
                       // least significant bits
@@ -844,7 +845,8 @@ struct _CtxEntry
  * refactoring and documentation in one place.
  */
 typedef struct _CtxCommand CtxCommand;
-struct _CtxCommand
+struct
+_CtxCommand
 {
   union {
     uint8_t  code;
@@ -1232,7 +1234,8 @@ typedef struct _CtxRasterizer CtxRasterizer;
 typedef struct _CtxGState     CtxGState;
 typedef struct _CtxState      CtxState;
 typedef struct _CtxMatrix     CtxMatrix;
-struct _CtxMatrix
+struct
+_CtxMatrix
 {
   float m[3][2];
 };
@@ -2034,7 +2037,7 @@ typedef struct CtxEdge {
 } CtxEdge;
 
 struct _CtxRasterizer {
-  void (*render_func)(void *renderer, CtxEntry *entry);
+  void (*render_func)(void *renderer, CtxCommand *entry);
 
 
   /* these should be initialized and used as the bounds for rendering into the
@@ -2106,9 +2109,11 @@ struct _CtxPixelFormatInfo
 
 #endif
   
-struct _Ctx {
-  void             *renderer;
-  void (*render_func)(void *renderer, CtxEntry *entry);
+struct
+_Ctx {
+  void                    *renderer;
+  void (*render_func)     (void *renderer, CtxCommand *entry);
+  void (*renderer_destory)(void *renderer);
 
   CtxRenderstream   renderstream;
   CtxState          state;
@@ -2407,7 +2412,7 @@ ctx_iterator_expand_s16_args (CtxIterator *iterator, CtxEntry *entry)
 }
 #endif
 
-static CtxEntry *
+static CtxCommand *
 ctx_iterator_next (CtxIterator *iterator)
 {
   CtxEntry *ret;
@@ -2423,7 +2428,7 @@ ctx_iterator_next (CtxIterator *iterator)
         iterator->bitpack_length = 0;
       }
 
-    return ret;
+    return (CtxCommand*)ret;
   }
 #endif
   ret = _ctx_iterator_next (iterator);
@@ -2529,7 +2534,7 @@ ctx_iterator_next (CtxIterator *iterator)
     case CTX_TEXT_STROKE:
     case CTX_SET_FONT:
       iterator->bitpack_length = 0;
-      return ret;
+      return (CtxCommand*)ret;
 
     default:
       iterator->bitpack_command[0] = *ret;
@@ -2539,7 +2544,7 @@ ctx_iterator_next (CtxIterator *iterator)
   }
 #endif
 
-  return ret;
+  return (CtxCommand*)ret;
 }
 
 static void
@@ -3859,22 +3864,23 @@ ctx_renderstream_remove_tiny_curves (CtxRenderstream *renderstream, int start_po
 
   ctx_iterator_init (&iterator, renderstream, start_pos, CTX_ITERATOR_FLAT);
   iterator.end_pos = renderstream->count - 5;
-  CtxEntry *command = NULL;
+  CtxCommand *command = NULL;
   while ((command = ctx_iterator_next(&iterator)))
   {
+    CtxEntry *entry = &command->entry;
     /* things smaller than this have probably been scaled down
        beyond recognition, bailing for both better packing and less rasterization work
      */
     if (command[0].code == CTX_REL_CURVE_TO)
     {
-      float max_dev = find_max_dev (command, 3);
+      float max_dev = find_max_dev (entry, 3);
       if (max_dev < 1.0)
       {
-        command[0].code = CTX_REL_LINE_TO;
-        command[0].data.f[0] = command[2].data.f[0];
-        command[0].data.f[1] = command[2].data.f[1];
-        command[1].code = CTX_NOP;
-        command[2].code = CTX_NOP;
+        entry[0].code = CTX_REL_LINE_TO;
+        entry[0].data.f[0] = entry[2].data.f[0];
+        entry[0].data.f[1] = entry[2].data.f[1];
+        entry[1].code = CTX_NOP;
+        entry[2].code = CTX_NOP;
       }
     }
   }
@@ -4569,7 +4575,7 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
 }
 
 static void
-ctx_rasterizer_process (void *user_data, CtxEntry *entry);
+ctx_rasterizer_process (void *user_data, CtxCommand *entry);
 
 CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     int stride,
@@ -7594,8 +7600,9 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
 }
 
 static void
-ctx_rasterizer_process (void *user_data, CtxEntry *entry)
+ctx_rasterizer_process (void *user_data, CtxCommand *command)
 {
+  CtxEntry *entry = &command->entry;
   //CtxRasterizer *rasterizer = ctx->renderer;
   CtxRasterizer *rasterizer = (CtxRasterizer*)user_data;
   //Ctx *ctx = rasterizer->ctx;
@@ -8358,10 +8365,10 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
 
   {
     CtxIterator iterator;
-    CtxEntry   *entry;
     ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_BITPACK);
-    while ((entry = ctx_iterator_next(&iterator)))
-      ctx_rasterizer_process (rasterizer, entry);
+    for (CtxCommand *command = ctx_iterator_next(&iterator);
+            command; command = ctx_iterator_next(&iterator))
+      ctx_rasterizer_process (rasterizer, command);
   }
 
   ctx_rasterizer_deinit (rasterizer);
@@ -8407,7 +8414,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 {
   if (ctx->render_func)
   {
-    ctx->render_func (ctx->renderer, entry);
+    ctx->render_func (ctx->renderer, (CtxCommand*)entry);
   }
   else
   {
@@ -8826,10 +8833,11 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 
   ctx_iterator_init (&iterator, &renderstream, start, CTX_ITERATOR_EXPAND_BITPACK);
 
-  CtxEntry *entry;
+  CtxCommand *command;
 
-  while ((entry = ctx_iterator_next (&iterator)))
+  while ((command= ctx_iterator_next (&iterator)))
   {
+    CtxEntry *entry = &command->entry;
     if (in_glyph)
     {
       if (entry->code == CTX_DEFINE_GLYPH)
@@ -9526,11 +9534,11 @@ void
 ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 {
   CtxIterator iterator;
-  CtxEntry   *entry;
+  CtxCommand *command;
   ctx_iterator_init (&iterator, &ctx->renderstream, 0, 
                      CTX_ITERATOR_EXPAND_BITPACK);
-  while ((entry = ctx_iterator_next (&iterator)))
-    ctx_process (d_ctx, entry);
+  while ((command = ctx_iterator_next (&iterator)))
+    ctx_process (d_ctx, &command->entry);
 }
 
 #else
@@ -10077,8 +10085,9 @@ ctx_print_entry (FILE *stream, int formatter, int *indent, CtxEntry *entry, int 
 }
 
 static void
-ctx_stream_process (void *user_data, CtxEntry *entry)
+ctx_stream_process (void *user_data, CtxCommand *command)
 {
+  CtxEntry *entry = &command->entry;
   void **user_data_array = (void**)user_data;
   FILE *stream    = (FILE*)user_data_array[0];
   int   formatter = (size_t)(user_data_array[1]);
@@ -10123,6 +10132,11 @@ ctx_stream_process (void *user_data, CtxEntry *entry)
     case CTX_VER_LINE_TO:
     case CTX_HOR_LINE_TO:
       ctx_print_entry (stream, formatter, indent, entry, 1);
+      break;
+
+    case CTX_SET_COLOR:
+      _ctx_indent (stream, *indent);
+      fprintf (stream, "set_color...\n");
       break;
 
     case CTX_SET_RGBA_U8:
@@ -10229,13 +10243,13 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
 {
   CtxIterator iterator;
   void *user_data[3]={stream, (void*)(size_t)(formatter), NULL};
-  CtxEntry   *entry;
+  CtxCommand *command;
 
   ctx_iterator_init (&iterator, &ctx->renderstream, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
 
-  while ((entry = ctx_iterator_next (&iterator)))
-          ctx_stream_process (user_data, entry);
+  while (command = ctx_iterator_next (&iterator))
+          ctx_stream_process (user_data, command);
   fprintf (stream, "\n");
 }
 
@@ -10248,7 +10262,8 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
 
 /* ctx parser, */
 
-struct _CtxParser {
+struct
+_CtxParser {
   Ctx       *ctx;
   int        state;
   uint8_t    holding[1024];
