@@ -187,10 +187,13 @@ void ctx_set_drgba        (Ctx *ctx, float r, float g, float b, float a);
 void ctx_set_rgb          (Ctx *ctx, float r, float g, float b);
 void ctx_set_gray         (Ctx *ctx, float gray);
 void ctx_set_cmyk         (Ctx *ctx, float c, float m, float y, float k);
+void ctx_set_dcmyk        (Ctx *ctx, float c, float m, float y, float k);
+void ctx_set_dcmyka       (Ctx *ctx, float c, float m, float y, float k, float a);
 void ctx_set_cmyka        (Ctx *ctx, float c, float m, float y, float k, float a);
-void ctx_get_drgba        (Ctx *ctx, float *rgba);
-void ctx_get_cmyka        (Ctx *ctx, float *cmyka);
-void ctx_get_graya        (Ctx *ctx, float *ya);
+void ctx_get_drgba        (Ctx *ctx,  float *drgba);
+void ctx_get_cmyka        (Ctx *ctx,  float *cmyka);
+void ctx_get_dcmyka        (Ctx *ctx, float *dcmyka);
+void ctx_get_graya        (Ctx *ctx,  float *ya);
 
 
 void ctx_current_point    (Ctx *ctx, float *x, float *y);
@@ -1041,18 +1044,21 @@ typedef enum {
   CTX_RGB            = 3,
   CTX_DRGB     = 4,
   CTX_CMYK           = 5,
-  CTX_LAB            = 6,
-  CTX_LCH            = 7,
+  CTX_DCMYK          = 6,
+  CTX_LAB            = 7,
+  CTX_LCH            = 8,
   CTX_GRAYA          = 101,
   CTX_RGBA           = 103,
   CTX_DRGBA    = 104,
   CTX_CMYKA          = 105,
-  CTX_LABA           = 106,
-  CTX_LCHA           = 107,
+  CTX_DCMYKA         = 106,
+  CTX_LABA           = 107,
+  CTX_LCHA           = 108,
   CTX_GRAYA_A        = 201,
   CTX_RGBA_A         = 203,
   CTX_RGBA_A_DEVICE  = 204,
   CTX_CMYKA_A        = 205,
+  CTX_DCMYKA_A       = 206,
   // RGB  device and  RGB  ?
 } CtxColorModel;
 
@@ -1071,6 +1077,7 @@ static inline int ctx_color_model_get_components (CtxColorModel model)
      case CTX_DRGB:
              return 3;
      case CTX_CMYK:
+     case CTX_DCMYK:
      case CTX_LABA:
      case CTX_LCHA:
      case CTX_RGBA:
@@ -1078,8 +1085,10 @@ static inline int ctx_color_model_get_components (CtxColorModel model)
      case CTX_RGBA_A:
      case CTX_RGBA_A_DEVICE:
              return 4;
+     case CTX_DCMYKA:
      case CTX_CMYKA:
      case CTX_CMYKA_A:
+     case CTX_DCMYKA_A:
              return 5;
    }
    return 0;
@@ -1320,8 +1329,8 @@ typedef struct _CtxSource CtxSource;
 #define CTX_VALID_RGBA        (1<<2)
 #endif
 #if CTX_ENABLE_CMYK
-#define CTX_VALID_CMYKA_U8    (1<<3)
-#define CTX_VALID_CMYKA       (1<<4)
+#define CTX_VALID_CMYKA       (1<<3)
+#define CTX_VALID_DCMYKA      (1<<4)
 #endif
 #define CTX_VALID_GRAYA       (1<<5)
 #define CTX_VALID_GRAYA_U8    (1<<6)
@@ -1349,6 +1358,10 @@ struct _CtxColor
   float   b;
 #endif
 #if CTX_ENABLE_CMYK
+  float   device_cyan;
+  float   device_magenta;
+  float   device_yellow;
+  float   device_key;
   float   cyan;
   float   magenta;
   float   yellow;
@@ -1916,12 +1929,16 @@ static void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, floa
   color->space = state->gstate.cmyk_space;
 }
 
-#if 0
-static void ctx_color_set_cmyka_ (CtxColor *color, const float *in)
+static void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a)
 {
-  ctx_color_set_cmyka (color, in[0], in[1], in[2], in[3], in[4]);
+  color->original = color->valid = CTX_VALID_DCMYKA;
+  color->device_cyan    = c;
+  color->device_magenta = m;
+  color->device_yellow  = y;
+  color->device_key     = k;
+  color->alpha          = a;
+  color->space = state->gstate.cmyk_space;
 }
-#endif
 
 #endif
 
@@ -1944,6 +1961,8 @@ static void ctx_rgb_device_to_user (CtxState *state, float rin, float gin, float
   *gout = gin;
   *bout = bin;
 }
+
+
 #endif
 
 
@@ -1976,9 +1995,9 @@ static void ctx_color_get_drgba (CtxState *state, CtxColor *color, float *out)
 #endif
     else if (color->valid & CTX_VALID_GRAYA)
     {
-      color->device_red    = 
-      color->device_green  =
-      color->device_blue   = color->l;
+      color->device_red   = 
+      color->device_green =
+      color->device_blue  = color->l;
     }
     color->valid |= CTX_VALID_RGBA_DEVICE;
   }
@@ -3135,6 +3154,25 @@ void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
      ctx_f (CTX_CONT, k, a)};
   ctx_process (ctx, command);
 }
+
+void ctx_set_dcmyk (Ctx *ctx, float c, float m, float y, float k)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_DCMYKA, c),
+     ctx_f (CTX_CONT, m, y),
+     ctx_f (CTX_CONT, k, 1.0f)};
+  ctx_process (ctx, command);
+}
+
+void ctx_set_dcmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
+{
+  CtxEntry command[3]={
+     ctx_f (CTX_SET_COLOR, CTX_DCMYKA, c),
+     ctx_f (CTX_CONT, m, y),
+     ctx_f (CTX_CONT, k, a)};
+  ctx_process (ctx, command);
+}
+
 #endif
 
 void
@@ -3794,6 +3832,12 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           case CTX_CMYK:
             ctx_color_set_cmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, 1.0f);
           break;
+        case CTX_DCMYKA:
+            ctx_color_set_dcmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
+        break;
+          case CTX_DCMYK:
+            ctx_color_set_dcmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, 1.0f);
+          break;
 #endif
         case CTX_GRAYA:
           ctx_color_set_graya (state, color, c->graya.g, c->graya.a);
@@ -4211,7 +4255,7 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
              entry[1].code == CTX_MOVE_TO &&
              entry[2].code == CTX_MOVE_TO)
     {
-        entry[0] = entry[2];
+        entry[0]      = entry[2];
         entry[0].code = CTX_MOVE_TO;
         entry[1].code = CTX_NOP;
         entry[2].code = CTX_NOP;
@@ -4220,10 +4264,10 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
 #if 1
     else if ((entry[0].code == CTX_MOVE_TO &&
               entry[1].code == CTX_MOVE_TO) ||
-            (entry[0].code == CTX_REL_MOVE_TO &&
-             entry[1].code == CTX_MOVE_TO))
+             (entry[0].code == CTX_REL_MOVE_TO &&
+              entry[1].code == CTX_MOVE_TO))
     {
-        entry[0] = entry[1];
+        entry[0]      = entry[1];
         entry[0].code = CTX_MOVE_TO;
         entry[1].code = CTX_NOP;
     }
@@ -4280,7 +4324,6 @@ ctx_last_history (CtxRenderstream *renderstream)
   return last_history;
 }
 #endif
-
 
 static void
 ctx_renderstream_compact (CtxRenderstream *renderstream)
@@ -4485,6 +4528,17 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
     }
   }
 }
+
+// for cmm - permit setting resolved babl fishes?
+//
+// for a pair of profiles, generate atob and btoa fishes
+// and set them
+//
+// can override bridges for
+//
+// rgb   <> drb
+// cmyk  <> drgb
+// dcmyk <> cmyk
 
 static void
 ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
@@ -10058,7 +10112,13 @@ ctx_stream_process (void *user_data, CtxCommand *c)
             fprintf (stream, "cmyk %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
             break;
           case CTX_CMYKA:
-            fprintf (stream, "cmyk %.4f %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
+            fprintf (stream, "cmyka %.4f %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
+            break;
+          case CTX_DCMYK:
+            fprintf (stream, "dcmyk %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
+            break;
+          case CTX_DCMYKA:
+            fprintf (stream, "dcmyka %.4f %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
             break;
           case CTX_DRGB:
             fprintf (stream, "drgb %.4f %.4f %.4f\n", c->rgba.r, c->rgba.g, c->rgba.b);
