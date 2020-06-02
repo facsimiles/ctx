@@ -698,7 +698,7 @@ void mrg_string_insert_utf8 (MrgString *string, int pos, const char *new_glyph)
 
 int mrg_string_get_utf8_length (MrgString  *string)
 {
-  //return mrg_utf8_strlen (string->str);
+  //return ctx_utf8_strlen (string->str);
   return string->utf8_length;
 }
 
@@ -1364,7 +1364,7 @@ typedef struct MrgItem {
   float          x1;
   float          y1;
 
-  //cairo_path_t   *path;
+  void *path;
   double          path_hash;
 
   MrgType   types; /* all cb's ored together */
@@ -1500,6 +1500,7 @@ float mrg_edge_right (Mrg *mrg);
 float mrg_edge_left (Mrg *mrg);
 float mrg_y (Mrg *mrg);
 float mrg_x (Mrg *mrg);
+
 float mrg_em (Mrg *mrg);
 void mrg_set_xy (Mrg *mrg, float x, float y);
 
@@ -1978,6 +1979,18 @@ float _mrg_dynamic_edge_left (Mrg *mrg)
     return mrg->state->wrap_edge_left (mrg, mrg->state->wrap_edge_data);
   return mrg->state->edge_left;
 }
+int  mrg_width (Mrg *mrg)
+{
+  if (!mrg) return 640;
+  return mrg->width / mrg->ddpx;
+}
+
+int  mrg_height (Mrg *mrg)
+{
+  if (!mrg) return 480;
+  return mrg->height / mrg->ddpx;
+}
+
 
 float _mrg_dynamic_edge_right (Mrg *mrg)
 {
@@ -2083,7 +2096,7 @@ float mrg_em (Mrg *mrg)
 {
   return ctx_get_font_size (mrg_cr (mrg));
 }
-#endif
+
 
 float mrg_x (Mrg *mrg)
 {
@@ -2094,6 +2107,7 @@ float mrg_y (Mrg *mrg)
 {
   return ctx_y (mrg_cr (mrg));
 }
+#endif
 
 float mrg_edge_bottom  (Mrg *mrg)
 {
@@ -2140,11 +2154,13 @@ void  mrg_set_edge_right (Mrg *mrg, float val)
   mrg->state->edge_right = val;
 }
 
+#if 0
 void mrg_set_xy (Mrg *mrg, float x, float y)
 {
   ctx_move_to (mrg_cr (mrg), x, y);
   mrg->state->overflowed = 0;
 }
+#endif
 
 float mrg_rem (Mrg *mrg)
 {
@@ -3250,8 +3266,1393 @@ void mrg_css_set (Mrg *mrg, const char *css);
 void mrg_css_add (Mrg *mrg, const char *css);
 
 
-void mrg_set_style (Mrg *mrg, const char *style);
-void mrg_set_stylef (Mrg *mrg, const char *format, ...);
+
+/* XXX: missing CSS1:
+ *
+ *   EM { color: rgb(110%, 0%, 0%) }  // clipped to 100% 
+ *
+ *
+ *   :first-letter
+ *   :first-list
+ *   :link :visited :active
+ *
+ */
+
+typedef struct ColorDef {
+  const char *name;
+  float r;
+  float g;
+  float b;
+  float a;
+} ColorDef;
+
+static ColorDef colors[]={
+  {"black",    0, 0, 0, 1},
+  {"red",      1, 0, 0, 1},
+  {"green",    0, 1, 0, 1},
+  {"yellow",   1, 1, 0, 1},
+  {"blue",     0, 0, 1, 1},
+  {"fuchsia",  1, 0, 1, 1},
+  {"cyan",     0, 1, 1, 1},
+  {"white",    1, 1, 1, 1},
+  {"silver",   0.75294, 0.75294, 0.75294, 1},
+  {"gray",     0.50196, 0.50196, 0.50196, 1},
+  {"magenta",  0.50196, 0, 0.50196, 1},
+  {"maroon",   0.50196, 0, 0, 1},
+  {"purple",   0.50196, 0, 0.50196, 1},
+  {"green",    0, 0.50196, 0, 1},
+  {"lime",     0, 1, 0, 1},
+  {"olive",    0.50196, 0.50196, 0, 1},
+  {"navy",     0, 0,      0.50196, 1},
+  {"teal",     0, 0.50196, 0.50196, 1},
+  {"aqua",     0, 1, 1, 1},
+  {"transparent", 0, 0, 0, 0},
+  {"none",     0, 0, 0, 0},
+};
+
+static int xdigit_value(const char xdigit)
+{
+  if (xdigit >= '0' && xdigit <= '9')
+   return xdigit - '0';
+  switch (xdigit)
+  {
+    case 'A':case 'a': return 10;
+    case 'B':case 'b': return 11;
+    case 'C':case 'c': return 12;
+    case 'D':case 'd': return 13;
+    case 'E':case 'e': return 14;
+    case 'F':case 'f': return 15;
+  }
+  return 0;
+}
+
+float mrg_parse_float (Mrg *mrg, const char *str, char **endptr)
+{
+  if (!str)
+  {
+    if (endptr)
+      *endptr = NULL;
+    return 0.0;
+  }
+#if 0
+  if (str[0] == '.')
+  {
+    char *endptr2;
+    int digits;
+    double val = strtod (&str[1], &endptr2); /* XXX: , vs . problem in some locales */
+    if (endptr)
+      *endptr = endptr2;
+    digits = endptr2 - &str[1];
+    while (digits--)
+      val /= 10.0;
+    fprintf (stderr, "[%s %f]\n", str, val);
+    return val;
+  }
+#endif
+  return strtod (str, endptr); /* XXX: , vs . problem in some locales */
+}
+
+static int
+mrg_color_parse_rgb (CtxColor *color, const char *color_string)
+{
+  float *dcolor = (void*)color;
+  dcolor[3] = 1.0;
+  while (*color_string && *color_string != '(')
+    color_string++;
+  if (*color_string) color_string++;
+
+  {
+    int n_floats = 0;
+    char *p =    (void*)color_string;
+    char *prev = (void *)NULL;
+    for (; p && n_floats < 4 && p != prev && *p; )
+    {
+      float val;
+      prev = p;
+      val = mrg_parse_float (NULL, p, &p);
+      if (p != prev)
+      {
+        if (n_floats < 3)
+          dcolor[n_floats++] = val/255.0;
+        else
+          dcolor[n_floats++] = val;
+
+        while (*p == ' ' || *p == ',')
+        {
+          p++;
+          prev++;
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+static int
+mrg_color_parse_hex (CtxColor *color, const char *color_string)
+{
+  float *dcolor = (void*)color;
+  int string_length = strlen (color_string);
+  int i;
+  dcolor[3] = 1.0;
+
+  if (string_length == 7 ||  /* #rrggbb   */
+      string_length == 9)    /* #rrggbbaa */
+    {
+      int num_iterations = (string_length - 1) / 2;
+  
+      for (i = 0; i < num_iterations; ++i)
+        {
+          if (isxdigit (color_string[2 * i + 1]) &&
+              isxdigit (color_string[2 * i + 2]))
+            {
+              dcolor[i] = (xdigit_value (color_string[2 * i + 1]) << 4 |
+                           xdigit_value (color_string[2 * i + 2])) / 255.f;
+            }
+          else
+            {
+              return 0;
+            }
+        }
+      /* Successful #rrggbb(aa) parsing! */
+      return 1;
+    }
+  else if (string_length == 4 ||  /* #rgb  */
+           string_length == 5)    /* #rgba */
+    {
+      int num_iterations = string_length - 1;
+      for (i = 0; i < num_iterations; ++i)
+        {
+          if (isxdigit (color_string[i + 1]))
+            {
+              dcolor[i] = (xdigit_value (color_string[i + 1]) << 4 |
+                           xdigit_value (color_string[i + 1])) / 255.f;
+            }
+          else
+            {
+              return 0;
+            }
+        }
+      /* Successful #rgb(a) parsing! */
+      return 0;
+    }
+  /* String was of unsupported length. */
+  return 1;
+}
+
+int mrg_color_set_from_string (Mrg *mrg, CtxColor *color, const char *string)
+{
+  int i;
+
+  if (!strcmp (string, "currentColor"))
+  {
+    MrgStyle *style = mrg_style (mrg);
+    float rgba[4];
+    ctx_color_get_rgba (&(mrg->ctx->state), &style->color, rgba);
+    ctx_color_set_rgba (&(mrg->ctx->state), color, rgba[0], rgba[1], rgba[2], rgba[3]);
+    return 0;
+  }
+
+  for (i = (sizeof(colors)/sizeof(colors[0]))-1; i>=0; i--)
+  {
+    if (!strcmp (colors[i].name, string))
+    {
+      ctx_color_set_rgba (&(mrg->ctx->state), color,
+       colors[i].r,
+       colors[i].g,
+       colors[i].b,
+       colors[i].a);
+      return 0;
+    }
+  }
+
+
+  if (string[0] == '#')
+    mrg_color_parse_hex (color, string);
+  else if (string[0] == 'r' &&
+      string[1] == 'g' &&
+      string[2] == 'b'
+      )
+    mrg_color_parse_rgb (color, string);
+  return 0;
+}
+
+static inline float mrg_parse_px_x (Mrg *mrg, const char *str, char **endptr)
+{
+  float result = 0;
+  char *end = NULL;
+#define PPI   96
+
+  if (!str)
+    return 0.0;
+
+
+  result = mrg_parse_float (mrg, str, &end); /* XXX: , vs . problem in some locales */
+  if (endptr)
+    *endptr=end;
+
+  //if (end[0]=='%v') /// XXX  % of viewport; regard less of stacking
+  if (end[0]=='%')
+  {
+    result = result / 100.0 * (mrg_edge_right (mrg) - mrg_edge_left (mrg));
+
+    if (endptr)
+      *endptr=end + 1;
+  }
+  else if (end[0]=='v' && end[1] == 'h')
+  {
+    result = result / 100.0 * (mrg_edge_bottom (mrg) - mrg_edge_top (mrg));
+    if (endptr)
+      *endptr=end + 1;
+  }
+  else if (end[0]=='v' && end[1] == 'w')
+  {
+    result = result / 100.0 * (mrg_edge_right (mrg) - mrg_edge_left (mrg));
+    if (endptr)
+      *endptr=end + 1;
+  }
+  else if (end[0]=='r' && end[1]=='e' && end[2]=='m')
+  {
+    result *= mrg_rem (mrg);
+    if (endptr)
+      *endptr=end + 3;
+  }
+  else if (end[0]=='e' && end[1]=='m')
+  {
+    result *= mrg_em (mrg);
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='p' && end[1]=='x')
+  {
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='p' && end[1]=='t')
+  {
+    result = (result / PPI) * 72;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='p' && end[1]=='c')
+  {
+    result = (result / PPI) * 72 / 12;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='i' && end[1]=='n')
+  {
+    result = result / PPI;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='c' && end[1]=='m')
+  {
+    result = (result / PPI) * 2.54;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='m' && end[1]=='m')
+  {
+    result = (result / PPI) * 25.4;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  return result;
+}
+
+static inline float mrg_parse_px_y (Mrg *mrg, const char *str, char **endptr)
+{
+  float result = 0;
+  char *end = NULL;
+  if (!str)
+    return 0.0;
+
+  result = mrg_parse_float (mrg, str, &end); /* XXX: , vs . problem in some locales */
+  if (endptr)
+    *endptr=end;
+
+  if (end[0]=='%')
+  {
+    result = result / 100.0 * (mrg_edge_bottom (mrg) - mrg_edge_top (mrg));
+    if (endptr)
+      *endptr=end + 1;
+  }
+  else if (end[0]=='v' && end[1] == 'h')
+  {
+    result = result / 100.0 * (mrg_edge_bottom (mrg) - mrg_edge_top (mrg));
+    if (endptr)
+      *endptr=end + 1;
+  }
+  else if (end[0]=='v' && end[1] == 'w')
+  {
+    result = result / 100.0 * (mrg_edge_right (mrg) - mrg_edge_left (mrg));
+    if (endptr)
+      *endptr=end + 1;
+  }
+  else if (end[0]=='r' && end[1]=='e' && end[2]=='m')
+  {
+    result *= mrg_rem (mrg);
+    if (endptr)
+      *endptr=end + 3;
+  }
+  else if (end[0]=='e' && end[1]=='m')
+  {
+    result *= mrg_em (mrg);
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='p' && end[1]=='x')
+  {
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='p' && end[1]=='t')
+  {
+    result = (result / PPI) * 72;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='p' && end[1]=='c')
+  {
+    result = (result / PPI) * 72 / 12;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='i' && end[1]=='n')
+  {
+    result = result / PPI;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='c' && end[1]=='m')
+  {
+    result = (result / PPI) * 2.54;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  else if (end[0]=='m' && end[1]=='m')
+  {
+    result = (result / PPI) * 25.4;
+    if (endptr)
+      *endptr=end + 2;
+  }
+  return result;
+}
+
+static inline int mrg_parse_pxs (Mrg *mrg, const char *str, float *vals)
+{
+  int n_floats = 0;
+  char *p =    (void*)str;
+  char *prev = (void *)NULL;
+
+  for (; p && p != prev && *p; )
+  {
+    float val;
+    prev = p;
+    val = n_floats%2==1?
+      mrg_parse_px_x (mrg, p, &p):mrg_parse_px_y (mrg, p, &p);
+    if (p != prev)
+    {
+      vals[n_floats++] = val;
+    }
+  }
+
+  return n_floats;
+}
+
+
+static inline void mrg_css_handle_property_pass0 (Mrg *mrg, const char *name,
+                                           const char *value)
+{
+  MrgStyle *s = mrg_style (mrg);
+  /* pass0 deals with properties that parsing of many other property
+   * definitions rely on */
+  if (!strcmp (name, "font-size"))
+  {
+    float parsed;
+    
+    if (mrg->state_no)
+    {
+      mrg->state_no--;
+      parsed = mrg_parse_px_y (mrg, value, NULL);
+      mrg->state_no++;
+    }
+    else
+    {
+      parsed = mrg_parse_px_y (mrg, value, NULL);
+    }
+    mrg_set_em (mrg, parsed);
+  }
+  else if (!strcmp (name, "color"))
+  {
+    mrg_color_set_from_string (mrg, &s->color, value);
+  }
+}
+
+static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
+                                           const char *value)
+{
+  MrgStyle *s = mrg_style (mrg);
+
+  if (!strcmp (name, "text-indent"))
+    s->text_indent = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "letter-spacing"))
+    s->letter_spacing = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "word-spacing"))
+    s->word_spacing = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "tab-size"))
+    s->tab_size = mrg_parse_px_x (mrg, value, NULL);
+  else if (!strcmp (name, "stroke-width"))
+    s->stroke_width = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "margin"))
+    {
+      float vals[10];
+      int    n_vals;
+
+      n_vals = mrg_parse_pxs (mrg, value, vals);
+      switch (n_vals)
+      {
+        case 1:
+          s->margin_top    = vals[0];
+          s->margin_right  = vals[0];
+          s->margin_bottom = vals[0];
+          s->margin_left   = vals[0];
+          break;
+        case 2:
+          s->margin_top    = vals[0];
+          s->margin_right  = vals[1];
+          s->margin_bottom = vals[0];
+          s->margin_left   = vals[1];
+          break;
+        case 3:
+          s->margin_top    = vals[0];
+          s->margin_right  = vals[1];
+          s->margin_bottom = vals[2];
+          s->margin_left   = vals[1];
+          break;
+        case 4:
+          s->margin_top    = vals[0];
+          s->margin_right  = vals[1];
+          s->margin_bottom = vals[2];
+          s->margin_left   = vals[3];
+          break;
+      }
+    }
+  else if (!strcmp (name, "margin-top"))
+    s->margin_top = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "margin-bottom"))
+    s->margin_bottom = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "margin-left"))
+  {
+    if (!strcmp (value, "auto"))
+    {
+      s->margin_left_auto = 1;
+    }
+    else
+    {
+      s->margin_left = mrg_parse_px_x (mrg, value, NULL);
+      s->margin_left_auto = 0;
+    }
+  }
+  else if (!strcmp (name, "margin-right"))
+  {
+    if (!strcmp (value, "auto"))
+    {
+      s->margin_right_auto = 1;
+    }
+    else
+    {
+      s->margin_right = mrg_parse_px_x (mrg, value, NULL);
+      s->margin_right_auto = 0;
+    }
+  }
+
+  else if (!strcmp (name, "padding-top"))
+    s->padding_top = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "padding-bottom"))
+    s->padding_bottom = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "padding-left"))
+    s->padding_left = mrg_parse_px_x (mrg, value, NULL);
+  else if (!strcmp (name, "padding-right"))
+    s->padding_right = mrg_parse_px_x (mrg, value, NULL);
+  else if (!strcmp (name, "padding"))
+    {
+      float vals[10];
+      int   n_vals;
+      n_vals = mrg_parse_pxs (mrg, value, vals);
+      switch (n_vals)
+      {
+        case 1:
+          s->padding_top    = vals[0];
+          s->padding_right  = vals[0];
+          s->padding_bottom = vals[0];
+          s->padding_left   = vals[0];
+          break;
+        case 2:
+          s->padding_top    = vals[0];
+          s->padding_right  = vals[1];
+          s->padding_bottom = vals[0];
+          s->padding_left   = vals[1];
+          break;
+        case 3:
+          s->padding_top    = vals[0];
+          s->padding_right  = vals[1];
+          s->padding_bottom = vals[2];
+          s->padding_left   = vals[1];
+          break;
+        case 4:
+          s->padding_top    = vals[0];
+          s->padding_right  = vals[1];
+          s->padding_bottom = vals[2];
+          s->padding_left   = vals[3];
+          break;
+      }
+    }
+  else if (!strcmp (name, "border-top-width"))
+    s->border_top_width = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "border-bottom-width"))
+    s->border_bottom_width = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "border-left-width"))
+    s->border_left_width = mrg_parse_px_x (mrg, value, NULL);
+  else if (!strcmp (name, "border-right-width"))
+    s->border_right_width = mrg_parse_px_x (mrg, value, NULL);
+  else if (!strcmp (name, "top"))
+    s->top = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "height"))
+    s->height = mrg_parse_px_y (mrg, value, NULL);
+
+  else if (!strcmp (name, "left"))
+    s->left = mrg_parse_px_x (mrg, value, NULL);
+  else if (!strcmp (name, "visibility"))
+  {
+    if (!strcmp (value, "visible"))
+      s->visibility = MRG_VISIBILITY_VISIBLE;
+    else if (!strcmp (value, "hidden"))
+      s->visibility = MRG_VISIBILITY_HIDDEN;
+    else
+      s->visibility = MRG_VISIBILITY_VISIBLE;
+  }
+  else if (!strcmp (name, "min-height"))
+    s->min_height = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "max-height"))
+    s->max_height = mrg_parse_px_y (mrg, value, NULL);
+  else if (!strcmp (name, "min-width"))
+    s->min_height = mrg_parse_px_x (mrg, value, NULL);
+  else if (!strcmp (name, "max-width"))
+    s->max_height = mrg_parse_px_x (mrg, value, NULL);
+  else if (!strcmp (name, "border-width"))
+    {
+      s->border_top_width =
+      s->border_bottom_width =
+      s->border_right_width =
+      s->border_left_width = mrg_parse_px_y (mrg, value, NULL);
+    }
+  else if (!strcmp (name, "border-color"))
+    {
+      mrg_color_set_from_string (mrg, &s->border_top_color, value);
+      mrg_color_set_from_string (mrg, &s->border_left_color, value);
+      mrg_color_set_from_string (mrg, &s->border_right_color, value);
+      mrg_color_set_from_string (mrg, &s->border_bottom_color, value);
+    }
+  else if (!strcmp (name, "border"))
+    {
+      char word[64];
+      int w = 0;
+      const char *p;
+      for (p = value; ; p++)
+      {
+        switch (*p)
+        {
+          case ' ':
+          case '\n':
+          case '\t':
+          case '\0':
+            if (w)
+            {
+              if ((word[0] >= '0' && word[0]<='9') || word[0] == '.')
+              {
+                s->border_top_width = mrg_parse_px_y (mrg, word, NULL);
+                s->border_left_width = mrg_parse_px_y (mrg, word, NULL);
+                s->border_right_width = mrg_parse_px_y (mrg, word, NULL);
+                s->border_bottom_width = mrg_parse_px_y (mrg, word, NULL);
+              } else if (!strcmp (word, "solid") ||
+                         !strcmp (word, "dotted") ||
+                         !strcmp (word, "inset")) {
+              } else {
+                mrg_color_set_from_string (mrg, &s->border_top_color, word);
+                mrg_color_set_from_string (mrg, &s->border_bottom_color, word);
+                mrg_color_set_from_string (mrg, &s->border_left_color, word);
+                mrg_color_set_from_string (mrg, &s->border_right_color, word);
+              }
+              word[0]=0;
+              w=0;
+            }
+            break;
+          default:
+            word[w++]=*p;
+            word[w]=0;
+            break;
+        }
+        if (!*p)
+          break;
+      }
+    }
+  else if (!strcmp (name, "border-right"))
+    {
+      char word[64];
+      int w = 0;
+      const char *p;
+      for (p = value; ; p++)
+      {
+        switch (*p)
+        {
+          case ' ':
+          case '\n':
+          case '\t':
+          case '\0':
+            if (w)
+            {
+              if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
+              {
+                s->border_right_width = mrg_parse_px_y (mrg, word, NULL);
+              } else if (!strcmp (word, "solid") ||
+                         !strcmp (word, "dotted") ||
+                         !strcmp (word, "inset")) {
+              } else {
+                mrg_color_set_from_string (mrg, &s->border_right_color, word);
+              }
+              word[0]=0;
+              w=0;
+            }
+            break;
+          default:
+            word[w++]=*p;
+            word[w]=0;
+            break;
+        }
+        if (!*p)
+          break;
+      }
+    }
+  else if (!strcmp (name, "border-top"))
+    {
+      char word[64];
+      int w = 0;
+      const char *p;
+      for (p = value; ; p++)
+      {
+        switch (*p)
+        {
+          case ' ':
+          case '\n':
+          case '\r':
+          case '\t':
+          case '\0':
+            if (w)
+            {
+              if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
+              {
+                s->border_top_width = mrg_parse_px_y (mrg, word, NULL);
+              } else if (!strcmp (word, "solid") ||
+                         !strcmp (word, "dotted") ||
+                         !strcmp (word, "inset")) {
+              } else {
+                mrg_color_set_from_string (mrg, &s->border_top_color, word);
+              }
+              word[0]=0;
+              w=0;
+            }
+            break;
+          default:
+            word[w++]=*p;
+            word[w]=0;
+            break;
+        }
+        if (!*p)
+          break;
+      }
+    }
+  else if (!strcmp (name, "border-left"))
+    {
+      char word[64];
+      int w = 0;
+      const char *p;
+      for (p = value; ; p++)
+      {
+        switch (*p)
+        {
+          case ' ':
+          case '\n':
+          case '\r':
+          case '\t':
+          case '\0':
+            if (w)
+            {
+              if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
+              {
+                s->border_left_width = mrg_parse_px_y (mrg, word, NULL);
+              } else if (!strcmp (word, "solid") ||
+                         !strcmp (word, "dotted") ||
+                         !strcmp (word, "inset")) {
+              } else {
+                mrg_color_set_from_string (mrg, &s->border_left_color, word);
+              }
+              word[0]=0;
+              w=0;
+            }
+            break;
+          default:
+            word[w++]=*p;
+            word[w]=0;
+            break;
+        }
+        if (!*p)
+          break;
+      }
+    }
+  else if (!strcmp (name, "border-bottom"))
+    {
+      char word[64];
+      int w = 0;
+      const char *p;
+      for (p = value; ; p++)
+      {
+        switch (*p)
+        {
+          case ' ':
+          case '\n':
+          case '\r':
+          case '\t':
+          case '\0':
+            if (w)
+            {
+              if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
+              {
+                s->border_bottom_width = mrg_parse_px_y (mrg, word, NULL);
+              } else if (!strcmp (word, "solid") ||
+                         !strcmp (word, "dotted") ||
+                         !strcmp (word, "inset")) {
+              } else {
+                mrg_color_set_from_string (mrg, &s->border_bottom_color, word);
+              }
+              word[0]=0;
+              w=0;
+            }
+            break;
+          default:
+            word[w++]=*p;
+            word[w]=0;
+            break;
+        }
+        if (!*p)
+          break;
+      }
+    }
+  else if (!strcmp (name, "line-height"))
+    mrg_set_line_height (mrg, mrg_parse_px_y (mrg, value, NULL));
+  else if (!strcmp (name, "line-width"))
+  {
+    float val =mrg_parse_px_y (mrg, value, NULL);
+    s->line_width = val;
+    ctx_set_line_width (mrg_cr (mrg), s->line_width);
+  }
+
+  else if (!strcmp (name, "background-color"))
+  {
+    mrg_color_set_from_string (mrg, &s->background_color, value);
+  }
+  else if (!strcmp (name, "background"))
+  {
+    mrg_color_set_from_string (mrg, &s->background_color, value);
+  }
+  else if (!strcmp (name, "fill-color") ||
+           !strcmp (name, "fill"))
+  {
+    mrg_color_set_from_string (mrg, &s->fill_color, value);
+  }
+  else if (!strcmp (name, "stroke-color") ||
+           !strcmp (name, "stroke"))
+  {
+    mrg_color_set_from_string (mrg, &s->stroke_color, value);
+  }
+  else if (!strcmp (name, "text-stroke-width"))
+  {
+    s->text_stroke_width = mrg_parse_px_y (mrg, value, NULL);
+  }
+  else if (!strcmp (name, "text-stroke-color"))
+  {
+    mrg_color_set_from_string (mrg, &s->text_stroke_color, value);
+  }
+  else if (!strcmp (name, "text-stroke"))
+  {
+    char *col = NULL;
+    s->text_stroke_width = mrg_parse_px_y (mrg, value, &col);
+    if (col)
+      mrg_color_set_from_string (mrg, &s->text_stroke_color, col + 1);
+  }
+  else if (!strcmp (name, "opacity"))
+  {
+    float dval = mrg_parse_float (mrg, value, NULL);
+      if (dval <= 0.5f)
+        s->text_decoration |= MRG_DIM;
+      s->fill_color.alpha = dval;
+      s->border_top_color.alpha = dval;
+      s->border_left_color.alpha = dval;
+      s->border_right_color.alpha = dval;
+      s->border_bottom_color.alpha = dval;
+      s->stroke_color.alpha = dval;
+      s->color.alpha = dval;
+      s->background_color.alpha = dval;
+  }
+  else  if (!strcmp (name, "print-symbols"))
+  {
+      if (!strcmp (value, "true"))
+        s->print_symbols = 1;
+      else if (!strcmp (value, "1"))
+        s->print_symbols = 1;
+      else if (!strcmp (value, "yes"))
+        s->print_symbols = 1;
+      else
+        s->print_symbols = 0;
+  }
+  else  if (!strcmp (name, "font-weight"))
+    {
+      if (!strcmp (value, "bold") ||
+          !strcmp (value, "bolder"))
+      {
+        s->text_decoration |= MRG_BOLD;
+        s->font_weight = MRG_FONT_WEIGHT_BOLD;
+      }
+      else
+      {
+        s->text_decoration ^= (s->text_decoration & MRG_BOLD);
+        s->font_weight = MRG_FONT_WEIGHT_NORMAL;
+      }
+#if 0 // XXX 
+      ctx_select_font_face (mrg_cr (mrg),
+          s->font_family,
+          s->font_style,
+          s->font_weight);
+#endif
+    }
+  else if (!strcmp (name, "white-space"))
+    {
+      if (!strcmp (value, "normal"))
+        s->white_space = MRG_WHITE_SPACE_NORMAL;
+      else if (!strcmp (value, "nowrap"))
+        s->white_space = MRG_WHITE_SPACE_NOWRAP;
+      else if (!strcmp (value, "pre"))
+        s->white_space = MRG_WHITE_SPACE_PRE;
+      else if (!strcmp (value, "pre-line"))
+        s->white_space = MRG_WHITE_SPACE_PRE_LINE;
+      else if (!strcmp (value, "pre-wrap"))
+        s->white_space = MRG_WHITE_SPACE_PRE_WRAP;
+      else
+        s->white_space = MRG_WHITE_SPACE_NORMAL;
+    }
+  else if (!strcmp (name, "box-sizing"))
+    {
+      if (!strcmp (value, "border-box"))
+      {
+        s->box_sizing = MRG_BOX_SIZING_BORDER_BOX;
+        s->box_sizing = MRG_BOX_SIZING_CONTENT_BOX;
+      }
+    }
+  else if (!strcmp (name, "float"))
+    {
+      if (!strcmp (value, "left"))
+        s->float_ = MRG_FLOAT_LEFT;
+      else if (!strcmp (value, "right"))
+        s->float_ = MRG_FLOAT_RIGHT;
+      else
+        s->float_ = MRG_FLOAT_NONE;
+    }
+  else if (!strcmp (name, "overflow"))
+    {
+      if (!strcmp (value, "visible"))
+        s->overflow = MRG_OVERFLOW_VISIBLE;
+      else if (!strcmp (value, "hidden"))
+        s->overflow = MRG_OVERFLOW_HIDDEN;
+      else if (!strcmp (value, "scroll"))
+        s->overflow = MRG_OVERFLOW_SCROLL;
+      else if (!strcmp (value, "auto"))
+        s->overflow = MRG_OVERFLOW_AUTO;
+      else
+        s->overflow = MRG_OVERFLOW_VISIBLE;
+    }
+  else if (!strcmp (name, "clear"))
+    {
+      if (!strcmp (value, "left"))
+        s->clear = MRG_CLEAR_LEFT;
+      else if (!strcmp (value, "right"))
+        s->clear = MRG_CLEAR_RIGHT;
+      else if (!strcmp (value, "both"))
+        s->clear = MRG_CLEAR_BOTH;
+      else
+        s->clear = MRG_CLEAR_NONE;
+    }
+  else if (!strcmp (name, "font-style"))
+    {
+      if (!strcmp (value, "italic"))
+      {
+        s->font_style = MRG_FONT_STYLE_ITALIC;
+      }
+      else if (!strcmp (value, "oblique"))
+      {
+        s->font_style = MRG_FONT_STYLE_OBLIQUE;
+      }
+      else
+      {
+        s->font_style = MRG_FONT_STYLE_NORMAL;
+      }
+#if 0 // XXX
+      cairo_select_font_face (mrg_cr (mrg),
+          s->font_family,
+          s->font_style,
+          s->font_weight);
+#endif
+    }
+  else if (!strcmp (name, "font-family"))
+    {
+      strncpy (s->font_family, value, 63);
+      s->font_family[63]=0;
+#if 0
+      cairo_select_font_face (mrg_cr (mrg),
+          s->font_family,
+          s->font_style,
+          s->font_weight);
+#endif
+    }
+  else if (!strcmp (name, "syntax-highlight"))
+    {
+      strncpy (s->syntax_highlight, value, 8);
+      s->syntax_highlight[8]=0;
+    }
+  else if (!strcmp (name, "fill-rule"))
+    {
+      if (!strcmp (value, "evenodd"))
+        s->fill_rule = MRG_FILL_RULE_EVEN_ODD;
+      else if (!strcmp (value, "nonzero"))
+        s->fill_rule = MRG_FILL_RULE_NONZERO;
+      else
+        s->fill_rule = MRG_FILL_RULE_EVEN_ODD;
+
+      if (s->fill_rule == MRG_FILL_RULE_EVEN_ODD)
+        ctx_set_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_EVEN_ODD);
+      else
+        ctx_set_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_WINDING);
+    }
+  else if (!strcmp (name, "stroke-linejoin"))
+    {
+      if (!strcmp (value, "miter"))
+        s->stroke_linejoin = MRG_LINE_JOIN_MITER;
+      else if (!strcmp (value, "round"))
+        s->stroke_linejoin = MRG_LINE_JOIN_ROUND;
+      else if (!strcmp (value, "bevel"))
+        s->stroke_linejoin = MRG_LINE_JOIN_BEVEL;
+      else
+        s->stroke_linejoin = MRG_LINE_JOIN_MITER;
+      ctx_set_line_join (mrg_cr (mrg), s->stroke_linejoin);
+    }
+  else if (!strcmp (name, "stroke-linecap"))
+    {
+      if (!strcmp (value, "butt"))
+        s->stroke_linecap = MRG_LINE_CAP_BUTT;
+      else if (!strcmp (value, "round"))
+        s->stroke_linecap = MRG_LINE_CAP_ROUND;
+      else if (!strcmp (value, "square"))
+        s->stroke_linecap = MRG_LINE_CAP_SQUARE;
+      else
+        s->stroke_linecap = MRG_LINE_CAP_BUTT;
+      ctx_set_line_cap (mrg_cr (mrg), s->stroke_linecap);
+    }
+  else if (!strcmp (name, "font-family"))
+    {
+      strncpy (s->font_family, value, 63);
+      s->font_family[63]=0;
+      ctx_set_font (mrg_cr (mrg), s->font_family);
+#if 0
+      cairo_select_font_face (mrg_cr (mrg),
+          s->font_family,
+          s->font_style,
+          s->font_weight);
+#endif
+    }
+  else if (!strcmp (name, "vertical-align"))
+    {
+      if (!strcmp (value, "middle"))
+        s->vertical_align = MRG_VERTICAL_ALIGN_MIDDLE;
+      if (!strcmp (value, "top"))
+        s->vertical_align = MRG_VERTICAL_ALIGN_TOP;
+      if (!strcmp (value, "sub"))
+        s->vertical_align = MRG_VERTICAL_ALIGN_SUB;
+      if (!strcmp (value, "super"))
+        s->vertical_align = MRG_VERTICAL_ALIGN_SUPER;
+      if (!strcmp (value, "bottom"))
+        s->vertical_align = MRG_VERTICAL_ALIGN_BOTTOM;
+      else
+        s->vertical_align = MRG_VERTICAL_ALIGN_BASELINE;
+    }
+  else if (!strcmp (name, "cursor"))
+  {
+      if (!strcmp (value, "auto")) s->cursor = MRG_CURSOR_AUTO;
+      else if (!strcmp (value, "alias")) s->cursor = MRG_CURSOR_ALIAS;
+      else if (!strcmp (value, "all-scroll")) s->cursor = MRG_CURSOR_ALL_SCROLL;
+      else if (!strcmp (value, "cell")) s->cursor = MRG_CURSOR_CELL;
+      else if (!strcmp (value, "context-menu")) s->cursor = MRG_CURSOR_CONTEXT_MENU;
+      else if (!strcmp (value, "col-resize")) s->cursor = MRG_CURSOR_COL_RESIZE;
+      else if (!strcmp (value, "copy")) s->cursor = MRG_CURSOR_COPY;
+      else if (!strcmp (value, "crosshair")) s->cursor = MRG_CURSOR_CROSSHAIR;
+      else if (!strcmp (value, "default")) s->cursor = MRG_CURSOR_DEFAULT;
+      else if (!strcmp (value, "e-resize")) s->cursor = MRG_CURSOR_E_RESIZE;
+      else if (!strcmp (value, "ew-resize")) s->cursor = MRG_CURSOR_EW_RESIZE;
+      else if (!strcmp (value, "help")) s->cursor = MRG_CURSOR_HELP;
+      else if (!strcmp (value, "move")) s->cursor = MRG_CURSOR_MOVE;
+      else if (!strcmp (value, "n-resize")) s->cursor = MRG_CURSOR_N_RESIZE;
+      else if (!strcmp (value, "ne-resize")) s->cursor = MRG_CURSOR_NE_RESIZE;
+      else if (!strcmp (value, "nesw-resize")) s->cursor = MRG_CURSOR_NESW_RESIZE;
+      else if (!strcmp (value, "ns-resize")) s->cursor = MRG_CURSOR_NS_RESIZE;
+      else if (!strcmp (value, "nw-resize")) s->cursor = MRG_CURSOR_NW_RESIZE;
+      else if (!strcmp (value, "no-drop")) s->cursor = MRG_CURSOR_NO_DROP;
+      else if (!strcmp (value, "none")) s->cursor = MRG_CURSOR_NONE;
+      else if (!strcmp (value, "not-allowed")) s->cursor = MRG_CURSOR_NOT_ALLOWED;
+      else if (!strcmp (value, "pointer")) s->cursor = MRG_CURSOR_POINTER;
+      else if (!strcmp (value, "progress")) s->cursor = MRG_CURSOR_PROGRESS;
+      else if (!strcmp (value, "row-resize")) s->cursor = MRG_CURSOR_ROW_RESIZE;
+      else if (!strcmp (value, "s-resize")) s->cursor = MRG_CURSOR_S_RESIZE;
+      else if (!strcmp (value, "se-resize")) s->cursor = MRG_CURSOR_SE_RESIZE;
+      else if (!strcmp (value, "sw-resize")) s->cursor = MRG_CURSOR_SW_RESIZE;
+      else if (!strcmp (value, "text")) s->cursor = MRG_CURSOR_TEXT;
+      else if (!strcmp (value, "vertical-text")) s->cursor = MRG_CURSOR_VERTICAL_TEXT;
+      else if (!strcmp (value, "w-resize")) s->cursor = MRG_CURSOR_W_RESIZE;
+      else if (!strcmp (value, "cursor-wait")) s->cursor = MRG_CURSOR_WAIT;
+      else if (!strcmp (value, "zoom-in")) s->cursor = MRG_CURSOR_ZOOM_IN;
+      else if (!strcmp (value, "zoom-out")) s->cursor = MRG_CURSOR_ZOOM_OUT;
+  }
+  else if (!strcmp (name, "display"))
+    {
+      if (!strcmp (value, "hidden"))
+        s->display = MRG_DISPLAY_HIDDEN;
+      else if (!strcmp (value, "block"))
+        s->display = MRG_DISPLAY_BLOCK;
+      else if (!strcmp (value, "list-item"))
+        s->display = MRG_DISPLAY_LIST_ITEM;
+      else if (!strcmp (value, "inline-block"))
+        s->display = MRG_DISPLAY_INLINE_BLOCK;
+      else
+        s->display = MRG_DISPLAY_INLINE;
+    }
+  else if (!strcmp (name, "position"))
+    {
+      if (!strcmp (value, "relative"))
+        s->position = MRG_POSITION_RELATIVE;
+      else if (!strcmp (value, "static"))
+        s->position = MRG_POSITION_STATIC;
+      else if (!strcmp (value, "absolute"))
+        s->position = MRG_POSITION_ABSOLUTE;
+      else if (!strcmp (value, "fixed"))
+        s->position = MRG_POSITION_FIXED;
+      else
+        s->position = MRG_POSITION_STATIC;
+    }
+  else if (!strcmp (name, "direction"))
+    {
+      if (!strcmp (value, "rtl"))
+        s->direction = MRG_DIRECTION_RTL;
+      else if (!strcmp (value, "ltr"))
+        s->direction = MRG_DIRECTION_LTR;
+      else
+        s->direction = MRG_DIRECTION_LTR;
+    }
+  else if (!strcmp (name, "unicode-bidi"))
+    {
+      if (!strcmp (value, "normal"))
+        s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL;
+      else if (!strcmp (value, "embed"))
+        s->unicode_bidi = MRG_UNICODE_BIDI_EMBED;
+      else if (!strcmp (value, "bidi-override"))
+        s->unicode_bidi = MRG_UNICODE_BIDI_BIDI_OVERRIDE;
+      else
+        s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL;
+    }
+  else if (!strcmp (name, "text-align"))
+    {
+      if (!strcmp (value, "left"))
+        s->text_align = MRG_TEXT_ALIGN_LEFT;
+      else if (!strcmp (value, "right"))
+        s->text_align = MRG_TEXT_ALIGN_RIGHT;
+      else if (!strcmp (value, "justify"))
+        s->text_align = MRG_TEXT_ALIGN_JUSTIFY;
+      else if (!strcmp (value, "center"))
+        s->text_align = MRG_TEXT_ALIGN_CENTER;
+      else
+        s->text_align = MRG_TEXT_ALIGN_LEFT;
+    }
+  else if (!strcmp (name, "text-decoration"))
+    {
+      if (!strcmp (value, "reverse"))
+      {
+#if 0
+        MrgColor temp = s->color;
+        s->text_decoration |= MRG_REVERSE;/* XXX: better do the reversing when drawing? */
+
+        s->color = s->background_color;
+        s->background_color = temp;
+        {
+          int t = mrg->state->fg;
+          mrg->state->fg = mrg->state->bg;
+          mrg->state->bg = t;
+        }
+#endif
+      }
+      else if (!strcmp (value, "underline"))
+      {
+        s->text_decoration|= MRG_UNDERLINE;
+      }
+      else if (!strcmp (value, "overline"))
+      {
+        s->text_decoration|= MRG_OVERLINE;
+      }
+      else if (!strcmp (value, "linethrough"))
+      {
+        s->text_decoration|= MRG_LINETHROUGH;
+      }
+      else if (!strcmp (value, "blink"))
+      {
+        s->text_decoration|= MRG_BLINK;
+      }
+      else if (!strcmp (value, "none"))
+      {
+        s->text_decoration ^= (s->text_decoration &
+      (MRG_UNDERLINE|MRG_REVERSE|MRG_OVERLINE|MRG_LINETHROUGH|MRG_BLINK));
+      }
+    }
+}
+
+static void mrg_css_handle_property_pass1med (Mrg *mrg, const char *name,
+                                              const char *value)
+{
+  MrgStyle *s = mrg_style (mrg);
+
+  if (!strcmp (name, "width"))
+  {
+    if (!strcmp (value, "auto"))
+    {
+      s->width_auto = 1;
+      s->width = 42;
+    }
+    else
+    {
+      s->width_auto = 0;
+      s->width = mrg_parse_px_x (mrg, value, NULL);
+
+      if (s->position == MRG_POSITION_FIXED) // XXX: seems wrong
+      {
+        //s->width -= s->border_left_width + s->border_right_width;
+      }
+    }
+  }
+}
+
+static float deco_width (Mrg *mrg)
+{
+  MrgStyle *s = mrg_style (mrg);
+  return s->padding_left + s->padding_right + s->border_left_width + s->border_right_width;
+}
+
+static void mrg_queue_draw (Mrg *mrg, MrgRectangle *rect)
+{
+}
+
+
+static void mrg_css_handle_property_pass2 (Mrg *mrg, const char *name,
+                                           const char *value)
+{
+  /* this pass contains things that might depend on values
+   * generated by the previous pass.
+   */
+  MrgStyle *s = mrg_style (mrg);
+
+
+  if (!strcmp (name, "right"))
+  {
+    float width = s->width;
+
+    s->right = mrg_parse_px_x (mrg, value, NULL);
+    if (width == 0)
+    {
+      MrgGeoCache *geo = _mrg_get_cache (&mrg->html, s->id_ptr);
+      if (geo->gen)
+        width = geo->width;
+      else
+      {
+        width = 8 * s->font_size;
+        mrg_queue_draw (mrg, NULL);
+      }
+    }
+    s->left = (mrg_width(mrg)-s->right) - width - s->border_left_width - s->padding_left - s->padding_right - s->border_right_width - s->margin_right;
+  }
+  else if (!strcmp (name, "bottom"))
+  {
+    float height = s->height;
+
+    s->bottom = mrg_parse_px_y (mrg, value, NULL);
+
+    if (height == 0)
+    {
+      MrgGeoCache *geo = _mrg_get_cache (&mrg->html, s->id_ptr);
+      if (geo->gen)
+        height = geo->height;
+      else
+      {
+        height = 2 * s->font_size;
+        mrg_queue_draw (mrg, NULL);
+      }
+    }
+    s->top = mrg_height(mrg) - s->bottom - height - s->padding_top - s->border_top_width - s->padding_bottom - s->border_bottom_width - s->margin_bottom;
+  }
+}
+
+#define MAXLEN 4096
+
+enum
+{
+  MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL = 0,
+  MRG_CSS_PROPERTY_PARSER_STATE_IN_NAME,
+  MRG_CSS_PROPERTY_PARSER_STATE_EXPECT_COLON,
+  MRG_CSS_PROPERTY_PARSER_STATE_EXPECT_VAL,
+  MRG_CSS_PROPERTY_PARSER_STATE_IN_VAL
+};
+
+static void css_parse_properties (Mrg *mrg, const char *style,
+  void (*handle_property) (Mrg *mrg, const char *name,
+                           const char *value))
+{
+  const char *p;
+  char name[MAXLEN] = "";
+  char string[MAXLEN] = "";
+  int name_l = 0;
+  int string_l = 0;
+  int state = MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL;
+
+  if (!style)
+    return;
+
+  for (p = style; *p; p++)
+  {
+    switch (state)
+    {
+      case MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL:
+        switch (*p)
+        {
+          case ' ':
+          case '\t':
+          case ';':
+          case '\n':
+          case '\r':
+            break;
+          default:
+            name[name_l++]=*p;
+            name[name_l]=0;
+            state = MRG_CSS_PROPERTY_PARSER_STATE_IN_NAME;
+            break;
+        }
+        break;
+      case MRG_CSS_PROPERTY_PARSER_STATE_IN_NAME:
+        switch (*p)
+        {
+          case ':':
+            state = MRG_CSS_PROPERTY_PARSER_STATE_EXPECT_VAL;
+            break;
+          case ' ':
+          case '\n':
+          case '\r':
+          case '\t':
+            state = MRG_CSS_PROPERTY_PARSER_STATE_EXPECT_COLON;
+            break;
+          default:
+            name[name_l++]=*p;
+            name[name_l]=0;
+            break;
+        }
+        break;
+      case MRG_CSS_PROPERTY_PARSER_STATE_EXPECT_COLON:
+        switch (*p)
+        {
+          case ':':
+            state = MRG_CSS_PROPERTY_PARSER_STATE_EXPECT_VAL;
+            break;
+          default:
+            break;
+        }
+        break;
+      case MRG_CSS_PROPERTY_PARSER_STATE_EXPECT_VAL:
+        switch (*p)
+        {
+          case ' ':
+          case '\n':
+          case '\r':
+          case '\t':
+            break;
+          default:
+            string[string_l++]=*p;
+            string[string_l]=0;
+            state = MRG_CSS_PROPERTY_PARSER_STATE_IN_VAL;
+            break;
+        }
+        break;
+      case MRG_CSS_PROPERTY_PARSER_STATE_IN_VAL:
+        switch (*p)
+        {
+          case ';':
+            handle_property (mrg, name, string);
+            state = MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL;
+            name_l = 0;
+            name[0] = 0;
+            string_l = 0;
+            string[0] = 0;
+            break;
+          default:
+            string[string_l++]=*p;
+            string[string_l]=0;
+            break;
+        }
+        break;
+    }
+  }
+  if (name[0])
+  handle_property (mrg, name, string);
+}
+
+
+
+void _mrg_set_style_properties (Mrg *mrg, const char *style_properties)
+{
+  _mrg_init_style (mrg);
+
+  if (style_properties)
+  {
+    mrg_set_style (mrg, style_properties);
+  }
+}
+
+void
+mrg_set_stylef (Mrg *mrg, const char *format, ...)
+{
+  va_list ap;
+  size_t needed;
+  char  *buffer;
+  va_start(ap, format);
+  needed = vsnprintf(NULL, 0, format, ap) + 1;
+  buffer = malloc(needed);
+  va_end (ap);
+  va_start(ap, format);
+  vsnprintf(buffer, needed, format, ap);
+  va_end (ap);
+  mrg_set_style (mrg, buffer);
+  free (buffer);
+}
 
 
 void  mrg_set_line_height (Mrg *mrg, float line_height);
@@ -3645,11 +5046,1773 @@ float mrg_pointer_y (Mrg *mrg)
   return 0.0;
 }
 
-void mrg_print (Mrg *mrg, const char *string)
+
+/* mrg - MicroRaptor Gui
+ * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
+ * 
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**************/
+
+static float measure_word_width (Mrg *mrg, const char *word)
 {
-  Ctx *ctx = mrg_cr (mrg);
-  ctx_text (ctx, string);
+#if 0 // MRG_CAIRO
+  cairo_scaled_font_t *scaled_font = mrg->scaled_font;
+  cairo_text_extents_t extents;
+  if (mrg_is_terminal (mrg))
+    return ctx_utf8_strlen (word) * CPX / mrg->ddpx;
+  if (mrg->in_paint)
+  {
+    cairo_set_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
+    scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
+  }
+  cairo_scaled_font_text_extents (scaled_font, word, &extents);
+  return extents.x_advance;
+#else
+  return ctx_utf8_strlen (word) * mrg_style (mrg)->font_size;
+#endif
 }
+
+void _mrg_get_ascent_descent (Mrg *mrg, float *ascent, float *descent)
+{
+#if 0 // MRG_CAIRO
+  cairo_scaled_font_t *scaled_font = mrg->scaled_font;
+  cairo_font_extents_t extents;
+  if (mrg_is_terminal (mrg))
+  {
+    if (ascent) *ascent = 0;
+    if (descent) *descent= 0;
+    return;
+  }
+
+  if (mrg->in_paint)
+  {
+    cairo_set_font_size (mrg_cr(mrg), mrg_style(mrg)->font_size);
+    scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
+  }
+  cairo_scaled_font_extents (scaled_font, &extents);
+
+  if (ascent)  *ascent  = extents.ascent;
+  if (descent) *descent = extents.descent;
+#else
+  if (ascent)  *ascent  = mrg_style(mrg)->font_size;
+  if (descent) *descent = 0.0;
+#endif
+}
+
+
+static float _mrg_text_shift (Mrg *mrg)
+{
+  //MrgStyle *style = mrg_style (mrg);
+  float ascent, descent;
+  _mrg_get_ascent_descent (mrg, &ascent, &descent);
+  return (descent * 0.9); // XXX
+}
+
+const char * hl_punctuation[] =
+{";", ",", "(", ")", "{", "}", NULL};
+const char * hl_operators [] =
+{"-", "+", "=", "*", "/", "return", "<", ">", ":",
+ "if", "else", "break", "case", NULL};
+const char * hl_types[] =
+{"int", "cairo_t", "Mrg", "float", "double",
+  "char", "const", "static", "void", "NULL",
+  "#include", "#define", NULL};
+
+static int is_one_of (const char *word, const char **words)
+{
+  int i;
+  for (i = 0; words[i]; i++)
+  {
+    if (!strcmp (words[i], word))
+      return 1;
+  }
+  return 0;
+}
+
+static int is_a_number (const char *word)
+{
+  int yep = 1;
+  int i;
+  for (i = 0; word[i]; i++)
+  {
+    if ((word[i] < '0' || word[i] > '9') && word[i] != '.')
+      yep = 0;
+  }
+  return yep;
+}
+
+/* the syntax highlighting is done with static globals; deep in the text
+ * rendering, this permits the editing code to recognize which string is
+ * edited and directly work with pointer arithmetic on that instead of
+ * marked up xml for the highlighting - it limits the syntax highlighting
+ * context ability
+ */
+enum {
+  MRG_HL_NEUTRAL      = 0,
+  MRG_HL_NEXT_NEUTRAL = 1,
+  MRG_HL_STRING       = 2,
+  MRG_HL_STRING_ESC   = 3,
+  MRG_HL_QSTRING      = 4,
+  MRG_HL_QSTRING_ESC  = 5,
+  MRG_HL_SLASH        = 6,
+  MRG_HL_LINECOMMENT  = 7,
+  MRG_HL_COMMENT      = 8,
+  MRG_HL_COMMENT_STAR = 9,
+};
+
+static int hl_state_c = MRG_HL_NEUTRAL;
+
+static void mrg_hl_token (Ctx *cr, const char *word)
+{
+  switch (hl_state_c)
+  {
+    case MRG_HL_NEUTRAL:
+      if (!strcmp (word, "\""))
+      {
+        hl_state_c = MRG_HL_STRING;
+      }
+      else if (!strcmp (word, "'"))
+      {
+        hl_state_c = MRG_HL_QSTRING;
+      }
+      else if (!strcmp (word, "/"))
+      {
+        hl_state_c = MRG_HL_SLASH;
+      }
+      break;
+    case MRG_HL_SLASH:
+      if (!strcmp (word, "/"))
+      {
+        hl_state_c = MRG_HL_LINECOMMENT;
+      } else if (!strcmp (word, "*"))
+      {
+        hl_state_c = MRG_HL_COMMENT;
+      } else
+      {
+        hl_state_c = MRG_HL_NEUTRAL;
+      }
+      break;
+    case MRG_HL_LINECOMMENT:
+      if (!strcmp (word, "\n"))
+      {
+        hl_state_c = MRG_HL_NEXT_NEUTRAL;
+      }
+      break;
+    case MRG_HL_COMMENT:
+      if (!strcmp (word, "*"))
+      {
+        hl_state_c = MRG_HL_COMMENT_STAR;
+      }
+      break;
+    case MRG_HL_COMMENT_STAR:
+      if (!strcmp (word, "/"))
+      {
+        hl_state_c = MRG_HL_NEUTRAL;
+      }
+      else
+      {
+        hl_state_c = MRG_HL_COMMENT;
+      }
+      break;
+    case MRG_HL_STRING:
+      if (!strcmp (word, "\""))
+      {
+        hl_state_c = MRG_HL_NEXT_NEUTRAL;
+      }
+      else if (!strcmp (word, "\\"))
+      {
+        hl_state_c = MRG_HL_STRING_ESC;
+      }
+      break;
+    case MRG_HL_STRING_ESC:
+      hl_state_c = MRG_HL_STRING;
+      break;
+    case MRG_HL_QSTRING:
+      if (!strcmp (word, "'"))
+      {
+        hl_state_c = MRG_HL_NEXT_NEUTRAL;
+      }
+      else if (!strcmp (word, "\\"))
+      {
+        hl_state_c = MRG_HL_QSTRING_ESC;
+      }
+      break;
+    case MRG_HL_QSTRING_ESC:
+      hl_state_c = MRG_HL_QSTRING;
+      break;
+    case MRG_HL_NEXT_NEUTRAL:
+      hl_state_c = MRG_HL_NEUTRAL;
+      break;
+  }
+
+  switch (hl_state_c)
+  {
+    case MRG_HL_NEUTRAL:
+      if (is_a_number (word))
+        ctx_set_rgb (cr, 0.5, 0.0, 0.0);
+      else if (is_one_of (word, hl_punctuation))
+        ctx_set_rgb (cr, 0.4, 0.4, 0.4);
+      else if (is_one_of (word, hl_operators))
+        ctx_set_rgb (cr, 0, 0.5, 0);
+      else if (is_one_of (word, hl_types))
+        ctx_set_rgb (cr, 0.2, 0.2, 0.5);
+      else 
+        ctx_set_rgb (cr, 0, 0, 0);
+      break;
+    case MRG_HL_STRING:
+    case MRG_HL_QSTRING:
+        ctx_set_rgb (cr, 1, 0, 0.5);
+      break;
+    case MRG_HL_COMMENT:
+    case MRG_HL_COMMENT_STAR:
+    case MRG_HL_LINECOMMENT:
+        ctx_set_rgb (cr, 0.4, 0.4, 1);
+      break;
+  }
+
+  ctx_text (cr, word);
+}
+
+/* hook syntax highlighter in here..  */
+void mrg_hl_text (Ctx *cr, const char *text)
+{
+  int i;
+  MrgString *word = mrg_string_new ("");
+  for (i = 0; i < text[i]; i++)
+  {
+    switch (text[i])
+    {
+      case ';':
+      case '-':
+      case '\'':
+      case '>':
+      case '<':
+      case '=':
+      case '+':
+      case ' ':
+      case ':':
+      case '"':
+      case '*':
+      case '/':
+      case '\\':
+      case '[':
+      case ']':
+      case ')':
+      case ',':
+      case '(':
+        if (word->length)
+        {
+          mrg_hl_token (cr, word->str);
+          mrg_string_set (word, "");
+        }
+        mrg_string_append_byte (word, text[i]);
+        mrg_hl_token (cr, word->str);
+        mrg_string_set (word, "");
+        break;
+      default:
+        ctx_set_rgb (cr, 0,0,0);
+        mrg_string_append_byte (word, text[i]);
+        break;
+    }
+  }
+  if (word->length)
+    mrg_hl_token (cr, word->str);
+
+  mrg_string_free (word, 1);
+}
+
+void ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
+{
+}
+
+static int
+path_equal (void *path,
+            void *path2)
+{
+  return 0;
+}
+
+void _mrg_item_ref (MrgItem *mrgitem)
+{
+  if (mrgitem->ref_count < 0)
+  {
+    fprintf (stderr, "EEEEK!\n");
+  }
+  mrgitem->ref_count++;
+}
+
+void _mrg_item_unref (MrgItem *mrgitem)
+{
+  if (mrgitem->ref_count <= 0)
+  {
+    fprintf (stderr, "EEEEK!\n");
+    return;
+  }
+  mrgitem->ref_count--;
+  if (mrgitem->ref_count <=0)
+  {
+    {
+      int i;
+      for (i = 0; i < mrgitem->cb_count; i++)
+      {
+        if (mrgitem->cb[i].finalize)
+          mrgitem->cb[i].finalize (mrgitem->cb[i].data1, mrgitem->cb[i].data2,
+                                   mrgitem->cb[i].finalize_data);
+      }
+    }
+    if (mrgitem->path)
+    {
+      //cairo_path_destroy (mrgitem->path);
+    }
+    free (mrgitem);
+  }
+}
+
+
+void mrg_listen_full (Mrg     *mrg,
+                      MrgType  types,
+                      MrgCb    cb,
+                      void    *data1,
+                      void    *data2,
+                      void   (*finalize)(void *listen_data, void *listen_data2,
+                                         void *finalize_data),
+                      void    *finalize_data)
+{
+  float x, y, width, height;
+
+  if (!mrg->frozen)
+  {
+    MrgItem *item;
+    Ctx *cr = mrg_cr (mrg);
+
+    /* generate bounding box of what to listen for - from current cairo path */
+    if (types & MRG_KEY)
+    {
+      x = 0;
+      y = 0;
+      width = 0;
+      height = 0;
+    }
+    else
+    {float ex1,ey1,ex2,ey2;
+     ctx_path_extents (cr, &ex1, &ey1, &ex2, &ey2);
+     x = ex1;
+     y = ey1;
+     width = ex2 - ex1;
+     height = ey2 - ey1;
+    }
+
+    /* early bail for listeners outside screen  */
+    {
+      float tx = x;
+      float ty = y;
+      float tw = width;
+      float th = height;
+      ctx_user_to_device (&cr->state, &tx, &ty);
+      ctx_user_to_device_distance (&cr->state, &tw, &th);
+      if (ty > mrg->height * 2 ||
+          tx > mrg->width * 2 ||
+          tx + tw < 0 ||
+          ty + th < 0)
+      {
+        if (finalize)
+          finalize (data1, data2, finalize_data);
+        return;
+      }
+    }
+
+    item = calloc (sizeof (MrgItem), 1);
+    item->x0 = x;
+    item->y0 = y;
+    item->x1 = x + width;
+    item->y1 = y + height;
+    item->cb[0].types = types;
+    item->cb[0].cb = cb;
+    item->cb[0].data1 = data1;
+    item->cb[0].data2 = data2;
+    item->cb[0].finalize = finalize;
+    item->cb[0].finalize_data = finalize_data;
+    item->cb_count = 1;
+    item->types = types;
+    //item->path = cairo_copy_path (cr); // XXX
+    //item->path_hash = path_hash (item->path);
+    ctx_get_matrix (cr, &item->inv_matrix);
+    ctx_matrix_invert (&item->inv_matrix);
+
+    if (mrg->items)
+    {
+      MrgList *l;
+      for (l = mrg->items; l; l = l->next)
+      {
+        MrgItem *item2 = l->data;
+
+        /* store multiple callbacks for one entry when the paths
+         * are exact matches, reducing per event traversal checks at the
+         * cost of a little paint-hit (XXX: is this the right tradeoff,
+         * perhaps it is better to spend more time during event processing
+         * than during paint?)
+         */
+        if (item->path_hash == item2->path_hash &&
+            path_equal (item->path, item2->path))
+        {
+          /* found an item, copy over cb data  */
+          item2->cb[item2->cb_count] = item->cb[0];
+          free (item);
+          item2->cb_count++;
+          item2->types |= types;
+          /* increment ref_count? */
+         return;
+        }
+      }
+    }
+    item->ref_count = 1;
+    mrg_list_prepend_full (&mrg->items, item, (void*)_mrg_item_unref, NULL);
+  }
+}
+
+void mrg_listen (Mrg     *mrg,
+                 MrgType  types,
+                 MrgCb    cb,
+                 void*    data1,
+                 void*    data2)
+{
+  if (types == MRG_DRAG_MOTION)
+    types = MRG_DRAG_MOTION | MRG_DRAG_PRESS;
+  return mrg_listen_full (mrg, types, cb, data1, data2, NULL, NULL);
+}
+
+
+/* x and y in cairo user units ; returns x advance in user units  */
+float mrg_draw_string (Mrg *mrg, MrgStyle *style, 
+                      float x, float y,
+                      const char *string,
+                      int utf8_len)
+{
+  float new_x, old_x;
+  char *temp_string = NULL;
+  Ctx *cr = mrg_cr (mrg);
+
+  if (utf8_len < 0)
+    utf8_len = ctx_utf8_strlen (string);
+
+  if (ctx_utf8_strlen (string) != utf8_len)
+  {
+    const char *t;
+    int i;
+
+    temp_string = strdup (string);
+    for (i = 0, t = temp_string ;i < utf8_len && *t; i++)
+    {
+      t += ctx_utf8_len (*t);
+    }
+    *(char *)t = 0;
+    string = temp_string;
+  }
+#if 0
+  if (mrg_is_terminal (mrg) && mrg_em (mrg) <= CPX * 4 / mrg->ddpx)
+  {
+    const char *t;
+    int i;
+
+    /* XXX: include transforms */
+    int offset;
+    double u = x , v = y;
+    cairo_matrix_t matrix;
+    cairo_get_matrix (mrg_cr (mrg), &matrix);
+    cairo_matrix_transform_point (&matrix, &u, &v);
+
+    //u = floor(u);
+    //v = floor(v);
+    
+    offset = (int)(v/CPX) * ((int)(mrg->width/CPX) * 4) + (int)(u/CPX) * 4;
+
+    old_x = x;
+    for (i = 0, t = string; *t; i++)
+    {
+      if ( v >= 0 && u >= 0 &&
+          (int)u/CPX < (int)(mrg->width/CPX) &&
+          (int)v/CPX < (int)(mrg->height/CPX))
+      {
+        int styleno = offset/4;
+        memcpy (&mrg->glyphs[offset], t, ctx_utf8_len (*t));
+        mrg->styles[styleno] = mrg->state->fg +
+                               mrg->state->bg * 8 +
+                               (mrg->state->style.text_decoration & 
+                                (MRG_BOLD|MRG_DIM|MRG_UNDERLINE|MRG_REVERSE)) * 64;;
+      }
+      t += ctx_utf8_len (*t);
+      offset += 4;
+      x += CPX / mrg->ddpx;
+    }
+    new_x = x;
+  }
+  else 
+#endif
+          if (mrg->in_paint)
+  {
+    ctx_set_font_size (cr, style->font_size);
+
+    if (style->text_stroke_width > 0.01)
+    {
+      mrg_ctx_set_source_color (cr, &style->text_stroke_color);
+      ctx_new_path (cr);
+      ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
+      ctx_set_line_width (cr, style->text_stroke_width);
+      ctx_set_line_join (cr, CTX_JOIN_ROUND);
+      ctx_text_stroke (cr, string);
+    }
+
+    mrg_ctx_set_source_color (cr, &style->color);
+    ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
+    ctx_current_point (cr, &old_x, NULL);
+
+    /* when syntax highlighting,.. should do it as a coloring
+     * directly here..
+     */
+
+    if (style->syntax_highlight[0] == 0)
+      ctx_text (cr, string);
+    else if (!strcmp (style->syntax_highlight, "C"))
+      mrg_hl_text (cr, string);
+    else
+      ctx_text (cr, string);
+
+    ctx_current_point (cr, &new_x, NULL);
+
+    if (style->text_decoration & MRG_UNDERLINE)
+      {
+        ctx_move_to (cr, old_x, y);
+        ctx_line_to (cr, new_x, y);
+        ctx_stroke (cr);
+      }
+    if (style->text_decoration & MRG_LINETHROUGH)
+      {
+        ctx_move_to (cr, old_x, y - style->font_size / 2);
+        ctx_line_to (cr, new_x, y - style->font_size / 2);
+        ctx_stroke (cr);
+      }
+    if (style->text_decoration & MRG_OVERLINE)
+      {
+        ctx_move_to (cr, old_x, y - style->font_size);
+        ctx_line_to (cr, new_x, y - style->font_size);
+        ctx_stroke (cr);
+      }
+    ctx_move_to (cr, new_x, y);
+  }
+
+  if (mrg->text_listen_active)
+  {
+    float em = mrg_em (mrg);
+    int no = mrg->text_listen_count-1;
+    float x, y;
+
+    ctx_current_point (cr, &x, &y);
+
+    //fprintf (stderr, "[%s %f (%f)]\n", string, old_x, new_x-old_x+1);
+
+    ctx_new_path (cr);
+    ctx_rectangle (cr,
+        old_x, y - em, new_x - old_x + 1, em * mrg->state->style.line_height);
+    mrg_listen (mrg,
+                mrg->text_listen_types[no],
+                mrg->text_listen_cb[no],
+                mrg->text_listen_data1[no],
+                mrg->text_listen_data2[no]);
+    ctx_new_path (cr);
+    ctx_move_to (cr, x, y);
+  }
+
+  if (temp_string)
+    free (temp_string);
+
+  return new_x - old_x;
+}
+
+float mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length);
+
+float paint_span_bg_final (Mrg   *mrg, float x, float y,
+                           float  width)
+{
+  MrgStyle *style = mrg_style (mrg);
+  Ctx *cr = mrg_cr (mrg);
+  if (style->display != MRG_DISPLAY_INLINE)
+    return 0.0;
+
+  if (style->background_color.alpha > 0.001)
+  {
+    ctx_save (cr);
+    ctx_rectangle (cr, x,
+                         y - mrg_em (mrg) * style->line_height +_mrg_text_shift (mrg)
+                         ,
+                         width + style->padding_right,
+                         mrg_em (mrg) * style->line_height);
+    mrg_ctx_set_source_color (cr, &style->background_color);
+    ctx_fill (cr);
+    ctx_restore (cr);
+  }
+
+  _mrg_border_top_r (mrg, x, y - mrg_em (mrg) , width, mrg_em (mrg));
+  _mrg_border_bottom_r (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
+  _mrg_border_right (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
+
+  return style->padding_right + style->border_right_width;
+}
+
+float paint_span_bg (Mrg   *mrg, float x, float y,
+                     float  width)
+{
+  MrgStyle *style = mrg_style (mrg);
+  Ctx *cr = mrg_cr (mrg);
+  if (!cr)
+    return 0.0;
+  float left_pad = 0.0;
+  float left_border = 0.0;
+  if (style->display != MRG_DISPLAY_INLINE)
+    return 0.0;
+
+  if (!mrg->state->span_bg_started)
+  {
+    left_pad = style->padding_left;
+    left_border = style->border_left_width;
+    mrg->state->span_bg_started = 1;
+  }
+
+  if (style->background_color.alpha > 0.001)
+  {
+    ctx_save (cr);
+    ctx_rectangle (cr, x + left_border,
+                         y - mrg_em (mrg) * style->line_height +_mrg_text_shift (mrg)
+                         ,
+                         width + left_pad,
+                         mrg_em (mrg) * style->line_height);
+    mrg_ctx_set_source_color (cr, &style->background_color);
+    ctx_fill (cr);
+    ctx_restore (cr);
+  }
+
+  if (left_pad || left_border)
+  {
+    _mrg_border_left (mrg, x + left_pad + left_border, y - mrg_em (mrg) , width, mrg_em (mrg));
+    _mrg_border_top_l (mrg, x + left_pad + left_border, y - mrg_em (mrg) , width , mrg_em (mrg));
+    _mrg_border_bottom_l (mrg, x + left_pad + left_border, y - mrg_em (mrg), width , mrg_em (mrg));
+  }
+  else
+  {
+    _mrg_border_top_m (mrg, x, y - mrg_em (mrg) , width, mrg_em (mrg));
+    _mrg_border_bottom_m (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
+  }
+
+  return left_pad + left_border;
+}
+
+float
+mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length)
+{
+  float wwidth = measure_word_width (mrg, string); //XXX get rid of some computation here
+  float left_pad;
+  left_pad = paint_span_bg (mrg, x, y, wwidth);
+
+  {
+    float tx = x;
+    float ty = y;
+    ctx_user_to_device (&(mrg_cr (mrg)->state), &tx, &ty);
+    if (ty > mrg->height * 2 ||
+        tx > mrg->width * 2 ||
+        tx < -mrg->width * 2 ||
+        ty < -mrg->height * 2)
+    {
+      /* bailing early*/
+    }
+    else
+    mrg_draw_string (mrg, &mrg->state->style, x + left_pad, y, string, utf8_length);
+  }
+
+  return wwidth + left_pad;
+}
+
+/******** end of core text-drawing primitives **********/
+
+#if 0
+void mrg_xy (Mrg *mrg, float x, float y)
+{
+  mrg->x = x * mrg_em (mrg);
+  mrg->y = y * mrg_em (mrg);
+}
+#endif
+
+void mrg_set_xy (Mrg *mrg, float x, float y)
+{
+  mrg->x = x;
+  mrg->y = y;
+  mrg->state->overflowed = 0;
+}
+
+float mrg_x (Mrg *mrg)
+{
+  return mrg->x;
+}
+
+float mrg_y (Mrg *mrg)
+{
+  return mrg->y;
+}
+
+void mrg_set_wrap_skip_lines (Mrg *mrg, int skip_lines);
+void mrg_set_wrap_max_lines  (Mrg *mrg, int max_lines);
+
+void mrg_set_wrap_skip_lines (Mrg *mrg, int skip_lines)
+{
+    mrg->state->skip_lines = skip_lines;
+}
+
+void mrg_set_wrap_max_lines  (Mrg *mrg, int max_lines)
+{
+    mrg->state->max_lines = max_lines;
+}
+
+//#define SNAP
+
+static void _mrg_nl (Mrg *mrg)
+{
+  mrg->x = _mrg_dynamic_edge_left(mrg);
+  mrg->y += mrg->state->style.line_height * mrg_em (mrg);
+#ifdef SNAP
+  float em = mrg_em (mrg);  /* XXX: a global body-line spacing 
+                               snap is better grid design */
+  mrg->x = ceil (mrg->x / em) * em;
+  mrg->y = ceil (mrg->y / em) * em;
+#endif
+
+  if (mrg->y >= 
+      mrg->state->edge_bottom - mrg->state->style.padding_bottom)
+  {
+    mrg->state->overflowed=1;
+  }
+
+  if (mrg->state->post_nl)
+    mrg->state->post_nl (mrg, mrg->state->post_nl_data, 0);
+}
+
+static void _mrg_spaces (Mrg *mrg, int count)
+{
+  while (count--)
+    {
+     if (mrg->state->style.print_symbols)
+        mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
+     else
+     {
+        float diff = mrg_addstr (mrg, mrg->x, mrg->y, " ", 1);
+
+#if 0
+        if (mrg_is_terminal (mrg) && mrg_em (mrg) <= CPX * 4 / mrg->ddpx)
+        {
+        }
+        else
+#endif
+        {
+          if (mrg->state->style.text_decoration & MRG_REVERSE)
+          {
+            Ctx *cr = mrg_cr (mrg);
+            ctx_rectangle (cr, mrg->x + diff*0.1, mrg->y + mrg_em(mrg)*0.2, diff*0.8, -mrg_em (mrg)*1.1);
+            ctx_set_rgb (cr, 1,1,1);
+            ctx_fill (cr);
+          }
+        }
+        mrg->x += diff;
+     }
+    }
+}
+
+#define EMIT_NL() \
+    do {wraps++; \
+    if (wraps >= max_lines)\
+      return wraps;\
+    if (skip_lines-- <=0)\
+      {\
+         if (print) { if (gotspace)\
+             _mrg_spaces (mrg, 1);\
+         if (cursor_start == pos -1 && cursor_start>0 && mrg->text_edited)\
+           {\
+             mrg_start (mrg, ".cursor", NULL);\
+             _mrg_spaces (mrg, 1);\
+             _mrg_nl (mrg);\
+             mrg_end (mrg);\
+           }\
+         else\
+           _mrg_nl (mrg);\
+         } else _mrg_nl (mrg);\
+      }\
+    if (skip_lines<=0)\
+      mrg_set_xy (mrg, _mrg_dynamic_edge_left(mrg), mrg_y (mrg));}while(0)
+
+#define EMIT_NL2() \
+    do {\
+    if (skip_lines-- <=0)\
+      {\
+         if (print) {if (gotspace)\
+             _mrg_spaces (mrg, 1);\
+         if (cursor_start == *pos -1 && cursor_start>0 && mrg->text_edited)\
+           {\
+             mrg_start (mrg, ".cursor", NULL);\
+             _mrg_spaces (mrg, 1);\
+             _mrg_nl (mrg);\
+             mrg_end (mrg);\
+           }\
+         else\
+           _mrg_nl (mrg);\
+         } else _mrg_nl (mrg);\
+      }\
+    if (skip_lines<=0)\
+      mrg_set_xy (mrg, _mrg_dynamic_edge_left(mrg), mrg_y (mrg));}while(0)
+
+
+
+static void mrg_get_edit_state (Mrg *mrg, 
+     float *x, float *y, float *s, float *e,
+     float *em_size)
+{
+  if (x) *x = mrg->e_x;
+  if (y) *y = mrg->e_y;
+  if (s) *s = mrg->e_ws;
+  if (e) *e = mrg->e_we;
+  if (em_size) *em_size = mrg->e_em;
+}
+
+
+static void emit_word (Mrg *mrg,
+                       int  print,
+                       const char *data,
+                       const char *word,
+                       int         max_lines,
+                       int         skip_lines,
+                       int         cursor_start,
+                       int        *pos,
+                       int        *wraps,
+                       int        *wl,
+                       int         c,
+                       int         gotspace)
+{
+    float len = ctx_utf8_strlen (word);
+    float wwidth = measure_word_width (mrg, word);
+
+    if (mrg->x + wwidth >= _mrg_dynamic_edge_right (mrg))
+    {
+      if (mrg->x > mrg_edge_left(mrg) || *wraps != 0)
+      {
+        EMIT_NL2();
+      }
+    }
+
+    if (mrg->x != mrg_edge_left(mrg) && gotspace)
+      { 
+        if ((skip_lines<=0)) 
+          { 
+            if (cursor_start == *pos-1 && cursor_start>=0 && mrg->text_edited)
+            { 
+              if (print) { 
+               mrg_start (mrg, ".cursor", NULL);
+               _mrg_spaces (mrg, 1); 
+               mrg_end (mrg);
+              } else { 
+               mrg->x += measure_word_width (mrg, " ");
+              }
+            }
+            else 
+              {
+                if (print){
+                  if (mrg->state->style.print_symbols)
+                    {
+                      mrg_start (mrg, "dim", NULL);
+                      mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
+                      mrg_end (mrg);
+                    }
+                  else
+                    _mrg_spaces (mrg, 1);
+                } else {
+                  if (mrg->state->style.print_symbols)
+                  {
+                    mrg->x += measure_word_width (mrg, "␣");
+                  }
+                  else
+                  {
+                    mrg->x += measure_word_width (mrg, " ");
+                  }
+                }
+              } 
+          }
+      } 
+    if ((skip_lines<=0)) {
+      if (print){if (cursor_start >= *pos && *pos + len > cursor_start && mrg->text_edited)
+        { 
+#if 0  // XXX: there is a bug in mrg_addstr it doesn't respect the length argument 
+          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, word, cursor_start - *pos);
+          mrg_start (mrg, ".cursor", NULL);
+          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, mrg_utf8_skip (word, cursor_start - *pos), 1);
+          mrg_end (mrg);
+          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, mrg_utf8_skip (word, cursor_start - *pos + 1), len - (cursor_start - *pos) - 1);
+#else
+
+          char *dup, *dup2, *dup3;
+
+          dup = strdup (word);
+          dup2 = strdup (ctx_utf8_skip (dup, cursor_start - *pos));
+          dup3 = strdup (ctx_utf8_skip (dup, cursor_start - *pos + 1));
+          *((char*)ctx_utf8_skip (dup,  cursor_start - *pos)) = 0;
+          *((char*)ctx_utf8_skip (dup2, 1)) = 0;
+
+          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, dup, -1);
+          mrg_start (mrg, ".cursor", NULL);
+          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, dup2, -1);
+          mrg_end (mrg);
+          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, dup3, -1);
+
+          free (dup);
+          free (dup2);
+          free (dup3);
+#endif
+        }
+      else
+        {
+          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, word, len); 
+        }
+      } else {
+          mrg->x += wwidth;
+      }
+    }
+    *pos += len;
+    *wl = 0;
+
+}
+
+static int mrg_print_wrap (Mrg        *mrg,
+                           int         print,
+                           const char *data, int length,
+                           int         max_lines,
+                           int         skip_lines,
+                           int         cursor_start,
+                           float     *retx,
+                           float     *rety)
+{
+  char word[400]="";
+  int wl = 0;
+  int c;
+  int wraps = 0;
+  int pos;
+  int gotspace = 0;
+
+  if (mrg->state->overflowed)
+  {
+    return 0;
+  }
+
+  pos = 0;
+
+  if (max_lines <= 0)
+    max_lines = 4096;
+  if (retx)
+    *retx = -1;
+
+  if (mrg->text_edited && print)
+    {
+      mrg->e_x = mrg->x;
+      mrg->e_y = mrg->y;
+      mrg->e_ws = mrg_edge_left(mrg);
+      mrg->e_we = mrg_edge_right(mrg);
+      mrg->e_em = mrg_em (mrg);
+#if 0
+      if (mrg->scaled_font)
+        cairo_scaled_font_destroy (mrg->scaled_font);
+#endif
+      ctx_set_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
+      //mrg->scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
+      //cairo_scaled_font_reference (mrg->scaled_font);
+    }
+
+  for (c = 0 ; c < length && data[c] && ! mrg->state->overflowed; c++)
+    switch (data[c])
+      {
+        case '\n':
+          if (wl)
+            {
+              emit_word (mrg, print, data, word, 
+                         max_lines, skip_lines,
+                         cursor_start,
+                         &pos, &wraps, &wl, c, gotspace);
+            }
+          pos++;
+
+          if (mrg->state->style.print_symbols && print)
+          {
+            mrg_start (mrg, "dim", NULL);
+            mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "¶", -1);\
+            mrg_end (mrg);
+          }
+          EMIT_NL();
+          gotspace = 0;
+          break;
+        case '\t': // XXX: this collapses tabs to a single space
+        case ' ':
+          if (wl == 0)
+            {
+              if (cursor_start == pos-1 && cursor_start>=0 && mrg->text_edited)
+                {
+                  if (print)
+                  {
+                    mrg_start (mrg, ".cursor", NULL);
+                    _mrg_spaces (mrg, 1);
+                    mrg_end (mrg);
+                  }
+                  else
+                    mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
+                }
+              else
+                {
+                  if (mrg->state->style.print_symbols)
+                    {
+                      mrg_start (mrg, "dim", NULL);
+                      mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
+                      mrg_end (mrg);
+                    }
+                  else
+                    {
+                      mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
+                    }
+                }
+            }
+          else
+            {
+              emit_word (mrg, print, data, word,
+                         max_lines, skip_lines,
+                         cursor_start,
+                         &pos, &wraps, &wl, c, gotspace);
+            }
+          pos++;
+
+          if (retx && *retx < 0 && pos >= cursor_start)
+            {
+              float tailwidth;
+              const char *rest = &word[ctx_utf8_strlen (word) - (pos-cursor_start)];
+#if 0
+              if (mrg_is_terminal (mrg))
+                tailwidth = (pos-cursor_start -1) * CPX / mrg->ddpx;
+              else
+#endif
+                tailwidth = measure_word_width (mrg, rest);
+              *retx = mrg->x - tailwidth;
+              *rety = mrg->y;
+              return pos;
+            }
+          gotspace = 1;
+          break;
+        default:
+          word[wl++]= data[c];
+          word[wl]  = '\0';
+          break;
+      }
+  if (wl) /* orphaned word for last line. */
+    {
+      emit_word (mrg, print, data, word, 
+                 max_lines, skip_lines,
+                 cursor_start,
+                 &pos, &wraps, &wl, c, gotspace);
+    }
+   /* cursor at end */
+   if (cursor_start == pos && cursor_start>=0 && mrg->text_edited)
+    {
+      if (print)
+      {
+        if (c && data[c-1]==' ')
+          mrg->x += measure_word_width (mrg, " ");
+        mrg_start (mrg, ".cursor", NULL);
+        _mrg_spaces (mrg, 1);
+        mrg_end (mrg);
+      }
+      else
+        mrg->x += measure_word_width (mrg, " ");
+    }
+  if (retx && *retx < 0 && pos >= cursor_start)
+    {
+       *retx = mrg->x; 
+       *rety = mrg->y;
+      return pos;
+    }
+  return wraps;
+}
+
+int mrg_print_get_xy (Mrg *mrg, const char *string, int no, float *x, float *y)
+{
+  int ret;
+  if (!string)
+    return 0;
+
+  if (mrg_edge_left(mrg) != mrg_edge_right(mrg))
+    {
+      float ox, oy;
+      ox = mrg->x;
+      oy = mrg->y;
+      ret = mrg_print_wrap (mrg, 0, string, strlen (string), mrg->state->max_lines,
+                             mrg->state->skip_lines, no, x, y);
+      mrg->x = ox;
+      mrg->y = oy;
+      return ret;
+    }
+  if (y) *y = mrg->y;
+  if (x) *x = mrg->x + no; // XXX: only correct for nct/monospace
+
+  return 0;
+}
+
+typedef struct _MrgGlyph MrgGlyph;
+
+struct _MrgGlyph{
+  unsigned long index; /*  done this way, the remnants of layout; before feeding
+                        *  glyphs positions in cairo, similar to how pango would do
+                        *  can be reused for computing the caret nav efficiently.
+                        */
+  float x;
+  float y;
+  int   no;
+};
+
+
+
+static int mrg_print_wrap2 (Mrg        *mrg,
+                           int         print,
+                           const char *data, int length,
+                           int         max_lines,
+                           int         skip_lines,
+                           MrgList   **list)
+{
+  char word[400]="";
+  int wl = 0;
+  int c;
+  int wraps = 0;
+  int pos;
+  int gotspace = 0;
+  int cursor_start = -1;
+
+  MrgGlyph *g = calloc (sizeof (MrgGlyph), 1);
+  g->x = length;
+  g->y = 42;
+  g->index = 44;
+  g->no = 2;
+  mrg_list_append (list, g);
+
+  if (mrg->state->overflowed)
+  {
+    return 0;
+  }
+
+  pos = 0;
+
+  if (max_lines <= 0)
+    max_lines = 4096;
+
+  if (mrg->text_edited && print)
+    {
+      mrg->e_x = mrg->x;
+      mrg->e_y = mrg->y;
+      mrg->e_ws = mrg_edge_left(mrg);
+      mrg->e_we = mrg_edge_right(mrg);
+      mrg->e_em = mrg_em (mrg);
+#if 0
+      if (mrg->scaled_font)
+        cairo_scaled_font_destroy (mrg->scaled_font);
+#endif
+      ctx_set_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
+#if 0
+      mrg->scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
+      cairo_scaled_font_reference (mrg->scaled_font);
+#endif
+    }
+
+  for (c = 0 ; c < length && data[c] && ! mrg->state->overflowed; c++)
+    switch (data[c])
+      {
+        case '\n':
+          if (wl)
+            {
+              emit_word (mrg, print, data, word, 
+                         max_lines, skip_lines,
+                         cursor_start,
+                         &pos, &wraps, &wl, c, gotspace);
+            }
+          pos++;
+
+          if (mrg->state->style.print_symbols && print)
+          {
+            mrg_start (mrg, "dim", NULL);
+            mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "¶", -1);\
+            mrg_end (mrg);
+          }
+          EMIT_NL();
+          gotspace = 0;
+          break;
+        case ' ':
+          if (wl == 0)
+            {
+              if (cursor_start == pos-1 && cursor_start>=0 && mrg->text_edited)
+                {
+                  if (print)
+                  {
+                    mrg_start (mrg, ".cursor", NULL);
+                    _mrg_spaces (mrg, 1);
+                    mrg_end (mrg);
+                  }
+                  else
+                    mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
+                }
+              else
+                {
+                  if (mrg->state->style.print_symbols)
+                    {
+                      mrg_start (mrg, "dim", NULL);
+                      mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
+                      mrg_end (mrg);
+                    }
+                  else
+                    {
+                      mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
+                    }
+                }
+            }
+          else
+            {
+              emit_word (mrg, print, data, word, 
+                         max_lines, skip_lines,
+                         cursor_start,
+                         &pos, &wraps, &wl, c, gotspace);
+            }
+          pos++;
+          
+#if 0
+          if (retx && *retx < 0 && pos >= cursor_start)
+            {
+              float tailwidth;
+              const char *rest = &word[ctx_utf8_strlen (word) - (pos-cursor_start)];
+              if (mrg_is_terminal (mrg))
+                tailwidth = (pos-cursor_start -1) * CPX / mrg->ddpx;
+              else
+                tailwidth = measure_word_width (mrg, rest);
+              *retx = mrg->x - tailwidth;
+              *rety = mrg->y;
+              return pos;
+            }
+#endif
+          gotspace = 1;
+          break;
+        default:
+          word[wl++]= data[c];
+          word[wl]  = '\0';
+          break;
+      }
+  if (wl) /* orphaned word for last line. */
+    {
+      emit_word (mrg, print, data, word, 
+                 max_lines, skip_lines,
+                 cursor_start, 
+                 &pos, &wraps, &wl, c, gotspace);
+    }
+   /* cursor at end */
+   if (cursor_start == pos && cursor_start>=0 && mrg->text_edited)
+    {
+      if (print)
+      {
+        mrg_start (mrg, ".cursor", NULL);
+        _mrg_spaces (mrg, 1);
+        mrg_end (mrg);
+      }
+      else
+        mrg->x += measure_word_width (mrg, " ");
+    }
+#if 0
+  if (retx && *retx < 0 && pos >= cursor_start)
+    {
+       *retx = mrg->x; 
+       *rety = mrg->y;
+      return pos;
+    }
+#endif
+  return wraps;
+}
+
+MrgList *mrg_print_get_coords (Mrg *mrg, const char *string)
+{
+  MrgList *ret = NULL;
+  if (!string)
+    return ret;
+
+  if (mrg_edge_left(mrg) != mrg_edge_right(mrg))
+    {
+      float ox, oy;
+      ox = mrg->x;
+      oy = mrg->y;
+      mrg_print_wrap2 (mrg, 0, string, strlen (string), mrg->state->max_lines,
+                       mrg->state->skip_lines, &ret);
+      mrg->x = ox;
+      mrg->y = oy;
+      return ret;
+    }
+
+  return ret;
+}
+
+#include <math.h>
+
+int mrg_print (Mrg *mrg, const char *string)
+{
+  float ret;
+
+#ifdef SNAP
+  float em = mrg_em (mrg);  /* XXX: a global body-line spacing 
+                               snap is better grid design */
+  mrg->x = ceil (mrg->x / em) * em;
+  mrg->y = ceil (mrg->y / em) * em;
+#endif
+
+  if (mrg->text_edited)
+    mrg_string_append_str (mrg->edited_str, string);
+
+  if (mrg->state->style.display == MRG_DISPLAY_HIDDEN)
+    return 0;
+
+  if (!string)
+    return 0;
+
+  if (mrg_edge_left(mrg) != mrg_edge_right(mrg))
+   return mrg_print_wrap (mrg, 1, string, strlen (string), mrg->state->max_lines, mrg->state->skip_lines, mrg->cursor_pos, NULL, NULL);
+
+  ret  = mrg_addstr (mrg, mrg->x, mrg->y, string, ctx_utf8_strlen (string));
+  mrg->x += ret;
+  return ret;
+}
+
+void _mrg_text_prepare (Mrg *mrg)
+{
+  hl_state_c = MRG_HL_NEUTRAL;
+}
+
+void _mrg_text_init (Mrg *mrg)
+{
+  // XXX: this should be done in a prepre,.. not an init?
+  //
+  mrg->state->style.line_height = 1.0;
+  mrg->state->style.print_symbols = 0;
+}
+
+void  mrg_text_listen_done (Mrg *mrg)
+{
+  mrg->text_listen_active = 0;
+}
+
+void  mrg_text_listen_full (Mrg *mrg, MrgType types,
+                            MrgCb cb, void *data1, void *data2,
+                      void   (*finalize)(void *listen_data, void *listen_data2, void *finalize_data),
+                      void    *finalize_data)
+{
+  int no = mrg->text_listen_count;
+  if (cb == NULL)
+  {
+    mrg_text_listen_done (mrg);
+    return;
+  }
+  if (no + 1 >= MRG_MAX_TEXT_LISTEN)
+  {
+    fprintf (stderr, "mrg text listen overflow\n");
+    return;
+  }
+
+  mrg->text_listen_types[no] = types;
+  mrg->text_listen_cb[no] = cb;
+  mrg->text_listen_data1[no] = data1;
+  mrg->text_listen_data2[no] = data2;
+  mrg->text_listen_finalize[no] = finalize;
+  mrg->text_listen_finalize_data[no] = finalize_data;
+  mrg->text_listen_count++;
+  mrg->text_listen_active = 1;
+}
+
+void  mrg_text_listen (Mrg *mrg, MrgType types,
+                       MrgCb cb, void *data1, void *data2)
+{
+  mrg_text_listen_full (mrg, types, cb, data1, data2, NULL, NULL);
+}
+
+
+static void mrg_event_stop_propagate (MrgEvent *e)
+{
+}
+
+int mrg_key_press         (Mrg *mrg, unsigned int keyval, const char *string, uint32_t time)
+{
+  return 0;
+}
+
+
+static void cmd_home (MrgEvent *event, void *data1, void *data2)
+{
+  Mrg *mrg = event->mrg;
+  mrg->cursor_pos = 0;
+  mrg_queue_draw (mrg, NULL);
+  mrg_event_stop_propagate (event);
+}
+
+static void cmd_end (MrgEvent *event, void *data1, void *data2)
+{
+  Mrg *mrg = event->mrg;
+  mrg->cursor_pos = ctx_utf8_strlen (mrg->edited_str->str);
+  mrg_queue_draw (mrg, NULL);
+  mrg_event_stop_propagate (event);
+}
+
+static void cmd_backspace (MrgEvent *event, void *data1, void *data2)
+{
+  Mrg *mrg = event->mrg;
+  char *new;
+  const char *rest = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos);
+  const char *mark = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos-1);
+
+  if (mrg->cursor_pos <= 0)
+    {
+      mrg->cursor_pos = 0;
+    }
+  else
+    {
+      new = malloc (strlen (mrg->edited_str->str) + 1);
+      memcpy (new, mrg->edited_str->str, ((mark - mrg->edited_str->str)));
+      memcpy (new + ((mark - mrg->edited_str->str)), rest, strlen (rest));
+      new [strlen (mrg->edited_str->str)-(rest-mark)] = 0;
+      mrg->update_string (new, mrg->update_string_user_data);
+      mrg_string_set (mrg->edited_str, new);
+      free (new);
+      mrg->cursor_pos--;
+    }
+  mrg_queue_draw (mrg, NULL);
+  mrg_event_stop_propagate (event);
+}
+
+static void cmd_delete (MrgEvent *event, void *data1, void *data2)
+{
+  Mrg *mrg = event->mrg;
+  char *new;
+  const char *rest = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos+1);
+  const char *mark = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos);
+
+  new = malloc (strlen (mrg->edited_str->str) + 1);
+  memcpy (new, mrg->edited_str->str, ((mark - mrg->edited_str->str)));
+  memcpy (new + ((mark - mrg->edited_str->str)), rest, strlen (rest));
+  new [strlen (mrg->edited_str->str)-(rest-mark)] = 0;
+
+  mrg->update_string (new, mrg->update_string_user_data);
+  mrg_string_set (mrg->edited_str, new);
+  free (new);
+  mrg_queue_draw (mrg, NULL);
+  mrg_event_stop_propagate (event);
+}
+
+static void cmd_down (MrgEvent *event, void *data1, void *data2)
+{
+  Mrg *mrg = event->mrg;
+  float e_x, e_y, e_s, e_e, e_em;
+  float cx, cy;
+ 
+  mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
+  mrg_set_edge_left (mrg, e_s - mrg->state->style.padding_left);
+  mrg_set_edge_right (mrg, e_e + mrg->state->style.padding_right);
+  mrg_set_xy (mrg, e_x, e_y);
+  mrg_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
+
+  {
+    int no;
+    int best = mrg->cursor_pos;
+    float best_score = 10000000000.0;
+    float best_y = cy;
+    int strl = ctx_utf8_strlen (mrg->edited_str->str);
+    for (no = mrg->cursor_pos + 1; no < mrg->cursor_pos + 256 && no < strl; no++)
+    {
+      float x, y;
+      float attempt_score = 0.0;
+      mrg_set_xy (mrg, e_x, e_y);
+      mrg_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
+
+      if (y > cy && best_y == cy)
+        best_y = y;
+
+      if (y > cy)
+        attempt_score = (y - best_y);
+      else
+        attempt_score = 1000.0;
+
+      attempt_score += fabs(cx-x) / 10000000.0;
+
+      if (attempt_score <= best_score)
+      {
+        best_score = attempt_score;
+        best = no;
+      }
+    }
+    if (best_y == cy)
+    {
+      mrg->cursor_pos = strl;
+#if 0
+      mrg_key_press (mrg, 0, "down-nudge", 0);
+#endif
+      mrg_queue_draw (mrg, NULL);
+      return;
+    }
+    mrg->cursor_pos = best;
+  }
+
+  if (mrg->cursor_pos >= ctx_utf8_strlen (mrg->edited_str->str))
+    mrg->cursor_pos = ctx_utf8_strlen (mrg->edited_str->str) - 1;
+  mrg_queue_draw (mrg, NULL);
+  mrg_event_stop_propagate (event);
+}
+
+static void cmd_up (MrgEvent *event, void *data1, void *data2)
+{
+  Mrg *mrg = event->mrg;
+  float e_x, e_y, e_s, e_e, e_em;
+  float cx, cy;
+  mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
+
+  mrg_set_edge_left  (mrg, e_s - mrg->state->style.padding_left);
+  mrg_set_edge_right (mrg, e_e + mrg->state->style.padding_right);
+
+  mrg_set_xy (mrg, e_x, e_y);
+  mrg_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
+
+  /* XXX: abstract the finding of best cursor pos for x coord to a function */
+  {
+    int no;
+    int best = mrg->cursor_pos;
+    float best_y = cy;
+    float best_score = 1000000000000.0;
+    for (no = mrg->cursor_pos - 1; no>= mrg->cursor_pos - 256 && no > 0; no--)
+    {
+      float x, y;
+      float attempt_score = 0.0;
+      mrg_set_xy (mrg, e_x, e_y);
+      mrg_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
+
+      if (y < cy && best_y == cy)
+        best_y = y;
+
+      if (y < cy)
+        attempt_score = (best_y - y);
+      else
+        attempt_score = 1000.0;
+
+      attempt_score += fabs(cx-x) / 10000000.0;
+
+      if (attempt_score < best_score)
+      {
+        best_score = attempt_score;
+        best = no;
+      }
+    }
+    mrg->cursor_pos = best;
+    if (best_y == cy)
+    {
+      mrg->cursor_pos = 0;
+      mrg_queue_draw (mrg, NULL);
+      mrg_key_press (mrg, 0, "up-nudge", 0);
+      return; // without stop propagate this should permit things registered earlier to fire
+    }
+  }
+
+  if (mrg->cursor_pos < 0)
+    mrg->cursor_pos = 0;
+  mrg_queue_draw (mrg, NULL);
+  mrg_event_stop_propagate (event);
+}
+
+int mrg_get_cursor_pos (Mrg *mrg)
+{
+  return mrg->cursor_pos;
+}
+
+void mrg_set_cursor_pos (Mrg *mrg, int pos)
+{
+  mrg->cursor_pos = pos;
+  mrg_queue_draw (mrg, NULL);
+}
+
+static void cmd_page_down (MrgEvent *event, void *data1, void *data2)
+{
+  int i;
+  for (i = 0; i < 6; i++)
+    cmd_down (event, data1, data2);
+  mrg_event_stop_propagate (event);
+}
+
+static void cmd_page_up (MrgEvent *event, void *data1, void *data2)
+{
+  int i;
+  for (i = 0; i < 6; i++)
+    cmd_up (event, data1, data2);
+  mrg_event_stop_propagate (event);
+}
+
+static void cmd_left (MrgEvent *event, void *data1, void *data2)
+{
+  Mrg *mrg = event->mrg;
+  mrg->cursor_pos--;
+  if (mrg->cursor_pos < 0)
+    mrg->cursor_pos = 0;
+  mrg_queue_draw (mrg, NULL);
+  mrg_event_stop_propagate (event);
+}
+
+static void cmd_right (MrgEvent *event, void *data1, void *data2)
+{
+  Mrg *mrg = event->mrg;
+  mrg->cursor_pos++;
+
+  /* should mrg have captured the text printed in-between to build its idea
+   * of what is being edited, thus being able to do its own internal cursor
+   * positioning with that cache?
+   */
+
+  if (mrg->cursor_pos > ctx_utf8_strlen (mrg->edited_str->str))
+    mrg->cursor_pos = ctx_utf8_strlen (mrg->edited_str->str);
+
+  mrg_queue_draw (mrg, NULL);
+  mrg_event_stop_propagate (event);
+}
+
+
+/* the added utf8 bits go to edited_str as well, so that successive edits do work out
+ *
+ */
+
+static void add_utf8 (Mrg *mrg, const char *string)
+{
+  char *new;
+  const char *rest;
+  /* XXX: this is the code the should be turned into a callback/event
+   * to digest for the user of the framework, with a reasonable default
+   * for using it from C with a string
+   */
+
+  rest = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos);
+
+  new = malloc (strlen (mrg->edited_str->str) + strlen (string) + 1);
+  memcpy (new, mrg->edited_str->str, (rest-mrg->edited_str->str));
+  memcpy (new + (rest-mrg->edited_str->str), string,  strlen (string));
+  memcpy (new + (rest-mrg->edited_str->str) + strlen (string),
+          rest, strlen (rest));
+  new [strlen (string) + strlen (mrg->edited_str->str)] = 0;
+  mrg->update_string (new, mrg->update_string_user_data);
+  mrg_string_set (mrg->edited_str, new);
+  free (new);
+  mrg_queue_draw (mrg, NULL);
+  mrg->cursor_pos++;
+}
+
+static void cmd_unhandled (MrgEvent *event, void *data1, void *data2)
+{
+  if (!strcmp (event->string, "space"))
+  {
+    add_utf8 (event->mrg, " ");
+    mrg_event_stop_propagate (event);
+  }
+
+  if (ctx_utf8_strlen (event->string) != 1)
+    return;
+
+  add_utf8 (event->mrg, event->string);
+  mrg_event_stop_propagate (event);
+}
+
+#if 0
+static void cmd_space (MrgEvent *event, void *data1, void *data2)
+{
+  if (!ctx_utf8_strlen (event->key_name) == 1)
+    return 0;
+
+  add_utf8 (event->mrg, " ");
+  return 1;
+}
+#endif
+
+static void cmd_return (MrgEvent *event, void *data1, void *data2)
+{
+  // this check excludes terminal from working
+  //if (!(ctx_utf8_strlen (event->key_name) == 1))
+  //  return;
+
+  add_utf8 (event->mrg, "\n");
+  mrg_event_stop_propagate (event);
+}
+
+static void cmd_escape (MrgEvent *event, void *data, void *data2)
+{
+#if 0
+  mrg_edit_string (event->mrg, NULL, NULL, NULL);
+#endif
+}
+
+void mrg_add_binding (Mrg *mrg,
+                      const char *key,
+                      const char *action,
+                      const char *label,
+                      MrgCb cb,
+                      void  *cb_data)
+{
+}
+
+
+void mrg_text_edit_bindings (Mrg *mrg)
+{
+  mrg_add_binding (mrg, "escape",    NULL, "stop editing",    cmd_escape,      NULL);
+  mrg_add_binding (mrg, "return",    NULL, "add newline",     cmd_return,    NULL);
+  mrg_add_binding (mrg, "home",      NULL, "cursor to start", cmd_home, NULL);
+  mrg_add_binding (mrg, "end",       NULL, "cursor to end",   cmd_end,    NULL);
+  mrg_add_binding (mrg, "left",      NULL, "cursor left",    cmd_left,    NULL);
+  mrg_add_binding (mrg, "right",     NULL, "cursor right",   cmd_right,  NULL);
+  mrg_add_binding (mrg, "up",        NULL, "cursor up",      cmd_up,        NULL);
+  mrg_add_binding (mrg, "down",      NULL, "cursor down",    cmd_down,    NULL);
+  mrg_add_binding (mrg, "page-up",   NULL, "cursor up",      cmd_page_up,     NULL);
+  mrg_add_binding (mrg, "page-down", NULL, "cursor down",    cmd_page_down, NULL);
+  mrg_add_binding (mrg, "backspace", NULL, "remove preceding character", cmd_backspace, NULL);
+  mrg_add_binding (mrg, "delete",    NULL, "remove character under cursor", cmd_delete, NULL);
+  mrg_add_binding (mrg, "unhandled", NULL, "add if key name is 1 char long", cmd_unhandled, NULL);
+}
+
+#if 0
+void mrg_edit_string (Mrg *mrg, char **string,
+                      void (*update_string)(Mrg *mrg,
+                        char **string_loc,
+                        const char *new_string,
+                        void  *user_data),
+                      void *user_data)
+{
+  if (mrg->edited == string)
+    return;
+  mrg->edited = string;
+  mrg->update_string = update_string;
+  mrg->update_string_user_data = user_data;
+  if (string)
+    mrg->cursor_pos = ctx_utf8_strlen (*string);
+  else
+    mrg->cursor_pos = 0;
+  mrg_queue_draw (mrg, NULL);
+}
+#endif
 
 void
 mrg_printf (Mrg *mrg, const char *format, ...)
@@ -3668,7 +6831,50 @@ mrg_printf (Mrg *mrg, const char *format, ...)
   free (buffer);
 }
 
+void  mrg_set_font_size   (Mrg *mrg, float size)
+{
+    mrg_set_stylef (mrg, "font-size:%fpx;", size);
+}
 
+void _mrg_block_edit (Mrg *mrg)
+{
+  mrg->text_edit_blocked = 1;
+}
+void _mrg_unblock_edit (Mrg *mrg)
+{
+  mrg->text_edit_blocked = 0;
+}
+
+void mrg_edit_start_full (Mrg *mrg,
+                          MrgNewText  update_string,
+                          void *user_data,
+                          MrgDestroyNotify destroy,
+                          void *destroy_data)
+{
+  if (mrg->update_string_destroy_notify)
+  {
+    mrg->update_string_destroy_notify (mrg->update_string_destroy_data);
+  }
+  mrg->got_edit                     = 1;
+  mrg->text_edited                  = 1;
+  mrg->update_string                = update_string;
+  mrg->update_string_user_data      = user_data;
+  mrg->update_string_destroy_notify = destroy;
+  mrg->update_string_destroy_data   = destroy_data;
+}
+
+void  mrg_edit_start (Mrg *mrg,
+                      MrgNewText  update_string,
+                      void *user_data)
+{
+  return mrg_edit_start_full (mrg, update_string, user_data, NULL, NULL);
+}
+
+void  mrg_edit_end (Mrg *mrg)
+{
+  mrg->text_edited = 0;
+  mrg_text_edit_bindings (mrg);
+}
 
 void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 {
@@ -3969,72 +7175,6 @@ void _mrg_set_post_nl (Mrg *mrg,
 {
   mrg->state->post_nl = post_nl;
   mrg->state->post_nl_data = post_nl_data;
-}
-
-
-void _mrg_get_ascent_descent (Mrg *mrg, float *ascent, float *descent)
-{
-#if 0 // MRG_CAIRO
-  cairo_scaled_font_t *scaled_font = mrg->scaled_font;
-  cairo_font_extents_t extents;
-  if (mrg_is_terminal (mrg))
-  {
-    if (ascent) *ascent = 0;
-    if (descent) *descent= 0;
-    return;
-  }
-
-  if (mrg->in_paint)
-  {
-    cairo_set_font_size (mrg_cr(mrg), mrg_style(mrg)->font_size);
-    scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
-  }
-  cairo_scaled_font_extents (scaled_font, &extents);
-
-  if (ascent)  *ascent  = extents.ascent;
-  if (descent) *descent = extents.descent;
-#else
-  if (ascent)  *ascent  = mrg_style(mrg)->font_size;
-  if (descent) *descent = 0.0;
-#endif
-}
-
-
-static float _mrg_text_shift (Mrg *mrg)
-{
-  //MrgStyle *style = mrg_style (mrg);
-  float ascent, descent;
-  _mrg_get_ascent_descent (mrg, &ascent, &descent);
-  return (descent * 0.9); // XXX
-}
-
-
-float paint_span_bg_final (Mrg   *mrg, float x, float y,
-                           float  width)
-{
-  MrgStyle *style = mrg_style (mrg);
-  Ctx *ctx = mrg_cr (mrg);
-  if (style->display != MRG_DISPLAY_INLINE)
-    return 0.0;
-
-  if (style->background_color.alpha > 0.001)
-  {
-    ctx_save (ctx);
-    ctx_rectangle (ctx, x,
-                         y - mrg_em (mrg) * style->line_height +_mrg_text_shift (mrg)
-                         ,
-                         width + style->padding_right,
-                         mrg_em (mrg) * style->line_height);
-    mrg_ctx_set_source_color (ctx, &style->background_color);
-    ctx_fill (ctx);
-    ctx_restore (ctx);
-  }
-
-  _mrg_border_top_r (mrg, x, y - mrg_em (mrg) , width, mrg_em (mrg));
-  _mrg_border_bottom_r (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
-  _mrg_border_right (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
-
-  return style->padding_right + style->border_right_width;
 }
 
 
@@ -4573,11 +7713,6 @@ again:
   return 0;
 }
 
-static float mrg_parse_float (Mrg *mrg, const char *a, char **b)
-{
-  return strtod (a, b);
-}
-
 static void
 mrg_parse_polygon (Mrg *mrg, const char *str)
 {
@@ -4647,39 +7782,6 @@ void  mrg_text_listen_full (Mrg *mrg, MrgType types,
           void (*finalize)(void *listen_data, void *listen_data2, void *finalize_data),
           void  *finalize_data);
 void  mrg_text_listen_done (Mrg *mrg);
-
-void  mrg_text_listen_done (Mrg *mrg)
-{
-  mrg->text_listen_active = 0;
-}
-
-void  mrg_text_listen_full (Mrg *mrg, MrgType types,
-                            MrgCb cb, void *data1, void *data2,
-                      void   (*finalize)(void *listen_data, void *listen_data2, void *finalize_data),
-                      void    *finalize_data)
-{
-  int no = mrg->text_listen_count;
-  if (cb == NULL)
-  {
-    mrg_text_listen_done (mrg);
-    return;
-  }
-  if (no + 1 >= MRG_MAX_TEXT_LISTEN)
-  {
-    fprintf (stderr, "mrg text listen overflow\n");
-    return;
-  }
-
-  mrg->text_listen_types[no] = types;
-  mrg->text_listen_cb[no] = cb;
-  mrg->text_listen_data1[no] = data1;
-  mrg->text_listen_data2[no] = data2;
-  mrg->text_listen_finalize[no] = finalize;
-  mrg->text_listen_finalize_data[no] = finalize_data;
-  mrg->text_listen_count++;
-  mrg->text_listen_active = 1;
-}
-
 
 char *_mrg_resolve_uri (const char *base_uri, const char *uri);
 typedef struct _MrgImage MrgImage;
