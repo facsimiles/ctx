@@ -5039,7 +5039,7 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
 {
   MrgHtml *html = &mrg->html;
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style; // XXX
+  MrgStyle *style = &state->style;
   float gap = ctx_get_font_size (ctx) * ctx_get(ctx, CTX_line_height);
 
   int width = ctx_get(ctx, CTX_width);
@@ -6979,15 +6979,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   if (style->clear & MRG_CLEAR_LEFT)
     clear_left (html);
 
-#define CTX_padding_right       CTX_STRH('p','a','d','d','i','n','g','_','r','i','g','h')
-#define CTX_margin_right        CTX_STRH('m','a','r','g','i','n','_','r','i','g','h','t')
-#define CTX_border_right_width  CTX_STRH('b','o','r','d','e','r','_','r','i','g','h','t')
-#define CTX_padding_left       CTX_STRH('p','a','d','d','i','n','g','_','l','e','f','t')
-#define CTX_margin_left        CTX_STRH('m','a','r','g','i','n','_','l','e','f','t',0)
-#define CTX_border_left_width  CTX_STRH('b','o','r','d','e','r','_','l','e','f','t','_')
-#define CTX_padding_top       CTX_STRH('p','a','d','d','i','n','g','_','l','e','f','t')
-#define CTX_margin_top        CTX_STRH('m','a','r','g','i','n','_','l','e','f','t',0)
-#define CTX_border_top_width  CTX_STRH('b','o','r','d','e','r','_','l','e','f','t','_')
+#include "svg-strings.h"
 
   if (style->display == MRG_DISPLAY_BLOCK ||
       style->display == MRG_DISPLAY_LIST_ITEM)
@@ -8749,5 +8741,281 @@ mrg_printf_xml (Mrg *mrg, const char *format, ...)
   mrg_print_xml (mrg, buffer);
   free (buffer);
 }
+
+void mrg_set_size (Mrg *mrg, int width, int height)
+{
+  if (mrg->width != width || mrg->height != height)
+  {
+    mrg->width = width;
+    mrg->height = height;
+    //mrg_resized (mrg, width, height, 0);
+    mrg_queue_draw (mrg, NULL);
+  }
+}
+
+int
+_mrg_file_get_contents (const char  *path,
+                   char       **contents,
+                   long        *length)
+{
+  FILE *file;
+  long  size;
+  long  remaining;
+  char *buffer;
+
+  file = fopen (path,"rb");
+
+  if (!file)
+    return -1;
+
+  if (!strncmp (path, "/proc", 4))
+  {
+    buffer = calloc(2048, 1);
+    *contents = buffer;
+    *length = fread (buffer, 1, 2047, file);
+    buffer[*length] = 0;
+    return 0;
+  }
+  else
+  {
+    fseek (file, 0, SEEK_END);
+    *length = size = remaining = ftell (file);
+    rewind (file);
+    buffer = malloc(size + 8);
+  }
+
+  if (!buffer)
+    {
+      fclose(file);
+      return -1;
+    }
+
+  remaining -= fread (buffer, 1, remaining, file);
+  if (remaining)
+    {
+      fclose (file);
+      free (buffer);
+      return -1;
+    }
+  fclose (file);
+  *contents = buffer;
+  buffer[size] = 0;
+  return 0;
+}
+
+
+static int
+_mr_get_contents (const char  *referer,
+                 const char  *uri,
+                 char       **contents,
+                 long        *length)
+{
+  char *uri_dup;
+  char *protocol = NULL;
+  char *host = NULL;
+  char *port = NULL;
+  char *path = NULL;
+  char *fragment = NULL;
+#if 0
+  if (!strncmp (uri, "mrg:", 4))
+  {
+    return _mrg_internal_get_contents (referer, uri, contents, length);
+  }
+#endif
+
+  uri_dup = strdup (uri);
+  split_uri (uri_dup, &protocol, &host, &port, &path, &fragment);
+#if 0
+  if (protocol && !strcmp (protocol, "http"))
+  {
+    int len;
+    char *pathdup = malloc (strlen (path) + 2);
+    pathdup[0] = '/';
+    strcpy (&pathdup[1], path);
+   // fprintf (stderr, "%s %i\n",host, port?atoi(port):80);
+    char *cont = _mrg_http (NULL, host, port?atoi(port):80, pathdup, &len);
+    *contents = cont;
+    *length = len;
+    //fprintf (stderr, "%s\n", cont);
+    //
+    fprintf (stderr, "%i\n", len);
+    free (uri_dup);
+    return 0;
+  } else
+#endif
+  if (protocol && !strcmp (protocol, "file"))
+  {
+    char *path2 = malloc (strlen (path) + 2);
+    int ret;
+    sprintf (path2, "/%s", path);
+    ret = _ctx_file_get_contents (path2, (uint8_t**)contents, length);
+
+    free (path2);
+    free (uri_dup);
+    fprintf (stderr, "%i\n", (int)*length);
+    return ret;
+  }
+  else
+  {
+    char *c = NULL;
+    long  l = 0;
+    int ret;
+    free (uri_dup);
+    ret = _mrg_file_get_contents (uri, &c, &l);
+    if (contents) *contents = c;
+    if (length) *length = l;
+    fprintf (stderr, "%li\n", l);
+    return ret;
+  }
+
+  return -1;
+}
+
+
+static MrgList *cache = NULL;
+
+typedef struct _CacheEntry {
+  char *uri;
+  char *contents;
+  long  length;
+} CacheEntry;
+
+/* caching uri fetcher
+ */
+int
+mrg_get_contents_default (const char  *referer,
+                          const char  *input_uri,
+                          char       **contents,
+                          long        *length,
+                          void        *ignored_user_data)
+{
+  MrgList *i;
+
+  /* should resolve before mrg_get_contents  */
+  char *uri = _mrg_resolve_uri (referer, input_uri);
+
+  for (i = cache; i; i = i->next)
+  {
+    CacheEntry *entry = i->data;
+    if (!strcmp (entry->uri, uri))
+    {
+      *contents = malloc (entry->length + 1);
+      memcpy (*contents, entry->contents, entry->length);
+      (*contents)[entry->length]=0;
+      free (uri);
+      if (length) *length = entry->length;
+      if (length)
+      {
+        return 0;
+      }
+      else
+      {
+        return -1;
+      }
+    }
+  }
+
+  {
+    CacheEntry *entry = calloc (sizeof (CacheEntry), 1);
+    char *c = NULL;
+    long  l = 0;
+
+    entry->uri = uri;
+    _mr_get_contents (referer, uri, &c, &l);
+    if (c){
+      entry->contents = c;
+      entry->length = l;
+    } else
+    {
+      entry->contents = NULL;
+      entry->length = 0;
+    }
+    mrg_list_prepend (&cache, entry);
+
+#if MRG_URI_LOG
+    if (c)
+      fprintf (stderr, "%li\t%s\n", l, uri);
+    else
+      fprintf (stderr, "FAIL\t%s\n", uri);
+#endif
+
+  }
+
+
+  return mrg_get_contents_default (referer, input_uri, contents, length, ignored_user_data);
+}
+
+
+void _mrg_init (Mrg *mrg, int width, int height)
+{
+  mrg->state = &mrg->states[0];
+  /* XXX: is there a better place to set the default text color to black? */
+#if 0
+  mrg->state->style.color.red =
+  mrg->state->style.color.green =
+  mrg->state->style.color.blue = 0;
+  mrg->state->style.color.alpha = 1;
+#endif
+  ctx_color_set_rgba (&mrg->ctx->state, &mrg->state->style.color, 0, 0, 0, 1);
+
+  mrg->ddpx = 1;
+  if (getenv ("MRG_DDPX"))
+  {
+    mrg->ddpx = strtod (getenv ("MRG_DDPX"), NULL);
+  }
+  mrg_set_size (mrg, width, height);
+  _mrg_text_init (mrg);
+
+  mrg->html.state = &mrg->html.states[0];
+  mrg->html.mrg = mrg;
+  mrg->style = mrg_string_new ("");
+
+  mrg_set_mrg_get_contents (mrg, mrg_get_contents_default, NULL);
+  mrg->style_global = mrg_string_new ("");
+
+  mrg->tap_delay_min  = 40;
+  mrg->tap_delay_max  = 800;
+  mrg->tap_delay_max  = 8000000; /* quick reflexes needed making it hard for some is an argument against very short values  */
+
+  mrg->tap_delay_hold = 1000;
+  mrg->tap_hysteresis = 32;  /* XXX: should be ppi dependent */
+
+  {
+    const char *global_css_uri = "mrg:theme.css";
+
+    if (getenv ("MRG_CSS"))
+      global_css_uri = getenv ("MRG_CSS");
+
+    char *contents;
+    long length;
+    mrg_get_contents (mrg, NULL, global_css_uri, &contents, &length);
+    if (contents)
+    {
+      mrg_string_set (mrg->style_global, contents);
+      free (contents);
+    }
+  }
+}
+
+Mrg *mrg_new (Ctx *ctx, int width, int height)
+{
+  Mrg *mrg;
+
+  mrg = calloc (sizeof (Mrg), 1);
+  mrg->ctx = ctx;
+  _mrg_init (mrg, width, height);
+
+  return mrg;
+}
+
+void mrg_destroy (Mrg *mrg)
+{
+  if (mrg->edited_str)
+    mrg_string_free (mrg->edited_str, 1);
+  mrg->edited_str = NULL;
+  free (mrg);
+}
+
+
 
 #endif

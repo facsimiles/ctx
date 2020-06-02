@@ -407,6 +407,16 @@ int main (int argc, char **argv)
 
   _ctx_set_transformation (ctx, 0);
 
+  if (!strcmp (get_suffix (source_path), ".html")||
+      !strcmp (get_suffix (source_path), ".svg")||
+      !strcmp (get_suffix (source_path), ".xml"))
+  {
+     unsigned char *contents = NULL;
+     long length;
+     _file_get_contents (source_path, &contents, &length);
+
+     
+  }
   if (!strcmp (get_suffix (source_path), ".ctx"))
   {
      unsigned char *contents = NULL;
