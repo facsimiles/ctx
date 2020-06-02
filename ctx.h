@@ -1623,7 +1623,18 @@ struct _CtxState {
 #define CTX_alphabetic   CTX_STRH('a','l','p','h','a', 'b','e', 't', 'i', 'c', 0, 0)
 #define CTX_hanging      CTX_STRH('h','a','n','g','i', 'n','g', 0, 0, 0, 0, 0)
 #define CTX_ideographic  CTX_STRH('i','d','e','o','g','r','a','p','h','i','c', 0)
-
+#define CTX_gray         CTX_STRH('g','r','a','y',0,0,0,0,0,0,0,0)
+#define CTX_graya        CTX_STRH('g','r','a','y','a',0,0,0,0,0,0,0)
+#define CTX_rgb          CTX_STRH('r','g','b',0,0,0,0,0,0,0,0,0)
+#define CTX_drgb         CTX_STRH('d','r','g','b',0,0,0,0,0,0,0,0)
+#define CTX_rgba         CTX_STRH('r','g','b','a',0,0,0,0,0,0,0,0)
+#define CTX_drgba        CTX_STRH('d','r','g','b','a',0,0,0,0,0,0,0)
+#define CTX_cmyk         CTX_STRH('c','m','y','k',0,0,0,0,0,0,0,0)
+#define CTX_cmyka        CTX_STRH('c','m','y','k','a',0,0,0,0,0,0,0)
+#define CTX_lab          CTX_STRH('l','a','b',0,0,0,0,0,0,0,0,0)
+#define CTX_laba         CTX_STRH('l','a','b','a',0,0,0,0,0,0,0,0)
+#define CTX_lch          CTX_STRH('l','c','h',0,0,0,0,0,0,0,0,0)
+#define CTX_lcha         CTX_STRH('l','c','h','a',0,0,0,0,0,0,0,0)
 
 static void ctx_state_set (CtxState *state, uint32_t hash, float value)
 {
@@ -10570,54 +10581,42 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     /* strings are handled directly here,
      * instead of in the one-char handler, using return instead of break
      */
-    case STR('g','r','a','y',0,0,0,0,0,0,0,0):
+    case CTX_gray:
       ctx_parser_set_color_model (parser, CTX_GRAY);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('g','r','a','y','a',0,0,0,0,0,0,0):
+    case CTX_graya:
       ctx_parser_set_color_model (parser, CTX_GRAYA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('r','g','b',0,0,0,0,0,0,0,0,0):
+    case CTX_rgb:
       ctx_parser_set_color_model (parser, CTX_RGB);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('d','r','g','b',0,0,0,0,0,0,0,0):
+    case CTX_drgb:
       ctx_parser_set_color_model (parser, CTX_RGB_DEVICE);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('r','g','b','a',0,0,0,0,0,0,0,0):
+    case CTX_rgba:
       ctx_parser_set_color_model (parser, CTX_RGBA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('d','r','g','b','a',0,0,0,0,0,0,0):
+    case CTX_drgba:
       ctx_parser_set_color_model (parser, CTX_RGBA_DEVICE);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('c','m','y','k',0,0,0,0,0,0,0,0):
+    case CTX_cmyk:
       ctx_parser_set_color_model (parser, CTX_CMYK);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('c','m','y','k','a',0,0,0,0,0,0,0):
+    case CTX_cmyka:
       ctx_parser_set_color_model (parser, CTX_CMYKA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('l','a','b',0,0,0,0,0,0,0,0,0):
+    case CTX_lab:
       ctx_parser_set_color_model (parser, CTX_LAB);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('l','a','b','a',0,0,0,0,0,0,0,0):
+    case CTX_laba:
       ctx_parser_set_color_model (parser, CTX_LABA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('l','c','h',0,0,0,0,0,0,0,0,0):
+    case CTX_lch:
       ctx_parser_set_color_model (parser, CTX_LCH);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
-    case STR('l','c','h','a',0,0,0,0,0,0,0,0):
+    case CTX_lcha:
       ctx_parser_set_color_model (parser, CTX_LCHA);
       return ctx_parser_set_command (parser, CTX_SET_COLOR);
-
 
     /* words that correspond to low integer constants
     */
