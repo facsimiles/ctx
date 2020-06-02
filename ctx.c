@@ -22,6 +22,159 @@
 // ctx with mmm as through the terminal, then
 // rebuild mrg on top of ctx
 
+void ctx_utf8_output_buf (uint8_t *pixels,
+                          int format,
+                          int width,
+                          int height,
+                          int stride,
+                          int reverse)
+{
+  char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
+  int no = 0;
+  switch(format)
+  {
+    case CTX_FORMAT_GRAY2:
+    {
+    static char *utf8_gray_scale[]={" ","░","▓","█", NULL};
+    for (int y= 0; y < height; y++)
+    {
+      no = y * stride;
+      for (int x = 0; x < width; x++)
+      {
+        int val = (pixels[no] & (3 << ((x % 4)*2)) ) >> ((x%4)*2);
+        if (reverse)
+          printf ("%s", utf8_gray_scale[val]);
+        else
+          printf ("%s", utf8_gray_scale[3-val]);
+        if ((x % 4) == 3)
+          no++;
+      }
+      printf ("\n");
+    }
+    }
+    break;
+    case CTX_FORMAT_GRAY1:
+    for (int row = 0; row < height/4; row++)
+    {
+      for (int col = 0; col < width /2; col++)
+      {
+        int unicode = 0;
+        int bitno = 0;
+        for (int x = 0; x < 2; x++)
+          for (int y = 0; y < 3; y++)
+          {
+            int no = (row * 4 + y) * stride + (col*2+x)/8;
+            int set = pixels[no] & (1<< ((col * 2 + x) % 8));
+            if (reverse) set = !set;
+             if (set)
+               unicode |=  (1<<(bitno));
+            bitno++;
+          }
+        {
+           int x = 0; int y = 3;
+           int no = (row * 4 + y) * stride + (col*2+x)/8;
+           int setA = pixels[no] & (1<< ((col * 2 + x) % 8));
+           no = (row * 4 + y) * stride + (col*2+x+1)/8;
+           int setB = pixels[no] & (1<< (   (col * 2 + x + 1) % 8));
+           if (reverse) setA = !setA;
+           if (reverse) setB = !setB;
+           if (setA != 0 && setB==0)
+             unicode += 0x2840;
+           else if (setA == 0 && setB)
+             unicode += 0x2880;
+           else if ((setA != 0) && (setB != 0))
+             unicode += 0x28C0;
+           else
+             unicode += 0x2800;
+          uint8_t utf8[5];
+          utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
+          printf ("%s", utf8);
+        }
+      }
+      printf ("\n");
+    }
+    break;
+    case CTX_FORMAT_GRAY4:
+    {
+
+    int no = 0;
+    for (int y= 0; y < height; y++)
+    {
+      no = y * stride;
+      for (int x = 0; x < width; x++)
+      {
+        int val = (pixels[no] & (15 << ((x % 2)*4)) ) >> ((x%2)*4);
+        val = val * 6 / 16;
+        if (reverse)val = 5-val;
+          val = CTX_CLAMP(val, 0, 4);
+        printf ("%s", utf8_gray_scale[val]);
+        if (x % 2 == 1)
+          no++;
+      }
+      printf ("\n");
+    }
+    }
+    break;
+    case CTX_FORMAT_RGBA8:
+    case CTX_FORMAT_CMYK8:
+    {
+     for (int c = 0; c < 4; c++)
+     {
+       int no = 0;
+       for (int y= 0; y < height; y++)
+       {
+         for (int x = 0; x < width; x++, no+=4)
+         {
+            int val = (int)CTX_CLAMP(pixels[no+c]/255.0*6.0, 0, 5);
+            if (reverse)
+              val = 5-val;
+            printf ("%s", utf8_gray_scale[val]);
+         }
+         printf ("\n");
+       }
+     }
+    }
+    break;
+    case CTX_FORMAT_RGB8:
+    {
+     for (int c = 0; c < 3; c++)
+     {
+       int no = 0;
+       for (int y= 0; y < height; y++)
+       {
+         for (int x = 0; x < width; x++, no+=3)
+         {
+            int val = (int)CTX_CLAMP(pixels[no+c]/255.0*6.0, 0, 5);
+            if (reverse)
+              val = 5-val;
+            printf ("%s", utf8_gray_scale[val]);
+         }
+         printf ("\n");
+       }
+     }
+    }
+    break;
+    case CTX_FORMAT_CMYKAF:
+    {
+     for (int c = 0; c < 5; c++)
+     {
+     int no = 0;
+     for (int y= 0; y < height; y++)
+     {
+       for (int x = 0; x < width; x++, no+=5)
+       {
+          int val = (int)CTX_CLAMP((pixels[no+c]*6.0), 0, 5);
+          if (reverse)
+            val = 5-val;
+          printf ("%s", utf8_gray_scale[val]);
+       }
+       printf ("\n");
+     }
+     }
+    }
+  }
+}
+
 int parse_main (int argc, char **argv)
 {
   char *line = NULL;
@@ -294,45 +447,9 @@ int main (int argc, char **argv)
     memset (pixels, 0, sizeof (pixels));
     ctx_render_ctx (ctx, dctx);
     ctx_free (dctx);
-    for (int row = 0; row < height/4; row++)
-    {
-      for (int col = 0; col < width /2; col++)
-      {
-        int unicode = 0;
-        int bitno = 0;
-        for (int x = 0; x < 2; x++)
-          for (int y = 0; y < 3; y++)
-          {
-            int no = (row * 4 + y) * stride + (col*2+x)/8;
-            int set = pixels[no] & (1<< ((col * 2 + x) % 8));
-            if (reverse) set = !set;
-             if (set)
-               unicode |=  (1<<(bitno));
-            bitno++;
-          }
-        {
-           int x = 0; int y = 3;
-           int no = (row * 4 + y) * stride + (col*2+x)/8;
-           int setA = pixels[no] & (1<< ((col * 2 + x) % 8));
-           no = (row * 4 + y) * stride + (col*2+x+1)/8;
-           int setB = pixels[no] & (1<< (   (col * 2 + x + 1) % 8));
-           if (reverse) setA = !setA;
-           if (reverse) setB = !setB;
-           if (setA != 0 && setB==0)
-             unicode += 0x2840;
-           else if (setA == 0 && setB)
-             unicode += 0x2880;
-           else if ((setA != 0) && (setB != 0))
-             unicode += 0x28C0;
-           else
-             unicode += 0x2800;
-          uint8_t utf8[5];
-          utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
-          printf ("%s", utf8);
-        }
-      }
-      printf ("\n");
-    }
+    ctx_utf8_output_buf (pixels,
+                         CTX_FORMAT_GRAY1,
+                         width, height, stride, reverse);
   }
 
   if (!strcmp (dest_path, "GRAY2"))
@@ -340,29 +457,15 @@ int main (int argc, char **argv)
      int reverse = 1;
      int stride = width/4;
      uint8_t pixels[stride*height];
-     static char *utf8_gray_scale[]={" ","░","▓","█", NULL};
 
      Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAY2);
      memset (pixels, 0, sizeof (pixels));
      ctx_render_ctx (ctx, dctx);
      ctx_free (dctx);
+    ctx_utf8_output_buf (pixels,
+                         CTX_FORMAT_GRAY2,
+                         width, height, stride, reverse);
 
-    int no = 0;
-    for (int y= 0; y < height; y++)
-    {
-      no = y * stride;
-      for (int x = 0; x < width; x++)
-      {
-        int val = (pixels[no] & (3 << ((x % 4)*2)) ) >> ((x%4)*2);
-        if (reverse)
-          printf ("%s", utf8_gray_scale[val]);
-        else
-          printf ("%s", utf8_gray_scale[3-val]);
-        if ((x % 4) == 3)
-          no++;
-      }
-      printf ("\n");
-    }
   }
 
   if (!strcmp (dest_path, "GRAY4"))
@@ -370,29 +473,14 @@ int main (int argc, char **argv)
      int reverse = 0;
      int stride = width/2;
      uint8_t pixels[stride*height];
-     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
-
      Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAY4);
      memset (pixels, 0, sizeof (pixels));
      ctx_render_ctx (ctx, dctx);
      ctx_free (dctx);
 
-    int no = 0;
-    for (int y= 0; y < height; y++)
-    {
-      no = y * stride;
-      for (int x = 0; x < width; x++)
-      {
-        int val = (pixels[no] & (15 << ((x % 2)*4)) ) >> ((x%2)*4);
-        val = val * 6 / 16;
-        if (reverse)val = 5-val;
-          val = CTX_CLAMP(val, 0, 4);
-        printf ("%s", utf8_gray_scale[val]);
-        if (x % 2 == 1)
-          no++;
-      }
-      printf ("\n");
-    }
+    ctx_utf8_output_buf (pixels,
+                         CTX_FORMAT_GRAY4,
+                         width, height, stride, reverse);
   }
 
   if (!strcmp (dest_path, "GRAY8"))
@@ -400,14 +488,17 @@ int main (int argc, char **argv)
      int reverse = 0;
      int stride = width;
      uint8_t pixels[stride*height];
-     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
 
      Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAY8);
      memset (pixels, 0, sizeof (pixels));
      ctx_render_ctx (ctx, dctx);
      ctx_free (dctx);
 
+    ctx_utf8_output_buf (pixels,
+                         CTX_FORMAT_GRAY8,
+                         width, height, stride, reverse);
      int no = 0;
+     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
      for (int y= 0; y < height; y++)
      {
        for (int x = 0; x < width; x++, no++)
@@ -445,6 +536,10 @@ int main (int argc, char **argv)
        }
        printf ("\n");
     }
+
+    ctx_utf8_output_buf ((uint8_t*)pixels,
+                         CTX_FORMAT_GRAYF,
+                         width, height, stride, reverse);
   }
 
   if (!strcmp (dest_path, "CMYKAF"))
@@ -452,28 +547,16 @@ int main (int argc, char **argv)
      int reverse = 0;
      int stride = width * 4 * 5;
      float pixels[stride*height];
-     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
 
      Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_CMYKAF);
      memset (pixels, 0, sizeof (pixels));
      ctx_render_ctx (ctx, dctx);
      ctx_free (dctx);
 
-     for (int c = 0; c < 5; c++)
-     {
-     int no = 0;
-     for (int y= 0; y < height; y++)
-     {
-       for (int x = 0; x < width; x++, no+=5)
-       {
-          int val = (int)CTX_CLAMP((pixels[no+c]*6.0), 0, 5);
-          if (reverse)
-            val = 5-val;
-          printf ("%s", utf8_gray_scale[val]);
-       }
-       printf ("\n");
-     }
-     }
+
+    ctx_utf8_output_buf ((uint8_t*)pixels,
+                         CTX_FORMAT_CMYKAF,
+                         width, height, stride, reverse);
   }
 
   if (!strcmp (dest_path, "RGBA8"))
@@ -481,28 +564,15 @@ int main (int argc, char **argv)
      int reverse = 0;
      int stride = width * 4;
      uint8_t pixels[stride*height];
-     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
 
      Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBA8);
      memset (pixels, 0, sizeof (pixels));
      ctx_render_ctx (ctx, dctx);
      ctx_free (dctx);
-
-     for (int c = 0; c < 4; c++)
-     {
-       int no = 0;
-       for (int y= 0; y < height; y++)
-       {
-         for (int x = 0; x < width; x++, no+=4)
-         {
-            int val = (int)CTX_CLAMP(pixels[no+c]/255.0*6.0, 0, 5);
-            if (reverse)
-              val = 5-val;
-            printf ("%s", utf8_gray_scale[val]);
-         }
-         printf ("\n");
-       }
-     }
+ 
+    ctx_utf8_output_buf ((uint8_t*)pixels,
+                         CTX_FORMAT_RGBA8,
+                         width, height, stride, reverse);
   }
 
   if (!strcmp (dest_path, "RGB8"))
@@ -510,28 +580,16 @@ int main (int argc, char **argv)
      int reverse = 0;
      int stride = width * 3;
      uint8_t pixels[stride*height];
-     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
 
      Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGB8);
      memset (pixels, 0, sizeof (pixels));
      ctx_render_ctx (ctx, dctx);
      ctx_free (dctx);
 
-     for (int c = 0; c < 3; c++)
-     {
-       int no = 0;
-       for (int y= 0; y < height; y++)
-       {
-         for (int x = 0; x < width; x++, no+=3)
-         {
-            int val = (int)CTX_CLAMP(pixels[no+c]/255.0*6.0, 0, 5);
-            if (reverse)
-              val = 5-val;
-            printf ("%s", utf8_gray_scale[val]);
-         }
-         printf ("\n");
-       }
-     }
+
+    ctx_utf8_output_buf ((uint8_t*)pixels,
+                         CTX_FORMAT_RGB8,
+                         width, height, stride, reverse);
   }
 
   if (!strcmp (dest_path, "CMYK8"))
@@ -539,28 +597,15 @@ int main (int argc, char **argv)
      int reverse = 0;
      int stride = width * 4;
      uint8_t pixels[stride*height];
-     static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
 
-     Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBA8);
+     Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_CMYK8);
      memset (pixels, 0, sizeof (pixels));
      ctx_render_ctx (ctx, dctx);
      ctx_free (dctx);
 
-     for (int c = 0; c < 4; c++)
-     {
-       int no = 0;
-       for (int y= 0; y < height; y++)
-       {
-         for (int x = 0; x < width; x++, no+=4)
-         {
-            int val = (int)CTX_CLAMP(pixels[no+c]/255.0*6.0, 0, 5);
-            if (reverse)
-              val = 5-val;
-            printf ("%s", utf8_gray_scale[val]);
-         }
-         printf ("\n");
-       }
-     }
+     ctx_utf8_output_buf ((uint8_t*)pixels,
+                         CTX_FORMAT_CMYK8,
+                         width, height, stride, reverse);
   }
 
   if (!strcmp (get_suffix (dest_path), ".png"))
