@@ -939,6 +939,30 @@ _CtxCommand
             uint8_t pad2; float a6; float a7;
             uint8_t pad3; float a8; float a9;
     } f;
+    struct {uint8_t code; uint32_t a0; uint32_t a1;
+            uint8_t pad0; uint32_t a2; uint32_t a3;
+            uint8_t pad1; uint32_t a4; uint32_t a5;
+            uint8_t pad2; uint32_t a6; uint32_t a7;
+            uint8_t pad3; uint32_t a8; uint32_t a9;
+    } u32;
+    struct {uint8_t code; int32_t a0; int32_t a1;
+            uint8_t pad0; int32_t a2; int32_t a3;
+            uint8_t pad1; int32_t a4; int32_t a5;
+            uint8_t pad2; int32_t a6; int32_t a7;
+            uint8_t pad3; int32_t a8; int32_t a9;
+    } s32;
+    struct {uint8_t code; int16_t a0; int16_t a1; int16_t a2; int16_t a3;
+            uint8_t pad0; int16_t a4; int16_t a5; int16_t a6; int16_t a7;
+            uint8_t pad1; int16_t a8; int16_t a9; int16_t a10; int16_t a11;
+            uint8_t pad2; int16_t a12; int16_t a13; int16_t a14; int16_t a15;
+            uint8_t pad3; int16_t a16; int16_t a17; int16_t a18; int16_t a19;
+    } s16;
+    struct {uint8_t code; uint16_t a0; uint16_t a1; uint16_t a2; uint16_t a3;
+            uint8_t pad0; uint16_t a4; uint16_t a5; uint16_t a6; uint16_t a7;
+            uint8_t pad1; uint16_t a8; uint16_t a9; uint16_t a10; uint16_t a11;
+            uint8_t pad2; uint16_t a12; uint16_t a13; uint16_t a14; uint16_t a15;
+            uint8_t pad3; uint16_t a16; uint16_t a17; uint16_t a18; uint16_t a19;
+    } u16;
     struct {uint8_t code; uint8_t a0; uint8_t a1; uint8_t a2; uint8_t a3; uint8_t a4; uint8_t a5; uint8_t a6; uint8_t a7;
             uint8_t pad0; uint8_t a8; uint8_t a9; uint8_t a10; uint8_t a11; uint8_t a12; uint8_t a13; uint8_t a14; uint8_t a15;
             uint8_t pad1; uint8_t a16; uint8_t a17; uint8_t a18; uint8_t a19; uint8_t a20; uint8_t a21; uint8_t a22; uint8_t a23;
@@ -10135,8 +10159,15 @@ ctx_stream_process (void *user_data, CtxCommand *command)
       break;
 
     case CTX_SET_COLOR:
-      _ctx_indent (stream, *indent);
-      fprintf (stream, "set_color...\n");
+      if (formatter)
+      {
+        _ctx_indent (stream, *indent);
+        fprintf (stream, "set_color %i\n", command->u32.a0 );
+      }
+      else
+      {
+        ctx_print_entry (stream, formatter, indent, entry, 1);
+      }
       break;
 
     case CTX_SET_RGBA_U8:
@@ -10248,7 +10279,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
   ctx_iterator_init (&iterator, &ctx->renderstream, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
 
-  while (command = ctx_iterator_next (&iterator))
+  while ((command = ctx_iterator_next (&iterator)))
           ctx_stream_process (user_data, command);
   fprintf (stream, "\n");
 }
