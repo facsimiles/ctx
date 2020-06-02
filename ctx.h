@@ -2180,7 +2180,7 @@ static float ctx_get (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get (&ctx->state, hash);
 }
-static int ctx_get_int (Ctx *ctx, uint32_t hash)
+static inline int ctx_get_int (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get (&ctx->state, hash);
 }
@@ -11591,7 +11591,6 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
 #endif
 
 #include "svg.h"
-
 
 #if CTX_MATH
 
