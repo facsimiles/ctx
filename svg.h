@@ -1944,8 +1944,6 @@ struct _MrgStyle {
 
   CtxColor          background_color;
 
-  //float             stroke_width;
-  //float             text_stroke_width;
   CtxColor          text_stroke_color;
   float             tab_size;
 
@@ -2309,6 +2307,18 @@ static void clear_right (MrgHtml *ctx)
   mrg_set_xy (mrg, mrg_x (mrg), y);
 }
 
+/**
+ * mrg_style:
+ * @mrg the mrg-context
+ *
+ * Returns the currently 
+ *
+ */
+MrgStyle *mrg_style (Mrg *mrg)
+{
+  return &mrg->state->style;
+}
+
 static void clear_both (MrgHtml *ctx)
 {
   Mrg *mrg = ctx->mrg;
@@ -2330,7 +2340,7 @@ static void clear_both (MrgHtml *ctx)
         }
       }
   }
-  y += mrg_em (mrg) * ctx_state_get (&mrg->ctx->state, CTX_line_height);
+  y += mrg_em (mrg) * mrg_style(mrg)->line_height;
   mrg_set_xy (mrg, mrg_x (mrg), y);
   //_mrg_draw_background_increment (mrg, &mrg->html, 0);
 #endif
@@ -2417,17 +2427,6 @@ float mrg_rem (Mrg *mrg)
   return mrg->rem;
 }
 
-/**
- * mrg_style:
- * @mrg the mrg-context
- *
- * Returns the currently 
- *
- */
-MrgStyle *mrg_style (Mrg *mrg)
-{
-  return &mrg->state->style;
-}
 
 void mrg_start     (Mrg *mrg, const char *class_name, void *id_ptr);
 void mrg_start_with_style (Mrg        *mrg,
@@ -5285,7 +5284,7 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
   MrgHtml *html = &mrg->html;
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = &state->style;
-  float gap = ctx_get_font_size (ctx) * ctx_get(ctx, CTX_line_height);
+  float gap = ctx_get_font_size (ctx) * mrg->state->style.line_height;
 
   int width = ctx_get(ctx, CTX_width);
 #if ooops
