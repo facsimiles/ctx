@@ -1760,7 +1760,6 @@ struct _CtxGState
   float         miter_limit;
   float         font_size;
 
-  //CtxColor    shadow_color; // color_r color_g color_b color_a ???
   int16_t       clip_min_x;
   int16_t       clip_min_y;
   int16_t       clip_max_x;
@@ -2155,18 +2154,11 @@ static int ctx_str_is_number (const char *str)
   return 0;
 }
 
-static void ctx_state_set_color (CtxState *state, uint32_t key, CtxColor *color)
-{
-}
-
-static void ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
-{
-}
 
 static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len)
 {
   int idx = state->gstate.stringpool_pos;
-  strcpy (&state->stringpool[idx], data);
+  memcpy (&state->stringpool[idx], data, len);
   state->gstate.stringpool_pos+=len;
   state->stringpool[state->gstate.stringpool_pos++]=0;
   ctx_state_set (state, key, ctx_string_index_to_float (idx));
@@ -2192,7 +2184,29 @@ static void ctx_state_set_string (CtxState *state, uint32_t key, const char *str
     return;
   }
 
-  ctx_state_set_blob (state, key, string, strlen(string));
+  ctx_state_set_blob (state, key, (uint8_t*)string, strlen(string));
+}
+
+static void ctx_state_set_color (CtxState *state, uint32_t key, CtxColor *color)
+{
+  ctx_state_set_blob (state, key, (void*)color, sizeof (CtxColor));
+  CtxColor *stored = (CtxColor*)ctx_state_get_string (state, key);
+  stored->magic = 127;
+
+}
+
+static int ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
+{
+  CtxColor *stored = (CtxColor*)ctx_state_get_string (state, key);
+  if (stored)
+  {
+    if (stored->magic == 127)
+    {
+      *color = *stored;
+      return 0;
+    }
+  }
+  return -1;
 }
 
 static uint8_t ctx_float_to_u8 (float val_f)
@@ -2316,17 +2330,17 @@ static void ctx_rgb_to_cmyk (float r, float g, float b,
 static void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a)
 {
   color->original = color->valid = CTX_VALID_CMYKA;
-  color->cyan    = c;
-  color->magenta = m;
-  color->yellow  = y;
-  color->key     = k;
-  color->alpha   = a;
-  color->space = state->gstate.cmyk_space;
+  color->cyan     = c;
+  color->magenta  = m;
+  color->yellow   = y;
+  color->key      = k;
+  color->alpha    = a;
+  color->space    = state->gstate.cmyk_space;
 }
 
 static void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a)
 {
-  color->original = color->valid = CTX_VALID_DCMYKA;
+  color->original       = color->valid = CTX_VALID_DCMYKA;
   color->device_cyan    = c;
   color->device_magenta = m;
   color->device_yellow  = y;
@@ -2357,7 +2371,6 @@ static void ctx_rgb_device_to_user (CtxState *state, float rin, float gin, float
   *bout = bin;
 }
 #endif
-
 
 static void ctx_color_get_drgba (CtxState *state, CtxColor *color, float *out)
 {
@@ -2632,32 +2645,34 @@ struct
 #endif
 };
 
-static const char *ctx_get_string (Ctx *ctx, uint32_t hash)
+const char *ctx_get_string (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get_string (&ctx->state, hash);
 }
-static float ctx_get (Ctx *ctx, uint32_t hash)
+float ctx_get (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get (&ctx->state, hash);
 }
-static inline int ctx_get_int (Ctx *ctx, uint32_t hash)
+int ctx_get_int (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get (&ctx->state, hash);
 }
-static void ctx_set (Ctx *ctx, uint32_t hash, float value)
+void ctx_set (Ctx *ctx, uint32_t hash, float value)
 {
-  // XXX : how to handle strings:
-  //         use a range of nans or similar
-  //         to be an index of a string-table
-  //         keep string-table index in state like keydb to
-  //         grow with stack
   ctx_state_set (&ctx->state, hash, value);
 }
-static void ctx_set_string (Ctx *ctx, uint32_t hash, const char *value)
+void ctx_set_string (Ctx *ctx, uint32_t hash, const char *value)
 {
   ctx_state_set_string (&ctx->state, hash, value);
 }
-
+void ctx_set_color (Ctx *ctx, uint32_t hash, CtxColor *color)
+{
+  ctx_state_set_color (&ctx->state, hash, color);
+}
+int  ctx_get_color (Ctx *ctx, uint32_t hash, CtxColor *color)
+{
+  return ctx_state_get_color (&ctx->state, hash, color);
+}
 
 typedef struct _CtxFont       CtxFont;
 typedef struct _CtxFontEngine CtxFontEngine;

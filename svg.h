@@ -9289,9 +9289,13 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   printf ("sizeof(MrgHtml) %li\n", sizeof(MrgHtml));
 
   ctx_set_string (ctx, ctx_strhash ("fnord", 0), "eeek1");
-  ctx_set_string (ctx, ctx_strhash ("fnord", 0), "eeek2");
   ctx_set (ctx, ctx_strhash ("bar", 0), 11);
+  ctx_save (ctx);
 
+  printf ("[%s] %f\n", ctx_get_string (ctx, ctx_strhash ("fnord", 0)), ctx_get (ctx, ctx_strhash("fnord", 0)));
+  ctx_set_string (ctx, ctx_strhash ("fnord", 0), "eeek2");
+  printf ("[%s] %f\n", ctx_get_string (ctx, ctx_strhash ("fnord", 0)), ctx_get (ctx, ctx_strhash("fnord", 0)));
+  ctx_restore (ctx);
   printf ("[%s] %f\n", ctx_get_string (ctx, ctx_strhash ("fnord", 0)), ctx_get (ctx, ctx_strhash("fnord", 0)));
 
   return mrg;
