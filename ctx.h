@@ -351,20 +351,22 @@ int  ctx_append_renderstream   (Ctx *ctx, void *data, int length);
 /* these are only needed for clients rendering text, as all text gets
  * converted to paths.
  */
-void  ctx_glyphs       (Ctx        *ctx,
-                        CtxGlyph   *glyphs,
-                        int         n_glyphs);
+void  ctx_glyphs        (Ctx        *ctx,
+                         CtxGlyph   *glyphs,
+                         int         n_glyphs);
 void  ctx_glyphs_stroke (Ctx       *ctx,
                          CtxGlyph   *glyphs,
                          int         n_glyphs);
-void  ctx_text         (Ctx        *ctx,
-                        const char *string);
-void  ctx_text_stroke  (Ctx        *ctx,
-                        const char *string);
-/* return the width of provided string if it had been rendered */
-float ctx_text_width   (Ctx        *ctx,
-                        const char *string);
-float ctx_glyph_width  (Ctx *ctx, int unichar);
+void  ctx_text          (Ctx        *ctx,
+                         const char *string);
+void  ctx_text_stroke   (Ctx        *ctx,
+                         const char *string);
+
+/* returns the total horizontal advance if string had been rendered */
+float ctx_text_width    (Ctx        *ctx,
+                         const char *string);
+
+float ctx_glyph_width   (Ctx *ctx, int unichar);
 
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 
@@ -982,6 +984,8 @@ CtxCommand *ctx_iterator_next (CtxIterator *iterator);
 
 CtxIterator *
 ctx_current_path (Ctx *ctx);
+void
+ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 
 /* definitions that determine which features are included and their settings,
@@ -1008,7 +1012,6 @@ ctx_current_path (Ctx *ctx);
 /* vertical level of supersampling at full/forced AA.
  *
  * 1 is none, 2 is faster, 3 is fast 5 is good 15 is best for 8bit  51 is
- *
  *
  * valid values:
  * 1 2 3 5 15 17 51 85
@@ -1094,7 +1097,7 @@ ctx_current_path (Ctx *ctx);
 #endif
 
 #ifndef CTX_CURRENT_PATH
-#define CTX_CURRENT_PATH 0
+#define CTX_CURRENT_PATH 1
 #endif
 
 #ifndef CTX_XML
@@ -1256,8 +1259,6 @@ ctx_current_path (Ctx *ctx);
 #define CTX_ENABLE_CMYK  1
 #endif
 
-
-
 #define CTX_PI               3.141592653589793f
 #ifndef CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  100
@@ -1333,14 +1334,14 @@ typedef enum
 {
   CTX_GRAY           = 1,
   CTX_RGB            = 3,
-  CTX_DRGB     = 4,
+  CTX_DRGB           = 4,
   CTX_CMYK           = 5,
   CTX_DCMYK          = 6,
   CTX_LAB            = 7,
   CTX_LCH            = 8,
   CTX_GRAYA          = 101,
   CTX_RGBA           = 103,
-  CTX_DRGBA    = 104,
+  CTX_DRGBA          = 104,
   CTX_CMYKA          = 105,
   CTX_DCMYKA         = 106,
   CTX_LABA           = 107,
@@ -1393,17 +1394,19 @@ static inline int ctx_color_model_get_components (CtxColorModel model)
 
 typedef struct _CtxParser CtxParser;
 CtxParser *ctx_parser_new (
-  Ctx       *ctx,
-  int        width,
-  int        height,
-  float      cell_width,
-  float      cell_height,
-  int        cursor_x,
-  int        cursor_y,
-  void (*exit) (void *exit_data),
-  void *exit_data);
-void ctx_parser_free (CtxParser *parser);
+  Ctx    *ctx,
+  int     width,
+  int     height,
+  float   cell_width,
+  float   cell_height,
+  int     cursor_x,
+  int     cursor_y,
+  void  (*exit) (void *exit_data),
+  void   *exit_data);
+
 void ctx_parser_feed_byte (CtxParser *parser, int byte);
+
+void ctx_parser_free (CtxParser *parser);
 
 #define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
 
@@ -2802,6 +2805,55 @@ ctx_current_path (Ctx *ctx)
   ctx_iterator_init (iterator, &ctx->current_path, 0, CTX_ITERATOR_EXPAND_BITPACK);
   return iterator;
 }
+
+void
+ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
+{
+  float minx = 50000.0;
+  float miny = 50000.0;
+  float maxx = -50000.0;
+  float maxy = -50000.0;
+  float x = 0;
+  float y = 0;
+
+  CtxIterator *iterator = ctx_current_path (ctx);
+  CtxCommand *command;
+
+  while ((command = ctx_iterator_next (iterator)))
+  {
+     switch (command->code)
+     {
+        case CTX_LINE_TO:
+        case CTX_MOVE_TO:
+          x = command->move_to.x;
+          y = command->move_to.y;
+          break;
+        case CTX_REL_LINE_TO:
+        case CTX_REL_MOVE_TO:
+          x += command->move_to.x;
+          y += command->move_to.y;
+          break;
+        case CTX_CURVE_TO:
+          x = command->curve_to.x;
+          y = command->curve_to.y;
+          break;
+        case CTX_REL_CURVE_TO:
+          x += command->curve_to.x;
+          y += command->curve_to.y;
+          break;
+     }
+    minx = ctx_minf (minx, x);
+    miny = ctx_minf (miny, y);
+    maxx = ctx_minf (maxx, x);
+    maxy = ctx_minf (maxy, y);
+  }
+  if (ex1) *ex1 = minx;
+  if (ex2) *ex2 = maxx;
+  if (ey1) *ey1 = miny;
+  if (ey2) *ey2 = maxy;
+}
+
+
 #endif
 
 #if CTX_BITPACK

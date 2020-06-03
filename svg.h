@@ -4740,13 +4740,6 @@ mrg_ctx_set_source_color (Ctx *ctx, CtxColor *color)
    ctx_set_rgba (ctx, rgba[0], rgba[1], rgba[2], rgba[3]);
 }
 
-static void
-ctx_fill_preserve (Ctx *ctx)
-{
-  // XXX
-  ctx_fill (ctx);
-}
-
 static void mrg_path_fill_stroke (Mrg *mrg)
 {
   Ctx *ctx = mrg_cr (mrg);
@@ -4754,7 +4747,8 @@ static void mrg_path_fill_stroke (Mrg *mrg)
   if (style->fill_color.alpha > 0.001)
   {
     mrg_ctx_set_source_color (ctx, &style->fill_color);
-    ctx_fill_preserve (ctx);
+    ctx_preserve (ctx);
+    ctx_fill (ctx);
   }
 
   if (style->stroke_width > 0.001)
@@ -4823,8 +4817,7 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
       style->border_top_color.alpha > 0.001)
   {
     ctx_new_path (cr);
-    ctx_move_to (cr, x,
-                       y - style->padding_top - style->border_top_width);
+    ctx_move_to (cr, x, y - style->padding_top - style->border_top_width);
     ctx_rel_line_to (cr, width + style->padding_right + style->border_right_width, 0);
     ctx_rel_line_to (cr, -style->border_right_width, style->border_top_width);
     ctx_rel_line_to (cr, - (width + style->padding_right), 0);
@@ -5404,10 +5397,6 @@ void mrg_hl_text (Ctx *cr, const char *text)
     mrg_hl_token (cr, word->str);
 
   mrg_string_free (word, 1);
-}
-
-void ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
-{
 }
 
 static int
