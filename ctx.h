@@ -1846,7 +1846,7 @@ static uint32_t ctx_strhash (const char *str, int case_insensitive)
   return str_hash;
 }
 
-#define CTX_STRINGPOOL_SIZE 2000
+#define CTX_STRINGPOOL_SIZE 8000
 
 struct _CtxState
 {
@@ -2645,6 +2645,8 @@ struct
 #endif
 };
 
+
+
 const char *ctx_get_string (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get_string (&ctx->state, hash);
@@ -2673,6 +2675,15 @@ int  ctx_get_color (Ctx *ctx, uint32_t hash, CtxColor *color)
 {
   return ctx_state_get_color (&ctx->state, hash, color);
 }
+int ctx_is_set (Ctx *ctx, uint32_t hash)
+{
+  return ctx_get (ctx, hash) != -0.0f;
+}
+int ctx_is_set_now (Ctx *ctx, uint32_t hash)
+{
+  return ctx_is_set (ctx, hash);
+}
+
 
 typedef struct _CtxFont       CtxFont;
 typedef struct _CtxFontEngine CtxFontEngine;
