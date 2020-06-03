@@ -3394,7 +3394,6 @@ _ctx_set_font (Ctx *ctx, const char *name)
   ctx->state.gstate.font = ctx_resolve_font (name);
 }
 
-
 void
 ctx_set_font (Ctx *ctx, const char *name)
 {
