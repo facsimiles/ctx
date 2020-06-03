@@ -1132,27 +1132,11 @@ ctx_memset (void *ptr, uint8_t val, int length)
     p[i] = val;
 }
 
-static float
-ctx_pow2 (float a)
-{
-  return a * a;
-}
-
-static float
-ctx_minf (float a, float b)
-{
-  if (a < b)
-    return a;
-  return b;
-}
-
-static float
-ctx_maxf (float a, float b)
-{
-  if (a > b)
-    return a;
-  return b;
-}
+static float ctx_pow2 (float a)          { return a * a; }
+static int   ctx_mini (int a, int b)     { if (a < b) return a; return b; }
+static float ctx_minf (float a, float b) { if (a < b) return a; return b; }
+static int   ctx_maxi (int a, int b)     { if (a > b) return a; return b; }
+static float ctx_maxf (float a, float b) { if (a > b) return a; return b; }
 
 static void ctx_strcpy (char *dst, const char *src)
 {
@@ -6798,17 +6782,17 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           if ((first!=last) && graystart)
           {
             int cov = coverage[first] + graystart / CTX_RASTERIZER_AA;
-            coverage[first] = ctx_minf(cov,255);
+            coverage[first] = ctx_mini(cov,255);
             first++;
           }
           for (int x = first; x < last; x++)
           {
             int cov = coverage[x] + 255 / CTX_RASTERIZER_AA;
-            coverage[x] = ctx_minf(cov,255);
+            coverage[x] = ctx_mini(cov,255);
           }
           if (grayend) {
             int cov = coverage[last] + grayend / CTX_RASTERIZER_AA;
-            coverage[last] = ctx_minf(cov,255);
+            coverage[last] = ctx_mini(cov,255);
           }
         }
         else
@@ -6816,7 +6800,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           if ((first!=last) && graystart)
           {
             int cov = coverage[first] + graystart;
-            coverage[first] = ctx_minf(cov,255);
+            coverage[first] = ctx_mini(cov,255);
             first++;
           }
 
@@ -6827,7 +6811,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           if (grayend)
           {
             int cov = coverage[last] + grayend;
-            coverage[last] = ctx_minf(cov,255);
+            coverage[last] = ctx_mini(cov,255);
           }
         }
 
@@ -7073,7 +7057,10 @@ static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->preserve?rasterizer->edge_list.count:0;
-  CtxEntry temp[count]; /* copy of already built up path's poly line  */
+  CtxEntry temp[count]; /* copy of already built up path's poly line
+                          XXX - by building a large enough path
+                          the stack can be smashed!
+                         */
   if (rasterizer->preserve)
     memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
 
@@ -7096,14 +7083,14 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
 
   rasterizer->state->min_x =
-       ctx_minf (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
+       ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
   rasterizer->state->max_x =
-       ctx_maxf (rasterizer->state->max_x, rasterizer->col_max / CTX_SUBDIV);
+       ctx_maxi (rasterizer->state->max_x, rasterizer->col_max / CTX_SUBDIV);
 
   rasterizer->state->min_y =
-       ctx_minf (rasterizer->state->min_y, rasterizer->scan_min / CTX_RASTERIZER_AA);
+       ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / CTX_RASTERIZER_AA);
   rasterizer->state->max_y =
-       ctx_maxf (rasterizer->state->max_y, rasterizer->scan_max / CTX_RASTERIZER_AA);
+       ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / CTX_RASTERIZER_AA);
 
   if (rasterizer->edge_list.count == 4)
   {
