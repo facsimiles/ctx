@@ -133,10 +133,6 @@ void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                                    float c,  float d,  // vskew,  vscale
                                    float e,  float f); // htran,  vtran
 
-float ctx_get_line_width (Ctx *ctx);
-void  ctx_get_transform  (Ctx *ctx, float *a, float *b,
-                                    float *c, float *d,
-                                    float *e, float *f);
 
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0
@@ -179,11 +175,13 @@ void  ctx_close_path      (Ctx *ctx);
 
 
 float ctx_get_font_size   (Ctx *ctx);
-
-
-void ctx_current_point    (Ctx *ctx, float *x, float *y);
+float ctx_get_line_width  (Ctx *ctx);
 float ctx_x               (Ctx *ctx);
 float ctx_y               (Ctx *ctx);
+void  ctx_current_point   (Ctx *ctx, float *x, float *y);
+void  ctx_get_transform   (Ctx *ctx, float *a, float *b,
+                                     float *c, float *d,
+                                     float *e, float *f);
 
 int  ctx_glyph            (Ctx *ctx, uint32_t unichar, int stroke);
 void ctx_arc              (Ctx  *ctx,
@@ -3325,6 +3323,11 @@ ctx_set_miter_limit (Ctx *ctx, float limit) {
 float ctx_get_font_size  (Ctx *ctx)
 {
   return ctx->state.gstate.font_size;
+}
+
+float ctx_get_line_width (Ctx *ctx)
+{
+  return ctx->state.gstate.line_width;
 }
 
 static int ctx_strcmp (const char *a, const char *b)
