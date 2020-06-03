@@ -1,5 +1,255 @@
-
 #if CTX_XML
+#define CTX_a 	CTX_STRH('a',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_absolute 	CTX_STRH('a','b','s','o','l','u','t','e',0,0,0,0,0,0)
+#define CTX_aelig 	CTX_STRH('a','e','l','i','g',0,0,0,0,0,0,0,0,0)
+#define CTX_Aelig 	CTX_STRH('A','e','l','i','g',0,0,0,0,0,0,0,0,0)
+#define CTX_AElig 	CTX_STRH('A','E','l','i','g',0,0,0,0,0,0,0,0,0)
+#define CTX_alias 	CTX_STRH('a','l','i','a','s',0,0,0,0,0,0,0,0,0)
+#define CTX_all_scroll 	CTX_STRH('a','l','l','-','s','c','r','o','l','l',0,0,0,0)
+#define CTX_alpha 	CTX_STRH('a','l','p','h','a',0,0,0,0,0,0,0,0,0)
+#define CTX_amp 	CTX_STRH('a','m','p',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_apos 	CTX_STRH('a','p','o','s',0,0,0,0,0,0,0,0,0,0)
+#define CTX_aqua 	CTX_STRH('a','q','u','a',0,0,0,0,0,0,0,0,0,0)
+#define CTX_aring 	CTX_STRH('a','r','i','n','g',0,0,0,0,0,0,0,0,0)
+#define CTX_Aring 	CTX_STRH('A','r','i','n','g',0,0,0,0,0,0,0,0,0)
+#define CTX_auto 	CTX_STRH('a','u','t','o',0,0,0,0,0,0,0,0,0,0)
+#define CTX_background 	CTX_STRH('b','a','c','k','g','r','o','u','n','d',0,0,0,0)
+#define CTX_background_color 	CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','c','o','l')
+//#define CTX_bevel 	CTX_STRH('b','e','v','e','l',0,0,0,0,0,0,0,0,0)
+#define CTX_bidi_override 	CTX_STRH('b','i','d','i','-','o','v','e','r','r','i','d','e',0)
+#define CTX_black 	CTX_STRH('b','l','a','c','k',0,0,0,0,0,0,0,0,0)
+#define CTX_blink 	CTX_STRH('b','l','i','n','k',0,0,0,0,0,0,0,0,0)
+#define CTX_block 	CTX_STRH('b','l','o','c','k',0,0,0,0,0,0,0,0,0)
+#define CTX_blue 	CTX_STRH('b','l','u','e',0,0,0,0,0,0,0,0,0,0)
+#define CTX_body 	CTX_STRH('b','o','d','y',0,0,0,0,0,0,0,0,0,0)
+#define CTX_bold 	CTX_STRH('b','o','l','d',0,0,0,0,0,0,0,0,0,0)
+#define CTX_bolder 	CTX_STRH('b','o','l','d','e','r',0,0,0,0,0,0,0,0)
+#define CTX_border 	CTX_STRH('b','o','r','d','e','r',0,0,0,0,0,0,0,0)
+#define CTX_border_bottom 	CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m',0)
+#define CTX_border_bottom_width 	CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m','-')
+#define CTX_border_box 	CTX_STRH('b','o','r','d','e','r','-','b','o','x',0,0,0,0)
+#define CTX_border_color 	CTX_STRH('b','o','r','d','e','r','-','c','o','l','o','r',0,0)
+#define CTX_border_left 	CTX_STRH('b','o','r','d','e','r','-','l','e','f','t',0,0,0)
+#define CTX_border_left_width 	CTX_STRH('b','o','r','d','e','r','-','l','e','f','t','-','w','i')
+#define CTX_border_right 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t',0,0)
+#define CTX_border_right_width 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t','-','w')
+#define CTX_border_top 	CTX_STRH('b','o','r','d','e','r','-','t','o','p',0,0,0,0)
+#define CTX_border_top_width 	CTX_STRH('b','o','r','d','e','r','-','t','o','p','-','w','i','d')
+#define CTX_border_width 	CTX_STRH('b','o','r','d','e','r','-','w','i','d','t','h',0,0)
+#define CTX_both 	CTX_STRH('b','o','t','h',0,0,0,0,0,0,0,0,0,0)
+#define CTX_bottom 	CTX_STRH('b','o','t','t','o','m',0,0,0,0,0,0,0,0)
+#define CTX_box_sizing 	CTX_STRH('b','o','x','-','s','i','z','i','n','g',0,0,0,0)
+#define CTX_br 	CTX_STRH('b','r',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_bull 	CTX_STRH('b','u','l','l',0,0,0,0,0,0,0,0,0,0)
+#define CTX_butt 	CTX_STRH('b','u','t','t',0,0,0,0,0,0,0,0,0,0)
+#define CTX_cedil 	CTX_STRH('c','e','d','i','l',0,0,0,0,0,0,0,0,0)
+#define CTX_cell 	CTX_STRH('c','e','l','l',0,0,0,0,0,0,0,0,0,0)
+#define CTX_cent 	CTX_STRH('c','e','n','t',0,0,0,0,0,0,0,0,0,0)
+//#define CTX_center 	CTX_STRH('c','e','n','t','e','r',0,0,0,0,0,0,0,0)
+#define CTX_class 	CTX_STRH('c','l','a','s','s',0,0,0,0,0,0,0,0,0)
+#define CTX_clear 	CTX_STRH('c','l','e','a','r',0,0,0,0,0,0,0,0,0)
+#define CTX_color 	CTX_STRH('c','o','l','o','r',0,0,0,0,0,0,0,0,0)
+#define CTX_col_resize 	CTX_STRH('c','o','l','-','r','e','s','i','z','e',0,0,0,0)
+#define CTX_context_menu 	CTX_STRH('c','o','n','t','e','x','t','-','m','e','n','u',0,0)
+#define CTX_copy 	CTX_STRH('c','o','p','y',0,0,0,0,0,0,0,0,0,0)
+#define CTX_crosshair 	CTX_STRH('c','r','o','s','s','h','a','i','r',0,0,0,0,0)
+#define CTX_curren 	CTX_STRH('c','u','r','r','e','n',0,0,0,0,0,0,0,0)
+#define CTX_currentColor 	CTX_STRH('c','u','r','r','e','n','t','C','o','l','o','r',0,0)
+#define CTX_cursor 	CTX_STRH('c','u','r','s','o','r',0,0,0,0,0,0,0,0)
+#define CTX_cursor_wait 	CTX_STRH('c','u','r','s','o','r','-','w','a','i','t',0,0,0)
+#define CTX_cyan 	CTX_STRH('c','y','a','n',0,0,0,0,0,0,0,0,0,0)
+#define CTX_d 	CTX_STRH('d',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_dd 	CTX_STRH('d','d',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_default 	CTX_STRH('d','e','f','a','u','l','t',0,0,0,0,0,0,0)
+#define CTX_deg 	CTX_STRH('d','e','g',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_dim 	CTX_STRH('d','i','m',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_direction 	CTX_STRH('d','i','r','e','c','t','i','o','n',0,0,0,0,0)
+#define CTX_display 	CTX_STRH('d','i','s','p','l','a','y',0,0,0,0,0,0,0)
+#define CTX_dotted 	CTX_STRH('d','o','t','t','e','d',0,0,0,0,0,0,0,0)
+#define CTX_dt 	CTX_STRH('d','t',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_embed 	CTX_STRH('e','m','b','e','d',0,0,0,0,0,0,0,0,0)
+#define CTX_e_resize 	CTX_STRH('e','-','r','e','s','i','z','e',0,0,0,0,0,0)
+#define CTX_euro 	CTX_STRH('e','u','r','o',0,0,0,0,0,0,0,0,0,0)
+#define CTX_even 	CTX_STRH('e','v','e','n',0,0,0,0,0,0,0,0,0,0)
+#define CTX_evenodd 	CTX_STRH('e','v','e','n','o','d','d',0,0,0,0,0,0,0)
+#define CTX_ew_resize 	CTX_STRH('e','w','-','r','e','s','i','z','e',0,0,0,0,0)
+#define CTX_fill 	CTX_STRH('f','i','l','l',0,0,0,0,0,0,0,0,0,0)
+#define CTX_fill_color 	CTX_STRH('f','i','l','l','-','c','o','l','o','r',0,0,0,0)
+//#define CTX_fill_rule 	CTX_STRH('f','i','l','l','-','r','u','l','e',0,0,0,0,0)
+#define CTX_first_child 	CTX_STRH('f','i','r','s','t','-','c','h','i','l','d',0,0,0)
+#define CTX_fixed 	CTX_STRH('f','i','x','e','d',0,0,0,0,0,0,0,0,0)
+#define CTX_float 	CTX_STRH('f','l','o','a','t',0,0,0,0,0,0,0,0,0)
+#define CTX_font_family 	CTX_STRH('f','o','n','t','-','f','a','m','i','l','y',0,0,0)
+//#define CTX_font_size 	CTX_STRH('f','o','n','t','-','s','i','z','e',0,0,0,0,0)
+#define CTX_font_style 	CTX_STRH('f','o','n','t','-','s','t','y','l','e',0,0,0,0)
+#define CTX_font_weight 	CTX_STRH('f','o','n','t','-','w','e','i','g','h','t',0,0,0)
+#define CTX_fuchsia 	CTX_STRH('f','u','c','h','s','i','a',0,0,0,0,0,0,0)
+#define CTX_g 	CTX_STRH('g',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_gray 	CTX_STRH('g','r','a','y',0,0,0,0,0,0,0,0,0,0)
+#define CTX_green 	CTX_STRH('g','r','e','e','n',0,0,0,0,0,0,0,0,0)
+#define CTX_gt 	CTX_STRH('g','t',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_head 	CTX_STRH('h','e','a','d',0,0,0,0,0,0,0,0,0,0)
+#define CTX_height 	CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
+#define CTX_hellip 	CTX_STRH('h','e','l','l','i','p',0,0,0,0,0,0,0,0)
+#define CTX_help 	CTX_STRH('h','e','l','p',0,0,0,0,0,0,0,0,0,0)
+#define CTX_hidden 	CTX_STRH('h','i','d','d','e','n',0,0,0,0,0,0,0,0)
+#define CTX_hr 	CTX_STRH('h','r',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_href 	CTX_STRH('h','r','e','f',0,0,0,0,0,0,0,0,0,0)
+#define CTX_http 	CTX_STRH('h','t','t','p',0,0,0,0,0,0,0,0,0,0)
+#define CTX_id 	CTX_STRH('i','d',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_iexcl 	CTX_STRH('i','e','x','c','l',0,0,0,0,0,0,0,0,0)
+#define CTX_img 	CTX_STRH('i','m','g',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_inline_block 	CTX_STRH('i','n','l','i','n','e','-','b','l','o','c','k',0,0)
+#define CTX_input 	CTX_STRH('i','n','p','u','t',0,0,0,0,0,0,0,0,0)
+#define CTX_inset 	CTX_STRH('i','n','s','e','t',0,0,0,0,0,0,0,0,0)
+#define CTX_italic 	CTX_STRH('i','t','a','l','i','c',0,0,0,0,0,0,0,0)
+#define CTX_justify 	CTX_STRH('j','u','s','t','i','f','y',0,0,0,0,0,0,0)
+#define CTX_laquo 	CTX_STRH('l','a','q','u','o',0,0,0,0,0,0,0,0,0)
+//#define CTX_left 	CTX_STRH('l','e','f','t',0,0,0,0,0,0,0,0,0,0)
+#define CTX_letter_spacing 	CTX_STRH('l','e','t','t','e','r','-','s','p','a','c','i','n','g')
+#define CTX_li 	CTX_STRH('l','i',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_lime 	CTX_STRH('l','i','m','e',0,0,0,0,0,0,0,0,0,0)
+//#define CTX_line_height 	CTX_STRH('l','i','n','e','-','h','e','i','g','h','t',0,0,0)
+#define CTX_linethrough 	CTX_STRH('l','i','n','e','t','h','r','o','u','g','h',0,0,0)
+//#define CTX_line_width 	CTX_STRH('l','i','n','e','-','w','i','d','t','h',0,0,0,0)
+#define CTX_link 	CTX_STRH('l','i','n','k',0,0,0,0,0,0,0,0,0,0)
+#define CTX_list_item 	CTX_STRH('l','i','s','t','-','i','t','e','m',0,0,0,0,0)
+#define CTX_lt 	CTX_STRH('l','t',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_ltr 	CTX_STRH('l','t','r',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_magenta 	CTX_STRH('m','a','g','e','n','t','a',0,0,0,0,0,0,0)
+#define CTX_margin 	CTX_STRH('m','a','r','g','i','n',0,0,0,0,0,0,0,0)
+#define CTX_margin_bottom 	CTX_STRH('m','a','r','g','i','n','-','b','o','t','t','o','m',0)
+#define CTX_margin_left 	CTX_STRH('m','a','r','g','i','n','-','l','e','f','t',0,0,0)
+#define CTX_margin_right 	CTX_STRH('m','a','r','g','i','n','-','r','i','g','h','t',0,0)
+#define CTX_margin_top 	CTX_STRH('m','a','r','g','i','n','-','t','o','p',0,0,0,0)
+#define CTX_maroon 	CTX_STRH('m','a','r','o','o','n',0,0,0,0,0,0,0,0)
+#define CTX_matrix 	CTX_STRH('m','a','t','r','i','x',0,0,0,0,0,0,0,0)
+#define CTX_max_height 	CTX_STRH('m','a','x','-','h','e','i','g','h','t',0,0,0,0)
+#define CTX_max_width 	CTX_STRH('m','a','x','-','w','i','d','t','h',0,0,0,0,0)
+#define CTX_mdash 	CTX_STRH('m','d','a','s','h',0,0,0,0,0,0,0,0,0)
+#define CTX_meta 	CTX_STRH('m','e','t','a',0,0,0,0,0,0,0,0,0,0)
+//#define CTX_middle 	CTX_STRH('m','i','d','d','l','e',0,0,0,0,0,0,0,0)
+#define CTX_middot 	CTX_STRH('m','i','d','d','o','t',0,0,0,0,0,0,0,0)
+#define CTX_min_height 	CTX_STRH('m','i','n','-','h','e','i','g','h','t',0,0,0,0)
+#define CTX_min_width 	CTX_STRH('m','i','n','-','w','i','d','t','h',0,0,0,0,0)
+//#define CTX_miter 	CTX_STRH('m','i','t','e','r',0,0,0,0,0,0,0,0,0)
+#define CTX_move 	CTX_STRH('m','o','v','e',0,0,0,0,0,0,0,0,0,0)
+#define CTX_navy 	CTX_STRH('n','a','v','y',0,0,0,0,0,0,0,0,0,0)
+#define CTX_nbsp 	CTX_STRH('n','b','s','p',0,0,0,0,0,0,0,0,0,0)
+#define CTX_ne_resize 	CTX_STRH('n','e','-','r','e','s','i','z','e',0,0,0,0,0)
+#define CTX_nesw_resize 	CTX_STRH('n','e','s','w','-','r','e','s','i','z','e',0,0,0)
+#define CTX_no_drop 	CTX_STRH('n','o','-','d','r','o','p',0,0,0,0,0,0,0)
+//#define CTX_none 	CTX_STRH('n','o','n','e',0,0,0,0,0,0,0,0,0,0)
+#define CTX_nonzero 	CTX_STRH('n','o','n','z','e','r','o',0,0,0,0,0,0,0)
+#define CTX_normal 	CTX_STRH('n','o','r','m','a','l',0,0,0,0,0,0,0,0)
+#define CTX_not_allowed 	CTX_STRH('n','o','t','-','a','l','l','o','w','e','d',0,0,0)
+#define CTX_nowrap 	CTX_STRH('n','o','w','r','a','p',0,0,0,0,0,0,0,0)
+#define CTX_n_resize 	CTX_STRH('n','-','r','e','s','i','z','e',0,0,0,0,0,0)
+#define CTX_ns_resize 	CTX_STRH('n','s','-','r','e','s','i','z','e',0,0,0,0,0)
+#define CTX_nth_child 	CTX_STRH('n','t','h','-','c','h','i','l','d',0,0,0,0,0)
+#define CTX_nw_resize 	CTX_STRH('n','w','-','r','e','s','i','z','e',0,0,0,0,0)
+#define CTX_oblique 	CTX_STRH('o','b','l','i','q','u','e',0,0,0,0,0,0,0)
+#define CTX_odd 	CTX_STRH('o','d','d',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_olive 	CTX_STRH('o','l','i','v','e',0,0,0,0,0,0,0,0,0)
+#define CTX_omega 	CTX_STRH('o','m','e','g','a',0,0,0,0,0,0,0,0,0)
+#define CTX_opacity 	CTX_STRH('o','p','a','c','i','t','y',0,0,0,0,0,0,0)
+#define CTX_ordm 	CTX_STRH('o','r','d','m',0,0,0,0,0,0,0,0,0,0)
+#define CTX_oslash 	CTX_STRH('o','s','l','a','s','h',0,0,0,0,0,0,0,0)
+#define CTX_Oslash 	CTX_STRH('O','s','l','a','s','h',0,0,0,0,0,0,0,0)
+#define CTX_overflow 	CTX_STRH('o','v','e','r','f','l','o','w',0,0,0,0,0,0)
+#define CTX_overline 	CTX_STRH('o','v','e','r','l','i','n','e',0,0,0,0,0,0)
+#define CTX_p 	CTX_STRH('p',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_padding 	CTX_STRH('p','a','d','d','i','n','g',0,0,0,0,0,0,0)
+#define CTX_padding_bottom 	CTX_STRH('p','a','d','d','i','n','g','-','b','o','t','t','o','m')
+#define CTX_padding_left 	CTX_STRH('p','a','d','d','i','n','g','-','l','e','f','t',0,0)
+#define CTX_padding_right 	CTX_STRH('p','a','d','d','i','n','g','-','r','i','g','h','t',0)
+#define CTX_padding_top 	CTX_STRH('p','a','d','d','i','n','g','-','t','o','p',0,0,0)
+#define CTX_para 	CTX_STRH('p','a','r','a',0,0,0,0,0,0,0,0,0,0)
+#define CTX_path 	CTX_STRH('p','a','t','h',0,0,0,0,0,0,0,0,0,0)
+#define CTX_phi 	CTX_STRH('p','h','i',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_plusmn 	CTX_STRH('p','l','u','s','m','n',0,0,0,0,0,0,0,0)
+#define CTX_pointer 	CTX_STRH('p','o','i','n','t','e','r',0,0,0,0,0,0,0)
+#define CTX_polygon 	CTX_STRH('p','o','l','y','g','o','n',0,0,0,0,0,0,0)
+#define CTX_position 	CTX_STRH('p','o','s','i','t','i','o','n',0,0,0,0,0,0)
+#define CTX_pound 	CTX_STRH('p','o','u','n','d',0,0,0,0,0,0,0,0,0)
+#define CTX_pre 	CTX_STRH('p','r','e',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_pre_line 	CTX_STRH('p','r','e','-','l','i','n','e',0,0,0,0,0,0)
+#define CTX_pre_wrap 	CTX_STRH('p','r','e','-','w','r','a','p',0,0,0,0,0,0)
+#define CTX_print_symbols 	CTX_STRH('p','r','i','n','t','-','s','y','m','b','o','l','s',0)
+#define CTX_progress 	CTX_STRH('p','r','o','g','r','e','s','s',0,0,0,0,0,0)
+#define CTX_purple 	CTX_STRH('p','u','r','p','l','e',0,0,0,0,0,0,0,0)
+#define CTX_quot 	CTX_STRH('q','u','o','t',0,0,0,0,0,0,0,0,0,0)
+#define CTX_raquo 	CTX_STRH('r','a','q','u','o',0,0,0,0,0,0,0,0,0)
+#define CTX_rect 	CTX_STRH('r','e','c','t',0,0,0,0,0,0,0,0,0,0)
+#define CTX_red 	CTX_STRH('r','e','d',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_reg 	CTX_STRH('r','e','g',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_relative 	CTX_STRH('r','e','l','a','t','i','v','e',0,0,0,0,0,0)
+#define CTX_reverse 	CTX_STRH('r','e','v','e','r','s','e',0,0,0,0,0,0,0)
+//#define CTX_right 	CTX_STRH('r','i','g','h','t',0,0,0,0,0,0,0,0,0)
+#define CTX_rotate 	CTX_STRH('r','o','t','a','t','e',0,0,0,0,0,0,0,0)
+//#define CTX_round 	CTX_STRH('r','o','u','n','d',0,0,0,0,0,0,0,0,0)
+#define CTX_row_resize 	CTX_STRH('r','o','w','-','r','e','s','i','z','e',0,0,0,0)
+#define CTX_rtl 	CTX_STRH('r','t','l',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_scale 	CTX_STRH('s','c','a','l','e',0,0,0,0,0,0,0,0,0)
+#define CTX_scroll 	CTX_STRH('s','c','r','o','l','l',0,0,0,0,0,0,0,0)
+#define CTX_sect 	CTX_STRH('s','e','c','t',0,0,0,0,0,0,0,0,0,0)
+#define CTX_se_resize 	CTX_STRH('s','e','-','r','e','s','i','z','e',0,0,0,0,0)
+#define CTX_shy 	CTX_STRH('s','h','y',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_silver 	CTX_STRH('s','i','l','v','e','r',0,0,0,0,0,0,0,0)
+#define CTX_solid 	CTX_STRH('s','o','l','i','d',0,0,0,0,0,0,0,0,0)
+//#define CTX_square 	CTX_STRH('s','q','u','a','r','e',0,0,0,0,0,0,0,0)
+#define CTX_src 	CTX_STRH('s','r','c',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_s_resize 	CTX_STRH('s','-','r','e','s','i','z','e',0,0,0,0,0,0)
+#define CTX_static 	CTX_STRH('s','t','a','t','i','c',0,0,0,0,0,0,0,0)
+#define CTX_stroke 	CTX_STRH('s','t','r','o','k','e',0,0,0,0,0,0,0,0)
+#define CTX_stroke_color 	CTX_STRH('s','t','r','o','k','e','-','c','o','l','o','r',0,0)
+#define CTX_stroke_linecap 	CTX_STRH('s','t','r','o','k','e','-','l','i','n','e','c','a','p')
+#define CTX_stroke_linejoin 	CTX_STRH('s','t','r','o','k','e','-','l','i','n','e','j','o','i')
+#define CTX_stroke_miterlimit 	CTX_STRH('s','t','r','o','k','e','-','m','i','t','e','r','l','i')
+#define CTX_stroke_width 	CTX_STRH('s','t','r','o','k','e','-','w','i','d','t','h',0,0)
+#define CTX_style 	CTX_STRH('s','t','y','l','e',0,0,0,0,0,0,0,0,0)
+#define CTX_sub 	CTX_STRH('s','u','b',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_sup1 	CTX_STRH('s','u','p','1',0,0,0,0,0,0,0,0,0,0)
+#define CTX_sup2 	CTX_STRH('s','u','p','2',0,0,0,0,0,0,0,0,0,0)
+#define CTX_sup3 	CTX_STRH('s','u','p','3',0,0,0,0,0,0,0,0,0,0)
+#define CTX_super 	CTX_STRH('s','u','p','e','r',0,0,0,0,0,0,0,0,0)
+#define CTX_sw_resize 	CTX_STRH('s','w','-','r','e','s','i','z','e',0,0,0,0,0)
+#define CTX_syntax_highlight 	CTX_STRH('s','y','n','t','a','x','-','h','i','g','h','l','i','g')
+#define CTX_tab_size 	CTX_STRH('t','a','b','-','s','i','z','e',0,0,0,0,0,0)
+#define CTX_td 	CTX_STRH('t','d',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_teal 	CTX_STRH('t','e','a','l',0,0,0,0,0,0,0,0,0,0)
+#define CTX_text 	CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0,0,0)
+//#define CTX_text_align 	CTX_STRH('t','e','x','t','-','a','l','i','g','n',0,0,0,0)
+#define CTX_text_decoration 	CTX_STRH('t','e','x','t','-','d','e','c','o','r','a','t','i','o')
+//#define CTX_text_indent 	CTX_STRH('t','e','x','t','-','i','n','d','e','n','t',0,0,0)
+//#define CTX_text_stroke 	CTX_STRH('t','e','x','t','-','s','t','r','o','k','e',0,0,0)
+#define CTX_text_stroke_color 	CTX_STRH('t','e','x','t','-','s','t','r','o','k','e','-','c','o')
+#define CTX_text_stroke_width 	CTX_STRH('t','e','x','t','-','s','t','r','o','k','e','-','w','i')
+//#define CTX_top 	CTX_STRH('t','o','p',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_tr 	CTX_STRH('t','r',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_trade 	CTX_STRH('t','r','a','d','e',0,0,0,0,0,0,0,0,0)
+#define CTX_transform 	CTX_STRH('t','r','a','n','s','f','o','r','m',0,0,0,0,0)
+#define CTX_translate 	CTX_STRH('t','r','a','n','s','l','a','t','e',0,0,0,0,0)
+#define CTX_transparent 	CTX_STRH('t','r','a','n','s','p','a','r','e','n','t',0,0,0)
+#define CTX_true 	CTX_STRH('t','r','u','e',0,0,0,0,0,0,0,0,0,0)
+#define CTX_underline 	CTX_STRH('u','n','d','e','r','l','i','n','e',0,0,0,0,0)
+#define CTX_unicode_bidi 	CTX_STRH('u','n','i','c','o','d','e','-','b','i','d','i',0,0)
+#define CTX_vertical_align 	CTX_STRH('v','e','r','t','i','c','a','l','-','a','l','i','g','n')
+#define CTX_vertical_text 	CTX_STRH('v','e','r','t','i','c','a','l','-','t','e','x','t',0)
+#define CTX_visibility 	CTX_STRH('v','i','s','i','b','i','l','i','t','y',0,0,0,0)
+#define CTX_visible 	CTX_STRH('v','i','s','i','b','l','e',0,0,0,0,0,0,0)
+#define CTX_white 	CTX_STRH('w','h','i','t','e',0,0,0,0,0,0,0,0,0)
+#define CTX_white_space 	CTX_STRH('w','h','i','t','e','-','s','p','a','c','e',0,0,0)
+#define CTX_width 	CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
+#define CTX_word_spacing 	CTX_STRH('w','o','r','d','-','s','p','a','c','i','n','g',0,0)
+#define CTX_w_resize 	CTX_STRH('w','-','r','e','s','i','z','e',0,0,0,0,0,0)
+#define CTX_x 	CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_y 	CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_yellow 	CTX_STRH('y','e','l','l','o','w',0,0,0,0,0,0,0,0)
+#define CTX_yen 	CTX_STRH('y','e','n',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_yes 	CTX_STRH('y','e','s',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_zoom_in 	CTX_STRH('z','o','o','m','-','i','n',0,0,0,0,0,0,0)
+#define CTX_zoom_out 	CTX_STRH('z','o','o','m','-','o','u','t',0,0,0,0,0,0)
 
 /*
  * Copyright (c) 2002, 2003, Øyvind Kolås <pippin@hodefoting.com>
@@ -1694,8 +1944,8 @@ struct _MrgStyle {
 
   CtxColor          background_color;
 
-  float             stroke_width;
-  float             text_stroke_width;
+  //float             stroke_width;
+  //float             text_stroke_width;
   CtxColor          text_stroke_color;
   float             tab_size;
 
@@ -2265,7 +2515,7 @@ void _mrg_init_style (Mrg *mrg)
   s->clear = MRG_CLEAR_NONE;
   s->overflow = MRG_OVERFLOW_VISIBLE;
 
-  s->stroke_width = 0.2;
+  ctx_set (mrg->ctx, CTX_stroke_width, 0.2);
 #if 0
   s->stroke_color.red = 1;
   s->stroke_color.green = 0;
@@ -3704,7 +3954,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
   else if (!strcmp (name, "tab-size"))
     s->tab_size = mrg_parse_px_x (mrg, value, NULL);
   else if (!strcmp (name, "stroke-width"))
-    s->stroke_width = mrg_parse_px_y (mrg, value, NULL);
+    ctx_set (mrg->ctx, CTX_stroke_width, mrg_parse_px_y (mrg, value, NULL));
   else if (!strcmp (name, "margin"))
     {
       float vals[10];
@@ -4078,7 +4328,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
   }
   else if (!strcmp (name, "text-stroke-width"))
   {
-    s->text_stroke_width = mrg_parse_px_y (mrg, value, NULL);
+    ctx_set (mrg->ctx, CTX_text_stroke_width, mrg_parse_px_y (mrg, value, NULL));
   }
   else if (!strcmp (name, "text-stroke-color"))
   {
@@ -4087,7 +4337,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
   else if (!strcmp (name, "text-stroke"))
   {
     char *col = NULL;
-    s->text_stroke_width = mrg_parse_px_y (mrg, value, &col);
+    ctx_set (mrg->ctx, CTX_text_stroke_width, mrg_parse_px_y (mrg, value, &col));
     if (col)
       mrg_color_set_from_string (mrg, &s->text_stroke_color, col + 1);
   }
@@ -4753,9 +5003,9 @@ static void mrg_path_fill_stroke (Mrg *mrg)
     ctx_fill (ctx);
   }
 
-  if (style->stroke_width > 0.001 && style->stroke_color.alpha > 0.001)
+  if (ctx_get (mrg->ctx, CTX_stroke_width) > 0.001 && style->stroke_color.alpha > 0.001)
   {
-    ctx_set_line_width (ctx, style->stroke_width);
+    ctx_set_line_width (ctx, ctx_get (mrg->ctx, CTX_stroke_width));
     mrg_ctx_set_source_color (ctx, &style->stroke_color);
     ctx_stroke (ctx);
   }
@@ -5614,12 +5864,12 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
   {
     ctx_set_font_size (cr, style->font_size);
 
-    if (style->text_stroke_width > 0.01)
+    if (ctx_get (cr, CTX_text_stroke_width) > 0.01)
     {
       mrg_ctx_set_source_color (cr, &style->text_stroke_color);
       ctx_new_path (cr);
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
-      ctx_set_line_width (cr, style->text_stroke_width);
+      ctx_set_line_width (cr, ctx_get (cr, CTX_text_stroke_width));
       ctx_set_line_join (cr, CTX_JOIN_ROUND);
       ctx_text_stroke (cr, string);
     }
@@ -8977,6 +9227,7 @@ void _mrg_init (Mrg *mrg, int width, int height)
 
 void mrg_style_defaults (Mrg *mrg)
 {
+  Ctx *ctx = mrg->ctx;
   float em = 16;
   mrg_set_em (mrg,  em);
   mrg_set_rem (mrg, em);
@@ -8986,7 +9237,7 @@ void mrg_style_defaults (Mrg *mrg)
   mrg_set_edge_top (mrg, 0);
   mrg_set_line_height (mrg, 1.2);
 
-  mrg->state->style.stroke_width = 1;
+  ctx_set (ctx, CTX_stroke_width, 1.0f);
   mrg_color_set_from_string (mrg, &mrg->state->style.stroke_color, "transparent");
   mrg_color_set_from_string (mrg, &mrg->state->style.fill_color, "black");
 
@@ -9014,6 +9265,8 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   mrg->do_clip = 1;
 
   printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
+  printf ("sizeof(MrgState) %li\n", sizeof(MrgState));
+  printf ("sizeof(MrgStyle) %li\n", sizeof(MrgStyle));
   return mrg;
 }
 

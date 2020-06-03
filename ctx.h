@@ -2053,10 +2053,10 @@ struct _CtxState
 #define CTX_lcha         CTX_STRH('l','c','h','a',0,0,0,0,0,0,0,0,0,0)
 
 // some core scg bits
-#define CTX_display      CTX_STRH('d','i','s','p','l','a','y',0,0,0,0,0,0,0)
-#define CTX_padding_bottom CTX_STRH('p','a','d','d','i','n','g','_','b','o','t','t','o','m')
-#define CTX_float        CTX_STRH('f','l','o','a','t',0,0,0,0,0,0,0,0,0)
-#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
+//#define CTX_display      CTX_STRH('d','i','s','p','l','a','y',0,0,0,0,0,0,0)
+//#define CTX_padding_bottom CTX_STRH('p','a','d','d','i','n','g','_','b','o','t','t','o','m')
+//#define CTX_float        CTX_STRH('f','l','o','a','t',0,0,0,0,0,0,0,0,0)
+//#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
 
 static float ctx_state_get (CtxState *state, uint32_t hash)
 {
