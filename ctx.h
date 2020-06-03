@@ -1508,7 +1508,8 @@ typedef enum {
 
 #define CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES   64
 #define CTX_RENDERSTREAM_EDGE_LIST            128
-#define CTX_RENDERSTREAM_CURRENT_PATH         256
+#define CTX_RENDERSTREAM_EDGE_LIST_PRESERVED  256
+#define CTX_RENDERSTREAM_CURRENT_PATH         512
 // BITPACK
 
 struct _CtxRenderstream
@@ -2155,6 +2156,8 @@ struct _CtxRasterizer {
   int        col_max;
 
   CtxRenderstream edge_list;
+  CtxRenderstream edge_list_preserved;
+
   CtxState  *state;
   Ctx       *ctx;
 
@@ -2694,6 +2697,12 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
 {
 #if CTX_RENDERSTREAM_STATIC
   if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
+  {
+    static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
+    renderstream->entries = &sbuf[0];
+    renderstream->size = CTX_MAX_EDGE_LIST_SIZE;
+  }
+  else if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST_PRESERVED)
   {
     static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
     renderstream->entries = &sbuf[0];
@@ -5289,18 +5298,18 @@ ctx_bezier_sample (float x0, float y0,
 
 static void
 ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
-                            float ox, float oy,
-                            float x0, float y0,
-                            float x1, float y1,
-                            float x2, float y2,
+                             float ox, float oy,
+                             float x0, float y0,
+                             float x1, float y1,
+                             float x2, float y2,
 
-                            float sx, float sy,
-                            float ex, float ey,
+                             float sx, float sy,
+                             float ex, float ey,
 
-                            float s,
-                            float e,
-                            int   iteration,
-                            float tolerance)
+                             float s,
+                             float e,
+                             int   iteration,
+                             float tolerance)
 {
   if (iteration > 8)
     return;
@@ -5329,12 +5338,12 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
   }
 
   ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                        sx, sy, x, y, s, t, iteration + 1,
-                                        tolerance);
+                                            sx, sy, x, y, s, t, iteration + 1,
+                                            tolerance);
   ctx_rasterizer_line_to (rasterizer, x, y);
   ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                        x, y, ex, ey, t, e, iteration + 1,
-                                        tolerance);
+                                            x, y, ex, ey, t, e, iteration + 1,
+                                            tolerance);
 }
 
 static void
@@ -7077,15 +7086,15 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   }
 #endif
 
-  if (rasterizer->state->min_x > rasterizer->col_min / CTX_SUBDIV)
-    rasterizer->state->min_x = rasterizer->col_min / CTX_SUBDIV;
-  if (rasterizer->state->max_x < rasterizer->col_max / CTX_SUBDIV)
-    rasterizer->state->max_x = rasterizer->col_max / CTX_SUBDIV;
+  rasterizer->state->min_x =
+       ctx_minf (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
+  rasterizer->state->max_x =
+       ctx_maxf (rasterizer->state->max_x, rasterizer->col_max / CTX_SUBDIV);
 
-  if (rasterizer->state->min_y > rasterizer->scan_min / CTX_RASTERIZER_AA)
-    rasterizer->state->min_y = rasterizer->scan_min / CTX_RASTERIZER_AA;
-  if (rasterizer->state->max_y < rasterizer->scan_max / CTX_RASTERIZER_AA)
-    rasterizer->state->max_y = rasterizer->scan_max / CTX_RASTERIZER_AA;
+  rasterizer->state->min_y =
+       ctx_minf (rasterizer->state->min_y, rasterizer->scan_min / CTX_RASTERIZER_AA);
+  rasterizer->state->max_y =
+       ctx_maxf (rasterizer->state->max_y, rasterizer->scan_max / CTX_RASTERIZER_AA);
 
   if (rasterizer->edge_list.count == 4)
   {
@@ -7116,7 +7125,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 
   ctx_rasterizer_finish_shape (rasterizer);
 #if CTX_SHAPE_CACHE
-
 
   uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
   int width = (rasterizer->col_max + (CTX_SUBDIV-1)) / CTX_SUBDIV - rasterizer->col_min/CTX_SUBDIV;
@@ -8483,6 +8491,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, void 
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer));
   rasterizer->render_func = ctx_rasterizer_process;
   rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
+  rasterizer->edge_list_preserved.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
   ctx_state_init (rasterizer->state);
