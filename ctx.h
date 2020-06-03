@@ -7691,22 +7691,17 @@ foo:
 static void
 ctx_rasterizer_clip (CtxRasterizer *rasterizer)
 {
-  // XXX
-  //  keep a rectangular clip/scissors rect
-  //  optionally keep a 1 2 4 8 or f graybuffer
-  //////
-
   int count = rasterizer->edge_list.count;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   if (rasterizer->preserve)
     memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
 
-  float minx = 5000.0f;
-  float miny = 5000.0f;
-  float maxx = -5000.0f;
-  float maxy = -5000.0f;
-  float prev_x = 0.0f;
-  float prev_y = 0.0f;
+  int minx = 5000;
+  int miny = 5000;
+  int maxx = -5000;
+  int maxy = -5000;
+  int prev_x = 0;
+  int prev_y = 0;
 
   for (int i = 0; i < count; i++)
   {
@@ -7730,14 +7725,15 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
     if (y > maxy) maxy = y;
   }
 
-  if (minx > rasterizer->state->gstate.clip_min_x)
-    rasterizer->state->gstate.clip_min_x = minx;
-  if (miny > rasterizer->state->gstate.clip_min_y)
-    rasterizer->state->gstate.clip_min_y = miny;
-  if (maxx < rasterizer->state->gstate.clip_max_x)
-    rasterizer->state->gstate.clip_max_x = maxx;
-  if (maxy < rasterizer->state->gstate.clip_max_y)
-    rasterizer->state->gstate.clip_max_y = maxy;
+  rasterizer->state->gstate.clip_min_x = ctx_maxi (minx,
+    rasterizer->state->gstate.clip_min_x);
+  rasterizer->state->gstate.clip_min_y = ctx_maxi (miny,
+    rasterizer->state->gstate.clip_min_y);
+  rasterizer->state->gstate.clip_max_x = ctx_mini (maxx,
+    rasterizer->state->gstate.clip_max_x);
+  rasterizer->state->gstate.clip_max_y = ctx_mini (maxy,
+    rasterizer->state->gstate.clip_max_y);
+
   ctx_rasterizer_reset (rasterizer);
 
   if (rasterizer->preserve)
