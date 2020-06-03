@@ -1,5 +1,5 @@
 #if CTX_XML
-#define CTX_a 	CTX_STRH('a',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_a           CTX_STRH('a',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_absolute 	CTX_STRH('a','b','s','o','l','u','t','e',0,0,0,0,0,0)
 #define CTX_aelig 	CTX_STRH('a','e','l','i','g',0,0,0,0,0,0,0,0,0)
 #define CTX_Aelig 	CTX_STRH('A','e','l','i','g',0,0,0,0,0,0,0,0,0)
@@ -124,7 +124,6 @@
 #define CTX_margin_top 	CTX_STRH('m','a','r','g','i','n','-','t','o','p',0,0,0,0)
 #define CTX_maroon 	CTX_STRH('m','a','r','o','o','n',0,0,0,0,0,0,0,0)
 #define CTX_matrix 	CTX_STRH('m','a','t','r','i','x',0,0,0,0,0,0,0,0)
-#define CTX_max_height 	CTX_STRH('m','a','x','-','h','e','i','g','h','t',0,0,0,0)
 #define CTX_max_width 	CTX_STRH('m','a','x','-','w','i','d','t','h',0,0,0,0,0)
 #define CTX_mdash 	CTX_STRH('m','d','a','s','h',0,0,0,0,0,0,0,0,0)
 #define CTX_meta 	CTX_STRH('m','e','t','a',0,0,0,0,0,0,0,0,0,0)
@@ -1929,23 +1928,22 @@ typedef enum {
  */
 struct _MrgStyle {
   /* text-related */
-  float             font_size;
-  char              font_family[128];
-  CtxColor          color;
-  float             text_indent;
-  float             letter_spacing;
-  float             word_spacing;
+  float               font_size;
+  char                font_family[128];
+  CtxColor            color;
+  float               text_indent;
+  float               letter_spacing;
+  float               word_spacing;
 
-  MrgVisibility     visibility;
+  MrgVisibility       visibility;
 
-  MrgTextDecoration text_decoration;
-  float             line_height;
-  float             line_width;
+  float               line_height;
+  float               line_width;
 
-  CtxColor          background_color;
+  CtxColor            background_color;
 
-  CtxColor          text_stroke_color;
-  float             tab_size;
+  CtxColor            text_stroke_color;
+  float               tab_size;
 
   MrgFillRule         fill_rule;
   MrgFontStyle        font_style;
@@ -1953,10 +1951,6 @@ struct _MrgStyle {
   MrgLineCap          stroke_linecap;
   MrgLineJoin         stroke_linejoin;
   MrgTextAlign        text_align;
-  MrgFloat            float_;
-  MrgClear            clear;
-  MrgOverflow         overflow;
-  MrgDisplay          display;
   MrgPosition         position;
   MrgBoxSizing        box_sizing;
   MrgVerticalAlign    vertical_align;
@@ -1970,17 +1964,19 @@ struct _MrgStyle {
   unsigned char       margin_left_auto;
   unsigned char       margin_right_auto;
   unsigned char       print_symbols;
+
+
   CtxColor            stroke_color;
 
   /* vector shape / box related */
   CtxColor            fill_color;
 
-  CtxColor          border_top_color;
-  CtxColor          border_left_color;
-  CtxColor          border_right_color;
-  CtxColor          border_bottom_color;
+  CtxColor            border_top_color;
+  CtxColor            border_left_color;
+  CtxColor            border_right_color;
+  CtxColor            border_bottom_color;
 
-  MrgCursor         cursor;
+  MrgCursor           cursor;
 
   /* layout related */
 
@@ -1990,10 +1986,6 @@ struct _MrgStyle {
   float             bottom;
   float             width;
   float             height;
-  float             min_height;
-  float             max_height;
-  float             min_width;
-  float             max_width;
 
   float             border_top_width;
   float             border_left_width;
@@ -2013,7 +2005,44 @@ struct _MrgStyle {
   void             *id_ptr;
 
   char              syntax_highlight[9];
+
+  MrgTextDecoration text_decoration;
+  MrgDisplay          display;
+  MrgFloat            float_;
+  MrgClear            clear;
+  MrgOverflow         overflow;
 };
+#if 0
+  s->text_decoration= 0;
+  s->display = MRG_DISPLAY_INLINE;
+  s->float_ = MRG_FLOAT_NONE;
+  s->clear = MRG_CLEAR_NONE;
+  s->overflow = MRG_OVERFLOW_VISIBLE;
+  s->border_top_color.alpha = 0;
+  s->border_left_color.alpha = 0;
+  s->border_right_color.alpha = 0;
+  s->border_bottom_color.alpha = 0;
+  s->border_top_width = 0;
+  s->border_left_width = 0;
+  s->border_right_width = 0;
+  s->border_bottom_width = 0;
+  s->margin_top = 0;
+  s->margin_left = 0;
+  s->margin_right = 0;
+  s->margin_bottom = 0;
+  s->padding_top = 0;
+  s->padding_left = 0;
+  s->padding_right = 0;
+  s->padding_bottom = 0;
+  s->position = MRG_POSITION_STATIC;
+  s->top = 0;
+  s->left = 0;
+  s->height = 0;
+  s->width = 0;
+  s->width_auto = 1;
+#endif
+
+
 typedef struct _MrgStyle MrgStyle;
 
 typedef struct MrgState {
@@ -2502,17 +2531,39 @@ void _mrg_init_style (Mrg *mrg)
 {
   MrgStyle *s = mrg_style (mrg);
 
-  s->text_decoration= 0;
 
   /* things not set here, are inherited from the parent style context,
    * more properly would be to rig up a fresh context, and copy inherited
    * values over, that would permit specifying inherit on any propery.
    */
 
+  s->text_decoration= 0;
   s->display = MRG_DISPLAY_INLINE;
   s->float_ = MRG_FLOAT_NONE;
   s->clear = MRG_CLEAR_NONE;
   s->overflow = MRG_OVERFLOW_VISIBLE;
+  s->border_top_color.alpha = 0;
+  s->border_left_color.alpha = 0;
+  s->border_right_color.alpha = 0;
+  s->border_bottom_color.alpha = 0;
+  s->border_top_width = 0;
+  s->border_left_width = 0;
+  s->border_right_width = 0;
+  s->border_bottom_width = 0;
+  s->margin_top = 0;
+  s->margin_left = 0;
+  s->margin_right = 0;
+  s->margin_bottom = 0;
+  s->padding_top = 0;
+  s->padding_left = 0;
+  s->padding_right = 0;
+  s->padding_bottom = 0;
+  s->position = MRG_POSITION_STATIC;
+  s->top = 0;
+  s->left = 0;
+  s->height = 0;
+  s->width = 0;
+  s->width_auto = 1;
 
   ctx_set (mrg->ctx, CTX_stroke_width, 0.2);
 #if 0
@@ -2538,28 +2589,6 @@ void _mrg_init_style (Mrg *mrg)
   mrg->state->fg = 0;
   mrg->state->bg = 7;
 
-  s->border_top_color.alpha = 0;
-  s->border_left_color.alpha = 0;
-  s->border_right_color.alpha = 0;
-  s->border_bottom_color.alpha = 0;
-  s->border_top_width = 0;
-  s->border_left_width = 0;
-  s->border_right_width = 0;
-  s->border_bottom_width = 0;
-  s->margin_top = 0;
-  s->margin_left = 0;
-  s->margin_right = 0;
-  s->margin_bottom = 0;
-  s->padding_top = 0;
-  s->padding_left = 0;
-  s->padding_right = 0;
-  s->padding_bottom = 0;
-  s->position = MRG_POSITION_STATIC;
-  s->top = 0;
-  s->left = 0;
-  s->height = 0;
-  s->width = 0;
-  s->width_auto = 1;
 }
 
 
@@ -3943,6 +3972,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
                                            const char *value)
 {
   MrgStyle *s = mrg_style (mrg);
+  Ctx *ctx = mrg->ctx;
+  uint32_t hash = ctx_strhash (name, 0);
 
   if (!strcmp (name, "text-indent"))
     s->text_indent = mrg_parse_px_y (mrg, value, NULL);
@@ -4082,14 +4113,12 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     else
       s->visibility = MRG_VISIBILITY_VISIBLE;
   }
-  else if (!strcmp (name, "min-height"))
-    s->min_height = mrg_parse_px_y (mrg, value, NULL);
-  else if (!strcmp (name, "max-height"))
-    s->max_height = mrg_parse_px_y (mrg, value, NULL);
-  else if (!strcmp (name, "min-width"))
-    s->min_height = mrg_parse_px_x (mrg, value, NULL);
-  else if (!strcmp (name, "max-width"))
-    s->max_height = mrg_parse_px_x (mrg, value, NULL);
+  else if (!strcmp (name, "min-height")||
+           !strcmp (name, "max-height"))
+    ctx_set (ctx, hash, mrg_parse_px_y (mrg, value, NULL));
+  else if (!strcmp (name, "min-width") ||
+           !strcmp (name, "max-width"))
+    ctx_set (ctx, hash, mrg_parse_px_x (mrg, value, NULL));
   else if (!strcmp (name, "border-width"))
     {
       s->border_top_width =
