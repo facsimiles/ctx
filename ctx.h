@@ -1469,6 +1469,7 @@ struct _CtxGState {
 
   float         global_alpha_f;
   float         line_width;
+  float         line_width_set;
   float         miter_limit;
   float         font_size;
   int           keydb_pos;
@@ -1508,7 +1509,6 @@ typedef enum {
 
 #define CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES   64
 #define CTX_RENDERSTREAM_EDGE_LIST            128
-#define CTX_RENDERSTREAM_EDGE_LIST_PRESERVED  256
 #define CTX_RENDERSTREAM_CURRENT_PATH         512
 // BITPACK
 
@@ -2156,7 +2156,6 @@ struct _CtxRasterizer {
   int        col_max;
 
   CtxRenderstream edge_list;
-  CtxRenderstream edge_list_preserved;
 
   CtxState  *state;
   Ctx       *ctx;
@@ -2170,7 +2169,7 @@ struct _CtxRasterizer {
   int8_t     needs_aa; // count of how many edges implies antialiasing
   int        has_shape:2;
   int        has_prev:2;
-
+  int        preserve:1;
   int        uses_transforms:1;
 
   int16_t    blit_x;
@@ -2685,9 +2684,9 @@ ctx_gstate_pop (CtxState *state)
   state->gstate_no--;
 }
 
-static void ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data);
-static void ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data);
-static void ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data);
+static void ctx_interpret_style         (CtxState *state, CtxEntry *entry, void *data);
+static void ctx_interpret_transforms    (CtxState *state, CtxEntry *entry, void *data);
+static void ctx_interpret_pos           (CtxState *state, CtxEntry *entry, void *data);
 static void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
 
 
@@ -2697,12 +2696,6 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
 {
 #if CTX_RENDERSTREAM_STATIC
   if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
-  {
-    static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
-    renderstream->entries = &sbuf[0];
-    renderstream->size = CTX_MAX_EDGE_LIST_SIZE;
-  }
-  else if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST_PRESERVED)
   {
     static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
     renderstream->entries = &sbuf[0];
@@ -3289,7 +3282,9 @@ void ctx_restore (Ctx *ctx)
 void ctx_set_line_width (Ctx *ctx, float x) {
 
   /* XXX : ugly hack to normalize the width dependent on the current
-           transform, this does not really belong here */
+           transform, this does not really belong here,
+           
+           move to rasterizer?*/
   x = x * ctx_maxf(ctx_maxf(ctx_fabsf(ctx->state.gstate.transform.m[0][0]),
                           ctx_fabsf(ctx->state.gstate.transform.m[0][1])),
                   ctx_maxf(ctx_fabsf(ctx->state.gstate.transform.m[1][0]),
@@ -4778,9 +4773,6 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
   buffer->free_func = freefunc;
   buffer->user_data = user_data;
 }
-
-static void
-ctx_rasterizer_process (void *user_data, CtxCommand *entry);
 
 CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     int stride,
@@ -7066,15 +7058,21 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   return 1;
 }
 
-static inline void
+static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
+  int count = rasterizer->preserve?rasterizer->edge_list.count:0;
+  CtxEntry temp[count]; /* copy of already built up path's poly line  */
+  if (rasterizer->preserve)
+    memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
+
+
 #if 1
   if (rasterizer->scan_min / CTX_RASTERIZER_AA > rasterizer->blit_y + rasterizer->blit_height ||
       rasterizer->scan_max / CTX_RASTERIZER_AA < rasterizer->blit_y)
   {
     ctx_rasterizer_reset (rasterizer);
-    return;
+    goto done;
   }
 #endif
 #if 1
@@ -7082,7 +7080,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       rasterizer->col_max / CTX_SUBDIV < rasterizer->blit_x)
   {
     ctx_rasterizer_reset (rasterizer);
-    return;
+    goto done;
   }
 #endif
 
@@ -7118,7 +7116,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                               entry1->data.s16[3]))
       {
         ctx_rasterizer_reset (rasterizer);
-        return;
+        goto done;
       }
     }
   }
@@ -7203,7 +7201,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       ctx_rasterizer_reset (rasterizer);
     }
     ctx_shape_entry_release (shape);
-    return;
+    goto done;
   }
   else
 #else
@@ -7217,6 +7215,14 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
                     );
   }
+done:
+  if (rasterizer->preserve)
+  {
+    memcpy (rasterizer->edge_list.entries, temp, sizeof (temp));
+    rasterizer->edge_list.count = count;
+  }
+  rasterizer->preserve = 0;
+
 }
 
 static int _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke);
@@ -7462,20 +7468,19 @@ foo:
 static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
-  //CtxSource source_backup = rasterizer->state->gstate.source;
-  //rasterizer->state->gstate.source = rasterizer->state->gstate.source_stroke;
+  int count = rasterizer->edge_list.count;
+  int preserved = rasterizer->preserve;
+  CtxEntry temp[count]; /* copy of already built up path's poly line  */
+  memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
 
   if (rasterizer->state->gstate.line_width <= 0.0f &&
       rasterizer->state->gstate.line_width > -10.0f)
   {
     ctx_rasterizer_stroke_1px (rasterizer);
-    //rasterizer->state->gstate.source = source_backup;
-    return;
   }
+  else
+  {
 
-  int count = rasterizer->edge_list.count;
-  CtxEntry temp[count]; /* copy of already built up path's poly line  */
-  memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
   ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
 
   CtxMatrix transform_backup = rasterizer->state->gstate.transform;
@@ -7668,12 +7673,21 @@ foo:
   CtxFillRule rule_backup = rasterizer->state->gstate.fill_rule;
   rasterizer->state->gstate.fill_rule = CTX_FILL_RULE_WINDING; 
 
+  rasterizer->preserve = 0; // so fill isn't tripped
   ctx_rasterizer_fill (rasterizer);
 
   rasterizer->state->gstate.fill_rule = rule_backup;
 #endif
   //rasterizer->state->gstate.source = source_backup;
   rasterizer->state->gstate.transform = transform_backup;
+  }
+
+  if (preserved)
+  {
+    memcpy (rasterizer->edge_list.entries, temp, sizeof (temp));
+    rasterizer->edge_list.count = count;
+    rasterizer->preserve = 0;
+  }
 }
 
 static void
@@ -7685,6 +7699,9 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
   //////
 
   int count = rasterizer->edge_list.count;
+  CtxEntry temp[count]; /* copy of already built up path's poly line  */
+  if (rasterizer->preserve)
+    memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
 
   float minx = 5000.0f;
   float miny = 5000.0f;
@@ -7724,6 +7741,13 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
   if (maxy < rasterizer->state->gstate.clip_max_y)
     rasterizer->state->gstate.clip_max_y = maxy;
   ctx_rasterizer_reset (rasterizer);
+
+  if (rasterizer->preserve)
+  {
+    memcpy (rasterizer->edge_list.entries, temp, sizeof (temp));
+    rasterizer->edge_list.count = count;
+    rasterizer->preserve = 0;
+  }
 }
 
 static void
@@ -7807,12 +7831,9 @@ static void
 ctx_rasterizer_process (void *user_data, CtxCommand *command)
 {
   CtxEntry *entry = &command->entry;
-  //CtxRasterizer *rasterizer = ctx->renderer;
   CtxRasterizer *rasterizer = (CtxRasterizer*)user_data;
-  //Ctx *ctx = rasterizer->ctx;
   CtxCommand *c = (CtxCommand*)entry;
 
-  //fprintf (stderr, "%c(%.1f %.1f %i)", entry->code, rasterizer->x,rasterizer->y, rasterizer->has_prev);
   switch (c->code)
   {
     case CTX_LINE_TO:
@@ -7900,7 +7921,9 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 #endif
       ctx_state_gradient_clear_stops (rasterizer->state);
       break;
-
+    case CTX_PRESERVE:
+      rasterizer->preserve = 1;
+      break;
     case CTX_ROTATE:
     case CTX_SCALE:
     case CTX_TRANSLATE:
@@ -8491,7 +8514,6 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, void 
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer));
   rasterizer->render_func = ctx_rasterizer_process;
   rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
-  rasterizer->edge_list_preserved.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
   ctx_state_init (rasterizer->state);
