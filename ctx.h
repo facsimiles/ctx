@@ -1623,6 +1623,8 @@ typedef struct _CtxSource CtxSource;
 typedef struct _CtxColor CtxColor;
 struct _CtxColor
 {
+  uint8_t magic; // for colors used in keydb, set to a non valid start of
+                 // string value.
   uint8_t rgba[4];
   uint8_t l_u8;
   uint8_t original; // the bitmask of the originally set color
@@ -1743,6 +1745,9 @@ struct _CtxSource
 
 struct _CtxGState
 {
+  int           keydb_pos;
+  int           stringpool_pos;
+
   CtxMatrix     transform;
   //CtxSource   source_stroke;
   CtxSource     source;
@@ -1754,7 +1759,6 @@ struct _CtxGState
   float         line_width_set;
   float         miter_limit;
   float         font_size;
-  int           keydb_pos;
 
   //CtxColor    shadow_color; // color_r color_g color_b color_a ???
   int16_t       clip_min_x;
@@ -1843,6 +1847,8 @@ static uint32_t ctx_strhash (const char *str, int case_insensitive)
   return str_hash;
 }
 
+#define CTX_STRINGPOOL_SIZE 2000
+
 struct _CtxState
 {
   int           has_moved:1;
@@ -1853,6 +1859,7 @@ struct _CtxState
   int           max_x;
   int           max_y;
   CtxKeyDbEntry keydb[CTX_MAX_KEYDB];
+  char          stringpool[CTX_STRINGPOOL_SIZE];
   CtxGradient   gradient; /* we keep only one gradient,
                            this goes icky with multiple
                            restores - it should really be part of
@@ -2058,6 +2065,7 @@ struct _CtxState
 //#define CTX_float        CTX_STRH('f','l','o','a','t',0,0,0,0,0,0,0,0,0)
 //#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
 
+
 static float ctx_state_get (CtxState *state, uint32_t hash)
 {
   for (int i = state->gstate.keydb_pos-1; i>=0; i--)
@@ -2068,17 +2076,17 @@ static float ctx_state_get (CtxState *state, uint32_t hash)
   return -0.0;
 }
 
-static void ctx_state_set (CtxState *state, uint32_t hash, float value)
+static void ctx_state_set (CtxState *state, uint32_t key, float value)
 {
-  if (hash != CTX_new_state)
+  if (key != CTX_new_state)
     {
-      if (ctx_state_get (state, hash) == value)
+      if (ctx_state_get (state, key) == value)
         { return; }
       for (int i = state->gstate.keydb_pos-1;
            state->keydb[i].key != CTX_new_state && i >=0;
            i--)
         {
-          if (state->keydb[i].key == hash)
+          if (state->keydb[i].key == key)
             {
               state->keydb[i].value = value;
               return;
@@ -2087,11 +2095,105 @@ static void ctx_state_set (CtxState *state, uint32_t hash, float value)
     }
   if (state->gstate.keydb_pos >= CTX_MAX_KEYDB)
     { return; }
-  state->keydb[state->gstate.keydb_pos].key = hash;
+  state->keydb[state->gstate.keydb_pos].key = key;
   state->keydb[state->gstate.keydb_pos].value = value;
   state->gstate.keydb_pos++;
 }
 
+
+#define CTX_KEYDB_STRING_START (-80000.0)
+#define CTX_KEYDB_STRING_END   (CTX_KEYDB_STRING_START + CTX_STRINGPOOL_SIZE)
+
+static int ctx_float_is_string (float val)
+{
+  return val >= CTX_KEYDB_STRING_START && val <= CTX_KEYDB_STRING_END;
+}
+
+static int ctx_float_to_string_index (float val)
+{
+  int idx = -1;
+  if (ctx_float_is_string (val))
+  {
+    idx = val - CTX_KEYDB_STRING_START;
+  }
+  return idx;
+}
+
+static float ctx_string_index_to_float (int index)
+{
+  return CTX_KEYDB_STRING_START + index;
+}
+
+const char *ctx_state_get_string (CtxState *state, uint32_t key)
+{
+  float stored = ctx_state_get (state, key);
+  int idx = ctx_float_to_string_index (stored);
+  if (idx >= 0)
+  {
+     return &state->stringpool[idx];
+  }
+  return NULL;
+}
+
+static int ctx_str_is_number (const char *str)
+{
+  int got_digit = 0;
+  for (int i = 0; str[i]; i++)
+  {
+    if (str[i] >= '0' && str[i] <= '9')
+    {
+       got_digit ++;
+    }
+    else if (str[i] == '.')
+    {
+    }
+    else
+      return 0;
+  }
+  if (got_digit)
+    return 1;
+  return 0;
+}
+
+static void ctx_state_set_color (CtxState *state, uint32_t key, CtxColor *color)
+{
+}
+
+static void ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
+{
+}
+
+static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len)
+{
+  int idx = state->gstate.stringpool_pos;
+  strcpy (&state->stringpool[idx], data);
+  state->gstate.stringpool_pos+=len;
+  state->stringpool[state->gstate.stringpool_pos++]=0;
+  ctx_state_set (state, key, ctx_string_index_to_float (idx));
+}
+
+static void ctx_state_set_string (CtxState *state, uint32_t key, const char *string)
+{
+  float old_val = ctx_state_get (state, key);
+  int   old_idx = ctx_float_to_string_index (old_val);
+
+  if (old_idx >= 0)
+  {
+    const char *old_string = ctx_state_get_string (state, key);
+    if (!strcmp (old_string, string))
+      return;
+  }
+  // detect floats and colors and transform them to float here.
+  // should do same with color
+
+  if (ctx_str_is_number (string))
+  {
+    ctx_state_set (state, key, strtod (string, NULL));
+    return;
+  }
+
+  ctx_state_set_blob (state, key, string, strlen(string));
+}
 
 static uint8_t ctx_float_to_u8 (float val_f)
 {
@@ -2530,6 +2632,10 @@ struct
 #endif
 };
 
+static const char *ctx_get_string (Ctx *ctx, uint32_t hash)
+{
+  return ctx_state_get_string (&ctx->state, hash);
+}
 static float ctx_get (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get (&ctx->state, hash);
@@ -2546,6 +2652,10 @@ static void ctx_set (Ctx *ctx, uint32_t hash, float value)
   //         keep string-table index in state like keydb to
   //         grow with stack
   ctx_state_set (&ctx->state, hash, value);
+}
+static void ctx_set_string (Ctx *ctx, uint32_t hash, const char *value)
+{
+  ctx_state_set_string (&ctx->state, hash, value);
 }
 
 
