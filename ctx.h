@@ -171,29 +171,12 @@ void  ctx_rel_curve_to    (Ctx *ctx,
                            float x2, float y2);
 void  ctx_rel_quad_to     (Ctx *ctx, float cx, float cy,
                            float x, float y);
+
 void  ctx_close_path      (Ctx *ctx);
 
+
+
 float ctx_get_font_size   (Ctx *ctx);
-
-void ctx_set_rgba         (Ctx *ctx, float r, float g, float b, float a);
-void ctx_get_rgba         (Ctx *ctx, float *rgba);
-
-
-
-void ctx_set_rgba8        (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-
-void ctx_set_drgba        (Ctx *ctx, float r, float g, float b, float a);
-
-void ctx_set_rgb          (Ctx *ctx, float r, float g, float b);
-void ctx_set_gray         (Ctx *ctx, float gray);
-void ctx_set_cmyk         (Ctx *ctx, float c, float m, float y, float k);
-void ctx_set_dcmyk        (Ctx *ctx, float c, float m, float y, float k);
-void ctx_set_dcmyka       (Ctx *ctx, float c, float m, float y, float k, float a);
-void ctx_set_cmyka        (Ctx *ctx, float c, float m, float y, float k, float a);
-void ctx_get_drgba        (Ctx *ctx,  float *drgba);
-void ctx_get_cmyka        (Ctx *ctx,  float *cmyka);
-void ctx_get_dcmyka        (Ctx *ctx, float *dcmyka);
-void ctx_get_graya        (Ctx *ctx,  float *ya);
 
 
 void ctx_current_point    (Ctx *ctx, float *x, float *y);
@@ -208,30 +191,53 @@ void ctx_arc              (Ctx  *ctx,
                            int   direction);
 void ctx_arc_to           (Ctx *ctx, float x1, float y1,
                            float x2, float y2, float radius);
-void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
-float ctx_get_global_alpha (Ctx *ctx);
 
-void ctx_preserve       (Ctx *ctx);
-void ctx_fill           (Ctx *ctx);
-void ctx_stroke         (Ctx *ctx);
-void ctx_paint          (Ctx *ctx);
-void
-ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-
-void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
-void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
-                                    float x1, float y1, float r1);
-void ctx_gradient_add_stop    (Ctx *ctx, float pos, float r, float g, float b, float a);
-
-void  ctx_quad_to        (Ctx *ctx, float cx, float cy,
-                          float x, float y);
+void ctx_quad_to        (Ctx *ctx, float cx, float cy,
+                         float x, float y);
 void ctx_arc            (Ctx  *ctx,
                          float x, float y,
                          float radius,
                          float angle1, float angle2,
                          int   direction);
 void ctx_arc_to         (Ctx *ctx, float x1, float y1,
-                                   float x2, float y2, float radius);
+                         float x2, float y2, float radius);
+
+void ctx_preserve       (Ctx *ctx);
+void ctx_fill           (Ctx *ctx);
+void ctx_stroke         (Ctx *ctx);
+void ctx_paint          (Ctx *ctx);
+
+void
+ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
+float ctx_get_global_alpha (Ctx *ctx);
+
+void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
+void ctx_get_rgba       (Ctx *ctx, float *rgba);
+void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
+
+void ctx_set_gray       (Ctx *ctx, float gray);
+void ctx_get_graya      (Ctx *ctx, float *ya);
+
+void ctx_set_rgba8      (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+void ctx_set_drgba      (Ctx *ctx, float r, float g, float b, float a);
+void ctx_get_drgba      (Ctx *ctx, float *drgba);
+
+void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a);
+void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k);
+void ctx_get_cmyka      (Ctx *ctx, float *cmyka);
+
+void ctx_set_dcmyka     (Ctx *ctx, float c, float m, float y, float k, float a);
+void ctx_set_dcmyk      (Ctx *ctx, float c, float m, float y, float k);
+void ctx_get_dcmyka     (Ctx *ctx, float *dcmyka);
+
+void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
+void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
+                                    float x1, float y1, float r1);
+void ctx_gradient_add_stop (Ctx *ctx, float pos, float r, float g, float b, float a);
+
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 /*ctx_texture_init:
@@ -245,9 +251,7 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
                       void *user_data);
 int ctx_texture_load        (Ctx *ctx, int id, const char *path);
 int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length);
-
 void ctx_texture_release (Ctx *ctx, int id);
-
 void ctx_texture (Ctx *ctx, int id, float x, float y);
 
 void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
@@ -257,7 +261,6 @@ typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
 
 void _ctx_set_store_clear (Ctx *ctx);
 void _ctx_set_transformation (Ctx *ctx, int transformation);
-void ctx_set_full_cb (Ctx *ctx, CtxFullCb cb, void *data);
 
 /* If cairo.h is included before ctx.h add cairo integration code
  */
@@ -276,13 +279,10 @@ void ctx_render_stream (Ctx *ctx, FILE *stream, int formatter);
 
 void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
 
-int
-ctx_add_single (Ctx *ctx, void *entry);
+int ctx_add_single (Ctx *ctx, void *entry);
 
-uint32_t
-ctx_utf8_to_unichar (const char *input);
-int ctx_unichar_to_utf8 (uint32_t  ch,
-                         uint8_t  *dest);
+uint32_t ctx_utf8_to_unichar (const char *input);
+int      ctx_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 
 typedef enum
 {
@@ -341,12 +341,12 @@ typedef enum
   CTX_TEXT_DIRECTION_RTL
 } CtxTextDirection;
 
-void ctx_set_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
-void ctx_set_line_cap         (Ctx *ctx, CtxLineCap cap);
-void ctx_set_line_join        (Ctx *ctx, CtxLineJoin join);
-void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
-int ctx_set_renderstream      (Ctx *ctx, void *data, int length);
-int ctx_append_renderstream   (Ctx *ctx, void *data, int length);
+void ctx_set_fill_rule         (Ctx *ctx, CtxFillRule fill_rule);
+void ctx_set_line_cap          (Ctx *ctx, CtxLineCap cap);
+void ctx_set_line_join         (Ctx *ctx, CtxLineJoin join);
+void ctx_set_compositing_mode  (Ctx *ctx, CtxCompositingMode mode);
+int  ctx_set_renderstream      (Ctx *ctx, void *data, int length);
+int  ctx_append_renderstream   (Ctx *ctx, void *data, int length);
 
 /* these are only needed for clients rendering text, as all text gets
  * converted to paths.
