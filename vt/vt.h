@@ -52,7 +52,7 @@ int         vt_get_scroll           (VT *vt);
 int         vt_get_cols             (VT *vt);
 int         vt_get_rows             (VT *vt);
 
-char *      vt_get_selection        (VT *vt);
+char       *vt_get_selection        (VT *vt);
 int         vt_get_cursor_x         (VT *vt);
 int         vt_get_cursor_y         (VT *vt);
 
@@ -62,11 +62,12 @@ void        vt_set_local (VT *vt, int local);
 void        vt_rev_inc              (VT *vt);
 int vt_mic (VT *vt);
 
-typedef enum VtMouseEvent {
-	VT_MOUSE_MOTION = 0,
-	VT_MOUSE_PRESS,
-	VT_MOUSE_DRAG,
-	VT_MOUSE_RELEASE,
+typedef enum VtMouseEvent
+{
+  VT_MOUSE_MOTION = 0,
+  VT_MOUSE_PRESS,
+  VT_MOUSE_DRAG,
+  VT_MOUSE_RELEASE,
 } VtMouseEvent;
 
 void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y);

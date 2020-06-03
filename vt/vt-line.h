@@ -1,6 +1,6 @@
 /* mrg - MicroRaptor Gui
  * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -33,7 +33,7 @@ struct _VtString
   int       style_size;
 
   void     *ctx; // each line can have an attached ctx context;
-                 // clearing could be brutal enough to unset the context of the current
+  // clearing could be brutal enough to unset the context of the current
   int       double_width;
   int       double_height_top;
   int       double_height_bottom;
@@ -55,13 +55,13 @@ struct _VtString
   int       image_subh[4];
 
 
-}  __attribute((packed));
+}  __attribute ( (packed) );
 
 
 static inline uint64_t vt_string_get_style (VtString *string, int pos)
 {
   if (pos < 0 || pos >= string->style_size)
-    return 0;
+    { return 0; }
   return string->style[pos];
 }
 
@@ -70,15 +70,14 @@ static inline uint64_t vt_string_get_style (VtString *string, int pos)
 static inline void vt_string_set_style (VtString *string, int pos, uint64_t style)
 {
   if (pos < 0 || pos >= 512)
-    return;
-
+    { return; }
   if (pos >= string->style_size)
-  {
-    int new_size = pos + 16;
-    string->style = realloc (string->style, new_size * sizeof (uint64_t));
-    memset (&string->style[string->style_size], 0, (new_size - string->style_size) * sizeof (uint64_t));
-    string->style_size = new_size;
-  }
+    {
+      int new_size = pos + 16;
+      string->style = realloc (string->style, new_size * sizeof (uint64_t) );
+      memset (&string->style[string->style_size], 0, (new_size - string->style_size) * sizeof (uint64_t) );
+      string->style_size = new_size;
+    }
   string->style[pos] = style;
 }
 
