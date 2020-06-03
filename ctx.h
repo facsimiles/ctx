@@ -2421,9 +2421,16 @@ typedef struct CtxEdge
   uint16_t index;
 } CtxEdge;
 
+typedef struct _CtxImplementation CtxImplementation;
+struct _CtxImplementation
+{
+  void (*process) (void *renderer, CtxCommand *entry);
+  void (*free)    (void *renderer);
+};
+
 struct _CtxRasterizer
 {
-  void (*render_func) (void *renderer, CtxCommand *entry);
+  CtxImplementation vfuncs;
   /* these should be initialized and used as the bounds for rendering into the
      buffer as well XXX: not yet in use, and when in use will only be
      correct for axis aligned clips - proper rasterization of a clipping path
@@ -2512,9 +2519,7 @@ struct
 struct
   _Ctx
 {
-  void           *renderer;
-  void (*render_func)     (void *renderer, CtxCommand *entry);
-  void (*renderer_destory) (void *renderer);
+  CtxImplementation *renderer;
   CtxRenderstream renderstream;
   CtxState        state;        /**/
   int             transformation;
@@ -4990,7 +4995,6 @@ static void
 ctx_init (Ctx *ctx)
 {
   ctx_state_init (&ctx->state);
-  ctx->render_func = NULL;
   ctx->renderer = NULL;
 #if CTX_CURRENT_PATH
   ctx->current_path.flags |= CTX_RENDERSTREAM_CURRENT_PATH;
@@ -5011,10 +5015,8 @@ static Ctx ctx_state;
 void ctx_set_renderer (Ctx  *ctx,
                        void *user_data)
 {
-  CtxRasterizer *rasterizer = (CtxRasterizer *) user_data;
   if (!user_data)
-    { return; }
-  ctx->render_func = rasterizer->render_func;
+    return;
   ctx->renderer = user_data;
 }
 
@@ -5051,10 +5053,9 @@ static void ctx_deinit (Ctx *ctx)
 #if CTX_RASTERIZER
   if (ctx->renderer)
     {
-      ctx_rasterizer_deinit ( (CtxRasterizer *) ctx->renderer);
-      free (ctx->renderer);
+      if (ctx->renderer->free)
+        ctx->renderer->free (ctx->renderer);
       ctx->renderer    = NULL;
-      ctx->render_func = NULL;
     }
 #endif
   ctx_renderstream_deinit (&ctx->renderstream);
@@ -8687,7 +8688,8 @@ static CtxRasterizer *
 ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
 {
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer) );
-  rasterizer->render_func = ctx_rasterizer_process;
+  rasterizer->vfuncs.process = ctx_rasterizer_process;
+  rasterizer->vfuncs.free    = (void*)ctx_rasterizer_deinit;
   rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
@@ -8834,9 +8836,9 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
         break;
     }
 #endif
-  if (ctx->render_func)
+  if (ctx->renderer)
     {
-      ctx->render_func (ctx->renderer, (CtxCommand *) entry);
+      ctx->renderer->process (ctx->renderer, (CtxCommand *) entry);
     }
   else
     {
@@ -9634,6 +9636,7 @@ struct
   cairo_t *cr;
   cairo_pattern_t *pat;
   cairo_surface_t *image;
+  int preserve;
 
 };
 
@@ -9665,6 +9668,9 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
         cairo_rel_curve_to (cr,ctx_arg_float (0), ctx_arg_float (1),
                             ctx_arg_float (2), ctx_arg_float (3),
                             ctx_arg_float (4), ctx_arg_float (5) );
+        break;
+      case CTX_PRESERVE:
+        ctx_cairo->preserve = 1;
         break;
       case CTX_QUAD_TO:
         {
@@ -9745,16 +9751,41 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
         cairo_fill (cr);
         break;
       case CTX_FILL:
-        cairo_fill (cr);
+        if (ctx_cairo->preserve)
+        {
+          cairo_fill_preserve (cr);
+          ctx_cairo->preserve = 0;
+        }
+        else
+        {
+          cairo_fill (cr);
+        }
         break;
       case CTX_STROKE:
-        cairo_stroke (cr);
+        if (ctx_cairo->preserve)
+        {
+          cairo_stroke_preserve (cr);
+          ctx_cairo->preserve = 0;
+        }
+        else
+        {
+          cairo_stroke (cr);
+        }
         break;
       case CTX_IDENTITY:
         cairo_identity_matrix (cr);
         break;
       case CTX_CLIP:
-        cairo_clip (cr);
+        if (ctx_cairo->preserve)
+        {
+          cairo_clip_preserve (cr);
+          ctx_cairo->preserve = 0;
+        }
+        else
+        {
+          cairo_clip (cr);
+        }
+        break;
         break;
       case CTX_NEW_PATH:
         cairo_new_path (cr);

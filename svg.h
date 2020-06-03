@@ -2265,7 +2265,7 @@ void _mrg_init_style (Mrg *mrg)
   s->clear = MRG_CLEAR_NONE;
   s->overflow = MRG_OVERFLOW_VISIBLE;
 
-  //s->stroke_width = 0.2;
+  s->stroke_width = 0.2;
 #if 0
   s->stroke_color.red = 1;
   s->stroke_color.green = 0;
@@ -2277,6 +2277,8 @@ void _mrg_init_style (Mrg *mrg)
   s->fill_color.alpha = 1;
 #endif
 
+  //ctx_color_set_rgba (&mrg->ctx->state, &s->fill_color, 1, 0, 1, 0);
+  //ctx_color_set_rgba (&mrg->ctx->state, &s->stroke_color, 1, 1, 0, 0);
   ctx_color_set_rgba (&mrg->ctx->state, &s->background_color, 1, 1, 1, 0);
   /* this shouldn't be inherited? */
   //s->background_color.red = 1;
@@ -2867,7 +2869,6 @@ void mrg_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
 void mrg_css_default (Mrg *mrg)
 {
   char *error = NULL;
-
   mrg_stylesheet_add (mrg, html_css, NULL, MRG_STYLE_INTERNAL, &error);
   if (error)
   {
@@ -3351,10 +3352,9 @@ float mrg_parse_float (Mrg *mrg, const char *str, char **endptr)
 }
 
 static int
-mrg_color_parse_rgb (CtxColor *color, const char *color_string)
+mrg_color_parse_rgb (CtxState *ctxstate, CtxColor *color, const char *color_string)
 {
-  float *dcolor = (void*)color;
-  dcolor[3] = 1.0;
+  float dcolor[4] = {0,0,0,1};
   while (*color_string && *color_string != '(')
     color_string++;
   if (*color_string) color_string++;
@@ -3383,13 +3383,14 @@ mrg_color_parse_rgb (CtxColor *color, const char *color_string)
       }
     }
   }
+  ctx_color_set_rgba (ctxstate, color, dcolor[0], dcolor[1],dcolor[2],dcolor[3]);
   return 0;
 }
 
 static int
-mrg_color_parse_hex (CtxColor *color, const char *color_string)
+mrg_color_parse_hex (CtxState *ctxstate, CtxColor *color, const char *color_string)
 {
-  float *dcolor = (void*)color;
+  float dcolor[4]={0,0,0,1};
   int string_length = strlen (color_string);
   int i;
   dcolor[3] = 1.0;
@@ -3409,10 +3410,12 @@ mrg_color_parse_hex (CtxColor *color, const char *color_string)
             }
           else
             {
+              printf ("aa\n");
               return 0;
             }
         }
       /* Successful #rrggbb(aa) parsing! */
+      ctx_color_set_rgba (ctxstate, color, dcolor[0], dcolor[1],dcolor[2],dcolor[3]);
       return 1;
     }
   else if (string_length == 4 ||  /* #rgb  */
@@ -3431,6 +3434,7 @@ mrg_color_parse_hex (CtxColor *color, const char *color_string)
               return 0;
             }
         }
+      ctx_color_set_rgba (ctxstate, color, dcolor[0], dcolor[1],dcolor[2],dcolor[3]);
       /* Successful #rgb(a) parsing! */
       return 0;
     }
@@ -3456,22 +3460,20 @@ int mrg_color_set_from_string (Mrg *mrg, CtxColor *color, const char *string)
     if (!strcmp (colors[i].name, string))
     {
       ctx_color_set_rgba (&(mrg->ctx->state), color,
-       colors[i].r,
-       colors[i].g,
-       colors[i].b,
-       colors[i].a);
+       colors[i].r, colors[i].g, colors[i].b, colors[i].a);
       return 0;
     }
   }
 
 
   if (string[0] == '#')
-    mrg_color_parse_hex (color, string);
+    mrg_color_parse_hex (&(mrg->ctx->state), color, string);
   else if (string[0] == 'r' &&
       string[1] == 'g' &&
       string[2] == 'b'
       )
-    mrg_color_parse_rgb (color, string);
+    mrg_color_parse_rgb (&(mrg->ctx->state), color, string);
+
   return 0;
 }
 
@@ -4751,7 +4753,7 @@ static void mrg_path_fill_stroke (Mrg *mrg)
     ctx_fill (ctx);
   }
 
-  if (style->stroke_width > 0.001)
+  if (style->stroke_width > 0.001 && style->stroke_color.alpha > 0.001)
   {
     ctx_set_line_width (ctx, style->stroke_width);
     mrg_ctx_set_source_color (ctx, &style->stroke_color);
@@ -4765,11 +4767,11 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (ctx);
 
   if (style->border_top_width &&
       style->border_top_color.alpha > 0.001)
   {
+  ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x - style->padding_left - style->border_left_width,
                        y - style->padding_top - style->border_top_width);
@@ -4779,8 +4781,8 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
 
     mrg_ctx_set_source_color (ctx, &style->border_top_color);
     ctx_fill (ctx);
-  }
   ctx_restore (ctx);
+  }
 }
 
 void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
@@ -4788,11 +4790,11 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (ctx);
 
   if (style->border_bottom_width &&
       style->border_bottom_color.alpha > 0.001)
   {
+  ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x + width + style->padding_right, y + height + style->padding_bottom);
     ctx_rel_line_to (ctx, style->border_right_width, style->border_bottom_width);
@@ -4801,9 +4803,9 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
 
     mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
     ctx_fill (ctx);
+  ctx_restore (ctx);
   }
 
-  ctx_restore (ctx);
 }
 
 void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
@@ -4811,11 +4813,11 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
   Ctx *cr = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (cr);
 
   if (style->border_top_width &&
       style->border_top_color.alpha > 0.001)
   {
+  ctx_save (cr);
     ctx_new_path (cr);
     ctx_move_to (cr, x, y - style->padding_top - style->border_top_width);
     ctx_rel_line_to (cr, width + style->padding_right + style->border_right_width, 0);
@@ -4824,19 +4826,19 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
 
     mrg_ctx_set_source_color (cr, &style->border_top_color);
     ctx_fill (cr);
-  }
   ctx_restore (cr);
+  }
 }
 void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (ctx);
 
   if (style->border_bottom_width &&
       style->border_bottom_color.alpha > 0.001)
   {
+  ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x + width + style->padding_right, y + height + style->padding_bottom);
     ctx_rel_line_to (ctx, style->border_right_width, style->border_bottom_width);
@@ -4845,9 +4847,9 @@ void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
 
     mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
     ctx_fill (ctx);
+  ctx_restore (ctx);
   }
 
-  ctx_restore (ctx);
 }
 
 void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
@@ -4855,11 +4857,11 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (ctx);
 
   if (style->border_top_width &&
       style->border_top_color.alpha > 0.001)
   {
+  ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x - style->padding_left - style->border_left_width,
                        y - style->padding_top - style->border_top_width);
@@ -4869,19 +4871,19 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
 
     mrg_ctx_set_source_color (ctx, &style->border_top_color);
     ctx_fill (ctx);
-  }
   ctx_restore (ctx);
+  }
 }
 void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (ctx);
 
   if (style->border_bottom_width &&
       style->border_bottom_color.alpha > 0.001)
   {
+  ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x + width, y + height + style->padding_bottom);
     ctx_rel_line_to (ctx, 0, style->border_bottom_width);
@@ -4890,9 +4892,9 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
 
     mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
     ctx_fill (ctx);
+  ctx_restore (ctx);
   }
 
-  ctx_restore (ctx);
 }
 
 
@@ -4901,11 +4903,11 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (ctx);
 
   if (style->border_top_width &&
       style->border_top_color.alpha > 0.001)
   {
+  ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x,
                        y - style->padding_top - style->border_top_width);
@@ -4915,19 +4917,19 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
 
     mrg_ctx_set_source_color (ctx, &style->border_top_color);
     ctx_fill (ctx);
-  }
   ctx_restore (ctx);
+  }
 }
 void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (ctx);
 
   if (style->border_bottom_width &&
       style->border_bottom_color.alpha > 0.001)
   {
+  ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x + width, y + height + style->padding_bottom);
     ctx_rel_line_to (ctx, 0, style->border_bottom_width);
@@ -4936,20 +4938,20 @@ void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
 
     mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
     ctx_fill (ctx);
+  ctx_restore (ctx);
   }
 
-  ctx_restore (ctx);
 }
 void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (ctx);
 
   if (style->border_left_width &&
       style->border_left_color.alpha > 0.001)
   {
+  ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x - style->padding_left - style->border_left_width,
                        y - style->padding_top - style->border_top_width);
@@ -4958,20 +4960,20 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, -style->border_left_width, style->border_bottom_width);
     mrg_ctx_set_source_color (ctx, &style->border_left_color);
     ctx_fill (ctx);
+  ctx_restore (ctx);
   }
 
-  ctx_restore (ctx);
 }
 void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
-  ctx_save (ctx);
 
   if (style->border_right_width &&
       style->border_right_color.alpha > 0.001)
   {
+  ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x + width + style->padding_right, y + height + style->padding_bottom);
     ctx_rel_line_to (ctx, style->border_right_width, style->border_bottom_width);
@@ -4980,9 +4982,9 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
 
     mrg_ctx_set_source_color (ctx, &style->border_right_color);
     ctx_fill (ctx);
+  ctx_restore (ctx);
   }
 
-  ctx_restore (ctx);
 }
 
 static void mrg_box (Mrg *mrg, int x, int y, int width, int height)
@@ -5133,21 +5135,7 @@ float mrg_pointer_y (Mrg *mrg)
 
 static float measure_word_width (Mrg *mrg, const char *word)
 {
-#if 0 // MRG_CAIRO
-  cairo_scaled_font_t *scaled_font = mrg->scaled_font;
-  cairo_text_extents_t extents;
-  if (mrg_is_terminal (mrg))
-    return ctx_utf8_strlen (word) * CPX / mrg->ddpx;
-  if (mrg->in_paint)
-  {
-    cairo_set_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
-    scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
-  }
-  cairo_scaled_font_text_extents (scaled_font, word, &extents);
-  return extents.x_advance;
-#else
-  return ctx_utf8_strlen (word) * mrg_style (mrg)->font_size;
-#endif
+  return ctx_text_width (mrg->ctx, word);
 }
 
 void _mrg_get_ascent_descent (Mrg *mrg, float *ascent, float *descent)
@@ -8841,7 +8829,7 @@ _mr_get_contents (const char  *referer,
 
     free (path2);
     free (uri_dup);
-    fprintf (stderr, "%i\n", (int)*length);
+    fprintf (stderr, "a%i\n", (int)*length);
     return ret;
   }
   else
@@ -8853,7 +8841,8 @@ _mr_get_contents (const char  *referer,
     ret = _mrg_file_get_contents (uri, &c, &l);
     if (contents) *contents = c;
     if (length) *length = l;
-    fprintf (stderr, "%li\n", l);
+    if (l==0)
+       fprintf (stderr, "%li %s\n", l, uri);
     return ret;
   }
 
@@ -8986,6 +8975,34 @@ void _mrg_init (Mrg *mrg, int width, int height)
   }
 }
 
+void mrg_style_defaults (Mrg *mrg)
+{
+  float em = 16;
+  mrg_set_em (mrg,  em);
+  mrg_set_rem (mrg, em);
+  mrg_set_edge_left (mrg, 0);
+  mrg_set_edge_right (mrg, mrg_width (mrg));
+  mrg_set_edge_bottom (mrg, mrg_height (mrg));
+  mrg_set_edge_top (mrg, 0);
+  mrg_set_line_height (mrg, 1.2);
+
+  mrg->state->style.stroke_width = 1;
+  mrg_color_set_from_string (mrg, &mrg->state->style.stroke_color, "transparent");
+  mrg_color_set_from_string (mrg, &mrg->state->style.fill_color, "black");
+
+  mrg_stylesheet_clear (mrg);
+  _mrg_init_style (mrg);
+
+  if (mrg->style_global->length)
+  {
+    mrg_stylesheet_add (mrg, mrg->style_global->str, NULL, MRG_STYLE_GLOBAL, NULL);
+  }
+
+  if (mrg->style->length)
+    mrg_stylesheet_add (mrg, mrg->style->str, NULL, MRG_STYLE_GLOBAL, NULL);
+}
+
+
 Mrg *mrg_new (Ctx *ctx, int width, int height)
 {
   Mrg *mrg;
@@ -8993,7 +9010,10 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   mrg = calloc (sizeof (Mrg), 1);
   mrg->ctx = ctx;
   _mrg_init (mrg, width, height);
+  mrg_set_size (mrg, width, height);
+  mrg->do_clip = 1;
 
+  printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
   return mrg;
 }
 
