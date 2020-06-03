@@ -132,9 +132,11 @@ void ctx_set_line_width (Ctx *ctx, float x);
 void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                                    float c,  float d,  // vskew,  vscale
                                    float e,  float f); // htran,  vtran
-void ctx_get_transform  (Ctx *ctx, float *a, float *b,
-                                   float *c, float *d,
-                                   float *e, float *f);
+
+float ctx_get_line_width (Ctx *ctx);
+void  ctx_get_transform  (Ctx *ctx, float *a, float *b,
+                                    float *c, float *d,
+                                    float *e, float *f);
 
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0
@@ -214,23 +216,23 @@ void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
 float ctx_get_global_alpha (Ctx *ctx);
 
 void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
-void ctx_get_rgba       (Ctx *ctx, float *rgba);
 void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
-
 void ctx_set_gray       (Ctx *ctx, float gray);
-void ctx_get_graya      (Ctx *ctx, float *ya);
-
 void ctx_set_rgba8      (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-
 void ctx_set_drgba      (Ctx *ctx, float r, float g, float b, float a);
-void ctx_get_drgba      (Ctx *ctx, float *drgba);
-
 void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a);
 void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k);
-void ctx_get_cmyka      (Ctx *ctx, float *cmyka);
-
 void ctx_set_dcmyka     (Ctx *ctx, float c, float m, float y, float k, float a);
 void ctx_set_dcmyk      (Ctx *ctx, float c, float m, float y, float k);
+
+/* there is also getters for colors, by first setting a color in one format and getting
+ * it with another color conversions can be done
+ */
+
+void ctx_get_rgba       (Ctx *ctx, float *rgba);
+void ctx_get_graya      (Ctx *ctx, float *ya);
+void ctx_get_drgba      (Ctx *ctx, float *drgba);
+void ctx_get_cmyka      (Ctx *ctx, float *cmyka);
 void ctx_get_dcmyka     (Ctx *ctx, float *dcmyka);
 
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
@@ -453,12 +455,13 @@ typedef enum
   CTX_SET_TEXT_DIRECTION   = 19, // kd
   CTX_SET_MITER_LIMIT      = 20, // km limit - float, default = 0.0
 
-  CTX_SET_DEVICE_SPACE     = 21, // hacks integer for now
+  CTX_SET_DRGB_SPACE       = 21, // hacks integer for now
   CTX_SET_RGB_SPACE        = 22, //
   CTX_SET_CMYK_SPACE       = 23, //
+  CTX_SET_DCMYK_SPACE      = 24, //
 
-  CTX_DEFUN  = 24,
-  CTX_ENDFUN = 25,
+  CTX_DEFUN  = 25,
+  CTX_ENDFUN = 26,
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
@@ -1707,8 +1710,10 @@ struct _CtxState {
 #define CTX_rgbSpace     CTX_STRH('r','g','b','S','p','a','c','e',0,0,0,0,0,0)
 #define CTX_cmyk_space   CTX_STRH('c','m','y','k','_','s','p','a','c','e',0,0,0,0)
 #define CTX_cmykSpace    CTX_STRH('c','m','y','k','S','p','a','c','e',0,0,0,0,0)
-#define CTX_device_space CTX_STRH('d','e','v','i','c','e','_','s','p','a','c','e',0,0)
-#define CTX_deviceSpace  CTX_STRH('d','e','v','i','c','e','S','p','a','c','e',0,0,0)
+#define CTX_drgb_space   CTX_STRH('d','r','g','b','_','s','p','a','c','e',0,0,0,0)
+#define CTX_drgbSpace    CTX_STRH('d','r','g','b','S','p','a','c','e',0,0,0,0,0)
+#define CTX_dcmyk_space  CTX_STRH('d','c','m','y','k','_','s','p','a','c','e',0,0,0)
+#define CTX_dcmykSpace   CTX_STRH('d','c','m','y','k','S','p','a','c','e',0,0,0,0)
 #define CTX_composite    CTX_STRH('c','o','m','p','o','s','i','t','i','e',0,0,0,0)
 #define CTX_compositing_mode CTX_STRH('c','o','m','p','o','s','i','t','i','n','g','_','m','o')
 #define CTX_compositingMode CTX_STRH('c','o','m','p','o','s','i','t','i','n','g','M','o','d')
@@ -3059,9 +3064,15 @@ ctx_get_graya (Ctx *ctx, float *ya)
 
 #if CTX_ENABLE_CM
 void
-ctx_set_device_space (Ctx *ctx, int device_space)
+ctx_set_drgb_space (Ctx *ctx, int device_space)
 {
-  CTX_PROCESS_U8(CTX_SET_DEVICE_SPACE, device_space);
+  CTX_PROCESS_U8(CTX_SET_DRGB_SPACE, device_space);
+}
+
+void
+ctx_set_dcmyk_space (Ctx *ctx, int device_space)
+{
+  CTX_PROCESS_U8(CTX_SET_DCMYK_SPACE, device_space);
 }
 
 void
@@ -10423,7 +10434,8 @@ static int ctx_arguments_for_code (CtxCode code)
   case CTX_ROTATE:
   case CTX_SET_RGB_SPACE:
   case CTX_SET_CMYK_SPACE:
-  case CTX_SET_DEVICE_SPACE:
+  case CTX_SET_DCMYK_SPACE:
+  case CTX_SET_DRGB_SPACE:
     return 1;
   case CTX_TRANSLATE:
   case CTX_REL_SMOOTHQ_TO:
@@ -10635,9 +10647,9 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t*str)
     case CTX_cmyk_space:
       return ctx_parser_set_command (parser, CTX_SET_CMYK_SPACE);
 
-    case CTX_device_space:
-    case CTX_deviceSpace:
-      return ctx_parser_set_command (parser, CTX_SET_DEVICE_SPACE);
+    case CTX_drgb_space:
+    case CTX_drgbSpace:
+      return ctx_parser_set_command (parser, CTX_SET_DRGB_SPACE);
 
     case CTX_composite:
     case CTX_compositing_mode:
@@ -10852,7 +10864,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
     case CTX_RESTORE: ctx_restore (ctx);   break;
 
 #if CTX_ENABLE_CM
-    case CTX_SET_DEVICE_SPACE: ctx_set_device_space (ctx, arg(0)); break;
+    case CTX_SET_DRGB_SPACE: ctx_set_drgb_space (ctx, arg(0)); break;
+    case CTX_SET_DCMYK_SPACE: ctx_set_dcmyk_space (ctx, arg(0)); break;
     case CTX_SET_RGB_SPACE: ctx_set_rgb_space (ctx, arg(0)); break;
     case CTX_SET_CMYK_SPACE: ctx_set_cmyk_space (ctx, arg(0)); break;
 #endif
