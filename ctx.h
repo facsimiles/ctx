@@ -4961,7 +4961,6 @@ ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *r
   ctx_color_set_rgba (rasterizer->state, &(stop->color), rgba[0], rgba[1], rgba[2], rgba[3]);
   if (gradient->n_stops < 15)//we'll keep overwriting the last when out of stops
     gradient->n_stops++;
-
 }
 
 static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
@@ -7817,7 +7816,6 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_move_to (rasterizer, x, y);
   ctx_rasterizer_rel_line_to (rasterizer, width, 0);
   ctx_rasterizer_rel_line_to (rasterizer, 0, height);
-  //ctx_rasterizer_rel_line_to (rasterizer, -width, 0);
   ctx_rasterizer_finish_shape (rasterizer);
 }
 
@@ -7896,12 +7894,12 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 #endif
     case CTX_GRADIENT_STOP:
       {
-      float rgba[4]={ctx_u8_to_float (ctx_arg_u8(4)),
-                     ctx_u8_to_float (ctx_arg_u8(4+1)),
-                     ctx_u8_to_float (ctx_arg_u8(4+2)),
-                     ctx_u8_to_float (ctx_arg_u8(4+3))};
-      ctx_rasterizer_gradient_add_stop (rasterizer,
-                                        ctx_arg_float(0), rgba);
+        float rgba[4]={ctx_u8_to_float (ctx_arg_u8(4)),
+                       ctx_u8_to_float (ctx_arg_u8(4+1)),
+                       ctx_u8_to_float (ctx_arg_u8(4+2)),
+                       ctx_u8_to_float (ctx_arg_u8(4+3))};
+        ctx_rasterizer_gradient_add_stop (rasterizer,
+                                          ctx_arg_float(0), rgba);
       }
       break;
     case CTX_LINEAR_GRADIENT:
