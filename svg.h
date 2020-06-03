@@ -215,9 +215,9 @@
 #define CTX_sw_resize 	CTX_STRH('s','w','-','r','e','s','i','z','e',0,0,0,0,0)
 #define CTX_syntax_highlight 	CTX_STRH('s','y','n','t','a','x','-','h','i','g','h','l','i','g')
 #define CTX_tab_size 	CTX_STRH('t','a','b','-','s','i','z','e',0,0,0,0,0,0)
-#define CTX_td 	CTX_STRH('t','d',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_teal 	CTX_STRH('t','e','a','l',0,0,0,0,0,0,0,0,0,0)
-#define CTX_text 	CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0,0,0)
+#define CTX_td          CTX_STRH('t','d',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_teal        CTX_STRH('t','e','a','l',0,0,0,0,0,0,0,0,0,0)
+#define CTX_text        CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0,0,0)
 //#define CTX_text_align 	CTX_STRH('t','e','x','t','-','a','l','i','g','n',0,0,0,0)
 #define CTX_text_decoration 	CTX_STRH('t','e','x','t','-','d','e','c','o','r','a','t','i','o')
 //#define CTX_text_indent 	CTX_STRH('t','e','x','t','-','i','n','d','e','n','t',0,0,0)
@@ -225,25 +225,25 @@
 #define CTX_text_stroke_color 	CTX_STRH('t','e','x','t','-','s','t','r','o','k','e','-','c','o')
 #define CTX_text_stroke_width 	CTX_STRH('t','e','x','t','-','s','t','r','o','k','e','-','w','i')
 //#define CTX_top 	CTX_STRH('t','o','p',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_tr 	CTX_STRH('t','r',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_trade 	CTX_STRH('t','r','a','d','e',0,0,0,0,0,0,0,0,0)
-#define CTX_transform 	CTX_STRH('t','r','a','n','s','f','o','r','m',0,0,0,0,0)
-#define CTX_translate 	CTX_STRH('t','r','a','n','s','l','a','t','e',0,0,0,0,0)
-#define CTX_transparent 	CTX_STRH('t','r','a','n','s','p','a','r','e','n','t',0,0,0)
-#define CTX_true 	CTX_STRH('t','r','u','e',0,0,0,0,0,0,0,0,0,0)
-#define CTX_underline 	CTX_STRH('u','n','d','e','r','l','i','n','e',0,0,0,0,0)
-#define CTX_unicode_bidi 	CTX_STRH('u','n','i','c','o','d','e','-','b','i','d','i',0,0)
-#define CTX_vertical_align 	CTX_STRH('v','e','r','t','i','c','a','l','-','a','l','i','g','n')
-#define CTX_vertical_text 	CTX_STRH('v','e','r','t','i','c','a','l','-','t','e','x','t',0)
+#define CTX_tr          CTX_STRH('t','r',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_trade       CTX_STRH('t','r','a','d','e',0,0,0,0,0,0,0,0,0)
+#define CTX_transform   CTX_STRH('t','r','a','n','s','f','o','r','m',0,0,0,0,0)
+#define CTX_translate   CTX_STRH('t','r','a','n','s','l','a','t','e',0,0,0,0,0)
+#define CTX_transparent CTX_STRH('t','r','a','n','s','p','a','r','e','n','t',0,0,0)
+#define CTX_true        CTX_STRH('t','r','u','e',0,0,0,0,0,0,0,0,0,0)
+#define CTX_underline   CTX_STRH('u','n','d','e','r','l','i','n','e',0,0,0,0,0)
+#define CTX_unicode_bidi        CTX_STRH('u','n','i','c','o','d','e','-','b','i','d','i',0,0)
+#define CTX_vertical_align      CTX_STRH('v','e','r','t','i','c','a','l','-','a','l','i','g','n')
+#define CTX_vertical_text       CTX_STRH('v','e','r','t','i','c','a','l','-','t','e','x','t',0)
 #define CTX_visibility 	CTX_STRH('v','i','s','i','b','i','l','i','t','y',0,0,0,0)
 #define CTX_visible 	CTX_STRH('v','i','s','i','b','l','e',0,0,0,0,0,0,0)
 #define CTX_white 	CTX_STRH('w','h','i','t','e',0,0,0,0,0,0,0,0,0)
-#define CTX_white_space 	CTX_STRH('w','h','i','t','e','-','s','p','a','c','e',0,0,0)
+#define CTX_white_space CTX_STRH('w','h','i','t','e','-','s','p','a','c','e',0,0,0)
 #define CTX_width 	CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
-#define CTX_word_spacing 	CTX_STRH('w','o','r','d','-','s','p','a','c','i','n','g',0,0)
+#define CTX_word_spacing CTX_STRH('w','o','r','d','-','s','p','a','c','i','n','g',0,0)
 #define CTX_w_resize 	CTX_STRH('w','-','r','e','s','i','z','e',0,0,0,0,0,0)
-#define CTX_x 	CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_y 	CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_x           CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_y 	        CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_yellow 	CTX_STRH('y','e','l','l','o','w',0,0,0,0,0,0,0,0)
 #define CTX_yen 	CTX_STRH('y','e','n',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_yes 	CTX_STRH('y','e','s',0,0,0,0,0,0,0,0,0,0,0)
@@ -766,7 +766,6 @@ void mrg_list_sort (MrgList **head,
 }
 
 
-
 static inline void
 mrg_list_insert_before (MrgList **list, MrgList *sibling,
                         void *data)
@@ -994,18 +993,17 @@ void mrg_string_remove_utf8 (MrgString *string, int pos)
 
 struct _MrgXml
 {
-  FILE     *file_in;
-  int       state;
+  FILE      *file_in;
+  int        state;
   MrgString *curdata;
   MrgString *curtag;
-  int       c;
-  int       c_held;
+  int        c;
+  int        c_held;
 
   unsigned char *inbuf;
-  int       inbuflen;
-  int       inbufpos;
-
-  int       line_no;
+  int            inbuflen;
+  int            inbufpos;
+  int            line_no;
 };
 
 enum
@@ -1072,14 +1070,14 @@ enum
 
 typedef struct
 {
-  int       state;
-  char     *chars;
+  int           state;
+  char         *chars;
   unsigned char r_start;
   unsigned char r_end;
-  int       next_state;
-  int       resetbuf;
-  int       charhandling;
-  int       return_type;        /* if set return current buf, with type set to the type */
+  int           next_state;
+  int           resetbuf;
+  int           charhandling;
+  int           return_type;        /* if set return current buf, with type set to the type */
 }
 state_entry;
 
@@ -1094,13 +1092,12 @@ a (int state,
    unsigned char r_end, int charhandling, int next_state)
 {
   int       no = 0;
-
   while (state_table[state][no].state != s_null)
     no++;
   state_table[state][no].state = state;
   state_table[state][no].r_start = r_start;
   if (chars)
-    state_table[state][no].chars = strdup (chars);
+    state_table[state][no].chars = chars;
   state_table[state][no].r_end = r_end;
   state_table[state][no].charhandling = charhandling;
   state_table[state][no].next_state = next_state;
@@ -1123,18 +1120,16 @@ init_statetable (void) {
         return;
     inited=1;
     memset(state_table,0,sizeof(state_table));
-    a(s_start,        "<",    0,0,            c_eat,            s_tag);
-    a(s_start,        c_ws,    0,0,            c_eat+c_store,    s_whitespace);
-    a(s_start,        "&",    0,0,            c_eat,            s_entitystart);
-    a(s_start,        NULL,    0,255,            c_eat+c_store,    s_word);
-
-    a(s_tag,        c_ws,    0,0,            c_eat,            s_tag);
-    a(s_tag,        "/",    0,0,            c_eat,            s_tagclose);
-    a(s_tag,        "!",    0,0,            c_eat,            s_tagexcl);
-    a(s_tag,        "?",    0,0,            c_eat,            s_prolog);
-    a(s_tag,        NULL,    0,255,            c_eat+c_store,    s_tagnamestart);
-
-    a(s_tagclose,    NULL,    0,255,            c_eat+c_store,    s_tagclosenamestart);
+    a(s_start,        "<",  0,0,            c_eat,            s_tag);
+    a(s_start,        c_ws, 0,0,            c_eat+c_store,    s_whitespace);
+    a(s_start,        "&",  0,0,            c_eat,            s_entitystart);
+    a(s_start,        NULL, 0,255,            c_eat+c_store,    s_word);
+    a(s_tag,          c_ws, 0,0,            c_eat,            s_tag);
+    a(s_tag,          "/",  0,0,            c_eat,            s_tagclose);
+    a(s_tag,          "!",  0,0,            c_eat,            s_tagexcl);
+    a(s_tag,          "?",  0,0,            c_eat,            s_prolog);
+    a(s_tag,          NULL, 0,255,            c_eat+c_store,    s_tagnamestart);
+    a(s_tagclose,     NULL,    0,255,            c_eat+c_store,    s_tagclosenamestart);
     a(s_tagclosenamestart,    ">",    0,0,    c_eat,            s_tagclosedone);
     a(s_tagclosenamestart,    NULL,    0,255,    c_eat+c_store,    s_tagclosename);
     a(s_tagclosename,    ">",    0,0,        c_eat,            s_tagclosedone);
@@ -1226,8 +1221,8 @@ init_statetable (void) {
     a(s_commentdash2,    "-",0,0,                c_eat,            s_commentenddash1);
     a(s_commentdash2,    NULL,0,255,                c_eat+c_store,    s_incomment);
 
-    a(s_incomment   ,    "-",0,0,                c_eat,            s_commentenddash1);
-    a(s_incomment   ,    NULL,0,255,                c_eat+c_store,    s_incomment);
+    a(s_incomment,    "-",0,0,                c_eat,            s_commentenddash1);
+    a(s_incomment,    NULL,0,255,                c_eat+c_store,    s_incomment);
 
     a(s_commentenddash1,    "-",0,0,            c_eat,            s_commentenddash2);
     a(s_commentenddash1,    NULL,0,255,            c_eat+c_store,    s_incomment);
@@ -1509,12 +1504,12 @@ enum _MrgType {
 typedef struct _MrgHtml      MrgHtml; 
 typedef struct _MrgHtmlState MrgHtmlState;
 #define MRG_MAX_STYLE_DEPTH 640
-#define MRG_MAX_STATE_DEPTH 128 //XXX: can these be different?
-#define MRG_MAX_FLOATS      64
-#define MRG_MAX_CBS         1024
+#define MRG_MAX_STATE_DEPTH 32    //XXX: can these be different?
+#define MRG_MAX_FLOATS      8
+#define MRG_MAX_CBS         32
 
 /* other important maximums */
-#define MRG_MAX_BINDINGS     1024
+#define MRG_MAX_BINDINGS     32
 #define MRG_MAX_TEXT_LISTEN  1024
 
 typedef struct _MrgRectangle MrgRectangle;
@@ -1536,8 +1531,6 @@ enum _MrgModifierState
   MRG_MODIFIER_STATE_BUTTON2 = (1<<4),
   MRG_MODIFIER_STATE_BUTTON3 = (1<<5)
 };
-
-
 
 typedef enum _MrgScrollDirection MrgScrollDirection;
 enum _MrgScrollDirection
@@ -1670,13 +1663,12 @@ struct _MrgHtmlState
 
 #define MRG_XML_MAX_ATTRIBUTES    32
 #define MRG_XML_MAX_ATTRIBUTE_LEN 32
-#define MRG_XML_MAX_VALUE_LEN     640
+#define MRG_XML_MAX_VALUE_LEN     640 // affects svg path data!
 #define MRG_MAX_DEVICES 16
-#define MRG_MAX_BINDINGS 1024
+
 typedef void (*MrgDestroyNotify) (void *data);
 typedef void (*MrgNewText)       (const char *new_text, void *data);
 typedef void (*UiRenderFun)      (Mrg *mrg, void *ui_data);
-
 
 typedef struct MrgBinding {
   char *nick;
@@ -1688,8 +1680,6 @@ typedef struct MrgBinding {
   void  *destroy_data;
 } MrgBinding;
 
-
-
 struct _MrgHtml
 {
   Mrg *mrg;
@@ -1699,7 +1689,7 @@ struct _MrgHtml
   int state_no;
   MrgList *geo_cache;
 
-  char         attribute[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_ATTRIBUTE_LEN];
+  char  attribute[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_ATTRIBUTE_LEN];
   char  value[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_VALUE_LEN];
 
   int   attributes;
@@ -1715,7 +1705,6 @@ struct _MrgGeoCache
   int   hover;
   int gen;
 };
-
 
 static void
 _mrg_draw_background_increment (Mrg *mrg, void *data, int last);
@@ -8476,7 +8465,7 @@ void mrg_xml_render (Mrg *mrg,
 {
   char *html;
   MrgXml *xmltok;
-  MrgHtml *ctx        = &mrg->html;
+  MrgHtml *htmlctx        = &mrg->html;
   char tag[64][16];
   int pos             = 0;
   int type            = t_none;
@@ -8500,10 +8489,10 @@ void mrg_xml_render (Mrg *mrg,
     mrg->text_listen_count++;
   }
 
-  _mrg_set_wrap_edge_vfuncs (mrg, wrap_edge_left, wrap_edge_right, ctx);
-  _mrg_set_post_nl (mrg, _mrg_draw_background_increment, ctx);
-  ctx->mrg = mrg;
-  ctx->state = &ctx->states[0];
+  _mrg_set_wrap_edge_vfuncs (mrg, wrap_edge_left, wrap_edge_right, htmlctx);
+  _mrg_set_post_nl (mrg, _mrg_draw_background_increment, htmlctx);
+  htmlctx->mrg = mrg;
+  htmlctx->state = &htmlctx->states[0];
 
   while (type != t_eof)
   {
@@ -8595,17 +8584,17 @@ void mrg_xml_render (Mrg *mrg,
         }
         break;
       case t_tag:
-        ctx->attributes = 0;
+        htmlctx->attributes = 0;
         tagpos = pos;
         mrg_string_clear (style);
         break;
       case t_att:
-        if (ctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
-          strncpy (ctx->attribute[ctx->attributes], data, MRG_XML_MAX_ATTRIBUTE_LEN-1);
+        if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
+          strncpy (htmlctx->attribute[htmlctx->attributes], data, MRG_XML_MAX_ATTRIBUTE_LEN-1);
         break;
       case t_val:
-        if (ctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
-          strncpy (ctx->value[ctx->attributes++], data, MRG_XML_MAX_VALUE_LEN-1);
+        if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
+          strncpy (htmlctx->value[htmlctx->attributes++], data, MRG_XML_MAX_VALUE_LEN-1);
         break;
       case t_endtag:
 
@@ -8641,11 +8630,11 @@ void mrg_xml_render (Mrg *mrg,
 
         {
           char combined[256]="";
-          char *klass = (void*)get_attr (ctx, "class");
+          char *klass = (void*)get_attr (htmlctx, "class");
           /* XXX: spaces in class should be turned into .s making
            * it possible to use multiple classes
            */
-          const char *id = get_attr (ctx, "id");
+          const char *id = get_attr (htmlctx, "id");
 
           const char *pseudo = "";
 
@@ -8662,7 +8651,7 @@ void mrg_xml_render (Mrg *mrg,
 
           //if (mrg_style(mrg)->id_ptr)
           { // XXX : perhaps do this a tiny bit differently?
-            MrgGeoCache *geo = _mrg_get_cache (ctx, (void*)(size_t)(tagpos));
+            MrgGeoCache *geo = _mrg_get_cache (htmlctx, (void*)(size_t)(tagpos));
             if (geo && geo->hover)
             {
               if (mrg->pointer_down[1])
@@ -8700,26 +8689,26 @@ void mrg_xml_render (Mrg *mrg,
               NULL};
 
             int i;
-            for (i = 0; i < ctx->attributes; i++)
+            for (i = 0; i < htmlctx->attributes; i++)
             {
               int j;
               for (j = 0; style_attribute[j]; j++)
-                if (!strcmp (ctx->attribute[i], style_attribute[j]))
+                if (!strcmp (htmlctx->attribute[i], style_attribute[j]))
                 {
                   mrg_string_append_printf (style, "%s: %s;",
-                      style_attribute[j], ctx->value[i]);
+                      style_attribute[j], htmlctx->value[i]);
                   break;
                 }
             }
           }
-          mrg_string_append_str (style, get_attr (ctx, "style"));
+          mrg_string_append_str (style, get_attr (htmlctx, "style"));
           mrg_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
         }
 
         if (!strcmp (data, "g"))
         {
           const char *transform;
-          if ((transform = get_attr (ctx, "transform")))
+          if ((transform = get_attr (htmlctx, "transform")))
             {
               CtxMatrix matrix;
               mrg_parse_transform (mrg, &matrix, transform);
@@ -8729,13 +8718,13 @@ void mrg_xml_render (Mrg *mrg,
 
         if (!strcmp (data, "polygon"))
         {
-          mrg_parse_polygon (mrg, get_attr (ctx, "d"));
+          mrg_parse_polygon (mrg, get_attr (htmlctx, "d"));
           mrg_path_fill_stroke (mrg);
         }
 
         if (!strcmp (data, "path"))
         {
-          mrg_parse_svg_path (mrg, get_attr (ctx, "d"));
+          mrg_parse_svg_path (mrg, get_attr (htmlctx, "d"));
           mrg_path_fill_stroke (mrg);
         }
 
@@ -8743,13 +8732,13 @@ void mrg_xml_render (Mrg *mrg,
         {
           float width, height, x, y;
           const char *val;
-          val = get_attr (ctx, "width");
+          val = get_attr (htmlctx, "width");
           width = val ? mrg_parse_float (mrg, val, NULL) : 0;
-          val = get_attr (ctx, "height");
+          val = get_attr (htmlctx, "height");
           height = val ? mrg_parse_float (mrg, val, NULL) : 0;
-          val = get_attr (ctx, "x");
+          val = get_attr (htmlctx, "x");
           x = val ? mrg_parse_float (mrg, val, NULL) : 0;
-          val = get_attr (ctx, "y");
+          val = get_attr (htmlctx, "y");
           y = val ? mrg_parse_float (mrg, val, NULL) : 0;
 
           ctx_rectangle (mrg_cr (mrg), x, y, width, height);
@@ -8758,14 +8747,14 @@ void mrg_xml_render (Mrg *mrg,
 
         if (!strcmp (data, "text"))
         {
-          mrg->x = mrg_parse_float (mrg, get_attr (ctx, "x"), NULL);
-          mrg->y = mrg_parse_float (mrg, get_attr (ctx, "y"), NULL);
+          mrg->x = mrg_parse_float (mrg, get_attr (htmlctx, "x"), NULL);
+          mrg->y = mrg_parse_float (mrg, get_attr (htmlctx, "y"), NULL);
         }
 
         if (!strcmp (data, "a"))
         {
-          if (link_cb && get_attr (ctx, "href")) 
-            mrg_text_listen_full (mrg, MRG_CLICK, link_cb, _mrg_resolve_uri (uri_base,  get_attr (ctx, "href")), link_data, (void*)free, NULL); //XXX: free is not invoked according to valgrind
+          if (link_cb && get_attr (htmlctx, "href")) 
+            mrg_text_listen_full (mrg, MRG_CLICK, link_cb, _mrg_resolve_uri (uri_base,  get_attr (htmlctx, "href")), link_data, (void*)free, NULL); //XXX: free is not invoked according to valgrind
         }
 
         if (!strcmp (data, "style"))
@@ -8778,11 +8767,11 @@ void mrg_xml_render (Mrg *mrg,
         if (!strcmp (data, "link"))
         {
           const char *rel;
-          if ((rel=get_attr (ctx, "rel")) && !strcmp (rel, "stylesheet") && get_attr (ctx, "href"))
+          if ((rel=get_attr (htmlctx, "rel")) && !strcmp (rel, "stylesheet") && get_attr (htmlctx, "href"))
           {
             char *contents;
             long length;
-            mrg_get_contents (mrg, uri_base, get_attr (ctx, "href"), &contents, &length);
+            mrg_get_contents (mrg, uri_base, get_attr (htmlctx, "href"), &contents, &length);
             if (contents)
             {
               mrg_stylesheet_add (mrg, contents, uri_base, MRG_STYLE_XML, NULL);
@@ -8791,10 +8780,10 @@ void mrg_xml_render (Mrg *mrg,
           }
         }
 
-        if (!strcmp (data, "img") && get_attr (ctx, "src"))
+        if (!strcmp (data, "img") && get_attr (htmlctx, "src"))
         {
           int img_width, img_height;
-          const char *src = get_attr (ctx, "src");
+          const char *src = get_attr (htmlctx, "src");
 
           if (mrg_query_image (mrg, src, &img_width, &img_height))
           {
@@ -8949,7 +8938,7 @@ void mrg_xml_render (Mrg *mrg,
     fprintf (stderr, "\n");
   }
 
-//  mrg_list_free (&ctx->geo_cache); /* XXX: no point in doing that here */
+//  mrg_list_free (&htmlctx->geo_cache); /* XXX: no point in doing that here */
   mrg_string_free (style, 1);
   free (html);
 }
@@ -9293,8 +9282,11 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   mrg->do_clip = 1;
 
   printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
+  printf ("sizeof(Mrg) %li (was: 1142496)\n", sizeof(Mrg));
   printf ("sizeof(MrgState) %li\n", sizeof(MrgState));
   printf ("sizeof(MrgStyle) %li\n", sizeof(MrgStyle));
+  printf ("sizeof(MrgHtmlState) %li\n", sizeof(MrgHtmlState));
+  printf ("sizeof(MrgHtml) %li\n", sizeof(MrgHtml));
   return mrg;
 }
 
