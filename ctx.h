@@ -3285,10 +3285,7 @@ void ctx_set_line_width (Ctx *ctx, float x) {
            transform, this does not really belong here,
            
            move to rasterizer?*/
-  x = x * ctx_maxf(ctx_maxf(ctx_fabsf(ctx->state.gstate.transform.m[0][0]),
-                          ctx_fabsf(ctx->state.gstate.transform.m[0][1])),
-                  ctx_maxf(ctx_fabsf(ctx->state.gstate.transform.m[1][0]),
-                          ctx_fabsf(ctx->state.gstate.transform.m[1][1])));
+
   CTX_PROCESS_F1(CTX_SET_LINE_WIDTH, x);
 }
 
@@ -7832,6 +7829,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 {
   CtxEntry *entry = &command->entry;
   CtxRasterizer *rasterizer = (CtxRasterizer*)user_data;
+  CtxState *state = rasterizer->state;
   CtxCommand *c = (CtxCommand*)entry;
 
   switch (c->code)
@@ -7962,6 +7960,18 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
   }
   ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
   ctx_interpret_style (rasterizer->state, entry, NULL);
+
+  if (command->code == CTX_SET_LINE_WIDTH)
+  {
+    float x = state->gstate.line_width;
+    /* normalize line width according to scaling factor
+     */
+    x = x * ctx_maxf(ctx_maxf(ctx_fabsf(state->gstate.transform.m[0][0]),
+                              ctx_fabsf(state->gstate.transform.m[0][1])),
+                     ctx_maxf(ctx_fabsf(state->gstate.transform.m[1][0]),
+                              ctx_fabsf(state->gstate.transform.m[1][1])));
+    state->gstate.line_width = x;
+  }
 }
 
 
