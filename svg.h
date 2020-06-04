@@ -8646,7 +8646,7 @@ _mr_get_contents (const char  *referer,
 
   uri_dup = strdup (uri);
   split_uri (uri_dup, &protocol, &host, &port, &path, &fragment);
-  protocol_hash = ctx_strhash (protocol, 0);
+  protocol_hash = protocol?ctx_strhash (protocol, 0):0;
 #if 0
   if (protocol && protocol_hash == CTX_http)
   {

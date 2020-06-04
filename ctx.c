@@ -128,7 +128,7 @@ void ctx_utf8_output_buf (uint8_t *pixels,
             printf ("\n");
           }
         break;
-      case CTX_FORMAT_RGBA8:
+      case CTX_FORMAT_RGBA8+200:
         {
            char *unicode_quarters[]={
 " ","▘","▝","▀","▖","▌","▞","▛","▗","▚","▐","▜","▄","▙","▟","█",};
@@ -212,7 +212,8 @@ void ctx_utf8_output_buf (uint8_t *pixels,
 
         break;
 
-      case CTX_FORMAT_RGBA8+200:
+      case CTX_FORMAT_RGBA8: // for fidelity the 
+                             // braille set is best
         for (int row = 0; row < height/4; row++)
           {
             for (int col = 0; col < width /2; col++)
@@ -571,7 +572,7 @@ int main (int argc, char **argv)
       if (!strcmp (dest_path, "GRAY1") ||
           !strcmp (dest_path, "RGBA8"))
         {
-          width = 158;
+          width = 160;
           height = 80;
           rows = 3;
           cols = 24;
