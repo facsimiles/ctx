@@ -52,7 +52,7 @@ static int ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   int c;
   int diff = 0;
   for (c = 0; c<3;c++)
-          diff += abs(a[c]-b[c]);
+    diff += ctx_pow2(a[c]-b[c]);
   return diff;
 }
 
@@ -128,7 +128,7 @@ void ctx_utf8_output_buf (uint8_t *pixels,
             printf ("\n");
           }
         break;
-      case CTX_FORMAT_RGBA8+200:
+      case CTX_FORMAT_RGBA8:
         {
            char *unicode_quarters[]={
 " ","▘","▝","▀","▖","▌","▞","▛","▗","▚","▐","▜","▄","▙","▟","█",};
@@ -136,8 +136,6 @@ void ctx_utf8_output_buf (uint8_t *pixels,
           {
             for (int col = 0; col < width /2; col++)
               {
-                int unicode = 0;
-
                 uint8_t rgba2[4] = {0,0,0,255};
                 uint8_t rgba1[4] = {255,255,255,255};
                 int best_diff = 0;
@@ -212,7 +210,7 @@ void ctx_utf8_output_buf (uint8_t *pixels,
 
         break;
 
-      case CTX_FORMAT_RGBA8: // for fidelity the 
+      //case CTX_FORMAT_RGBA8: // for fidelity the 
                              // braille set is best
         for (int row = 0; row < height/4; row++)
           {
@@ -227,27 +225,16 @@ void ctx_utf8_output_buf (uint8_t *pixels,
 
                 for (int xi = 0; xi < 2; xi++)
                   for (int yi = 0; yi < 4; yi++)
-                    for (int xj = 0; xj < 2; xj++)
-                      for (int yj = 0; yj < 4; yj++)
                       {
-                        if (!(xi == xj && yi == yj))
+                        int noi = (row * 4 + yi) * stride + (col*2+xi) * 4;
+                        int diff = ctx_rgba8_manhattan_diff (&pixels[noi], rgba2);
+                        if (diff > best_diff)
                         {
-                           int noi = (row * 4 + yi) * stride + (col*2+xi) * 4;
-                           uint8_t rgbai[4]={0,};
-                           uint8_t rgbaj[4]={0,};
-                           for (int c = 0; c < 3; c++)
-                           {
-                             rgbai[c] = pixels[noi+c];
-                           }
-                           int diff = ctx_rgba8_manhattan_diff (rgbai, rgba2);
-                           if (diff > best_diff)
-                           {
-                             best_diff = diff;
-                             for (int c = 0; c < 3; c++)
-                             {
-                               rgba1[c] = pixels[noi+c];
-                             }
-                           }
+                          best_diff = diff;
+                          for (int c = 0; c < 3; c++)
+                          {
+                            rgba1[c] = pixels[noi+c];
+                          }
                         }
                       }
 
@@ -260,17 +247,13 @@ void ctx_utf8_output_buf (uint8_t *pixels,
   printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
   printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
 
-
                 for (int x = 0; x < 2; x++)
                   for (int y = 0; y < 3; y++)
                     {
                       int no = (row * 4 + y) * stride + (col*2+x) * 4;
-//#define CHECK_IS_SET \
-//                      pixels[no] > 127;
-
 #define CHECK_IS_SET \
       (ctx_rgba8_manhattan_diff (&pixels[no], rgba1)< \
-      ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
+       ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
 
                       int set = CHECK_IS_SET;
                       if (reverse) { set = !set; }
@@ -431,10 +414,16 @@ int parse_main (int argc, char **argv)
 int help_main (int argc, char **argv)
 {
   if (argc &&  argv) {};
-  printf ("Usage: ctx [command [command args]]\n\n"
-          "where command is one of:\n"
-          " vt    - virtual terminal, running ctx with no args\n    also launches a terminal\n"
-          " parse - parse ascii, and generate ctx on stdout\n");
+  printf (
+    "Usage: ctx [options] <inputpath> [outputpath]\n"
+    "\n"
+    "The input path is a file format recognized by ctx, for rendering.\n"
+    "\n"
+    "\n"
+    "options available:\n"
+    "  --width  pixels   sets width of canvas\n"
+    "  --height pixels   sets height of canvas\n"
+    "  --rows   rows     configures number of em-rows, cols is implied\n");
   return 0;
 }
 

@@ -5223,6 +5223,12 @@ path_equal (void *path,
   return 0;
 }
 
+void mrg_listen (Mrg     *mrg,
+                 MrgType  types,
+                 MrgCb    cb,
+                 void*    data1,
+                 void*    data2);
+
 void _mrg_item_ref (MrgItem *mrgitem)
 {
   if (mrgitem->ref_count < 0)
@@ -5259,118 +5265,6 @@ void _mrg_item_unref (MrgItem *mrgitem)
   }
 }
 
-
-void mrg_listen_full (Mrg     *mrg,
-                      MrgType  types,
-                      MrgCb    cb,
-                      void    *data1,
-                      void    *data2,
-                      void   (*finalize)(void *listen_data, void *listen_data2,
-                                         void *finalize_data),
-                      void    *finalize_data)
-{
-  float x, y, width, height;
-
-  if (!mrg->frozen)
-  {
-    MrgItem *item;
-    Ctx *cr = mrg_cr (mrg);
-
-    /* generate bounding box of what to listen for - from current cairo path */
-    if (types & MRG_KEY)
-    {
-      x = 0;
-      y = 0;
-      width = 0;
-      height = 0;
-    }
-    else
-    {float ex1,ey1,ex2,ey2;
-     ctx_path_extents (cr, &ex1, &ey1, &ex2, &ey2);
-     x = ex1;
-     y = ey1;
-     width = ex2 - ex1;
-     height = ey2 - ey1;
-    }
-
-    /* early bail for listeners outside screen  */
-    {
-      float tx = x;
-      float ty = y;
-      float tw = width;
-      float th = height;
-      ctx_user_to_device (&cr->state, &tx, &ty);
-      ctx_user_to_device_distance (&cr->state, &tw, &th);
-      if (ty > mrg->height * 2 ||
-          tx > mrg->width * 2 ||
-          tx + tw < 0 ||
-          ty + th < 0)
-      {
-        if (finalize)
-          finalize (data1, data2, finalize_data);
-        return;
-      }
-    }
-
-    item = calloc (sizeof (MrgItem), 1);
-    item->x0 = x;
-    item->y0 = y;
-    item->x1 = x + width;
-    item->y1 = y + height;
-    item->cb[0].types = types;
-    item->cb[0].cb = cb;
-    item->cb[0].data1 = data1;
-    item->cb[0].data2 = data2;
-    item->cb[0].finalize = finalize;
-    item->cb[0].finalize_data = finalize_data;
-    item->cb_count = 1;
-    item->types = types;
-    //item->path = cairo_copy_path (cr); // XXX
-    //item->path_hash = path_hash (item->path);
-    ctx_get_matrix (cr, &item->inv_matrix);
-    ctx_matrix_invert (&item->inv_matrix);
-
-    if (mrg->items)
-    {
-      MrgList *l;
-      for (l = mrg->items; l; l = l->next)
-      {
-        MrgItem *item2 = l->data;
-
-        /* store multiple callbacks for one entry when the paths
-         * are exact matches, reducing per event traversal checks at the
-         * cost of a little paint-hit (XXX: is this the right tradeoff,
-         * perhaps it is better to spend more time during event processing
-         * than during paint?)
-         */
-        if (item->path_hash == item2->path_hash &&
-            path_equal (item->path, item2->path))
-        {
-          /* found an item, copy over cb data  */
-          item2->cb[item2->cb_count] = item->cb[0];
-          free (item);
-          item2->cb_count++;
-          item2->types |= types;
-          /* increment ref_count? */
-         return;
-        }
-      }
-    }
-    item->ref_count = 1;
-    mrg_list_prepend_full (&mrg->items, item, (void*)_mrg_item_unref, NULL);
-  }
-}
-
-void mrg_listen (Mrg     *mrg,
-                 MrgType  types,
-                 MrgCb    cb,
-                 void*    data1,
-                 void*    data2)
-{
-  if (types == MRG_DRAG_MOTION)
-    types = MRG_DRAG_MOTION | MRG_DRAG_PRESS;
-  return mrg_listen_full (mrg, types, cb, data1, data2, NULL, NULL);
-}
 
 
 /* x and y in cairo user units ; returns x advance in user units  */
@@ -6665,9 +6559,7 @@ void mrg_add_binding (Mrg *mrg,
                       const char *action,
                       const char *label,
                       MrgCb cb,
-                      void  *cb_data)
-{
-}
+                      void  *cb_data);
 
 
 void mrg_text_edit_bindings (Mrg *mrg)
@@ -8891,5 +8783,212 @@ void mrg_destroy (Mrg *mrg)
   mrg->edited_str = NULL;
   free (mrg);
 }
+
+
+/*********** mrg beyond xml layout ***********************/
+
+
+void mrg_add_binding_full (Mrg *mrg,
+                           const char *key,
+                           const char *action,
+                           const char *label,
+                           MrgCb       cb,
+                           void       *cb_data,
+                           MrgDestroyNotify destroy_notify,
+                           void       *destroy_data)
+{
+  if (mrg->n_bindings +1 >= MRG_MAX_BINDINGS)
+  {
+    fprintf (stderr, "warning: mrg binding overflow\n");
+    return;
+  }
+  mrg->bindings[mrg->n_bindings].nick = strdup (key);
+  strcpy (mrg->bindings[mrg->n_bindings].nick, key);
+
+  if (action)
+    mrg->bindings[mrg->n_bindings].command = action ? strdup (action) : NULL;
+  if (label)
+    mrg->bindings[mrg->n_bindings].label = label ? strdup (label) : NULL;
+  mrg->bindings[mrg->n_bindings].cb = cb;
+  mrg->bindings[mrg->n_bindings].cb_data = cb_data;
+  mrg->bindings[mrg->n_bindings].destroy_notify = destroy_notify;
+  mrg->bindings[mrg->n_bindings].destroy_data = destroy_data;
+  mrg->n_bindings++;
+}
+
+void mrg_add_binding (Mrg *mrg,
+                      const char *key,
+                      const char *action,
+                      const char *label,
+                      MrgCb cb,
+                      void  *cb_data)
+{
+  mrg_add_binding_full (mrg, key, action, label, cb, cb_data, NULL, NULL);
+}
+
+void _mrg_bindings_key_down (MrgEvent *event, void *data1, void *data2)
+{
+  Mrg *mrg = event->mrg;
+  int i;
+  int handled = 0;
+
+  for (i = mrg->n_bindings-1; i>=0; i--)
+    if (!strcmp (mrg->bindings[i].nick, event->string))
+    {
+      if (mrg->bindings[i].cb)
+      {
+        mrg->bindings[i].cb (event, mrg->bindings[i].cb_data, NULL);
+        if (event->stop_propagate)
+          return;
+        handled = 1;
+      }
+    }
+  if (!handled)
+  for (i = mrg->n_bindings-1; i>=0; i--)
+    if (!strcmp (mrg->bindings[i].nick, "unhandled"))
+    {
+      if (mrg->bindings[i].cb)
+      {
+        mrg->bindings[i].cb (event, mrg->bindings[i].cb_data, NULL);
+        if (event->stop_propagate)
+          return;
+      }
+    }
+}
+
+void mrg_clear_bindings (Mrg *mrg)
+{
+  int i;
+  for (i = 0; mrg->bindings[i].nick; i ++)
+  {
+    if (mrg->bindings[i].destroy_notify)
+      mrg->bindings[i].destroy_notify (mrg->bindings[i].destroy_data);
+    free (mrg->bindings[i].nick);
+    if (mrg->bindings[i].command)
+      free (mrg->bindings[i].command);
+    if (mrg->bindings[i].label)
+      free (mrg->bindings[i].label);
+  }
+  memset (&mrg->bindings, 0, sizeof (mrg->bindings));
+  mrg->n_bindings = 0;
+}
+
+MrgBinding *mrg_get_bindings (Mrg *mrg)
+{
+  return &mrg->bindings[0];
+}
+
+void mrg_listen_full (Mrg     *mrg,
+                      MrgType  types,
+                      MrgCb    cb,
+                      void    *data1,
+                      void    *data2,
+                      void   (*finalize)(void *listen_data, void *listen_data2,
+                                         void *finalize_data),
+                      void    *finalize_data)
+{
+  float x, y, width, height;
+
+  if (!mrg->frozen)
+  {
+    MrgItem *item;
+    Ctx *cr = mrg_cr (mrg);
+
+    /* generate bounding box of what to listen for - from current cairo path */
+    if (types & MRG_KEY)
+    {
+      x = 0;
+      y = 0;
+      width = 0;
+      height = 0;
+    }
+    else
+    {float ex1,ey1,ex2,ey2;
+     ctx_path_extents (cr, &ex1, &ey1, &ex2, &ey2);
+     x = ex1;
+     y = ey1;
+     width = ex2 - ex1;
+     height = ey2 - ey1;
+    }
+
+    /* early bail for listeners outside screen  */
+    {
+      float tx = x;
+      float ty = y;
+      float tw = width;
+      float th = height;
+      ctx_user_to_device (&cr->state, &tx, &ty);
+      ctx_user_to_device_distance (&cr->state, &tw, &th);
+      if (ty > mrg->height * 2 ||
+          tx > mrg->width * 2 ||
+          tx + tw < 0 ||
+          ty + th < 0)
+      {
+        if (finalize)
+          finalize (data1, data2, finalize_data);
+        return;
+      }
+    }
+
+    item = calloc (sizeof (MrgItem), 1);
+    item->x0 = x;
+    item->y0 = y;
+    item->x1 = x + width;
+    item->y1 = y + height;
+    item->cb[0].types = types;
+    item->cb[0].cb = cb;
+    item->cb[0].data1 = data1;
+    item->cb[0].data2 = data2;
+    item->cb[0].finalize = finalize;
+    item->cb[0].finalize_data = finalize_data;
+    item->cb_count = 1;
+    item->types = types;
+    //item->path = cairo_copy_path (cr); // XXX
+    //item->path_hash = path_hash (item->path);
+    ctx_get_matrix (cr, &item->inv_matrix);
+    ctx_matrix_invert (&item->inv_matrix);
+
+    if (mrg->items)
+    {
+      MrgList *l;
+      for (l = mrg->items; l; l = l->next)
+      {
+        MrgItem *item2 = l->data;
+
+        /* store multiple callbacks for one entry when the paths
+         * are exact matches, reducing per event traversal checks at the
+         * cost of a little paint-hit (XXX: is this the right tradeoff,
+         * perhaps it is better to spend more time during event processing
+         * than during paint?)
+         */
+        if (item->path_hash == item2->path_hash &&
+            path_equal (item->path, item2->path))
+        {
+          /* found an item, copy over cb data  */
+          item2->cb[item2->cb_count] = item->cb[0];
+          free (item);
+          item2->cb_count++;
+          item2->types |= types;
+          /* increment ref_count? */
+         return;
+        }
+      }
+    }
+    item->ref_count = 1;
+    mrg_list_prepend_full (&mrg->items, item, (void*)_mrg_item_unref, NULL);
+  }
+}
+
+void mrg_listen (Mrg     *mrg,
+                 MrgType  types,
+                 MrgCb    cb,
+                 void*    data1,
+                 void*    data2)
+{
+  if (types == MRG_DRAG_MOTION)
+    types = MRG_DRAG_MOTION | MRG_DRAG_PRESS;
+  return mrg_listen_full (mrg, types, cb, data1, data2, NULL, NULL);
+}
+
 
 #endif
