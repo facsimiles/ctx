@@ -24,7 +24,7 @@ tiny: tiny.c ../ctx.h ../fonts/*.h Makefile
 small: small.c ../ctx.h ../fonts/*.h Makefile
 	$(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
-full: full.c ../ctx.h ../fonts/*.h Makefile
+full: full.c ../*.h ../fonts/*.h Makefile
 	$(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
 

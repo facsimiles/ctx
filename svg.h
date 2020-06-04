@@ -3660,7 +3660,6 @@ static inline float mrg_parse_px_x (Mrg *mrg, const char *str, char **endptr)
   if (!str)
     return 0.0;
 
-
   result = mrg_parse_float (mrg, str, &end); /* XXX: , vs . problem in some locales */
   if (endptr)
     *endptr=end;
@@ -3874,838 +3873,675 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
 
   switch (key)
   {
-  case CTX_text_indent:
-  case CTX_letter_spacing:
-  case CTX_word_spacing:
-  case CTX_stroke_width:
-    SET_PROPh(key, mrg_parse_px_y (mrg, value, NULL));
-    break;
-    break;
-  case CTX_tab_size:
-    SET_PROP(tab_size, mrg_parse_px_x (mrg, value, NULL));
-    break;
-  case CTX_margin:
-    {
-      float vals[10];
-      int    n_vals;
-
-      n_vals = mrg_parse_pxs (mrg, value, vals);
-      switch (n_vals)
+    case CTX_top:
+    case CTX_height:
+    case CTX_line_width:
+    case CTX_text_indent:
+    case CTX_letter_spacing:
+    case CTX_word_spacing:
+    case CTX_stroke_width:
+    case CTX_text_stroke_width:
+    case CTX_line_height:
+    case CTX_border_top_width:
+    case CTX_border_bottom_width:
+    case CTX_margin_top:
+    case CTX_margin_bottom:
+    case CTX_padding_bottom:
+    case CTX_padding_top:
+    case CTX_min_height:
+    case CTX_max_height:
+      SET_PROPh(key, mrg_parse_px_y (mrg, value, NULL));
+      break;
+    case CTX_border_right_width:
+    case CTX_border_left_width:
+    case CTX_left:
+    case CTX_right:
+    case CTX_tab_size:
+    case CTX_min_width:
+    case CTX_max_width:
+    case CTX_padding_left:
+    case CTX_padding_right:
+      SET_PROPh(key, mrg_parse_px_x (mrg, value, NULL));
+      break;
+    case CTX_margin:
       {
-        case 1:
-          ctx_set (ctx, CTX_margin_top, vals[0]);
-          ctx_set (ctx, CTX_margin_right, vals[0]);
-          ctx_set (ctx, CTX_margin_bottom, vals[0]);
-          ctx_set (ctx, CTX_margin_left, vals[0]);
-          break;
-        case 2:
-          ctx_set (ctx, CTX_margin_top, vals[0]);
-          ctx_set (ctx, CTX_margin_right, vals[1]);
-          ctx_set (ctx, CTX_margin_bottom, vals[0]);
-          ctx_set (ctx, CTX_margin_left, vals[1]);
-          break;
-        case 3:
-          ctx_set (ctx, CTX_margin_top, vals[0]);
-          ctx_set (ctx, CTX_margin_right, vals[1]);
-          ctx_set (ctx, CTX_margin_bottom, vals[2]);
-          ctx_set (ctx, CTX_margin_left, vals[1]);
-          break;
-        case 4:
-          ctx_set (ctx, CTX_margin_top, vals[0]);
-          ctx_set (ctx, CTX_margin_right, vals[1]);
-          ctx_set (ctx, CTX_margin_bottom, vals[2]);
-          ctx_set (ctx, CTX_margin_left, vals[3]);
-          break;
+        float vals[10];
+        int    n_vals;
+  
+        n_vals = mrg_parse_pxs (mrg, value, vals);
+        switch (n_vals)
+        {
+          case 1:
+            ctx_set (ctx, CTX_margin_top, vals[0]);
+            ctx_set (ctx, CTX_margin_right, vals[0]);
+            ctx_set (ctx, CTX_margin_bottom, vals[0]);
+            ctx_set (ctx, CTX_margin_left, vals[0]);
+            break;
+          case 2:
+            ctx_set (ctx, CTX_margin_top, vals[0]);
+            ctx_set (ctx, CTX_margin_right, vals[1]);
+            ctx_set (ctx, CTX_margin_bottom, vals[0]);
+            ctx_set (ctx, CTX_margin_left, vals[1]);
+            break;
+          case 3:
+            ctx_set (ctx, CTX_margin_top, vals[0]);
+            ctx_set (ctx, CTX_margin_right, vals[1]);
+            ctx_set (ctx, CTX_margin_bottom, vals[2]);
+            ctx_set (ctx, CTX_margin_left, vals[1]);
+            break;
+          case 4:
+            ctx_set (ctx, CTX_margin_top, vals[0]);
+            ctx_set (ctx, CTX_margin_right, vals[1]);
+            ctx_set (ctx, CTX_margin_bottom, vals[2]);
+            ctx_set (ctx, CTX_margin_left, vals[3]);
+            break;
+        }
+      }
+      break;
+    case CTX_margin_left:
+    {
+      if (val_hash == CTX_auto)
+      {
+        s->margin_left_auto = 1;
+      }
+      else
+      {
+        ctx_set (ctx, CTX_margin_left, mrg_parse_px_x (mrg, value, NULL));
+        s->margin_left_auto = 0;
       }
     }
-    break;
-  case CTX_margin_top:
-    ctx_set (ctx, CTX_margin_top, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_margin_bottom:
-    ctx_set (ctx, CTX_margin_bottom, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_margin_left:
-  {
-    if (val_hash == CTX_auto)
+      break;
+    case CTX_margin_right:
     {
-      s->margin_left_auto = 1;
-    }
-    else
-    {
-      ctx_set (ctx, CTX_margin_left, mrg_parse_px_x (mrg, value, NULL));
-      s->margin_left_auto = 0;
-    }
-  }
-    break;
-  case CTX_margin_right:
-  {
-    if (val_hash == CTX_auto)
-    {
-      s->margin_right_auto = 1;
-    }
-    else
-    {
-      ctx_set (ctx, CTX_margin_right, mrg_parse_px_x (mrg, value, NULL));
-      s->margin_right_auto = 0;
-    }
-  }
-    break;
-
-  case CTX_padding_top:
-    ctx_set (ctx, CTX_padding_top, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_padding_bottom:
-    ctx_set (ctx, CTX_padding_bottom, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_padding_left:
-    ctx_set (ctx, CTX_padding_left, mrg_parse_px_x (mrg, value, NULL));
-    break;
-  case CTX_padding_right:
-    ctx_set (ctx, CTX_padding_right, mrg_parse_px_x (mrg, value, NULL));
-    break;
-  case CTX_padding:
-    {
-      float vals[10];
-      int   n_vals;
-      n_vals = mrg_parse_pxs (mrg, value, vals);
-      switch (n_vals)
+      if (val_hash == CTX_auto)
       {
-        case 1:
-          ctx_set (ctx, CTX_padding_top,    vals[0]);
-          ctx_set (ctx, CTX_padding_right,  vals[0]);
-          ctx_set (ctx, CTX_padding_bottom, vals[0]);
-          ctx_set (ctx, CTX_padding_left,   vals[0]);
-          break;
-        case 2:
-          ctx_set (ctx, CTX_padding_top,    vals[0]);
-          ctx_set (ctx, CTX_padding_right,  vals[1]);
-          ctx_set (ctx, CTX_padding_bottom, vals[0]);
-          ctx_set (ctx, CTX_padding_left,   vals[1]);
-          break;
-        case 3:
-          ctx_set (ctx, CTX_padding_top,    vals[0]);
-          ctx_set (ctx, CTX_padding_right,  vals[1]);
-          ctx_set (ctx, CTX_padding_bottom, vals[2]);
-          ctx_set (ctx, CTX_padding_left,   vals[1]);
-          break;
-        case 4:
-          ctx_set (ctx, CTX_padding_top,    vals[0]);
-          ctx_set (ctx, CTX_padding_right,  vals[1]);
-          ctx_set (ctx, CTX_padding_bottom, vals[2]);
-          ctx_set (ctx, CTX_padding_left,   vals[3]);
-          break;
+        s->margin_right_auto = 1;
+      }
+      else
+      {
+        ctx_set (ctx, CTX_margin_right, mrg_parse_px_x (mrg, value, NULL));
+        s->margin_right_auto = 0;
       }
     }
-    break;
-  case CTX_border_top_width:
-    ctx_set (ctx, CTX_border_top_width, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_border_bottom_width:
-    ctx_set (ctx, CTX_border_bottom_width, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_border_left_width:
-    ctx_set (ctx, CTX_border_left_width, mrg_parse_px_x (mrg, value, NULL));
-    break;
-  case CTX_border_right_width:
-    ctx_set (ctx, CTX_border_right_width, mrg_parse_px_x (mrg, value, NULL));
-    break;
-  case CTX_top:
-    ctx_set (ctx, CTX_top, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_height:
-    ctx_set (ctx, CTX_height, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_left:
-    ctx_set (ctx, CTX_left, mrg_parse_px_x (mrg, value, NULL));
-    break;
-  case CTX_right:
-    ctx_set (ctx, CTX_right, mrg_parse_px_x (mrg, value, NULL));
-    break;
-  case CTX_visibility:
-  {
-    if (val_hash == CTX_visible)
-      s->visibility = MRG_VISIBILITY_VISIBLE;
-    else if (val_hash == CTX_hidden)
-      s->visibility = MRG_VISIBILITY_HIDDEN;
-    else
-      s->visibility = MRG_VISIBILITY_VISIBLE;
-  }
-    break;
-  case CTX_min_height:
-  case CTX_max_height:
-    ctx_set (ctx, key, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_min_width:
-  case CTX_max_width:
-    ctx_set (ctx, key, mrg_parse_px_x (mrg, value, NULL));
-    break;
-  case CTX_border_width:
+      break;
+  
+    case CTX_padding:
+      {
+        float vals[10];
+        int   n_vals;
+        n_vals = mrg_parse_pxs (mrg, value, vals);
+        switch (n_vals)
+        {
+          case 1:
+            ctx_set (ctx, CTX_padding_top,    vals[0]);
+            ctx_set (ctx, CTX_padding_right,  vals[0]);
+            ctx_set (ctx, CTX_padding_bottom, vals[0]);
+            ctx_set (ctx, CTX_padding_left,   vals[0]);
+            break;
+          case 2:
+            ctx_set (ctx, CTX_padding_top,    vals[0]);
+            ctx_set (ctx, CTX_padding_right,  vals[1]);
+            ctx_set (ctx, CTX_padding_bottom, vals[0]);
+            ctx_set (ctx, CTX_padding_left,   vals[1]);
+            break;
+          case 3:
+            ctx_set (ctx, CTX_padding_top,    vals[0]);
+            ctx_set (ctx, CTX_padding_right,  vals[1]);
+            ctx_set (ctx, CTX_padding_bottom, vals[2]);
+            ctx_set (ctx, CTX_padding_left,   vals[1]);
+            break;
+          case 4:
+            ctx_set (ctx, CTX_padding_top,    vals[0]);
+            ctx_set (ctx, CTX_padding_right,  vals[1]);
+            ctx_set (ctx, CTX_padding_bottom, vals[2]);
+            ctx_set (ctx, CTX_padding_left,   vals[3]);
+            break;
+        }
+      }
+      break;
+    case CTX_visibility:
     {
-      float valf = mrg_parse_px_y (mrg, value, NULL);
-
-      ctx_set (ctx, CTX_border_top_width, valf);
-      ctx_set (ctx, CTX_border_bottom_width, valf);
-      ctx_set (ctx, CTX_border_right_width, valf);
-      ctx_set (ctx, CTX_border_left_width, valf);
+      if (val_hash == CTX_visible)
+        s->visibility = MRG_VISIBILITY_VISIBLE;
+      else if (val_hash == CTX_hidden)
+        s->visibility = MRG_VISIBILITY_HIDDEN;
+      else
+        s->visibility = MRG_VISIBILITY_VISIBLE;
     }
-    break;
-  case CTX_border_color:
+      break;
+  
+    case CTX_border_width:
+      {
+        float valf = mrg_parse_px_y (mrg, value, NULL);
+  
+        ctx_set (ctx, CTX_border_top_width, valf);
+        ctx_set (ctx, CTX_border_bottom_width, valf);
+        ctx_set (ctx, CTX_border_right_width, valf);
+        ctx_set (ctx, CTX_border_left_width, valf);
+      }
+      break;
+    case CTX_border_color:
+      {
+        CtxColor color;
+        mrg_color_set_from_string (mrg, &color, value);
+        ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
+        ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
+        ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
+        ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
+      }
+      break;
+    case CTX_border:
+      {
+        char word[64];
+        int w = 0;
+        const char *p;
+        for (p = value; ; p++)
+        {
+          switch (*p)
+          {
+            case ' ':
+            case '\n':
+            case '\t':
+            case '\0':
+              if (w)
+              {
+                if ((word[0] >= '0' && word[0]<='9') || word[0] == '.')
+                {
+                  float valf = mrg_parse_px_y (mrg, word, NULL);
+                  ctx_set (ctx, CTX_border_top_width, valf);
+                  ctx_set (ctx, CTX_border_bottom_width, valf);
+                  ctx_set (ctx, CTX_border_right_width, valf);
+                  ctx_set (ctx, CTX_border_left_width, valf);
+                } else if (!strcmp (word, "solid") ||
+                           !strcmp (word, "dotted") ||
+                           !strcmp (word, "inset")) {
+                } else {
+                  CtxColor color;
+                  mrg_color_set_from_string (mrg, &color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
+                  ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
+                  ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
+                  ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
+                }
+                word[0]=0;
+                w=0;
+              }
+              break;
+            default:
+              word[w++]=*p;
+              word[w]=0;
+              break;
+          }
+          if (!*p)
+            break;
+        }
+      }
+      break;
+    case CTX_border_right:
+      {
+        char word[64];
+        int w = 0;
+        const char *p;
+        for (p = value; ; p++)
+        {
+          switch (*p)
+          {
+            case ' ':
+            case '\n':
+            case '\t':
+            case '\0':
+              if (w)
+              {
+                if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
+                {
+                  float valf = mrg_parse_px_x (mrg, word, NULL);
+                  ctx_set (ctx, CTX_border_right_width, valf);
+                } else if (!strcmp (word, "solid") ||
+                           !strcmp (word, "dotted") ||
+                           !strcmp (word, "inset")) {
+                } else {
+                  CtxColor color;
+                  mrg_color_set_from_string (mrg, &color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
+                }
+                word[0]=0;
+                w=0;
+              }
+              break;
+            default:
+              word[w++]=*p;
+              word[w]=0;
+              break;
+          }
+          if (!*p)
+            break;
+        }
+      }
+      break;
+    case CTX_border_top:
+      {
+        char word[64];
+        int w = 0;
+        const char *p;
+        for (p = value; ; p++)
+        {
+          switch (*p)
+          {
+            case ' ':
+            case '\n':
+            case '\r':
+            case '\t':
+            case '\0':
+              if (w)
+              {
+                if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
+                {
+                  float valf = mrg_parse_px_x (mrg, word, NULL);
+                  ctx_set (ctx, CTX_border_top_width, valf);
+                } else if (!strcmp (word, "solid") ||
+                           !strcmp (word, "dotted") ||
+                           !strcmp (word, "inset")) {
+                } else {
+                  CtxColor color;
+                  mrg_color_set_from_string (mrg, &color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
+                }
+                word[0]=0;
+                w=0;
+              }
+              break;
+            default:
+              word[w++]=*p;
+              word[w]=0;
+              break;
+          }
+          if (!*p)
+            break;
+        }
+      }
+      break;
+    case CTX_border_left:
+      {
+        char word[64];
+        int w = 0;
+        const char *p;
+        for (p = value; ; p++)
+        {
+          switch (*p)
+          {
+            case ' ':
+            case '\n':
+            case '\r':
+            case '\t':
+            case '\0':
+              if (w)
+              {
+                if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
+                {
+                  float valf = mrg_parse_px_x (mrg, word, NULL);
+                  ctx_set (ctx, CTX_border_left_width, valf);
+                } else if (!strcmp (word, "solid") ||
+                           !strcmp (word, "dotted") ||
+                           !strcmp (word, "inset")) {
+                } else {
+                  CtxColor color;
+                  mrg_color_set_from_string (mrg, &color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
+                }
+                word[0]=0;
+                w=0;
+              }
+              break;
+            default:
+              word[w++]=*p;
+              word[w]=0;
+              break;
+          }
+          if (!*p)
+            break;
+        }
+      }
+      break;
+    case CTX_border_bottom:
+      {
+        char word[64];
+        int w = 0;
+        const char *p;
+        for (p = value; ; p++)
+        {
+          switch (*p)
+          {
+            case ' ':
+            case '\n':
+            case '\r':
+            case '\t':
+            case '\0':
+              if (w)
+              {
+                uint32_t word_hash = ctx_strhash (word, 0);
+                if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
+                {
+                  float valf = mrg_parse_px_x (mrg, word, NULL);
+                  ctx_set (ctx, CTX_border_bottom_width, valf);
+                } else if (word_hash == CTX_solid ||
+                           word_hash == CTX_dotted ||
+                           word_hash == CTX_inset) {
+                } else {
+                  CtxColor color;
+                  mrg_color_set_from_string (mrg, &color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
+                }
+                word[0]=0;
+                w=0;
+              }
+              break;
+            default:
+              word[w++]=*p;
+              word[w]=0;
+              break;
+          }
+          if (!*p)
+            break;
+        }
+      }
+      break;
+  
+    case CTX_background_color:
+    case CTX_background:
     {
       CtxColor color;
       mrg_color_set_from_string (mrg, &color, value);
-      ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
-      ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
-      ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
-      ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
+      ctx_set_color (mrg->ctx, CTX_background_color, &color);
     }
-    break;
-  case CTX_border:
-    {
-      char word[64];
-      int w = 0;
-      const char *p;
-      for (p = value; ; p++)
-      {
-        switch (*p)
-        {
-          case ' ':
-          case '\n':
-          case '\t':
-          case '\0':
-            if (w)
-            {
-              if ((word[0] >= '0' && word[0]<='9') || word[0] == '.')
-              {
-                float valf = mrg_parse_px_y (mrg, word, NULL);
-                ctx_set (ctx, CTX_border_top_width, valf);
-                ctx_set (ctx, CTX_border_bottom_width, valf);
-                ctx_set (ctx, CTX_border_right_width, valf);
-                ctx_set (ctx, CTX_border_left_width, valf);
-              } else if (!strcmp (word, "solid") ||
-                         !strcmp (word, "dotted") ||
-                         !strcmp (word, "inset")) {
-              } else {
-                CtxColor color;
-                mrg_color_set_from_string (mrg, &color, word);
-                ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
-                ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
-                ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
-                ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
-              }
-              word[0]=0;
-              w=0;
-            }
-            break;
-          default:
-            word[w++]=*p;
-            word[w]=0;
-            break;
-        }
-        if (!*p)
-          break;
-      }
-    }
-    break;
-  case CTX_border_right:
-    {
-      char word[64];
-      int w = 0;
-      const char *p;
-      for (p = value; ; p++)
-      {
-        switch (*p)
-        {
-          case ' ':
-          case '\n':
-          case '\t':
-          case '\0':
-            if (w)
-            {
-              if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
-              {
-                float valf = mrg_parse_px_x (mrg, word, NULL);
-                ctx_set (ctx, CTX_border_right_width, valf);
-              } else if (!strcmp (word, "solid") ||
-                         !strcmp (word, "dotted") ||
-                         !strcmp (word, "inset")) {
-              } else {
-                CtxColor color;
-                mrg_color_set_from_string (mrg, &color, word);
-                ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
-              }
-              word[0]=0;
-              w=0;
-            }
-            break;
-          default:
-            word[w++]=*p;
-            word[w]=0;
-            break;
-        }
-        if (!*p)
-          break;
-      }
-    }
-    break;
-  case CTX_border_top:
-    {
-      char word[64];
-      int w = 0;
-      const char *p;
-      for (p = value; ; p++)
-      {
-        switch (*p)
-        {
-          case ' ':
-          case '\n':
-          case '\r':
-          case '\t':
-          case '\0':
-            if (w)
-            {
-              if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
-              {
-                float valf = mrg_parse_px_x (mrg, word, NULL);
-                ctx_set (ctx, CTX_border_top_width, valf);
-              } else if (!strcmp (word, "solid") ||
-                         !strcmp (word, "dotted") ||
-                         !strcmp (word, "inset")) {
-              } else {
-                CtxColor color;
-                mrg_color_set_from_string (mrg, &color, word);
-                ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
-              }
-              word[0]=0;
-              w=0;
-            }
-            break;
-          default:
-            word[w++]=*p;
-            word[w]=0;
-            break;
-        }
-        if (!*p)
-          break;
-      }
-    }
-    break;
-  case CTX_border_left:
-    {
-      char word[64];
-      int w = 0;
-      const char *p;
-      for (p = value; ; p++)
-      {
-        switch (*p)
-        {
-          case ' ':
-          case '\n':
-          case '\r':
-          case '\t':
-          case '\0':
-            if (w)
-            {
-              if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
-              {
-                float valf = mrg_parse_px_x (mrg, word, NULL);
-                ctx_set (ctx, CTX_border_left_width, valf);
-              } else if (!strcmp (word, "solid") ||
-                         !strcmp (word, "dotted") ||
-                         !strcmp (word, "inset")) {
-              } else {
-                CtxColor color;
-                mrg_color_set_from_string (mrg, &color, word);
-                ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
-              }
-              word[0]=0;
-              w=0;
-            }
-            break;
-          default:
-            word[w++]=*p;
-            word[w]=0;
-            break;
-        }
-        if (!*p)
-          break;
-      }
-    }
-    break;
-  case CTX_border_bottom:
-    {
-      char word[64];
-      int w = 0;
-      const char *p;
-      for (p = value; ; p++)
-      {
-        switch (*p)
-        {
-          case ' ':
-          case '\n':
-          case '\r':
-          case '\t':
-          case '\0':
-            if (w)
-            {
-              uint32_t word_hash = ctx_strhash (word, 0);
-              if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
-              {
-                float valf = mrg_parse_px_x (mrg, word, NULL);
-                ctx_set (ctx, CTX_border_bottom_width, valf);
-              } else if (word_hash == CTX_solid ||
-                         word_hash == CTX_dotted ||
-                         word_hash == CTX_inset) {
-              } else {
-                CtxColor color;
-                mrg_color_set_from_string (mrg, &color, word);
-                ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
-              }
-              word[0]=0;
-              w=0;
-            }
-            break;
-          default:
-            word[w++]=*p;
-            word[w]=0;
-            break;
-        }
-        if (!*p)
-          break;
-      }
-    }
-    break;
-  case CTX_line_height:
-    mrg_set_line_height (mrg, mrg_parse_px_y (mrg, value, NULL));
-    break;
-  case CTX_line_width:
-  {
-    float val =mrg_parse_px_y (mrg, value, NULL);
-    ctx_set (mrg_cr (mrg), CTX_line_width, val);
-  }
-    break;
-
-  case CTX_background_color:
-  case CTX_background:
-  {
-    CtxColor color;
-    mrg_color_set_from_string (mrg, &color, value);
-    ctx_set_color (mrg->ctx, CTX_background_color, &color);
-  }
-    break;
-  case CTX_fill_color:
-  case CTX_fill:
-  {
-    CtxColor color;
-    mrg_color_set_from_string (mrg, &color, value);
-    ctx_set_color (mrg->ctx, CTX_fill_color, &color);
-  }
-    break;
-  case CTX_stroke_color:
-  case CTX_stroke:
-  {
-    CtxColor color;
-    mrg_color_set_from_string (mrg, &color, value);
-    ctx_set_color (mrg->ctx, CTX_stroke_color, &color);
-  }
-    break;
-  case CTX_text_stroke_width:
-  {
-    ctx_set (mrg->ctx, CTX_text_stroke_width, mrg_parse_px_y (mrg, value, NULL));
-  }
-    break;
-  case CTX_text_stroke_color:
-  {
-    CtxColor color;
-    mrg_color_set_from_string (mrg, &color, value);
-    ctx_set_color (mrg->ctx, CTX_text_stroke_color, &color);
-  }
-    break;
-  case CTX_text_stroke:
-  {
-    char *col = NULL;
-    ctx_set (mrg->ctx, CTX_text_stroke_width, mrg_parse_px_y (mrg, value, &col));
-
-    if (col)
+      break;
+    case CTX_fill_color:
+    case CTX_fill:
     {
       CtxColor color;
-      mrg_color_set_from_string (mrg, &color, col + 1);
+      mrg_color_set_from_string (mrg, &color, value);
+      ctx_set_color (mrg->ctx, CTX_fill_color, &color);
+    }
+      break;
+    case CTX_stroke_color:
+    case CTX_stroke:
+    {
+      CtxColor color;
+      mrg_color_set_from_string (mrg, &color, value);
+      ctx_set_color (mrg->ctx, CTX_stroke_color, &color);
+    }
+      break;
+    case CTX_text_stroke_color:
+    {
+      CtxColor color;
+      mrg_color_set_from_string (mrg, &color, value);
       ctx_set_color (mrg->ctx, CTX_text_stroke_color, &color);
     }
-  }
-    break;
-  case CTX_opacity:
-  {
-#if 0
-    float dval = mrg_parse_float (mrg, value, NULL);
-      if (dval <= 0.5f)
-        s->text_decoration |= MRG_DIM;
-      s->fill_color.alpha = dval;
-      s->border_top_color.alpha = dval;
-      s->border_left_color.alpha = dval;
-      s->border_right_color.alpha = dval;
-      s->border_bottom_color.alpha = dval;
-      s->stroke_color.alpha = dval;
-      s->color.alpha = dval;
-      s->background_color.alpha = dval;
-#endif
+      break;
+    case CTX_text_stroke:
+    {
+      char *col = NULL;
+      ctx_set (mrg->ctx, CTX_text_stroke_width, mrg_parse_px_y (mrg, value, &col));
+  
+      if (col)
+      {
+        CtxColor color;
+        mrg_color_set_from_string (mrg, &color, col + 1);
+        ctx_set_color (mrg->ctx, CTX_text_stroke_color, &color);
+      }
+    }
+      break;
+    case CTX_opacity:
+    {
       ctx_set_global_alpha (mrg->ctx, mrg_parse_float (mrg, value, NULL));
-  }
-    break;
-  case CTX_print_symbols:
-  switch (val_hash)
-  {
-      case CTX_true:
-      case CTX_1:
-      case CTX_yes:
-        s->print_symbols = 1;
-        break;
-      default:
-        s->print_symbols = 0;
-  }
-    break;
-  case CTX_font_weight:
-    {
-      if (val_hash == CTX_bold || val_hash == CTX_bolder)
-      {
-        s->text_decoration |= MRG_BOLD;
-        s->font_weight = MRG_FONT_WEIGHT_BOLD;
-      }
-      else
-      {
-        s->text_decoration ^= (s->text_decoration & MRG_BOLD);
-        s->font_weight = MRG_FONT_WEIGHT_NORMAL;
-      }
-#if 0 // XXX 
-      ctx_select_font_face (mrg_cr (mrg),
-          s->font_family,
-          s->font_style,
-          s->font_weight);
-#endif
+      ctx_set (mrg->ctx, CTX_opacity, mrg_parse_float (mrg, value, NULL));
     }
     break;
-  case CTX_white_space:
-    {
-      switch (val_hash)
-      {
-        default:
-        case CTX_normal:       s->white_space = MRG_WHITE_SPACE_NORMAL; break;
-        case CTX_nowrap:       s->white_space = MRG_WHITE_SPACE_NOWRAP; break;
-        case CTX_pre:          s->white_space = MRG_WHITE_SPACE_PRE; break;
-        case CTX_pre_line:     s->white_space = MRG_WHITE_SPACE_PRE_LINE; break;
-        case CTX_pre_wrap:     s->white_space = MRG_WHITE_SPACE_PRE_WRAP; break;
-      }
-    }
-    break;
-  case CTX_box_sizing:
-    {
-      if (val_hash == CTX_border_box)
-      {
-        s->box_sizing = MRG_BOX_SIZING_BORDER_BOX;
-        s->box_sizing = MRG_BOX_SIZING_CONTENT_BOX;
-      }
-    }
-    break;
-  case CTX_float:
+    case CTX_print_symbols:
     switch (val_hash)
     {
-      case CTX_left:
-        s->float_ = MRG_FLOAT_LEFT;
-        break;
-      case CTX_right:
-        s->float_ = MRG_FLOAT_RIGHT;
-        break;
-      default:
-        s->float_ = MRG_FLOAT_NONE;
+        case CTX_true:
+        case CTX_1:
+        case CTX_yes:
+          s->print_symbols = 1;
+          break;
+        default:
+          s->print_symbols = 0;
     }
-    break;
-  case CTX_overflow:
-    switch(val_hash)
-    {
-      case CTX_visible:
-        s->overflow = MRG_OVERFLOW_VISIBLE;
-        break;
-      case CTX_hidden:
-        s->overflow = MRG_OVERFLOW_HIDDEN;
-        break;
-      case CTX_scroll:
-        s->overflow = MRG_OVERFLOW_SCROLL;
-        break;
-      case CTX_auto:
-        s->overflow = MRG_OVERFLOW_AUTO;
-        break;
-      default:
-        s->overflow = MRG_OVERFLOW_VISIBLE;
-        break;
-    }
-    break;
-  case CTX_clear:
-    switch(val_hash)
-    {
-      case CTX_left:
-        s->clear = MRG_CLEAR_LEFT;
-        break;
-      case CTX_right:
-        s->clear = MRG_CLEAR_RIGHT;
-        break;
-      case CTX_both:
-        s->clear = MRG_CLEAR_BOTH;
-        break;
-      default:
-        s->clear = MRG_CLEAR_NONE;
-        break;
-    }
-    break;
-  case CTX_font_style:
-    switch(val_hash)
-    {
-      case CTX_italic:
-        s->font_style = MRG_FONT_STYLE_ITALIC;
-        break;
-      case CTX_oblique:
-        s->font_style = MRG_FONT_STYLE_OBLIQUE;
-        break;
-      default:
-        s->font_style = MRG_FONT_STYLE_NORMAL;
-#if 0 // XXX
-      cairo_select_font_face (mrg_cr (mrg),
-          s->font_family,
-          s->font_style,
-          s->font_weight);
-#endif
-    }
-    break;
-  case CTX_font_family:
-    {
-      ctx_set_string (mrg_cr (mrg), CTX_font_family, value);
-      ctx_set_font (mrg_cr (mrg), value);
-    }
-    break;
-  case CTX_syntax_highlight:
-    ctx_set_string (mrg_cr (mrg), CTX_syntax_highlight, value);
-    break;
-  case CTX_fill_rule:
-    {
-      if (val_hash == CTX_evenodd)
-        s->fill_rule = MRG_FILL_RULE_EVEN_ODD;
-      else if (val_hash == CTX_nonzero)
-        s->fill_rule = MRG_FILL_RULE_NONZERO;
-      else
-        s->fill_rule = MRG_FILL_RULE_EVEN_ODD;
-
+      break;
+    case CTX_font_weight:
+      switch (val_hash)
+      {
+        case CTX_bold:
+        case CTX_bolder:
+          s->text_decoration |= MRG_BOLD;
+          s->font_weight = MRG_FONT_WEIGHT_BOLD;
+          break;
+        default:
+          s->text_decoration ^= (s->text_decoration & MRG_BOLD);
+          s->font_weight = MRG_FONT_WEIGHT_NORMAL;
+      }
+  #if 0 // XXX 
+        ctx_select_font_face (mrg_cr (mrg),
+            s->font_family,
+            s->font_style,
+            s->font_weight);
+  #endif
+      break;
+    case CTX_white_space:
+      {
+        switch (val_hash)
+        {
+          default:
+          case CTX_normal:   s->white_space = MRG_WHITE_SPACE_NORMAL; break;
+          case CTX_nowrap:   s->white_space = MRG_WHITE_SPACE_NOWRAP; break;
+          case CTX_pre:      s->white_space = MRG_WHITE_SPACE_PRE; break;
+          case CTX_pre_line: s->white_space = MRG_WHITE_SPACE_PRE_LINE; break;
+          case CTX_pre_wrap: s->white_space = MRG_WHITE_SPACE_PRE_WRAP; break;
+        }
+      }
+      break;
+    case CTX_box_sizing:
+      {
+        if (val_hash == CTX_border_box)
+        {
+          s->box_sizing = MRG_BOX_SIZING_BORDER_BOX;
+          s->box_sizing = MRG_BOX_SIZING_CONTENT_BOX;
+        }
+      }
+      break;
+    case CTX_float:
+      switch (val_hash)
+      {
+        case CTX_left:  s->float_ = MRG_FLOAT_LEFT; break;
+        case CTX_right: s->float_ = MRG_FLOAT_RIGHT; break;
+        default:        s->float_ = MRG_FLOAT_NONE;
+      }
+      break;
+    case CTX_overflow:
+      switch(val_hash)
+      {
+        case CTX_visible: s->overflow = MRG_OVERFLOW_VISIBLE; break;
+        case CTX_hidden:  s->overflow = MRG_OVERFLOW_HIDDEN; break;
+        case CTX_scroll:  s->overflow = MRG_OVERFLOW_SCROLL; break;
+        case CTX_auto:    s->overflow = MRG_OVERFLOW_AUTO; break;
+        default:          s->overflow = MRG_OVERFLOW_VISIBLE; break;
+      }
+      break;
+    case CTX_clear:
+      switch(val_hash)
+      {
+        case CTX_left:  s->clear = MRG_CLEAR_LEFT; break;
+        case CTX_right: s->clear = MRG_CLEAR_RIGHT; break;
+        case CTX_both:  s->clear = MRG_CLEAR_BOTH; break;
+        default:        s->clear = MRG_CLEAR_NONE; break;
+      }
+      break;
+    case CTX_font_style:
+      switch(val_hash)
+      {
+        case CTX_italic:  s->font_style = MRG_FONT_STYLE_ITALIC; break;
+        case CTX_oblique: s->font_style = MRG_FONT_STYLE_OBLIQUE; break;
+        default:          s->font_style = MRG_FONT_STYLE_NORMAL;
+  #if 0 // XXX
+        cairo_select_font_face (mrg_cr (mrg),
+            s->font_family,
+            s->font_style,
+            s->font_weight);
+  #endif
+      }
+      break;
+    case CTX_font_family:
+      {
+        ctx_set_string (mrg_cr (mrg), CTX_font_family, value);
+        ctx_set_font (mrg_cr (mrg), value);
+      }
+      break;
+    case CTX_syntax_highlight:
+      ctx_set_string (mrg_cr (mrg), CTX_syntax_highlight, value);
+      break;
+    case CTX_fill_rule:
+      switch (val_hash)
+      { 
+        default:
+        case  CTX_evenodd: s->fill_rule = MRG_FILL_RULE_EVEN_ODD; break;
+        case  CTX_nonzero: s->fill_rule = MRG_FILL_RULE_NONZERO; break;
+      }
       if (s->fill_rule == MRG_FILL_RULE_EVEN_ODD)
         ctx_set_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_EVEN_ODD);
       else
         ctx_set_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_WINDING);
-    }
-    break;
-  case CTX_stroke_linejoin:
-    {
-      if (val_hash == CTX_miter)
-        s->stroke_linejoin = MRG_LINE_JOIN_MITER;
-      else if (val_hash == CTX_round)
-        s->stroke_linejoin = MRG_LINE_JOIN_ROUND;
-      else if (val_hash == CTX_bevel)
-        s->stroke_linejoin = MRG_LINE_JOIN_BEVEL;
-      else
-        s->stroke_linejoin = MRG_LINE_JOIN_MITER;
+      break;
+    case CTX_stroke_linejoin:
+      switch (val_hash)
+      { 
+        case CTX_miter: s->stroke_linejoin = MRG_LINE_JOIN_MITER; break;
+        case CTX_round: s->stroke_linejoin = MRG_LINE_JOIN_ROUND; break;
+        case CTX_bevel: s->stroke_linejoin = MRG_LINE_JOIN_BEVEL; break;
+        default:        s->stroke_linejoin = MRG_LINE_JOIN_MITER;
+      }
       ctx_set_line_join (mrg_cr (mrg), s->stroke_linejoin);
-    }
-    break;
-  case CTX_stroke_linecap:
-    {
-      if (val_hash == CTX_butt)
-        s->stroke_linecap = MRG_LINE_CAP_BUTT;
-      else if (val_hash == CTX_round)
-        s->stroke_linecap = MRG_LINE_CAP_ROUND;
-      else if (val_hash == CTX_square)
-        s->stroke_linecap = MRG_LINE_CAP_SQUARE;
-      else
-        s->stroke_linecap = MRG_LINE_CAP_BUTT;
+      break;
+    case CTX_stroke_linecap:
+      switch (val_hash)
+      { 
+        case  CTX_butt:   s->stroke_linecap = MRG_LINE_CAP_BUTT; break;
+        case  CTX_round:  s->stroke_linecap = MRG_LINE_CAP_ROUND;break;
+        case  CTX_square: s->stroke_linecap = MRG_LINE_CAP_SQUARE; break;
+        default:          s->stroke_linecap = MRG_LINE_CAP_BUTT;
+      }
       ctx_set_line_cap (mrg_cr (mrg), s->stroke_linecap);
-    }
-    break;
-  case CTX_vertical_align:
-    {
-      if (val_hash == CTX_middle)
-        s->vertical_align = MRG_VERTICAL_ALIGN_MIDDLE;
-      else if (val_hash == CTX_top)
-        s->vertical_align = MRG_VERTICAL_ALIGN_TOP;
-      else if (val_hash == CTX_sub)
-        s->vertical_align = MRG_VERTICAL_ALIGN_SUB;
-      else if (val_hash == CTX_super)
-        s->vertical_align = MRG_VERTICAL_ALIGN_SUPER;
-      else if (val_hash == CTX_bottom)
-        s->vertical_align = MRG_VERTICAL_ALIGN_BOTTOM;
-      else
-        s->vertical_align = MRG_VERTICAL_ALIGN_BASELINE;
-    }
-    break;
-  case CTX_cursor:
-    switch (val_hash)
-  {
-      case CTX_auto: s->cursor = MRG_CURSOR_AUTO;break;
-      case CTX_alias: s->cursor = MRG_CURSOR_ALIAS;break;
-      case CTX_all_scroll: s->cursor = MRG_CURSOR_ALL_SCROLL;break;
-      case CTX_cell: s->cursor = MRG_CURSOR_CELL;break;
-      case CTX_context_menu: s->cursor = MRG_CURSOR_CONTEXT_MENU;break;
-      case CTX_col_resize: s->cursor = MRG_CURSOR_COL_RESIZE;break;
-      case CTX_copy: s->cursor = MRG_CURSOR_COPY;break;
-      case CTX_crosshair: s->cursor = MRG_CURSOR_CROSSHAIR;break;
-      default:
-      case CTX_default: s->cursor = MRG_CURSOR_DEFAULT;break;
-      case CTX_e_resize: s->cursor = MRG_CURSOR_E_RESIZE;break;
-      case CTX_ew_resize: s->cursor = MRG_CURSOR_EW_RESIZE;break;
-      case CTX_help: s->cursor = MRG_CURSOR_HELP;break;
-      case CTX_move: s->cursor = MRG_CURSOR_MOVE;break;
-      case CTX_n_resize: s->cursor = MRG_CURSOR_N_RESIZE;break;
-      case CTX_ne_resize: s->cursor = MRG_CURSOR_NE_RESIZE;break;
-      case CTX_nesw_resize: s->cursor = MRG_CURSOR_NESW_RESIZE;break;
-      case CTX_ns_resize: s->cursor = MRG_CURSOR_NS_RESIZE;break;
-      case CTX_nw_resize: s->cursor = MRG_CURSOR_NW_RESIZE;break;
-      case CTX_no_drop: s->cursor = MRG_CURSOR_NO_DROP;break;
-      case CTX_none: s->cursor = MRG_CURSOR_NONE;break;
-      case CTX_not_allowed: s->cursor = MRG_CURSOR_NOT_ALLOWED;break;
-      case CTX_pointer: s->cursor = MRG_CURSOR_POINTER;break;
-      case CTX_progress: s->cursor = MRG_CURSOR_PROGRESS;break;
-      case CTX_row_resize: s->cursor = MRG_CURSOR_ROW_RESIZE;break;
-      case CTX_s_resize: s->cursor = MRG_CURSOR_S_RESIZE;break;
-      case CTX_se_resize: s->cursor = MRG_CURSOR_SE_RESIZE;break;
-      case CTX_sw_resize: s->cursor = MRG_CURSOR_SW_RESIZE;break;
-      case CTX_text: s->cursor = MRG_CURSOR_TEXT;break;
-      case CTX_vertical_text: s->cursor = MRG_CURSOR_VERTICAL_TEXT;break;
-      case CTX_w_resize: s->cursor = MRG_CURSOR_W_RESIZE;break;
-      case CTX_cursor_wait: s->cursor = MRG_CURSOR_WAIT;break;
-      case CTX_zoom_in: s->cursor = MRG_CURSOR_ZOOM_IN;break;
-      case CTX_zoom_out: s->cursor = MRG_CURSOR_ZOOM_OUT;break;
-  }
-    break;
-  case CTX_display:
-    switch (val_hash)
-    {
-      case CTX_hidden: s->display = MRG_DISPLAY_HIDDEN; break;
-      case CTX_block:  s->display = MRG_DISPLAY_BLOCK; break;
-      case CTX_list_item: s->display = MRG_DISPLAY_LIST_ITEM; break;
-      case CTX_inline_block: s->display = MRG_DISPLAY_INLINE_BLOCK; break;
-      default:
-        s->display = MRG_DISPLAY_INLINE;
-    }
-    break;
-  case CTX_position:
-    switch (val_hash)
-    {
-      case CTX_relative:
-        s->position = MRG_POSITION_RELATIVE;
-        break;
-      case CTX_static:
-        s->position = MRG_POSITION_STATIC;
-        break;
-      case CTX_absolute:
-        s->position = MRG_POSITION_ABSOLUTE;
-        break;
-      case CTX_fixed:
-        s->position = MRG_POSITION_FIXED;
-        break;
-      default:
-        s->position = MRG_POSITION_STATIC;
-    }
-    break;
-  case CTX_direction:
-    switch (val_hash)
-    {
-      case CTX_rtl:
-        s->direction = MRG_DIRECTION_RTL;
-        break;
-      case CTX_ltr:
-        s->direction = MRG_DIRECTION_LTR;
-        break;
-      default:
-        s->direction = MRG_DIRECTION_LTR;
-    }
-    break;
-  case CTX_unicode_bidi:
-    switch (val_hash)
-    {
-      case CTX_normal:
-        s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL;
-        break;
-      case CTX_embed:
-        s->unicode_bidi = MRG_UNICODE_BIDI_EMBED;
-        break;
-      case CTX_bidi_override:
-        s->unicode_bidi = MRG_UNICODE_BIDI_BIDI_OVERRIDE;
-        break;
-      default:
-        s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL;
-        break;
-    }
-    break;
-  case CTX_text_align:
-    switch (val_hash)
-    {
-      case CTX_left:
-        s->text_align = MRG_TEXT_ALIGN_LEFT;
-        break;
-      case CTX_right:
-        s->text_align = MRG_TEXT_ALIGN_RIGHT;
-        break;
-      case CTX_justify:
-        s->text_align = MRG_TEXT_ALIGN_JUSTIFY;
-        break;
-      case CTX_center:
-        s->text_align = MRG_TEXT_ALIGN_CENTER;
-        break;
-      default:
-        s->text_align = MRG_TEXT_ALIGN_LEFT;
-    }
-    break;
-  case CTX_text_decoration:
-    switch (val_hash)
-    {
-      case CTX_reverse:
+      break;
+    case CTX_vertical_align:
+      switch (val_hash)
       {
-#if 0
-        MrgColor temp = s->color;
-        s->text_decoration |= MRG_REVERSE;/* XXX: better do the reversing when drawing? */
-
-        s->color = s->background_color;
-        s->background_color = temp;
-        {
-          int t = mrg->state->fg;
-          mrg->state->fg = mrg->state->bg;
-          mrg->state->bg = t;
-        }
-#endif
+        case CTX_middle: s->vertical_align = MRG_VERTICAL_ALIGN_MIDDLE; break;
+        case CTX_top:    s->vertical_align = MRG_VERTICAL_ALIGN_TOP; break;
+        case CTX_sub:    s->vertical_align = MRG_VERTICAL_ALIGN_SUB;break;
+        case CTX_super:  s->vertical_align = MRG_VERTICAL_ALIGN_SUPER;break;
+        case CTX_bottom: s->vertical_align = MRG_VERTICAL_ALIGN_BOTTOM; break;
+        default:         s->vertical_align = MRG_VERTICAL_ALIGN_BASELINE;
       }
       break;
-      case CTX_underline:
+    case CTX_cursor:
+      switch (val_hash)
       {
-        s->text_decoration|= MRG_UNDERLINE;
+        default:
+        case CTX_default:       s->cursor = MRG_CURSOR_DEFAULT;break;
+        case CTX_auto:          s->cursor = MRG_CURSOR_AUTO;break;
+        case CTX_alias:         s->cursor = MRG_CURSOR_ALIAS;break;
+        case CTX_all_scroll:    s->cursor = MRG_CURSOR_ALL_SCROLL;break;
+        case CTX_cell:          s->cursor = MRG_CURSOR_CELL;break;
+        case CTX_context_menu:  s->cursor = MRG_CURSOR_CONTEXT_MENU;break;
+        case CTX_col_resize:    s->cursor = MRG_CURSOR_COL_RESIZE;break;
+        case CTX_copy:          s->cursor = MRG_CURSOR_COPY;break;
+        case CTX_crosshair:     s->cursor = MRG_CURSOR_CROSSHAIR;break;
+        case CTX_e_resize:      s->cursor = MRG_CURSOR_E_RESIZE;break;
+        case CTX_ew_resize:     s->cursor = MRG_CURSOR_EW_RESIZE;break;
+        case CTX_help:          s->cursor = MRG_CURSOR_HELP;break;
+        case CTX_move:          s->cursor = MRG_CURSOR_MOVE;break;
+        case CTX_n_resize:      s->cursor = MRG_CURSOR_N_RESIZE;break;
+        case CTX_ne_resize:     s->cursor = MRG_CURSOR_NE_RESIZE;break;
+        case CTX_nesw_resize:   s->cursor = MRG_CURSOR_NESW_RESIZE;break;
+        case CTX_ns_resize:     s->cursor = MRG_CURSOR_NS_RESIZE;break;
+        case CTX_nw_resize:     s->cursor = MRG_CURSOR_NW_RESIZE;break;
+        case CTX_no_drop:       s->cursor = MRG_CURSOR_NO_DROP;break;
+        case CTX_none:          s->cursor = MRG_CURSOR_NONE;break;
+        case CTX_not_allowed:   s->cursor = MRG_CURSOR_NOT_ALLOWED;break;
+        case CTX_pointer:       s->cursor = MRG_CURSOR_POINTER;break;
+        case CTX_progress:      s->cursor = MRG_CURSOR_PROGRESS;break;
+        case CTX_row_resize:    s->cursor = MRG_CURSOR_ROW_RESIZE;break;
+        case CTX_s_resize:      s->cursor = MRG_CURSOR_S_RESIZE;break;
+        case CTX_se_resize:     s->cursor = MRG_CURSOR_SE_RESIZE;break;
+        case CTX_sw_resize:     s->cursor = MRG_CURSOR_SW_RESIZE;break;
+        case CTX_text:          s->cursor = MRG_CURSOR_TEXT;break;
+        case CTX_vertical_text: s->cursor = MRG_CURSOR_VERTICAL_TEXT;break;
+        case CTX_w_resize:      s->cursor = MRG_CURSOR_W_RESIZE;break;
+        case CTX_cursor_wait:   s->cursor = MRG_CURSOR_WAIT;break;
+        case CTX_zoom_in:       s->cursor = MRG_CURSOR_ZOOM_IN;break;
+        case CTX_zoom_out:      s->cursor = MRG_CURSOR_ZOOM_OUT;break;
       }
       break;
-      case CTX_overline:
+    case CTX_display:
+      switch (val_hash)
       {
-        s->text_decoration|= MRG_OVERLINE;
+        case CTX_hidden:       s->display = MRG_DISPLAY_HIDDEN; break;
+        case CTX_block:        s->display = MRG_DISPLAY_BLOCK; break;
+        case CTX_list_item:    s->display = MRG_DISPLAY_LIST_ITEM; break;
+        case CTX_inline_block: s->display = MRG_DISPLAY_INLINE_BLOCK; break;
+        default:               s->display = MRG_DISPLAY_INLINE;
       }
       break;
-      case CTX_linethrough:
+    case CTX_position:
+      switch (val_hash)
       {
-        s->text_decoration|= MRG_LINETHROUGH;
+        case CTX_relative:  s->position = MRG_POSITION_RELATIVE; break;
+        case CTX_static:    s->position = MRG_POSITION_STATIC; break;
+        case CTX_absolute:  s->position = MRG_POSITION_ABSOLUTE; break;
+        case CTX_fixed:     s->position = MRG_POSITION_FIXED; break;
+        default:            s->position = MRG_POSITION_STATIC;
       }
       break;
-      case CTX_blink:
+    case CTX_direction:
+      switch (val_hash)
       {
-        s->text_decoration|= MRG_BLINK;
+        case CTX_rtl: s->direction = MRG_DIRECTION_RTL; break;
+        case CTX_ltr: s->direction = MRG_DIRECTION_LTR; break;
+        default:      s->direction = MRG_DIRECTION_LTR;
       }
       break;
-      case CTX_none:
+    case CTX_unicode_bidi:
+      switch (val_hash)
       {
-        s->text_decoration ^= (s->text_decoration &
-      (MRG_UNDERLINE|MRG_REVERSE|MRG_OVERLINE|MRG_LINETHROUGH|MRG_BLINK));
+        case CTX_normal: s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL; break;
+        case CTX_embed:  s->unicode_bidi = MRG_UNICODE_BIDI_EMBED; break;
+        case CTX_bidi_override: s->unicode_bidi = MRG_UNICODE_BIDI_BIDI_OVERRIDE; break;
+        default:         s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL; break;
       }
       break;
-    }
-    break;
+    case CTX_text_align:
+      switch (val_hash)
+      {
+        case CTX_left:    s->text_align = MRG_TEXT_ALIGN_LEFT; break;
+        case CTX_right:   s->text_align = MRG_TEXT_ALIGN_RIGHT; break;
+        case CTX_justify: s->text_align = MRG_TEXT_ALIGN_JUSTIFY; break;
+        case CTX_center:  s->text_align = MRG_TEXT_ALIGN_CENTER; break;
+        default:          s->text_align = MRG_TEXT_ALIGN_LEFT;
+      }
+      break;
+    case CTX_text_decoration:
+      switch (val_hash)
+      {
+        case CTX_reverse:     s->text_decoration|= MRG_REVERSE; break;
+        case CTX_underline:   s->text_decoration|= MRG_UNDERLINE; break;
+        case CTX_overline:    s->text_decoration|= MRG_OVERLINE; break;
+        case CTX_linethrough: s->text_decoration|= MRG_LINETHROUGH; break;
+        case CTX_blink:       s->text_decoration|= MRG_BLINK; break;
+        case CTX_none:
+          s->text_decoration ^= (s->text_decoration &
+        (MRG_UNDERLINE|MRG_REVERSE|MRG_OVERLINE|MRG_LINETHROUGH|MRG_BLINK));
+        break;
+      }
+      break;
   }
 }
 
