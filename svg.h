@@ -4,7 +4,7 @@
 #define MRG_MAX_CBS              128
 #define MRG_MAX_SELECTOR_LENGTH  64
 #define MRG_MAX_CSS_STRINGLEN    512
-#define MRG_MAX_CSS_RULELEN      64   // XXX doesnt have overflow protection
+#define MRG_MAX_CSS_RULELEN      32   // XXX doesnt have overflow protection
 #define MRG_MAX_CSS_RULES        128
 
 /* other important maximums */
@@ -100,27 +100,27 @@
 #define CTX_fill 	CTX_STRH('f','i','l','l',0,0,0,0,0,0,0,0,0,0)
 #define CTX_fill_color 	CTX_STRH('f','i','l','l','-','c','o','l','o','r',0,0,0,0)
 //#define CTX_fill_rule 	CTX_STRH('f','i','l','l','-','r','u','l','e',0,0,0,0,0)
-#define CTX_first_child 	CTX_STRH('f','i','r','s','t','-','c','h','i','l','d',0,0,0)
+#define CTX_first_child CTX_STRH('f','i','r','s','t','-','c','h','i','l','d',0,0,0)
 #define CTX_fixed 	CTX_STRH('f','i','x','e','d',0,0,0,0,0,0,0,0,0)
 #define CTX_float 	CTX_STRH('f','l','o','a','t',0,0,0,0,0,0,0,0,0)
 #define CTX_font_family 	CTX_STRH('f','o','n','t','-','f','a','m','i','l','y',0,0,0)
 //#define CTX_font_size 	CTX_STRH('f','o','n','t','-','s','i','z','e',0,0,0,0,0)
 #define CTX_font_style 	CTX_STRH('f','o','n','t','-','s','t','y','l','e',0,0,0,0)
-#define CTX_font_weight 	CTX_STRH('f','o','n','t','-','w','e','i','g','h','t',0,0,0)
+#define CTX_font_weight CTX_STRH('f','o','n','t','-','w','e','i','g','h','t',0,0,0)
 #define CTX_fuchsia 	CTX_STRH('f','u','c','h','s','i','a',0,0,0,0,0,0,0)
-#define CTX_g 	CTX_STRH('g',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_g           CTX_STRH('g',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_gray 	CTX_STRH('g','r','a','y',0,0,0,0,0,0,0,0,0,0)
 #define CTX_green 	CTX_STRH('g','r','e','e','n',0,0,0,0,0,0,0,0,0)
-#define CTX_gt 	CTX_STRH('g','t',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_gt          CTX_STRH('g','t',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_head 	CTX_STRH('h','e','a','d',0,0,0,0,0,0,0,0,0,0)
 #define CTX_height 	CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 #define CTX_hellip 	CTX_STRH('h','e','l','l','i','p',0,0,0,0,0,0,0,0)
 #define CTX_help 	CTX_STRH('h','e','l','p',0,0,0,0,0,0,0,0,0,0)
 #define CTX_hidden 	CTX_STRH('h','i','d','d','e','n',0,0,0,0,0,0,0,0)
-#define CTX_hr 	CTX_STRH('h','r',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_hr          CTX_STRH('h','r',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_href 	CTX_STRH('h','r','e','f',0,0,0,0,0,0,0,0,0,0)
 #define CTX_http 	CTX_STRH('h','t','t','p',0,0,0,0,0,0,0,0,0,0)
-#define CTX_id 	CTX_STRH('i','d',0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_id          CTX_STRH('i','d',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_iexcl 	CTX_STRH('i','e','x','c','l',0,0,0,0,0,0,0,0,0)
 #define CTX_img 	CTX_STRH('i','m','g',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_inline_block 	CTX_STRH('i','n','l','i','n','e','-','b','l','o','c','k',0,0)
@@ -508,12 +508,10 @@ void mrg_string_append_string (MrgString *string, MrgString *string2)
       str++;
     }
 }
-
 const char *mrg_string_get (MrgString *string)
 {
   return string->str;
 }
-
 int mrg_string_get_length (MrgString *string)
 {
   return string->length;
@@ -581,8 +579,6 @@ mrg_string_set (MrgString *string, const char *new_string)
   mrg_string_clear (string);
   _mrg_string_append_str (string, new_string);
 }
-
-
 
 #ifndef __MRG_LIST__
 #define  __MRG_LIST__
@@ -1959,36 +1955,6 @@ struct _MrgStyle {
   MrgDisplay          display:3;
   void               *id_ptr;
 };
-#if 0
-  s->text_decoration= 0;
-  s->display = MRG_DISPLAY_INLINE;
-  s->float_ = MRG_FLOAT_NONE;
-  s->clear = MRG_CLEAR_NONE;
-  s->overflow = MRG_OVERFLOW_VISIBLE;
-  s->border_top_color.alpha = 0;
-  s->border_left_color.alpha = 0;
-  s->border_right_color.alpha = 0;
-  s->border_bottom_color.alpha = 0;
-  s->border_top_width = 0;
-  s->border_left_width = 0;
-  s->border_right_width = 0;
-  s->border_bottom_width = 0;
-  s->margin_top = 0;
-  s->margin_left = 0;
-  s->margin_right = 0;
-  s->margin_bottom = 0;
-  s->padding_top = 0;
-  s->padding_left = 0;
-  s->padding_right = 0;
-  s->padding_bottom = 0;
-  s->position = MRG_POSITION_STATIC;
-  s->top = 0;
-  s->left = 0;
-  s->height = 0;
-  s->width = 0;
-  s->width_auto = 1;
-#endif
-
 
 typedef struct _MrgStyle MrgStyle;
 
@@ -2005,8 +1971,6 @@ typedef struct MrgState {
 
   int          skip_lines;  /* better with an em offset? */
   int          max_lines;   /* better with max-y in ems? ? */
-
-  //void        *id_ptr;
 
   char        *style_id;
   MrgStyleNode style_node;
@@ -2193,7 +2157,7 @@ static float _mrg_parent_dynamic_edge_right (MrgHtml *ctx)
   return _mrg_dynamic_edge_right2 (ctx->mrg, state);
 }
 
-float _mrg_dynamic_edge_left (Mrg *mrg)
+static float _mrg_dynamic_edge_left (Mrg *mrg)
 {
   if (mrg->state->wrap_edge_left)
     return mrg->state->wrap_edge_left (mrg, mrg->state->wrap_edge_data);
@@ -2211,8 +2175,7 @@ int  mrg_height (Mrg *mrg)
   return mrg->height / mrg->ddpx;
 }
 
-
-float _mrg_dynamic_edge_right (Mrg *mrg)
+static float _mrg_dynamic_edge_right (Mrg *mrg)
 {
   if (mrg->state->wrap_edge_right)
     return mrg->state->wrap_edge_right (mrg, mrg->state->wrap_edge_data);
