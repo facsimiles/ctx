@@ -2129,8 +2129,15 @@ const char *ctx_state_get_string (CtxState *state, uint32_t key)
   int idx = ctx_float_to_string_index (stored);
   if (idx >= 0)
   {
+     if (state->stringpool[idx] == 127) // magic for color
+     {
+       // format color as string?
+       return NULL;
+     }
+
      return &state->stringpool[idx];
   }
+  // format number as string?
   return NULL;
 }
 
@@ -2187,14 +2194,6 @@ static void ctx_state_set_string (CtxState *state, uint32_t key, const char *str
   ctx_state_set_blob (state, key, (uint8_t*)string, strlen(string));
 }
 
-static void ctx_state_set_color (CtxState *state, uint32_t key, CtxColor *color)
-{
-  ctx_state_set_blob (state, key, (void*)color, sizeof (CtxColor));
-  CtxColor *stored = (CtxColor*)ctx_state_get_string (state, key);
-  stored->magic = 127;
-
-}
-
 static int ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
 {
   CtxColor *stored = (CtxColor*)ctx_state_get_string (state, key);
@@ -2207,6 +2206,20 @@ static int ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
     }
   }
   return -1;
+}
+
+static void ctx_state_set_color (CtxState *state, uint32_t key, CtxColor *color)
+{
+  CtxColor mod_color;
+  CtxColor old_color;
+  mod_color = *color;
+  mod_color.magic = 127;
+  if (ctx_state_get_color (state, key, &old_color)==0)
+  {
+    if (!memcmp (&mod_color, &old_color, sizeof (mod_color)))
+      return;
+  }
+  ctx_state_set_blob (state, key, (void*)&mod_color, sizeof (CtxColor));
 }
 
 static uint8_t ctx_float_to_u8 (float val_f)
