@@ -8,6 +8,7 @@
 #define MRG_MAX_TEXT_LISTEN  256
 
 #define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
+#define PROPS(a)         (ctx_get_string(mrg->ctx, CTX_##a))
 #define SET_PROPh(a,v)   (ctx_set(mrg->ctx, a, v))
 #define SET_PROP(a,v)    SET_PROPh(CTX_##a, v)
 #define SET_PROPS(a,v)   (ctx_set_string(mrg->ctx, CTX_##a, v))
@@ -1244,13 +1245,13 @@ init_statetable (void) {
     a(s_incomment,    "-",0,0,                c_eat,            s_commentenddash1);
     a(s_incomment,    NULL,0,255,                c_eat+c_store,    s_incomment);
 
-    a(s_commentenddash1,    "-",0,0,            c_eat,            s_commentenddash2);
-    a(s_commentenddash1,    NULL,0,255,            c_eat+c_store,    s_incomment);
+    a(s_commentenddash1, "-",0,0,            c_eat,            s_commentenddash2);
+    a(s_commentenddash1, NULL,0,255,            c_eat+c_store,    s_incomment);
 
-    a(s_commentenddash2,    ">",0,0,            c_eat,            s_commentdone);
-    a(s_commentenddash2,    NULL,0,255,            c_eat+c_store,    s_incomment);
+    a(s_commentenddash2, ">",0,0,            c_eat,            s_commentdone);
+    a(s_commentenddash2, NULL,0,255,            c_eat+c_store,    s_incomment);
 
-    r(s_commentdone,    t_comment,                s_start);
+    r(s_commentdone,     t_comment,                s_start);
 
 }
 
@@ -1926,7 +1927,6 @@ struct _MrgStyle {
   /* text-related */
   float               font_size; // used for mrg_em() should be direct
   float               line_height;
-  float               line_width;
   MrgVisibility       visibility:1;
   MrgFillRule         fill_rule:1;
   MrgFontStyle        font_style:3;
@@ -1941,19 +1941,18 @@ struct _MrgStyle {
   MrgUnicodeBidi      unicode_bidi:2;
   MrgDirection        direction:2;
   MrgListStyle        list_style:1;
+  MrgClear            clear:2;
+  unsigned char       fill:1;
   MrgCursor           cursor:6;
   MrgTextDecoration   text_decoration:7;
-  unsigned char       stroke:1;
-  unsigned char       fill:1;
   unsigned char       width_auto:1;
   unsigned char       margin_left_auto:1;
   unsigned char       margin_right_auto:1;
   unsigned char       print_symbols:1;
   MrgFloat            float_:2;
-  MrgClear            clear:2;
+  unsigned char       stroke:1;
   MrgOverflow         overflow:2;
   MrgDisplay          display:3;
-  char                syntax_highlight[9];
   void               *id_ptr;
 };
 #if 0
@@ -4328,8 +4327,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   case CTX_line_width:
   {
     float val =mrg_parse_px_y (mrg, value, NULL);
-    s->line_width = val;
-    ctx_set_line_width (mrg_cr (mrg), s->line_width);
+    ctx_set (mrg_cr (mrg), CTX_line_width, val);
   }
     break;
 
@@ -4530,10 +4528,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     }
     break;
   case CTX_syntax_highlight:
-    {
-      strncpy (s->syntax_highlight, value, 8);
-      s->syntax_highlight[8]=0;
-    }
+    ctx_set_string (mrg_cr (mrg), CTX_syntax_highlight, value);
     break;
   case CTX_fill_rule:
     {
@@ -5977,9 +5972,12 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
      * directly here..
      */
 
-    if (style->syntax_highlight[0] == 0)
+    const char *syntax_highlight = PROPS(syntax_highlight);
+    if (!syntax_highlight) syntax_highlight = "";
+
+    if (syntax_highlight[0] == 0)
       ctx_text (cr, string);
-    else if (!strcmp (style->syntax_highlight, "C"))
+    else if (!strcmp (syntax_highlight, "C"))
       mrg_hl_text (cr, string);
     else
       ctx_text (cr, string);
