@@ -82,7 +82,7 @@ static void render_test (Ctx *ctx)
     ctx_line_to (ctx, 0.0, 10.0);
 
 //  ctx_curve_to (ctx, 10.0, 30.0, 1,1,3,3);
-    ctx_set_rgba_u8 (ctx, 255, 255, 0, 255);
+    ctx_set_rgba8 (ctx, 255, 255, 0, 255);
     ctx_close_path (ctx);
     ctx_fill (ctx);
     ctx_restore (ctx);
@@ -98,7 +98,7 @@ static void render_test (Ctx *ctx)
     ctx_line_to (ctx, 50.0, 0.0);
     ctx_line_to (ctx, 100.0, 30.0);
     ctx_line_to (ctx, 50.0, 100.0);
-    ctx_set_rgba_u8 (ctx, 255, 255, 0, 255);
+    ctx_set_rgba8 (ctx, 255, 255, 0, 255);
     ctx_close_path (ctx);
     ctx_fill (ctx);
     ctx_restore (ctx);
@@ -112,7 +112,7 @@ static void render_test (Ctx *ctx)
     ctx_line_to (ctx, 50.0,   0.0);
     ctx_line_to (ctx, 0.0, 30.0);
     ctx_line_to (ctx, 50.0, 100.0);
-    ctx_set_rgba_u8 (ctx, 255, 255, 0, 255);
+    ctx_set_rgba8 (ctx, 255, 255, 0, 255);
     ctx_close_path (ctx);
     ctx_fill (ctx);
     ctx_restore (ctx);
@@ -128,7 +128,7 @@ static void render_test (Ctx *ctx)
     ctx_rel_line_to (ctx, 0,  -70.0);
     ctx_rel_line_to (ctx, -50,  0.0);
     ctx_rel_line_to (ctx, 0,   70.0);
-    ctx_set_rgba_u8 (ctx, 255, 255, 0, 255);
+    ctx_set_rgba8 (ctx, 255, 255, 0, 255);
     ctx_close_path (ctx);
     ctx_fill (ctx);
     ctx_restore (ctx);
@@ -144,7 +144,7 @@ static void render_test (Ctx *ctx)
     ctx_rel_line_to (ctx, 0,   70.0);
     ctx_rel_line_to (ctx, -50,  0.0);
     ctx_rel_line_to (ctx, 0,   -70.0);
-    ctx_set_rgba_u8 (ctx, 255, 25, 0, 255);
+    ctx_set_rgba8 (ctx, 255, 25, 0, 255);
     ctx_close_path (ctx);
     ctx_fill (ctx);
     ctx_restore (ctx);
@@ -167,13 +167,13 @@ static void render_test (Ctx *ctx)
     ctx_rel_line_to (ctx, 40,0);
     ctx_rel_line_to (ctx, 0,40);
     ctx_rel_line_to (ctx, 40,0);
-    ctx_set_rgba_u8 (ctx, 255, 25, 0, 255);
+    ctx_set_rgba8 (ctx, 255, 25, 0, 255);
     ctx_fill (ctx);
     ctx_restore (ctx);
   }
 
 #if 1
-  ctx_set_rgba_u8 (ctx, 0, 0, 0, 255);
+  ctx_set_rgba8 (ctx, 0, 0, 0, 255);
     ctx_move_to (ctx, 54, 50);
     ctx_set_font_size (ctx, 32);
     ctx_text (ctx, "æøåabcdefghijklmnopqrstuvwxyz\n");
@@ -192,7 +192,7 @@ static void render_test (Ctx *ctx)
 
   ctx_set_font_size (ctx, 100);
 
-    ctx_set_rgba_u8 (ctx, 0, 0, 0, 20);
+    ctx_set_rgba8 (ctx, 0, 0, 0, 20);
     for (int o=0;o<10;o++)
     {
       ctx_move_to (ctx, 45 + o, 532 + o);
@@ -202,7 +202,7 @@ static void render_test (Ctx *ctx)
 
 #endif
 
-  //ctx_set_rgba_u8 (ctx, 255,0,0,111);
+  //ctx_set_rgba8 (ctx, 255,0,0,111);
   //ctx_rectangle (ctx, 22, 22, 222, 122);
   //ctx_fill (ctx);
 
@@ -218,7 +218,7 @@ static void render_test (Ctx *ctx)
 
 
 #if 1
-  ctx_set_rgba_u8 (ctx, 255,0,0,111);
+  ctx_set_rgba8 (ctx, 255,0,0,111);
   ctx_linear_gradient (ctx, 10.0, 11.0, 320.0, 240.0);
   ctx_gradient_add_stop_u8 (ctx, 0.0f, 0,0,0,255);
   ctx_gradient_add_stop_u8 (ctx, 1.0f, 255,255,255,255);
@@ -246,7 +246,6 @@ static void render_test (Ctx *ctx)
 #endif
   ctx_radial_gradient (ctx, 128.0, 128.0, 100.0,
                             128.0, 128.0, 140.0);
-  ctx_gradient_clear_stops(ctx);
   ctx_gradient_add_stop_u8 (ctx, 0.0f, 255,0,255,0);
   ctx_gradient_add_stop_u8 (ctx, 0.1f, 255,0,255,255);
   ctx_gradient_add_stop_u8 (ctx, 0.2, 0,0,255,255);
@@ -339,7 +338,7 @@ static void tiger (Ctx *ctx)
                         cmd->x2, cmd->y2);
                         break;
         case 'f':
-          ctx_set_rgba_u8 (ctx, cmd->x0*255, cmd->y0*255, cmd->x1*255, cmd->y1*255);
+          ctx_set_rgba8 (ctx, cmd->x0*255, cmd->y0*255, cmd->x1*255, cmd->y1*255);
           ctx_fill (ctx);
           break;
      }

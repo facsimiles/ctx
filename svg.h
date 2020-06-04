@@ -375,12 +375,8 @@ void         mrg_string_clear          (MrgString  *string);
 void         mrg_string_append_str     (MrgString  *string, const char *str);
 void         mrg_string_append_byte    (MrgString  *string, char  val);
 void         mrg_string_append_string  (MrgString  *string, MrgString *string2);
-void         mrg_string_append_unichar (MrgString  *string, unsigned int unichar);
 void         mrg_string_append_data    (MrgString  *string, const char *data, int len);
 void         mrg_string_append_printf  (MrgString  *string, const char *format, ...);
-void         mrg_string_replace_utf8   (MrgString *string, int pos, const char *new_glyph);
-void         mrg_string_insert_utf8    (MrgString *string, int pos, const char *new_glyph);
-void         mrg_string_remove_utf8    (MrgString *string, int pos);
 
 
 /* mrg - MicroRaptor Gui
@@ -452,20 +448,6 @@ static inline void _mrg_string_append_byte (MrgString *string, char  val)
 void mrg_string_append_byte (MrgString *string, char  val)
 {
   _mrg_string_append_byte (string, val);
-}
-
-void mrg_string_append_unichar (MrgString *string, unsigned int unichar)
-{
-  char *str;
-  char utf8[5];
-  utf8[ctx_unichar_to_utf8 (unichar, (unsigned char*)utf8)]=0;
-  str = utf8;
-
-  while (str && *str)
-    {
-      _mrg_string_append_byte (string, *str);
-      str++;
-    }
 }
 
 static inline void _mrg_string_append_str (MrgString *string, const char *str)
@@ -694,21 +676,6 @@ static inline void mrg_list_free (MrgList **list)
     mrg_list_remove (list, (*list)->data);
 }
 
-static inline MrgList *mrg_list_nth (MrgList *list, int no)
-{
-  while(no-- && list)
-    list = list->next;
-  return list;
-}
-
-static inline MrgList *mrg_list_find (MrgList *list, void *data)
-{
-  for (;list;list=list->next)
-    if (list->data == data)
-      break;
-  return list;
-}
-
 static MrgList*
 mrg_list_merge_sorted (MrgList* list1,
                        MrgList* list2,
@@ -790,53 +757,6 @@ void mrg_list_sort (MrgList **head,
   *head = mrg_list_merge_sorted (list1, list2, compare, userdata);
 }
 
-
-static inline void
-mrg_list_insert_before (MrgList **list, MrgList *sibling,
-                        void *data)
-{
-  if (*list == NULL || *list == sibling)
-    {
-      mrg_list_prepend (list, data);
-    }
-  else
-    {
-      MrgList *prev = NULL;
-      for (MrgList *l = *list; l; l=l->next)
-        {
-          if (l == sibling)
-            break;
-          prev = l;
-        }
-      if (prev) {
-        MrgList *new_=calloc(sizeof (MrgList), 1);
-        new_->next = sibling;
-        new_->data = data;
-        prev->next=new_;
-      }
-    }
-}
-
-static inline void
-mrg_list_insert_sorted (MrgList **list, void *data,
-                       int(*compare)(const void *a, const void *b, void *userdata),
-                       void *userdata)
-{
-  mrg_list_prepend (list, data);
-  mrg_list_sort (list, compare, userdata);
-}
-
-static inline void
-mrg_list_reverse (MrgList **list)
-{
-  MrgList *new_ = NULL;
-  MrgList *l;
-  for (l = *list; l; l=l->next)
-    mrg_list_prepend (&new_, l->data);
-  mrg_list_free (list);
-  *list = new_;
-}
-
 #endif
 
 static MrgList *interns = NULL;
@@ -854,158 +774,11 @@ const char * mrg_intern_string (const char *str)
   return str;
 }
 
-void mrg_string_replace_utf8 (MrgString *string, int pos, const char *new_glyph)
-{
-  int new_len = ctx_utf8_len (*new_glyph);
-  int old_len = string->utf8_length;
-  char tmpg[3]=" ";
-  if (new_len <= 1 && new_glyph[0] < 32)
-  {
-    tmpg[0]=new_glyph[0]+64;
-    new_glyph = tmpg;
-  }
-
-  if (pos == old_len)
-  {
-    _mrg_string_append_str (string, new_glyph);
-    return;
-  }
-
-  {
-    for (int i = old_len; i <= pos; i++)
-    {
-      _mrg_string_append_byte (string, ' ');
-      old_len++;
-    }
-  }
-
-  if (string->length + new_len  > string->allocated_length)
-  {
-    char *tmp;
-    char *defer;
-    string->allocated_length = string->length + new_len;
-    tmp = calloc (string->allocated_length, 1);
-    strcpy (tmp, string->str);
-    defer = string->str;
-    string->str = tmp;
-    free (defer);
-  }
-
-  char *p = (void*)ctx_utf8_skip (string->str, pos);
-  int prev_len = ctx_utf8_len (*p);
-  char *rest;
-  if (*p == 0 || *(p+prev_len) == 0)
-  {
-    rest = strdup("");
-  }
-  else
-  {
-    rest = strdup (p + prev_len);
-  }
-
-  memcpy (p, new_glyph, new_len);
-  memcpy (p + new_len, rest, strlen (rest) + 1);
-  string->length += new_len;
-  string->length -= prev_len;
-  free (rest);
-
-  string->utf8_length = ctx_utf8_strlen (string->str);
-}
-
-void mrg_string_insert_utf8 (MrgString *string, int pos, const char *new_glyph)
-{
-  int new_len = ctx_utf8_len (*new_glyph);
-  int old_len = string->utf8_length;
-  char tmpg[3]=" ";
-  if (new_len <= 1 && new_glyph[0] < 32)
-  {
-    tmpg[0]=new_glyph[0]+64;
-    new_glyph = tmpg;
-  }
-
-  if (pos == old_len)
-  {
-    _mrg_string_append_str (string, new_glyph);
-    return;
-  }
-
-  {
-    for (int i = old_len; i <= pos; i++)
-    {
-      _mrg_string_append_byte (string, ' ');
-      old_len++;
-    }
-  }
-
-  if (string->length + new_len + 1  > string->allocated_length)
-  {
-    char *tmp;
-    char *defer;
-    string->allocated_length = string->length + new_len + 1;
-    tmp = calloc (string->allocated_length, 1);
-    strcpy (tmp, string->str);
-    defer = string->str;
-    string->str = tmp;
-    free (defer);
-  }
-
-  char *p = (void*)ctx_utf8_skip (string->str, pos);
-  int prev_len = ctx_utf8_len (*p);
-  char *rest;
-  if (*p == 0 || *(p+prev_len) == 0)
-  {
-    rest = strdup("");
-  }
-  else
-  {
-    rest = strdup (p);
-  }
-
-  memcpy (p, new_glyph, new_len);
-  memcpy (p + new_len, rest, strlen (rest) + 1);
-  string->length += new_len;
-  free (rest);
-
-  string->utf8_length = ctx_utf8_strlen (string->str);
-}
-
 int mrg_string_get_utf8_length (MrgString  *string)
 {
   //return ctx_utf8_strlen (string->str);
   return string->utf8_length;
 }
-
-void mrg_string_remove_utf8 (MrgString *string, int pos)
-{
-  int old_len = string->utf8_length;
-
-  {
-    for (int i = old_len; i <= pos; i++)
-    {
-      _mrg_string_append_byte (string, ' ');
-      old_len++;
-    }
-  }
-
-  char *p = (void*)ctx_utf8_skip (string->str, pos);
-  int prev_len = ctx_utf8_len (*p);
-  char *rest;
-  if (*p == 0 || *(p+prev_len) == 0)
-  {
-    rest = strdup("");
-  }
-  else
-  {
-    rest = strdup (p + prev_len);
-  }
-
-  memcpy (p, rest, strlen (rest) + 1);
-  string->length -= prev_len;
-  free (rest);
-
-  string->utf8_length = ctx_utf8_strlen (string->str);
-}
-
 
 #ifndef TRUE
 #define TRUE 1
@@ -8291,8 +8064,6 @@ void mrg_xml_render (Mrg *mrg,
   {
     char *data = NULL;
     type = xmltok_get (xmltok, &data, &pos);
-    uint32_t data_hash;
-    if (data) data_hash = ctx_strhash (data, 0);
 
     if (type == t_tag ||
         type == t_att ||
@@ -8663,16 +8434,12 @@ void mrg_xml_render (Mrg *mrg,
             } else 
             if (depth > 0 && tag[depth-1] == data_hash)
             {
-              fprintf (stderr, "%i: fixing close of %s when %s is open\n", pos, data, tag[depth]);
-
               mrg_end (mrg);
               depth --;
             }
             else if (depth > 1 && tag[depth-2] == data_hash)
             {
               int i;
-              fprintf (stderr, "%i: fixing close of %s when %s was open\n", pos, data, tag[depth]);
-
               for (i = 0; i < 2; i ++)
               {
                 depth --;
@@ -8728,8 +8495,6 @@ void mrg_xml_render (Mrg *mrg,
                 depth--;
                 mrg_end (mrg);
               }
-              else
-                fprintf (stderr, "%i closed %s but %s is open\n", pos, data, tag[depth]);
             }
           }
         }
@@ -8742,7 +8507,7 @@ void mrg_xml_render (Mrg *mrg,
     fprintf (stderr, "html parsing unbalanced, %i open tags.. \n", depth);
     while (depth > 0)
     {
-      fprintf (stderr, " %s ", tag[depth-1]);
+      //fprintf (stderr, " %s ", tag[depth-1]);
       mrg_end (mrg);
       depth--;
     }

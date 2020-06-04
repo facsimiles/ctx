@@ -1831,9 +1831,7 @@ struct _CtxKeyDbEntry
   //union { float f[1]; uint8_t u8[4]; }value;
 };
 
-
-
-static uint32_t ctx_strhash (const char *str, int case_insensitive)
+static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 {
 #define CTX_NORMALIZE(a)             (((a)=='-')?'_':(a))
 #define CTX_NORMALIZE_CASEFOLDED(a)  (((a)=='-')?'_':( (((a)>='A')&&((a)<='Z') )?(a)+32:(a)))
@@ -9789,7 +9787,8 @@ typedef struct _CtxCairo CtxCairo;
 struct
   _CtxCairo
 {
-  void (*render_func) (void *ctx_cairo, CtxEntry *entry);
+  void (*render_func) (CtxCairo *ctx_cairo, CtxCommand *entry);
+  void (*free) (void *ctx_cairo);
   Ctx *ctx;
   cairo_t *cr;
   cairo_pattern_t *pat;
@@ -9799,9 +9798,9 @@ struct
 };
 
 static void
-ctx_cairo_process (CtxCairo *ctx_cairo, CtxEntry *entry)
+ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
 {
-  CtxUnion *ue = (CtxUnion *) entry;
+  CtxEntry *entry = (CtxEntry *) &c->entry;
   cairo_t *cr = ctx_cairo->cr;
   switch (entry->code)
     {
@@ -10087,11 +10086,11 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 {
   CtxIterator iterator;
   CtxEntry   *entry;
-  CtxCairo    ctx_cairo = {ctx_new(), cr, NULL, NULL};
+  CtxCairo    ctx_cairo = {ctx_cairo_process, NULL, ctx, cr, NULL, NULL};
   ctx_iterator_init (&iterator, &ctx->renderstream, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (entry = ctx_iterator_next (&iterator) ) )
-    { ctx_cairo_process (&ctx_cairo, entry); }
+    { ctx_cairo_process (&ctx_cairo, (CtxCommand*)entry); }
   if (ctx_cairo.pat)
     { cairo_pattern_destroy (ctx_cairo.pat); }
   if (ctx_cairo.image)

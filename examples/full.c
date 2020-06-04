@@ -9,7 +9,7 @@
 #define CTX_FORMATTER       0
 #define CTX_BITPACK_PACKER  1
 #define CTX_GRADIENT_CACHE   0
-#define CTX_FONTS_FROM_FILE  1 /* leaves out code */
+#define CTX_FONTS_FROM_FILE  1
 #define CTX_IMPLEMENTATION
 
 #include "ctx.h"
