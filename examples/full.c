@@ -1,10 +1,14 @@
 #include <stdint.h>
 
 #include "ctx-font-ascii.h"
-#define CTX_PARSER          1
-#define CTX_FORMATTER       1
+#define CTX_LIMIT_FORMATS
+#define CTX_ENABLE_RGBA8    1
+#define CTX_ENABLE_CMYK     0
+#define CTX_ENABLE_CM       0
+#define CTX_PARSER          0
+#define CTX_FORMATTER       0
 #define CTX_BITPACK_PACKER  1
-#define CTX_GRADIENT_CACHE   1
+#define CTX_GRADIENT_CACHE   0
 #define CTX_FONTS_FROM_FILE  1 /* leaves out code */
 #define CTX_IMPLEMENTATION
 
@@ -50,6 +54,7 @@ int main (int argc, char **argv)
     printf ("\n");
   }
 #endif
+#if 0
   {
        CtxParser *ctxp = ctx_parser_new (ctx, WIDTH, HEIGHT, WIDTH/20, HEIGHT/20, 1, 1, NULL, NULL);
 
@@ -61,6 +66,7 @@ int main (int argc, char **argv)
        ctx_parser_free (ctxp);
        ctx_render_stream (ctx, stdout, 1);
   }
+#endif
   {
       Mrg *mrg = mrg_new (ctx, 100, 100);
       mrg_print_xml (mrg, "abc");

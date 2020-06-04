@@ -240,6 +240,7 @@
 #define CTX_super 	CTX_STRH('s','u','p','e','r',0,0,0,0,0,0,0,0,0)
 #define CTX_sw_resize 	CTX_STRH('s','w','-','r','e','s','i','z','e',0,0,0,0,0)
 #define CTX_syntax_highlight 	CTX_STRH('s','y','n','t','a','x','-','h','i','g','h','l','i','g')
+#define CTX_table    	CTX_STRH('t','a','b','l','e',0,0,0,0,0,0,0,0,0)
 #define CTX_tab_size 	CTX_STRH('t','a','b','-','s','i','z','e',0,0,0,0,0,0)
 #define CTX_td          CTX_STRH('t','d',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_teal        CTX_STRH('t','e','a','l',0,0,0,0,0,0,0,0,0,0)
@@ -2514,82 +2515,79 @@ void _mrg_init_style (Mrg *mrg)
  */
 
 const char * html_css =
-"html, address,\n"
+"html,address,\n"
 "blockquote,\n"
-"body, dd, div,\n"
-"dl, dt, fieldset, form,\n"
-"frame, frameset,\n"
-"h1, h2, h3, h4,\n"
-"h5, h6, noframes,\n"
-"ol, p, ul, center,\n"
-"dir, hr, menu, pre { display: block; unicode-bidi: embed }\n"
-"li { display: list-item }\n"
-"head { display: none }\n"
-"table { display: table }\n"
-"tr { display: table-row }\n"
-"thead { display: table-header-group }\n"
-"tbody { display: table-row-group }\n"
-"tfoot { display: table-footer-group }\n"
-"col { display: table-column }\n"
-"img { display: inline-block }\n"
-"colgroup { display: table-column-group }\n"
-"td, th          { display: table-cell }\n"
-"caption         { display: table-caption }\n"
-"th              { font-weight: bolder; text-align: center }\n"
-"caption         { text-align: center }\n"
-"body            { margin: 0.5em }\n"
-"h1              { font-size: 2em; margin: .67em 0 }\n"
-"h2              { font-size: 1.5em; margin: .75em 0 }\n"
-"h3              { font-size: 1.17em; margin: .83em 0 }\n"
-"h4, p,\n"
-"blockquote, ul,\n"
-"fieldset, form,\n"
-"ol, dl, dir,\n"
-"menu            { margin: 1.12em 0 }\n"
-"h5              { font-size: .83em; margin: 1.5em 0 }\n"
-"h6              { font-size: .75em; margin: 1.67em 0 }\n"
-"h1, h2, h3, h4,\n"
-"h5, h6, b,\n"
-"strong          { font-weight: bolder }\n"
-"blockquote      { margin-left: 4em; margin-right: 4em }\n"
-"i, cite, em,\n"
-"var, address    { font-style: italic }\n"
-"pre, tt, code,\n"
-"kbd, samp       { font-family: monospace }\n"
-"pre             { white-space: pre }\n"
-"button, textarea,\n"
-"input, select   { display: inline-block }\n"
-"big             { font-size: 1.17em }\n"
-"small, sub, sup { font-size: .83em }\n"
-"sub             { vertical-align: sub }\n"
-"sup             { vertical-align: super }\n"
-"table           { border-spacing: 2px; }\n"
-"thead, tbody,\n"
-"tfoot           { vertical-align: middle }\n"
-"td, th, tr      { vertical-align: inherit }\n"
-"s, strike, del  { text-decoration: line-through }\n"
-"hr              { border: 1px inset black }\n"
-"ol, ul, dir,\n"
-"menu, dd        { padding-left: 2.5em }\n"
-"ol              { list-style-type: decimal }\n"
-"ol ul, ul ol,\n"
-"ul ul, ol ol    { margin-top: 0; margin-bottom: 0 }\n"
-"u, ins          { text-decoration: underline }\n"
-//"br:before     { content: \"\\A\"; white-space: pre-line }\n"
-"center          { text-align: center }\n"
-":link, :visited { text-decoration: underline }\n"
-":focus          { outline: thin dotted invert }\n"
-
-".cursor { color: white; background: black; } \n"
-
-"br       { display: block; }\n"
-"document { color : black; font-weight: normal; background-color: white; }\n"
-"body     { background-color: transparent; }\n"
-"a        { color: blue; text-decoration: underline; }\n"
-"a:hover  { background: black; color: white; text-decoration: underline; }\n"
-"style, script { display: hidden; }\n"
-
-"hr { margin-top:16px;font-size: 1px; }\n"  /* hack that works in one way, but shrinks top margin too much */
+"body,dd, div,\n"
+"dl,dt,fieldset, form,\n"
+"frame,frameset,\n"
+"h1,h2,h3, h4,\n"
+"h5,h6,noframes,\n"
+"ol,p,ul,center,\n"
+"dir,hr,menu,pre{display:block;unicode-bidi:embed}\n"
+"li{display:list-item}\n"
+"head{display:none}\n"
+"table{display:table}\n"
+"tr{display:table-row}\n"
+"thead{display:table-header-group }\n"
+"tbody{display:table-row-group }\n"
+"tfoot{display:table-footer-group }\n"
+"col{display:table-column}\n"
+"img{display:inline-block}\n"
+"colgroup{display:table-column-group}\n"
+"td,th{display:table-cell}\n"
+"caption{display:table-caption}\n"
+"th{font-weight:bolder;text-align:center}\n"
+"caption{text-align:center}\n"
+"body{margin:0.5em}\n"
+"h1{font-size:2em;margin:.67em 0}\n"
+"h2{font-size:1.5em;margin:.75em 0}\n"
+"h3{font-size:1.17em;margin:.83em 0}\n"
+"h4,p,"
+"blockquote,ul,"
+"fieldset,form,"
+"ol,dl,dir,"
+"menu{margin:1.12em 0}\n"
+"h5{font-size:.83em;margin: 1.5em 0}\n"
+"h6{font-size:.75em;margin: 1.67em 0}\n"
+"h1,h2,h3,h4,\n"
+"h5,h6,b,\n"
+"strong{font-weight:bolder}\n"
+"blockquote{margin-left:4em;margin-right:4em}\n"
+"i,cite,em,\n"
+"var,address{font-style:italic}\n"
+"pre,tt,code,\n"
+"kbd,samp{font-family:monospace}\n"
+"pre{white-space:pre}\n"
+"button,textarea,\n"
+"input,select{display:inline-block}\n"
+"big{font-size:1.17em}\n"
+"small,sub,sup{font-size:.83em}\n"
+"sub{vertical-align:sub}\n"
+"sup{vertical-align:super}\n"
+"table{border-spacing:2px;}\n"
+"thead,tbody,\n"
+"tfoot{vertical-align:middle}\n"
+"td,th,tr{vertical-align:inherit}\n"
+"s,strike,del{text-decoration:line-through}\n"
+"hr{border:1px inset black}\n"
+"ol,ul,dir,"
+"menu,dd{padding-left:2.5em}\n"
+"ol{list-style-type:decimal}\n"
+"ol ul,ul ol,"
+"ul ul,ol ol{margin-top: 0;margin-bottom: 0}\n"
+"u,ins{text-decoration:underline}\n"
+//"br:before{content:\"\\A\";white-space:pre-line}\n"
+"center{text-align:center}\n"
+":link,:visited{text-decoration:underline}\n"
+":focus{outline:thin dotted invert}\n"
+".cursor{color:white;background: black;} \n"
+"br{display:block;}\n"
+"document{color:black;font-weight:normal;background-color:white;}\n"
+"body{background-color:transparent;}\n"
+"a{color:blue;text-decoration: underline;}\n"
+"a:hover{background:black;color:white;text-decoration:underline; }\n"
+"style,script{display:hidden;}\n"
+"hr{margin-top:16px;font-size:1px;}\n"  /* hack that works in one way, but shrinks top margin too much */
 ;
 
 
@@ -3104,10 +3102,10 @@ static inline int _mrg_nth_match (const char *selector, int child_no)
   }
   else
   {
-    if (strchr (tmp, 'n'))
+    if (ctx_strchr (tmp, 'n'))
     {
       a = atoi (tmp);
-      b = atoi (strchr (tmp, 'n')+1);
+      b = atoi (ctx_strchr (tmp, 'n')+1);
     }
     else
     {
@@ -3155,7 +3153,7 @@ static inline int match_nodes (Mrg *mrg, MrgStyleNode *sel_node, MrgStyleNode *s
   }
   for (j = 0; sel_node->pseudo[j]; j++)
   {
-    if (!strcmp (sel_node->pseudo[j], "first-child"))
+    if (ctx_strhash (sel_node->pseudo[j], 0) == CTX_first_child)
     {
       if (!(_mrg_child_no (mrg) == 1))
         return 0;
@@ -4563,7 +4561,7 @@ static void mrg_css_handle_property_pass1med (Mrg *mrg, uint32_t key,
 
   if (key == CTX_width)
   {
-    if (!strcmp (value, "auto"))
+    if (ctx_strhash (value, 0) == CTX_auto)
     {
       s->width_auto = 1;
       SET_PROP(width, 42);
@@ -5139,7 +5137,6 @@ static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float wid
     ctx_rel_line_to (ctx, 0, -(height ));
 
     ctx_set_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
-    fprintf (stderr, "!!!! %f %f %f %f\n", x, y, width, height);
     mrg_ctx_set_source_color (ctx, &background_color);
     ctx_fill (ctx);
   }
@@ -5305,7 +5302,8 @@ const char * hl_operators [] =
 {"-", "+", "=", "*", "/", "return", "<", ">", ":",
  "if", "else", "break", "case", NULL};
 const char * hl_types[] =
-{"int", "cairo_t", "Mrg", "float", "double",
+// XXX anything ending in _t ?
+{"int", "uint32_t", "uint64_t", "uint8_t", "Ctx", "cairo_t", "Mrg", "float", "double",
   "char", "const", "static", "void", "NULL",
   "#include", "#define", NULL};
 
@@ -7495,56 +7493,61 @@ enum {
   HTML_ATT_SRC
 };
 
-static char *entities[][2]={
-  {"shy",    ""},   // soft hyphen,. should be made use of in wrapping..
-  {"nbsp",   " "},  //
-  {"lt",     "<"},
-  {"gt",     ">"},
-  {"trade",  "™"},
-  {"copy",   "©"},
-  {"middot", "·"},
-  {"bull",   "•"},
-  {"Oslash", "Ø"},
-  {"oslash", "ø"},
-  {"hellip", "…"},
-  {"aring",  "å"},
-  {"Aring",  "Å"},
-  {"aelig",  "æ"},
-  {"AElig",  "Æ"},
-  {"Aelig",  "Æ"},
-  {"laquo",  "«"},
-  {"raquo",  "»"},
+typedef struct MrgEntity {
+   uint32_t    name;
+   const char *value;
+} MrgEntity;
+
+static MrgEntity entities[]={
+  {CTX_shy,    ""},   // soft hyphen,. should be made use of in wrapping..
+  {CTX_nbsp,   " "},  //
+  {CTX_lt,     "<"},
+  {CTX_gt,     ">"},
+  {CTX_trade,  "™"},
+  {CTX_copy,   "©"},
+  {CTX_middot, "·"},
+  {CTX_bull,   "•"},
+  {CTX_Oslash, "Ø"},
+  {CTX_oslash, "ø"},
+  {CTX_hellip, "…"},
+  {CTX_aring,  "å"},
+  {CTX_Aring,  "Å"},
+  {CTX_aelig,  "æ"},
+  {CTX_AElig,  "Æ"},
+  {CTX_Aelig,  "Æ"},
+  {CTX_laquo,  "«"},
+  {CTX_raquo,  "»"},
 
   /*the above were added as encountered, the rest in anticipation  */
 
-  {"reg",    "®"},
-  {"deg",    "°"},
-  {"plusmn", "±"},
-  {"sup2",   "²"},
-  {"sup3",   "³"},
-  {"sup1",   "¹"},
-  {"ordm",   "º"},
-  {"para",   "¶"},
-  {"cedil",  "¸"},
-  {"bull",   "·"},
-  {"amp",   "&"},
-  {"mdash",  "–"},
-  {"apos",   "'"},
-  {"quot",   "\""},
-  {"iexcl",  "¡"},
-  {"cent",   "¢"},
-  {"pound",  "£"},
-  {"euro",   "€"},
-  {"yen",    "¥"},
-  {"curren", "¤"},
-  {"sect",   "§"},
-  {"phi",    "Φ"},
-  {"omega",  "Ω"},
-  {"alpha",  "α"},
+  {CTX_reg,    "®"},
+  {CTX_deg,    "°"},
+  {CTX_plusmn, "±"},
+  {CTX_sup2,   "²"},
+  {CTX_sup3,   "³"},
+  {CTX_sup1,   "¹"},
+  {CTX_ordm,   "º"},
+  {CTX_para,   "¶"},
+  {CTX_cedil,  "¸"},
+  {CTX_bull,   "·"},
+  {CTX_amp,   "&"},
+  {CTX_mdash,  "–"},
+  {CTX_apos,   "'"},
+  {CTX_quot,   "\""},
+  {CTX_iexcl,  "¡"},
+  {CTX_cent,   "¢"},
+  {CTX_pound,  "£"},
+  {CTX_euro,   "€"},
+  {CTX_yen,    "¥"},
+  {CTX_curren, "¤"},
+  {CTX_sect,   "§"},
+  {CTX_phi,    "Φ"},
+  {CTX_omega,  "Ω"},
+  {CTX_alpha,  "α"},
 
   /* XXX: incomplete */
 
-  {NULL, NULL}
+  {0, NULL}
 };
 
 static const char *get_attr_string (MrgHtml *htmlctx, const char *attr)
@@ -7588,7 +7591,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     int numbers = 0;
     double number[12];
     ctx_matrix_identity (matrix);
-    s = (void*) strchr (str, '(');
+    s = (void*) ctx_strchr (str, '(');
     if (!s)
       return;
     s++;
@@ -7615,7 +7618,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     int numbers = 0;
     double number[12];
     ctx_matrix_identity (matrix);
-    s = (void*) strchr (str, '(');
+    s = (void*) ctx_strchr (str, '(');
     if (!s)
       return;
     s++;
@@ -7640,7 +7643,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     int numbers = 0;
     double number[12];
     ctx_matrix_identity (matrix);
-    s = (void*) strchr (str, '(');
+    s = (void*) ctx_strchr (str, '(');
     if (!s)
       return;
     s++;
@@ -7662,7 +7665,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     int numbers = 0;
     double number[12];
     ctx_matrix_identity (matrix);
-    s = (void*) strchr (str, '(');
+    s = (void*) ctx_strchr (str, '(');
     if (!s)
       return;
     s++;
@@ -8025,7 +8028,7 @@ int split_uri (char *uri,
   *path =
   *fragment = NULL;
 
-  if (strstr (uri, "//") || strchr(uri, ':'))
+  if (ctx_strstr (uri, "//") || ctx_strchr(uri, ':'))
   {
     int mr = URI_STATE_IN_PROTOCOL;
 
@@ -8314,8 +8317,8 @@ char *_mrg_resolve_uri (const char *base_uri, const char *uri)
    {
       if (strrchr (base_path, '/'))
         strrchr (base_path, '/')[1] = 0;
-      else if (strchr (base_path, '/'))
-        strchr (base_path, '/')[1] = 0;
+      else if (ctx_strchr (base_path, '/'))
+        ctx_strchr (base_path, '/')[1] = 0;
       else
         base_path[0] = 0;
 
@@ -8354,7 +8357,7 @@ void mrg_xml_render (Mrg *mrg,
   char *html;
   MrgXml *xmltok;
   MrgHtml *htmlctx        = &mrg->html;
-  char tag[64][16];
+  uint32_t tag[64];
   int pos             = 0;
   int type            = t_none;
   static int depth    = 0;
@@ -8413,12 +8416,15 @@ void mrg_xml_render (Mrg *mrg,
             mrg_printf (mrg, "%c", c);
           }
           else
-          for (i = 0; entities[i][0] && !dealt_with; i++)
-            if (!strcmp (data, entities[i][0]))
+          {
+            uint32_t hash = ctx_strhash (data, 0);
+          for (i = 0; entities[i].name && !dealt_with; i++)
+            if (hash == entities[i].name)
             {
-              mrg_print (mrg, entities[i][1]);
+              mrg_print (mrg, entities[i].value);
               dealt_with = 1;
             }
+          }
 
           if (!dealt_with){
             mrg_start (mrg, "dim", (void*)((size_t)pos));
@@ -8533,35 +8539,36 @@ void mrg_xml_render (Mrg *mrg,
           }
         break;
       case t_endtag:
+        {
+          uint32_t data_hash = ctx_strhash (data, 0);
 
-
-        if (depth && ((!strcmp (data, "tr") && !strcmp (tag[depth-1], "td"))))
+        if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
           mrg_end (mrg);
           depth--;
           mrg_end (mrg);
           depth--;
         }
-        if (depth && ((!strcmp (data, "tr") && !strcmp (tag[depth-1], "td"))))
+        if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
           mrg_end (mrg);
           depth--;
           mrg_end (mrg);
           depth--;
         }
-        else if (depth && ((!strcmp (data, "dd") && !strcmp (tag[depth-1], "dt")) ||
-                      (!strcmp (data, "li") && !strcmp (tag[depth-1], "li")) ||
-                      (!strcmp (data, "dt") && !strcmp (tag[depth-1], "dd")) ||
-                      (!strcmp (data, "td") && !strcmp (tag[depth-1], "td")) ||
-                      (!strcmp (data, "tr") && !strcmp (tag[depth-1], "tr")) ||
-                      (!strcmp (data, "dd") && !strcmp (tag[depth-1], "dd")) ||
-                      (!strcmp (data, "p") && !strcmp (tag[depth-1], "p"))))
+        else if (depth && ((data_hash == CTX_dd && tag[depth-1] == CTX_dt) ||
+                      (data_hash == CTX_li && tag[depth-1] == CTX_li) ||
+                      (data_hash == CTX_dt && tag[depth-1] == CTX_dd) ||
+                      (data_hash == CTX_td && tag[depth-1] == CTX_td) ||
+                      (data_hash == CTX_tr && tag[depth-1] == CTX_tr) ||
+                      (data_hash == CTX_dd && tag[depth-1] == CTX_dd) ||
+                      (data_hash == CTX_p &&  tag[depth-1] == CTX_p)))
         {
           mrg_end (mrg);
           depth--;
         }
 
-        strcpy (tag[depth], data);
+        tag[depth] = data_hash;
         depth ++;
 
         {
@@ -8606,7 +8613,7 @@ void mrg_xml_render (Mrg *mrg,
           if (klass)
             free (klass);
             /* collect XML attributes and convert into CSS declarations */
-          mrg_string_append_str (style, get_attr_string (htmlctx, "style"));
+          mrg_string_append_str (style, PROPS(style));
           mrg_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
         }
 
@@ -8729,12 +8736,14 @@ void mrg_xml_render (Mrg *mrg,
           depth--;
         }
 #endif
+        }
         break;
 
       case t_closeemptytag:
       case t_closetag:
         if (!should_be_empty)
         {
+          uint32_t data_hash = ctx_strhash (data, 0);
           if (!strcmp (data, "a"))
           {
             mrg_text_listen_done (mrg);
@@ -8743,21 +8752,21 @@ void mrg_xml_render (Mrg *mrg,
           mrg_end (mrg);
           depth--;
 
-          if (strcmp (tag[depth], data))
+          if (tag[depth] != data_hash)
           {
-            if (!strcmp (tag[depth], "p"))
+            if (tag[depth] == CTX_p)
             {
               mrg_end (mrg);
               depth --;
             } else 
-            if (depth > 0 && !strcmp (tag[depth-1], data))
+            if (depth > 0 && tag[depth-1] == data_hash)
             {
               fprintf (stderr, "%i: fixing close of %s when %s is open\n", pos, data, tag[depth]);
 
               mrg_end (mrg);
               depth --;
             }
-            else if (depth > 1 && !strcmp (tag[depth-2], data))
+            else if (depth > 1 && tag[depth-2] == data_hash)
             {
               int i;
               fprintf (stderr, "%i: fixing close of %s when %s was open\n", pos, data, tag[depth]);
@@ -8768,7 +8777,7 @@ void mrg_xml_render (Mrg *mrg,
                 mrg_end (mrg);
               }
             }
-            else if (depth > 2 && !strcmp (tag[depth-3], data))
+            else if (depth > 2 && tag[depth-3] == data_hash)
             {
               int i;
               fprintf (stderr, "%i: fixing close of %s when %s wass open\n", pos, data, tag[depth]);
@@ -8779,7 +8788,7 @@ void mrg_xml_render (Mrg *mrg,
                 mrg_end (mrg);
               }
             }
-            else if (depth > 3 && !strcmp (tag[depth-4], data))
+            else if (depth > 3 && tag[depth-3] == data_hash)
             {
               int i;
               fprintf (stderr, "%i: fixing close of %s when %s wasss open\n", pos, data, tag[depth]);
@@ -8790,7 +8799,7 @@ void mrg_xml_render (Mrg *mrg,
                 mrg_end (mrg);
               }
             }
-            else if (depth > 4 && !strcmp (tag[depth-5], data))
+            else if (depth > 4 && tag[depth-5] == data_hash)
             {
               int i;
               fprintf (stderr, "%i: fixing close of %s when %s wassss open\n", pos, data, tag[depth]);
@@ -8804,20 +8813,20 @@ void mrg_xml_render (Mrg *mrg,
             }
             else
             {
-              if (!strcmp (data, "table") && !strcmp (tag[depth], "td"))
+              if (data_hash == CTX_table && tag[depth] == CTX_td)
               {
                 depth--;
                 mrg_end (mrg);
                 depth--;
                 mrg_end (mrg);
               }
-              else if (!strcmp (data, "table") && !strcmp (tag[depth], "tr"))
+              else if (data_hash == CTX_table && tag[depth] == CTX_tr)
               {
                 depth--;
                 mrg_end (mrg);
               }
               else
-              fprintf (stderr, "%i closed %s but %s is open\n", pos, data, tag[depth]);
+                fprintf (stderr, "%i closed %s but %s is open\n", pos, data, tag[depth]);
             }
           }
         }
@@ -9187,11 +9196,12 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   mrg = calloc (sizeof (Mrg), 1);
   mrg->ctx = ctx;
   mrg->in_paint = 1;
+  mrg->do_clip = 1;
   _mrg_init (mrg, width, height);
   mrg_set_size (mrg, width, height);
   mrg_style_defaults (mrg);
-  mrg->do_clip = 1;
 
+#if 0
   printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
   printf ("sizeof(Mrg) %li (was: 1142496)\n", sizeof(Mrg));
   printf ("sizeof(MrgState) %li\n", sizeof(MrgState));
@@ -9199,6 +9209,7 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   printf ("sizeof(MrgHtmlState) %li\n", sizeof(MrgHtmlState));
   printf ("sizeof(MrgHtml) %li\n", sizeof(MrgHtml));
   printf ("sizeof(MrgCssParseState) %li\n", sizeof(MrgCssParseState));
+#endif
 
   return mrg;
 }
