@@ -2123,22 +2123,24 @@ static float ctx_string_index_to_float (int index)
   return CTX_KEYDB_STRING_START + index;
 }
 
-const char *ctx_state_get_string (CtxState *state, uint32_t key)
+void *ctx_state_get_blob (CtxState *state, uint32_t key)
 {
   float stored = ctx_state_get (state, key);
   int idx = ctx_float_to_string_index (stored);
   if (idx >= 0)
   {
-     if (state->stringpool[idx] == 127) // magic for color
-     {
-       // format color as string?
-       return NULL;
-     }
-
      return &state->stringpool[idx];
   }
   // format number as string?
   return NULL;
+}
+
+const char *ctx_state_get_string (CtxState *state, uint32_t key)
+{
+  const char *ret = ctx_state_get_blob (state, key);
+  if (ret && ret[0] == 127)
+    return NULL;
+  return ret;
 }
 
 static int ctx_str_is_number (const char *str)
@@ -2196,7 +2198,7 @@ static void ctx_state_set_string (CtxState *state, uint32_t key, const char *str
 
 static int ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
 {
-  CtxColor *stored = (CtxColor*)ctx_state_get_string (state, key);
+  CtxColor *stored = (CtxColor*)ctx_state_get_blob (state, key);
   if (stored)
   {
     if (stored->magic == 127)
