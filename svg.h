@@ -3904,11 +3904,10 @@ static inline int mrg_parse_pxs (Mrg *mrg, const char *str, float *vals)
 }
 
 
-static inline void mrg_css_handle_property_pass0 (Mrg *mrg, const char *name,
+static inline void mrg_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
                                            const char *value)
 {
   MrgStyle *s = mrg_style (mrg);
-  uint32_t key = ctx_strhash (name, 0);
   /* pass0 deals with properties that parsing of many other property
    * definitions rely on */
   if (key == CTX_font_size)
@@ -3933,12 +3932,11 @@ static inline void mrg_css_handle_property_pass0 (Mrg *mrg, const char *name,
   }
 }
 
-static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
+static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                                            const char *value)
 {
   MrgStyle *s = mrg_style (mrg);
   Ctx *ctx = mrg->ctx;
-  uint32_t key = ctx_strhash (name, 0);
   uint32_t val_hash = ctx_strhash (value, 0);
 
   switch (key)
@@ -4001,7 +3999,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_margin_left:
   {
-    if (!strcmp (value, "auto"))
+    if (val_hash == CTX_auto)
     {
       s->margin_left_auto = 1;
     }
@@ -4014,7 +4012,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_margin_right:
   {
-    if (!strcmp (value, "auto"))
+    if (val_hash == CTX_auto)
     {
       s->margin_right_auto = 1;
     }
@@ -4098,9 +4096,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_visibility:
   {
-    if (!strcmp (value, "visible"))
+    if (val_hash == CTX_visible)
       s->visibility = MRG_VISIBILITY_VISIBLE;
-    else if (!strcmp (value, "hidden"))
+    else if (val_hash == CTX_hidden)
       s->visibility = MRG_VISIBILITY_HIDDEN;
     else
       s->visibility = MRG_VISIBILITY_VISIBLE;
@@ -4783,12 +4781,12 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
   }
 }
 
-static void mrg_css_handle_property_pass1med (Mrg *mrg, const char *name,
+static void mrg_css_handle_property_pass1med (Mrg *mrg, uint32_t key,
                                               const char *value)
 {
   MrgStyle *s = mrg_style (mrg);
 
-  if (!strcmp (name, "width"))
+  if (key == CTX_width)
   {
     if (!strcmp (value, "auto"))
     {
@@ -4822,7 +4820,7 @@ enum
 
 
 static void css_parse_properties (Mrg *mrg, const char *style,
-  void (*handle_property) (Mrg *mrg, const char *name,
+  void (*handle_property) (Mrg *mrg, uint32_t key,
                            const char *value))
 {
   const char *p;
@@ -4831,10 +4829,8 @@ static void css_parse_properties (Mrg *mrg, const char *style,
   int name_l = 0;
   int string_l = 0;
   int state = MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL;
-
   if (!style)
     return;
-
   for (p = style; *p; p++)
   {
     switch (state)
@@ -4902,7 +4898,7 @@ static void css_parse_properties (Mrg *mrg, const char *style,
         switch (*p)
         {
           case ';':
-            handle_property (mrg, name, string);
+            handle_property (mrg, ctx_strhash (name, 0), string);
             state = MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL;
             name_l = 0;
             name[0] = 0;
@@ -4918,7 +4914,7 @@ static void css_parse_properties (Mrg *mrg, const char *style,
     }
   }
   if (name[0])
-  handle_property (mrg, name, string);
+  handle_property (mrg, ctx_strhash (name, 0), string);
 }
 
 static void mrg_queue_draw (Mrg *mrg, MrgRectangle *rect)
@@ -4926,7 +4922,7 @@ static void mrg_queue_draw (Mrg *mrg, MrgRectangle *rect)
 }
 
 
-static void mrg_css_handle_property_pass2 (Mrg *mrg, const char *name,
+static void mrg_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
                                            const char *value)
 {
   /* this pass contains things that might depend on values
@@ -4937,7 +4933,7 @@ static void mrg_css_handle_property_pass2 (Mrg *mrg, const char *name,
 #define PROP(a)         (ctx_get(mrg->ctx, CTX_##a))
 #define SET_PROP(a,v)   (ctx_set(mrg->ctx, CTX_##a, v))
 
-  if (!strcmp (name, "right"))
+  if (key == CTX_right)
   {
     float width = ctx_get (mrg->ctx, CTX_width);
     float right = mrg_parse_px_x (mrg, value, NULL);
@@ -4957,7 +4953,7 @@ static void mrg_css_handle_property_pass2 (Mrg *mrg, const char *name,
     ctx_set (mrg->ctx, CTX_left,
          (mrg_width(mrg)-right) - width - PROP(border_left_width) - PROP(padding_left) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right));
   }
-  else if (!strcmp (name, "bottom"))
+  else if (key == CTX_bottom)
   {
     float height = PROP(height);
 
