@@ -3909,9 +3909,10 @@ static inline void mrg_css_handle_property_pass0 (Mrg *mrg, const char *name,
                                            const char *value)
 {
   MrgStyle *s = mrg_style (mrg);
+  uint32_t key = ctx_strhash (name, 0);
   /* pass0 deals with properties that parsing of many other property
    * definitions rely on */
-  if (!strcmp (name, "font-size"))
+  if (key == CTX_font_size)
   {
     float parsed;
     
@@ -3927,7 +3928,7 @@ static inline void mrg_css_handle_property_pass0 (Mrg *mrg, const char *name,
     }
     mrg_set_em (mrg, parsed);
   }
-  else if (!strcmp (name, "color"))
+  else if (key == CTX_color)
   {
     mrg_color_set_from_string (mrg, &s->color, value);
   }
@@ -3938,9 +3939,10 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
 {
   MrgStyle *s = mrg_style (mrg);
   Ctx *ctx = mrg->ctx;
-  uint32_t hash = ctx_strhash (name, 0);
+  uint32_t key = ctx_strhash (name, 0);
+  uint32_t val_hash = ctx_strhash (value, 0);
 
-  switch (hash)
+  switch (key)
   {
   case CTX_text_indent:
     s->text_indent = mrg_parse_px_y (mrg, value, NULL);
@@ -4107,11 +4109,11 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_min_height:
   case CTX_max_height:
-    ctx_set (ctx, hash, mrg_parse_px_y (mrg, value, NULL));
+    ctx_set (ctx, key, mrg_parse_px_y (mrg, value, NULL));
     break;
   case CTX_min_width:
   case CTX_max_width:
-    ctx_set (ctx, hash, mrg_parse_px_x (mrg, value, NULL));
+    ctx_set (ctx, key, mrg_parse_px_x (mrg, value, NULL));
     break;
   case CTX_border_width:
     {
@@ -4436,18 +4438,15 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_white_space:
     {
-      if (!strcmp (value, "normal"))
-        s->white_space = MRG_WHITE_SPACE_NORMAL;
-      else if (!strcmp (value, "nowrap"))
-        s->white_space = MRG_WHITE_SPACE_NOWRAP;
-      else if (!strcmp (value, "pre"))
-        s->white_space = MRG_WHITE_SPACE_PRE;
-      else if (!strcmp (value, "pre-line"))
-        s->white_space = MRG_WHITE_SPACE_PRE_LINE;
-      else if (!strcmp (value, "pre-wrap"))
-        s->white_space = MRG_WHITE_SPACE_PRE_WRAP;
-      else
-        s->white_space = MRG_WHITE_SPACE_NORMAL;
+      switch (val_hash)
+      {
+        default:
+        case CTX_normal:       s->white_space = MRG_WHITE_SPACE_NORMAL; break;
+        case CTX_nowrap:       s->white_space = MRG_WHITE_SPACE_NOWRAP; break;
+        case CTX_pre:          s->white_space = MRG_WHITE_SPACE_PRE; break;
+        case CTX_pre_line:     s->white_space = MRG_WHITE_SPACE_PRE_LINE; break;
+        case CTX_pre_wrap:     s->white_space = MRG_WHITE_SPACE_PRE_WRAP; break;
+      }
     }
     break;
   case CTX_box_sizing:
