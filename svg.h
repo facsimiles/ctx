@@ -1930,7 +1930,7 @@ struct _MrgStyle {
   //float             word_spacing;
   float               line_height;
   float               line_width;
-  CtxColor            color;
+  //CtxColor            color;
   MrgVisibility       visibility:1;
   MrgFillRule         fill_rule:1;
   MrgFontStyle        font_style:3;
@@ -3672,9 +3672,10 @@ int mrg_color_set_from_string (Mrg *mrg, CtxColor *color, const char *string)
 
   if (!strcmp (string, "currentColor"))
   {
-    MrgStyle *style = mrg_style (mrg);
     float rgba[4];
-    ctx_color_get_rgba (&(mrg->ctx->state), &style->color, rgba);
+    CtxColor ccolor;
+    ctx_get_color (mrg->ctx, CTX_color, &ccolor);
+    ctx_color_get_rgba (&(mrg->ctx->state), &ccolor, rgba);
     ctx_color_set_rgba (&(mrg->ctx->state), color, rgba[0], rgba[1], rgba[2], rgba[3]);
     return 0;
   }
@@ -3889,7 +3890,6 @@ static inline int mrg_parse_pxs (Mrg *mrg, const char *str, float *vals)
 static inline void mrg_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
                                            const char *value)
 {
-  MrgStyle *s = mrg_style (mrg);
   /* pass0 deals with properties that parsing of many other property
    * definitions rely on */
   if (key == CTX_font_size)
@@ -3910,7 +3910,9 @@ static inline void mrg_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
   }
   else if (key == CTX_color)
   {
-    mrg_color_set_from_string (mrg, &s->color, value);
+    CtxColor color;
+    mrg_color_set_from_string (mrg, &color, value);
+    ctx_set_color (mrg->ctx, CTX_color, &color);
   }
 }
 
@@ -5295,8 +5297,6 @@ void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
-
   CtxColor color;
   ctx_get_color (ctx, CTX_border_left_color, &color);
 
@@ -5319,8 +5319,6 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
-
   CtxColor color;
   ctx_get_color (ctx, CTX_border_right_color, &color);
 
@@ -5983,7 +5981,12 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
       ctx_text_stroke (cr, string);
     }
 
-    mrg_ctx_set_source_color (cr, &style->color);
+
+    {
+    CtxColor color;
+    ctx_get_color (cr, CTX_color, &color);
+    mrg_ctx_set_source_color (cr, &color);
+    }
     ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
     ctx_current_point (cr, &old_x, NULL);
 
@@ -9329,7 +9332,11 @@ void _mrg_init (Mrg *mrg, int width, int height)
   mrg->state->style.color.blue = 0;
   mrg->state->style.color.alpha = 1;
 #endif
-  ctx_color_set_rgba (&mrg->ctx->state, &mrg->state->style.color, 0, 0, 0, 1);
+  {
+    CtxColor color;
+    ctx_color_set_rgba (&mrg->ctx->state, &color, 0, 0, 0, 1);
+    ctx_set_color (mrg->ctx, CTX_color, &color);
+  }
 
   mrg->ddpx = 1;
   if (getenv ("MRG_DDPX"))
