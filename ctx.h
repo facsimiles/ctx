@@ -2186,7 +2186,7 @@ static void ctx_state_set_string (CtxState *state, uint32_t key, const char *str
   if (old_idx >= 0)
   {
     const char *old_string = ctx_state_get_string (state, key);
-    if (!strcmp (old_string, string))
+    if (old_string && !strcmp (old_string, string))
       return;
   }
   // detect floats and colors and transform them to float here.

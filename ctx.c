@@ -47,6 +47,15 @@
 // ctx with mmm as through the terminal, then
 // rebuild mrg on top of ctx
 
+static int ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
+{
+  int c;
+  int diff = 0;
+  for (c = 0; c<3;c++)
+          diff += abs(a[c]-b[c]);
+  return diff;
+}
+
 void ctx_utf8_output_buf (uint8_t *pixels,
                           int format,
                           int width,
@@ -119,6 +128,183 @@ void ctx_utf8_output_buf (uint8_t *pixels,
             printf ("\n");
           }
         break;
+      case CTX_FORMAT_RGBA8:
+        {
+           char *unicode_quarters[]={
+" ","▘","▝","▀","▖","▌","▞","▛","▗","▚","▐","▜","▄","▙","▟","█",};
+        for (int row = 0; row < height/2; row++)
+          {
+            for (int col = 0; col < width /2; col++)
+              {
+                int unicode = 0;
+
+                uint8_t rgba2[4] = {0,0,0,255};
+                uint8_t rgba1[4] = {255,255,255,255};
+                int best_diff = 0;
+
+                for (int c = 0; c < 3; c++)
+                {
+                  int no = (row * 2) * stride + (col*2) * 4;
+                  rgba2[c] = pixels[no+c];
+                }
+
+                for (int xi = 0; xi < 2; xi++)
+                  for (int yi = 0; yi < 2; yi++)
+                    for (int xj = 0; xj < 2; xj++)
+                      for (int yj = 0; yj < 2; yj++)
+                      {
+                        if (!(xi == xj && yi == yj))
+                        {
+                           int noi = (row * 2 + yi) * stride + (col*2+xi) * 4;
+                           int noj = (row * 2 + yj) * stride + (col*2+xj) * 4;
+                           uint8_t rgbai[4]={0,};
+                           uint8_t rgbaj[4]={0,};
+                           for (int c = 0; c < 3; c++)
+                           {
+                             rgbai[c] = pixels[noi+c];
+                             rgbaj[c] = pixels[noj+c];
+                           }
+                           int diff = ctx_rgba8_manhattan_diff (rgbai, rgbaj);
+                           if (diff > best_diff)
+                           {
+                             best_diff = diff;
+                             for (int c = 0; c < 3; c++)
+                             {
+                               rgba1[c] = pixels[noi+c];
+                               rgba2[c] = 0;
+                             }
+                           }
+                        }
+                      }
+
+
+
+                // to determine color .. find two most different
+                // colors in set.. and threshold between them..
+                // even better dither between them.
+                //
+  printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
+  printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
+
+                int bits_set=0;
+
+                int bit_no = 0;
+                for (int y = 0; y < 2; y++)
+                  for (int x = 0; x < 2; x++)
+                    {
+                      int no = (row * 2 + y) * stride + (col*2+x) * 4;
+#define CHECK_IS_SET \
+      (ctx_rgba8_manhattan_diff (&pixels[no], rgba1)< \
+       ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
+
+                      int set = CHECK_IS_SET;
+                      if (reverse) { set = !set; }
+                      if (set)
+                        { bits_set |=  (1<< (bit_no) ); }
+                      bit_no++;
+                    }
+                printf ("%s", unicode_quarters[bits_set]);
+       //         printf ("%i ", bits_set);
+              }
+            printf ("\n");
+          }
+        }
+
+        break;
+
+      case CTX_FORMAT_RGBA8+200:
+        for (int row = 0; row < height/4; row++)
+          {
+            for (int col = 0; col < width /2; col++)
+              {
+                int unicode = 0;
+                int bitno = 0;
+
+                uint8_t rgba2[4] = {0,0,0,255};
+                uint8_t rgba1[4] = {255,255,255,255};
+                int best_diff = 0;
+
+                for (int xi = 0; xi < 2; xi++)
+                  for (int yi = 0; yi < 4; yi++)
+                    for (int xj = 0; xj < 2; xj++)
+                      for (int yj = 0; yj < 4; yj++)
+                      {
+                        if (!(xi == xj && yi == yj))
+                        {
+                           int noi = (row * 4 + yi) * stride + (col*2+xi) * 4;
+                           uint8_t rgbai[4]={0,};
+                           uint8_t rgbaj[4]={0,};
+                           for (int c = 0; c < 3; c++)
+                           {
+                             rgbai[c] = pixels[noi+c];
+                           }
+                           int diff = ctx_rgba8_manhattan_diff (rgbai, rgba2);
+                           if (diff > best_diff)
+                           {
+                             best_diff = diff;
+                             for (int c = 0; c < 3; c++)
+                             {
+                               rgba1[c] = pixels[noi+c];
+                             }
+                           }
+                        }
+                      }
+
+
+
+                // to determine color .. find two most different
+                // colors in set.. and threshold between them..
+                // even better dither between them.
+                //
+  printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
+  printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
+
+
+                for (int x = 0; x < 2; x++)
+                  for (int y = 0; y < 3; y++)
+                    {
+                      int no = (row * 4 + y) * stride + (col*2+x) * 4;
+//#define CHECK_IS_SET \
+//                      pixels[no] > 127;
+
+#define CHECK_IS_SET \
+      (ctx_rgba8_manhattan_diff (&pixels[no], rgba1)< \
+      ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
+
+                      int set = CHECK_IS_SET;
+                      if (reverse) { set = !set; }
+                      if (set)
+                        { unicode |=  (1<< (bitno) ); }
+                      bitno++;
+                    }
+                {
+                  int x = 0;
+                  int y = 3;
+                  int no = (row * 4 + y) * stride + (col*2+x) * 4;
+                  int setA = CHECK_IS_SET;
+                  no = (row * 4 + y) * stride + (col*2+x+1) * 4;
+                  int setB = CHECK_IS_SET;
+#undef CHECK_IS_SET
+                  if (reverse) { setA = !setA; }
+                  if (reverse) { setB = !setB; }
+                  if (setA != 0 && setB==0)
+                    { unicode += 0x2840; }
+                  else if (setA == 0 && setB)
+                    { unicode += 0x2880; }
+                  else if ( (setA != 0) && (setB != 0) )
+                    { unicode += 0x28C0; }
+                  else
+                    { unicode += 0x2800; }
+                  uint8_t utf8[5];
+                  utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
+                  printf ("%s", utf8);
+                }
+              }
+            printf ("\n");
+          }
+
+        break;
+
       case CTX_FORMAT_GRAY4:
         {
           int no = 0;
@@ -139,7 +325,6 @@ void ctx_utf8_output_buf (uint8_t *pixels,
             }
         }
         break;
-      case CTX_FORMAT_RGBA8:
       case CTX_FORMAT_CMYK8:
         {
           for (int c = 0; c < 4; c++)
@@ -383,7 +568,8 @@ int main (int argc, char **argv)
   cols = width / (height / rows);
   if (dest_path)
     {
-      if (!strcmp (dest_path, "GRAY1") )
+      if (!strcmp (dest_path, "GRAY1") ||
+          !strcmp (dest_path, "RGBA8"))
         {
           width = 158;
           height = 80;
@@ -402,7 +588,7 @@ int main (int argc, char **argv)
           !strcmp (dest_path, "GRAYF") ||
           !strcmp (dest_path, "CMYKAF") ||
           !strcmp (dest_path, "RGB8") ||
-          !strcmp (dest_path, "RGBA8") ||
+          //!strcmp (dest_path, "RGBA8") ||
           !strcmp (dest_path, "CMYK8")
          )
         {
