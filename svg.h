@@ -133,6 +133,7 @@
 #define CTX_margin_top 	CTX_STRH('m','a','r','g','i','n','-','t','o','p',0,0,0,0)
 #define CTX_maroon 	CTX_STRH('m','a','r','o','o','n',0,0,0,0,0,0,0,0)
 #define CTX_matrix 	CTX_STRH('m','a','t','r','i','x',0,0,0,0,0,0,0,0)
+#define CTX_max_height	CTX_STRH('m','a','x','-','h','e','i','g','h','t',0,0,0,0)
 #define CTX_max_width 	CTX_STRH('m','a','x','-','w','i','d','t','h',0,0,0,0,0)
 #define CTX_mdash 	CTX_STRH('m','d','a','s','h',0,0,0,0,0,0,0,0,0)
 #define CTX_meta 	CTX_STRH('m','e','t','a',0,0,0,0,0,0,0,0,0,0)
@@ -1943,12 +1944,13 @@ struct _MrgStyle {
   MrgUnicodeBidi      unicode_bidi;
   MrgDirection        direction;
   MrgListStyle        list_style;
-  unsigned char       stroke;
-  unsigned char       fill;
-  unsigned char       width_auto;
-  unsigned char       margin_left_auto;
-  unsigned char       margin_right_auto;
-  unsigned char       print_symbols;
+
+  unsigned char       stroke:1;
+  unsigned char       fill:1;
+  unsigned char       width_auto:1;
+  unsigned char       margin_left_auto:1;
+  unsigned char       margin_right_auto:1;
+  unsigned char       print_symbols:1;
 
 
   CtxColor            stroke_color;
@@ -1965,37 +1967,15 @@ struct _MrgStyle {
 
   /* layout related */
 
-  //float             top;
-  //float             left;
-  //float             right;
-  //float             bottom;
-  //float             width;
-  //float             height;
-
-  //float             border_top_width;
-  //float             border_left_width;
-  //float             border_right_width;
-  //float             border_bottom_width;
-
-  //float             padding_top;
-  //float             padding_left;
-  //float             padding_right;
-  //float             padding_bottom;
-
-  //float             margin_top;
-  //float             margin_left;
-  //float             margin_right;
-  //float             margin_bottom;
-
   void             *id_ptr;
 
   char              syntax_highlight[9];
 
   MrgTextDecoration text_decoration;
   //MrgDisplay          display;
-  MrgFloat            float_;
-  MrgClear            clear;
-  MrgOverflow         overflow;
+  MrgFloat          float_;
+  MrgClear          clear;
+  MrgOverflow       overflow;
 };
 #if 0
   s->text_decoration= 0;
@@ -3960,17 +3940,24 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
   Ctx *ctx = mrg->ctx;
   uint32_t hash = ctx_strhash (name, 0);
 
-  if (!strcmp (name, "text-indent"))
+  switch (hash)
+  {
+  case CTX_text_indent:
     s->text_indent = mrg_parse_px_y (mrg, value, NULL);
-  else if (!strcmp (name, "letter-spacing"))
+    break;
+  case CTX_letter_spacing:
     s->letter_spacing = mrg_parse_px_y (mrg, value, NULL);
-  else if (!strcmp (name, "word-spacing"))
+    break;
+  case CTX_word_spacing:
     s->word_spacing = mrg_parse_px_y (mrg, value, NULL);
-  else if (!strcmp (name, "tab-size"))
+    break;
+  case CTX_tab_size:
     s->tab_size = mrg_parse_px_x (mrg, value, NULL);
-  else if (!strcmp (name, "stroke-width"))
+    break;
+  case CTX_stroke_width:
     ctx_set (mrg->ctx, CTX_stroke_width, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "margin"))
+    break;
+  case CTX_margin:
     {
       float vals[10];
       int    n_vals;
@@ -4004,11 +3991,14 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           break;
       }
     }
-  else if (!strcmp (name, "margin-top"))
+    break;
+  case CTX_margin_top:
     ctx_set (ctx, CTX_margin_top, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "margin-bottom"))
+    break;
+  case CTX_margin_bottom:
     ctx_set (ctx, CTX_margin_bottom, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "margin-left"))
+    break;
+  case CTX_margin_left:
   {
     if (!strcmp (value, "auto"))
     {
@@ -4020,7 +4010,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       s->margin_left_auto = 0;
     }
   }
-  else if (!strcmp (name, "margin-right"))
+    break;
+  case CTX_margin_right:
   {
     if (!strcmp (value, "auto"))
     {
@@ -4032,16 +4023,21 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       s->margin_right_auto = 0;
     }
   }
+    break;
 
-  else if (!strcmp (name, "padding-top"))
+  case CTX_padding_top:
     ctx_set (ctx, CTX_padding_top, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "padding-bottom"))
+    break;
+  case CTX_padding_bottom:
     ctx_set (ctx, CTX_padding_bottom, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "padding-left"))
+    break;
+  case CTX_padding_left:
     ctx_set (ctx, CTX_padding_left, mrg_parse_px_x (mrg, value, NULL));
-  else if (!strcmp (name, "padding-right"))
+    break;
+  case CTX_padding_right:
     ctx_set (ctx, CTX_padding_right, mrg_parse_px_x (mrg, value, NULL));
-  else if (!strcmp (name, "padding"))
+    break;
+  case CTX_padding:
     {
       float vals[10];
       int   n_vals;
@@ -4074,23 +4070,32 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           break;
       }
     }
-  else if (!strcmp (name, "border-top-width"))
+    break;
+  case CTX_border_top_width:
     ctx_set (ctx, CTX_border_top_width, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "border-bottom-width"))
+    break;
+  case CTX_border_bottom_width:
     ctx_set (ctx, CTX_border_bottom_width, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "border-left-width"))
+    break;
+  case CTX_border_left_width:
     ctx_set (ctx, CTX_border_left_width, mrg_parse_px_x (mrg, value, NULL));
-  else if (!strcmp (name, "border-right-width"))
+    break;
+  case CTX_border_right_width:
     ctx_set (ctx, CTX_border_right_width, mrg_parse_px_x (mrg, value, NULL));
-  else if (!strcmp (name, "top"))
+    break;
+  case CTX_top:
     ctx_set (ctx, CTX_top, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "height"))
+    break;
+  case CTX_height:
     ctx_set (ctx, CTX_height, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "left"))
+    break;
+  case CTX_left:
     ctx_set (ctx, CTX_left, mrg_parse_px_x (mrg, value, NULL));
-  else if (!strcmp (name, "right"))
+    break;
+  case CTX_right:
     ctx_set (ctx, CTX_right, mrg_parse_px_x (mrg, value, NULL));
-  else if (!strcmp (name, "visibility"))
+    break;
+  case CTX_visibility:
   {
     if (!strcmp (value, "visible"))
       s->visibility = MRG_VISIBILITY_VISIBLE;
@@ -4099,13 +4104,16 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     else
       s->visibility = MRG_VISIBILITY_VISIBLE;
   }
-  else if (!strcmp (name, "min-height")||
-           !strcmp (name, "max-height"))
+    break;
+  case CTX_min_height:
+  case CTX_max_height:
     ctx_set (ctx, hash, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "min-width") ||
-           !strcmp (name, "max-width"))
+    break;
+  case CTX_min_width:
+  case CTX_max_width:
     ctx_set (ctx, hash, mrg_parse_px_x (mrg, value, NULL));
-  else if (!strcmp (name, "border-width"))
+    break;
+  case CTX_border_width:
     {
       float valf = mrg_parse_px_y (mrg, value, NULL);
 
@@ -4114,14 +4122,16 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       ctx_set (ctx, CTX_border_right_width, valf);
       ctx_set (ctx, CTX_border_left_width, valf);
     }
-  else if (!strcmp (name, "border-color"))
+    break;
+  case CTX_border_color:
     {
       mrg_color_set_from_string (mrg, &s->border_top_color, value);
       mrg_color_set_from_string (mrg, &s->border_left_color, value);
       mrg_color_set_from_string (mrg, &s->border_right_color, value);
       mrg_color_set_from_string (mrg, &s->border_bottom_color, value);
     }
-  else if (!strcmp (name, "border"))
+    break;
+  case CTX_border:
     {
       char word[64];
       int w = 0;
@@ -4165,7 +4175,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           break;
       }
     }
-  else if (!strcmp (name, "border-right"))
+    break;
+  case CTX_border_right:
     {
       char word[64];
       int w = 0;
@@ -4203,7 +4214,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           break;
       }
     }
-  else if (!strcmp (name, "border-top"))
+    break;
+  case CTX_border_top:
     {
       char word[64];
       int w = 0;
@@ -4242,7 +4254,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           break;
       }
     }
-  else if (!strcmp (name, "border-left"))
+    break;
+  case CTX_border_left:
     {
       char word[64];
       int w = 0;
@@ -4281,7 +4294,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           break;
       }
     }
-  else if (!strcmp (name, "border-bottom"))
+    break;
+  case CTX_border_bottom:
     {
       char word[64];
       int w = 0;
@@ -4320,49 +4334,59 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           break;
       }
     }
-  else if (!strcmp (name, "line-height"))
+    break;
+  case CTX_line_height:
     mrg_set_line_height (mrg, mrg_parse_px_y (mrg, value, NULL));
-  else if (!strcmp (name, "line-width"))
+    break;
+  case CTX_line_width:
   {
     float val =mrg_parse_px_y (mrg, value, NULL);
     s->line_width = val;
     ctx_set_line_width (mrg_cr (mrg), s->line_width);
   }
+    break;
 
-  else if (!strcmp (name, "background-color"))
+  case CTX_background_color:
   {
     mrg_color_set_from_string (mrg, &s->background_color, value);
   }
-  else if (!strcmp (name, "background"))
+    break;
+  case CTX_background:
   {
     mrg_color_set_from_string (mrg, &s->background_color, value);
   }
-  else if (!strcmp (name, "fill-color") ||
-           !strcmp (name, "fill"))
+    break;
+  case CTX_fill_color:
+  case CTX_fill:
   {
     mrg_color_set_from_string (mrg, &s->fill_color, value);
   }
-  else if (!strcmp (name, "stroke-color") ||
-           !strcmp (name, "stroke"))
+    break;
+  case CTX_stroke_color:
+  case CTX_stroke:
   {
     mrg_color_set_from_string (mrg, &s->stroke_color, value);
   }
-  else if (!strcmp (name, "text-stroke-width"))
+    break;
+  case CTX_text_stroke_width:
   {
     ctx_set (mrg->ctx, CTX_text_stroke_width, mrg_parse_px_y (mrg, value, NULL));
   }
-  else if (!strcmp (name, "text-stroke-color"))
+    break;
+  case CTX_text_stroke_color:
   {
     mrg_color_set_from_string (mrg, &s->text_stroke_color, value);
   }
-  else if (!strcmp (name, "text-stroke"))
+    break;
+  case CTX_text_stroke:
   {
     char *col = NULL;
     ctx_set (mrg->ctx, CTX_text_stroke_width, mrg_parse_px_y (mrg, value, &col));
     if (col)
       mrg_color_set_from_string (mrg, &s->text_stroke_color, col + 1);
   }
-  else if (!strcmp (name, "opacity"))
+    break;
+  case CTX_opacity:
   {
     float dval = mrg_parse_float (mrg, value, NULL);
       if (dval <= 0.5f)
@@ -4376,7 +4400,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       s->color.alpha = dval;
       s->background_color.alpha = dval;
   }
-  else  if (!strcmp (name, "print-symbols"))
+    break;
+  case CTX_print_symbols:
   {
       if (!strcmp (value, "true"))
         s->print_symbols = 1;
@@ -4387,7 +4412,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->print_symbols = 0;
   }
-  else  if (!strcmp (name, "font-weight"))
+    break;
+  case CTX_font_weight:
     {
       if (!strcmp (value, "bold") ||
           !strcmp (value, "bolder"))
@@ -4407,7 +4433,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           s->font_weight);
 #endif
     }
-  else if (!strcmp (name, "white-space"))
+    break;
+  case CTX_white_space:
     {
       if (!strcmp (value, "normal"))
         s->white_space = MRG_WHITE_SPACE_NORMAL;
@@ -4422,7 +4449,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->white_space = MRG_WHITE_SPACE_NORMAL;
     }
-  else if (!strcmp (name, "box-sizing"))
+    break;
+  case CTX_box_sizing:
     {
       if (!strcmp (value, "border-box"))
       {
@@ -4430,7 +4458,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
         s->box_sizing = MRG_BOX_SIZING_CONTENT_BOX;
       }
     }
-  else if (!strcmp (name, "float"))
+    break;
+  case CTX_float:
     {
       if (!strcmp (value, "left"))
         s->float_ = MRG_FLOAT_LEFT;
@@ -4439,7 +4468,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->float_ = MRG_FLOAT_NONE;
     }
-  else if (!strcmp (name, "overflow"))
+    break;
+  case CTX_overflow:
     {
       if (!strcmp (value, "visible"))
         s->overflow = MRG_OVERFLOW_VISIBLE;
@@ -4452,7 +4482,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->overflow = MRG_OVERFLOW_VISIBLE;
     }
-  else if (!strcmp (name, "clear"))
+    break;
+  case CTX_clear:
     {
       if (!strcmp (value, "left"))
         s->clear = MRG_CLEAR_LEFT;
@@ -4463,7 +4494,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->clear = MRG_CLEAR_NONE;
     }
-  else if (!strcmp (name, "font-style"))
+    break;
+  case CTX_font_style:
     {
       if (!strcmp (value, "italic"))
       {
@@ -4484,10 +4516,12 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           s->font_weight);
 #endif
     }
-  else if (!strcmp (name, "font-family"))
+    break;
+  case CTX_font_family:
     {
       strncpy (s->font_family, value, 63);
       s->font_family[63]=0;
+      ctx_set_font (mrg_cr (mrg), s->font_family);
 #if 0
       cairo_select_font_face (mrg_cr (mrg),
           s->font_family,
@@ -4495,12 +4529,14 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           s->font_weight);
 #endif
     }
-  else if (!strcmp (name, "syntax-highlight"))
+    break;
+  case CTX_syntax_highlight:
     {
       strncpy (s->syntax_highlight, value, 8);
       s->syntax_highlight[8]=0;
     }
-  else if (!strcmp (name, "fill-rule"))
+    break;
+  case CTX_fill_rule:
     {
       if (!strcmp (value, "evenodd"))
         s->fill_rule = MRG_FILL_RULE_EVEN_ODD;
@@ -4514,7 +4550,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         ctx_set_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_WINDING);
     }
-  else if (!strcmp (name, "stroke-linejoin"))
+    break;
+  case CTX_stroke_linejoin:
     {
       if (!strcmp (value, "miter"))
         s->stroke_linejoin = MRG_LINE_JOIN_MITER;
@@ -4526,7 +4563,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
         s->stroke_linejoin = MRG_LINE_JOIN_MITER;
       ctx_set_line_join (mrg_cr (mrg), s->stroke_linejoin);
     }
-  else if (!strcmp (name, "stroke-linecap"))
+    break;
+  case CTX_stroke_linecap:
     {
       if (!strcmp (value, "butt"))
         s->stroke_linecap = MRG_LINE_CAP_BUTT;
@@ -4538,19 +4576,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
         s->stroke_linecap = MRG_LINE_CAP_BUTT;
       ctx_set_line_cap (mrg_cr (mrg), s->stroke_linecap);
     }
-  else if (!strcmp (name, "font-family"))
-    {
-      strncpy (s->font_family, value, 63);
-      s->font_family[63]=0;
-      ctx_set_font (mrg_cr (mrg), s->font_family);
-#if 0
-      cairo_select_font_face (mrg_cr (mrg),
-          s->font_family,
-          s->font_style,
-          s->font_weight);
-#endif
-    }
-  else if (!strcmp (name, "vertical-align"))
+    break;
+  case CTX_vertical_align:
     {
       if (!strcmp (value, "middle"))
         s->vertical_align = MRG_VERTICAL_ALIGN_MIDDLE;
@@ -4565,7 +4592,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->vertical_align = MRG_VERTICAL_ALIGN_BASELINE;
     }
-  else if (!strcmp (name, "cursor"))
+    break;
+  case CTX_cursor:
   {
       if (!strcmp (value, "auto")) s->cursor = MRG_CURSOR_AUTO;
       else if (!strcmp (value, "alias")) s->cursor = MRG_CURSOR_ALIAS;
@@ -4601,7 +4629,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else if (!strcmp (value, "zoom-in")) s->cursor = MRG_CURSOR_ZOOM_IN;
       else if (!strcmp (value, "zoom-out")) s->cursor = MRG_CURSOR_ZOOM_OUT;
   }
-  else if (!strcmp (name, "display"))
+    break;
+  case CTX_display:
     {
       if (!strcmp (value, "hidden"))
       {
@@ -4619,7 +4648,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_INLINE);
     }
-  else if (!strcmp (name, "position"))
+    break;
+  case CTX_position:
     {
       if (!strcmp (value, "relative"))
         s->position = MRG_POSITION_RELATIVE;
@@ -4632,7 +4662,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->position = MRG_POSITION_STATIC;
     }
-  else if (!strcmp (name, "direction"))
+    break;
+  case CTX_direction:
     {
       if (!strcmp (value, "rtl"))
         s->direction = MRG_DIRECTION_RTL;
@@ -4641,7 +4672,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->direction = MRG_DIRECTION_LTR;
     }
-  else if (!strcmp (name, "unicode-bidi"))
+    break;
+  case CTX_unicode_bidi:
     {
       if (!strcmp (value, "normal"))
         s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL;
@@ -4652,7 +4684,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL;
     }
-  else if (!strcmp (name, "text-align"))
+    break;
+  case CTX_text_align:
     {
       if (!strcmp (value, "left"))
         s->text_align = MRG_TEXT_ALIGN_LEFT;
@@ -4665,7 +4698,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       else
         s->text_align = MRG_TEXT_ALIGN_LEFT;
     }
-  else if (!strcmp (name, "text-decoration"))
+    break;
+  case CTX_text_decoration:
     {
       if (!strcmp (value, "reverse"))
       {
@@ -4704,6 +4738,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       (MRG_UNDERLINE|MRG_REVERSE|MRG_OVERLINE|MRG_LINETHROUGH|MRG_BLINK));
       }
     }
+    break;
+  }
 }
 
 static void mrg_css_handle_property_pass1med (Mrg *mrg, const char *name,
