@@ -1925,12 +1925,8 @@ typedef enum {
 struct _MrgStyle {
   /* text-related */
   float               font_size; // used for mrg_em() should be direct
-
-  //float             letter_spacing;
-  //float             word_spacing;
   float               line_height;
   float               line_width;
-  //CtxColor            color;
   MrgVisibility       visibility:1;
   MrgFillRule         fill_rule:1;
   MrgFontStyle        font_style:3;
@@ -1956,9 +1952,9 @@ struct _MrgStyle {
   MrgFloat            float_:2;
   MrgClear            clear:2;
   MrgOverflow         overflow:2;
+  MrgDisplay          display:3;
   char                syntax_highlight[9];
   void               *id_ptr;
-  //MrgDisplay      display;
 };
 #if 0
   s->text_decoration= 0;
@@ -2485,10 +2481,11 @@ void _mrg_init_style (Mrg *mrg)
    */
 
   s->text_decoration= 0;
-  ctx_set (ctx, CTX_display, MRG_DISPLAY_INLINE);
+  s->display = MRG_DISPLAY_INLINE;
   s->float_ = MRG_FLOAT_NONE;
   s->clear = MRG_CLEAR_NONE;
   s->overflow = MRG_OVERFLOW_VISIBLE;
+  s->position = MRG_POSITION_STATIC;
 #if 0
   s->border_top_color.alpha = 0;
   s->border_left_color.alpha = 0;
@@ -2508,7 +2505,6 @@ void _mrg_init_style (Mrg *mrg)
   ctx_set (ctx, CTX_padding_left, 0);
   ctx_set (ctx, CTX_padding_right, 0);
   ctx_set (ctx, CTX_padding_bottom, 0);
-  s->position = MRG_POSITION_STATIC;
   ctx_set (ctx, CTX_top, 0);
   ctx_set (ctx, CTX_left, 0);
   ctx_set (ctx, CTX_right, 0);
@@ -3414,7 +3410,7 @@ void mrg_start_with_style (Mrg        *mrg,
       mrg->state->style_id,
       &mrg->state->style_node);
 
-  ctx_set (mrg_cr(mrg), CTX_display, MRG_DISPLAY_INLINE);
+  mrg->state->style.display = MRG_DISPLAY_INLINE;
   mrg->state->style.id_ptr = id_ptr;
 
   _mrg_init_style (mrg);
@@ -4638,25 +4634,12 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   case CTX_display:
     switch (val_hash)
     {
-      case CTX_hidden:
-      {
-        ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_HIDDEN);
-        printf ("!!");
-      }
-      break;
-      case CTX_block:
-      {
-        ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_BLOCK);
-      }
-      break;
-      case CTX_list_item:
-        ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_LIST_ITEM);
-        break;
-      case CTX_inline_block:
-        ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_INLINE_BLOCK);
-        break;
+      case CTX_hidden: s->display = MRG_DISPLAY_HIDDEN; break;
+      case CTX_block:  s->display = MRG_DISPLAY_BLOCK; break;
+      case CTX_list_item: s->display = MRG_DISPLAY_LIST_ITEM; break;
+      case CTX_inline_block: s->display = MRG_DISPLAY_INLINE_BLOCK; break;
       default:
-        ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_INLINE);
+        s->display = MRG_DISPLAY_INLINE;
     }
     break;
   case CTX_position:
@@ -5397,7 +5380,7 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
   if (style->background_color.alpha <= 0.0001)
     return;
 #endif
-  if (ctx_get_int (ctx, CTX_display) == MRG_DISPLAY_INLINE &&
+  if (style->display == MRG_DISPLAY_INLINE &&
       ctx_get(ctx, CTX_float) == MRG_FLOAT_NONE)
     return;
 
@@ -6059,7 +6042,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
 {
   MrgStyle *style = mrg_style (mrg);
   Ctx *cr = mrg_cr (mrg);
-  if (ctx_get_int (cr, CTX_display) != MRG_DISPLAY_INLINE)
+  if (style->display != MRG_DISPLAY_INLINE)
     return 0.0;
   CtxColor background_color;
   ctx_get_color (cr, CTX_background_color, &background_color);
@@ -6093,7 +6076,7 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
     return 0.0;
   float left_pad = 0.0;
   float left_border = 0.0;
-  if (ctx_get_int (cr, CTX_display) != MRG_DISPLAY_INLINE)
+  if (style->display != MRG_DISPLAY_INLINE)
     return 0.0;
 
   CtxColor background_color;
@@ -6791,6 +6774,7 @@ MrgList *mrg_print_get_coords (Mrg *mrg, const char *string)
 int mrg_print (Mrg *mrg, const char *string)
 {
   float ret;
+  MrgStyle *style = mrg_style (mrg);
 
 #ifdef SNAP
   float em = mrg_em (mrg);  /* XXX: a global body-line spacing 
@@ -6802,7 +6786,7 @@ int mrg_print (Mrg *mrg, const char *string)
   if (mrg->text_edited)
     mrg_string_append_str (mrg->edited_str, string);
 
-  if (ctx_get_int (mrg->ctx, CTX_display) == MRG_DISPLAY_HIDDEN)
+  if (style->display == MRG_DISPLAY_HIDDEN)
     return 0.0;
 
   if (!string)
@@ -7325,9 +7309,8 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
 #include "svg-strings.h"
 
-  int display = ctx_get_int (ctx, CTX_display);
-  if (display == MRG_DISPLAY_BLOCK ||
-      display == MRG_DISPLAY_LIST_ITEM)
+  if (style->display == MRG_DISPLAY_BLOCK ||
+      style->display == MRG_DISPLAY_LIST_ITEM)
   {
     if (PROP(padding_left) + PROP(margin_left) + PROP(border_left_width)
         != 0)
@@ -7358,7 +7341,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
     html->state->block_start_y = mrg_y (mrg);
   }
 
-  if (display == MRG_DISPLAY_LIST_ITEM)
+  if (style->display == MRG_DISPLAY_LIST_ITEM)
   {
     float x = mrg->x;
     _mrg_draw_background_increment (mrg, html, 0);
@@ -7508,8 +7491,8 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
       break;
   }
 
-  if (display == MRG_DISPLAY_BLOCK ||
-      display == MRG_DISPLAY_INLINE_BLOCK ||
+  if (style->display == MRG_DISPLAY_BLOCK ||
+      style->display == MRG_DISPLAY_INLINE_BLOCK ||
       style->float_)
   {
      float height = PROP(height);
@@ -7597,7 +7580,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
   
   /* ad>ust cursor back to before display */
 
-  if ((ctx_get_int (mrg->ctx, CTX_display) == MRG_DISPLAY_BLOCK || style->float_) &&
+  if ((style->display == MRG_DISPLAY_BLOCK || style->float_) &&
        height != 0.0)
   {
     float diff = height - (mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg)));
@@ -7633,8 +7616,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
     ctx->states[ctx->state_no-1].floats++;
   }
 
-  int display = ctx_get_int (mrg->ctx, CTX_display);
-  if (display == MRG_DISPLAY_BLOCK || style->float_)
+  if (style->display == MRG_DISPLAY_BLOCK || style->float_)
   {
     MrgGeoCache *geo = _mrg_get_cache (ctx, style->id_ptr);
 
@@ -7688,7 +7670,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
 
     //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg)));
 
-    if (!style->float_ && display == MRG_DISPLAY_BLOCK)
+    if (!style->float_ && style->display == MRG_DISPLAY_BLOCK)
     {
       vmarg = PROP(margin_bottom);
 
@@ -7697,7 +7679,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
           mrg_y (mrg) + vmarg + PROP(border_bottom_width));
     }
   }
-  else if (display == MRG_DISPLAY_INLINE)
+  else if (style->display == MRG_DISPLAY_INLINE)
   {
     mrg->x += paint_span_bg_final (mrg, mrg->x, mrg->y, 0);
   }
