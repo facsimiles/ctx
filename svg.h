@@ -99,6 +99,7 @@
 #define CTX_evenodd 	CTX_STRH('e','v','e','n','o','d','d',0,0,0,0,0,0,0)
 #define CTX_ew_resize 	CTX_STRH('e','w','-','r','e','s','i','z','e',0,0,0,0,0)
 #define CTX_fill 	CTX_STRH('f','i','l','l',0,0,0,0,0,0,0,0,0,0)
+#define CTX_file 	CTX_STRH('f','i','l','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_fill_color 	CTX_STRH('f','i','l','l','-','c','o','l','o','r',0,0,0,0)
 //#define CTX_fill_rule 	CTX_STRH('f','i','l','l','-','r','u','l','e',0,0,0,0,0)
 #define CTX_first_child CTX_STRH('f','i','r','s','t','-','c','h','i','l','d',0,0,0)
@@ -207,6 +208,7 @@
 #define CTX_raquo 	CTX_STRH('r','a','q','u','o',0,0,0,0,0,0,0,0,0)
 #define CTX_rect 	CTX_STRH('r','e','c','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_red 	CTX_STRH('r','e','d',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_rel 	CTX_STRH('r','e','l',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_reg 	CTX_STRH('r','e','g',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_relative 	CTX_STRH('r','e','l','a','t','i','v','e',0,0,0,0,0,0)
 #define CTX_reverse 	CTX_STRH('r','e','v','e','r','s','e',0,0,0,0,0,0,0)
@@ -2288,30 +2290,12 @@ static Ctx *mrg_cr (Mrg *mrg)
   return mrg->ctx;
 }
 
-#if 0
-float mrg_em (Mrg *mrg)
-{
-  return ctx_get_font_size (mrg_cr (mrg));
-}
-
-
-float mrg_x (Mrg *mrg)
-{
-  return ctx_x (mrg_cr (mrg));
-}
-
-float mrg_y (Mrg *mrg)
-{
-  return ctx_y (mrg_cr (mrg));
-}
-#endif
-
-float mrg_edge_bottom  (Mrg *mrg)
+static float mrg_edge_bottom  (Mrg *mrg)
 {
   return mrg->state->edge_bottom;
 }
 
-float mrg_edge_top  (Mrg *mrg)
+static float mrg_edge_top  (Mrg *mrg)
 {
   return mrg->state->edge_top;
 }
@@ -2351,29 +2335,19 @@ void  mrg_set_edge_right (Mrg *mrg, float val)
   mrg->state->edge_right = val;
 }
 
-#if 0
-void mrg_set_xy (Mrg *mrg, float x, float y)
-{
-  ctx_move_to (mrg_cr (mrg), x, y);
-  mrg->state->overflowed = 0;
-}
-#endif
-
 float mrg_rem (Mrg *mrg)
 {
   return mrg->rem;
 }
 
 
-void mrg_start     (Mrg *mrg, const char *class_name, void *id_ptr);
+void mrg_start            (Mrg *mrg, const char *class_name, void *id_ptr);
 void mrg_start_with_style (Mrg        *mrg,
                            const char *style_id,
                            void       *id_ptr,
                            const char *style);
 void mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
-                       const char *format, ...);
-
-
+                            const char *format, ...);
 static void mrg_parse_style_id (Mrg          *mrg,
                                 const char   *style_id,
                                 MrgStyleNode *node)
@@ -2445,9 +2419,9 @@ void _mrg_init_style (Mrg *mrg)
    */
 
   s->text_decoration= 0;
-  s->display = MRG_DISPLAY_INLINE;
-  s->float_ = MRG_FLOAT_NONE;
-  s->clear = MRG_CLEAR_NONE;
+  s->display  = MRG_DISPLAY_INLINE;
+  s->float_   = MRG_FLOAT_NONE;
+  s->clear    = MRG_CLEAR_NONE;
   s->overflow = MRG_OVERFLOW_VISIBLE;
   s->position = MRG_POSITION_STATIC;
 #if 0
@@ -3050,13 +3024,13 @@ void mrg_css_default (Mrg *mrg)
   }
 
   mrg_stylesheet_add (mrg,
-" bold{font-weight:bold;}"
-" dim*,dim{opacity:0.5;}"
-" underline*,underline{text-decoration:underline;}"
-" reverse*,selected*,reverse,selected{text-decoration:reverse;}"
-" unhandled{color:cyan;}"
-" binding:key{background-color:white; color:black;}"
-" binding:label{color:cyan;}"
+"bold{font-weight:bold;}"
+"dim*,dim{opacity:0.5;}"
+"underline*,underline{text-decoration:underline;}"
+"reverse*,selected*,reverse,selected{text-decoration:reverse;}"
+"unhandled{color:cyan;}"
+"binding:key{background-color:white;color:black;}"
+"binding:label{color:cyan;}"
       
       ,NULL, MRG_STYLE_INTERNAL, &error);
 
@@ -3304,8 +3278,6 @@ char *_mrg_stylesheet_collate_style (Mrg *mrg)
 
 void  mrg_set_line_height (Mrg *mrg, float line_height)
 {
-  //if (mrg_is_terminal (mrg))
-  //  line_height = 1.0;
   mrg_style (mrg)->line_height = line_height;
 }
 
@@ -3421,9 +3393,7 @@ void mrg_end (Mrg *mrg)
     ctx_restore (mrg_cr (mrg));
 }
 
-
 void mrg_end       (Mrg *mrg);
-
 
 void mrg_stylesheet_clear (Mrg *mrg);
 void mrg_stylesheet_add (Mrg *mrg, const char *css, const char *uri,
@@ -3432,8 +3402,6 @@ void mrg_stylesheet_add (Mrg *mrg, const char *css, const char *uri,
 
 void mrg_css_set (Mrg *mrg, const char *css);
 void mrg_css_add (Mrg *mrg, const char *css);
-
-
 
 /* XXX: missing CSS1:
  *
@@ -3496,27 +3464,6 @@ static int xdigit_value(const char xdigit)
 
 float mrg_parse_float (Mrg *mrg, const char *str, char **endptr)
 {
-  if (!str)
-  {
-    if (endptr)
-      *endptr = NULL;
-    return 0.0;
-  }
-#if 0
-  if (str[0] == '.')
-  {
-    char *endptr2;
-    int digits;
-    double val = strtod (&str[1], &endptr2); /* XXX: , vs . problem in some locales */
-    if (endptr)
-      *endptr = endptr2;
-    digits = endptr2 - &str[1];
-    while (digits--)
-      val /= 10.0;
-    fprintf (stderr, "[%s %f]\n", str, val);
-    return val;
-  }
-#endif
   return strtod (str, endptr); /* XXX: , vs . problem in some locales */
 }
 
@@ -3579,7 +3526,6 @@ mrg_color_parse_hex (CtxState *ctxstate, CtxColor *color, const char *color_stri
             }
           else
             {
-              printf ("aa\n");
               return 0;
             }
         }
@@ -3657,7 +3603,7 @@ static inline float mrg_parse_px_x (Mrg *mrg, const char *str, char **endptr)
   if (!str)
     return 0.0;
 
-  result = mrg_parse_float (mrg, str, &end); /* XXX: , vs . problem in some locales */
+  result = mrg_parse_float (mrg, str, &end);
   if (endptr)
     *endptr=end;
 
@@ -3738,7 +3684,7 @@ static inline float mrg_parse_px_y (Mrg *mrg, const char *str, char **endptr)
   if (!str)
     return 0.0;
 
-  result = mrg_parse_float (mrg, str, &end); /* XXX: , vs . problem in some locales */
+  result = mrg_parse_float (mrg, str, &end);
   if (endptr)
     *endptr=end;
 
@@ -3833,7 +3779,7 @@ static inline int mrg_parse_pxs (Mrg *mrg, const char *str, float *vals)
 
 
 static inline void mrg_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
-                                           const char *value)
+                                                  const char *value)
 {
   /* pass0 deals with properties that parsing of many other property
    * definitions rely on */
@@ -4006,12 +3952,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       break;
     case CTX_visibility:
     {
-      if (val_hash == CTX_visible)
-        s->visibility = MRG_VISIBILITY_VISIBLE;
-      else if (val_hash == CTX_hidden)
-        s->visibility = MRG_VISIBILITY_HIDDEN;
-      else
-        s->visibility = MRG_VISIBILITY_VISIBLE;
+      if      (val_hash == CTX_visible) s->visibility = MRG_VISIBILITY_VISIBLE;
+      else if (val_hash == CTX_hidden)  s->visibility = MRG_VISIBILITY_HIDDEN;
+      else                              s->visibility = MRG_VISIBILITY_VISIBLE;
     }
     break;
   
@@ -4047,6 +3990,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case ' ':
             case '\n':
             case '\t':
+            case '\r':
             case '\0':
               if (w)
               {
@@ -4094,6 +4038,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
           {
             case ' ':
             case '\n':
+            case '\r':
             case '\t':
             case '\0':
               if (w)
@@ -4761,9 +4706,7 @@ void mrg_set_style (Mrg *mrg, const char *style)
   if (s->position == MRG_POSITION_STATIC &&
       !s->float_)
   {
-    if (s->width_auto &&
-        (s->margin_right_auto || 
-         s->margin_left_auto))
+    if (s->width_auto && (s->margin_right_auto || s->margin_left_auto))
     {
       if (s->margin_left_auto && s->margin_right_auto)
       {
@@ -4775,9 +4718,7 @@ void mrg_set_style (Mrg *mrg, const char *style)
         s->margin_right_auto = 0;
     }
 
-    if ( s->margin_left_auto &&
-        !s->width_auto &&
-        !s->margin_right_auto)
+    if ( s->margin_left_auto && !s->width_auto && !s->margin_right_auto)
     {
       SET_PROP (margin_left,
         (mrg->state->edge_right - mrg->state->edge_left)
@@ -4791,17 +4732,13 @@ void mrg_set_style (Mrg *mrg, const char *style)
         (mrg->state->edge_right - mrg->state->edge_left)
         - deco_width (mrg) - PROP(margin_left) - PROP(margin_right));
     }
-    else if ( !s->margin_left_auto &&
-              !s->width_auto &&
-              s->margin_right_auto)
+    else if ( !s->margin_left_auto && !s->width_auto && s->margin_right_auto)
     {
       SET_PROP (margin_right,
         (mrg->state->edge_right - mrg->state->edge_left)
         - deco_width (mrg) - PROP(margin_left) - PROP(width));
     }
-    else if ( s->margin_left_auto &&
-              !s->width_auto &&
-              s->margin_right_auto)
+    else if ( s->margin_left_auto && !s->width_auto && s->margin_right_auto)
     {
       float val = ((mrg->state->edge_right - mrg->state->edge_left)
         - deco_width (mrg) - PROP(width))/2;
@@ -4809,11 +4746,8 @@ void mrg_set_style (Mrg *mrg, const char *style)
       SET_PROP (margin_right, val);
     }
   }
-
   css_parse_properties (mrg, style, mrg_css_handle_property_pass2);
 }
-
-
 
 void _mrg_set_style_properties (Mrg *mrg, const char *style_properties)
 {
@@ -4845,7 +4779,6 @@ mrg_set_stylef (Mrg *mrg, const char *format, ...)
 
 void  mrg_set_line_height (Mrg *mrg, float line_height);
 float  mrg_line_height (Mrg *mrg);
-
 
 
 static void
@@ -7550,38 +7483,6 @@ static MrgEntity entities[]={
   {0, NULL}
 };
 
-static const char *get_attr_string (MrgHtml *htmlctx, const char *attr)
-{
-  return ctx_get_string (htmlctx->mrg->ctx, ctx_strhash (attr, 0));
-#if 0
-  int i;
-  for (i = 0; i < ctx->attributes; i++)
-  {
-    if (!strcmp (ctx->attribute[i], attr))
-    {
-      return ctx->value[i];
-    }
-  }
-  return NULL;
-#endif
-}
-
-static float get_attr_number (MrgHtml *htmlctx, const char *attr)
-{
-  return ctx_get (htmlctx->mrg->ctx, ctx_strhash (attr, 0));
-#if 0
-  int i;
-  for (i = 0; i < ctx->attributes; i++)
-  {
-    if (!strcmp (ctx->attribute[i], attr))
-    {
-      return ctx->value[i];
-    }
-  }
-  return NULL;
-#endif
-}
-
 static void
 mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
 {
@@ -8357,7 +8258,7 @@ void mrg_xml_render (Mrg *mrg,
   char *html;
   MrgXml *xmltok;
   MrgHtml *htmlctx        = &mrg->html;
-  uint32_t tag[64];
+  uint32_t tag[MRG_MAX_STATE_DEPTH];
   int pos             = 0;
   int type            = t_none;
   static int depth    = 0;
@@ -8617,10 +8518,10 @@ void mrg_xml_render (Mrg *mrg,
           mrg_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
         }
 
-        if (!strcmp (data, "g"))
+        if (data_hash == CTX_g)
         {
           const char *transform;
-          if ((transform = get_attr_string (htmlctx, "transform")))
+          if ((transform = PROPS(transform)))
             {
               CtxMatrix matrix;
               mrg_parse_transform (mrg, &matrix, transform);
@@ -8628,33 +8529,33 @@ void mrg_xml_render (Mrg *mrg,
             }
         }
 
-        if (!strcmp (data, "polygon"))
+        else if (data_hash == CTX_polygon)
         {
-          mrg_parse_polygon (mrg, get_attr_string (htmlctx, "d"));
+          mrg_parse_polygon (mrg, PROPS(d));
           mrg_path_fill_stroke (mrg);
         }
 
-        if (!strcmp (data, "path"))
+        else if (data_hash == CTX_path)
         {
-          mrg_parse_svg_path (mrg, get_attr_string (htmlctx, "d"));
+          mrg_parse_svg_path (mrg, PROPS(d));
           mrg_path_fill_stroke (mrg);
         }
 
-        if (!strcmp (data, "rect"))
+        else if (data_hash == CTX_rect)
         {
-          float width  = get_attr_number (htmlctx, "width");
-          float height = get_attr_number (htmlctx, "height");
-          float x      = get_attr_number (htmlctx, "x");
-          float y      = get_attr_number (htmlctx, "y");
+          float width  = PROP(width);
+          float height = PROP(height);
+          float x      = PROP(x);
+          float y      = PROP(y);
 
           ctx_rectangle (mrg_cr (mrg), x, y, width, height);
           mrg_path_fill_stroke (mrg);
         }
 
-        if (!strcmp (data, "text"))
+        else if (data_hash == CTX_text)
         {
-          mrg->x = get_attr_number (htmlctx, "x");
-          mrg->y = get_attr_number (htmlctx, "y");
+          mrg->x = PROP(x);
+          mrg->y = PROP(y);
         }
 
         if (data_hash == CTX_a)
@@ -8663,17 +8564,17 @@ void mrg_xml_render (Mrg *mrg,
             mrg_text_listen_full (mrg, MRG_CLICK, link_cb, _mrg_resolve_uri (uri_base, ctx_get_string (mrg->ctx, CTX_href)), link_data, (void*)free, NULL); //XXX: free is not invoked according to valgrind
         }
 
-        if (!strcmp (data, "style"))
+        else if (data_hash == CTX_style)
           in_style = 1;
         else
           in_style = 0;
 
         should_be_empty = 0;
 
-        if (!strcmp (data, "link"))
+        if (data_hash == CTX_link)
         {
           const char *rel;
-          if ((rel=get_attr_string (htmlctx, "rel")) && !strcmp (rel, "stylesheet") && ctx_is_set_now (mrg->ctx, CTX_href))
+          if ((rel=PROPS(rel)) && !strcmp (rel, "stylesheet") && ctx_is_set_now (mrg->ctx, CTX_href))
           {
             char *contents;
             long length;
@@ -8686,7 +8587,7 @@ void mrg_xml_render (Mrg *mrg,
           }
         }
 
-        if (!strcmp (data, "img") && ctx_is_set_now (mrg->ctx, CTX_src))
+        if (data_hash == CTX_img && ctx_is_set_now (mrg->ctx, CTX_src))
         {
           int img_width, img_height;
           const char *src = ctx_get_string (mrg->ctx, CTX_src);
@@ -8724,16 +8625,17 @@ void mrg_xml_render (Mrg *mrg,
           }
         }
 #if 1
-        if (!strcmp (data, "link") ||
-            !strcmp (data, "meta") ||
-            !strcmp (data, "input") ||
-            !strcmp (data, "img") ||
-            !strcmp (data, "br") ||
-            !strcmp (data, "hr"))
+        switch (data_hash)
         {
-          should_be_empty = 1;
-          mrg_end (mrg);
-          depth--;
+          case CTX_link:
+          case CTX_meta:
+          case CTX_input:
+          case CTX_img:
+          case CTX_br:
+          case CTX_hr:
+            should_be_empty = 1;
+            mrg_end (mrg);
+            depth--;
         }
 #endif
         }
@@ -8777,6 +8679,7 @@ void mrg_xml_render (Mrg *mrg,
                 mrg_end (mrg);
               }
             }
+#if 0
             else if (depth > 2 && tag[depth-3] == data_hash)
             {
               int i;
@@ -8809,8 +8712,8 @@ void mrg_xml_render (Mrg *mrg,
                 depth --;
                 mrg_end (mrg);
               }
-
             }
+#endif
             else
             {
               if (data_hash == CTX_table && tag[depth] == CTX_td)
@@ -8968,6 +8871,7 @@ _mr_get_contents (const char  *referer,
   char *port = NULL;
   char *path = NULL;
   char *fragment = NULL;
+  uint32_t protocol_hash;
 #if 0
   if (!strncmp (uri, "mrg:", 4))
   {
@@ -8977,8 +8881,9 @@ _mr_get_contents (const char  *referer,
 
   uri_dup = strdup (uri);
   split_uri (uri_dup, &protocol, &host, &port, &path, &fragment);
+  protocol_hash = ctx_strhash (protocol, 0);
 #if 0
-  if (protocol && !strcmp (protocol, "http"))
+  if (protocol && protocol_hash == CTX_http)
   {
     int len;
     char *pathdup = malloc (strlen (path) + 2);
@@ -8995,7 +8900,7 @@ _mr_get_contents (const char  *referer,
     return 0;
   } else
 #endif
-  if (protocol && !strcmp (protocol, "file"))
+  if (protocol && protocol_hash == CTX_file)
   {
     char *path2 = malloc (strlen (path) + 2);
     int ret;
