@@ -6,10 +6,10 @@
 #define CTX_BITPACK_PACKER  1
 #define CTX_GRADIENT_CACHE   1
 #define CTX_FONTS_FROM_FILE  1 /* leaves out code */
-
 #define CTX_IMPLEMENTATION
 
 #include "ctx.h"
+#include "svg.h"
 
 #define WIDTH    72
 #define HEIGHT   24
@@ -60,6 +60,10 @@ int main (int argc, char **argv)
 
        ctx_parser_free (ctxp);
        ctx_render_stream (ctx, stdout, 1);
+  }
+  {
+      Mrg *mrg = mrg_new (ctx, 100, 100);
+      mrg_print_xml (mrg, "abc");
   }
 
   ctx_free (ctx);

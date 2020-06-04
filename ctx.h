@@ -1450,6 +1450,12 @@ static char *ctx_strchr (const char *haystack, char needle)
 #if CTX_MATH
 
 static float
+ctx_floorf (float x)
+{
+  return (int)x; // XXX
+}
+
+static float
 ctx_fabsf (float x)
 {
   union
@@ -1572,6 +1578,7 @@ static float ctx_tanf (float a)
 #else
 #include <math.h>
 static float ctx_fabsf (float x)           { return fabsf (x); }
+static float ctx_floorf (float x)          { return floorf (x); }
 static float ctx_sinf (float x)            { return sinf (x); }
 static float ctx_atan2f (float y, float x) { return atan2f (y, x); }
 static float ctx_hypotf (float a, float b) { return hypotf (a, b); }

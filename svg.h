@@ -5286,8 +5286,8 @@ static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float wid
   if (background_color.alpha <= 0.0001)
     return;
 
-  height = floor (y + height) - floor(y);
-  y = floor (y);
+  height = ctx_floorf (y + height) - ctx_floorf(y);
+  y = ctx_floorf (y);
 
   ctx_save (ctx);
   {
@@ -5868,8 +5868,8 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
     cairo_get_matrix (mrg_cr (mrg), &matrix);
     cairo_matrix_transform_point (&matrix, &u, &v);
 
-    //u = floor(u);
-    //v = floor(v);
+    //u = ctx_floorf(u);
+    //v = ctx_floorf(v);
     
     offset = (int)(v/CPX) * ((int)(mrg->width/CPX) * 4) + (int)(u/CPX) * 4;
 
