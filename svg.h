@@ -16,6 +16,7 @@
 #define SET_PROPh(a,v)   (ctx_set(mrg->ctx, a, v))
 #define SET_PROP(a,v)    SET_PROPh(CTX_##a, v)
 #define SET_PROPS(a,v)   (ctx_set_string(mrg->ctx, CTX_##a, v))
+#define SET_PROPSh(a,v)  (ctx_set_string(mrg->ctx, a, v))
 
 #if CTX_XML
 #define CTX_1           CTX_STRH('1',0,0,0,0,0,0,0,0,0,0,0,0,0)
@@ -2436,8 +2437,6 @@ static void mrg_parse_style_id (Mrg          *mrg,
 void _mrg_init_style (Mrg *mrg)
 {
   MrgStyle *s = mrg_style (mrg);
-  Ctx *ctx = mrg->ctx;
-
 
   /* things not set here, are inherited from the parent style context,
    * more properly would be to rig up a fresh context, and copy inherited
@@ -2457,22 +2456,22 @@ void _mrg_init_style (Mrg *mrg)
   s->border_bottom_color.alpha = 0;
 #endif
 
-  ctx_set (ctx, CTX_border_top_width, 0);
-  ctx_set (ctx, CTX_border_left_width, 0);
-  ctx_set (ctx, CTX_border_right_width, 0);
-  ctx_set (ctx, CTX_border_bottom_width, 0);
-  ctx_set (ctx, CTX_margin_top, 0);
-  ctx_set (ctx, CTX_margin_left, 0);
-  ctx_set (ctx, CTX_margin_right, 0);
-  ctx_set (ctx, CTX_margin_bottom, 0);
-  ctx_set (ctx, CTX_padding_top, 0);
-  ctx_set (ctx, CTX_padding_left, 0);
-  ctx_set (ctx, CTX_padding_right, 0);
-  ctx_set (ctx, CTX_padding_bottom, 0);
-  ctx_set (ctx, CTX_top, 0);
-  ctx_set (ctx, CTX_left, 0);
-  ctx_set (ctx, CTX_right, 0);
-  ctx_set (ctx, CTX_bottom, 0);
+  SET_PROP(border_top_width, 0);
+  SET_PROP(border_left_width, 0);
+  SET_PROP(border_right_width, 0);
+  SET_PROP(border_bottom_width, 0);
+  SET_PROP(margin_top, 0);
+  SET_PROP(margin_left, 0);
+  SET_PROP(margin_right, 0);
+  SET_PROP(margin_bottom, 0);
+  SET_PROP(padding_top, 0);
+  SET_PROP(padding_left, 0);
+  SET_PROP(padding_right, 0);
+  SET_PROP(padding_bottom, 0);
+  SET_PROP(top, 0);
+  SET_PROP(left, 0);
+  SET_PROP(right, 0);
+  SET_PROP(bottom, 0);
 
   ctx_set (mrg->ctx, CTX_stroke_width, 0.2);
 #if 0
@@ -3868,11 +3867,20 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                                            const char *value)
 {
   MrgStyle *s = mrg_style (mrg);
-  Ctx *ctx = mrg->ctx;
   uint32_t val_hash = ctx_strhash (value, 0);
 
   switch (key)
   {
+    default:
+      SET_PROPSh(key, value);
+      break;
+    case CTX_right:
+    case CTX_bottom:
+    case CTX_width:
+    case CTX_color:
+    case CTX_font_size:
+      // handled in pass0
+      break;
     case CTX_top:
     case CTX_height:
     case CTX_line_width:
@@ -3895,7 +3903,6 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_border_right_width:
     case CTX_border_left_width:
     case CTX_left:
-    case CTX_right:
     case CTX_tab_size:
     case CTX_min_width:
     case CTX_max_width:
@@ -3912,28 +3919,28 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         switch (n_vals)
         {
           case 1:
-            ctx_set (ctx, CTX_margin_top, vals[0]);
-            ctx_set (ctx, CTX_margin_right, vals[0]);
-            ctx_set (ctx, CTX_margin_bottom, vals[0]);
-            ctx_set (ctx, CTX_margin_left, vals[0]);
+            SET_PROP(margin_top, vals[0]);
+            SET_PROP(margin_right, vals[0]);
+            SET_PROP(margin_bottom, vals[0]);
+            SET_PROP(margin_left, vals[0]);
             break;
           case 2:
-            ctx_set (ctx, CTX_margin_top, vals[0]);
-            ctx_set (ctx, CTX_margin_right, vals[1]);
-            ctx_set (ctx, CTX_margin_bottom, vals[0]);
-            ctx_set (ctx, CTX_margin_left, vals[1]);
+            SET_PROP(margin_top, vals[0]);
+            SET_PROP(margin_right, vals[1]);
+            SET_PROP(margin_bottom, vals[0]);
+            SET_PROP(margin_left, vals[1]);
             break;
           case 3:
-            ctx_set (ctx, CTX_margin_top, vals[0]);
-            ctx_set (ctx, CTX_margin_right, vals[1]);
-            ctx_set (ctx, CTX_margin_bottom, vals[2]);
-            ctx_set (ctx, CTX_margin_left, vals[1]);
+            SET_PROP(margin_top, vals[0]);
+            SET_PROP(margin_right, vals[1]);
+            SET_PROP(margin_bottom, vals[2]);
+            SET_PROP(margin_left, vals[1]);
             break;
           case 4:
-            ctx_set (ctx, CTX_margin_top, vals[0]);
-            ctx_set (ctx, CTX_margin_right, vals[1]);
-            ctx_set (ctx, CTX_margin_bottom, vals[2]);
-            ctx_set (ctx, CTX_margin_left, vals[3]);
+            SET_PROP(margin_top, vals[0]);
+            SET_PROP(margin_right, vals[1]);
+            SET_PROP(margin_bottom, vals[2]);
+            SET_PROP(margin_left, vals[3]);
             break;
         }
       }
@@ -3946,7 +3953,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       }
       else
       {
-        ctx_set (ctx, CTX_margin_left, mrg_parse_px_x (mrg, value, NULL));
+        SET_PROP(margin_left, mrg_parse_px_x (mrg, value, NULL));
         s->margin_left_auto = 0;
       }
     }
@@ -3959,7 +3966,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       }
       else
       {
-        ctx_set (ctx, CTX_margin_right, mrg_parse_px_x (mrg, value, NULL));
+        SET_PROP(margin_right, mrg_parse_px_x (mrg, value, NULL));
         s->margin_right_auto = 0;
       }
     }
@@ -3973,28 +3980,28 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         switch (n_vals)
         {
           case 1:
-            ctx_set (ctx, CTX_padding_top,    vals[0]);
-            ctx_set (ctx, CTX_padding_right,  vals[0]);
-            ctx_set (ctx, CTX_padding_bottom, vals[0]);
-            ctx_set (ctx, CTX_padding_left,   vals[0]);
+            SET_PROP(padding_top,    vals[0]);
+            SET_PROP(padding_right,  vals[0]);
+            SET_PROP(padding_bottom, vals[0]);
+            SET_PROP(padding_left,   vals[0]);
             break;
           case 2:
-            ctx_set (ctx, CTX_padding_top,    vals[0]);
-            ctx_set (ctx, CTX_padding_right,  vals[1]);
-            ctx_set (ctx, CTX_padding_bottom, vals[0]);
-            ctx_set (ctx, CTX_padding_left,   vals[1]);
+            SET_PROP(padding_top,    vals[0]);
+            SET_PROP(padding_right,  vals[1]);
+            SET_PROP(padding_bottom, vals[0]);
+            SET_PROP(padding_left,   vals[1]);
             break;
           case 3:
-            ctx_set (ctx, CTX_padding_top,    vals[0]);
-            ctx_set (ctx, CTX_padding_right,  vals[1]);
-            ctx_set (ctx, CTX_padding_bottom, vals[2]);
-            ctx_set (ctx, CTX_padding_left,   vals[1]);
+            SET_PROP(padding_top,    vals[0]);
+            SET_PROP(padding_right,  vals[1]);
+            SET_PROP(padding_bottom, vals[2]);
+            SET_PROP(padding_left,   vals[1]);
             break;
           case 4:
-            ctx_set (ctx, CTX_padding_top,    vals[0]);
-            ctx_set (ctx, CTX_padding_right,  vals[1]);
-            ctx_set (ctx, CTX_padding_bottom, vals[2]);
-            ctx_set (ctx, CTX_padding_left,   vals[3]);
+            SET_PROP(padding_top,    vals[0]);
+            SET_PROP(padding_right,  vals[1]);
+            SET_PROP(padding_bottom, vals[2]);
+            SET_PROP(padding_left,   vals[3]);
             break;
         }
       }
@@ -4008,16 +4015,16 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       else
         s->visibility = MRG_VISIBILITY_VISIBLE;
     }
-      break;
+    break;
   
     case CTX_border_width:
       {
         float valf = mrg_parse_px_y (mrg, value, NULL);
   
-        ctx_set (ctx, CTX_border_top_width, valf);
-        ctx_set (ctx, CTX_border_bottom_width, valf);
-        ctx_set (ctx, CTX_border_right_width, valf);
-        ctx_set (ctx, CTX_border_left_width, valf);
+        SET_PROP(border_top_width, valf);
+        SET_PROP(border_bottom_width, valf);
+        SET_PROP(border_right_width, valf);
+        SET_PROP(border_left_width, valf);
       }
       break;
     case CTX_border_color:
@@ -4045,16 +4052,17 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case '\0':
               if (w)
               {
+                uint32_t word_hash = ctx_strhash (word, 0);
                 if ((word[0] >= '0' && word[0]<='9') || word[0] == '.')
                 {
                   float valf = mrg_parse_px_y (mrg, word, NULL);
-                  ctx_set (ctx, CTX_border_top_width, valf);
-                  ctx_set (ctx, CTX_border_bottom_width, valf);
-                  ctx_set (ctx, CTX_border_right_width, valf);
-                  ctx_set (ctx, CTX_border_left_width, valf);
-                } else if (!strcmp (word, "solid") ||
-                           !strcmp (word, "dotted") ||
-                           !strcmp (word, "inset")) {
+                  SET_PROP(border_top_width, valf);
+                  SET_PROP(border_bottom_width, valf);
+                  SET_PROP(border_right_width, valf);
+                  SET_PROP(border_left_width, valf);
+                } else if (word_hash == CTX_solid ||
+                           word_hash == CTX_dotted ||
+                           word_hash == CTX_inset) {
                 } else {
                   CtxColor color;
                   mrg_color_set_from_string (mrg, &color, word);
@@ -4092,13 +4100,14 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case '\0':
               if (w)
               {
+                uint32_t word_hash = ctx_strhash (word, 0);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
-                  ctx_set (ctx, CTX_border_right_width, valf);
-                } else if (!strcmp (word, "solid") ||
-                           !strcmp (word, "dotted") ||
-                           !strcmp (word, "inset")) {
+                  SET_PROP(border_right_width, valf);
+                } else if (word_hash == CTX_solid ||
+                           word_hash == CTX_dotted ||
+                           word_hash == CTX_inset) {
                 } else {
                   CtxColor color;
                   mrg_color_set_from_string (mrg, &color, word);
@@ -4134,13 +4143,14 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case '\0':
               if (w)
               {
+                uint32_t word_hash = ctx_strhash (word, 0);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
-                  ctx_set (ctx, CTX_border_top_width, valf);
-                } else if (!strcmp (word, "solid") ||
-                           !strcmp (word, "dotted") ||
-                           !strcmp (word, "inset")) {
+                  SET_PROP(border_top_width, valf);
+                } else if (word_hash == CTX_solid ||
+                           word_hash == CTX_dotted ||
+                           word_hash == CTX_inset) {
                 } else {
                   CtxColor color;
                   mrg_color_set_from_string (mrg, &color, word);
@@ -4176,13 +4186,14 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case '\0':
               if (w)
               {
+                uint32_t word_hash = ctx_strhash (word, 0);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
-                  ctx_set (ctx, CTX_border_left_width, valf);
-                } else if (!strcmp (word, "solid") ||
-                           !strcmp (word, "dotted") ||
-                           !strcmp (word, "inset")) {
+                  SET_PROP(border_left_width, valf);
+                } else if (word_hash == CTX_solid ||
+                           word_hash == CTX_dotted ||
+                           word_hash == CTX_inset) {
                 } else {
                   CtxColor color;
                   mrg_color_set_from_string (mrg, &color, word);
@@ -4222,7 +4233,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
-                  ctx_set (ctx, CTX_border_bottom_width, valf);
+                  SET_PROP(border_bottom_width, valf);
                 } else if (word_hash == CTX_solid ||
                            word_hash == CTX_dotted ||
                            word_hash == CTX_inset) {
@@ -4280,7 +4291,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_text_stroke:
     {
       char *col = NULL;
-      ctx_set (mrg->ctx, CTX_text_stroke_width, mrg_parse_px_y (mrg, value, &col));
+      SET_PROP(text_stroke_width, mrg_parse_px_y (mrg, value, &col));
   
       if (col)
       {
@@ -4293,7 +4304,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_opacity:
     {
       ctx_set_global_alpha (mrg->ctx, mrg_parse_float (mrg, value, NULL));
-      ctx_set (mrg->ctx, CTX_opacity, mrg_parse_float (mrg, value, NULL));
+      SET_PROP(opacity, mrg_parse_float (mrg, value, NULL));
     }
     break;
     case CTX_print_symbols:
@@ -4321,7 +4332,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
           s->font_weight = MRG_FONT_WEIGHT_NORMAL;
       }
   #if 0 // XXX 
-        ctx_select_font_face (mrg_cr (mrg),
+        cairo_select_font_face (mrg_cr (mrg),
             s->font_family,
             s->font_style,
             s->font_weight);
@@ -4392,12 +4403,12 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       break;
     case CTX_font_family:
       {
-        ctx_set_string (mrg_cr (mrg), CTX_font_family, value);
+        SET_PROPS(font_family, value);
         ctx_set_font (mrg_cr (mrg), value);
       }
       break;
     case CTX_syntax_highlight:
-      ctx_set_string (mrg_cr (mrg), CTX_syntax_highlight, value);
+      SET_PROPS(syntax_highlight, value);
       break;
     case CTX_fill_rule:
       switch (val_hash)
@@ -4555,12 +4566,12 @@ static void mrg_css_handle_property_pass1med (Mrg *mrg, uint32_t key,
     if (!strcmp (value, "auto"))
     {
       s->width_auto = 1;
-      ctx_set (mrg->ctx, CTX_width, 42);
+      SET_PROP(width, 42);
     }
     else
     {
       s->width_auto = 0;
-      ctx_set (mrg->ctx, CTX_width, mrg_parse_px_x (mrg, value, NULL));
+      SET_PROP(width, mrg_parse_px_x (mrg, value, NULL));
 
       if (s->position == MRG_POSITION_FIXED) // XXX: seems wrong
       {
@@ -4570,8 +4581,6 @@ static void mrg_css_handle_property_pass1med (Mrg *mrg, uint32_t key,
   }
 }
 
-
-
 enum
 {
   MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL = 0,
@@ -4580,7 +4589,6 @@ enum
   MRG_CSS_PROPERTY_PARSER_STATE_EXPECT_VAL,
   MRG_CSS_PROPERTY_PARSER_STATE_IN_VAL
 };
-
 
 static void css_parse_properties (Mrg *mrg, const char *style,
   void (*handle_property) (Mrg *mrg, uint32_t key,
@@ -4693,13 +4701,13 @@ static void mrg_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
    */
   MrgStyle *s = mrg_style (mrg);
 
-
   if (key == CTX_right)
   {
-    float width = ctx_get (mrg->ctx, CTX_width);
+    float width = PROP(width);
     float right = mrg_parse_px_x (mrg, value, NULL);
 
-    ctx_set (mrg->ctx, CTX_right, right);
+    SET_PROP(right, right);
+
     if (width == 0)
     {
       MrgGeoCache *geo = _mrg_get_cache (&mrg->html, s->id_ptr);
@@ -4711,7 +4719,8 @@ static void mrg_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
         mrg_queue_draw (mrg, NULL);
       }
     }
-    ctx_set (mrg->ctx, CTX_left,
+    SET_PROP(right, right);
+    SET_PROP(left,
          (mrg_width(mrg)-right) - width - PROP(border_left_width) - PROP(padding_left) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right));
   }
   else if (key == CTX_bottom)
@@ -4865,9 +4874,9 @@ static void mrg_path_fill_stroke (Mrg *mrg)
     ctx_fill (ctx);
   }
 
-  if (ctx_get (mrg->ctx, CTX_stroke_width) > 0.001 && stroke_color.alpha > 0.001)
+  if (PROP(stroke_width) > 0.001 && stroke_color.alpha > 0.001)
   {
-    ctx_set_line_width (ctx, ctx_get (mrg->ctx, CTX_stroke_width));
+    ctx_set_line_width (ctx, PROP(stroke_width));
     mrg_ctx_set_source_color (ctx, &stroke_color);
     ctx_stroke (ctx);
   }
@@ -5159,11 +5168,11 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
     return;
 #endif
   if (style->display == MRG_DISPLAY_INLINE &&
-      ctx_get(ctx, CTX_float) == MRG_FLOAT_NONE)
+      style->float_ == MRG_FLOAT_NONE)
     return;
 
   if (last)
-    gap += ctx_get(ctx, CTX_padding_bottom);
+    gap += PROP(padding_bottom);
 
   if (!width)
   {
@@ -5730,14 +5739,14 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
   {
     ctx_set_font_size (cr, style->font_size);
 
-    if (ctx_get (cr, CTX_text_stroke_width) > 0.01)
+    if (PROP(text_stroke_width) > 0.01)
     {
       CtxColor color;
       ctx_get_color (cr, CTX_text_stroke_color, &color);
       mrg_ctx_set_source_color (cr, &color);
       ctx_new_path (cr);
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
-      ctx_set_line_width (cr, ctx_get (cr, CTX_text_stroke_width));
+      ctx_set_line_width (cr, PROP(text_stroke_width));
       ctx_set_line_join (cr, CTX_JOIN_ROUND);
       ctx_text_stroke (cr, string);
     }
@@ -7060,7 +7069,6 @@ void  mrg_edit_end (Mrg *mrg)
 void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 {
   MrgStyle *style;
-  Ctx *ctx = mrg_cr (mrg);
   float dynamic_edge_left, dynamic_edge_right;
 
   html->state_no++;
@@ -7097,17 +7105,13 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         != 0)
     {
       mrg_set_edge_left (mrg, mrg_edge_left (mrg) +
-            ctx_get (ctx, CTX_padding_left) +
-            ctx_get (ctx, CTX_margin_left) +
-            ctx_get (ctx, CTX_border_left_width));
+        PROP(padding_left) + PROP(margin_left) + PROP(border_left_width));
     }
     if (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)
         != 0)
     {
       mrg_set_edge_right (mrg, mrg_edge_right (mrg) -
-            (ctx_get (ctx, CTX_padding_right) +
-             ctx_get (ctx, CTX_margin_right) +
-             ctx_get (ctx, CTX_border_right_width)));
+        (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)));
     }
 
     if (PROP(margin_top) > html->state->vmarg)
@@ -7139,7 +7143,6 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
       /* fallthrough */
 
     case MRG_POSITION_STATIC:
-
 
       if (style->float_ == MRG_FLOAT_RIGHT)
       {
@@ -8563,11 +8566,11 @@ void mrg_xml_render (Mrg *mrg,
 
         {
           char combined[256]="";
-          char *klass = (void*)get_attr_string (htmlctx, "class");
+          char *klass = (char*)PROPS(class);
           /* XXX: spaces in class should be turned into .s making
            * it possible to use multiple classes
            */
-          const char *id = get_attr_string (htmlctx, "id");
+          const char *id = PROPS(id);
 
           const char *pseudo = "";
 
@@ -9152,7 +9155,7 @@ void mrg_style_defaults (Mrg *mrg)
   mrg_set_edge_top (mrg, 0);
   mrg_set_line_height (mrg, 1.2);
 
-  ctx_set (ctx, CTX_stroke_width, 1.0f);
+  SET_PROP(stroke_width, 1.0f);
   {
     CtxColor color;
     mrg_color_set_from_string (mrg, &color, "transparent");
