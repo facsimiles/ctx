@@ -3047,21 +3047,19 @@ void mrg_css_default (Mrg *mrg)
 {
   char *error = NULL;
   mrg_stylesheet_add (mrg, html_css, NULL, MRG_STYLE_INTERNAL, &error);
-  printf ("!!!\n");
   if (error)
   {
     fprintf (stderr, "Mrg css parsing error: %s\n", error);
   }
 
   mrg_stylesheet_add (mrg,
-
-" bold { font-weight:bold; } \n"
-" dim *, dim { opacity:0.5; } \n"
-" underline *, underline{ text-decoration:underline; }\n"
-" reverse *,selected *, reverse,selected { text-decoration:reverse;}\n"
-" unhandled       { color:cyan; }\n"
-" binding:key     { background-color:white; color:black; }\n"
-" binding:label   { color:cyan; }\n"
+" bold{font-weight:bold;}"
+" dim*,dim{opacity:0.5;}"
+" underline*,underline{text-decoration:underline;}"
+" reverse*,selected*,reverse,selected{text-decoration:reverse;}"
+" unhandled{color:cyan;}"
+" binding:key{background-color:white; color:black;}"
+" binding:label{color:cyan;}"
       
       ,NULL, MRG_STYLE_INTERNAL, &error);
 
@@ -3181,11 +3179,13 @@ static inline int match_nodes (Mrg *mrg, MrgStyleNode *sel_node, MrgStyleNode *s
         return 0;
     }
   }
-
   return 1;
 }
 
-static int mrg_selector_vs_ancestry (Mrg *mrg, StyleEntry *entry, MrgStyleNode **ancestry, int a_depth)
+static int mrg_selector_vs_ancestry (Mrg *mrg,
+                                     StyleEntry *entry,
+                                     MrgStyleNode **ancestry,
+                                     int a_depth)
 {
   int s = entry->sel_len - 1;
 
@@ -3329,8 +3329,6 @@ float mrg_em (Mrg *mrg)
 
 void  mrg_set_em (Mrg *mrg, float em)
 {
-  //if (mrg_is_terminal (mrg)) /* XXX: not _really_ neccesary, and disables huge-title fonts,.."and (small-font vnc)" */
-  //   em = CPX / mrg->ddpx;
   mrg->state->style.font_size = em;
 }
 
@@ -3343,8 +3341,6 @@ void mrg_css_add (Mrg *mrg, const char *css)
 {
   mrg_string_append_str (mrg->style, css);
 }
-
-
 
 void _mrg_layout_pre (Mrg *mrg, MrgHtml *ctx);
 void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx);
@@ -3364,9 +3360,7 @@ void mrg_start_with_style (Mrg        *mrg,
 
   mrg->state->style_id = style_id ? strdup (style_id) : NULL;
 
-  mrg_parse_style_id (mrg,
-      mrg->state->style_id,
-      &mrg->state->style_node);
+  mrg_parse_style_id (mrg, mrg->state->style_id, &mrg->state->style_node);
 
   mrg->state->style.display = MRG_DISPLAY_INLINE;
   mrg->state->style.id_ptr = id_ptr;
@@ -3456,7 +3450,7 @@ void mrg_css_add (Mrg *mrg, const char *css);
  */
 
 typedef struct ColorDef {
-  const char *name;
+  uint32_t name;
   float r;
   float g;
   float b;
@@ -3464,27 +3458,27 @@ typedef struct ColorDef {
 } ColorDef;
 
 static ColorDef colors[]={
-  {"black",    0, 0, 0, 1},
-  {"red",      1, 0, 0, 1},
-  {"green",    0, 1, 0, 1},
-  {"yellow",   1, 1, 0, 1},
-  {"blue",     0, 0, 1, 1},
-  {"fuchsia",  1, 0, 1, 1},
-  {"cyan",     0, 1, 1, 1},
-  {"white",    1, 1, 1, 1},
-  {"silver",   0.75294, 0.75294, 0.75294, 1},
-  {"gray",     0.50196, 0.50196, 0.50196, 1},
-  {"magenta",  0.50196, 0, 0.50196, 1},
-  {"maroon",   0.50196, 0, 0, 1},
-  {"purple",   0.50196, 0, 0.50196, 1},
-  {"green",    0, 0.50196, 0, 1},
-  {"lime",     0, 1, 0, 1},
-  {"olive",    0.50196, 0.50196, 0, 1},
-  {"navy",     0, 0,      0.50196, 1},
-  {"teal",     0, 0.50196, 0.50196, 1},
-  {"aqua",     0, 1, 1, 1},
-  {"transparent", 0, 0, 0, 0},
-  {"none",     0, 0, 0, 0},
+  {CTX_black,    0, 0, 0, 1},
+  {CTX_red,      1, 0, 0, 1},
+  {CTX_green,    0, 1, 0, 1},
+  {CTX_yellow,   1, 1, 0, 1},
+  {CTX_blue,     0, 0, 1, 1},
+  {CTX_fuchsia,  1, 0, 1, 1},
+  {CTX_cyan,     0, 1, 1, 1},
+  {CTX_white,    1, 1, 1, 1},
+  {CTX_silver,   0.75294, 0.75294, 0.75294, 1},
+  {CTX_gray,     0.50196, 0.50196, 0.50196, 1},
+  {CTX_magenta,  0.50196, 0, 0.50196, 1},
+  {CTX_maroon,   0.50196, 0, 0, 1},
+  {CTX_purple,   0.50196, 0, 0.50196, 1},
+  {CTX_green,    0, 0.50196, 0, 1},
+  {CTX_lime,     0, 1, 0, 1},
+  {CTX_olive,    0.50196, 0.50196, 0, 1},
+  {CTX_navy,     0, 0,      0.50196, 1},
+  {CTX_teal,     0, 0.50196, 0.50196, 1},
+  {CTX_aqua,     0, 1, 1, 1},
+  {CTX_transparent, 0, 0, 0, 0},
+  {CTX_none,     0, 0, 0, 0},
 };
 
 static int xdigit_value(const char xdigit)
@@ -3623,8 +3617,9 @@ mrg_color_parse_hex (CtxState *ctxstate, CtxColor *color, const char *color_stri
 int mrg_color_set_from_string (Mrg *mrg, CtxColor *color, const char *string)
 {
   int i;
+  uint32_t hash = ctx_strhash (string, 0);
 
-  if (!strcmp (string, "currentColor"))
+  if (hash == CTX_currentColor)
   {
     float rgba[4];
     CtxColor ccolor;
@@ -3636,7 +3631,7 @@ int mrg_color_set_from_string (Mrg *mrg, CtxColor *color, const char *string)
 
   for (i = (sizeof(colors)/sizeof(colors[0]))-1; i>=0; i--)
   {
-    if (!strcmp (colors[i].name, string))
+    if (hash == colors[i].name)
     {
       ctx_color_set_rgba (&(mrg->ctx->state), color,
        colors[i].r, colors[i].g, colors[i].b, colors[i].a);
