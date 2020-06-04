@@ -1,11 +1,15 @@
 #define MRG_MAX_STYLE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_STATE_DEPTH  CTX_MAX_STATES
-#define MRG_MAX_FLOATS      8
-#define MRG_MAX_CBS         128
+#define MRG_MAX_FLOATS           8
+#define MRG_MAX_CBS              128
+#define MRG_MAX_SELECTOR_LENGTH  64
+#define MRG_MAX_CSS_STRINGLEN    512
+#define MRG_MAX_CSS_RULELEN      64   // XXX doesnt have overflow protection
+#define MRG_MAX_CSS_RULES        128
 
 /* other important maximums */
-#define MRG_MAX_BINDINGS     256
-#define MRG_MAX_TEXT_LISTEN  256
+#define MRG_MAX_BINDINGS         256
+#define MRG_MAX_TEXT_LISTEN      256
 
 #define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
 #define PROPS(a)         (ctx_get_string(mrg->ctx, CTX_##a))
@@ -42,8 +46,8 @@
 #define CTX_bolder 	CTX_STRH('b','o','l','d','e','r',0,0,0,0,0,0,0,0)
 #define CTX_border 	CTX_STRH('b','o','r','d','e','r',0,0,0,0,0,0,0,0)
 #define CTX_border_bottom 	CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m',0)
-#define CTX_border_bottom_width 	CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m','-')
-#define CTX_border_bottom_color 	CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m','c') // XXX
+#define CTX_border_bottom_width CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m','-')
+#define CTX_border_bottom_color CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m','c') // XXX
 #define CTX_border_box 	CTX_STRH('b','o','r','d','e','r','-','b','o','x',0,0,0,0)
 #define CTX_border_color 	CTX_STRH('b','o','r','d','e','r','-','c','o','l','o','r',0,0)
 #define CTX_border_left 	CTX_STRH('b','o','r','d','e','r','-','l','e','f','t',0,0,0)
@@ -2008,11 +2012,9 @@ typedef struct MrgState {
   MrgStyleNode style_node;
   MrgStyle     style;
 
-  int          overflowed;
-  /* ansi/vt100 approximations of set text fg/bg color  */
-
-  int          span_bg_started;
   int          children;
+  int          overflowed:1;
+  int          span_bg_started:1;
 }  MrgState;;
 
 struct _Mrg {
@@ -2628,7 +2630,6 @@ const char * html_css =
 "hr { margin-top:16px;font-size: 1px; }\n"  /* hack that works in one way, but shrinks top margin too much */
 ;
 
-#define MRG_MAX_SELECTOR_LENGTH 32
 
 typedef struct StyleEntry {
   char        *selector;
@@ -2750,7 +2751,6 @@ static void mrg_stylesheet_add_selector (Mrg *mrg, const char *selector, const c
   mrg_list_prepend_full (&mrg->stylesheet, entry, (void*)free_entry, NULL);
 }
 
-#define MAXLEN 4096
 
 #define MAKE_ERROR \
  if (error)\
@@ -2761,16 +2761,15 @@ static void mrg_stylesheet_add_selector (Mrg *mrg, const char *selector, const c
    *error = strdup (errbuf);\
  }
 
-#define MAX_RULES 64
 
 typedef struct _MrgCssParseState MrgCssParseState;
 
 struct _MrgCssParseState {
   int   state;
-  char  rule[MAX_RULES][MAXLEN];
+  char  rule[MRG_MAX_CSS_RULES][MRG_MAX_CSS_RULELEN];
   int   rule_no ;
-  int   rule_l[MAX_RULES];
-  char  val[MAXLEN];
+  int   rule_l[MRG_MAX_CSS_RULES];
+  char  val[MRG_MAX_CSS_STRINGLEN];
   int   val_l;
 };
 
@@ -3029,10 +3028,6 @@ static void _mrg_stylesheet_add (MrgCssParseState *ps, Mrg *mrg, const char *css
         {
           int no;
 
-          /* XXX: parsing grammar is a bit more complicated, wrt quotes and
-           * brackets..
-           */
-
           case '/': if (p[1] == '*') { p++; ps->state = VAL_COMMENT; } break;
           case '}':
             while (ps->val_l && (
@@ -3041,6 +3036,7 @@ static void _mrg_stylesheet_add (MrgCssParseState *ps, Mrg *mrg, const char *css
                 ps->val[ps->val_l-1] == '\t'))
               ps->val_l--;
             ps->val[ps->val_l]=0;
+
             for (no = 0; no < ps->rule_no+1; no ++)
             {
               while (ps->rule_l[no] && (
@@ -4781,7 +4777,6 @@ static void mrg_css_handle_property_pass1med (Mrg *mrg, uint32_t key,
 }
 
 
-#define MAXLEN 4096
 
 enum
 {
@@ -4798,8 +4793,8 @@ static void css_parse_properties (Mrg *mrg, const char *style,
                            const char *value))
 {
   const char *p;
-  char name[MAXLEN] = "";
-  char string[MAXLEN] = "";
+  char name[MRG_MAX_CSS_STRINGLEN] = "";
+  char string[MRG_MAX_CSS_STRINGLEN] = "";
   int name_l = 0;
   int string_l = 0;
   int state = MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL;
@@ -5016,12 +5011,6 @@ void mrg_set_style (Mrg *mrg, const char *style)
 
   css_parse_properties (mrg, style, mrg_css_handle_property_pass2);
 }
-
-
-
-#define MAXLEN 4096
-
-
 
 
 
@@ -9412,6 +9401,7 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   printf ("sizeof(MrgStyle) %li\n", sizeof(MrgStyle));
   printf ("sizeof(MrgHtmlState) %li\n", sizeof(MrgHtmlState));
   printf ("sizeof(MrgHtml) %li\n", sizeof(MrgHtml));
+  printf ("sizeof(MrgCssParseState) %li\n", sizeof(MrgCssParseState));
 
   return mrg;
 }
