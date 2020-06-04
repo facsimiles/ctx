@@ -1955,7 +1955,7 @@ struct _MrgStyle {
   char                syntax_highlight[9];
 
   /* vector shape / box related */
-  CtxColor            text_stroke_color;
+  //CtxColor            text_stroke_color;
   CtxColor            border_top_color;
   CtxColor            border_left_color;
   CtxColor            border_right_color;
@@ -4359,15 +4359,22 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     break;
   case CTX_text_stroke_color:
   {
-    mrg_color_set_from_string (mrg, &s->text_stroke_color, value);
+    CtxColor color;
+    mrg_color_set_from_string (mrg, &color, value);
+    ctx_set_color (mrg->ctx, CTX_text_stroke_color, &color);
   }
     break;
   case CTX_text_stroke:
   {
     char *col = NULL;
     ctx_set (mrg->ctx, CTX_text_stroke_width, mrg_parse_px_y (mrg, value, &col));
+
     if (col)
-      mrg_color_set_from_string (mrg, &s->text_stroke_color, col + 1);
+    {
+      CtxColor color;
+      mrg_color_set_from_string (mrg, &color, col + 1);
+      ctx_set_color (mrg->ctx, CTX_text_stroke_color, &color);
+    }
   }
     break;
   case CTX_opacity:
@@ -5954,7 +5961,9 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
 
     if (ctx_get (cr, CTX_text_stroke_width) > 0.01)
     {
-      mrg_ctx_set_source_color (cr, &style->text_stroke_color);
+      CtxColor color;
+      ctx_get_color (cr, CTX_text_stroke_color, &color);
+      mrg_ctx_set_source_color (cr, &color);
       ctx_new_path (cr);
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
       ctx_set_line_width (cr, ctx_get (cr, CTX_text_stroke_width));
