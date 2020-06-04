@@ -1958,7 +1958,7 @@ struct _MrgStyle {
   CtxColor            stroke_color;
 
   /* vector shape / box related */
-  CtxColor            fill_color;
+  //CtxColor            fill_color;
   CtxColor            border_top_color;
   CtxColor            border_left_color;
   CtxColor            border_right_color;
@@ -2028,8 +2028,6 @@ typedef struct MrgState {
 
   int          overflowed;
   /* ansi/vt100 approximations of set text fg/bg color  */
-  int          fg;
-  int          bg;
 
   int          span_bg_started;
   int          children;
@@ -2546,9 +2544,6 @@ void _mrg_init_style (Mrg *mrg)
   //s->background_color.green = 1;
   //s->background_color.blue = 1;
   //s->background_color.alpha = 0;
-
-  mrg->state->fg = 0;
-  mrg->state->bg = 7;
 }
 
 
@@ -4351,7 +4346,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   case CTX_fill_color:
   case CTX_fill:
   {
-    mrg_color_set_from_string (mrg, &s->fill_color, value);
+    CtxColor color;
+    mrg_color_set_from_string (mrg, &color, value);
+    ctx_set_color (mrg->ctx, CTX_fill_color, &color);
   }
     break;
   case CTX_stroke_color:
@@ -4380,6 +4377,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     break;
   case CTX_opacity:
   {
+#if 0
     float dval = mrg_parse_float (mrg, value, NULL);
       if (dval <= 0.5f)
         s->text_decoration |= MRG_DIM;
@@ -4391,6 +4389,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       s->stroke_color.alpha = dval;
       s->color.alpha = dval;
       s->background_color.alpha = dval;
+#endif
+      ctx_set_global_alpha (mrg->ctx, mrg_parse_float (mrg, value, NULL));
   }
     break;
   case CTX_print_symbols:
@@ -5081,9 +5081,13 @@ static void mrg_path_fill_stroke (Mrg *mrg)
 {
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
-  if (style->fill_color.alpha > 0.001)
+  CtxColor fill_color;
+  //MrgColor stroke_color;
+
+  ctx_get_color (ctx, CTX_fill_color, &fill_color);
+  if (fill_color.alpha > 0.001)
   {
-    mrg_ctx_set_source_color (ctx, &style->fill_color);
+    mrg_ctx_set_source_color (ctx, &fill_color);
     ctx_preserve (ctx);
     ctx_fill (ctx);
   }
@@ -9356,7 +9360,12 @@ void mrg_style_defaults (Mrg *mrg)
 
   ctx_set (ctx, CTX_stroke_width, 1.0f);
   mrg_color_set_from_string (mrg, &mrg->state->style.stroke_color, "transparent");
-  mrg_color_set_from_string (mrg, &mrg->state->style.fill_color, "black");
+
+  {
+    CtxColor color;
+    mrg_color_set_from_string (mrg, &color, "black");
+    ctx_set_color (ctx, CTX_fill_color, &color);
+  }
 
   mrg_stylesheet_clear (mrg);
   _mrg_init_style (mrg);
