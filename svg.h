@@ -42,13 +42,17 @@
 #define CTX_border 	CTX_STRH('b','o','r','d','e','r',0,0,0,0,0,0,0,0)
 #define CTX_border_bottom 	CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m',0)
 #define CTX_border_bottom_width 	CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m','-')
+#define CTX_border_bottom_color 	CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m','c') // XXX
 #define CTX_border_box 	CTX_STRH('b','o','r','d','e','r','-','b','o','x',0,0,0,0)
 #define CTX_border_color 	CTX_STRH('b','o','r','d','e','r','-','c','o','l','o','r',0,0)
 #define CTX_border_left 	CTX_STRH('b','o','r','d','e','r','-','l','e','f','t',0,0,0)
 #define CTX_border_left_width 	CTX_STRH('b','o','r','d','e','r','-','l','e','f','t','-','w','i')
+#define CTX_border_left_color 	CTX_STRH('b','o','r','d','e','r','-','l','e','f','t','-','c','o')
 #define CTX_border_right 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t',0,0)
 #define CTX_border_right_width 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t','-','w')
+#define CTX_border_right_color 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t','-','c')
 #define CTX_border_top 	CTX_STRH('b','o','r','d','e','r','-','t','o','p',0,0,0,0)
+#define CTX_border_top_color 	CTX_STRH('b','o','r','d','e','r','-','t','o','p','-','c','o','l')
 #define CTX_border_top_width 	CTX_STRH('b','o','r','d','e','r','-','t','o','p','-','w','i','d')
 #define CTX_border_width 	CTX_STRH('b','o','r','d','e','r','-','w','i','d','t','h',0,0)
 #define CTX_both 	CTX_STRH('b','o','t','h',0,0,0,0,0,0,0,0,0,0)
@@ -1953,19 +1957,7 @@ struct _MrgStyle {
   MrgClear            clear:2;
   MrgOverflow         overflow:2;
   char                syntax_highlight[9];
-
-  /* vector shape / box related */
-  //CtxColor            text_stroke_color;
-  CtxColor            border_top_color;
-  CtxColor            border_left_color;
-  CtxColor            border_right_color;
-  CtxColor            border_bottom_color;
-
-  /* layout related */
-
-  void             *id_ptr;
-
-
+  void               *id_ptr;
   //MrgDisplay      display;
 };
 #if 0
@@ -2497,10 +2489,13 @@ void _mrg_init_style (Mrg *mrg)
   s->float_ = MRG_FLOAT_NONE;
   s->clear = MRG_CLEAR_NONE;
   s->overflow = MRG_OVERFLOW_VISIBLE;
+#if 0
   s->border_top_color.alpha = 0;
   s->border_left_color.alpha = 0;
   s->border_right_color.alpha = 0;
   s->border_bottom_color.alpha = 0;
+#endif
+
   ctx_set (ctx, CTX_border_top_width, 0);
   ctx_set (ctx, CTX_border_left_width, 0);
   ctx_set (ctx, CTX_border_right_width, 0);
@@ -4106,10 +4101,12 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     break;
   case CTX_border_color:
     {
-      mrg_color_set_from_string (mrg, &s->border_top_color, value);
-      mrg_color_set_from_string (mrg, &s->border_left_color, value);
-      mrg_color_set_from_string (mrg, &s->border_right_color, value);
-      mrg_color_set_from_string (mrg, &s->border_bottom_color, value);
+      CtxColor color;
+      mrg_color_set_from_string (mrg, &color, value);
+      ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
+      ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
+      ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
+      ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
     }
     break;
   case CTX_border:
@@ -4138,10 +4135,12 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                          !strcmp (word, "dotted") ||
                          !strcmp (word, "inset")) {
               } else {
-                mrg_color_set_from_string (mrg, &s->border_top_color, word);
-                mrg_color_set_from_string (mrg, &s->border_bottom_color, word);
-                mrg_color_set_from_string (mrg, &s->border_left_color, word);
-                mrg_color_set_from_string (mrg, &s->border_right_color, word);
+                CtxColor color;
+                mrg_color_set_from_string (mrg, &color, word);
+                ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
+                ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
+                ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
+                ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
               }
               word[0]=0;
               w=0;
@@ -4180,7 +4179,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                          !strcmp (word, "dotted") ||
                          !strcmp (word, "inset")) {
               } else {
-                mrg_color_set_from_string (mrg, &s->border_right_color, word);
+                CtxColor color;
+                mrg_color_set_from_string (mrg, &color, word);
+                ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
               }
               word[0]=0;
               w=0;
@@ -4220,7 +4221,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                          !strcmp (word, "dotted") ||
                          !strcmp (word, "inset")) {
               } else {
-                mrg_color_set_from_string (mrg, &s->border_top_color, word);
+                CtxColor color;
+                mrg_color_set_from_string (mrg, &color, word);
+                ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
               }
               word[0]=0;
               w=0;
@@ -4260,7 +4263,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                          !strcmp (word, "dotted") ||
                          !strcmp (word, "inset")) {
               } else {
-                mrg_color_set_from_string (mrg, &s->border_left_color, word);
+                CtxColor color;
+                mrg_color_set_from_string (mrg, &color, word);
+                ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
               }
               word[0]=0;
               w=0;
@@ -4301,7 +4306,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                          word_hash == CTX_dotted ||
                          word_hash == CTX_inset) {
               } else {
-                mrg_color_set_from_string (mrg, &s->border_bottom_color, word);
+                CtxColor color;
+                mrg_color_set_from_string (mrg, &color, word);
+                ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
               }
               word[0]=0;
               w=0;
@@ -5107,11 +5114,12 @@ static void mrg_path_fill_stroke (Mrg *mrg)
 void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
 
+  CtxColor color;
+  ctx_get_color (ctx, CTX_border_top_color, &color);
 
   if (PROP(border_top_width) > 0.01f &&
-      style->border_top_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
@@ -5121,7 +5129,7 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, -PROP(border_right_width), PROP(border_top_width));
     ctx_rel_line_to (ctx, - (width + PROP(padding_right) + PROP(padding_left)), 0);
 
-    mrg_ctx_set_source_color (ctx, &style->border_top_color);
+    mrg_ctx_set_source_color (ctx, &color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
@@ -5130,11 +5138,11 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
-
+  CtxColor color;
+  ctx_get_color (ctx, CTX_border_top_color, &color);
 
   if (PROP(border_bottom_width) > 0.01 &&
-      style->border_bottom_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
@@ -5143,7 +5151,7 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
     ctx_rel_line_to (ctx, PROP(border_left_width), -PROP(border_bottom_width));
 
-    mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
+    mrg_ctx_set_source_color (ctx, &color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
@@ -5153,11 +5161,11 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *cr = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
-
+  CtxColor color;
+  ctx_get_color (cr, CTX_border_top_color, &color);
 
   if (PROP(border_top_width) > 0.01 &&
-      style->border_top_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (cr);
     ctx_new_path (cr);
@@ -5166,7 +5174,7 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (cr, -PROP(border_right_width), PROP(border_top_width));
     ctx_rel_line_to (cr, - (width + PROP(padding_right)), 0);
 
-    mrg_ctx_set_source_color (cr, &style->border_top_color);
+    mrg_ctx_set_source_color (cr, &color);
     ctx_fill (cr);
   ctx_restore (cr);
   }
@@ -5174,11 +5182,11 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
-
+  CtxColor color;
+  ctx_get_color (ctx, CTX_border_bottom_color, &color);
 
   if (PROP(border_bottom_width) &&
-      style->border_bottom_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
@@ -5187,7 +5195,7 @@ void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
     ctx_rel_line_to (ctx, PROP(border_left_width), -PROP(border_bottom_width));
 
-    mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
+    mrg_ctx_set_source_color (ctx, &color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
@@ -5197,11 +5205,11 @@ void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
-
+  CtxColor color;
+  ctx_get_color (ctx, CTX_border_top_color, &color);
 
   if (PROP(border_top_width) > 0.01 &&
-      style->border_top_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
@@ -5211,7 +5219,7 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, 0, PROP(border_top_width));
     ctx_rel_line_to (ctx, - (width + PROP(padding_left)), 0);
 
-    mrg_ctx_set_source_color (ctx, &style->border_top_color);
+    mrg_ctx_set_source_color (ctx, &color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
@@ -5219,11 +5227,11 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
-
+  CtxColor color;
+  ctx_get_color (ctx, CTX_border_bottom_color, &color);
 
   if (PROP(border_bottom_width) > 0.01 &&
-      style->border_bottom_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
@@ -5232,7 +5240,7 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(border_left_width)), 0);
     ctx_rel_line_to (ctx, PROP(border_left_width), -PROP(border_bottom_width));
 
-    mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
+    mrg_ctx_set_source_color (ctx, &color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
@@ -5243,11 +5251,11 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
-
+  CtxColor color;
+  ctx_get_color (ctx, CTX_border_top_color, &color);
 
   if (PROP(border_top_width) &&
-      style->border_top_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
@@ -5257,7 +5265,7 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, 0, PROP(border_top_width));
     ctx_rel_line_to (ctx, -width, 0);
 
-    mrg_ctx_set_source_color (ctx, &style->border_top_color);
+    mrg_ctx_set_source_color (ctx, &color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
@@ -5265,11 +5273,11 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
-
+  CtxColor color;
+  ctx_get_color (ctx, CTX_border_bottom_color, &color);
 
   if (PROP(border_bottom_width) &&
-      style->border_bottom_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
@@ -5278,7 +5286,7 @@ void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, - width, 0);
     ctx_rel_line_to (ctx, 0, -PROP(border_bottom_width));
 
-    mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
+    mrg_ctx_set_source_color (ctx, &color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
@@ -5289,9 +5297,11 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
+  CtxColor color;
+  ctx_get_color (ctx, CTX_border_left_color, &color);
 
   if (PROP(border_left_width) &&
-      style->border_left_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
@@ -5300,7 +5310,7 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, PROP(border_left_width), PROP(border_top_width));
     ctx_rel_line_to (ctx, 0, height + PROP(padding_top) + PROP(padding_bottom) );
     ctx_rel_line_to (ctx, -PROP(border_left_width), PROP(border_bottom_width));
-    mrg_ctx_set_source_color (ctx, &style->border_left_color);
+    mrg_ctx_set_source_color (ctx, &color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
@@ -5311,9 +5321,11 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
   Ctx *ctx = mrg_cr (mrg);
   MrgStyle *style = mrg_style (mrg);
 
+  CtxColor color;
+  ctx_get_color (ctx, CTX_border_right_color, &color);
 
   if (PROP(border_right_width) > 0.01 &&
-      style->border_right_color.alpha > 0.001)
+      color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
@@ -5322,7 +5334,7 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, 0, - (height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width)));
     ctx_rel_line_to (ctx, -PROP(border_right_width), PROP(border_top_width));
 
-    mrg_ctx_set_source_color (ctx, &style->border_right_color);
+    mrg_ctx_set_source_color (ctx, &color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
