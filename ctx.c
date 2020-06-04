@@ -27,7 +27,7 @@
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
 //#define CTX_RASTERIZER_AA        5
 //#define CTX_RASTERIZER_FORCE_AA  1
-#define CTX_MATH                 0
+#define CTX_MATH                 1
 
 #define CTX_IMPLEMENTATION 1
 //
@@ -60,17 +60,16 @@ void ctx_utf8_output_buf (uint8_t *pixels,
     {
       case CTX_FORMAT_GRAY2:
         {
-          static char *utf8_gray_scale[]= {" ","░","▓","█", NULL};
           for (int y= 0; y < height; y++)
             {
               no = y * stride;
               for (int x = 0; x < width; x++)
                 {
-                  int val = (pixels[no] & (3 << ( (x % 4) *2) ) ) >> ( (x%4) *2);
-                  if (reverse)
-                    { printf ("%s", utf8_gray_scale[val]); }
-                  else
-                    { printf ("%s", utf8_gray_scale[3-val]); }
+                  int val4= (pixels[no] & (3 << ( (x % 4) *2) ) ) >> ( (x%4) *2);
+                  int val = (int) CTX_CLAMP (5.0 * val4 / 3.0, 0, 5);
+                  if (!reverse)
+                  { val = 5-val; }
+                  printf ("%s", utf8_gray_scale[val]);
                   if ( (x % 4) == 3)
                     { no++; }
                 }

@@ -460,7 +460,7 @@ typedef enum
   CTX_SET_CMYK_SPACE       = 23, //
   CTX_SET_DCMYK_SPACE      = 24, //
 
-  CTX_DEFUN  = 25,
+  CTX_FUNCTION = 25,
   CTX_ENDFUN = 26,
 
   // non-alphabetic chars that get filtered out when parsing
@@ -1554,7 +1554,7 @@ static float ctx_atanf (float a)
   return ctx_atan2f ( (a), 1.0f);
 }
 
-static float ctx_asinf (float x)
+static inline float ctx_asinf (float x)
 {
   return ctx_atanf ( (x) * (ctx_invsqrtf (1.0f-ctx_pow2 (x) ) ) );
 }
@@ -10759,7 +10759,6 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
   fprintf (stream, "\n");
 }
 
-
 #endif
 
 /* the parser comes in the end, nothing in ctx knows about the parser  */
@@ -10848,6 +10847,7 @@ CtxParser *ctx_parser_new (
                            cursor_x, cursor_y,
                            exit, exit_data);
 }
+
 void ctx_parser_free (CtxParser *parser)
 {
   free (parser);
@@ -10929,7 +10929,7 @@ static int ctx_arguments_for_code (CtxCode code)
         return 200;  /* 200 means number of components */
       case CTX_GRADIENT_STOP:
         return 201;  /* 201 means number of components+1 */
-      case CTX_DEFUN: /* special interpretation   */
+      case CTX_FUNCTION: /* special interpretation   */
         return 300;
       default:
 #if 0
@@ -11001,10 +11001,10 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
         {
 #define CTX_ENABLE_DEFUN 1
 #if CTX_ENABLE_DEFUN
-#define CTX_defun  CTX_STRH('d','e','f','u','n',0,0,0,0,0,0,0,0,0)
+#define CTX_function CTX_STRH('f','u','n','c','t','o','n',0,0,0,0,0,0,0)
 #define CTX_endfun CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
-          case CTX_defun:
-            ret = CTX_DEFUN;
+          case CTX_function:
+            ret = CTX_FUNCTION;
             break;
           case CTX_endfun:
             ret = CTX_ENDFUN;
