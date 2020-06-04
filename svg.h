@@ -1965,27 +1965,27 @@ struct _MrgStyle {
 
   /* layout related */
 
-  float             top;
-  float             left;
-  float             right;
-  float             bottom;
-  float             width;
-  float             height;
+  //float             top;
+  //float             left;
+  //float             right;
+  //float             bottom;
+  //float             width;
+  //float             height;
 
-  float             border_top_width;
-  float             border_left_width;
-  float             border_right_width;
-  float             border_bottom_width;
+  //float             border_top_width;
+  //float             border_left_width;
+  //float             border_right_width;
+  //float             border_bottom_width;
 
-  float             padding_top;
-  float             padding_left;
-  float             padding_right;
-  float             padding_bottom;
+  //float             padding_top;
+  //float             padding_left;
+  //float             padding_right;
+  //float             padding_bottom;
 
-  float             margin_top;
-  float             margin_left;
-  float             margin_right;
-  float             margin_bottom;
+  //float             margin_top;
+  //float             margin_left;
+  //float             margin_right;
+  //float             margin_bottom;
 
   void             *id_ptr;
 
@@ -2515,6 +2515,7 @@ static void mrg_parse_style_id (Mrg          *mrg,
 void _mrg_init_style (Mrg *mrg)
 {
   MrgStyle *s = mrg_style (mrg);
+  Ctx *ctx = mrg->ctx;
 
 
   /* things not set here, are inherited from the parent style context,
@@ -2523,7 +2524,7 @@ void _mrg_init_style (Mrg *mrg)
    */
 
   s->text_decoration= 0;
-  ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_INLINE);
+  ctx_set (ctx, CTX_display, MRG_DISPLAY_INLINE);
   s->float_ = MRG_FLOAT_NONE;
   s->clear = MRG_CLEAR_NONE;
   s->overflow = MRG_OVERFLOW_VISIBLE;
@@ -2531,24 +2532,23 @@ void _mrg_init_style (Mrg *mrg)
   s->border_left_color.alpha = 0;
   s->border_right_color.alpha = 0;
   s->border_bottom_color.alpha = 0;
-  s->border_top_width = 0;
-  s->border_left_width = 0;
-  s->border_right_width = 0;
-  s->border_bottom_width = 0;
-  s->margin_top = 0;
-  s->margin_left = 0;
-  s->margin_right = 0;
-  s->margin_bottom = 0;
-  s->padding_top = 0;
-  s->padding_left = 0;
-  s->padding_right = 0;
-  s->padding_bottom = 0;
+  ctx_set (ctx, CTX_border_top_width, 0);
+  ctx_set (ctx, CTX_border_left_width, 0);
+  ctx_set (ctx, CTX_border_right_width, 0);
+  ctx_set (ctx, CTX_border_bottom_width, 0);
+  ctx_set (ctx, CTX_margin_top, 0);
+  ctx_set (ctx, CTX_margin_left, 0);
+  ctx_set (ctx, CTX_margin_right, 0);
+  ctx_set (ctx, CTX_margin_bottom, 0);
+  ctx_set (ctx, CTX_padding_top, 0);
+  ctx_set (ctx, CTX_padding_left, 0);
+  ctx_set (ctx, CTX_padding_right, 0);
+  ctx_set (ctx, CTX_padding_bottom, 0);
   s->position = MRG_POSITION_STATIC;
-  s->top = 0;
-  s->left = 0;
-  s->height = 0;
-  s->width = 0;
-  s->width_auto = 1;
+  ctx_set (ctx, CTX_top, 0);
+  ctx_set (ctx, CTX_left, 0);
+  ctx_set (ctx, CTX_right, 0);
+  ctx_set (ctx, CTX_bottom, 0);
 
   ctx_set (mrg->ctx, CTX_stroke_width, 0.2);
 #if 0
@@ -2573,7 +2573,6 @@ void _mrg_init_style (Mrg *mrg)
 
   mrg->state->fg = 0;
   mrg->state->bg = 7;
-
 }
 
 
@@ -3980,35 +3979,35 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       switch (n_vals)
       {
         case 1:
-          s->margin_top    = vals[0];
-          s->margin_right  = vals[0];
-          s->margin_bottom = vals[0];
-          s->margin_left   = vals[0];
+          ctx_set (ctx, CTX_margin_top, vals[0]);
+          ctx_set (ctx, CTX_margin_right, vals[0]);
+          ctx_set (ctx, CTX_margin_bottom, vals[0]);
+          ctx_set (ctx, CTX_margin_left, vals[0]);
           break;
         case 2:
-          s->margin_top    = vals[0];
-          s->margin_right  = vals[1];
-          s->margin_bottom = vals[0];
-          s->margin_left   = vals[1];
+          ctx_set (ctx, CTX_margin_top, vals[0]);
+          ctx_set (ctx, CTX_margin_right, vals[1]);
+          ctx_set (ctx, CTX_margin_bottom, vals[0]);
+          ctx_set (ctx, CTX_margin_left, vals[1]);
           break;
         case 3:
-          s->margin_top    = vals[0];
-          s->margin_right  = vals[1];
-          s->margin_bottom = vals[2];
-          s->margin_left   = vals[1];
+          ctx_set (ctx, CTX_margin_top, vals[0]);
+          ctx_set (ctx, CTX_margin_right, vals[1]);
+          ctx_set (ctx, CTX_margin_bottom, vals[2]);
+          ctx_set (ctx, CTX_margin_left, vals[1]);
           break;
         case 4:
-          s->margin_top    = vals[0];
-          s->margin_right  = vals[1];
-          s->margin_bottom = vals[2];
-          s->margin_left   = vals[3];
+          ctx_set (ctx, CTX_margin_top, vals[0]);
+          ctx_set (ctx, CTX_margin_right, vals[1]);
+          ctx_set (ctx, CTX_margin_bottom, vals[2]);
+          ctx_set (ctx, CTX_margin_left, vals[3]);
           break;
       }
     }
   else if (!strcmp (name, "margin-top"))
-    s->margin_top = mrg_parse_px_y (mrg, value, NULL);
+    ctx_set (ctx, CTX_margin_top, mrg_parse_px_y (mrg, value, NULL));
   else if (!strcmp (name, "margin-bottom"))
-    s->margin_bottom = mrg_parse_px_y (mrg, value, NULL);
+    ctx_set (ctx, CTX_margin_bottom, mrg_parse_px_y (mrg, value, NULL));
   else if (!strcmp (name, "margin-left"))
   {
     if (!strcmp (value, "auto"))
@@ -4017,7 +4016,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     }
     else
     {
-      s->margin_left = mrg_parse_px_x (mrg, value, NULL);
+      ctx_set (ctx, CTX_margin_left, mrg_parse_px_x (mrg, value, NULL));
       s->margin_left_auto = 0;
     }
   }
@@ -4029,19 +4028,19 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     }
     else
     {
-      s->margin_right = mrg_parse_px_x (mrg, value, NULL);
+      ctx_set (ctx, CTX_margin_right, mrg_parse_px_x (mrg, value, NULL));
       s->margin_right_auto = 0;
     }
   }
 
   else if (!strcmp (name, "padding-top"))
-    s->padding_top = mrg_parse_px_y (mrg, value, NULL);
+    ctx_set (ctx, CTX_padding_top, mrg_parse_px_y (mrg, value, NULL));
   else if (!strcmp (name, "padding-bottom"))
-    s->padding_bottom = mrg_parse_px_y (mrg, value, NULL);
+    ctx_set (ctx, CTX_padding_bottom, mrg_parse_px_y (mrg, value, NULL));
   else if (!strcmp (name, "padding-left"))
-    s->padding_left = mrg_parse_px_x (mrg, value, NULL);
+    ctx_set (ctx, CTX_padding_left, mrg_parse_px_x (mrg, value, NULL));
   else if (!strcmp (name, "padding-right"))
-    s->padding_right = mrg_parse_px_x (mrg, value, NULL);
+    ctx_set (ctx, CTX_padding_right, mrg_parse_px_x (mrg, value, NULL));
   else if (!strcmp (name, "padding"))
     {
       float vals[10];
@@ -4050,46 +4049,47 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
       switch (n_vals)
       {
         case 1:
-          s->padding_top    = vals[0];
-          s->padding_right  = vals[0];
-          s->padding_bottom = vals[0];
-          s->padding_left   = vals[0];
+          ctx_set (ctx, CTX_padding_top,    vals[0]);
+          ctx_set (ctx, CTX_padding_right,  vals[0]);
+          ctx_set (ctx, CTX_padding_bottom, vals[0]);
+          ctx_set (ctx, CTX_padding_left,   vals[0]);
           break;
         case 2:
-          s->padding_top    = vals[0];
-          s->padding_right  = vals[1];
-          s->padding_bottom = vals[0];
-          s->padding_left   = vals[1];
+          ctx_set (ctx, CTX_padding_top,    vals[0]);
+          ctx_set (ctx, CTX_padding_right,  vals[1]);
+          ctx_set (ctx, CTX_padding_bottom, vals[0]);
+          ctx_set (ctx, CTX_padding_left,   vals[1]);
           break;
         case 3:
-          s->padding_top    = vals[0];
-          s->padding_right  = vals[1];
-          s->padding_bottom = vals[2];
-          s->padding_left   = vals[1];
+          ctx_set (ctx, CTX_padding_top,    vals[0]);
+          ctx_set (ctx, CTX_padding_right,  vals[1]);
+          ctx_set (ctx, CTX_padding_bottom, vals[2]);
+          ctx_set (ctx, CTX_padding_left,   vals[1]);
           break;
         case 4:
-          s->padding_top    = vals[0];
-          s->padding_right  = vals[1];
-          s->padding_bottom = vals[2];
-          s->padding_left   = vals[3];
+          ctx_set (ctx, CTX_padding_top,    vals[0]);
+          ctx_set (ctx, CTX_padding_right,  vals[1]);
+          ctx_set (ctx, CTX_padding_bottom, vals[2]);
+          ctx_set (ctx, CTX_padding_left,   vals[3]);
           break;
       }
     }
   else if (!strcmp (name, "border-top-width"))
-    s->border_top_width = mrg_parse_px_y (mrg, value, NULL);
+    ctx_set (ctx, CTX_border_top_width, mrg_parse_px_y (mrg, value, NULL));
   else if (!strcmp (name, "border-bottom-width"))
-    s->border_bottom_width = mrg_parse_px_y (mrg, value, NULL);
+    ctx_set (ctx, CTX_border_bottom_width, mrg_parse_px_y (mrg, value, NULL));
   else if (!strcmp (name, "border-left-width"))
-    s->border_left_width = mrg_parse_px_x (mrg, value, NULL);
+    ctx_set (ctx, CTX_border_left_width, mrg_parse_px_x (mrg, value, NULL));
   else if (!strcmp (name, "border-right-width"))
-    s->border_right_width = mrg_parse_px_x (mrg, value, NULL);
+    ctx_set (ctx, CTX_border_right_width, mrg_parse_px_x (mrg, value, NULL));
   else if (!strcmp (name, "top"))
-    s->top = mrg_parse_px_y (mrg, value, NULL);
+    ctx_set (ctx, CTX_top, mrg_parse_px_y (mrg, value, NULL));
   else if (!strcmp (name, "height"))
-    s->height = mrg_parse_px_y (mrg, value, NULL);
-
+    ctx_set (ctx, CTX_height, mrg_parse_px_y (mrg, value, NULL));
   else if (!strcmp (name, "left"))
-    s->left = mrg_parse_px_x (mrg, value, NULL);
+    ctx_set (ctx, CTX_left, mrg_parse_px_x (mrg, value, NULL));
+  else if (!strcmp (name, "right"))
+    ctx_set (ctx, CTX_right, mrg_parse_px_x (mrg, value, NULL));
   else if (!strcmp (name, "visibility"))
   {
     if (!strcmp (value, "visible"))
@@ -4107,10 +4107,12 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     ctx_set (ctx, hash, mrg_parse_px_x (mrg, value, NULL));
   else if (!strcmp (name, "border-width"))
     {
-      s->border_top_width =
-      s->border_bottom_width =
-      s->border_right_width =
-      s->border_left_width = mrg_parse_px_y (mrg, value, NULL);
+      float valf = mrg_parse_px_y (mrg, value, NULL);
+
+      ctx_set (ctx, CTX_border_top_width, valf);
+      ctx_set (ctx, CTX_border_bottom_width, valf);
+      ctx_set (ctx, CTX_border_right_width, valf);
+      ctx_set (ctx, CTX_border_left_width, valf);
     }
   else if (!strcmp (name, "border-color"))
     {
@@ -4136,10 +4138,11 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
             {
               if ((word[0] >= '0' && word[0]<='9') || word[0] == '.')
               {
-                s->border_top_width = mrg_parse_px_y (mrg, word, NULL);
-                s->border_left_width = mrg_parse_px_y (mrg, word, NULL);
-                s->border_right_width = mrg_parse_px_y (mrg, word, NULL);
-                s->border_bottom_width = mrg_parse_px_y (mrg, word, NULL);
+                float valf = mrg_parse_px_y (mrg, word, NULL);
+                ctx_set (ctx, CTX_border_top_width, valf);
+                ctx_set (ctx, CTX_border_bottom_width, valf);
+                ctx_set (ctx, CTX_border_right_width, valf);
+                ctx_set (ctx, CTX_border_left_width, valf);
               } else if (!strcmp (word, "solid") ||
                          !strcmp (word, "dotted") ||
                          !strcmp (word, "inset")) {
@@ -4179,7 +4182,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
             {
               if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
               {
-                s->border_right_width = mrg_parse_px_y (mrg, word, NULL);
+                float valf = mrg_parse_px_x (mrg, word, NULL);
+                ctx_set (ctx, CTX_border_right_width, valf);
               } else if (!strcmp (word, "solid") ||
                          !strcmp (word, "dotted") ||
                          !strcmp (word, "inset")) {
@@ -4217,7 +4221,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
             {
               if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
               {
-                s->border_top_width = mrg_parse_px_y (mrg, word, NULL);
+                float valf = mrg_parse_px_x (mrg, word, NULL);
+                ctx_set (ctx, CTX_border_top_width, valf);
               } else if (!strcmp (word, "solid") ||
                          !strcmp (word, "dotted") ||
                          !strcmp (word, "inset")) {
@@ -4255,7 +4260,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
             {
               if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
               {
-                s->border_left_width = mrg_parse_px_y (mrg, word, NULL);
+                float valf = mrg_parse_px_x (mrg, word, NULL);
+                ctx_set (ctx, CTX_border_left_width, valf);
               } else if (!strcmp (word, "solid") ||
                          !strcmp (word, "dotted") ||
                          !strcmp (word, "inset")) {
@@ -4293,7 +4299,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
             {
               if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
               {
-                s->border_bottom_width = mrg_parse_px_y (mrg, word, NULL);
+                float valf = mrg_parse_px_x (mrg, word, NULL);
+                ctx_set (ctx, CTX_border_bottom_width, valf);
               } else if (!strcmp (word, "solid") ||
                          !strcmp (word, "dotted") ||
                          !strcmp (word, "inset")) {
@@ -4709,12 +4716,12 @@ static void mrg_css_handle_property_pass1med (Mrg *mrg, const char *name,
     if (!strcmp (value, "auto"))
     {
       s->width_auto = 1;
-      s->width = 42;
+      ctx_set (mrg->ctx, CTX_width, 42);
     }
     else
     {
       s->width_auto = 0;
-      s->width = mrg_parse_px_x (mrg, value, NULL);
+      ctx_set (mrg->ctx, CTX_width, mrg_parse_px_x (mrg, value, NULL));
 
       if (s->position == MRG_POSITION_FIXED) // XXX: seems wrong
       {
@@ -4850,12 +4857,15 @@ static void mrg_css_handle_property_pass2 (Mrg *mrg, const char *name,
    */
   MrgStyle *s = mrg_style (mrg);
 
+#define PROP(a)         (ctx_get(mrg->ctx, CTX_##a))
+#define SET_PROP(a,v)   (ctx_set(mrg->ctx, CTX_##a, v))
 
   if (!strcmp (name, "right"))
   {
-    float width = s->width;
+    float width = ctx_get (mrg->ctx, CTX_width);
+    float right = mrg_parse_px_x (mrg, value, NULL);
 
-    s->right = mrg_parse_px_x (mrg, value, NULL);
+    ctx_set (mrg->ctx, CTX_right, right);
     if (width == 0)
     {
       MrgGeoCache *geo = _mrg_get_cache (&mrg->html, s->id_ptr);
@@ -4867,13 +4877,14 @@ static void mrg_css_handle_property_pass2 (Mrg *mrg, const char *name,
         mrg_queue_draw (mrg, NULL);
       }
     }
-    s->left = (mrg_width(mrg)-s->right) - width - s->border_left_width - s->padding_left - s->padding_right - s->border_right_width - s->margin_right;
+    ctx_set (mrg->ctx, CTX_left,
+         (mrg_width(mrg)-right) - width - PROP(border_left_width) - PROP(padding_left) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right));
   }
   else if (!strcmp (name, "bottom"))
   {
-    float height = s->height;
+    float height = PROP(height);
 
-    s->bottom = mrg_parse_px_y (mrg, value, NULL);
+    SET_PROP (bottom, mrg_parse_px_y (mrg, value, NULL));
 
     if (height == 0)
     {
@@ -4886,15 +4897,14 @@ static void mrg_css_handle_property_pass2 (Mrg *mrg, const char *name,
         mrg_queue_draw (mrg, NULL);
       }
     }
-    s->top = mrg_height(mrg) - s->bottom - height - s->padding_top - s->border_top_width - s->padding_bottom - s->border_bottom_width - s->margin_bottom;
+    SET_PROP(top, mrg_height(mrg) - PROP(bottom) - height - PROP(padding_top) - PROP(border_top_width) - PROP(padding_bottom) - PROP(border_bottom_width) - PROP(margin_bottom));
   }
 }
 
 
 static float deco_width (Mrg *mrg)
 {
-  MrgStyle *s = mrg_style (mrg);
-  return s->padding_left + s->padding_right + s->border_left_width + s->border_right_width;
+  return PROP (padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width);
 }
 
 void mrg_set_style (Mrg *mrg, const char *style)
@@ -4928,34 +4938,34 @@ void mrg_set_style (Mrg *mrg, const char *style)
         !s->width_auto &&
         !s->margin_right_auto)
     {
-      s->margin_left =
+      SET_PROP (margin_left,
         (mrg->state->edge_right - mrg->state->edge_left)
-        - deco_width (mrg) - s->margin_right - s->width;
+        - deco_width (mrg) - PROP(margin_right) - PROP(width));
     }
     else if ( !s->margin_left_auto &&
               s->width_auto &&
               !s->margin_right_auto)
     {
-      s->width =
+      SET_PROP (width,
         (mrg->state->edge_right - mrg->state->edge_left)
-        - deco_width (mrg) - s->margin_left - s->margin_right;
+        - deco_width (mrg) - PROP(margin_left) - PROP(margin_right));
     }
     else if ( !s->margin_left_auto &&
               !s->width_auto &&
               s->margin_right_auto)
     {
-      s->margin_right=
+      SET_PROP (margin_right,
         (mrg->state->edge_right - mrg->state->edge_left)
-        - deco_width (mrg) - s->margin_left - s->width;
+        - deco_width (mrg) - PROP(margin_left) - PROP(width));
     }
     else if ( s->margin_left_auto &&
               !s->width_auto &&
               s->margin_right_auto)
     {
-      s->margin_left =
-      s->margin_right =
-        ((mrg->state->edge_right - mrg->state->edge_left)
-        - deco_width (mrg) - s->width)/2;
+      float val = ((mrg->state->edge_right - mrg->state->edge_left)
+        - deco_width (mrg) - PROP(width))/2;
+      SET_PROP (margin_left, val);
+      SET_PROP (margin_right, val);
     }
   }
 
@@ -5037,16 +5047,16 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_top_width &&
+  if (PROP(border_top_width) > 0.01f &&
       style->border_top_color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
-    ctx_move_to (ctx, x - style->padding_left - style->border_left_width,
-                       y - style->padding_top - style->border_top_width);
-    ctx_rel_line_to (ctx, width + style->padding_left + style->padding_right + style->border_left_width + style->border_right_width, 0);
-    ctx_rel_line_to (ctx, -style->border_right_width, style->border_top_width);
-    ctx_rel_line_to (ctx, - (width + style->padding_right + style->padding_left), 0);
+    ctx_move_to (ctx, x - PROP(padding_left) - PROP(border_left_width),
+                       y - PROP(padding_top) - PROP(border_top_width));
+    ctx_rel_line_to (ctx, width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width), 0);
+    ctx_rel_line_to (ctx, -PROP(border_right_width), PROP(border_top_width));
+    ctx_rel_line_to (ctx, - (width + PROP(padding_right) + PROP(padding_left)), 0);
 
     mrg_ctx_set_source_color (ctx, &style->border_top_color);
     ctx_fill (ctx);
@@ -5060,15 +5070,15 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_bottom_width &&
+  if (PROP(border_bottom_width) > 0.01 &&
       style->border_bottom_color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
-    ctx_move_to (ctx, x + width + style->padding_right, y + height + style->padding_bottom);
-    ctx_rel_line_to (ctx, style->border_right_width, style->border_bottom_width);
-    ctx_rel_line_to (ctx, - (width + style->padding_left + style->padding_right + style->border_left_width + style->border_right_width), 0);
-    ctx_rel_line_to (ctx, style->border_left_width, -style->border_bottom_width);
+    ctx_move_to (ctx, x + width + PROP(padding_right), y + height + PROP(padding_bottom));
+    ctx_rel_line_to (ctx, PROP(border_right_width), PROP(border_bottom_width));
+    ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
+    ctx_rel_line_to (ctx, PROP(border_left_width), -PROP(border_bottom_width));
 
     mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
     ctx_fill (ctx);
@@ -5083,15 +5093,15 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_top_width &&
+  if (PROP(border_top_width) > 0.01 &&
       style->border_top_color.alpha > 0.001)
   {
   ctx_save (cr);
     ctx_new_path (cr);
-    ctx_move_to (cr, x, y - style->padding_top - style->border_top_width);
-    ctx_rel_line_to (cr, width + style->padding_right + style->border_right_width, 0);
-    ctx_rel_line_to (cr, -style->border_right_width, style->border_top_width);
-    ctx_rel_line_to (cr, - (width + style->padding_right), 0);
+    ctx_move_to (cr, x, y - PROP(padding_top) - PROP(border_top_width));
+    ctx_rel_line_to (cr, width + PROP(padding_right) + PROP(border_right_width), 0);
+    ctx_rel_line_to (cr, -PROP(border_right_width), PROP(border_top_width));
+    ctx_rel_line_to (cr, - (width + PROP(padding_right)), 0);
 
     mrg_ctx_set_source_color (cr, &style->border_top_color);
     ctx_fill (cr);
@@ -5104,15 +5114,15 @@ void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_bottom_width &&
+  if (PROP(border_bottom_width) &&
       style->border_bottom_color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
-    ctx_move_to (ctx, x + width + style->padding_right, y + height + style->padding_bottom);
-    ctx_rel_line_to (ctx, style->border_right_width, style->border_bottom_width);
-    ctx_rel_line_to (ctx, - (width + style->padding_left + style->padding_right + style->border_left_width + style->border_right_width), 0);
-    ctx_rel_line_to (ctx, style->border_left_width, -style->border_bottom_width);
+    ctx_move_to (ctx, x + width + PROP(padding_right), y + height + PROP(padding_bottom));
+    ctx_rel_line_to (ctx, PROP(border_right_width), PROP(border_bottom_width));
+    ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
+    ctx_rel_line_to (ctx, PROP(border_left_width), -PROP(border_bottom_width));
 
     mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
     ctx_fill (ctx);
@@ -5127,16 +5137,16 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_top_width &&
+  if (PROP(border_top_width) > 0.01 &&
       style->border_top_color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
-    ctx_move_to (ctx, x - style->padding_left - style->border_left_width,
-                       y - style->padding_top - style->border_top_width);
-    ctx_rel_line_to (ctx, width + style->padding_left + style->padding_right + style->border_left_width, 0);
-    ctx_rel_line_to (ctx, 0, style->border_top_width);
-    ctx_rel_line_to (ctx, - (width + style->padding_left), 0);
+    ctx_move_to (ctx, x - PROP(padding_left) - PROP(border_left_width),
+                       y - PROP(padding_top) - PROP(border_top_width));
+    ctx_rel_line_to (ctx, width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width), 0);
+    ctx_rel_line_to (ctx, 0, PROP(border_top_width));
+    ctx_rel_line_to (ctx, - (width + PROP(padding_left)), 0);
 
     mrg_ctx_set_source_color (ctx, &style->border_top_color);
     ctx_fill (ctx);
@@ -5149,15 +5159,15 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_bottom_width &&
+  if (PROP(border_bottom_width) > 0.01 &&
       style->border_bottom_color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
-    ctx_move_to (ctx, x + width, y + height + style->padding_bottom);
-    ctx_rel_line_to (ctx, 0, style->border_bottom_width);
-    ctx_rel_line_to (ctx, - (width + style->padding_left + style->border_left_width), 0);
-    ctx_rel_line_to (ctx, style->border_left_width, -style->border_bottom_width);
+    ctx_move_to (ctx, x + width, y + height + PROP(padding_bottom));
+    ctx_rel_line_to (ctx, 0, PROP(border_bottom_width));
+    ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(border_left_width)), 0);
+    ctx_rel_line_to (ctx, PROP(border_left_width), -PROP(border_bottom_width));
 
     mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
     ctx_fill (ctx);
@@ -5173,15 +5183,15 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_top_width &&
+  if (PROP(border_top_width) &&
       style->border_top_color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
     ctx_move_to (ctx, x,
-                       y - style->padding_top - style->border_top_width);
+                       y - PROP(padding_top) - PROP(border_top_width));
     ctx_rel_line_to (ctx, width, 0);
-    ctx_rel_line_to (ctx, 0, style->border_top_width);
+    ctx_rel_line_to (ctx, 0, PROP(border_top_width));
     ctx_rel_line_to (ctx, -width, 0);
 
     mrg_ctx_set_source_color (ctx, &style->border_top_color);
@@ -5195,15 +5205,15 @@ void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_bottom_width &&
+  if (PROP(border_bottom_width) &&
       style->border_bottom_color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
-    ctx_move_to (ctx, x + width, y + height + style->padding_bottom);
-    ctx_rel_line_to (ctx, 0, style->border_bottom_width);
+    ctx_move_to (ctx, x + width, y + height + PROP(padding_bottom));
+    ctx_rel_line_to (ctx, 0, PROP(border_bottom_width));
     ctx_rel_line_to (ctx, - width, 0);
-    ctx_rel_line_to (ctx, 0, -style->border_bottom_width);
+    ctx_rel_line_to (ctx, 0, -PROP(border_bottom_width));
 
     mrg_ctx_set_source_color (ctx, &style->border_bottom_color);
     ctx_fill (ctx);
@@ -5217,16 +5227,16 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_left_width &&
+  if (PROP(border_left_width) &&
       style->border_left_color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
-    ctx_move_to (ctx, x - style->padding_left - style->border_left_width,
-                       y - style->padding_top - style->border_top_width);
-    ctx_rel_line_to (ctx, style->border_left_width, style->border_top_width);
-    ctx_rel_line_to (ctx, 0, height + style->padding_top + style->padding_bottom );
-    ctx_rel_line_to (ctx, -style->border_left_width, style->border_bottom_width);
+    ctx_move_to (ctx, x - PROP(padding_left) - PROP(border_left_width),
+                       y - PROP(padding_top) - PROP(border_top_width));
+    ctx_rel_line_to (ctx, PROP(border_left_width), PROP(border_top_width));
+    ctx_rel_line_to (ctx, 0, height + PROP(padding_top) + PROP(padding_bottom) );
+    ctx_rel_line_to (ctx, -PROP(border_left_width), PROP(border_bottom_width));
     mrg_ctx_set_source_color (ctx, &style->border_left_color);
     ctx_fill (ctx);
   ctx_restore (ctx);
@@ -5239,15 +5249,15 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
   MrgStyle *style = mrg_style (mrg);
 
 
-  if (style->border_right_width &&
+  if (PROP(border_right_width) > 0.01 &&
       style->border_right_color.alpha > 0.001)
   {
   ctx_save (ctx);
     ctx_new_path (ctx);
-    ctx_move_to (ctx, x + width + style->padding_right, y + height + style->padding_bottom);
-    ctx_rel_line_to (ctx, style->border_right_width, style->border_bottom_width);
-    ctx_rel_line_to (ctx, 0, - (height + style->padding_top + style->padding_bottom + style->border_top_width + style->border_bottom_width));
-    ctx_rel_line_to (ctx, -style->border_right_width, style->border_top_width);
+    ctx_move_to (ctx, x + width + PROP(padding_right), y + height + PROP(padding_bottom));
+    ctx_rel_line_to (ctx, PROP(border_right_width), PROP(border_bottom_width));
+    ctx_rel_line_to (ctx, 0, - (height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width)));
+    ctx_rel_line_to (ctx, -PROP(border_right_width), PROP(border_top_width));
 
     mrg_ctx_set_source_color (ctx, &style->border_right_color);
     ctx_fill (ctx);
@@ -5284,6 +5294,7 @@ static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float wid
     ctx_rel_line_to (ctx, 0, -(height ));
 
     ctx_set_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
+    fprintf (stderr, "!!!! %f %f %f %f\n", x, y, width, height);
     mrg_ctx_set_source_color (ctx, &style->background_color);
     ctx_fill (ctx);
   }
@@ -5306,7 +5317,7 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
   MrgStyle *style = &state->style;
   float gap = ctx_get_font_size (ctx) * mrg->state->style.line_height;
 
-  int width = ctx_get(ctx, CTX_width);
+  int width = PROP(width);
 #if ooops
   if (style->background_color.alpha <= 0.0001)
     return;
@@ -5330,23 +5341,23 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
   if (html_state->ptly == 0)
   {
     mrg_box_fill (mrg, style,
-      html_state->block_start_x - style->padding_left,
-      (html_state->block_start_y - mrg_em (mrg) - style->padding_top),
-      width + style->padding_left + style->padding_right,
-      style->padding_top + gap);
+      html_state->block_start_x - PROP(padding_left),
+      (html_state->block_start_y - mrg_em (mrg) - PROP(padding_top)),
+      width + PROP(padding_left) + PROP(padding_right),
+      PROP(padding_top) + gap);
     
     html_state->ptly = 
-      html_state->block_start_y - mrg_em (mrg) - style->padding_top +
-      (style->padding_top + gap);
+      html_state->block_start_y - mrg_em (mrg) - PROP(padding_top) +
+      (PROP(padding_top) + gap);
   }
   else
   {
     if (( (mrg_y (mrg) - style->font_size) - html_state->ptly) + gap > 0)
     {
       mrg_box_fill (mrg, style,
-          html_state->block_start_x - style->padding_left,
+          html_state->block_start_x - PROP(padding_left),
           html_state->ptly,
-          width + style->padding_left + style->padding_right,
+          width + PROP(padding_left) + PROP(padding_right),
           ((mrg_y (mrg) - style->font_size) - html_state->ptly) + gap);
 
       html_state->ptly = mrg_y (mrg) - style->font_size  + gap;
@@ -5975,7 +5986,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
     ctx_rectangle (cr, x,
                          y - mrg_em (mrg) * style->line_height +_mrg_text_shift (mrg)
                          ,
-                         width + style->padding_right,
+                         width + PROP(padding_right),
                          mrg_em (mrg) * style->line_height);
     mrg_ctx_set_source_color (cr, &style->background_color);
     ctx_fill (cr);
@@ -5986,7 +5997,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
   _mrg_border_bottom_r (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
   _mrg_border_right (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
 
-  return style->padding_right + style->border_right_width;
+  return PROP(padding_right) + PROP(border_right_width);
 }
 
 float paint_span_bg (Mrg   *mrg, float x, float y,
@@ -6003,8 +6014,8 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
 
   if (!mrg->state->span_bg_started)
   {
-    left_pad = style->padding_left;
-    left_border = style->border_left_width;
+    left_pad = PROP(padding_left);
+    left_border = PROP(border_left_width);
     mrg->state->span_bg_started = 1;
   }
 
@@ -6115,7 +6126,7 @@ static void _mrg_nl (Mrg *mrg)
 #endif
 
   if (mrg->y >= 
-      mrg->state->edge_bottom - mrg->state->style.padding_bottom)
+      mrg->state->edge_bottom - PROP(padding_bottom))
   {
     mrg->state->overflowed=1;
   }
@@ -6848,8 +6859,8 @@ static void cmd_down (MrgEvent *event, void *data1, void *data2)
   float cx, cy;
  
   mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
-  mrg_set_edge_left (mrg, e_s - mrg->state->style.padding_left);
-  mrg_set_edge_right (mrg, e_e + mrg->state->style.padding_right);
+  mrg_set_edge_left (mrg, e_s - PROP (padding_left));
+  mrg_set_edge_right (mrg, e_e + PROP (padding_right));
   mrg_set_xy (mrg, e_x, e_y);
   mrg_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
 
@@ -6907,8 +6918,8 @@ static void cmd_up (MrgEvent *event, void *data1, void *data2)
   float cx, cy;
   mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
 
-  mrg_set_edge_left  (mrg, e_s - mrg->state->style.padding_left);
-  mrg_set_edge_right (mrg, e_e + mrg->state->style.padding_right);
+  mrg_set_edge_left  (mrg, e_s - PROP(padding_left));
+  mrg_set_edge_right (mrg, e_e + PROP(padding_right));
 
   mrg_set_xy (mrg, e_x, e_y);
   mrg_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
@@ -7231,7 +7242,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   if (display == MRG_DISPLAY_BLOCK ||
       display == MRG_DISPLAY_LIST_ITEM)
   {
-    if (style->padding_left + style->margin_left + style->border_left_width
+    if (PROP(padding_left) + PROP(margin_left) + PROP(border_left_width)
         != 0)
     {
       mrg_set_edge_left (mrg, mrg_edge_left (mrg) +
@@ -7239,7 +7250,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
             ctx_get (ctx, CTX_margin_left) +
             ctx_get (ctx, CTX_border_left_width));
     }
-    if (style->padding_right + style->margin_right + style->border_right_width
+    if (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)
         != 0)
     {
       mrg_set_edge_right (mrg, mrg_edge_right (mrg) -
@@ -7248,12 +7259,12 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
              ctx_get (ctx, CTX_border_right_width)));
     }
 
-    if (style->margin_top > html->state->vmarg)
-    mrg_set_edge_top (mrg, mrg_y (mrg) + style->border_top_width + (style->margin_top - html->state->vmarg));
+    if (PROP(margin_top) > html->state->vmarg)
+    mrg_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + (PROP(margin_top) - html->state->vmarg));
     else
     {
       /* XXX: just ignoring vmarg when top-margin is negative? */
-      mrg_set_edge_top (mrg, mrg_y (mrg) + style->border_top_width + (style->margin_top));
+      mrg_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + (PROP(margin_top)));
     }
 
     html->state->block_start_x = mrg_edge_left (mrg);
@@ -7273,7 +7284,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   {
     case MRG_POSITION_RELATIVE:
       /* XXX: deal with style->right and style->bottom */
-      ctx_translate (mrg_cr (mrg), style->left, style->top);
+      ctx_translate (mrg_cr (mrg), PROP(left), PROP(top));
       /* fallthrough */
 
     case MRG_POSITION_STATIC:
@@ -7281,7 +7292,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
       if (style->float_ == MRG_FLOAT_RIGHT)
       {
-        float width = style->width;
+        float width = PROP(width);
 
         if (width == 0.0)
         {
@@ -7292,20 +7303,20 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
             width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
-        width = (width + style->padding_right + style->padding_left + style->border_left_width + style->border_right_width);
+        width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
 
 
-        if (width + style->margin_left + style->margin_right >
+        if (width + PROP(margin_left) + PROP(margin_right) >
             mrg_edge_right(mrg)-mrg_edge_left(mrg))
         {
           clear_both (html);
           mrg_set_edge_left (mrg, mrg_edge_right (mrg) - width);
-          mrg_set_edge_right (mrg, mrg_edge_right (mrg) - (style->margin_right + style->padding_right + style->border_right_width));
+          mrg_set_edge_right (mrg, mrg_edge_right (mrg) - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
 
         }
         else
         {
-        while (dynamic_edge_right - dynamic_edge_left < width + style->margin_left + style->margin_right)
+        while (dynamic_edge_right - dynamic_edge_left < width + PROP(margin_left) + PROP(margin_right))
         {
           mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + 1.0);
           dynamic_edge_right = _mrg_parent_dynamic_edge_right(html);
@@ -7313,11 +7324,11 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         }
 
         mrg_set_edge_left (mrg, dynamic_edge_right - width);
-        mrg_set_edge_right (mrg, dynamic_edge_right - (style->margin_right + style->padding_right + style->border_right_width));
+        mrg_set_edge_right (mrg, dynamic_edge_right - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
 
         }
 
-        mrg_set_edge_top (mrg, mrg_y (mrg) + (style->margin_top - html->state->vmarg) - mrg_em(mrg));
+        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top) - html->state->vmarg) - mrg_em(mrg));
 
         html->state->block_start_x = mrg_x (mrg);
         html->state->block_start_y = mrg_y (mrg);
@@ -7327,7 +7338,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
       {
         float left, y;
 
-        float width = style->width;
+        float width = PROP(width);
 
         if (width == 0.0)
         {
@@ -7338,55 +7349,55 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
             width = 4 * mrg_em (mrg);//mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
-        width = (width + style->padding_right + style->padding_left + style->border_left_width + style->border_right_width);
+        width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
 
-        if (width + style->margin_left + style->margin_right >
+        if (width + PROP(margin_left) + PROP(margin_right) >
             mrg_edge_right(mrg)-mrg_edge_left(mrg))
         {
           clear_both (html);
-          left = mrg_edge_left (mrg) + style->padding_left + style->border_left_width + style->margin_left;
+          left = mrg_edge_left (mrg) + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
         }
         else
         {
-        while (dynamic_edge_right - dynamic_edge_left < width + style->margin_left + style->margin_right)
+        while (dynamic_edge_right - dynamic_edge_left < width + PROP(margin_left) + PROP(margin_right))
         {
           mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + 1.0);
           dynamic_edge_right = _mrg_parent_dynamic_edge_right(html);
           dynamic_edge_left = _mrg_parent_dynamic_edge_left(html);
         }
-          left = dynamic_edge_left + style->padding_left + style->border_left_width + style->margin_left;
+          left = dynamic_edge_left + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
         }
 
         y = mrg_y (mrg);
 
         mrg_set_edge_left (mrg, left);
         mrg_set_edge_right (mrg,  left + width +
-            style->padding_left + style->border_right_width);
-        mrg_set_edge_top (mrg, mrg_y (mrg) + (style->margin_top - html->state->vmarg) - mrg_em(mrg));
+            PROP(padding_left) + PROP(border_right_width));
+        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top) - html->state->vmarg) - mrg_em(mrg));
         html->state->block_start_x = mrg_x (mrg);
-        html->state->block_start_y = y - style->font_size + style->padding_top + style->border_top_width;
+        html->state->block_start_y = y - style->font_size + PROP(padding_top) + PROP(border_top_width);
         html->state->floats = 0;
 
         /* change cursor point after floating something left; if pushed far
          * down, the new correct
          */
-        mrg_set_xy (mrg, html->state->original_x = left + width + style->padding_left + style->border_right_width + style->padding_right + style->margin_right + style->margin_left + style->border_left_width,
-            y - style->font_size + style->padding_top + style->border_top_width);
+        mrg_set_xy (mrg, html->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
+            y - style->font_size + PROP(padding_top) + PROP(border_top_width));
       } /* XXX: maybe spot for */
       break;
     case MRG_POSITION_ABSOLUTE:
       {
         html->state->floats = 0;
-        mrg_set_edge_left (mrg, style->left + style->margin_left + style->border_left_width + style->padding_left);
-        mrg_set_edge_right (mrg, style->left + style->width);
-        mrg_set_edge_top (mrg, style->top + style->margin_top + style->border_top_width + style->padding_top);
+        mrg_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
+        mrg_set_edge_right (mrg, PROP(left) + PROP(width));
+        mrg_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
         html->state->block_start_x = mrg_x (mrg);
         html->state->block_start_y = mrg_y (mrg);
       }
       break;
     case MRG_POSITION_FIXED:
       {
-        int width = style->width;
+        int width = PROP(width);
 
         if (!width)
         {
@@ -7401,9 +7412,9 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         ctx_scale (mrg_cr(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
         html->state->floats = 0;
 
-        mrg_set_edge_left (mrg, style->left + style->margin_left + style->border_left_width + style->padding_left);
-        mrg_set_edge_right (mrg, style->left + style->margin_left + style->border_left_width + style->padding_left + width);//mrg_width (mrg) - style->padding_right - style->border_right_width - style->margin_right); //style->left + style->width); /* why only padding and not also border?  */
-        mrg_set_edge_top (mrg, style->top + style->margin_top + style->border_top_width + style->padding_top);
+        mrg_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
+        mrg_set_edge_right (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left) + width);//mrg_width (mrg) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right)); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
+        mrg_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
         html->state->block_start_x = mrg_x (mrg);
         html->state->block_start_y = mrg_y (mrg);
       }
@@ -7414,8 +7425,8 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
       display == MRG_DISPLAY_INLINE_BLOCK ||
       style->float_)
   {
-     float height = style->height;
-     float width = style->width;
+     float height = PROP(height);
+     float width = PROP(width);
 
      if (!height)
        {
@@ -7439,10 +7450,10 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
        && style->overflow == MRG_OVERFLOW_HIDDEN)
        {
          ctx_rectangle (mrg_cr(mrg),
-            html->state->block_start_x - style->padding_left - style->border_left_width,
-            html->state->block_start_y - mrg_em(mrg) - style->padding_top - style->border_top_width,
-            width + style->border_right_width + style->border_left_width + style->padding_left + style->padding_right, //mrg_edge_right (mrg) - mrg_edge_left (mrg) + style->padding_left + style->padding_right + style->border_left_width + style->border_right_width,
-            height + style->padding_top + style->padding_bottom + style->border_top_width + style->border_bottom_width);
+            html->state->block_start_x - PROP(padding_left) - PROP(border_left_width),
+            html->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width),
+            width + PROP(border_right_width) + PROP(border_left_width) + PROP(padding_left) + PROP(padding_right), //mrg_edge_right (mrg) - mrg_edge_left (mrg) + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width),
+            height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width));
          ctx_clip (mrg_cr(mrg));
        }
 
@@ -7494,13 +7505,15 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
 {
   float vmarg = 0;
   MrgStyle *style = mrg_style (mrg);
+  float height = PROP(height);
+  float width = PROP(width);
   
   /* ad>ust cursor back to before display */
 
   if ((ctx_get_int (mrg->ctx, CTX_display) == MRG_DISPLAY_BLOCK || style->float_) &&
-       style->height != 0.0)
+       height != 0.0)
   {
-    float diff = style->height - (mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg)));
+    float diff = height - (mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg)));
     mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + diff);
     if (diff > 0)
       _mrg_draw_background_increment (mrg, ctx, 1);
@@ -7514,16 +7527,16 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
     int was_float = 0;
     float fx,fy,fw,fh; // these tempvars arent really needed.
     was_float = style->float_;
-    fx = ctx->state->block_start_x - style->padding_left - style->border_left_width - style->margin_left;
-    fy = ctx->state->block_start_y - mrg_em(mrg) - style->padding_top - style->border_top_width
-      - style->margin_top;
+    fx = ctx->state->block_start_x - PROP(padding_left) - PROP(border_left_width) - PROP(margin_left);
+    fy = ctx->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width)
+      - PROP(margin_top);
 
     fw = mrg_edge_right (mrg) - mrg_edge_left (mrg)
-     + style->padding_left + style->border_left_width + style->margin_left
-     + style->padding_right + style->border_right_width + style->margin_right;
+     + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left)
+     + PROP(padding_right) + PROP(border_right_width) + PROP(margin_right);
 
     fh = mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg))
-         + style->margin_bottom + style->padding_top + style->padding_bottom + style->border_top_width + style->border_bottom_width + style->margin_top + mrg_em (mrg);
+         + PROP(margin_bottom) + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width) + PROP(margin_top) + mrg_em (mrg);
 
     ctx->states[ctx->state_no-1].float_data[ctx->states[ctx->state_no-1].floats].type = was_float;
     ctx->states[ctx->state_no-1].float_data[ctx->states[ctx->state_no-1].floats].x = fx;
@@ -7538,7 +7551,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
   {
     MrgGeoCache *geo = _mrg_get_cache (ctx, style->id_ptr);
 
-    if (style->width == 0)
+    if (width == 0)
     {
 #if 0
       if (mrg_y (mrg) == (ctx->state->block_start_y))
@@ -7549,13 +7562,13 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
       geo->width = mrg_x (mrg) - (ctx->state->block_start_x);
     }
     else
-      geo->width = style->width;
+      geo->width = width;
 
     //:mrg_edge_right (mrg) - mrg_edge_left (mrg);
-    if (style->height == 0)
+    if (height == 0)
       geo->height = mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg));
     else
-      geo->height = style->height;
+      geo->height = height;
 
     geo->gen++;
 
@@ -7590,11 +7603,11 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
 
     if (!style->float_ && display == MRG_DISPLAY_BLOCK)
     {
-      vmarg = style->margin_bottom;
+      vmarg = PROP(margin_bottom);
 
       mrg_set_xy (mrg, 
           mrg_edge_left (mrg),
-          mrg_y (mrg) + vmarg + style->border_bottom_width);
+          mrg_y (mrg) + vmarg + PROP(border_bottom_width));
     }
   }
   else if (display == MRG_DISPLAY_INLINE)
@@ -7603,7 +7616,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
   }
 
   if (style->position == MRG_POSITION_RELATIVE)
-    ctx_translate (mrg_cr (mrg), -style->left, -style->top);
+    ctx_translate (mrg_cr (mrg), -PROP(left), -PROP(top));
 
   if (style->float_ ||
       style->position == MRG_POSITION_ABSOLUTE ||
@@ -8820,8 +8833,8 @@ void mrg_xml_render (Mrg *mrg,
 
           if (mrg_query_image (mrg, src, &img_width, &img_height))
           {
-            float width = mrg_style(mrg)->width;
-            float height = mrg_style(mrg)->height;
+            float width =  PROP(width);
+            float height = PROP(height);
 
             if (width < 1)
             {
@@ -9310,8 +9323,8 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   mrg->ctx = ctx;
   mrg->in_paint = 1;
   _mrg_init (mrg, width, height);
-  mrg_css_default (mrg);
   mrg_set_size (mrg, width, height);
+  mrg_css_default (mrg);
   mrg->do_clip = 1;
 
   printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
