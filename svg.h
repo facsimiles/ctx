@@ -1922,8 +1922,8 @@ struct _MrgStyle {
   /* text-related */
   float               font_size; // used for mrg_em() should be direct
 
-  //float               letter_spacing;
-  //float               word_spacing;
+  //float             letter_spacing;
+  //float             word_spacing;
   float               line_height;
   float               line_width;
   CtxColor            background_color;
@@ -1959,7 +1959,6 @@ struct _MrgStyle {
 
   /* vector shape / box related */
   CtxColor            fill_color;
-
   CtxColor            border_top_color;
   CtxColor            border_left_color;
   CtxColor            border_right_color;
@@ -2539,9 +2538,9 @@ void _mrg_init_style (Mrg *mrg)
   s->fill_color.alpha = 1;
 #endif
 
-  ctx_color_set_rgba (&mrg->ctx->state, &s->fill_color, 1, 0, 1, 0);
-  ctx_color_set_rgba (&mrg->ctx->state, &s->stroke_color, 1, 1, 0, 0);
-  ctx_color_set_rgba (&mrg->ctx->state, &s->background_color, 1, 1, 1, 0);
+  //ctx_color_set_rgba (&mrg->ctx->state, &s->fill_color, 1, 0, 1, 0);
+  //ctx_color_set_rgba (&mrg->ctx->state, &s->stroke_color, 1, 1, 0, 0);
+  //ctx_color_set_rgba (&mrg->ctx->state, &s->background_color, 1, 1, 1, 0);
   /* this shouldn't be inherited? */
   //s->background_color.red = 1;
   //s->background_color.green = 1;
