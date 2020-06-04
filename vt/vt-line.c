@@ -125,14 +125,30 @@ VtString *vt_string_new_with_size (const char *initial, int initial_size)
   vt_string_init (string, initial_size);
   if (initial)
     { _vt_string_append_str (string, initial); }
-  string->style = calloc (sizeof (uint64_t), initial_size);
-  string->style_size = initial_size;
   return string;
+}
+
+VtLine *vt_line_new_with_size (const char *initial, int initial_size)
+{
+  VtLine *line = calloc (sizeof (VtLine), 1);
+  VtString *string = (VtString*)line;
+  vt_string_init (string, initial_size);
+  if (initial)
+    { _vt_string_append_str (string, initial); }
+  line->style = calloc (sizeof (uint64_t), initial_size);
+  line->style_size = initial_size;
+  string->is_line = 1;
+  return line;
 }
 
 VtString *vt_string_new (const char *initial)
 {
   return vt_string_new_with_size (initial, 8);
+}
+
+VtLine *vt_line_new (const char *initial)
+{
+  return vt_line_new_with_size (initial, 8);
 }
 
 void vt_string_append_data (VtString *string, const char *str, int len)
@@ -169,10 +185,14 @@ vt_string_free (VtString *string, int freealloc)
     {
       vt_string_destroy (string);
     }
-  if (string->style)
-    { free (string->style); }
-  if (string->ctx)
-    { ctx_free (string->ctx); }
+  if (string->is_line)
+  {
+    VtLine *line = (VtLine*)string;
+    if (line->style)
+      { free (line->style); }
+    if (line->ctx)
+      { ctx_free (line->ctx); }
+  }
   free (string);
 }
 
@@ -305,7 +325,7 @@ void vt_string_insert_utf8 (VtString *string, int pos, const char *new_glyph)
   string->utf8_length = mrg_utf8_strlen (string->str);
 }
 
-void vt_string_remove_utf8 (VtString *string, int pos)
+void vt_string_remove (VtString *string, int pos)
 {
   int old_len = string->utf8_length;
   {
