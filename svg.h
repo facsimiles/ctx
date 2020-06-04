@@ -1955,7 +1955,6 @@ struct _MrgStyle {
   char                syntax_highlight[9];
 
   /* vector shape / box related */
-  CtxColor            background_color;
   CtxColor            text_stroke_color;
   CtxColor            border_top_color;
   CtxColor            border_left_color;
@@ -4330,13 +4329,11 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     break;
 
   case CTX_background_color:
-  {
-    mrg_color_set_from_string (mrg, &s->background_color, value);
-  }
-    break;
   case CTX_background:
   {
-    mrg_color_set_from_string (mrg, &s->background_color, value);
+    CtxColor color;
+    mrg_color_set_from_string (mrg, &color, value);
+    ctx_set_color (mrg->ctx, CTX_background_color, &color);
   }
     break;
   case CTX_fill_color:
@@ -5337,7 +5334,9 @@ static void mrg_box (Mrg *mrg, int x, int y, int width, int height)
 static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float width, float height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  if (style->background_color.alpha <= 0.0001)
+  CtxColor background_color;
+  ctx_get_color (ctx, CTX_background_color, &background_color);
+  if (background_color.alpha <= 0.0001)
     return;
 
   height = floor (y + height) - floor(y);
@@ -5354,7 +5353,7 @@ static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float wid
 
     ctx_set_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
     fprintf (stderr, "!!!! %f %f %f %f\n", x, y, width, height);
-    mrg_ctx_set_source_color (ctx, &style->background_color);
+    mrg_ctx_set_source_color (ctx, &background_color);
     ctx_fill (ctx);
   }
   ctx_restore (ctx);
@@ -6038,8 +6037,10 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
   Ctx *cr = mrg_cr (mrg);
   if (ctx_get_int (cr, CTX_display) != MRG_DISPLAY_INLINE)
     return 0.0;
+  CtxColor background_color;
+  ctx_get_color (cr, CTX_background_color, &background_color);
 
-  if (style->background_color.alpha > 0.001)
+  if (background_color.alpha > 0.001)
   {
     ctx_save (cr);
     ctx_rectangle (cr, x,
@@ -6047,7 +6048,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
                          ,
                          width + PROP(padding_right),
                          mrg_em (mrg) * style->line_height);
-    mrg_ctx_set_source_color (cr, &style->background_color);
+    mrg_ctx_set_source_color (cr, &background_color);
     ctx_fill (cr);
     ctx_restore (cr);
   }
@@ -6071,6 +6072,9 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
   if (ctx_get_int (cr, CTX_display) != MRG_DISPLAY_INLINE)
     return 0.0;
 
+  CtxColor background_color;
+  ctx_get_color (cr, CTX_background_color, &background_color);
+
   if (!mrg->state->span_bg_started)
   {
     left_pad = PROP(padding_left);
@@ -6078,7 +6082,7 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
     mrg->state->span_bg_started = 1;
   }
 
-  if (style->background_color.alpha > 0.001)
+  if (background_color.alpha > 0.001)
   {
     ctx_save (cr);
     ctx_rectangle (cr, x + left_border,
@@ -6086,7 +6090,7 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
                          ,
                          width + left_pad,
                          mrg_em (mrg) * style->line_height);
-    mrg_ctx_set_source_color (cr, &style->background_color);
+    mrg_ctx_set_source_color (cr, &background_color);
     ctx_fill (cr);
     ctx_restore (cr);
   }
