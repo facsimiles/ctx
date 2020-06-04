@@ -1926,8 +1926,6 @@ struct _MrgStyle {
   //float             word_spacing;
   float               line_height;
   float               line_width;
-  CtxColor            background_color;
-  CtxColor            text_stroke_color;
   CtxColor            color;
   MrgVisibility       visibility:1;
   MrgFillRule         fill_rule:1;
@@ -1954,24 +1952,22 @@ struct _MrgStyle {
   MrgFloat            float_:2;
   MrgClear            clear:2;
   MrgOverflow         overflow:2;
-
-  CtxColor            stroke_color;
+  char                syntax_highlight[9];
 
   /* vector shape / box related */
-  //CtxColor            fill_color;
+  CtxColor            background_color;
+  CtxColor            text_stroke_color;
   CtxColor            border_top_color;
   CtxColor            border_left_color;
   CtxColor            border_right_color;
   CtxColor            border_bottom_color;
 
-
   /* layout related */
 
   void             *id_ptr;
 
-  char              syntax_highlight[9];
 
-  //MrgDisplay          display;
+  //MrgDisplay      display;
 };
 #if 0
   s->text_decoration= 0;
@@ -4354,7 +4350,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   case CTX_stroke_color:
   case CTX_stroke:
   {
-    mrg_color_set_from_string (mrg, &s->stroke_color, value);
+    CtxColor color;
+    mrg_color_set_from_string (mrg, &color, value);
+    ctx_set_color (mrg->ctx, CTX_stroke_color, &color);
   }
     break;
   case CTX_text_stroke_width:
@@ -5080,11 +5078,12 @@ mrg_ctx_set_source_color (Ctx *ctx, CtxColor *color)
 static void mrg_path_fill_stroke (Mrg *mrg)
 {
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = mrg_style (mrg);
   CtxColor fill_color;
-  //MrgColor stroke_color;
+  CtxColor stroke_color;
 
   ctx_get_color (ctx, CTX_fill_color, &fill_color);
+  ctx_get_color (ctx, CTX_stroke_color, &stroke_color);
+
   if (fill_color.alpha > 0.001)
   {
     mrg_ctx_set_source_color (ctx, &fill_color);
@@ -5092,10 +5091,10 @@ static void mrg_path_fill_stroke (Mrg *mrg)
     ctx_fill (ctx);
   }
 
-  if (ctx_get (mrg->ctx, CTX_stroke_width) > 0.001 && style->stroke_color.alpha > 0.001)
+  if (ctx_get (mrg->ctx, CTX_stroke_width) > 0.001 && stroke_color.alpha > 0.001)
   {
     ctx_set_line_width (ctx, ctx_get (mrg->ctx, CTX_stroke_width));
-    mrg_ctx_set_source_color (ctx, &style->stroke_color);
+    mrg_ctx_set_source_color (ctx, &stroke_color);
     ctx_stroke (ctx);
   }
   ctx_new_path (ctx);
@@ -9359,8 +9358,11 @@ void mrg_style_defaults (Mrg *mrg)
   mrg_set_line_height (mrg, 1.2);
 
   ctx_set (ctx, CTX_stroke_width, 1.0f);
-  mrg_color_set_from_string (mrg, &mrg->state->style.stroke_color, "transparent");
-
+  {
+    CtxColor color;
+    mrg_color_set_from_string (mrg, &color, "transparent");
+    ctx_set_color (ctx, CTX_stroke_color, &color);
+  }
   {
     CtxColor color;
     mrg_color_set_from_string (mrg, &color, "black");
@@ -9389,7 +9391,7 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   mrg->in_paint = 1;
   _mrg_init (mrg, width, height);
   mrg_set_size (mrg, width, height);
-  mrg_css_default (mrg);
+  mrg_style_defaults (mrg);
   mrg->do_clip = 1;
 
   printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
@@ -9398,17 +9400,6 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   printf ("sizeof(MrgStyle) %li\n", sizeof(MrgStyle));
   printf ("sizeof(MrgHtmlState) %li\n", sizeof(MrgHtmlState));
   printf ("sizeof(MrgHtml) %li\n", sizeof(MrgHtml));
-
-  ctx_set_string (ctx, ctx_strhash ("fnord", 0), "eeek1");
-  ctx_set (ctx, ctx_strhash ("bar", 0), 11);
-  ctx_save (ctx);
-  mrg_set_font_size (mrg, 12);
-
-  printf ("[%s] %f\n", ctx_get_string (ctx, ctx_strhash ("fnord", 0)), ctx_get (ctx, ctx_strhash("fnord", 0)));
-  ctx_set_string (ctx, ctx_strhash ("fnord", 0), "eeek2");
-  printf ("[%s] %f\n", ctx_get_string (ctx, ctx_strhash ("fnord", 0)), ctx_get (ctx, ctx_strhash("fnord", 0)));
-  ctx_restore (ctx);
-  printf ("[%s] %f\n", ctx_get_string (ctx, ctx_strhash ("fnord", 0)), ctx_get (ctx, ctx_strhash("fnord", 0)));
 
   return mrg;
 }
@@ -9420,7 +9411,5 @@ void mrg_destroy (Mrg *mrg)
   mrg->edited_str = NULL;
   free (mrg);
 }
-
-
 
 #endif
