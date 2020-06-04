@@ -7,6 +7,11 @@
 #define MRG_MAX_BINDINGS     256
 #define MRG_MAX_TEXT_LISTEN  256
 
+#define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
+#define SET_PROPh(a,v)   (ctx_set(mrg->ctx, a, v))
+#define SET_PROP(a,v)    SET_PROPh(CTX_##a, v)
+#define SET_PROPS(a,v)   (ctx_set_string(mrg->ctx, CTX_##a, v))
+
 #if CTX_XML
 #define CTX_1           CTX_STRH('1',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_a           CTX_STRH('a',0,0,0,0,0,0,0,0,0,0,0,0,0)
@@ -1915,21 +1920,15 @@ typedef enum {
  */
 struct _MrgStyle {
   /* text-related */
-  float               font_size;
-  char                font_family[128];
-  CtxColor            color;
-  float               text_indent;
-  float               letter_spacing;
-  float               word_spacing;
+  float               font_size; // used for mrg_em() should be direct
 
+  //float               letter_spacing;
+  //float               word_spacing;
   float               line_height;
   float               line_width;
-
   CtxColor            background_color;
-
   CtxColor            text_stroke_color;
-  float               tab_size;
-
+  CtxColor            color;
   MrgVisibility       visibility:1;
   MrgFillRule         fill_rule:1;
   MrgFontStyle        font_style:3;
@@ -1944,13 +1943,17 @@ struct _MrgStyle {
   MrgUnicodeBidi      unicode_bidi:2;
   MrgDirection        direction:2;
   MrgListStyle        list_style:1;
+  MrgCursor           cursor:6;
+  MrgTextDecoration   text_decoration:7;
   unsigned char       stroke:1;
   unsigned char       fill:1;
   unsigned char       width_auto:1;
   unsigned char       margin_left_auto:1;
   unsigned char       margin_right_auto:1;
   unsigned char       print_symbols:1;
-
+  MrgFloat            float_:2;
+  MrgClear            clear:2;
+  MrgOverflow         overflow:2;
 
   CtxColor            stroke_color;
 
@@ -1962,7 +1965,6 @@ struct _MrgStyle {
   CtxColor            border_right_color;
   CtxColor            border_bottom_color;
 
-  MrgCursor           cursor;
 
   /* layout related */
 
@@ -1970,11 +1972,7 @@ struct _MrgStyle {
 
   char              syntax_highlight[9];
 
-  MrgTextDecoration text_decoration;
   //MrgDisplay          display;
-  MrgFloat          float_;
-  MrgClear          clear;
-  MrgOverflow       overflow;
 };
 #if 0
   s->text_decoration= 0;
@@ -3942,19 +3940,14 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   switch (key)
   {
   case CTX_text_indent:
-    s->text_indent = mrg_parse_px_y (mrg, value, NULL);
-    break;
   case CTX_letter_spacing:
-    s->letter_spacing = mrg_parse_px_y (mrg, value, NULL);
-    break;
   case CTX_word_spacing:
-    s->word_spacing = mrg_parse_px_y (mrg, value, NULL);
+  case CTX_stroke_width:
+    SET_PROPh(key, mrg_parse_px_y (mrg, value, NULL));
+    break;
     break;
   case CTX_tab_size:
-    s->tab_size = mrg_parse_px_x (mrg, value, NULL);
-    break;
-  case CTX_stroke_width:
-    ctx_set (mrg->ctx, CTX_stroke_width, mrg_parse_px_y (mrg, value, NULL));
+    SET_PROP(tab_size, mrg_parse_px_x (mrg, value, NULL));
     break;
   case CTX_margin:
     {
@@ -4526,15 +4519,8 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     break;
   case CTX_font_family:
     {
-      strncpy (s->font_family, value, 63);
-      s->font_family[63]=0;
-      ctx_set_font (mrg_cr (mrg), s->font_family);
-#if 0
-      cairo_select_font_face (mrg_cr (mrg),
-          s->font_family,
-          s->font_style,
-          s->font_weight);
-#endif
+      ctx_set_string (mrg_cr (mrg), CTX_font_family, value);
+      ctx_set_font (mrg_cr (mrg), value);
     }
     break;
   case CTX_syntax_highlight:
@@ -4930,8 +4916,6 @@ static void mrg_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
    */
   MrgStyle *s = mrg_style (mrg);
 
-#define PROP(a)         (ctx_get(mrg->ctx, CTX_##a))
-#define SET_PROP(a,v)   (ctx_set(mrg->ctx, CTX_##a, v))
 
   if (key == CTX_right)
   {
