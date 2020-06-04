@@ -8,6 +8,7 @@
 #define MRG_MAX_TEXT_LISTEN  256
 
 #if CTX_XML
+#define CTX_1           CTX_STRH('1',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_a           CTX_STRH('a',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_absolute 	CTX_STRH('a','b','s','o','l','u','t','e',0,0,0,0,0,0)
 #define CTX_aelig 	CTX_STRH('a','e','l','i','g',0,0,0,0,0,0,0,0,0)
@@ -1921,8 +1922,6 @@ struct _MrgStyle {
   float               letter_spacing;
   float               word_spacing;
 
-  MrgVisibility       visibility;
-
   float               line_height;
   float               line_width;
 
@@ -1931,20 +1930,20 @@ struct _MrgStyle {
   CtxColor            text_stroke_color;
   float               tab_size;
 
-  MrgFillRule         fill_rule;
-  MrgFontStyle        font_style;
-  MrgFontWeight       font_weight;
-  MrgLineCap          stroke_linecap;
-  MrgLineJoin         stroke_linejoin;
-  MrgTextAlign        text_align;
-  MrgPosition         position;
-  MrgBoxSizing        box_sizing;
-  MrgVerticalAlign    vertical_align;
-  MrgWhiteSpace       white_space;
-  MrgUnicodeBidi      unicode_bidi;
-  MrgDirection        direction;
-  MrgListStyle        list_style;
-
+  MrgVisibility       visibility:1;
+  MrgFillRule         fill_rule:1;
+  MrgFontStyle        font_style:3;
+  MrgFontWeight       font_weight:4;
+  MrgLineCap          stroke_linecap:2;
+  MrgLineJoin         stroke_linejoin:2;
+  MrgTextAlign        text_align:2;
+  MrgPosition         position:2;
+  MrgBoxSizing        box_sizing:1;
+  MrgVerticalAlign    vertical_align:3;
+  MrgWhiteSpace       white_space:3;
+  MrgUnicodeBidi      unicode_bidi:2;
+  MrgDirection        direction:2;
+  MrgListStyle        list_style:1;
   unsigned char       stroke:1;
   unsigned char       fill:1;
   unsigned char       width_auto:1;
@@ -4313,13 +4312,14 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
           case '\0':
             if (w)
             {
+              uint32_t word_hash = ctx_strhash (word, 0);
               if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
               {
                 float valf = mrg_parse_px_x (mrg, word, NULL);
                 ctx_set (ctx, CTX_border_bottom_width, valf);
-              } else if (!strcmp (word, "solid") ||
-                         !strcmp (word, "dotted") ||
-                         !strcmp (word, "inset")) {
+              } else if (word_hash == CTX_solid ||
+                         word_hash == CTX_dotted ||
+                         word_hash == CTX_inset) {
               } else {
                 mrg_color_set_from_string (mrg, &s->border_bottom_color, word);
               }
@@ -4404,21 +4404,20 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
   }
     break;
   case CTX_print_symbols:
+  switch (val_hash)
   {
-      if (!strcmp (value, "true"))
+      case CTX_true:
+      case CTX_1:
+      case CTX_yes:
         s->print_symbols = 1;
-      else if (!strcmp (value, "1"))
-        s->print_symbols = 1;
-      else if (!strcmp (value, "yes"))
-        s->print_symbols = 1;
-      else
+        break;
+      default:
         s->print_symbols = 0;
   }
     break;
   case CTX_font_weight:
     {
-      if (!strcmp (value, "bold") ||
-          !strcmp (value, "bolder"))
+      if (val_hash == CTX_bold || val_hash == CTX_bolder)
       {
         s->text_decoration |= MRG_BOLD;
         s->font_weight = MRG_FONT_WEIGHT_BOLD;
@@ -4451,7 +4450,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_box_sizing:
     {
-      if (!strcmp (value, "border-box"))
+      if (val_hash == CTX_border_box)
       {
         s->box_sizing = MRG_BOX_SIZING_BORDER_BOX;
         s->box_sizing = MRG_BOX_SIZING_CONTENT_BOX;
@@ -4459,55 +4458,66 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     }
     break;
   case CTX_float:
+    switch (val_hash)
     {
-      if (!strcmp (value, "left"))
+      case CTX_left:
         s->float_ = MRG_FLOAT_LEFT;
-      else if (!strcmp (value, "right"))
+        break;
+      case CTX_right:
         s->float_ = MRG_FLOAT_RIGHT;
-      else
+        break;
+      default:
         s->float_ = MRG_FLOAT_NONE;
     }
     break;
   case CTX_overflow:
+    switch(val_hash)
     {
-      if (!strcmp (value, "visible"))
+      case CTX_visible:
         s->overflow = MRG_OVERFLOW_VISIBLE;
-      else if (!strcmp (value, "hidden"))
+        break;
+      case CTX_hidden:
         s->overflow = MRG_OVERFLOW_HIDDEN;
-      else if (!strcmp (value, "scroll"))
+        break;
+      case CTX_scroll:
         s->overflow = MRG_OVERFLOW_SCROLL;
-      else if (!strcmp (value, "auto"))
+        break;
+      case CTX_auto:
         s->overflow = MRG_OVERFLOW_AUTO;
-      else
+        break;
+      default:
         s->overflow = MRG_OVERFLOW_VISIBLE;
+        break;
     }
     break;
   case CTX_clear:
+    switch(val_hash)
     {
-      if (!strcmp (value, "left"))
+      case CTX_left:
         s->clear = MRG_CLEAR_LEFT;
-      else if (!strcmp (value, "right"))
+        break;
+      case CTX_right:
         s->clear = MRG_CLEAR_RIGHT;
-      else if (!strcmp (value, "both"))
+        break;
+      case CTX_both:
         s->clear = MRG_CLEAR_BOTH;
-      else
+        break;
+      default:
         s->clear = MRG_CLEAR_NONE;
+        break;
     }
     break;
   case CTX_font_style:
+    switch(val_hash)
     {
-      if (!strcmp (value, "italic"))
-      {
+      case CTX_italic:
         s->font_style = MRG_FONT_STYLE_ITALIC;
-      }
-      else if (!strcmp (value, "oblique"))
-      {
+        break;
+      case CTX_oblique:
         s->font_style = MRG_FONT_STYLE_OBLIQUE;
-      }
-      else
-      {
+        break;
+      default:
         s->font_style = MRG_FONT_STYLE_NORMAL;
-      }
 #if 0 // XXX
       cairo_select_font_face (mrg_cr (mrg),
           s->font_family,
@@ -4537,9 +4547,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_fill_rule:
     {
-      if (!strcmp (value, "evenodd"))
+      if (val_hash == CTX_evenodd)
         s->fill_rule = MRG_FILL_RULE_EVEN_ODD;
-      else if (!strcmp (value, "nonzero"))
+      else if (val_hash == CTX_nonzero)
         s->fill_rule = MRG_FILL_RULE_NONZERO;
       else
         s->fill_rule = MRG_FILL_RULE_EVEN_ODD;
@@ -4552,11 +4562,11 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_stroke_linejoin:
     {
-      if (!strcmp (value, "miter"))
+      if (val_hash == CTX_miter)
         s->stroke_linejoin = MRG_LINE_JOIN_MITER;
-      else if (!strcmp (value, "round"))
+      else if (val_hash == CTX_round)
         s->stroke_linejoin = MRG_LINE_JOIN_ROUND;
-      else if (!strcmp (value, "bevel"))
+      else if (val_hash == CTX_bevel)
         s->stroke_linejoin = MRG_LINE_JOIN_BEVEL;
       else
         s->stroke_linejoin = MRG_LINE_JOIN_MITER;
@@ -4565,11 +4575,11 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_stroke_linecap:
     {
-      if (!strcmp (value, "butt"))
+      if (val_hash == CTX_butt)
         s->stroke_linecap = MRG_LINE_CAP_BUTT;
-      else if (!strcmp (value, "round"))
+      else if (val_hash == CTX_round)
         s->stroke_linecap = MRG_LINE_CAP_ROUND;
-      else if (!strcmp (value, "square"))
+      else if (val_hash == CTX_square)
         s->stroke_linecap = MRG_LINE_CAP_SQUARE;
       else
         s->stroke_linecap = MRG_LINE_CAP_BUTT;
@@ -4578,129 +4588,155 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
     break;
   case CTX_vertical_align:
     {
-      if (!strcmp (value, "middle"))
+      if (val_hash == CTX_middle)
         s->vertical_align = MRG_VERTICAL_ALIGN_MIDDLE;
-      if (!strcmp (value, "top"))
+      else if (val_hash == CTX_top)
         s->vertical_align = MRG_VERTICAL_ALIGN_TOP;
-      if (!strcmp (value, "sub"))
+      else if (val_hash == CTX_sub)
         s->vertical_align = MRG_VERTICAL_ALIGN_SUB;
-      if (!strcmp (value, "super"))
+      else if (val_hash == CTX_super)
         s->vertical_align = MRG_VERTICAL_ALIGN_SUPER;
-      if (!strcmp (value, "bottom"))
+      else if (val_hash == CTX_bottom)
         s->vertical_align = MRG_VERTICAL_ALIGN_BOTTOM;
       else
         s->vertical_align = MRG_VERTICAL_ALIGN_BASELINE;
     }
     break;
   case CTX_cursor:
+    switch (val_hash)
   {
-      if (!strcmp (value, "auto")) s->cursor = MRG_CURSOR_AUTO;
-      else if (!strcmp (value, "alias")) s->cursor = MRG_CURSOR_ALIAS;
-      else if (!strcmp (value, "all-scroll")) s->cursor = MRG_CURSOR_ALL_SCROLL;
-      else if (!strcmp (value, "cell")) s->cursor = MRG_CURSOR_CELL;
-      else if (!strcmp (value, "context-menu")) s->cursor = MRG_CURSOR_CONTEXT_MENU;
-      else if (!strcmp (value, "col-resize")) s->cursor = MRG_CURSOR_COL_RESIZE;
-      else if (!strcmp (value, "copy")) s->cursor = MRG_CURSOR_COPY;
-      else if (!strcmp (value, "crosshair")) s->cursor = MRG_CURSOR_CROSSHAIR;
-      else if (!strcmp (value, "default")) s->cursor = MRG_CURSOR_DEFAULT;
-      else if (!strcmp (value, "e-resize")) s->cursor = MRG_CURSOR_E_RESIZE;
-      else if (!strcmp (value, "ew-resize")) s->cursor = MRG_CURSOR_EW_RESIZE;
-      else if (!strcmp (value, "help")) s->cursor = MRG_CURSOR_HELP;
-      else if (!strcmp (value, "move")) s->cursor = MRG_CURSOR_MOVE;
-      else if (!strcmp (value, "n-resize")) s->cursor = MRG_CURSOR_N_RESIZE;
-      else if (!strcmp (value, "ne-resize")) s->cursor = MRG_CURSOR_NE_RESIZE;
-      else if (!strcmp (value, "nesw-resize")) s->cursor = MRG_CURSOR_NESW_RESIZE;
-      else if (!strcmp (value, "ns-resize")) s->cursor = MRG_CURSOR_NS_RESIZE;
-      else if (!strcmp (value, "nw-resize")) s->cursor = MRG_CURSOR_NW_RESIZE;
-      else if (!strcmp (value, "no-drop")) s->cursor = MRG_CURSOR_NO_DROP;
-      else if (!strcmp (value, "none")) s->cursor = MRG_CURSOR_NONE;
-      else if (!strcmp (value, "not-allowed")) s->cursor = MRG_CURSOR_NOT_ALLOWED;
-      else if (!strcmp (value, "pointer")) s->cursor = MRG_CURSOR_POINTER;
-      else if (!strcmp (value, "progress")) s->cursor = MRG_CURSOR_PROGRESS;
-      else if (!strcmp (value, "row-resize")) s->cursor = MRG_CURSOR_ROW_RESIZE;
-      else if (!strcmp (value, "s-resize")) s->cursor = MRG_CURSOR_S_RESIZE;
-      else if (!strcmp (value, "se-resize")) s->cursor = MRG_CURSOR_SE_RESIZE;
-      else if (!strcmp (value, "sw-resize")) s->cursor = MRG_CURSOR_SW_RESIZE;
-      else if (!strcmp (value, "text")) s->cursor = MRG_CURSOR_TEXT;
-      else if (!strcmp (value, "vertical-text")) s->cursor = MRG_CURSOR_VERTICAL_TEXT;
-      else if (!strcmp (value, "w-resize")) s->cursor = MRG_CURSOR_W_RESIZE;
-      else if (!strcmp (value, "cursor-wait")) s->cursor = MRG_CURSOR_WAIT;
-      else if (!strcmp (value, "zoom-in")) s->cursor = MRG_CURSOR_ZOOM_IN;
-      else if (!strcmp (value, "zoom-out")) s->cursor = MRG_CURSOR_ZOOM_OUT;
+      case CTX_auto: s->cursor = MRG_CURSOR_AUTO;break;
+      case CTX_alias: s->cursor = MRG_CURSOR_ALIAS;break;
+      case CTX_all_scroll: s->cursor = MRG_CURSOR_ALL_SCROLL;break;
+      case CTX_cell: s->cursor = MRG_CURSOR_CELL;break;
+      case CTX_context_menu: s->cursor = MRG_CURSOR_CONTEXT_MENU;break;
+      case CTX_col_resize: s->cursor = MRG_CURSOR_COL_RESIZE;break;
+      case CTX_copy: s->cursor = MRG_CURSOR_COPY;break;
+      case CTX_crosshair: s->cursor = MRG_CURSOR_CROSSHAIR;break;
+      default:
+      case CTX_default: s->cursor = MRG_CURSOR_DEFAULT;break;
+      case CTX_e_resize: s->cursor = MRG_CURSOR_E_RESIZE;break;
+      case CTX_ew_resize: s->cursor = MRG_CURSOR_EW_RESIZE;break;
+      case CTX_help: s->cursor = MRG_CURSOR_HELP;break;
+      case CTX_move: s->cursor = MRG_CURSOR_MOVE;break;
+      case CTX_n_resize: s->cursor = MRG_CURSOR_N_RESIZE;break;
+      case CTX_ne_resize: s->cursor = MRG_CURSOR_NE_RESIZE;break;
+      case CTX_nesw_resize: s->cursor = MRG_CURSOR_NESW_RESIZE;break;
+      case CTX_ns_resize: s->cursor = MRG_CURSOR_NS_RESIZE;break;
+      case CTX_nw_resize: s->cursor = MRG_CURSOR_NW_RESIZE;break;
+      case CTX_no_drop: s->cursor = MRG_CURSOR_NO_DROP;break;
+      case CTX_none: s->cursor = MRG_CURSOR_NONE;break;
+      case CTX_not_allowed: s->cursor = MRG_CURSOR_NOT_ALLOWED;break;
+      case CTX_pointer: s->cursor = MRG_CURSOR_POINTER;break;
+      case CTX_progress: s->cursor = MRG_CURSOR_PROGRESS;break;
+      case CTX_row_resize: s->cursor = MRG_CURSOR_ROW_RESIZE;break;
+      case CTX_s_resize: s->cursor = MRG_CURSOR_S_RESIZE;break;
+      case CTX_se_resize: s->cursor = MRG_CURSOR_SE_RESIZE;break;
+      case CTX_sw_resize: s->cursor = MRG_CURSOR_SW_RESIZE;break;
+      case CTX_text: s->cursor = MRG_CURSOR_TEXT;break;
+      case CTX_vertical_text: s->cursor = MRG_CURSOR_VERTICAL_TEXT;break;
+      case CTX_w_resize: s->cursor = MRG_CURSOR_W_RESIZE;break;
+      case CTX_cursor_wait: s->cursor = MRG_CURSOR_WAIT;break;
+      case CTX_zoom_in: s->cursor = MRG_CURSOR_ZOOM_IN;break;
+      case CTX_zoom_out: s->cursor = MRG_CURSOR_ZOOM_OUT;break;
   }
     break;
   case CTX_display:
+    switch (val_hash)
     {
-      if (!strcmp (value, "hidden"))
+      case CTX_hidden:
       {
         ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_HIDDEN);
         printf ("!!");
       }
-      else if (!strcmp (value, "block"))
+      break;
+      case CTX_block:
       {
         ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_BLOCK);
       }
-      else if (!strcmp (value, "list-item"))
+      break;
+      case CTX_list_item:
         ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_LIST_ITEM);
-      else if (!strcmp (value, "inline-block"))
+        break;
+      case CTX_inline_block:
         ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_INLINE_BLOCK);
-      else
+        break;
+      default:
         ctx_set (mrg->ctx, CTX_display, MRG_DISPLAY_INLINE);
     }
     break;
   case CTX_position:
+    switch (val_hash)
     {
-      if (!strcmp (value, "relative"))
+      case CTX_relative:
         s->position = MRG_POSITION_RELATIVE;
-      else if (!strcmp (value, "static"))
+        break;
+      case CTX_static:
         s->position = MRG_POSITION_STATIC;
-      else if (!strcmp (value, "absolute"))
+        break;
+      case CTX_absolute:
         s->position = MRG_POSITION_ABSOLUTE;
-      else if (!strcmp (value, "fixed"))
+        break;
+      case CTX_fixed:
         s->position = MRG_POSITION_FIXED;
-      else
+        break;
+      default:
         s->position = MRG_POSITION_STATIC;
     }
     break;
   case CTX_direction:
+    switch (val_hash)
     {
-      if (!strcmp (value, "rtl"))
+      case CTX_rtl:
         s->direction = MRG_DIRECTION_RTL;
-      else if (!strcmp (value, "ltr"))
+        break;
+      case CTX_ltr:
         s->direction = MRG_DIRECTION_LTR;
-      else
+        break;
+      default:
         s->direction = MRG_DIRECTION_LTR;
     }
     break;
   case CTX_unicode_bidi:
+    switch (val_hash)
     {
-      if (!strcmp (value, "normal"))
+      case CTX_normal:
         s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL;
-      else if (!strcmp (value, "embed"))
+        break;
+      case CTX_embed:
         s->unicode_bidi = MRG_UNICODE_BIDI_EMBED;
-      else if (!strcmp (value, "bidi-override"))
+        break;
+      case CTX_bidi_override:
         s->unicode_bidi = MRG_UNICODE_BIDI_BIDI_OVERRIDE;
-      else
+        break;
+      default:
         s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL;
+        break;
     }
     break;
   case CTX_text_align:
+    switch (val_hash)
     {
-      if (!strcmp (value, "left"))
+      case CTX_left:
         s->text_align = MRG_TEXT_ALIGN_LEFT;
-      else if (!strcmp (value, "right"))
+        break;
+      case CTX_right:
         s->text_align = MRG_TEXT_ALIGN_RIGHT;
-      else if (!strcmp (value, "justify"))
+        break;
+      case CTX_justify:
         s->text_align = MRG_TEXT_ALIGN_JUSTIFY;
-      else if (!strcmp (value, "center"))
+        break;
+      case CTX_center:
         s->text_align = MRG_TEXT_ALIGN_CENTER;
-      else
+        break;
+      default:
         s->text_align = MRG_TEXT_ALIGN_LEFT;
     }
     break;
   case CTX_text_decoration:
+    switch (val_hash)
     {
-      if (!strcmp (value, "reverse"))
+      case CTX_reverse:
       {
 #if 0
         MrgColor temp = s->color;
@@ -4715,27 +4751,33 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, const char *name,
         }
 #endif
       }
-      else if (!strcmp (value, "underline"))
+      break;
+      case CTX_underline:
       {
         s->text_decoration|= MRG_UNDERLINE;
       }
-      else if (!strcmp (value, "overline"))
+      break;
+      case CTX_overline:
       {
         s->text_decoration|= MRG_OVERLINE;
       }
-      else if (!strcmp (value, "linethrough"))
+      break;
+      case CTX_linethrough:
       {
         s->text_decoration|= MRG_LINETHROUGH;
       }
-      else if (!strcmp (value, "blink"))
+      break;
+      case CTX_blink:
       {
         s->text_decoration|= MRG_BLINK;
       }
-      else if (!strcmp (value, "none"))
+      break;
+      case CTX_none:
       {
         s->text_decoration ^= (s->text_decoration &
       (MRG_UNDERLINE|MRG_REVERSE|MRG_OVERLINE|MRG_LINETHROUGH|MRG_BLINK));
       }
+      break;
     }
     break;
   }
