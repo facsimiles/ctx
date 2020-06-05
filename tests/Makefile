@@ -79,7 +79,7 @@ clean:
 	rm -rf gray1 png gray8 png-640x480 png-640x480b
 
 gray1/%: %.ctx ../ctx 
-	../ctx $< GRAY1 > $@
+	../ctx $< --width 160 --height 80 GRAY1 > $@
 png/%.png: %.ctx ../ctx 
 	../ctx $< $@ --width 160 --height 80
 png-80x160/%.png: %.ctx ../ctx 
@@ -89,4 +89,4 @@ png-640x480/%.png: %.ctx ../ctx
 png-640x480b/%.png: %.ctx ../ctx 
 	../ctx $< $@ --rows 24 --width 640 --height 480
 gray8/%: %.ctx ../ctx
-	../ctx $< GRAY8 > $@
+	../ctx $< GRAY8 --width 80 --height 24 > $@
