@@ -39,7 +39,6 @@ static int lctrl = 0;
 static int lalt = 0;
 static int rctrl = 0;
 
-
 #define CTX_MAX_CLIENTS 16
 static CtxClient clients[CTX_MAX_CLIENTS]={{NULL,},};
 #define vt         clients[0].vt
@@ -59,12 +58,17 @@ void sdl_setup (int width, int height)
   //renderer = SDL_CreateRenderer (window, -1, 0);
   renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
   SDL_StartTextInput ();
-  texture = SDL_CreateTexture (renderer,
-                               SDL_PIXELFORMAT_ARGB8888,
-                               SDL_TEXTUREACCESS_STREAMING,
-                               width, height);
-  pixels = calloc (width * height, 4);
+
   SDL_EnableScreenSaver ();
+}
+void add_client (const char *commandline, int width, int height)
+{
+    vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
+    texture = SDL_CreateTexture (renderer,
+                                 SDL_PIXELFORMAT_ARGB8888,
+                                 SDL_TEXTUREACCESS_STREAMING,
+                                 width, height);
+    pixels = calloc (width * height, 4);
 }
 
 void terminal_set_title (const char *new_title)
@@ -495,8 +499,9 @@ int vt_main (int argc, char **argv)
   vt_width = ( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
   vt_height = font_size * DEFAULT_ROWS;
   sdl_setup (vt_width, vt_height);
-  setsid();
-  vt = vt_new (argv[1]?argv[1]:vt_find_shell_command(), DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
+  //setsid();
+  add_client (argv[1]?argv[1]:vt_find_shell_command(), vt_width, vt_height);
+
   int sleep_time = 10;
   while (!do_quit)
     {
