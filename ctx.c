@@ -237,7 +237,6 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 uint8_t rgba1[4] = {0,0,0,255};
                 int     rgbasum[4] = {0,};
                 int     col_count = 0;
-                int best_diff = 0;
 
                 for (int xi = 0; xi < 2; xi++)
                   for (int yi = 0; yi < 4; yi++)

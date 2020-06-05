@@ -1,3 +1,11 @@
+/* other important maximums */
+#define MRG_MAX_BINDINGS         256
+#define MRG_MAX_TEXT_LISTEN      256
+
+
+
+
+
 #define MRG_MAX_STYLE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_STATE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_FLOATS           8
@@ -7,9 +15,6 @@
 #define MRG_MAX_CSS_RULELEN      32   // XXX doesnt have overflow protection
 #define MRG_MAX_CSS_RULES        128
 
-/* other important maximums */
-#define MRG_MAX_BINDINGS         256
-#define MRG_MAX_TEXT_LISTEN      256
 
 #define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
 #define PROPS(a)         (ctx_get_string(mrg->ctx, CTX_##a))
@@ -261,9 +266,9 @@
 #define CTX_transparent CTX_STRH('t','r','a','n','s','p','a','r','e','n','t',0,0,0)
 #define CTX_true        CTX_STRH('t','r','u','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_underline   CTX_STRH('u','n','d','e','r','l','i','n','e',0,0,0,0,0)
-#define CTX_unicode_bidi        CTX_STRH('u','n','i','c','o','d','e','-','b','i','d','i',0,0)
-#define CTX_vertical_align      CTX_STRH('v','e','r','t','i','c','a','l','-','a','l','i','g','n')
-#define CTX_vertical_text       CTX_STRH('v','e','r','t','i','c','a','l','-','t','e','x','t',0)
+#define CTX_unicode_bidi    CTX_STRH('u','n','i','c','o','d','e','-','b','i','d','i',0,0)
+#define CTX_vertical_align  CTX_STRH('v','e','r','t','i','c','a','l','-','a','l','i','g','n')
+#define CTX_vertical_text   CTX_STRH('v','e','r','t','i','c','a','l','-','t','e','x','t',0)
 #define CTX_visibility 	CTX_STRH('v','i','s','i','b','i','l','i','t','y',0,0,0,0)
 #define CTX_visible 	CTX_STRH('v','i','s','i','b','l','e',0,0,0,0,0,0,0)
 #define CTX_white 	CTX_STRH('w','h','i','t','e',0,0,0,0,0,0,0,0,0)
