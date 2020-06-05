@@ -355,6 +355,8 @@ typedef struct GfxState
 
 struct _VT
 {
+  int       lastx;
+  int       lasty;
   char     *title;
   void    (*state) (VT *vt, int byte);
 
@@ -823,6 +825,8 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
 VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
 {
   VT *vt         = calloc (sizeof (VT), 1);
+  vt->lastx = -1;
+  vt->lasty = -1;
   vt->state         = vt_state_neutral;
   vt->smooth_scroll = 0;
   vt->scroll_offset = 0.0;
@@ -6418,8 +6422,6 @@ static uint8_t palettes[][16][3]=
 
   void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
   {
-    static int lastx=-1; // XXX  : need one per vt
-    static int lasty=-1;
     static int scrollbar_down = 0;
     if ( (type == VT_MOUSE_DRAG || type == VT_MOUSE_PRESS)
          && (x > vt->cols - 3 || scrollbar_down) )
@@ -6486,10 +6488,10 @@ static uint8_t palettes[][16][3]=
         case VT_MOUSE_MOTION:
           if (!vt->mouse_all)
             { return; }
-          if (x==lastx && y==lasty)
+          if (x==vt->lastx && y==vt->lasty)
             { return; }
-          lastx = x;
-          lasty = y;
+          vt->lastx = x;
+          vt->lasty = y;
           sprintf (buf, "\033[<35;%i;%iM", x, y);
           break;
         case VT_MOUSE_RELEASE:

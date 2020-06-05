@@ -56,6 +56,19 @@ static int ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   return diff;
 }
 
+typedef enum CtxOutputmode
+{
+  CTX_OUTPUT_MODE_QUARTER,
+  CTX_OUTPUT_MODE_BRAILLE,
+  CTX_OUTPUT_MODE_GRAYS,
+  CTX_OUTPUT_MODE_CTX,
+  CTX_OUTPUT_MODE_CTX_COMPACT,
+  CTX_OUTPUT_MODE_CTX_TERM,
+  CTX_OUTPUT_MODE_SIXELS,
+} CtxOutputmode;
+
+CtxOutputmode outputmode = CTX_OUTPUT_MODE_QUARTER;
+
 void ctx_utf8_output_buf (uint8_t *pixels,
                           int format,
                           int width,
@@ -129,6 +142,9 @@ void ctx_utf8_output_buf (uint8_t *pixels,
           }
         break;
       case CTX_FORMAT_RGBA8:
+        switch (outputmode)  {
+      default:
+      case  CTX_OUTPUT_MODE_QUARTER:
         {
            char *unicode_quarters[]={
 " ","▘","▝","▀","▖","▌","▞","▛","▗","▚","▐","▜","▄","▙","▟","█",};
@@ -207,11 +223,9 @@ void ctx_utf8_output_buf (uint8_t *pixels,
             printf ("\n");
           }
         }
-
         break;
-
-      //case CTX_FORMAT_RGBA8: // for fidelity the 
-                             // braille set is best
+      case  CTX_OUTPUT_MODE_BRAILLE:
+        {
         for (int row = 0; row < height/4; row++)
           {
             for (int col = 0; col < width /2; col++)
@@ -286,7 +300,9 @@ void ctx_utf8_output_buf (uint8_t *pixels,
               }
             printf ("\n");
           }
-
+        }
+        break;
+        }
         break;
 
       case CTX_FORMAT_GRAY4:
@@ -411,6 +427,7 @@ int parse_main (int argc, char **argv)
   return 0;
 }
 
+
 // the render API could be a PUT of new contents
 // replacing old contents
 // ...
@@ -435,9 +452,12 @@ int help_main (int argc, char **argv)
     "\n"
     "options available:\n"
     "  --braille       unicode braille char output mode\n"
-    "  --quads         unicode quad char output mode\n"
+    "  --quarter       unicode quad char output mode\n"
     "  --grays         unicode  quad char output mode\n"
-    "  --ctx           render to ctx terminal\n"
+    "  --ctx-compact   output compact ctx to terminal\n"
+    "  --ctx           output raw ctx to terminal\n"
+    "  --ctx-term      render to ctx terminal\n"
+
     "  --color         use color in output\n"
     "  --width  pixels sets width of canvas\n"
     "  --height pixels sets height of canvas\n"
@@ -523,6 +543,30 @@ int main (int argc, char **argv)
     {
       if (argv[i][0] == '-')
         {
+          if (!strcmp ( argv[i], "--quarter") )
+            {
+              outputmode = CTX_OUTPUT_MODE_QUARTER;
+            }
+          else if (!strcmp ( argv[i], "--braille") )
+            {
+              outputmode = CTX_OUTPUT_MODE_BRAILLE;
+            }
+          else if (!strcmp ( argv[i], "--grays") )
+            {
+              outputmode = CTX_OUTPUT_MODE_GRAYS;
+            }
+          else if (!strcmp ( argv[i], "--ctx-compact") )
+            {
+              outputmode = CTX_OUTPUT_MODE_CTX_COMPACT;
+            }
+          else if (!strcmp ( argv[i], "--ctx") )
+            {
+              outputmode = CTX_OUTPUT_MODE_CTX;
+            }
+          else if (!strcmp ( argv[i], "--ctx-term") )
+            {
+              outputmode = CTX_OUTPUT_MODE_CTX_TERM;
+            }
           if (!strcmp ( argv[i], "--width") )
             {
               if (argv[i+1])
@@ -574,6 +618,7 @@ int main (int argc, char **argv)
         }
     }
   cols = width / (height / rows);
+#if 0
   if (dest_path)
     {
       if (!strcmp (dest_path, "GRAY1") ||
@@ -607,6 +652,8 @@ int main (int argc, char **argv)
           cols = width / (height / rows);
         }
     }
+#endif
+
 #if 0
   fprintf (stderr, "%s [%s]\n", source_path, get_suffix (source_path) );
   fprintf (stderr, "%s [%s]\n", dest_path, get_suffix (dest_path) );
@@ -644,11 +691,14 @@ int main (int argc, char **argv)
       fprintf (stderr, "unhandled input suffix\n");
       exit (-1);
     }
+
   if (!dest_path)
     {
+
       ctx_render_stream (ctx, stdout, 1);
       exit (0);
     }
+
   if (!strcmp (dest_path, "GRAY1") )
     {
       int reverse = 0;
