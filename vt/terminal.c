@@ -28,6 +28,7 @@ CtxClient {
   int           do_quit;
   long          drawn_rev;
 }CtxClient;
+int           do_quit = 0;
 
 float font_size    = 32.0;
 float line_spacing = 2.0;
@@ -41,13 +42,15 @@ static int rctrl = 0;
 
 #define CTX_MAX_CLIENTS 16
 static CtxClient clients[CTX_MAX_CLIENTS]={{NULL,},};
-#define vt         clients[0].vt
-#define vt_width   clients[0].vt_width
-#define vt_height  clients[0].vt_height
-#define do_quit    clients[0].do_quit
-#define pixels     clients[0].pixels
-#define texture    clients[0].texture
-#define drawn_rev  clients[0].drawn_rev
+static int client_pos = 0;
+static int active = 0; // active client
+//#define vt         clients[0].vt
+//#define vt_width   clients[0].vt_width
+//#define vt_height  clients[0].vt_height
+//#define do_quit    clients[0].do_quit
+//#define pixels     clients[0].pixels
+//#define texture    clients[0].texture
+//#define drawn_rev  clients[0].drawn_rev
 
 static SDL_Window   *window;
 static SDL_Renderer *renderer;
@@ -63,12 +66,15 @@ void sdl_setup (int width, int height)
 }
 void add_client (const char *commandline, int width, int height)
 {
-    vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
-    texture = SDL_CreateTexture (renderer,
+    clients[client_pos].vt_width = ( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
+    clients[client_pos].vt_height = font_size * DEFAULT_ROWS;
+    clients[client_pos].vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
+    clients[client_pos].texture = SDL_CreateTexture (renderer,
                                  SDL_PIXELFORMAT_ARGB8888,
                                  SDL_TEXTUREACCESS_STREAMING,
                                  width, height);
-    pixels = calloc (width * height, 4);
+    clients[client_pos].pixels = calloc (width * height, 4);
+    client_pos++;
 }
 
 void terminal_set_title (const char *new_title)
@@ -80,6 +86,9 @@ extern float ctx_shape_cache_rate;
 
 static void handle_event (const char *event)
 {
+  VT *vt = clients[active].vt;
+  int vt_height = clients[active].vt_height;
+  int vt_width = clients[active].vt_width;
   //if (!strcmp (event, "shift-return"))
   // event = "return";
   //else
@@ -155,11 +164,11 @@ static void handle_event (const char *event)
     }
   else if (!strcmp (event, "shift-control-q") )
     {
-      do_quit = 1;
+      clients[active].do_quit = 1; // global?
     }
   else if (!strcmp (event, "shift-control-w") )
     {
-      do_quit = 1;
+      clients[active].do_quit = 1;
     }
   else if (!strncmp (event, "mouse-", 5) )
     {
@@ -194,7 +203,7 @@ static void handle_event (const char *event)
                   vt_mouse (vt, VT_MOUSE_PRESS, x/cw + 1, y/ch + 1, x, y);
                 }
             }
-          drawn_rev = 0;
+          clients[active].drawn_rev = 0;
         }
       else if (!strncmp (event + 6, "drag", 4) )
         {
@@ -210,7 +219,7 @@ static void handle_event (const char *event)
                   vt_mouse (vt, VT_MOUSE_DRAG, x/cw + 1, y/ch + 1, x, y);
                 }
             }
-          drawn_rev = 0;
+          clients[active].drawn_rev = 0;
         }
       else if (!strncmp (event + 6, "release", 7) )
         {
@@ -226,7 +235,7 @@ static void handle_event (const char *event)
                   vt_mouse (vt, VT_MOUSE_RELEASE, x/cw + 1, y/ch + 1, x, y);
                 }
             }
-          drawn_rev = 0;
+          clients[active].drawn_rev = 0;
         }
     }
   else
@@ -245,6 +254,9 @@ static int sdl_check_events ()
 {
   int got_event = 0;
   static SDL_Event      event;
+  VT *vt = clients[active].vt;
+  //int vt_width = clients[active].vt_width;
+  //int vt_height = clients[active].vt_height;
   if (SDL_WaitEventTimeout (&event, 15) )
     do
       {
@@ -256,6 +268,7 @@ static int sdl_check_events ()
               break;
             case SDL_WINDOWEVENT:
               {
+#if 0
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
                   {
                     int width  = event.window.data1;
@@ -277,6 +290,7 @@ static int sdl_check_events ()
                         return 1;
                       }
                   }
+#endif
               }
               break;
             case SDL_MOUSEMOTION:
@@ -494,25 +508,32 @@ static int sdl_check_events ()
 
 int vt_main (int argc, char **argv)
 {
+  static int width = 800;
+  static int height = 600;
   execute_self = malloc (strlen (argv[0]) + 16);
   sprintf (execute_self, "%s", argv[0]);
-  vt_width = ( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
-  vt_height = font_size * DEFAULT_ROWS;
-  sdl_setup (vt_width, vt_height);
+  sdl_setup (width, height);
   //setsid();
-  add_client (argv[1]?argv[1]:vt_find_shell_command(), vt_width, vt_height);
+  add_client (argv[1]?argv[1]:vt_find_shell_command(), width/2, height/2);
 
   int sleep_time = 10;
   while (!do_quit)
     {
-      int in_scroll = (vt_has_blink (vt) >= 10);
-      if (vt_is_done (vt) )
-        { do_quit = 1; }
-      if ( (drawn_rev != vt_rev (vt) ) ||
+      for (int no = 0; no < client_pos; no++)
+      {
+        VT *vt = clients[no].vt;
+        int vt_width = clients[no].vt_width;
+        int vt_height = clients[no].vt_height;
+        //int vt_x = clients[no].x;
+        //int vt_y = clients[no].y;
+      int in_scroll = (vt_has_blink (clients[no].vt) >= 10);
+      //if (vt_is_done (vt) )
+      //  { do_quit = 1; }
+      if ( (clients[no].drawn_rev != vt_rev (vt) ) ||
            vt_has_blink (vt) ||
            in_scroll)
         {
-          drawn_rev = vt_rev (vt);
+          clients[no].drawn_rev = vt_rev (vt);
           SDL_Rect dirty;
 #if 0
           // XXX this works for initial line in started shell
@@ -529,12 +550,13 @@ int vt_main (int argc, char **argv)
           // terminal is also keeping track of state of already drawn
           // pixels and often only repaints what is needed XXX  need API
           //                                              to force full draw
-          Ctx *ctx = ctx_new_for_framebuffer (pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
+          Ctx *ctx = ctx_new_for_framebuffer (clients[no].pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
           vt_draw (vt, ctx, 0, 0);
 #endif
           ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
           ctx_free (ctx);
-#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
+
+#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
           dirty.w ++;
           dirty.h ++;
           if (dirty.x + dirty.w > vt_width)
@@ -545,25 +567,34 @@ int vt_main (int argc, char **argv)
                              &dirty,
                              (uint8_t *) pixels + sizeof (Uint32) * (vt_width * dirty.y + dirty.x), vt_width * sizeof (Uint32) );
 #else
-          SDL_UpdateTexture (texture, NULL,
-                             (void *) pixels, vt_width * sizeof (Uint32) );
+          SDL_UpdateTexture (clients[no].texture, NULL,
+                             (void *) clients[no].pixels, vt_width * sizeof (Uint32) );
 #endif
-          SDL_RenderClear (renderer);
-          SDL_RenderCopy (renderer, texture, NULL, NULL);
-          SDL_RenderPresent (renderer);
         }
+        }
+          SDL_RenderClear (renderer);
+          SDL_RenderCopy (renderer, clients[active].texture, NULL, NULL);
+          SDL_RenderPresent (renderer);
       int got_event = 0;
-      if (!in_scroll)
+      //if (!in_scroll)
         got_event = sdl_check_events ();
+
+
       if (got_event)
         {
           sleep_time = 200;
         }
+#if 0
       if (in_scroll)
         {
           sleep_time = 200;
         }
-      if (vt_poll (vt, sleep_time) )
+#endif
+
+      for (int a = 0; a < client_pos; a++)
+      {
+
+      if (vt_poll (clients[a].vt, sleep_time/client_pos) )
         {
           if (sleep_time > 2500)
             { sleep_time = 2500; }
@@ -572,9 +603,12 @@ int vt_main (int argc, char **argv)
         {
           sleep_time *= 1.5;
         }
+      }
+
       if (sleep_time > 60000)
         { sleep_time = 60000; }
     }
-  vt_destroy (vt);
+  for (int a = 0; a < client_pos; a++)
+    vt_destroy (clients[a].vt);
   return 0;
 }
