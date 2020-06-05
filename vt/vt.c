@@ -487,6 +487,12 @@ struct _VT
 
   GfxState   gfx;
   AudioState audio;
+
+  int select_start_col;
+  int select_start_row;
+  int select_end_col;
+  int select_end_row;
+
 };
 
 /* on current line */
@@ -841,6 +847,7 @@ VT *vt_new (const char *command, int cols, int rows, float font_size, float line
   vt->current_line       = NULL;
   vt->cols               = 0;
   vt->rows               = 0;
+
   vt->scrollback_limit   = DEFAULT_SCROLLBACK;
   vt->argument_buf_len   = 0;
   vt->argument_buf_cap   = 64;
@@ -6078,10 +6085,6 @@ static uint8_t palettes[][16][3]=
     return cw;
   }
 
-  static int select_start_col = 0;
-  static int select_start_row = 0;
-  static int select_end_col = 0;
-  static int select_end_row = 0;
 
   int vt_has_blink (VT *vt)
   {
@@ -6157,22 +6160,22 @@ static uint8_t palettes[][16][3]=
                   int c = col;
                   int real_cw;
                   int in_selected_region = 0;
-                  if (r > select_start_row && r < select_end_row)
+                  if (r > vt->select_start_row && r < vt->select_end_row)
                     {
                       in_selected_region = 1;
                     }
-                  else if (r == select_start_row)
+                  else if (r == vt->select_start_row)
                     {
-                      if (col >= select_start_col) { in_selected_region = 1; }
-                      if (r == select_end_row)
+                      if (col >= vt->select_start_col) { in_selected_region = 1; }
+                      if (r == vt->select_end_row)
                         {
-                          if (col > select_end_col) { in_selected_region = 0; }
+                          if (col > vt->select_end_col) { in_selected_region = 0; }
                         }
                     }
-                  else if (r == select_end_row)
+                  else if (r == vt->select_end_row)
                     {
                       in_selected_region = 1;
-                      if (col > select_end_col) { in_selected_region = 0; }
+                      if (col > vt->select_end_col) { in_selected_region = 0; }
                     }
                   got_selection |= in_selected_region;
                   if (vt->scroll)
@@ -6392,15 +6395,15 @@ static uint8_t palettes[][16][3]=
   {
     VtString *str = vt_string_new ("");
     char *ret;
-    for (int row = select_start_row; row <= select_end_row; row++)
+    for (int row = vt->select_start_row; row <= vt->select_end_row; row++)
       {
         const char *line_str = vt_get_line (vt, vt->rows - row);
         int col = 1;
         for (const char *c = line_str; *c; c = mrg_utf8_skip (c, 1), col ++)
           {
-            if (row == select_end_row && col > select_end_col)
+            if (row == vt->select_end_row && col > vt->select_end_col)
               { continue; }
-            if (row == select_start_row && col < select_start_col)
+            if (row == vt->select_start_row && col < vt->select_start_col)
               { continue; }
             vt_string_append_utf8char (str, c);
           }
@@ -6452,26 +6455,26 @@ static uint8_t palettes[][16][3]=
         //
         if (type == VT_MOUSE_PRESS)
           {
-            select_start_col = x;
-            select_start_row = y;
-            select_end_col = x;
-            select_end_row = y;
+            vt->select_start_col = x;
+            vt->select_start_row = y;
+            vt->select_end_col = x;
+            vt->select_end_row = y;
           }
         else if (type == VT_MOUSE_DRAG)
           {
-            select_end_col = x;
-            select_end_row = y;
-            if ( ( (select_start_row == select_end_row) &&
-                   (select_start_col > select_end_col) ) ||
-                 (select_start_row > select_end_row) )
+            vt->select_end_col = x;
+            vt->select_end_row = y;
+            if ( ( (vt->select_start_row == vt->select_end_row) &&
+                   (vt->select_start_col > vt->select_end_col) ) ||
+                 (vt->select_start_row > vt->select_end_row) )
               {
                 int tmp;
-                tmp = select_start_row;
-                select_start_row = select_end_row;
-                select_end_row = tmp;
-                tmp = select_start_col;
-                select_start_col = select_end_col;
-                select_end_col = tmp;
+                tmp = vt->select_start_row;
+                vt->select_start_row = vt->select_end_row;
+                vt->select_end_row = tmp;
+                tmp = vt->select_start_col;
+                vt->select_start_col = vt->select_end_col;
+                vt->select_end_col = tmp;
               }
           }
         return;
