@@ -1701,7 +1701,11 @@ typedef enum {
  * semantic meaning.
  */
 struct _MrgStyle {
-  /* text-related */
+  /* text-related, we could potentially store *all* variables in keydb
+   * that would both be slower and more bloatful than tightly packed bits,
+   * some things currently in keydb should maybe be moved out for
+   * performance.
+   */
   float               font_size; // used for mrg_em() should be direct
   float               line_height;
   MrgVisibility       visibility:1;
@@ -1756,7 +1760,7 @@ typedef struct MrgState {
   int          children;
   int          overflowed:1;
   int          span_bg_started:1;
-}  MrgState;;
+} MrgState;;
 
 struct _Mrg {
   float          rem;
@@ -1774,6 +1778,10 @@ struct _Mrg {
   MrgString     *style_global;
 
   MrgList       *items;
+
+  MrgBinding     bindings[MRG_MAX_BINDINGS];
+  int            n_bindings;
+
   //MrgItem       *grab;
 
   int            frozen;
@@ -1791,10 +1799,6 @@ struct _Mrg {
   float          pointer_y[MRG_MAX_DEVICES];
   unsigned char  pointer_down[MRG_MAX_DEVICES];
 
-  MrgBinding     bindings[MRG_MAX_BINDINGS];
-  int            n_bindings;
-
-
   float          x; /* in px */
   float          y; /* in px */
 
@@ -1810,8 +1814,6 @@ struct _Mrg {
   MrgState       states[MRG_MAX_STATE_DEPTH];
   int            state_no;
   int            in_paint;
-  unsigned char *glyphs;  /* for terminal backend */
-  unsigned char *styles;  /* ----------"--------- */
   void          *backend_data;
   int            do_clip;
 
@@ -1828,12 +1830,11 @@ struct _Mrg {
   void *user_data;
 
   //MrgBackend *backend;
-
-  char *title;
+  char      *title;
 
     /** text editing state follows **/
-  int       text_edited;
-  int       got_edit;
+  int        text_edited;
+  int        got_edit;
   MrgString *edited_str;
 
   int              text_edit_blocked;
@@ -1843,37 +1844,37 @@ struct _Mrg {
   MrgDestroyNotify update_string_destroy_notify;
   void            *update_string_destroy_data;
 
-  int       cursor_pos;
-  float     e_x;
-  float     e_y;
-  float     e_ws;
-  float     e_we;
-  float     e_em;
-  float     offset_x;
-  float     offset_y;
+  int        cursor_pos;
+  float      e_x;
+  float      e_y;
+  float      e_ws;
+  float      e_we;
+  float      e_em;
+  float      offset_x;
+  float      offset_y;
   //cairo_scaled_font_t *scaled_font;
 
-  MrgType      text_listen_types[MRG_MAX_TEXT_LISTEN];
-  MrgCb        text_listen_cb[MRG_MAX_TEXT_LISTEN];
-  void        *text_listen_data1[MRG_MAX_TEXT_LISTEN];
-  void        *text_listen_data2[MRG_MAX_TEXT_LISTEN];
+  MrgType    text_listen_types[MRG_MAX_TEXT_LISTEN];
+  MrgCb      text_listen_cb[MRG_MAX_TEXT_LISTEN];
+  void      *text_listen_data1[MRG_MAX_TEXT_LISTEN];
+  void      *text_listen_data2[MRG_MAX_TEXT_LISTEN];
 
-  void       (*text_listen_finalize[MRG_MAX_TEXT_LISTEN])(void *listen_data, void *listen_data2, void *finalize_data);
-  void        *text_listen_finalize_data[MRG_MAX_TEXT_LISTEN];
-  int          text_listen_count;
-  int          text_listen_active;
+  void     (*text_listen_finalize[MRG_MAX_TEXT_LISTEN])(void *listen_data, void *listen_data2, void *finalize_data);
+  void      *text_listen_finalize_data[MRG_MAX_TEXT_LISTEN];
+  int        text_listen_count;
+  int        text_listen_active;
 
-    MrgList     *idles;
-  int          idle_id;
+  MrgList   *idles;
+  int        idle_id;
 
-  long         tap_delay_min;
-  long         tap_delay_max;
-  long         tap_delay_hold;
+  long       tap_delay_min;
+  long       tap_delay_max;
+  long       tap_delay_hold;
 
-  double       tap_hysteresis;
+  double     tap_hysteresis;
 
-  int          printing;
-  //cairo_t     *printing_cr;
+  int        printing;
+  //cairo_t *printing_cr;
 };
 
 
@@ -8784,9 +8785,7 @@ void mrg_destroy (Mrg *mrg)
   free (mrg);
 }
 
-
 /*********** mrg beyond xml layout ***********************/
-
 
 void mrg_add_binding_full (Mrg *mrg,
                            const char *key,

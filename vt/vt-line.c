@@ -89,8 +89,6 @@ void vt_string_append_unichar (VtString *string, unsigned int unichar)
     }
 }
 
-
-
 static inline void _vt_string_append_str (VtString *string, const char *str)
 {
   if (!str) { return; }
@@ -116,8 +114,6 @@ void vt_string_append_str (VtString *string, const char *str)
 {
   _vt_string_append_str (string, str);
 }
-
-
 
 VtString *vt_string_new_with_size (const char *initial, int initial_size)
 {
@@ -353,4 +349,3 @@ void vt_string_remove (VtString *string, int pos)
   string->length = strlen (string->str);
   string->utf8_length = mrg_utf8_strlen (string->str);
 }
-
