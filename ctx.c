@@ -67,7 +67,7 @@ typedef enum CtxOutputmode
   CTX_OUTPUT_MODE_SIXELS,
 } CtxOutputmode;
 
-CtxOutputmode outputmode = CTX_OUTPUT_MODE_QUARTER;
+CtxOutputmode outputmode = CTX_OUTPUT_MODE_BRAILLE;
 
 void ctx_utf8_output_buf (uint8_t *pixels,
                           int format,
@@ -546,10 +546,14 @@ int main (int argc, char **argv)
           if (!strcmp ( argv[i], "--quarter") )
             {
               outputmode = CTX_OUTPUT_MODE_QUARTER;
+              width = 160;
+              height = 48;
             }
           else if (!strcmp ( argv[i], "--braille") )
             {
               outputmode = CTX_OUTPUT_MODE_BRAILLE;
+              width = 160;
+              height = 80;
             }
           else if (!strcmp ( argv[i], "--grays") )
             {
@@ -692,14 +696,32 @@ int main (int argc, char **argv)
       exit (-1);
     }
 
-  if (!dest_path)
+  if (outputmode == CTX_OUTPUT_MODE_CTX)
     {
-
       ctx_render_stream (ctx, stdout, 1);
       exit (0);
     }
+  if (outputmode == CTX_OUTPUT_MODE_CTX_COMPACT)
+    {
 
-  if (!strcmp (dest_path, "GRAY1") )
+      ctx_render_stream (ctx, stdout, 0);
+      exit (0);
+    }
+
+  if (dest_path == NULL || !strcmp (dest_path, "RGBA8") )
+    {
+      int reverse = 0;
+      int stride = width * 4;
+      uint8_t pixels[stride*height];
+      Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBA8);
+      memset (pixels, 0, sizeof (pixels) );
+      ctx_render_ctx (ctx, dctx);
+      ctx_free (dctx);
+      ctx_utf8_output_buf ( (uint8_t *) pixels,
+                            CTX_FORMAT_RGBA8,
+                            width, height, stride, reverse);
+    }
+  else if (!strcmp (dest_path, "GRAY1") )
     {
       int reverse = 0;
       int stride = width/8+ (width%8?1:0);
@@ -714,7 +736,7 @@ int main (int argc, char **argv)
                            CTX_FORMAT_GRAY1,
                            width, height, stride, reverse);
     }
-  if (!strcmp (dest_path, "GRAY2") )
+  else if (!strcmp (dest_path, "GRAY2") )
     {
       int reverse = 1;
       int stride = width/4;
@@ -727,7 +749,7 @@ int main (int argc, char **argv)
                            CTX_FORMAT_GRAY2,
                            width, height, stride, reverse);
     }
-  if (!strcmp (dest_path, "GRAY4") )
+  else if (!strcmp (dest_path, "GRAY4") )
     {
       int reverse = 0;
       int stride = width/2;
@@ -740,7 +762,7 @@ int main (int argc, char **argv)
                            CTX_FORMAT_GRAY4,
                            width, height, stride, reverse);
     }
-  if (!strcmp (dest_path, "GRAY8") )
+  else if (!strcmp (dest_path, "GRAY8") )
     {
       int reverse = 0;
       int stride = width;
@@ -766,7 +788,7 @@ int main (int argc, char **argv)
           printf ("\n");
         }
     }
-  if (!strcmp (dest_path, "GRAYF") )
+  else if (!strcmp (dest_path, "GRAYF") )
     {
       int reverse = 0;
       int stride = width * 4;
@@ -792,7 +814,7 @@ int main (int argc, char **argv)
                             CTX_FORMAT_GRAYF,
                             width, height, stride, reverse);
     }
-  if (!strcmp (dest_path, "CMYKAF") )
+  else if (!strcmp (dest_path, "CMYKAF") )
     {
       int reverse = 0;
       int stride = width * 4 * 5;
@@ -805,20 +827,7 @@ int main (int argc, char **argv)
                             CTX_FORMAT_CMYKAF,
                             width, height, stride, reverse);
     }
-  if (!strcmp (dest_path, "RGBA8") )
-    {
-      int reverse = 0;
-      int stride = width * 4;
-      uint8_t pixels[stride*height];
-      Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBA8);
-      memset (pixels, 0, sizeof (pixels) );
-      ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
-      ctx_utf8_output_buf ( (uint8_t *) pixels,
-                            CTX_FORMAT_RGBA8,
-                            width, height, stride, reverse);
-    }
-  if (!strcmp (dest_path, "RGB8") )
+  else if (!strcmp (dest_path, "RGB8") )
     {
       int reverse = 0;
       int stride = width * 3;
@@ -831,7 +840,7 @@ int main (int argc, char **argv)
                             CTX_FORMAT_RGB8,
                             width, height, stride, reverse);
     }
-  if (!strcmp (dest_path, "CMYK8") )
+  else if (!strcmp (dest_path, "CMYK8") )
     {
       int reverse = 0;
       int stride = width * 4;
@@ -844,7 +853,7 @@ int main (int argc, char **argv)
                             CTX_FORMAT_CMYK8,
                             width, height, stride, reverse);
     }
-  if (!strcmp (get_suffix (dest_path), ".png") )
+  else if (!strcmp (get_suffix (dest_path), ".png") )
     {
       int stride = width * 4;
       uint8_t pixels[stride*height];
