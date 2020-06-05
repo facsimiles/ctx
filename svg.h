@@ -1,6 +1,6 @@
 #define MRG_MAX_STYLE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_STATE_DEPTH  CTX_MAX_STATES
-#define MRG_MAX_FLOATS           8
+#define MRG_MAX_FLOATS           16
 #define MRG_MAX_CBS              128
 #define MRG_MAX_SELECTOR_LENGTH  64
 #define MRG_MAX_CSS_STRINGLEN    512
@@ -57,6 +57,8 @@
 #define CTX_border_right 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t',0,0)
 #define CTX_border_right_width 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t','-','w')
 #define CTX_border_right_color 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t','-','c')
+#define CTX_border_style  	CTX_STRH('b','o','r','d','e','r','-','s','t','y','l','e',0,0)
+#define CTX_border_spacing   	CTX_STRH('b','o','r','d','e','r','-','s','p','a','c','i','n','g')
 #define CTX_border_top 	CTX_STRH('b','o','r','d','e','r','-','t','o','p',0,0,0,0)
 #define CTX_border_top_color 	CTX_STRH('b','o','r','d','e','r','-','t','o','p','-','c','o','l')
 #define CTX_border_top_width 	CTX_STRH('b','o','r','d','e','r','-','t','o','p','-','w','i','d')
@@ -140,6 +142,7 @@
 //#define CTX_line_width 	CTX_STRH('l','i','n','e','-','w','i','d','t','h',0,0,0,0)
 #define CTX_link 	CTX_STRH('l','i','n','k',0,0,0,0,0,0,0,0,0,0)
 #define CTX_list_item 	CTX_STRH('l','i','s','t','-','i','t','e','m',0,0,0,0,0)
+#define CTX_list_style	CTX_STRH('l','i','s','t','-','s','t','y','l','e',0,0,0,0)
 #define CTX_lt 	CTX_STRH('l','t',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_ltr 	CTX_STRH('l','t','r',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_magenta 	CTX_STRH('m','a','g','e','n','t','a',0,0,0,0,0,0,0)
@@ -219,6 +222,8 @@
 #define CTX_rtl 	CTX_STRH('r','t','l',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_scale 	CTX_STRH('s','c','a','l','e',0,0,0,0,0,0,0,0,0)
 #define CTX_scroll 	CTX_STRH('s','c','r','o','l','l',0,0,0,0,0,0,0,0)
+#define CTX_sans_serif 	CTX_STRH('s','a','n','s','-','s','e','r','i','f',0,0,0,0)
+#define CTX_serif 	CTX_STRH('s','e','r','i','f',0,0,0,0,0,0,0,0,0)
 #define CTX_sect 	CTX_STRH('s','e','c','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_se_resize 	CTX_STRH('s','e','-','r','e','s','i','z','e',0,0,0,0,0)
 #define CTX_shy 	CTX_STRH('s','h','y',0,0,0,0,0,0,0,0,0,0,0)
@@ -243,6 +248,7 @@
 #define CTX_sw_resize 	CTX_STRH('s','w','-','r','e','s','i','z','e',0,0,0,0,0)
 #define CTX_syntax_highlight 	CTX_STRH('s','y','n','t','a','x','-','h','i','g','h','l','i','g')
 #define CTX_table    	CTX_STRH('t','a','b','l','e',0,0,0,0,0,0,0,0,0)
+#define CTX_table_cell  CTX_STRH('t','a','b','l','e','-','c','e','l','l',0,0,0,0)
 #define CTX_tab_size 	CTX_STRH('t','a','b','-','s','i','z','e',0,0,0,0,0,0)
 #define CTX_td          CTX_STRH('t','d',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_teal        CTX_STRH('t','e','a','l',0,0,0,0,0,0,0,0,0,0)
@@ -254,6 +260,7 @@
 #define CTX_text_stroke_color 	CTX_STRH('t','e','x','t','-','s','t','r','o','k','e','-','c','o')
 #define CTX_text_stroke_width 	CTX_STRH('t','e','x','t','-','s','t','r','o','k','e','-','w','i')
 //#define CTX_top 	CTX_STRH('t','o','p',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_thin        CTX_STRH('t','h','i','n',0,0,0,0,0,0,0,0,0,0)
 #define CTX_tr          CTX_STRH('t','r',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_trade       CTX_STRH('t','r','a','d','e',0,0,0,0,0,0,0,0,0)
 #define CTX_transform   CTX_STRH('t','r','a','n','s','f','o','r','m',0,0,0,0,0)
@@ -276,6 +283,7 @@
 #define CTX_yellow 	CTX_STRH('y','e','l','l','o','w',0,0,0,0,0,0,0,0)
 #define CTX_yen 	CTX_STRH('y','e','n',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_yes 	CTX_STRH('y','e','s',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_z_index	CTX_STRH('z','-','i','n','d','e','x',0,0,0,0,0,0,0)
 #define CTX_zoom_in 	CTX_STRH('z','o','o','m','-','i','n',0,0,0,0,0,0,0)
 #define CTX_zoom_out 	CTX_STRH('z','o','o','m','-','o','u','t',0,0,0,0,0,0)
 

@@ -1854,7 +1854,7 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
   return str_hash;
 }
 
-#define CTX_STRINGPOOL_SIZE 5000  // if we parse svg path data inline
+#define CTX_STRINGPOOL_SIZE 6000  // if we parse svg path data inline
                                   // with a separate parse state we do
                                   // not need this much room.
 
@@ -10799,11 +10799,12 @@ struct
 {
   Ctx       *ctx;
   int        state;
-  uint8_t    holding[1024];
+#define CTX_PARSER_MAXLEN  1024
+  uint8_t    holding[CTX_PARSER_MAXLEN]; /*  */
   int        line; /*  for error reporting */
   int        col;  /*  for error reporting */
   int        pos;
-  float      numbers[12]; /* used by svg parser */
+  float      numbers[12];
   int        n_numbers;
   int        decimal;
   CtxCode    command;
@@ -10813,13 +10814,11 @@ struct
   int        color_components;
   int        color_model; // 1 gray 3 rgb 4 cmyk
   float      left_margin; // set by last user provided move_to
-  // before text, used by newlines
-
-  int        width;   // <- maybe should be float
+  int        width;       // <- maybe should be float
   int        height;
   float      cell_width;
   float      cell_height;
-  int        cursor_x; // <- leaking in from terminal
+  int        cursor_x;    // <- leaking in from terminal
   int        cursor_y;
 
   void (*exit) (void *exit_data);
@@ -11028,8 +11027,9 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
         {
 #define CTX_ENABLE_DEFUN 1
 #if CTX_ENABLE_DEFUN
-#define CTX_function CTX_STRH('f','u','n','c','t','o','n',0,0,0,0,0,0,0)
+#define CTX_function CTX_STRH('f','u','n','c','t','i','o','n',0,0,0,0,0,0)
 #define CTX_endfun CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
+
           case CTX_function:
             ret = CTX_FUNCTION;
             break;
