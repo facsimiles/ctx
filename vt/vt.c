@@ -355,6 +355,7 @@ typedef struct GfxState
 
 struct _VT
 {
+  unsigned char buf[BUFSIZ]; // need one per vt
   int       lastx;
   int       lasty;
   char     *title;
@@ -4211,11 +4212,11 @@ static void vt_state_neutral (VT *vt, int byte)
     }
 }
 
-static unsigned char buf[BUFSIZ];
+
 
 int vt_poll (VT *vt, int timeout)
 {
-  int read_size = sizeof (buf);
+  int read_size = sizeof (vt->buf);
   int got_data = 0;
   int remaining_chars = 1024 * 1024;
   int len = 0;
@@ -4237,9 +4238,9 @@ int vt_poll (VT *vt, int timeout)
          remaining_chars > 0 &&
          vt_waitdata (vt, timeout) )
     {
-      len = vt_read (vt, buf, read_size);
+      len = vt_read (vt, vt->buf, read_size);
       for (int i = 0; i < len; i++)
-        { vt->state (vt, buf[i]); }
+        { vt->state (vt, vt->buf[i]); }
       got_data+=len;
       remaining_chars -= len;
       timeout -= 10;
