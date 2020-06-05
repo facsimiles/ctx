@@ -21,12 +21,14 @@ CtxClient {
   VT *vt;
   SDL_Texture  *texture;
   uint8_t      *pixels;
+  char         *title;
   int           x;
   int           y;
   int           vt_width;
   int           vt_height;
   int           do_quit;
   long          drawn_rev;
+  int           id;
 }CtxClient;
 
 int   do_quit      = 0;
@@ -60,12 +62,14 @@ void sdl_setup (int width, int height)
 
 void add_client (const char *commandline, int x, int y, int width, int height)
 {
+  static int global_id = 0;
+  clients[client_pos].id = global_id++;
   clients[client_pos].x = x;
   clients[client_pos].y = y;
 
   clients[client_pos].vt_width = width;//( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
   clients[client_pos].vt_height = height;//font_size * DEFAULT_ROWS;
-  clients[client_pos].vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
+  clients[client_pos].vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing, clients[client_pos].id);
   clients[client_pos].texture = SDL_CreateTexture (renderer,
                                    SDL_PIXELFORMAT_ARGB8888,
                                    SDL_TEXTUREACCESS_STREAMING,
@@ -74,10 +78,6 @@ void add_client (const char *commandline, int x, int y, int width, int height)
   client_pos++;
 }
 
-void terminal_set_title (const char *new_title)
-{
-  SDL_SetWindowTitle (window, new_title);
-}
 
 extern float ctx_shape_cache_rate;
 
@@ -97,6 +97,14 @@ static int find_active (int x, int y)
   return ret;
 }
 
+int id_to_no (int id)
+{
+  for (int i = 0 ;i < client_pos; i++)
+          if (clients[i].id == id)
+                  return i;
+  return -1;
+}
+
 void remove_client (int no)
 {
   vt_destroy (clients[no].vt);
@@ -108,6 +116,23 @@ void remove_client (int no)
   if (client_pos == 0)
     do_quit = 1;
   find_active (last_x, last_y);
+}
+
+void remove_client_by_id (int id)
+{
+  int no = id_to_no (id);
+  if (no>=0)
+    remove_client (no);
+}
+
+void terminal_set_title (int id, const char *new_title)
+{
+  int no = id_to_no (id);
+  if (no < 0) return;
+  if (clients[no].title) free (clients[no].title);
+  clients[no].title = strdup (new_title);
+  if (client_pos == 1)
+    SDL_SetWindowTitle (window, new_title);
 }
 
 static void handle_event (const char *event)
@@ -164,8 +189,18 @@ static void handle_event (const char *event)
 static int key_balance = 0;
 static int key_repeat = 0;
 
-int client_resize (int no, int width, int height)
+void client_move (int id, int x, int y)
 {
+   int no = id_to_no (id);
+   if (no < 0) return;
+   clients[no].x = x;
+   clients[no].y = y;
+}
+
+int client_resize (int id, int width, int height)
+{
+   int no = id_to_no (id);
+   if (no < 0) return 0;
    if ( (height != clients[no].vt_height) || (width != clients[no].vt_width) )
    {
      SDL_DestroyTexture (clients[no].texture);
@@ -188,8 +223,6 @@ static int sdl_check_events ()
   int got_event = 0;
   static SDL_Event      event;
   VT *vt = clients[active].vt;
-  //int vt_width = clients[active].vt_width;
-  //int vt_height = clients[active].vt_height;
   if (SDL_WaitEventTimeout (&event, 15) )
     do
       {
@@ -209,7 +242,7 @@ static int sdl_check_events ()
                     int height = event.window.data2;
                     //        host->stride = host->width * host->bpp;
                     got_event = 1;
-                    if (client_resize (0, width, height))
+                    if (client_resize (clients[0].id, width, height))
                         return 1;
                   }
 #endif

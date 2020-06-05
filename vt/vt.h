@@ -1,7 +1,7 @@
 
 typedef struct _VT VT;
 
-VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing);
+VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing, int id);
 
 void vt_open_log (VT *vt, const char *path);
 

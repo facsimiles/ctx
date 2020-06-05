@@ -355,6 +355,7 @@ typedef struct GfxState
 
 struct _VT
 {
+  int       id;
   unsigned char buf[BUFSIZ]; // need one per vt
   int       lastx;
   int       lasty;
@@ -634,7 +635,7 @@ long vt_rev (VT *vt)
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
 
-void terminal_set_title (const char *new_title);
+void terminal_set_title (int id, const char *new_title);
 
 static void vt_set_title (VT *vt, const char *new_title)
 {
@@ -642,7 +643,7 @@ static void vt_set_title (VT *vt, const char *new_title)
   if (vt->title)
     { free (vt->title); }
   vt->title = strdup (new_title);
-  terminal_set_title (vt->title);
+  terminal_set_title (vt->id, vt->title);
 }
 
 const char *vt_get_title (VT *vt)
@@ -833,9 +834,10 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
   vt_cell_cache_clear (vt);
 }
 
-VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing)
+VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing, int id)
 {
   VT *vt         = calloc (sizeof (VT), 1);
+  vt->id = id;
   vt->lastx = -1;
   vt->lasty = -1;
   vt->state         = vt_state_neutral;
