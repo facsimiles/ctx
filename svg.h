@@ -1,11 +1,3 @@
-/* other important maximums */
-#define MRG_MAX_BINDINGS         256
-#define MRG_MAX_TEXT_LISTEN      256
-
-
-
-
-
 #define MRG_MAX_STYLE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_STATE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_FLOATS           8
@@ -15,6 +7,9 @@
 #define MRG_MAX_CSS_RULELEN      32   // XXX doesnt have overflow protection
 #define MRG_MAX_CSS_RULES        128
 
+/* other important maximums */
+#define MRG_MAX_BINDINGS         256
+#define MRG_MAX_TEXT_LISTEN      256
 
 #define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
 #define PROPS(a)         (ctx_get_string(mrg->ctx, CTX_##a))
@@ -284,293 +279,6 @@
 #define CTX_zoom_in 	CTX_STRH('z','o','o','m','-','i','n',0,0,0,0,0,0,0)
 #define CTX_zoom_out 	CTX_STRH('z','o','o','m','-','o','u','t',0,0,0,0,0,0)
 
-/*
- * Copyright (c) 2002, 2003, Øyvind Kolås <pippin@hodefoting.com>
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- */
-
-#ifndef XMLTOK_H
-#define XMLTOK_H
-
-#include <stdio.h>
-
-#define inbufsize 4096
-
-typedef struct _Mrg Mrg;
-
-typedef struct _MrgXml MrgXml;
-
-enum
-{
-  t_none = 0,
-  t_whitespace,
-  t_prolog,
-  t_dtd,
-  t_comment,
-  t_word,
-  t_tag,
-  t_closetag,
-  t_closeemptytag,
-  t_endtag,
-  t_att = 10,
-  t_val,
-  t_eof,
-  t_entity,
-  t_error
-};
-
-MrgXml *xmltok_new (FILE * file_in);
-MrgXml *xmltok_buf_new (char *membuf);
-void    xmltok_free (MrgXml *t);
-int     xmltok_lineno (MrgXml *t);
-int     xmltok_get (MrgXml *t, char **data, int *pos);
-
-#endif /*XMLTOK_H */
-
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
-
-
-/* mrg - MicroRaptor Gui
- * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
- */
-
-#ifndef MRG_STRING_H
-#define MRG_STRING_H
-
-typedef struct _MrgString MrgString;
-
-struct _MrgString
-{
-  char *str;
-  int   length;
-  int   utf8_length;
-  int   allocated_length;
-}  __attribute((packed));
-
-MrgString   *mrg_string_new_with_size  (const char *initial, int initial_size);
-MrgString   *mrg_string_new            (const char *initial);
-MrgString   *mrg_string_new_printf     (const char *format, ...);
-void         mrg_string_free           (MrgString  *string, int freealloc);
-char        *mrg_string_dissolve       (MrgString  *string);
-const char  *mrg_string_get            (MrgString  *string);
-int          mrg_string_get_length     (MrgString  *string);
-int          mrg_string_get_utf8_length (MrgString  *string);
-void         mrg_string_set            (MrgString  *string, const char *new_string);
-void         mrg_string_clear          (MrgString  *string);
-void         mrg_string_append_str     (MrgString  *string, const char *str);
-void         mrg_string_append_byte    (MrgString  *string, char  val);
-void         mrg_string_append_string  (MrgString  *string, MrgString *string2);
-void         mrg_string_append_data    (MrgString  *string, const char *data, int len);
-void         mrg_string_append_printf  (MrgString  *string, const char *format, ...);
-
-
-/* mrg - MicroRaptor Gui
- * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
- */
-
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-static void mrg_string_init (MrgString *string, int initial_size)
-{
-  string->allocated_length = initial_size;
-  string->length = 0;
-  string->utf8_length = 0;
-  string->str = malloc (string->allocated_length);
-  string->str[0]='\0';
-}
-
-static void mrg_string_destroy (MrgString *string)
-{
-  if (string->str)
-  {
-    free (string->str);
-    string->str = NULL;
-  }
-}
-
-void mrg_string_clear (MrgString *string)
-{
-  string->length = 0;
-  string->utf8_length = 0;
-  string->str[string->length]=0;
-}
-
-static inline void _mrg_string_append_byte (MrgString *string, char  val)
-{
-  if ((val & 0xC0) != 0x80)
-    string->utf8_length++;
-  if (string->length + 1 >= string->allocated_length)
-    {
-      char *old = string->str;
-      string->allocated_length *= 2;
-      string->str = malloc (string->allocated_length);
-      memcpy (string->str, old, string->allocated_length/2);
-      free (old);
-    }
-  string->str[string->length++] = val;
-  string->str[string->length] = '\0';
-}
-void mrg_string_append_byte (MrgString *string, char  val)
-{
-  _mrg_string_append_byte (string, val);
-}
-
-static inline void _mrg_string_append_str (MrgString *string, const char *str)
-{
-  if (!str) return;
-  while (*str)
-    {
-      _mrg_string_append_byte (string, *str);
-      str++;
-    }
-}
-void mrg_string_append_str (MrgString *string, const char *str)
-{
-  _mrg_string_append_str (string, str);
-}
-
-MrgString *mrg_string_new_with_size (const char *initial, int initial_size)
-{
-  MrgString *string = calloc (sizeof (MrgString), 1);
-  mrg_string_init (string, initial_size);
-  if (initial)
-    _mrg_string_append_str (string, initial);
-  return string;
-}
-
-MrgString *mrg_string_new (const char *initial)
-{
-  return mrg_string_new_with_size (initial, 8);
-}
-
-void mrg_string_append_data (MrgString *string, const char *str, int len)
-{
-  int i;
-  for (i = 0; i<len; i++)
-    _mrg_string_append_byte (string, str[i]);
-}
-
-void mrg_string_append_string (MrgString *string, MrgString *string2)
-{
-  const char *str = mrg_string_get (string2);
-  while (str && *str)
-    {
-      _mrg_string_append_byte (string, *str);
-      str++;
-    }
-}
-const char *mrg_string_get (MrgString *string)
-{
-  return string->str;
-}
-int mrg_string_get_length (MrgString *string)
-{
-  return string->length;
-}
-
-/* dissolving a string, means destroying it, but returning
- * the string, that should be manually freed.
- */
-char *mrg_string_dissolve   (MrgString *string)
-{
-  char *ret = string->str;
-  string->str = NULL;
-  free (string);
-  return ret;
-}
-
-void
-mrg_string_free (MrgString *string, int freealloc)
-{
-  if (freealloc)
-    {
-      mrg_string_destroy (string);
-    }
-  free (string);
-}
-
-void
-mrg_string_append_printf (MrgString *string, const char *format, ...)
-{
-  va_list ap;
-  size_t needed;
-  char  *buffer;
-  va_start(ap, format);
-  needed = vsnprintf(NULL, 0, format, ap) + 1;
-  buffer = malloc(needed);
-  va_end (ap);
-  va_start(ap, format);
-  vsnprintf(buffer, needed, format, ap);
-  va_end (ap);
-  _mrg_string_append_str (string, buffer);
-  free (buffer);
-}
-
-MrgString *mrg_string_new_printf (const char *format, ...)
-{
-  MrgString *string = mrg_string_new_with_size ("", 8);
-  va_list ap;
-  size_t needed;
-  char  *buffer;
-  va_start(ap, format);
-  needed = vsnprintf(NULL, 0, format, ap) + 1;
-  buffer = malloc(needed);
-  va_end (ap);
-  va_start(ap, format);
-  vsnprintf(buffer, needed, format, ap);
-  va_end (ap);
-  _mrg_string_append_str (string, buffer);
-  free (buffer);
-  return string;
-}
-
-void
-mrg_string_set (MrgString *string, const char *new_string)
-{
-  mrg_string_clear (string);
-  _mrg_string_append_str (string, new_string);
-}
-
 #ifndef __MRG_LIST__
 #define  __MRG_LIST__
 
@@ -790,12 +498,6 @@ const char * mrg_intern_string (const char *str)
   return str;
 }
 
-int mrg_string_get_utf8_length (MrgString  *string)
-{
-  //return ctx_utf8_strlen (string->str);
-  return string->utf8_length;
-}
-
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -804,6 +506,545 @@ int mrg_string_get_utf8_length (MrgString  *string)
 #endif
 
 #endif
+
+
+
+/* mrg - MicroRaptor Gui
+ * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
+ * 
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <string.h>
+#include <math.h>
+
+typedef enum _MrgType MrgType;
+enum _MrgType {
+  MRG_PRESS          = 1 << 0,
+  MRG_MOTION         = 1 << 1,
+  MRG_RELEASE        = 1 << 2,
+  MRG_ENTER          = 1 << 3,
+  MRG_LEAVE          = 1 << 4,
+  MRG_TAP            = 1 << 5,
+  MRG_TAP_AND_HOLD   = 1 << 6,
+
+  /* NYI: SWIPE, ZOOM ROT_ZOOM, */
+
+  MRG_DRAG_PRESS     = 1 << 7,
+  MRG_DRAG_MOTION    = 1 << 8,
+  MRG_DRAG_RELEASE   = 1 << 9,
+  MRG_KEY_DOWN       = 1 << 10,
+  MRG_KEY_UP         = 1 << 11,
+  MRG_SCROLL         = 1 << 12,
+  MRG_MESSAGE        = 1 << 13,
+  MRG_DROP           = 1 << 14,
+
+  /* client should store state - preparing
+                                 * for restart
+                                 */
+
+  MRG_POINTER  = (MRG_PRESS | MRG_MOTION | MRG_RELEASE | MRG_DROP),
+  MRG_TAPS     = (MRG_TAP | MRG_TAP_AND_HOLD),
+  MRG_CROSSING = (MRG_ENTER | MRG_LEAVE),
+  MRG_DRAG     = (MRG_DRAG_PRESS | MRG_DRAG_MOTION | MRG_DRAG_RELEASE),
+  MRG_KEY      = (MRG_KEY_DOWN | MRG_KEY_UP),
+  MRG_MISC     = (MRG_MESSAGE),
+  MRG_ANY      = (MRG_POINTER | MRG_DRAG | MRG_CROSSING | MRG_KEY | MRG_MISC | MRG_TAPS),
+};
+
+#define MRG_CLICK   MRG_PRESS   // SHOULD HAVE MORE LOGIC
+
+
+typedef struct _MrgHtml      MrgHtml; 
+typedef struct _MrgHtmlState MrgHtmlState;
+
+typedef struct _MrgRectangle MrgRectangle;
+struct _MrgRectangle {
+  int x;
+  int y;
+  int width;
+  int height;
+};
+
+typedef enum _MrgModifierState MrgModifierState;
+
+enum _MrgModifierState
+{
+  MRG_MODIFIER_STATE_SHIFT   = (1<<0),
+  MRG_MODIFIER_STATE_CONTROL = (1<<1),
+  MRG_MODIFIER_STATE_ALT     = (1<<2),
+  MRG_MODIFIER_STATE_BUTTON1 = (1<<3),
+  MRG_MODIFIER_STATE_BUTTON2 = (1<<4),
+  MRG_MODIFIER_STATE_BUTTON3 = (1<<5)
+};
+
+typedef enum _MrgScrollDirection MrgScrollDirection;
+enum _MrgScrollDirection
+{
+  MRG_SCROLL_DIRECTION_UP,
+  MRG_SCROLL_DIRECTION_DOWN,
+  MRG_SCROLL_DIRECTION_LEFT,
+  MRG_SCROLL_DIRECTION_RIGHT
+};
+
+typedef struct _MrgEvent MrgEvent;
+typedef struct _Mrg Mrg;
+
+struct _MrgEvent {
+  MrgType  type;
+  Mrg     *mrg;
+  uint32_t time;
+
+  MrgModifierState state;
+
+  int      device_no; /* 0 = left mouse button / virtual focus */
+                      /* 1 = middle mouse button */
+                      /* 2 = right mouse button */
+                      /* 3 = first multi-touch .. (NYI) */
+
+  float   device_x; /* untransformed (device) coordinates  */
+  float   device_y;
+
+  /* coordinates; and deltas for motion/drag events in user-coordinates: */
+  float   x;
+  float   y;
+  float   start_x; /* start-coordinates (press) event for drag, */
+  float   start_y; /*    untransformed coordinates */
+  float   prev_x;  /* previous events coordinates */
+  float   prev_y;
+  float   delta_x; /* x - prev_x, redundant - but often useful */
+  float   delta_y; /* y - prev_y, redundant - ..  */
+
+  MrgScrollDirection scroll_direction;
+
+  unsigned int unicode; /* only valid for key-events */
+
+  const char *string;   /* as key can be "up" "down" "space" "backspace" "a" "b" "ø" etc .. */
+                        /* this is also where the message is delivered for
+                         * MESSAGE events
+                         *
+                         * and the data for drop events are delivered
+                         */
+  int stop_propagate; /* */
+};
+
+typedef void (*MrgCb) (MrgEvent *event,
+                       void     *data,
+                       void     *data2);
+
+typedef struct MrgItemCb {
+  MrgType types;
+  MrgCb   cb;
+  void*   data1;
+  void*   data2;
+
+  void (*finalize) (void *data1, void *data2, void *finalize_data);
+  void  *finalize_data;
+
+} MrgItemCb;
+
+typedef struct MrgItem {
+  CtxMatrix inv_matrix;  /* for event coordinate transforms */
+
+  /* bounding box */
+  float          x0;
+  float          y0;
+  float          x1;
+  float          y1;
+
+  void *path;
+  double          path_hash;
+
+  MrgType   types; /* all cb's ored together */
+  MrgItemCb cb[MRG_MAX_CBS];
+  int       cb_count;
+
+  int       ref_count;
+} MrgItem;
+
+typedef struct _MrgStyleNode MrgStyleNode;
+typedef struct _MrgHtmlState MrgHtmlState;
+
+#define MRG_STYLE_MAX_CLASSES 8
+#define MRG_STYLE_MAX_PSEUDO  8
+
+struct _MrgStyleNode
+{
+  int         is_direct_parent; /* for use in selector chains with > */
+  const char *id;
+  const char *element;
+  const char *classes[MRG_STYLE_MAX_CLASSES];
+  const char *pseudo[MRG_STYLE_MAX_PSEUDO];
+};
+
+typedef enum {
+  MRG_FLOAT_NONE = 0,
+  MRG_FLOAT_LEFT,
+  MRG_FLOAT_RIGHT,
+  MRG_FLOAT_FIXED
+} MrgFloat;
+
+
+typedef struct MrgFloatData {
+  MrgFloat  type;
+  float     x;
+  float     y;
+  float     width;
+  float     height;
+} MrgFloatData;
+
+
+struct _MrgHtmlState
+{
+  float        original_x;
+  float        original_y;
+  float        block_start_x;
+  float        block_start_y;
+  float        ptly;
+  float        vmarg;
+  MrgFloatData float_data[MRG_MAX_FLOATS];
+  int          floats;
+};
+
+#define MRG_MAX_DEVICES 16
+
+typedef void (*MrgDestroyNotify) (void *data);
+typedef void (*MrgNewText)       (const char *new_text, void *data);
+typedef void (*UiRenderFun)      (Mrg *mrg, void *ui_data);
+
+typedef struct MrgBinding {
+  char *nick;
+  char *command;
+  char *label;
+  MrgCb cb;
+  void *cb_data;
+  MrgDestroyNotify destroy_notify;
+  void  *destroy_data;
+} MrgBinding;
+
+struct _MrgHtml
+{
+  Mrg *mrg;
+  int foo;
+  MrgHtmlState  states[MRG_MAX_STYLE_DEPTH];
+  MrgHtmlState *state;
+  int state_no;
+  MrgList *geo_cache;
+
+  //char  attribute[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_ATTRIBUTE_LEN];
+  //char  value[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_VALUE_LEN];
+  //int   attributes;
+};
+
+
+typedef struct _MrgGeoCache MrgGeoCache;
+struct _MrgGeoCache
+{
+  void *id_ptr;
+  float height;
+  float width;
+  int   hover;
+  int gen;
+};
+
+/////////////////////////
+
+/*
+ * Copyright (c) 2002, 2003, Øyvind Kolås <pippin@hodefoting.com>
+ * 
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ */
+
+#ifndef XMLTOK_H
+#define XMLTOK_H
+
+#include <stdio.h>
+
+#define inbufsize 4096
+
+typedef struct _Mrg Mrg;
+
+typedef struct _MrgXml MrgXml;
+
+enum
+{
+  t_none = 0,
+  t_whitespace,
+  t_prolog,
+  t_dtd,
+  t_comment,
+  t_word,
+  t_tag,
+  t_closetag,
+  t_closeemptytag,
+  t_endtag,
+  t_att = 10,
+  t_val,
+  t_eof,
+  t_entity,
+  t_error
+};
+
+MrgXml *xmltok_new (FILE * file_in);
+MrgXml *xmltok_buf_new (char *membuf);
+void    xmltok_free (MrgXml *t);
+int     xmltok_lineno (MrgXml *t);
+int     xmltok_get (MrgXml *t, char **data, int *pos);
+
+#endif /*XMLTOK_H */
+
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+
+
+/* mrg - MicroRaptor Gui
+ * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
+ * 
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef MRG_STRING_H
+#define MRG_STRING_H
+
+typedef struct _MrgString MrgString;
+
+struct _MrgString
+{
+  char *str;
+  int   length;
+  int   utf8_length;
+  int   allocated_length;
+}  __attribute((packed));
+
+MrgString   *mrg_string_new_with_size  (const char *initial, int initial_size);
+MrgString   *mrg_string_new            (const char *initial);
+MrgString   *mrg_string_new_printf     (const char *format, ...);
+void         mrg_string_free           (MrgString  *string, int freealloc);
+char        *mrg_string_dissolve       (MrgString  *string);
+const char  *mrg_string_get            (MrgString  *string);
+int          mrg_string_get_length     (MrgString  *string);
+void         mrg_string_set            (MrgString  *string, const char *new_string);
+void         mrg_string_clear          (MrgString  *string);
+void         mrg_string_append_str     (MrgString  *string, const char *str);
+void         mrg_string_append_byte    (MrgString  *string, char  val);
+void         mrg_string_append_string  (MrgString  *string, MrgString *string2);
+void         mrg_string_append_data    (MrgString  *string, const char *data, int len);
+void         mrg_string_append_printf  (MrgString  *string, const char *format, ...);
+
+
+/* mrg - MicroRaptor Gui
+ * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static void mrg_string_init (MrgString *string, int initial_size)
+{
+  string->allocated_length = initial_size;
+  string->length = 0;
+  string->utf8_length = 0;
+  string->str = malloc (string->allocated_length);
+  string->str[0]='\0';
+}
+
+static void mrg_string_destroy (MrgString *string)
+{
+  if (string->str)
+  {
+    free (string->str);
+    string->str = NULL;
+  }
+}
+
+void mrg_string_clear (MrgString *string)
+{
+  string->length = 0;
+  string->utf8_length = 0;
+  string->str[string->length]=0;
+}
+
+static inline void _mrg_string_append_byte (MrgString *string, char  val)
+{
+  if ((val & 0xC0) != 0x80)
+    string->utf8_length++;
+  if (string->length + 1 >= string->allocated_length)
+    {
+      char *old = string->str;
+      string->allocated_length *= 2;
+      string->str = malloc (string->allocated_length);
+      memcpy (string->str, old, string->allocated_length/2);
+      free (old);
+    }
+  string->str[string->length++] = val;
+  string->str[string->length] = '\0';
+}
+void mrg_string_append_byte (MrgString *string, char  val)
+{
+  _mrg_string_append_byte (string, val);
+}
+
+static inline void _mrg_string_append_str (MrgString *string, const char *str)
+{
+  if (!str) return;
+  while (*str)
+    {
+      _mrg_string_append_byte (string, *str);
+      str++;
+    }
+}
+void mrg_string_append_str (MrgString *string, const char *str)
+{
+  _mrg_string_append_str (string, str);
+}
+
+MrgString *mrg_string_new_with_size (const char *initial, int initial_size)
+{
+  MrgString *string = calloc (sizeof (MrgString), 1);
+  mrg_string_init (string, initial_size);
+  if (initial)
+    _mrg_string_append_str (string, initial);
+  return string;
+}
+
+MrgString *mrg_string_new (const char *initial)
+{
+  return mrg_string_new_with_size (initial, 8);
+}
+
+void mrg_string_append_data (MrgString *string, const char *str, int len)
+{
+  int i;
+  for (i = 0; i<len; i++)
+    _mrg_string_append_byte (string, str[i]);
+}
+
+void mrg_string_append_string (MrgString *string, MrgString *string2)
+{
+  const char *str = mrg_string_get (string2);
+  while (str && *str)
+    {
+      _mrg_string_append_byte (string, *str);
+      str++;
+    }
+}
+const char *mrg_string_get (MrgString *string)
+{
+  return string->str;
+}
+int mrg_string_get_length (MrgString *string)
+{
+  return string->length;
+}
+
+/* dissolving a string, means destroying it, but returning
+ * the string, that should be manually freed.
+ */
+char *mrg_string_dissolve   (MrgString *string)
+{
+  char *ret = string->str;
+  string->str = NULL;
+  free (string);
+  return ret;
+}
+
+void
+mrg_string_free (MrgString *string, int freealloc)
+{
+  if (freealloc)
+    {
+      mrg_string_destroy (string);
+    }
+  free (string);
+}
+
+void
+mrg_string_append_printf (MrgString *string, const char *format, ...)
+{
+  va_list ap;
+  size_t needed;
+  char  *buffer;
+  va_start(ap, format);
+  needed = vsnprintf(NULL, 0, format, ap) + 1;
+  buffer = malloc(needed);
+  va_end (ap);
+  va_start(ap, format);
+  vsnprintf(buffer, needed, format, ap);
+  va_end (ap);
+  _mrg_string_append_str (string, buffer);
+  free (buffer);
+}
+
+MrgString *mrg_string_new_printf (const char *format, ...)
+{
+  MrgString *string = mrg_string_new_with_size ("", 8);
+  va_list ap;
+  size_t needed;
+  char  *buffer;
+  va_start(ap, format);
+  needed = vsnprintf(NULL, 0, format, ap) + 1;
+  buffer = malloc(needed);
+  va_end (ap);
+  va_start(ap, format);
+  vsnprintf(buffer, needed, format, ap);
+  va_end (ap);
+  _mrg_string_append_str (string, buffer);
+  free (buffer);
+  return string;
+}
+
+void
+mrg_string_set (MrgString *string, const char *new_string)
+{
+  mrg_string_clear (string);
+  _mrg_string_append_str (string, new_string);
+}
 
 struct _MrgXml
 {
@@ -1258,254 +1499,8 @@ xmltok_lineno (MrgXml *t)
 }
 
 
-/* mrg - MicroRaptor Gui
- * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
- */
-
-#include <string.h>
-#include <math.h>
-
-typedef enum _MrgType MrgType;
-enum _MrgType {
-  MRG_PRESS          = 1 << 0,
-  MRG_MOTION         = 1 << 1,
-  MRG_RELEASE        = 1 << 2,
-  MRG_ENTER          = 1 << 3,
-  MRG_LEAVE          = 1 << 4,
-  MRG_TAP            = 1 << 5,
-  MRG_TAP_AND_HOLD   = 1 << 6,
-
-  /* NYI: SWIPE, ZOOM ROT_ZOOM, */
-
-  MRG_DRAG_PRESS     = 1 << 7,
-  MRG_DRAG_MOTION    = 1 << 8,
-  MRG_DRAG_RELEASE   = 1 << 9,
-  MRG_KEY_DOWN       = 1 << 10,
-  MRG_KEY_UP         = 1 << 11,
-  MRG_SCROLL         = 1 << 12,
-  MRG_MESSAGE        = 1 << 13,
-  MRG_DROP           = 1 << 14,
-
-  /* client should store state - preparing
-                                 * for restart
-                                 */
-
-  MRG_POINTER  = (MRG_PRESS | MRG_MOTION | MRG_RELEASE | MRG_DROP),
-  MRG_TAPS     = (MRG_TAP | MRG_TAP_AND_HOLD),
-  MRG_CROSSING = (MRG_ENTER | MRG_LEAVE),
-  MRG_DRAG     = (MRG_DRAG_PRESS | MRG_DRAG_MOTION | MRG_DRAG_RELEASE),
-  MRG_KEY      = (MRG_KEY_DOWN | MRG_KEY_UP),
-  MRG_MISC     = (MRG_MESSAGE),
-  MRG_ANY      = (MRG_POINTER | MRG_DRAG | MRG_CROSSING | MRG_KEY | MRG_MISC | MRG_TAPS),
-};
-
-#define MRG_CLICK   MRG_PRESS   // SHOULD HAVE MORE LOGIC
 
 
-typedef struct _MrgHtml      MrgHtml; 
-typedef struct _MrgHtmlState MrgHtmlState;
-
-typedef struct _MrgRectangle MrgRectangle;
-struct _MrgRectangle {
-  int x;
-  int y;
-  int width;
-  int height;
-};
-
-typedef enum _MrgModifierState MrgModifierState;
-
-enum _MrgModifierState
-{
-  MRG_MODIFIER_STATE_SHIFT   = (1<<0),
-  MRG_MODIFIER_STATE_CONTROL = (1<<1),
-  MRG_MODIFIER_STATE_ALT     = (1<<2),
-  MRG_MODIFIER_STATE_BUTTON1 = (1<<3),
-  MRG_MODIFIER_STATE_BUTTON2 = (1<<4),
-  MRG_MODIFIER_STATE_BUTTON3 = (1<<5)
-};
-
-typedef enum _MrgScrollDirection MrgScrollDirection;
-enum _MrgScrollDirection
-{
-  MRG_SCROLL_DIRECTION_UP,
-  MRG_SCROLL_DIRECTION_DOWN,
-  MRG_SCROLL_DIRECTION_LEFT,
-  MRG_SCROLL_DIRECTION_RIGHT
-};
-
-typedef struct _MrgEvent MrgEvent;
-typedef struct _Mrg Mrg;
-
-struct _MrgEvent {
-  MrgType  type;
-  Mrg     *mrg;
-  uint32_t time;
-
-  MrgModifierState state;
-
-  int      device_no; /* 0 = left mouse button / virtual focus */
-                      /* 1 = middle mouse button */
-                      /* 2 = right mouse button */
-                      /* 3 = first multi-touch .. (NYI) */
-
-  float   device_x; /* untransformed (device) coordinates  */
-  float   device_y;
-
-  /* coordinates; and deltas for motion/drag events in user-coordinates: */
-  float   x;
-  float   y;
-  float   start_x; /* start-coordinates (press) event for drag, */
-  float   start_y; /*    untransformed coordinates */
-  float   prev_x;  /* previous events coordinates */
-  float   prev_y;
-  float   delta_x; /* x - prev_x, redundant - but often useful */
-  float   delta_y; /* y - prev_y, redundant - ..  */
-
-  MrgScrollDirection scroll_direction;
-
-  unsigned int unicode; /* only valid for key-events */
-
-  const char *string;   /* as key can be "up" "down" "space" "backspace" "a" "b" "ø" etc .. */
-                        /* this is also where the message is delivered for
-                         * MESSAGE events
-                         *
-                         * and the data for drop events are delivered
-                         */
-  int stop_propagate; /* */
-};
-
-typedef void (*MrgCb) (MrgEvent *event,
-                       void     *data,
-                       void     *data2);
-
-typedef struct MrgItemCb {
-  MrgType types;
-  MrgCb   cb;
-  void*   data1;
-  void*   data2;
-
-  void (*finalize) (void *data1, void *data2, void *finalize_data);
-  void  *finalize_data;
-
-} MrgItemCb;
-
-typedef struct MrgItem {
-  CtxMatrix inv_matrix;  /* for event coordinate transforms */
-
-  /* bounding box */
-  float          x0;
-  float          y0;
-  float          x1;
-  float          y1;
-
-  void *path;
-  double          path_hash;
-
-  MrgType   types; /* all cb's ored together */
-  MrgItemCb cb[MRG_MAX_CBS];
-  int       cb_count;
-
-  int       ref_count;
-} MrgItem;
-
-typedef struct _MrgStyleNode MrgStyleNode;
-typedef struct _MrgHtmlState MrgHtmlState;
-
-#define MRG_STYLE_MAX_CLASSES 8
-#define MRG_STYLE_MAX_PSEUDO  8
-
-struct _MrgStyleNode
-{
-  int         is_direct_parent; /* for use in selector chains with > */
-  const char *id;
-  const char *element;
-  const char *classes[MRG_STYLE_MAX_CLASSES];
-  const char *pseudo[MRG_STYLE_MAX_PSEUDO];
-};
-
-typedef enum {
-  MRG_FLOAT_NONE = 0,
-  MRG_FLOAT_LEFT,
-  MRG_FLOAT_RIGHT,
-  MRG_FLOAT_FIXED
-} MrgFloat;
-
-
-typedef struct MrgFloatData {
-  MrgFloat  type;
-  float     x;
-  float     y;
-  float     width;
-  float     height;
-} MrgFloatData;
-
-
-struct _MrgHtmlState
-{
-  float        original_x;
-  float        original_y;
-  float        block_start_x;
-  float        block_start_y;
-  float        ptly;
-  float        vmarg;
-  MrgFloatData float_data[MRG_MAX_FLOATS];
-  int          floats;
-};
-
-#define MRG_MAX_DEVICES 16
-
-typedef void (*MrgDestroyNotify) (void *data);
-typedef void (*MrgNewText)       (const char *new_text, void *data);
-typedef void (*UiRenderFun)      (Mrg *mrg, void *ui_data);
-
-typedef struct MrgBinding {
-  char *nick;
-  char *command;
-  char *label;
-  MrgCb cb;
-  void *cb_data;
-  MrgDestroyNotify destroy_notify;
-  void  *destroy_data;
-} MrgBinding;
-
-struct _MrgHtml
-{
-  Mrg *mrg;
-  int foo;
-  MrgHtmlState  states[MRG_MAX_STYLE_DEPTH];
-  MrgHtmlState *state;
-  int state_no;
-  MrgList *geo_cache;
-
-  //char  attribute[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_ATTRIBUTE_LEN];
-  //char  value[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_VALUE_LEN];
-  //int   attributes;
-};
-
-
-typedef struct _MrgGeoCache MrgGeoCache;
-struct _MrgGeoCache
-{
-  void *id_ptr;
-  float height;
-  float width;
-  int   hover;
-  int gen;
-};
 
 static void
 _mrg_draw_background_increment (Mrg *mrg, void *data, int last);
@@ -3112,6 +3107,8 @@ void mrg_start_with_style (Mrg        *mrg,
                            const char *style)
 {
   mrg->states[mrg->state_no].children++;
+  if (mrg->state_no+1 >= CTX_MAX_STATES)
+          return;
   mrg->state_no++;
   mrg->state = &mrg->states[mrg->state_no];
   *mrg->state = mrg->states[mrg->state_no-1];
@@ -8055,7 +8052,7 @@ void mrg_xml_render (Mrg *mrg,
         break;
       case t_tag:
         //htmlctx->attributes = 0;
-        ctx_save (mrg->ctx);
+        //ctx_save (mrg->ctx);
         tagpos = pos;
         mrg_string_clear (style);
         break;
@@ -8119,19 +8116,19 @@ void mrg_xml_render (Mrg *mrg,
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
           mrg_end (mrg);
-        ctx_restore (mrg->ctx);
+        //ctx_restore (mrg->ctx);
           depth--;
           mrg_end (mrg);
-        ctx_restore (mrg->ctx);
+        //ctx_restore (mrg->ctx);
           depth--;
         }
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
           mrg_end (mrg);
-        ctx_restore (mrg->ctx);
+        //ctx_restore (mrg->ctx);
           depth--;
           mrg_end (mrg);
-        ctx_restore (mrg->ctx);
+        //ctx_restore (mrg->ctx);
           depth--;
         }
         else if (depth && ((data_hash == CTX_dd && tag[depth-1] == CTX_dt) ||
@@ -8143,7 +8140,7 @@ void mrg_xml_render (Mrg *mrg,
                       (data_hash == CTX_p &&  tag[depth-1] == CTX_p)))
         {
           mrg_end (mrg);
-        ctx_restore (mrg->ctx);
+        //ctx_restore (mrg->ctx);
           depth--;
         }
 
@@ -8313,7 +8310,7 @@ void mrg_xml_render (Mrg *mrg,
           case CTX_hr:
             should_be_empty = 1;
             mrg_end (mrg);
-            ctx_restore (mrg->ctx);
+            //ctx_restore (mrg->ctx);
             depth--;
         }
 #endif
@@ -8331,7 +8328,7 @@ void mrg_xml_render (Mrg *mrg,
           }
           in_style = 0;
           mrg_end (mrg);
-          ctx_restore (mrg->ctx);
+          //ctx_restore (mrg->ctx);
           depth--;
 
           if (tag[depth] != data_hash)
@@ -8339,13 +8336,13 @@ void mrg_xml_render (Mrg *mrg,
             if (tag[depth] == CTX_p)
             {
               mrg_end (mrg);
-              ctx_restore (mrg->ctx);
+              //ctx_restore (mrg->ctx);
               depth --;
             } else 
             if (depth > 0 && tag[depth-1] == data_hash)
             {
               mrg_end (mrg);
-              ctx_restore (mrg->ctx);
+              //ctx_restore (mrg->ctx);
               depth --;
             }
             else if (depth > 1 && tag[depth-2] == data_hash)
@@ -8355,7 +8352,7 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth --;
                 mrg_end (mrg);
-                ctx_restore (mrg->ctx);
+                //nctx_restore (mrg->ctx);
               }
             }
 #if 0
@@ -8368,7 +8365,7 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth --;
                 mrg_end (mrg);
-                ctx_restore (mrg->ctx);
+               // ctx_restore (mrg->ctx);
               }
             }
             else if (depth > 3 && tag[depth-3] == data_hash)
@@ -8380,7 +8377,7 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth --;
                 mrg_end (mrg);
-                ctx_restore (mrg->ctx);
+                //ctx_restore (mrg->ctx);
               }
             }
             else if (depth > 4 && tag[depth-5] == data_hash)
@@ -8392,7 +8389,7 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth --;
                 mrg_end (mrg);
-                ctx_restore (mrg->ctx);
+                //ctx_restore (mrg->ctx);
               }
             }
 #endif
@@ -8402,16 +8399,16 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth--;
                 mrg_end (mrg);
-                ctx_restore (mrg->ctx);
+                //ctx_restore (mrg->ctx);
                 depth--;
                 mrg_end (mrg);
-                ctx_restore (mrg->ctx);
+                //ctx_restore (mrg->ctx);
               }
               else if (data_hash == CTX_table && tag[depth] == CTX_tr)
               {
                 depth--;
                 mrg_end (mrg);
-                ctx_restore (mrg->ctx);
+                //ctx_restore (mrg->ctx);
               }
             }
           }

@@ -64,7 +64,7 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile
 	  echo "</tr>" >> $@;\
 	  echo "<tr>" >> $@;\
 	  echo "<td><pre>" >> $@; \
-	  cat $$a.ctx >> $@; \
+	  test -f $$a.ctx && cat $$a.ctx >> $@; \
 	  echo "</pre></td>" >> $@;\
 	  echo "<td><a href='png/$$a.png'><img class='side' src='png/$$a.png'/></a></td>" >> $@; \
 	  echo "<td><a href='png-80x160/$$a.png'><img class='side' src='png-80x160/$$a.png'/></a></td>" >> $@; \
