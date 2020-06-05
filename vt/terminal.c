@@ -16,25 +16,42 @@
 #include "vt-line.h"
 #include "vt.h"
 
-int   do_quit      = 0;
+typedef struct
+CtxClient {
+  VT *vt;
+  SDL_Texture  *texture;
+  uint8_t      *pixels;
+  int           x;
+  int           y;
+  int           vt_width;
+  int           vt_height;
+  int           do_quit;
+  long          drawn_rev;
+}CtxClient;
+
 float font_size    = 32.0;
 float line_spacing = 2.0;
 
-static VT *vt = NULL;
+static char *execute_self = NULL;
 
-static SDL_Window   *window;
-static SDL_Renderer *renderer;
-static SDL_Texture  *texture;
-static uint8_t      *pixels;
 static int pointer_down[3] = {0,};
 static int lctrl = 0;
 static int lalt = 0;
 static int rctrl = 0;
 
-static char *execute_self = NULL;
 
-int vt_width;
-int vt_height;
+#define CTX_MAX_CLIENTS 16
+static CtxClient clients[CTX_MAX_CLIENTS]={{NULL,},};
+#define vt         clients[0].vt
+#define vt_width   clients[0].vt_width
+#define vt_height  clients[0].vt_height
+#define do_quit    clients[0].do_quit
+#define pixels     clients[0].pixels
+#define texture    clients[0].texture
+#define drawn_rev  clients[0].drawn_rev
+
+static SDL_Window   *window;
+static SDL_Renderer *renderer;
 
 void sdl_setup (int width, int height)
 {
@@ -55,8 +72,6 @@ void terminal_set_title (const char *new_title)
   SDL_SetWindowTitle (window, new_title);
 }
 
-
-long drawn_rev = 0;
 extern float ctx_shape_cache_rate;
 
 static void handle_event (const char *event)
@@ -472,7 +487,6 @@ static int sdl_check_events ()
     while (SDL_PollEvent (&event) );
   return got_event;
 }
-
 
 int vt_main (int argc, char **argv)
 {

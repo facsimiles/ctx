@@ -3541,6 +3541,22 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
   return 0;
 }
 
+uint8_t *
+ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, int format, int stride)
+{
+   // NYI
+   return NULL;
+}
+
+void
+ctx_put_image_data (Ctx *ctx, uint8_t *data, int w, int h, int format, int stride,
+                    int dx, int dy, int dirtyX, int dirtyY,
+                    int dirtyWidth, int dirtyHeight)
+{
+   // NYI
+}
+                    
+
 #if CTX_ENABLE_CMYK
 void
 ctx_get_cmyka (Ctx *ctx, float *cmyka)

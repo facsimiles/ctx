@@ -453,12 +453,11 @@ int help_main (int argc, char **argv)
     "options available:\n"
     "  --braille       unicode braille char output mode\n"
     "  --quarter       unicode quad char output mode\n"
-    "  --grays         unicode  quad char output mode\n"
-    "  --ctx-compact   output compact ctx to terminal\n"
+    //"  --grays         unicode  quad char output mode\n"
+    //"  --ctx-compact   output compact ctx to terminal\n"
     "  --ctx           output raw ctx to terminal\n"
-    "  --ctx-term      render to ctx terminal\n"
 
-    "  --color         use color in output\n"
+    //  --color         use color in output\n"
     "  --width  pixels sets width of canvas\n"
     "  --height pixels sets height of canvas\n"
     "  --rows   rows   configures number of em-rows, cols is implied\n");
@@ -698,13 +697,17 @@ int main (int argc, char **argv)
 
   if (outputmode == CTX_OUTPUT_MODE_CTX)
     {
+      fprintf (stdout, "\e[H\e[?25l\e[?7020h");
       ctx_render_stream (ctx, stdout, 1);
+      fprintf (stdout, "\ndone\n\e[?25h");
       exit (0);
     }
   if (outputmode == CTX_OUTPUT_MODE_CTX_COMPACT)
     {
-
+      fprintf (stdout, "\e[H\e[?25l\e[?7020h");
       ctx_render_stream (ctx, stdout, 0);
+      //fprintf (stdout, "\nX\n");
+      fprintf (stdout, "\ndone\n\[e?25h");
       exit (0);
     }
 
