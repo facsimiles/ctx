@@ -8052,6 +8052,7 @@ void mrg_xml_render (Mrg *mrg,
         break;
       case t_tag:
         //htmlctx->attributes = 0;
+        ctx_save (mrg->ctx);
         tagpos = pos;
         mrg_string_clear (style);
         break;
@@ -8115,15 +8116,19 @@ void mrg_xml_render (Mrg *mrg,
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
           mrg_end (mrg);
+        ctx_restore (mrg->ctx);
           depth--;
           mrg_end (mrg);
+        ctx_restore (mrg->ctx);
           depth--;
         }
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
           mrg_end (mrg);
+        ctx_restore (mrg->ctx);
           depth--;
           mrg_end (mrg);
+        ctx_restore (mrg->ctx);
           depth--;
         }
         else if (depth && ((data_hash == CTX_dd && tag[depth-1] == CTX_dt) ||
@@ -8135,6 +8140,7 @@ void mrg_xml_render (Mrg *mrg,
                       (data_hash == CTX_p &&  tag[depth-1] == CTX_p)))
         {
           mrg_end (mrg);
+        ctx_restore (mrg->ctx);
           depth--;
         }
 
@@ -8304,6 +8310,7 @@ void mrg_xml_render (Mrg *mrg,
           case CTX_hr:
             should_be_empty = 1;
             mrg_end (mrg);
+            ctx_restore (mrg->ctx);
             depth--;
         }
 #endif
@@ -8321,6 +8328,7 @@ void mrg_xml_render (Mrg *mrg,
           }
           in_style = 0;
           mrg_end (mrg);
+          ctx_restore (mrg->ctx);
           depth--;
 
           if (tag[depth] != data_hash)
@@ -8328,11 +8336,13 @@ void mrg_xml_render (Mrg *mrg,
             if (tag[depth] == CTX_p)
             {
               mrg_end (mrg);
+              ctx_restore (mrg->ctx);
               depth --;
             } else 
             if (depth > 0 && tag[depth-1] == data_hash)
             {
               mrg_end (mrg);
+              ctx_restore (mrg->ctx);
               depth --;
             }
             else if (depth > 1 && tag[depth-2] == data_hash)
@@ -8342,6 +8352,7 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth --;
                 mrg_end (mrg);
+                ctx_restore (mrg->ctx);
               }
             }
 #if 0
@@ -8354,6 +8365,7 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth --;
                 mrg_end (mrg);
+                ctx_restore (mrg->ctx);
               }
             }
             else if (depth > 3 && tag[depth-3] == data_hash)
@@ -8365,6 +8377,7 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth --;
                 mrg_end (mrg);
+                ctx_restore (mrg->ctx);
               }
             }
             else if (depth > 4 && tag[depth-5] == data_hash)
@@ -8376,6 +8389,7 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth --;
                 mrg_end (mrg);
+                ctx_restore (mrg->ctx);
               }
             }
 #endif
@@ -8385,13 +8399,16 @@ void mrg_xml_render (Mrg *mrg,
               {
                 depth--;
                 mrg_end (mrg);
+                ctx_restore (mrg->ctx);
                 depth--;
                 mrg_end (mrg);
+                ctx_restore (mrg->ctx);
               }
               else if (data_hash == CTX_table && tag[depth] == CTX_tr)
               {
                 depth--;
                 mrg_end (mrg);
+                ctx_restore (mrg->ctx);
               }
             }
           }

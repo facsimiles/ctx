@@ -1854,7 +1854,7 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
   return str_hash;
 }
 
-#define CTX_STRINGPOOL_SIZE 8000
+#define CTX_STRINGPOOL_SIZE 5000
 
 struct _CtxState
 {
@@ -1868,9 +1868,12 @@ struct _CtxState
   CtxKeyDbEntry keydb[CTX_MAX_KEYDB];
   char          stringpool[CTX_STRINGPOOL_SIZE];
   CtxGradient   gradient; /* we keep only one gradient,
-                           this goes icky with multiple
-                           restores - it should really be part of
-                           graphics state.. XXX */
+                             this goes icky with multiple
+                             restores - it should really be part of
+                             graphics state..
+                             XXX, with the stringpool gradients
+                             can be stored there.
+                           */
   int16_t       gstate_no;
   CtxGState     gstate;
   CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
@@ -2175,6 +2178,13 @@ static int ctx_str_is_number (const char *str)
 static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len)
 {
   int idx = state->gstate.stringpool_pos;
+
+  if (idx + len > CTX_STRINGPOOL_SIZE)
+  {
+    fprintf (stderr, "blowing varpool size [%c%c%c..]\n", data[0],data[1], data[1]?data[2]:0);
+    return;
+  }
+
   memcpy (&state->stringpool[idx], data, len);
   state->gstate.stringpool_pos+=len;
   state->stringpool[state->gstate.stringpool_pos++]=0;
@@ -2192,15 +2202,16 @@ static void ctx_state_set_string (CtxState *state, uint32_t key, const char *str
     if (old_string && !strcmp (old_string, string))
       return;
   }
-  // detect floats and colors and transform them to float here.
-  // should do same with color
 
   if (ctx_str_is_number (string))
   {
     ctx_state_set (state, key, strtod (string, NULL));
     return;
   }
-
+  // should do same with color
+ 
+  // XXX should special case when the string modified is at the
+  //     end of the stringpool.
   ctx_state_set_blob (state, key, (uint8_t*)string, strlen(string));
 }
 
@@ -2668,8 +2679,6 @@ struct
 #endif
 };
 
-
-
 const char *ctx_get_string (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get_string (&ctx->state, hash);
@@ -2706,7 +2715,6 @@ int ctx_is_set_now (Ctx *ctx, uint32_t hash)
 {
   return ctx_is_set (ctx, hash);
 }
-
 
 typedef struct _CtxFont       CtxFont;
 typedef struct _CtxFontEngine CtxFontEngine;
@@ -2914,9 +2922,6 @@ ctx_conts_for_entry (CtxEntry *entry)
     }
 }
 
-
-
-
 /* the iterator - should decode bitpacked data as well -
  * making the rasterizers simpler, possibly do unpacking
  * all the way to absolute coordinates.. unless mixed
@@ -3080,7 +3085,7 @@ again:
           ctx_iterator_expand_s8_args (iterator, ret);
           iterator->bitpack_command[0].code = CTX_REL_CURVE_TO;
           iterator->bitpack_command[1].code =
-            iterator->bitpack_command[2].code = CTX_CONT;
+          iterator->bitpack_command[2].code = CTX_CONT;
           iterator->bitpack_command[3].code = CTX_REL_LINE_TO;
           // 0.0 here is a common optimization - so check for it
           if (ret->data.s8[6]== 0 && ret->data.s8[7] == 0)
@@ -3099,9 +3104,9 @@ again:
         case CTX_REL_LINE_TO_X4:
           ctx_iterator_expand_s8_args (iterator, ret);
           iterator->bitpack_command[0].code =
-            iterator->bitpack_command[1].code =
-              iterator->bitpack_command[2].code =
-                iterator->bitpack_command[3].code = CTX_REL_LINE_TO;
+          iterator->bitpack_command[1].code =
+          iterator->bitpack_command[2].code =
+          iterator->bitpack_command[3].code = CTX_REL_LINE_TO;
           goto again;
         case CTX_REL_QUAD_TO_S16:
           ctx_iterator_expand_s16_args (iterator, ret);
@@ -3110,12 +3115,12 @@ again:
         case CTX_REL_QUAD_TO_REL_QUAD_TO:
           ctx_iterator_expand_s8_args (iterator, ret);
           iterator->bitpack_command[0].code =
-            iterator->bitpack_command[2].code = CTX_REL_QUAD_TO;
+          iterator->bitpack_command[2].code = CTX_REL_QUAD_TO;
           goto again;
         case CTX_REL_LINE_TO_X2:
           ctx_iterator_expand_s16_args (iterator, ret);
           iterator->bitpack_command[0].code =
-            iterator->bitpack_command[1].code = CTX_REL_LINE_TO;
+          iterator->bitpack_command[1].code = CTX_REL_LINE_TO;
           goto again;
         case CTX_REL_LINE_TO_REL_MOVE_TO:
           ctx_iterator_expand_s16_args (iterator, ret);
@@ -3494,16 +3499,6 @@ ctx_u8 (CtxCode code,
 static void
 ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string)
 {
-#if 0
-  int stringlen = strlen (string);
-  CtxCommand command = {{code}};
-  command.set_font.code_data = CTX_DATA;
-  command.set_font.code_cont = CTX_CONT;
-  command.set_font.stringlen = stringlen;
-  command.set_font.blocklen  = stringlen/9+1;
-  ctx_strcpy ( (char *) & (command.set_font.utf8[0]), string);
-  ctx_process (ctx, &command.entry);
-#else
   int stringlen = strlen (string);
   CtxEntry commands[1 + 2 + stringlen/8];
   ctx_memset (commands, 0, sizeof (commands) );
@@ -3514,7 +3509,6 @@ ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string)
   ctx_strcpy ( (char *) &commands[2].data.u8[0], string);
   ( (char *) (&commands[2].data.u8[0]) ) [stringlen]=0;
   ctx_process (ctx, commands);
-#endif
 }
 
 void
@@ -3701,7 +3695,7 @@ void ctx_set_dcmyk (Ctx *ctx, float c, float m, float y, float k)
   ctx_process (ctx, command);
 }
 
-void ctx_set_dcmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
+void ctx_set_dcmyka (Ctx *ctx, float c, float m, float y, float k, float a)
 {
   CtxEntry command[3]=
   {
@@ -5521,7 +5515,6 @@ struct _CtxShapeEntry
 };
 
 typedef struct _CtxShapeEntry CtxShapeEntry;
-
 
 #define CTX_SHAPE_CACHE_PRIME1   13
 #define CTX_SHAPE_CACHE_PRIME2   112
