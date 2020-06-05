@@ -44,7 +44,7 @@ static int rctrl = 0;
 
 #define CTX_MAX_CLIENTS 16
 static CtxClient clients[CTX_MAX_CLIENTS]={{NULL,},};
-static int client_pos = 0;
+static int client_count = 0;
 static int active = 0; // active client
 
 static SDL_Window   *window;
@@ -63,19 +63,19 @@ void sdl_setup (int width, int height)
 void add_client (const char *commandline, int x, int y, int width, int height)
 {
   static int global_id = 0;
-  clients[client_pos].id = global_id++;
-  clients[client_pos].x = x;
-  clients[client_pos].y = y;
+  clients[client_count].id = global_id++;
+  clients[client_count].x = x;
+  clients[client_count].y = y;
 
-  clients[client_pos].vt_width = width;//( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
-  clients[client_pos].vt_height = height;//font_size * DEFAULT_ROWS;
-  clients[client_pos].vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing, clients[client_pos].id);
-  clients[client_pos].texture = SDL_CreateTexture (renderer,
+  clients[client_count].vt_width = width;//( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
+  clients[client_count].vt_height = height;//font_size * DEFAULT_ROWS;
+  clients[client_count].vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing, clients[client_count].id);
+  clients[client_count].texture = SDL_CreateTexture (renderer,
                                    SDL_PIXELFORMAT_ARGB8888,
                                    SDL_TEXTUREACCESS_STREAMING,
                                    width, height);
-  clients[client_pos].pixels = calloc (width * height, 4);
-  client_pos++;
+  clients[client_count].pixels = calloc (width * height, 4);
+  client_count++;
 }
 
 
@@ -88,7 +88,7 @@ static int find_active (int x, int y)
   int ret = 0;
   last_x = x;
   last_y = y;
-  for (int i = 0; i < client_pos; i++)
+  for (int i = 0; i < client_count; i++)
   {
      if (x > clients[i].x && x < clients[i].x+clients[i].vt_width &&
          y > clients[i].y && y < clients[i].y+clients[i].vt_height)
@@ -99,39 +99,39 @@ static int find_active (int x, int y)
 
 int id_to_no (int id)
 {
-  for (int i = 0 ;i < client_pos; i++)
+  for (int i = 0 ;i < client_count; i++)
           if (clients[i].id == id)
                   return i;
   return -1;
 }
 
-void remove_client (int no)
+void client_remove (int no)
 {
   vt_destroy (clients[no].vt);
   SDL_DestroyTexture (clients[no].texture);
   free(clients[no].pixels);
 
-  clients[no]=clients[client_pos-1];
-  client_pos--;
-  if (client_pos == 0)
+  clients[no]=clients[client_count-1];
+  client_count--;
+  if (client_count == 0)
     do_quit = 1;
   find_active (last_x, last_y);
 }
 
-void remove_client_by_id (int id)
+void client_remove_by_id (int id)
 {
   int no = id_to_no (id);
   if (no>=0)
-    remove_client (no);
+    client_remove (no);
 }
 
-void terminal_set_title (int id, const char *new_title)
+void client_set_title (int id, const char *new_title)
 {
   int no = id_to_no (id);
   if (no < 0) return;
   if (clients[no].title) free (clients[no].title);
   clients[no].title = strdup (new_title);
-  if (client_pos == 1)
+  if (client_count == 1)
     SDL_SetWindowTitle (window, new_title);
 }
 
@@ -181,8 +181,6 @@ static void handle_event (const char *event)
   else
     {
       vt_feed_keystring (vt, event);
-      // make optional? - reset of scroll on key input
-      vt_set_scroll (vt, 0);
     }
 }
 
@@ -233,19 +231,16 @@ static int sdl_check_events ()
               vt_set_scroll (vt, vt_get_scroll (vt) + event.wheel.y);
               break;
             case SDL_WINDOWEVENT:
-              if (client_pos == 1)
+              if (client_count == 1)
               {
-#if 1
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
                   {
                     int width  = event.window.data1;
                     int height = event.window.data2;
-                    //        host->stride = host->width * host->bpp;
                     got_event = 1;
                     if (client_resize (clients[0].id, width, height))
                         return 1;
                   }
-#endif
               }
               break;
             case SDL_MOUSEMOTION:
@@ -421,7 +416,7 @@ int vt_main (int argc, char **argv)
     {
 again:
       SDL_RenderClear (renderer);
-      for (int no = 0; no < client_pos; no++)
+      for (int no = 0; no < client_count; no++)
       {
         VT *vt = clients[no].vt;
         int vt_width = clients[no].vt_width;
@@ -432,7 +427,7 @@ again:
 
         if (vt_is_done (vt) )
         {
-          remove_client (no);
+          client_remove (no);
           goto again;
         }
 
@@ -464,16 +459,16 @@ again:
           ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
           ctx_free (ctx);
 
-#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
+#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
           dirty.w ++;
           dirty.h ++;
           if (dirty.x + dirty.w > vt_width)
             { dirty.w = vt_width - dirty.x; }
           if (dirty.y + dirty.h > vt_height)
             { dirty.h = vt_height - dirty.y; }
-          SDL_UpdateTexture (texture,
+          SDL_UpdateTexture (clients[no].texture,
                              &dirty,
-                             (uint8_t *) pixels + sizeof (Uint32) * (vt_width * dirty.y + dirty.x), vt_width * sizeof (Uint32) );
+                             (uint8_t *) clients[no].pixels + sizeof (Uint32) * (vt_width * dirty.y + dirty.x), vt_width * sizeof (Uint32) );
 #else
           SDL_UpdateTexture (clients[no].texture, NULL,
                              (void *) clients[no].pixels, vt_width * sizeof (Uint32) );
@@ -510,9 +505,9 @@ again:
         }
 #endif
 
-      for (int a = 0; a < client_pos; a++)
+      for (int a = 0; a < client_count; a++)
       {
-        if (vt_poll (clients[a].vt, sleep_time/client_pos) )
+        if (vt_poll (clients[a].vt, sleep_time/client_count) )
         {
           if (sleep_time > 2500)
             { sleep_time = 2500; }
@@ -526,7 +521,7 @@ again:
       if (sleep_time > 60000)
         { sleep_time = 60000; }
     }
-  while (client_pos)
-    remove_client (client_pos);
+  while (client_count)
+    client_remove (client_count);
   return 0;
 }

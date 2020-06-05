@@ -635,7 +635,7 @@ long vt_rev (VT *vt)
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
 
-void terminal_set_title (int id, const char *new_title);
+void client_set_title (int id, const char *new_title);
 
 static void vt_set_title (VT *vt, const char *new_title)
 {
@@ -643,7 +643,7 @@ static void vt_set_title (VT *vt, const char *new_title)
   if (vt->title)
     { free (vt->title); }
   vt->title = strdup (new_title);
-  terminal_set_title (vt->id, vt->title);
+  client_set_title (vt->id, vt->title);
 }
 
 const char *vt_get_title (VT *vt)
@@ -4426,6 +4426,9 @@ static const char *keymap_general[][2]=
 
 void vt_feed_keystring (VT *vt, const char *str)
 {
+  // make optional? - reset of scroll on key input
+  vt_set_scroll (vt, 0);
+
   if (!strcmp (str, "shift-page-up") )
     {
       int new_scroll = vt_get_scroll (vt) + vt_get_rows (vt) /2;
