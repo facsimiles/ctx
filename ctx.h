@@ -1854,7 +1854,9 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
   return str_hash;
 }
 
-#define CTX_STRINGPOOL_SIZE 5000
+#define CTX_STRINGPOOL_SIZE 5000  // if we parse svg path data inline
+                                  // with a separate parse state we do
+                                  // not need this much room.
 
 struct _CtxState
 {
@@ -2182,6 +2184,13 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
   if (idx + len > CTX_STRINGPOOL_SIZE)
   {
     fprintf (stderr, "blowing varpool size [%c%c%c..]\n", data[0],data[1], data[1]?data[2]:0);
+#if 0
+    for (int i = 0; i< CTX_STRINGPOOL_SIZE; i++)
+    {
+       if (i==0) fprintf (stderr, "\n%i ", i);
+       else      fprintf (stderr, "%c", state->stringpool[i]);
+    }
+#endif
     return;
   }
 

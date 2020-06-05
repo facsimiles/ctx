@@ -6690,8 +6690,6 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   if (style->clear & MRG_CLEAR_LEFT)
     clear_left (html);
 
-#include "svg-strings.h"
-
   if (style->display == MRG_DISPLAY_BLOCK ||
       style->display == MRG_DISPLAY_LIST_ITEM)
   {
