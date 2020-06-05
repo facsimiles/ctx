@@ -28,8 +28,8 @@ CtxClient {
   int           do_quit;
   long          drawn_rev;
 }CtxClient;
-int           do_quit = 0;
 
+int   do_quit      = 0;
 float font_size    = 32.0;
 float line_spacing = 2.0;
 
@@ -57,32 +57,33 @@ void sdl_setup (int width, int height)
 
   SDL_EnableScreenSaver ();
 }
+
 void add_client (const char *commandline, int x, int y, int width, int height)
 {
-    clients[client_pos].x = x;
-    clients[client_pos].y = y;
+  clients[client_pos].x = x;
+  clients[client_pos].y = y;
 
-    clients[client_pos].vt_width = width;//( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
-    clients[client_pos].vt_height = height;//font_size * DEFAULT_ROWS;
-    clients[client_pos].vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
-    clients[client_pos].texture = SDL_CreateTexture (renderer,
-                                 SDL_PIXELFORMAT_ARGB8888,
-                                 SDL_TEXTUREACCESS_STREAMING,
-                                 width, height);
-    clients[client_pos].pixels = calloc (width * height, 4);
-    client_pos++;
+  clients[client_pos].vt_width = width;//( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
+  clients[client_pos].vt_height = height;//font_size * DEFAULT_ROWS;
+  clients[client_pos].vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
+  clients[client_pos].texture = SDL_CreateTexture (renderer,
+                                   SDL_PIXELFORMAT_ARGB8888,
+                                   SDL_TEXTUREACCESS_STREAMING,
+                                   width, height);
+  clients[client_pos].pixels = calloc (width * height, 4);
+  client_pos++;
 }
 
 void remove_client (int no)
 {
-    vt_destroy (clients[no].vt);
-    SDL_DestroyTexture (clients[no].texture);
-    free(clients[no].pixels);
+  vt_destroy (clients[no].vt);
+  SDL_DestroyTexture (clients[no].texture);
+  free(clients[no].pixels);
 
-    clients[no]=clients[client_pos-1];
-    client_pos--;
-    if (client_pos == 0)
-      do_quit = 1;
+  clients[no]=clients[client_pos-1];
+  client_pos--;
+  if (client_pos == 0)
+    do_quit = 1;
 }
 
 void terminal_set_title (const char *new_title)
@@ -270,6 +271,25 @@ static void handle_event (const char *event)
 static int key_balance = 0;
 static int key_repeat = 0;
 
+int client_resize (int no, int width, int height)
+{
+   if ( (height != clients[no].vt_height) || (width != clients[no].vt_width) )
+   {
+     SDL_DestroyTexture (clients[no].texture);
+     clients[no].texture = SDL_CreateTexture (renderer,
+                                  SDL_PIXELFORMAT_ARGB8888,
+                                  SDL_TEXTUREACCESS_STREAMING,
+                                  width, height);
+     free (clients[no].pixels);
+     clients[no].pixels = calloc (width * height, 4);
+     clients[no].vt_width = width;
+     clients[no].vt_height = height;
+     vt_set_term_size (clients[no].vt, width / vt_cw (clients[no].vt), height / vt_ch (clients[no].vt) );
+     return 1;
+   }
+   return 0;
+}
+
 static int sdl_check_events ()
 {
   int got_event = 0;
@@ -287,28 +307,17 @@ static int sdl_check_events ()
               vt_set_scroll (vt, vt_get_scroll (vt) + event.wheel.y);
               break;
             case SDL_WINDOWEVENT:
+              if (client_pos == 1)
               {
-#if 0
+#if 1
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
                   {
                     int width  = event.window.data1;
                     int height = event.window.data2;
                     //        host->stride = host->width * host->bpp;
                     got_event = 1;
-                    if ( (height != vt_height) || (width != vt_width) )
-                      {
-                        SDL_DestroyTexture (texture);
-                        texture = SDL_CreateTexture (renderer,
-                                                     SDL_PIXELFORMAT_ARGB8888,
-                                                     SDL_TEXTUREACCESS_STREAMING,
-                                                     width, height);
-                        free (pixels);
-                        pixels = calloc (width * height, 4);
-                        vt_width = width;
-                        vt_height = height;
-                        vt_set_term_size (vt, width / vt_cw (vt), height / vt_ch (vt) );
+                    if (client_resize (0, width, height))
                         return 1;
-                      }
                   }
 #endif
               }
@@ -537,8 +546,8 @@ int vt_main (int argc, char **argv)
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
   //setsid();
-  add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width/2, height);
-  add_client ("/usr/bin/top", width/2, 0, width/2, height);
+  add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height);
+  //add_client ("/usr/bin/top", width/2, 0, width/2, height);
 
   int sleep_time = 10;
   while (!do_quit)
