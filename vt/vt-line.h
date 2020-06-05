@@ -67,6 +67,7 @@ struct _VtLine
 
 static inline uint64_t vt_line_get_style (VtLine *string, int pos)
 {
+  if (string->string.is_line==0)return 0;
   if (pos < 0 || pos >= string->style_size)
     { return 0; }
   return string->style[pos];
@@ -76,6 +77,7 @@ static inline uint64_t vt_line_get_style (VtLine *string, int pos)
 
 static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
 {
+  if (string->string.is_line==0)return;
   if (pos < 0 || pos >= 512)
     { return; }
   if (pos >= string->style_size)
@@ -115,7 +117,8 @@ void        vt_string_remove         (VtString *string, int pos);
 
 static inline void        vt_line_free           (VtLine *line, int freealloc)
 {
-  VtString *string = (VtString*)line; vt_string_free (string, freealloc);
+  VtString *string = (VtString*)line;
+  vt_string_free (string, freealloc);
 }
 static inline const char *vt_line_get            (VtLine *line)
 {

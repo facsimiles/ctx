@@ -411,6 +411,17 @@ int parse_main (int argc, char **argv)
   return 0;
 }
 
+// the render API could be a PUT of new contents
+// replacing old contents
+// ...
+// into a small conceptual folder managed per client by the
+// compositor.
+//
+// insert message in the command stream requesting response..
+// get message back that data has been presented
+//
+// can reuse other similar commands for this purpose.
+
 int help_main (int argc, char **argv)
 {
   if (argc &&  argv) {};
@@ -419,11 +430,18 @@ int help_main (int argc, char **argv)
     "\n"
     "The input path is a file format recognized by ctx, for rendering.\n"
     "\n"
+    "ctx alone should launch a terminal, that is part of a session which\n"
+    "can have other clients\n"
     "\n"
     "options available:\n"
-    "  --width  pixels   sets width of canvas\n"
-    "  --height pixels   sets height of canvas\n"
-    "  --rows   rows     configures number of em-rows, cols is implied\n");
+    "  --braille       unicode braille char output mode\n"
+    "  --quads         unicode quad char output mode\n"
+    "  --grays         unicode  quad char output mode\n"
+    "  --ctx           render to ctx terminal\n"
+    "  --color         use color in output\n"
+    "  --width  pixels sets width of canvas\n"
+    "  --height pixels sets height of canvas\n"
+    "  --rows   rows   configures number of em-rows, cols is implied\n");
   return 0;
 }
 
