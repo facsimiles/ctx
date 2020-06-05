@@ -232,6 +232,9 @@ void ctx_get_graya      (Ctx *ctx, float *ya);
 void ctx_get_drgba      (Ctx *ctx, float *drgba);
 void ctx_get_cmyka      (Ctx *ctx, float *cmyka);
 void ctx_get_dcmyka     (Ctx *ctx, float *dcmyka);
+int ctx_in_fill         (Ctx *ctx, float x, float y);
+int ctx_in_stroke       (Ctx *ctx, float x, float y);
+
 
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
 void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
@@ -3530,6 +3533,12 @@ void
 ctx_get_drgba (Ctx *ctx, float *rgba)
 {
   ctx_color_get_drgba (& (ctx->state), &ctx->state.gstate.source.color, rgba);
+}
+
+int ctx_in_fill (Ctx *ctx, float x, float y)
+{
+  //  XXX  NYI
+  return 0;
 }
 
 #if CTX_ENABLE_CMYK
