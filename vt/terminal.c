@@ -9,19 +9,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define USE_SDL 1
-#define USE_MMM 0
 #define ENABLE_CLICK 0
 
-#if USE_SDL
 #include <SDL.h>
-#endif
-
-#if USE_MMM
-#include "mmm.h"
-#include "mmm-pset.h"
-#endif
-
 #include "ctx.h"
 #include "vt-line.h"
 #include "vt.h"
@@ -30,12 +20,8 @@ int   do_quit      = 0;
 float font_size    = 32.0;
 float line_spacing = 2.0;
 
-static pid_t vt_child;
 static VT *vt = NULL;
 
-#if USE_MMM
-static Mmm *mmm = NULL;
-#elif USE_SDL
 static SDL_Window   *window;
 static SDL_Renderer *renderer;
 static SDL_Texture  *texture;
@@ -44,14 +30,11 @@ static int pointer_down[3] = {0,};
 static int lctrl = 0;
 static int lalt = 0;
 static int rctrl = 0;
-#endif
 
 static char *execute_self = NULL;
 
 int vt_width;
 int vt_height;
-
-#if USE_SDL
 
 void sdl_setup (int width, int height)
 {
@@ -66,21 +49,10 @@ void sdl_setup (int width, int height)
   pixels = calloc (width * height, 4);
   SDL_EnableScreenSaver ();
 }
-#elif USE_MMM
-void mmm_setup (int width, int height)
-{
-  mmm = mmm_new (vt_width, vt_height, 0, NULL);
-  unsetenv ("MMM_PATH");
-}
-#endif
 
 void terminal_set_title (const char *new_title)
 {
-#if USE_SDL
   SDL_SetWindowTitle (window, new_title);
-#elif USE_MMM
-  mmm_set_title (mmm, new_title);
-#endif
 }
 
 
@@ -107,25 +79,21 @@ static void handle_event (const char *event)
     }
   else if (!strcmp (event, "shift-control-v") )
     {
-#if USE_SDL
       char *text = SDL_GetClipboardText ();
       if (text)
         {
           vt_paste (vt, text);
           free (text);
         }
-#endif
     }
   else if (!strcmp (event, "shift-control-c") )
     {
-#if USE_SDL
       char *text = vt_get_selection (vt);
       if (text)
         {
           SDL_SetClipboardText (text);
           free (text);
         }
-#endif
     }
   else if (!strcmp (event, "shift-control-l") )
     {
@@ -251,19 +219,6 @@ static void handle_event (const char *event)
 }
 
 
-#if USE_MMM
-int mmm_check_events (Mmm *mmm)
-{
-  int got_event = 0;
-  while (mmm_has_event (mmm) )
-    {
-      const char *event = mmm_get_event (mmm);
-      handle_event (event);
-      got_event = 1;
-    }
-  return got_event;
-}
-#elif USE_SDL
 static int key_balance = 0;
 static int key_repeat = 0;
 
@@ -517,7 +472,6 @@ static int sdl_check_events ()
     while (SDL_PollEvent (&event) );
   return got_event;
 }
-#endif
 
 
 int vt_main (int argc, char **argv)
@@ -526,20 +480,10 @@ int vt_main (int argc, char **argv)
   sprintf (execute_self, "%s", argv[0]);
   vt_width = ( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
   vt_height = font_size * DEFAULT_ROWS;
-#if USE_MMM
-  unsigned char *pixels;
-  mmm_setup (vt_width, vt_height);
-#elif USE_SDL
   sdl_setup (vt_width, vt_height);
-#endif
   setsid();
   vt = vt_new (argv[1]?argv[1]:vt_find_shell_command(), DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing);
-#if USE_MMM
-  vt_set_mmm (vt, mmm);
-  mmm_pcm_set_sample_rate (mmm, 8000);
-#endif
   int sleep_time = 10;
-  vt_child = vt_get_pid (vt);
   while (!do_quit)
     {
       int in_scroll = (vt_has_blink (vt) >= 10);
@@ -550,23 +494,7 @@ int vt_main (int argc, char **argv)
            in_scroll)
         {
           drawn_rev = vt_rev (vt);
-#if USE_SDL
           SDL_Rect dirty;
-#endif
-#if USE_MMM
-          int width;
-          int height;
-          int stride;
-          mmm_client_check_size (mmm, &width, &height);
-          if (vt_width != width ||  vt_height!=height)
-            {
-              vt_set_term_size (vt, width / vt_cw (vt), height / vt_ch (vt) );
-              vt_width = width;
-              vt_height = height;
-              drawn_rev = 0;
-            }
-          pixels = mmm_get_buffer_write (mmm, &width, &height, &stride, NULL);
-#endif
 #if 0
           // XXX this works for initial line in started shell
           // but falls apart when bottom is reached,
@@ -578,16 +506,15 @@ int vt_main (int argc, char **argv)
 #else
           // render directlty to framebuffer in immediate mode - skips
           // creation of renderstream.
+          //
+          // terminal is also keeping track of state of already drawn
+          // pixels and often only repaints what is needed XXX  need API
+          //                                              to force full draw
           Ctx *ctx = ctx_new_for_framebuffer (pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
           vt_draw (vt, ctx, 0, 0);
 #endif
-#if USE_SDL
           ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
-#endif
           ctx_free (ctx);
-#if USE_MMM
-          mmm_write_done (mmm, 0, 0, -1, -1);
-#elif USE_SDL
 #if 1 // < flipping this turns on subtexture updates, needs bounds tuning
           dirty.w ++;
           dirty.h ++;
@@ -605,15 +532,10 @@ int vt_main (int argc, char **argv)
           SDL_RenderClear (renderer);
           SDL_RenderCopy (renderer, texture, NULL, NULL);
           SDL_RenderPresent (renderer);
-#endif
         }
       int got_event = 0;
       if (!in_scroll)
-#if USE_MMM
-        got_event = mmm_check_events (mmm);
-#elif USE_SDL
         got_event = sdl_check_events ();
-#endif
       if (got_event)
         {
           sleep_time = 200;
@@ -635,9 +557,5 @@ int vt_main (int argc, char **argv)
         { sleep_time = 60000; }
     }
   vt_destroy (vt);
-#if USE_MMM
-  if (mmm)
-    { mmm_destroy (mmm); }
-#endif
   return 0;
 }
