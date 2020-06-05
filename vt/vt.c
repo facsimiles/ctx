@@ -4555,8 +4555,8 @@ static void vt_run_command (VT *vt, const char *command)
       //setenv ("TERM", "xterm-256color", 1);
       setenv ("TERM", "xterm", 1);
       setenv ("COLORTERM", "truecolor", 1);
-      execlp ("/bin/bash", "/bin/bash", NULL);
-      //system (command);
+      //execlp ("/bin/bash", "/bin/bash", NULL);
+      system (command);
       //vt->done = 1;
       exit (0);
     }
