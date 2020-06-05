@@ -234,7 +234,9 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 int bitno = 0;
 
                 uint8_t rgba2[4] = {0,0,0,255};
-                uint8_t rgba1[4] = {255,255,255,255};
+                uint8_t rgba1[4] = {0,0,0,255};
+                int     rgbasum[4] = {0,};
+                int     col_count = 0;
                 int best_diff = 0;
 
                 for (int xi = 0; xi < 2; xi++)
@@ -242,15 +244,20 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                       {
                         int noi = (row * 4 + yi) * stride + (col*2+xi) * 4;
                         int diff = ctx_rgba8_manhattan_diff (&pixels[noi], rgba2);
-                        if (diff > best_diff)
+                        if (diff > 32*32)
                         {
-                          best_diff = diff;
                           for (int c = 0; c < 3; c++)
                           {
-                            rgba1[c] = pixels[noi+c];
+                            rgbasum[c] += pixels[noi+c];
                           }
+                          col_count++;
                         }
                       }
+                if (col_count)
+                for (int c = 0; c < 3; c++)
+                {
+                  rgba1[c] = rgbasum[c] / col_count;
+                }
 
 
 
