@@ -8,6 +8,7 @@ void vt_open_log (VT *vt, const char *path);
 int         vt_cw                 (VT *vt);
 int         vt_ch                 (VT *vt);
 void        vt_set_font_size      (VT *vt, float font_size);
+float       vt_get_font_size      (VT *vt);
 void        vt_set_line_spacing   (VT *vt, float line_spacing);
 
 const char *vt_find_shell_command (void);

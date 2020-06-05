@@ -74,6 +74,29 @@ void add_client (const char *commandline, int x, int y, int width, int height)
   client_pos++;
 }
 
+void terminal_set_title (const char *new_title)
+{
+  SDL_SetWindowTitle (window, new_title);
+}
+
+extern float ctx_shape_cache_rate;
+
+static int last_x = 0;
+static int last_y = 0;
+static int find_active (int x, int y)
+{
+  int ret = 0;
+  last_x = x;
+  last_y = y;
+  for (int i = 0; i < client_pos; i++)
+  {
+     if (x > clients[i].x && x < clients[i].x+clients[i].vt_width &&
+         y > clients[i].y && y < clients[i].y+clients[i].vt_height)
+             ret = i;
+  }
+  return ret;
+}
+
 void remove_client (int no)
 {
   vt_destroy (clients[no].vt);
@@ -84,49 +107,16 @@ void remove_client (int no)
   client_pos--;
   if (client_pos == 0)
     do_quit = 1;
-}
-
-void terminal_set_title (const char *new_title)
-{
-  SDL_SetWindowTitle (window, new_title);
-}
-
-extern float ctx_shape_cache_rate;
-
-static int find_active (int x, int y)
-{
-  int ret = 0;
-  for (int i = 0; i < client_pos; i++)
-  {
-     if (x > clients[i].x && x < clients[i].x+clients[i].vt_width &&
-         y > clients[i].y && y < clients[i].y+clients[i].vt_height)
-             ret = i;
-  }
-  return ret;
+  find_active (last_x, last_y);
 }
 
 static void handle_event (const char *event)
 {
   VT *vt = clients[active].vt;
-  int vt_height = clients[active].vt_height;
-  int vt_width = clients[active].vt_width;
-  //if (!strcmp (event, "shift-return"))
-  // event = "return";
-  //else
-  if (!strcmp (event, "shift-page-up") )
-    {
-      int new_scroll = vt_get_scroll (vt) + vt_get_rows (vt) /2;
-      vt_set_scroll (vt, new_scroll);
-      vt_rev_inc (vt);
-    }
-  else if (!strcmp (event, "shift-page-down") )
-    {
-      int new_scroll = vt_get_scroll (vt) - vt_get_rows (vt) /2;
-      if (new_scroll < 0) { new_scroll = 0; }
-      vt_set_scroll (vt, new_scroll);
-      vt_rev_inc (vt);
-    }
-  else if (!strcmp (event, "shift-control-v") )
+  if (!strcmp (event, "shift-return"))
+   event = "return";
+  else
+  if (!strcmp (event, "shift-control-v") )
     {
       char *text = SDL_GetClipboardText ();
       if (text)
@@ -144,30 +134,6 @@ static void handle_event (const char *event)
           free (text);
         }
     }
-  else if (!strcmp (event, "shift-control-l") )
-    {
-      vt_set_local (vt, !vt_get_local (vt) );
-    }
-  else if (!strcmp (event, "shift-control--") ||
-           !strcmp (event, "control--") )
-    {
-      font_size /= 1.15;
-      font_size = (int) (font_size);
-      if (font_size < 5) { font_size = 5; }
-      vt_set_font_size (vt, font_size);
-      vt_set_term_size (vt, vt_width / vt_cw (vt), vt_height / vt_ch (vt) );
-    }
-  else if (!strcmp (event, "shift-control-=") ||
-           !strcmp (event, "control-=") )
-    {
-      float old = font_size;
-      font_size *= 1.15;
-      font_size = (int) (font_size);
-      if (old == font_size) { font_size = old+1; }
-      if (font_size > 200) { font_size = 200; }
-      vt_set_font_size (vt, font_size);
-      vt_set_term_size (vt, vt_width / vt_cw (vt), vt_height / vt_ch (vt) );
-    }
   else if (!strcmp (event, "shift-control-n") )
     {
       pid_t pid;
@@ -179,10 +145,6 @@ static void handle_event (const char *event)
           exit (0);
         }
     }
-  else if (!strcmp (event, "shift-control-r") )
-    {
-      vt_open_log (vt, "/tmp/ctx-vt");
-    }
   else if (!strcmp (event, "shift-control-q") )
     {
       do_quit = 1; // global?
@@ -191,82 +153,13 @@ static void handle_event (const char *event)
     {
       clients[active].do_quit = 1;
     }
-  else if (!strncmp (event, "mouse-", 5) )
-    {
-      int cw = vt_cw (vt);
-      int ch = vt_ch (vt);
-      if (!strncmp (event + 6, "motion", 6) )
-        {
-          int x = 0, y = 0;
-          char *s = strchr (event, ' ');
-          if (s)
-            {
-              x = atoi (s);
-              s = strchr (s + 1, ' ');
-              if (s)
-                {
-                  y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_MOTION, x/cw + 1, y/ch + 1, x, y);
-                }
-            }
-        }
-      else if (!strncmp (event + 6, "press", 5) )
-        {
-          int x = 0, y = 0;
-          char *s = strchr (event, ' ');
-          if (s)
-            {
-              x = atoi (s);
-              s = strchr (s + 1, ' ');
-              if (s)
-                {
-                  y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_PRESS, x/cw + 1, y/ch + 1, x, y);
-                }
-            }
-          clients[active].drawn_rev = 0;
-        }
-      else if (!strncmp (event + 6, "drag", 4) )
-        {
-          int x = 0, y = 0;
-          char *s = strchr (event, ' ');
-          if (s)
-            {
-              x = atoi (s);
-              s = strchr (s + 1, ' ');
-              if (s)
-                {
-                  y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_DRAG, x/cw + 1, y/ch + 1, x, y);
-                }
-            }
-          clients[active].drawn_rev = 0;
-        }
-      else if (!strncmp (event + 6, "release", 7) )
-        {
-          int x = 0, y = 0;
-          char *s = strchr (event, ' ');
-          if (s)
-            {
-              x = atoi (s);
-              s = strchr (s + 1, ' ');
-              if (s)
-                {
-                  y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_RELEASE, x/cw + 1, y/ch + 1, x, y);
-                }
-            }
-          clients[active].drawn_rev = 0;
-        }
-    }
   else
     {
       vt_feed_keystring (vt, event);
-      // make optional?
+      // make optional? - reset of scroll on key input
       vt_set_scroll (vt, 0);
     }
 }
-
 
 static int key_balance = 0;
 static int key_repeat = 0;
@@ -403,97 +296,39 @@ static int sdl_check_events ()
                 buf[ctx_unichar_to_utf8 (event.key.keysym.sym, (void *) buf)]=0;
                 switch (event.key.keysym.sym)
                   {
-                    case SDLK_LCTRL:
-                      lctrl=1;
-                      break;
-                    case SDLK_LALT:
-                      lalt=1;
-                      break;
-                    case SDLK_RCTRL:
-                      rctrl=1;
-                      break;
-                    case SDLK_F1:
-                      name = "F1";
-                      break;
-                    case SDLK_F2:
-                      name = "F2";
-                      break;
-                    case SDLK_F3:
-                      name = "F3";
-                      break;
-                    case SDLK_F4:
-                      name = "F4";
-                      break;
-                    case SDLK_F5:
-                      name = "F5";
-                      break;
-                    case SDLK_F6:
-                      name = "F6";
-                      break;
-                    case SDLK_F7:
-                      name = "F7";
-                      break;
-                    case SDLK_F8:
-                      name = "F8";
-                      break;
-                    case SDLK_F9:
-                      name = "F9";
-                      break;
-                    case SDLK_F10:
-                      name = "F10";
-                      break;
-                    case SDLK_F11:
-                      name = "F11";
-                      break;
-                    case SDLK_F12:
-                      name = "F12";
-                      break;
-                    case SDLK_ESCAPE:
-                      name = "escape";
-                      break;
-                    case SDLK_DOWN:
-                      name = "down";
-                      break;
-                    case SDLK_LEFT:
-                      name = "left";
-                      break;
-                    case SDLK_UP:
-                      name = "up";
-                      break;
-                    case SDLK_RIGHT:
-                      name = "right";
-                      break;
-                    case SDLK_BACKSPACE:
-                      name = "backspace";
-                      break;
-                    case SDLK_SPACE:
-                      name = "space";
-                      break;
-                    case SDLK_TAB:
-                      name = "tab";
-                      break;
-                    case SDLK_DELETE:
-                      name = "delete";
-                      break;
-                    case SDLK_INSERT:
-                      name = "insert";
-                      break;
+                    case SDLK_LCTRL: lctrl=1; break;
+                    case SDLK_LALT: lalt=1; break;
+                    case SDLK_RCTRL: rctrl=1; break;
+                    case SDLK_F1: name = "F1"; break;
+                    case SDLK_F2: name = "F2"; break;
+                    case SDLK_F3: name = "F3"; break;
+                    case SDLK_F4: name = "F4"; break;
+                    case SDLK_F5: name = "F5"; break;
+                    case SDLK_F6: name = "F6"; break;
+                    case SDLK_F7: name = "F7"; break;
+                    case SDLK_F8: name = "F8"; break;
+                    case SDLK_F9: name = "F9"; break;
+                    case SDLK_F10: name = "F10"; break;
+                    case SDLK_F11: name = "F11"; break;
+                    case SDLK_F12: name = "F12"; break;
+                    case SDLK_ESCAPE: name = "escape"; break;
+                    case SDLK_DOWN: name = "down"; break;
+                    case SDLK_LEFT: name = "left"; break;
+                    case SDLK_UP: name = "up"; break;
+                    case SDLK_RIGHT: name = "right"; break;
+                    case SDLK_BACKSPACE: name = "backspace"; break;
+                    case SDLK_SPACE: name = "space"; break;
+                    case SDLK_TAB: name = "tab"; break;
+                    case SDLK_DELETE: name = "delete"; break;
+                    case SDLK_INSERT: name = "insert"; break;
                     case SDLK_RETURN:
                       //if (key_repeat == 0) // return never should repeat
                       name = "return";   // on a DEC like terminal
                       break;
-                    case SDLK_HOME:
-                      name = "home";
-                      break;
-                    case SDLK_END:
-                      name = "end";
-                      break;
-                    case SDLK_PAGEDOWN:
-                      name = "page-down";
-                      break;
-                    case SDLK_PAGEUP:
-                      name = "page-up";
-                      break;
+                    case SDLK_HOME: name = "home"; break;
+                    case SDLK_END: name = "end"; break;
+                    case SDLK_PAGEDOWN: name = "page-down"; break;
+                    case SDLK_PAGEUP: name = "page-up"; break;
                     default:
                       ;
                   }
@@ -545,15 +380,14 @@ int vt_main (int argc, char **argv)
   execute_self = malloc (strlen (argv[0]) + 16);
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
-  //setsid();
   add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height);
-  //add_client ("/usr/bin/top", width/2, 0, width/2, height);
+  add_client ("/usr/bin/top", width/3, height/3, width/2, height/2);
 
   int sleep_time = 10;
   while (!do_quit)
     {
 again:
-          SDL_RenderClear (renderer);
+      SDL_RenderClear (renderer);
       for (int no = 0; no < client_pos; no++)
       {
         VT *vt = clients[no].vt;
@@ -561,14 +395,13 @@ again:
         int vt_height = clients[no].vt_height;
         //int vt_x = clients[no].x;
         //int vt_y = clients[no].y;
-      int in_scroll = (vt_has_blink (clients[no].vt) >= 10);
+        int in_scroll = (vt_has_blink (clients[no].vt) >= 10);
 
-      if (vt_is_done (vt) )
+        if (vt_is_done (vt) )
         {
           remove_client (no);
           goto again;
         }
-
 
       if ( (clients[no].drawn_rev != vt_rev (vt) ) ||
            vt_has_blink (vt) ||
@@ -646,13 +479,12 @@ again:
 
       for (int a = 0; a < client_pos; a++)
       {
-
-      if (vt_poll (clients[a].vt, sleep_time/client_pos) )
+        if (vt_poll (clients[a].vt, sleep_time/client_pos) )
         {
           if (sleep_time > 2500)
             { sleep_time = 2500; }
         }
-      else
+        else
         {
           sleep_time *= 1.5;
         }

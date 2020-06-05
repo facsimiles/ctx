@@ -821,6 +821,10 @@ void vt_set_font_size (VT *vt, float font_size)
   _vt_compute_cw_ch (vt);
   vt_cell_cache_clear (vt);
 }
+float       vt_get_font_size      (VT *vt)
+{
+  return vt->font_size;
+}
 
 void vt_set_line_spacing (VT *vt, float line_spacing)
 {
@@ -4420,6 +4424,130 @@ static const char *keymap_general[][2]=
 
 void vt_feed_keystring (VT *vt, const char *str)
 {
+  if (!strcmp (str, "shift-page-up") )
+    {
+      int new_scroll = vt_get_scroll (vt) + vt_get_rows (vt) /2;
+      vt_set_scroll (vt, new_scroll);
+      vt_rev_inc (vt);
+      return;
+    }
+  else if (!strcmp (str, "shift-page-down") )
+    {
+      int new_scroll = vt_get_scroll (vt) - vt_get_rows (vt) /2;
+      if (new_scroll < 0) { new_scroll = 0; }
+      vt_set_scroll (vt, new_scroll);
+      vt_rev_inc (vt);
+      return;
+    }
+  else if (!strcmp (str, "shift-control--") ||
+           !strcmp (str, "control--") )
+    {
+      float font_size = vt_get_font_size (vt);
+      int vt_width = vt->cols * vt->cw;
+      int vt_height = vt->rows * vt->ch;
+      font_size /= 1.15;
+      font_size = (int) (font_size);
+      if (font_size < 5) { font_size = 5; }
+      vt_set_font_size (vt, font_size);
+      vt_set_term_size (vt, vt_width / vt_cw (vt), vt_height / vt_ch (vt) );
+      return;
+    }
+  else if (!strcmp (str, "shift-control-=") ||
+           !strcmp (str, "control-=") )
+    {
+      float font_size = vt_get_font_size (vt);
+      int vt_width = vt->cols * vt->cw;
+      int vt_height = vt->rows * vt->ch;
+      float old = font_size;
+      font_size *= 1.15;
+      font_size = (int) (font_size);
+      if (old == font_size) { font_size = old+1; }
+      if (font_size > 200) { font_size = 200; }
+      vt_set_font_size (vt, font_size);
+      vt_set_term_size (vt, vt_width / vt_cw (vt), vt_height / vt_ch (vt) );
+      return;
+    }
+  else if (!strcmp (str, "shift-control-r") )
+    {
+      vt_open_log (vt, "/tmp/ctx-vt");
+    }
+  else if (!strcmp (str, "shift-control-l") )
+    {
+      vt_set_local (vt, !vt_get_local (vt) );
+      return;
+    }
+  else if (!strncmp (str, "mouse-", 5) )
+    {
+      int cw = vt_cw (vt);
+      int ch = vt_ch (vt);
+      if (!strncmp (str + 6, "motion", 6) )
+        {
+          int x = 0, y = 0;
+          char *s = strchr (str, ' ');
+          if (s)
+            {
+              x = atoi (s);
+              s = strchr (s + 1, ' ');
+              if (s)
+                {
+                  y = atoi (s);
+                  vt_mouse (vt, VT_MOUSE_MOTION, x/cw + 1, y/ch + 1, x, y);
+                }
+            }
+        }
+      else if (!strncmp (str + 6, "press", 5) )
+        {
+          int x = 0, y = 0;
+          char *s = strchr (str, ' ');
+          if (s)
+            {
+              x = atoi (s);
+              s = strchr (s + 1, ' ');
+              if (s)
+                {
+                  y = atoi (s);
+                  vt_mouse (vt, VT_MOUSE_PRESS, x/cw + 1, y/ch + 1, x, y);
+                }
+            }
+          //clients[active].drawn_rev = 0;
+        }
+      else if (!strncmp (str + 6, "drag", 4) )
+        {
+          int x = 0, y = 0;
+          char *s = strchr (str, ' ');
+          if (s)
+            {
+              x = atoi (s);
+              s = strchr (s + 1, ' ');
+              if (s)
+                {
+                  y = atoi (s);
+                  vt_mouse (vt, VT_MOUSE_DRAG, x/cw + 1, y/ch + 1, x, y);
+                }
+            }
+          //clients[active].drawn_rev = 0;
+        }
+      else if (!strncmp (str + 6, "release", 7) )
+        {
+          int x = 0, y = 0;
+          char *s = strchr (str, ' ');
+          if (s)
+            {
+              x = atoi (s);
+              s = strchr (s + 1, ' ');
+              if (s)
+                {
+                  y = atoi (s);
+                  vt_mouse (vt, VT_MOUSE_RELEASE, x/cw + 1, y/ch + 1, x, y);
+                }
+            }
+          //clients[active].drawn_rev = 0;
+          // queue-draw
+        }
+      return;
+    }
+
+
   if (vt->state == vt_state_vt52)
     {
       for (unsigned int i = 0; i<sizeof (keymap_vt52) /sizeof (keymap_vt52[0]); i++)
@@ -4435,6 +4563,8 @@ void vt_feed_keystring (VT *vt, const char *str)
               { str = keymap_application[i][1]; goto done; }
         }
     }
+
+
   if (!strcmp (str, "return") )
     {
       if (vt->cr_on_lf)
