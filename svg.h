@@ -1,14 +1,12 @@
 #define MRG_MAX_STYLE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_STATE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_FLOATS           16
-#define MRG_MAX_CBS              128
 #define MRG_MAX_SELECTOR_LENGTH  64
 #define MRG_MAX_CSS_STRINGLEN    512
 #define MRG_MAX_CSS_RULELEN      32   // XXX doesnt have overflow protection
 #define MRG_MAX_CSS_RULES        128
 
 /* other important maximums */
-#define CTX_MAX_BINDINGS         256
 #define MRG_MAX_TEXT_LISTEN      256
 
 #define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
@@ -409,12 +407,6 @@
  * wherever it is used.
  */
 
-typedef struct _CtxList CtxList;
-  struct _CtxList {void *data;CtxList *next;
-  void (*freefunc)(void *data, void *freefunc_data);
-  void *freefunc_data;
-}
-;
 
 static inline void ctx_list_prepend_full (CtxList **list, void *data,
     void (*freefunc)(void *data, void *freefunc_data),
@@ -634,148 +626,18 @@ void ctx_list_sort (CtxList **head,
 #include <string.h>
 #include <math.h>
 
-typedef enum _CtxEventType CtxEventType;
-enum _CtxEventType {
-  MRG_PRESS          = 1 << 0,
-  MRG_MOTION         = 1 << 1,
-  MRG_RELEASE        = 1 << 2,
-  MRG_ENTER          = 1 << 3,
-  MRG_LEAVE          = 1 << 4,
-  MRG_TAP            = 1 << 5,
-  MRG_TAP_AND_HOLD   = 1 << 6,
-
-  /* NYI: SWIPE, ZOOM ROT_ZOOM, */
-
-  MRG_DRAG_PRESS     = 1 << 7,
-  MRG_DRAG_MOTION    = 1 << 8,
-  MRG_DRAG_RELEASE   = 1 << 9,
-  MRG_KEY_DOWN       = 1 << 10,
-  MRG_KEY_UP         = 1 << 11,
-  MRG_SCROLL         = 1 << 12,
-  MRG_MESSAGE        = 1 << 13,
-  MRG_DROP           = 1 << 14,
-
-  /* client should store state - preparing
-                                 * for restart
-                                 */
-
-  MRG_POINTER  = (MRG_PRESS | MRG_MOTION | MRG_RELEASE | MRG_DROP),
-  MRG_TAPS     = (MRG_TAP | MRG_TAP_AND_HOLD),
-  MRG_CROSSING = (MRG_ENTER | MRG_LEAVE),
-  MRG_DRAG     = (MRG_DRAG_PRESS | MRG_DRAG_MOTION | MRG_DRAG_RELEASE),
-  MRG_KEY      = (MRG_KEY_DOWN | MRG_KEY_UP),
-  MRG_MISC     = (MRG_MESSAGE),
-  MRG_ANY      = (MRG_POINTER | MRG_DRAG | MRG_CROSSING | MRG_KEY | MRG_MISC | MRG_TAPS),
-};
-
-#define MRG_CLICK   MRG_PRESS   // SHOULD HAVE MORE LOGIC
-
+typedef struct _Mrg Mrg;
 typedef struct _MrgHtml      MrgHtml; 
 typedef struct _MrgHtmlState MrgHtmlState;
 
-typedef struct _MrgRectangle MrgRectangle;
-struct _MrgRectangle {
+typedef struct _CtxRectangle CtxRectangle;
+struct _CtxRectangle {
   int x;
   int y;
   int width;
   int height;
 };
 
-typedef enum _MrgModifierState MrgModifierState;
-
-enum _MrgModifierState
-{
-  MRG_MODIFIER_STATE_SHIFT   = (1<<0),
-  MRG_MODIFIER_STATE_CONTROL = (1<<1),
-  MRG_MODIFIER_STATE_ALT     = (1<<2),
-  MRG_MODIFIER_STATE_BUTTON1 = (1<<3),
-  MRG_MODIFIER_STATE_BUTTON2 = (1<<4),
-  MRG_MODIFIER_STATE_BUTTON3 = (1<<5)
-};
-
-typedef enum _MrgScrollDirection MrgScrollDirection;
-enum _MrgScrollDirection
-{
-  MRG_SCROLL_DIRECTION_UP,
-  MRG_SCROLL_DIRECTION_DOWN,
-  MRG_SCROLL_DIRECTION_LEFT,
-  MRG_SCROLL_DIRECTION_RIGHT
-};
-
-typedef struct _MrgEvent MrgEvent;
-typedef struct _Mrg Mrg;
-
-struct _MrgEvent {
-  CtxEventType  type;
-  Mrg     *mrg;
-  uint32_t time;
-
-  MrgModifierState state;
-
-  int      device_no; /* 0 = left mouse button / virtual focus */
-                      /* 1 = middle mouse button */
-                      /* 2 = right mouse button */
-                      /* 3 = first multi-touch .. (NYI) */
-
-  float   device_x; /* untransformed (device) coordinates  */
-  float   device_y;
-
-  /* coordinates; and deltas for motion/drag events in user-coordinates: */
-  float   x;
-  float   y;
-  float   start_x; /* start-coordinates (press) event for drag, */
-  float   start_y; /*    untransformed coordinates */
-  float   prev_x;  /* previous events coordinates */
-  float   prev_y;
-  float   delta_x; /* x - prev_x, redundant - but often useful */
-  float   delta_y; /* y - prev_y, redundant - ..  */
-
-  MrgScrollDirection scroll_direction;
-
-  unsigned int unicode; /* only valid for key-events */
-
-  const char *string;   /* as key can be "up" "down" "space" "backspace" "a" "b" "ø" etc .. */
-                        /* this is also where the message is delivered for
-                         * MESSAGE events
-                         *
-                         * and the data for drop events are delivered
-                         */
-  int stop_propagate; /* */
-};
-
-typedef void (*MrgCb) (MrgEvent *event,
-                       void     *data,
-                       void     *data2);
-
-typedef struct CtxItemCb {
-  CtxEventType types;
-  MrgCb        cb;
-  void*        data1;
-  void*        data2;
-
-  void (*finalize) (void *data1, void *data2, void *finalize_data);
-  void  *finalize_data;
-
-} CtxItemCb;
-
-typedef struct CtxItem {
-  CtxMatrix inv_matrix;  /* for event coordinate transforms */
-
-  /* bounding box */
-  float          x0;
-  float          y0;
-  float          x1;
-  float          y1;
-
-  void *path;
-  double          path_hash;
-
-  CtxEventType   types; /* all cb's ored together */
-  CtxItemCb cb[MRG_MAX_CBS];
-  int       cb_count;
-
-  int       ref_count;
-} CtxItem;
 
 typedef struct _MrgStyleNode MrgStyleNode;
 typedef struct _MrgHtmlState MrgHtmlState;
@@ -821,19 +683,8 @@ struct _MrgHtmlState
 };
 
 
-typedef void (*MrgDestroyNotify) (void *data);
 typedef void (*MrgNewText)       (const char *new_text, void *data);
 typedef void (*UiRenderFun)      (Mrg *mrg, void *ui_data);
-
-typedef struct MrgBinding {
-  char *nick;
-  char *command;
-  char *label;
-  MrgCb cb;
-  void *cb_data;
-  MrgDestroyNotify destroy_notify;
-  void  *destroy_data;
-} MrgBinding;
 
 struct _MrgHtml
 {
@@ -849,7 +700,7 @@ struct _MrgHtml
   //int   attributes;
 };
 
-
+typedef struct _Mrg Mrg;
 typedef struct _MrgGeoCache MrgGeoCache;
 struct _MrgGeoCache
 {
@@ -1112,29 +963,6 @@ typedef struct MrgState {
 struct _Mrg {
   Ctx            *ctx;
 
-#define CTX_MAX_DEVICES 16
-  int             frozen;
-  int             fullscreen;
-  CtxList        *grabs; /* could split the grabs per device in the same way,
-                            to make dispatch overhead smaller,. probably
-                            not much to win though. */
-  CtxItem         *prev[CTX_MAX_DEVICES];
-  float            pointer_x[CTX_MAX_DEVICES];
-  float            pointer_y[CTX_MAX_DEVICES];
-  unsigned char    pointer_down[CTX_MAX_DEVICES];
-  MrgEvent         drag_event[CTX_MAX_DEVICES];
-  CtxList         *idles;
-  int              idle_id;
-  MrgBinding       bindings[CTX_MAX_BINDINGS]; /*< better as list, uses no mem if unused */
-  int              n_bindings;
-  int              width;
-  int              height;
-  CtxList         *items;
-  MrgModifierState modifier_state;
-  int              tap_delay_min;
-  int              tap_delay_max;
-  int              tap_delay_hold;
-  double           tap_hysteresis;
 
   float            rem;
   MrgHtml          html;
@@ -1147,8 +975,8 @@ struct _Mrg {
   int              quit;
   float            x; /* in px */
   float            y; /* in px */
-  MrgRectangle     dirty;
-  MrgRectangle     dirty_during_paint; // queued during painting
+  CtxRectangle     dirty;
+  CtxRectangle     dirty_during_paint; // queued during painting
   MrgState        *state;
   CtxList         *geo_cache;
   MrgState         states[MRG_MAX_STATE_DEPTH];
@@ -1179,7 +1007,7 @@ struct _Mrg {
   MrgNewText       update_string;
   void            *update_string_user_data;
 
-  MrgDestroyNotify update_string_destroy_notify;
+  CtxDestroyNotify update_string_destroy_notify;
   void            *update_string_destroy_data;
 
   int              cursor_pos;
@@ -1193,7 +1021,7 @@ struct _Mrg {
   //cairo_scaled_font_t *scaled_font;
 
   CtxEventType          text_listen_types[MRG_MAX_TEXT_LISTEN];
-  MrgCb            text_listen_cb[MRG_MAX_TEXT_LISTEN];
+  CtxCb            text_listen_cb[MRG_MAX_TEXT_LISTEN];
   void            *text_listen_data1[MRG_MAX_TEXT_LISTEN];
   void            *text_listen_data2[MRG_MAX_TEXT_LISTEN];
 
@@ -1209,15 +1037,16 @@ struct _Mrg {
 ///////////////////////// YYY
 //
 
-void ctx_add_binding_full (Mrg *mrg,
+void ctx_add_binding_full (Ctx *ctx,
                            const char *key,
                            const char *action,
                            const char *label,
-                           MrgCb       cb,
+                           CtxCb       cb,
                            void       *cb_data,
-                           MrgDestroyNotify destroy_notify,
+                           CtxDestroyNotify destroy_notify,
                            void       *destroy_data)
 {
+  CtxEvents *mrg = &ctx->events;
   if (mrg->n_bindings +1 >= CTX_MAX_BINDINGS)
   {
     fprintf (stderr, "warning: mrg binding overflow\n");
@@ -1237,19 +1066,20 @@ void ctx_add_binding_full (Mrg *mrg,
   mrg->n_bindings++;
 }
 
-void ctx_add_binding (Mrg *mrg,
+void ctx_add_binding (Ctx *ctx,
                       const char *key,
                       const char *action,
                       const char *label,
-                      MrgCb cb,
+                      CtxCb cb,
                       void  *cb_data)
 {
-  ctx_add_binding_full (mrg, key, action, label, cb, cb_data, NULL, NULL);
+  ctx_add_binding_full (ctx, key, action, label, cb, cb_data, NULL, NULL);
 }
 
-void _ctX_bindings_key_down (MrgEvent *event, void *data1, void *data2)
+void _ctX_bindings_key_down (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = event->mrg;
+  Ctx *ctx = event->ctx;
+  CtxEvents *mrg = &ctx->events;
   int i;
   int handled = 0;
 
@@ -1277,8 +1107,9 @@ void _ctX_bindings_key_down (MrgEvent *event, void *data1, void *data2)
     }
 }
 
-void ctx_clear_bindings (Mrg *mrg)
+void ctx_clear_bindings (Ctx *ctx)
 {
+  CtxEvents *mrg = &ctx->events;
   int i;
   for (i = 0; mrg->bindings[i].nick; i ++)
   {
@@ -1294,13 +1125,13 @@ void ctx_clear_bindings (Mrg *mrg)
   mrg->n_bindings = 0;
 }
 
-MrgBinding *ctx_get_bindings (Mrg *mrg)
+CtxBinding *ctx_get_bindings (Ctx *ctx)
 {
-  return &mrg->bindings[0];
+  return &ctx->events.bindings[0];
 }
 
 typedef struct CtxIdleCb {
-  int (*cb) (Mrg *mrg, void *idle_data);
+  int (*cb) (Ctx *ctx, void *idle_data);
   void *idle_data;
 
   void (*destroy_notify)(void *destroy_data);
@@ -1312,16 +1143,16 @@ typedef struct CtxIdleCb {
   int   id;
 } CtxIdleCb;
 
-void ctx_remove_idle (Mrg *mrg, int handle)
+void ctx_remove_idle (Ctx *ctx, int handle)
 {
   CtxList *l;
   CtxList *to_remove = NULL;
 
-  if (!mrg->idles)
+  if (!ctx->events.idles)
   {
     return;
   }
-  for (l = mrg->idles; l; l = l->next)
+  for (l = ctx->events.idles; l; l = l->next)
   {
     CtxIdleCb *item = l->data;
     if (item->id == handle)
@@ -1332,49 +1163,49 @@ void ctx_remove_idle (Mrg *mrg, int handle)
     CtxIdleCb *item = l->data;
     if (item->destroy_notify)
       item->destroy_notify (item->destroy_data);
-    ctx_list_remove (&mrg->idles, l->data);
+    ctx_list_remove (&ctx->events.idles, l->data);
   }
 }
 
-int ctx_add_timeout_full (Mrg *mrg, int ms, int (*idle_cb)(Mrg *mrg, void *idle_data), void *idle_data,
+int ctx_add_timeout_full (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                           void (*destroy_notify)(void *destroy_data), void *destroy_data)
 {
   CtxIdleCb *item = calloc (sizeof (CtxIdleCb), 1);
   item->cb              = idle_cb;
   item->idle_data       = idle_data;
-  item->id              = ++mrg->idle_id;
+  item->id              = ++ctx->events.idle_id;
   item->ticks_full      = 
   item->ticks_remaining = ms * 1000;
   item->destroy_notify  = destroy_notify;
   item->destroy_data    = destroy_data;
-  ctx_list_append (&mrg->idles, item);
+  ctx_list_append (&ctx->events.idles, item);
   return item->id;
 }
 
-int ctx_add_timeout (Mrg *mrg, int ms, int (*idle_cb)(Mrg *mrg, void *idle_data), void *idle_data)
+int ctx_add_timeout (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data)
 {
-  return ctx_add_timeout_full (mrg, ms, idle_cb, idle_data, NULL, NULL);
+  return ctx_add_timeout_full (ctx, ms, idle_cb, idle_data, NULL, NULL);
 }
 
-int ctx_add_idle_full (Mrg *mrg, int (*idle_cb)(Mrg *mrg, void *idle_data), void *idle_data,
+int ctx_add_idle_full (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                                  void (*destroy_notify)(void *destroy_data), void *destroy_data)
 {
   CtxIdleCb *item = calloc (sizeof (CtxIdleCb), 1);
   item->cb = idle_cb;
   item->idle_data = idle_data;
-  item->id = ++mrg->idle_id;
+  item->id = ++ctx->events.idle_id;
   item->ticks_full =
   item->ticks_remaining = -1;
   item->is_idle = 1;
   item->destroy_notify = destroy_notify;
   item->destroy_data = destroy_data;
-  ctx_list_append (&mrg->idles, item);
+  ctx_list_append (&ctx->events.idles, item);
   return item->id;
 }
 
-int ctx_add_idle (Mrg *mrg, int (*idle_cb)(Mrg *mrg, void *idle_data), void *idle_data)
+int ctx_add_idle (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data)
 {
-  return ctx_add_idle_full (mrg, idle_cb, idle_data, NULL, NULL);
+  return ctx_add_idle_full (ctx, idle_cb, idle_data, NULL, NULL);
 }
 
 /* using bigger primes would be a good idea, this falls apart due to rounding
@@ -1478,9 +1309,9 @@ path_equal (void *path,
   return 0;
 }
 
-void ctx_listen_full (Mrg     *mrg,
+void ctx_listen_full (Ctx     *ctx,
                       CtxEventType  types,
-                      MrgCb    cb,
+                      CtxCb    cb,
                       void    *data1,
                       void    *data2,
                       void   (*finalize)(void *listen_data, void *listen_data2,
@@ -1489,13 +1320,12 @@ void ctx_listen_full (Mrg     *mrg,
 {
   float x, y, width, height;
 
-  if (!mrg->frozen)
+  if (!ctx->events.frozen)
   {
     CtxItem *item;
-    Ctx *cr = mrg_cr (mrg);
 
     /* generate bounding box of what to listen for - from current cairo path */
-    if (types & MRG_KEY)
+    if (types & CTX_KEY)
     {
       x = 0;
       y = 0;
@@ -1504,7 +1334,7 @@ void ctx_listen_full (Mrg     *mrg,
     }
     else
     {float ex1,ey1,ex2,ey2;
-     ctx_path_extents (cr, &ex1, &ey1, &ex2, &ey2);
+     ctx_path_extents (ctx, &ex1, &ey1, &ex2, &ey2);
      x = ex1;
      y = ey1;
      width = ex2 - ex1;
@@ -1517,10 +1347,10 @@ void ctx_listen_full (Mrg     *mrg,
       float ty = y;
       float tw = width;
       float th = height;
-      ctx_user_to_device (&cr->state, &tx, &ty);
-      ctx_user_to_device_distance (&cr->state, &tw, &th);
-      if (ty > mrg->height * 2 ||
-          tx > mrg->width * 2 ||
+      ctx_user_to_device (&ctx->state, &tx, &ty);
+      ctx_user_to_device_distance (&ctx->state, &tw, &th);
+      if (ty > ctx->events.height * 2 ||
+          tx > ctx->events.width * 2 ||
           tx + tw < 0 ||
           ty + th < 0)
       {
@@ -1545,13 +1375,13 @@ void ctx_listen_full (Mrg     *mrg,
     item->types = types;
     //item->path = cairo_copy_path (cr); // XXX
     item->path_hash = path_hash (item->path);
-    ctx_get_matrix (cr, &item->inv_matrix);
+    ctx_get_matrix (ctx, &item->inv_matrix);
     ctx_matrix_invert (&item->inv_matrix);
 
-    if (mrg->items)
+    if (ctx->events.items)
     {
       CtxList *l;
-      for (l = mrg->items; l; l = l->next)
+      for (l = ctx->events.items; l; l = l->next)
       {
         CtxItem *item2 = l->data;
 
@@ -1575,25 +1405,25 @@ void ctx_listen_full (Mrg     *mrg,
       }
     }
     item->ref_count = 1;
-    ctx_list_prepend_full (&mrg->items, item, (void*)_ctx_item_unref, NULL);
+    ctx_list_prepend_full (&ctx->events.items, item, (void*)_ctx_item_unref, NULL);
   }
 }
 
-void ctx_event_stop_propagate (MrgEvent *event)
+void ctx_event_stop_propagate (CtxEvent *event)
 {
   if (event)
     event->stop_propagate = 1;
 }
 
-void ctx_listen (Mrg     *mrg,
+void ctx_listen (Ctx          *ctx,
                  CtxEventType  types,
-                 MrgCb    cb,
-                 void*    data1,
-                 void*    data2)
+                 CtxCb         cb,
+                 void*         data1,
+                 void*         data2)
 {
-  if (types == MRG_DRAG_MOTION)
-    types = MRG_DRAG_MOTION | MRG_DRAG_PRESS;
-  return ctx_listen_full (mrg, types, cb, data1, data2, NULL, NULL);
+  if (types == CTX_DRAG_MOTION)
+    types = CTX_DRAG_MOTION | CTX_DRAG_PRESS;
+  return ctx_listen_full (ctx, types, cb, data1, data2, NULL, NULL);
 }
 
 typedef struct _CtxGrab CtxGrab;
@@ -1609,39 +1439,39 @@ struct _CtxGrab
   CtxEventType  type;
 };
 
-static void grab_free (Mrg *mrg, CtxGrab *grab)
+static void grab_free (Ctx *ctx, CtxGrab *grab)
 {
   if (grab->timeout_id)
   {
-    ctx_remove_idle (mrg, grab->timeout_id);
+    ctx_remove_idle (ctx, grab->timeout_id);
     grab->timeout_id = 0;
   }
   _ctx_item_unref (grab->item);
   free (grab);
 }
 
-static void device_remove_grab (Mrg *mrg, CtxGrab *grab)
+static void device_remove_grab (Ctx *ctx, CtxGrab *grab)
 {
-  ctx_list_remove (&mrg->grabs, grab);
-  grab_free (mrg, grab);
+  ctx_list_remove (&ctx->events.grabs, grab);
+  grab_free (ctx, grab);
 }
 
-static CtxGrab *device_add_grab (Mrg *mrg, int device_no, CtxItem *item, CtxEventType type)
+static CtxGrab *device_add_grab (Ctx *ctx, int device_no, CtxItem *item, CtxEventType type)
 {
   CtxGrab *grab = calloc (1, sizeof (CtxGrab));
   grab->item = item;
   grab->type = type;
   _ctx_item_ref (item);
   grab->device_no = device_no;
-  ctx_list_append (&mrg->grabs, grab);
+  ctx_list_append (&ctx->events.grabs, grab);
   return grab;
 }
 
-CtxList *device_get_grabs (Mrg *mrg, int device_no)
+CtxList *device_get_grabs (Ctx *ctx, int device_no)
 {
   CtxList *ret = NULL;
   CtxList *l;
-  for (l = mrg->grabs; l; l = l->next)
+  for (l = ctx->events.grabs; l; l = l->next)
   {
     CtxGrab *grab = l->data;
     if (grab->device_no == device_no)
@@ -1660,19 +1490,19 @@ static void _mrg_restore_path (Ctx *ctx, void *path)  //XXX
   //cairo_append_path (cr, path);
 }
 
-CtxList *_ctx_detect_list (Mrg *mrg, float x, float y, CtxEventType type)
+CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
 {
   CtxList *a;
   CtxList *ret = NULL;
 
-  if (type == MRG_KEY_DOWN ||
-      type == MRG_KEY_UP ||
-      type == MRG_MESSAGE ||
-      type == (MRG_KEY_DOWN|MRG_MESSAGE) ||
-      type == (MRG_KEY_DOWN|MRG_KEY_UP) ||
-      type == (MRG_KEY_DOWN|MRG_KEY_UP|MRG_MESSAGE))
+  if (type == CTX_KEY_DOWN ||
+      type == CTX_KEY_UP ||
+      type == CTX_MESSAGE ||
+      type == (CTX_KEY_DOWN|CTX_MESSAGE) ||
+      type == (CTX_KEY_DOWN|CTX_KEY_UP) ||
+      type == (CTX_KEY_DOWN|CTX_KEY_UP|CTX_MESSAGE))
   {
-    for (a = mrg->items; a; a = a->next)
+    for (a = ctx->events.items; a; a = a->next)
     {
       CtxItem *item = a->data;
       if (item->types & type)
@@ -1684,7 +1514,7 @@ CtxList *_ctx_detect_list (Mrg *mrg, float x, float y, CtxEventType type)
     return NULL;
   }
 
-  for (a = mrg->items; a; a = a->next)
+  for (a = ctx->events.items; a; a = a->next)
   {
     CtxItem *item= a->data;
   
@@ -1699,7 +1529,6 @@ CtxList *_ctx_detect_list (Mrg *mrg, float x, float y, CtxEventType type)
     {
       if (item->path)
       {
-        Ctx *ctx = mrg_cr (mrg);
         _mrg_restore_path (ctx, item->path);
         if (ctx_in_fill (ctx, u, v))
         {
@@ -1717,9 +1546,9 @@ CtxList *_ctx_detect_list (Mrg *mrg, float x, float y, CtxEventType type)
   return ret;
 }
 
-CtxItem *_ctx_detect (Mrg *mrg, float x, float y, CtxEventType type)
+CtxItem *_ctx_detect (Ctx *ctx, float x, float y, CtxEventType type)
 {
-  CtxList *l = _ctx_detect_list (mrg, x, y, type);
+  CtxList *l = _ctx_detect_list (ctx, x, y, type);
   if (l)
   {
     ctx_list_reverse (&l);
@@ -1731,10 +1560,10 @@ CtxItem *_ctx_detect (Mrg *mrg, float x, float y, CtxEventType type)
 }
 
 static int
-_ctx_emit_cb_item (Mrg *mrg, CtxItem *item, MrgEvent *event, CtxEventType type, float x, float y)
+_ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, float x, float y)
 {
-  static MrgEvent s_event;
-  MrgEvent transformed_event;
+  static CtxEvent s_event;
+  CtxEvent transformed_event;
   int i;
 
   if (!event)
@@ -1744,7 +1573,7 @@ _ctx_emit_cb_item (Mrg *mrg, CtxItem *item, MrgEvent *event, CtxEventType type, 
     event->x = x;
     event->y = y;
   }
-  event->mrg = mrg;
+  event->ctx = ctx;
   transformed_event = *event;
   transformed_event.device_x = event->x;
   transformed_event.device_y = event->y;
@@ -1757,9 +1586,9 @@ _ctx_emit_cb_item (Mrg *mrg, CtxItem *item, MrgEvent *event, CtxEventType type, 
     transformed_event.x = tx;
     transformed_event.y = ty;
 
-    if ((type & MRG_DRAG_PRESS) ||
-        (type & MRG_DRAG_MOTION) ||
-        (type & MRG_MOTION))   /* probably a worthwhile check for the performance 
+    if ((type & CTX_DRAG_PRESS) ||
+        (type & CTX_DRAG_MOTION) ||
+        (type & CTX_MOTION))   /* probably a worthwhile check for the performance 
                                   benefit
                                 */
     {
@@ -1778,7 +1607,7 @@ _ctx_emit_cb_item (Mrg *mrg, CtxItem *item, MrgEvent *event, CtxEventType type, 
     transformed_event.delta_y = ty;
   }
 
-  transformed_event.state = mrg->modifier_state;
+  transformed_event.state = ctx->events.modifier_state;
   transformed_event.type = type;
 
   for (i = item->cb_count-1; i >= 0; i--)
@@ -1795,20 +1624,20 @@ _ctx_emit_cb_item (Mrg *mrg, CtxItem *item, MrgEvent *event, CtxEventType type, 
 }
 
 static int
-_ctx_emit_cb (Mrg *mrg, CtxList *items, MrgEvent *event, CtxEventType type, float x, float y)
+_ctx_emit_cb (Ctx *ctx, CtxList *items, CtxEvent *event, CtxEventType type, float x, float y)
 {
   CtxList *l;
   event->stop_propagate = 0;
   for (l = items; l; l = l->next)
   {
-    _ctx_emit_cb_item (mrg, l->data, event, type, x, y);
+    _ctx_emit_cb_item (ctx, l->data, event, type, x, y);
     if (event->stop_propagate)
       return event->stop_propagate;
   }
   return 0;
 }
 
-static void mrg_queue_draw (Mrg *mrg, MrgRectangle *rect)
+static void mrg_queue_draw (Mrg *mrg, CtxRectangle *rect)
 {
 }
 
@@ -1817,11 +1646,11 @@ static void mrg_queue_draw (Mrg *mrg, MrgRectangle *rect)
  * a well.
  *
  */
-static CtxItem *_mrg_update_item (Mrg *mrg, int device_no, float x, float y, CtxEventType type, CtxList **hitlist)
+static CtxItem *_ctx_update_item (Ctx *ctx, int device_no, float x, float y, CtxEventType type, CtxList **hitlist)
 {
   CtxItem *current = NULL;
 
-  CtxList *l = _ctx_detect_list (mrg, x, y, type);
+  CtxList *l = _ctx_detect_list (ctx, x, y, type);
   if (l)
   {
     ctx_list_reverse (&l);
@@ -1832,40 +1661,44 @@ static CtxItem *_mrg_update_item (Mrg *mrg, int device_no, float x, float y, Ctx
   else
     ctx_list_free (&l);
 
-  if (mrg->prev[device_no] == NULL || current == NULL || (current->path_hash != mrg->prev[device_no]->path_hash))
+  if (ctx->events.prev[device_no] == NULL || current == NULL || (current->path_hash != ctx->events.prev[device_no]->path_hash))
   {
-    int focus_radius = 2;
+    //int focus_radius = 2;
     if (current)
       _ctx_item_ref (current);
 
-    if (mrg->prev[device_no])
+    if (ctx->events.prev[device_no])
     {
       {
-        MrgRectangle rect = {floor(mrg->prev[device_no]->x0-focus_radius),
-                             floor(mrg->prev[device_no]->y0-focus_radius),
-                             ceil(mrg->prev[device_no]->x1)-floor(mrg->prev[device_no]->x0) + focus_radius * 2,
-                             ceil(mrg->prev[device_no]->y1)-floor(mrg->prev[device_no]->y0) + focus_radius * 2};
+#if 0
+        CtxRectangle rect = {floor(ctx->events.prev[device_no]->x0-focus_radius),
+                             floor(ctx->events.prev[device_no]->y0-focus_radius),
+                             ceil(ctx->events.prev[device_no]->x1)-floor(ctx->events.prev[device_no]->x0) + focus_radius * 2,
+                             ceil(ctx->events.prev[device_no]->y1)-floor(ctx->events.prev[device_no]->y0) + focus_radius * 2};
         mrg_queue_draw (mrg, &rect);
+#endif 
       }
 
-      _ctx_emit_cb_item (mrg, mrg->prev[device_no], NULL, MRG_LEAVE, x, y);
-      _ctx_item_unref (mrg->prev[device_no]);
-      mrg->prev[device_no] = NULL;
+      _ctx_emit_cb_item (ctx, ctx->events.prev[device_no], NULL, CTX_LEAVE, x, y);
+      _ctx_item_unref (ctx->events.prev[device_no]);
+      ctx->events.prev[device_no] = NULL;
     }
     if (current)
     {
+#if 0
       {
-        MrgRectangle rect = {floor(current->x0-focus_radius),
+        CtxRectangle rect = {floor(current->x0-focus_radius),
                              floor(current->y0-focus_radius),
                              ceil(current->x1)-floor(current->x0) + focus_radius * 2,
                              ceil(current->y1)-floor(current->y0) + focus_radius * 2};
         mrg_queue_draw (mrg, &rect);
       }
-      _ctx_emit_cb_item (mrg, current, NULL, MRG_ENTER, x, y);
-      mrg->prev[device_no] = current;
+#endif
+      _ctx_emit_cb_item (ctx, current, NULL, CTX_ENTER, x, y);
+      ctx->events.prev[device_no] = current;
     }
   }
-  current = _ctx_detect (mrg, x, y, type);
+  current = _ctx_detect (ctx, x, y, type);
   return current;
 }
 
@@ -1876,7 +1709,7 @@ static struct timeval start_time;
 #define usecs(time)    ((time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
 static void
-init_ticks (void)
+_ctx_init_ticks (void)
 {
   static int done = 0;
 
@@ -1886,37 +1719,37 @@ init_ticks (void)
   gettimeofday (&start_time, NULL);
 }
 static inline long
-_mrg_ticks (void)
+_ctx_ticks (void)
 {
   struct timeval measure_time;
-  init_ticks ();
+  _ctx_init_ticks ();
   gettimeofday (&measure_time, NULL);
   return usecs (measure_time) - usecs (start_time);
 }
 
-uint32_t mrg_ms (Mrg *mrg)
+uint32_t ctx_ms (Ctx *ctx)
 {
-  return _mrg_ticks () / 1000;
+  return _ctx_ticks () / 1000;
 }
 
-static int tap_and_hold_fire (Mrg *mrg, void *data)
+static int tap_and_hold_fire (Ctx *ctx, void *data)
 {
   CtxGrab *grab = data;
   CtxList *list = NULL;
   ctx_list_prepend (&list, grab->item);
-  MrgEvent event = {0, };
+  CtxEvent event = {0, };
 
-  event.mrg = mrg;
-  event.time = mrg_ms (mrg);
+  event.ctx = ctx;
+  event.time = ctx_ms (ctx);
 
   event.device_x = 
-  event.x = mrg->pointer_x[grab->device_no];
+  event.x = ctx->events.pointer_x[grab->device_no];
   event.device_y = 
-  event.y = mrg->pointer_y[grab->device_no];
+  event.y = ctx->events.pointer_y[grab->device_no];
 
   // XXX: x and y coordinates
-  int ret = _ctx_emit_cb (mrg, list, &event, MRG_TAP_AND_HOLD,
-      mrg->pointer_x[grab->device_no], mrg->pointer_y[grab->device_no]);
+  int ret = _ctx_emit_cb (ctx, list, &event, CTX_TAP_AND_HOLD,
+      ctx->events.pointer_x[grab->device_no], ctx->events.pointer_y[grab->device_no]);
 
   ctx_list_free (&list);
 
@@ -1927,27 +1760,28 @@ static int tap_and_hold_fire (Mrg *mrg, void *data)
   return ret;
 }
 
-int ctx_pointer_drop (Mrg *mrg, float x, float y, int device_no, uint32_t time,
+int ctx_pointer_drop (Ctx *ctx, float x, float y, int device_no, uint32_t time,
                       char *string)
 {
   CtxList *l;
   CtxList *hitlist = NULL;
 
-  mrg->pointer_x[device_no] = x;
-  mrg->pointer_y[device_no] = y;
+  ctx->events.pointer_x[device_no] = x;
+  ctx->events.pointer_y[device_no] = y;
   if (device_no <= 3)
   {
-    mrg->pointer_x[0] = x;
-    mrg->pointer_y[0] = y;
+    ctx->events.pointer_x[0] = x;
+    ctx->events.pointer_y[0] = y;
   }
 
   if (device_no < 0) device_no = 0;
   if (device_no >= CTX_MAX_DEVICES) device_no = CTX_MAX_DEVICES-1;
-  MrgEvent *event = &mrg->drag_event[device_no];
+  CtxEvent *event = &ctx->events.drag_event[device_no];
 
   if (time == 0)
-    time = mrg_ms (mrg);
+    time = ctx_ms (ctx);
 
+  event->ctx = ctx;
   event->x = x;
   event->y = y;
 
@@ -1958,26 +1792,27 @@ int ctx_pointer_drop (Mrg *mrg, float x, float y, int device_no, uint32_t time,
   event->time      = time;
   event->stop_propagate = 0;
 
-  _mrg_update_item (mrg, device_no, x, y, MRG_DROP, &hitlist);
+  _ctx_update_item (ctx, device_no, x, y, CTX_DROP, &hitlist);
 
   for (l = hitlist; l; l = l?l->next:NULL)
   {
-    CtxItem *mrg_item = l->data;
-    _ctx_emit_cb_item (mrg, mrg_item, event, MRG_DROP, x, y);
+    CtxItem *item = l->data;
+    _ctx_emit_cb_item (ctx, item, event, CTX_DROP, x, y);
 
     if (event->stop_propagate)
       l = NULL;
   }
 
-  mrg_queue_draw (mrg, NULL); /* in case of style change, and more  */
+  //mrg_queue_draw (mrg, NULL); /* in case of style change, and more  */
   ctx_list_free (&hitlist);
 
   return 0;
 }
 
 
-int ctx_pointer_press (Mrg *mrg, float x, float y, int device_no, uint32_t time)
+int ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
+  CtxEvents *mrg = &ctx->events;
   CtxList *hitlist = NULL;
   mrg->pointer_x[device_no] = x;
   mrg->pointer_y[device_no] = y;
@@ -1989,10 +1824,10 @@ int ctx_pointer_press (Mrg *mrg, float x, float y, int device_no, uint32_t time)
 
   if (device_no < 0) device_no = 0;
   if (device_no >= CTX_MAX_DEVICES) device_no = CTX_MAX_DEVICES-1;
-  MrgEvent *event = &mrg->drag_event[device_no];
+  CtxEvent *event = &mrg->drag_event[device_no];
 
   if (time == 0)
-    time = mrg_ms (mrg);
+    time = ctx_ms (ctx);
 
   event->x = event->start_x = event->prev_x = x;
   event->y = event->start_y = event->prev_y = y;
@@ -2027,49 +1862,49 @@ int ctx_pointer_press (Mrg *mrg, float x, float y, int device_no, uint32_t time)
   CtxGrab *grab = NULL;
   CtxList *l;
 
-  _mrg_update_item (mrg, device_no, x, y, 
-      MRG_PRESS | MRG_DRAG_PRESS | MRG_TAP | MRG_TAP_AND_HOLD, &hitlist);
+  _ctx_update_item (ctx, device_no, x, y, 
+      CTX_PRESS | CTX_DRAG_PRESS | CTX_TAP | CTX_TAP_AND_HOLD, &hitlist);
 
   for (l = hitlist; l; l = l?l->next:NULL)
   {
-    CtxItem *mrg_item = l->data;
-    if (mrg_item &&
-        ((mrg_item->types & MRG_DRAG)||
-         (mrg_item->types & MRG_TAP) ||
-         (mrg_item->types & MRG_TAP_AND_HOLD)))
+    CtxItem *item = l->data;
+    if (item &&
+        ((item->types & CTX_DRAG)||
+         (item->types & CTX_TAP) ||
+         (item->types & CTX_TAP_AND_HOLD)))
     {
-      grab = device_add_grab (mrg, device_no, mrg_item, mrg_item->types);
+      grab = device_add_grab (ctx, device_no, item, item->types);
       grab->start_time = time;
 
-      if (mrg_item->types & MRG_TAP_AND_HOLD)
+      if (item->types & CTX_TAP_AND_HOLD)
       {
-         grab->timeout_id = ctx_add_timeout (mrg, mrg->tap_delay_hold, tap_and_hold_fire, grab);
+         grab->timeout_id = ctx_add_timeout (ctx, mrg->tap_delay_hold, tap_and_hold_fire, grab);
       }
     }
-    _ctx_emit_cb_item (mrg, mrg_item, event, MRG_PRESS, x, y);
+    _ctx_emit_cb_item (ctx, item, event, CTX_PRESS, x, y);
     if (!event->stop_propagate)
-      _ctx_emit_cb_item (mrg, mrg_item, event, MRG_DRAG_PRESS, x, y);
+      _ctx_emit_cb_item (ctx, item, event, CTX_DRAG_PRESS, x, y);
 
     if (event->stop_propagate)
       l = NULL;
   }
 
-  mrg_queue_draw (mrg, NULL); /* in case of style change, and more  */
+  //mrg_queue_draw (mrg, NULL); /* in case of style change, and more  */
   ctx_list_free (&hitlist);
 
   return 0;
 }
 
 
-void mrg_resized (Mrg *mrg, int width, int height, long time)
+void ctx_resized (Ctx *ctx, int width, int height, long time)
 {
-  CtxItem *item = _ctx_detect (mrg, 0, 0, MRG_KEY_DOWN);
-  MrgEvent event = {0, };
+  CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_DOWN);
+  CtxEvent event = {0, };
 
   if (!time)
-    time = mrg_ms (mrg);
+    time = ctx_ms (ctx);
   
-  event.mrg = mrg;
+  event.ctx = ctx;
   event.time = time;
   event.string = "resize-event"; /* gets delivered to clients as a key_down event, maybe message shouldbe used instead?
    */
@@ -2077,22 +1912,23 @@ void mrg_resized (Mrg *mrg, int width, int height, long time)
   if (item)
   {
     event.stop_propagate = 0;
-    _ctx_emit_cb_item (mrg, item, &event, MRG_KEY_DOWN, 0, 0);
+    _ctx_emit_cb_item (ctx, item, &event, CTX_KEY_DOWN, 0, 0);
   }
 }
 
-int ctx_pointer_release (Mrg *mrg, float x, float y, int device_no, uint32_t time)
+int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
+  CtxEvents *mrg = &ctx->events;
   if (time == 0)
-    time = mrg_ms (mrg);
+    time = ctx_ms (ctx);
 
   if (device_no < 0) device_no = 0;
   if (device_no >= CTX_MAX_DEVICES) device_no = CTX_MAX_DEVICES-1;
-  MrgEvent *event = &mrg->drag_event[device_no];
+  CtxEvent *event = &mrg->drag_event[device_no];
 
   event->time = time;
   event->x = x;
-  event->mrg = mrg;
+  event->ctx = ctx;
   event->y = y;
   event->device_no = device_no;
   event->stop_propagate = 0;
@@ -2115,7 +1951,7 @@ int ctx_pointer_release (Mrg *mrg, float x, float y, int device_no, uint32_t tim
       break;
   }
 
-  mrg_queue_draw (mrg, NULL); /* in case of style change */
+  //mrg_queue_draw (mrg, NULL); /* in case of style change */
 
   if (mrg->pointer_down[device_no] == 0)
   {
@@ -2134,8 +1970,8 @@ int ctx_pointer_release (Mrg *mrg, float x, float y, int device_no, uint32_t tim
   CtxList *grablist = NULL , *g= NULL;
   CtxGrab *grab;
 
-  _mrg_update_item (mrg, device_no, x, y, MRG_RELEASE | MRG_DRAG_RELEASE, &hitlist);
-  grablist = device_get_grabs (mrg, device_no);
+  _ctx_update_item (ctx, device_no, x, y, CTX_RELEASE | CTX_DRAG_RELEASE, &hitlist);
+  grablist = device_get_grabs (ctx, device_no);
 
   for (g = grablist; g; g = g->next)
   {
@@ -2143,7 +1979,7 @@ int ctx_pointer_release (Mrg *mrg, float x, float y, int device_no, uint32_t tim
 
     if (!event->stop_propagate)
     {
-      if (grab->item->types & MRG_TAP)
+      if (grab->item->types & CTX_TAP)
       {
         long delay = time - grab->start_time;
 
@@ -2154,23 +1990,23 @@ int ctx_pointer_release (Mrg *mrg, float x, float y, int device_no, uint32_t tim
               (event->start_y - y) * (event->start_y - y)) < mrg->tap_hysteresis
             )
         {
-          _ctx_emit_cb_item (mrg, grab->item, event, MRG_TAP, x, y);
+          _ctx_emit_cb_item (ctx, grab->item, event, CTX_TAP, x, y);
         }
       }
 
-      if (!event->stop_propagate && grab->item->types & MRG_DRAG_RELEASE)
+      if (!event->stop_propagate && grab->item->types & CTX_DRAG_RELEASE)
       {
-        _ctx_emit_cb_item (mrg, grab->item, event, MRG_DRAG_RELEASE, x, y);
+        _ctx_emit_cb_item (ctx, grab->item, event, CTX_DRAG_RELEASE, x, y);
       }
     }
 
-    device_remove_grab (mrg, grab);
+    device_remove_grab (ctx, grab);
   }
 
   if (hitlist)
   {
     if (!event->stop_propagate)
-      _ctx_emit_cb (mrg, hitlist, event, MRG_RELEASE, x, y);
+      _ctx_emit_cb (ctx, hitlist, event, CTX_RELEASE, x, y);
     ctx_list_free (&hitlist);
   }
   ctx_list_free (&grablist);
@@ -2179,12 +2015,13 @@ int ctx_pointer_release (Mrg *mrg, float x, float y, int device_no, uint32_t tim
 
 /*  for multi-touch, need a list of active grabs - thus a grab corresponds to
  *  a device id. even during drag-grabs events propagate; to stop that stop
- *  propagation like for other events.
+ *e
+ propagation like for other events.
  *
  *
  */
 
-int ctx_pointer_motion (Mrg *mrg, float x, float y, int device_no, uint32_t time)
+int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
   CtxList *hitlist = NULL;
   CtxList *grablist = NULL, *g;
@@ -2192,33 +2029,33 @@ int ctx_pointer_motion (Mrg *mrg, float x, float y, int device_no, uint32_t time
 
   if (device_no < 0) device_no = 0;
   if (device_no >= CTX_MAX_DEVICES) device_no = CTX_MAX_DEVICES-1;
-  MrgEvent *event = &mrg->drag_event[device_no];
+  CtxEvent *event = &ctx->events.drag_event[device_no];
 
   if (time == 0)
-    time = mrg_ms (mrg);
+    time = ctx_ms (ctx);
 
-  event->mrg  = mrg;
+  event->ctx  = ctx;
   event->x    = x;
   event->y    = y;
   event->time = time;
   event->device_no = device_no;
   event->stop_propagate = 0;
   
-  mrg->pointer_x[device_no] = x;
-  mrg->pointer_y[device_no] = y;
+  ctx->events.pointer_x[device_no] = x;
+  ctx->events.pointer_y[device_no] = y;
 
   if (device_no <= 3)
   {
-    mrg->pointer_x[0] = x;
-    mrg->pointer_y[0] = y;
+    ctx->events.pointer_x[0] = x;
+    ctx->events.pointer_y[0] = y;
   }
 
   /* XXX: too brutal; should use enter/leave events */
-  if (getenv ("MRG_FAST") == NULL)
-  mrg_queue_draw (mrg, NULL); /* XXX: not really needed for all backends,
-                                      needs more tinkering */
-  grablist = device_get_grabs (mrg, device_no);
-  _mrg_update_item (mrg, device_no, x, y, MRG_MOTION, &hitlist);
+  //if (getenv ("MRG_FAST") == NULL)
+ // mrg_queue_draw (mrg, NULL); /* XXX: not really needed for all backends,
+ //                                     needs more tinkering */
+  grablist = device_get_grabs (ctx, device_no);
+  _ctx_update_item (ctx, device_no, x, y, CTX_MOTION, &hitlist);
 
   event->delta_x = x - event->prev_x;
   event->delta_y = y - event->prev_y;
@@ -2231,14 +2068,14 @@ int ctx_pointer_motion (Mrg *mrg, float x, float y, int device_no, uint32_t time
   {
     grab = g->data;
 
-    if ((grab->type & MRG_TAP) ||
-        (grab->type & MRG_TAP_AND_HOLD))
+    if ((grab->type & CTX_TAP) ||
+        (grab->type & CTX_TAP_AND_HOLD))
     {
       if (
           sqrt (
             (event->start_x - x) * (event->start_x - x) +
             (event->start_y - y) * (event->start_y - y)) >
-              mrg->tap_hysteresis
+              ctx->events.tap_hysteresis
          )
       {
         //fprintf (stderr, "-");
@@ -2250,9 +2087,9 @@ int ctx_pointer_motion (Mrg *mrg, float x, float y, int device_no, uint32_t time
       }
     }
 
-    if (grab->type & MRG_DRAG_MOTION)
+    if (grab->type & CTX_DRAG_MOTION)
     {
-      _ctx_emit_cb_item (mrg, grab->item, event, MRG_DRAG_MOTION, x, y);
+      _ctx_emit_cb_item (ctx, grab->item, event, CTX_DRAG_MOTION, x, y);
       if (event->stop_propagate)
         break;
     }
@@ -2260,32 +2097,32 @@ int ctx_pointer_motion (Mrg *mrg, float x, float y, int device_no, uint32_t time
   if (remove_grabs)
   {
     for (g = remove_grabs; g; g = g->next)
-      device_remove_grab (mrg, g->data);
+      device_remove_grab (ctx, g->data);
     ctx_list_free (&remove_grabs);
   }
   if (hitlist)
   {
     if (!event->stop_propagate)
-      _ctx_emit_cb (mrg, hitlist, event, MRG_MOTION, x, y);
+      _ctx_emit_cb (ctx, hitlist, event, CTX_MOTION, x, y);
     ctx_list_free (&hitlist);
   }
   ctx_list_free (&grablist);
   return 0;
 }
 
-void mrg_incoming_message (Mrg *mrg, const char *message, long time)
+void mrg_incoming_message (Ctx *ctx, const char *message, long time)
 {
-  CtxItem *item = _ctx_detect (mrg, 0, 0, MRG_MESSAGE);
-  MrgEvent event = {0, };
+  CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_MESSAGE);
+  CtxEvent event = {0, };
 
   if (!time)
-    time = mrg_ms (mrg);
+    time = ctx_ms (ctx);
 
   if (item)
   {
     int i;
-    event.mrg = mrg;
-    event.type = MRG_MESSAGE;
+    event.ctx = ctx;
+    event.type = CTX_MESSAGE;
     event.time = time;
     event.string = message;
 
@@ -2293,9 +2130,9 @@ void mrg_incoming_message (Mrg *mrg, const char *message, long time)
 
       for (i = 0; i < item->cb_count; i++)
       {
-        if (item->cb[i].types & (MRG_MESSAGE))
+        if (item->cb[i].types & (CTX_MESSAGE))
         {
-          event.state = mrg->modifier_state;
+          event.state = ctx->events.modifier_state;
           item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
           if (event.stop_propagate)
             return;// event.stop_propagate;
@@ -2304,21 +2141,21 @@ void mrg_incoming_message (Mrg *mrg, const char *message, long time)
   }
 }
 
-int mrg_scrolled (Mrg *mrg, float x, float y, MrgScrollDirection scroll_direction, uint32_t time)
+int mrg_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time)
 {
   CtxList *hitlist = NULL;
   CtxList *l;
 
   int device_no = 0;
-  mrg->pointer_x[device_no] = x;
-  mrg->pointer_y[device_no] = y;
+  ctx->events.pointer_x[device_no] = x;
+  ctx->events.pointer_y[device_no] = y;
 
-  MrgEvent *event = &mrg->drag_event[device_no];  /* XXX: might
+  CtxEvent *event = &ctx->events.drag_event[device_no];  /* XXX: might
                                        conflict with other code
                                        create a sibling member
                                        of drag_event?*/
   if (time == 0)
-    time = mrg_ms (mrg);
+    time = ctx_ms (ctx);
 
   event->x         = event->start_x = event->prev_x = x;
   event->y         = event->start_y = event->prev_y = y;
@@ -2328,37 +2165,37 @@ int mrg_scrolled (Mrg *mrg, float x, float y, MrgScrollDirection scroll_directio
   event->stop_propagate = 0;
   event->scroll_direction = scroll_direction;
 
-  _mrg_update_item (mrg, device_no, x, y, MRG_SCROLL, &hitlist);
+  _ctx_update_item (ctx, device_no, x, y, CTX_SCROLL, &hitlist);
 
   for (l = hitlist; l; l = l?l->next:NULL)
   {
     CtxItem *mrg_item = l->data;
 
-    _ctx_emit_cb_item (mrg, mrg_item, event, MRG_SCROLL, x, y);
+    _ctx_emit_cb_item (ctx, mrg_item, event, CTX_SCROLL, x, y);
 
     if (event->stop_propagate)
       l = NULL;
   }
 
-  mrg_queue_draw (mrg, NULL); /* in case of style change, and more  */
+  //mrg_queue_draw (mrg, NULL); /* in case of style change, and more  */
   ctx_list_free (&hitlist);
   return 0;
 }
 
-int ctx_key_press (Mrg *mrg, unsigned int keyval,
+int ctx_key_press (Ctx *ctx, unsigned int keyval,
                    const char *string, uint32_t time)
 {
-  CtxItem *item = _ctx_detect (mrg, 0, 0, MRG_KEY_DOWN);
-  MrgEvent event = {0,};
+  CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_DOWN);
+  CtxEvent event = {0,};
 
   if (time == 0)
-    time = mrg_ms (mrg);
+    time = ctx_ms (ctx);
 
   if (item)
   {
     int i;
-    event.mrg = mrg;
-    event.type = MRG_KEY_DOWN;
+    event.ctx = ctx;
+    event.type = CTX_KEY_DOWN;
     event.unicode = keyval; 
     event.string = string;
     event.stop_propagate = 0;
@@ -2366,9 +2203,9 @@ int ctx_key_press (Mrg *mrg, unsigned int keyval,
 
     for (i = 0; i < item->cb_count; i++)
     {
-      if (item->cb[i].types & (MRG_KEY_DOWN))
+      if (item->cb[i].types & (CTX_KEY_DOWN))
       {
-        event.state = mrg->modifier_state;
+        event.state = ctx->events.modifier_state;
         item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
         if (event.stop_propagate)
           return event.stop_propagate;
@@ -2378,38 +2215,43 @@ int ctx_key_press (Mrg *mrg, unsigned int keyval,
   return 0;
 }
 
-void mrg_freeze           (Mrg *mrg)
+void mrg_freeze           (Ctx *ctx)
 {
-  mrg->frozen ++;
+  ctx->events.frozen ++;
 }
 
-void mrg_thaw             (Mrg *mrg)
+void mrg_thaw             (Ctx *ctx)
 {
-  mrg->frozen --;
+  ctx->events.frozen --;
 }
 
-float ctx_pointer_x (Mrg *mrg)
+float ctx_pointer_x (Ctx *ctx)
 {
-  return mrg->pointer_x[0];
+  return ctx->events.pointer_x[0];
 }
 
-float ctx_pointer_y (Mrg *mrg)
+float ctx_pointer_y (Ctx *ctx)
 {
-  return mrg->pointer_y[0];
+  return ctx->events.pointer_y[0];
 }
 
-void _mrg_debug_overlays (Mrg *mrg)
+int ctx_pointer_is_down (Ctx *ctx, int no)
+{
+  if (no < 0 || no > CTX_MAX_DEVICES) return 0;
+  return ctx->events.pointer_down[no];
+}
+
+void _ctx_debug_overlays (Ctx *ctx)
 {
   CtxList *a;
-  Ctx *cr = mrg_cr (mrg);
-  ctx_save (cr);
+  ctx_save (ctx);
 
-  ctx_set_line_width (cr, 2);
-  ctx_set_rgba (cr, 0,0,0.8,0.5);
-  for (a = mrg->items; a; a = a->next)
+  ctx_set_line_width (ctx, 2);
+  ctx_set_rgba (ctx, 0,0,0.8,0.5);
+  for (a = ctx->events.items; a; a = a->next)
   {
-    float current_x = ctx_pointer_x (mrg);
-    float current_y = ctx_pointer_y (mrg);
+    float current_x = ctx_pointer_x (ctx);
+    float current_y = ctx_pointer_y (ctx);
     CtxItem *item = a->data;
     CtxMatrix matrix = item->inv_matrix;
 
@@ -2419,12 +2261,12 @@ void _mrg_debug_overlays (Mrg *mrg)
         current_y >= item->y0 && current_y < item->y1)
     {
       ctx_matrix_invert (&matrix);
-      ctx_set_matrix (cr, &matrix);
-      _mrg_restore_path (cr, item->path);
-      ctx_stroke (cr);
+      ctx_set_matrix (ctx, &matrix);
+      _mrg_restore_path (ctx, item->path);
+      ctx_stroke (ctx);
     }
   }
-  ctx_restore (cr);
+  ctx_restore (ctx);
 }
 /////
 
@@ -3200,15 +3042,21 @@ xmltok_lineno (MrgXml *t)
 }
 
 
-void mrg_clear (Mrg *mrg)
+void ctx_events_clear (Ctx *ctx)
 {
-  if (mrg->frozen)
+  if (ctx->events.frozen)
     return;
-  ctx_list_free (&mrg->items);
+
+  ctx_list_free (&ctx->events.items);
   //if (mrg->backend->mrg_clear)
   //  mrg->backend->mrg_clear (mrg);
 
-  ctx_clear_bindings (mrg);
+  ctx_clear_bindings (ctx);
+}
+
+void mrg_clear (Mrg *mrg)
+{
+  ctx_events_clear (mrg->ctx);
   _mrg_clear_text_closures (mrg);
 }
 
@@ -3319,13 +3167,13 @@ static float _mrg_dynamic_edge_left (Mrg *mrg)
 int  mrg_width (Mrg *mrg)
 {
   if (!mrg) return 640;
-  return mrg->width / mrg->ddpx;
+  return mrg->ctx->events.width / mrg->ddpx;
 }
 
 int  mrg_height (Mrg *mrg)
 {
   if (!mrg) return 480;
-  return mrg->height / mrg->ddpx;
+  return mrg->ctx->events.height / mrg->ddpx;
 }
 
 static float _mrg_dynamic_edge_right (Mrg *mrg)
@@ -6576,9 +6424,9 @@ void mrg_hl_text (Ctx *cr, const char *text)
   mrg_string_free (word, 1);
 }
 
-void ctx_listen (Mrg     *mrg,
+void ctx_listen (Ctx     *ctx,
                  CtxEventType  types,
-                 MrgCb    cb,
+                 CtxCb    cb,
                  void*    data1,
                  void*    data2);
 
@@ -6725,7 +6573,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
     ctx_new_path (cr);
     ctx_rectangle (cr,
         old_x, y - em, new_x - old_x + 1, em * mrg->state->style.line_height);
-    ctx_listen (mrg,
+    ctx_listen (cr,
                 mrg->text_listen_types[no],
                 mrg->text_listen_cb[no],
                 mrg->text_listen_data1[no],
@@ -6833,10 +6681,10 @@ mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length)
     float tx = x;
     float ty = y;
     ctx_user_to_device (&(mrg_cr (mrg)->state), &tx, &ty);
-    if (ty > mrg->height * 2 ||
-        tx > mrg->width * 2 ||
-        tx < -mrg->width * 2 ||
-        ty < -mrg->height * 2)
+    if (ty > mrg->ctx->events.height * 2 ||
+        tx > mrg->ctx->events.width * 2 ||
+        tx < -mrg->ctx->events.width * 2 ||
+        ty < -mrg->ctx->events.height * 2)
     {
       /* bailing early*/
     }
@@ -7524,7 +7372,7 @@ void  mrg_text_listen_done (Mrg *mrg)
 }
 
 void  mrg_text_listen_full (Mrg *mrg, CtxEventType types,
-                            MrgCb cb, void *data1, void *data2,
+                            CtxCb cb, void *data1, void *data2,
                       void   (*finalize)(void *listen_data, void *listen_data2, void *finalize_data),
                       void    *finalize_data)
 {
@@ -7551,34 +7399,31 @@ void  mrg_text_listen_full (Mrg *mrg, CtxEventType types,
 }
 
 void  mrg_text_listen (Mrg *mrg, CtxEventType types,
-                       MrgCb cb, void *data1, void *data2)
+                       CtxCb cb, void *data1, void *data2)
 {
   mrg_text_listen_full (mrg, types, cb, data1, data2, NULL, NULL);
 }
 
 
-int ctx_key_press         (Mrg *mrg, unsigned int keyval, const char *string, uint32_t time);
-
-
-static void cmd_home (MrgEvent *event, void *data1, void *data2)
+static void cmd_home (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = event->mrg;
+  Mrg *mrg = data1;
   mrg->cursor_pos = 0;
   mrg_queue_draw (mrg, NULL);
   ctx_event_stop_propagate (event);
 }
 
-static void cmd_end (MrgEvent *event, void *data1, void *data2)
+static void cmd_end (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = event->mrg;
+  Mrg *mrg = data1;
   mrg->cursor_pos = ctx_utf8_strlen (mrg->edited_str->str);
   mrg_queue_draw (mrg, NULL);
   ctx_event_stop_propagate (event);
 }
 
-static void cmd_backspace (MrgEvent *event, void *data1, void *data2)
+static void cmd_backspace (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = event->mrg;
+  Mrg *mrg = data1;
   char *new;
   const char *rest = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos);
   const char *mark = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos-1);
@@ -7602,9 +7447,9 @@ static void cmd_backspace (MrgEvent *event, void *data1, void *data2)
   ctx_event_stop_propagate (event);
 }
 
-static void cmd_delete (MrgEvent *event, void *data1, void *data2)
+static void cmd_delete (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = event->mrg;
+  Mrg *mrg = data1;
   char *new;
   const char *rest = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos+1);
   const char *mark = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos);
@@ -7621,9 +7466,9 @@ static void cmd_delete (MrgEvent *event, void *data1, void *data2)
   ctx_event_stop_propagate (event);
 }
 
-static void cmd_down (MrgEvent *event, void *data1, void *data2)
+static void cmd_down (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = event->mrg;
+  Mrg *mrg = data1;
   float e_x, e_y, e_s, e_e, e_em;
   float cx, cy;
  
@@ -7680,9 +7525,9 @@ static void cmd_down (MrgEvent *event, void *data1, void *data2)
   ctx_event_stop_propagate (event);
 }
 
-static void cmd_up (MrgEvent *event, void *data1, void *data2)
+static void cmd_up (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = event->mrg;
+  Mrg *mrg = data1;
   float e_x, e_y, e_s, e_e, e_em;
   float cx, cy;
   mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
@@ -7727,7 +7572,7 @@ static void cmd_up (MrgEvent *event, void *data1, void *data2)
     {
       mrg->cursor_pos = 0;
       mrg_queue_draw (mrg, NULL);
-      ctx_key_press (mrg, 0, "up-nudge", 0);
+      ctx_key_press (event->ctx, 0, "up-nudge", 0);
       return; // without stop propagate this should permit things registered earlier to fire
     }
   }
@@ -7749,7 +7594,7 @@ void mrg_set_cursor_pos (Mrg *mrg, int pos)
   mrg_queue_draw (mrg, NULL);
 }
 
-static void cmd_page_down (MrgEvent *event, void *data1, void *data2)
+static void cmd_page_down (CtxEvent *event, void *data1, void *data2)
 {
   int i;
   for (i = 0; i < 6; i++)
@@ -7757,7 +7602,7 @@ static void cmd_page_down (MrgEvent *event, void *data1, void *data2)
   ctx_event_stop_propagate (event);
 }
 
-static void cmd_page_up (MrgEvent *event, void *data1, void *data2)
+static void cmd_page_up (CtxEvent *event, void *data1, void *data2)
 {
   int i;
   for (i = 0; i < 6; i++)
@@ -7765,9 +7610,9 @@ static void cmd_page_up (MrgEvent *event, void *data1, void *data2)
   ctx_event_stop_propagate (event);
 }
 
-static void cmd_left (MrgEvent *event, void *data1, void *data2)
+static void cmd_left (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = event->mrg;
+  Mrg *mrg = data1;
   mrg->cursor_pos--;
   if (mrg->cursor_pos < 0)
     mrg->cursor_pos = 0;
@@ -7775,9 +7620,9 @@ static void cmd_left (MrgEvent *event, void *data1, void *data2)
   ctx_event_stop_propagate (event);
 }
 
-static void cmd_right (MrgEvent *event, void *data1, void *data2)
+static void cmd_right (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = event->mrg;
+  Mrg *mrg = data1;
   mrg->cursor_pos++;
 
   /* should mrg have captured the text printed in-between to build its idea
@@ -7821,23 +7666,24 @@ static void add_utf8 (Mrg *mrg, const char *string)
   mrg->cursor_pos++;
 }
 
-static void cmd_unhandled (MrgEvent *event, void *data1, void *data2)
+static void cmd_unhandled (CtxEvent *event, void *data1, void *data2)
 {
+  Mrg *mrg = data1;
   if (!strcmp (event->string, "space"))
   {
-    add_utf8 (event->mrg, " ");
+    add_utf8 (mrg, " ");
     ctx_event_stop_propagate (event);
   }
 
   if (ctx_utf8_strlen (event->string) != 1)
     return;
 
-  add_utf8 (event->mrg, event->string);
+  add_utf8 (mrg, event->string);
   ctx_event_stop_propagate (event);
 }
 
 #if 0
-static void cmd_space (MrgEvent *event, void *data1, void *data2)
+static void cmd_space (CtxEvent *event, void *data1, void *data2)
 {
   if (!ctx_utf8_strlen (event->key_name) == 1)
     return 0;
@@ -7847,17 +7693,18 @@ static void cmd_space (MrgEvent *event, void *data1, void *data2)
 }
 #endif
 
-static void cmd_return (MrgEvent *event, void *data1, void *data2)
+static void cmd_return (CtxEvent *event, void *data1, void *data2)
 {
+  Mrg *mrg = data1;
   // this check excludes terminal from working
   //if (!(ctx_utf8_strlen (event->key_name) == 1))
   //  return;
 
-  add_utf8 (event->mrg, "\n");
+  add_utf8 (mrg, "\n");
   ctx_event_stop_propagate (event);
 }
 
-static void cmd_escape (MrgEvent *event, void *data, void *data2)
+static void cmd_escape (CtxEvent *event, void *data, void *data2)
 {
 #if 0
   mrg_edit_string (event->mrg, NULL, NULL, NULL);
@@ -7866,19 +7713,19 @@ static void cmd_escape (MrgEvent *event, void *data, void *data2)
 
 void mrg_text_edit_bindings (Mrg *mrg)
 {
-  ctx_add_binding (mrg, "escape",    NULL, "stop editing",    cmd_escape,      NULL);
-  ctx_add_binding (mrg, "return",    NULL, "add newline",     cmd_return,    NULL);
-  ctx_add_binding (mrg, "home",      NULL, "cursor to start", cmd_home, NULL);
-  ctx_add_binding (mrg, "end",       NULL, "cursor to end",   cmd_end,    NULL);
-  ctx_add_binding (mrg, "left",      NULL, "cursor left",     cmd_left,    NULL);
-  ctx_add_binding (mrg, "right",     NULL, "cursor right",    cmd_right,  NULL);
-  ctx_add_binding (mrg, "up",        NULL, "cursor up",       cmd_up,        NULL);
-  ctx_add_binding (mrg, "down",      NULL, "cursor down",     cmd_down,    NULL);
-  ctx_add_binding (mrg, "page-up",   NULL, "cursor up",       cmd_page_up,     NULL);
-  ctx_add_binding (mrg, "page-down", NULL, "cursor down",     cmd_page_down, NULL);
-  ctx_add_binding (mrg, "backspace", NULL, "remove preceding character", cmd_backspace, NULL);
-  ctx_add_binding (mrg, "delete",    NULL, "remove character under cursor", cmd_delete, NULL);
-  ctx_add_binding (mrg, "unhandled", NULL, "add if key name is 1 char long", cmd_unhandled, NULL);
+  ctx_add_binding (mrg->ctx, "escape",    NULL, "stop editing",    cmd_escape,      mrg);
+  ctx_add_binding (mrg->ctx, "return",    NULL, "add newline",     cmd_return,    mrg);
+  ctx_add_binding (mrg->ctx, "home",      NULL, "cursor to start", cmd_home, mrg);
+  ctx_add_binding (mrg->ctx, "end",       NULL, "cursor to end",   cmd_end,    mrg);
+  ctx_add_binding (mrg->ctx, "left",      NULL, "cursor left",     cmd_left,    mrg);
+  ctx_add_binding (mrg->ctx, "right",     NULL, "cursor right",    cmd_right,  mrg);
+  ctx_add_binding (mrg->ctx, "up",        NULL, "cursor up",       cmd_up,        mrg);
+  ctx_add_binding (mrg->ctx, "down",      NULL, "cursor down",     cmd_down,    mrg);
+  ctx_add_binding (mrg->ctx, "page-up",   NULL, "cursor up",       cmd_page_up,     mrg);
+  ctx_add_binding (mrg->ctx, "page-down", NULL, "cursor down",     cmd_page_down, mrg);
+  ctx_add_binding (mrg->ctx, "backspace", NULL, "remove preceding character", cmd_backspace, mrg);
+  ctx_add_binding (mrg->ctx, "delete",    NULL, "remove character under cursor", cmd_delete, mrg);
+  ctx_add_binding (mrg->ctx, "unhandled", NULL, "add if key name is 1 char long", cmd_unhandled, mrg);
 }
 
 #if 1
@@ -7936,7 +7783,7 @@ void _mrg_unblock_edit (Mrg *mrg)
 void mrg_edit_start_full (Mrg *mrg,
                           MrgNewText  update_string,
                           void *user_data,
-                          MrgDestroyNotify destroy,
+                          CtxDestroyNotify destroy,
                           void *destroy_data)
 {
   if (mrg->update_string_destroy_notify)
@@ -8250,8 +8097,9 @@ void _mrg_set_post_nl (Mrg *mrg,
 }
 
 
-void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
+void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
 {
+  Ctx *ctx = mrg->ctx;
   float vmarg = 0;
   MrgStyle *style = mrg_style (mrg);
   float height = PROP(height);
@@ -8262,10 +8110,10 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
   if ((style->display == MRG_DISPLAY_BLOCK || style->float_) &&
        height != 0.0)
   {
-    float diff = height - (mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg)));
+    float diff = height - (mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg)));
     mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + diff);
     if (diff > 0)
-      _mrg_draw_background_increment (mrg, ctx, 1);
+      _mrg_draw_background_increment (mrg, html, 1);
   }
 
   /* remember data to store about float, XXX: perhaps better to store
@@ -8276,28 +8124,28 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
     int was_float = 0;
     float fx,fy,fw,fh; // these tempvars arent really needed.
     was_float = style->float_;
-    fx = ctx->state->block_start_x - PROP(padding_left) - PROP(border_left_width) - PROP(margin_left);
-    fy = ctx->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width)
+    fx = html->state->block_start_x - PROP(padding_left) - PROP(border_left_width) - PROP(margin_left);
+    fy = html->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width)
       - PROP(margin_top);
 
     fw = mrg_edge_right (mrg) - mrg_edge_left (mrg)
      + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left)
      + PROP(padding_right) + PROP(border_right_width) + PROP(margin_right);
 
-    fh = mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg))
+    fh = mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg))
          + PROP(margin_bottom) + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width) + PROP(margin_top) + mrg_em (mrg);
 
-    ctx->states[ctx->state_no-1].float_data[ctx->states[ctx->state_no-1].floats].type = was_float;
-    ctx->states[ctx->state_no-1].float_data[ctx->states[ctx->state_no-1].floats].x = fx;
-    ctx->states[ctx->state_no-1].float_data[ctx->states[ctx->state_no-1].floats].y = fy;
-    ctx->states[ctx->state_no-1].float_data[ctx->states[ctx->state_no-1].floats].width = fw;
-    ctx->states[ctx->state_no-1].float_data[ctx->states[ctx->state_no-1].floats].height = fh;
-    ctx->states[ctx->state_no-1].floats++;
+    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].type = was_float;
+    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].x = fx;
+    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].y = fy;
+    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].width = fw;
+    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].height = fh;
+    html->states[html->state_no-1].floats++;
   }
 
   if (style->display == MRG_DISPLAY_BLOCK || style->float_)
   {
-    MrgGeoCache *geo = _mrg_get_cache (ctx, style->id_ptr);
+    MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
 
     if (width == 0)
     {
@@ -8307,37 +8155,37 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
       else
         geo->width = mrg->state->edge_right  - (ctx->state->block_start_x);
 #endif
-      geo->width = mrg_x (mrg) - (ctx->state->block_start_x);
+      geo->width = mrg_x (mrg) - (html->state->block_start_x);
     }
     else
       geo->width = width;
 
     //:mrg_edge_right (mrg) - mrg_edge_left (mrg);
     if (height == 0)
-      geo->height = mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg));
+      geo->height = mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg));
     else
       geo->height = height;
 
     geo->gen++;
 
     mrg_box (mrg,
-        ctx->state->block_start_x,
-        ctx->state->block_start_y - mrg_em(mrg),
+        html->state->block_start_x,
+        html->state->block_start_y - mrg_em(mrg),
         geo->width,
         geo->height);
 
     {
       CtxMatrix transform;
       ctx_get_matrix (mrg_cr (mrg), &transform);
-      float x = ctx_pointer_x (mrg);
-      float y = ctx_pointer_y (mrg);
+      float x = ctx_pointer_x (ctx);
+      float y = ctx_pointer_y (ctx);
       ctx_matrix_invert (&transform);
       ctx_matrix_apply_transform (&transform, &x, &y);
 
-      if (x >= ctx->state->block_start_x &&
-          x <  ctx->state->block_start_x + geo->width &&
-          y >= ctx->state->block_start_y - mrg_em (mrg) &&
-          y <  ctx->state->block_start_y - mrg_em (mrg) + geo->height)
+      if (x >= html->state->block_start_x &&
+          x <  html->state->block_start_x + geo->width &&
+          y >= html->state->block_start_y - mrg_em (mrg) &&
+          y <  html->state->block_start_y - mrg_em (mrg) + geo->height)
       {
         geo->hover = 1;
       }
@@ -8347,7 +8195,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
       }
     }
 
-    //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (ctx->state->block_start_y - mrg_em(mrg)));
+    //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg)));
 
     if (!style->float_ && style->display == MRG_DISPLAY_BLOCK)
     {
@@ -8370,14 +8218,14 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx)
       style->position == MRG_POSITION_ABSOLUTE ||
       style->position == MRG_POSITION_FIXED)
   {
-    mrg_set_xy (mrg, ctx->state->original_x,
-                     ctx->state->original_y);
+    mrg_set_xy (mrg, html->state->original_x,
+                     html->state->original_y);
   }
-  if (ctx->state_no)
-    ctx->states[ctx->state_no-1].vmarg = vmarg;
+  if (html->state_no)
+    html->states[html->state_no-1].vmarg = vmarg;
 
-  ctx->state_no--;
-  ctx->state = &ctx->states[ctx->state_no];
+  html->state_no--;
+  html->state = &html->states[html->state_no];
 }
 
 enum {
@@ -8839,10 +8687,10 @@ int mrg_get_contents (Mrg         *mrg,
 
 
 void  mrg_text_listen (Mrg *mrg, CtxEventType types,
-                       MrgCb cb, void *data1, void *data2);
+                       CtxCb cb, void *data1, void *data2);
 
 void  mrg_text_listen_full (Mrg *mrg, CtxEventType types,
-                            MrgCb cb, void *data1, void *data2,
+                            CtxCb cb, void *data1, void *data2,
           void (*finalize)(void *listen_data, void *listen_data2, void *finalize_data),
           void  *finalize_data);
 void  mrg_text_listen_done (Mrg *mrg);
@@ -9213,7 +9061,7 @@ char *_mrg_resolve_uri (const char *base_uri, const char *uri)
 
 void mrg_xml_render (Mrg *mrg,
                      char *uri_base,
-                     void (*link_cb) (MrgEvent *event, void *href, void *link_data),
+                     void (*link_cb) (CtxEvent *event, void *href, void *link_data),
                      void *link_data,
                      void *(finalize)(void *listen_data, void *listen_data2, void *finalize_data),
                      void *finalize_data,
@@ -9466,7 +9314,7 @@ void mrg_xml_render (Mrg *mrg,
             MrgGeoCache *geo = _mrg_get_cache (htmlctx, (void*)(size_t)(tagpos));
             if (geo && geo->hover)
             {
-              if (mrg->pointer_down[1])
+              if (ctx_pointer_is_down (mrg->ctx, 0))
                 pseudo = ":active:hover";
               else
                 pseudo = ":hover";
@@ -9529,7 +9377,7 @@ void mrg_xml_render (Mrg *mrg,
         if (data_hash == CTX_a)
         {
           if (link_cb && ctx_is_set_now (mrg->ctx, CTX_href))
-            mrg_text_listen_full (mrg, MRG_CLICK, link_cb, _mrg_resolve_uri (uri_base, ctx_get_string (mrg->ctx, CTX_href)), link_data, (void*)free, NULL); //XXX: free is not invoked according to valgrind
+            mrg_text_listen_full (mrg, CTX_CLICK, link_cb, _mrg_resolve_uri (uri_base, ctx_get_string (mrg->ctx, CTX_href)), link_data, (void*)free, NULL); //XXX: free is not invoked according to valgrind
         }
 
         else if (data_hash == CTX_style)
@@ -9729,7 +9577,7 @@ void mrg_xml_render (Mrg *mrg,
 
 void mrg_xml_renderf (Mrg *mrg,
                       char *uri_base,
-                      void (*link_cb) (MrgEvent *event, void *href, void *link_data),
+                      void (*link_cb) (CtxEvent *event, void *href, void *link_data),
                       void *link_data,
                       char *format,
                       ...)
@@ -9770,13 +9618,20 @@ mrg_printf_xml (Mrg *mrg, const char *format, ...)
   free (buffer);
 }
 
+void ctx_set_size (Ctx *ctx, int width, int height)
+{
+  if (ctx->events.width != width || ctx->events.height != height)
+  {
+    ctx->events.width = width;
+    ctx->events.height = height;
+    ctx_resized (ctx, width, height, 0);
+  }
+}
 void mrg_set_size (Mrg *mrg, int width, int height)
 {
-  if (mrg->width != width || mrg->height != height)
+  if (mrg->ctx->events.width != width || mrg->ctx->events.height != height)
   {
-    mrg->width = width;
-    mrg->height = height;
-    //mrg_resized (mrg, width, height, 0);
+    ctx_set_size (mrg->ctx, width, height);
     mrg_queue_draw (mrg, NULL);
   }
 }
@@ -9974,9 +9829,20 @@ mrg_get_contents_default (const char  *referer,
   return mrg_get_contents_default (referer, input_uri, contents, length, ignored_user_data);
 }
 
+void ctx_events_init (Ctx *ctx)
+{
+  CtxEvents *mrg = &ctx->events;
+  mrg->tap_delay_min  = 40;
+  mrg->tap_delay_max  = 800;
+  mrg->tap_delay_max  = 8000000; /* quick reflexes needed making it hard for some is an argument against very short values  */
+
+  mrg->tap_delay_hold = 1000;
+  mrg->tap_hysteresis = 32;  /* XXX: should be ppi dependent */
+}
 
 void _mrg_init (Mrg *mrg, int width, int height)
 {
+  ctx_events_init (mrg->ctx);
   mrg->state = &mrg->states[0];
   /* XXX: is there a better place to set the default text color to black? */
 #if 0
@@ -10006,12 +9872,6 @@ void _mrg_init (Mrg *mrg, int width, int height)
   mrg_set_mrg_get_contents (mrg, mrg_get_contents_default, NULL);
   mrg->style_global = mrg_string_new ("");
 
-  mrg->tap_delay_min  = 40;
-  mrg->tap_delay_max  = 800;
-  mrg->tap_delay_max  = 8000000; /* quick reflexes needed making it hard for some is an argument against very short values  */
-
-  mrg->tap_delay_hold = 1000;
-  mrg->tap_hysteresis = 32;  /* XXX: should be ppi dependent */
 
   {
     const char *global_css_uri = "mrg:theme.css";

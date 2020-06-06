@@ -2681,6 +2681,198 @@ struct
   // user if unpacking is needed.
 };
 
+#define CTX_MAX_DEVICES 16
+#define CTX_MAX_BINDINGS         256
+
+#if CTX_EVENTS 
+
+typedef struct _CtxList CtxList;
+struct _CtxList {
+  void *data;
+  CtxList *next;
+  void (*freefunc)(void *data, void *freefunc_data);
+  void *freefunc_data;
+};
+
+// YYY include list implementation - since it already is a header+inline online
+// implementation?
+
+typedef enum _CtxModifierState CtxModifierState;
+
+enum _CtxModifierState
+{
+  MRG_MODIFIER_STATE_SHIFT   = (1<<0),
+  MRG_MODIFIER_STATE_CONTROL = (1<<1),
+  MRG_MODIFIER_STATE_ALT     = (1<<2),
+  MRG_MODIFIER_STATE_BUTTON1 = (1<<3),
+  MRG_MODIFIER_STATE_BUTTON2 = (1<<4),
+  MRG_MODIFIER_STATE_BUTTON3 = (1<<5)
+};
+
+typedef enum _CtxScrollDirection CtxScrollDirection;
+enum _CtxScrollDirection
+{
+  MRG_SCROLL_DIRECTION_UP,
+  MRG_SCROLL_DIRECTION_DOWN,
+  MRG_SCROLL_DIRECTION_LEFT,
+  MRG_SCROLL_DIRECTION_RIGHT
+};
+
+typedef struct _CtxEvent CtxEvent;
+
+
+typedef enum _CtxEventType CtxEventType;
+enum _CtxEventType {
+  CTX_PRESS          = 1 << 0,
+  CTX_MOTION         = 1 << 1,
+  CTX_RELEASE        = 1 << 2,
+  CTX_ENTER          = 1 << 3,
+  CTX_LEAVE          = 1 << 4,
+  CTX_TAP            = 1 << 5,
+  CTX_TAP_AND_HOLD   = 1 << 6,
+
+  /* NYI: SWIPE, ZOOM ROT_ZOOM, */
+
+  CTX_DRAG_PRESS     = 1 << 7,
+  CTX_DRAG_MOTION    = 1 << 8,
+  CTX_DRAG_RELEASE   = 1 << 9,
+  CTX_KEY_DOWN       = 1 << 10,
+  CTX_KEY_UP         = 1 << 11,
+  CTX_SCROLL         = 1 << 12,
+  CTX_MESSAGE        = 1 << 13,
+  CTX_DROP           = 1 << 14,
+
+  /* client should store state - preparing
+                                 * for restart
+                                 */
+
+  CTX_POINTER  = (CTX_PRESS | CTX_MOTION | CTX_RELEASE | CTX_DROP),
+  CTX_TAPS     = (CTX_TAP | CTX_TAP_AND_HOLD),
+  CTX_CROSSING = (CTX_ENTER | CTX_LEAVE),
+  CTX_DRAG     = (CTX_DRAG_PRESS | CTX_DRAG_MOTION | CTX_DRAG_RELEASE),
+  CTX_KEY      = (CTX_KEY_DOWN | CTX_KEY_UP),
+  CTX_MISC     = (CTX_MESSAGE),
+  CTX_ANY      = (CTX_POINTER | CTX_DRAG | CTX_CROSSING | CTX_KEY | CTX_MISC | CTX_TAPS),
+};
+
+#define CTX_CLICK   CTX_PRESS   // SHOULD HAVE MORE LOGIC
+
+
+struct _CtxEvent {
+  CtxEventType  type;
+  Ctx     *ctx;
+  uint32_t time;
+
+  CtxModifierState state;
+
+  int      device_no; /* 0 = left mouse button / virtual focus */
+                      /* 1 = middle mouse button */
+                      /* 2 = right mouse button */
+                      /* 3 = first multi-touch .. (NYI) */
+
+  float   device_x; /* untransformed (device) coordinates  */
+  float   device_y;
+
+  /* coordinates; and deltas for motion/drag events in user-coordinates: */
+  float   x;
+  float   y;
+  float   start_x; /* start-coordinates (press) event for drag, */
+  float   start_y; /*    untransformed coordinates */
+  float   prev_x;  /* previous events coordinates */
+  float   prev_y;
+  float   delta_x; /* x - prev_x, redundant - but often useful */
+  float   delta_y; /* y - prev_y, redundant - ..  */
+
+  CtxScrollDirection scroll_direction;
+
+  unsigned int unicode; /* only valid for key-events */
+
+  const char *string;   /* as key can be "up" "down" "space" "backspace" "a" "b" "ø" etc .. */
+                        /* this is also where the message is delivered for
+                         * MESSAGE events
+                         *
+                         * and the data for drop events are delivered
+                         */
+  int stop_propagate; /* */
+};
+
+typedef void (*CtxCb) (CtxEvent *event,
+                       void     *data,
+                       void     *data2);
+
+typedef struct CtxItemCb {
+  CtxEventType types;
+  CtxCb        cb;
+  void*        data1;
+  void*        data2;
+
+  void (*finalize) (void *data1, void *data2, void *finalize_data);
+  void  *finalize_data;
+
+} CtxItemCb;
+
+typedef void (*CtxDestroyNotify) (void *data);
+
+typedef struct CtxBinding {
+  char *nick;
+  char *command;
+  char *label;
+  CtxCb cb;
+  void *cb_data;
+  CtxDestroyNotify destroy_notify;
+  void  *destroy_data;
+} CtxBinding;
+
+#define CTX_MAX_CBS              128
+
+typedef struct CtxItem {
+  CtxMatrix inv_matrix;  /* for event coordinate transforms */
+
+  /* bounding box */
+  float          x0;
+  float          y0;
+  float          x1;
+  float          y1;
+
+  void *path;
+  double          path_hash;
+
+  CtxEventType   types; /* all cb's ored together */
+  CtxItemCb cb[CTX_MAX_CBS];
+  int       cb_count;
+
+  int       ref_count;
+} CtxItem;
+
+
+typedef struct _CtxEvents CtxEvents;
+struct _CtxEvents
+{
+  int             frozen;
+  int             fullscreen;
+  CtxList        *grabs; /* could split the grabs per device in the same way,
+                            to make dispatch overhead smaller,. probably
+                            not much to win though. */
+  CtxItem         *prev[CTX_MAX_DEVICES];
+  float            pointer_x[CTX_MAX_DEVICES];
+  float            pointer_y[CTX_MAX_DEVICES];
+  unsigned char    pointer_down[CTX_MAX_DEVICES];
+  CtxEvent         drag_event[CTX_MAX_DEVICES];
+  CtxList         *idles;
+  int              idle_id;
+  CtxBinding       bindings[CTX_MAX_BINDINGS]; /*< better as list, uses no mem if unused */
+  int              n_bindings;
+  int              width;
+  int              height;
+  CtxList         *items;
+  CtxModifierState modifier_state;
+  int              tap_delay_min;
+  int              tap_delay_max;
+  int              tap_delay_hold;
+  double           tap_hysteresis;
+};
+#endif
+
 struct
   _Ctx
 {
@@ -2689,6 +2881,9 @@ struct
   CtxState        state;        /**/
   int             transformation;
   CtxBuffer       texture[CTX_MAX_TEXTURES];
+#if CTX_EVENTS 
+  CtxEvents       events;
+#endif
 #if CTX_CURRENT_PATH
   CtxRenderstream current_path; // possibly transformed coordinates !
   CtxIterator     current_path_iterator;
