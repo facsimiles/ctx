@@ -8230,15 +8230,6 @@ mrg_printf_xml (Mrg *mrg, const char *format, ...)
   free (buffer);
 }
 
-void ctx_set_size (Ctx *ctx, int width, int height)
-{
-  if (ctx->events.width != width || ctx->events.height != height)
-  {
-    ctx->events.width = width;
-    ctx->events.height = height;
-    ctx_resized (ctx, width, height, 0);
-  }
-}
 void mrg_set_size (Mrg *mrg, int width, int height)
 {
   if (mrg->ctx->events.width != width || mrg->ctx->events.height != height)
@@ -8444,7 +8435,7 @@ mrg_get_contents_default (const char  *referer,
 
 void _mrg_init (Mrg *mrg, int width, int height)
 {
-  ctx_events_init (mrg->ctx);
+  _ctx_events_init (mrg->ctx);
   mrg->state = &mrg->states[0];
   /* XXX: is there a better place to set the default text color to black? */
 #if 0

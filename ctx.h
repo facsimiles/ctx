@@ -374,8 +374,188 @@ float ctx_glyph_width   (Ctx *ctx, int unichar);
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 
 typedef struct _CtxEntry CtxEntry;
+typedef enum _CtxModifierState CtxModifierState;
+
+enum _CtxModifierState
+{
+  MRG_MODIFIER_STATE_SHIFT   = (1<<0),
+  MRG_MODIFIER_STATE_CONTROL = (1<<1),
+  MRG_MODIFIER_STATE_ALT     = (1<<2),
+  MRG_MODIFIER_STATE_BUTTON1 = (1<<3),
+  MRG_MODIFIER_STATE_BUTTON2 = (1<<4),
+  MRG_MODIFIER_STATE_BUTTON3 = (1<<5)
+};
+
+typedef enum _CtxScrollDirection CtxScrollDirection;
+enum _CtxScrollDirection
+{
+  MRG_SCROLL_DIRECTION_UP,
+  MRG_SCROLL_DIRECTION_DOWN,
+  MRG_SCROLL_DIRECTION_LEFT,
+  MRG_SCROLL_DIRECTION_RIGHT
+};
+
+typedef struct _CtxEvent CtxEvent;
+
+
 void ctx_set_renderer (Ctx *ctx,
                        void *renderer);
+
+/* the following API is only available when CTX_EVENTS is defined to 1 */
+
+uint32_t ctx_ms    (Ctx *ctx);
+long     ctx_ticks (void);
+
+void _ctx_events_init     (Ctx *ctx);
+void ctx_set_size (Ctx *ctx, int width, int height);
+
+typedef void (*CtxCb) (CtxEvent *event,
+                       void     *data,
+                       void     *data2);
+typedef void (*CtxDestroyNotify) (void *data);
+
+typedef enum _CtxEventType CtxEventType;
+enum _CtxEventType {
+  CTX_PRESS          = 1 << 0,
+  CTX_MOTION         = 1 << 1,
+  CTX_RELEASE        = 1 << 2,
+  CTX_ENTER          = 1 << 3,
+  CTX_LEAVE          = 1 << 4,
+  CTX_TAP            = 1 << 5,
+  CTX_TAP_AND_HOLD   = 1 << 6,
+
+  /* NYI: SWIPE, ZOOM ROT_ZOOM, */
+
+  CTX_DRAG_PRESS     = 1 << 7,
+  CTX_DRAG_MOTION    = 1 << 8,
+  CTX_DRAG_RELEASE   = 1 << 9,
+  CTX_KEY_DOWN       = 1 << 10,
+  CTX_KEY_UP         = 1 << 11,
+  CTX_SCROLL         = 1 << 12,
+  CTX_MESSAGE        = 1 << 13,
+  CTX_DROP           = 1 << 14,
+
+  /* client should store state - preparing
+                                 * for restart
+                                 */
+
+  CTX_POINTER  = (CTX_PRESS | CTX_MOTION | CTX_RELEASE | CTX_DROP),
+  CTX_TAPS     = (CTX_TAP | CTX_TAP_AND_HOLD),
+  CTX_CROSSING = (CTX_ENTER | CTX_LEAVE),
+  CTX_DRAG     = (CTX_DRAG_PRESS | CTX_DRAG_MOTION | CTX_DRAG_RELEASE),
+  CTX_KEY      = (CTX_KEY_DOWN | CTX_KEY_UP),
+  CTX_MISC     = (CTX_MESSAGE),
+  CTX_ANY      = (CTX_POINTER | CTX_DRAG | CTX_CROSSING | CTX_KEY | CTX_MISC | CTX_TAPS),
+};
+
+#define CTX_CLICK   CTX_PRESS   // SHOULD HAVE MORE LOGIC
+
+struct _CtxEvent {
+  CtxEventType  type;
+  Ctx     *ctx;
+  uint32_t time;
+
+  CtxModifierState state;
+
+  int      device_no; /* 0 = left mouse button / virtual focus */
+                      /* 1 = middle mouse button */
+                      /* 2 = right mouse button */
+                      /* 3 = first multi-touch .. (NYI) */
+
+  float   device_x; /* untransformed (device) coordinates  */
+  float   device_y;
+
+  /* coordinates; and deltas for motion/drag events in user-coordinates: */
+  float   x;
+  float   y;
+  float   start_x; /* start-coordinates (press) event for drag, */
+  float   start_y; /*    untransformed coordinates */
+  float   prev_x;  /* previous events coordinates */
+  float   prev_y;
+  float   delta_x; /* x - prev_x, redundant - but often useful */
+  float   delta_y; /* y - prev_y, redundant - ..  */
+
+  CtxScrollDirection scroll_direction;
+
+  unsigned int unicode; /* only valid for key-events */
+
+  const char *string;   /* as key can be "up" "down" "space" "backspace" "a" "b" "ø" etc .. */
+                        /* this is also where the message is delivered for
+                         * MESSAGE events
+                         *
+                         * and the data for drop events are delivered
+                         */
+  int stop_propagate; /* */
+};
+
+
+void ctx_add_binding_full (Ctx *ctx,
+                           const char *key,
+                           const char *action,
+                           const char *label,
+                           CtxCb       cb,
+                           void       *cb_data,
+                           CtxDestroyNotify destroy_notify,
+                           void       *destroy_data);
+void ctx_add_binding (Ctx *ctx,
+                      const char *key,
+                      const char *action,
+                      const char *label,
+                      CtxCb cb,
+                      void  *cb_data);
+typedef struct CtxBinding {
+  char *nick;
+  char *command;
+  char *label;
+  CtxCb cb;
+  void *cb_data;
+  CtxDestroyNotify destroy_notify;
+  void  *destroy_data;
+} CtxBinding;
+CtxBinding *ctx_get_bindings (Ctx *ctx);
+void  ctx_clear_bindings   (Ctx *ctx);
+void  ctx_remove_idle      (Ctx *ctx, int handle);
+int   ctx_add_timeout_full (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
+                            void (*destroy_notify)(void *destroy_data), void *destroy_data);
+int   ctx_add_timeout   (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data);
+int   ctx_add_idle_full (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
+                         void (*destroy_notify)(void *destroy_data), void *destroy_data);
+int   ctx_add_idle      (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data);
+void  ctx_listen_full   (Ctx     *ctx,
+                         CtxEventType  types,
+                         CtxCb    cb,
+                         void    *data1,
+                         void    *data2,
+                         void   (*finalize)(void *listen_data, void *listen_data2,
+                                            void *finalize_data),
+                         void    *finalize_data);
+void  ctx_event_stop_propagate (CtxEvent *event);
+void  ctx_listen               (Ctx          *ctx,
+                                CtxEventType  types,
+                                CtxCb         cb,
+                                void*         data1,
+                                void*         data2);
+
+int   ctx_pointer_is_down (Ctx *ctx, int no);
+float ctx_pointer_x (Ctx *ctx);
+float ctx_pointer_y (Ctx *ctx);
+void  ctx_freeze (Ctx *ctx);
+void  ctx_thaw   (Ctx *ctx);
+
+
+int ctx_key_press (Ctx *ctx, unsigned int keyval,
+                   const char *string, uint32_t time);
+int ctx_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time);
+
+void ctx_incoming_message (Ctx *ctx, const char *message, long time);
+int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time);
+int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time);
+int ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time);
+int ctx_pointer_drop (Ctx *ctx, float x, float y, int device_no, uint32_t time,
+                      char *string);
+
+
+////////////////////
 
 
 typedef enum
@@ -2697,108 +2877,7 @@ struct _CtxList {
 // YYY include list implementation - since it already is a header+inline online
 // implementation?
 
-typedef enum _CtxModifierState CtxModifierState;
 
-enum _CtxModifierState
-{
-  MRG_MODIFIER_STATE_SHIFT   = (1<<0),
-  MRG_MODIFIER_STATE_CONTROL = (1<<1),
-  MRG_MODIFIER_STATE_ALT     = (1<<2),
-  MRG_MODIFIER_STATE_BUTTON1 = (1<<3),
-  MRG_MODIFIER_STATE_BUTTON2 = (1<<4),
-  MRG_MODIFIER_STATE_BUTTON3 = (1<<5)
-};
-
-typedef enum _CtxScrollDirection CtxScrollDirection;
-enum _CtxScrollDirection
-{
-  MRG_SCROLL_DIRECTION_UP,
-  MRG_SCROLL_DIRECTION_DOWN,
-  MRG_SCROLL_DIRECTION_LEFT,
-  MRG_SCROLL_DIRECTION_RIGHT
-};
-
-typedef struct _CtxEvent CtxEvent;
-
-
-typedef enum _CtxEventType CtxEventType;
-enum _CtxEventType {
-  CTX_PRESS          = 1 << 0,
-  CTX_MOTION         = 1 << 1,
-  CTX_RELEASE        = 1 << 2,
-  CTX_ENTER          = 1 << 3,
-  CTX_LEAVE          = 1 << 4,
-  CTX_TAP            = 1 << 5,
-  CTX_TAP_AND_HOLD   = 1 << 6,
-
-  /* NYI: SWIPE, ZOOM ROT_ZOOM, */
-
-  CTX_DRAG_PRESS     = 1 << 7,
-  CTX_DRAG_MOTION    = 1 << 8,
-  CTX_DRAG_RELEASE   = 1 << 9,
-  CTX_KEY_DOWN       = 1 << 10,
-  CTX_KEY_UP         = 1 << 11,
-  CTX_SCROLL         = 1 << 12,
-  CTX_MESSAGE        = 1 << 13,
-  CTX_DROP           = 1 << 14,
-
-  /* client should store state - preparing
-                                 * for restart
-                                 */
-
-  CTX_POINTER  = (CTX_PRESS | CTX_MOTION | CTX_RELEASE | CTX_DROP),
-  CTX_TAPS     = (CTX_TAP | CTX_TAP_AND_HOLD),
-  CTX_CROSSING = (CTX_ENTER | CTX_LEAVE),
-  CTX_DRAG     = (CTX_DRAG_PRESS | CTX_DRAG_MOTION | CTX_DRAG_RELEASE),
-  CTX_KEY      = (CTX_KEY_DOWN | CTX_KEY_UP),
-  CTX_MISC     = (CTX_MESSAGE),
-  CTX_ANY      = (CTX_POINTER | CTX_DRAG | CTX_CROSSING | CTX_KEY | CTX_MISC | CTX_TAPS),
-};
-
-#define CTX_CLICK   CTX_PRESS   // SHOULD HAVE MORE LOGIC
-
-
-struct _CtxEvent {
-  CtxEventType  type;
-  Ctx     *ctx;
-  uint32_t time;
-
-  CtxModifierState state;
-
-  int      device_no; /* 0 = left mouse button / virtual focus */
-                      /* 1 = middle mouse button */
-                      /* 2 = right mouse button */
-                      /* 3 = first multi-touch .. (NYI) */
-
-  float   device_x; /* untransformed (device) coordinates  */
-  float   device_y;
-
-  /* coordinates; and deltas for motion/drag events in user-coordinates: */
-  float   x;
-  float   y;
-  float   start_x; /* start-coordinates (press) event for drag, */
-  float   start_y; /*    untransformed coordinates */
-  float   prev_x;  /* previous events coordinates */
-  float   prev_y;
-  float   delta_x; /* x - prev_x, redundant - but often useful */
-  float   delta_y; /* y - prev_y, redundant - ..  */
-
-  CtxScrollDirection scroll_direction;
-
-  unsigned int unicode; /* only valid for key-events */
-
-  const char *string;   /* as key can be "up" "down" "space" "backspace" "a" "b" "ø" etc .. */
-                        /* this is also where the message is delivered for
-                         * MESSAGE events
-                         *
-                         * and the data for drop events are delivered
-                         */
-  int stop_propagate; /* */
-};
-
-typedef void (*CtxCb) (CtxEvent *event,
-                       void     *data,
-                       void     *data2);
 
 typedef struct CtxItemCb {
   CtxEventType types;
@@ -2811,17 +2890,6 @@ typedef struct CtxItemCb {
 
 } CtxItemCb;
 
-typedef void (*CtxDestroyNotify) (void *data);
-
-typedef struct CtxBinding {
-  char *nick;
-  char *command;
-  char *label;
-  CtxCb cb;
-  void *cb_data;
-  CtxDestroyNotify destroy_notify;
-  void  *destroy_data;
-} CtxBinding;
 
 #define CTX_MAX_CBS              128
 
