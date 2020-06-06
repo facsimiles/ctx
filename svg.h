@@ -8,7 +8,7 @@
 #define MRG_MAX_CSS_RULES        128
 
 /* other important maximums */
-#define MRG_MAX_BINDINGS         256
+#define CTX_MAX_BINDINGS         256
 #define MRG_MAX_TEXT_LISTEN      256
 
 #define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
@@ -820,7 +820,6 @@ struct _MrgHtmlState
   int          floats;
 };
 
-#define MRG_MAX_DEVICES 16
 
 typedef void (*MrgDestroyNotify) (void *data);
 typedef void (*MrgNewText)       (const char *new_text, void *data);
@@ -1113,19 +1112,20 @@ typedef struct MrgState {
 struct _Mrg {
   Ctx            *ctx;
 
+#define CTX_MAX_DEVICES 16
   int             frozen;
   int             fullscreen;
   CtxList        *grabs; /* could split the grabs per device in the same way,
                             to make dispatch overhead smaller,. probably
                             not much to win though. */
-  CtxItem         *prev[MRG_MAX_DEVICES];
-  float            pointer_x[MRG_MAX_DEVICES];
-  float            pointer_y[MRG_MAX_DEVICES];
-  unsigned char    pointer_down[MRG_MAX_DEVICES];
-  MrgEvent         drag_event[MRG_MAX_DEVICES];
+  CtxItem         *prev[CTX_MAX_DEVICES];
+  float            pointer_x[CTX_MAX_DEVICES];
+  float            pointer_y[CTX_MAX_DEVICES];
+  unsigned char    pointer_down[CTX_MAX_DEVICES];
+  MrgEvent         drag_event[CTX_MAX_DEVICES];
   CtxList         *idles;
   int              idle_id;
-  MrgBinding       bindings[MRG_MAX_BINDINGS]; /*< better as list, uses no mem if unused */
+  MrgBinding       bindings[CTX_MAX_BINDINGS]; /*< better as list, uses no mem if unused */
   int              n_bindings;
   int              width;
   int              height;
@@ -1218,7 +1218,7 @@ void ctx_add_binding_full (Mrg *mrg,
                            MrgDestroyNotify destroy_notify,
                            void       *destroy_data)
 {
-  if (mrg->n_bindings +1 >= MRG_MAX_BINDINGS)
+  if (mrg->n_bindings +1 >= CTX_MAX_BINDINGS)
   {
     fprintf (stderr, "warning: mrg binding overflow\n");
     return;
@@ -1942,7 +1942,7 @@ int ctx_pointer_drop (Mrg *mrg, float x, float y, int device_no, uint32_t time,
   }
 
   if (device_no < 0) device_no = 0;
-  if (device_no >= MRG_MAX_DEVICES) device_no = MRG_MAX_DEVICES-1;
+  if (device_no >= CTX_MAX_DEVICES) device_no = CTX_MAX_DEVICES-1;
   MrgEvent *event = &mrg->drag_event[device_no];
 
   if (time == 0)
@@ -1988,7 +1988,7 @@ int ctx_pointer_press (Mrg *mrg, float x, float y, int device_no, uint32_t time)
   }
 
   if (device_no < 0) device_no = 0;
-  if (device_no >= MRG_MAX_DEVICES) device_no = MRG_MAX_DEVICES-1;
+  if (device_no >= CTX_MAX_DEVICES) device_no = CTX_MAX_DEVICES-1;
   MrgEvent *event = &mrg->drag_event[device_no];
 
   if (time == 0)
@@ -2087,7 +2087,7 @@ int ctx_pointer_release (Mrg *mrg, float x, float y, int device_no, uint32_t tim
     time = mrg_ms (mrg);
 
   if (device_no < 0) device_no = 0;
-  if (device_no >= MRG_MAX_DEVICES) device_no = MRG_MAX_DEVICES-1;
+  if (device_no >= CTX_MAX_DEVICES) device_no = CTX_MAX_DEVICES-1;
   MrgEvent *event = &mrg->drag_event[device_no];
 
   event->time = time;
@@ -2191,7 +2191,7 @@ int ctx_pointer_motion (Mrg *mrg, float x, float y, int device_no, uint32_t time
   CtxGrab *grab;
 
   if (device_no < 0) device_no = 0;
-  if (device_no >= MRG_MAX_DEVICES) device_no = MRG_MAX_DEVICES-1;
+  if (device_no >= CTX_MAX_DEVICES) device_no = CTX_MAX_DEVICES-1;
   MrgEvent *event = &mrg->drag_event[device_no];
 
   if (time == 0)
