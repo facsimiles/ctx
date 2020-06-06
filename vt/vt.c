@@ -390,6 +390,7 @@ struct _VT
   int       reverse_video;
   int       echo;
   int       bracket_paste;
+  int       ctx_events;
   int       font_is_mono;
   int       palette_no;
   int       has_blink; // if any of the set characters are blinking
@@ -769,6 +770,7 @@ static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence)
   vtcmd_clear (vt, sequence);
   vt->encoding = 0;
   vt->bracket_paste = 0;
+  vt->ctx_events = 0;
   vt->cr_on_lf = 0;
   vtcmd_set_top_and_bottom_margins (vt, "[r");
   vtcmd_set_left_and_right_margins (vt, "[s");
@@ -2234,6 +2236,10 @@ qagain:
             break;
           //case 2020: /*MODE;wordwrap;On;Off;*/
           //      vt->wordwrap = set; break;
+          case 6150:/*MODE;Ctx-events;On;Off;*/
+            vt->ctx_events = set;
+            break;
+          
           case 7020:/*MODE;Ctx ascii;On;;*/
             if (set)
               {
@@ -2361,9 +2367,11 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
           case 1006:
             is_set = vt->mouse_decimal;
             break;
+          case 6150:
+            is_set = vt->ctx_events;
+            break;
           case 2004:
             is_set = vt->bracket_paste;
-            break;
             break;
           case 1010: // scroll to bottom on tty output (rxvt)
           case 1011: // scroll to bottom on key press (rxvt)
@@ -4423,9 +4431,15 @@ static const char *keymap_general[][2]=
 
 };
 
-
 void vt_feed_keystring (VT *vt, const char *str)
 {
+  if (vt->ctx_events)
+  {
+    vt_write (vt, str, strlen (str) );
+    vt_write (vt, "\n", 1);
+    return;
+  }
+
   // make optional? - reset of scroll on key input
   vt_set_scroll (vt, 0);
 

@@ -378,21 +378,21 @@ typedef enum _CtxModifierState CtxModifierState;
 
 enum _CtxModifierState
 {
-  MRG_MODIFIER_STATE_SHIFT   = (1<<0),
-  MRG_MODIFIER_STATE_CONTROL = (1<<1),
-  MRG_MODIFIER_STATE_ALT     = (1<<2),
-  MRG_MODIFIER_STATE_BUTTON1 = (1<<3),
-  MRG_MODIFIER_STATE_BUTTON2 = (1<<4),
-  MRG_MODIFIER_STATE_BUTTON3 = (1<<5)
+  CTX_MODIFIER_STATE_SHIFT   = (1<<0),
+  CTX_MODIFIER_STATE_CONTROL = (1<<1),
+  CTX_MODIFIER_STATE_ALT     = (1<<2),
+  CTX_MODIFIER_STATE_BUTTON1 = (1<<3),
+  CTX_MODIFIER_STATE_BUTTON2 = (1<<4),
+  CTX_MODIFIER_STATE_BUTTON3 = (1<<5)
 };
 
 typedef enum _CtxScrollDirection CtxScrollDirection;
 enum _CtxScrollDirection
 {
-  MRG_SCROLL_DIRECTION_UP,
-  MRG_SCROLL_DIRECTION_DOWN,
-  MRG_SCROLL_DIRECTION_LEFT,
-  MRG_SCROLL_DIRECTION_RIGHT
+  CTX_SCROLL_DIRECTION_UP,
+  CTX_SCROLL_DIRECTION_DOWN,
+  CTX_SCROLL_DIRECTION_LEFT,
+  CTX_SCROLL_DIRECTION_RIGHT
 };
 
 typedef struct _CtxEvent CtxEvent;
@@ -13600,13 +13600,13 @@ int ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
   switch (device_no)
   {
     case 1:
-      events->modifier_state |= MRG_MODIFIER_STATE_BUTTON1;
+      events->modifier_state |= CTX_MODIFIER_STATE_BUTTON1;
       break;
     case 2:
-      events->modifier_state |= MRG_MODIFIER_STATE_BUTTON2;
+      events->modifier_state |= CTX_MODIFIER_STATE_BUTTON2;
       break;
     case 3:
-      events->modifier_state |= MRG_MODIFIER_STATE_BUTTON3;
+      events->modifier_state |= CTX_MODIFIER_STATE_BUTTON3;
       break;
     default:
       break;
@@ -13689,16 +13689,16 @@ int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t tim
   switch (device_no)
   {
     case 1:
-      if (events->modifier_state & MRG_MODIFIER_STATE_BUTTON1)
-        events->modifier_state -= MRG_MODIFIER_STATE_BUTTON1;
+      if (events->modifier_state & CTX_MODIFIER_STATE_BUTTON1)
+        events->modifier_state -= CTX_MODIFIER_STATE_BUTTON1;
       break;
     case 2:
-      if (events->modifier_state & MRG_MODIFIER_STATE_BUTTON2)
-        events->modifier_state -= MRG_MODIFIER_STATE_BUTTON2;
+      if (events->modifier_state & CTX_MODIFIER_STATE_BUTTON2)
+        events->modifier_state -= CTX_MODIFIER_STATE_BUTTON2;
       break;
     case 3:
-      if (events->modifier_state & MRG_MODIFIER_STATE_BUTTON3)
-        events->modifier_state -= MRG_MODIFIER_STATE_BUTTON3;
+      if (events->modifier_state & CTX_MODIFIER_STATE_BUTTON3)
+        events->modifier_state -= CTX_MODIFIER_STATE_BUTTON3;
       break;
     default:
       break;
@@ -13738,9 +13738,9 @@ int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t tim
 
         if (delay > events->tap_delay_min &&
             delay < events->tap_delay_max &&
-            sqrt(
+            (
               (event->start_x - x) * (event->start_x - x) +
-              (event->start_y - y) * (event->start_y - y)) < events->tap_hysteresis
+              (event->start_y - y) * (event->start_y - y)) < ctx_pow2(events->tap_hysteresis)
             )
         {
           _ctx_emit_cb_item (ctx, grab->item, event, CTX_TAP, x, y);
@@ -13803,7 +13803,7 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
   }
 
   /* XXX: too brutal; should use enter/leave events */
-  //if (getenv ("MRG_FAST") == NULL)
+  //if (getenv ("CTX_FAST") == NULL)
  // mrg_queue_draw (mrg, NULL); /* XXX: not really needed for all backends,
  //                                     needs more tinkering */
   grablist = device_get_grabs (ctx, device_no);
@@ -13824,10 +13824,10 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
         (grab->type & CTX_TAP_AND_HOLD))
     {
       if (
-          sqrt (
+          (
             (event->start_x - x) * (event->start_x - x) +
             (event->start_y - y) * (event->start_y - y)) >
-              ctx->events.tap_hysteresis
+              ctx_pow2(ctx->events.tap_hysteresis)
          )
       {
         //fprintf (stderr, "-");
