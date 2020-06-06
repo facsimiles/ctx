@@ -8,17 +8,243 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/ioctl.h>
+#include <signal.h>
 
 #define ENABLE_CLICK 0
 
 #include <SDL.h>
 #include "ctx.h"
 #include "vt-line.h"
+
+typedef struct VtPty
+{
+  int        pty;
+  pid_t      pid;
+} VtPty;
+
+static int vtpty_waitdata (void  *data, int timeout)
+{
+  VtPty *vtpty = data;
+  struct timeval tv;
+  fd_set fdset;
+  FD_ZERO (&fdset);
+  FD_SET (vtpty->pty, &fdset);
+  tv.tv_sec = 0;
+  tv.tv_usec = timeout;
+  tv.tv_sec  = timeout / 1000000;
+  tv.tv_usec = timeout % 1000000;
+  if (select (vtpty->pty+1, &fdset, NULL, NULL, &tv) == -1)
+    {
+      perror ("select");
+      return 0;
+    }
+  if (FD_ISSET (vtpty->pty, &fdset) )
+    {
+      return 1;
+    }
+  return 0;
+}
+
+static void signal_child (int signum)
+{
+  pid_t pid;
+  int   status;
+  if ( (pid = waitpid (-1, &status, WNOHANG) ) != -1)
+    {
+      if (pid)
+        {
+          for (VtList *l = vts; l; l=l->next)
+            {
+              VT *vt = l->data;
+              if (vt->vtpty.pid == pid)
+                {
+                  vt->done = 1;
+                  vt->result = status;
+                }
+            }
+        }
+    }
+}
+
+
 #include "vt.h"
+
+struct _CT
+{
+  VtPty      vtpty;
+  int       id;
+  unsigned char buf[BUFSIZ]; // need one per vt
+  int keyrepeat;
+  int       lastx;
+  int       lasty;
+  int        done;
+  int        result;
+
+  ssize_t (*write) (void *serial_obj, const void *buf, size_t count);
+  ssize_t (*read) (void *serial_obj, void *buf, size_t count);
+  int    (*waitdata) (void *serial_obj, int timeout);
+  void  (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
+};
+
+void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
+{
+  VtPty *vtpty = data;
+  struct winsize ws;
+  ws.ws_row = rows;
+  ws.ws_col = cols;
+  ws.ws_xpixel = px_width;
+  ws.ws_ypixel = px_height;
+  ioctl (vtpty->pty, TIOCSWINSZ, &ws);
+}
+
+static ssize_t vtpty_write (void *data, const void *buf, size_t count)
+{
+  VtPty *vtpty = data;
+  return write (vtpty->pty, buf, count);
+}
+
+static ssize_t vtpty_read (void  *data, void *buf, size_t count)
+{
+  VtPty *vtpty = data;
+  return read (vtpty->pty, buf, count);
+}
+
+
+
+int ct_poll (CT *ct, int timeout)
+{
+  int read_size = sizeof (ct->buf);
+  int got_data = 0;
+  int remaining_chars = 1024 * 1024;
+  int len = 0;
+  // audio_task (vt, 0);
+  read_size = ctx_mini (read_size, remaining_chars);
+  while (timeout > 100 &&
+         remaining_chars > 0 &&
+         vtpty_waitdata ((void*)ct, timeout))
+    {
+      len = vtpty_read ((void*)ct, ct->buf, read_size);
+      //for (int i = 0; i < len; i++)
+      //  { ct->state (ct, ct->buf[i]); }
+      got_data+=len;
+      remaining_chars -= len;
+      timeout -= 10;
+   // audio_task (vt, 0);
+    }
+  if (got_data < 0)
+    {
+      if (kill (ct->vtpty.pid, 0) != 0)
+        {
+          ct->done = 1;
+        }
+    }
+  return got_data;
+}
+
+static void ct_run_command (CT *vt, const char *command, int width, int height)
+{
+  struct winsize ws;
+  signal (SIGCHLD,signal_child);
+  ws.ws_row = 40;
+  ws.ws_col = 20
+  ws.ws_xpixel = width;
+  ws.ws_ypixel = height;
+  vt->vtpty.pid = forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
+  if (vt->vtpty.pid == 0)
+    {
+      int i;
+      for (i = 3; i<768; i++) { close (i); } /*hack, trying to close xcb */
+      unsetenv ("TERM");
+      unsetenv ("COLUMNS");
+      unsetenv ("LINES");
+      unsetenv ("TERMCAP");
+      unsetenv ("COLOR_TERM");
+      unsetenv ("COLORTERM");
+      unsetenv ("VTE_VERSION");
+      setenv ("TERM", "ctx", 1);
+      system (command);
+      exit (0);
+    }
+  else if (vt->vtpty.pid < 0)
+    {
+      VT_error ("forkpty failed (%s)", command);
+    }
+  //fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
+}
+
+
+CT *ct_new (const char *command, int width, int height, int id)
+{
+  CT *ct = calloc (sizeof (CT), 1);
+  ct->id = id;
+  ct->lastx = -1;
+  ct->lasty = -1;
+  //vt->state         = vt_state_neutral;
+  //vt->smooth_scroll = 0;
+  //vt->scroll_offset = 0.0;
+  ct->waitdata      = vtpty_waitdata;
+  ct->read          = vtpty_read;
+  ct->write         = vtpty_write;
+  ct->resize        = vtpty_resize;
+  //vt->font_to_cell_scale = 1.0;
+  //vt->cursor_visible     = 1;
+  //vt->lines              = NULL;
+  //vt->line_count         = 0;
+  //vt->current_line       = NULL;
+  //vt->cols               = 0;
+  //vt->rows               = 0;
+
+  //vt->scrollback_limit   = DEFAULT_SCROLLBACK;
+  //vt->argument_buf_len   = 0;
+  //vt->argument_buf_cap   = 64;
+  //vt->argument_buf       = malloc (vt->argument_buf_cap);
+  //vt->argument_buf[0]    = 0;
+  ct->done               = 0;
+  //vt->result             = -1;
+  //vt->line_spacing       = 1.0;
+  //vt->scale_x            = 1.0;
+  //vt->scale_y            = 1.0;
+  //vt_set_font_size (vt, font_size);
+  //vt_set_line_spacing (vt, line_spacing);
+  if (command)
+    {
+      vt_run_command ((void*)ct, command, "ctx");
+    }
+  //if (cols <= 0) { cols = DEFAULT_COLS; }
+  //if (rows <= 0) { cols = DEFAULT_ROWS; }
+  //vt_set_term_size (vt, cols, rows);
+  //ct->width = width;
+  //ct->height = width;
+  vt_list_prepend (&vts, ct);
+  return ct;
+}
+pid_t       ct_get_pid              (VT *ct)
+{
+  return vt_get_pid ((void*)ct);
+}
+void        ct_feed_keystring     (CT *ct, const char *str)
+{
+  vt_write ((void*)ct, str, strlen (str));
+  vt_write ((void*)ct, "\n", 1);
+}
+
+void ct_destroy (CT *ct)
+{
+  vt_list_remove (&vts, ct);
+  kill (ct->vtpty.pid, 9);
+  close (ct->vtpty.pty);
+  free (ct);
+}
+
+
+
+
 
 typedef struct
 CtxClient {
   VT *vt;
+  CT *ct;
   SDL_Texture  *texture;
   uint8_t      *pixels;
   char         *title;
@@ -107,7 +333,11 @@ int id_to_no (int id)
 
 void client_remove (int no)
 {
-  vt_destroy (clients[no].vt);
+  if (clients[no].vt)
+    vt_destroy (clients[no].vt);
+  if (clients[no].ct)
+    ct_destroy (clients[no].ct);
+
   SDL_DestroyTexture (clients[no].texture);
   free(clients[no].pixels);
 
@@ -138,6 +368,7 @@ void client_set_title (int id, const char *new_title)
 static void handle_event (const char *event)
 {
   VT *vt = clients[active].vt;
+  CT *ct = clients[active].ct;
   if (!strcmp (event, "shift-return"))
    event = "return";
   else
@@ -146,11 +377,12 @@ static void handle_event (const char *event)
       char *text = SDL_GetClipboardText ();
       if (text)
         {
-          vt_paste (vt, text);
+          if (vt)
+            vt_paste (vt, text);
           free (text);
         }
     }
-  else if (!strcmp (event, "shift-control-c") )
+  else if (!strcmp (event, "shift-control-c") && vt)
     {
       char *text = vt_get_selection (vt);
       if (text)
@@ -180,7 +412,10 @@ static void handle_event (const char *event)
     }
   else
     {
-      vt_feed_keystring (vt, event);
+      if (vt)
+        vt_feed_keystring (vt, event);
+      if (ct)
+        ct_feed_keystring (ct, event);
     }
 }
 
@@ -221,6 +456,7 @@ static int sdl_check_events ()
   int got_event = 0;
   static SDL_Event      event;
   VT *vt = clients[active].vt;
+  CT *ct = clients[active].ct;
   if (SDL_WaitEventTimeout (&event, 15) )
     do
       {
@@ -228,7 +464,9 @@ static int sdl_check_events ()
         switch (event.type)
           {
             case SDL_MOUSEWHEEL:
-              vt_set_scroll (vt, vt_get_scroll (vt) + event.wheel.y);
+              if (vt)
+                vt_set_scroll (vt, vt_get_scroll (vt) + event.wheel.y);
+              else if (ct) {};
               break;
             case SDL_WINDOWEVENT:
               if (client_count == 1)
@@ -401,6 +639,67 @@ static int sdl_check_events ()
   return got_event;
 }
 
+int update_vt (CtxClient *client)
+{
+        VT *vt = client->vt;
+        int vt_width = client->vt_width;
+        int vt_height = client->vt_height;
+        //int vt_x = client->x;
+        //int vt_y = client->y;
+        int in_scroll = (vt_has_blink (client->vt) >= 10);
+
+        if (vt_is_done (vt) )
+        {
+          client_remove_by_id (client->id);
+          return -1;
+        }
+
+      if ( (client->drawn_rev != vt_rev (vt) ) ||
+           vt_has_blink (vt) ||
+           in_scroll)
+        {
+          client->drawn_rev = vt_rev (vt);
+          SDL_Rect dirty;
+#if 0
+          // XXX this works for initial line in started shell
+          // but falls apart when bottom is reached,
+          // needs investigation, this is the code path that
+          // can be turned into threaded rendering.
+          Ctx *ctx = ctx_new ();
+          vt_draw (vt, ctx, 0, 0);
+          ctx_blit (ctx, pixels, 0,0, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
+#else
+          // render directlty to framebuffer in immediate mode - skips
+          // creation of renderstream.
+          //
+          // terminal is also keeping track of state of already drawn
+          // pixels and often only repaints what is needed XXX  need API
+          //                                              to force full draw
+          Ctx *ctx = ctx_new_for_framebuffer (client->pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
+          //fprintf (stderr, "%i\r", no);
+          vt_draw (vt, ctx, 0, 0);
+#endif
+          ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
+          ctx_free (ctx);
+
+#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
+          dirty.w ++;
+          dirty.h ++;
+          if (dirty.x + dirty.w > vt_width)
+            { dirty.w = vt_width - dirty.x; }
+          if (dirty.y + dirty.h > vt_height)
+            { dirty.h = vt_height - dirty.y; }
+          SDL_UpdateTexture (client->texture,
+                             &dirty,
+                             (uint8_t *) client->pixels + sizeof (Uint32) * (vt_width * dirty.y + dirty.x), vt_width * sizeof (Uint32) );
+#else
+          SDL_UpdateTexture (client->texture, NULL,
+                             (void *) client->pixels, vt_width * sizeof (Uint32) );
+#endif
+        }
+      return 0;
+}
+
 int vt_main (int argc, char **argv)
 {
   static int width = 800;
@@ -418,62 +717,8 @@ again:
       SDL_RenderClear (renderer);
       for (int no = 0; no < client_count; no++)
       {
-        VT *vt = clients[no].vt;
-        int vt_width = clients[no].vt_width;
-        int vt_height = clients[no].vt_height;
-        //int vt_x = clients[no].x;
-        //int vt_y = clients[no].y;
-        int in_scroll = (vt_has_blink (clients[no].vt) >= 10);
-
-        if (vt_is_done (vt) )
-        {
-          client_remove (no);
-          goto again;
-        }
-
-      if ( (clients[no].drawn_rev != vt_rev (vt) ) ||
-           vt_has_blink (vt) ||
-           in_scroll)
-        {
-          clients[no].drawn_rev = vt_rev (vt);
-          SDL_Rect dirty;
-#if 0
-          // XXX this works for initial line in started shell
-          // but falls apart when bottom is reached,
-          // needs investigation, this is the code path that
-          // can be turned into threaded rendering.
-          Ctx *ctx = ctx_new ();
-          vt_draw (vt, ctx, 0, 0);
-          ctx_blit (ctx, pixels, 0,0, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
-#else
-          // render directlty to framebuffer in immediate mode - skips
-          // creation of renderstream.
-          //
-          // terminal is also keeping track of state of already drawn
-          // pixels and often only repaints what is needed XXX  need API
-          //                                              to force full draw
-          Ctx *ctx = ctx_new_for_framebuffer (clients[no].pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
-          fprintf (stderr, "%i\r", no);
-          vt_draw (vt, ctx, 0, 0);
-#endif
-          ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
-          ctx_free (ctx);
-
-#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
-          dirty.w ++;
-          dirty.h ++;
-          if (dirty.x + dirty.w > vt_width)
-            { dirty.w = vt_width - dirty.x; }
-          if (dirty.y + dirty.h > vt_height)
-            { dirty.h = vt_height - dirty.y; }
-          SDL_UpdateTexture (clients[no].texture,
-                             &dirty,
-                             (uint8_t *) clients[no].pixels + sizeof (Uint32) * (vt_width * dirty.y + dirty.x), vt_width * sizeof (Uint32) );
-#else
-          SDL_UpdateTexture (clients[no].texture, NULL,
-                             (void *) clients[no].pixels, vt_width * sizeof (Uint32) );
-#endif
-        }
+          if (update_vt (&clients[no]))
+            goto again; // client is gone
           SDL_Rect SrcR;
           SDL_Rect DestR;
           SrcR.x = 0;
@@ -488,11 +733,12 @@ again:
 
           SDL_RenderCopy (renderer, clients[no].texture, &SrcR, &DestR);
         }
-          SDL_RenderPresent (renderer);
+
+      SDL_RenderPresent (renderer);
+
       int got_event = 0;
       //if (!in_scroll)
         got_event = sdl_check_events ();
-
 
       if (got_event)
         {

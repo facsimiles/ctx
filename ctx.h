@@ -1606,6 +1606,10 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte);
 void ctx_parser_free (CtxParser *parser);
 
 #define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
+static int   ctx_mini (int a, int b)     { if (a < b) return a; return b; }
+static float ctx_minf (float a, float b) { if (a < b) return a; return b; }
+static int   ctx_maxi (int a, int b)     { if (a > b) return a; return b; }
+static float ctx_maxf (float a, float b) { if (a > b) return a; return b; }
 
 #ifdef CTX_IMPLEMENTATION
 
@@ -1618,10 +1622,6 @@ ctx_memset (void *ptr, uint8_t val, int length)
 }
 
 static float ctx_pow2 (float a)          { return a * a; }
-static int   ctx_mini (int a, int b)     { if (a < b) return a; return b; }
-static float ctx_minf (float a, float b) { if (a < b) return a; return b; }
-static int   ctx_maxi (int a, int b)     { if (a > b) return a; return b; }
-static float ctx_maxf (float a, float b) { if (a > b) return a; return b; }
 
 static void ctx_strcpy (char *dst, const char *src)
 {

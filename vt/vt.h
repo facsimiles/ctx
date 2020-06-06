@@ -1,7 +1,17 @@
 
 typedef struct _VT VT;
+typedef struct _CT CT;
 
 VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing, int id);
+CT *ct_new (const char *command, int width, int height, int id);
+pid_t       ct_get_pid            (VT *ct);
+void        ct_feed_keystring     (CT *ct, const char *str);
+int         ct_get_width          (CT *ct);
+int         ct_get_height         (CT *ct);
+int         ct_poll               (CT *vt, int timeout);
+long        ct_rev                (CT *vt);
+void        ct_destroy            (CT *vt);
+int         ct_is_done            (CT *vt);
 
 void vt_open_log (VT *vt, const char *path);
 
@@ -26,7 +36,8 @@ int vt_has_blink (VT *vt);
 /* this is how mrg/mmm based key-events are fed into the vt engine
  */
 void        vt_feed_keystring     (VT *vt, const char *str);
-void vt_paste (VT *vt, const char *str);
+
+void        vt_paste              (VT *vt, const char *str);
 
 /* not needed when passing a commandline for command to
  * run, but could be used for injecting commands, or

@@ -237,12 +237,6 @@ typedef enum
   //STYLE_NONERASABLE     = 1 << 16  // needed for selective erase
 } TerminalStyle;
 
-typedef struct VtPty
-{
-  int        pty;
-  pid_t      pid;
-} VtPty;
-
 typedef struct Image
 {
   int kitty_format;
@@ -355,12 +349,26 @@ typedef struct GfxState
 
 struct _VT
 {
+  VtPty      vtpty;
   int       id;
   unsigned char buf[BUFSIZ]; // need one per vt
+  int keyrepeat;
   int       lastx;
   int       lasty;
+  int        done;
+  int        result;
+
+  ssize_t (*write) (void *serial_obj, const void *buf, size_t count);
+  ssize_t (*read) (void *serial_obj, void *buf, size_t count);
+  int    (*waitdata) (void *serial_obj, int timeout);
+  void  (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
+
+
   char     *title;
   void    (*state) (VT *vt, int byte);
+
+  AudioState audio; // < want to move this one up and share impl
+  GfxState   gfx;
 
   VtList   *saved_lines;
   int       in_alt_screen;
@@ -401,7 +409,6 @@ struct _VT
   int mouse_drag;
   int mouse_all;
   int mouse_decimal;
-  int keyrepeat;
 
   long       rev;
   uint8_t    utf8_holding[64]; /* only 4 needed for utf8 - but it's purpose
@@ -463,8 +470,6 @@ struct _VT
   uint8_t    tabs[MAX_COLS];
   int        inert;
 
-  int        done;
-  int        result;
 
   float      font_to_cell_scale;
   float      font_size; // should maybe be integer?
@@ -481,15 +486,7 @@ struct _VT
   int        blink_state;
 
   FILE      *log;
-  ssize_t (*write) (void *serial_obj, const void *buf, size_t count);
-  ssize_t (*read) (void *serial_obj, void *buf, size_t count);
-  int    (*waitdata) (void *serial_obj, int timeout);
-  void  (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
 
-  VtPty      vtpty;
-
-  GfxState   gfx;
-  AudioState audio;
 
   int select_start_col;
   int select_start_row;
@@ -497,6 +494,7 @@ struct _VT
   int select_end_row;
 
 };
+
 
 /* on current line */
 static int vt_col_to_pos (VT *vt, int col)
@@ -566,61 +564,14 @@ static ssize_t vt_read (VT *vt, void *buf, size_t count)
   if (!vt->read) { return 0; }
   return vt->read (&vt->vtpty, buf, count);
 }
-static int vt_waitdata (VT *vt, int timeout)
+static int vt_waitdata (CT *vt, int timeout)
 {
-  if (!vt->waitdata) { return 0; }
-  return vt->waitdata (&vt->vtpty, timeout);
+  return ct_waitdata ((void*)vt, timeout);
 }
 static void vt_resize (VT *vt, int cols, int rows, int px_width, int px_height)
 {
   if (vt->resize)
     { vt->resize (&vt->vtpty, cols, rows, px_width, px_height); }
-}
-
-void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
-{
-  VtPty *vtpty = data;
-  struct winsize ws;
-  ws.ws_row = rows;
-  ws.ws_col = cols;
-  ws.ws_xpixel = px_width;
-  ws.ws_ypixel = px_height;
-  ioctl (vtpty->pty, TIOCSWINSZ, &ws);
-}
-
-static ssize_t vtpty_write (void *data, const void *buf, size_t count)
-{
-  VtPty *vtpty = data;
-  return write (vtpty->pty, buf, count);
-}
-
-static ssize_t vtpty_read (void  *data, void *buf, size_t count)
-{
-  VtPty *vtpty = data;
-  return read (vtpty->pty, buf, count);
-}
-
-static int vtpty_waitdata (void  *data, int timeout)
-{
-  VtPty *vtpty = data;
-  struct timeval tv;
-  fd_set fdset;
-  FD_ZERO (&fdset);
-  FD_SET (vtpty->pty, &fdset);
-  tv.tv_sec = 0;
-  tv.tv_usec = timeout;
-  tv.tv_sec  = timeout / 1000000;
-  tv.tv_usec = timeout % 1000000;
-  if (select (vtpty->pty+1, &fdset, NULL, NULL, &tv) == -1)
-    {
-      perror ("select");
-      return 0;
-    }
-  if (FD_ISSET (vtpty->pty, &fdset) )
-    {
-      return 1;
-    }
-  return 0;
 }
 
 
@@ -654,7 +605,7 @@ const char *vt_get_title (VT *vt)
 
 static VtList *vts = NULL;
 
-static void vt_run_command (VT *vt, const char *command);
+static void vt_run_command (VT *vt, const char *command, const char *term);
 static void vtcmd_set_top_and_bottom_margins (VT *vt, const char *sequence);
 static void vtcmd_set_left_and_right_margins (VT *vt, const char *sequence);
 static void _vt_move_to (VT *vt, int y, int x);
@@ -871,7 +822,7 @@ VT *vt_new (const char *command, int cols, int rows, float font_size, float line
   vt_set_line_spacing (vt, line_spacing);
   if (command)
     {
-      vt_run_command (vt, command);
+      vt_run_command (vt, command, "xterm");
     }
   if (cols <= 0) { cols = DEFAULT_COLS; }
   if (rows <= 0) { cols = DEFAULT_ROWS; }
@@ -4270,6 +4221,7 @@ int vt_poll (VT *vt, int timeout)
   return got_data;
 }
 
+
 /******/
 
 static const char *keymap_vt52[][2]=
@@ -4660,29 +4612,8 @@ const char *vt_find_shell_command (void)
   return command;
 }
 
-static void signal_child (int signum)
-{
-  pid_t pid;
-  int   status;
-  if ( (pid = waitpid (-1, &status, WNOHANG) ) != -1)
-    {
-      if (pid)
-        {
-          for (VtList *l = vts; l; l=l->next)
-            {
-              VT *vt = l->data;
-              if (vt->vtpty.pid == pid)
-                {
-                  vt->done = 1;
-                  vt->result = status;
-                }
-            }
-        }
-    }
-}
 
-
-static void vt_run_command (VT *vt, const char *command)
+static void vt_run_command (VT *vt, const char *command, const char *term)
 {
   struct winsize ws;
   signal (SIGCHLD,signal_child);
@@ -4706,7 +4637,7 @@ static void vt_run_command (VT *vt, const char *command)
       //setenv ("TERM", "vt102", 1);
       //setenv ("TERM", "vt100", 1);
       //setenv ("TERM", "xterm-256color", 1);
-      setenv ("TERM", "xterm", 1);
+      setenv ("TERM", term?term:"xterm", 1);
       setenv ("COLORTERM", "truecolor", 1);
       //execlp ("/bin/bash", "/bin/bash", NULL);
       system (command);
