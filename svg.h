@@ -1154,8 +1154,6 @@ struct _Mrg {
   MrgRectangle     dirty_during_paint; // queued during painting
   MrgState        *state;
   MrgList         *geo_cache;
-  void            *eeek2;  /* something sometimes goes too deep! */
-  void            *eeek1;  /* XXX something sometimes goes too deep in state */
   MrgState         states[MRG_MAX_STATE_DEPTH];
   int              state_no;
   int              in_paint;
