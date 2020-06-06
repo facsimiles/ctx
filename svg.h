@@ -6325,19 +6325,19 @@ static void cmd_escape (CtxEvent *event, void *data, void *data2)
 
 void mrg_text_edit_bindings (Mrg *mrg)
 {
-  ctx_add_binding (mrg->ctx, "escape",    NULL, "stop editing",    cmd_escape,      mrg);
-  ctx_add_binding (mrg->ctx, "return",    NULL, "add newline",     cmd_return,    mrg);
-  ctx_add_binding (mrg->ctx, "home",      NULL, "cursor to start", cmd_home, mrg);
-  ctx_add_binding (mrg->ctx, "end",       NULL, "cursor to end",   cmd_end,    mrg);
-  ctx_add_binding (mrg->ctx, "left",      NULL, "cursor left",     cmd_left,    mrg);
-  ctx_add_binding (mrg->ctx, "right",     NULL, "cursor right",    cmd_right,  mrg);
-  ctx_add_binding (mrg->ctx, "up",        NULL, "cursor up",       cmd_up,        mrg);
-  ctx_add_binding (mrg->ctx, "down",      NULL, "cursor down",     cmd_down,    mrg);
-  ctx_add_binding (mrg->ctx, "page-up",   NULL, "cursor up",       cmd_page_up,     mrg);
-  ctx_add_binding (mrg->ctx, "page-down", NULL, "cursor down",     cmd_page_down, mrg);
-  ctx_add_binding (mrg->ctx, "backspace", NULL, "remove preceding character", cmd_backspace, mrg);
-  ctx_add_binding (mrg->ctx, "delete",    NULL, "remove character under cursor", cmd_delete, mrg);
-  ctx_add_binding (mrg->ctx, "unhandled", NULL, "add if key name is 1 char long", cmd_unhandled, mrg);
+  ctx_add_key_binding (mrg->ctx, "escape",    NULL, "stop editing",    cmd_escape,      mrg);
+  ctx_add_key_binding (mrg->ctx, "return",    NULL, "add newline",     cmd_return,    mrg);
+  ctx_add_key_binding (mrg->ctx, "home",      NULL, "cursor to start", cmd_home, mrg);
+  ctx_add_key_binding (mrg->ctx, "end",       NULL, "cursor to end",   cmd_end,    mrg);
+  ctx_add_key_binding (mrg->ctx, "left",      NULL, "cursor left",     cmd_left,    mrg);
+  ctx_add_key_binding (mrg->ctx, "right",     NULL, "cursor right",    cmd_right,  mrg);
+  ctx_add_key_binding (mrg->ctx, "up",        NULL, "cursor up",       cmd_up,        mrg);
+  ctx_add_key_binding (mrg->ctx, "down",      NULL, "cursor down",     cmd_down,    mrg);
+  ctx_add_key_binding (mrg->ctx, "page-up",   NULL, "cursor up",       cmd_page_up,     mrg);
+  ctx_add_key_binding (mrg->ctx, "page-down", NULL, "cursor down",     cmd_page_down, mrg);
+  ctx_add_key_binding (mrg->ctx, "backspace", NULL, "remove preceding character", cmd_backspace, mrg);
+  ctx_add_key_binding (mrg->ctx, "delete",    NULL, "remove character under cursor", cmd_delete, mrg);
+  ctx_add_key_binding (mrg->ctx, "unhandled", NULL, "add if key name is 1 char long", cmd_unhandled, mrg);
 }
 
 #if 1
