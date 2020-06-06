@@ -109,48 +109,49 @@ static void vt_state_swallow      (VT *vt, int byte);
 static void vt_state_ctx          (VT *vt, int byte);
 static void vt_state_vt52         (VT *vt, int byte);
 
+#if 0
 /* barebones linked list */
 
-typedef struct _VtList VtList;
-struct _VtList
+typedef struct _CtxList CtxList;
+struct _CtxList
 {
   void *data;
-  VtList *next;
+  CtxList *next;
 };
 
-static inline int vt_list_length (VtList *list)
+static inline int ctx_list_length (CtxList *list)
 {
   int length = 0;
-  for (VtList *l = list; l; l = l->next, length++);
+  for (CtxList *l = list; l; l = l->next, length++);
   return length;
 }
 
-static inline void vt_list_prepend (VtList **list, void *data)
+static inline void ctx_list_prepend (CtxList **list, void *data)
 {
-  VtList *new_=calloc (sizeof (VtList), 1);
+  CtxList *new_=calloc (sizeof (CtxList), 1);
   new_->next = *list;
   new_->data = data;
   *list = new_;
 }
 
-static inline void *vt_list_last (VtList *list)
+static inline void *ctx_list_last (CtxList *list)
 {
   if (list)
     {
-      VtList *last;
+      CtxList *last;
       for (last = list; last->next; last=last->next);
       return last->data;
     }
   return NULL;
 }
 
-static inline void vt_list_append (VtList **list, void *data)
+static inline void ctx_list_append (CtxList **list, void *data)
 {
-  VtList *new_= calloc (sizeof (VtList), 1);
+  CtxList *new_= calloc (sizeof (CtxList), 1);
   new_->data=data;
   if (*list)
     {
-      VtList *last;
+      CtxList *last;
       for (last = *list; last->next; last=last->next);
       last->next = new_;
       return;
@@ -159,9 +160,9 @@ static inline void vt_list_append (VtList **list, void *data)
   return;
 }
 
-static inline void vt_list_remove (VtList **list, void *data)
+static inline void ctx_list_remove (CtxList **list, void *data)
 {
-  VtList *iter, *prev = NULL;
+  CtxList *iter, *prev = NULL;
   if ( (*list)->data == data)
     {
       prev = (void *) (*list)->next;
@@ -180,25 +181,18 @@ static inline void vt_list_remove (VtList **list, void *data)
       { prev = iter; }
 }
 
-static inline VtList *vt_list_nth (VtList *list, int no)
-{
-  while (no-- && list)
-    { list = list->next; }
-  return list;
-}
-
 static inline void
-vt_list_insert_before (VtList **list, VtList *sibling,
+ctx_list_insert_before (CtxList **list, CtxList *sibling,
                        void *data)
 {
   if (*list == NULL || *list == sibling)
     {
-      vt_list_prepend (list, data);
+      ctx_list_prepend (list, data);
     }
   else
     {
-      VtList *prev = NULL;
-      for (VtList *l = *list; l; l=l->next)
+      CtxList *prev = NULL;
+      for (CtxList *l = *list; l; l=l->next)
         {
           if (l == sibling)
             { break; }
@@ -206,13 +200,14 @@ vt_list_insert_before (VtList **list, VtList *sibling,
         }
       if (prev)
         {
-          VtList *new_=calloc (sizeof (VtList), 1);
+          CtxList *new_=calloc (sizeof (CtxList), 1);
           new_->next = sibling;
           new_->data = data;
           prev->next=new_;
         }
     }
 }
+#endif
 
 #define MAX_COLS 2048 // used for tabstops
 
@@ -346,6 +341,7 @@ typedef struct GfxState
   int   data_size;
 } GfxState;
 
+#include "terminal.h"
 
 struct _VT
 {
@@ -370,12 +366,12 @@ struct _VT
   AudioState audio; // < want to move this one up and share impl
   GfxState   gfx;
 
-  VtList   *saved_lines;
+  CtxList   *saved_lines;
   int       in_alt_screen;
   int       saved_line_count;
-  VtList   *lines;
+  CtxList   *lines;
   int       line_count;
-  VtList   *scrollback;
+  CtxList   *scrollback;
   int       scrollback_count;
   int       leds[4];
   uint64_t  cstyle;
@@ -564,9 +560,10 @@ static ssize_t vt_read (VT *vt, void *buf, size_t count)
   if (!vt->read) { return 0; }
   return vt->read (&vt->vtpty, buf, count);
 }
-static int vt_waitdata (CT *vt, int timeout)
+static int vt_waitdata (VT *vt, int timeout)
 {
-  return ct_waitdata ((void*)vt, timeout);
+  if (!vt->waitdata) { return 0; }
+  return vt->waitdata (&vt->vtpty, timeout);
 }
 static void vt_resize (VT *vt, int cols, int rows, int px_width, int px_height)
 {
@@ -603,7 +600,6 @@ const char *vt_get_title (VT *vt)
   return vt->title;
 }
 
-static VtList *vts = NULL;
 
 static void vt_run_command (VT *vt, const char *command, const char *term);
 static void vtcmd_set_top_and_bottom_margins (VT *vt, const char *sequence);
@@ -640,7 +636,7 @@ static void vtcmd_clear (VT *vt, const char *sequence)
   while (vt->lines)
     {
       vt_line_free (vt->lines->data, 1);
-      vt_list_remove (&vt->lines, vt->lines->data);
+      ctx_list_remove (&vt->lines, vt->lines->data);
     }
   vt->lines = NULL;
   vt->line_count = 0;
@@ -648,7 +644,7 @@ static void vtcmd_clear (VT *vt, const char *sequence)
   for (int i=0; i<vt->rows; i++)
     {
       vt->current_line = vt_line_new_with_size ("", vt->cols);
-      vt_list_prepend (&vt->lines, vt->current_line);
+      ctx_list_prepend (&vt->lines, vt->current_line);
       vt->line_count++;
     }
   vt_cell_cache_clear (vt); // should not be needed
@@ -835,7 +831,7 @@ VT *vt_new (const char *command, int cols, int rows, float font_size, float line
   vt->bg_color[2] = 0;
   vtcmd_reset_to_initial_state (vt, NULL);
   //vt->ctx = ctx_new ();
-  vt_list_prepend (&vts, vt);
+  ctx_list_prepend (&vts, vt);
   return vt;
 }
 
@@ -856,8 +852,8 @@ void vt_set_mmm (VT *vt, void *mmm)
 
 static int vt_trimlines (VT *vt, int max)
 {
-  VtList *chop_point = NULL;
-  VtList *l;
+  CtxList *chop_point = NULL;
+  CtxList *l;
   int i;
   if (vt->line_count < max)
     { return 0; }
@@ -875,15 +871,15 @@ static int vt_trimlines (VT *vt, int max)
         }
       else
         {
-          vt_list_prepend (&vt->scrollback, chop_point->data);
+          ctx_list_prepend (&vt->scrollback, chop_point->data);
           vt->scrollback_count ++;
         }
-      vt_list_remove (&chop_point, chop_point->data);
+      ctx_list_remove (&chop_point, chop_point->data);
       vt->line_count--;
     }
   if (vt->scrollback_count > vt->scrollback_limit + 128)
     {
-      VtList *l = vt->scrollback;
+      CtxList *l = vt->scrollback;
       int no = 0;
       while (l && no < vt->scrollback_limit)
         {
@@ -899,7 +895,7 @@ static int vt_trimlines (VT *vt, int max)
       while (chop_point)
         {
           vt_line_free (chop_point->data, 1);
-          vt_list_remove (&chop_point, chop_point->data);
+          ctx_list_remove (&chop_point, chop_point->data);
           vt->scrollback_count --;
         }
     }
@@ -917,12 +913,12 @@ void vt_set_term_size (VT *vt, int icols, int irows)
       if (vt->scrollback_count)
         {
           vt->scrollback_count--;
-          vt_list_append (&vt->lines, vt->scrollback->data);
-          vt_list_remove (&vt->scrollback, vt->scrollback->data);
+          ctx_list_append (&vt->lines, vt->scrollback->data);
+          ctx_list_remove (&vt->scrollback, vt->scrollback->data);
         }
       else
         {
-          vt_list_append (&vt->lines, vt_line_new_with_size ("", vt->cols) );
+          ctx_list_append (&vt->lines, vt_line_new_with_size ("", vt->cols) );
         }
       vt->cursor_y++;
       vt->rows++;
@@ -988,7 +984,7 @@ _vt_move_to (VT *vt, int y, int x)
   vt->cursor_x = x;
   vt->cursor_y = y;
   i = vt->rows - y;
-  VtList *l;
+  CtxList *l;
   for (l = vt->lines; l && i >= 1; l = l->next, i--);
   if (l)
     {
@@ -999,7 +995,7 @@ _vt_move_to (VT *vt, int y, int x)
       for (; i > 0; i--)
         {
           vt->current_line = vt_line_new_with_size ("", vt->cols);
-          vt_list_append (&vt->lines, vt->current_line);
+          ctx_list_append (&vt->lines, vt->current_line);
           vt->line_count++;
         }
     }
@@ -1180,14 +1176,14 @@ static void vt_scroll (VT *vt, int amount)
       remove_no = vt->margin_bottom;
       insert_before = vt->margin_top;
     }
-  VtList *l;
+  CtxList *l;
   int i;
   for (i=vt->rows, l = vt->lines; i > 0 && l; l=l->next, i--)
     {
       if (i == remove_no)
         {
           string = l->data;
-          vt_list_remove (&vt->lines, string);
+          ctx_list_remove (&vt->lines, string);
           break;
         }
     }
@@ -1196,7 +1192,7 @@ static void vt_scroll (VT *vt, int amount)
       if (!vt->in_alt_screen &&
           (vt->margin_top == 1 && vt->margin_bottom == vt->rows) )
         {
-          vt_list_prepend (&vt->scrollback, string);
+          ctx_list_prepend (&vt->scrollback, string);
           vt->scrollback_count ++;
         }
       else
@@ -1207,7 +1203,7 @@ static void vt_scroll (VT *vt, int amount)
   string = vt_line_new_with_size ("", vt->cols/4);
   if (amount > 0 && vt->margin_top == 1)
     {
-      vt_list_append (&vt->lines, string);
+      ctx_list_append (&vt->lines, string);
     }
   else
     {
@@ -1215,13 +1211,13 @@ static void vt_scroll (VT *vt, int amount)
         {
           if (i == insert_before)
             {
-              vt_list_insert_before (&vt->lines, l, string);
+              ctx_list_insert_before (&vt->lines, l, string);
               break;
             }
         }
       if (i != insert_before)
         {
-          vt_list_append (&vt->lines, string);
+          ctx_list_append (&vt->lines, string);
         }
     }
   vt->current_line = string;
@@ -1461,7 +1457,7 @@ static void vtcmd_erase_in_display (VT *vt, const char *sequence)
         for (int col = vt->cursor_x; col <= VT_MARGIN_RIGHT; col++)
           { vt_line_set_style (vt->current_line, col-1, vt->cstyle); }
         {
-          VtList *l;
+          CtxList *l;
           int no = vt->rows;
           for (l = vt->lines; l->data != vt->current_line; l = l->next, no--)
             {
@@ -1483,7 +1479,7 @@ static void vtcmd_erase_in_display (VT *vt, const char *sequence)
             }
         }
         {
-          VtList *l;
+          CtxList *l;
           int there_yet = 0;
           int no = vt->rows;
           for (l = vt->lines; l; l = l->next, no--)
@@ -1510,7 +1506,7 @@ static void vtcmd_erase_in_display (VT *vt, const char *sequence)
           int ty = vt->cursor_y;
           vtcmd_clear (vt, "");
           _vt_move_to (vt, ty, tx);
-          for (VtList *l = vt->lines; l; l = l->next)
+          for (CtxList *l = vt->lines; l; l = l->next)
             {
               VtLine *line = l->data;
               for (int col = 1; col <= vt->cols; col++)
@@ -1962,16 +1958,16 @@ static void vtcmd_delete_n_lines (VT *vt, const char *sequence)
   for (int a = 0; a < n; a++)
     {
       int i;
-      VtList *l;
+      CtxList *l;
       VtLine *string = vt->current_line;
       vt_line_set (string, "");
-      vt_list_remove (&vt->lines, vt->current_line);
+      ctx_list_remove (&vt->lines, vt->current_line);
       for (i=vt->rows, l = vt->lines; l; l=l->next, i--)
         {
           if (i == vt->margin_bottom)
             {
               vt->current_line = string;
-              vt_list_insert_before (&vt->lines, l, string);
+              ctx_list_insert_before (&vt->lines, l, string);
               break;
             }
         }
@@ -2147,7 +2143,7 @@ qagain:
                     for (int i = 0; i <  vt->rows; i++)
                       {
                         vt->current_line = vt_line_new_with_size ("", vt->cols);
-                        vt_list_append (&vt->lines, vt->current_line);
+                        ctx_list_append (&vt->lines, vt->current_line);
                         vt->line_count++;
                       }
                     vt->in_alt_screen = 1;
@@ -2164,7 +2160,7 @@ qagain:
                     while (vt->lines)
                       {
                         vt_line_free (vt->lines->data, 1);
-                        vt_list_remove (&vt->lines, vt->lines->data);
+                        ctx_list_remove (&vt->lines, vt->lines->data);
                       }
                     vt->line_count = vt->saved_line_count;
                     vt->lines = vt->saved_lines;
@@ -2889,7 +2885,7 @@ static void vt_line_feed (VT *vt)
           (vt->lines->data == vt->current_line && vt->cursor_y != vt->rows) )
         {
           vt->current_line = vt_line_new_with_size ("", vt->cols);
-          vt_list_prepend (&vt->lines, vt->current_line);
+          ctx_list_prepend (&vt->lines, vt->current_line);
           vt->line_count++;
         }
       if (vt->cursor_y >= vt->margin_bottom)
@@ -2908,7 +2904,7 @@ static void vt_line_feed (VT *vt)
           (vt->cursor_y != vt->margin_bottom) && 0)
         {
           vt->current_line = vt_line_new_with_size ("", vt->cols);
-          vt_list_prepend (&vt->lines, vt->current_line);
+          ctx_list_prepend (&vt->lines, vt->current_line);
           vt->line_count++;
         }
       vt->cursor_y++;
@@ -3341,7 +3337,7 @@ void vt_gfx (VT *vt, const char *command)
           case 'd': // delete
             {
               int row = vt->rows; // probably not right at start of session XXX
-              for (VtList *l = vt->lines; l; l = l->next, row --)
+              for (CtxList *l = vt->lines; l; l = l->next, row --)
                 {
                   VtLine *line = l->data;
                   for (int i = 0; i < 4; i ++)
@@ -4616,7 +4612,7 @@ const char *vt_find_shell_command (void)
 static void vt_run_command (VT *vt, const char *command, const char *term)
 {
   struct winsize ws;
-  signal (SIGCHLD,signal_child);
+  //signal (SIGCHLD,signal_child);
   ws.ws_row = vt->rows;
   ws.ws_col = vt->cols;
   ws.ws_xpixel = ws.ws_col * vt->cw;
@@ -4656,7 +4652,7 @@ void vt_destroy (VT *vt)
   while (vt->lines)
     {
       vt_line_free (vt->lines->data, 1);
-      vt_list_remove (&vt->lines, vt->lines->data);
+      ctx_list_remove (&vt->lines, vt->lines->data);
       vt->line_count--;
     }
   if (vt->set_style)
@@ -4666,7 +4662,7 @@ void vt_destroy (VT *vt)
   if (vt->ctx)
     { ctx_free (vt->ctx); }
   free (vt->argument_buf);
-  vt_list_remove (&vts, vt);
+  ctx_list_remove (&vts, vt);
   kill (vt->vtpty.pid, 9);
   close (vt->vtpty.pty);
   free (vt);
@@ -4679,7 +4675,7 @@ int vt_get_line_count (VT *vt)
 
 const char *vt_get_line (VT *vt, int no)
 {
-  VtList *l= vt_list_nth (vt->lines, no);
+  CtxList *l= ctx_list_nth (vt->lines, no);
   VtString *str;
   if (!l)
     { return NULL; }
@@ -6221,11 +6217,11 @@ static uint8_t palettes[][16][3]=
     {
       for (int row = 0; row <= (vt->scroll) + vt->rows; row ++)
         {
-          VtList *l = vt_list_nth (vt->lines, row);
+          CtxList *l = ctx_list_nth (vt->lines, row);
           float y = y0 + vt->ch * (vt->rows - row);
           if (row >= vt->rows)
             {
-              l = vt_list_nth (vt->scrollback, row-vt->rows);
+              l = ctx_list_nth (vt->scrollback, row-vt->rows);
             }
           if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
             {
@@ -6343,10 +6339,10 @@ static uint8_t palettes[][16][3]=
       float y = y0 + vt->ch * vt->rows;
       for (int row = 0; y > - (vt->scroll + 8) * vt->ch; row ++)
         {
-          VtList *l = vt_list_nth (vt->lines, row);
+          CtxList *l = ctx_list_nth (vt->lines, row);
           if (row >= vt->rows)
             {
-              l = vt_list_nth (vt->scrollback, row-vt->rows);
+              l = ctx_list_nth (vt->scrollback, row-vt->rows);
             }
           if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
             {
@@ -6463,8 +6459,8 @@ static uint8_t palettes[][16][3]=
     if (vt->scroll == scroll)
       { return; }
     vt->scroll = scroll;
-    if (vt->scroll > vt_list_length (vt->scrollback) )
-      { vt->scroll = vt_list_length (vt->scrollback); }
+    if (vt->scroll > ctx_list_length (vt->scrollback) )
+      { vt->scroll = ctx_list_length (vt->scrollback); }
     if (vt->scroll < 0)
       { vt->scroll = 0; }
     vt_cell_cache_clear (vt);

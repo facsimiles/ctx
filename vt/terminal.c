@@ -10,20 +10,16 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <signal.h>
+#include <pty.h>
 
 #define ENABLE_CLICK 0
 
 #include <SDL.h>
 #include "ctx.h"
 #include "vt-line.h"
+#include "terminal.h"
 
-typedef struct VtPty
-{
-  int        pty;
-  pid_t      pid;
-} VtPty;
-
-static int vtpty_waitdata (void  *data, int timeout)
+int vtpty_waitdata (void  *data, int timeout)
 {
   VtPty *vtpty = data;
   struct timeval tv;
@@ -46,29 +42,8 @@ static int vtpty_waitdata (void  *data, int timeout)
   return 0;
 }
 
-static void signal_child (int signum)
-{
-  pid_t pid;
-  int   status;
-  if ( (pid = waitpid (-1, &status, WNOHANG) ) != -1)
-    {
-      if (pid)
-        {
-          for (VtList *l = vts; l; l=l->next)
-            {
-              VT *vt = l->data;
-              if (vt->vtpty.pid == pid)
-                {
-                  vt->done = 1;
-                  vt->result = status;
-                }
-            }
-        }
-    }
-}
 
-
-#include "vt.h"
+typedef struct _CT CT;
 
 struct _CT
 {
@@ -87,6 +62,29 @@ struct _CT
   void  (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
 };
 
+CtxList *vts = NULL;
+
+static void signal_child (int signum)
+{
+  pid_t pid;
+  int   status;
+  if ( (pid = waitpid (-1, &status, WNOHANG) ) != -1)
+    {
+      if (pid)
+        {
+          for (CtxList *l = vts; l; l=l->next)
+            {
+              CT *ct = l->data;
+              if (ct->vtpty.pid == pid)
+                {
+                  ct->done = 1;
+                  ct->result = status;
+                }
+            }
+        }
+    }
+}
+
 void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
 {
   VtPty *vtpty = data;
@@ -98,13 +96,13 @@ void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
   ioctl (vtpty->pty, TIOCSWINSZ, &ws);
 }
 
-static ssize_t vtpty_write (void *data, const void *buf, size_t count)
+ssize_t vtpty_write (void *data, const void *buf, size_t count)
 {
   VtPty *vtpty = data;
   return write (vtpty->pty, buf, count);
 }
 
-static ssize_t vtpty_read (void  *data, void *buf, size_t count)
+ssize_t vtpty_read (void  *data, void *buf, size_t count)
 {
   VtPty *vtpty = data;
   return read (vtpty->pty, buf, count);
@@ -145,9 +143,8 @@ int ct_poll (CT *ct, int timeout)
 static void ct_run_command (CT *vt, const char *command, int width, int height)
 {
   struct winsize ws;
-  signal (SIGCHLD,signal_child);
   ws.ws_row = 40;
-  ws.ws_col = 20
+  ws.ws_col = 20;
   ws.ws_xpixel = width;
   ws.ws_ypixel = height;
   vt->vtpty.pid = forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
@@ -168,7 +165,7 @@ static void ct_run_command (CT *vt, const char *command, int width, int height)
     }
   else if (vt->vtpty.pid < 0)
     {
-      VT_error ("forkpty failed (%s)", command);
+      //VT_error ("forkpty failed (%s)", command);
     }
   //fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
 }
@@ -209,29 +206,29 @@ CT *ct_new (const char *command, int width, int height, int id)
   //vt_set_line_spacing (vt, line_spacing);
   if (command)
     {
-      vt_run_command ((void*)ct, command, "ctx");
+      ct_run_command ((void*)ct, command, width, height);
     }
   //if (cols <= 0) { cols = DEFAULT_COLS; }
   //if (rows <= 0) { cols = DEFAULT_ROWS; }
   //vt_set_term_size (vt, cols, rows);
   //ct->width = width;
   //ct->height = width;
-  vt_list_prepend (&vts, ct);
+  ctx_list_prepend (&vts, ct);
   return ct;
 }
-pid_t       ct_get_pid              (VT *ct)
+pid_t       ct_get_pid (CT *ct)
 {
-  return vt_get_pid ((void*)ct);
+  return ct->vtpty.pid;
 }
 void        ct_feed_keystring     (CT *ct, const char *str)
 {
-  vt_write ((void*)ct, str, strlen (str));
-  vt_write ((void*)ct, "\n", 1);
+  vtpty_write ((void*)ct, str, strlen (str));
+  vtpty_write ((void*)ct, "\n", 1);
 }
 
 void ct_destroy (CT *ct)
 {
-  vt_list_remove (&vts, ct);
+  ctx_list_remove (&vts, ct);
   kill (ct->vtpty.pid, 9);
   close (ct->vtpty.pty);
   free (ct);
@@ -239,6 +236,7 @@ void ct_destroy (CT *ct)
 
 
 
+#include "vt.h"
 
 
 typedef struct
@@ -709,6 +707,7 @@ int vt_main (int argc, char **argv)
   sdl_setup (width, height);
   add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height);
   add_client ("/usr/bin/top", width/3, height/3, width/2, height/2);
+  signal (SIGCHLD,signal_child);
 
   int sleep_time = 10;
   while (!do_quit)

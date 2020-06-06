@@ -4,7 +4,6 @@ typedef struct _CT CT;
 
 VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing, int id);
 CT *ct_new (const char *command, int width, int height, int id);
-pid_t       ct_get_pid            (VT *ct);
 void        ct_feed_keystring     (CT *ct, const char *str);
 int         ct_get_width          (CT *ct);
 int         ct_get_height         (CT *ct);
