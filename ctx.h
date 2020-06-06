@@ -1295,6 +1295,10 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_RENDER_CTX       1
 #endif
 
+#ifndef CTX_EVENTS
+#define CTX_EVENTS           1
+#endif
+
 #define CTX_ASSERT 0
 
 #if CTX_ASSERT==1
@@ -1854,7 +1858,10 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
   return str_hash;
 }
 
-#define CTX_STRINGPOOL_SIZE 6000  // if we parse svg path data inline
+
+#define CTX_STRINGPOOL_SIZE 8192 
+
+//#define CTX_STRINGPOOL_SIZE 6000  // if we parse svg path data inline
                                   // with a separate parse state we do
                                   // not need this much room.
 
@@ -12323,5 +12330,6 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
 }
 #endif
 
+//#include "events.h"
 
 #endif
