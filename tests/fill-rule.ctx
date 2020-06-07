@@ -4,7 +4,6 @@ line_width=5%
 fill_rule even_odd
 
 rectangle 5% 5% 90% 30%
-close_path
 arc 30% 30% 15% 0.0 6.3 0
 close_path
 arc 70% 30% 15% 0.0 -6.3 1
@@ -13,7 +12,6 @@ fill
 new_path
 
 rectangle 5% 5% 90% 30%
-close_path
 arc 30% 30% 15% 0.0 6.3 0
 close_path
 arc 70% 30% 15% 0.0 -6.3 1

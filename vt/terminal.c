@@ -183,44 +183,16 @@ CT *ct_new (const char *command, int width, int height, int id, void *pixels)
   ct->id = id;
   ct->lastx = -1;
   ct->lasty = -1;
-  //vt->state         = vt_state_neutral;
-  //vt->smooth_scroll = 0;
-  //vt->scroll_offset = 0.0;
   ct->waitdata      = vtpty_waitdata;
   ct->read          = vtpty_read;
   ct->write         = vtpty_write;
   ct->resize        = vtpty_resize;
-  //vt->font_to_cell_scale = 1.0;
-  //vt->cursor_visible     = 1;
-  //vt->lines              = NULL;
-  //vt->line_count         = 0;
-  //vt->current_line       = NULL;
-  //vt->cols               = 0;
-  //vt->rows               = 0;
-
-  //vt->scrollback_limit   = DEFAULT_SCROLLBACK;
-  //vt->argument_buf_len   = 0;
-  //vt->argument_buf_cap   = 64;
-  //vt->argument_buf       = malloc (vt->argument_buf_cap);
-  //vt->argument_buf[0]    = 0;
   ct->done               = 0;
-  //vt->result             = -1;
-  //vt->line_spacing       = 1.0;
-  //vt->scale_x            = 1.0;
-  //vt->scale_y            = 1.0;
-  //vt_set_font_size (vt, font_size);
-  //vt_set_line_spacing (vt, line_spacing);
-  fprintf (stderr, "%i %i\n", width,  height);
   ct->ctx = ctx_new ();
   _ctx_set_transformation (ct->ctx, 0);
           
-  //ctx_new_for_framebuffer (pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
   ct->parser = ctx_parser_new (ct->ctx, width, height, width/40.0, height/20.0, 1, 1, NULL, NULL);
   ctx_clear (ct->ctx);
-  ctx_move_to (ct->ctx, 30, 30);
-  ctx_set_font_size (ct->ctx, 30);
-  ctx_set_rgb (ct->ctx, 0, 1, 0);
-  ctx_text (ct->ctx, "fooooo");
 
   if (command)
     {
@@ -477,12 +449,16 @@ int client_resize (int id, int width, int height)
 static int sdl_check_events ()
 {
   int got_event = 0;
-  static SDL_Event      event;
+  SDL_Event      event;
   CtxClient *client = &clients[active];
   VT *vt = clients[active].vt;
   CT *ct = clients[active].ct;
-  if (SDL_WaitEventTimeout (&event, 15) )
-    do
+
+  int last_motion_x = -1;
+  int last_motion_y = -1;
+
+  event.type = 0;
+    while (SDL_PollEvent (&event) )
       {
         char buf[64];
         switch (event.type)
@@ -507,21 +483,15 @@ static int sdl_check_events ()
               break;
             case SDL_MOUSEMOTION:
               {
-                active = find_active (event.motion.x, event.motion.y);
-                if (pointer_down[0])
-                  sprintf (buf, "mouse-drag %.0f %.0f",
-                           (float) event.motion.x - client->x,
-                           (float) event.motion.y - client->y);
-                else
-                  sprintf (buf, "mouse-motion %.0f %.0f",
-                           (float) event.motion.x - client->x,
-                           (float) event.motion.y - client->y);
-                handle_event (buf);
+                last_motion_x = event.motion.x;
+                last_motion_y = event.motion.y;
+                usleep (15000);
                 got_event = 1;
               }
               break;
             case SDL_MOUSEBUTTONDOWN:
               {
+                last_motion_x = -1;
                 active = find_active (event.motion.x, event.motion.y);
                 sprintf (buf, "mouse-press %.0f %.0f",
                          (float) event.button.x - client->x,
@@ -533,6 +503,7 @@ static int sdl_check_events ()
               break;
             case SDL_MOUSEBUTTONUP:
               {
+                last_motion_x = -1;
                 active = find_active (event.motion.x, event.motion.y);
                 sprintf (buf, "mouse-release %.0f %.0f",
                          (float) event.button.x - client->x,
@@ -659,7 +630,25 @@ static int sdl_check_events ()
               break;
           }
       }
-    while (SDL_PollEvent (&event) );
+
+  if (last_motion_x >=0)
+  {static char buf[127];
+    last_motion_x = event.motion.x;
+    last_motion_y = event.motion.y;
+    active = find_active (last_motion_x, last_motion_y);
+    if (pointer_down[0])
+      sprintf (buf, "mouse-drag %.0f %.0f",
+               (float) last_motion_x - client->x,
+               (float) last_motion_y - client->y);
+    else
+      sprintf (buf, "mouse-motion %.0f %.0f",
+               (float) last_motion_x - client->x,
+               (float) last_motion_y - client->y);
+    fprintf (stderr, ".");
+    handle_event (buf);
+    last_motion_x = -1;
+  }
+
   return got_event;
 }
 
@@ -730,6 +719,8 @@ long ct_rev (CT *ct)
   return ct->rev;
 }
 
+int ctx_count (Ctx *ctx);
+
 int update_ct (CtxClient *client)
 {
     CT *ct = client->ct;
@@ -748,7 +739,10 @@ int update_ct (CtxClient *client)
       client->drawn_rev = ct_rev (ct);
       SDL_Rect dirty;
       Ctx *dctx = ctx_new_for_framebuffer (client->pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
+
+      //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
       ctx_render_ctx (ct->ctx, dctx);
+      ctx_clear (ct->ctx);
 
 #if 0 // < flipping this turns on subtexture updates, needs bounds tuning
           ctx_dirty_rect (dctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
@@ -778,7 +772,7 @@ int vt_main (int argc, char **argv)
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
   add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height, 0);
-  //add_client ("/home/pippin/src/ctx/vt/foo.sh", width/2, height/2, width, height/2, 1);
+  //add_client ("/home/pippin/src/ctx/vt/foo.sh", 0, 0, width, height, 1);
   signal (SIGCHLD,signal_child);
 
   int sleep_time = 10;

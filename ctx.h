@@ -580,6 +580,7 @@ typedef enum
   CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius
   CTX_ARC              = 'B', // x y radius angle1 angle2 direction
   CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y
+  CTX_ROUND_RECTANGLE  = 'D', // x y width height radius
 
   CTX_STROKE           = 'E', //
   CTX_FILL             = 'F', //
@@ -915,6 +916,8 @@ struct
       uint8_t pad0;
       float width;
       float height;
+      uint8_t pad1;
+      float radius;
     } rectangle;
     struct
     {
@@ -2418,6 +2421,7 @@ struct _CtxState
 #define CTX_linear_gradient CTX_STRH('l','i','n','e','a','r','_','g','r','a','d','i','e','n')
 #define CTX_relHorLineTo CTX_STRH('r','e','l','H','o','r','L','i','n','e','T','o',0,0)
 #define CTX_rel_hor_line_to CTX_STRH('r','e','l','_','h','o','r','_','l','i','n','e',0,0)
+#define CTX_rel_ver_line_to CTX_STRH('r','e','l','_','v','e','r','_','l','i','n','e',0,0)
 #define CTX_relLineTo    CTX_STRH('r','e','l','L','i','n','e','T','o',0,0,0,0,0)
 #define CTX_rel_line_to  CTX_STRH('r','e','l','_','l','i','n','e','_','t','o',0,0,0)
 #define CTX_relMoveTo    CTX_STRH('r','e','l','M','o','v','e','T','o',0,0,0,0,0)
@@ -2431,6 +2435,9 @@ struct _CtxState
 #define CTX_add_stop     CTX_STRH('a','d','d','_','s','t','o','p',0,0,0,0,0,0)
 #define CTX_relQuadTo    CTX_STRH('r','e','l','Q','u','a','d','T','o',0,0,0,0,0)
 #define CTX_rel_quad_to  CTX_STRH('r','e','l','_','q','u','a','d','_','t','o',0,0,0)
+#define CTX_round_rectangle   CTX_STRH('r','o','u','n','d','_','r','e','c','t','a','n','g','l')
+#define CTX_roundRectangle    CTX_STRH('r','o','u','n','d','R','e','c','t','a','n','g','l','e')
+#define CTX_text         CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_rectangle    CTX_STRH('r','e','c','t','a','n','g','l','e',0,0,0,0,0)
 #define CTX_rect         CTX_STRH('r','e','c','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_relSmoothTo  CTX_STRH('r','e','l','S','m','o','o','t','h','T','o',0,0,0)
@@ -2440,7 +2447,6 @@ struct _CtxState
 #define CTX_textStroke   CTX_STRH('t','e','x','t','S','t','r','o','k','e', 0, 0,0,0)
 #define CTX_text_stroke  CTX_STRH('t','e','x','t','_','s','t','r','o','k','e', 0,0,0)
 #define CTX_relVerLineTo CTX_STRH('r','e','l','V','e','r','L','i','n','e','T','o',0,0)
-#define CTX_rel_ver_line_to CTX_STRH('r','e','l','_','v','e','r','_','l','i','n','e','_','t')
 #define CTX_text         CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_identity     CTX_STRH('i','d','e','n','t','i','t','y',0,0,0,0,0,0)
 #define CTX_transform    CTX_STRH('t','r','a','n','s','f','o','r','m',0,0,0,0,0)
@@ -3664,6 +3670,7 @@ again:
         case CTX_QUAD_TO:
         case CTX_REL_QUAD_TO:
         case CTX_TEXTURE:
+        case CTX_RECTANGLE:
           iterator->bitpack_command[0] = ret[0];
           iterator->bitpack_command[1] = ret[1];
           iterator->bitpack_pos = 0;
@@ -3675,6 +3682,7 @@ again:
         case CTX_CURVE_TO:
         case CTX_REL_CURVE_TO:
         case CTX_APPLY_TRANSFORM:
+        case CTX_ROUND_RECTANGLE:
           iterator->bitpack_command[0] = ret[0];
           iterator->bitpack_command[1] = ret[1];
           iterator->bitpack_command[2] = ret[2];
@@ -3687,7 +3695,11 @@ again:
           iterator->bitpack_length = 0;
           return (CtxCommand *) ret;
         default:
-          iterator->bitpack_command[0] = *ret;
+          iterator->bitpack_command[0] = ret[0];
+          iterator->bitpack_command[1] = ret[1];
+          iterator->bitpack_command[2] = ret[2];
+          iterator->bitpack_command[3] = ret[3];
+          iterator->bitpack_command[4] = ret[4];
           iterator->bitpack_pos = 0;
           iterator->bitpack_length = 1;
           goto again;
@@ -4567,24 +4579,32 @@ void ctx_curve_to (Ctx *ctx, float x0, float y0,
   ctx_process (ctx, command);
 }
 
+
+
+void ctx_round_rectangle (Ctx *ctx,
+                          float x0, float y0,
+                          float w, float h,
+                          float radius)
+{
+  CtxEntry command[3]=
+  {
+    ctx_f (CTX_RECTANGLE, x0, y0),
+    ctx_f (CTX_CONT,      w, h),
+    ctx_f (CTX_CONT,      radius, 0)
+  };
+  ctx_process (ctx, command);
+}
+
 void ctx_rectangle (Ctx *ctx,
                     float x0, float y0,
                     float w, float h)
 {
-#if 0
   CtxEntry command[3]=
   {
     ctx_f (CTX_RECTANGLE, x0, y0),
     ctx_f (CTX_CONT,      w, h)
   };
   ctx_process (ctx, command);
-#else
-  ctx_move_to (ctx, x0, y0);
-  ctx_rel_line_to (ctx, w, 0);
-  ctx_rel_line_to (ctx, 0, h);
-  ctx_rel_line_to (ctx, -w, 0);
-  ctx_close_path (ctx);
-#endif
 }
 
 void ctx_rel_line_to (Ctx *ctx, float x, float y)
@@ -5695,8 +5715,8 @@ ctx_init (Ctx *ctx)
 #if CTX_CURRENT_PATH
   ctx->current_path.flags |= CTX_RENDERSTREAM_CURRENT_PATH;
 #endif
-  ctx->transformation |= (CtxTransformation) CTX_TRANSFORMATION_SCREEN_SPACE;
-  ctx->transformation |= (CtxTransformation) CTX_TRANSFORMATION_RELATIVE;
+  //ctx->transformation |= (CtxTransformation) CTX_TRANSFORMATION_SCREEN_SPACE;
+  //ctx->transformation |= (CtxTransformation) CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
   ctx->renderstream.flags |= CTX_TRANSFORMATION_BITPACK;
 #endif
@@ -8664,6 +8684,25 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_move_to (rasterizer, x, y);
   ctx_rasterizer_rel_line_to (rasterizer, width, 0);
   ctx_rasterizer_rel_line_to (rasterizer, 0, height);
+  ctx_rasterizer_rel_line_to (rasterizer, -width, 0);
+  ctx_rasterizer_rel_line_to (rasterizer, 0, -height);
+  ctx_rasterizer_rel_line_to (rasterizer, 0.3, 0);
+  ctx_rasterizer_finish_shape (rasterizer);
+}
+
+static void
+ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, float width, float height, float corner_radius)
+{
+  float aspect        = 1.0;
+  float radius = corner_radius / aspect;
+  float degrees = M_PI / 180.0;
+
+  ctx_rasterizer_finish_shape (rasterizer);
+  //ctx_close_path (ctx);
+  ctx_rasterizer_arc (rasterizer, x + width - radius, y + radius, radius, -90 * degrees, 0 * degrees, 0);
+  ctx_rasterizer_arc (rasterizer, x + width - radius, y + height - radius, radius, 0 * degrees, 90 * degrees, 0);
+  ctx_rasterizer_arc (rasterizer, x + radius, y + height - radius, radius, 90 * degrees, 180 * degrees, 0);
+  ctx_rasterizer_arc (rasterizer, x + radius, y + radius, radius, 180 * degrees, 270 * degrees, 0);
   ctx_rasterizer_finish_shape (rasterizer);
 }
 
@@ -8710,6 +8749,11 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_RECTANGLE:
         ctx_rasterizer_rectangle (rasterizer, c->rectangle.x, c->rectangle.y,
                                   c->rectangle.width, c->rectangle.height);
+        break;
+      case CTX_ROUND_RECTANGLE:
+        ctx_rasterizer_round_rectangle (rasterizer, c->rectangle.x, c->rectangle.y,
+                                        c->rectangle.width, c->rectangle.height,
+                                        c->rectangle.radius);
         break;
       case CTX_SET_PIXEL:
         ctx_rasterizer_set_pixel (rasterizer, c->set_pixel.x, c->set_pixel.y,
@@ -11687,6 +11731,10 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_rect:
             ret = CTX_RECTANGLE;
             break;
+          case CTX_round_rectangle:
+          case CTX_roundRectangle:
+            ret = CTX_ROUND_RECTANGLE;
+            break;
           case CTX_rel_smooth_to:
           case CTX_relSmoothTo:
             ret = CTX_REL_SMOOTH_TO;
@@ -14059,6 +14107,10 @@ void _ctx_debug_overlays (Ctx *ctx)
     }
   }
   ctx_restore (ctx);
+}
+int ctx_count (Ctx *ctx)
+{
+        return ctx->renderstream.count;
 }
 #endif
 
