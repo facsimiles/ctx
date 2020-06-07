@@ -35,6 +35,7 @@
 // since it has the biggest need for tuning
 #include "ctx.h"
 #include "svg.h"
+#include "nct.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"

@@ -1,12 +1,12 @@
 SMALL_CFLAGS=-Os  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto
 #SMALL_CFLAGS=-O2 -fomit-frame-pointer -flto
 
-report: tiny small baseline musl-static-tiny musl-static-small musl-static-baseline all
+report: ui tiny small baseline musl-static-tiny musl-static-small musl-static-baseline all
 	(cd ../tools; ./size-report.sh)
 
-all: tiny small sdl2 mmm test-renderpaths musl-static-tiny musl-static-small musl-static-baseline musl-static-full full
+all: ui tiny small sdl2 mmm test-renderpaths musl-static-tiny musl-static-small musl-static-baseline musl-static-full full
 clean:
-	rm -rf mmm sdl2 tiny small musl-static-tiny musl-static-small musl-static-baseline test-renderpaths baseline full musl-static-full
+	rm -rf mmm sdl2 tiny small musl-static-tiny musl-static-small musl-static-baseline test-renderpaths baseline full musl-static-full ui
 mmm: mmm.c ../ctx.h  Makefile
 	$(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs mmm` -Wall
 sdl2: sdl2.c ../ctx.h
@@ -16,6 +16,9 @@ test-renderpaths: test-renderpaths.c ../ctx.h ../fonts/*.h
 
 
 baseline: baseline.c ../ctx.h ../fonts/*.h Makefile
+	$(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
+	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
+ui: ui.c ../ctx.h ../fonts/*.h Makefile
 	$(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
 tiny: tiny.c ../ctx.h ../fonts/*.h Makefile

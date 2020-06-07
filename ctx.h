@@ -1906,7 +1906,7 @@ static char *ctx_strchr (const char *haystack, char needle)
 
 #if CTX_MATH
 
-static float
+static inline float
 ctx_floorf (float x)
 {
   return (int)x; // XXX
@@ -3211,6 +3211,9 @@ struct
   CtxBuffer       texture[CTX_MAX_TEXTURES];
 #if CTX_EVENTS 
   CtxEvents       events;
+  int             mouse_fd;
+  int             mouse_x;
+  int             mouse_y;
 #endif
 #if CTX_CURRENT_PATH
   CtxRenderstream current_path; // possibly transformed coordinates !
@@ -10681,12 +10684,12 @@ void
 ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 {
   CtxIterator iterator;
-  CtxEntry   *entry;
+  CtxCommand *command;
   CtxCairo    ctx_cairo = {ctx_cairo_process, NULL, ctx, cr, NULL, NULL};
   ctx_iterator_init (&iterator, &ctx->renderstream, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
-  while ( (entry = ctx_iterator_next (&iterator) ) )
-    { ctx_cairo_process (&ctx_cairo, (CtxCommand*)entry); }
+  while ( (command = ctx_iterator_next (&iterator) ) )
+    { ctx_cairo_process (&ctx_cairo, command); }
   if (ctx_cairo.pat)
     { cairo_pattern_destroy (ctx_cairo.pat); }
   if (ctx_cairo.image)
@@ -14144,13 +14147,51 @@ int ctx_count (Ctx *ctx)
   return ctx->renderstream.count;
 }
 
-Ctx *ctx_new_braille (int width, int height)
+#include <fcntl.h>
+#include <sys/ioctl.h>
+
+int ctx_sys_terminal_width (void)
 {
-  // 
-  //
-  return NULL;
+  struct winsize ws; 
+  if (ioctl(0,TIOCGWINSZ,&ws)!=0)
+    return 80;
+  return ws.ws_col;
+} 
+
+int ctx_sys_terminal_height (void)
+{
+  struct winsize ws; 
+  if (ioctl(0,TIOCGWINSZ,&ws)!=0)
+    return 25;
+  return ws.ws_row;
 }
 
+
+static uint8_t *ctx_pixels = NULL;
+static Ctx     *ctx_host = NULL;
+
+Ctx *ctx_new_braille (int width, int height)
+{
+  Ctx *ctx = ctx_new ();
+  if (width <= 0 || height <= 0)
+  {
+    width  = ctx_sys_terminal_width  () * 2;
+    height = ctx_sys_terminal_height () * 4;
+  }
+
+  ctx_set_size (ctx, width, height);
+  ctx_pixels = (uint8_t*)malloc (width * height * 4);
+  ctx_host = ctx_new_for_framebuffer (ctx_pixels,
+                  width, height,
+                  width * 4, CTX_FORMAT_RGBA8);
+  return ctx;
+}
+
+// NYI idea for sizing:
+//
+//   0,0 or -1,-1 default size
+//   -2,-2 fullscreened 
+//
 Ctx *ctx_new_ui (int width, int height)
 {
   return ctx_new_braille (width, height);
