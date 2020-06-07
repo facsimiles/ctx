@@ -104,6 +104,8 @@ Ctx *ctx_new_for_framebuffer (void *data,
                               int width, int height, int stride,
                               CtxPixelFormat pixel_format);
 
+Ctx *ctx_new_ui (int width, int height);
+
 /**
  * ctx_new_for_renderstream:
  *
@@ -1267,6 +1269,8 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_SHAPE_CACHE_MAX_DIM  32
 #endif
 
+
+
 /* maximum number of entries in shape cache
  */
 #ifndef CTX_SHAPE_CACHE_ENTRIES
@@ -1338,8 +1342,15 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 /* The maximum size we permit the renderstream to grow to
  */
 #ifndef CTX_MAX_EDGE_LIST_SIZE
-#define CTX_MAX_EDGE_LIST_SIZE   1024
+#define CTX_MAX_EDGE_LIST_SIZE   4096
 #endif
+
+#define CTX_STRINGPOOL_SIZE 10240
+
+//#define CTX_STRINGPOOL_SIZE 6000  // if we parse svg path data inline
+                                  // with a separate parse state we do
+                                  // not need this much room.
+
 
 /* whether we dither or not for gradients
  */
@@ -2292,11 +2303,6 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 }
 
 
-#define CTX_STRINGPOOL_SIZE 8192 
-
-//#define CTX_STRINGPOOL_SIZE 6000  // if we parse svg path data inline
-                                  // with a separate parse state we do
-                                  // not need this much room.
 
 struct _CtxState
 {
@@ -3434,6 +3440,8 @@ ctx_conts_for_entry (CtxEntry *entry)
         return 1;
       case CTX_RADIAL_GRADIENT:
       case CTX_ARC:
+      case CTX_ARC_TO:
+      case CTX_REL_ARC_TO:
       case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
       case CTX_APPLY_TRANSFORM:
@@ -3677,6 +3685,8 @@ again:
           iterator->bitpack_length = 2;
           goto again;
         case CTX_ARC:
+        case CTX_ARC_TO:
+        case CTX_REL_ARC_TO:
         case CTX_SET_COLOR:
         case CTX_RADIAL_GRADIENT:
         case CTX_CURVE_TO:
@@ -4763,7 +4773,7 @@ ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
   int dir;
   if (!ctx->state.has_moved)
     { return; }
-  if (0)
+  if (1)
     {
       // Handle degenerate cases.
       if (ctx_coords_equal (x0,y0, x1,y1, 0.5f) ||
@@ -4784,7 +4794,7 @@ ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
   ctx_normalize (&dx1,&dy1);
   a = ctx_acosf (dx0*dx1 + dy0*dy1);
   d = radius / ctx_tanf (a/2.0f);
-#if 1
+#if 0
   if (d > 10000.0f)
     {
       ctx_line_to (ctx, x1, y1);
@@ -8693,12 +8703,11 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
 static void
 ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, float width, float height, float corner_radius)
 {
-  float aspect        = 1.0;
-  float radius = corner_radius / aspect;
-  float degrees = M_PI / 180.0;
+  float aspect  = 1.0f;
+  float radius  = corner_radius / aspect;
+  float degrees = CTX_PI / 180.0f;
 
   ctx_rasterizer_finish_shape (rasterizer);
-  //ctx_close_path (ctx);
   ctx_rasterizer_arc (rasterizer, x + width - radius, y + radius, radius, -90 * degrees, 0 * degrees, 0);
   ctx_rasterizer_arc (rasterizer, x + width - radius, y + height - radius, radius, 0 * degrees, 90 * degrees, 0);
   ctx_rasterizer_arc (rasterizer, x + radius, y + height - radius, radius, 90 * degrees, 180 * degrees, 0);
@@ -14110,10 +14119,19 @@ void _ctx_debug_overlays (Ctx *ctx)
 }
 int ctx_count (Ctx *ctx)
 {
-        return ctx->renderstream.count;
+  return ctx->renderstream.count;
 }
-#endif
+
+Ctx *ctx_new_ui (int width, int height)
+{
+  // look for ctx in terminal
+  // look for linux console
+  // look for kitty image protocol in terminal
+  // look for iterm2 image protocol in terminal
+  // look for sixels in terminal
+  // use braille
+}
 
 #endif
 
-
+#endif

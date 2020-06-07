@@ -8,6 +8,7 @@
 
 /* other important maximums */
 #define MRG_MAX_TEXT_LISTEN      256
+#define CTX_XML_INBUF_SIZE       1024
 
 #define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
 #define PROPS(a)         (ctx_get_string(mrg->ctx, CTX_##a))
@@ -930,7 +931,6 @@ void _ctX_bindings_key_down (CtxEvent *event, void *data1, void *data2)
 
 #include <stdio.h>
 
-#define inbufsize 4096
 
 typedef struct _Mrg Mrg;
 
@@ -955,11 +955,11 @@ enum
   t_error
 };
 
-MrgXml *xmltok_new (FILE * file_in);
+MrgXml *xmltok_new     (FILE *file_in);
 MrgXml *xmltok_buf_new (char *membuf);
-void    xmltok_free (MrgXml *t);
-int     xmltok_lineno (MrgXml *t);
-int     xmltok_get (MrgXml *t, char **data, int *pos);
+void    xmltok_free    (MrgXml *t);
+int     xmltok_lineno  (MrgXml *t);
+int     xmltok_get     (MrgXml *t, char **data, int *pos);
 
 #endif /*XMLTOK_H */
 
@@ -1467,7 +1467,7 @@ nextchar (MrgXml *t)
     {
       if (t->inbufpos >= t->inbuflen)
         {
-          t->inbuflen = fread (t->inbuf, 1, inbufsize, t->file_in);
+          t->inbuflen = fread (t->inbuf, 1, CTX_XML_INBUF_SIZE, t->file_in);
           t->inbufpos = 0;
           if (!t->inbuflen)
             return -1;
@@ -1604,7 +1604,7 @@ xmltok_new (FILE * file_in)
   ret->state = s_start;
   ret->curtag = mrg_string_new ("");
   ret->curdata = mrg_string_new ("");
-  ret->inbuf = calloc (1, inbufsize);
+  ret->inbuf = calloc (1, CTX_XML_INBUF_SIZE);
   return ret;
 }
 
@@ -5750,8 +5750,6 @@ struct _MrgGlyph{
   float y;
   int   no;
 };
-
-
 
 static int mrg_print_wrap2 (Mrg        *mrg,
                            int         print,

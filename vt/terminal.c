@@ -734,7 +734,7 @@ int update_ct (CtxClient *client)
       return -1;
     }
 
-  //if ( (client->drawn_rev != ct_rev (ct) ))
+  if ( (client->drawn_rev != ct_rev (ct) ))
     {
       client->drawn_rev = ct_rev (ct);
       SDL_Rect dirty;
@@ -771,8 +771,8 @@ int vt_main (int argc, char **argv)
   execute_self = malloc (strlen (argv[0]) + 16);
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
-  add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height, 0);
-  //add_client ("/home/pippin/src/ctx/vt/foo.sh", 0, 0, width, height, 1);
+  //add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height, 0);
+  add_client ("/home/pippin/src/ctx/vt/foo.sh", 0, 0, width, height, 1);
   signal (SIGCHLD,signal_child);
 
   int sleep_time = 10;
