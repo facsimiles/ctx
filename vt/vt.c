@@ -353,6 +353,7 @@ struct _VT
   int       lasty;
   int        done;
   int        result;
+  long       rev;
 
   ssize_t (*write) (void *serial_obj, const void *buf, size_t count);
   ssize_t (*read) (void *serial_obj, void *buf, size_t count);
@@ -406,7 +407,6 @@ struct _VT
   int mouse_all;
   int mouse_decimal;
 
-  long       rev;
   uint8_t    utf8_holding[64]; /* only 4 needed for utf8 - but it's purpose
                                  is also overloaded for ctx journal command
                                  buffering , and the bigger sizes for the svg-like

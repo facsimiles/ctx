@@ -3,12 +3,11 @@ typedef struct _VT VT;
 typedef struct _CT CT;
 
 VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing, int id);
-CT *ct_new (const char *command, int width, int height, int id);
+CT *ct_new (const char *command, int width, int height, int id, void *pixels);
 void        ct_feed_keystring     (CT *ct, const char *str);
 int         ct_get_width          (CT *ct);
 int         ct_get_height         (CT *ct);
 int         ct_poll               (CT *vt, int timeout);
-long        ct_rev                (CT *vt);
 void        ct_destroy            (CT *vt);
 int         ct_is_done            (CT *vt);
 
