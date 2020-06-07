@@ -211,7 +211,10 @@ CT *ct_new (const char *command, int width, int height, int id, void *pixels)
   //vt_set_font_size (vt, font_size);
   //vt_set_line_spacing (vt, line_spacing);
   fprintf (stderr, "%i %i\n", width,  height);
-  ct->ctx = ctx_new_for_framebuffer (pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
+  ct->ctx = ctx_new ();
+  _ctx_set_transformation (ct->ctx, 0);
+          
+  //ctx_new_for_framebuffer (pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
   ct->parser = ctx_parser_new (ct->ctx, width, height, width/40.0, height/20.0, 1, 1, NULL, NULL);
   ctx_clear (ct->ctx);
   ctx_move_to (ct->ctx, 30, 30);
@@ -511,8 +514,8 @@ static int sdl_check_events ()
                            (float) event.motion.y - client->y);
                 else
                   sprintf (buf, "mouse-motion %.0f %.0f",
-                           (float) event.motion.x,
-                           (float) event.motion.y);
+                           (float) event.motion.x - client->x,
+                           (float) event.motion.y - client->y);
                 handle_event (buf);
                 got_event = 1;
               }
@@ -744,29 +747,11 @@ int update_ct (CtxClient *client)
     {
       client->drawn_rev = ct_rev (ct);
       SDL_Rect dirty;
-#if 0
-          // XXX this works for initial line in started shell
-          // but falls apart when bottom is reached,
-          // needs investigation, this is the code path that
-          // can be turned into threaded rendering.
-          Ctx *ctx = ctx_new ();
-          vt_draw (vt, ctx, 0, 0);
-          ctx_blit (ctx, pixels, 0,0, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
-#else
-          // render directlty to framebuffer in immediate mode - skips
-          // creation of renderstream.
-          //
-          // terminal is also keeping track of state of already drawn
-          // pixels and often only repaints what is needed XXX  need API
-          //                                              to force full draw
-          //Ctx *ctx = ctx_new_for_framebuffer (client->pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
-          //fprintf (stderr, "%i\r", no);
-          //vt_draw (vt, ctx, 0, 0);
-#endif
-          //ctx_free (ctx);
+      Ctx *dctx = ctx_new_for_framebuffer (client->pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
+      ctx_render_ctx (ct->ctx, dctx);
 
-#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
-          ctx_dirty_rect (ct->ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
+#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
+          ctx_dirty_rect (dctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
           dirty.w ++;
           dirty.h ++;
           if (dirty.x + dirty.w > vt_width)
@@ -780,6 +765,7 @@ int update_ct (CtxClient *client)
           SDL_UpdateTexture (client->texture, NULL,
                              (void *) client->pixels, vt_width * sizeof (Uint32) );
 #endif
+          ctx_free (dctx);
         }
       return 0;
 }
@@ -792,7 +778,7 @@ int vt_main (int argc, char **argv)
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
   add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height, 0);
-  add_client ("/home/pippin/src/ctx/vt/foo.sh", width/2, height/2, width, height/2, 1);
+  //add_client ("/home/pippin/src/ctx/vt/foo.sh", width/2, height/2, width, height/2, 1);
   signal (SIGCHLD,signal_child);
 
   int sleep_time = 10;

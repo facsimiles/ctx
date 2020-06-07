@@ -2034,8 +2034,8 @@ static void vt_ctx_exit (void *data)
 {
   VT *vt = data;
   vt->state = vt_state_neutral;
-  ctx_parser_free (vt->ctxp);
-  vt->ctxp = NULL;
+  //ctx_parser_free (vt->ctxp);
+  //vt->ctxp = NULL;
 }
 
 static void vtcmd_set_mode (VT *vt, const char *sequence)
@@ -2193,6 +2193,7 @@ qagain:
                 if (!vt->current_line->ctx)
                   {
                     vt->current_line->ctx = ctx_new ();
+                    _ctx_set_transformation (vt->current_line->ctx, 0);
                   }
                 vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                                            vt->cols * vt->cw, vt->rows * vt->ch,
@@ -3680,7 +3681,8 @@ static void vt_sixels (VT *vt, const char *sixels)
 
 static void vt_state_ctx (VT *vt, int byte)
 {
-  ctx_parser_feed_byte (vt->ctxp, byte);
+  if (vt->ctxp)
+    ctx_parser_feed_byte (vt->ctxp, byte);
 }
 
 static int vt_decoder_feed (VT *vt, int byte)

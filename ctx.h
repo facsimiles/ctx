@@ -12241,7 +12241,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_EXIT:
         if (parser->exit)
-          { parser->exit (parser->exit_data); }
+          { parser->exit (parser->exit_data);
+            return;
+          }
         break;
       case CTX_CLEAR:
         ctx_clear (ctx);

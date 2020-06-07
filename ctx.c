@@ -26,7 +26,7 @@
 #define CTX_SHAPE_CACHE_DIM      (48*48)
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
 //#define CTX_RASTERIZER_AA        5
-//#define CTX_RASTERIZER_FORCE_AA  1
+#define CTX_RASTERIZER_FORCE_AA  1
 #define CTX_MATH                 1
 
 #define CTX_IMPLEMENTATION 1
