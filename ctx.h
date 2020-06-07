@@ -1345,7 +1345,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_MAX_EDGE_LIST_SIZE   4096
 #endif
 
-#define CTX_STRINGPOOL_SIZE 10240
+#define CTX_STRINGPOOL_SIZE 102400
 
 //#define CTX_STRINGPOOL_SIZE 6000  // if we parse svg path data inline
                                   // with a separate parse state we do
@@ -1614,6 +1614,12 @@ CtxParser *ctx_parser_new (
   int     cursor_y,
   void  (*exit) (void *exit_data),
   void   *exit_data);
+void
+ctx_parser_set_size (CtxParser *parser,
+                 int        width,
+                 int        height,
+                 float      cell_width,
+                 float      cell_height);
 
 void ctx_parser_feed_byte (CtxParser *parser, int byte);
 
@@ -4589,8 +4595,6 @@ void ctx_curve_to (Ctx *ctx, float x0, float y0,
   ctx_process (ctx, command);
 }
 
-
-
 void ctx_round_rectangle (Ctx *ctx,
                           float x0, float y0,
                           float w, float h,
@@ -5025,7 +5029,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           state->gstate.source.radial_gradient.x1 = x1;
           state->gstate.source.radial_gradient.y1 = y1;
           state->gstate.source.radial_gradient.r1 = r1;
-          state->gstate.source.type = CTX_SOURCE_RADIAL_GRADIENT;
+          state->gstate.source.type      = CTX_SOURCE_RADIAL_GRADIENT;
           state->gstate.source.transform = state->gstate.transform;
           ctx_matrix_invert (&state->gstate.source.transform);
         }
@@ -11390,6 +11394,23 @@ struct
   void *exit_data;
 };
 
+void
+ctx_parser_set_size (CtxParser *parser,
+                 int        width,
+                 int        height,
+                 float      cell_width,
+                 float      cell_height)
+{
+  if (cell_width > 0)
+    parser->cell_width       = cell_width;
+  if (cell_height > 0)
+    parser->cell_height      = cell_height;
+  if (width > 0)
+    parser->width            = width;
+  if (height > 0)
+    parser->height           = height;
+}
+
 static CtxParser *
 ctx_parser_init (CtxParser *parser,
                  Ctx       *ctx,
@@ -14117,13 +14138,24 @@ void _ctx_debug_overlays (Ctx *ctx)
   }
   ctx_restore (ctx);
 }
+
 int ctx_count (Ctx *ctx)
 {
   return ctx->renderstream.count;
 }
 
+Ctx *ctx_new_braille (int width, int height)
+{
+  // 
+  //
+  return NULL;
+}
+
 Ctx *ctx_new_ui (int width, int height)
 {
+  return ctx_new_braille (width, height);
+ 
+  //
   // look for ctx in terminal
   // look for linux console
   // look for kitty image protocol in terminal

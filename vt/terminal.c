@@ -60,7 +60,7 @@ struct _CT
   ssize_t (*write) (void *serial_obj, const void *buf, size_t count);
   ssize_t (*read) (void *serial_obj, void *buf, size_t count);
   int    (*waitdata) (void *serial_obj, int timeout);
-  void  (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
+  void   (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
 
   Ctx       *ctx;
   CtxParser *parser;
@@ -429,6 +429,7 @@ int client_resize (int id, int width, int height)
 {
    int no = id_to_no (id);
    if (no < 0) return 0;
+
    if ( (height != clients[no].vt_height) || (width != clients[no].vt_width) )
    {
      SDL_DestroyTexture (clients[no].texture);
@@ -440,7 +441,11 @@ int client_resize (int id, int width, int height)
      clients[no].pixels = calloc (width * height, 4);
      clients[no].vt_width = width;
      clients[no].vt_height = height;
-     vt_set_term_size (clients[no].vt, width / vt_cw (clients[no].vt), height / vt_ch (clients[no].vt) );
+     if (clients[no].vt)
+       vt_set_term_size (clients[no].vt, width / vt_cw (clients[no].vt), height / vt_ch (clients[no].vt) );
+     else
+       ctx_parser_set_size (clients[no].ct->parser, width, height, -1, -1);
+
      return 1;
    }
    return 0;
