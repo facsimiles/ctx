@@ -76,7 +76,7 @@ int main (int argc, char **argv)
     //if (strcmp (event, "idle"))
     //fprintf (stderr, "[%s :%i %i]", event, mx, my);
 
-    x+=0.1;
+    x+=0.25;
    
     if(event = ctx_get_event (ctx))
     {
