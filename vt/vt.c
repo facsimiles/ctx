@@ -6026,7 +6026,7 @@ static uint8_t palettes[][16][3]=
           }
         if (dh)
           {
-            ctx_rectangle (ctx, x0, y0 - ch - ch * (vt->scroll_offset), cw, ch);
+            ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - ch - ch * (vt->scroll_offset)), cw, ch);
           }
         else
           {

@@ -5064,6 +5064,8 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
   char *temp_string = NULL;
   Ctx *cr = mrg_cr (mrg);
 
+  ctx_current_point (cr, &old_x, NULL);
+
   if (utf8_len < 0)
     utf8_len = ctx_utf8_strlen (string);
 
@@ -5120,7 +5122,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
   }
   else 
 #endif
-          if (mrg->in_paint)
+  if (mrg->in_paint)
   {
     ctx_set_font_size (cr, style->font_size);
 
@@ -5180,6 +5182,11 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
         ctx_stroke (cr);
       }
     ctx_move_to (cr, new_x, y);
+  }
+  else
+  {
+    ctx_set_font_size (cr, style->font_size);
+    new_x = old_x + ctx_text_width (cr, string);
   }
 
   if (mrg->text_listen_active)

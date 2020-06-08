@@ -19,7 +19,7 @@
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1
 #define CTX_EVENTS               1
-#define CTX_BITPACK_PACKER       0
+#define CTX_BITPACK_PACKER       1
 #define CTX_GRADIENT_CACHE       1
 #define CTX_ENABLE_CMYK          1
 #define CTX_SHAPE_CACHE          1

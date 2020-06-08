@@ -1882,48 +1882,10 @@ typedef enum CtxOutputmode
   CTX_OUTPUT_MODE_SIXELS,
 } CtxOutputmode;
 
-#ifdef CTX_IMPLEMENTATION
-
-static void
-ctx_memset (void *ptr, uint8_t val, int length)
-{
-  uint8_t *p = (uint8_t *) ptr;
-  for (int i = 0; i < length; i ++)
-    { p[i] = val; }
-}
-
-static float ctx_pow2 (float a)          { return a * a; }
-
-static void ctx_strcpy (char *dst, const char *src)
-{
-  int i = 0;
-  for (i = 0; src[i]; i++)
-    { dst[i] = src[i]; }
-  dst[i] = 0;
-}
-
-static char *ctx_strchr (const char *haystack, char needle)
-{
-  const char *p = haystack;
-  while (*p && *p != needle)
-    {
-      p++;
-    }
-  if (*p == needle)
-    { return (char *) p; }
-  return NULL;
-}
-
-
+static inline float ctx_pow2 (float a) { return a * a; }
 #if CTX_MATH
 
 static inline float
-ctx_floorf (float x)
-{
-  return (int)x; // XXX
-}
-
-static float
 ctx_fabsf (float x)
 {
   union
@@ -1935,7 +1897,7 @@ ctx_fabsf (float x)
   return u.f;
 }
 
-static float
+static inline float
 ctx_invsqrtf (float x)
 {
   void *foo = &x;
@@ -1949,7 +1911,7 @@ ctx_invsqrtf (float x)
   return x;
 }
 
-static float
+static inline float
 ctx_sinf (float x)
 {
   /* source : http://mooooo.ooo/chebyshev-sine-approximation/ */
@@ -1977,7 +1939,7 @@ ctx_sinf (float x)
          (x + CTX_PI - 0.00000008742278f) * p1 * x;
 }
 
-static float ctx_atan2f (float y, float x)
+static inline float ctx_atan2f (float y, float x)
 {
   float atan, z;
   if ( x == 0.0f )
@@ -2007,17 +1969,17 @@ static float ctx_atan2f (float y, float x)
   return atan;
 }
 
-static float ctx_sqrtf (float a)
+static inline float ctx_sqrtf (float a)
 {
   return 1.0f/ctx_invsqrtf (a);
 }
 
-static float ctx_hypotf (float a, float b)
+static inline float ctx_hypotf (float a, float b)
 {
   return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
 }
 
-static float ctx_atanf (float a)
+static inline float ctx_atanf (float a)
 {
   return ctx_atan2f ( (a), 1.0f);
 }
@@ -2027,33 +1989,71 @@ static inline float ctx_asinf (float x)
   return ctx_atanf ( (x) * (ctx_invsqrtf (1.0f-ctx_pow2 (x) ) ) );
 }
 
-static float ctx_acosf (float x)
+static inline float ctx_acosf (float x)
 {
   return ctx_atanf ( (ctx_sqrtf (1.0f-ctx_pow2 (x) ) / (x) ) );
 }
 
-static float ctx_cosf (float a)
+static inline float ctx_cosf (float a)
 {
   return ctx_sinf ( (a) + CTX_PI/2.0f);
 }
 
-static float ctx_tanf (float a)
+static inline float ctx_tanf (float a)
 {
   return (ctx_cosf (a) /ctx_sinf (a) );
 }
+static inline float
+ctx_floorf (float x)
+{
+  return (int)x; // XXX
+}
+
 /* define more trig based on having sqrt, sin and atan2 */
 
 #else
 #include <math.h>
-static float ctx_fabsf (float x)           { return fabsf (x); }
-static float ctx_floorf (float x)          { return floorf (x); }
-static float ctx_sinf (float x)            { return sinf (x); }
-static float ctx_atan2f (float y, float x) { return atan2f (y, x); }
-static float ctx_hypotf (float a, float b) { return hypotf (a, b); }
-static float ctx_acosf (float a)           { return acosf (a); }
-static float ctx_cosf (float a)            { return cosf (a); }
-static float ctx_tanf (float a)            { return tanf (a); }
+static inline float ctx_fabsf (float x)           { return fabsf (x); }
+static inline float ctx_floorf (float x)          { return floorf (x); }
+static inline float ctx_sinf (float x)            { return sinf (x); }
+static inline float ctx_atan2f (float y, float x) { return atan2f (y, x); }
+static inline float ctx_hypotf (float a, float b) { return hypotf (a, b); }
+static inline float ctx_acosf (float a)           { return acosf (a); }
+static inline float ctx_cosf (float a)            { return cosf (a); }
+static inline float ctx_tanf (float a)            { return tanf (a); }
 #endif
+
+#ifdef CTX_IMPLEMENTATION
+
+static void
+ctx_memset (void *ptr, uint8_t val, int length)
+{
+  uint8_t *p = (uint8_t *) ptr;
+  for (int i = 0; i < length; i ++)
+    { p[i] = val; }
+}
+
+
+static void ctx_strcpy (char *dst, const char *src)
+{
+  int i = 0;
+  for (i = 0; src[i]; i++)
+    { dst[i] = src[i]; }
+  dst[i] = 0;
+}
+
+static char *ctx_strchr (const char *haystack, char needle)
+{
+  const char *p = haystack;
+  while (*p && *p != needle)
+    {
+      p++;
+    }
+  if (*p == needle)
+    { return (char *) p; }
+  return NULL;
+}
+
 
 static float ctx_fast_hypotf (float x, float y)
 {
@@ -8161,7 +8161,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / CTX_RASTERIZER_AA);
   rasterizer->state->max_y =
     ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / CTX_RASTERIZER_AA);
-  if (rasterizer->edge_list.count == 4)
+  if (rasterizer->edge_list.count == 6)
     {
       CtxEntry *entry0 = &rasterizer->edge_list.entries[0];
       CtxEntry *entry1 = &rasterizer->edge_list.entries[1];
@@ -9634,7 +9634,10 @@ void
 ctx_current_point (Ctx *ctx, float *x, float *y)
 {
   if (!ctx)
-    { return; }
+    { 
+      if (x) { *x = 0.0f; }
+      if (y) { *y = 0.0f; }
+    }
 #if CTX_RASTERIZER
   if (ctx->renderer)
     {
