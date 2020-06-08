@@ -5834,11 +5834,11 @@ static Ctx ctx_state;
 #endif
 
 void ctx_set_renderer (Ctx  *ctx,
-                       void *user_data)
+                       void *renderer)
 {
-  if (!user_data)
-    return;
-  ctx->renderer = user_data;
+  if (ctx->renderer && ctx->renderer->free)
+    ctx->renderer->free (ctx->renderer);
+  ctx->renderer = renderer;
 }
 
 Ctx *
@@ -5871,14 +5871,12 @@ static void ctx_rasterizer_deinit (CtxRasterizer *rasterizer);
 
 static void ctx_deinit (Ctx *ctx)
 {
-#if CTX_RASTERIZER
   if (ctx->renderer)
     {
       if (ctx->renderer->free)
         ctx->renderer->free (ctx->renderer);
       ctx->renderer    = NULL;
     }
-#endif
   ctx_renderstream_deinit (&ctx->renderstream);
 }
 
