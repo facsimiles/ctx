@@ -530,6 +530,9 @@ int main (int argc, char **argv)
   int height = 80;
   float cols = 30;
   float rows = 5;
+  
+
+
   if (!argv[1])
     { return vt_main (argc, argv); }
   if (!strcmp (argv[1], "vt") )

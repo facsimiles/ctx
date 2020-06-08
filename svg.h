@@ -459,9 +459,13 @@ struct _MrgStyleNode
 {
   int         is_direct_parent; /* for use in selector chains with > */
   const char *id;
-  const char *element;
-  const char *classes[MRG_STYLE_MAX_CLASSES];
+  uint32_t id_hash;
+  uint32_t element_hash;
+  uint32_t classes_hash[MRG_STYLE_MAX_CLASSES];
   const char *pseudo[MRG_STYLE_MAX_PSEUDO];
+              // TODO : to hash pseudos we need to store
+              //   argument (like for nth-child)
+  uint32_t pseudo_hash[MRG_STYLE_MAX_PSEUDO];
 };
 
 typedef enum {
@@ -1981,8 +1985,8 @@ static void mrg_parse_style_id (Mrg          *mrg,
             case '.':
               {
                 int i = 0;
-                for (i = 0; node->classes[i]; i++);
-                node->classes[i] = mrg_intern_string (&temp[1]);
+                for (i = 0; node->classes_hash[i]; i++);
+                node->classes_hash[i] = ctx_strhash (&temp[1], 0);
               }
               break;
             case ':':
@@ -1990,13 +1994,16 @@ static void mrg_parse_style_id (Mrg          *mrg,
                 int i = 0;
                 for (i = 0; node->pseudo[i]; i++);
                 node->pseudo[i] = mrg_intern_string (&temp[1]);
+                for (i = 0; node->pseudo_hash[i]; i++);
+                node->pseudo_hash[i] = ctx_strhash (&temp[1], 0);
               }
               break;
             case '#':
               node->id = mrg_intern_string (&temp[1]);
+              node->id_hash = ctx_strhash (&temp[1], 0);
               break;
             default:
-              node->element = mrg_intern_string (temp);
+              node->element_hash = ctx_strhash (temp, 0);
               break;
           }
           temp_l = 0;
@@ -2242,16 +2249,17 @@ static void mrg_parse_selector (Mrg *mrg, const char *selector, StyleEntry *entr
           switch (type)
           {
             case ' ':
-              entry->parsed[entry->sel_len].element = mrg_intern_string (section);
+              entry->parsed[entry->sel_len].element_hash = ctx_strhash (section, 0);
               break;
             case '#':
               entry->parsed[entry->sel_len].id = mrg_intern_string (section);
+              entry->parsed[entry->sel_len].id_hash = ctx_strhash (section, 0);
               break;
             case '.':
               {
                 int i = 0;
-                for (i = 0; entry->parsed[entry->sel_len].classes[i]; i++);
-                entry->parsed[entry->sel_len].classes[i] = mrg_intern_string (section);
+                for (i = 0; entry->parsed[entry->sel_len].classes_hash[i]; i++);
+                entry->parsed[entry->sel_len].classes_hash[i] = ctx_strhash (section, 0);
               }
               break;
             case ':':
@@ -2259,6 +2267,8 @@ static void mrg_parse_selector (Mrg *mrg, const char *selector, StyleEntry *entr
                 int i = 0;
                 for (i = 0; entry->parsed[entry->sel_len].pseudo[i]; i++);
                 entry->parsed[entry->sel_len].pseudo[i] = mrg_intern_string (section);
+                for (i = 0; entry->parsed[entry->sel_len].pseudo_hash[i]; i++);
+                entry->parsed[entry->sel_len].pseudo_hash[i] = ctx_strhash (section, 0);
               }
               break;
           }
@@ -2711,20 +2721,20 @@ static inline int match_nodes (Mrg *mrg, MrgStyleNode *sel_node, MrgStyleNode *s
 {
   int j, k;
 
-  if (sel_node->element &&
-      sel_node->element != subject->element)
+  if (sel_node->element_hash &&
+      sel_node->element_hash != subject->element_hash)
     return 0;
 
   if (sel_node->id &&
       sel_node->id != subject->id)
     return 0;
 
-  for (j = 0; sel_node->classes[j]; j++)
+  for (j = 0; sel_node->classes_hash[j]; j++)
   {
     int found = 0;
-    for (k = 0; subject->classes[k] && !found; k++)
+    for (k = 0; subject->classes_hash[k] && !found; k++)
     {
-      if (sel_node->classes[j] == subject->classes[k])
+      if (sel_node->classes_hash[j] == subject->classes_hash[k])
         found = 1;
     }
     if (!found)
@@ -2748,7 +2758,7 @@ static inline int match_nodes (Mrg *mrg, MrgStyleNode *sel_node, MrgStyleNode *s
 
       for (k = 0; subject->pseudo[k] && !found; k++)
       {
-        if (sel_node->pseudo[j] == subject->pseudo[k])
+        if (sel_node->pseudo_hash[j] == subject->pseudo_hash[k])
           found = 1;
       }
       if (!found)
