@@ -1,3 +1,5 @@
+#if CTX_EVENTS
+
 #define MRG_MAX_STYLE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_STATE_DEPTH  CTX_MAX_STATES
 #define MRG_MAX_FLOATS           16
@@ -990,8 +992,6 @@ int     xmltok_get     (MrgXml *t, char **data, int *pos);
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MRG_STRING_H
-#define MRG_STRING_H
 
 
 struct _MrgString

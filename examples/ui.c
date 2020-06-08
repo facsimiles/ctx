@@ -7,7 +7,7 @@
 #define CTX_ENABLE_CM           0
 #define CTX_PARSER              0
 #define CTX_DITHER              0 // implied by limit formats and only rgba being anbled, but we're explicit
-#define CTX_FORMATTER           0
+#define CTX_FORMATTER           1
 #define CTX_EVENTS              1
 #define CTX_BITPACK_PACKER      0
 #define CTX_GRADIENT_CACHE      0

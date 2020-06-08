@@ -1501,7 +1501,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_EVENTS
-#define CTX_EVENTS           1
+#define CTX_EVENTS           0
 #endif
 
 #define CTX_ASSERT 0
@@ -3270,7 +3270,7 @@ struct
 #endif
 };
 
-
+#if CTX_EVENTS
 int   ctx_width           (Ctx *ctx)
 {
   return ctx->events.width;
@@ -3279,6 +3279,7 @@ int   ctx_height          (Ctx *ctx)
 {
   return ctx->events.height;
 }
+#endif
 
 const char *ctx_get_string (Ctx *ctx, uint32_t hash)
 {
@@ -4410,6 +4411,7 @@ void _ctx_set_store_clear (Ctx *ctx)
   ctx->transformation |= CTX_TRANSFORMATION_STORE_CLEAR;
 }
 
+#if CTX_EVENTS
 static void
 ctx_collect_events (CtxEvent *event, void *data, void *data2)
 {
@@ -4421,6 +4423,7 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
   memcpy (copy, event, sizeof (CtxEvent));
   ctx_list_append_full (&ctx->events.events, copy, (void*)free, NULL);
 }
+#endif
 
 void ctx_clear (Ctx *ctx)
 {
@@ -4429,6 +4432,7 @@ void ctx_clear (Ctx *ctx)
   //  { return; }
   ctx_empty (ctx);
   ctx_state_init (&ctx->state);
+#if CTX_EVENTS
   ctx_list_free (&ctx->events.items);
 
   if (ctx->events.ctx_get_event_enabled)
@@ -4443,6 +4447,7 @@ void ctx_clear (Ctx *ctx)
                      CTX_KEY_UP, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
   }
+#endif
 }
 
 void ctx_new_path (Ctx *ctx)
@@ -14271,7 +14276,23 @@ int ctx_count (Ctx *ctx)
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
-int ctx_sys_terminal_width (void)
+int ctx_terminal_width (void)
+{
+  struct winsize ws; 
+  if (ioctl(0,TIOCGWINSZ,&ws)!=0)
+    return 80;
+  return ws.ws_xpixel;
+} 
+
+int ctx_terminal_height (void)
+{
+  struct winsize ws; 
+  if (ioctl(0,TIOCGWINSZ,&ws)!=0)
+    return 80;
+  return ws.ws_ypixel;
+} 
+
+int ctx_terminal_cols (void)
 {
   struct winsize ws; 
   if (ioctl(0,TIOCGWINSZ,&ws)!=0)
@@ -14279,7 +14300,7 @@ int ctx_sys_terminal_width (void)
   return ws.ws_col;
 } 
 
-int ctx_sys_terminal_height (void)
+int ctx_terminal_rows (void)
 {
   struct winsize ws; 
   if (ioctl(0,TIOCGWINSZ,&ws)!=0)
@@ -14766,6 +14787,7 @@ nc_at_exit (void)
   printf (TERMINAL_MOUSE_OFF);
   printf (XTERM_ALTSCREEN_OFF);
   _nc_noraw();
+  fprintf (stdout, "\e[2J\e[H\e[?25h");
 }
 
 static int _nc_raw (void)
@@ -15123,13 +15145,13 @@ struct _CtxBraille
    void (*render) (void *braille, CtxCommand *command);
    void (*flush)  (void *braille);
    void (*free)   (void *braille);
-   uint8_t *pixels;
    Ctx     *ctx;
-   Ctx     *host;
    int width;
    int height;
    int cols;
    int rows;
+   uint8_t *pixels;
+   Ctx     *host;
    int was_down;
 };
 
@@ -15143,7 +15165,7 @@ int mrg_nct_consume_events (Ctx *ctx)
       event = ctx_nct_get_event (ctx, 50, &ix, &iy);
 
       x = (ix - 1.0 + 0.5) / braille->cols * ctx->events.width;
-      y = (iy - 1.0 + 0.5) / braille->rows * ctx->events.height;
+      y = (iy - 1.0) / braille->rows * ctx->events.height;
   //fprintf (stderr, "{%i %i %i %i\n", braille->cols, braille->rows, ctx->events.width, ctx->events.height);
   //    x = ix * 2;
   //    y = iy * 4;
@@ -15255,8 +15277,8 @@ Ctx *ctx_new_braille (int width, int height)
   CtxBraille *braille = calloc (sizeof (CtxBraille), 1);
   if (width <= 0 || height <= 0)
   {
-    width  = ctx_sys_terminal_width  () * 2;
-    height = (ctx_sys_terminal_height ()-1) * 4;
+    width  = ctx_terminal_cols  () * 2;
+    height = (ctx_terminal_rows ()-1) * 4;
   }
   braille->ctx = ctx;
   braille->width  = width;
@@ -15276,50 +15298,63 @@ Ctx *ctx_new_braille (int width, int height)
   return ctx;
 }
 
-static void ctx_ctx_flush (CtxBraille *braille)
+typedef struct _CtxCtx CtxCtx;
+
+struct _CtxCtx
 {
-  int width =  braille->width;
-  int height = braille->height;
-  ctx_render_ctx (braille->ctx, braille->host);
-  printf ("\e[H");
-  _ctx_utf8_output_buf (braille->pixels,
-                        CTX_FORMAT_RGBA8,
-                        width, height, width * 4, 0);
+   void (*render) (void *ctxctx, CtxCommand *command);
+   void (*flush)  (void *ctxctx);
+   void (*free)   (void *ctxctx);
+   Ctx *ctx;
+   int width;
+   int height;
+   int cols;
+   int rows;
+// int was_down;
+};
+
+static void ctx_ctx_flush (CtxCtx *ctxctx)
+{
+  //int width =  ctxctx->width;
+  //int height = ctxctx->height;
+  //ctx_render_ctx (ctxctx->ctx, ctxctx->host);
+  fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h clear\n");
+  ctx_render_stream (ctxctx->ctx, stdout, 1);
+  fprintf (stdout, "\ndone\n\e");
+  fflush (stdout);
 }
 
-void ctx_ctx_free (CtxBraille *braille)
+void ctx_ctx_free (CtxCtx *ctxctx)
 {
   nc_at_exit ();
-  free (braille->pixels);
-  ctx_free (braille->host);
-  free (braille);
+  free (ctxctx);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
 Ctx *ctx_new_ctx (int width, int height)
 {
   Ctx *ctx = ctx_new ();
-  CtxBraille *braille = calloc (sizeof (CtxBraille), 1);
+  CtxCtx *ctxctx = calloc (sizeof (CtxBraille), 1);
   if (width <= 0 || height <= 0)
   {
-    width  = ctx_sys_terminal_width  () * 2;
-    height = (ctx_sys_terminal_height ()-1) * 4;
+    ctxctx->cols = ctx_terminal_cols ();
+    ctxctx->rows = ctx_terminal_rows ();
+    width = ctxctx->width = ctx_terminal_width ();
+    height = ctxctx->height = ctx_terminal_height ();
   }
-  braille->ctx = ctx;
-  braille->width  = width;
-  braille->height = height;
-  braille->cols = (width + 1) / 2;
-  braille->rows = (height + 3) / 4;
-  braille->pixels = (uint8_t*)malloc (width * height * 4);
-  braille->host = ctx_new_for_framebuffer (braille->pixels,
-                  width, height,
-                  width * 4, CTX_FORMAT_RGBA8);
+  else
+  {
+    ctxctx->width  = width;
+    ctxctx->height = height;
+    ctxctx->cols = width / 80;
+    ctxctx->rows = height / 24;
+  }
+  ctxctx->ctx = ctx;
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
-  ctx_set_renderer (ctx, braille);
+  ctx_set_renderer (ctx, ctxctx);
   ctx_set_size (ctx, width, height);
- // ctx_set_size (braille->host, width, height);
-  braille->flush = (void*)ctx_braille_flush;
-  braille->free  = (void*)ctx_braille_free;
+  ctxctx->flush = (void*)ctx_ctx_flush;
+  ctxctx->free  = (void*)ctx_ctx_free;
   return ctx;
 }
 
@@ -15330,7 +15365,7 @@ Ctx *ctx_new_ui (int width, int height)
   return ctx_new_braille (width, height);
  
   //
-  // look for ctx in terminal
+  // look for ctx in terminal <
   // look for linux console
   // look for kitty image protocol in terminal
   // look for iterm2 image protocol in terminal
