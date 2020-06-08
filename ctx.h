@@ -1872,6 +1872,16 @@ static inline void ctx_list_sort (CtxList **head,
 }
 
 #endif
+typedef enum CtxOutputmode
+{
+  CTX_OUTPUT_MODE_QUARTER,
+  CTX_OUTPUT_MODE_BRAILLE,
+  CTX_OUTPUT_MODE_GRAYS,
+  CTX_OUTPUT_MODE_CTX,
+  CTX_OUTPUT_MODE_CTX_COMPACT,
+  CTX_OUTPUT_MODE_CTX_TERM,
+  CTX_OUTPUT_MODE_SIXELS,
+} CtxOutputmode;
 
 #ifdef CTX_IMPLEMENTATION
 
@@ -4389,13 +4399,39 @@ void _ctx_set_store_clear (Ctx *ctx)
   ctx->transformation |= CTX_TRANSFORMATION_STORE_CLEAR;
 }
 
+static void
+ctx_collect_events (CtxEvent *event, void *data, void *data2)
+{
+  Ctx *ctx = data;
+  CtxEvent *copy;
+  if (event->type == CTX_KEY_DOWN && !strcmp (event->string, "idle"))
+          return;
+  copy = malloc (sizeof (CtxEvent));
+  memcpy (copy, event, sizeof (CtxEvent));
+  ctx_list_append_full (&ctx->events.events, copy, (void*)free, NULL);
+}
+
 void ctx_clear (Ctx *ctx)
 {
-  CTX_PROCESS_VOID (CTX_CLEAR);
-  if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
-    { return; }
+  //CTX_PROCESS_VOID (CTX_CLEAR);
+  //if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
+  //  { return; }
   ctx_empty (ctx);
   ctx_state_init (&ctx->state);
+  ctx_list_free (&ctx->events.items);
+
+  if (ctx->events.ctx_get_event_enabled)
+  {
+    ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
+                     CTX_PRESS|CTX_RELEASE|CTX_MOTION, ctx_collect_events, ctx, ctx,
+                     NULL, NULL);
+    ctx_listen_full (ctx, 0, 0, 0,0,
+                     CTX_KEY_DOWN, ctx_collect_events, ctx, ctx,
+                     NULL, NULL);
+    ctx_listen_full (ctx, 0, 0, 0,0,
+                     CTX_KEY_UP, ctx_collect_events, ctx, ctx,
+                     NULL, NULL);
+  }
 }
 
 void ctx_new_path (Ctx *ctx)
@@ -13588,29 +13624,25 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
   }
   return 0;
 }
-
-const char *ctx_get_event (Ctx *ctx)
+#if CTX_EVENTS
+int mrg_nct_consume_events (Ctx *ctx);
+CtxEvent *ctx_get_event (Ctx *ctx)
 {
-  char *ret = NULL;
-  static char *prev_ret = NULL;
+  static CtxEvent copy;
   if (!ctx->events.ctx_get_event_enabled)
     ctx->events.ctx_get_event_enabled = 1;
-
-  if (prev_ret)
-  {
-    free (prev_ret);
-    prev_ret = NULL;
-  }
+  mrg_nct_consume_events (ctx);
 
   if (ctx->events.events)
     {
-      ret = ctx->events.events->data;
-      ctx_list_remove (&ctx->events.events, ret);
-      ret = strdup (ret);
-      prev_ret = ret;
+      copy = *((CtxEvent*)(ctx->events.events->data));
+      ctx_list_remove (&ctx->events.events, ctx->events.events->data);
+      return &copy;
     }
-  return ret;
+
+  return NULL;
 }
+#endif
 
 static int
 _ctx_emit_cb (Ctx *ctx, CtxList *items, CtxEvent *event, CtxEventType type, float x, float y)
@@ -14249,16 +14281,8 @@ int ctx_sys_terminal_height (void)
 
 #endif
 
+#include "nct.h"
+
 #endif
 
 
-typedef enum CtxOutputmode
-{
-  CTX_OUTPUT_MODE_QUARTER,
-  CTX_OUTPUT_MODE_BRAILLE,
-  CTX_OUTPUT_MODE_GRAYS,
-  CTX_OUTPUT_MODE_CTX,
-  CTX_OUTPUT_MODE_CTX_COMPACT,
-  CTX_OUTPUT_MODE_CTX_TERM,
-  CTX_OUTPUT_MODE_SIXELS,
-} CtxOutputmode;
