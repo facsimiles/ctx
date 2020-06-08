@@ -742,7 +742,6 @@ int update_ct (CtxClient *client)
   if ( (client->drawn_rev != ct_rev (ct) ))
     {
       client->drawn_rev = ct_rev (ct);
-      SDL_Rect dirty;
       Ctx *dctx = ctx_new_for_framebuffer (client->pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
@@ -750,6 +749,7 @@ int update_ct (CtxClient *client)
       ctx_clear (ct->ctx);
 
 #if 0 // < flipping this turns on subtexture updates, needs bounds tuning
+          SDL_Rect dirty;
           ctx_dirty_rect (dctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
           dirty.w ++;
           dirty.h ++;
