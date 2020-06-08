@@ -7031,7 +7031,7 @@ mrg_parse_svg_path (Mrg *mrg, const char *str)
 again:
   numbers = 0;
 
-  for (; *s; s++)
+  for (; s && *s; s++)
   {
     switch (*s)
     {
