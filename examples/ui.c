@@ -50,7 +50,7 @@ int main (int argc, char **argv)
     ctx_rectangle      (ctx, 0, 0, 160, 44);
     ctx_fill           (ctx);
     ctx_move_to        (ctx, 10+x, 9);
-    ctx_set_font_size  (ctx, 12);
+    ctx_set_font_size  (ctx, 12 + x/4);
     ctx_set_line_width (ctx, 2);
     ctx_set_rgba       (ctx, 0, 0, 0, 1);
     ctx_text_stroke    (ctx, utf8);
@@ -58,7 +58,7 @@ int main (int argc, char **argv)
     ctx_move_to        (ctx, 10+x, 9);
     ctx_text           (ctx, utf8);
     ctx_move_to        (ctx, 10, 30);
-    ctx_set_font_size  (ctx, 20);
+    ctx_set_font_size  (ctx, 10);
 
     ctx_set_rgb       (ctx, 1, 0,0);
     ctx_text           (ctx, message);
@@ -77,6 +77,7 @@ int main (int argc, char **argv)
     //fprintf (stderr, "[%s :%i %i]", event, mx, my);
 
     x+=0.25;
+    if (x > ctx_width (ctx)) x= 0;
    
     if(event = ctx_get_event (ctx))
     {

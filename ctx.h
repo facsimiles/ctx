@@ -176,6 +176,8 @@ void  ctx_close_path      (Ctx *ctx);
 float ctx_get_font_size   (Ctx *ctx);
 float ctx_get_line_width  (Ctx *ctx);
 float ctx_x               (Ctx *ctx);
+int   ctx_width           (Ctx *ctx);
+int   ctx_height          (Ctx *ctx);
 float ctx_y               (Ctx *ctx);
 void  ctx_current_point   (Ctx *ctx, float *x, float *y);
 void  ctx_get_transform   (Ctx *ctx, float *a, float *b,
@@ -3244,6 +3246,8 @@ struct _CtxEvents
   int              tap_delay_hold;
   double           tap_hysteresis;
 };
+
+
 #endif
 
 struct
@@ -3265,6 +3269,16 @@ struct
   CtxIterator     current_path_iterator;
 #endif
 };
+
+
+int   ctx_width           (Ctx *ctx)
+{
+  return ctx->events.width;
+}
+int   ctx_height          (Ctx *ctx)
+{
+  return ctx->events.height;
+}
 
 const char *ctx_get_string (Ctx *ctx, uint32_t hash)
 {
