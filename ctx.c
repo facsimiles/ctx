@@ -57,17 +57,6 @@ static int ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   return diff;
 }
 
-typedef enum CtxOutputmode
-{
-  CTX_OUTPUT_MODE_QUARTER,
-  CTX_OUTPUT_MODE_BRAILLE,
-  CTX_OUTPUT_MODE_GRAYS,
-  CTX_OUTPUT_MODE_CTX,
-  CTX_OUTPUT_MODE_CTX_COMPACT,
-  CTX_OUTPUT_MODE_CTX_TERM,
-  CTX_OUTPUT_MODE_SIXELS,
-} CtxOutputmode;
-
 CtxOutputmode outputmode = CTX_OUTPUT_MODE_BRAILLE;
 
 void ctx_utf8_output_buf (uint8_t *pixels,

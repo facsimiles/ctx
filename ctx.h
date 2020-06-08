@@ -3038,6 +3038,7 @@ typedef struct _CtxImplementation CtxImplementation;
 struct _CtxImplementation
 {
   void (*process) (void *renderer, CtxCommand *entry);
+  void (*flush)   (void *renderer);
   void (*free)    (void *renderer);
 };
 
@@ -4865,6 +4866,8 @@ ctx_flush (Ctx *ctx)
   printf ("Xx.Xx.Xx.");
   fflush (NULL);
 #endif
+  if (ctx->renderer && ctx->renderer->flush)
+    ctx->renderer->flush (ctx->renderer);
   ctx->renderstream.count = 0;
   ctx_state_init (&ctx->state);
 }
@@ -9591,7 +9594,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
         break;
     }
 #endif
-  if (ctx->renderer)
+  if (ctx->renderer && ctx->renderer->process)
     {
       ctx->renderer->process (ctx->renderer, (CtxCommand *) entry);
     }
@@ -14167,44 +14170,18 @@ int ctx_sys_terminal_height (void)
 }
 
 
-static uint8_t *ctx_pixels = NULL;
-static Ctx     *ctx_host = NULL;
-
-Ctx *ctx_new_braille (int width, int height)
-{
-  Ctx *ctx = ctx_new ();
-  if (width <= 0 || height <= 0)
-  {
-    width  = ctx_sys_terminal_width  () * 2;
-    height = ctx_sys_terminal_height () * 4;
-  }
-
-  ctx_set_size (ctx, width, height);
-  ctx_pixels = (uint8_t*)malloc (width * height * 4);
-  ctx_host = ctx_new_for_framebuffer (ctx_pixels,
-                  width, height,
-                  width * 4, CTX_FORMAT_RGBA8);
-  return ctx;
-}
-
-// NYI idea for sizing:
-//
-//   0,0 or -1,-1 default size
-//   -2,-2 fullscreened 
-//
-Ctx *ctx_new_ui (int width, int height)
-{
-  return ctx_new_braille (width, height);
- 
-  //
-  // look for ctx in terminal
-  // look for linux console
-  // look for kitty image protocol in terminal
-  // look for iterm2 image protocol in terminal
-  // look for sixels in terminal
-  // use braille
-}
-
 #endif
 
 #endif
+
+
+typedef enum CtxOutputmode
+{
+  CTX_OUTPUT_MODE_QUARTER,
+  CTX_OUTPUT_MODE_BRAILLE,
+  CTX_OUTPUT_MODE_GRAYS,
+  CTX_OUTPUT_MODE_CTX,
+  CTX_OUTPUT_MODE_CTX_COMPACT,
+  CTX_OUTPUT_MODE_CTX_TERM,
+  CTX_OUTPUT_MODE_SIXELS,
+} CtxOutputmode;
