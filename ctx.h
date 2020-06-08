@@ -1345,12 +1345,9 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_MAX_EDGE_LIST_SIZE   4096
 #endif
 
-#define CTX_STRINGPOOL_SIZE 102400
-
-//#define CTX_STRINGPOOL_SIZE 6000  // if we parse svg path data inline
-                                  // with a separate parse state we do
-                                  // not need this much room.
-
+//#define CTX_STRINGPOOL_SIZE   6000 // needed for tiger
+//#define CTX_STRINGPOOL_SIZE   8000 // needed for debian logo in bw
+#define CTX_STRINGPOOL_SIZE   8500 // needed for debian logo in color
 
 /* whether we dither or not for gradients
  */
