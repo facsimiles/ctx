@@ -2480,15 +2480,15 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 #define CTX_rel_move_to  CTX_STRH('r','e','l','_','m','o','v','e','_','t','o',0,0,0)
 #define CTX_font         CTX_STRH('f','o','n','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_radial_gradient CTX_STRH('r','a','d','i','a','l','_','g','r','a','d','i','e','n')
-#define CTX_radialGradient CTX_STRH('r','a','d','i','a','l',,'G','r','a','d','i','e','n','t')
+#define CTX_radialGradient  CTX_STRH('r','a','d','i','a','l',,'G','r','a','d','i','e','n','t')
 #define CTX_gradient_add_stop CTX_STRH('g','r','a','d','i','e','n','t','_','a','d','d','_','s')
 #define CTX_gradientAddStop CTX_STRH('g','r','a','d','i','e','n','t','A','d','d','S','t','o')
-#define CTX_addStop      CTX_STRH('a','d','d','S','t','o','p',0,0,0,0,0,0,0)
-#define CTX_add_stop     CTX_STRH('a','d','d','_','s','t','o','p',0,0,0,0,0,0)
-#define CTX_relQuadTo    CTX_STRH('r','e','l','Q','u','a','d','T','o',0,0,0,0,0)
-#define CTX_rel_quad_to  CTX_STRH('r','e','l','_','q','u','a','d','_','t','o',0,0,0)
-#define CTX_round_rectangle   CTX_STRH('r','o','u','n','d','_','r','e','c','t','a','n','g','l')
-#define CTX_roundRectangle    CTX_STRH('r','o','u','n','d','R','e','c','t','a','n','g','l','e')
+#define CTX_addStop         CTX_STRH('a','d','d','S','t','o','p',0,0,0,0,0,0,0)
+#define CTX_add_stop        CTX_STRH('a','d','d','_','s','t','o','p',0,0,0,0,0,0)
+#define CTX_relQuadTo       CTX_STRH('r','e','l','Q','u','a','d','T','o',0,0,0,0,0)
+#define CTX_rel_quad_to     CTX_STRH('r','e','l','_','q','u','a','d','_','t','o',0,0,0)
+#define CTX_round_rectangle CTX_STRH('r','o','u','n','d','_','r','e','c','t','a','n','g','l')
+#define CTX_roundRectangle  CTX_STRH('r','o','u','n','d','R','e','c','t','a','n','g','l','e')
 #define CTX_text         CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_rectangle    CTX_STRH('r','e','c','t','a','n','g','l','e',0,0,0,0,0)
 #define CTX_rect         CTX_STRH('r','e','c','t',0,0,0,0,0,0,0,0,0,0)
@@ -2565,13 +2565,6 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 #define CTX_laba         CTX_STRH('l','a','b','a',0,0,0,0,0,0,0,0,0,0)
 #define CTX_lch          CTX_STRH('l','c','h',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_lcha         CTX_STRH('l','c','h','a',0,0,0,0,0,0,0,0,0,0)
-
-// some core scg bits
-//#define CTX_display      CTX_STRH('d','i','s','p','l','a','y',0,0,0,0,0,0,0)
-//#define CTX_padding_bottom CTX_STRH('p','a','d','d','i','n','g','_','b','o','t','t','o','m')
-//#define CTX_float        CTX_STRH('f','l','o','a','t',0,0,0,0,0,0,0,0,0)
-//#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
-
 
 static float ctx_state_get (CtxState *state, uint32_t hash)
 {
@@ -3506,6 +3499,17 @@ ctx_conts_for_entry (CtxEntry *entry)
         return 0;
     }
 }
+
+// expanding arc_to to arc can be the job
+// of a layer in front of renderer?
+//   doing:
+//     rectangle
+//     arc
+//     ... etc reduction to beziers
+//     or even do the reduction to
+//     polylines directly here...
+//     making the rasterizer able to
+//     only do poly-lines? will that be faster?
 
 /* the iterator - should decode bitpacked data as well -
  * making the rasterizers simpler, possibly do unpacking

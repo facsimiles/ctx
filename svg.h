@@ -5222,7 +5222,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
   CtxColor background_color;
   ctx_get_color (cr, CTX_background_color, &background_color);
 
-  if (background_color.alpha > 0.001)
+  if (background_color.alpha > 0.001 && 0)
   {
     ctx_save (cr);
     ctx_rectangle (cr, x,
