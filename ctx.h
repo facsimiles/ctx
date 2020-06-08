@@ -2288,28 +2288,6 @@ struct _CtxKeyDbEntry
   //union { float f[1]; uint8_t u8[4]; }value;
 };
 
-static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
-{
-#define CTX_NORMALIZE(a)             (((a)=='-')?'_':(a))
-#define CTX_NORMALIZE_CASEFOLDED(a)  (((a)=='-')?'_':( (((a)>='A')&&((a)<='Z') )?(a)+32:(a)))
-  uint32_t str_hash = 0;
-  /* hash string to number */
-  {
-    int multiplier = 1;
-    for (int i = 0; str[i] && i < 14; i++)
-      {
-        if (case_insensitive)
-          { str_hash = str_hash + CTX_NORMALIZE_CASEFOLDED (str[i]) * multiplier; }
-        else
-          { str_hash = str_hash + CTX_NORMALIZE (str[i]) * multiplier; }
-        multiplier *= 11;
-      }
-  }
-  return str_hash;
-}
-
-
-
 struct _CtxState
 {
   int           has_moved:1;
@@ -2332,6 +2310,27 @@ struct _CtxState
   CtxGState     gstate;
   CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
+
+
+static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
+{
+  #define CTX_NORMALIZE(a)             (((a)=='-')?'_':(a))
+  #define CTX_NORMALIZE_CASEFOLDED(a)  (((a)=='-')?'_':( (((a)>='A')&&((a)<='Z') )?(a)+32:(a)))
+  uint32_t str_hash = 0;
+  /* hash string to number */
+  {
+    int multiplier = 1;
+    for (int i = 0; str[i] && i < 14; i++)
+      {
+        if (case_insensitive)
+          { str_hash = str_hash + CTX_NORMALIZE_CASEFOLDED (str[i]) * multiplier; }
+        else
+          { str_hash = str_hash + CTX_NORMALIZE (str[i]) * multiplier; }
+        multiplier *= 11;
+      }
+  }
+  return str_hash;
+}
 
 
 /* We use the preprocessor to compute case invariant hashes
