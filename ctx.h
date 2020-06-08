@@ -15229,7 +15229,6 @@ static void ctx_braille_flush (CtxBraille *braille)
 void ctx_braille_free (CtxBraille *braille)
 {
   nc_at_exit ();
-  fprintf (stderr, "it ends!\n");
   free (braille->pixels);
   ctx_free (braille->host);
   free (braille);
@@ -15263,8 +15262,57 @@ Ctx *ctx_new_braille (int width, int height)
   return ctx;
 }
 
+static void ctx_ctx_flush (CtxBraille *braille)
+{
+  int width =  braille->width;
+  int height = braille->height;
+  ctx_render_ctx (braille->ctx, braille->host);
+  printf ("\e[H");
+  _ctx_utf8_output_buf (braille->pixels,
+                        CTX_FORMAT_RGBA8,
+                        width, height, width * 4, 0);
+}
+
+void ctx_ctx_free (CtxBraille *braille)
+{
+  nc_at_exit ();
+  free (braille->pixels);
+  ctx_free (braille->host);
+  free (braille);
+  /* we're not destoring the ctx member, this is function is called in ctx' teardown */
+}
+
+Ctx *ctx_new_ctx (int width, int height)
+{
+  Ctx *ctx = ctx_new ();
+  CtxBraille *braille = calloc (sizeof (CtxBraille), 1);
+  if (width <= 0 || height <= 0)
+  {
+    width  = ctx_sys_terminal_width  () * 2;
+    height = (ctx_sys_terminal_height ()-1) * 4;
+  }
+  braille->ctx = ctx;
+  braille->width  = width;
+  braille->height = height;
+  braille->cols = (width + 1) / 2;
+  braille->rows = (height + 3) / 4;
+  braille->pixels = (uint8_t*)malloc (width * height * 4);
+  braille->host = ctx_new_for_framebuffer (braille->pixels,
+                  width, height,
+                  width * 4, CTX_FORMAT_RGBA8);
+  _ctx_mouse (ctx, NC_MOUSE_DRAG);
+  ctx_set_renderer (ctx, braille);
+  ctx_set_size (ctx, width, height);
+ // ctx_set_size (braille->host, width, height);
+  braille->flush = (void*)ctx_braille_flush;
+  braille->free  = (void*)ctx_braille_free;
+  return ctx;
+}
+
 Ctx *ctx_new_ui (int width, int height)
 {
+  return ctx_new_ctx (width, height);
+
   return ctx_new_braille (width, height);
  
   //

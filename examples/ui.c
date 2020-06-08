@@ -63,9 +63,12 @@ int main (int argc, char **argv)
     ctx_set_rgb       (ctx, 1, 0,0);
     ctx_text           (ctx, message);
 
-    ctx_arc            (ctx, mx, my, 5.0, 0.0, CTX_PI*2, 0);
-    ctx_set_rgba      (ctx, 1, 1, 1, 0.5);
-    ctx_fill           (ctx);
+    if (ctx_pointer_is_down (ctx, 0))
+    {
+      ctx_arc            (ctx, mx, my, 5.0, 0.0, CTX_PI*2, 0);
+      ctx_set_rgba      (ctx, 1, 1, 1, 0.5);
+      ctx_fill           (ctx);
+    }
 
 
     ctx_flush          (ctx);
@@ -82,7 +85,10 @@ int main (int argc, char **argv)
        case CTX_MOTION:
          mx = event->x;
          my = event->y;
-         sprintf (message, "motion %.1f %.1f", event->x, event->y);
+         sprintf (message, "%s %.1f %.1f", 
+                          ctx_pointer_is_down (ctx, 0)?
+                         "drag":"motion", event->x, event->y);
+
          break;
        case CTX_PRESS:
          mx = event->x;
@@ -111,7 +117,6 @@ int main (int argc, char **argv)
     }
     }
   }
-  fprintf (stderr, "fnord\n");
   ctx_free (ctx);
   return 0;
 }

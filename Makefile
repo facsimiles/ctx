@@ -14,7 +14,7 @@ clean:
 CFLAGS=-g
 #CFLAGS=-Os -flto
 
-ctx: ctx.c vt/*.[ch] ctx.h  Makefile svg.h nct.h
+ctx: ctx.c vt/*.[ch] ctx.h  Makefile svg.h
 	$(CC) ctx.c vt/*.c -o $@ $(CFLAGS) -I. -Ifonts -Ivt `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -lm -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers
 
 ctx.O1: ctx.c vt/*.[ch] ctx.h  Makefile 
