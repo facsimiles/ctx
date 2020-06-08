@@ -1,23 +1,20 @@
-/* ctx - tiny footprint 2d vector rasterizer context
+/* This file is the public GEGL API
  *
- * Copyright (c) 2019, 2020 Øyvind Kolås <pippin@gimp.org>
+ * ctx is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
  *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies. Funding
- * of past and future development is welcome, for further information see
- * https://pippin.gimp.org/funding/
+ * ctx is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with ctx; if not, see <https://www.gnu.org/licenses/>.
  *
+ * 2002, 2012, 2015, 2019, 2020 Øyvind Kolås <pippin@gimp.org>
  */
-
 
 #ifndef CTX_H
 #define CTX_H
@@ -14276,10 +14273,1011 @@ int ctx_sys_terminal_height (void)
   return ws.ws_row;
 }
 
+static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
+{
+  int c;
+  int diff = 0;
+  for (c = 0; c<3;c++)
+    diff += ctx_pow2(a[c]-b[c]);
+  return diff;
+}
+
+
+//CtxOutputmode _outputmode = CTX_OUTPUT_MODE_BRAILLE;
+
+static inline void _ctx_utf8_output_buf (uint8_t *pixels,
+                          int format,
+                          int width,
+                          int height,
+                          int stride,
+                          int reverse)
+{
+  char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
+  int no = 0;
+  switch (format)
+    {
+      case CTX_FORMAT_GRAY2:
+        {
+          for (int y= 0; y < height; y++)
+            {
+              no = y * stride;
+              for (int x = 0; x < width; x++)
+                {
+                  int val4= (pixels[no] & (3 << ( (x % 4) *2) ) ) >> ( (x%4) *2);
+                  int val = (int) CTX_CLAMP (5.0 * val4 / 3.0, 0, 5);
+                  if (!reverse)
+                  { val = 5-val; }
+                  printf ("%s", utf8_gray_scale[val]);
+                  if ( (x % 4) == 3)
+                    { no++; }
+                }
+              printf ("\n");
+            }
+        }
+        break;
+      case CTX_FORMAT_GRAY1:
+        for (int row = 0; row < height/4; row++)
+          {
+            for (int col = 0; col < width /2; col++)
+              {
+                int unicode = 0;
+                int bitno = 0;
+                for (int x = 0; x < 2; x++)
+                  for (int y = 0; y < 3; y++)
+                    {
+                      int no = (row * 4 + y) * stride + (col*2+x) /8;
+                      int set = pixels[no] & (1<< ( (col * 2 + x) % 8) );
+                      if (reverse) { set = !set; }
+                      if (set)
+                        { unicode |=  (1<< (bitno) ); }
+                      bitno++;
+                    }
+                {
+                  int x = 0;
+                  int y = 3;
+                  int no = (row * 4 + y) * stride + (col*2+x) /8;
+                  int setA = pixels[no] & (1<< ( (col * 2 + x) % 8) );
+                  no = (row * 4 + y) * stride + (col*2+x+1) /8;
+                  int setB = pixels[no] & (1<< (   (col * 2 + x + 1) % 8) );
+                  if (reverse) { setA = !setA; }
+                  if (reverse) { setB = !setB; }
+                  if (setA != 0 && setB==0)
+                    { unicode += 0x2840; }
+                  else if (setA == 0 && setB)
+                    { unicode += 0x2880; }
+                  else if ( (setA != 0) && (setB != 0) )
+                    { unicode += 0x28C0; }
+                  else
+                    { unicode += 0x2800; }
+                  uint8_t utf8[5];
+                  utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
+                  printf ("%s", utf8);
+                }
+              }
+            printf ("\n");
+          }
+        break;
+      case CTX_FORMAT_RGBA8:
+        {
+        for (int row = 0; row < height/4; row++)
+          {
+            for (int col = 0; col < width /2; col++)
+              {
+                int unicode = 0;
+                int bitno = 0;
+
+                uint8_t rgba2[4] = {0,0,0,255};
+                uint8_t rgba1[4] = {0,0,0,255};
+                int     rgbasum[4] = {0,};
+                int     col_count = 0;
+
+                for (int xi = 0; xi < 2; xi++)
+                  for (int yi = 0; yi < 4; yi++)
+                      {
+                        int noi = (row * 4 + yi) * stride + (col*2+xi) * 4;
+                        int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba2);
+                        if (diff > 32*32)
+                        {
+                          for (int c = 0; c < 3; c++)
+                          {
+                            rgbasum[c] += pixels[noi+c];
+                          }
+                          col_count++;
+                        }
+                      }
+                if (col_count)
+                for (int c = 0; c < 3; c++)
+                {
+                  rgba1[c] = rgbasum[c] / col_count;
+                }
+
+
+
+                // to determine color .. find two most different
+                // colors in set.. and threshold between them..
+                // even better dither between them.
+                //
+  printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
+  //printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
+
+                for (int x = 0; x < 2; x++)
+                  for (int y = 0; y < 3; y++)
+                    {
+                      int no = (row * 4 + y) * stride + (col*2+x) * 4;
+#define CHECK_IS_SET \
+      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba1)< \
+       _ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
+
+                      int set = CHECK_IS_SET;
+                      if (reverse) { set = !set; }
+                      if (set)
+                        { unicode |=  (1<< (bitno) ); }
+                      bitno++;
+                    }
+                {
+                  int x = 0;
+                  int y = 3;
+                  int no = (row * 4 + y) * stride + (col*2+x) * 4;
+                  int setA = CHECK_IS_SET;
+                  no = (row * 4 + y) * stride + (col*2+x+1) * 4;
+                  int setB = CHECK_IS_SET;
+#undef CHECK_IS_SET
+                  if (reverse) { setA = !setA; }
+                  if (reverse) { setB = !setB; }
+                  if (setA != 0 && setB==0)
+                    { unicode += 0x2840; }
+                  else if (setA == 0 && setB)
+                    { unicode += 0x2880; }
+                  else if ( (setA != 0) && (setB != 0) )
+                    { unicode += 0x28C0; }
+                  else
+                    { unicode += 0x2800; }
+                  uint8_t utf8[5];
+                  utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
+                  printf ("%s", utf8);
+                }
+              }
+            printf ("\n\r");
+          }
+          printf ("\e[38;2;%i;%i;%im", 255,255,255);
+        }
+        break;
+
+      case CTX_FORMAT_GRAY4:
+        {
+          int no = 0;
+          for (int y= 0; y < height; y++)
+            {
+              no = y * stride;
+              for (int x = 0; x < width; x++)
+                {
+                  int val = (pixels[no] & (15 << ( (x % 2) *4) ) ) >> ( (x%2) *4);
+                  val = val * 6 / 16;
+                  if (reverse) { val = 5-val; }
+                  val = CTX_CLAMP (val, 0, 4);
+                  printf ("%s", utf8_gray_scale[val]);
+                  if (x % 2 == 1)
+                    { no++; }
+                }
+              printf ("\n");
+            }
+        }
+        break;
+      case CTX_FORMAT_CMYK8:
+        {
+          for (int c = 0; c < 4; c++)
+            {
+              int no = 0;
+              for (int y= 0; y < height; y++)
+                {
+                  for (int x = 0; x < width; x++, no+=4)
+                    {
+                      int val = (int) CTX_CLAMP (pixels[no+c]/255.0*6.0, 0, 5);
+                      if (reverse)
+                        { val = 5-val; }
+                      printf ("%s", utf8_gray_scale[val]);
+                    }
+                  printf ("\n");
+                }
+            }
+        }
+        break;
+      case CTX_FORMAT_RGB8:
+        {
+          for (int c = 0; c < 3; c++)
+            {
+              int no = 0;
+              for (int y= 0; y < height; y++)
+                {
+                  for (int x = 0; x < width; x++, no+=3)
+                    {
+                      int val = (int) CTX_CLAMP (pixels[no+c]/255.0*6.0, 0, 5);
+                      if (reverse)
+                        { val = 5-val; }
+                      printf ("%s", utf8_gray_scale[val]);
+                    }
+                  printf ("\n");
+                }
+            }
+        }
+        break;
+      case CTX_FORMAT_CMYKAF:
+        {
+          for (int c = 0; c < 5; c++)
+            {
+              int no = 0;
+              for (int y= 0; y < height; y++)
+                {
+                  for (int x = 0; x < width; x++, no+=5)
+                    {
+                      int val = (int) CTX_CLAMP ( (pixels[no+c]*6.0), 0, 5);
+                      if (reverse)
+                        { val = 5-val; }
+                      printf ("%s", utf8_gray_scale[val]);
+                    }
+                  printf ("\n");
+                }
+            }
+        }
+    }
+}
+
+enum {
+  NC_MOUSE_NONE  = 0,
+  NC_MOUSE_PRESS = 1,  /* "mouse-pressed", "mouse-released" */
+  NC_MOUSE_DRAG  = 2,  /* + "mouse-drag"   (motion with pressed button) */
+  NC_MOUSE_ALL   = 3   /* + "mouse-motion" (also delivered for release) */
+};
+
+#define DECTCEM_CURSOR_SHOW      "\033[?25h"
+#define DECTCEM_CURSOR_HIDE      "\033[?25l"
+#define TERMINAL_MOUSE_OFF       "\033[?1000l\033[?1003l"
+#define TERMINAL_MOUSE_ON_BASIC  "\033[?1000h"
+#define TERMINAL_MOUSE_ON_DRAG   "\033[?1000h\033[?1003h" /* +ON_BASIC for wider */
+#define TERMINAL_MOUSE_ON_FULL   "\033[?1000h\033[?1004h" /* compatibility */
+#define XTERM_ALTSCREEN_ON       "\033[?47h"
+#define XTERM_ALTSCREEN_OFF      "\033[?47l"
+
+/*************************** input handling *************************/
+
+#include <stdio.h>
+#include <termios.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+
+#define DELAY_MS  100  
+
+#ifndef MIN
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#endif
+
+static int  size_changed = 0;       /* XXX: global state */
+static int  signal_installed = 0;   /* XXX: global state */
+
+static const char *mouse_modes[]=
+{TERMINAL_MOUSE_OFF,
+ TERMINAL_MOUSE_ON_BASIC,
+ TERMINAL_MOUSE_ON_DRAG,
+ TERMINAL_MOUSE_ON_FULL,
+ NULL};
+
+/* note that a nick can have multiple occurences, the labels
+ * should be kept the same for all occurences of a combination. */
+typedef struct NcKeyCode {
+  char *nick;          /* programmers name for key (combo) */
+  char *label;         /* utf8 label for key */
+  char  sequence[10];  /* terminal sequence */
+} NcKeyCode;
+static const NcKeyCode keycodes[]={  
+  {"up",                  "↑",     "\033[A"},
+  {"down",                "↓",     "\033[B"},
+  {"right",               "→",     "\033[C"},
+  {"left",                "←",     "\033[D"},
+
+  {"shift-up",            "⇧↑",    "\033[1;2A"},
+  {"shift-down",          "⇧↓",    "\033[1;2B"},
+  {"shift-right",         "⇧→",    "\033[1;2C"},
+  {"shift-left",          "⇧←",    "\033[1;2D"},
+
+  {"alt-up",              "^↑",    "\033[1;3A"},
+  {"alt-down",            "^↓",    "\033[1;3B"},
+  {"alt-right",           "^→",    "\033[1;3C"},
+  {"alt-left",            "^←",    "\033[1;3D"},
+
+  {"alt-shift-up",        "alt-s↑", "\033[1;4A"},
+  {"alt-shift-down",      "alt-s↓", "\033[1;4B"},
+  {"alt-shift-right",     "alt-s→", "\033[1;4C"},
+  {"alt-shift-left",      "alt-s←", "\033[1;4D"},
+
+  {"control-up",          "^↑",    "\033[1;5A"},
+  {"control-down",        "^↓",    "\033[1;5B"},
+  {"control-right",       "^→",    "\033[1;5C"},
+  {"control-left",        "^←",    "\033[1;5D"},
+
+  /* putty */
+  {"control-up",          "^↑",    "\033OA"},
+  {"control-down",        "^↓",    "\033OB"},
+  {"control-right",       "^→",    "\033OC"},
+  {"control-left",        "^←",    "\033OD"},
+
+  {"control-shift-up",    "^⇧↑",   "\033[1;6A"},
+  {"control-shift-down",  "^⇧↓",   "\033[1;6B"},
+  {"control-shift-right", "^⇧→",   "\033[1;6C"},
+  {"control-shift-left",  "^⇧←",   "\033[1;6D"},
+
+  {"control-up",          "^↑",    "\033Oa"},
+  {"control-down",        "^↓",    "\033Ob"},
+  {"control-right",       "^→",    "\033Oc"},
+  {"control-left",        "^←",    "\033Od"},
+
+  {"shift-up",            "⇧↑",    "\033[a"},
+  {"shift-down",          "⇧↓",    "\033[b"},
+  {"shift-right",         "⇧→",    "\033[c"},
+  {"shift-left",          "⇧←",    "\033[d"},
+
+  {"insert",              "ins",   "\033[2~"},
+  {"delete",              "del",   "\033[3~"},
+  {"page-up",             "PgUp",  "\033[5~"},
+  {"page-down",           "PdDn",  "\033[6~"},
+  {"home",                "Home",  "\033OH"},
+  {"end",                 "End",   "\033OF"},
+  {"home",                "Home",  "\033[H"},
+  {"end",                 "End",   "\033[F"},
+  {"control-delete",      "^del",  "\033[3;5~"},
+  {"shift-delete",        "⇧del",  "\033[3;2~"},
+  {"control-shift-delete","^⇧del", "\033[3;6~"},
+
+  {"F1",        "F1",  "\033[11~"},
+  {"F2",        "F2",  "\033[12~"},
+  {"F3",        "F3",  "\033[13~"},
+  {"F4",        "F4",  "\033[14~"},
+  {"F1",        "F1",  "\033OP"},
+  {"F2",        "F2",  "\033OQ"},
+  {"F3",        "F3",  "\033OR"},
+  {"F4",        "F4",  "\033OS"},
+  {"F5",        "F5",  "\033[15~"},
+  {"F6",        "F6",  "\033[16~"},
+  {"F7",        "F7",  "\033[17~"},
+  {"F8",        "F8",  "\033[18~"},
+  {"F9",        "F9",  "\033[19~"},
+  {"F9",        "F9",  "\033[20~"},
+  {"F10",       "F10", "\033[21~"},
+  {"F11",       "F11", "\033[22~"},
+  {"F12",       "F12", "\033[23~"},
+  {"tab",       "↹",  {9, '\0'}},
+  {"shift-tab", "shift+↹",  "\033[Z"},
+  {"backspace", "⌫",  {127, '\0'}},
+  {"space",     "␣",   " "},
+  {"esc",        "␛",  "\033"},
+  {"return",    "⏎",  {10,0}},
+  {"return",    "⏎",  {13,0}},
+  /* this section could be autogenerated by code */
+  {"control-a", "^A",  {1,0}},
+  {"control-b", "^B",  {2,0}},
+  {"control-c", "^C",  {3,0}},
+  {"control-d", "^D",  {4,0}},
+  {"control-e", "^E",  {5,0}},
+  {"control-f", "^F",  {6,0}},
+  {"control-g", "^G",  {7,0}},
+  {"control-h", "^H",  {8,0}}, /* backspace? */
+  {"control-i", "^I",  {9,0}},
+  {"control-j", "^J",  {10,0}},
+  {"control-k", "^K",  {11,0}},
+  {"control-l", "^L",  {12,0}},
+  {"control-n", "^N",  {14,0}},
+  {"control-o", "^O",  {15,0}},
+  {"control-p", "^P",  {16,0}},
+  {"control-q", "^Q",  {17,0}},
+  {"control-r", "^R",  {18,0}},
+  {"control-s", "^S",  {19,0}},
+  {"control-t", "^T",  {20,0}},
+  {"control-u", "^U",  {21,0}},
+  {"control-v", "^V",  {22,0}},
+  {"control-w", "^W",  {23,0}},
+  {"control-x", "^X",  {24,0}},
+  {"control-y", "^Y",  {25,0}},
+  {"control-z", "^Z",  {26,0}},
+  {"alt-0",     "%0",  "\0330"},
+  {"alt-1",     "%1",  "\0331"},
+  {"alt-2",     "%2",  "\0332"},
+  {"alt-3",     "%3",  "\0333"},
+  {"alt-4",     "%4",  "\0334"},
+  {"alt-5",     "%5",  "\0335"},
+  {"alt-6",     "%6",  "\0336"},
+  {"alt-7",     "%7",  "\0337"}, /* backspace? */
+  {"alt-8",     "%8",  "\0338"},
+  {"alt-9",     "%9",  "\0339"},
+  {"alt-+",     "%+",  "\033+"},
+  {"alt--",     "%-",  "\033-"},
+  {"alt-/",     "%/",  "\033/"},
+  {"alt-a",     "%A",  "\033a"},
+  {"alt-b",     "%B",  "\033b"},
+  {"alt-c",     "%C",  "\033c"},
+  {"alt-d",     "%D",  "\033d"},
+  {"alt-e",     "%E",  "\033e"},
+  {"alt-f",     "%F",  "\033f"},
+  {"alt-g",     "%G",  "\033g"},
+  {"alt-h",     "%H",  "\033h"}, /* backspace? */
+  {"alt-i",     "%I",  "\033i"},
+  {"alt-j",     "%J",  "\033j"},
+  {"alt-k",     "%K",  "\033k"},
+  {"alt-l",     "%L",  "\033l"},
+  {"alt-n",     "%N",  "\033m"},
+  {"alt-n",     "%N",  "\033n"},
+  {"alt-o",     "%O",  "\033o"},
+  {"alt-p",     "%P",  "\033p"},
+  {"alt-q",     "%Q",  "\033q"},
+  {"alt-r",     "%R",  "\033r"},
+  {"alt-s",     "%S",  "\033s"},
+  {"alt-t",     "%T",  "\033t"},
+  {"alt-u",     "%U",  "\033u"},
+  {"alt-v",     "%V",  "\033v"},
+  {"alt-w",     "%W",  "\033w"},
+  {"alt-x",     "%X",  "\033x"},
+  {"alt-y",     "%Y",  "\033y"},
+  {"alt-z",     "%Z",  "\033z"},
+  /* Linux Console  */
+  {"home",      "Home", "\033[1~"},
+  {"end",       "End",  "\033[4~"},
+  {"F1",        "F1",   "\033[[A"},
+  {"F2",        "F2",   "\033[[B"},
+  {"F3",        "F3",   "\033[[C"},
+  {"F4",        "F4",   "\033[[D"},
+  {"F5",        "F5",   "\033[[E"},
+  {"F6",        "F6",   "\033[[F"},
+  {"F7",        "F7",   "\033[[G"},
+  {"F8",        "F8",   "\033[[H"},
+  {"F9",        "F9",   "\033[[I"},
+  {"F10",       "F10",  "\033[[J"},
+  {"F11",       "F11",  "\033[[K"},
+  {"F12",       "F12",  "\033[[L"}, 
+  {NULL, }
+};
+
+static struct termios orig_attr;    /* in order to restore at exit */
+static int    nc_is_raw = 0;
+static int    atexit_registered = 0;
+static int    mouse_mode = NC_MOUSE_NONE;
+
+static void _nc_noraw (void)
+{
+  if (nc_is_raw && tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr) != -1)
+    nc_is_raw = 0;
+}
+
+static void
+nc_at_exit (void)
+{
+  printf (TERMINAL_MOUSE_OFF);
+  printf (XTERM_ALTSCREEN_OFF);
+  _nc_noraw();
+}
+
+static int _nc_raw (void)
+{
+  struct termios raw;
+  if (!isatty (STDIN_FILENO))
+    return -1;
+  if (!atexit_registered)
+    {
+      atexit (nc_at_exit);
+      atexit_registered = 1;
+    }
+  if (tcgetattr (STDIN_FILENO, &orig_attr) == -1)
+    return -1;
+  raw = orig_attr;  /* modify the original mode */
+  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+  raw.c_oflag &= ~(OPOST);
+  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+  raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
+  if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
+    return -1;
+  nc_is_raw = 1;
+  tcdrain(STDIN_FILENO);
+  tcflush(STDIN_FILENO, 1);
+  return 0;
+}
+
+static int match_keycode (const char *buf, int length, const NcKeyCode **ret)
+{
+  int i;
+  int matches = 0;
+
+  if (!strncmp (buf, "\033[M", MIN(length,3)))
+    {
+      if (length >= 6)
+        return 9001;
+      return 2342;
+    }
+  for (i = 0; keycodes[i].nick; i++)
+    if (!strncmp (buf, keycodes[i].sequence, length))
+      {
+        matches ++;
+        if ((int)strlen (keycodes[i].sequence) == length && ret)
+          {
+            *ret = &keycodes[i];
+            return 1;
+          }
+      }
+  if (matches != 1 && ret)
+    *ret = NULL;
+  return matches==1?2:matches;
+}
+
+static void nc_resize_term (int  dummy)
+{
+  size_changed = 1;
+}
+
+int ctx_has_event (Ctx  *n, int delay_ms)
+{
+  struct timeval tv;
+  int retval;
+  fd_set rfds;
+
+  if (size_changed)
+    return 1;
+  FD_ZERO (&rfds);
+  FD_SET (STDIN_FILENO, &rfds);
+  tv.tv_sec = 0; tv.tv_usec = delay_ms * 1000; 
+  retval = select (1, &rfds, NULL, NULL, &tv);
+  if (size_changed)
+    return 1;
+  return retval == 1 && retval != -1;
+}
+
+static const char *mouse_get_event_int (Ctx *n, int *x, int *y)
+{
+  static int prev_state = 0;
+  const char *ret = "mouse-motion";
+  float relx, rely;
+  signed char buf[3];
+  read (n->mouse_fd, buf, 3);
+  relx = buf[1];
+  rely = -buf[2];
+
+  n->mouse_x += relx * 0.1;
+  n->mouse_y += rely * 0.1;
+
+  if (n->mouse_x < 1) n->mouse_x = 1;
+  if (n->mouse_y < 1) n->mouse_y = 1;
+  if (n->mouse_x >= n->events.width)  n->mouse_x = n->events.width;
+  if (n->mouse_y >= n->events.height) n->mouse_y = n->events.height;
+
+  if (x) *x = n->mouse_x;
+  if (y) *y = n->mouse_y;
+
+  if ((prev_state & 1) != (buf[0] & 1))
+    {
+      if (buf[0] & 1) ret = "mouse-press";
+    }
+  else if (buf[0] & 1)
+    ret = "mouse-drag";
+
+  if ((prev_state & 2) != (buf[0] & 2))
+    {
+      if (buf[0] & 2) ret = "mouse2-press";
+    }
+  else if (buf[0] & 2)
+    ret = "mouse2-drag";
+
+  if ((prev_state & 4) != (buf[0] & 4))
+    {
+      if (buf[0] & 4) ret = "mouse1-press";
+    }
+  else if (buf[0] & 4)
+    ret = "mouse1-drag";
+
+  prev_state = buf[0];
+  return ret;
+}
+
+static const char *mev_type = NULL;
+static int         mev_x = 0;
+static int         mev_y = 0;
+static int         mev_q = 0;
+
+static const char *mouse_get_event (Ctx  *n, int *x, int *y)
+{
+  if (!mev_q)
+    return NULL;
+  *x = mev_x;
+  *y = mev_y;
+  mev_q = 0;
+  return mev_type;
+}
+
+static int mouse_has_event (Ctx *n)
+{
+  struct timeval tv;
+  int retval;
+
+  if (mouse_mode == NC_MOUSE_NONE)
+    return 0;
+
+  if (mev_q)
+    return 1;
+
+  if (n->mouse_fd == 0)
+    return 0;
+  return 0;
+
+  {
+    fd_set rfds;
+    FD_ZERO (&rfds);
+    FD_SET(n->mouse_fd, &rfds);
+    tv.tv_sec = 0; tv.tv_usec = 0;
+    retval = select (n->mouse_fd+1, &rfds, NULL, NULL, &tv);
+  }
+
+  if (retval != 0)
+    {
+      int nx = 0, ny = 0;
+      const char *type = mouse_get_event_int (n, &nx, &ny);
+
+      if ((mouse_mode < NC_MOUSE_DRAG && mev_type && !strcmp (mev_type, "drag")) ||
+          (mouse_mode < NC_MOUSE_ALL && mev_type && !strcmp (mev_type, "motion")))
+        {
+          mev_q = 0;
+          return mouse_has_event (n);
+        }
+
+      if ((mev_type && !strcmp (type, mev_type) && !strcmp (type, "mouse-motion")) ||
+         (mev_type && !strcmp (type, mev_type) && !strcmp (type, "mouse1-drag")) ||
+         (mev_type && !strcmp (type, mev_type) && !strcmp (type, "mouse2-drag")))
+        {
+          if (nx == mev_x && ny == mev_y)
+          {
+            mev_q = 0;
+            return mouse_has_event (n);
+          }
+        }
+      mev_x = nx;
+      mev_y = ny;
+      mev_type = type;
+      mev_q = 1;
+    }
+  return retval != 0;
+}
+
+const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
+{
+  unsigned char buf[20];
+  int length;
+
+
+  if (x) *x = -1;
+  if (y) *y = -1;
+
+  if (!signal_installed)
+    {
+      _nc_raw ();
+      signal_installed = 1;
+      signal (SIGWINCH, nc_resize_term);
+    }
+  if (mouse_mode) // XXX too often to do it all the time!
+    printf(mouse_modes[mouse_mode]);
+
+  {
+    int elapsed = 0;
+    int got_event = 0;
+
+    do {
+      if (size_changed)
+        {
+          size_changed = 0;
+          return "size-changed";
+        }
+      got_event = mouse_has_event (n);
+      if (!got_event)
+        got_event = ctx_has_event (n, MIN(DELAY_MS, timeoutms-elapsed));
+      if (size_changed)
+        {
+          size_changed = 0;
+          return "size-changed";
+        }
+      /* only do this if the client has asked for idle events,
+       * and perhaps programmed the ms timer?
+       */
+      elapsed += MIN(DELAY_MS, timeoutms-elapsed);
+      if (!got_event && timeoutms && elapsed >= timeoutms)
+        return "idle";
+    } while (!got_event);
+  }
+
+  if (mouse_has_event (n))
+    return mouse_get_event (n, x, y);
+
+  for (length = 0; length < 10; length ++)
+    if (read (STDIN_FILENO, &buf[length], 1) != -1)
+      {
+        const NcKeyCode *match = NULL;
+
+        /* special case ESC, so that we can use it alone in keybindings */
+        if (length == 0 && buf[0] == 27)
+          {
+            struct timeval tv;
+            fd_set rfds;
+            FD_ZERO (&rfds);
+            FD_SET (STDIN_FILENO, &rfds);
+            tv.tv_sec = 0;
+            tv.tv_usec = 1000 * DELAY_MS;
+            if (select (1, &rfds, NULL, NULL, &tv) == 0)
+              return "esc";
+          }
+
+        switch (match_keycode ((void*)buf, length + 1, &match))
+          {
+            case 1: /* unique match */
+              if (!match)
+                return NULL;
+              return match->nick;
+              break;
+            case 9001: /* mouse event */
+              if (x) *x = ((unsigned char)buf[4]-32)*1.0;
+              if (y) *y = ((unsigned char)buf[5]-32)*1.0;
+              switch (buf[3])
+                {
+                  case 32: return "mouse-press";
+                  case 33: return "mouse1-press";
+                  case 34: return "mouse2-press";
+                  case 40: return "alt-mouse-press";
+                  case 41: return "alt-mouse1-press";
+                  case 42: return "alt-mouse2-press";
+                  case 48: return "control-mouse-press";
+                  case 49: return "control-mouse1-press";
+                  case 50: return "control-mouse2-press";
+                  case 56: return "alt-control-mouse-press";
+                  case 57: return "alt-control-mouse1-press";
+                  case 58: return "alt-control-mouse2-press";
+                  case 64: return "mouse-drag";
+                  case 65: return "mouse1-drag";
+                  case 66: return "mouse2-drag";
+                  case 71: return "mouse-motion"; /* shift+motion */
+                  case 72: return "alt-mouse-drag";
+                  case 73: return "alt-mouse1-drag";
+                  case 74: return "alt-mouse2-drag";
+                  case 75: return "mouse-motion"; /* alt+motion */
+                  case 80: return "control-mouse-drag";
+                  case 81: return "control-mouse1-drag";
+                  case 82: return "control-mouse2-drag";
+                  case 83: return "mouse-motion"; /* ctrl+motion */
+                  case 91: return "mouse-motion"; /* ctrl+alt+motion */
+                  case 95: return "mouse-motion"; /* ctrl+alt+shift+motion */
+                  case 96: return "scroll-up";
+                  case 97: return "scroll-down";
+                  case 100: return "shift-scroll-up";
+                  case 101: return "shift-scroll-down";
+                  case 104: return "alt-scroll-up";
+                  case 105: return "alt-scroll-down";
+                  case 112: return "control-scroll-up";
+                  case 113: return "control-scroll-down";
+                  case 116: return "control-shift-scroll-up";
+                  case 117: return "control-shift-scroll-down";
+                  case 35: /* (or release) */
+                  case 51: /* (or ctrl-release) */
+                  case 43: /* (or alt-release) */
+                  case 67: return "mouse-motion";
+                           /* have a separate mouse-drag ? */
+                  default: {
+                             static char rbuf[100];
+                             sprintf (rbuf, "mouse (unhandled state: %i)", buf[3]);
+                             return rbuf;
+                           }
+                }
+            case 0: /* no matches, bail*/
+              { 
+                static char ret[256];
+                if (length == 0 && ctx_utf8_len (buf[0])>1) /* single unicode
+                                                               char */
+                  {
+                    read (STDIN_FILENO, &buf[length+1], ctx_utf8_len(buf[0])-1);
+                    buf[ctx_utf8_len(buf[0])]=0;
+                    strcpy (ret, (void*)buf);
+                    return ret;
+                  }
+                if (length == 0) /* ascii */
+                  {
+                    buf[1]=0;
+                    strcpy (ret, (void*)buf);
+                    return ret;
+                  }
+                sprintf (ret, "unhandled %i:'%c' %i:'%c' %i:'%c' %i:'%c' %i:'%c' %i:'%c' %i:'%c'",
+                  length>=0? buf[0]: 0, length>=0? buf[0]>31?buf[0]:'?': ' ', 
+                  length>=1? buf[1]: 0, length>=1? buf[1]>31?buf[1]:'?': ' ', 
+                  length>=2? buf[2]: 0, length>=2? buf[2]>31?buf[2]:'?': ' ', 
+                  length>=3? buf[3]: 0, length>=3? buf[3]>31?buf[3]:'?': ' ',
+                  length>=4? buf[4]: 0, length>=4? buf[4]>31?buf[4]:'?': ' ',
+                  length>=5? buf[5]: 0, length>=5? buf[5]>31?buf[5]:'?': ' ',
+                  length>=6? buf[6]: 0, length>=6? buf[6]>31?buf[6]:'?': ' ');
+                return ret;
+              }
+              return NULL;
+            default: /* continue */
+              break;
+          }
+      }
+    else
+      return "key read eek";
+  return "fail";
+}
+typedef struct _CtxBraille CtxBraille;
+
+struct _CtxBraille
+{
+   void (*render) (void *braille, CtxCommand *command);
+   void (*flush)  (void *braille);
+   void (*free)   (void *braille);
+   uint8_t *pixels;
+   Ctx     *ctx;
+   Ctx     *host;
+   int width;
+   int height;
+   int cols;
+   int rows;
+   int was_down;
+};
+
+int mrg_nct_consume_events (Ctx *ctx)
+{
+  int ix, iy;
+  CtxBraille *braille = (void*)ctx->renderer;
+  const char *event = NULL;
+    {
+      float x, y;
+      event = ctx_nct_get_event (ctx, 50, &ix, &iy);
+
+      x = (ix - 1.0 + 0.5) / braille->cols * ctx->events.width;
+      y = (iy - 1.0 + 0.5) / braille->rows * ctx->events.height;
+  //fprintf (stderr, "{%i %i %i %i\n", braille->cols, braille->rows, ctx->events.width, ctx->events.height);
+  //    x = ix * 2;
+  //    y = iy * 4;
+
+      if (!strcmp (event, "mouse-press"))
+      {
+        ctx_pointer_press (ctx, x, y, 0, 0);
+        braille->was_down = 1;
+      } else if (!strcmp (event, "mouse-release"))
+      {
+        ctx_pointer_release (ctx, x, y, 0, 0);
+      } else if (!strcmp (event, "mouse-motion"))
+      {
+        //nct_set_cursor_pos (backend->term, ix, iy);
+        //nct_flush (backend->term);
+        if (braille->was_down)
+        {
+          ctx_pointer_release (ctx, x, y, 0, 0);
+          braille->was_down = 0;
+        }
+        ctx_pointer_motion (ctx, x, y, 0, 0);
+      } else if (!strcmp (event, "mouse-drag"))
+      {
+        ctx_pointer_motion (ctx, x, y, 0, 0);
+      } else if (!strcmp (event, "size-changed"))
+      {
+#if 0
+        int width = nct_sys_terminal_width ();
+        int height = nct_sys_terminal_height ();
+        nct_set_size (backend->term, width, height);
+        width *= CPX;
+        height *= CPX;
+        free (mrg->glyphs);
+        free (mrg->styles);
+        free (backend->nct_pixels);
+        backend->nct_pixels = calloc (width * height * 4, 1);
+        mrg->glyphs = calloc ((width/CPX) * (height/CPX) * 4, 1);
+        mrg->styles = calloc ((width/CPX) * (height/CPX) * 1, 1);
+        mrg_set_size (mrg, width, height);
+        mrg_queue_draw (mrg, NULL);
+#endif
+      }
+      else
+      {
+        if (!strcmp (event, "esc"))
+          ctx_key_press (ctx, 0, "escape", 0);
+        else if (!strcmp (event, "space"))
+          ctx_key_press (ctx, 0, "space", 0);
+        else if (!strcmp (event, "enter"))
+          ctx_key_press (ctx, 0, "\n", 0);
+        else if (!strcmp (event, "return"))
+          ctx_key_press (ctx, 0, "\n", 0);
+        else
+        ctx_key_press (ctx, 0, event, 0);
+      }
+    }
+
+    //if (ctx_has_event (ctx, 25))
+    //  mrg_nct_consume_events (ctx);
+  return 1;
+}
+
+const char *ctx_key_get_label (Ctx  *n, const char *nick)
+{
+  int j;
+  int found = -1;
+  for (j = 0; keycodes[j].nick; j++)
+    if (found == -1 && !strcmp (keycodes[j].nick, nick))
+      return keycodes[j].label;
+  return NULL;
+}
+
+static void _ctx_mouse (Ctx *term, int mode)
+{
+  //if (term->is_st && mode > 1)
+  //  mode = 1;
+  if (mode != mouse_mode)
+  {
+    printf (mouse_modes[mode]);
+    fflush (stdout);
+  }
+  mouse_mode = mode;
+}
+
+
+static void ctx_braille_flush (CtxBraille *braille)
+{
+  int width =  braille->width;
+  int height = braille->height;
+  ctx_render_ctx (braille->ctx, braille->host);
+  printf ("\e[H");
+  _ctx_utf8_output_buf (braille->pixels,
+                        CTX_FORMAT_RGBA8,
+                        width, height, width * 4, 0);
+}
+
+void ctx_braille_free (CtxBraille *braille)
+{
+  nc_at_exit ();
+  fprintf (stderr, "it ends!\n");
+  free (braille->pixels);
+  ctx_free (braille->host);
+  free (braille);
+  /* we're not destoring the ctx member, this is function is called in ctx' teardown */
+}
+
+Ctx *ctx_new_braille (int width, int height)
+{
+  Ctx *ctx = ctx_new ();
+  CtxBraille *braille = calloc (sizeof (CtxBraille), 1);
+  if (width <= 0 || height <= 0)
+  {
+    width  = ctx_sys_terminal_width  () * 2;
+    height = (ctx_sys_terminal_height ()-1) * 4;
+  }
+  braille->ctx = ctx;
+  braille->width  = width;
+  braille->height = height;
+  braille->cols = (width + 1) / 2;
+  braille->rows = (height + 3) / 4;
+  braille->pixels = (uint8_t*)malloc (width * height * 4);
+  braille->host = ctx_new_for_framebuffer (braille->pixels,
+                  width, height,
+                  width * 4, CTX_FORMAT_RGBA8);
+  _ctx_mouse (ctx, NC_MOUSE_DRAG);
+  ctx_set_renderer (ctx, braille);
+  ctx_set_size (ctx, width, height);
+ // ctx_set_size (braille->host, width, height);
+  braille->flush = (void*)ctx_braille_flush;
+  braille->free  = (void*)ctx_braille_free;
+  return ctx;
+}
+
+Ctx *ctx_new_ui (int width, int height)
+{
+  return ctx_new_braille (width, height);
+ 
+  //
+  // look for ctx in terminal
+  // look for linux console
+  // look for kitty image protocol in terminal
+  // look for iterm2 image protocol in terminal
+  // look for sixels in terminal
+  // use braille
+}
 
 #endif
 
-#include "nct.h"
 
 #endif
 
