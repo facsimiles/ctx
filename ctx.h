@@ -529,14 +529,19 @@ int   ctx_add_timeout   (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_d
 int   ctx_add_idle_full (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                          void (*destroy_notify)(void *destroy_data), void *destroy_data);
 int   ctx_add_idle      (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data);
-void  ctx_listen_full   (Ctx     *ctx,
-                         CtxEventType  types,
-                         CtxCb    cb,
-                         void    *data1,
-                         void    *data2,
-                         void   (*finalize)(void *listen_data, void *listen_data2,
-                                            void *finalize_data),
-                         void    *finalize_data);
+
+void ctx_listen_full (Ctx     *ctx,
+                      float    x,
+                      float    y,
+                      float    width,
+                      float    height,
+                      CtxEventType  types,
+                      CtxCb    cb,
+                      void    *data1,
+                      void    *data2,
+                      void   (*finalize)(void *listen_data, void *listen_data2,
+                                         void *finalize_data),
+                      void    *finalize_data);
 void  ctx_event_stop_propagate (CtxEvent *event);
 void  ctx_listen               (Ctx          *ctx,
                                 CtxEventType  types,
@@ -3218,6 +3223,8 @@ struct _CtxEvents
   unsigned char    pointer_down[CTX_MAX_DEVICES];
   CtxEvent         drag_event[CTX_MAX_DEVICES];
   CtxList         *idles;
+  CtxList         *events; // for ctx_get_event
+  int              ctx_get_event_enabled;
   int              idle_id;
   CtxBinding       bindings[CTX_MAX_BINDINGS]; /*< better as list, uses no mem if unused */
   int              n_bindings;
@@ -3578,6 +3585,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
   {
      switch (command->code)
      {
+        // XXX missing many curve types
         case CTX_LINE_TO:
         case CTX_MOVE_TO:
           x = command->move_to.x;
@@ -13265,6 +13273,10 @@ path_equal (void *path,
 }
 
 void ctx_listen_full (Ctx     *ctx,
+                      float    x,
+                      float    y,
+                      float    width,
+                      float    height,
                       CtxEventType  types,
                       CtxCb    cb,
                       void    *data1,
@@ -13273,28 +13285,10 @@ void ctx_listen_full (Ctx     *ctx,
                                          void *finalize_data),
                       void    *finalize_data)
 {
-  float x, y, width, height;
-
   if (!ctx->events.frozen)
   {
     CtxItem *item;
 
-    /* generate bounding box of what to listen for - from current cairo path */
-    if (types & CTX_KEY)
-    {
-      x = 0;
-      y = 0;
-      width = 0;
-      height = 0;
-    }
-    else
-    {float ex1,ey1,ex2,ey2;
-     ctx_path_extents (ctx, &ex1, &ey1, &ex2, &ey2);
-     x = ex1;
-     y = ey1;
-     width = ex2 - ex1;
-     height = ey2 - ey1;
-    }
 
     /* early bail for listeners outside screen  */
     {
@@ -13376,9 +13370,28 @@ void ctx_listen (Ctx          *ctx,
                  void*         data1,
                  void*         data2)
 {
+  float x, y, width, height;
+  /* generate bounding box of what to listen for - from current cairo path */
+  if (types & CTX_KEY)
+  {
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+  }
+  else
+  {
+     float ex1,ey1,ex2,ey2;
+     ctx_path_extents (ctx, &ex1, &ey1, &ex2, &ey2);
+     x = ex1;
+     y = ey1;
+     width = ex2 - ex1;
+     height = ey2 - ey1;
+  }
+
   if (types == CTX_DRAG_MOTION)
     types = CTX_DRAG_MOTION | CTX_DRAG_PRESS;
-  return ctx_listen_full (ctx, types, cb, data1, data2, NULL, NULL);
+  return ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, NULL, NULL);
 }
 
 typedef struct _CtxGrab CtxGrab;
@@ -13574,6 +13587,29 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
     }
   }
   return 0;
+}
+
+const char *ctx_get_event (Ctx *ctx)
+{
+  char *ret = NULL;
+  static char *prev_ret = NULL;
+  if (!ctx->events.ctx_get_event_enabled)
+    ctx->events.ctx_get_event_enabled = 1;
+
+  if (prev_ret)
+  {
+    free (prev_ret);
+    prev_ret = NULL;
+  }
+
+  if (ctx->events.events)
+    {
+      ret = ctx->events.events->data;
+      ctx_list_remove (&ctx->events.events, ret);
+      ret = strdup (ret);
+      prev_ret = ret;
+    }
+  return ret;
 }
 
 static int
