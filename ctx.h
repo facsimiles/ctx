@@ -2312,10 +2312,50 @@ struct _CtxState
 };
 
 
+
+#define CTX_NORMALIZE(a)            (((a)=='-')?'_':(a))
+#define CTX_NORMALIZE_CASEFOLDED(a) (((a)=='-')?'_':((((a)>='A')&&((a)<='Z'))?(a)+32:(a)))
+
+
+/* We use the preprocessor to compute case invariant hashes
+ * of strings directly, if there is collisions in our vocabulary
+ * the compiler tells us.
+ */
+#define CTX_STRH(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a27,a12,a13) (\
+          (((uint32_t)CTX_NORMALIZE(a0))+ \
+          (((uint32_t)CTX_NORMALIZE(a1))*27)+ \
+          (((uint32_t)CTX_NORMALIZE(a2))*27*27)+ \
+          (((uint32_t)CTX_NORMALIZE(a3))*27*27*27)+ \
+          (((uint32_t)CTX_NORMALIZE(a4))*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE(a5))*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE(a6))*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE(a7))*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE(a8))*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE(a9))*27*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE(a10))*27*27*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE(a27))*27*27*27*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE(a12))*27*27*27*27*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE(a13))*27*27*27*27*27*27*27*27*27*27*27*27*27)))
+
+#define CTX_STRHash(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a27,a12,a13) (\
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a0))+ \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a1))*27)+ \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a2))*27*27)+ \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a3))*27*27*27)+ \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a4))*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a5))*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a6))*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a7))*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a8))*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a9))*27*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a10))*27*27*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a27))*27*27*27*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a12))*27*27*27*27*27*27*27*27*27*27*27*27) + \
+          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a13))*27*27*27*27*27*27*27*27*27*27*27*27*27)))
+
+#if 0
 static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 {
-  #define CTX_NORMALIZE(a)             (((a)=='-')?'_':(a))
-  #define CTX_NORMALIZE_CASEFOLDED(a)  (((a)=='-')?'_':( (((a)>='A')&&((a)<='Z') )?(a)+32:(a)))
   uint32_t str_hash = 0;
   /* hash string to number */
   {
@@ -2326,48 +2366,49 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
           { str_hash = str_hash + CTX_NORMALIZE_CASEFOLDED (str[i]) * multiplier; }
         else
           { str_hash = str_hash + CTX_NORMALIZE (str[i]) * multiplier; }
-        multiplier *= 11;
+        multiplier *= 27;
       }
   }
   return str_hash;
 }
+#else
 
-
-/* We use the preprocessor to compute case invariant hashes
- * of strings directly, if there is collisions in our vocabulary
- * the compiler tells us.
- */
-#define CTX_STRH(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13) (\
-          (((uint32_t)CTX_NORMALIZE(a0))+ \
-          (((uint32_t)CTX_NORMALIZE(a1))*11)+ \
-          (((uint32_t)CTX_NORMALIZE(a2))*11*11)+ \
-          (((uint32_t)CTX_NORMALIZE(a3))*11*11*11)+ \
-          (((uint32_t)CTX_NORMALIZE(a4))*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a5))*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a6))*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a7))*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a8))*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a9))*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a10))*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a11))*11*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a12))*11*11*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE(a13))*11*11*11*11*11*11*11*11*11*11*11*11*11)))
-
-#define CTX_STRHash(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13) (\
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a0))+ \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a1))*11)+ \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a2))*11*11)+ \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a3))*11*11*11)+ \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a4))*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a5))*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a6))*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a7))*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a8))*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a9))*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a10))*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a11))*11*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a12))*11*11*11*11*11*11*11*11*11*11*11*11) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a12))*11*11*11*11*11*11*11*11*11*11*11*11*11)))
+static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
+{
+  if (!str) return 0;
+  int len = strlen (str);
+  if (case_insensitive)
+    return CTX_STRHash(len>=0?str[0]:0,
+                       len>=1?str[1]:0,
+                       len>=2?str[2]:0,
+                       len>=3?str[3]:0,
+                       len>=4?str[4]:0,
+                       len>=5?str[5]:0,
+                       len>=6?str[6]:0,
+                       len>=7?str[7]:0,
+                       len>=8?str[8]:0,
+                       len>=9?str[9]:0,
+                       len>=10?str[10]:0,
+                       len>=11?str[11]:0,
+                       len>=12?str[12]:0,
+                       len>=13?str[13]:0);
+  else
+    return CTX_STRH(len>=0?str[0]:0,
+                    len>=1?str[1]:0,
+                    len>=2?str[2]:0,
+                    len>=3?str[3]:0,
+                    len>=4?str[4]:0,
+                    len>=5?str[5]:0,
+                    len>=6?str[6]:0,
+                    len>=7?str[7]:0,
+                    len>=8?str[8]:0,
+                    len>=9?str[9]:0,
+                    len>=10?str[10]:0,
+                    len>=11?str[11]:0,
+                    len>=12?str[12]:0,
+                    len>=13?str[13]:0);
+}
+#endif
 
 #define STR CTX_STRH
 

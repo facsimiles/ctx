@@ -530,7 +530,25 @@ int main (int argc, char **argv)
   int height = 80;
   float cols = 30;
   float rows = 5;
-  
+#if 0
+  for (int i = 0; i < 100000; i++)
+  {
+     char buf[1024];
+     sprintf (buf, "id-%i", i);
+     printf ("%i\n", ctx_strhash (buf ,0));
+     sprintf (buf, "id%i", i);
+     printf ("%i\n", ctx_strhash (buf ,0));
+     sprintf (buf, "foo-%i", i);
+     printf ("%i\n", ctx_strhash (buf ,0));
+     sprintf (buf, "class-%i", i);
+     printf ("%i\n", ctx_strhash (buf ,0));
+     sprintf (buf, "div%i", i);
+     printf ("%i\n", ctx_strhash (buf ,0));
+  }
+  return 0;
+#endif
+
+
   if (!argv[1])
     { return vt_main (argc, argv); }
   if (!strcmp (argv[1], "vt") )
