@@ -13660,14 +13660,19 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
   return 0;
 }
 #if CTX_EVENTS
+static int ctx_native_events = 1;
 int mrg_nct_consume_events (Ctx *ctx);
+int mrg_ctx_consume_events (Ctx *ctx);
 CtxEvent *ctx_get_event (Ctx *ctx)
 {
   static CtxEvent copy;
   if (!ctx->events.ctx_get_event_enabled)
     ctx->events.ctx_get_event_enabled = 1;
 
-  mrg_nct_consume_events (ctx);
+  if (ctx_native_events)
+    mrg_ctx_consume_events (ctx);
+  else
+    mrg_nct_consume_events (ctx);
 
   if (ctx->events.events)
     {
@@ -15162,6 +15167,58 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
       return "key read eek";
   return "fail";
 }
+
+const char *ctx_native_get_event (Ctx *n, int timeoutms)
+{
+  static unsigned char buf[256];
+  int length;
+
+  if (!signal_installed)
+    {
+      _nc_raw ();
+      signal_installed = 1;
+      signal (SIGWINCH, nc_resize_term);
+    }
+//if (mouse_mode) // XXX too often to do it all the time!
+//  printf(mouse_modes[mouse_mode]);
+
+  {
+    int elapsed = 0;
+    int got_event = 0;
+
+    do {
+      if (size_changed)
+        {
+          size_changed = 0;
+          return "size-changed";
+        }
+      got_event = ctx_has_event (n, MIN(DELAY_MS, timeoutms-elapsed));
+      if (size_changed)
+        {
+          size_changed = 0;
+          return "size-changed";
+        }
+      /* only do this if the client has asked for idle events,
+       * and perhaps programmed the ms timer?
+       */
+      elapsed += MIN(DELAY_MS, timeoutms-elapsed);
+      if (!got_event && timeoutms && elapsed >= timeoutms)
+        return "idle";
+    } while (!got_event);
+  }
+
+  for (length = 0; length < 200; length ++)
+    if (read (STDIN_FILENO, &buf[length], 1) != -1)
+      {
+         if (buf[length]=='\n')
+         {
+           buf[length]=0;
+           return buf;
+         }
+      }
+  return NULL;
+}
+
 typedef struct _CtxBraille CtxBraille;
 
 struct _CtxBraille
@@ -15184,68 +15241,67 @@ int mrg_nct_consume_events (Ctx *ctx)
   int ix, iy;
   CtxBraille *braille = (void*)ctx->renderer;
   const char *event = NULL;
+
+  {
+    float x, y;
+    event = ctx_nct_get_event (ctx, 50, &ix, &iy);
+
+    x = (ix - 1.0 + 0.5) / braille->cols * ctx->events.width;
+    y = (iy - 1.0)       / braille->rows * ctx->events.height;
+
+    if (!strcmp (event, "mouse-press"))
     {
-      float x, y;
-      event = ctx_nct_get_event (ctx, 50, &ix, &iy);
-
-      x = (ix - 1.0 + 0.5) / braille->cols * ctx->events.width;
-      y = (iy - 1.0)       / braille->rows * ctx->events.height;
-
-      if (!strcmp (event, "mouse-press"))
-      {
-        ctx_pointer_press (ctx, x, y, 0, 0);
-        braille->was_down = 1;
-      } else if (!strcmp (event, "mouse-release"))
+      ctx_pointer_press (ctx, x, y, 0, 0);
+      braille->was_down = 1;
+    } else if (!strcmp (event, "mouse-release"))
+    {
+      ctx_pointer_release (ctx, x, y, 0, 0);
+    } else if (!strcmp (event, "mouse-motion"))
+    {
+      //nct_set_cursor_pos (backend->term, ix, iy);
+      //nct_flush (backend->term);
+      if (braille->was_down)
       {
         ctx_pointer_release (ctx, x, y, 0, 0);
-      } else if (!strcmp (event, "mouse-motion"))
-      {
-        //nct_set_cursor_pos (backend->term, ix, iy);
-        //nct_flush (backend->term);
-        if (braille->was_down)
-        {
-          ctx_pointer_release (ctx, x, y, 0, 0);
-          braille->was_down = 0;
-        }
-        ctx_pointer_motion (ctx, x, y, 0, 0);
-      } else if (!strcmp (event, "mouse-drag"))
-      {
-        ctx_pointer_motion (ctx, x, y, 0, 0);
-      } else if (!strcmp (event, "size-changed"))
-      {
+        braille->was_down = 0;
+      }
+      ctx_pointer_motion (ctx, x, y, 0, 0);
+    } else if (!strcmp (event, "mouse-drag"))
+    {
+      ctx_pointer_motion (ctx, x, y, 0, 0);
+    } else if (!strcmp (event, "size-changed"))
+    {
 #if 0
-        int width = nct_sys_terminal_width ();
-        int height = nct_sys_terminal_height ();
-        nct_set_size (backend->term, width, height);
-        width *= CPX;
-        height *= CPX;
-        free (mrg->glyphs);
-        free (mrg->styles);
-        free (backend->nct_pixels);
-        backend->nct_pixels = calloc (width * height * 4, 1);
-        mrg->glyphs = calloc ((width/CPX) * (height/CPX) * 4, 1);
-        mrg->styles = calloc ((width/CPX) * (height/CPX) * 1, 1);
-        mrg_set_size (mrg, width, height);
-        mrg_queue_draw (mrg, NULL);
+      int width = nct_sys_terminal_width ();
+      int height = nct_sys_terminal_height ();
+      nct_set_size (backend->term, width, height);
+      width *= CPX;
+      height *= CPX;
+      free (mrg->glyphs);
+      free (mrg->styles);
+      free (backend->nct_pixels);
+      backend->nct_pixels = calloc (width * height * 4, 1);
+      mrg->glyphs = calloc ((width/CPX) * (height/CPX) * 4, 1);
+      mrg->styles = calloc ((width/CPX) * (height/CPX) * 1, 1);
+      mrg_set_size (mrg, width, height);
+      mrg_queue_draw (mrg, NULL);
 #endif
-      }
-      else
-      {
-        if (!strcmp (event, "esc"))
-          ctx_key_press (ctx, 0, "escape", 0);
-        else if (!strcmp (event, "space"))
-          ctx_key_press (ctx, 0, "space", 0);
-        else if (!strcmp (event, "enter"))
-          ctx_key_press (ctx, 0, "\n", 0);
-        else if (!strcmp (event, "return"))
-          ctx_key_press (ctx, 0, "\n", 0);
-        else
-        ctx_key_press (ctx, 0, event, 0);
-      }
     }
+    else
+    {
+      if (!strcmp (event, "esc"))
+        ctx_key_press (ctx, 0, "escape", 0);
+      else if (!strcmp (event, "space"))
+        ctx_key_press (ctx, 0, "space", 0);
+      else if (!strcmp (event, "enter"))
+        ctx_key_press (ctx, 0, "\n", 0);
+      else if (!strcmp (event, "return"))
+        ctx_key_press (ctx, 0, "\n", 0);
+      else
+      ctx_key_press (ctx, 0, event, 0);
+    }
+  }
 
-    //if (ctx_has_event (ctx, 25))
-    //  mrg_nct_consume_events (ctx);
   return 1;
 }
 
@@ -15254,6 +15310,46 @@ int mrg_ctx_consume_events (Ctx *ctx)
   int ix, iy;
   CtxBraille *braille = (void*)ctx->renderer;
   const char *event = NULL;
+  if (ctx_native_events)
+    {
+      float x = 0, y = 0;
+      char event_type[128]="";
+      event = ctx_native_get_event (ctx, 50);
+      {
+      FILE *file = fopen ("/tmp/log", "a");
+      fprintf (file, "[%s]\n", event);
+      fclose (file);
+      }
+      if (event)
+      {
+      sscanf (event, "%s %f %f", event_type, &x, &y);
+      if (!strcmp (event_type, "idle"))
+      {
+      }
+      else if (!strcmp (event_type, "mouse-press"))
+      {
+        ctx_pointer_press (ctx, x, y, 1, 0);
+      }
+      else if (!strcmp (event_type, "mouse-drag")||
+               !strcmp (event_type, "mouse-motion"))
+      {
+        ctx_pointer_motion (ctx, x, y, 1, 0);
+      }
+      else if (!strcmp (event_type, "mouse-release"))
+      {
+        ctx_pointer_release (ctx, x, y, 1, 0);
+      }
+      else if (!strcmp (event_type, "message"))
+      {
+        ctx_incoming_message (ctx, event + strlen ("message"), 0);
+      }
+      else
+      {
+        ctx_key_press (ctx, 0, event, 0);
+      }
+      }
+    }
+  else
     {
       float x, y;
       event = ctx_nct_get_event (ctx, 50, &ix, &iy);
@@ -15314,8 +15410,6 @@ int mrg_ctx_consume_events (Ctx *ctx)
       }
     }
 
-    //if (ctx_has_event (ctx, 25))
-    //  mrg_nct_consume_events (ctx);
   return 1;
 }
 
@@ -15404,7 +15498,6 @@ struct _CtxCtx
    int  rows;
 };
 
-static int ctx_native_events = 1;
 static void ctx_ctx_flush (CtxCtx *ctxctx)
 {
   if (ctx_native_events)
