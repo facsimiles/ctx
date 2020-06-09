@@ -440,11 +440,13 @@ int help_main (int argc, char **argv)
   if (argc &&  argv) {};
   printf (
     "Usage: ctx [options] <inputpath> [outputpath]\n"
+    "   or: ctx [options] <interpreter> [file] parameters\n"
     "\n"
     "The input path is a file format recognized by ctx, for rendering.\n"
     "\n"
     "ctx alone should launch a terminal, that is part of a session which\n"
-    "can have other clients\n"
+    "can have other clients. The interpreter cannot have the same extension\n"
+    "as one of the supported formats.\n"
     "\n"
     "options available:\n"
     "  --braille       unicode braille char output mode\n"
@@ -456,6 +458,8 @@ int help_main (int argc, char **argv)
     //  --color         use color in output\n"
     "  --width  pixels sets width of canvas\n"
     "  --height pixels sets height of canvas\n"
+    //"  --x      set pixel position of canvas (only means something when running in compositor)\n"
+    //"  --y      set pixel position of canvas (only means something when running in compositor\n"
     "  --rows   rows   configures number of em-rows, cols is implied\n");
   return 0;
 }
@@ -524,6 +528,7 @@ int main (int argc, char **argv)
 {
   const char *source_path = NULL;
   const char *dest_path = NULL;
+  int   source_arg_no = 1;
   //int width =  512;
   //int height = 512;
   int width =  160;
@@ -551,8 +556,6 @@ int main (int argc, char **argv)
 
   if (!argv[1])
     { return vt_main (argc, argv); }
-  if (!strcmp (argv[1], "vt") )
-    { return vt_main (argc - 1, argv + 1); }
   for (int i = 1; argv[i]; i++)
     {
       if (argv[i][0] == '-')
@@ -623,6 +626,7 @@ int main (int argc, char **argv)
           if (!source_path)
             {
               source_path = argv[i];
+              source_arg_no = i;
             }
           else
             {
@@ -706,8 +710,11 @@ int main (int argc, char **argv)
     }
   else
     {
-      fprintf (stderr, "unhandled input suffix\n");
-      exit (-1);
+      if (getenv ("CTX_VERSION"))
+      {
+        execvp (argv[source_arg_no], &argv[source_arg_no]);
+      }
+      return vt_main (argc-source_arg_no, &argv[source_arg_no]);
     }
 
   if (outputmode == CTX_OUTPUT_MODE_CTX)

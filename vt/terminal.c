@@ -300,6 +300,25 @@ void add_client (const char *commandline, int x, int y, int width, int height, i
   }
 }
 
+void add_client_argv (const char **argv, int x, int y, int width, int height, int ctx)
+{
+  VtString *string = vt_string_new ("");
+  for (int i = 0; argv[i]; i++)
+  {
+    for (int c = 0; argv[i][c]; c++)
+    {
+       switch (argv[i][c])
+       {
+         case '"':vt_string_append_str (string, "\\\"");break;
+         case '\'':vt_string_append_str (string, "\\\'");break;
+         default:vt_string_append_byte (string, argv[i][c]);break;
+       }
+    }
+    vt_string_append_byte (string, ' ');
+  }
+  add_client (string->str, x, y, width, height, ctx);
+  vt_string_free (string, 1);
+}
 
 extern float ctx_shape_cache_rate;
 
@@ -660,7 +679,7 @@ static int sdl_check_events ()
   }
 
 
-  if (ctx_ticks () - last_event_tick >  10000000)
+  if (ctx_ticks () - last_event_tick >  33333)
   { static char *idle = "idle";
     handle_event (idle);
     last_motion_x = -1;
@@ -792,9 +811,18 @@ int vt_main (int argc, char **argv)
   execute_self = malloc (strlen (argv[0]) + 16);
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
-  add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height/2, 0);
-  add_client ("/home/pippin/src/ctx/bash.sh", 0, height/2, width/2, height/2, 1);
-  add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
+
+  if (argv[1] == NULL)
+  {
+    add_client (vt_find_shell_command(), 0, 0, width, height/2, 0);
+  }
+  else
+  {
+    add_client_argv (&argv[1], 0, 0, width, height, 1);
+  }
+
+  //add_client ("/home/pippin/src/ctx/examples/bash.sh", 0, height/2, width/2, height/2, 1);
+  //add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
   signal (SIGCHLD,signal_child);
 
   int sleep_time = 10;
