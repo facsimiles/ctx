@@ -178,6 +178,7 @@ float ctx_get_line_width  (Ctx *ctx);
 float ctx_x               (Ctx *ctx);
 int   ctx_width           (Ctx *ctx);
 int   ctx_height          (Ctx *ctx);
+int   ctx_rev             (Ctx *ctx);
 float ctx_y               (Ctx *ctx);
 void  ctx_current_point   (Ctx *ctx, float *x, float *y);
 void  ctx_get_transform   (Ctx *ctx, float *a, float *b,
@@ -1181,6 +1182,14 @@ struct
     } s8;
   };
   CtxEntry next_entry; // also pads size of CtxCommand slightly.
+};
+
+typedef struct _CtxImplementation CtxImplementation;
+struct _CtxImplementation
+{
+  void (*process) (void *renderer, CtxCommand *entry);
+  void (*flush)   (void *renderer);
+  void (*free)    (void *renderer);
 };
 
 typedef struct _CtxIterator CtxIterator;
@@ -3080,13 +3089,6 @@ typedef struct CtxEdge
   uint16_t index;
 } CtxEdge;
 
-typedef struct _CtxImplementation CtxImplementation;
-struct _CtxImplementation
-{
-  void (*process) (void *renderer, CtxCommand *entry);
-  void (*flush)   (void *renderer);
-  void (*free)    (void *renderer);
-};
 
 struct _CtxRasterizer
 {
@@ -3260,6 +3262,7 @@ struct
   CtxState        state;        /**/
   int             transformation;
   CtxBuffer       texture[CTX_MAX_TEXTURES];
+  int             rev;
 #if CTX_EVENTS 
   CtxEvents       events;
   int             mouse_fd;
@@ -3282,6 +3285,10 @@ int   ctx_height          (Ctx *ctx)
   return ctx->events.height;
 }
 #endif
+int ctx_rev (Ctx *ctx)
+{
+  return ctx->rev;
+}
 
 const char *ctx_get_string (Ctx *ctx, uint32_t hash)
 {
@@ -4953,6 +4960,8 @@ ctx_exit (Ctx *ctx)
 void
 ctx_flush (Ctx *ctx)
 {
+  ctx->rev++;
+//  CTX_PROCESS_VOID (CTX_FLUSH);
 #if 0
   //printf (" \e[?2222h");
   ctx_renderstream_compact (&ctx->renderstream);
@@ -12450,6 +12459,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           { parser->exit (parser->exit_data);
             return;
           }
+        break;
+      case CTX_FLUSH:
+        ctx_flush (ctx);
         break;
       case CTX_CLEAR:
         ctx_clear (ctx);

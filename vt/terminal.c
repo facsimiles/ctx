@@ -45,6 +45,11 @@ int vtpty_waitdata (void  *data, int timeout)
 
 typedef struct _CT CT;
 
+typedef struct CTRenderer {
+   CtxImplementation vfuncs;
+   CT *ct;
+} CTRenderer;
+
 struct _CT
 {
   VtPty      vtpty;
@@ -61,7 +66,7 @@ struct _CT
   ssize_t (*read) (void *serial_obj, void *buf, size_t count);
   int    (*waitdata) (void *serial_obj, int timeout);
   void   (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
-
+  CTRenderer renderer;
   Ctx       *ctx;
   CtxParser *parser;
 };
@@ -141,7 +146,7 @@ int ct_poll (CT *ct, int timeout)
     }
   else
   {
-    ct->rev++;
+    //ct->rev++;
   }
   return got_data;
 }
@@ -177,6 +182,11 @@ static void ct_run_command (CT *vt, const char *command, int width, int height)
   //fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
 }
 
+static void ct_rev_inc (void *data)
+{
+   CT *ct = data;
+   ct->rev++;
+}
 
 CT *ct_new (const char *command, int width, int height, int id, void *pixels)
 {
@@ -190,9 +200,10 @@ CT *ct_new (const char *command, int width, int height, int id, void *pixels)
   ct->resize        = vtpty_resize;
   ct->done               = 0;
   ct->ctx = ctx_new ();
+  ct->renderer.ct = ct;
   _ctx_set_transformation (ct->ctx, 0);
           
-  ct->parser = ctx_parser_new (ct->ctx, width, height, width/40.0, height/20.0, 1, 1, NULL, NULL);
+  ct->parser = ctx_parser_new (ct->ctx, width, height, width/40.0, height/20.0, 1, 1, ct_rev_inc, ct);
   ctx_clear (ct->ctx);
 
   if (command)
@@ -679,7 +690,7 @@ static int sdl_check_events ()
   }
 
 
-  if (ctx_ticks () - last_event_tick >  33333)
+  if (ctx_ticks () - last_event_tick >  333333)
   { static char *idle = "idle";
     handle_event (idle);
     last_motion_x = -1;
@@ -750,14 +761,11 @@ int update_vt (CtxClient *client)
           SDL_UpdateTexture (client->texture, NULL,
                              (void *) client->pixels, vt_width * sizeof (Uint32) );
 #endif
+          return 1;
         }
       return 0;
 }
 
-long ct_rev (CT *ct)
-{
-  return ct->rev;
-}
 
 int ctx_count (Ctx *ctx);
 
@@ -774,9 +782,9 @@ int update_ct (CtxClient *client)
       return -1;
     }
 
-  if ( (client->drawn_rev != ct_rev (ct) ))
+  if ( (client->drawn_rev != ct->rev))
     {
-      client->drawn_rev = ct_rev (ct);
+      client->drawn_rev = ct->rev;
       Ctx *dctx = ctx_new_for_framebuffer (client->pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
@@ -800,6 +808,7 @@ int update_ct (CtxClient *client)
                              (void *) client->pixels, vt_width * sizeof (Uint32) );
 #endif
           ctx_free (dctx);
+          return 1;
         }
       return 0;
 }
@@ -818,7 +827,7 @@ int vt_main (int argc, char **argv)
   }
   else
   {
-    add_client_argv (&argv[1], 0, 0, width, height, 1);
+    add_client_argv ((void*)&argv[1], 0, 0, width, height, 1);
   }
 
   //add_client ("/home/pippin/src/ctx/examples/bash.sh", 0, height/2, width/2, height/2, 1);
@@ -828,20 +837,26 @@ int vt_main (int argc, char **argv)
   int sleep_time = 10;
   while (!do_quit)
     {
-again:
-      SDL_RenderClear (renderer);
+      int changes = 0;
       for (int no = 0; no < client_count; no++)
       {
           if (clients[no].vt)
           {
-          if (update_vt (&clients[no]))
-            goto again; // client is gone
+            if (update_vt (&clients[no]))
+              changes++;
           }
           else
           {
-          if (update_ct (&clients[no]))
-            goto again; // client is gone
+            if (update_ct (&clients[no]))
+              changes++;
           }
+      }
+
+      if (changes)
+      {
+      SDL_RenderClear (renderer);
+      for (int no = 0; no < client_count; no++)
+      {
           SDL_Rect SrcR;
           SDL_Rect DestR;
           SrcR.x = 0;
@@ -857,13 +872,16 @@ again:
           SDL_RenderCopy (renderer, clients[no].texture, &SrcR, &DestR);
         }
 
-      SDL_RenderPresent (renderer);
+        SDL_RenderPresent (renderer);
+      }
+      else
+      {
+         usleep (10000);
+      }
 
-      int got_event = 0;
-      //if (!in_scroll)
-        got_event = sdl_check_events ();
+      int got_event = sdl_check_events ();
 
-      if (got_event)
+      if (!got_event)
         {
           sleep_time = 200;
         }

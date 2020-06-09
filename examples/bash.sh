@@ -59,9 +59,11 @@ rectangle $((10+$v)) 50 30 30
 new_path
 arc($cx, $cy, $radius, 0.0, 6.4, 0);
 stroke  
+flush
 done
 "; 
 
+sleep 0.5
 v=$(($v+1))
 
 if [ $v -gt 1000 ];then
@@ -69,6 +71,7 @@ if [ $v -gt 1000 ];then
 fi
   read -s event
   while [ $event =~ "idle" ]; do read -s event; done;
+  while [ x"$event" != x"" ]; do
   case $event in
    "up")    cy=$(($cy - 1))   ;;
    "down")  cy=$(($cy + 1)) ;;
@@ -92,4 +95,9 @@ fi
         cy=`echo $event|cut -f 3 -d ' '`
         ;;
   esac
+  last_event=$event
+  event=""
+  read -t 0.1 -s event
+done
+event=$last_event
 done
