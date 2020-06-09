@@ -770,8 +770,8 @@ int update_ct (CtxClient *client)
 
 int vt_main (int argc, char **argv)
 {
-  static int width = 800;
-  static int height = 600;
+  int width = 80 * font_size/2;
+  int height = 24 * font_size;
   execute_self = malloc (strlen (argv[0]) + 16);
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
