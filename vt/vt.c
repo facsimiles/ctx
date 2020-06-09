@@ -4397,7 +4397,9 @@ void vt_feed_keystring (VT *vt, const char *str)
   // make optional? - reset of scroll on key input
   vt_set_scroll (vt, 0);
 
-  if (!strcmp (str, "shift-page-up") )
+  if (!strcmp (str, "idle") )
+     return;
+  else if (!strcmp (str, "shift-page-up") )
     {
       int new_scroll = vt_get_scroll (vt) + vt_get_rows (vt) /2;
       vt_set_scroll (vt, new_scroll);

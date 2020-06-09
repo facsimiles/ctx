@@ -15205,7 +15205,9 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
        */
       elapsed += MIN(DELAY_MS, timeoutms-elapsed);
       if (!got_event && timeoutms && elapsed >= timeoutms)
+      {
         return "idle";
+      }
     } while (!got_event);
   }
 
@@ -15215,7 +15217,7 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
          if (buf[length]=='\n')
          {
            buf[length]=0;
-           return buf;
+           return (void*)buf;
          }
       }
   return NULL;

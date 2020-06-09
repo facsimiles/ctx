@@ -211,7 +211,7 @@ pid_t       ct_get_pid (CT *ct)
 {
   return ct->vtpty.pid;
 }
-void        ct_feed_keystring     (CT *ct, const char *str)
+void ct_feed_keystring (CT *ct, const char *str)
 {
   vtpty_write ((void*)ct, str, strlen (str));
   vtpty_write ((void*)ct, "\n", 1);
@@ -268,8 +268,8 @@ static SDL_Renderer *renderer;
 void sdl_setup (int width, int height)
 {
   window = SDL_CreateWindow ("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
-  //renderer = SDL_CreateRenderer (window, -1, 0);
-  renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
+  renderer = SDL_CreateRenderer (window, -1, 0);
+  //renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
   SDL_StartTextInput ();
 
   SDL_EnableScreenSaver ();
@@ -283,8 +283,8 @@ void add_client (const char *commandline, int x, int y, int width, int height, i
   client->x = x;
   client->y = y;
 
-  client->vt_width = width;//( (int) (font_size/line_spacing + 0.999) ) * DEFAULT_COLS;
-  client->vt_height = height;//font_size * DEFAULT_ROWS;
+  client->vt_width = width;
+  client->vt_height = height;
   client->texture = SDL_CreateTexture (renderer,
                                    SDL_PIXELFORMAT_ARGB8888,
                                    SDL_TEXTUREACCESS_STREAMING,
@@ -462,6 +462,7 @@ static int sdl_check_events ()
 
   int last_motion_x = -1;
   int last_motion_y = -1;
+  static long last_event_tick = 0;
 
   event.type = 0;
     while (SDL_PollEvent (&event) )
@@ -491,7 +492,8 @@ static int sdl_check_events ()
               {
                 last_motion_x = event.motion.x;
                 last_motion_y = event.motion.y;
-                usleep (15000);
+                //usleep (15000);
+                usleep (5000);
                 got_event = 1;
               }
               break;
@@ -653,6 +655,21 @@ static int sdl_check_events ()
     handle_event (buf);
     last_motion_x = -1;
   }
+  else
+  {
+  }
+
+
+  if (ctx_ticks () - last_event_tick >  10000000)
+  { static char *idle = "idle";
+    handle_event (idle);
+    last_motion_x = -1;
+    got_event = 1;
+  }
+
+  if (got_event)
+    last_event_tick = ctx_ticks ();
+
   return got_event;
 }
 
@@ -776,7 +793,7 @@ int vt_main (int argc, char **argv)
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
   add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height/2, 0);
-  add_client ("/home/pippin/src/ctx/vt/foo.sh", 0, height/2, width/2, height/2, 1);
+  add_client ("/home/pippin/src/ctx/bash.sh", 0, height/2, width/2, height/2, 1);
   add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
   signal (SIGCHLD,signal_child);
 
