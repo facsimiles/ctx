@@ -6229,7 +6229,9 @@ static uint8_t palettes[][16][3]=
             {
               VtLine *line = l->data;
               int r = vt->rows - row;
-              if (line->string.str[0] == 0 && r < vt->rows)
+              if (line->string.str[0] == 0 && r < vt->rows && 0)
+                      // this being 0 is not enough, the string as used
+                      // here is not neccesarily null terminated.
               {
                 ctx_rectangle (ctx, x0, y - vt->ch, vt->cw * vt->cols, vt->ch);
         if (vt->reverse_video)

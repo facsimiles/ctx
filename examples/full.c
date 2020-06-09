@@ -7,10 +7,12 @@
 #define CTX_ENABLE_CM       0
 #define CTX_PARSER          0
 #define CTX_FORMATTER       0
+#define CTX_EVENTS          1
 #define CTX_BITPACK_PACKER  1
 #define CTX_GRADIENT_CACHE   0
 #define CTX_FONTS_FROM_FILE  1
 #define CTX_IMPLEMENTATION
+#define CTX_SVG
 
 #include "ctx.h"
 #include "svg.h"
@@ -68,8 +70,8 @@ int main (int argc, char **argv)
   }
 #endif
   {
-      Mrg *mrg = mrg_new (ctx, 100, 100);
-      mrg_print_xml (mrg, "abc");
+     Mrg *mrg = mrg_new (ctx, 100, 100);
+     mrg_print_xml (mrg, "abc");
   }
 
   ctx_free (ctx);
