@@ -166,6 +166,7 @@ static void ct_run_command (CT *vt, const char *command, int width, int height)
       unsetenv ("COLORTERM");
       unsetenv ("VTE_VERSION");
       setenv ("TERM", "ctx", 1);
+      setenv ("CTX_VERSION", "0", 1);
       system (command);
       exit (0);
     }
@@ -652,7 +653,6 @@ static int sdl_check_events ()
     handle_event (buf);
     last_motion_x = -1;
   }
-
   return got_event;
 }
 
@@ -700,7 +700,7 @@ int update_vt (CtxClient *client)
           ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
           ctx_free (ctx);
 
-#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
+#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
           dirty.w ++;
           dirty.h ++;
           if (dirty.x + dirty.w > vt_width)
@@ -747,7 +747,7 @@ int update_ct (CtxClient *client)
       ctx_render_ctx (ct->ctx, dctx);
       ctx_clear (ct->ctx);
 
-#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
+#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
           SDL_Rect dirty;
           ctx_dirty_rect (dctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
           dirty.w ++;
@@ -775,8 +775,8 @@ int vt_main (int argc, char **argv)
   execute_self = malloc (strlen (argv[0]) + 16);
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
-  add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height, 0);
-  //add_client ("/home/pippin/src/ctx/vt/foo.sh", 0, 0, width, height, 1);
+  add_client (argv[1]?argv[1]:vt_find_shell_command(), 0, 0, width, height/2, 0);
+  add_client ("/home/pippin/src/ctx/vt/foo.sh", 0, height/2, width/2, height/2, 1);
   add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
   signal (SIGCHLD,signal_child);
 
