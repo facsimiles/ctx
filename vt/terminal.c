@@ -1,3 +1,5 @@
+
+
 #define _DEFAULT_SOURCE
 
 #include <unistd.h>
@@ -18,6 +20,21 @@
 #include "ctx.h"
 #include "vt-line.h"
 #include "terminal.h"
+
+#define CTX_x            CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_y            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_lower_bottom CTX_STRH('l','o','w','e','r','-','b','o','t','t','o','m',0,0)
+#define CTX_lower        CTX_STRH('l','o','w','e','r',0,0,0,0,0,0,0,0,0)
+#define CTX_raise        CTX_STRH('r','a','i','s','e',0,0,0,0,0,0,0,0,0)
+#define CTX_raise_top    CTX_STRH('r','a','i','s','e','-','t','o','p',0,0,0,0,0)
+#define CTX_terminate    CTX_STRH('t','e','r','m','i','n','a','t','e',0,0,0,0,0)
+#define CTX_maximize     CTX_STRH('m','a','x','i','m','i','z','e',0,0,0,0,0,0)
+#define CTX_unmaximize   CTX_STRH('u','n','m','a','x','i','m','i','z','e',0,0,0,0)
+#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
+#define CTX_title        CTX_STRH('t','i','t','l','e',0,0,0,0,0,0,0,0,0)
+#define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
+#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
+
 
 int vtpty_waitdata (void  *data, int timeout)
 {
@@ -287,35 +304,52 @@ static SDL_Window   *window;
 static SDL_Renderer *renderer;
 
 static CtxClient *client_by_id (int id);
+
+static void client_unmaximize (CtxClient *client)
+{
+}
+static void client_maximize (CtxClient *client)
+{
+}
+static void client_raise (CtxClient *client)
+{
+}
+static void client_lower (CtxClient *client)
+{
+}
+static void client_raise_top (CtxClient *client)
+{
+}
+static void client_lower_bottom (CtxClient *client)
+{
+}
+void client_set_title (int id, const char *new_title);
+
 static int ct_set_prop (CT *ct, const char *key, const char *val, int len)
 {
   float fval = strtod (val, NULL);
   CtxClient *client = client_by_id (ct->id);
+  uint32_t key_hash = ctx_strhash (key, 0);
+  uint32_t val_hash = ctx_strhash (val, 0);
   if (!client)
     return 0;
-  if (!strcmp (key, "x"))
+  switch (key_hash)
   {
-    client->x = fval;
+    case CTX_title: client_set_title (ct->id, val); break;
+    case CTX_x: client->x = fval; break;
+    case CTX_y: client->y = fval; break;
+    case CTX_action:
+      switch (val_hash)
+      {
+        case CTX_maximize: client_maximize (client); break;
+        case CTX_unmaximize: client_unmaximize (client); break;
+        case CTX_lower: client_lower (client); break;
+        case CTX_lower_bottom: client_lower_bottom (client);  break;
+        case CTX_raise: client_raise (client); break;
+        case CTX_raise_top: client_raise_top (client); break;
+      }
+      break;
   }
-  if (!strcmp (key, "y"))
-  {
-    client->y = fval;
-  }
-#if 0
-  if (!strcmp (key, "action"))
-  {
-    if (!strcmp (val, "raise"))
-    {
-    }
-    else if (!strcmp (val, "lower"))
-    {
-    }
-    else if (!strcmp (val, "lower"))
-    {
-    }
-  }
-#endif
-  // width, height, title, action,
   ct->rev++;
   fprintf (stderr, "%s: %s %s %i\n", __FUNCTION__, key, val, len);
   return 1;
