@@ -639,6 +639,8 @@ typedef enum
   CTX_CLOSE_PATH       = 'z', //
   CTX_PRESERVE         = 'd', // - make the following fill, stroke or clip leave the path
 
+  CTX_SET              = 'Y', // keystring valuestring
+
   /* these commands have single byte binary representations,
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
@@ -13660,7 +13662,7 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
   return 0;
 }
 #if CTX_EVENTS
-static int ctx_native_events = 1;
+static int ctx_native_events = 0;
 int mrg_nct_consume_events (Ctx *ctx);
 int mrg_ctx_consume_events (Ctx *ctx);
 CtxEvent *ctx_get_event (Ctx *ctx)
@@ -15521,6 +15523,7 @@ Ctx *ctx_new_ctx (int width, int height)
 {
   Ctx *ctx = ctx_new ();
   CtxCtx *ctxctx = calloc (sizeof (CtxBraille), 1);
+  ctx_native_events = 1;
   if (width <= 0 || height <= 0)
   {
     ctxctx->cols = ctx_terminal_cols ();
@@ -15547,9 +15550,12 @@ Ctx *ctx_new_ctx (int width, int height)
 
 Ctx *ctx_new_ui (int width, int height)
 {
-  return ctx_new_ctx (width, height);
-
-  return ctx_new_braille (width, height);
+  if (getenv ("CTX_VERSION"))
+          // full blown ctx - in terminal or standalone
+    return ctx_new_ctx (width, height);
+  else
+          // braille in terminal
+    return ctx_new_braille (width, height);
  
   //
   // look for ctx in terminal <
