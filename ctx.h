@@ -2226,8 +2226,6 @@ struct _CtxGState
   CtxMatrix     transform;
   //CtxSource   source_stroke;
   CtxSource     source;
-  CtxColorModel color_model;
-  uint8_t       global_alpha_u8;
 
   float         global_alpha_f;
   float         line_width;
@@ -2246,6 +2244,8 @@ struct _CtxGState
   int           cmyk_space;
 #endif
 
+  uint8_t       global_alpha_u8;
+  CtxColorModel color_model;
   /* bitfield-pack small state-parts */
   CtxCompositingMode  compositing_mode:2;
   CtxBlend                  blend_mode:3;
@@ -10491,8 +10491,7 @@ typedef struct _CtxCairo CtxCairo;
 struct
   _CtxCairo
 {
-  void (*render_func) (CtxCairo *ctx_cairo, CtxCommand *entry);
-  void (*free) (void *ctx_cairo);
+  CtxImplementation impl;
   Ctx *ctx;
   cairo_t *cr;
   cairo_pattern_t *pat;
@@ -10785,21 +10784,35 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
   ctx_process (ctx_cairo->ctx, entry);
 }
 
+void ctx_cairo_free (CtxCairo *ctx_cairo)
+{
+  if (ctx_cairo->pat)
+    { cairo_pattern_destroy (ctx_cairo->pat); }
+  if (ctx_cairo->image)
+    { cairo_surface_destroy (ctx_cairo->image); }
+  free (ctx_cairo);
+}
+
 void
 ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 {
   CtxIterator iterator;
   CtxCommand *command;
-  CtxCairo    ctx_cairo = {ctx_cairo_process, NULL, ctx, cr, NULL, NULL};
+  CtxCairo    ctx_cairo = {{ctx_cairo_process, NULL, NULL}, ctx, cr, NULL, NULL};
   ctx_iterator_init (&iterator, &ctx->renderstream, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
     { ctx_cairo_process (&ctx_cairo, command); }
-  if (ctx_cairo.pat)
-    { cairo_pattern_destroy (ctx_cairo.pat); }
-  if (ctx_cairo.image)
-    { cairo_surface_destroy (ctx_cairo.image); }
 }
+
+Ctx *
+ctx_new_for_cairo (Ctx *ctx, cairo_t *cr)
+{
+  CtxCairo ctx_cairo = {{ctx_cairo_process, NULL, ctx_cairo_free}, ctx, cr, NULL, NULL};
+
+
+}
+
 #endif
 
 void
