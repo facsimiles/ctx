@@ -587,7 +587,6 @@ typedef enum
   CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius
   CTX_ARC              = 'B', // x y radius angle1 angle2 direction
   CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y
-  CTX_ROUND_RECTANGLE  = 'D', // x y width height radius
 
   CTX_STROKE           = 'E', //
   CTX_FILL             = 'F', //
@@ -621,6 +620,7 @@ typedef enum
   CTX_SAVE             = 'g',
   CTX_REL_HOR_LINE_TO  = 'h', // x
   CTX_TEXTURE          = 'i',
+  CTX_PRESERVE         = 'j', // - make the following fill, stroke or clip leave the path
 
   CTX_SET_KEY          = 'k', // - used together with another char to identify a key to set
   CTX_REL_LINE_TO      = 'l', // x y
@@ -638,10 +638,10 @@ typedef enum
   CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
   CTX_IDENTITY         = 'y', //
   CTX_CLOSE_PATH       = 'z', //
-  CTX_PRESERVE         = 'd', // - make the following fill, stroke or clip leave the path
 
-  CTX_SET              = 'Y', // keystring valuestring
-
+  CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
+  CTX_SET              = 'D', // key value -   will take over k/K spots
+  CTX_GET              = 'd', // key -
   /* these commands have single byte binary representations,
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
@@ -670,7 +670,7 @@ typedef enum
   // are used for internal purposes
   //
   // unused:  . , : backslash ! # $ % ^ { } < > ? & /
-  //          D d j i Y
+  //           i 
   //
   //
   CTX_CONT             = '\0', // - contains args from preceding entry

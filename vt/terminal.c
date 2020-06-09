@@ -690,7 +690,7 @@ static int sdl_check_events ()
   }
 
 
-  if (ctx_ticks () - last_event_tick >  333333)
+  if (ctx_ticks () - last_event_tick >  666666)
   { static char *idle = "idle";
     handle_event (idle);
     last_motion_x = -1;
@@ -876,7 +876,7 @@ int vt_main (int argc, char **argv)
       }
       else
       {
-         usleep (10000);
+         usleep (5000);
       }
 
       int got_event = sdl_check_events ();
