@@ -6228,12 +6228,29 @@ static uint8_t palettes[][16][3]=
           if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
             {
               VtLine *line = l->data;
+              int r = vt->rows - row;
+              if (line->string.str[0] == 0 && r < vt->rows)
+              {
+                ctx_rectangle (ctx, x0, y - vt->ch, vt->cw * vt->cols, vt->ch);
+        if (vt->reverse_video)
+          {
+            ctx_set_rgba (ctx, 1,1,1,1);
+            ctx_fill  (ctx);
+            ctx_set_rgba (ctx, 0,0,0,1);
+          }
+        else
+          {
+            ctx_set_rgba (ctx, 0,0,0,1);
+            ctx_fill  (ctx);
+            ctx_set_rgba (ctx, 1,1,1,1);
+          }
+                continue;
+              }
               const char *data = line->string.str;
               const char *d = data;
               float x = x0;
               uint64_t style = 0;
               uint32_t unichar = 0;
-              int r = vt->rows - row;
               int in_scrolling_region = vt->in_smooth_scroll && ( (r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
               int got_selection = 0;
               if (line->double_width)

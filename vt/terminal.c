@@ -649,7 +649,6 @@ static int sdl_check_events ()
       sprintf (buf, "mouse-motion %.0f %.0f",
                (float) last_motion_x - client->x,
                (float) last_motion_y - client->y);
-    fprintf (stderr, ".");
     handle_event (buf);
     last_motion_x = -1;
   }
