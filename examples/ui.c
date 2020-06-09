@@ -47,7 +47,7 @@ int main (int argc, char **argv)
     ctx_clear          (ctx);
     //ctx_set_rgba       (ctx, 0.5, 0.5, 0.5, 1);
     ctx_set_rgba       (ctx, 0.0, 0.0, 0.0, 1);
-    ctx_rectangle      (ctx, 0, 0, 160, 44);
+    ctx_rectangle      (ctx, 0, 0, ctx_width(ctx), ctx_height(ctx));
     ctx_fill           (ctx);
     ctx_move_to        (ctx, 10+x, 9);
     ctx_set_font_size  (ctx, 12 + x/4);
