@@ -275,8 +275,8 @@ void _ctx_set_transformation (Ctx *ctx, int transformation);
 #endif
 
 #if CTX_CAIRO
-void
-ctx_render_cairo (Ctx *ctx, cairo_t *cr);
+void  ctx_render_cairo  (Ctx *ctx, cairo_t *cr);
+Ctx * ctx_new_for_cairo (cairo_t *cr);
 #endif
 
 void ctx_render_stream (Ctx *ctx, FILE *stream, int formatter);
@@ -10798,7 +10798,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 {
   CtxIterator iterator;
   CtxCommand *command;
-  CtxCairo    ctx_cairo = {{ctx_cairo_process, NULL, NULL}, ctx, cr, NULL, NULL};
+  CtxCairo    ctx_cairo = {{(void*)ctx_cairo_process, NULL, NULL}, ctx, cr, NULL, NULL};
   ctx_iterator_init (&iterator, &ctx->renderstream, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
@@ -10806,11 +10806,17 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 }
 
 Ctx *
-ctx_new_for_cairo (Ctx *ctx, cairo_t *cr)
+ctx_new_for_cairo (cairo_t *cr)
 {
-  CtxCairo ctx_cairo = {{ctx_cairo_process, NULL, ctx_cairo_free}, ctx, cr, NULL, NULL};
+  Ctx *ctx = ctx_new ();
+  CtxCairo *ctx_cairo = calloc(sizeof(CtxCairo),1);
+  ctx_cairo.free = ctx_cairo_free;
+  ctx_cairo.process = ctx_cairo_process;
+  ctx_cairo.ctx = ctx;
+  ctx_cairo.cr = cr;
 
-
+  ctx_set_renderer (ctx, (void*)ctx_cairo);
+  return ctx;
 }
 
 #endif
@@ -15396,13 +15402,14 @@ struct _CtxCtx
    int  rows;
 };
 
+static int ctx_native_events = 1;
 static void ctx_ctx_flush (CtxCtx *ctxctx)
 {
-  //int width =  ctxctx->width;
-  //int height = ctxctx->height;
-  //ctx_render_ctx (ctxctx->ctx, ctxctx->host);
+  if (ctx_native_events)
+    fprintf (stdout, "\e[?6150h");
   fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h clear\n");
-  ctx_render_stream (ctxctx->ctx, stdout, 1);
+  ctx_render_stream (ctxctx->ctx, stdout, 1);  //  XXX  should use 0
+                                               // but something broken, probably color
   fprintf (stdout, "\ndone\n\e");
   fflush (stdout);
 }
@@ -15413,6 +15420,7 @@ void ctx_ctx_free (CtxCtx *ctxctx)
   free (ctxctx);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
+
 
 Ctx *ctx_new_ctx (int width, int height)
 {
@@ -15433,7 +15441,8 @@ Ctx *ctx_new_ctx (int width, int height)
     ctxctx->rows = height / 24;
   }
   ctxctx->ctx = ctx;
-  _ctx_mouse (ctx, NC_MOUSE_DRAG);
+  if (!ctx_native_events)
+    _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_renderer (ctx, ctxctx);
   ctx_set_size (ctx, width, height);
   ctxctx->flush = (void*)ctx_ctx_flush;
