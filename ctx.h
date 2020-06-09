@@ -10799,7 +10799,6 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
     { cairo_pattern_destroy (ctx_cairo.pat); }
   if (ctx_cairo.image)
     { cairo_surface_destroy (ctx_cairo.image); }
-  ctx_free (ctx_cairo.ctx);
 }
 #endif
 
