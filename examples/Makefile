@@ -19,7 +19,7 @@ baseline: baseline.c ../ctx.h ../fonts/*.h Makefile
 	ccache $(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@
 ui: ui.c ../ctx.h ../fonts/*.h Makefile
-	musl-gcc -static $< -o $@ -I.. -I../fonts
+	ccache i686-linux-gnu-gcc $< -o $@ -lm -I.. -I../fonts -static
 tiny: tiny.c ../ctx.h ../fonts/*.h Makefile
 	ccache $(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 	strip -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag $@

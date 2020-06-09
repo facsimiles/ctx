@@ -296,7 +296,7 @@ void add_client (const char *commandline, int x, int y, int width, int height, i
   }
   else
   {
-    client->vt = vt_new (commandline, DEFAULT_COLS, DEFAULT_ROWS, font_size, line_spacing, client->id);
+    client->vt = vt_new (commandline, width/font_size*2, height/font_size, font_size, line_spacing, client->id);
   }
 }
 
