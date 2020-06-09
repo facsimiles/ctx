@@ -44,6 +44,7 @@ int vtpty_waitdata (void  *data, int timeout)
 
 
 typedef struct _CT CT;
+typedef struct _CtxClient CtxClient;
 
 typedef struct CTRenderer {
    CtxImplementation vfuncs;
@@ -62,10 +63,13 @@ struct _CT
   int        result;
   long       rev;
 
+  CtxClient *client;
+#if 0
   ssize_t (*write) (void *serial_obj, const void *buf, size_t count);
   ssize_t (*read) (void *serial_obj, void *buf, size_t count);
   int    (*waitdata) (void *serial_obj, int timeout);
   void   (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
+#endif
   CTRenderer renderer;
   Ctx       *ctx;
   CtxParser *parser;
@@ -188,22 +192,31 @@ static void ct_rev_inc (void *data)
    ct->rev++;
 }
 
+static int ct_set_prop (CT *ct, const char *key, const char *val, int len);
+static int ct_get_prop (CT *ct, const char *key, const char **val, int *len)
+{
+  fprintf (stderr, "%s: %s\n", __FUNCTION__, key);
+  return 0;
+}
+
 CT *ct_new (const char *command, int width, int height, int id, void *pixels)
 {
   CT *ct = calloc (sizeof (CT), 1);
   ct->id = id;
   ct->lastx = -1;
   ct->lasty = -1;
+#if 0
   ct->waitdata      = vtpty_waitdata;
   ct->read          = vtpty_read;
   ct->write         = vtpty_write;
   ct->resize        = vtpty_resize;
+#endif
   ct->done               = 0;
   ct->ctx = ctx_new ();
   ct->renderer.ct = ct;
   _ctx_set_transformation (ct->ctx, 0);
           
-  ct->parser = ctx_parser_new (ct->ctx, width, height, width/40.0, height/20.0, 1, 1, ct_rev_inc, ct);
+  ct->parser = ctx_parser_new (ct->ctx, width, height, width/40.0, height/20.0, 1, 1, (void*)ct_set_prop, (void*)ct_get_prop, ct, ct_rev_inc, ct);
   ctx_clear (ct->ctx);
 
   if (command)
@@ -236,13 +249,10 @@ void ct_destroy (CT *ct)
   free (ct);
 }
 
-
-
 #include "vt.h"
 
-
-typedef struct
-CtxClient {
+struct
+_CtxClient {
   VT *vt;
   CT *ct;
   SDL_Texture  *texture;
@@ -255,7 +265,7 @@ CtxClient {
   int           do_quit;
   long          drawn_rev;
   int           id;
-}CtxClient;
+};
 
 int   do_quit      = 0;
 float font_size    = 32.0;
@@ -275,6 +285,41 @@ static int active = 0; // active client
 
 static SDL_Window   *window;
 static SDL_Renderer *renderer;
+
+static CtxClient *client_by_id (int id);
+static int ct_set_prop (CT *ct, const char *key, const char *val, int len)
+{
+  float fval = strtod (val, NULL);
+  CtxClient *client = client_by_id (ct->id);
+  if (!client)
+    return 0;
+  if (!strcmp (key, "x"))
+  {
+    client->x = fval;
+  }
+  if (!strcmp (key, "y"))
+  {
+    client->y = fval;
+  }
+#if 0
+  if (!strcmp (key, "action"))
+  {
+    if (!strcmp (val, "raise"))
+    {
+    }
+    else if (!strcmp (val, "lower"))
+    {
+    }
+    else if (!strcmp (val, "lower"))
+    {
+    }
+  }
+#endif
+  // width, height, title, action,
+  ct->rev++;
+  fprintf (stderr, "%s: %s %s %i\n", __FUNCTION__, key, val, len);
+  return 1;
+}
 
 void sdl_setup (int width, int height)
 {
@@ -355,6 +400,13 @@ int id_to_no (int id)
           if (clients[i].id == id)
                   return i;
   return -1;
+}
+
+static CtxClient *client_by_id (int id)
+{
+  int no = id_to_no (id);
+  if (no < 0) return NULL;
+  return &clients[no];
 }
 
 void client_remove (int no)

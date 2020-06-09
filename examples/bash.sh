@@ -51,6 +51,7 @@ rectangle 20% 20% 60% 60%
 stroke
 rectangle 30% 30% 40% 40%
 stroke
+setkey \"x\" \"$v\"
 new_path
 rectangle $((10+$v)) 10 30 30
 rgba 0 0 1 1

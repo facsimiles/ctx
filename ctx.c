@@ -699,7 +699,7 @@ int main (int argc, char **argv)
       _file_get_contents (source_path, &contents, &length);
       if (contents)
         {
-          CtxParser *ctxp = ctx_parser_new (ctx, width, height, width/cols, height/rows, 1, 1, NULL, NULL);
+          CtxParser *ctxp = ctx_parser_new (ctx, width, height, width/cols, height/rows, 1, 1, NULL, NULL, NULL, NULL, NULL);
           for (int i = 0; contents[i]; i++)
             {
               ctx_parser_feed_byte (ctxp, contents[i]);

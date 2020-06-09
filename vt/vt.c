@@ -59,6 +59,20 @@
 #include "vt-line.h"
 #include "vt.h"
 
+#define CTX_x            CTX_STRH('x',0,0,0,0,,0,0,0,0,0,0,0,0,0)
+#define CTX_y            CTX_STRH('y',0,0,0,0,,0,0,0,0,0,0,0,0,0)
+#define CTX_lower_bottom CTX_STRH('l','o','w','e','r','-','b','o','t','t','o','m',0,0)
+#define CTX_lower        CTX_STRH('l','o','w','e','r',0,0,0,0,0,0,0,0,0)
+#define CTX_raise        CTX_STRH('r','a','i','s','e',0,0,0,0,0,0,0,0,0)
+#define CTX_raise_top    CTX_STRH('r','a','i','s','e','-','t','o','p',0,0,0,0,0)
+#define CTX_terminate    CTX_STRH('t','e','r','m','i','n','a','t','e',0,0,0,0,0)
+#define CTX_maximize     CTX_STRH('m','a','x','i','m','i','z','e',0,0,0,0,0,0)
+#define CTX_unmaximize   CTX_STRH('u','n','m','a','x','i','m','i','z','e',0,0,0,0)
+#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
+#define CTX_title        CTX_STRH('t','i','t','l','e',0,0,0,0,0,0,0,0,0)
+#define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
+#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
+
 #define VT_LOG_INFO     (1<<0)
 #define VT_LOG_CURSOR   (1<<1)
 #define VT_LOG_COMMAND  (1<<2)
@@ -2198,7 +2212,7 @@ qagain:
                 vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                                            vt->cols * vt->cw, vt->rows * vt->ch,
                                            vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
-                                           vt_ctx_exit, vt);
+                                           NULL, NULL, NULL, vt_ctx_exit, vt);
                 vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
                 vt->state = vt_state_ctx;
               }

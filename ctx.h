@@ -1617,15 +1617,18 @@ static inline int ctx_color_model_get_components (CtxColorModel model)
 
 typedef struct _CtxParser CtxParser;
 CtxParser *ctx_parser_new (
-  Ctx    *ctx,
-  int     width,
-  int     height,
-  float   cell_width,
-  float   cell_height,
-  int     cursor_x,
-  int     cursor_y,
-  void  (*exit) (void *exit_data),
-  void   *exit_data);
+  Ctx       *ctx,
+  int        width,
+  int        height,
+  float      cell_width,
+  float      cell_height,
+  int        cursor_x,
+  int        cursor_y,
+  int   (*set_prop)(void *prop_data, const char *key, const char *data,  int len),
+  int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
+  void  *prop_data,
+  void (*exit) (void *exit_data),
+  void *exit_data);
 void
 ctx_parser_set_size (CtxParser *parser,
                  int        width,
@@ -2587,6 +2590,12 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 #define CTX_laba         CTX_STRH('l','a','b','a',0,0,0,0,0,0,0,0,0,0)
 #define CTX_lch          CTX_STRH('l','c','h',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_lcha         CTX_STRH('l','c','h','a',0,0,0,0,0,0,0,0,0,0)
+
+
+#define CTX_x            CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_w            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_setkey       CTX_STRH('s','e','t','k','e','y',0,0,0,0,0,0,0,0)
+#define CTX_getkey       CTX_STRH('g','e','t','k','e','y',0,0,0,0,0,0,0,0)
 
 static float ctx_state_get (CtxState *state, uint32_t hash)
 {
@@ -11503,6 +11512,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
 struct
   _CtxParser
 {
+  int        t_args; // total number of arguments seen for current command
   Ctx       *ctx;
   int        state;
 #define CTX_PARSER_MAXLEN  1024
@@ -11515,6 +11525,7 @@ struct
   int        decimal;
   CtxCode    command;
   int        n_args;
+  uint8_t    set_key[16]; /*  */
   float      pcx;
   float      pcy;
   int        color_components;
@@ -11529,6 +11540,9 @@ struct
 
   void (*exit) (void *exit_data);
   void *exit_data;
+  int   (*set_prop)(void *prop_data, const char *key, const char *data,  int len);
+  int   (*get_prop)(void *prop_data, const char *key, char **data, int *len);
+  void *prop_data;
 };
 
 void
@@ -11557,6 +11571,9 @@ ctx_parser_init (CtxParser *parser,
                  float      cell_height,
                  int        cursor_x,
                  int        cursor_y,
+  int   (*set_prop)(void *prop_data, const char *key, const char *data,  int len),
+  int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
+                 void  *prop_data,
                  void (*exit) (void *exit_data),
                  void *exit_data
                 )
@@ -11575,6 +11592,9 @@ ctx_parser_init (CtxParser *parser,
   parser->color_model      = CTX_RGBA;
   parser->color_components = 4;
   parser->command          = CTX_MOVE_TO;
+  parser->set_prop         = set_prop;
+  parser->get_prop         = get_prop;
+  parser->prop_data        = prop_data;
   return parser;
 }
 
@@ -11586,6 +11606,9 @@ CtxParser *ctx_parser_new (
   float      cell_height,
   int        cursor_x,
   int        cursor_y,
+  int   (*set_prop)(void *prop_data, const char *key, const char *data,  int len),
+  int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
+  void  *prop_data,
   void (*exit) (void *exit_data),
   void *exit_data)
 {
@@ -11593,7 +11616,7 @@ CtxParser *ctx_parser_new (
                            ctx,
                            width, height,
                            cell_width, cell_height,
-                           cursor_x, cursor_y,
+                           cursor_x, cursor_y, set_prop, get_prop, prop_data,
                            exit, exit_data);
 }
 
@@ -11655,6 +11678,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
       case CTX_RECTANGLE:
+      case CTX_ROUND_RECTANGLE:
       case CTX_REL_SMOOTH_TO:
       case CTX_MEDIA_BOX:
       case CTX_SMOOTH_TO:
@@ -11670,6 +11694,8 @@ static int ctx_arguments_for_code (CtxCode code)
         return 6;
       case CTX_TEXT_STROKE:
       case CTX_TEXT: // special case
+      case CTX_SET:
+      case CTX_GET:
         return 100; /* 100 is a special value,
                    which means string|number accepted
                  */
@@ -11680,34 +11706,33 @@ static int ctx_arguments_for_code (CtxCode code)
         return 201;  /* 201 means number of components+1 */
       case CTX_FUNCTION: /* special interpretation   */
         return 300;
-      default:
-#if 0
+        default:
+#if 1
       case CTX_TEXTURE:
-        CTX_SET_RGBA_U8
-        CTX_GRADIENT_CLEAR
-        CTX_BITPIX
-        CTX_BITPIX_DATA
-        CTX_NOP
-        CTX_NEW_EDGE
-        CTX_EDGE
-        CTX_EDGE_FLIPPED
-        CTX_REPEAT_HISTORY
-        CTX_CONT
-        CTX_DATA
-        CTX_DATA_REV
-        CTX_DEFINE_GLYPH
-        CTX_KERNING_PAIR
-        CTX_SET_PIXEL
-        CTX_REL_LINE_TO_X4
-        CTX_REL_LINE_TO_REL_CURVE_TO
-        CTX_REL_CURVE_TO_REL_LINE_TO
-        CTX_REL_CURVE_TO_REL_MOVE_TO
-        CTX_REL_LINE_TO_X2
-        CTX_MOVE_TO_REL_LINE_TO
-        CTX_REL_LINE_TO_REL_MOVE_TO
-        CTX_FILL_MOVE_TO
-        CTX_REL_QUAD_TO_REL_QUAD_TO
-        CTX_REL_QUAD_TO_S16
+        case CTX_SET_RGBA_U8:
+        case CTX_BITPIX:
+        case CTX_BITPIX_DATA:
+        case CTX_NOP:
+        case CTX_NEW_EDGE:
+        case CTX_EDGE:
+        case CTX_EDGE_FLIPPED:
+        case CTX_REPEAT_HISTORY:
+        case CTX_CONT:
+        case CTX_DATA:
+        case CTX_DATA_REV:
+        case CTX_DEFINE_GLYPH:
+        case CTX_KERNING_PAIR:
+        case CTX_SET_PIXEL:
+        case CTX_REL_LINE_TO_X4:
+        case CTX_REL_LINE_TO_REL_CURVE_TO:
+        case CTX_REL_CURVE_TO_REL_LINE_TO:
+        case CTX_REL_CURVE_TO_REL_MOVE_TO:
+        case CTX_REL_LINE_TO_X2:
+        case CTX_MOVE_TO_REL_LINE_TO:
+        case CTX_REL_LINE_TO_REL_MOVE_TO:
+        case CTX_FILL_MOVE_TO:
+        case CTX_REL_QUAD_TO_REL_QUAD_TO:
+        case CTX_REL_QUAD_TO_S16:
 #endif
         return 0;
     }
@@ -11720,6 +11745,7 @@ static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
     {
       parser->n_args = (parser->n_args % 100) + parser->color_components;
     }
+  //parser->t_args = 0;
 #if 0
   else if (parser->n_args >= 100)
     {
@@ -11753,181 +11779,91 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 #define CTX_function CTX_STRH('f','u','n','c','t','i','o','n',0,0,0,0,0,0)
 #define CTX_endfun CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
 
-          case CTX_function:
-            ret = CTX_FUNCTION;
-            break;
-          case CTX_endfun:
-            ret = CTX_ENDFUN;
-            break;
+          case CTX_function:  ret = CTX_FUNCTION; break;
+          case CTX_endfun:    ret = CTX_ENDFUN; break;
 #endif
           /* first a list of mappings to one_char hashes, handled in a
            * separate fast path switch without hashing
            */
           case CTX_arcTo:
-          case CTX_arc_to:
-            ret = CTX_ARC_TO;
-            break;
-          case CTX_arc:
-            ret = CTX_ARC;
-            break;
+          case CTX_arc_to:         ret = CTX_ARC_TO; break;
+          case CTX_arc:            ret = CTX_ARC; break;
           case CTX_curveTo:
-          case CTX_curve_to:
-            ret = CTX_CURVE_TO;
-            break;
-          case CTX_restore:
-            ret = CTX_RESTORE;
-            break;
-          case CTX_stroke:
-            ret = CTX_STROKE;
-            break;
-          case CTX_fill:
-            ret = CTX_FILL;
-            break;
+          case CTX_curve_to:       ret = CTX_CURVE_TO; break;
+          case CTX_setkey:         ret = CTX_SET; parser->t_args=0;break;
+          case CTX_getkey:         ret = CTX_GET; break;
+          case CTX_restore:        ret = CTX_RESTORE; break;
+          case CTX_stroke:         ret = CTX_STROKE; break;
+          case CTX_fill:           ret = CTX_FILL; break;
           case CTX_hor_line_to:
-          case CTX_horLineTo:
-            ret = CTX_HOR_LINE_TO;
-            break;
-          case CTX_rotate:
-            ret = CTX_ROTATE;
-            break;
-          case CTX_color:
-            ret = CTX_SET_COLOR;
-            break;
+          case CTX_horLineTo:      ret = CTX_HOR_LINE_TO; break;
+          case CTX_rotate:         ret = CTX_ROTATE; break;
+          case CTX_color:          ret = CTX_SET_COLOR; break;
           case CTX_line_to:
-          case CTX_lineTo:
-            ret = CTX_LINE_TO;
-            break;
+          case CTX_lineTo:         ret = CTX_LINE_TO; break;
           case CTX_move_to:
-          case CTX_moveTo:
-            ret = CTX_MOVE_TO;
-            break;
-          case CTX_scale:
-            ret = CTX_SCALE;
-            break;
+          case CTX_moveTo:         ret = CTX_MOVE_TO; break;
+          case CTX_scale:          ret = CTX_SCALE; break;
           case CTX_new_page:
-          case CTX_newPage:
-            ret = CTX_NEW_PAGE;
-            break;
+          case CTX_newPage:        ret = CTX_NEW_PAGE; break;
           case CTX_quad_to:
-          case CTX_quadTo:
-            ret = CTX_QUAD_TO;
-            break;
+          case CTX_quadTo:         ret = CTX_QUAD_TO; break;
           case CTX_media_box:
-          case CTX_mediaBox:
-            ret = CTX_MEDIA_BOX;
-            break;
+          case CTX_mediaBox:       ret = CTX_MEDIA_BOX; break;
           case CTX_smoothTo:
-          case CTX_smooth_to:
-            ret = CTX_SMOOTH_TO;
-            break;
+          case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
           case CTX_smoothQuadTo:
-          case CTX_smooth_quad_to:
-            ret = CTX_SMOOTHQ_TO;
-            break;
-          case CTX_clear:
-            ret = CTX_CLEAR;
-            break;
+          case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
+          case CTX_clear:          ret = CTX_CLEAR; break;
           case CTX_verLineTo:
-          case CTX_ver_line_to:
-            ret = CTX_VER_LINE_TO;
-            break;
+          case CTX_ver_line_to:    ret = CTX_VER_LINE_TO; break;
           case CTX_exit:
-          case CTX_done:
-            ret = CTX_EXIT;
-            break;
+          case CTX_done:           ret = CTX_EXIT; break;
           case CTX_close_path:
-          case CTX_closePath:
-            ret =  CTX_CLOSE_PATH;
-            break;
+          case CTX_closePath:      ret =  CTX_CLOSE_PATH; break;
           case CTX_new_path:
           case CTX_begin_path:
           case CTX_beginPath:
-          case CTX_newPath:
-            ret =  CTX_NEW_PATH;
-            break;
+          case CTX_newPath:        ret =  CTX_NEW_PATH; break;
           case CTX_rel_arc_to:
-          case CTX_relArcTo:
-            ret = CTX_REL_ARC_TO;
-            break;
-          case CTX_clip:
-            ret = CTX_CLIP;
-            break;
+          case CTX_relArcTo:       ret = CTX_REL_ARC_TO; break;
+          case CTX_clip:           ret = CTX_CLIP; break;
           case CTX_rel_curve_to:
-          case CTX_relCurveTo:
-            ret = CTX_REL_CURVE_TO;
-            break;
-          case CTX_save:
-            ret = CTX_SAVE;
-            break;
-          case CTX_translate:
-            ret = CTX_TRANSLATE;
-            break;
+          case CTX_relCurveTo:     ret = CTX_REL_CURVE_TO; break;
+          case CTX_save:           ret = CTX_SAVE; break;
+          case CTX_translate:      ret = CTX_TRANSLATE; break;
           case CTX_linear_gradient:
-          case CTX_linearGradient:
-            ret = CTX_LINEAR_GRADIENT;
-            break;
+          case CTX_linearGradient: ret = CTX_LINEAR_GRADIENT; break;
           case CTX_rel_hor_line_to:
-          case CTX_relHorLineTo:
-            ret = CTX_REL_HOR_LINE_TO;
-            break;
+          case CTX_relHorLineTo:   ret = CTX_REL_HOR_LINE_TO; break;
           case CTX_rel_line_to:
-          case CTX_relLineTo:
-            ret = CTX_REL_LINE_TO;
-            break;
+          case CTX_relLineTo:      ret = CTX_REL_LINE_TO; break;
           case CTX_relMoveTo:
-          case CTX_rel_move_to:
-            ret = CTX_REL_MOVE_TO;
-            break;
-          case CTX_font:
-            ret = CTX_SET_FONT;
-            break;
-          case CTX_radial_gradient:
-            ret = CTX_RADIAL_GRADIENT;
-            break;
+          case CTX_rel_move_to:    ret = CTX_REL_MOVE_TO; break;
+          case CTX_font:           ret = CTX_SET_FONT; break;
+          case CTX_radial_gradient:ret = CTX_RADIAL_GRADIENT; break;
           case CTX_gradient_add_stop:
           case CTX_gradientAddStop:
           case CTX_addStop:
-          case CTX_add_stop:
-            ret = CTX_GRADIENT_STOP;
-            break;
+          case CTX_add_stop:       ret = CTX_GRADIENT_STOP; break;
           case CTX_rel_quad_to:
-          case CTX_relQuadTo:
-            ret = CTX_REL_QUAD_TO;
-            break;
+          case CTX_relQuadTo:      ret = CTX_REL_QUAD_TO; break;
           case CTX_rectangle:
-          case CTX_rect:
-            ret = CTX_RECTANGLE;
-            break;
+          case CTX_rect:           ret = CTX_RECTANGLE; break;
           case CTX_round_rectangle:
-          case CTX_roundRectangle:
-            ret = CTX_ROUND_RECTANGLE;
-            break;
+          case CTX_roundRectangle: ret = CTX_ROUND_RECTANGLE; break;
           case CTX_rel_smooth_to:
-          case CTX_relSmoothTo:
-            ret = CTX_REL_SMOOTH_TO;
-            break;
+          case CTX_relSmoothTo:    ret = CTX_REL_SMOOTH_TO; break;
           case CTX_relSmoothqTo:
-          case CTX_rel_smoothq_to:
-            ret = CTX_REL_SMOOTHQ_TO;
-            break;
+          case CTX_rel_smoothq_to: ret = CTX_REL_SMOOTHQ_TO; break;
           case CTX_text_stroke:
-          case CTX_textStroke:
-            ret = CTX_TEXT_STROKE;
-            break;
+          case CTX_textStroke:     ret = CTX_TEXT_STROKE; break;
           case CTX_rel_ver_line_to:
-          case CTX_relVerLineTo:
-            ret = CTX_REL_VER_LINE_TO;
-            break;
-          case CTX_text:
-            ret = CTX_TEXT;
-            break;
-          case CTX_identity:
-            ret = CTX_IDENTITY;
-            break;
-          case CTX_transform:
-            ret = CTX_APPLY_TRANSFORM;
-            break;
-          // XXX: make it apply instead of set
+          case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
+          case CTX_text:           ret = CTX_TEXT; break;
+          case CTX_identity:       ret = CTX_IDENTITY; break;
+          case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
+
           case STR (CTX_SET_KEY,'m',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_rgb_space:
           case CTX_rgbSpace:
@@ -12025,43 +11961,25 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
             return ctx_parser_set_command (parser, CTX_SET_COLOR);
           /* words that correspond to low integer constants
           */
-          case CTX_winding:
-            return CTX_FILL_RULE_WINDING;
+          case CTX_winding:     return CTX_FILL_RULE_WINDING;
           case CTX_evenOdd:
-          case CTX_even_odd:
-            return CTX_FILL_RULE_EVEN_ODD;
-          case CTX_bevel:
-            return CTX_JOIN_BEVEL;
-          case CTX_round:
-            return CTX_JOIN_ROUND;
-          case CTX_miter:
-            return CTX_JOIN_MITER;
-          case CTX_none:
-            return CTX_CAP_NONE;
-          case CTX_square:
-            return CTX_CAP_SQUARE;
-          case CTX_start:
-            return CTX_TEXT_ALIGN_START;
-          case CTX_end:
-            return CTX_TEXT_ALIGN_END;
-          case CTX_left:
-            return CTX_TEXT_ALIGN_LEFT;
-          case CTX_right:
-            return CTX_TEXT_ALIGN_RIGHT;
-          case CTX_center:
-            return CTX_TEXT_ALIGN_CENTER;
-          case CTX_top:
-            return CTX_TEXT_BASELINE_TOP;
-          case CTX_bottom:
-            return CTX_TEXT_BASELINE_BOTTOM;
-          case CTX_middle:
-            return CTX_TEXT_BASELINE_MIDDLE;
-          case CTX_alphabetic:
-            return CTX_TEXT_BASELINE_ALPHABETIC;
-          case CTX_hanging:
-            return CTX_TEXT_BASELINE_HANGING;
-          case CTX_ideographic:
-            return CTX_TEXT_BASELINE_IDEOGRAPHIC;
+          case CTX_even_odd:    return CTX_FILL_RULE_EVEN_ODD;
+          case CTX_bevel:       return CTX_JOIN_BEVEL;
+          case CTX_round:       return CTX_JOIN_ROUND;
+          case CTX_miter:       return CTX_JOIN_MITER;
+          case CTX_none:        return CTX_CAP_NONE;
+          case CTX_square:      return CTX_CAP_SQUARE;
+          case CTX_start:       return CTX_TEXT_ALIGN_START;
+          case CTX_end:         return CTX_TEXT_ALIGN_END;
+          case CTX_left:        return CTX_TEXT_ALIGN_LEFT;
+          case CTX_right:       return CTX_TEXT_ALIGN_RIGHT;
+          case CTX_center:      return CTX_TEXT_ALIGN_CENTER;
+          case CTX_top:         return CTX_TEXT_BASELINE_TOP;
+          case CTX_bottom :     return CTX_TEXT_BASELINE_BOTTOM;
+          case CTX_middle:      return CTX_TEXT_BASELINE_MIDDLE;
+          case CTX_alphabetic:  return CTX_TEXT_BASELINE_ALPHABETIC;
+          case CTX_hanging:     return CTX_TEXT_BASELINE_HANGING;
+          case CTX_ideographic: return CTX_TEXT_BASELINE_IDEOGRAPHIC;
 #undef STR
 #undef LOWER
           default:
@@ -12128,6 +12046,26 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
                 (1.0 - parser->numbers[offset + 3]);
         break;
     }
+}
+
+static void ctx_parser_set (CtxParser *parser, const char *key,
+                            const char *value, int val_len)
+{
+  if (parser->set_prop)
+  {
+     parser->set_prop (parser->prop_data, key, value, val_len);
+  }
+}
+
+char *ctx_parser_get (CtxParser *parser, const char *key)
+{
+  char *ret = NULL;
+  int len = 0;
+  if (parser->get_prop)
+  {
+     parser->get_prop (parser->prop_data, key, &ret, &len);
+  }
+  return ret;
 }
 
 static void ctx_parser_dispatch_command (CtxParser *parser)
@@ -12351,6 +12289,29 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_SET_FONT:
         ctx_set_font (ctx, (char *) parser->holding);
         break;
+
+      case CTX_SET:
+        parser->t_args++;
+        if (parser->t_args % 2 == 1)
+        {
+           strncpy ((char*)parser->set_key, (char*)parser->holding, sizeof(parser->set_key)-1);
+           parser->set_key[15]=0;
+        }
+        else
+        {
+           ctx_parser_set (parser, (char*)parser->set_key, (char*)parser->holding, parser->pos);
+        }
+        parser->command = CTX_SET;
+        break;
+      case CTX_GET:
+        {
+        char *val = ctx_parser_get (parser, (char*)parser->holding);
+        if (val)
+          free (val);
+        parser->command = CTX_GET;
+        }
+        break;
+
       case CTX_TEXT_STROKE:
       case CTX_TEXT:
         if (parser->n_numbers == 1)
@@ -12860,6 +12821,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                 parser->state != CTX_PARSER_NEGATIVE_NUMBER) || new_neg)
             {
               parser->n_numbers ++;
+              //parser->t_args ++;
               if (parser->n_numbers == parser->n_args || parser->n_args == 100)
                 {
                   ctx_parser_dispatch_command (parser);
