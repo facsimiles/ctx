@@ -82,22 +82,22 @@ fi
    "-")     radius=$(($radius - 1)) ;;
    "q")  exit ;;
    "control-c") exit;;
-   "mouse-motion" ) 
+   *"mouse-motion"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
         ;;
-   "mouse-drag" ) 
+   *"mouse-drag"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
         ;;
-   "mouse-press" ) 
+   *"mouse-press"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
         ;;
   esac
   last_event=$event
   event=""
-  read -t 0.1 -s event
+  read -t 0.05 -s event
 done
 event=$last_event
 done
