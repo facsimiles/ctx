@@ -10491,7 +10491,7 @@ typedef struct _CtxCairo CtxCairo;
 struct
   _CtxCairo
 {
-  CtxImplementation impl;
+  CtxImplementation vfuncs;
   Ctx *ctx;
   cairo_t *cr;
   cairo_pattern_t *pat;
@@ -10810,10 +10810,10 @@ ctx_new_for_cairo (cairo_t *cr)
 {
   Ctx *ctx = ctx_new ();
   CtxCairo *ctx_cairo = calloc(sizeof(CtxCairo),1);
-  ctx_cairo.free = ctx_cairo_free;
-  ctx_cairo.process = ctx_cairo_process;
-  ctx_cairo.ctx = ctx;
-  ctx_cairo.cr = cr;
+  ctx_cairo->vfuncs.free = (void*)ctx_cairo_free;
+  ctx_cairo->vfuncs.process = (void*)ctx_cairo_process;
+  ctx_cairo->ctx = ctx;
+  ctx_cairo->cr = cr;
 
   ctx_set_renderer (ctx, (void*)ctx_cairo);
   return ctx;
@@ -14810,6 +14810,8 @@ nc_at_exit (void)
   printf (XTERM_ALTSCREEN_OFF);
   _nc_noraw();
   fprintf (stdout, "\e[2J\e[H\e[?25h");
+  //if (ctx_native_events)
+  fprintf (stdout, "\e[?6150l");
 }
 
 static int _nc_raw (void)
