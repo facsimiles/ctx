@@ -435,9 +435,8 @@ int parse_main (int argc, char **argv)
 //
 // can reuse other similar commands for this purpose.
 
-int help_main (int argc, char **argv)
+static int usage (void)
 {
-  if (argc &&  argv) {};
   printf (
     "Usage: ctx [options] <inputpath> [outputpath]\n"
     "   or: ctx [options] <interpreter> [file] parameters\n"
@@ -463,15 +462,6 @@ int help_main (int argc, char **argv)
     "  --rows   rows   configures number of em-rows, cols is implied\n");
   return 0;
 }
-
-
-//  ctx API
-//    nchanterm + ctx APIs
-//      braille
-//      sixels
-//      ctx
-//
-//
 
 
 int vt_main (int argc, char **argv);
@@ -596,6 +586,11 @@ int main (int argc, char **argv)
                   i++;
                 }
             }
+          if (!strcmp (argv[i], "--help") ||
+              !strcmp (argv[i], "--usage") ||
+              !strcmp (argv[i], "-h") )
+          { return usage();
+          }
           if (!strcmp ( argv[i], "--height") )
             {
               if (argv[i+1])
@@ -889,10 +884,5 @@ int main (int argc, char **argv)
       stbi_write_png (dest_path, width, height, 4, pixels, stride);
     }
   ctx_free (ctx);
-  exit (0);
-  if (!strcmp (argv[1], "parse") )
-    { return parse_main (argc - 1, argv + 1); }
-  if (!strcmp (argv[1], "--help") )
-    { return help_main (argc - 1, argv + 1); }
-  return help_main (1, argv);
+  return 0;
 }
