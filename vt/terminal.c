@@ -277,8 +277,13 @@ _CtxClient {
   char         *title;
   int           x;
   int           y;
-  int           vt_width;
-  int           vt_height;
+  int           width;
+  int           height;
+  int           maximized;
+  int           unmaximized_x;
+  int           unmaximized_y;
+  int           unmaximized_width;
+  int           unmaximized_height;
   int           do_quit;
   long          drawn_rev;
   int           id;
@@ -305,23 +310,66 @@ static SDL_Renderer *renderer;
 
 static CtxClient *client_by_id (int id);
 
+int client_resize (int id, int width, int height);
+
 static void client_unmaximize (CtxClient *client)
 {
+  if (!client->maximized)
+    return;
+  client->x = client->unmaximized_x;
+  client->y = client->unmaximized_y;
+  client_resize (client->id, client->unmaximized_width, client->unmaximized_height);
 }
 static void client_maximize (CtxClient *client)
 {
+  int w, h;
+  if (client->maximized)
+    return;
+
+  client->unmaximized_x = client->x;
+  client->unmaximized_y = client->y;
+  client->unmaximized_width = client->width;
+  client->unmaximized_height = client->height;
+  client->maximized = 1;
+  SDL_GetWindowSize (window, &w, &h);
+  client_resize (client->id, w, h);
+  client->x = 0;
+  client->y = 0;
 }
+int id_to_no (int id);
+
 static void client_raise (CtxClient *client)
 {
+  CtxClient temp;
+  int no = id_to_no (client->id);
+  if (no >= client_count-2)
+    return;
+  temp = clients[no];
+  clients[no] = clients[no+1];
+  clients[no+1] = temp;
 }
+
 static void client_lower (CtxClient *client)
 {
+  CtxClient temp;
+  int no = id_to_no (client->id);
+  if (no < 1)
+    return;
+  temp = clients[no];
+  clients[no] = clients[no-1];
+  clients[no-1] = temp;
 }
 static void client_raise_top (CtxClient *client)
 {
+  int no = id_to_no (client->id);
+  for (int i = no; i < client_count)
+    client_raise (client);
 }
 static void client_lower_bottom (CtxClient *client)
 {
+  int no = id_to_no (client->id);
+  for (int i = 0; i < no)
+    client_lower (client);
 }
 void client_set_title (int id, const char *new_title);
 
@@ -333,11 +381,25 @@ static int ct_set_prop (CT *ct, const char *key, const char *val, int len)
   uint32_t val_hash = ctx_strhash (val, 0);
   if (!client)
     return 0;
+
+// set "pcm-hz"       "8000"
+// set "pcm-bits"     "8"
+// set "pcm-encoding" "ulaw"
+// set "play-pcm"     "d41ata312313"
+// set "play-pcm-ref" "foo.wav"
+
+// get "free"
+// storage of blobs for referencing when drawing or for playback
+// set "foo.wav"      "\3\1\1\4\"
+// set "fnord.png"    "PNG12.4a312"
+
   switch (key_hash)
   {
-    case CTX_title: client_set_title (ct->id, val); break;
-    case CTX_x: client->x = fval; break;
-    case CTX_y: client->y = fval; break;
+    case CTX_title:  client_set_title (ct->id, val); break;
+    case CTX_x:      client->x = fval; break;
+    case CTX_y:      client->y = fval; break;
+    case CTX_width:  client_resize (ct->id, fval, client->height); break;
+    case CTX_height: client_resize (ct->id, client->width, fval); break;
     case CTX_action:
       switch (val_hash)
       {
@@ -358,8 +420,8 @@ static int ct_set_prop (CT *ct, const char *key, const char *val, int len)
 void sdl_setup (int width, int height)
 {
   window = SDL_CreateWindow ("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
-  renderer = SDL_CreateRenderer (window, -1, 0);
-  //renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
+  //renderer = SDL_CreateRenderer (window, -1, 0);
+  renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
   SDL_StartTextInput ();
 
   SDL_EnableScreenSaver ();
@@ -373,8 +435,8 @@ void add_client (const char *commandline, int x, int y, int width, int height, i
   client->x = x;
   client->y = y;
 
-  client->vt_width = width;
-  client->vt_height = height;
+  client->width = width;
+  client->height = height;
   client->texture = SDL_CreateTexture (renderer,
                                    SDL_PIXELFORMAT_ARGB8888,
                                    SDL_TEXTUREACCESS_STREAMING,
@@ -421,8 +483,8 @@ static int find_active (int x, int y)
   last_y = y;
   for (int i = 0; i < client_count; i++)
   {
-     if (x > clients[i].x && x < clients[i].x+clients[i].vt_width &&
-         y > clients[i].y && y < clients[i].y+clients[i].vt_height)
+     if (x > clients[i].x && x < clients[i].x+clients[i].width &&
+         y > clients[i].y && y < clients[i].y+clients[i].height)
              ret = i;
   }
   return ret;
@@ -547,7 +609,7 @@ int client_resize (int id, int width, int height)
    int no = id_to_no (id);
    if (no < 0) return 0;
 
-   if ( (height != clients[no].vt_height) || (width != clients[no].vt_width) )
+   if ( (height != clients[no].height) || (width != clients[no].width) )
    {
      SDL_DestroyTexture (clients[no].texture);
      clients[no].texture = SDL_CreateTexture (renderer,
@@ -556,8 +618,8 @@ int client_resize (int id, int width, int height)
                                   width, height);
      free (clients[no].pixels);
      clients[no].pixels = calloc (width * height, 4);
-     clients[no].vt_width = width;
-     clients[no].vt_height = height;
+     clients[no].width = width;
+     clients[no].height = height;
      if (clients[no].vt)
        vt_set_term_size (clients[no].vt, width / vt_cw (clients[no].vt), height / vt_ch (clients[no].vt) );
      else
@@ -792,8 +854,8 @@ static int sdl_check_events ()
 int update_vt (CtxClient *client)
 {
         VT *vt = client->vt;
-        int vt_width = client->vt_width;
-        int vt_height = client->vt_height;
+        int width = client->width;
+        int height = client->height;
         //int vt_x = client->x;
         //int vt_y = client->y;
         int in_scroll = (vt_has_blink (client->vt) >= 10);
@@ -818,7 +880,7 @@ int update_vt (CtxClient *client)
           // can be turned into threaded rendering.
           Ctx *ctx = ctx_new ();
           vt_draw (vt, ctx, 0, 0);
-          ctx_blit (ctx, client->pixels, 0,0, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
+          ctx_blit (ctx, client->pixels, 0,0, width, height, width * 4, CTX_FORMAT_BGRA8);
 #else
           // render directlty to framebuffer in immediate mode - skips
           // creation of renderstream.
@@ -826,7 +888,7 @@ int update_vt (CtxClient *client)
           // terminal is also keeping track of state of already drawn
           // pixels and often only repaints what is needed XXX  need API
           //                                              to force full draw
-          Ctx *ctx = ctx_new_for_framebuffer (client->pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
+          Ctx *ctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
           //fprintf (stderr, "%i\r", no);
           vt_draw (vt, ctx, 0, 0);
 #endif
@@ -836,16 +898,16 @@ int update_vt (CtxClient *client)
 #if 1 // < flipping this turns on subtexture updates, needs bounds tuning
           dirty.w ++;
           dirty.h ++;
-          if (dirty.x + dirty.w > vt_width)
-            { dirty.w = vt_width - dirty.x; }
-          if (dirty.y + dirty.h > vt_height)
-            { dirty.h = vt_height - dirty.y; }
+          if (dirty.x + dirty.w > width)
+            { dirty.w = width - dirty.x; }
+          if (dirty.y + dirty.h > height)
+            { dirty.h = height - dirty.y; }
           SDL_UpdateTexture (client->texture,
                              &dirty,
-                             (uint8_t *) client->pixels + sizeof (Uint32) * (vt_width * dirty.y + dirty.x), vt_width * sizeof (Uint32) );
+                             (uint8_t *) client->pixels + sizeof (Uint32) * (width * dirty.y + dirty.x), width * sizeof (Uint32) );
 #else
           SDL_UpdateTexture (client->texture, NULL,
-                             (void *) client->pixels, vt_width * sizeof (Uint32) );
+                             (void *) client->pixels, width * sizeof (Uint32) );
 #endif
           return 1;
         }
@@ -858,8 +920,8 @@ int ctx_count (Ctx *ctx);
 int update_ct (CtxClient *client)
 {
     CT *ct = client->ct;
-    int vt_width = client->vt_width;
-    int vt_height = client->vt_height;
+    int width = client->width;
+    int height = client->height;
     //int in_scroll;
    
     if (vt_is_done ((void*)ct) )
@@ -871,7 +933,7 @@ int update_ct (CtxClient *client)
   if ( (client->drawn_rev != ct->rev))
     {
       client->drawn_rev = ct->rev;
-      Ctx *dctx = ctx_new_for_framebuffer (client->pixels, vt_width, vt_height, vt_width * 4, CTX_FORMAT_BGRA8);
+      Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
       ctx_render_ctx (ct->ctx, dctx);
@@ -882,16 +944,16 @@ int update_ct (CtxClient *client)
           ctx_dirty_rect (dctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
           dirty.w ++;
           dirty.h ++;
-          if (dirty.x + dirty.w > vt_width)
-            { dirty.w = vt_width - dirty.x; }
-          if (dirty.y + dirty.h > vt_height)
-            { dirty.h = vt_height - dirty.y; }
+          if (dirty.x + dirty.w > width)
+            { dirty.w = width - dirty.x; }
+          if (dirty.y + dirty.h > height)
+            { dirty.h = height - dirty.y; }
           SDL_UpdateTexture (client->texture,
                              &dirty,
-                             (uint8_t *) client->pixels + sizeof (Uint32) * (vt_width * dirty.y + dirty.x), vt_width * sizeof (Uint32) );
+                             (uint8_t *) client->pixels + sizeof (Uint32) * (width * dirty.y + dirty.x), width * sizeof (Uint32) );
 #else
           SDL_UpdateTexture (client->texture, NULL,
-                             (void *) client->pixels, vt_width * sizeof (Uint32) );
+                             (void *) client->pixels, width * sizeof (Uint32) );
 #endif
           ctx_free (dctx);
           return 1;
@@ -947,13 +1009,13 @@ int vt_main (int argc, char **argv)
           SDL_Rect DestR;
           SrcR.x = 0;
           SrcR.y = 0;
-          SrcR.w = clients[no].vt_width;
-          SrcR.h = clients[no].vt_height;
+          SrcR.w = clients[no].width;
+          SrcR.h = clients[no].height;
 
           DestR.x = clients[no].x;
           DestR.y = clients[no].y;
-          DestR.w = clients[no].vt_width;
-          DestR.h = clients[no].vt_height;
+          DestR.w = clients[no].width;
+          DestR.h = clients[no].height;
 
           SDL_RenderCopy (renderer, clients[no].texture, &SrcR, &DestR);
         }

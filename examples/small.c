@@ -60,7 +60,7 @@ int main (int argc, char **argv)
   }
 #endif
   {
-       CtxParser *ctxp = ctx_parser_new (ctx, WIDTH, HEIGHT, WIDTH/20, HEIGHT/20, 1, 1, NULL, NULL);
+       CtxParser *ctxp = ctx_parser_new (ctx, WIDTH, HEIGHT, WIDTH/20, HEIGHT/20, 1, 1, NULL, NULL, NULL, NULL, NULL);
 
        for (int i = 0; i<3; i++)
        {
