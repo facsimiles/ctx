@@ -712,9 +712,9 @@ int main (int argc, char **argv)
     {
       if (getenv ("CTX_VERSION"))
       {
-        execvp (argv[source_arg_no], &argv[source_arg_no]);
+        execvp (argv[source_arg_no-1], &argv[source_arg_no-1]);
       }
-      return vt_main (argc-source_arg_no, &argv[source_arg_no]);
+      return vt_main (argc-source_arg_no-1, &argv[source_arg_no-1]);
     }
 
   if (outputmode == CTX_OUTPUT_MODE_CTX)
