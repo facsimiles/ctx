@@ -64,8 +64,11 @@ static inline void _vt_string_append_byte (VtString *string, char  val)
       char *old = string->str;
       string->allocated_length *= 2;
       string->str = malloc (string->allocated_length);
-      memcpy (string->str, old, string->allocated_length/2);
-      free (old);
+      if (old)
+      {
+        memcpy (string->str, old, string->allocated_length/2);
+        free (old);
+      }
     }
   string->str[string->length++] = val;
   string->str[string->length] = '\0';

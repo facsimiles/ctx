@@ -1,4 +1,4 @@
-SMALL_CFLAGS=-Os  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto
+SMALL_CFLAGS=-Os  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -fassociative-math -fsingle-precision-constant
 #SMALL_CFLAGS=-O2 -fomit-frame-pointer -flto
 
 report: ui tiny small baseline musl-static-tiny musl-static-small musl-static-baseline all

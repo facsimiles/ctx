@@ -677,17 +677,6 @@ typedef enum {
   MRG_CURSOR_ZOOM_OUT
 } MrgCursor;
 
-typedef enum {
-  MRG_LINE_CAP_BUTT,
-  MRG_LINE_CAP_ROUND,
-  MRG_LINE_CAP_SQUARE
-} MrgLineCap;
-
-typedef enum {
-  MRG_LINE_JOIN_MITER,
-  MRG_LINE_JOIN_ROUND,
-  MRG_LINE_JOIN_BEVEL
-} MrgLineJoin;
 
 typedef enum {
   MRG_UNICODE_BIDI_NORMAL = 0,
@@ -725,8 +714,8 @@ struct _MrgStyle {
   MrgFillRule         fill_rule:1;
   MrgFontStyle        font_style:3;
   MrgFontWeight       font_weight:4;
-  MrgLineCap          stroke_linecap:2;
-  MrgLineJoin         stroke_linejoin:2;
+  CtxLineCap          stroke_linecap:2;
+  CtxLineJoin         stroke_linejoin:2;
   MrgTextAlign        text_align:2;
   MrgPosition         position:2;
   MrgBoxSizing        box_sizing:1;
@@ -3985,20 +3974,20 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_stroke_linejoin:
       switch (val_hash)
       { 
-        case CTX_miter: s->stroke_linejoin = MRG_LINE_JOIN_MITER; break;
-        case CTX_round: s->stroke_linejoin = MRG_LINE_JOIN_ROUND; break;
-        case CTX_bevel: s->stroke_linejoin = MRG_LINE_JOIN_BEVEL; break;
-        default:        s->stroke_linejoin = MRG_LINE_JOIN_MITER;
+        case CTX_miter: s->stroke_linejoin = CTX_JOIN_MITER; break;
+        case CTX_round: s->stroke_linejoin = CTX_JOIN_ROUND; break;
+        case CTX_bevel: s->stroke_linejoin = CTX_JOIN_BEVEL; break;
+        default:        s->stroke_linejoin = CTX_JOIN_MITER;
       }
-      ctx_set_line_join (mrg_cr (mrg), s->stroke_linejoin);
+      ctx_set_line_join (mrg_cr (mrg), (CtxLineJoin)s->stroke_linejoin);
       break;
     case CTX_stroke_linecap:
       switch (val_hash)
       { 
-        case  CTX_butt:   s->stroke_linecap = MRG_LINE_CAP_BUTT; break;
-        case  CTX_round:  s->stroke_linecap = MRG_LINE_CAP_ROUND;break;
-        case  CTX_square: s->stroke_linecap = MRG_LINE_CAP_SQUARE; break;
-        default:          s->stroke_linecap = MRG_LINE_CAP_BUTT;
+        case  CTX_butt:   s->stroke_linecap = CTX_CAP_NONE; break;
+        case  CTX_round:  s->stroke_linecap = CTX_CAP_ROUND;break;
+        case  CTX_square: s->stroke_linecap = CTX_CAP_SQUARE; break;
+        default:          s->stroke_linecap = CTX_CAP_NONE;
       }
       ctx_set_line_cap (mrg_cr (mrg), s->stroke_linecap);
       break;

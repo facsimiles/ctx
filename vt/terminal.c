@@ -362,13 +362,13 @@ static void client_lower (CtxClient *client)
 static void client_raise_top (CtxClient *client)
 {
   int no = id_to_no (client->id);
-  for (int i = no; i < client_count)
+  for (int i = no; i < client_count; i++)
     client_raise (client);
 }
 static void client_lower_bottom (CtxClient *client)
 {
   int no = id_to_no (client->id);
-  for (int i = 0; i < no)
+  for (int i = 0; i < no; i ++)
     client_lower (client);
 }
 void client_set_title (int id, const char *new_title);
@@ -403,12 +403,12 @@ static int ct_set_prop (CT *ct, const char *key, const char *val, int len)
     case CTX_action:
       switch (val_hash)
       {
-        case CTX_maximize: client_maximize (client); break;
-        case CTX_unmaximize: client_unmaximize (client); break;
-        case CTX_lower: client_lower (client); break;
+        case CTX_maximize:     client_maximize (client); break;
+        case CTX_unmaximize:   client_unmaximize (client); break;
+        case CTX_lower:        client_lower (client); break;
         case CTX_lower_bottom: client_lower_bottom (client);  break;
-        case CTX_raise: client_raise (client); break;
-        case CTX_raise_top: client_raise_top (client); break;
+        case CTX_raise:        client_raise (client); break;
+        case CTX_raise_top:    client_raise_top (client); break;
       }
       break;
   }
