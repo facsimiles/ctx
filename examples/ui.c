@@ -24,6 +24,8 @@
 
 int main (int argc, char **argv)
 {
+  ctx_init (&argc, &argv);
+
   Ctx *ctx = ctx_new_ui (-1, -1);
   float x = 0;
 

@@ -64,14 +64,14 @@ flush
 done
 "; 
 
-sleep 0.5
+#sleep 0.5
 v=$(($v+1))
 
 if [ $v -gt 1000 ];then
   v=0
 fi
-  read -s event
-  while [ $event =~ "idle" ]; do read -s event; done;
+  read -s event -t 0.1
+  while [ $event = *"idle"* ]; do read -s event -t 0.1; done;
   while [ x"$event" != x"" ]; do
   case $event in
    "up")    cy=$(($cy - 1))   ;;
@@ -98,7 +98,7 @@ fi
   esac
   last_event=$event
   event=""
-  read -t 0.05 -s event
+  read -t 0.1 -s event
 done
 event=$last_event
 done

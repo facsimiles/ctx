@@ -4173,7 +4173,12 @@ ctx_get_drgba (Ctx *ctx, float *rgba)
 
 int ctx_in_fill (Ctx *ctx, float x, float y)
 {
-  //  XXX  NYI
+  float x1, y1, x2, y2;
+  ctx_path_extents (ctx, &x1, &y1, &x2, &y2);
+
+  if (x1 <= x && x <= x2 && // XXX - just bounding box for now
+      y1 <= y && y <= y2)   //
+    return 1;
   return 0;
 }
 
@@ -5849,7 +5854,7 @@ void _ctx_set_transformation (Ctx *ctx, int transformation)
 }
 
 static void
-ctx_init (Ctx *ctx)
+_ctx_init (Ctx *ctx)
 {
   ctx_state_init (&ctx->state);
   ctx->renderer = NULL;
@@ -5887,7 +5892,7 @@ ctx_new (void)
   Ctx *ctx = (Ctx *) malloc (sizeof (Ctx) );
 #endif
   ctx_memset (ctx, 0, sizeof (Ctx) );
-  ctx_init (ctx);
+  _ctx_init (ctx);
   return ctx;
 }
 
@@ -13019,6 +13024,23 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
 
 
 #if CTX_EVENTS
+
+void
+ctx_init (int *argc, char ***argv)
+{
+  if (!getenv ("CTX_VERSION"))
+  {
+    int i;
+    char *new_argv[*argc+3];
+    new_argv[0] = "ctx";
+    for (i = 0; i < *argc; i++)
+      new_argv[i+1] = *argv[i];
+    new_argv[i] = NULL;
+    execvp (new_argv[0], new_argv);
+    // if this fails .. we continue normal startup
+    // and end up in self-hosted braille
+  }
+}
 
 void _ctx_resized (Ctx *ctx, int width, int height, long time);
 
