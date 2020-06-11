@@ -493,9 +493,10 @@ struct _CtxEvent {
   int stop_propagate; /* */
 
   // would be nice to add the bounding box of the hit-area causing
-  // the event, making for instance scissored enter/leave repaint easy.
+  // the event, making for instance scissored enter/leave repaint easier.
 };
 
+// layer-event "layer"  motion x y device_no 
 
 void ctx_add_key_binding_full (Ctx *ctx,
                                const char *key,

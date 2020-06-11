@@ -66,22 +66,17 @@ done
   dirty=false
 fi
 
-  #v=$(($v+1))
-  #if [ $v -gt 1000 ];then
-  #  v=0
-  #fi
-
   IFS=$'\n' read -s event 
   case $event in
    "up")    cy=$(($cy - 1)) ;dirty=true  ;;
    "down")  cy=$(($cy + 1)) ;dirty=true  ;;
-   "right") cx=$(($cx + 1)) ;;
-   "left")  cx=$(($cx - 1)) ;;
-   "=")     radius=$(($radius + 1)) ;;
-   "+")     radius=$(($radius + 1)) ;;
-   "-")     radius=$(($radius - 1)) ;;
+   "right") cx=$(($cx + 1)) ;dirty=true  ;;
+   "left")  cx=$(($cx - 1)) ;dirty=true ;;
+   "=")     radius=$(($radius + 1)) ; dirty=true ;;
+   "+")     radius=$(($radius + 1)) ; dirty=true ;;
+   "-")     radius=$(($radius - 1)) ; dirty=true ;;
    "a")     echo -en "\e[?7020h\ngetkey \"foobar\" done\n"; dirty=true ;;
-   "b")     echo -en "\e[?7020h\ngetkey \"width\" done\n" ;;
+   "b")     echo -en "\e[?7020h\ngetkey \"width\" done\n"; dirty=true ;;
    "q")  exit ;;
    "idle") sleep 0.1 ;;
    "control-c") exit;;
@@ -99,6 +94,8 @@ fi
         cy=`echo $event|cut -f 3 -d ' '`
         dirty=true
         ;;
+    *) dirty=true
+            ;;
   esac
 done
 

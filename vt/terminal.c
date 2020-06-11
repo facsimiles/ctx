@@ -654,9 +654,16 @@ int client_resize (int id, int width, int height)
      clients[no].width = width;
      clients[no].height = height;
      if (clients[no].vt)
+     {
        vt_set_term_size (clients[no].vt, width / vt_cw (clients[no].vt), height / vt_ch (clients[no].vt) );
+     }
      else
+     {
+       char str[128];
        ctx_parser_set_size (clients[no].ct->parser, width, height, -1, -1);
+       sprintf (str, "resized %i %i\n", width, height);
+       vtpty_write ((void*)clients[no].ct, str, strlen (str));
+     }
 
      return 1;
    }
@@ -703,7 +710,11 @@ static int sdl_check_events ()
               {
                 last_motion_x = event.motion.x;
                 last_motion_y = event.motion.y;
-                usleep (15000);
+                if (pointer_down[0] == 0)
+                  usleep (20000);
+                else
+                  usleep (8000);
+                //usleep (15000);
                 //usleep (5000);
                 got_event = 1;
               }
@@ -1004,7 +1015,7 @@ int vt_main (int argc, char **argv)
 
   if (argv[1] == NULL)
   {
-    add_client (vt_find_shell_command(), 0, 0, width, height/2, 0);
+    add_client (vt_find_shell_command(), 0, 0, width, height, 0);
   }
   else
   {
