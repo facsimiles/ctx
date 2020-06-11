@@ -40,8 +40,17 @@ int main (int argc, char **argv)
   ctx_set_rgba (ctx, 0, 0, 0, 1);
   ctx_text_stroke (ctx, utf8);
   ctx_set_rgba8 (ctx, 255, 255, 255, 255);
+
+  ctx_fill (ctx);
   ctx_move_to (ctx, 10, 9);
   ctx_text (ctx, utf8);
+  ctx_new_path (ctx);
+  ctx_rectangle (ctx, 10, 10, 20, 24);
+  float x1, y1, x2, y2;
+  ctx_path_extents (ctx, &x1, &y1, &x2, &y2);
+  fprintf (stderr, "... %f %f %f %f\n", x1, y1, x2, y2);
+
+
 #ifndef REALLY_TINY
   static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
   int no = 0;

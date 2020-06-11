@@ -3624,6 +3624,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
 
   while ((command = ctx_iterator_next (iterator)))
   {
+     int got_coord = 0;
      switch (command->code)
      {
         // XXX missing many curve types
@@ -3631,29 +3632,48 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
         case CTX_MOVE_TO:
           x = command->move_to.x;
           y = command->move_to.y;
+          got_coord++;
           break;
         case CTX_REL_LINE_TO:
         case CTX_REL_MOVE_TO:
           x += command->move_to.x;
           y += command->move_to.y;
+          got_coord++;
           break;
         case CTX_CURVE_TO:
           x = command->curve_to.x;
           y = command->curve_to.y;
+          got_coord++;
           break;
         case CTX_REL_CURVE_TO:
           x += command->curve_to.x;
           y += command->curve_to.y;
+          got_coord++;
+          break;
+        case CTX_RECTANGLE:
+          x = command->rectangle.x;
+          y = command->rectangle.y;
+          minx = ctx_minf (minx, x);
+          miny = ctx_minf (miny, y);
+          maxx = ctx_maxf (maxx, x);
+          maxy = ctx_maxf (maxy, y);
+
+          x += command->rectangle.width;
+          y += command->rectangle.height;
+          got_coord++;
           break;
      }
-    minx = ctx_minf (minx, x);
-    miny = ctx_minf (miny, y);
-    maxx = ctx_minf (maxx, x);
-    maxy = ctx_minf (maxy, y);
+    if (got_coord)
+    {
+      minx = ctx_minf (minx, x);
+      miny = ctx_minf (miny, y);
+      maxx = ctx_maxf (maxx, x);
+      maxy = ctx_maxf (maxy, y);
+    }
   }
   if (ex1) *ex1 = minx;
-  if (ex2) *ex2 = maxx;
   if (ey1) *ey1 = miny;
+  if (ex2) *ex2 = maxx;
   if (ey2) *ey2 = maxy;
 }
 
@@ -9701,8 +9721,10 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       case CTX_NEW_PATH:
       case CTX_FILL:
       case CTX_STROKE:
+              // XXX unless preserve
         ctx->current_path.count = 0;
         break;
+      case CTX_CLOSE_PATH:
       case CTX_LINE_TO:
       case CTX_MOVE_TO:
       case CTX_QUAD_TO:
@@ -9716,6 +9738,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       case CTX_ARC:
       case CTX_ARC_TO:
       case CTX_REL_ARC_TO:
+      case CTX_RECTANGLE:
         ctx_renderstream_add_entry (&ctx->current_path, entry);
         break;
       default:
