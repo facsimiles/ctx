@@ -2919,18 +2919,18 @@ static void ctx_rgb_user_to_device (CtxState *state, float rin, float gin, float
                                     float *rout, float *gout, float *bout)
 {
   /* babl plug-in point */
-  *rout = rin;
-  *gout = gin;
-  *bout = bin;
+  *rout = rin ;
+  *gout = gin ;
+  *bout = bin ;
 }
 
 static void ctx_rgb_device_to_user (CtxState *state, float rin, float gin, float bin,
                                     float *rout, float *gout, float *bout)
 {
   /* babl plug-in point */
-  *rout = rin;
-  *gout = gin;
-  *bout = bin;
+  *rout = rin ;
+  *gout = gin ;
+  *bout = bin ;
 }
 #endif
 
@@ -3062,7 +3062,7 @@ static void ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
   if (! (color->valid & CTX_VALID_RGBA_U8) )
     {
       float rgba[4];
-      ctx_color_get_rgba (state, color, rgba);
+      ctx_color_get_drgba (state, color, rgba);
       for (int i = 0; i < 4; i ++)
         { color->rgba[i] = ctx_float_to_u8 (rgba[i]); }
       color->valid |= CTX_VALID_RGBA_U8;

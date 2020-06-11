@@ -22,6 +22,7 @@
 #define CTX_BITPACK_PACKER       1
 #define CTX_GRADIENT_CACHE       1
 #define CTX_ENABLE_CMYK          1
+#define CTX_ENABLE_CM            1
 #define CTX_SHAPE_CACHE          1
 #define CTX_SHAPE_CACHE_MAX_DIM  48
 #define CTX_SHAPE_CACHE_DIM      (48*48)
@@ -435,6 +436,39 @@ int parse_main (int argc, char **argv)
 //
 // can reuse other similar commands for this purpose.
 
+//
+//  capabilities:
+//     font-upload
+//     graphics-upload
+//     audio-output
+//     mic-input
+//     webcam-input
+//     launch
+//     add-layer
+//     set-layer
+//
+//     file-system-access
+//     location
+//
+//     list-clients        # for wm
+//     manipulate-clients  # for wm
+//
+// set cap-mic-input desired
+// set cap-mic-output
+//
+// launch "ctx bash wallpaper.sh"
+// launch "ctx bash panel.sh"
+//
+//  listen drag "titlebar"
+//  
+//
+// get_element_by_id .. should be able to return a mockable element
+// that is also used in html versions.
+//
+// ctx launch ui test.jpg
+//
+//   memory budget tuning
+
 static int usage (void)
 {
   printf (
@@ -448,6 +482,7 @@ static int usage (void)
     "as one of the supported formats.\n"
     "\n"
     "options available:\n"
+    "  --clear\n"
     "  --braille       unicode braille char output mode\n"
     "  --quarter       unicode quad char output mode\n"
     //"  --grays         unicode  quad char output mode\n"
