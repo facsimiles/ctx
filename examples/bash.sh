@@ -1,3 +1,4 @@
+#!/bin/bash
 #!/usr/bin/env -S ctx bash
 
 cleanup() {
@@ -21,9 +22,6 @@ function vt_sync(){
 	read -s -N 1 ch ;
   done
 }
-
-# received  frame_no
-# presented frame_no
 
 echo -ne "\e[?6150h"
 stty -echo
@@ -51,7 +49,7 @@ rectangle 20% 20% 60% 60%
 stroke
 rectangle 30% 30% 40% 40%
 stroke
-setkey \"x\" \"$v\"
+#setkey \"x\" \"$v\"
 new_path
 rectangle $((10+$v)) 10 30 30
 rgba 0 0 1 1
@@ -64,15 +62,14 @@ flush
 done
 "; 
 
-#sleep 0.5
-v=$(($v+1))
+  #sleep 0.5
+  v=$(($v+1))
 
-if [ $v -gt 1000 ];then
-  v=0
-fi
-  read -s event -t 0.1
-  while [ $event = *"idle"* ]; do read -s event -t 0.1; done;
-  while [ x"$event" != x"" ]; do
+  if [ $v -gt 1000 ];then
+    v=0
+  fi
+  IFS=$'\n' read -s event -t 0.2
+  while [ $event = *"idle"* ]; do IFS=$'\n' read -s event -t 0.2; done;
   case $event in
    "up")    cy=$(($cy - 1))   ;;
    "down")  cy=$(($cy + 1)) ;;
@@ -81,6 +78,8 @@ fi
    "=")     radius=$(($radius + 1)) ;;
    "+")     radius=$(($radius + 1)) ;;
    "-")     radius=$(($radius - 1)) ;;
+   "a")     echo -en "\e[?7020h\ngetkey \"foobar\" done\n" ;;
+   "b")     echo -en "\e[?7020h\ngetkey \"width\" done\n" ;;
    "q")  exit ;;
    "control-c") exit;;
    *"mouse-motion"*) 
@@ -96,9 +95,7 @@ fi
         cy=`echo $event|cut -f 3 -d ' '`
         ;;
   esac
-  last_event=$event
-  event=""
   read -t 0.1 -s event
-done
-event=$last_event
+
+
 done

@@ -460,7 +460,12 @@ int parse_main (int argc, char **argv)
 // launch "ctx bash panel.sh"
 //
 //  listen drag "titlebar"
-//  
+//
+// "ctx test.svg" or "ctx test.ctx" should launch a ctx client that
+// shows this static bit of data. In a resizable window.
+//
+//  make mmm able to run in a ctx compatible mode with hash based
+//  change detection
 //
 // get_element_by_id .. should be able to return a mockable element
 // that is also used in html versions.
@@ -482,11 +487,9 @@ static int usage (void)
     "as one of the supported formats.\n"
     "\n"
     "options available:\n"
-    "  --clear\n"
+    "  --clear         clear and home between each frame\n"
     "  --braille       unicode braille char output mode\n"
     "  --quarter       unicode quad char output mode\n"
-    //"  --grays         unicode  quad char output mode\n"
-    //"  --ctx-compact   output compact ctx to terminal\n"
     "  --ctx           output raw ctx to terminal\n"
 
     //  --color         use color in output\n"

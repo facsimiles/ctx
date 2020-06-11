@@ -210,11 +210,7 @@ static void ct_rev_inc (void *data)
 }
 
 static int ct_set_prop (CT *ct, const char *key, const char *val, int len);
-static int ct_get_prop (CT *ct, const char *key, const char **val, int *len)
-{
-  fprintf (stderr, "%s: %s\n", __FUNCTION__, key);
-  return 0;
-}
+static int ct_get_prop (CT *ct, const char *key, const char **val, int *len);
 
 CT *ct_new (const char *command, int width, int height, int id, void *pixels)
 {
@@ -372,6 +368,43 @@ static void client_lower_bottom (CtxClient *client)
     client_lower (client);
 }
 void client_set_title (int id, const char *new_title);
+
+static int ct_get_prop (CT *ct, const char *key, const char **val, int *len)
+{
+  uint32_t key_hash = ctx_strhash (key, 0);
+  char str[4096]="";
+  fprintf (stderr, "%s: %s\n", __FUNCTION__, key);
+  CtxClient *client = client_by_id (ct->id);
+  if (!client)
+    return 0;
+  switch (key_hash)
+  {
+    case CTX_title:
+      sprintf (str, "setkey %s %s\n", key, client->title);
+      break;
+    case CTX_x:      
+      sprintf (str, "setkey %s %i\n", key, client->x);
+      break;
+    case CTX_y:    
+      sprintf (str, "setkey %s %i\n", key, client->y);
+      break;
+    case CTX_width:
+      sprintf (str, "setkey %s %i\n", key, client->width);
+      break;
+    case CTX_height:
+      sprintf (str, "setkey %s %i\n", key, client->width);
+      break;
+    default:
+      sprintf (str, "setkey %s undefined\n", key);
+      break;
+  }
+  if (str[0])
+  {
+    vtpty_write ((void*)ct, str, strlen (str));
+    fprintf (stderr, "%s", str);
+  }
+  return 0;
+}
 
 static int ct_set_prop (CT *ct, const char *key, const char *val, int len)
 {
