@@ -703,8 +703,8 @@ static int sdl_check_events ()
               {
                 last_motion_x = event.motion.x;
                 last_motion_y = event.motion.y;
-                //usleep (15000);
-                usleep (5000);
+                usleep (15000);
+                //usleep (5000);
                 got_event = 1;
               }
               break;
@@ -871,7 +871,7 @@ static int sdl_check_events ()
   }
 
 
-  if (ctx_ticks () - last_event_tick >  666666)
+  if (ctx_ticks () - last_event_tick >  1000000)
   { static char *idle = "idle";
     handle_event (idle);
     last_motion_x = -1;

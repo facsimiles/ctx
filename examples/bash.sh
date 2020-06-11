@@ -1,5 +1,5 @@
-#!/bin/bash
 #!/usr/bin/env -S ctx bash
+#!/bin/bash
 
 cleanup() {
   echo -ne "\e[2J\eH\e[?6150l"
@@ -27,11 +27,13 @@ echo -ne "\e[?6150h"
 stty -echo
 v=0
 event="event"
+dirty=true
 cx=20;cy=20;radius=30;
 for a in b{1..1000000}; do
 
 #vt_sync # we call this to sync before rendering
 
+if [ $dirty = true ];then 
 echo -ne "\e[2J\e[H\e[?7020h"
 echo "clear
 rectangle 0%  0% 100% 100%
@@ -61,41 +63,43 @@ stroke
 flush
 done
 "; 
+  dirty=false
+fi
 
-  #sleep 0.5
-  v=$(($v+1))
+  #v=$(($v+1))
+  #if [ $v -gt 1000 ];then
+  #  v=0
+  #fi
 
-  if [ $v -gt 1000 ];then
-    v=0
-  fi
-  IFS=$'\n' read -s event -t 0.2
-  while [ $event = *"idle"* ]; do IFS=$'\n' read -s event -t 0.2; done;
+  IFS=$'\n' read -s event 
   case $event in
-   "up")    cy=$(($cy - 1))   ;;
-   "down")  cy=$(($cy + 1)) ;;
+   "up")    cy=$(($cy - 1)) ;dirty=true  ;;
+   "down")  cy=$(($cy + 1)) ;dirty=true  ;;
    "right") cx=$(($cx + 1)) ;;
    "left")  cx=$(($cx - 1)) ;;
    "=")     radius=$(($radius + 1)) ;;
    "+")     radius=$(($radius + 1)) ;;
    "-")     radius=$(($radius - 1)) ;;
-   "a")     echo -en "\e[?7020h\ngetkey \"foobar\" done\n" ;;
+   "a")     echo -en "\e[?7020h\ngetkey \"foobar\" done\n"; dirty=true ;;
    "b")     echo -en "\e[?7020h\ngetkey \"width\" done\n" ;;
    "q")  exit ;;
+   "idle") sleep 0.1 ;;
    "control-c") exit;;
-   *"mouse-motion"*) 
+   "mouse-motion"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
         ;;
-   *"mouse-drag"*) 
+   "mouse-drag"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
+        dirty=true
         ;;
    *"mouse-press"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
+        dirty=true
         ;;
   esac
-  read -t 0.1 -s event
-
-
 done
+
+
