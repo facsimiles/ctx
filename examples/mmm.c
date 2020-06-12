@@ -76,7 +76,7 @@ void event_handling (Mmm *fb)
 
 int main ()
 {
-  Mmm *fb = mmm_new (W, H, 0, NULL);
+  Mmm *fb = mmm_new (W, H, (MmmFlag)0, NULL);
   //int j;
   if (!fb)
     {

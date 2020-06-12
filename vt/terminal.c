@@ -598,6 +598,7 @@ static void handle_event (const char *event)
           free (text);
         }
     }
+
   else if (!strcmp (event, "shift-control-n") )
     {
       pid_t pid;

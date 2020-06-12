@@ -14,7 +14,7 @@
 
 #define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
 #define PROPS(a)         (ctx_get_string(mrg->ctx, CTX_##a))
-#define SET_PROPh(a,v)   (ctx_set(mrg->ctx, a, v))
+#define SET_PROPh(a,v)   (ctx_set_float(mrg->ctx, a, v))
 #define SET_PROP(a,v)    SET_PROPh(CTX_##a, v)
 #define SET_PROPS(a,v)   (ctx_set_string(mrg->ctx, CTX_##a, v))
 #define SET_PROPSh(a,v)  (ctx_set_string(mrg->ctx, a, v))
@@ -2048,7 +2048,7 @@ void _mrg_init_style (Mrg *mrg)
   SET_PROP(right, 0);
   SET_PROP(bottom, 0);
 
-  ctx_set (mrg->ctx, CTX_stroke_width, 0.2);
+  ctx_set_float (mrg->ctx, CTX_stroke_width, 0.2);
 #if 0
   s->stroke_color.red = 1;
   s->stroke_color.green = 0;

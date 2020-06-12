@@ -376,7 +376,6 @@ float ctx_glyph_width   (Ctx *ctx, int unichar);
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 
 typedef struct _CtxEntry CtxEntry;
-typedef enum _CtxModifierState CtxModifierState;
 
 enum _CtxModifierState
 {
@@ -387,8 +386,8 @@ enum _CtxModifierState
   CTX_MODIFIER_STATE_BUTTON2 = (1<<4),
   CTX_MODIFIER_STATE_BUTTON3 = (1<<5)
 };
+typedef enum _CtxModifierState CtxModifierState;
 
-typedef enum _CtxScrollDirection CtxScrollDirection;
 enum _CtxScrollDirection
 {
   CTX_SCROLL_DIRECTION_UP,
@@ -396,6 +395,7 @@ enum _CtxScrollDirection
   CTX_SCROLL_DIRECTION_LEFT,
   CTX_SCROLL_DIRECTION_RIGHT
 };
+typedef enum _CtxScrollDirection CtxScrollDirection;
 
 typedef struct _CtxEvent CtxEvent;
 
@@ -419,7 +419,6 @@ typedef void (*CtxCb) (CtxEvent *event,
                        void     *data2);
 typedef void (*CtxDestroyNotify) (void *data);
 
-typedef enum _CtxEventType CtxEventType;
 enum _CtxEventType {
   CTX_PRESS          = 1 << 0,
   CTX_MOTION         = 1 << 1,
@@ -452,6 +451,7 @@ enum _CtxEventType {
   CTX_MISC     = (CTX_MESSAGE),
   CTX_ANY      = (CTX_POINTER | CTX_DRAG | CTX_CROSSING | CTX_KEY | CTX_MISC | CTX_TAPS),
 };
+typedef enum _CtxEventType CtxEventType;
 
 #define CTX_CLICK   CTX_PRESS   // SHOULD HAVE MORE LOGIC
 
@@ -641,7 +641,7 @@ typedef enum
   CTX_CLOSE_PATH       = 'z', //
 
   CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
-  CTX_SET              = 'D', // key value -   will take over k/K spots
+  CTX_SET              = 'D', // key value - will take over k/K spots?
   CTX_GET              = 'd', // key -
   /* these commands have single byte binary representations,
    * but are two chars in text, values below 9 are used for
@@ -775,6 +775,28 @@ struct
       uint8_t code_cont;
       uint8_t utf8[8]; /* .. and continues */
     } text;
+    struct
+    {
+      uint8_t  code;
+      uint32_t key_hash;
+      float    pad;
+      uint8_t  code_data;
+      uint32_t stringlen;
+      uint32_t blocklen;
+      uint8_t  code_cont;
+      uint8_t  utf8[8]; /* .. and continues */
+    } set;
+    struct
+    {
+      uint8_t  code;
+      uint32_t pad0;
+      float    pad1;
+      uint8_t  code_data;
+      uint32_t stringlen;
+      uint32_t blocklen;
+      uint8_t  code_cont;
+      uint8_t  utf8[8]; /* .. and continues */
+    } get;
     struct
     {
       uint8_t code;
@@ -1671,7 +1693,7 @@ static inline void ctx_list_prepend_full (CtxList **list, void *data,
     void (*freefunc)(void *data, void *freefunc_data),
     void *freefunc_data)
 {
-  CtxList *new_=calloc (sizeof (CtxList), 1);
+  CtxList *new_= (CtxList*)calloc (sizeof (CtxList), 1);
   new_->next = *list;
   new_->data=data;
   new_->freefunc=freefunc;
@@ -1690,7 +1712,7 @@ static inline int ctx_list_length (CtxList *list)
 
 static inline void ctx_list_prepend (CtxList **list, void *data)
 {
-  CtxList *new_=calloc (sizeof (CtxList), 1);
+  CtxList *new_ = (CtxList*) calloc (sizeof (CtxList), 1);
   new_->next= *list;
   new_->data=data;
   *list = new_;
@@ -1723,7 +1745,7 @@ ctx_list_insert_before (CtxList **list, CtxList *sibling,
         }
       if (prev)
         {
-          CtxList *new_=calloc (sizeof (CtxList), 1);
+          CtxList *new_ = (CtxList*)calloc (sizeof (CtxList), 1);
           new_->next = sibling;
           new_->data = data;
           prev->next=new_;
@@ -1738,7 +1760,7 @@ static inline void ctx_list_remove (CtxList **list, void *data)
     {
       if ((*list)->freefunc)
         (*list)->freefunc ((*list)->data, (*list)->freefunc_data);
-      prev = (void*)(*list)->next;
+      prev = (*list)->next;
       free (*list);
       *list = prev;
       return;
@@ -1788,7 +1810,7 @@ static inline void ctx_list_append_full (CtxList **list, void *data,
     void (*freefunc)(void *data, void *freefunc_data),
     void *freefunc_data)
 {
-  CtxList *new_= calloc (sizeof (CtxList), 1);
+  CtxList *new_ = (CtxList*) calloc (sizeof (CtxList), 1);
   new_->data=data;
   new_->freefunc = freefunc;
   new_->freefunc_data = freefunc_data;
@@ -2675,7 +2697,7 @@ void *ctx_state_get_blob (CtxState *state, uint32_t key)
 
 const char *ctx_state_get_string (CtxState *state, uint32_t key)
 {
-  const char *ret = ctx_state_get_blob (state, key);
+  const char *ret = (char*)ctx_state_get_blob (state, key);
   if (ret && ret[0] == 127)
     return NULL;
   return ret;
@@ -2774,7 +2796,7 @@ static void ctx_state_set_color (CtxState *state, uint32_t key, CtxColor *color)
     if (!memcmp (&mod_color, &old_color, sizeof (mod_color)))
       return;
   }
-  ctx_state_set_blob (state, key, (void*)&mod_color, sizeof (CtxColor));
+  ctx_state_set_blob (state, key, (uint8_t*)&mod_color, sizeof (CtxColor));
 }
 
 static uint8_t ctx_float_to_u8 (float val_f)
@@ -3317,7 +3339,7 @@ int ctx_get_int (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get (&ctx->state, hash);
 }
-void ctx_set (Ctx *ctx, uint32_t hash, float value)
+void ctx_set_float (Ctx *ctx, uint32_t hash, float value)
 {
   ctx_state_set (&ctx->state, hash, value);
 }
@@ -5906,7 +5928,7 @@ void ctx_set_renderer (Ctx  *ctx,
 {
   if (ctx->renderer && ctx->renderer->free)
     ctx->renderer->free (ctx->renderer);
-  ctx->renderer = renderer;
+  ctx->renderer = (CtxImplementation*)renderer;
 }
 
 Ctx *
@@ -7655,7 +7677,7 @@ ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *
 static void
 ctx_fragment_other_CMYKAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  float *cmyka = out;
+  float *cmyka = (float*)out;
   float rgba[4];
   CtxGState *gstate = &rasterizer->state->gstate;
   switch (gstate->source.type)
@@ -7680,9 +7702,9 @@ ctx_fragment_other_CMYKAF (CtxRasterizer *rasterizer, float x, float y, void *ou
 static void
 ctx_fragment_color_CMYKAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  float *cmyka = out;
+  float *cmyka = (float*)out;
   // XXX : only solid color implemented for now
-  ctx_color_get_CMYKAF (rasterizer->state, &rasterizer->state->gstate.source.color, out);
+  ctx_color_get_CMYKAF (rasterizer->state, &rasterizer->state->gstate.source.color, cmyka);
   // RGBW instead of CMYK, and premultiply
   for (int i = 0; i < 4; i ++)
     {
@@ -9598,7 +9620,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, void 
 {
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer) );
   rasterizer->vfuncs.process = ctx_rasterizer_process;
-  rasterizer->vfuncs.free    = (void*)ctx_rasterizer_deinit;
+  rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
   rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
@@ -9799,7 +9821,7 @@ _ctx_file_get_contents (const char     *path,
   if (length)
     { *length =size; }
   rewind (file);
-  buffer = malloc (size + 8);
+  buffer = (char*)malloc (size + 8);
   if (!buffer)
     {
       fclose (file);
@@ -9813,7 +9835,7 @@ _ctx_file_get_contents (const char     *path,
       return -1;
     }
   fclose (file);
-  *contents = (void *) buffer;
+  *contents = (unsigned char*) buffer;
   buffer[size] = 0;
   return 0;
 }
@@ -10166,7 +10188,6 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
         {
           if (entry->code == CTX_DEFINE_GLYPH)
             {
-done:
               if (stroke)
                 { ctx_stroke (ctx); }
               else
@@ -10187,7 +10208,12 @@ done:
                      font_size / CTX_BAKE_FONT_SIZE);
         }
     }
-  goto done; // for the last glyph in a font
+  // for the last glyph in a font
+  if (stroke)
+    { ctx_stroke (ctx); }
+  else
+    { ctx_fill (ctx); }
+  ctx_restore (ctx);
   return -1;
 }
 
@@ -11774,7 +11800,7 @@ static int ctx_arguments_for_code (CtxCode code)
 
 static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
 {
-        fprintf (stderr, "%i %s\n", code, parser->holding);
+        //fprintf (stderr, "%i %s\n", code, parser->holding);
   if (code < 127 && code > 10)
   {
   parser->n_args = ctx_arguments_for_code (code);
