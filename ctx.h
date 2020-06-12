@@ -412,7 +412,7 @@ uint32_t ctx_ms    (Ctx *ctx);
 long     ctx_ticks (void);
 
 void _ctx_events_init     (Ctx *ctx);
-void ctx_set_size (Ctx *ctx, int width, int height);
+
 
 typedef void (*CtxCb) (CtxEvent *event,
                        void     *data,
@@ -1285,7 +1285,9 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_SHAPE_CACHE_MAX_DIM  32
 #endif
 
-
+#ifndef CTX_PARSER_MAXLEN
+#define CTX_PARSER_MAXLEN  1024 // this is the largest text string we support
+#endif
 
 /* maximum number of entries in shape cache
  */
@@ -1625,7 +1627,7 @@ CtxParser *ctx_parser_new (
   float      cell_height,
   int        cursor_x,
   int        cursor_y,
-  int   (*set_prop)(void *prop_data, const char *key, const char *data,  int len),
+  int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len),
   int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
   void  *prop_data,
   void (*exit) (void *exit_data),
@@ -1959,10 +1961,11 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 
 static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 {
+  uint32_t ret;
   if (!str) return 0;
   int len = strlen (str);
   if (case_insensitive)
-    return CTX_STRHash(len>=0?str[0]:0,
+    ret =CTX_STRHash(len>=0?str[0]:0,
                        len>=1?str[1]:0,
                        len>=2?str[2]:0,
                        len>=3?str[3]:0,
@@ -1977,7 +1980,7 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
                        len>=12?str[12]:0,
                        len>=13?str[13]:0);
   else
-    return CTX_STRH(len>=0?str[0]:0,
+    ret =CTX_STRH(len>=0?str[0]:0,
                     len>=1?str[1]:0,
                     len>=2?str[2]:0,
                     len>=3?str[3]:0,
@@ -1991,6 +1994,7 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
                     len>=11?str[11]:0,
                     len>=12?str[12]:0,
                     len>=13?str[13]:0);
+                  return ret;
 }
 #endif
 
@@ -2452,6 +2456,7 @@ struct _CtxState
 #define CTX_curve_to     CTX_STRH('c','u','r','v','e','_','t','o',0,0,0,0,0,0)
 #define CTX_stroke       CTX_STRH('s','t','r','o','k','e',0,0,0,0,0,0,0,0)
 #define CTX_fill         CTX_STRH('f','i','l','l',0,0,0,0,0,0,0,0,0,0)
+#define CTX_flush        CTX_STRH('f','l','u','s','h',0,0,0,0,0,0,0,0,0)
 #define CTX_horLineTo    CTX_STRH('h','o','r','L','i','n','e','T','o',0,0,0,0,0)
 #define CTX_hor_line_to  CTX_STRH('h','o','r','_','l','i','n','e','_','t','o',0,0,0)
 #define CTX_rotate       CTX_STRH('r','o','t','a','t','e',0,0,0,0,0,0,0,0)
@@ -3678,8 +3683,9 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
 }
 
 
-#endif
 
+#endif
+// 6024x4008
 #if CTX_BITPACK
 static void
 ctx_iterator_expand_s8_args (CtxIterator *iterator, CtxEntry *entry)
@@ -11544,17 +11550,16 @@ struct
   int        t_args; // total number of arguments seen for current command
   Ctx       *ctx;
   int        state;
-#define CTX_PARSER_MAXLEN  1024
   uint8_t    holding[CTX_PARSER_MAXLEN]; /*  */
   int        line; /*  for error reporting */
   int        col;  /*  for error reporting */
   int        pos;
-  float      numbers[12];
+  double     numbers[12];
   int        n_numbers;
   int        decimal;
   CtxCode    command;
   int        n_args;
-  uint8_t    set_key[16]; /*  */
+  uint32_t   set_key_hash;
   float      pcx;
   float      pcy;
   int        color_components;
@@ -11569,7 +11574,7 @@ struct
 
   void (*exit) (void *exit_data);
   void *exit_data;
-  int   (*set_prop)(void *prop_data, const char *key, const char *data,  int len);
+  int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len);
   int   (*get_prop)(void *prop_data, const char *key, char **data, int *len);
   void *prop_data;
 };
@@ -11600,7 +11605,7 @@ ctx_parser_init (CtxParser *parser,
                  float      cell_height,
                  int        cursor_x,
                  int        cursor_y,
-  int   (*set_prop)(void *prop_data, const char *key, const char *data,  int len),
+  int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len),
   int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
                  void  *prop_data,
                  void (*exit) (void *exit_data),
@@ -11635,7 +11640,7 @@ CtxParser *ctx_parser_new (
   float      cell_height,
   int        cursor_x,
   int        cursor_y,
-  int   (*set_prop)(void *prop_data, const char *key, const char *data,  int len),
+  int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len),
   int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
   void  *prop_data,
   void (*exit) (void *exit_data),
@@ -11769,6 +11774,9 @@ static int ctx_arguments_for_code (CtxCode code)
 
 static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
 {
+        fprintf (stderr, "%i %s\n", code, parser->holding);
+  if (code < 127 && code > 10)
+  {
   parser->n_args = ctx_arguments_for_code (code);
   if (parser->n_args >= 200)
     {
@@ -11781,6 +11789,7 @@ static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
       parser->n_args = (parser->n_args % 100);
     }
 #endif
+  }
   return code;
 }
 
@@ -11800,7 +11809,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
         }
       if ( (str[0] == 's' && str[1] == 'e' && str[2] == 't' && str[3] == '_') )
         { str += 4; }
-      str_hash = ctx_strhash ( (char *) str, 1);
+      str_hash = ctx_strhash ( (char *) str, 0);
       switch (str_hash)
         {
 #define CTX_ENABLE_DEFUN 1
@@ -11824,6 +11833,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_restore:        ret = CTX_RESTORE; break;
           case CTX_stroke:         ret = CTX_STROKE; break;
           case CTX_fill:           ret = CTX_FILL; break;
+          case CTX_flush:          ret = CTX_FLUSH; break;
           case CTX_hor_line_to:
           case CTX_horLineTo:      ret = CTX_HOR_LINE_TO; break;
           case CTX_rotate:         ret = CTX_ROTATE; break;
@@ -12077,12 +12087,12 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
     }
 }
 
-static void ctx_parser_set (CtxParser *parser, const char *key,
+static void ctx_parser_set (CtxParser *parser, uint32_t key_hash,
                             const char *value, int val_len)
 {
   if (parser->set_prop)
   {
-     parser->set_prop (parser->prop_data, key, value, val_len);
+     parser->set_prop (parser->prop_data, key_hash, value, val_len);
   }
 }
 
@@ -12323,12 +12333,18 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->t_args++;
         if (parser->t_args % 2 == 1)
         {
-           strncpy ((char*)parser->set_key, (char*)parser->holding, sizeof(parser->set_key)-1);
-           parser->set_key[15]=0;
+           if (parser->n_numbers == 1)
+           {
+             parser->set_key_hash = parser->numbers[0];
+           }
+           else
+           {
+             parser->set_key_hash = ctx_strhash ((char*)parser->holding, 0);
+           }
         }
         else
         {
-           ctx_parser_set (parser, (char*)parser->set_key, (char*)parser->holding, parser->pos);
+           ctx_parser_set (parser, parser->set_key_hash, (char*)parser->holding, parser->pos);
         }
         parser->command = CTX_SET;
         break;
@@ -12451,7 +12467,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           }
         break;
       case CTX_FLUSH:
-        ctx_flush (ctx);
+        //ctx_flush (ctx);
         break;
       case CTX_CLEAR:
         ctx_clear (ctx);
@@ -12580,7 +12596,7 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
         else
           {
             if (! (arg_no > 1) )
-              { parser->numbers[parser->n_numbers] --; } // XXX ?
+              { (*value) -= 1.0f; }
             *value *= parser->cell_height;
           }
         break;
@@ -12590,12 +12606,18 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
     }
 }
 
+// %h %v %m %M
+
 static void ctx_parser_word_done (CtxParser *parser)
 {
   parser->holding[parser->pos]=0;
   int command = ctx_parser_resolve_command (parser, parser->holding);
-  if (command >= 0 && command < 10) // special case low enum values
-    {
+  if ((command >= 0 && command < 10) 
+      || (command > 127) || (command < 0)
+      )  // special case low enum values
+    {                   // and enum values too high to be
+                        // commands - permitting passing words
+                        // for strings in some cases
       parser->numbers[parser->n_numbers] = command;
       parser->state = CTX_PARSER_NUMBER;
       ctx_parser_feed_byte (parser, ',');
@@ -12653,46 +12675,12 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
       case CTX_PARSER_NEUTRAL:
         switch (byte)
           {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 11:
-            case 12:
-            case 14:
-            case 15:
-            case 16:
-            case 17:
-            case 18:
-            case 19:
-            case 20:
-            case 21:
-            case 22:
-            case 23:
-            case 24:
-            case 25:
-            case 26:
-            case 27:
-            case 28:
-            case 29:
-            case 30:
-            case 31:
+            case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 11: case 12: case 14: case 15: case 16: case 17: case 18: case 19: case 20: case 21: case 22: case 23: case 24: case 25: case 26: case 27: case 28: case 29: case 30: case 31:
               break;
-            case ' ':
-            case '\t':
-            case '\r':
-            case '\n':
-            case ';':
-            case ',':
-            case '(':
-            case ')':
-            case '{':
-            case '}':
+            case ' ': case '\t': case '\r': case '\n':
+            case ';': case ',':
+            case '(': case ')':
+            case '{': case '}':
             case '=':
               break;
             case '#':
@@ -12713,16 +12701,8 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
               parser->numbers[parser->n_numbers] = 0;
               parser->decimal = 0;
               break;
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
               parser->state = CTX_PARSER_NUMBER;
               parser->numbers[parser->n_numbers] = 0;
               parser->numbers[parser->n_numbers] += (byte - '0');
@@ -12829,13 +12809,21 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
               case '@': // cells
                 if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
                   { parser->numbers[parser->n_numbers] *= -1; }
-                ctx_parser_transform_cell (parser, parser->command, parser->n_numbers, &parser->numbers[parser->n_numbers]);
+                {
+                float fval = parser->numbers[parser->n_numbers];
+                ctx_parser_transform_cell (parser, parser->command, parser->n_numbers, &fval);
+                parser->numbers[parser->n_numbers]= fval;
+                }
                 parser->state = CTX_PARSER_NEUTRAL;
                 break;
               case '%': // percent of width/height
                 if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
                   { parser->numbers[parser->n_numbers] *= -1; }
-                ctx_parser_transform_percent (parser, parser->command, parser->n_numbers, &parser->numbers[parser->n_numbers]);
+                {
+                float fval = parser->numbers[parser->n_numbers];
+                ctx_parser_transform_percent (parser, parser->command, parser->n_numbers, &fval);
+                parser->numbers[parser->n_numbers]= fval;
+                }
                 parser->state = CTX_PARSER_NEUTRAL;
                 break;
               default:
@@ -12863,46 +12851,13 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
       case CTX_PARSER_WORD:
         switch (byte)
           {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 11:
-            case 12:
-            case 14:
-            case 15:
-            case 16:
-            case 17:
-            case 18:
-            case 19:
-            case 20:
-            case 21:
-            case 22:
-            case 23:
-            case 24:
-            case 25:
-            case 26:
-            case 27:
-            case 28:
-            case 29:
-            case 30:
-            case 31:
-            case ' ':
-            case '\t':
-            case '\r':
-            case '\n':
-            case ';':
-            case ',':
-            case '(':
-            case ')':
-            case '=':
-            case '{':
-            case '}':
+            case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+            case 8: case 11: case 12: case 14: case 15: case 16: case 17:
+            case 18: case 19: case 20: case 21: case 22: case 23: case 24:
+            case 25: case 26: case 27: case 28: case 29: case 30: case 31:
+            case ' ': case '\t': case '\r': case '\n':
+            case ';': case ',':
+            case '(': case ')': case '=': case '{': case '}':
               parser->state = CTX_PARSER_NEUTRAL;
               break;
             case '#':
@@ -12913,16 +12868,8 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
               parser->numbers[parser->n_numbers] = 0;
               parser->decimal = 0;
               break;
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
               parser->state = CTX_PARSER_NUMBER;
               parser->numbers[parser->n_numbers] = 0;
               parser->numbers[parser->n_numbers] += (byte - '0');
@@ -12945,44 +12892,24 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
       case CTX_PARSER_STRING_APOS:
         switch (byte)
           {
-            case '\\':
-              parser->state = CTX_PARSER_STRING_APOS_ESCAPED;
-              break;
-            case '\'':
-              parser->state = CTX_PARSER_NEUTRAL;
-              ctx_parser_string_done (parser);
-              break;
+            case '\\': parser->state = CTX_PARSER_STRING_APOS_ESCAPED; break;
+            case '\'': parser->state = CTX_PARSER_NEUTRAL;
+              ctx_parser_string_done (parser); break;
             default:
-              ctx_parser_holding_append (parser, byte);
-              break;
+              ctx_parser_holding_append (parser, byte); break;
           }
         break;
       case CTX_PARSER_STRING_APOS_ESCAPED:
         switch (byte)
           {
-            case '0':
-              byte = '\0';
-              break;
-            case 'b':
-              byte = '\b';
-              break;
-            case 'f':
-              byte = '\f';
-              break;
-            case 'n':
-              byte = '\n';
-              break;
-            case 'r':
-              byte = '\r';
-              break;
-            case 't':
-              byte = '\t';
-              break;
-            case 'v':
-              byte = '\v';
-              break;
-            default:
-              break;
+            case '0': byte = '\0'; break;
+            case 'b': byte = '\b'; break;
+            case 'f': byte = '\f'; break;
+            case 'n': byte = '\n'; break;
+            case 'r': byte = '\r'; break;
+            case 't': byte = '\t'; break;
+            case 'v': byte = '\v'; break;
+            default: break;
           }
         ctx_parser_holding_append (parser, byte);
         parser->state = CTX_PARSER_STRING_APOS;
@@ -12990,29 +12917,14 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
       case CTX_PARSER_STRING_QUOT_ESCAPED:
         switch (byte)
           {
-            case '0':
-              byte = '\0';
-              break;
-            case 'b':
-              byte = '\b';
-              break;
-            case 'f':
-              byte = '\f';
-              break;
-            case 'n':
-              byte = '\n';
-              break;
-            case 'r':
-              byte = '\r';
-              break;
-            case 't':
-              byte = '\t';
-              break;
-            case 'v':
-              byte = '\v';
-              break;
-            default:
-              break;
+            case '0': byte = '\0'; break;
+            case 'b': byte = '\b'; break;
+            case 'f': byte = '\f'; break;
+            case 'n': byte = '\n'; break;
+            case 'r': byte = '\r'; break;
+            case 't': byte = '\t'; break;
+            case 'v': byte = '\v'; break;
+            default: break;
           }
         ctx_parser_holding_append (parser, byte);
         parser->state = CTX_PARSER_STRING_QUOT;

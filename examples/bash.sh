@@ -34,7 +34,7 @@ for a in b{1..1000000}; do
 #vt_sync # we call this to sync before rendering
 
 if [ $dirty = true ];then 
-echo -ne "\e[2J\e[H\e[?7020h"
+echo -ne "\e[2J\e[H\e[?7020h\n"
 echo "clear
 rectangle 0%  0% 100% 100%
 rgba 0 0 0 1
@@ -75,9 +75,9 @@ fi
    "=")     radius=$(($radius + 1)) ; dirty=true ;;
    "+")     radius=$(($radius + 1)) ; dirty=true ;;
    "-")     radius=$(($radius - 1)) ; dirty=true ;;
-   "a")     echo -en "\e[?7020h\ngetkey \"foobar\" done\n"; dirty=true ;;
-   "b")     echo -en "\e[?7020h\ngetkey \"width\" done\n"; dirty=true ;;
-   "q")  exit ;;
+   "a")     echo -en "\e[?7020h\nsetkey width '200' X\n"; dirty=true ;;
+   "b")     echo -en "\e[?7020h\nsetkey 'width' '300' X\n"; dirty=true ;;
+   "q")     exit ;;
    "idle") sleep 0.1 ;;
    "control-c") exit;;
    "mouse-motion"*) 
@@ -98,5 +98,3 @@ fi
             ;;
   esac
 done
-
-

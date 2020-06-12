@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <libgen.h>
 
-#define CTX_MAX_JOURNAL_SIZE 4096000
+#define CTX_MAX_RENDERSTREAM_SIZE 4096000
 #define CTX_BACKEND_TEXT 0
 #define CTX_PARSER       1
 #define CTX_GLYPH_CACHE  1

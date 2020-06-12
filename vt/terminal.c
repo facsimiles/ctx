@@ -209,7 +209,7 @@ static void ct_rev_inc (void *data)
    ct->rev++;
 }
 
-static int ct_set_prop (CT *ct, const char *key, const char *val, int len);
+static int ct_set_prop (CT *ct, uint32_t key, const char *val, int len);
 static int ct_get_prop (CT *ct, const char *key, const char **val, int *len);
 
 CT *ct_new (const char *command, int width, int height, int id, void *pixels)
@@ -373,7 +373,7 @@ static int ct_get_prop (CT *ct, const char *key, const char **val, int *len)
 {
   uint32_t key_hash = ctx_strhash (key, 0);
   char str[4096]="";
-  fprintf (stderr, "%s: %s\n", __FUNCTION__, key);
+  fprintf (stderr, "%s: %s %i\n", __FUNCTION__, key, key_hash);
   CtxClient *client = client_by_id (ct->id);
   if (!client)
     return 0;
@@ -406,14 +406,14 @@ static int ct_get_prop (CT *ct, const char *key, const char **val, int *len)
   return 0;
 }
 
-static int ct_set_prop (CT *ct, const char *key, const char *val, int len)
+static int ct_set_prop (CT *ct, uint32_t key_hash, const char *val, int len)
 {
   float fval = strtod (val, NULL);
   CtxClient *client = client_by_id (ct->id);
-  uint32_t key_hash = ctx_strhash (key, 0);
   uint32_t val_hash = ctx_strhash (val, 0);
   if (!client)
     return 0;
+  fprintf (stderr, "%i %s\n", key_hash, val);
 
 // set "pcm-hz"       "8000"
 // set "pcm-bits"     "8"
@@ -446,7 +446,7 @@ static int ct_set_prop (CT *ct, const char *key, const char *val, int len)
       break;
   }
   ct->rev++;
-  fprintf (stderr, "%s: %s %s %i\n", __FUNCTION__, key, val, len);
+  fprintf (stderr, "%s: %i %s %i\n", __FUNCTION__, key_hash, val, len);
   return 1;
 }
 
