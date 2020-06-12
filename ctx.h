@@ -3331,7 +3331,7 @@ const char *ctx_get_string (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get_string (&ctx->state, hash);
 }
-float ctx_get (Ctx *ctx, uint32_t hash)
+float ctx_get_float (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get (&ctx->state, hash);
 }
@@ -3357,7 +3357,7 @@ int  ctx_get_color (Ctx *ctx, uint32_t hash, CtxColor *color)
 }
 int ctx_is_set (Ctx *ctx, uint32_t hash)
 {
-  return ctx_get (ctx, hash) != -0.0f;
+  return ctx_get_float (ctx, hash) != -0.0f;
 }
 int ctx_is_set_now (Ctx *ctx, uint32_t hash)
 {

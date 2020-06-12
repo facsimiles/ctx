@@ -12,7 +12,7 @@
 #define MRG_MAX_TEXT_LISTEN      256
 #define CTX_XML_INBUF_SIZE       1024
 
-#define PROP(a)          (ctx_get(mrg->ctx, CTX_##a))
+#define PROP(a)          (ctx_get_float(mrg->ctx, CTX_##a))
 #define PROPS(a)         (ctx_get_string(mrg->ctx, CTX_##a))
 #define SET_PROPh(a,v)   (ctx_set_float(mrg->ctx, a, v))
 #define SET_PROP(a,v)    SET_PROPh(CTX_##a, v)
@@ -1913,7 +1913,7 @@ float _mrg_dynamic_edge_left (Mrg *mrg);
 void  mrg_set_edge_top (Mrg *mrg, float val)
 {
   mrg->state->edge_top = val;
-  mrg_set_xy (mrg, _mrg_dynamic_edge_left (mrg) + ctx_get(mrg_cr(mrg), CTX_text_indent)
+  mrg_set_xy (mrg, _mrg_dynamic_edge_left (mrg) + ctx_get_float (mrg_cr(mrg), CTX_text_indent)
       , mrg->state->edge_top + mrg_em (mrg));
 }
 
