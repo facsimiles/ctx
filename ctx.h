@@ -4209,7 +4209,6 @@ ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32
 static void
 ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1)
 {
-        fprintf (stdout, "%i %s\n", arg0, string);
   ctx_process_cmd_str_with_len (ctx, code, string, arg0, arg1, strlen (string));
 }
 
@@ -4554,17 +4553,15 @@ void ctx_restore (Ctx *ctx)
 
 void ctx_set_line_width (Ctx *ctx, float x)
 {
-  /* XXX : ugly hack to normalize the width dependent on the current
-           transform, this does not really belong here,
-
-           move to rasterizer?*/
-  CTX_PROCESS_F1 (CTX_SET_LINE_WIDTH, x);
+  if (ctx->state.gstate.line_width != x)
+    CTX_PROCESS_F1 (CTX_SET_LINE_WIDTH, x);
 }
 
 void
 ctx_set_global_alpha (Ctx *ctx, float global_alpha)
 {
-  CTX_PROCESS_F1 (CTX_SET_GLOBAL_ALPHA, global_alpha);
+  if (ctx->state.gstate.global_alpha_f != global_alpha)
+    CTX_PROCESS_F1 (CTX_SET_GLOBAL_ALPHA, global_alpha);
 }
 
 float
@@ -4840,15 +4837,18 @@ void ctx_rel_move_to (Ctx *ctx, float x, float y)
 
 void ctx_set_line_cap (Ctx *ctx, CtxLineCap cap)
 {
-  CTX_PROCESS_U8 (CTX_SET_LINE_CAP, cap);
+  if (ctx->state.gstate.line_cap != cap)
+    CTX_PROCESS_U8 (CTX_SET_LINE_CAP, cap);
 }
 void ctx_set_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
 {
-  CTX_PROCESS_U8 (CTX_SET_FILL_RULE, fill_rule);
+  if (ctx->state.gstate.fill_rule != fill_rule)
+    CTX_PROCESS_U8 (CTX_SET_FILL_RULE, fill_rule);
 }
 void ctx_set_line_join (Ctx *ctx, CtxLineJoin join)
 {
-  CTX_PROCESS_U8 (CTX_SET_LINE_JOIN, join);
+  if (ctx->state.gstate.line_join != join)
+    CTX_PROCESS_U8 (CTX_SET_LINE_JOIN, join);
 }
 void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
 {
@@ -11049,6 +11049,9 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
             break;
           case CTX_CLOSE_PATH:
             name="close_path";
+            break;
+          case CTX_PRESERVE:
+            name="preserve";
             break;
           case CTX_FLUSH:
             name="flush";

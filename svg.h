@@ -4403,7 +4403,8 @@ static void mrg_path_fill_stroke (Mrg *mrg)
   if (fill_color.alpha > 0.001)
   {
     mrg_ctx_set_source_color (ctx, &fill_color);
-    ctx_preserve (ctx);
+    if (PROP(stroke_width) > 0.001 && stroke_color.alpha > 0.001)
+      ctx_preserve (ctx);
     ctx_fill (ctx);
   }
 
@@ -4413,7 +4414,6 @@ static void mrg_path_fill_stroke (Mrg *mrg)
     mrg_ctx_set_source_color (ctx, &stroke_color);
     ctx_stroke (ctx);
   }
-  ctx_new_path (ctx);
 }
 
 void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
