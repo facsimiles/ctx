@@ -2621,7 +2621,9 @@ struct _CtxState
 
 
 #define CTX_x            CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_w            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
+#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
+#define CTX_y            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_setkey       CTX_STRH('s','e','t','k','e','y',0,0,0,0,0,0,0,0)
 #define CTX_getkey       CTX_STRH('g','e','t','k','e','y',0,0,0,0,0,0,0,0)
 
@@ -3295,32 +3297,33 @@ struct
   _Ctx
 {
   CtxImplementation *renderer;
-  CtxRenderstream renderstream;
-  CtxState        state;        /**/
-  int             transformation;
-  CtxBuffer       texture[CTX_MAX_TEXTURES];
-  int             rev;
+  CtxRenderstream    renderstream;
+  CtxState           state;        /**/
+  int                transformation;
+  CtxBuffer          texture[CTX_MAX_TEXTURES];
+  int                rev;
 #if CTX_EVENTS 
-  CtxEvents       events;
-  int             mouse_fd;
-  int             mouse_x;
-  int             mouse_y;
+  CtxEvents          events;
+  int                mouse_fd;
+  int                mouse_x;
+  int                mouse_y;
 #endif
 #if CTX_CURRENT_PATH
-  CtxRenderstream current_path; // possibly transformed coordinates !
-  CtxIterator     current_path_iterator;
+  CtxRenderstream    current_path; // possibly transformed coordinates !
+  CtxIterator        current_path_iterator;
 #endif
 };
 
 #if CTX_EVENTS
-int   ctx_width           (Ctx *ctx)
+int ctx_width (Ctx *ctx)
 {
   return ctx->events.width;
 }
-int   ctx_height          (Ctx *ctx)
+int ctx_height (Ctx *ctx)
 {
   return ctx->events.height;
 }
+
 #endif
 int ctx_rev (Ctx *ctx)
 {
@@ -3850,6 +3853,7 @@ again:
         case CTX_TEXT:
         case CTX_TEXT_STROKE:
         case CTX_SET_FONT:
+        case CTX_SET:
           iterator->bitpack_length = 0;
           return (CtxCommand *) ret;
         default:
@@ -4187,19 +4191,26 @@ ctx_u8 (CtxCode code,
   CtxEntry command = ctx_u8(cmd, x,0,0,0,0,0,0,0);\
   ctx_process (ctx, &command);}while(0)
 
+
 static void
-ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string)
+ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1, int len)
 {
-  int stringlen = strlen (string);
-  CtxEntry commands[1 + 2 + stringlen/8];
+  CtxEntry commands[1 + 2 + len/8];
   ctx_memset (commands, 0, sizeof (commands) );
-  commands[0] = ctx_u8 (code, 0, 0,0,0,0,0,0,0);
+  commands[0] = ctx_u32 (code, arg0, arg1);
   commands[1].code = CTX_DATA;
-  commands[1].data.u32[0] = stringlen;
-  commands[1].data.u32[1] = stringlen/9+1;
-  ctx_strcpy ( (char *) &commands[2].data.u8[0], string);
-  ( (char *) (&commands[2].data.u8[0]) ) [stringlen]=0;
+  commands[1].data.u32[0] = len;
+  commands[1].data.u32[1] = len/9+1;
+  memcpy( (char *) &commands[2].data.u8[0], string, len);
+  ( (char *) (&commands[2].data.u8[0]) ) [len]=0;
   ctx_process (ctx, commands);
+}
+
+static void
+ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1)
+{
+        fprintf (stdout, "%i %s\n", arg0, string);
+  ctx_process_cmd_str_with_len (ctx, code, string, arg0, arg1, strlen (string));
 }
 
 void
@@ -4664,10 +4675,22 @@ _ctx_set_font (Ctx *ctx, const char *name)
 }
 
 void
+ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len)
+{
+  ctx_process_cmd_str (ctx, CTX_SET, string, key_hash, len);
+}
+
+void
+ctx_get (Ctx *ctx, const char *key)
+{
+  CTX_PROCESS_U32(CTX_GET, ctx_strhash (key, 0), 0);
+}
+
+void
 ctx_set_font (Ctx *ctx, const char *name)
 {
 #if CTX_BACKEND_TEXT
-  ctx_process_cmd_str (ctx, CTX_SET_FONT, name);
+  ctx_process_cmd_str (ctx, CTX_SET_FONT, name, 0, 0);
 #else
   _ctx_set_font (ctx, name);
 #endif
@@ -9788,6 +9811,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       ctx_renderstream_add_entry (&ctx->renderstream, entry);
 #if 1
       if (entry->code == CTX_TEXT ||
+          entry->code == CTX_SET ||
           entry->code == CTX_TEXT_STROKE ||
           entry->code == CTX_SET_FONT)
         {
@@ -10477,13 +10501,12 @@ ctx_glyphs_stroke (Ctx        *ctx,
   _ctx_glyphs (ctx, glyphs, n_glyphs, 1);
 }
 
-
 void
 ctx_text (Ctx        *ctx,
           const char *string)
 {
 #if CTX_BACKEND_TEXT
-  ctx_process_cmd_str (ctx, CTX_TEXT, string);
+  ctx_process_cmd_str (ctx, CTX_TEXT, string, 0, 0);
   _ctx_text (ctx, string, 0, 0);
 #else
   _ctx_text (ctx, string, 0, 1);
@@ -10495,7 +10518,7 @@ ctx_text_stroke (Ctx        *ctx,
                  const char *string)
 {
 #if CTX_BACKEND_TEXT
-  ctx_process_cmd_str (ctx, CTX_TEXT_STROKE, string);
+  ctx_process_cmd_str (ctx, CTX_TEXT_STROKE, string, 0, 0);
   _ctx_text (ctx, string, 1, 0);
 #else
   _ctx_text (ctx, string, 1, 1);
@@ -11126,6 +11149,9 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_SET_FILL_RULE:
             name="set_fill_rule";
             break;
+          case CTX_SET:
+            name="setprop";
+            break;
         }
       if (name)
         {
@@ -11380,8 +11406,8 @@ ctx_stream_process (void *user_data, CtxCommand *c)
   FILE *stream    = (FILE *) user_data_array[0];
   int   formatter = (size_t) (user_data_array[1]);
   int  *indent    = (int *) &user_data_array[2];
-  switch (entry->code)
-    //switch ((CtxCode)(entry->code))
+    switch (entry->code)
+  //switch ((CtxCode)(entry->code))
     {
       case CTX_LINE_TO:
       case CTX_REL_LINE_TO:
@@ -11416,41 +11442,117 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_HOR_LINE_TO:
         ctx_print_entry (stream, formatter, indent, entry, 1);
         break;
+      case CTX_SET:
+        _ctx_print_name (stream, entry->code, formatter, indent);
+        switch (c->set.key_hash)
+        {
+           case CTX_x: fprintf (stream, " 'x' "); break;
+           case CTX_y: fprintf (stream, " 'y' "); break;
+           case CTX_width: fprintf (stream, " width "); break;
+           case CTX_height: fprintf (stream, " height "); break;
+           default:
+             fprintf (stream, " %d ", c->set.key_hash);
+        }
+        fprintf (stream, "\"");
+        ctx_print_escaped_string (stream, c->set.utf8);
+        fprintf (stream, "\"");
+        _ctx_print_endcmd (stream, formatter);
+        break;
       case CTX_SET_COLOR:
-        if (formatter)
+        if (formatter ||  1)
           {
             _ctx_indent (stream, *indent);
             switch ( (int) c->set_color.model)
               {
                 case CTX_GRAY:
-                  fprintf (stream, "gray %.4f\n", c->graya.g);
+                  fprintf (stream, "gray ");
+                  ctx_print_float (stream, c->graya.g);
                   break;
                 case CTX_GRAYA:
-                  fprintf (stream, "graya %.4f %.4f\n", c->graya.a, c->graya.a);
+                  fprintf (stream, "graya ");
+                  ctx_print_float (stream, c->graya.g);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->graya.a);
                   break;
                 case CTX_RGB:
-                  fprintf (stream, "rgb %.4f %.4f %.4f\n", c->rgba.r, c->rgba.g, c->rgba.b);
+                  fprintf (stream, "rgb ");
+                  ctx_print_float (stream, c->rgba.r);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.g);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.b);
                   break;
                 case CTX_RGBA:
-                  fprintf (stream, "rgba %.4f %.4f %.4f %.4f\n", c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
-                  break;
-                case CTX_CMYK:
-                  fprintf (stream, "cmyk %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
-                  break;
-                case CTX_CMYKA:
-                  fprintf (stream, "cmyka %.4f %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
-                  break;
-                case CTX_DCMYK:
-                  fprintf (stream, "dcmyk %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
-                  break;
-                case CTX_DCMYKA:
-                  fprintf (stream, "dcmyka %.4f %.4f %.4f %.4f %.4f\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
+                  fprintf (stream, "rgba ");
+                  ctx_print_float (stream, c->rgba.r);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.g);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.b);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.a);
                   break;
                 case CTX_DRGB:
-                  fprintf (stream, "drgb %.4f %.4f %.4f\n", c->rgba.r, c->rgba.g, c->rgba.b);
+                  fprintf (stream, "drgb ");
+                  ctx_print_float (stream, c->rgba.r);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.g);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.b);
                   break;
                 case CTX_DRGBA:
-                  fprintf (stream, "drgba %.4f %.4f %.4f %.4f\n", c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+                  fprintf (stream, "drgba ");
+                  ctx_print_float (stream, c->rgba.r);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.g);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.b);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->rgba.a);
+                  break;
+                case CTX_CMYK:
+                  fprintf (stream, "cmyk ");
+                  ctx_print_float (stream, c->cmyka.c);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.m);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.y);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.k);
+                  break;
+                case CTX_CMYKA:
+                  fprintf (stream, "cmyka ");
+                  ctx_print_float (stream, c->cmyka.c);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.m);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.y);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.k);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.a);
+                  break;
+                case CTX_DCMYK:
+                  fprintf (stream, "dcmyk ");
+                  ctx_print_float (stream, c->cmyka.c);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.m);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.y);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.k);
+                  break;
+                case CTX_DCMYKA:
+                  fprintf (stream, "dcmyka ");
+                  ctx_print_float (stream, c->cmyka.c);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.m);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.y);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.k);
+                  fprintf (stream, " ");
+                  ctx_print_float (stream, c->cmyka.a);
                   break;
               }
           }
@@ -11482,14 +11584,6 @@ ctx_stream_process (void *user_data, CtxCommand *c)
           }
         _ctx_print_endcmd (stream, formatter);
         break;
-#if 0
-      case CTX_SET_RGBA_STROKE:
-        ctx_set_rgba_stroke (d_ctx, ctx_arg_u8 (0) /255.0,
-                             ctx_arg_u8 (1) /255.0,
-                             ctx_arg_u8 (2) /255.0,
-                             ctx_arg_u8 (3) /255.0);
-        break;
-#endif
       case CTX_SET_PIXEL:
 #if 0
         ctx_set_pixel_u8 (d_ctx,
@@ -11508,6 +11602,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_NEW_PATH:
       case CTX_CLOSE_PATH:
       case CTX_SAVE:
+      case CTX_PRESERVE:
       case CTX_RESTORE:
         ctx_print_entry (stream, formatter, indent, entry, 0);
         break;
@@ -12370,7 +12465,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         }
         else
         {
-           ctx_parser_set (parser, parser->set_key_hash, (char*)parser->holding, parser->pos);
+           if (parser->set_prop)
+             ctx_parser_set (parser, parser->set_key_hash, (char*)parser->holding, parser->pos);
+           else
+             ctx_set (ctx, parser->set_key_hash, (char*)parser->holding, parser->pos);
         }
         parser->command = CTX_SET;
         break;
@@ -15482,7 +15580,7 @@ void ctx_ctx_free (CtxCtx *ctxctx)
 Ctx *ctx_new_ctx (int width, int height)
 {
   Ctx *ctx = ctx_new ();
-  CtxCtx *ctxctx = calloc (sizeof (CtxBraille), 1);
+  CtxCtx *ctxctx = calloc (sizeof (CtxCtx), 1);
   ctx_native_events = 1;
   if (width <= 0 || height <= 0)
   {
