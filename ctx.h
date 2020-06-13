@@ -11210,6 +11210,8 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           break;
       }
     fwrite (name, 1, strlen ( (char *) name), stream);
+    if (!formatter)
+      { fwrite (" ", 1, 1, stream); }
     if (formatter)
       { fwrite (" (", 1, 2, stream); }
   }
@@ -11354,7 +11356,7 @@ static void
 ctx_print_float (FILE *stream, float val)
 {
   char temp[128];
-  sprintf (temp, "%0.5f", val);
+  sprintf (temp, "%0.3f", val);
   int j;
   for (j = 0; temp[j]; j++)
     if (j == ',') { temp[j] = '.'; }
@@ -11474,23 +11476,33 @@ ctx_stream_process (void *user_data, CtxCommand *c)
                   fprintf (stream, " ");
                   ctx_print_float (stream, c->graya.a);
                   break;
+                case CTX_RGBA:
+                  if (c->rgba.a != 1.0)
+                  {
+                    fprintf (stream, "rgba ");
+                    ctx_print_float (stream, c->rgba.r);
+                    fprintf (stream, " ");
+                    ctx_print_float (stream, c->rgba.g);
+                    fprintf (stream, " ");
+                    ctx_print_float (stream, c->rgba.b);
+                    fprintf (stream, " ");
+                    ctx_print_float (stream, c->rgba.a);
+                    break;
+                  }
                 case CTX_RGB:
+                  if (c->rgba.r == c->rgba.g && c->rgba.g == c->rgba.b)
+                  {
+                    fprintf (stream, "gray ");
+                    ctx_print_float (stream, c->rgba.r);
+                    fprintf (stream, " ");
+                    break;
+                  }
                   fprintf (stream, "rgb ");
                   ctx_print_float (stream, c->rgba.r);
                   fprintf (stream, " ");
                   ctx_print_float (stream, c->rgba.g);
                   fprintf (stream, " ");
                   ctx_print_float (stream, c->rgba.b);
-                  break;
-                case CTX_RGBA:
-                  fprintf (stream, "rgba ");
-                  ctx_print_float (stream, c->rgba.r);
-                  fprintf (stream, " ");
-                  ctx_print_float (stream, c->rgba.g);
-                  fprintf (stream, " ");
-                  ctx_print_float (stream, c->rgba.b);
-                  fprintf (stream, " ");
-                  ctx_print_float (stream, c->rgba.a);
                   break;
                 case CTX_DRGB:
                   fprintf (stream, "drgb ");
