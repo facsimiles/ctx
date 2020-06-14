@@ -5983,7 +5983,7 @@ ctx_new (void)
 void
 ctx_renderstream_deinit (CtxRenderstream *renderstream)
 {
-#if CTX_RENDERSTREAM_STATIC==0
+#if !CTX_RENDERSTREAM_STATIC
   if (renderstream->entries && ! (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES) )
     { free (renderstream->entries); }
 #endif
@@ -6003,6 +6003,9 @@ static void ctx_deinit (Ctx *ctx)
       ctx->renderer    = NULL;
     }
   ctx_renderstream_deinit (&ctx->renderstream);
+#if CTX_CURRENT_PATH
+  ctx_renderstream_deinit (&ctx->current_path);
+#endif
 }
 
 void ctx_free (Ctx *ctx)
