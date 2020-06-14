@@ -4665,6 +4665,11 @@ void vt_destroy (VT *vt)
       ctx_list_remove (&vt->lines, vt->lines->data);
       vt->line_count--;
     }
+  while (vt->scrollback)
+    {
+      vt_line_free (vt->scrollback->data, 1);
+      ctx_list_remove (&vt->scrollback, vt->scrollback->data);
+    }
   if (vt->set_style)
     { free (vt->set_style); }
   if (vt->set_unichar)
@@ -4675,6 +4680,8 @@ void vt_destroy (VT *vt)
   ctx_list_remove (&vts, vt);
   kill (vt->vtpty.pid, 9);
   close (vt->vtpty.pty);
+  if (vt->title)
+    free (vt->title);
   free (vt);
 }
 

@@ -259,6 +259,8 @@ void ct_destroy (CT *ct)
   ctx_list_remove (&vts, ct);
   kill (ct->vtpty.pid, 9);
   close (ct->vtpty.pty);
+  free (ct->parser);
+  ctx_free (ct->ctx);
   free (ct);
 }
 
@@ -712,7 +714,8 @@ static int sdl_check_events ()
                 last_motion_x = event.motion.x;
                 last_motion_y = event.motion.y;
                 if (pointer_down[0] == 0)
-                  usleep (20000);
+                  //usleep (20000);
+                  usleep (8000);
                 else
                   usleep (8000);
                 //usleep (15000);
@@ -1014,11 +1017,8 @@ int vt_main (int argc, char **argv)
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
 
-
   //add_client ("/home/pippin/src/ctx/examples/bash.sh", 0, height/2, width/2, height/2, 1);
   //add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
-  add_client ("/home/pippin/src/ctx/examples/clock", width/2, height/2, width/2, height/2, 1);
-  add_client ("/home/pippin/src/ctx/examples/clock", 0, height/2, width/2, height/2, 1);
   if (argv[1] == NULL)
   {
     add_client (vt_find_shell_command(), 0, 0, width, height/2, 0);
@@ -1027,6 +1027,8 @@ int vt_main (int argc, char **argv)
   {
     add_client_argv ((void*)&argv[1], 0, 0, width, height/2, 1);
   }
+  add_client ("/home/pippin/src/ctx/examples/clock", width/2, height/2, width/2, height/2, 1);
+  add_client ("/home/pippin/src/ctx/examples/clock", 0, height/2, width/2, height/2, 1);
   signal (SIGCHLD,signal_child);
 
   int sleep_time = 10;
@@ -1087,36 +1089,24 @@ int vt_main (int argc, char **argv)
         }
 #endif
 
+      sleep_time = 200;
       for (int a = 0; a < client_count; a++)
       {
         if (clients[a].vt)
         {
-          if (vt_poll (clients[a].vt, sleep_time/client_count) )
+          if (vt_poll (clients[a].vt, sleep_time) )
           {
-            if (sleep_time > 2500)
-              { sleep_time = 2500; }
-          }
-          else
-          {
-            sleep_time *= 1.5;
+             // got data
           }
         }
         else
         {
-          if (ct_poll (clients[a].ct, sleep_time/client_count) )
+          if (ct_poll (clients[a].ct, sleep_time) )
           {
-            if (sleep_time > 2500)
-              { sleep_time = 2500; }
-          }
-          else
-          {
-            sleep_time *= 1.5;
+            // got data
           }
         }
       }
-
-      if (sleep_time > 60000)
-        { sleep_time = 60000; }
     }
   while (client_count)
     client_remove (client_count);

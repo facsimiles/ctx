@@ -6010,7 +6010,7 @@ void ctx_free (Ctx *ctx)
   if (!ctx)
     { return; }
   ctx_deinit (ctx);
-#if CTX_RENDERSTREAM_STATIC==0
+#if !CTX_RENDERSTREAM_STATIC
   free (ctx);
 #endif
 }
@@ -9532,6 +9532,7 @@ static void
 ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
 {
   ctx_renderstream_deinit (&rasterizer->edge_list);
+  free (rasterizer);
 }
 
 static CtxPixelFormatInfo ctx_pixel_formats[]=
