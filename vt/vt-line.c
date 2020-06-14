@@ -225,11 +225,11 @@ void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
         old_len++;
       }
   }
-  if (string->length + new_len >= string->allocated_length)
+  if (string->length + new_len  >= string->allocated_length - 2)
     {
       char *tmp;
       char *defer;
-      string->allocated_length = string->length + new_len;
+      string->allocated_length = string->length + new_len + 2;
       tmp = calloc (string->allocated_length + 1, 1);
       strcpy (tmp, string->str);
       defer = string->str;

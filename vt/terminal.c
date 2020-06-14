@@ -413,7 +413,7 @@ static int ct_set_prop (CT *ct, uint32_t key_hash, const char *val, int len)
   uint32_t val_hash = ctx_strhash (val, 0);
   if (!client)
     return 0;
-  fprintf (stderr, "%i %s\n", key_hash, val);
+  //fprintf (stderr, "%i %s\n", key_hash, val);
 
 // set "pcm-hz"       "8000"
 // set "pcm-bits"     "8"

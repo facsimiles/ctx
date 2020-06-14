@@ -3428,7 +3428,11 @@ static void vt_state_vt52 (VT *vt, int byte)
                 break;
               default:
                 {
-                  char str[2] = {byte, 0};
+                  char str[2] = {byte & 127, 0};
+                  /* we're not validating utf8, and our utf8 manipulation
+                   * functions are not robust against malformed utf8,
+                   * hence we strip to ascii
+                   */
                   _vt_add_str (vt, str);
                 }
                 break;

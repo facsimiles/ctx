@@ -2172,7 +2172,7 @@ ctx_memset (void *ptr, uint8_t val, int length)
 }
 
 
-static void ctx_strcpy (char *dst, const char *src)
+static inline void ctx_strcpy (char *dst, const char *src)
 {
   int i = 0;
   for (i = 0; src[i]; i++)
@@ -4674,13 +4674,25 @@ _ctx_set_font (Ctx *ctx, const char *name)
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len)
 {
+  if (len <= 0) len = strlen (string);
   ctx_process_cmd_str (ctx, CTX_SET, string, key_hash, len);
 }
 
-void
+#include <unistd.h>
+
+const char *
 ctx_get (Ctx *ctx, const char *key)
 {
+  static char retbuf[32];
+  int len = 0;
   CTX_PROCESS_U32(CTX_GET, ctx_strhash (key, 0), 0);
+  while (read (STDIN_FILENO, &retbuf[len], 1) != -1)
+    {
+      if(retbuf[len]=='\n')
+        break;
+      retbuf[++len]=0;
+    }
+  return retbuf;
 }
 
 void
@@ -15578,7 +15590,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   if (ctx_native_events)
     fprintf (stdout, "\e[?6150h");
   fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h clear\n");
-  ctx_render_stream (ctxctx->ctx, stdout, 1);  //  XXX  should use 0
+  ctx_render_stream (ctxctx->ctx, stdout, 0);  //  XXX  should use 0
                                                // but something broken, probably color
   fprintf (stdout, "\ndone\n\e");
   fflush (stdout);

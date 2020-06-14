@@ -256,7 +256,6 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 // even better dither between them.
                 //
   printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
-  printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
 
                 for (int x = 0; x < 2; x++)
                   for (int y = 0; y < 3; y++)
@@ -296,6 +295,7 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 }
               }
             printf ("\n");
+  printf ("\e[38;2;%i;%i;%im", 255,255,255);
           }
         }
         break;
@@ -754,15 +754,14 @@ int main (int argc, char **argv)
     {
       fprintf (stdout, "\e[H\e[?25l\e[?7020h");
       ctx_render_stream (ctx, stdout, 1);
-      fprintf (stdout, "\ndone\n\e[?25h");
+      fprintf (stdout, "\nX\n\e[?25h");
       exit (0);
     }
   if (outputmode == CTX_OUTPUT_MODE_CTX_COMPACT)
     {
       fprintf (stdout, "\e[H\e[?25l\e[?7020h");
       ctx_render_stream (ctx, stdout, 0);
-      //fprintf (stdout, "\nX\n");
-      fprintf (stdout, "\ndone\n\[e?25h");
+      fprintf (stdout, "\nX\n\[e?25h");
       exit (0);
     }
 

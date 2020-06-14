@@ -1,5 +1,5 @@
-#!/usr/bin/env -S ctx bash
 #!/bin/bash
+#!/usr/bin/env -S ctx bash
 
 cleanup() {
   echo -ne "\e[2J\eH\e[?6150l"
@@ -75,8 +75,8 @@ fi
    "=")     radius=$(($radius + 1)) ; dirty=true ;;
    "+")     radius=$(($radius + 1)) ; dirty=true ;;
    "-")     radius=$(($radius - 1)) ; dirty=true ;;
-   "a")     echo -en "\e[?7020h\nsetkey width '200' X\n"; dirty=true ;;
-   "b")     echo -en "\e[?7020h\nsetkey 'width' '300' X\n"; dirty=true ;;
+   "a")     echo -en "\e[?7020h\nsetkey 'x' '200' X\n"; dirty=true ;;
+   "b")     echo -en "\e[?7020h\nsetkey 'x' '300' X\n"; dirty=true ;;
    "q")     exit ;;
    "idle") sleep 0.1 ;;
    "control-c") exit;;

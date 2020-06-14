@@ -8356,8 +8356,6 @@ _mr_get_contents (const char  *referer,
     ret = _mrg_file_get_contents (uri, &c, &l);
     if (contents) *contents = c;
     if (length) *length = l;
-    if (l==0)
-       fprintf (stderr, "%li %s\n", l, uri);
     return ret;
   }
 
