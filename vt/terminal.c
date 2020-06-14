@@ -550,6 +550,9 @@ void client_remove (int no)
   SDL_DestroyTexture (clients[no].texture);
   free(clients[no].pixels);
 
+  if (clients[no].title)
+    free (clients[no].title);
+
   clients[no]=clients[client_count-1];
   client_count--;
   if (client_count == 0)
