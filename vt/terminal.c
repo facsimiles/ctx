@@ -1014,17 +1014,19 @@ int vt_main (int argc, char **argv)
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
 
-  if (argv[1] == NULL)
-  {
-    add_client (vt_find_shell_command(), 0, 0, width, height, 0);
-  }
-  else
-  {
-    add_client_argv ((void*)&argv[1], 0, 0, width, height, 1);
-  }
 
   //add_client ("/home/pippin/src/ctx/examples/bash.sh", 0, height/2, width/2, height/2, 1);
   //add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
+  add_client ("/home/pippin/src/ctx/examples/clock", width/2, height/2, width/2, height/2, 1);
+  add_client ("/home/pippin/src/ctx/examples/clock", 0, height/2, width/2, height/2, 1);
+  if (argv[1] == NULL)
+  {
+    add_client (vt_find_shell_command(), 0, 0, width, height/2, 0);
+  }
+  else
+  {
+    add_client_argv ((void*)&argv[1], 0, 0, width, height/2, 1);
+  }
   signal (SIGCHLD,signal_child);
 
   int sleep_time = 10;

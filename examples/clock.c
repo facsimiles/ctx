@@ -87,7 +87,6 @@ void red_rect (CtxEvent *event, void *userdata, void *userdata2)
    x += event->delta_x;// - 50;
 }
 
-
 void green_rect (CtxEvent *event, void *userdata, void *userdata2)
 {
    char buf[32];
@@ -103,7 +102,7 @@ void green_rect (CtxEvent *event, void *userdata, void *userdata2)
       {
         const char *orig_xs = ctx_get (event->ctx, "x");
         start_x = strtod (orig_xs, NULL);
-        const char *orig_ys = ctx_get (event->ctx, "x");
+        const char *orig_ys = ctx_get (event->ctx, "y");
         start_y = strtod (orig_ys, NULL);
         start_ex = event->device_x+start_x;
         start_ey = event->device_y+start_y;
@@ -128,12 +127,10 @@ void green_rect (CtxEvent *event, void *userdata, void *userdata2)
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
-
   Ctx *ctx = ctx_new_ui (-1, -1);
 
-  //fprintf (stderr, "%ix%i\n", ctx_width (ctx), ctx_height (ctx));
 #ifndef REALLY_TINY
-  char *utf8 = "tinytest\necho foobaz\n";
+  char *utf8 = "ctx\n";
 #else
   char *utf8 = "";
 #endif
@@ -193,14 +190,14 @@ int main (int argc, char **argv)
 
 
     ctx_flush          (ctx);
-    //usleep (1000);
+    usleep (50000);
     //if (strcmp (event, "idle"))
     //fprintf (stderr, "[%s :%i %i]", event, mx, my);
 
     //x+=0.25;
     if (x > ctx_width (ctx)) x= 0;
    
-    if(event = ctx_get_event (ctx))
+    if (event = ctx_get_event (ctx))
     {
     switch (event->type)
     {
