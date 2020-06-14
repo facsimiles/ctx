@@ -2196,6 +2196,8 @@ qagain:
                     vt->current_line->ctx = ctx_new ();
                     _ctx_set_transformation (vt->current_line->ctx, 0);
                   }
+                if (vt->ctxp)
+                  ctx_parser_free (vt->ctxp);
                 vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                                            vt->cols * vt->cw, vt->rows * vt->ch,
                                            vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
@@ -4674,6 +4676,8 @@ void vt_destroy (VT *vt)
     { free (vt->set_style); }
   if (vt->set_unichar)
     { free (vt->set_unichar); }
+  if (vt->ctxp)
+    ctx_parser_free (vt->ctxp);
   if (vt->ctx)
     { ctx_free (vt->ctx); }
   free (vt->argument_buf);
