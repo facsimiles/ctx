@@ -7437,8 +7437,15 @@ static void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
     { dst[c] = (src[c]*cov + dst[c] * ralpha) >> 8; }
 }
 
+static void ctx_source_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
+{
+  //uint8_t ralpha = 255 - ( (cov * src[3]) >> 8);
+  for (int c = 0; c < 4; c++)
+    dst[c] = src[c];
+}
+
 static int
-ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+ctx_b2f_generic_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count, void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t cov))
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   uint8_t color[4];
@@ -7457,13 +7464,9 @@ ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *co
               fragment (rasterizer, u, v, &color[0]);
               if (color[3])
                 {
-                  //      if ((gstate->source.global_alpha_u8 != 255) || (color[3]!=255))
-                  //      {
-//         if (gstate->source.global_alpha_u8 != 255)
                   color[3] = (color[3] * gstate->global_alpha_u8) >>8;
                   ctx_RGBA8_associate_alpha (color);
-//       }
-                  ctx_over_RGBA8 (dst, color, cov);
+                  comp_op (dst, color, cov);
                 }
             }
           dst += 4;
@@ -7485,7 +7488,7 @@ ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *co
                 }
               else
                 {
-                  ctx_over_RGBA8 (dst, color, cov);
+                  comp_op (dst, color, cov);
                 }
             }
           coverage++;
@@ -7499,12 +7502,18 @@ ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *co
       uint8_t cov = *coverage;;
       if (cov)
         {
-          ctx_over_RGBA8 (dst, color, cov);
+          comp_op (dst, color, cov);
         }
       dst += 4;
       coverage++;
     }
   return count;
+}
+
+static int
+ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+{
+  return ctx_b2f_generic_RGBA8 (rasterizer, x0, dst, coverage, count, ctx_over_RGBA8);
 }
 
 static int

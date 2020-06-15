@@ -747,7 +747,7 @@ int main (int argc, char **argv)
       {
         execvp (argv[source_arg_no-1], &argv[source_arg_no-1]);
       }
-      return vt_main (argc-source_arg_no-1, &argv[source_arg_no-1]);
+      return vt_main (argc-source_arg_no, &argv[source_arg_no]);
     }
 
   if (outputmode == CTX_OUTPUT_MODE_CTX)
