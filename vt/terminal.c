@@ -557,7 +557,12 @@ void client_remove (int no)
   client_count--;
   if (client_count == 0)
     do_quit = 1;
-  find_active (last_x, last_y);
+
+  if (no == active)
+  {
+    active = 0;
+    find_active (last_x, last_y);
+  }
 }
 
 void client_remove_by_id (int id)
