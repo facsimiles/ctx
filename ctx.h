@@ -7439,13 +7439,28 @@ static void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
 
 static void ctx_source_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
 {
-  //uint8_t ralpha = 255 - ( (cov * src[3]) >> 8);
   for (int c = 0; c < 4; c++)
     dst[c] = src[c];
 }
 
+static inline void ctx_over_float (int components, float *dst, float *src, uint8_t cov)
+{
+  float fcov = cov/255.0f;
+
+  float ralpha = 1.0f - (fcov) * src[components-1];
+  for (int c = 0; c < components; c++)
+    dst[c] = src[c] * fcov + dst[c] * ralpha;
+}
+
+static inline void ctx_source_float (int components, float *dst, float *src, uint8_t cov)
+{
+  for (int c = 0; c < components; c++)
+    dst[c] = src[c];
+}
+
 static int
-ctx_b2f_generic_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count, void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t cov))
+ctx_b2f_generic_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count, 
+                void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t cov))
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   uint8_t color[4];
@@ -7561,7 +7576,8 @@ ctx_RGBA8_to_BGRA8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
 }
 
 static int
-ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+ctx_b2f_generic_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count,
+                void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t cov))
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   uint8_t color[4];
@@ -7587,7 +7603,7 @@ ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *co
                       color[3] = (color[3] * gstate->global_alpha_u8) >>8;
                       ctx_RGBA8_associate_alpha (color);
                     }
-                  ctx_over_RGBA8 (dst, color, cov);
+                  comp_op (dst, color, cov);
                 }
             }
           dst += 4;
@@ -7611,7 +7627,7 @@ ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *co
                 }
               else
                 {
-                  ctx_over_RGBA8 (dst, color, cov);
+                  comp_op (dst, color, cov);
                 }
             }
           coverage++;
@@ -7626,7 +7642,7 @@ ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *co
         uint8_t cov = *coverage;;
         if (cov)
           {
-            ctx_over_RGBA8 (dst, color, cov);
+            comp_op (dst, color, cov);
 #undef MASK_GREEN
 #undef MASK_GREEN_ALPHA
 #undef MASK_RED_BLUE
@@ -7638,19 +7654,28 @@ ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *co
   return count;
 }
 
+static int
+ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+{
+  return ctx_b2f_generic_BGRA8 (rasterizer, x0, dst, coverage, count,
+                                ctx_over_RGBA8);
+}
+
 #endif
 
 
+
 #if CTX_ENABLE_GRAYF
+
 static int
-ctx_gray_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+ctx_gray_float_b2f_generic (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count,
+                void (*comp_op)(int components, float *src, float *dst, uint8_t cov))
 {
+  int components = 2;
   float *dst_f = (float *) dst;
   float y = rasterizer->scanline / CTX_RASTERIZER_AA;
   float graya[2];
   ctx_color_get_graya (rasterizer->state, &rasterizer->state->gstate.source.color, graya);
-  float gray = graya[0];
-  float alpha = graya[1];
   CtxFragment source = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   if (source == ctx_fragment_color_RGBA8) { source = NULL; }
   for (int x = 0; x < count; x++)
@@ -7665,23 +7690,35 @@ ctx_gray_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_
               float v = y;
               ctx_matrix_apply_transform (&rasterizer->state->gstate.source.transform, &u, &v);
               source (rasterizer, u, v, &scolor[0]);
-              gray =  ctx_u8_to_float ( (scolor[0]+scolor[1]+scolor[2]) /3.0);
-              alpha = ctx_u8_to_float (scolor[3]) *
+
+              graya[0] =  ctx_u8_to_float ( (scolor[0]+scolor[1]+scolor[2]) /3.0);
+              graya[1] = ctx_u8_to_float (scolor[3]) *
                       rasterizer->state->gstate.global_alpha_f;
             }
-          float ralpha = 1.0f - alpha * cov/255.0;
-          dst_f[0] = gray * cov/255.0 + dst_f[0] * ralpha;
+          float temp_f[2]={dst_f[0], 1.0f};
+          comp_op (components, temp_f, graya, cov);
+          dst_f[0]=temp_f[0];
         }
       dst_f+=1;
     }
   return count;
 }
+
+static int
+ctx_gray_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+{
+  return ctx_gray_float_b2f_generic (rasterizer, x0, dst, coverage, count,
+                                     ctx_over_float);
+}
+
 #endif
 
 
 #if CTX_ENABLE_RGBAF
+
 static int
-ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+ctx_associated_rgba_float_b2f_generic (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count,
+                void (*comp_op)(int components, float *src, float *dst, uint8_t cov))
 {
   int components = 4;
   float *dst_f = (float *) dst;
@@ -7698,8 +7735,8 @@ ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *
   {
     for (int x = 0; x < count; x++)
       {
-        float cov = ctx_u8_to_float (coverage[x]);
-        if (cov != 0.0f)
+        int cov = coverage[x];
+        if (cov != 0)
           {
             if (fragment)
               {
@@ -7707,15 +7744,20 @@ ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *
                 for (int c = 0; c < components; c++)
                   { color_f[c] *= rasterizer->state->gstate.global_alpha_f; }
               }
-            float ralpha = 1.0f - color_f[components-1] * cov;
-            for (int c = 0; c < components; c++)
-              { dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha; }
+            comp_op (components, color_f, dst_f, cov);
           }
         dst_f += components;
       }
   }
   return count;
 }
+
+static int
+ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+{
+  return ctx_associated_rgba_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_over_float);
+}
+
 #endif
 
 #if CTX_ENABLE_CMYKAF
@@ -7770,8 +7812,10 @@ static CtxFragment ctx_rasterizer_get_fragment_CMYKAF (CtxRasterizer *rasterizer
   return ctx_fragment_other_CMYKAF;
 }
 
+
 static int
-ctx_associated_cmyka_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+ctx_associated_cmyka_float_b2f_generic (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count,
+                void (*comp_op)(int components, float *src, float *dst, uint8_t cov))
 {
   int components = 5;
   float *dst_f = (float *) dst;
@@ -7787,8 +7831,8 @@ ctx_associated_cmyka_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t 
     }
   for (int x = 0; x < count; x++)
     {
-      float cov = ctx_u8_to_float (coverage[x]);
-      if (cov != 0.0f)
+      int cov = coverage[x];
+      if (cov)
         {
           if (fragment)
             {
@@ -7796,13 +7840,17 @@ ctx_associated_cmyka_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t 
               for (int c = 0; c < components; c++)
                 { color_f[c] *= rasterizer->state->gstate.global_alpha_f; }
             }
-          float ralpha = 1.0f - color_f[components-1] * cov;
-          for (int c = 0; c < components; c++)
-            { dst_f[c] = color_f[c] * cov + dst_f[c] * ralpha; }
+          comp_op (components, color_f, dst_f, cov);
         }
       dst_f += components;
     }
   return count;
+}
+
+static int
+ctx_associated_cmyka_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
+{
+  return ctx_associated_cmyka_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_over_float);
 }
 
 #endif
@@ -8042,18 +8090,18 @@ static void
 ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 {
   rasterizer->lingering_edges = 0;
-  rasterizer->active_edges = 0;
-  rasterizer->pending_edges = 0;
-  rasterizer->has_shape = 0;
-  rasterizer->has_prev = 0;
+  rasterizer->active_edges    = 0;
+  rasterizer->pending_edges   = 0;
+  rasterizer->has_shape       = 0;
+  rasterizer->has_prev        = 0;
   rasterizer->edge_list.count = 0; // ready for new edges
-  rasterizer->edge_pos = 0;
-  rasterizer->needs_aa = 0;
-  rasterizer->scanline = 0;
-  rasterizer->scan_min = 5000;
-  rasterizer->scan_max = -5000;
-  rasterizer->col_min = 5000;
-  rasterizer->col_max = -5000;
+  rasterizer->edge_pos        = 0;
+  rasterizer->needs_aa        = 0;
+  rasterizer->scanline        = 0;
+  rasterizer->scan_min        = 5000;
+  rasterizer->scan_max        = -5000;
+  rasterizer->col_min         = 5000;
+  rasterizer->col_max         = -5000;
 }
 
 static void
@@ -11484,7 +11532,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
              fprintf (stream, " %d ", c->set.key_hash);
         }
         fprintf (stream, "\"");
-        ctx_print_escaped_string (stream, c->set.utf8);
+        ctx_print_escaped_string (stream, (char*)c->set.utf8);
         fprintf (stream, "\"");
         _ctx_print_endcmd (stream, formatter);
         break;
