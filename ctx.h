@@ -3198,6 +3198,7 @@ struct _CtxPixelFormatInfo
                              int x, const uint8_t *comp, void *dst, int count);
   int          (*crunch) (CtxRasterizer *r, int x, uint8_t *dst, uint8_t *coverage,
                           int count);
+  void         (*setup) (CtxRasterizer *r);
 };
 
 #endif

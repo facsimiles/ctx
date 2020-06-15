@@ -205,7 +205,11 @@ vt_string_set (VtString *string, const char *new_string)
 void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
 {
   int new_len = mrg_utf8_len (*new_glyph);
+#if 1
   int old_len = string->utf8_length;
+#else
+  int old_len = mrg_utf8_strlen (string->str);// string->utf8_length;
+#endif
   char tmpg[3]=" ";
   if (pos == old_len)
     {
@@ -219,7 +223,7 @@ void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
       new_glyph = tmpg;
     }
   {
-    for (int i = old_len; i <= pos; i++)
+    for (int i = old_len; i <= pos + 2; i++)
       {
         _vt_string_append_byte (string, ' ');
         old_len++;
@@ -230,7 +234,7 @@ void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
       char *tmp;
       char *defer;
       string->allocated_length = string->length + new_len + 2;
-      tmp = calloc (string->allocated_length + 1, 1);
+      tmp = calloc (string->allocated_length + 1 + 8, 1);
       strcpy (tmp, string->str);
       defer = string->str;
       string->str = tmp;
@@ -252,9 +256,10 @@ void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
     }
   memcpy (p, new_glyph, new_len);
   memcpy (p + new_len, rest, strlen (rest) + 1);
-  string->length += new_len;
-  string->length -= prev_len;
+  //string->length += new_len;
+  //string->length -= prev_len;
   free (rest);
+  string->length = strlen (string->str);
   string->utf8_length = mrg_utf8_strlen (string->str);
 }
 
