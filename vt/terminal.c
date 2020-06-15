@@ -1024,11 +1024,11 @@ int vt_main (int argc, char **argv)
   //add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
   if (argv[1] == NULL)
   {
-    add_client (vt_find_shell_command(), 0, 0, width, height/2, 0);
+    add_client (vt_find_shell_command(), 0, 0, width, height, 0);
   }
   else
   {
-    add_client_argv ((void*)&argv[1], 0, 0, width, height/2, 1);
+    add_client_argv ((void*)&argv[1], 0, 0, width, height, 1);
   }
   add_client ("/home/pippin/src/ctx/examples/clock", width/2, height/2, width/2, height/2, 1);
   add_client ("/home/pippin/src/ctx/examples/clock", 0, height/2, width/2, height/2, 1);
@@ -1054,9 +1054,9 @@ int vt_main (int argc, char **argv)
 
       if (changes)
       {
-      SDL_RenderClear (renderer);
-      for (int no = 0; no < client_count; no++)
-      {
+        SDL_RenderClear (renderer);
+        for (int no = 0; no < client_count; no++)
+        {
           SDL_Rect SrcR;
           SDL_Rect DestR;
           SrcR.x = 0;
@@ -1069,14 +1069,12 @@ int vt_main (int argc, char **argv)
           DestR.w = clients[no].width;
           DestR.h = clients[no].height;
 
+          if (clients[no].ct)
+            SDL_SetTextureBlendMode (clients[no].texture, SDL_BLENDMODE_BLEND);
           SDL_RenderCopy (renderer, clients[no].texture, &SrcR, &DestR);
         }
 
         SDL_RenderPresent (renderer);
-      }
-      else
-      {
-         usleep (5000);
       }
 
       int got_event = sdl_check_events ();
@@ -1111,6 +1109,7 @@ int vt_main (int argc, char **argv)
         }
       }
     }
+
   while (client_count)
     client_remove (client_count);
   return 0;

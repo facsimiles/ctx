@@ -91,27 +91,29 @@ void green_rect (CtxEvent *event, void *userdata, void *userdata2)
 {
    char buf[32];
    static float start_x;
-   static float start_ex;
-   static float set_x;
    static float start_y;
+   static float start_ex;
    static float start_ey;
+
+   static float set_x;
    static float set_y;
    switch (event->type)
    {
      case CTX_DRAG_PRESS:
       {
         const char *orig_xs = ctx_get (event->ctx, "x");
-        start_x = strtod (orig_xs, NULL);
+        set_x = start_x = strtod (orig_xs, NULL);
         const char *orig_ys = ctx_get (event->ctx, "y");
-        start_y = strtod (orig_ys, NULL);
-        start_ex = event->device_x+start_x;
-        start_ey = event->device_y+start_y;
+        set_y = start_y = strtod (orig_ys, NULL);
+
+        start_ex = event->device_x;
+        start_ey = event->device_y;
       }
       break;
      case CTX_DRAG_MOTION:
       {
-        set_x  = start_x + ((event->device_x+set_x) - start_ex);
-        set_y  = start_y + ((event->device_y+set_y) - start_ey);
+        set_x  = ((event->device_x+set_x) - start_ex);
+        set_y  = ((event->device_y+set_y) - start_ey);
         sprintf (buf, "%f", set_x);
         ctx_set (event->ctx, ctx_strhash("x",0), buf, strlen(buf));
         sprintf (buf, "%f", set_y);
@@ -147,7 +149,7 @@ int main (int argc, char **argv)
   {
     ctx_clear          (ctx);
     //ctx_set_rgba       (ctx, 0.5, 0.5, 0.5, 1);
-    ctx_set_rgba       (ctx, 0.0, 0.0, 0.0, 0.0);
+    ctx_set_rgba       (ctx, 0.0, 0.5, 0.0, 0.0);
     ctx_save (ctx);
     ctx_rectangle      (ctx, 0, 0, ctx_width(ctx), ctx_height(ctx));
     ctx_set_compositing_mode (ctx, CTX_COMPOSITE_SOURCE_COPY);

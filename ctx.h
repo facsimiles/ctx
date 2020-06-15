@@ -7477,7 +7477,7 @@ ctx_b2f_generic_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t 
               float v = y;
               ctx_matrix_apply_transform (&gstate->source.transform, &u, &v);
               fragment (rasterizer, u, v, &color[0]);
-              if (color[3])
+              //if (color[3])
                 {
                   color[3] = (color[3] * gstate->global_alpha_u8) >>8;
                   ctx_RGBA8_associate_alpha (color);
@@ -7528,7 +7528,9 @@ ctx_b2f_generic_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t 
 static int
 ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  return ctx_b2f_generic_RGBA8 (rasterizer, x0, dst, coverage, count, ctx_over_RGBA8);
+  if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+    return ctx_b2f_generic_RGBA8 (rasterizer, x0, dst, coverage, count, ctx_over_RGBA8);
+  return ctx_b2f_generic_RGBA8 (rasterizer, x0, dst, coverage, count, ctx_source_RGBA8);
 }
 
 static int
@@ -7594,7 +7596,7 @@ ctx_b2f_generic_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t 
               float v = y;
               ctx_matrix_apply_transform (&gstate->source.transform, &u, &v);
               source (rasterizer, u, v, &color[0]);
-              if (color[3])
+              //if (color[3])
                 {
                   ctx_swap_red_green (color);
                   if ( (gstate->global_alpha_u8 != 255 ) ||
@@ -7657,8 +7659,9 @@ ctx_b2f_generic_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t 
 static int
 ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  return ctx_b2f_generic_BGRA8 (rasterizer, x0, dst, coverage, count,
-                                ctx_over_RGBA8);
+  if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+    return ctx_b2f_generic_BGRA8 (rasterizer, x0, dst, coverage, count, ctx_over_RGBA8);
+  return ctx_b2f_generic_BGRA8 (rasterizer, x0, dst, coverage, count, ctx_source_RGBA8);
 }
 
 #endif
@@ -12113,6 +12116,12 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
 
           case STR (CTX_SET_KEY,'m',0,0,0,0,0,0,0,0,0,0,0,0) :
+          case CTX_composite:
+          case CTX_compositing_mode:
+          case CTX_compositingMode:
+            return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
+
+
           case CTX_rgb_space:
           case CTX_rgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
@@ -12122,10 +12131,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_drgb_space:
           case CTX_drgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_DRGB_SPACE);
-          case CTX_composite:
-          case CTX_compositing_mode:
-          case CTX_compositingMode:
-            return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
           case STR (CTX_SET_KEY,'r',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_fill_rule:
           case CTX_fillRule:
