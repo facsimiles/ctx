@@ -1592,6 +1592,7 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
                   if (s)
                     { sscanf (s, ":%i:%i:%i", &r, &g, &b); }
                 }
+              if (s)
               for (int i = 0; i < 3; i++)
                 {
                   if (*s)
@@ -1652,6 +1653,7 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
                   if (s)
                     { sscanf (s, ":%i:%i:%i", &r, &g, &b); }
                 }
+              if (s)
               for (int i = 0; i < 3; i++)
                 {
                   s++;
