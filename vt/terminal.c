@@ -411,6 +411,10 @@ static int ct_get_prop (CT *ct, const char *key, const char **val, int *len)
   return 0;
 }
 
+static int moving_client = 0;
+
+static void start_moving (CtxClient *client);
+
 static int ct_set_prop (CT *ct, uint32_t key_hash, const char *val, int len)
 {
   float fval = strtod (val, NULL);
@@ -421,7 +425,8 @@ static int ct_set_prop (CT *ct, uint32_t key_hash, const char *val, int len)
 
   if (key_hash == ctx_strhash("start_move", 0))
   {
-    fprintf (stderr, "start moving!\n");
+    start_moving (client);
+    moving_client = 1;
     return 0;
   }
 
@@ -705,6 +710,21 @@ int client_resize (int id, int width, int height)
    }
    return 0;
 }
+static int last_bx = -1;
+static int last_by = -1;
+
+static int last_motion_x = -1;
+static int last_motion_y = -1;
+
+static int client_move_dx = 0;
+static int client_move_dy = 0;
+
+static void start_moving (CtxClient *client)
+{
+  client_move_dx = last_bx - client->x;
+  client_move_dy = last_by - client->y;
+  moving_client = 1;
+}
 
 static int sdl_check_events ()
 {
@@ -720,9 +740,11 @@ static int sdl_check_events ()
   }
 
 
-  int last_motion_x = -1;
-  int last_motion_y = -1;
   static long last_event_tick = 0;
+  int max_motion = 64;
+
+  int motion_start_x = -1;
+  int motion_start_y = -1;
 
   event.type = 0;
     while (SDL_PollEvent (&event) )
@@ -749,21 +771,43 @@ static int sdl_check_events ()
               }
               break;
             case SDL_MOUSEMOTION:
+              last_motion_x = event.motion.x;
+              last_motion_y = event.motion.y;
+              if (moving_client)
               {
-                last_motion_x = event.motion.x;
-                last_motion_y = event.motion.y;
-                if (pointer_down[0] == 0)
-                  //usleep (20000);
-                  usleep (8000);
-                else
-                  usleep (8000);
-                //usleep (15000);
-                //usleep (5000);
+                active->x = last_motion_x - client_move_dx;
+                active->y = last_motion_y - client_move_dy;
                 got_event = 1;
+                goto done;
+              }
+              else
+              {
+
+              if (motion_start_x < 0)
+              {
+                motion_start_x = event.motion.x;
+                motion_start_y = event.motion.y;
+              }
+
+              //if (pointer_down[0] == 0)
+              //  usleep (6000);
+              //else
+              usleep (8000);
+              //usleep (15000);
+              //usleep (5000);
+              got_event = 1;
+
+              max_motion--;
+              if ((ctx_fabsf (last_motion_x - motion_start_x) +
+                  ctx_fabsf (last_motion_y - motion_start_y) >
+                  128) || max_motion < 0)
+                      goto done;
               }
               break;
             case SDL_MOUSEBUTTONDOWN:
-                active = find_active (event.motion.x, event.motion.y);
+                active = find_active (event.button.x, event.button.y);
+                last_bx = event.button.x;
+                last_by = event.button.y;
               if (active)
               {
                 sprintf (buf, "mouse-press %.0f %.0f",
@@ -790,6 +834,8 @@ static int sdl_check_events ()
                 }
                 got_event = 1;
                 pointer_down[0] = 0;
+                if (moving_client)
+                  moving_client = 0;
               }
               break;
             case SDL_TEXTINPUT:
@@ -911,11 +957,21 @@ static int sdl_check_events ()
               break;
           }
       }
+done:
 
   if (last_motion_x >=0)
   {static char buf[127];
-    last_motion_x = event.motion.x;
-    last_motion_y = event.motion.y;
+    //last_motion_x = event.motion.x;
+    //last_motion_y = event.motion.y;
+
+    if (moving_client)
+    {
+      active->x = last_motion_x - client_move_dx;
+      active->y = last_motion_y - client_move_dy;
+    }
+    else
+    {
+
     active = find_active (last_motion_x, last_motion_y);
 
     if (active)
@@ -929,6 +985,7 @@ static int sdl_check_events ()
                  (float) last_motion_x - active->x,
                  (float) last_motion_y - active->y);
       handle_event (buf);
+    }
     }
     last_motion_x = -1;
   }
