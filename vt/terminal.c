@@ -79,6 +79,7 @@ struct _CT
   int        done;
   int        result;
   long       rev;
+  SDL_Rect   dirty;
 
   CtxClient *client;
 #if 0
@@ -1023,8 +1024,8 @@ int update_vt (CtxClient *client)
            vt_has_blink (vt) ||
            in_scroll)
         {
+          CT *ct = (void*)vt;
           client->drawn_rev = vt_rev (vt);
-          SDL_Rect dirty;
 #if 0
           // XXX this works for initial line in started shell
           // but falls apart when bottom is reached,
@@ -1044,19 +1045,20 @@ int update_vt (CtxClient *client)
           //fprintf (stderr, "%i\r", no);
           vt_draw (vt, ctx, 0, 0);
 #endif
-          ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
+          ctx_dirty_rect (ctx, &ct->dirty.x, &ct->dirty.y, &ct->dirty.w, &ct->dirty.h);
           ctx_free (ctx);
 
 #if 1 // < flipping this turns on subtexture updates, needs bounds tuning
-          dirty.w ++;
-          dirty.h ++;
-          if (dirty.x + dirty.w > width)
-            { dirty.w = width - dirty.x; }
-          if (dirty.y + dirty.h > height)
-            { dirty.h = height - dirty.y; }
+          ct->dirty.w ++;
+          ct->dirty.h ++;
+          if (ct->dirty.x + ct->dirty.w > width)
+            { ct->dirty.w = width - ct->dirty.x; }
+          if (ct->dirty.y + ct->dirty.h > height)
+            { ct->dirty.h = height - ct->dirty.y; }
           SDL_UpdateTexture (client->texture,
-                             &dirty,
-                             (uint8_t *) client->pixels + sizeof (Uint32) * (width * dirty.y + dirty.x), width * sizeof (Uint32) );
+                             &ct->dirty,
+                             (uint8_t *) client->pixels + sizeof (Uint32) * (width * ct->dirty.y + ct->dirty.x), width * sizeof (Uint32) );
+          ct->dirty.x = ct->dirty.y = ct->dirty.w = ct->dirty.h;
 #else
           SDL_UpdateTexture (client->texture, NULL,
                              (void *) client->pixels, width * sizeof (Uint32) );
@@ -1083,21 +1085,22 @@ int update_ct (CtxClient *client)
       Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
+      //ctx_clear (dctx);
       ctx_render_ctx (ct->ctx, dctx);
       ctx_clear (ct->ctx);
 
 #if 1 // < flipping this turns on subtexture updates, needs bounds tuning
-          SDL_Rect dirty;
-          ctx_dirty_rect (dctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
-          dirty.w ++;
-          dirty.h ++;
-          if (dirty.x + dirty.w > width)
-            { dirty.w = width - dirty.x; }
-          if (dirty.y + dirty.h > height)
-            { dirty.h = height - dirty.y; }
+          ctx_dirty_rect (dctx, &ct->dirty.x, &ct->dirty.y, &ct->dirty.w, &ct->dirty.h);
+          ct->dirty.w ++;
+          ct->dirty.h ++;
+          if (ct->dirty.x + ct->dirty.w > width)
+            { ct->dirty.w = width - ct->dirty.x; }
+          if (ct->dirty.y + ct->dirty.h > height)
+            { ct->dirty.h = height - ct->dirty.y; }
           SDL_UpdateTexture (client->texture,
-                             &dirty,
-                             (uint8_t *) client->pixels + sizeof (Uint32) * (width * dirty.y + dirty.x), width * sizeof (Uint32) );
+                             &ct->dirty,
+                             (uint8_t *) client->pixels + sizeof (Uint32) * (width * ct->dirty.y + ct->dirty.x), width * sizeof (Uint32) );
+          ct->dirty.x = ct->dirty.y = ct->dirty.w = ct->dirty.h;
 #else
           SDL_UpdateTexture (client->texture, NULL,
                              (void *) client->pixels, width * sizeof (Uint32) );
@@ -1146,7 +1149,7 @@ int vt_main (int argc, char **argv)
           }
           else
           {
-            if (vt_is_done (client->ct))
+            if (vt_is_done ((void*)client->ct))
               ctx_list_prepend (&to_remove, client);
           }
       }

@@ -4574,6 +4574,9 @@ void ctx_clip (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_CLIP);
 }
 
+void
+ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
+
 void ctx_start_move (Ctx *ctx)
 {
   ctx_set (ctx, CTX_start_move, "", 0);

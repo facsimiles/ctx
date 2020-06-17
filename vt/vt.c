@@ -355,6 +355,11 @@ struct _VT
   int        done;
   int        result;
   long       rev;
+  //SDL_Rect   dirty;
+  double dirtpad;
+  double dirtpad1;
+  double dirtpad2;
+  double dirtpad3;
 
   ssize_t (*write) (void *serial_obj, const void *buf, size_t count);
   ssize_t (*read) (void *serial_obj, void *buf, size_t count);
