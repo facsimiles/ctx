@@ -775,9 +775,9 @@ static int sdl_check_events ()
             case SDL_MOUSEMOTION:
               last_motion_x = event.motion.x;
               last_motion_y = event.motion.y;
-              if (moving_client)
+              if (moving_client && active)
               {
-  client_raise_top (active);
+  //client_raise_top (active);
                 active->x = last_motion_x - client_move_dx;
                 active->y = last_motion_y - client_move_dy;
                 got_event = 1;
@@ -795,7 +795,7 @@ static int sdl_check_events ()
               //if (pointer_down[0] == 0)
               //  usleep (6000);
               //else
-              usleep (8000);
+              usleep (10000);
               //usleep (15000);
               //usleep (5000);
               got_event = 1;
@@ -1111,7 +1111,22 @@ int update_ct (CtxClient *client)
       return 0;
 }
 
-static int update ()
+static int dirt = 0;
+
+static int update_cts ()
+{
+  int changes = 0;
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+      if (client->ct && update_ct (client))
+          changes++;
+  }
+  dirt += changes;
+  return changes;
+}
+
+static int update_vts ()
 {
   int changes = 0;
   for (CtxList *l = clients; l; l = l->next)
@@ -1119,11 +1134,18 @@ static int update ()
     CtxClient *client = l->data;
       if (client->vt && update_vt (client))
           changes++;
-      else if (client->ct && update_ct (client))
-          changes++;
   }
-
+  dirt += changes;
   return changes;
+}
+
+void render_fun (void *data)
+{
+  while(!do_quit)
+  {
+    int changes = update_cts ();
+    if (!changes) usleep (2000);
+  }
 }
 
 static void texture_upload ()
@@ -1143,15 +1165,18 @@ static void texture_upload ()
       ct->dirty.x = ct->dirty.y = ct->dirty.w = ct->dirty.h = 0;
     }
   }
+  dirt = 0;
 }
 
 int vt_main (int argc, char **argv)
 {
+  SDL_Thread *render_thread;
   int width = 80 * font_size/2;
   int height = 24 * font_size;
   execute_self = malloc (strlen (argv[0]) + 16);
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
+  render_thread = SDL_CreateThread (render_fun, "render", NULL);
 
   //add_client ("/home/pippin/src/ctx/examples/bash.sh", 0, height/2, width/2, height/2, 1);
   //add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
@@ -1196,9 +1221,9 @@ int vt_main (int argc, char **argv)
          ctx_list_remove (&to_remove, to_remove->data);
       }
 
-      changes += update ();
+      changes += update_vts ();
 
-      if (changes)
+      if (dirt)
       {
         texture_upload ();
         SDL_RenderClear (renderer);
