@@ -1055,10 +1055,12 @@ int update_vt (CtxClient *client)
             { ct->dirty.w = width - ct->dirty.x; }
           if (ct->dirty.y + ct->dirty.h > height)
             { ct->dirty.h = height - ct->dirty.y; }
+#if 0
           SDL_UpdateTexture (client->texture,
                              &ct->dirty,
                              (uint8_t *) client->pixels + sizeof (Uint32) * (width * ct->dirty.y + ct->dirty.x), width * sizeof (Uint32) );
-          ct->dirty.x = ct->dirty.y = ct->dirty.w = ct->dirty.h;
+          ct->dirty.x = ct->dirty.y = ct->dirty.w = ct->dirty.h = 0;
+#endif
 #else
           SDL_UpdateTexture (client->texture, NULL,
                              (void *) client->pixels, width * sizeof (Uint32) );
@@ -1091,16 +1093,14 @@ int update_ct (CtxClient *client)
 
 #if 1 // < flipping this turns on subtexture updates, needs bounds tuning
           ctx_dirty_rect (dctx, &ct->dirty.x, &ct->dirty.y, &ct->dirty.w, &ct->dirty.h);
+
+          // XXX look out for race condition on value of w..
           ct->dirty.w ++;
           ct->dirty.h ++;
           if (ct->dirty.x + ct->dirty.w > width)
             { ct->dirty.w = width - ct->dirty.x; }
           if (ct->dirty.y + ct->dirty.h > height)
             { ct->dirty.h = height - ct->dirty.y; }
-          SDL_UpdateTexture (client->texture,
-                             &ct->dirty,
-                             (uint8_t *) client->pixels + sizeof (Uint32) * (width * ct->dirty.y + ct->dirty.x), width * sizeof (Uint32) );
-          ct->dirty.x = ct->dirty.y = ct->dirty.w = ct->dirty.h;
 #else
           SDL_UpdateTexture (client->texture, NULL,
                              (void *) client->pixels, width * sizeof (Uint32) );
@@ -1109,6 +1109,40 @@ int update_ct (CtxClient *client)
           return 1;
         }
       return 0;
+}
+
+static int update ()
+{
+  int changes = 0;
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+      if (client->vt && update_vt (client))
+          changes++;
+      else if (client->ct && update_ct (client))
+          changes++;
+  }
+
+  return changes;
+}
+
+static void texture_upload ()
+{
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    CT *ct;
+    if (client->vt) ct = (void*)client->vt;
+    else ct = client->ct;
+
+    if (ct->dirty.w > 0)
+    {
+      SDL_UpdateTexture (client->texture,
+                         &ct->dirty,
+                         (uint8_t *) client->pixels + sizeof (Uint32) * (client->width * ct->dirty.y + ct->dirty.x), client->width * sizeof (Uint32) );
+      ct->dirty.x = ct->dirty.y = ct->dirty.w = ct->dirty.h = 0;
+    }
+  }
 }
 
 int vt_main (int argc, char **argv)
@@ -1162,17 +1196,11 @@ int vt_main (int argc, char **argv)
          ctx_list_remove (&to_remove, to_remove->data);
       }
 
-      for (CtxList *l = clients; l; l = l->next)
-      {
-        CtxClient *client = l->data;
-          if (client->vt && update_vt (client))
-              changes++;
-          else if (client->ct && update_ct (client))
-              changes++;
-      }
+      changes += update ();
 
       if (changes)
       {
+        texture_upload ();
         SDL_RenderClear (renderer);
         for (CtxList *l = clients; l; l = l->next)
         {
