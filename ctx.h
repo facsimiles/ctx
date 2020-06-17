@@ -284,6 +284,8 @@ void ctx_render_stream (Ctx *ctx, FILE *stream, int formatter);
 
 void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
 
+void ctx_start_move (Ctx *ctx);
+
 int ctx_add_single (Ctx *ctx, void *entry);
 
 uint32_t ctx_utf8_to_unichar (const char *input);
@@ -2532,7 +2534,7 @@ struct _CtxState
 #define CTX_drgb_space   CTX_STRH('d','r','g','b','_','s','p','a','c','e',0,0,0,0)
 #define CTX_drgbSpace    CTX_STRH('d','r','g','b','S','p','a','c','e',0,0,0,0,0)
 #define CTX_end          CTX_STRH('e','n','d',0,0,0, 0, 0, 0, 0, 0, 0,0,0)
-#define CTX_endfun CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
+#define CTX_endfun       CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
 #define CTX_even_odd     CTX_STRH('e','v','e','n','_','o','d', 'd', 0, 0, 0, 0,0,0)
 #define CTX_evenOdd      CTX_STRH('e','v','e','n','O','d', 'd', 0, 0, 0, 0, 0,0,0)
 #define CTX_exit         CTX_STRH('e','x','i','t',0,0,0,0,0,0,0,0,0,0)
@@ -2574,7 +2576,6 @@ struct _CtxState
 #define CTX_line_spacing CTX_STRH('l','i','n','e','_','s','p','a','c','i','n','g',0,0)
 #define CTX_line_to      CTX_STRH('l','i','n','e','_','t','o',0,0,0,0,0,0,0)
 #define CTX_lineTo       CTX_STRH('l','i','n','e','T','o',0,0,0,0,0,0,0,0)
-#define CTX_LINE_WIDTH_ALIASED  -1.0
 #define CTX_line_width   CTX_STRH('l','i','n','e','_','w','i','d','t','h',0,0,0,0)
 #define CTX_lineWidth    CTX_STRH('l','i','n','e','W','i','d','t','h',0,0,0,0,0)
 #define CTX_media_box    CTX_STRH('m','e','d','i','a','_','b','o','x',0,0,0,0,0)
@@ -2607,8 +2608,8 @@ struct _CtxState
 #define CTX_relLineTo    CTX_STRH('r','e','l','L','i','n','e','T','o',0,0,0,0,0)
 #define CTX_rel_move_to  CTX_STRH('r','e','l','_','m','o','v','e','_','t','o',0,0,0)
 #define CTX_relMoveTo    CTX_STRH('r','e','l','M','o','v','e','T','o',0,0,0,0,0)
-#define CTX_rel_quad_to     CTX_STRH('r','e','l','_','q','u','a','d','_','t','o',0,0,0)
-#define CTX_relQuadTo       CTX_STRH('r','e','l','Q','u','a','d','T','o',0,0,0,0,0)
+#define CTX_rel_quad_to  CTX_STRH('r','e','l','_','q','u','a','d','_','t','o',0,0,0)
+#define CTX_relQuadTo    CTX_STRH('r','e','l','Q','u','a','d','T','o',0,0,0,0,0)
 #define CTX_rel_smoothq_to CTX_STRH('r','e','l','_','s','m','o','o','t','h','q','_','t','o')
 #define CTX_relSmoothqTo CTX_STRH('r','e','l','S','m','o','o','t','h','q','T','o',0,0)
 #define CTX_rel_smooth_to CTX_STRH('r','e','l','_','s','m','o','o','t','h','_','t','o',0)
@@ -4572,6 +4573,11 @@ void ctx_new_path (Ctx *ctx)
 void ctx_clip (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_CLIP);
+}
+
+void ctx_start_move (Ctx *ctx)
+{
+  CTX_PROCESS_VOID (CTX_START_MOVE);
 }
 
 void ctx_save (Ctx *ctx)
@@ -11077,6 +11083,9 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
       //switch ((CtxCode)code)
       switch (code)
         {
+          case CTX_START_MOVE:
+            name="start_move";
+            break;
           case CTX_SET_KEY:
             name="set_param";
             break;
@@ -11282,6 +11291,14 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
     name[2]='\0';
     switch (code)
       {
+        case CTX_START_MOVE:
+          {
+            char *name = "start_move "
+            fwrite (name, 1, strlen ( (char *) name), stream);
+            if (formatter)
+              fwrite ("(", 1, 1, stream);
+          }
+          break;
         case CTX_SET_GLOBAL_ALPHA:
           name[1]='a';
           break;
@@ -11321,10 +11338,9 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           break;
       }
     fwrite (name, 1, strlen ( (char *) name), stream);
-    if (!formatter)
-      { fwrite (" ", 1, 1, stream); }
+    fwrite (" ", 1, 1, stream);
     if (formatter)
-      { fwrite (" (", 1, 2, stream); }
+      { fwrite ("(", 1, 1, stream); }
   }
 }
 
@@ -12146,6 +12162,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_text:           ret = CTX_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
+          case CTX_start_move:     ret = CTX_START_MOVE; break;
 
           case STR (CTX_SET_KEY,'m',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_composite:
@@ -12723,6 +12740,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_translate (ctx,
                        (parser->cursor_x-1) * parser->cell_width * 1.0,
                        (parser->cursor_y-1) * parser->cell_height * 1.0);
+        break;
+      case CTX_START_MOVE:
+        ctx_start_move (ctx);
         break;
     }
 #undef arg
