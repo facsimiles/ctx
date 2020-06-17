@@ -298,10 +298,8 @@ static int lctrl = 0;
 static int lalt = 0;
 static int rctrl = 0;
 
-#define CTX_MAX_CLIENTS 16
-static CtxClient clients[CTX_MAX_CLIENTS]={{NULL,},};
-static int client_count = 0;
-static int active = 0; // active client
+static CtxList *clients;//CtxClient clients[CTX_MAX_CLIENTS]={{NULL,},};
+static CtxClient *active = NULL;
 
 static SDL_Window   *window;
 static SDL_Renderer *renderer;
@@ -338,36 +336,41 @@ int id_to_no (int id);
 
 static void client_raise (CtxClient *client)
 {
-  CtxClient temp;
+  if (!client) return;
   int no = id_to_no (client->id);
-  if (no >= client_count-2)
-    return;
-  temp = clients[no];
-  clients[no] = clients[no+1];
-  clients[no+1] = temp;
+  ctx_list_remove (&clients, client);
+  ctx_list_insert_at (&clients, no+1, client);
+}
+
+static int only_one_client ()
+{
+  if (clients)
+  {
+     return clients->next == NULL;
+  }
+  return 0;
 }
 
 static void client_lower (CtxClient *client)
 {
-  CtxClient temp;
+  if (!client) return;
   int no = id_to_no (client->id);
   if (no < 1)
     return;
-  temp = clients[no];
-  clients[no] = clients[no-1];
-  clients[no-1] = temp;
+  ctx_list_remove (&clients, client);
+  ctx_list_insert_at (&clients, no-1, client);
 }
 static void client_raise_top (CtxClient *client)
 {
-  int no = id_to_no (client->id);
-  for (int i = no; i < client_count; i++)
-    client_raise (client);
+  if (!client) return;
+  ctx_list_remove (&clients, client);
+  ctx_list_append (&clients, client);
 }
 static void client_lower_bottom (CtxClient *client)
 {
-  int no = id_to_no (client->id);
-  for (int i = 0; i < no; i ++)
-    client_lower (client);
+  if (!client) return;
+  ctx_list_remove (&clients, client);
+  ctx_list_prepend (&clients, client);
 }
 void client_set_title (int id, const char *new_title);
 
@@ -465,7 +468,8 @@ void sdl_setup (int width, int height)
 void add_client (const char *commandline, int x, int y, int width, int height, int ctx)
 {
   static int global_id = 0;
-  CtxClient *client = &clients[client_count++];
+  CtxClient *client = calloc (sizeof (CtxClient), 1);
+  ctx_list_append (&clients, client);
   client->id = global_id++;
   client->x = x;
   client->y = y;
@@ -511,81 +515,96 @@ extern float ctx_shape_cache_rate;
 
 static int last_x = 0;
 static int last_y = 0;
-static int find_active (int x, int y)
+static CtxClient *find_active (int x, int y)
 {
-  int ret = 0;
+  CtxClient *ret = 0;
   last_x = x;
   last_y = y;
-  for (int i = 0; i < client_count; i++)
+  for (CtxList *l = clients; l; l = l->next)
   {
-     if (x > clients[i].x && x < clients[i].x+clients[i].width &&
-         y > clients[i].y && y < clients[i].y+clients[i].height)
-             ret = i;
+     CtxClient *c = l->data;
+     if (x > c->x && x < c->x+c->width &&
+         y > c->y && y < c->y+c->height)
+       ret = c;
   }
+  active = ret;
   return ret;
 }
 
 int id_to_no (int id)
 {
-  for (int i = 0 ;i < client_count; i++)
-          if (clients[i].id == id)
-                  return i;
+  CtxList *l;
+  int no = 0;
+
+  for (l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (client->id == id)
+      return no;
+    no++;
+  }
   return -1;
 }
 
 static CtxClient *client_by_id (int id)
 {
-  int no = id_to_no (id);
-  if (no < 0) return NULL;
-  return &clients[no];
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (client->id == id)
+      return client;
+  }
+  return NULL;
 }
 
-void client_remove (int no)
+void client_remove (CtxClient *client)
 {
-  if (clients[no].vt)
-    vt_destroy (clients[no].vt);
-  if (clients[no].ct)
-    ct_destroy (clients[no].ct);
+  if (client->vt)
+    vt_destroy (client->vt);
+  if (client->ct)
+    ct_destroy (client->ct);
 
-  SDL_DestroyTexture (clients[no].texture);
-  free(clients[no].pixels);
+  SDL_DestroyTexture (client->texture);
+  free(client->pixels);
 
-  if (clients[no].title)
-    free (clients[no].title);
+  if (client->title)
+    free (client->title);
 
-  clients[no]=clients[client_count-1];
-  client_count--;
-  if (client_count == 0)
+  ctx_list_remove (&clients, client);
+  if (clients == NULL)
     do_quit = 1;
 
-  if (no == active)
+  if (client == active)
   {
-    active = 0;
-    find_active (last_x, last_y);
+    active = find_active (last_x, last_y);
   }
 }
 
+#if 0
 void client_remove_by_id (int id)
 {
   int no = id_to_no (id);
   if (no>=0)
     client_remove (no);
 }
+#endif
 
 void client_set_title (int id, const char *new_title)
 {
-  int no = id_to_no (id);
-  if (no < 0) return;
-  if (clients[no].title) free (clients[no].title);
-  clients[no].title = strdup (new_title);
-  if (client_count == 1)
+  CtxClient *client = client_by_id (id);
+  if (!client) return;
+  if (client->title) free (client->title);
+  client->title = strdup (new_title);
+  if (only_one_client())
     SDL_SetWindowTitle (window, new_title);
 }
 
 static void handle_event (const char *event)
 {
-  VT *vt = clients[active].vt;
-  CT *ct = clients[active].ct;
+  if (!active)
+    return;
+  VT *vt = active->vt;
+  CT *ct = active->ct;
   if (!strcmp (event, "shift-return"))
    event = "return";
   else
@@ -626,7 +645,7 @@ static void handle_event (const char *event)
     }
   else if (!strcmp (event, "shift-control-w") )
     {
-      clients[active].do_quit = 1;
+      active->do_quit = 1;
     }
   else
     {
@@ -642,38 +661,37 @@ static int key_repeat = 0;
 
 void client_move (int id, int x, int y)
 {
-   int no = id_to_no (id);
-   if (no < 0) return;
-   clients[no].x = x;
-   clients[no].y = y;
+   CtxClient *client = client_by_id (id);
+   if (!client) return;
+   client->x = x;
+   client->y = y;
 }
 
 int client_resize (int id, int width, int height)
 {
-   int no = id_to_no (id);
-   if (no < 0) return 0;
+   CtxClient *client = client_by_id (id);
 
-   if ( (height != clients[no].height) || (width != clients[no].width) )
+   if (client && ((height != client->height) || (width != client->width) ))
    {
-     SDL_DestroyTexture (clients[no].texture);
-     clients[no].texture = SDL_CreateTexture (renderer,
+     SDL_DestroyTexture (client->texture);
+     client->texture = SDL_CreateTexture (renderer,
                                   SDL_PIXELFORMAT_ARGB8888,
                                   SDL_TEXTUREACCESS_STREAMING,
                                   width, height);
-     free (clients[no].pixels);
-     clients[no].pixels = calloc (width * height, 4);
-     clients[no].width = width;
-     clients[no].height = height;
-     if (clients[no].vt)
+     free (client->pixels);
+     client->pixels = calloc (width * height, 4);
+     client->width = width;
+     client->height = height;
+     if (client->vt)
      {
-       vt_set_term_size (clients[no].vt, width / vt_cw (clients[no].vt), height / vt_ch (clients[no].vt) );
+       vt_set_term_size (client->vt, width / vt_cw (client->vt), height / vt_ch (client->vt) );
      }
      else
      {
        char str[128];
-       ctx_parser_set_size (clients[no].ct->parser, width, height, -1, -1);
+       ctx_parser_set_size (client->ct->parser, width, height, -1, -1);
        sprintf (str, "resized %i %i\n", width, height);
-       vtpty_write ((void*)clients[no].ct, str, strlen (str));
+       vtpty_write ((void*)client->ct, str, strlen (str));
      }
 
      return 1;
@@ -685,9 +703,15 @@ static int sdl_check_events ()
 {
   int got_event = 0;
   SDL_Event      event;
-  CtxClient *client = &clients[active];
-  VT *vt = clients[active].vt;
-  CT *ct = clients[active].ct;
+  //CtxClient *client = active;
+  VT *vt = NULL;
+  CT *ct = NULL;
+  if (active)
+  {
+    vt = active->vt;
+    ct = active->ct;
+  }
+
 
   int last_motion_x = -1;
   int last_motion_y = -1;
@@ -705,14 +729,14 @@ static int sdl_check_events ()
               else if (ct) {};
               break;
             case SDL_WINDOWEVENT:
-              if (client_count == 1)
+              if (only_one_client())
               {
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
                   {
                     int width  = event.window.data1;
                     int height = event.window.data2;
                     got_event = 1;
-                    if (client_resize (clients[0].id, width, height))
+                    if (client_resize (active->id, width, height))
                         return 1;
                   }
               }
@@ -732,30 +756,38 @@ static int sdl_check_events ()
               }
               break;
             case SDL_MOUSEBUTTONDOWN:
-              {
-                last_motion_x = -1;
                 active = find_active (event.motion.x, event.motion.y);
+              if (active)
+              {
                 sprintf (buf, "mouse-press %.0f %.0f",
-                         (float) event.button.x - client->x,
-                         (float) event.button.y - client->y);
+                         (float) event.button.x - active->x,
+                         (float) event.button.y - active->y);
                 handle_event (buf);
+              }
+                last_motion_x = -1;
+                last_motion_y = -1;
                 got_event = 1;
                 pointer_down[0] = 1;
-              }
               break;
             case SDL_MOUSEBUTTONUP:
               {
                 last_motion_x = -1;
+                last_motion_y = -1;
                 active = find_active (event.motion.x, event.motion.y);
-                sprintf (buf, "mouse-release %.0f %.0f",
-                         (float) event.button.x - client->x,
-                         (float) event.button.y - client->y);
-                handle_event (buf);
+                if (active)
+                {
+                  sprintf (buf, "mouse-release %.0f %.0f",
+                           (float) event.button.x - active->x,
+                           (float) event.button.y - active->y);
+                  handle_event (buf);
+                }
                 got_event = 1;
                 pointer_down[0] = 0;
               }
               break;
             case SDL_TEXTINPUT:
+              if (!active)
+                break;
               if (!lctrl && !rctrl && !lalt &&
                   ( (vt && vt_keyrepeat (vt) ) || (key_repeat==0) )
                  )
@@ -835,7 +867,7 @@ static int sdl_check_events ()
                     default:
                       ;
                   }
-                if (strlen (name) )
+                if (active && strlen (name) )
                   {
                     if (event.key.keysym.mod & (KMOD_CTRL) ||
                         event.key.keysym.mod & (KMOD_ALT) ||
@@ -878,15 +910,19 @@ static int sdl_check_events ()
     last_motion_x = event.motion.x;
     last_motion_y = event.motion.y;
     active = find_active (last_motion_x, last_motion_y);
-    if (pointer_down[0])
-      sprintf (buf, "mouse-drag %.0f %.0f",
-               (float) last_motion_x - client->x,
-               (float) last_motion_y - client->y);
-    else
-      sprintf (buf, "mouse-motion %.0f %.0f",
-               (float) last_motion_x - client->x,
-               (float) last_motion_y - client->y);
-    handle_event (buf);
+
+    if (active)
+    {
+      if (pointer_down[0])
+        sprintf (buf, "mouse-drag %.0f %.0f",
+                 (float) last_motion_x - active->x,
+                 (float) last_motion_y - active->y);
+      else
+        sprintf (buf, "mouse-motion %.0f %.0f",
+                 (float) last_motion_x - active->x,
+                 (float) last_motion_y - active->y);
+      handle_event (buf);
+    }
     last_motion_x = -1;
   }
   else
@@ -896,7 +932,8 @@ static int sdl_check_events ()
 
   if (ctx_ticks () - last_event_tick >  1000000)
   { static char *idle = "idle";
-    handle_event (idle);
+    if (active)
+      handle_event (idle);
     last_motion_x = -1;
     got_event = 1;
   }
@@ -909,19 +946,12 @@ static int sdl_check_events ()
 
 int update_vt (CtxClient *client)
 {
-        VT *vt = client->vt;
-        int width = client->width;
-        int height = client->height;
-        //int vt_x = client->x;
-        //int vt_y = client->y;
-        int in_scroll = (vt_has_blink (client->vt) >= 10);
-
-       
-        if (vt_is_done (vt) )
-        {
-          client_remove_by_id (client->id);
-          return -1;
-        }
+      VT *vt = client->vt;
+      int width = client->width;
+      int height = client->height;
+      //int vt_x = client->x;
+      //int vt_y = client->y;
+      int in_scroll = (vt_has_blink (client->vt) >= 10);
 
       if ( (client->drawn_rev != vt_rev (vt) ) ||
            vt_has_blink (vt) ||
@@ -980,11 +1010,6 @@ int update_ct (CtxClient *client)
     int height = client->height;
     //int in_scroll;
    
-    if (vt_is_done ((void*)ct) )
-    {
-      client_remove_by_id (client->id);
-      return -1;
-    }
 
   if ( (client->drawn_rev != ct->rev))
     {
@@ -1040,43 +1065,60 @@ int vt_main (int argc, char **argv)
   signal (SIGCHLD,signal_child);
 
   int sleep_time = 10;
-  while (!do_quit)
+  while (clients)
     {
-      int changes = 0;
-      for (int no = 0; no < client_count; no++)
+      CtxList *to_remove = NULL;
+      for (CtxList *l = clients; l; l = l->next)
       {
-          if (clients[no].vt)
+        CtxClient *client = l->data;
+        if (client->vt)
           {
-            if (update_vt (&clients[no]))
-              changes++;
+            if (vt_is_done (client->vt))
+              ctx_list_prepend (&to_remove, client);
           }
           else
           {
-            if (update_ct (&clients[no]))
-              changes++;
+            if (vt_is_done (client->ct))
+              ctx_list_prepend (&to_remove, client);
           }
+      }
+      for (CtxList *l = to_remove; l; l = l->next)
+      {
+        ctx_list_remove (&clients, l->data);
+      }
+      while (to_remove) ctx_list_remove (&to_remove, to_remove->data);
+
+      int changes = 0;
+      for (CtxList *l = clients; l; l = l->next)
+      {
+        CtxClient *client = l->data;
+          if (client->vt && update_vt (client))
+              changes++;
+          else if (client->ct && update_ct (client))
+              changes++;
       }
 
       if (changes)
       {
         SDL_RenderClear (renderer);
-        for (int no = 0; no < client_count; no++)
+        for (CtxList *l = clients; l; l = l->next)
         {
+          CtxClient *client = l->data;
           SDL_Rect SrcR;
           SDL_Rect DestR;
           SrcR.x = 0;
           SrcR.y = 0;
-          SrcR.w = clients[no].width;
-          SrcR.h = clients[no].height;
+          SrcR.w = client->width;
+          SrcR.h = client->height;
 
-          DestR.x = clients[no].x;
-          DestR.y = clients[no].y;
-          DestR.w = clients[no].width;
-          DestR.h = clients[no].height;
+          DestR.x = client->x;
+          DestR.y = client->y;
+          DestR.w = client->width;
+          DestR.h = client->height;
 
-          if (clients[no].ct)
-            SDL_SetTextureBlendMode (clients[no].texture, SDL_BLENDMODE_BLEND);
-          SDL_RenderCopy (renderer, clients[no].texture, &SrcR, &DestR);
+          if (client->ct)
+            SDL_SetTextureBlendMode (client->texture, SDL_BLENDMODE_BLEND);
+          SDL_RenderCopy (renderer, client->texture, &SrcR, &DestR);
         }
 
         SDL_RenderPresent (renderer);
@@ -1088,26 +1130,21 @@ int vt_main (int argc, char **argv)
         {
           sleep_time = 200;
         }
-#if 0
-      if (in_scroll)
-        {
-          sleep_time = 200;
-        }
-#endif
 
       sleep_time = 200;
-      for (int a = 0; a < client_count; a++)
+      for (CtxList *l = clients; l; l = l->next)
       {
-        if (clients[a].vt)
+        CtxClient *client = l->data;
+        if (client->vt)
         {
-          if (vt_poll (clients[a].vt, sleep_time) )
+          if (vt_poll (client->vt, sleep_time) )
           {
              // got data
           }
         }
         else
         {
-          if (ct_poll (clients[a].ct, sleep_time) )
+          if (ct_poll (client->ct, sleep_time) )
           {
             // got data
           }
@@ -1115,7 +1152,7 @@ int vt_main (int argc, char **argv)
       }
     }
 
-  while (client_count)
-    client_remove (client_count);
+  while (clients)
+    client_remove (clients->data);
   return 0;
 }

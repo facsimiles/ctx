@@ -1753,6 +1753,7 @@ ctx_list_insert_before (CtxList **list, CtxList *sibling,
     }
 }
 
+
 static inline void ctx_list_remove (CtxList **list, void *data)
 {
   CtxList *iter, *prev = NULL;
@@ -1828,6 +1829,38 @@ static inline void ctx_list_append_full (CtxList **list, void *data,
 static inline void ctx_list_append (CtxList **list, void *data)
 {
   ctx_list_append_full (list, data, NULL, NULL);
+}
+
+static inline void
+ctx_list_insert_at (CtxList **list,
+                    int       no,
+                    void     *data)
+{
+  if (*list == NULL || no == 0)
+    {
+      ctx_list_prepend (list, data);
+    }
+  else
+    {
+      int pos = 0;
+      CtxList *prev = NULL;
+      CtxList *sibling = NULL;
+      for (CtxList *l = *list; l && pos < no; l=l->next)
+        {
+          prev = sibling;
+          sibling = l;
+          pos ++;
+        }
+      if (prev)
+        {
+          CtxList *new_ = (CtxList*)calloc (sizeof (CtxList), 1);
+          new_->next = sibling;
+          new_->data = data;
+          prev->next=new_;
+          return;
+        }
+      ctx_list_append (list, data);
+    }
 }
 
 static CtxList*

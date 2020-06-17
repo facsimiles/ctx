@@ -4397,10 +4397,11 @@ static void mrg_path_fill_stroke (Mrg *mrg)
   CtxColor fill_color;
   CtxColor stroke_color;
 
+  fill_color.alpha = 0.0f;
   ctx_get_color (ctx, CTX_fill_color, &fill_color);
   ctx_get_color (ctx, CTX_stroke_color, &stroke_color);
 
-  if (fill_color.alpha > 0.001)
+  if (fill_color.alpha > 0.001f)
   {
     mrg_ctx_set_source_color (ctx, &fill_color);
     if (PROP(stroke_width) > 0.001 && stroke_color.alpha > 0.001)
