@@ -590,6 +590,7 @@ void client_remove (CtxClient *client)
   {
     active = find_active (last_x, last_y);
   }
+  free (client);
 }
 
 #if 0
@@ -1151,10 +1152,12 @@ int vt_main (int argc, char **argv)
       }
       for (CtxList *l = to_remove; l; l = l->next)
       {
-        ctx_list_remove (&clients, l->data);
+        client_remove (l->data);
         changes++;
       }
-      while (to_remove) ctx_list_remove (&to_remove, to_remove->data);
+      while (to_remove){
+         ctx_list_remove (&to_remove, to_remove->data);
+      }
 
       for (CtxList *l = clients; l; l = l->next)
       {
