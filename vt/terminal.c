@@ -762,6 +762,7 @@ static int sdl_check_events ()
             case SDL_WINDOWEVENT:
               if (only_one_client())
               {
+                active = clients->data;
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
                   {
                     int width  = event.window.data1;
@@ -1144,7 +1145,7 @@ void render_fun (void *data)
   while(!do_quit)
   {
     int changes = update_cts ();
-    if (!changes) usleep (2000);
+    if (!changes) usleep (20000);
   }
 }
 
@@ -1257,7 +1258,7 @@ int vt_main (int argc, char **argv)
           sleep_time = 200;
         }
 
-      sleep_time = 200;
+      sleep_time = 5000;
       for (CtxList *l = clients; l; l = l->next)
       {
         CtxClient *client = l->data;
