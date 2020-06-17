@@ -418,6 +418,13 @@ static int ct_set_prop (CT *ct, uint32_t key_hash, const char *val, int len)
   uint32_t val_hash = ctx_strhash (val, 0);
   if (!client)
     return 0;
+
+  if (key_hash == ctx_strhash("start_move", 0))
+  {
+    fprintf (stderr, "start moving!\n");
+    return 0;
+  }
+
   //fprintf (stderr, "%i %s\n", key_hash, val);
 
 // set "pcm-hz"       "8000"
@@ -1068,6 +1075,8 @@ int vt_main (int argc, char **argv)
   while (clients)
     {
       CtxList *to_remove = NULL;
+      int changes = 0;
+
       for (CtxList *l = clients; l; l = l->next)
       {
         CtxClient *client = l->data;
@@ -1085,10 +1094,10 @@ int vt_main (int argc, char **argv)
       for (CtxList *l = to_remove; l; l = l->next)
       {
         ctx_list_remove (&clients, l->data);
+        changes++;
       }
       while (to_remove) ctx_list_remove (&to_remove, to_remove->data);
 
-      int changes = 0;
       for (CtxList *l = clients; l; l = l->next)
       {
         CtxClient *client = l->data;

@@ -667,8 +667,7 @@ typedef enum
   CTX_SET_DCMYK_SPACE      = 24, //
 
   CTX_FUNCTION = 25,
-  CTX_ENDFUN = 26,
-  CTX_START_MOVE = 27, // start moving client
+  //CTX_ENDFUN = 26,
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
@@ -4577,7 +4576,7 @@ void ctx_clip (Ctx *ctx)
 
 void ctx_start_move (Ctx *ctx)
 {
-  CTX_PROCESS_VOID (CTX_START_MOVE);
+  ctx_set (ctx, CTX_start_move, "", 0);
 }
 
 void ctx_save (Ctx *ctx)
@@ -11083,9 +11082,6 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
       //switch ((CtxCode)code)
       switch (code)
         {
-          case CTX_START_MOVE:
-            name="start_move";
-            break;
           case CTX_SET_KEY:
             name="set_param";
             break;
@@ -11291,14 +11287,6 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
     name[2]='\0';
     switch (code)
       {
-        case CTX_START_MOVE:
-          {
-            char *name = "start_move "
-            fwrite (name, 1, strlen ( (char *) name), stream);
-            if (formatter)
-              fwrite ("(", 1, 1, stream);
-          }
-          break;
         case CTX_SET_GLOBAL_ALPHA:
           name[1]='a';
           break;
@@ -12078,7 +12066,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 #define CTX_endfun CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
 
           case CTX_function:  ret = CTX_FUNCTION; break;
-          case CTX_endfun:    ret = CTX_ENDFUN; break;
+          //case CTX_endfun:    ret = CTX_ENDFUN; break;
 #endif
           /* first a list of mappings to one_char hashes, handled in a
            * separate fast path switch without hashing
@@ -12162,7 +12150,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_text:           ret = CTX_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
-          case CTX_start_move:     ret = CTX_START_MOVE; break;
 
           case STR (CTX_SET_KEY,'m',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_composite:
@@ -12592,6 +12579,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_set_font (ctx, (char *) parser->holding);
         break;
 
+
       case CTX_SET:
         parser->t_args++;
         if (parser->t_args % 2 == 1)
@@ -12740,9 +12728,6 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_translate (ctx,
                        (parser->cursor_x-1) * parser->cell_width * 1.0,
                        (parser->cursor_y-1) * parser->cell_height * 1.0);
-        break;
-      case CTX_START_MOVE:
-        ctx_start_move (ctx);
         break;
     }
 #undef arg

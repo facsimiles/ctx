@@ -89,6 +89,7 @@ void red_rect (CtxEvent *event, void *userdata, void *userdata2)
 
 void green_rect (CtxEvent *event, void *userdata, void *userdata2)
 {
+#if 0
    char buf[32];
    static float start_x;
    static float start_y;
@@ -123,7 +124,9 @@ void green_rect (CtxEvent *event, void *userdata, void *userdata2)
      case CTX_DRAG_RELEASE:
       break;
    }
+#endif
    ctx_event_stop_propagate (event);
+   ctx_start_move (event->ctx);
 }
 
 int main (int argc, char **argv)
@@ -175,7 +178,7 @@ int main (int argc, char **argv)
 
     ctx_set_rgb        (ctx, 0, 1,0);
     ctx_rectangle (ctx, 100,250,100,100);
-    ctx_listen    (ctx, CTX_DRAG, green_rect, NULL, NULL);
+    ctx_listen    (ctx, CTX_PRESS, green_rect, NULL, NULL);
     ctx_fill (ctx);
     
     _analog_clock (ctx,
