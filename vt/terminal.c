@@ -775,6 +775,7 @@ static int sdl_check_events ()
               last_motion_y = event.motion.y;
               if (moving_client)
               {
+  client_raise_top (active);
                 active->x = last_motion_x - client_move_dx;
                 active->y = last_motion_y - client_move_dy;
                 got_event = 1;
