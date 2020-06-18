@@ -90,6 +90,9 @@ struct _CT
 #endif
   CTRenderer renderer;
   int        frame;
+  int        render_frame;
+  int        ready_frame;
+  int        shown_frame;
   Ctx       *ctx[2];
   CtxParser *parser[2];
 };
@@ -155,7 +158,7 @@ int ct_poll (CT *ct, int timeout)
     {
       len = vtpty_read ((void*)ct, ct->buf, read_size);
       for (int i = 0; i < len; i++)
-        { ctx_parser_feed_byte (ct->parser[ct->frame], ct->buf[i]); }
+        { ctx_parser_feed_byte (ct->parser[ct->frame%2], ct->buf[i]); }
       got_data+=len;
       remaining_chars -= len;
       timeout -= 10;
@@ -209,10 +212,15 @@ static void ct_run_command (CT *vt, const char *command, int width, int height)
 static void ct_rev_inc (void *data)
 {
    CT *ct = data;
-   SDL_LockMutex (clients_mutex);
-   ct->frame = (ct->frame + 1) % 2;
-   ct->rev++;
-   SDL_UnlockMutex (clients_mutex);
+   //SDL_LockMutex (clients_mutex);
+   if (ct->shown_frame == ct->render_frame)
+   {
+     ct->render_frame = ct->frame;
+     ct->frame++;
+     ct->rev++;
+   }
+   ctx_clear (ct->ctx[ct->frame%2]);
+   //SDL_UnlockMutex (clients_mutex);
 }
 
 static int ct_set_prop (CT *ct, uint32_t key, const char *val, int len);
@@ -729,7 +737,8 @@ int client_resize (int id, int width, int height)
      else
      {
        char str[128];
-       ctx_parser_set_size (client->ct->parser[client->ct->frame], width, height, -1, -1);
+       ctx_parser_set_size (client->ct->parser[0], width, height, -1, -1);
+       ctx_parser_set_size (client->ct->parser[1], width, height, -1, -1);
        sprintf (str, "resized %i %i\n", width, height);
        vtpty_write ((void*)client->ct, str, strlen (str));
      }
@@ -1115,15 +1124,14 @@ int update_ct (CtxClient *client)
     //int in_scroll;
    
 
-  if ( (client->drawn_rev != ct->rev))
+  if (ct->shown_frame != ct->render_frame && (ct->ready_frame == 0))
     {
-      client->drawn_rev = ct->rev;
       Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
       //ctx_clear (dctx);
-      ctx_render_ctx (ct->ctx[(ct->frame+1)%2], dctx);
-      ctx_clear (ct->ctx[(ct->frame+1)%2]);
+      ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
+      //ctx_clear (ct->ctx[(ct->render_frame)%2]);
 
 #if 1 // < flipping this turns on subtexture updates, needs bounds tuning
           ctx_dirty_rect (dctx, &ct->dirty.x, &ct->dirty.y, &ct->dirty.w, &ct->dirty.h);
@@ -1140,6 +1148,7 @@ int update_ct (CtxClient *client)
                              (void *) client->pixels, width * sizeof (Uint32) );
 #endif
           ctx_free (dctx);
+          ct->ready_frame = ct->render_frame;
           return 1;
         }
       return 0;
@@ -1199,6 +1208,11 @@ static void texture_upload ()
                          &ct->dirty,
                          (uint8_t *) client->pixels + sizeof (Uint32) * (client->width * ct->dirty.y + ct->dirty.x), client->width * sizeof (Uint32) );
       ct->dirty.x = ct->dirty.y = ct->dirty.w = ct->dirty.h = 0;
+      if (client->ct)
+      {
+        ct->shown_frame = ct->ready_frame;
+        ct->ready_frame = 0;
+      }
     }
   }
   dirt = 0;

@@ -356,10 +356,12 @@ struct _VT
   int        result;
   long       rev;
   //SDL_Rect   dirty;
-  double dirtpad;
-  double dirtpad1;
-  double dirtpad2;
-  double dirtpad3;
+  float  dirtpad;
+  float  dirtpad1;
+  float  dirtpad2;
+  float  dirtpad3;
+
+  void  *client;
 
   ssize_t (*write) (void *serial_obj, const void *buf, size_t count);
   ssize_t (*read) (void *serial_obj, void *buf, size_t count);
@@ -595,10 +597,11 @@ void client_set_title (int id, const char *new_title);
 static void vt_set_title (VT *vt, const char *new_title)
 {
   if (vt->inert) { return; }
+
   if (vt->title)
     { free (vt->title); }
   vt->title = strdup (new_title);
-  client_set_title (vt->id, vt->title);
+  client_set_title (vt->id, new_title);//vt->title);
 }
 
 const char *vt_get_title (VT *vt)
@@ -4691,8 +4694,10 @@ void vt_destroy (VT *vt)
   ctx_list_remove (&vts, vt);
   kill (vt->vtpty.pid, 9);
   close (vt->vtpty.pty);
+#if 1
   if (vt->title)
     free (vt->title);
+#endif
   free (vt);
 }
 
@@ -6587,6 +6592,7 @@ static uint8_t palettes[][16][3]=
             vt->select_start_row = y;
             vt->select_end_col = x;
             vt->select_end_row = y;
+            vt->rev++;
           }
         else if (type == VT_MOUSE_DRAG)
           {
@@ -6604,6 +6610,7 @@ static uint8_t palettes[][16][3]=
                 vt->select_start_col = vt->select_end_col;
                 vt->select_end_col = tmp;
               }
+            vt->rev++;
           }
         return;
       }
