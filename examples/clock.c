@@ -198,7 +198,7 @@ int main (int argc, char **argv)
 
 
     ctx_flush          (ctx);
-    usleep (50000);
+    //usleep (50000);
     //if (strcmp (event, "idle"))
     //fprintf (stderr, "[%s :%i %i]", event, mx, my);
 

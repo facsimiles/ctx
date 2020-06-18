@@ -89,8 +89,9 @@ struct _CT
   void   (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
 #endif
   CTRenderer renderer;
-  Ctx       *ctx;
-  CtxParser *parser;
+  int        frame;
+  Ctx       *ctx[2];
+  CtxParser *parser[2];
 };
 
 CtxList *vts = NULL;
@@ -154,7 +155,7 @@ int ct_poll (CT *ct, int timeout)
     {
       len = vtpty_read ((void*)ct, ct->buf, read_size);
       for (int i = 0; i < len; i++)
-        { ctx_parser_feed_byte (ct->parser, ct->buf[i]); }
+        { ctx_parser_feed_byte (ct->parser[ct->frame], ct->buf[i]); }
       got_data+=len;
       remaining_chars -= len;
       timeout -= 10;
@@ -208,7 +209,10 @@ static void ct_run_command (CT *vt, const char *command, int width, int height)
 static void ct_rev_inc (void *data)
 {
    CT *ct = data;
+   SDL_LockMutex (clients_mutex);
+   ct->frame = (ct->frame + 1) % 2;
    ct->rev++;
+   SDL_UnlockMutex (clients_mutex);
 }
 
 static int ct_set_prop (CT *ct, uint32_t key, const char *val, int len);
@@ -227,12 +231,16 @@ CT *ct_new (const char *command, int width, int height, int id, void *pixels)
   ct->resize        = vtpty_resize;
 #endif
   ct->done               = 0;
-  ct->ctx = ctx_new ();
   ct->renderer.ct = ct;
-  _ctx_set_transformation (ct->ctx, 0);
-          
-  ct->parser = ctx_parser_new (ct->ctx, width, height, width/40.0, height/20.0, 1, 1, (void*)ct_set_prop, (void*)ct_get_prop, ct, ct_rev_inc, ct);
-  ctx_clear (ct->ctx);
+
+  for (int i = 0; i < 2; i++)
+  {
+    ct->ctx[i] = ctx_new ();
+  _ctx_set_transformation (ct->ctx[i], 0);
+    ct->parser[i] = ctx_parser_new (ct->ctx[i], width, height, width/40.0, height/20.0, 1, 1, (void*)ct_set_prop, (void*)ct_get_prop, ct, ct_rev_inc, ct);
+    ctx_clear (ct->ctx[i]);
+  }
+
 
   if (command)
     {
@@ -261,8 +269,11 @@ void ct_destroy (CT *ct)
   ctx_list_remove (&vts, ct);
   kill (ct->vtpty.pid, 9);
   close (ct->vtpty.pty);
-  free (ct->parser);
-  ctx_free (ct->ctx);
+  for (int i = 0; i < 2; i++)
+  {
+    free (ct->parser[i]);
+    ctx_free (ct->ctx[i]);
+  }
   free (ct);
 }
 
@@ -718,7 +729,7 @@ int client_resize (int id, int width, int height)
      else
      {
        char str[128];
-       ctx_parser_set_size (client->ct->parser, width, height, -1, -1);
+       ctx_parser_set_size (client->ct->parser[client->ct->frame], width, height, -1, -1);
        sprintf (str, "resized %i %i\n", width, height);
        vtpty_write ((void*)client->ct, str, strlen (str));
      }
@@ -794,6 +805,7 @@ static int sdl_check_events ()
             case SDL_MOUSEMOTION:
               last_motion_x = event.motion.x;
               last_motion_y = event.motion.y;
+#if 0
               if (moving_client && active)
               {
                 client_raise_top (active);
@@ -803,6 +815,7 @@ static int sdl_check_events ()
                 goto done;
               }
               else
+#endif
               {
 
               if (motion_start_x < 0)
@@ -811,12 +824,6 @@ static int sdl_check_events ()
                 motion_start_y = event.motion.y;
               }
 
-              //if (pointer_down[0] == 0)
-              //  usleep (6000);
-              //else
-              usleep (10000);
-              //usleep (15000);
-              //usleep (5000);
               got_event = 1;
 
               max_motion--;
@@ -824,6 +831,14 @@ static int sdl_check_events ()
                   ctx_fabsf (last_motion_y - motion_start_y) >
                   128) || max_motion < 0)
                       goto done;
+
+#if 0
+              if (pointer_down[0] == 0)
+                usleep (6000);
+              else
+                usleep (8000);
+#endif
+
               }
               break;
             case SDL_MOUSEBUTTONDOWN:
@@ -1107,8 +1122,8 @@ int update_ct (CtxClient *client)
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
       //ctx_clear (dctx);
-      ctx_render_ctx (ct->ctx, dctx);
-      ctx_clear (ct->ctx);
+      ctx_render_ctx (ct->ctx[(ct->frame+1)%2], dctx);
+      ctx_clear (ct->ctx[(ct->frame+1)%2]);
 
 #if 1 // < flipping this turns on subtexture updates, needs bounds tuning
           ctx_dirty_rect (dctx, &ct->dirty.x, &ct->dirty.y, &ct->dirty.w, &ct->dirty.h);
@@ -1191,14 +1206,14 @@ static void texture_upload ()
 
 int vt_main (int argc, char **argv)
 {
-  SDL_Thread *render_thread;
+  //SDL_Thread *render_thread;
   clients_mutex = SDL_CreateMutex();
   int width = 80 * font_size/2;
   int height = 24 * font_size;
   execute_self = malloc (strlen (argv[0]) + 16);
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
-  render_thread = SDL_CreateThread (render_fun, "render", NULL);
+  SDL_CreateThread ((void*)render_fun, "render", NULL);
 
   //add_client ("/home/pippin/src/ctx/examples/bash.sh", 0, height/2, width/2, height/2, 1);
   //add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
