@@ -94,6 +94,7 @@ struct _CT
 };
 
 CtxList *vts = NULL;
+SDL_mutex *clients_mutex = NULL;
 
 static void signal_child (int signum)
 {
@@ -338,9 +339,11 @@ int id_to_no (int id);
 static void client_raise (CtxClient *client)
 {
   if (!client) return;
+  SDL_LockMutex (clients_mutex);
   int no = id_to_no (client->id);
   ctx_list_remove (&clients, client);
   ctx_list_insert_at (&clients, no+1, client);
+  SDL_UnlockMutex (clients_mutex);
 }
 
 static int only_one_client ()
@@ -355,23 +358,32 @@ static int only_one_client ()
 static void client_lower (CtxClient *client)
 {
   if (!client) return;
+  SDL_LockMutex (clients_mutex);
   int no = id_to_no (client->id);
   if (no < 1)
+  {
+    SDL_UnlockMutex (clients_mutex);
     return;
+  }
   ctx_list_remove (&clients, client);
   ctx_list_insert_at (&clients, no-1, client);
+  SDL_UnlockMutex (clients_mutex);
 }
 static void client_raise_top (CtxClient *client)
 {
   if (!client) return;
+  SDL_LockMutex (clients_mutex);
   ctx_list_remove (&clients, client);
   ctx_list_append (&clients, client);
+  SDL_UnlockMutex (clients_mutex);
 }
 static void client_lower_bottom (CtxClient *client)
 {
   if (!client) return;
+  SDL_LockMutex (clients_mutex);
   ctx_list_remove (&clients, client);
   ctx_list_prepend (&clients, client);
+  SDL_UnlockMutex (clients_mutex);
 }
 void client_set_title (int id, const char *new_title);
 
@@ -572,6 +584,7 @@ static CtxClient *client_by_id (int id)
 
 void client_remove (CtxClient *client)
 {
+  SDL_LockMutex (clients_mutex);
   if (client->vt)
     vt_destroy (client->vt);
   if (client->ct)
@@ -592,6 +605,7 @@ void client_remove (CtxClient *client)
     active = find_active (last_x, last_y);
   }
   free (client);
+  SDL_UnlockMutex (clients_mutex);
 }
 
 #if 0
@@ -687,6 +701,7 @@ int client_resize (int id, int width, int height)
 
    if (client && ((height != client->height) || (width != client->width) ))
    {
+     SDL_LockMutex (clients_mutex);
      SDL_DestroyTexture (client->texture);
      client->texture = SDL_CreateTexture (renderer,
                                   SDL_PIXELFORMAT_ARGB8888,
@@ -708,6 +723,7 @@ int client_resize (int id, int width, int height)
        vtpty_write ((void*)client->ct, str, strlen (str));
      }
 
+     SDL_UnlockMutex (clients_mutex);
      return 1;
    }
    return 0;
@@ -741,7 +757,6 @@ static int sdl_check_events ()
     ct = active->ct;
   }
 
-
   static long last_event_tick = 0;
   int max_motion = 64;
 
@@ -769,7 +784,10 @@ static int sdl_check_events ()
                     int height = event.window.data2;
                     got_event = 1;
                     if (client_resize (active->id, width, height))
-                        return 1;
+                    {
+                      client_move (active->id,0,0);
+                      return 1;
+                    }
                   }
               }
               break;
@@ -778,7 +796,7 @@ static int sdl_check_events ()
               last_motion_y = event.motion.y;
               if (moving_client && active)
               {
-  //client_raise_top (active);
+                client_raise_top (active);
                 active->x = last_motion_x - client_move_dx;
                 active->y = last_motion_y - client_move_dy;
                 got_event = 1;
@@ -1144,7 +1162,9 @@ void render_fun (void *data)
 {
   while(!do_quit)
   {
+    SDL_LockMutex (clients_mutex);
     int changes = update_cts ();
+    SDL_UnlockMutex (clients_mutex);
     if (!changes) usleep (20000);
   }
 }
@@ -1172,6 +1192,7 @@ static void texture_upload ()
 int vt_main (int argc, char **argv)
 {
   SDL_Thread *render_thread;
+  clients_mutex = SDL_CreateMutex();
   int width = 80 * font_size/2;
   int height = 24 * font_size;
   execute_self = malloc (strlen (argv[0]) + 16);
@@ -1224,7 +1245,7 @@ int vt_main (int argc, char **argv)
 
       changes += update_vts ();
 
-      if (dirt)
+      if (dirt + changes)
       {
         texture_upload ();
         SDL_RenderClear (renderer);
