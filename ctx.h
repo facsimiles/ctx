@@ -300,7 +300,17 @@ typedef enum
 typedef enum
 {
   CTX_COMPOSITE_SOURCE_OVER,
-  CTX_COMPOSITE_SOURCE_COPY
+  CTX_COMPOSITE_COPY,
+  CTX_COMPOSITE_SOURCE_IN,
+  CTX_COMPOSITE_SOURCE_OUT,
+  CTX_COMPOSITE_SOURCE_ATOP,
+  CTX_COMPOSITE_DESTINATION_OVER,
+  CTX_COMPOSITE_DESTINATION_IN,
+  CTX_COMPOSITE_DESTINATION_OUT,
+  CTX_COMPOSITE_DESTINATION_ATOP,
+  CTX_COMPOSITE_LIGHTER,
+  CTX_COMPOSITE_XOR
+
 } CtxCompositingMode;
 
 typedef enum
@@ -2527,6 +2537,12 @@ struct _CtxState
 #define CTX_curveTo      CTX_STRH('c','u','r','v','e','T','o',0,0,0,0,0,0,0)
 #define CTX_dcmyk_space  CTX_STRH('d','c','m','y','k','_','s','p','a','c','e',0,0,0)
 #define CTX_dcmykSpace   CTX_STRH('d','c','m','y','k','S','p','a','c','e',0,0,0,0)
+#define CTX_destinationIn     CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','I','n',0)
+#define CTX_destination_in    CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','i','n')
+#define CTX_destinationAtop   CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','A','t','o')
+#define CTX_destination_atop  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','a','t')
+#define CTX_destinationOver   CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','O','v','e')
+#define CTX_destination_over  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','-','o','v')
 #define CTX_done         CTX_STRH('d','o','n','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_drgba        CTX_STRH('d','r','g','b','a',0,0,0,0,0,0,0,0,0)
 #define CTX_drgb         CTX_STRH('d','r','g','b',0,0,0,0,0,0,0,0,0,0)
@@ -2565,6 +2581,7 @@ struct _CtxState
 #define CTX_lcha         CTX_STRH('l','c','h','a',0,0,0,0,0,0,0,0,0,0)
 #define CTX_lch          CTX_STRH('l','c','h',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_left         CTX_STRH('l','e','f','t',0,0, 0, 0, 0, 0, 0, 0,0,0)
+#define CTX_lighter      CTX_STRH('l','i','g','h','t','e','r',0,0,0,0,0,0,0)
 #define CTX_linear_gradient CTX_STRH('l','i','n','e','a','r','_','g','r','a','d','i','e','n')
 #define CTX_linearGradient CTX_STRH('l','i','n','e','a','r','G','r','a','d','i','e','n','t')
 #define CTX_line_cap     CTX_STRH('l','i','n','e','_','c','a','p',0,0,0,0,0,0)
@@ -2633,6 +2650,12 @@ struct _CtxState
 #define CTX_smoothQuadTo CTX_STRH('s','m','o','o','t','h','Q','u','a','d','T','o',0,0)
 #define CTX_smooth_to    CTX_STRH('s','m','o','o','t','h','_','t','o',0,0,0,0,0)
 #define CTX_smoothTo     CTX_STRH('s','m','o','o','t','h','T','o',0,0,0,0,0,0)
+#define CTX_sourceIn     CTX_STRH('s','o','u','r','c','e','I','n',0,0,0,0,0,0)
+#define CTX_source_in    CTX_STRH('s','o','u','r','c','e','_','i','n',0,0,0,0,0)
+#define CTX_sourceAtop   CTX_STRH('s','o','u','r','c','e','A','t','o','p',0,0,0,0)
+#define CTX_source_atop  CTX_STRH('s','o','u','r','c','e','_','a','t','o','p',0,0,0)
+#define CTX_sourceOver   CTX_STRH('s','o','u','r','c','e','O','v','e','r',0,0,0,0)
+#define CTX_source_over  CTX_STRH('s','o','u','r','c','e','-','o','v','e','r',0,0,0)
 #define CTX_square       CTX_STRH('s','q','u','a','r','e', 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_start        CTX_STRH('s','t','a','r','t',0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_start_move   CTX_STRH('s','t','a','r','t','_','m','o','v','e',0,0,0,0)
@@ -2656,6 +2679,7 @@ struct _CtxState
 #define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
 #define CTX_winding      CTX_STRH('w','i','n','d','i','n', 'g', 0, 0, 0, 0, 0,0,0)
 #define CTX_x            CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_xor          CTX_STRH('x','o','r',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_y            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
 
 static float ctx_state_get (CtxState *state, uint32_t hash)
