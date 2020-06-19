@@ -116,6 +116,7 @@ int main (int argc, char **argv)
   {
     ctx_reset          (ctx);
     ctx_save (ctx);
+    ctx_set_rgba       (ctx, 0, 0, 0.5, 0.9); //XXX should not impact clear
     ctx_rectangle      (ctx, 0, 0, ctx_width(ctx), ctx_height(ctx));
     ctx_set_compositing_mode (ctx, CTX_COMPOSITE_CLEAR);
     ctx_fill           (ctx);

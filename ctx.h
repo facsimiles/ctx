@@ -12079,6 +12079,12 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
           case CTX_smoothQuadTo:
           case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
+
+          case CTX_clear:          ret = CTX_COMPOSITE_CLEAR; break;
+          case CTX_copy:           ret = CTX_COMPOSITE_COPY; break;
+          case CTX_sourceOver:
+          case CTX_source_over:    ret = CTX_COMPOSITE_SOURCE_OVER; break;
+
           case CTX_reset:          ret = CTX_RESET; break;
           case CTX_verLineTo:
           case CTX_ver_line_to:    ret = CTX_VER_LINE_TO; break;

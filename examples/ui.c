@@ -46,7 +46,7 @@ int main (int argc, char **argv)
   //
   while (!do_quit)
   {
-    ctx_clear          (ctx);
+    ctx_reset          (ctx);
     //ctx_set_rgba       (ctx, 0.5, 0.5, 0.5, 1);
     ctx_set_rgba       (ctx, 0.0, 0.0, 0.0, 1);
     ctx_rectangle      (ctx, 0, 0, ctx_width(ctx), ctx_height(ctx));
