@@ -2524,6 +2524,7 @@ struct _CtxState
 #define CTX_cap          CTX_STRH('c','a','p',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_center       CTX_STRH('c','e','n','t','e','r', 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_clear        CTX_STRH('c','l','e','a','r',0,0,0,0,0,0,0,0,0)
+#define CTX_reset        CTX_STRH('r','e','s','e','t',0,0,0,0,0,0,0,0,0)
 #define CTX_copy         CTX_STRH('c','o','p','y',0,0,0,0,0,0,0,0,0,0)
 #define CTX_clip         CTX_STRH('c','l','i','p',0,0,0,0,0,0,0,0,0,0)
 #define CTX_close_path   CTX_STRH('c','l','o','s','e','_','p','a','t','h',0,0,0,0)
@@ -11164,192 +11165,68 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
       //switch ((CtxCode)code)
       switch (code)
         {
-          case CTX_SET_KEY:
-            name="set_param";
-            break;
-          case CTX_SET_COLOR:
-            name="set_color";
-            break;
-          case CTX_DEFINE_GLYPH:
-            name="define_glyph";
-            break;
-          case CTX_SET_PIXEL:
-            name="set_pixel";
-            break;
-          case CTX_SET_GLOBAL_ALPHA:
-            name="set_global_alpha";
-            break;
-          case CTX_TEXT:
-            name="text";
-            break;
-          case CTX_TEXT_STROKE:
-            name="text_stroke";
-            break;
-          case CTX_SAVE:
-            name="save";
-            break;
-          case CTX_RESTORE:
-            name="restore";
-            break;
-          case CTX_RECTANGLE:
-            name="rectangle";
-            break;
-          case CTX_LINEAR_GRADIENT:
-            name="linear_gradient";
-            break;
-          case CTX_RADIAL_GRADIENT:
-            name="radial_gradient";
-            break;
-          case CTX_GRADIENT_STOP:
-            name="gradient_add_stop";
-            break;
-          case CTX_MEDIA_BOX:
-            name="media_box";
-            break;
-          case CTX_MOVE_TO:
-            name="move_to";
-            break;
-          case CTX_LINE_TO:
-            name="line_to";
-            break;
-          case CTX_NEW_PATH:
-            name="new_path";
-            break;
-          case CTX_REL_MOVE_TO:
-            name="rel_move_to";
-            break;
-          case CTX_REL_LINE_TO:
-            name="rel_line_to";
-            break;
-          case CTX_FILL:
-            name="fill";
-            break;
-          case CTX_EXIT:
-            name="exit";
-            break;
-          case CTX_APPLY_TRANSFORM:
-            name="set_transform";
-            break;
-          case CTX_REL_ARC_TO:
-            name="rel_arc_to";
-            break;
-          case CTX_GLYPH:
-            name="glyph";
-            break;
-          case CTX_TEXTURE:
-            name="texture";
-            break;
-          case CTX_IDENTITY:
-            name="identity";
-            break;
-          case CTX_CLOSE_PATH:
-            name="close_path";
-            break;
-          case CTX_PRESERVE:
-            name="preserve";
-            break;
-          case CTX_FLUSH:
-            name="flush";
-            break;
-          case CTX_RESET:
-            name="clear";
-            break;
-          case CTX_SET_FONT:
-            name="set_font";
-            break;
-          case CTX_STROKE:
-            name="stroke";
-            break;
-          case CTX_CLIP:
-            name="clip";
-            break;
-          case CTX_ARC:
-            name="arc";
-            break;
-          case CTX_SCALE:
-            name="scale";
-            break;
-          case CTX_TRANSLATE:
-            name="translate";
-            break;
-          case CTX_ROTATE:
-            name="rotate";
-            break;
-          case CTX_ARC_TO:
-            name="arc_to";
-            break;
-          case CTX_CURVE_TO:
-            name="curve_to";
-            break;
-          case CTX_REL_CURVE_TO:
-            name="rel_curve_to";
-            break;
-          case CTX_REL_QUAD_TO:
-            name="rel_quad_to";
-            break;
-          case CTX_QUAD_TO:
-            name="quad_to";
-            break;
-          case CTX_SMOOTH_TO:
-            name="smooth_to";
-            break;
-          case CTX_REL_SMOOTH_TO:
-            name="rel_smooth_to";
-            break;
-          case CTX_SMOOTHQ_TO:
-            name="smoothq_to";
-            break;
-          case CTX_REL_SMOOTHQ_TO:
-            name="rel_smoothq_to";
-            break;
-          case CTX_NEW_PAGE:
-            name="new_page";
-            break;
-          case CTX_HOR_LINE_TO:
-            name="hor_line_to";
-            break;
-          case CTX_VER_LINE_TO:
-            name="ver_line_to";
-            break;
-          case CTX_REL_HOR_LINE_TO:
-            name="rel_hor_line_to";
-            break;
-          case CTX_REL_VER_LINE_TO:
-            name="rel_ver_line_to";
-            break;
-          case CTX_SET_COMPOSITING_MODE:
-            name="set_compositing_mode";
-            break;
-          case CTX_SET_TEXT_ALIGN:
-            name="set_text_align";
-            break;
-          case CTX_SET_TEXT_BASELINE:
-            name="set_text_baseline";
-            break;
-          case CTX_SET_TEXT_DIRECTION:
-            name="set_text_direction";
-            break;
-          case CTX_SET_FONT_SIZE:
-            name="set_font_size";
-            break;
-          case CTX_SET_MITER_LIMIT:
-            name="set_miter_limit";
-            break;
-          case CTX_SET_LINE_JOIN:
-            name="set_line_join";
-            break;
-          case CTX_SET_LINE_CAP:
-            name="set_line_cap";
-            break;
-          case CTX_SET_LINE_WIDTH:
-            name="set_line_width";
-            break;
-          case CTX_SET_FILL_RULE:
-            name="set_fill_rule";
-            break;
-          case CTX_SET:
-            name="setprop";
-            break;
+          case CTX_SET_KEY:              name="set_param"; break;
+          case CTX_SET_COLOR:            name="set_color"; break;
+          case CTX_DEFINE_GLYPH:         name="define_glyph"; break;
+          case CTX_SET_PIXEL:            name="set_pixel"; break;
+          case CTX_SET_GLOBAL_ALPHA:     name="set_global_alpha"; break;
+          case CTX_TEXT:                 name="text"; break;
+          case CTX_TEXT_STROKE:          name="text_stroke"; break;
+          case CTX_SAVE:                 name="save"; break;
+          case CTX_RESTORE:              name="restore"; break;
+          case CTX_RECTANGLE:            name="rectangle"; break;
+          case CTX_LINEAR_GRADIENT:      name="linear_gradient"; break;
+          case CTX_RADIAL_GRADIENT:      name="radial_gradient"; break;
+          case CTX_GRADIENT_STOP:        name="gradient_add_stop"; break;
+          case CTX_MEDIA_BOX:            name="media_box"; break;
+          case CTX_MOVE_TO:              name="move_to"; break;
+          case CTX_LINE_TO:              name="line_to"; break;
+          case CTX_NEW_PATH:             name="new_path"; break;
+          case CTX_REL_MOVE_TO:          name="rel_move_to"; break;
+          case CTX_REL_LINE_TO:          name="rel_line_to"; break;
+          case CTX_FILL:                 name="fill"; break;
+          case CTX_EXIT:                 name="exit"; break;
+          case CTX_APPLY_TRANSFORM:      name="set_transform"; break;
+          case CTX_REL_ARC_TO:           name="rel_arc_to"; break;
+          case CTX_GLYPH:                name="glyph"; break;
+          case CTX_TEXTURE:              name="texture"; break;
+          case CTX_IDENTITY:             name="identity"; break;
+          case CTX_CLOSE_PATH:           name="close_path"; break;
+          case CTX_PRESERVE:             name="preserve"; break;
+          case CTX_FLUSH:                name="flush"; break;
+          case CTX_RESET:                name="reset"; break;
+          case CTX_SET_FONT:             name="set_font"; break;
+          case CTX_STROKE:               name="stroke"; break;
+          case CTX_CLIP:                 name="clip"; break;
+          case CTX_ARC:                  name="arc"; break;
+          case CTX_SCALE:                name="scale"; break;
+          case CTX_TRANSLATE:            name="translate"; break;
+          case CTX_ROTATE:               name="rotate"; break;
+          case CTX_ARC_TO:               name="arc_to"; break;
+          case CTX_CURVE_TO:             name="curve_to"; break;
+          case CTX_REL_CURVE_TO:         name="rel_curve_to"; break;
+          case CTX_REL_QUAD_TO:          name="rel_quad_to"; break;
+          case CTX_QUAD_TO:              name="quad_to"; break;
+          case CTX_SMOOTH_TO:            name="smooth_to"; break;
+          case CTX_REL_SMOOTH_TO:        name="rel_smooth_to"; break;
+          case CTX_SMOOTHQ_TO:           name="smoothq_to"; break;
+          case CTX_REL_SMOOTHQ_TO:       name="rel_smoothq_to"; break;
+          case CTX_NEW_PAGE:             name="new_page"; break;
+          case CTX_HOR_LINE_TO:          name="hor_line_to"; break;
+          case CTX_VER_LINE_TO:          name="ver_line_to"; break;
+          case CTX_REL_HOR_LINE_TO:      name="rel_hor_line_to"; break;
+          case CTX_REL_VER_LINE_TO:      name="rel_ver_line_to"; break;
+          case CTX_SET_COMPOSITING_MODE: name="set_compositing_mode"; break;
+          case CTX_SET_TEXT_ALIGN:       name="set_text_align"; break;
+          case CTX_SET_TEXT_BASELINE:    name="set_text_baseline"; break;
+          case CTX_SET_TEXT_DIRECTION:   name="set_text_direction"; break;
+          case CTX_SET_FONT_SIZE:        name="set_font_size"; break;
+          case CTX_SET_MITER_LIMIT:      name="set_miter_limit"; break;
+          case CTX_SET_LINE_JOIN:        name="set_line_join"; break;
+          case CTX_SET_LINE_CAP:         name="set_line_cap"; break;
+          case CTX_SET_LINE_WIDTH:       name="set_line_width"; break;
+          case CTX_SET_FILL_RULE:        name="set_fill_rule"; break;
+          case CTX_SET:                  name="setprop"; break;
         }
       if (name)
         {
@@ -12202,7 +12079,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
           case CTX_smoothQuadTo:
           case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
-          case CTX_clear:          ret = CTX_RESET; break;
+          case CTX_reset:          ret = CTX_RESET; break;
           case CTX_verLineTo:
           case CTX_ver_line_to:    ret = CTX_VER_LINE_TO; break;
           case CTX_exit:
@@ -15793,7 +15670,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
 {
   if (ctx_native_events)
     fprintf (stdout, "\e[?6150h");
-  fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h clear\n");
+  fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h reset\n");
   ctx_render_stream (ctxctx->ctx, stdout, 0);  //  XXX  should use 0
                                                // but something broken, probably color
   fprintf (stdout, "\ndone\n\e");

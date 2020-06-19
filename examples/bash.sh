@@ -35,7 +35,7 @@ for a in b{1..1000000}; do
 
 if [ $dirty = true ];then 
 echo -ne "\e[2J\e[H\e[?7020h\n"
-echo "clear
+echo "reset
 rectangle 0%  0% 100% 100%
 rgba 0 0 0 1
 fill
