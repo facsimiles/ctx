@@ -14,6 +14,8 @@
 #include <signal.h>
 #include <pty.h>
 
+#define ENABLE_THREADS 1
+
 #define ENABLE_CLICK 0
 
 #include <SDL.h>
@@ -219,7 +221,7 @@ static void ct_rev_inc (void *data)
      ct->frame++;
      ct->rev++;
    }
-   ctx_clear (ct->ctx[ct->frame%2]);
+   ctx_reset (ct->ctx[ct->frame%2]);
    //SDL_UnlockMutex (clients_mutex);
 }
 
@@ -246,7 +248,7 @@ CT *ct_new (const char *command, int width, int height, int id, void *pixels)
     ct->ctx[i] = ctx_new ();
   _ctx_set_transformation (ct->ctx[i], 0);
     ct->parser[i] = ctx_parser_new (ct->ctx[i], width, height, width/40.0, height/20.0, 1, 1, (void*)ct_set_prop, (void*)ct_get_prop, ct, ct_rev_inc, ct);
-    ctx_clear (ct->ctx[i]);
+    ctx_reset (ct->ctx[i]);
   }
 
 
@@ -1129,9 +1131,9 @@ int update_ct (CtxClient *client)
       Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
-      //ctx_clear (dctx);
+      //ctx_reset (dctx);
       ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
-      //ctx_clear (ct->ctx[(ct->render_frame)%2]);
+      //ctx_reset (ct->ctx[(ct->render_frame)%2]);
 
 #if 1 // < flipping this turns on subtexture updates, needs bounds tuning
           ctx_dirty_rect (dctx, &ct->dirty.x, &ct->dirty.y, &ct->dirty.w, &ct->dirty.h);
@@ -1227,7 +1229,9 @@ int vt_main (int argc, char **argv)
   execute_self = malloc (strlen (argv[0]) + 16);
   sprintf (execute_self, "%s", argv[0]);
   sdl_setup (width, height);
+#if ENABLE_THREADS
   SDL_CreateThread ((void*)render_fun, "render", NULL);
+#endif
 
   //add_client ("/home/pippin/src/ctx/examples/bash.sh", 0, height/2, width/2, height/2, 1);
   //add_client ("/home/pippin/src/ctx/examples/ui", width/2, height/2, width/2, height/2, 1);
@@ -1273,6 +1277,9 @@ int vt_main (int argc, char **argv)
       }
 
       changes += update_vts ();
+#if !ENABLE_THREADS
+      changes += update_cts ();
+#endif
 
       if (dirt + changes)
       {

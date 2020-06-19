@@ -119,7 +119,7 @@ void ctx_blit          (Ctx *ctx,
                         CtxPixelFormat pixel_format);
 
 /* clears and resets a context */
-void ctx_clear          (Ctx *ctx);
+void ctx_reset          (Ctx *ctx);
 
 void ctx_new_path       (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
@@ -618,7 +618,7 @@ typedef enum
   CTX_MEDIA_BOX        = 'R', // x y width height
   CTX_SMOOTH_TO        = 'S', // cx cy x y
   CTX_SMOOTHQ_TO       = 'T', // x y
-  CTX_CLEAR            = 'U', //
+  CTX_RESET            = 'U', //
   CTX_VER_LINE_TO      = 'V', // y
   CTX_APPLY_TRANSFORM  = 'W', // a b c d e f - for set_transform combine with identity
   CTX_EXIT             = 'X', //
@@ -2430,7 +2430,7 @@ struct _CtxGState
   uint8_t       global_alpha_u8;
   CtxColorModel color_model;
   /* bitfield-pack small state-parts */
-  CtxCompositingMode  compositing_mode:2;
+  CtxCompositingMode  compositing_mode:4;
   CtxBlend                  blend_mode:3;
   CtxLineCap                  line_cap:2;
   CtxLineJoin                line_join:2;
@@ -4563,9 +4563,9 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
 }
 #endif
 
-void ctx_clear (Ctx *ctx)
+void ctx_reset (Ctx *ctx)
 {
-  //CTX_PROCESS_VOID (CTX_CLEAR);
+  //CTX_PROCESS_VOID (CTX_RESET);
   //if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
   //  { return; }
   ctx_empty (ctx);
@@ -5910,7 +5910,7 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
 {
   switch (entry->code)
     {
-      case CTX_CLEAR:
+      case CTX_RESET:
         ctx_state_init (state);
         break;
       case CTX_CLIP:
@@ -11196,7 +11196,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_FLUSH:
             name="flush";
             break;
-          case CTX_CLEAR:
+          case CTX_RESET:
             name="clear";
             break;
           case CTX_SET_FONT:
@@ -11749,7 +11749,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
 #endif
         break;
       case CTX_FILL:
-      case CTX_CLEAR:
+      case CTX_RESET:
       case CTX_STROKE:
       case CTX_IDENTITY:
       case CTX_CLIP:
@@ -11942,7 +11942,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_IDENTITY:
       case CTX_CLOSE_PATH:
       case CTX_NEW_PATH:
-      case CTX_CLEAR:
+      case CTX_RESET:
       case CTX_FLUSH:
       case CTX_RESTORE:
       case CTX_STROKE:
@@ -12128,7 +12128,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
           case CTX_smoothQuadTo:
           case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
-          case CTX_clear:          ret = CTX_CLEAR; break;
+          case CTX_clear:          ret = CTX_RESET; break;
           case CTX_verLineTo:
           case CTX_ver_line_to:    ret = CTX_VER_LINE_TO; break;
           case CTX_exit:
@@ -12750,8 +12750,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_FLUSH:
         //ctx_flush (ctx);
         break;
-      case CTX_CLEAR:
-        ctx_clear (ctx);
+      case CTX_RESET:
+        ctx_reset (ctx);
         ctx_translate (ctx,
                        (parser->cursor_x-1) * parser->cell_width * 1.0,
                        (parser->cursor_y-1) * parser->cell_height * 1.0);

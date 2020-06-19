@@ -763,7 +763,7 @@ static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence)
   _vt_move_to (vt, vt->margin_top, vt->cursor_x);
   vt_carriage_return (vt);
   if (vt->ctx)
-    { ctx_clear (vt->ctx); }
+    { ctx_reset (vt->ctx); }
   vt->audio.bits = 8;
   vt->audio.channels = 1;
   vt->audio.type = 'u';
