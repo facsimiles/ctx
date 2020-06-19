@@ -301,9 +301,11 @@ typedef enum
 {
   CTX_COMPOSITE_SOURCE_OVER,
   CTX_COMPOSITE_COPY,
+  CTX_COMPOSITE_CLEAR,
   CTX_COMPOSITE_SOURCE_IN,
   CTX_COMPOSITE_SOURCE_OUT,
   CTX_COMPOSITE_SOURCE_ATOP,
+  CTX_COMPOSITE_DESTINATION,
   CTX_COMPOSITE_DESTINATION_OVER,
   CTX_COMPOSITE_DESTINATION_IN,
   CTX_COMPOSITE_DESTINATION_OUT,
@@ -2522,6 +2524,7 @@ struct _CtxState
 #define CTX_cap          CTX_STRH('c','a','p',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_center       CTX_STRH('c','e','n','t','e','r', 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_clear        CTX_STRH('c','l','e','a','r',0,0,0,0,0,0,0,0,0)
+#define CTX_copy         CTX_STRH('c','o','p','y',0,0,0,0,0,0,0,0,0,0)
 #define CTX_clip         CTX_STRH('c','l','i','p',0,0,0,0,0,0,0,0,0,0)
 #define CTX_close_path   CTX_STRH('c','l','o','s','e','_','p','a','t','h',0,0,0,0)
 #define CTX_closePath    CTX_STRH('c','l','o','s','e','P','a','t','h',0,0,0,0,0)
@@ -7494,20 +7497,26 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
-static void ctx_over_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
+static void ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t cov)
 {
   uint8_t ralpha = 255 - ( (cov * src[3]) >> 8);
   for (int c = 0; c < 4; c++)
     { dst[c] = (src[c]*cov + dst[c] * ralpha) >> 8; }
 }
 
-static void ctx_source_RGBA8 (uint8_t *dst, uint8_t *src, uint8_t cov)
+static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t cov)
 {
   for (int c = 0; c < 4; c++)
     dst[c] = src[c];
 }
 
-static inline void ctx_over_float (int components, float *dst, float *src, uint8_t cov)
+static void ctx_RGBA8_clear (uint8_t *dst, uint8_t *src, uint8_t cov)
+{
+  for (int c = 0; c < 4; c++)
+    dst[c] = 0;
+}
+
+static inline void ctx_float_source_over (int components, float *dst, float *src, uint8_t cov)
 {
   float fcov = cov/255.0f;
 
@@ -7516,10 +7525,16 @@ static inline void ctx_over_float (int components, float *dst, float *src, uint8
     dst[c] = src[c] * fcov + dst[c] * ralpha;
 }
 
-static inline void ctx_source_float (int components, float *dst, float *src, uint8_t cov)
+static inline void ctx_float_copy (int components, float *dst, float *src, uint8_t cov)
 {
   for (int c = 0; c < components; c++)
     dst[c] = src[c];
+}
+
+static inline void ctx_float_clear(int components, float *dst, float *src, uint8_t cov)
+{
+  for (int c = 0; c < components; c++)
+    dst[c] = 0.0f;
 }
 
 static int
@@ -7592,9 +7607,16 @@ ctx_b2f_generic_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t 
 static int
 ctx_b2f_over_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-    return ctx_b2f_generic_RGBA8 (rasterizer, x0, dst, coverage, count, ctx_over_RGBA8);
-  return ctx_b2f_generic_RGBA8 (rasterizer, x0, dst, coverage, count, ctx_source_RGBA8);
+  switch (rasterizer->state->gstate.compositing_mode)
+  {
+     default:
+     case CTX_COMPOSITE_SOURCE_OVER:
+       return ctx_b2f_generic_RGBA8 (rasterizer, x0, dst, coverage, count, ctx_RGBA8_source_over);
+     case CTX_COMPOSITE_COPY:
+       return ctx_b2f_generic_RGBA8 (rasterizer, x0, dst, coverage, count, ctx_RGBA8_copy);
+     case CTX_COMPOSITE_CLEAR:
+       return ctx_b2f_generic_RGBA8 (rasterizer, x0, dst, coverage, count, ctx_RGBA8_clear);
+  }
 }
 
 static int
@@ -7723,9 +7745,16 @@ ctx_b2f_generic_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t 
 static int
 ctx_b2f_over_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-    return ctx_b2f_generic_BGRA8 (rasterizer, x0, dst, coverage, count, ctx_over_RGBA8);
-  return ctx_b2f_generic_BGRA8 (rasterizer, x0, dst, coverage, count, ctx_source_RGBA8);
+  switch (rasterizer->state->gstate.compositing_mode)
+  {
+     default:
+     case CTX_COMPOSITE_SOURCE_OVER:
+       return ctx_b2f_generic_BGRA8 (rasterizer, x0, dst, coverage, count, ctx_RGBA8_source_over);
+     case CTX_COMPOSITE_COPY:
+       return ctx_b2f_generic_BGRA8 (rasterizer, x0, dst, coverage, count, ctx_RGBA8_copy);
+     case CTX_COMPOSITE_CLEAR:
+       return ctx_b2f_generic_BGRA8 (rasterizer, x0, dst, coverage, count, ctx_RGBA8_clear);
+  }
 }
 
 #endif
@@ -7774,8 +7803,16 @@ ctx_gray_float_b2f_generic (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uin
 static int
 ctx_gray_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  return ctx_gray_float_b2f_generic (rasterizer, x0, dst, coverage, count,
-                                     ctx_over_float);
+  switch (rasterizer->state->gstate.compositing_mode)
+  {
+     default:
+     case CTX_COMPOSITE_SOURCE_OVER:
+       return ctx_gray_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_float_source_over);
+     case CTX_COMPOSITE_COPY:
+       return ctx_gray_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_float_copy);
+     case CTX_COMPOSITE_CLEAR:
+       return ctx_gray_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_float_clear);
+  }
 }
 
 #endif
@@ -7822,7 +7859,16 @@ ctx_associated_rgba_float_b2f_generic (CtxRasterizer *rasterizer, int x0, uint8_
 static int
 ctx_associated_rgba_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  return ctx_associated_rgba_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_over_float);
+  switch (rasterizer->state->gstate.compositing_mode)
+  {
+     default:
+     case CTX_COMPOSITE_SOURCE_OVER:
+       return ctx_associated_rgba_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_float_source_over);
+     case CTX_COMPOSITE_COPY:
+       return ctx_associated_rgba_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_float_copy);
+     case CTX_COMPOSITE_CLEAR:
+       return ctx_associated_rgba_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_float_clear);
+  }
 }
 
 #endif
@@ -7917,7 +7963,16 @@ ctx_associated_cmyka_float_b2f_generic (CtxRasterizer *rasterizer, int x0, uint8
 static int
 ctx_associated_cmyka_float_b2f_over (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  return ctx_associated_cmyka_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_over_float);
+  switch (rasterizer->state->gstate.compositing_mode)
+  {
+     default:
+     case CTX_COMPOSITE_SOURCE_OVER:
+       return ctx_associated_cmyka_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_float_source_over);
+     case CTX_COMPOSITE_COPY:
+       return ctx_associated_cmyka_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_float_copy);
+     case CTX_COMPOSITE_CLEAR:
+       return ctx_associated_cmyka_float_b2f_generic (rasterizer, x0, dst, coverage, count, ctx_float_clear);
+  }
 }
 
 #endif
@@ -11456,6 +11511,25 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
                       break;
                   }
                 break;
+              case CTX_SET_COMPOSITING_MODE:
+                switch (val)
+                  {
+              case CTX_COMPOSITE_SOURCE_OVER: str = "sourceOver"; break;
+              case CTX_COMPOSITE_COPY: str = "copy"; break;
+              case CTX_COMPOSITE_CLEAR: str = "clear"; break;
+              case CTX_COMPOSITE_SOURCE_IN: str = "sourceIn"; break;
+              case CTX_COMPOSITE_SOURCE_OUT: str = "sourceOut"; break;
+              case CTX_COMPOSITE_SOURCE_ATOP: str = "sourceAtop"; break;
+              case CTX_COMPOSITE_DESTINATION: str = "destination"; break;
+              case CTX_COMPOSITE_DESTINATION_OVER: str = "destinationOver"; break;
+              case CTX_COMPOSITE_DESTINATION_IN: str = "destinationIn"; break;
+              case CTX_COMPOSITE_DESTINATION_OUT: str = "destinationOut"; break;
+              case CTX_COMPOSITE_DESTINATION_ATOP: str = "destinationAtop"; break;
+              case CTX_COMPOSITE_LIGHTER: str = "lighter"; break;
+              case CTX_COMPOSITE_XOR: str = "xor"; break;
+                  }
+
+               break;
             }
           if (str)
             { fprintf (stream, "%s", str); }

@@ -31,7 +31,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
     if (glyphs[i] == glyph)
       return;
   }
-  ctx_clear (ctx);
+  ctx_reset (ctx);
   ctx_set_font_size (ctx, CTX_BAKE_FONT_SIZE);
   ctx_move_to (ctx, 0, 0);
   if (ctx_glyph (ctx, glyph, 1)) /* we request stroking, since it is better to exclude strokes than fills from bitpacking  */

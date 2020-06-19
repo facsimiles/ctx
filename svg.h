@@ -106,7 +106,6 @@
 #define CTX_counter_increment    CTX_STRH('c','o','u','n','t','e','r','-','i','n','c','r','e','m')
 #define CTX_counter_reset        CTX_STRH('c','o','u','n','t','e','r','-','r','e','s','e','t',0)
 #define CTX_context_menu 	CTX_STRH('c','o','n','t','e','x','t','-','m','e','n','u',0,0)
-#define CTX_copy 	CTX_STRH('c','o','p','y',0,0,0,0,0,0,0,0,0,0)
 #define CTX_crosshair 	CTX_STRH('c','r','o','s','s','h','a','i','r',0,0,0,0,0)
 #define CTX_curren 	CTX_STRH('c','u','r','r','e','n',0,0,0,0,0,0,0,0)
 #define CTX_currentColor 	CTX_STRH('c','u','r','r','e','n','t','C','o','l','o','r',0,0)
