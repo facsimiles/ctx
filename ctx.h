@@ -267,6 +267,9 @@ typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
 void _ctx_set_store_clear (Ctx *ctx);
 void _ctx_set_transformation (Ctx *ctx, int transformation);
 
+Ctx *ctx_hasher_new (int width, int height, int rows, int cols);
+uint64_t ctx_hash_get_hash (Ctx *ctx, int row, int col);
+
 /* If cairo.h is included before ctx.h add cairo integration code
  */
 #ifdef CAIRO_H
@@ -3238,16 +3241,15 @@ struct _CtxRasterizer
   CtxPixelFormatInfo *format;
 };
 
+typedef struct _CtxHasher CtxHasher;
 struct _CtxHasher
 {
   CtxRasterizer rasterizer;
   int           cols;
   int           rows;
-  uint32_t     *hash_col;
-  uint32_t     *hash_row;
+  uint32_t     *hashes;
 };
 
-typedef struct _CtxHasher CtxHasher;
 
 struct _CtxPixelFormatInfo
 {
@@ -6347,6 +6349,11 @@ static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
   return ctx_renderstream_add_u32 (&rasterizer->edge_list, CTX_EDGE, (uint32_t *) args);
 }
 
+#define CTX_SHAPE_CACHE_PRIME1   7853
+#define CTX_SHAPE_CACHE_PRIME2   4129
+#define CTX_SHAPE_CACHE_PRIME3   3371
+#define CTX_SHAPE_CACHE_PRIME4   4221
+
 float ctx_shape_cache_rate = 0.0;
 #if CTX_SHAPE_CACHE
 
@@ -6367,10 +6374,6 @@ struct _CtxShapeEntry
 
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
-#define CTX_SHAPE_CACHE_PRIME1   13
-#define CTX_SHAPE_CACHE_PRIME2   112
-#define CTX_SHAPE_CACHE_PRIME3   79
-#define CTX_SHAPE_CACHE_PRIME4   79
 
 // this needs a max-size
 // and a more agressive freeing when
@@ -6504,6 +6507,36 @@ static void ctx_shape_entry_release (CtxShapeEntry *entry)
 }
 #endif
 
+
+static uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
+{
+  int16_t x = 0;
+  int16_t y = 0;
+  CtxEntry *entry = &rasterizer->edge_list.entries[0];
+  int ox = entry->data.s16[2];
+  int oy = entry->data.s16[3];
+  uint32_t hash = rasterizer->edge_list.count;
+  hash = (ox % CTX_SUBDIV);
+  hash *= CTX_SHAPE_CACHE_PRIME1;
+  hash += (oy % CTX_RASTERIZER_AA);
+  for (int i = 0; i < rasterizer->edge_list.count; i++)
+    {
+      CtxEntry *entry = &rasterizer->edge_list.entries[i];
+      x = entry->data.s16[2];
+      y = entry->data.s16[3];
+      int dx = x-ox;
+      int dy = y-oy;
+      ox = x;
+      oy = y;
+      hash *= CTX_SHAPE_CACHE_PRIME3;
+      hash += dx;
+      hash *= CTX_SHAPE_CACHE_PRIME4;
+      hash += dy;
+    }
+  return hash;
+}
+
+
 static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {
   int16_t x = 0;
@@ -6571,11 +6604,24 @@ static void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 
 static void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
+  float tx; float ty;
   rasterizer->x        = x;
   rasterizer->y        = y;
   rasterizer->first_x  = x;
   rasterizer->first_y  = y;
   rasterizer->has_prev = -1;
+
+  tx = (x - rasterizer->blit_x) * CTX_SUBDIV;
+  ty = y * CTX_RASTERIZER_AA;
+  if (ty < rasterizer->scan_min)
+    { rasterizer->scan_min = ty; }
+  if (ty > rasterizer->scan_max)
+    { rasterizer->scan_max = ty; }
+  if (tx < rasterizer->col_min)
+    { rasterizer->col_min = tx; }
+  if (tx > rasterizer->col_max)
+    { rasterizer->col_max = tx; }
+
 }
 
 static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
@@ -9374,7 +9420,14 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_STROKE:
         // XXX check bounds
         //   update hashes
-        ctx_rasterizer_stroke (rasterizer);
+        //ctx_rasterizer_stroke (rasterizer);
+        {
+        int hash = ctx_rasterizer_poly_to_hash (rasterizer);
+        printf ("s(%i %i %i %i %i)\n", (int)rasterizer->scan_min/CTX_RASTERIZER_AA, (int)rasterizer->scan_max / CTX_RASTERIZER_AA, (int)rasterizer->col_min / CTX_SUBDIV, (int)rasterizer->col_max / CTX_SUBDIV, hash);
+        }
+        if (!rasterizer->preserve)
+          ctx_rasterizer_reset (rasterizer);
+        rasterizer->preserve = 0;
         break;
       case CTX_SET_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
@@ -9382,22 +9435,25 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_TEXT:
         // XXX check bounds
         //   update hashes
-        ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
+        //ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
         break;
       case CTX_TEXT_STROKE:
         // XXX check bounds
         //   update hashes
-        ctx_rasterizer_text (rasterizer, ctx_arg_string(), 1);
+        //ctx_rasterizer_text (rasterizer, ctx_arg_string(), 1);
         break;
       case CTX_GLYPH:
         // XXX check bounds
         //   update hashes
-        ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
+        //ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
         break;
       case CTX_FILL:
         // XXX check bounds
+        printf ("f(%i %i %i %i %i)\n", rasterizer->scan_min/CTX_RASTERIZER_AA, rasterizer->scan_max / CTX_RASTERIZER_AA, rasterizer->col_min / CTX_SUBDIV, rasterizer->col_max / CTX_SUBDIV, ctx_rasterizer_poly_to_hash (rasterizer));
         //   update hashes with absolute path + source state
-        ctx_rasterizer_fill (rasterizer);
+        if (!rasterizer->preserve)
+          ctx_rasterizer_reset (rasterizer);
+        rasterizer->preserve = 0;
         break;
       case CTX_NEW_PATH:
         ctx_rasterizer_reset (rasterizer);
@@ -10027,7 +10083,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, void 
 }
 
 static CtxRasterizer *
-ctx_hasher_init (CtxRasterizer *rasterizer, CtxState *state, int width, int height, int rows, int cols)
+ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width, int height, int rows, int cols)
 {
   CtxHasher *hasher = (CtxHasher*)rasterizer;
   ctx_memset (rasterizer, 0, sizeof (CtxHasher) );
@@ -10035,7 +10091,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, CtxState *state, int width, int heig
   rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
   rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   rasterizer->state       = state;
-  rasterizer->ctx         = ctx_new ();
+  rasterizer->ctx         = ctx;
   ctx_state_init (rasterizer->state);
   rasterizer->blit_x      = 0;
   rasterizer->blit_y      = 0;
@@ -10051,8 +10107,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, CtxState *state, int width, int heig
   hasher->rows = rows;
   hasher->cols = cols;
 
-  hasher->hash_row = calloc (sizeof(uint32_t), rows);
-  hasher->hash_col = calloc (sizeof(uint32_t), cols);
+  hasher->hashes   = calloc (sizeof(uint64_t), rows * cols);
 
   return rasterizer;
 }
@@ -10096,12 +10151,24 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
 }
 #endif
 
-CtxHasher *ctx_hasher_new (int width, int height, int rows, int cols)
+Ctx *ctx_hasher_new (int width, int height, int rows, int cols)
 {
-  CtxState    *state    = (CtxState *) malloc (sizeof (CtxState) );
+  Ctx *ctx = ctx_new ();
+  CtxState    *state    = &ctx->state;
   CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxHasher) );
-  ctx_hasher_init (rasterizer, state, width, height, rows, cols);
-  return (void*)rasterizer;
+  ctx_hasher_init (rasterizer, ctx, state, width, height, rows, cols);
+  ctx_set_renderer (ctx, (void*)rasterizer);
+  return ctx;
+}
+uint64_t ctx_hash_get_hash (Ctx *ctx, int row, int col)
+{
+  CtxHasher *hasher = (CtxHasher*)ctx->renderer;
+  if (row < 0) row =0;
+  if (col < 0) col =0;
+  if (row >= hasher->rows) row = hasher->rows-1;
+  if (col >= hasher->cols) col = hasher->cols-1;
+
+  return hasher->hashes[row*hasher->cols+col];
 }
 
 /* add an or-able value to pixelformat to indicate vflip+hflip
