@@ -175,8 +175,8 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                              best_diff = diff;
                              for (int c = 0; c < 3; c++)
                              {
-                               rgba1[c] = pixels[noi+c];
-                               rgba2[c] = 0;
+                               rgba1[c] = rgbai[c];
+                               rgba2[c] = rgbaj[c];
                              }
                            }
                         }

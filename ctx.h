@@ -3238,6 +3238,17 @@ struct _CtxRasterizer
   CtxPixelFormatInfo *format;
 };
 
+struct _CtxHasher
+{
+  CtxRasterizer rasterizer;
+  int           cols;
+  int           rows;
+  uint32_t     *hash_col;
+  uint32_t     *hash_row;
+};
+
+typedef struct _CtxHasher CtxHasher;
+
 struct _CtxPixelFormatInfo
 {
   CtxPixelFormat pixel_format;
@@ -9260,6 +9271,161 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 }
 
 
+static void
+ctx_hasher_process (void *user_data, CtxCommand *command)
+{
+  CtxEntry *entry = &command->entry;
+  CtxRasterizer *rasterizer = (CtxRasterizer *) user_data;
+  CtxState *state = rasterizer->state;
+  CtxCommand *c = (CtxCommand *) entry;
+  switch (c->code)
+    {
+      case CTX_LINE_TO:
+        ctx_rasterizer_line_to (rasterizer, c->c.x0, c->c.y0);
+        break;
+      case CTX_REL_LINE_TO:
+        ctx_rasterizer_rel_line_to (rasterizer, c->c.x0, c->c.y0);
+        break;
+      case CTX_MOVE_TO:
+        ctx_rasterizer_move_to (rasterizer, c->c.x0, c->c.y0);
+        break;
+      case CTX_REL_MOVE_TO:
+        ctx_rasterizer_rel_move_to (rasterizer, c->c.x0, c->c.y0);
+        break;
+      case CTX_CURVE_TO:
+        ctx_rasterizer_curve_to (rasterizer, c->c.x0, c->c.y0,
+                                 c->c.x1, c->c.y1,
+                                 c->c.x2, c->c.y2);
+        break;
+      case CTX_REL_CURVE_TO:
+        ctx_rasterizer_rel_curve_to (rasterizer, c->c.x0, c->c.y0,
+                                     c->c.x1, c->c.y1,
+                                     c->c.x2, c->c.y2);
+        break;
+      case CTX_QUAD_TO:
+        ctx_rasterizer_quad_to (rasterizer, c->c.x0, c->c.y0, c->c.x1, c->c.y1);
+        break;
+      case CTX_REL_QUAD_TO:
+        ctx_rasterizer_rel_quad_to (rasterizer, c->c.x0, c->c.y0, c->c.x1, c->c.y1);
+        break;
+      case CTX_ARC:
+        ctx_rasterizer_arc (rasterizer, c->arc.x, c->arc.y, c->arc.radius, c->arc.angle1, c->arc.angle2, c->arc.direction);
+        break;
+      case CTX_RECTANGLE:
+        ctx_rasterizer_rectangle (rasterizer, c->rectangle.x, c->rectangle.y,
+                                  c->rectangle.width, c->rectangle.height);
+        break;
+      case CTX_ROUND_RECTANGLE:
+        ctx_rasterizer_round_rectangle (rasterizer, c->rectangle.x, c->rectangle.y,
+                                        c->rectangle.width, c->rectangle.height,
+                                        c->rectangle.radius);
+        break;
+      case CTX_SET_PIXEL:
+        ctx_rasterizer_set_pixel (rasterizer, c->set_pixel.x, c->set_pixel.y,
+                                  c->set_pixel.rgba[0],
+                                  c->set_pixel.rgba[1],
+                                  c->set_pixel.rgba[2],
+                                  c->set_pixel.rgba[3]);
+        break;
+      case CTX_TEXTURE:
+        ctx_rasterizer_set_texture (rasterizer, ctx_arg_u32 (0),
+                                    ctx_arg_float (2), ctx_arg_float (3) );
+        break;
+#if 0
+      case CTX_LOAD_IMAGE:
+        ctx_rasterizer_load_image (rasterizer, ctx_arg_string(),
+                                   ctx_arg_float (0), ctx_arg_float (1) );
+        break;
+#endif
+      case CTX_GRADIENT_STOP:
+        {
+          float rgba[4]= {ctx_u8_to_float (ctx_arg_u8 (4) ),
+                          ctx_u8_to_float (ctx_arg_u8 (4+1) ),
+                          ctx_u8_to_float (ctx_arg_u8 (4+2) ),
+                          ctx_u8_to_float (ctx_arg_u8 (4+3) )
+                         };
+          ctx_rasterizer_gradient_add_stop (rasterizer,
+                                            ctx_arg_float (0), rgba);
+        }
+        break;
+      case CTX_LINEAR_GRADIENT:
+#if CTX_GRADIENT_CACHE
+        ctx_gradient_cache_reset();
+#endif
+        ctx_state_gradient_clear_stops (rasterizer->state);
+        break;
+      case CTX_RADIAL_GRADIENT:
+#if CTX_GRADIENT_CACHE
+        ctx_gradient_cache_reset();
+#endif
+        ctx_state_gradient_clear_stops (rasterizer->state);
+        break;
+      case CTX_PRESERVE:
+        rasterizer->preserve = 1;
+        break;
+      case CTX_ROTATE:
+      case CTX_SCALE:
+      case CTX_TRANSLATE:
+      case CTX_SAVE:
+      case CTX_RESTORE:
+        rasterizer->uses_transforms = 1;
+        ctx_interpret_transforms (rasterizer->state, entry, NULL);
+        break;
+      case CTX_STROKE:
+        // XXX check bounds
+        //   update hashes
+        ctx_rasterizer_stroke (rasterizer);
+        break;
+      case CTX_SET_FONT:
+        ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
+        break;
+      case CTX_TEXT:
+        // XXX check bounds
+        //   update hashes
+        ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
+        break;
+      case CTX_TEXT_STROKE:
+        // XXX check bounds
+        //   update hashes
+        ctx_rasterizer_text (rasterizer, ctx_arg_string(), 1);
+        break;
+      case CTX_GLYPH:
+        // XXX check bounds
+        //   update hashes
+        ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
+        break;
+      case CTX_FILL:
+        // XXX check bounds
+        //   update hashes with absolute path + source state
+        ctx_rasterizer_fill (rasterizer);
+        break;
+      case CTX_NEW_PATH:
+        ctx_rasterizer_reset (rasterizer);
+        break;
+      case CTX_CLIP:
+        ctx_rasterizer_clip (rasterizer);
+        break;
+      case CTX_CLOSE_PATH:
+        ctx_rasterizer_finish_shape (rasterizer);
+        break;
+    }
+  ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
+  ctx_interpret_style (rasterizer->state, entry, NULL);
+  if (command->code == CTX_SET_LINE_WIDTH)
+    {
+      float x = state->gstate.line_width;
+      /* normalize line width according to scaling factor
+       */
+      x = x * ctx_maxf (ctx_maxf (ctx_fabsf (state->gstate.transform.m[0][0]),
+                                  ctx_fabsf (state->gstate.transform.m[0][1]) ),
+                        ctx_maxf (ctx_fabsf (state->gstate.transform.m[1][0]),
+                                  ctx_fabsf (state->gstate.transform.m[1][1]) ) );
+      state->gstate.line_width = x;
+    }
+}
+
+
+
 #if CTX_ENABLE_RGB8
 
 static inline void
@@ -9860,6 +10026,38 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, void 
   return rasterizer;
 }
 
+static CtxRasterizer *
+ctx_hasher_init (CtxRasterizer *rasterizer, CtxState *state, int width, int height, int rows, int cols)
+{
+  CtxHasher *hasher = (CtxHasher*)rasterizer;
+  ctx_memset (rasterizer, 0, sizeof (CtxHasher) );
+  rasterizer->vfuncs.process = ctx_hasher_process;
+  rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
+  rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
+  rasterizer->state       = state;
+  rasterizer->ctx         = ctx_new ();
+  ctx_state_init (rasterizer->state);
+  rasterizer->blit_x      = 0;
+  rasterizer->blit_y      = 0;
+  rasterizer->blit_width  = width;
+  rasterizer->blit_height = height;
+  rasterizer->state->gstate.clip_min_x  = 0;
+  rasterizer->state->gstate.clip_min_y  = 0;
+  rasterizer->state->gstate.clip_max_x  = width - 1;
+  rasterizer->state->gstate.clip_max_y  = height - 1;
+  rasterizer->scan_min    = 5000;
+  rasterizer->scan_max    = -5000;
+
+  hasher->rows = rows;
+  hasher->cols = cols;
+
+  hasher->hash_row = calloc (sizeof(uint32_t), rows);
+  hasher->hash_col = calloc (sizeof(uint32_t), cols);
+
+  return rasterizer;
+}
+
+
 Ctx *
 ctx_new_for_buffer (CtxBuffer *buffer)
 {
@@ -9898,6 +10096,13 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
 }
 #endif
 
+CtxHasher *ctx_hasher_new (int width, int height, int rows, int cols)
+{
+  CtxState    *state    = (CtxState *) malloc (sizeof (CtxState) );
+  CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxHasher) );
+  ctx_hasher_init (rasterizer, state, width, height, rows, cols);
+  return (void*)rasterizer;
+}
 
 /* add an or-able value to pixelformat to indicate vflip+hflip
  */
