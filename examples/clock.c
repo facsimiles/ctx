@@ -144,6 +144,7 @@ int main (int argc, char **argv)
     ctx_listen    (ctx, CTX_PRESS, green_rect, NULL, NULL);
     ctx_fill (ctx);
     
+    if ( mx >  ctx_width(ctx)/2)
     _analog_clock (ctx,
 		   ctx_ticks()/1000,
                    ctx_width(ctx)/2,

@@ -1225,6 +1225,20 @@ static void texture_upload ()
 
     if (ct->dirty.w > 0)
     {
+      { // de-associate alpha
+      int stride = client->width * 4;
+      for (int y = ct->dirty.y; y < ct->dirty.y + ct->dirty.h; y++)
+      {
+         int o = stride * y + ct->dirty.x;
+         for (int x = 0; x < ct->dirty.w; x++, o+=4)
+         {
+           float r = 255.0f/client->pixels[o+3];
+           client->pixels[o] *= r;
+           client->pixels[o+1] *= r;
+           client->pixels[o+2] *= r;
+         }
+      }
+      }
       SDL_UpdateTexture (client->texture,
                          &ct->dirty,
                          (uint8_t *) client->pixels + sizeof (Uint32) * (client->width * ct->dirty.y + ct->dirty.x), client->width * sizeof (Uint32) );
