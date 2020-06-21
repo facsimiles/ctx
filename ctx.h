@@ -9336,6 +9336,25 @@ ctx_rect_intersect (const CtxRectangle *a, const CtxRectangle *b)
 }
 
 static void
+_ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, uint32_t hash)
+{
+  CtxRectangle rect = {0,0, hasher->rasterizer.blit_width/hasher->cols,
+                            hasher->rasterizer.blit_height/hasher->rows};
+  int hno = 0;
+  for (int row = 0; row < hasher->rows; row++)
+    for (int col = 0; col < hasher->cols; col++, hno++)
+    {
+      rect.x = col * rect.width;
+      rect.y = row * rect.height;
+      if (ctx_rect_intersect (shape_rect, &rect))
+      {
+        hasher->hashes[row * hasher->cols + col] *= 5;
+        hasher->hashes[row * hasher->cols + col] ^= hash;
+      }
+    }
+}
+
+static void
 ctx_hasher_process (void *user_data, CtxCommand *command)
 {
   CtxEntry *entry = &command->entry;
@@ -9345,6 +9364,112 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
   CtxCommand *c = (CtxCommand *) entry;
   switch (c->code)
     {
+      case CTX_TEXT:
+        {
+          float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
+          float height = ctx_get_font_size (rasterizer->ctx);
+
+          int hash = ctx_strhash (ctx_arg_string(), 0); // clips strings XXX
+
+           CtxRectangle shape_rect = {
+              rasterizer->x, rasterizer->y - height,
+              width, height * 2
+           };
+
+          _ctx_add_hash (hasher, &shape_rect, hash);
+
+          ctx_rasterizer_rel_move_to (rasterizer, width, 0);
+        }
+        ctx_rasterizer_reset (rasterizer);
+        break;
+      case CTX_TEXT_STROKE:
+        {
+          float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
+          float height = ctx_get_font_size (rasterizer->ctx);
+
+          int hash = 99+ctx_strhash (ctx_arg_string(), 0); // clips strings XXX
+
+           CtxRectangle shape_rect = {
+              rasterizer->x, rasterizer->y - height,
+              width, height * 2
+           };
+
+          _ctx_add_hash (hasher, &shape_rect, hash);
+
+          ctx_rasterizer_rel_move_to (rasterizer, width, 0);
+        }
+        ctx_rasterizer_reset (rasterizer);
+        break;
+      case CTX_GLYPH:
+        // XXX check bounds
+          ctx_rasterizer_reset (rasterizer);
+        break;
+      case CTX_FILL:
+        {
+        int hash = ctx_rasterizer_poly_to_hash (rasterizer);
+        CtxRectangle shape_rect = {
+          rasterizer->col_min / CTX_SUBDIV,
+          rasterizer->scan_min / CTX_RASTERIZER_AA,
+
+          (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
+          rasterizer->col_min / CTX_SUBDIV,
+
+          (rasterizer->scan_max + CTX_RASTERIZER_AA-1)/ CTX_RASTERIZER_AA -
+          rasterizer->scan_min / CTX_RASTERIZER_AA
+        };
+        fprintf (stderr, "%i,%i %ix%i \n", shape_rect.x, shape_rect.y, shape_rect.width, shape_rect.height);
+
+        // XXX not doing a good job with state
+        hash ^= (rasterizer->state->gstate.fill_rule * 23);
+        hash ^= (rasterizer->state->gstate.source.type * 117);
+        hash ^= (rasterizer->state->gstate.source.color.rgba[0] * 111);
+        hash ^= (rasterizer->state->gstate.source.color.rgba[1] * 129);
+        hash ^= (rasterizer->state->gstate.source.color.rgba[2] * 147);
+        hash ^= (rasterizer->state->gstate.source.color.rgba[3] * 477);
+
+        _ctx_add_hash (hasher, &shape_rect, hash);
+
+        if (!rasterizer->preserve)
+          ctx_rasterizer_reset (rasterizer);
+        rasterizer->preserve = 0;
+        }
+        break;
+      case CTX_STROKE:
+        // XXX check bounds
+        //   update hashes
+        //ctx_rasterizer_stroke (rasterizer);
+        {
+        int hash = ctx_rasterizer_poly_to_hash (rasterizer);
+        CtxRectangle shape_rect = {
+          rasterizer->col_min / CTX_SUBDIV,
+          rasterizer->scan_min / CTX_RASTERIZER_AA,
+
+          (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
+          rasterizer->col_min / CTX_SUBDIV,
+
+          (rasterizer->scan_max + CTX_RASTERIZER_AA-1)/ CTX_RASTERIZER_AA -
+          rasterizer->scan_min / CTX_RASTERIZER_AA
+        };
+
+        // XXX not doing a good job with state
+        hash ^= (int)(rasterizer->state->gstate.line_width * 110);
+        hash ^= (rasterizer->state->gstate.line_cap * 23);
+        hash ^= (rasterizer->state->gstate.source.type * 117);
+        hash ^= (rasterizer->state->gstate.source.color.rgba[0] * 111);
+        hash ^= (rasterizer->state->gstate.source.color.rgba[1] * 129);
+        hash ^= (rasterizer->state->gstate.source.color.rgba[2] * 147);
+        hash ^= (rasterizer->state->gstate.source.color.rgba[3] * 477);
+
+        _ctx_add_hash (hasher, &shape_rect, hash);
+        }
+        if (!rasterizer->preserve)
+          ctx_rasterizer_reset (rasterizer);
+        rasterizer->preserve = 0;
+        break;
+        /* the above cases are the actual painting cases and 
+         * the only ones differing from the rasterizer
+         */
+
       case CTX_LINE_TO:
         ctx_rasterizer_line_to (rasterizer, c->c.x0, c->c.y0);
         break;
@@ -9436,113 +9561,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         rasterizer->uses_transforms = 1;
         ctx_interpret_transforms (rasterizer->state, entry, NULL);
         break;
-      case CTX_STROKE:
-        // XXX check bounds
-        //   update hashes
-        //ctx_rasterizer_stroke (rasterizer);
-        {
-        int hash = ctx_rasterizer_poly_to_hash (rasterizer);
-        CtxRectangle shape_rect = {
-          rasterizer->col_min / CTX_SUBDIV,
-          rasterizer->scan_min / CTX_RASTERIZER_AA,
-
-          (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
-          rasterizer->col_min / CTX_SUBDIV,
-
-          (rasterizer->scan_max + CTX_RASTERIZER_AA-1)/ CTX_RASTERIZER_AA -
-          rasterizer->scan_min / CTX_RASTERIZER_AA
-        };
-        CtxRectangle rect = {0,0, rasterizer->blit_width/hasher->cols,
-                                  rasterizer->blit_height/hasher->rows};
-        int hno = 0;
-
-        // XXX not doing a good job with state
-        hash ^= (int)(rasterizer->state->gstate.line_width * 110);
-        hash ^= (rasterizer->state->gstate.line_cap * 23);
-        hash ^= (rasterizer->state->gstate.source.type * 117);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[0] * 111);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[1] * 129);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[2] * 147);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[3] * 477);
-
-        for (int row = 0; row < hasher->rows; row++)
-          for (int col = 0; col < hasher->cols; col++, hno++)
-          {
-            rect.x = col * rect.width;
-            rect.y = row * rect.height;
-            if (ctx_rect_intersect (&shape_rect, &rect))
-            {
-              hasher->hashes[row * hasher->cols + col] *= 5;
-              hasher->hashes[row * hasher->cols + col] ^= hash;
-            }
-          }
-        }
-        if (!rasterizer->preserve)
-          ctx_rasterizer_reset (rasterizer);
-        rasterizer->preserve = 0;
-        break;
       case CTX_SET_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
-        break;
-      case CTX_TEXT:
-        // XXX check bounds
-        //   update hashes
-        //ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
-          ctx_rasterizer_reset (rasterizer);
-        break;
-      case CTX_TEXT_STROKE:
-        // XXX check bounds
-        //   update hashes
-        //ctx_rasterizer_text (rasterizer, ctx_arg_string(), 1);
-          ctx_rasterizer_reset (rasterizer);
-        break;
-      case CTX_GLYPH:
-        // XXX check bounds
-        //   update hashes
-        //ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
-          ctx_rasterizer_reset (rasterizer);
-        break;
-      case CTX_FILL:
-        {
-        int hash = ctx_rasterizer_poly_to_hash (rasterizer);
-        CtxRectangle shape_rect = {
-          rasterizer->col_min / CTX_SUBDIV,
-          rasterizer->scan_min / CTX_RASTERIZER_AA,
-
-          (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
-          rasterizer->col_min / CTX_SUBDIV,
-
-          (rasterizer->scan_max + CTX_RASTERIZER_AA-1)/ CTX_RASTERIZER_AA -
-          rasterizer->scan_min / CTX_RASTERIZER_AA
-        };
-        fprintf (stderr, "%i,%i %ix%i \n", shape_rect.x, shape_rect.y, shape_rect.width, shape_rect.height);
-        CtxRectangle rect = {0,0, rasterizer->blit_width/hasher->cols,
-                                  rasterizer->blit_height/hasher->rows};
-        int hno = 0;
-
-        // XXX not doing a good job with state
-        hash ^= (rasterizer->state->gstate.fill_rule * 23);
-        hash ^= (rasterizer->state->gstate.source.type * 117);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[0] * 111);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[1] * 129);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[2] * 147);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[3] * 477);
-
-        for (int row = 0; row < hasher->rows; row++)
-          for (int col = 0; col < hasher->cols; col++, hno++)
-          {
-            rect.x = col * rect.width;
-            rect.y = row * rect.height;
-            if (ctx_rect_intersect (&shape_rect, &rect))
-            {
-              hasher->hashes[row * hasher->cols + col] *= 5;
-              hasher->hashes[row * hasher->cols + col] ^= hash;
-            }
-          }
-        }
-        if (!rasterizer->preserve)
-          ctx_rasterizer_reset (rasterizer);
-        rasterizer->preserve = 0;
         break;
       case CTX_NEW_PATH:
         ctx_rasterizer_reset (rasterizer);
