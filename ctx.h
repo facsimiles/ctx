@@ -6541,6 +6541,8 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {
   int16_t x = 0;
   int16_t y = 0;
+  if (rasterizer->edge_list.count == 0)
+     return 0;
 #if CTX_SHAPE_CACHE
   CtxEntry *entry = &rasterizer->edge_list.entries[0];
   int ox = entry->data.s16[2];
@@ -6621,7 +6623,6 @@ static void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
     { rasterizer->col_min = tx; }
   if (tx > rasterizer->col_max)
     { rasterizer->col_max = tx; }
-
 }
 
 static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
