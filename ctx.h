@@ -3241,6 +3241,14 @@ struct _CtxRasterizer
   CtxPixelFormatInfo *format;
 };
 
+typedef struct _CtxRectangle CtxRectangle;
+struct _CtxRectangle {
+  int x;
+  int y;
+  int width;
+  int height;
+};
+
 typedef struct _CtxHasher CtxHasher;
 struct _CtxHasher
 {
@@ -9317,12 +9325,22 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
     }
 }
 
+static int
+ctx_rect_intersect (const CtxRectangle *a, const CtxRectangle *b)
+{
+  if (a->x > b->x + b->width)  return 0;
+  if (b->x > a->x + a->width)  return 0;
+  if (a->y > b->y + b->height) return 0;
+  if (b->y > a->y + a->height) return 0;
+  return 1;
+}
 
 static void
 ctx_hasher_process (void *user_data, CtxCommand *command)
 {
   CtxEntry *entry = &command->entry;
   CtxRasterizer *rasterizer = (CtxRasterizer *) user_data;
+  CtxHasher *hasher = (CtxHasher*) user_data;
   CtxState *state = rasterizer->state;
   CtxCommand *c = (CtxCommand *) entry;
   switch (c->code)
@@ -9424,7 +9442,31 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         //ctx_rasterizer_stroke (rasterizer);
         {
         int hash = ctx_rasterizer_poly_to_hash (rasterizer);
-        printf ("s(%i %i %i %i %i)\n", (int)rasterizer->scan_min/CTX_RASTERIZER_AA, (int)rasterizer->scan_max / CTX_RASTERIZER_AA, (int)rasterizer->col_min / CTX_SUBDIV, (int)rasterizer->col_max / CTX_SUBDIV, hash);
+        CtxRectangle shape_rect = {
+          rasterizer->col_min / CTX_SUBDIV,
+          rasterizer->scan_min / CTX_RASTERIZER_AA,
+
+          (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
+          rasterizer->col_min / CTX_SUBDIV,
+
+          (rasterizer->scan_max + CTX_RASTERIZER_AA-1)/ CTX_RASTERIZER_AA -
+          rasterizer->scan_min / CTX_RASTERIZER_AA
+        };
+        CtxRectangle rect = {0,0, rasterizer->blit_width/hasher->cols,
+                                  rasterizer->blit_height/hasher->rows};
+        // TODO : incorporate source in hash
+        int hno = 0;
+        for (int row = 0; row < hasher->rows; row++)
+          for (int col = 0; col < hasher->cols; col++, hno++)
+          {
+            rect.x = col * rect.width;
+            rect.y = row * rect.height;
+            if (ctx_rect_intersect (&shape_rect, &rect))
+            {
+              hasher->hashes[row * hasher->cols + col] *= 5;
+              hasher->hashes[row * hasher->cols + col] ^= hash;
+            }
+          }
         }
         if (!rasterizer->preserve)
           ctx_rasterizer_reset (rasterizer);
@@ -10161,7 +10203,7 @@ Ctx *ctx_hasher_new (int width, int height, int rows, int cols)
   ctx_set_renderer (ctx, (void*)rasterizer);
   return ctx;
 }
-uint64_t ctx_hash_get_hash (Ctx *ctx, int row, int col)
+uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row)
 {
   CtxHasher *hasher = (CtxHasher*)ctx->renderer;
   if (row < 0) row =0;

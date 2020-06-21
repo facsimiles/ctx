@@ -438,13 +438,6 @@ typedef struct _MrgHtmlState MrgHtmlState;
 
 
 void mrg_clear (Mrg *mrg);
-typedef struct _CtxRectangle CtxRectangle;
-struct _CtxRectangle {
-  int x;
-  int y;
-  int width;
-  int height;
-};
 
 static void mrg_queue_draw (Mrg *mrg, CtxRectangle *rect)
 {

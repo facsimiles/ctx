@@ -1130,14 +1130,14 @@ int update_ct (CtxClient *client)
     {
 
       {
-        int cols = 4; int rows = 4;
+        int cols = 16; int rows = 16;
         Ctx *dctx = ctx_hasher_new (width, height, cols, rows);
         ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
         for (int y = 0; y < rows; y++)
         {
           for (int x = 0; x < cols; x++)
           {
-             printf ("%lx ", ctx_hash_get_hash (dctx, x, y));
+             printf ("%08lx ", ctx_hash_get_hash (dctx, x, y));
           }
           printf ("\n");
         }
