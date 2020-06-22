@@ -6524,9 +6524,9 @@ static uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
   int ox = entry->data.s16[2];
   int oy = entry->data.s16[3];
   uint32_t hash = rasterizer->edge_list.count;
-  hash = (ox % CTX_SUBDIV);
+  hash = ox;//(ox % CTX_SUBDIV);
   hash *= CTX_SHAPE_CACHE_PRIME1;
-  hash += (oy % CTX_RASTERIZER_AA);
+  hash += oy; //(oy % CTX_RASTERIZER_AA);
   for (int i = 0; i < rasterizer->edge_list.count; i++)
     {
       CtxEntry *entry = &rasterizer->edge_list.entries[i];
@@ -9376,6 +9376,11 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
               width, height * 2
            };
 
+           hash *= 21129;
+           hash += shape_rect.x;
+           hash *= 124229;
+           hash += shape_rect.y;
+
           _ctx_add_hash (hasher, &shape_rect, hash);
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
@@ -9393,6 +9398,10 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
               rasterizer->x, rasterizer->y - height,
               width, height * 2
            };
+           hash *= 21129;
+           hash += shape_rect.x;
+           hash *= 124229;
+           hash += shape_rect.y;
 
           _ctx_add_hash (hasher, &shape_rect, hash);
 
@@ -9417,11 +9426,14 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           (rasterizer->scan_max + CTX_RASTERIZER_AA-1)/ CTX_RASTERIZER_AA -
           rasterizer->scan_min / CTX_RASTERIZER_AA
         };
-        fprintf (stderr, "%i,%i %ix%i \n", shape_rect.x, shape_rect.y, shape_rect.width, shape_rect.height);
+        //fprintf (stderr, "%i,%i %ix%i \n", shape_rect.x, shape_rect.y, shape_rect.width, shape_rect.height);
 
         // XXX not doing a good job with state
         hash ^= (rasterizer->state->gstate.fill_rule * 23);
         hash ^= (rasterizer->state->gstate.source.type * 117);
+
+        // XXX color does not work - we need to do a get-color, this rgba
+        // is possibly even unused
         hash ^= (rasterizer->state->gstate.source.color.rgba[0] * 111);
         hash ^= (rasterizer->state->gstate.source.color.rgba[1] * 129);
         hash ^= (rasterizer->state->gstate.source.color.rgba[2] * 147);
@@ -9460,7 +9472,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         hash ^= (rasterizer->state->gstate.source.color.rgba[2] * 147);
         hash ^= (rasterizer->state->gstate.source.color.rgba[3] * 477);
 
-        _ctx_add_hash (hasher, &shape_rect, hash);
+        //_ctx_add_hash (hasher, &shape_rect, hash);
         }
         if (!rasterizer->preserve)
           ctx_rasterizer_reset (rasterizer);

@@ -95,6 +95,9 @@ struct _CT
   int        render_frame;
   int        ready_frame;
   int        shown_frame;
+  int hash_cols;
+  int hash_rows;
+  uint32_t   *hashes;
   Ctx       *ctx[2];
   CtxParser *parser[2];
 };
@@ -234,6 +237,10 @@ CT *ct_new (const char *command, int width, int height, int id, void *pixels)
   ct->id = id;
   ct->lastx = -1;
   ct->lasty = -1;
+  ct->hash_cols = 8;
+  ct->hash_rows = 8;
+  ct->hashes = calloc (ct->hash_cols *ct->hash_rows, sizeof (uint32_t));
+
 #if 0
   ct->waitdata      = vtpty_waitdata;
   ct->read          = vtpty_read;
@@ -284,6 +291,7 @@ void ct_destroy (CT *ct)
     free (ct->parser[i]);
     ctx_free (ct->ctx[i]);
   }
+  free (ct->hashes);
   free (ct);
 }
 
@@ -1130,18 +1138,30 @@ int update_ct (CtxClient *client)
     {
 
       {
-        int cols = 16; int rows = 16;
-        Ctx *dctx = ctx_hasher_new (width, height, cols, rows);
+        Ctx *dctx = ctx_hasher_new (width, height, ct->hash_cols, ct->hash_rows);
         ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
-        for (int y = 0; y < rows; y++)
+        if (0)
         {
-          for (int x = 0; x < cols; x++)
+        for (int y = 0; y < ct->hash_rows; y++)
+        {
+          for (int x = 0; x < ct->hash_cols; x++)
           {
-             printf ("%08lx ", ctx_hash_get_hash (dctx, x, y));
+             uint32_t new_hash = ctx_hash_get_hash (dctx, x,y);
+             if (ct->hashes[y * ct->hash_cols + x] != new_hash)
+             {
+                printf ("%08x ", new_hash);
+                ct->hashes[y * ct->hash_cols + x] = new_hash;
+             }
+             else
+             {
+                //printf ("%08x ", 0);
+                printf ("%08x ", new_hash);
+             }
           }
           printf ("\n");
         }
         printf ("\n");
+        }
         ctx_free (dctx);
       }
 
