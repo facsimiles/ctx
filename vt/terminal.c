@@ -824,17 +824,14 @@ static int sdl_check_events ()
             case SDL_MOUSEMOTION:
               last_motion_x = event.motion.x;
               last_motion_y = event.motion.y;
-#if 0
+
               if (moving_client && active)
               {
                 client_raise_top (active);
-                active->x = last_motion_x - client_move_dx;
-                active->y = last_motion_y - client_move_dy;
                 got_event = 1;
-                goto done;
+                //goto done;
               }
               else
-#endif
               {
 
               if (motion_start_x < 0)
@@ -1137,6 +1134,7 @@ int update_ct (CtxClient *client)
   if (ct->shown_frame != ct->render_frame && (ct->ready_frame == 0))
     {
 
+      if(0)
       {
         Ctx *dctx = ctx_hasher_new (width, height, ct->hash_cols, ct->hash_rows);
         ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
@@ -1167,41 +1165,36 @@ int update_ct (CtxClient *client)
         printf ("\n");
         }
         ctx_free (dctx);
+        ct->dirty.w = width;
+        ct->dirty.h = height;
+        ct->dirty.x = 0;
+        ct->dirty.y = 0;
+          ct->ready_frame = ct->render_frame;
       }
-//    ctx_blit (ct->ctx[(ct->render_frame)%2],
-//              client->pixels + 10 * 4, 10, 0, width-10, height, width * 4,
-//              CTX_FORMAT_BGRA8);
+      else
+      {
 
-
-
-   // Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
+    Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
       //ctx_reset (dctx);
-  //  ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
+    ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
   //  ctx_reset (ct->ctx[(ct->render_frame)%2]);
 
-#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
           ctx_dirty_rect (dctx, &ct->dirty.x, &ct->dirty.y, &ct->dirty.w, &ct->dirty.h);
 
-          // XXX look out for race condition on value of w..
           ct->dirty.w ++;
           ct->dirty.h ++;
           if (ct->dirty.x + ct->dirty.w > width)
             { ct->dirty.w = width - ct->dirty.x; }
           if (ct->dirty.y + ct->dirty.h > height)
             { ct->dirty.h = height - ct->dirty.y; }
-#else
-          ct->dirty.w = width;
-          ct->dirty.h = height;
-          ct->dirty.x = 0;
-          ct->dirty.y = 0;
-#endif
-          //ctx_free (dctx);
+          ctx_free (dctx);
+        }
           ct->ready_frame = ct->render_frame;
           return 1;
-        }
-      return 0;
+    }
+  return 0;
 }
 
 static int dirt = 0;
@@ -1300,13 +1293,13 @@ int vt_main (int argc, char **argv)
   if (argv[1] == NULL)
   {
     add_client (vt_find_shell_command(), 0, 0, width, height, 0);
+    add_client ("/home/pippin/src/ctx/examples/clock", width/2, height/2, width/2, height/2, 1);
+    add_client ("/home/pippin/src/ctx/examples/clock", 0, height/2, width/2, height/2, 1);
   }
   else
   {
     add_client_argv ((void*)&argv[1], 0, 0, width, height, 1);
   }
-  add_client ("/home/pippin/src/ctx/examples/clock", width/2, height/2, width/2, height/2, 1);
-  add_client ("/home/pippin/src/ctx/examples/clock", 0, height/2, width/2, height/2, 1);
   signal (SIGCHLD,signal_child);
 
   int sleep_time = 10;

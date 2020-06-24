@@ -13612,8 +13612,10 @@ ctx_init (int *argc, char ***argv)
     char *new_argv[*argc+3];
     new_argv[0] = "ctx";
     for (i = 0; i < *argc; i++)
+    {
       new_argv[i+1] = *argv[i];
-    new_argv[i] = NULL;
+    }
+    new_argv[i+1] = NULL;
     execvp (new_argv[0], new_argv);
     // if this fails .. we continue normal startup
     // and end up in self-hosted braille
@@ -16081,8 +16083,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   if (ctx_native_events)
     fprintf (stdout, "\e[?6150h");
   fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h reset\n");
-  ctx_render_stream (ctxctx->ctx, stdout, 1);  //  XXX  should use 0
-                                               // but something broken, probably color
+  ctx_render_stream (ctxctx->ctx, stdout, 0);
   fprintf (stdout, "\ndone\n\e");
   fflush (stdout);
 }

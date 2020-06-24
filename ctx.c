@@ -559,10 +559,11 @@ int main (int argc, char **argv)
   int   source_arg_no = 1;
   //int width =  512;
   //int height = 512;
-  int width =  160;
+  int width = 160;
   int height = 80;
   float cols = 30;
   float rows = 5;
+
 #if 0
   for (int i = 0; i < 100000; i++)
   {
@@ -747,7 +748,7 @@ int main (int argc, char **argv)
       {
         execvp (argv[source_arg_no-1], &argv[source_arg_no-1]);
       }
-      return vt_main (argc-source_arg_no, &argv[source_arg_no]);
+      return vt_main (argc-source_arg_no+1, &argv[source_arg_no-1]);
     }
 
   if (outputmode == CTX_OUTPUT_MODE_CTX)
