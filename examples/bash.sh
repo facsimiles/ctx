@@ -23,19 +23,20 @@ function vt_sync(){
   done
 }
 
-echo -ne "\e[?6150h"
+# received  frame_no
+# presented frame_no
+
+echo -ne "\e[2J\e[?6150h"
 stty -echo
 v=0
 event="event"
-dirty=true
 cx=20;cy=20;radius=30;
 for a in b{1..1000000}; do
 
 #vt_sync # we call this to sync before rendering
 
-if [ $dirty = true ];then 
-echo -ne "\e[2J\e[H\e[?7020h\n"
-echo "reset
+echo -ne "\e[2J\e[H\e[?7020h"
+echo -ne "reset
 rectangle 0%  0% 100% 100%
 rgba 0 0 0 1
 fill
@@ -51,7 +52,7 @@ rectangle 20% 20% 60% 60%
 stroke
 rectangle 30% 30% 40% 40%
 stroke
-#setkey \"x\" \"$v\"
+setkey \"x\" \"$v\"
 new_path
 rectangle $((10+$v)) 10 30 30
 rgba 0 0 1 1
@@ -61,40 +62,43 @@ new_path
 arc($cx, $cy, $radius, 0.0, 6.4, 0);
 stroke  
 flush
-done
-"; 
-  dirty=false
-fi
+done ";
 
-  IFS=$'\n' read -s event 
+#sleep 0.5
+v=$(($v+1))
+
+if [ $v -gt 1000 ];then
+  v=0
+fi
+  read -t 0.1 -s event
+  #while [ $event = *"idle"* ]; do read -s event -t 0.1; done;
+  #while [ x"$event" != x"" ]; do
   case $event in
-   "up")    cy=$(($cy - 1)) ;dirty=true  ;;
-   "down")  cy=$(($cy + 1)) ;dirty=true  ;;
-   "right") cx=$(($cx + 1)) ;dirty=true  ;;
-   "left")  cx=$(($cx - 1)) ;dirty=true ;;
-   "=")     radius=$(($radius + 1)) ; dirty=true ;;
-   "+")     radius=$(($radius + 1)) ; dirty=true ;;
-   "-")     radius=$(($radius - 1)) ; dirty=true ;;
-   "a")     echo -en "\e[?7020h\nsetkey 'x' '200' X\n"; dirty=true ;;
-   "b")     echo -en "\e[?7020h\nsetkey 'x' '300' X\n"; dirty=true ;;
-   "q")     exit ;;
-   "idle") sleep 0.1 ;;
+   "up")    cy=$(($cy - 1))   ;;
+   "down")  cy=$(($cy + 1)) ;;
+   "right") cx=$(($cx + 1)) ;;
+   "left")  cx=$(($cx - 1)) ;;
+   "=")     radius=$(($radius + 1)) ;;
+   "+")     radius=$(($radius + 1)) ;;
+   "-")     radius=$(($radius - 1)) ;;
+   "q")  exit ;;
    "control-c") exit;;
-   "mouse-motion"*) 
+   *"mouse-motion"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
         ;;
-   "mouse-drag"*) 
+   *"mouse-drag"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
-        dirty=true
         ;;
    *"mouse-press"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
-        dirty=true
         ;;
-    *) dirty=true
-            ;;
   esac
+  last_event=$event
+  #event=""
+  #read -s -t 0.1 event
 done
+event=$last_event
+#done
