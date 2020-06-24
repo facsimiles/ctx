@@ -1378,7 +1378,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * edgelist and renderstram.
  */
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   128
+#define CTX_MIN_JOURNAL_SIZE   10240
 #endif
 
 /* The maximum size we permit the renderstream to grow to,
@@ -2213,6 +2213,7 @@ static inline float ctx_tanf (float a)            { return tanf (a); }
 
 #ifdef CTX_IMPLEMENTATION
 
+#if 0
 static void
 ctx_memset (void *ptr, uint8_t val, int length)
 {
@@ -2220,6 +2221,9 @@ ctx_memset (void *ptr, uint8_t val, int length)
   for (int i = 0; i < length; i ++)
     { p[i] = val; }
 }
+#else
+#define ctx_memset memset
+#endif
 
 
 static inline void ctx_strcpy (char *dst, const char *src)
@@ -9328,10 +9332,11 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 static int
 ctx_rect_intersect (const CtxRectangle *a, const CtxRectangle *b)
 {
-  if (a->x > b->x + b->width)  return 0;
-  if (b->x > a->x + a->width)  return 0;
-  if (a->y > b->y + b->height) return 0;
-  if (b->y > a->y + a->height) return 0;
+  if (a->x >= b->x + b->width ||
+      b->x >= a->x + a->width ||
+      a->y >= b->y + b->height ||
+      b->y >= a->y + a->height) return 0;
+
   return 1;
 }
 
@@ -9463,6 +9468,11 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           rasterizer->scan_min / CTX_RASTERIZER_AA
         };
 
+        shape_rect.width += rasterizer->state->gstate.line_width * 2;
+        shape_rect.height += rasterizer->state->gstate.line_width * 2;
+        shape_rect.x -= rasterizer->state->gstate.line_width;
+        shape_rect.y -= rasterizer->state->gstate.line_width;
+
         // XXX not doing a good job with state
         hash ^= (int)(rasterizer->state->gstate.line_width * 110);
         hash ^= (rasterizer->state->gstate.line_cap * 23);
@@ -9472,7 +9482,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         hash ^= (rasterizer->state->gstate.source.color.rgba[2] * 147);
         hash ^= (rasterizer->state->gstate.source.color.rgba[3] * 477);
 
-        //_ctx_add_hash (hasher, &shape_rect, hash);
+        _ctx_add_hash (hasher, &shape_rect, hash);
         }
         if (!rasterizer->preserve)
           ctx_rasterizer_reset (rasterizer);
@@ -10272,7 +10282,7 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
 }
 #endif
 
-Ctx *ctx_hasher_new (int width, int height, int rows, int cols)
+Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
 {
   Ctx *ctx = ctx_new ();
   CtxState    *state    = &ctx->state;
@@ -10299,10 +10309,11 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
           int stride, CtxPixelFormat pixel_format)
 {
   CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxRasterizer) );
+  CtxState *state = malloc (sizeof (CtxState));
   /* we borrow the state of ctx, this makes us non-thradable,
    * but saves memory, this should be made configurable at compile-time
    */
-  ctx_rasterizer_init (rasterizer, ctx, &ctx->state, data, x, y, width, height,
+  ctx_rasterizer_init (rasterizer, ctx, state, data, x, y, width, height,
                        stride, pixel_format);
   {
     CtxIterator iterator;
@@ -10312,7 +10323,7 @@ ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
       { ctx_rasterizer_process (rasterizer, command); }
   }
   ctx_rasterizer_deinit (rasterizer);
-  free (rasterizer);
+  free (state);
 }
 #endif
 
@@ -16070,7 +16081,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   if (ctx_native_events)
     fprintf (stdout, "\e[?6150h");
   fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h reset\n");
-  ctx_render_stream (ctxctx->ctx, stdout, 0);  //  XXX  should use 0
+  ctx_render_stream (ctxctx->ctx, stdout, 1);  //  XXX  should use 0
                                                // but something broken, probably color
   fprintf (stdout, "\ndone\n\e");
   fflush (stdout);

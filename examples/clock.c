@@ -82,9 +82,11 @@ static void _analog_clock (Ctx     *ctx,
  */
 
 float x = 0;
+float y = 100;
 void red_rect (CtxEvent *event, void *userdata, void *userdata2)
 {
    x += event->delta_x;// - 50;
+   y += event->delta_y;// - 50;
 }
 
 void green_rect (CtxEvent *event, void *userdata, void *userdata2)
@@ -135,7 +137,7 @@ int main (int argc, char **argv)
     ctx_set_rgb        (ctx, 1, 0,0);
     ctx_text           (ctx, message);
 
-    ctx_rectangle (ctx, x,200,100,100);
+    ctx_rectangle (ctx, x,y,100,100);
     ctx_listen    (ctx, CTX_DRAG, red_rect, NULL, NULL);
     ctx_fill (ctx);
 

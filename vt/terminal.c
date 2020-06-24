@@ -233,12 +233,12 @@ static int ct_get_prop (CT *ct, const char *key, const char **val, int *len);
 
 CT *ct_new (const char *command, int width, int height, int id, void *pixels)
 {
-  CT *ct = calloc (sizeof (CT), 1);
-  ct->id = id;
-  ct->lastx = -1;
-  ct->lasty = -1;
-  ct->hash_cols = 8;
-  ct->hash_rows = 8;
+  CT *ct        = calloc (sizeof (CT), 1);
+  ct->id        = id;
+  ct->lastx     = -1;
+  ct->lasty     = -1;
+  ct->hash_cols = 1;
+  ct->hash_rows = 10;
   ct->hashes = calloc (ct->hash_cols *ct->hash_rows, sizeof (uint32_t));
 
 #if 0
@@ -1140,23 +1140,27 @@ int update_ct (CtxClient *client)
       {
         Ctx *dctx = ctx_hasher_new (width, height, ct->hash_cols, ct->hash_rows);
         ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
-        if (0)
+        if (1)
         {
-        for (int y = 0; y < ct->hash_rows; y++)
+        for (int y = 0; y < ct->hash_rows-1; y++)
         {
           for (int x = 0; x < ct->hash_cols; x++)
           {
-             uint32_t new_hash = ctx_hash_get_hash (dctx, x,y);
+             uint64_t new_hash = ctx_hash_get_hash (dctx, x,y);
              if (ct->hashes[y * ct->hash_cols + x] != new_hash)
              {
-                printf ("%08x ", new_hash);
+                int u = ((width/ct->hash_cols) * x);
+                int v = ((height/ct->hash_rows) * y);
                 ct->hashes[y * ct->hash_cols + x] = new_hash;
+#if 1
+                ctx_blit (ct->ctx[(ct->render_frame)%2],
+                          client->pixels + 
+                            ((v * (width )) + u) * 4, u, v,
+                            width/ct->hash_cols, height/ct->hash_rows,
+                            width * 4, CTX_FORMAT_BGRA8);
+#endif
              }
-             else
-             {
-                //printf ("%08x ", 0);
-                printf ("%08x ", new_hash);
-             }
+             printf ("%08lx ", new_hash);
           }
           printf ("\n");
         }
@@ -1164,17 +1168,20 @@ int update_ct (CtxClient *client)
         }
         ctx_free (dctx);
       }
+//    ctx_blit (ct->ctx[(ct->render_frame)%2],
+//              client->pixels + 10 * 4, 10, 0, width-10, height, width * 4,
+//              CTX_FORMAT_BGRA8);
 
 
 
-      Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
+   // Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
       //ctx_reset (dctx);
-      ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
-      //ctx_reset (ct->ctx[(ct->render_frame)%2]);
+  //  ctx_render_ctx (ct->ctx[(ct->render_frame)%2], dctx);
+  //  ctx_reset (ct->ctx[(ct->render_frame)%2]);
 
-#if 1 // < flipping this turns on subtexture updates, needs bounds tuning
+#if 0 // < flipping this turns on subtexture updates, needs bounds tuning
           ctx_dirty_rect (dctx, &ct->dirty.x, &ct->dirty.y, &ct->dirty.w, &ct->dirty.h);
 
           // XXX look out for race condition on value of w..
@@ -1185,10 +1192,12 @@ int update_ct (CtxClient *client)
           if (ct->dirty.y + ct->dirty.h > height)
             { ct->dirty.h = height - ct->dirty.y; }
 #else
-          SDL_UpdateTexture (client->texture, NULL,
-                             (void *) client->pixels, width * sizeof (Uint32) );
+          ct->dirty.w = width;
+          ct->dirty.h = height;
+          ct->dirty.x = 0;
+          ct->dirty.y = 0;
 #endif
-          ctx_free (dctx);
+          //ctx_free (dctx);
           ct->ready_frame = ct->render_frame;
           return 1;
         }

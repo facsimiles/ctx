@@ -1509,6 +1509,7 @@ static void vtcmd_erase_in_display (VT *vt, const char *sequence)
             }
         }
         break;
+      case 3: // XXX also clear scrollback
       case 2: // clear entire screen but keep cursor;
         {
           int tx = vt->cursor_x;
@@ -2396,6 +2397,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
 
 static void vtcmd_set_t (VT *vt, const char *sequence)
 {
+  /* \e[21y is request title - allows inserting keychars */
   if (!strcmp (sequence, "[14t") ) /* request terminal dimensions */
     {
       char buf[128];
