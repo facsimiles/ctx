@@ -8369,8 +8369,15 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     { scan_start = rasterizer->state->gstate.clip_min_y * CTX_RASTERIZER_AA; }
   if (rasterizer->state->gstate.clip_max_y *  CTX_RASTERIZER_AA < scan_end)
     { scan_end = rasterizer->state->gstate.clip_max_y * CTX_RASTERIZER_AA; }
+  if (scan_start > scan_end ||
+      (scan_start > (rasterizer->blit_y + rasterizer->blit_height) * CTX_RASTERIZER_AA) ||
+      (scan_end < (rasterizer->blit_y) * CTX_RASTERIZER_AA))
+  { 
+
+    ctx_rasterizer_reset (rasterizer);
+    return;
+  }
   ctx_rasterizer_sort_edges (rasterizer);
-  if (scan_start > scan_end) { return; }
   for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
     {
       ctx_memset (coverage, 0,
