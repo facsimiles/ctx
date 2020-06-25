@@ -531,7 +531,7 @@ void add_client (const char *commandline, int x, int y, int width, int height, i
   client->width = width;
   client->height = height;
   client->texture = SDL_CreateTexture (renderer,
-                                   SDL_PIXELFORMAT_ARGB8888,
+                                   SDL_PIXELFORMAT_RGBA32,
                                    SDL_TEXTUREACCESS_STREAMING,
                                    width, height);
   client->pixels = calloc (width * height, 4);
@@ -1083,7 +1083,7 @@ int update_vt (CtxClient *client)
           // can be turned into threaded rendering.
           Ctx *ctx = ctx_new ();
           vt_draw (vt, ctx, 0, 0);
-          ctx_blit (ctx, client->pixels, 0,0, width, height, width * 4, CTX_FORMAT_BGRA8);
+          ctx_blit (ctx, client->pixels, 0,0, width, height, width * 4, CTX_FORMAT_RGBA8);
 #else
           // render directlty to framebuffer in immediate mode - skips
           // creation of renderstream.
@@ -1091,7 +1091,7 @@ int update_vt (CtxClient *client)
           // terminal is also keeping track of state of already drawn
           // pixels and often only repaints what is needed XXX  need API
           //                                              to force full draw
-          Ctx *ctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
+          Ctx *ctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_RGBA8);
           //fprintf (stderr, "%i\r", no);
           vt_draw (vt, ctx, 0, 0);
 #endif
@@ -1155,7 +1155,7 @@ int update_ct (CtxClient *client)
                           client->pixels + 
                             ((v * (width )) + u) * 4, u, v,
                             width/ct->hash_cols, height/ct->hash_rows,
-                            width * 4, CTX_FORMAT_BGRA8);
+                            width * 4, CTX_FORMAT_RGBA8);
 #endif
              }
              printf ("%08lx ", new_hash);
@@ -1174,7 +1174,7 @@ int update_ct (CtxClient *client)
       else
       {
 
-    Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
+    Ctx *dctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_RGBA8);
 
       //fprintf (stderr, "%i\n", ctx_count (ct->ctx));
       //ctx_reset (dctx);

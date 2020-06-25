@@ -7583,15 +7583,23 @@ ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t cov)
     return;
   if (cov != 255)
   {
-    uint8_t ralpha = 255 - ( (cov * src[3]) / 255);
+    uint8_t ralpha;
+    if (src[3]!=255)
+      ralpha = 255 - ( (cov * src[3]) / 255);
+    else
+      ralpha = 255 - cov;
     for (int c = 0; c < 4; c++)
-      { dst[c] = (src[c]*cov + dst[c] * ralpha) / 255; }
+      dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
+  }
+  else if (src[3] == 255)
+  {
+    *((uint32_t*)(dst)) = *((uint32_t*)(src));
   }
   else
   {
-    int ralpha = 256 - src[3]; // to permit >>
+    uint8_t ralpha = 255 - src[3];
     for (int c = 0; c < 4; c++)
-      { dst[c] = src[c] + ((dst[c] * ralpha) >> 8); }
+      dst[c] = src[c] + ((dst[c] * ralpha) >> 8);
   }
 }
 
@@ -7620,6 +7628,7 @@ static void ctx_RGBA8_clear (uint8_t *dst, uint8_t *src, uint8_t cov)
 
 static inline void ctx_float_source_over (int components, float *dst, float *src, uint8_t cov)
 {
+  if (cov == 0) return;
   float fcov = cov/255.0f;
 
   float ralpha = 1.0f - (fcov) * src[components-1];
@@ -7629,8 +7638,12 @@ static inline void ctx_float_source_over (int components, float *dst, float *src
 
 static inline void ctx_float_copy (int components, float *dst, float *src, uint8_t cov)
 {
+  if (cov == 0) return;
+  float fcov = cov/255.0f;
+
+  float ralpha = 1.0f - (fcov);
   for (int c = 0; c < components; c++)
-    dst[c] = src[c];
+    dst[c] = src[c] * fcov + dst[c] * ralpha;
 }
 
 static inline void ctx_float_clear(int components, float *dst, float *src, uint8_t cov)
@@ -7672,7 +7685,8 @@ ctx_RGBA8_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
     {
       for (int x = 0; x < count; x++)
         {
-          comp_op (dst, color, *coverage);
+          uint8_t cov = *coverage;
+          comp_op (dst, color, cov);
           coverage++;
           dst += 4;
         }
@@ -7681,7 +7695,8 @@ ctx_RGBA8_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
   ctx_RGBA8_associate_alpha (color);
   for (int x = 0; x < count; x++)
     {
-      comp_op (dst, color, *coverage);
+      uint8_t cov = *coverage;
+      comp_op (dst, color, cov);
       dst += 4;
       coverage++;
     }
@@ -7784,15 +7799,13 @@ ctx_BGRA8_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
     ctx_RGBA8_associate_alpha (color);
   ctx_swap_red_green (color);
 
-  {
-    for (int x = 0; x < count; x++)
-      {
-        uint8_t cov = *coverage;
-        comp_op (dst, color, cov);
-        dst += 4;
-        coverage++;
-      }
-  }
+  for (int x = 0; x < count; x++)
+    {
+      uint8_t cov = *coverage;
+      comp_op (dst, color, cov);
+      dst += 4;
+      coverage++;
+    }
   return count;
 #undef MASK_GREEN
 #undef MASK_GREEN_ALPHA
