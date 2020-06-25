@@ -11,7 +11,7 @@ clean:
 	make -C fonts clean
 	make -C examples clean
 
-CFLAGS=-g -O2 #-fanalyzer
+CFLAGS=-g  #-fanalyzer
 #CFLAGS=-Os -flto
 
 ctx: ctx.c vt/*.[ch] ctx.h  Makefile svg.h

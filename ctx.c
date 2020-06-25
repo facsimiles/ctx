@@ -24,11 +24,11 @@
 #define CTX_ENABLE_CMYK          1
 #define CTX_ENABLE_CM            1
 #define CTX_SHAPE_CACHE          1
-#define CTX_SHAPE_CACHE_MAX_DIM  48
-#define CTX_SHAPE_CACHE_DIM      (48*48)
+#define CTX_SHAPE_CACHE_MAX_DIM  96
+#define CTX_SHAPE_CACHE_DIM      (64*64)
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
-//#define CTX_RASTERIZER_AA        5
-#define CTX_RASTERIZER_FORCE_AA  1
+#define CTX_RASTERIZER_AA        5
+#define CTX_RASTERIZER_FORCE_AA  0
 #define CTX_MATH                 1
 
 #define CTX_IMPLEMENTATION 1

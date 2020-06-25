@@ -3303,7 +3303,7 @@ struct
 };
 
 #define CTX_MAX_DEVICES 16
-#define CTX_MAX_BINDINGS         256
+#define CTX_MAX_KEYBINDINGS         256
 
 #if CTX_EVENTS 
 
@@ -3363,7 +3363,7 @@ struct _CtxEvents
   CtxList         *events; // for ctx_get_event
   int              ctx_get_event_enabled;
   int              idle_id;
-  CtxBinding       bindings[CTX_MAX_BINDINGS]; /*< better as list, uses no mem if unused */
+  CtxBinding       bindings[CTX_MAX_KEYBINDINGS]; /*< better as list, uses no mem if unused */
   int              n_bindings;
   int              width;
   int              height;
@@ -4592,6 +4592,8 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
 }
 #endif
 
+static void _ctx_bindings_key_down (CtxEvent *event, void *data1, void *data2);
+
 void ctx_reset (Ctx *ctx)
 {
   //CTX_PROCESS_VOID (CTX_RESET);
@@ -4604,6 +4606,7 @@ void ctx_reset (Ctx *ctx)
 
   if (ctx->events.ctx_get_event_enabled)
   {
+    ctx_clear_bindings (ctx);
     ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
                      CTX_PRESS|CTX_RELEASE|CTX_MOTION, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
@@ -4612,6 +4615,9 @@ void ctx_reset (Ctx *ctx)
                      NULL, NULL);
     ctx_listen_full (ctx, 0, 0, 0,0,
                      CTX_KEY_UP, ctx_collect_events, ctx, ctx,
+                     NULL, NULL);
+    ctx_listen_full (ctx, 0,0,0,0,
+                     CTX_KEY_DOWN, _ctx_bindings_key_down, ctx, ctx,
                      NULL, NULL);
   }
 #endif
@@ -13713,7 +13719,7 @@ void ctx_add_key_binding_full (Ctx *ctx,
                            void       *destroy_data)
 {
   CtxEvents *events = &ctx->events;
-  if (events->n_bindings +1 >= CTX_MAX_BINDINGS)
+  if (events->n_bindings +1 >= CTX_MAX_KEYBINDINGS)
   {
     fprintf (stderr, "warning: binding overflow\n");
     return;
@@ -13759,6 +13765,37 @@ void ctx_clear_bindings (Ctx *ctx)
   }
   memset (&events->bindings, 0, sizeof (events->bindings));
   events->n_bindings = 0;
+}
+
+static void _ctx_bindings_key_down (CtxEvent *event, void *data1, void *data2)
+{
+  Ctx *ctx = event->ctx;
+  CtxEvents *events = &ctx->events;
+  int i;
+  int handled = 0;
+
+  for (i = events->n_bindings-1; i>=0; i--)
+    if (!strcmp (events->bindings[i].nick, event->string))
+    {
+      if (events->bindings[i].cb)
+      {
+        events->bindings[i].cb (event, events->bindings[i].cb_data, NULL);
+        if (event->stop_propagate)
+          return;
+        handled = 1;
+      }
+    }
+  if (!handled)
+  for (i = events->n_bindings-1; i>=0; i--)
+    if (!strcmp (events->bindings[i].nick, "unhandled"))
+    {
+      if (events->bindings[i].cb)
+      {
+        events->bindings[i].cb (event, events->bindings[i].cb_data, NULL);
+        if (event->stop_propagate)
+          return;
+      }
+    }
 }
 
 CtxBinding *ctx_get_bindings (Ctx *ctx)
@@ -14818,6 +14855,11 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
       {
         event.state = ctx->events.modifier_state;
         item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
+#if 0
+        char buf[256];
+        ctx_set (ctx, ctx_strhash ("title", 0), buf, strlen(buf));
+        ctx_flush (ctx);
+#endif
         if (event.stop_propagate)
           return event.stop_propagate;
       }
