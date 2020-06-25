@@ -1,7 +1,7 @@
-SMALL_CFLAGS=-Os  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant
+SMALL_CFLAGS=-O3  -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant
 #SMALL_CFLAGS=-O2 -fomit-frame-pointer -flto
 
-PROGRAMS=clock ui ui2 tiny small baseline musl-static-tiny musl-static-small musl-static-baseline all sdl2 mmm
+PROGRAMS=clock dir perf ui ui2 tiny small baseline musl-static-tiny musl-static-small musl-static-baseline all sdl2 mmm
 
 report: all
 	(cd ../tools; ./size-report.sh)
