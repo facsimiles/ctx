@@ -34,7 +34,7 @@ static void render_test (Ctx *ctx)
     frame ++;
     if (frame > 1000)
       frame=-1000;
-    ctx_clear (ctx);
+    ctx_reset (ctx);
     ctx_translate (ctx, frame/3.0, 0.0);
     //ctx_scale (ctx, 0.3f, 0.3f);
   ctx_set_font (ctx, "italic");

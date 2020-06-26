@@ -7302,9 +7302,9 @@ static inline void ctx_dither_rgba_u8 (uint8_t *rgba, int x, int y, int dither_r
 static void
 ctx_RGBA8_associate_alpha (uint8_t *rgba)
 {
-  rgba[0] = (rgba[0] * rgba[3]) >>8;
-  rgba[1] = (rgba[1] * rgba[3]) >>8;
-  rgba[2] = (rgba[2] * rgba[3]) >>8;
+  rgba[0] = (rgba[0] * rgba[3]) /255;
+  rgba[1] = (rgba[1] * rgba[3]) /255;
+  rgba[2] = (rgba[2] * rgba[3]) /255;
 }
 
 static void
@@ -7577,40 +7577,51 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
 static inline void
-ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t cov)
+ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
 {
-  if (cov == 0)
-    return;
   uint8_t alpha = src[3];
-  if (cov != 255)
+  for (int x = 0; x < count; x ++)
   {
-    uint8_t ralpha;
-    if (alpha!=255)
-      ralpha = 255 - ( (cov * alpha) / 255);
-    else
-      ralpha = 255 - cov;
-
-    for (int c = 0; c < 4; c++)
-      dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
-  }
-  else // cov == 255
-  {
-    if (alpha == 255)
-      *((uint32_t*)(dst)) = *((uint32_t*)(src));
-    else
+    uint8_t cov = *covp;
+    if (cov)
     {
-      uint8_t ralpha = 255 - alpha;
-      for (int c = 0; c < 4; c++)
-        dst[c] = src[c] + ((dst[c] * ralpha) / 255);
+      if (cov != 255)
+      {
+        uint8_t ralpha;
+        if (alpha!=255)
+         ralpha = 255 - ( (cov * alpha) / 255);
+        else
+         ralpha = 255 - cov;
+
+        for (int c = 0; c < 4; c++)
+          dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
+      }
+      else // cov == 255
+      {
+        if (alpha == 255)
+          *((uint32_t*)(dst)) = *((uint32_t*)(src));
+        else
+         {
+           uint8_t ralpha = 255 - alpha;
+           for (int c = 0; c < 4; c++)
+             dst[c] = src[c] + ((dst[c] * ralpha) / 255);
+         }
+      }
     }
+    covp ++;
+    dst+=4;
   }
 }
 
-static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t cov)
+static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
 {
+  for (int x = 0; x < count; x ++)
+  {
+    uint8_t cov = *covp;
   if (cov == 0)
-    return;
-  if (cov == 255)
+  {
+  }
+  else if (cov == 255)
   {
     for (int c = 0; c < 4; c++)
       dst[c] = src[c];
@@ -7621,15 +7632,22 @@ static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t cov)
     for (int c = 0; c < 4; c++)
       { dst[c] = (src[c]*cov + dst[c] * ralpha) / 255; }
   }
+    dst += 4;
+    covp ++;
+  }
 }
 
-static void ctx_RGBA8_clear (uint8_t *dst, uint8_t *src, uint8_t cov)
+static void ctx_RGBA8_clear (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
 {
+  for (int x = 0; x < count; x ++)
+  {
+    uint8_t cov = *covp;
   for (int c = 0; c < 4; c++)
     dst[c] = 0;
   if (cov == 0)
-    return;
-  if (cov == 255)
+  {
+  }
+  else if (cov == 255)
   {
     for (int c = 0; c < 4; c++)
       dst[c] = 0;
@@ -7639,6 +7657,9 @@ static void ctx_RGBA8_clear (uint8_t *dst, uint8_t *src, uint8_t cov)
     uint8_t ralpha = 255 - cov;
     for (int c = 0; c < 4; c++)
       { dst[c] = (dst[c] * ralpha) / 255; }
+  }
+    covp ++;
+    dst += 4;
   }
 }
 
@@ -7695,7 +7716,7 @@ static inline void ctx_float_clear(int components, float *dst, float *src, uint8
 
 static int
 ctx_RGBA8_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count, 
-                       void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t cov))
+                     void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t *cov, int count))
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   if (gstate->source.type != CTX_SOURCE_COLOR)
@@ -7724,7 +7745,7 @@ ctx_RGBA8_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
                 color[3] = (color[3] * gstate->global_alpha_u8)/255;
               if (color[3] != 255)
                 ctx_RGBA8_associate_alpha (color);
-              comp_op (dst, color, cov);
+              comp_op (dst, color, &cov, 1);
             }
           u0+=ud;
           v0+=vd;
@@ -7740,13 +7761,7 @@ ctx_RGBA8_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
       color[3] = (color[3] * gstate->global_alpha_u8)/255;
     if (color[3] != 255)
       ctx_RGBA8_associate_alpha (color);
-    for (int x = 0; x < count; x++)
-    {
-      uint8_t cov = *coverage;
-      comp_op (dst, color, cov);
-      dst += 4;
-      coverage++;
-    }
+    comp_op (dst, color, coverage, count);
   }
   return count;
 }
@@ -7814,7 +7829,7 @@ ctx_RGBA8_to_BGRA8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
 
 static int
 ctx_BGRA8_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count,
-                       void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t cov))
+                       void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t *cov, int count))
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   uint8_t color[4];
@@ -7845,7 +7860,7 @@ ctx_BGRA8_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
                 color[3] = (color[3] * gstate->global_alpha_u8) / 255;
               if (color[3] != 255)
                 ctx_RGBA8_associate_alpha (color);
-              comp_op (dst, color, cov);
+              comp_op (dst, color, &cov, 1);
             }
           u0+=ud;
           v0+=vd;
@@ -7860,13 +7875,7 @@ ctx_BGRA8_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
     ctx_RGBA8_associate_alpha (color);
   ctx_swap_red_green (color);
 
-  for (int x = 0; x < count; x++)
-    {
-      uint8_t cov = *coverage;
-      comp_op (dst, color, cov);
-      dst += 4;
-      coverage++;
-    }
+  comp_op (dst, color, coverage, count);
   return count;
 #undef MASK_GREEN
 #undef MASK_GREEN_ALPHA
@@ -11518,7 +11527,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
               case CTX_COMPOSITE_SOURCE_OVER:
                 cairo_val = CAIRO_OPERATOR_OVER;
                 break;
-              case CTX_COMPOSITE_SOURCE_COPY:
+              case CTX_COMPOSITE_COPY:
                 cairo_val = CAIRO_OPERATOR_SOURCE;
                 break;
             }
