@@ -7803,7 +7803,15 @@ ctx_RGBA8_source_out (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxB
     blend);
 }
 
-static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
+static inline void
+ctx_RGBA8_source (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_1, CTX_PORTER_DUFF_0,
+    blend);
+}
+
+static void ctx_RGBA8_copy_normal (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend, float u0, float v0, float ud, float vd)
 {
   while (count--)
   {
@@ -7827,7 +7835,7 @@ static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t *covp, int count
   }
 }
 
-static void ctx_RGBA8_clear (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
+static void ctx_RGBA8_clear_normal (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   while (count--)
   {
@@ -7910,13 +7918,19 @@ ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
   // with source pre-processing tricks blend mode could be baked into precompiled
   // functions
 
-  void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t *cov, int count, CtxBlend blend_mode);
-  if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
-      gstate->blend_mode == CTX_BLEND_NORMAL)
+  void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t *cov, int count, CtxBlend blend_mode) = NULL;
+  if (gstate->blend_mode == CTX_BLEND_NORMAL)
   {
-     comp_op = ctx_RGBA8_source_over_normal;
+    switch (gstate->compositing_mode)
+    {
+      case CTX_COMPOSITE_SOURCE_OVER: comp_op = ctx_RGBA8_source_over_normal; break;
+      case CTX_COMPOSITE_CLEAR:       comp_op = ctx_RGBA8_clear_normal; break;
+      case CTX_COMPOSITE_COPY:        comp_op = ctx_RGBA8_copy_normal; break;
+      default: break;
+    }
   }
-  else
+
+  if (!comp_op)
   {
   switch (gstate->compositing_mode)
   {
@@ -7932,8 +7946,8 @@ ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
      case CTX_COMPOSITE_DESTINATION_OUT: comp_op = ctx_RGBA8_destination_out; break;
      case CTX_COMPOSITE_DESTINATION_IN: comp_op = ctx_RGBA8_destination_in; break;
      case CTX_COMPOSITE_XOR:   comp_op = ctx_RGBA8_xor;     break;
-     case CTX_COMPOSITE_COPY:  comp_op = ctx_RGBA8_copy;    break;
-     case CTX_COMPOSITE_CLEAR: comp_op = ctx_RGBA8_clear;   break;
+     case CTX_COMPOSITE_COPY:  comp_op = ctx_RGBA8_source;  break;
+     case CTX_COMPOSITE_CLEAR: comp_op = ctx_RGBA8_clear_normal;  break;
   }
   }
   if (gstate->source.type != CTX_SOURCE_COLOR)
@@ -8042,9 +8056,9 @@ ctx_composite_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
   switch (gstate->compositing_mode)
   {
      default:
-     case CTX_COMPOSITE_SOURCE_OVER: comp_op = ctx_RGBA8_source_over; break;
-     case CTX_COMPOSITE_COPY:        comp_op = ctx_RGBA8_copy; break;
-     case CTX_COMPOSITE_CLEAR:       comp_op = ctx_RGBA8_clear; break;
+     case CTX_COMPOSITE_SOURCE_OVER: comp_op = ctx_RGBA8_source_over_normal; break;
+     case CTX_COMPOSITE_COPY:        comp_op = ctx_RGBA8_copy_normal; break;
+     case CTX_COMPOSITE_CLEAR:       comp_op = ctx_RGBA8_clear_normal; break;
   }
   if (gstate->source.type != CTX_SOURCE_COLOR)
     {
