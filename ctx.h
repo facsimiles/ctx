@@ -302,7 +302,7 @@ typedef enum
 
 typedef enum
 {
-  CTX_COMPOSITE_SOURCE_OVER,
+  CTX_COMPOSITE_SOURCE_OVER, // 0
   CTX_COMPOSITE_COPY,
   CTX_COMPOSITE_CLEAR,
   CTX_COMPOSITE_SOURCE_IN,
@@ -310,11 +310,15 @@ typedef enum
   CTX_COMPOSITE_SOURCE_ATOP,
   CTX_COMPOSITE_DESTINATION,
   CTX_COMPOSITE_DESTINATION_OVER,
-  CTX_COMPOSITE_DESTINATION_IN,
+  CTX_COMPOSITE_DESTINATION_IN, // 8
   CTX_COMPOSITE_DESTINATION_OUT,
   CTX_COMPOSITE_DESTINATION_ATOP,
+  CTX_COMPOSITE_DIFFERENCE,
   CTX_COMPOSITE_LIGHTER,
-  CTX_COMPOSITE_XOR
+  CTX_COMPOSITE_XOR, // 13
+  //CTX_COMPOSITE_HUE, // 14
+  CTX_COMPOSITE_MULTIPLY,// 15
+  CTX_COMPOSITE_SCREEN // 16
 
 } CtxCompositingMode;
 
@@ -2558,6 +2562,9 @@ struct _CtxState
 #define CTX_destination_atop  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','a','t')
 #define CTX_destinationOver   CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','O','v','e')
 #define CTX_destination_over  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','-','o','v')
+#define CTX_destinationOut    CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','O','u','t')
+#define CTX_destination_out   CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','o','u')
+#define CTX_difference        CTX_STRH('d','i','f','f','e','r','e','n','c','e',0,0,0,0)
 #define CTX_done         CTX_STRH('d','o','n','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_drgba        CTX_STRH('d','r','g','b','a',0,0,0,0,0,0,0,0,0)
 #define CTX_drgb         CTX_STRH('d','r','g','b',0,0,0,0,0,0,0,0,0,0)
@@ -2588,6 +2595,7 @@ struct _CtxState
 #define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 #define CTX_hor_line_to  CTX_STRH('h','o','r','_','l','i','n','e','_','t','o',0,0,0)
 #define CTX_horLineTo    CTX_STRH('h','o','r','L','i','n','e','T','o',0,0,0,0,0)
+#define CTX_hue          CTX_STRH('h','u','e',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_identity     CTX_STRH('i','d','e','n','t','i','t','y',0,0,0,0,0,0)
 #define CTX_ideographic  CTX_STRH('i','d','e','o','g','r','a','p','h','i','c',0,0,0)
 #define CTX_join         CTX_STRH('j','o','i','n',0,0,0,0,0,0,0,0,0,0)
@@ -2617,6 +2625,7 @@ struct _CtxState
 #define CTX_miterLimit   CTX_STRH('m','i','t','e','r','L','i','m','i','t',0,0,0,0)
 #define CTX_move_to      CTX_STRH('m','o','v','e','_','t','o',0,0,0,0,0,0,0)
 #define CTX_moveTo       CTX_STRH('m','o','v','e','T','o',0,0,0,0,0,0,0,0)
+#define CTX_multiply     CTX_STRH('m','u','l','t','i','p','l','y',0,0,0,0,0,0)
 #define CTX_new_page     CTX_STRH('n','e','w','_','p','a','g','e',0,0,0,0,0,0)
 #define CTX_newPage      CTX_STRH('n','e','w','P','a','g','e',0,0,0,0,0,0,0)
 #define CTX_new_path     CTX_STRH('n','e','w','_','p','a','t','h',0,0,0,0,0,0)
@@ -2660,6 +2669,7 @@ struct _CtxState
 #define CTX_save         CTX_STRH('s','a','v','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_save         CTX_STRH('s','a','v','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_scale        CTX_STRH('s','c','a','l','e',0,0,0,0,0,0,0,0,0)
+#define CTX_screen       CTX_STRH('s','c','r','e','e','n',0,0,0,0,0,0,0,0)
 #define CTX_setkey       CTX_STRH('s','e','t','k','e','y',0,0,0,0,0,0,0,0)
 #define CTX_smooth_quad_to CTX_STRH('s','m','o','o','t','h','_','q','u','a','d','_','t','o')
 #define CTX_smoothQuadTo CTX_STRH('s','m','o','o','t','h','Q','u','a','d','T','o',0,0)
@@ -2669,6 +2679,8 @@ struct _CtxState
 #define CTX_source_in    CTX_STRH('s','o','u','r','c','e','_','i','n',0,0,0,0,0)
 #define CTX_sourceAtop   CTX_STRH('s','o','u','r','c','e','A','t','o','p',0,0,0,0)
 #define CTX_source_atop  CTX_STRH('s','o','u','r','c','e','_','a','t','o','p',0,0,0)
+#define CTX_sourceOut    CTX_STRH('s','o','u','r','c','e','O','u','t',0,0,0,0,0)
+#define CTX_source_out   CTX_STRH('s','o','u','r','c','e','_','o','u','t',0,0,0,0)
 #define CTX_sourceOver   CTX_STRH('s','o','u','r','c','e','O','v','e','r',0,0,0,0)
 #define CTX_source_over  CTX_STRH('s','o','u','r','c','e','_','o','v','e','r',0,0,0)
 #define CTX_square       CTX_STRH('s','q','u','a','r','e', 0, 0, 0, 0, 0, 0,0,0)
@@ -7579,7 +7591,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
 static inline void
-ctx_RGBA8_osource_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
 {
   uint8_t alpha = src[3];
   while (count--)
@@ -7611,6 +7623,125 @@ ctx_RGBA8_osource_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
   }
 }
 
+
+typedef enum {
+  CTX_PORTER_DUFF_0,
+  CTX_PORTER_DUFF_1,
+  CTX_PORTER_DUFF_FOO,
+  CTX_PORTER_DUFF_1_MINUS_FOO,
+} CtxPorterDuffFactor;
+
+static inline void
+ctx_RGBA8_porter_duff (uint8_t *dst, uint8_t *src, uint8_t *covp, int count,
+                       CtxPorterDuffFactor f_s, CtxPorterDuffFactor f_d)
+{
+  while (count--)
+  {
+    uint8_t cov = *covp;
+    uint8_t tsrc[4];
+
+    if (cov != 255) for (int c = 0; c < 4; c++)
+      tsrc[c] = (src[c] * cov)/255;
+    else for (int c = 0; c < 4; c++)
+      tsrc[c] = src[c];
+
+    for (int c = 0; c < 4; c++)
+    {
+      int res = 0;
+      switch (f_s)
+      {
+        case CTX_PORTER_DUFF_0: break;
+        case CTX_PORTER_DUFF_1: res += tsrc[c]; break;
+        case CTX_PORTER_DUFF_FOO: res += (tsrc[c] * dst[3])/255; break;
+        case CTX_PORTER_DUFF_1_MINUS_FOO: res += (tsrc[c] * (255-dst[3]))/255; break;
+      }
+      switch (f_d)
+      {
+        case CTX_PORTER_DUFF_0: break;
+        case CTX_PORTER_DUFF_1: res += dst[c]; break;
+        case CTX_PORTER_DUFF_FOO: res += (dst[c] * tsrc[3])/255; break;
+        case CTX_PORTER_DUFF_1_MINUS_FOO: res += (dst[c] * (255-tsrc[3]))/255; break;
+      }
+      if (res > 255) res = 255;
+      dst[c] = res;
+    }
+    covp ++;
+    dst+=4;
+  }
+}
+
+static inline void
+ctx_RGBA8_source_atop (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_FOO, CTX_PORTER_DUFF_1_MINUS_FOO);
+}
+
+static inline void
+ctx_RGBA8_destination_atop (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_FOO);
+}
+
+static inline void
+ctx_RGBA8_source_in (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_FOO, CTX_PORTER_DUFF_0);
+}
+
+static inline void
+ctx_RGBA8_destination_in (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_FOO);
+}
+
+static inline void
+ctx_RGBA8_destination (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_1);
+}
+
+static inline void
+ctx_RGBA8_destination_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_1);
+}
+
+static inline void
+ctx_RGBA8_xor (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_1_MINUS_FOO);
+}
+
+static inline void
+ctx_RGBA8_destination_out (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_1_MINUS_FOO);
+}
+
+static inline void
+ctx_RGBA8_lighter (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_1, CTX_PORTER_DUFF_1);
+}
+
+
+static inline void
+ctx_RGBA8_source_out (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_0);
+}
+
+
 static inline void
 ctx_RGBA8_blend (uint8_t *dst, uint8_t *src, uint8_t *covp, int count,
                  void (*blend_op)(uint8_t *dst, uint8_t *src, uint8_t *blended))
@@ -7622,15 +7753,14 @@ ctx_RGBA8_blend (uint8_t *dst, uint8_t *src, uint8_t *covp, int count,
     if (cov)
     {
       uint8_t rgba[4];
-      blend_op (src, dst, rgba); // the blend should be combined
-                                 // with source type?
+      blend_op (dst, src, rgba);
 
       if (cov != 255)
       {
         uint8_t ralpha = 255 - ( (cov * alpha) / 255);
 
         for (int c = 0; c < 4; c++)
-          dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
+          dst[c] = (rgba[c]*cov + dst[c] * ralpha) / 255;
       }
       else // cov == 255
       {
@@ -7649,32 +7779,24 @@ ctx_RGBA8_blend (uint8_t *dst, uint8_t *src, uint8_t *covp, int count,
   }
 }
 
-static void ctx_RGBA8_blend_lighter (uint8_t *dst, uint8_t *src, uint8_t *blended)
+static void ctx_RGBA8_blend_multiply (uint8_t *dst, uint8_t *src, uint8_t *blended)
 {
+  uint8_t tsrc[4];
+  uint8_t tdst[4];
   for (int c = 0; c < 3; c++)
-  {
-    if (dst[c] > src[c]) blended[c] = dst[c];
-    else blended[c] = src[c];
-  }
+    tsrc[0] = (src[c] * 255) / src[3];
+  for (int c = 0; c < 3; c++)
+    tdst[0] = (dst[c] * 255) / dst[3];
+
+  for (int c = 0; c < 3; c++)
+    blended[c] = (tsrc[c] * tdst[c])/255;
   blended[3] = src[3];
 }
-
-static void ctx_RGBA8_blend_normal (uint8_t *dst, uint8_t *src, uint8_t *blended)
-{
-  *((uint32_t*)(blended)) = *((uint32_t*)(src));
-}
-
-
+ 
 static inline void
-ctx_RGBA8_lighter (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_multiply (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
 {
-  ctx_RGBA8_blend (dst, src, covp, count, ctx_RGBA8_blend_lighter);
-}
-
-static inline void
-ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
-{
-  ctx_RGBA8_blend (dst, src, covp, count, ctx_RGBA8_blend_normal);
+  ctx_RGBA8_blend (dst, src, covp, count, ctx_RGBA8_blend_multiply);
 }
 
 static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
@@ -7785,10 +7907,19 @@ ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
   {
      default:
      case CTX_COMPOSITE_SOURCE_OVER: comp_op = ctx_RGBA8_source_over; break;
-     case CTX_COMPOSITE_LIGHTER:     comp_op = ctx_RGBA8_lighter; 
-                                     break;
-     case CTX_COMPOSITE_COPY:        comp_op = ctx_RGBA8_copy;        break;
-     case CTX_COMPOSITE_CLEAR:       comp_op = ctx_RGBA8_clear;       break;
+     case CTX_COMPOSITE_SOURCE_OUT:  comp_op = ctx_RGBA8_source_out; break;
+     case CTX_COMPOSITE_SOURCE_ATOP: comp_op = ctx_RGBA8_source_atop; break;
+     case CTX_COMPOSITE_SOURCE_IN:   comp_op = ctx_RGBA8_source_in; break;
+
+     case CTX_COMPOSITE_DESTINATION: comp_op = ctx_RGBA8_destination; break;
+     case CTX_COMPOSITE_DESTINATION_ATOP: comp_op = ctx_RGBA8_destination_atop; break;
+     case CTX_COMPOSITE_DESTINATION_OVER: comp_op = ctx_RGBA8_destination_over; break;
+     case CTX_COMPOSITE_DESTINATION_OUT: comp_op = ctx_RGBA8_destination_out; break;
+     case CTX_COMPOSITE_DESTINATION_IN: comp_op = ctx_RGBA8_destination_in; break;
+     case CTX_COMPOSITE_LIGHTER:     comp_op = ctx_RGBA8_lighter; break;
+     case CTX_COMPOSITE_XOR:         comp_op = ctx_RGBA8_xor;     break;
+     case CTX_COMPOSITE_COPY:        comp_op = ctx_RGBA8_copy;    break;
+     case CTX_COMPOSITE_CLEAR:       comp_op = ctx_RGBA8_clear;   break;
   }
   if (gstate->source.type != CTX_SOURCE_COLOR)
     {
@@ -11996,7 +12127,11 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
               case CTX_COMPOSITE_DESTINATION_OUT: str = "destinationOut"; break;
               case CTX_COMPOSITE_DESTINATION_ATOP: str = "destinationAtop"; break;
               case CTX_COMPOSITE_LIGHTER: str = "lighter"; break;
+              case CTX_COMPOSITE_MULTIPLY: str = "multiply"; break;
+              case CTX_COMPOSITE_SCREEN: str = "screen"; break;
+              case CTX_COMPOSITE_DIFFERENCE: str = "difference"; break;
               case CTX_COMPOSITE_XOR: str = "xor"; break;
+              //case CTX_COMPOSITE_HUE: str = "hue"; break;
                   }
 
                break;
@@ -12675,11 +12810,28 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 
           case CTX_clear:          ret = CTX_COMPOSITE_CLEAR; break;
           case CTX_copy:           ret = CTX_COMPOSITE_COPY; break;
+          case CTX_destinationOver:
+          case CTX_destination_over: ret = CTX_COMPOSITE_DESTINATION_OVER; break;
+          case CTX_destinationOut:
+          case CTX_destination_out: ret = CTX_COMPOSITE_DESTINATION_OUT; break;
           case CTX_sourceOver:
           case CTX_source_over:    ret = CTX_COMPOSITE_SOURCE_OVER; break;
-          case CTX_lighter:        ret = CTX_COMPOSITE_LIGHTER; 
-                                   break;
+          case CTX_sourceAtop:
+          case CTX_source_atop:    ret = CTX_COMPOSITE_SOURCE_ATOP; break;
+          case CTX_destinationAtop:
+          case CTX_destination_atop: ret = CTX_COMPOSITE_DESTINATION_ATOP; break;
+          case CTX_sourceOut:
 
+          case CTX_source_out:     ret = CTX_COMPOSITE_SOURCE_OUT; break;
+          case CTX_sourceIn:
+
+          case CTX_source_in:      ret = CTX_COMPOSITE_SOURCE_IN; break;
+          case CTX_lighter:        ret = CTX_COMPOSITE_LIGHTER; break;
+          case CTX_multiply:       ret = CTX_COMPOSITE_MULTIPLY; break;
+          case CTX_screen:         ret = CTX_COMPOSITE_SCREEN; break;
+          case CTX_xor:            ret = CTX_COMPOSITE_XOR; break;
+          //case CTX_hue:            ret = CTX_COMPOSITE_HUE; break;
+          case CTX_difference:     ret = CTX_COMPOSITE_DIFFERENCE; break;
           case CTX_reset:          ret = CTX_RESET; break;
           case CTX_verLineTo:
           case CTX_ver_line_to:    ret = CTX_VER_LINE_TO; break;
