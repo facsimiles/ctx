@@ -7615,7 +7615,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
 static inline void
-ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_source_over_normal (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend ignored)
 {
   uint8_t alpha = src[3];
   while (count--)
@@ -7647,6 +7647,26 @@ ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
   }
 }
 
+static void ctx_RGBA8_blend_normal (uint8_t *dst, uint8_t *src, uint8_t *blended)
+{
+  for (int c = 0; c < 4; c++)
+    blended[c] = src[c];
+}
+
+static void ctx_RGBA8_blend_multiply (uint8_t *dst, uint8_t *src, uint8_t *blended)
+{
+  uint8_t tsrc[4];
+  uint8_t tdst[4];
+  for (int c = 0; c < 3; c++)
+    tsrc[0] = (src[c] * 255) / src[3];
+  for (int c = 0; c < 3; c++)
+    tdst[0] = (dst[c] * 255) / dst[3];
+
+  for (int c = 0; c < 3; c++)
+    blended[c] = (tsrc[c] * tdst[c])/255;
+  blended[3] = src[3];
+}
+
 
 typedef enum {
   CTX_PORTER_DUFF_0,
@@ -7657,17 +7677,26 @@ typedef enum {
 
 static inline void
 ctx_RGBA8_porter_duff (uint8_t *dst, uint8_t *src, uint8_t *covp, int count,
-                       CtxPorterDuffFactor f_s, CtxPorterDuffFactor f_d)
+                       CtxPorterDuffFactor f_s, CtxPorterDuffFactor f_d,
+                       CtxBlend blend)
 {
+  void (*blend_op)(uint8_t *dst, uint8_t *src, uint8_t *blended) = NULL;
+  switch (blend)
+  {
+    default:
+    case CTX_BLEND_NORMAL:   blend_op = ctx_RGBA8_blend_normal; break; // NULL with check
+                                                                        // need to be bencmarked
+    case CTX_BLEND_MULTIPLY: blend_op = ctx_RGBA8_blend_multiply; break;
+  }
   while (count--)
   {
     uint8_t cov = *covp;
     uint8_t tsrc[4];
 
+    blend_op (dst, src, tsrc);
+
     if (cov != 255) for (int c = 0; c < 4; c++)
-      tsrc[c] = (src[c] * cov)/255;
-    else for (int c = 0; c < 4; c++)
-      tsrc[c] = src[c];
+      tsrc[c] = (tsrc[c] * cov)/255;
 
     for (int c = 0; c < 4; c++)
     {
@@ -7695,127 +7724,86 @@ ctx_RGBA8_porter_duff (uint8_t *dst, uint8_t *src, uint8_t *covp, int count,
 }
 
 static inline void
-ctx_RGBA8_source_atop (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_source_atop (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_FOO, CTX_PORTER_DUFF_1_MINUS_FOO);
+    CTX_PORTER_DUFF_FOO, CTX_PORTER_DUFF_1_MINUS_FOO,
+    blend);
 }
 
 static inline void
-ctx_RGBA8_destination_atop (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_destination_atop (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_FOO);
+    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_FOO,
+    blend);
 }
 
 static inline void
-ctx_RGBA8_source_in (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_source_in (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_FOO, CTX_PORTER_DUFF_0);
+    CTX_PORTER_DUFF_FOO, CTX_PORTER_DUFF_0,
+    blend);
 }
 
 static inline void
-ctx_RGBA8_destination_in (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_destination_in (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_FOO);
+    CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_FOO,
+    blend);
 }
 
 static inline void
-ctx_RGBA8_destination (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_destination (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_1);
+    CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_1,
+    blend);
 }
 
 static inline void
-ctx_RGBA8_destination_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_1);
+    CTX_PORTER_DUFF_1, CTX_PORTER_DUFF_1_MINUS_FOO,
+    blend);
 }
 
 static inline void
-ctx_RGBA8_xor (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_destination_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_1_MINUS_FOO);
+    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_1,
+    blend);
 }
 
 static inline void
-ctx_RGBA8_destination_out (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_xor (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_1_MINUS_FOO);
+    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_1_MINUS_FOO,
+    blend);
 }
 
 static inline void
-ctx_RGBA8_source_out (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_destination_out (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_0);
+    CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_1_MINUS_FOO,
+    blend);
 }
-
 
 static inline void
-ctx_RGBA8_blend (uint8_t *dst, uint8_t *src, uint8_t *covp, int count,
-                 void (*blend_op)(uint8_t *dst, uint8_t *src, uint8_t *blended))
+ctx_RGBA8_source_out (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
-  uint8_t alpha = src[3];
-  while (count--)
-  {
-    uint8_t cov = *covp;
-    if (cov)
-    {
-      uint8_t rgba[4];
-      blend_op (dst, src, rgba);
-
-      if (cov != 255)
-      {
-        uint8_t ralpha = 255 - ( (cov * alpha) / 255);
-
-        for (int c = 0; c < 4; c++)
-          dst[c] = (rgba[c]*cov + dst[c] * ralpha) / 255;
-      }
-      else // cov == 255
-      {
-        if (alpha == 255)
-          *((uint32_t*)(dst)) = *((uint32_t*)(rgba));
-        else
-         {
-           uint8_t ralpha = 255 - alpha;
-           for (int c = 0; c < 4; c++)
-             dst[c] = rgba[c] + ((dst[c] * ralpha) / 255);
-         }
-      }
-    }
-    covp ++;
-    dst+=4;
-  }
+  ctx_RGBA8_porter_duff (dst, src, covp, count,
+    CTX_PORTER_DUFF_1_MINUS_FOO, CTX_PORTER_DUFF_0,
+    blend);
 }
 
-static void ctx_RGBA8_blend_multiply (uint8_t *dst, uint8_t *src, uint8_t *blended)
-{
-  uint8_t tsrc[4];
-  uint8_t tdst[4];
-  for (int c = 0; c < 3; c++)
-    tsrc[0] = (src[c] * 255) / src[3];
-  for (int c = 0; c < 3; c++)
-    tdst[0] = (dst[c] * 255) / dst[3];
-
-  for (int c = 0; c < 3; c++)
-    blended[c] = (tsrc[c] * tdst[c])/255;
-  blended[3] = src[3];
-}
- 
-static inline void
-ctx_RGBA8_multiply (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
-{
-  ctx_RGBA8_blend (dst, src, covp, count, ctx_RGBA8_blend_multiply);
-}
-
-static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   while (count--)
   {
@@ -7839,7 +7827,7 @@ static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t *covp, int count
   }
 }
 
-static void ctx_RGBA8_clear (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+static void ctx_RGBA8_clear (uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxBlend blend)
 {
   while (count--)
   {
@@ -7918,7 +7906,18 @@ static int
 ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
-  void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t *cov, int count);
+  CtxBlend blend_mode = gstate->blend_mode;
+  // with source pre-processing tricks blend mode could be baked into precompiled
+  // functions
+
+  void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t *cov, int count, CtxBlend blend_mode);
+  if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
+      gstate->blend_mode == CTX_BLEND_NORMAL)
+  {
+     comp_op = ctx_RGBA8_source_over_normal;
+  }
+  else
+  {
   switch (gstate->compositing_mode)
   {
      default:
@@ -7935,6 +7934,7 @@ ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
      case CTX_COMPOSITE_XOR:   comp_op = ctx_RGBA8_xor;     break;
      case CTX_COMPOSITE_COPY:  comp_op = ctx_RGBA8_copy;    break;
      case CTX_COMPOSITE_CLEAR: comp_op = ctx_RGBA8_clear;   break;
+  }
   }
   if (gstate->source.type != CTX_SOURCE_COLOR)
     {
@@ -7962,7 +7962,7 @@ ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
                 color[3] = (color[3] * gstate->global_alpha_u8)/255;
               if (color[3] != 255)
                 ctx_RGBA8_associate_alpha (color);
-              comp_op (dst, color, &cov, 1);
+              comp_op (dst, color, &cov, 1, blend_mode);
               // XXX collecting into a stack allocated source buffer
               //     is 160% the performance of without, but
               //
@@ -7984,7 +7984,7 @@ ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
       color[3] = (color[3] * gstate->global_alpha_u8)/255;
     if (color[3] != 255)
       ctx_RGBA8_associate_alpha (color);
-    comp_op (dst, color, coverage, count);
+    comp_op (dst, color, coverage, count, blend_mode);
   }
   return count;
 }
@@ -8037,7 +8037,8 @@ static int
 ctx_composite_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
-  void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t *cov, int count);
+  CtxBlend blend = gstate->blend_mode;
+  void (*comp_op)(uint8_t *src, uint8_t *dst, uint8_t *cov, int count, CtxBlend blend);
   switch (gstate->compositing_mode)
   {
      default:
@@ -8072,7 +8073,7 @@ ctx_composite_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
               if (color[3] != 255)
                 ctx_RGBA8_associate_alpha (color);
               ctx_swap_red_green (color);
-              comp_op (dst, color, &cov, 1);
+              comp_op (dst, color, &cov, 1, blend);
               // XXX collecting into a stack allocated source buffer
               //     is 160% the performance of without, but
               //
@@ -8095,7 +8096,7 @@ ctx_composite_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
     if (color[3] != 255)
       ctx_RGBA8_associate_alpha (color);
     ctx_swap_red_green (color);
-    comp_op (dst, color, coverage, count);
+    comp_op (dst, color, coverage, count, blend);
   }
   return count;
 }
