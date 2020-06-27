@@ -7579,7 +7579,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
 static inline void
-ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+ctx_RGBA8_osource_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
 {
   uint8_t alpha = src[3];
   while (count--)
@@ -7622,8 +7622,8 @@ ctx_RGBA8_blend (uint8_t *dst, uint8_t *src, uint8_t *covp, int count,
     if (cov)
     {
       uint8_t rgba[4];
-      if (blend_op)
-        blend_op (src, dst, rgba);
+      blend_op (src, dst, rgba); // the blend should be combined
+                                 // with source type?
 
       if (cov != 255)
       {
@@ -7659,11 +7659,22 @@ static void ctx_RGBA8_blend_lighter (uint8_t *dst, uint8_t *src, uint8_t *blende
   blended[3] = src[3];
 }
 
+static void ctx_RGBA8_blend_normal (uint8_t *dst, uint8_t *src, uint8_t *blended)
+{
+  *((uint32_t*)(blended)) = *((uint32_t*)(src));
+}
+
 
 static inline void
 ctx_RGBA8_lighter (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
 {
   ctx_RGBA8_blend (dst, src, covp, count, ctx_RGBA8_blend_lighter);
+}
+
+static inline void
+ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_blend (dst, src, covp, count, ctx_RGBA8_blend_normal);
 }
 
 static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
