@@ -7597,14 +7597,10 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
       case CTX_SOURCE_IMAGE:
         switch (buffer->format->bpp)
           {
-            case 1:
-              return ctx_fragment_image_gray1_RGBA8;
-            case 24:
-              return ctx_fragment_image_rgb8_RGBA8;
-            case 32:
-              return ctx_fragment_image_rgba8_RGBA8;
-            default:
-              return ctx_fragment_image_RGBA8;
+            case 1:  return ctx_fragment_image_gray1_RGBA8;
+            case 24: return ctx_fragment_image_rgb8_RGBA8;
+            case 32: return ctx_fragment_image_rgba8_RGBA8;
+            default: return ctx_fragment_image_RGBA8;
           }
       case CTX_SOURCE_COLOR:
         return ctx_fragment_color_RGBA8;
@@ -8063,19 +8059,17 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   else
     {
       rasterizer->fragment = NULL;
-    ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
-    if (gstate->global_alpha_u8 != 255)
-      rasterizer->color[3] = (rasterizer->color[3] * gstate->global_alpha_u8)/255;
-    if (rasterizer->color[3] != 255)
-      ctx_RGBA8_associate_alpha (rasterizer->color);
-
+      ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
+      if (gstate->global_alpha_u8 != 255)
+        rasterizer->color[3] = (rasterizer->color[3] * gstate->global_alpha_u8)/255;
+      if (rasterizer->color[3] != 255)
+        ctx_RGBA8_associate_alpha (rasterizer->color);
     }
 }
 
 static int
 ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  CtxGState *gstate = &rasterizer->state->gstate;
   if (!rasterizer->comp_op)
     ctx_setup_RGBA8 (rasterizer);
 
@@ -8181,10 +8175,9 @@ ctx_RGBA8_to_BGRA8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
 static int
 ctx_composite_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count)
 {
-  int ret;
   uint8_t pixels[count * 4];
   ctx_BGRA8_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
-  ret = ctx_composite_RGBA8 (rasterizer, x0, &pixels[0], coverage, count);
+  ctx_composite_RGBA8 (rasterizer, x0, &pixels[0], coverage, count);
   ctx_BGRA8_to_RGBA8  (rasterizer, x0, &pixels[0], dst, count);
   return count;
 }
@@ -8711,7 +8704,7 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   rasterizer->scan_max        = -5000;
   rasterizer->col_min         = 5000;
   rasterizer->col_max         = -5000;
-  rasterizer->comp_op         = NULL;
+  //rasterizer->comp_op         = NULL;
 }
 
 static void
@@ -9668,6 +9661,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_TEXTURE:
         ctx_rasterizer_set_texture (rasterizer, ctx_arg_u32 (0),
                                     ctx_arg_float (2), ctx_arg_float (3) );
+        rasterizer->comp_op = NULL;
         break;
 #if 0
       case CTX_LOAD_IMAGE:
@@ -9691,21 +9685,29 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         ctx_gradient_cache_reset();
 #endif
         ctx_state_gradient_clear_stops (rasterizer->state);
+        rasterizer->comp_op = NULL;
         break;
       case CTX_RADIAL_GRADIENT:
 #if CTX_GRADIENT_CACHE
         ctx_gradient_cache_reset();
 #endif
         ctx_state_gradient_clear_stops (rasterizer->state);
+        rasterizer->comp_op = NULL;
         break;
       case CTX_PRESERVE:
         rasterizer->preserve = 1;
+        break;
+      case CTX_SET_COLOR:
+      case CTX_SET_COMPOSITING_MODE:
+      case CTX_SET_BLEND_MODE:
+        rasterizer->comp_op = NULL;
         break;
       case CTX_ROTATE:
       case CTX_SCALE:
       case CTX_TRANSLATE:
       case CTX_SAVE:
       case CTX_RESTORE:
+        rasterizer->comp_op = NULL;
         rasterizer->uses_transforms = 1;
         ctx_interpret_transforms (rasterizer->state, entry, NULL);
         break;
