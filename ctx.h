@@ -664,13 +664,6 @@ typedef enum
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
-  CTX_SET_GLOBAL_ALPHA     = 10, // ka alpha - default=1.0
-  CTX_SET_COMPOSITING_MODE = 11, // kc mode - u8 , default=0
-  CTX_SET_FONT_SIZE        = 12, // kf size - float, default=?
-  CTX_SET_LINE_JOIN        = 13, // kj join - u8 , default=0
-  CTX_SET_LINE_CAP         = 14, // kc cap - u8, default = 0
-  CTX_SET_LINE_WIDTH       = 15, // kw width, default = 2.0
-  CTX_SET_FILL_RULE        = 16, // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
   CTX_SET_TEXT_ALIGN       = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
   CTX_SET_TEXT_BASELINE    = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
   CTX_SET_TEXT_DIRECTION   = 19, // kd
@@ -682,12 +675,22 @@ typedef enum
   CTX_SET_DCMYK_SPACE      = 24, //
 
   CTX_FUNCTION = 25,
+  CTX_SET_GLOBAL_ALPHA     = 26, // ka alpha - default=1.0
+  CTX_SET_COMPOSITING_MODE = 27, // kc mode - u8 , default=0
+  CTX_SET_FONT_SIZE        = 28, // kf size - float, default=?
+  CTX_SET_LINE_JOIN        = 29, // kj join - u8 , default=0
+  CTX_SET_LINE_CAP         = 30, // kc cap - u8, default = 0
+  CTX_SET_LINE_WIDTH       = 31, // kw width, default = 2.0
+  CTX_SET_FILL_RULE        = '!', // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
+
+
+
   //CTX_ENDFUN = 26,
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
   //
-  // unused:  . , : backslash ! # $ % ^ { } < > ? & /
+  // unused:  . , : backslash  # $ % ^ { } < > ? & /
   //           i 
   //
   //
@@ -2423,7 +2426,6 @@ struct _CtxGState
 
   float         global_alpha_f;
   float         line_width;
-  float         line_width_set;
   float         miter_limit;
   float         font_size;
 
@@ -2668,7 +2670,7 @@ struct _CtxState
 #define CTX_sourceAtop   CTX_STRH('s','o','u','r','c','e','A','t','o','p',0,0,0,0)
 #define CTX_source_atop  CTX_STRH('s','o','u','r','c','e','_','a','t','o','p',0,0,0)
 #define CTX_sourceOver   CTX_STRH('s','o','u','r','c','e','O','v','e','r',0,0,0,0)
-#define CTX_source_over  CTX_STRH('s','o','u','r','c','e','-','o','v','e','r',0,0,0)
+#define CTX_source_over  CTX_STRH('s','o','u','r','c','e','_','o','v','e','r',0,0,0)
 #define CTX_square       CTX_STRH('s','q','u','a','r','e', 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_start        CTX_STRH('s','t','a','r','t',0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_start_move   CTX_STRH('s','t','a','r','t','_','m','o','v','e',0,0,0,0)
@@ -7587,11 +7589,7 @@ ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
     {
       if (cov != 255)
       {
-        uint8_t ralpha;
-        if (alpha!=255)
-         ralpha = 255 - ( (cov * alpha) / 255);
-        else
-         ralpha = 255 - cov;
+        uint8_t ralpha = 255 - ( (cov * alpha) / 255);
 
         for (int c = 0; c < 4; c++)
           dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
@@ -7611,6 +7609,61 @@ ctx_RGBA8_source_over (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
     covp ++;
     dst+=4;
   }
+}
+
+static inline void
+ctx_RGBA8_blend (uint8_t *dst, uint8_t *src, uint8_t *covp, int count,
+                 void (*blend_op)(uint8_t *dst, uint8_t *src, uint8_t *blended))
+{
+  uint8_t alpha = src[3];
+  while (count--)
+  {
+    uint8_t cov = *covp;
+    if (cov)
+    {
+      uint8_t rgba[4];
+      if (blend_op)
+        blend_op (src, dst, rgba);
+
+      if (cov != 255)
+      {
+        uint8_t ralpha = 255 - ( (cov * alpha) / 255);
+
+        for (int c = 0; c < 4; c++)
+          dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
+      }
+      else // cov == 255
+      {
+        if (alpha == 255)
+          *((uint32_t*)(dst)) = *((uint32_t*)(rgba));
+        else
+         {
+           uint8_t ralpha = 255 - alpha;
+           for (int c = 0; c < 4; c++)
+             dst[c] = rgba[c] + ((dst[c] * ralpha) / 255);
+         }
+      }
+    }
+    covp ++;
+    dst+=4;
+  }
+}
+
+static void ctx_RGBA8_blend_lighter (uint8_t *dst, uint8_t *src, uint8_t *blended)
+{
+  for (int c = 0; c < 3; c++)
+  {
+    if (dst[c] > src[c]) blended[c] = dst[c];
+    else blended[c] = src[c];
+  }
+  blended[3] = src[3];
+}
+
+
+static inline void
+ctx_RGBA8_lighter (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
+{
+  ctx_RGBA8_blend (dst, src, covp, count, ctx_RGBA8_blend_lighter);
 }
 
 static void ctx_RGBA8_copy (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
@@ -7721,6 +7774,8 @@ ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
   {
      default:
      case CTX_COMPOSITE_SOURCE_OVER: comp_op = ctx_RGBA8_source_over; break;
+     case CTX_COMPOSITE_LIGHTER:     comp_op = ctx_RGBA8_lighter; 
+                                     break;
      case CTX_COMPOSITE_COPY:        comp_op = ctx_RGBA8_copy;        break;
      case CTX_COMPOSITE_CLEAR:       comp_op = ctx_RGBA8_clear;       break;
   }
@@ -7830,6 +7885,7 @@ ctx_composite_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
   {
      default:
      case CTX_COMPOSITE_SOURCE_OVER: comp_op = ctx_RGBA8_source_over; break;
+     case CTX_COMPOSITE_LIGHTER:     comp_op = ctx_RGBA8_lighter; break;
      case CTX_COMPOSITE_COPY:        comp_op = ctx_RGBA8_copy; break;
      case CTX_COMPOSITE_CLEAR:       comp_op = ctx_RGBA8_clear; break;
   }
@@ -8489,7 +8545,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
       (scan_start > (rasterizer->blit_y + rasterizer->blit_height) * CTX_RASTERIZER_AA) ||
       (scan_end < (rasterizer->blit_y) * CTX_RASTERIZER_AA))
   { 
-
     ctx_rasterizer_reset (rasterizer);
     return;
   }
@@ -12528,7 +12583,7 @@ static int ctx_arguments_for_code (CtxCode code)
 static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
 {
         //fprintf (stderr, "%i %s\n", code, parser->holding);
-  if (code < 127 && code > 10)
+  if (code < 127 && code > 16)
   {
   parser->n_args = ctx_arguments_for_code (code);
   if (parser->n_args >= 200)
@@ -12611,6 +12666,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_copy:           ret = CTX_COMPOSITE_COPY; break;
           case CTX_sourceOver:
           case CTX_source_over:    ret = CTX_COMPOSITE_SOURCE_OVER; break;
+          case CTX_lighter:        ret = CTX_COMPOSITE_LIGHTER; 
+                                   break;
 
           case CTX_reset:          ret = CTX_RESET; break;
           case CTX_verLineTo:
@@ -12666,6 +12723,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_composite:
           case CTX_compositing_mode:
           case CTX_compositingMode:
+                                   fprintf (stderr, "cmd%i\n", CTX_SET_COMPOSITING_MODE);
             return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
 
 
@@ -13183,6 +13241,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_set_line_cap (ctx, (CtxLineCap) arg (0) );
         break;
       case CTX_SET_COMPOSITING_MODE:
+  fprintf (stderr, "::%i\n", (int)arg(0));
         ctx_set_compositing_mode (ctx, (CtxCompositingMode) arg (0) );
         break;
       case CTX_SET_FILL_RULE:
@@ -13377,13 +13436,15 @@ static void ctx_parser_word_done (CtxParser *parser)
 {
   parser->holding[parser->pos]=0;
   int command = ctx_parser_resolve_command (parser, parser->holding);
-  if ((command >= 0 && command < 10) 
+  if ((command >= 0 && command < 16) 
       || (command > 127) || (command < 0)
       )  // special case low enum values
     {                   // and enum values too high to be
                         // commands - permitting passing words
                         // for strings in some cases
       parser->numbers[parser->n_numbers] = command;
+
+      // trigger transition from number
       parser->state = CTX_PARSER_NUMBER;
       ctx_parser_feed_byte (parser, ',');
     }
