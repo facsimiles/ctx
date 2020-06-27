@@ -1,5 +1,4 @@
-/* This file is the public GEGL API
- *
+/* 
  * ctx is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -212,31 +211,30 @@ void ctx_paint          (Ctx *ctx);
 void
 ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-void ctx_set_global_alpha (Ctx *ctx, float global_alpha);
+void  ctx_set_global_alpha (Ctx *ctx, float global_alpha);
 float ctx_get_global_alpha (Ctx *ctx);
 
-void ctx_set_rgba       (Ctx *ctx, float r, float g, float b, float a);
-void ctx_set_rgb        (Ctx *ctx, float r, float g, float b);
-void ctx_set_gray       (Ctx *ctx, float gray);
-void ctx_set_rgba8      (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-void ctx_set_drgba      (Ctx *ctx, float r, float g, float b, float a);
-void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a);
-void ctx_set_cmyk       (Ctx *ctx, float c, float m, float y, float k);
-void ctx_set_dcmyka     (Ctx *ctx, float c, float m, float y, float k, float a);
-void ctx_set_dcmyk      (Ctx *ctx, float c, float m, float y, float k);
+void ctx_set_rgba   (Ctx *ctx, float r, float g, float b, float a);
+void ctx_set_rgb    (Ctx *ctx, float r, float g, float b);
+void ctx_set_gray   (Ctx *ctx, float gray);
+void ctx_set_rgba8  (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void ctx_set_drgba  (Ctx *ctx, float r, float g, float b, float a);
+void ctx_set_cmyka  (Ctx *ctx, float c, float m, float y, float k, float a);
+void ctx_set_cmyk   (Ctx *ctx, float c, float m, float y, float k);
+void ctx_set_dcmyka (Ctx *ctx, float c, float m, float y, float k, float a);
+void ctx_set_dcmyk  (Ctx *ctx, float c, float m, float y, float k);
 
 /* there is also getters for colors, by first setting a color in one format and getting
  * it with another color conversions can be done
  */
 
-void ctx_get_rgba       (Ctx *ctx, float *rgba);
-void ctx_get_graya      (Ctx *ctx, float *ya);
-void ctx_get_drgba      (Ctx *ctx, float *drgba);
-void ctx_get_cmyka      (Ctx *ctx, float *cmyka);
-void ctx_get_dcmyka     (Ctx *ctx, float *dcmyka);
-int ctx_in_fill         (Ctx *ctx, float x, float y);
-int ctx_in_stroke       (Ctx *ctx, float x, float y);
-
+void ctx_get_rgba   (Ctx *ctx, float *rgba);
+void ctx_get_graya  (Ctx *ctx, float *ya);
+void ctx_get_drgba  (Ctx *ctx, float *drgba);
+void ctx_get_cmyka  (Ctx *ctx, float *cmyka);
+void ctx_get_dcmyka (Ctx *ctx, float *dcmyka);
+int  ctx_in_fill    (Ctx *ctx, float x, float y);
+int  ctx_in_stroke  (Ctx *ctx, float x, float y);
 
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
 void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
@@ -313,18 +311,27 @@ typedef enum
   CTX_COMPOSITE_DESTINATION_IN, // 8
   CTX_COMPOSITE_DESTINATION_OUT,
   CTX_COMPOSITE_DESTINATION_ATOP,
-  CTX_COMPOSITE_DIFFERENCE,
-  CTX_COMPOSITE_LIGHTER,
-  CTX_COMPOSITE_XOR, // 13
-  //CTX_COMPOSITE_HUE, // 14
-  CTX_COMPOSITE_MULTIPLY,// 15
-  CTX_COMPOSITE_SCREEN // 16
-
+  CTX_COMPOSITE_XOR, // 11
 } CtxCompositingMode;
 
 typedef enum
 {
-  CTX_BLEND_NORMAL
+  CTX_BLEND_NORMAL, // 0
+  CTX_BLEND_MULTIPLY,
+  CTX_BLEND_SCREEN,
+  CTX_BLEND_OVERLAY,
+  CTX_BLEND_DARKEN,
+  CTX_BLEND_LIGHTEN,
+  CTX_BLEND_COLOR_DODGE,
+  CTX_BLEND_COLOR_BURN,
+  CTX_BLEND_HARD_LIGHT,
+  CTX_BLEND_SOFT_LIGHT,
+  CTX_BLEND_DIFFERENCE,
+  CTX_BLEND_EXCLUSION,
+  CTX_BLEND_HUE, 
+  CTX_BLEND_SATURATION, 
+  CTX_BLEND_COLOR, 
+  CTX_BLEND_LUMINOSITY,  // 15
 } CtxBlend;
 
 typedef enum
@@ -367,12 +374,12 @@ typedef enum
   CTX_TEXT_DIRECTION_RTL
 } CtxTextDirection;
 
-void ctx_set_fill_rule         (Ctx *ctx, CtxFillRule fill_rule);
-void ctx_set_line_cap          (Ctx *ctx, CtxLineCap cap);
-void ctx_set_line_join         (Ctx *ctx, CtxLineJoin join);
-void ctx_set_compositing_mode  (Ctx *ctx, CtxCompositingMode mode);
-int  ctx_set_renderstream      (Ctx *ctx, void *data, int length);
-int  ctx_append_renderstream   (Ctx *ctx, void *data, int length);
+void ctx_set_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
+void ctx_set_line_cap         (Ctx *ctx, CtxLineCap cap);
+void ctx_set_line_join        (Ctx *ctx, CtxLineJoin join);
+void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
+int  ctx_set_renderstream     (Ctx *ctx, void *data, int length);
+int  ctx_append_renderstream  (Ctx *ctx, void *data, int length);
 
 /* these are only needed for clients rendering text, as all text gets
  * converted to paths.
@@ -463,7 +470,6 @@ enum _CtxEventType {
   /* client should store state - preparing
                                  * for restart
                                  */
-
   CTX_POINTER  = (CTX_PRESS | CTX_MOTION | CTX_RELEASE | CTX_DROP),
   CTX_TAPS     = (CTX_TAP | CTX_TAP_AND_HOLD),
   CTX_CROSSING = (CTX_ENTER | CTX_LEAVE),
@@ -585,17 +591,15 @@ void  ctx_thaw   (Ctx *ctx);
 
 int ctx_key_press (Ctx *ctx, unsigned int keyval,
                    const char *string, uint32_t time);
-int ctx_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time);
+int ctx_scrolled  (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time);
 void ctx_incoming_message (Ctx *ctx, const char *message, long time);
-int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time);
-int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time);
-int ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time);
-int ctx_pointer_drop (Ctx *ctx, float x, float y, int device_no, uint32_t time,
-                      char *string);
-
+int ctx_pointer_motion    (Ctx *ctx, float x, float y, int device_no, uint32_t time);
+int ctx_pointer_release   (Ctx *ctx, float x, float y, int device_no, uint32_t time);
+int ctx_pointer_press     (Ctx *ctx, float x, float y, int device_no, uint32_t time);
+int ctx_pointer_drop      (Ctx *ctx, float x, float y, int device_no, uint32_t time,
+                           char *string);
 
 ////////////////////
-
 
 typedef enum
 {
@@ -678,25 +682,26 @@ typedef enum
   CTX_SET_CMYK_SPACE       = 23, //
   CTX_SET_DCMYK_SPACE      = 24, //
 
-  CTX_FUNCTION = 25,
+  /* though expressed as two chars in serialization we have
+   * dedicated byte commands for these setters
+   */
   CTX_SET_GLOBAL_ALPHA     = 26, // ka alpha - default=1.0
   CTX_SET_COMPOSITING_MODE = 27, // kc mode - u8 , default=0
+  CTX_SET_BLEND_MODE       = '$',// kb mode - u8 , default=0
   CTX_SET_FONT_SIZE        = 28, // kf size - float, default=?
   CTX_SET_LINE_JOIN        = 29, // kj join - u8 , default=0
   CTX_SET_LINE_CAP         = 30, // kc cap - u8, default = 0
   CTX_SET_LINE_WIDTH       = 31, // kw width, default = 2.0
   CTX_SET_FILL_RULE        = '!', // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
 
-
-
+  CTX_FUNCTION             = 25,
   //CTX_ENDFUN = 26,
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
   //
-  // unused:  . , : backslash  # $ % ^ { } < > ? & /
+  // unused:  . , : backslash  #  % ^ { } < > ? & /
   //           i 
-  //
   //
   CTX_CONT             = '\0', // - contains args from preceding entry
   CTX_SET_RGBA_U8      = '*', // r g b a - u8
@@ -2448,7 +2453,7 @@ struct _CtxGState
   CtxColorModel color_model;
   /* bitfield-pack small state-parts */
   CtxCompositingMode  compositing_mode:4;
-  CtxBlend                  blend_mode:3;
+  CtxBlend                  blend_mode:4;
   CtxLineCap                  line_cap:2;
   CtxLineJoin                line_join:2;
   CtxFillRule                fill_rule:1;
@@ -2539,7 +2544,7 @@ struct _CtxState
 #define CTX_cap          CTX_STRH('c','a','p',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_center       CTX_STRH('c','e','n','t','e','r', 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_clear        CTX_STRH('c','l','e','a','r',0,0,0,0,0,0,0,0,0)
-#define CTX_reset        CTX_STRH('r','e','s','e','t',0,0,0,0,0,0,0,0,0)
+#define CTX_color        CTX_STRH('c','o','l','o','r',0,0,0,0,0,0,0,0,0)
 #define CTX_copy         CTX_STRH('c','o','p','y',0,0,0,0,0,0,0,0,0,0)
 #define CTX_clip         CTX_STRH('c','l','i','p',0,0,0,0,0,0,0,0,0,0)
 #define CTX_close_path   CTX_STRH('c','l','o','s','e','_','p','a','t','h',0,0,0,0)
@@ -2549,22 +2554,31 @@ struct _CtxState
 #define CTX_cmyk_space   CTX_STRH('c','m','y','k','_','s','p','a','c','e',0,0,0,0)
 #define CTX_cmykSpace    CTX_STRH('c','m','y','k','S','p','a','c','e',0,0,0,0,0)
 #define CTX_color        CTX_STRH('c','o','l','o','r',0,0,0,0,0,0,0,0,0)
+
+#define CTX_blending     CTX_STRH('b','l','e','n','d','i','n','g',0,0,0,0,0,0)
+#define CTX_blend        CTX_STRH('b','l','e','n','d',0,0,0,0,0,0,0,0,0)
+#define CTX_blending_mode CTX_STRH('b','l','e','n','d','i','n','g','_','m','o','d','e',0)
+#define CTX_blendingMode CTX_STRH('b','l','e','n','d','i','n','g','M','o','d','e',0,0)
+#define CTX_blend_mode   CTX_STRH('b','l','e','n','d','_','m','o','d','e',0,0,0,0)
+#define CTX_blendMode    CTX_STRH('b','l','e','n','d','M','o','d','e',0,0,0,0,0)
+
 #define CTX_composite    CTX_STRH('c','o','m','p','o','s','i','t','i','e',0,0,0,0)
 #define CTX_compositing_mode CTX_STRH('c','o','m','p','o','s','i','t','i','n','g','_','m','o')
 #define CTX_compositingMode CTX_STRH('c','o','m','p','o','s','i','t','i','n','g','M','o','d')
 #define CTX_curve_to     CTX_STRH('c','u','r','v','e','_','t','o',0,0,0,0,0,0)
 #define CTX_curveTo      CTX_STRH('c','u','r','v','e','T','o',0,0,0,0,0,0,0)
+#define CTX_darken       CTX_STRH('d','a','r','k','e','n',0,0,0,0,0,0,0,0)
 #define CTX_dcmyk_space  CTX_STRH('d','c','m','y','k','_','s','p','a','c','e',0,0,0)
 #define CTX_dcmykSpace   CTX_STRH('d','c','m','y','k','S','p','a','c','e',0,0,0,0)
-#define CTX_destinationIn     CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','I','n',0)
-#define CTX_destination_in    CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','i','n')
-#define CTX_destinationAtop   CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','A','t','o')
-#define CTX_destination_atop  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','a','t')
-#define CTX_destinationOver   CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','O','v','e')
-#define CTX_destination_over  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','-','o','v')
-#define CTX_destinationOut    CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','O','u','t')
-#define CTX_destination_out   CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','o','u')
-#define CTX_difference        CTX_STRH('d','i','f','f','e','r','e','n','c','e',0,0,0,0)
+#define CTX_destinationIn    CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','I','n',0)
+#define CTX_destination_in   CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','i','n')
+#define CTX_destinationAtop  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','A','t','o')
+#define CTX_destination_atop CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','a','t')
+#define CTX_destinationOver  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','O','v','e')
+#define CTX_destination_over CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','-','o','v')
+#define CTX_destinationOut   CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','O','u','t')
+#define CTX_destination_out  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','o','u')
+#define CTX_difference       CTX_STRH('d','i','f','f','e','r','e','n','c','e',0,0,0,0)
 #define CTX_done         CTX_STRH('d','o','n','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_drgba        CTX_STRH('d','r','g','b','a',0,0,0,0,0,0,0,0,0)
 #define CTX_drgb         CTX_STRH('d','r','g','b',0,0,0,0,0,0,0,0,0,0)
@@ -2605,6 +2619,7 @@ struct _CtxState
 #define CTX_lch          CTX_STRH('l','c','h',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_left         CTX_STRH('l','e','f','t',0,0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_lighter      CTX_STRH('l','i','g','h','t','e','r',0,0,0,0,0,0,0)
+#define CTX_lighten      CTX_STRH('l','i','g','h','t','e','n',0,0,0,0,0,0,0)
 #define CTX_linear_gradient CTX_STRH('l','i','n','e','a','r','_','g','r','a','d','i','e','n')
 #define CTX_linearGradient CTX_STRH('l','i','n','e','a','r','G','r','a','d','i','e','n','t')
 #define CTX_line_cap     CTX_STRH('l','i','n','e','_','c','a','p',0,0,0,0,0,0)
@@ -2657,6 +2672,7 @@ struct _CtxState
 #define CTX_rel_ver_line_to CTX_STRH('r','e','l','_','v','e','r','_','l','i','n','e',0,0)
 #define CTX_relVerLineTo CTX_STRH('r','e','l','V','e','r','L','i','n','e','T','o',0,0)
 #define CTX_restore      CTX_STRH('r','e','s','t','o','r','e',0,0,0,0,0,0,0)
+#define CTX_reset        CTX_STRH('r','e','s','e','t',0,0,0,0,0,0,0,0,0)
 #define CTX_rgba         CTX_STRH('r','g','b','a',0,0,0,0,0,0,0,0,0,0)
 #define CTX_rgb          CTX_STRH('r','g','b',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_rgb_space    CTX_STRH('r','g','b','_','s','p','a','c','e',0,0,0,0,0)
@@ -3807,7 +3823,6 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
   if (ex2) *ex2 = maxx;
   if (ey2) *ey2 = maxy;
 }
-
 
 
 #endif
@@ -4977,6 +4992,12 @@ void ctx_set_line_join (Ctx *ctx, CtxLineJoin join)
   if (ctx->state.gstate.line_join != join)
     CTX_PROCESS_U8 (CTX_SET_LINE_JOIN, join);
 }
+
+void ctx_set_blend_mode (Ctx *ctx, CtxBlend mode)
+{
+  CTX_PROCESS_U8 (CTX_SET_BLEND_MODE, mode);
+}
+
 void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
 {
   CTX_PROCESS_U8 (CTX_SET_COMPOSITING_MODE, mode);
@@ -5241,6 +5262,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         break;
       case CTX_SET_COMPOSITING_MODE:
         state->gstate.compositing_mode = (CtxCompositingMode) ctx_arg_u8 (0);
+        break;
+      case CTX_SET_BLEND_MODE:
+        state->gstate.blend_mode = (CtxBlend) ctx_arg_u8 (0);
         break;
       case CTX_SET_TEXT_ALIGN:
         ctx_state_set (state, CTX_text_align, ctx_arg_u8 (0) );
@@ -7727,14 +7751,6 @@ ctx_RGBA8_destination_out (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
 }
 
 static inline void
-ctx_RGBA8_lighter (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
-{
-  ctx_RGBA8_porter_duff (dst, src, covp, count,
-    CTX_PORTER_DUFF_1, CTX_PORTER_DUFF_1);
-}
-
-
-static inline void
 ctx_RGBA8_source_out (uint8_t *dst, uint8_t *src, uint8_t *covp, int count)
 {
   ctx_RGBA8_porter_duff (dst, src, covp, count,
@@ -7916,10 +7932,9 @@ ctx_composite_RGBA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
      case CTX_COMPOSITE_DESTINATION_OVER: comp_op = ctx_RGBA8_destination_over; break;
      case CTX_COMPOSITE_DESTINATION_OUT: comp_op = ctx_RGBA8_destination_out; break;
      case CTX_COMPOSITE_DESTINATION_IN: comp_op = ctx_RGBA8_destination_in; break;
-     case CTX_COMPOSITE_LIGHTER:     comp_op = ctx_RGBA8_lighter; break;
-     case CTX_COMPOSITE_XOR:         comp_op = ctx_RGBA8_xor;     break;
-     case CTX_COMPOSITE_COPY:        comp_op = ctx_RGBA8_copy;    break;
-     case CTX_COMPOSITE_CLEAR:       comp_op = ctx_RGBA8_clear;   break;
+     case CTX_COMPOSITE_XOR:   comp_op = ctx_RGBA8_xor;     break;
+     case CTX_COMPOSITE_COPY:  comp_op = ctx_RGBA8_copy;    break;
+     case CTX_COMPOSITE_CLEAR: comp_op = ctx_RGBA8_clear;   break;
   }
   if (gstate->source.type != CTX_SOURCE_COLOR)
     {
@@ -8027,7 +8042,6 @@ ctx_composite_BGRA8 (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *c
   {
      default:
      case CTX_COMPOSITE_SOURCE_OVER: comp_op = ctx_RGBA8_source_over; break;
-     case CTX_COMPOSITE_LIGHTER:     comp_op = ctx_RGBA8_lighter; break;
      case CTX_COMPOSITE_COPY:        comp_op = ctx_RGBA8_copy; break;
      case CTX_COMPOSITE_CLEAR:       comp_op = ctx_RGBA8_clear; break;
   }
@@ -11707,6 +11721,11 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
           cairo_set_line_cap (cr, cairo_val);
         }
         break;
+      case CTX_SET_BLEND_MODE:
+        {
+          // XXX does not map to cairo
+        }
+        break;
       case CTX_SET_COMPOSITING_MODE:
         {
           int cairo_val = CAIRO_OPERATOR_OVER;
@@ -11941,6 +11960,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_REL_HOR_LINE_TO:      name="rel_hor_line_to"; break;
           case CTX_REL_VER_LINE_TO:      name="rel_ver_line_to"; break;
           case CTX_SET_COMPOSITING_MODE: name="set_compositing_mode"; break;
+          case CTX_SET_BLEND_MODE:       name="set_blend_mode"; break;
           case CTX_SET_TEXT_ALIGN:       name="set_text_align"; break;
           case CTX_SET_TEXT_BASELINE:    name="set_text_baseline"; break;
           case CTX_SET_TEXT_DIRECTION:   name="set_text_direction"; break;
@@ -11975,6 +11995,9 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           break;
         case CTX_SET_COMPOSITING_MODE:
           name[1]='m';
+          break;
+        case CTX_SET_BLEND_MODE:
+          name[1]='b';
           break;
         case CTX_SET_TEXT_ALIGN:
           name[1]='t';
@@ -12112,6 +12135,27 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
                       break;
                   }
                 break;
+              case CTX_SET_BLEND_MODE:
+                switch (val)
+                  {
+            case CTX_BLEND_NORMAL: str = "normal"; break;
+            case CTX_BLEND_MULTIPLY: str= "multiply"; break;
+            case CTX_BLEND_SCREEN: str = "screen"; break;
+            case CTX_BLEND_OVERLAY: str = "overlay"; break;
+            case CTX_BLEND_DARKEN: str = "darken"; break;
+            case CTX_BLEND_LIGHTEN: str = "lighten"; break;
+            case CTX_BLEND_COLOR_DODGE: str = "colorDodge"; break;
+            case CTX_BLEND_COLOR_BURN: str = "colorBurn"; break;
+            case CTX_BLEND_HARD_LIGHT: str = "hardLight"; break;
+            case CTX_BLEND_SOFT_LIGHT: str = "softLight"; break;
+            case CTX_BLEND_DIFFERENCE: str = "difference"; break;
+            case CTX_BLEND_EXCLUSION: str = "exclusion"; break;
+            case CTX_BLEND_HUE: str = "hue"; break;
+            case CTX_BLEND_SATURATION:  str = "saturation"; break;
+            case CTX_BLEND_COLOR: str = "color"; break; 
+            case CTX_BLEND_LUMINOSITY: str = "luminosity"; break;
+                  }
+                break;
               case CTX_SET_COMPOSITING_MODE:
                 switch (val)
                   {
@@ -12126,12 +12170,7 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
               case CTX_COMPOSITE_DESTINATION_IN: str = "destinationIn"; break;
               case CTX_COMPOSITE_DESTINATION_OUT: str = "destinationOut"; break;
               case CTX_COMPOSITE_DESTINATION_ATOP: str = "destinationAtop"; break;
-              case CTX_COMPOSITE_LIGHTER: str = "lighter"; break;
-              case CTX_COMPOSITE_MULTIPLY: str = "multiply"; break;
-              case CTX_COMPOSITE_SCREEN: str = "screen"; break;
-              case CTX_COMPOSITE_DIFFERENCE: str = "difference"; break;
               case CTX_COMPOSITE_XOR: str = "xor"; break;
-              //case CTX_COMPOSITE_HUE: str = "hue"; break;
                   }
 
                break;
@@ -12813,25 +12852,30 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_destinationOver:
           case CTX_destination_over: ret = CTX_COMPOSITE_DESTINATION_OVER; break;
           case CTX_destinationOut:
-          case CTX_destination_out: ret = CTX_COMPOSITE_DESTINATION_OUT; break;
+          case CTX_destination_out:  ret = CTX_COMPOSITE_DESTINATION_OUT; break;
           case CTX_sourceOver:
-          case CTX_source_over:    ret = CTX_COMPOSITE_SOURCE_OVER; break;
+          case CTX_source_over:      ret = CTX_COMPOSITE_SOURCE_OVER; break;
           case CTX_sourceAtop:
-          case CTX_source_atop:    ret = CTX_COMPOSITE_SOURCE_ATOP; break;
+          case CTX_source_atop:      ret = CTX_COMPOSITE_SOURCE_ATOP; break;
           case CTX_destinationAtop:
           case CTX_destination_atop: ret = CTX_COMPOSITE_DESTINATION_ATOP; break;
           case CTX_sourceOut:
-
           case CTX_source_out:     ret = CTX_COMPOSITE_SOURCE_OUT; break;
           case CTX_sourceIn:
-
           case CTX_source_in:      ret = CTX_COMPOSITE_SOURCE_IN; break;
-          case CTX_lighter:        ret = CTX_COMPOSITE_LIGHTER; break;
-          case CTX_multiply:       ret = CTX_COMPOSITE_MULTIPLY; break;
-          case CTX_screen:         ret = CTX_COMPOSITE_SCREEN; break;
           case CTX_xor:            ret = CTX_COMPOSITE_XOR; break;
-          //case CTX_hue:            ret = CTX_COMPOSITE_HUE; break;
-          case CTX_difference:     ret = CTX_COMPOSITE_DIFFERENCE; break;
+          case CTX_darken:         ret = CTX_BLEND_DARKEN; break;
+          case CTX_lighten:        ret = CTX_BLEND_LIGHTEN; break;
+          //case CTX_color:          ret = CTX_BLEND_COLOR; break;
+          //
+          //  XXX check that he special casing for color works
+          //      it is the first collision and it is due to our own
+          //      color, not w3c for now unique use of it
+          //
+          case CTX_hue:            ret = CTX_BLEND_HUE; break;
+          case CTX_multiply:       ret = CTX_BLEND_MULTIPLY; break;
+          case CTX_screen:         ret = CTX_BLEND_SCREEN; break;
+          case CTX_difference:     ret = CTX_BLEND_DIFFERENCE; break;
           case CTX_reset:          ret = CTX_RESET; break;
           case CTX_verLineTo:
           case CTX_ver_line_to:    ret = CTX_VER_LINE_TO; break;
@@ -12886,10 +12930,12 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_composite:
           case CTX_compositing_mode:
           case CTX_compositingMode:
-                                   fprintf (stderr, "cmd%i\n", CTX_SET_COMPOSITING_MODE);
             return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
-
-
+          case CTX_blend:
+          case CTX_blending:
+          case CTX_blending_mode:
+          case CTX_blendMode:
+            return ctx_parser_set_command (parser, CTX_SET_BLEND_MODE);
           case CTX_rgb_space:
           case CTX_rgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
@@ -13404,8 +13450,14 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_set_line_cap (ctx, (CtxLineCap) arg (0) );
         break;
       case CTX_SET_COMPOSITING_MODE:
-  fprintf (stderr, "::%i\n", (int)arg(0));
         ctx_set_compositing_mode (ctx, (CtxCompositingMode) arg (0) );
+        break;
+      case CTX_SET_BLEND_MODE:
+        {
+          int blend_mode = arg(0);
+          if (blend_mode == CTX_SET_COLOR) blend_mode = CTX_BLEND_COLOR;
+          ctx_set_blend_mode (ctx, blend_mode);
+        }
         break;
       case CTX_SET_FILL_RULE:
         ctx_set_fill_rule (ctx, (CtxFillRule) arg (0) );
