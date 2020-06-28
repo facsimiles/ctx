@@ -7737,8 +7737,8 @@ static void ctx_RGBA8_blend_multiply (uint8_t *dst, uint8_t *src, uint8_t *blend
   uint8_t tdst[4];
   for (int c = 0; c < 3; c++)
   {
-    tsrc[0] = (src[c] * 255) / src[3];
-    tdst[0] = (dst[c] * 255) / dst[3];
+    tsrc[c] = (src[c] * 255) / src[3];
+    tdst[c] = (dst[c] * 255) / dst[3];
   }
 
   for (int c = 0; c < 3; c++)
