@@ -15,6 +15,8 @@ clean:
 
 perf.S: perf.c ../*.h ../fonts/*.h Makefile
 	ccache gcc-10 -O3 -s -Ofast $< -S -o $@ -I.. -I../fonts -static
+perf.s: perf.S
+	as -alhnd perf.S > perf.s
 perf: perf.c ../*.h ../fonts/*.h Makefile
 	ccache gcc-10 -O3 -s -Ofast $< -o $@ -I.. -I../fonts -static
 

@@ -7656,6 +7656,7 @@ static void
 ctx_RGBA8_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
 {
   uint8_t alpha = src[3];
+
   while (count--)
   {
     uint8_t cov = *covp;
@@ -7677,6 +7678,8 @@ ctx_RGBA8_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t *dst, uin
     covp ++;
     dst+=4;
   }
+
+
 }
 
 static void
@@ -7694,35 +7697,25 @@ ctx_RGBA8_source_over_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *
     uint8_t cov = *covp;
     if (cov)
     {
-      if (rasterizer->fragment)
+      rasterizer->fragment (rasterizer, u, v, src);
+      ctx_RGBA8_associate_alpha (src);
+      alpha = src[3];
+      
+      if (cov == 255 && alpha == 255)
       {
-        rasterizer->fragment (rasterizer, u, v, src);
-        ctx_RGBA8_associate_alpha (src);
-        alpha = src[3];
+        *((uint32_t*)(dst)) = *((uint32_t*)(src));
       }
-      if (cov != 255)
+      else
       {
-        uint8_t ralpha = 255 - ( (cov * alpha) / 255);
-
+        uint8_t ralpha = 255 - alpha;
         for (int c = 0; c < 4; c++)
-          dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
-      }
-      else // cov == 255
-      {
-        if (alpha == 255)
-          *((uint32_t*)(dst)) = *((uint32_t*)(src));
-        else
-         {
-           uint8_t ralpha = 255 - alpha;
-           for (int c = 0; c < 4; c++)
-             dst[c] = src[c] + ((dst[c] * ralpha) / 255);
-         }
+          dst[c] = src[c] + ((dst[c] * ralpha) / 255);
       }
     }
     covp ++;
     u += ud;
     v += vd;
-    dst  +=4;
+    dst +=4;
   }
 }
 
@@ -7812,7 +7805,6 @@ ctx_RGBA8_porter_duff (CtxRasterizer *rasterizer,
   }
   else
   {
-
     while (count--)
     {
       uint8_t cov = *covp;
