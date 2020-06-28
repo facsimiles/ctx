@@ -7756,101 +7756,102 @@ typedef enum {
 } CtxPorterDuffFactor;
 
 static inline void
-ctx_RGBA8_porter_duff (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count,
+ctx_RGBA8_porter_duff (CtxRasterizer *rasterizer,
+                       uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count,
                        CtxPorterDuffFactor f_s, CtxPorterDuffFactor f_d)
 {
-  float u0 = 0; float v0 = 0;
-  float ud = 0; float vd = 0;
   if (rasterizer->fragment)
   {
+    float u0 = 0; float v0 = 0;
+    float ud = 0; float vd = 0;
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
-  while (count--)
-  {
-    uint8_t cov = *covp;
-    uint8_t tsrc[4];
-
-    rasterizer->fragment (rasterizer, u0, v0, tsrc);
-    ctx_RGBA8_associate_alpha (tsrc);
-    u0 += ud;
-    v0 += vd;
-    rasterizer->blend_op (dst, tsrc, tsrc);
-
-    if (cov != 255) for (int c = 0; c < 4; c++)
-      tsrc[c] = (tsrc[c] * cov)/255;
-
-    for (int c = 0; c < 4; c++)
+    while (count--)
     {
-      int res = 0;
-      /* these switches and this whole function disappear when
-       * compiled when the enum values passed in are constants.
-       */
-      switch (f_s)
+      uint8_t cov = *covp;
+      uint8_t tsrc[4];
+
+      rasterizer->fragment (rasterizer, u0, v0, tsrc);
+      ctx_RGBA8_associate_alpha (tsrc);
+      u0 += ud;
+      v0 += vd;
+      rasterizer->blend_op (dst, tsrc, tsrc);
+
+      if (cov != 255) for (int c = 0; c < 4; c++)
+        tsrc[c] = (tsrc[c] * cov)/255;
+
+      for (int c = 0; c < 4; c++)
       {
-        case CTX_PORTER_DUFF_0: break;
-        case CTX_PORTER_DUFF_1:   res += tsrc[c]; break;
-        case CTX_PORTER_DUFF_FOO: res += (tsrc[c] * dst[3])/255; break;
-        case CTX_PORTER_DUFF_1_MINUS_FOO: res += (tsrc[c] * (255-dst[3]))/255; break;
+        int res = 0;
+        /* these switches and this whole function disappear when
+         * compiled when the enum values passed in are constants.
+         */
+        switch (f_s)
+        {
+          case CTX_PORTER_DUFF_0: break;
+          case CTX_PORTER_DUFF_1:   res += tsrc[c]; break;
+          case CTX_PORTER_DUFF_FOO: res += (tsrc[c] * dst[3])/255; break;
+          case CTX_PORTER_DUFF_1_MINUS_FOO: res += (tsrc[c] * (255-dst[3]))/255; break;
+        }
+        switch (f_d)
+        {
+          case CTX_PORTER_DUFF_0: break;
+          case CTX_PORTER_DUFF_1:   res += dst[c]; break;
+          case CTX_PORTER_DUFF_FOO: res += (dst[c] * tsrc[3])/255; break;
+          case CTX_PORTER_DUFF_1_MINUS_FOO: res += (dst[c] * (255-tsrc[3]))/255; break;
+        }
+        if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
+        { // XXX perf impact?
+          if (res > 255) res = 255;
+        }
+        dst[c] = res;
       }
-      switch (f_d)
-      {
-        case CTX_PORTER_DUFF_0: break;
-        case CTX_PORTER_DUFF_1:   res += dst[c]; break;
-        case CTX_PORTER_DUFF_FOO: res += (dst[c] * tsrc[3])/255; break;
-        case CTX_PORTER_DUFF_1_MINUS_FOO: res += (dst[c] * (255-tsrc[3]))/255; break;
-      }
-      if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
-      { // XXX perf impact?
-        if (res > 255) res = 255;
-      }
-      dst[c] = res;
+      covp ++;
+      dst+=4;
     }
-    covp ++;
-    dst+=4;
-  }
   }
   else
   {
 
-  while (count--)
-  {
-    uint8_t cov = *covp;
-    uint8_t tsrc[4];
-
-    rasterizer->blend_op (dst, src, tsrc);
-
-    if (cov != 255) for (int c = 0; c < 4; c++)
-      tsrc[c] = (tsrc[c] * cov)/255;
-
-    for (int c = 0; c < 4; c++)
+    while (count--)
     {
-      int res = 0;
-      /* these switches and this whole function disappear when
-       * compiled when the enum values passed in are constants.
-       */
-      switch (f_s)
+      uint8_t cov = *covp;
+      uint8_t tsrc[4];
+  
+      rasterizer->blend_op (dst, src, tsrc);
+  
+      if (cov != 255) for (int c = 0; c < 4; c++)
+        tsrc[c] = (tsrc[c] * cov)/255;
+  
+      for (int c = 0; c < 4; c++)
       {
-        case CTX_PORTER_DUFF_0: break;
-        case CTX_PORTER_DUFF_1:   res += tsrc[c]; break;
-        case CTX_PORTER_DUFF_FOO: res += (tsrc[c] * dst[3])/255; break;
-        case CTX_PORTER_DUFF_1_MINUS_FOO: res += (tsrc[c] * (255-dst[3]))/255; break;
+        int res = 0;
+        /* these switches and this whole function disappear when
+         * compiled when the enum values passed in are constants.
+         */
+        switch (f_s)
+        {
+          case CTX_PORTER_DUFF_0: break;
+          case CTX_PORTER_DUFF_1:   res += tsrc[c]; break;
+          case CTX_PORTER_DUFF_FOO: res += (tsrc[c] * dst[3])/255; break;
+          case CTX_PORTER_DUFF_1_MINUS_FOO: res += (tsrc[c] * (255-dst[3]))/255; break;
+        }
+        switch (f_d)
+        {
+          case CTX_PORTER_DUFF_0: break;
+          case CTX_PORTER_DUFF_1:   res += dst[c]; break;
+          case CTX_PORTER_DUFF_FOO: res += (dst[c] * tsrc[3])/255; break;
+          case CTX_PORTER_DUFF_1_MINUS_FOO: res += (dst[c] * (255-tsrc[3]))/255; break;
+        }
+        if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
+        { // XXX perf impact?
+          if (res > 255) res = 255;
+        }
+        dst[c] = res;
       }
-      switch (f_d)
-      {
-        case CTX_PORTER_DUFF_0: break;
-        case CTX_PORTER_DUFF_1:   res += dst[c]; break;
-        case CTX_PORTER_DUFF_FOO: res += (dst[c] * tsrc[3])/255; break;
-        case CTX_PORTER_DUFF_1_MINUS_FOO: res += (dst[c] * (255-tsrc[3]))/255; break;
-      }
-      if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
-      { // XXX perf impact?
-        if (res > 255) res = 255;
-      }
-      dst[c] = res;
+      covp ++;
+      dst+=4;
     }
-    covp ++;
-    dst+=4;
-  }
   }
 }
 
@@ -8090,7 +8091,6 @@ ctx_composite_RGBA8_convert (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *s
   ctx_composite_RGBA8 (rasterizer, &pixels[0], src, x, coverage, count);
   rasterizer->format->from_comp (rasterizer, x, &pixels[0], dst, count);
 }
-
 
 static inline void ctx_float_source_over (int components, float *dst, float *src, uint8_t cov)
 {
