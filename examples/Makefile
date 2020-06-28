@@ -13,8 +13,10 @@ clean:
 %: %.c ../*.h ../fonts/*.h Makefile
 	ccache $(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 
+perf.S: perf.c ../*.h ../fonts/*.h Makefile
+	ccache gcc-10 -O3 -s -Ofast $< -S -o $@ -I.. -I../fonts -static
 perf: perf.c ../*.h ../fonts/*.h Makefile
-	ccache musl-gcc -Ofast $< -o $@ -I.. -I../fonts -static
+	ccache gcc-10 -O3 -s -Ofast $< -o $@ -I.. -I../fonts -static
 
 musl-static-%: %.c ../*.h ../fonts/*.h Makefile
 	ccache musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static

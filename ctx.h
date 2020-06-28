@@ -4649,14 +4649,14 @@ void ctx_reset (Ctx *ctx)
     ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
                      CTX_PRESS|CTX_RELEASE|CTX_MOTION, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
+    ctx_listen_full (ctx, 0,0,0,0,
+                     CTX_KEY_DOWN, _ctx_bindings_key_down, ctx, ctx,
+                     NULL, NULL);
     ctx_listen_full (ctx, 0, 0, 0,0,
                      CTX_KEY_DOWN, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
     ctx_listen_full (ctx, 0, 0, 0,0,
                      CTX_KEY_UP, ctx_collect_events, ctx, ctx,
-                     NULL, NULL);
-    ctx_listen_full (ctx, 0,0,0,0,
-                     CTX_KEY_DOWN, _ctx_bindings_key_down, ctx, ctx,
                      NULL, NULL);
   }
 #endif
@@ -7687,9 +7687,7 @@ ctx_RGBA8_source_over_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *
   float u  = 0; float v  = 0;
   float ud = 0; float vd = 0;
   if (rasterizer->fragment)
-    {
-      ctx_init_uv (rasterizer, x0, count, &u, &v, &ud, &vd);
-    }
+    ctx_init_uv (rasterizer, x0, count, &u, &v, &ud, &vd);
 
   while (count--)
   {
@@ -7730,8 +7728,7 @@ ctx_RGBA8_source_over_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *
 
 static void ctx_RGBA8_blend_normal (uint8_t *dst, uint8_t *src, uint8_t *blended)
 {
-  for (int c = 0; c < 4; c++)
-    blended[c] = src[c];
+  *((uint32_t*)(blended)) = *((uint32_t*)(src));
 }
 
 static void ctx_RGBA8_blend_multiply (uint8_t *dst, uint8_t *src, uint8_t *blended)
@@ -7739,9 +7736,10 @@ static void ctx_RGBA8_blend_multiply (uint8_t *dst, uint8_t *src, uint8_t *blend
   uint8_t tsrc[4];
   uint8_t tdst[4];
   for (int c = 0; c < 3; c++)
+  {
     tsrc[0] = (src[c] * 255) / src[3];
-  for (int c = 0; c < 3; c++)
     tdst[0] = (dst[c] * 255) / dst[3];
+  }
 
   for (int c = 0; c < 3; c++)
     blended[c] = (tsrc[c] * tdst[c])/255;
@@ -7764,27 +7762,19 @@ ctx_RGBA8_porter_duff (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, in
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
   if (rasterizer->fragment)
-    {
-      ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-    }
+  {
+    ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
   while (count--)
   {
     uint8_t cov = *covp;
     uint8_t tsrc[4];
 
-    if (rasterizer->fragment)
-    {
-      rasterizer->fragment (rasterizer, u0, v0, tsrc);
-      ctx_RGBA8_associate_alpha (tsrc);
-      u0 += ud;
-      v0 += vd;
-      rasterizer->blend_op (dst, tsrc, tsrc);
-    }
-    else
-    {
-      rasterizer->blend_op (dst, src, tsrc);
-    }
+    rasterizer->fragment (rasterizer, u0, v0, tsrc);
+    ctx_RGBA8_associate_alpha (tsrc);
+    u0 += ud;
+    v0 += vd;
+    rasterizer->blend_op (dst, tsrc, tsrc);
 
     if (cov != 255) for (int c = 0; c < 4; c++)
       tsrc[c] = (tsrc[c] * cov)/255;
@@ -7792,6 +7782,9 @@ ctx_RGBA8_porter_duff (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, in
     for (int c = 0; c < 4; c++)
     {
       int res = 0;
+      /* these switches and this whole function disappear when
+       * compiled when the enum values passed in are constants.
+       */
       switch (f_s)
       {
         case CTX_PORTER_DUFF_0: break;
@@ -7806,11 +7799,58 @@ ctx_RGBA8_porter_duff (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, in
         case CTX_PORTER_DUFF_FOO: res += (dst[c] * tsrc[3])/255; break;
         case CTX_PORTER_DUFF_1_MINUS_FOO: res += (dst[c] * (255-tsrc[3]))/255; break;
       }
-      if (res > 255) res = 255;
+      if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
+      { // XXX perf impact?
+        if (res > 255) res = 255;
+      }
       dst[c] = res;
     }
     covp ++;
     dst+=4;
+  }
+  }
+  else
+  {
+
+  while (count--)
+  {
+    uint8_t cov = *covp;
+    uint8_t tsrc[4];
+
+    rasterizer->blend_op (dst, src, tsrc);
+
+    if (cov != 255) for (int c = 0; c < 4; c++)
+      tsrc[c] = (tsrc[c] * cov)/255;
+
+    for (int c = 0; c < 4; c++)
+    {
+      int res = 0;
+      /* these switches and this whole function disappear when
+       * compiled when the enum values passed in are constants.
+       */
+      switch (f_s)
+      {
+        case CTX_PORTER_DUFF_0: break;
+        case CTX_PORTER_DUFF_1:   res += tsrc[c]; break;
+        case CTX_PORTER_DUFF_FOO: res += (tsrc[c] * dst[3])/255; break;
+        case CTX_PORTER_DUFF_1_MINUS_FOO: res += (tsrc[c] * (255-dst[3]))/255; break;
+      }
+      switch (f_d)
+      {
+        case CTX_PORTER_DUFF_0: break;
+        case CTX_PORTER_DUFF_1:   res += dst[c]; break;
+        case CTX_PORTER_DUFF_FOO: res += (dst[c] * tsrc[3])/255; break;
+        case CTX_PORTER_DUFF_1_MINUS_FOO: res += (dst[c] * (255-tsrc[3]))/255; break;
+      }
+      if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
+      { // XXX perf impact?
+        if (res > 255) res = 255;
+      }
+      dst[c] = res;
+    }
+    covp ++;
+    dst+=4;
+  }
   }
 }
 

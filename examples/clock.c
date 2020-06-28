@@ -117,32 +117,33 @@ int main (int argc, char **argv)
   while (!do_quit)
   {
     ctx_reset          (ctx);
+    float width = ctx_width (ctx);
+    float height = ctx_height (ctx);
     ctx_save (ctx);
-    ctx_set_rgba       (ctx, 0, 0, 0.5, 0.9); //XXX should not impact clear
-    ctx_rectangle      (ctx, 0, 0, ctx_width(ctx), ctx_height(ctx));
+    ctx_rectangle      (ctx, 0, 0, width, height);
     ctx_set_compositing_mode (ctx, CTX_COMPOSITE_CLEAR);
     ctx_fill           (ctx);
     ctx_restore (ctx);
-    ctx_move_to        (ctx, 10+x, 9);
-    ctx_set_font_size  (ctx, 12 + x/4);
+    ctx_move_to        (ctx, 10+x, height * 0.2);
+    ctx_set_font_size  (ctx, height * 0.1 + x/4.0);
     ctx_set_line_width (ctx, 2);
     ctx_set_rgba       (ctx, 0, 0, 0, 1);
     ctx_text_stroke    (ctx, utf8);
     ctx_set_rgba8      (ctx, 255, 255, 255, 255);
-    ctx_move_to        (ctx, 10+x, 9);
+    ctx_move_to        (ctx, height * 0.05 +x, height * 0.2);
     ctx_text           (ctx, utf8);
-    ctx_move_to        (ctx, 10, 130);
-    ctx_set_font_size  (ctx, 40);
+    ctx_set_font_size  (ctx, height * 0.2);
 
+    ctx_move_to        (ctx, height * 0.05, height * 0.4);
     ctx_set_rgb        (ctx, 1, 0,0);
     ctx_text           (ctx, message);
 
-    ctx_rectangle (ctx, x,y,100,100);
+    ctx_rectangle (ctx, x,y,height * 0.2,height * 0.2);
     ctx_listen    (ctx, CTX_DRAG, red_rect, NULL, NULL);
     ctx_fill (ctx);
 
     ctx_set_rgb        (ctx, 0, 1,0);
-    ctx_rectangle (ctx, 100,250,100,100);
+    ctx_rectangle (ctx, 0,height * 0.8,height * 0.2,height * 0.2);
     ctx_listen    (ctx, CTX_PRESS, green_rect, NULL, NULL);
     ctx_fill (ctx);
     
