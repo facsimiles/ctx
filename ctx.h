@@ -10781,8 +10781,11 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
   switch (entry->code)
     {
       case CTX_TEXT:
-      case CTX_CLIP:
+      case CTX_TEXT_STROKE:
       case CTX_NEW_PATH:
+        ctx->current_path.count = 0;
+        break;
+      case CTX_CLIP:
       case CTX_FILL:
       case CTX_STROKE:
               // XXX unless preserve
@@ -13435,8 +13438,6 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_SET_FONT:
         ctx_set_font (ctx, (char *) parser->holding);
         break;
-
-
       case CTX_SET:
         parser->t_args++;
         if (parser->t_args % 2 == 1)
