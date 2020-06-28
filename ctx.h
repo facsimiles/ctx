@@ -7559,14 +7559,10 @@ static void ctx_fragment_image_RGBAF (CtxRasterizer *rasterizer, float x, float 
   CtxBuffer *buffer = gstate->source.image.buffer;
   switch (buffer->format->bpp)
     {
-      case 1:
-        ctx_fragment_image_gray1_RGBA8 (rasterizer, x, y, rgba);
-      case 24:
-        ctx_fragment_image_rgb8_RGBA8 (rasterizer, x, y, rgba);
-      case 32:
-        ctx_fragment_image_rgba8_RGBA8 (rasterizer, x, y, rgba);
-      default:
-        ctx_fragment_image_RGBA8 (rasterizer, x, y, rgba);
+      case 1:  ctx_fragment_image_gray1_RGBA8 (rasterizer, x, y, rgba); break;
+      case 24: ctx_fragment_image_rgb8_RGBA8 (rasterizer, x, y, rgba); break;
+      case 32: ctx_fragment_image_rgba8_RGBA8 (rasterizer, x, y, rgba); break;
+      default: ctx_fragment_image_RGBA8 (rasterizer, x, y, rgba); break;
     }
   for (int c = 0; c < 4; c ++) { outf[c] = ctx_u8_to_float (rgba[c]); }
 }
@@ -7576,14 +7572,10 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBAF (CtxRasterizer *rasterizer)
   CtxGState *gstate = &rasterizer->state->gstate;
   switch (gstate->source.type)
     {
-      case CTX_SOURCE_IMAGE:
-        return ctx_fragment_image_RGBAF;
-      case CTX_SOURCE_COLOR:
-        return ctx_fragment_color_RGBAF;
-      case CTX_SOURCE_LINEAR_GRADIENT:
-        return ctx_fragment_linear_gradient_RGBAF;
-      case CTX_SOURCE_RADIAL_GRADIENT:
-        return ctx_fragment_radial_gradient_RGBAF;
+      case CTX_SOURCE_IMAGE:           return ctx_fragment_image_RGBAF;
+      case CTX_SOURCE_COLOR:           return ctx_fragment_color_RGBAF;
+      case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_RGBAF;
+      case CTX_SOURCE_RADIAL_GRADIENT: return ctx_fragment_radial_gradient_RGBAF;
     }
   return ctx_fragment_color_RGBAF;
 }
@@ -7602,12 +7594,9 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
             case 32: return ctx_fragment_image_rgba8_RGBA8;
             default: return ctx_fragment_image_RGBA8;
           }
-      case CTX_SOURCE_COLOR:
-        return ctx_fragment_color_RGBA8;
-      case CTX_SOURCE_LINEAR_GRADIENT:
-        return ctx_fragment_linear_gradient_RGBA8;
-      case CTX_SOURCE_RADIAL_GRADIENT:
-        return ctx_fragment_radial_gradient_RGBA8;
+      case CTX_SOURCE_COLOR:           return ctx_fragment_color_RGBA8;
+      case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_RGBA8;
+      case CTX_SOURCE_RADIAL_GRADIENT: return ctx_fragment_radial_gradient_RGBA8;
     }
   return ctx_fragment_color_RGBA8;
 }
@@ -7618,7 +7607,8 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
 static void ctx_init_uv (CtxRasterizer *rasterizer,
-                         int x0, int count, float *u0, float *v0, float *ud, float *vd)
+                         int x0, int count,
+                         float *u0, float *v0, float *ud, float *vd)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   float y = rasterizer->scanline / CTX_RASTERIZER_AA;
@@ -7634,8 +7624,7 @@ static void ctx_init_uv (CtxRasterizer *rasterizer,
   *vd = (v1-*v0)/(count);
 }
 
-
-static inline void
+static void
 ctx_RGBA8_source_over_normal_opaque_color (int x0, uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxRasterizer *rasterizer)
 {
   while (count--)
@@ -7659,7 +7648,7 @@ ctx_RGBA8_source_over_normal_opaque_color (int x0, uint8_t *dst, uint8_t *src, u
   }
 }
 
-static inline void
+static void
 ctx_RGBA8_source_over_normal_color (int x0, uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxRasterizer *rasterizer)
 {
   uint8_t alpha = src[3];
@@ -7691,7 +7680,7 @@ ctx_RGBA8_source_over_normal_color (int x0, uint8_t *dst, uint8_t *src, uint8_t 
   }
 }
 
-static inline void
+static void
 ctx_RGBA8_source_over_normal (int x0, uint8_t *dst, uint8_t *src, uint8_t *covp, int count, CtxRasterizer *rasterizer)
 {
   uint8_t alpha = src[3];
@@ -7761,7 +7750,6 @@ static void ctx_RGBA8_blend_multiply (uint8_t *dst, uint8_t *src, uint8_t *blend
 
   ctx_RGBA8_associate_alpha (blended);
 }
-
 
 typedef enum {
   CTX_PORTER_DUFF_0,
