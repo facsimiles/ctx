@@ -6080,6 +6080,7 @@ static void cmd_down (CtxEvent *event, void *data1, void *data2)
   Mrg *mrg = data1;
   float e_x, e_y, e_s, e_e, e_em;
   float cx, cy;
+  cx = cy = 0;
  
   mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
   mrg_set_edge_left (mrg, e_s - PROP (padding_left));

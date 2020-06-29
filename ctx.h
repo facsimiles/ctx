@@ -282,13 +282,13 @@ void  ctx_render_cairo  (Ctx *ctx, cairo_t *cr);
 Ctx * ctx_new_for_cairo (cairo_t *cr);
 #endif
 
-void ctx_render_stream (Ctx *ctx, FILE *stream, int formatter);
+void ctx_render_stream  (Ctx *ctx, FILE *stream, int formatter);
 
-void ctx_render_ctx (Ctx *ctx, Ctx *d_ctx);
+void ctx_render_ctx     (Ctx *ctx, Ctx *d_ctx);
 
-void ctx_start_move (Ctx *ctx);
+void ctx_start_move     (Ctx *ctx);
 
-int ctx_add_single (Ctx *ctx, void *entry);
+int ctx_add_single      (Ctx *ctx, void *entry);
 
 uint32_t ctx_utf8_to_unichar (const char *input);
 int      ctx_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
@@ -3149,7 +3149,7 @@ static void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
 }
 
 #if CTX_ENABLE_CMYK
-static void ctx_color_get_CMYKAF (CtxState *state, CtxColor *color, float *out)
+static void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out)
 {
   if (! (color->valid & CTX_VALID_CMYKA) )
     {
@@ -4393,7 +4393,7 @@ ctx_put_image_data (Ctx *ctx, uint8_t *data, int w, int h, int format, int strid
 void
 ctx_get_cmyka (Ctx *ctx, float *cmyka)
 {
-  ctx_color_get_CMYKAF (& (ctx->state), &ctx->state.gstate.source.color, cmyka);
+  ctx_color_get_cmyka (& (ctx->state), &ctx->state.gstate.source.color, cmyka);
 }
 #endif
 void
@@ -7674,13 +7674,13 @@ ctx_RGBA8_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * 
     {
       if (cov != 255)
       {
-#if 0
+#if 1
         int ralpha = 255 - cov;
         for (int c = 0; c < 4; c++)
           dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
 #else
         for (int c = 0; c < 4; c++)
-          dst[c] = dst[c]+(src[c]-dst[c] * cov) / 255;
+          dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
 #endif
       }
       else // cov == 255
@@ -7702,12 +7702,20 @@ ctx_RGBA8_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restr
     uint8_t cov = *covp;
     if (cov)
     {
+#if 1
       int alpha = alphai;
       if (cov != 255)
         alpha = (cov * alpha) / 255;
       int ralpha = 255 - alpha;
       for (int c = 0; c < 4; c++)
         dst[c] = (src[c]*alpha + dst[c] * ralpha) / 255;
+#else
+      int alpha = alphai;
+      if (cov != 255)
+        alpha = (cov * alpha) / 255;
+      for (int c = 0; c < 4; c++)
+          dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
+#endif
     }
     covp ++;
     dst+=4;
@@ -8490,14 +8498,14 @@ static void
 ctx_setup_RGBAF (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
-
+  int components = 4;
   if (gstate->source.type == CTX_SOURCE_COLOR)
     {
       rasterizer->comp_op = ctx_RGBAF_porter_duffs_color;
       rasterizer->fragment = NULL;
       ctx_color_get_rgba (rasterizer->state, &gstate->source.color, (float*)rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
-        for (int c = 0; c < 4; c ++)
+        for (int c = 0; c < components; c ++)
           rasterizer->color[c] *= gstate->global_alpha_f;
     }
   else
@@ -8524,7 +8532,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
           case CTX_SOURCE_COLOR:
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
-              if (rasterizer->color[3] == 1.0f && gstate->global_alpha_u8 == 255)
+              if (rasterizer->color[components-1] == 1.0f && gstate->global_alpha_u8 == 255)
                 rasterizer->comp_op = ctx_RGBAF_source_over_normal_opaque_color;
               else
                 rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
@@ -8629,11 +8637,10 @@ ctx_fragment_radial_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
 static void
 ctx_fragment_color_GRAYAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  float rgba[4];
+  float *graya = out;
   CtxSource *g = &rasterizer->state->gstate.source;
-  ctx_color_get_rgba (rasterizer->state, &g->color, rgba);
-  ctx_RGBAF_associate_alpha (rgba);
-  ctx_rgba_to_graya (rgba, (float*)out);
+  ctx_color_get_graya (rasterizer->state, &g->color, out);
+  graya[0]*=graya[1];
 }
 
 static void ctx_fragment_image_GRAYAF (CtxRasterizer *rasterizer, float x, float y, void *out)
@@ -8834,7 +8841,7 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
           case CTX_SOURCE_COLOR:
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
-              if (rasterizer->color[3] == 1.0f && gstate->global_alpha_u8 == 255)
+              if (rasterizer->color[components-1] == 1.0f && gstate->global_alpha_u8 == 255)
                 rasterizer->comp_op = ctx_GRAYAF_source_over_normal_opaque_color;
               else
                 rasterizer->comp_op = ctx_GRAYAF_source_over_normal_color;
@@ -8865,7 +8872,6 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
         break;
     }
 #endif
-
 }
 
 static void
@@ -9050,7 +9056,6 @@ ctx_composite_GRAYF (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int 
 
 #if CTX_ENABLE_CMYKAF
 
-
 static void
 ctx_fragment_other_CMYKAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
@@ -9081,7 +9086,7 @@ ctx_fragment_color_CMYKAF (CtxRasterizer *rasterizer, float x, float y, void *ou
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   float *cmyka = (float*)out;
-  ctx_color_get_CMYKAF (rasterizer->state, &gstate->source.color, cmyka);
+  ctx_color_get_cmyka (rasterizer->state, &gstate->source.color, cmyka);
   // RGBW instead of CMYK, and premultiply
   for (int i = 0; i < 4; i ++)
     {
@@ -9100,75 +9105,213 @@ static CtxFragment ctx_rasterizer_get_fragment_CMYKAF (CtxRasterizer *rasterizer
   return ctx_fragment_other_CMYKAF;
 }
 
+CTX_PORTER_DUFFS(CMYKAF, 5,color,           NULL,                               rasterizer->state->gstate.blend_mode)
+CTX_PORTER_DUFFS(CMYKAF, 5,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
-static int
-ctx_CMYKAF_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count,
-                void (*comp_op)(int components, float *src, float *dst, uint8_t cov))
+#if CTX_INLINED_COMPOSITING
+
+CTX_PORTER_DUFFS(CMYKAF, 5,color_normal,            NULL,                               CTX_BLEND_NORMAL)
+CTX_PORTER_DUFFS(CMYKAF, 5,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
+
+static void
+ctx_CMYKAF_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
+{
+  int components = 5;
+  float *dstf = (float*)dst;
+  float *srcf = (float*)src;
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  if (rasterizer->fragment)
+    {
+      ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+    }
+
+  while (count--)
+  {
+    uint8_t cov = *covp;
+    if (cov == 0)
+    {
+    }
+    else
+    {
+      if (rasterizer->fragment)
+      {
+        rasterizer->fragment (rasterizer, u0, v0, src);
+        u0+=ud;
+        v0+=vd;
+      }
+    if (cov == 255)
+    {
+      for (int c = 0; c < components; c++)
+        dstf[c] = srcf[c];
+    }
+    else
+    {
+      float covf = ctx_u8_to_float (cov);
+      float ralpha = 1.0f - covf;
+      for (int c = 0; c < components; c++)
+        dstf[c] = (srcf[c]*cov + dstf[c] * ralpha);
+    }
+    }
+    dstf += components;
+    covp ++;
+  }
+}
+
+static void
+ctx_CMYKAF_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
+{
+  int components = 5;
+  float *dstf = (float*)dst;
+  while (count--)
+  {
+    uint8_t cov = *covp;
+    if (cov)
+    {
+      float ralpha = 1.0 - ctx_u8_to_float (cov);
+      for (int c = 0; c < components; c++)
+        { dstf[c] = (dstf[c] * ralpha); }
+    }
+    covp ++;
+    dstf += components;
+  }
+}
+
+static void
+ctx_CMYKAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  int components = 5;
+  float *dstf = (float*)dst;
+  float *srcf = (float*)src;
+  while (count--)
+  {
+    uint8_t cov = *covp;
+    //if (cov)
+    {
+      //if (cov != 255)
+      {
+        float fcov = ctx_u8_to_float (cov);
+        float ralpha = 1.0f - fcov;
+        for (int c = 0; c < components; c++)
+          dstf[c] = (srcf[c]*fcov + dstf[c] * ralpha);
+      }
+      //else // cov == 255
+      //{
+      //  ((uint64_t*)(dst))[0] = ((uint64_t*)(src))[0];
+      //  ((uint64_t*)(dst))[1] = ((uint64_t*)(src))[1];
+     // }
+    }
+    covp ++;
+    dstf+=components;
+  }
+}
+
+static void
+ctx_CMYKAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  int components = 5;
+  float *dstf = (float*)dst;
+  float *srcf = (float*)src;
+  while (count--)
+  {
+    float alpha = srcf[components-1];
+    uint8_t cov = *covp;
+    //if (cov)
+    {
+      if (cov != 255)
+      {
+        float fcov = ctx_u8_to_float (cov);
+        alpha = (fcov * alpha);
+      }
+      float ralpha = 1.0f - alpha;
+      for (int c = 0; c < components; c++)
+        dstf[c] = (srcf[c]*alpha + dstf[c] * ralpha);
+    }
+    covp ++;
+    dstf+=components;
+  }
+}
+#endif
+
+static void
+ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   int components = 5;
-  float *dst_f = (float *) dst;
-  float y = rasterizer->scanline / CTX_RASTERIZER_AA;
-  CtxFragment fragment = ctx_rasterizer_get_fragment_CMYKAF (rasterizer);
-  float color_f[components];
-  float u0 = x0;
-  float v0 = y;
-  float u1 = x0 + count;
-  float v1 = y;
-  float ud = 0;
-  float vd = 0;
-
   if (gstate->source.type == CTX_SOURCE_COLOR)
     {
-      fragment (rasterizer, 0, 0, color_f);
-      for (int c = 0; c < components-1; c++)
-        { color_f[c] *= gstate->global_alpha_f; }
-      fragment = NULL;
+      rasterizer->comp_op = ctx_CMYKAF_porter_duffs_color;
+      rasterizer->fragment = NULL;
+      ctx_color_get_cmyka (rasterizer->state, &gstate->source.color, (float*)rasterizer->color);
+      if (gstate->global_alpha_u8 != 255)
+        for (int c = 0; c < components; c ++)
+          rasterizer->color[c] *= gstate->global_alpha_f;
     }
   else
   {
-    ctx_matrix_apply_transform (&gstate->source.transform, &u0, &v0);
-    ctx_matrix_apply_transform (&gstate->source.transform, &u1, &v1);
-    ud = (u1-u0)/(count);
-    vd = (v1-v0)/(count);
+    rasterizer->fragment = ctx_rasterizer_get_fragment_CMYKAF (rasterizer);
+    rasterizer->comp_op = ctx_CMYKAF_porter_duffs_generic;
   }
 
-  for (int x = 0; x < count; x++)
+
+#if CTX_INLINED_COMPOSITING
+  if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
+    rasterizer->comp_op = ctx_CMYKAF_clear_normal;
+  else
+    switch (gstate->blend_mode)
     {
-      int cov = coverage[x];
-      if (cov)
+      case CTX_BLEND_NORMAL:
+        if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
         {
-          if (fragment)
-            {
-              fragment (rasterizer, u0, v0, color_f);
-              for (int c = 0; c < components; c++)
-                { color_f[c] *= gstate->global_alpha_f; }
-            }
-          comp_op (components, color_f, dst_f, cov);
+          rasterizer->comp_op = ctx_CMYKAF_copy_normal;
         }
-      dst_f += components;
-      u0 += ud;
-      v0 += vd;
+        else
+        switch (gstate->source.type)
+        {
+          case CTX_SOURCE_COLOR:
+            if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+            {
+              if (rasterizer->color[components-1] == 1.0f && gstate->global_alpha_u8 == 255)
+                rasterizer->comp_op = ctx_CMYKAF_source_over_normal_opaque_color;
+              else
+                rasterizer->comp_op = ctx_CMYKAF_source_over_normal_color;
+              rasterizer->fragment = NULL;
+            }
+            else
+            {
+              rasterizer->comp_op = ctx_CMYKAF_porter_duffs_color_normal;
+              rasterizer->fragment = NULL;
+            }
+            break;
+          default:
+            rasterizer->comp_op = ctx_CMYKAF_porter_duffs_generic_normal;
+            break;
+        }
+        break;
+      default:
+        switch (gstate->source.type)
+        {
+          case CTX_SOURCE_COLOR:
+            rasterizer->comp_op = ctx_CMYKAF_porter_duffs_color;
+            rasterizer->fragment = NULL;
+            break;
+          default:
+            rasterizer->comp_op = ctx_CMYKAF_porter_duffs_generic;
+            break;
+        }
+        break;
     }
-  return count;
+#endif
 }
 
 static void
 ctx_composite_CMYKAF (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *coverage, int count)
 {
-  switch (rasterizer->state->gstate.compositing_mode)
-  {
-     default:
-     case CTX_COMPOSITE_SOURCE_OVER:
-       ctx_CMYKAF_composite (rasterizer, x0, dst, coverage, count, ctx_float_source_over);
-     case CTX_COMPOSITE_COPY:
-       ctx_CMYKAF_composite (rasterizer, x0, dst, coverage, count, ctx_float_copy);
-     case CTX_COMPOSITE_CLEAR:
-       ctx_CMYKAF_composite (rasterizer, x0, dst, coverage, count, ctx_float_clear);
-  }
+  rasterizer->comp_op (rasterizer, dst, rasterizer->color, x0, coverage, count);
 }
 
 #endif
+
 
 #if CTX_ENABLE_CMYKA8
 
@@ -11310,19 +11453,19 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_CMYKAF
   {
     CTX_FORMAT_CMYKAF, 5, 160, 4 * 5, 0, 0,
-    NULL, NULL, ctx_composite_CMYKAF
+    NULL, NULL, ctx_composite_CMYKAF, ctx_setup_CMYKAF,
   },
 #endif
 #if CTX_ENABLE_CMYKA8
   {
     CTX_FORMAT_CMYKA8, 5, 40, 4 * 5, 0, 0,
-    NULL, NULL, ctx_composite_CMYKA8
+    NULL, NULL, ctx_composite_CMYKA8, ctx_setup_CMYKAF,
   },
 #endif
 #if CTX_ENABLE_CMYK8
   {
     CTX_FORMAT_CMYK8, 5, 32, 4 * 5, 0, 0,
-    NULL, NULL, ctx_composite_CMYK8
+    NULL, NULL, ctx_composite_CMYK8, ctx_setup_CMYKAF,
   },
 #endif
 };
