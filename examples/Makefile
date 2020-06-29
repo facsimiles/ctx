@@ -1,5 +1,7 @@
-SMALL_CFLAGS=-Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant
-#SMALL_CFLAGS=-O2 -fomit-frame-pointer -flto
+SMALL_CFLAGS=-Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant --param large-function-growth=400
+PERF_CFLAGS=-Ofast -fomit-frame-pointer -finline-small-functions --param large-function-growth=400 --param inline-unit-growth=100 -ftree-vectorize -fsingle-precision-constant -ftree-vectorizer-verbose=2 -fdump-tree-vect-details -funsafe-loop-optimizations
+
+
 
 PROGRAMS=clock dir perf ui ui2 tiny small baseline musl-static-tiny musl-static-small musl-static-baseline all sdl2 mmm
 
@@ -14,11 +16,11 @@ clean:
 	ccache $(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
 
 perf.S: perf.c ../*.h ../fonts/*.h Makefile
-	ccache gcc-10 -O3 -s -Ofast $< -S -o $@ -I.. -I../fonts -static
+	ccache gcc-10 $(PERF_CFLAGS) $< -S -o $@ -I.. -I../fonts 
 perf.s: perf.S
 	as -alhnd perf.S > perf.s
 perf: perf.c ../*.h ../fonts/*.h Makefile
-	ccache gcc-10 -O3 -s -Ofast $< -o $@ -I.. -I../fonts -static
+	ccache gcc-10 -s $(PERF_CFLAGS) $< -o $@ -I.. -I../fonts 
 
 musl-static-%: %.c ../*.h ../fonts/*.h Makefile
 	ccache musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static
