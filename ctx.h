@@ -7468,10 +7468,7 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = 0.0f;
-  if ((g->radial_gradient.r1-g->radial_gradient.r0) < 0.0f)
-    {
-    }
-  else
+  if ((g->radial_gradient.r1-g->radial_gradient.r0) > 0.0f)
     {
       v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
       v = (v - g->radial_gradient.r0) /
@@ -7491,11 +7488,7 @@ ctx_fragment_radial_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
   float *rgba = (float *) out;
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = 0.0f;
-  if (g->radial_gradient.r0 == 0.0f ||
-      (g->radial_gradient.r1-g->radial_gradient.r0) < 0.0f)
-    {
-    }
-  else
+  if ((g->radial_gradient.r1-g->radial_gradient.r0) > 0.0f)
     {
       v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
       v = (v - g->radial_gradient.r0) /
