@@ -357,16 +357,17 @@ void ctx_utf8_output_buf (uint8_t *pixels,
             }
         }
         break;
-      case CTX_FORMAT_CMYKAF:
+      case CTX_FORMAT_GRAYF:
         {
-          for (int c = 0; c < 5; c++)
+          float *pix = (float*)pixels;
+          for (int c = 0; c < 1; c++)
             {
               int no = 0;
               for (int y= 0; y < height; y++)
                 {
-                  for (int x = 0; x < width; x++, no+=5)
+                  for (int x = 0; x < width; x++, no+=1)
                     {
-                      int val = (int) CTX_CLAMP ( (pixels[no+c]*6.0), 0, 5);
+                      int val = (int) CTX_CLAMP ( (pix[no+c]*6.0), 0, 5);
                       if (reverse)
                         { val = 5-val; }
                       printf ("%s", utf8_gray_scale[val]);
@@ -375,6 +376,47 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 }
             }
         }
+        break;
+      case CTX_FORMAT_CMYKAF:
+        {
+          float *pix = (float*)pixels;
+          for (int c = 0; c < 5; c++)
+            {
+              int no = 0;
+              for (int y= 0; y < height; y++)
+                {
+                  for (int x = 0; x < width; x++, no+=5)
+                    {
+                      int val = (int) CTX_CLAMP ( (pix[no+c]*6.0), 0, 5);
+                      if (reverse)
+                        { val = 5-val; }
+                      printf ("%s", utf8_gray_scale[val]);
+                    }
+                  printf ("\n");
+                }
+            }
+        }
+        break;
+      case CTX_FORMAT_RGBAF:
+        {
+          float *pix = (float*)pixels;
+          for (int c = 0; c < 4; c++)
+            {
+              int no = 0;
+              for (int y= 0; y < height; y++)
+                {
+                  for (int x = 0; x < width; x++, no+=4)
+                    {
+                      int val = (int) CTX_CLAMP ( (pix[no+c]*6.0), 0, 5);
+                      if (reverse)
+                        { val = 5-val; }
+                      printf ("%s", utf8_gray_scale[val]);
+                    }
+                  printf ("\n");
+                }
+            }
+        }
+        break;
     }
 }
 
@@ -880,6 +922,19 @@ int main (int argc, char **argv)
       ctx_free (dctx);
       ctx_utf8_output_buf ( (uint8_t *) pixels,
                             CTX_FORMAT_CMYKAF,
+                            width, height, stride, reverse);
+    }
+  else if (!strcmp (dest_path, "RGBAF") )
+    {
+      int reverse = 0;
+      int stride = width * 4 * 4;
+      float pixels[stride*height];
+      Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBAF);
+      memset (pixels, 0, sizeof (pixels) );
+      ctx_render_ctx (ctx, dctx);
+      ctx_free (dctx);
+      ctx_utf8_output_buf ( (uint8_t *) pixels,
+                            CTX_FORMAT_RGBAF,
                             width, height, stride, reverse);
     }
   else if (!strcmp (dest_path, "RGB8") )
