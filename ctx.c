@@ -181,9 +181,6 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                            }
                         }
                       }
-
-
-
                 // to determine color .. find two most different
                 // colors in set.. and threshold between them..
                 // even better dither between them.
