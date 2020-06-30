@@ -1440,12 +1440,16 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_ENABLE_CM  1
 #endif
 
+#ifndef CTX_LIMIT_FORMATS
+#define CTX_LIMIT_FORMATS 0
+#endif
+
 /* by default ctx includes all pixel formats, on microcontrollers
  * it can be useful to slim down code and runtime size by only
  * defining the used formats, set CTX_LIMIT_FORMATS to 1, and
  * manually add CTX_ENABLE_ flags for each of them.
  */
-#ifndef CTX_LIMIT_FORMATS
+#if CTX_LIMIT_FORMATS==0
 
 #define CTX_ENABLE_GRAY8                1
 #define CTX_ENABLE_GRAYA8               1
@@ -8017,6 +8021,11 @@ ctx_RGBA8_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, i
 #endif
 
 static void
+ctx_RGBA8_nop (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
+{
+}
+
+static void
 ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
@@ -8049,6 +8058,10 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
         {
           rasterizer->comp_op = ctx_RGBA8_copy_normal;
         }
+        else if (gstate->global_alpha_u8 == 0)
+        {
+          rasterizer->comp_op = ctx_RGBA8_nop;
+        }
         else
         switch (gstate->source.type)
         {
@@ -8062,6 +8075,10 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
               else
               {
                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
+              }
+              if (rasterizer->color[3] == 0)
+              {
+                rasterizer->comp_op = ctx_RGBA8_nop;
               }
               rasterizer->fragment = NULL;
             }
@@ -8532,13 +8549,13 @@ ctx_RGBAF_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, i
 static void
 ctx_RGBAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
-  ctx_float_source_over_normal_opaque_color (4, rasterizer, dst, src, x0, covp, count);
+  ctx_float_source_over_normal_opaque_color (4, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
 
 static void
 ctx_RGBAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
-  ctx_float_source_over_normal_color (4, rasterizer, dst, src, x0, covp, count);
+  ctx_float_source_over_normal_color (4, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
 #endif
 
@@ -8574,6 +8591,10 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
         {
           rasterizer->comp_op = ctx_RGBAF_copy_normal;
         }
+        else if (gstate->global_alpha_u8 == 0)
+        {
+          rasterizer->comp_op = ctx_RGBA8_nop;
+        }
         else
         switch (gstate->source.type)
         {
@@ -8584,6 +8605,8 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
                 rasterizer->comp_op = ctx_RGBAF_source_over_normal_opaque_color;
               else
                 rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
+              if (((float*)(rasterizer->color))[components-1] == 0.0f)
+                rasterizer->comp_op = ctx_RGBA8_nop;
               rasterizer->fragment = NULL;
             }
             else
@@ -8745,13 +8768,13 @@ ctx_GRAYAF_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, 
 static void
 ctx_GRAYAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
-  ctx_float_source_over_normal_opaque_color (2, rasterizer, dst, src, x0, covp, count);
+  ctx_float_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
 
 static void
 ctx_GRAYAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
-  ctx_float_source_over_normal_color (2, rasterizer, dst, src, x0, covp, count);
+  ctx_float_source_over_normal_color (2, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
 #endif
 
@@ -8787,6 +8810,8 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
         {
           rasterizer->comp_op = ctx_GRAYAF_copy_normal;
         }
+        else if (gstate->global_alpha_u8 == 0)
+          rasterizer->comp_op = ctx_RGBA8_nop;
         else
         switch (gstate->source.type)
         {
@@ -8797,6 +8822,8 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
                 rasterizer->comp_op = ctx_GRAYAF_source_over_normal_opaque_color;
               else
                 rasterizer->comp_op = ctx_GRAYAF_source_over_normal_color;
+              if (((float*)rasterizer->color)[components-1] == 0.0f)
+                rasterizer->comp_op = ctx_RGBA8_nop;
               rasterizer->fragment = NULL;
             }
             else
@@ -8973,13 +9000,13 @@ ctx_CMYKAF_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, 
 static void
 ctx_CMYKAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
-  ctx_float_source_over_normal_opaque_color (5, rasterizer, dst, src, x0, covp, count);
+  ctx_float_source_over_normal_opaque_color (5, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
 
 static void
 ctx_CMYKAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
-  ctx_float_source_over_normal_color (5, rasterizer, dst, src, x0, covp, count);
+  ctx_float_source_over_normal_color (5, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
 #endif
 
@@ -9015,6 +9042,8 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
         {
           rasterizer->comp_op = ctx_CMYKAF_copy_normal;
         }
+        else if (gstate->global_alpha_u8 == 0)
+          rasterizer->comp_op = ctx_RGBA8_nop;
         else
         switch (gstate->source.type)
         {
@@ -9025,6 +9054,8 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
                 rasterizer->comp_op = ctx_CMYKAF_source_over_normal_opaque_color;
               else
                 rasterizer->comp_op = ctx_CMYKAF_source_over_normal_color;
+              if (((float*)rasterizer->color)[components-1] == 0.0f)
+                rasterizer->comp_op = ctx_RGBA8_nop;
               rasterizer->fragment = NULL;
             }
             else
