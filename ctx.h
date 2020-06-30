@@ -7344,7 +7344,8 @@ static inline int ctx_dither_mask_a (int x, int y, int c, int divisor)
   return ( ( ( ( (x + c * 67) + y * 236) * 119) & 255 )-127) / divisor;
 }
 
-static inline void ctx_dither_rgba_u8 (uint8_t *rgba, int x, int y, int dither_red_blue, int dither_green)
+static inline void
+ctx_dither_rgba_u8 (uint8_t *rgba, int x, int y, int dither_red_blue, int dither_green)
 {
   if (dither_red_blue == 0)
     { return; }
@@ -7645,7 +7646,8 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
-static inline void ctx_init_uv (CtxRasterizer *rasterizer,
+static inline void __attribute__((always_inline))
+ctx_init_uv (CtxRasterizer *rasterizer,
                                 int x0, int count,
                                 float *u0, float *v0, float *ud, float *vd)
 {
@@ -7723,12 +7725,14 @@ ctx_RGBA8_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restr
 }
 #endif
 
-static void ctx_RGBA8_blend_normal (uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
+static inline void __attribute__((always_inline))
+ctx_RGBA8_blend_normal (uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
 {
   *((uint32_t*)(blended)) = *((uint32_t*)(src));
 }
 
-static void ctx_RGBA8_blend_multiply (uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
+static inline void __attribute__((always_inline))
+ctx_RGBA8_blend_multiply (uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
 {
   uint8_t tsrc[4];
   uint8_t tdst[4];
@@ -7937,12 +7941,12 @@ CTX_PORTER_DUFFS(radial_gradient, ctx_fragment_radial_gradient_RGBA8, rasterizer
 CTX_PORTER_DUFFS(image_rgb8_RGBA8, ctx_fragment_image_rgb8_RGBA8,     rasterizer->state->gstate.blend_mode)
 CTX_PORTER_DUFFS(image_rgba8_RGBA8, ctx_fragment_image_rgba8_RGBA8,   rasterizer->state->gstate.blend_mode)
 
-CTX_PORTER_DUFFS(color_normal,            NULL,                               CTX_BLEND_NORMAL)
+CTX_PORTER_DUFFS(color_normal,            NULL,                               CTX_BLEND_NORMAL) // auto-vectorizer winner, 11 vectorized loops
 CTX_PORTER_DUFFS(generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
 CTX_PORTER_DUFFS(linear_gradient_normal,  ctx_fragment_linear_gradient_RGBA8, CTX_BLEND_NORMAL)
 CTX_PORTER_DUFFS(radial_gradient_normal,  ctx_fragment_radial_gradient_RGBA8, CTX_BLEND_NORMAL)
 CTX_PORTER_DUFFS(image_rgb8_RGBA8_normal, ctx_fragment_image_rgb8_RGBA8,      CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS(image_rgba8_RGBA8_normal,ctx_fragment_image_rgba8_RGBA8,     CTX_BLEND_NORMAL)
+CTX_PORTER_DUFFS(image_rgba8_RGBA8_normal,ctx_fragment_image_rgba8_RGBA8,     CTX_BLEND_NORMAL)  // 1 autovectorized
 
 static void
 ctx_RGBA8_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
@@ -8286,13 +8290,15 @@ ctx_float_source_over_normal_color (int components, CtxRasterizer *rasterizer, u
   }
 }
 
-static inline void ctx_float_blend_normal (int components, float *dst, float *src, float *blended)
+static inline void __attribute__((always_inline))
+ctx_float_blend_normal (int components, float *dst, float *src, float *blended)
 {
   for (int c = 0; c <  components; c++)
     blended[c] = src[c];
 }
 
-static inline void ctx_float_blend_multiply (int components, float *dst, float *src, float *blended)
+static inline void __attribute__((always_inline))
+ctx_float_blend_multiply (int components, float *dst, float *src, float *blended)
 {
   float tsrc[components];
   float tdst[components];
@@ -8306,7 +8312,8 @@ static inline void ctx_float_blend_multiply (int components, float *dst, float *
   ctx_RGBAF_associate_alpha (blended);
 }
 
-static inline void
+//static inline void
+static inline void __attribute__((always_inline))
 ctx_float_blend (int components, CtxBlend blend, float *dst, float *src, float *blended)
 {
   switch (blend)
@@ -8320,7 +8327,7 @@ ctx_float_blend (int components, CtxBlend blend, float *dst, float *src, float *
 /* this is the grunt working function, when inlined code-path elimination makes
  * it produce efficient code.
  */
-static inline void
+static inline void __attribute__((always_inline))
 ctx_float_porter_duff (CtxRasterizer *rasterizer,
                        int components,
                        uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count,
@@ -8337,8 +8344,7 @@ ctx_float_porter_duff (CtxRasterizer *rasterizer,
 
     while (count--)
     {
-      uint8_t cov = *covp;
-      float covf = ctx_u8_to_float (cov);
+      float covf = ctx_u8_to_float (*covp);
       float   tsrc[components];
 
       fragment (rasterizer, u0, v0, tsrc);
@@ -8347,7 +8353,7 @@ ctx_float_porter_duff (CtxRasterizer *rasterizer,
 
       ctx_float_blend (components, blend, dstf, tsrc, tsrc);
 
-      if (cov != 255)
+      if (covf != 1.0f)
         for (int c = 0; c < components; c++)
           tsrc[c] *= covf;
 
@@ -8371,10 +8377,12 @@ ctx_float_porter_duff (CtxRasterizer *rasterizer,
           case CTX_PORTER_DUFF_ALPHA: res += (dstf[c] * tsrc[components-1]); break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dstf[c] * (1.0f-tsrc[components-1])); break;
         }
+#if 0
       if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
       { // XXX perf impact?
         if (res > 1.0f) res = 1.0f;
       }
+#endif
         dstf[c] = res;
       }
       covp ++;
@@ -8385,13 +8393,12 @@ ctx_float_porter_duff (CtxRasterizer *rasterizer,
   {
     while (count--)
     {
-      uint8_t cov = *covp;
-      float covf = ctx_u8_to_float (cov);
+      float covf = ctx_u8_to_float (*covp);
       float tsrc[components];
   
       ctx_float_blend (components, blend, dstf, srcf, tsrc);
   
-      if (cov != 255)
+      if (covf != 1.0f)
         for (int c = 0; c < components; c++)
           tsrc[c] = (tsrc[c] * covf);
   
@@ -8415,10 +8422,12 @@ ctx_float_porter_duff (CtxRasterizer *rasterizer,
           case CTX_PORTER_DUFF_ALPHA: res += (dstf[c] * tsrc[components-1]); break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dstf[c] * (1.0f-tsrc[components-1])); break;
         }
+#if 0
       if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
       {
         if (res > 1.0f) res = 1.0f;
       }
+#endif
         dstf[c] = res;
       }
       covp ++;
@@ -12842,22 +12851,22 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
               case CTX_SET_BLEND_MODE:
                 switch (val)
                   {
-            case CTX_BLEND_NORMAL: str = "normal"; break;
-            case CTX_BLEND_MULTIPLY: str= "multiply"; break;
-            case CTX_BLEND_SCREEN: str = "screen"; break;
-            case CTX_BLEND_OVERLAY: str = "overlay"; break;
-            case CTX_BLEND_DARKEN: str = "darken"; break;
-            case CTX_BLEND_LIGHTEN: str = "lighten"; break;
+            case CTX_BLEND_NORMAL:      str = "normal"; break;
+            case CTX_BLEND_MULTIPLY:    str= "multiply"; break;
+            case CTX_BLEND_SCREEN:      str = "screen"; break;
+            case CTX_BLEND_OVERLAY:     str = "overlay"; break;
+            case CTX_BLEND_DARKEN:      str = "darken"; break;
+            case CTX_BLEND_LIGHTEN:     str = "lighten"; break;
             case CTX_BLEND_COLOR_DODGE: str = "colorDodge"; break;
-            case CTX_BLEND_COLOR_BURN: str = "colorBurn"; break;
-            case CTX_BLEND_HARD_LIGHT: str = "hardLight"; break;
-            case CTX_BLEND_SOFT_LIGHT: str = "softLight"; break;
-            case CTX_BLEND_DIFFERENCE: str = "difference"; break;
-            case CTX_BLEND_EXCLUSION: str = "exclusion"; break;
+            case CTX_BLEND_COLOR_BURN:  str = "colorBurn"; break;
+            case CTX_BLEND_HARD_LIGHT:  str = "hardLight"; break;
+            case CTX_BLEND_SOFT_LIGHT:  str = "softLight"; break;
+            case CTX_BLEND_DIFFERENCE:  str = "difference"; break;
+            case CTX_BLEND_EXCLUSION:   str = "exclusion"; break;
             case CTX_BLEND_HUE: str = "hue"; break;
             case CTX_BLEND_SATURATION:  str = "saturation"; break;
             case CTX_BLEND_COLOR: str = "color"; break; 
-            case CTX_BLEND_LUMINOSITY: str = "luminosity"; break;
+            case CTX_BLEND_LUMINOSITY:  str = "luminosity"; break;
                   }
                 break;
               case CTX_SET_COMPOSITING_MODE:
