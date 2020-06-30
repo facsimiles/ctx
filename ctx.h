@@ -8146,7 +8146,7 @@ ctx_composite_RGBA8_convert (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *s
 {
   uint8_t pixels[count * 4];
   rasterizer->format->to_comp (rasterizer, x, dst, &pixels[0], count);
-  ctx_composite_RGBA8 (rasterizer, &pixels[0], src, x, coverage, count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x, coverage, count);
   rasterizer->format->from_comp (rasterizer, x, &pixels[0], dst, count);
 }
 
@@ -8884,7 +8884,7 @@ ctx_composite_BGRA8 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int 
 {
   uint8_t pixels[count * 4];
   ctx_BGRA8_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
-  ctx_composite_RGBA8 (rasterizer, &pixels[0], src, x0, coverage, count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
   ctx_BGRA8_to_RGBA8  (rasterizer, x0, &pixels[0], dst, count);
 }
 
@@ -9106,7 +9106,7 @@ ctx_composite_CMYKA8 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int
 {
   float pixels[count * 5];
   ctx_CMYKA8_to_CMYKAF (rasterizer, dst, &pixels[0], count);
-  ctx_composite_CMYKAF (rasterizer, (uint8_t *) &pixels[0], src, x, coverage, count);
+  rasterizer->comp_op (rasterizer, (uint8_t *) &pixels[0], rasterizer->color, x, coverage, count);
   ctx_CMYKAF_to_CMYKA8 (rasterizer, &pixels[0], dst, count);
 }
 #endif
@@ -9163,7 +9163,7 @@ ctx_composite_CMYK8 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int 
 {
   float pixels[count * 5];
   ctx_CMYK8_to_CMYKAF (rasterizer, dst, &pixels[0], count);
-  ctx_composite_CMYKAF (rasterizer, (uint8_t *) &pixels[0], src, x, coverage, count);
+  rasterizer->comp_op (rasterizer, (uint8_t *) &pixels[0], src, x, coverage, count);
   ctx_CMYKAF_to_CMYK8 (rasterizer, &pixels[0], dst, count);
 }
 #endif
@@ -10744,7 +10744,7 @@ ctx_composite_GRAY1 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int 
 {
   uint8_t pixels[count * 4];
   ctx_GRAY1_to_RGBA8 (rasterizer, x, dst, &pixels[0], count);
-  ctx_composite_RGBA8 (rasterizer, &pixels[0], src, x, coverage, count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x, coverage, count);
   ctx_RGBA8_to_GRAY1 (rasterizer, x, &pixels[0], dst, count);
 }
 #endif
@@ -10791,7 +10791,7 @@ ctx_composite_GRAY2 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int 
 {
   uint8_t pixels[count * 4];
   ctx_GRAY2_to_RGBA8 (rasterizer, x, dst, &pixels[0], count);
-  ctx_composite_RGBA8 (rasterizer, &pixels[0], src, x, coverage, count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x, coverage, count);
   ctx_RGBA8_to_GRAY2 (rasterizer, x, &pixels[0], dst, count);
 }
 #endif
@@ -10838,7 +10838,7 @@ ctx_composite_GRAY4 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int 
 {
   uint8_t pixels[count * 4];
   ctx_GRAY4_to_RGBA8 (rasterizer, x, dst, &pixels[0], count);
-  ctx_composite_RGBA8 (rasterizer, &pixels[0], src, x, coverage, count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x, coverage, count);
   ctx_RGBA8_to_GRAY4 (rasterizer, x, &pixels[0], dst, count);
 }
 #endif
@@ -10965,7 +10965,7 @@ ctx_composite_RGB332 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int
 {
   uint8_t pixels[count * 4];
   ctx_RGB332_to_RGBA8 (rasterizer, x, dst, &pixels[0], count);
-  ctx_composite_RGBA8 (rasterizer, &pixels[0], src, x, coverage, count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x, coverage, count);
   ctx_RGBA8_to_RGB332 (rasterizer, x, &pixels[0], dst, count);
 }
 
@@ -11045,7 +11045,7 @@ ctx_composite_RGB565 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int
 {
   uint8_t pixels[count * 4];
   ctx_RGB565_to_RGBA8 (rasterizer, x, dst, &pixels[0], count);
-  ctx_composite_RGBA8 (rasterizer, &pixels[0], src, x, coverage, count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x, coverage, count);
   ctx_RGBA8_to_RGB565 (rasterizer, x, &pixels[0], dst, count);
 }
 
@@ -11088,7 +11088,7 @@ ctx_composite_RGB565_BS (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, 
 {
   uint8_t pixels[count * 4];
   ctx_RGB565_BS_to_RGBA8 (rasterizer, x, dst, &pixels[0], count);
-  ctx_composite_RGBA8 (rasterizer, &pixels[0], src, x, coverage, count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x, coverage, count);
   ctx_RGBA8_to_RGB565_BS (rasterizer, x, &pixels[0], dst, count);
 }
 
