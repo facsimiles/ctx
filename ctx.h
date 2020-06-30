@@ -8882,6 +8882,28 @@ ctx_composite_GRAYAF (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int
 
 #endif
 
+#if CTX_ENABLE_GRAYF
+
+static void
+ctx_composite_GRAYF (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *coverage, int count)
+{
+  float *dstf = (float*)dst;
+
+  float temp[count*2];
+  for (int i = 0; i < count; i++)
+  {
+    temp[i*2] = dstf[i];
+    temp[i*2+1] = 1.0f;
+  }
+  rasterizer->comp_op (rasterizer, (uint8_t*)temp, rasterizer->color, x0, coverage, count);
+  for (int i = 0; i < count; i++)
+  {
+    dstf[i] = temp[i*2];
+  }
+}
+
+#endif
+
 static inline void ctx_float_source_over (int components, float *dst, float *src, uint8_t cov)
 {
   if (cov == 0) return;
@@ -8979,78 +9001,6 @@ ctx_composite_BGRA8 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int 
 
 
 
-#if CTX_ENABLE_GRAYF
-static int
-ctx_GRAYF_composite (CtxRasterizer *rasterizer, int x0, uint8_t *dst, uint8_t *coverage, int count,
-                void (*comp_op)(int components, float *src, float *dst, uint8_t cov))
-{
-  CtxGState *gstate = &rasterizer->state->gstate;
-  int components = 2;
-  float *dst_f = (float *) dst;
-  float y = rasterizer->scanline / CTX_RASTERIZER_AA;
-  float graya[2];
-  ctx_color_get_graya (rasterizer->state, &gstate->source.color, graya);
-  CtxFragment source = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
-
-  float u0 = x0;
-  float v0 = y;
-  float u1 = x0 + count;
-  float v1 = y;
-  float ud = 0;
-  float vd = 0;
-
-  if (source == ctx_fragment_color_RGBA8)
-    { 
-       source = NULL;
-    }
-  else
-    {
-      ctx_matrix_apply_transform (&gstate->source.transform, &u0, &v0);
-      ctx_matrix_apply_transform (&gstate->source.transform, &u1, &v1);
-      ud = (u1-u0)/(count);
-      vd = (v1-v0)/(count);
-    }
-
-  for (int x = 0; x < count; x++)
-    {
-      int cov = coverage[x];
-      if (cov != 0)
-        {
-          if (source)
-            {
-              uint8_t scolor[4];
-              source (rasterizer, u0, v0, &scolor[0]);
-
-              graya[0] = ctx_u8_to_float ( (scolor[0]+scolor[1]+scolor[2]) /3.0);
-              graya[1] = ctx_u8_to_float (scolor[3]) * gstate->global_alpha_f;
-            }
-          float temp_f[2]={dst_f[0], 1.0f};
-          comp_op (components, temp_f, graya, cov);
-          dst_f[0]=temp_f[0];
-        }
-      u0 += ud;
-      v0 += vd;
-      dst_f+=1;
-    }
-  return count;
-}
-
-static void
-ctx_composite_GRAYF (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *coverage, int count)
-{
-  switch (rasterizer->state->gstate.compositing_mode)
-  {
-     default:
-     case CTX_COMPOSITE_SOURCE_OVER:
-       ctx_GRAYF_composite (rasterizer, x0, dst, coverage, count, ctx_float_source_over);
-     case CTX_COMPOSITE_COPY:
-       ctx_GRAYF_composite (rasterizer, x0, dst, coverage, count, ctx_float_copy);
-     case CTX_COMPOSITE_CLEAR:
-       ctx_GRAYF_composite (rasterizer, x0, dst, coverage, count, ctx_float_clear);
-  }
-}
-
-#endif
 
 
 
@@ -11377,7 +11327,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_GRAYF
   {
     CTX_FORMAT_GRAYF, 1, 32, 4, 0, 0,
-    NULL, NULL, ctx_composite_GRAYF
+    NULL, NULL, ctx_composite_GRAYF, ctx_setup_GRAYAF,
   },
 #endif
 #if CTX_ENABLE_GRAYAF
