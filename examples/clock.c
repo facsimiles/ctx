@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 #include "ctx-font-ascii.h"
-#define CTX_LIMIT_FORMATS
+#define CTX_LIMIT_FORMATS       1
 #define CTX_ENABLE_RGBA8        1
 #define CTX_ENABLE_CMYK         0
 #define CTX_ENABLE_CM           0

@@ -22,6 +22,8 @@ perf.s: perf.S
 	as -alhnd perf.S > perf.s
 perf: perf.c ../*.h ../fonts/*.h Makefile
 	ccache gcc-10 $(PERF_CFLAGS) $< -o $@ -I.. -I../fonts 
+perf-circ: perf-circ.c ../*.h ../fonts/*.h Makefile
+	ccache gcc-10 $(PERF_CFLAGS) $< -o $@ -I.. -I../fonts 
 
 musl-static-%: %.c ../*.h ../fonts/*.h Makefile
 	ccache musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static

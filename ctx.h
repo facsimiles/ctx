@@ -7727,6 +7727,91 @@ ctx_RGBA8_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restr
     dst+=4;
   }
 }
+
+
+static void
+ctx_RGBA8_source_over_normal_alpha_color (int ialpha, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  while (count--)
+  {
+    int alpha = (*covp * ialpha)/255;
+    for (int c = 0; c < 4; c++)
+      dst[c] = dst[c]+((src[c]-dst[c]) * alpha) / 255;
+    covp ++;
+    dst  += 4;
+  }
+}
+
+#define ctx_RGBA8_color_alpha(alpha) \
+static void \
+ctx_RGBA8_source_over_normal_a##alpha##_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)\
+{\
+  ctx_RGBA8_source_over_normal_alpha_color (alpha, rasterizer, dst, src, x0, covp, count);\
+}
+
+ctx_RGBA8_color_alpha(1); ctx_RGBA8_color_alpha(2); ctx_RGBA8_color_alpha(3);
+ctx_RGBA8_color_alpha(4); ctx_RGBA8_color_alpha(5); ctx_RGBA8_color_alpha(6);
+ctx_RGBA8_color_alpha(7); ctx_RGBA8_color_alpha(8); ctx_RGBA8_color_alpha(9);
+ctx_RGBA8_color_alpha(10); ctx_RGBA8_color_alpha(11);
+ctx_RGBA8_color_alpha(12); ctx_RGBA8_color_alpha(13);
+ctx_RGBA8_color_alpha(14); ctx_RGBA8_color_alpha(15);
+ctx_RGBA8_color_alpha(16); ctx_RGBA8_color_alpha(17);
+ctx_RGBA8_color_alpha(18); ctx_RGBA8_color_alpha(19);
+ctx_RGBA8_color_alpha(20); ctx_RGBA8_color_alpha(21);
+ctx_RGBA8_color_alpha(22); ctx_RGBA8_color_alpha(23);
+ctx_RGBA8_color_alpha(24); ctx_RGBA8_color_alpha(25);
+ctx_RGBA8_color_alpha(26); ctx_RGBA8_color_alpha(27);
+ctx_RGBA8_color_alpha(28); ctx_RGBA8_color_alpha(29);
+ctx_RGBA8_color_alpha(30); ctx_RGBA8_color_alpha(31);
+ctx_RGBA8_color_alpha(32); ctx_RGBA8_color_alpha(33);
+ctx_RGBA8_color_alpha(34); ctx_RGBA8_color_alpha(35);
+ctx_RGBA8_color_alpha(36); ctx_RGBA8_color_alpha(37);
+ctx_RGBA8_color_alpha(38); ctx_RGBA8_color_alpha(39);
+ctx_RGBA8_color_alpha(40); ctx_RGBA8_color_alpha(41);
+ctx_RGBA8_color_alpha(42); ctx_RGBA8_color_alpha(43);
+ctx_RGBA8_color_alpha(44); ctx_RGBA8_color_alpha(45);
+ctx_RGBA8_color_alpha(46); ctx_RGBA8_color_alpha(47);
+ctx_RGBA8_color_alpha(48); ctx_RGBA8_color_alpha(49);
+ctx_RGBA8_color_alpha(50); ctx_RGBA8_color_alpha(51);
+ctx_RGBA8_color_alpha(52); ctx_RGBA8_color_alpha(53);
+ctx_RGBA8_color_alpha(54); ctx_RGBA8_color_alpha(55);
+ctx_RGBA8_color_alpha(56); ctx_RGBA8_color_alpha(57);
+ctx_RGBA8_color_alpha(58); ctx_RGBA8_color_alpha(59);
+ctx_RGBA8_color_alpha(60); ctx_RGBA8_color_alpha(61);
+ctx_RGBA8_color_alpha(62); ctx_RGBA8_color_alpha(63);
+ctx_RGBA8_color_alpha(64); ctx_RGBA8_color_alpha(65);
+ctx_RGBA8_color_alpha(66); ctx_RGBA8_color_alpha(67);
+ctx_RGBA8_color_alpha(68); ctx_RGBA8_color_alpha(69);
+ctx_RGBA8_color_alpha(70); ctx_RGBA8_color_alpha(71);
+ctx_RGBA8_color_alpha(72); ctx_RGBA8_color_alpha(73);
+ctx_RGBA8_color_alpha(74); ctx_RGBA8_color_alpha(75);
+ctx_RGBA8_color_alpha(76); ctx_RGBA8_color_alpha(77);
+ctx_RGBA8_color_alpha(78); ctx_RGBA8_color_alpha(79);
+ctx_RGBA8_color_alpha(80); ctx_RGBA8_color_alpha(81);
+ctx_RGBA8_color_alpha(82); ctx_RGBA8_color_alpha(83);
+ctx_RGBA8_color_alpha(84); ctx_RGBA8_color_alpha(85);
+ctx_RGBA8_color_alpha(86); ctx_RGBA8_color_alpha(87);
+ctx_RGBA8_color_alpha(88); ctx_RGBA8_color_alpha(89);
+ctx_RGBA8_color_alpha(90); ctx_RGBA8_color_alpha(91);
+ctx_RGBA8_color_alpha(92); ctx_RGBA8_color_alpha(93);
+ctx_RGBA8_color_alpha(94); ctx_RGBA8_color_alpha(95);
+ctx_RGBA8_color_alpha(96); ctx_RGBA8_color_alpha(97);
+ctx_RGBA8_color_alpha(98); ctx_RGBA8_color_alpha(99);
+ctx_RGBA8_color_alpha(100); ctx_RGBA8_color_alpha(101);
+ctx_RGBA8_color_alpha(102); ctx_RGBA8_color_alpha(103);
+ctx_RGBA8_color_alpha(104); ctx_RGBA8_color_alpha(105);
+ctx_RGBA8_color_alpha(106); ctx_RGBA8_color_alpha(107);
+ctx_RGBA8_color_alpha(108); ctx_RGBA8_color_alpha(109);
+ctx_RGBA8_color_alpha(110); ctx_RGBA8_color_alpha(111);
+ctx_RGBA8_color_alpha(112); ctx_RGBA8_color_alpha(113);
+ctx_RGBA8_color_alpha(114); ctx_RGBA8_color_alpha(115);
+ctx_RGBA8_color_alpha(116); ctx_RGBA8_color_alpha(117);
+ctx_RGBA8_color_alpha(118); ctx_RGBA8_color_alpha(119);
+ctx_RGBA8_color_alpha(120); ctx_RGBA8_color_alpha(121);
+ctx_RGBA8_color_alpha(122); ctx_RGBA8_color_alpha(123);
+ctx_RGBA8_color_alpha(124); ctx_RGBA8_color_alpha(125);
+ctx_RGBA8_color_alpha(126); ctx_RGBA8_color_alpha(127);
+
 #endif
 
 static inline void __attribute__((always_inline))
@@ -8029,6 +8114,7 @@ static void
 ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
+  int components = 4;
 
   if (gstate->source.type == CTX_SOURCE_COLOR)
     {
@@ -8036,8 +8122,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       rasterizer->fragment = NULL;
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
-        rasterizer->color[3] = (rasterizer->color[3] * gstate->global_alpha_u8)/255;
-      if (rasterizer->color[3] != 255)
+        rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
+      if (rasterizer->color[components-1] != 255)
         ctx_RGBA8_associate_alpha (rasterizer->color);
     }
   else
@@ -8045,7 +8131,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
     rasterizer->comp_op = ctx_RGBA8_porter_duffs_generic;
   }
-
 
 #if CTX_INLINED_COMPOSITING
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
@@ -8068,17 +8153,36 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           case CTX_SOURCE_COLOR:
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
-              if (rasterizer->color[3] == 255 && gstate->global_alpha_u8 == 255)
+              switch (rasterizer->color[components-1])
               {
-                rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
-              }
-              else
-              {
+                case 255: rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color; break;
+                case 0:   rasterizer->comp_op = ctx_RGBA8_nop; break;
+#define CASE(a) case a: rasterizer->comp_op = ctx_RGBA8_source_over_normal_a##a##_color; break;
+                CASE(1); CASE(2); CASE(3); CASE(4); CASE(5); CASE(6); CASE(7);
+                CASE(8); CASE(9); CASE(10); CASE(11); CASE(12); CASE(13);
+                CASE(14); CASE(15); CASE(16); CASE(17); CASE(18); CASE(19);
+                CASE(20); CASE(21); CASE(22); CASE(23); CASE(24); CASE(25);
+                CASE(26); CASE(27); CASE(28); CASE(29); CASE(30); CASE(31);
+                CASE(32); CASE(33); CASE(34); CASE(35); CASE(36); CASE(37);
+                CASE(38); CASE(39); CASE(40); CASE(41); CASE(42); CASE(43);
+                CASE(44); CASE(45); CASE(46); CASE(47); CASE(48); CASE(49);
+                CASE(50); CASE(51); CASE(52); CASE(53); CASE(54); CASE(55);
+                CASE(56); CASE(57); CASE(58); CASE(59); CASE(60); CASE(61);
+                CASE(62); CASE(63); CASE(64); CASE(65); CASE(66); CASE(67);
+                CASE(68); CASE(69); CASE(70); CASE(71); CASE(72); CASE(73);
+                CASE(74); CASE(75); CASE(76); CASE(77); CASE(78); CASE(79);
+                CASE(80); CASE(81); CASE(82); CASE(83); CASE(84); CASE(85);
+                CASE(86); CASE(87); CASE(88); CASE(89); CASE(90); CASE(91);
+                CASE(92); CASE(93); CASE(94); CASE(95); CASE(96); CASE(97);
+                CASE(98); CASE(99); CASE(100); CASE(101); CASE(102);
+                CASE(103); CASE(104); CASE(105); CASE(106); CASE(107);
+                CASE(108); CASE(109); CASE(110); CASE(111); CASE(112);
+                CASE(113); CASE(114); CASE(115); CASE(116); CASE(117);
+                CASE(118); CASE(119); CASE(120); CASE(121); CASE(122);
+                CASE(123); CASE(124); CASE(125); CASE(126); CASE(127);
+#undef CASE
+                default:
                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
-              }
-              if (rasterizer->color[3] == 0)
-              {
-                rasterizer->comp_op = ctx_RGBA8_nop;
               }
               rasterizer->fragment = NULL;
             }
@@ -8153,7 +8257,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
         break;
     }
 #endif
-
 }
 
 static void
@@ -8255,34 +8358,6 @@ ctx_float_clear_normal (int components, CtxRasterizer *rasterizer, uint8_t *dst,
 }
 
 static void
-ctx_float_source_over_normal_opaque_color (int components, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
-{
-  float *dstf = (float*)dst;
-  float *srcf = (float*)src;
-  while (count--)
-  {
-    uint8_t cov = *covp;
-    //if (cov)
-    {
-      //if (cov != 255)
-      {
-        float fcov = ctx_u8_to_float (cov);
-        float ralpha = 1.0f - fcov;
-        for (int c = 0; c < components; c++)
-          dstf[c] = (srcf[c]*fcov + dstf[c] * ralpha);
-      }
-      //else // cov == 255
-      //{
-      //  ((uint64_t*)(dst))[0] = ((uint64_t*)(src))[0];
-      //  ((uint64_t*)(dst))[1] = ((uint64_t*)(src))[1];
-     // }
-    }
-    covp ++;
-    dstf+= components;
-  }
-}
-
-static void
 ctx_float_source_over_normal_color (int components, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
   float *dstf = (float*)dst;
@@ -8291,7 +8366,7 @@ ctx_float_source_over_normal_color (int components, CtxRasterizer *rasterizer, u
   {
     float alpha = srcf[components-1];
     uint8_t cov = *covp;
-    //if (cov)
+    if (cov)
     {
       if (cov != 255)
       {
@@ -8547,12 +8622,6 @@ ctx_RGBAF_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, i
 }
 
 static void
-ctx_RGBAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
-{
-  ctx_float_source_over_normal_opaque_color (4, rasterizer, dst, rasterizer->color, x0, covp, count);
-}
-
-static void
 ctx_RGBAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
   ctx_float_source_over_normal_color (4, rasterizer, dst, rasterizer->color, x0, covp, count);
@@ -8571,7 +8640,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
       ctx_color_get_rgba (rasterizer->state, &gstate->source.color, (float*)rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
-          rasterizer->color[c] *= gstate->global_alpha_f;
+          ((float*)rasterizer->color)[c] *= gstate->global_alpha_f;
     }
   else
   {
@@ -8601,12 +8670,10 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
           case CTX_SOURCE_COLOR:
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
-              if (rasterizer->color[components-1] == 1.0f && gstate->global_alpha_u8 == 255)
-                rasterizer->comp_op = ctx_RGBAF_source_over_normal_opaque_color;
-              else
-                rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
               if (((float*)(rasterizer->color))[components-1] == 0.0f)
                 rasterizer->comp_op = ctx_RGBA8_nop;
+              else
+                rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
               rasterizer->fragment = NULL;
             }
             else
@@ -8766,12 +8833,6 @@ ctx_GRAYAF_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, 
 }
 
 static void
-ctx_GRAYAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
-{
-  ctx_float_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, x0, covp, count);
-}
-
-static void
 ctx_GRAYAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
   ctx_float_source_over_normal_color (2, rasterizer, dst, rasterizer->color, x0, covp, count);
@@ -8790,7 +8851,7 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
       ctx_color_get_rgba (rasterizer->state, &gstate->source.color, (float*)rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
-          rasterizer->color[c] *= gstate->global_alpha_f;
+          ((float*)rasterizer->color)[c] *= gstate->global_alpha_f;
     }
   else
   {
@@ -8818,12 +8879,10 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
           case CTX_SOURCE_COLOR:
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
-              if (rasterizer->color[components-1] == 1.0f && gstate->global_alpha_u8 == 255)
-                rasterizer->comp_op = ctx_GRAYAF_source_over_normal_opaque_color;
-              else
-                rasterizer->comp_op = ctx_GRAYAF_source_over_normal_color;
               if (((float*)rasterizer->color)[components-1] == 0.0f)
                 rasterizer->comp_op = ctx_RGBA8_nop;
+              else
+                rasterizer->comp_op = ctx_GRAYAF_source_over_normal_color;
               rasterizer->fragment = NULL;
             }
             else
@@ -8998,12 +9057,6 @@ ctx_CMYKAF_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, 
 }
 
 static void
-ctx_CMYKAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
-{
-  ctx_float_source_over_normal_opaque_color (5, rasterizer, dst, rasterizer->color, x0, covp, count);
-}
-
-static void
 ctx_CMYKAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
   ctx_float_source_over_normal_color (5, rasterizer, dst, rasterizer->color, x0, covp, count);
@@ -9022,7 +9075,7 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
       ctx_color_get_cmyka (rasterizer->state, &gstate->source.color, (float*)rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
-          rasterizer->color[c] *= gstate->global_alpha_f;
+          ((float*)rasterizer->color)[c] *= gstate->global_alpha_f;
     }
   else
   {
@@ -9050,12 +9103,10 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
           case CTX_SOURCE_COLOR:
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
-              if (rasterizer->color[components-1] == 1.0f && gstate->global_alpha_u8 == 255)
-                rasterizer->comp_op = ctx_CMYKAF_source_over_normal_opaque_color;
-              else
-                rasterizer->comp_op = ctx_CMYKAF_source_over_normal_color;
               if (((float*)rasterizer->color)[components-1] == 0.0f)
                 rasterizer->comp_op = ctx_RGBA8_nop;
+              else
+                rasterizer->comp_op = ctx_CMYKAF_source_over_normal_color;
               rasterizer->fragment = NULL;
             }
             else
