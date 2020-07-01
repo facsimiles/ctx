@@ -10128,6 +10128,53 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
       dst += rasterizer->blit_stride;
     }
+
+  if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OUT ||
+      rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_IN ||
+      rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_DESTINATION_ATOP ||
+      rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_CLEAR)
+  {
+     /* fill in the rest of the blitrect when compositing mode permits it */
+     uint8_t nocoverage[rasterizer->blit_width];
+     int gscan_start = rasterizer->blit_y * CTX_RASTERIZER_AA;
+     memset (nocoverage, 0, sizeof(nocoverage));
+     uint8_t *dst = ( (uint8_t *) rasterizer->buf);
+     for (rasterizer->scanline = gscan_start; rasterizer->scanline < scan_start;)
+     {
+       ctx_rasterizer_apply_coverage (rasterizer,
+                                      dst,
+                                      0,
+                                      nocoverage, rasterizer->blit_width);
+       rasterizer->scanline += CTX_RASTERIZER_AA;
+       dst += rasterizer->blit_stride;
+     }
+     for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
+     {
+       ctx_rasterizer_apply_coverage (rasterizer,
+                                      dst,
+                                      0,
+                                      nocoverage, minx);
+
+       ctx_rasterizer_apply_coverage (rasterizer,
+                                      &dst[ (maxx * rasterizer->format->bpp) /8],
+                                      0,
+                                      nocoverage, rasterizer->blit_width-maxx);
+
+       rasterizer->scanline += CTX_RASTERIZER_AA;
+       dst += rasterizer->blit_stride;
+     }
+     dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_end / CTX_RASTERIZER_AA);
+     for (rasterizer->scanline = scan_end; rasterizer->scanline/CTX_RASTERIZER_AA < rasterizer->blit_height;)
+     {
+       ctx_rasterizer_apply_coverage (rasterizer,
+                                      dst,
+                                      0,
+                                      nocoverage, rasterizer->blit_width);
+
+       rasterizer->scanline += CTX_RASTERIZER_AA;
+       dst += rasterizer->blit_stride;
+     }
+  }
   ctx_rasterizer_reset (rasterizer);
 }
 
