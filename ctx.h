@@ -9851,7 +9851,6 @@ ctx_rasterizer_setup (CtxRasterizer *rasterizer)
   }
 }
 
-#if 1
 inline static void
 ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
                                uint8_t       *dst,
@@ -9864,13 +9863,6 @@ ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
   else
     rasterizer->comp_op (rasterizer, dst, rasterizer->color, x, coverage, count);
 }
-#else
-#define ctx_rasterizer_apply_coverage(r,d,x,cov,count) \
-    do { if (rasterizer->format->apply_coverage) \
-      rasterizer->format->apply_coverage(r, d, rasterizer->color, x, cov, count); \
-    else\
-      rasterizer->comp_op (r, d, rasterizer->color, x, cov, count);}while(0)
-#endif
 
 
 static void
@@ -10107,7 +10099,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
         }
       else
         {
-#if 1
           rasterizer->scanline += CTX_RASTERIZER_AA3;
           ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA3);
           ctx_rasterizer_feed_edges (rasterizer);
@@ -10116,9 +10107,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 0);
           rasterizer->scanline += CTX_RASTERIZER_AA2;
           ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA2);
-#else
-          rasterizer->scanline += CTX_RASTERIZER_AA;
-#endif
         }
       if (maxx>minx)
         {
