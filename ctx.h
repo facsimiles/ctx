@@ -7663,15 +7663,14 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #define MASK_GREEN_ALPHA ((0xff << 8)|MASK_ALPHA)
 #define MASK_RED_BLUE    ((0xff << 16) | (0xff))
 
-static void CTX_INLINE
+static void
 ctx_init_uv (CtxRasterizer *rasterizer,
-                                int x0, int count,
-                                float *u0, float *v0, float *ud, float *vd)
+             int x0, int count,
+             float *u0, float *v0, float *ud, float *vd)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
-  float y = rasterizer->scanline / CTX_RASTERIZER_AA;
   *u0 = x0;
-  *v0 = y;
+  *v0 = rasterizer->scanline / CTX_RASTERIZER_AA;
   float u1 = *u0 + count;
   float v1 = *v0;
 
@@ -7762,6 +7761,9 @@ ctx_RGBA8_source_over_normal_a##alpha##_color (CtxRasterizer *rasterizer, uint8_
   ctx_RGBA8_source_over_normal_alpha_color (alpha, rasterizer, dst, src, x0, covp, count);\
 }
 
+/* for alpha values 1-127 there is a gain from this, on x86_64 the generic code
+ * path is faster >127
+ */
 ctx_RGBA8_color_alpha(1); ctx_RGBA8_color_alpha(2); ctx_RGBA8_color_alpha(3);
 ctx_RGBA8_color_alpha(4); ctx_RGBA8_color_alpha(5); ctx_RGBA8_color_alpha(6);
 ctx_RGBA8_color_alpha(7); ctx_RGBA8_color_alpha(8); ctx_RGBA8_color_alpha(9);
@@ -7848,45 +7850,22 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
 static void CTX_INLINE
 ctx_u8_blend_multiply (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
 {
-  uint8_t tsrc[components];
-  uint8_t tdst[components];
+  uint8_t tsrc[components], tdst[components];
 
-#if 0
-  {
-    ctx_RGBA8_deassociate_alpha (src, tsrc);
-    ctx_RGBA8_deassociate_alpha (src, tdst);
-  }
-#else
-  {
-    for (int c = 0; c < components-1; c++)
-      tdst[c] = dst[c] * 255 / dst[components-1];
-    for (int c = 0; c < components-1; c++)
-      tsrc[c] = src[c] * 255 / src[components-1];
-  }
-#endif
+  ctx_u8_deassociate_alpha (components, src, tsrc);
+  ctx_u8_deassociate_alpha (components, src, tdst);
 
 #if 1
   for (int c = 0; c < components-1; c++)
     blended[c] = (tsrc[c] * tdst[c])/255;
   blended[components-1] = src[components-1];
 #else
-  for (int c = 0; c < 3; c++)
+  for (int c = 0; c < components-1; c++)
     blended[c] = (tsrc[c] * tdst[c])/255;
-  blended[3] = src[3];
+  blended[3] = src[components-1];
 #endif
 
-#if 0
-  {
-    ctx_RGBA8_associate_alpha (blended);
-  }
-#else
-  {
-    for (int c = 0; c < components-1; c++)
-    {
-      blended[c] = (blended[c] * blended[components-1]) / 255;
-    }
-  }
-#endif
+  ctx_u8_associate_alpha (components, blended);
 }
 
 static void CTX_INLINE
@@ -7900,6 +7879,84 @@ ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_
   }
 }
 
+static void
+ctx_u8_copy_normal (int components, CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
+{
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  if (rasterizer->fragment)
+    {
+      ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+    }
+
+  while (count--)
+  {
+    uint8_t cov = *covp;
+    if (cov == 0)
+    {
+    }
+    else
+    {
+      if (rasterizer->fragment)
+      {
+        rasterizer->fragment (rasterizer, u0, v0, src);
+        u0+=ud;
+        v0+=vd;
+      }
+    if (cov == 255)
+    {
+      for (int c = 0; c < components; c++)
+        dst[c] = src[c];
+    }
+    else
+    {
+      uint8_t ralpha = 255 - cov;
+      for (int c = 0; c < components; c++)
+        { dst[c] = (src[c]*cov + dst[c] * ralpha) / 255; }
+    }
+    }
+    dst += components;
+    covp ++;
+  }
+}
+
+static void
+ctx_u8_clear_normal (int components, CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
+{
+  while (count--)
+  {
+    uint8_t cov = *covp;
+    for (int c = 0; c < components; c++)
+      dst[c] = 0;
+    if (cov == 0)
+    {
+    }
+    else if (cov == 255)
+    {
+      switch (components)
+      {
+        case 1: dst[0] = 0; break;
+        case 3: dst[2] = 0;
+        case 2: *((uint16_t*)(dst)) = 0; break;
+        case 5: dst[4] = 0;
+        case 4: *((uint32_t*)(dst)) = 0; break;
+        default:
+          for (int c = 0; c < components; c ++)
+            dst[c] = 0;
+          break;
+      }
+    }
+    else
+    {
+      uint8_t ralpha = 255 - cov;
+      for (int c = 0; c < components; c++)
+        { dst[c] = (dst[c] * ralpha) / 255; }
+    }
+    covp ++;
+    dst += components;
+  }
+}
+
 typedef enum {
   CTX_PORTER_DUFF_0,
   CTX_PORTER_DUFF_1,
@@ -7909,65 +7966,65 @@ typedef enum {
 
 static void CTX_INLINE
 ctx_porter_duff_factors (CtxCompositingMode mode,
-                         CtxPorterDuffFactor *f_s,
-                         CtxPorterDuffFactor *f_d)
+                         CtxPorterDuffFactor *s,
+                         CtxPorterDuffFactor *d)
 {
   switch (mode)
   {
      case CTX_COMPOSITE_SOURCE_ATOP:
-        *f_s = CTX_PORTER_DUFF_ALPHA;
-        *f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        *s = CTX_PORTER_DUFF_ALPHA;
+        *d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
       break;
      case CTX_COMPOSITE_DESTINATION_ATOP:
-        *f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-        *f_d = CTX_PORTER_DUFF_ALPHA;
+        *s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        *d = CTX_PORTER_DUFF_ALPHA;
       break;
      case CTX_COMPOSITE_DESTINATION_IN:
-        *f_s = CTX_PORTER_DUFF_0;
-        *f_d = CTX_PORTER_DUFF_ALPHA;
+        *s = CTX_PORTER_DUFF_0;
+        *d = CTX_PORTER_DUFF_ALPHA;
       break;
      case CTX_COMPOSITE_DESTINATION:
-        *f_s = CTX_PORTER_DUFF_0;
-        *f_d = CTX_PORTER_DUFF_1;
+        *s = CTX_PORTER_DUFF_0;
+        *d = CTX_PORTER_DUFF_1;
        break;
      case CTX_COMPOSITE_SOURCE_OVER:
-        *f_s = CTX_PORTER_DUFF_1;
-        *f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        *s = CTX_PORTER_DUFF_1;
+        *d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
        break;
      case CTX_COMPOSITE_DESTINATION_OVER:
-        *f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-        *f_d = CTX_PORTER_DUFF_1;
+        *s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        *d = CTX_PORTER_DUFF_1;
        break;
      case CTX_COMPOSITE_XOR:
-        *f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-        *f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        *s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        *d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
        break;
      case CTX_COMPOSITE_DESTINATION_OUT:
-        *f_s = CTX_PORTER_DUFF_0;
-        *f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        *s = CTX_PORTER_DUFF_0;
+        *d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
        break;
      case CTX_COMPOSITE_SOURCE_OUT:
-        *f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-        *f_d = CTX_PORTER_DUFF_0;
+        *s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        *d = CTX_PORTER_DUFF_0;
        break;
      case CTX_COMPOSITE_SOURCE_IN:
-        *f_s = CTX_PORTER_DUFF_ALPHA;
-        *f_d = CTX_PORTER_DUFF_0;
+        *s = CTX_PORTER_DUFF_ALPHA;
+        *d = CTX_PORTER_DUFF_0;
        break;
      case CTX_COMPOSITE_COPY:
-        *f_s = CTX_PORTER_DUFF_1;
-        *f_d = CTX_PORTER_DUFF_0;
+        *s = CTX_PORTER_DUFF_1;
+        *d = CTX_PORTER_DUFF_0;
        break;
      case CTX_COMPOSITE_CLEAR:
-        *f_s = CTX_PORTER_DUFF_0;
-        *f_d = CTX_PORTER_DUFF_0;
+        *s = CTX_PORTER_DUFF_0;
+        *d = CTX_PORTER_DUFF_0;
        break;
   }
 }
 
 static void CTX_INLINE
-ctx_u8_porter_duff (CtxRasterizer *rasterizer,
-                    int components,
+ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
+                    int                    components,
                     uint8_t * __restrict__ dst,
                     uint8_t * __restrict__ src,
                     int                    x0,
@@ -7975,7 +8032,7 @@ ctx_u8_porter_duff (CtxRasterizer *rasterizer,
                     int                    count,
                     CtxCompositingMode     compositing_mode,
                     CtxFragment            fragment,
-                    CtxBlend                blend)
+                    CtxBlend               blend)
 {
   CtxPorterDuffFactor f_s, f_d;
   ctx_porter_duff_factors (compositing_mode, &f_s, &f_d);
@@ -8005,21 +8062,18 @@ ctx_u8_porter_duff (CtxRasterizer *rasterizer,
       for (int c = 0; c < components; c++)
       {
         int res = 0;
-        /* these switches and this whole function disappear when
-         * compiled when the enum values passed in are constants.
-         */
         switch (f_s)
         {
           case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:   res += tsrc[c]; break;
-          case CTX_PORTER_DUFF_ALPHA: res += (tsrc[c] * dst[components-1])/255; break;
+          case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] *      dst[components-1])/255; break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (255-dst[components-1]))/255; break;
         }
         switch (f_d)
         {
           case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:   res += dst[c]; break;
-          case CTX_PORTER_DUFF_ALPHA: res += (dst[c] * tsrc[components-1])/255; break;
+          case CTX_PORTER_DUFF_1:             res += dst[c]; break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1])/255; break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (255-tsrc[components-1]))/255; break;
         }
 #if 0
@@ -8050,21 +8104,18 @@ ctx_u8_porter_duff (CtxRasterizer *rasterizer,
       for (int c = 0; c < components; c++)
       {
         int res = 0;
-        /* these switches and this whole function disappear when
-         * compiled when the enum values passed in are constants.
-         */
         switch (f_s)
         {
           case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:   res += tsrc[c]; break;
-          case CTX_PORTER_DUFF_ALPHA: res += (tsrc[c] * dst[components-1])/255; break;
+          case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] *      dst[components-1])/255; break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (255-dst[components-1]))/255; break;
         }
         switch (f_d)
         {
           case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:   res += dst[c]; break;
-          case CTX_PORTER_DUFF_ALPHA: res += (dst[c] * tsrc[components-1])/255; break;
+          case CTX_PORTER_DUFF_1:             res += (dst[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] *      tsrc[components-1])/255; break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (255-tsrc[components-1]))/255; break;
         }
 #if 0
@@ -8081,13 +8132,14 @@ ctx_u8_porter_duff (CtxRasterizer *rasterizer,
   }
 }
 
+
 /* generating one function per compositing_mode would be slightly more efficient,
  * but on embedded targets leads to slightly more code bloat,
  * here we trade off a slight amount of performance
  */
-#define CTX_PORTER_DUFFS_U8(components, source, fragment, blend) \
+#define ctx_porter_duff_u8(comp_format, components, source, fragment, blend) \
 static void \
-ctx_RGBA8_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count) \
+ctx_##comp_format##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count) \
 { \
    switch (rasterizer->state->gstate.compositing_mode) \
    { \
@@ -8142,87 +8194,33 @@ ctx_RGBA8_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t
    }\
 }
 
-CTX_PORTER_DUFFS_U8(4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFFS_U8(4,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_u8(RGBA8, 4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_u8(RGBA8, 4,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
-CTX_PORTER_DUFFS_U8(4,linear_gradient, ctx_fragment_linear_gradient_RGBA8, rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFFS_U8(4,radial_gradient, ctx_fragment_radial_gradient_RGBA8, rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFFS_U8(4,image_rgb8_RGBA8, ctx_fragment_image_rgb8_RGBA8,     rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFFS_U8(4,image_rgba8_RGBA8, ctx_fragment_image_rgba8_RGBA8,   rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_u8(RGBA8, 4,linear_gradient,   ctx_fragment_linear_gradient_RGBA8, rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_u8(RGBA8, 4,radial_gradient,   ctx_fragment_radial_gradient_RGBA8, rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_u8(RGBA8, 4,image_rgb8_RGBA8,  ctx_fragment_image_rgb8_RGBA8,      rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_u8(RGBA8, 4,image_rgba8_RGBA8, ctx_fragment_image_rgba8_RGBA8,     rasterizer->state->gstate.blend_mode)
 
-CTX_PORTER_DUFFS_U8(4,color_normal,            NULL,                               CTX_BLEND_NORMAL) // auto-vectorizer winner, 11 vectorized loops
-CTX_PORTER_DUFFS_U8(4,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS_U8(4,linear_gradient_normal,  ctx_fragment_linear_gradient_RGBA8, CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS_U8(4,radial_gradient_normal,  ctx_fragment_radial_gradient_RGBA8, CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS_U8(4,image_rgb8_RGBA8_normal, ctx_fragment_image_rgb8_RGBA8,      CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS_U8(4,image_rgba8_RGBA8_normal,ctx_fragment_image_rgba8_RGBA8,     CTX_BLEND_NORMAL)  // 1 autovectorized
+ctx_porter_duff_u8(RGBA8, 4,color_normal,            NULL,                               CTX_BLEND_NORMAL)
+ctx_porter_duff_u8(RGBA8, 4,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
+ctx_porter_duff_u8(RGBA8, 4,linear_gradient_normal,  ctx_fragment_linear_gradient_RGBA8, CTX_BLEND_NORMAL)
+ctx_porter_duff_u8(RGBA8, 4,radial_gradient_normal,  ctx_fragment_radial_gradient_RGBA8, CTX_BLEND_NORMAL)
+ctx_porter_duff_u8(RGBA8, 4,image_rgb8_RGBA8_normal, ctx_fragment_image_rgb8_RGBA8,      CTX_BLEND_NORMAL)
+ctx_porter_duff_u8(RGBA8, 4,image_rgba8_RGBA8_normal,ctx_fragment_image_rgba8_RGBA8,     CTX_BLEND_NORMAL)
+
 
 static void
 ctx_RGBA8_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
 {
-  float u0 = 0; float v0 = 0;
-  float ud = 0; float vd = 0;
-  if (rasterizer->fragment)
-    {
-      ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-    }
-
-  while (count--)
-  {
-    uint8_t cov = *covp;
-    if (cov == 0)
-    {
-    }
-    else
-    {
-      if (rasterizer->fragment)
-      {
-        rasterizer->fragment (rasterizer, u0, v0, src);
-        u0+=ud;
-        v0+=vd;
-      }
-    if (cov == 255)
-    {
-      for (int c = 0; c < 4; c++)
-        dst[c] = src[c];
-    }
-    else
-    {
-      uint8_t ralpha = 255 - cov;
-      for (int c = 0; c < 4; c++)
-        { dst[c] = (src[c]*cov + dst[c] * ralpha) / 255; }
-    }
-    }
-    dst += 4;
-    covp ++;
-  }
+  ctx_u8_copy_normal (4, rasterizer, dst, src, x0, covp, count);
 }
 
 static void
 ctx_RGBA8_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
 {
-  while (count--)
-  {
-    uint8_t cov = *covp;
-    for (int c = 0; c < 4; c++)
-      dst[c] = 0;
-    if (cov == 0)
-    {
-    }
-    else if (cov == 255)
-    {
-      *((uint32_t*)(dst)) = 0;
-    }
-    else
-    {
-      uint8_t ralpha = 255 - cov;
-      for (int c = 0; c < 4; c++)
-        { dst[c] = (dst[c] * ralpha) / 255; }
-    }
-    covp ++;
-    dst += 4;
-  }
+  ctx_u8_clear_normal (4, rasterizer, dst, src, x0, covp, count);
 }
 #endif
 
@@ -8559,8 +8557,7 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
   
   if (fragment)
   {
-    float u0 = 0; float v0 = 0;
-    float ud = 0; float vd = 0;
+    float u0, v0, ud, vd;
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
     while (count--)
@@ -8587,15 +8584,15 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
         switch (f_s)
         {
           case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:   res += tsrc[c]; break;
-          case CTX_PORTER_DUFF_ALPHA: res += (tsrc[c] * dstf[components-1]); break;
+          case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] *       dstf[components-1]); break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (1.0f-dstf[components-1])); break;
         }
         switch (f_d)
         {
           case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:   res += dstf[c]; break;
-          case CTX_PORTER_DUFF_ALPHA: res += (dstf[c] * tsrc[components-1]); break;
+          case CTX_PORTER_DUFF_1:             res += (dstf[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (dstf[c] *       tsrc[components-1]); break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dstf[c] * (1.0f-tsrc[components-1])); break;
         }
 #if 0
@@ -8632,15 +8629,15 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
         switch (f_s)
         {
           case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:     res += tsrc[c]; break;
-          case CTX_PORTER_DUFF_ALPHA: res += (tsrc[c] * dstf[components-1]); break;
+          case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] *      dstf[components-1]); break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (1.0-dstf[components-1])); break;
         }
         switch (f_d)
         {
           case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:     res += dstf[c]; break;
-          case CTX_PORTER_DUFF_ALPHA: res += (dstf[c] * tsrc[components-1]); break;
+          case CTX_PORTER_DUFF_1:             res += (dstf[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (dstf[c] *       tsrc[components-1]); break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dstf[c] * (1.0f-tsrc[components-1])); break;
         }
 #if 0
@@ -8661,7 +8658,7 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
  * but on embedded targets leads to slightly more code bloat,
  * here we trade off a slight amount of performance
  */
-#define CTX_PORTER_DUFFS(compformat, components, source, fragment, blend) \
+#define ctx_porter_duff_float(compformat, components, source, fragment, blend) \
 static void \
 ctx_##compformat##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count) \
 { \
@@ -8721,19 +8718,19 @@ ctx_##compformat##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst
 
 #if CTX_ENABLE_RGBAF
 
-CTX_PORTER_DUFFS(RGBAF, 4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFFS(RGBAF, 4,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_float(RGBAF, 4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_float(RGBAF, 4,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
-CTX_PORTER_DUFFS(RGBAF, 4,linear_gradient, ctx_fragment_linear_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFFS(RGBAF, 4,radial_gradient, ctx_fragment_radial_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFFS(RGBAF, 4,image,           ctx_fragment_image_RGBAF,           rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_float(RGBAF, 4,linear_gradient, ctx_fragment_linear_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_float(RGBAF, 4,radial_gradient, ctx_fragment_radial_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_float(RGBAF, 4,image,           ctx_fragment_image_RGBAF,           rasterizer->state->gstate.blend_mode)
 
-CTX_PORTER_DUFFS(RGBAF, 4,color_normal,            NULL,                               CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS(RGBAF, 4,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS(RGBAF, 4,linear_gradient_normal,  ctx_fragment_linear_gradient_RGBAF, CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS(RGBAF, 4,radial_gradient_normal,  ctx_fragment_radial_gradient_RGBAF, CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS(RGBAF, 4,image_normal,            ctx_fragment_image_RGBAF,           CTX_BLEND_NORMAL)
+ctx_porter_duff_float(RGBAF, 4,color_normal,            NULL,                               CTX_BLEND_NORMAL)
+ctx_porter_duff_float(RGBAF, 4,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
+ctx_porter_duff_float(RGBAF, 4,linear_gradient_normal,  ctx_fragment_linear_gradient_RGBAF, CTX_BLEND_NORMAL)
+ctx_porter_duff_float(RGBAF, 4,radial_gradient_normal,  ctx_fragment_radial_gradient_RGBAF, CTX_BLEND_NORMAL)
+ctx_porter_duff_float(RGBAF, 4,image_normal,            ctx_fragment_image_RGBAF,           CTX_BLEND_NORMAL)
 
 
 static void
@@ -8929,13 +8926,13 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYAF (CtxRasterizer *rasterizer
   return ctx_fragment_color_GRAYAF;
 }
 
-CTX_PORTER_DUFFS(GRAYAF, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFFS(GRAYAF, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
+CTX_PORTER_DUFF(GRAYAF, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
+CTX_PORTER_DUFF(GRAYAF, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
 
-CTX_PORTER_DUFFS(GRAYAF, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS(GRAYAF, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
+CTX_PORTER_DUFF(GRAYAF, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
+CTX_PORTER_DUFF(GRAYAF, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
 
 static void
 ctx_GRAYAF_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
@@ -9147,13 +9144,13 @@ static CtxFragment ctx_rasterizer_get_fragment_CMYKAF (CtxRasterizer *rasterizer
   return ctx_fragment_other_CMYKAF;
 }
 
-CTX_PORTER_DUFFS(CMYKAF, 5,color,           NULL,                               rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFFS(CMYKAF, 5,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
+CTX_PORTER_DUFF(CMYKAF, 5,color,           NULL,                               rasterizer->state->gstate.blend_mode)
+CTX_PORTER_DUFF(CMYKAF, 5,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
 
-CTX_PORTER_DUFFS(CMYKAF, 5,color_normal,            NULL,                               CTX_BLEND_NORMAL)
-CTX_PORTER_DUFFS(CMYKAF, 5,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
+CTX_PORTER_DUFF(CMYKAF, 5,color_normal,            NULL,                               CTX_BLEND_NORMAL)
+CTX_PORTER_DUFF(CMYKAF, 5,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
 
 static void
 ctx_CMYKAF_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
