@@ -9,7 +9,7 @@
 #define CTX_DITHER          0 // implied by limit formats and only rgba being anbled, but we're explicit
 #define CTX_FORMATTER       0
 #define CTX_BITPACK_PACKER  0
-#define CTX_INLINED_COMPOSITING 0 /* opt out of duplicated faster code */
+#define CTX_INLINED_COMPOSITING 1 /* opt out of duplicated faster code */
 #define CTX_GRADIENT_CACHE  0
 #define CTX_RENDERSTREAM_STATIC 1
 #define CTX_FONTS_FROM_FILE     0 /* leaves out code */

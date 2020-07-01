@@ -333,6 +333,9 @@ typedef enum
   CTX_BLEND_SATURATION, 
   CTX_BLEND_COLOR, 
   CTX_BLEND_LUMINOSITY,  // 15
+  CTX_BLEND_DIVIDE,
+  CTX_BLEND_ADDITION,
+  CTX_BLEND_SUBTRACT, // 18
 } CtxBlend;
 
 typedef enum
@@ -3043,7 +3046,9 @@ static void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, floa
   color->yellow   = y;
   color->key      = k;
   color->alpha    = a;
+#if CTX_ENABLE_CM
   color->space    = state->gstate.cmyk_space;
+#endif
 }
 
 static void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a)
@@ -3054,7 +3059,9 @@ static void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, flo
   color->device_yellow  = y;
   color->device_key     = k;
   color->alpha          = a;
+#if CTX_ENABLE_CM
   color->space = state->gstate.cmyk_space;
+#endif
 }
 
 #endif
@@ -3122,7 +3129,7 @@ static void ctx_color_get_drgba (CtxState *state, CtxColor *color, float *out)
   out[3] = color->alpha;
 }
 
-static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
+inline static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
 {
 #if CTX_ENABLE_CM
   if (! (color->valid & CTX_VALID_RGBA) )
@@ -6612,7 +6619,6 @@ static uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
   return hash;
 }
 
-
 static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {
   int16_t x = 0;
@@ -6762,10 +6768,8 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
                               float x0, float y0,
                               float x1, float y1,
                               float x2, float y2,
-
                               float sx, float sy,
                               float ex, float ey,
-
                               float s,
                               float e,
                               int   iteration,
@@ -6883,7 +6887,7 @@ ctx_rasterizer_rel_curve_to (CtxRasterizer *rasterizer,
   ctx_rasterizer_curve_to (rasterizer, x0, y0, x1, y1, x2, y2);
 }
 
-static int ctx_compare_edges (const void *ap, const void *bp)
+CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
 {
   const CtxEntry *a = (const CtxEntry *) ap;
   const CtxEntry *b = (const CtxEntry *) bp;
@@ -6894,7 +6898,7 @@ static int ctx_compare_edges (const void *ap, const void *bp)
   return xcompare;
 }
 
-static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
+CTX_INLINE static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
 {
   CtxEntry pivot = A[ (high+low) /2];
   int i = low;
@@ -7072,67 +7076,58 @@ static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     }
 }
 
-static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
+CTX_INLINE static int ctx_compare_edges2 (const void *ap, const void *bp)
 {
-  int sorted = 0;
-  while (!sorted)
-    {
-      sorted = 1;
-      for (int i = 0; i < rasterizer->active_edges-1; i++)
-        {
-          CtxEdge *a = &rasterizer->edges[i];
-          CtxEdge *b = &rasterizer->edges[i+1];
-          if (a->x > b->x)
-            {
-              CtxEdge tmp = *b;
-              *b = *a;
-              *a = tmp;
-              sorted = 0;
-            }
-        }
-    }
-  sorted = 0;
-#if 0
-  while (!sorted)
-    {
-      sorted = 1;
-      for (int i = 0; i < rasterizer->pending_edges-1; i++)
-        {
-          CtxEdge *a = &rasterizer->edges[CTX_MAX_EDGES-1-i];
-          CtxEdge *b = &rasterizer->edges[CTX_MAX_EDGES-1- (i+1)];
-          if (a->x > b->x)
-            {
-              CtxEdge tmp = *b;
-              *b = *a;
-              *a = tmp;
-              sorted = 0;
-            }
-        }
-    }
-  sorted = 0;
-  while (!sorted)
-    {
-      sorted = 1;
-      for (int i = 0; i < rasterizer->lingering_edges-1; i++)
-        {
-          CtxEdge *a = &rasterizer->lingering[i];
-          CtxEdge *b = &rasterizer->lingering[i+1];
-          if (a->x > b->x)
-            {
-              CtxEdge tmp = *b;
-              *b = *a;
-              *a = tmp;
-              sorted = 0;
-            }
-        }
-    }
-#endif
+  const CtxEdge *a = (const CtxEdge *) ap;
+  const CtxEdge *b = (const CtxEdge *) bp;
+  return a->x - b->x;
 }
 
+CTX_INLINE static int ctx_edge2_qsort_partition (CtxEdge *A, int low, int high)
+{
+  CtxEdge pivot = A[ (high+low) /2];
+  int i = low;
+  int j = high;
+  while (i <= j)
+    {
+      while (ctx_compare_edges2 (&A[i], &pivot) <0) { i ++; }
+      while (ctx_compare_edges2 (&pivot, &A[j]) <0) { j --; }
+      if (i <= j)
+        {
+          CtxEdge tmp = A[i];
+          A[i] = A[j];
+          A[j] = tmp;
+          i++;
+          j--;
+        }
+    }
+  return i;
+}
+
+static void ctx_edge2_qsort (CtxEdge *entries, int low, int high)
+{
+  {
+    int p = ctx_edge2_qsort_partition (entries, low, high);
+    if (low < p -1 )
+      { ctx_edge2_qsort (entries, low, p - 1); }
+    if (low < high)
+      { ctx_edge2_qsort (entries, p, high); }
+  }
+}
+
+static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
+{
+  if (rasterizer->active_edges)
+    ctx_edge2_qsort (&rasterizer->edges[0], 0, rasterizer->active_edges-1);
+}
 
 static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 {
   return ( ( ( ( (v0) <<8) + (dx) * ( (v1) - (v0) ) ) ) >>8);
+#if 0
+  return (v1*dx+ v0 * (255-dx)) / 255;
+  return v0 + ((v1-v0) * dx)/255;
+#endif
 }
 
 #if CTX_GRADIENT_CACHE
@@ -7868,6 +7863,9 @@ ctx_u8_blend_define_seperable(color_burn,   blended[c] = b[c] == 1 ? 1 :
 ctx_u8_blend_define_seperable(hard_light,   blended[c] = s[c] < 127 ? (b[c] * s[c])/255 :
                                                           b[c] + s[c] - (b[c] * s[c])/255;)
 ctx_u8_blend_define_seperable(difference,   blended[c] = (b[c] - s[c]))
+ctx_u8_blend_define_seperable(divide,       blended[c] = s[c]?(255 * b[c]) / s[c]:0)
+ctx_u8_blend_define_seperable(addition,     blended[c] = ctx_mini(255, s[c]+b[c]))
+ctx_u8_blend_define_seperable(subtract,     blended[c] = ctx_maxi(0, s[c]-b[c]))
 ctx_u8_blend_define_seperable(exclusion,    blended[c] = b[c] + s[c] - 2 * (b[c] * s[c]/255))
 ctx_u8_blend_define_seperable(soft_light,
   if (s[c] <= 255/2)
@@ -8090,6 +8088,9 @@ ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_
     case CTX_BLEND_HUE:         ctx_u8_blend_hue         (components, dst, src, blended); break;
     case CTX_BLEND_SATURATION:  ctx_u8_blend_saturation  (components, dst, src, blended); break;
     case CTX_BLEND_LUMINOSITY:  ctx_u8_blend_luminosity  (components, dst, src, blended); break;
+    case CTX_BLEND_ADDITION:    ctx_u8_blend_addition    (components, dst, src, blended); break;
+    case CTX_BLEND_DIVIDE:      ctx_u8_blend_divide      (components, dst, src, blended); break;
+    case CTX_BLEND_SUBTRACT:    ctx_u8_blend_subtract    (components, dst, src, blended); break;
   }
 }
 
@@ -8417,12 +8418,15 @@ ctx_porter_duff_u8(RGBA8, 4,radial_gradient,   ctx_fragment_radial_gradient_RGBA
 ctx_porter_duff_u8(RGBA8, 4,image_rgb8_RGBA8,  ctx_fragment_image_rgb8_RGBA8,      rasterizer->state->gstate.blend_mode)
 ctx_porter_duff_u8(RGBA8, 4,image_rgba8_RGBA8, ctx_fragment_image_rgba8_RGBA8,     rasterizer->state->gstate.blend_mode)
 
-ctx_porter_duff_u8(RGBA8, 4,color_normal,            NULL,                               CTX_BLEND_NORMAL)
-ctx_porter_duff_u8(RGBA8, 4,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
-ctx_porter_duff_u8(RGBA8, 4,linear_gradient_normal,  ctx_fragment_linear_gradient_RGBA8, CTX_BLEND_NORMAL)
-ctx_porter_duff_u8(RGBA8, 4,radial_gradient_normal,  ctx_fragment_radial_gradient_RGBA8, CTX_BLEND_NORMAL)
-ctx_porter_duff_u8(RGBA8, 4,image_rgb8_RGBA8_normal, ctx_fragment_image_rgb8_RGBA8,      CTX_BLEND_NORMAL)
-ctx_porter_duff_u8(RGBA8, 4,image_rgba8_RGBA8_normal,ctx_fragment_image_rgba8_RGBA8,     CTX_BLEND_NORMAL)
+#define ctx_porter_duff_u8_blend(comp_name, components, blend_mode)\
+ctx_porter_duff_u8(comp_name, 4,color_normal,            NULL,                               blend_mode)\
+ctx_porter_duff_u8(comp_name, 4,generic_normal,          rasterizer->fragment,               blend_mode)\
+ctx_porter_duff_u8(comp_name, 4,linear_gradient_normal,  ctx_fragment_linear_gradient_RGBA8, blend_mode)\
+ctx_porter_duff_u8(comp_name, 4,radial_gradient_normal,  ctx_fragment_radial_gradient_RGBA8, blend_mode)\
+ctx_porter_duff_u8(comp_name, 4,image_rgb8_RGBA8_normal, ctx_fragment_image_rgb8_RGBA8,      blend_mode)\
+ctx_porter_duff_u8(comp_name, 4,image_rgba8_RGBA8_normal,ctx_fragment_image_rgba8_RGBA8,     blend_mode)
+
+ctx_porter_duff_u8_blend(RGBA8, 4, CTX_BLEND_NORMAL)
 
 
 static void
@@ -8759,6 +8763,11 @@ ctx_float_blend_define_seperable(color_burn,  blended[c] = (b[c] == 1.0f) ? 1.0f
 ctx_float_blend_define_seperable(hard_light,  blended[c] = s[c] < 0.f ? (b[c] * s[c]) :
                                                           b[c] + s[c] - (b[c] * s[c]);)
 ctx_float_blend_define_seperable(difference,  blended[c] = (b[c] - s[c]))
+
+ctx_float_blend_define_seperable(divide,      blended[c] = s[c]?(b[c]) / s[c]:0.0f)
+ctx_float_blend_define_seperable(addition,    blended[c] = s[c]+b[c])
+ctx_float_blend_define_seperable(subtract,    blended[c] = s[c]-b[c])
+
 ctx_float_blend_define_seperable(exclusion,   blended[c] = b[c] + s[c] - 2.0f * b[c] * s[c])
 ctx_float_blend_define_seperable(soft_light,
   if (s[c] <= 0.5f)
@@ -8955,6 +8964,9 @@ ctx_float_blend (int components, CtxBlend blend, float * __restrict__ dst, float
     case CTX_BLEND_HUE:         ctx_float_blend_hue         (components, dst, src, blended); break;
     case CTX_BLEND_SATURATION:  ctx_float_blend_saturation  (components, dst, src, blended); break;
     case CTX_BLEND_LUMINOSITY:  ctx_float_blend_luminosity  (components, dst, src, blended); break;
+    case CTX_BLEND_ADDITION:    ctx_float_blend_addition    (components, dst, src, blended); break;
+    case CTX_BLEND_SUBTRACT:    ctx_float_blend_subtract    (components, dst, src, blended); break;
+    case CTX_BLEND_DIVIDE:      ctx_float_blend_divide      (components, dst, src, blended); break;
   }
 }
 

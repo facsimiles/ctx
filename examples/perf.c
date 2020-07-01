@@ -3,7 +3,7 @@
 #include "ctx-font-ascii.h"
 #define CTX_LIMIT_FORMATS   0
 #define CTX_EVENTS          1
-#define CTX_ENABLE_CM       1
+#define CTX_ENABLE_CM       0
 #define CTX_PARSER          0
 #define CTX_DITHER          0 // implied by limit formats and only rgba being anbled, but we're explicit
 #define CTX_FORMATTER       1
