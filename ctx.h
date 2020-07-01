@@ -550,14 +550,14 @@ typedef struct CtxBinding {
   void  *destroy_data;
 } CtxBinding;
 CtxBinding *ctx_get_bindings (Ctx *ctx);
-void  ctx_clear_bindings   (Ctx *ctx);
-void  ctx_remove_idle      (Ctx *ctx, int handle);
-int   ctx_add_timeout_full (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
-                            void (*destroy_notify)(void *destroy_data), void *destroy_data);
-int   ctx_add_timeout   (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data);
-int   ctx_add_idle_full (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
-                         void (*destroy_notify)(void *destroy_data), void *destroy_data);
-int   ctx_add_idle      (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data);
+void  ctx_clear_bindings     (Ctx *ctx);
+void  ctx_remove_idle        (Ctx *ctx, int handle);
+int   ctx_add_timeout_full   (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
+                              void (*destroy_notify)(void *destroy_data), void *destroy_data);
+int   ctx_add_timeout        (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data);
+int   ctx_add_idle_full      (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
+                              void (*destroy_notify)(void *destroy_data), void *destroy_data);
+int   ctx_add_idle           (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data);
 
 void ctx_listen_full (Ctx     *ctx,
                       float    x,
@@ -8487,14 +8487,19 @@ ctx_float_source_over_normal_color (int components, CtxRasterizer *rasterizer, u
     uint8_t cov = *covp;
     if (cov)
     {
-      if (cov != 255)
+      if (cov == 255 && alpha == 1.0f)
+      {
+        for (int c = 0; c < components; c++)
+          dstf[c] = srcf[c];
+      }
+      else
       {
         float fcov = ctx_u8_to_float (cov);
         alpha = (fcov * alpha);
+        float ralpha = 1.0f - alpha;
+        for (int c = 0; c < components; c++)
+          dstf[c] = (srcf[c]*alpha + dstf[c] * ralpha);
       }
-      float ralpha = 1.0f - alpha;
-      for (int c = 0; c < components; c++)
-        dstf[c] = (srcf[c]*alpha + dstf[c] * ralpha);
     }
     covp ++;
     dstf+= components;
@@ -8926,13 +8931,13 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYAF (CtxRasterizer *rasterizer
   return ctx_fragment_color_GRAYAF;
 }
 
-CTX_PORTER_DUFF(GRAYAF, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFF(GRAYAF, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_float(GRAYAF, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_float(GRAYAF, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
 
-CTX_PORTER_DUFF(GRAYAF, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
-CTX_PORTER_DUFF(GRAYAF, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
+ctx_porter_duff_float(GRAYAF, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
+ctx_porter_duff_float(GRAYAF, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
 
 static void
 ctx_GRAYAF_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
@@ -9144,13 +9149,13 @@ static CtxFragment ctx_rasterizer_get_fragment_CMYKAF (CtxRasterizer *rasterizer
   return ctx_fragment_other_CMYKAF;
 }
 
-CTX_PORTER_DUFF(CMYKAF, 5,color,           NULL,                               rasterizer->state->gstate.blend_mode)
-CTX_PORTER_DUFF(CMYKAF, 5,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_float (CMYKAF, 5,color,           NULL,                               rasterizer->state->gstate.blend_mode)
+ctx_porter_duff_float (CMYKAF, 5,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
 
-CTX_PORTER_DUFF(CMYKAF, 5,color_normal,            NULL,                               CTX_BLEND_NORMAL)
-CTX_PORTER_DUFF(CMYKAF, 5,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
+ctx_porter_duff_float (CMYKAF, 5,color_normal,            NULL,                               CTX_BLEND_NORMAL)
+ctx_porter_duff_float (CMYKAF, 5,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
 
 static void
 ctx_CMYKAF_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
