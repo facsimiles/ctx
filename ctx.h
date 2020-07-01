@@ -7858,25 +7858,49 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
 }
 
 inline static void
-ctx_u8_blend_multiply (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
+octx_u8_blend_multiply (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
 {
   uint8_t tsrc[components], tdst[components];
-
   ctx_u8_deassociate_alpha (components, src, tsrc);
   ctx_u8_deassociate_alpha (components, src, tdst);
 
-#if 1
   for (int c = 0; c < components-1; c++)
     blended[c] = (tsrc[c] * tdst[c])/255;
-  blended[components-1] = src[components-1];
-#else
-  for (int c = 0; c < components-1; c++)
-    blended[c] = (tsrc[c] * tdst[c])/255;
-  blended[3] = src[components-1];
-#endif
 
+  blended[components-1] = src[components-1];
   ctx_u8_associate_alpha (components, blended);
 }
+
+
+
+#define ctx_u8_blend_define(name, CODE) \
+inline static void \
+ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)\
+{\
+  uint8_t s[components], b[components];\
+  ctx_u8_deassociate_alpha (components, src, s);\
+  ctx_u8_deassociate_alpha (components, src, b);\
+  for (int c = 0; c < components-1; c++)\
+    CODE;\
+  blended[components-1] = s[components-1];\
+  ctx_u8_associate_alpha (components, blended);\
+}
+
+ctx_u8_blend_define(multiply,     blended[c] = (b[c] * s[c])/255;)
+ctx_u8_blend_define(screen,       blended[c] = b[c] + s[c] - (b[c] * s[c])/255;)
+ctx_u8_blend_define(overlay,      blended[c] = b[c] < 127 ? (s[c] * b[c])/255 :
+                                                          s[c] + b[c] - (s[c] * b[c])/255;)
+ctx_u8_blend_define(darken,       blended[c] = ctx_mini (b[c], s[c]))
+ctx_u8_blend_define(lighten,      blended[c] = ctx_maxi (b[c], s[c]))
+ctx_u8_blend_define(color_dodge,  blended[c] = b[c] == 0 ? 0 :
+                                     s[c] == 255 ? 255 : ctx_mini(255, (255 * b[c]) / (255-s[c])))
+ctx_u8_blend_define(color_burn,   blended[c] = b[c] == 1 ? 1 :
+                                     s[c] == 0 ? 0 : 255 - ctx_mini(255, (255*(255 - b[c])) / s[c]))
+ctx_u8_blend_define(hard_light,   blended[c] = s[c] < 127 ? (b[c] * s[c])/255 :
+                                                          b[c] + s[c] - (b[c] * s[c])/255;)
+// XXX soft_light
+ctx_u8_blend_define(difference,   blended[c] = (b[c] - s[c]))
+ctx_u8_blend_define(exclusion,    blended[c] = b[c] + s[c] - 2 * b[c] * s[c])
 
 inline static void
 ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
@@ -7884,8 +7908,16 @@ ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_
   switch (blend)
   {
     default:
-    case CTX_BLEND_NORMAL:   ctx_u8_blend_normal   (components, dst, src, blended); break;
-    case CTX_BLEND_MULTIPLY: ctx_u8_blend_multiply (components, dst, src, blended); break;
+    case CTX_BLEND_NORMAL:      ctx_u8_blend_normal      (components, dst, src, blended); break;
+    case CTX_BLEND_MULTIPLY:    ctx_u8_blend_multiply    (components, dst, src, blended); break;
+    case CTX_BLEND_OVERLAY:     ctx_u8_blend_overlay     (components, dst, src, blended); break;
+    case CTX_BLEND_DARKEN:      ctx_u8_blend_darken      (components, dst, src, blended); break;
+    case CTX_BLEND_LIGHTEN:     ctx_u8_blend_lighten     (components, dst, src, blended); break;
+    case CTX_BLEND_COLOR_DODGE: ctx_u8_blend_color_dodge (components, dst, src, blended); break;
+    case CTX_BLEND_COLOR_BURN:  ctx_u8_blend_color_burn  (components, dst, src, blended); break;
+    case CTX_BLEND_HARD_LIGHT:  ctx_u8_blend_hard_light  (components, dst, src, blended); break;
+    case CTX_BLEND_DIFFERENCE:  ctx_u8_blend_difference  (components, dst, src, blended); break;
+    case CTX_BLEND_EXCLUSION:   ctx_u8_blend_exclusion   (components, dst, src, blended); break;
   }
 }
 
@@ -10861,8 +10893,6 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
     }
 }
 
-
-
 #if CTX_ENABLE_RGB8
 
 inline static void
@@ -10895,8 +10925,8 @@ ctx_RGBA8_to_RGB8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *
 }
 
 #endif
-
 #if CTX_ENABLE_GRAY1
+
 inline static void
 ctx_GRAY1_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -10948,8 +10978,8 @@ ctx_RGBA8_to_GRAY1 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
 }
 
 #endif
-
 #if CTX_ENABLE_GRAY2
+
 inline static void
 ctx_GRAY2_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -10987,8 +11017,8 @@ ctx_RGBA8_to_GRAY2 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
 }
 
 #endif
-
 #if CTX_ENABLE_GRAY4
+
 inline static void
 ctx_GRAY4_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -11024,9 +11054,10 @@ ctx_RGBA8_to_GRAY4 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
       rgba +=4;
     }
 }
-#endif
 
+#endif
 #if CTX_ENABLE_GRAY8
+
 inline static void
 ctx_GRAY8_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -11054,9 +11085,10 @@ ctx_RGBA8_to_GRAY8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
       rgba +=4;
     }
 }
-#endif
 
+#endif
 #if CTX_ENABLE_GRAYA8
+
 inline static void
 ctx_GRAYA8_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -11264,8 +11296,8 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
 #endif
 
 #endif
-
 #if CTX_ENABLE_RGB332
+
 inline static void
 ctx_332_unpack (uint8_t pixel,
                 uint8_t *red,
@@ -11323,7 +11355,6 @@ ctx_RGBA8_to_RGB332 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
 }
 
 #endif
-
 #if CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED
 
 static inline void
@@ -11359,9 +11390,10 @@ ctx_565_pack (uint8_t red,
     { return (c>>8) | (c<<8); } /* swap bytes */
   return c;
 }
-#endif
 
+#endif
 #if CTX_ENABLE_RGB565
+
 static inline void
 ctx_RGB565_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -11394,8 +11426,8 @@ ctx_RGBA8_to_RGB565 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
 }
 
 #endif
-
 #if CTX_ENABLE_RGB565_BYTESWAPPED
+
 static inline void
 ctx_RGB565_BS_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
