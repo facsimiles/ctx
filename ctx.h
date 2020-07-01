@@ -8487,10 +8487,64 @@ ctx_float_porter_duff (CtxRasterizer *rasterizer,
                        int x0,
                        uint8_t * __restrict__ covp,
                        int count,
-                       CtxPorterDuffFactor f_s, CtxPorterDuffFactor f_d,
+                       CtxCompositingMode compositing_mode,
                        CtxFragment fragment,
                        CtxBlend blend)
 {
+  CtxPorterDuffFactor f_s;
+  CtxPorterDuffFactor f_d;
+  switch (compositing_mode)
+  {
+     case CTX_COMPOSITE_SOURCE_ATOP:
+        f_s = CTX_PORTER_DUFF_ALPHA;
+        f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+      break;\
+     case CTX_COMPOSITE_DESTINATION_ATOP:
+        f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        f_d = CTX_PORTER_DUFF_ALPHA;
+      break;
+     case CTX_COMPOSITE_DESTINATION_IN:
+        f_s = CTX_PORTER_DUFF_0;
+        f_d = CTX_PORTER_DUFF_ALPHA;
+      break;
+     case CTX_COMPOSITE_DESTINATION:
+        f_s = CTX_PORTER_DUFF_0;
+        f_d = CTX_PORTER_DUFF_1;
+       break;
+     case CTX_COMPOSITE_SOURCE_OVER:
+        f_s = CTX_PORTER_DUFF_1;
+        f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+       break;
+     case CTX_COMPOSITE_DESTINATION_OVER:
+        f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        f_d = CTX_PORTER_DUFF_1;
+       break;
+     case CTX_COMPOSITE_XOR:
+        f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+       break;
+     case CTX_COMPOSITE_DESTINATION_OUT:
+        f_s = CTX_PORTER_DUFF_0;
+        f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+       break;
+     case CTX_COMPOSITE_SOURCE_OUT:
+        f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
+        f_d = CTX_PORTER_DUFF_0;
+       break;
+     case CTX_COMPOSITE_SOURCE_IN:
+        f_s = CTX_PORTER_DUFF_ALPHA;
+        f_d = CTX_PORTER_DUFF_0;
+       break;
+     case CTX_COMPOSITE_COPY:
+        f_s = CTX_PORTER_DUFF_1;
+        f_d = CTX_PORTER_DUFF_0;
+       break;
+     case CTX_COMPOSITE_CLEAR:
+        f_s = CTX_PORTER_DUFF_0;
+        f_d = CTX_PORTER_DUFF_0;
+       break;
+  }
+  
   float *dstf = (float*)dst;
   float *srcf = (float*)src;
   if (fragment)
@@ -8605,51 +8659,51 @@ ctx_##compformat##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst
    { \
      case CTX_COMPOSITE_SOURCE_ATOP: \
       ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count, \
-        CTX_PORTER_DUFF_ALPHA, CTX_PORTER_DUFF_1_MINUS_ALPHA, fragment, blend);\
+        CTX_COMPOSITE_SOURCE_ATOP, fragment, blend);\
       break;\
      case CTX_COMPOSITE_DESTINATION_ATOP:\
       ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-        CTX_PORTER_DUFF_1_MINUS_ALPHA, CTX_PORTER_DUFF_ALPHA, fragment, blend);\
+        CTX_COMPOSITE_DESTINATION_ATOP, fragment, blend);\
       break;\
      case CTX_COMPOSITE_DESTINATION_IN:\
       ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-        CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_ALPHA, fragment, blend);\
+        CTX_COMPOSITE_DESTINATION_IN, fragment, blend);\
       break;\
      case CTX_COMPOSITE_DESTINATION:\
       ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-        CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_1, fragment, blend);\
+        CTX_COMPOSITE_DESTINATION, fragment, blend);\
        break;\
      case CTX_COMPOSITE_SOURCE_OVER:\
       ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-        CTX_PORTER_DUFF_1, CTX_PORTER_DUFF_1_MINUS_ALPHA, fragment, blend);\
+        CTX_COMPOSITE_SOURCE_OVER, fragment, blend);\
        break;\
      case CTX_COMPOSITE_DESTINATION_OVER:\
       ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-        CTX_PORTER_DUFF_1_MINUS_ALPHA, CTX_PORTER_DUFF_1, fragment, blend);\
+        CTX_COMPOSITE_DESTINATION_OVER, fragment, blend);\
        break;\
      case CTX_COMPOSITE_XOR:\
       ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-        CTX_PORTER_DUFF_1_MINUS_ALPHA, CTX_PORTER_DUFF_1_MINUS_ALPHA, fragment, blend);\
+        CTX_COMPOSITE_XOR, fragment, blend);\
        break;\
      case CTX_COMPOSITE_DESTINATION_OUT:\
        ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-         CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_1_MINUS_ALPHA, fragment, blend);\
+        CTX_COMPOSITE_DESTINATION_OUT, fragment, blend);\
        break;\
      case CTX_COMPOSITE_SOURCE_OUT:\
        ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-         CTX_PORTER_DUFF_1_MINUS_ALPHA, CTX_PORTER_DUFF_0, fragment, blend);\
+        CTX_COMPOSITE_SOURCE_OUT, fragment, blend);\
        break;\
      case CTX_COMPOSITE_SOURCE_IN:\
        ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-         CTX_PORTER_DUFF_ALPHA, CTX_PORTER_DUFF_0, fragment, blend);\
+        CTX_COMPOSITE_SOURCE_IN, fragment, blend);\
        break;\
      case CTX_COMPOSITE_COPY:\
        ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-         CTX_PORTER_DUFF_1, CTX_PORTER_DUFF_0, fragment, blend);\
+        CTX_COMPOSITE_COPY, fragment, blend);\
        break;\
      case CTX_COMPOSITE_CLEAR:\
        ctx_float_porter_duff (rasterizer, components, dst, src, x0, covp, count,\
-         CTX_PORTER_DUFF_0, CTX_PORTER_DUFF_0, fragment, blend);\
+        CTX_COMPOSITE_CLEAR, fragment, blend);\
        break;\
    }\
 }
