@@ -7871,53 +7871,256 @@ octx_u8_blend_multiply (int components, uint8_t * __restrict__ dst, uint8_t *src
   ctx_u8_associate_alpha (components, blended);
 }
 
-
-
 #define ctx_u8_blend_define(name, CODE) \
-inline static void \
+CTX_INLINE static void \
 ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)\
 {\
   uint8_t s[components], b[components];\
   ctx_u8_deassociate_alpha (components, src, s);\
   ctx_u8_deassociate_alpha (components, src, b);\
-  for (int c = 0; c < components-1; c++)\
     CODE;\
   blended[components-1] = s[components-1];\
   ctx_u8_associate_alpha (components, blended);\
 }
 
-ctx_u8_blend_define(multiply,     blended[c] = (b[c] * s[c])/255;)
-ctx_u8_blend_define(screen,       blended[c] = b[c] + s[c] - (b[c] * s[c])/255;)
-ctx_u8_blend_define(overlay,      blended[c] = b[c] < 127 ? (s[c] * b[c])/255 :
-                                                          s[c] + b[c] - (s[c] * b[c])/255;)
-ctx_u8_blend_define(darken,       blended[c] = ctx_mini (b[c], s[c]))
-ctx_u8_blend_define(lighten,      blended[c] = ctx_maxi (b[c], s[c]))
-ctx_u8_blend_define(color_dodge,  blended[c] = b[c] == 0 ? 0 :
-                                     s[c] == 255 ? 255 : ctx_mini(255, (255 * b[c]) / (255-s[c])))
-ctx_u8_blend_define(color_burn,   blended[c] = b[c] == 1 ? 1 :
-                                     s[c] == 0 ? 0 : 255 - ctx_mini(255, (255*(255 - b[c])) / s[c]))
-ctx_u8_blend_define(hard_light,   blended[c] = s[c] < 127 ? (b[c] * s[c])/255 :
-                                                          b[c] + s[c] - (b[c] * s[c])/255;)
-// XXX soft_light
-ctx_u8_blend_define(difference,   blended[c] = (b[c] - s[c]))
-ctx_u8_blend_define(exclusion,    blended[c] = b[c] + s[c] - 2 * b[c] * s[c])
+#define ctx_u8_blend_define_seperable(name, CODE) \
+        ctx_u8_blend_define(name, for (int c = 0; c < components-1; c++) { CODE ;}) \
 
-inline static void
+ctx_u8_blend_define_seperable(multiply,     blended[c] = (b[c] * s[c])/255;)
+ctx_u8_blend_define_seperable(screen,       blended[c] = b[c] + s[c] - (b[c] * s[c])/255;)
+ctx_u8_blend_define_seperable(overlay,      blended[c] = b[c] < 127 ? (s[c] * b[c])/255 :
+                                                          s[c] + b[c] - (s[c] * b[c])/255;)
+ctx_u8_blend_define_seperable(darken,       blended[c] = ctx_mini (b[c], s[c]))
+ctx_u8_blend_define_seperable(lighten,      blended[c] = ctx_maxi (b[c], s[c]))
+ctx_u8_blend_define_seperable(color_dodge,  blended[c] = b[c] == 0 ? 0 :
+                                     s[c] == 255 ? 255 : ctx_mini(255, (255 * b[c]) / (255-s[c])))
+ctx_u8_blend_define_seperable(color_burn,   blended[c] = b[c] == 1 ? 1 :
+                                     s[c] == 0 ? 0 : 255 - ctx_mini(255, (255*(255 - b[c])) / s[c]))
+ctx_u8_blend_define_seperable(hard_light,   blended[c] = s[c] < 127 ? (b[c] * s[c])/255 :
+                                                          b[c] + s[c] - (b[c] * s[c])/255;)
+ctx_u8_blend_define_seperable(difference,   blended[c] = (b[c] - s[c]))
+ctx_u8_blend_define_seperable(exclusion,    blended[c] = b[c] + s[c] - 2 * b[c] * s[c])
+ctx_u8_blend_define_seperable(soft_light,
+  if (s[c] <= 255/2)
+  {
+    blended[c] = b[c] - (255 - 2 * s[c]) * b[c] * (255 - b[c]) / (255 * 255);
+  }
+  else
+  {
+    int d;
+    if (b[c] <= 255/4)
+      d = (((16 * b[c] - 12 * 255)/255 * b[c] + 4 * 255) * b[c])/255;
+    else
+      d = sqrt(b[c]);
+    blended[c] = (b[c] + (2 * s[c] - 255) * (d - b[c]))/255;
+  }
+)
+
+static int ctx_int_get_max (int components, int *c)
+{
+  int max = 0;
+  for (int i = 0; i < components - 1; i ++)
+  {
+    if (c[i] > max) max = c[i];
+  }
+  return max;
+}
+
+static int ctx_int_get_min (int components, int *c)
+{
+  int min = 400;
+  for (int i = 0; i < components - 1; i ++)
+  {
+    if (c[i] < min) min = c[i];
+  }
+  return min;
+}
+
+static int ctx_int_get_lum (int components, int *c)
+{
+  switch (components)
+  {
+    case 3:
+    case 4:
+            return c[0] * 0.3 + 
+                   c[1] * 0.59 +
+                   c[2] * 0.11;
+            break;
+    case 1:
+    case 2:
+            return c[0];
+            break;
+    default:
+       {
+         int sum = 0;
+         for (int i = 0; i < components - 1; i ++)
+         {
+           sum += c[i];
+         }
+         return sum / (components - 1);
+       }
+            break;
+  }
+}
+
+static int ctx_u8_get_lum (int components, uint8_t *c)
+{
+  switch (components)
+  {
+    case 3:
+    case 4:
+            return c[0] * 0.3 + 
+                   c[1] * 0.59 +
+                   c[2] * 0.11;
+            break;
+    case 1:
+    case 2:
+            return c[0];
+            break;
+    default:
+       {
+         int sum = 0;
+         for (int i = 0; i < components - 1; i ++)
+         {
+           sum += c[i];
+         }
+         return sum / (components - 1);
+       }
+            break;
+  }
+}
+static int ctx_u8_get_sat (int components, uint8_t *c)
+{
+  switch (components)
+  {
+    case 3:
+    case 4:
+            { int r = c[0];
+              int g = c[1];
+              int b = c[2];
+              return ctx_maxi(r, ctx_maxi(g,b)) - ctx_mini(r,ctx_mini(g,b));
+            }
+            break;
+    case 1:
+    case 2:
+            return 0.0;
+            break;
+    default:
+       {
+         int min = 1000;
+         int max = -1000;
+         for (int i = 0; i < components - 1; i ++)
+         {
+           if (c[i] < min) min = c[i];
+           if (c[i] > max) max = c[i];
+         }
+         return max-min;
+       }
+       break;
+  }
+}
+
+static void ctx_u8_set_lum (int components, uint8_t *c, uint8_t lum)
+{
+  int d = lum - ctx_u8_get_lum (components, c);
+  int tc[components];
+  for (int i = 0; i < components - 1; i++)
+  {
+    tc[i] = c[i] + d;
+  }
+
+  int l = ctx_int_get_lum (components, tc);
+  int n = ctx_int_get_min (components, tc);
+  int x = ctx_int_get_max (components, tc);
+
+  if (n < 0)
+  {
+    for (int i = 0; i < components - 1; i++)
+      tc[i] = l + (((tc[i] - l) * l) / (l-n));
+  }
+
+  if (x > 255)
+  {
+    for (int i = 0; i < components - 1; i++)
+      tc[i] = l + (((tc[i] - l) * (255 - l)) / (x-l));
+  }
+  for (int i = 0; i < components - 1; i++)
+    c[i] = tc[i];
+}
+
+static void ctx_u8_set_sat (int components, uint8_t *c, uint8_t sat)
+{
+  int max = 0, mid = 1, min = 2;
+  
+  if (c[min] > c[mid]){int t = min; min = mid; mid = t;}
+  if (c[mid] > c[max]){int t = mid; mid = max; max = t;}
+  if (c[min] > c[mid]){int t = min; min = mid; mid = t;}
+
+  if (c[max] > c[min])
+  {
+    c[mid] = ((c[mid]-c[min]) * sat) / (c[max] - c[min]);
+    c[max] = sat;
+  }
+  else
+  {
+    c[mid] = c[max] = 0;
+  }
+  c[min] = 0;
+
+}
+
+ctx_u8_blend_define(color,
+  for (int i = 0; i < components; i++)
+    blended[i] = s[i];
+  ctx_u8_set_lum(components, blended, ctx_u8_get_lum (components, s));
+)
+
+ctx_u8_blend_define(hue,
+  int in_sat = ctx_u8_get_sat(components, b);
+  int in_lum = ctx_u8_get_lum(components, b);
+  for (int i = 0; i < components; i++)
+    blended[i] = s[i];
+  ctx_u8_set_sat(components, blended, in_sat);
+  ctx_u8_set_lum(components, blended, in_lum);
+)
+
+ctx_u8_blend_define(saturation,
+  int in_sat = ctx_u8_get_sat(components, s);
+  int in_lum = ctx_u8_get_lum(components, b);
+  for (int i = 0; i < components; i++)
+    blended[i] = b[i];
+  ctx_u8_set_sat(components, blended, in_sat);
+  ctx_u8_set_lum(components, blended, in_lum);
+)
+
+ctx_u8_blend_define(luminosity,
+  int in_lum = ctx_u8_get_lum(components, s);
+  for (int i = 0; i < components; i++)
+    blended[i] = b[i];
+  ctx_u8_set_lum(components, blended, in_lum);
+)
+
+CTX_INLINE static void
 ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
 {
   switch (blend)
   {
-    default:
     case CTX_BLEND_NORMAL:      ctx_u8_blend_normal      (components, dst, src, blended); break;
     case CTX_BLEND_MULTIPLY:    ctx_u8_blend_multiply    (components, dst, src, blended); break;
+    case CTX_BLEND_SCREEN:      ctx_u8_blend_screen      (components, dst, src, blended); break;
     case CTX_BLEND_OVERLAY:     ctx_u8_blend_overlay     (components, dst, src, blended); break;
     case CTX_BLEND_DARKEN:      ctx_u8_blend_darken      (components, dst, src, blended); break;
     case CTX_BLEND_LIGHTEN:     ctx_u8_blend_lighten     (components, dst, src, blended); break;
     case CTX_BLEND_COLOR_DODGE: ctx_u8_blend_color_dodge (components, dst, src, blended); break;
     case CTX_BLEND_COLOR_BURN:  ctx_u8_blend_color_burn  (components, dst, src, blended); break;
     case CTX_BLEND_HARD_LIGHT:  ctx_u8_blend_hard_light  (components, dst, src, blended); break;
+    case CTX_BLEND_SOFT_LIGHT:  ctx_u8_blend_soft_light  (components, dst, src, blended); break;
     case CTX_BLEND_DIFFERENCE:  ctx_u8_blend_difference  (components, dst, src, blended); break;
     case CTX_BLEND_EXCLUSION:   ctx_u8_blend_exclusion   (components, dst, src, blended); break;
+    case CTX_BLEND_COLOR:       ctx_u8_blend_color       (components, dst, src, blended); break;
+    case CTX_BLEND_HUE:         ctx_u8_blend_hue         (components, dst, src, blended); break;
+    case CTX_BLEND_SATURATION:  ctx_u8_blend_saturation  (components, dst, src, blended); break;
+    case CTX_BLEND_LUMINOSITY:  ctx_u8_blend_luminosity  (components, dst, src, blended); break;
   }
 }
 
@@ -8766,7 +8969,6 @@ ctx_##compformat##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst
    }\
 }
 
-
 #if CTX_ENABLE_RGBAF
 
 ctx_porter_duff_float(RGBAF, 4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
@@ -8897,7 +9099,6 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
 }
 
 #endif
-
 #if CTX_ENABLE_GRAYAF
 
 static void ctx_rgba_to_graya (float *in, float *out)
@@ -9077,7 +9278,6 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
 }
 
 #endif
-
 #if CTX_ENABLE_GRAYF
 
 static void
@@ -9142,7 +9342,6 @@ ctx_composite_BGRA8 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int 
 }
 
 #endif
-
 #if CTX_ENABLE_CMYKAF
 
 static void
@@ -9295,7 +9494,6 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
 }
 
 #endif
-
 #if CTX_ENABLE_CMYKA8
 
 static void
@@ -9352,8 +9550,8 @@ ctx_composite_CMYKA8 (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int
   rasterizer->comp_op (rasterizer, (uint8_t *) &pixels[0], rasterizer->color, x, coverage, count);
   ctx_CMYKAF_to_CMYKA8 (rasterizer, &pixels[0], dst, count);
 }
-#endif
 
+#endif
 #if CTX_ENABLE_CMYK8
 
 static void
