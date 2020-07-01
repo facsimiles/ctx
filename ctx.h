@@ -10065,6 +10065,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     return;
   }
   ctx_rasterizer_sort_edges (rasterizer);
+  if (maxx>minx)
   for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
     {
       ctx_memset (coverage, 0,
@@ -10108,7 +10109,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           rasterizer->scanline += CTX_RASTERIZER_AA2;
           ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA2);
         }
-      if (maxx>minx)
         {
 #if CTX_SHAPE_CACHE
           if (shape == NULL)
