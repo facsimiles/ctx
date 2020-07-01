@@ -8033,7 +8033,6 @@ static void ctx_u8_set_sat (int components, uint8_t *c, uint8_t sat)
     c[mid] = c[max] = 0;
   }
   c[min] = 0;
-
 }
 
 ctx_u8_blend_define(color,
@@ -8347,7 +8346,6 @@ ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
   }
 }
 
-
 /* generating one function per compositing_mode would be slightly more efficient,
  * but on embedded targets leads to slightly more code bloat,
  * here we trade off a slight amount of performance
@@ -8418,15 +8416,15 @@ ctx_porter_duff_u8(RGBA8, 4,radial_gradient,   ctx_fragment_radial_gradient_RGBA
 ctx_porter_duff_u8(RGBA8, 4,image_rgb8_RGBA8,  ctx_fragment_image_rgb8_RGBA8,      rasterizer->state->gstate.blend_mode)
 ctx_porter_duff_u8(RGBA8, 4,image_rgba8_RGBA8, ctx_fragment_image_rgba8_RGBA8,     rasterizer->state->gstate.blend_mode)
 
-#define ctx_porter_duff_u8_blend(comp_name, components, blend_mode)\
-ctx_porter_duff_u8(comp_name, 4,color_normal,            NULL,                               blend_mode)\
-ctx_porter_duff_u8(comp_name, 4,generic_normal,          rasterizer->fragment,               blend_mode)\
-ctx_porter_duff_u8(comp_name, 4,linear_gradient_normal,  ctx_fragment_linear_gradient_RGBA8, blend_mode)\
-ctx_porter_duff_u8(comp_name, 4,radial_gradient_normal,  ctx_fragment_radial_gradient_RGBA8, blend_mode)\
-ctx_porter_duff_u8(comp_name, 4,image_rgb8_RGBA8_normal, ctx_fragment_image_rgb8_RGBA8,      blend_mode)\
-ctx_porter_duff_u8(comp_name, 4,image_rgba8_RGBA8_normal,ctx_fragment_image_rgba8_RGBA8,     blend_mode)
+#define ctx_porter_duff_u8_blend(comp_name, components, blend_mode, blend_name)\
+ctx_porter_duff_u8(comp_name, components,color_##blend_name,            NULL,                               blend_mode)\
+ctx_porter_duff_u8(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
+ctx_porter_duff_u8(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_RGBA8, blend_mode)\
+ctx_porter_duff_u8(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_RGBA8, blend_mode)\
+ctx_porter_duff_u8(comp_name, components,image_rgb8_RGBA8_##blend_name, ctx_fragment_image_rgb8_RGBA8,      blend_mode)\
+ctx_porter_duff_u8(comp_name, components,image_rgba8_RGBA8_##blend_name,ctx_fragment_image_rgba8_RGBA8,     blend_mode)
 
-ctx_porter_duff_u8_blend(RGBA8, 4, CTX_BLEND_NORMAL)
+ctx_porter_duff_u8_blend(RGBA8, 4, CTX_BLEND_NORMAL, normal)
 
 
 static void
@@ -9161,11 +9159,15 @@ ctx_porter_duff_float(RGBAF, 4,linear_gradient, ctx_fragment_linear_gradient_RGB
 ctx_porter_duff_float(RGBAF, 4,radial_gradient, ctx_fragment_radial_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
 ctx_porter_duff_float(RGBAF, 4,image,           ctx_fragment_image_RGBAF,           rasterizer->state->gstate.blend_mode)
 
-ctx_porter_duff_float(RGBAF, 4,color_normal,            NULL,                               CTX_BLEND_NORMAL)
-ctx_porter_duff_float(RGBAF, 4,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
-ctx_porter_duff_float(RGBAF, 4,linear_gradient_normal,  ctx_fragment_linear_gradient_RGBAF, CTX_BLEND_NORMAL)
-ctx_porter_duff_float(RGBAF, 4,radial_gradient_normal,  ctx_fragment_radial_gradient_RGBAF, CTX_BLEND_NORMAL)
-ctx_porter_duff_float(RGBAF, 4,image_normal,            ctx_fragment_image_RGBAF,           CTX_BLEND_NORMAL)
+
+#define ctx_porter_duff_float_blend(comp_name, components, blend_mode, blend_name)\
+ctx_porter_duff_float(comp_name, components,color_##blend_name,            NULL,                               blend_mode)\
+ctx_porter_duff_float(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
+ctx_porter_duff_float(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_RGBA8, blend_mode)\
+ctx_porter_duff_float(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_RGBA8, blend_mode)\
+ctx_porter_duff_float(comp_name, components,image_##blend_name,            ctx_fragment_image_RGBAF,           blend_mode)
+
+ctx_porter_duff_float_blend(RGBAF, 4, CTX_BLEND_NORMAL, normal)
 
 
 static void
