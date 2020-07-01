@@ -3297,8 +3297,8 @@ struct _CtxRasterizer
   CtxPixelFormatInfo *format;
 
 
-  CtxFragment     fragment;
-  uint8_t         color[4*5];
+  CtxFragment         fragment;
+  uint8_t             color[4*5];
   void (*comp_op)(CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x, uint8_t *cov, int count);
 
 };
@@ -3319,7 +3319,6 @@ struct _CtxHasher
   int           rows;
   uint32_t     *hashes;
 };
-
 
 struct _CtxPixelFormatInfo
 {
@@ -5953,7 +5952,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         }
         break;
     }
-  if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_RELATIVE) )
+  if ((((Ctx *) (data) )->transformation & CTX_TRANSFORMATION_RELATIVE))
     {
       int components = 0;
       ctx_user_to_device (state, &start_x, &start_y);
@@ -5998,17 +5997,6 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         }
     }
 }
-
-// for cmm - permit setting resolved babl fishes?
-//
-// for a pair of profiles, generate atob and btoa fishes
-// and set them
-//
-// can override bridges for
-//
-// rgb   <> drb
-// cmyk  <> drgb
-// dcmyk <> cmyk
 
 static void
 ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
@@ -6559,7 +6547,7 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
 #endif
     }
   misses ++;
-// XXX : this 1 one is needed  to silence:
+// XXX : this 1 one is needed  to silence a false positive:
 // ==90718== Invalid write of size 1
 // ==90718==    at 0x1189EF: ctx_rasterizer_generate_coverage (ctx.h:4786)
 // ==90718==    by 0x118E57: ctx_rasterizer_rasterize_edges (ctx.h:4907)
@@ -6827,7 +6815,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
   tolerance = 1.0f/tolerance;
-#if 0 // skipping this to preserve hashes
+#if 0 // skipping this to preserve hash integrity
   float maxx = ctx_maxf (x1,x2);
   maxx = ctx_maxf (maxx, ox);
   maxx = ctx_maxf (maxx, x0);
@@ -6940,15 +6928,10 @@ static void ctx_edge_qsort (CtxEntry *entries, int low, int high)
 
 static void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 {
-#if 0
-  qsort (&rasterizer->edge_list.entries[0], rasterizer->edge_list.count,
-         sizeof (CtxEntry), ctx_compare_edges);
-#else
   if (rasterizer->edge_list.count > 1)
     {
       ctx_edge_qsort (& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
     }
-#endif
 }
 
 static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
@@ -7367,14 +7350,14 @@ ctx_dither_rgba_u8 (uint8_t *rgba, int x, int y, int dither_red_blue, int dither
 }
 #endif
 
-inline static void
+CTX_INLINE static void
 ctx_u8_associate_alpha (int components, uint8_t *u8)
 {
   for (int c = 0; c < components-1; c++)
     u8[c] = (u8[c] * u8[components-1]) /255;
 }
 
-inline static void
+CTX_INLINE static void
 ctx_u8_deassociate_alpha (int components, const uint8_t *col, uint8_t *dst)
 {
   for (int c = 0; c < components-1; c++)
@@ -7383,19 +7366,19 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *col, uint8_t *dst)
 }
 
 
-inline static void
+CTX_INLINE static void
 ctx_RGBA8_associate_alpha (uint8_t *rgba)
 {
   ctx_u8_associate_alpha (4, rgba);
 }
 
-inline static void
+CTX_INLINE static void
 ctx_RGBA8_deassociate_alpha (const uint8_t *col, uint8_t *dst)
 {
   ctx_u8_deassociate_alpha (4, col, dst);
 }
 
-inline static void
+CTX_INLINE static void
 ctx_float_associate_alpha (int components, float *rgba)
 {
   float alpha = rgba[components-1];
@@ -7403,7 +7386,7 @@ ctx_float_associate_alpha (int components, float *rgba)
     rgba[c] *= alpha;
 }
 
-inline static void
+CTX_INLINE static void
 ctx_float_deassociate_alpha (int components, float *rgba, float *dst)
 {
   float ralpha = rgba[components-1];
@@ -7414,13 +7397,13 @@ ctx_float_deassociate_alpha (int components, float *rgba, float *dst)
   dst[components-1] = rgba[components-1];
 }
 
-inline static void
+CTX_INLINE static void
 ctx_RGBAF_associate_alpha (float *rgba)
 {
   ctx_float_associate_alpha (4, rgba);
 }
 
-inline static void
+CTX_INLINE static void
 ctx_RGBAF_deassociate_alpha (float *rgba, float *dst)
 {
   dst[0] = (rgba[0] / rgba[3]);
@@ -7897,7 +7880,7 @@ ctx_u8_blend_define_seperable(soft_light,
     if (b[c] <= 255/4)
       d = (((16 * b[c] - 12 * 255)/255 * b[c] + 4 * 255) * b[c])/255;
     else
-      d = sqrt(b[c]);
+      d = ctx_sqrtf(b[c]/255.0) * 255.4;
     blended[c] = (b[c] + (2 * s[c] - 255) * (d - b[c]))/255;
   }
 )
@@ -8748,34 +8731,6 @@ ctx_float_blend_normal (int components, float *dst, float *src, float *blended)
     blended[c] = src[c];
 }
 
-#if 0
-inline static void
-ctx_float_blend_multiply (int components, float *dst, float *src, float *blended)
-{
-  float tsrc[components];
-  float tdst[components];
-  ctx_float_deassociate_alpha (components, src, tsrc);
-  ctx_float_deassociate_alpha (components, dst, tdst);
-
-  for (int c = 0; c < components - 1; c++)
-    blended[c] = (tsrc[c] * tdst[c]);
-  blended[components-1] = src[components-1];
-
-  ctx_RGBAF_associate_alpha (blended);
-}
-
-inline static void
-ctx_float_blend (int components, CtxBlend blend, float *dst, float *src, float *blended)
-{
-  switch (blend)
-  {
-    default:
-    case CTX_BLEND_NORMAL:   ctx_float_blend_normal  (components, dst, src, blended); break;
-    case CTX_BLEND_MULTIPLY: ctx_float_blend_multiply (components, dst, src, blended); break;
-  }
-}
-#else
-
 #define ctx_float_blend_define(name, CODE) \
 CTX_INLINE static void \
 ctx_float_blend_##name (int components, float * __restrict__ dst, float *src, float *blended)\
@@ -8791,20 +8746,20 @@ ctx_float_blend_##name (int components, float * __restrict__ dst, float *src, fl
 #define ctx_float_blend_define_seperable(name, CODE) \
         ctx_float_blend_define(name, for (int c = 0; c < components-1; c++) { CODE ;}) \
 
-ctx_float_blend_define_seperable(multiply,     blended[c] = (b[c] * s[c]);)
-ctx_float_blend_define_seperable(screen,       blended[c] = b[c] + s[c] - (b[c] * s[c]);)
-ctx_float_blend_define_seperable(overlay,      blended[c] = b[c] < 0.5f ? (s[c] * b[c]) :
+ctx_float_blend_define_seperable(multiply,    blended[c] = (b[c] * s[c]);)
+ctx_float_blend_define_seperable(screen,      blended[c] = b[c] + s[c] - (b[c] * s[c]);)
+ctx_float_blend_define_seperable(overlay,     blended[c] = b[c] < 0.5f ? (s[c] * b[c]) :
                                                           s[c] + b[c] - (s[c] * b[c]);)
-ctx_float_blend_define_seperable(darken,       blended[c] = ctx_minf (b[c], s[c]))
-ctx_float_blend_define_seperable(lighten,      blended[c] = ctx_maxf (b[c], s[c]))
-ctx_float_blend_define_seperable(color_dodge,  blended[c] = (b[c] == 0.0f) ? 0.0f :
+ctx_float_blend_define_seperable(darken,      blended[c] = ctx_minf (b[c], s[c]))
+ctx_float_blend_define_seperable(lighten,     blended[c] = ctx_maxf (b[c], s[c]))
+ctx_float_blend_define_seperable(color_dodge, blended[c] = (b[c] == 0.0f) ? 0.0f :
                                      s[c] == 1.0f ? 1.0f : ctx_minf(1.0f, (b[c]) / (1.0f-s[c])))
-ctx_float_blend_define_seperable(color_burn,   blended[c] = (b[c] == 1.0f) ? 1.0f :
+ctx_float_blend_define_seperable(color_burn,  blended[c] = (b[c] == 1.0f) ? 1.0f :
                                      s[c] == 0.0f ? 0.0f : 1.0f - ctx_minf(1.0f, ((1.0f - b[c])) / s[c]))
-ctx_float_blend_define_seperable(hard_light,   blended[c] = s[c] < 0.f ? (b[c] * s[c]) :
+ctx_float_blend_define_seperable(hard_light,  blended[c] = s[c] < 0.f ? (b[c] * s[c]) :
                                                           b[c] + s[c] - (b[c] * s[c]);)
-ctx_float_blend_define_seperable(difference,   blended[c] = (b[c] - s[c]))
-ctx_float_blend_define_seperable(exclusion,    blended[c] = b[c] + s[c] - 2.0f * b[c] * s[c])
+ctx_float_blend_define_seperable(difference,  blended[c] = (b[c] - s[c]))
+ctx_float_blend_define_seperable(exclusion,   blended[c] = b[c] + s[c] - 2.0f * b[c] * s[c])
 ctx_float_blend_define_seperable(soft_light,
   if (s[c] <= 0.5f)
   {
@@ -8816,7 +8771,7 @@ ctx_float_blend_define_seperable(soft_light,
     if (b[c] <= 255/4)
       d = (((16 * b[c] - 12) * b[c] + 4.0f) * b[c]);
     else
-      d = sqrtf(b[c]);
+      d = ctx_sqrtf(b[c]);
     blended[c] = (b[c] + (2 * s[c] - 1.0f) * (d - b[c]));
   }
 )
@@ -9003,8 +8958,6 @@ ctx_float_blend (int components, CtxBlend blend, float * __restrict__ dst, float
   }
 }
 
-#endif
-
 /* this is the grunt working function, when inlined code-path elimination makes
  * it produce efficient code.
  */
@@ -9034,7 +8987,7 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
     while (count--)
     {
       float covf = ctx_u8_to_float (*covp);
-      float   tsrc[components];
+      float tsrc[components];
 
       fragment (rasterizer, u0, v0, tsrc);
       u0 += ud;
