@@ -676,10 +676,6 @@ typedef enum
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
-  CTX_SET_TEXT_ALIGN       = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
-  CTX_SET_TEXT_BASELINE    = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
-  CTX_SET_TEXT_DIRECTION   = 19, // kd
-  CTX_SET_MITER_LIMIT      = 20, // km limit - float, default = 0.0
 
   CTX_SET_DRGB_SPACE       = 21, // hacks integer for now
   CTX_SET_RGB_SPACE        = 22, //
@@ -689,9 +685,14 @@ typedef enum
   /* though expressed as two chars in serialization we have
    * dedicated byte commands for these setters
    */
+  CTX_SET_TEXT_ALIGN       = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
+  CTX_SET_TEXT_BASELINE    = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
+  CTX_SET_TEXT_DIRECTION   = 19, // kd
+  CTX_SET_MITER_LIMIT      = 20, // km limit - float, default = 0.0
   CTX_SET_GLOBAL_ALPHA     = 26, // ka alpha - default=1.0
   CTX_SET_COMPOSITING_MODE = 27, // kc mode - u8 , default=0
-  CTX_SET_BLEND_MODE       = '$',// kb mode - u8 , default=0
+  CTX_SET_BLEND_MODE       = '$',// kB mode - u8 , default=0
+                                 // kb - text baseline
   CTX_SET_FONT_SIZE        = 28, // kf size - float, default=?
   CTX_SET_LINE_JOIN        = 29, // kj join - u8 , default=0
   CTX_SET_LINE_CAP         = 30, // kc cap - u8, default = 0
@@ -5028,6 +5029,7 @@ void ctx_set_line_join (Ctx *ctx, CtxLineJoin join)
 
 void ctx_set_blend_mode (Ctx *ctx, CtxBlend mode)
 {
+        fprintf (stderr, "\r      \r[[[%i\n", mode);
   CTX_PROCESS_U8 (CTX_SET_BLEND_MODE, mode);
 }
 
@@ -7356,8 +7358,16 @@ ctx_u8_associate_alpha (int components, uint8_t *u8)
 CTX_INLINE static void
 ctx_u8_deassociate_alpha (int components, const uint8_t *col, uint8_t *dst)
 {
+  if (col[components-1])
+  {
   for (int c = 0; c < components-1; c++)
     dst[c] = (col[c] * 255) / col[components-1];
+  }
+  else
+  {
+  for (int c = 0; c < components-1; c++)
+    dst[c] = 0;
+  }
   dst[components-1] = col[components-1];
 }
 
@@ -7842,7 +7852,7 @@ ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, u
 {\
   uint8_t s[components], b[components];\
   ctx_u8_deassociate_alpha (components, src, s);\
-  ctx_u8_deassociate_alpha (components, src, b);\
+  ctx_u8_deassociate_alpha (components, dst, b);\
     CODE;\
   blended[components-1] = s[components-1];\
   ctx_u8_associate_alpha (components, blended);\
@@ -7852,7 +7862,7 @@ ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, u
         ctx_u8_blend_define(name, for (int c = 0; c < components-1; c++) { CODE ;}) \
 
 ctx_u8_blend_define_seperable(multiply,     blended[c] = (b[c] * s[c])/255;)
-ctx_u8_blend_define_seperable(screen,       blended[c] = b[c] + s[c] - (b[c] * s[c])/255;)
+ctx_u8_blend_define_seperable(screen,       blended[c] = s[c] + b[c] - (s[c] * b[c])/255;)
 ctx_u8_blend_define_seperable(overlay,      blended[c] = b[c] < 127 ? (s[c] * b[c])/255 :
                                                           s[c] + b[c] - (s[c] * b[c])/255;)
 ctx_u8_blend_define_seperable(darken,       blended[c] = ctx_mini (b[c], s[c]))
@@ -8778,7 +8788,7 @@ ctx_float_blend_##name (int components, float * __restrict__ dst, float *src, fl
 {\
   float s[components], b[components];\
   ctx_float_deassociate_alpha (components, src, s);\
-  ctx_float_deassociate_alpha (components, src, b);\
+  ctx_float_deassociate_alpha (components, dst, b);\
     CODE;\
   blended[components-1] = s[components-1];\
   ctx_float_associate_alpha (components, blended);\
@@ -13489,7 +13499,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           name[1]='m';
           break;
         case CTX_SET_BLEND_MODE:
-          name[1]='b';
+          name[1]='B';
           break;
         case CTX_SET_TEXT_ALIGN:
           name[1]='t';
@@ -14163,6 +14173,7 @@ static int ctx_arguments_for_code (CtxCode code)
         return 0;
       case CTX_SET_GLOBAL_ALPHA:
       case CTX_SET_COMPOSITING_MODE:
+      case CTX_SET_BLEND_MODE:
       case CTX_SET_FONT_SIZE:
       case CTX_SET_LINE_JOIN:
       case CTX_SET_LINE_CAP:
@@ -14365,8 +14376,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           //      color, not w3c for now unique use of it
           //
           case CTX_hue:            ret = CTX_BLEND_HUE; break;
-          case CTX_multiply:       ret = CTX_BLEND_MULTIPLY; break;
-          case CTX_screen:         ret = CTX_BLEND_SCREEN; break;
+          case CTX_multiply:       ret = CTX_BLEND_MULTIPLY; fprintf (stderr, "[%i]", ret);break;
+          case CTX_screen:         ret = CTX_BLEND_SCREEN;fprintf (stderr, "[%i]", ret);break;
           case CTX_difference:     ret = CTX_BLEND_DIFFERENCE; break;
           case CTX_reset:          ret = CTX_RESET; break;
           case CTX_verLineTo:
@@ -14426,6 +14437,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_blend:
           case CTX_blending:
           case CTX_blending_mode:
+          case CTX_blend_mode:
           case CTX_blendMode:
             return ctx_parser_set_command (parser, CTX_SET_BLEND_MODE);
           case CTX_rgb_space:
