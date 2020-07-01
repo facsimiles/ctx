@@ -11,7 +11,7 @@ clean:
 	make -C fonts clean
 	make -C examples clean
 
-CFLAGS= -Wno-array-bounds #-fanalyzer
+CFLAGS= -Ofast -march=native -Wno-array-bounds #-fanalyzer
 #CFLAGS=-Os -flto
 
 ctx: ctx.c vt/*.[ch] ctx.h  Makefile svg.h

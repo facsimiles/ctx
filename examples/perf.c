@@ -48,7 +48,7 @@ static void run_tests (Ctx *ctx)
   count = 0;
   do {
     ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.8);
+    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.75);
     ctx_fill (ctx);
     count ++;
     elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
@@ -77,73 +77,6 @@ static void run_tests (Ctx *ctx)
     elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
   } while (elapsed < MEASURE_SECS);
   fprintf (stdout, "color alpha 0.25 fills: %.1f\n", count/elapsed);
-
-
-  start = ctx_ticks ();
-  count = 0;
-  do {
-    ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.01);
-    ctx_fill (ctx);
-    count ++;
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  } while (elapsed < MEASURE_SECS);
-  fprintf (stdout, "color alpha 0.01 fills: %.1f\n", count/elapsed);
-
-  start = ctx_ticks ();
-  count = 0;
-  do {
-    ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.75);
-    ctx_fill (ctx);
-    count ++;
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  } while (elapsed < MEASURE_SECS);
-  fprintf (stdout, "color alpha 0.75 fills: %.1f\n", count/elapsed);
-
-  start = ctx_ticks ();
-  count = 0;
-  do {
-    ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.6);
-    ctx_fill (ctx);
-    count ++;
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  } while (elapsed < MEASURE_SECS);
-  fprintf (stdout, "color alpha 0.6 fills: %.1f\n", count/elapsed);
-
-  start = ctx_ticks ();
-  count = 0;
-  do {
-    ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.9);
-    ctx_fill (ctx);
-    count ++;
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  } while (elapsed < MEASURE_SECS);
-  fprintf (stdout, "color alpha 0.9 fills: %.1f\n", count/elapsed);
-
-  start = ctx_ticks ();
-  count = 0;
-  do {
-    ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.4);
-    ctx_fill (ctx);
-    count ++;
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  } while (elapsed < MEASURE_SECS);
-  fprintf (stdout, "color alpha 0.4 fills: %.1f\n", count/elapsed);
-
-  start = ctx_ticks ();
-  count = 0;
-  do {
-    ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.1);
-    ctx_fill (ctx);
-    count ++;
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  } while (elapsed < MEASURE_SECS);
-  fprintf (stdout, "color alpha 0.1 fills: %.1f\n", count/elapsed);
 
   start = ctx_ticks ();
   count = 0;
