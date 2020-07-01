@@ -8350,7 +8350,7 @@ ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
  * but on embedded targets leads to slightly more code bloat,
  * here we trade off a slight amount of performance
  */
-#define ctx_porter_duff_u8(comp_format, components, source, fragment, blend) \
+#define ctx_u8_porter_duff(comp_format, components, source, fragment, blend) \
 static void \
 ctx_##comp_format##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count) \
 { \
@@ -8407,24 +8407,24 @@ ctx_##comp_format##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *ds
    }\
 }
 
-ctx_porter_duff_u8(RGBA8, 4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_u8(RGBA8, 4,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
+ctx_u8_porter_duff(RGBA8, 4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
+ctx_u8_porter_duff(RGBA8, 4,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
-ctx_porter_duff_u8(RGBA8, 4,linear_gradient,   ctx_fragment_linear_gradient_RGBA8, rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_u8(RGBA8, 4,radial_gradient,   ctx_fragment_radial_gradient_RGBA8, rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_u8(RGBA8, 4,image_rgb8_RGBA8,  ctx_fragment_image_rgb8_RGBA8,      rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_u8(RGBA8, 4,image_rgba8_RGBA8, ctx_fragment_image_rgba8_RGBA8,     rasterizer->state->gstate.blend_mode)
+ctx_u8_porter_duff(RGBA8, 4,linear_gradient,   ctx_fragment_linear_gradient_RGBA8, rasterizer->state->gstate.blend_mode)
+ctx_u8_porter_duff(RGBA8, 4,radial_gradient,   ctx_fragment_radial_gradient_RGBA8, rasterizer->state->gstate.blend_mode)
+ctx_u8_porter_duff(RGBA8, 4,image_rgb8_RGBA8,  ctx_fragment_image_rgb8_RGBA8,      rasterizer->state->gstate.blend_mode)
+ctx_u8_porter_duff(RGBA8, 4,image_rgba8_RGBA8, ctx_fragment_image_rgba8_RGBA8,     rasterizer->state->gstate.blend_mode)
 
-#define ctx_porter_duff_u8_blend(comp_name, components, blend_mode, blend_name)\
-ctx_porter_duff_u8(comp_name, components,color_##blend_name,            NULL,                               blend_mode)\
-ctx_porter_duff_u8(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
-ctx_porter_duff_u8(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_RGBA8, blend_mode)\
-ctx_porter_duff_u8(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_RGBA8, blend_mode)\
-ctx_porter_duff_u8(comp_name, components,image_rgb8_RGBA8_##blend_name, ctx_fragment_image_rgb8_RGBA8,      blend_mode)\
-ctx_porter_duff_u8(comp_name, components,image_rgba8_RGBA8_##blend_name,ctx_fragment_image_rgba8_RGBA8,     blend_mode)
+#define ctx_u8_porter_duff_blend(comp_name, components, blend_mode, blend_name)\
+ctx_u8_porter_duff(comp_name, components,color_##blend_name,            NULL,                               blend_mode)\
+ctx_u8_porter_duff(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
+ctx_u8_porter_duff(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_RGBA8, blend_mode)\
+ctx_u8_porter_duff(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_RGBA8, blend_mode)\
+ctx_u8_porter_duff(comp_name, components,image_rgb8_RGBA8_##blend_name, ctx_fragment_image_rgb8_RGBA8,      blend_mode)\
+ctx_u8_porter_duff(comp_name, components,image_rgba8_RGBA8_##blend_name,ctx_fragment_image_rgba8_RGBA8,     blend_mode)
 
-ctx_porter_duff_u8_blend(RGBA8, 4, CTX_BLEND_NORMAL, normal)
+ctx_u8_porter_duff_blend(RGBA8, 4, CTX_BLEND_NORMAL, normal)
 
 
 static void
@@ -9092,7 +9092,7 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
  * but on embedded targets leads to slightly more code bloat,
  * here we trade off a slight amount of performance
  */
-#define ctx_porter_duff_float(compformat, components, source, fragment, blend) \
+#define ctx_float_porter_duff(compformat, components, source, fragment, blend) \
 static void \
 ctx_##compformat##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count) \
 { \
@@ -9151,23 +9151,23 @@ ctx_##compformat##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst
 
 #if CTX_ENABLE_RGBAF
 
-ctx_porter_duff_float(RGBAF, 4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_float(RGBAF, 4,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
+ctx_float_porter_duff(RGBAF, 4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
+ctx_float_porter_duff(RGBAF, 4,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
-ctx_porter_duff_float(RGBAF, 4,linear_gradient, ctx_fragment_linear_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_float(RGBAF, 4,radial_gradient, ctx_fragment_radial_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_float(RGBAF, 4,image,           ctx_fragment_image_RGBAF,           rasterizer->state->gstate.blend_mode)
+ctx_float_porter_duff(RGBAF, 4,linear_gradient, ctx_fragment_linear_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
+ctx_float_porter_duff(RGBAF, 4,radial_gradient, ctx_fragment_radial_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
+ctx_float_porter_duff(RGBAF, 4,image,           ctx_fragment_image_RGBAF,           rasterizer->state->gstate.blend_mode)
 
 
-#define ctx_porter_duff_float_blend(comp_name, components, blend_mode, blend_name)\
-ctx_porter_duff_float(comp_name, components,color_##blend_name,            NULL,                               blend_mode)\
-ctx_porter_duff_float(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
-ctx_porter_duff_float(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_RGBA8, blend_mode)\
-ctx_porter_duff_float(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_RGBA8, blend_mode)\
-ctx_porter_duff_float(comp_name, components,image_##blend_name,            ctx_fragment_image_RGBAF,           blend_mode)
+#define ctx_float_porter_duff_blend(comp_name, components, blend_mode, blend_name)\
+ctx_float_porter_duff(comp_name, components,color_##blend_name,            NULL,                               blend_mode)\
+ctx_float_porter_duff(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
+ctx_float_porter_duff(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_RGBA8, blend_mode)\
+ctx_float_porter_duff(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_RGBA8, blend_mode)\
+ctx_float_porter_duff(comp_name, components,image_##blend_name,            ctx_fragment_image_RGBAF,           blend_mode)
 
-ctx_porter_duff_float_blend(RGBAF, 4, CTX_BLEND_NORMAL, normal)
+ctx_float_porter_duff_blend(RGBAF, 4, CTX_BLEND_NORMAL, normal)
 
 
 static void
@@ -9362,13 +9362,13 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYAF (CtxRasterizer *rasterizer
   return ctx_fragment_color_GRAYAF;
 }
 
-ctx_porter_duff_float(GRAYAF, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_float(GRAYAF, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
+ctx_float_porter_duff(GRAYAF, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
+ctx_float_porter_duff(GRAYAF, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
 
-ctx_porter_duff_float(GRAYAF, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
-ctx_porter_duff_float(GRAYAF, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
+ctx_float_porter_duff(GRAYAF, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
+ctx_float_porter_duff(GRAYAF, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
 
 static void
 ctx_GRAYAF_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
@@ -9577,13 +9577,13 @@ static CtxFragment ctx_rasterizer_get_fragment_CMYKAF (CtxRasterizer *rasterizer
   return ctx_fragment_other_CMYKAF;
 }
 
-ctx_porter_duff_float (CMYKAF, 5,color,           NULL,                               rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_float (CMYKAF, 5,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
+ctx_float_porter_duff (CMYKAF, 5,color,           NULL,                               rasterizer->state->gstate.blend_mode)
+ctx_float_porter_duff (CMYKAF, 5,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
 
-ctx_porter_duff_float (CMYKAF, 5,color_normal,            NULL,                               CTX_BLEND_NORMAL)
-ctx_porter_duff_float (CMYKAF, 5,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
+ctx_float_porter_duff (CMYKAF, 5,color_normal,            NULL,                               CTX_BLEND_NORMAL)
+ctx_float_porter_duff (CMYKAF, 5,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
 
 static void
 ctx_CMYKAF_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
@@ -11573,13 +11573,13 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYA8 (CtxRasterizer *rasterizer
   return ctx_fragment_color_GRAYA8;
 }
 
-ctx_porter_duff_u8(GRAYA8, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
-ctx_porter_duff_u8(GRAYA8, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
+ctx_u8_porter_duff(GRAYA8, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
+ctx_u8_porter_duff(GRAYA8, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_COMPOSITING
 
-ctx_porter_duff_u8(GRAYA8, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
-ctx_porter_duff_u8(GRAYA8, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
+ctx_u8_porter_duff(GRAYA8, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
+ctx_u8_porter_duff(GRAYA8, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
 
 static void
 ctx_GRAYA8_copy_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
