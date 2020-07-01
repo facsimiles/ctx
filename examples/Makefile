@@ -1,6 +1,6 @@
 SMALL_CFLAGS=-Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant --param large-function-growth=400
 #PERF_CFLAGS=-Ofast -fomit-frame-pointer -finline-small-functions  --param inline-unit-growth=100 -ftree-vectorize -fsingle-precision-constant -ftree-vectorizer-verbose=1 -fdump-tree-vect-details -funsafe-loop-optimizations -march=native
-PERF_CFLAGS=-Ofast -fomit-frame-pointer -fsingle-precision-constant -funsafe-loop-optimizations -march=native -g
+PERF_CFLAGS=-Ofast -g
 
 
 
