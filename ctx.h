@@ -8230,6 +8230,7 @@ ctx_porter_duff_factors (CtxCompositingMode mode,
         *s = CTX_PORTER_DUFF_1;
         *d = CTX_PORTER_DUFF_0;
        break;
+     default:
      case CTX_COMPOSITE_CLEAR:
         *s = CTX_PORTER_DUFF_0;
         *d = CTX_PORTER_DUFF_0;
@@ -8627,7 +8628,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
             rasterizer->comp_op = ctx_RGBA8_blends_generic;
             break;
         }
-#endif
         break;
     }
 #endif
