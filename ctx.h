@@ -1433,16 +1433,20 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_INLINED_NORMAL      1
 #endif
 
+#ifndef CTX_NATIVE_GRAYA8
+#define CTX_NATIVE_GRAYA8       0
+#endif
+
 #ifndef CTX_ENABLE_CMYK
-#define CTX_ENABLE_CMYK  1
+#define CTX_ENABLE_CMYK         1
 #endif
 
 #ifndef CTX_ENABLE_CM
-#define CTX_ENABLE_CM  1
+#define CTX_ENABLE_CM           1
 #endif
 
 #ifndef CTX_LIMIT_FORMATS
-#define CTX_LIMIT_FORMATS 0
+#define CTX_LIMIT_FORMATS       0
 #endif
 
 /* by default ctx includes all pixel formats, on microcontrollers
@@ -2941,7 +2945,8 @@ inline static float ctx_u8_to_float (uint8_t val_u8)
 }
 #else
 static float ctx_u8_float[256];
-#define ctx_u8_to_float(val_u8) ctx_u8_float[val_u8]
+#define ctx_u8_to_float(val_u8) ctx_u8_float[((uint8_t)(val_u8))]
+//#define ctx_u8_to_float(val_u8) (val_u8/255.0f)
 
 #endif
 
@@ -3238,7 +3243,7 @@ ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
   out[3] = color->rgba[3];
 }
 
-#if 0
+#if 1
 static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (! (color->valid & CTX_VALID_GRAYA_U8) )
@@ -6116,7 +6121,7 @@ static void
 _ctx_init (Ctx *ctx)
 {
   for (int i = 0; i <256;i++)
-    ctx_u8_float[256] = i/255.0f;
+    ctx_u8_float[i] = i/255.0f;
 
   ctx_state_init (&ctx->state);
   ctx->renderer = NULL;
@@ -7607,6 +7612,39 @@ ctx_init_uv (CtxRasterizer *rasterizer,
 }
 
 #if CTX_INLINED_NORMAL
+
+static void
+ctx_u8_source_over_normal_opaque_color (int components, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  while (count--)
+  {
+    int cov = *covp;
+    if (cov)
+    {
+    if (cov == 255)
+    {
+        switch (components)
+        {
+          case 4:
+            *((uint32_t*)(dst)) = *((uint32_t*)(src));
+            break;
+          default:
+            for (int c = 0; c < components; c++)
+              dst[c] = src[c];
+        }
+    }
+    else
+    {
+        for (int c = 0; c < components; c++)
+          dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
+    }
+    }
+    covp ++;
+    dst+=components;
+  }
+}
+
+
 static void
 ctx_RGBA8_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
@@ -7767,10 +7805,14 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
 {
   switch (components)
   {
+     case 3:
+       ((uint8_t*)(blended))[2] = ((uint8_t*)(src))[2];
      case 2:
        *((uint16_t*)(blended)) = *((uint16_t*)(src));
        ctx_u8_associate_alpha (components, blended);
        break;
+     case 5:
+       ((uint8_t*)(blended))[4] = ((uint8_t*)(src))[4];
      case 4:
        *((uint32_t*)(blended)) = *((uint32_t*)(src));
        ctx_u8_associate_alpha (components, blended);
@@ -8665,6 +8707,35 @@ ctx_float_clear_normal (int components, CtxRasterizer *rasterizer, uint8_t *dst,
 }
 
 static void
+ctx_float_source_over_normal_opaque_color (int components, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  float *dstf = (float*)dst;
+  float *srcf = (float*)src;
+
+  while (count--)
+  {
+    uint8_t cov = *covp;
+    if (cov)
+    {
+      if (cov == 255)
+      {
+        for (int c = 0; c < components; c++)
+          dstf[c] = srcf[c];
+      }
+      else
+      {
+        float fcov = ctx_u8_to_float (cov);
+        float ralpha = 1.0f - fcov;
+        for (int c = 0; c < components-1; c++)
+          dstf[c] = (srcf[c]*fcov + dstf[c] * ralpha);
+      }
+    }
+    covp ++;
+    dstf+= components;
+  }
+}
+
+static void
 ctx_float_source_over_normal_color (int components, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
   float *dstf = (float*)dst;
@@ -9199,6 +9270,12 @@ ctx_RGBAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restr
 {
   ctx_float_source_over_normal_color (4, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
+
+static void
+ctx_RGBAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  ctx_float_source_over_normal_opaque_color (4, rasterizer, dst, rasterizer->color, x0, covp, count);
+}
 #endif
 
 static void
@@ -9245,6 +9322,8 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
             {
               if (((float*)(rasterizer->color))[components-1] == 0.0f)
                 rasterizer->comp_op = ctx_RGBA8_nop;
+              else if (((float*)(rasterizer->color))[components-1] == 1.0f)
+                rasterizer->comp_op = ctx_RGBAF_source_over_normal_opaque_color;
               else
                 rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
               rasterizer->fragment = NULL;
@@ -9396,6 +9475,12 @@ ctx_GRAYAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __rest
 {
   ctx_float_source_over_normal_color (2, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
+
+static void
+ctx_GRAYAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  ctx_float_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, x0, covp, count);
+}
 #endif
 
 static void
@@ -9439,6 +9524,8 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
             {
               if (((float*)rasterizer->color)[components-1] == 0.0f)
                 rasterizer->comp_op = ctx_RGBA8_nop;
+              else if (((float*)rasterizer->color)[components-1] == 0.0f)
+                rasterizer->comp_op = ctx_GRAYAF_source_over_normal_opaque_color;
               else
                 rasterizer->comp_op = ctx_GRAYAF_source_over_normal_color;
               rasterizer->fragment = NULL;
@@ -9611,6 +9698,12 @@ ctx_CMYKAF_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __rest
 {
   ctx_float_source_over_normal_color (5, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
+
+static void
+ctx_CMYKAF_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  ctx_float_source_over_normal_opaque_color (5, rasterizer, dst, rasterizer->color, x0, covp, count);
+}
 #endif
 
 static void
@@ -9654,6 +9747,8 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
             {
               if (((float*)rasterizer->color)[components-1] == 0.0f)
                 rasterizer->comp_op = ctx_RGBA8_nop;
+              else if (((float*)rasterizer->color)[components-1] == 1.0f)
+                rasterizer->comp_op = ctx_CMYKAF_source_over_normal_opaque_color;
               else
                 rasterizer->comp_op = ctx_CMYKAF_source_over_normal_color;
               rasterizer->fragment = NULL;
@@ -11524,7 +11619,7 @@ ctx_RGBA8_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
     }
 }
 
-#if 0
+#if CTX_NATIVE_GRAYA8
 static void ctx_rgba_to_graya_u8 (uint8_t *in, uint8_t *out)
 {
   out[0] = (in[1]+in[2]+in[3])/3;
@@ -11599,7 +11694,7 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYA8 (CtxRasterizer *rasterizer
 ctx_u8_porter_duff(GRAYA8, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
 ctx_u8_porter_duff(GRAYA8, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
-#if CTX_INLINED_COMPOSITING
+#if CTX_INLINED_NORMAL
 
 ctx_u8_porter_duff(GRAYA8, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
 ctx_u8_porter_duff(GRAYA8, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
@@ -11621,6 +11716,12 @@ ctx_GRAYA8_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __rest
 {
   ctx_u8_source_over_normal_color (2, rasterizer, dst, rasterizer->color, x0, covp, count);
 }
+
+static void
+ctx_GRAYA8_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  ctx_u8_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, x0, covp, count);
+}
 #endif
 
 static void
@@ -11632,22 +11733,22 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
     {
       rasterizer->comp_op = ctx_GRAYA8_porter_duff_color;
       rasterizer->fragment = NULL;
-      ctx_color_get_rgba (rasterizer->state, &gstate->source.color, (float*)rasterizer->color);
+      ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
           rasterizer->color[c] = (rasterizer->color[c] * gstate->global_alpha_u8)/255;
       rasterizer->color[0] = (rasterizer->color[0]+
-                             rasterizer->color[1]+
-                             rasterizer->color[2])/3;
+                              rasterizer->color[1]+
+                              rasterizer->color[2])/3;
       rasterizer->color[1] = rasterizer->color[3];
     }
   else
   {
     rasterizer->fragment = ctx_rasterizer_get_fragment_GRAYA8 (rasterizer);
-    rasterizer->comp_op = ctx_GRAYA8_porter_duff_generic;
+    rasterizer->comp_op  = ctx_GRAYA8_porter_duff_generic;
   }
 
-#if CTX_INLINED_COMPOSITING
+#if CTX_INLINED_NORMAL
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
     rasterizer->comp_op = ctx_GRAYA8_clear_normal;
   else
@@ -11668,6 +11769,8 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
             {
               if (rasterizer->color[components-1] == 0)
                 rasterizer->comp_op = ctx_RGBA8_nop;
+              else if (rasterizer->color[components-1] == 255)
+                rasterizer->comp_op = ctx_GRAYA8_source_over_normal_opaque_color;
               else
                 rasterizer->comp_op = ctx_GRAYA8_source_over_normal_color;
               rasterizer->fragment = NULL;
@@ -11936,7 +12039,12 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_GRAYA8
   {
     CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0,
+#if CTX_NATIVE_GRAYA8
+    // XXX this is slower
+    ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, NULL, ctx_setup_GRAYA8,
+#else
     ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_convert, ctx_setup_RGBA8,
+#endif
   },
 #endif
 #if CTX_ENABLE_RGB332
