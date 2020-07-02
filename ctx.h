@@ -1497,7 +1497,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  */
 #ifdef __STB_INCLUDE_STB_TRUETYPE_H__
 #ifndef CTX_FONT_ENGINE_STB
-#define CTX_FONT_ENGINE_STB      1
+#define CTX_FONT_ENGINE_STB        1
 #endif
 #else
 #define CTX_FONT_ENGINE_STB        0
@@ -1547,7 +1547,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #ifdef CTX_ENABLE_CMYK
 #undef CTX_ENABLE_CMYK
 #endif
-#define CTX_ENABLE_CMYK  1
+#define CTX_ENABLE_CMYK   1
 #endif
 
 #define CTX_PI               3.141592653589793f
@@ -1556,38 +1556,38 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_MAX_FONTS
-#define CTX_MAX_FONTS           3
+#define CTX_MAX_FONTS            3
 #endif
 
 #ifndef CTX_MAX_STATES
-#define CTX_MAX_STATES          10
+#define CTX_MAX_STATES           10
 #endif
 
 #ifndef CTX_MAX_EDGES
-#define CTX_MAX_EDGES           257
+#define CTX_MAX_EDGES            257
 #endif
 
 #ifndef CTX_MAX_LINGERING_EDGES
-#define CTX_MAX_LINGERING_EDGES 32
+#define CTX_MAX_LINGERING_EDGES  32
 #endif
 
 #ifndef CTX_MAX_TEXTURES
-#define CTX_MAX_TEXTURES        16
+#define CTX_MAX_TEXTURES         16
 #endif
 
 #ifndef CTX_MAX_PENDING
-#define CTX_MAX_PENDING         128
+#define CTX_MAX_PENDING          128
 #endif
 
 #ifndef CTX_RENDER_CTX
-#define CTX_RENDER_CTX       1
+#define CTX_RENDER_CTX           1
 #endif
 
 #ifndef CTX_EVENTS
-#define CTX_EVENTS           0
+#define CTX_EVENTS               0
 #endif
 
-#define CTX_ASSERT 0
+#define CTX_ASSERT               0
 
 #if CTX_ASSERT==1
 #define ctx_assert(a)  if(!(a)){fprintf(stderr,"%s:%i assertion failed\n", __FUNCTION__, __LINE__);  }
@@ -1601,8 +1601,6 @@ int   ctx_load_font_ttf_file (const char *name, const char *path);
 #endif
 
 int ctx_get_renderstream_count (Ctx *ctx);
-
-
 
 #define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
 
@@ -7611,7 +7609,6 @@ ctx_init_uv (CtxRasterizer *rasterizer,
   *vd = (v1-*v0) / (count);
 }
 
-#if CTX_INLINED_NORMAL
 
 static void
 ctx_u8_source_over_normal_opaque_color (int components, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
@@ -7797,8 +7794,6 @@ ctx_RGBA8_clear_normal (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, i
 {
   ctx_u8_clear_normal (4, rasterizer, dst, src, x0, covp, count);
 }
-
-#endif
 
 inline static void
 ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
@@ -8196,7 +8191,6 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       u0 += ud;
       v0 += vd;
 
-      //ctx_u8_associate_alpha (components, tsrc);
       ctx_u8_blend (components, blend, dst, tsrc, tsrc);
 
       if (cov != 255)
@@ -8356,9 +8350,9 @@ ctx_##comp_format##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *ds
 ctx_u8_porter_duff(RGBA8, 4,color,   NULL,                 rasterizer->state->gstate.blend_mode)
 ctx_u8_porter_duff(RGBA8, 4,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
+
 #if CTX_INLINED_NORMAL
 #define ctx_u8_porter_duff_blend(comp_name, components, blend_mode, blend_name)\
-ctx_u8_porter_duff(comp_name, components,color_##blend_name,            NULL,                               blend_mode)\
 ctx_u8_porter_duff(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
 ctx_u8_porter_duff(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_##comp_name, blend_mode)\
 ctx_u8_porter_duff(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_##comp_name, blend_mode)\
@@ -8366,6 +8360,7 @@ ctx_u8_porter_duff(comp_name, components,image_rgb8_##blend_name, ctx_fragment_i
 ctx_u8_porter_duff(comp_name, components,image_rgba8_##blend_name,ctx_fragment_image_rgba8_##comp_name,     blend_mode)
 ctx_u8_porter_duff_blend(RGBA8, 4, CTX_BLEND_NORMAL, normal)
 #endif
+
 
 #if CTX_INLINED_COMPOSITING
 
@@ -8403,7 +8398,6 @@ ctx_##cname##_blends_##source (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t 
 
 #define ctx_u8_porter_duff_blends(comp_name, components)\
 ctx_u8_blends(comp_name, components,color,  NULL)\
-ctx_u8_blends(comp_name, components,generic, rasterizer->fragment)\
 ctx_u8_blends(comp_name, components,linear_gradient, ctx_fragment_linear_gradient_##comp_name)\
 ctx_u8_blends(comp_name, components,radial_gradient, ctx_fragment_radial_gradient_##comp_name)\
 ctx_u8_blends(comp_name, components,image_rgb8, ctx_fragment_image_rgb8_RGBA8)\
@@ -8423,8 +8417,15 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   int components = 4;
+  rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
+  rasterizer->comp_op = ctx_RGBA8_porter_duff_generic;
 
-#if CTX_INLINED_NORMAL
+  if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
+  {
+    rasterizer->comp_op = ctx_RGBA8_clear_normal;
+    return;
+  }
+
   if (gstate->source.type == CTX_SOURCE_COLOR)
     {
       rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
@@ -8432,7 +8433,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
-    }
 
     switch (gstate->blend_mode)
     {
@@ -8440,32 +8440,38 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
         if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
         {
           rasterizer->comp_op = ctx_RGBA8_copy_normal;
+          return;
         }
         else if (gstate->global_alpha_u8 == 0)
         {
           rasterizer->comp_op = ctx_RGBA8_nop;
         }
-        else
+        else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+        {
+           switch (rasterizer->color[components-1])
+           {
+             case 255: rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color; break;
+             case 0:   rasterizer->comp_op = ctx_RGBA8_nop; break;
+             default:
+             rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
+           }
+           rasterizer->fragment = NULL;
+       }
+       break;
+      default:
+        break;
+    }
+    return;
+  }
+
+
+#if CTX_INLINED_NORMAL
+    if (gstate->blend_mode == CTX_BLEND_NORMAL)
+    {
         switch (gstate->source.type)
         {
           case CTX_SOURCE_COLOR:
-            if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-            {
-              switch (rasterizer->color[components-1])
-              {
-                case 255: rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color; break;
-                case 0:   rasterizer->comp_op = ctx_RGBA8_nop; break;
-                default:
-                rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
-              }
-              rasterizer->fragment = NULL;
-            }
-            else
-            {
-              rasterizer->comp_op = ctx_RGBA8_porter_duff_color_normal;
-              rasterizer->fragment = NULL;
-            }
-            break;
+            return; // exhaustively handled above;
           case CTX_SOURCE_LINEAR_GRADIENT:
             rasterizer->comp_op = ctx_RGBA8_porter_duff_linear_gradient_normal;
             break;
@@ -8493,33 +8499,11 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
             rasterizer->comp_op = ctx_RGBA8_porter_duff_generic_normal;
             break;
         }
-        break;
-      default:
-        rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
-        rasterizer->comp_op = ctx_RGBA8_porter_duff_generic;
-        break;
+        return;
     }
-#else
-  if (gstate->source.type == CTX_SOURCE_COLOR)
-    {
-      rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
-      rasterizer->fragment = NULL;
-      ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
-      if (gstate->global_alpha_u8 != 255)
-        rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
-    }
-  else
-  {
-    rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
-    rasterizer->comp_op = ctx_RGBA8_porter_duff_generic;
-  }
 #endif
 
-
-
 #if CTX_INLINED_COMPOSITING
-  if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
-    rasterizer->comp_op = ctx_RGBA8_clear_normal;
   else
     switch (gstate->blend_mode)
     {
