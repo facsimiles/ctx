@@ -1422,13 +1422,9 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_DITHER 1
 #endif
 
-/* enables duplicated faster code per blend mode and per
- * source type.
+/* some performance gain from inlining code paths in normal
+ * blend-mode - trading code size.
  */
-#ifndef CTX_INLINED_COMPOSITING
-#define CTX_INLINED_COMPOSITING 0
-#endif
-
 #ifndef CTX_INLINED_NORMAL     
 #define CTX_INLINED_NORMAL      1
 #endif
@@ -3241,8 +3237,7 @@ ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
   out[3] = color->rgba[3];
 }
 
-#if 1
-static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
+inline static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (! (color->valid & CTX_VALID_GRAYA_U8) )
     {
@@ -3255,7 +3250,6 @@ static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *o
   out[0] = color->l_u8;
   out[1] = color->rgba[3];
 }
-#endif
 
 #if CTX_RASTERIZER
 
@@ -8639,55 +8633,6 @@ ctx_float_blend_normal (int components, float *dst, float *src, float *blended)
   blended[components-1]=a;
 }
 
-#define ctx_float_blend_define(name, CODE) \
-static void \
-ctx_float_blend_##name (int components, float * __restrict__ dst, float *src, float *blended)\
-{\
-  float *s = src; float b[components];\
-  ctx_float_deassociate_alpha (components, dst, b);\
-    CODE;\
-  blended[components-1] = s[components-1];\
-  ctx_float_associate_alpha (components, blended);\
-}
-
-#define ctx_float_blend_define_seperable(name, CODE) \
-        ctx_float_blend_define(name, for (int c = 0; c < components-1; c++) { CODE ;}) \
-
-ctx_float_blend_define_seperable(multiply,    blended[c] = (b[c] * s[c]);)
-ctx_float_blend_define_seperable(screen,      blended[c] = b[c] + s[c] - (b[c] * s[c]);)
-ctx_float_blend_define_seperable(overlay,     blended[c] = b[c] < 0.5f ? (s[c] * b[c]) :
-                                                          s[c] + b[c] - (s[c] * b[c]);)
-ctx_float_blend_define_seperable(darken,      blended[c] = ctx_minf (b[c], s[c]))
-ctx_float_blend_define_seperable(lighten,     blended[c] = ctx_maxf (b[c], s[c]))
-ctx_float_blend_define_seperable(color_dodge, blended[c] = (b[c] == 0.0f) ? 0.0f :
-                                     s[c] == 1.0f ? 1.0f : ctx_minf(1.0f, (b[c]) / (1.0f-s[c])))
-ctx_float_blend_define_seperable(color_burn,  blended[c] = (b[c] == 1.0f) ? 1.0f :
-                                     s[c] == 0.0f ? 0.0f : 1.0f - ctx_minf(1.0f, ((1.0f - b[c])) / s[c]))
-ctx_float_blend_define_seperable(hard_light,  blended[c] = s[c] < 0.f ? (b[c] * s[c]) :
-                                                          b[c] + s[c] - (b[c] * s[c]);)
-ctx_float_blend_define_seperable(difference,  blended[c] = (b[c] - s[c]))
-
-ctx_float_blend_define_seperable(divide,      blended[c] = s[c]?(b[c]) / s[c]:0.0f)
-ctx_float_blend_define_seperable(addition,    blended[c] = s[c]+b[c])
-ctx_float_blend_define_seperable(subtract,    blended[c] = s[c]-b[c])
-
-ctx_float_blend_define_seperable(exclusion,   blended[c] = b[c] + s[c] - 2.0f * b[c] * s[c])
-ctx_float_blend_define_seperable(soft_light,
-  if (s[c] <= 0.5f)
-  {
-    blended[c] = b[c] - (1.0f - 2 * s[c]) * b[c] * (1.0f - b[c]);
-  }
-  else
-  {
-    int d;
-    if (b[c] <= 255/4)
-      d = (((16 * b[c] - 12) * b[c] + 4.0f) * b[c]);
-    else
-      d = ctx_sqrtf(b[c]);
-    blended[c] = (b[c] + (2 * s[c] - 1.0f) * (d - b[c]));
-  }
-)
-
 static float ctx_float_get_max (int components, float *c)
 {
   float max = -1000.0f;
@@ -8731,7 +8676,6 @@ static float ctx_float_get_lum (int components, float *c)
          }
          return sum / (components - 1);
        }
-            break;
   }
 }
 
@@ -8748,8 +8692,7 @@ static float ctx_float_get_sat (int components, float *c)
             }
             break;
     case 1:
-    case 2:
-            return 0.0;
+    case 2: return 0.0;
             break;
     default:
        {
@@ -8762,7 +8705,6 @@ static float ctx_float_get_sat (int components, float *c)
          }
          return max-min;
        }
-       break;
   }
 }
 
@@ -8814,6 +8756,56 @@ static void ctx_float_set_sat (int components, float *c, float sat)
   c[min] = 0.0f;
 
 }
+
+#define ctx_float_blend_define(name, CODE) \
+static void \
+ctx_float_blend_##name (int components, float * __restrict__ dst, float *src, float *blended)\
+{\
+  float *s = src; float b[components];\
+  ctx_float_deassociate_alpha (components, dst, b);\
+    CODE;\
+  blended[components-1] = s[components-1];\
+  ctx_float_associate_alpha (components, blended);\
+}
+
+#define ctx_float_blend_define_seperable(name, CODE) \
+        ctx_float_blend_define(name, for (int c = 0; c < components-1; c++) { CODE ;}) \
+
+ctx_float_blend_define_seperable(multiply,    blended[c] = (b[c] * s[c]);)
+ctx_float_blend_define_seperable(screen,      blended[c] = b[c] + s[c] - (b[c] * s[c]);)
+ctx_float_blend_define_seperable(overlay,     blended[c] = b[c] < 0.5f ? (s[c] * b[c]) :
+                                                          s[c] + b[c] - (s[c] * b[c]);)
+ctx_float_blend_define_seperable(darken,      blended[c] = ctx_minf (b[c], s[c]))
+ctx_float_blend_define_seperable(lighten,     blended[c] = ctx_maxf (b[c], s[c]))
+ctx_float_blend_define_seperable(color_dodge, blended[c] = (b[c] == 0.0f) ? 0.0f :
+                                     s[c] == 1.0f ? 1.0f : ctx_minf(1.0f, (b[c]) / (1.0f-s[c])))
+ctx_float_blend_define_seperable(color_burn,  blended[c] = (b[c] == 1.0f) ? 1.0f :
+                                     s[c] == 0.0f ? 0.0f : 1.0f - ctx_minf(1.0f, ((1.0f - b[c])) / s[c]))
+ctx_float_blend_define_seperable(hard_light,  blended[c] = s[c] < 0.f ? (b[c] * s[c]) :
+                                                          b[c] + s[c] - (b[c] * s[c]);)
+ctx_float_blend_define_seperable(difference,  blended[c] = (b[c] - s[c]))
+
+ctx_float_blend_define_seperable(divide,      blended[c] = s[c]?(b[c]) / s[c]:0.0f)
+ctx_float_blend_define_seperable(addition,    blended[c] = s[c]+b[c])
+ctx_float_blend_define_seperable(subtract,    blended[c] = s[c]-b[c])
+
+ctx_float_blend_define_seperable(exclusion,   blended[c] = b[c] + s[c] - 2.0f * b[c] * s[c])
+ctx_float_blend_define_seperable(soft_light,
+  if (s[c] <= 0.5f)
+  {
+    blended[c] = b[c] - (1.0f - 2 * s[c]) * b[c] * (1.0f - b[c]);
+  }
+  else
+  {
+    int d;
+    if (b[c] <= 255/4)
+      d = (((16 * b[c] - 12) * b[c] + 4.0f) * b[c]);
+    else
+      d = ctx_sqrtf(b[c]);
+    blended[c] = (b[c] + (2 * s[c] - 1.0f) * (d - b[c]));
+  }
+)
+
 
 ctx_float_blend_define(color,
   for (int i = 0; i < components; i++)
@@ -9016,7 +9008,7 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dstf[c] * (1.0f-tsrc[components-1])); break;
         }
 #if 0
-      if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
+      if (compositing_mode == CTX_PORTER_DUFF_ )
       {
         if (res > 1.0f) res = 1.0f;
       }
