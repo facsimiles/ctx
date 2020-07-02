@@ -7743,13 +7743,39 @@ ctx_RGBA8_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restr
 }
 
 static void
+ctx_RGBA8_source_over_normal_alpha_half_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
+{
+  while (count--)
+  {
+    switch (*covp){
+            case 0: break;
+            case 255:
+              for (int c = 0; c < 4; c++)
+                dst[c] = (dst[c]+src[c])/2;
+              break;
+            default:
+                    {
+      int alpha = *covp/2;
+      for (int c = 0; c < 4; c++)
+        dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
+    }
+    }
+    covp ++;
+    dst  += 4;
+  }
+}
+
+
+static void
 ctx_RGBA8_source_over_normal_alpha_color (int ialpha, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
   while (count--)
   {
+    if (*covp){
     int alpha = (*covp * ialpha)/255;
     for (int c = 0; c < 4; c++)
       dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
+    }
     covp ++;
     dst  += 4;
   }
@@ -8569,6 +8595,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
               {
                 case 255: rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color; break;
                 case 0:   rasterizer->comp_op = ctx_RGBA8_nop; break;
+                case 127: rasterizer->comp_op = ctx_RGBA8_source_over_normal_alpha_half_color; break;
 #define CASE(a) case a: rasterizer->comp_op = ctx_RGBA8_source_over_normal_a##a##_color; break;
                 CASE(1); CASE(2); CASE(3); CASE(4); CASE(5); CASE(6); CASE(7);
                 CASE(8); CASE(9); CASE(10); CASE(11); CASE(12); CASE(13);
@@ -8591,7 +8618,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
                 CASE(108); CASE(109); CASE(110); CASE(111); CASE(112);
                 CASE(113); CASE(114); CASE(115); CASE(116); CASE(117);
                 CASE(118); CASE(119); CASE(120); CASE(121); CASE(122);
-                CASE(123); CASE(124); CASE(125); CASE(126); CASE(127);
+                CASE(123); CASE(124); CASE(125); CASE(126);
 #undef CASE
                 default:
                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
