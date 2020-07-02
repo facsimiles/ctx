@@ -1433,7 +1433,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * source type.
  */
 #ifndef CTX_INLINED_COMPOSITING
-#define CTX_INLINED_COMPOSITING 1
+#define CTX_INLINED_COMPOSITING 0
 #endif
 
 #ifndef CTX_INLINED_NORMAL     
@@ -7681,46 +7681,47 @@ ctx_RGBA8_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * 
 {
   while (count--)
   {
-    uint8_t cov = *covp;
-    if (cov)
+    int cov = *covp;
+    switch (cov)
     {
-      if (cov != 255)
-      {
+      case 0: break;
+      case 255:
+        *((uint32_t*)(dst)) = *((uint32_t*)(src));
+              break;
+      default:
 #if 1
-        int ralpha = 255 - cov;
+        //uint8_t ralpha = 255 - cov;
         for (int c = 0; c < 4; c++)
-          dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
+          //dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
+          dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * cov)) >> 8; 
 #else
         for (int c = 0; c < 4; c++)
           dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
 #endif
-      }
-      else // cov == 255
-      {
-        *((uint32_t*)(dst)) = *((uint32_t*)(src));
-      }
+
     }
     covp ++;
     dst+=4;
   }
 }
 
-inline static void
+static void
 ctx_u8_source_over_normal_color (int components, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
   int alphai = src[components-1];
   while (count--)
   {
-    uint8_t cov = *covp;
+    int cov = *covp;
     if (cov)
     {
 #if 1
       int alpha = alphai;
       if (cov != 255)
         alpha = (cov * alpha) / 255;
-      int ralpha = 255 - alpha;
+      //int ralpha = 255 - alpha;
       for (int c = 0; c < components; c++)
-        dst[c] = (src[c]*alpha + dst[c] * ralpha) / 255;
+        //dst[c] = (src[c]*alpha + dst[c] * ralpha) / 255;
+        dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
 #else
       int alpha = alphai;
       if (cov != 255)
@@ -7748,7 +7749,7 @@ ctx_RGBA8_source_over_normal_alpha_color (int ialpha, CtxRasterizer *rasterizer,
   {
     int alpha = (*covp * ialpha)/255;
     for (int c = 0; c < 4; c++)
-      dst[c] = dst[c]+((src[c]-dst[c]) * alpha) / 255;
+      dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
     covp ++;
     dst  += 4;
   }
@@ -8595,7 +8596,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
                 default:
                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
               }
-              rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
               rasterizer->fragment = NULL;
             }
             else
