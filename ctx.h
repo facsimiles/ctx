@@ -7689,7 +7689,6 @@ ctx_RGBA8_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * 
   while (count--)
   {
     int cov = *covp;
-
     if (cov)
     {
     if (cov == 255)
@@ -7710,28 +7709,32 @@ ctx_RGBA8_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * 
 static void
 ctx_u8_source_over_normal_color (int components, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
+  uint8_t srca[components];
   int alphai = src[components-1];
+  for (int c = 0; c<components-1; c++)
+  {
+    if (alphai == 255)
+      srca[c] = src[c];
+    else
+      srca[c] = (src[c]*alphai)/255;
+  }
+  srca[components-1]=src[components-1];
+  
   while (count--)
   {
     int cov = *covp;
-
+    if (cov)
+    {
     if(cov==255){
       int alpha = alphai;
       for (int c = 0; c < components; c++)
-        dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
+        dst[c] = dst[c]+((srca[c]-dst[c]) * cov) / 255;
     }
-    else if(cov){
-#if 1
-      int alpha = alphai;
-      alpha = (cov * alpha) / 255;
+    else {
+      int alpha = (cov * alphai) / 255;
       for (int c = 0; c < components; c++)
-        dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
-#else
-      int alpha = alphai;
-      alpha = (cov * alpha) / 255;
-      for (int c = 0; c < components; c++)
-          dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
-#endif
+          dst[c] = dst[c]+((srca[c]-dst[c]) * cov) / 255;
+    }
     }
     covp ++;
     dst+=components;
@@ -7742,40 +7745,6 @@ static void
 ctx_RGBA8_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
   ctx_u8_source_over_normal_color (4, rasterizer, dst, src, x0, covp, count);
-}
-
-static void
-ctx_RGBA8_source_over_normal_alpha_half_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
-{
-  while (count--)
-  {
-    int cov = *covp;
-    if (cov == 0)
-    {
-      while (*covp == 0 && count)
-      {
-         covp ++;
-         dst+=4;
-         count--;
-      }
-      if (!count)
-        return;
-      cov = *covp;
-    }
-
-    if (cov==255){
-    for (int c = 0; c < 4; c++)
-      dst[c] = (dst[c]+src[c])/2;
-    }
-    else
-    {
-      int alpha = *covp/2;
-      for (int c = 0; c < 4; c++)
-        dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
-    }
-    covp ++;
-    dst  += 4;
-  }
 }
 
 static void
@@ -8521,7 +8490,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
               {
                 case 255: rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color; break;
                 case 0:   rasterizer->comp_op = ctx_RGBA8_nop; break;
-                case 127: rasterizer->comp_op = ctx_RGBA8_source_over_normal_alpha_half_color; break;
                 default:
                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
               }
@@ -8777,13 +8745,20 @@ static void
 ctx_float_source_over_normal_color (int components, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
 {
   float *dstf = (float*)dst;
-  float *srcf = (float*)src;
+  float *_srcf = (float*)src;
+
+  float srcf[components];
+  float a = _srcf[components-1];
+  for (int c = 0; c < components; c++)
+    srcf[c] = _srcf[c] * a;
+  srcf[components-1]=a;
+
   while (count--)
   {
-    float alpha = srcf[components-1];
     uint8_t cov = *covp;
     if (cov)
     {
+      float alpha = srcf[components-1];
       if (cov == 255 && alpha == 1.0f)
       {
         for (int c = 0; c < components; c++)
@@ -8794,7 +8769,7 @@ ctx_float_source_over_normal_color (int components, CtxRasterizer *rasterizer, u
         float fcov = ctx_u8_to_float (cov);
         alpha = (fcov * alpha);
         float ralpha = 1.0f - alpha;
-        for (int c = 0; c < components; c++)
+        for (int c = 0; c < components-1; c++)
           dstf[c] = (srcf[c]*alpha + dstf[c] * ralpha);
       }
     }
