@@ -1433,10 +1433,6 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_INLINED_NORMAL      1
 #endif
 
-#ifndef CTX_INLINED_BLEND      
-#define CTX_INLINED_BLEND       1
-#endif
-
 #ifndef CTX_NATIVE_GRAYA8
 #define CTX_NATIVE_GRAYA8       0
 #endif
@@ -8366,50 +8362,6 @@ ctx_u8_porter_duff_blend(RGBA8, 4, CTX_BLEND_NORMAL, normal)
 #endif
 
 
-#if CTX_INLINED_BLEND
-
-ctx_u8_porter_duff_blend(RGBA8, 4, rasterizer->state->gstate.blend_mode, generic)
-
-#define ctx_u8_blends(cname, components, source, frag) \
-static void \
-ctx_##cname##_blends_##source (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count) \
-{ \
-   switch (rasterizer->state->gstate.blend_mode)\
-   { \
-      default:                   _ctx_u8_porter_duffs(cname, components, source, frag, rasterizer->state->gstate.blend_mode); break;\
-      case CTX_BLEND_NORMAL:     _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_NORMAL);   break;\
-      case CTX_BLEND_MULTIPLY:   _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_MULTIPLY); break;\
-      case CTX_BLEND_SCREEN:     _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_SCREEN   ); break;\
-      case CTX_BLEND_OVERLAY:    _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_OVERLAY ); break;\
-      case CTX_BLEND_DARKEN:     _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_DARKEN  ); break;\
-      case CTX_BLEND_LIGHTEN:    _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_LIGHTEN ); break;\
-      case CTX_BLEND_COLOR_DODGE:_ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_COLOR_DODGE); break;\
-      case CTX_BLEND_COLOR_BURN: _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_COLOR_BURN); break;\
-      case CTX_BLEND_HARD_LIGHT: _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_HARD_LIGHT); break;\
-      case CTX_BLEND_SOFT_LIGHT: _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_SOFT_LIGHT); break;\
-      case CTX_BLEND_DIFFERENCE: _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_DIFFERENCE); break;\
-      case CTX_BLEND_EXCLUSION:  _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_EXCLUSION);  break;\
-      case CTX_BLEND_COLOR:      _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_COLOR);      break;\
-      case CTX_BLEND_HUE:        _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_HUE);        break;\
-      case CTX_BLEND_SATURATION: _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_SATURATION); break;\
-      case CTX_BLEND_LUMINOSITY: _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_LUMINOSITY); break;\
-      case CTX_BLEND_ADDITION:   _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_ADDITION);   break;\
-      case CTX_BLEND_DIVIDE:     _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_DIVIDE);     break;\
-      case CTX_BLEND_SUBTRACT:   _ctx_u8_porter_duffs(cname, components, source, frag, CTX_BLEND_SUBTRACT);   break;\
-   }\
-}
-
-#define ctx_u8_porter_duff_blends(comp_name, components)\
-ctx_u8_blends(comp_name, components,color,  NULL)\
-ctx_u8_blends(comp_name, components,linear_gradient, ctx_fragment_linear_gradient_##comp_name)\
-ctx_u8_blends(comp_name, components,radial_gradient, ctx_fragment_radial_gradient_##comp_name)\
-ctx_u8_blends(comp_name, components,image_rgb8, ctx_fragment_image_rgb8_RGBA8)\
-ctx_u8_blends(comp_name, components,image_rgba8, ctx_fragment_image_rgba8_RGBA8)\
-
-ctx_u8_porter_duff_blends(RGBA8, 4)
-
-#endif
-
 static void
 ctx_RGBA8_nop (CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
 {
@@ -8434,51 +8386,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
-    }
 
-#if CTX_INLINED_BLEND
-   switch (gstate->source.type)
-   {
-     case CTX_SOURCE_COLOR:
-             // NOTE : does not get used, unless we comment out
-             //  default code paths
-       rasterizer->comp_op = ctx_RGBA8_blends_color;
-       rasterizer->fragment = NULL;
-       break;
-     case CTX_SOURCE_LINEAR_GRADIENT:
-       rasterizer->comp_op = ctx_RGBA8_blends_linear_gradient;
-       break;
-     case CTX_SOURCE_RADIAL_GRADIENT:
-       rasterizer->comp_op = ctx_RGBA8_blends_radial_gradient;
-       break;
-     case CTX_SOURCE_IMAGE:
-       {
-          CtxSource *g = &rasterizer->state->gstate.source;
-          switch (g->image.buffer->format->bpp)
-          {
-            case 32:
-              rasterizer->comp_op = ctx_RGBA8_blends_image_rgba8;
-              break;
-            case 24:
-              rasterizer->comp_op = ctx_RGBA8_blends_image_rgb8;
-            break;
-            default:
-              //rasterizer->comp_op = ctx_RGBA8_blends_generic;
-              break;
-          }
-       }
-       break;
-     default:
-       //rasterizer->comp_op = ctx_RGBA8_blends_generic;
-       //return;
-       break;
-   }
-   return;
-#endif
-
-
-  if (gstate->source.type == CTX_SOURCE_COLOR)
-    {
       switch (gstate->blend_mode)
       {
         case CTX_BLEND_NORMAL:
