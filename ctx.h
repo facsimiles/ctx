@@ -7683,27 +7683,17 @@ ctx_RGBA8_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * 
   {
     int cov = *covp;
 
-
-    if (cov == 0)
+    if (cov)
     {
-    }
-    else
     if (cov == 255)
     {
         *((uint32_t*)(dst)) = *((uint32_t*)(src));
     }
     else
     {
-#if 1
-        //uint8_t ralpha = 255 - cov;
-        for (int c = 0; c < 4; c++)
-          //dst[c] = (src[c]*cov + dst[c] * ralpha) / 255;
-          dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * cov)) >> 8; 
-#else
         for (int c = 0; c < 4; c++)
           dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
-#endif
-
+    }
     }
     covp ++;
     dst+=4;
@@ -7718,32 +7708,20 @@ ctx_u8_source_over_normal_color (int components, CtxRasterizer *rasterizer, uint
   {
     int cov = *covp;
 
-    if (cov == 0)
-    {
-      while (*covp == 0 && count)
-      {
-         covp ++;
-         dst+=4;
-         count--;
-      }
-      if (!count)
-        return;
-      cov = *covp;
+    if(cov==255){
+      int alpha = alphai;
+      for (int c = 0; c < components; c++)
+        dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
     }
-
-    {
+    else if(cov){
 #if 1
       int alpha = alphai;
-      if (cov != 255)
-        alpha = (cov * alpha) / 255;
-      //int ralpha = 255 - alpha;
+      alpha = (cov * alpha) / 255;
       for (int c = 0; c < components; c++)
-        //dst[c] = (src[c]*alpha + dst[c] * ralpha) / 255;
         dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
 #else
       int alpha = alphai;
-      if (cov != 255)
-        alpha = (cov * alpha) / 255;
+      alpha = (cov * alpha) / 255;
       for (int c = 0; c < components; c++)
           dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
 #endif
@@ -7780,11 +7758,11 @@ ctx_RGBA8_source_over_normal_alpha_half_color (CtxRasterizer *rasterizer, uint8_
     }
 
     if (cov==255){
-              for (int c = 0; c < 4; c++)
-                dst[c] = (dst[c]+src[c])/2;
+    for (int c = 0; c < 4; c++)
+      dst[c] = (dst[c]+src[c])/2;
     }
     else
-                    {
+    {
       int alpha = *covp/2;
       for (int c = 0; c < 4; c++)
         dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
@@ -7841,8 +7819,8 @@ ctx_u8_clear_normal (int components, CtxRasterizer *rasterizer, uint8_t *dst, ui
   while (count--)
   {
     uint8_t cov = *covp;
-    for (int c = 0; c < components; c++)
-      dst[c] = 0;
+    //for (int c = 0; c < components; c++)
+    //  dst[c] = 0;
     if (cov == 0)
     {
     }
@@ -8269,16 +8247,19 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
         continue;
       }
 
-      fragment (rasterizer, u0, v0, tsrc);
-      u0 += ud;
-      v0 += vd;
+      if (f_s != CTX_PORTER_DUFF_0)
+      {
+        fragment (rasterizer, u0, v0, tsrc);
+        u0 += ud;
+        v0 += vd;
 
-      ctx_u8_associate_alpha (components, tsrc);
-      ctx_u8_blend (components, blend, dst, tsrc, tsrc);
+        ctx_u8_associate_alpha (components, tsrc);
+        ctx_u8_blend (components, blend, dst, tsrc, tsrc);
 
       if (cov != 255)
       for (int c = 0; c < components; c++)
         tsrc[c] = (tsrc[c] * cov)/255;
+      }
 
       for (int c = 0; c < components; c++)
       {
