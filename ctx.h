@@ -1433,6 +1433,10 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_INLINED_NORMAL      1
 #endif
 
+#ifndef CTX_INLINED_BLEND      
+#define CTX_INLINED_BLEND       1
+#endif
+
 #ifndef CTX_NATIVE_GRAYA8
 #define CTX_NATIVE_GRAYA8       0
 #endif
@@ -8362,8 +8366,7 @@ ctx_u8_porter_duff_blend(RGBA8, 4, CTX_BLEND_NORMAL, normal)
 #endif
 
 
-#if CTX_INLINED_COMPOSITING
-
+#if CTX_INLINED_BLEND
 
 ctx_u8_porter_duff_blend(RGBA8, 4, rasterizer->state->gstate.blend_mode, generic)
 
@@ -8403,7 +8406,7 @@ ctx_u8_blends(comp_name, components,radial_gradient, ctx_fragment_radial_gradien
 ctx_u8_blends(comp_name, components,image_rgb8, ctx_fragment_image_rgb8_RGBA8)\
 ctx_u8_blends(comp_name, components,image_rgba8, ctx_fragment_image_rgba8_RGBA8)\
 
-//ctx_u8_porter_duff_blends(RGBA8, 4)
+ctx_u8_porter_duff_blends(RGBA8, 4)
 
 #endif
 
@@ -8431,7 +8434,51 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
+    }
 
+#if CTX_INLINED_BLEND
+   switch (gstate->source.type)
+   {
+     case CTX_SOURCE_COLOR:
+             // NOTE : does not get used, unless we comment out
+             //  default code paths
+       rasterizer->comp_op = ctx_RGBA8_blends_color;
+       rasterizer->fragment = NULL;
+       break;
+     case CTX_SOURCE_LINEAR_GRADIENT:
+       rasterizer->comp_op = ctx_RGBA8_blends_linear_gradient;
+       break;
+     case CTX_SOURCE_RADIAL_GRADIENT:
+       rasterizer->comp_op = ctx_RGBA8_blends_radial_gradient;
+       break;
+     case CTX_SOURCE_IMAGE:
+       {
+          CtxSource *g = &rasterizer->state->gstate.source;
+          switch (g->image.buffer->format->bpp)
+          {
+            case 32:
+              rasterizer->comp_op = ctx_RGBA8_blends_image_rgba8;
+              break;
+            case 24:
+              rasterizer->comp_op = ctx_RGBA8_blends_image_rgb8;
+            break;
+            default:
+              //rasterizer->comp_op = ctx_RGBA8_blends_generic;
+              break;
+          }
+       }
+       break;
+     default:
+       //rasterizer->comp_op = ctx_RGBA8_blends_generic;
+       //return;
+       break;
+   }
+   return;
+#endif
+
+
+  if (gstate->source.type == CTX_SOURCE_COLOR)
+    {
       switch (gstate->blend_mode)
       {
         case CTX_BLEND_NORMAL:
@@ -8503,89 +8550,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
             break;
         }
         return;
-    }
-#endif
-
-#if CTX_INLINED_COMPOSITING
-  else
-    switch (gstate->blend_mode)
-    {
-      case CTX_BLEND_NORMAL:
-              // we trust the above to have set it.
-        break;
-#if 0
-      default:
-        switch (gstate->source.type)
-        {
-          case CTX_SOURCE_COLOR:
-            rasterizer->comp_op = ctx_RGBA8_blends_color;
-            rasterizer->fragment = NULL;
-            break;
-          case CTX_SOURCE_LINEAR_GRADIENT:
-            rasterizer->comp_op = ctx_RGBA8_blends_linear_gradient;
-            break;
-          case CTX_SOURCE_RADIAL_GRADIENT:
-            rasterizer->comp_op = ctx_RGBA8_blends_radial_gradient;
-            break;
-          case CTX_SOURCE_IMAGE:
-            {
-               CtxSource *g = &rasterizer->state->gstate.source;
-               switch (g->image.buffer->format->bpp)
-               {
-                 case 32:
-                   rasterizer->comp_op = ctx_RGBA8_blends_image_rgba8;
-                   break;
-                 case 24:
-                   rasterizer->comp_op = ctx_RGBA8_blends_image_rgb8;
-                 break;
-                 default:
-                   rasterizer->comp_op = ctx_RGBA8_blends_generic;
-                   break;
-               }
-            }
-            break;
-          default:
-            rasterizer->comp_op = ctx_RGBA8_blends_generic;
-            break;
-        }
-        break;
-#else
-      default:
-        switch (gstate->source.type)
-        {
-          case CTX_SOURCE_COLOR:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_color_generic;
-            rasterizer->fragment = NULL;
-            break;
-          case CTX_SOURCE_LINEAR_GRADIENT:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_linear_gradient_generic;
-            break;
-          case CTX_SOURCE_RADIAL_GRADIENT:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_radial_gradient_generic;
-            break;
-          case CTX_SOURCE_IMAGE:
-            {
-               CtxSource *g = &rasterizer->state->gstate.source;
-               switch (g->image.buffer->format->bpp)
-               {
-                 case 32:
-                   rasterizer->comp_op = ctx_RGBA8_porter_duff_image_rgba8_generic;
-                   break;
-                 case 24:
-                   rasterizer->comp_op = ctx_RGBA8_porter_duff_image_rgb8_generic;
-                 break;
-                 default:
-                   rasterizer->comp_op = ctx_RGBA8_porter_duff_generic;
-                   break;
-               }
-            }
-            break;
-          default:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_generic;
-            break;
-        }
-        break;
-#endif
     }
 #endif
 }
