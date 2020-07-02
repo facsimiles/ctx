@@ -7877,16 +7877,21 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
   {
      case 2:
        *((uint16_t*)(blended)) = *((uint16_t*)(src));
+       ctx_u8_associate_alpha (components, blended);
        break;
      case 4:
        *((uint32_t*)(blended)) = *((uint32_t*)(src));
+       ctx_u8_associate_alpha (components, blended);
        break;
      default:
-       for (int i = 0; i<components;i++)
-         blended[i] = src[i];
+       {
+         uint8_t alpha = src[components-1];
+         for (int i = 0; i<components - 1;i++)
+           blended[i] = (src[i] * alpha)/255;
+         blended[components-1]=alpha;
+       }
        break;
   }
-  ctx_u8_associate_alpha (components, blended);
 }
 
 #define ctx_u8_blend_define(name, CODE) \
