@@ -9818,28 +9818,22 @@ ctx_CMYKAF_to_CMYKA8 (CtxRasterizer *rasterizer, float *src, uint8_t *dst, int c
 {
   for (int i = 0; i < count; i ++)
     {
-      float c = src[0];
-      float m = src[1];
-      float y = src[2];
-      float k = src[3];
-      float a = src[4];
-      if (a != 0.0f && a != 1.0f)
+      int a = ctx_float_to_u8 (src[4]);
+      if (a != 0 && a != 255)
+      {
+        float recip = 1.0f/src[4];
+        for (int c = 0; c < 4; c++)
         {
-          float recip = 1.0f/a;
-          c *= recip;
-          m *= recip;
-          y *= recip;
-          k *= recip;
+          dst[c] = ctx_float_to_u8 (1.0f - src[c] * recip);
         }
-      c = 1.0 - c;
-      m = 1.0 - m;
-      y = 1.0 - y;
-      k = 1.0 - k;
-      dst[0] = ctx_float_to_u8 (c);
-      dst[1] = ctx_float_to_u8 (m);
-      dst[2] = ctx_float_to_u8 (y);
-      dst[3] = ctx_float_to_u8 (k);
-      dst[4] = ctx_float_to_u8 (a);
+      }
+      else
+      {
+        for (int c = 0; c < 4; c++)
+          dst[c] = 255 - ctx_float_to_u8 (src[c]);
+      }
+      dst[4]=a;
+
       src += 5;
       dst += 5;
     }
