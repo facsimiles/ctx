@@ -9415,7 +9415,6 @@ ctx_fragment_linear_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
               g->linear_gradient.start) /
             (g->linear_gradient.end - g->linear_gradient.start);
   ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0, rgba);
-  ctx_RGBAF_associate_alpha (rgba);
   ctx_rgba_to_graya (rgba, (float*)out);
 }
 
@@ -9432,7 +9431,6 @@ ctx_fragment_radial_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
           (g->radial_gradient.r1 - g->radial_gradient.r0);
     }
   ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 0.0, rgba);
-  ctx_RGBAF_associate_alpha (rgba);
   ctx_rgba_to_graya (rgba, (float*)out);
 }
 
@@ -9443,7 +9441,6 @@ ctx_fragment_color_GRAYAF (CtxRasterizer *rasterizer, float x, float y, void *ou
   float *graya = out;
   CtxSource *g = &rasterizer->state->gstate.source;
   ctx_color_get_graya (rasterizer->state, &g->color, out);
-  graya[0]*=graya[1];
 }
 
 static void ctx_fragment_image_GRAYAF (CtxRasterizer *rasterizer, float x, float y, void *out)
@@ -9673,10 +9670,10 @@ ctx_fragment_color_CMYKAF (CtxRasterizer *rasterizer, float x, float y, void *ou
   CtxGState *gstate = &rasterizer->state->gstate;
   float *cmyka = (float*)out;
   ctx_color_get_cmyka (rasterizer->state, &gstate->source.color, cmyka);
-  // RGBW instead of CMYK, and premultiply
+  // RGBW instead of CMYK
   for (int i = 0; i < 4; i ++)
     {
-      cmyka[i] = (1.0f - cmyka[i]) * cmyka[4];
+      cmyka[i] = (1.0f - cmyka[i]);
     }
 }
 
@@ -9729,8 +9726,7 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
       rasterizer->fragment = NULL;
       ctx_color_get_cmyka (rasterizer->state, &gstate->source.color, (float*)rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
-        for (int c = 0; c < components; c ++)
-          ((float*)rasterizer->color)[c] *= gstate->global_alpha_f;
+        ((float*)rasterizer->color)[components-1] *= gstate->global_alpha_f;
     }
   else
   {
@@ -11659,7 +11655,6 @@ ctx_fragment_linear_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y
               g->linear_gradient.start) /
             (g->linear_gradient.end - g->linear_gradient.start);
   ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 1.0, rgba);
-  ctx_RGBA8_associate_alpha (rgba);
   ctx_rgba_to_graya_u8 (rgba, (uint8_t*)out);
 }
 
@@ -11676,7 +11671,6 @@ ctx_fragment_radial_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y
           (g->radial_gradient.r1 - g->radial_gradient.r0);
     }
   ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0, rgba);
-  ctx_RGBA8_associate_alpha (rgba);
   ctx_rgba_to_graya_u8 (rgba, (uint8_t*)out);
 }
 
