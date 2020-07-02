@@ -1437,7 +1437,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_INLINED_NORMAL     
-#define CTX_INLINED_NORMAL      0
+#define CTX_INLINED_NORMAL      1
 #endif
 
 #ifndef CTX_ENABLE_CMYK
@@ -9268,7 +9268,7 @@ ctx_##compformat##_porter_duff_##source (CtxRasterizer *rasterizer, uint8_t *dst
 ctx_float_porter_duff(RGBAF, 4,color,           NULL,                               rasterizer->state->gstate.blend_mode)
 ctx_float_porter_duff(RGBAF, 4,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
-#if CTX_INLINED_COMPOSITING
+#if CTX_INLINED_NORMAL
 ctx_float_porter_duff(RGBAF, 4,linear_gradient, ctx_fragment_linear_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
 ctx_float_porter_duff(RGBAF, 4,radial_gradient, ctx_fragment_radial_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
 ctx_float_porter_duff(RGBAF, 4,image,           ctx_fragment_image_RGBAF,           rasterizer->state->gstate.blend_mode)
@@ -9324,7 +9324,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
   }
 
 
-#if CTX_INLINED_COMPOSITING
+#if CTX_INLINED_NORMAL
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
     rasterizer->comp_op = ctx_RGBAF_clear_normal;
   else
@@ -9479,7 +9479,7 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYAF (CtxRasterizer *rasterizer
 ctx_float_porter_duff(GRAYAF, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
 ctx_float_porter_duff(GRAYAF, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
-#if CTX_INLINED_COMPOSITING
+#if CTX_INLINED_NORMAL
 
 ctx_float_porter_duff(GRAYAF, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
 ctx_float_porter_duff(GRAYAF, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
@@ -9523,7 +9523,7 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
     rasterizer->comp_op = ctx_GRAYAF_porter_duff_generic;
   }
 
-#if CTX_INLINED_COMPOSITING
+#if CTX_INLINED_NORMAL
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
     rasterizer->comp_op = ctx_GRAYAF_clear_normal;
   else
@@ -9694,7 +9694,7 @@ static CtxFragment ctx_rasterizer_get_fragment_CMYKAF (CtxRasterizer *rasterizer
 ctx_float_porter_duff (CMYKAF, 5,color,           NULL,                               rasterizer->state->gstate.blend_mode)
 ctx_float_porter_duff (CMYKAF, 5,generic,         rasterizer->fragment,               rasterizer->state->gstate.blend_mode)
 
-#if CTX_INLINED_COMPOSITING
+#if CTX_INLINED_NORMAL
 
 ctx_float_porter_duff (CMYKAF, 5,color_normal,            NULL,                               CTX_BLEND_NORMAL)
 ctx_float_porter_duff (CMYKAF, 5,generic_normal,          rasterizer->fragment,               CTX_BLEND_NORMAL)
@@ -9739,7 +9739,7 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
   }
 
 
-#if CTX_INLINED_COMPOSITING
+#if CTX_INLINED_NORMAL
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
     rasterizer->comp_op = ctx_CMYKAF_clear_normal;
   else
