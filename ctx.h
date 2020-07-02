@@ -1351,13 +1351,6 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_SHAPE_CACHE_ENTRIES  160
 #endif
 
-/* implement a chache for gradient rendering; that cuts down the
- * per-pixel cost for complex gradients
- */
-#ifndef CTX_GRADIENT_CACHE
-#define CTX_GRADIENT_CACHE  1
-#endif
-
 #ifndef CTX_FONTS_FROM_FILE
 #define CTX_FONTS_FROM_FILE 1
 #endif
@@ -6413,11 +6406,6 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
   return id;
 }
 
-#if CTX_GRADIENT_CACHE
-static void
-ctx_gradient_cache_reset (void);
-#endif
-
 static void
 ctx_state_gradient_clear_stops (CtxState *state)
 {
@@ -7151,61 +7139,19 @@ static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 #endif
 }
 
-#if CTX_GRADIENT_CACHE
-
-#define CTX_GRADIENT_CACHE_ELEMENTS 128
-
-static uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
-
-static void
-ctx_gradient_cache_reset (void)
-{
-  for (int i = 0; i < CTX_GRADIENT_CACHE_ELEMENTS; i++)
-    {
-      ctx_gradient_cache_u8[i][0] = 255;
-      ctx_gradient_cache_u8[i][1] = 2;
-      ctx_gradient_cache_u8[i][2] = 255;
-      ctx_gradient_cache_u8[i][3] = 13;
-    }
-}
-
-#endif
-
 static void
 ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
 {
   float v = x;
-  /* caching a 512 long gradient - and sampling with nearest neighbor
-     will be much faster.. */
   CtxGradient *g = &rasterizer->state->gradient;
   if (v < 0) { v = 0; }
   if (v > 1) { v = 1; }
-#if CTX_GRADIENT_CACHE
-  int cache_no = v * (CTX_GRADIENT_CACHE_ELEMENTS-1.0f);
-  uint8_t *cache_entry = &ctx_gradient_cache_u8[cache_no][0];
-  if (! ( //cache_entry[0] == 255 &&
-        //cache_entry[1] == 2   &&
-        //cache_entry[2] == 255 &&
-        cache_entry[3] == 13) )
-    {
-      rgba[0] = cache_entry[0];
-      rgba[1] = cache_entry[1];
-      rgba[2] = cache_entry[2];
-      rgba[3] = cache_entry[3];
-      return;
-    }
-#endif
   if (g->n_stops == 0)
     {
       rgba[0] = rgba[1] = rgba[2] = v * 255;
       rgba[3] = 255;
       return;
     }
-#if CTX_GRADIENT_CACHE
-  /* force first and last cached entries to be end points */
-  if (cache_no == 0) { v = 0.0f; }
-  else if (cache_no == CTX_GRADIENT_CACHE_ELEMENTS-1) { v = 1.0f; }
-#endif
   CtxGradientStop *stop      = NULL;
   CtxGradientStop *next_stop = &g->stops[0];
   for (int s = 0; s < g->n_stops; s++)
@@ -7240,20 +7186,12 @@ ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uin
     {
       ctx_color_get_rgba8 (rasterizer->state, & (g->stops[g->n_stops-1].color), rgba);
     }
-#if CTX_GRADIENT_CACHE
-  cache_entry[0] = rgba[0];
-  cache_entry[1] = rgba[1];
-  cache_entry[2] = rgba[2];
-  cache_entry[3] = rgba[3];
-#endif
 }
 
 static void
 ctx_fragment_gradient_1d_RGBAF (CtxRasterizer *rasterizer, float x, float y, float *rgba)
 {
   float v = x;
-  /* caching a 512 long gradient - and sampling with nearest neighbor
-     will be much faster.. */
   CtxGradient *g = &rasterizer->state->gradient;
   if (v < 0) { v = 0; }
   if (v > 1) { v = 1; }
@@ -7389,7 +7327,6 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *col, uint8_t *dst)
   dst[components-1] = col[components-1];
 }
 
-
 CTX_INLINE static void
 ctx_RGBA8_associate_alpha (uint8_t *rgba)
 {
@@ -7430,12 +7367,8 @@ ctx_RGBAF_associate_alpha (float *rgba)
 CTX_INLINE static void
 ctx_RGBAF_deassociate_alpha (float *rgba, float *dst)
 {
-  dst[0] = (rgba[0] / rgba[3]);
-  dst[1] = (rgba[1] / rgba[3]);
-  dst[2] = (rgba[2] / rgba[3]);
-  dst[3] = rgba[3];
+  ctx_float_deassociate_alpha (4, rgba, dst);
 }
-
 
 static void
 ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
@@ -7466,7 +7399,6 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
                       rasterizer->format->dither_green);
 #endif
-//ctx_RGBA8_associate_alpha (rgba);
 }
 
 static void
@@ -7579,7 +7511,7 @@ ctx_fragment_linear_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
   float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
                 g->linear_gradient.length) -
               g->linear_gradient.start) * (g->linear_gradient.rdelta);
-  ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0, rgba);
+  ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0f, rgba);
 }
 
 static void
@@ -7589,7 +7521,7 @@ ctx_fragment_radial_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
         v = (v - g->radial_gradient.r0) * (g->radial_gradient.rdelta);
-  ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 0.0, rgba);
+  ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 0.0f, rgba);
 }
 
 
@@ -7670,8 +7602,8 @@ ctx_init_uv (CtxRasterizer *rasterizer,
   ctx_matrix_apply_transform (&gstate->source.transform, u0, v0);
   ctx_matrix_apply_transform (&gstate->source.transform, &u1, &v1);
 
-  *ud = (u1-*u0)/(count);
-  *vd = (v1-*v0)/(count);
+  *ud = (u1-*u0) / (count);
+  *vd = (v1-*v0) / (count);
 }
 
 #if CTX_INLINED_NORMAL
@@ -7718,14 +7650,13 @@ ctx_u8_source_over_normal_color (int components, CtxRasterizer *rasterizer, uint
     if (cov)
     {
     if(cov==255){
-      int alpha = alphai;
       for (int c = 0; c < components; c++)
         dst[c] = dst[c]+((srca[c]-dst[c]) * cov) / 255;
     }
     else {
       int alpha = (cov * alphai) / 255;
       for (int c = 0; c < components; c++)
-          dst[c] = dst[c]+((srca[c]-dst[c]) * cov) / 255;
+          dst[c] = dst[c]+((srca[c]-dst[c]) * alpha) / 255;
     }
     }
     covp ++;
@@ -11026,16 +10957,10 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         }
         break;
       case CTX_LINEAR_GRADIENT:
-#if CTX_GRADIENT_CACHE
-        ctx_gradient_cache_reset();
-#endif
         ctx_state_gradient_clear_stops (rasterizer->state);
         rasterizer->comp_op = NULL;
         break;
       case CTX_RADIAL_GRADIENT:
-#if CTX_GRADIENT_CACHE
-        ctx_gradient_cache_reset();
-#endif
         ctx_state_gradient_clear_stops (rasterizer->state);
         rasterizer->comp_op = NULL;
         break;
@@ -11331,15 +11256,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         }
         break;
       case CTX_LINEAR_GRADIENT:
-#if CTX_GRADIENT_CACHE
-        ctx_gradient_cache_reset();
-#endif
         ctx_state_gradient_clear_stops (rasterizer->state);
         break;
       case CTX_RADIAL_GRADIENT:
-#if CTX_GRADIENT_CACHE
-        ctx_gradient_cache_reset();
-#endif
         ctx_state_gradient_clear_stops (rasterizer->state);
         break;
       case CTX_PRESERVE:
