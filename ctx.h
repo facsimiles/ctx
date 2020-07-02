@@ -8428,42 +8428,45 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 
   if (gstate->source.type == CTX_SOURCE_COLOR)
     {
-      rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
-      rasterizer->fragment = NULL;
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
 
-    switch (gstate->blend_mode)
-    {
-      case CTX_BLEND_NORMAL:
-        if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
-        {
-          rasterizer->comp_op = ctx_RGBA8_copy_normal;
-          return;
-        }
-        else if (gstate->global_alpha_u8 == 0)
-        {
-          rasterizer->comp_op = ctx_RGBA8_nop;
-        }
-        else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-        {
-           switch (rasterizer->color[components-1])
-           {
-             case 255: rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color; break;
-             case 0:   rasterizer->comp_op = ctx_RGBA8_nop; break;
-             default:
-             rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
-           }
-           rasterizer->fragment = NULL;
-       }
-       break;
+      switch (gstate->blend_mode)
+      {
+        case CTX_BLEND_NORMAL:
+          if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
+          {
+            rasterizer->comp_op = ctx_RGBA8_copy_normal;
+            return;
+          }
+          else if (gstate->global_alpha_u8 == 0)
+          {
+            rasterizer->comp_op = ctx_RGBA8_nop;
+          }
+          else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+          {
+             switch (rasterizer->color[components-1])
+             {
+               case 255:
+                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
+                 break;
+               case 0:
+                 rasterizer->comp_op = ctx_RGBA8_nop;
+                 break;
+               default:
+                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
+                 break;
+             }
+         }
+         break;
       default:
-        break;
+         rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
+         break;
     }
+    rasterizer->fragment = NULL;
     return;
   }
-
 
 #if CTX_INLINED_NORMAL
     if (gstate->blend_mode == CTX_BLEND_NORMAL)
@@ -8584,7 +8587,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
         break;
 #endif
     }
-#else
 #endif
 }
 
