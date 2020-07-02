@@ -7682,13 +7682,18 @@ ctx_RGBA8_source_over_normal_opaque_color (CtxRasterizer *rasterizer, uint8_t * 
   while (count--)
   {
     int cov = *covp;
-    switch (cov)
+
+
+    if (cov == 0)
     {
-      case 0: break;
-      case 255:
+    }
+    else
+    if (cov == 255)
+    {
         *((uint32_t*)(dst)) = *((uint32_t*)(src));
-              break;
-      default:
+    }
+    else
+    {
 #if 1
         //uint8_t ralpha = 255 - cov;
         for (int c = 0; c < 4; c++)
@@ -7712,7 +7717,20 @@ ctx_u8_source_over_normal_color (int components, CtxRasterizer *rasterizer, uint
   while (count--)
   {
     int cov = *covp;
-    if (cov)
+
+    if (cov == 0)
+    {
+      while (*covp == 0 && count)
+      {
+         covp ++;
+         dst+=4;
+         count--;
+      }
+      if (!count)
+        return;
+      cov = *covp;
+    }
+
     {
 #if 1
       int alpha = alphai;
@@ -7747,113 +7765,34 @@ ctx_RGBA8_source_over_normal_alpha_half_color (CtxRasterizer *rasterizer, uint8_
 {
   while (count--)
   {
-    switch (*covp){
-            case 0: break;
-            case 255:
+    int cov = *covp;
+    if (cov == 0)
+    {
+      while (*covp == 0 && count)
+      {
+         covp ++;
+         dst+=4;
+         count--;
+      }
+      if (!count)
+        return;
+      cov = *covp;
+    }
+
+    if (cov==255){
               for (int c = 0; c < 4; c++)
                 dst[c] = (dst[c]+src[c])/2;
-              break;
-            default:
+    }
+    else
                     {
       int alpha = *covp/2;
       for (int c = 0; c < 4; c++)
         dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
     }
-    }
     covp ++;
     dst  += 4;
   }
 }
-
-
-static void
-ctx_RGBA8_source_over_normal_alpha_color (int ialpha, CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
-{
-  while (count--)
-  {
-    if (*covp){
-    int alpha = (*covp * ialpha)/255;
-    for (int c = 0; c < 4; c++)
-      dst[c] = ((dst[c]<<8)+((src[c]-dst[c]) * alpha)) >> 8; 
-    }
-    covp ++;
-    dst  += 4;
-  }
-}
-
-#define ctx_RGBA8_color_alpha(alpha) \
-static void \
-ctx_RGBA8_source_over_normal_a##alpha##_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)\
-{\
-  ctx_RGBA8_source_over_normal_alpha_color (alpha, rasterizer, dst, src, x0, covp, count);\
-}
-
-/* for alpha values 1-127 there is a gain from this, on x86_64 the generic code
- * path is faster >127
- */
-ctx_RGBA8_color_alpha(1); ctx_RGBA8_color_alpha(2); ctx_RGBA8_color_alpha(3);
-ctx_RGBA8_color_alpha(4); ctx_RGBA8_color_alpha(5); ctx_RGBA8_color_alpha(6);
-ctx_RGBA8_color_alpha(7); ctx_RGBA8_color_alpha(8); ctx_RGBA8_color_alpha(9);
-ctx_RGBA8_color_alpha(10); ctx_RGBA8_color_alpha(11);
-ctx_RGBA8_color_alpha(12); ctx_RGBA8_color_alpha(13);
-ctx_RGBA8_color_alpha(14); ctx_RGBA8_color_alpha(15);
-ctx_RGBA8_color_alpha(16); ctx_RGBA8_color_alpha(17);
-ctx_RGBA8_color_alpha(18); ctx_RGBA8_color_alpha(19);
-ctx_RGBA8_color_alpha(20); ctx_RGBA8_color_alpha(21);
-ctx_RGBA8_color_alpha(22); ctx_RGBA8_color_alpha(23);
-ctx_RGBA8_color_alpha(24); ctx_RGBA8_color_alpha(25);
-ctx_RGBA8_color_alpha(26); ctx_RGBA8_color_alpha(27);
-ctx_RGBA8_color_alpha(28); ctx_RGBA8_color_alpha(29);
-ctx_RGBA8_color_alpha(30); ctx_RGBA8_color_alpha(31);
-ctx_RGBA8_color_alpha(32); ctx_RGBA8_color_alpha(33);
-ctx_RGBA8_color_alpha(34); ctx_RGBA8_color_alpha(35);
-ctx_RGBA8_color_alpha(36); ctx_RGBA8_color_alpha(37);
-ctx_RGBA8_color_alpha(38); ctx_RGBA8_color_alpha(39);
-ctx_RGBA8_color_alpha(40); ctx_RGBA8_color_alpha(41);
-ctx_RGBA8_color_alpha(42); ctx_RGBA8_color_alpha(43);
-ctx_RGBA8_color_alpha(44); ctx_RGBA8_color_alpha(45);
-ctx_RGBA8_color_alpha(46); ctx_RGBA8_color_alpha(47);
-ctx_RGBA8_color_alpha(48); ctx_RGBA8_color_alpha(49);
-ctx_RGBA8_color_alpha(50); ctx_RGBA8_color_alpha(51);
-ctx_RGBA8_color_alpha(52); ctx_RGBA8_color_alpha(53);
-ctx_RGBA8_color_alpha(54); ctx_RGBA8_color_alpha(55);
-ctx_RGBA8_color_alpha(56); ctx_RGBA8_color_alpha(57);
-ctx_RGBA8_color_alpha(58); ctx_RGBA8_color_alpha(59);
-ctx_RGBA8_color_alpha(60); ctx_RGBA8_color_alpha(61);
-ctx_RGBA8_color_alpha(62); ctx_RGBA8_color_alpha(63);
-ctx_RGBA8_color_alpha(64); ctx_RGBA8_color_alpha(65);
-ctx_RGBA8_color_alpha(66); ctx_RGBA8_color_alpha(67);
-ctx_RGBA8_color_alpha(68); ctx_RGBA8_color_alpha(69);
-ctx_RGBA8_color_alpha(70); ctx_RGBA8_color_alpha(71);
-ctx_RGBA8_color_alpha(72); ctx_RGBA8_color_alpha(73);
-ctx_RGBA8_color_alpha(74); ctx_RGBA8_color_alpha(75);
-ctx_RGBA8_color_alpha(76); ctx_RGBA8_color_alpha(77);
-ctx_RGBA8_color_alpha(78); ctx_RGBA8_color_alpha(79);
-ctx_RGBA8_color_alpha(80); ctx_RGBA8_color_alpha(81);
-ctx_RGBA8_color_alpha(82); ctx_RGBA8_color_alpha(83);
-ctx_RGBA8_color_alpha(84); ctx_RGBA8_color_alpha(85);
-ctx_RGBA8_color_alpha(86); ctx_RGBA8_color_alpha(87);
-ctx_RGBA8_color_alpha(88); ctx_RGBA8_color_alpha(89);
-ctx_RGBA8_color_alpha(90); ctx_RGBA8_color_alpha(91);
-ctx_RGBA8_color_alpha(92); ctx_RGBA8_color_alpha(93);
-ctx_RGBA8_color_alpha(94); ctx_RGBA8_color_alpha(95);
-ctx_RGBA8_color_alpha(96); ctx_RGBA8_color_alpha(97);
-ctx_RGBA8_color_alpha(98); ctx_RGBA8_color_alpha(99);
-ctx_RGBA8_color_alpha(100); ctx_RGBA8_color_alpha(101);
-ctx_RGBA8_color_alpha(102); ctx_RGBA8_color_alpha(103);
-ctx_RGBA8_color_alpha(104); ctx_RGBA8_color_alpha(105);
-ctx_RGBA8_color_alpha(106); ctx_RGBA8_color_alpha(107);
-ctx_RGBA8_color_alpha(108); ctx_RGBA8_color_alpha(109);
-ctx_RGBA8_color_alpha(110); ctx_RGBA8_color_alpha(111);
-ctx_RGBA8_color_alpha(112); ctx_RGBA8_color_alpha(113);
-ctx_RGBA8_color_alpha(114); ctx_RGBA8_color_alpha(115);
-ctx_RGBA8_color_alpha(116); ctx_RGBA8_color_alpha(117);
-ctx_RGBA8_color_alpha(118); ctx_RGBA8_color_alpha(119);
-ctx_RGBA8_color_alpha(120); ctx_RGBA8_color_alpha(121);
-ctx_RGBA8_color_alpha(122); ctx_RGBA8_color_alpha(123);
-ctx_RGBA8_color_alpha(124); ctx_RGBA8_color_alpha(125);
-ctx_RGBA8_color_alpha(126); ctx_RGBA8_color_alpha(127);
-
 
 static void
 ctx_u8_copy_normal (int components, CtxRasterizer *rasterizer, uint8_t *dst, uint8_t *src, int x0, uint8_t *covp, int count)
@@ -8596,30 +8535,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
                 case 255: rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color; break;
                 case 0:   rasterizer->comp_op = ctx_RGBA8_nop; break;
                 case 127: rasterizer->comp_op = ctx_RGBA8_source_over_normal_alpha_half_color; break;
-#define CASE(a) case a: rasterizer->comp_op = ctx_RGBA8_source_over_normal_a##a##_color; break;
-                CASE(1); CASE(2); CASE(3); CASE(4); CASE(5); CASE(6); CASE(7);
-                CASE(8); CASE(9); CASE(10); CASE(11); CASE(12); CASE(13);
-                CASE(14); CASE(15); CASE(16); CASE(17); CASE(18); CASE(19);
-                CASE(20); CASE(21); CASE(22); CASE(23); CASE(24); CASE(25);
-                CASE(26); CASE(27); CASE(28); CASE(29); CASE(30); CASE(31);
-                CASE(32); CASE(33); CASE(34); CASE(35); CASE(36); CASE(37);
-                CASE(38); CASE(39); CASE(40); CASE(41); CASE(42); CASE(43);
-                CASE(44); CASE(45); CASE(46); CASE(47); CASE(48); CASE(49);
-                CASE(50); CASE(51); CASE(52); CASE(53); CASE(54); CASE(55);
-                CASE(56); CASE(57); CASE(58); CASE(59); CASE(60); CASE(61);
-                CASE(62); CASE(63); CASE(64); CASE(65); CASE(66); CASE(67);
-                CASE(68); CASE(69); CASE(70); CASE(71); CASE(72); CASE(73);
-                CASE(74); CASE(75); CASE(76); CASE(77); CASE(78); CASE(79);
-                CASE(80); CASE(81); CASE(82); CASE(83); CASE(84); CASE(85);
-                CASE(86); CASE(87); CASE(88); CASE(89); CASE(90); CASE(91);
-                CASE(92); CASE(93); CASE(94); CASE(95); CASE(96); CASE(97);
-                CASE(98); CASE(99); CASE(100); CASE(101); CASE(102);
-                CASE(103); CASE(104); CASE(105); CASE(106); CASE(107);
-                CASE(108); CASE(109); CASE(110); CASE(111); CASE(112);
-                CASE(113); CASE(114); CASE(115); CASE(116); CASE(117);
-                CASE(118); CASE(119); CASE(120); CASE(121); CASE(122);
-                CASE(123); CASE(124); CASE(125); CASE(126);
-#undef CASE
                 default:
                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
               }
@@ -8691,86 +8606,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     switch (gstate->blend_mode)
     {
       case CTX_BLEND_NORMAL:
-        if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
-        {
-          rasterizer->comp_op = ctx_RGBA8_copy_normal;
-        }
-        else if (gstate->global_alpha_u8 == 0)
-        {
-          rasterizer->comp_op = ctx_RGBA8_nop;
-        }
-        else
-        switch (gstate->source.type)
-        {
-          case CTX_SOURCE_COLOR:
-            if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-            {
-              switch (rasterizer->color[components-1])
-              {
-                case 255: rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color; break;
-                case 0:   rasterizer->comp_op = ctx_RGBA8_nop; break;
-#define CASE(a) case a: rasterizer->comp_op = ctx_RGBA8_source_over_normal_a##a##_color; break;
-                CASE(1); CASE(2); CASE(3); CASE(4); CASE(5); CASE(6); CASE(7);
-                CASE(8); CASE(9); CASE(10); CASE(11); CASE(12); CASE(13);
-                CASE(14); CASE(15); CASE(16); CASE(17); CASE(18); CASE(19);
-                CASE(20); CASE(21); CASE(22); CASE(23); CASE(24); CASE(25);
-                CASE(26); CASE(27); CASE(28); CASE(29); CASE(30); CASE(31);
-                CASE(32); CASE(33); CASE(34); CASE(35); CASE(36); CASE(37);
-                CASE(38); CASE(39); CASE(40); CASE(41); CASE(42); CASE(43);
-                CASE(44); CASE(45); CASE(46); CASE(47); CASE(48); CASE(49);
-                CASE(50); CASE(51); CASE(52); CASE(53); CASE(54); CASE(55);
-                CASE(56); CASE(57); CASE(58); CASE(59); CASE(60); CASE(61);
-                CASE(62); CASE(63); CASE(64); CASE(65); CASE(66); CASE(67);
-                CASE(68); CASE(69); CASE(70); CASE(71); CASE(72); CASE(73);
-                CASE(74); CASE(75); CASE(76); CASE(77); CASE(78); CASE(79);
-                CASE(80); CASE(81); CASE(82); CASE(83); CASE(84); CASE(85);
-                CASE(86); CASE(87); CASE(88); CASE(89); CASE(90); CASE(91);
-                CASE(92); CASE(93); CASE(94); CASE(95); CASE(96); CASE(97);
-                CASE(98); CASE(99); CASE(100); CASE(101); CASE(102);
-                CASE(103); CASE(104); CASE(105); CASE(106); CASE(107);
-                CASE(108); CASE(109); CASE(110); CASE(111); CASE(112);
-                CASE(113); CASE(114); CASE(115); CASE(116); CASE(117);
-                CASE(118); CASE(119); CASE(120); CASE(121); CASE(122);
-                CASE(123); CASE(124); CASE(125); CASE(126); CASE(127);
-#undef CASE
-                default:
-                rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
-              }
-              rasterizer->fragment = NULL;
-            }
-            else
-            {
-              rasterizer->comp_op = ctx_RGBA8_porter_duff_color_normal;
-              rasterizer->fragment = NULL;
-            }
-            break;
-          case CTX_SOURCE_LINEAR_GRADIENT:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_linear_gradient_normal;
-            break;
-          case CTX_SOURCE_RADIAL_GRADIENT:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_radial_gradient_normal;
-            break;
-          case CTX_SOURCE_IMAGE:
-            {
-               CtxSource *g = &rasterizer->state->gstate.source;
-               switch (g->image.buffer->format->bpp)
-               {
-                 case 32:
-                   rasterizer->comp_op = ctx_RGBA8_porter_duff_image_rgba8_normal;
-                   break;
-                 case 24:
-                   rasterizer->comp_op = ctx_RGBA8_porter_duff_image_rgb8_normal;
-                 break;
-                 default:
-                   rasterizer->comp_op = ctx_RGBA8_porter_duff_generic_normal;
-                   break;
-               }
-            }
-            break;
-          default:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_generic_normal;
-            break;
-        }
+              // we trust the above to have set it.
         break;
 #if 0
       default:
