@@ -2928,17 +2928,27 @@ static void ctx_state_set_color (CtxState *state, uint32_t key, CtxColor *color)
 
 static uint8_t ctx_float_to_u8 (float val_f)
 {
+   return (val_f * 255.99f);
+#if 0
   int val_i = val_f * 255.999f;
   if (val_i < 0) { return 0; }
   else if (val_i > 255) { return 255; }
   return val_i;
+#endif
 }
 
-static float ctx_u8_to_float (uint8_t val_u8)
+#if 0
+
+inline static float ctx_u8_to_float (uint8_t val_u8)
 {
   float val_f = val_u8 / 255.0;
   return val_f;
 }
+#else
+static float ctx_u8_float[256];
+#define ctx_u8_to_float(val_u8) ctx_u8_float[val_u8]
+
+#endif
 
 static void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
@@ -6108,6 +6118,9 @@ void _ctx_set_transformation (Ctx *ctx, int transformation)
 static void
 _ctx_init (Ctx *ctx)
 {
+  for (int i = 0; i <256;i++)
+    ctx_u8_float[256] = i/255.0f;
+
   ctx_state_init (&ctx->state);
   ctx->renderer = NULL;
 #if CTX_CURRENT_PATH
@@ -8247,19 +8260,16 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
         continue;
       }
 
-      if (f_s != CTX_PORTER_DUFF_0)
-      {
-        fragment (rasterizer, u0, v0, tsrc);
-        u0 += ud;
-        v0 += vd;
+      fragment (rasterizer, u0, v0, tsrc);
+      u0 += ud;
+      v0 += vd;
 
-        ctx_u8_associate_alpha (components, tsrc);
-        ctx_u8_blend (components, blend, dst, tsrc, tsrc);
+      //ctx_u8_associate_alpha (components, tsrc);
+      ctx_u8_blend (components, blend, dst, tsrc, tsrc);
 
       if (cov != 255)
       for (int c = 0; c < components; c++)
         tsrc[c] = (tsrc[c] * cov)/255;
-      }
 
       for (int c = 0; c < components; c++)
       {
