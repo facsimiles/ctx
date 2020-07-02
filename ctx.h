@@ -1437,7 +1437,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_INLINED_NORMAL     
-#define CTX_INLINED_NORMAL      1
+#define CTX_INLINED_NORMAL      0
 #endif
 
 #ifndef CTX_ENABLE_CMYK
@@ -7547,7 +7547,6 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
                       rasterizer->format->dither_green);
 #endif
-//ctx_RGBA8_associate_alpha (rgba);
 }
 
 static void
@@ -7564,7 +7563,6 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
                       rasterizer->format->dither_green);
 #endif
-//ctx_RGBA8_associate_alpha (rgba);
 }
 
 static void
@@ -7573,7 +7571,6 @@ ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source;
   ctx_color_get_rgba8 (rasterizer->state, &g->color, rgba);
-//ctx_RGBA8_associate_alpha (rgba);
 }
 
 static void
@@ -7586,7 +7583,6 @@ ctx_fragment_linear_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
               g->linear_gradient.start) /
             (g->linear_gradient.end - g->linear_gradient.start);
   ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0, rgba);
-  ctx_RGBAF_associate_alpha (rgba);
 }
 
 static void
@@ -7602,7 +7598,6 @@ ctx_fragment_radial_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
           (g->radial_gradient.r1 - g->radial_gradient.r0);
     }
   ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 0.0, rgba);
-  ctx_RGBAF_associate_alpha (rgba);
 }
 
 
@@ -7612,7 +7607,6 @@ ctx_fragment_color_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out
   float *rgba = (float *) out;
   CtxSource *g = &rasterizer->state->gstate.source;
   ctx_color_get_rgba (rasterizer->state, &g->color, rgba);
-  ctx_RGBAF_associate_alpha (rgba);
 }
 
 static void ctx_fragment_image_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out)
@@ -7743,7 +7737,6 @@ ctx_u8_source_over_normal_color (int components, CtxRasterizer *rasterizer, uint
     dst+=components;
   }
 }
-
 
 static void
 ctx_RGBA8_source_over_normal_color (CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ covp, int count)
@@ -7893,17 +7886,17 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
          blended[i] = src[i];
        break;
   }
+  ctx_u8_associate_alpha (components, blended);
 }
 
 #define ctx_u8_blend_define(name, CODE) \
 CTX_INLINE static void \
 ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)\
 {\
-  uint8_t s[components], b[components];\
-  ctx_u8_deassociate_alpha (components, src, s);\
+  uint8_t *s=src; uint8_t b[components];\
   ctx_u8_deassociate_alpha (components, dst, b);\
     CODE;\
-  blended[components-1] = s[components-1];\
+  blended[components-1] = src[components-1];\
   ctx_u8_associate_alpha (components, blended);\
 }
 
@@ -8500,8 +8493,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
-      if (rasterizer->color[components-1] != 255)
-        ctx_RGBA8_associate_alpha (rasterizer->color);
     }
 
     switch (gstate->blend_mode)
@@ -8578,8 +8569,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
-      if (rasterizer->color[components-1] != 255)
-        ctx_RGBA8_associate_alpha (rasterizer->color);
     }
   else
   {
@@ -8812,16 +8801,17 @@ ctx_float_source_over_normal_color (int components, CtxRasterizer *rasterizer, u
 inline static void
 ctx_float_blend_normal (int components, float *dst, float *src, float *blended)
 {
-  for (int c = 0; c <  components; c++)
-    blended[c] = src[c];
+  float a = src[components-1];
+  for (int c = 0; c <  components - 1; c++)
+    blended[c] = src[c] * a;
+  blended[components-1]=a;
 }
 
 #define ctx_float_blend_define(name, CODE) \
 static void \
 ctx_float_blend_##name (int components, float * __restrict__ dst, float *src, float *blended)\
 {\
-  float s[components], b[components];\
-  ctx_float_deassociate_alpha (components, src, s);\
+  float *s = src; float b[components];\
   ctx_float_deassociate_alpha (components, dst, b);\
     CODE;\
   blended[components-1] = s[components-1];\
