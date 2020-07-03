@@ -15237,6 +15237,11 @@ static void ctx_parser_transform_percent_height (CtxParser *parser, CtxCode code
   *value *= (parser->height/100.0);
 }
 
+static void ctx_parser_transform_percent_width (CtxParser *parser, CtxCode code, int arg_no, float *value)
+{
+  *value *= (parser->height/100.0);
+}
+
 static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_no, float *value)
 {
   float small = parser->cell_width;
@@ -15524,6 +15529,16 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                 {
                 float fval = parser->numbers[parser->n_numbers];
                 ctx_parser_transform_percent_height (parser, parser->command, parser->n_numbers, &fval);
+                parser->numbers[parser->n_numbers]= fval;
+                }
+                parser->state = CTX_PARSER_NEUTRAL;
+                break;
+              case '~': // percent of width
+                if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
+                  { parser->numbers[parser->n_numbers] *= -1; }
+                {
+                float fval = parser->numbers[parser->n_numbers];
+                ctx_parser_transform_percent_width (parser, parser->command, parser->n_numbers, &fval);
                 parser->numbers[parser->n_numbers]= fval;
                 }
                 parser->state = CTX_PARSER_NEUTRAL;
