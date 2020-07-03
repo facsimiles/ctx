@@ -7701,7 +7701,7 @@ ctx_u8_clear_normal (int components, CtxRasterizer *rasterizer, uint8_t *dst, ui
   while (count--)
   {
     uint8_t cov = *covp;
-    if (cov == 0)
+    if (cov)
     {
       if (cov == 255)
       {
@@ -8327,12 +8327,13 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   int components = 4;
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   rasterizer->comp_op = ctx_RGBA8_porter_duff_generic;
-
+#if 1
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
   {
     rasterizer->comp_op = ctx_RGBA8_clear_normal;
     return;
   }
+#endif
 
   if (gstate->source.type == CTX_SOURCE_COLOR)
     {
@@ -9212,7 +9213,6 @@ ctx_fragment_radial_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
 static void
 ctx_fragment_color_GRAYAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  float *graya = out;
   CtxSource *g = &rasterizer->state->gstate.source;
   ctx_color_get_graya (rasterizer->state, &g->color, out);
 }
