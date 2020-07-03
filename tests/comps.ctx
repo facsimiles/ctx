@@ -2,7 +2,7 @@ font_size 12^
 
 
 ctx_save
-  translate 150^ 50^
+  translate 120^ 50^
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
@@ -174,6 +174,23 @@ ctx_save
 ctx_restore
 
 ctx_save
+  translate 150^ 50^
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode clear
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "clear"
+ctx_restore
+
+ctx_save
   translate 90^ 50^
   rect(0^, 0^, 45^, 50^);
   clip
@@ -190,22 +207,6 @@ ctx_save
   text "dOut"
 ctx_restore
 
-ctx_save
-  translate 120^ 50^
-  rect(0^, 0^, 45^, 50^);
-  clip
-  rect(5^, 2^, 25^, 25^);
-  rgba 0 1 0 1
-  fill();
-  compositing_mode clear
-  arc ( 18^, 23^, 10^, 0, 6.0, 0);
-  rgba 1 0 0 1
-  fill();
-  gray 0
-  moveTo 5^ 48^
-  compositing_mode source_over
-  text "clear"
-ctx_restore
 
 
 

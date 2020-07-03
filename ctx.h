@@ -7736,6 +7736,8 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
     uint8_t cov = *coverage;
     if (cov == 0)
     {
+      for (int c = 0; c < components; c++)
+        { dst[c] = 0; }
     }
     else
     {
@@ -7754,7 +7756,7 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
     {
       uint8_t ralpha = 255 - cov;
       for (int c = 0; c < components; c++)
-        { dst[c] = (src[c]*cov + dst[c] * ralpha) / 255; }
+        { dst[c] = (src[c]*cov + 0 * ralpha) / 255; }
     }
     }
     dst += components;
@@ -7767,11 +7769,13 @@ ctx_u8_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   while (count--)
   {
+#if 0
     uint8_t cov = *coverage;
     if (cov)
     {
       if (cov == 255)
       {
+#endif
         switch (components)
         {
           case 1: dst[0] = 0; break;
@@ -7784,6 +7788,7 @@ ctx_u8_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
               dst[c] = 0;
             break;
         }
+#if 0
       }
       else
       {
@@ -7793,6 +7798,7 @@ ctx_u8_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
       }
     }
     coverage ++;
+#endif
     dst += components;
   }
 }
@@ -9993,17 +9999,23 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 
   if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OUT ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_IN ||
+      rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_DESTINATION_IN ||
+      rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_DESTINATION_ATOP ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_CLEAR)
   {
      /* fill in the rest of the blitrect when compositing mode permits it */
      uint8_t nocoverage[rasterizer->blit_width];
-     int gscan_start = rasterizer->blit_y * CTX_RASTERIZER_AA;
+     //int gscan_start = rasterizer->state->gstate.clip_min_y * CTX_RASTERIZER_AA;
+     int gscan_start = rasterizer->state->gstate.clip_min_y * CTX_RASTERIZER_AA;
+     int gscan_end = rasterizer->state->gstate.clip_max_y * CTX_RASTERIZER_AA;
      memset (nocoverage, 0, sizeof(nocoverage));
      int startx  = rasterizer->state->gstate.clip_min_x;
      int endx    = rasterizer->state->gstate.clip_max_x;
      int clipw   = endx-startx + 1;
      uint8_t *dst = ( (uint8_t *) rasterizer->buf);
+
+     dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (gscan_start / CTX_RASTERIZER_AA);
      for (rasterizer->scanline = gscan_start; rasterizer->scanline < scan_start;)
      {
        ctx_rasterizer_apply_coverage (rasterizer,
@@ -10040,12 +10052,13 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
      }
      }
      dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_end / CTX_RASTERIZER_AA);
-     for (rasterizer->scanline = scan_end; rasterizer->scanline/CTX_RASTERIZER_AA < rasterizer->blit_height;)
+     // XXX valgrind/asan this
+     if(0)for (rasterizer->scanline = scan_end; rasterizer->scanline/CTX_RASTERIZER_AA < gscan_end-1;)
      {
        ctx_rasterizer_apply_coverage (rasterizer,
                                       &dst[ (startx * rasterizer->format->bpp) /8],
                                       0,
-                                      nocoverage, clipw);
+                                      nocoverage, clipw-1);
 
        rasterizer->scanline += CTX_RASTERIZER_AA;
        dst += rasterizer->blit_stride;
