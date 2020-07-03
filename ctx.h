@@ -90,7 +90,6 @@ void      gtx_glyph_free     (CtxGlyph *glyphs);
  */
 Ctx *ctx_new (void);
 
-
 /**
  * ctx_new_for_framebuffer:
  *
@@ -3131,7 +3130,7 @@ static void ctx_color_get_drgba (CtxState *state, CtxColor *color, float *out)
   out[3] = color->alpha;
 }
 
-inline static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
+CTX_INLINE static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
 {
 #if CTX_ENABLE_CM
   if (! (color->valid & CTX_VALID_RGBA) )
@@ -3167,7 +3166,7 @@ static void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
 }
 
 #if CTX_ENABLE_CMYK
-static void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out)
+CTX_INLINE static void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out)
 {
   if (! (color->valid & CTX_VALID_CMYKA) )
     {
@@ -3212,7 +3211,7 @@ static void ctx_color_get_cmyka_u8 (CtxState *state, CtxColor *color, uint8_t *o
 #endif
 #endif
 
-inline static void
+CTX_INLINE static void
 ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (! (color->valid & CTX_VALID_RGBA_U8) )
@@ -3229,7 +3228,7 @@ ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
   out[3] = color->rgba[3];
 }
 
-inline static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
+CTX_INLINE static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (! (color->valid & CTX_VALID_GRAYA_U8) )
     {
