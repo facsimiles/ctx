@@ -2216,6 +2216,13 @@ ctx_floorf (float x)
 {
   return (int)x; // XXX
 }
+static inline float
+ctx_expf (float x)
+{
+  union { uint32_t i; float f; } v =
+    { (1 << 23) * (x + 183.1395965) };
+  return v.f;
+}
 
 /* define more trig based on having sqrt, sin and atan2 */
 
@@ -2229,6 +2236,7 @@ static inline float ctx_hypotf (float a, float b) { return hypotf (a, b); }
 static inline float ctx_acosf (float a)           { return acosf (a); }
 static inline float ctx_cosf (float a)            { return cosf (a); }
 static inline float ctx_tanf (float a)            { return tanf (a); }
+static inline float ctx_expf (float p)            { return expf (a); }
 #endif
 
 #ifdef CTX_IMPLEMENTATION
@@ -10767,12 +10775,12 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_rel_line_to (rasterizer, 0.3, 0);
   ctx_rasterizer_finish_shape (rasterizer);
 }
-#include <math.h>
+
 static float
 ctx_gaussian (float x, float mu, float sigma)
 {
   float a = ( x- mu) / sigma;
-  return expf (-0.5 * a * a);
+  return ctx_expf (-0.5 * a * a);
 }
 
 static void
