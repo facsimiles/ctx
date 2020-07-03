@@ -2471,6 +2471,7 @@ struct _CtxGState
   float         shadow_offset_x;
   float         shadow_offset_y;
   CtxColor      shadow_color;
+  int           clipped:1;
 
   int16_t       clip_min_x;
   int16_t       clip_min_y;
@@ -9864,7 +9865,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #if 1
   if (rasterizer->state->gstate.clip_min_x>
       minx)
-    { minx = rasterizer->state->gstate.clip_min_x; }
+    { clip_comp_x = rasterizer->state->gstate.clip_min_x - minx;
+      minx = rasterizer->state->gstate.clip_min_x; }
   if (rasterizer->state->gstate.clip_max_x <
       maxx)
     { maxx = rasterizer->state->gstate.clip_max_x; }
@@ -9975,7 +9977,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
             {
               ctx_rasterizer_apply_coverage (rasterizer,
-                                             &dst[ (minx * rasterizer->format->bpp) /8],
+                                             &dst[(minx * rasterizer->format->bpp) /8],
                                              minx,
                                              coverage, maxx-minx);
             }
@@ -9998,27 +10000,35 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
      uint8_t nocoverage[rasterizer->blit_width];
      int gscan_start = rasterizer->blit_y * CTX_RASTERIZER_AA;
      memset (nocoverage, 0, sizeof(nocoverage));
+     int startx  = rasterizer->state->gstate.clip_min_x;
+     int endx    = rasterizer->state->gstate.clip_max_x;
+     int clipw   = endx-startx + 1;
      uint8_t *dst = ( (uint8_t *) rasterizer->buf);
      for (rasterizer->scanline = gscan_start; rasterizer->scanline < scan_start;)
      {
        ctx_rasterizer_apply_coverage (rasterizer,
-                                      dst,
+                                      &dst[ (startx * rasterizer->format->bpp) /8],
                                       0,
-                                      nocoverage, rasterizer->blit_width);
+                                      nocoverage, clipw);
        rasterizer->scanline += CTX_RASTERIZER_AA;
        dst += rasterizer->blit_stride;
      }
+     if (minx < startx)
      for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
      {
        ctx_rasterizer_apply_coverage (rasterizer,
-                                      dst,
+                                      &dst[ (startx * rasterizer->format->bpp) /8],
                                       0,
-                                      nocoverage, minx);
-
+                                      nocoverage, minx-startx);
+       dst += rasterizer->blit_stride;
+     }
+     if (endx < maxx)
+     for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
+     {
        ctx_rasterizer_apply_coverage (rasterizer,
                                       &dst[ (maxx * rasterizer->format->bpp) /8],
                                       0,
-                                      nocoverage, rasterizer->blit_width-maxx);
+                                      nocoverage, endx-maxx);
 
        rasterizer->scanline += CTX_RASTERIZER_AA;
        dst += rasterizer->blit_stride;
@@ -10027,9 +10037,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
      for (rasterizer->scanline = scan_end; rasterizer->scanline/CTX_RASTERIZER_AA < rasterizer->blit_height;)
      {
        ctx_rasterizer_apply_coverage (rasterizer,
-                                      dst,
+                                      &dst[ (startx * rasterizer->format->bpp) /8],
                                       0,
-                                      nocoverage, rasterizer->blit_width);
+                                      nocoverage, clipw);
 
        rasterizer->scanline += CTX_RASTERIZER_AA;
        dst += rasterizer->blit_stride;
@@ -10173,7 +10183,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   int height = (rasterizer->scan_max + (CTX_RASTERIZER_AA-1) ) / CTX_RASTERIZER_AA - rasterizer->scan_min / CTX_RASTERIZER_AA;
   if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
       && width < CTX_SHAPE_CACHE_MAX_DIM
-      && height < CTX_SHAPE_CACHE_MAX_DIM)
+      && height < CTX_SHAPE_CACHE_MAX_DIM && !rasterizer->state->gstate.clipped)
     {
       int scan_min = rasterizer->scan_min;
       int col_min = rasterizer->col_min;
@@ -10674,6 +10684,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
   int count = rasterizer->edge_list.count;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   rasterizer->state->has_clipped=1;
+  rasterizer->state->gstate.clipped=1;
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
   int minx = 5000;
