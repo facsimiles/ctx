@@ -10110,6 +10110,21 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                          */
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
+
+  if (rasterizer->in_shadow)
+  {
+  for (int i = 0; i < rasterizer->edge_list.count; i++)
+    {
+      CtxEntry *entry = &rasterizer->edge_list.entries[i];
+      entry->data.s16[2] += rasterizer->shadow_x * CTX_SUBDIV;
+      entry->data.s16[3] += rasterizer->shadow_y * CTX_RASTERIZER_AA;
+    }
+    rasterizer->scan_min += rasterizer->shadow_y;
+    rasterizer->scan_max += rasterizer->shadow_y;
+    rasterizer->col_min  += rasterizer->shadow_x;
+    rasterizer->col_max  += rasterizer->shadow_x;
+  }
+
 #if 1
   if (rasterizer->scan_min / CTX_RASTERIZER_AA > rasterizer->blit_y + rasterizer->blit_height ||
       rasterizer->scan_max / CTX_RASTERIZER_AA < rasterizer->blit_y)
@@ -10128,19 +10143,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
   ctx_rasterizer_setup (rasterizer);
 
-  if (rasterizer->in_shadow)
-  {
-  for (int i = 0; i < rasterizer->edge_list.count; i++)
-    {
-      CtxEntry *entry = &rasterizer->edge_list.entries[i];
-      entry->data.s16[2] += rasterizer->shadow_x * CTX_SUBDIV;
-      entry->data.s16[3] += rasterizer->shadow_y * CTX_RASTERIZER_AA;
-    }
-    rasterizer->scan_min += rasterizer->shadow_y;
-    rasterizer->scan_max += rasterizer->shadow_y;
-    rasterizer->col_min  += rasterizer->shadow_x;
-    rasterizer->col_max  += rasterizer->shadow_x;
-  }
 
   rasterizer->state->min_x =
     ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
@@ -10183,7 +10185,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   int height = (rasterizer->scan_max + (CTX_RASTERIZER_AA-1) ) / CTX_RASTERIZER_AA - rasterizer->scan_min / CTX_RASTERIZER_AA;
   if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
       && width < CTX_SHAPE_CACHE_MAX_DIM
-      && height < CTX_SHAPE_CACHE_MAX_DIM && !rasterizer->state->gstate.clipped)
+      && height < CTX_SHAPE_CACHE_MAX_DIM && !rasterizer->state->gstate.clipped &&
+      !rasterizer->in_shadow)
     {
       int scan_min = rasterizer->scan_min;
       int col_min = rasterizer->col_min;
@@ -10259,6 +10262,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
                                      );
     }
+
 done:
   if (rasterizer->preserve)
     {
@@ -10499,12 +10503,14 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   int preserved = rasterizer->preserve;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
+#if 0
   if (rasterizer->state->gstate.line_width <= 0.0f &&
       rasterizer->state->gstate.line_width > -10.0f)
     {
       ctx_rasterizer_stroke_1px (rasterizer);
     }
   else
+#endif
     {
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
       CtxMatrix transform_backup = rasterizer->state->gstate.transform;
