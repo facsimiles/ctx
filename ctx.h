@@ -1422,8 +1422,15 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_DITHER 1
 #endif
 
-/* some performance gain from inlining code paths in normal
- * blend-mode - trading code size.
+/*  this forces the inlining of some performance
+ *  critical paths.
+ */
+#ifndef CTX_FORCE_INLINES
+#define CTX_FORCE_INLINES       1
+#endif
+
+/* quite a bit of code can be dropped for the
+ *
  */
 #ifndef CTX_INLINED_NORMAL     
 #define CTX_INLINED_NORMAL      1
@@ -1452,20 +1459,22 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  */
 #if CTX_LIMIT_FORMATS==0
 
+#define CTX_ENABLE_GRAY1                1
+#define CTX_ENABLE_GRAY2                1
+#define CTX_ENABLE_GRAY4                1
 #define CTX_ENABLE_GRAY8                1
 #define CTX_ENABLE_GRAYA8               1
+#define CTX_ENABLE_GRAYF                1
+#define CTX_ENABLE_GRAYAF               1
+
 #define CTX_ENABLE_RGB8                 1
 #define CTX_ENABLE_RGBA8                1
 #define CTX_ENABLE_BGRA8                1
+
 #define CTX_ENABLE_RGB332               1
 #define CTX_ENABLE_RGB565               1
 #define CTX_ENABLE_RGB565_BYTESWAPPED   1
 #define CTX_ENABLE_RGBAF                1
-#define CTX_ENABLE_GRAYF                1
-#define CTX_ENABLE_GRAYAF               1
-#define CTX_ENABLE_GRAY1                1
-#define CTX_ENABLE_GRAY2                1
-#define CTX_ENABLE_GRAY4                1
 
 #if CTX_ENABLE_CMYK
 #define CTX_ENABLE_CMYK8                1
@@ -1475,7 +1484,6 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 #endif
 
-#define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
 
 /* by including ctx-font-regular.h, or ctx-font-mono.h the
  * built-in fonts using ctx renderstream encoding is enabled
@@ -1546,7 +1554,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_ENABLE_CMYK   1
 #endif
 
-#define CTX_PI               3.141592653589793f
+#define CTX_PI                              3.141592653589793f
 #ifndef CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  100
 #endif
@@ -1578,6 +1586,8 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #ifndef CTX_RENDER_CTX
 #define CTX_RENDER_CTX           1
 #endif
+
+#define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
 
 #ifndef CTX_EVENTS
 #define CTX_EVENTS               0
@@ -1742,7 +1752,6 @@ static inline void ctx_list_prepend_full (CtxList **list, void *data,
   *list = new_;
 }
 
-
 static inline int ctx_list_length (CtxList *list)
 {
   int length = 0;
@@ -1793,7 +1802,6 @@ ctx_list_insert_before (CtxList **list, CtxList *sibling,
         }
     }
 }
-
 
 static inline void ctx_list_remove (CtxList **list, void *data)
 {
@@ -2035,26 +2043,6 @@ typedef enum CtxOutputmode
           (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a12))*27*27*27*27*27*27*27*27*27*27*27*27) + \
           (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a13))*27*27*27*27*27*27*27*27*27*27*27*27*27)))
 
-#if 0
-static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
-{
-  uint32_t str_hash = 0;
-  /* hash string to number */
-  {
-    int multiplier = 1;
-    for (int i = 0; str[i] && i < 14; i++)
-      {
-        if (case_insensitive)
-          { str_hash = str_hash + CTX_NORMALIZE_CASEFOLDED (str[i]) * multiplier; }
-        else
-          { str_hash = str_hash + CTX_NORMALIZE (str[i]) * multiplier; }
-        multiplier *= 27;
-      }
-  }
-  return str_hash;
-}
-#else
-
 static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 {
   uint32_t ret;
@@ -2092,7 +2080,6 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
                     len>=13?str[13]:0);
                   return ret;
 }
-#endif
 
 static inline float ctx_pow2 (float a) { return a * a; }
 #if CTX_MATH
@@ -2240,9 +2227,13 @@ static inline float ctx_tanf (float a)            { return tanf (a); }
 /* can balloon size and gcc itself is quite good at determining what to
  * inline
  */
-//#define CTX_INLINE   inline __attribute__((always_inline))
-#define CTX_INLINE inline
-#define CTX_INLINE2  inline __attribute__((always_inline))
+
+
+#if CTX_FORCE_INLINES
+#define CTX_INLINE  inline __attribute__((always_inline))
+#else
+#define CTX_INLINE  inline
+#endif
 
 #if 0
 static void
@@ -6894,7 +6885,7 @@ ctx_rasterizer_rel_curve_to (CtxRasterizer *rasterizer,
   ctx_rasterizer_curve_to (rasterizer, x0, y0, x1, y1, x2, y2);
 }
 
-CTX_INLINE2 static int ctx_compare_edges (const void *ap, const void *bp)
+CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
 {
   const CtxEntry *a = (const CtxEntry *) ap;
   const CtxEntry *b = (const CtxEntry *) bp;
@@ -6905,7 +6896,7 @@ CTX_INLINE2 static int ctx_compare_edges (const void *ap, const void *bp)
   return xcompare;
 }
 
-CTX_INLINE2 static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
+CTX_INLINE static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
 {
   CtxEntry pivot = A[ (high+low) /2];
   int i = low;
@@ -7083,14 +7074,14 @@ static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     }
 }
 
-CTX_INLINE2 static int ctx_compare_edges2 (const void *ap, const void *bp)
+CTX_INLINE static int ctx_compare_edges2 (const void *ap, const void *bp)
 {
   const CtxEdge *a = (const CtxEdge *) ap;
   const CtxEdge *b = (const CtxEdge *) bp;
   return a->x - b->x;
 }
 
-CTX_INLINE2 static int ctx_edge2_qsort_partition (CtxEdge *A, int low, int high)
+CTX_INLINE static int ctx_edge2_qsort_partition (CtxEdge *A, int low, int high)
 {
   CtxEdge pivot = A[ (high+low) /2];
   int i = low;
@@ -7137,7 +7128,7 @@ static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 #endif
 }
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
 {
   float v = x;
@@ -7186,7 +7177,7 @@ ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uin
     }
 }
 
-static void
+CTX_INLINE static void
 ctx_fragment_gradient_1d_RGBAF (CtxRasterizer *rasterizer, float x, float y, float *rgba)
 {
   float v = x;
@@ -7302,14 +7293,14 @@ ctx_dither_rgba_u8 (uint8_t *rgba, int x, int y, int dither_red_blue, int dither
 }
 #endif
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_u8_associate_alpha (int components, uint8_t *u8)
 {
   for (int c = 0; c < components-1; c++)
     u8[c] = (u8[c] * u8[components-1]) /255;
 }
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_u8_deassociate_alpha (int components, const uint8_t *col, uint8_t *dst)
 {
   if (col[components-1])
@@ -7325,19 +7316,19 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *col, uint8_t *dst)
   dst[components-1] = col[components-1];
 }
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_RGBA8_associate_alpha (uint8_t *rgba)
 {
   ctx_u8_associate_alpha (4, rgba);
 }
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_RGBA8_deassociate_alpha (const uint8_t *col, uint8_t *dst)
 {
   ctx_u8_deassociate_alpha (4, col, dst);
 }
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_float_associate_alpha (int components, float *rgba)
 {
   float alpha = rgba[components-1];
@@ -7345,7 +7336,7 @@ ctx_float_associate_alpha (int components, float *rgba)
     rgba[c] *= alpha;
 }
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_float_deassociate_alpha (int components, float *rgba, float *dst)
 {
   float ralpha = rgba[components-1];
@@ -7356,13 +7347,13 @@ ctx_float_deassociate_alpha (int components, float *rgba, float *dst)
   dst[components-1] = rgba[components-1];
 }
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_RGBAF_associate_alpha (float *rgba)
 {
   ctx_float_associate_alpha (4, rgba);
 }
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_RGBAF_deassociate_alpha (float *rgba, float *dst)
 {
   ctx_float_deassociate_alpha (4, rgba, dst);
@@ -8022,7 +8013,7 @@ ctx_u8_blend_define(luminosity,
   ctx_u8_set_lum(components, blended, in_lum);
 )
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
 {
   switch (blend)
@@ -8056,7 +8047,7 @@ typedef enum {
   CTX_PORTER_DUFF_1_MINUS_ALPHA,
 } CtxPorterDuffFactor;
 
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_porter_duff_factors (CtxCompositingMode mode,
                          CtxPorterDuffFactor *s,
                          CtxPorterDuffFactor *d)
@@ -8807,7 +8798,7 @@ ctx_float_blend_define(luminosity,
   ctx_float_set_lum(components, blended, in_lum);
 )
 
-CTX_INLINE static void
+inline static void
 ctx_float_blend (int components, CtxBlend blend, float * __restrict__ dst, float *src, float *blended)
 {
   switch (blend)
@@ -8837,7 +8828,7 @@ ctx_float_blend (int components, CtxBlend blend, float * __restrict__ dst, float
 /* this is the grunt working function, when inlined code-path elimination makes
  * it produce efficient code.
  */
-CTX_INLINE2 static void
+CTX_INLINE static void
 ctx_float_porter_duff (CtxRasterizer         *rasterizer,
                        int                    components,
                        uint8_t * __restrict__ dst,
