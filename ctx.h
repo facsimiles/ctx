@@ -302,12 +302,13 @@ typedef enum
 {
   CTX_COMPOSITE_SOURCE_OVER, // 0
   CTX_COMPOSITE_COPY,
-  CTX_COMPOSITE_CLEAR,
   CTX_COMPOSITE_SOURCE_IN,
   CTX_COMPOSITE_SOURCE_OUT,
   CTX_COMPOSITE_SOURCE_ATOP,
-  CTX_COMPOSITE_DESTINATION,
+  CTX_COMPOSITE_CLEAR,
+
   CTX_COMPOSITE_DESTINATION_OVER,
+  CTX_COMPOSITE_DESTINATION,
   CTX_COMPOSITE_DESTINATION_IN, // 8
   CTX_COMPOSITE_DESTINATION_OUT,
   CTX_COMPOSITE_DESTINATION_ATOP,
@@ -14501,6 +14502,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_copy:           ret = CTX_COMPOSITE_COPY; break;
           case CTX_destinationOver:
           case CTX_destination_over: ret = CTX_COMPOSITE_DESTINATION_OVER; break;
+          case CTX_destinationIn:
+          case CTX_destination_in:  ret = CTX_COMPOSITE_DESTINATION_IN; break;
           case CTX_destinationOut:
           case CTX_destination_out:  ret = CTX_COMPOSITE_DESTINATION_OUT; break;
           case CTX_sourceOver:
