@@ -697,6 +697,11 @@ typedef enum
   CTX_SET_LINE_CAP         = 30, // kc cap - u8, default = 0
   CTX_SET_LINE_WIDTH       = 31, // kw width, default = 2.0
   CTX_SET_FILL_RULE        = '!', // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
+  CTX_SET_SHADOW_BLUR      = '<', // ks
+  CTX_SET_SHADOW_COLOR     = '>', // kC
+  CTX_SET_SHADOW_OFFSET_X  = '{', // kx
+  CTX_SET_SHADOW_OFFSET_Y  = '}', // ky
+
 
   CTX_FUNCTION             = 25,
   //CTX_ENDFUN = 26,
@@ -1419,6 +1424,14 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  */
 #ifndef CTX_DITHER
 #define CTX_DITHER 1
+#endif
+
+/*  only source-over clear and copy will work, the API still
+ *  through - but the renderer is limited, for use to measure
+ *  size and possibly in severely constrained ROMs.
+ */
+#ifndef CTX_BLENDING_AND_COMPOSITING
+#define CTX_BLENDING_AND_COMPOSITING 0
 #endif
 
 /*  this forces the inlining of some performance
@@ -2449,6 +2462,10 @@ struct _CtxGState
   float         line_width;
   float         miter_limit;
   float         font_size;
+  float         shadow_blur;
+  float         shadow_offset_x;
+  float         shadow_offset_y;
+  CtxColor      shadow_color;
 
   int16_t       clip_min_x;
   int16_t       clip_min_y;
@@ -2699,6 +2716,10 @@ struct _CtxState
 #define CTX_scale          CTX_STRH('s','c','a','l','e',0,0,0,0,0,0,0,0,0)
 #define CTX_screen         CTX_STRH('s','c','r','e','e','n',0,0,0,0,0,0,0,0)
 #define CTX_setkey         CTX_STRH('s','e','t','k','e','y',0,0,0,0,0,0,0,0)
+#define CTX_shadowBlur     CTX_STRH('s','h','a','d','o','w','B','l','u','r',0,0,0,0)
+#define CTX_shadowColor    CTX_STRH('s','h','a','d','o','w','C','o','l','o','r',0,0,0)
+#define CTX_shadowOffsetX  CTX_STRH('s','h','a','d','o','w','O','f','f','s','e','t','X',0)
+#define CTX_shadowOffsetY  CTX_STRH('s','h','a','d','o','w','O','f','f','s','e','t','Y',0)
 #define CTX_smooth_quad_to CTX_STRH('s','m','o','o','t','h','_','q','u','a','d','_','t','o')
 #define CTX_smoothQuadTo   CTX_STRH('s','m','o','o','t','h','Q','u','a','d','T','o',0,0)
 #define CTX_smooth_to      CTX_STRH('s','m','o','o','t','h','_','t','o',0,0,0,0,0)
@@ -3152,13 +3173,34 @@ CTX_INLINE static void ctx_color_get_rgba (CtxState *state, CtxColor *color, flo
 #endif
 }
 
+#define CTX_CSS_LUMINANCE_RED   0.3f
+#define CTX_CSS_LUMINANCE_GREEN 0.59f
+#define CTX_CSS_LUMINANCE_BLUE  0.11f
+
+/* works on both float and uint8_t */
+#define CTX_CSS_RGB_TO_LUMINANCE(rgb)  (\
+  (rgb[0]) * CTX_CSS_LUMINANCE_RED + \
+  (rgb[1]) * CTX_CSS_LUMINANCE_GREEN +\
+  (rgb[2]) * CTX_CSS_LUMINANCE_BLUE)
+
+CTX_INLINE static float ctx_float_color_rgb_to_gray (CtxState *state, const float *rgb)
+{
+        // XXX todo replace with correct according to primaries
+  return CTX_CSS_RGB_TO_LUMINANCE(rgb);
+}
+CTX_INLINE static uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb)
+{
+        // XXX todo replace with correct according to primaries
+  return CTX_CSS_RGB_TO_LUMINANCE(rgb);
+}
+
 static void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
 {
   if (! (color->valid & CTX_VALID_GRAYA) )
     {
       float rgba[4];
       ctx_color_get_drgba (state, color, rgba);
-      color->l = (rgba[0] + rgba[1] + rgba[2]) /3.0f; // XXX
+      color->l = ctx_float_color_rgb_to_gray (state, rgba);
       color->valid |= CTX_VALID_GRAYA;
     }
   out[0] = color->l;
@@ -3370,11 +3412,8 @@ struct
 
 #if CTX_EVENTS 
 
-
 // YYY include list implementation - since it already is a header+inline online
 // implementation?
-
-
 
 typedef struct CtxItemCb {
   CtxEventType types;
@@ -4718,6 +4757,24 @@ void ctx_set_line_width (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_SET_LINE_WIDTH, x);
 }
 
+void ctx_set_shadow_blur (Ctx *ctx, float x)
+{
+  if (ctx->state.gstate.shadow_blur != x)
+    CTX_PROCESS_F1 (CTX_SET_SHADOW_BLUR, x);
+}
+
+void ctx_set_shadow_offset_x (Ctx *ctx, float x)
+{
+  if (ctx->state.gstate.shadow_offset_x != x)
+    CTX_PROCESS_F1 (CTX_SET_SHADOW_OFFSET_X, x);
+}
+
+void ctx_set_shadow_offset_y (Ctx *ctx, float x)
+{
+  if (ctx->state.gstate.shadow_offset_y != x)
+    CTX_PROCESS_F1 (CTX_SET_SHADOW_OFFSET_Y, x);
+}
+
 void
 ctx_set_global_alpha (Ctx *ctx, float global_alpha)
 {
@@ -5283,6 +5340,15 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
     {
       case CTX_SET_LINE_WIDTH:
         state->gstate.line_width = ctx_arg_float (0);
+        break;
+      case CTX_SET_SHADOW_BLUR:
+        state->gstate.shadow_blur = ctx_arg_float (0);
+        break;
+      case CTX_SET_SHADOW_OFFSET_X:
+        state->gstate.shadow_offset_x = ctx_arg_float (0);
+        break;
+      case CTX_SET_SHADOW_OFFSET_Y:
+        state->gstate.shadow_offset_y = ctx_arg_float (0);
         break;
       case CTX_SET_LINE_CAP:
         state->gstate.line_cap = (CtxLineCap) ctx_arg_u8 (0);
@@ -7782,6 +7848,8 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
   }
 }
 
+#if CTX_BLENDING_AND_COMPOSITING
+
 #define ctx_u8_blend_define(name, CODE) \
 static void \
 ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)\
@@ -7855,10 +7923,7 @@ static int ctx_int_get_lum (int components, int *c)
   {
     case 3:
     case 4:
-            return c[0] * 0.3 + 
-                   c[1] * 0.59 +
-                   c[2] * 0.11;
-            break;
+            return CTX_CSS_RGB_TO_LUMINANCE(c);
     case 1:
     case 2:
             return c[0];
@@ -7882,10 +7947,7 @@ static int ctx_u8_get_lum (int components, uint8_t *c)
   {
     case 3:
     case 4:
-            return c[0] * 0.3 + 
-                   c[1] * 0.59 +
-                   c[2] * 0.11;
-            break;
+            return CTX_CSS_RGB_TO_LUMINANCE(c);
     case 1:
     case 2:
             return c[0];
@@ -8011,10 +8073,12 @@ ctx_u8_blend_define(luminosity,
     blended[i] = b[i];
   ctx_u8_set_lum(components, blended, in_lum);
 )
+#endif
 
 CTX_INLINE static void
 ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
 {
+#if CTX_BLENDING_AND_COMPOSITING
   switch (blend)
   {
     case CTX_BLEND_NORMAL:      ctx_u8_blend_normal      (components, dst, src, blended); break;
@@ -8037,6 +8101,13 @@ ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_
     case CTX_BLEND_DIVIDE:      ctx_u8_blend_divide      (components, dst, src, blended); break;
     case CTX_BLEND_SUBTRACT:    ctx_u8_blend_subtract    (components, dst, src, blended); break;
   }
+#else
+  switch (blend)
+  {
+    default:                    ctx_u8_blend_normal      (components, dst, src, blended); break;
+  }
+
+#endif
 }
 
 typedef enum {
@@ -8619,10 +8690,7 @@ static float ctx_float_get_lum (int components, float *c)
   {
     case 3:
     case 4:
-            return c[0] * 0.3 + 
-                   c[1] * 0.59 +
-                   c[2] * 0.11;
-            break;
+            return CTX_CSS_RGB_TO_LUMINANCE(c);
     case 1:
     case 2:
             return c[0];
@@ -9174,12 +9242,6 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
 #endif
 #if CTX_ENABLE_GRAYAF
 
-static void ctx_rgba_to_graya (float *in, float *out)
-{
-  out[0] = (in[1]+in[2]+in[3])/3;
-  out[1] = in[3];
-}
-
 static void
 ctx_fragment_linear_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
@@ -9188,9 +9250,10 @@ ctx_fragment_linear_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
   float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
                 g->linear_gradient.length) -
               g->linear_gradient.start) /
-            (g->linear_gradient.end - g->linear_gradient.start);
+            (g->linear_gradient.rdelta);
   ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0, rgba);
-  ctx_rgba_to_graya (rgba, (float*)out);
+  ((float*)out)[0] = ctx_float_color_rgb_to_gray (rasterizer->state, rgba);
+  ((float*)out)[1] = rgba[3];
 }
 
 static void
@@ -9202,11 +9265,11 @@ ctx_fragment_radial_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
   if ((g->radial_gradient.r1-g->radial_gradient.r0) > 0.0f)
     {
       v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
-      v = (v - g->radial_gradient.r0) /
-          (g->radial_gradient.r1 - g->radial_gradient.r0);
+      v = (v - g->radial_gradient.r0) / (g->radial_gradient.rdelta);
     }
   ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 0.0, rgba);
-  ctx_rgba_to_graya (rgba, (float*)out);
+  ((float*)out)[0] = ctx_float_color_rgb_to_gray (rasterizer->state, rgba);
+  ((float*)out)[1] = rgba[3];
 }
 
 
@@ -9231,7 +9294,8 @@ static void ctx_fragment_image_GRAYAF (CtxRasterizer *rasterizer, float x, float
       default: ctx_fragment_image_RGBA8 (rasterizer, x, y, rgba);       break;
     }
   for (int c = 0; c < 4; c ++) { rgbaf[c] = ctx_u8_to_float (rgba[c]); }
-  ctx_rgba_to_graya (rgbaf, (float*)out);
+  ((float*)out)[0] = ctx_float_color_rgb_to_gray (rasterizer->state, rgbaf);
+  ((float*)out)[1] = rgbaf[3];
 }
 
 static CtxFragment ctx_rasterizer_get_fragment_GRAYAF (CtxRasterizer *rasterizer)
@@ -11259,7 +11323,7 @@ ctx_RGBA8_to_GRAY1 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
   uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      int gray = (rgba[0]+rgba[1]+rgba[2]) /3 ;
+      int gray = ctx_u8_color_rgb_to_gray (rasterizer->state, rgba);
       //gray += ctx_dither_mask_a (x, rasterizer->scanline/CTX_RASTERIZER_AA, 0, 127);
       if (gray < 127)
         {
@@ -11304,7 +11368,7 @@ ctx_RGBA8_to_GRAY2 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
   uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      int val = (rgba[0]+rgba[1]+rgba[2]) /3 ;
+      int val = ctx_u8_color_rgb_to_gray (rasterizer->state, rgba);
       val >>= 6;
       *pixel = *pixel & (~ (3 << ( (x&3) <<1) ) );
       *pixel = *pixel | ( (val << ( (x&3) <<1) ) );
@@ -11343,7 +11407,7 @@ ctx_RGBA8_to_GRAY4 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
   uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      int val = (rgba[0]+rgba[1]+rgba[2]) /3 ;
+      int val = ctx_u8_color_rgb_to_gray (rasterizer->state, rgba);
       val >>= 4;
       *pixel = *pixel & (~ (15 << ( (x&1) <<2) ) );
       *pixel = *pixel | ( (val << ( (x&1) <<2) ) );
@@ -11378,7 +11442,7 @@ ctx_RGBA8_to_GRAY8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
   uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      pixel[0] = (rgba[0]+rgba[1]+rgba[2]) /3;
+      pixel[0] = ctx_u8_color_rgb_to_gray (rasterizer->state, rgba);
       // for internal uses... using only green would work
       pixel+=1;
       rgba +=4;
@@ -11409,7 +11473,7 @@ ctx_RGBA8_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
   uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      pixel[0] = (rgba[0]+rgba[1]+rgba[2]) /3;
+      pixel[0] = ctx_u8_color_rgb_to_gray (rasterizer->state, rgba);
       pixel[1] = rgba[3];
       pixel+=2;
       rgba +=4;
@@ -11417,9 +11481,9 @@ ctx_RGBA8_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
 }
 
 #if CTX_NATIVE_GRAYA8
-static void ctx_rgba_to_graya_u8 (uint8_t *in, uint8_t *out)
+CTX_INLINE static void ctx_rgba_to_graya_u8 (CtxState *state, uint8_t *in, uint8_t *out)
 {
-  out[0] = (in[1]+in[2]+in[3])/3;
+  out[0] = ctx_u8_color_rgb_to_gray (state, in);
   out[1] = in[3];
 }
 
@@ -11430,10 +11494,9 @@ ctx_fragment_linear_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
                 g->linear_gradient.length) -
-              g->linear_gradient.start) /
-            (g->linear_gradient.end - g->linear_gradient.start);
+              g->linear_gradient.start) / (g->linear_gradient.rdelta);
   ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 1.0, rgba);
-  ctx_rgba_to_graya_u8 (rgba, (uint8_t*)out);
+  ctx_rgba_to_graya_u8 (rasterizer->state, rgba, (uint8_t*)out);
 }
 
 static void
@@ -11445,8 +11508,7 @@ ctx_fragment_radial_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y
   if ((g->radial_gradient.r1-g->radial_gradient.r0) > 0.0f)
     {
       v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
-      v = (v - g->radial_gradient.r0) /
-          (g->radial_gradient.r1 - g->radial_gradient.r0);
+      v = (v - g->radial_gradient.r0) / (g->radial_gradient.rdelta);
     }
   ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0, rgba);
   ctx_rgba_to_graya_u8 (rgba, (uint8_t*)out);
@@ -11534,9 +11596,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
           rasterizer->color[c] = (rasterizer->color[c] * gstate->global_alpha_u8)/255;
-      rasterizer->color[0] = (rasterizer->color[0]+
-                              rasterizer->color[1]+
-                              rasterizer->color[2])/3;
+      rasterizer->color[0] = ctx_u8_color_rgb_to_gray (rasterizer->state, rasterizer->color);
       rasterizer->color[1] = rasterizer->color[3];
     }
   else
@@ -13350,6 +13410,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_SET_LINE_JOIN:        name="set_line_join"; break;
           case CTX_SET_LINE_CAP:         name="set_line_cap"; break;
           case CTX_SET_LINE_WIDTH:       name="set_line_width"; break;
+          case CTX_SET_SHADOW_BLUR:      name="setShadowBlur";  break;
           case CTX_SET_FILL_RULE:        name="set_fill_rule"; break;
           case CTX_SET:                  name="setprop"; break;
         }
@@ -13403,6 +13464,18 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           break;
         case CTX_SET_LINE_WIDTH:
           name[1]='w';
+          break;
+        case CTX_SET_SHADOW_BLUR:
+          name[1]='s';
+          break;
+        case CTX_SET_SHADOW_COLOR:
+          name[1]='C';
+          break;
+        case CTX_SET_SHADOW_OFFSET_X:
+          name[1]='x';
+          break;
+        case CTX_SET_SHADOW_OFFSET_Y:
+          name[1]='y';
           break;
         case CTX_SET_FILL_RULE:
           name[1]='r';
@@ -13681,6 +13754,9 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_SET_MITER_LIMIT:
       case CTX_ROTATE:
       case CTX_SET_LINE_WIDTH:
+      case CTX_SET_SHADOW_BLUR:
+      case CTX_SET_SHADOW_OFFSET_X:
+      case CTX_SET_SHADOW_OFFSET_Y:
       case CTX_VER_LINE_TO:
       case CTX_HOR_LINE_TO:
         ctx_print_entry (stream, formatter, indent, entry, 1);
@@ -14057,6 +14133,9 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_SET_LINE_JOIN:
       case CTX_SET_LINE_CAP:
       case CTX_SET_LINE_WIDTH:
+      case CTX_SET_SHADOW_BLUR:
+      case CTX_SET_SHADOW_OFFSET_X:
+      case CTX_SET_SHADOW_OFFSET_Y:
       case CTX_SET_FILL_RULE:
       case CTX_SET_TEXT_ALIGN:
       case CTX_SET_TEXT_BASELINE:
@@ -14366,6 +14445,12 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_line_width:
           case CTX_lineWidth:
             return ctx_parser_set_command (parser, CTX_SET_LINE_WIDTH);
+          case CTX_shadowBlur:
+            return ctx_parser_set_command (parser, CTX_SET_SHADOW_BLUR);
+          case CTX_shadowOffsetX:
+            return ctx_parser_set_command (parser, CTX_SET_SHADOW_OFFSET_X);
+          case CTX_shadowOffsetY:
+            return ctx_parser_set_command (parser, CTX_SET_SHADOW_OFFSET_Y);
           case STR (CTX_SET_KEY,'a',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_global_alpha:
           case CTX_globalAlpha:
@@ -14823,6 +14908,15 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_SET_LINE_WIDTH:
         ctx_set_line_width (ctx, arg (0) );
+        break;
+      case CTX_SET_SHADOW_BLUR:
+        ctx_set_shadow_blur (ctx, arg (0) );
+        break;
+      case CTX_SET_SHADOW_OFFSET_X:
+        ctx_set_shadow_offset_x (ctx, arg (0) );
+        break;
+      case CTX_SET_SHADOW_OFFSET_Y:
+        ctx_set_shadow_offset_y (ctx, arg (0) );
         break;
       case CTX_SET_LINE_JOIN:
         ctx_set_line_join (ctx, (CtxLineJoin) arg (0) );

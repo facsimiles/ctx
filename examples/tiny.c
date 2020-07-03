@@ -2,16 +2,17 @@
 
 #include "ctx-font-ascii.h"
 #define CTX_LIMIT_FORMATS   1
-#define CTX_ENABLE_RGBA8    1
+#define CTX_ENABLE_RGBA8    1 // this format is mandatory
 #define CTX_ENABLE_CMYK     0
 #define CTX_ENABLE_CM       0
 #define CTX_PARSER          0
+#define CTX_RENDER_CTX      0
 #define CTX_DITHER          0 // implied by limit formats and only rgba being anbled, but we're explicit
 #define CTX_FORMATTER       0
 #define CTX_BITPACK_PACKER  0
 #define CTX_FORCE_INLINES   0
-#define CTX_INLINED_NORMAL  0
-#define CTX_GRADIENT_CACHE  0
+#define CTX_BLENDING_AND_COMPOSITING 0   // 4392 bytes of code difference
+#define CTX_INLINED_NORMAL           0   // 328 bytes of difference, big speed impact
 #define CTX_RENDERSTREAM_STATIC 1
 #define CTX_FONTS_FROM_FILE     0 /* leaves out code */
 #define CTX_IMPLEMENTATION
