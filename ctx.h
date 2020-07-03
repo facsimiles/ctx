@@ -1431,7 +1431,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  *  size and possibly in severely constrained ROMs.
  */
 #ifndef CTX_BLENDING_AND_COMPOSITING
-#define CTX_BLENDING_AND_COMPOSITING 0
+#define CTX_BLENDING_AND_COMPOSITING 1
 #endif
 
 /*  this forces the inlining of some performance
