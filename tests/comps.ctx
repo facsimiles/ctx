@@ -1,0 +1,217 @@
+font_size 12^
+
+
+ctx_save
+  translate 150^ 50^
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode destination_atop
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "dAtop"
+ctx_restore
+
+ctx_save
+  translate 0^ 0^
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 0 1 1
+  fill();
+  compositing_mode source_over
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0.3 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "sOver"
+ctx_restore
+
+ctx_save
+  translate 30^ 0
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode copy
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "copy"
+ctx_restore
+
+ctx_save
+  translate 60^ 0
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode source_in
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "sIn"
+ctx_restore
+
+ctx_save
+  translate 90^ 0
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode source_out
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "sOut"
+ctx_restore
+
+ctx_save
+  translate 120^ 0
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode source_atop
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "sAtop"
+ctx_restore
+
+
+ctx_save
+  translate 150^ 0
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode xor
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "xor"
+ctx_restore
+
+
+ctx_save
+  translate 0^ 50^
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 0 1 1
+  fill();
+  compositing_mode destination_over
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0.3 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "dOvr"
+ctx_restore
+
+ctx_save
+  translate 30^ 50^
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode destination
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "dest"
+ctx_restore
+
+ctx_save
+  translate 60^ 50^
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode destination_in
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "dIn"
+ctx_restore
+
+ctx_save
+  translate 90^ 50^
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode destination_out
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "dOut"
+ctx_restore
+
+ctx_save
+  translate 120^ 50^
+  rect(0^, 0^, 45^, 50^);
+  clip
+  rect(5^, 2^, 25^, 25^);
+  rgba 0 1 0 1
+  fill();
+  compositing_mode clear
+  arc ( 18^, 23^, 10^, 0, 6.0, 0);
+  rgba 1 0 0 1
+  fill();
+  gray 0
+  moveTo 5^ 48^
+  compositing_mode source_over
+  text "clear"
+ctx_restore
+
+
+
+
+compositing_mode destination_over
+rect(0,0,100%,100%)
+gray 1
+fill
+

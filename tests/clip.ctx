@@ -1,9 +1,22 @@
-rgb 1 1 1 rectangle 0 0 100% 100% fill
-
-rectangle 30% 30% 20% 20%
-clip
-rgb 0 0 0
-arc 50% 50% 30% 0 6.2 0
+rgb 1 1 0
+rectangle 0 0 100% 100% 
 fill
 
+save
+arc 50% 50% 40% 0 6.1 0
+#rectangle 10 10 100 100
+clip
+
+
+rgba linearGradient 0 0 100% 100%
+addStop 0 0 0 0 1
+addStop 0.5 0 0 0 0.0
+addStop 1 1 1 1 1
+
+rectangle 0 0 100% 100% fill
+restore
+
+arc 50% 50% 40% 0 6.1 0
+rgba 1 0 0 0.5
+fill
 

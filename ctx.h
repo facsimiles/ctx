@@ -10014,6 +10014,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
        dst += rasterizer->blit_stride;
      }
      if (minx < startx)
+     {
+     dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_start / CTX_RASTERIZER_AA);
      for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
      {
        ctx_rasterizer_apply_coverage (rasterizer,
@@ -10022,7 +10024,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
                                       nocoverage, minx-startx);
        dst += rasterizer->blit_stride;
      }
-     if (endx < maxx)
+     }
+     if (endx > maxx)
+     {
+     dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_start / CTX_RASTERIZER_AA);
      for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
      {
        ctx_rasterizer_apply_coverage (rasterizer,
@@ -10032,6 +10037,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 
        rasterizer->scanline += CTX_RASTERIZER_AA;
        dst += rasterizer->blit_stride;
+     }
      }
      dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_end / CTX_RASTERIZER_AA);
      for (rasterizer->scanline = scan_end; rasterizer->scanline/CTX_RASTERIZER_AA < rasterizer->blit_height;)
@@ -10158,7 +10164,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       CtxEntry *entry1 = &rasterizer->edge_list.entries[1];
       CtxEntry *entry2 = &rasterizer->edge_list.entries[2];
       CtxEntry *entry3 = &rasterizer->edge_list.entries[3];
-      if ( (entry0->data.s16[2] == entry1->data.s16[2]) &&
+      if (!rasterizer->state->gstate.clipped &&
+           (entry0->data.s16[2] == entry1->data.s16[2]) &&
            (entry0->data.s16[3] == entry3->data.s16[3]) &&
            (entry1->data.s16[3] == entry2->data.s16[3]) &&
            (entry2->data.s16[2] == entry3->data.s16[2])

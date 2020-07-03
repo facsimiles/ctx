@@ -1,0 +1,61 @@
+rgb 1 1 1 rectangle 0 0 100% 100% fill
+
+line_width=5%
+
+rgb 0 0 0
+arc 10% 15% 10% 0.0 4.2 0
+stroke
+
+arc 25% 15% 10% 0.0 5.5 0
+stroke
+
+arc 40% 15% 10% 0.0 6.0 0
+stroke
+
+arc 55% 15% 10% 0.0 6.1 0
+stroke
+
+arc 70% 15% 10% 0.0 6.2 0
+stroke
+
+arc 85% 15% 10% 0.0 6.3 0
+stroke
+
+
+rgb 0 0 0
+arc 10% 45% 10% 1.0 5.2 0
+stroke
+
+arc 25% 45% 10% 0.0 4.2 0
+stroke
+
+arc 40% 45% 10% -1.0 3.2 0
+stroke
+
+arc 55% 45% 10% 2.0 6.2 0
+stroke
+
+arc 70% 45% 10% -2.0 2.2 0
+stroke
+
+arc 85% 45% 10% -3.0 1.2 0
+stroke
+
+
+arc 10% 75% 10% 0.0 -4.2 1
+stroke
+
+arc 25% 75% 10% 0.0 -5.5 1
+stroke
+
+arc 40% 75% 10% 0.0 -6.0 1
+stroke
+
+arc 55% 75% 10% 0.0 -6.1 1
+stroke
+
+arc 70% 75% 10% 0.0 -6.2 1
+stroke
+
+arc 85% 75% 10% 0.0 -6.3 1
+stroke
