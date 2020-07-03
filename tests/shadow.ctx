@@ -4,9 +4,9 @@ fill
 
 
 rgba shadowColor 0 0 0 1
-shadowBlur 8^
-shadowOffsetX 6
-shadowOffsetY 6
+shadowBlur 0.5@
+shadowOffsetX 0.5@
+shadowOffsetY 0.5@
 
 
 rectangle 10% 20% 80% 60%
@@ -24,7 +24,7 @@ set_text_baseline middle
 
 shadowOffsetX 0@
 shadowOffsetY 0@
-shadowBlur 4^
+shadowBlur 0.2@
 rgba shadowColor 1 0 0 1
 
 rgb 1 1 1
@@ -40,7 +40,7 @@ set_text_baseline middle
 
 shadowOffsetX 0.1@
 shadowOffsetY 0.1@
-shadowBlur 4
+shadowBlur 0.2@
 rgba shadowColor 0 0 0 1
 
 rgb 0.5 1 0.8

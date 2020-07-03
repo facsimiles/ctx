@@ -11082,16 +11082,21 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
           float *kernel = calloc (sizeof (float), dim * dim);
           ctx_compute_gaussian_kernel (dim, radius, kernel);
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
+
+          int step = 1;
+          if (dim > 30) step = 2;
+          if (dim > 60) step = 4;
+          if (dim > 90) step = 6;
           {
-            int i = 0;
             for (int v = 0; v < dim; v += 1)
-              for (int u = 0; u < dim; u += 1, i++)
+              for (int u = 0; u < dim; u += 1)
               {
+                int i = v * dim + u;
                 float dx = x + rasterizer->state->gstate.shadow_offset_x + u - dim/2;
                 float dy = y + rasterizer->state->gstate.shadow_offset_y + v - dim/2;
                 move_to_command[0].data.f[0] = dx;
                 move_to_command[0].data.f[1] = dy;
-                set_color_command[2].data.f[0] = kernel[i] * rgba[3];
+                set_color_command[2].data.f[0] = kernel[i] * step * step * rgba[3];
                 ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command);
                 ctx_rasterizer_process (rasterizer, (CtxCommand*)&move_to_command);
                 ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
@@ -11135,14 +11140,19 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
           float *kernel = calloc (sizeof (float), dim * dim);
           ctx_compute_gaussian_kernel (dim, radius, kernel);
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
+
+          int step = 1;
+          if (dim > 30) step = 2;
+          if (dim > 60) step = 4;
+          if (dim > 90) step = 6;
           {
-            int i = 0;
-            for (int v = 0; v < dim; v += 1)
-              for (int u = 0; u < dim; u += 1, i++)
+            for (int v = 0; v < dim; v += step)
+              for (int u = 0; u < dim; u += step)
               {
+                int i = v * dim + u;
                 float dx = rasterizer->state->gstate.shadow_offset_x + u - dim/2;
                 float dy = rasterizer->state->gstate.shadow_offset_y + v - dim/2;
-                set_color_command[2].data.f[0] = kernel[i] * rgba[3];
+                set_color_command[2].data.f[0] = kernel[i] * step * step * rgba[3];
                 ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command);
                 rasterizer->in_shadow = 1;
                 rasterizer->shadow_x = dx;
