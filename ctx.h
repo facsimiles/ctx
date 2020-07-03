@@ -3748,6 +3748,7 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_REL_CURVE_TO:
       case CTX_APPLY_TRANSFORM:
       case CTX_SET_COLOR:
+      case CTX_SET_SHADOW_COLOR:
         return 2;
       case CTX_RECTANGLE:
       case CTX_REL_QUAD_TO:
@@ -4022,6 +4023,7 @@ again:
         case CTX_ARC_TO:
         case CTX_REL_ARC_TO:
         case CTX_SET_COLOR:
+        case CTX_SET_SHADOW_COLOR:
         case CTX_RADIAL_GRADIENT:
         case CTX_CURVE_TO:
         case CTX_REL_CURVE_TO:
@@ -4763,6 +4765,17 @@ void ctx_set_shadow_blur (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_SET_SHADOW_BLUR, x);
 }
 
+void ctx_set_shadow_rgba (Ctx *ctx, float r, float g, float b, float a)
+{
+  CtxEntry command[3]=
+  {
+    ctx_f (CTX_SET_SHADOW_COLOR, CTX_RGBA, r),
+    ctx_f (CTX_CONT, g, b),
+    ctx_f (CTX_CONT, a, 0)
+  };
+  ctx_process (ctx, command);
+}
+
 void ctx_set_shadow_offset_x (Ctx *ctx, float x)
 {
   if (ctx->state.gstate.shadow_offset_x != x)
@@ -5384,6 +5397,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       case CTX_SET_MITER_LIMIT:
         state->gstate.miter_limit = ctx_arg_float (0);
         break;
+
       case CTX_SET_COLOR:
         {
           CtxColor *color = &state->gstate.source.color;
@@ -10724,6 +10738,33 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_rel_line_to (rasterizer, 0.3, 0);
   ctx_rasterizer_finish_shape (rasterizer);
 }
+#include <math.h>
+static float
+ctx_gaussian (float x, float mu, float sigma)
+{
+  float a = ( x- mu) / sigma;
+  return expf (-0.5 * a * a);
+}
+
+static void
+ctx_compute_gaussian_kernel (int dim, float radius, float *kernel)
+{
+  float sigma = radius / 2;
+  float sum = 0.0;
+  int i = 0;
+  for (int row = 0; row < dim; row ++)
+    for (int col = 0; col < dim; col ++, i++)
+    {
+      float val = ctx_gaussian (row, radius, sigma) *
+                            ctx_gaussian (col, radius, sigma);
+      kernel[i] = val;
+      sum += val;
+    }
+  i = 0;
+  for (int row = 0; row < dim; row ++)
+    for (int col = 0; col < dim; col ++, i++)
+        kernel[i] /= sum;
+}
 
 static void
 ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, float width, float height, float corner_radius)
@@ -10749,6 +10790,48 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
   CtxCommand *c = (CtxCommand *) entry;
   switch (c->code)
     {
+      case CTX_SET_SHADOW_COLOR:
+        {
+          CtxColor  col;
+          CtxColor *color = &col;
+          //state->gstate.source.type = CTX_SOURCE_COLOR;
+          switch ((int)c->rgba.model)
+            {
+              case CTX_RGB:
+                ctx_color_set_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, 1.0f);
+                break;
+              case CTX_RGBA:
+                //ctx_color_set_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+                ctx_color_set_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+                break;
+              case CTX_DRGBA:
+                ctx_color_set_drgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+                break;
+#if CTX_ENABLE_CMYK
+              case CTX_CMYKA:
+                ctx_color_set_cmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
+                break;
+              case CTX_CMYK:
+                ctx_color_set_cmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, 1.0f);
+                break;
+              case CTX_DCMYKA:
+                ctx_color_set_dcmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
+                break;
+              case CTX_DCMYK:
+                ctx_color_set_dcmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, 1.0f);
+                break;
+#endif
+              case CTX_GRAYA:
+                ctx_color_set_graya (state, color, c->graya.g, c->graya.a);
+                break;
+              case CTX_GRAY:
+                ctx_color_set_graya (state, color, c->graya.g, 1.0f);
+                break;
+            }
+          ctx_set_color (rasterizer->ctx, CTX_shadowColor, color);
+        }
+        break;
+
       case CTX_LINE_TO:
         ctx_rasterizer_line_to (rasterizer, c->c.x0, c->c.y0);
         break;
@@ -10854,35 +10937,45 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         {
           float x = rasterizer->state->x;
           float y = rasterizer->state->y;
+          CtxColor color;
           CtxEntry save_command = ctx_void(CTX_SAVE);
+
+          float rgba[4] = {0, 0, 0, 1.0};
+          if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
+            ctx_color_get_rgba (rasterizer->state, &color, rgba);
+
           CtxEntry set_color_command [3]=
           {
-            ctx_f (CTX_SET_COLOR, CTX_RGBA, 0),
-            ctx_f (CTX_CONT, 0, 0),
-            ctx_f (CTX_CONT, 0.04, 0)
+            ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
+            ctx_f (CTX_CONT, rgba[1], rgba[2]),
+            ctx_f (CTX_CONT, rgba[3], 0)
           };
           CtxEntry move_to_command [1]=
           {
             ctx_f (CTX_MOVE_TO, x, y),
           };
           CtxEntry restore_command = ctx_void(CTX_RESTORE);
-
+          float radius = rasterizer->state->gstate.shadow_blur;
+          int dim = 2 * radius + 1;
+          float *kernel = calloc (sizeof (float), dim * dim);
+          ctx_compute_gaussian_kernel (dim, radius, kernel);
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
-
           {
-            for (int u = - 3; u < 3; u += 1)
-              for (int v = - 3; v < 3; v += 1)
+            int i = 0;
+            for (int v = 0; v < dim; v += 1)
+              for (int u = 0; u < dim; u += 1, i++)
               {
-                float dx = x + rasterizer->state->gstate.shadow_offset_x + u;
-                float dy = y + rasterizer->state->gstate.shadow_offset_y + v;
+                float dx = x + rasterizer->state->gstate.shadow_offset_x + u - dim/2;
+                float dy = y + rasterizer->state->gstate.shadow_offset_y + v - dim/5;
                 move_to_command[0].data.f[0] = dx;
                 move_to_command[0].data.f[1] = dy;
+                set_color_command[2].data.f[0] = kernel[i] * rgba[3];
                 ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command);
                 ctx_rasterizer_process (rasterizer, (CtxCommand*)&move_to_command);
                 ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
               }
           }
-
+          free (kernel);
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
           move_to_command[0].data.f[0] = x;
           move_to_command[0].data.f[1] = y;
@@ -14133,6 +14226,7 @@ static int ctx_arguments_for_code (CtxCode code)
                  */
       //case CTX_SET_KEY:
       case CTX_SET_COLOR:
+      case CTX_SET_SHADOW_COLOR:
         return 200;  /* 200 means number of components */
       case CTX_GRADIENT_STOP:
         return 201;  /* 201 means number of components+1 */
@@ -14389,6 +14483,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_line_width:
           case CTX_lineWidth:
             return ctx_parser_set_command (parser, CTX_SET_LINE_WIDTH);
+          case CTX_shadowColor:
+            return ctx_parser_set_command (parser, CTX_SET_SHADOW_COLOR);
           case CTX_shadowBlur:
             return ctx_parser_set_command (parser, CTX_SET_SHADOW_BLUR);
           case CTX_shadowOffsetX:
@@ -14852,6 +14948,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_SET_LINE_WIDTH:
         ctx_set_line_width (ctx, arg (0) );
+        break;
+      case CTX_SET_SHADOW_COLOR:
+        ctx_set_shadow_rgba (ctx, arg (0), arg(1), arg(2), arg(3));
         break;
       case CTX_SET_SHADOW_BLUR:
         ctx_set_shadow_blur (ctx, arg (0) );
