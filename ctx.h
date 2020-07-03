@@ -8532,6 +8532,8 @@ ctx_float_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
     uint8_t cov = *coverage;
     if (cov == 0)
     {
+      for (int c = 0; c < components; c++)
+        { dst[c] = 0; }
     }
     else
     {
@@ -8549,9 +8551,8 @@ ctx_float_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
     else
     {
       float covf = ctx_u8_to_float (cov);
-      float ralpha = 1.0f - covf;
       for (int c = 0; c < components; c++)
-        dstf[c] = (srcf[c]*cov + dstf[c] * ralpha);
+        dstf[c] = srcf[c]*covf;
     }
     }
     dstf += components;
@@ -8565,12 +8566,14 @@ ctx_float_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
   float *dstf = (float*)dst;
   while (count--)
   {
+#if 0
     uint8_t cov = *coverage;
     if (cov == 0)
     {
     }
     else if (cov == 255)
     {
+#endif
       switch (components)
       {
         case 2:
@@ -8584,6 +8587,7 @@ ctx_float_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
           for (int c = 0; c < components; c++)
             dstf[c] = 0.0f;
       }
+#if 0
     }
     else
     {
@@ -8592,6 +8596,7 @@ ctx_float_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
         { dstf[c] = (dstf[c] * ralpha); }
     }
     coverage ++;
+#endif
     dstf += components;
   }
 }
