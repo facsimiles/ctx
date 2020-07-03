@@ -6894,7 +6894,7 @@ ctx_rasterizer_rel_curve_to (CtxRasterizer *rasterizer,
   ctx_rasterizer_curve_to (rasterizer, x0, y0, x1, y1, x2, y2);
 }
 
-CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
+CTX_INLINE2 static int ctx_compare_edges (const void *ap, const void *bp)
 {
   const CtxEntry *a = (const CtxEntry *) ap;
   const CtxEntry *b = (const CtxEntry *) bp;
@@ -6905,7 +6905,7 @@ CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
   return xcompare;
 }
 
-CTX_INLINE static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
+CTX_INLINE2 static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
 {
   CtxEntry pivot = A[ (high+low) /2];
   int i = low;
@@ -7083,14 +7083,14 @@ static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     }
 }
 
-CTX_INLINE static int ctx_compare_edges2 (const void *ap, const void *bp)
+CTX_INLINE2 static int ctx_compare_edges2 (const void *ap, const void *bp)
 {
   const CtxEdge *a = (const CtxEdge *) ap;
   const CtxEdge *b = (const CtxEdge *) bp;
   return a->x - b->x;
 }
 
-CTX_INLINE static int ctx_edge2_qsort_partition (CtxEdge *A, int low, int high)
+CTX_INLINE2 static int ctx_edge2_qsort_partition (CtxEdge *A, int low, int high)
 {
   CtxEdge pivot = A[ (high+low) /2];
   int i = low;
@@ -8183,12 +8183,6 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
           case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1])/255; break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (255-tsrc[components-1]))/255; break;
         }
-#if 0
-        if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
-        { // XXX perf impact?
-          if (res > 255) res = 255;
-        }
-#endif
         dst[c] = res;
       }
       covp ++;
@@ -8768,16 +8762,16 @@ ctx_float_blend_define_seperable(exclusion,   blended[c] = b[c] + s[c] - 2.0f * 
 ctx_float_blend_define_seperable(soft_light,
   if (s[c] <= 0.5f)
   {
-    blended[c] = b[c] - (1.0f - 2 * s[c]) * b[c] * (1.0f - b[c]);
+    blended[c] = b[c] - (1.0f - 2.0f * s[c]) * b[c] * (1.0f - b[c]);
   }
   else
   {
     int d;
     if (b[c] <= 255/4)
-      d = (((16 * b[c] - 12) * b[c] + 4.0f) * b[c]);
+      d = (((16 * b[c] - 12.0f) * b[c] + 4.0f) * b[c]);
     else
       d = ctx_sqrtf(b[c]);
-    blended[c] = (b[c] + (2 * s[c] - 1.0f) * (d - b[c]));
+    blended[c] = (b[c] + (2.0f * s[c] - 1.0f) * (d - b[c]));
   }
 )
 
@@ -8843,7 +8837,7 @@ ctx_float_blend (int components, CtxBlend blend, float * __restrict__ dst, float
 /* this is the grunt working function, when inlined code-path elimination makes
  * it produce efficient code.
  */
-CTX_INLINE static void
+CTX_INLINE2 static void
 ctx_float_porter_duff (CtxRasterizer         *rasterizer,
                        int                    components,
                        uint8_t * __restrict__ dst,
@@ -8920,12 +8914,6 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
           case CTX_PORTER_DUFF_ALPHA:         res += (dstf[c] *       tsrc[components-1]); break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dstf[c] * (1.0f-tsrc[components-1])); break;
         }
-#if 0
-      if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
-      { // XXX perf impact?
-        if (res > 1.0f) res = 1.0f;
-      }
-#endif
         dstf[c] = res;
       }
       covp ++;
@@ -8982,12 +8970,6 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
           case CTX_PORTER_DUFF_ALPHA:         res += (dstf[c] *       tsrc[components-1]); break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dstf[c] * (1.0f-tsrc[components-1])); break;
         }
-#if 0
-      if (compositing_mode == CTX_PORTER_DUFF_ )
-      {
-        if (res > 1.0f) res = 1.0f;
-      }
-#endif
         dstf[c] = res;
       }
       covp ++;
