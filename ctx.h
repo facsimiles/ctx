@@ -9865,8 +9865,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #if 1
   if (rasterizer->state->gstate.clip_min_x>
       minx)
-    { clip_comp_x = rasterizer->state->gstate.clip_min_x - minx;
-      minx = rasterizer->state->gstate.clip_min_x; }
+    { minx = rasterizer->state->gstate.clip_min_x; }
   if (rasterizer->state->gstate.clip_max_x <
       maxx)
     { maxx = rasterizer->state->gstate.clip_max_x; }
