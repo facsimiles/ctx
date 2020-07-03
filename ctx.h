@@ -8422,7 +8422,11 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
                  rasterizer->comp_op = ctx_RGBA8_nop;
                  break;
                default:
+#if CTX_INLINED_NORMAL
                  rasterizer->comp_op = ctx_RGBA8_porter_duff_color_normal;
+#else
+         rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
+#endif
                  break;
              }
          }
