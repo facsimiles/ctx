@@ -2541,6 +2541,7 @@ struct _CtxKeyDbEntry
 struct _CtxState
 {
   int           has_moved:1;
+  int           has_clipped:1;
   float         x;
   float         y;
   int           min_x;
@@ -4080,6 +4081,7 @@ ctx_gstate_push (CtxState *state)
   state->gstate_stack[state->gstate_no] = state->gstate;
   state->gstate_no++;
   ctx_state_set (state, CTX_new_state, 0.0);
+  state->has_clipped=0;
 }
 
 static void
@@ -9909,7 +9911,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
         { scan_end = rasterizer->scan_max; }
     }
   if (rasterizer->state->gstate.clip_min_y * CTX_RASTERIZER_AA > scan_start )
-    { scan_start = rasterizer->state->gstate.clip_min_y * CTX_RASTERIZER_AA; }
+    { 
+       dst += (rasterizer->blit_stride * (rasterizer->state->gstate.clip_min_y * CTX_RASTERIZER_AA-scan_start) /CTX_RASTERIZER_AA);
+       scan_start = rasterizer->state->gstate.clip_min_y * CTX_RASTERIZER_AA; 
+    }
   if (rasterizer->state->gstate.clip_max_y *  CTX_RASTERIZER_AA < scan_end)
     { scan_end = rasterizer->state->gstate.clip_max_y * CTX_RASTERIZER_AA; }
   if (scan_start > scan_end ||
@@ -10668,6 +10673,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->edge_list.count;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
+  rasterizer->state->has_clipped=1;
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
   int minx = 5000;
