@@ -17,10 +17,10 @@ rgba 0 0 0 1.0
 
 rgb 1 0 0
 
-set_font_size 1.0@
-move_to 50% 50%
-set_text_align right
-set_text_baseline middle
+fontSize 1.0@
+moveTo 50% 50%
+textAlign right
+textBaseline middle
 
 shadowOffsetX 0@
 shadowOffsetY 0@
@@ -34,9 +34,9 @@ text "light"
 
 rgb 1 0 0
 
-move_to 50% 50%
-set_text_align left
-set_text_baseline middle
+moveTo 50% 50%
+textAlign left
+textBaseline middle
 
 shadowOffsetX 0.1@
 shadowOffsetY 0.1@
@@ -48,12 +48,9 @@ rgb 0.5 1 0.8
 text "shadow"
 shadowBlur 4
 
-move_to 15% 30%
-line_to 14% 40%
-line_to 25% 60%
-line_to 12% 70%
-line_to 15% 75%
+moveTo 15% 30%
+lineTo 14% 40%
+lineTo 25% 60%
+lineTo 12% 70%
+lineTo 15% 75%
 stroke
-
-
-

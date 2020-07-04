@@ -1,23 +1,23 @@
-linear_gradient 0 0 80% 0
-gradient_add_stop 0 0 0 0 1
-gradient_add_stop 0.5 0.5 0.5 0.5 1
+linearGradient 0 0 80% 0
+gradientAddStop 0 0 0 0 1
+gradientAddStop 0.5 0.5 0.5 0.5 1
 rectangle 0 0 100% 100%
 fill
 
 rgba 1 0 0 0.5
-move_to 50% 0%
-line_to 50% 100%
-move_to 0% 50%
-line_to 100% 50%
-set_line_width 2%
+moveTo 50% 0%
+lineTo 50% 100%
+moveTo 0% 50%
+lineTo 100% 50%
+lineWidth 2%
 stroke
 
 
 rgb 1 1 1
 
-set_font_size 1.2@
-move_to 50% 50%
-set_text_align center
-set_text_baseline middle
+fontSize 1.2@
+moveTo 50% 50%
+textAlign center
+textBaseline middle
 text "centered"
 

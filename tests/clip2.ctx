@@ -1,15 +1,15 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
 rgb 0 0 0
-line_width=10%
+lineWidth=10%
 arc 50% 50% 30% 0.0 6.2 0
 clip
 
-line_width=5%
+lineWidth=5%
 rgb 1 0 0
-new_path
-move_to 0% 0%
-line_to 100% 100%
-move_to 100% 0%
-line_to 0% 100%
+beginPath
+moveTo 0% 0%
+lineTo 100% 100%
+moveTo 100% 0%
+lineTo 0% 100%
 stroke

@@ -1,217 +1,217 @@
-font_size 12^
+fontSize 12^
 
 
-ctx_save
+save
   translate 120^ 50^
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode destination_atop
+  compositingMode destinationAtop
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "dAtop"
-ctx_restore
+restore
 
-ctx_save
+save
   translate 0^ 0^
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 0 1 1
   fill();
-  compositing_mode source_over
+  compositingMode sourceOver
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0.3 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "sOver"
-ctx_restore
+restore
 
-ctx_save
+save
   translate 30^ 0
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode copy
+  compositingMode copy
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "copy"
-ctx_restore
+restore
 
-ctx_save
+save
   translate 60^ 0
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode source_in
+  compositingMode sourceIn
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "sIn"
-ctx_restore
+restore
 
-ctx_save
+save
   translate 90^ 0
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode source_out
+  compositingMode sourceOut
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "sOut"
-ctx_restore
+restore
 
-ctx_save
+save
   translate 120^ 0
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode source_atop
+  compositingMode sourceAtop
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "sAtop"
-ctx_restore
+restore
 
 
-ctx_save
+save
   translate 150^ 0
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode xor
+  compositingMode xor
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "xor"
-ctx_restore
+restore
 
 
-ctx_save
+save
   translate 0^ 50^
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 0 1 1
   fill();
-  compositing_mode destination_over
+  compositingMode destinationOver
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0.3 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "dOvr"
-ctx_restore
+restore
 
-ctx_save
+save
   translate 30^ 50^
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode destination
+  compositingMode destination
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "dest"
-ctx_restore
+restore
 
-ctx_save
+save
   translate 60^ 50^
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode destination_in
+  compositingMode destinationIn
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "dIn"
-ctx_restore
+restore
 
-ctx_save
+save
   translate 150^ 50^
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode clear
+  compositingMode clear
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "clear"
-ctx_restore
+restore
 
-ctx_save
+save
   translate 90^ 50^
   rect(0^, 0^, 45^, 50^);
   clip
   rect(5^, 2^, 25^, 25^);
   rgba 0 1 0 1
   fill();
-  compositing_mode destination_out
+  compositingMode destinationOut
   arc ( 18^, 23^, 10^, 0, 6.0, 0);
   rgba 1 0 0 1
   fill();
   gray 0
   moveTo 5^ 48^
-  compositing_mode source_over
+  compositingMode sourceOver
   text "dOut"
-ctx_restore
+restore
 
 
 
 
 
-compositing_mode destination_over
+compositingMode destinationOver
 rect(0,0,100%,100%)
 gray 1
 fill

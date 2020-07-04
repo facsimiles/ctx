@@ -1,41 +1,41 @@
-linear_gradient 0 0 80% 0
-gradient_add_stop 0 0 0 0 1
-gradient_add_stop 0.5 0.5 0.5 0.5 1
+linearGradient 0 0 80% 0
+gradientAddStop 0 0 0 0 1
+gradientAddStop 0.5 0.5 0.5 0.5 1
 rectangle 0 0 100% 100%
 fill
 
 rgba 1 0 0 0.5
-move_to 0% 33%
-line_to 100% 33%
-move_to 0% 66%
-line_to 100% 66%
-set_line_width 2%
+moveTo 0% 33%
+lineTo 100% 33%
+moveTo 0% 66%
+lineTo 100% 66%
+lineWidth 2%
 stroke
 
 rgb 1 1 1
 
-set_font_size 1@
-move_to 2% 33%
-set_text_baseline top
+fontSize 1@
+moveTo 2% 33%
+textBaseline top
 text "Top"
 
-move_to 2% 66%
-set_text_baseline bottom
+moveTo 2% 66%
+textBaseline bottom
 text "Bottom"
 
-move_to 70% 33%
-set_text_baseline middle
+moveTo 70% 33%
+textBaseline middle
 text "Middle"
 
-move_to 2% 33%
-set_text_baseline alphabetic
+moveTo 2% 33%
+textBaseline alphabetic
 text "Alphabetic"
 
-move_to 30% 66%
-set_text_baseline hanging
+moveTo 30% 66%
+textBaseline hanging
 text "Hanging"
 
-move_to 55% 66%
-set_text_baseline ideographic
+moveTo 55% 66%
+textBaseline ideographic
 text "Ideographic"
 

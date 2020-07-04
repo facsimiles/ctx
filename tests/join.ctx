@@ -1,20 +1,20 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
 rgb 0 0 0
-set_line_width 13%
+lineWidth 13%
 
-move_to 25% 7% line_to 50% 40% line_to 75% 7%
-set_line_join bevel
+moveTo 25% 7% lineTo 50% 40% lineTo 75% 7%
+lineJoin bevel
 stroke
 
 translate 0 24%
-move_to 25% 7% line_to 50% 40% line_to 75% 7%
-set_line_join round
+moveTo 25% 7% lineTo 50% 40% lineTo 75% 7%
+lineJoin round
 stroke
 
 translate 0 24%
-move_to 25% 7% line_to 50% 40% line_to 75% 7%
-set_line_join miter
+moveTo 25% 7% lineTo 50% 40% lineTo 75% 7%
+lineJoin miter
 stroke
 
 

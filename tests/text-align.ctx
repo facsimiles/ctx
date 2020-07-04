@@ -1,37 +1,37 @@
-linear_gradient 0 0 80% 0
-gradient_add_stop 0 0 0 0 1
-gradient_add_stop 0.5 0.5 0.5 0.5 1
+linearGradient 0 0 80% 0
+gradientAddStop 0 0 0 0 1
+gradientAddStop 0.5 0.5 0.5 0.5 1
 rectangle 0 0 100% 100%
 fill
 
 rgba 1 0 0 0.5
-move_to 50% 0%
-line_to 50% 100%
-set_line_width 2%
+moveTo 50% 0%
+lineTo 50% 100%
+lineWidth 2%
 stroke
 
 
 rgb 1 1 1
 
-set_font_size 1@
-move_to 50% 20%
-set_text_align start
+fontSize 1@
+moveTo 50% 20%
+textAlign start
 text "start"
 
-move_to 50% 37%
+moveTo 50% 37%
 
-set_text_align center
+textAlign center
 text "center"
 
-move_to 50% 60%
-set_text_align end
+moveTo 50% 60%
+textAlign end
 text "end"
 
-move_to 50% 77%
-set_text_align left
+moveTo 50% 77%
+textAlign left
 text "left"
 
-move_to 50% 95%
-text_align=right
+moveTo 50% 95%
+textAlign=right
 text "right"
 
