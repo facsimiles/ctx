@@ -1440,7 +1440,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_FORCE_INLINES       1
 #endif
 
-#ifdef  CTX_POSTEL_PRINCIPLED_INPUT
+#ifndef  CTX_POSTEL_PRINCIPLED_INPUT
 #define CTX_POSTEL_PRINCIPLED_INPUT 0
 #endif
 
@@ -15082,77 +15082,82 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
 
           case STR (CTX_SET_KEY,'m',0,0,0,0,0,0,0,0,0,0,0,0) :
-          case CTX_composite:
-          case CTX_compositing_mode:
+          OPT(case CTX_composite:)
+          OPT(case CTX_compositing_mode:)
           case CTX_compositingMode:
             return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
+          case STR (CTX_SET_KEY,'B',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_blend:
           case CTX_blending:
-          case CTX_blending_mode:
-          case CTX_blend_mode:
+          OPT(case CTX_blending_mode:)
+          OPT(case CTX_blend_mode:)
           case CTX_blendMode:
             return ctx_parser_set_command (parser, CTX_SET_BLEND_MODE);
-          case CTX_rgb_space:
+          OPT(case CTX_rgb_space:)
           case CTX_rgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
           case CTX_cmykSpace:
-          case CTX_cmyk_space:
+          OPT(case CTX_cmyk_space:)
             return ctx_parser_set_command (parser, CTX_SET_CMYK_SPACE);
-          case CTX_drgb_space:
+          OPT(case CTX_drgb_space:)
           case CTX_drgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_DRGB_SPACE);
+          OPT(case CTX_fill_rule:)
           case STR (CTX_SET_KEY,'r',0,0,0,0,0,0,0,0,0,0,0,0) :
-          case CTX_fill_rule:
           case CTX_fillRule:
             return ctx_parser_set_command (parser, CTX_SET_FILL_RULE);
           case STR (CTX_SET_KEY,'f',0,0,0,0,0,0,0,0,0,0,0,0) :
-          case CTX_font_size:
+          OPT(case CTX_font_size:)
           case CTX_fontSize:
           case CTX_setFontSize:
             return ctx_parser_set_command (parser, CTX_SET_FONT_SIZE);
+          OPT(case CTX_miter_limit:)
           case STR (CTX_SET_KEY,'l',0,0,0,0,0,0,0,0,0,0,0,0) :
-          case CTX_miter_limit:
           case CTX_miterLimit:
             return ctx_parser_set_command (parser, CTX_SET_MITER_LIMIT);
+          OPT(case CTX_text_align:)
           case STR (CTX_SET_KEY,'t',0,0,0,0,0,0,0,0,0,0,0,0) :
-          case CTX_text_align:
           case CTX_textAlign:
             return ctx_parser_set_command (parser, CTX_SET_TEXT_ALIGN);
+          OPT(case CTX_text_baseline:)
           case STR (CTX_SET_KEY,'b',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_textBaseline:
-          case CTX_text_baseline:
             return ctx_parser_set_command (parser, CTX_SET_TEXT_BASELINE);
+          OPT(case CTX_text_direction:)
           case STR (CTX_SET_KEY,'d',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_textDirection:
-          case CTX_text_direction:
             return ctx_parser_set_command (parser, CTX_SET_TEXT_DIRECTION);
           case STR (CTX_SET_KEY,'j',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_join:
-          case CTX_line_join:
+          OPT(case CTX_line_join:)
           case CTX_lineJoin:
           case CTX_setLineJoin:
             return ctx_parser_set_command (parser, CTX_SET_LINE_JOIN);
           case STR (CTX_SET_KEY,'c',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_cap:
-          case CTX_line_cap:
+          OPT(case CTX_line_cap:)
           case CTX_lineCap:
           case CTX_setLineCap:
             return ctx_parser_set_command (parser, CTX_SET_LINE_CAP);
           case STR (CTX_SET_KEY,'w',0,0,0,0,0,0,0,0,0,0,0,0) :
-          case CTX_line_width:
+          OPT(case CTX_line_width:)
           case CTX_lineWidth:
           case CTX_setLineWidth:
             return ctx_parser_set_command (parser, CTX_SET_LINE_WIDTH);
+          case STR (CTX_SET_KEY,'s',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_shadowColor:
             return ctx_parser_set_command (parser, CTX_SET_SHADOW_COLOR);
+          case STR (CTX_SET_KEY,'C',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_shadowBlur:
             return ctx_parser_set_command (parser, CTX_SET_SHADOW_BLUR);
+          case STR (CTX_SET_KEY,'x',0,0,0,0,0,0,0,0,0,0,0,0) :
           case CTX_shadowOffsetX:
             return ctx_parser_set_command (parser, CTX_SET_SHADOW_OFFSET_X);
           case CTX_shadowOffsetY:
+          case STR (CTX_SET_KEY,'y',0,0,0,0,0,0,0,0,0,0,0,0) :
             return ctx_parser_set_command (parser, CTX_SET_SHADOW_OFFSET_Y);
           case STR (CTX_SET_KEY,'a',0,0,0,0,0,0,0,0,0,0,0,0) :
-          case CTX_global_alpha:
+          OPT(case CTX_global_alpha:)
           case CTX_globalAlpha:
             return ctx_parser_set_command (parser, CTX_SET_GLOBAL_ALPHA);
           /* strings are handled directly here,
