@@ -7278,6 +7278,58 @@ ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uin
 }
 
 CTX_INLINE static void
+ctx_fragment_gradient_1d_GRAYA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
+{
+  float v = x;
+  CtxGradient *g = &rasterizer->state->gradient;
+  if (v < 0) { v = 0; }
+  if (v > 1) { v = 1; }
+  if (g->n_stops == 0)
+    {
+      rgba[0] = rgba[1] = rgba[2] = v * 255;
+      rgba[1] = 255;
+      return;
+    }
+  CtxGradientStop *stop      = NULL;
+  CtxGradientStop *next_stop = &g->stops[0];
+  CtxColor *color;
+  for (int s = 0; s < g->n_stops; s++)
+    {
+      stop      = &g->stops[s];
+      next_stop = &g->stops[s+1];
+      if (s + 1 >= g->n_stops) { next_stop = NULL; }
+      if (v >= stop->pos && next_stop && v < next_stop->pos)
+        { break; }
+      stop = NULL;
+      next_stop = NULL;
+    }
+  if (stop == NULL && next_stop)
+    {
+      color = & (next_stop->color);
+    }
+  else if (stop && next_stop == NULL)
+    {
+      color = & (stop->color);
+    }
+  else if (stop && next_stop)
+    {
+      uint8_t stop_rgba[4];
+      uint8_t next_rgba[4];
+      ctx_color_get_graya_u8 (rasterizer->state, & (stop->color), stop_rgba);
+      ctx_color_get_graya_u8 (rasterizer->state, & (next_stop->color), next_rgba);
+      int dx = (v - stop->pos) * 255 / (next_stop->pos - stop->pos);
+      for (int c = 0; c < 2; c++)
+        { rgba[c] = ctx_lerp_u8 (stop_rgba[c], next_rgba[c], dx); }
+      return;
+    }
+  else
+    {
+      color = & (g->stops[g->n_stops-1].color);
+    }
+  ctx_color_get_graya_u8 (rasterizer->state, color, rgba);
+}
+
+CTX_INLINE static void
 ctx_fragment_gradient_1d_RGBAF (CtxRasterizer *rasterizer, float v, float y, float *rgba)
 {
   CtxGradient *g = &rasterizer->state->gradient;
@@ -7390,6 +7442,18 @@ ctx_dither_rgba_u8 (uint8_t *rgba, int x, int y, int dither_red_blue, int dither
   for (int c = 0; c < 3; c ++)
     {
       int val = rgba[c] + ctx_dither_mask_a (x, y, 0, c==1?dither_green:dither_red_blue);
+      rgba[c] = CTX_CLAMP (val, 0, 255);
+    }
+}
+
+inline static void
+ctx_dither_graya_u8 (uint8_t *rgba, int x, int y, int dither_red_blue, int dither_green)
+{
+  if (dither_red_blue == 0)
+    { return; }
+  for (int c = 0; c < 1; c ++)
+    {
+      int val = rgba[c] + ctx_dither_mask_a (x, y, 0, dither_red_blue);
       rgba[c] = CTX_CLAMP (val, 0, 255);
     }
 }
@@ -7930,6 +7994,8 @@ ctx_RGBA8_source_over_normal_linear_gradient (
   float linear_gradient_rdelta = g->linear_gradient.rdelta;
   float linear_gradient_start = g->linear_gradient.start;
   float linear_gradient_length = g->linear_gradient.length;
+  int dither_red_blue = rasterizer->format->dither_red_blue;
+  int dither_green = rasterizer->format->dither_green;
 
   while (count--)
   {
@@ -7940,6 +8006,9 @@ ctx_RGBA8_source_over_normal_linear_gradient (
       float vv = ( ( (linear_gradient_dx * u0 + linear_gradient_dy * v0) / linear_gradient_length) -
             linear_gradient_start) * (linear_gradient_rdelta);
       ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, tsrc);
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
+#endif
       ctx_u8_associate_alpha (components, tsrc);
 
       if (cov == 255)
@@ -7979,6 +8048,8 @@ ctx_RGBA8_source_over_normal_radial_gradient (
   float radial_gradient_y0 = g->radial_gradient.y0;
   float radial_gradient_r0 = g->radial_gradient.r0;
   float radial_gradient_rdelta = g->radial_gradient.rdelta;
+  int dither_red_blue = rasterizer->format->dither_red_blue;
+  int dither_green = rasterizer->format->dither_green;
 
   while (count--)
   {
@@ -7989,6 +8060,9 @@ ctx_RGBA8_source_over_normal_radial_gradient (
       float vv = ctx_hypotf (radial_gradient_x0 - u0, radial_gradient_y0 - v0);
             vv = (vv - radial_gradient_r0) * (radial_gradient_rdelta);
       ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 0.0f, tsrc);
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
+#endif
 
       ctx_u8_associate_alpha (components, tsrc);
 
@@ -12052,28 +12126,45 @@ CTX_INLINE static void ctx_rgba_to_graya_u8 (CtxState *state, uint8_t *in, uint8
 static void
 ctx_fragment_linear_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  uint8_t rgba[4];
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
                 g->linear_gradient.length) -
               g->linear_gradient.start) / (g->linear_gradient.rdelta);
-  ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 1.0, rgba);
-  ctx_rgba_to_graya_u8 (rasterizer->state, rgba, (uint8_t*)out);
+  ctx_fragment_gradient_1d_GRAYA8 (rasterizer, v, 1.0, (uint8_t*)out);
+#if CTX_DITHER
+  ctx_dither_graya_u8 ((uint8_t*)out, x, y, rasterizer->format->dither_red_blue,
+                      rasterizer->format->dither_green);
+#endif
 }
+
+#if 0
+static void
+ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
+{
+  uint8_t *rgba = (uint8_t *) out;
+  CtxSource *g = &rasterizer->state->gstate.source;
+  float v = (ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y) -
+              g->radial_gradient.r0) * (g->radial_gradient.rdelta);
+  ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0, rgba);
+#if CTX_DITHER
+  ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
+                      rasterizer->format->dither_green);
+#endif
+}
+#endif
+
 
 static void
 ctx_fragment_radial_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
-  uint8_t rgba[4];
   CtxSource *g = &rasterizer->state->gstate.source;
-  float v = 0.0f;
-  if ((g->radial_gradient.r1-g->radial_gradient.r0) > 0.0f)
-    {
-      v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
-      v = (v - g->radial_gradient.r0) / (g->radial_gradient.rdelta);
-    }
-  ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0, rgba);
-  ctx_rgba_to_graya_u8 (rasterizer->state, rgba, (uint8_t*)out);
+  float v = (ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y) -
+              g->radial_gradient.r0) * (g->radial_gradient.rdelta);
+  ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0, (uint8_t*)out);
+#if CTX_DITHER
+  ctx_dither_graya_u8 ((uint8_t*)out, x, y, rasterizer->format->dither_red_blue,
+                      rasterizer->format->dither_green);
+#endif
 }
 
 
