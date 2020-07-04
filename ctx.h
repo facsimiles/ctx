@@ -7721,6 +7721,7 @@ ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
   }
 }
 
+
 static void
 ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 {
@@ -7733,7 +7734,7 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 
   while (count--)
   {
-    uint8_t cov = *coverage;
+    int cov = *coverage;
     if (cov == 0)
     {
       for (int c = 0; c < components; c++)
@@ -7770,7 +7771,7 @@ ctx_u8_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
 #if 0
-    uint8_t cov = *coverage;
+    int cov = *coverage;
     if (cov)
     {
       if (cov == 255)
@@ -7807,6 +7808,111 @@ static void
 ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
 {
   ctx_u8_source_over_normal_opaque_color (4, rasterizer, dst, src, clip, x0, coverage, count);
+}
+
+typedef enum {
+  CTX_PORTER_DUFF_0,
+  CTX_PORTER_DUFF_1,
+  CTX_PORTER_DUFF_ALPHA,
+  CTX_PORTER_DUFF_1_MINUS_ALPHA,
+} CtxPorterDuffFactor;
+
+#define  \
+ctx_porter_duff_factors(mode, foo, bar)\
+{\
+  switch (mode)\
+  {\
+     case CTX_COMPOSITE_SOURCE_ATOP:\
+        f_s = CTX_PORTER_DUFF_ALPHA;\
+        f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;\
+      break;\
+     case CTX_COMPOSITE_DESTINATION_ATOP:\
+        f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;\
+        f_d = CTX_PORTER_DUFF_ALPHA;\
+      break;\
+     case CTX_COMPOSITE_DESTINATION_IN:\
+        f_s = CTX_PORTER_DUFF_0;\
+        f_d = CTX_PORTER_DUFF_ALPHA;\
+      break;\
+     case CTX_COMPOSITE_DESTINATION:\
+        f_s = CTX_PORTER_DUFF_0;\
+        f_d = CTX_PORTER_DUFF_1;\
+       break;\
+     case CTX_COMPOSITE_SOURCE_OVER:\
+        f_s = CTX_PORTER_DUFF_1;\
+        f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;\
+       break;\
+     case CTX_COMPOSITE_DESTINATION_OVER:\
+        f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;\
+        f_d = CTX_PORTER_DUFF_1;\
+       break;\
+     case CTX_COMPOSITE_XOR:\
+        f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;\
+        f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;\
+       break;\
+     case CTX_COMPOSITE_DESTINATION_OUT:\
+        f_s = CTX_PORTER_DUFF_0;\
+        f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;\
+       break;\
+     case CTX_COMPOSITE_SOURCE_OUT:\
+        f_s = CTX_PORTER_DUFF_1_MINUS_ALPHA;\
+        f_d = CTX_PORTER_DUFF_0;\
+       break;\
+     case CTX_COMPOSITE_SOURCE_IN:\
+        f_s = CTX_PORTER_DUFF_ALPHA;\
+        f_d = CTX_PORTER_DUFF_0;\
+       break;\
+     case CTX_COMPOSITE_COPY:\
+        f_s = CTX_PORTER_DUFF_1;\
+        f_d = CTX_PORTER_DUFF_0;\
+       break;\
+     default:\
+     case CTX_COMPOSITE_CLEAR:\
+        f_s = CTX_PORTER_DUFF_0;\
+        f_d = CTX_PORTER_DUFF_0;\
+       break;\
+  }\
+}
+
+static void
+ctx_u8_source_over_normal_color (int components,
+                     CtxRasterizer         *rasterizer,
+                     uint8_t * __restrict__ dst,
+                     uint8_t * __restrict__ src,
+                     uint8_t * __restrict__ clip,
+                     int                    x0,
+                     uint8_t * __restrict__ coverage,
+                     int                    count)
+{
+  uint8_t tsrc[4];
+  *((uint32_t*)tsrc) = *((uint32_t*)src);
+  ctx_u8_associate_alpha (components, tsrc);
+
+    while (count--)
+    {
+      int cov = *coverage;
+      if (cov)
+      {
+        if (cov == 255)
+        {
+        for (int c = 0; c < components; c++)
+          dst[c] = (tsrc[c]) + (dst[c] * (255-(tsrc[components-1])))/(255);
+        }
+        else
+        {
+          for (int c = 0; c < components; c++)
+            dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
+         }
+      }
+      coverage ++;
+      dst+=components;
+    }
+}
+
+static void
+ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
+{
+  ctx_u8_source_over_normal_color (4, rasterizer, dst, src, clip, x0, coverage, count);
 }
 
 static void
@@ -8111,71 +8217,6 @@ ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_
 #endif
 }
 
-typedef enum {
-  CTX_PORTER_DUFF_0,
-  CTX_PORTER_DUFF_1,
-  CTX_PORTER_DUFF_ALPHA,
-  CTX_PORTER_DUFF_1_MINUS_ALPHA,
-} CtxPorterDuffFactor;
-
-CTX_INLINE static void
-ctx_porter_duff_factors (CtxCompositingMode mode,
-                         CtxPorterDuffFactor *s,
-                         CtxPorterDuffFactor *d)
-{
-  switch (mode)
-  {
-     case CTX_COMPOSITE_SOURCE_ATOP:
-        *s = CTX_PORTER_DUFF_ALPHA;
-        *d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-      break;
-     case CTX_COMPOSITE_DESTINATION_ATOP:
-        *s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-        *d = CTX_PORTER_DUFF_ALPHA;
-      break;
-     case CTX_COMPOSITE_DESTINATION_IN:
-        *s = CTX_PORTER_DUFF_0;
-        *d = CTX_PORTER_DUFF_ALPHA;
-      break;
-     case CTX_COMPOSITE_DESTINATION:
-        *s = CTX_PORTER_DUFF_0;
-        *d = CTX_PORTER_DUFF_1;
-       break;
-     case CTX_COMPOSITE_SOURCE_OVER:
-        *s = CTX_PORTER_DUFF_1;
-        *d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-       break;
-     case CTX_COMPOSITE_DESTINATION_OVER:
-        *s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-        *d = CTX_PORTER_DUFF_1;
-       break;
-     case CTX_COMPOSITE_XOR:
-        *s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-        *d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-       break;
-     case CTX_COMPOSITE_DESTINATION_OUT:
-        *s = CTX_PORTER_DUFF_0;
-        *d = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-       break;
-     case CTX_COMPOSITE_SOURCE_OUT:
-        *s = CTX_PORTER_DUFF_1_MINUS_ALPHA;
-        *d = CTX_PORTER_DUFF_0;
-       break;
-     case CTX_COMPOSITE_SOURCE_IN:
-        *s = CTX_PORTER_DUFF_ALPHA;
-        *d = CTX_PORTER_DUFF_0;
-       break;
-     case CTX_COMPOSITE_COPY:
-        *s = CTX_PORTER_DUFF_1;
-        *d = CTX_PORTER_DUFF_0;
-       break;
-     default:
-     case CTX_COMPOSITE_CLEAR:
-        *s = CTX_PORTER_DUFF_0;
-        *d = CTX_PORTER_DUFF_0;
-       break;
-  }
-}
 
 CTX_INLINE static void
 _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
@@ -8201,8 +8242,8 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
 
     while (count--)
     {
-      uint8_t cov = *coverage;
       uint8_t tsrc[components];
+      int cov = *coverage;
 
       if (
         (compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 255)||
@@ -8248,16 +8289,22 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
         }
         dst[c] = res;
       }
+
+
       coverage ++;
       dst+=components;
     }
   }
   else
   {
+    uint8_t tsrc[components];
+
+    if (blend == CTX_BLEND_NORMAL)
+      ctx_u8_blend (components, blend, dst, src, tsrc);
+
     while (count--)
     {
-      uint8_t cov = *coverage;
-      uint8_t tsrc[components];
+      int cov = *coverage;
   
       if (
         (compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 255)||
@@ -8272,35 +8319,46 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
         continue;
       }
 
-      ctx_u8_blend (components, blend, dst, src, tsrc);
-  
-      if (cov != 255)
-        for (int c = 0; c < components; c++)
-          tsrc[c] = (tsrc[c] * cov)/255;
-  
-      for (int c = 0; c < components; c++)
+      if (blend != CTX_BLEND_NORMAL)
+        ctx_u8_blend (components, blend, dst, src, tsrc);
+
+      if (cov == 255) for (int c = 0; c < components; c++)
       {
         int res = 0;
         switch (f_s)
         {
           case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] *      dst[components-1])/255; break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (255-dst[components-1]))/255; break;
+          case CTX_PORTER_DUFF_1:             res += (tsrc[c] ); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] * dst[components-1])/(255); break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (255-dst[components-1]))/(255); break;
         }
         switch (f_d)
         {
           case CTX_PORTER_DUFF_0: break;
           case CTX_PORTER_DUFF_1:             res += (dst[c]); break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] *      tsrc[components-1])/255; break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (255-tsrc[components-1]))/255; break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1] )/(255); break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * ((255)-tsrc[components-1] ))/(255); break;
         }
-#if 0
-        if (f_d == CTX_PORTER_DUFF_1 && f_s == CTX_PORTER_DUFF_1)
+        dst[c] = res;
+      }
+      else for (int c = 0; c < components; c++)
+      {
+        int res = 0;
+        switch (f_s)
         {
-          if (res > 255) res = 255;
+          case CTX_PORTER_DUFF_0: break;
+          case CTX_PORTER_DUFF_1:             res += (tsrc[c] * cov)/255; break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] * cov * dst[components-1])/(255*255); break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * cov * (255-dst[components-1]))/(255*255); break;
         }
-#endif
+        switch (f_d)
+        {
+          case CTX_PORTER_DUFF_0: break;
+          case CTX_PORTER_DUFF_1:             res += (dst[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1] * cov)/(255*255); break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * ((255*255)-tsrc[components-1] * cov))/(255*255); break;
+        }
+
         dst[c] = res;
       }
       coverage ++;
@@ -8438,10 +8496,14 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
                  rasterizer->comp_op = ctx_RGBA8_nop;
                  break;
                default:
+#if 0
 #if CTX_INLINED_NORMAL
                  rasterizer->comp_op = ctx_RGBA8_porter_duff_color_normal;
 #else
          rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
+#endif
+#else
+                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
 #endif
                  break;
              }
@@ -8529,7 +8591,7 @@ ctx_float_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 
   while (count--)
   {
-    uint8_t cov = *coverage;
+    int cov = *coverage;
     if (cov == 0)
     {
       for (int c = 0; c < components; c++)
@@ -8567,7 +8629,7 @@ ctx_float_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
 #if 0
-    uint8_t cov = *coverage;
+    int cov = *coverage;
     if (cov == 0)
     {
     }
@@ -8609,7 +8671,7 @@ ctx_float_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMEN
 
   while (count--)
   {
-    uint8_t cov = *coverage;
+    int cov = *coverage;
     if (cov)
     {
       if (cov == 255)
@@ -8897,7 +8959,7 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
 
     while (count--)
     {
-      uint8_t cov = *coverage;
+      int cov = *coverage;
       float tsrc[components];
 #if 1
       if (
@@ -8957,10 +9019,13 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
   }
   else
   {
+    float tsrc[components];
+    if (blend == CTX_BLEND_NORMAL)
+      ctx_float_blend (components, blend, dstf, srcf, tsrc);
+
     while (count--)
     {
-      uint8_t cov = *coverage;
-      float tsrc[components];
+      int cov = *coverage;
 #if 1
       if (
         (compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 1.0f)||
@@ -8976,7 +9041,8 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
       }
 #endif
   
-      ctx_float_blend (components, blend, dstf, srcf, tsrc);
+      if (blend != CTX_BLEND_NORMAL)
+        ctx_float_blend (components, blend, dstf, srcf, tsrc);
   
       if (cov != 255)
       {
