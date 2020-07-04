@@ -285,6 +285,7 @@ void ctx_render_ctx     (Ctx *ctx, Ctx *d_ctx);
 
 void ctx_start_move     (Ctx *ctx);
 
+
 int ctx_add_single      (Ctx *ctx, void *entry);
 
 uint32_t ctx_utf8_to_unichar (const char *input);
@@ -559,6 +560,9 @@ int   ctx_add_timeout        (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *i
 int   ctx_add_idle_full      (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                               void (*destroy_notify)(void *destroy_data), void *destroy_data);
 int   ctx_add_idle           (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data);
+
+
+void ctx_add_hit_region (Ctx *ctx, const char *id);
 
 void ctx_listen_full (Ctx     *ctx,
                       float    x,
@@ -16691,6 +16695,34 @@ void ctx_listen (Ctx          *ctx,
   if (types == CTX_DRAG_MOTION)
     types = CTX_DRAG_MOTION | CTX_DRAG_PRESS;
   return ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, NULL, NULL);
+}
+
+
+static void ctx_report_hit_region (CtxEvent *event,
+                       void     *data,
+                       void     *data2)
+{
+  const char *id = data;
+
+  fprintf (stderr, "hit region %s\n", id);
+  // XXX: NYI
+}
+
+void ctx_add_hit_region (Ctx *ctx, const char *id)
+{
+  char *id_copy = strdup (id);
+  float x, y, width, height;
+  /* generate bounding box of what to listen for - from current cairo path */
+  {
+     float ex1,ey1,ex2,ey2;
+     ctx_path_extents (ctx, &ex1, &ey1, &ex2, &ey2);
+     x = ex1;
+     y = ey1;
+     width = ex2 - ex1;
+     height = ey2 - ey1;
+  }
+  
+  return ctx_listen_full (ctx, x, y, width, height, CTX_POINTER, ctx_report_hit_region, id_copy, NULL, (void*)free, NULL);
 }
 
 typedef struct _CtxGrab CtxGrab;
