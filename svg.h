@@ -4420,7 +4420,7 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (ctx);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x - PROP(padding_left) - PROP(border_left_width),
                        y - PROP(padding_top) - PROP(border_top_width));
     ctx_rel_line_to (ctx, width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width), 0);
@@ -4443,7 +4443,7 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (ctx);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x + width + PROP(padding_right), y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, PROP(border_right_width), PROP(border_bottom_width));
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
@@ -4466,7 +4466,7 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (cr);
-    ctx_new_path (cr);
+    ctx_begin_path (cr);
     ctx_move_to (cr, x, y - PROP(padding_top) - PROP(border_top_width));
     ctx_rel_line_to (cr, width + PROP(padding_right) + PROP(border_right_width), 0);
     ctx_rel_line_to (cr, -PROP(border_right_width), PROP(border_top_width));
@@ -4487,7 +4487,7 @@ void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (ctx);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x + width + PROP(padding_right), y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, PROP(border_right_width), PROP(border_bottom_width));
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
@@ -4510,7 +4510,7 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (ctx);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x - PROP(padding_left) - PROP(border_left_width),
                        y - PROP(padding_top) - PROP(border_top_width));
     ctx_rel_line_to (ctx, width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width), 0);
@@ -4532,7 +4532,7 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (ctx);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x + width, y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, 0, PROP(border_bottom_width));
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(border_left_width)), 0);
@@ -4556,7 +4556,7 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (ctx);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x,
                        y - PROP(padding_top) - PROP(border_top_width));
     ctx_rel_line_to (ctx, width, 0);
@@ -4578,7 +4578,7 @@ void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (ctx);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x + width, y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, 0, PROP(border_bottom_width));
     ctx_rel_line_to (ctx, - width, 0);
@@ -4600,7 +4600,7 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (ctx);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x - PROP(padding_left) - PROP(border_left_width),
                        y - PROP(padding_top) - PROP(border_top_width));
     ctx_rel_line_to (ctx, PROP(border_left_width), PROP(border_top_width));
@@ -4622,7 +4622,7 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
       color.alpha > 0.001)
   {
   ctx_save (ctx);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x + width + PROP(padding_right), y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, PROP(border_right_width), PROP(border_bottom_width));
     ctx_rel_line_to (ctx, 0, - (height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width)));
@@ -4657,7 +4657,7 @@ static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float wid
 
   ctx_save (ctx);
   {
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, x,
                        y);
     ctx_rel_line_to (ctx, 0, height );
@@ -5113,7 +5113,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
       CtxColor color;
       ctx_get_color (cr, CTX_text_stroke_color, &color);
       mrg_ctx_set_source_color (cr, &color);
-      ctx_new_path (cr);
+      ctx_begin_path (cr);
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
       ctx_set_line_width (cr, PROP(text_stroke_width));
       ctx_set_line_join (cr, CTX_JOIN_ROUND);
@@ -5181,7 +5181,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
 
     //fprintf (stderr, "[%s %f (%f)]\n", string, old_x, new_x-old_x+1);
 
-    ctx_new_path (cr);
+    ctx_begin_path (cr);
     ctx_rectangle (cr,
         old_x, y - em, new_x - old_x + 1, em * mrg->state->style.line_height);
     ctx_listen (cr,
@@ -5189,7 +5189,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
                 mrg->text_listen_cb[no],
                 mrg->text_listen_data1[no],
                 mrg->text_listen_data2[no]);
-    ctx_new_path (cr);
+    ctx_begin_path (cr);
     ctx_move_to (cr, x, y);
   }
 

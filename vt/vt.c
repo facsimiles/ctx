@@ -4740,7 +4740,7 @@ int vt_get_cursor_y (VT *vt)
 
 static void draw_braille_bit (Ctx *ctx, float x, float y, float cw, float ch, int u, int v)
 {
-  ctx_new_path (ctx);
+  ctx_begin_path (ctx);
   ctx_rectangle (ctx, 0.167 * cw + x + u * cw * 0.5,
                  y - ch + 0.080 * ch + v * ch * 0.25,
                  0.33 *cw, 0.33 * cw);
@@ -4752,7 +4752,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
   switch (unichar)
     {
       case 0x2594: // UPPER_ONE_EIGHT_BLOCK
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         {
           float factor = 1.0f/8.0f;
           ctx_rectangle (ctx, x, y - ch, cw, ch * factor);
@@ -4760,7 +4760,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         }
         return 0;
       case 0x2581: // LOWER_ONE_EIGHT_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         {
           float factor = 1.0f/8.0f;
           ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
@@ -4768,7 +4768,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         }
         return 0;
       case 0x2582: // LOWER_ONE_QUARTER_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         {
           float factor = 1.0f/4.0f;
           ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
@@ -4776,7 +4776,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         }
         return 0;
       case 0x2583: // LOWER_THREE_EIGHTS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         {
           float factor = 3.0f/8.0f;
           ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
@@ -4784,7 +4784,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         }
         return 0;
       case 0x2585: // LOWER_FIVE_EIGHTS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         {
           float factor = 5.0f/8.0f;
           ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
@@ -4792,7 +4792,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         }
         return 0;
       case 0x2586: // LOWER_THREE_QUARTERS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         {
           float factor = 3.0f/4.0f;
           ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
@@ -4800,7 +4800,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         }
         return 0;
       case 0x2587: // LOWER_SEVEN_EIGHTS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         {
           float factor = 7.0f/8.0f;
           ctx_rectangle (ctx, x, y - ch * factor, cw, ch * factor);
@@ -4808,97 +4808,97 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         }
         return 0;
       case 0x2589: // LEFT_SEVEN_EIGHTS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw*7/8, ch);
         ctx_fill (ctx);
         return 0;
       case 0x258A: // LEFT_THREE_QUARTERS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw*3/4, ch);
         ctx_fill (ctx);
         return 0;
       case 0x258B: // LEFT_FIVE_EIGHTS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw*5/8, ch);
         ctx_fill (ctx);
         return 0;
       case 0x258D: // LEFT_THREE_EIGHTS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw*3/8, ch);
         ctx_fill (ctx);
         return 0;
       case 0x258E: // LEFT_ONE_QUARTER_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw/4, ch);
         ctx_fill (ctx);
         return 0;
       case 0x258F: // LEFT_ONE_EIGHT_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw/8, ch);
         ctx_fill (ctx);
         return 0;
       case 0x258C: // HALF_LEFT_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw/2, ch);
         ctx_fill (ctx);
         return 0;
       case 0x2590: // HALF_RIGHT_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2, y - ch, cw/2, ch);
         ctx_fill (ctx);
         return 0;
       case 0x1fb8f: // VT_RIGHT_SEVEN_EIGHTS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw*1/8, y - ch, cw*7/8, ch);
         ctx_fill (ctx);
         return 0;
       case 0x1fb8d: // VT_RIGHT_FIVE_EIGHTS_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw*3/8, y - ch, cw*5/8, ch);
         ctx_fill (ctx);
         return 0;
       case 0x1fb8b: // VT_RIGHT_ONE_QUARTER_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw*3/4, y - ch, cw/4, ch);
         ctx_fill (ctx);
         return 0;
       case 0x1fb8e: // VT_RIGHT_THREE_QUARTER_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw*1/4, y - ch, cw*3/4, ch);
         ctx_fill (ctx);
         return 0;
       case 0x2595: // VT_RIGHT_ONE_EIGHT_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw*7/8, y - ch, cw/8, ch);
         ctx_fill (ctx);
         return 0;
       case 0x2580: // HALF_UP_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw, ch/2);
         ctx_fill (ctx);
         return 0;
       case 0x2584: // _HALF_DOWN_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch/2, cw, ch/2);
         ctx_fill (ctx);
         return 0;
       case 0x2596: // _QUADRANT LOWER LEFT
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch/2, cw/2, ch/2);
         ctx_fill (ctx);
         return 0;
       case 0x2597: // _QUADRANT LOWER RIGHT
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x+cw/2, y - ch/2, cw/2, ch/2);
         ctx_fill (ctx);
         return 0;
       case 0x2598: // _QUADRANT UPPER LEFT
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw/2, ch/2);
         ctx_fill (ctx);
         return 0;
       case 0x259D: // _QUADRANT UPPER RIGHT
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2, y - ch, cw/2, ch/2);
         ctx_fill (ctx);
         return 0;
@@ -4931,12 +4931,12 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         vt_special_glyph (ctx, vt, x, y, cw, ch, 0x2597);
         return 0;
       case 0x2588: // FULL_BLOCK:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw, ch);
         ctx_fill (ctx);
         return 0;
       case 0x2591: // LIGHT_SHADE:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw, ch);
         ctx_save (ctx);
         ctx_set_global_alpha (ctx, 0.25);
@@ -4944,7 +4944,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_restore (ctx);
         return 0;
       case 0x2592: // MEDIUM_SHADE:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw, ch);
         ctx_save (ctx);
         ctx_set_global_alpha (ctx, 0.5);
@@ -4952,7 +4952,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_restore (ctx);
         return 0;
       case 0x2593: // DARK SHADE:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw, ch);
         ctx_save (ctx);
         ctx_set_global_alpha (ctx, 0.75);
@@ -4960,102 +4960,102 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_restore (ctx);
         return 0;
       case 0x23BA: //HORIZONTAL_SCANLINE-1
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x,      y - ch + ch*0.1 - ch * 0.1,
                        cw, ch * 0.1);
         ctx_fill (ctx);
         return 0;
       case 0x23BB: //HORIZONTAL_SCANLINE-3
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x,      y - ch + ch*0.3 - ch * 0.075,
                        cw, ch * 0.1);
         ctx_fill (ctx);
         return 0;
       case 0x23BC: //HORIZONTAL_SCANLINE-7
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x,      y - ch + ch*0.7 - ch * 0.025,
                        cw, ch * 0.1);
         ctx_fill (ctx);
         return 0;
       case 0x23BD: //HORIZONTAL_SCANLINE-9
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x,      y - ch + ch*0.9 + ch * 0.0,
                        cw, ch * 0.1);
         ctx_fill (ctx);
         return 0;
       case 0x2500: //VT_BOX_DRAWINGS_LIGHT_HORIZONTAL // and scanline 5
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch/2 - ch * 0.1 / 2, cw, ch * 0.1);
         ctx_fill (ctx);
         return 0;
       case 0x2212: // minus -sign
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw * 0.1, y - ch/2 - ch * 0.1 / 2, cw * 0.8, ch * 0.1);
         ctx_fill (ctx);
         return 0;
       case 0x2502: // VT_BOX_DRAWINGS_LIGHT_VERTICAL:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
         ctx_fill (ctx);
         return 0;
       case 0x250c: //VT_BOX_DRAWINGS_LIGHT_DOWN_AND_RIGHT:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2 - ch*0.1/2, ch * 0.1, ch/2 + ch*0.1);
         ctx_fill (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2 - ch*0.1/2, cw/2+ ch * 0.1, ch*0.1);
         ctx_fill (ctx);
         return 0;
       case 0x2510: //VT_BOX_DRAWINGS_LIGHT_DOWN_AND_LEFT:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2 - ch*0.1/2, ch * 0.1, ch/2 + ch*0.1);
         ctx_fill (ctx);
         ctx_rectangle (ctx, x, y - ch/2 - ch*0.1/2, cw/2+ ch * 0.1/2, ch*0.1);
         ctx_fill (ctx);
         return 0;
       case 0x2514: //VT_BOX_DRAWINGS_LIGHT_UP_AND_RIGHT:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch/2+ch*0.1/2);
         ctx_fill (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2 - ch*0.1/2, cw/2 + ch * 0.1, ch*0.1);
         ctx_fill (ctx);
         return 0;
       case 0x2518: //VT_BOX_DRAWINGS_LIGHT_UP_AND_LEFT:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch/2+ ch*0.1/2);
         ctx_fill (ctx);
         ctx_rectangle (ctx, x, y - ch/2-ch*0.1/2, cw/2+ch * 0.1/2, ch*0.1);
         ctx_fill (ctx);
         return 0;
       case 0x251C: //VT_BOX_DRAWINGS_LIGHT_VERTICAL_AND_RIGHT:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2-ch*0.1/2, cw/2+ch * 0.1, ch*0.1);
         ctx_fill (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
         ctx_fill (ctx);
         return 0;
       case 0x2524: //VT_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
         ctx_fill (ctx);
         ctx_rectangle (ctx, x, y - ch/2-ch*0.1/2, cw/2+ch * 0.1/2, ch*0.1);
         ctx_fill (ctx);
         return 0;
       case 0x252C: // VT_BOX_DRAWINGS_LIGHT_DOWN_AND_HORIZONTAL:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch/2-ch*0.1/2, ch * 0.1, ch/2+ch*0.1);
         ctx_fill (ctx);
         ctx_rectangle (ctx, x, y - ch/2 - ch * 0.1 / 2, cw, ch * 0.1);
         ctx_fill (ctx);
         return 0;
       case 0x2534: // VT_BOX_DRAWINGS_LIGHT_UP_AND_HORIZONTAL:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch/2 - ch * 0.1 / 2, cw, ch * 0.1);
         ctx_fill (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch /2+ch*0.1/2);
         ctx_fill (ctx);
         return 0;
       case 0x253C: // VT_BOX_DRAWINGS_LIGHT_VERTICAL_AND_HORIZONTAL:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch/2 - ch * 0.1 / 2, cw, ch * 0.1);
         ctx_fill (ctx);
         ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
@@ -5063,7 +5063,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         return 0;
       case 0xe0a0: // PowerLine branch
         ctx_save (ctx);
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x+cw/2, y - 0.15 * ch);
         ctx_rel_line_to (ctx, -cw/3, -ch * 0.7);
         ctx_rel_line_to (ctx, cw/2, 0);
@@ -5075,7 +5075,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
       // case 0xe0a1: // PowerLine LN
       // case 0xe0a2: // PowerLine Lock
       case 0xe0b0: // PowerLine left solid
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
         ctx_rel_line_to (ctx, 0, -ch);
         ctx_rel_line_to (ctx, cw, ch/2);
@@ -5083,7 +5083,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         return 0;
       case 0xe0b1: // PowerLine left line
         ctx_save (ctx);
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y - ch * 0.1);
         ctx_rel_line_to (ctx, cw * 0.9, -ch/2 * 0.8);
         ctx_rel_line_to (ctx, -cw * 0.9, -ch/2 * 0.8);
@@ -5092,7 +5092,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_restore (ctx);
         return 0;
       case 0xe0b2: // PowerLine Right solid
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
         ctx_rel_move_to (ctx, cw, 0);
         ctx_rel_line_to (ctx, -cw, -ch/2);
@@ -5101,7 +5101,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         return 0;
       case 0xe0b3: // PowerLine right line
         ctx_save (ctx);
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y - ch * 0.1);
         ctx_rel_move_to (ctx, cw, 0);
         ctx_rel_line_to (ctx, -cw * 0.9, -ch/2 * 0.8);
@@ -5111,14 +5111,14 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_restore (ctx);
         return 0;
       case 0x1fb70: // left triangular one quarter block
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
         ctx_rel_line_to (ctx, 0, -ch);
         ctx_rel_line_to (ctx, cw/2, -ch/2);
         ctx_fill (ctx);
         return 0;
       case 0x1fb72: // right triangular one quarter block
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
         ctx_rel_move_to (ctx, cw/2, -ch/2);
         ctx_rel_line_to (ctx, cw/2, -ch/2);
@@ -5126,14 +5126,14 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_fill (ctx);
         return 0;
       case 0x1fb73: // lower triangular one quarter block
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
         ctx_rel_line_to (ctx, cw/2, -ch/2);
         ctx_rel_line_to (ctx, cw/2, ch/2);
         ctx_fill (ctx);
         return 0;
       case 0x1fb71: // upper triangular one quarter block
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
         ctx_rel_move_to (ctx, cw/2, -ch/2);
         ctx_rel_line_to (ctx, -cw/2, -ch/2);
@@ -5141,28 +5141,28 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_fill (ctx);
         return 0;
       case 0x25E2: // VT_BLACK_LOWER_RIGHT_TRIANGLE:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
         ctx_rel_line_to (ctx, cw, -ch);
         ctx_rel_line_to (ctx, 0, ch);
         ctx_fill (ctx);
         return 0;
       case 0x25E3: //  VT_BLACK_LOWER_LEFT_TRIANGLE:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
         ctx_rel_line_to (ctx, 0, -ch);
         ctx_rel_line_to (ctx, cw, ch);
         ctx_fill (ctx);
         return 0;
       case 0x25E4: // tri
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
         ctx_rel_line_to (ctx, 0, -ch);
         ctx_rel_line_to (ctx, cw, 0);
         ctx_fill (ctx);
         return 0;
       case 0x25E5: // tri
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y - ch);
         ctx_rel_line_to (ctx, cw, 0);
         ctx_rel_line_to (ctx, 0, ch);
@@ -5232,7 +5232,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
       case 0x283D:
       case 0x283E:
       case 0x283F:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         {
           int bit_pattern = unichar - 0x2800;
           int bit = 0;
@@ -5318,7 +5318,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
       case 0x287D:
       case 0x287E:
       case 0x287F:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         draw_braille_bit (ctx, x, y, cw, ch, 0, 3);
         {
           int bit_pattern = unichar - 0x2840;
@@ -5404,7 +5404,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
       case 0x28BD:
       case 0x28BE:
       case 0x28BF:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         draw_braille_bit (ctx, x, y, cw, ch, 1, 3);
         {
           int bit_pattern = unichar - 0x2880;
@@ -6001,7 +6001,7 @@ static uint8_t palettes[][16][3]=
       }
     if (bg)
       {
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         if (style &  STYLE_BG24_COLOR_SET)
           {
             // XXX - this case seem to be missing reverse handling
@@ -6154,7 +6154,7 @@ static uint8_t palettes[][16][3]=
           }
         if (curved_underline)
           {
-            ctx_new_path (ctx);
+            ctx_begin_path (ctx);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
             ctx_rel_line_to (ctx, (cw+2) /3, -vt->ch * 0.05);
             ctx_rel_line_to (ctx, (cw+2) /3, vt->ch * 0.1);
@@ -6165,7 +6165,7 @@ static uint8_t palettes[][16][3]=
           }
         else if (double_underline)
           {
-            ctx_new_path (ctx);
+            ctx_begin_path (ctx);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.130 - vt->ch * vt->scroll_offset);
             ctx_rel_line_to (ctx, cw, 0);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.030 - vt->ch * vt->scroll_offset);
@@ -6175,7 +6175,7 @@ static uint8_t palettes[][16][3]=
           }
         else if (underline)
           {
-            ctx_new_path (ctx);
+            ctx_begin_path (ctx);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
             ctx_rel_line_to (ctx, cw, 0);
             ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
@@ -6183,7 +6183,7 @@ static uint8_t palettes[][16][3]=
           }
         if (overline)
           {
-            ctx_new_path (ctx);
+            ctx_begin_path (ctx);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.94 - vt->ch * vt->scroll_offset);
             ctx_rel_line_to (ctx, cw, 0);
             ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
@@ -6191,7 +6191,7 @@ static uint8_t palettes[][16][3]=
           }
         if (strikethrough)
           {
-            ctx_new_path (ctx);
+            ctx_begin_path (ctx);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43 - vt->ch * vt->scroll_offset);
             ctx_rel_line_to (ctx, cw, 0);
             ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
@@ -6226,7 +6226,7 @@ static uint8_t palettes[][16][3]=
     cursor_h = vt->ch;
     if (vt->scroll)
       {
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
                        (vt->rows + 1) * vt->ch);
         if (vt->reverse_video)
@@ -6425,7 +6425,7 @@ static uint8_t palettes[][16][3]=
       {
         vt_cell_cache_reset (vt, vt->cursor_y, vt->cursor_x);
         ctx_set_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         ctx_rectangle (ctx,
                        cursor_x_px, cursor_y_px,
                        cursor_w, cursor_h);

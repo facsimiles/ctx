@@ -120,7 +120,7 @@ void ctx_blit          (Ctx *ctx,
 /* clears and resets a context */
 void ctx_reset          (Ctx *ctx);
 
-void ctx_new_path       (Ctx *ctx);
+void ctx_begin_path       (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
 void ctx_restore        (Ctx *ctx);
 void ctx_clip           (Ctx *ctx);
@@ -4771,7 +4771,7 @@ void ctx_reset (Ctx *ctx)
 #endif
 }
 
-void ctx_new_path (Ctx *ctx)
+void ctx_begin_path (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_BEGIN_PATH);
 }
@@ -13309,7 +13309,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
           in_glyph = 1;
           ctx_save (ctx);
           ctx_translate (ctx, origin_x, origin_y);
-          ctx_new_path (ctx);
+          ctx_begin_path (ctx);
           ctx_move_to (ctx, 0, 0);
           ctx_scale (ctx, font_size / CTX_BAKE_FONT_SIZE,
                      font_size / CTX_BAKE_FONT_SIZE);
@@ -15730,7 +15730,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_set_global_alpha (ctx, arg (0) );
         break;
       case CTX_BEGIN_PATH:
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
         break;
       case CTX_CLOSE_PATH:
         ctx_close_path (ctx);
@@ -16869,10 +16869,10 @@ CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
         _mrg_restore_path (ctx, item->path);
         if (ctx_in_fill (ctx, u, v))
         {
-          ctx_new_path (ctx);
+          ctx_begin_path (ctx);
           ctx_list_prepend (&ret, item);
         }
-        ctx_new_path (ctx);
+        ctx_begin_path (ctx);
       }
       else
       {

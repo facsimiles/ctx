@@ -52,7 +52,7 @@ static void render_test (Ctx *ctx)
     ctx_translate (ctx, 30.0 + i * 131, 30.0);
     //ctx_rotate (ctx, 0.15);
     //ctx_scale (ctx, 0.8, 0.8);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, 0.0, 0.0);
     ctx_line_to (ctx, 4.0, -4.0);
     ctx_line_to (ctx, 45.0, 0.0);
@@ -93,7 +93,7 @@ static void render_test (Ctx *ctx)
     ctx_translate (ctx, 200.0, 30.0);
     //ctx_rotate (ctx, 0.15);
     //ctx_scale (ctx, 0.8, 0.8);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, 0.0, 50.0);
     ctx_line_to (ctx, 50.0, 0.0);
     ctx_line_to (ctx, 100.0, 30.0);
@@ -107,7 +107,7 @@ static void render_test (Ctx *ctx)
   if(1){
     ctx_save (ctx);
     ctx_translate (ctx, 350.0, 30.0);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, 100.0,   50.0);
     ctx_line_to (ctx, 50.0,   0.0);
     ctx_line_to (ctx, 0.0, 30.0);
@@ -122,7 +122,7 @@ static void render_test (Ctx *ctx)
   if(1){
     ctx_save (ctx);
     ctx_translate (ctx, 350.0, 150.0);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, 50.0,   50.0);
     ctx_rel_line_to (ctx, 25, 25.0);
     ctx_rel_line_to (ctx, 0,  -70.0);
@@ -138,7 +138,7 @@ static void render_test (Ctx *ctx)
   if(1){
     ctx_save (ctx);
     ctx_translate (ctx, 350.0, 210.0);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, 50.0,   50.0);
     ctx_rel_line_to (ctx, 25,  -25.0);
     ctx_rel_line_to (ctx, 0,   70.0);
@@ -154,7 +154,7 @@ static void render_test (Ctx *ctx)
   if(1){
     ctx_save (ctx);
     ctx_translate (ctx, 500.0, 210.0);
-    ctx_new_path (ctx);
+    ctx_begin_path (ctx);
     ctx_move_to (ctx, 50.0,   50.0);
     ctx_rel_line_to (ctx, 40,0);
     ctx_rel_line_to (ctx, 0,-40);
