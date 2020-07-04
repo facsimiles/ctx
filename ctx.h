@@ -674,7 +674,6 @@ typedef enum
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
-
   CTX_SET_DRGB_SPACE       = 21, // hacks integer for now
   CTX_SET_RGB_SPACE        = 22, //
   CTX_SET_CMYK_SPACE       = 23, //
@@ -1440,16 +1439,24 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_FORCE_INLINES       1
 #endif
 
+/* this enables alternate syntax in parsing, like _ instead of camel case,
+ * surprisingly permitting some aliases does not increase the size of the
+ * generated parser.
+ */
 #ifndef  CTX_POSTEL_PRINCIPLED_INPUT
-#define CTX_POSTEL_PRINCIPLED_INPUT 0
+#define CTX_POSTEL_PRINCIPLED_INPUT     0
 #endif
 
+/* create one-off inlined inner loop for normal blend mode
+ */
 #ifndef CTX_INLINED_NORMAL     
 #define CTX_INLINED_NORMAL      1
 #endif
 
+/* do 
+ */
 #ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       0
+#define CTX_NATIVE_GRAYA8       1
 #endif
 
 #ifndef CTX_ENABLE_CMYK
