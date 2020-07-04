@@ -1445,7 +1445,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       0
+#define CTX_NATIVE_GRAYA8       1
 #endif
 
 #ifndef CTX_ENABLE_CMYK
@@ -6829,7 +6829,7 @@ static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
   rasterizer->x         = x;
 }
 
-static float
+CTX_INLINE static float
 ctx_lerpf (float v0, float v1, float dx)
 {
   return v0 + (v1-v0) * dx;
@@ -7216,7 +7216,7 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
     ctx_edge2_qsort (&rasterizer->edges[0], 0, rasterizer->active_edges-1);
 }
 
-static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
+CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 {
   return ( ( ( ( (v0) <<8) + (dx) * ( (v1) - (v0) ) ) ) >>8);
 #if 0
@@ -7885,7 +7885,7 @@ ctx_u8_source_over_normal_color (int components,
                      uint8_t * __restrict__ coverage,
                      int                    count)
 {
-  uint8_t tsrc[4];
+  uint8_t tsrc[5];
   *((uint32_t*)tsrc) = *((uint32_t*)src);
   ctx_u8_associate_alpha (components, tsrc);
 
@@ -11702,6 +11702,55 @@ ctx_RGBA8_to_RGB8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *
 #endif
 #if CTX_ENABLE_GRAY1
 
+#if CTX_NATIVE_GRAYA8
+inline static void
+ctx_GRAY1_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
+{
+  const uint8_t *pixel = (uint8_t *) buf;
+  while (count--)
+    {
+      if (*pixel & (1<< (x&7) ) )
+        {
+          rgba[0] = 255;
+          rgba[1] = 255;
+        }
+      else
+        {
+          rgba[0] = 0;
+          rgba[1] = 255;
+        }
+      if ( (x&7) ==7)
+        { pixel+=1; }
+      x++;
+      rgba +=2;
+    }
+}
+
+inline static void
+ctx_GRAYA8_to_GRAY1 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
+{
+  uint8_t *pixel = (uint8_t *) buf;
+  while (count--)
+    {
+      int gray = rgba[0];
+      //gray += ctx_dither_mask_a (x, rasterizer->scanline/CTX_RASTERIZER_AA, 0, 127);
+      if (gray < 127)
+        {
+          *pixel = *pixel & (~ (1<< (x&7) ) );
+        }
+      else
+        {
+          *pixel = *pixel | (1<< (x&7) );
+        }
+      if ( (x&7) ==7)
+        { pixel+=1; }
+      x++;
+      rgba +=2;
+    }
+}
+
+#else
+
 inline static void
 ctx_GRAY1_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -11751,9 +11800,46 @@ ctx_RGBA8_to_GRAY1 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
       rgba +=4;
     }
 }
+#endif
 
 #endif
 #if CTX_ENABLE_GRAY2
+
+#if CTX_NATIVE_GRAYA8
+inline static void
+ctx_GRAY2_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
+{
+  const uint8_t *pixel = (uint8_t *) buf;
+  while (count--)
+    {
+      int val = (*pixel & (3 << ( (x & 3) <<1) ) ) >> ( (x&3) <<1);
+      val <<= 6;
+      rgba[0] = val;
+      rgba[1] = 255;
+      if ( (x&3) ==3)
+        { pixel+=1; }
+      x++;
+      rgba +=2;
+    }
+}
+
+inline static void
+ctx_GRAYA8_to_GRAY2 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
+{
+  uint8_t *pixel = (uint8_t *) buf;
+  while (count--)
+    {
+      int val = rgba[0];
+      val >>= 6;
+      *pixel = *pixel & (~ (3 << ( (x&3) <<1) ) );
+      *pixel = *pixel | ( (val << ( (x&3) <<1) ) );
+      if ( (x&3) ==3)
+        { pixel+=1; }
+      x++;
+      rgba +=2;
+    }
+}
+#else
 
 inline static void
 ctx_GRAY2_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
@@ -11790,10 +11876,46 @@ ctx_RGBA8_to_GRAY2 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
       rgba +=4;
     }
 }
+#endif
 
 #endif
 #if CTX_ENABLE_GRAY4
 
+#if CTX_NATIVE_GRAYA8
+inline static void
+ctx_GRAY4_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
+{
+  const uint8_t *pixel = (uint8_t *) buf;
+  while (count--)
+    {
+      int val = (*pixel & (15 << ( (x & 1) <<2) ) ) >> ( (x&1) <<2);
+      val <<= 4;
+      rgba[0] = val;
+      rgba[1] = 255;
+      if ( (x&1) ==1)
+        { pixel+=1; }
+      x++;
+      rgba +=2;
+    }
+}
+
+inline static void
+ctx_GRAYA8_to_GRAY4 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
+{
+  uint8_t *pixel = (uint8_t *) buf;
+  while (count--)
+    {
+      int val = rgba[0];
+      val >>= 4;
+      *pixel = *pixel & (~ (15 << ( (x&1) <<2) ) );
+      *pixel = *pixel | ( (val << ( (x&1) <<2) ) );
+      if ( (x&1) ==1)
+        { pixel+=1; }
+      x++;
+      rgba +=2;
+    }
+}
+#else
 inline static void
 ctx_GRAY4_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -11829,10 +11951,37 @@ ctx_RGBA8_to_GRAY4 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
       rgba +=4;
     }
 }
+#endif
 
 #endif
 #if CTX_ENABLE_GRAY8
 
+#if CTX_NATIVE_GRAYA8
+inline static void
+ctx_GRAY8_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
+{
+  const uint8_t *pixel = (uint8_t *) buf;
+  while (count--)
+    {
+      rgba[0] = pixel[0];
+      rgba[1] = 255;
+      pixel+=1;
+      rgba +=2;
+    }
+}
+
+inline static void
+ctx_GRAYA8_to_GRAY8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
+{
+  uint8_t *pixel = (uint8_t *) buf;
+  while (count--)
+    {
+      pixel[0] = rgba[0];
+      pixel+=1;
+      rgba +=2;
+    }
+}
+#else
 inline static void
 ctx_GRAY8_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -11860,6 +12009,7 @@ ctx_RGBA8_to_GRAY8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
       rgba +=4;
     }
 }
+#endif
 
 #endif
 #if CTX_ENABLE_GRAYA8
@@ -11923,7 +12073,7 @@ ctx_fragment_radial_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y
       v = (v - g->radial_gradient.r0) / (g->radial_gradient.rdelta);
     }
   ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0, rgba);
-  ctx_rgba_to_graya_u8 (rgba, (uint8_t*)out);
+  ctx_rgba_to_graya_u8 (rasterizer->state, rgba, (uint8_t*)out);
 }
 
 
@@ -11946,7 +12096,7 @@ static void ctx_fragment_image_GRAYA8 (CtxRasterizer *rasterizer, float x, float
       case 32: ctx_fragment_image_rgba8_RGBA8 (rasterizer, x, y, rgba); break;
       default: ctx_fragment_image_RGBA8 (rasterizer, x, y, rgba);       break;
     }
-  ctx_rgba_to_graya_u8 (rgba, (uint8_t*)out);
+  ctx_rgba_to_graya_u8 (rasterizer->state, rgba, (uint8_t*)out);
 }
 
 static CtxFragment ctx_rasterizer_get_fragment_GRAYA8 (CtxRasterizer *rasterizer)
@@ -11985,13 +12135,13 @@ ctx_GRAYA8_clear_normal (CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_GRAYA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
-  ctx_u8_source_over_normal_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
+  ctx_u8_source_over_normal_color (2, rasterizer, dst, rasterizer->color, clip, x0, coverage, count);
 }
 
 static void
 ctx_GRAYA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
 {
-  ctx_u8_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
+  ctx_u8_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, clip, x0, coverage, count);
 }
 #endif
 
@@ -12284,25 +12434,41 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_GRAY1
   {
     CTX_FORMAT_GRAY1, 1, 1, 4, 1, 1,
+#if CTX_NATIVE_GRAYA8
+    ctx_GRAY1_to_GRAYA8, ctx_GRAYA8_to_GRAY1, ctx_composite_convert, ctx_setup_GRAYA8,
+#else
     ctx_GRAY1_to_RGBA8, ctx_RGBA8_to_GRAY1, ctx_composite_convert, ctx_setup_RGBA8,
+#endif
   },
 #endif
 #if CTX_ENABLE_GRAY2
   {
     CTX_FORMAT_GRAY2, 1, 2, 4, 4, 4,
+#if CTX_NATIVE_GRAYA8
+    ctx_GRAY2_to_GRAYA8, ctx_GRAYA8_to_GRAY2, ctx_composite_convert, ctx_setup_GRAYA8,
+#else
     ctx_GRAY2_to_RGBA8, ctx_RGBA8_to_GRAY2, ctx_composite_convert, ctx_setup_RGBA8,
+#endif
   },
 #endif
 #if CTX_ENABLE_GRAY4
   {
     CTX_FORMAT_GRAY4, 1, 4, 4, 16, 16,
+#if CTX_NATIVE_GRAYA8
+    ctx_GRAY4_to_GRAYA8, ctx_GRAYA8_to_GRAY4, ctx_composite_convert, ctx_setup_GRAYA8,
+#else
     ctx_GRAY4_to_RGBA8, ctx_RGBA8_to_GRAY4, ctx_composite_convert, ctx_setup_RGBA8,
+#endif
   },
 #endif
 #if CTX_ENABLE_GRAY8
   {
     CTX_FORMAT_GRAY8, 1, 8, 4, 0, 0,
+#if CTX_NATIVE_GRAYA8
+    ctx_GRAY8_to_GRAYA8, ctx_GRAYA8_to_GRAY8, ctx_composite_convert, ctx_setup_GRAYA8,
+#else
     ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGBA8,
+#endif
   },
 #endif
 #if CTX_ENABLE_GRAYA8
