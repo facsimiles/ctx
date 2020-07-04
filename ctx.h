@@ -170,8 +170,6 @@ void  ctx_rel_quad_to     (Ctx *ctx, float cx, float cy,
 
 void  ctx_close_path      (Ctx *ctx);
 
-
-
 float ctx_get_font_size   (Ctx *ctx);
 float ctx_get_line_width  (Ctx *ctx);
 float ctx_x               (Ctx *ctx);
@@ -1292,7 +1290,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 2 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA       5
+#define CTX_RASTERIZER_AA       15
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -2471,7 +2469,6 @@ struct _CtxGState
   float         shadow_blur;
   float         shadow_offset_x;
   float         shadow_offset_y;
-  CtxColor      shadow_color;
   int           clipped:1;
 
   int16_t       clip_min_x;
@@ -7721,7 +7718,6 @@ ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
   }
 }
 
-
 static void
 ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 {
@@ -7908,6 +7904,110 @@ ctx_u8_source_over_normal_color (int components,
       dst+=components;
     }
 }
+
+static void
+ctx_RGBA8_source_over_normal_linear_gradient (
+                     CtxRasterizer         *rasterizer,
+                     uint8_t * __restrict__ dst,
+                     uint8_t * __restrict__ src,
+                     uint8_t * __restrict__ clip,
+                     int                    x0,
+                     uint8_t * __restrict__ coverage,
+                     int                    count)
+{
+  CtxSource *g = &rasterizer->state->gstate.source;
+  int components = 4;
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+  float linear_gradient_dx = g->linear_gradient.dx;
+  float linear_gradient_dy = g->linear_gradient.dy;
+  float linear_gradient_rdelta = g->linear_gradient.rdelta;
+  float linear_gradient_start = g->linear_gradient.start;
+  float linear_gradient_end = g->linear_gradient.end;
+  float linear_gradient_length = g->linear_gradient.length;
+
+  while (count--)
+  {
+    int cov = *coverage;
+    if (cov)
+    {
+      uint8_t tsrc[components];
+      float vv = ( ( (linear_gradient_dx * u0 + linear_gradient_dy * v0) /
+            linear_gradient_length) -
+            linear_gradient_start) * (linear_gradient_rdelta);
+      ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, tsrc);
+
+      ctx_u8_associate_alpha (components, tsrc);
+
+      if (cov == 255)
+      {
+      for (int c = 0; c < components; c++)
+        dst[c] = (tsrc[c]) + (dst[c] * (255-(tsrc[components-1])))/(255);
+      }
+      else
+      {
+        for (int c = 0; c < components; c++)
+          dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
+       }
+    }
+    u0 += ud;
+    v0 += vd;
+    coverage ++;
+    dst+=components;
+  }
+}
+
+static void
+ctx_RGBA8_source_over_normal_radial_gradient (
+                     CtxRasterizer         *rasterizer,
+                     uint8_t * __restrict__ dst,
+                     uint8_t * __restrict__ src,
+                     uint8_t * __restrict__ clip,
+                     int                    x0,
+                     uint8_t * __restrict__ coverage,
+                     int                    count)
+{
+  CtxSource *g = &rasterizer->state->gstate.source;
+  int components = 4;
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+  float radial_gradient_x0 = g->radial_gradient.x0;
+  float radial_gradient_y0 = g->radial_gradient.y0;
+  float radial_gradient_r0 = g->radial_gradient.r0;
+  float radial_gradient_rdelta = g->radial_gradient.rdelta;
+
+  while (count--)
+  {
+    int cov = *coverage;
+    if (cov)
+    {
+      uint8_t tsrc[components];
+      float vv = ctx_hypotf (radial_gradient_x0 - u0, radial_gradient_y0 - v0);
+            vv = (vv - radial_gradient_r0) * (radial_gradient_rdelta);
+      ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 0.0f, tsrc);
+
+      ctx_u8_associate_alpha (components, tsrc);
+
+      if (cov == 255)
+      {
+      for (int c = 0; c < components; c++)
+        dst[c] = (tsrc[c]) + (dst[c] * (255-(tsrc[components-1])))/(255);
+      }
+      else
+      {
+        for (int c = 0; c < components; c++)
+          dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
+       }
+    }
+    u0 += ud;
+    v0 += vd;
+    coverage ++;
+    dst+=components;
+  }
+}
+
 
 static void
 ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
@@ -8438,7 +8538,7 @@ ctx_u8_porter_duff(RGBA8, 4,generic, rasterizer->fragment, rasterizer->state->gs
 #if CTX_INLINED_NORMAL
 #define ctx_u8_porter_duff_blend(comp_name, components, blend_mode, blend_name)\
 ctx_u8_porter_duff(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
-ctx_u8_porter_duff(comp_name, components,color_##blend_name,  ctx_fragment_color_##comp_name, blend_mode)\
+ctx_u8_porter_duff(comp_name, components,color_##blend_name,  NULL, blend_mode)\
 ctx_u8_porter_duff(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_##comp_name, blend_mode)\
 ctx_u8_porter_duff(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_##comp_name, blend_mode)\
 ctx_u8_porter_duff(comp_name, components,image_rgb8_##blend_name, ctx_fragment_image_rgb8_##comp_name,      blend_mode)\
@@ -8466,6 +8566,20 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     return;
   }
 #endif
+  if (gstate->source.type == CTX_SOURCE_LINEAR_GRADIENT &&
+      gstate->blend_mode == CTX_BLEND_NORMAL &&
+      gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+  {
+     rasterizer->comp_op = ctx_RGBA8_source_over_normal_linear_gradient;
+     return;
+  }
+  if (gstate->source.type == CTX_SOURCE_RADIAL_GRADIENT &&
+      gstate->blend_mode == CTX_BLEND_NORMAL &&
+      gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+  {
+     rasterizer->comp_op = ctx_RGBA8_source_over_normal_radial_gradient;
+     return;
+  }
 
   if (gstate->source.type == CTX_SOURCE_COLOR)
     {
@@ -10594,7 +10708,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   int preserved = rasterizer->preserve;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
-#if 0
+#if 1
   if (rasterizer->state->gstate.line_width <= 0.0f &&
       rasterizer->state->gstate.line_width > -10.0f)
     {
