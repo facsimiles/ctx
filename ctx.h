@@ -1445,7 +1445,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       1
+#define CTX_NATIVE_GRAYA8       0
 #endif
 
 #ifndef CTX_ENABLE_CMYK
@@ -3396,10 +3396,10 @@ struct _CtxPixelFormatInfo
   uint8_t        dither_green;
 
   void         (*to_comp) (CtxRasterizer *r,
-                           int x, const void *src, uint8_t *comp, int count);
+                           int x, const void * __restrict__ src, uint8_t * __restrict__ comp, int count);
   void         (*from_comp) (CtxRasterizer *r,
-                             int x, const uint8_t *comp, void *dst, int count);
-  void         (*apply_coverage) (CtxRasterizer *r, uint8_t *dst, uint8_t *src, uint8_t *clip, int x, uint8_t *coverage,
+                             int x, const uint8_t * __restrict__ comp, void *__restrict__ dst, int count);
+  void         (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, uint8_t * __restrict__ clip, int x, uint8_t *coverage,
                           int count);
   void         (*setup) (CtxRasterizer *r);
 };
@@ -9976,9 +9976,9 @@ ctx_rasterizer_setup (CtxRasterizer *rasterizer)
 
 inline static void
 ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
-                               uint8_t       *dst,
+                               uint8_t * __restrict__ dst,
                                int            x,
-                               uint8_t       *coverage,
+                               uint8_t * __restrict__ coverage,
                                int            count)
 {
   if (rasterizer->format->apply_coverage)

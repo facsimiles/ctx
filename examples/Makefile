@@ -1,5 +1,5 @@
 SMALL_CFLAGS=-Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant
-PERF_CFLAGS=-Ofast -march=native
+PERF_CFLAGS=-Ofast -march=native -fdump-tree-vect-details
 
 PROGRAMS=img clock dir perf ui ui2 tiny small baseline musl-static-tiny musl-static-small musl-static-baseline all sdl2 mmm
 
