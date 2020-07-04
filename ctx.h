@@ -630,11 +630,11 @@ typedef enum
   // arguments.
   CTX_LINE_TO          = 'L', // x y
   CTX_MOVE_TO          = 'M', // x y
-  CTX_NEW_PATH         = 'N',
+  CTX_BEGIN_PATH         = 'N',
   CTX_SCALE            = 'O', // xscale yscale
   CTX_NEW_PAGE         = 'P', // - NYI
   CTX_QUAD_TO          = 'Q', // cx cy x y
-  CTX_MEDIA_BOX        = 'R', // x y width height
+  CTX_VIEW_BOX        = 'R', // x y width height
   CTX_SMOOTH_TO        = 'S', // cx cy x y
   CTX_SMOOTHQ_TO       = 'T', // x y
   CTX_RESET            = 'U', //
@@ -2692,7 +2692,7 @@ struct _CtxState
 #define CTX_lineWidth      CTX_STRH('l','i','n','e','W','i','d','t','h',0,0,0,0,0)
 #define CTX_setLineWidth      CTX_STRH('s','e','t','L','i','n','e','W','i','d','t','h',0,0)
 #define CTX_media_box      CTX_STRH('m','e','d','i','a','_','b','o','x',0,0,0,0,0)
-#define CTX_mediaBox       CTX_STRH('m','e','d','i','a','B','o','x',0,0,0,0,0,0)
+#define CTX_viewBox        CTX_STRH('v','i','e','w','B','o','x',0,0,0,0,0,0,0)
 #define CTX_middle         CTX_STRH('m','i','d','d','l','e',0, 0, 0, 0, 0, 0,0,0)
 #define CTX_miter          CTX_STRH('m','i','t','e','r',0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_miter_limit    CTX_STRH('m','i','t','e','r','_','l','i','m','i','t',0,0,0)
@@ -3793,6 +3793,7 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_SET_SHADOW_COLOR:
         return 2;
       case CTX_RECTANGLE:
+      case CTX_VIEW_BOX:
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
       case CTX_TEXTURE:
@@ -4056,6 +4057,7 @@ again:
         case CTX_REL_QUAD_TO:
         case CTX_TEXTURE:
         case CTX_RECTANGLE:
+        case CTX_VIEW_BOX:
           iterator->bitpack_command[0] = ret[0];
           iterator->bitpack_command[1] = ret[1];
           iterator->bitpack_pos = 0;
@@ -4771,7 +4773,7 @@ void ctx_reset (Ctx *ctx)
 
 void ctx_new_path (Ctx *ctx)
 {
-  CTX_PROCESS_VOID (CTX_NEW_PATH);
+  CTX_PROCESS_VOID (CTX_BEGIN_PATH);
 }
 
 void ctx_clip (Ctx *ctx)
@@ -5088,6 +5090,18 @@ void ctx_round_rectangle (Ctx *ctx,
     ctx_f (CTX_RECTANGLE, x0, y0),
     ctx_f (CTX_CONT,      w, h),
     ctx_f (CTX_CONT,      radius, 0)
+  };
+  ctx_process (ctx, command);
+}
+
+void ctx_view_box (Ctx *ctx,
+                   float x0, float y0,
+                   float w, float h)
+{
+  CtxEntry command[3]=
+  {
+    ctx_f (CTX_VIEW_BOX, x0, y0),
+    ctx_f (CTX_CONT,     w, h)
   };
   ctx_process (ctx, command);
 }
@@ -6136,7 +6150,7 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
         ctx_state_init (state);
         break;
       case CTX_CLIP:
-      case CTX_NEW_PATH:
+      case CTX_BEGIN_PATH:
       case CTX_FILL:
       case CTX_STROKE:
         state->has_moved = 0;
@@ -11466,7 +11480,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         }
         ctx_rasterizer_fill (rasterizer);
         break;
-      case CTX_NEW_PATH:
+      case CTX_BEGIN_PATH:
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_CLIP:
@@ -11742,7 +11756,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_SET_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
         break;
-      case CTX_NEW_PATH:
+      case CTX_BEGIN_PATH:
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_CLIP:
@@ -12835,7 +12849,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
     {
       case CTX_TEXT:
       case CTX_TEXT_STROKE:
-      case CTX_NEW_PATH:
+      case CTX_BEGIN_PATH:
         ctx->current_path.count = 0;
         break;
       case CTX_CLIP:
@@ -13820,7 +13834,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
         }
         break;
         break;
-      case CTX_NEW_PATH:
+      case CTX_BEGIN_PATH:
         cairo_new_path (cr);
         break;
       case CTX_CLOSE_PATH:
@@ -14043,33 +14057,33 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
       //switch ((CtxCode)code)
       switch (code)
         {
-          case CTX_SET_KEY:              name="set_param"; break;
-          case CTX_SET_COLOR:            name="set_color"; break;
-          case CTX_DEFINE_GLYPH:         name="define_glyph"; break;
-          case CTX_SET_PIXEL:            name="set_pixel"; break;
-          case CTX_SET_GLOBAL_ALPHA:     name="set_global_alpha"; break;
+          case CTX_SET_KEY:              name="setParam"; break;
+          case CTX_SET_COLOR:            name="setColor"; break;
+          case CTX_DEFINE_GLYPH:         name="defineGlyph"; break;
+          case CTX_SET_PIXEL:            name="setPixel"; break;
+          case CTX_SET_GLOBAL_ALPHA:     name="globalAlpha"; break;
           case CTX_TEXT:                 name="text"; break;
-          case CTX_TEXT_STROKE:          name="text_stroke"; break;
+          case CTX_TEXT_STROKE:          name="textStroke"; break;
           case CTX_SAVE:                 name="save"; break;
           case CTX_RESTORE:              name="restore"; break;
           case CTX_RECTANGLE:            name="rectangle"; break;
-          case CTX_LINEAR_GRADIENT:      name="linear_gradient"; break;
-          case CTX_RADIAL_GRADIENT:      name="radial_gradient"; break;
-          case CTX_GRADIENT_STOP:        name="gradient_add_stop"; break;
-          case CTX_MEDIA_BOX:            name="media_box"; break;
-          case CTX_MOVE_TO:              name="move_to"; break;
-          case CTX_LINE_TO:              name="line_to"; break;
-          case CTX_NEW_PATH:             name="new_path"; break;
-          case CTX_REL_MOVE_TO:          name="rel_move_to"; break;
-          case CTX_REL_LINE_TO:          name="rel_line_to"; break;
+          case CTX_LINEAR_GRADIENT:      name="linearGradient"; break;
+          case CTX_RADIAL_GRADIENT:      name="radialGradient"; break;
+          case CTX_GRADIENT_STOP:        name="gradientAddStop"; break;
+          case CTX_VIEW_BOX:             name="viewBox"; break;
+          case CTX_MOVE_TO:              name="moveTo"; break;
+          case CTX_LINE_TO:              name="lineTo"; break;
+          case CTX_BEGIN_PATH:             name="beginPath"; break;
+          case CTX_REL_MOVE_TO:          name="relMoveTo"; break;
+          case CTX_REL_LINE_TO:          name="relLineTo"; break;
           case CTX_FILL:                 name="fill"; break;
           case CTX_EXIT:                 name="exit"; break;
-          case CTX_APPLY_TRANSFORM:      name="set_transform"; break;
-          case CTX_REL_ARC_TO:           name="rel_arc_to"; break;
+          case CTX_APPLY_TRANSFORM:      name="transform"; break;
+          case CTX_REL_ARC_TO:           name="relArcTo"; break;
           case CTX_GLYPH:                name="glyph"; break;
           case CTX_TEXTURE:              name="texture"; break;
           case CTX_IDENTITY:             name="identity"; break;
-          case CTX_CLOSE_PATH:           name="close_path"; break;
+          case CTX_CLOSE_PATH:           name="closePath"; break;
           case CTX_PRESERVE:             name="preserve"; break;
           case CTX_FLUSH:                name="flush"; break;
           case CTX_RESET:                name="reset"; break;
@@ -14441,7 +14455,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_RECTANGLE:
       case CTX_REL_QUAD_TO:
       case CTX_LINEAR_GRADIENT:
-      case CTX_MEDIA_BOX:
+      case CTX_VIEW_BOX:
         ctx_print_entry (stream, formatter, indent, entry, 4);
         break;
       case CTX_SET_FONT_SIZE:
@@ -14622,7 +14636,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_STROKE:
       case CTX_IDENTITY:
       case CTX_CLIP:
-      case CTX_NEW_PATH:
+      case CTX_BEGIN_PATH:
       case CTX_CLOSE_PATH:
       case CTX_SAVE:
       case CTX_PRESERVE:
@@ -14810,7 +14824,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_SAVE:
       case CTX_IDENTITY:
       case CTX_CLOSE_PATH:
-      case CTX_NEW_PATH:
+      case CTX_BEGIN_PATH:
       case CTX_RESET:
       case CTX_FLUSH:
       case CTX_RESTORE:
@@ -14854,7 +14868,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_REL_LINE_TO:
       case CTX_REL_MOVE_TO:
       case CTX_SMOOTHQ_TO:
-      case CTX_GLYPH: // glyph and is_stroke
+      case CTX_GLYPH: 
         return 2;
       case CTX_LINEAR_GRADIENT:
       case CTX_REL_QUAD_TO:
@@ -14862,7 +14876,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_RECTANGLE:
       case CTX_ROUND_RECTANGLE:
       case CTX_REL_SMOOTH_TO:
-      case CTX_MEDIA_BOX:
+      case CTX_VIEW_BOX:
       case CTX_SMOOTH_TO:
         return 4;
       case CTX_ARC_TO:
@@ -15032,7 +15046,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           OPT(case CTX_quad_to:)
           case CTX_quadTo:         ret = CTX_QUAD_TO; break;
           OPT(case CTX_media_box:)
-          case CTX_mediaBox:       ret = CTX_MEDIA_BOX; break;
+          case CTX_viewBox:       ret = CTX_VIEW_BOX; break;
           OPT(case CTX_smoothTo:)
           case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
           OPT(case CTX_smoothQuadTo:)
@@ -15083,7 +15097,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           OPT(case CTX_new_path:)
           OPT(case CTX_begin_path:)
           case CTX_beginPath:
-          case CTX_newPath:        ret =  CTX_NEW_PATH; break;
+          case CTX_newPath:        ret =  CTX_BEGIN_PATH; break;
           OPT(case CTX_rel_arc_to:)
           case CTX_relArcTo:       ret = CTX_REL_ARC_TO; break;
           case CTX_clip:           ret = CTX_CLIP; break;
@@ -15110,6 +15124,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_relQuadTo:      ret = CTX_REL_QUAD_TO; break;
           case CTX_rectangle:
           case CTX_rect:           ret = CTX_RECTANGLE; break;
+          case CTX_viewBox:        ret = CTX_VIEW_BOX; break;
           OPT(case CTX_round_rectangle:)
           case CTX_roundRectangle: ret = CTX_ROUND_RECTANGLE; break;
           OPT(case CTX_rel_smooth_to:)
@@ -15695,6 +15710,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_RECTANGLE:
         ctx_rectangle (ctx, arg (0), arg (1), arg (2), arg (3) );
         break;
+      case CTX_VIEW_BOX:
+        ctx_view_box (ctx, arg (0), arg (1), arg (2), arg (3) );
+        break;
       case CTX_LINEAR_GRADIENT:
         ctx_linear_gradient (ctx, arg (0), arg (1), arg (2), arg (3) );
         break;
@@ -15711,7 +15729,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_SET_GLOBAL_ALPHA:
         ctx_set_global_alpha (ctx, arg (0) );
         break;
-      case CTX_NEW_PATH:
+      case CTX_BEGIN_PATH:
         ctx_new_path (ctx);
         break;
       case CTX_CLOSE_PATH:
