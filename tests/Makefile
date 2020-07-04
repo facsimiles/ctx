@@ -7,8 +7,8 @@ TEST_GRAY1= $(patsubst %, gray1/%, $(TEST_NAMES))
 TEST_GRAY8= $(patsubst %, gray8/%, $(TEST_NAMES))
 TEST_PNG  = $(patsubst %, png/%.png, $(TEST_NAMES))
 TEST_PPNG  = $(patsubst %, png-80x160/%.png, $(TEST_NAMES))
-TEST_LPNG  = $(patsubst %, png-640x480/%.png, $(TEST_NAMES))
-TEST_LBPNG  = $(patsubst %, png-640x480b/%.png, $(TEST_NAMES))
+TEST_LPNG  = $(patsubst %, png-640x240/%.png, $(TEST_NAMES))
+TEST_LBPNG  = $(patsubst %, png-480x640/%.png, $(TEST_NAMES))
 
 TESTS=$(TEST_GRAY1) $(TEST_PNG) $(TEST_GRAY8)
 
@@ -16,13 +16,13 @@ all: pre index.html $(TESTS) check
 png: $(TEST_LPNG)  $(TEST_PPNG)  $(TEST_LBPNG)
 
 pre:
-	@mkdir -p png gray1 gray8 reference/gray1 reference/gray8 png-640x480 png-640x480b png-80x160
+	@mkdir -p png gray1 gray8 reference/gray1 reference/gray8 png-640x240 png-480x640 png-80x160
 
 
 webupdate:
 	cat index.html | sed 's/.*script.*//' > tmp
 	mv tmp index.html
-	cp -R * ~/pgo/ctx/tests
+	cp -R * ~/pgo/ctx.graphics/tests
 
 update-reference:
 	cp gray1/* reference/gray1
@@ -69,8 +69,8 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile
 	  echo "</pre></td>" >> $@;\
 	  echo "<td><a href='png/$$a.png'><img class='side' src='png/$$a.png'/></a></td>" >> $@; \
 	  echo "<td><a href='png-80x160/$$a.png'><img class='side' src='png-80x160/$$a.png'/></a></td>" >> $@; \
-	  echo "<td><a href='png-640x480/$$a.png'><img class='side' src='png-640x480/$$a.png'/></a>" >> $@; \
-	  echo "<td><a href='png-640x480b/$$a.png'><img class='side' src='png-640x480b/$$a.png'/></a>" >> $@; \
+	  echo "<td><a href='png-640x240/$$a.png'><img class='side' src='png-640x240/$$a.png'/></a>" >> $@; \
+	  echo "<td><a href='png-480x640/$$a.png'><img class='side' src='png-480x640/$$a.png'/></a>" >> $@; \
 	  echo "</td></tr>" >> $@; \
 	done
 	echo "</table>" >> $@
@@ -78,7 +78,7 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile
 
 
 clean:
-	rm -rf gray1 png gray8 png-640x480 png-640x480b
+	rm -rf gray1 png gray8 png-640x240 png-480x640
 
 gray1/%: %.ctx ../ctx 
 	../ctx $< --width 160 --height 80 GRAY1 > $@
@@ -92,14 +92,14 @@ png-80x160/%.png: %.ctx ../ctx
 	../ctx $< $@ --width 80 --height 160 --rows 10
 png-80x160/%.png: %.svg ../ctx 
 	../ctx $< $@ --width 80 --height 160 --rows 10
-png-640x480/%.png: %.ctx ../ctx 
-	../ctx $< $@ --width 640 --height 480
-png-640x480/%.png: %.svg ../ctx 
-	../ctx $< $@ --width 640 --height 480
-png-640x480b/%.png: %.ctx ../ctx 
-	../ctx $< $@ --rows 24 --width 640 --height 480
-png-640x480b/%.png: %.svg ../ctx 
-	../ctx $< $@ --rows 24 --width 640 --height 480
+png-640x240/%.png: %.ctx ../ctx 
+	../ctx $< $@ --width 640 --height 240
+png-640x240/%.png: %.svg ../ctx 
+	../ctx $< $@ --width 640 --height 240
+png-480x640/%.png: %.ctx ../ctx 
+	../ctx $< $@ --rows 24 --width 480 --height 640
+png-480x640/%.png: %.svg ../ctx 
+	../ctx $< $@ --rows 24 --width 480 --height 640
 gray8/%: %.ctx ../ctx
 	../ctx $< GRAY8 --width 80 --height 24 > $@
 gray8/%: %.svg ../ctx
