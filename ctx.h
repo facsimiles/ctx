@@ -8055,7 +8055,55 @@ ctx_u8_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
 {
+#if 0
   ctx_u8_source_over_normal_opaque_color (4, rasterizer, dst, src, clip, x0, coverage, count);
+#else
+  {
+#if 0
+    uint32_t val = *((uint32_t*)(u8));
+    int a = val >> CTX_RGBA8_A_SHIFT;
+    if (a!=255)
+    {
+      if (a)
+      {
+        uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
+        uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
+        *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+      }
+      else
+      {
+        *((uint32_t*)(u8)) = 0;
+      }
+    }
+#endif
+    uint8_t tsrc[4];
+    int components = 4;
+    *((uint32_t*)(tsrc)) = *((uint32_t*)(src));
+    ctx_u8_associate_alpha (components, tsrc);
+    uint32_t si = *((uint32_t*)(tsrc));
+    uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
+    uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+    while (count--)
+    {
+      int cov = *coverage;
+      if (cov!=255)
+      {
+        uint32_t di = *((uint32_t*)(dst));
+        uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
+        uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+        int r_cov = 255-cov;
+        *((uint32_t*)(dst)) = 
+         (((si_rb * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
+         (((si_ga * cov + di_ga * r_cov) >> 8) & CTX_RGBA8_GA_MASK);
+       }
+      else
+        *((uint32_t*)(dst)) = si;
+     
+      dst += 4;
+      coverage ++;
+    }
+  }
+#endif
 }
 
 typedef enum {
@@ -8214,7 +8262,6 @@ ctx_RGBA8_source_over_normal_linear_gradient (
     uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
     uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
     int si_a = si >> CTX_RGBA8_A_SHIFT;
-    int r_si_a = 255 - si_a;
     uint32_t di = *((uint32_t*)(dst));
     uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
     uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
@@ -8289,7 +8336,6 @@ ctx_RGBA8_source_over_normal_radial_gradient (
     uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
     uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
     int si_a = si >> CTX_RGBA8_A_SHIFT;
-    int r_si_a = 255 - si_a;
     uint32_t di = *((uint32_t*)(dst));
     uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
     uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
@@ -8340,7 +8386,6 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
     uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
     int si_a = si >> CTX_RGBA8_A_SHIFT;
-    int r_si_a = 255 - si_a;
     while (count--)
     {
       int cov = *coverage;
@@ -8970,9 +9015,9 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           {
              switch (rasterizer->color[components-1])
              {
-               //case 255:
-               //  rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
-               //  break;
+               case 255:
+                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
+                 break;
                case 0:
                  rasterizer->comp_op = ctx_RGBA8_nop;
                  break;
