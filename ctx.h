@@ -7610,16 +7610,46 @@ ctx_RGBA8_associate_alpha (uint8_t *rgba)
 #else
     uint32_t val = *((uint32_t*)(rgba));
     int a = val >> CTX_RGBA8_A_SHIFT;
-    uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
-    uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
-    *((uint32_t*)(rgba)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+    if (a!=255)
+    {
+      if (a)
+      {
+        uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
+        uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
+        *((uint32_t*)(rgba)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+      }
+      else
+      {
+        *((uint32_t*)(rgba)) = 0;
+      }
+    }
 #endif
 }
 
 CTX_INLINE static void
-ctx_RGBA8_deassociate_alpha (const uint8_t *col, uint8_t *dst)
+ctx_RGBA8_deassociate_alpha (const uint8_t *in, uint8_t *out)
 {
-  ctx_u8_deassociate_alpha (4, col, dst);
+#if 0
+  ctx_u8_deassociate_alpha (4, in, out);
+#else
+    uint32_t val = *((uint32_t*)(in));
+    int a = val >> CTX_RGBA8_A_SHIFT;
+    if (a !=255)
+    {
+      uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
+      uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
+      *((uint32_t*)(out)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+    } else if (a != 0)
+    {
+      uint32_t g = (((val & CTX_RGBA8_G_MASK) * 255 / a) >> 8) & CTX_RGBA8_G_MASK;
+      uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * 255 / a) >> 8) & CTX_RGBA8_RB_MASK;
+      *((uint32_t*)(out)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+    }
+    else
+    {
+      *((uint32_t*)(out)) = 0;
+    }
+#endif
 }
 
 CTX_INLINE static void
