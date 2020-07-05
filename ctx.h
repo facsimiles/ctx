@@ -8198,6 +8198,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (
       ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
 #endif
 
+#if 0
       if (cov == 255)
       {
       for (int c = 0; c < components; c++)
@@ -8208,6 +8209,22 @@ ctx_RGBA8_source_over_normal_linear_gradient (
         for (int c = 0; c < components; c++)
           dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
        }
+#else
+    uint32_t si = *((uint32_t*)(tsrc));
+    uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
+    uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+    int si_a = si >> CTX_RGBA8_A_SHIFT;
+    int r_si_a = 255 - si_a;
+    uint32_t di = *((uint32_t*)(dst));
+    uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
+    uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+    int ir_cov_si_a = 255-((cov*si_a)>>8);
+        *((uint32_t*)(dst)) =
+         (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
+         (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
+#endif
+
+
     }
     u0 += ud;
     v0 += vd;
@@ -8256,6 +8273,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (
       ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
 #endif
 
+#if 0
       if (cov == 255)
       {
       for (int c = 0; c < components; c++)
@@ -8266,6 +8284,21 @@ ctx_RGBA8_source_over_normal_radial_gradient (
         for (int c = 0; c < components; c++)
           dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
        }
+#else
+    uint32_t si = *((uint32_t*)(tsrc));
+    uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
+    uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+    int si_a = si >> CTX_RGBA8_A_SHIFT;
+    int r_si_a = 255 - si_a;
+    uint32_t di = *((uint32_t*)(dst));
+    uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
+    uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+    int ir_cov_si_a = 255-((cov*si_a)>>8);
+        *((uint32_t*)(dst)) =
+         (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
+         (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
+
+#endif
     }
     u0 += ud;
     v0 += vd;
