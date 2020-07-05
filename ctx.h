@@ -1480,7 +1480,8 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * defining the used formats, set CTX_LIMIT_FORMATS to 1, and
  * manually add CTX_ENABLE_ flags for each of them.
  */
-#if CTX_LIMIT_FORMATS==0
+#if CTX_LIMIT_FORMATS
+#else
 
 #define CTX_ENABLE_GRAY1                1
 #define CTX_ENABLE_GRAY2                1
@@ -2691,7 +2692,7 @@ struct _CtxState
 #define CTX_line_width     CTX_STRH('l','i','n','e','_','w','i','d','t','h',0,0,0,0)
 #define CTX_lineWidth      CTX_STRH('l','i','n','e','W','i','d','t','h',0,0,0,0,0)
 #define CTX_setLineWidth      CTX_STRH('s','e','t','L','i','n','e','W','i','d','t','h',0,0)
-#define CTX_media_box      CTX_STRH('m','e','d','i','a','_','b','o','x',0,0,0,0,0)
+#define CTX_view_box       CTX_STRH('v','i','e','w','_','b','o','x',0,0,0,0,0,0)
 #define CTX_viewBox        CTX_STRH('v','i','e','w','B','o','x',0,0,0,0,0,0,0)
 #define CTX_middle         CTX_STRH('m','i','d','d','l','e',0, 0, 0, 0, 0, 0,0,0)
 #define CTX_miter          CTX_STRH('m','i','t','e','r',0, 0, 0, 0, 0, 0, 0,0,0)
@@ -15045,7 +15046,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_newPage:        ret = CTX_NEW_PAGE; break;
           OPT(case CTX_quad_to:)
           case CTX_quadTo:         ret = CTX_QUAD_TO; break;
-          OPT(case CTX_media_box:)
+          OPT(case CTX_view_box:)
           case CTX_viewBox:       ret = CTX_VIEW_BOX; break;
           OPT(case CTX_smoothTo:)
           case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
@@ -15124,7 +15125,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_relQuadTo:      ret = CTX_REL_QUAD_TO; break;
           case CTX_rectangle:
           case CTX_rect:           ret = CTX_RECTANGLE; break;
-          case CTX_viewBox:        ret = CTX_VIEW_BOX; break;
           OPT(case CTX_round_rectangle:)
           case CTX_roundRectangle: ret = CTX_ROUND_RECTANGLE; break;
           OPT(case CTX_rel_smooth_to:)

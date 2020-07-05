@@ -511,10 +511,18 @@ static int ct_set_prop (CT *ct, uint32_t key_hash, const char *val, int len)
 
 void sdl_setup (int width, int height)
 {
+  SDL_Init (SDL_INIT_VIDEO);
+
+#if 1
+  SDL_CreateWindowAndRenderer(width, height, 0, &window, &renderer);
+#else
+
   window = SDL_CreateWindow ("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   //renderer = SDL_CreateRenderer (window, -1, 0);
   renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
+#endif
   SDL_StartTextInput ();
+
 
   SDL_EnableScreenSaver ();
 }

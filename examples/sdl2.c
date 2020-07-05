@@ -47,7 +47,7 @@ static int sdl_check_events ()
 {
   int got_event = 0;
   static SDL_Event      event;
-  if (SDL_WaitEventTimeout (&event, 15))
+  if (SDL_WaitEventTimeout (&event, 0))
   do
   {
     switch (event.type)
@@ -111,13 +111,18 @@ int main(int argc, char **argv)
   pixels = calloc (width * height, 4);
   SDL_EnableScreenSaver ();
 
+  int x = 0;
   while(!do_quit)
   {
     SDL_Rect dirty;
 
     Ctx *ctx = ctx_new_for_framebuffer (pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
 
-    ctx_rectangle (ctx, 20, 30, 100, 100);
+    ctx_rectangle (ctx, 0,0,width,height);
+    ctx_set_rgba (ctx, 0, 0, 0, 1);
+    ctx_fill (ctx);
+    ctx_rectangle (ctx, 20+x, 30, 100, 100);
+    x++;
     ctx_set_rgba (ctx, 1, 1, 1, 1);
     ctx_fill (ctx);
     ctx_set_font_size (ctx, height * 0.1);
@@ -149,7 +154,7 @@ int main(int argc, char **argv)
 
     if (!sdl_check_events ())
     {
-      SDL_Delay (100);
+      //SDL_Delay (100);
     }
 
   }
