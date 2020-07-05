@@ -8800,11 +8800,11 @@ ctx_##comp_format##_porter_duff_##source (CTX_COMPOSITE_ARGUMENTS) \
 ctx_u8_porter_duff(RGBA8, 4,color,   NULL,                 rasterizer->state->gstate.blend_mode)
 ctx_u8_porter_duff(RGBA8, 4,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
+//ctx_u8_porter_duff(comp_name, components,color_##blend_name,  NULL, blend_mode)
 
 #if CTX_INLINED_NORMAL
 #define ctx_u8_porter_duff_blend(comp_name, components, blend_mode, blend_name)\
 ctx_u8_porter_duff(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
-ctx_u8_porter_duff(comp_name, components,color_##blend_name,  NULL, blend_mode)\
 ctx_u8_porter_duff(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_##comp_name, blend_mode)\
 ctx_u8_porter_duff(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_##comp_name, blend_mode)\
 ctx_u8_porter_duff(comp_name, components,image_rgb8_##blend_name, ctx_fragment_image_rgb8_##comp_name,      blend_mode)\
