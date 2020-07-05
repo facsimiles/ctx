@@ -6544,7 +6544,9 @@ ctx_gradient_cache_reset (void);
 static void
 ctx_state_gradient_clear_stops (CtxState *state)
 {
+#if CTX_GRADIENT_CACHE
   ctx_gradient_cache_reset ();
+#endif
   state->gradient.n_stops = 0;
 }
 
@@ -7367,8 +7369,10 @@ _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, ui
 }
 
 
+#if CTX_GRADIENT_CACHE
 static void
 ctx_gradient_cache_prime (CtxRasterizer *rasterizer);
+#endif
 
 CTX_INLINE static void
 ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
@@ -7419,6 +7423,7 @@ ctx_u8_associate_alpha (int components, uint8_t *u8)
   }
 }
 
+#if CTX_GRADIENT_CACHE
 static void
 ctx_gradient_cache_prime (CtxRasterizer *rasterizer)
 {
@@ -7433,6 +7438,7 @@ ctx_gradient_cache_prime (CtxRasterizer *rasterizer)
   }
   ctx_gradient_cache_valid = 1;
 }
+#endif
 
 
 CTX_INLINE static void
@@ -10156,6 +10162,7 @@ ctx_rasterizer_setup (CtxRasterizer *rasterizer)
   {
     rasterizer->format->setup (rasterizer);
   }
+#if CTX_GRADIENT_CACHE
   CtxGState *gstate = &rasterizer->state->gstate;
   switch (gstate->source.type)
   {
@@ -10163,6 +10170,7 @@ ctx_rasterizer_setup (CtxRasterizer *rasterizer)
     case CTX_SOURCE_RADIAL_GRADIENT:
       ctx_gradient_cache_prime (rasterizer);
   }
+#endif
 }
 
 inline static void
