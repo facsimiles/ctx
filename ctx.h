@@ -1293,7 +1293,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 2 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA       15
+#define CTX_RASTERIZER_AA       3
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -1302,7 +1302,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  0
+#define CTX_RASTERIZER_FORCE_AA  1
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
@@ -13762,7 +13762,17 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
         cairo_set_line_width (cr, ctx_arg_float (0) );
         break;
       case CTX_ARC:
-        if (ctx_arg_float (5) == 0)
+#if 0
+        fprintf (stderr, "F %2.1f %2.1f %2.1f %2.1f %2.1f %2.1f\n",
+                        ctx_arg_float(0),
+                        ctx_arg_float(1),
+                        ctx_arg_float(2),
+                        ctx_arg_float(3),
+                        ctx_arg_float(4),
+                        ctx_arg_float(5),
+                        ctx_arg_float(6));
+#endif
+        if (ctx_arg_float (5) == 1)
           cairo_arc (cr, ctx_arg_float (0), ctx_arg_float (1),
                      ctx_arg_float (2), ctx_arg_float (3),
                      ctx_arg_float (4) );
