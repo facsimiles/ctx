@@ -1293,7 +1293,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 2 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA       5
+#define CTX_RASTERIZER_AA       15
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -8067,18 +8067,17 @@ ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
 
     while (count--)
     {
-      int cov = *coverage;
+      int cov = coverage[0];
       if (cov)
       {
+        int r_cov = 255-cov;
         uint32_t di = *((uint32_t*)(dst));
         uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-        int r_cov = 255-cov;
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
          (((si_ga * cov + di_ga * r_cov) >> 8) & CTX_RGBA8_GA_MASK);
       }
-     
       dst += 4;
       coverage ++;
     }
@@ -8357,12 +8356,10 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
         uint32_t di = *((uint32_t*)(dst));
         uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-      {
         int ir_cov_si_a = 255-((cov*si_a)>>8);
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
          (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
-       }
       }
       dst += 4;
       coverage ++;
