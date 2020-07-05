@@ -7383,8 +7383,31 @@ ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uin
 CTX_INLINE static void
 ctx_u8_associate_alpha (int components, uint8_t *u8)
 {
+  switch (components)
+  {
+    case 4:
+            {
+    uint32_t val = *((uint32_t*)(u8));
+    int a = val >> CTX_RGBA8_A_SHIFT;
+    if (a!=255)
+    {
+      if (a)
+      {
+        uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
+        uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
+        *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+      }
+      else
+      {
+        *((uint32_t*)(u8)) = 0;
+      }
+    }
+            }
+            break;
+    default:
   for (int c = 0; c < components-1; c++)
     u8[c] = (u8[c] * u8[components-1]) /255;
+  }
 }
 
 static void
@@ -7587,51 +7610,12 @@ ctx_dither_graya_u8 (uint8_t *rgba, int x, int y, int dither_red_blue, int dithe
 
 
 CTX_INLINE static void
-ctx_u8_deassociate_alpha (int components, const uint8_t *col, uint8_t *dst)
+ctx_u8_deassociate_alpha (int components, const uint8_t *in, uint8_t *out)
 {
-  if (col[components-1])
+  switch (components)
   {
-  for (int c = 0; c < components-1; c++)
-    dst[c] = (col[c] * 255) / col[components-1];
-  }
-  else
-  {
-  for (int c = 0; c < components-1; c++)
-    dst[c] = 0;
-  }
-  dst[components-1] = col[components-1];
-}
-
-CTX_INLINE static void
-ctx_RGBA8_associate_alpha (uint8_t *rgba)
-{
-#if 0
-  ctx_u8_associate_alpha (4, rgba);
-#else
-    uint32_t val = *((uint32_t*)(rgba));
-    int a = val >> CTX_RGBA8_A_SHIFT;
-    if (a!=255)
-    {
-      if (a)
-      {
-        uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
-        uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
-        *((uint32_t*)(rgba)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
-      }
-      else
-      {
-        *((uint32_t*)(rgba)) = 0;
-      }
-    }
-#endif
-}
-
-CTX_INLINE static void
-ctx_RGBA8_deassociate_alpha (const uint8_t *in, uint8_t *out)
-{
-#if 0
-  ctx_u8_deassociate_alpha (4, in, out);
-#else
+    case 4:
+            {
     uint32_t val = *((uint32_t*)(in));
     int a = val >> CTX_RGBA8_A_SHIFT;
     if (a !=255)
@@ -7649,7 +7633,36 @@ ctx_RGBA8_deassociate_alpha (const uint8_t *in, uint8_t *out)
     {
       *((uint32_t*)(out)) = 0;
     }
-#endif
+            }
+    break;
+    default:
+    {
+  if (in[components-1])
+  {
+  for (int c = 0; c < components-1; c++)
+    out[c] = (in[c] * 255) / in[components-1];
+  }
+  else
+  {
+  for (int c = 0; c < components-1; c++)
+    out[c] = 0;
+  }
+  out[components-1] = in[components-1];
+  break;
+  }
+  }
+}
+
+CTX_INLINE static void
+ctx_RGBA8_associate_alpha (uint8_t *rgba)
+{
+  ctx_u8_associate_alpha (4, rgba);
+}
+
+CTX_INLINE static void
+ctx_RGBA8_deassociate_alpha (const uint8_t *in, uint8_t *out)
+{
+  ctx_u8_deassociate_alpha (4, in, out);
 }
 
 CTX_INLINE static void
