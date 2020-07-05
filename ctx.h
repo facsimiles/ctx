@@ -7275,6 +7275,19 @@ CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 #endif
 }
 
+#define CTX_RGBA8_R_SHIFT  0
+#define CTX_RGBA8_G_SHIFT  8
+#define CTX_RGBA8_B_SHIFT  16
+#define CTX_RGBA8_A_SHIFT  24
+
+#define CTX_RGBA8_R_MASK   (0xff << CTX_RGBA8_R_SHIFT)
+#define CTX_RGBA8_G_MASK   (0xff << CTX_RGBA8_G_SHIFT)
+#define CTX_RGBA8_B_MASK   (0xff << CTX_RGBA8_B_SHIFT)
+#define CTX_RGBA8_A_MASK   (0xff << CTX_RGBA8_A_SHIFT)
+
+#define CTX_RGBA8_RB_MASK  (CTX_RGBA8_R_MASK | CTX_RGBA8_B_MASK)
+#define CTX_RGBA8_BG_MASK  (CTX_RGBA8_B_MASK | CTX_RGBA8_G_MASK)
+
 #if CTX_GRADIENT_CACHE
 
 
@@ -7592,7 +7605,15 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *col, uint8_t *dst)
 CTX_INLINE static void
 ctx_RGBA8_associate_alpha (uint8_t *rgba)
 {
+#if 0
   ctx_u8_associate_alpha (4, rgba);
+#else
+    uint32_t val = *((uint32_t*)(rgba));
+    int a = val >> CTX_RGBA8_A_SHIFT;
+    uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
+    uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
+    *((uint32_t*)(rgba)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+#endif
 }
 
 CTX_INLINE static void
