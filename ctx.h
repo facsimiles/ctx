@@ -7405,8 +7405,17 @@ ctx_u8_associate_alpha (int components, uint8_t *u8)
             }
             break;
     default:
+  switch (u8[components-1])
+  {
+          case 255:break;
+          case 0: 
+            for (int c = 0; c < components-1; c++)
+             u8[c] = 0;
+            break;
+          default:
   for (int c = 0; c < components-1; c++)
     u8[c] = (u8[c] * u8[components-1]) /255;
+  }
   }
 }
 
@@ -7639,8 +7648,9 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *in, uint8_t *out)
     {
   if (in[components-1])
   {
-  for (int c = 0; c < components-1; c++)
-    out[c] = (in[c] * 255) / in[components-1];
+    if (in[components-1] != 255)
+    for (int c = 0; c < components-1; c++)
+      out[c] = (in[c] * 255) / in[components-1];
   }
   else
   {
@@ -7651,18 +7661,6 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *in, uint8_t *out)
   break;
   }
   }
-}
-
-CTX_INLINE static void
-ctx_RGBA8_associate_alpha (uint8_t *rgba)
-{
-  ctx_u8_associate_alpha (4, rgba);
-}
-
-CTX_INLINE static void
-ctx_RGBA8_deassociate_alpha (const uint8_t *in, uint8_t *out)
-{
-  ctx_u8_deassociate_alpha (4, in, out);
 }
 
 CTX_INLINE static void
