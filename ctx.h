@@ -1461,6 +1461,10 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_INLINED_NORMAL      1
 #endif
 
+#ifndef CTX_SIMD
+#define CTX_SIMD 1
+#endif
+
 /* do 
  */
 #ifndef CTX_NATIVE_GRAYA8
@@ -1512,6 +1516,13 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 #endif
 
+#if CTX_SIMD
+
+#include <xmmintrin.h>
+#include <smmintrin.h>
+#include <immintrin.h>
+
+#endif
 
 /* by including ctx-font-regular.h, or ctx-font-mono.h the
  * built-in fonts using ctx renderstream encoding is enabled
@@ -8332,6 +8343,126 @@ ctx_RGBA8_source_over_normal_radial_gradient (
   }
 }
 
+#if CTX_SIMD
+static void
+ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
+{
+#if 0
+  ctx_u8_source_over_normal_color (4, rasterizer, dst, src, clip, x0, coverage, count);
+#else
+  {
+
+    uint8_t tsrc[4*8];
+    int components = 4;
+    *((uint32_t*)(tsrc)) = *((uint32_t*)(src));
+    ctx_u8_associate_alpha (components, tsrc);
+    uint32_t si = *((uint32_t*)(tsrc));
+    uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
+    uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+    int si_a = si >> CTX_RGBA8_A_SHIFT;
+    //while (count--)
+    //
+    //
+    int x;
+    for (int t= 1; t < 8; t++)
+      ((uint32_t*)(tsrc))[t]= ((uint32_t*)(tsrc))[0];
+  
+    __m256i xsrc = _mm256_load_si256((__m256i*)(&tsrc[0])) ;
+
+    int8_t a = tsrc[3];
+    __m256i xsrca = _mm256_set1_epi8(a);
+
+    //__m256i xsrca = _mm256_set_epi8(a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,
+    //   /                              a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a);
+    __m256i x40  = _mm256_set1_epi8(60);
+                    
+    for (x = 0; x < count-8; x+=8)
+    {
+      __m256i xdst = _mm256_loadu_si256((__m256i*)(dst)) ;
+      __m256i xcov = _mm256_set_epi8(coverage[7], coverage[7], coverage[7], coverage[7],
+                                     coverage[6], coverage[6], coverage[6], coverage[6],
+                                     coverage[5], coverage[5], coverage[5], coverage[5],
+                                     coverage[4], coverage[4], coverage[4], coverage[4],
+                                     coverage[3], coverage[3], coverage[3], coverage[3],
+                                     coverage[2], coverage[2], coverage[2], coverage[2],
+                                     coverage[1], coverage[1], coverage[1], coverage[1],
+                                     coverage[0], coverage[0], coverage[0], coverage[0]);
+
+      //for (int i =0 ;i <8;i++)
+      {
+
+              if(1){
+#define xmm_mul(a,b) \
+                      {\
+        __m256i aodd    = _mm256_srli_epi16(a, 8); \
+        __m256i bodd    = _mm256_srli_epi16(b, 8); \
+        __m256i muleven = _mm256_mullo_epi16(a, b); \
+        __m256i mulodd  = _mm256_slli_epi16(_mm256_mullo_epi16(aodd, bodd), 8); \
+        a = _mm256_blendv_epi8(mulodd, muleven, _mm256_set1_epi32(0x00FF00FF)); }
+#endif
+
+        //xdst = xdst + x40;
+        //xdst = _mm256_adds_epu8(xdst, x40);
+        __m256i xa = xsrc;
+        xmm_mul(xa, xcov);
+
+        __m256i xb = xsrca;
+        xmm_mul(xb, xcov);
+        xb = _mm256_sub_epi8(_mm256_set1_epi8(255), xb);
+        xmm_mul(xb, xdst);
+
+        xdst = _mm256_adds_epu8(xa, xb);
+
+        _mm256_storeu_si256((__m256i*)dst, xdst);
+              }
+
+#if 0
+      if (cov)
+      {
+        if (cov == 255)
+        {
+        for (int c = 0; c < components; c++)
+          dst[c] = (tsrc[c]) + (dst[c] * (255-(tsrc[components-1])))/(255);
+        }
+        else
+        {
+          for (int c = 0; c < components; c++)
+          {
+             int a = (xsrc[c] * xcov);
+             int b = (xdst[c] * ((x255)-(xsrca * xcov)));
+             dst[c] = a + b;
+
+          }
+         }
+      }
+#endif
+
+      dst += 4 * 8;
+      coverage += 8;
+      }
+    }
+
+    /* finish remainder with nifty trick */
+
+    for (; x < count; x++)
+    {
+      int cov = *coverage;
+      if (cov)
+      {
+        uint32_t di = *((uint32_t*)(dst));
+        uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
+        uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+        int ir_cov_si_a = 255-((cov*si_a)>>8);
+        *((uint32_t*)(dst)) = 
+         (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
+         (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
+      }
+      dst += 4;
+      coverage ++;
+    }
+  }
+}
+#else
 
 static void
 ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
@@ -8367,6 +8498,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
   }
 #endif
 }
+#endif
 
 static void
 ctx_RGBA8_copy_normal (CTX_COMPOSITE_ARGUMENTS)

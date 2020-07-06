@@ -3,6 +3,7 @@
 
 #define CTX_MAX_RENDERSTREAM_SIZE 4096000
 #define CTX_BACKEND_TEXT 0
+#define CTX_SIMD 0
 #define CTX_PARSER       1
 #define CTX_GLYPH_CACHE  1
 #define CTX_ENABLE_CMYK  0
