@@ -23,7 +23,7 @@ ctx.asan: ctx.c vt/*.[ch] ctx.h Makefile
 	$(CC) -DASANBUILD=1 ctx.c vt/*.c -o $@ -g -O0 -I. -Ifonts -Ivt `pkg-config --cflags --libs sdl2` -lutil -lasan -fsanitize=address -lz -lm
 
 sentry:
-	sentry Makefile ctx.h tests/*.ctx -- make ctx
+	sentry Makefile ctx.h tests/*.ctx -- make ctx  post
 sentry-f:
 	sentry Makefile ctx.h tests/*.ctx -- make
 
