@@ -8343,6 +8343,8 @@ ctx_RGBA8_source_over_normal_radial_gradient (
   }
 }
 
+#include <stdalign.h>
+
 #if CTX_SIMD
 static void
 ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
@@ -8351,8 +8353,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
   ctx_u8_source_over_normal_color (4, rasterizer, dst, src, clip, x0, coverage, count);
 #else
   {
-
-    uint8_t tsrc[4*8];
+    alignas(alignof(__m256i)) uint8_t tsrc[4*8];
     int components = 4;
     *((uint32_t*)(tsrc)) = *((uint32_t*)(src));
     ctx_u8_associate_alpha (components, tsrc);
@@ -8367,7 +8368,6 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     for (int t= 1; t < 8; t++)
       ((uint32_t*)(tsrc))[t]= ((uint32_t*)(tsrc))[0];
   
-    //__m256i xsrc = _mm256_load_si256((__m256i*)(&tsrc[0])) ;
 
     int8_t a = tsrc[3];
     //__m256i xsrca = _mm256_set1_epi8(a);
@@ -8376,19 +8376,38 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     //                                  a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a);
     //__m256i x40  = _mm256_set1_epi8(60);
                     
+    __m256i xsrc = _mm256_load_si256((__m256i*)(&tsrc[0])) ;
     for (x = 0; x < count-8; x+=8)
     {
       __m256i xdst = _mm256_loadu_si256((__m256i*)(dst)) ;
 #if 1
-      __m256i xcov = _mm256_set_epi8(coverage[7], coverage[7], coverage[7], coverage[7],
-                                     coverage[6], coverage[6], coverage[6], coverage[6],
-                                     coverage[5], coverage[5], coverage[5], coverage[5],
-                                     coverage[4], coverage[4], coverage[4], coverage[4],
-                                     coverage[3], coverage[3], coverage[3], coverage[3],
-                                     coverage[2], coverage[2], coverage[2], coverage[2],
-                                     coverage[1], coverage[1], coverage[1], coverage[1],
-                                     coverage[0], coverage[0], coverage[0], coverage[0]);
-
+      __m256i xcov = _mm256_set_epi16((coverage[7]), (coverage[7]),
+                                      (coverage[6]), (coverage[6]),
+                                      (coverage[5]), (coverage[5]),
+                                      (coverage[4]), (coverage[4]),
+                                      (coverage[3]), (coverage[3]),
+                                      (coverage[2]), (coverage[2]),
+                                      (coverage[1]), (coverage[1]),
+                                      (coverage[0]), (coverage[0]));
+      __m256i x1_minus_cov_a = 
+         _mm256_sub_epi16(_mm256_set1_epi16(255), 
+      _mm256_set_epi16((coverage[7]*a)>>8, (coverage[7]*a)>>8,
+                                      (coverage[6]*a)>>8, (coverage[6]*a)>>8,
+                                      (coverage[5]*a)>>8, (coverage[5]*a)>>8,
+                                      (coverage[4]*a)>>8, (coverage[4]*a)>>8,
+                                      (coverage[3]*a)>>8, (coverage[3]*a)>>8,
+                                      (coverage[2]*a)>>8, (coverage[2]*a)>>8,
+                                      (coverage[1]*a)>>8, (coverage[1]*a)>>8,
+                                      (coverage[0]*a)>>8, (coverage[0]*a)>>8));
+#else
+      __m256i xcov = _mm256_set_epi8((coverage[7]*a)>>8, (coverage[7]*a)>>8, (coverage[7]*a)>>8, (coverage[7]*a)>>8,
+                                     (coverage[6]*a)>>8, (coverage[6]*a)>>8, (coverage[6]*a)>>8, (coverage[6]*a)>>8,
+                                     (coverage[5]*a)>>8, (coverage[5]*a)>>8, (coverage[5]*a)>>8, (coverage[5]*a)>>8,
+                                     (coverage[4]*a)>>8, (coverage[4]*a)>>8, (coverage[4]*a)>>8, (coverage[4]*a)>>8,
+                                     (coverage[3]*a)>>8, (coverage[3]*a)>>8, (coverage[3]*a)>>8, (coverage[3]*a)>>8,
+                                     (coverage[2]*a)>>8, (coverage[2]*a)>>8, (coverage[2]*a)>>8, (coverage[2]*a)>>8,
+                                     (coverage[1]*a)>>8, (coverage[1]*a)>>8, (coverage[1]*a)>>8, (coverage[1]*a)>>8,
+                                     (coverage[0]*a)>>8, (coverage[0]*a)>>8, (coverage[0]*a)>>8, (coverage[0]*a)>>8);
 #endif
               if(1){
 #define xmm_mul(a,b) \
@@ -8420,30 +8439,60 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
         xb = xdst;
         xmm_mul(xb, _mm256_set1_epi16(2));
 #endif
-        __m256i zero = _mm256_setzero_si256();
-        __m256i even_mask =   _mm256_set1_epi32(0x00FF00FF);
-        __m256i odd_mask =  _mm256_set1_epi32(0xFF00FF00);
+        __m256i even_mask =  _mm256_set1_epi32(0x00FF00FF);
+        __m256i odd_mask  =  _mm256_set1_epi32(0xFF00FF00);
 
-        __m256i xb = xdst;
-
-        __m256i even = xb & even_mask;
-        __m256i odd  = xb & odd_mask;
+#if 1
+        __m256i dt = _mm256_xor_si256(xdst, _mm256_set1_epi8(0x80));
+        __m256i xs = _mm256_xor_si256(xsrc, _mm256_set1_epi8(0x80));
+        __m256i dst_even = dt & even_mask;
+        __m256i dst_odd  = dt & odd_mask;
+        __m256i src_even = xs & even_mask;
+        __m256i src_odd  = xs & odd_mask;
+#else
+        __m256i dt = xdst;
+        __m256i xs = xsrc;
+        __m256i dst_even = dt & even_mask;
+        __m256i dst_odd  = dt & odd_mask;
+        __m256i src_even = xs & even_mask;
+        __m256i src_odd  = xs & odd_mask;
+#endif
         
-        odd  = _mm256_srli_epi16  (odd, 8);
+        dst_odd  = _mm256_srli_epi16  (dst_odd, 8);
+  //    src_odd  = _mm256_srli_epi16  (src_odd, 8);
 
-        even = _mm256_adds_epi16(even, _mm256_set1_epi16(-128));
-        odd  = _mm256_adds_epi16(odd,  _mm256_set1_epi16(-128));
+//    dst_even = _mm256_subs_epi16(dst_even, _mm256_set1_epi16(128));
+//    dst_odd  = _mm256_subs_epi16(dst_odd,  _mm256_set1_epi16(128));
+//    src_even = _mm256_subs_epi16(src_even, _mm256_set1_epi16(128));
+//    src_odd  = _mm256_subs_epi16(src_odd,  _mm256_set1_epi16(128));
 
-        even = _mm256_mullo_epi16(even, _mm256_set1_epi16(200)); 
-        odd =  _mm256_mullo_epi16(odd, _mm256_set1_epi16(200)); 
-        even = _mm256_srli_epi16  (even, 8);
-        odd =  _mm256_srli_epi16  (odd , 8);
-        even = _mm256_adds_epi16(even, _mm256_set1_epi16(128));
-        odd  = _mm256_adds_epi16(odd,  _mm256_set1_epi16(128));
+        src_even = _mm256_mullo_epi16(src_even, xcov);
+        src_odd  = _mm256_mullo_epi16(src_odd,  xcov);
+        src_even = _mm256_srli_epi16  (src_even, 8);
+        src_odd  = _mm256_srli_epi16  (src_odd , 8);
+        
+#if 0
+      dst_even = _mm256_mullo_epi16(dst_even, _mm256_set1_epi16(212));
+      dst_odd  = _mm256_mullo_epi16(dst_odd,  _mm256_set1_epi16(212));
+      dst_even = _mm256_srli_epi16  (dst_even, 8);
+      dst_odd  = _mm256_srli_epi16  (dst_odd , 8);
+#else
+        dst_even = _mm256_mullo_epi16(dst_even, x1_minus_cov_a);
+        dst_odd  = _mm256_mullo_epi16(dst_odd, x1_minus_cov_a);
+          dst_even = _mm256_srli_epi16  (dst_even, 8);
+          dst_odd  = _mm256_srli_epi16  (dst_odd , 8);
+#endif
+        dst_odd  = _mm256_adds_epi16(dst_odd,  src_odd);
+        dst_even = _mm256_adds_epi16(dst_even,  src_even);
+        dst_even = _mm256_subs_epi16(dst_even, _mm256_set1_epi16(128));
+        dst_odd  = _mm256_subs_epi16(dst_odd,  _mm256_set1_epi16(128));
+        src_even = _mm256_subs_epi16(src_even, _mm256_set1_epi16(128));
+        src_odd  = _mm256_subs_epi16(src_odd,  _mm256_set1_epi16(128));
 
-        odd = _mm256_slli_epi16  (odd , 8);
+        dst_odd = _mm256_slli_epi16  (dst_odd , 8);
+        src_odd = _mm256_slli_epi16  (src_odd , 8);
 
-        __m256i vecResult = _mm256_blendv_epi8(even, odd, _mm256_set1_epi32(0xFF00FF00)); 
+        __m256i vecResult = _mm256_blendv_epi8(dst_even, dst_odd, _mm256_set1_epi32(0xFF00FF00)); 
         _mm256_storeu_si256((__m256i*)dst, vecResult);
 
 #if 0
