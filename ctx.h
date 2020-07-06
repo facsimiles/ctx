@@ -8367,18 +8367,19 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     for (int t= 1; t < 8; t++)
       ((uint32_t*)(tsrc))[t]= ((uint32_t*)(tsrc))[0];
   
-    __m256i xsrc = _mm256_load_si256((__m256i*)(&tsrc[0])) ;
+    //__m256i xsrc = _mm256_load_si256((__m256i*)(&tsrc[0])) ;
 
     int8_t a = tsrc[3];
-    __m256i xsrca = _mm256_set1_epi8(a);
+    //__m256i xsrca = _mm256_set1_epi8(a);
 
     //__m256i xsrca = _mm256_set_epi8(a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,
-    //   /                              a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a);
-    __m256i x40  = _mm256_set1_epi8(60);
+    //                                  a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a);
+    //__m256i x40  = _mm256_set1_epi8(60);
                     
     for (x = 0; x < count-8; x+=8)
     {
       __m256i xdst = _mm256_loadu_si256((__m256i*)(dst)) ;
+#if 1
       __m256i xcov = _mm256_set_epi8(coverage[7], coverage[7], coverage[7], coverage[7],
                                      coverage[6], coverage[6], coverage[6], coverage[6],
                                      coverage[5], coverage[5], coverage[5], coverage[5],
@@ -8388,33 +8389,62 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
                                      coverage[1], coverage[1], coverage[1], coverage[1],
                                      coverage[0], coverage[0], coverage[0], coverage[0]);
 
-      //for (int i =0 ;i <8;i++)
-      {
-
+#endif
               if(1){
 #define xmm_mul(a,b) \
                       {\
-        __m256i aodd    = _mm256_srli_epi16(a, 8); \
-        __m256i bodd    = _mm256_srli_epi16(b, 8); \
-        __m256i muleven = _mm256_mullo_epi16(a, b); \
-        __m256i mulodd  = _mm256_slli_epi16(_mm256_mullo_epi16(aodd, bodd), 8); \
-        a = _mm256_blendv_epi8(mulodd, muleven, _mm256_set1_epi32(0x00FF00FF)); }
+        __m256i aodd    = _mm256_and_si256(a, odd_mask); \
+        __m256i bodd    = _mm256_and_si256(b, odd_mask);  \
+        __m256i aeven   = _mm256_and_si256(a, even_mask);  \
+        __m256i beven   = _mm256_and_si256(b, even_mask);  \
+        __m256i muleven = _mm256_mullo_epi16(aeven, beven);\
+        __m256i mulodd  = _mm256_mullo_epi16(aodd, beven); \
+        muleven = _mm256_srli_epi64  (muleven, 8);\
+        mulodd = _mm256_srli_epi64  (mulodd, 8);\
+        muleven  = _mm256_and_si256(muleven, even_mask);\
+        mulodd   = _mm256_and_si256(mulodd, odd_mask);\
+        a = _mm256_or_si256(mulodd, muleven);}\
+        //a = _mm256_blendv_epi8(mulodd, muleven, _mm256_set1_epi32(0x00FF00FF)); }
 #endif
 
+#if 0
         //xdst = xdst + x40;
         //xdst = _mm256_adds_epu8(xdst, x40);
         __m256i xa = xsrc;
         xmm_mul(xa, xcov);
 
-        __m256i xb = xsrca;
         xmm_mul(xb, xcov);
         xb = _mm256_sub_epi8(_mm256_set1_epi8(255), xb);
         xmm_mul(xb, xdst);
 
-        xdst = _mm256_adds_epu8(xa, xb);
+        xb = xdst;
+        xmm_mul(xb, _mm256_set1_epi16(2));
+#endif
+        __m256i zero = _mm256_setzero_si256();
+        __m256i even_mask =   _mm256_set1_epi32(0x00FF00FF);
+        __m256i odd_mask =  _mm256_set1_epi32(0xFF00FF00);
 
-        _mm256_storeu_si256((__m256i*)dst, xdst);
-              }
+        __m256i xb = xdst;
+
+        __m256i even = xb & even_mask;
+        __m256i odd  = xb & odd_mask;
+        
+        odd  = _mm256_srli_epi16  (odd, 8);
+
+        even = _mm256_adds_epi16(even, _mm256_set1_epi16(-128));
+        odd  = _mm256_adds_epi16(odd,  _mm256_set1_epi16(-128));
+
+        even = _mm256_mullo_epi16(even, _mm256_set1_epi16(200)); 
+        odd =  _mm256_mullo_epi16(odd, _mm256_set1_epi16(200)); 
+        even = _mm256_srli_epi16  (even, 8);
+        odd =  _mm256_srli_epi16  (odd , 8);
+        even = _mm256_adds_epi16(even, _mm256_set1_epi16(128));
+        odd  = _mm256_adds_epi16(odd,  _mm256_set1_epi16(128));
+
+        odd = _mm256_slli_epi16  (odd , 8);
+
+        __m256i vecResult = _mm256_blendv_epi8(even, odd, _mm256_set1_epi32(0xFF00FF00)); 
+        _mm256_storeu_si256((__m256i*)dst, vecResult);
 
 #if 0
       if (cov)
