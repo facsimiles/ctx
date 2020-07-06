@@ -8377,12 +8377,13 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     //__m256i xsrca = _mm256_set_epi8(a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,
     //                                  a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a);
     //__m256i x40  = _mm256_set1_epi8(60);
+    __m256i  even_mask = _mm256_set1_epi32(0x00FF00FF);
+    __m256i  odd_mask =  _mm256_set1_epi32(0xFF00FF00);
                     
     __m256i xsrc = _mm256_load_si256((__m256i*)(&tsrc[0])) ;
     for (x = 0; x < count-8; x+=8)
     {
       __m256i xdst = _mm256_loadu_si256((__m256i*)(dst)) ;
-#if 1
       __m256i xcov = _mm256_set_epi16((coverage[7]), (coverage[7]),
                                       (coverage[6]), (coverage[6]),
                                       (coverage[5]), (coverage[5]),
@@ -8391,60 +8392,24 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
                                       (coverage[2]), (coverage[2]),
                                       (coverage[1]), (coverage[1]),
                                       (coverage[0]), (coverage[0]));
-#if 0
-      __m256i x1_minus_cov_a = 
+      __m256i x1_minus_cov_mul_a = 
          _mm256_sub_epi16(
                 _mm256_set1_epi16(255), 
                 _mm256_srli_epi16 (
                    _mm256_mullo_epi16(xcov,
                                       _mm256_set1_epi16(a)),
                    8));
-#else
-      __m256i x1_minus_cov_a = 
-         _mm256_sub_epi16(_mm256_set1_epi16(255), 
-      _mm256_set_epi16((coverage[7]*a)>>8, (coverage[7]*a)>>8,
-                       (coverage[6]*a)>>8, (coverage[6]*a)>>8,
-                       (coverage[5]*a)>>8, (coverage[5]*a)>>8,
-                       (coverage[4]*a)>>8, (coverage[4]*a)>>8,
-                       (coverage[3]*a)>>8, (coverage[3]*a)>>8,
-                       (coverage[2]*a)>>8, (coverage[2]*a)>>8,
-                       (coverage[1]*a)>>8, (coverage[1]*a)>>8,
-                       (coverage[0]*a)>>8, (coverage[0]*a)>>8));
-#endif
-#else
-      __m256i xcov = _mm256_set_epi8((coverage[7]*a)>>8, (coverage[7]*a)>>8, (coverage[7]*a)>>8, (coverage[7]*a)>>8,
-                                     (coverage[6]*a)>>8, (coverage[6]*a)>>8, (coverage[6]*a)>>8, (coverage[6]*a)>>8,
-                                     (coverage[5]*a)>>8, (coverage[5]*a)>>8, (coverage[5]*a)>>8, (coverage[5]*a)>>8,
-                                     (coverage[4]*a)>>8, (coverage[4]*a)>>8, (coverage[4]*a)>>8, (coverage[4]*a)>>8,
-                                     (coverage[3]*a)>>8, (coverage[3]*a)>>8, (coverage[3]*a)>>8, (coverage[3]*a)>>8,
-                                     (coverage[2]*a)>>8, (coverage[2]*a)>>8, (coverage[2]*a)>>8, (coverage[2]*a)>>8,
-                                     (coverage[1]*a)>>8, (coverage[1]*a)>>8, (coverage[1]*a)>>8, (coverage[1]*a)>>8,
-                                     (coverage[0]*a)>>8, (coverage[0]*a)>>8, (coverage[0]*a)>>8, (coverage[0]*a)>>8);
-#endif
               if(1){
 #endif
 
-#define even_mask _mm256_set1_epi32(0x00FF00FF)
-#define odd_mask  _mm256_set1_epi32(0xFF00FF00)
 
-#if 0
-        __m256i dt = _mm256_xor_si256(xdst, _mm256_set1_epi8(0x80));
-        __m256i xs = _mm256_xor_si256(xsrc, _mm256_set1_epi8(0x80));
-        __m256i dst_even = dt & even_mask;
-        __m256i dst_odd  = dt & odd_mask;
-        __m256i src_even = xs & even_mask;
-        __m256i src_odd  = xs & odd_mask;
-#else
-        __m256i dt = xdst;
-        __m256i xs = xsrc;
-        __m256i dst_even = dt & even_mask;
-        __m256i dst_odd  = dt & odd_mask;
-        __m256i src_even = xs & even_mask;
-        __m256i src_odd  = xs & odd_mask;
-#endif
+        __m256i dst_even = _mm256_and_si256 (xdst, even_mask);
+        __m256i dst_odd  = _mm256_and_si256 (xdst, odd_mask);
+        __m256i src_even = _mm256_and_si256 (xsrc, even_mask);
+        __m256i src_odd  = _mm256_and_si256 (xsrc, odd_mask);
         
-        dst_odd  = _mm256_srli_epi16  (dst_odd, 8);
-        src_odd  = _mm256_srli_epi16  (src_odd, 8);
+       dst_odd  = _mm256_srli_epi16  (dst_odd, 8);
+       src_odd  = _mm256_srli_epi16  (src_odd, 8);
 
       dst_even = _mm256_subs_epi16(dst_even, _mm256_set1_epi16(128));
       dst_odd  = _mm256_subs_epi16(dst_odd,  _mm256_set1_epi16(128));
@@ -8454,22 +8419,12 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
       src_even = _mm256_mullo_epi16(src_even, xcov);
       src_odd  = _mm256_mullo_epi16(src_odd,  xcov);
 
-      //src_even = _mm256_srli_epi16  (src_even, 8);
-      //src_odd  = _mm256_srli_epi16  (src_odd , 8);
-        
-#if 0
-      dst_even = _mm256_mullo_epi16(dst_even, _mm256_set1_epi16(212));
-      dst_odd  = _mm256_mullo_epi16(dst_odd,  _mm256_set1_epi16(212));
-      dst_even = _mm256_srli_epi16  (dst_even, 8);
-      dst_odd  = _mm256_srli_epi16  (dst_odd , 8);
-#else
-      dst_even = _mm256_mullo_epi16(dst_even, x1_minus_cov_a);
-      dst_odd  = _mm256_mullo_epi16(dst_odd,  x1_minus_cov_a);
+      dst_even = _mm256_mullo_epi16(dst_even, x1_minus_cov_mul_a);
+      dst_odd  = _mm256_mullo_epi16(dst_odd,  x1_minus_cov_mul_a);
       dst_odd  = _mm256_adds_epi16(dst_odd,  src_odd);
       dst_even = _mm256_adds_epi16(dst_even, src_even);
       dst_even = _mm256_srli_epi16  (dst_even, 8);
       dst_odd  = _mm256_srli_epi16  (dst_odd , 8);
-#endif
 
       dst_even = _mm256_add_epi16(dst_even, _mm256_set1_epi16(-128));
       dst_odd  = _mm256_add_epi16(dst_odd,  _mm256_set1_epi16(-128));
@@ -8479,37 +8434,15 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
       dst_odd = _mm256_slli_epi16 (dst_odd, 8);
       src_odd = _mm256_slli_epi16 (src_odd, 8);
 
-      __m256i vecResult = _mm256_blendv_epi8(dst_even, dst_odd, odd_mask); 
-      //__m256i vecResult = _mm256_blendv_epi8(src_even, src_odd, odd_mask); 
-      _mm256_storeu_si256((__m256i*)dst, vecResult);
-
-#if 0
-      if (cov)
-      {
-        if (cov == 255)
-        {
-        for (int c = 0; c < components; c++)
-          dst[c] = (tsrc[c]) + (dst[c] * (255-(tsrc[components-1])))/(255);
-        }
-        else
-        {
-          for (int c = 0; c < components; c++)
-          {
-             int a = (xsrc[c] * xcov);
-             int b = (xdst[c] * ((x255)-(xsrca * xcov)));
-             dst[c] = a + b;
-
-          }
-         }
-      }
-#endif
+      _mm256_storeu_si256((__m256i*)dst,
+              _mm256_blendv_epi8(dst_even, dst_odd, odd_mask)); 
 
       dst += 4 * 8;
       coverage += 8;
       }
     }
 
-    /* finish remainder with nifty trick */
+    /* finish remainder with proto simd, still faster than byte processing  */
 
     for (; x < count; x++)
     {
