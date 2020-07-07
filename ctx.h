@@ -8320,7 +8320,6 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
                     
     for (; x < count-8; x+=8)
     {
-      __m256i xsrc;
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
      
@@ -8352,6 +8351,15 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
         v0 += vd;
       }
       __m256i xsrc  = _mm256_load_si256((__m256i*)(tsrc));
+      __m256i xsrc_a = _mm256_set_epi16(
+            tsrc[7*4+3], tsrc[7*4+3],
+            tsrc[6*4+3], tsrc[6*4+3],
+            tsrc[5*4+3], tsrc[5*4+3],
+            tsrc[4*4+3], tsrc[4*4+3],
+            tsrc[3*4+3], tsrc[3*4+3],
+            tsrc[2*4+3], tsrc[2*4+3],
+            tsrc[1*4+3], tsrc[1*4+3],
+            tsrc[0*4+3], tsrc[0*4+3]);
 
        if (((uint64_t*)(coverage))[0] == 0xffffffffffffffff)
        {
@@ -8367,7 +8375,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
           x1_minus_cov_mul_a = 
             _mm256_sub_epi16(x00ff, _mm256_mulhi_epu16 (
                    _mm256_adds_epu16 (_mm256_mullo_epi16(xcov,
-                                      _mm256_set1_epi16(a)), x0080), x0101));
+                                      xsrc_a), x0080), x0101));
        }
        else
        {
@@ -8382,7 +8390,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
         x1_minus_cov_mul_a = 
            _mm256_sub_epi16(x00ff, _mm256_mulhi_epu16 (
                    _mm256_adds_epu16 (_mm256_mullo_epi16(xcov,
-                                      _mm256_set1_epi16(a)), x0080), x0101));
+                                      xsrc_a), x0080), x0101));
        }
       __m256i xdst   = _mm256_load_si256((__m256i*)(dst));
       __m256i dst_lo = _mm256_and_si256 (xdst, lo_mask);
@@ -8562,9 +8570,16 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
         v0 += vd;
       }
       __m256i xsrc  = _mm256_load_si256((__m256i*)(tsrc));
-      __m256i xsrc_a = xsrc;
 
-#if 1
+      __m256i  xsrc_a = _mm256_set_epi16(
+            tsrc[7*4+3], tsrc[7*4+3],
+            tsrc[6*4+3], tsrc[6*4+3],
+            tsrc[5*4+3], tsrc[5*4+3],
+            tsrc[4*4+3], tsrc[4*4+3],
+            tsrc[3*4+3], tsrc[3*4+3],
+            tsrc[2*4+3], tsrc[2*4+3],
+            tsrc[1*4+3], tsrc[1*4+3],
+            tsrc[0*4+3], tsrc[0*4+3]);
        if (((uint64_t*)(coverage))[0] == 0xffffffffffffffff)
        {
           if (a == 255)
@@ -8575,15 +8590,6 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
             continue;
           }
           xcov = _mm256_set1_epi16(0xff);
-          xsrc_a = _mm256_set_epi16(
-            tsrc[7*4+3], tsrc[7*4+3],
-            tsrc[6*4+3], tsrc[6*4+3],
-            tsrc[5*4+3], tsrc[5*4+3],
-            tsrc[4*4+3], tsrc[4*4+3],
-            tsrc[3*4+3], tsrc[3*4+3],
-            tsrc[2*4+3], tsrc[2*4+3],
-            tsrc[1*4+3], tsrc[1*4+3],
-            tsrc[0*4+3], tsrc[0*4+3]);
 
 
           x1_minus_cov_mul_a = 
@@ -8592,7 +8598,6 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
                                       xsrc_a), x0080), x0101));
        }
        else
-#endif
        {
          xcov  = _mm256_set_epi16((coverage[7]), (coverage[7]),
                                   (coverage[6]), (coverage[6]),
@@ -8602,15 +8607,6 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
                                   (coverage[2]), (coverage[2]),
                                   (coverage[1]), (coverage[1]),
                                   (coverage[0]), (coverage[0]));
-          xsrc_a = _mm256_set_epi16(
-            tsrc[7*4+3], tsrc[7*4+3],
-            tsrc[6*4+3], tsrc[6*4+3],
-            tsrc[5*4+3], tsrc[5*4+3],
-            tsrc[4*4+3], tsrc[4*4+3],
-            tsrc[3*4+3], tsrc[3*4+3],
-            tsrc[2*4+3], tsrc[2*4+3],
-            tsrc[1*4+3], tsrc[1*4+3],
-            tsrc[0*4+3], tsrc[0*4+3]);
         x1_minus_cov_mul_a = 
            _mm256_sub_epi16(x00ff, _mm256_mulhi_epu16 (
                    _mm256_adds_epu16 (_mm256_mullo_epi16(xcov,
