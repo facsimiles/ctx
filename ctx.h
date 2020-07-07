@@ -8454,17 +8454,9 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
 
 
 static void
-ctx_RGBA8_source_over_normal_radial_gradient (
-                     CtxRasterizer         *rasterizer,
-                     uint8_t * __restrict__ dst,
-                     uint8_t * __restrict__ src,
-                     uint8_t * __restrict__ clip,
-                     int                    x0,
-                     uint8_t * __restrict__ coverage,
-                     int                    count)
+ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
 {
   CtxSource *g = &rasterizer->state->gstate.source;
-  int components = 4;
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
   ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
@@ -8474,56 +8466,222 @@ ctx_RGBA8_source_over_normal_radial_gradient (
   float radial_gradient_rdelta = g->radial_gradient.rdelta;
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
+    uint8_t tsrc[4 * 8];
+    int x = 0;
 
-  while (count--)
-  {
-    int cov = *coverage;
-    if (cov)
+#if CTX_SIMD
+
+#define lo_mask   _mm256_set1_epi32 (0x00FF00FF)
+#define hi_mask   _mm256_set1_epi32 (0xFF00FF00)
+#define x00ff     _mm256_set1_epi16(255)
+#define x0101     _mm256_set1_epi16(0x0101)
+#define x0080     _mm256_set1_epi16(0x0080)
+
+
+    if ((size_t)(dst) & 31)
+#endif
     {
-      uint8_t tsrc[components];
+    {
+      for (; (x < count) 
+#if CTX_SIMD
+                      && ((size_t)(dst)&31)
+#endif
+                      ; 
+                      x++)
+      {
+        int cov = *coverage;
+        if (cov)
+        {
       float vv = ctx_hypotf (radial_gradient_x0 - u0, radial_gradient_y0 - v0);
             vv = (vv - radial_gradient_r0) * (radial_gradient_rdelta);
 #if CTX_GRADIENT_CACHE
       *((uint32_t*)tsrc) = *((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
 #else
-      ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 0.0f, tsrc);
+      ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, tsrc);
       ctx_u8_associate_alpha (components, tsrc);
 #endif
 #if CTX_DITHER
       ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
 #endif
 
-#if 0
-      if (cov == 255)
-      {
-      for (int c = 0; c < components; c++)
-        dst[c] = (tsrc[c]) + (dst[c] * (255-(tsrc[components-1])))/(255);
-      }
-      else
-      {
-        for (int c = 0; c < components; c++)
-          dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
-       }
-#else
     uint32_t si = *((uint32_t*)(tsrc));
+      int si_a = si >> CTX_RGBA8_A_SHIFT;
+
     uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
     uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
-    int si_a = si >> CTX_RGBA8_A_SHIFT;
-    uint32_t di = *((uint32_t*)(dst));
-    uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
-    uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-    int ir_cov_si_a = 255-((cov*si_a)>>8);
-        *((uint32_t*)(dst)) =
-         (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
-         (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
 
-#endif
+          uint32_t di = *((uint32_t*)(dst));
+          uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
+          uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+          int ir_cov_si_a = 255-((cov*si_a)>>8);
+          *((uint32_t*)(dst)) = 
+           (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
+           (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
+        }
+        dst += 4;
+        coverage ++;
+        u0 += ud;
+        v0 += vd;
+      }
     }
-    u0 += ud;
-    v0 += vd;
-    coverage ++;
-    dst+=components;
-  }
+    }
+
+#if CTX_SIMD
+                    
+    for (; x < count-8; x+=8)
+    {
+      __m256i xsrc;
+      __m256i xcov;
+      __m256i x1_minus_cov_mul_a;
+     
+     if (((uint64_t*)(coverage))[0] == 0)
+     {
+        u0 += ud * 8;
+        v0 += vd * 8;
+     }
+     else
+     {
+      int a = 255;
+      for (int i = 0; i < 8; i++)
+      {
+      float vv = ctx_hypotf (radial_gradient_x0 - u0, radial_gradient_y0 - v0);
+            vv = (vv - radial_gradient_r0) * (radial_gradient_rdelta);
+
+#if CTX_GRADIENT_CACHE
+      ((uint32_t*)tsrc)[i] = *((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
+#else
+      ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, &tsrc[i*4]);
+      ctx_u8_associate_alpha (components, &tsrc[i*4]);
+#endif
+      if (tsrc[i*4+3]!=255)
+        a = 0;
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (&tsrc[i*4], u0, v0, dither_red_blue, dither_green);
+#endif
+        u0 += ud;
+        v0 += vd;
+      }
+      __m256i xsrc  = _mm256_load_si256((__m256i*)(tsrc));
+      __m256i xsrc_a = xsrc;
+
+#if 1
+       if (((uint64_t*)(coverage))[0] == 0xffffffffffffffff)
+       {
+          if (a == 255)
+          {
+            _mm256_store_si256((__m256i*)dst, xsrc);
+            dst += 4 * 8;
+            coverage += 8;
+            continue;
+          }
+          xcov = _mm256_set1_epi16(0xff);
+          xsrc_a = _mm256_set_epi16(
+            tsrc[7*4+3], tsrc[7*4+3],
+            tsrc[6*4+3], tsrc[6*4+3],
+            tsrc[5*4+3], tsrc[5*4+3],
+            tsrc[4*4+3], tsrc[4*4+3],
+            tsrc[3*4+3], tsrc[3*4+3],
+            tsrc[2*4+3], tsrc[2*4+3],
+            tsrc[1*4+3], tsrc[1*4+3],
+            tsrc[0*4+3], tsrc[0*4+3]);
+
+
+          x1_minus_cov_mul_a = 
+            _mm256_sub_epi16(x00ff, _mm256_mulhi_epu16 (
+                   _mm256_adds_epu16 (_mm256_mullo_epi16(xcov,
+                                      xsrc_a), x0080), x0101));
+       }
+       else
+#endif
+       {
+         xcov  = _mm256_set_epi16((coverage[7]), (coverage[7]),
+                                  (coverage[6]), (coverage[6]),
+                                  (coverage[5]), (coverage[5]),
+                                  (coverage[4]), (coverage[4]),
+                                  (coverage[3]), (coverage[3]),
+                                  (coverage[2]), (coverage[2]),
+                                  (coverage[1]), (coverage[1]),
+                                  (coverage[0]), (coverage[0]));
+          xsrc_a = _mm256_set_epi16(
+            tsrc[7*4+3], tsrc[7*4+3],
+            tsrc[6*4+3], tsrc[6*4+3],
+            tsrc[5*4+3], tsrc[5*4+3],
+            tsrc[4*4+3], tsrc[4*4+3],
+            tsrc[3*4+3], tsrc[3*4+3],
+            tsrc[2*4+3], tsrc[2*4+3],
+            tsrc[1*4+3], tsrc[1*4+3],
+            tsrc[0*4+3], tsrc[0*4+3]);
+        x1_minus_cov_mul_a = 
+           _mm256_sub_epi16(x00ff, _mm256_mulhi_epu16 (
+                   _mm256_adds_epu16 (_mm256_mullo_epi16(xcov,
+                                      xsrc_a), x0080), x0101));
+       }
+      __m256i xdst   = _mm256_load_si256((__m256i*)(dst));
+      __m256i dst_lo = _mm256_and_si256 (xdst, lo_mask);
+      __m256i dst_hi = _mm256_srli_epi16 (_mm256_and_si256 (xdst, hi_mask), 8);
+      __m256i src_lo = _mm256_and_si256 (xsrc, lo_mask);
+      __m256i src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
+        
+      dst_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_hi,  x1_minus_cov_mul_a), x0080), x0101);
+      dst_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_lo,  x1_minus_cov_mul_a), x0080), x0101);
+
+      src_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_lo, xcov), x0080), x0101);
+      src_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_hi,  xcov), x0080), x0101);
+
+      dst_hi = _mm256_adds_epu16(dst_hi, src_hi);
+      dst_lo = _mm256_adds_epu16(dst_lo, src_lo);
+
+      dst_hi = _mm256_slli_epi16 (dst_hi, 8);
+      src_hi = _mm256_slli_epi16 (src_hi, 8);
+
+      _mm256_store_si256((__m256i*)dst,
+              _mm256_blendv_epi8(dst_lo, dst_hi, hi_mask)); 
+     }
+
+      dst += 4 * 8;
+      coverage += 8;
+    }
+
+    if (x < count)
+    {
+      for (; (x < count) ; x++)
+      {
+        int cov = *coverage;
+        if (cov)
+        {
+      float vv = ctx_hypotf (radial_gradient_x0 - u0, radial_gradient_y0 - v0);
+            vv = (vv - radial_gradient_r0) * (radial_gradient_rdelta);
+#if CTX_GRADIENT_CACHE
+      *((uint32_t*)tsrc) = *((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
+#else
+      ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, tsrc);
+      ctx_u8_associate_alpha (components, tsrc);
+#endif
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
+#endif
+
+    uint32_t si = *((uint32_t*)(tsrc));
+      int si_a = si >> CTX_RGBA8_A_SHIFT;
+
+    uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
+    uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+
+          uint32_t di = *((uint32_t*)(dst));
+          uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
+          uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+          int ir_cov_si_a = 255-((cov*si_a)>>8);
+          *((uint32_t*)(dst)) = 
+           (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
+           (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
+        }
+        dst += 4;
+        coverage ++;
+        u0 += ud;
+        v0 += vd;
+      }
+    }
+#endif
 }
 
 static void
