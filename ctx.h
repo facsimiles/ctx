@@ -8358,14 +8358,43 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     uint8_t tsrc[4];
     *((uint32_t*)(tsrc)) = *((uint32_t*)(src));
     ctx_u8_associate_alpha (4, tsrc);
-    int8_t a = src[3];
-    int x;
-    __m256i  odd_mask =  _mm256_set1_epi32(0xFF00FF00);
-    __m256i  even_mask = _mm256_srli_epi16 (odd_mask, 8);
-    //__m256i  even_mask = _mm256_set1_epi32(0x00FF00FF);
+    uint8_t a = src[3];
+    int x = 0;
+    __m256i  hi_mask =  _mm256_set1_epi32 (0xFF00FF00);
+    __m256i  lo_mask = _mm256_srli_epi16 (hi_mask, 8);
+    __m256i  all_a = _mm256_set1_epi16(a);
+
+
+    if ((size_t)(dst) & 31)
+    {
+      uint32_t si = *((uint32_t*)(tsrc));
+      uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
+      uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+      int si_a = si >> CTX_RGBA8_A_SHIFT;
+      for (; (x < count) && ((size_t)(dst)&31); x++)
+      {
+        int cov = *coverage;
+        if (cov)
+        {
+          uint32_t di = *((uint32_t*)(dst));
+          uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
+          uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+          int ir_cov_si_a = 255-((cov*si_a)>>8);
+          *((uint32_t*)(dst)) = 
+           (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
+           (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
+        }
+        dst += 4;
+        coverage ++;
+      }
+    }
+
+
+    //__m256i  lo_mask = _mm256_set1_epi32(0x00FF00FF);
+      __m256i x255 = _mm256_set1_epi16(255);
                     
     __m256i xsrc = _mm256_set1_epi32( *((uint32_t*)tsrc)) ;
-    for (x = 0; x < count-8; x+=8)
+    for (x; x < count-8; x+=8)
     {
       __m256i xcov = _mm256_set_epi16((coverage[7]), (coverage[7]),
                                       (coverage[6]), (coverage[6]),
@@ -8375,49 +8404,64 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
                                       (coverage[2]), (coverage[2]),
                                       (coverage[1]), (coverage[1]),
                                       (coverage[0]), (coverage[0]));
+#if 0
       __m256i x1_minus_cov_mul_a = 
          _mm256_sub_epi16(
-                _mm256_set1_epi16(255), 
-                _mm256_srli_epi16 (
-                   _mm256_mullo_epi16(xcov,
-                                      _mm256_set1_epi16(a)),
-                   8));
-      __m256i xdst = _mm256_loadu_si256((__m256i*)(dst)) ;
+                x255,
+                _mm256_mulhi_epu16 (
+                   _mm256_adds_epu16 (_mm256_mullo_epi16(xcov,
+                                      _mm256_set1_epi16(a)), _mm256_set1_epi16(0x0080)),
+                _mm256_set1_epi16(0x0100)))
+         ;
+#else
+      __m256i x1_minus_cov_mul_a = 
+         _mm256_sub_epi16( x255,
+                    _mm256_srli_epi16 (
+                       _mm256_mullo_epi16(xcov, all_a),
+                       8));
+#endif
+      __m256i xdst = _mm256_load_si256((__m256i*)(dst)) ;
 
-      __m256i dst_even = _mm256_and_si256 (xdst, even_mask);
-      __m256i dst_odd  = _mm256_and_si256 (xdst, odd_mask);
-      __m256i src_even = _mm256_and_si256 (xsrc, even_mask);
-      __m256i src_odd  = _mm256_and_si256 (xsrc, odd_mask);
+      __m256i dst_lo = _mm256_and_si256 (xdst, lo_mask);
+      __m256i dst_hi  = _mm256_and_si256 (xdst, hi_mask);
+      __m256i src_lo = _mm256_and_si256 (xsrc, lo_mask);
+      __m256i src_hi  = _mm256_and_si256 (xsrc, hi_mask);
         
-      dst_odd  = _mm256_srli_epi16  (dst_odd, 8);
-      src_odd  = _mm256_srli_epi16  (src_odd, 8);
-      dst_even = _mm256_subs_epi16(dst_even, _mm256_set1_epi16(128));
-      dst_odd  = _mm256_subs_epi16(dst_odd,  _mm256_set1_epi16(128));
-      src_even = _mm256_subs_epi16(src_even, _mm256_set1_epi16(128));
-      src_odd  = _mm256_subs_epi16(src_odd,  _mm256_set1_epi16(128));
-      src_even = _mm256_mullo_epi16(src_even, xcov);
-      src_odd  = _mm256_mullo_epi16(src_odd,  xcov);
-      dst_even = _mm256_mullo_epi16(dst_even, x1_minus_cov_mul_a);
-      dst_odd  = _mm256_mullo_epi16(dst_odd,  x1_minus_cov_mul_a);
-      dst_odd  = _mm256_adds_epi16(dst_odd,  src_odd);
-      dst_even = _mm256_adds_epi16(dst_even, src_even);
-      dst_even = _mm256_srli_epi16  (dst_even, 8);
-      dst_odd  = _mm256_srli_epi16  (dst_odd , 8);
-      dst_even = _mm256_add_epi16(dst_even, _mm256_set1_epi16(-128));
-      dst_odd  = _mm256_add_epi16(dst_odd,  _mm256_set1_epi16(-128));
-      src_even = _mm256_add_epi16(src_even, _mm256_set1_epi16(-128));
-      src_odd  = _mm256_add_epi16(src_odd,  _mm256_set1_epi16(-128));
-      dst_odd = _mm256_slli_epi16 (dst_odd, 8);
-      src_odd = _mm256_slli_epi16 (src_odd, 8);
+      dst_hi  = _mm256_srli_epi16  (dst_hi, 8);
+      src_hi  = _mm256_srli_epi16  (src_hi, 8);
 
-      _mm256_storeu_si256((__m256i*)dst,
-              _mm256_blendv_epi8(dst_even, dst_odd, odd_mask)); 
+#if 1
+    src_lo  = _mm256_mullo_epi16 (src_lo, xcov);
+    src_lo  = _mm256_srli_epi16  (src_lo, 8);
+
+    src_hi  = _mm256_mullo_epi16 (src_hi,  xcov);
+    src_hi  = _mm256_srli_epi16  (src_hi , 8);
+
+    dst_lo = _mm256_mullo_epi16 (dst_lo, x1_minus_cov_mul_a);
+    dst_hi = _mm256_mullo_epi16 (dst_hi,  x1_minus_cov_mul_a);
+    dst_lo = _mm256_srli_epi16  (dst_lo, 8);
+    dst_hi = _mm256_srli_epi16  (dst_hi , 8);
+#else
+
+      src_lo = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_lo, xcov), _mm256_set1_epi16(128)), _mm256_set1_epi16(0x0101));
+      src_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_hi,  xcov), _mm256_set1_epi16(128)), _mm256_set1_epi16(0x0101));
+
+      dst_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_hi,  x1_minus_cov_mul_a), _mm256_set1_epi16(128)), _mm256_set1_epi16(0x0101));
+      dst_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_lo,  x1_minus_cov_mul_a), _mm256_set1_epi16(128)), _mm256_set1_epi16(0x0101));
+#endif
+
+      dst_hi = _mm256_adds_epu16(dst_hi, src_hi);
+      dst_lo = _mm256_adds_epu16(dst_lo, src_lo);
+
+      dst_hi = _mm256_slli_epi16 (dst_hi, 8);
+      src_hi = _mm256_slli_epi16 (src_hi, 8);
+
+      _mm256_store_si256((__m256i*)dst,
+              _mm256_blendv_epi8(dst_lo, dst_hi, hi_mask)); 
 
       dst += 4 * 8;
       coverage += 8;
     }
-
-    /* finish remainder with proto simd, still faster than byte processing  */
 
     if (x < count)
     {
