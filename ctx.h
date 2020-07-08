@@ -3350,7 +3350,7 @@ typedef struct CtxEdge
 
 typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out);
 
-#define CTX_MAX_GROUPS 8
+#define CTX_GROUP_MAX 8
 
 struct _CtxRasterizer
 {
@@ -3384,7 +3384,7 @@ struct _CtxRasterizer
   void      *buf;
 
   void      *saved_buf; // when group redirected
-  CtxBuffer *group[CTX_MAX_GROUPS];
+  CtxBuffer *group[CTX_GROUP_MAX];
 
   float      x;  // < redundant? use state instead?
   float      y;
@@ -6376,7 +6376,7 @@ Ctx *ctx_new_for_renderstream (void *data, size_t length)
 static CtxPixelFormatInfo *
 ctx_pixel_format_info (CtxPixelFormat format);
 
-CtxBuffer *ctx_buffer_new (void)
+CtxBuffer *ctx_buffer_new_bare (void)
 {
   CtxBuffer *buffer = (CtxBuffer *) malloc (sizeof (CtxBuffer) );
   ctx_memset (buffer, 0, sizeof (CtxBuffer) );
@@ -6407,9 +6407,22 @@ CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     void (*freefunc) (void *pixels, void *user_data),
                                     void *user_data)
 {
-  CtxBuffer *buffer = ctx_buffer_new ();
+  CtxBuffer *buffer = ctx_buffer_new_bare ();
   ctx_buffer_set_data (buffer, data, width, height, stride, pixel_format,
                        freefunc, user_data);
+  return buffer;
+}
+
+CtxBuffer *ctx_buffer_new (int width, int height,
+                           CtxPixelFormat pixel_format)
+{
+  CtxPixelFormatInfo *info = ctx_pixel_format_info (CTX_FORMAT_GRAY8);
+  CtxBuffer *buffer = ctx_buffer_new_bare ();
+  int stride = width * info->bpp/8;
+  uint8_t *pixels = calloc (stride, width);
+
+  ctx_buffer_set_data (buffer, pixels, width, height, stride, pixel_format,
+                       (void*)free, NULL);
   return buffer;
 }
 
@@ -11987,6 +12000,19 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         {
           CtxEntry save_command = ctx_void(CTX_SAVE);
           // allocate buffer, and set it as temporary target
+          int no;
+          if (rasterizer->group[0] == NULL) // first group
+          {
+            rasterizer->saved_buf = rasterizer->buf;
+          }
+          for (no = 0; rasterizer->group[no] && no < CTX_GROUP_MAX; no++);
+
+          if (no >= CTX_GROUP_MAX)
+             break;
+          rasterizer->group[no] = ctx_buffer_new (rasterizer->blit_width,
+                                                  rasterizer->blit_height,
+                                                  rasterizer->format->pixel_format);
+          rasterizer->buf = rasterizer->group[no]->data;
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
         }
         break;
@@ -11994,13 +12020,63 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         {
           CtxEntry restore_command = ctx_void(CTX_RESTORE);
           CtxEntry save_command = ctx_void(CTX_SAVE);
-          // rig up for painting..
+          int no = 0;
+          for (no = 0; rasterizer->group[no] && no < CTX_GROUP_MAX; no++);
+          no--;
+
+          if (no < 0)
+            break;
+
+          CtxCompositingMode comp = rasterizer->state->gstate.compositing_mode;
+          CtxBlend blend = rasterizer->state->gstate.blend_mode;
+          float global_alpha = rasterizer->state->gstate.global_alpha_f;
           // fetch compositing, blending, global alpha
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
-          // reset compositing, lbending, global, alpha
-          // rig up drawing from buffer
-          // draw
+          CtxEntry set_state[3]=
+          {
+            ctx_u8 (CTX_SET_COMPOSITING_MODE, comp, 0,0,0,0,0,0,0),
+            ctx_u8 (CTX_SET_BLEND_MODE,      blend, 0,0,0,0,0,0,0),
+            ctx_f  (CTX_SET_GLOBAL_ALPHA, global_alpha, 0.0)
+          };
+          ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[0]);
+          ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[1]);
+          ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[2]);
+          if (no == 0)
+          {
+            rasterizer->buf = rasterizer->saved_buf;
+          }
+          else
+          {
+            rasterizer->buf = rasterizer->group[no-1]->data;
+          }
+          int id = ctx_texture_init (rasterizer->ctx, -1,
+                          rasterizer->blit_width,
+                          rasterizer->blit_height,
+                          rasterizer->format->bpp,
+                          rasterizer->group[no]->data,
+                          NULL, NULL);
+          {
+             CtxEntry commands[2] =
+              {ctx_u32 (CTX_TEXTURE, id, 0),
+               ctx_f  (CTX_CONT, rasterizer->blit_x, rasterizer->blit_y)};
+             ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
+          }
+          {
+            CtxEntry commands[2]=
+            {
+              ctx_f (CTX_RECTANGLE, rasterizer->blit_x, rasterizer->blit_y),
+              ctx_f (CTX_CONT,      rasterizer->blit_width, rasterizer->blit_height)
+            };
+            ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
+          }
+          {
+            CtxEntry commands[1]= { ctx_void (CTX_FILL) };
+            ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
+          }
+          ctx_texture_release (rasterizer->ctx, id);
+          ctx_buffer_free (rasterizer->group[no]);
+          rasterizer->group[no] = 0;
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
         }
         break;
