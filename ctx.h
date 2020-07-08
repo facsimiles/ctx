@@ -123,6 +123,8 @@ void ctx_reset          (Ctx *ctx);
 void ctx_begin_path     (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
 void ctx_restore        (Ctx *ctx);
+void ctx_start_group    (Ctx *ctx);
+void ctx_end_group      (Ctx *ctx);
 void ctx_clip           (Ctx *ctx);
 void ctx_identity       (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
