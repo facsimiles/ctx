@@ -6875,11 +6875,16 @@ static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
       ctx_user_to_device (rasterizer->state, &tx, &ty);
     }
   tx -= rasterizer->blit_x;
+
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * CTX_RASTERIZER_AA);
   if (rasterizer->has_prev<=0)
     {
       if (rasterizer->uses_transforms)
-        { ctx_user_to_device (rasterizer->state, &ox, &oy); }
+      {
+        // storing transformed would save some processing for a tiny
+        // amount of runtime RAM XXX
+        ctx_user_to_device (rasterizer->state, &ox, &oy);
+      }
       ox -= rasterizer->blit_x;
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[0] = ox * CTX_SUBDIV;
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[1] = oy * CTX_RASTERIZER_AA;
