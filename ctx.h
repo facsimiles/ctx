@@ -9175,6 +9175,8 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       v0 += vd;
 
       ctx_u8_blend (components, blend, dst, tsrc, tsrc);
+      if (rasterizer->state->gstate.global_alpha_u8 != 255)
+        cov = (cov * rasterizer->state->gstate.global_alpha_u8)/255;
 
       if (cov != 255)
       for (int c = 0; c < components; c++)
@@ -9228,6 +9230,9 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
         dst+=components;
         continue;
       }
+
+      if (rasterizer->state->gstate.global_alpha_u8 != 255)
+        cov = (cov * rasterizer->state->gstate.global_alpha_u8)/255;
 
       if (blend != CTX_BLEND_NORMAL)
         ctx_u8_blend (components, blend, dst, src, tsrc);
@@ -12035,9 +12040,9 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
           CtxEntry set_state[3]=
           {
-            ctx_u8 (CTX_SET_COMPOSITING_MODE, comp, 0,0,0,0,0,0,0),
-            ctx_u8 (CTX_SET_BLEND_MODE,      blend, 0,0,0,0,0,0,0),
-            ctx_f  (CTX_SET_GLOBAL_ALPHA, global_alpha, 0.0)
+            ctx_u8 (CTX_SET_COMPOSITING_MODE, comp,  0,0,0,0,0,0,0),
+            ctx_u8 (CTX_SET_BLEND_MODE,       blend, 0,0,0,0,0,0,0),
+            ctx_f  (CTX_SET_GLOBAL_ALPHA,     global_alpha, 0.0)
           };
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[0]);
           ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[1]);
@@ -12121,7 +12126,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
                 float dx = rasterizer->state->gstate.shadow_offset_x + u - dim/2;
                 float dy = rasterizer->state->gstate.shadow_offset_y + v - dim/2;
                 set_color_command[2].data.f[0] = kernel[i] * rgba[3];
-                ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command);
+                ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command[0]);
                 rasterizer->in_shadow = 1;
                 rasterizer->shadow_x = dx;
                 rasterizer->shadow_y = dy;
