@@ -8,6 +8,7 @@ post:
 
 clean:
 	rm -f test-renderpaths ctx ctx.asan ctx.O1
+	rm -f tests/index.html
 	make -C fonts clean
 	make -C examples clean
 
@@ -27,3 +28,11 @@ sentry:
 sentry-f:
 	sentry Makefile ctx.h tests/*.ctx -- make
 
+updateweb: clean all post
+	cat tests/index.html | sed 's/.*script.*//' > tmp
+	mv tmp tests/index.html
+	git gc
+	git update-server-info
+	rm -rf /home/pippin/pgo/ctx.graphics/.git || true
+	cp -Rv .git /home/pippin/pgo/ctx.graphics/.git
+	cp -R tests/* ~/pgo/ctx.graphics/tests
