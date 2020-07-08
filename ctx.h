@@ -120,7 +120,7 @@ void ctx_blit          (Ctx *ctx,
 /* clears and resets a context */
 void ctx_reset          (Ctx *ctx);
 
-void ctx_begin_path       (Ctx *ctx);
+void ctx_begin_path     (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
 void ctx_restore        (Ctx *ctx);
 void ctx_clip           (Ctx *ctx);
@@ -167,9 +167,7 @@ void  ctx_rel_curve_to    (Ctx *ctx,
                            float x2, float y2);
 void  ctx_rel_quad_to     (Ctx *ctx, float cx, float cy,
                            float x, float y);
-
 void  ctx_close_path      (Ctx *ctx);
-
 float ctx_get_font_size   (Ctx *ctx);
 float ctx_get_line_width  (Ctx *ctx);
 float ctx_x               (Ctx *ctx);
@@ -237,6 +235,7 @@ int  ctx_in_stroke  (Ctx *ctx, float x, float y);
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
 void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
                           float x1, float y1, float r1);
+/* XXX should be ctx_gradient_add_stop_rgba */
 void ctx_gradient_add_stop (Ctx *ctx, float pos, float r, float g, float b, float a);
 
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -299,7 +298,7 @@ typedef enum
 
 typedef enum
 {
-  CTX_COMPOSITE_SOURCE_OVER, // 0
+  CTX_COMPOSITE_SOURCE_OVER,
   CTX_COMPOSITE_COPY,
   CTX_COMPOSITE_SOURCE_IN,
   CTX_COMPOSITE_SOURCE_OUT,
@@ -308,15 +307,15 @@ typedef enum
 
   CTX_COMPOSITE_DESTINATION_OVER,
   CTX_COMPOSITE_DESTINATION,
-  CTX_COMPOSITE_DESTINATION_IN, // 8
+  CTX_COMPOSITE_DESTINATION_IN,
   CTX_COMPOSITE_DESTINATION_OUT,
   CTX_COMPOSITE_DESTINATION_ATOP,
-  CTX_COMPOSITE_XOR, // 11
+  CTX_COMPOSITE_XOR,
 } CtxCompositingMode;
 
 typedef enum
 {
-  CTX_BLEND_NORMAL, // 0
+  CTX_BLEND_NORMAL,
   CTX_BLEND_MULTIPLY,
   CTX_BLEND_SCREEN,
   CTX_BLEND_OVERLAY,
@@ -334,7 +333,7 @@ typedef enum
   CTX_BLEND_LUMINOSITY,  // 15
   CTX_BLEND_DIVIDE,
   CTX_BLEND_ADDITION,
-  CTX_BLEND_SUBTRACT, // 18
+  CTX_BLEND_SUBTRACT,    // 18
 } CtxBlend;
 
 typedef enum
@@ -700,9 +699,12 @@ typedef enum
   CTX_SET_FILL_RULE        = '!', // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
   CTX_SET_SHADOW_BLUR      = '<', // ks
   CTX_SET_SHADOW_COLOR     = '>', // kC
-  CTX_SET_SHADOW_OFFSET_X  = '{', // kx
-  CTX_SET_SHADOW_OFFSET_Y  = '}', // ky
+  CTX_SET_SHADOW_OFFSET_X  = '?', // kx
+  CTX_SET_SHADOW_OFFSET_Y  = '&', // ky
 
+
+  CTX_START_GROUP = '{',
+  CTX_END_GROUP   = '}',
 
   CTX_FUNCTION             = 25,
   //CTX_ENDFUN = 26,
@@ -1286,13 +1288,13 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* vertical level of supersampling at full/forced AA.
  *
- * 1 is none, 2 is faster, 3 is fast 5 is good 15 is best for 8bit  51 is
+ * 1 is none, 3 is fast 5 is good 15 is best for 8bit  51 is
  *
  * valid values:
  * 1 2 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA        5
+#define CTX_RASTERIZER_AA        1
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -1301,7 +1303,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  0
+#define CTX_RASTERIZER_FORCE_AA  1
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
@@ -2432,6 +2434,8 @@ struct _CtxBuffer
   int                 width;
   int                 height;
   int                 stride;
+  int                 revision; // XXX NYI, number to update when contents change
+                                //
   CtxPixelFormatInfo *format;
   void (*free_func) (void *pixels, void *user_data);
   void               *user_data;
@@ -2656,6 +2660,10 @@ struct _CtxState
 #define CTX_drgbSpace      CTX_STRH('d','r','g','b','S','p','a','c','e',0,0,0,0,0)
 #define CTX_end            CTX_STRH('e','n','d',0,0,0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_endfun         CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
+
+#define CTX_end_group      CTX_STRH('e','n','d','_','G','r','o','u','p',0,0,0,0,0)
+#define CTX_endGroup       CTX_STRH('e','n','d','G','r','o','u','p',0,0,0,0,0,0)
+
 #define CTX_even_odd       CTX_STRH('e','v','e','n','_','o','d', 'd', 0, 0, 0, 0,0,0)
 #define CTX_evenOdd        CTX_STRH('e','v','e','n','O','d', 'd', 0, 0, 0, 0, 0,0,0)
 #define CTX_exit           CTX_STRH('e','x','i','t',0,0,0,0,0,0,0,0,0,0)
@@ -2780,6 +2788,8 @@ struct _CtxState
 #define CTX_square         CTX_STRH('s','q','u','a','r','e', 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_start          CTX_STRH('s','t','a','r','t',0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_start_move     CTX_STRH('s','t','a','r','t','_','m','o','v','e',0,0,0,0)
+#define CTX_start_group    CTX_STRH('s','t','a','r','t','_','G','r','o','u','p',0,0,0)
+#define CTX_startGroup     CTX_STRH('s','t','a','r','t','G','r','o','u','p',0,0,0,0)
 #define CTX_stroke         CTX_STRH('s','t','r','o','k','e',0,0,0,0,0,0,0,0)
 #define CTX_text_align     CTX_STRH('t','e','x','t','_','a','l','i','g','n',0, 0,0,0)
 #define CTX_textAlign      CTX_STRH('t','e','x','t','A','l','i','g','n',0, 0, 0,0,0)
@@ -3340,6 +3350,8 @@ typedef struct CtxEdge
 
 typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out);
 
+#define CTX_MAX_GROUPS 8
+
 struct _CtxRasterizer
 {
   CtxImplementation vfuncs;
@@ -3370,6 +3382,10 @@ struct _CtxRasterizer
   Ctx       *ctx;
 
   void      *buf;
+
+  void      *saved_buf; // when group redirected
+  CtxBuffer *group[CTX_MAX_GROUPS];
+
   float      x;  // < redundant? use state instead?
   float      y;
 
@@ -4810,6 +4826,15 @@ void ctx_save (Ctx *ctx)
 void ctx_restore (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_RESTORE);
+}
+
+void ctx_start_group (Ctx *ctx)
+{
+  CTX_PROCESS_VOID (CTX_START_GROUP);
+}
+void ctx_end_group (Ctx *ctx)
+{
+  CTX_PROCESS_VOID (CTX_END_GROUP);
 }
 
 void ctx_set_line_width (Ctx *ctx, float x)
@@ -11958,6 +11983,27 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_SET_BLEND_MODE:
         rasterizer->comp_op = NULL;
         break;
+      case CTX_START_GROUP:
+        {
+          CtxEntry save_command = ctx_void(CTX_SAVE);
+          // allocate buffer, and set it as temporary target
+          ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
+        }
+        break;
+      case CTX_END_GROUP:
+        {
+          CtxEntry restore_command = ctx_void(CTX_RESTORE);
+          CtxEntry save_command = ctx_void(CTX_SAVE);
+          // rig up for painting..
+          // fetch compositing, blending, global alpha
+          ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
+          ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
+          // reset compositing, lbending, global, alpha
+          // rig up drawing from buffer
+          // draw
+          ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
+        }
+        break;
       case CTX_ROTATE:
       case CTX_SCALE:
       case CTX_TRANSLATE:
@@ -14727,6 +14773,8 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_TEXT_STROKE:          name="textStroke"; break;
           case CTX_SAVE:                 name="save"; break;
           case CTX_RESTORE:              name="restore"; break;
+          case CTX_START_GROUP:          name="startGroup"; break;
+          case CTX_END_GROUP:            name="endGroup"; break;
           case CTX_RECTANGLE:            name="rectangle"; break;
           case CTX_LINEAR_GRADIENT:      name="linearGradient"; break;
           case CTX_RADIAL_GRADIENT:      name="radialGradient"; break;
@@ -15301,6 +15349,8 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_CLOSE_PATH:
       case CTX_SAVE:
       case CTX_PRESERVE:
+      case CTX_START_GROUP:
+      case CTX_END_GROUP:
       case CTX_RESTORE:
         ctx_print_entry (stream, formatter, indent, entry, 0);
         break;
@@ -15483,6 +15533,8 @@ static int ctx_arguments_for_code (CtxCode code)
   switch (code)
     {
       case CTX_SAVE:
+      case CTX_START_GROUP:
+      case CTX_END_GROUP:
       case CTX_IDENTITY:
       case CTX_CLOSE_PATH:
       case CTX_BEGIN_PATH:
@@ -15764,6 +15816,10 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_clip:           ret = CTX_CLIP; break;
           OPT(case CTX_rel_curve_to:)
           case CTX_relCurveTo:     ret = CTX_REL_CURVE_TO; break;
+          OPT(case CTX_start_group:)
+          case CTX_startGroup:     ret = CTX_START_GROUP; break;
+          OPT(case CTX_end_group:)
+          case CTX_endGroup:       ret = CTX_END_GROUP; break;
           case CTX_save:           ret = CTX_SAVE; break;
           case CTX_translate:      ret = CTX_TRANSLATE; break;
           OPT(case CTX_linear_gradient:)
@@ -16043,6 +16099,12 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_SAVE:
         ctx_save (ctx);
+        break;
+      case CTX_START_GROUP:
+        ctx_start_group (ctx);
+        break;
+      case CTX_END_GROUP:
+        ctx_end_group (ctx);
         break;
       case CTX_STROKE:
         ctx_stroke (ctx);
