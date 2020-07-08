@@ -7650,16 +7650,17 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *in, uint8_t *out)
             {
     uint32_t val = *((uint32_t*)(in));
     int a = val >> CTX_RGBA8_A_SHIFT;
-    if (a !=255)
+    if (a)
     {
-      uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
-      uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
-      *((uint32_t*)(out)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
-    } else if (a != 0)
+    if (a ==255)
+    {
+      *((uint32_t*)(out)) = val;
+    } else
     {
       uint32_t g = (((val & CTX_RGBA8_G_MASK) * 255 / a) >> 8) & CTX_RGBA8_G_MASK;
       uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * 255 / a) >> 8) & CTX_RGBA8_RB_MASK;
       *((uint32_t*)(out)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+    }
     }
     else
     {
@@ -7674,6 +7675,9 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *in, uint8_t *out)
     if (in[components-1] != 255)
     for (int c = 0; c < components-1; c++)
       out[c] = (in[c] * 255) / in[components-1];
+    else
+    for (int c = 0; c < components-1; c++)
+      out[c] = in[c];
   }
   else
   {
@@ -8543,7 +8547,6 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
                     
     for (; x < count-8; x+=8)
     {
-      __m256i xsrc;
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
      
