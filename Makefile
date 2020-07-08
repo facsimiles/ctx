@@ -27,8 +27,12 @@ sentry:
 	sentry Makefile ctx.h tests/*.ctx -- make ctx  post
 sentry-f:
 	sentry Makefile ctx.h tests/*.ctx -- make
+ctx.h.html: ctx.h Makefile
+	highlight -l -a --encoding=utf8 -W ctx.h > ctx.h.html
+ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
+	highlight -l -a --encoding=utf8 -W fonts/ctx-font-regular.h > ctx-font-regular.h.html
 
-updateweb: clean all post
+updateweb: clean all post ctx.h.html ctx-font-regular.h.html
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
 	git gc
@@ -36,3 +40,4 @@ updateweb: clean all post
 	rm -rf /home/pippin/pgo/ctx.graphics/.git || true
 	cp -Rv .git /home/pippin/pgo/ctx.graphics/.git
 	cp -R tests/* ~/pgo/ctx.graphics/tests
+	cp highlight.css ctx.h.html ctx-font-regular.h.html ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/

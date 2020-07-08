@@ -23,6 +23,7 @@
 #define CTX_GRADIENT_CACHE       1
 #define CTX_ENABLE_CMYK          1
 #define CTX_ENABLE_CM            1
+#define CTX_SIMD                 1
 #define CTX_SHAPE_CACHE          1
 #define CTX_SHAPE_CACHE_MAX_DIM  96
 #define CTX_SHAPE_CACHE_DIM      (64*64)

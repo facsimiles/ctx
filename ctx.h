@@ -1462,7 +1462,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_SIMD
-#define CTX_SIMD         1
+#define CTX_SIMD         0
 #endif
 
 /* do 
