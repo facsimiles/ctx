@@ -9143,6 +9143,7 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
 {
   CtxPorterDuffFactor f_s, f_d;
   ctx_porter_duff_factors (compositing_mode, &f_s, &f_d);
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
 
   if (fragment)
   {
@@ -9175,8 +9176,8 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       v0 += vd;
 
       ctx_u8_blend (components, blend, dst, tsrc, tsrc);
-      if (rasterizer->state->gstate.global_alpha_u8 != 255)
-        cov = (cov * rasterizer->state->gstate.global_alpha_u8)/255;
+      if (global_alpha_u8 != 255)
+        cov = (cov * global_alpha_u8)/255;
 
       if (cov != 255)
       for (int c = 0; c < components; c++)
@@ -9231,8 +9232,8 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
         continue;
       }
 
-      if (rasterizer->state->gstate.global_alpha_u8 != 255)
-        cov = (cov * rasterizer->state->gstate.global_alpha_u8)/255;
+      if (global_alpha_u8 != 255)
+        cov = (cov * global_alpha_u8)/255;
 
       if (blend != CTX_BLEND_NORMAL)
         ctx_u8_blend (components, blend, dst, src, tsrc);
@@ -9864,6 +9865,8 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
 
   CtxPorterDuffFactor f_s, f_d;
   ctx_porter_duff_factors (compositing_mode, &f_s, &f_d);
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  float   global_alpha_f = rasterizer->state->gstate.global_alpha_f;
   
   if (fragment)
   {
@@ -9896,10 +9899,13 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
       v0 += vd;
 
       ctx_float_blend (components, blend, dstf, tsrc, tsrc);
+      float covf = ctx_u8_to_float (cov);
 
-      if (cov != 255)
+      if (global_alpha_u8 != 255)
+        covf = covf * global_alpha_f;
+
+      if (covf != 1.0f)
       {
-        float covf = ctx_u8_to_float (cov);
         for (int c = 0; c < components; c++)
           tsrc[c] *= covf;
       }
@@ -9956,8 +9962,13 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
   
       if (blend != CTX_BLEND_NORMAL)
         ctx_float_blend (components, blend, dstf, srcf, tsrc);
+
+      float covf = ctx_u8_to_float (cov);
+
+      if (global_alpha_u8 != 255)
+        covf = covf * global_alpha_f;
   
-      if (cov != 255)
+      if (covf != 1.0)
       {
         float covf = ctx_u8_to_float (cov);
         for (int c = 0; c < components; c++)
