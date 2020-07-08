@@ -439,7 +439,6 @@ void ctx_set_renderer (Ctx *ctx,
  * that get delivered with transformed coordinates.
  */
 
-uint32_t ctx_ms    (Ctx *ctx);
 long     ctx_ticks (void);
 
 void _ctx_events_init     (Ctx *ctx);
@@ -16926,6 +16925,41 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
 }
 #endif
 
+#include <sys/time.h>
+
+static struct timeval start_time;
+
+#define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
+
+static void
+_ctx_init_ticks (void)
+{
+  static int done = 0;
+  if (done)
+    return;
+  done = 1;
+  gettimeofday (&start_time, NULL);
+}
+
+static inline long
+_ctx_ticks (void)
+{
+  struct timeval measure_time;
+  gettimeofday (&measure_time, NULL);
+  return usecs (measure_time) - usecs (start_time);
+}
+
+long
+ctx_ticks (void)
+{
+  _ctx_init_ticks ();
+  return _ctx_ticks ();
+}
+
+uint32_t ctx_ms (Ctx *ctx)
+{
+  return _ctx_ticks () / 1000;
+}
 
 #if CTX_EVENTS
 
@@ -16973,40 +17007,6 @@ typedef struct CtxIdleCb {
   int   id;
 } CtxIdleCb;
 
-#include <sys/time.h>
-
-static struct timeval start_time;
-
-#define usecs(time)    ((time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
-
-static void
-_ctx_init_ticks (void)
-{
-  static int done = 0;
-  if (done)
-    return;
-  done = 1;
-  gettimeofday (&start_time, NULL);
-}
-
-static inline long
-_ctx_ticks (void)
-{
-  struct timeval measure_time;
-  gettimeofday (&measure_time, NULL);
-  return usecs (measure_time) - usecs (start_time);
-}
-
-long
-ctx_ticks (void)
-{
-  return _ctx_ticks ();
-}
-
-uint32_t ctx_ms (Ctx *ctx)
-{
-  return _ctx_ticks () / 1000;
-}
 
 
 void _ctx_events_init (Ctx *ctx)
