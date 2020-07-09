@@ -7172,6 +7172,9 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 
 static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
 {
+#if CTX_SIMD
+         // XXX
+#endif
   for (int i = 0; i < rasterizer->lingering_edges; i++)
     {
       rasterizer->lingering[i].x += rasterizer->lingering[i].dx * count;
@@ -8261,7 +8264,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
       *((uint32_t*)tsrc) = *((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
 #else
       ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, tsrc);
-      ctx_u8_associate_alpha (components, tsrc);
+      ctx_u8_associate_alpha (4, tsrc);
 #endif
 #if CTX_DITHER
       ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
@@ -8479,7 +8482,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
       *((uint32_t*)tsrc) = *((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
 #else
       ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, tsrc);
-      ctx_u8_associate_alpha (components, tsrc);
+      ctx_u8_associate_alpha (4, tsrc);
 #endif
 #if CTX_DITHER
       ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
@@ -8667,11 +8670,13 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 
 #if CTX_SIMD
 
-#define lo_mask   _mm256_set1_epi32 (0x00FF00FF)
-#define hi_mask   _mm256_set1_epi32 (0xFF00FF00)
+    /*
+#define lo_mask   _mm256_set1_epi32(0x00FF00FF)
+#define hi_mask   _mm256_set1_epi32(0xFF00FF00)
 #define x00ff     _mm256_set1_epi16(255)
 #define x0101     _mm256_set1_epi16(0x0101)
 #define x0080     _mm256_set1_epi16(0x0080)
+*/
 
     if ((size_t)(dst) & 31)
 #endif
@@ -9130,7 +9135,6 @@ ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_
 #endif
 }
 
-
 CTX_INLINE static void
 _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
                      int                    components,
@@ -9148,15 +9152,17 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
   ctx_porter_duff_factors (compositing_mode, &f_s, &f_d);
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
 
-  if (fragment)
   {
+    uint8_t tsrc[components];
     float u0 = 0; float v0 = 0;
     float ud = 0; float vd = 0;
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
+    if (blend == CTX_BLEND_NORMAL)
+      ctx_u8_blend (components, blend, dst, src, tsrc);
+
     while (count--)
     {
-      uint8_t tsrc[components];
       int cov = *coverage;
 
       if (
@@ -9174,11 +9180,20 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
         continue;
       }
 
-      fragment (rasterizer, u0, v0, tsrc);
+      if (fragment)
+      {
+        fragment (rasterizer, u0, v0, tsrc);
+        if (blend != CTX_BLEND_NORMAL)
+          ctx_u8_blend (components, blend, dst, tsrc, tsrc);
+      }
+      else
+      {
+        if (blend != CTX_BLEND_NORMAL)
+          ctx_u8_blend (components, blend, dst, src, tsrc);
+      }
+
       u0 += ud;
       v0 += vd;
-
-      ctx_u8_blend (components, blend, dst, tsrc, tsrc);
       if (global_alpha_u8 != 255)
         cov = (cov * global_alpha_u8)/255;
 
@@ -9203,81 +9218,6 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
           case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1])/255; break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (255-tsrc[components-1]))/255; break;
         }
-        dst[c] = res;
-      }
-
-
-      coverage ++;
-      dst+=components;
-    }
-  }
-  else
-  {
-    uint8_t tsrc[components];
-
-    if (blend == CTX_BLEND_NORMAL)
-      ctx_u8_blend (components, blend, dst, src, tsrc);
-
-    while (count--)
-    {
-      int cov = *coverage;
-  
-      if (
-        (compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 255)||
-        (compositing_mode == CTX_COMPOSITE_SOURCE_OVER      && cov == 0) ||
-        (compositing_mode == CTX_COMPOSITE_XOR              && cov == 0) ||
-        (compositing_mode == CTX_COMPOSITE_DESTINATION_OUT  && cov == 0) ||
-        (compositing_mode == CTX_COMPOSITE_SOURCE_ATOP      && cov == 0)
-        )
-      {
-        coverage ++;
-        dst+=components;
-        continue;
-      }
-
-      if (global_alpha_u8 != 255)
-        cov = (cov * global_alpha_u8)/255;
-
-      if (blend != CTX_BLEND_NORMAL)
-        ctx_u8_blend (components, blend, dst, src, tsrc);
-
-      if (cov == 255) for (int c = 0; c < components; c++)
-      {
-        int res = 0;
-        switch (f_s)
-        {
-          case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:             res += (tsrc[c] ); break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] * dst[components-1])/(255); break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (255-dst[components-1]))/(255); break;
-        }
-        switch (f_d)
-        {
-          case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:             res += (dst[c]); break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1] )/(255); break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * ((255)-tsrc[components-1] ))/(255); break;
-        }
-        dst[c] = res;
-      }
-      else for (int c = 0; c < components; c++)
-      {
-        int res = 0;
-        switch (f_s)
-        {
-          case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:             res += (tsrc[c] * cov)/255; break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] * cov * dst[components-1])/(255*255); break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * cov * (255-dst[components-1]))/(255*255); break;
-        }
-        switch (f_d)
-        {
-          case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:             res += (dst[c]); break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1] * cov)/(255*255); break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * ((255*255)-tsrc[components-1] * cov))/(255*255); break;
-        }
-
         dst[c] = res;
       }
       coverage ++;
@@ -9871,15 +9811,16 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   float   global_alpha_f = rasterizer->state->gstate.global_alpha_f;
   
-  if (fragment)
   {
+    float tsrc[components];
     float u0, v0, ud, vd;
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+    if (blend == CTX_BLEND_NORMAL)
+      ctx_float_blend (components, blend, dstf, srcf, tsrc);
 
     while (count--)
     {
       int cov = *coverage;
-      float tsrc[components];
 #if 1
       if (
         (compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 1.0f)||
@@ -9897,11 +9838,19 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
       }
 #endif
 
-      fragment (rasterizer, u0, v0, tsrc);
+      if (fragment)
+      {
+        fragment (rasterizer, u0, v0, tsrc);
+        if (blend != CTX_BLEND_NORMAL)
+          ctx_float_blend (components, blend, dstf, tsrc, tsrc);
+      }
+      else
+      {
+        if (blend != CTX_BLEND_NORMAL)
+          ctx_float_blend (components, blend, dstf, srcf, tsrc);
+      }
       u0 += ud;
       v0 += vd;
-
-      ctx_float_blend (components, blend, dstf, tsrc, tsrc);
       float covf = ctx_u8_to_float (cov);
 
       if (global_alpha_u8 != 255)
@@ -9925,71 +9874,6 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
           case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
           case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] *       dstf[components-1]); break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (1.0f-dstf[components-1])); break;
-        }
-        switch (f_d)
-        {
-          case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:             res += (dstf[c]); break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (dstf[c] *       tsrc[components-1]); break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dstf[c] * (1.0f-tsrc[components-1])); break;
-        }
-        dstf[c] = res;
-      }
-      coverage ++;
-      dstf+=components;
-    }
-  }
-  else
-  {
-    float tsrc[components];
-    if (blend == CTX_BLEND_NORMAL)
-      ctx_float_blend (components, blend, dstf, srcf, tsrc);
-
-    while (count--)
-    {
-      int cov = *coverage;
-#if 1
-      if (
-        (compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 1.0f)||
-        (compositing_mode == CTX_COMPOSITE_SOURCE_OVER      && cov == 0) ||
-        (compositing_mode == CTX_COMPOSITE_XOR              && cov == 0) ||
-        (compositing_mode == CTX_COMPOSITE_DESTINATION_OUT  && cov == 0) ||
-        (compositing_mode == CTX_COMPOSITE_SOURCE_ATOP      && cov == 0)
-        )
-      {
-        coverage ++;
-        dstf+=components;
-        continue;
-      }
-#endif
-  
-      if (blend != CTX_BLEND_NORMAL)
-        ctx_float_blend (components, blend, dstf, srcf, tsrc);
-
-      float covf = ctx_u8_to_float (cov);
-
-      if (global_alpha_u8 != 255)
-        covf = covf * global_alpha_f;
-  
-      if (covf != 1.0)
-      {
-        float covf = ctx_u8_to_float (cov);
-        for (int c = 0; c < components; c++)
-          tsrc[c] = (tsrc[c] * covf);
-      }
-  
-      for (int c = 0; c < components; c++)
-      {
-        float res = 0.0f;
-        /* these switches and this whole function disappear when
-         * compiled when the enum values passed in are constants.
-         */
-        switch (f_s)
-        {
-          case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] *      dstf[components-1]); break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (1.0-dstf[components-1])); break;
         }
         switch (f_d)
         {
