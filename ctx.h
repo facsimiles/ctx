@@ -9161,7 +9161,7 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
     if (fragment)
       ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
-    if (blend == CTX_BLEND_NORMAL)
+ // if (blend == CTX_BLEND_NORMAL)
       ctx_u8_blend (components, blend, dst, src, tsrc);
 
     while (count--)
@@ -9186,12 +9186,12 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       if (fragment)
       {
         fragment (rasterizer, u0, v0, tsrc);
-        if (blend != CTX_BLEND_NORMAL)
+      //if (blend != CTX_BLEND_NORMAL)
           ctx_u8_blend (components, blend, dst, tsrc, tsrc);
       }
       else
       {
-        if (blend != CTX_BLEND_NORMAL)
+      //if (blend != CTX_BLEND_NORMAL)
           ctx_u8_blend (components, blend, dst, src, tsrc);
       }
 
@@ -9246,76 +9246,336 @@ ctx_avx2_porter_duff (CtxRasterizer         *rasterizer,
   CtxPorterDuffFactor f_s, f_d;
   ctx_porter_duff_factors (compositing_mode, &f_s, &f_d);
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
-  uint8_t tsrc[components];
+  int n_pix = 32/components;
+  uint8_t tsrc[components * n_pix];
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
+  int x = 0;
   if (fragment)
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
   if (blend == CTX_BLEND_NORMAL)
     ctx_u8_blend (components, blend, dst, src, tsrc);
 
-  while (count--)
+  for (; x < count-n_pix; x+=n_pix)
   {
-    int cov = *coverage;
+    __m256i xdst   = _mm256_loadu_si256((__m256i*)(dst)); 
+    __m256i xcov;
+    __m256i xsrc;
+    __m256i xsrc_a;
+    __m256i xdst_a;
 
+    int is_blank = 1;
+    int is_full = 0;
+    switch (n_pix)
+    {
+      case 16:
+        if (((uint64_t*)(coverage))[0] &&
+            ((uint64_t*)(coverage))[1])
+           is_blank = 0;
+        else if (((uint64_t*)(coverage))[0] == 0xffffffffffffffff &&
+                 ((uint64_t*)(coverage))[1] == 0xffffffffffffffff)
+           is_full = 1;
+        break;
+      case 8:
+        if (((uint64_t*)(coverage))[0])
+           is_blank = 0;
+        else if (((uint64_t*)(coverage))[0] == 0xffffffffffffffff)
+           is_full = 1;
+        break;
+      case 4:
+        if (((uint32_t*)(coverage))[0])
+           is_blank = 0;
+        else if (((uint32_t*)(coverage))[0] == 0xffffffff)
+           is_full = 1;
+        break;
+      default:
+        break;
+    }
+
+#if 0
     if (
-      (compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 255)||
-      (compositing_mode == CTX_COMPOSITE_SOURCE_OVER      && cov == 0) ||
-      (compositing_mode == CTX_COMPOSITE_XOR              && cov == 0) ||
-      (compositing_mode == CTX_COMPOSITE_DESTINATION_OUT  && cov == 0) ||
-      (compositing_mode == CTX_COMPOSITE_SOURCE_ATOP      && cov == 0)
+      //(compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 255)||
+      (compositing_mode == CTX_COMPOSITE_SOURCE_OVER      && is_blank) ||
+      (compositing_mode == CTX_COMPOSITE_XOR              && is_blank) ||
+      (compositing_mode == CTX_COMPOSITE_DESTINATION_OUT  && is_blank) ||
+      (compositing_mode == CTX_COMPOSITE_SOURCE_ATOP      && is_blank)
       )
     {
-      u0 += ud;
-      v0 += vd;
-      coverage ++;
-      dst+=components;
+      u0 += ud * n_pix;
+      v0 += vd * n_pix;
+      coverage += n_pix;
+      dst+=32;
       continue;
     }
+#endif
 
     if (fragment)
     {
-      fragment (rasterizer, u0, v0, tsrc);
-      if (blend != CTX_BLEND_NORMAL)
-        ctx_u8_blend (components, blend, dst, tsrc, tsrc);
+      for (int i = 0; i < n_pix; i++)
+      {
+         fragment (rasterizer, u0, v0, &tsrc[i*components]);
+         ctx_u8_blend (components, blend,
+                       &dst[i*components],
+                       &tsrc[i*components],
+                       &tsrc[i*components]);
+         u0 += ud;
+         v0 += vd;
+      }
+      //if (blend != CTX_BLEND_NORMAL)
+      {
+        for (int i = 0; i < n_pix; i++)
+          ctx_u8_blend (components, blend,
+                        &dst[i*components],
+                        &tsrc[i*components],
+                        &tsrc[i*components]);
+      }
+      xsrc = _mm256_loadu_si256((__m256i*)tsrc);
     }
     else
     {
-      if (blend != CTX_BLEND_NORMAL)
+      //if (blend != CTX_BLEND_NORMAL)
         ctx_u8_blend (components, blend, dst, src, tsrc);
+      if (components == 4)
+        xsrc = _mm256_set1_epi32 (*((uint32_t*)tsrc));
+      else
+      {
+        for (int i = 1; i < n_pix; i++)
+          for (int c = 0; c < components; c++)
+            tsrc[i*components+c]=tsrc[c];
+        xsrc = _mm256_loadu_si256((__m256i*)tsrc);
+      }
     }
 
-    u0 += ud;
-    v0 += vd;
-    if (global_alpha_u8 != 255)
-      cov = (cov * global_alpha_u8)/255;
-
-    if (cov != 255)
-    for (int c = 0; c < components; c++)
-      tsrc[c] = (tsrc[c] * cov)/255;
-
-    for (int c = 0; c < components; c++)
+    if (is_full)
+       xcov = _mm256_set1_epi16(255);
+    else
+    switch (n_pix)
     {
-      int res = 0;
+      case 4: xcov  = _mm256_set_epi16(
+               (coverage[3]), (coverage[3]), coverage[3], coverage[3],
+               (coverage[2]), (coverage[2]), coverage[2], coverage[2],
+               (coverage[1]), (coverage[1]), coverage[1], coverage[1],
+               (coverage[0]), (coverage[0]), coverage[0], coverage[0]);
+              break;
+      case 8: xcov  = _mm256_set_epi16(
+               (coverage[7]), (coverage[7]),
+               (coverage[6]), (coverage[6]),
+               (coverage[5]), (coverage[5]),
+               (coverage[4]), (coverage[4]),
+               (coverage[3]), (coverage[3]),
+               (coverage[2]), (coverage[2]),
+               (coverage[1]), (coverage[1]),
+               (coverage[0]), (coverage[0]));
+              break;
+      case 16: xcov  = _mm256_set_epi16(
+               (coverage[15]),
+               (coverage[14]),
+               (coverage[13]),
+               (coverage[12]),
+               (coverage[11]),
+               (coverage[10]),
+               (coverage[9]),
+               (coverage[8]),
+               (coverage[7]),
+               (coverage[6]),
+               (coverage[5]),
+               (coverage[4]),
+               (coverage[3]),
+               (coverage[2]),
+               (coverage[1]),
+               (coverage[0]));
+              break;
+    }
+    switch (n_pix)
+    {
+      case 4:
+      xsrc_a = _mm256_set_epi16(
+            tsrc[3*components+(components-1)], tsrc[3*components+(components-1)],tsrc[3*components+(components-1)], tsrc[3*components+(components-1)],
+            tsrc[2*components+(components-1)], tsrc[2*components+(components-1)],tsrc[2*components+(components-1)], tsrc[2*components+(components-1)],
+            tsrc[1*components+(components-1)], tsrc[1*components+(components-1)],tsrc[1*components+(components-1)], tsrc[1*components+(components-1)],
+            tsrc[0*components+(components-1)], tsrc[0*components+(components-1)],tsrc[0*components+(components-1)], tsrc[0*components+(components-1)]);
+      xdst_a = _mm256_set_epi16(
+            dst[3*components+(components-1)], dst[3*components+(components-1)],dst[3*components+(components-1)], dst[3*components+(components-1)],
+            dst[2*components+(components-1)], dst[2*components+(components-1)],dst[2*components+(components-1)], dst[2*components+(components-1)],
+            dst[1*components+(components-1)], dst[1*components+(components-1)],dst[1*components+(components-1)], dst[1*components+(components-1)],
+            dst[0*components+(components-1)], dst[0*components+(components-1)],dst[0*components+(components-1)], dst[0*components+(components-1)]);
+
+              break;
+      case 8:
+      xsrc_a = _mm256_set_epi16(
+            tsrc[7*components+(components-1)], tsrc[7*components+(components-1)],
+            tsrc[6*components+(components-1)], tsrc[6*components+(components-1)],
+            tsrc[5*components+(components-1)], tsrc[5*components+(components-1)],
+            tsrc[4*components+(components-1)], tsrc[4*components+(components-1)],
+            tsrc[3*components+(components-1)], tsrc[3*components+(components-1)],
+            tsrc[2*components+(components-1)], tsrc[2*components+(components-1)],
+            tsrc[1*components+(components-1)], tsrc[1*components+(components-1)],
+            tsrc[0*components+(components-1)], tsrc[0*components+(components-1)]);
+      xdst_a = _mm256_set_epi16(
+            dst[7*components+(components-1)], dst[7*components+(components-1)],
+            dst[6*components+(components-1)], dst[6*components+(components-1)],
+            dst[5*components+(components-1)], dst[5*components+(components-1)],
+            dst[4*components+(components-1)], dst[4*components+(components-1)],
+            dst[3*components+(components-1)], dst[3*components+(components-1)],
+            dst[2*components+(components-1)], dst[2*components+(components-1)],
+            dst[1*components+(components-1)], dst[1*components+(components-1)],
+            dst[0*components+(components-1)], dst[0*components+(components-1)]);
+              break;
+      case 16: 
+      xsrc_a = _mm256_set_epi16(
+            tsrc[15*components+(components-1)],
+            tsrc[14*components+(components-1)],
+            tsrc[13*components+(components-1)],
+            tsrc[12*components+(components-1)],
+            tsrc[11*components+(components-1)],
+            tsrc[10*components+(components-1)],
+            tsrc[9*components+(components-1)],
+            tsrc[8*components+(components-1)],
+            tsrc[7*components+(components-1)],
+            tsrc[6*components+(components-1)],
+            tsrc[5*components+(components-1)],
+            tsrc[4*components+(components-1)],
+            tsrc[3*components+(components-1)],
+            tsrc[2*components+(components-1)],
+            tsrc[1*components+(components-1)],
+            tsrc[0*components+(components-1)]);
+      xdst_a = _mm256_set_epi16(
+            dst[15*components+(components-1)],
+            dst[14*components+(components-1)],
+            dst[13*components+(components-1)],
+            dst[12*components+(components-1)],
+            dst[11*components+(components-1)],
+            dst[10*components+(components-1)],
+            dst[9*components+(components-1)],
+            dst[8*components+(components-1)],
+            dst[7*components+(components-1)],
+            dst[6*components+(components-1)],
+            dst[5*components+(components-1)],
+            dst[4*components+(components-1)],
+            dst[3*components+(components-1)],
+            dst[2*components+(components-1)],
+            dst[1*components+(components-1)],
+            dst[0*components+(components-1)]);
+              break;
+    }
+
+    if (global_alpha_u8 != 255)
+    {
+      xcov = _mm256_mulhi_epu16(
+              _mm256_adds_epu16(
+                 _mm256_mullo_epi16(xcov,
+                                    _mm256_set1_epi16(global_alpha_u8)),
+                 x0080), x0101);
+    }
+
+    if (!is_full)
+    {
+      xsrc = _mm256_mulhi_epu16(
+              _mm256_adds_epu16(
+                 _mm256_mullo_epi16(xsrc, xcov),
+                 x0080), x0101);
+
+    }
+
+    __m256i dst_lo;
+    __m256i dst_hi; 
+    __m256i src_lo; 
+    __m256i src_hi;
+    
+
       switch (f_s)
       {
-        case CTX_PORTER_DUFF_0: break;
-        case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
-        case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] *      dst[components-1])/255; break;
-        case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (255-dst[components-1]))/255; break;
+        case CTX_PORTER_DUFF_0:
+                src_lo = _mm256_set1_epi32(0);
+                src_hi = _mm256_set1_epi32(0);
+                break;
+        case CTX_PORTER_DUFF_1:
+                src_lo = _mm256_and_si256 (xsrc, lo_mask); 
+                src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
+                break;
+        case CTX_PORTER_DUFF_ALPHA:
+             // res += (tsrc[c] *      dst[components-1])/255;
+                src_lo = _mm256_and_si256 (xsrc, lo_mask); 
+                src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
+                src_lo =
+                  _mm256_mulhi_epu16 (
+                      _mm256_adds_epu16 (_mm256_mullo_epi16(src_lo,
+                                         xdst_a), x0080), x0101);
+                src_hi =
+                  _mm256_mulhi_epu16 (
+                      _mm256_adds_epu16 (_mm256_mullo_epi16(src_hi,
+                                         xdst_a), x0080), x0101);
+
+
+                break;
+        case CTX_PORTER_DUFF_1_MINUS_ALPHA:
+             // res += (tsrc[c] * (255-dst[components-1]))/255;
+                src_lo = _mm256_and_si256 (xsrc, lo_mask); 
+                src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
+        src_lo = 
+               _mm256_mulhi_epu16 (
+                   _mm256_adds_epu16 (_mm256_mullo_epi16(src_lo,
+                                      _mm256_sub_epi16(x00ff,xdst_a)), x0080), x0101);
+        src_hi = 
+               _mm256_mulhi_epu16 (
+                   _mm256_adds_epu16 (_mm256_mullo_epi16(src_hi,
+                                      _mm256_sub_epi16(x00ff,xdst_a)), x0080), x0101);
+
+                break;
       }
       switch (f_d)
       {
-        case CTX_PORTER_DUFF_0: break;
-        case CTX_PORTER_DUFF_1:             res += dst[c]; break;
-        case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1])/255; break;
-        case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (255-tsrc[components-1]))/255; break;
+        case CTX_PORTER_DUFF_0: 
+            dst_lo = _mm256_set1_epi32(0);
+            dst_hi = _mm256_set1_epi32(0);
+            break;
+        case CTX_PORTER_DUFF_1:
+            dst_lo = _mm256_and_si256 (xdst, lo_mask); 
+            dst_hi = _mm256_srli_epi16 (_mm256_and_si256 (xdst, hi_mask), 8); 
+            break;
+        case CTX_PORTER_DUFF_ALPHA:        
+                //res += (dst[c] * tsrc[components-1])/255;
+            dst_lo = _mm256_and_si256 (xdst, lo_mask); 
+            dst_hi = _mm256_srli_epi16 (_mm256_and_si256 (xdst, hi_mask), 8); 
+
+            dst_lo =
+               _mm256_mulhi_epu16 (
+                   _mm256_adds_epu16 (_mm256_mullo_epi16(dst_lo,
+                                      xsrc_a), x0080), x0101);
+            dst_hi =
+               _mm256_mulhi_epu16 (
+                   _mm256_adds_epu16 (_mm256_mullo_epi16(dst_hi,
+                                      xsrc_a), x0080), x0101);
+            break;
+        case CTX_PORTER_DUFF_1_MINUS_ALPHA:
+                //res += (dst[c] * (255-tsrc[components-1]))/255;
+            dst_lo = _mm256_and_si256 (xdst, lo_mask); 
+            dst_hi = _mm256_srli_epi16 (_mm256_and_si256 (xdst, hi_mask), 8); 
+            dst_lo = 
+               _mm256_mulhi_epu16 (
+                   _mm256_adds_epu16 (_mm256_mullo_epi16(dst_lo,
+                                      _mm256_sub_epi16(x00ff,xsrc_a)), x0080), x0101);
+            dst_hi = 
+               _mm256_mulhi_epu16 (
+                   _mm256_adds_epu16 (_mm256_mullo_epi16(dst_hi,
+                                      _mm256_sub_epi16(x00ff,xsrc_a)), x0080), x0101);
+            break;
       }
-      dst[c] = res;
-    }
-    coverage ++;
-    dst+=components;
+
+      dst_hi = _mm256_adds_epu16(dst_hi, src_hi);
+      dst_lo = _mm256_adds_epu16(dst_lo, src_lo);
+
+      dst_hi = _mm256_slli_epi16 (dst_hi, 8);
+      src_hi = _mm256_slli_epi16 (src_hi, 8);
+
+  //  _mm256_storeu_si256((__m256i*)dst, _mm256_blendv_epi8(src_lo, src_hi, hi_mask));
+      _mm256_storeu_si256((__m256i*)dst, _mm256_blendv_epi8(dst_lo, dst_hi, hi_mask));
+
+
+
+    coverage += n_pix;
+    dst+=32;
   }
 }
 #endif
@@ -9334,6 +9594,7 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
                      CtxBlend               blend)
 {
 #if CTX_SIMD
+
   int pre_count = 0;
   if ((size_t)(dst)&31)
   {
@@ -9348,12 +9609,27 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
   if (count < 0)
      return;
   int post_count = (count & 31);
-  ctx_avx2_porter_duff (rasterizer, components, dst, src, clip, x0, coverage, count, compositing_mode, fragment, blend);
+  if (src && 0)
+  {
+    src[0]/=2;
+    src[1]/=2;
+    src[2]/=2;
+    src[3]/=2;
+  }
+  ctx_avx2_porter_duff (rasterizer, components, dst, src, clip, x0, coverage, count-post_count, compositing_mode, fragment, blend);
+  //__ctx_u8_porter_duff (rasterizer, components, dst, src, clip, x0, coverage, count-post_count, compositing_mode, fragment, blend);
+  if (src && 0)
+  {
+    src[0]*=2;
+    src[1]*=2;
+    src[2]*=2;
+    src[3]*=2;
+  }
   if (post_count > 0)
   {
        x0 += (count - post_count);
        dst += components * (count-post_count);
-  coverage += (count - post_count);
+       coverage += (count - post_count);
        __ctx_u8_porter_duff (rasterizer, components, dst, src, clip, x0, coverage, post_count, compositing_mode, fragment, blend);
   }
 #else
@@ -9505,6 +9781,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
          rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
          break;
     }
+    rasterizer->comp_op = ctx_RGBA8_porter_duff_color; // XXX overide to make all go
+                                                       // through generic code path
     rasterizer->fragment = NULL;
     return;
   }
