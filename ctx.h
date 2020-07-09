@@ -3362,7 +3362,7 @@ struct _CtxRasterizer
      correct for axis aligned clips - proper rasterization of a clipping path
      would be yet another refinement on top.
    */
-  //CtxBuffer *clip_buffer; // NYI
+  CtxBuffer *clip_buffer;
 
   int        lingering_edges;  // previous half scanline
   CtxEdge    lingering[CTX_MAX_LINGERING_EDGES];
@@ -3418,7 +3418,6 @@ struct _CtxRasterizer
 #define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, uint8_t * __restrict__ clip, int x0, uint8_t * __restrict__ coverage, int count
 
   void (*comp_op)(CTX_COMPOSITE_ARGUMENTS);
-
 
   uint8_t *clip_mask;
 };
@@ -11881,6 +11880,241 @@ ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, flo
 }
 
 static void
+ctx_rasterizer_process (void *user_data, CtxCommand *command);
+
+static void
+ctx_rasterizer_start_group (CtxRasterizer *rasterizer)
+{
+  CtxEntry save_command = ctx_void(CTX_SAVE);
+  // allocate buffer, and set it as temporary target
+  int no;
+  if (rasterizer->group[0] == NULL) // first group
+  {
+    rasterizer->saved_buf = rasterizer->buf;
+  }
+  for (no = 0; rasterizer->group[no] && no < CTX_GROUP_MAX; no++);
+
+  if (no >= CTX_GROUP_MAX)
+     return;
+  rasterizer->group[no] = ctx_buffer_new (rasterizer->blit_width,
+                                          rasterizer->blit_height,
+                                          rasterizer->format->pixel_format);
+  rasterizer->buf = rasterizer->group[no]->data;
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
+}
+
+static void
+ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
+{
+  CtxEntry restore_command = ctx_void(CTX_RESTORE);
+  CtxEntry save_command = ctx_void(CTX_SAVE);
+  int no = 0;
+  for (no = 0; rasterizer->group[no] && no < CTX_GROUP_MAX; no++);
+  no--;
+
+  if (no < 0)
+    return;
+
+  CtxCompositingMode comp = rasterizer->state->gstate.compositing_mode;
+  CtxBlend blend = rasterizer->state->gstate.blend_mode;
+  float global_alpha = rasterizer->state->gstate.global_alpha_f;
+  // fetch compositing, blending, global alpha
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
+  CtxEntry set_state[3]=
+  {
+    ctx_u8 (CTX_SET_COMPOSITING_MODE, comp,  0,0,0,0,0,0,0),
+    ctx_u8 (CTX_SET_BLEND_MODE,       blend, 0,0,0,0,0,0,0),
+    ctx_f  (CTX_SET_GLOBAL_ALPHA,     global_alpha, 0.0)
+  };
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[0]);
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[1]);
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[2]);
+  if (no == 0)
+  {
+    rasterizer->buf = rasterizer->saved_buf;
+  }
+  else
+  {
+    rasterizer->buf = rasterizer->group[no-1]->data;
+  }
+  int id = ctx_texture_init (rasterizer->ctx, -1,
+                  rasterizer->blit_width,
+                  rasterizer->blit_height,
+                  rasterizer->format->bpp,
+                  rasterizer->group[no]->data,
+                  NULL, NULL);
+  {
+     CtxEntry commands[2] =
+      {ctx_u32 (CTX_TEXTURE, id, 0),
+       ctx_f  (CTX_CONT, rasterizer->blit_x, rasterizer->blit_y)};
+     ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
+  }
+  {
+    CtxEntry commands[2]=
+    {
+      ctx_f (CTX_RECTANGLE, rasterizer->blit_x, rasterizer->blit_y),
+      ctx_f (CTX_CONT,      rasterizer->blit_width, rasterizer->blit_height)
+    };
+    ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
+  }
+  {
+    CtxEntry commands[1]= { ctx_void (CTX_FILL) };
+    ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
+  }
+  ctx_texture_release (rasterizer->ctx, id);
+  ctx_buffer_free (rasterizer->group[no]);
+  rasterizer->group[no] = 0;
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
+}
+
+static void
+ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
+{
+  CtxColor color;
+  CtxEntry save_command = ctx_void(CTX_SAVE);
+
+  float rgba[4] = {0, 0, 0, 1.0};
+  if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
+    ctx_color_get_rgba (rasterizer->state, &color, rgba);
+
+  CtxEntry set_color_command [3]=
+  {
+    ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
+    ctx_f (CTX_CONT, rgba[1], rgba[2]),
+    ctx_f (CTX_CONT, rgba[3], 0)
+  };
+  CtxEntry restore_command = ctx_void(CTX_RESTORE);
+  float radius = rasterizer->state->gstate.shadow_blur;
+  int dim = 2 * radius + 1;
+  float *kernel = calloc (sizeof (float), dim * dim);
+  ctx_compute_gaussian_kernel (dim, radius, kernel);
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
+  {
+    int i = 0;
+    for (int v = 0; v < dim; v += 1)
+      for (int u = 0; u < dim; u += 1, i++)
+      {
+        float dx = rasterizer->state->gstate.shadow_offset_x + u - dim/2;
+        float dy = rasterizer->state->gstate.shadow_offset_y + v - dim/2;
+        set_color_command[2].data.f[0] = kernel[i] * rgba[3];
+        ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command[0]);
+        rasterizer->in_shadow = 1;
+        rasterizer->shadow_x = dx;
+        rasterizer->shadow_y = dy;
+        rasterizer->preserve = 1;
+        ctx_rasterizer_stroke (rasterizer);
+        rasterizer->in_shadow = 0;
+      }
+  }
+  free (kernel);
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
+}
+
+static void
+ctx_rasterizer_shadow_text (CtxRasterizer *rasterizer, const char *str)
+{
+  float x = rasterizer->state->x;
+  float y = rasterizer->state->y;
+  CtxColor color;
+  CtxEntry save_command = ctx_void(CTX_SAVE);
+
+  float rgba[4] = {0, 0, 0, 1.0};
+  if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
+    ctx_color_get_rgba (rasterizer->state, &color, rgba);
+
+  CtxEntry set_color_command [3]=
+  {
+    ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
+    ctx_f (CTX_CONT, rgba[1], rgba[2]),
+    ctx_f (CTX_CONT, rgba[3], 0)
+  };
+  CtxEntry move_to_command [1]=
+  {
+    ctx_f (CTX_MOVE_TO, x, y),
+  };
+  CtxEntry restore_command = ctx_void(CTX_RESTORE);
+  float radius = rasterizer->state->gstate.shadow_blur;
+  int dim = 2 * radius + 1;
+  float *kernel = calloc (sizeof (float), dim * dim);
+  ctx_compute_gaussian_kernel (dim, radius, kernel);
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
+
+  int step = 1;
+  if (dim > 30) step = 2;
+  if (dim > 60) step = 4;
+  if (dim > 90) step = 6;
+  {
+    for (int v = 0; v < dim; v += 1)
+      for (int u = 0; u < dim; u += 1)
+      {
+        int i = v * dim + u;
+        float dx = x + rasterizer->state->gstate.shadow_offset_x + u - dim/2;
+        float dy = y + rasterizer->state->gstate.shadow_offset_y + v - dim/2;
+        move_to_command[0].data.f[0] = dx;
+        move_to_command[0].data.f[1] = dy;
+        set_color_command[2].data.f[0] = kernel[i] * step * step * rgba[3];
+        ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command);
+        ctx_rasterizer_process (rasterizer, (CtxCommand*)&move_to_command);
+        ctx_rasterizer_text (rasterizer, str, 0);
+      }
+  }
+  free (kernel);
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
+  move_to_command[0].data.f[0] = x;
+  move_to_command[0].data.f[1] = y;
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&move_to_command);
+}
+
+static void
+ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
+{
+  CtxColor color;
+  CtxEntry save_command = ctx_void(CTX_SAVE);
+
+  float rgba[4] = {0, 0, 0, 1.0};
+  if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
+    ctx_color_get_rgba (rasterizer->state, &color, rgba);
+
+  CtxEntry set_color_command [3]=
+  {
+    ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
+    ctx_f (CTX_CONT, rgba[1], rgba[2]),
+    ctx_f (CTX_CONT, rgba[3], 0)
+  };
+  CtxEntry restore_command = ctx_void(CTX_RESTORE);
+  float radius = rasterizer->state->gstate.shadow_blur;
+  int dim = 2 * radius + 1;
+  float *kernel = calloc (sizeof (float), dim * dim);
+  ctx_compute_gaussian_kernel (dim, radius, kernel);
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
+
+  int step = 1;
+  if (dim > 30) step = 2;
+  if (dim > 60) step = 4;
+  if (dim > 90) step = 6;
+  {
+    for (int v = 0; v < dim; v += step)
+      for (int u = 0; u < dim; u += step)
+      {
+        int i = v * dim + u;
+        float dx = rasterizer->state->gstate.shadow_offset_x + u - dim/2;
+        float dy = rasterizer->state->gstate.shadow_offset_y + v - dim/2;
+        set_color_command[2].data.f[0] = kernel[i] * step * step * rgba[3];
+        ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command);
+        rasterizer->in_shadow = 1;
+        rasterizer->shadow_x = dx;
+        rasterizer->shadow_y = dy;
+        rasterizer->preserve = 1;
+        ctx_rasterizer_fill (rasterizer);
+        rasterizer->in_shadow = 0;
+      }
+  }
+  free (kernel);
+  ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
+}
+
+static void
 ctx_rasterizer_process (void *user_data, CtxCommand *command)
 {
   CtxEntry *entry = &command->entry;
@@ -12017,88 +12251,10 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         rasterizer->comp_op = NULL;
         break;
       case CTX_START_GROUP:
-        {
-          CtxEntry save_command = ctx_void(CTX_SAVE);
-          // allocate buffer, and set it as temporary target
-          int no;
-          if (rasterizer->group[0] == NULL) // first group
-          {
-            rasterizer->saved_buf = rasterizer->buf;
-          }
-          for (no = 0; rasterizer->group[no] && no < CTX_GROUP_MAX; no++);
-
-          if (no >= CTX_GROUP_MAX)
-             break;
-          rasterizer->group[no] = ctx_buffer_new (rasterizer->blit_width,
-                                                  rasterizer->blit_height,
-                                                  rasterizer->format->pixel_format);
-          rasterizer->buf = rasterizer->group[no]->data;
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
-        }
+        ctx_rasterizer_start_group (rasterizer);
         break;
       case CTX_END_GROUP:
-        {
-          CtxEntry restore_command = ctx_void(CTX_RESTORE);
-          CtxEntry save_command = ctx_void(CTX_SAVE);
-          int no = 0;
-          for (no = 0; rasterizer->group[no] && no < CTX_GROUP_MAX; no++);
-          no--;
-
-          if (no < 0)
-            break;
-
-          CtxCompositingMode comp = rasterizer->state->gstate.compositing_mode;
-          CtxBlend blend = rasterizer->state->gstate.blend_mode;
-          float global_alpha = rasterizer->state->gstate.global_alpha_f;
-          // fetch compositing, blending, global alpha
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
-          CtxEntry set_state[3]=
-          {
-            ctx_u8 (CTX_SET_COMPOSITING_MODE, comp,  0,0,0,0,0,0,0),
-            ctx_u8 (CTX_SET_BLEND_MODE,       blend, 0,0,0,0,0,0,0),
-            ctx_f  (CTX_SET_GLOBAL_ALPHA,     global_alpha, 0.0)
-          };
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[0]);
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[1]);
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[2]);
-          if (no == 0)
-          {
-            rasterizer->buf = rasterizer->saved_buf;
-          }
-          else
-          {
-            rasterizer->buf = rasterizer->group[no-1]->data;
-          }
-          int id = ctx_texture_init (rasterizer->ctx, -1,
-                          rasterizer->blit_width,
-                          rasterizer->blit_height,
-                          rasterizer->format->bpp,
-                          rasterizer->group[no]->data,
-                          NULL, NULL);
-          {
-             CtxEntry commands[2] =
-              {ctx_u32 (CTX_TEXTURE, id, 0),
-               ctx_f  (CTX_CONT, rasterizer->blit_x, rasterizer->blit_y)};
-             ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
-          }
-          {
-            CtxEntry commands[2]=
-            {
-              ctx_f (CTX_RECTANGLE, rasterizer->blit_x, rasterizer->blit_y),
-              ctx_f (CTX_CONT,      rasterizer->blit_width, rasterizer->blit_height)
-            };
-            ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
-          }
-          {
-            CtxEntry commands[1]= { ctx_void (CTX_FILL) };
-            ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
-          }
-          ctx_texture_release (rasterizer->ctx, id);
-          ctx_buffer_free (rasterizer->group[no]);
-          rasterizer->group[no] = 0;
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
-        }
+        ctx_rasterizer_end_group (rasterizer);
         break;
       case CTX_ROTATE:
       case CTX_SCALE:
@@ -12110,49 +12266,9 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         ctx_interpret_transforms (rasterizer->state, entry, NULL);
         break;
       case CTX_STROKE:
-
         if (rasterizer->state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)
-        {
-          CtxColor color;
-          CtxEntry save_command = ctx_void(CTX_SAVE);
-
-          float rgba[4] = {0, 0, 0, 1.0};
-          if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
-            ctx_color_get_rgba (rasterizer->state, &color, rgba);
-
-          CtxEntry set_color_command [3]=
-          {
-            ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
-            ctx_f (CTX_CONT, rgba[1], rgba[2]),
-            ctx_f (CTX_CONT, rgba[3], 0)
-          };
-          CtxEntry restore_command = ctx_void(CTX_RESTORE);
-          float radius = rasterizer->state->gstate.shadow_blur;
-          int dim = 2 * radius + 1;
-          float *kernel = calloc (sizeof (float), dim * dim);
-          ctx_compute_gaussian_kernel (dim, radius, kernel);
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
-          {
-            int i = 0;
-            for (int v = 0; v < dim; v += 1)
-              for (int u = 0; u < dim; u += 1, i++)
-              {
-                float dx = rasterizer->state->gstate.shadow_offset_x + u - dim/2;
-                float dy = rasterizer->state->gstate.shadow_offset_y + v - dim/2;
-                set_color_command[2].data.f[0] = kernel[i] * rgba[3];
-                ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command[0]);
-                rasterizer->in_shadow = 1;
-                rasterizer->shadow_x = dx;
-                rasterizer->shadow_y = dy;
-                rasterizer->preserve = 1;
-                ctx_rasterizer_stroke (rasterizer);
-                rasterizer->in_shadow = 0;
-              }
-          }
-          free (kernel);
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
-        }
+          ctx_rasterizer_shadow_stroke (rasterizer);
         ctx_rasterizer_stroke (rasterizer);
         break;
       case CTX_SET_FONT:
@@ -12161,58 +12277,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_TEXT:
         rasterizer->in_text++;
         if (rasterizer->state->gstate.shadow_blur > 0.0)
-        {
-          float x = rasterizer->state->x;
-          float y = rasterizer->state->y;
-          CtxColor color;
-          CtxEntry save_command = ctx_void(CTX_SAVE);
-
-          float rgba[4] = {0, 0, 0, 1.0};
-          if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
-            ctx_color_get_rgba (rasterizer->state, &color, rgba);
-
-          CtxEntry set_color_command [3]=
-          {
-            ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
-            ctx_f (CTX_CONT, rgba[1], rgba[2]),
-            ctx_f (CTX_CONT, rgba[3], 0)
-          };
-          CtxEntry move_to_command [1]=
-          {
-            ctx_f (CTX_MOVE_TO, x, y),
-          };
-          CtxEntry restore_command = ctx_void(CTX_RESTORE);
-          float radius = rasterizer->state->gstate.shadow_blur;
-          int dim = 2 * radius + 1;
-          float *kernel = calloc (sizeof (float), dim * dim);
-          ctx_compute_gaussian_kernel (dim, radius, kernel);
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
-
-          int step = 1;
-          if (dim > 30) step = 2;
-          if (dim > 60) step = 4;
-          if (dim > 90) step = 6;
-          {
-            for (int v = 0; v < dim; v += 1)
-              for (int u = 0; u < dim; u += 1)
-              {
-                int i = v * dim + u;
-                float dx = x + rasterizer->state->gstate.shadow_offset_x + u - dim/2;
-                float dy = y + rasterizer->state->gstate.shadow_offset_y + v - dim/2;
-                move_to_command[0].data.f[0] = dx;
-                move_to_command[0].data.f[1] = dy;
-                set_color_command[2].data.f[0] = kernel[i] * step * step * rgba[3];
-                ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command);
-                ctx_rasterizer_process (rasterizer, (CtxCommand*)&move_to_command);
-                ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
-              }
-          }
-          free (kernel);
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
-          move_to_command[0].data.f[0] = x;
-          move_to_command[0].data.f[1] = y;
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&move_to_command);
-        }
+          ctx_rasterizer_shadow_text (rasterizer, ctx_arg_string ());
         ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
         rasterizer->in_text--;
         break;
@@ -12225,51 +12290,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_FILL:
         if (rasterizer->state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)
-        {
-          CtxColor color;
-          CtxEntry save_command = ctx_void(CTX_SAVE);
-
-          float rgba[4] = {0, 0, 0, 1.0};
-          if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
-            ctx_color_get_rgba (rasterizer->state, &color, rgba);
-
-          CtxEntry set_color_command [3]=
-          {
-            ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
-            ctx_f (CTX_CONT, rgba[1], rgba[2]),
-            ctx_f (CTX_CONT, rgba[3], 0)
-          };
-          CtxEntry restore_command = ctx_void(CTX_RESTORE);
-          float radius = rasterizer->state->gstate.shadow_blur;
-          int dim = 2 * radius + 1;
-          float *kernel = calloc (sizeof (float), dim * dim);
-          ctx_compute_gaussian_kernel (dim, radius, kernel);
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
-
-          int step = 1;
-          if (dim > 30) step = 2;
-          if (dim > 60) step = 4;
-          if (dim > 90) step = 6;
-          {
-            for (int v = 0; v < dim; v += step)
-              for (int u = 0; u < dim; u += step)
-              {
-                int i = v * dim + u;
-                float dx = rasterizer->state->gstate.shadow_offset_x + u - dim/2;
-                float dy = rasterizer->state->gstate.shadow_offset_y + v - dim/2;
-                set_color_command[2].data.f[0] = kernel[i] * step * step * rgba[3];
-                ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command);
-                rasterizer->in_shadow = 1;
-                rasterizer->shadow_x = dx;
-                rasterizer->shadow_y = dy;
-                rasterizer->preserve = 1;
-                ctx_rasterizer_fill (rasterizer);
-                rasterizer->in_shadow = 0;
-              }
-          }
-          free (kernel);
-          ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
-        }
+          ctx_rasterizer_shadow_fill (rasterizer);
         ctx_rasterizer_fill (rasterizer);
         break;
       case CTX_BEGIN_PATH:
