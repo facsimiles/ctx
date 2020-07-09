@@ -6420,8 +6420,8 @@ CtxBuffer *ctx_buffer_new (int width, int height,
 {
   CtxPixelFormatInfo *info = ctx_pixel_format_info (CTX_FORMAT_GRAY8);
   CtxBuffer *buffer = ctx_buffer_new_bare ();
-  int stride = width * info->bpp/8;
-  uint8_t *pixels = calloc (stride, width);
+  int stride = width * info->ebpp;
+  uint8_t *pixels = calloc (stride, height + 1);
 
   ctx_buffer_set_data (buffer, pixels, width, height, stride, pixel_format,
                        (void*)free, NULL);
@@ -7685,6 +7685,7 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *in, uint8_t *out)
 {
   switch (components)
   {
+#if 0
     case 4:
             {
     uint32_t val = *((uint32_t*)(in));
@@ -7707,6 +7708,7 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *in, uint8_t *out)
     }
             }
     break;
+#endif
     default:
     {
   if (in[components-1])
@@ -7717,13 +7719,13 @@ ctx_u8_deassociate_alpha (int components, const uint8_t *in, uint8_t *out)
     else
     for (int c = 0; c < components-1; c++)
       out[c] = in[c];
+    out[components-1] = in[components-1];
   }
   else
   {
-  for (int c = 0; c < components-1; c++)
+  for (int c = 0; c < components; c++)
     out[c] = 0;
   }
-  out[components-1] = in[components-1];
   break;
   }
   }

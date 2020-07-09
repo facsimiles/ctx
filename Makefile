@@ -21,7 +21,7 @@ ctx: ctx.c vt/*.[ch] ctx.h  Makefile svg.h
 ctx.O1: ctx.c vt/*.[ch] ctx.h  Makefile 
 	$(CC) ctx.c vt/*.c -o $@ -g -O1 -I. -Ifonts -Ivt `pkg-config sdl2 --cflags --libs` -lutil -Wall -lz -lm
 ctx.asan: ctx.c vt/*.[ch] ctx.h Makefile
-	$(CC) -DASANBUILD=1 ctx.c vt/*.c -o $@ -g -O0 -I. -Ifonts -Ivt `pkg-config --cflags --libs sdl2` -lutil -lasan -fsanitize=address -lz -lm
+	$(CC) -DASANBUILD=1 ctx.c vt/*.c -o $@ -g -O0 -I. -Ifonts -Ivt `pkg-config --cflags --libs sdl2` -lutil -lasan -fsanitize=address -lz -lm -march=native
 
 sentry:
 	sentry Makefile ctx.h tests/*.ctx -- make ctx  post
