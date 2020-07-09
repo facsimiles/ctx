@@ -10827,6 +10827,20 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
         }
       t = next_t;
     }
+
+  if (rasterizer->clip_buffer)
+  {
+    int y = scanline / CTX_RASTERIZER_AA;
+    uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
+    for (int x = minx; x < maxx; x ++)
+    {
+      if (coverage[x])
+      {
+        int clip = clip_line[x];
+        coverage[x] = (coverage[x] * clip)/255;
+      }
+    }
+  }
 }
 
 #undef CTX_EDGE_Y0
@@ -11720,6 +11734,43 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
   rasterizer->state->gstate.clipped=1;
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
+  if (!rasterizer->clip_buffer)
+  {
+    rasterizer->clip_buffer = ctx_buffer_new (rasterizer->blit_width,
+                                              rasterizer->blit_height,
+                                              CTX_FORMAT_GRAY8);
+
+    }
+
+  // for now only one level of clipping is supported
+  {
+
+  int prev_x = 0;
+  int prev_y = 0;
+
+    Ctx *ctx = ctx_new_for_framebuffer (rasterizer->clip_buffer->data, rasterizer->blit_width, rasterizer->blit_height,
+       rasterizer->blit_width,
+       CTX_FORMAT_GRAY8);
+    memset (rasterizer->clip_buffer->data, 0, rasterizer->blit_width * rasterizer->blit_height);
+
+  for (int i = 0; i < count; i++)
+    {
+      CtxEntry *entry = &rasterizer->edge_list.entries[i];
+      float x, y;
+      if (entry->code == CTX_NEW_EDGE)
+        {
+          prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
+          prev_y = entry->data.s16[1] * 1.0f / CTX_RASTERIZER_AA;
+          ctx_move_to (ctx, prev_x, prev_y);
+        }
+      x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
+      y = entry->data.s16[3] * 1.0f / CTX_RASTERIZER_AA;
+      ctx_line_to (ctx, x, y);
+    }
+    ctx_set_gray (ctx, 1.0f);
+    ctx_fill (ctx);
+    ctx_free (ctx);
+  }
   int minx = 5000;
   int miny = 5000;
   int maxx = -5000;
