@@ -23,7 +23,6 @@
 #define CTX_GRADIENT_CACHE       1
 #define CTX_ENABLE_CMYK          1
 #define CTX_ENABLE_CM            1
-#define CTX_SIMD                 1
 #define CTX_SHAPE_CACHE          1
 #define CTX_SHAPE_CACHE_MAX_DIM  96
 #define CTX_SHAPE_CACHE_DIM      (64*64)
@@ -31,6 +30,8 @@
 #define CTX_RASTERIZER_AA        5
 #define CTX_RASTERIZER_FORCE_AA  1
 #define CTX_MATH                 1
+
+#include <immintrin.h> // XXX is detected by ctx, and enables AVX2
 
 #define CTX_IMPLEMENTATION 1
 //

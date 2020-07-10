@@ -1296,7 +1296,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 2 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA        1
+#define CTX_RASTERIZER_AA        5
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -1305,7 +1305,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  1
+#define CTX_RASTERIZER_FORCE_AA  0
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
@@ -1465,7 +1465,11 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_SIMD
+#ifdef _IMMINTRIN_H_INCLUDED
+#define CTX_SIMD         1
+#else
 #define CTX_SIMD         0
+#endif
 #endif
 
 /* do 
@@ -1516,14 +1520,6 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_ENABLE_CMYKA8               1
 #define CTX_ENABLE_CMYKAF               1
 #endif
-
-#endif
-
-#if CTX_SIMD
-
-#include <xmmintrin.h>
-#include <smmintrin.h>
-#include <immintrin.h>
 
 #endif
 
@@ -8349,8 +8345,8 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
             continue;
           }
 
-          xcov = _mm256_set1_epi16(0xff);
-          x1_minus_cov_mul_a = _mm256_sub_epi16(xcov, _mm256_set1_epi16(a));
+          xcov = x00ff;
+          x1_minus_cov_mul_a = _mm256_sub_epi16(x00ff, xsrc_a);
        }
        else
        {
@@ -8564,8 +8560,8 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
             coverage += 8;
             continue;
           }
-          xcov = _mm256_set1_epi16(0xff);
-          x1_minus_cov_mul_a = _mm256_sub_epi16(xcov, _mm256_set1_epi16(a));
+          xcov = x00ff;
+          x1_minus_cov_mul_a = _mm256_sub_epi16(x00ff, xsrc_a);
        }
        else
        {
@@ -8587,8 +8583,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
       __m256i dst_hi = _mm256_srli_epi16 (_mm256_and_si256 (xdst, hi_mask), 8);
       __m256i src_lo = _mm256_and_si256 (xsrc, lo_mask);
       __m256i src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
-        //////
-        //
+//////////////
       dst_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_hi,  x1_minus_cov_mul_a), x0080), x0101);
       dst_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_lo,  x1_minus_cov_mul_a), x0080), x0101);
 
@@ -8754,8 +8749,10 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
             coverage += 8;
             continue;
           }
-          xcov = _mm256_set1_epi16(0xff);
-          x1_minus_cov_mul_a = _mm256_sub_epi16(xcov, _mm256_set1_epi16(a));
+
+          xcov = x00ff;
+          x1_minus_cov_mul_a = 
+            _mm256_sub_epi16(x00ff, _mm256_set1_epi16(a));
        }
        else
        {
@@ -9283,7 +9280,7 @@ ctx_avx2_porter_duff (CtxRasterizer         *rasterizer,
         break;
     }
 
-#if 0
+#if 1
     if (
       //(compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 255)||
       (compositing_mode == CTX_COMPOSITE_SOURCE_OVER      && is_blank) ||
@@ -9633,7 +9630,7 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
                      CtxFragment            fragment,
                      CtxBlend               blend)
 {
-#if CTX_SIMD
+#if 0
 
   int pre_count = 0;
   if ((size_t)(dst)&31)

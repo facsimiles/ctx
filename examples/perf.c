@@ -7,7 +7,7 @@
 #define CTX_PARSER          0
 #define CTX_DITHER          0 // implied by limit formats and only rgba being anbled, but we're explicit
 #define CTX_FORMATTER       1
-#define CTX_SIMD            1
+#include <immintrin.h>
 #define CTX_BITPACK_PACKER  0
 #define CTX_GRADIENT_CACHE  1
 #define CTX_RENDERSTREAM_STATIC 0
