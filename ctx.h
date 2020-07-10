@@ -8455,13 +8455,6 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
 
 #if CTX_SIMD
 
-#define lo_mask   _mm256_set1_epi32 (0x00FF00FF)
-#define hi_mask   _mm256_set1_epi32 (0xFF00FF00)
-#define x00ff     _mm256_set1_epi16(255)
-#define x0101     _mm256_set1_epi16(0x0101)
-#define x0080     _mm256_set1_epi16(0x0080)
-
-
     if ((size_t)(dst) & 31)
 #endif
     {
@@ -8571,7 +8564,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
           if (a == 255)
           {
             _mm256_store_si256((__m256i*)dst, xsrc);
-            dst += 4 * 8;
+            dst      += 32;
             coverage += 8;
             continue;
           }
@@ -8680,14 +8673,6 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     int x = 0;
 
 #if CTX_SIMD
-
-    /*
-#define lo_mask   _mm256_set1_epi32(0x00FF00FF)
-#define hi_mask   _mm256_set1_epi32(0xFF00FF00)
-#define x00ff     _mm256_set1_epi16(255)
-#define x0101     _mm256_set1_epi16(0x0101)
-#define x0080     _mm256_set1_epi16(0x0080)
-*/
 
     if ((size_t)(dst) & 31)
 #endif
