@@ -708,10 +708,8 @@ typedef enum
   CTX_SET_SHADOW_COLOR     = '>', // kC
   CTX_SET_SHADOW_OFFSET_X  = '?', // kx
   CTX_SET_SHADOW_OFFSET_Y  = '&', // ky
-
-
-  CTX_START_GROUP = '{',
-  CTX_END_GROUP   = '}',
+  CTX_START_GROUP          = '{',
+  CTX_END_GROUP            = '}',
 
   CTX_FUNCTION             = 25,
   //CTX_ENDFUN = 26,
@@ -885,7 +883,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_ENABLE_CLIP
-#define CTX_ENABLE_CLIP   0
+#define CTX_ENABLE_CLIP   1
 #endif
 
 /* maximum number of entries in shape cache
@@ -2294,7 +2292,8 @@ static inline float ctx_hypotf (float a, float b) { return hypotf (a, b); }
 static inline float ctx_acosf (float a)           { return acosf (a); }
 static inline float ctx_cosf (float a)            { return cosf (a); }
 static inline float ctx_tanf (float a)            { return tanf (a); }
-static inline float ctx_expf (float p)            { return expf (a); }
+static inline float ctx_expf (float p)            { return expf (p); }
+static inline float ctx_sqrtf (float a)           { return sqrtf (a); }
 #endif
 
 #ifdef CTX_IMPLEMENTATION
