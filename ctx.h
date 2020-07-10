@@ -7372,8 +7372,64 @@ static void ctx_edge2_qsort (CtxEdge *entries, int low, int high)
 
 static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 {
-  if (rasterizer->active_edges)
-    ctx_edge2_qsort (&rasterizer->edges[0], 0, rasterizer->active_edges-1);
+  switch (rasterizer->active_edges)
+  {
+    case 0:
+    case 1: break;
+#if 1
+    case 2:
+#define COMPARE(a,b) \
+      if (ctx_compare_edges2 (&rasterizer->edges[a], &rasterizer->edges[b])>0)\
+      {\
+        CtxEdge tmp = rasterizer->edges[a];\
+        rasterizer->edges[a] = rasterizer->edges[b];\
+        rasterizer->edges[b] = tmp;\
+      }
+      COMPARE(0,1);
+      break;
+    case 3:
+      COMPARE(0,1);
+      COMPARE(0,2);
+      COMPARE(1,2);
+      break;
+    case 4:
+      COMPARE(0,1);
+      COMPARE(2,3);
+      COMPARE(0,2);
+      COMPARE(1,3);
+      COMPARE(1,2);
+      break;
+    case 5:
+      COMPARE(1,2);
+      COMPARE(0,2);
+      COMPARE(0,1);
+      COMPARE(3,4);
+      COMPARE(0,3);
+      COMPARE(1,4);
+      COMPARE(2,4);
+      COMPARE(1,3);
+      COMPARE(2,3);
+      break;
+    case 6:
+      COMPARE(1,2);
+      COMPARE(0,2);
+      COMPARE(0,1);
+      COMPARE(4,5);
+      COMPARE(3,5);
+      COMPARE(3,4);
+      COMPARE(0,3);
+      COMPARE(1,4);
+      COMPARE(2,5);
+      COMPARE(2,4);
+      COMPARE(1,3);
+      COMPARE(2,3);
+      break;
+#endif
+    default:
+      //fprintf (stderr, "a:%i ", rasterizer->active_edges);
+      ctx_edge2_qsort (&rasterizer->edges[0], 0, rasterizer->active_edges-1);
+      break;
+  }
 }
 
 CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
