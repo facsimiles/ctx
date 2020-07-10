@@ -890,8 +890,12 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_SHAPE_CACHE_ENTRIES  160
 #endif
 
+#ifndef CTX_SHADOW_BLUR
+#define CTX_SHADOW_BLUR    0
+#endif
+
 #ifndef CTX_GRADIENTS
-#define CTX_GRADIENTS   0
+#define CTX_GRADIENTS      1
 #endif
 
 #ifndef CTX_GRADIENT_CACHE
@@ -2519,9 +2523,11 @@ struct _CtxGState
   float         line_width;
   float         miter_limit;
   float         font_size;
+#if CTX_SHADOW_BLUR
   float         shadow_blur;
   float         shadow_offset_x;
   float         shadow_offset_y;
+#endif
   int           clipped:1;
 
   int16_t       clip_min_x;
@@ -4865,7 +4871,9 @@ void ctx_set_line_width (Ctx *ctx, float x)
 
 void ctx_set_shadow_blur (Ctx *ctx, float x)
 {
+#if CTX_SHADOW_BLUR
   if (ctx->state.gstate.shadow_blur != x)
+#endif
     CTX_PROCESS_F1 (CTX_SET_SHADOW_BLUR, x);
 }
 
@@ -4882,13 +4890,17 @@ void ctx_set_shadow_rgba (Ctx *ctx, float r, float g, float b, float a)
 
 void ctx_set_shadow_offset_x (Ctx *ctx, float x)
 {
+#if CTX_SHADOW_BLUR
   if (ctx->state.gstate.shadow_offset_x != x)
+#endif
     CTX_PROCESS_F1 (CTX_SET_SHADOW_OFFSET_X, x);
 }
 
 void ctx_set_shadow_offset_y (Ctx *ctx, float x)
 {
+#if CTX_SHADOW_BLUR
   if (ctx->state.gstate.shadow_offset_y != x)
+#endif
     CTX_PROCESS_F1 (CTX_SET_SHADOW_OFFSET_Y, x);
 }
 
@@ -5470,6 +5482,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       case CTX_SET_LINE_WIDTH:
         state->gstate.line_width = ctx_arg_float (0);
         break;
+#if CTX_SHADOW_BLUR
       case CTX_SET_SHADOW_BLUR:
         state->gstate.shadow_blur = ctx_arg_float (0);
         break;
@@ -5479,6 +5492,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       case CTX_SET_SHADOW_OFFSET_Y:
         state->gstate.shadow_offset_y = ctx_arg_float (0);
         break;
+#endif
       case CTX_SET_LINE_CAP:
         state->gstate.line_cap = (CtxLineCap) ctx_arg_u8 (0);
         break;
@@ -12301,6 +12315,7 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_finish_shape (rasterizer);
 }
 
+#if CTX_SHADOW_BLUR
 static float
 ctx_gaussian (float x, float mu, float sigma)
 {
@@ -12327,6 +12342,7 @@ ctx_compute_gaussian_kernel (int dim, float radius, float *kernel)
     for (int col = 0; col < dim; col ++, i++)
         kernel[i] /= sum;
 }
+#endif
 
 static void
 ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, float width, float height, float corner_radius)
@@ -12434,6 +12450,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
 }
 #endif
 
+#if CTX_SHADOW_BLUR
 static void
 ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
 {
@@ -12579,6 +12596,7 @@ ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
   free (kernel);
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
 }
+#endif
 
 static void
 ctx_rasterizer_process (void *user_data, CtxCommand *command)
@@ -12589,6 +12607,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
   CtxCommand *c = (CtxCommand *) entry;
   switch (c->code)
     {
+#if CTX_SHADOW_BLUR
       case CTX_SET_SHADOW_COLOR:
         {
           CtxColor  col;
@@ -12630,6 +12649,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
           ctx_set_color (rasterizer->ctx, CTX_shadowColor, color);
         }
         break;
+#endif
 
       case CTX_LINE_TO:
         ctx_rasterizer_line_to (rasterizer, c->c.x0, c->c.y0);
@@ -12736,9 +12756,11 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         ctx_interpret_transforms (rasterizer->state, entry, NULL);
         break;
       case CTX_STROKE:
+#if CTX_SHADOW_BLUR
         if (rasterizer->state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)
           ctx_rasterizer_shadow_stroke (rasterizer);
+#endif
         ctx_rasterizer_stroke (rasterizer);
         break;
       case CTX_SET_FONT:
@@ -12746,8 +12768,10 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         break;
       case CTX_TEXT:
         rasterizer->in_text++;
+#if CTX_SHADOW_BLUR
         if (rasterizer->state->gstate.shadow_blur > 0.0)
           ctx_rasterizer_shadow_text (rasterizer, ctx_arg_string ());
+#endif
         ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
         rasterizer->in_text--;
         break;
@@ -12758,9 +12782,11 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
         break;
       case CTX_FILL:
+#if CTX_SHADOW_BLUR
         if (rasterizer->state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)
           ctx_rasterizer_shadow_fill (rasterizer);
+#endif
         ctx_rasterizer_fill (rasterizer);
         break;
       case CTX_BEGIN_PATH:
