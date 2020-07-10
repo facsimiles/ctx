@@ -22,11 +22,9 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
-
+#include <stdio.h>
 
 typedef struct _Ctx            Ctx;
 typedef enum   _CtxPixelFormat CtxPixelFormat;
@@ -787,6 +785,398 @@ struct
   // aglinment and cacheline behavior.
 };
 typedef struct _CtxCommand CtxCommand;
+typedef struct _CtxIterator CtxIterator;
+
+CtxIterator *
+ctx_current_path (Ctx *ctx);
+void
+ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
+
+
+/* definitions that determine which features are included and their settings,
+ * for particular platforms - in particular microcontrollers ctx might need
+ * tuning for different quality/performance/resource constraints.
+ *
+ * the way to configure ctx is to set these defines, before both including it
+ * as a header and in the file where CTX_IMPLEMENTATION is set to include the
+ * implementation for different featureset and runtime settings.
+ *
+ */
+
+#ifndef CTX_RASTERIZER  // set to 0 before to disable rasterizer code, useful for clients that only
+// build journals.
+#define CTX_RASTERIZER   1
+#endif
+
+/* experimental feature, not fully working - where text rendering happens
+ * closer to rasterizer. Positions are screwed up in playback  */
+#ifndef CTX_BACKEND_TEXT
+#define CTX_BACKEND_TEXT 1
+#endif
+
+/* vertical level of supersampling at full/forced AA.
+ *
+ * 1 is none, 3 is fast 5 is good 15 is best for 8bit  51 is
+ *
+ * valid values:
+ * 1 2 3 5 15 17 51 85
+ */
+#ifndef CTX_RASTERIZER_AA
+#define CTX_RASTERIZER_AA        15
+#endif
+
+#define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
+#define CTX_RASTERIZER_AA3     (CTX_RASTERIZER_AA/2+CTX_RASTERIZER_AA%2)
+
+
+/* force full antialising */
+#ifndef CTX_RASTERIZER_FORCE_AA
+#define CTX_RASTERIZER_FORCE_AA  0
+#endif
+
+/* when AA is not forced, the slope below which full AA get enabled.
+ */
+#ifndef CTX_RASTERIZER_AA_SLOPE_LIMIT
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    512
+#endif
+
+/* subpixel-aa coordinates used in BITPACKing of renderstream
+ */
+#define CTX_SUBDIV             8 // changing this changes font-file-format
+
+// 8    12 68 40 24
+// 16   12 68 40 24
+/* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
+ *
+ * changing this also changes font file format
+ */
+#define CTX_BAKE_FONT_SIZE    160
+
+/* pack some linetos/curvetos/movetos into denser renderstream indstructions,
+ * permitting more vectors to be stored in the same space.
+ */
+#ifndef CTX_BITPACK
+#define CTX_BITPACK           1
+#endif
+
+/* whether we have a shape-cache where we keep pre-rasterized bitmaps of commonly
+ * occuring small shapes.
+ */
+#ifndef CTX_SHAPE_CACHE
+#define CTX_SHAPE_CACHE       0
+#endif
+
+/* size (in pixels, w*h) that we cache rasterization for
+ */
+#ifndef CTX_SHAPE_CACHE_DIM
+#define CTX_SHAPE_CACHE_DIM      (16*16)
+#endif
+
+#ifndef CTX_SHAPE_CACHE_MAX_DIM
+#define CTX_SHAPE_CACHE_MAX_DIM  32
+#endif
+
+#ifndef CTX_PARSER_MAXLEN
+#define CTX_PARSER_MAXLEN  1024 // this is the largest text string we support
+#endif
+
+#ifndef CTX_COMPOSITING_GROUPS
+#define CTX_COMPOSITING_GROUPS   1
+#endif
+
+/* maximum number of entries in shape cache
+ */
+#ifndef CTX_SHAPE_CACHE_ENTRIES
+#define CTX_SHAPE_CACHE_ENTRIES  160
+#endif
+
+#ifndef CTX_GRADIENT_CACHE
+#define CTX_GRADIENT_CACHE 1
+#endif
+
+#ifndef CTX_FONTS_FROM_FILE
+#define CTX_FONTS_FROM_FILE 1
+#endif
+
+#ifndef CTX_FORMATTER
+#define CTX_FORMATTER 0
+#endif
+
+#ifndef CTX_PARSER
+#define CTX_PARSER 0
+#endif
+
+#ifndef CTX_CURRENT_PATH
+#define CTX_CURRENT_PATH 1
+#endif
+
+#ifndef CTX_XML
+#define CTX_XML 1
+#endif
+
+/* when ctx_math is defined, which it is by default, we use ctx' own
+ * implementations of math functions, instead of relying on math.h
+ * the possible inlining gives us a slight speed-gain, and on
+ * embedded platforms guarantees that we do not do double precision
+ * math.
+ */
+#ifndef CTX_MATH
+#define CTX_MATH           1  // use internal fast math for sqrt,sin,cos,atan2f etc.
+#endif
+
+#define ctx_log(fmt, ...)
+//#define ctx_log(str, a...) fprintf(stderr, str, ##a)
+
+/* the initial journal size - for both rasterizer
+ * edgelist and renderstram.
+ */
+#ifndef CTX_MIN_JOURNAL_SIZE
+#define CTX_MIN_JOURNAL_SIZE   10240
+#endif
+
+/* The maximum size we permit the renderstream to grow to,
+ * the memory used is this number * 9, where 9 is sizeof(CtxEntry)
+ */
+#ifndef CTX_MAX_JOURNAL_SIZE
+#define CTX_MAX_JOURNAL_SIZE   1024*10
+#endif
+
+#ifndef CTX_RENDERSTREAM_STATIC
+#define CTX_RENDERSTREAM_STATIC 0
+#endif
+
+#ifndef CTX_MIN_EDGE_LIST_SIZE
+#define CTX_MIN_EDGE_LIST_SIZE   128
+#endif
+
+/* The maximum size we permit the renderstream to grow to
+ */
+#ifndef CTX_MAX_EDGE_LIST_SIZE
+#define CTX_MAX_EDGE_LIST_SIZE   4096
+#endif
+
+//#define CTX_STRINGPOOL_SIZE   6000 // needed for tiger
+//#define CTX_STRINGPOOL_SIZE   8000 // needed for debian logo in bw
+#define CTX_STRINGPOOL_SIZE   8500 // needed for debian logo in color
+
+/* whether we dither or not for gradients
+ */
+#ifndef CTX_DITHER
+#define CTX_DITHER 1
+#endif
+
+/*  only source-over clear and copy will work, the API still
+ *  through - but the renderer is limited, for use to measure
+ *  size and possibly in severely constrained ROMs.
+ */
+#ifndef CTX_BLENDING_AND_COMPOSITING
+#define CTX_BLENDING_AND_COMPOSITING 1
+#endif
+
+/*  this forces the inlining of some performance
+ *  critical paths.
+ */
+#ifndef CTX_FORCE_INLINES
+#define CTX_FORCE_INLINES       1
+#endif
+
+/* this enables alternate syntax in parsing, like _ instead of camel case,
+ * surprisingly permitting some aliases does not increase the size of the
+ * generated parser.
+ */
+#ifndef  CTX_POSTEL_PRINCIPLED_INPUT
+#define CTX_POSTEL_PRINCIPLED_INPUT     0
+#endif
+
+/* create one-off inlined inner loop for normal blend mode
+ */
+#ifndef CTX_INLINED_NORMAL     
+#define CTX_INLINED_NORMAL      1
+#endif
+
+#ifndef CTX_SIMD
+#ifdef _IMMINTRIN_H_INCLUDED
+#define CTX_SIMD         1
+#else
+#define CTX_SIMD         0
+#endif
+#endif
+
+/* do 
+ */
+#ifndef CTX_NATIVE_GRAYA8
+#define CTX_NATIVE_GRAYA8       1
+#endif
+
+#ifndef CTX_ENABLE_CMYK
+#define CTX_ENABLE_CMYK         1
+#endif
+
+#ifndef CTX_ENABLE_CM
+#define CTX_ENABLE_CM           1
+#endif
+
+#ifndef CTX_LIMIT_FORMATS
+#define CTX_LIMIT_FORMATS       0
+#endif
+
+/* by default ctx includes all pixel formats, on microcontrollers
+ * it can be useful to slim down code and runtime size by only
+ * defining the used formats, set CTX_LIMIT_FORMATS to 1, and
+ * manually add CTX_ENABLE_ flags for each of them.
+ */
+#if CTX_LIMIT_FORMATS
+#else
+
+#define CTX_ENABLE_GRAY1                1
+#define CTX_ENABLE_GRAY2                1
+#define CTX_ENABLE_GRAY4                1
+#define CTX_ENABLE_GRAY8                1
+#define CTX_ENABLE_GRAYA8               1
+#define CTX_ENABLE_GRAYF                1
+#define CTX_ENABLE_GRAYAF               1
+
+#define CTX_ENABLE_RGB8                 1
+#define CTX_ENABLE_RGBA8                1
+#define CTX_ENABLE_BGRA8                1
+
+#define CTX_ENABLE_RGB332               1
+#define CTX_ENABLE_RGB565               1
+#define CTX_ENABLE_RGB565_BYTESWAPPED   1
+#define CTX_ENABLE_RGBAF                1
+
+#if CTX_ENABLE_CMYK
+#define CTX_ENABLE_CMYK8                1
+#define CTX_ENABLE_CMYKA8               1
+#define CTX_ENABLE_CMYKAF               1
+#endif
+
+#endif
+
+/* by including ctx-font-regular.h, or ctx-font-mono.h the
+ * built-in fonts using ctx renderstream encoding is enabled
+ */
+#if CTX_FONT_regular || CTX_FONT_mono || CTX_FONT_bold \
+  || CTX_FONT_italic || CTX_FONT_sans || CTX_FONT_serif
+#ifndef CTX_FONT_ENGINE_CTX
+#define CTX_FONT_ENGINE_CTX        1
+#endif
+#endif
+
+
+/* If stb_strutype.h is included before ctx.h add integration code for runtime loading
+ * of opentype fonts.
+ */
+#ifdef __STB_INCLUDE_STB_TRUETYPE_H__
+#ifndef CTX_FONT_ENGINE_STB
+#define CTX_FONT_ENGINE_STB        1
+#endif
+#else
+#define CTX_FONT_ENGINE_STB        0
+#endif
+
+/* force add format if we have shape cache */
+#if CTX_SHAPE_CACHE
+#ifdef CTX_ENABLE_GRAY8
+#undef CTX_ENABLE_GRAY8
+#endif
+#define CTX_ENABLE_GRAY8  1
+#endif
+
+/* include the bitpack packer, can be opted out of to decrease code size
+ */
+#ifndef CTX_BITPACK_PACKER
+#define CTX_BITPACK_PACKER 1
+#endif
+
+/* enable RGBA8 intermediate format for
+ *the indirectly implemented pixel-formats.
+ */
+#if CTX_ENABLE_GRAY1 | CTX_ENABLE_GRAY2 | CTX_ENABLE_GRAY4 | CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED | CTX_ENABLE_RGB8 | CTX_ENABLE_RGB332
+
+#ifdef CTX_ENABLE_RGBA8
+#undef CTX_ENABLE_RGBA8
+#endif
+#define CTX_ENABLE_RGBA8  1
+#endif
+
+/* enable cmykf which is cmyk intermediate format
+ */
+#ifdef CTX_ENABLE_CMYK8
+#ifdef CTX_ENABLE_CMYKF
+#undef CTX_ENABLE_CMYKF
+#endif
+#define CTX_ENABLE_CMYKF  1
+#endif
+#ifdef CTX_ENABLE_CMYKA8
+#ifdef CTX_ENABLE_CMYKF
+#undef CTX_ENABLE_CMYKF
+#endif
+#define CTX_ENABLE_CMYKF  1
+#endif
+
+#ifdef CTX_ENABLE_CMYKF8
+#ifdef CTX_ENABLE_CMYK
+#undef CTX_ENABLE_CMYK
+#endif
+#define CTX_ENABLE_CMYK   1
+#endif
+
+#define CTX_PI                              3.141592653589793f
+#ifndef CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS
+#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  100
+#endif
+
+#ifndef CTX_MAX_FONTS
+#define CTX_MAX_FONTS            3
+#endif
+
+#ifndef CTX_MAX_STATES
+#define CTX_MAX_STATES           10
+#endif
+
+#ifndef CTX_MAX_EDGES
+#define CTX_MAX_EDGES            257
+#endif
+
+#ifndef CTX_MAX_LINGERING_EDGES
+#define CTX_MAX_LINGERING_EDGES  32
+#endif
+
+#ifndef CTX_MAX_TEXTURES
+#define CTX_MAX_TEXTURES         16
+#endif
+
+#ifndef CTX_MAX_PENDING
+#define CTX_MAX_PENDING          128
+#endif
+
+#ifndef CTX_RENDER_CTX
+#define CTX_RENDER_CTX           1
+#endif
+
+#define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
+
+#ifndef CTX_EVENTS
+#define CTX_EVENTS               0
+#endif
+
+#define CTX_ASSERT               0
+
+#if CTX_ASSERT==1
+#define ctx_assert(a)  if(!(a)){fprintf(stderr,"%s:%i assertion failed\n", __FUNCTION__, __LINE__);  }
+#else
+#define ctx_assert(a)
+#endif
+
+
+#if CTX_FONTS_FROM_FILE
+int   ctx_load_font_ttf_file (const char *name, const char *path);
+#endif
+
+int ctx_get_renderstream_count (Ctx *ctx);
+
+
 struct
   _CtxCommand
 {
@@ -1265,397 +1655,7 @@ struct _CtxImplementation
   void (*free)    (void *renderer);
 };
 
-typedef struct _CtxIterator CtxIterator;
 CtxCommand *ctx_iterator_next (CtxIterator *iterator);
-
-CtxIterator *
-ctx_current_path (Ctx *ctx);
-void
-ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
-
-
-/* definitions that determine which features are included and their settings,
- * for particular platforms - in particular microcontrollers ctx might need
- * tuning for different quality/performance/resource constraints.
- *
- * the way to configure ctx is to set these defines, before both including it
- * as a header and in the file where CTX_IMPLEMENTATION is set to include the
- * implementation for different featureset and runtime settings.
- *
- */
-
-#ifndef CTX_RASTERIZER  // set to 0 before to disable rasterizer code, useful for clients that only
-// build journals.
-#define CTX_RASTERIZER   1
-#endif
-
-/* experimental feature, not fully working - where text rendering happens
- * closer to rasterizer. Positions are screwed up in playback  */
-#ifndef CTX_BACKEND_TEXT
-#define CTX_BACKEND_TEXT 1
-#endif
-
-/* vertical level of supersampling at full/forced AA.
- *
- * 1 is none, 3 is fast 5 is good 15 is best for 8bit  51 is
- *
- * valid values:
- * 1 2 3 5 15 17 51 85
- */
-#ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA        15
-#endif
-
-#define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
-#define CTX_RASTERIZER_AA3     (CTX_RASTERIZER_AA/2+CTX_RASTERIZER_AA%2)
-
-
-/* force full antialising */
-#ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  0
-#endif
-
-/* when AA is not forced, the slope below which full AA get enabled.
- */
-#ifndef CTX_RASTERIZER_AA_SLOPE_LIMIT
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    512
-#endif
-
-/* subpixel-aa coordinates used in BITPACKing of renderstream
- */
-#define CTX_SUBDIV             8 // changing this changes font-file-format
-
-// 8    12 68 40 24
-// 16   12 68 40 24
-/* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
- *
- * changing this also changes font file format
- */
-#define CTX_BAKE_FONT_SIZE    160
-
-/* pack some linetos/curvetos/movetos into denser renderstream indstructions,
- * permitting more vectors to be stored in the same space.
- */
-#ifndef CTX_BITPACK
-#define CTX_BITPACK           1
-#endif
-
-/* whether we have a shape-cache where we keep pre-rasterized bitmaps of commonly
- * occuring small shapes.
- */
-#ifndef CTX_SHAPE_CACHE
-#define CTX_SHAPE_CACHE       0
-#endif
-
-/* size (in pixels, w*h) that we cache rasterization for
- */
-#ifndef CTX_SHAPE_CACHE_DIM
-#define CTX_SHAPE_CACHE_DIM      (16*16)
-#endif
-
-#ifndef CTX_SHAPE_CACHE_MAX_DIM
-#define CTX_SHAPE_CACHE_MAX_DIM  32
-#endif
-
-#ifndef CTX_PARSER_MAXLEN
-#define CTX_PARSER_MAXLEN  1024 // this is the largest text string we support
-#endif
-
-#ifndef CTX_COMPOSITING_GROUPS
-#define CTX_COMPOSITING_GROUPS   1
-#endif
-
-/* maximum number of entries in shape cache
- */
-#ifndef CTX_SHAPE_CACHE_ENTRIES
-#define CTX_SHAPE_CACHE_ENTRIES  160
-#endif
-
-#ifndef CTX_GRADIENT_CACHE
-#define CTX_GRADIENT_CACHE 1
-#endif
-
-#ifndef CTX_FONTS_FROM_FILE
-#define CTX_FONTS_FROM_FILE 1
-#endif
-
-#ifndef CTX_FORMATTER
-#define CTX_FORMATTER 0
-#endif
-
-#ifndef CTX_PARSER
-#define CTX_PARSER 0
-#endif
-
-#ifndef CTX_CURRENT_PATH
-#define CTX_CURRENT_PATH 1
-#endif
-
-#ifndef CTX_XML
-#define CTX_XML 1
-#endif
-
-/* when ctx_math is defined, which it is by default, we use ctx' own
- * implementations of math functions, instead of relying on math.h
- * the possible inlining gives us a slight speed-gain, and on
- * embedded platforms guarantees that we do not do double precision
- * math.
- */
-#ifndef CTX_MATH
-#define CTX_MATH           1  // use internal fast math for sqrt,sin,cos,atan2f etc.
-#endif
-
-#define ctx_log(fmt, ...)
-//#define ctx_log(str, a...) fprintf(stderr, str, ##a)
-
-/* the initial journal size - for both rasterizer
- * edgelist and renderstram.
- */
-#ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   10240
-#endif
-
-/* The maximum size we permit the renderstream to grow to,
- * the memory used is this number * 9, where 9 is sizeof(CtxEntry)
- */
-#ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   1024*10
-#endif
-
-#ifndef CTX_RENDERSTREAM_STATIC
-#define CTX_RENDERSTREAM_STATIC 0
-#endif
-
-#ifndef CTX_MIN_EDGE_LIST_SIZE
-#define CTX_MIN_EDGE_LIST_SIZE   128
-#endif
-
-/* The maximum size we permit the renderstream to grow to
- */
-#ifndef CTX_MAX_EDGE_LIST_SIZE
-#define CTX_MAX_EDGE_LIST_SIZE   4096
-#endif
-
-//#define CTX_STRINGPOOL_SIZE   6000 // needed for tiger
-//#define CTX_STRINGPOOL_SIZE   8000 // needed for debian logo in bw
-#define CTX_STRINGPOOL_SIZE   8500 // needed for debian logo in color
-
-/* whether we dither or not for gradients
- */
-#ifndef CTX_DITHER
-#define CTX_DITHER 1
-#endif
-
-/*  only source-over clear and copy will work, the API still
- *  through - but the renderer is limited, for use to measure
- *  size and possibly in severely constrained ROMs.
- */
-#ifndef CTX_BLENDING_AND_COMPOSITING
-#define CTX_BLENDING_AND_COMPOSITING 1
-#endif
-
-/*  this forces the inlining of some performance
- *  critical paths.
- */
-#ifndef CTX_FORCE_INLINES
-#define CTX_FORCE_INLINES       1
-#endif
-
-/* this enables alternate syntax in parsing, like _ instead of camel case,
- * surprisingly permitting some aliases does not increase the size of the
- * generated parser.
- */
-#ifndef  CTX_POSTEL_PRINCIPLED_INPUT
-#define CTX_POSTEL_PRINCIPLED_INPUT     0
-#endif
-
-/* create one-off inlined inner loop for normal blend mode
- */
-#ifndef CTX_INLINED_NORMAL     
-#define CTX_INLINED_NORMAL      1
-#endif
-
-#ifndef CTX_SIMD
-#ifdef _IMMINTRIN_H_INCLUDED
-#define CTX_SIMD         1
-#else
-#define CTX_SIMD         0
-#endif
-#endif
-
-/* do 
- */
-#ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       1
-#endif
-
-#ifndef CTX_ENABLE_CMYK
-#define CTX_ENABLE_CMYK         1
-#endif
-
-#ifndef CTX_ENABLE_CM
-#define CTX_ENABLE_CM           1
-#endif
-
-#ifndef CTX_LIMIT_FORMATS
-#define CTX_LIMIT_FORMATS       0
-#endif
-
-/* by default ctx includes all pixel formats, on microcontrollers
- * it can be useful to slim down code and runtime size by only
- * defining the used formats, set CTX_LIMIT_FORMATS to 1, and
- * manually add CTX_ENABLE_ flags for each of them.
- */
-#if CTX_LIMIT_FORMATS
-#else
-
-#define CTX_ENABLE_GRAY1                1
-#define CTX_ENABLE_GRAY2                1
-#define CTX_ENABLE_GRAY4                1
-#define CTX_ENABLE_GRAY8                1
-#define CTX_ENABLE_GRAYA8               1
-#define CTX_ENABLE_GRAYF                1
-#define CTX_ENABLE_GRAYAF               1
-
-#define CTX_ENABLE_RGB8                 1
-#define CTX_ENABLE_RGBA8                1
-#define CTX_ENABLE_BGRA8                1
-
-#define CTX_ENABLE_RGB332               1
-#define CTX_ENABLE_RGB565               1
-#define CTX_ENABLE_RGB565_BYTESWAPPED   1
-#define CTX_ENABLE_RGBAF                1
-
-#if CTX_ENABLE_CMYK
-#define CTX_ENABLE_CMYK8                1
-#define CTX_ENABLE_CMYKA8               1
-#define CTX_ENABLE_CMYKAF               1
-#endif
-
-#endif
-
-/* by including ctx-font-regular.h, or ctx-font-mono.h the
- * built-in fonts using ctx renderstream encoding is enabled
- */
-#if CTX_FONT_regular || CTX_FONT_mono || CTX_FONT_bold \
-  || CTX_FONT_italic || CTX_FONT_sans || CTX_FONT_serif
-#ifndef CTX_FONT_ENGINE_CTX
-#define CTX_FONT_ENGINE_CTX        1
-#endif
-#endif
-
-
-/* If stb_strutype.h is included before ctx.h add integration code for runtime loading
- * of opentype fonts.
- */
-#ifdef __STB_INCLUDE_STB_TRUETYPE_H__
-#ifndef CTX_FONT_ENGINE_STB
-#define CTX_FONT_ENGINE_STB        1
-#endif
-#else
-#define CTX_FONT_ENGINE_STB        0
-#endif
-
-/* force add format if we have shape cache */
-#if CTX_SHAPE_CACHE
-#ifdef CTX_ENABLE_GRAY8
-#undef CTX_ENABLE_GRAY8
-#endif
-#define CTX_ENABLE_GRAY8  1
-#endif
-
-/* include the bitpack packer, can be opted out of to decrease code size
- */
-#ifndef CTX_BITPACK_PACKER
-#define CTX_BITPACK_PACKER 1
-#endif
-
-/* enable RGBA8 intermediate format for
- *the indirectly implemented pixel-formats.
- */
-#if CTX_ENABLE_GRAY1 | CTX_ENABLE_GRAY2 | CTX_ENABLE_GRAY4 | CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED | CTX_ENABLE_RGB8 | CTX_ENABLE_RGB332
-
-#ifdef CTX_ENABLE_RGBA8
-#undef CTX_ENABLE_RGBA8
-#endif
-#define CTX_ENABLE_RGBA8  1
-#endif
-
-/* enable cmykf which is cmyk intermediate format
- */
-#ifdef CTX_ENABLE_CMYK8
-#ifdef CTX_ENABLE_CMYKF
-#undef CTX_ENABLE_CMYKF
-#endif
-#define CTX_ENABLE_CMYKF  1
-#endif
-#ifdef CTX_ENABLE_CMYKA8
-#ifdef CTX_ENABLE_CMYKF
-#undef CTX_ENABLE_CMYKF
-#endif
-#define CTX_ENABLE_CMYKF  1
-#endif
-
-#ifdef CTX_ENABLE_CMYKF8
-#ifdef CTX_ENABLE_CMYK
-#undef CTX_ENABLE_CMYK
-#endif
-#define CTX_ENABLE_CMYK   1
-#endif
-
-#define CTX_PI                              3.141592653589793f
-#ifndef CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS
-#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  100
-#endif
-
-#ifndef CTX_MAX_FONTS
-#define CTX_MAX_FONTS            3
-#endif
-
-#ifndef CTX_MAX_STATES
-#define CTX_MAX_STATES           10
-#endif
-
-#ifndef CTX_MAX_EDGES
-#define CTX_MAX_EDGES            257
-#endif
-
-#ifndef CTX_MAX_LINGERING_EDGES
-#define CTX_MAX_LINGERING_EDGES  32
-#endif
-
-#ifndef CTX_MAX_TEXTURES
-#define CTX_MAX_TEXTURES         16
-#endif
-
-#ifndef CTX_MAX_PENDING
-#define CTX_MAX_PENDING          128
-#endif
-
-#ifndef CTX_RENDER_CTX
-#define CTX_RENDER_CTX           1
-#endif
-
-#define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
-
-#ifndef CTX_EVENTS
-#define CTX_EVENTS               0
-#endif
-
-#define CTX_ASSERT               0
-
-#if CTX_ASSERT==1
-#define ctx_assert(a)  if(!(a)){fprintf(stderr,"%s:%i assertion failed\n", __FUNCTION__, __LINE__);  }
-#else
-#define ctx_assert(a)
-#endif
-
-
-#if CTX_FONTS_FROM_FILE
-int   ctx_load_font_ttf_file (const char *name, const char *path);
-#endif
-
-int ctx_get_renderstream_count (Ctx *ctx);
 
 #define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
 
@@ -2286,11 +2286,11 @@ static inline float ctx_expf (float p)            { return expf (a); }
 #endif
 
 #ifdef CTX_IMPLEMENTATION
+#include <stdlib.h>
 
 /* can balloon size and gcc itself is quite good at determining what to
  * inline
  */
-
 
 #if CTX_FORCE_INLINES
 #define CTX_INLINE  inline __attribute__((always_inline))
