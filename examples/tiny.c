@@ -10,9 +10,11 @@
 #define CTX_DITHER          0 // implied by limit formats and only rgba being anbled, but we're explicit
 #define CTX_FORMATTER       0
 #define CTX_CURRENT_PATH    0
+#define CTX_NATIVE_GRAYA8   0
 #define CTX_SHAPE_CACHE     0
 #define CTX_GRADIENT_CACHE  0
 #define CTX_ENABLE_CLIP     0
+#define CTX_BLOATY_FAST_PATHS 0
 #define CTX_BITPACK_PACKER  0
 #define CTX_FORCE_INLINES   0
 #define CTX_RASTERIZER_FORCE_AA      1   // slightly smaller size code path

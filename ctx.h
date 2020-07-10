@@ -900,6 +900,12 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_GRADIENTS      1
 #endif
 
+/* some optinal micro-optimizations that are known to increase code size
+ */
+#ifndef CTX_BLOATY_FAST_PATHS
+#define CTX_BLOATY_FAST_PATHS 0
+#endif
+
 #ifndef CTX_GRADIENT_CACHE
 #define CTX_GRADIENT_CACHE 1
 #endif
@@ -1024,6 +1030,14 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 #ifndef CTX_ENABLE_CM
 #define CTX_ENABLE_CM           1
+#endif
+
+#ifndef CTX_RENDER_CTX
+#define CTX_RENDER_CTX          1
+#endif
+
+#ifndef CTX_EVENTS
+#define CTX_EVENTS              0
 #endif
 
 #ifndef CTX_LIMIT_FORMATS
@@ -1161,15 +1175,9 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_MAX_PENDING          128
 #endif
 
-#ifndef CTX_RENDER_CTX
-#define CTX_RENDER_CTX           1
-#endif
 
 #define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
 
-#ifndef CTX_EVENTS
-#define CTX_EVENTS               0
-#endif
 
 #define CTX_ASSERT               0
 
@@ -7370,13 +7378,14 @@ static void ctx_edge2_qsort (CtxEdge *entries, int low, int high)
   }
 }
 
+
 static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 {
   switch (rasterizer->active_edges)
   {
     case 0:
     case 1: break;
-#if 1
+#if CTX_BLOATY_FAST_PATHS
     case 2:
 #define COMPARE(a,b) \
       if (ctx_compare_edges2 (&rasterizer->edges[a], &rasterizer->edges[b])>0)\
@@ -7387,43 +7396,31 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
       }
       COMPARE(0,1);
       break;
-    case 3:
-      COMPARE(0,1);
-      COMPARE(0,2);
-      COMPARE(1,2);
-      break;
-    case 4:
-      COMPARE(0,1);
-      COMPARE(2,3);
-      COMPARE(0,2);
-      COMPARE(1,3);
-      COMPARE(1,2);
-      break;
-    case 5:
-      COMPARE(1,2);
-      COMPARE(0,2);
-      COMPARE(0,1);
-      COMPARE(3,4);
-      COMPARE(0,3);
-      COMPARE(1,4);
-      COMPARE(2,4);
-      COMPARE(1,3);
-      COMPARE(2,3);
-      break;
+    case 3: COMPARE(0,1); COMPARE(0,2); COMPARE(1,2); break;
+    case 4: COMPARE(0,1); COMPARE(2,3); COMPARE(0,2); COMPARE(1,3); COMPARE(1,2); break;
+    case 5: COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(3,4); COMPARE(0,3); // non-optimal
+            COMPARE(1,4); COMPARE(2,4); COMPARE(1,3); COMPARE(2,3); break;
     case 6:
-      COMPARE(1,2);
-      COMPARE(0,2);
-      COMPARE(0,1);
-      COMPARE(4,5);
-      COMPARE(3,5);
-      COMPARE(3,4);
-      COMPARE(0,3);
-      COMPARE(1,4);
-      COMPARE(2,5);
-      COMPARE(2,4);
-      COMPARE(1,3);
-      COMPARE(2,3);
+      COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(4,5);
+      COMPARE(3,5); COMPARE(3,4); COMPARE(0,3); COMPARE(1,4);
+      COMPARE(2,5); COMPARE(2,4); COMPARE(1,3); COMPARE(2,3);
       break;
+    case 7: // non-optimal
+      COMPARE(0,1); COMPARE(2,3); COMPARE(4,5); COMPARE(2,3);
+      COMPARE(0,3); COMPARE(5,6); COMPARE(0,1); COMPARE(2,3);
+      COMPARE(4,5); COMPARE(3,4); COMPARE(2,5); COMPARE(1,6);
+      COMPARE(1,3); COMPARE(4,6); COMPARE(0,2); COMPARE(0,1);
+      COMPARE(2,3); COMPARE(4,5);
+      break;
+    case 8:
+      COMPARE(0,1); COMPARE(2,3); COMPARE(4,5); COMPARE(6,7);
+      COMPARE(2,3); COMPARE(5,7); COMPARE(0,3); COMPARE(5,6);
+      COMPARE(0,1); COMPARE(2,3); COMPARE(4,5); COMPARE(6,7);
+      COMPARE(3,4); COMPARE(2,5); COMPARE(1,6); COMPARE(0,7);
+      COMPARE(1,3); COMPARE(4,6); COMPARE(0,2); COMPARE(5,7);
+      COMPARE(0,1); COMPARE(2,3); COMPARE(4,5); COMPARE(6,7);
+      break;
+#undef COMPARE
 #endif
     default:
       //fprintf (stderr, "a:%i ", rasterizer->active_edges);
