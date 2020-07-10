@@ -884,6 +884,10 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_COMPOSITING_GROUPS   1
 #endif
 
+#ifndef CTX_ENABLE_CLIP
+#define CTX_ENABLE_CLIP   0
+#endif
+
 /* maximum number of entries in shape cache
  */
 #ifndef CTX_SHAPE_CACHE_ENTRIES
@@ -3381,7 +3385,9 @@ struct _CtxRasterizer
      correct for axis aligned clips - proper rasterization of a clipping path
      would be yet another refinement on top.
    */
+#if CTX_ENABLE_CLIP
   CtxBuffer *clip_buffer;
+#endif
 
 #if CTX_RASTERIZER_FORCE_AA==0
   int        lingering_edges;  // previous half scanline
@@ -11248,6 +11254,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
       t = next_t;
     }
 
+#if CTX_ENABLE_CLIP
   if (rasterizer->clip_buffer)
   {
     /* perhaps not working right for clear? */
@@ -11262,6 +11269,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
       }
     }
   }
+#endif
 }
 
 #undef CTX_EDGE_Y0
@@ -12161,6 +12169,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
   rasterizer->state->gstate.clipped=1;
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
+#if CTX_ENABLE_CLIP
   if (!rasterizer->clip_buffer)
   {
     rasterizer->clip_buffer = ctx_buffer_new (rasterizer->blit_width,
@@ -12198,6 +12207,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
     ctx_fill (ctx);
     ctx_free (ctx);
   }
+#endif
   int minx = 5000;
   int miny = 5000;
   int maxx = -5000;
