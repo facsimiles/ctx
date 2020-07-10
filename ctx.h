@@ -806,8 +806,9 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_RASTERIZER   1
 #endif
 
-/* experimental feature, not fully working - where text rendering happens
- * closer to rasterizer. Positions are screwed up in playback  */
+/* whether the font rendering happens in backend or front-end of API,
+ * the option exists for generating ctx fonts.
+ */
 #ifndef CTX_BACKEND_TEXT
 #define CTX_BACKEND_TEXT 1
 #endif
@@ -817,7 +818,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 is none, 3 is fast 5 is good 15 is best for 8bit  51 is
  *
  * valid values:
- * 1 2 3 5 15 17 51 85
+ * 1 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
 #define CTX_RASTERIZER_AA        15
@@ -893,7 +894,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_SHADOW_BLUR
-#define CTX_SHADOW_BLUR    0
+#define CTX_SHADOW_BLUR    1
 #endif
 
 #ifndef CTX_GRADIENTS
@@ -903,7 +904,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 /* some optinal micro-optimizations that are known to increase code size
  */
 #ifndef CTX_BLOATY_FAST_PATHS
-#define CTX_BLOATY_FAST_PATHS 0
+#define CTX_BLOATY_FAST_PATHS 1
 #endif
 
 #ifndef CTX_GRADIENT_CACHE
@@ -915,11 +916,11 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_FORMATTER
-#define CTX_FORMATTER 0
+#define CTX_FORMATTER 1
 #endif
 
 #ifndef CTX_PARSER
-#define CTX_PARSER 0
+#define CTX_PARSER 1
 #endif
 
 #ifndef CTX_CURRENT_PATH

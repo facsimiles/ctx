@@ -11,6 +11,7 @@
 #define CTX_FORMATTER       0
 #define CTX_SHAPE_CACHE     0
 #define CTX_BLOATY_FAST_PATHS 0
+#define CTX_SHADOW_BLUR     0
 #define CTX_GRADIENT_CACHE  0
 #define CTX_ENABLE_CLIP     0
 #define CTX_BITPACK_PACKER  0
