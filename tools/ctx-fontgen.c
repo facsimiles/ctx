@@ -3,6 +3,7 @@
 
 #define CTX_MAX_RENDERSTREAM_SIZE 4096000
 #define CTX_BACKEND_TEXT 0
+#define CTX_RASTERIZER  0
 #define CTX_GLYPH_CACHE 0
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"

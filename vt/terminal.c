@@ -1158,7 +1158,7 @@ int update_ct (CtxClient *client)
                 int u = ((width/ct->hash_cols) * x);
                 int v = ((height/ct->hash_rows) * y);
                 ct->hashes[y * ct->hash_cols + x] = new_hash;
-#if 1
+#if 0
                 ctx_blit (ct->ctx[(ct->render_frame)%2],
                           client->pixels + 
                             ((v * (width )) + u) * 4, u, v,

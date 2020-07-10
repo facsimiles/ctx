@@ -11,6 +11,8 @@
 #define CTX_FORMATTER       0
 #define CTX_BITPACK_PACKER  0
 #define CTX_FORCE_INLINES   0
+#define CTX_RASTERIZER_FORCE_AA      1   // slightly smaller size code path
+#define CTX_COMPOSITING_GROUPS       0
 #define CTX_BLENDING_AND_COMPOSITING 0   // 4392 bytes of code difference
 #define CTX_INLINED_NORMAL           0   // 328 bytes of difference, big speed impact
 #define CTX_RENDERSTREAM_STATIC 1

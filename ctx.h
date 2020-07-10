@@ -27,66 +27,17 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 
-/* The pixel formats supported as render targets
- */
 
-typedef enum
-{
-  CTX_FORMAT_GRAY8,
-  CTX_FORMAT_GRAYA8,
-  CTX_FORMAT_RGB8,
-  CTX_FORMAT_RGBA8,
-  CTX_FORMAT_BGRA8,
-  CTX_FORMAT_RGB565,
-  CTX_FORMAT_RGB565_BYTESWAPPED,
-  CTX_FORMAT_RGB332,
-  CTX_FORMAT_RGBAF,
-  CTX_FORMAT_GRAYF,
-  CTX_FORMAT_GRAYAF,
-  CTX_FORMAT_GRAY1,
-  CTX_FORMAT_GRAY2,
-  CTX_FORMAT_GRAY4,
-  CTX_FORMAT_CMYK8,
-  CTX_FORMAT_CMYKA8,
-  CTX_FORMAT_CMYKAF,
-  CTX_FORMAT_DEVICEN1,
-  CTX_FORMAT_DEVICEN2,
-  CTX_FORMAT_DEVICEN3,
-  CTX_FORMAT_DEVICEN4,
-  CTX_FORMAT_DEVICEN5,
-  CTX_FORMAT_DEVICEN6,
-  CTX_FORMAT_DEVICEN7,
-  CTX_FORMAT_DEVICEN8,
-  CTX_FORMAT_DEVICEN9,
-  CTX_FORMAT_DEVICEN10,
-  CTX_FORMAT_DEVICEN11,
-  CTX_FORMAT_DEVICEN12,
-  CTX_FORMAT_DEVICEN13,
-  CTX_FORMAT_DEVICEN14,
-  CTX_FORMAT_DEVICEN15,
-  CTX_FORMAT_DEVICEN16
-} CtxPixelFormat;
-
-typedef struct _Ctx Ctx;
-
-struct
-  _CtxGlyph
-{
-  uint32_t index;
-  float    x;
-  float    y;
-};
-
-typedef struct _CtxGlyph CtxGlyph;
-
-CtxGlyph *ctx_glyph_allocate (int n_glyphs);
-void      gtx_glyph_free     (CtxGlyph *glyphs);
+typedef struct _Ctx            Ctx;
+typedef enum   _CtxPixelFormat CtxPixelFormat;
+typedef struct _CtxGlyph       CtxGlyph;
 
 /**
  * ctx_new:
  *
- * Create a new drawing context, without an associated target frame buffer,
- * use ctx_blit to render the built up renderstream to a framebuffer.
+ * Create a new drawing context, this context has no pixels but
+ * accumulates commands and can be played back on other ctx
+ * render contexts.
  */
 Ctx *ctx_new (void);
 
@@ -99,7 +50,12 @@ Ctx *ctx_new (void);
 Ctx *ctx_new_for_framebuffer (void *data,
                               int width, int height, int stride,
                               CtxPixelFormat pixel_format);
-
+/**
+ * ctx_new_ui:
+ *
+ * Create a new interactive ctx context, might depend on additional
+ * integration.
+ */
 Ctx *ctx_new_ui (int width, int height);
 
 /**
@@ -110,12 +66,6 @@ Ctx *ctx_new_ui (int width, int height);
 Ctx *ctx_new_for_renderstream (void *data, size_t length);
 void ctx_free                  (Ctx *ctx);
 
-/* blits the contents of a bare context
- */
-void ctx_blit          (Ctx *ctx,
-                        void *data, int x, int y,
-                        int width, int height, int stride,
-                        CtxPixelFormat pixel_format);
 
 /* clears and resets a context */
 void ctx_reset          (Ctx *ctx);
@@ -128,15 +78,15 @@ void ctx_end_group      (Ctx *ctx);
 void ctx_clip           (Ctx *ctx);
 void ctx_identity       (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
+
+#define CTX_LINE_WIDTH_HAIRLINE -1000.0
+#define CTX_LINE_WIDTH_ALIASED  -1.0
+#define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line */
 void ctx_set_line_width (Ctx *ctx, float x);
 void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                            float c,  float d,  // vskew,  vscale
                            float e,  float f); // htran,  vtran
 
-
-#define CTX_LINE_WIDTH_HAIRLINE -1000.0
-#define CTX_LINE_WIDTH_ALIASED  -1.0
-#define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line */
 
 void  ctx_dirty_rect      (Ctx *ctx, int *x, int *y, int *width, int *height);
 
@@ -182,6 +132,8 @@ void  ctx_get_transform   (Ctx *ctx, float *a, float *b,
                            float *c, float *d,
                            float *e, float *f);
 
+CtxGlyph *ctx_glyph_allocate (int n_glyphs);
+void      gtx_glyph_free     (CtxGlyph *glyphs);
 int  ctx_glyph            (Ctx *ctx, uint32_t unichar, int stroke);
 void ctx_arc              (Ctx  *ctx,
                            float x, float y,
@@ -276,7 +228,15 @@ uint64_t ctx_hash_get_hash (Ctx *ctx, int row, int col);
 #endif
 
 #if CTX_CAIRO
+
+/* render the deferred commands of a ctx context to a cairo
+ * context
+ */
 void  ctx_render_cairo  (Ctx *ctx, cairo_t *cr);
+
+/* create a ctx context that directly renders to the specified
+ * cairo context
+ */
 Ctx * ctx_new_for_cairo (cairo_t *cr);
 #endif
 
@@ -291,6 +251,45 @@ int ctx_add_single      (Ctx *ctx, void *entry);
 
 uint32_t ctx_utf8_to_unichar (const char *input);
 int      ctx_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
+
+/* The pixel formats supported as render targets
+ */
+enum _CtxPixelFormat
+{
+  CTX_FORMAT_GRAY8,
+  CTX_FORMAT_GRAYA8,
+  CTX_FORMAT_RGB8,
+  CTX_FORMAT_RGBA8,
+  CTX_FORMAT_BGRA8,
+  CTX_FORMAT_RGB565,
+  CTX_FORMAT_RGB565_BYTESWAPPED,
+  CTX_FORMAT_RGB332,
+  CTX_FORMAT_RGBAF,
+  CTX_FORMAT_GRAYF,
+  CTX_FORMAT_GRAYAF,
+  CTX_FORMAT_GRAY1,
+  CTX_FORMAT_GRAY2,
+  CTX_FORMAT_GRAY4,
+  CTX_FORMAT_CMYK8,
+  CTX_FORMAT_CMYKA8,
+  CTX_FORMAT_CMYKAF,
+  CTX_FORMAT_DEVICEN1,
+  CTX_FORMAT_DEVICEN2,
+  CTX_FORMAT_DEVICEN3,
+  CTX_FORMAT_DEVICEN4,
+  CTX_FORMAT_DEVICEN5,
+  CTX_FORMAT_DEVICEN6,
+  CTX_FORMAT_DEVICEN7,
+  CTX_FORMAT_DEVICEN8,
+  CTX_FORMAT_DEVICEN9,
+  CTX_FORMAT_DEVICEN10,
+  CTX_FORMAT_DEVICEN11,
+  CTX_FORMAT_DEVICEN12,
+  CTX_FORMAT_DEVICEN13,
+  CTX_FORMAT_DEVICEN14,
+  CTX_FORMAT_DEVICEN15,
+  CTX_FORMAT_DEVICEN16
+};
 
 typedef enum
 {
@@ -377,6 +376,14 @@ typedef enum
   CTX_TEXT_DIRECTION_LTR,
   CTX_TEXT_DIRECTION_RTL
 } CtxTextDirection;
+
+struct
+_CtxGlyph
+{
+  uint32_t index;
+  float    x;
+  float    y;
+};
 
 void ctx_set_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
 void ctx_set_line_cap         (Ctx *ctx, CtxLineCap cap);
@@ -1352,6 +1359,10 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 #ifndef CTX_PARSER_MAXLEN
 #define CTX_PARSER_MAXLEN  1024 // this is the largest text string we support
+#endif
+
+#ifndef CTX_COMPOSITING_GROUPS
+#define CTX_COMPOSITING_GROUPS   1
 #endif
 
 /* maximum number of entries in shape cache
@@ -3385,8 +3396,10 @@ struct _CtxRasterizer
 
   void      *buf;
 
+#if CTX_COMPOSITING_GROUPS
   void      *saved_buf; // when group redirected
   CtxBuffer *group[CTX_GROUP_MAX];
+#endif
 
   float      x;  // < redundant? use state instead?
   float      y;
@@ -6546,7 +6559,8 @@ static int ctx_buffer_load_memory (CtxBuffer *buffer,
 #endif
 }
 
-int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length)
+int
+ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length)
 {
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
@@ -6558,7 +6572,8 @@ int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length)
   return id;
 }
 
-int ctx_texture_load (Ctx *ctx, int id, const char *path)
+int
+ctx_texture_load (Ctx *ctx, int id, const char *path)
 {
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
@@ -12271,6 +12286,7 @@ ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, flo
 static void
 ctx_rasterizer_process (void *user_data, CtxCommand *command);
 
+#if CTX_COMPOSITING_GROUPS
 static void
 ctx_rasterizer_start_group (CtxRasterizer *rasterizer)
 {
@@ -12356,6 +12372,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
   rasterizer->group[no] = 0;
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
 }
+#endif
 
 static void
 ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
@@ -12639,12 +12656,14 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_SET_BLEND_MODE:
         rasterizer->comp_op = NULL;
         break;
+#if CTX_COMPOSITING_GROUPS
       case CTX_START_GROUP:
         ctx_rasterizer_start_group (rasterizer);
         break;
       case CTX_END_GROUP:
         ctx_rasterizer_end_group (rasterizer);
         break;
+#endif
       case CTX_ROTATE:
       case CTX_SCALE:
       case CTX_TRANSLATE:
@@ -13984,31 +14003,13 @@ uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row)
   return hasher->hashes[row*hasher->cols+col];
 }
 
-/* add an or-able value to pixelformat to indicate vflip+hflip
- */
-void
-ctx_blit (Ctx *ctx, void *data, int x, int y, int width, int height,
-          int stride, CtxPixelFormat pixel_format)
+#endif
+#else
+int ctx_texture_load (Ctx *ctx, int id, const char *path)
 {
-  CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxRasterizer) );
-  CtxState *state = malloc (sizeof (CtxState));
-  /* we borrow the state of ctx, this makes us non-thradable,
-   * but saves memory, this should be made configurable at compile-time
-   */
-  ctx_rasterizer_init (rasterizer, ctx, state, data, x, y, width, height,
-                       stride, pixel_format);
-  {
-    CtxIterator iterator;
-    ctx_iterator_init (&iterator, &ctx->renderstream, 0, CTX_ITERATOR_EXPAND_BITPACK);
-    for (CtxCommand *command = ctx_iterator_next (&iterator);
-         command; command = ctx_iterator_next (&iterator) )
-      { ctx_rasterizer_process (rasterizer, command); }
-  }
-  ctx_rasterizer_deinit (rasterizer);
-  free (state);
-#endif
-#endif
+  return 0;
 }
+#endif
 
 void
 ctx_current_point (Ctx *ctx, float *x, float *y)

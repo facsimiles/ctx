@@ -31,7 +31,7 @@ musl-static-%: %.c ../*.h ../fonts/*.h Makefile
 mmm: mmm.c ../ctx.h  Makefile
 	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs mmm` -Wall
 sdl2: sdl2.c ../ctx.h
-	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs sdl2` -lm -Wall
+	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs sdl2` -lm -Wall -march=native -O2
 test-renderpaths: test-renderpaths.c ../ctx.h ../fonts/*.h
 	gcc $< -o $@ -g -O3 -march=native -mtune=native `pkg-config mrg --cflags --libs` -I../fonts -I../tools -I.. -msse3
 
