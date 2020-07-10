@@ -7168,9 +7168,6 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 
 static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
 {
-#if CTX_SIMD
-         // XXX
-#endif
   for (int i = 0; i < rasterizer->lingering_edges; i++)
     {
       rasterizer->lingering[i].x += rasterizer->lingering[i].dx * count;
@@ -7179,6 +7176,7 @@ static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count
     {
       rasterizer->edges[i].x += rasterizer->edges[i].dx * count;
     }
+
   for (int i = 0; i < rasterizer->pending_edges; i++)
     {
       rasterizer->edges[CTX_MAX_EDGES-1-i].x += rasterizer->edges[CTX_MAX_EDGES-1-i].dx * count;
@@ -7196,6 +7194,7 @@ static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count
 static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
   int miny;
+  ctx_rasterizer_discard_edges (rasterizer);
   for (int i = 0; i < rasterizer->pending_edges; i++)
     {
       if (rasterizer->edge_list.entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] <= rasterizer->scanline)
@@ -8180,13 +8179,13 @@ ctx_porter_duff_factors(mode, foo, bar)\
 
 static void
 ctx_u8_source_over_normal_color (int components,
-                     CtxRasterizer         *rasterizer,
-                     uint8_t * __restrict__ dst,
-                     uint8_t * __restrict__ src,
-                     uint8_t * __restrict__ clip,
-                     int                    x0,
-                     uint8_t * __restrict__ coverage,
-                     int                    count)
+                                 CtxRasterizer         *rasterizer,
+                                 uint8_t * __restrict__ dst,
+                                 uint8_t * __restrict__ src,
+                                 uint8_t * __restrict__ clip,
+                                 int                    x0,
+                                 uint8_t * __restrict__ coverage,
+                                 int                    count)
 {
   uint8_t tsrc[5];
   *((uint32_t*)tsrc) = *((uint32_t*)src);
@@ -11302,7 +11301,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
                   sizeof (_coverage) );
       ctx_rasterizer_feed_edges (rasterizer);
-      ctx_rasterizer_discard_edges (rasterizer);
 #if CTX_RASTERIZER_FORCE_AA==1
       rasterizer->needs_aa = 1;
 #endif
@@ -11322,7 +11320,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
               if (i!=CTX_RASTERIZER_AA-1)
                 {
                   ctx_rasterizer_feed_edges (rasterizer);
-                  ctx_rasterizer_discard_edges (rasterizer);
                 }
             }
         }
@@ -11331,7 +11328,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           rasterizer->scanline += CTX_RASTERIZER_AA3;
           ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA3);
           ctx_rasterizer_feed_edges (rasterizer);
-          ctx_rasterizer_discard_edges (rasterizer);
           ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 0);
           rasterizer->scanline += CTX_RASTERIZER_AA2;
