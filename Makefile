@@ -24,7 +24,7 @@ ctx.asan: ctx.c vt/*.[ch] ctx.h Makefile
 	$(CC) -DASANBUILD=1 ctx.c vt/*.c -o $@ -g -O0 -I. -Ifonts -Ivt `pkg-config --cflags --libs babl sdl2` -lutil -lasan -fsanitize=address -lz -lm -march=native
 
 sentry:
-	sentry Makefile ctx.h tests/*.ctx -- make ctx  post
+	sentry Makefile ctx.h tests/*.ctx -- sh -c 'make ctx  post && make -C tests png'
 sentry-f:
 	sentry Makefile ctx.h tests/*.ctx -- make
 ctx.h.html: ctx.h Makefile
