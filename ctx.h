@@ -821,7 +821,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA        5
+#define CTX_RASTERIZER_AA        5 
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -836,7 +836,18 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 /* when AA is not forced, the slope below which full AA get enabled.
  */
 #ifndef CTX_RASTERIZER_AA_SLOPE_LIMIT
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    128
+#if CTX_RASTERIZER_AA==15
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    1050
+#endif
+#if CTX_RASTERIZER_AA==5
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    5000
+#endif
+#if CTX_RASTERIZER_AA==3
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    7000
+#endif
+#endif
+#ifndef CTX_RASTERIZER_AA_SLOPE_LIMIT
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    256
 #endif
 
 /* subpixel-aa coordinates used in BITPACKing of renderstream
@@ -7075,7 +7086,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   float oy = rasterizer->y;
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
-  tolerance = 1.0f/tolerance;
+  tolerance = 1.0f/tolerance * 2;
 #if 0 // skipping this to preserve hash integrity
   float maxx = ctx_maxf (x1,x2);
   maxx = ctx_maxf (maxx, ox);
@@ -7202,6 +7213,9 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3] < rasterizer->scanline
          )
         {
+          int dx_dy = rasterizer->edges[i].dx;
+          if (dx_dy * dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT * CTX_RASTERIZER_AA_SLOPE_LIMIT)
+            { rasterizer->needs_aa --; }
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
           i--;
@@ -7304,8 +7318,7 @@ static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
                 }
 #endif
 #if CTX_RASTERIZER_FORCE_AA==0
-              if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT ||
-                  dx_dy < -CTX_RASTERIZER_AA_SLOPE_LIMIT)
+              if (dx_dy * dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT * CTX_RASTERIZER_AA_SLOPE_LIMIT)
                 { rasterizer->needs_aa ++; }
               if ((miny > rasterizer->scanline) )
                 {
@@ -11249,8 +11262,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                 {
                   if ( (first!=last) && graystart)
                     {
-                      //int cov = coverage[first] + graystart;
-                      coverage[first] = graystart;//ctx_mini (cov,255);
+                      coverage[first] = ctx_sadd8 (coverage[first], graystart);
                       first++;
                     }
                   int x = first;
@@ -11261,8 +11273,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 
                   if (grayend)
                     {
-                      //int cov = coverage[last] + grayend;
-                      coverage[last] = grayend;//ctx_mini (cov,255);
+                      coverage[last] = ctx_sadd8 (coverage[last], grayend);
                     }
                 }
             }
@@ -11413,12 +11424,12 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
                   sizeof (_coverage) );
 #if CTX_RASTERIZER_FORCE_AA==1
       rasterizer->needs_aa = 1;
-#else
-      rasterizer->needs_aa |= rasterizer->pending_edges;
 #endif
 
 #if CTX_RASTERIZER_FORCE_AA==0
-      if (rasterizer->needs_aa)
+      if (rasterizer->needs_aa
+        || rasterizer->pending_edges
+          )
 #endif
         {
           for (int i = 0; i < CTX_RASTERIZER_AA; i++)
@@ -11427,16 +11438,17 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
               ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
               rasterizer->scanline ++;
               ctx_rasterizer_increment_edges (rasterizer, 1);
+          //rasterizer->needs_aa = 0;
               ctx_rasterizer_feed_edges (rasterizer);
             }
         }
 #if CTX_RASTERIZER_FORCE_AA==0
       else
         {
-          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA3);
+          //ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA3);
           ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 0);
-          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA2);
+          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA);
           rasterizer->scanline += CTX_RASTERIZER_AA;
           ctx_rasterizer_feed_edges (rasterizer);
         }
