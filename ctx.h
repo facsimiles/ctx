@@ -492,8 +492,9 @@ typedef enum _CtxEventType CtxEventType;
 
 struct _CtxEvent {
   CtxEventType  type;
-  Ctx     *ctx;
   uint32_t time;
+  Ctx     *ctx;
+  int stop_propagate; /* when set - propagation is stopped */
 
   CtxModifierState state;
 
@@ -515,17 +516,16 @@ struct _CtxEvent {
   float   delta_x; /* x - prev_x, redundant - but often useful */
   float   delta_y; /* y - prev_y, redundant - ..  */
 
-  CtxScrollDirection scroll_direction;
 
   unsigned int unicode; /* only valid for key-events */
-
   const char *string;   /* as key can be "up" "down" "space" "backspace" "a" "b" "ø" etc .. */
                         /* this is also where the message is delivered for
                          * MESSAGE events
                          *
                          * and the data for drop events are delivered
                          */
-  int stop_propagate; /* when set - propagation is stopped */
+  CtxScrollDirection scroll_direction;
+
 
   // would be nice to add the bounding box of the hit-area causing
   // the event, making for instance scissored enter/leave repaint easier.
@@ -821,7 +821,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA        15
+#define CTX_RASTERIZER_AA        3
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -830,7 +830,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  0
+#define CTX_RASTERIZER_FORCE_AA  1
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
@@ -3495,6 +3495,7 @@ struct _CtxPixelFormatInfo
                          ebpp of the working space applied */
   uint8_t        dither_red_blue;
   uint8_t        dither_green;
+  CtxPixelFormat composite_format;
 
   void         (*to_comp) (CtxRasterizer *r,
                            int x, const void * __restrict__ src, uint8_t * __restrict__ comp, int count);
@@ -11223,6 +11224,11 @@ ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
     rasterizer->comp_op (rasterizer, dst, rasterizer->color, NULL, x, coverage, count);
 }
 
+CTX_INLINE uint8_t ctx_sadd8(uint8_t a, uint8_t b)
+{
+  uint8_t s = (uint8_t)a+b;
+  return -(s>>8) | (uint8_t)s;
+}
 
 inline static void
 ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
@@ -11280,37 +11286,36 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                 {
                   if ( (first!=last) && graystart)
                     {
-                      int cov = coverage[first] + graystart / CTX_RASTERIZER_AA;
-                      coverage[first] = ctx_mini (cov,255);
+                      coverage[first] = ctx_sadd8 (coverage[first], graystart/ CTX_RASTERIZER_AA);
                       first++;
                     }
                   for (int x = first; x < last; x++)
                     {
-                      int cov = coverage[x] + 255 / CTX_RASTERIZER_AA;
-                      coverage[x] = ctx_mini (cov,255);
+                      coverage[x] = ctx_sadd8 (coverage[x], 255 / CTX_RASTERIZER_AA);
                     }
                   if (grayend)
                     {
-                      int cov = coverage[last] + grayend / CTX_RASTERIZER_AA;
-                      coverage[last] = ctx_mini (cov,255);
+                      coverage[last] = ctx_sadd8 (coverage[last], grayend/ CTX_RASTERIZER_AA);
                     }
                 }
               else
                 {
                   if ( (first!=last) && graystart)
                     {
-                      int cov = coverage[first] + graystart;
-                      coverage[first] = ctx_mini (cov,255);
+                      //int cov = coverage[first] + graystart;
+                      coverage[first] = graystart;//ctx_mini (cov,255);
                       first++;
                     }
-                  for (int x = first; x < last; x++)
+                  int x = 0;
+                  for (; x < last; x++)
                     {
                       coverage[x] = 255;
                     }
+
                   if (grayend)
                     {
-                      int cov = coverage[last] + grayend;
-                      coverage[last] = ctx_mini (cov,255);
+                      //int cov = coverage[last] + grayend;
+                      coverage[last] = grayend;//ctx_mini (cov,255);
                     }
                 }
             }
@@ -13916,36 +13921,36 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
 static CtxPixelFormatInfo ctx_pixel_formats[]=
 {
   {
-    CTX_FORMAT_RGBA8, 4, 32, 4, 0, 0,
+    CTX_FORMAT_RGBA8, 4, 32, 4, 0, 0, CTX_FORMAT_RGBA8,
     NULL, NULL, NULL, ctx_setup_RGBA8
   },
 #if CTX_ENABLE_BGRA8
   {
-    CTX_FORMAT_BGRA8, 4, 32, 4, 0, 0,
+    CTX_FORMAT_BGRA8, 4, 32, 4, 0, 0, CTX_FORMAT_RGBA8,
     ctx_BGRA8_to_RGBA8, ctx_RGBA8_to_BGRA8, ctx_composite_BGRA8, ctx_setup_RGBA8,
   },
 #endif
 #if CTX_ENABLE_GRAYF
   {
-    CTX_FORMAT_GRAYF, 1, 32, 4, 0, 0,
+    CTX_FORMAT_GRAYF, 1, 32, 4, 0, 0, CTX_FORMAT_GRAYAF,
     NULL, NULL, ctx_composite_GRAYF, ctx_setup_GRAYAF,
   },
 #endif
 #if CTX_ENABLE_GRAYAF
   {
-    CTX_FORMAT_GRAYAF, 2, 64, 4 * 2, 0, 0,
+    CTX_FORMAT_GRAYAF, 2, 64, 4 * 2, 0, 0, CTX_FORMAT_GRAYAF,
     NULL, NULL, NULL, ctx_setup_GRAYAF,
   },
 #endif
 #if CTX_ENABLE_RGBAF
   {
-    CTX_FORMAT_RGBAF, 4, 128, 4 * 4, 0, 0,
+    CTX_FORMAT_RGBAF, 4, 128, 4 * 4, 0, 0, CTX_FORMAT_RGBAF,
     NULL, NULL, NULL, ctx_setup_RGBAF,
   },
 #endif
 #if CTX_ENABLE_RGB8
   {
-    CTX_FORMAT_RGB8, 3, 24, 4, 0, 0,
+    CTX_FORMAT_RGB8, 3, 24, 4, 0, 0, CTX_FORMAT_RGBA8,
     ctx_RGB8_to_RGBA8, ctx_RGBA8_to_RGB8, ctx_composite_convert, ctx_setup_RGBA8,
   },
 #endif
@@ -13953,8 +13958,10 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
     CTX_FORMAT_GRAY1, 1, 1, 4, 1, 1,
 #if CTX_NATIVE_GRAYA8
+    CTX_FORMAT_GRAYA8,
     ctx_GRAY1_to_GRAYA8, ctx_GRAYA8_to_GRAY1, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
+    CTX_FORMAT_RGBA8,
     ctx_GRAY1_to_RGBA8, ctx_RGBA8_to_GRAY1, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
@@ -13963,8 +13970,10 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
     CTX_FORMAT_GRAY2, 1, 2, 4, 4, 4,
 #if CTX_NATIVE_GRAYA8
+    CTX_FORMAT_GRAYA8,
     ctx_GRAY2_to_GRAYA8, ctx_GRAYA8_to_GRAY2, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
+    CTX_FORMAT_RGBA8,
     ctx_GRAY2_to_RGBA8, ctx_RGBA8_to_GRAY2, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
@@ -13973,8 +13982,10 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
     CTX_FORMAT_GRAY4, 1, 4, 4, 16, 16,
 #if CTX_NATIVE_GRAYA8
+    CTX_FORMAT_GRAYA8,
     ctx_GRAY4_to_GRAYA8, ctx_GRAYA8_to_GRAY4, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
+    CTX_FORMAT_RGBA8,
     ctx_GRAY4_to_RGBA8, ctx_RGBA8_to_GRAY4, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
@@ -13983,8 +13994,10 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
     CTX_FORMAT_GRAY8, 1, 8, 4, 0, 0,
 #if CTX_NATIVE_GRAYA8
+    CTX_FORMAT_GRAYA8,
     ctx_GRAY8_to_GRAYA8, ctx_GRAYA8_to_GRAY8, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
+    CTX_FORMAT_RGBA8,
     ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
@@ -13993,30 +14006,31 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
     CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0,
 #if CTX_NATIVE_GRAYA8
-    // XXX this is slower
+    CTX_FORMAT_GRAYA8,
     ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, NULL, ctx_setup_GRAYA8,
 #else
+    CTX_FORMAT_RGBA8,
     ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
 #endif
 #if CTX_ENABLE_RGB332
   {
-    CTX_FORMAT_RGB332, 3, 8, 4, 10, 12,
+    CTX_FORMAT_RGB332, 3, 8, 4, 10, 12, CTX_FORMAT_RGBA8,
     ctx_RGB332_to_RGBA8, ctx_RGBA8_to_RGB332,
     ctx_composite_convert, ctx_setup_RGBA8,
   },
 #endif
 #if CTX_ENABLE_RGB565
   {
-    CTX_FORMAT_RGB565, 3, 16, 4, 32, 64,
+    CTX_FORMAT_RGB565, 3, 16, 4, 32, 64, CTX_FORMAT_RGBA8,
     ctx_RGB565_to_RGBA8, ctx_RGBA8_to_RGB565,
     ctx_composite_convert, ctx_setup_RGBA8,
   },
 #endif
 #if CTX_ENABLE_RGB565_BYTESWAPPED
   {
-    CTX_FORMAT_RGB565_BYTESWAPPED, 3, 16, 4, 32, 64,
+    CTX_FORMAT_RGB565_BYTESWAPPED, 3, 16, 4, 32, 64, CTX_FORMAT_RGBA8,
     ctx_RGB565_BS_to_RGBA8,
     ctx_RGBA8_to_RGB565_BS,
     ctx_composite_convert, ctx_setup_RGBA8,
@@ -14024,19 +14038,19 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #endif
 #if CTX_ENABLE_CMYKAF
   {
-    CTX_FORMAT_CMYKAF, 5, 160, 4 * 5, 0, 0,
+    CTX_FORMAT_CMYKAF, 5, 160, 4 * 5, 0, 0, CTX_FORMAT_CMYKAF,
     NULL, NULL, NULL, ctx_setup_CMYKAF,
   },
 #endif
 #if CTX_ENABLE_CMYKA8
   {
-    CTX_FORMAT_CMYKA8, 5, 40, 4 * 5, 0, 0,
+    CTX_FORMAT_CMYKA8, 5, 40, 4 * 5, 0, 0, CTX_FORMAT_CMYKAF,
     NULL, NULL, ctx_composite_CMYKA8, ctx_setup_CMYKAF,
   },
 #endif
 #if CTX_ENABLE_CMYK8
   {
-    CTX_FORMAT_CMYK8, 5, 32, 4 * 5, 0, 0,
+    CTX_FORMAT_CMYK8, 5, 32, 4 * 5, 0, 0, CTX_FORMAT_CMYKAF,
     NULL, NULL, ctx_composite_CMYK8, ctx_setup_CMYKAF,
   },
 #endif
