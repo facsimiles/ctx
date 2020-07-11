@@ -7444,12 +7444,13 @@ CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 
 #define CTX_GRADIENT_CACHE_ELEMENTS 256
 
-static inline int ctx_grad_index (float v)
+inline static int ctx_grad_index (float v)
 {
-  int ret = v * (CTX_GRADIENT_CACHE_ELEMENTS - 1);
+  int ret = v * (CTX_GRADIENT_CACHE_ELEMENTS - 1.0f) + 0.5f;
+  if (ret >= CTX_GRADIENT_CACHE_ELEMENTS)
+    return CTX_GRADIENT_CACHE_ELEMENTS - 1;
   if (ret >= 0 && ret < CTX_GRADIENT_CACHE_ELEMENTS)
     return ret;
-  if (v >= CTX_GRADIENT_CACHE_ELEMENTS) return CTX_GRADIENT_CACHE_ELEMENTS - 1;
   return 0;
 }
 
