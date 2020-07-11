@@ -11616,8 +11616,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     }
     rasterizer->scan_min += rasterizer->shadow_y;
     rasterizer->scan_max += rasterizer->shadow_y;
-    rasterizer->col_min  += rasterizer->shadow_x;
-    rasterizer->col_max  += rasterizer->shadow_x;
+    rasterizer->col_min  += rasterizer->shadow_x * CTX_SUBDIV;
+    rasterizer->col_max  += rasterizer->shadow_x * CTX_SUBDIV;
   }
 
 #if 1
@@ -11750,6 +11750,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #else
   ctx_rasterizer_poly_to_edges (rasterizer);
 #endif
+
     {
       //fprintf (stderr, "%i %i\n", width, height);
       ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
@@ -11769,8 +11770,8 @@ done:
   {
     rasterizer->scan_min -= rasterizer->shadow_y;
     rasterizer->scan_max -= rasterizer->shadow_y;
-    rasterizer->col_min  -= rasterizer->shadow_x;
-    rasterizer->col_max  -= rasterizer->shadow_x;
+    rasterizer->col_min  -= rasterizer->shadow_x * CTX_SUBDIV;
+    rasterizer->col_max  -= rasterizer->shadow_x * CTX_SUBDIV;
   }
   rasterizer->preserve = 0;
 }
