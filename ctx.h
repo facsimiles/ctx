@@ -821,7 +821,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA        5 
+#define CTX_RASTERIZER_AA        5
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -830,7 +830,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  0
+#define CTX_RASTERIZER_FORCE_AA  1
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
@@ -3420,7 +3420,8 @@ struct _CtxRasterizer
 
   int        active_edges;
 #if CTX_RASTERIZER_FORCE_AA==0
-  int        pending_edges;    // next half scanline
+  int        pending_edges;   // this-scanline
+  int        ending_edges;    // count of edges ending this scanline
 #endif
   int        edge_pos;         // where we're at in iterating all edges
   CtxEdge    edges[CTX_MAX_EDGES];
@@ -7208,6 +7209,7 @@ static void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 
 static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
+  rasterizer->ending_edges = 0;
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
       if (rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3] < rasterizer->scanline
@@ -7220,6 +7222,9 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           rasterizer->active_edges--;
           i--;
         }
+      else if (rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3] < rasterizer->scanline
+                      + CTX_RASTERIZER_AA)
+        rasterizer->ending_edges = 1;
     }
 }
 
@@ -11428,6 +11433,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #if CTX_RASTERIZER_FORCE_AA==0
       if (rasterizer->needs_aa
         || rasterizer->pending_edges
+        || rasterizer->ending_edges
           )
 #endif
         {
