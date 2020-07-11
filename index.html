@@ -318,7 +318,8 @@ global alpha.</td></tr>
         examples, card10 test l0dable: <a href='ctx.elf'>ctx.elf</a></p>
 
         <h2 id='performance'>is ctx fast <span style='color:gray'>yet</span>?</h2>
-<p>This table contains fills of 1024px with various fill sources for all of ctx' supported targets, along with cairo included as a frame of reference.
+<p>This table contains fills of 1024px with various fill sources for all of ctx' supported targets, along with cairo included as a frame of reference. Note that
+ this is the test case that has received optimization, other cases like filling rectangles cairo is faster.
 </p>
 <p>Ctx implements all combinations of compositing and blending modes, but
 normal with source over has received the most attentions, both with optional
@@ -341,7 +342,9 @@ AVX256 acceleration and not.</p>
            <td>overlay rgrad</td>
            <td colspan='2'>aTop overlay</td><td>..lgrad</td><td>..rgrad</td>
         </tr>
-<tr><td>RGBA8</td><td>3809</td><td>1996</td><td>281</td><td>181</td><td>145</td><td>126</td><td>92</td><td>92</td><td>100</td><td>88</td><td>56</td><td>56</td><td>103</td><td>97</td><td>56</td><td>56</td></tr>
+<tr><td>RGBA8 AVX2</td><td>3809</td><td>1996</td><td>281</td><td>181</td><td>145</td><td>126</td><td>92</td><td>92</td><td>100</td><td>88</td><td>56</td><td>56</td><td>103</td><td>97</td><td>56</td><td>56</td></tr>
+<tr><td>RGBA8</td><td>799</td><td>765</td><td>217</td><td>167</td><td>141</td><td>122</td><td>90</td><td>87</td><td>115</td><td>102</td><td>56</td><td>56</td><td>117</td><td>103</td><td>57</td><td>56</td></tr>
+
 <tr><td>cairo</td><td>2585</td><td>1148</td><td>115</td><td>66</td><td>644</td><td>560</td><td>115</td><td>69</td></tr>
 <tr><td>GRAYA8</td><td>1052</td><td>651</td><td>84</td><td>54</td><td>264</td><td>258</td><td>78</td><td>54</td><td>187</td><td>178</td><td>63</td><td>52</td><td>188</td><td>178</td><td>63</td><td>52</td></tr>
 <tr><td>GRAYAF</td><td>506</td><td>506</td><td>74</td><td>73</td><td>594</td><td>596</td><td>73</td><td>72</td><td>229</td><td>229</td><td>55</td><td>55</td><td>231</td><td>229</td><td>54</td><td>54</td></tr>
