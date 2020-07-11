@@ -6885,7 +6885,7 @@ static MrgEntity entities[]={
   {CTX_para,   "¶"},
   {CTX_cedil,  "¸"},
   {CTX_bull,   "·"},
-  {CTX_amp,   "&"},
+  {CTX_amp,    "&"},
   {CTX_mdash,  "–"},
   {CTX_apos,   "'"},
   {CTX_quot,   "\""},

@@ -821,7 +821,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA        5
+#define CTX_RASTERIZER_AA        3
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -841,7 +841,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* subpixel-aa coordinates used in BITPACKing of renderstream
  */
-#define CTX_SUBDIV             8 // changing this changes font-file-format
+#define CTX_SUBDIV            16 // changing this changes font-file-format
 
 // 8    12 68 40 24
 // 16   12 68 40 24
@@ -881,6 +881,12 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 #ifndef CTX_COMPOSITING_GROUPS
 #define CTX_COMPOSITING_GROUPS   1
+#endif
+
+/* maximum nesting level of compositing groups
+ */
+#ifndef CTX_GROUP_MAX
+#define CTX_GROUP_MAX 8
 #endif
 
 #ifndef CTX_ENABLE_CLIP
@@ -3388,7 +3394,6 @@ typedef struct CtxEdge
 
 typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out);
 
-#define CTX_GROUP_MAX 8
 
 struct _CtxRasterizer
 {
@@ -7411,29 +7416,13 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
       break;
     case 3: COMPARE(0,1); COMPARE(0,2); COMPARE(1,2); break;
     case 4: COMPARE(0,1); COMPARE(2,3); COMPARE(0,2); COMPARE(1,3); COMPARE(1,2); break;
-    case 5: COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(3,4); COMPARE(0,3); // non-optimal
+    case 5: COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(3,4); COMPARE(0,3);
             COMPARE(1,4); COMPARE(2,4); COMPARE(1,3); COMPARE(2,3); break;
     case 6:
       COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(4,5);
       COMPARE(3,5); COMPARE(3,4); COMPARE(0,3); COMPARE(1,4);
       COMPARE(2,5); COMPARE(2,4); COMPARE(1,3); COMPARE(2,3);
       break;
-    case 7: // non-optimal
-      COMPARE(0,1); COMPARE(2,3); COMPARE(4,5); COMPARE(2,3);
-      COMPARE(0,3); COMPARE(5,6); COMPARE(0,1); COMPARE(2,3);
-      COMPARE(4,5); COMPARE(3,4); COMPARE(2,5); COMPARE(1,6);
-      COMPARE(1,3); COMPARE(4,6); COMPARE(0,2); COMPARE(0,1);
-      COMPARE(2,3); COMPARE(4,5);
-      break;
-    case 8:
-      COMPARE(0,1); COMPARE(2,3); COMPARE(4,5); COMPARE(6,7);
-      COMPARE(2,3); COMPARE(5,7); COMPARE(0,3); COMPARE(5,6);
-      COMPARE(0,1); COMPARE(2,3); COMPARE(4,5); COMPARE(6,7);
-      COMPARE(3,4); COMPARE(2,5); COMPARE(1,6); COMPARE(0,7);
-      COMPARE(1,3); COMPARE(4,6); COMPARE(0,2); COMPARE(5,7);
-      COMPARE(0,1); COMPARE(2,3); COMPARE(4,5); COMPARE(6,7);
-      break;
-#undef COMPARE
 #endif
     default:
  //   fprintf (stderr, "a:%i ", rasterizer->active_edges);
@@ -11292,7 +11281,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                       coverage[first] = graystart;//ctx_mini (cov,255);
                       first++;
                     }
-                  int x = 0;
+                  int x = first;
                   for (; x < last; x++)
                     {
                       coverage[x] = 255;
@@ -11441,6 +11430,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
   }
   ctx_rasterizer_sort_edges (rasterizer);
   if (maxx>minx)
+  {
+      ctx_rasterizer_feed_edges (rasterizer);
   for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
     {
       ctx_memset (coverage, 0,
@@ -11448,20 +11439,15 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
                   shape?shape->width:
 #endif
                   sizeof (_coverage) );
-      ctx_rasterizer_feed_edges (rasterizer);
-#if CTX_RASTERIZER_FORCE_AA
+#if CTX_RASTERIZER_FORCE_AA==1
       rasterizer->needs_aa = 1;
+#else
+      rasterizer->needs_aa |= rasterizer->lingering_edges;
+      rasterizer->needs_aa |= rasterizer->pending_edges;
 #endif
 
-
 #if CTX_RASTERIZER_FORCE_AA==0
-
-      if (rasterizer->needs_aa         // due to slopes of active edges
-//#if CTX_RASTERIZER_AUTOHINT==0
-          || rasterizer->lingering_edges    // or due to edges ...
-          || rasterizer->pending_edges      //   ... that start or end within scanline
-//#endif
-         )
+      if (rasterizer->needs_aa)
 #endif
         {
           for (int i = 0; i < CTX_RASTERIZER_AA; i++)
@@ -11470,22 +11456,18 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
               ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
               rasterizer->scanline ++;
               ctx_rasterizer_increment_edges (rasterizer, 1);
-              if (i!=CTX_RASTERIZER_AA-1)
-                {
-                  ctx_rasterizer_feed_edges (rasterizer);
-                }
+              //if (i != CTX_RASTERIZER_AA-1)
+                ctx_rasterizer_feed_edges (rasterizer);
             }
         }
 #if CTX_RASTERIZER_FORCE_AA==0
       else
         {
-          rasterizer->scanline += CTX_RASTERIZER_AA3;
-          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA3);
-          ctx_rasterizer_feed_edges (rasterizer);
           ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 0);
-          rasterizer->scanline += CTX_RASTERIZER_AA2;
-          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA2);
+          rasterizer->scanline += CTX_RASTERIZER_AA;
+          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA);
+          ctx_rasterizer_feed_edges (rasterizer);
         }
 #endif
         {
@@ -11507,6 +11489,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
       dst += rasterizer->blit_stride;
     }
+  }
 
   if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OUT ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_IN ||
