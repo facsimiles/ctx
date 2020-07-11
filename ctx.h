@@ -11246,37 +11246,33 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
               int grayend   = (x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff;
               if (aa)
                 {
-                  if ( (first!=last) && graystart)
-                    {
-                      coverage[first] = ctx_sadd8 (coverage[first], graystart/ CTX_RASTERIZER_AA);
-                      first++;
-                    }
-                  for (int x = first; x < last; x++)
-                    {
+                  if (first == last)
+                  {
+                    coverage[first] = ctx_sadd8 (coverage[first], (graystart-(255-grayend))/ CTX_RASTERIZER_AA);
+                  }
+                  else
+                  {
+                    coverage[first] = ctx_sadd8 (coverage[first], graystart/ CTX_RASTERIZER_AA);
+                    first++;
+                    for (int x = first; x < last; x++)
                       coverage[x] = ctx_sadd8 (coverage[x], 255 / CTX_RASTERIZER_AA);
-                    }
-                  if (grayend)
-                    {
-                      coverage[last] = ctx_sadd8 (coverage[last], grayend/ CTX_RASTERIZER_AA);
-                    }
+                    coverage[last] = ctx_sadd8 (coverage[last], grayend/ CTX_RASTERIZER_AA);
+                  }
                 }
               else
                 {
-                  if ( (first!=last) && graystart)
-                    {
-                      coverage[first] = ctx_sadd8 (coverage[first], graystart);
-                      first++;
-                    }
-                  int x = first;
-                  for (; x < last; x++)
-                    {
+                  if (first == last)
+                  {
+                    coverage[first] = ctx_sadd8 (coverage[first], (graystart-(255-grayend)));
+                  }
+                  else
+                  {
+                    coverage[first] = ctx_sadd8 (coverage[first], graystart);
+                    first++;
+                    for (int x = first; x < last; x++)
                       coverage[x] = 255;
-                    }
-
-                  if (grayend)
-                    {
-                      coverage[last] = ctx_sadd8 (coverage[last], grayend);
-                    }
+                    coverage[last] = ctx_sadd8 (coverage[last], grayend);
+                  }
                 }
             }
         }
