@@ -1038,7 +1038,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_EVENTS
-#define CTX_EVENTS              0
+#define CTX_EVENTS              1
 #endif
 
 #ifndef CTX_LIMIT_FORMATS
@@ -3376,9 +3376,14 @@ CTX_INLINE static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color,
 
 typedef struct CtxEdge
 {
+#if CTX_BLOATY_FAST_PATHS
+  uint32_t index;  // provide for more aligned memory accesses.
+  uint32_t pad;    // in the extreme, we want 4x4 bytes per entry
+#else
+  uint16_t index;
+#endif
   int32_t  x;     /* the center-line intersection      */
   int32_t  dx;
-  uint16_t index;
 } CtxEdge;
 
 typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out);
@@ -7256,11 +7261,12 @@ static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count
 static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
   int miny;
+  CtxEntry *entries = rasterizer->edge_list.entries;
   ctx_rasterizer_discard_edges (rasterizer);
 #if CTX_RASTERIZER_FORCE_AA==0
   for (int i = 0; i < rasterizer->pending_edges; i++)
     {
-      if (rasterizer->edge_list.entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] <= rasterizer->scanline)
+      if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] <= rasterizer->scanline)
         {
           if (rasterizer->active_edges < CTX_MAX_EDGES-2)
             {
@@ -7276,11 +7282,11 @@ static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     }
 #endif
   while (rasterizer->edge_pos < rasterizer->edge_list.count &&
-         (miny=rasterizer->edge_list.entries[rasterizer->edge_pos].data.s16[1]) <= rasterizer->scanline)
+         (miny=entries[rasterizer->edge_pos].data.s16[1]) <= rasterizer->scanline)
     {
       if (rasterizer->active_edges < CTX_MAX_EDGES-2)
         {
-          int dy = (rasterizer->edge_list.entries[rasterizer->edge_pos].data.s16[3] -
+          int dy = (entries[rasterizer->edge_pos].data.s16[3] -
                     miny);
           if (dy) /* skipping horizontal edges */
             {
@@ -7288,8 +7294,9 @@ static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
               int no = rasterizer->active_edges;
               rasterizer->active_edges++;
               rasterizer->edges[no].index = rasterizer->edge_pos;
-              int x0 = rasterizer->edge_list.entries[rasterizer->edges[no].index].data.s16[0];
-              int x1 = rasterizer->edge_list.entries[rasterizer->edges[no].index].data.s16[2];
+              int index = rasterizer->edges[no].index;
+              int x0 = entries[index].data.s16[0];
+              int x1 = entries[index].data.s16[2];
               rasterizer->edges[no].x = x0 * CTX_RASTERIZER_EDGE_MULTIPLIER;
               int dx_dy;
               //  if (dy)
@@ -7382,6 +7389,10 @@ static void ctx_edge2_qsort (CtxEdge *entries, int low, int high)
 
 static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 {
+  CtxEdge *edges = rasterizer->edges;
+  /* we use sort networks for the very frequent cases of few active edges
+   * the built in qsort is fast, but sort networks are even faster
+   */
   switch (rasterizer->active_edges)
   {
     case 0:
@@ -7389,11 +7400,11 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 #if CTX_BLOATY_FAST_PATHS
     case 2:
 #define COMPARE(a,b) \
-      if (ctx_compare_edges2 (&rasterizer->edges[a], &rasterizer->edges[b])>0)\
+      if (ctx_compare_edges2 (&edges[a], &edges[b])>0)\
       {\
-        CtxEdge tmp = rasterizer->edges[a];\
-        rasterizer->edges[a] = rasterizer->edges[b];\
-        rasterizer->edges[b] = tmp;\
+        CtxEdge tmp = edges[a];\
+        edges[a] = edges[b];\
+        edges[b] = tmp;\
       }
       COMPARE(0,1);
       break;
@@ -7424,18 +7435,18 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 #undef COMPARE
 #endif
     default:
-      //fprintf (stderr, "a:%i ", rasterizer->active_edges);
-      ctx_edge2_qsort (&rasterizer->edges[0], 0, rasterizer->active_edges-1);
+ //   fprintf (stderr, "a:%i ", rasterizer->active_edges);
+      ctx_edge2_qsort (&edges[0], 0, rasterizer->active_edges-1);
       break;
   }
 }
 
 CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 {
-  return ( ( ( ( (v0) <<8) + (dx) * ( (v1) - (v0) ) ) ) >>8);
 #if 0
-  return (v1*dx+ v0 * (255-dx)) / 255;
   return v0 + ((v1-v0) * dx)/255;
+#else
+  return ( ( ( ( (v0) <<8) + (dx) * ( (v1) - (v0) ) ) ) >>8);
 #endif
 }
 
@@ -11455,10 +11466,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #if CTX_RASTERIZER_FORCE_AA==0
 
       if (rasterizer->needs_aa         // due to slopes of active edges
-#if CTX_RASTERIZER_AUTOHINT==0
+//#if CTX_RASTERIZER_AUTOHINT==0
           || rasterizer->lingering_edges    // or due to edges ...
           || rasterizer->pending_edges      //   ... that start or end within scanline
-#endif
+//#endif
          )
 #endif
         {
@@ -20157,6 +20168,7 @@ void ctx_braille_free (CtxBraille *braille)
 Ctx *ctx_new_braille (int width, int height)
 {
   Ctx *ctx = ctx_new ();
+#if CTX_RASTERIZER
   CtxBraille *braille = calloc (sizeof (CtxBraille), 1);
   if (width <= 0 || height <= 0)
   {
@@ -20178,6 +20190,7 @@ Ctx *ctx_new_braille (int width, int height)
  // ctx_set_size (braille->host, width, height);
   braille->flush = (void*)ctx_braille_flush;
   braille->free  = (void*)ctx_braille_free;
+#endif
   return ctx;
 }
 
