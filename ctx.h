@@ -821,7 +821,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA        3
+#define CTX_RASTERIZER_AA        5
 #endif
 
 #define CTX_RASTERIZER_AA2     (CTX_RASTERIZER_AA/2)
@@ -830,13 +830,13 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  1
+#define CTX_RASTERIZER_FORCE_AA  0
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
  */
 #ifndef CTX_RASTERIZER_AA_SLOPE_LIMIT
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    512
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    128
 #endif
 
 /* subpixel-aa coordinates used in BITPACKing of renderstream
@@ -3405,11 +3405,6 @@ struct _CtxRasterizer
    */
 #if CTX_ENABLE_CLIP
   CtxBuffer *clip_buffer;
-#endif
-
-#if CTX_RASTERIZER_FORCE_AA==0
-  int        lingering_edges;  // previous half scanline
-  CtxEdge    lingering[CTX_MAX_LINGERING_EDGES];
 #endif
 
   int        active_edges;
@@ -7207,43 +7202,15 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3] < rasterizer->scanline
          )
         {
-#if CTX_RASTERIZER_FORCE_AA==0
-          if (rasterizer->lingering_edges + 1 < CTX_MAX_LINGERING_EDGES)
-            {
-              rasterizer->lingering[rasterizer->lingering_edges] =
-                rasterizer->edges[i];
-              rasterizer->lingering_edges++;
-            }
-#endif
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
           i--;
         }
     }
-#if CTX_RASTERIZER_FORCE_AA==0
-  for (int i = 0; i < rasterizer->lingering_edges; i++)
-    {
-      if (rasterizer->edge_list.entries[rasterizer->lingering[i].index].data.s16[3] < rasterizer->scanline - CTX_RASTERIZER_AA2)
-        {
-          if (rasterizer->lingering[i].dx > CTX_RASTERIZER_AA_SLOPE_LIMIT ||
-              rasterizer->lingering[i].dx < -CTX_RASTERIZER_AA_SLOPE_LIMIT)
-            { rasterizer->needs_aa --; }
-          rasterizer->lingering[i] = rasterizer->lingering[rasterizer->lingering_edges-1];
-          rasterizer->lingering_edges--;
-          i--;
-        }
-    }
-#endif
 }
 
 static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
 {
-#if CTX_RASTERIZER_FORCE_AA==0
-  for (int i = 0; i < rasterizer->lingering_edges; i++)
-    {
-      rasterizer->lingering[i].x += rasterizer->lingering[i].dx * count;
-    }
-#endif
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
       rasterizer->edges[i].x += rasterizer->edges[i].dx * count;
@@ -7288,7 +7255,12 @@ static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     }
 #endif
   while (rasterizer->edge_pos < rasterizer->edge_list.count &&
-         (miny=entries[rasterizer->edge_pos].data.s16[1]) <= rasterizer->scanline)
+         (miny=entries[rasterizer->edge_pos].data.s16[1]) <= rasterizer->scanline 
+#if CTX_RASTERIZER_FORCE_AA==0
+         + CTX_RASTERIZER_AA
+#endif
+         
+         )
     {
       if (rasterizer->active_edges < CTX_MAX_EDGES-2)
         {
@@ -7335,7 +7307,7 @@ static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
               if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT ||
                   dx_dy < -CTX_RASTERIZER_AA_SLOPE_LIMIT)
                 { rasterizer->needs_aa ++; }
-              if (! (miny <= rasterizer->scanline) )
+              if ((miny > rasterizer->scanline) )
                 {
                   /* it is a pending edge - we add it to the end of the array
                      and keep a different count for items stored here, like
@@ -11323,7 +11295,6 @@ static void
 ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 {
 #if CTX_RASTERIZER_FORCE_AA==0
-  rasterizer->lingering_edges = 0;
   rasterizer->pending_edges   = 0;
 #endif
   rasterizer->active_edges    = 0;
@@ -11431,6 +11402,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
   ctx_rasterizer_sort_edges (rasterizer);
   if (maxx>minx)
   {
+  rasterizer->scanline = scan_start;
       ctx_rasterizer_feed_edges (rasterizer);
   for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
     {
@@ -11442,7 +11414,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #if CTX_RASTERIZER_FORCE_AA==1
       rasterizer->needs_aa = 1;
 #else
-      rasterizer->needs_aa |= rasterizer->lingering_edges;
       rasterizer->needs_aa |= rasterizer->pending_edges;
 #endif
 
@@ -11456,17 +11427,17 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
               ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
               rasterizer->scanline ++;
               ctx_rasterizer_increment_edges (rasterizer, 1);
-              //if (i != CTX_RASTERIZER_AA-1)
-                ctx_rasterizer_feed_edges (rasterizer);
+              ctx_rasterizer_feed_edges (rasterizer);
             }
         }
 #if CTX_RASTERIZER_FORCE_AA==0
       else
         {
+          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA3);
           ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 0);
+          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA2);
           rasterizer->scanline += CTX_RASTERIZER_AA;
-          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA);
           ctx_rasterizer_feed_edges (rasterizer);
         }
 #endif
