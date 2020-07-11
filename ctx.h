@@ -8785,11 +8785,11 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     if ((size_t)(dst) & 31)
 #endif
     {
-    uint32_t si = *((uint32_t*)(tsrc));
-    uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
-    uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
-       if (a==255)
-       {
+      uint32_t si = *((uint32_t*)(tsrc));
+      uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
+      uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+      if (a==255)
+      {
 
       for (; (x < count) 
 #if CTX_SIMD
@@ -8801,6 +8801,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
       int cov = coverage[0];
       if (cov)
       {
+        {
         int r_cov = 255-cov;
         uint32_t di = *((uint32_t*)(dst));
         uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
@@ -8808,6 +8809,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
          (((si_ga * cov + di_ga * r_cov) >> 8) & CTX_RGBA8_GA_MASK);
+        }
       }
       dst += 4;
       coverage ++;
@@ -8869,18 +8871,6 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
        }
        else
        {
-         {
-#if 0
-           uint16_t covs[16]={(coverage[7]), (coverage[7]),
-                              (coverage[6]), (coverage[6]),
-                              (coverage[5]), (coverage[5]),
-                              (coverage[4]), (coverage[4]),
-                              (coverage[3]), (coverage[3]),
-                              (coverage[2]), (coverage[2]),
-                              (coverage[1]), (coverage[1]),
-                              (coverage[0]), (coverage[0])};
-          xcov  = _mm256_load_si256((__m256i*)(covs));
-#else
          xcov  = _mm256_set_epi16((coverage[7]), (coverage[7]),
                                   (coverage[6]), (coverage[6]),
                                   (coverage[5]), (coverage[5]),
@@ -8889,8 +8879,6 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
                                   (coverage[2]), (coverage[2]),
                                   (coverage[1]), (coverage[1]),
                                   (coverage[0]), (coverage[0]));
-#endif
-         }
         x1_minus_cov_mul_a = 
            _mm256_sub_epi16(x00ff, _mm256_mulhi_epu16 (
                    _mm256_adds_epu16 (_mm256_mullo_epi16(xcov,
