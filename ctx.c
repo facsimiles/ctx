@@ -31,7 +31,7 @@
 //#define CTX_RASTERIZER_FORCE_AA  1
 #define CTX_MATH                 1
 
-#include <immintrin.h> // XXX is detected by ctx, and enables AVX2
+#include <immintrin.h> // is detected by ctx, and enables AVX2
 
 #define CTX_IMPLEMENTATION 1
 //

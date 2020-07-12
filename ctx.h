@@ -815,10 +815,11 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* vertical level of supersampling at full/forced AA.
  *
- * 1 is none, 3 is fast 5 is good 15 is best for 8bit  51 is
+ * 1 is none, 3 is fast 5 is good 15 or 17 is best for 8bit
  *
  * valid values:
- * 3 5 15 17 51 85
+ * 3 5 15 17 51
+ *
  */
 #ifndef CTX_RASTERIZER_AA
 #define CTX_RASTERIZER_AA        15
@@ -830,25 +831,20 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  1
+#define CTX_RASTERIZER_FORCE_AA  0
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
  */
-#ifndef CTX_RASTERIZER_AA_SLOPE_LIMIT
-#if CTX_RASTERIZER_AA==15
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    1050
+
+
+//#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (13000/CTX_RASTERIZER_AA)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (15000/CTX_RASTERIZER_AA)
+
+#ifndef CTX_RASTERIZER_AA_SLOPE_DEBUG
+#define CTX_RASTERIZER_AA_SLOPE_DEBUG 0
 #endif
-#if CTX_RASTERIZER_AA==5
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    5000
-#endif
-#if CTX_RASTERIZER_AA==3
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    7000
-#endif
-#endif
-#ifndef CTX_RASTERIZER_AA_SLOPE_LIMIT
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    256
-#endif
+
 
 /* subpixel-aa coordinates used in BITPACKing of renderstream
  */
@@ -7218,7 +7214,7 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (edge_end < rasterizer->scanline)
         {
           int dx_dy = rasterizer->edges[i].dx;
-          if (dx_dy * dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT * CTX_RASTERIZER_AA_SLOPE_LIMIT)
+          if (abs(dx_dy)> CTX_RASTERIZER_AA_SLOPE_LIMIT)
             { rasterizer->needs_aa --; }
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
@@ -7326,8 +7322,9 @@ static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
                 }
 #endif
 #if CTX_RASTERIZER_FORCE_AA==0
-              if (dx_dy * dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT * CTX_RASTERIZER_AA_SLOPE_LIMIT)
+              if (abs(dx_dy)> CTX_RASTERIZER_AA_SLOPE_LIMIT)
                 { rasterizer->needs_aa ++; }
+
               if ((miny > rasterizer->scanline) )
                 {
                   /* it is a pending edge - we add it to the end of the array
@@ -11269,15 +11266,19 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                 {
                   if (first == last)
                   {
-                    coverage[first] = (graystart-(255-grayend));
+                    coverage[first] = ctx_sadd8(coverage[first], graystart-(255-grayend));
                   }
                   else
                   {
-                    coverage[first] = graystart;
+                    coverage[first] = ctx_sadd8(coverage[first], graystart);
                     first++;
                     for (int x = first; x < last; x++)
+#ifndef CTX_RASTERIZER_AA_SLOPE_DEBUG
+                      coverage[x] = 64;
+#else
                       coverage[x] = 255;
-                    coverage[last] = grayend;
+#endif
+                    coverage[last] = ctx_sadd8 (coverage[last], grayend);
                   }
                 }
             }
@@ -11417,7 +11418,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
   ctx_rasterizer_sort_edges (rasterizer);
   if (maxx>minx)
   {
-  rasterizer->scanline = scan_start;
+    rasterizer->needs_aa = 0;
+    rasterizer->scanline = scan_start;
       ctx_rasterizer_feed_edges (rasterizer);
   for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
     {
@@ -11450,10 +11452,13 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #if CTX_RASTERIZER_FORCE_AA==0
       else
         {
-          //ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA3);
+          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA3);
           ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 0);
-          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA);
+          /* doing increment of AA3 before and AA2 after produces identical
+           * results in GRAY1 and GRAY8, and is also not the reason for the
+           * anomaly in the resolution chart.  */
+          ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA2);
           rasterizer->scanline += CTX_RASTERIZER_AA;
           ctx_rasterizer_feed_edges (rasterizer);
         }
