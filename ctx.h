@@ -818,7 +818,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * 1 is none, 3 is fast 5 is good 15 is best for 8bit  51 is
  *
  * valid values:
- * 1 3 5 15 17 51 85
+ * 3 5 15 17 51 85
  */
 #ifndef CTX_RASTERIZER_AA
 #define CTX_RASTERIZER_AA        15
@@ -7209,11 +7209,13 @@ static void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 
 static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
+#if CTX_RASTERIZER_FORCE_AA==0
   rasterizer->ending_edges = 0;
+#endif
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
-      if (rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3] < rasterizer->scanline
-         )
+      int edge_end =rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3];
+      if (edge_end < rasterizer->scanline)
         {
           int dx_dy = rasterizer->edges[i].dx;
           if (dx_dy * dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT * CTX_RASTERIZER_AA_SLOPE_LIMIT)
@@ -7222,9 +7224,10 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           rasterizer->active_edges--;
           i--;
         }
-      else if (rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3] < rasterizer->scanline
-                      + CTX_RASTERIZER_AA)
+#if CTX_RASTERIZER_FORCE_AA==0
+      else if (edge_end < rasterizer->scanline + CTX_RASTERIZER_AA)
         rasterizer->ending_edges = 1;
+#endif
     }
 }
 
@@ -11254,30 +11257,30 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                 {
                   if (first == last)
                   {
-                    coverage[first] = ctx_sadd8 (coverage[first], (graystart-(255-grayend))/ CTX_RASTERIZER_AA);
+                    coverage[first] += (graystart-(255-grayend))/ CTX_RASTERIZER_AA;
                   }
                   else
                   {
-                    coverage[first] = ctx_sadd8 (coverage[first], graystart/ CTX_RASTERIZER_AA);
+                    coverage[first] += graystart/ CTX_RASTERIZER_AA;
                     first++;
                     for (int x = first; x < last; x++)
-                      coverage[x] = ctx_sadd8 (coverage[x], 255 / CTX_RASTERIZER_AA);
-                    coverage[last] = ctx_sadd8 (coverage[last], grayend/ CTX_RASTERIZER_AA);
+                      coverage[x] += 255 / CTX_RASTERIZER_AA;
+                    coverage[last] += grayend/ CTX_RASTERIZER_AA;
                   }
                 }
               else
                 {
                   if (first == last)
                   {
-                    coverage[first] = ctx_sadd8 (coverage[first], (graystart-(255-grayend)));
+                    coverage[first] = (graystart-(255-grayend));
                   }
                   else
                   {
-                    coverage[first] = ctx_sadd8 (coverage[first], graystart);
+                    coverage[first] = graystart;
                     first++;
                     for (int x = first; x < last; x++)
                       coverage[x] = 255;
-                    coverage[last] = ctx_sadd8 (coverage[last], grayend);
+                    coverage[last] = grayend;
                   }
                 }
             }
