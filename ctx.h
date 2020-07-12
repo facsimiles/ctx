@@ -8351,9 +8351,6 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
     int x = 0;
 
 #if CTX_AVX2
-
-
-
     if ((size_t)(dst) & 31)
 #endif
     {
@@ -8404,7 +8401,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
 
 #if CTX_AVX2
                     
-    for (; x < count-8; x+=8)
+    for (; x <= count-8; x+=8)
     {
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
@@ -8612,7 +8609,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
 
 #if CTX_AVX2
                     
-    for (; x < count-8; x+=8)
+    for (; x <= count-8; x+=8)
     {
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
@@ -8830,7 +8827,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 #if CTX_AVX2
                     
     __m256i xsrc = _mm256_set1_epi32( *((uint32_t*)tsrc)) ;
-    for (; x < count-8; x+=8)
+    for (; x <= count-8; x+=8)
     {
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
