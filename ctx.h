@@ -830,7 +830,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* force full antialising */
 #ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  0
+#define CTX_RASTERIZER_FORCE_AA  1
 #endif
 
 /* when AA is not forced, the slope below which full AA get enabled.
@@ -11294,12 +11294,12 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
     /* perhaps not working right for clear? */
     int y = scanline / CTX_RASTERIZER_AA;
     uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
+    // XXX SIMD candidate
     for (int x = minx; x < maxx; x ++)
     {
       if (coverage[x])
       {
-        int clip = clip_line[x];
-        coverage[x] = (coverage[x] * clip)/255;
+        coverage[x] = (coverage[x] * clip_line[x])/255;
       }
     }
   }
@@ -11623,8 +11623,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       entry->data.s16[2] += rasterizer->shadow_x * CTX_SUBDIV;
       entry->data.s16[3] += rasterizer->shadow_y * CTX_RASTERIZER_AA;
     }
-    rasterizer->scan_min += rasterizer->shadow_y;
-    rasterizer->scan_max += rasterizer->shadow_y;
+    rasterizer->scan_min += rasterizer->shadow_y * CTX_RASTERIZER_AA;
+    rasterizer->scan_max += rasterizer->shadow_y * CTX_RASTERIZER_AA;
     rasterizer->col_min  += rasterizer->shadow_x * CTX_SUBDIV;
     rasterizer->col_max  += rasterizer->shadow_x * CTX_SUBDIV;
   }
@@ -11777,8 +11777,8 @@ done:
     }
   if (rasterizer->in_shadow)
   {
-    rasterizer->scan_min -= rasterizer->shadow_y;
-    rasterizer->scan_max -= rasterizer->shadow_y;
+    rasterizer->scan_min -= rasterizer->shadow_y * CTX_RASTERIZER_AA;
+    rasterizer->scan_max -= rasterizer->shadow_y * CTX_RASTERIZER_AA;
     rasterizer->col_min  -= rasterizer->shadow_x * CTX_SUBDIV;
     rasterizer->col_max  -= rasterizer->shadow_x * CTX_SUBDIV;
   }
