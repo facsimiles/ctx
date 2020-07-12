@@ -11217,14 +11217,14 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   int            winding,
                                   int            aa)
 {
+  CtxEntry *entries = rasterizer->edge_list.entries;;
+  CtxEdge  *edges = rasterizer->edges;
   int scanline     = rasterizer->scanline;
   int active_edges = rasterizer->active_edges;
   int parity = 0;
   coverage -= minx;
-#define CTX_EDGE(no)      rasterizer->edge_list.entries[rasterizer->edges[no].index]
+#define CTX_EDGE(no)      entries[edges[no].index]
 #define CTX_EDGE_YMIN(no) CTX_EDGE(no).data.s16[1]
-#define CTX_EDGE_YMAX(no) CTX_EDGE(no).data.s16[3]
-#define CTX_EDGE_SLOPE(no) rasterizer->edges[no].dx
 #define CTX_EDGE_X(no)     (rasterizer->edges[no].x)
   for (int t = 0; t < active_edges -1;)
     {
