@@ -1028,11 +1028,11 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_INLINED_NORMAL      1
 #endif
 
-#ifndef CTX_SIMD
+#ifndef CTX_AVX2
 #ifdef _IMMINTRIN_H_INCLUDED
-#define CTX_SIMD         1
+#define CTX_AVX2         1
 #else
-#define CTX_SIMD         0
+#define CTX_AVX2         0
 #endif
 #endif
 
@@ -8321,7 +8321,7 @@ ctx_u8_source_over_normal_color (int components,
     }
 }
 
-#if CTX_SIMD
+#if CTX_AVX2
 #define lo_mask   _mm256_set1_epi32 (0x00FF00FF)
 #define hi_mask   _mm256_set1_epi32 (0xFF00FF00)
 #define x00ff     _mm256_set1_epi16(255)
@@ -8350,7 +8350,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
     //uint8_t a = src[3];
     int x = 0;
 
-#if CTX_SIMD
+#if CTX_AVX2
 
 
 
@@ -8359,7 +8359,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
     {
     {
       for (; (x < count) 
-#if CTX_SIMD
+#if CTX_AVX2
                       && ((size_t)(dst)&31)
 #endif
                       ; 
@@ -8402,7 +8402,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
     }
     }
 
-#if CTX_SIMD
+#if CTX_AVX2
                     
     for (; x < count-8; x+=8)
     {
@@ -8560,14 +8560,14 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
     uint8_t tsrc[4 * 8];
     int x = 0;
 
-#if CTX_SIMD
+#if CTX_AVX2
 
     if ((size_t)(dst) & 31)
 #endif
     {
     {
       for (; (x < count) 
-#if CTX_SIMD
+#if CTX_AVX2
                       && ((size_t)(dst)&31)
 #endif
                       ; 
@@ -8610,7 +8610,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
     }
     }
 
-#if CTX_SIMD
+#if CTX_AVX2
                     
     for (; x < count-8; x+=8)
     {
@@ -8765,7 +8765,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     uint8_t a = src[3];
     int x = 0;
 
-#if CTX_SIMD
+#if CTX_AVX2
 
     if ((size_t)(dst) & 31)
 #endif
@@ -8777,7 +8777,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
       {
 
       for (; (x < count) 
-#if CTX_SIMD
+#if CTX_AVX2
                       && ((size_t)(dst)&31)
 #endif
                       ; 
@@ -8804,7 +8804,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     {
       int si_a = si >> CTX_RGBA8_A_SHIFT;
       for (; (x < count) 
-#if CTX_SIMD
+#if CTX_AVX2
                       && ((size_t)(dst)&31)
 #endif
                       ; 
@@ -8827,7 +8827,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     }
     }
 
-#if CTX_SIMD
+#if CTX_AVX2
                     
     __m256i xsrc = _mm256_set1_epi32( *((uint32_t*)tsrc)) ;
     for (; x < count-8; x+=8)
@@ -9323,7 +9323,7 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
   }
 }
 
-#if CTX_SIMD
+#if CTX_AVX2
 CTX_INLINE static void
 ctx_avx2_porter_duff (CtxRasterizer         *rasterizer,
                       int                    components,
