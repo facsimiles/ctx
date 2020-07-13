@@ -52,15 +52,15 @@ int main (int argc, char **argv)
     ctx_rectangle      (ctx, 0, 0, ctx_width(ctx), ctx_height(ctx));
     ctx_fill           (ctx);
     ctx_move_to        (ctx, 10+x, 9);
-    ctx_set_font_size  (ctx, 12 + x/4);
-    ctx_set_line_width (ctx, 2);
+    ctx_font_size  (ctx, 12 + x/4);
+    ctx_line_width (ctx, 2);
     ctx_set_rgba       (ctx, 0, 0, 0, 1);
     ctx_text_stroke    (ctx, utf8);
     ctx_rgba8      (ctx, 255, 255, 255, 255);
     ctx_move_to        (ctx, 10+x, 9);
     ctx_text           (ctx, utf8);
     ctx_move_to        (ctx, 10, 130);
-    ctx_set_font_size  (ctx, 40);
+    ctx_font_size  (ctx, 40);
 
     ctx_set_rgb       (ctx, 1, 0,0);
     ctx_text           (ctx, message);

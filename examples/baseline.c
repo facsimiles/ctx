@@ -23,8 +23,8 @@ int main (int argc, char **argv)
   ctx_rectangle (ctx, 0, 0, 80, 24);
   ctx_fill (ctx);
   ctx_move_to (ctx, 10, 9);
-  ctx_set_font_size (ctx, 12);
-  ctx_set_line_width (ctx, 2);
+  ctx_font_size (ctx, 12);
+  ctx_line_width (ctx, 2);
   ctx_set_rgba (ctx, 0, 0, 0, 1);
   ctx_text_stroke (ctx, utf8);
   ctx_set_rgba_u8 (ctx, 255, 255, 255, 255);

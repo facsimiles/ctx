@@ -40,11 +40,11 @@ static void _analog_clock (Ctx     *ctx,
 
   ctx_rgba8 (ctx, 127,127,127,255);
   ctx_arc (ctx, x, y, radius * 0.9, 0.0, CTX_PI * 2 + 0.001, 0); // XXX
-  ctx_set_line_width (ctx, radius * 0.1);
+  ctx_line_width (ctx, radius * 0.1);
   ctx_set_line_cap (ctx, CTX_CAP_NONE);
   ctx_stroke (ctx);
 
-  ctx_set_line_width (ctx, 7);
+  ctx_line_width (ctx, 7);
   ctx_set_line_cap (ctx, CTX_CAP_ROUND);
   ctx_rgba8 (ctx, 188,188,188,255);
 
@@ -62,7 +62,7 @@ static void _analog_clock (Ctx     *ctx,
   ctx_stroke (ctx);
 
 
-  ctx_set_line_width (ctx, 2);
+  ctx_line_width (ctx, 2);
   ctx_set_line_cap (ctx, CTX_CAP_ROUND);
   ctx_rgba8 (ctx, 255,0,0,127);
 
@@ -125,14 +125,14 @@ int main (int argc, char **argv)
     ctx_fill           (ctx);
     ctx_restore (ctx);
     ctx_move_to        (ctx, 10+x, height * 0.2);
-    ctx_set_font_size  (ctx, height * 0.1 + x/4.0);
-    ctx_set_line_width (ctx, 2);
+    ctx_font_size  (ctx, height * 0.1 + x/4.0);
+    ctx_line_width (ctx, 2);
     ctx_set_rgba       (ctx, 0, 0, 0, 1);
     ctx_text_stroke    (ctx, utf8);
     ctx_rgba8      (ctx, 255, 255, 255, 255);
     ctx_move_to        (ctx, height * 0.05 +x, height * 0.2);
     ctx_text           (ctx, utf8);
-    ctx_set_font_size  (ctx, height * 0.2);
+    ctx_font_size  (ctx, height * 0.2);
 
     ctx_move_to        (ctx, height * 0.05, height * 0.4);
     ctx_set_rgb        (ctx, 1, 0,0);

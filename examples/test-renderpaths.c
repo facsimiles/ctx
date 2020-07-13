@@ -37,7 +37,7 @@ static void render_test (Ctx *ctx)
     ctx_reset (ctx);
     ctx_translate (ctx, frame/3.0, 0.0);
     //ctx_scale (ctx, 0.3f, 0.3f);
-  ctx_set_font (ctx, "italic");
+  ctx_font (ctx, "italic");
     //ctx_rotate (ctx, -frame * 0.05);
     //ctx_scale (ctx, 1 - frame * 0.001, 1 - frame * 0.001);
     //ctx_scale (ctx, 1 - frame * 0.001, 1 - frame * 0.001);
@@ -175,7 +175,7 @@ static void render_test (Ctx *ctx)
 #if 1
   ctx_rgba8 (ctx, 0, 0, 0, 255);
     ctx_move_to (ctx, 54, 50);
-    ctx_set_font_size (ctx, 32);
+    ctx_font_size (ctx, 32);
     ctx_text (ctx, "æøåabcdefghijklmnopqrstuvwxyz\n");
     ctx_move_to (ctx, 54, 82);
     ctx_text (ctx, "AvBCDEFGHIJKLMNOPQRSTUVWXYZ\n");
@@ -184,13 +184,13 @@ static void render_test (Ctx *ctx)
     ctx_move_to (ctx, 54, 82+32+32);
     ctx_text (ctx, "this is some text, with more\nduplicated chars\n");
     ctx_move_to (ctx, 10, 300);
-    ctx_set_font_size (ctx, 200);
+    ctx_font_size (ctx, 200);
     ctx_text (ctx, "beziers");
     ctx_move_to (ctx, 10, 440);
     ctx_text (ctx, "æøå\nßñ€");
     ctx_move_to (ctx, 44, 120);
 
-  ctx_set_font_size (ctx, 100);
+  ctx_font_size (ctx, 100);
 
     ctx_rgba8 (ctx, 0, 0, 0, 20);
     for (int o=0;o<10;o++)
@@ -223,7 +223,7 @@ static void render_test (Ctx *ctx)
   ctx_gradient_add_stop_u8 (ctx, 0.0f, 0,0,0,255);
   ctx_gradient_add_stop_u8 (ctx, 1.0f, 255,255,255,255);
 
-  ctx_set_line_width(ctx, 15);
+  ctx_line_width(ctx, 15);
   ctx_set_line_cap (ctx, CTX_CAP_ROUND);
 #if 1
   ctx_move_to (ctx, 40, 40);
@@ -264,13 +264,13 @@ static void render_test (Ctx *ctx)
   ctx_image_path (ctx, "vw.png", 20, 20);
   ctx_fill (ctx);
 
-  ctx_set_font (ctx, "mono");
-  ctx_set_font_size (ctx, 48);
+  ctx_font (ctx, "mono");
+  ctx_font_size (ctx, 48);
   ctx_move_to (ctx, 2, 32);
   ctx_set_rgba (ctx, 0,0,1,1);
   ctx_text (ctx, "mono");
   ctx_move_to (ctx, 2, 64);
-  ctx_set_font (ctx, "bitmap");
+  ctx_font (ctx, "bitmap");
   ctx_text (ctx, "bitmap");
 
   if(1)for (int y = 100; y < 150; y++)

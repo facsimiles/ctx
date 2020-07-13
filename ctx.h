@@ -80,7 +80,7 @@ void ctx_rotate         (Ctx *ctx, float x);
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0
 #define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line */
-void ctx_set_line_width (Ctx *ctx, float x);
+void ctx_line_width       (Ctx *ctx, float x);
 void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                            float c,  float d,  // vskew,  vscale
                            float e,  float f); // htran,  vtran
@@ -88,8 +88,8 @@ void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
 
 void  ctx_dirty_rect      (Ctx *ctx, int *x, int *y, int *width, int *height);
 
-void  ctx_set_font_size   (Ctx *ctx, float x);
-void  ctx_set_font        (Ctx *ctx, const char *font);
+void  ctx_font_size       (Ctx *ctx, float x);
+void  ctx_font            (Ctx *ctx, const char *font);
 void  ctx_scale           (Ctx *ctx, float x, float y);
 void  ctx_translate       (Ctx *ctx, float x, float y);
 void  ctx_line_to         (Ctx *ctx, float x, float y);
@@ -159,7 +159,7 @@ void ctx_paint          (Ctx *ctx);
 void
 ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-void  ctx_set_global_alpha (Ctx *ctx, float global_alpha);
+void  ctx_global_alpha (Ctx *ctx, float global_alpha);
 float ctx_get_global_alpha (Ctx *ctx);
 
 void ctx_rgba   (Ctx *ctx, float r, float g, float b, float a);
@@ -383,7 +383,7 @@ _CtxGlyph
   float    y;
 };
 
-void ctx_set_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
+void ctx_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
 void ctx_set_line_cap         (Ctx *ctx, CtxLineCap cap);
 void ctx_set_line_join        (Ctx *ctx, CtxLineJoin join);
 void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
@@ -4883,7 +4883,7 @@ void ctx_end_group (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_END_GROUP);
 }
 
-void ctx_set_line_width (Ctx *ctx, float x)
+void ctx_line_width (Ctx *ctx, float x)
 {
   if (ctx->state.gstate.line_width != x)
     CTX_PROCESS_F1 (CTX_SET_LINE_WIDTH, x);
@@ -4925,7 +4925,7 @@ void ctx_set_shadow_offset_y (Ctx *ctx, float x)
 }
 
 void
-ctx_set_global_alpha (Ctx *ctx, float global_alpha)
+ctx_global_alpha (Ctx *ctx, float global_alpha)
 {
   if (ctx->state.gstate.global_alpha_f != global_alpha)
     CTX_PROCESS_F1 (CTX_SET_GLOBAL_ALPHA, global_alpha);
@@ -4938,7 +4938,7 @@ ctx_get_global_alpha (Ctx *ctx)
 }
 
 void
-ctx_set_font_size (Ctx *ctx, float x)
+ctx_font_size (Ctx *ctx, float x)
 {
   CTX_PROCESS_F1 (CTX_SET_FONT_SIZE, x);
 }
@@ -5033,7 +5033,7 @@ static int ctx_resolve_font (const char *name)
 }
 
 void
-_ctx_set_font (Ctx *ctx, const char *name)
+_ctx_font (Ctx *ctx, const char *name)
 {
   ctx->state.gstate.font = ctx_resolve_font (name);
 }
@@ -5063,12 +5063,12 @@ ctx_get (Ctx *ctx, const char *key)
 }
 
 void
-ctx_set_font (Ctx *ctx, const char *name)
+ctx_font (Ctx *ctx, const char *name)
 {
 #if CTX_BACKEND_TEXT
   ctx_process_cmd_str (ctx, CTX_SET_FONT, name, 0, 0);
 #else
-  _ctx_set_font (ctx, name);
+  _ctx_font (ctx, name);
 #endif
 }
 
@@ -5231,7 +5231,7 @@ void ctx_set_line_cap (Ctx *ctx, CtxLineCap cap)
   if (ctx->state.gstate.line_cap != cap)
     CTX_PROCESS_U8 (CTX_SET_LINE_CAP, cap);
 }
-void ctx_set_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
+void ctx_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
 {
   if (ctx->state.gstate.fill_rule != fill_rule)
     CTX_PROCESS_U8 (CTX_SET_FILL_RULE, fill_rule);
@@ -11832,11 +11832,11 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
 }
 
 void
-_ctx_set_font (Ctx *ctx, const char *name);
+_ctx_font (Ctx *ctx, const char *name);
 static void
 ctx_rasterizer_set_font (CtxRasterizer *rasterizer, const char *font_name)
 {
-  _ctx_set_font (rasterizer->ctx, font_name);
+  _ctx_font (rasterizer->ctx, font_name);
 }
 
 static void
@@ -17007,7 +17007,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->left_margin = parser->pcx;
         break;
       case CTX_SET_FONT_SIZE:
-        ctx_set_font_size (ctx, arg (0) );
+        ctx_font_size (ctx, arg (0) );
         break;
       case CTX_SET_MITER_LIMIT:
         ctx_set_miter_limit (ctx, arg (0) );
@@ -17037,7 +17037,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_rotate (ctx, arg (0) );
         break;
       case CTX_SET_FONT:
-        ctx_set_font (ctx, (char *) parser->holding);
+        ctx_font (ctx, (char *) parser->holding);
         break;
       case CTX_SET:
         parser->t_args++;
@@ -17122,7 +17122,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->left_margin = ctx_x (ctx);
         break;
       case CTX_SET_LINE_WIDTH:
-        ctx_set_line_width (ctx, arg (0) );
+        ctx_line_width (ctx, arg (0) );
         break;
       case CTX_SET_SHADOW_COLOR:
         ctx_set_shadow_rgba (ctx, arg (0), arg(1), arg(2), arg(3));
@@ -17153,7 +17153,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         }
         break;
       case CTX_SET_FILL_RULE:
-        ctx_set_fill_rule (ctx, (CtxFillRule) arg (0) );
+        ctx_fill_rule (ctx, (CtxFillRule) arg (0) );
         break;
       case CTX_SET_TEXT_ALIGN:
         ctx_set_text_align (ctx, (CtxTextAlign) arg (0) );
@@ -17187,7 +17187,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         }
         break;
       case CTX_SET_GLOBAL_ALPHA:
-        ctx_set_global_alpha (ctx, arg (0) );
+        ctx_global_alpha (ctx, arg (0) );
         break;
       case CTX_BEGIN_PATH:
         ctx_begin_path (ctx);
@@ -19042,7 +19042,7 @@ void _ctx_debug_overlays (Ctx *ctx)
   CtxList *a;
   ctx_save (ctx);
 
-  ctx_set_line_width (ctx, 2);
+  ctx_line_width (ctx, 2);
   ctx_rgba (ctx, 0,0,0.8,0.5);
   for (a = ctx->events.items; a; a = a->next)
   {

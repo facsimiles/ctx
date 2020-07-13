@@ -507,8 +507,8 @@ static int vt_col_to_pos (VT *vt, int col)
   if (vt->current_line->contains_proportional)
     {
       Ctx *ctx = ctx_new ();
-      ctx_set_font (ctx, "regular");
-      ctx_set_font_size (ctx, vt->font_size);
+      ctx_font (ctx, "regular");
+      ctx_font_size (ctx, vt->font_size);
       int x = 0;
       pos = 0;
       int prev_prop = 0;
@@ -4939,7 +4939,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw, ch);
         ctx_save (ctx);
-        ctx_set_global_alpha (ctx, 0.25);
+        ctx_global_alpha (ctx, 0.25);
         ctx_fill (ctx);
         ctx_restore (ctx);
         return 0;
@@ -4947,7 +4947,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw, ch);
         ctx_save (ctx);
-        ctx_set_global_alpha (ctx, 0.5);
+        ctx_global_alpha (ctx, 0.5);
         ctx_fill (ctx);
         ctx_restore (ctx);
         return 0;
@@ -4955,7 +4955,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_begin_path (ctx);
         ctx_rectangle (ctx, x, y - ch, cw, ch);
         ctx_save (ctx);
-        ctx_set_global_alpha (ctx, 0.75);
+        ctx_global_alpha (ctx, 0.75);
         ctx_fill (ctx);
         ctx_restore (ctx);
         return 0;
@@ -5068,7 +5068,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_rel_line_to (ctx, -cw/3, -ch * 0.7);
         ctx_rel_line_to (ctx, cw/2, 0);
         ctx_rel_line_to (ctx, -cw/3, ch * 0.7);
-        ctx_set_line_width (ctx, cw * 0.25);
+        ctx_line_width (ctx, cw * 0.25);
         ctx_stroke (ctx);
         ctx_restore (ctx);
         break;
@@ -5087,7 +5087,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_move_to (ctx, x, y - ch * 0.1);
         ctx_rel_line_to (ctx, cw * 0.9, -ch/2 * 0.8);
         ctx_rel_line_to (ctx, -cw * 0.9, -ch/2 * 0.8);
-        ctx_set_line_width (ctx, cw * 0.2);
+        ctx_line_width (ctx, cw * 0.2);
         ctx_stroke (ctx);
         ctx_restore (ctx);
         return 0;
@@ -5106,7 +5106,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_rel_move_to (ctx, cw, 0);
         ctx_rel_line_to (ctx, -cw * 0.9, -ch/2 * 0.8);
         ctx_rel_line_to (ctx,  cw * 0.9, ch/2 * 0.8);
-        ctx_set_line_width (ctx, cw * 0.2);
+        ctx_line_width (ctx, cw * 0.2);
         ctx_stroke (ctx);
         ctx_restore (ctx);
         return 0;
@@ -5536,7 +5536,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
   if (bold)
     {
       ctx_move_to (ctx, x, y);
-      ctx_set_line_width (ctx, vt->font_size/35.0);
+      ctx_line_width (ctx, vt->font_size/35.0);
       ctx_glyph (ctx, unichar, 1);
     }
   ctx_move_to (ctx, x, y);
@@ -5825,7 +5825,7 @@ static uint8_t palettes[][16][3]=
       {
         if (vt->font_is_mono)
           {
-            ctx_set_font (ctx, "regular");
+            ctx_font (ctx, "regular");
             vt->font_is_mono = 0;
           }
         cw = ctx_glyph_width (ctx, unichar);
@@ -5834,7 +5834,7 @@ static uint8_t palettes[][16][3]=
       {
         if (vt->font_is_mono == 0)
           {
-            ctx_set_font (ctx, "mono");
+            ctx_font (ctx, "mono");
             vt->font_is_mono = 1;
             if (col > 1)
               {
@@ -6160,7 +6160,7 @@ static uint8_t palettes[][16][3]=
             ctx_rel_line_to (ctx, (cw+2) /3, vt->ch * 0.1);
             ctx_rel_line_to (ctx, (cw+2) /3, -vt->ch * 0.05);
             //ctx_rel_line_to (ctx, cw, 0);
-            ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04) );
+            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04) );
             ctx_stroke (ctx);
           }
         else if (double_underline)
@@ -6170,7 +6170,7 @@ static uint8_t palettes[][16][3]=
             ctx_rel_line_to (ctx, cw, 0);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.030 - vt->ch * vt->scroll_offset);
             ctx_rel_line_to (ctx, cw, 0);
-            ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04) );
+            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04) );
             ctx_stroke (ctx);
           }
         else if (underline)
@@ -6178,7 +6178,7 @@ static uint8_t palettes[][16][3]=
             ctx_begin_path (ctx);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
             ctx_rel_line_to (ctx, cw, 0);
-            ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
+            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
             ctx_stroke (ctx);
           }
         if (overline)
@@ -6186,7 +6186,7 @@ static uint8_t palettes[][16][3]=
             ctx_begin_path (ctx);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.94 - vt->ch * vt->scroll_offset);
             ctx_rel_line_to (ctx, cw, 0);
-            ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
+            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
             ctx_stroke (ctx);
           }
         if (strikethrough)
@@ -6194,7 +6194,7 @@ static uint8_t palettes[][16][3]=
             ctx_begin_path (ctx);
             ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43 - vt->ch * vt->scroll_offset);
             ctx_rel_line_to (ctx, cw, 0);
-            ctx_set_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
+            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
             ctx_stroke (ctx);
           }
       }
@@ -6211,9 +6211,9 @@ static uint8_t palettes[][16][3]=
   {
     int image_id = 0;
     ctx_save (ctx);
-    ctx_set_font (ctx, "mono");
+    ctx_font (ctx, "mono");
     vt->font_is_mono = 0;
-    ctx_set_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
+    ctx_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
     vt->has_blink = 0;
     vt->blink_state++;
     int cursor_x_px = 0;

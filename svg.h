@@ -3844,7 +3844,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       break;
     case CTX_opacity:
     {
-      ctx_set_global_alpha (mrg->ctx, mrg_parse_float (mrg, value, NULL));
+      ctx_global_alpha (mrg->ctx, mrg_parse_float (mrg, value, NULL));
       SET_PROP(opacity, mrg_parse_float (mrg, value, NULL));
     }
     break;
@@ -3945,7 +3945,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_font_family:
       {
         SET_PROPS(font_family, value);
-        ctx_set_font (mrg_cr (mrg), value);
+        ctx_font (mrg_cr (mrg), value);
       }
       break;
     case CTX_syntax_highlight:
@@ -3959,9 +3959,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         case  CTX_nonzero: s->fill_rule = MRG_FILL_RULE_NONZERO; break;
       }
       if (s->fill_rule == MRG_FILL_RULE_EVEN_ODD)
-        ctx_set_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_EVEN_ODD);
+        ctx_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_EVEN_ODD);
       else
-        ctx_set_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_WINDING);
+        ctx_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_WINDING);
       break;
     case CTX_stroke_linejoin:
       switch (val_hash)
@@ -4403,7 +4403,7 @@ static void mrg_path_fill_stroke (Mrg *mrg)
 
   if (PROP(stroke_width) > 0.001 && stroke_color.alpha > 0.001)
   {
-    ctx_set_line_width (ctx, PROP(stroke_width));
+    ctx_line_width (ctx, PROP(stroke_width));
     mrg_ctx_set_source_color (ctx, &stroke_color);
     ctx_stroke (ctx);
   }
@@ -4664,7 +4664,7 @@ static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float wid
     ctx_rel_line_to (ctx, width, 0);
     ctx_rel_line_to (ctx, 0, -(height ));
 
-    ctx_set_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
+    ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
     mrg_ctx_set_source_color (ctx, &background_color);
     ctx_fill (ctx);
   }
@@ -5106,7 +5106,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
 #endif
   if (mrg->in_paint)
   {
-    ctx_set_font_size (cr, style->font_size);
+    ctx_font_size (cr, style->font_size);
 
     if (PROP(text_stroke_width) > 0.01)
     {
@@ -5115,7 +5115,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
       mrg_ctx_set_source_color (cr, &color);
       ctx_begin_path (cr);
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
-      ctx_set_line_width (cr, PROP(text_stroke_width));
+      ctx_line_width (cr, PROP(text_stroke_width));
       ctx_set_line_join (cr, CTX_JOIN_ROUND);
       ctx_text_stroke (cr, string);
     }
@@ -5167,7 +5167,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
   }
   else
   {
-    ctx_set_font_size (cr, style->font_size);
+    ctx_font_size (cr, style->font_size);
     new_x = old_x + ctx_text_width (cr, string);
   }
 
@@ -5599,7 +5599,7 @@ static int mrg_print_wrap (Mrg        *mrg,
       if (mrg->scaled_font)
         cairo_scaled_font_destroy (mrg->scaled_font);
 #endif
-      ctx_set_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
+      ctx_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
       //mrg->scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
       //cairo_scaled_font_reference (mrg->scaled_font);
     }
@@ -5793,7 +5793,7 @@ static int mrg_print_wrap2 (Mrg        *mrg,
       if (mrg->scaled_font)
         cairo_scaled_font_destroy (mrg->scaled_font);
 #endif
-      ctx_set_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
+      ctx_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
 #if 0
       mrg->scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
       cairo_scaled_font_reference (mrg->scaled_font);

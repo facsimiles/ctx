@@ -125,7 +125,7 @@ int main(int argc, char **argv)
     x++;
     ctx_set_rgba (ctx, 1, 1, 1, 1);
     ctx_fill (ctx);
-    ctx_set_font_size (ctx, height * 0.1);
+    ctx_font_size (ctx, height * 0.1);
     ctx_move_to (ctx, width * 0.3, height * 0.4);
     ctx_text (ctx, "hello SDL2\n");
     ctx_set_rgba (ctx, 1, 1, 1, 1);

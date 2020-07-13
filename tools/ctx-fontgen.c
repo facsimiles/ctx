@@ -34,7 +34,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
       return;
   }
   ctx_reset (ctx);
-  ctx_set_font_size (ctx, CTX_BAKE_FONT_SIZE);
+  ctx_font_size (ctx, CTX_BAKE_FONT_SIZE);
   ctx_move_to (ctx, 0, 0);
   if (ctx_glyph (ctx, glyph, 1)) /* we request stroking, since it is better to exclude strokes than fills from bitpacking  */
     return;
@@ -80,7 +80,7 @@ int main (int argc, char **argv)
   ctx_load_font_ttf_file ("import", argv[1]);
   ctx = ctx_new ();
   _ctx_set_transformation (ctx, CTX_TRANSFORMATION_RELATIVE);
-  ctx_set_font (ctx, "import");
+  ctx_font (ctx, "import");
 
   if (strstr (subsets, "all"))
   for (int glyph = 0; glyph < 65536*8; glyph++) add_glyph (ctx, glyph);
