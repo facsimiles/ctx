@@ -817,7 +817,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  *
  * 1 is none, 3 is fast 5 is good 15 or 17 is best for 8bit
  *
- * valid values:
+ * valid values:  - for other values we do not add up to 255
  * 3 5 15 17 51
  *
  */
@@ -838,7 +838,6 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  */
 
 
-//#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (13000/CTX_RASTERIZER_AA)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT    (15000/CTX_RASTERIZER_AA)
 
 #ifndef CTX_RASTERIZER_AA_SLOPE_DEBUG
@@ -11209,13 +11208,14 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   int            maxx,
                                   uint8_t       *coverage,
                                   int            winding,
-                                  int            aa)
+                                  int            aa_factor)
 {
   CtxEntry *entries = rasterizer->edge_list.entries;;
   CtxEdge  *edges = rasterizer->edges;
   int scanline     = rasterizer->scanline;
   int active_edges = rasterizer->active_edges;
   int parity = 0;
+  int fraction = 255/aa_factor;
   coverage -= minx;
 #define CTX_EDGE(no)      entries[edges[no].index]
 #define CTX_EDGE_YMIN(no) CTX_EDGE(no).data.s16[1]
@@ -11235,53 +11235,43 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
         {
           int x0 = CTX_EDGE_X (t)      / CTX_SUBDIV ;
           int x1 = CTX_EDGE_X (next_t) / CTX_SUBDIV ;
-          if ( (x0 < x1) )
-            {
-              int first = x0 / CTX_RASTERIZER_EDGE_MULTIPLIER;
-              int last  = x1 / CTX_RASTERIZER_EDGE_MULTIPLIER;
-              if (first < minx)
-                { first = minx; }
-              if (last >= maxx)
-                { last = maxx; }
-              if (first > last)
-                { return; }
-              int graystart = 255- ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
-              int grayend   = (x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff;
-              if (aa)
-                {
-                  if (first == last)
-                  {
-                    coverage[first] += (graystart-(255-grayend))/ CTX_RASTERIZER_AA;
-                  }
-                  else
-                  {
-                    coverage[first] += graystart/ CTX_RASTERIZER_AA;
-                    first++;
-                    for (int x = first; x < last; x++)
-                      coverage[x] += 255 / CTX_RASTERIZER_AA;
-                    coverage[last] += grayend/ CTX_RASTERIZER_AA;
-                  }
-                }
-              else
-                {
-                  if (first == last)
-                  {
-                    coverage[first] = ctx_sadd8(coverage[first], graystart-(255-grayend));
-                  }
-                  else
-                  {
-                    coverage[first] = ctx_sadd8(coverage[first], graystart);
-                    first++;
-                    for (int x = first; x < last; x++)
-#ifndef CTX_RASTERIZER_AA_SLOPE_DEBUG
-                      coverage[x] = 64;
-#else
-                      coverage[x] = 255;
-#endif
-                    coverage[last] = ctx_sadd8 (coverage[last], grayend);
-                  }
-                }
+          int first = x0 / CTX_RASTERIZER_EDGE_MULTIPLIER;
+          int last  = x1 / CTX_RASTERIZER_EDGE_MULTIPLIER;
+
+          int graystart = 255 - ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
+          int grayend   = (x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff;
+
+          if (first < minx)
+            { first = minx;
+              graystart=255;
             }
+          if (last > maxx)
+            { last = maxx;
+              grayend=255;
+            }
+          if (first == last)
+          {
+            coverage[first] += (graystart-(255-grayend))/ aa_factor;
+          }
+          else if (first < last)
+          {
+                  /*
+            if (aa_factor == 1)
+            {
+              coverage[first] += graystart;
+              for (int x = first + 1; x < last; x++)
+                coverage[x] = 255;
+              coverage[last] = grayend;
+            }
+            else
+            */
+            {
+              coverage[first] += graystart/ aa_factor;
+              for (int x = first + 1; x < last; x++)
+                coverage[x] += fraction;
+              coverage[last]  += grayend/ aa_factor;
+            }
+          }
         }
       t = next_t;
     }
@@ -11295,10 +11285,10 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
     // XXX SIMD candidate
     for (int x = minx; x < maxx; x ++)
     {
-      if (coverage[x])
-      {
+ //   if (coverage[x])
+ //   {
         coverage[x] = (coverage[x] * clip_line[x])/255;
-      }
+ //   }
     }
   }
 #endif
@@ -11442,10 +11432,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           for (int i = 0; i < CTX_RASTERIZER_AA; i++)
             {
               ctx_rasterizer_sort_active_edges (rasterizer);
-              ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
+              ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, CTX_RASTERIZER_AA);
               rasterizer->scanline ++;
               ctx_rasterizer_increment_edges (rasterizer, 1);
-          //rasterizer->needs_aa = 0;
               ctx_rasterizer_feed_edges (rasterizer);
             }
         }
@@ -11454,7 +11443,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
         {
           ctx_rasterizer_increment_edges (rasterizer, CTX_RASTERIZER_AA3);
           ctx_rasterizer_sort_active_edges (rasterizer);
-          ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 0);
+          ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
           /* doing increment of AA3 before and AA2 after produces identical
            * results in GRAY1 and GRAY8, and is also not the reason for the
            * anomaly in the resolution chart.  */
