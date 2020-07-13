@@ -224,7 +224,7 @@ static void render_test (Ctx *ctx)
   ctx_gradient_add_stop_u8 (ctx, 1.0f, 255,255,255,255);
 
   ctx_line_width(ctx, 15);
-  ctx_set_line_cap (ctx, CTX_CAP_ROUND);
+  ctx_line_cap (ctx, CTX_CAP_ROUND);
 #if 1
   ctx_move_to (ctx, 40, 40);
   ctx_line_to (ctx, 500, 420);

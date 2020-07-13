@@ -384,9 +384,9 @@ _CtxGlyph
 };
 
 void ctx_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
-void ctx_set_line_cap         (Ctx *ctx, CtxLineCap cap);
-void ctx_set_line_join        (Ctx *ctx, CtxLineJoin join);
-void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
+void ctx_line_cap         (Ctx *ctx, CtxLineCap cap);
+void ctx_line_join        (Ctx *ctx, CtxLineJoin join);
+void ctx_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
 int  ctx_set_renderstream     (Ctx *ctx, void *data, int length);
 int  ctx_append_renderstream  (Ctx *ctx, void *data, int length);
 
@@ -4889,7 +4889,7 @@ void ctx_line_width (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_SET_LINE_WIDTH, x);
 }
 
-void ctx_set_shadow_blur (Ctx *ctx, float x)
+void ctx_shadow_blur (Ctx *ctx, float x)
 {
 #if CTX_SHADOW_BLUR
   if (ctx->state.gstate.shadow_blur != x)
@@ -4897,7 +4897,7 @@ void ctx_set_shadow_blur (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_SET_SHADOW_BLUR, x);
 }
 
-void ctx_set_shadow_rgba (Ctx *ctx, float r, float g, float b, float a)
+void ctx_shadow_rgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]=
   {
@@ -4908,7 +4908,7 @@ void ctx_set_shadow_rgba (Ctx *ctx, float r, float g, float b, float a)
   ctx_process (ctx, command);
 }
 
-void ctx_set_shadow_offset_x (Ctx *ctx, float x)
+void ctx_shadow_offset_x (Ctx *ctx, float x)
 {
 #if CTX_SHADOW_BLUR
   if (ctx->state.gstate.shadow_offset_x != x)
@@ -4916,7 +4916,7 @@ void ctx_set_shadow_offset_x (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_SET_SHADOW_OFFSET_X, x);
 }
 
-void ctx_set_shadow_offset_y (Ctx *ctx, float x)
+void ctx_shadow_offset_y (Ctx *ctx, float x)
 {
 #if CTX_SHADOW_BLUR
   if (ctx->state.gstate.shadow_offset_y != x)
@@ -4944,7 +4944,7 @@ ctx_font_size (Ctx *ctx, float x)
 }
 
 void
-ctx_set_miter_limit (Ctx *ctx, float limit)
+ctx_miter_limit (Ctx *ctx, float limit)
 {
   CTX_PROCESS_F1 (CTX_SET_MITER_LIMIT, limit);
 }
@@ -5226,7 +5226,7 @@ void ctx_rel_move_to (Ctx *ctx, float x, float y)
   CTX_PROCESS_F (CTX_REL_MOVE_TO,x,y);
 }
 
-void ctx_set_line_cap (Ctx *ctx, CtxLineCap cap)
+void ctx_line_cap (Ctx *ctx, CtxLineCap cap)
 {
   if (ctx->state.gstate.line_cap != cap)
     CTX_PROCESS_U8 (CTX_SET_LINE_CAP, cap);
@@ -5236,24 +5236,24 @@ void ctx_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
   if (ctx->state.gstate.fill_rule != fill_rule)
     CTX_PROCESS_U8 (CTX_SET_FILL_RULE, fill_rule);
 }
-void ctx_set_line_join (Ctx *ctx, CtxLineJoin join)
+void ctx_line_join (Ctx *ctx, CtxLineJoin join)
 {
   if (ctx->state.gstate.line_join != join)
     CTX_PROCESS_U8 (CTX_SET_LINE_JOIN, join);
 }
-void ctx_set_blend_mode (Ctx *ctx, CtxBlend mode)
+void ctx_blend_mode (Ctx *ctx, CtxBlend mode)
 {
   CTX_PROCESS_U8 (CTX_SET_BLEND_MODE, mode);
 }
-void ctx_set_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
+void ctx_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
 {
   CTX_PROCESS_U8 (CTX_SET_COMPOSITING_MODE, mode);
 }
-void ctx_set_text_align (Ctx *ctx, CtxTextAlign text_align)
+void ctx_text_align (Ctx *ctx, CtxTextAlign text_align)
 {
   CTX_PROCESS_U8 (CTX_SET_TEXT_ALIGN, text_align);
 }
-void ctx_set_text_baseline (Ctx *ctx, CtxTextBaseline text_baseline)
+void ctx_text_baseline (Ctx *ctx, CtxTextBaseline text_baseline)
 {
   CTX_PROCESS_U8 (CTX_SET_TEXT_BASELINE, text_baseline);
 }
@@ -17010,7 +17010,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_font_size (ctx, arg (0) );
         break;
       case CTX_SET_MITER_LIMIT:
-        ctx_set_miter_limit (ctx, arg (0) );
+        ctx_miter_limit (ctx, arg (0) );
         break;
       case CTX_SCALE:
         ctx_scale (ctx, arg (0), arg (1) );
@@ -17125,41 +17125,41 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_line_width (ctx, arg (0) );
         break;
       case CTX_SET_SHADOW_COLOR:
-        ctx_set_shadow_rgba (ctx, arg (0), arg(1), arg(2), arg(3));
+        ctx_shadow_rgba (ctx, arg (0), arg(1), arg(2), arg(3));
         break;
       case CTX_SET_SHADOW_BLUR:
-        ctx_set_shadow_blur (ctx, arg (0) );
+        ctx_shadow_blur (ctx, arg (0) );
         break;
       case CTX_SET_SHADOW_OFFSET_X:
-        ctx_set_shadow_offset_x (ctx, arg (0) );
+        ctx_shadow_offset_x (ctx, arg (0) );
         break;
       case CTX_SET_SHADOW_OFFSET_Y:
-        ctx_set_shadow_offset_y (ctx, arg (0) );
+        ctx_shadow_offset_y (ctx, arg (0) );
         break;
       case CTX_SET_LINE_JOIN:
-        ctx_set_line_join (ctx, (CtxLineJoin) arg (0) );
+        ctx_line_join (ctx, (CtxLineJoin) arg (0) );
         break;
       case CTX_SET_LINE_CAP:
-        ctx_set_line_cap (ctx, (CtxLineCap) arg (0) );
+        ctx_line_cap (ctx, (CtxLineCap) arg (0) );
         break;
       case CTX_SET_COMPOSITING_MODE:
-        ctx_set_compositing_mode (ctx, (CtxCompositingMode) arg (0) );
+        ctx_compositing_mode (ctx, (CtxCompositingMode) arg (0) );
         break;
       case CTX_SET_BLEND_MODE:
         {
           int blend_mode = arg(0);
           if (blend_mode == CTX_SET_COLOR) blend_mode = CTX_BLEND_COLOR;
-          ctx_set_blend_mode (ctx, blend_mode);
+          ctx_blend_mode (ctx, blend_mode);
         }
         break;
       case CTX_SET_FILL_RULE:
         ctx_fill_rule (ctx, (CtxFillRule) arg (0) );
         break;
       case CTX_SET_TEXT_ALIGN:
-        ctx_set_text_align (ctx, (CtxTextAlign) arg (0) );
+        ctx_text_align (ctx, (CtxTextAlign) arg (0) );
         break;
       case CTX_SET_TEXT_BASELINE:
-        ctx_set_text_baseline (ctx, (CtxTextBaseline) arg (0) );
+        ctx_text_baseline (ctx, (CtxTextBaseline) arg (0) );
         break;
       case CTX_SET_TEXT_DIRECTION:
         ctx_set_text_direction (ctx, (CtxTextDirection) arg (0) );

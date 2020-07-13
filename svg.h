@@ -3971,7 +3971,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         case CTX_bevel: s->stroke_linejoin = CTX_JOIN_BEVEL; break;
         default:        s->stroke_linejoin = CTX_JOIN_MITER;
       }
-      ctx_set_line_join (mrg_cr (mrg), (CtxLineJoin)s->stroke_linejoin);
+      ctx_line_join (mrg_cr (mrg), (CtxLineJoin)s->stroke_linejoin);
       break;
     case CTX_stroke_linecap:
       switch (val_hash)
@@ -3981,7 +3981,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         case  CTX_square: s->stroke_linecap = CTX_CAP_SQUARE; break;
         default:          s->stroke_linecap = CTX_CAP_NONE;
       }
-      ctx_set_line_cap (mrg_cr (mrg), s->stroke_linecap);
+      ctx_line_cap (mrg_cr (mrg), s->stroke_linecap);
       break;
     case CTX_vertical_align:
       switch (val_hash)
@@ -5116,7 +5116,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
       ctx_begin_path (cr);
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
       ctx_line_width (cr, PROP(text_stroke_width));
-      ctx_set_line_join (cr, CTX_JOIN_ROUND);
+      ctx_line_join (cr, CTX_JOIN_ROUND);
       ctx_text_stroke (cr, string);
     }
 

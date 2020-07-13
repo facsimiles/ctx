@@ -41,11 +41,11 @@ static void _analog_clock (Ctx     *ctx,
   ctx_rgba8 (ctx, 127,127,127,255);
   ctx_arc (ctx, x, y, radius * 0.9, 0.0, CTX_PI * 2 + 0.001, 0); // XXX
   ctx_line_width (ctx, radius * 0.1);
-  ctx_set_line_cap (ctx, CTX_CAP_NONE);
+  ctx_line_cap (ctx, CTX_CAP_NONE);
   ctx_stroke (ctx);
 
   ctx_line_width (ctx, 7);
-  ctx_set_line_cap (ctx, CTX_CAP_ROUND);
+  ctx_line_cap (ctx, CTX_CAP_ROUND);
   ctx_rgba8 (ctx, 188,188,188,255);
 
   r = m * CTX_PI * 2/ 60.0 - CTX_PI/2;
@@ -63,7 +63,7 @@ static void _analog_clock (Ctx     *ctx,
 
 
   ctx_line_width (ctx, 2);
-  ctx_set_line_cap (ctx, CTX_CAP_ROUND);
+  ctx_line_cap (ctx, CTX_CAP_ROUND);
   ctx_rgba8 (ctx, 255,0,0,127);
 
   if (smoothstep)
@@ -121,7 +121,7 @@ int main (int argc, char **argv)
     float height = ctx_height (ctx);
     ctx_save (ctx);
     ctx_rectangle      (ctx, 0, 0, width, height);
-    ctx_set_compositing_mode (ctx, CTX_COMPOSITE_CLEAR);
+    ctx_compositing_mode (ctx, CTX_COMPOSITE_CLEAR);
     ctx_fill           (ctx);
     ctx_restore (ctx);
     ctx_move_to        (ctx, 10+x, height * 0.2);
