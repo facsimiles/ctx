@@ -5787,7 +5787,7 @@ static uint8_t palettes[][16][3]=
         float val = gray * 255 / 24;
         r = g = b = val;
       }
-    ctx_set_rgba8 (ctx, r, g, b, 255);
+    ctx_rgba8 (ctx, r, g, b, 255);
   }
 
   int vt_keyrepeat (VT *vt)
@@ -6013,7 +6013,7 @@ static uint8_t palettes[][16][3]=
             int b = temp & 0xff;
             if (dh)
               { r= g = b = 30; }
-            ctx_set_rgba8 (ctx, r, g, b, 255);
+            ctx_rgba8 (ctx, r, g, b, 255);
           }
         else
           {
@@ -6052,7 +6052,7 @@ static uint8_t palettes[][16][3]=
                         { rgb[i] = vt->fg_color[i]; }
                       break;
                   }
-                ctx_set_rgba8 (ctx, rgb[0],
+                ctx_rgba8 (ctx, rgb[0],
                                rgb[1],
                                rgb[2], 255);
               }
@@ -6100,7 +6100,7 @@ static uint8_t palettes[][16][3]=
             int g = temp & 0xff;
             temp >>= 8;
             int b = temp & 0xff;
-            ctx_set_rgba8 (ctx, r, g, b, 255);
+            ctx_rgba8 (ctx, r, g, b, 255);
           }
         else
           {
@@ -6125,7 +6125,7 @@ static uint8_t palettes[][16][3]=
                       for (int i = 0; i <3 ; i++)
                         { rgb[i] = vt->fg_color[i]; }
                   }
-                ctx_set_rgba8 (ctx, rgb[0],
+                ctx_rgba8 (ctx, rgb[0],
                                rgb[1],
                                rgb[2], 255);
               }
@@ -6231,15 +6231,15 @@ static uint8_t palettes[][16][3]=
                        (vt->rows + 1) * vt->ch);
         if (vt->reverse_video)
           {
-            ctx_set_rgba (ctx, 1,1,1,1);
+            ctx_rgba (ctx, 1,1,1,1);
             ctx_fill  (ctx);
-            ctx_set_rgba (ctx, 0,0,0,1);
+            ctx_rgba (ctx, 0,0,0,1);
           }
         else
           {
-            ctx_set_rgba (ctx, 0,0,0,1);
+            ctx_rgba (ctx, 0,0,0,1);
             ctx_fill  (ctx);
-            ctx_set_rgba (ctx, 1,1,1,1);
+            ctx_rgba (ctx, 1,1,1,1);
           }
         ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
       }
@@ -6269,15 +6269,15 @@ static uint8_t palettes[][16][3]=
                 ctx_rectangle (ctx, x0, y - vt->ch, vt->cw * vt->cols, vt->ch);
         if (vt->reverse_video)
           {
-            ctx_set_rgba (ctx, 1,1,1,1);
+            ctx_rgba (ctx, 1,1,1,1);
             ctx_fill  (ctx);
-            ctx_set_rgba (ctx, 0,0,0,1);
+            ctx_rgba (ctx, 0,0,0,1);
           }
         else
           {
-            ctx_set_rgba (ctx, 0,0,0,1);
+            ctx_rgba (ctx, 0,0,0,1);
             ctx_fill  (ctx);
-            ctx_set_rgba (ctx, 1,1,1,1);
+            ctx_rgba (ctx, 1,1,1,1);
           }
                 continue;
               }
@@ -6424,7 +6424,7 @@ static uint8_t palettes[][16][3]=
     if (vt->cursor_visible)
       {
         vt_cell_cache_reset (vt, vt->cursor_y, vt->cursor_x);
-        ctx_set_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
+        ctx_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
         ctx_begin_path (ctx);
         ctx_rectangle (ctx,
                        cursor_x_px, cursor_y_px,
@@ -6435,7 +6435,7 @@ static uint8_t palettes[][16][3]=
       {
         if (vt->leds[i])
           {
-            ctx_set_rgba (ctx, .5,1,.5,0.8);
+            ctx_rgba (ctx, .5,1,.5,0.8);
             ctx_rectangle (ctx, vt->cw * i + vt->cw * 0.25, vt->ch * 0.25, vt->cw/2, vt->ch/2);
             ctx_fill (ctx);
           }
@@ -6451,12 +6451,12 @@ static uint8_t palettes[][16][3]=
         ctx_rectangle (ctx, vt->cw * (vt->cols - 2),
                        0, 2 * vt->cw,
                        vt->rows * vt->ch);
-        ctx_set_rgba (ctx, 1, 1, 1, .5);
+        ctx_rgba (ctx, 1, 1, 1, .5);
         ctx_fill (ctx);
         ctx_rectangle (ctx, vt->cw * (vt->cols - 2 + 0.1),
                        offset * vt->rows * vt->ch, (2-0.2) * vt->cw,
                        win_len * vt->rows * vt->ch);
-        ctx_set_rgba (ctx, 0, 0, 0, .5);
+        ctx_rgba (ctx, 0, 0, 0, .5);
         ctx_fill (ctx);
       }
 //#define SCROLL_SPEED 0.25;

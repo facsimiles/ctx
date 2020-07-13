@@ -162,15 +162,15 @@ ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_
 void  ctx_set_global_alpha (Ctx *ctx, float global_alpha);
 float ctx_get_global_alpha (Ctx *ctx);
 
-void ctx_set_rgba   (Ctx *ctx, float r, float g, float b, float a);
-void ctx_set_rgb    (Ctx *ctx, float r, float g, float b);
-void ctx_set_gray   (Ctx *ctx, float gray);
-void ctx_set_rgba8  (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-void ctx_set_drgba  (Ctx *ctx, float r, float g, float b, float a);
-void ctx_set_cmyka  (Ctx *ctx, float c, float m, float y, float k, float a);
-void ctx_set_cmyk   (Ctx *ctx, float c, float m, float y, float k);
-void ctx_set_dcmyka (Ctx *ctx, float c, float m, float y, float k, float a);
-void ctx_set_dcmyk  (Ctx *ctx, float c, float m, float y, float k);
+void ctx_rgba   (Ctx *ctx, float r, float g, float b, float a);
+void ctx_rgb    (Ctx *ctx, float r, float g, float b);
+void ctx_gray   (Ctx *ctx, float gray);
+void ctx_rgba8  (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void ctx_drgba  (Ctx *ctx, float r, float g, float b, float a);
+void ctx_cmyka  (Ctx *ctx, float c, float m, float y, float k, float a);
+void ctx_cmyk   (Ctx *ctx, float c, float m, float y, float k);
+void ctx_dcmyka (Ctx *ctx, float c, float m, float y, float k, float a);
+void ctx_dcmyk  (Ctx *ctx, float c, float m, float y, float k);
 
 /* there is also getters for colors, by first setting a color in one format and getting
  * it with another color conversions can be done
@@ -4591,7 +4591,7 @@ ctx_set_dcmyk_space (Ctx *ctx, int device_space)
 }
 
 void
-ctx_set_rgb_space (Ctx *ctx, int device_space)
+ctx_rgb_space (Ctx *ctx, int device_space)
 {
   CTX_PROCESS_U8 (CTX_SET_RGB_SPACE, device_space);
 }
@@ -4623,7 +4623,7 @@ ctx_image_path (Ctx *ctx, const char *path, float x, float y)
 }
 
 void
-ctx_set_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
   ctx_process (ctx, &command);
@@ -4638,7 +4638,7 @@ ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_
   ctx_process (ctx, &command);
 }
 
-void ctx_set_drgba (Ctx *ctx, float r, float g, float b, float a)
+void ctx_drgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]=
   {
@@ -4649,7 +4649,7 @@ void ctx_set_drgba (Ctx *ctx, float r, float g, float b, float a)
   ctx_process (ctx, command);
 }
 
-void ctx_set_rgba (Ctx *ctx, float r, float g, float b, float a)
+void ctx_rgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]=
   {
@@ -4660,12 +4660,12 @@ void ctx_set_rgba (Ctx *ctx, float r, float g, float b, float a)
   ctx_process (ctx, command);
 }
 
-void ctx_set_rgb (Ctx *ctx, float   r, float   g, float   b)
+void ctx_rgb (Ctx *ctx, float   r, float   g, float   b)
 {
-  ctx_set_rgba (ctx, r, g, b, 1.0f);
+  ctx_rgba (ctx, r, g, b, 1.0f);
 }
 
-void ctx_set_gray (Ctx *ctx, float gray)
+void ctx_gray (Ctx *ctx, float gray)
 {
   CtxEntry command[3]=
   {
@@ -4677,7 +4677,7 @@ void ctx_set_gray (Ctx *ctx, float gray)
 }
 
 #if CTX_ENABLE_CMYK
-void ctx_set_cmyk (Ctx *ctx, float c, float m, float y, float k)
+void ctx_cmyk (Ctx *ctx, float c, float m, float y, float k)
 {
   CtxEntry command[3]=
   {
@@ -4688,7 +4688,7 @@ void ctx_set_cmyk (Ctx *ctx, float c, float m, float y, float k)
   ctx_process (ctx, command);
 }
 
-void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
+void ctx_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
 {
   CtxEntry command[3]=
   {
@@ -4699,7 +4699,7 @@ void ctx_set_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
   ctx_process (ctx, command);
 }
 
-void ctx_set_dcmyk (Ctx *ctx, float c, float m, float y, float k)
+void ctx_dcmyk (Ctx *ctx, float c, float m, float y, float k)
 {
   CtxEntry command[3]=
   {
@@ -4710,7 +4710,7 @@ void ctx_set_dcmyk (Ctx *ctx, float c, float m, float y, float k)
   ctx_process (ctx, command);
 }
 
-void ctx_set_dcmyka (Ctx *ctx, float c, float m, float y, float k, float a)
+void ctx_dcmyka (Ctx *ctx, float c, float m, float y, float k, float a)
 {
   CtxEntry command[3]=
   {
@@ -12264,7 +12264,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
       y = entry->data.s16[3] * 1.0f / aa;
       ctx_line_to (ctx, x, y);
     }
-    ctx_set_gray (ctx, 1.0f);
+    ctx_gray (ctx, 1.0f);
     ctx_fill (ctx);
     ctx_free (ctx);
   }
@@ -16858,7 +16858,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_set_dcmyk_space (ctx, arg (0) );
         break;
       case CTX_SET_RGB_SPACE:
-        ctx_set_rgb_space (ctx, arg (0) );
+        ctx_rgb_space (ctx, arg (0) );
         break;
       case CTX_SET_CMYK_SPACE:
         ctx_set_cmyk_space (ctx, arg (0) );
@@ -16869,20 +16869,20 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           switch (parser->color_model)
             {
               case CTX_GRAY:
-                ctx_set_gray (ctx, arg (0) );
+                ctx_gray (ctx, arg (0) );
                 break;
               case CTX_GRAYA:
-                ctx_set_rgba (ctx, arg (0), arg (0), arg (0), arg (1) );
+                ctx_rgba (ctx, arg (0), arg (0), arg (0), arg (1) );
                 break;
               case CTX_RGB:
-                ctx_set_rgb (ctx, arg (0), arg (1), arg (2) );
+                ctx_rgb (ctx, arg (0), arg (1), arg (2) );
                 break;
 #if CTX_ENABLE_CMYK
               case CTX_CMYK:
-                ctx_set_cmyk (ctx, arg (0), arg (1), arg (2), arg (3) );
+                ctx_cmyk (ctx, arg (0), arg (1), arg (2), arg (3) );
                 break;
               case CTX_CMYKA:
-                ctx_set_cmyka (ctx, arg (0), arg (1), arg (2), arg (3), arg (4) );
+                ctx_cmyka (ctx, arg (0), arg (1), arg (2), arg (3), arg (4) );
                 break;
 #else
               /* when there is no cmyk support at all in rasterizer
@@ -16895,18 +16895,18 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                   ctx_cmyk_to_rgb (arg (0), arg (1), arg (2), arg (3), &r, &g, &b);
                   if (parser->color_model == CTX_CMYKA)
                     { a = arg (4); }
-                  ctx_set_rgba (ctx, r, g, b, a);
+                  ctx_rgba (ctx, r, g, b, a);
                 }
                 break;
 #endif
               case CTX_RGBA:
-                ctx_set_rgba (ctx, arg (0), arg (1), arg (2), arg (3) );
+                ctx_rgba (ctx, arg (0), arg (1), arg (2), arg (3) );
                 break;
               case CTX_DRGB:
-                ctx_set_drgba (ctx, arg (0), arg (1), arg (2), 1.0);
+                ctx_drgba (ctx, arg (0), arg (1), arg (2), 1.0);
                 break;
               case CTX_DRGBA:
-                ctx_set_drgba (ctx, arg (0), arg (1), arg (2), arg (3) );
+                ctx_drgba (ctx, arg (0), arg (1), arg (2), arg (3) );
                 break;
             }
         }
@@ -19043,7 +19043,7 @@ void _ctx_debug_overlays (Ctx *ctx)
   ctx_save (ctx);
 
   ctx_set_line_width (ctx, 2);
-  ctx_set_rgba (ctx, 0,0,0.8,0.5);
+  ctx_rgba (ctx, 0,0,0.8,0.5);
   for (a = ctx->events.items; a; a = a->next)
   {
     float current_x = ctx_pointer_x (ctx);

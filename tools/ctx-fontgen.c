@@ -43,7 +43,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
   ctx_renderstream_compact (&ctx->renderstream);
 
   char buf[44]={0,0,0,0,0};
-  ctx_unichar_to_utf8 (glyph, buf);
+  ctx_unichar_to_utf8 (glyph, (uint8_t*)buf);
   uint32_t args[2] = {glyph, ctx_glyph_width (ctx, glyph) * 256};
   ctx_renderstream_add_u32 (&output_font, CTX_DEFINE_GLYPH, args);
 
@@ -167,7 +167,7 @@ char* string =
     if (entry->code == '@')
     {
        char buf[44]={0,0,0,0,0};
-       ctx_unichar_to_utf8 (entry->data.u32[0], buf);
+       ctx_unichar_to_utf8 (entry->data.u32[0], (uint8_t*)buf);
        switch (buf[0])
        {
          case '\\':
@@ -207,11 +207,11 @@ char* string =
     if (entry->code == '@')
     {
        char buf[44]={0,0,0,0,0};
-       ctx_unichar_to_utf8 (entry->data.u32[0], buf);
+       ctx_unichar_to_utf8 (entry->data.u32[0], (uint8_t*)buf);
        switch (buf[0])
        {
          case '\\':
-           printf ("/*       \\         x-advance: %f */", buf, entry->data.u32[1]/256.0);
+           printf ("/*       \\         x-advance: %f */", entry->data.u32[1]/256.0);
          break;
          default:
            printf ("/*        %s        x-advance: %f */", buf, entry->data.u32[1]/256.0);

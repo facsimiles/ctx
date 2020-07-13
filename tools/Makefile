@@ -6,7 +6,7 @@ clean:
 	rm -f $(PROGRAMS)
 
 %: %.c ../ctx.h
-	ccache gcc $< -o $@ -lm -I.. -I../fonts
+	ccache gcc $< -o $@ -lm -I.. -I../fonts -Wall
 
 %-32bit: %.c ../ctx.h
 	ccache i686-linux-gnu-gcc $< -o $@ -lm -I.. -I../fonts

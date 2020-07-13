@@ -38,7 +38,7 @@ static void _analog_clock (Ctx     *ctx,
   float r;
   ctx_save (ctx);
 
-  ctx_set_rgba8 (ctx, 127,127,127,255);
+  ctx_rgba8 (ctx, 127,127,127,255);
   ctx_arc (ctx, x, y, radius * 0.9, 0.0, CTX_PI * 2 + 0.001, 0); // XXX
   ctx_set_line_width (ctx, radius * 0.1);
   ctx_set_line_cap (ctx, CTX_CAP_NONE);
@@ -46,7 +46,7 @@ static void _analog_clock (Ctx     *ctx,
 
   ctx_set_line_width (ctx, 7);
   ctx_set_line_cap (ctx, CTX_CAP_ROUND);
-  ctx_set_rgba8 (ctx, 188,188,188,255);
+  ctx_rgba8 (ctx, 188,188,188,255);
 
   r = m * CTX_PI * 2/ 60.0 - CTX_PI/2;
 	  ;
@@ -64,7 +64,7 @@ static void _analog_clock (Ctx     *ctx,
 
   ctx_set_line_width (ctx, 2);
   ctx_set_line_cap (ctx, CTX_CAP_ROUND);
-  ctx_set_rgba8 (ctx, 255,0,0,127);
+  ctx_rgba8 (ctx, 255,0,0,127);
 
   if (smoothstep)
     r = (s + ms/1000.0f) * CTX_PI * 2/ 60 - CTX_PI/2;
@@ -129,7 +129,7 @@ int main (int argc, char **argv)
     ctx_set_line_width (ctx, 2);
     ctx_set_rgba       (ctx, 0, 0, 0, 1);
     ctx_text_stroke    (ctx, utf8);
-    ctx_set_rgba8      (ctx, 255, 255, 255, 255);
+    ctx_rgba8      (ctx, 255, 255, 255, 255);
     ctx_move_to        (ctx, height * 0.05 +x, height * 0.2);
     ctx_text           (ctx, utf8);
     ctx_set_font_size  (ctx, height * 0.2);
