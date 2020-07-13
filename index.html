@@ -29,7 +29,7 @@
 
        <div id='menu'>
                 <a href='http://ctx.graphics/'>ctx</a>
-                <a href='#code'>code</a>
+                <a href='#downloads'>files</a>
                 <a href='#reference'>reference</a>
                 <a href='#example'>hello</a>
                 <br/>
@@ -39,7 +39,7 @@
                 <a href='#roadmap'>roadmap</a>
                 <a href='#license'>license</a>
                 <br/>
-                <a href='#mcu'>videos</a>
+                <a href='mcu/'>videos</a>
                 <a href='tests/'>tests</a>
                 <a href='glitch/'>glitch</a>
         </div>
@@ -49,11 +49,10 @@
               <div class='content'>
         <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is a vector graphics renderer and protocol, for content
-        rendering. With a footprint scalable down to fit microcontrollers,
-        but also handling CMYK and floating point with SIMD on higher
-        end systems.
-        </p>
+        <p>ctx is a vector graphics renderer and protocol inspired by HTML5
+        Canvas 2D context, with a footprint tunable to be small enough for <a
+        href='mcu/'>microcontrollers</a>, while being capable of supporting
+floating point and CMYK.</p>
 
         <p>ctx is an implementation of a HTML5 Canvas 2d context renderer as a
         text protocol with an efficient C <a href='rasterizer/'>rasterizer</a>.
@@ -86,35 +85,6 @@
         renderer, which becomes available if cairo.h is included before
         ctx.h</p>
         
-<h2 id='mcu'>microcontroller tests</h2> <p>To keep code size small and constraining
-development of ctx from the beginning has been the ability to use it for
-antialiased resolution independent user interfaces on microcontrollers. The
-arm-cortex-m4 at 97mhz in the card10 badge and on the TTGO ESP32 both with
-immediate rendering, the card10 has a 180x80 display with really high visual
-quality, while the TFT LCD on the ESP32 has slightly higher pixel resolution at
-160x128, video from november 2019.
-</p>
-<video width="100%" controls>
-  <source src="ctx2.mp4" type="video/mp4">
-Your browser does not support the video tag and mp4.
-</video>
-
-<p>january 2020, a demo running on an esp with 320x240 <tt>RGB565</tt> display, here the
-framebuffer is larger than the biggest single allocation we can afford and the
-deferred rendering is rendering the display in 4 chunks. The performance of ctx
-has improved since these tests were done as a side effect of work being
-focusing mainly on x86_64 and <a href='http://gegl.org/GEGL/'>GEGL</a>s needs
-for floating point and CMYK.</p>
-
-<video width="100%" controls>
-  <source src="ctx3.mp4" type="video/mp4">
-Your browser does not support the video tag and mp4.
-</video>
-
-With little geometry this is fine; with more the displays starts
-having very visible tearing on large content changes.
-
-</p>
 
 <h2 id='tests'>rendering tests</h2>
 
@@ -137,7 +107,7 @@ in shorter time, I will relicense ctx under the <a href='https://opensource.org/
         compositing is according to <a
         href='https://drafts.fxtf.org/compositing/'>Compositing and Blending
 Level 2</a>. The core ideas for a 2d vector vocabulary is however shared with
-postscript, PDF, cairo and others.
+ PDF, cairo, OpenVG, directdraw and others all with a basis in postscript.
         </p>
 
         <h2 id='reference'>ctx syntax reference</h2>
@@ -300,7 +270,7 @@ global alpha.</td></tr>
         for mostly static UIs.</p>
 -->
 
-        <h2 id='code'>code</h2>
+        <h2 id='downloads'>the code</h2>
 
         <p>It is early stages for ctx, more instructions on integration and use
         read the header file itself. A git repository with tests and examples
@@ -309,12 +279,13 @@ global alpha.</td></tr>
         <h3>Files</h3>
 
         <table>
-                <tr><td><a href='ctx.h.html'>ctx.h</a></td><td>580K</td><td><a href='ctx.h'>download<td></td></tr>
-                <tr><td><a href='ctx-font-regular.h.html'>ctx-font-regular.h</a></td><td>128K</td><td><a href='ctx-font-regular.h'>download<td></td></tr>
+                <tr><td><a href='ctx.h'>ctx.h</a></td><td>580K</td><td><a href='ctx.h.html'>browse<td></td>The singleheader library ctx.</tr>
+                <tr><td><a href='ctx-font-ascii.h'>ctx-font-ascii.h</a></td><td>72K</td><td><a href='ctx-font-regular.h.html'>browse<td></td><td>Example font to use with ctx, containing only ASCII</td></tr>
+                <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a></td><td>128K</td><td><a href='ctx-font-regular.h.html'>browse<td></td><td>Example font to use with ctx</td></tr>
+                <tr><td><a href='ctx.elf'>ctx.elf</a></td><td>168K<td><td>card10 l0dable</td>
+                                        <tr><td><a href='hello.c'>hello.c</a></td><td>3K</td><td></td><td>Animated terminal test.</tr>
+                                        <tr><td><a href='test-size.c'>test-size.c</a></td><td>3K</td><td><td></td><td>minimal example</td></tr>
         </table>
-        <p>Library header (and implementation): <a href='ctx.h.html'>ctx.h</a>, <a
-                href='ctx-font-regular.h'>ctx-font-regular.h</a> font used in
-        examples, card10 test l0dable: <a href='ctx.elf'>ctx.elf</a></p>
 
         <h2 id='performance'>is ctx fast <span style='color:gray'>yet</span>?</h2>
 <p>This table contains fills of 1024px with various fill sources for all of ctx' supported targets, along with cairo included as a frame of reference. Small changes, like

@@ -33,8 +33,9 @@ check:
 	  diff -u reference/$$a $$a ; true;  \
 	done
 
-index.html: $(TEST_CTX) $(TEST_SVG) Makefile
+index.html: $(TEST_CTX) $(TEST_SVG) Makefile ../ctx.h
 	echo "<html><head><title></title>" > $@
+	echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>' >> $@
 	echo "<style>@import url('../ctx.css');td{vertical-align:top;}" >> $@
 	echo "img{image-rendering: -moz-crisp-edges; \
 	image-rendering:   -o-crisp-edges;        \
@@ -43,7 +44,7 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile
     -ms-interpolation-mode: nearest-neighbor;  }" >> $@
 	echo "img.side{height:40vh;}" >> $@
 	echo "img.thumb{height:10vh;}" >> $@
-	echo "pre{height:40vh;width:50vw; overflow:scroll}" >> $@
+	echo "pre{height:40vh;width:20em; overflow:scroll}" >> $@
 	echo "</style>" >> $@
 	echo "<script>setTimeout(function(){location.reload();},8000);</script>" >> $@
 	echo "</head>" >> $@ 
