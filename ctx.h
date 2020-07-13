@@ -824,7 +824,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  */
 
 
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (15000/rasterizer->aa)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (17000/rasterizer->aa)
 
 #ifndef CTX_RASTERIZER_AA_SLOPE_DEBUG
 #define CTX_RASTERIZER_AA_SLOPE_DEBUG 0
@@ -11272,13 +11272,18 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
     int y = scanline / rasterizer->aa;
     uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
     // XXX SIMD candidate
-    for (int x = minx; x < maxx; x ++)
+    for (int x = minx; x <= maxx; x ++)
     {
  //   if (coverage[x])
  //   {
         coverage[x] = (coverage[x] * clip_line[x])/255;
  //   }
     }
+  }
+  if (rasterizer->aa == 1)
+  {
+    for (int x = minx; x <= maxx; x ++)
+     coverage[x] = coverage[x] > 127?255:0;
   }
 #endif
 }
@@ -11301,12 +11306,12 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   rasterizer->scanline        = 0;
   if (!rasterizer->preserve)
   {
-    rasterizer->scan_min        = 5000;
-    rasterizer->scan_max        = -5000;
-    rasterizer->col_min         = 5000;
-    rasterizer->col_max         = -5000;
+    rasterizer->scan_min      = 5000;
+    rasterizer->scan_max      = -5000;
+    rasterizer->col_min       = 5000;
+    rasterizer->col_max       = -5000;
   }
-  //rasterizer->comp_op         = NULL;
+  //rasterizer->comp_op       = NULL;
 }
 
 static void
@@ -11405,7 +11410,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     rasterizer->scanline = scan_start;
       ctx_rasterizer_feed_edges (rasterizer);
 
-  for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
+  for (rasterizer->scanline = scan_start; rasterizer->scanline <= scan_end;)
     {
       ctx_memset (coverage, 0,
 #if CTX_SHAPE_CACHE
@@ -11662,8 +11667,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
            (entry0->data.s16[3] == entry3->data.s16[3]) &&
            (entry1->data.s16[3] == entry2->data.s16[3]) &&
            (entry2->data.s16[2] == entry3->data.s16[2]) &&
-           (entry3->data.s16[2] & (CTX_SUBDIV-1) == 0)  &&
-           (entry3->data.s16[3] & (aa-1) == 0)
+           ((entry3->data.s16[2] & (CTX_SUBDIV-1)) == 0)  &&
+           ((entry3->data.s16[3] & (aa-1)) == 0)
          )
         {
           /* XXX ; also check that there is no subpixel bits.. */
@@ -12912,15 +12917,17 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
     case CTX_ANTIALIAS_NONE:
       ((CtxRasterizer*)(ctx->renderer))->aa = 1;
       break;
-    case CTX_ANTIALIAS_DEFAULT:
-    case CTX_ANTIALIAS_GOOD:
-      ((CtxRasterizer*)(ctx->renderer))->aa = 5;
-      break;
     case CTX_ANTIALIAS_FAST:
       ((CtxRasterizer*)(ctx->renderer))->aa = 3;
       break;
-    case CTX_ANTIALIAS_BEST:
+    case CTX_ANTIALIAS_GOOD:
+      ((CtxRasterizer*)(ctx->renderer))->aa = 5;
+      break;
+    case CTX_ANTIALIAS_DEFAULT:
       ((CtxRasterizer*)(ctx->renderer))->aa = 15;
+      break;
+    case CTX_ANTIALIAS_BEST:
+      ((CtxRasterizer*)(ctx->renderer))->aa = 17;
       break;
   }
 /* vertical level of supersampling at full/forced AA.
