@@ -40,5 +40,6 @@ updateweb: clean all post ctx.h.html ctx-font-regular.h.html
 	rm -rf /home/pippin/pgo/ctx.graphics/.git || true
 	cp -Rv .git /home/pippin/pgo/ctx.graphics/.git
 	cp -R tests/* ~/pgo/ctx.graphics/tests
+	cp -R rasterizer/* ~/pgo/ctx.graphics/rasterizer
 	cp -R glitch/* ~/pgo/ctx.graphics/glitch
 	cp ctx.css index.html highlight.css ctx.h.html ctx-font-regular.h.html ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/

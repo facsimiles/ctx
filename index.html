@@ -27,7 +27,7 @@
         </div>
 
 
-        <div id='menu'>
+       <div id='menu'>
                 <a href='http://ctx.graphics/'>ctx</a>
                 <a href='#code'>code</a>
                 <a href='#reference'>reference</a>
@@ -35,9 +35,9 @@
                 <br/>
                 <a href='#performance'>speed</a>
                 <a href='#codesize'>codesize</a>
+                <a href='rasterizer/'>rasterizer</a>
                 <a href='#roadmap'>roadmap</a>
                 <a href='#license'>license</a>
-                <a href='#example'>example</a>
                 <br/>
                 <a href='#mcu'>videos</a>
                 <a href='tests/'>tests</a>
@@ -49,18 +49,17 @@
               <div class='content'>
         <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is a vector graphics renderer and protocol, for resolution
-        independent graphics and user interfaces; from code and RAM constrained
-        embedded/BIOS use to experimental printing and networked user
-        interfaces.</p>
-
+        <p>ctx is a vector graphics renderer and protocol, for content
+        rendering. With a footprint scalable down to fit microcontrollers,
+        but also handling CMYK and floating point with SIMD on higher
+        end systems.
+        </p>
 
         <p>ctx is an implementation of a HTML5 Canvas 2d context renderer as a
-        text protocol with an efficient C rasterizer.  Almost he full W3C
-        rendering API is covered including shadow-blur, currently missing
-        is ellipse() and correct handling of path instead of using bounding box
-        in in_fill().
-        </p>
+        text protocol with an efficient C <a href='rasterizer/'>rasterizer</a>.
+        Almost he full W3C rendering API is covered including shadow-blur,
+        currently missing is ellipse() and correct handling of path instead of
+        using bounding box in in_fill().  </p>
 
         <p>Render targets handled natively are 8bit sRGBA
         <tt>RGBA8</tt>, floating point scRGB <tt>RGBAF</tt> 8bit and floating
@@ -318,8 +317,9 @@ global alpha.</td></tr>
         examples, card10 test l0dable: <a href='ctx.elf'>ctx.elf</a></p>
 
         <h2 id='performance'>is ctx fast <span style='color:gray'>yet</span>?</h2>
-<p>This table contains fills of 1024px with various fill sources for all of ctx' supported targets, along with cairo included as a frame of reference. Note that
- this is the test case that has received optimization, other cases like filling rectangles cairo is faster.
+<p>This table contains fills of 1024px with various fill sources for all of ctx' supported targets, along with cairo included as a frame of reference. Small changes, like
+changing between inlining, forced inlinging and no inlining can lead to performance
+fluctuations, the numbers show that performance is decent in contrast with cairo.
 </p>
 <p>Ctx implements all combinations of compositing and blending modes, but
 normal with source over has received the most attentions, both with optional
@@ -405,18 +405,20 @@ near neglible.</p>
 if the maximum number of vertices in a path is reduced this can be below
 10kb.</p>
 
-        <h2 id='roadmap'>semi-ordered roadmap</h2>
+        <h2 id='roadmap'>semi-ordered roadmap / wishlist</h2>
 	<ul>
         <li>reduce size and improve performance</li>
-        <li>rasterizer glitches</li>
+        <li>Tidy up SDL2 wrapping code - and include it when <tt>SDL.h</tt> has been included.</li>
+        <li>Document/clean up network transparent UI protocol using ctx
+                syntax. (<a href='not-really-a-demo.png'>test</a>, <a href='multi-client.png'>test</a>)</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
 	<li>point in fill/stroke, (current in_fill API uses path boundingbox)</li>
         <li>texture upload as part of ctx syntax</li>
         <li>ICC color management (provisions have been made in the API for this,
                 but RGBtoRGB and CMYKtoRGB RGBtoCMYK conversions are currently
-                done naively, instead of using babl.)</li>
+                done naively, instead of using <a href='http://gegl.org/babl/'>babl</a>.)</li>
 	<li>glyph fallback</li>
-        <li>faster shadow blur</li>
+        <li>faster 1d-gaussian blur for shadow blur</li>
 	<li>gradients: use both circle centers</li>
         <li>bindings to a javascript engine, for running canvas js content as
             apps.</li>
@@ -427,7 +429,7 @@ if the maximum number of vertices in a path is reduced this can be below
             <li>dash pattern</li>
           </ul>
         </li>
-        <li>SVG/HTML parser renderer (in progress)</li>
+        <li>SVG/HTML parser renderer (in progress, from mrg)</li>
         <li>PDF/SVG generation (can already be done through cairo integration)</li>
     
         <li>Add API for integrating device-N with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>

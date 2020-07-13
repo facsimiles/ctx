@@ -14718,7 +14718,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
                 {
       if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
       {
-        ctx_rasterizer_shadow_fill (ctx->renderer);
+        ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->renderer);
         ((CtxRasterizer*)(ctx->renderer))->in_shadow = 1;
       }
       else
@@ -14750,7 +14750,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
     
       if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
       {
-        ctx_rasterizer_shadow_fill (ctx->renderer);
+        ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->renderer);
         ((CtxRasterizer*)(ctx->renderer))->in_shadow = 1;
       }
       else
