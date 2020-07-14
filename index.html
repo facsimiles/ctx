@@ -30,11 +30,11 @@
        <div id='menu'>
                 <a href='http://ctx.graphics/'>ctx</a>
                 <a href='#downloads'>files</a>
-                <a href='#reference'>reference</a>
                 <a href='#example'>hello</a>
                 <br/>
                 <a href='#performance'>speed</a>
                 <a href='#codesize'>codesize</a>
+                <a href='#protocol'>protocol|API</a>
                 <a href='rasterizer/'>rasterizer</a>
                 <a href='#roadmap'>roadmap</a>
                 <a href='#license'>license</a>
@@ -110,13 +110,12 @@ Level 2</a>. The core ideas for a 2d vector vocabulary is however shared with
  PDF, cairo, OpenVG, directdraw and others all with a basis in postscript.
         </p>
 
-        <h2 id='reference'>ctx syntax reference</h2>
+        <h2 id='protocol'>protocol reference</h2>
 
-        <p>This is a terse technical referemce, drawing with ctx is like
-        drawing with HTML5 canvas 2d context and <a
-        href='https://duckduckgo.com/?q=html5+2d+context&t=ffab&ia=web'>tutorials
-for using the 2d context</a> are also mostly applicable to ctx in its
-        various incarnations.</p>
+        <p>This is a terse technical reference on the command entries stores
+        internally when serializing drawing commands, it maps to the the <a href='ctx.h.html#l_33'>C API</a>
+        if you ruen <tt>camelCase</tt> into <tt>snake_case</tt>, and prefixing
+        each command with <tt>ctx_</tt>.  </p>
 
         <!-- http://diveintohtml5.info/canvas.html  -->
 
@@ -429,23 +428,23 @@ uint8_t pixels[WIDTH*HEIGHT*4];
 
 int main (int argc, char **argv)
 {
+  char *utf8 = "hello\nctx\n";
   Ctx *ctx = ctx_new_for_framebuffer (
     pixels, WIDTH, HEIGHT, WIDTH*4,
     CTX_FORMAT_RGBA8);
 
-  ctx_rgba (ctx, 0.5, 0.5, 0.5, 1);
-  ctx_rectangle (ctx, 0, 0, 80, 24);
-  ctx_fill (ctx);
-
-  char *utf8 = "tinytest\necho foobaz\n";
-  ctx_move_to (ctx, 10, 9);
-  ctx_font_size (ctx, 12);
-  ctx_line_width (ctx, 2);
-  ctx_rgba (ctx, 0, 0, 0, 1);
+  ctx_rgba        (ctx, 0.5, 0.5, 0.5, 1);
+  ctx_rectangle   (ctx, 0, 0, 80, 24);
+  ctx_fill        (ctx);
+  ctx_move_to     (ctx, 10, 9);
+  ctx_font_size   (ctx, 12);
+  ctx_line_width  (ctx, 2);
+  ctx_rgba        (ctx, 0, 0, 0, 1);
   ctx_text_stroke (ctx, utf8);
-  ctx_rgba (ctx, 1,0, 1.0, 1.0, 1.0);
-  ctx_move_to (ctx, 10, 9);
-  ctx_text (ctx, utf8);
+  ctx_rgba        (ctx, 1,0, 1.0, 1.0, 1.0);
+  ctx_move_to     (ctx, 10, 9);
+  ctx_text        (ctx, utf8);
+  ctx_free (ctx);
 
   static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
   int no=0;
@@ -455,7 +454,6 @@ int main (int argc, char **argv)
       printf ("%s", utf8_gray_scale[5-(int)CTX_CLAMP(pixels[no+1]/255.0*6.0, 0, 5)]);
     printf ("\n");
   }
-  ctx_free (ctx);
 
   return 0;
 }

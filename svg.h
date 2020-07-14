@@ -1,3 +1,5 @@
+/* This file is not licensed (c) Øyvind Kolås pippin@gimp.org */
+
 #if CTX_EVENTS
 
 #define MRG_MAX_STYLE_DEPTH  CTX_MAX_STATES
