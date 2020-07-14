@@ -885,6 +885,13 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_ENABLE_CLIP   1
 #endif
 
+/* use a 1bit clip buffer, saving RAM on microcontrollers, other rendering
+ * will still be antialiased.
+ */
+#ifndef CTX_1BIT_CLIP
+#define CTX_1BIT_CLIP 0
+#endif
+
 /* maximum number of entries in shape cache
  */
 #ifndef CTX_SHAPE_CACHE_ENTRIES
@@ -6470,7 +6477,7 @@ CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
 CtxBuffer *ctx_buffer_new (int width, int height,
                            CtxPixelFormat pixel_format)
 {
-  CtxPixelFormatInfo *info = ctx_pixel_format_info (CTX_FORMAT_GRAY8);
+  CtxPixelFormatInfo *info = ctx_pixel_format_info (pixel_format);
   CtxBuffer *buffer = ctx_buffer_new_bare ();
   int stride = width * info->ebpp;
   uint8_t *pixels = calloc (stride, height + 1);
@@ -11299,10 +11306,11 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
     // XXX SIMD candidate
     for (int x = minx; x <= maxx; x ++)
     {
- //   if (coverage[x])
- //   {
+#if CTX_1BIT_CLIP
+        coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x%8)))?255:0))/255;
+#else
         coverage[x] = (coverage[x] * clip_line[x])/255;
- //   }
+#endif
     }
   }
   if (rasterizer->aa == 1)
@@ -12220,6 +12228,12 @@ foo:
     }
 }
 
+#if CTX_1BIT_CLIP
+#define CTX_CLIP_FORMAT CTX_FORMAT_GRAY1
+#else
+#define CTX_CLIP_FORMAT CTX_FORMAT_GRAY8
+#endif
+
 static void
 ctx_rasterizer_clip (CtxRasterizer *rasterizer)
 {
@@ -12235,9 +12249,8 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
   {
     rasterizer->clip_buffer = ctx_buffer_new (rasterizer->blit_width,
                                               rasterizer->blit_height,
-                                              CTX_FORMAT_GRAY8);
-
-    }
+                                              CTX_CLIP_FORMAT);
+  }
 
   // for now only one level of clipping is supported
   {
@@ -12247,7 +12260,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
 
     Ctx *ctx = ctx_new_for_framebuffer (rasterizer->clip_buffer->data, rasterizer->blit_width, rasterizer->blit_height,
        rasterizer->blit_width,
-       CTX_FORMAT_GRAY8);
+       CTX_CLIP_FORMAT);
     memset (rasterizer->clip_buffer->data, 0, rasterizer->blit_width * rasterizer->blit_height);
 
   for (int i = 0; i < count; i++)
@@ -12458,7 +12471,7 @@ ctx_rasterizer_start_group (CtxRasterizer *rasterizer)
      return;
   rasterizer->group[no] = ctx_buffer_new (rasterizer->blit_width,
                                           rasterizer->blit_height,
-                                          rasterizer->format->pixel_format);
+                                          rasterizer->format->composite_format);
   rasterizer->buf = rasterizer->group[no]->data;
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
 }
@@ -12501,7 +12514,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
   int id = ctx_texture_init (rasterizer->ctx, -1,
                   rasterizer->blit_width,
                   rasterizer->blit_height,
-                  rasterizer->format->bpp,
+                  rasterizer->format->ebpp * 8,
                   rasterizer->group[no]->data,
                   NULL, NULL);
   {
@@ -13962,7 +13975,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #endif
 #if CTX_ENABLE_GRAYF
   {
-    CTX_FORMAT_GRAYF, 1, 32, 4, 0, 0, CTX_FORMAT_GRAYAF,
+    CTX_FORMAT_GRAYF, 1, 32, 4 * 2, 0, 0, CTX_FORMAT_GRAYAF,
     NULL, NULL, ctx_composite_GRAYF, ctx_setup_GRAYAF,
   },
 #endif
@@ -13986,60 +13999,55 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #endif
 #if CTX_ENABLE_GRAY1
   {
-    CTX_FORMAT_GRAY1, 1, 1, 4, 1, 1,
 #if CTX_NATIVE_GRAYA8
-    CTX_FORMAT_GRAYA8,
+    CTX_FORMAT_GRAY1, 1, 1, 2, 1, 1, CTX_FORMAT_GRAYA8,
     ctx_GRAY1_to_GRAYA8, ctx_GRAYA8_to_GRAY1, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
-    CTX_FORMAT_RGBA8,
+    CTX_FORMAT_GRAY1, 1, 1, 4, 1, 1, CTX_FORMAT_RGBA8,
     ctx_GRAY1_to_RGBA8, ctx_RGBA8_to_GRAY1, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
 #endif
 #if CTX_ENABLE_GRAY2
   {
-    CTX_FORMAT_GRAY2, 1, 2, 4, 4, 4,
 #if CTX_NATIVE_GRAYA8
-    CTX_FORMAT_GRAYA8,
+    CTX_FORMAT_GRAY2, 1, 2, 2, 4, 4, CTX_FORMAT_GRAYA8,
     ctx_GRAY2_to_GRAYA8, ctx_GRAYA8_to_GRAY2, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
-    CTX_FORMAT_RGBA8,
+    CTX_FORMAT_GRAY2, 1, 2, 4, 4, 4, CTX_FORMAT_RGBA8,
     ctx_GRAY2_to_RGBA8, ctx_RGBA8_to_GRAY2, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
 #endif
 #if CTX_ENABLE_GRAY4
   {
-    CTX_FORMAT_GRAY4, 1, 4, 4, 16, 16,
 #if CTX_NATIVE_GRAYA8
-    CTX_FORMAT_GRAYA8,
+    CTX_FORMAT_GRAY4, 1, 4, 2, 16, 16, CTX_FORMAT_GRAYA8,
     ctx_GRAY4_to_GRAYA8, ctx_GRAYA8_to_GRAY4, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
-    CTX_FORMAT_RGBA8,
+    CTX_FORMAT_GRAY4, 1, 4, 4, 16, 16, CTX_FORMAT_GRAYA8,
     ctx_GRAY4_to_RGBA8, ctx_RGBA8_to_GRAY4, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
 #endif
 #if CTX_ENABLE_GRAY8
   {
-    CTX_FORMAT_GRAY8, 1, 8, 4, 0, 0,
 #if CTX_NATIVE_GRAYA8
-    CTX_FORMAT_GRAYA8,
+    CTX_FORMAT_GRAY8, 1, 8, 2, 0, 0, CTX_FORMAT_GRAYA8,
     ctx_GRAY8_to_GRAYA8, ctx_GRAYA8_to_GRAY8, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
-    CTX_FORMAT_RGBA8,
+    CTX_FORMAT_GRAY8, 1, 8, 4, 0, 0, CTX_FORMAT_RGBA8,
     ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
 #endif
 #if CTX_ENABLE_GRAYA8
   {
-    CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0,
 #if CTX_NATIVE_GRAYA8
-    CTX_FORMAT_GRAYA8,
+    CTX_FORMAT_GRAYA8, 2, 16, 2, 0, 0, CTX_FORMAT_GRAYA8,
     ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, NULL, ctx_setup_GRAYA8,
 #else
-    CTX_FORMAT_RGBA8,
+    CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0, CTX_FORMAT_RGBA8,
     ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_convert, ctx_setup_RGBA8,
 #endif
   },
