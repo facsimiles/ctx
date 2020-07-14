@@ -3465,7 +3465,9 @@ struct _CtxRasterizer
 
   CtxPixelFormatInfo *format;
 
+#if CTX_SHADOW_BLUR
   int in_shadow;
+#endif
   int in_text;
   int shadow_x;
   int shadow_y;
@@ -11284,6 +11286,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
       t = next_t;
     }
 
+#if CTX_SHADOW_BLUR
   if (rasterizer->in_shadow)
   {
     float radius = rasterizer->state->gstate.shadow_blur;
@@ -11302,6 +11305,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
         coverage[minx+x] = temp[x] >> 8;
     }
   }
+#endif
 
 #if CTX_ENABLE_CLIP
   if (rasterizer->clip_buffer)
@@ -11655,6 +11659,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
 
+#if CTX_SHADOW_BLUR
   if (rasterizer->in_shadow)
   {
   for (int i = 0; i < rasterizer->edge_list.count; i++)
@@ -11668,6 +11673,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     rasterizer->col_min  += (rasterizer->shadow_x - rasterizer->state->gstate.shadow_blur * 3 + 1) * CTX_SUBDIV;
     rasterizer->col_max  += (rasterizer->shadow_x + rasterizer->state->gstate.shadow_blur * 3 + 1) * CTX_SUBDIV;
   }
+#endif
 
 #if 1
   if (rasterizer->scan_min / aa > rasterizer->blit_y + rasterizer->blit_height ||
@@ -11708,8 +11714,10 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
            (entry1->data.s16[3] == entry2->data.s16[3]) &&
            (entry2->data.s16[2] == entry3->data.s16[2]) &&
            ((entry3->data.s16[2] & (CTX_SUBDIV-1)) == 0)  &&
-           ((entry3->data.s16[3] & (aa-1)) == 0) &&
-           !rasterizer->in_shadow
+           ((entry3->data.s16[3] & (aa-1)) == 0)
+#if CTX_SHADOW_BLUR
+           && !rasterizer->in_shadow
+#endif
          )
         {
           if (ctx_rasterizer_fill_rect (rasterizer,
@@ -11733,7 +11741,10 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
       && width < CTX_SHAPE_CACHE_MAX_DIM
       && height < CTX_SHAPE_CACHE_MAX_DIM && !rasterizer->state->gstate.clipped &&
-      !rasterizer->in_shadow)
+#if CTX_SHADOW_BLUR
+      !rasterizer->in_shadow
+#endif
+      )
     {
       int scan_min = rasterizer->scan_min;
       int col_min = rasterizer->col_min;
@@ -11817,6 +11828,7 @@ done:
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
       rasterizer->edge_list.count = count;
     }
+#if CTX_SHADOW_BLUR
   if (rasterizer->in_shadow)
   {
     rasterizer->scan_min -= rasterizer->shadow_y * aa;
@@ -11824,6 +11836,7 @@ done:
     rasterizer->col_min  -= (rasterizer->shadow_x - rasterizer->state->gstate.shadow_blur * 3 + 1) * CTX_SUBDIV;
     rasterizer->col_max  -= (rasterizer->shadow_x + rasterizer->state->gstate.shadow_blur * 3 + 1) * CTX_SUBDIV;
   }
+#endif
   rasterizer->preserve = 0;
 }
 
@@ -12579,12 +12592,16 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
         float dy = rasterizer->state->gstate.shadow_offset_y + v - dim/2;
         set_color_command[2].data.f[0] = rasterizer->kernel[i] * rgba[3];
         ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command[0]);
+#if CTX_SHADOW_BLUR
         rasterizer->in_shadow = 1;
+#endif
         rasterizer->shadow_x = rasterizer->state->gstate.shadow_offset_x;
         rasterizer->shadow_y = dy;
         rasterizer->preserve = 1;
         ctx_rasterizer_stroke (rasterizer);
+#if CTX_SHADOW_BLUR
         rasterizer->in_shadow = 0;
+#endif
       }
   }
   //free (kernel);
