@@ -36,12 +36,12 @@ void fill_render (Mmm *fb)
   ctx = ctx_new_for_framebuffer (buffer, width, height, stride, CTX_FORMAT_RGBA8);
 
   ctx_rectangle (ctx, 0, 0, width, height);
-  ctx_set_rgba (ctx, 1, 1, 1, 1);
+  ctx_rgba (ctx, 1, 1, 1, 1);
   ctx_fill (ctx);
-  ctx_set_rgba (ctx, 0, 0, 0, 1);
+  ctx_rgba (ctx, 0, 0, 0, 1);
   ctx_rectangle (ctx, width * 0.2, height * 0.2, width * 0.6, height * 0.6);
   ctx_fill (ctx);
-  ctx_set_rgba (ctx, 1, 1, 1, 1);
+  ctx_rgba (ctx, 1, 1, 1, 1);
   ctx_font_size (ctx, height * 0.1);
   ctx_font (ctx, "regular");
   ctx_move_to (ctx, width * 0.3, height * 0.6);

@@ -26,7 +26,7 @@ static void run_tests (Ctx *ctx)
   {
 
   char *utf8 = "tinytest\necho foobaz\n";
-  ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 1);
+  ctx_rgba (ctx, 0.5, 0.5, 0.5, 1);
   ctx_rectangle (ctx, 0, 0, 80, 24);
   ctx_fill (ctx);
 
@@ -38,7 +38,7 @@ static void run_tests (Ctx *ctx)
   count = 0;
   do {
     ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 1);
+    ctx_rgba (ctx, 0.5, 0.5, 0.5, 1);
     ctx_fill (ctx);
     count ++;
     elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
@@ -49,7 +49,7 @@ static void run_tests (Ctx *ctx)
   count = 0;
   do {
     ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.75);
+    ctx_rgba (ctx, 0.5, 0.5, 0.5, 0.75);
     ctx_fill (ctx);
     count ++;
     elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
@@ -60,7 +60,7 @@ static void run_tests (Ctx *ctx)
   count = 0;
   do {
     ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.5);
+    ctx_rgba (ctx, 0.5, 0.5, 0.5, 0.5);
     ctx_fill (ctx);
     count ++;
     elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
@@ -72,7 +72,7 @@ static void run_tests (Ctx *ctx)
   count = 0;
   do {
     ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.25);
+    ctx_rgba (ctx, 0.5, 0.5, 0.5, 0.25);
     ctx_fill (ctx);
     count ++;
     elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
@@ -83,7 +83,7 @@ static void run_tests (Ctx *ctx)
   count = 0;
   do {
     ctx_rectangle (ctx, 10.5, 10.5, 800, 800);
-    ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 0.0);
+    ctx_rgba (ctx, 0.5, 0.5, 0.5, 0.0);
     ctx_fill (ctx);
     count ++;
     elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;

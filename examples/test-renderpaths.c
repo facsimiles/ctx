@@ -267,7 +267,7 @@ static void render_test (Ctx *ctx)
   ctx_font (ctx, "mono");
   ctx_font_size (ctx, 48);
   ctx_move_to (ctx, 2, 32);
-  ctx_set_rgba (ctx, 0,0,1,1);
+  ctx_rgba (ctx, 0,0,1,1);
   ctx_text (ctx, "mono");
   ctx_move_to (ctx, 2, 64);
   ctx_font (ctx, "bitmap");
@@ -277,7 +277,7 @@ static void render_test (Ctx *ctx)
     for (int x = 100; x < 150; x++)
       {
 #if 0
-        ctx_set_rgba (ctx, 1.0, 0.5, 0.0 + (x-100.0)/25.0, 1.0);
+        ctx_rgba (ctx, 1.0, 0.5, 0.0 + (x-100.0)/25.0, 1.0);
         ctx_rectangle (ctx, x, y, 1, 1);
         ctx_fill (ctx);
 #else

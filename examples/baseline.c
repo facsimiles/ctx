@@ -19,15 +19,15 @@ int main (int argc, char **argv)
 
   char *utf8 = "tinytest\necho foobaz\n";
 #if 0
-  ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 1);
+  ctx_rgba (ctx, 0.5, 0.5, 0.5, 1);
   ctx_rectangle (ctx, 0, 0, 80, 24);
   ctx_fill (ctx);
   ctx_move_to (ctx, 10, 9);
   ctx_font_size (ctx, 12);
   ctx_line_width (ctx, 2);
-  ctx_set_rgba (ctx, 0, 0, 0, 1);
+  ctx_rgba (ctx, 0, 0, 0, 1);
   ctx_text_stroke (ctx, utf8);
-  ctx_set_rgba_u8 (ctx, 255, 255, 255, 255);
+  ctx_rgba_u8 (ctx, 255, 255, 255, 255);
   ctx_move_to (ctx, 10, 9);
   ctx_text (ctx, utf8);
 #endif

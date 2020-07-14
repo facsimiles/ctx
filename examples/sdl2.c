@@ -119,16 +119,16 @@ int main(int argc, char **argv)
     Ctx *ctx = ctx_new_for_framebuffer (pixels, width, height, width * 4, CTX_FORMAT_BGRA8);
 
     ctx_rectangle (ctx, 0,0,width,height);
-    ctx_set_rgba (ctx, 0, 0, 0, 1);
+    ctx_rgba (ctx, 0, 0, 0, 1);
     ctx_fill (ctx);
     ctx_rectangle (ctx, 20+x, 30, 100, 100);
     x++;
-    ctx_set_rgba (ctx, 1, 1, 1, 1);
+    ctx_rgba (ctx, 1, 1, 1, 1);
     ctx_fill (ctx);
     ctx_font_size (ctx, height * 0.1);
     ctx_move_to (ctx, width * 0.3, height * 0.4);
     ctx_text (ctx, "hello SDL2\n");
-    ctx_set_rgba (ctx, 1, 1, 1, 1);
+    ctx_rgba (ctx, 1, 1, 1, 1);
 
     ctx_dirty_rect (ctx, &dirty.x, &dirty.y, &dirty.w, &dirty.h);
     ctx_free (ctx);

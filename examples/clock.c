@@ -1,5 +1,5 @@
 #include <stdint.h>
-
+#include <SDL.h>
 #include "ctx-font-ascii.h"
 #define CTX_LIMIT_FORMATS       1
 #define CTX_ENABLE_RGBA8        1
@@ -127,7 +127,7 @@ int main (int argc, char **argv)
     ctx_move_to        (ctx, 10+x, height * 0.2);
     ctx_font_size  (ctx, height * 0.1 + x/4.0);
     ctx_line_width (ctx, 2);
-    ctx_set_rgba       (ctx, 0, 0, 0, 1);
+    ctx_rgba       (ctx, 0, 0, 0, 1);
     ctx_text_stroke    (ctx, utf8);
     ctx_rgba8      (ctx, 255, 255, 255, 255);
     ctx_move_to        (ctx, height * 0.05 +x, height * 0.2);
@@ -135,14 +135,14 @@ int main (int argc, char **argv)
     ctx_font_size  (ctx, height * 0.2);
 
     ctx_move_to        (ctx, height * 0.05, height * 0.4);
-    ctx_set_rgb        (ctx, 1, 0,0);
+    ctx_rgb        (ctx, 1, 0,0);
     ctx_text           (ctx, message);
 
     ctx_rectangle (ctx, x,y,height * 0.2,height * 0.2);
     ctx_listen    (ctx, CTX_DRAG, red_rect, NULL, NULL);
     ctx_fill (ctx);
 
-    ctx_set_rgb        (ctx, 0, 1,0);
+    ctx_rgb        (ctx, 0, 1,0);
     ctx_rectangle (ctx, 0,height * 0.8,height * 0.2,height * 0.2);
     ctx_listen    (ctx, CTX_PRESS, green_rect, NULL, NULL);
     ctx_fill (ctx);
@@ -159,7 +159,7 @@ int main (int argc, char **argv)
     if (ctx_pointer_is_down (ctx, 0))
     {
       ctx_arc      (ctx, mx, my, 5.0, 0.0, CTX_PI*2, 0);
-      ctx_set_rgba (ctx, 1, 1, 1, 0.5);
+      ctx_rgba (ctx, 1, 1, 1, 0.5);
       ctx_fill     (ctx);
     }
 
@@ -171,7 +171,7 @@ int main (int argc, char **argv)
     //x+=0.25;
     if (x > ctx_width (ctx)) x= 0;
    
-    if (event = ctx_get_event (ctx))
+    if ((event = ctx_get_event (ctx)))
     {
     switch (event->type)
     {
@@ -206,6 +206,8 @@ int main (int argc, char **argv)
          }
          if (strcmp (event->string, "idle"))
            sprintf (message, "key %s", event->string);
+         break;
+       default:
          break;
     }
     }

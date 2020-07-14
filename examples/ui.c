@@ -47,14 +47,14 @@ int main (int argc, char **argv)
   while (!do_quit)
   {
     ctx_reset          (ctx);
-    //ctx_set_rgba       (ctx, 0.5, 0.5, 0.5, 1);
-    ctx_set_rgba       (ctx, 0.0, 0.0, 0.0, 1);
+    //ctx_rgba       (ctx, 0.5, 0.5, 0.5, 1);
+    ctx_rgba       (ctx, 0.0, 0.0, 0.0, 1);
     ctx_rectangle      (ctx, 0, 0, ctx_width(ctx), ctx_height(ctx));
     ctx_fill           (ctx);
     ctx_move_to        (ctx, 10+x, 9);
     ctx_font_size  (ctx, 12 + x/4);
     ctx_line_width (ctx, 2);
-    ctx_set_rgba       (ctx, 0, 0, 0, 1);
+    ctx_rgba       (ctx, 0, 0, 0, 1);
     ctx_text_stroke    (ctx, utf8);
     ctx_rgba8      (ctx, 255, 255, 255, 255);
     ctx_move_to        (ctx, 10+x, 9);
@@ -62,13 +62,13 @@ int main (int argc, char **argv)
     ctx_move_to        (ctx, 10, 130);
     ctx_font_size  (ctx, 40);
 
-    ctx_set_rgb       (ctx, 1, 0,0);
+    ctx_rgb       (ctx, 1, 0,0);
     ctx_text           (ctx, message);
 
     if (ctx_pointer_is_down (ctx, 0))
     {
       ctx_arc            (ctx, mx, my, 5.0, 0.0, CTX_PI*2, 0);
-      ctx_set_rgba      (ctx, 1, 1, 1, 0.5);
+      ctx_rgba      (ctx, 1, 1, 1, 0.5);
       ctx_fill           (ctx);
     }
 

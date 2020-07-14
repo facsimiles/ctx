@@ -38,7 +38,7 @@ int main (int argc, char **argv)
     pixels, WIDTH, HEIGHT, WIDTH*4,
     CTX_FORMAT_RGBA8);
 
-  ctx_set_rgba (ctx, 0.5, 0.5, 0.5, 1);
+  ctx_rgba (ctx, 0.5, 0.5, 0.5, 1);
   ctx_rectangle (ctx, 0, 0, 80, 24);
   ctx_fill (ctx);
 
@@ -50,7 +50,7 @@ int main (int argc, char **argv)
   ctx_move_to (ctx, 10, 9);
   ctx_font_size (ctx, 12);
   ctx_line_width (ctx, 2);
-  ctx_set_rgba (ctx, 0, 0, 0, 1);
+  ctx_rgba (ctx, 0, 0, 0, 1);
   ctx_text_stroke (ctx, utf8);
   ctx_rgba8 (ctx, 255, 255, 255, 255);
   ctx_move_to (ctx, 10, 9);
