@@ -2260,12 +2260,12 @@ static inline float ctx_atan2f (float y, float x)
   return atan;
 }
 
-static inline float ctx_sqrtf (float a)
+CTX_INLINE static float ctx_sqrtf (float a)
 {
   return 1.0f/ctx_invsqrtf (a);
 }
 
-static inline float ctx_hypotf (float a, float b)
+CTX_INLINE static float ctx_hypotf (float a, float b)
 {
   return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
 }
@@ -2285,7 +2285,7 @@ static inline float ctx_acosf (float x)
   return ctx_atanf ( (ctx_sqrtf (1.0f-ctx_pow2 (x) ) / (x) ) );
 }
 
-static inline float ctx_cosf (float a)
+CTX_INLINE static float ctx_cosf (float a)
 {
   return ctx_sinf ( (a) + CTX_PI/2.0f);
 }
@@ -4976,7 +4976,7 @@ float ctx_get_line_width (Ctx *ctx)
   return ctx->state.gstate.line_width;
 }
 
-static int ctx_strcmp (const char *a, const char *b)
+inline static int ctx_strcmp (const char *a, const char *b)
 {
   int i;
   for (i = 0; a[i] && b[i]; a++, b++)
@@ -4986,7 +4986,7 @@ static int ctx_strcmp (const char *a, const char *b)
   return 1;
 }
 
-static int ctx_strncmp (const char *a, const char *b, size_t n)
+inline static int ctx_strncmp (const char *a, const char *b, size_t n)
 {
   size_t i;
   for (i = 0; a[i] && b[i] && i < n; a++, b++)
@@ -7016,7 +7016,7 @@ ctx_lerpf (float v0, float v1, float dx)
   return v0 + (v1-v0) * dx;
 }
 
-static float
+CTX_INLINE static float
 ctx_bezier_sample_1d (float x0, float x1, float x2, float x3, float dt)
 {
   float ab   = ctx_lerpf (x0, x1, dt);
@@ -7027,7 +7027,7 @@ ctx_bezier_sample_1d (float x0, float x1, float x2, float x3, float dt)
   return ctx_lerpf (abbc, bccd, dt);
 }
 
-static void
+inline static void
 ctx_bezier_sample (float x0, float y0,
                    float x1, float y1,
                    float x2, float y2,
