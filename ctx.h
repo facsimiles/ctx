@@ -11653,12 +11653,27 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   return 1;
 }
 
+inline static int
+ctx_is_transparent (CtxRasterizer *rasterizer)
+{
+  CtxGState *gstate = &rasterizer->state->gstate;
+  if (gstate->global_alpha_u8 == 0)
+    return 1;
+  if (gstate->source.type == CTX_SOURCE_COLOR)
+  {
+    uint8_t ga[2];
+    ctx_color_get_graya_u8 (rasterizer->state, &gstate->source.color, ga);
+    if (ga[1] == 0)
+      return 1;
+  }
+  return 0;
+}
+
 static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->preserve?rasterizer->edge_list.count:0;
   int aa = rasterizer->aa;
-
 
   CtxEntry temp[count]; /* copy of already built up path's poly line
                           XXX - by building a large enough path
@@ -11667,8 +11682,11 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
 
-  if (ctx_rasterizer_is_transparent (rasterizer))
-    goto done;
+  if (ctx_is_transparent (rasterizer))
+  {
+     ctx_rasterizer_reset (rasterizer);
+     goto done;
+  }
 
 #if CTX_SHADOW_BLUR
   if (rasterizer->in_shadow)
@@ -13744,6 +13762,21 @@ ctx_GRAYA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
   ctx_u8_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
 }
 #endif
+
+inline static int
+ctx_is_opaque_color (CtxRasterizer *rasterizer)
+{
+  CtxGState *gstate = &rasterizer->state->gstate;
+  if (gstate->global_alpha_u8 != 255)
+    return 0;
+  if (gstate->source.type == CTX_SOURCE_COLOR)
+  {
+    uint8_t ga[2];
+    ctx_color_get_graya_u8 (rasterizer->state, &gstate->source.color, ga);
+    return ga[1] == 255;
+  }
+  return 0;
+}
 
 static void
 ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
