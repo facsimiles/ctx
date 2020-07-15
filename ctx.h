@@ -1131,10 +1131,10 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  */
 #if CTX_ENABLE_GRAY1 | CTX_ENABLE_GRAY2 | CTX_ENABLE_GRAY4 | CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED | CTX_ENABLE_RGB8 | CTX_ENABLE_RGB332
 
-#ifdef CTX_ENABLE_RGBA8
-#undef CTX_ENABLE_RGBA8
-#endif
-#define CTX_ENABLE_RGBA8  1
+  #ifdef CTX_ENABLE_RGBA8
+    #undef CTX_ENABLE_RGBA8
+  #endif
+  #define CTX_ENABLE_RGBA8  1
 #endif
 
 /* enable cmykf which is cmyk intermediate format
@@ -6944,7 +6944,7 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 #endif
 }
 
-static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y);
+inline static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y);
 
 static void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 {
@@ -6955,7 +6955,7 @@ static void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
     }
 }
 
-static void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
+inline static void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx; float ty;
   int aa = rasterizer->aa;
@@ -6977,7 +6977,7 @@ static void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
     { rasterizer->col_max = tx; }
 }
 
-static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
+inline static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx = x;
   float ty = y;
@@ -7259,7 +7259,7 @@ static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count
    again feed_edges until middle of scanline if doing non-AA
    or directly render when doing AA
 */
-static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
+inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
   int miny;
   CtxEntry *entries = rasterizer->edge_list.entries;
@@ -11448,8 +11448,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
   ctx_rasterizer_sort_edges (rasterizer);
   if (maxx>minx)
   {
+#if CTX_RASTERIZER_FORCE_AA==0
     int halfstep2 = aa/2;
     int halfstep  = aa/2 + 1;
+#endif
     rasterizer->needs_aa = 0;
     rasterizer->scanline = scan_start;
       ctx_rasterizer_feed_edges (rasterizer);
@@ -11489,9 +11491,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           ctx_rasterizer_increment_edges (rasterizer, halfstep);
           ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
-          /* doing increment of AA3 before and AA2 after produces identical
-           * results in GRAY1 and GRAY8, and is also not the reason for the
-           * anomaly in the resolution chart.  */
           ctx_rasterizer_increment_edges (rasterizer, halfstep2);
           rasterizer->scanline += rasterizer->aa;
           ctx_rasterizer_feed_edges (rasterizer);
@@ -11866,7 +11865,7 @@ ctx_rasterizer_set_font (CtxRasterizer *rasterizer, const char *font_name)
   _ctx_font (rasterizer->ctx, font_name);
 }
 
-static void
+inline static void
 ctx_rasterizer_arc (CtxRasterizer *rasterizer,
                     float        x,
                     float        y,
@@ -13986,10 +13985,12 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
 
 static CtxPixelFormatInfo ctx_pixel_formats[]=
 {
+#if CTX_ENABLE_RGBA8
   {
     CTX_FORMAT_RGBA8, 4, 32, 4, 0, 0, CTX_FORMAT_RGBA8,
     NULL, NULL, NULL, ctx_setup_RGBA8
   },
+#endif
 #if CTX_ENABLE_BGRA8
   {
     CTX_FORMAT_BGRA8, 4, 32, 4, 0, 0, CTX_FORMAT_RGBA8,
@@ -14747,12 +14748,15 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
                 { ctx_stroke (ctx); }
               else
                 {
+
+#if CTX_SHADOW_BLUR
       if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
       {
         ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->renderer);
         ((CtxRasterizer*)(ctx->renderer))->in_shadow = 1;
       }
       else
+#endif
          ctx_fill (ctx); 
                
                 }
@@ -14779,12 +14783,14 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   else
     { 
     
+#if CTX_SHADOW_BLUR
       if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
       {
         ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->renderer);
         ((CtxRasterizer*)(ctx->renderer))->in_shadow = 1;
       }
       else
+#endif
          ctx_fill (ctx); 
     }
   return -1;

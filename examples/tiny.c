@@ -1,16 +1,18 @@
 #include <stdint.h>
 
 #include "ctx-font-ascii.h"
+#define CTX_MATH            1
 #define CTX_LIMIT_FORMATS   1
-#define CTX_ENABLE_RGBA8    1 // this format is mandatory
+#define CTX_NATIVE_GRAYA8   1
+#define CTX_ENABLE_GRAYA8   1 //RGBA8    1 // this format is mandatory
 #define CTX_ENABLE_CMYK     0
 #define CTX_ENABLE_CM       0
 #define CTX_PARSER          0
+#define CTX_EVENTS          0
 #define CTX_RENDER_CTX      0
 #define CTX_DITHER          0 // implied by limit formats and only rgba being anbled, but we're explicit
 #define CTX_FORMATTER       0
 #define CTX_CURRENT_PATH    0
-#define CTX_NATIVE_GRAYA8   0
 #define CTX_SHAPE_CACHE     0
 #define CTX_GRADIENT_CACHE  0
 #define CTX_ENABLE_CLIP     0
