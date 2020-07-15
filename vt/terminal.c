@@ -918,13 +918,13 @@ static int sdl_check_events ()
                 switch (event.key.keysym.sym)
                   {
                     case SDLK_LCTRL:
-                      lctrl=0;
+                      lctrl = 0;
                       break;
                     case SDLK_LALT:
-                      lalt =0;
+                      lalt = 0;
                       break;
                     case SDLK_RCTRL:
-                      rctrl=0;
+                      rctrl = 0;
                       break;
                   }
               }
@@ -945,9 +945,9 @@ static int sdl_check_events ()
                 buf[ctx_unichar_to_utf8 (event.key.keysym.sym, (void *) buf)]=0;
                 switch (event.key.keysym.sym)
                   {
-                    case SDLK_LCTRL: lctrl=1; break;
-                    case SDLK_LALT: lalt=1; break;
-                    case SDLK_RCTRL: rctrl=1; break;
+                    case SDLK_LCTRL: lctrl = 1; break;
+                    case SDLK_LALT: lalt = 1; break;
+                    case SDLK_RCTRL: rctrl = 1; break;
                     case SDLK_F1: name = "F1"; break;
                     case SDLK_F2: name = "F2"; break;
                     case SDLK_F3: name = "F3"; break;

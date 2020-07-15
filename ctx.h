@@ -20188,6 +20188,13 @@ struct _CtxSDL
    SDL_Window   *window;
    SDL_Renderer *renderer;
    SDL_Texture  *texture;
+
+   int           key_balance;
+   int           key_repeat;
+   int           lctrl;
+   int           lalt;
+   int           rctrl;
+   int           pointer_down[3];
 };
 
 int mrg_sdl_consume_events (Ctx *ctx)
@@ -20206,6 +20213,106 @@ int mrg_sdl_consume_events (Ctx *ctx)
         break;
       case SDL_MOUSEMOTION:
         ctx_pointer_motion (ctx, event.motion.x, event.motion.y, 0, 0);
+        break;
+      case SDL_KEYUP:
+        {
+           sdl->key_balance --;
+           switch (event.key.keysym.sym)
+           {
+             case SDLK_LCTRL: sdl->lctrl = 0; break;
+             case SDLK_RCTRL: sdl->rctrl = 0; break;
+             case SDLK_LALT:  sdl->lalt  = 0; break;
+           }
+        }
+        break;
+      case SDL_KEYDOWN:
+        {
+          char buf[32] = "";
+          char *name = buf;
+          if (!event.key.repeat)
+          {
+            sdl->key_balance ++;
+            sdl->key_repeat = 0;
+          }
+          else
+          {
+            sdl->key_repeat ++;
+          }
+          buf[ctx_unichar_to_utf8 (event.key.keysym.sym, (void*)buf)]=0;
+          switch (event.key.keysym.sym)
+          {
+            case SDLK_LCTRL: sdl->lctrl = 1; break;
+            case SDLK_LALT:  sdl->lalt = 1; break;
+            case SDLK_RCTRL: sdl->rctrl = 1; break;
+            case SDLK_F1: name = "F1"; break;
+            case SDLK_F2: name = "F2"; break;
+            case SDLK_F3: name = "F3"; break;
+            case SDLK_F4: name = "F4"; break;
+            case SDLK_F5: name = "F5"; break;
+            case SDLK_F6: name = "F6"; break;
+            case SDLK_F7: name = "F7"; break;
+            case SDLK_F8: name = "F8"; break;
+            case SDLK_F9: name = "F9"; break;
+            case SDLK_F10: name = "F10"; break;
+            case SDLK_F11: name = "F11"; break;
+            case SDLK_F12: name = "F12"; break;
+            case SDLK_ESCAPE: name = "escape"; break;
+            case SDLK_DOWN: name = "down"; break;
+            case SDLK_LEFT: name = "left"; break;
+            case SDLK_UP: name = "up"; break;
+            case SDLK_RIGHT: name = "right"; break;
+            case SDLK_BACKSPACE: name = "backspace"; break;
+            case SDLK_SPACE: name = "space"; break;
+            case SDLK_TAB: name = "tab"; break;
+            case SDLK_DELETE: name = "delete"; break;
+            case SDLK_INSERT: name = "insert"; break;
+            case SDLK_RETURN:
+              //if (key_repeat == 0) // return never should repeat
+              name = "return";   // on a DEC like terminal
+              break;
+            case SDLK_HOME: name = "home"; break;
+            case SDLK_END: name = "end"; break;
+            case SDLK_PAGEDOWN: name = "page-down"; break;
+            case SDLK_PAGEUP: name = "page-up"; break;
+            default:
+              ;
+          }
+          if (strlen (name)
+              &&(event.key.keysym.mod & (KMOD_CTRL) ||
+                 event.key.keysym.mod & (KMOD_ALT) ||
+                 strlen (name) >= 2))
+          {
+            if (event.key.keysym.mod & (KMOD_CTRL) )
+              {
+                static char buf[64] = "";
+                sprintf (buf, "control-%s", name);
+                name = buf;
+              }
+            if (event.key.keysym.mod & (KMOD_ALT) )
+              {
+                static char buf[128] = "";
+                sprintf (buf, "alt-%s", name);
+                name = buf;
+              }
+            if (event.key.keysym.mod & (KMOD_SHIFT) )
+              {
+                static char buf[196] = "";
+                sprintf (buf, "shift-%s", name);
+                name = buf;
+              }
+            if (strcmp (name, "space") &&
+                (/* (vt && vt_keyrepeat (vt) ) || */ (sdl->key_repeat==0) )
+               )
+              {
+                ctx_key_press (ctx, 0, name, 0);
+                //got_event = 1;
+              }
+          }
+          else
+          {
+             ctx_key_press (ctx, 0, name, 0);
+          }
+        }
         break;
       case SDL_WINDOWEVENT:
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -20462,6 +20569,8 @@ Ctx *ctx_new_sdl (int width, int height)
         SDL_TEXTUREACCESS_STREAMING,
         width, height);
 
+  SDL_StartTextInput ();
+
   sdl->ctx = ctx;
   sdl->width  = width;
   sdl->height = height;
@@ -20472,10 +20581,9 @@ Ctx *ctx_new_sdl (int width, int height)
                   width, height,
                   width * 4, CTX_FORMAT_RGBA8);
 
-  //_ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_renderer (ctx, sdl);
   ctx_set_size (ctx, width, height);
- // ctx_set_size (braille->host, width, height);
+  ctx_set_size (sdl->host, width, height);
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->free  = (void*)ctx_sdl_free;
 #endif
