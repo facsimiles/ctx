@@ -4,7 +4,7 @@
 #define CTX_MATH            1
 #define CTX_LIMIT_FORMATS   1
 #define CTX_NATIVE_GRAYA8   1
-#define CTX_ENABLE_GRAYA8   1 //RGBA8    1 // this format is mandatory
+#define CTX_ENABLE_RGBA8    1 // this format is mandatory
 #define CTX_ENABLE_CMYK     0
 #define CTX_ENABLE_CM       0
 #define CTX_PARSER          0

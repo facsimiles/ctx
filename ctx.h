@@ -18505,10 +18505,10 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
 #if CTX_EVENTS
 static int ctx_native_events = 0;
 static int ctx_sdl_events = 0;
-int mrg_nct_consume_events (Ctx *ctx);
-int mrg_ctx_consume_events (Ctx *ctx);
+static int ctx_nct_consume_events (Ctx *ctx);
+static int ctx_ctx_consume_events (Ctx *ctx);
 #if CTX_SDL
-int mrg_sdl_consume_events (Ctx *ctx);
+static int ctx_sdl_consume_events (Ctx *ctx);
 #endif
 
 
@@ -18520,13 +18520,13 @@ CtxEvent *ctx_get_event (Ctx *ctx)
 
 #if CTX_SDL
   if (ctx_sdl_events)
-    mrg_sdl_consume_events (ctx);
+    ctx_sdl_consume_events (ctx);
   else
 #endif
   if (ctx_native_events)
-    mrg_ctx_consume_events (ctx);
+    ctx_ctx_consume_events (ctx);
   else
-    mrg_nct_consume_events (ctx);
+    ctx_nct_consume_events (ctx);
 
   if (ctx->events.events)
     {
@@ -20100,7 +20100,7 @@ struct _CtxBraille
    int      was_down;
 };
 
-int mrg_nct_consume_events (Ctx *ctx)
+static int ctx_nct_consume_events (Ctx *ctx)
 {
   int ix, iy;
   CtxBraille *braille = (void*)ctx->renderer;
@@ -20197,7 +20197,7 @@ struct _CtxSDL
    int           pointer_down[3];
 };
 
-int mrg_sdl_consume_events (Ctx *ctx)
+static int ctx_sdl_consume_events (Ctx *ctx)
 {
   CtxSDL *sdl = (void*)ctx->renderer;
   SDL_Event event;
@@ -20339,8 +20339,7 @@ int mrg_sdl_consume_events (Ctx *ctx)
 }
 #endif
 
-
-int mrg_ctx_consume_events (Ctx *ctx)
+static int ctx_ctx_consume_events (Ctx *ctx)
 {
   int ix, iy;
   CtxBraille *braille = (void*)ctx->renderer;
