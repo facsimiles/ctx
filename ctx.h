@@ -2167,6 +2167,12 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
                   return ret;
 }
 
+#if CTX_FORCE_INLINES
+#define CTX_INLINE  inline __attribute__((always_inline))
+#else
+#define CTX_INLINE  inline
+#endif
+
 static inline float ctx_pow2 (float a) { return a * a; }
 #if CTX_MATH
 
@@ -2196,7 +2202,7 @@ ctx_invsqrtf (float x)
   return x;
 }
 
-static inline float
+CTX_INLINE static float
 ctx_sinf (float x)
 {
   /* source : http://mooooo.ooo/chebyshev-sine-approximation/ */
@@ -2324,11 +2330,6 @@ static inline float ctx_sqrtf (float a)           { return sqrtf (a); }
  * inline
  */
 
-#if CTX_FORCE_INLINES
-#define CTX_INLINE  inline __attribute__((always_inline))
-#else
-#define CTX_INLINE  inline
-#endif
 
 #if 0
 static void
