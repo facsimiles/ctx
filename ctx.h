@@ -2749,11 +2749,11 @@ struct _CtxState
 #define CTX_linearGradient CTX_STRH('l','i','n','e','a','r','G','r','a','d','i','e','n','t')
 #define CTX_line_cap       CTX_STRH('l','i','n','e','_','c','a','p',0,0,0,0,0,0)
 #define CTX_lineCap        CTX_STRH('l','i','n','e','C','a','p',0,0,0,0,0,0,0)
-#define CTX_setLineCap        CTX_STRH('s','e','t','L','i','n','e','C','a','p',0,0,0,0)
+#define CTX_setLineCap     CTX_STRH('s','e','t','L','i','n','e','C','a','p',0,0,0,0)
 #define CTX_line_height    CTX_STRH('l','i','n','e','_','h','e','i','h','t',0,0,0,0)
 #define CTX_line_join      CTX_STRH('l','i','n','e','_','j','o','i','n',0,0,0,0,0)
 #define CTX_lineJoin       CTX_STRH('l','i','n','e','J','o','i','n',0,0,0,0,0,0)
-#define CTX_setLineJoin       CTX_STRH('s','e','t','L','i','n','e','J','o','i','n',0,0,0)
+#define CTX_setLineJoin    CTX_STRH('s','e','t','L','i','n','e','J','o','i','n',0,0,0)
 #define CTX_line_spacing   CTX_STRH('l','i','n','e','_','s','p','a','c','i','n','g',0,0)
 #define CTX_line_to        CTX_STRH('l','i','n','e','_','t','o',0,0,0,0,0,0,0)
 #define CTX_lineTo         CTX_STRH('l','i','n','e','T','o',0,0,0,0,0,0,0,0)
@@ -11667,6 +11667,9 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
 
+  if (ctx_rasterizer_is_transparent (rasterizer))
+    goto done;
+
 #if CTX_SHADOW_BLUR
   if (rasterizer->in_shadow)
   {
@@ -18468,14 +18471,25 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
 }
 #if CTX_EVENTS
 static int ctx_native_events = 0;
+static int ctx_sdl_events = 0;
 int mrg_nct_consume_events (Ctx *ctx);
 int mrg_ctx_consume_events (Ctx *ctx);
+#if CTX_SDL
+int mrg_sdl_consume_events (Ctx *ctx);
+#endif
+
+
 CtxEvent *ctx_get_event (Ctx *ctx)
 {
   static CtxEvent copy;
   if (!ctx->events.ctx_get_event_enabled)
     ctx->events.ctx_get_event_enabled = 1;
 
+#if CTX_SDL
+  if (ctx_sdl_events)
+    mrg_sdl_consume_events (ctx);
+  else
+#endif
   if (ctx_native_events)
     mrg_ctx_consume_events (ctx);
   else
@@ -20038,7 +20052,6 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
 }
 
 typedef struct _CtxBraille CtxBraille;
-
 struct _CtxBraille
 {
    void (*render) (void *braille, CtxCommand *command);
@@ -20123,6 +20136,70 @@ int mrg_nct_consume_events (Ctx *ctx)
   return 1;
 }
 
+#if CTX_SDL
+
+typedef struct _CtxSDL CtxSDL;
+struct _CtxSDL
+{
+   void (*render) (void *braille, CtxCommand *command);
+   void (*flush)  (void *braille);
+   void (*free)   (void *braille);
+   Ctx          *ctx;
+   int           width;
+   int           height;
+   int           cols;
+   int           rows;
+   uint8_t      *pixels;
+   Ctx          *host;
+   int           was_down;
+   SDL_Window   *window;
+   SDL_Renderer *renderer;
+   SDL_Texture  *texture;
+};
+
+int mrg_sdl_consume_events (Ctx *ctx)
+{
+  CtxSDL *sdl = (void*)ctx->renderer;
+  SDL_Event event;
+  while (SDL_PollEvent (&event))
+  {
+    switch (event.type)
+    {
+      case SDL_MOUSEBUTTONDOWN:
+        ctx_pointer_press (ctx, event.button.x, event.button.y, 0, 0);
+        break;
+      case SDL_MOUSEBUTTONUP:
+        ctx_pointer_release (ctx, event.button.x, event.button.y, 0, 0);
+        break;
+      case SDL_MOUSEMOTION:
+        ctx_pointer_motion (ctx, event.motion.x, event.motion.y, 0, 0);
+        break;
+      case SDL_WINDOWEVENT:
+        if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+        {
+          int width = event.window.data1;
+          int height = event.window.data2;
+          SDL_DestroyTexture (sdl->texture);
+          free (sdl->pixels);
+          sdl->texture = SDL_CreateTexture (sdl->renderer, SDL_PIXELFORMAT_ABGR8888,
+                          SDL_TEXTUREACCESS_STREAMING, width, height);
+          sdl->pixels = calloc (4, width * height);
+          sdl->width = width;
+          sdl->height = height;
+          ctx_free (sdl->host);
+          ctx_set_size (sdl->ctx, width, height);
+          sdl->host = ctx_new_for_framebuffer (sdl->pixels,
+                   width, height,
+                  width * 4, CTX_FORMAT_RGBA8);
+        }
+        break;
+    }
+  }
+  return 0;
+}
+#endif
+
+
 int mrg_ctx_consume_events (Ctx *ctx)
 {
   int ix, iy;
@@ -20134,9 +20211,9 @@ int mrg_ctx_consume_events (Ctx *ctx)
       char event_type[128]="";
       event = ctx_native_get_event (ctx, 50);
       {
-      FILE *file = fopen ("/tmp/log", "a");
-      fprintf (file, "[%s]\n", event);
-      fclose (file);
+      //FILE *file = fopen ("/tmp/log", "a");
+      //fprintf (file, "[%s]\n", event);
+      //fclose (file);
       }
       if (event)
       {
@@ -20305,31 +20382,69 @@ Ctx *ctx_new_braille (int width, int height)
 }
 
 #if CTX_SDL
+
+
+inline static void ctx_sdl_flush (CtxSDL *sdl)
+{
+  int width =  sdl->width;
+  int height = sdl->height;
+  ctx_render_ctx (sdl->ctx, sdl->host);
+  SDL_UpdateTexture(sdl->texture, NULL,
+                    (void*)sdl->pixels, sdl->width * sizeof (Uint32));
+  SDL_RenderClear(sdl->renderer);
+  SDL_RenderCopy(sdl->renderer, sdl->texture, NULL, NULL);
+  SDL_RenderPresent(sdl->renderer);
+}
+
+void ctx_sdl_free (CtxSDL *sdl)
+{
+  free (sdl->pixels);
+  ctx_free (sdl->host);
+  free (sdl);
+  /* we're not destoring the ctx member, this is function is called in ctx' teardown */
+}
+
+
 Ctx *ctx_new_sdl (int width, int height)
 {
   Ctx *ctx = ctx_new ();
 #if CTX_RASTERIZER
-  CtxBraille *braille = calloc (sizeof (CtxBraille), 1);
+  CtxSDL *sdl = calloc (sizeof (CtxSDL), 1);
   if (width <= 0 || height <= 0)
   {
-    width  = ctx_terminal_cols  () * 2;
-    height = (ctx_terminal_rows ()-1) * 4;
+    width  = 640;
+    height = 480;
   }
-  braille->ctx = ctx;
-  braille->width  = width;
-  braille->height = height;
-  braille->cols = (width + 1) / 2;
-  braille->rows = (height + 3) / 4;
-  braille->pixels = (uint8_t*)malloc (width * height * 4);
-  braille->host = ctx_new_for_framebuffer (braille->pixels,
+  sdl->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
+  sdl->renderer = SDL_CreateRenderer (sdl->window, -1, SDL_RENDERER_SOFTWARE);
+  if (!sdl->renderer)
+  {
+     ctx_free (ctx);
+     free (sdl);
+     return NULL;
+  }
+  ctx_sdl_events = 1;
+  sdl->texture = SDL_CreateTexture (sdl->renderer,
+        SDL_PIXELFORMAT_ABGR8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        width, height);
+
+  sdl->ctx = ctx;
+  sdl->width  = width;
+  sdl->height = height;
+  sdl->cols = 80;
+  sdl->rows = 20;
+  sdl->pixels = (uint8_t*)malloc (width * height * 4);
+  sdl->host = ctx_new_for_framebuffer (sdl->pixels,
                   width, height,
                   width * 4, CTX_FORMAT_RGBA8);
-  _ctx_mouse (ctx, NC_MOUSE_DRAG);
-  ctx_set_renderer (ctx, braille);
+
+  //_ctx_mouse (ctx, NC_MOUSE_DRAG);
+  ctx_set_renderer (ctx, sdl);
   ctx_set_size (ctx, width, height);
  // ctx_set_size (braille->host, width, height);
-  braille->flush = (void*)ctx_braille_flush;
-  braille->free  = (void*)ctx_braille_free;
+  sdl->flush = (void*)ctx_sdl_flush;
+  sdl->free  = (void*)ctx_sdl_free;
 #endif
   return ctx;
 }
@@ -20360,13 +20475,12 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   fflush (stdout);
 }
 
-void ctx_ctx_free (CtxCtx *ctxctx)
+void ctx_ctx_free (CtxCtx *ctx)
 {
   nc_at_exit ();
-  free (ctxctx);
+  free (ctx);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
-
 
 Ctx *ctx_new_ctx (int width, int height)
 {

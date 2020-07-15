@@ -103,7 +103,6 @@ int main(int argc, char **argv)
 #else // software renderer
   renderer = SDL_CreateRenderer (window, -1, SDL_RENDERER_SOFTWARE);
 #endif
-
   texture = SDL_CreateTexture (renderer,
 	SDL_PIXELFORMAT_ARGB8888,
         SDL_TEXTUREACCESS_STREAMING,
