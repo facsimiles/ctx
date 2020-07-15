@@ -8334,6 +8334,8 @@ ctx_u8_source_over_normal_color (int components,
 #define x00ff     _mm256_set1_epi16(255)
 #define x0101     _mm256_set1_epi16(0x0101)
 #define x0080     _mm256_set1_epi16(0x0080)
+
+#include <stdalign.h>
 #endif
 
 #if CTX_GRADIENTS
@@ -8352,6 +8354,9 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
 #if CTX_DITHER
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
+#endif
+#if CTX_AVX2
+    alignas(32)
 #endif
     uint8_t tsrc[4 * 8];
     //*((uint32_t*)(tsrc)) = *((uint32_t*)(src));
@@ -8564,6 +8569,9 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
 #if CTX_DITHER
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
+#endif
+#if CTX_AVX2
+  alignas(32)
 #endif
     uint8_t tsrc[4 * 8];
     int x = 0;
