@@ -6207,7 +6207,7 @@ static uint8_t palettes[][16][3]=
     return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
   }
 
-  void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
+  void vt_draw (VT *vt, Ctx *ctx, double x0, double y0, int full)
   {
     int image_id = 0;
     ctx_save (ctx);
@@ -6224,7 +6224,7 @@ static uint8_t palettes[][16][3]=
     cursor_y_px = y0 + (vt->cursor_y - 1) * vt->ch;
     cursor_w = vt->cw;
     cursor_h = vt->ch;
-    if (vt->scroll)
+    if (vt->scroll || full)
       {
         ctx_begin_path (ctx);
         ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
@@ -6313,7 +6313,7 @@ static uint8_t palettes[][16][3]=
                       if (col > vt->select_end_col) { in_selected_region = 0; }
                     }
                   got_selection |= in_selected_region;
-                  if (vt->scroll)
+                  if (vt->scroll || full)
                     {
                       /* this prevents draw_cell from using cache */
                       r = c = 0;

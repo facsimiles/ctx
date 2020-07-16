@@ -428,7 +428,8 @@ enum _CtxModifierState
   CTX_MODIFIER_STATE_ALT     = (1<<2),
   CTX_MODIFIER_STATE_BUTTON1 = (1<<3),
   CTX_MODIFIER_STATE_BUTTON2 = (1<<4),
-  CTX_MODIFIER_STATE_BUTTON3 = (1<<5)
+  CTX_MODIFIER_STATE_BUTTON3 = (1<<5),
+  CTX_MODIFIER_STATE_DRAG    = (1<<6), // pointer button is down (0 or any)
 };
 typedef enum _CtxModifierState CtxModifierState;
 
@@ -11771,8 +11772,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 
 #if CTX_SHAPE_CACHE
   uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
-  int width = (rasterizer->col_max + (CTX_SUBDIV-1) ) / CTX_SUBDIV - rasterizer->col_min/CTX_SUBDIV;
-  int height = (rasterizer->scan_max + (aa-1) ) / aa - rasterizer->scan_min / aa;
+  int width = (rasterizer->col_max + (CTX_SUBDIV-1) ) / CTX_SUBDIV - rasterizer->col_min/CTX_SUBDIV + 1;
+  int height = (rasterizer->scan_max + (aa-1) ) / aa - rasterizer->scan_min / aa + 1;
   if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
       && width < CTX_SHAPE_CACHE_MAX_DIM
       && height < CTX_SHAPE_CACHE_MAX_DIM && !rasterizer->state->gstate.clipped &&

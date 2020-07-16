@@ -17,6 +17,10 @@
 #include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
 #define CTX_EVENTS            1
+#define CTX_SHAPE_CACHE       1
+
+#define CTX_MAX_JOURNAL_SIZE   1024*32
+
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 #include "vt-line.h"
@@ -254,7 +258,7 @@ void client_remove_by_id (int id)
 }
 #endif
 
-static void handle_key_event (const char *event)
+static void handle_event (const char *event)
 {
   if (!active)
     return;
@@ -347,7 +351,7 @@ int update_vt (Ctx *ctx, CtxClient *client)
            in_scroll)
         {
           client->drawn_rev = vt_rev (vt);
-          vt_draw (vt, ctx, 0, 0);
+          vt_draw (vt, ctx, 0, 0, 1);
           return 1;
         }
       return 0;
@@ -448,8 +452,33 @@ int main (int argc, char **argv)
       CtxEvent *event;
       if ((event = ctx_get_event (ctx)))
       {
+        char buf[64];
         switch (event->type)
         {
+          case CTX_RELEASE:
+            sprintf (buf, "mouse-release %.0f %.0f", (float) event->x,
+                                                     (float) event->y);
+            handle_event (buf);
+            break;
+          case CTX_PRESS:
+            sprintf (buf, "mouse-press %.0f %.0f", (float) event->x,
+                                                  (float) event->y);
+            handle_event (buf);
+            break;
+          case CTX_MOTION:
+            if (event->state & CTX_MODIFIER_STATE_BUTTON1)
+            {
+              sprintf (buf, "mouse-drag %.0f %.0f", (float) event->x,
+                                                    (float) event->y);
+            }
+            else
+            {
+              sprintf (buf, "mouse-motion %.0f %.0f", (float) event->x,
+                                                      (float) event->y);
+            }
+            handle_event (buf);
+            break;
+
           case CTX_KEY_DOWN:
             if (!strcmp (event->string, "resize-event"))
             {
@@ -458,7 +487,7 @@ int main (int argc, char **argv)
             }
             else
             {
-              handle_key_event (event->string);
+              handle_event (event->string);
             }
             break;
 
