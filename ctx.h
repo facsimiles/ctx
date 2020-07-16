@@ -15607,8 +15607,8 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
     {
       const char *name = NULL;
       _ctx_indent (stream, *indent);
-      //switch ((CtxCode)code)
-      switch (code)
+      switch ((CtxCode)code)
+      //switch (code)
         {
           case CTX_SET_KEY:              name="setParam"; break;
           case CTX_SET_COLOR:            name="setColor"; break;
@@ -15619,16 +15619,18 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_TEXT_STROKE:          name="textStroke"; break;
           case CTX_SAVE:                 name="save"; break;
           case CTX_RESTORE:              name="restore"; break;
+          case CTX_NEW_PAGE:             name="newPage"; break;
           case CTX_START_GROUP:          name="startGroup"; break;
           case CTX_END_GROUP:            name="endGroup"; break;
           case CTX_RECTANGLE:            name="rectangle"; break;
+          case CTX_ROUND_RECTANGLE:      name="roundRectangle"; break;
           case CTX_LINEAR_GRADIENT:      name="linearGradient"; break;
           case CTX_RADIAL_GRADIENT:      name="radialGradient"; break;
           case CTX_GRADIENT_STOP:        name="gradientAddStop"; break;
           case CTX_VIEW_BOX:             name="viewBox"; break;
           case CTX_MOVE_TO:              name="moveTo"; break;
           case CTX_LINE_TO:              name="lineTo"; break;
-          case CTX_BEGIN_PATH:             name="beginPath"; break;
+          case CTX_BEGIN_PATH:           name="beginPath"; break;
           case CTX_REL_MOVE_TO:          name="relMoveTo"; break;
           case CTX_REL_LINE_TO:          name="relLineTo"; break;
           case CTX_FILL:                 name="fill"; break;
@@ -15658,7 +15660,6 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_REL_SMOOTH_TO:        name="rel_smooth_to"; break;
           case CTX_SMOOTHQ_TO:           name="smoothq_to"; break;
           case CTX_REL_SMOOTHQ_TO:       name="rel_smoothq_to"; break;
-          case CTX_NEW_PAGE:             name="new_page"; break;
           case CTX_HOR_LINE_TO:          name="hor_line_to"; break;
           case CTX_VER_LINE_TO:          name="ver_line_to"; break;
           case CTX_REL_HOR_LINE_TO:      name="rel_hor_line_to"; break;
@@ -16006,11 +16007,11 @@ ctx_stream_process (void *user_data, CtxCommand *c)
   FILE *stream    = (FILE *) user_data_array[0];
   int   formatter = (size_t) (user_data_array[1]);
   int  *indent    = (int *) &user_data_array[2];
-  //switch (entry->code)
-  switch ((CtxCode)(entry->code))
+  switch (entry->code)
+  //switch ((CtxCode)(entry->code))
     {
       case CTX_GLYPH:
-        ctx_print_glyph (stream, formatter, indent, entry, 5);
+        ctx_print_glyph (stream, formatter, indent, entry, 1);
         break;
         break;
       case CTX_LINE_TO:
@@ -16019,9 +16020,13 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_TRANSLATE:
       case CTX_MOVE_TO:
       case CTX_REL_MOVE_TO:
+      case CTX_SMOOTHQ_TO:
+      case CTX_REL_SMOOTHQ_TO:
         ctx_print_entry (stream, formatter, indent, entry, 2);
         break;
+      case CTX_REL_ARC_TO:
       case CTX_ARC_TO:
+      case CTX_ROUND_RECTANGLE:
         ctx_print_entry (stream, formatter, indent, entry, 5);
         break;
       case CTX_CURVE_TO:
@@ -16036,6 +16041,8 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_REL_QUAD_TO:
       case CTX_LINEAR_GRADIENT:
       case CTX_VIEW_BOX:
+      case CTX_SMOOTH_TO:
+      case CTX_REL_SMOOTH_TO:
         ctx_print_entry (stream, formatter, indent, entry, 4);
         break;
       case CTX_SET_FONT_SIZE:
@@ -16047,6 +16054,8 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_SET_SHADOW_OFFSET_Y:
       case CTX_VER_LINE_TO:
       case CTX_HOR_LINE_TO:
+      case CTX_REL_VER_LINE_TO:
+      case CTX_REL_HOR_LINE_TO:
         ctx_print_entry (stream, formatter, indent, entry, 1);
         break;
       case CTX_SET:
@@ -16221,6 +16230,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_SAVE:
       case CTX_PRESERVE:
       case CTX_START_GROUP:
+      case CTX_NEW_PAGE:
       case CTX_END_GROUP:
       case CTX_RESTORE:
         ctx_print_entry (stream, formatter, indent, entry, 0);
