@@ -15645,39 +15645,39 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_PRESERVE:             name="preserve"; break;
           case CTX_FLUSH:                name="flush"; break;
           case CTX_RESET:                name="reset"; break;
-          case CTX_SET_FONT:             name="set_font"; break;
+          case CTX_SET_FONT:             name="font"; break;
           case CTX_STROKE:               name="stroke"; break;
           case CTX_CLIP:                 name="clip"; break;
           case CTX_ARC:                  name="arc"; break;
           case CTX_SCALE:                name="scale"; break;
           case CTX_TRANSLATE:            name="translate"; break;
           case CTX_ROTATE:               name="rotate"; break;
-          case CTX_ARC_TO:               name="arc_to"; break;
-          case CTX_CURVE_TO:             name="curve_to"; break;
-          case CTX_REL_CURVE_TO:         name="rel_curve_to"; break;
-          case CTX_REL_QUAD_TO:          name="rel_quad_to"; break;
-          case CTX_QUAD_TO:              name="quad_to"; break;
-          case CTX_SMOOTH_TO:            name="smooth_to"; break;
-          case CTX_REL_SMOOTH_TO:        name="rel_smooth_to"; break;
-          case CTX_SMOOTHQ_TO:           name="smoothq_to"; break;
-          case CTX_REL_SMOOTHQ_TO:       name="rel_smoothq_to"; break;
-          case CTX_HOR_LINE_TO:          name="hor_line_to"; break;
-          case CTX_VER_LINE_TO:          name="ver_line_to"; break;
-          case CTX_REL_HOR_LINE_TO:      name="rel_hor_line_to"; break;
-          case CTX_REL_VER_LINE_TO:      name="rel_ver_line_to"; break;
-          case CTX_SET_COMPOSITING_MODE: name="set_compositing_mode"; break;
-          case CTX_SET_BLEND_MODE:       name="set_blend_mode"; break;
-          case CTX_SET_TEXT_ALIGN:       name="set_text_align"; break;
-          case CTX_SET_TEXT_BASELINE:    name="set_text_baseline"; break;
-          case CTX_SET_TEXT_DIRECTION:   name="set_text_direction"; break;
-          case CTX_SET_FONT_SIZE:        name="set_font_size"; break;
-          case CTX_SET_MITER_LIMIT:      name="set_miter_limit"; break;
-          case CTX_SET_LINE_JOIN:        name="set_line_join"; break;
-          case CTX_SET_LINE_CAP:         name="set_line_cap"; break;
-          case CTX_SET_LINE_WIDTH:       name="set_line_width"; break;
+          case CTX_ARC_TO:               name="arcTo"; break;
+          case CTX_CURVE_TO:             name="curveTo"; break;
+          case CTX_REL_CURVE_TO:         name="relCurveTo"; break;
+          case CTX_REL_QUAD_TO:          name="relQuadTo"; break;
+          case CTX_QUAD_TO:              name="quadTo"; break;
+          case CTX_SMOOTH_TO:            name="smoothTo"; break;
+          case CTX_REL_SMOOTH_TO:        name="relSmoothTo"; break;
+          case CTX_SMOOTHQ_TO:           name="smoothqTo"; break;
+          case CTX_REL_SMOOTHQ_TO:       name="relSmoothqTo"; break;
+          case CTX_HOR_LINE_TO:          name="horLineTo"; break;
+          case CTX_VER_LINE_TO:          name="verLineTo"; break;
+          case CTX_REL_HOR_LINE_TO:      name="relHorLineTo"; break;
+          case CTX_REL_VER_LINE_TO:      name="relVerLineTo"; break;
+          case CTX_SET_COMPOSITING_MODE: name="compositingMode"; break;
+          case CTX_SET_BLEND_MODE:       name="blendMode"; break;
+          case CTX_SET_TEXT_ALIGN:       name="textAlign"; break;
+          case CTX_SET_TEXT_BASELINE:    name="textBaseline"; break;
+          case CTX_SET_TEXT_DIRECTION:   name="textDirection"; break;
+          case CTX_SET_FONT_SIZE:        name="fontSize"; break;
+          case CTX_SET_MITER_LIMIT:      name="miterLimit"; break;
+          case CTX_SET_LINE_JOIN:        name="lineJoin"; break;
+          case CTX_SET_LINE_CAP:         name="lineCap"; break;
+          case CTX_SET_LINE_WIDTH:       name="lineWidth"; break;
           case CTX_SET_SHADOW_BLUR:      name="setShadowBlur";  break;
-          case CTX_SET_FILL_RULE:        name="set_fill_rule"; break;
-          case CTX_SET:                  name="setprop"; break;
+          case CTX_SET_FILL_RULE:        name="fillRule"; break;
+          case CTX_SET:                  name="setProp"; break;
         }
       if (name)
         {
@@ -20621,7 +20621,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   //int height = sdl->height;
   ctx_render_ctx (sdl->ctx, sdl->host);
  
-  //ctx_render_stream (sdl->ctx, stdout, 0);
+  //ctx_render_stream (sdl->ctx, stdout, 1);
 
   SDL_UpdateTexture(sdl->texture, NULL,
                     (void*)sdl->pixels, width * sizeof (Uint32));

@@ -4413,7 +4413,8 @@ void vt_feed_keystring (VT *vt, const char *str)
   }
 
   // make optional? - reset of scroll on key input
-  vt_set_scroll (vt, 0);
+  if (strstr (str, "-page"))
+    vt_set_scroll (vt, 0);
 
   if (!strcmp (str, "idle") )
      return;
