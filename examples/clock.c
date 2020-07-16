@@ -17,8 +17,6 @@
 
 #include "ctx.h"
 
-
-
 static void _analog_clock (Ctx     *ctx,
 		           uint32_t ms,
 			   float    x,

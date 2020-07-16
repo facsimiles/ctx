@@ -4821,6 +4821,12 @@ void _ctx_set_store_clear (Ctx *ctx)
 
 #if CTX_EVENTS
 static void
+ctx_event_free (CtxEvent *event)
+{
+  free (event);
+}
+
+static void
 ctx_collect_events (CtxEvent *event, void *data, void *data2)
 {
   Ctx *ctx = data;
@@ -4828,8 +4834,8 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
   if (event->type == CTX_KEY_DOWN && !strcmp (event->string, "idle"))
           return;
   copy = malloc (sizeof (CtxEvent));
-  memcpy (copy, event, sizeof (CtxEvent));
-  ctx_list_append_full (&ctx->events.events, copy, (void*)free, NULL);
+  *copy = *event;
+  ctx_list_append_full (&ctx->events.events, copy, (void*)ctx_event_free, NULL);
 }
 #endif
 
@@ -19074,14 +19080,13 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
 
   if (time == 0)
     time = ctx_ms (ctx);
-
   if (item)
   {
     int i;
     event.ctx = ctx;
     event.type = CTX_KEY_DOWN;
     event.unicode = keyval; 
-    event.string = string;
+    event.string = strdup(string);
     event.stop_propagate = 0;
     event.time = time;
 
@@ -19100,6 +19105,8 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
           return event.stop_propagate;
       }
     }
+
+    
   }
   return 0;
 }
@@ -20225,6 +20232,21 @@ static int ctx_sdl_consume_events (Ctx *ctx)
            }
         }
         break;
+#if 1
+      case SDL_TEXTINPUT:
+    //  if (!active)
+    //    break;
+        if (!sdl->lctrl && !sdl->rctrl && !sdl->lalt 
+           //&& ( (vt && vt_keyrepeat (vt) ) || (key_repeat==0) )
+           )
+          {
+            const char *name = event.text.text;
+            if (!strcmp (name, " ") ) { name = "space"; }
+            ctx_key_press (ctx, 0, name, 0);
+            //got_event = 1;
+          }
+        break;
+#endif
       case SDL_KEYDOWN:
         {
           char buf[32] = "";
@@ -20300,17 +20322,16 @@ static int ctx_sdl_consume_events (Ctx *ctx)
                 sprintf (buf, "shift-%s", name);
                 name = buf;
               }
-            if (strcmp (name, "space") &&
-                (/* (vt && vt_keyrepeat (vt) ) || */ (sdl->key_repeat==0) )
-               )
+            if (strcmp (name, "space"))
               {
-                ctx_key_press (ctx, 0, name, 0);
-                //got_event = 1;
+               ctx_key_press (ctx, 0, name, 0);
               }
           }
           else
           {
-             ctx_key_press (ctx, 0, name, 0);
+#if 0
+             ctx_key_press (ctx, 0, buf, 0);
+#endif
           }
         }
         break;
@@ -20522,14 +20543,13 @@ Ctx *ctx_new_braille (int width, int height)
 
 #if CTX_SDL
 
-
 inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
   int width =  sdl->width;
-  int height = sdl->height;
+  //int height = sdl->height;
   ctx_render_ctx (sdl->ctx, sdl->host);
   SDL_UpdateTexture(sdl->texture, NULL,
-                    (void*)sdl->pixels, sdl->width * sizeof (Uint32));
+                    (void*)sdl->pixels, width * sizeof (Uint32));
   SDL_RenderClear(sdl->renderer);
   SDL_RenderCopy(sdl->renderer, sdl->texture, NULL, NULL);
   SDL_RenderPresent(sdl->renderer);
@@ -20569,6 +20589,7 @@ Ctx *ctx_new_sdl (int width, int height)
         width, height);
 
   SDL_StartTextInput ();
+  SDL_EnableScreenSaver ();
 
   sdl->ctx = ctx;
   sdl->width  = width;
@@ -20589,7 +20610,6 @@ Ctx *ctx_new_sdl (int width, int height)
   return ctx;
 }
 #endif
-
 
 typedef struct _CtxCtx CtxCtx;
 

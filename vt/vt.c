@@ -352,7 +352,6 @@ struct _VT
   int keyrepeat;
   int       lastx;
   int       lasty;
-  int        done;
   int        result;
   long       rev;
   //SDL_Rect   dirty;
@@ -601,7 +600,7 @@ static void vt_set_title (VT *vt, const char *new_title)
   if (vt->title)
     { free (vt->title); }
   vt->title = strdup (new_title);
-  client_set_title (vt->id, new_title);//vt->title);
+  //client_set_title (vt->id, new_title);//vt->title);
 }
 
 const char *vt_get_title (VT *vt)
@@ -730,26 +729,26 @@ static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence)
   vt->cr_on_lf = 0;
   vtcmd_set_top_and_bottom_margins (vt, "[r");
   vtcmd_set_left_and_right_margins (vt, "[s");
-  vt->autowrap       = 1;
-  vt->justify        = 0;
-  vt->cursor_visible = 1;
-  vt->charset[0]     = 0;
-  vt->charset[1]     = 0;
-  vt->charset[2]     = 0;
-  vt->charset[3]     = 0;
-  vt->bell           = 3;
-  vt->scale_x        = 1.0;
-  vt->scale_y        = 1.0;
-  vt->saved_x        = 1;
-  vt->saved_y        = 1;
-  vt->saved_style    = 1;
-  vt->reverse_video  = 0;
-  vt->cstyle         = 0;
-  vt->keyrepeat      = 1;
+  vt->autowrap               = 1;
+  vt->justify                = 0;
+  vt->cursor_visible         = 1;
+  vt->charset[0]             = 0;
+  vt->charset[1]             = 0;
+  vt->charset[2]             = 0;
+  vt->charset[3]             = 0;
+  vt->bell                   = 3;
+  vt->scale_x                = 1.0;
+  vt->scale_y                = 1.0;
+  vt->saved_x                = 1;
+  vt->saved_y                = 1;
+  vt->saved_style            = 1;
+  vt->reverse_video          = 0;
+  vt->cstyle                 = 0;
+  vt->keyrepeat              = 1;
   vt->cursor_key_application = 0;
   vt->argument_buf_len       = 0;
   vt->argument_buf[0]        = 0;
-  vt->done                   = 0;
+  vt->vtpty.done              = 0;
   vt->result                 = -1;
   vt->state                  = vt_state_neutral;
   vt->unit_pixels   = 0;
@@ -818,7 +817,7 @@ VT *vt_new (const char *command, int cols, int rows, float font_size, float line
   vt->argument_buf_cap   = 64;
   vt->argument_buf       = malloc (vt->argument_buf_cap);
   vt->argument_buf[0]    = 0;
-  vt->done               = 0;
+  vt->vtpty.done         = 0;
   vt->result             = -1;
   vt->line_spacing       = 1.0;
   vt->scale_x            = 1.0;
@@ -4232,7 +4231,7 @@ int vt_poll (VT *vt, int timeout)
     {
       if (kill (vt->vtpty.pid, 0) != 0)
         {
-          vt->done = 1;
+          vt->vtpty.done = 1;
         }
     }
   return got_data;
@@ -4668,6 +4667,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
     {
       VT_error ("forkpty failed (%s)", command);
     }
+  fprintf (stderr, "fpty %i\n", vt->vtpty.pid);
   //fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
 }
 
@@ -6489,7 +6489,7 @@ static uint8_t palettes[][16][3]=
 
   int vt_is_done (VT *vt)
   {
-    return vt->done;
+    return vt->vtpty.done;
   }
 
   int vt_get_result (VT *vt)

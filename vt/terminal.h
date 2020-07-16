@@ -4,6 +4,7 @@ typedef struct VtPty
 {
   int        pty;
   pid_t      pid;
+  int        done;
 } VtPty;
 ssize_t vtpty_read     (void  *data, void *buf, size_t count);
 ssize_t vtpty_write    (void *data, const void *buf, size_t count);
