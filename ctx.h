@@ -20674,6 +20674,7 @@ Ctx *ctx_new_ctx (int width, int height)
 
 Ctx *ctx_new_ui (int width, int height)
 {
+
   if (getenv ("CTX_VERSION"))
           // full blown ctx - in terminal or standalone
     return ctx_new_ctx (width, height);

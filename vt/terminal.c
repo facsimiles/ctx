@@ -1090,7 +1090,7 @@ int update_vt (CtxClient *client)
           // needs investigation, this is the code path that
           // can be turned into threaded rendering.
           Ctx *ctx = ctx_new ();
-          vt_draw (vt, ctx, 0, 0);
+          vt_draw (vt, ctx, 0, 0, 0);
           ctx_blit (ctx, client->pixels, 0,0, width, height, width * 4, CTX_FORMAT_RGBA8);
 #else
           // render directlty to framebuffer in immediate mode - skips
@@ -1101,7 +1101,7 @@ int update_vt (CtxClient *client)
           //                                              to force full draw
           Ctx *ctx = ctx_new_for_framebuffer (client->pixels, width, height, width * 4, CTX_FORMAT_RGBA8);
           //fprintf (stderr, "%i\r", no);
-          vt_draw (vt, ctx, 0, 0);
+          vt_draw (vt, ctx, 0, 0, 0);
 #endif
           ctx_dirty_rect (ctx, &ct->dirty.x, &ct->dirty.y, &ct->dirty.w, &ct->dirty.h);
           ctx_free (ctx);

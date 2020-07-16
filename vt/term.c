@@ -262,6 +262,7 @@ static void handle_event (const char *event)
 {
   if (!active)
     return;
+  fprintf (stderr, "{%s}\n", event);
   VT *vt = active->vt;
   if (!strcmp (event, "shift-return"))
    event = "return";
@@ -450,28 +451,35 @@ int main (int argc, char **argv)
       }
 
       CtxEvent *event;
+      static int mouse_down = 0;
       if ((event = ctx_get_event (ctx)))
       {
         char buf[64];
         switch (event->type)
         {
           case CTX_RELEASE:
+            if (event->device_no == 0)
+                    mouse_down = 0;
             sprintf (buf, "mouse-release %.0f %.0f", (float) event->x,
                                                      (float) event->y);
             handle_event (buf);
             break;
           case CTX_PRESS:
+            if (event->device_no == 0)
+                    mouse_down = 1;
             sprintf (buf, "mouse-press %.0f %.0f", (float) event->x,
                                                   (float) event->y);
             handle_event (buf);
             break;
           case CTX_MOTION:
-            if (event->state & CTX_MODIFIER_STATE_BUTTON1)
+#if 1
+            if (mouse_down)
             {
               sprintf (buf, "mouse-drag %.0f %.0f", (float) event->x,
                                                     (float) event->y);
             }
             else
+#endif
             {
               sprintf (buf, "mouse-motion %.0f %.0f", (float) event->x,
                                                       (float) event->y);
