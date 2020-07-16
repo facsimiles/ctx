@@ -17852,9 +17852,17 @@ uint32_t ctx_ms (Ctx *ctx)
 
 #if CTX_EVENTS
 
+typedef enum _CtxFlags CtxFlags;
+
+enum _CtxFlags {
+   CTX_FLAG_DIRECT = (1<<0),
+};
+
+
 void
 ctx_init (int *argc, char ***argv)
 {
+#if 0
   if (!getenv ("CTX_VERSION"))
   {
     int i;
@@ -17869,6 +17877,7 @@ ctx_init (int *argc, char ***argv)
     // if this fails .. we continue normal startup
     // and end up in self-hosted braille
   }
+#endif
 }
 
 void _ctx_resized (Ctx *ctx, int width, int height, long time);

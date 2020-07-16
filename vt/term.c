@@ -262,7 +262,6 @@ static void handle_event (const char *event)
 {
   if (!active)
     return;
-  fprintf (stderr, "{%s}\n", event);
   VT *vt = active->vt;
   if (!strcmp (event, "shift-return"))
    event = "return";
@@ -447,12 +446,12 @@ int main (int argc, char **argv)
       }
       else
       {
-        usleep (100);
+        usleep (1000 *  15);
       }
 
       CtxEvent *event;
       static int mouse_down = 0;
-      if ((event = ctx_get_event (ctx)))
+      while ((event = ctx_get_event (ctx)))
       {
         char buf[64];
         switch (event->type)
