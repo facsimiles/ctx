@@ -2841,6 +2841,7 @@ struct _CtxState
 #define CTX_stroke         CTX_STRH('s','t','r','o','k','e',0,0,0,0,0,0,0,0)
 #define CTX_text_align     CTX_STRH('t','e','x','t','_','a','l','i','g','n',0, 0,0,0)
 #define CTX_textAlign      CTX_STRH('t','e','x','t','A','l','i','g','n',0, 0, 0,0,0)
+#define CTX_texture        CTX_STRH('t','e','x','t','u','r','e',0,0,0, 0, 0,0,0)
 #define CTX_text_baseline  CTX_STRH('t','e','x','t','_','b','a','s','e','l','i','n','e',0)
 #define CTX_text_baseline  CTX_STRH('t','e','x','t','_','b','a','s','e','l','i','n','e',0)
 #define CTX_textBaseline   CTX_STRH('t','e','x','t','B','a','s','e','l','i','n','e',0,0)
@@ -3441,6 +3442,7 @@ struct _CtxRasterizer
 
   CtxState  *state;
   Ctx       *ctx;
+  Ctx       *texture_source; /* normally same as ctx */
 
   void      *buf;
 
@@ -6671,6 +6673,13 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data)
 {
+  /* .. how to relay? ..
+   * fully serializing is one needed option
+   * another is knowing a ctx context that needs relaying from,
+   * or a context to use as texturing source?
+   *
+   * texturing source seems like a good option for multi threaded render
+   */
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
     { return id; }
@@ -12407,13 +12416,13 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
                             float y)
 {
   if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
-  if (rasterizer->ctx->texture[no].data == NULL)
+  if (rasterizer->texture_source->texture[no].data == NULL)
     {
       ctx_log ("failed setting texture %i\n", no);
       return;
     }
   rasterizer->state->gstate.source.type = CTX_SOURCE_IMAGE;
-  rasterizer->state->gstate.source.image.buffer = &rasterizer->ctx->texture[no];
+  rasterizer->state->gstate.source.image.buffer = &rasterizer->texture_source->texture[no];
   //ctx_user_to_device (rasterizer->state, &x, &y);
   rasterizer->state->gstate.source.image.x0 = 0;
   rasterizer->state->gstate.source.image.y0 = 0;
@@ -14204,14 +14213,15 @@ ctx_pixel_format_info (CtxPixelFormat format)
 }
 
 static CtxRasterizer *
-ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
+ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
 {
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer) );
   rasterizer->vfuncs.process = ctx_rasterizer_process;
   rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
   rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   rasterizer->state       = state;
-  rasterizer->ctx         = ctx;
+  rasterizer->ctx = ctx;
+  rasterizer->texture_source = texture_source?texture_source:ctx;
   rasterizer->aa          = 15;
   rasterizer->force_aa    = 0;
   ctx_state_init (rasterizer->state);
@@ -14268,7 +14278,7 @@ ctx_new_for_buffer (CtxBuffer *buffer)
   Ctx *ctx = ctx_new ();
   ctx_set_renderer (ctx,
                     ctx_rasterizer_init ( (CtxRasterizer *) malloc (sizeof (CtxRasterizer) ),
-                                          ctx, &ctx->state,
+                                          ctx, NULL, &ctx->state,
                                           buffer->data, 0, 0, buffer->width, buffer->height,
                                           buffer->stride, buffer->format->pixel_format) );
   return ctx;
@@ -14282,7 +14292,7 @@ ctx_new_for_framebuffer (void *data, int width, int height,
   Ctx *ctx = ctx_new ();
   ctx_set_renderer (ctx,
                     ctx_rasterizer_init ( (CtxRasterizer *) malloc (sizeof (CtxRasterizer) ),
-                                          ctx, &ctx->state, data, 0, 0, width, height,
+                                          ctx, NULL, &ctx->state, data, 0, 0, width, height,
                                           stride, pixel_format) );
   return ctx;
 }
@@ -16737,8 +16747,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_text:           ret = CTX_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
-
-
+          case CTX_texture:        ret = CTX_TEXTURE; break;
 
           OPT(case CTX_rgb_space:)
           case CTX_rgbSpace:
@@ -17334,6 +17343,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_SET_GLOBAL_ALPHA:
         ctx_global_alpha (ctx, arg (0) );
+        break;
+      case CTX_TEXTURE:
+        ctx_texture (ctx, arg (0), arg(1), arg(2));
         break;
       case CTX_BEGIN_PATH:
         ctx_begin_path (ctx);
@@ -20422,6 +20434,7 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           sdl->host = ctx_new_for_framebuffer (sdl->pixels,
                    width, height,
                   width * 4, CTX_FORMAT_RGBA8);
+          ((CtxRasterizer*)sdl->host->renderer)->texture_source = ctx;
         }
         break;
     }
@@ -20675,6 +20688,7 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->host = ctx_new_for_framebuffer (sdl->pixels,
                   width, height,
                   width * 4, CTX_FORMAT_RGBA8);
+  ((CtxRasterizer*)sdl->host->renderer)->texture_source = ctx;
 
   ctx_set_renderer (ctx, sdl);
   ctx_set_size (ctx, width, height);
