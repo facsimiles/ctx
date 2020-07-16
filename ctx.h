@@ -7438,10 +7438,16 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
       }
       COMPARE(0,1);
       break;
-    case 3: COMPARE(0,1); COMPARE(0,2); COMPARE(1,2); break;
-    case 4: COMPARE(0,1); COMPARE(2,3); COMPARE(0,2); COMPARE(1,3); COMPARE(1,2); break;
-    case 5: COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(3,4); COMPARE(0,3);
-            COMPARE(1,4); COMPARE(2,4); COMPARE(1,3); COMPARE(2,3); break;
+    case 3:
+      COMPARE(0,1); COMPARE(0,2); COMPARE(1,2);
+      break;
+    case 4:
+      COMPARE(0,1); COMPARE(2,3); COMPARE(0,2); COMPARE(1,3); COMPARE(1,2);
+      break;
+    case 5:
+      COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(3,4); COMPARE(0,3);
+      COMPARE(1,4); COMPARE(2,4); COMPARE(1,3); COMPARE(2,3);
+      break;
     case 6:
       COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(4,5);
       COMPARE(3,5); COMPARE(3,4); COMPARE(0,3); COMPARE(1,4);
@@ -7449,7 +7455,6 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
       break;
 #endif
     default:
- //   fprintf (stderr, "a:%i ", rasterizer->active_edges);
       ctx_edge2_qsort (&edges[0], 0, rasterizer->active_edges-1);
       break;
   }
@@ -7504,7 +7509,6 @@ ctx_gradient_cache_reset (void)
 }
 
 #endif
-
 
 CTX_INLINE static void
 _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
@@ -7596,7 +7600,7 @@ ctx_RGBA8_associate_alpha (uint8_t *u8)
         *((uint32_t*)(u8)) = 0;
       }
     }
-            }
+  }
 }
 
 
@@ -7633,7 +7637,6 @@ ctx_gradient_cache_prime (CtxRasterizer *rasterizer)
   ctx_gradient_cache_valid = 1;
 }
 #endif
-
 
 CTX_INLINE static void
 ctx_fragment_gradient_1d_GRAYA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
@@ -20602,8 +20605,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   //int height = sdl->height;
   ctx_render_ctx (sdl->ctx, sdl->host);
  
-  ctx_render_stream (sdl->ctx, stdout, 1);
-
+  //ctx_render_stream (sdl->ctx, stdout, 1);
 
   SDL_UpdateTexture(sdl->texture, NULL,
                     (void*)sdl->pixels, width * sizeof (Uint32));
