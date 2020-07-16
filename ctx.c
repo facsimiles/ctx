@@ -543,9 +543,6 @@ static int usage (void)
 }
 
 
-int vt_main (int argc, char **argv);
-
-
 const char *get_suffix (const char *path)
 {
   if (!path)
@@ -623,9 +620,6 @@ int main (int argc, char **argv)
   return 0;
 #endif
 
-
-  if (!argv[1])
-    { return vt_main (argc, argv); }
   for (int i = 1; argv[i]; i++)
     {
       if (argv[i][0] == '-')
@@ -785,11 +779,8 @@ int main (int argc, char **argv)
     }
   else
     {
-      if (getenv ("CTX_VERSION"))
-      {
-        execvp (argv[source_arg_no-1], &argv[source_arg_no-1]);
-      }
-      return vt_main (argc-source_arg_no+1, &argv[source_arg_no-1]);
+      fprintf (stderr, "nothing to do\n");
+      exit(0);
     }
 
   if (outputmode == CTX_OUTPUT_MODE_CTX)
