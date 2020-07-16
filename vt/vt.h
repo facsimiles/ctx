@@ -66,7 +66,7 @@ char       *vt_get_selection        (VT *vt);
 int         vt_get_cursor_x         (VT *vt);
 int         vt_get_cursor_y         (VT *vt);
 
-void        vt_draw                 (VT *vt, Ctx *ctx, double x, double y, int full);
+void        vt_draw                 (VT *vt, Ctx *ctx, double x, double y);
 int         vt_get_local (VT *vt);
 void        vt_set_local (VT *vt, int local);
 void        vt_rev_inc              (VT *vt);

@@ -387,8 +387,6 @@ struct _VT
   uint8_t   fg_color[3];
   uint8_t   bg_color[3];
 
-  uint64_t *set_style;
-  uint32_t *set_unichar;
   int       in_smooth_scroll;
   int       smooth_scroll;
   float     scroll_offset;
@@ -614,31 +612,6 @@ static void vtcmd_set_top_and_bottom_margins (VT *vt, const char *sequence);
 static void vtcmd_set_left_and_right_margins (VT *vt, const char *sequence);
 static void _vt_move_to (VT *vt, int y, int x);
 
-static void vt_cell_cache_reset (VT *vt, int row, int col)
-{
-  if (row < 0 || col < 0 || row > vt->rows || col > vt->cols)
-    { return; }
-  vt->set_unichar[row*vt->cols*2+col] = 0xfffff;
-  vt->set_style[row*vt->cols*2+col] = 0xffffff;
-}
-
-static void vt_cell_cache_clear_row (VT *vt, int row)
-{
-  if (!vt->set_style)
-    { return; }
-  for (int col = 0; col <= vt->cols; col++)
-    { vt_cell_cache_reset (vt, row, col); }
-}
-
-static void vt_cell_cache_clear (VT *vt)
-{
-  if (!vt->set_style)
-    { return; }
-  vt->rev++;
-  for (int row = 0; row <= vt->rows; row++)
-    { vt_cell_cache_clear_row (vt, row); }
-}
-
 static void vtcmd_clear (VT *vt, const char *sequence)
 {
   while (vt->lines)
@@ -655,7 +628,6 @@ static void vtcmd_clear (VT *vt, const char *sequence)
       ctx_list_prepend (&vt->lines, vt->current_line);
       vt->line_count++;
     }
-  vt_cell_cache_clear (vt); // should not be needed
 }
 
 #define set_fg_rgb(r, g, b) \
@@ -777,7 +749,6 @@ void vt_set_font_size (VT *vt, float font_size)
 {
   vt->font_size = font_size;
   _vt_compute_cw_ch (vt);
-  vt_cell_cache_clear (vt);
 }
 float       vt_get_font_size      (VT *vt)
 {
@@ -788,7 +759,6 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
 {
   vt->line_spacing = line_spacing;
   _vt_compute_cw_ch (vt);
-  vt_cell_cache_clear (vt);
 }
 
 VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing, int id)
@@ -913,7 +883,6 @@ static int vt_trimlines (VT *vt, int max)
 
 void vt_set_term_size (VT *vt, int icols, int irows)
 {
-  vt_cell_cache_clear (vt);
   if (vt->rows == irows && vt->cols == icols)
     { return; }
   while (irows > vt->rows)
@@ -945,12 +914,6 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   vt->margin_bottom  = vt->rows;
   vt->margin_right   = vt->cols;
   vt->rev++;
-  if (vt->set_style)
-    { free (vt->set_style); }
-  if (vt->set_unichar)
-    { free (vt->set_unichar); }
-  vt->set_style = malloc ( ( (1+vt->rows) * (1+vt->cols*2) ) * sizeof (uint64_t) );
-  vt->set_unichar = malloc ( ( (1+vt->rows) * (1+vt->cols*2) ) * sizeof (uint32_t) );
   VT_info ("resize %i %i", irows, icols);
 }
 
@@ -1242,7 +1205,6 @@ static void vt_scroll (VT *vt, int amount)
           vt->scroll_offset = 1.0;
           vt->in_smooth_scroll = 1;
         }
-      vt_cell_cache_clear (vt);
     }
 }
 
@@ -2077,11 +2039,9 @@ qagain:
             break; // set 132 col
           case 4: /*MODE;Smooth scroll;Smooth;Jump;*/
             vt->smooth_scroll = set;
-            vt_cell_cache_clear (vt);
             break; // set 132 col
           case 5: /*MODE;DECSCNM Screen mode;Reverse;Normal;*/
             vt->reverse_video = set;
-            vt_cell_cache_clear (vt);
             break;
           case 6: /*MODE;DECOM Origin mode;Relative;Absolute;*/
             vt->origin = set;
@@ -2159,7 +2119,6 @@ qagain:
                       }
                     vt->in_alt_screen = 1;
                     vt_line_feed (vt);
-                    vt_cell_cache_clear (vt);
                     _vt_move_to (vt, 1, 1);
                     vt_carriage_return (vt);
                   }
@@ -4685,10 +4644,6 @@ void vt_destroy (VT *vt)
       vt_line_free (vt->scrollback->data, 1);
       ctx_list_remove (&vt->scrollback, vt->scrollback->data);
     }
-  if (vt->set_style)
-    { free (vt->set_style); }
-  if (vt->set_unichar)
-    { free (vt->set_unichar); }
   if (vt->ctxp)
     ctx_parser_free (vt->ctxp);
   if (vt->ctx)
@@ -5887,14 +5842,6 @@ static uint8_t palettes[][16][3]=
         offset_y -= vt->scroll_offset / (dh?2:1);
       }
     cw *= scale_x;
-    if (row>0 && col>0 && ! proportional && (scale_x == 1.0f) )
-      {
-        if (vt->set_unichar[row*vt->cols*2+col] == unichar &&
-            vt->set_style[row*vt->cols*2+col] == style)
-          { return cw; }
-        vt->set_unichar[row*vt->cols*2+col] = unichar;
-        vt->set_style[row*vt->cols*2+col] = style;
-      }
     if (blink_fast)
       {
         if ( (vt->blink_state % 2) == 0)
@@ -6235,7 +6182,7 @@ bg_done:
     return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
   }
 
-  void vt_draw (VT *vt, Ctx *ctx, double x0, double y0, int full)
+  void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   {
     int image_id = 0;
     ctx_save (ctx);
@@ -6252,7 +6199,7 @@ bg_done:
     cursor_y_px = y0 + (vt->cursor_y - 1) * vt->ch;
     cursor_w = vt->cw;
     cursor_h = vt->ch;
-    if (vt->scroll || full)
+    //if (vt->scroll || full)
       {
         ctx_begin_path (ctx);
         ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
@@ -6317,8 +6264,6 @@ bg_done:
               uint32_t unichar = 0;
               int in_scrolling_region = vt->in_smooth_scroll && ( (r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
               int got_selection = 0;
-              if (line->double_width)
-                { vt_cell_cache_clear_row (vt, r); }
               for (int col = 1; col <= vt->cols * 1.33 && x < vt->cols * vt->cw; col++)
                 {
                   int c = col;
@@ -6342,7 +6287,7 @@ bg_done:
                       if (col > vt->select_end_col) { in_selected_region = 0; }
                     }
                   got_selection |= in_selected_region;
-                  if (vt->scroll || full)
+                  //if (vt->scroll || full)
                     {
                       /* this prevents draw_cell from using cache */
                       r = c = 0;
@@ -6364,11 +6309,6 @@ bg_done:
                       style & STYLE_BLINK_FAST)
                     {
                       vt->has_blink = 1;
-                      vt_cell_cache_reset (vt, r, c);
-                    }
-                  if (style & STYLE_PROPORTIONAL)
-                    {
-                      vt_cell_cache_clear_row (vt, r);
                     }
                   if (d)
                     {
@@ -6394,7 +6334,7 @@ bg_done:
                     {
                       int u = (line->image_col[i]-1) * vt->cw + (line->image_X[i] * vt->cw);
                       int v = y - vt->ch + (line->image_Y[i] * vt->ch);
-                      int rows = (image->height + (vt->ch-1) ) /vt->ch;
+                  //  int rows = (image->height + (vt->ch-1) ) /vt->ch;
                       ctx_save (ctx);
                       // we give each texture a unique-id - if we use more ids than
                       // there is, ctx will alias the first image.
@@ -6405,20 +6345,13 @@ bg_done:
                       ctx_rectangle (ctx, u, v, image->width, image->height);
                       ctx_fill (ctx);
                       ctx_restore (ctx);
-                      for (int row = r; row < r + rows; row++)
-                        { vt_cell_cache_clear_row (vt, row); }
                     }
-                }
-              if (got_selection)
-                {
-                  vt_cell_cache_clear_row (vt, r);
                 }
             }
         }
     }
     {
       /* draw ctx graphics */
-      int got_ctx = 0;
       float y = y0 + vt->ch * vt->rows;
       for (int row = 0; y > - (vt->scroll + 8) * vt->ch; row ++)
         {
@@ -6438,21 +6371,14 @@ bg_done:
                   //ctx_scale (ctx, factor, factor);
                   ctx_render_ctx (line->ctx, ctx);
                   ctx_restore (ctx);
-                  got_ctx = 1;
                 }
             }
           y -= vt->ch;
-        }
-      if (got_ctx)
-        {
-          /* if we knew the bounds of rendered ctx data - we can do better */
-          vt_cell_cache_clear (vt);
         }
     }
     /* draw cursor */
     if (vt->cursor_visible)
       {
-        vt_cell_cache_reset (vt, vt->cursor_y, vt->cursor_x);
         ctx_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
         ctx_begin_path (ctx);
         ctx_rectangle (ctx,
@@ -6476,7 +6402,6 @@ bg_done:
         float tot_lines = vt->line_count + vt->scrollback_count;
         float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
         float win_len = disp_lines / tot_lines;
-        vt_cell_cache_clear (vt);
         ctx_rectangle (ctx, vt->cw * (vt->cols - 2),
                        0, 2 * vt->cw,
                        vt->rows * vt->ch);
@@ -6492,7 +6417,6 @@ bg_done:
 #define SCROLL_SPEED 0.2;
     if (vt->in_smooth_scroll)
       {
-        vt_cell_cache_clear (vt);
         if (vt->in_smooth_scroll<0)
           {
             vt->scroll_offset += SCROLL_SPEED;
@@ -6546,7 +6470,6 @@ bg_done:
       { vt->scroll = ctx_list_length (vt->scrollback); }
     if (vt->scroll < 0)
       { vt->scroll = 0; }
-    vt_cell_cache_clear (vt);
   }
 
   int vt_get_scroll (VT *vt)

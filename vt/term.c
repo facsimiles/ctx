@@ -352,7 +352,7 @@ int update_vt (Ctx *ctx, CtxClient *client)
            in_scroll)
         {
           client->drawn_rev = vt_rev (vt);
-          vt_draw (vt, ctx, 0, 0, 1);
+          vt_draw (vt, ctx, 0, 0);
           return 1;
         }
       return 0;
