@@ -5518,20 +5518,35 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
 
 void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, float scale_x, float scale_y, float offset_y)
 {
+  int did_save = 0;
   if (unichar <= ' ')
     { return; }
   scale_x *= vt->scale_x;
   scale_y *= vt->scale_y;
   if (!vt_special_glyph (ctx, vt, x, y + offset_y * vt->ch, vt->cw * scale_x, vt->ch * scale_y, unichar) )
     { return; }
-  ctx_save (ctx);
+
   if (scale_x != 1.0 || scale_y != 1.0)
     {
+      if (!did_save)
+      {
+        ctx_save (ctx);
+        did_save = 1;
+      }
+
       ctx_translate (ctx, x, y);
       ctx_scale (ctx, scale_x, scale_y);
       ctx_translate (ctx, -x, -y);
     }
-  ctx_translate (ctx, 0, vt->font_size * offset_y);
+  if (offset_y != 0.0f)
+  {
+    if (!did_save)
+    {
+      ctx_save (ctx);
+      did_save = 1;
+    }
+    ctx_translate (ctx, 0, vt->font_size * offset_y);
+  }
   y -= vt->font_size * 0.22;
   if (bold)
     {
@@ -5541,7 +5556,8 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
     }
   ctx_move_to (ctx, x, y);
   ctx_glyph (ctx, unichar, 0);
-  ctx_restore (ctx);
+  if (did_save)
+    ctx_restore (ctx);
 }
 
 //static uint8_t palette[256][3];
@@ -6001,7 +6017,7 @@ static uint8_t palettes[][16][3]=
       }
     if (bg)
       {
-        ctx_begin_path (ctx);
+        //ctx_begin_path (ctx);
         if (style &  STYLE_BG24_COLOR_SET)
           {
             // XXX - this case seem to be missing reverse handling
@@ -6013,6 +6029,8 @@ static uint8_t palettes[][16][3]=
             int b = temp & 0xff;
             if (dh)
               { r= g = b = 30; }
+            if (r == 0 && g == r && b == g)
+              goto bg_done;
             ctx_rgba8 (ctx, r, g, b, 255);
           }
         else
@@ -6028,6 +6046,8 @@ static uint8_t palettes[][16][3]=
                     color = (style >> 40) & 255;
                   }
                 bg_intensity = -1;
+                if (color == 0)
+                  goto bg_done;
                 vt_ctx_set_color (vt, ctx, color, bg_intensity);
               }
             else
@@ -6052,9 +6072,9 @@ static uint8_t palettes[][16][3]=
                         { rgb[i] = vt->fg_color[i]; }
                       break;
                   }
-                ctx_rgba8 (ctx, rgb[0],
-                               rgb[1],
-                               rgb[2], 255);
+                if (rgb[0] == 0 && rgb[0] == rgb[1] && rgb[2] == rgb[1])
+                  goto bg_done;
+                ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
               }
           }
         if (dh)
@@ -6066,6 +6086,9 @@ static uint8_t palettes[][16][3]=
             ctx_rectangle (ctx, x0, y0 - ch + ch * offset_y, cw, ch);
           }
         ctx_fill (ctx);
+bg_done:
+        {
+        };
       }
     if (!fg) { return cw; }
     int italic        = (style & STYLE_ITALIC) != 0;
@@ -6090,6 +6113,10 @@ static uint8_t palettes[][16][3]=
             curved_underline = 1;
           }
       }
+
+    if (unichar == ' ' && !(underline || double_underline || curved_underline))
+            hidden = 1;
+
     if (!hidden)
       {
         if (style & STYLE_FG24_COLOR_SET)
@@ -6241,7 +6268,8 @@ static uint8_t palettes[][16][3]=
             ctx_fill  (ctx);
             ctx_rgba (ctx, 1,1,1,1);
           }
-        ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
+        if (vt->scroll != 0.0f)
+          ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
       }
     /* draw terminal lines */
 #if 0

@@ -18,6 +18,7 @@
 #include "ctx-font-mono.h"
 #define CTX_EVENTS            1
 #define CTX_SHAPE_CACHE       1
+#include <immintrin.h> // is detected by ctx, and enables AVX2
 
 #define CTX_MAX_JOURNAL_SIZE   1024*32
 
@@ -388,11 +389,6 @@ void render_fun (void *data)
 }
 #endif
 
-static void foo (CtxEvent *event, void *a, void *b)
-{
-        fprintf (stderr, "fnord\n");
-}
-
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
@@ -440,8 +436,6 @@ int main (int argc, char **argv)
       if (changes)
       {
         ctx_reset (ctx);
-        ctx_rectangle (ctx, 0, 0, 100, 100);
-        ctx_listen (ctx, CTX_DRAG, foo, NULL, NULL);
         ctx_flush (ctx);
       }
       else

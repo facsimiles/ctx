@@ -4644,6 +4644,12 @@ void
 ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
+
+  uint8_t rgba[4];
+  ctx_color_get_rgba8 (&ctx->state, &ctx->state.gstate.source.color, rgba);
+  if (rgba[0] == r && rgba[1] == g && rgba[2] == b && rgba[3] == a)
+     return;
+
   ctx_process (ctx, &command);
 }
 
@@ -4675,6 +4681,10 @@ void ctx_rgba (Ctx *ctx, float r, float g, float b, float a)
     ctx_f (CTX_CONT, g, b),
     ctx_f (CTX_CONT, a, 0)
   };
+  float rgba[4];
+  ctx_color_get_rgba (&ctx->state, &ctx->state.gstate.source.color, rgba);
+  if (rgba[0] == r && rgba[1] == g && rgba[2] == b && rgba[3] == a)
+     return;
   ctx_process (ctx, command);
 }
 
@@ -5150,6 +5160,8 @@ void ctx_set_matrix (Ctx *ctx, CtxMatrix *matrix)
 
 void ctx_rotate (Ctx *ctx, float x)
 {
+  if (x == 0.0f)
+    return;
   CTX_PROCESS_F1 (CTX_ROTATE, x);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
     { ctx->renderstream.count--; }
@@ -5157,6 +5169,8 @@ void ctx_rotate (Ctx *ctx, float x)
 
 void ctx_scale (Ctx *ctx, float x, float y)
 {
+  if (x == 1.0f && y == 1.0f)
+    return;
   CTX_PROCESS_F (CTX_SCALE, x, y);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
     { ctx->renderstream.count--; }
@@ -5164,6 +5178,8 @@ void ctx_scale (Ctx *ctx, float x, float y)
 
 void ctx_translate (Ctx *ctx, float x, float y)
 {
+  if (x == 0.0f && y == 0.0f)
+    return;
   CTX_PROCESS_F (CTX_TRANSLATE, x, y);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
     { ctx->renderstream.count--; }
@@ -15959,6 +15975,27 @@ ctx_print_entry (FILE *stream, int formatter, int *indent, CtxEntry *entry, int 
 }
 
 static void
+ctx_print_glyph (FILE *stream, int formatter, int *indent, CtxEntry *entry, int args)
+{
+  char buf[32];
+  _ctx_print_name (stream, entry->code, formatter, indent);
+  switch (formatter)
+    {
+      case CTX_FORMATTER_VERBOSE:
+        sprintf (buf, "%i", entry->data.u32[0]);
+        break;
+      case CTX_FORMATTER_COMPACT:
+      default:
+        sprintf (buf, "%i", entry->data.u32[0]);
+        break;
+    }
+  fwrite (buf, 1, strlen (buf), stream);
+
+  _ctx_print_endcmd (stream, formatter);
+}
+
+
+static void
 ctx_stream_process (void *user_data, CtxCommand *c)
 {
   CtxEntry *entry = &c->entry;
@@ -15966,9 +16003,13 @@ ctx_stream_process (void *user_data, CtxCommand *c)
   FILE *stream    = (FILE *) user_data_array[0];
   int   formatter = (size_t) (user_data_array[1]);
   int  *indent    = (int *) &user_data_array[2];
-    switch (entry->code)
-  //switch ((CtxCode)(entry->code))
+  //switch (entry->code)
+  switch ((CtxCode)(entry->code))
     {
+      case CTX_GLYPH:
+        ctx_print_glyph (stream, formatter, indent, entry, 5);
+        break;
+        break;
       case CTX_LINE_TO:
       case CTX_REL_LINE_TO:
       case CTX_SCALE:
@@ -20553,11 +20594,17 @@ Ctx *ctx_new_braille (int width, int height)
 
 #if CTX_SDL
 
+#include <stdio.h>
+
 inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
   int width =  sdl->width;
   //int height = sdl->height;
   ctx_render_ctx (sdl->ctx, sdl->host);
+ 
+  ctx_render_stream (sdl->ctx, stdout, 1);
+
+
   SDL_UpdateTexture(sdl->texture, NULL,
                     (void*)sdl->pixels, width * sizeof (Uint32));
   SDL_RenderClear(sdl->renderer);
