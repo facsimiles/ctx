@@ -2726,6 +2726,7 @@ struct _CtxState
 #define CTX_getkey         CTX_STRH('g','e','t','k','e','y',0,0,0,0,0,0,0,0)
 #define CTX_global_alpha   CTX_STRH('g','l','o','b','a','l','_','a','l','p','h','a',0,0)
 #define CTX_globalAlpha    CTX_STRH('g','l','o','b','a','l','A','l','p','h','a',0,0,0)
+#define CTX_glyph          CTX_STRH('g','l','y','p','h',0,0,0,0,0,0,0,0,0)
 #define CTX_gradient_add_stop CTX_STRH('g','r','a','d','i','e','n','t','_','a','d','d','_','s')
 #define CTX_gradientAddStop CTX_STRH('g','r','a','d','i','e','n','t','A','d','d','S','t','o')
 #define CTX_graya          CTX_STRH('g','r','a','y','a',0,0,0,0,0,0,0,0,0)
@@ -16449,6 +16450,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_VER_LINE_TO:
       case CTX_SET_FONT:
       case CTX_ROTATE:
+      case CTX_GLYPH:
       case CTX_SET_RGB_SPACE:
       case CTX_SET_CMYK_SPACE:
       case CTX_SET_DCMYK_SPACE:
@@ -16462,7 +16464,6 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_REL_LINE_TO:
       case CTX_REL_MOVE_TO:
       case CTX_SMOOTHQ_TO:
-      case CTX_GLYPH: 
         return 2;
       case CTX_LINEAR_GRADIENT:
       case CTX_REL_QUAD_TO:
@@ -16785,6 +16786,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_lineJoin:
           case CTX_setLineJoin:
             return ctx_parser_set_command (parser, CTX_SET_LINE_JOIN);
+          case CTX_glyph:
+            return ctx_parser_set_command (parser, CTX_GLYPH);
           case CTX_cap:
           OPT(case CTX_line_cap:)
           case CTX_lineCap:
@@ -17334,6 +17337,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_BEGIN_PATH:
         ctx_begin_path (ctx);
+        break;
+      case CTX_GLYPH:
+        ctx_glyph (ctx, arg(0), 0);
         break;
       case CTX_CLOSE_PATH:
         ctx_close_path (ctx);
@@ -20615,7 +20621,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   //int height = sdl->height;
   ctx_render_ctx (sdl->ctx, sdl->host);
  
-  //ctx_render_stream (sdl->ctx, stdout, 1);
+  //ctx_render_stream (sdl->ctx, stdout, 0);
 
   SDL_UpdateTexture(sdl->texture, NULL,
                     (void*)sdl->pixels, width * sizeof (Uint32));

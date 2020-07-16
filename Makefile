@@ -16,12 +16,12 @@ CFLAGS= -g -march=native -Wno-array-bounds
 #CFLAGS=-Os -flto
 
 ctx: ctx.c ctx.h  Makefile svg.h
-	ccache $(CC) ctx.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config babl sdl2 --cflags --libs` -lutil -Wall  -lz -lm -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers 
+	ccache $(CC) ctx.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config babl --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm
 
 ctx.O1: ctx.c ctx.h  Makefile 
-	$(CC) ctx.c -o $@ -g -O1 -I. -Ifonts `pkg-config babl sdl2 --cflags --libs` -lutil -Wall -lz -lm
+	$(CC) ctx.c -o $@ -g -O1 -I. -Ifonts `pkg-config babl --cflags --libs` -lutil -Wall -lz -lm
 ctx.asan: ctx.c ctx.h Makefile
-	$(CC) -DASANBUILD=1 ctx.c -o $@ -g -O0 -I. -Ifonts `pkg-config --cflags --libs babl sdl2` -lutil -lasan -fsanitize=address -lz -lm -march=native
+	$(CC) -DASANBUILD=1 ctx.c -o $@ -g -O0 -I. -Ifonts `pkg-config --cflags --libs babl ` -lutil -lasan -fsanitize=address -lz -march=native -lm
 
 sentry:
 	sentry Makefile ctx.h tests/*.ctx -- sh -c 'make ctx  post && make -C tests png'
