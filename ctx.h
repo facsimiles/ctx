@@ -3873,8 +3873,7 @@ ctx_matrix_skew_y (CtxMatrix *matrix, float angle)
 static int
 ctx_conts_for_entry (CtxEntry *entry)
 {
-  switch (entry->code)
-    //switch ((CtxCode)(cmd))  //  XXX  should be exhaustive
+    switch (entry->code)
     {
       case CTX_DATA:
         return entry->data.u32[1];
@@ -4090,7 +4089,6 @@ again:
 #if CTX_BITPACK
   if (ret && expand_bitpack)
     switch (ret->code)
-      //switch ((CtxCode)(ret->code))
       {
         case CTX_REL_CURVE_TO_REL_LINE_TO:
           ctx_iterator_expand_s8_args (iterator, ret);
@@ -15618,8 +15616,8 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
     {
       const char *name = NULL;
       _ctx_indent (stream, *indent);
-      switch ((CtxCode)code)
-      //switch (code)
+      //switch ((CtxCode)code)
+      switch (code)
         {
           case CTX_SET_KEY:              name="setParam"; break;
           case CTX_SET_COLOR:            name="setColor"; break;
@@ -16035,6 +16033,9 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_REL_SMOOTHQ_TO:
         ctx_print_entry (stream, formatter, indent, entry, 2);
         break;
+      case CTX_TEXTURE:
+        ctx_print_entry (stream, formatter, indent, entry, 3);
+        break;
       case CTX_REL_ARC_TO:
       case CTX_ARC_TO:
       case CTX_ROUND_RECTANGLE:
@@ -16060,6 +16061,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_SET_MITER_LIMIT:
       case CTX_ROTATE:
       case CTX_SET_LINE_WIDTH:
+      case CTX_SET_GLOBAL_ALPHA:
       case CTX_SET_SHADOW_BLUR:
       case CTX_SET_SHADOW_OFFSET_X:
       case CTX_SET_SHADOW_OFFSET_Y:
@@ -16253,6 +16255,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_SET_LINE_CAP:
       case CTX_SET_LINE_JOIN:
       case CTX_SET_COMPOSITING_MODE:
+      case CTX_SET_BLEND_MODE:
         ctx_print_entry_enum (stream, formatter, indent, entry, 1);
         break;
       case CTX_GRADIENT_STOP:
