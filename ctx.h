@@ -639,7 +639,7 @@ typedef enum
   CTX_HOR_LINE_TO      = 'H', // x
 
   CTX_ROTATE           = 'J', // radians
-  CTX_SET_COLOR        = 'K', // model, c1 c2 c3 ca - has a variable set of
+  CTX_COLOR            = 'K', // model, c1 c2 c3 ca - has a variable set of
   // arguments.
   CTX_LINE_TO          = 'L', // x y
   CTX_MOVE_TO          = 'M', // x y
@@ -670,7 +670,7 @@ typedef enum
   CTX_SET_KEY          = 'k', // - used together with another char to identify a key to set
   CTX_REL_LINE_TO      = 'l', // x y
   CTX_REL_MOVE_TO      = 'm', // x y
-  CTX_SET_FONT         = 'n', // as used by text parser
+  CTX_FONT         = 'n', // as used by text parser
   CTX_RADIAL_GRADIENT  = 'o', // x1 y1 radius1 x2 y2 radius2
   CTX_GRADIENT_STOP    = 'p', //   , count depends on current color model
   CTX_REL_QUAD_TO      = 'q', // cx cy x y
@@ -699,23 +699,23 @@ typedef enum
   /* though expressed as two chars in serialization we have
    * dedicated byte commands for these setters
    */
-  CTX_SET_TEXT_ALIGN       = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
-  CTX_SET_TEXT_BASELINE    = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
-  CTX_SET_TEXT_DIRECTION   = 19, // kd
-  CTX_SET_MITER_LIMIT      = 20, // km limit - float, default = 0.0
-  CTX_SET_GLOBAL_ALPHA     = 26, // ka alpha - default=1.0
-  CTX_SET_COMPOSITING_MODE = 27, // kc mode - u8 , default=0
-  CTX_SET_BLEND_MODE       = '$',// kB mode - u8 , default=0
+  CTX_TEXT_ALIGN           = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
+  CTX_TEXT_BASELINE        = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
+  CTX_TEXT_DIRECTION       = 19, // kd
+  CTX_MITER_LIMIT          = 20, // km limit - float, default = 0.0
+  CTX_GLOBAL_ALPHA         = 26, // ka alpha - default=1.0
+  CTX_COMPOSITING_MODE     = 27, // kc mode - u8 , default=0
+  CTX_BLEND_MODE           = '$',// kB mode - u8 , default=0
                                  // kb - text baseline
-  CTX_SET_FONT_SIZE        = 28, // kf size - float, default=?
-  CTX_SET_LINE_JOIN        = 29, // kj join - u8 , default=0
-  CTX_SET_LINE_CAP         = 30, // kc cap - u8, default = 0
-  CTX_SET_LINE_WIDTH       = 31, // kw width, default = 2.0
-  CTX_SET_FILL_RULE        = '!', // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
-  CTX_SET_SHADOW_BLUR      = '<', // ks
-  CTX_SET_SHADOW_COLOR     = '>', // kC
-  CTX_SET_SHADOW_OFFSET_X  = '?', // kx
-  CTX_SET_SHADOW_OFFSET_Y  = '&', // ky
+  CTX_FONT_SIZE            = 28, // kf size - float, default=?
+  CTX_LINE_JOIN            = 29, // kj join - u8 , default=0
+  CTX_LINE_CAP             = 30, // kc cap - u8, default = 0
+  CTX_LINE_WIDTH           = 31, // kw width, default = 2.0
+  CTX_FILL_RULE            = '!', // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
+  CTX_SHADOW_BLUR          = '<', // ks
+  CTX_SHADOW_COLOR         = '>', // kC
+  CTX_SHADOW_OFFSET_X      = '?', // kx
+  CTX_SHADOW_OFFSET_Y      = '&', // ky
   CTX_START_GROUP          = '{',
   CTX_END_GROUP            = '}',
 
@@ -906,8 +906,8 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_SHAPE_CACHE_ENTRIES  160
 #endif
 
-#ifndef CTX_SHADOW_BLUR
-#define CTX_SHADOW_BLUR    1
+#ifndef CTX_ENABLE_SHADOW_BLUR
+#define CTX_ENABLE_SHADOW_BLUR    1
 #endif
 
 #ifndef CTX_GRADIENTS
@@ -2549,7 +2549,7 @@ struct _CtxGState
   float         line_width;
   float         miter_limit;
   float         font_size;
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
   float         shadow_blur;
   float         shadow_offset_x;
   float         shadow_offset_y;
@@ -3418,7 +3418,7 @@ struct _CtxRasterizer
   CtxBuffer *clip_buffer;
 #endif
 
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
 
@@ -3470,7 +3470,7 @@ struct _CtxRasterizer
 
   CtxPixelFormatInfo *format;
 
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
   int in_shadow;
 #endif
   int in_text;
@@ -3886,8 +3886,8 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
       case CTX_APPLY_TRANSFORM:
-      case CTX_SET_COLOR:
-      case CTX_SET_SHADOW_COLOR:
+      case CTX_COLOR:
+      case CTX_SHADOW_COLOR:
         return 2;
       case CTX_RECTANGLE:
       case CTX_VIEW_BOX:
@@ -4162,8 +4162,8 @@ again:
         case CTX_ARC:
         case CTX_ARC_TO:
         case CTX_REL_ARC_TO:
-        case CTX_SET_COLOR:
-        case CTX_SET_SHADOW_COLOR:
+        case CTX_COLOR:
+        case CTX_SHADOW_COLOR:
         case CTX_RADIAL_GRADIENT:
         case CTX_CURVE_TO:
         case CTX_REL_CURVE_TO:
@@ -4177,7 +4177,7 @@ again:
           goto again;
         case CTX_TEXT:
         case CTX_TEXT_STROKE:
-        case CTX_SET_FONT:
+        case CTX_FONT:
         case CTX_SET:
           iterator->bitpack_length = 0;
           return (CtxCommand *) ret;
@@ -4667,7 +4667,7 @@ void ctx_drgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_DRGBA, r),
+    ctx_f (CTX_COLOR, CTX_DRGBA, r),
     ctx_f (CTX_CONT, g, b),
     ctx_f (CTX_CONT, a, 0)
   };
@@ -4678,7 +4678,7 @@ void ctx_rgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_RGBA, r),
+    ctx_f (CTX_COLOR, CTX_RGBA, r),
     ctx_f (CTX_CONT, g, b),
     ctx_f (CTX_CONT, a, 0)
   };
@@ -4698,7 +4698,7 @@ void ctx_gray (Ctx *ctx, float gray)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_GRAY, gray),
+    ctx_f (CTX_COLOR, CTX_GRAY, gray),
     ctx_f (CTX_CONT, 1.0f, 0.0f),
     ctx_f (CTX_CONT, 0.0f, 0.0f)
   };
@@ -4710,7 +4710,7 @@ void ctx_cmyk (Ctx *ctx, float c, float m, float y, float k)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_CMYKA, c),
+    ctx_f (CTX_COLOR, CTX_CMYKA, c),
     ctx_f (CTX_CONT, m, y),
     ctx_f (CTX_CONT, k, 1.0f)
   };
@@ -4721,7 +4721,7 @@ void ctx_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_CMYKA, c),
+    ctx_f (CTX_COLOR, CTX_CMYKA, c),
     ctx_f (CTX_CONT, m, y),
     ctx_f (CTX_CONT, k, a)
   };
@@ -4732,7 +4732,7 @@ void ctx_dcmyk (Ctx *ctx, float c, float m, float y, float k)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_DCMYKA, c),
+    ctx_f (CTX_COLOR, CTX_DCMYKA, c),
     ctx_f (CTX_CONT, m, y),
     ctx_f (CTX_CONT, k, 1.0f)
   };
@@ -4743,7 +4743,7 @@ void ctx_dcmyka (Ctx *ctx, float c, float m, float y, float k, float a)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_DCMYKA, c),
+    ctx_f (CTX_COLOR, CTX_DCMYKA, c),
     ctx_f (CTX_CONT, m, y),
     ctx_f (CTX_CONT, k, a)
   };
@@ -4921,22 +4921,22 @@ void ctx_end_group (Ctx *ctx)
 void ctx_line_width (Ctx *ctx, float x)
 {
   if (ctx->state.gstate.line_width != x)
-    CTX_PROCESS_F1 (CTX_SET_LINE_WIDTH, x);
+    CTX_PROCESS_F1 (CTX_LINE_WIDTH, x);
 }
 
 void ctx_shadow_blur (Ctx *ctx, float x)
 {
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
   if (ctx->state.gstate.shadow_blur != x)
 #endif
-    CTX_PROCESS_F1 (CTX_SET_SHADOW_BLUR, x);
+    CTX_PROCESS_F1 (CTX_SHADOW_BLUR, x);
 }
 
 void ctx_shadow_rgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_SET_SHADOW_COLOR, CTX_RGBA, r),
+    ctx_f (CTX_SHADOW_COLOR, CTX_RGBA, r),
     ctx_f (CTX_CONT, g, b),
     ctx_f (CTX_CONT, a, 0)
   };
@@ -4945,25 +4945,25 @@ void ctx_shadow_rgba (Ctx *ctx, float r, float g, float b, float a)
 
 void ctx_shadow_offset_x (Ctx *ctx, float x)
 {
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
   if (ctx->state.gstate.shadow_offset_x != x)
 #endif
-    CTX_PROCESS_F1 (CTX_SET_SHADOW_OFFSET_X, x);
+    CTX_PROCESS_F1 (CTX_SHADOW_OFFSET_X, x);
 }
 
 void ctx_shadow_offset_y (Ctx *ctx, float x)
 {
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
   if (ctx->state.gstate.shadow_offset_y != x)
 #endif
-    CTX_PROCESS_F1 (CTX_SET_SHADOW_OFFSET_Y, x);
+    CTX_PROCESS_F1 (CTX_SHADOW_OFFSET_Y, x);
 }
 
 void
 ctx_global_alpha (Ctx *ctx, float global_alpha)
 {
   if (ctx->state.gstate.global_alpha_f != global_alpha)
-    CTX_PROCESS_F1 (CTX_SET_GLOBAL_ALPHA, global_alpha);
+    CTX_PROCESS_F1 (CTX_GLOBAL_ALPHA, global_alpha);
 }
 
 float
@@ -4975,13 +4975,13 @@ ctx_get_global_alpha (Ctx *ctx)
 void
 ctx_font_size (Ctx *ctx, float x)
 {
-  CTX_PROCESS_F1 (CTX_SET_FONT_SIZE, x);
+  CTX_PROCESS_F1 (CTX_FONT_SIZE, x);
 }
 
 void
 ctx_miter_limit (Ctx *ctx, float limit)
 {
-  CTX_PROCESS_F1 (CTX_SET_MITER_LIMIT, limit);
+  CTX_PROCESS_F1 (CTX_MITER_LIMIT, limit);
 }
 
 float ctx_get_font_size  (Ctx *ctx)
@@ -5101,7 +5101,7 @@ void
 ctx_font (Ctx *ctx, const char *name)
 {
 #if CTX_BACKEND_TEXT
-  ctx_process_cmd_str (ctx, CTX_SET_FONT, name, 0, 0);
+  ctx_process_cmd_str (ctx, CTX_FONT, name, 0, 0);
 #else
   _ctx_font (ctx, name);
 #endif
@@ -5270,37 +5270,37 @@ void ctx_rel_move_to (Ctx *ctx, float x, float y)
 void ctx_line_cap (Ctx *ctx, CtxLineCap cap)
 {
   if (ctx->state.gstate.line_cap != cap)
-    CTX_PROCESS_U8 (CTX_SET_LINE_CAP, cap);
+    CTX_PROCESS_U8 (CTX_LINE_CAP, cap);
 }
 void ctx_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
 {
   if (ctx->state.gstate.fill_rule != fill_rule)
-    CTX_PROCESS_U8 (CTX_SET_FILL_RULE, fill_rule);
+    CTX_PROCESS_U8 (CTX_FILL_RULE, fill_rule);
 }
 void ctx_line_join (Ctx *ctx, CtxLineJoin join)
 {
   if (ctx->state.gstate.line_join != join)
-    CTX_PROCESS_U8 (CTX_SET_LINE_JOIN, join);
+    CTX_PROCESS_U8 (CTX_LINE_JOIN, join);
 }
 void ctx_blend_mode (Ctx *ctx, CtxBlend mode)
 {
-  CTX_PROCESS_U8 (CTX_SET_BLEND_MODE, mode);
+  CTX_PROCESS_U8 (CTX_BLEND_MODE, mode);
 }
 void ctx_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
 {
-  CTX_PROCESS_U8 (CTX_SET_COMPOSITING_MODE, mode);
+  CTX_PROCESS_U8 (CTX_COMPOSITING_MODE, mode);
 }
 void ctx_text_align (Ctx *ctx, CtxTextAlign text_align)
 {
-  CTX_PROCESS_U8 (CTX_SET_TEXT_ALIGN, text_align);
+  CTX_PROCESS_U8 (CTX_TEXT_ALIGN, text_align);
 }
 void ctx_text_baseline (Ctx *ctx, CtxTextBaseline text_baseline)
 {
-  CTX_PROCESS_U8 (CTX_SET_TEXT_BASELINE, text_baseline);
+  CTX_PROCESS_U8 (CTX_TEXT_BASELINE, text_baseline);
 }
 void ctx_set_text_direction (Ctx *ctx, CtxTextDirection text_direction)
 {
-  CTX_PROCESS_U8 (CTX_SET_TEXT_DIRECTION, text_direction);
+  CTX_PROCESS_U8 (CTX_TEXT_DIRECTION, text_direction);
 }
 
 void
@@ -5540,56 +5540,56 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
   CtxCommand *c = (CtxCommand *) entry;
   switch (entry->code)
     {
-      case CTX_SET_LINE_WIDTH:
+      case CTX_LINE_WIDTH:
         state->gstate.line_width = ctx_arg_float (0);
         break;
-#if CTX_SHADOW_BLUR
-      case CTX_SET_SHADOW_BLUR:
+#if CTX_ENABLE_SHADOW_BLUR
+      case CTX_SHADOW_BLUR:
         state->gstate.shadow_blur = ctx_arg_float (0);
         break;
-      case CTX_SET_SHADOW_OFFSET_X:
+      case CTX_SHADOW_OFFSET_X:
         state->gstate.shadow_offset_x = ctx_arg_float (0);
         break;
-      case CTX_SET_SHADOW_OFFSET_Y:
+      case CTX_SHADOW_OFFSET_Y:
         state->gstate.shadow_offset_y = ctx_arg_float (0);
         break;
 #endif
-      case CTX_SET_LINE_CAP:
+      case CTX_LINE_CAP:
         state->gstate.line_cap = (CtxLineCap) ctx_arg_u8 (0);
         break;
-      case CTX_SET_FILL_RULE:
+      case CTX_FILL_RULE:
         state->gstate.fill_rule = (CtxFillRule) ctx_arg_u8 (0);
         break;
-      case CTX_SET_LINE_JOIN:
+      case CTX_LINE_JOIN:
         state->gstate.line_join = (CtxLineJoin) ctx_arg_u8 (0);
         break;
-      case CTX_SET_COMPOSITING_MODE:
+      case CTX_COMPOSITING_MODE:
         state->gstate.compositing_mode = (CtxCompositingMode) ctx_arg_u8 (0);
         break;
-      case CTX_SET_BLEND_MODE:
+      case CTX_BLEND_MODE:
         state->gstate.blend_mode = (CtxBlend) ctx_arg_u8 (0);
         break;
-      case CTX_SET_TEXT_ALIGN:
+      case CTX_TEXT_ALIGN:
         ctx_state_set (state, CTX_text_align, ctx_arg_u8 (0) );
         break;
-      case CTX_SET_TEXT_BASELINE:
+      case CTX_TEXT_BASELINE:
         ctx_state_set (state, CTX_text_baseline, ctx_arg_u8 (0) );
         break;
-      case CTX_SET_TEXT_DIRECTION:
+      case CTX_TEXT_DIRECTION:
         ctx_state_set (state, CTX_text_direction, ctx_arg_u8 (0) );
         break;
-      case CTX_SET_GLOBAL_ALPHA:
+      case CTX_GLOBAL_ALPHA:
         state->gstate.global_alpha_u8 = ctx_float_to_u8 (ctx_arg_float (0) );
         state->gstate.global_alpha_f = ctx_arg_float (0);
         break;
-      case CTX_SET_FONT_SIZE:
+      case CTX_FONT_SIZE:
         state->gstate.font_size = ctx_arg_float (0);
         break;
-      case CTX_SET_MITER_LIMIT:
+      case CTX_MITER_LIMIT:
         state->gstate.miter_limit = ctx_arg_float (0);
         break;
 
-      case CTX_SET_COLOR:
+      case CTX_COLOR:
         {
           CtxColor *color = &state->gstate.source.color;
           state->gstate.source.type = CTX_SOURCE_COLOR;
@@ -11329,7 +11329,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
       t = next_t;
     }
 
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
   if (rasterizer->in_shadow)
   {
     float radius = rasterizer->state->gstate.shadow_blur;
@@ -11722,7 +11722,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
      goto done;
   }
 
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
   if (rasterizer->in_shadow)
   {
   for (int i = 0; i < rasterizer->edge_list.count; i++)
@@ -11778,7 +11778,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
            (entry2->data.s16[2] == entry3->data.s16[2]) &&
            ((entry3->data.s16[2] & (CTX_SUBDIV-1)) == 0)  &&
            ((entry3->data.s16[3] & (aa-1)) == 0)
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
            && !rasterizer->in_shadow
 #endif
          )
@@ -11804,7 +11804,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
       && width < CTX_SHAPE_CACHE_MAX_DIM
       && height < CTX_SHAPE_CACHE_MAX_DIM && !rasterizer->state->gstate.clipped &&
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
       !rasterizer->in_shadow
 #endif
       )
@@ -11891,7 +11891,7 @@ done:
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
       rasterizer->edge_list.count = count;
     }
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
   if (rasterizer->in_shadow)
   {
     rasterizer->scan_min -= rasterizer->shadow_y * aa;
@@ -12481,7 +12481,7 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_finish_shape (rasterizer);
 }
 
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
 static float
 ctx_gaussian (float x, float mu, float sigma)
 {
@@ -12578,9 +12578,9 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
   CtxEntry set_state[3]=
   {
-    ctx_u8 (CTX_SET_COMPOSITING_MODE, comp,  0,0,0,0,0,0,0),
-    ctx_u8 (CTX_SET_BLEND_MODE,       blend, 0,0,0,0,0,0,0),
-    ctx_f  (CTX_SET_GLOBAL_ALPHA,     global_alpha, 0.0)
+    ctx_u8 (CTX_COMPOSITING_MODE, comp,  0,0,0,0,0,0,0),
+    ctx_u8 (CTX_BLEND_MODE,       blend, 0,0,0,0,0,0,0),
+    ctx_f  (CTX_GLOBAL_ALPHA,     global_alpha, 0.0)
   };
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[0]);
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[1]);
@@ -12624,7 +12624,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
 }
 #endif
 
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
 static void
 ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
 {
@@ -12637,7 +12637,7 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
 
   CtxEntry set_color_command [3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
+    ctx_f (CTX_COLOR, CTX_RGBA, rgba[0]),
     ctx_f (CTX_CONT, rgba[1], rgba[2]),
     ctx_f (CTX_CONT, rgba[3], 0)
   };
@@ -12655,14 +12655,14 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
         float dy = rasterizer->state->gstate.shadow_offset_y + v - dim/2;
         set_color_command[2].data.f[0] = rasterizer->kernel[i] * rgba[3];
         ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_color_command[0]);
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
         rasterizer->in_shadow = 1;
 #endif
         rasterizer->shadow_x = rasterizer->state->gstate.shadow_offset_x;
         rasterizer->shadow_y = dy;
         rasterizer->preserve = 1;
         ctx_rasterizer_stroke (rasterizer);
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
         rasterizer->in_shadow = 0;
 #endif
       }
@@ -12685,7 +12685,7 @@ ctx_rasterizer_shadow_text (CtxRasterizer *rasterizer, const char *str)
 
   CtxEntry set_color_command [3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
+    ctx_f (CTX_COLOR, CTX_RGBA, rgba[0]),
     ctx_f (CTX_CONT, rgba[1], rgba[2]),
     ctx_f (CTX_CONT, rgba[3], 0)
   };
@@ -12731,7 +12731,7 @@ ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
 
   CtxEntry set_color_command [3]=
   {
-    ctx_f (CTX_SET_COLOR, CTX_RGBA, rgba[0]),
+    ctx_f (CTX_COLOR, CTX_RGBA, rgba[0]),
     ctx_f (CTX_CONT, rgba[1], rgba[2]),
     ctx_f (CTX_CONT, rgba[3], 0)
   };
@@ -12771,8 +12771,8 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
   CtxCommand *c = (CtxCommand *) entry;
   switch (c->code)
     {
-#if CTX_SHADOW_BLUR
-      case CTX_SET_SHADOW_COLOR:
+#if CTX_ENABLE_SHADOW_BLUR
+      case CTX_SHADOW_COLOR:
         {
           CtxColor  col;
           CtxColor *color = &col;
@@ -12897,9 +12897,9 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_PRESERVE:
         rasterizer->preserve = 1;
         break;
-      case CTX_SET_COLOR:
-      case CTX_SET_COMPOSITING_MODE:
-      case CTX_SET_BLEND_MODE:
+      case CTX_COLOR:
+      case CTX_COMPOSITING_MODE:
+      case CTX_BLEND_MODE:
         rasterizer->comp_op = NULL;
         break;
 #if CTX_COMPOSITING_GROUPS
@@ -12920,19 +12920,19 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         ctx_interpret_transforms (rasterizer->state, entry, NULL);
         break;
       case CTX_STROKE:
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
         if (rasterizer->state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)
           ctx_rasterizer_shadow_stroke (rasterizer);
 #endif
         ctx_rasterizer_stroke (rasterizer);
         break;
-      case CTX_SET_FONT:
+      case CTX_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
         break;
       case CTX_TEXT:
         rasterizer->in_text++;
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
         if (rasterizer->state->gstate.shadow_blur > 0.0)
           ctx_rasterizer_shadow_text (rasterizer, ctx_arg_string ());
 #endif
@@ -12946,7 +12946,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
         break;
       case CTX_FILL:
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
         if (rasterizer->state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)
           ctx_rasterizer_shadow_fill (rasterizer);
@@ -12965,7 +12965,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
     }
   ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
   ctx_interpret_style (rasterizer->state, entry, NULL);
-  if (command->code == CTX_SET_LINE_WIDTH)
+  if (command->code == CTX_LINE_WIDTH)
     {
       float x = state->gstate.line_width;
       /* normalize line width according to scaling factor
@@ -13272,7 +13272,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         rasterizer->uses_transforms = 1;
         ctx_interpret_transforms (rasterizer->state, entry, NULL);
         break;
-      case CTX_SET_FONT:
+      case CTX_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
         break;
       case CTX_BEGIN_PATH:
@@ -13287,7 +13287,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
     }
   ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
   ctx_interpret_style (rasterizer->state, entry, NULL);
-  if (command->code == CTX_SET_LINE_WIDTH)
+  if (command->code == CTX_LINE_WIDTH)
     {
       float x = state->gstate.line_width;
       /* normalize line width according to scaling factor
@@ -14425,7 +14425,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       if (entry->code == CTX_TEXT ||
           entry->code == CTX_SET ||
           entry->code == CTX_TEXT_STROKE ||
-          entry->code == CTX_SET_FONT)
+          entry->code == CTX_FONT)
         {
           /* the image command and its data is submitted as one unit,
            */
@@ -14829,7 +14829,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
               else
                 {
 
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
       if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
       {
         ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->renderer);
@@ -14863,7 +14863,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   else
     { 
     
-#if CTX_SHADOW_BLUR
+#if CTX_ENABLE_SHADOW_BLUR
       if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
       {
         ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->renderer);
@@ -15309,7 +15309,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
       case CTX_TRANSLATE:
         cairo_translate (cr, ctx_arg_float (0), ctx_arg_float (1) );
         break;
-      case CTX_SET_LINE_WIDTH:
+      case CTX_LINE_WIDTH:
         cairo_set_line_width (cr, ctx_arg_float (0) );
         break;
       case CTX_ARC:
@@ -15408,13 +15408,13 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
       case CTX_RESTORE:
         cairo_restore (cr);
         break;
-      case CTX_SET_FONT_SIZE:
+      case CTX_FONT_SIZE:
         cairo_set_font_size (cr, ctx_arg_float (0) );
         break;
-      case CTX_SET_MITER_LIMIT:
+      case CTX_MITER_LIMIT:
         cairo_set_miter_limit (cr, ctx_arg_float (0) );
         break;
-      case CTX_SET_LINE_CAP:
+      case CTX_LINE_CAP:
         {
           int cairo_val = CAIRO_LINE_CAP_SQUARE;
           switch (ctx_arg_u8 (0) )
@@ -15432,12 +15432,12 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
           cairo_set_line_cap (cr, cairo_val);
         }
         break;
-      case CTX_SET_BLEND_MODE:
+      case CTX_BLEND_MODE:
         {
           // XXX does not map to cairo
         }
         break;
-      case CTX_SET_COMPOSITING_MODE:
+      case CTX_COMPOSITING_MODE:
         {
           int cairo_val = CAIRO_OPERATOR_OVER;
           switch (ctx_arg_u8 (0) )
@@ -15451,7 +15451,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
             }
           cairo_set_operator (cr, cairo_val);
         }
-      case CTX_SET_LINE_JOIN:
+      case CTX_LINE_JOIN:
         {
           int cairo_val = CAIRO_LINE_JOIN_ROUND;
           switch (ctx_arg_u8 (0) )
@@ -15620,10 +15620,10 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
       switch (code)
         {
           case CTX_SET_KEY:              name="setParam"; break;
-          case CTX_SET_COLOR:            name="setColor"; break;
+          case CTX_COLOR:                name="setColor"; break;
           case CTX_DEFINE_GLYPH:         name="defineGlyph"; break;
           case CTX_SET_PIXEL:            name="setPixel"; break;
-          case CTX_SET_GLOBAL_ALPHA:     name="globalAlpha"; break;
+          case CTX_GLOBAL_ALPHA:         name="globalAlpha"; break;
           case CTX_TEXT:                 name="text"; break;
           case CTX_TEXT_STROKE:          name="textStroke"; break;
           case CTX_SAVE:                 name="save"; break;
@@ -15653,7 +15653,7 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_PRESERVE:             name="preserve"; break;
           case CTX_FLUSH:                name="flush"; break;
           case CTX_RESET:                name="reset"; break;
-          case CTX_SET_FONT:             name="font"; break;
+          case CTX_FONT:             name="font"; break;
           case CTX_STROKE:               name="stroke"; break;
           case CTX_CLIP:                 name="clip"; break;
           case CTX_ARC:                  name="arc"; break;
@@ -15673,18 +15673,18 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
           case CTX_VER_LINE_TO:          name="verLineTo"; break;
           case CTX_REL_HOR_LINE_TO:      name="relHorLineTo"; break;
           case CTX_REL_VER_LINE_TO:      name="relVerLineTo"; break;
-          case CTX_SET_COMPOSITING_MODE: name="compositingMode"; break;
-          case CTX_SET_BLEND_MODE:       name="blendMode"; break;
-          case CTX_SET_TEXT_ALIGN:       name="textAlign"; break;
-          case CTX_SET_TEXT_BASELINE:    name="textBaseline"; break;
-          case CTX_SET_TEXT_DIRECTION:   name="textDirection"; break;
-          case CTX_SET_FONT_SIZE:        name="fontSize"; break;
-          case CTX_SET_MITER_LIMIT:      name="miterLimit"; break;
-          case CTX_SET_LINE_JOIN:        name="lineJoin"; break;
-          case CTX_SET_LINE_CAP:         name="lineCap"; break;
-          case CTX_SET_LINE_WIDTH:       name="lineWidth"; break;
-          case CTX_SET_SHADOW_BLUR:      name="setShadowBlur";  break;
-          case CTX_SET_FILL_RULE:        name="fillRule"; break;
+          case CTX_COMPOSITING_MODE:     name="compositingMode"; break;
+          case CTX_BLEND_MODE:           name="blendMode"; break;
+          case CTX_TEXT_ALIGN:           name="textAlign"; break;
+          case CTX_TEXT_BASELINE:        name="textBaseline"; break;
+          case CTX_TEXT_DIRECTION:       name="textDirection"; break;
+          case CTX_FONT_SIZE:            name="fontSize"; break;
+          case CTX_MITER_LIMIT:          name="miterLimit"; break;
+          case CTX_LINE_JOIN:            name="lineJoin"; break;
+          case CTX_LINE_CAP:             name="lineCap"; break;
+          case CTX_LINE_WIDTH:           name="lineWidth"; break;
+          case CTX_SHADOW_BLUR:          name="setShadowBlur";  break;
+          case CTX_FILL_RULE:            name="fillRule"; break;
           case CTX_SET:                  name="setProp"; break;
         }
       if (name)
@@ -15705,52 +15705,52 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
     name[2]='\0';
     switch (code)
       {
-        case CTX_SET_GLOBAL_ALPHA:
+        case CTX_GLOBAL_ALPHA:
           name[1]='a';
           break;
-        case CTX_SET_COMPOSITING_MODE:
+        case CTX_COMPOSITING_MODE:
           name[1]='m';
           break;
-        case CTX_SET_BLEND_MODE:
+        case CTX_BLEND_MODE:
           name[1]='B';
           break;
-        case CTX_SET_TEXT_ALIGN:
+        case CTX_TEXT_ALIGN:
           name[1]='t';
           break;
-        case CTX_SET_TEXT_BASELINE:
+        case CTX_TEXT_BASELINE:
           name[1]='b';
           break;
-        case CTX_SET_TEXT_DIRECTION:
+        case CTX_TEXT_DIRECTION:
           name[1]='d';
           break;
-        case CTX_SET_FONT_SIZE:
+        case CTX_FONT_SIZE:
           name[1]='f';
           break;
-        case CTX_SET_MITER_LIMIT:
+        case CTX_MITER_LIMIT:
           name[1]='l';
           break;
-        case CTX_SET_LINE_JOIN:
+        case CTX_LINE_JOIN:
           name[1]='j';
           break;
-        case CTX_SET_LINE_CAP:
+        case CTX_LINE_CAP:
           name[1]='c';
           break;
-        case CTX_SET_LINE_WIDTH:
+        case CTX_LINE_WIDTH:
           name[1]='w';
           break;
-        case CTX_SET_SHADOW_BLUR:
+        case CTX_SHADOW_BLUR:
           name[1]='s';
           break;
-        case CTX_SET_SHADOW_COLOR:
+        case CTX_SHADOW_COLOR:
           name[1]='C';
           break;
-        case CTX_SET_SHADOW_OFFSET_X:
+        case CTX_SHADOW_OFFSET_X:
           name[1]='x';
           break;
-        case CTX_SET_SHADOW_OFFSET_Y:
+        case CTX_SHADOW_OFFSET_Y:
           name[1]='y';
           break;
-        case CTX_SET_FILL_RULE:
+        case CTX_FILL_RULE:
           name[1]='r';
           break;
         default:
@@ -15780,7 +15780,7 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
           const char *str = NULL;
           switch (entry->code)
             {
-              case CTX_SET_TEXT_BASELINE:
+              case CTX_TEXT_BASELINE:
                 switch (val)
                   {
                     case CTX_TEXT_BASELINE_ALPHABETIC:
@@ -15803,7 +15803,7 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
                       break;
                   }
                 break;
-              case CTX_SET_TEXT_ALIGN:
+              case CTX_TEXT_ALIGN:
                 switch (val)
                   {
                     case CTX_TEXT_ALIGN_LEFT:
@@ -15823,7 +15823,7 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
                       break;
                   }
                 break;
-              case CTX_SET_LINE_CAP:
+              case CTX_LINE_CAP:
                 switch (val)
                   {
                     case CTX_CAP_NONE:
@@ -15837,7 +15837,7 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
                       break;
                   }
                 break;
-              case CTX_SET_LINE_JOIN:
+              case CTX_LINE_JOIN:
                 switch (val)
                   {
                     case CTX_JOIN_MITER:
@@ -15851,7 +15851,7 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
                       break;
                   }
                 break;
-              case CTX_SET_FILL_RULE:
+              case CTX_FILL_RULE:
                 switch (val)
                   {
                     case CTX_FILL_RULE_WINDING:
@@ -15862,7 +15862,7 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
                       break;
                   }
                 break;
-              case CTX_SET_BLEND_MODE:
+              case CTX_BLEND_MODE:
                 switch (val)
                   {
             case CTX_BLEND_NORMAL:      str = "normal"; break;
@@ -15883,7 +15883,7 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
             case CTX_BLEND_LUMINOSITY:  str = "luminosity"; break;
                   }
                 break;
-              case CTX_SET_COMPOSITING_MODE:
+              case CTX_COMPOSITING_MODE:
                 switch (val)
                   {
               case CTX_COMPOSITE_SOURCE_OVER: str = "sourceOver"; break;
@@ -16057,14 +16057,14 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_REL_SMOOTH_TO:
         ctx_print_entry (stream, formatter, indent, entry, 4);
         break;
-      case CTX_SET_FONT_SIZE:
-      case CTX_SET_MITER_LIMIT:
+      case CTX_FONT_SIZE:
+      case CTX_MITER_LIMIT:
       case CTX_ROTATE:
-      case CTX_SET_LINE_WIDTH:
-      case CTX_SET_GLOBAL_ALPHA:
-      case CTX_SET_SHADOW_BLUR:
-      case CTX_SET_SHADOW_OFFSET_X:
-      case CTX_SET_SHADOW_OFFSET_Y:
+      case CTX_LINE_WIDTH:
+      case CTX_GLOBAL_ALPHA:
+      case CTX_SHADOW_BLUR:
+      case CTX_SHADOW_OFFSET_X:
+      case CTX_SHADOW_OFFSET_Y:
       case CTX_VER_LINE_TO:
       case CTX_HOR_LINE_TO:
       case CTX_REL_VER_LINE_TO:
@@ -16087,7 +16087,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
         fprintf (stream, "\"");
         _ctx_print_endcmd (stream, formatter);
         break;
-      case CTX_SET_COLOR:
+      case CTX_COLOR:
         if (formatter ||  1)
           {
             _ctx_indent (stream, *indent);
@@ -16248,14 +16248,14 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_RESTORE:
         ctx_print_entry (stream, formatter, indent, entry, 0);
         break;
-      case CTX_SET_TEXT_ALIGN:
-      case CTX_SET_TEXT_BASELINE:
-      case CTX_SET_TEXT_DIRECTION:
-      case CTX_SET_FILL_RULE:
-      case CTX_SET_LINE_CAP:
-      case CTX_SET_LINE_JOIN:
-      case CTX_SET_COMPOSITING_MODE:
-      case CTX_SET_BLEND_MODE:
+      case CTX_TEXT_ALIGN:
+      case CTX_TEXT_BASELINE:
+      case CTX_TEXT_DIRECTION:
+      case CTX_FILL_RULE:
+      case CTX_LINE_CAP:
+      case CTX_LINE_JOIN:
+      case CTX_COMPOSITING_MODE:
+      case CTX_BLEND_MODE:
         ctx_print_entry_enum (stream, formatter, indent, entry, 1);
         break;
       case CTX_GRADIENT_STOP:
@@ -16270,7 +16270,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
         break;
       case CTX_TEXT:
       case CTX_TEXT_STROKE:
-      case CTX_SET_FONT:
+      case CTX_FONT:
         _ctx_print_name (stream, entry->code, formatter, indent);
         fprintf (stream, "\"");
         ctx_print_escaped_string (stream, ctx_arg_string() );
@@ -16442,26 +16442,26 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_CLIP:
       case CTX_EXIT:
         return 0;
-      case CTX_SET_GLOBAL_ALPHA:
-      case CTX_SET_COMPOSITING_MODE:
-      case CTX_SET_BLEND_MODE:
-      case CTX_SET_FONT_SIZE:
-      case CTX_SET_LINE_JOIN:
-      case CTX_SET_LINE_CAP:
-      case CTX_SET_LINE_WIDTH:
-      case CTX_SET_SHADOW_BLUR:
-      case CTX_SET_SHADOW_OFFSET_X:
-      case CTX_SET_SHADOW_OFFSET_Y:
-      case CTX_SET_FILL_RULE:
-      case CTX_SET_TEXT_ALIGN:
-      case CTX_SET_TEXT_BASELINE:
-      case CTX_SET_TEXT_DIRECTION:
-      case CTX_SET_MITER_LIMIT:
+      case CTX_GLOBAL_ALPHA:
+      case CTX_COMPOSITING_MODE:
+      case CTX_BLEND_MODE:
+      case CTX_FONT_SIZE:
+      case CTX_LINE_JOIN:
+      case CTX_LINE_CAP:
+      case CTX_LINE_WIDTH:
+      case CTX_SHADOW_BLUR:
+      case CTX_SHADOW_OFFSET_X:
+      case CTX_SHADOW_OFFSET_Y:
+      case CTX_FILL_RULE:
+      case CTX_TEXT_ALIGN:
+      case CTX_TEXT_BASELINE:
+      case CTX_TEXT_DIRECTION:
+      case CTX_MITER_LIMIT:
       case CTX_REL_VER_LINE_TO:
       case CTX_REL_HOR_LINE_TO:
       case CTX_HOR_LINE_TO:
       case CTX_VER_LINE_TO:
-      case CTX_SET_FONT:
+      case CTX_FONT:
       case CTX_ROTATE:
       case CTX_GLYPH:
       case CTX_SET_RGB_SPACE:
@@ -16504,8 +16504,8 @@ static int ctx_arguments_for_code (CtxCode code)
                    which means string|number accepted
                  */
       //case CTX_SET_KEY:
-      case CTX_SET_COLOR:
-      case CTX_SET_SHADOW_COLOR:
+      case CTX_COLOR:
+      case CTX_SHADOW_COLOR:
         return 200;  /* 200 means number of components */
       case CTX_GRADIENT_STOP:
         return 201;  /* 201 means number of components+1 */
@@ -16585,22 +16585,22 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
   {
     switch (str[1])
     {
-      case 'm': return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
-      case 'B': return ctx_parser_set_command (parser, CTX_SET_BLEND_MODE);
-      case 'l': return ctx_parser_set_command (parser, CTX_SET_MITER_LIMIT);
-      case 't': return ctx_parser_set_command (parser, CTX_SET_TEXT_ALIGN);
-      case 'b': return ctx_parser_set_command (parser, CTX_SET_TEXT_BASELINE);
-      case 'd': return ctx_parser_set_command (parser, CTX_SET_TEXT_DIRECTION);
-      case 'j': return ctx_parser_set_command (parser, CTX_SET_LINE_JOIN);
-      case 'c': return ctx_parser_set_command (parser, CTX_SET_LINE_CAP);
-      case 'w': return ctx_parser_set_command (parser, CTX_SET_LINE_WIDTH);
-      case 'C': return ctx_parser_set_command (parser, CTX_SET_SHADOW_COLOR);
-      case 's': return ctx_parser_set_command (parser, CTX_SET_SHADOW_BLUR);
-      case 'x': return ctx_parser_set_command (parser, CTX_SET_SHADOW_OFFSET_X);
-      case 'y': return ctx_parser_set_command (parser, CTX_SET_SHADOW_OFFSET_Y);
-      case 'a': return ctx_parser_set_command (parser, CTX_SET_GLOBAL_ALPHA);
-      case 'f': return ctx_parser_set_command (parser, CTX_SET_FONT_SIZE);
-      case 'r': return ctx_parser_set_command (parser, CTX_SET_FILL_RULE);
+      case 'm': return ctx_parser_set_command (parser, CTX_COMPOSITING_MODE);
+      case 'B': return ctx_parser_set_command (parser, CTX_BLEND_MODE);
+      case 'l': return ctx_parser_set_command (parser, CTX_MITER_LIMIT);
+      case 't': return ctx_parser_set_command (parser, CTX_TEXT_ALIGN);
+      case 'b': return ctx_parser_set_command (parser, CTX_TEXT_BASELINE);
+      case 'd': return ctx_parser_set_command (parser, CTX_TEXT_DIRECTION);
+      case 'j': return ctx_parser_set_command (parser, CTX_LINE_JOIN);
+      case 'c': return ctx_parser_set_command (parser, CTX_LINE_CAP);
+      case 'w': return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
+      case 'C': return ctx_parser_set_command (parser, CTX_SHADOW_COLOR);
+      case 's': return ctx_parser_set_command (parser, CTX_SHADOW_BLUR);
+      case 'x': return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_X);
+      case 'y': return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_Y);
+      case 'a': return ctx_parser_set_command (parser, CTX_GLOBAL_ALPHA);
+      case 'f': return ctx_parser_set_command (parser, CTX_FONT_SIZE);
+      case 'r': return ctx_parser_set_command (parser, CTX_FILL_RULE);
     }
   }
 
@@ -16643,7 +16643,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           OPT(case CTX_hor_line_to:)
           case CTX_horLineTo:      ret = CTX_HOR_LINE_TO; break;
           case CTX_rotate:         ret = CTX_ROTATE; break;
-          case CTX_color:          ret = CTX_SET_COLOR; break;
+          case CTX_color:          ret = CTX_COLOR; break;
           OPT(case CTX_line_to:)
           case CTX_lineTo:         ret = CTX_LINE_TO; break;
           OPT(case CTX_move_to:)
@@ -16725,7 +16725,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_relLineTo:      ret = CTX_REL_LINE_TO; break;
           OPT(case CTX_rel_move_to:)
           case CTX_relMoveTo:      ret = CTX_REL_MOVE_TO; break;
-          case CTX_font:           ret = CTX_SET_FONT; break;
+          case CTX_font:           ret = CTX_FONT; break;
           OPT(case CTX_radial_gradient:)
           case CTX_radialGradient:ret = CTX_RADIAL_GRADIENT; break;
           OPT(case CTX_gradient_add_stop:)
@@ -16763,102 +16763,102 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
             return ctx_parser_set_command (parser, CTX_SET_DRGB_SPACE);
           OPT(case CTX_fill_rule:)
           case CTX_fillRule:
-            return ctx_parser_set_command (parser, CTX_SET_FILL_RULE);
+            return ctx_parser_set_command (parser, CTX_FILL_RULE);
           OPT(case CTX_font_size:)
           case CTX_fontSize:
           case CTX_setFontSize:
-            return ctx_parser_set_command (parser, CTX_SET_FONT_SIZE);
+            return ctx_parser_set_command (parser, CTX_FONT_SIZE);
 
           OPT(case CTX_composite:)
           OPT(case CTX_compositing_mode:)
           case CTX_compositingMode:
-            return ctx_parser_set_command (parser, CTX_SET_COMPOSITING_MODE);
+            return ctx_parser_set_command (parser, CTX_COMPOSITING_MODE);
 
           case CTX_blend:
           case CTX_blending:
           OPT(case CTX_blending_mode:)
           OPT(case CTX_blend_mode:)
           case CTX_blendMode:
-            return ctx_parser_set_command (parser, CTX_SET_BLEND_MODE);
+            return ctx_parser_set_command (parser, CTX_BLEND_MODE);
 
           OPT(case CTX_miter_limit:)
           case CTX_miterLimit:
-            return ctx_parser_set_command (parser, CTX_SET_MITER_LIMIT);
+            return ctx_parser_set_command (parser, CTX_MITER_LIMIT);
           OPT(case CTX_text_align:)
           case CTX_textAlign:
-            return ctx_parser_set_command (parser, CTX_SET_TEXT_ALIGN);
+            return ctx_parser_set_command (parser, CTX_TEXT_ALIGN);
           OPT(case CTX_text_baseline:)
           case CTX_textBaseline:
-            return ctx_parser_set_command (parser, CTX_SET_TEXT_BASELINE);
+            return ctx_parser_set_command (parser, CTX_TEXT_BASELINE);
           OPT(case CTX_text_direction:)
           case CTX_textDirection:
-            return ctx_parser_set_command (parser, CTX_SET_TEXT_DIRECTION);
+            return ctx_parser_set_command (parser, CTX_TEXT_DIRECTION);
           case CTX_join:
           OPT(case CTX_line_join:)
           case CTX_lineJoin:
           case CTX_setLineJoin:
-            return ctx_parser_set_command (parser, CTX_SET_LINE_JOIN);
+            return ctx_parser_set_command (parser, CTX_LINE_JOIN);
           case CTX_glyph:
             return ctx_parser_set_command (parser, CTX_GLYPH);
           case CTX_cap:
           OPT(case CTX_line_cap:)
           case CTX_lineCap:
           case CTX_setLineCap:
-            return ctx_parser_set_command (parser, CTX_SET_LINE_CAP);
+            return ctx_parser_set_command (parser, CTX_LINE_CAP);
           OPT(case CTX_line_width:)
           case CTX_lineWidth:
           case CTX_setLineWidth:
-            return ctx_parser_set_command (parser, CTX_SET_LINE_WIDTH);
+            return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
           case CTX_shadowColor:
-            return ctx_parser_set_command (parser, CTX_SET_SHADOW_COLOR);
+            return ctx_parser_set_command (parser, CTX_SHADOW_COLOR);
           case CTX_shadowBlur:
-            return ctx_parser_set_command (parser, CTX_SET_SHADOW_BLUR);
+            return ctx_parser_set_command (parser, CTX_SHADOW_BLUR);
           case CTX_shadowOffsetX:
-            return ctx_parser_set_command (parser, CTX_SET_SHADOW_OFFSET_X);
+            return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_X);
           case CTX_shadowOffsetY:
-            return ctx_parser_set_command (parser, CTX_SET_SHADOW_OFFSET_Y);
+            return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_Y);
           OPT(case CTX_global_alpha:)
           case CTX_globalAlpha:
-            return ctx_parser_set_command (parser, CTX_SET_GLOBAL_ALPHA);
+            return ctx_parser_set_command (parser, CTX_GLOBAL_ALPHA);
           /* strings are handled directly here,
            * instead of in the one-char handler, using return instead of break
            */
           case CTX_gray:
             ctx_parser_set_color_model (parser, CTX_GRAY);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_graya:
             ctx_parser_set_color_model (parser, CTX_GRAYA);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_rgb:
             ctx_parser_set_color_model (parser, CTX_RGB);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_drgb:
             ctx_parser_set_color_model (parser, CTX_DRGB);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_rgba:
             ctx_parser_set_color_model (parser, CTX_RGBA);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_drgba:
             ctx_parser_set_color_model (parser, CTX_DRGBA);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_cmyk:
             ctx_parser_set_color_model (parser, CTX_CMYK);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_cmyka:
             ctx_parser_set_color_model (parser, CTX_CMYKA);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_lab:
             ctx_parser_set_color_model (parser, CTX_LAB);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_laba:
             ctx_parser_set_color_model (parser, CTX_LABA);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_lch:
             ctx_parser_set_color_model (parser, CTX_LCH);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_lcha:
             ctx_parser_set_color_model (parser, CTX_LCHA);
-            return ctx_parser_set_command (parser, CTX_SET_COLOR);
+            return ctx_parser_set_command (parser, CTX_COLOR);
           /* words that correspond to low integer constants
           */
           case CTX_winding:     return CTX_FILL_RULE_WINDING;
@@ -17022,7 +17022,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_set_cmyk_space (ctx, arg (0) );
         break;
 #endif
-      case CTX_SET_COLOR:
+      case CTX_COLOR:
         {
           switch (parser->color_model)
             {
@@ -17164,10 +17164,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->pcy = arg (1);
         parser->left_margin = parser->pcx;
         break;
-      case CTX_SET_FONT_SIZE:
+      case CTX_FONT_SIZE:
         ctx_font_size (ctx, arg (0) );
         break;
-      case CTX_SET_MITER_LIMIT:
+      case CTX_MITER_LIMIT:
         ctx_miter_limit (ctx, arg (0) );
         break;
       case CTX_SCALE:
@@ -17194,7 +17194,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_ROTATE:
         ctx_rotate (ctx, arg (0) );
         break;
-      case CTX_SET_FONT:
+      case CTX_FONT:
         ctx_font (ctx, (char *) parser->holding);
         break;
       case CTX_SET:
@@ -17279,47 +17279,47 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->pcy += arg (1);
         parser->left_margin = ctx_x (ctx);
         break;
-      case CTX_SET_LINE_WIDTH:
+      case CTX_LINE_WIDTH:
         ctx_line_width (ctx, arg (0) );
         break;
-      case CTX_SET_SHADOW_COLOR:
+      case CTX_SHADOW_COLOR:
         ctx_shadow_rgba (ctx, arg (0), arg(1), arg(2), arg(3));
         break;
-      case CTX_SET_SHADOW_BLUR:
+      case CTX_SHADOW_BLUR:
         ctx_shadow_blur (ctx, arg (0) );
         break;
-      case CTX_SET_SHADOW_OFFSET_X:
+      case CTX_SHADOW_OFFSET_X:
         ctx_shadow_offset_x (ctx, arg (0) );
         break;
-      case CTX_SET_SHADOW_OFFSET_Y:
+      case CTX_SHADOW_OFFSET_Y:
         ctx_shadow_offset_y (ctx, arg (0) );
         break;
-      case CTX_SET_LINE_JOIN:
+      case CTX_LINE_JOIN:
         ctx_line_join (ctx, (CtxLineJoin) arg (0) );
         break;
-      case CTX_SET_LINE_CAP:
+      case CTX_LINE_CAP:
         ctx_line_cap (ctx, (CtxLineCap) arg (0) );
         break;
-      case CTX_SET_COMPOSITING_MODE:
+      case CTX_COMPOSITING_MODE:
         ctx_compositing_mode (ctx, (CtxCompositingMode) arg (0) );
         break;
-      case CTX_SET_BLEND_MODE:
+      case CTX_BLEND_MODE:
         {
           int blend_mode = arg(0);
-          if (blend_mode == CTX_SET_COLOR) blend_mode = CTX_BLEND_COLOR;
+          if (blend_mode == CTX_COLOR) blend_mode = CTX_BLEND_COLOR;
           ctx_blend_mode (ctx, blend_mode);
         }
         break;
-      case CTX_SET_FILL_RULE:
+      case CTX_FILL_RULE:
         ctx_fill_rule (ctx, (CtxFillRule) arg (0) );
         break;
-      case CTX_SET_TEXT_ALIGN:
+      case CTX_TEXT_ALIGN:
         ctx_text_align (ctx, (CtxTextAlign) arg (0) );
         break;
-      case CTX_SET_TEXT_BASELINE:
+      case CTX_TEXT_BASELINE:
         ctx_text_baseline (ctx, (CtxTextBaseline) arg (0) );
         break;
-      case CTX_SET_TEXT_DIRECTION:
+      case CTX_TEXT_DIRECTION:
         ctx_set_text_direction (ctx, (CtxTextDirection) arg (0) );
         break;
       case CTX_IDENTITY:
@@ -17344,7 +17344,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           ctx_gradient_add_stop (ctx, arg (0), red, green, blue, alpha);
         }
         break;
-      case CTX_SET_GLOBAL_ALPHA:
+      case CTX_GLOBAL_ALPHA:
         ctx_global_alpha (ctx, arg (0) );
         break;
       case CTX_TEXTURE:
@@ -17416,9 +17416,9 @@ static void ctx_parser_transform_percent (CtxParser *parser, CtxCode code, int a
               break;
           }
         break;
-      case CTX_SET_FONT_SIZE:
-      case CTX_SET_MITER_LIMIT:
-      case CTX_SET_LINE_WIDTH:
+      case CTX_FONT_SIZE:
+      case CTX_MITER_LIMIT:
+      case CTX_LINE_WIDTH:
         {
           *value *= (small/100.0);
         }
@@ -17481,9 +17481,9 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
               break;
           }
         break;
-      case CTX_SET_MITER_LIMIT:
-      case CTX_SET_FONT_SIZE:
-      case CTX_SET_LINE_WIDTH:
+      case CTX_MITER_LIMIT:
+      case CTX_FONT_SIZE:
+      case CTX_LINE_WIDTH:
         {
           *value *= parser->cell_height;
         }
