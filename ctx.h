@@ -120,10 +120,10 @@ void  ctx_rel_quad_to     (Ctx *ctx, float cx, float cy,
 void  ctx_close_path      (Ctx *ctx);
 float ctx_get_font_size   (Ctx *ctx);
 float ctx_get_line_width  (Ctx *ctx);
-float ctx_x               (Ctx *ctx);
 int   ctx_width           (Ctx *ctx);
 int   ctx_height          (Ctx *ctx);
 int   ctx_rev             (Ctx *ctx);
+float ctx_x               (Ctx *ctx);
 float ctx_y               (Ctx *ctx);
 void  ctx_current_point   (Ctx *ctx, float *x, float *y);
 void  ctx_get_transform   (Ctx *ctx, float *a, float *b,
@@ -157,9 +157,9 @@ void ctx_stroke         (Ctx *ctx);
 void ctx_paint          (Ctx *ctx);
 
 void
-ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+ctx_set_pixel_u8          (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-void  ctx_global_alpha (Ctx *ctx, float global_alpha);
+void  ctx_global_alpha     (Ctx *ctx, float global_alpha);
 float ctx_get_global_alpha (Ctx *ctx);
 
 void ctx_rgba   (Ctx *ctx, float r, float g, float b, float a);
@@ -203,8 +203,8 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
                       void *user_data);
 int ctx_texture_load        (Ctx *ctx, int id, const char *path);
 int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length);
-void ctx_texture_release (Ctx *ctx, int id);
-void ctx_texture (Ctx *ctx, int id, float x, float y);
+void ctx_texture_release    (Ctx *ctx, int id);
+void ctx_texture            (Ctx *ctx, int id, float x, float y);
 
 void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
 
@@ -1024,6 +1024,11 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_INLINED_NORMAL      1
 #endif
 
+
+#ifndef CTX_BRAILLE_TEXT
+#define CTX_BRAILLE_TEXT        0
+#endif
+
 #ifndef CTX_AVX2
 #ifdef _IMMINTRIN_H_INCLUDED
 #define CTX_AVX2         1
@@ -1035,7 +1040,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 /* do 
  */
 #ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       1
+#define CTX_NATIVE_GRAYA8       0
 #endif
 
 #ifndef CTX_ENABLE_CMYK
@@ -3438,6 +3443,10 @@ struct _CtxRasterizer
   int        col_min;
   int        col_max;
 
+#if CTX_BRAILLE_TEXT
+  CtxList   *glyphs;
+#endif
+
   CtxRenderstream edge_list;
 
   CtxState  *state;
@@ -3461,6 +3470,9 @@ struct _CtxRasterizer
   int        has_prev:2;
   int        preserve:1;
   int        uses_transforms:1;
+#if CTX_BRAILLE_TEXT
+  int        term_glyphs:1; // store appropriate glyphs for redisplay
+#endif
 
   int16_t    blit_x;
   int16_t    blit_y;
@@ -11910,6 +11922,17 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   _ctx_glyph (rasterizer->ctx, unichar, stroke);
 }
 
+typedef struct _CtxTermGlyph CtxTermGlyph;
+
+struct _CtxTermGlyph
+{
+  uint32_t unichar;
+  int      col;
+  int      row;
+  uint8_t  rgba_bg[4];
+  uint8_t  rgba_fg[4];
+};
+
 static void
 _ctx_text (Ctx        *ctx,
            const char *string,
@@ -11918,7 +11941,28 @@ _ctx_text (Ctx        *ctx,
 static void
 ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
 {
-  _ctx_text (rasterizer->ctx, string, stroke, 1);
+#if CTX_BRAILLE_TEXT
+  if (rasterizer->term_glyphs && !stroke)
+  {
+    int col = rasterizer->x / 2 + 1;
+    int row = rasterizer->y / 4 + 1;
+    for (int i = 0; string[i]; i++, col++)
+    {
+      CtxTermGlyph *glyph = calloc (sizeof (CtxTermGlyph), 1);
+      ctx_list_prepend (&rasterizer->glyphs, glyph);
+      glyph->unichar = string[i];
+      glyph->col = col;
+      glyph->row = row;
+      ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color,
+                      glyph->rgba_fg);
+    }
+    //_ctx_text (rasterizer->ctx, string, stroke, 1);
+  }
+  else
+#endif
+  {
+    _ctx_text (rasterizer->ctx, string, stroke, 1);
+  }
 }
 
 void
@@ -14662,8 +14706,8 @@ static float
 ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
-  float font_size = ctx->state.gstate.font_size;
-  float scale = stbtt_ScaleForPixelHeight (ttf_info, font_size);
+  float font_size          = ctx->state.gstate.font_size;
+  float scale              = stbtt_ScaleForPixelHeight (ttf_info, font_size);
   int advance, lsb;
   int glyph = ctx_glyph_stb_find (font, unichar);
   if (glyph==0)
@@ -20039,34 +20083,35 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
               if (y) *y = ((unsigned char)buf[5]-32)*1.0;
               switch (buf[3])
                 {
-                  case 32: return "mouse-press";
-                  case 33: return "mouse1-press";
-                  case 34: return "mouse2-press";
-                  case 40: return "alt-mouse-press";
-                  case 41: return "alt-mouse1-press";
-                  case 42: return "alt-mouse2-press";
-                  case 48: return "control-mouse-press";
-                  case 49: return "control-mouse1-press";
-                  case 50: return "control-mouse2-press";
-                  case 56: return "alt-control-mouse-press";
-                  case 57: return "alt-control-mouse1-press";
-                  case 58: return "alt-control-mouse2-press";
-                  case 64: return "mouse-drag";
-                  case 65: return "mouse1-drag";
-                  case 66: return "mouse2-drag";
-                  case 71: return "mouse-motion"; /* shift+motion */
-                  case 72: return "alt-mouse-drag";
-                  case 73: return "alt-mouse1-drag";
-                  case 74: return "alt-mouse2-drag";
-                  case 75: return "mouse-motion"; /* alt+motion */
-                  case 80: return "control-mouse-drag";
-                  case 81: return "control-mouse1-drag";
-                  case 82: return "control-mouse2-drag";
-                  case 83: return "mouse-motion"; /* ctrl+motion */
-                  case 91: return "mouse-motion"; /* ctrl+alt+motion */
-                  case 95: return "mouse-motion"; /* ctrl+alt+shift+motion */
-                  case 96: return "scroll-up";
-                  case 97: return "scroll-down";
+                        /* XXX : todo reduce this to less string constants */
+                  case 32:  return "mouse-press";
+                  case 33:  return "mouse1-press";
+                  case 34:  return "mouse2-press";
+                  case 40:  return "alt-mouse-press";
+                  case 41:  return "alt-mouse1-press";
+                  case 42:  return "alt-mouse2-press";
+                  case 48:  return "control-mouse-press";
+                  case 49:  return "control-mouse1-press";
+                  case 50:  return "control-mouse2-press";
+                  case 56:  return "alt-control-mouse-press";
+                  case 57:  return "alt-control-mouse1-press";
+                  case 58:  return "alt-control-mouse2-press";
+                  case 64:  return "mouse-drag";
+                  case 65:  return "mouse1-drag";
+                  case 66:  return "mouse2-drag";
+                  case 71:  return "mouse-motion"; /* shift+motion */
+                  case 72:  return "alt-mouse-drag";
+                  case 73:  return "alt-mouse1-drag";
+                  case 74:  return "alt-mouse2-drag";
+                  case 75:  return "mouse-motion"; /* alt+motion */
+                  case 80:  return "control-mouse-drag";
+                  case 81:  return "control-mouse1-drag";
+                  case 82:  return "control-mouse2-drag";
+                  case 83:  return "mouse-motion"; /* ctrl+motion */
+                  case 91:  return "mouse-motion"; /* ctrl+alt+motion */
+                  case 95:  return "mouse-motion"; /* ctrl+alt+shift+motion */
+                  case 96:  return "scroll-up";
+                  case 97:  return "scroll-down";
                   case 100: return "shift-scroll-up";
                   case 101: return "shift-scroll-down";
                   case 104: return "alt-scroll-up";
@@ -20577,7 +20622,6 @@ static void _ctx_mouse (Ctx *term, int mode)
   mouse_mode = mode;
 }
 
-
 inline static void ctx_braille_flush (CtxBraille *braille)
 {
   int width =  braille->width;
@@ -20587,6 +20631,18 @@ inline static void ctx_braille_flush (CtxBraille *braille)
   _ctx_utf8_output_buf (braille->pixels,
                         CTX_FORMAT_RGBA8,
                         width, height, width * 4, 0);
+#if CTX_BRAILLE_TEXT
+  CtxRasterizer *rasterizer = (CtxRasterizer*)(braille->host->renderer);
+  // XXX instead sort and inject along with braille
+  for (CtxList *l = rasterizer->glyphs; l; l = l->next)
+  {
+      CtxTermGlyph *glyph = l->data;
+      printf ("\e[0m\e[%i;%iH%c", glyph->row, glyph->col, glyph->unichar);
+      free (glyph);
+  }
+  while (rasterizer->glyphs)
+    ctx_list_remove (&rasterizer->glyphs, rasterizer->glyphs->data);
+#endif
 }
 
 void ctx_braille_free (CtxBraille *braille)
@@ -20615,12 +20671,15 @@ Ctx *ctx_new_braille (int width, int height)
   braille->rows = (height + 3) / 4;
   braille->pixels = (uint8_t*)malloc (width * height * 4);
   braille->host = ctx_new_for_framebuffer (braille->pixels,
-                  width, height,
-                  width * 4, CTX_FORMAT_RGBA8);
+                                           width, height,
+                                           width * 4, CTX_FORMAT_RGBA8);
+#if CTX_BRAILLE_TEXT
+  ((CtxRasterizer*)braille->host->renderer)->term_glyphs=1;
+#endif
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_renderer (ctx, braille);
   ctx_set_size (ctx, width, height);
- // ctx_set_size (braille->host, width, height);
+  ctx_font_size (ctx, 4.0f);
   braille->flush = (void*)ctx_braille_flush;
   braille->free  = (void*)ctx_braille_free;
 #endif
@@ -20629,12 +20688,9 @@ Ctx *ctx_new_braille (int width, int height)
 
 #if CTX_SDL
 
-#include <stdio.h>
-
 inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
   int width =  sdl->width;
-  //int height = sdl->height;
   ctx_render_ctx (sdl->ctx, sdl->host);
  
   //ctx_render_stream (sdl->ctx, stdout, 1);
@@ -20653,7 +20709,6 @@ void ctx_sdl_free (CtxSDL *sdl)
   free (sdl);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
-
 
 Ctx *ctx_new_sdl (int width, int height)
 {
@@ -20765,7 +20820,6 @@ Ctx *ctx_new_ctx (int width, int height)
 
 Ctx *ctx_new_ui (int width, int height)
 {
-
   if (getenv ("CTX_VERSION"))
           // full blown ctx - in terminal or standalone
     return ctx_new_ctx (width, height);
