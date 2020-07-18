@@ -12,7 +12,7 @@ clean:
 	rm -rf $(PROGRAMS)
 
 %: %.c ../*.h ../fonts/*.h Makefile
-	ccache $(CC) $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts
+	ccache $(CC) $(SMALL_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` -O3
 
 perf.S: perf.c ../*.h ../fonts/*.h Makefile
 	ccache gcc-10 $(PERF_CFLAGS) $< -S -o $@ -I.. -I../fonts 
@@ -30,11 +30,6 @@ musl-static-%: %.c ../*.h ../fonts/*.h Makefile
 
 mmm: mmm.c ../ctx.h  Makefile
 	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs mmm` -Wall
-clock: clock.c ../ctx.h
-	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs sdl2` -lm -Wall -march=native -O2
-sdl2: sdl2.c ../ctx.h
-	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs sdl2` -lm -Wall -march=native -O2
-test-renderpaths: test-renderpaths.c ../ctx.h ../fonts/*.h
-	gcc $< -o $@ -g -O3 -march=native -mtune=native `pkg-config mrg --cflags --libs` -I../fonts -I../tools -I.. -msse3
 
-
+%: %.c ../ctx.h
+	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs sdl2` -lm -Wall -march=native -O2

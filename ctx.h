@@ -17931,6 +17931,21 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
         break;
     }
 }
+
+void ctx_parse (Ctx *ctx, const char *string)
+{
+  if (!string)
+    return;
+  CtxParser *parser = ctx_parser_new (ctx, ctx_width(ctx),
+                                           ctx_height(ctx),
+                                           ctx_get_font_size(ctx),
+                                           ctx_get_font_size(ctx),
+                                           0, 0, NULL, NULL, NULL, NULL, NULL);
+  for (int i = 0; string[i]; i++)
+     ctx_parser_feed_byte (parser, string[i]);
+  ctx_parser_free (parser);
+}
+
 #endif
 
 #include <sys/time.h>

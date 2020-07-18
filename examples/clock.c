@@ -123,14 +123,14 @@ int main (int argc, char **argv)
     ctx_fill           (ctx);
     ctx_restore (ctx);
     ctx_move_to        (ctx, 10+x, height * 0.2);
-    ctx_font_size  (ctx, height * 0.1 + x/4.0);
+    //ctx_font_size  (ctx, height * 0.1 + x/4.0);
     ctx_line_width (ctx, 2);
     ctx_rgba       (ctx, 0, 0, 0, 1);
     ctx_text_stroke    (ctx, utf8);
     ctx_rgba8      (ctx, 255, 255, 255, 255);
     ctx_move_to        (ctx, height * 0.05 +x, height * 0.2);
     ctx_text           (ctx, utf8);
-    ctx_font_size  (ctx, height * 0.2);
+    //ctx_font_size  (ctx, height * 0.2);
 
     ctx_move_to        (ctx, height * 0.05, height * 0.4);
     ctx_rgb        (ctx, 1, 0,0);
