@@ -11,6 +11,9 @@ all: $(PROGRAMS)
 clean:
 	rm -rf $(PROGRAMS)
 
+text: text.c ../*.h ../fonts/*.h Makefile
+	ccache $(CC) $(PERF_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` 
+
 %: %.c ../*.h ../fonts/*.h Makefile
 	ccache $(CC) $(SMALL_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` 
 

@@ -11516,6 +11516,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     rasterizer->needs_aa = 0;
     rasterizer->scanline = scan_start;
       ctx_rasterizer_feed_edges (rasterizer);
+      ctx_rasterizer_discard_edges (rasterizer);
 
   for (rasterizer->scanline = scan_start; rasterizer->scanline <= scan_end;)
     {
@@ -20329,6 +20330,13 @@ static int ctx_nct_consume_events (Ctx *ctx)
 
 #if CTX_SDL
 
+ // 1 threads 12fps
+ // 2 threads 18fps
+ // 3 threads 18fps
+ // 4 threads 21fps
+
+#define RENDER_THREADS  4
+
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
 {
@@ -20337,12 +20345,12 @@ struct _CtxSDL
    void (*free)   (void *braille);
    Ctx          *ctx;
    Ctx          *ctx_copy;
+   Ctx          *host[RENDER_THREADS];
    int           width;
    int           height;
    int           cols;
    int           rows;
    uint8_t      *pixels;
-   Ctx          *host;
    int           was_down;
    SDL_Window   *window;
    SDL_Renderer *renderer;
@@ -20356,21 +20364,23 @@ struct _CtxSDL
    int           rctrl;
    int           shown_frame;
    int           render_frame;
-   int           rendered_frame;
+   int           rendered_frame[RENDER_THREADS];
+   int           threads_done;
    int           frame;
    int           pointer_down[3];
 };
 
 static void ctx_show_frame (CtxSDL *sdl)
 {
-  if (sdl->rendered_frame != sdl->shown_frame)
+  if (sdl->threads_done == RENDER_THREADS)
   {
     SDL_UpdateTexture(sdl->texture, NULL,
                       (void*)sdl->pixels, sdl->width * sizeof (Uint32));
     SDL_RenderClear(sdl->renderer);
     SDL_RenderCopy(sdl->renderer, sdl->texture, NULL, NULL);
     SDL_RenderPresent(sdl->renderer);
-    sdl->shown_frame = sdl->rendered_frame;
+    sdl->shown_frame = sdl->render_frame;
+    sdl->threads_done = 0;
   }
 }
 
@@ -20521,13 +20531,16 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           sdl->pixels = calloc (4, width * height);
           sdl->width = width;
           sdl->height = height;
-          ctx_free (sdl->host);
+          for (int i = 0 ; i < RENDER_THREADS; i++)
+          {
+          ctx_free (sdl->host[i]);
+          sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/RENDER_THREADS) * i],
+                   width, height/RENDER_THREADS,
+                   width * 4, CTX_FORMAT_RGBA8);
+          ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = ctx;
+          }
           ctx_set_size (sdl->ctx, width, height);
           ctx_set_size (sdl->ctx_copy, width, height);
-          sdl->host = ctx_new_for_framebuffer (sdl->pixels,
-                   width, height,
-                  width * 4, CTX_FORMAT_RGBA8);
-          ((CtxRasterizer*)sdl->host->renderer)->texture_source = ctx;
           SDL_UnlockMutex (sdl->mutex);
         }
         break;
@@ -20739,7 +20752,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   int width =  sdl->width;
   while (sdl->shown_frame != sdl->render_frame)
   {
-    usleep (1000);
+    usleep (1);
     ctx_show_frame (sdl);
   }
   if (sdl->shown_frame == sdl->render_frame)
@@ -20750,6 +20763,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
                                          sdl->ctx->renderstream.count * 9);
     sdl->render_frame = sdl->frame;
     sdl->frame++;
+    sdl->threads_done = 0;
     SDL_UnlockMutex (sdl->mutex);
   }
   ctx_reset (sdl->ctx);
@@ -20758,27 +20772,39 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   free (sdl->pixels);
-  ctx_free (sdl->host);
+  for (int i = 0 ; i < RENDER_THREADS; i++)
+    ctx_free (sdl->host[i]);
   free (sdl);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
 static
-void render_fun (void *data)
+void render_fun (void **data)
 {
-  CtxSDL *sdl = data;
+  int no = (size_t)data[0];
+  CtxSDL *sdl = data[1];
+
   while (!sdl->quit)
   {
-    if (sdl->render_frame != sdl->rendered_frame)
+    SDL_LockMutex (sdl->mutex);
+    if (sdl->render_frame != sdl->rendered_frame[no])
     {
+      SDL_UnlockMutex (sdl->mutex);
+      ctx_save (sdl->host[no]);
+      ctx_translate (sdl->host[no], 0.0, -1.0 * ((sdl->height)/RENDER_THREADS) * no);
+      ctx_render_ctx (sdl->ctx_copy, sdl->host[no]);
+      sdl->rendered_frame[no] = sdl->render_frame;
+      ctx_restore (sdl->host[no]);
       SDL_LockMutex (sdl->mutex);
-      ctx_render_ctx (sdl->ctx_copy, sdl->host);
-      sdl->rendered_frame = sdl->render_frame;
-      ctx_reset (sdl->ctx_copy);
+      sdl->threads_done++;
+      if (sdl->threads_done == RENDER_THREADS)
+        ctx_reset (sdl->ctx_copy);
+ //   ctx_reset (sdl->host[no]);
       SDL_UnlockMutex (sdl->mutex);
     }
     else
     {
+      SDL_UnlockMutex (sdl->mutex);
       usleep (1000 * 15);
     }
     // render
@@ -20820,11 +20846,13 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->cols = 80;
   sdl->rows = 20;
   sdl->pixels = (uint8_t*)malloc (width * height * 4);
-  sdl->host = ctx_new_for_framebuffer (sdl->pixels,
-                  width, height,
-                  width * 4, CTX_FORMAT_RGBA8);
-  ((CtxRasterizer*)sdl->host->renderer)->texture_source = ctx;
-
+  for (int i = 0; i < RENDER_THREADS; i++)
+  {
+    sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/RENDER_THREADS) * i],
+                   width, height/RENDER_THREADS,
+                   width * 4, CTX_FORMAT_RGBA8);
+          ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = ctx;
+  }
   ctx_set_renderer (ctx, sdl);
   ctx_set_renderer (sdl->ctx_copy, sdl);
 
@@ -20832,7 +20860,47 @@ Ctx *ctx_new_sdl (int width, int height)
   ctx_set_size (sdl->ctx_copy, width, height);
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->free  = (void*)ctx_sdl_free;
-  SDL_CreateThread ((void*)render_fun, "render", sdl);
+
+  {
+    static void *args[2]={(void*)0, };
+    args[1]=sdl;
+    SDL_CreateThread ((void*)render_fun, "render", args);
+  }
+  if(RENDER_THREADS>1){
+    static void *args[2]={(void*)1};
+    args[1]=sdl;
+    SDL_CreateThread ((void*)render_fun, "render", args);
+  }
+  if(RENDER_THREADS>2){
+    static void *args[2]={(void*)2};
+    args[1]=sdl;
+    SDL_CreateThread ((void*)render_fun, "render", args);
+  }
+  if(RENDER_THREADS>3){
+    static void *args[2]={(void*)3};
+    args[1]=sdl;
+    SDL_CreateThread ((void*)render_fun, "render", args);
+  }
+  if(RENDER_THREADS>4){
+    static void *args[2]={(void*)4};
+    args[1]=sdl;
+    SDL_CreateThread ((void*)render_fun, "render", args);
+  }
+  if(RENDER_THREADS>5){
+    static void *args[2]={(void*)5};
+    args[1]=sdl;
+    SDL_CreateThread ((void*)render_fun, "render", args);
+  }
+  if(RENDER_THREADS>6){
+    static void *args[2]={(void*)6};
+    args[1]=sdl;
+    SDL_CreateThread ((void*)render_fun, "render", args);
+  }
+  if(RENDER_THREADS>7){
+    static void *args[2]={(void*)7};
+    args[1]=sdl;
+    SDL_CreateThread ((void*)render_fun, "render", args);
+  }
 
 #endif
   return ctx;
