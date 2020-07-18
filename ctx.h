@@ -20336,7 +20336,7 @@ struct _CtxSDL
    void (*flush)  (void *braille);
    void (*free)   (void *braille);
    Ctx          *ctx;
-   Ctx          *ctx_to_render;
+   Ctx          *ctx_copy;
    int           width;
    int           height;
    int           cols;
@@ -20356,14 +20356,31 @@ struct _CtxSDL
    int           rctrl;
    int           shown_frame;
    int           render_frame;
+   int           rendered_frame;
    int           frame;
    int           pointer_down[3];
 };
+
+static void ctx_show_frame (CtxSDL *sdl)
+{
+  if (sdl->rendered_frame != sdl->shown_frame)
+  {
+    SDL_UpdateTexture(sdl->texture, NULL,
+                      (void*)sdl->pixels, sdl->width * sizeof (Uint32));
+    SDL_RenderClear(sdl->renderer);
+    SDL_RenderCopy(sdl->renderer, sdl->texture, NULL, NULL);
+    SDL_RenderPresent(sdl->renderer);
+    sdl->shown_frame = sdl->rendered_frame;
+  }
+}
 
 static int ctx_sdl_consume_events (Ctx *ctx)
 {
   CtxSDL *sdl = (void*)ctx->renderer;
   SDL_Event event;
+
+  ctx_show_frame (sdl);
+
   while (SDL_PollEvent (&event))
   {
     switch (event.type)
@@ -20494,6 +20511,7 @@ static int ctx_sdl_consume_events (Ctx *ctx)
       case SDL_WINDOWEVENT:
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
+          SDL_LockMutex (sdl->mutex);
           int width = event.window.data1;
           int height = event.window.data2;
           SDL_DestroyTexture (sdl->texture);
@@ -20505,10 +20523,12 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           sdl->height = height;
           ctx_free (sdl->host);
           ctx_set_size (sdl->ctx, width, height);
+          ctx_set_size (sdl->ctx_copy, width, height);
           sdl->host = ctx_new_for_framebuffer (sdl->pixels,
                    width, height,
                   width * 4, CTX_FORMAT_RGBA8);
           ((CtxRasterizer*)sdl->host->renderer)->texture_source = ctx;
+          SDL_UnlockMutex (sdl->mutex);
         }
         break;
     }
@@ -20717,15 +20737,22 @@ Ctx *ctx_new_braille (int width, int height)
 inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
   int width =  sdl->width;
-  ctx_render_ctx (sdl->ctx, sdl->host);
- 
-  //ctx_render_stream (sdl->ctx, stdout, 1);
-
-  SDL_UpdateTexture(sdl->texture, NULL,
-                    (void*)sdl->pixels, width * sizeof (Uint32));
-  SDL_RenderClear(sdl->renderer);
-  SDL_RenderCopy(sdl->renderer, sdl->texture, NULL, NULL);
-  SDL_RenderPresent(sdl->renderer);
+  while (sdl->shown_frame != sdl->render_frame)
+  {
+    usleep (1000);
+    ctx_show_frame (sdl);
+  }
+  if (sdl->shown_frame == sdl->render_frame)
+  {
+    SDL_LockMutex (sdl->mutex);
+    ctx_reset (sdl->ctx_copy);
+    ctx_set_renderstream (sdl->ctx_copy, &sdl->ctx->renderstream.entries[0],
+                                         sdl->ctx->renderstream.count * 9);
+    sdl->render_frame = sdl->frame;
+    sdl->frame++;
+    SDL_UnlockMutex (sdl->mutex);
+  }
+  ctx_reset (sdl->ctx);
 }
 
 void ctx_sdl_free (CtxSDL *sdl)
@@ -20742,9 +20769,19 @@ void render_fun (void *data)
   CtxSDL *sdl = data;
   while (!sdl->quit)
   {
-    SDL_LockMutex (sdl->mutex);
+    if (sdl->render_frame != sdl->rendered_frame)
+    {
+      SDL_LockMutex (sdl->mutex);
+      ctx_render_ctx (sdl->ctx_copy, sdl->host);
+      sdl->rendered_frame = sdl->render_frame;
+      ctx_reset (sdl->ctx_copy);
+      SDL_UnlockMutex (sdl->mutex);
+    }
+    else
+    {
+      usleep (1000 * 15);
+    }
     // render
-    SDL_UnlockMutex (sdl->mutex);
   }
 }
 
@@ -20777,6 +20814,7 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_EnableScreenSaver ();
 
   sdl->ctx = ctx;
+  sdl->ctx_copy = ctx_new ();
   sdl->width  = width;
   sdl->height = height;
   sdl->cols = 80;
@@ -20788,10 +20826,14 @@ Ctx *ctx_new_sdl (int width, int height)
   ((CtxRasterizer*)sdl->host->renderer)->texture_source = ctx;
 
   ctx_set_renderer (ctx, sdl);
+  ctx_set_renderer (sdl->ctx_copy, sdl);
+
   ctx_set_size (ctx, width, height);
-  ctx_set_size (sdl->host, width, height);
+  ctx_set_size (sdl->ctx_copy, width, height);
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->free  = (void*)ctx_sdl_free;
+  SDL_CreateThread ((void*)render_fun, "render", sdl);
+
 #endif
   return ctx;
 }
