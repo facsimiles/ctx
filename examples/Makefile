@@ -2,7 +2,7 @@ SMALL_CFLAGS=-Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-s
 #SMALL_CFLAGS=-Ofast -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program 
 PERF_CFLAGS=-Ofast -march=native  -g
 
-PROGRAMS=img clock perf-circ dir perf ui ui2 tiny small baseline musl-static-tiny musl-static-small musl-static-baseline all sdl2 mmm
+PROGRAMS=img clock perf-circ dir perf ui ui2 tiny small baseline musl-static-tiny musl-static-small musl-static-baseline all mmm test
 
 report: all
 	(cd ../tools; ./size-report.sh)
@@ -12,7 +12,7 @@ clean:
 	rm -rf $(PROGRAMS)
 
 %: %.c ../*.h ../fonts/*.h Makefile
-	ccache $(CC) $(SMALL_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` -O3
+	ccache $(CC) $(SMALL_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` 
 
 perf.S: perf.c ../*.h ../fonts/*.h Makefile
 	ccache gcc-10 $(PERF_CFLAGS) $< -S -o $@ -I.. -I../fonts 
@@ -31,5 +31,3 @@ musl-static-%: %.c ../*.h ../fonts/*.h Makefile
 mmm: mmm.c ../ctx.h  Makefile
 	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs mmm` -Wall
 
-%: %.c ../ctx.h
-	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs sdl2` -lm -Wall -march=native -O2

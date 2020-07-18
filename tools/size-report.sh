@@ -29,7 +29,7 @@ Ctx=`./ctx-info|grep '(Ctx)'|cut -f 3 -d ' '`
 
 
 
-echo "Sizes computed with static musl libc binaries, where the baseline"
+echo "Sizes computed with dynamic libc binaries, where the baseline"
 echo "version contains the same raw data and c library calls."
 
 echo "ASCII font:      " $(($FONT)) " bytes"

@@ -67,16 +67,7 @@ int main (int argc, char **argv)
     printf ("\n");
   }
 #endif
-  {
-       CtxParser *ctxp = ctx_parser_new (ctx, WIDTH, HEIGHT, WIDTH/20, HEIGHT/20, 1, 1, NULL, NULL, NULL, NULL, NULL);
-
-       for (int i = 0; i<3; i++)
-       {
-         ctx_parser_feed_byte (ctxp, ' ');
-       }
-
-       ctx_parser_free (ctxp);
-  }
+  ctx_parse (ctx, "M 100 100");
   ctx_free (ctx);
   free (pixels);
   return 0;

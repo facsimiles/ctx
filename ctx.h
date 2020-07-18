@@ -1024,6 +1024,9 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_INLINED_NORMAL      1
 #endif
 
+#ifndef CTX_INLINED_GRADIENTS
+#define CTX_INLINED_GRADIENTS   0
+#endif
 
 #ifndef CTX_BRAILLE_TEXT
 #define CTX_BRAILLE_TEXT        0
@@ -8385,6 +8388,7 @@ ctx_u8_source_over_normal_color (int components,
 #endif
 
 #if CTX_GRADIENTS
+#if CTX_INLINED_GRADIENTS
 static void
 ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
 {
@@ -8600,7 +8604,6 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
 #endif
 }
 
-
 static void
 ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
 {
@@ -8812,6 +8815,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
     }
 #endif
 }
+#endif
 #endif
 
 static void
@@ -9949,6 +9953,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     return;
   }
 #endif
+#if CTX_INLINED_GRADIENTS
 #if CTX_GRADIENTS
   if (gstate->source.type == CTX_SOURCE_LINEAR_GRADIENT &&
       gstate->blend_mode == CTX_BLEND_NORMAL &&
@@ -9964,6 +9969,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
      rasterizer->comp_op = ctx_RGBA8_source_over_normal_radial_gradient;
      return;
   }
+#endif
 #endif
 
   if (gstate->source.type == CTX_SOURCE_COLOR)
@@ -20330,6 +20336,7 @@ struct _CtxSDL
    void (*flush)  (void *braille);
    void (*free)   (void *braille);
    Ctx          *ctx;
+   Ctx          *ctx_to_render;
    int           width;
    int           height;
    int           cols;
@@ -20340,12 +20347,16 @@ struct _CtxSDL
    SDL_Window   *window;
    SDL_Renderer *renderer;
    SDL_Texture  *texture;
-
+   SDL_mutex    *mutex;
+   int           quit;
    int           key_balance;
    int           key_repeat;
    int           lctrl;
    int           lalt;
    int           rctrl;
+   int           shown_frame;
+   int           render_frame;
+   int           frame;
    int           pointer_down[3];
 };
 
@@ -20725,6 +20736,18 @@ void ctx_sdl_free (CtxSDL *sdl)
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
+static
+void render_fun (void *data)
+{
+  CtxSDL *sdl = data;
+  while (!sdl->quit)
+  {
+    SDL_LockMutex (sdl->mutex);
+    // render
+    SDL_UnlockMutex (sdl->mutex);
+  }
+}
+
 Ctx *ctx_new_sdl (int width, int height)
 {
   Ctx *ctx = ctx_new ();
@@ -20744,6 +20767,7 @@ Ctx *ctx_new_sdl (int width, int height)
      return NULL;
   }
   ctx_sdl_events = 1;
+  sdl->mutex = SDL_CreateMutex ();
   sdl->texture = SDL_CreateTexture (sdl->renderer,
         SDL_PIXELFORMAT_ABGR8888,
         SDL_TEXTUREACCESS_STREAMING,
