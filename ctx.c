@@ -959,12 +959,13 @@ int main (int argc, char **argv)
   else if (!strcmp (get_suffix (dest_path), ".png") )
     {
       int stride = width * 4;
-      uint8_t pixels[stride*height];
+      uint8_t *pixels = malloc (stride*height);
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBA8);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
       ctx_free (dctx);
       stbi_write_png (dest_path, width, height, 4, pixels, stride);
+      free (pixels);
     }
   ctx_free (ctx);
   return 0;

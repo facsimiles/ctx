@@ -841,7 +841,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* subpixel-aa coordinates used in BITPACKing of renderstream
  */
-#define CTX_SUBDIV            16 // changing this changes font-file-format
+#define CTX_SUBDIV             8 // changing this changes font-file-format
 
 // 8    12 68 40 24
 // 16   12 68 40 24
