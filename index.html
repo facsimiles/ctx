@@ -49,36 +49,30 @@
               <div class='content'>
         <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is a vector graphics renderer and protocol inspired by HTML5
-        Canvas 2D context, with a footprint tunable to be small enough for <a
-        href='mcu/'>microcontrollers</a>, while being capable of supporting
-floating point and CMYK.</p>
+        <p>ctx is a small footprint vector graphics protocol and <a href='rasterizer/'>rasterizer</a> 
+        based
+        on the HTML5 Canvas 2D context. It can drive resolution independent
+        antialiased interfaces on <a href='mcu/'>microcontrollers</a> as well
+        as provide color and CMYK processing capabilities as well as floating
+        point processing needed for content authoring.</p>
 
-        <p>ctx is an implementation of a HTML5 Canvas 2d context renderer as a
-        text protocol with an efficient C <a href='rasterizer/'>rasterizer</a>.
-        Almost he full W3C rendering API is covered including shadow-blur,
-        currently missing is ellipse() and correct handling of path instead of
-        using bounding box in in_fill().  </p>
+        <p>It provides both a C API and an efficient text based serialization of
+        the canvas drawing model. 
+        Almost the full W3C rendering API is covered,
+        currently missing is ellipse(), correct handling of path instead of
+        using bounding box in in_fill().</p>
 
         <p>Render targets handled natively are 8bit sRGBA
         <tt>RGBA8</tt>, floating point scRGB <tt>RGBAF</tt> 8bit and floating
         point grayscale with alpha. <tt>GRAYA8</tt> and <tt>GRAYAF</tt> and
         floating point CMYK <tt>CMYKAF</tt>. Integration points are catered
         for in API and protocol for color management, which will be done with
-        <a href='http://gegl.org/babl/'>babl</a>, possibly swallowing the
-        matrix part of that implementation.</p>
+        <a href='http://gegl.org/babl/'>babl</a>.
         The formats
         <tt>RGB332</tt>, <tt>RGB565</tt>, <tt>RGB565_BYTESWAPPED</tt>,
         <tt>CMYKA8</tt>, <tt>RGB8</tt>, <tt>BGRA8</tt>, <tt>GRAY1</tt>,
         <tt>GRAY2</tt>, <tt>GRAY4</tt>, <tt>GRAY8</tt> and <tt>GRAYF</tt> are
         handled by converting processed scanlines back and forth to one of the supported targets.</p>
-
-        <p>The rasterizer implementation does accurate horizontal AA, and
-        accumulates an adaptive amount of vertical sub-scanlines based on edge
-        intersection complexity.  Even for float point render target point
-        buffers/colors the alpha created is 8bit - this is sufficient for
-        improved behavior in most scenarios, supporting even higher fidelity
-        would be neat.</p>
 
         <p>SVG and PDF output can be generated with the <a
                                                                 href='https://cairographics.org/'>cairo</a>
@@ -106,8 +100,9 @@ in shorter time, I will relicense ctx under the <a href='https://opensource.org/
         <p>ctx uses the <a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 2d context</a> is the primary reference, The
         compositing is according to <a
         href='https://drafts.fxtf.org/compositing/'>Compositing and Blending
-Level 2</a>. The core ideas for a 2d vector vocabulary is however shared with
- PDF, cairo, OpenVG, directdraw and others all with a basis in postscript.
+Level 2</a>; though ctx permits any combination of compositing and blending
+mode. The core ideas for a 2d vector vocabulary is however shared with PDF,
+cairo, OpenVG, directdraw and others all with a basis in postscript.
         </p>
 
         <h2 id='protocol'>protocol reference</h2>
