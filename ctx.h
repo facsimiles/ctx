@@ -832,7 +832,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  */
 
 
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (17000/rasterizer->aa)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (2125/CTX_SUBDIV/rasterizer->aa)
 
 #ifndef CTX_RASTERIZER_AA_SLOPE_DEBUG
 #define CTX_RASTERIZER_AA_SLOPE_DEBUG 0
@@ -841,7 +841,8 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 /* subpixel-aa coordinates used in BITPACKing of renderstream
  */
-#define CTX_SUBDIV             8 // changing this changes font-file-format
+#define CTX_SUBDIV   4 // higher gives higher quality, but 4096wide rendering
+                       // stops working
 
 // 8    12 68 40 24
 // 16   12 68 40 24
@@ -14271,7 +14272,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->state       = state;
   rasterizer->ctx = ctx;
   rasterizer->texture_source = texture_source?texture_source:ctx;
-  rasterizer->aa          = 15;
+  rasterizer->aa          = 5;
   rasterizer->force_aa    = 0;
   ctx_state_init (rasterizer->state);
   rasterizer->buf         = data;
