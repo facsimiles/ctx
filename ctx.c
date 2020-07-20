@@ -961,7 +961,7 @@ int main (int argc, char **argv)
       int stride = width * 4;
       uint8_t *pixels = malloc (stride*height);
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBA8);
-      memset (pixels, 0, sizeof (pixels) );
+      memset (pixels, 0, sizeof (stride*height) );
       ctx_render_ctx (ctx, dctx);
       ctx_free (dctx);
       stbi_write_png (dest_path, width, height, 4, pixels, stride);

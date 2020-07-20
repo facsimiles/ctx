@@ -3403,7 +3403,7 @@ typedef struct CtxEdge
 {
 #if CTX_BLOATY_FAST_PATHS
   uint32_t index;  // provide for more aligned memory accesses.
-  uint32_t pad;    // in the extreme, we want 4x4 bytes per entry
+  uint32_t pad;    //
 #else
   uint16_t index;
 #endif
@@ -14312,6 +14312,8 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   rasterizer->state->gstate.clip_max_y  = height - 1;
   rasterizer->scan_min    = 5000;
   rasterizer->scan_max    = -5000;
+  rasterizer->aa          = 5;
+  rasterizer->force_aa    = 0;
 
   hasher->rows = rows;
   hasher->cols = cols;
@@ -18661,6 +18663,9 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
   return 0;
 }
 #if CTX_EVENTS
+
+#include <stdatomic.h>
+
 static int ctx_native_events = 0;
 static int ctx_sdl_events = 0;
 static int ctx_nct_consume_events (Ctx *ctx);
@@ -20331,10 +20336,10 @@ static int ctx_nct_consume_events (Ctx *ctx)
 
 #if CTX_SDL
 
- // 1 threads 12fps
- // 2 threads 18fps
- // 3 threads 18fps
- // 4 threads 21fps
+ // 1 threads 13fps
+ // 2 threads 20fps
+ // 3 threads 27fps
+ // 4 threads 29fps
 
 #define RENDER_THREADS  4
 
@@ -20366,13 +20371,24 @@ struct _CtxSDL
    int           shown_frame;
    int           render_frame;
    int           rendered_frame[RENDER_THREADS];
-   int           threads_done;
+  //_Atomic int    threads_done;
+   atomic_int    threads_done;
    int           frame;
    int           pointer_down[3];
+
+#define CTX_HASH_ROWS 8
+#define CTX_HASH_COLS 8
+
+   uint32_t     hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+   uint8_t      tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
+                                                              // responsible for a tile
 };
 
 static void ctx_show_frame (CtxSDL *sdl)
 {
+  // we can hang here, if two threads decrement
+  // at exactly the same time
+  //
   if (sdl->threads_done == RENDER_THREADS)
   {
     SDL_UpdateTexture(sdl->texture, NULL,
@@ -20382,6 +20398,7 @@ static void ctx_show_frame (CtxSDL *sdl)
     SDL_RenderPresent(sdl->renderer);
     sdl->shown_frame = sdl->render_frame;
     sdl->threads_done = 0;
+    SDL_UnlockMutex (sdl->mutex);
   }
 }
 
@@ -20759,13 +20776,46 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   if (sdl->shown_frame == sdl->render_frame)
   {
     SDL_LockMutex (sdl->mutex);
+    Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
+                      CTX_HASH_COLS, CTX_HASH_ROWS);
     ctx_reset (sdl->ctx_copy);
     ctx_set_renderstream (sdl->ctx_copy, &sdl->ctx->renderstream.entries[0],
                                          sdl->ctx->renderstream.count * 9);
+    ctx_render_ctx (sdl->ctx_copy, hasher);
+
+    int dirty_tiles = 0;
+    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int col = 0; col < CTX_HASH_COLS; col++)
+      {
+        uint32_t new_hash = ctx_hash_get_hash (hasher, row, col);
+        if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col])
+        {
+          sdl->hashes[row * CTX_HASH_COLS + col] = new_hash;
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+          dirty_tiles++;
+        }
+        else
+        {
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = -1;
+        }
+      }
+    int dirty_no = 0;
+    if (dirty_tiles)
+    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int col = 0; col < CTX_HASH_COLS; col++)
+      {
+        if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
+        {
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no / (1+(dirty_tiles/RENDER_THREADS));
+          dirty_no++;
+        }
+      }
+    fprintf (stderr, "%i dirty tiles\n", dirty_tiles);
+
     sdl->render_frame = sdl->frame;
     sdl->frame++;
     sdl->threads_done = 0;
-    SDL_UnlockMutex (sdl->mutex);
+    ctx_free (hasher);
   }
   ctx_reset (sdl->ctx);
 }
@@ -20787,25 +20837,20 @@ void render_fun (void **data)
 
   while (!sdl->quit)
   {
-    SDL_LockMutex (sdl->mutex);
     if (sdl->render_frame != sdl->rendered_frame[no])
     {
-      SDL_UnlockMutex (sdl->mutex);
       ctx_save (sdl->host[no]);
       ctx_translate (sdl->host[no], 0.0, -1.0 * ((sdl->height)/RENDER_THREADS) * no);
       ctx_render_ctx (sdl->ctx_copy, sdl->host[no]);
       sdl->rendered_frame[no] = sdl->render_frame;
       ctx_restore (sdl->host[no]);
-      SDL_LockMutex (sdl->mutex);
       sdl->threads_done++;
       if (sdl->threads_done == RENDER_THREADS)
         ctx_reset (sdl->ctx_copy);
  //   ctx_reset (sdl->host[no]);
-      SDL_UnlockMutex (sdl->mutex);
     }
     else
     {
-      SDL_UnlockMutex (sdl->mutex);
       usleep (1000 * 15);
     }
     // render
