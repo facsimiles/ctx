@@ -6911,6 +6911,7 @@ static uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
 {
   int16_t x = 0;
   int16_t y = 0;
+
   CtxEntry *entry = &rasterizer->edge_list.entries[0];
   int ox = entry->data.s16[2];
   int oy = entry->data.s16[3];
@@ -7143,6 +7144,8 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   oy = rasterizer->state->y;
   tolerance = 1.0f/tolerance * 2;
 #if 0 // skipping this to preserve hash integrity
+  if (tolerance == 1.0f)
+  {
   float maxx = ctx_maxf (x1,x2);
   maxx = ctx_maxf (maxx, ox);
   maxx = ctx_maxf (maxx, x0);
@@ -7155,8 +7158,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   float miny = ctx_minf (y1,y2);
   miny = ctx_minf (miny, oy);
   miny = ctx_minf (miny, y0);
-  if (tolerance == 1.0f &&
-      (
+    if(
         (minx > rasterizer->blit_x + rasterizer->blit_width) ||
         (miny > rasterizer->blit_y + rasterizer->blit_height) ||
         (maxx < rasterizer->blit_x) ||
@@ -7165,6 +7167,15 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
       // tolerance==1.0 is most likely screen-space -
       // skip subdivides for things outside
     }
+    else
+    {
+      ctx_rasterizer_bezier_divide (rasterizer,
+                                    ox, oy, x0, y0,
+                                    x1, y1, x2, y2,
+                                    ox, oy, x2, y2,
+                                    0.0f, 1.0f, 0.0f, tolerance);
+    }
+  }
   else
 #endif
     {
@@ -7301,7 +7312,7 @@ static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count
 
 /* feeds up to rasterizer->scanline,
    keeps a pending buffer of edges - that encompass
-   the full coming scanline - for adaptive AA,
+   the full incoming scanline,
    feed until the start of the scanline and check for need for aa
    in all of pending + active edges, then
    again feed_edges until middle of scanline if doing non-AA
@@ -7311,7 +7322,6 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
   int miny;
   CtxEntry *entries = rasterizer->edge_list.entries;
-  ctx_rasterizer_discard_edges (rasterizer);
 #if CTX_RASTERIZER_FORCE_AA==0
   for (int i = 0; i < rasterizer->pending_edges; i++)
     {
@@ -7399,6 +7409,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
         }
       rasterizer->edge_pos++;
     }
+  ctx_rasterizer_discard_edges (rasterizer);
 }
 
 CTX_INLINE static int ctx_compare_edges2 (const void *ap, const void *bp)
@@ -11516,8 +11527,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
     rasterizer->needs_aa = 0;
     rasterizer->scanline = scan_start;
-      ctx_rasterizer_feed_edges (rasterizer);
-      ctx_rasterizer_discard_edges (rasterizer);
+    ctx_rasterizer_feed_edges (rasterizer);
 
   for (rasterizer->scanline = scan_start; rasterizer->scanline <= scan_end;)
     {
@@ -13125,7 +13135,12 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
               rasterizer->x, rasterizer->y - height,
               width, height * 2
            };
-
+#if 0
+        c->s16.a0 = shape_rect.x;
+        c->s16.a1 = shape_rect.y;
+        c->s16.a2 = shape_rect.x + shape_rect.width - 1;
+        c->s16.a3 = shape_rect.y + shape_rect.height - 1;
+#endif
            hash *= 21129;
            hash += shape_rect.x;
            hash *= 124229;
@@ -13148,10 +13163,20 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
               rasterizer->x, rasterizer->y - height,
               width, height * 2
            };
+
+#if 0
+        c->s16.a0 = shape_rect.x;
+        c->s16.a1 = shape_rect.y;
+        c->s16.a2 = shape_rect.x + shape_rect.width - 1;
+        c->s16.a3 = shape_rect.y + shape_rect.height - 1;
+#endif
            hash *= 21129;
            hash += shape_rect.x;
            hash *= 124229;
            hash += shape_rect.y;
+        uint32_t color;
+        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
+        hash ^= color;
 
           _ctx_add_hash (hasher, &shape_rect, hash);
 
@@ -13160,8 +13185,33 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_GLYPH:
-        // XXX check bounds
+         {
+          uint8_t string[8];
+          string[ctx_unichar_to_utf8 (c->u32.a0, string)]=0;
+          float width = ctx_text_width (rasterizer->ctx, (char*)string);
+          float height = ctx_get_font_size (rasterizer->ctx);
+
+          int hash = ctx_strhash ((char*)string, 0);
+
+           CtxRectangle shape_rect = {
+              rasterizer->x, rasterizer->y - height,
+              width, height * 2
+           };
+
+           hash *= 21129;
+           hash += shape_rect.x;
+           hash *= 124229;
+           hash += shape_rect.y;
+
+        uint32_t color;
+        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
+        hash ^= color;
+
+          _ctx_add_hash (hasher, &shape_rect, hash);
+
+          ctx_rasterizer_rel_move_to (rasterizer, width, 0);
           ctx_rasterizer_reset (rasterizer);
+         }
         break;
       case CTX_FILL:
         {
@@ -13177,17 +13227,22 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           rasterizer->scan_min / aa
         };
         //fprintf (stderr, "%i,%i %ix%i \n", shape_rect.x, shape_rect.y, shape_rect.width, shape_rect.height);
+        //
+        /* set bounding box on fill command */
+#if 0
+        c->s16.a0 = shape_rect.x;
+        c->s16.a1 = shape_rect.y;
+        c->s16.a2 = shape_rect.x + shape_rect.width - 1;
+        c->s16.a3 = shape_rect.y + shape_rect.height - 1;
+#endif
 
-        // XXX not doing a good job with state
+        // XXX state is only partially captured in hash 
         hash ^= (rasterizer->state->gstate.fill_rule * 23);
         hash ^= (rasterizer->state->gstate.source.type * 117);
 
-        // XXX color does not work - we need to do a get-color, this rgba
-        // is possibly even unused
-        hash ^= (rasterizer->state->gstate.source.color.rgba[0] * 111);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[1] * 129);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[2] * 147);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[3] * 477);
+        uint32_t color;
+        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
+        hash ^= color;
 
         _ctx_add_hash (hasher, &shape_rect, hash);
 
@@ -13197,9 +13252,6 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         }
         break;
       case CTX_STROKE:
-        // XXX check bounds
-        //   update hashes
-        //ctx_rasterizer_stroke (rasterizer);
         {
         int hash = ctx_rasterizer_poly_to_hash (rasterizer);
         CtxRectangle shape_rect = {
@@ -13217,15 +13269,18 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         shape_rect.height += rasterizer->state->gstate.line_width * 2;
         shape_rect.x -= rasterizer->state->gstate.line_width;
         shape_rect.y -= rasterizer->state->gstate.line_width;
-
-        // XXX not doing a good job with state
+#if 0
+        c->s16.a0 = shape_rect.x;
+        c->s16.a1 = shape_rect.y;
+        c->s16.a2 = shape_rect.x + shape_rect.width - 1;
+        c->s16.a3 = shape_rect.y + shape_rect.height - 1;
+#endif
         hash ^= (int)(rasterizer->state->gstate.line_width * 110);
         hash ^= (rasterizer->state->gstate.line_cap * 23);
         hash ^= (rasterizer->state->gstate.source.type * 117);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[0] * 111);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[1] * 129);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[2] * 147);
-        hash ^= (rasterizer->state->gstate.source.color.rgba[3] * 477);
+        uint32_t color;
+        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
+        hash ^= color;
 
         _ctx_add_hash (hasher, &shape_rect, hash);
         }
