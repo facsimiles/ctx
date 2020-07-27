@@ -214,8 +214,8 @@ typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
 void _ctx_set_store_clear (Ctx *ctx);
 void _ctx_set_transformation (Ctx *ctx, int transformation);
 
-Ctx *ctx_hasher_new (int width, int height, int rows, int cols);
-uint64_t ctx_hash_get_hash (Ctx *ctx, int row, int col);
+Ctx *ctx_hasher_new (int width, int height, int cols, int rows);
+uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row);
 
 /* If cairo.h is included before ctx.h add cairo integration code
  */
@@ -14347,7 +14347,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
 }
 
 static CtxRasterizer *
-ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width, int height, int rows, int cols)
+ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width, int height, int cols, int rows)
 {
   CtxHasher *hasher = (CtxHasher*)rasterizer;
   ctx_memset (rasterizer, 0, sizeof (CtxHasher) );
@@ -14422,7 +14422,7 @@ Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
   Ctx *ctx = ctx_new ();
   CtxState    *state    = &ctx->state;
   CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxHasher) );
-  ctx_hasher_init (rasterizer, ctx, state, width, height, rows, cols);
+  ctx_hasher_init (rasterizer, ctx, state, width, height, cols, rows);
   ctx_set_renderer (ctx, (void*)rasterizer);
   return ctx;
 }
@@ -20406,7 +20406,6 @@ struct _CtxSDL
    void (*free)   (void *braille);
    Ctx          *ctx;
    Ctx          *ctx_copy;
-   Ctx          *host[RENDER_THREADS];
    int           width;
    int           height;
    int           cols;
@@ -20606,11 +20605,13 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           sdl->height = height;
           for (int i = 0 ; i < RENDER_THREADS; i++)
           {
+#if 0
           ctx_free (sdl->host[i]);
           sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/RENDER_THREADS) * i],
                    width, height/RENDER_THREADS,
                    width * 4, CTX_FORMAT_RGBA8);
           ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = ctx;
+#endif
           }
           ctx_set_size (sdl->ctx, width, height);
           ctx_set_size (sdl->ctx_copy, width, height);
@@ -20842,7 +20843,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        uint32_t new_hash = ctx_hash_get_hash (hasher, row, col);
+        uint32_t new_hash = ctx_hash_get_hash (hasher, col, row);
         if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col])
         {
           sdl->hashes[row * CTX_HASH_COLS + col] = new_hash;
@@ -20861,7 +20862,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       {
         if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no / (1+(dirty_tiles/RENDER_THREADS));
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no % RENDER_THREADS;
           dirty_no++;
         }
       }
@@ -20878,8 +20879,10 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   free (sdl->pixels);
+#if 0
   for (int i = 0 ; i < RENDER_THREADS; i++)
     ctx_free (sdl->host[i]);
+#endif
   free (sdl);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
@@ -20894,11 +20897,24 @@ void render_fun (void **data)
   {
     if (sdl->render_frame != sdl->rendered_frame[no])
     {
-      ctx_save (sdl->host[no]);
-      ctx_translate (sdl->host[no], 0.0, -1.0 * ((sdl->height)/RENDER_THREADS) * no);
-      ctx_render_ctx (sdl->ctx_copy, sdl->host[no]);
+      int hno = 0;
+      for (int row = 0; row < CTX_HASH_ROWS; row++)
+        for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
+        {
+          if (sdl->tile_affinity[hno]==no)
+          {
+            int x0 = ((sdl->width)/CTX_HASH_COLS) * col;
+            int y0 = ((sdl->height)/CTX_HASH_ROWS) * row;
+
+            Ctx *host = ctx_new_for_framebuffer (&sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
+                   sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
+                   sdl->width * 4, CTX_FORMAT_RGBA8);
+            ((CtxRasterizer*)host->renderer)->texture_source = sdl->ctx;
+      ctx_translate (host, -x0, -y0);
+      ctx_render_ctx (sdl->ctx_copy, host);
+          }
+        }
       sdl->rendered_frame[no] = sdl->render_frame;
-      ctx_restore (sdl->host[no]);
       sdl->threads_done++;
       if (sdl->threads_done == RENDER_THREADS)
         ctx_reset (sdl->ctx_copy);
@@ -20947,13 +20963,6 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->cols = 80;
   sdl->rows = 20;
   sdl->pixels = (uint8_t*)malloc (width * height * 4);
-  for (int i = 0; i < RENDER_THREADS; i++)
-  {
-    sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/RENDER_THREADS) * i],
-                   width, height/RENDER_THREADS,
-                   width * 4, CTX_FORMAT_RGBA8);
-          ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = ctx;
-  }
   ctx_set_renderer (ctx, sdl);
   ctx_set_renderer (sdl->ctx_copy, sdl);
 
