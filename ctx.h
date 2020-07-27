@@ -20430,8 +20430,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 8
-#define CTX_HASH_COLS 8
+#define CTX_HASH_ROWS 16
+#define CTX_HASH_COLS 1
 
    uint32_t     hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    uint8_t      tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20912,6 +20912,7 @@ void render_fun (void **data)
             ((CtxRasterizer*)host->renderer)->texture_source = sdl->ctx;
       ctx_translate (host, -x0, -y0);
       ctx_render_ctx (sdl->ctx_copy, host);
+      ctx_free (host);
           }
         }
       sdl->rendered_frame[no] = sdl->render_frame;
