@@ -11937,6 +11937,17 @@ static int _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke);
 static void
 ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
 {
+  float tx = rasterizer->state->x;
+  float ty = rasterizer->state->y - rasterizer->state->gstate.font_size;
+  float tx2 = rasterizer->state->x + rasterizer->state->gstate.font_size;
+  float ty2 = rasterizer->state->y + rasterizer->state->gstate.font_size;
+  ctx_user_to_device (rasterizer->state, &tx, &ty);
+  ctx_user_to_device (rasterizer->state, &tx2, &ty2);
+
+  if (tx2 < rasterizer->blit_x || ty2 < rasterizer->blit_y) return;
+  if (tx  > rasterizer->blit_x + rasterizer->blit_width ||
+      ty  > rasterizer->blit_y + rasterizer->blit_height)
+          return;
   _ctx_glyph (rasterizer->ctx, unichar, stroke);
 }
 
@@ -15080,6 +15091,7 @@ int
 _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
+
   return font->engine->glyph (font, ctx, unichar, stroke);
 }
 
@@ -20430,8 +20442,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 16
-#define CTX_HASH_COLS 1
+#define CTX_HASH_ROWS 8
+#define CTX_HASH_COLS 8
 
    uint32_t     hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    uint8_t      tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
