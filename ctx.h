@@ -20446,7 +20446,7 @@ struct _CtxSDL
 #define CTX_HASH_COLS 8
 
    uint32_t     hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
-   uint8_t      tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
+    int8_t      tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                               // responsible for a tile
 };
 
@@ -20874,11 +20874,10 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       {
         if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no % RENDER_THREADS;
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (RENDER_THREADS-1) / dirty_tiles;
           dirty_no++;
         }
       }
-    fprintf (stderr, "%i dirty tiles\n", dirty_tiles);
 
     sdl->render_frame = sdl->frame;
     sdl->frame++;

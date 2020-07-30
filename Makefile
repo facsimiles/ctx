@@ -31,11 +31,12 @@ ctx.h.html: ctx.h Makefile
 	highlight -l -a --encoding=utf8 -W ctx.h > ctx.h.html
 ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
 	highlight -l -a --encoding=utf8 -W fonts/ctx-font-regular.h > ctx-font-regular.h.html
+	
+#git gc
 
 updateweb: clean all post ctx.h.html ctx-font-regular.h.html
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
-	git gc
 	git update-server-info
 	rm -rf /home/pippin/pgo/ctx.graphics/.git || true
 	cp -Rv .git /home/pippin/pgo/ctx.graphics/.git
