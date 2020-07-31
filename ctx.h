@@ -20437,7 +20437,7 @@ struct _CtxSDL
    int           shown_frame;
    int           render_frame;
    int           rendered_frame[RENDER_THREADS];
-  //_Atomic int    threads_done;
+   Ctx          *host[RENDER_THREADS];
    atomic_int    threads_done;
    int           frame;
    int           pointer_down[3];
@@ -20445,9 +20445,9 @@ struct _CtxSDL
 #define CTX_HASH_ROWS 8
 #define CTX_HASH_COLS 8
 
-   uint32_t     hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
-    int8_t      tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
-                                                              // responsible for a tile
+   uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+   int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
+                                                           // responsible for a tile
 };
 
 static void ctx_show_frame (CtxSDL *sdl)
@@ -20890,7 +20890,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   free (sdl->pixels);
-#if 0
+#if 1
   for (int i = 0 ; i < RENDER_THREADS; i++)
     ctx_free (sdl->host[i]);
 #endif
@@ -20916,14 +20916,16 @@ void render_fun (void **data)
           {
             int x0 = ((sdl->width)/CTX_HASH_COLS) * col;
             int y0 = ((sdl->height)/CTX_HASH_ROWS) * row;
-
-            Ctx *host = ctx_new_for_framebuffer (&sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
-                   sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
-                   sdl->width * 4, CTX_FORMAT_RGBA8);
+            Ctx *host = sdl->host[no];
+            CtxRasterizer *rasterizer = host->renderer;
+            ctx_rasterizer_init (rasterizer,
+                                 host, NULL, &host->state,
+                                 &sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
+                                 0, 0, sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
+                                 sdl->width*4, CTX_FORMAT_RGBA8);
             ((CtxRasterizer*)host->renderer)->texture_source = sdl->ctx;
-      ctx_translate (host, -x0, -y0);
-      ctx_render_ctx (sdl->ctx_copy, host);
-      ctx_free (host);
+            ctx_translate (host, -x0, -y0);
+            ctx_render_ctx (sdl->ctx_copy, host);
           }
         }
       sdl->rendered_frame[no] = sdl->render_frame;
@@ -20983,6 +20985,13 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->free  = (void*)ctx_sdl_free;
 
+  for (int i = 0; i < RENDER_THREADS; i++)
+  {
+    sdl->host[i] = ctx_new_for_framebuffer (sdl->pixels,
+                   sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
+                   sdl->width * 4, CTX_FORMAT_RGBA8);
+    ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = sdl->ctx;
+  }
   {
     static void *args[2]={(void*)0, };
     args[1]=sdl;
