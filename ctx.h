@@ -20932,7 +20932,6 @@ void render_fun (void **data)
       sdl->threads_done++;
       if (sdl->threads_done == RENDER_THREADS)
         ctx_reset (sdl->ctx_copy);
- //   ctx_reset (sdl->host[no]);
     }
     else
     {
