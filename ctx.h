@@ -20408,7 +20408,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 3 threads 27fps
  // 4 threads 29fps
 
-#define RENDER_THREADS  4
+#define CTX_THREADS  16
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
@@ -20436,14 +20436,14 @@ struct _CtxSDL
    int           rctrl;
    int           shown_frame;
    int           render_frame;
-   int           rendered_frame[RENDER_THREADS];
-   Ctx          *host[RENDER_THREADS];
+   int           rendered_frame[CTX_THREADS];
+   Ctx          *host[CTX_THREADS];
    atomic_int    threads_done;
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 8
-#define CTX_HASH_COLS 8
+#define CTX_HASH_ROWS 16
+#define CTX_HASH_COLS 4
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20455,7 +20455,7 @@ static void ctx_show_frame (CtxSDL *sdl)
   // we can hang here, if two threads decrement
   // at exactly the same time
   //
-  if (sdl->threads_done == RENDER_THREADS)
+  if (sdl->threads_done == CTX_THREADS)
   {
     SDL_UpdateTexture(sdl->texture, NULL,
                       (void*)sdl->pixels, sdl->width * sizeof (Uint32));
@@ -20615,15 +20615,13 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           sdl->pixels = calloc (4, width * height);
           sdl->width = width;
           sdl->height = height;
-          for (int i = 0 ; i < RENDER_THREADS; i++)
+          for (int i = 0 ; i < CTX_THREADS; i++)
           {
-#if 0
-          ctx_free (sdl->host[i]);
-          sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/RENDER_THREADS) * i],
-                   width, height/RENDER_THREADS,
+            ctx_free (sdl->host[i]);
+            sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/CTX_THREADS) * i],
+                   width / CTX_HASH_COLS, height/CTX_HASH_ROWS,
                    width * 4, CTX_FORMAT_RGBA8);
-          ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = ctx;
-#endif
+            ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = ctx;
           }
           ctx_set_size (sdl->ctx, width, height);
           ctx_set_size (sdl->ctx_copy, width, height);
@@ -20874,7 +20872,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       {
         if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (RENDER_THREADS-1) / dirty_tiles;
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_THREADS-1) / dirty_tiles;
           dirty_no++;
         }
       }
@@ -20890,10 +20888,8 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   free (sdl->pixels);
-#if 1
-  for (int i = 0 ; i < RENDER_THREADS; i++)
+  for (int i = 0 ; i < CTX_THREADS; i++)
     ctx_free (sdl->host[i]);
-#endif
   free (sdl);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
@@ -20930,7 +20926,7 @@ void render_fun (void **data)
         }
       sdl->rendered_frame[no] = sdl->render_frame;
       sdl->threads_done++;
-      if (sdl->threads_done == RENDER_THREADS)
+      if (sdl->threads_done == CTX_THREADS)
         ctx_reset (sdl->ctx_copy);
     }
     else
@@ -20984,53 +20980,37 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->free  = (void*)ctx_sdl_free;
 
-  for (int i = 0; i < RENDER_THREADS; i++)
+  for (int i = 0; i < CTX_THREADS; i++)
   {
     sdl->host[i] = ctx_new_for_framebuffer (sdl->pixels,
                    sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
                    sdl->width * 4, CTX_FORMAT_RGBA8);
     ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = sdl->ctx;
   }
-  {
-    static void *args[2]={(void*)0, };
-    args[1]=sdl;
-    SDL_CreateThread ((void*)render_fun, "render", args);
+
+#define start_thread(no)\
+  if(CTX_THREADS>no){ \
+    static void *args[2]={(void*)no, };\
+    args[1]=sdl;\
+    SDL_CreateThread ((void*)render_fun, "render", args);\
   }
-  if(RENDER_THREADS>1){
-    static void *args[2]={(void*)1};
-    args[1]=sdl;
-    SDL_CreateThread ((void*)render_fun, "render", args);
-  }
-  if(RENDER_THREADS>2){
-    static void *args[2]={(void*)2};
-    args[1]=sdl;
-    SDL_CreateThread ((void*)render_fun, "render", args);
-  }
-  if(RENDER_THREADS>3){
-    static void *args[2]={(void*)3};
-    args[1]=sdl;
-    SDL_CreateThread ((void*)render_fun, "render", args);
-  }
-  if(RENDER_THREADS>4){
-    static void *args[2]={(void*)4};
-    args[1]=sdl;
-    SDL_CreateThread ((void*)render_fun, "render", args);
-  }
-  if(RENDER_THREADS>5){
-    static void *args[2]={(void*)5};
-    args[1]=sdl;
-    SDL_CreateThread ((void*)render_fun, "render", args);
-  }
-  if(RENDER_THREADS>6){
-    static void *args[2]={(void*)6};
-    args[1]=sdl;
-    SDL_CreateThread ((void*)render_fun, "render", args);
-  }
-  if(RENDER_THREADS>7){
-    static void *args[2]={(void*)7};
-    args[1]=sdl;
-    SDL_CreateThread ((void*)render_fun, "render", args);
-  }
+  start_thread(0);
+  start_thread(1);
+  start_thread(2);
+  start_thread(3);
+  start_thread(4);
+  start_thread(5);
+  start_thread(6);
+  start_thread(7);
+  start_thread(8);
+  start_thread(9);
+  start_thread(10);
+  start_thread(11);
+  start_thread(12);
+  start_thread(13);
+  start_thread(14);
+  start_thread(15);
+#undef start_thread
 
 #endif
   return ctx;
