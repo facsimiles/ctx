@@ -20431,7 +20431,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 3 threads 27fps
  // 4 threads 29fps
 
-#define CTX_THREADS  16
+#define CTX_THREADS  4
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
@@ -20862,10 +20862,12 @@ Ctx *ctx_new_braille (int width, int height)
 inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
   int width =  sdl->width;
-  while (sdl->shown_frame != sdl->render_frame)
+  int count = 0;
+  while (sdl->shown_frame != sdl->render_frame && count < 1000)
   {
-    usleep (1);
+    usleep (10);
     ctx_show_frame (sdl);
+    count++;
   }
   if (sdl->shown_frame == sdl->render_frame)
   {
@@ -21077,7 +21079,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   if (ctx_native_events)
     fprintf (stdout, "\e[?6150h");
   fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h reset\n");
-  ctx_render_stream (ctxctx->ctx, stdout, 0);
+  ctx_render_stream (ctxctx->ctx, stdout, 1);
   fprintf (stdout, "\ndone\n\e");
   fflush (stdout);
 }
