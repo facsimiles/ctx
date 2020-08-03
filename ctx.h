@@ -13375,8 +13375,10 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
                                   c->set_pixel.rgba[3]);
         break;
       case CTX_TEXTURE:
+#if 0
         ctx_rasterizer_set_texture (rasterizer, ctx_arg_u32 (0),
                                     ctx_arg_float (2), ctx_arg_float (3) );
+#endif
         break;
 #if 0
       case CTX_LOAD_IMAGE:
@@ -20864,15 +20866,17 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
   int width =  sdl->width;
   int count = 0;
-  while (sdl->shown_frame != sdl->render_frame && count < 1000)
+  while (sdl->shown_frame != sdl->render_frame && count < 10000)
   {
     usleep (10);
     ctx_show_frame (sdl);
     count++;
   }
-  if (count >= 1000)
+  if (count >= 10000)
   {
     fprintf (stderr, "!\n");
+    sdl->threads_done = CTX_THREADS;
+    ctx_show_frame (sdl);
   }
   if (sdl->shown_frame == sdl->render_frame)
   {
@@ -20974,6 +20978,10 @@ void render_fun (void **data)
         }
       sdl->rendered_frame[no] = sdl->render_frame;
       sdl->threads_done++;
+
+      //ctx_render_stream (sdl->ctx_copy, stdout, 1);
+
+
       if (sdl->threads_done == CTX_THREADS)
         ctx_reset (sdl->ctx_copy);
     }
@@ -21084,7 +21092,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   if (ctx_native_events)
     fprintf (stdout, "\e[?6150h");
   fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h reset\n");
-  ctx_render_stream (ctxctx->ctx, stdout, 1);
+  ctx_render_stream (ctxctx->ctx, stdout, 0);
   fprintf (stdout, "\ndone\n\e");
   fflush (stdout);
 }

@@ -6366,7 +6366,7 @@ bg_done:
               if (line->ctx)
                 {
                   ctx_save (ctx);
-                  ctx_translate (ctx, 0, (vt->rows-row) * (vt->ch) );
+                  ctx_translate (ctx, 0, (vt->rows-row-1) * (vt->ch) );
                   //float factor = vt->cols * vt->cw / 1000.0;
                   //ctx_scale (ctx, factor, factor);
                   ctx_render_ctx (line->ctx, ctx);
