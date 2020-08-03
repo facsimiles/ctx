@@ -1794,7 +1794,7 @@ static inline int ctx_color_model_get_components (CtxColorModel model)
 #endif
 
 typedef struct _CtxParser CtxParser;
-CtxParser *ctx_parser_new (
+  CtxParser *ctx_parser_new (
   Ctx       *ctx,
   int        width,
   int        height,
@@ -1807,12 +1807,13 @@ CtxParser *ctx_parser_new (
   void  *prop_data,
   void (*exit) (void *exit_data),
   void *exit_data);
+
 void
 ctx_parser_set_size (CtxParser *parser,
-                 int        width,
-                 int        height,
-                 float      cell_width,
-                 float      cell_height);
+                     int        width,
+                     int        height,
+                     float      cell_width,
+                     float      cell_height);
 
 void ctx_parser_feed_byte (CtxParser *parser, int byte);
 
@@ -1826,7 +1827,7 @@ static inline float ctx_maxf (float a, float b) { if (a > b) return a; return b;
 
 
 #ifndef __CTX_LIST__
-#define  __CTX_LIST__
+#define __CTX_LIST__
 
 #include <stdlib.h>
 
@@ -20431,7 +20432,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 3 threads 27fps
  // 4 threads 29fps
 
-#define CTX_THREADS  4
+#define CTX_THREADS  2
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
@@ -20465,8 +20466,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 16
-#define CTX_HASH_COLS 16
+#define CTX_HASH_ROWS 8
+#define CTX_HASH_COLS 8
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20868,6 +20869,10 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     usleep (10);
     ctx_show_frame (sdl);
     count++;
+  }
+  if (count >= 1000)
+  {
+    fprintf (stderr, "!\n");
   }
   if (sdl->shown_frame == sdl->render_frame)
   {
