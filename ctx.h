@@ -20443,7 +20443,7 @@ struct _CtxSDL
    int           pointer_down[3];
 
 #define CTX_HASH_ROWS 16
-#define CTX_HASH_COLS 4
+#define CTX_HASH_COLS 16
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20912,12 +20912,25 @@ void render_fun (void **data)
           {
             int x0 = ((sdl->width)/CTX_HASH_COLS) * col;
             int y0 = ((sdl->height)/CTX_HASH_ROWS) * row;
+            int width = sdl->width / CTX_HASH_COLS;
+            int height = sdl->height / CTX_HASH_ROWS;
+
             Ctx *host = sdl->host[no];
             CtxRasterizer *rasterizer = host->renderer;
+#if 1 // merge horizontally adjecant tiles of same affinity
+            while (col + 1 < CTX_HASH_COLS &&
+                   sdl->tile_affinity[hno+1] == no)
+            {
+              width += sdl->width / CTX_HASH_COLS;
+              col++;
+              hno++;
+            }
+#endif
+
             ctx_rasterizer_init (rasterizer,
                                  host, NULL, &host->state,
                                  &sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
-                                 0, 0, sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
+                                 0, 0, width, height,
                                  sdl->width*4, CTX_FORMAT_RGBA8);
             ((CtxRasterizer*)host->renderer)->texture_source = sdl->ctx;
             ctx_translate (host, -x0, -y0);
