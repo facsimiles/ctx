@@ -231,6 +231,18 @@ uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row);
 #define CTX_SDL 0
 #endif
 
+#if CTX_SDL
+#define ctx_mutex_t            SDL_mutex
+#define ctx_create_mutex()     SDL_CreateMutex
+#define ctx_lock_mutex(a)      SDL_LockMutex(a)
+#define ctx_unlock_mutex(a)    SDL_UnlockMutex(a)
+#else
+#define ctx_mutex_t           int
+#define ctx_create_mutex()    0
+#define ctx_lock_mutex(a)   
+#define ctx_unlock_mutex(a)  
+#endif
+
 
 #if CTX_CAIRO
 
@@ -6786,6 +6798,7 @@ struct _CtxShapeCache
 
 typedef struct _CtxShapeCache CtxShapeCache;
 
+static ctx_mutex_t  *ctx_shape_cache_mutex;
 static CtxShapeCache ctx_cache = {{NULL,}, 0};
 
 static long hits = 0;
@@ -6869,6 +6882,15 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
         }
 #endif
     }
+
+  if (!ctx_shape_cache_mutex)
+  {
+    // racy - but worst that happens is visual glitches
+    ctx_shape_cache_mutex = ctx_create_mutex ();
+  }
+  // lock shape cache mutex
+  ctx_lock_mutex (ctx_shape_cache_mutex);
+
   misses ++;
 // XXX : this 1 one is needed  to silence a false positive:
 // ==90718== Invalid write of size 1
@@ -6897,6 +6919,7 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
   ctx_cache.entries[i]->width=width;
   ctx_cache.entries[i]->height=height;
   ctx_cache.entries[i]->uses = 0;
+  ctx_unlock_mutex (ctx_shape_cache_mutex);
   return ctx_cache.entries[i];
 }
 
@@ -20427,7 +20450,7 @@ struct _CtxSDL
    SDL_Window   *window;
    SDL_Renderer *renderer;
    SDL_Texture  *texture;
-   SDL_mutex    *mutex;
+   ctx_mutex_t  *mutex;
    int           quit;
    int           key_balance;
    int           key_repeat;
@@ -20464,7 +20487,7 @@ static void ctx_show_frame (CtxSDL *sdl)
     SDL_RenderPresent(sdl->renderer);
     sdl->shown_frame = sdl->render_frame;
     sdl->threads_done = 0;
-    SDL_UnlockMutex (sdl->mutex);
+    ctx_unlock_mutex (sdl->mutex);
   }
 }
 
@@ -20605,7 +20628,7 @@ static int ctx_sdl_consume_events (Ctx *ctx)
       case SDL_WINDOWEVENT:
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
-          SDL_LockMutex (sdl->mutex);
+          ctx_lock_mutex (sdl->mutex);
           int width = event.window.data1;
           int height = event.window.data2;
           SDL_DestroyTexture (sdl->texture);
@@ -20625,7 +20648,7 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           }
           ctx_set_size (sdl->ctx, width, height);
           ctx_set_size (sdl->ctx_copy, width, height);
-          SDL_UnlockMutex (sdl->mutex);
+          ctx_unlock_mutex (sdl->mutex);
         }
         break;
     }
@@ -20841,7 +20864,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   }
   if (sdl->shown_frame == sdl->render_frame)
   {
-    SDL_LockMutex (sdl->mutex);
+    ctx_lock_mutex (sdl->mutex);
     Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
                       CTX_HASH_COLS, CTX_HASH_ROWS);
     ctx_reset (sdl->ctx_copy);
@@ -20969,7 +20992,7 @@ Ctx *ctx_new_sdl (int width, int height)
      return NULL;
   }
   ctx_sdl_events = 1;
-  sdl->mutex = SDL_CreateMutex ();
+  sdl->mutex = ctx_create_mutex ();
   sdl->texture = SDL_CreateTexture (sdl->renderer,
         SDL_PIXELFORMAT_ABGR8888,
         SDL_TEXTUREACCESS_STREAMING,

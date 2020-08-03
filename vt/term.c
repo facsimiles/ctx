@@ -294,9 +294,10 @@ static void handle_event (const char *event)
         {
           for (int i = 0; i<700; i++)
             { close (i); }
-          execlp (execute_self, execute_self, NULL);
+          execlp (execute_self, execute_self, ((char*)NULL), NULL);
           exit (0);
         }
+      fprintf (stderr, "!\n");
     }
   else if (!strcmp (event, "shift-control-q") )
     {
