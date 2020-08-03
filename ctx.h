@@ -20629,6 +20629,11 @@ static int ctx_sdl_consume_events (Ctx *ctx)
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
           ctx_lock_mutex (sdl->mutex);
+          while (sdl->threads_done != 0 &&
+                 sdl->threads_done != CTX_THREADS) {
+                  usleep (100);
+                  fprintf (stderr, ".");
+          }
           int width = event.window.data1;
           int height = event.window.data2;
           SDL_DestroyTexture (sdl->texture);
