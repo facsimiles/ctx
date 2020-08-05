@@ -139,6 +139,7 @@ char* string =
     add_glyph (ctx, ctx_utf8_to_unichar (utf8));
   }
 
+  if(0)
   for (int i = 0; i < n_glyphs; i++)
     for (int j = 0; j < n_glyphs; j++)
     {

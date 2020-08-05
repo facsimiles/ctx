@@ -1038,7 +1038,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_INLINED_GRADIENTS
-#define CTX_INLINED_GRADIENTS   0
+#define CTX_INLINED_GRADIENTS   1
 #endif
 
 #ifndef CTX_BRAILLE_TEXT
@@ -3919,6 +3919,7 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_SHADOW_COLOR:
         return 2;
       case CTX_RECTANGLE:
+      case CTX_ROUND_RECTANGLE:
       case CTX_VIEW_BOX:
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
@@ -4035,6 +4036,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
           got_coord++;
           break;
         case CTX_RECTANGLE:
+        case CTX_ROUND_RECTANGLE:
           x = command->rectangle.x;
           y = command->rectangle.y;
           minx = ctx_minf (minx, x);
@@ -5248,7 +5250,7 @@ void ctx_round_rectangle (Ctx *ctx,
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_RECTANGLE, x0, y0),
+    ctx_f (CTX_ROUND_RECTANGLE, x0, y0),
     ctx_f (CTX_CONT,      w, h),
     ctx_f (CTX_CONT,      radius, 0)
   };
@@ -11539,6 +11541,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
       (scan_start > (rasterizer->blit_y + rasterizer->blit_height) * aa) ||
       (scan_end < (rasterizer->blit_y) * aa))
   { 
+    /* not affecting this rasterizers scanlines */
     ctx_rasterizer_reset (rasterizer);
     return;
   }
@@ -20434,7 +20437,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 3 threads 27fps
  // 4 threads 29fps
 
-#define CTX_THREADS  2
+#define CTX_THREADS  1
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
@@ -20468,8 +20471,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 8
-#define CTX_HASH_COLS 8
+#define CTX_HASH_ROWS 4
+#define CTX_HASH_COLS 4
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
