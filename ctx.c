@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <termios.h>
 #include <unistd.h>
-
+#include <SDL.h>
 #include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
 
@@ -60,7 +60,12 @@ static int ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   return diff;
 }
 
+#if 1
 CtxOutputmode outputmode = CTX_OUTPUT_MODE_BRAILLE;
+#else
+CtxOutputmode outputmode = CTX_OUTPUT_MODE_UI;
+#endif
+
 
 void ctx_utf8_output_buf (uint8_t *pixels,
                           int format,
@@ -630,6 +635,12 @@ int main (int argc, char **argv)
               width = 160;
               height = 48;
             }
+          else if (!strcmp ( argv[i], "--ui") )
+            {
+              outputmode = CTX_OUTPUT_MODE_UI;
+              width = 640;
+              height = 480;
+            }
           else if (!strcmp ( argv[i], "--braille") )
             {
               outputmode = CTX_OUTPUT_MODE_BRAILLE;
@@ -749,7 +760,9 @@ int main (int argc, char **argv)
   fprintf (stderr, "%s [%s]\n", source_path, get_suffix (source_path) );
   fprintf (stderr, "%s [%s]\n", dest_path, get_suffix (dest_path) );
 #endif
-  Ctx *ctx = ctx_new ();
+  Ctx *ctx;
+again:
+  ctx = ctx_new ();
   _ctx_set_transformation (ctx, 0);
   if (!strcmp (get_suffix (source_path), ".html") ||
       !strcmp (get_suffix (source_path), ".svg") ||
@@ -782,6 +795,39 @@ int main (int argc, char **argv)
       fprintf (stderr, "nothing to do\n");
       exit(0);
     }
+
+  if (outputmode == CTX_OUTPUT_MODE_UI)
+  {
+    static Ctx *ui = NULL;
+    if (!ui) ui = ctx_new_ui (width, height);
+    for (;;)
+    {
+      ctx_reset (ui);
+      ctx_render_ctx (ctx, ui);
+      ctx_flush (ui);
+
+      CtxEvent *event;
+      if ((event = ctx_get_event (ui)))
+      {
+        if (event->type == CTX_KEY_DOWN)
+        {
+          if (!strcmp (event->string, "q")) exit (0);
+          else if (!strcmp (event->string, "resize-event"))
+          {
+             width = ctx_width (ui);
+             height = ctx_height (ui);
+             ctx_free (ctx);
+             goto again;
+          }
+        }
+        else
+        {
+          usleep (100);
+        }
+      }
+    }
+    exit(0);
+  }
 
   if (outputmode == CTX_OUTPUT_MODE_CTX)
     {

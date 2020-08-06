@@ -2104,6 +2104,7 @@ typedef enum CtxOutputmode
   CTX_OUTPUT_MODE_CTX_COMPACT,
   CTX_OUTPUT_MODE_CTX_TERM,
   CTX_OUTPUT_MODE_SIXELS,
+  CTX_OUTPUT_MODE_UI
 } CtxOutputmode;
 
 #define CTX_NORMALIZE(a)            (((a)=='-')?'_':(a))
@@ -19468,8 +19469,6 @@ static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
 }
 
 
-//CtxOutputmode _outputmode = CTX_OUTPUT_MODE_BRAILLE;
-
 static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                           int format,
                           int width,
@@ -21072,6 +21071,7 @@ Ctx *ctx_new_sdl (int width, int height)
 #undef start_thread
 
 #endif
+  ctx_flush (ctx);
   return ctx;
 }
 #endif
