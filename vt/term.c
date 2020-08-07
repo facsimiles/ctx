@@ -20,7 +20,7 @@
 #define CTX_SHAPE_CACHE       1
 #include <immintrin.h> // is detected by ctx, and enables AVX2
 
-#define CTX_MAX_JOURNAL_SIZE   1024*32
+#define CTX_MAX_JOURNAL_SIZE     1024*64
 
 #define CTX_IMPLEMENTATION
 #include "ctx.h"

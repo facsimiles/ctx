@@ -13,7 +13,7 @@
 //#include "unscii-16.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "../tools/stb_truetype.h"
+#include "stb_truetype.h"
 
 #define CTX_BACKEND_TEXT         1
 #define CTX_PARSER               1
@@ -28,6 +28,7 @@
 #define CTX_SHAPE_CACHE_DIM      (64*64)
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
 #define CTX_MATH                 1
+#define CTX_MAX_JOURNAL_SIZE     1024*64
 //#define CTX_RASTERIZER_AA        5
 //#define CTX_RASTERIZER_FORCE_AA  1
 

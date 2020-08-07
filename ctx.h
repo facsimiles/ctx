@@ -981,7 +981,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * edgelist and renderstram.
  */
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   10240
+#define CTX_MIN_JOURNAL_SIZE   1024*10
 #endif
 
 /* The maximum size we permit the renderstream to grow to,
@@ -4883,7 +4883,7 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
   Ctx *ctx = data;
   CtxEvent *copy;
   if (event->type == CTX_KEY_DOWN && !strcmp (event->string, "idle"))
-          return;
+    return;
   copy = malloc (sizeof (CtxEvent));
   *copy = *event;
   ctx_list_append_full (&ctx->events.events, copy, (void*)ctx_event_free, NULL);
@@ -4905,7 +4905,7 @@ void ctx_reset (Ctx *ctx)
   if (ctx->events.ctx_get_event_enabled)
   {
     ctx_clear_bindings (ctx);
-    ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
+    ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height+1,
                      CTX_PRESS|CTX_RELEASE|CTX_MOTION, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
     ctx_listen_full (ctx, 0,0,0,0,
