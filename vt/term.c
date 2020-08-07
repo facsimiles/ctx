@@ -393,7 +393,7 @@ void render_fun (void *data)
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
-  int width = 1024;
+  int width = 1280;
   int height = 768;
   Ctx *ctx = ctx_new_ui (width, height);
   width = ctx_width (ctx);

@@ -217,6 +217,12 @@ void _ctx_set_transformation (Ctx *ctx, int transformation);
 Ctx *ctx_hasher_new (int width, int height, int cols, int rows);
 uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row);
 
+#ifdef _BABL_H
+#define CTX_BABL 1
+#else
+#define CTX_BABL 0
+#endif
+
 /* If cairo.h is included before ctx.h add cairo integration code
  */
 #ifdef CAIRO_H
@@ -233,12 +239,12 @@ uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row);
 
 #if CTX_SDL
 #define ctx_mutex_t            SDL_mutex
-#define ctx_create_mutex()     SDL_CreateMutex
+#define ctx_create_mutex()     SDL_CreateMutex()
 #define ctx_lock_mutex(a)      SDL_LockMutex(a)
 #define ctx_unlock_mutex(a)    SDL_UnlockMutex(a)
 #else
 #define ctx_mutex_t           int
-#define ctx_create_mutex()    0
+#define ctx_create_mutex()    NULL
 #define ctx_lock_mutex(a)   
 #define ctx_unlock_mutex(a)  
 #endif
@@ -402,10 +408,10 @@ _CtxGlyph
   float    y;
 };
 
-void ctx_fill_rule        (Ctx *ctx, CtxFillRule fill_rule);
-void ctx_line_cap         (Ctx *ctx, CtxLineCap cap);
-void ctx_line_join        (Ctx *ctx, CtxLineJoin join);
-void ctx_compositing_mode (Ctx *ctx, CtxCompositingMode mode);
+void ctx_fill_rule            (Ctx *ctx, CtxFillRule fill_rule);
+void ctx_line_cap             (Ctx *ctx, CtxLineCap cap);
+void ctx_line_join            (Ctx *ctx, CtxLineJoin join);
+void ctx_compositing_mode     (Ctx *ctx, CtxCompositingMode mode);
 int  ctx_set_renderstream     (Ctx *ctx, void *data, int length);
 int  ctx_append_renderstream  (Ctx *ctx, void *data, int length);
 
@@ -415,11 +421,14 @@ int  ctx_append_renderstream  (Ctx *ctx, void *data, int length);
 void  ctx_glyphs        (Ctx        *ctx,
                          CtxGlyph   *glyphs,
                          int         n_glyphs);
+
 void  ctx_glyphs_stroke (Ctx       *ctx,
                          CtxGlyph   *glyphs,
                          int         n_glyphs);
+
 void  ctx_text          (Ctx        *ctx,
                          const char *string);
+
 void  ctx_text_stroke   (Ctx        *ctx,
                          const char *string);
 
@@ -614,8 +623,6 @@ float ctx_pointer_y (Ctx *ctx);
 void  ctx_freeze (Ctx *ctx);
 void  ctx_thaw   (Ctx *ctx);
 
-
-
 /* The following functions drive the event delivery, registered callbacks
  * are called in response to these being called.
  */
@@ -655,11 +662,11 @@ typedef enum
   // arguments.
   CTX_LINE_TO          = 'L', // x y
   CTX_MOVE_TO          = 'M', // x y
-  CTX_BEGIN_PATH         = 'N',
+  CTX_BEGIN_PATH       = 'N',
   CTX_SCALE            = 'O', // xscale yscale
   CTX_NEW_PAGE         = 'P', // - NYI
   CTX_QUAD_TO          = 'Q', // cx cy x y
-  CTX_VIEW_BOX        = 'R', // x y width height
+  CTX_VIEW_BOX         = 'R', // x y width height
   CTX_SMOOTH_TO        = 'S', // cx cy x y
   CTX_SMOOTHQ_TO       = 'T', // x y
   CTX_RESET            = 'U', //
@@ -8205,6 +8212,7 @@ ctx_init_uv (CtxRasterizer *rasterizer,
   *vd = (v1-*v0) / (count);
 }
 
+#if 0
 static void
 ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
@@ -8235,6 +8243,7 @@ ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
     dst+=components;
   }
 }
+#endif
 
 static void
 ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
@@ -8382,6 +8391,7 @@ ctx_porter_duff_factors(mode, foo, bar)\
   }\
 }
 
+#if 0
 static void
 ctx_u8_source_over_normal_color (int components,
                                  CtxRasterizer         *rasterizer,
@@ -8415,6 +8425,7 @@ ctx_u8_source_over_normal_color (int components,
       dst+=components;
     }
 }
+#endif
 
 #if CTX_AVX2
 #define lo_mask   _mm256_set1_epi32 (0x00FF00FF)
@@ -20866,7 +20877,7 @@ Ctx *ctx_new_braille (int width, int height)
 
 inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
-  int width =  sdl->width;
+  //int width =  sdl->width;
   int count = 0;
   while (sdl->shown_frame != sdl->render_frame && count < 10000)
   {
@@ -20957,7 +20968,7 @@ void render_fun (void **data)
             int height = sdl->height / CTX_HASH_ROWS;
 
             Ctx *host = sdl->host[no];
-            CtxRasterizer *rasterizer = host->renderer;
+            CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
 #if 1 // merge horizontally adjecant tiles of same affinity
             while (col + 1 < CTX_HASH_COLS &&
                    sdl->tile_affinity[hno+1] == no)

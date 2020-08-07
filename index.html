@@ -339,19 +339,19 @@ implementations for normal + source-over does however still make sense.</p>
 <p>ctx is designed from the beginning to act as a GPU in software for modern
 micontrontrollers - powerful enough to have hundres of megahertz and possibly
 multiple cores.  Different optimization settings of the compiler give a wide
-range for the performance/binary size tradeoff.  The rendering engine for
-<tt>RGBA8</tt> and an embedded font for in less than 64kb, the raw numbers on
-x86_64 (i686 gives similar sizes).</p>
+range for the performance/binary size tradeoff. But the small footprint in RAM
+and ability to use a shared read-only display list makes the ctx rasterizer
+core also useful in multi-threaded rendering.</p>
 
 <pre>
 font data size:    15291 bytes (A sans font subsetted to only ASCII)
-RGBA8 rasterizer:  38869 bytes (-Os ~38kb  - with features disabled ~29kb
+RGBA8 rasterizer:  38869 bytes (-Os ~38kb - with many features disabled ~29kb
                                 -O0  90-631kb
                                 -O2  57-114kb
                                 -Ofast/-O3  76-181kb, size bump due to
                                 SIMD tree-vectorizer)
 
-ctx parser:        22232 bytes (not needed for direct use from C, but also
+ctx parser:        20512 bytes (not needed for direct use from C, but also
                                 on embedded this can be useful for ease of
                                 integration with other languages or directly
                                 using ctx+mictrocontroller+display as a serial
@@ -373,9 +373,8 @@ if the maximum number of vertices in a path is reduced this can be below
         <h2 id='roadmap'>semi-ordered roadmap / wishlist</h2>
 	<ul>
         <li>reduce size and improve performance</li>
-        <li>Tidy up SDL2 wrapping code - and include it when <tt>SDL.h</tt> has been included.</li>
         <li>Document/clean up network transparent UI protocol using ctx
-                syntax. (<a href='not-really-a-demo.png'>test</a>, <a href='multi-client.png'>test</a>)</li>
+            syntax. (<a href='not-really-a-demo.png'>test</a>, <a href='multi-client.png'>test</a>)</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
 	<li>point in fill/stroke, (current in_fill API uses path boundingbox)</li>
         <li>texture upload as part of ctx syntax</li>
@@ -396,13 +395,11 @@ if the maximum number of vertices in a path is reduced this can be below
         </li>
         <li>SVG/HTML parser renderer (in progress, from mrg)</li>
         <li>PDF/SVG generation (can already be done through cairo integration)</li>
-    
         <li>Add API for integrating device-N with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
-        <li>optional 32bit float implementation of rasterizer, continuing to produce 8bit alpha coverage.</li>
-        <li>32bit float coverage computation in rasterizer</li>
-        <li>More SIMD code (the common RGBA8 cases are the only bit covered
-            thus far, for floating point formats making the existing code
-            more autovectorizer friendly is a priority.)</li>
+        <li>32bit float coverage from rasterizer - right now we support 32f images; but composite them with 8bit alpha masks.</li>
+        <li>More SIMD code (the common RGBA8 cases for AVX2 are the only bit
+            covered thus far, for floating point formats making the
+            existing code more autovectorizer friendly is a priority.)</li>
 	</ul>
 
         <h3 id='example'>minimal example code</h3>

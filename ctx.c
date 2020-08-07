@@ -27,9 +27,9 @@
 #define CTX_SHAPE_CACHE_MAX_DIM  96
 #define CTX_SHAPE_CACHE_DIM      (64*64)
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
+#define CTX_MATH                 1
 //#define CTX_RASTERIZER_AA        5
 //#define CTX_RASTERIZER_FORCE_AA  1
-#define CTX_MATH                 1
 
 #include <immintrin.h> // is detected by ctx, and enables AVX2
 
@@ -470,18 +470,6 @@ int parse_main (int argc, char **argv)
   return 0;
 }
 
-
-// the render API could be a PUT of new contents
-// replacing old contents
-// ...
-// into a small conceptual folder managed per client by the
-// compositor.
-//
-// insert message in the command stream requesting response..
-// get message back that data has been presented
-//
-// can reuse other similar commands for this purpose.
-
 //
 //  capabilities:
 //     font-upload
@@ -502,23 +490,6 @@ int parse_main (int argc, char **argv)
 // set cap-mic-input desired
 // set cap-mic-output
 //
-// launch "ctx bash wallpaper.sh"
-// launch "ctx bash panel.sh"
-//
-//  listen drag "titlebar"
-//
-// "ctx test.svg" or "ctx test.ctx" should launch a ctx client that
-// shows this static bit of data. In a resizable window.
-//
-//  make mmm able to run in a ctx compatible mode with hash based
-//  change detection
-//
-// get_element_by_id .. should be able to return a mockable element
-// that is also used in html versions.
-//
-// ctx launch ui test.jpg
-//
-//   memory budget tuning
 
 static int usage (void)
 {
@@ -546,7 +517,6 @@ static int usage (void)
     "  --rows   rows   configures number of em-rows, cols is implied\n");
   return 0;
 }
-
 
 const char *get_suffix (const char *path)
 {
@@ -593,6 +563,12 @@ _file_get_contents (const char     *path,
   *contents = (void *) buffer;
   buffer[size] = 0;
   return 0;
+}
+
+static void ui_drag (CtxEvent *event, void *data1, void *data2)
+{
+  fprintf (stderr, "%f %f\n", event->x, event->y);
+  fprintf (stderr, "%f %f\n", event->delta_x, event->delta_y);
 }
 
 int main (int argc, char **argv)
@@ -761,6 +737,10 @@ int main (int argc, char **argv)
   fprintf (stderr, "%s [%s]\n", dest_path, get_suffix (dest_path) );
 #endif
   Ctx *ctx;
+  int dirty = 1;
+  float offset_x = 0.0;
+  float offset_y = 0.0;
+  float scale = 1.0f;
 again:
   ctx = ctx_new ();
   _ctx_set_transformation (ctx, 0);
@@ -799,19 +779,66 @@ again:
   if (outputmode == CTX_OUTPUT_MODE_UI)
   {
     static Ctx *ui = NULL;
-    if (!ui) ui = ctx_new_ui (width, height);
+    if (!ui)
+    {
+      ui = ctx_new_ui (width, height);
+      ctx_get_event (ui); // forces enabling of get event
+    }
     for (;;)
     {
+      if (dirty)
+      {
       ctx_reset (ui);
+      ctx_save (ui);
+      ctx_translate (ui, offset_x, offset_y);
+      ctx_scale (ui, scale, scale);
       ctx_render_ctx (ctx, ui);
+      ctx_restore (ui);
+#if 1
+      ctx_begin_path (ctx);
+      ctx_rectangle (ctx, 0, 0, width, height);
+      ctx_listen (ctx, CTX_MOTION, ui_drag, NULL, NULL);
+      ctx_begin_path (ctx);
+#endif
       ctx_flush (ui);
+      dirty = 0;
+      }
 
       CtxEvent *event;
-      if ((event = ctx_get_event (ui)))
+      while ((event = ctx_get_event (ui)))
       {
-        if (event->type == CTX_KEY_DOWN)
+        switch (event->type)
         {
-          if (!strcmp (event->string, "q")) exit (0);
+          case CTX_SCROLL:
+             fprintf (stderr, "scroll!\n");
+             break;
+          case CTX_RELEASE:
+             fprintf (stderr, "release\n");
+             dirty++;
+             break;
+          case CTX_PRESS:
+             fprintf (stderr, "press\n");
+             dirty++;
+             break;
+          case CTX_MOTION:
+             if (ctx_pointer_is_down (ui, 0))
+             {
+               offset_x += event->delta_x;
+               offset_y += event->delta_y;
+             dirty++;
+             //fprintf (stderr, "drag\n");
+             }
+             else
+             {
+             //fprintf (stderr, "motion\n");
+             }
+             break;
+          case CTX_KEY_DOWN:
+             dirty++;
+          if (!strcmp (event->string, "+")) scale *= 1.1;
+          else if (!strcmp (event->string, "=")) scale *= 1.1;
+          else if (!strcmp (event->string, "-")) scale /= 1.1;
+          else if (!strcmp (event->string, "q")) exit (0);
           else if (!strcmp (event->string, "resize-event"))
           {
              width = ctx_width (ui);
@@ -819,10 +846,14 @@ again:
              ctx_free (ctx);
              goto again;
           }
-        }
-        else
-        {
-          usleep (100);
+          else
+          {
+             fprintf (stderr, "key-down: %s\n", event->string);
+          }
+          break;
+          default:
+            usleep (100);
+          break;
         }
       }
     }
