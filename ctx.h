@@ -2106,11 +2106,10 @@ typedef enum CtxOutputmode
 {
   CTX_OUTPUT_MODE_QUARTER,
   CTX_OUTPUT_MODE_BRAILLE,
+  CTX_OUTPUT_MODE_SIXELS,
   CTX_OUTPUT_MODE_GRAYS,
   CTX_OUTPUT_MODE_CTX,
   CTX_OUTPUT_MODE_CTX_COMPACT,
-  CTX_OUTPUT_MODE_CTX_TERM,
-  CTX_OUTPUT_MODE_SIXELS,
   CTX_OUTPUT_MODE_UI
 } CtxOutputmode;
 
@@ -7443,7 +7442,6 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
         }
       rasterizer->edge_pos++;
     }
-  ctx_rasterizer_discard_edges (rasterizer);
 }
 
 CTX_INLINE static int ctx_compare_edges2 (const void *ap, const void *bp)
@@ -11565,8 +11563,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     int halfstep  = aa/2 + 1;
 #endif
     rasterizer->needs_aa = 0;
-    rasterizer->scanline = scan_start;
+    rasterizer->scanline = scan_start-1;
     ctx_rasterizer_feed_edges (rasterizer);
+    ctx_rasterizer_discard_edges (rasterizer);
 
   for (rasterizer->scanline = scan_start; rasterizer->scanline <= scan_end;)
     {
@@ -11595,6 +11594,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
               rasterizer->scanline ++;
               ctx_rasterizer_increment_edges (rasterizer, 1);
               ctx_rasterizer_feed_edges (rasterizer);
+  ctx_rasterizer_discard_edges (rasterizer);
             }
         }
 #if CTX_RASTERIZER_FORCE_AA==0
@@ -11606,6 +11606,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           ctx_rasterizer_increment_edges (rasterizer, halfstep2);
           rasterizer->scanline += rasterizer->aa;
           ctx_rasterizer_feed_edges (rasterizer);
+  ctx_rasterizer_discard_edges (rasterizer);
         }
 #endif
         {
@@ -19070,6 +19071,7 @@ void _ctx_resized (Ctx *ctx, int width, int height, long time)
     event.stop_propagate = 0;
     _ctx_emit_cb_item (ctx, item, &event, CTX_KEY_DOWN, 0, 0);
   }
+
 }
 
 int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time)
@@ -20447,7 +20449,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 3 threads 27fps
  // 4 threads 29fps
 
-#define CTX_THREADS  1
+#define CTX_THREADS  2
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
@@ -20481,8 +20483,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 4
-#define CTX_HASH_COLS 4
+#define CTX_HASH_ROWS 8
+#define CTX_HASH_COLS 8
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20644,12 +20646,12 @@ static int ctx_sdl_consume_events (Ctx *ctx)
       case SDL_WINDOWEVENT:
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
-          ctx_lock_mutex (sdl->mutex);
           while (sdl->threads_done != 0 &&
                  sdl->threads_done != CTX_THREADS) {
                   usleep (100);
                   fprintf (stderr, ".");
           }
+          ctx_lock_mutex (sdl->mutex);
           int width = event.window.data1;
           int height = event.window.data2;
           SDL_DestroyTexture (sdl->texture);

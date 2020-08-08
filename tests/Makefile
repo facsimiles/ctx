@@ -85,26 +85,26 @@ clean:
 	rm -rf gray1 png gray8 png-640x240 png-480x640
 
 gray1/%: %.ctx ../ctx 
-	../ctx $< --width 160 --height 80 GRAY1 > $@
+	../ctx $< --width 160 --height 80 --rows 5 --cols 10 GRAY1 > $@
 png/%.png: %.ctx ../ctx 
-	../ctx $< $@ --width 160 --height 80
+	../ctx $< $@ --width 160 --height 80 --cols 40 --rows 8
 png/%.png: %.svg ../ctx 
-	../ctx $< $@ --width 160 --height 80
+	../ctx $< $@ --width 160 --height 80 --cols 40 --rows 8
 gray1/%: %.svg ../ctx 
-	../ctx $< --width 160 --height 80 GRAY1 > $@
+	../ctx $< --width 160 --height 80 GRAY1 --cols 40 --rows 8 > $@
 png-80x160/%.png: %.ctx ../ctx 
-	../ctx $< $@ --width 80 --height 160 --rows 10
+	../ctx $< $@ --width 80 --height 160 --rows 10 --rows 40 --cols 8
 png-80x160/%.png: %.svg ../ctx 
-	../ctx $< $@ --width 80 --height 160 --rows 10
+	../ctx $< $@ --width 80 --height 160 --rows 10 --rows 40 --cols 8
 png-640x240/%.png: %.ctx ../ctx 
-	../ctx $< $@ --width 640 --height 240
+	../ctx $< $@ --width 640 --height 240 --rows 12
 png-640x240/%.png: %.svg ../ctx 
-	../ctx $< $@ --width 640 --height 240
+	../ctx $< $@ --width 640 --height 240 --rows 12
 png-480x640/%.png: %.ctx ../ctx 
 	../ctx $< $@ --rows 24 --width 480 --height 640
 png-480x640/%.png: %.svg ../ctx 
 	../ctx $< $@ --rows 24 --width 480 --height 640
 gray8/%: %.ctx ../ctx
-	../ctx $< GRAY8 --width 80 --height 24 > $@
+	../ctx $< GRAY8 --width 80 --height 24 --rows 3 --cols 12 > $@
 gray8/%: %.svg ../ctx
-	../ctx $< GRAY8 --width 80 --height 24 > $@
+	../ctx $< GRAY8 --width 80 --height 24 --rows 3 --cols 12 > $@

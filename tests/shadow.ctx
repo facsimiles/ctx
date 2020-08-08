@@ -4,7 +4,7 @@ fill
 
 
 rgba shadowColor 0 0 0 1
-shadowBlur 0.5@
+shadowBlur 0.3@
 shadowOffsetX 0.5@
 shadowOffsetY 0.5@
 
@@ -17,7 +17,7 @@ rgba 0 0 0 1.0
 
 rgb 1 0 0
 
-fontSize 1.0@
+fontSize 1.1@
 moveTo 50% 50%
 textAlign right
 textBaseline middle
@@ -46,7 +46,7 @@ rgba shadowColor 0 0 0 1
 rgb 0.5 1 0.8
 
 text "shadow"
-shadowBlur 4
+shadowBlur 3@
 
 moveTo 15% 30%
 lineTo 14% 40%

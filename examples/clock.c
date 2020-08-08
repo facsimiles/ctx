@@ -109,7 +109,7 @@ int main (int argc, char **argv)
   const CtxEvent *event;
   int mx, my;
   int do_quit = 0;
-  //event = ctx_get_event (ctx, 1000, &mx, &my);
+  event = ctx_get_event (ctx);
   //fprintf (stderr, "[%s :%i %i]", event, mx, my);
   //
   while (!do_quit)

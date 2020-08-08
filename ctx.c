@@ -504,18 +504,20 @@ static int usage (void)
     "can have other clients. The interpreter cannot have the same extension\n"
     "as one of the supported formats.\n"
     "\n"
-    "options available:\n"
+    "options:\n"
     "  --clear         clear and home between each frame\n"
     "  --braille       unicode braille char output mode\n"
     "  --quarter       unicode quad char output mode\n"
-    "  --ctx           output raw ctx to terminal\n"
+    "  --ctx           output ctx to terminal\n"
+    "  --ctx-compact   output compact ctx to terminal\n"
 
     //  --color         use color in output\n"
-    "  --width  pixels sets width of canvas\n"
-    "  --height pixels sets height of canvas\n"
     //"  --x      set pixel position of canvas (only means something when running in compositor)\n"
     //"  --y      set pixel position of canvas (only means something when running in compositor\n"
-    "  --rows   rows   configures number of em-rows, cols is implied\n");
+    "  --width  pixels sets width of canvas\n"
+    "  --height pixels sets height of canvas\n"
+    "  --rows   rows   configures number of em-rows\n"
+    "  --cols   cols   configures number of em-cols\n");
   return 0;
 }
 
@@ -576,13 +578,11 @@ int main (int argc, char **argv)
 {
   const char *source_path = NULL;
   const char *dest_path = NULL;
-  int   source_arg_no = 1;
-  //int width =  512;
-  //int height = 512;
-  int width = 160;
-  int height = 80;
-  float cols = 30;
-  float rows = 5;
+  //int   source_arg_no = 1;
+  int width=-1;//=  ctx_terminal_width ();
+  int height=-1;// = ctx_terminal_height ();
+  float cols=-1;// = ctx_terminal_cols ();
+  float rows=-1;// = ctx_terminal_rows ();
 
 #if 0
   for (int i = 0; i < 100000; i++)
@@ -609,8 +609,6 @@ int main (int argc, char **argv)
           if (!strcmp ( argv[i], "--quarter") )
             {
               outputmode = CTX_OUTPUT_MODE_QUARTER;
-              width = 160;
-              height = 48;
             }
           else if (!strcmp ( argv[i], "--ui") )
             {
@@ -621,12 +619,6 @@ int main (int argc, char **argv)
           else if (!strcmp ( argv[i], "--braille") )
             {
               outputmode = CTX_OUTPUT_MODE_BRAILLE;
-              width = 160;
-              height = 80;
-            }
-          else if (!strcmp ( argv[i], "--grays") )
-            {
-              outputmode = CTX_OUTPUT_MODE_GRAYS;
             }
           else if (!strcmp ( argv[i], "--ctx-compact") )
             {
@@ -635,10 +627,6 @@ int main (int argc, char **argv)
           else if (!strcmp ( argv[i], "--ctx") )
             {
               outputmode = CTX_OUTPUT_MODE_CTX;
-            }
-          else if (!strcmp ( argv[i], "--ctx-term") )
-            {
-              outputmode = CTX_OUTPUT_MODE_CTX_TERM;
             }
           if (!strcmp ( argv[i], "--width") )
             {
@@ -683,7 +671,7 @@ int main (int argc, char **argv)
           if (!source_path)
             {
               source_path = argv[i];
-              source_arg_no = i;
+              //source_arg_no = i;
             }
           else
             {
@@ -696,7 +684,53 @@ int main (int argc, char **argv)
             }
         }
     }
-  cols = width / (height / rows);
+
+  if (dest_path && strstr (dest_path, "GRAY2")) outputmode = CTX_OUTPUT_MODE_GRAYS;
+  if (dest_path && strstr (dest_path, "GRAY4")) outputmode = CTX_OUTPUT_MODE_GRAYS;
+  if (dest_path && strstr (dest_path, "GRAY8")) outputmode = CTX_OUTPUT_MODE_GRAYS;
+
+  if (width <= 0 || height <= 0)
+  {
+    width = ctx_terminal_width ();
+    height = ctx_terminal_height ();
+  switch (outputmode)
+  {
+    case CTX_OUTPUT_MODE_GRAYS:
+      if (rows < 0) rows = ctx_terminal_rows ();
+      if (cols < 0) cols = ctx_terminal_cols ();
+      width  = cols;
+      height = rows;
+      rows /= 8;
+      cols /= 8;
+      break;
+    case CTX_OUTPUT_MODE_QUARTER:
+      if (rows < 0) rows = ctx_terminal_rows ();
+      if (cols < 0) cols = ctx_terminal_cols ();
+      width  = cols * 2;
+      height = rows * 2;
+      rows /= 5;
+      cols /= 5;
+      break;
+    case CTX_OUTPUT_MODE_BRAILLE:
+      if (rows < 0) rows = ctx_terminal_rows ();
+      if (cols < 0) cols = ctx_terminal_cols ();
+      width  = cols * 2;
+      height = rows * 4;
+      rows /= 6;
+      cols /= 6;
+      break;
+    case CTX_OUTPUT_MODE_SIXELS:
+    case CTX_OUTPUT_MODE_CTX:
+    case CTX_OUTPUT_MODE_UI:
+    case CTX_OUTPUT_MODE_CTX_COMPACT:
+      if (rows < 0) rows = ctx_terminal_rows ();
+      if (cols < 0) cols = ctx_terminal_cols ();
+      break;
+  }
+  }
+
+  if (cols < 0)
+    cols = width / (height / rows);
 #if 0
   if (dest_path)
     {
@@ -863,14 +897,15 @@ again:
 
   if (outputmode == CTX_OUTPUT_MODE_CTX)
     {
-      fprintf (stdout, "\e[H\e[?25l\e[?7020h");
+      // determine terminal size
+      fprintf (stdout, "\e[H\e[?25l\e[?7020h\nreset\n");
       ctx_render_stream (ctx, stdout, 1);
       fprintf (stdout, "\nX\n\e[?25h");
       exit (0);
     }
   if (outputmode == CTX_OUTPUT_MODE_CTX_COMPACT)
     {
-      fprintf (stdout, "\e[H\e[?25l\e[?7020h");
+      fprintf (stdout, "\e[H\e[?25l\e[?7020h\nreset\n");
       ctx_render_stream (ctx, stdout, 0);
       fprintf (stdout, "\nX\n\[e?25h");
       exit (0);
