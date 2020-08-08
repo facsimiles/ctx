@@ -3923,10 +3923,10 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_REL_CURVE_TO:
       case CTX_APPLY_TRANSFORM:
       case CTX_COLOR:
+      case CTX_ROUND_RECTANGLE:
       case CTX_SHADOW_COLOR:
         return 2;
       case CTX_RECTANGLE:
-      case CTX_ROUND_RECTANGLE:
       case CTX_VIEW_BOX:
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
@@ -14565,6 +14565,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       case CTX_ARC_TO:
       case CTX_REL_ARC_TO:
       case CTX_RECTANGLE:
+      case CTX_ROUND_RECTANGLE:
         ctx_renderstream_add_entry (&ctx->current_path, entry);
         break;
       default:
@@ -15512,6 +15513,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
         break;
 #endif
       case CTX_RECTANGLE:
+      case CTX_ROUND_RECTANGLE: // XXX - arcs
         cairo_rectangle (cr, c->rectangle.x, c->rectangle.y,
                          c->rectangle.width, c->rectangle.height);
         break;
@@ -16646,13 +16648,13 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
       case CTX_RECTANGLE:
-      case CTX_ROUND_RECTANGLE:
       case CTX_REL_SMOOTH_TO:
       case CTX_VIEW_BOX:
       case CTX_SMOOTH_TO:
         return 4;
       case CTX_ARC_TO:
       case CTX_REL_ARC_TO:
+      case CTX_ROUND_RECTANGLE:
         return 5;
       case CTX_ARC:
       case CTX_CURVE_TO:
@@ -17433,39 +17435,39 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           { parser->command = CTX_TEXT; }
         break;
       case CTX_REL_LINE_TO:
-        ctx_rel_line_to (ctx, arg (0), arg (1) );
-        parser->pcx += arg (0);
-        parser->pcy += arg (1);
+        ctx_rel_line_to (ctx, arg(0), arg(1) );
+        parser->pcx += arg(0);
+        parser->pcy += arg(1);
         break;
       case CTX_REL_MOVE_TO:
-        ctx_rel_move_to (ctx, arg (0), arg (1) );
-        parser->pcx += arg (0);
-        parser->pcy += arg (1);
+        ctx_rel_move_to (ctx, arg(0), arg(1) );
+        parser->pcx += arg(0);
+        parser->pcy += arg(1);
         parser->left_margin = ctx_x (ctx);
         break;
       case CTX_LINE_WIDTH:
-        ctx_line_width (ctx, arg (0) );
+        ctx_line_width (ctx, arg(0) );
         break;
       case CTX_SHADOW_COLOR:
-        ctx_shadow_rgba (ctx, arg (0), arg(1), arg(2), arg(3));
+        ctx_shadow_rgba (ctx, arg(0), arg(1), arg(2), arg(3));
         break;
       case CTX_SHADOW_BLUR:
-        ctx_shadow_blur (ctx, arg (0) );
+        ctx_shadow_blur (ctx, arg(0) );
         break;
       case CTX_SHADOW_OFFSET_X:
-        ctx_shadow_offset_x (ctx, arg (0) );
+        ctx_shadow_offset_x (ctx, arg(0) );
         break;
       case CTX_SHADOW_OFFSET_Y:
-        ctx_shadow_offset_y (ctx, arg (0) );
+        ctx_shadow_offset_y (ctx, arg(0) );
         break;
       case CTX_LINE_JOIN:
-        ctx_line_join (ctx, (CtxLineJoin) arg (0) );
+        ctx_line_join (ctx, (CtxLineJoin) arg(0) );
         break;
       case CTX_LINE_CAP:
-        ctx_line_cap (ctx, (CtxLineCap) arg (0) );
+        ctx_line_cap (ctx, (CtxLineCap) arg(0) );
         break;
       case CTX_COMPOSITING_MODE:
-        ctx_compositing_mode (ctx, (CtxCompositingMode) arg (0) );
+        ctx_compositing_mode (ctx, (CtxCompositingMode) arg(0) );
         break;
       case CTX_BLEND_MODE:
         {
@@ -17475,44 +17477,47 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         }
         break;
       case CTX_FILL_RULE:
-        ctx_fill_rule (ctx, (CtxFillRule) arg (0) );
+        ctx_fill_rule (ctx, (CtxFillRule) arg(0) );
         break;
       case CTX_TEXT_ALIGN:
-        ctx_text_align (ctx, (CtxTextAlign) arg (0) );
+        ctx_text_align (ctx, (CtxTextAlign) arg(0) );
         break;
       case CTX_TEXT_BASELINE:
-        ctx_text_baseline (ctx, (CtxTextBaseline) arg (0) );
+        ctx_text_baseline (ctx, (CtxTextBaseline) arg(0) );
         break;
       case CTX_TEXT_DIRECTION:
-        ctx_set_text_direction (ctx, (CtxTextDirection) arg (0) );
+        ctx_set_text_direction (ctx, (CtxTextDirection) arg(0) );
         break;
       case CTX_IDENTITY:
         ctx_identity (ctx);
         break;
       case CTX_RECTANGLE:
-        ctx_rectangle (ctx, arg (0), arg (1), arg (2), arg (3) );
+        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3) );
+        break;
+      case CTX_ROUND_RECTANGLE:
+        ctx_round_rectangle (ctx, arg(0), arg(1), arg(2), arg(3), arg(4));
         break;
       case CTX_VIEW_BOX:
-        ctx_view_box (ctx, arg (0), arg (1), arg (2), arg (3) );
+        ctx_view_box (ctx, arg(0), arg(1), arg(2), arg(3) );
         break;
       case CTX_LINEAR_GRADIENT:
-        ctx_linear_gradient (ctx, arg (0), arg (1), arg (2), arg (3) );
+        ctx_linear_gradient (ctx, arg(0), arg(1), arg(2), arg(3) );
         break;
       case CTX_RADIAL_GRADIENT:
-        ctx_radial_gradient (ctx, arg (0), arg (1), arg (2), arg (3), arg (4), arg (5) );
+        ctx_radial_gradient (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
         break;
       case CTX_GRADIENT_STOP:
         {
           float red, green, blue, alpha;
           ctx_parser_get_color_rgba (parser, 1, &red, &green, &blue, &alpha);
-          ctx_gradient_add_stop (ctx, arg (0), red, green, blue, alpha);
+          ctx_gradient_add_stop (ctx, arg(0), red, green, blue, alpha);
         }
         break;
       case CTX_GLOBAL_ALPHA:
-        ctx_global_alpha (ctx, arg (0) );
+        ctx_global_alpha (ctx, arg(0) );
         break;
       case CTX_TEXTURE:
-        ctx_texture (ctx, arg (0), arg(1), arg(2));
+        ctx_texture (ctx, arg(0), arg(1), arg(2));
         break;
       case CTX_BEGIN_PATH:
         ctx_begin_path (ctx);
@@ -17601,6 +17606,12 @@ static void ctx_parser_transform_percent (CtxParser *parser, CtxCode code, int a
               { *value *= ( (parser->height) /100.0); }
           }
         break;
+      case CTX_ROUND_RECTANGLE:
+        if (arg_no == 4)
+        {
+          { *value *= ( (parser->height) /100.0); }
+          return;
+        }
       default: // even means x coord
         if (arg_no % 2 == 0)
           { *value  *= ( (parser->width) /100.0); }
