@@ -5707,7 +5707,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           state->gstate.source.linear_gradient.dy = dy;
           state->gstate.source.linear_gradient.start = start;
           state->gstate.source.linear_gradient.end = end;
-          state->gstate.source.linear_gradient.rdelta = (end-start)!=0.0?1.0f/(end - start):0.0;
+          state->gstate.source.linear_gradient.rdelta = (end-start)!=0.0?1.0f/(end - start):1.0;
           state->gstate.source.type = CTX_SOURCE_LINEAR_GRADIENT;
           state->gstate.source.transform = state->gstate.transform;
           ctx_matrix_invert (&state->gstate.source.transform);
@@ -10793,8 +10793,7 @@ ctx_fragment_linear_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
                 g->linear_gradient.length) -
-              g->linear_gradient.start) /
-            (g->linear_gradient.rdelta);
+              g->linear_gradient.start) * (g->linear_gradient.rdelta);
   ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0, rgba);
   ((float*)out)[0] = ctx_float_color_rgb_to_gray (rasterizer->state, rgba);
   ((float*)out)[1] = rgba[3];
@@ -13849,7 +13848,7 @@ ctx_fragment_linear_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y
   CtxSource *g = &rasterizer->state->gstate.source;
   float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
                 g->linear_gradient.length) -
-              g->linear_gradient.start) / (g->linear_gradient.rdelta);
+              g->linear_gradient.start) * (g->linear_gradient.rdelta);
   ctx_fragment_gradient_1d_GRAYA8 (rasterizer, v, 1.0, (uint8_t*)out);
 #if CTX_DITHER
   ctx_dither_graya_u8 ((uint8_t*)out, x, y, rasterizer->format->dither_red_blue,
