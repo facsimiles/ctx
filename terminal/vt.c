@@ -2012,12 +2012,96 @@ static void vt_ctx_exit (void *data)
 
 static int ct_set_prop (VT *vt, uint32_t key_hash, const char *val)
 {
+#if 1
   fprintf (stderr, "%i: %s\n", key_hash, val);
+#else
+  float fval = strtod (val, NULL);
+  CtxClient *client = client_by_id (ct->id);
+  uint32_t val_hash = ctx_strhash (val, 0);
+  if (!client)
+    return 0;
+
+  if (key_hash == ctx_strhash("start_move", 0))
+  {
+    start_moving (client);
+    moving_client = 1;
+    return 0;
+  }
+
+  //fprintf (stderr, "%i %s\n", key_hash, val);
+
+// set "pcm-hz"       "8000"
+// set "pcm-bits"     "8"
+// set "pcm-encoding" "ulaw"
+// set "play-pcm"     "d41ata312313"
+// set "play-pcm-ref" "foo.wav"
+
+// get "free"
+// storage of blobs for referencing when drawing or for playback
+// set "foo.wav"      "\3\1\1\4\"
+// set "fnord.png"    "PNG12.4a312"
+
+  switch (key_hash)
+  {
+    case CTX_title:  client_set_title (ct->id, val); break;
+    case CTX_x:      client->x = fval; break;
+    case CTX_y:      client->y = fval; break;
+    case CTX_width:  client_resize (ct->id, fval, client->height); break;
+    case CTX_height: client_resize (ct->id, client->width, fval); break;
+    case CTX_action:
+      switch (val_hash)
+      {
+        case CTX_maximize:     client_maximize (client); break;
+        case CTX_unmaximize:   client_unmaximize (client); break;
+        case CTX_lower:        client_lower (client); break;
+        case CTX_lower_bottom: client_lower_bottom (client);  break;
+        case CTX_raise:        client_raise (client); break;
+        case CTX_raise_top:    client_raise_top (client); break;
+      }
+      break;
+  }
+  ct->rev++;
+  fprintf (stderr, "%s: %i %s %i\n", __FUNCTION__, key_hash, val, len);
+#endif
   return 0;
 }
 
 static int ct_get_prop (VT *vt, const char *key, const char **val, int *len)
 {
+#if 0
+  uint32_t key_hash = ctx_strhash (key, 0);
+  char str[4096]="";
+  fprintf (stderr, "%s: %s %i\n", __FUNCTION__, key, key_hash);
+  CtxClient *client = client_by_id (ct->id);
+  if (!client)
+    return 0;
+  switch (key_hash)
+  {
+    case CTX_title:
+      sprintf (str, "setkey %s %s\n", key, client->title);
+      break;
+    case CTX_x:      
+      sprintf (str, "setkey %s %i\n", key, client->x);
+      break;
+    case CTX_y:    
+      sprintf (str, "setkey %s %i\n", key, client->y);
+      break;
+    case CTX_width:
+      sprintf (str, "setkey %s %i\n", key, client->width);
+      break;
+    case CTX_height:
+      sprintf (str, "setkey %s %i\n", key, client->width);
+      break;
+    default:
+      sprintf (str, "setkey %s undefined\n", key);
+      break;
+  }
+  if (str[0])
+  {
+    vtpty_write ((void*)ct, str, strlen (str));
+    fprintf (stderr, "%s", str);
+  }
+#endif
   return 0;
 }
 
