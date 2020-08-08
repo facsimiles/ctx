@@ -202,10 +202,10 @@ static void ct_run_command (CT *vt, const char *command, int width, int height)
       unsetenv ("COLOR_TERM");
       unsetenv ("COLORTERM");
       unsetenv ("VTE_VERSION");
-      setenv ("TERM", "ctx", 1);
-      setenv ("CTX_VERSION", "0", 1);
-      system (command);
-      exit (0);
+      setenv   ("TERM", "ctx", 1);
+      setenv   ("CTX_VERSION", "0", 1);
+      system   (command);
+      exit     (0);
     }
   else if (vt->vtpty.pid < 0)
     {

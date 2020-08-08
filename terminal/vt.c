@@ -588,8 +588,7 @@ long vt_rev (VT *vt)
 }
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
-
-void client_set_title (int id, const char *new_title);
+static int ct_set_prop (VT *vt, uint32_t key_hash, const char *val);
 
 static void vt_set_title (VT *vt, const char *new_title)
 {
@@ -599,13 +598,13 @@ static void vt_set_title (VT *vt, const char *new_title)
     { free (vt->title); }
   vt->title = strdup (new_title);
   //client_set_title (vt->id, new_title);//vt->title);
+  ct_set_prop (vt, ctx_strhash ("title", 0), (char*)new_title);
 }
 
 const char *vt_get_title (VT *vt)
 {
   return vt->title;
 }
-
 
 static void vt_run_command (VT *vt, const char *command, const char *term);
 static void vtcmd_set_top_and_bottom_margins (VT *vt, const char *sequence);
@@ -2011,6 +2010,17 @@ static void vt_ctx_exit (void *data)
   //vt->ctxp = NULL;
 }
 
+static int ct_set_prop (VT *vt, uint32_t key_hash, const char *val)
+{
+  fprintf (stderr, "%i: %s\n", key_hash, val);
+  return 0;
+}
+
+static int ct_get_prop (VT *vt, const char *key, const char **val, int *len)
+{
+  return 0;
+}
+
 static void vtcmd_set_mode (VT *vt, const char *sequence)
 {
   int set = 1;
@@ -2170,7 +2180,7 @@ qagain:
                 vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                                            vt->cols * vt->cw, vt->rows * vt->ch,
                                            vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
-                                           NULL, NULL, NULL, vt_ctx_exit, vt);
+                                           (void*)ct_set_prop, (void*)ct_get_prop, vt, vt_ctx_exit, vt);
                 vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
                 vt->state = vt_state_ctx;
               }

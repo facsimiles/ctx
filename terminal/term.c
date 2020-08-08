@@ -118,7 +118,7 @@ ssize_t vtpty_read (void  *data, void *buf, size_t count)
 
 struct
 _CtxClient {
-  VT *vt;
+  VT           *vt;
   char         *title;
   int           x;
   int           y;
@@ -294,7 +294,7 @@ static void handle_event (const char *event)
         {
           for (int i = 0; i<700; i++)
             { close (i); }
-          execlp (execute_self, execute_self, ((char*)NULL), NULL);
+          execlp (execute_self, execute_self, NULL, NULL);
           exit (0);
         }
       fprintf (stderr, "!\n");
