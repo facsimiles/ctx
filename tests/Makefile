@@ -8,15 +8,16 @@ TEST_GRAY8= $(patsubst %, gray8/%, $(TEST_NAMES))
 TEST_PNG  = $(patsubst %, png/%.png, $(TEST_NAMES))
 TEST_PPNG  = $(patsubst %, png-80x160/%.png, $(TEST_NAMES))
 TEST_LPNG  = $(patsubst %, png-640x240/%.png, $(TEST_NAMES))
+TEST_LVGAPNG  = $(patsubst %, png-320x240/%.png, $(TEST_NAMES))
 TEST_LBPNG  = $(patsubst %, png-480x640/%.png, $(TEST_NAMES))
 
 TESTS=$(TEST_GRAY1) $(TEST_PNG) $(TEST_GRAY8)
 
 all: pre index.html $(TESTS) check
-png: $(TEST_LPNG)  $(TEST_PPNG)  $(TEST_LBPNG)
+png: $(TEST_LPNG)  $(TEST_PPNG)  $(TEST_LBPNG) $(TEST_LVGAPNG)
 
 pre:
-	@mkdir -p png gray1 gray8 reference/gray1 reference/gray8 png-640x240 png-480x640 png-80x160
+	@mkdir -p png gray1 gray8 reference/gray1 reference/gray8 png-640x240 png-480x640 png-80x160 png-320x240
 
 
 webupdate:
@@ -71,6 +72,7 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile ../ctx.h
 	  test -f $$a.ctx && cat $$a.ctx >> $@; \
 	  echo "</pre></td>" >> $@;\
 	  echo "<td><a href='png/$$a.png'><img class='side' src='png/$$a.png'/></a></td>" >> $@; \
+	  echo "<td><a href='png-320x240/$$a.png'><img class='side' src='png-320x240/$$a.png'/></a></td>" >> $@; \
 	  echo "<td><a href='png-80x160/$$a.png'><img class='side' src='png-80x160/$$a.png'/></a></td>" >> $@; \
 	  echo "<td><a href='png-640x240/$$a.png'><img class='side' src='png-640x240/$$a.png'/></a>" >> $@; \
 	  echo "<td><a href='png-480x640/$$a.png'><img class='side' src='png-480x640/$$a.png'/></a>" >> $@; \
@@ -82,29 +84,35 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile ../ctx.h
 
 
 clean:
-	rm -rf gray1 png gray8 png-640x240 png-480x640
+	rm -rf gray1 png gray8 png-640x240 png-480x640 png-320x240
 
-gray1/%: %.ctx ../ctx 
+gray1/%: %.ctx ../ctx Makefile
 	../ctx $< --width 160 --height 80 --rows 5 --cols 10 GRAY1 > $@
-png/%.png: %.ctx ../ctx 
-	../ctx $< $@ --width 160 --height 80 --cols 40 --rows 8
-png/%.png: %.svg ../ctx 
-	../ctx $< $@ --width 160 --height 80 --cols 40 --rows 8
-gray1/%: %.svg ../ctx 
+png/%.png: %.ctx ../ctx Makefile
+	../ctx $< $@ --width 160 --height 80 --cols 31 --rows 8
+png/%.png: %.svg ../ctx Makefile
+	../ctx $< $@ --width 160 --height 80 --cols 31 --rows 8
+gray1/%: %.svg ../ctx Makefile
 	../ctx $< --width 160 --height 80 GRAY1 --cols 40 --rows 8 > $@
-png-80x160/%.png: %.ctx ../ctx 
-	../ctx $< $@ --width 80 --height 160 --rows 10 --rows 40 --cols 8
-png-80x160/%.png: %.svg ../ctx 
-	../ctx $< $@ --width 80 --height 160 --rows 10 --rows 40 --cols 8
-png-640x240/%.png: %.ctx ../ctx 
-	../ctx $< $@ --width 640 --height 240 --rows 12
-png-640x240/%.png: %.svg ../ctx 
-	../ctx $< $@ --width 640 --height 240 --rows 12
-png-480x640/%.png: %.ctx ../ctx 
-	../ctx $< $@ --rows 24 --width 480 --height 640
-png-480x640/%.png: %.svg ../ctx 
-	../ctx $< $@ --rows 24 --width 480 --height 640
-gray8/%: %.ctx ../ctx
+png-80x160/%.png: %.ctx ../ctx  Makefile
+	../ctx $< $@ --width 80 --height 160 --rows 15 --cols 15
+png-80x160/%.png: %.svg ../ctx  Makefile
+	../ctx $< $@ --width 80 --height 160 --rows 15 --cols 15
+png-640x240/%.png: %.ctx ../ctx Makefile
+	../ctx $< $@ --width 640 --height 240 --rows 16 --cols 82 
+png-640x240/%.png: %.svg ../ctx  Makefile
+	../ctx $< $@ --width 640 --height 240 --rows 16 --cols 82
+
+png-320x240/%.png: %.ctx ../ctx  Makefile
+	../ctx $< $@ --width 320 --height 240 --rows 32 --cols 81
+png-320x240/%.png: %.svg ../ctx  Makefile
+	../ctx $< $@ --width 320 --height 240 --rows 32 --cols 81
+
+png-480x640/%.png: %.ctx ../ctx  Makefile
+	../ctx $< $@ --width 480 --height 640 --rows 56 --cols 81
+png-480x640/%.png: %.svg ../ctx Makefile
+	../ctx $< $@ --width 480 --height 640 --rows 56 --cols 81
+gray8/%: %.ctx ../ctx Makefile
 	../ctx $< GRAY8 --width 80 --height 24 --rows 3 --cols 12 > $@
-gray8/%: %.svg ../ctx
+gray8/%: %.svg ../ctx Makefile
 	../ctx $< GRAY8 --width 80 --height 24 --rows 3 --cols 12 > $@

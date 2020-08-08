@@ -11563,9 +11563,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     int halfstep  = aa/2 + 1;
 #endif
     rasterizer->needs_aa = 0;
-    rasterizer->scanline = scan_start-1;
+    rasterizer->scanline = scan_start-aa;
     ctx_rasterizer_feed_edges (rasterizer);
     ctx_rasterizer_discard_edges (rasterizer);
+    ctx_rasterizer_increment_edges (rasterizer, aa);
 
   for (rasterizer->scanline = scan_start; rasterizer->scanline <= scan_end;)
     {
