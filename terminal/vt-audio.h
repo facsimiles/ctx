@@ -1347,6 +1347,8 @@ void vt_audio (VT *vt, const char *command)
         if (bin_length)
         {
         uint8_t *data2 = malloc ((unsigned int)a85len ((char*)audio->data, audio->data_size) + 1);
+        // a85len is inaccurate but gives an upper bound,
+        // should be fixed.
         bin_length = a85dec ((char*)audio->data,
                                 (void*)data2,
                                 bin_length);

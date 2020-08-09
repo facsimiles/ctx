@@ -113,28 +113,32 @@ static int a85len (const char *src, int count)
   int out_len = 0;
   int k = 0;
 
-  for (int i = 0; src[i] && i < count; i ++, k++)
+  for (int i = 0; i < count; i ++, k++)
   {
     if (src[i] == '~')
       break;
     else if (src[i] == 'z')
     {
-      out_len += 4;
+      for (int j = 0; j < 4; j++)
+        out_len++;
       k = 0;
     }
     else
     {
       if (k % 5 == 4)
       {
-        out_len += 4;
+         out_len += 4;
       }
     }
   }
   k = k % 5;
   if (k)
   {
-    out_len += 4;
-    out_len -= (5-k);
+    for (int j = 0; j < k-1; j++)
+    {
+      out_len++;
+    }
   }
-  return out_len + 10; // XXX redo a85len, a85dec seems to decode more
+  return out_len;
 }
+

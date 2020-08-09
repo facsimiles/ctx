@@ -230,15 +230,19 @@ global alpha.</td></tr>
         optionally separated by white space.  The characters 
         <tt>,</tt><tt>=</tt><tt>(</tt><tt>)</tt><tt>;</tt> are also treated as white-space.
         Words are substrings consisting of one or more characters in the ranges
-        <tt>a</tt>-<tt>z</tt> and <tt>A</tt>-<tt>Z</tt>. Numbers are sequenes of <tt>0</tt>-<tt>9</tt>. Numbers can be followed by
+        <tt>a</tt>-<tt>z</tt> and <tt>A</tt>-<tt>Z</tt>. Numbers are sequences of <tt>0</tt>-<tt>9</tt>. Numbers can be followed by
         the suffixes <tt>%</tt> or <tt>@</tt>, indicating that units of percent canvas width/height
         should be used or a global em / cell-size. <tt>^</tt> is equivalent to CSS vh, and <tt>~</tt> vw,
-        this can be used to override the automatic choice done by <tt>%</tt>.
+        this can be used to override the automatic choice done by <tt>%</tt>, which
+        favors height for dimensions that are independent of x/y like
+        <tt>lineWidth</tt> and <tt>shadowBlur</tt>.
 
-        Strings are UTF8 contained
+        Strings are raw binary UTF8 contained
         in <tt>'</tt> or <tt>"</tt> pairs. <tt>"\n\r"</tt> etc from C are available for escaping newlines,
         though they can also be directly included in the string.
         <tt>#</tt> introduces a comment and the rest of the line is ignored.</p>
+
+        <p>Blobs can also be represented as a85</p>
 
 <!--    <h2>ctx renderstream</h2>
 

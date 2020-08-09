@@ -2806,6 +2806,7 @@ struct _CtxState
 #define CTX_newPath        CTX_STRH('n','e','w','P','a','t','h',0,0,0,0,0,0,0)
 #define CTX_new_state      CTX_STRH('n','e','w','_','s','t','a','t','e',0,0,0,0,0)
 #define CTX_none           CTX_STRH('n','o','n','e', 0 ,0, 0, 0, 0, 0, 0, 0,0,0)
+#define CTX_normal         CTX_STRH('n','o','r','m','a','l',0,0,0,0,0,0,0,0)
 #define CTX_quad_to        CTX_STRH('q','u','a','d','_','t','o',0,0,0,0,0,0,0)
 #define CTX_quadTo         CTX_STRH('q','u','a','d','T','o',0,0,0,0,0,0,0,0)
 #define CTX_radial_gradient CTX_STRH('r','a','d','i','a','l','_','g','r','a','d','i','e','n')
@@ -8880,7 +8881,6 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
     int x = 0;
 
 #if CTX_AVX2
-
     if ((size_t)(dst) & 31)
 #endif
     {
@@ -9452,6 +9452,7 @@ ctx_avx2_porter_duff (CtxRasterizer         *rasterizer,
   CtxPorterDuffFactor f_s, f_d;
   ctx_porter_duff_factors (compositing_mode, &f_s, &f_d);
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  assert ((((size_t)dst) & 31) == 0);
   int n_pix = 32/components;
   uint8_t tsrc[components * n_pix];
   float u0 = 0; float v0 = 0;
@@ -9460,12 +9461,9 @@ ctx_avx2_porter_duff (CtxRasterizer         *rasterizer,
   if (fragment)
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
-  if (blend == CTX_BLEND_NORMAL)
-    ctx_u8_blend (components, blend, dst, src, tsrc);
-
   for (; x < count; x+=n_pix)
   {
-    __m256i xdst   = _mm256_loadu_si256((__m256i*)(dst)); 
+    __m256i xdst  = _mm256_loadu_si256((__m256i*)(dst)); 
     __m256i xcov;
     __m256i xsrc;
     __m256i xsrc_a;
@@ -9756,7 +9754,7 @@ ctx_avx2_porter_duff (CtxRasterizer         *rasterizer,
              // res += (tsrc[c] * (255-dst[components-1]))/255;
                 src_lo = _mm256_and_si256 (xsrc, lo_mask); 
                 src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
-    if (!is_full)
+    if (!is_full && 1)
     {
       src_lo = _mm256_mulhi_epu16(
               _mm256_adds_epu16(
@@ -9848,12 +9846,11 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
                      CtxFragment            fragment,
                      CtxBlend               blend)
 {
-#if 0
-
+#if CTX_AVX2
   int pre_count = 0;
   if ((size_t)(dst)&31)
   {
-    pre_count = 32-(((size_t)(dst))&31);
+    pre_count = (32-(((size_t)(dst))&31))/components;
   __ctx_u8_porter_duff (rasterizer, components,
      dst, src, x0, coverage, pre_count, compositing_mode, fragment, blend);
     dst += components * pre_count;
@@ -9871,7 +9868,11 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
     src[2]/=2;
     src[3]/=2;
   }
+#if 0
+  __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count-post_count, compositing_mode, fragment, blend);
+#else
   ctx_avx2_porter_duff (rasterizer, components, dst, src, x0, coverage, count-post_count, compositing_mode, fragment, blend);
+#endif
   //__ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count-post_count, compositing_mode, fragment, blend);
   if (src && 0)
   {
@@ -11562,10 +11563,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     int halfstep  = aa/2 + 1;
 #endif
     rasterizer->needs_aa = 0;
-    rasterizer->scanline = scan_start-aa;
+    rasterizer->scanline = scan_start-1;
     ctx_rasterizer_feed_edges (rasterizer);
     ctx_rasterizer_discard_edges (rasterizer);
-    ctx_rasterizer_increment_edges (rasterizer, aa);
+    ctx_rasterizer_increment_edges (rasterizer, 1);
 
   for (rasterizer->scanline = scan_start; rasterizer->scanline <= scan_end;)
     {
@@ -16858,6 +16859,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           //
           case CTX_hue:            ret = CTX_BLEND_HUE; break;
           case CTX_multiply:       ret = CTX_BLEND_MULTIPLY; break;
+          case CTX_normal:         ret = CTX_BLEND_NORMAL;break;
           case CTX_screen:         ret = CTX_BLEND_SCREEN;break;
           case CTX_difference:     ret = CTX_BLEND_DIFFERENCE; break;
           case CTX_reset:          ret = CTX_RESET; break;
@@ -20902,7 +20904,9 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   {
     fprintf (stderr, "!\n");
     sdl->threads_done = CTX_THREADS;
-    ctx_show_frame (sdl);
+    sdl->shown_frame = sdl->render_frame;
+    sdl->threads_done = 0;
+    ctx_unlock_mutex (sdl->mutex);
   }
   if (sdl->shown_frame == sdl->render_frame)
   {

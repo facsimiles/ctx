@@ -216,6 +216,8 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 printf ("%s", unicode_quarters[bits_set]);
        //         printf ("%i ", bits_set);
               }
+            printf ("\e[38;2;%i;%i;%im", 255,255,255);
+            printf ("\e[48;2;%i;%i;%im", 0,0,0);
             printf ("\n");
           }
         }
@@ -301,6 +303,7 @@ void ctx_utf8_output_buf (uint8_t *pixels,
               }
             printf ("\n");
   printf ("\e[38;2;%i;%i;%im", 255,255,255);
+  printf ("\e[48;2;%i;%i;%im", 0,0,0);
           }
         }
         break;
