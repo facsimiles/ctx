@@ -22,7 +22,8 @@
 
 #define CTX_MAX_JOURNAL_SIZE     1024*64
 
-#define CTX_IMPLEMENTATION
+// #define CTX_IMPLEMENTATION
+//
 #include "ctx.h"
 #include "vt-line.h"
 #include "terminal.h"
@@ -344,7 +345,7 @@ void pressed (CtxEvent *event, void *data, void *data2)
    fprintf (stderr, "press %f %f\n", event->x, event->y);
 }
 
-int update_vt (Ctx *ctx, CtxClient *client)
+int update_vt (Ctx *ctx, CtxClient *client, int is_reset)
 {
       VT *vt = client->vt;
       //int width = client->width;
@@ -357,6 +358,9 @@ int update_vt (Ctx *ctx, CtxClient *client)
            vt_has_blink (vt) ||
            in_scroll)
         {
+          if (!is_reset)
+            ctx_reset (ctx);
+
           client->drawn_rev = vt_rev (vt);
           vt_draw (vt, ctx, 0, 0);
           ctx_rectangle (ctx, 10, 10, 100, 100);
@@ -373,13 +377,13 @@ int ctx_count (Ctx *ctx);
 
 static int dirt = 0;
 
-static int update_vts (Ctx *ctx)
+static int update_vts (Ctx *ctx, int changes_in)
 {
   int changes = 0;
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-      if (client->vt && update_vt (ctx, client))
+      if (client->vt && update_vt (ctx, client, changes + changes_in))
           changes++;
   }
   dirt += changes;
@@ -442,10 +446,10 @@ int main (int argc, char **argv)
         ctx_list_remove (&to_remove, to_remove->data);
       }
 
-      changes += update_vts (ctx);
+      changes += update_vts (ctx, changes);
       if (changes)
       {
-        ctx_reset (ctx);
+ //     ctx_reset (ctx);
         ctx_flush (ctx);
       }
       else
