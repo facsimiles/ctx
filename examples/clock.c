@@ -169,7 +169,7 @@ int main (int argc, char **argv)
     //x+=0.25;
     if (x > ctx_width (ctx)) x= 0;
    
-    if ((event = ctx_get_event (ctx)))
+    while ((event = ctx_get_event (ctx)))
     {
     switch (event->type)
     {

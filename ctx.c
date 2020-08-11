@@ -820,7 +820,7 @@ again:
     if (!ui)
     {
       ui = ctx_new_ui (width, height);
-      ctx_get_event (ui); // forces enabling of get event
+      //ctx_get_event (ui); // forces enabling of get event
     }
     for (;;)
     {

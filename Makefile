@@ -1,4 +1,4 @@
-all: pre ctx post
+all: pre ctx.o ctx post
 pre:
 	make -C tools
 	make -C fonts
@@ -15,11 +15,18 @@ clean:
 CFLAGS= -g -march=native -Wno-array-bounds 
 #CFLAGS=-Os -flto
 
+ctx.o: ctx-lib.c ctx.h Makefile
+	ccache $(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 babl --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
+
+libctx.o: ctx-lib.c ctx.h Makefile
+	ccache $(CC) ctx-lib.c -shared -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 babl --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
+
 ctx: ctx.c ctx.h  Makefile svg.h
 	ccache $(CC) ctx.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 babl --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
-ctx.O1: ctx.c ctx.h  Makefile 
-	$(CC) ctx.c -o $@ -g -O1 -I. -Ifonts `pkg-config babl --cflags --libs` -lutil -Wall -lz -lm -Ideps
+ctx.O1: ctx.c ctx.h  Makefile svg.h
+	ccache $(CC) ctx.c -o $@ -g -O1 -I. -Ifonts `pkg-config sdl2 babl --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -march=native
+
 ctx.asan: ctx.c ctx.h Makefile
 	$(CC) -DASANBUILD=1 ctx.c -o $@ -g -O0 -I. -Ifonts `pkg-config --cflags --libs babl ` -lutil -lasan -fsanitize=address -lz -march=native -lm -Ideps
 
