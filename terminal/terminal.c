@@ -339,6 +339,11 @@ int client_resize (int id, int width, int height)
    return 0;
 }
 
+void pressed (CtxEvent *event, void *data, void *data2)
+{
+   fprintf (stderr, "press %f %f\n", event->x, event->y);
+}
+
 int update_vt (Ctx *ctx, CtxClient *client)
 {
       VT *vt = client->vt;
@@ -354,6 +359,10 @@ int update_vt (Ctx *ctx, CtxClient *client)
         {
           client->drawn_rev = vt_rev (vt);
           vt_draw (vt, ctx, 0, 0);
+          ctx_rectangle (ctx, 10, 10, 100, 100);
+          ctx_rgb (ctx,1,0,0);
+          ctx_listen (ctx, CTX_PRESS, pressed, NULL, NULL);
+          ctx_fill (ctx);
           return 1;
         }
       return 0;

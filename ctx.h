@@ -109,6 +109,10 @@ void  ctx_arc_to          (Ctx *ctx, float x1, float y1,
 void  ctx_rectangle       (Ctx *ctx,
                            float x0, float y0,
                            float w, float h);
+void  ctx_round_rectangle (Ctx *ctx,
+                           float x0, float y0,
+                           float w, float h,
+                           float radius);
 void  ctx_rel_line_to     (Ctx *ctx, float x, float y);
 void  ctx_rel_move_to     (Ctx *ctx, float x, float y);
 void  ctx_rel_curve_to    (Ctx *ctx,
@@ -617,6 +621,8 @@ void  ctx_listen               (Ctx          *ctx,
                                 void*         data1,
                                 void*         data2);
 
+void ctx_init (int *argc, char ***argv); // is a no-op but could launch
+                                         // terminal
 CtxEvent *ctx_get_event (Ctx *ctx);
 
 int   ctx_pointer_is_down (Ctx *ctx, int no);
@@ -4907,9 +4913,6 @@ void ctx_reset (Ctx *ctx)
   if (ctx->events.ctx_get_event_enabled)
   {
     ctx_clear_bindings (ctx);
-    ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height+1,
-                     CTX_PRESS|CTX_RELEASE|CTX_MOTION, ctx_collect_events, ctx, ctx,
-                     NULL, NULL);
     ctx_listen_full (ctx, 0,0,0,0,
                      CTX_KEY_DOWN, _ctx_bindings_key_down, ctx, ctx,
                      NULL, NULL);
@@ -4918,6 +4921,9 @@ void ctx_reset (Ctx *ctx)
                      NULL, NULL);
     ctx_listen_full (ctx, 0, 0, 0,0,
                      CTX_KEY_UP, ctx_collect_events, ctx, ctx,
+                     NULL, NULL);
+    ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
+                     CTX_PRESS|CTX_RELEASE|CTX_MOTION, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
   }
 #endif
@@ -9488,7 +9494,7 @@ ctx_avx2_porter_duff (CtxRasterizer         *rasterizer,
         break;
     }
 
-#if 0
+#if 1
     if (
       //(compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 255)||
       (compositing_mode == CTX_COMPOSITE_SOURCE_OVER      && is_blank) ||
@@ -18111,7 +18117,6 @@ enum _CtxFlags {
    CTX_FLAG_DIRECT = (1<<0),
 };
 
-
 void
 ctx_init (int *argc, char ***argv)
 {
@@ -18714,6 +18719,7 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
   static CtxEvent s_event;
   CtxEvent transformed_event;
   int i;
+
 
   if (!event)
   {
@@ -20938,7 +20944,6 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     sdl->threads_done = 0;
     ctx_free (hasher);
   }
-  ctx_reset (sdl->ctx);
 }
 
 void ctx_sdl_free (CtxSDL *sdl)
