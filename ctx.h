@@ -20488,8 +20488,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 8
-#define CTX_HASH_COLS 8
+#define CTX_HASH_ROWS 4
+#define CTX_HASH_COLS 4
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20523,7 +20523,6 @@ static int ctx_sdl_consume_events (Ctx *ctx)
 
   if (SDL_PollEvent (&event))
   {
-  fprintf (stderr, ".");
     switch (event.type)
     {
       case SDL_MOUSEBUTTONDOWN:

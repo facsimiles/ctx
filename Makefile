@@ -12,7 +12,7 @@ clean:
 	make -C fonts clean
 	make -C examples clean
 
-CFLAGS= -g -march=native -Wno-array-bounds 
+CFLAGS= -O3 -g -march=native -Wno-array-bounds 
 #CFLAGS=-Os -flto
 
 ctx.o: ctx-lib.c ctx.h Makefile

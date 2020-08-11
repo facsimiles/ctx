@@ -937,7 +937,7 @@ static inline void vt_argument_buf_add (VT *vt, int ch)
   if (vt->argument_buf_len + 1 >=
       vt->argument_buf_cap)
     {
-      vt->argument_buf_cap = vt->argument_buf_cap * 1.5;
+      vt->argument_buf_cap = vt->argument_buf_cap * 2;
       vt->argument_buf = realloc (vt->argument_buf, vt->argument_buf_cap);
     }
   vt->argument_buf[vt->argument_buf_len] = ch;
@@ -4000,7 +4000,7 @@ static void vt_state_osc (VT *vt, int byte)
                       }
                     else
                       {
-                        fprintf (stderr, "image decoding problem\n");
+                        fprintf (stderr, "image decoding problem %s\n", stbi_failure_reason());
                       }
                   }
                   if (image)
@@ -6276,6 +6276,12 @@ bg_done:
     return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
   }
 
+void pressed (CtxEvent *event, void *data, void *data2)
+{
+   fprintf (stderr, "press %f %f\n", event->x, event->y);
+}
+
+
   void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   {
     int image_id = 0;
@@ -6319,6 +6325,7 @@ bg_done:
     first draw things in scrolling region
     then draw all else,
 #endif
+
     {
       for (int row = 0; row <= (vt->scroll) + vt->rows; row ++)
         {
@@ -6444,6 +6451,7 @@ bg_done:
             }
         }
     }
+
     {
       /* draw ctx graphics */
       float y = y0 + vt->ch * vt->rows;
@@ -6470,6 +6478,7 @@ bg_done:
           y -= vt->ch;
         }
     }
+
     /* draw cursor */
     if (vt->cursor_visible)
       {
@@ -6532,6 +6541,15 @@ bg_done:
               }
           }
       }
+
+    float width = (vt->cols + 1) * vt->cw;
+    float height = (vt->rows + 1) * vt->ch;
+    float scroll_width = height * 0.05;
+      ctx_rectangle (ctx, width - scroll_width, 0, scroll_width, height);
+      ctx_rgb (ctx,1,0,0);
+      ctx_listen (ctx, CTX_PRESS, pressed, NULL, NULL);
+      ctx_fill (ctx);
+
   }
 
   int vt_is_done (VT *vt)
