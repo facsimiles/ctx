@@ -671,7 +671,8 @@ static void vtcmd_set_132_col (VT  *vt, int set)
   if (set == 1 && vt->scale_x != 1.0f) { return; }
   if (set) // 132 col
     {
-      vt->scale_x = 80.0/132.0;
+      vt->scale_x = 74.0/132.0; // show all - po
+      //vt->scale_x = 80.0/132.0;
       vt->scale_y = 1.0;
       _vt_compute_cw_ch (vt);
       vt_set_term_size (vt, vt->cols * 132/80.0, vt->rows);
@@ -6278,7 +6279,17 @@ bg_done:
 
 void pressed (CtxEvent *event, void *data, void *data2)
 {
-   fprintf (stderr, "press %f %f\n", event->x, event->y);
+  Ctx *ctx = data;
+
+  fprintf (stderr, "press %f %f\n", event->x, event->y);
+}
+
+void drag (CtxEvent *event, void *data, void *data2)
+{
+  Ctx *ctx = data;
+
+  fprintf (stderr, "drag %f %f\n", event->delta_x, event->delta_y);
+  event->stop_propagate = 1;
 }
 
 
@@ -6499,23 +6510,6 @@ void pressed (CtxEvent *event, void *data, void *data2)
           }
       }
     ctx_restore (ctx);
-    if (vt->scroll != 0)
-      {
-        float disp_lines = vt->rows;
-        float tot_lines = vt->line_count + vt->scrollback_count;
-        float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
-        float win_len = disp_lines / tot_lines;
-        ctx_rectangle (ctx, vt->cw * (vt->cols - 2),
-                       0, 2 * vt->cw,
-                       vt->rows * vt->ch);
-        ctx_rgba (ctx, 1, 1, 1, .5);
-        ctx_fill (ctx);
-        ctx_rectangle (ctx, vt->cw * (vt->cols - 2 + 0.1),
-                       offset * vt->rows * vt->ch, (2-0.2) * vt->cw,
-                       win_len * vt->rows * vt->ch);
-        ctx_rgba (ctx, 0, 0, 0, .5);
-        ctx_fill (ctx);
-      }
 //#define SCROLL_SPEED 0.25;
 #define SCROLL_SPEED 0.2;
     if (vt->in_smooth_scroll)
@@ -6541,14 +6535,43 @@ void pressed (CtxEvent *event, void *data, void *data2)
               }
           }
       }
-
+#if 0
     float width = (vt->cols + 1) * vt->cw;
     float height = (vt->rows + 1) * vt->ch;
     float scroll_width = height * 0.05;
+
       ctx_rectangle (ctx, width - scroll_width, 0, scroll_width, height);
-      ctx_rgb (ctx,1,0,0);
+      ctx_rgba (ctx,1,0,0,0.5);
       ctx_listen (ctx, CTX_PRESS, pressed, NULL, NULL);
       ctx_fill (ctx);
+#endif
+
+      if (!vt->in_alt_screen)
+      {
+        float disp_lines = vt->rows;
+        float tot_lines = vt->line_count + vt->scrollback_count;
+        float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
+        float win_len = disp_lines / tot_lines;
+        ctx_rectangle (ctx, vt->cw * (vt->cols - 1.5),
+                       0, 1.5 * vt->cw,
+                       vt->rows * vt->ch);
+        ctx_listen (ctx, CTX_PRESS, pressed, vt, NULL);
+        if (vt->scroll != 0)
+          ctx_rgba (ctx, 0.5, 0.5, 0.5, .25);
+        else
+          ctx_rgba (ctx, 0.5, 0.5, 0.5, .15);
+        ctx_fill (ctx);
+        ctx_round_rectangle (ctx, vt->cw * (vt->cols - 1.5 + 0.1),
+                             offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
+                             win_len * vt->rows * vt->ch,
+                             vt->cw * 1.5 /2);
+        ctx_listen (ctx, CTX_DRAG, drag, vt, NULL);
+        if (vt->scroll != 0)
+          ctx_rgba (ctx, 1, 1, 1, .25);
+        else
+          ctx_rgba (ctx, 1, 1, 1, .15);
+        ctx_fill (ctx);
+      }
 
   }
 
@@ -6624,6 +6647,7 @@ void pressed (CtxEvent *event, void *data, void *data2)
 
   void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
   {
+#if 0
     static int scrollbar_down = 0;
     if ( (type == VT_MOUSE_DRAG || type == VT_MOUSE_PRESS)
          && (x > vt->cols - 3 || scrollbar_down) )
@@ -6645,6 +6669,7 @@ void pressed (CtxEvent *event, void *data, void *data2)
         scrollbar_down = 0;
         SDL_CaptureMouse (0);
       }
+#endif
     char buf[64]="";
     int button_state = 0;
     if (! (vt->mouse | vt->mouse_all | vt->mouse_drag) )

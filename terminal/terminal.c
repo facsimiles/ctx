@@ -438,7 +438,6 @@ int main (int argc, char **argv)
       changes += update_vts (ctx, changes);
       if (changes)
       {
- //     ctx_reset (ctx);
         ctx_flush (ctx);
       }
       else
@@ -447,12 +446,14 @@ int main (int argc, char **argv)
       }
 
       CtxEvent *event;
-      static int mouse_down = 0;
+  //  static int mouse_down = 0;
+  //
       while ((event = ctx_get_event (ctx)))
       {
         char buf[64];
         switch (event->type)
         {
+#if 0
           case CTX_RELEASE:
             if (event->device_no == 0)
                     mouse_down = 0;
@@ -461,14 +462,14 @@ int main (int argc, char **argv)
             handle_event (buf);
             break;
           case CTX_PRESS:
-            if (event->device_no == 0)
-                    mouse_down = 1;
+       //   if (event->device_no == 0)
+       //           mouse_down = 1;
             sprintf (buf, "mouse-press %.0f %.0f", (float) event->x,
                                                   (float) event->y);
             handle_event (buf);
             break;
           case CTX_MOTION:
-#if 1
+#if 0
             if (mouse_down)
             {
               sprintf (buf, "mouse-drag %.0f %.0f", (float) event->x,
@@ -482,7 +483,7 @@ int main (int argc, char **argv)
             }
             handle_event (buf);
             break;
-
+#endif
           case CTX_KEY_DOWN:
             if (!strcmp (event->string, "resize-event"))
             {
