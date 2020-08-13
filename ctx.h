@@ -20542,9 +20542,11 @@ static int ctx_sdl_consume_events (Ctx *ctx)
     switch (event.type)
     {
       case SDL_MOUSEBUTTONDOWN:
+        SDL_CaptureMouse (1);
         ctx_pointer_press (ctx, event.button.x, event.button.y, 1, 0);
         break;
       case SDL_MOUSEBUTTONUP:
+        SDL_CaptureMouse (0);
         ctx_pointer_release (ctx, event.button.x, event.button.y, 1, 0);
         break;
       case SDL_MOUSEMOTION:
