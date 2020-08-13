@@ -6277,17 +6277,39 @@ bg_done:
     return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
   }
 
+void vt_mouse_event (CtxEvent *event, void *data, void *data2)
+{
+  VT *vt = data;
+  float x = event->x;
+  float y = event->y;
+  char buf[128]="";
+
+  switch (event->type)
+  {
+    case CTX_MOTION:
+      sprintf (buf, "mouse-motion %.0f %.0f", x, y);
+      vt_feed_keystring (vt, buf);
+      break;
+    case CTX_PRESS:
+      sprintf (buf, "mouse-press %.0f %.0f", x, y);
+      vt_feed_keystring (vt, buf);
+      break;
+    case CTX_RELEASE:
+      sprintf (buf, "mouse-release %.0f %.0f", x, y);
+      vt_feed_keystring (vt, buf);
+      break;
+  }
+}
+
 void pressed (CtxEvent *event, void *data, void *data2)
 {
-  Ctx *ctx = data;
-
+  VT *vt = data;
   fprintf (stderr, "press %f %f\n", event->x, event->y);
 }
 
 void drag (CtxEvent *event, void *data, void *data2)
 {
-  Ctx *ctx = data;
-
+  VT *vt = data;
   fprintf (stderr, "drag %f %f\n", event->delta_x, event->delta_y);
   event->stop_propagate = 1;
 }
@@ -6542,9 +6564,13 @@ void drag (CtxEvent *event, void *data, void *data2)
 
       ctx_rectangle (ctx, width - scroll_width, 0, scroll_width, height);
       ctx_rgba (ctx,1,0,0,0.5);
-      ctx_listen (ctx, CTX_PRESS, pressed, NULL, NULL);
+      ctx_listen (ctx, CTX_PRESS, pressed, vt, NULL);
       ctx_fill (ctx);
 #endif
+
+      ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
+      ctx_listen (ctx, CTX_PRESS|CTX_RELEASE|CTX_MOTION, vt_mouse_event, vt, NULL);
+      ctx_begin_path (ctx);
 
       if (!vt->in_alt_screen)
       {
@@ -6730,7 +6756,7 @@ void drag (CtxEvent *event, void *data, void *data2)
         case VT_MOUSE_PRESS:
           button_state = 0;
           break;
-        case VT_MOUSE_DRAG:
+        case VT_MOUSE_DRAG: // XXX not really used - remove
           if (! (vt->mouse_all || vt->mouse_drag) )
             { return; }
           button_state = 32;
