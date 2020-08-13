@@ -6306,19 +6306,35 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
   }
 }
 
-void pressed (CtxEvent *event, void *data, void *data2)
+static int scrollbar_focused = 0;
+static void scrollbar_enter (CtxEvent *event, void *data, void *data2)
+{
+  VT *vt = data;
+  vt->rev++;
+  scrollbar_focused = 1;
+}
+
+static void scrollbar_leave (CtxEvent *event, void *data, void *data2)
+{
+  VT *vt = data;
+  vt->rev++;
+  scrollbar_focused = 0;
+}
+
+static void scrollbar_pressed (CtxEvent *event, void *data, void *data2)
 {
   VT *vt = data;
   float disp_lines = vt->rows;
   float tot_lines = vt->line_count + vt->scrollback_count;
   vt->scroll = tot_lines - disp_lines - (event->y*1.0/ (vt->rows * vt->ch) ) * tot_lines + disp_lines/2;
-  if (vt->scroll < 0) { vt->scroll = 0.01; }
+  if (vt->scroll < 0) { vt->scroll = 0.0; }
+  if (vt->scroll > vt->scrollback_count) { vt->scroll = vt->scrollback_count; }
   fprintf (stderr, "press %f %f scroll:%f\n", event->x, event->y, vt->scroll);
   vt->rev++;
   event->stop_propagate = 1;
 }
 
-void scroll_drag (CtxEvent *event, void *data, void *data2)
+static void scroll_handle_drag (CtxEvent *event, void *data, void *data2)
 {
   VT *vt = data;
   float tot_lines = vt->line_count + vt->scrollback_count;
@@ -6326,6 +6342,8 @@ void scroll_drag (CtxEvent *event, void *data, void *data2)
   {
     vt->scroll -= (event->delta_y * tot_lines) / (vt->rows * vt->ch);
   }
+  if (vt->scroll < 0) { vt->scroll = 0.0; }
+  if (vt->scroll > vt->scrollback_count) { vt->scroll = vt->scrollback_count; }
   vt->rev++;
   event->stop_propagate = 1;
 }
@@ -6596,8 +6614,10 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
        ctx_rectangle (ctx, vt->cw * (vt->cols - 1.5),
                       0, 1.5 * vt->cw,
                       vt->rows * vt->ch);
-       ctx_listen (ctx, CTX_PRESS, pressed, vt, NULL);
-       if (vt->scroll != 0)
+       ctx_listen (ctx, CTX_PRESS, scrollbar_pressed, vt, NULL);
+       ctx_listen (ctx, CTX_ENTER, scrollbar_enter, vt, NULL);
+       ctx_listen (ctx, CTX_LEAVE, scrollbar_leave, vt, NULL);
+       if (vt->scroll != 0 || scrollbar_focused)
          ctx_rgba (ctx, 0.5, 0.5, 0.5, .25);
        else
          ctx_rgba (ctx, 0.5, 0.5, 0.5, .15);
@@ -6606,8 +6626,8 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                             offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
                             win_len * vt->rows * vt->ch,
                             vt->cw * 1.5 /2);
-       ctx_listen (ctx, CTX_DRAG, scroll_drag, vt, NULL);
-       if (vt->scroll != 0)
+       ctx_listen (ctx, CTX_DRAG, scroll_handle_drag, vt, NULL);
+       if (vt->scroll != 0 || scrollbar_focused)
          ctx_rgba (ctx, 1, 1, 1, .25);
        else
          ctx_rgba (ctx, 1, 1, 1, .15);

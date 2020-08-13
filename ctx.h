@@ -13254,17 +13254,11 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         hash ^= color;
 
         hash ^= (int)(rasterizer->state->gstate.transform.m[0][0]*100);
-        hash *= 17;
         hash ^= (int)(rasterizer->state->gstate.transform.m[1][1]*100);
-        hash *= 17;
         hash ^= (int)(rasterizer->state->gstate.transform.m[0][1]*100);
-        hash *= 17;
         hash ^= (int)(rasterizer->state->gstate.transform.m[1][0]*100);
-        hash *= 17;
         hash ^= (int)(rasterizer->state->gstate.transform.m[2][0]*100);
-        hash *= 17;
         hash ^= (int)(rasterizer->state->gstate.transform.m[2][1]*100);
-        hash *= 17;
 
           _ctx_add_hash (hasher, &shape_rect, hash);
 
@@ -20504,8 +20498,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 4
-#define CTX_HASH_COLS 4
+#define CTX_HASH_ROWS 1
+#define CTX_HASH_COLS 1
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20537,7 +20531,7 @@ static int ctx_sdl_consume_events (Ctx *ctx)
 
   ctx_show_frame (sdl);
 
-  if (SDL_PollEvent (&event))
+  while (SDL_PollEvent (&event))
   {
     switch (event.type)
     {
@@ -20933,7 +20927,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
         uint32_t new_hash = ctx_hash_get_hash (hasher, col, row);
-        if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col])
+        if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col] || 1)
         {
           sdl->hashes[row * CTX_HASH_COLS + col] = new_hash;
           sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
