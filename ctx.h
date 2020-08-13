@@ -478,7 +478,8 @@ void ctx_set_renderer (Ctx *ctx,
  * that get delivered with transformed coordinates.
  */
 
-long     ctx_ticks (void);
+long ctx_ticks (void);
+void ctx_flush (Ctx *ctx);
 
 void _ctx_events_init     (Ctx *ctx);
 
@@ -13109,7 +13110,7 @@ _ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, uint32_t hash)
       rect.y = row * rect.height;
       if (ctx_rect_intersect (shape_rect, &rect))
       {
-        hasher->hashes[row * hasher->cols + col] *= 5;
+        hasher->hashes[row * hasher->cols + col] *= 117;
         hasher->hashes[row * hasher->cols + col] ^= hash;
       }
     }

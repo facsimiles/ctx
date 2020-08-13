@@ -4465,9 +4465,10 @@ void vt_feed_keystring (VT *vt, const char *str)
     vt_write (vt, "\n", 1);
     return;
   }
-
+#if 0
   if (!strstr (str, "-page"))
     vt_set_scroll (vt, 0);
+#endif
 
   if (!strcmp (str, "idle") )
      return;
@@ -5705,576 +5706,576 @@ static uint8_t palettes[][16][3]=
 #endif
 
 
-      {0, 0, 0},
-      {139, 0, 0},
-      {9, 154, 9},
-      {255, 137, 113},
-      {3, 0, 255},
-      {56, 0, 132},
-      {0, 111, 111},
-      {204, 204, 204},
-      {127, 127, 127},
-      {255, 33, 0},
-      {118, 255, 92},
-      {255, 230, 15},
-      {1, 122, 255},
-      {232, 0, 220},
-      {1, 217, 255},
-      {255, 255, 255},
-    },
+    {0, 0, 0},
+    {139, 0, 0},
+    {9, 154, 9},
+    {255, 137, 113},
+    {3, 0, 255},
+    {56, 0, 132},
+    {0, 111, 111},
+    {204, 204, 204},
+    {127, 127, 127},
+    {255, 33, 0},
+    {118, 255, 92},
+    {255, 230, 15},
+    {1, 122, 255},
+    {232, 0, 220},
+    {1, 217, 255},
+    {255, 255, 255},
+  },
+  {
+
+    {0, 0, 0},
+    {191, 0, 0},
+    {3, 187, 0},
+    {254, 212, 0},
+    {0, 0, 255},
+    {80, 0, 128},
+    {0, 156, 255},
+    {166, 166, 166},
+    {84, 84, 84},
+    {255, 62, 0},
+    {85, 255, 143},
+    {255, 255, 0},
+    {67, 80, 255},
+    {243, 70, 255},
+    {30, 255, 222},
+    {255, 255, 255},
+  },
+  {
+    /* */
+    { 32, 32, 32}, // 0 - background (black)
+    {165, 15, 21}, // 1               red
+    { 95,130, 10}, // 2               green
+    {205,145, 60}, // 3               yellow
+    { 49,130,189}, // 4               blue
+    {120, 40,160}, // 5               magenta
+    {120,230,230}, // 6               cyan
+    {196,196,196},// 7                light-gray
+    { 85, 85, 85},// 8                dark gray
+
+    {251,106, 74},// 9                light red
+    {130,215,140},// 10               light green
+    {255,255,  0},// 11               light yellow
+    {107,174,214},// 12               light blue
+    {215,130,160},// 13               light magenta
+    {225,255,245},// 14               light cyan
+    {255,255,255},// 15 - foreground (white)
+  },{
+    /* */
+    { 32, 32, 32}, // 0 - background (black)
+    {160,  0,  0}, // 1               red
+    {  9,233,  0}, // 2               green
+    {220,110, 44}, // 3               yellow
+    {  0,  0,200}, // 4               blue
+    { 90,  0,130}, // 5               magenta
+    {  0,156,180}, // 6               cyan
+    {196,196,196},// 7                light-gray
+    { 85, 85, 85},// 8                dark gray
+
+    {240, 60, 40},// 9                light red
+    {170,240, 80},// 10               light green
+    {248,248,  0},// 11               light yellow
+    {  0, 40,255},// 12               light blue
+    {204, 62,214},// 13               light magenta
+    { 10,234,254},// 14               light cyan
+    {255,255,255},// 15 - foreground (white)
+  },
+  /* inspired by DEC */
+  { {  0,  0,  0}, // 0 - background  black
+    {150, 10, 10}, // 1               red
+    { 21,133,  0}, // 2               green
+
+    {103,103, 24}, // 3               yellow
+    { 44, 44,153}, // 4               blue
+    {123, 94,183}, // 5               magenta
+
+    { 20,183,193}, // 6               cyan
+
+    {177,177,177},// 7                light-gray
+    {100,100,100},// 8                dark gray
+
+    {244, 39, 39},// 9                light red
+    { 61,224, 81},// 10               light green
+    {255,255,  0},// 11               light yellow
+    { 61, 61,244},// 12               light blue
+    {240, 11,240},// 13               light magenta
+    { 61,234,234},// 14               light cyan
+
+    {255,255,255},// 15 - foreground  white
+  },
+};
+
+void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity)
+{
+  uint8_t r = 0, g = 0, b = 0;
+  if (no < 16 && no >= 0)
     {
-
-      {0, 0, 0},
-      {191, 0, 0},
-      {3, 187, 0},
-      {254, 212, 0},
-      {0, 0, 255},
-      {80, 0, 128},
-      {0, 156, 255},
-      {166, 166, 166},
-      {84, 84, 84},
-      {255, 62, 0},
-      {85, 255, 143},
-      {255, 255, 0},
-      {67, 80, 255},
-      {243, 70, 255},
-      {30, 255, 222},
-      {255, 255, 255},
-    },
-    {
-      /* */
-      { 32, 32, 32}, // 0 - background (black)
-      {165, 15, 21}, // 1               red
-      { 95,130, 10}, // 2               green
-      {205,145, 60}, // 3               yellow
-      { 49,130,189}, // 4               blue
-      {120, 40,160}, // 5               magenta
-      {120,230,230}, // 6               cyan
-      {196,196,196},// 7                light-gray
-      { 85, 85, 85},// 8                dark gray
-
-      {251,106, 74},// 9                light red
-      {130,215,140},// 10               light green
-      {255,255,  0},// 11               light yellow
-      {107,174,214},// 12               light blue
-      {215,130,160},// 13               light magenta
-      {225,255,245},// 14               light cyan
-      {255,255,255},// 15 - foreground (white)
-    },{
-      /* */
-      { 32, 32, 32}, // 0 - background (black)
-      {160,  0,  0}, // 1               red
-      {  9,233,  0}, // 2               green
-      {220,110, 44}, // 3               yellow
-      {  0,  0,200}, // 4               blue
-      { 90,  0,130}, // 5               magenta
-      {  0,156,180}, // 6               cyan
-      {196,196,196},// 7                light-gray
-      { 85, 85, 85},// 8                dark gray
-
-      {240, 60, 40},// 9                light red
-      {170,240, 80},// 10               light green
-      {248,248,  0},// 11               light yellow
-      {  0, 40,255},// 12               light blue
-      {204, 62,214},// 13               light magenta
-      { 10,234,254},// 14               light cyan
-      {255,255,255},// 15 - foreground (white)
-    },
-    /* inspired by DEC */
-    { {  0,  0,  0}, // 0 - background  black
-      {150, 10, 10}, // 1               red
-      { 21,133,  0}, // 2               green
-
-      {103,103, 24}, // 3               yellow
-      { 44, 44,153}, // 4               blue
-      {123, 94,183}, // 5               magenta
-
-      { 20,183,193}, // 6               cyan
-
-      {177,177,177},// 7                light-gray
-      {100,100,100},// 8                dark gray
-
-      {244, 39, 39},// 9                light red
-      { 61,224, 81},// 10               light green
-      {255,255,  0},// 11               light yellow
-      { 61, 61,244},// 12               light blue
-      {240, 11,240},// 13               light magenta
-      { 61,234,234},// 14               light cyan
-
-      {255,255,255},// 15 - foreground  white
-    },
-  };
-
-  void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity)
-  {
-    uint8_t r = 0, g = 0, b = 0;
-    if (no < 16 && no >= 0)
-      {
-        switch (intensity)
-          {
-            case 0:
-              no = 0;
-              break;
-            case 1:
-              // 15 becomes 7
-              if (no == 15) { no = 8; }
-              else if (no > 8) { no -= 8; }
-              break;
-            case 2:
-              /* give the normal color special treatment, and in really normal
-               * cirumstances it is the dim variant of foreground that is used
-               */
-              if (no == 15) { no = 7; }
-              break;
-            case 3:
-            case 4:
-              if (no < 8)
-                { no += 8; }
-              break;
-            default:
-              break;
-          }
-        r = palettes[vt->palette_no][no][0];
-        g = palettes[vt->palette_no][no][1];
-        b = palettes[vt->palette_no][no][2];
-      }
-    else if (no < 16 + 6*6*6)
-      {
-        no = no-16;
-        b = (no % 6) * 255 / 5;
-        no /= 6;
-        g = (no % 6) * 255 / 5;
-        no /= 6;
-        r = (no % 6) * 255 / 5;
-      }
-    else
-      {
-        int gray = no - (16 + 6*6*6);
-        float val = gray * 255 / 24;
-        r = g = b = val;
-      }
-    ctx_rgba8 (ctx, r, g, b, 255);
-  }
-
-  int vt_keyrepeat (VT *vt)
-  {
-    return vt->keyrepeat;
-  }
-
-  float vt_draw_cell (VT *vt, Ctx *ctx,
-                      int   row, int col, // pass 0 to force draw - like
-                      float x0, float y0, // for scrollback visible
-                      uint64_t style,
-                      uint32_t unichar,
-                      int      bg, int fg,
-                      int      dw, int dh,
-                      int in_smooth_scroll,
-                      int in_select)
-  // dw is 0 or 1
-  // dh is 0 1 or -1  1 is upper -1 is lower
-  {
-    int on_white = vt->reverse_video;
-    int color = 0;
-    int bold = (style & STYLE_BOLD) != 0;
-    int dim = (style & STYLE_DIM) != 0;
-    int hidden = (style & STYLE_HIDDEN) != 0;
-    int proportional = (style & STYLE_PROPORTIONAL) != 0;
-    int fg_set = (style & STYLE_FG_COLOR_SET) != 0;
-    int bg_intensity = 0;
-    int fg_intensity = 2;
-    int reverse = ( (style & STYLE_REVERSE) != 0) ^ in_select;
-    int blink = ( (style & STYLE_BLINK) != 0);
-    int blink_fast = ( (style & STYLE_BLINK_FAST) != 0);
-    int cw = vt->cw;
-    int ch = vt->ch;
-    if (proportional)
-      {
-        if (vt->font_is_mono)
-          {
-            ctx_font (ctx, "regular");
-            vt->font_is_mono = 0;
-          }
-        cw = ctx_glyph_width (ctx, unichar);
-      }
-    else
-      {
-        if (vt->font_is_mono == 0)
-          {
-            ctx_font (ctx, "mono");
-            vt->font_is_mono = 1;
-            if (col > 1)
-              {
-                int x = x0;
-                int new_cw = cw - ( (x % cw) );
-                if (new_cw < cw*3/2)
-                  { new_cw += cw; }
-                cw = new_cw;
-              }
-          }
-      }
-    float scale_x = 1.0f;
-    float scale_y = 1.0f;
-    float offset_y = 0.0f;
-    if (dw)
-      {
-        scale_x = 2.0f;
-      }
-    if (dh)
-      {
-        scale_y = 2.0f;
-      }
-    if (dh == 1)
-      {
-        offset_y = 0.5f;
-      }
-    else if (dh == -1)
-      {
-        offset_y =  0.0f;
-      }
-    if (in_smooth_scroll)
-      {
-        offset_y -= vt->scroll_offset / (dh?2:1);
-      }
-    cw *= scale_x;
-    if (blink_fast)
-      {
-        if ( (vt->blink_state % 2) == 0)
-          { blink = 1; }
-        else
-          { blink = 0; }
-      }
-    else if (blink)
-      {
-        if ( (vt->blink_state % 10) < 5)
-          { blink = 1; }
-        else
-          { blink = 0; }
-      }
-    /*
-       from the vt100 technical-manual:
-
-       "Reverse characters [..] normally have dim backgrounds with
-       black characters so that large white spaces have the same impact
-       on the viewer's eye as the smaller brighter white areas of
-       normal characters. Bold and reverse asserted together give a
-       background of normal intensity. Blink applied to nonreverse
-       characters causes them to alternate between their usual
-       intensity and the next lower intensity. (Normal characters vary
-       between normal and dim intensity. Bold characters vary between
-       bright and normal intensity.) Blink applied to a reverse
-       character causes that character to alternate between normal and
-       reverse video representations of that character."
-
-       This is in contrast with how the truth table appears to be
-       meant used, since it uses a reverse computed as the xor of
-       the global screen reverse and the reverse attribute of the
-       cell.
-
-       To fulfil the more asthethic resulting from implementing the
-       text, and would be useful to show how the on_bright background
-       mode of the vt100 actually displays the vttest.
-
-       */
-    if (on_white)
-      {
-        if ( (reverse) == 0)
-          {
-            if (bold)
-              {
-                bg_intensity =           2;
-                fg_intensity = blink?1:  0;
-              }
-            else if (dim)
-              {
-                bg_intensity =           2;
-                fg_intensity = blink?3:  1;
-              }
-            else
-              {
-                bg_intensity =           2;
-                fg_intensity = blink?1:  0;
-              }
-            if (fg_set)
-              {
-                fg_intensity = blink?2:3;
-              }
-          }
-        else
-          {
-            if (bold)
-              {
-                bg_intensity = blink?2:  0;
-                fg_intensity = blink?0:  3;
-              }
-            else if (dim)
-              {
-                bg_intensity = blink?2:  0;
-                fg_intensity = blink?0:  1;
-              }
-            else
-              {
-                bg_intensity = blink?2:  0;
-                fg_intensity = blink?0:  2;
-              }
-          }
-      }
-    else /* bright on dark */
-      {
-        if (reverse == 0)
-          {
-            if (bold)
-              {
-                bg_intensity =           0;
-                fg_intensity = blink?2:  3;
-              }
-            else if (dim)
-              {
-                bg_intensity =           0;
-                fg_intensity = blink?0:  1;
-              }
-            else
-              {
-                bg_intensity =           0;
-                fg_intensity = blink?1:  2;
-              }
-          }
-        else
-          {
-            if (bold)
-              {
-                bg_intensity = blink?0:  2;
-                fg_intensity = blink?3:  0;
-              }
-            else if (dim)
-              {
-                bg_intensity = blink?0:  2;
-                fg_intensity = blink?1:  0;
-              }
-            else
-              {
-                bg_intensity = blink?0:  2;
-                fg_intensity = blink?2:  0;
-              }
-          }
-      }
-    if (bg)
-      {
-        //ctx_begin_path (ctx);
-        if (style &  STYLE_BG24_COLOR_SET)
-          {
-            // XXX - this case seem to be missing reverse handling
-            uint64_t temp = style >> 40;
-            int r = temp & 0xff;
-            temp >>= 8;
-            int g = temp & 0xff;
-            temp >>= 8;
-            int b = temp & 0xff;
-            if (dh)
-              { r= g = b = 30; }
-            if (r == 0 && g == r && b == g)
-              goto bg_done;
-            ctx_rgba8 (ctx, r, g, b, 255);
-          }
-        else
-          {
-            if (style & STYLE_BG_COLOR_SET)
-              {
-                if (reverse)
-                  {
-                    color = (style >> 16) & 255;
-                  }
-                else
-                  {
-                    color = (style >> 40) & 255;
-                  }
-                bg_intensity = -1;
-                if (color == 0)
-                  goto bg_done;
-                vt_ctx_set_color (vt, ctx, color, bg_intensity);
-              }
-            else
-              {
-                uint8_t rgb[3]= {0,};
-                switch (bg_intensity)
-                  {
-                    case 0:
-                      for (int i = 0; i <3 ; i++)
-                        { rgb[i] = vt->bg_color[i]; }
-                      break;
-                    case 1:
-                      for (int i = 0; i <3 ; i++)
-                        { rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
-                      break;
-                    case 2:
-                      for (int i = 0; i <3 ; i++)
-                        { rgb[i] = vt->bg_color[i] * 0.05 + vt->fg_color[i] * 0.95; }
-                      break;
-                    case 3:
-                      for (int i = 0; i <3 ; i++)
-                        { rgb[i] = vt->fg_color[i]; }
-                      break;
-                  }
-                if (rgb[0] == 0 && rgb[0] == rgb[1] && rgb[2] == rgb[1])
-                  goto bg_done;
-                ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
-              }
-          }
-        if (dh)
-          {
-            ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - ch - ch * (vt->scroll_offset)), cw, ch);
-          }
-        else
-          {
-            ctx_rectangle (ctx, x0, y0 - ch + ch * offset_y, cw, ch);
-          }
-        ctx_fill (ctx);
-bg_done:
+      switch (intensity)
         {
-        };
-      }
-    if (!fg) { return cw; }
-    int italic        = (style & STYLE_ITALIC) != 0;
-    int strikethrough = (style & STYLE_STRIKETHROUGH) != 0;
-    int overline      = (style & STYLE_OVERLINE) != 0;
-    int underline     = (style & STYLE_UNDERLINE) != 0;
-    int underline_var = (style & STYLE_UNDERLINE_VAR) != 0;
-    if (dh == 1)
+          case 0:
+            no = 0;
+            break;
+          case 1:
+            // 15 becomes 7
+            if (no == 15) { no = 8; }
+            else if (no > 8) { no -= 8; }
+            break;
+          case 2:
+            /* give the normal color special treatment, and in really normal
+             * cirumstances it is the dim variant of foreground that is used
+             */
+            if (no == 15) { no = 7; }
+            break;
+          case 3:
+          case 4:
+            if (no < 8)
+              { no += 8; }
+            break;
+          default:
+            break;
+        }
+      r = palettes[vt->palette_no][no][0];
+      g = palettes[vt->palette_no][no][1];
+      b = palettes[vt->palette_no][no][2];
+    }
+  else if (no < 16 + 6*6*6)
+    {
+      no = no-16;
+      b = (no % 6) * 255 / 5;
+      no /= 6;
+      g = (no % 6) * 255 / 5;
+      no /= 6;
+      r = (no % 6) * 255 / 5;
+    }
+  else
+    {
+      int gray = no - (16 + 6*6*6);
+      float val = gray * 255 / 24;
+      r = g = b = val;
+    }
+  ctx_rgba8 (ctx, r, g, b, 255);
+}
+
+int vt_keyrepeat (VT *vt)
+{
+  return vt->keyrepeat;
+}
+
+float vt_draw_cell (VT *vt, Ctx *ctx,
+                    int   row, int col, // pass 0 to force draw - like
+                    float x0, float y0, // for scrollback visible
+                    uint64_t style,
+                    uint32_t unichar,
+                    int      bg, int fg,
+                    int      dw, int dh,
+                    int in_smooth_scroll,
+                    int in_select)
+// dw is 0 or 1
+// dh is 0 1 or -1  1 is upper -1 is lower
+{
+  int on_white = vt->reverse_video;
+  int color = 0;
+  int bold = (style & STYLE_BOLD) != 0;
+  int dim = (style & STYLE_DIM) != 0;
+  int hidden = (style & STYLE_HIDDEN) != 0;
+  int proportional = (style & STYLE_PROPORTIONAL) != 0;
+  int fg_set = (style & STYLE_FG_COLOR_SET) != 0;
+  int bg_intensity = 0;
+  int fg_intensity = 2;
+  int reverse = ( (style & STYLE_REVERSE) != 0) ^ in_select;
+  int blink = ( (style & STYLE_BLINK) != 0);
+  int blink_fast = ( (style & STYLE_BLINK_FAST) != 0);
+  int cw = vt->cw;
+  int ch = vt->ch;
+  if (proportional)
+    {
+      if (vt->font_is_mono)
+        {
+          ctx_font (ctx, "regular");
+          vt->font_is_mono = 0;
+        }
+      cw = ctx_glyph_width (ctx, unichar);
+    }
+  else
+    {
+      if (vt->font_is_mono == 0)
+        {
+          ctx_font (ctx, "mono");
+          vt->font_is_mono = 1;
+          if (col > 1)
+            {
+              int x = x0;
+              int new_cw = cw - ( (x % cw) );
+              if (new_cw < cw*3/2)
+                { new_cw += cw; }
+              cw = new_cw;
+            }
+        }
+    }
+  float scale_x = 1.0f;
+  float scale_y = 1.0f;
+  float offset_y = 0.0f;
+  if (dw)
+    {
+      scale_x = 2.0f;
+    }
+  if (dh)
+    {
+      scale_y = 2.0f;
+    }
+  if (dh == 1)
+    {
+      offset_y = 0.5f;
+    }
+  else if (dh == -1)
+    {
+      offset_y =  0.0f;
+    }
+  if (in_smooth_scroll)
+    {
+      offset_y -= vt->scroll_offset / (dh?2:1);
+    }
+  cw *= scale_x;
+  if (blink_fast)
+    {
+      if ( (vt->blink_state % 2) == 0)
+        { blink = 1; }
+      else
+        { blink = 0; }
+    }
+  else if (blink)
+    {
+      if ( (vt->blink_state % 10) < 5)
+        { blink = 1; }
+      else
+        { blink = 0; }
+    }
+  /*
+     from the vt100 technical-manual:
+
+     "Reverse characters [..] normally have dim backgrounds with
+     black characters so that large white spaces have the same impact
+     on the viewer's eye as the smaller brighter white areas of
+     normal characters. Bold and reverse asserted together give a
+     background of normal intensity. Blink applied to nonreverse
+     characters causes them to alternate between their usual
+     intensity and the next lower intensity. (Normal characters vary
+     between normal and dim intensity. Bold characters vary between
+     bright and normal intensity.) Blink applied to a reverse
+     character causes that character to alternate between normal and
+     reverse video representations of that character."
+
+     This is in contrast with how the truth table appears to be
+     meant used, since it uses a reverse computed as the xor of
+     the global screen reverse and the reverse attribute of the
+     cell.
+
+     To fulfil the more asthethic resulting from implementing the
+     text, and would be useful to show how the on_bright background
+     mode of the vt100 actually displays the vttest.
+
+     */
+  if (on_white)
+    {
+      if ( (reverse) == 0)
+        {
+          if (bold)
+            {
+              bg_intensity =           2;
+              fg_intensity = blink?1:  0;
+            }
+          else if (dim)
+            {
+              bg_intensity =           2;
+              fg_intensity = blink?3:  1;
+            }
+          else
+            {
+              bg_intensity =           2;
+              fg_intensity = blink?1:  0;
+            }
+          if (fg_set)
+            {
+              fg_intensity = blink?2:3;
+            }
+        }
+      else
+        {
+          if (bold)
+            {
+              bg_intensity = blink?2:  0;
+              fg_intensity = blink?0:  3;
+            }
+          else if (dim)
+            {
+              bg_intensity = blink?2:  0;
+              fg_intensity = blink?0:  1;
+            }
+          else
+            {
+              bg_intensity = blink?2:  0;
+              fg_intensity = blink?0:  2;
+            }
+        }
+    }
+  else /* bright on dark */
+    {
+      if (reverse == 0)
+        {
+          if (bold)
+            {
+              bg_intensity =           0;
+              fg_intensity = blink?2:  3;
+            }
+          else if (dim)
+            {
+              bg_intensity =           0;
+              fg_intensity = blink?0:  1;
+            }
+          else
+            {
+              bg_intensity =           0;
+              fg_intensity = blink?1:  2;
+            }
+        }
+      else
+        {
+          if (bold)
+            {
+              bg_intensity = blink?0:  2;
+              fg_intensity = blink?3:  0;
+            }
+          else if (dim)
+            {
+              bg_intensity = blink?0:  2;
+              fg_intensity = blink?1:  0;
+            }
+          else
+            {
+              bg_intensity = blink?0:  2;
+              fg_intensity = blink?2:  0;
+            }
+        }
+    }
+  if (bg)
+    {
+      //ctx_begin_path (ctx);
+      if (style &  STYLE_BG24_COLOR_SET)
+        {
+          // XXX - this case seem to be missing reverse handling
+          uint64_t temp = style >> 40;
+          int r = temp & 0xff;
+          temp >>= 8;
+          int g = temp & 0xff;
+          temp >>= 8;
+          int b = temp & 0xff;
+          if (dh)
+            { r= g = b = 30; }
+          if (r == 0 && g == r && b == g)
+            goto bg_done;
+          ctx_rgba8 (ctx, r, g, b, 255);
+        }
+      else
+        {
+          if (style & STYLE_BG_COLOR_SET)
+            {
+              if (reverse)
+                {
+                  color = (style >> 16) & 255;
+                }
+              else
+                {
+                  color = (style >> 40) & 255;
+                }
+              bg_intensity = -1;
+              if (color == 0)
+                goto bg_done;
+              vt_ctx_set_color (vt, ctx, color, bg_intensity);
+            }
+          else
+            {
+              uint8_t rgb[3]= {0,};
+              switch (bg_intensity)
+                {
+                  case 0:
+                    for (int i = 0; i <3 ; i++)
+                      { rgb[i] = vt->bg_color[i]; }
+                    break;
+                  case 1:
+                    for (int i = 0; i <3 ; i++)
+                      { rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
+                    break;
+                  case 2:
+                    for (int i = 0; i <3 ; i++)
+                      { rgb[i] = vt->bg_color[i] * 0.05 + vt->fg_color[i] * 0.95; }
+                    break;
+                  case 3:
+                    for (int i = 0; i <3 ; i++)
+                      { rgb[i] = vt->fg_color[i]; }
+                    break;
+                }
+              if (rgb[0] == 0 && rgb[0] == rgb[1] && rgb[2] == rgb[1])
+                goto bg_done;
+              ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
+            }
+        }
+      if (dh)
+        {
+          ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - ch - ch * (vt->scroll_offset)), cw, ch);
+        }
+      else
+        {
+          ctx_rectangle (ctx, x0, y0 - ch + ch * offset_y, cw, ch);
+        }
+      ctx_fill (ctx);
+bg_done:
       {
-        underline = underline_var = 0;
-      }
-    int double_underline = 0;
-    int curved_underline = 0;
-    if (underline_var)
-      {
-        if (underline)
-          {
-            double_underline = 1;
-          }
-        else
-          {
-            curved_underline = 1;
-          }
-      }
+      };
+    }
+  if (!fg) { return cw; }
+  int italic        = (style & STYLE_ITALIC) != 0;
+  int strikethrough = (style & STYLE_STRIKETHROUGH) != 0;
+  int overline      = (style & STYLE_OVERLINE) != 0;
+  int underline     = (style & STYLE_UNDERLINE) != 0;
+  int underline_var = (style & STYLE_UNDERLINE_VAR) != 0;
+  if (dh == 1)
+    {
+      underline = underline_var = 0;
+    }
+  int double_underline = 0;
+  int curved_underline = 0;
+  if (underline_var)
+    {
+      if (underline)
+        {
+          double_underline = 1;
+        }
+      else
+        {
+          curved_underline = 1;
+        }
+    }
 
-    if (unichar == ' ' && !(underline || double_underline || curved_underline))
-            hidden = 1;
+  if (unichar == ' ' && !(underline || double_underline || curved_underline))
+          hidden = 1;
 
-    if (!hidden)
-      {
-        if (style & STYLE_FG24_COLOR_SET)
-          {
-            uint64_t temp = style >> 16;
-            int r = temp & 0xff;
-            temp >>= 8;
-            int g = temp & 0xff;
-            temp >>= 8;
-            int b = temp & 0xff;
-            ctx_rgba8 (ctx, r, g, b, 255);
-          }
-        else
-          {
-            if ( (style & STYLE_FG_COLOR_SET) == 0)
-              {
-                uint8_t rgb[3]= {0,};
-                switch (fg_intensity)
-                  {
-                    case 0:
-                      for (int i = 0; i <3 ; i++)
-                        { rgb[i] = vt->bg_color[i] * 0.7 + vt->fg_color[i] * 0.3; }
-                      break;
-                    case 1:
-                      for (int i = 0; i <3 ; i++)
-                        { rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
-                      break;
-                    case 2:
-                      for (int i = 0; i <3 ; i++)
-                        { rgb[i] = vt->bg_color[i] * 0.20 + vt->fg_color[i] * 0.80; }
-                      break;
-                    case 3:
-                      for (int i = 0; i <3 ; i++)
-                        { rgb[i] = vt->fg_color[i]; }
-                  }
-                ctx_rgba8 (ctx, rgb[0],
-                               rgb[1],
-                               rgb[2], 255);
-              }
-            else
-              {
-                if (reverse)
-                  { color = (style >> 40) & 255; }
-                else
-                  { color = (style >> 16) & 255; }
-                bg_intensity = -1;
-                vt_ctx_set_color (vt, ctx, color, fg_intensity);
-              }
-          }
-        if (italic)
-          {
-            ctx_save (ctx);
-            ctx_translate (ctx, (x0 + cw/3), (y0 + vt->ch/2) );
-            ctx_scale (ctx, 0.9, 0.9);
-            ctx_rotate (ctx, 0.15);
-            ctx_translate (ctx, - (x0 + cw/3), - (y0 + vt->ch/2) );
-          }
-        vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold, scale_x, scale_y, offset_y);
-        if (italic)
-          {
-            ctx_restore (ctx);
-          }
-        if (curved_underline)
-          {
-            ctx_begin_path (ctx);
-            ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
-            ctx_rel_line_to (ctx, (cw+2) /3, -vt->ch * 0.05);
-            ctx_rel_line_to (ctx, (cw+2) /3, vt->ch * 0.1);
-            ctx_rel_line_to (ctx, (cw+2) /3, -vt->ch * 0.05);
-            //ctx_rel_line_to (ctx, cw, 0);
-            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04) );
-            ctx_stroke (ctx);
-          }
-        else if (double_underline)
-          {
-            ctx_begin_path (ctx);
-            ctx_move_to (ctx, x0, y0 - vt->font_size * 0.130 - vt->ch * vt->scroll_offset);
-            ctx_rel_line_to (ctx, cw, 0);
-            ctx_move_to (ctx, x0, y0 - vt->font_size * 0.030 - vt->ch * vt->scroll_offset);
-            ctx_rel_line_to (ctx, cw, 0);
-            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04) );
-            ctx_stroke (ctx);
-          }
-        else if (underline)
-          {
-            ctx_begin_path (ctx);
-            ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
-            ctx_rel_line_to (ctx, cw, 0);
-            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
-            ctx_stroke (ctx);
-          }
-        if (overline)
-          {
-            ctx_begin_path (ctx);
-            ctx_move_to (ctx, x0, y0 - vt->font_size * 0.94 - vt->ch * vt->scroll_offset);
-            ctx_rel_line_to (ctx, cw, 0);
-            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
-            ctx_stroke (ctx);
-          }
-        if (strikethrough)
-          {
-            ctx_begin_path (ctx);
-            ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43 - vt->ch * vt->scroll_offset);
-            ctx_rel_line_to (ctx, cw, 0);
-            ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
-            ctx_stroke (ctx);
-          }
-      }
-    return cw;
-  }
+  if (!hidden)
+    {
+      if (style & STYLE_FG24_COLOR_SET)
+        {
+          uint64_t temp = style >> 16;
+          int r = temp & 0xff;
+          temp >>= 8;
+          int g = temp & 0xff;
+          temp >>= 8;
+          int b = temp & 0xff;
+          ctx_rgba8 (ctx, r, g, b, 255);
+        }
+      else
+        {
+          if ( (style & STYLE_FG_COLOR_SET) == 0)
+            {
+              uint8_t rgb[3]= {0,};
+              switch (fg_intensity)
+                {
+                  case 0:
+                    for (int i = 0; i <3 ; i++)
+                      { rgb[i] = vt->bg_color[i] * 0.7 + vt->fg_color[i] * 0.3; }
+                    break;
+                  case 1:
+                    for (int i = 0; i <3 ; i++)
+                      { rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
+                    break;
+                  case 2:
+                    for (int i = 0; i <3 ; i++)
+                      { rgb[i] = vt->bg_color[i] * 0.20 + vt->fg_color[i] * 0.80; }
+                    break;
+                  case 3:
+                    for (int i = 0; i <3 ; i++)
+                      { rgb[i] = vt->fg_color[i]; }
+                }
+              ctx_rgba8 (ctx, rgb[0],
+                             rgb[1],
+                             rgb[2], 255);
+            }
+          else
+            {
+              if (reverse)
+                { color = (style >> 40) & 255; }
+              else
+                { color = (style >> 16) & 255; }
+              bg_intensity = -1;
+              vt_ctx_set_color (vt, ctx, color, fg_intensity);
+            }
+        }
+      if (italic)
+        {
+          ctx_save (ctx);
+          ctx_translate (ctx, (x0 + cw/3), (y0 + vt->ch/2) );
+          ctx_scale (ctx, 0.9, 0.9);
+          ctx_rotate (ctx, 0.15);
+          ctx_translate (ctx, - (x0 + cw/3), - (y0 + vt->ch/2) );
+        }
+      vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold, scale_x, scale_y, offset_y);
+      if (italic)
+        {
+          ctx_restore (ctx);
+        }
+      if (curved_underline)
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
+          ctx_rel_line_to (ctx, (cw+2) /3, -vt->ch * 0.05);
+          ctx_rel_line_to (ctx, (cw+2) /3, vt->ch * 0.1);
+          ctx_rel_line_to (ctx, (cw+2) /3, -vt->ch * 0.05);
+          //ctx_rel_line_to (ctx, cw, 0);
+          ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04) );
+          ctx_stroke (ctx);
+        }
+      else if (double_underline)
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x0, y0 - vt->font_size * 0.130 - vt->ch * vt->scroll_offset);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_move_to (ctx, x0, y0 - vt->font_size * 0.030 - vt->ch * vt->scroll_offset);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.050:0.04) );
+          ctx_stroke (ctx);
+        }
+      else if (underline)
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x0, y0 - vt->font_size * 0.07 - vt->ch * vt->scroll_offset);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
+          ctx_stroke (ctx);
+        }
+      if (overline)
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x0, y0 - vt->font_size * 0.94 - vt->ch * vt->scroll_offset);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
+          ctx_stroke (ctx);
+        }
+      if (strikethrough)
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x0, y0 - vt->font_size * 0.43 - vt->ch * vt->scroll_offset);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_line_width (ctx, vt->font_size * (style &  STYLE_BOLD?0.075:0.05) );
+          ctx_stroke (ctx);
+        }
+    }
+  return cw;
+}
 
 
-  int vt_has_blink (VT *vt)
-  {
-    return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
-  }
+int vt_has_blink (VT *vt)
+{
+  return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
+}
 
 void vt_mouse_event (CtxEvent *event, void *data, void *data2)
 {
@@ -6297,485 +6298,497 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       sprintf (buf, "mouse-release %.0f %.0f", x, y);
       vt_feed_keystring (vt, buf);
       break;
+    default:
+      break;
   }
 }
 
 void pressed (CtxEvent *event, void *data, void *data2)
 {
   VT *vt = data;
-  fprintf (stderr, "press %f %f\n", event->x, event->y);
-}
-
-void drag (CtxEvent *event, void *data, void *data2)
-{
-  VT *vt = data;
-  fprintf (stderr, "drag %f %f\n", event->delta_x, event->delta_y);
+  float disp_lines = vt->rows;
+  float tot_lines = vt->line_count + vt->scrollback_count;
+  vt->scroll = tot_lines - disp_lines - (event->y*1.0/ (vt->rows * vt->ch) ) * tot_lines + disp_lines/2;
+  if (vt->scroll < 0) { vt->scroll = 0.01; }
+  fprintf (stderr, "press %f %f scroll:%f\n", event->x, event->y, vt->scroll);
+  vt->rev++;
   event->stop_propagate = 1;
 }
 
-
-  void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
+void scroll_drag (CtxEvent *event, void *data, void *data2)
+{
+  VT *vt = data;
+  float tot_lines = vt->line_count + vt->scrollback_count;
+  if (event->type == CTX_DRAG_MOTION)
   {
-    int image_id = 0;
-    ctx_save (ctx);
-    ctx_font (ctx, "mono");
-    vt->font_is_mono = 0;
-    ctx_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
-    vt->has_blink = 0;
-    vt->blink_state++;
-    int cursor_x_px = 0;
-    int cursor_y_px = 0;
-    int cursor_w = vt->cw;
-    int cursor_h = vt->ch;
-    cursor_x_px = x0 + (vt->cursor_x - 1) * vt->cw;
-    cursor_y_px = y0 + (vt->cursor_y - 1) * vt->ch;
-    cursor_w = vt->cw;
-    cursor_h = vt->ch;
-    //if (vt->scroll || full)
-      {
-        ctx_begin_path (ctx);
-        ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
-                       (vt->rows + 1) * vt->ch);
-        if (vt->reverse_video)
-          {
-            ctx_rgba (ctx, 1,1,1,1);
-            ctx_fill  (ctx);
-            ctx_rgba (ctx, 0,0,0,1);
-          }
-        else
-          {
-            ctx_rgba (ctx, 0,0,0,1);
-            ctx_fill  (ctx);
-            ctx_rgba (ctx, 1,1,1,1);
-          }
-        if (vt->scroll != 0.0f)
-          ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
-      }
-    /* draw terminal lines */
+    vt->scroll -= (event->delta_y * tot_lines) / (vt->rows * vt->ch);
+  }
+  vt->rev++;
+  event->stop_propagate = 1;
+}
+
+void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
+{
+  int image_id = 0;
+  ctx_save (ctx);
+  ctx_font (ctx, "mono");
+  vt->font_is_mono = 0;
+  ctx_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
+  vt->has_blink = 0;
+  vt->blink_state++;
+  int cursor_x_px = 0;
+  int cursor_y_px = 0;
+  int cursor_w = vt->cw;
+  int cursor_h = vt->ch;
+  cursor_x_px = x0 + (vt->cursor_x - 1) * vt->cw;
+  cursor_y_px = y0 + (vt->cursor_y - 1) * vt->ch;
+  cursor_w = vt->cw;
+  cursor_h = vt->ch;
+  //if (vt->scroll || full)
+    {
+      ctx_begin_path (ctx);
+      ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
+                     (vt->rows + 1) * vt->ch);
+      if (vt->reverse_video)
+        {
+          ctx_rgba (ctx, 1,1,1,1);
+          ctx_fill  (ctx);
+          ctx_rgba (ctx, 0,0,0,1);
+        }
+      else
+        {
+          ctx_rgba (ctx, 0,0,0,1);
+          ctx_fill  (ctx);
+          ctx_rgba (ctx, 1,1,1,1);
+        }
+      if (vt->scroll != 0.0f)
+        ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
+    }
+  /* draw terminal lines */
 #if 0
-    when in scroll...
-    first draw things in scrolling region
-    then draw all else,
+  when in scroll...
+  first draw things in scrolling region
+  then draw all else,
 #endif
 
-    {
-      for (int row = 0; row <= (vt->scroll) + vt->rows; row ++)
-        {
-          CtxList *l = ctx_list_nth (vt->lines, row);
-          float y = y0 + vt->ch * (vt->rows - row);
-          if (row >= vt->rows)
-            {
-              l = ctx_list_nth (vt->scrollback, row-vt->rows);
-            }
-          if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
-            {
-              VtLine *line = l->data;
-              int r = vt->rows - row;
-              if (line->string.str[0] == 0 && r < vt->rows && 0)
-                      // this being 0 is not enough, the string as used
-                      // here is not neccesarily null terminated.
+   {
+     for (int row = 0; row <= (vt->scroll) + vt->rows; row ++)
+       {
+         CtxList *l = ctx_list_nth (vt->lines, row);
+         float y = y0 + vt->ch * (vt->rows - row);
+         if (row >= vt->rows)
+           {
+             l = ctx_list_nth (vt->scrollback, row-vt->rows);
+           }
+         if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
+           {
+             VtLine *line = l->data;
+             int r = vt->rows - row;
+             if (line->string.str[0] == 0 && r < vt->rows && 0)
+                     // this being 0 is not enough, the string as used
+                     // here is not neccesarily null terminated.
+             {
+               ctx_rectangle (ctx, x0, y - vt->ch, vt->cw * vt->cols, vt->ch);
+       if (vt->reverse_video)
+         {
+           ctx_rgba (ctx, 1,1,1,1);
+           ctx_fill  (ctx);
+           ctx_rgba (ctx, 0,0,0,1);
+         }
+       else
+         {
+           ctx_rgba (ctx, 0,0,0,1);
+           ctx_fill  (ctx);
+           ctx_rgba (ctx, 1,1,1,1);
+         }
+               continue;
+             }
+             const char *data = line->string.str;
+             const char *d = data;
+             float x = x0;
+             uint64_t style = 0;
+             uint32_t unichar = 0;
+             int in_scrolling_region = vt->in_smooth_scroll && ( (r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
+             int got_selection = 0;
+             for (int col = 1; col <= vt->cols * 1.33 && x < vt->cols * vt->cw; col++)
+               {
+                 int c = col;
+                 int real_cw;
+                 int in_selected_region = 0;
+                 if (r > vt->select_start_row && r < vt->select_end_row)
+                   {
+                     in_selected_region = 1;
+                   }
+                 else if (r == vt->select_start_row)
+                   {
+                     if (col >= vt->select_start_col) { in_selected_region = 1; }
+                     if (r == vt->select_end_row)
+                       {
+                         if (col > vt->select_end_col) { in_selected_region = 0; }
+                       }
+                   }
+                 else if (r == vt->select_end_row)
+                   {
+                     in_selected_region = 1;
+                     if (col > vt->select_end_col) { in_selected_region = 0; }
+                   }
+                 got_selection |= in_selected_region;
+                 //if (vt->scroll || full)
+                   {
+                     /* this prevents draw_cell from using cache */
+                     r = c = 0;
+                   }
+                 style = vt_line_get_style (line, col-1);
+                 unichar = d?ctx_utf8_to_unichar (d) :' ';
+                 real_cw=vt_draw_cell (vt, ctx, r, c, x, y, style, unichar, 1, 1,
+                                       line->double_width,
+                                       line->double_height_top?1:
+                                       line->double_height_bottom?-1:0,
+                                       in_scrolling_region,
+                                       in_selected_region);
+                 if (r == vt->cursor_y && col == vt->cursor_x)
+                   {
+                     cursor_x_px = x;
+                   }
+                 x+=real_cw;
+                 if (style & STYLE_BLINK ||
+                     style & STYLE_BLINK_FAST)
+                   {
+                     vt->has_blink = 1;
+                   }
+                 if (d)
+                   {
+                     d = mrg_utf8_skip (d, 1);
+                     if (!*d) { d = NULL; }
+                   }
+               }
+#if 0
+            while (x < vt->cols * vt->cw)
               {
-                ctx_rectangle (ctx, x0, y - vt->ch, vt->cw * vt->cols, vt->ch);
-        if (vt->reverse_video)
-          {
-            ctx_rgba (ctx, 1,1,1,1);
-            ctx_fill  (ctx);
-            ctx_rgba (ctx, 0,0,0,1);
-          }
-        else
-          {
-            ctx_rgba (ctx, 0,0,0,1);
-            ctx_fill  (ctx);
-            ctx_rgba (ctx, 1,1,1,1);
-          }
-                continue;
+                x+=vt_draw_cell (vt, ctx, -1, -1, x, y, style, '-', 1, 1,
+                                 line->double_width,
+                                 line->double_height_top?1:
+                                 line->double_height_bottom?-1:0,
+                                 in_scrolling_region,
+                                 0);
               }
-              const char *data = line->string.str;
-              const char *d = data;
-              float x = x0;
-              uint64_t style = 0;
-              uint32_t unichar = 0;
-              int in_scrolling_region = vt->in_smooth_scroll && ( (r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
-              int got_selection = 0;
-              for (int col = 1; col <= vt->cols * 1.33 && x < vt->cols * vt->cw; col++)
-                {
-                  int c = col;
-                  int real_cw;
-                  int in_selected_region = 0;
-                  if (r > vt->select_start_row && r < vt->select_end_row)
-                    {
-                      in_selected_region = 1;
-                    }
-                  else if (r == vt->select_start_row)
-                    {
-                      if (col >= vt->select_start_col) { in_selected_region = 1; }
-                      if (r == vt->select_end_row)
-                        {
-                          if (col > vt->select_end_col) { in_selected_region = 0; }
-                        }
-                    }
-                  else if (r == vt->select_end_row)
-                    {
-                      in_selected_region = 1;
-                      if (col > vt->select_end_col) { in_selected_region = 0; }
-                    }
-                  got_selection |= in_selected_region;
-                  //if (vt->scroll || full)
-                    {
-                      /* this prevents draw_cell from using cache */
-                      r = c = 0;
-                    }
-                  style = vt_line_get_style (line, col-1);
-                  unichar = d?ctx_utf8_to_unichar (d) :' ';
-                  real_cw=vt_draw_cell (vt, ctx, r, c, x, y, style, unichar, 1, 1,
-                                        line->double_width,
-                                        line->double_height_top?1:
-                                        line->double_height_bottom?-1:0,
-                                        in_scrolling_region,
-                                        in_selected_region);
-                  if (r == vt->cursor_y && col == vt->cursor_x)
-                    {
-                      cursor_x_px = x;
-                    }
-                  x+=real_cw;
-                  if (style & STYLE_BLINK ||
-                      style & STYLE_BLINK_FAST)
-                    {
-                      vt->has_blink = 1;
-                    }
-                  if (d)
-                    {
-                      d = mrg_utf8_skip (d, 1);
-                      if (!*d) { d = NULL; }
-                    }
-                }
-#if 0
-              while (x < vt->cols * vt->cw)
-                {
-                  x+=vt_draw_cell (vt, ctx, -1, -1, x, y, style, '-', 1, 1,
-                                   line->double_width,
-                                   line->double_height_top?1:
-                                   line->double_height_bottom?-1:0,
-                                   in_scrolling_region,
-                                   0);
-                }
 #endif
-              for (int i = 0; i < 4; i++)
-                {
-                  Image *image = line->images[i];
-                  if (image)
-                    {
-                      int u = (line->image_col[i]-1) * vt->cw + (line->image_X[i] * vt->cw);
-                      int v = y - vt->ch + (line->image_Y[i] * vt->ch);
-                  //  int rows = (image->height + (vt->ch-1) ) /vt->ch;
-                      ctx_save (ctx);
-                      // we give each texture a unique-id - if we use more ids than
-                      // there is, ctx will alias the first image.
-                      ctx_texture_init (ctx, image_id, image->width, image->height, image->kitty_format,
-                                        image->data, NULL, NULL);
-                      ctx_texture (ctx, image_id, u, v);
-                      image_id ++;
-                      ctx_rectangle (ctx, u, v, image->width, image->height);
-                      ctx_fill (ctx);
-                      ctx_restore (ctx);
-                    }
-                }
-            }
-        }
-    }
-
-    {
-      /* draw ctx graphics */
-      float y = y0 + vt->ch * vt->rows;
-      for (int row = 0; y > - (vt->scroll + 8) * vt->ch; row ++)
-        {
-          CtxList *l = ctx_list_nth (vt->lines, row);
-          if (row >= vt->rows)
-            {
-              l = ctx_list_nth (vt->scrollback, row-vt->rows);
-            }
-          if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
-            {
-              VtLine *line = l->data;
-              if (line->ctx)
-                {
-                  ctx_save (ctx);
-                  ctx_translate (ctx, 0, (vt->rows-row-1) * (vt->ch) );
-                  //float factor = vt->cols * vt->cw / 1000.0;
-                  //ctx_scale (ctx, factor, factor);
-                  ctx_render_ctx (line->ctx, ctx);
-                  ctx_restore (ctx);
-                }
-            }
-          y -= vt->ch;
-        }
-    }
-
-    /* draw cursor */
-    if (vt->cursor_visible)
-      {
-        ctx_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
-        ctx_begin_path (ctx);
-        ctx_rectangle (ctx,
-                       cursor_x_px, cursor_y_px,
-                       cursor_w, cursor_h);
-        ctx_fill (ctx);
-      }
-    for (int i = 0; i < 4; i++)
-      {
-        if (vt->leds[i])
-          {
-            ctx_rgba (ctx, .5,1,.5,0.8);
-            ctx_rectangle (ctx, vt->cw * i + vt->cw * 0.25, vt->ch * 0.25, vt->cw/2, vt->ch/2);
-            ctx_fill (ctx);
+            for (int i = 0; i < 4; i++)
+              {
+                Image *image = line->images[i];
+                if (image)
+                  {
+                    int u = (line->image_col[i]-1) * vt->cw + (line->image_X[i] * vt->cw);
+                    int v = y - vt->ch + (line->image_Y[i] * vt->ch);
+                //  int rows = (image->height + (vt->ch-1) ) /vt->ch;
+                    ctx_save (ctx);
+                    // we give each texture a unique-id - if we use more ids than
+                    // there is, ctx will alias the first image.
+                    ctx_texture_init (ctx, image_id, image->width, image->height, image->kitty_format,
+                                      image->data, NULL, NULL);
+                    ctx_texture (ctx, image_id, u, v);
+                    image_id ++;
+                    ctx_rectangle (ctx, u, v, image->width, image->height);
+                    ctx_fill (ctx);
+                    ctx_restore (ctx);
+                  }
+              }
           }
       }
-    ctx_restore (ctx);
+  }
+
+  {
+    /* draw ctx graphics */
+    float y = y0 + vt->ch * vt->rows;
+    for (int row = 0; y > - (vt->scroll + 8) * vt->ch; row ++)
+      {
+        CtxList *l = ctx_list_nth (vt->lines, row);
+        if (row >= vt->rows)
+          {
+            l = ctx_list_nth (vt->scrollback, row-vt->rows);
+          }
+        if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
+          {
+            VtLine *line = l->data;
+            if (line->ctx)
+              {
+                ctx_save (ctx);
+                ctx_translate (ctx, 0, (vt->rows-row-1) * (vt->ch) );
+                //float factor = vt->cols * vt->cw / 1000.0;
+                //ctx_scale (ctx, factor, factor);
+                ctx_render_ctx (line->ctx, ctx);
+                ctx_restore (ctx);
+              }
+          }
+        y -= vt->ch;
+      }
+  }
+
+  /* draw cursor */
+  if (vt->cursor_visible)
+    {
+      ctx_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
+      ctx_begin_path (ctx);
+      ctx_rectangle (ctx,
+                     cursor_x_px, cursor_y_px,
+                     cursor_w, cursor_h);
+      ctx_fill (ctx);
+    }
+  for (int i = 0; i < 4; i++)
+    {
+      if (vt->leds[i])
+        {
+          ctx_rgba (ctx, .5,1,.5,0.8);
+          ctx_rectangle (ctx, vt->cw * i + vt->cw * 0.25, vt->ch * 0.25, vt->cw/2, vt->ch/2);
+          ctx_fill (ctx);
+        }
+    }
+  ctx_restore (ctx);
 //#define SCROLL_SPEED 0.25;
 #define SCROLL_SPEED 0.2;
-    if (vt->in_smooth_scroll)
-      {
-        if (vt->in_smooth_scroll<0)
-          {
-            vt->scroll_offset += SCROLL_SPEED;
-            if (vt->scroll_offset >= 0.0)
-              {
-                vt->scroll_offset = 0;
-                vt->in_smooth_scroll = 0;
-                vt->rev++;
-              }
-          }
-        else
-          {
-            vt->scroll_offset -= SCROLL_SPEED;
-            if (vt->scroll_offset <= 0.0)
-              {
-                vt->scroll_offset = 0;
-                vt->in_smooth_scroll = 0;
-                vt->rev++;
-              }
-          }
-      }
+  if (vt->in_smooth_scroll)
+    {
+      if (vt->in_smooth_scroll<0)
+        {
+          vt->scroll_offset += SCROLL_SPEED;
+          if (vt->scroll_offset >= 0.0)
+            {
+              vt->scroll_offset = 0;
+              vt->in_smooth_scroll = 0;
+              vt->rev++;
+            }
+        }
+      else
+        {
+          vt->scroll_offset -= SCROLL_SPEED;
+          if (vt->scroll_offset <= 0.0)
+            {
+              vt->scroll_offset = 0;
+              vt->in_smooth_scroll = 0;
+              vt->rev++;
+            }
+        }
+    }
 #if 0
-    float width = (vt->cols + 1) * vt->cw;
-    float height = (vt->rows + 1) * vt->ch;
-    float scroll_width = height * 0.05;
+  float width = (vt->cols + 1) * vt->cw;
+  float height = (vt->rows + 1) * vt->ch;
+  float scroll_width = height * 0.05;
 
-      ctx_rectangle (ctx, width - scroll_width, 0, scroll_width, height);
-      ctx_rgba (ctx,1,0,0,0.5);
-      ctx_listen (ctx, CTX_PRESS, pressed, vt, NULL);
-      ctx_fill (ctx);
+    ctx_rectangle (ctx, width - scroll_width, 0, scroll_width, height);
+    ctx_rgba (ctx,1,0,0,0.5);
+    ctx_listen (ctx, CTX_PRESS, pressed, vt, NULL);
+    ctx_fill (ctx);
 #endif
 
-      ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
-      ctx_listen (ctx, CTX_PRESS|CTX_RELEASE|CTX_MOTION, vt_mouse_event, vt, NULL);
-      ctx_begin_path (ctx);
+     ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
+     ctx_listen (ctx, CTX_PRESS|CTX_RELEASE|CTX_MOTION, vt_mouse_event, vt, NULL);
+     ctx_begin_path (ctx);
 
-      if (!vt->in_alt_screen)
-      {
-        float disp_lines = vt->rows;
-        float tot_lines = vt->line_count + vt->scrollback_count;
-        float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
-        float win_len = disp_lines / tot_lines;
-        ctx_rectangle (ctx, vt->cw * (vt->cols - 1.5),
-                       0, 1.5 * vt->cw,
-                       vt->rows * vt->ch);
-        ctx_listen (ctx, CTX_PRESS, pressed, vt, NULL);
-        if (vt->scroll != 0)
-          ctx_rgba (ctx, 0.5, 0.5, 0.5, .25);
-        else
-          ctx_rgba (ctx, 0.5, 0.5, 0.5, .15);
-        ctx_fill (ctx);
-        ctx_round_rectangle (ctx, vt->cw * (vt->cols - 1.5 + 0.1),
-                             offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
-                             win_len * vt->rows * vt->ch,
-                             vt->cw * 1.5 /2);
-        ctx_listen (ctx, CTX_DRAG, drag, vt, NULL);
-        if (vt->scroll != 0)
-          ctx_rgba (ctx, 1, 1, 1, .25);
-        else
-          ctx_rgba (ctx, 1, 1, 1, .15);
-        ctx_fill (ctx);
-      }
+     if (!vt->in_alt_screen)
+     {
+       float disp_lines = vt->rows;
+       float tot_lines = vt->line_count + vt->scrollback_count;
+       float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
+       float win_len = disp_lines / tot_lines;
+       ctx_rectangle (ctx, vt->cw * (vt->cols - 1.5),
+                      0, 1.5 * vt->cw,
+                      vt->rows * vt->ch);
+       ctx_listen (ctx, CTX_PRESS, pressed, vt, NULL);
+       if (vt->scroll != 0)
+         ctx_rgba (ctx, 0.5, 0.5, 0.5, .25);
+       else
+         ctx_rgba (ctx, 0.5, 0.5, 0.5, .15);
+       ctx_fill (ctx);
+       ctx_round_rectangle (ctx, vt->cw * (vt->cols - 1.5 + 0.1),
+                            offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
+                            win_len * vt->rows * vt->ch,
+                            vt->cw * 1.5 /2);
+       ctx_listen (ctx, CTX_DRAG, scroll_drag, vt, NULL);
+       if (vt->scroll != 0)
+         ctx_rgba (ctx, 1, 1, 1, .25);
+       else
+         ctx_rgba (ctx, 1, 1, 1, .15);
+       ctx_fill (ctx);
+     }
 
-  }
+ }
 
-  int vt_is_done (VT *vt)
-  {
-    return vt->vtpty.done;
-  }
+ int vt_is_done (VT *vt)
+ {
+   return vt->vtpty.done;
+ }
 
-  int vt_get_result (VT *vt)
-  {
-    /* we could block - at least for a while, here..? */
-    return vt->result;
-  }
+ int vt_get_result (VT *vt)
+ {
+   /* we could block - at least for a while, here..? */
+   return vt->result;
+ }
 
-  void vt_set_scrollback_lines (VT *vt, int scrollback_lines)
-  {
-    vt->scrollback_limit = scrollback_lines;
-  }
+ void vt_set_scrollback_lines (VT *vt, int scrollback_lines)
+ {
+   vt->scrollback_limit = scrollback_lines;
+ }
 
-  int  vt_get_scrollback_lines (VT *vt)
-  {
-    return vt->scrollback_limit;
-  }
+ int  vt_get_scrollback_lines (VT *vt)
+ {
+   return vt->scrollback_limit;
+ }
 
-  void vt_set_scroll (VT *vt, int scroll)
-  {
-    if (vt->scroll == scroll)
-      { return; }
-    vt->scroll = scroll;
-    if (vt->scroll > ctx_list_length (vt->scrollback) )
-      { vt->scroll = ctx_list_length (vt->scrollback); }
-    if (vt->scroll < 0)
-      { vt->scroll = 0; }
-  }
+ void vt_set_scroll (VT *vt, int scroll)
+ {
+   if (vt->scroll == scroll)
+     { return; }
+   vt->scroll = scroll;
+   if (vt->scroll > ctx_list_length (vt->scrollback) )
+     { vt->scroll = ctx_list_length (vt->scrollback); }
+   if (vt->scroll < 0)
+     { vt->scroll = 0; }
+ }
 
-  int vt_get_scroll (VT *vt)
-  {
-    return vt->scroll;
-  }
+ int vt_get_scroll (VT *vt)
+ {
+   return vt->scroll;
+ }
 
-  char *
-  vt_get_selection (VT *vt)
-  {
-    VtString *str = vt_string_new ("");
-    char *ret;
-    for (int row = vt->select_start_row; row <= vt->select_end_row; row++)
-      {
-        const char *line_str = vt_get_line (vt, vt->rows - row);
-        int col = 1;
-        for (const char *c = line_str; *c; c = mrg_utf8_skip (c, 1), col ++)
-          {
-            if (row == vt->select_end_row && col > vt->select_end_col)
-              { continue; }
-            if (row == vt->select_start_row && col < vt->select_start_col)
-              { continue; }
-            vt_string_append_utf8char (str, c);
-          }
-      }
-    ret = str->str;
-    vt_string_free (str, 0);
-    return ret;
-  }
+ char *
+ vt_get_selection (VT *vt)
+ {
+   VtString *str = vt_string_new ("");
+   char *ret;
+   for (int row = vt->select_start_row; row <= vt->select_end_row; row++)
+     {
+       const char *line_str = vt_get_line (vt, vt->rows - row);
+       int col = 1;
+       for (const char *c = line_str; *c; c = mrg_utf8_skip (c, 1), col ++)
+         {
+           if (row == vt->select_end_row && col > vt->select_end_col)
+             { continue; }
+           if (row == vt->select_start_row && col < vt->select_start_col)
+             { continue; }
+           vt_string_append_utf8char (str, c);
+         }
+     }
+   ret = str->str;
+   vt_string_free (str, 0);
+   return ret;
+ }
 
-  int vt_get_local (VT *vt)
-  {
-    return vt->local_editing;
-  }
+ int vt_get_local (VT *vt)
+ {
+   return vt->local_editing;
+ }
 
-  void vt_set_local (VT *vt, int local)
-  {
-    vt->local_editing = local;
-  }
+ void vt_set_local (VT *vt, int local)
+ {
+   vt->local_editing = local;
+ }
 
-  void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
-  {
+ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
+ {
 #if 0
-    static int scrollbar_down = 0;
-    if ( (type == VT_MOUSE_DRAG || type == VT_MOUSE_PRESS)
-         && (x > vt->cols - 3 || scrollbar_down) )
-      {
-        /* scrollbar */
-        float disp_lines = vt->rows;
-        float tot_lines = vt->line_count + vt->scrollback_count;
-        vt->scroll = tot_lines - disp_lines - (px_y*1.0/ (vt->rows * vt->ch) ) * tot_lines;
-        if (vt->scroll < 0) { vt->scroll = 0.01; }
-        if (type == VT_MOUSE_PRESS)
-          {
-            scrollbar_down = 1;
-            SDL_CaptureMouse (1);
-          }
-        vt->rev++;
-      }
-    if (scrollbar_down && type == VT_MOUSE_RELEASE)
-      {
-        scrollbar_down = 0;
-        SDL_CaptureMouse (0);
-      }
+  static int scrollbar_down = 0;
+  if ( (type == VT_MOUSE_DRAG || type == VT_MOUSE_PRESS)
+       && (x > vt->cols - 3 || scrollbar_down) )
+    {
+      /* scrollbar */
+      float disp_lines = vt->rows;
+      float tot_lines = vt->line_count + vt->scrollback_count;
+      vt->scroll = tot_lines - disp_lines - (px_y*1.0/ (vt->rows * vt->ch) ) * tot_lines;
+      if (vt->scroll < 0) { vt->scroll = 0.01; }
+      if (type == VT_MOUSE_PRESS)
+        {
+          scrollbar_down = 1;
+          SDL_CaptureMouse (1);
+        }
+      vt->rev++;
+    }
+  if (scrollbar_down && type == VT_MOUSE_RELEASE)
+    {
+      scrollbar_down = 0;
+      SDL_CaptureMouse (0);
+    }
 #endif
-    char buf[64]="";
-    int button_state = 0;
-    if (! (vt->mouse | vt->mouse_all | vt->mouse_drag) )
-      {
-        // regular mouse select, this is incomplete
-        // fully ignorant of scrollback for now
-        //
-        if (type == VT_MOUSE_PRESS)
-          {
-            vt->select_start_col = x;
-            vt->select_start_row = y;
-            vt->select_end_col = x;
-            vt->select_end_row = y;
-            vt->rev++;
-          }
-        else if (type == VT_MOUSE_DRAG)
-          {
-            vt->select_end_col = x;
-            vt->select_end_row = y;
-            if ( ( (vt->select_start_row == vt->select_end_row) &&
-                   (vt->select_start_col > vt->select_end_col) ) ||
-                 (vt->select_start_row > vt->select_end_row) )
-              {
-                int tmp;
-                tmp = vt->select_start_row;
-                vt->select_start_row = vt->select_end_row;
-                vt->select_end_row = tmp;
-                tmp = vt->select_start_col;
-                vt->select_start_col = vt->select_end_col;
-                vt->select_end_col = tmp;
-              }
-            vt->rev++;
-          }
-        return;
-      }
-    if (type == VT_MOUSE_MOTION)
-      { button_state = 3; }
-    if (vt->unit_pixels && vt->mouse_decimal)
-      {
-        x = px_x;
-        y = px_y;
-      }
-    switch (type)
-      {
-        case VT_MOUSE_MOTION:
-          if (!vt->mouse_all)
-            { return; }
-          if (x==vt->lastx && y==vt->lasty)
-            { return; }
-          vt->lastx = x;
-          vt->lasty = y;
-          sprintf (buf, "\033[<35;%i;%iM", x, y);
-          break;
-        case VT_MOUSE_RELEASE:
-          if (vt->mouse_decimal == 0)
-            { button_state = 3; }
-          break;
-        case VT_MOUSE_PRESS:
-          button_state = 0;
-          break;
-        case VT_MOUSE_DRAG: // XXX not really used - remove
-          if (! (vt->mouse_all || vt->mouse_drag) )
-            { return; }
-          button_state = 32;
-          break;
-      }
-    // todo : mix in ctrl/meta state
-    if (vt->mouse_decimal)
-      {
-        sprintf (buf, "\033[<%i;%i;%i%c", button_state, x, y, type == VT_MOUSE_RELEASE?'m':'M');
-      }
-    else
-      { sprintf (buf, "\033[M%c%c%c", button_state + 32, x + 32, y + 32); }
-    if (buf[0])
-      {
-        vt_write (vt, buf, strlen (buf) );
-        fflush (NULL);
-      }
-  }
+  char buf[64]="";
+  int button_state = 0;
+  if (! (vt->mouse | vt->mouse_all | vt->mouse_drag) )
+    {
+      // regular mouse select, this is incomplete
+      // fully ignorant of scrollback for now
+      //
+      if (type == VT_MOUSE_PRESS)
+        {
+          vt->select_start_col = x;
+          vt->select_start_row = y;
+          vt->select_end_col = x;
+          vt->select_end_row = y;
+          vt->rev++;
+        }
+      else if (type == VT_MOUSE_MOTION && button_state)
+        {
+          vt->select_end_col = x;
+          vt->select_end_row = y;
+          if ( ( (vt->select_start_row == vt->select_end_row) &&
+                 (vt->select_start_col > vt->select_end_col) ) ||
+               (vt->select_start_row > vt->select_end_row) )
+            {
+              int tmp;
+              tmp = vt->select_start_row;
+              vt->select_start_row = vt->select_end_row;
+              vt->select_end_row = tmp;
+              tmp = vt->select_start_col;
+              vt->select_start_col = vt->select_end_col;
+              vt->select_end_col = tmp;
+            }
+          vt->rev++;
+        }
+      return;
+    }
+  if (type == VT_MOUSE_MOTION)
+    { button_state = 3; }
+  if (vt->unit_pixels && vt->mouse_decimal)
+    {
+      x = px_x;
+      y = px_y;
+    }
+  switch (type)
+    {
+      case VT_MOUSE_MOTION:
+        if (!vt->mouse_all)
+          { return; }
+        if (x==vt->lastx && y==vt->lasty)
+          { return; }
+        vt->lastx = x;
+        vt->lasty = y;
+ //     sprintf (buf, "\033[<35;%i;%iM", x, y);
+        break;
+      case VT_MOUSE_RELEASE:
+        if (vt->mouse_decimal == 0)
+          { button_state = 3; }
+        break;
+      case VT_MOUSE_PRESS:
+        button_state = 0;
+        break;
+      case VT_MOUSE_DRAG: // XXX not really used - remove
+        if (! (vt->mouse_all || vt->mouse_drag) )
+          { return; }
+        button_state = 32;
+        break;
+    }
+  // todo : mix in ctrl/meta state
+  if (vt->mouse_decimal)
+    {
+      sprintf (buf, "\033[<%i;%i;%i%c", button_state, x, y, type == VT_MOUSE_RELEASE?'m':'M');
+    }
+  else
+    { sprintf (buf, "\033[M%c%c%c", button_state + 32, x + 32, y + 32); }
+  if (buf[0])
+    {
+      vt_write (vt, buf, strlen (buf) );
+      fflush (NULL);
+    }
+}
 
-  pid_t vt_get_pid (VT *vt)
-  {
-    return vt->vtpty.pid;
-  }
+pid_t vt_get_pid (VT *vt)
+{
+  return vt->vtpty.pid;
+}

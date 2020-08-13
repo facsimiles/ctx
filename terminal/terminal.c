@@ -41,7 +41,6 @@
 #define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
 #define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
-
 int vtpty_waitdata (void  *data, int timeout)
 {
   VtPty *vtpty = data;
@@ -69,7 +68,6 @@ int vtpty_waitdata (void  *data, int timeout)
 typedef struct _CtxClient CtxClient;
 
 CtxList *vts = NULL;
-//SDL_mutex *clients_mutex = NULL;
 
 static void signal_child (int signum)
 {
@@ -230,7 +228,6 @@ static CtxClient *client_by_id (int id)
 
 void client_remove (CtxClient *client)
 {
-  //SDL_LockMutex (clients_mutex);
   if (client->vt)
     vt_destroy (client->vt);
 
@@ -246,7 +243,6 @@ void client_remove (CtxClient *client)
     active = find_active (last_x, last_y);
   }
   free (client);
-  //SDL_UnlockMutex (clients_mutex);
 }
 
 #if 0
@@ -327,12 +323,9 @@ int client_resize (int id, int width, int height)
 
    if (client && ((height != client->height) || (width != client->width) ))
    {
-     //SDL_LockMutex (clients_mutex);
      client->width = width;
      client->height = height;
      vt_set_term_size (client->vt, width / vt_cw (client->vt), height / vt_ch (client->vt) );
-
-     //SDL_UnlockMutex (clients_mutex);
      return 1;
    }
    return 0;
@@ -341,10 +334,6 @@ int client_resize (int id, int width, int height)
 int update_vt (Ctx *ctx, CtxClient *client, int is_reset)
 {
   VT *vt = client->vt;
-  //int width = client->width;
-  //int height = client->height;
-  //int vt_x = client->x;
-  //int vt_y = client->y;
   int in_scroll = (vt_has_blink (client->vt) >= 10);
 
   if ( (client->drawn_rev != vt_rev (vt) ) ||
@@ -378,19 +367,6 @@ static int update_vts (Ctx *ctx, int changes_in)
   dirt += changes;
   return changes;
 }
-
-#if 0
-void render_fun (void *data)
-{
-  while(!do_quit)
-  {
-    SDL_LockMutex (clients_mutex);
-    int changes = update_cts ();
-    SDL_UnlockMutex (clients_mutex);
-    if (!changes) usleep (20000);
-  }
-}
-#endif
 
 int main (int argc, char **argv)
 {
@@ -446,44 +422,10 @@ int main (int argc, char **argv)
       }
 
       CtxEvent *event;
-  //  static int mouse_down = 0;
-  //
       while ((event = ctx_get_event (ctx)))
       {
-        char buf[64];
         switch (event->type)
         {
-#if 0
-          case CTX_RELEASE:
-            if (event->device_no == 0)
-                    mouse_down = 0;
-            sprintf (buf, "mouse-release %.0f %.0f", (float) event->x,
-                                                     (float) event->y);
-            handle_event (buf);
-            break;
-          case CTX_PRESS:
-       //   if (event->device_no == 0)
-       //           mouse_down = 1;
-            sprintf (buf, "mouse-press %.0f %.0f", (float) event->x,
-                                                  (float) event->y);
-            handle_event (buf);
-            break;
-          case CTX_MOTION:
-#if 0
-            if (mouse_down)
-            {
-              sprintf (buf, "mouse-drag %.0f %.0f", (float) event->x,
-                                                    (float) event->y);
-            }
-            else
-#endif
-            {
-              sprintf (buf, "mouse-motion %.0f %.0f", (float) event->x,
-                                                      (float) event->y);
-            }
-            handle_event (buf);
-            break;
-#endif
           case CTX_KEY_DOWN:
             if (!strcmp (event->string, "resize-event"))
             {
@@ -495,12 +437,10 @@ int main (int argc, char **argv)
               handle_event (event->string);
             }
             break;
-
           default:
             break;
         }
       }
-
       for (CtxList *l = clients; l; l = l->next)
       {
         CtxClient *client = l->data;
