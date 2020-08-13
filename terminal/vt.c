@@ -6685,29 +6685,6 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 
  void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
  {
-#if 0
-  static int scrollbar_down = 0;
-  if ( (type == VT_MOUSE_DRAG || type == VT_MOUSE_PRESS)
-       && (x > vt->cols - 3 || scrollbar_down) )
-    {
-      /* scrollbar */
-      float disp_lines = vt->rows;
-      float tot_lines = vt->line_count + vt->scrollback_count;
-      vt->scroll = tot_lines - disp_lines - (px_y*1.0/ (vt->rows * vt->ch) ) * tot_lines;
-      if (vt->scroll < 0) { vt->scroll = 0.01; }
-      if (type == VT_MOUSE_PRESS)
-        {
-          scrollbar_down = 1;
-          SDL_CaptureMouse (1);
-        }
-      vt->rev++;
-    }
-  if (scrollbar_down && type == VT_MOUSE_RELEASE)
-    {
-      scrollbar_down = 0;
-      SDL_CaptureMouse (0);
-    }
-#endif
   char buf[64]="";
   int button_state = 0;
   if (! (vt->mouse | vt->mouse_all | vt->mouse_drag) )
