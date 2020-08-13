@@ -6780,7 +6780,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       sprintf (buf, "\033[<%i;%i;%i%c", button_state, x, y, type == VT_MOUSE_RELEASE?'m':'M');
     }
   else
-    { sprintf (buf, "\033[M%c%c%c", button_state + 32, x + 32, y + 32); }
+    { 
+      sprintf (buf, "\033[M%c%c%c", button_state + 32, x + 32, y + 32);
+    }
   if (buf[0])
     {
       vt_write (vt, buf, strlen (buf) );

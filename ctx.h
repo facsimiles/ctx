@@ -13253,6 +13253,19 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
         hash ^= color;
 
+        hash ^= (int)(rasterizer->state->gstate.transform.m[0][0]*100);
+        hash *= 17;
+        hash ^= (int)(rasterizer->state->gstate.transform.m[1][1]*100);
+        hash *= 17;
+        hash ^= (int)(rasterizer->state->gstate.transform.m[0][1]*100);
+        hash *= 17;
+        hash ^= (int)(rasterizer->state->gstate.transform.m[1][0]*100);
+        hash *= 17;
+        hash ^= (int)(rasterizer->state->gstate.transform.m[2][0]*100);
+        hash *= 17;
+        hash ^= (int)(rasterizer->state->gstate.transform.m[2][1]*100);
+        hash *= 17;
+
           _ctx_add_hash (hasher, &shape_rect, hash);
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
@@ -13426,6 +13439,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_RESTORE:
         rasterizer->uses_transforms = 1;
         ctx_interpret_transforms (rasterizer->state, entry, NULL);
+
+        
         break;
       case CTX_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
