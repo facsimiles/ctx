@@ -488,7 +488,10 @@ struct _VT
 
   FILE      *log;
 
+  int cursor_down;
 
+  int select_begin_col;
+  int select_begin_row;
   int select_start_col;
   int select_start_row;
   int select_end_col;
@@ -6694,28 +6697,36 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       //
       if (type == VT_MOUSE_PRESS)
         {
+          vt->cursor_down = 1;
+          vt->select_begin_col = x;
+          vt->select_begin_row = y;
           vt->select_start_col = x;
           vt->select_start_row = y;
           vt->select_end_col = x;
           vt->select_end_row = y;
           vt->rev++;
         }
-      else if (type == VT_MOUSE_MOTION && button_state)
+      else if (type == VT_MOUSE_RELEASE)
+      {
+        vt->cursor_down = 0;
+      }
+      else if (type == VT_MOUSE_MOTION && vt->cursor_down)
         {
-          vt->select_end_col = x;
-          vt->select_end_row = y;
-          if ( ( (vt->select_start_row == vt->select_end_row) &&
-                 (vt->select_start_col > vt->select_end_col) ) ||
-               (vt->select_start_row > vt->select_end_row) )
-            {
-              int tmp;
-              tmp = vt->select_start_row;
-              vt->select_start_row = vt->select_end_row;
-              vt->select_end_row = tmp;
-              tmp = vt->select_start_col;
-              vt->select_start_col = vt->select_end_col;
-              vt->select_end_col = tmp;
-            }
+          if ((y >= vt->select_begin_row) || ((y == vt->select_begin_row) && (x >= vt->select_begin_col)))
+          {
+            vt->select_start_col = vt->select_begin_col;
+            vt->select_start_row = vt->select_begin_row;
+            vt->select_end_col = x;
+            vt->select_end_row = y;
+          }
+          else
+          {
+            vt->select_start_col = x;
+            vt->select_start_row = y;
+            vt->select_end_col = vt->select_begin_col;
+            vt->select_end_row = vt->select_begin_row;
+          }
+
           vt->rev++;
         }
       return;
