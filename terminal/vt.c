@@ -6562,234 +6562,223 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 //#define SCROLL_SPEED 0.25;
 #define SCROLL_SPEED 0.2;
   if (vt->in_smooth_scroll)
+   {
+     if (vt->in_smooth_scroll<0)
+       {
+         vt->scroll_offset += SCROLL_SPEED;
+         if (vt->scroll_offset >= 0.0)
+           {
+             vt->scroll_offset = 0;
+             vt->in_smooth_scroll = 0;
+             vt->rev++;
+           }
+       }
+     else
+       {
+         vt->scroll_offset -= SCROLL_SPEED;
+         if (vt->scroll_offset <= 0.0)
+           {
+             vt->scroll_offset = 0;
+             vt->in_smooth_scroll = 0;
+             vt->rev++;
+           }
+       }
+   }
+    ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
+    ctx_listen (ctx, CTX_PRESS|CTX_RELEASE|CTX_MOTION, vt_mouse_event, vt, NULL);
+    ctx_begin_path (ctx);
+
+    /* scrollbar */
+    if (!vt->in_alt_screen)
     {
-      if (vt->in_smooth_scroll<0)
-        {
-          vt->scroll_offset += SCROLL_SPEED;
-          if (vt->scroll_offset >= 0.0)
-            {
-              vt->scroll_offset = 0;
-              vt->in_smooth_scroll = 0;
-              vt->rev++;
-            }
-        }
+      float disp_lines = vt->rows;
+      float tot_lines = vt->line_count + vt->scrollback_count;
+      float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
+      float win_len = disp_lines / tot_lines;
+      ctx_rectangle (ctx, vt->cw * (vt->cols - 1.5),
+                     0, 1.5 * vt->cw,
+                     vt->rows * vt->ch);
+      ctx_listen (ctx, CTX_PRESS, scrollbar_pressed, vt, NULL);
+      ctx_listen (ctx, CTX_ENTER, scrollbar_enter, vt, NULL);
+      ctx_listen (ctx, CTX_LEAVE, scrollbar_leave, vt, NULL);
+      if (vt->scroll != 0 || scrollbar_focused)
+        ctx_rgba (ctx, 0.5, 0.5, 0.5, .25);
       else
+        ctx_rgba (ctx, 0.5, 0.5, 0.5, .15);
+      ctx_fill (ctx);
+      ctx_round_rectangle (ctx, vt->cw * (vt->cols - 1.5 + 0.1),
+                           offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
+                           win_len * vt->rows * vt->ch,
+                           vt->cw * 1.5 /2);
+      ctx_listen (ctx, CTX_DRAG, scroll_handle_drag, vt, NULL);
+      if (vt->scroll != 0 || scrollbar_focused)
+        ctx_rgba (ctx, 1, 1, 1, .25);
+      else
+        ctx_rgba (ctx, 1, 1, 1, .15);
+      ctx_fill (ctx);
+    }
+}
+
+int vt_is_done (VT *vt)
+{
+  return vt->vtpty.done;
+}
+
+int vt_get_result (VT *vt)
+{
+  /* we could block - at least for a while, here..? */
+  return vt->result;
+}
+
+void vt_set_scrollback_lines (VT *vt, int scrollback_lines)
+{
+  vt->scrollback_limit = scrollback_lines;
+}
+
+int  vt_get_scrollback_lines (VT *vt)
+{
+  return vt->scrollback_limit;
+}
+
+void vt_set_scroll (VT *vt, int scroll)
+{
+  if (vt->scroll == scroll)
+    { return; }
+  vt->scroll = scroll;
+  if (vt->scroll > ctx_list_length (vt->scrollback) )
+    { vt->scroll = ctx_list_length (vt->scrollback); }
+  if (vt->scroll < 0)
+    { vt->scroll = 0; }
+}
+
+int vt_get_scroll (VT *vt)
+{
+  return vt->scroll;
+}
+
+char *
+vt_get_selection (VT *vt)
+{
+  VtString *str = vt_string_new ("");
+  char *ret;
+  for (int row = vt->select_start_row; row <= vt->select_end_row; row++)
+    {
+      const char *line_str = vt_get_line (vt, vt->rows - row);
+      int col = 1;
+      for (const char *c = line_str; *c; c = mrg_utf8_skip (c, 1), col ++)
         {
-          vt->scroll_offset -= SCROLL_SPEED;
-          if (vt->scroll_offset <= 0.0)
-            {
-              vt->scroll_offset = 0;
-              vt->in_smooth_scroll = 0;
-              vt->rev++;
-            }
+          if (row == vt->select_end_row && col > vt->select_end_col)
+            { continue; }
+          if (row == vt->select_start_row && col < vt->select_start_col)
+            { continue; }
+          vt_string_append_utf8char (str, c);
         }
     }
-#if 0
-  float width = (vt->cols + 1) * vt->cw;
-  float height = (vt->rows + 1) * vt->ch;
-  float scroll_width = height * 0.05;
+  ret = str->str;
+  vt_string_free (str, 0);
+  return ret;
+}
 
-    ctx_rectangle (ctx, width - scroll_width, 0, scroll_width, height);
-    ctx_rgba (ctx,1,0,0,0.5);
-    ctx_listen (ctx, CTX_PRESS, pressed, vt, NULL);
-    ctx_fill (ctx);
-#endif
+int vt_get_local (VT *vt)
+{
+  return vt->local_editing;
+}
 
-     ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
-     ctx_listen (ctx, CTX_PRESS|CTX_RELEASE|CTX_MOTION, vt_mouse_event, vt, NULL);
-     ctx_begin_path (ctx);
+void vt_set_local (VT *vt, int local)
+{
+  vt->local_editing = local;
+}
 
-     if (!vt->in_alt_screen)
+void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
+{
+ char buf[64]="";
+ int button_state = 0;
+ if (! (vt->mouse | vt->mouse_all | vt->mouse_drag) )
+   {
+     // regular mouse select, this is incomplete
+     // fully ignorant of scrollback for now
+     //
+     if (type == VT_MOUSE_PRESS)
+       {
+         vt->cursor_down = 1;
+         vt->select_begin_col = x;
+         vt->select_begin_row = y - (int)vt->scroll;
+         vt->select_start_col = x;
+         vt->select_start_row = y - (int)vt->scroll;
+         vt->select_end_col = x;
+         vt->select_end_row = y - (int)vt->scroll;
+         vt->rev++;
+       }
+     else if (type == VT_MOUSE_RELEASE)
      {
-       float disp_lines = vt->rows;
-       float tot_lines = vt->line_count + vt->scrollback_count;
-       float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
-       float win_len = disp_lines / tot_lines;
-       ctx_rectangle (ctx, vt->cw * (vt->cols - 1.5),
-                      0, 1.5 * vt->cw,
-                      vt->rows * vt->ch);
-       ctx_listen (ctx, CTX_PRESS, scrollbar_pressed, vt, NULL);
-       ctx_listen (ctx, CTX_ENTER, scrollbar_enter, vt, NULL);
-       ctx_listen (ctx, CTX_LEAVE, scrollbar_leave, vt, NULL);
-       if (vt->scroll != 0 || scrollbar_focused)
-         ctx_rgba (ctx, 0.5, 0.5, 0.5, .25);
-       else
-         ctx_rgba (ctx, 0.5, 0.5, 0.5, .15);
-       ctx_fill (ctx);
-       ctx_round_rectangle (ctx, vt->cw * (vt->cols - 1.5 + 0.1),
-                            offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
-                            win_len * vt->rows * vt->ch,
-                            vt->cw * 1.5 /2);
-       ctx_listen (ctx, CTX_DRAG, scroll_handle_drag, vt, NULL);
-       if (vt->scroll != 0 || scrollbar_focused)
-         ctx_rgba (ctx, 1, 1, 1, .25);
-       else
-         ctx_rgba (ctx, 1, 1, 1, .15);
-       ctx_fill (ctx);
+       vt->cursor_down = 0;
      }
-
- }
-
- int vt_is_done (VT *vt)
- {
-   return vt->vtpty.done;
- }
-
- int vt_get_result (VT *vt)
- {
-   /* we could block - at least for a while, here..? */
-   return vt->result;
- }
-
- void vt_set_scrollback_lines (VT *vt, int scrollback_lines)
- {
-   vt->scrollback_limit = scrollback_lines;
- }
-
- int  vt_get_scrollback_lines (VT *vt)
- {
-   return vt->scrollback_limit;
- }
-
- void vt_set_scroll (VT *vt, int scroll)
- {
-   if (vt->scroll == scroll)
-     { return; }
-   vt->scroll = scroll;
-   if (vt->scroll > ctx_list_length (vt->scrollback) )
-     { vt->scroll = ctx_list_length (vt->scrollback); }
-   if (vt->scroll < 0)
-     { vt->scroll = 0; }
- }
-
- int vt_get_scroll (VT *vt)
- {
-   return vt->scroll;
- }
-
- char *
- vt_get_selection (VT *vt)
- {
-   VtString *str = vt_string_new ("");
-   char *ret;
-   for (int row = vt->select_start_row; row <= vt->select_end_row; row++)
-     {
-       const char *line_str = vt_get_line (vt, vt->rows - row);
-       int col = 1;
-       for (const char *c = line_str; *c; c = mrg_utf8_skip (c, 1), col ++)
+     else if (type == VT_MOUSE_MOTION && vt->cursor_down)
+       {
+         if ((y - (int)vt->scroll >= vt->select_begin_row) || ((y - (int)vt->scroll == vt->select_begin_row) && (x >= vt->select_begin_col)))
          {
-           if (row == vt->select_end_row && col > vt->select_end_col)
-             { continue; }
-           if (row == vt->select_start_row && col < vt->select_start_col)
-             { continue; }
-           vt_string_append_utf8char (str, c);
+           vt->select_start_col = vt->select_begin_col;
+           vt->select_start_row = vt->select_begin_row;
+           vt->select_end_col = x;
+           vt->select_end_row = y - (int)vt->scroll;
          }
-     }
-   ret = str->str;
-   vt_string_free (str, 0);
-   return ret;
- }
+         else
+         {
+           vt->select_start_col = x;
+           vt->select_start_row = y - (int)vt->scroll;
+           vt->select_end_col = vt->select_begin_col;
+           vt->select_end_row = vt->select_begin_row;
+         }
 
- int vt_get_local (VT *vt)
- {
-   return vt->local_editing;
- }
-
- void vt_set_local (VT *vt, int local)
- {
-   vt->local_editing = local;
- }
-
- void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
- {
-  char buf[64]="";
-  int button_state = 0;
-  if (! (vt->mouse | vt->mouse_all | vt->mouse_drag) )
-    {
-      // regular mouse select, this is incomplete
-      // fully ignorant of scrollback for now
-      //
-      if (type == VT_MOUSE_PRESS)
-        {
-          vt->cursor_down = 1;
-          vt->select_begin_col = x;
-          vt->select_begin_row = y - (int)vt->scroll;
-          vt->select_start_col = x;
-          vt->select_start_row = y - (int)vt->scroll;
-          vt->select_end_col = x;
-          vt->select_end_row = y - (int)vt->scroll;
-          vt->rev++;
-        }
-      else if (type == VT_MOUSE_RELEASE)
-      {
-        vt->cursor_down = 0;
-      }
-      else if (type == VT_MOUSE_MOTION && vt->cursor_down)
-        {
-          if ((y - (int)vt->scroll >= vt->select_begin_row) || ((y - (int)vt->scroll == vt->select_begin_row) && (x >= vt->select_begin_col)))
-          {
-            vt->select_start_col = vt->select_begin_col;
-            vt->select_start_row = vt->select_begin_row;
-            vt->select_end_col = x;
-            vt->select_end_row = y - (int)vt->scroll;
-          }
-          else
-          {
-            vt->select_start_col = x;
-            vt->select_start_row = y - (int)vt->scroll;
-            vt->select_end_col = vt->select_begin_col;
-            vt->select_end_row = vt->select_begin_row;
-          }
-
-          vt->rev++;
-        }
-      return;
-    }
-  if (type == VT_MOUSE_MOTION)
-    { button_state = 3; }
-  if (vt->unit_pixels && vt->mouse_decimal)
-    {
-      x = px_x;
-      y = px_y;
-    }
-  switch (type)
-    {
-      case VT_MOUSE_MOTION:
-        if (!vt->mouse_all)
-          { return; }
-        if (x==vt->lastx && y==vt->lasty)
-          { return; }
-        vt->lastx = x;
-        vt->lasty = y;
- //     sprintf (buf, "\033[<35;%i;%iM", x, y);
-        break;
-      case VT_MOUSE_RELEASE:
-        if (vt->mouse_decimal == 0)
-          { button_state = 3; }
-        break;
-      case VT_MOUSE_PRESS:
-        button_state = 0;
-        break;
-      case VT_MOUSE_DRAG: // XXX not really used - remove
-        if (! (vt->mouse_all || vt->mouse_drag) )
-          { return; }
-        button_state = 32;
-        break;
-    }
-  // todo : mix in ctrl/meta state
-  if (vt->mouse_decimal)
-    {
-      sprintf (buf, "\033[<%i;%i;%i%c", button_state, x, y, type == VT_MOUSE_RELEASE?'m':'M');
-    }
-  else
-    { 
-      sprintf (buf, "\033[M%c%c%c", button_state + 32, x + 32, y + 32);
-    }
-  if (buf[0])
-    {
-      vt_write (vt, buf, strlen (buf) );
-      fflush (NULL);
-    }
+         vt->rev++;
+       }
+     return;
+   }
+ if (type == VT_MOUSE_MOTION)
+   { button_state = 3; }
+ if (vt->unit_pixels && vt->mouse_decimal)
+   {
+     x = px_x;
+     y = px_y;
+   }
+ switch (type)
+   {
+     case VT_MOUSE_MOTION:
+       if (!vt->mouse_all)
+         { return; }
+       if (x==vt->lastx && y==vt->lasty)
+         { return; }
+       vt->lastx = x;
+       vt->lasty = y;
+//     sprintf (buf, "\033[<35;%i;%iM", x, y);
+       break;
+     case VT_MOUSE_RELEASE:
+       if (vt->mouse_decimal == 0)
+         { button_state = 3; }
+       break;
+     case VT_MOUSE_PRESS:
+       button_state = 0;
+       break;
+     case VT_MOUSE_DRAG: // XXX not really used - remove
+       if (! (vt->mouse_all || vt->mouse_drag) )
+         { return; }
+       button_state = 32;
+       break;
+   }
+ // todo : mix in ctrl/meta state
+ if (vt->mouse_decimal)
+   {
+     sprintf (buf, "\033[<%i;%i;%i%c", button_state, x, y, type == VT_MOUSE_RELEASE?'m':'M');
+   }
+ else
+   { 
+     sprintf (buf, "\033[M%c%c%c", button_state + 32, x + 32, y + 32);
+   }
+ if (buf[0])
+   {
+     vt_write (vt, buf, strlen (buf) );
+     fflush (NULL);
+   }
 }
 
 pid_t vt_get_pid (VT *vt)

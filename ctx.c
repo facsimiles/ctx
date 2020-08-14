@@ -34,7 +34,7 @@
 
 #include <immintrin.h> // is detected by ctx, and enables AVX2
 
-//#define CTX_IMPLEMENTATION 1
+#define CTX_IMPLEMENTATION 1
 //
 // we let the vt contain the implementation
 // since it has the biggest need for tuning
@@ -820,8 +820,9 @@ again:
     if (!ui)
     {
       ui = ctx_new_ui (width, height);
-      //ctx_get_event (ui); // forces enabling of get event
+      ctx_get_event (ui); // forces enabling of get event
     }
+    dirty=1;
     for (;;)
     {
       if (dirty)

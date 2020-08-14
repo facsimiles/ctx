@@ -18881,6 +18881,13 @@ static CtxItem *_ctx_update_item (Ctx *ctx, int device_no, float x, float y, Ctx
 
   if (ctx->events.prev[device_no] == NULL || current == NULL || (current->path_hash != ctx->events.prev[device_no]->path_hash))
   {
+// enter/leave should snapshot chain to root
+// and compare with previous snapshotted chain to root
+// and emit/enter/leave as appropriate..
+//
+// leave might be registered for emission on enter..emission?
+
+
     //int focus_radius = 2;
     if (current)
       _ctx_item_ref (current);
