@@ -18924,7 +18924,7 @@ static CtxItem *_ctx_update_item (Ctx *ctx, int device_no, float x, float y, Ctx
     }
   }
   current = _ctx_detect (ctx, x, y, type);
-  fprintf (stderr, "%p\n", current);
+  //fprintf (stderr, "%p\n", current);
   return current;
 }
 
