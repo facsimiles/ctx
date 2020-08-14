@@ -19970,6 +19970,7 @@ nc_at_exit (void)
   fprintf (stdout, "\e[2J\e[H\e[?25h");
   //if (ctx_native_events)
   fprintf (stdout, "\e[?6150l");
+  fprintf (stdout, "\e[?1049l");
 }
 
 static int _nc_raw (void)
@@ -21128,6 +21129,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
 {
   if (ctx_native_events)
     fprintf (stdout, "\e[?6150h");
+  fprintf (stdout, "\e[?1049h");
   fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h reset\n");
   ctx_render_stream (ctxctx->ctx, stdout, 0);
   fprintf (stdout, "\ndone\n\e");
