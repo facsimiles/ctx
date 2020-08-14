@@ -12625,6 +12625,9 @@ ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, flo
   float radius  = corner_radius / aspect;
   float degrees = CTX_PI / 180.0f;
 
+  if (radius > width/2) radius = width/2;
+  if (radius > height/2) radius = height/2;
+
   ctx_rasterizer_finish_shape (rasterizer);
   ctx_rasterizer_arc (rasterizer, x + width - radius, y + radius, radius, -90 * degrees, 0 * degrees, 0);
   ctx_rasterizer_arc (rasterizer, x + width - radius, y + height - radius, radius, 0 * degrees, 90 * degrees, 0);
