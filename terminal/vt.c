@@ -2201,7 +2201,7 @@ qagain:
           //case 47:
           //case 1047:
           //case 1048:
-          case 1049:
+          case 1049:/*MODE;Alt screen;On;Off;*/
             if (set)
               {
                 if (vt->in_alt_screen)
@@ -2251,7 +2251,7 @@ qagain:
             break;
           case 1011: // scroll to bottom on key press (rxvt)
             break;
-          case 2004:  /* MODE;bracketd paste:On;Off; */
+          case 2004:  /* MODE;bracketed paste;On;Off; */
             vt->bracket_paste = set;
             break;
           //case 2020: /*MODE;wordwrap;On;Off;*/
