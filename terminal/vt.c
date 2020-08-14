@@ -462,8 +462,6 @@ struct _VT
   int        scrollback_limit;
   float      scroll;
 
-#define MAX_ARGUMENT_BUF_LEN (8192 + 16)
-
   char       *argument_buf;
   int        argument_buf_len;
   int        argument_buf_cap;
@@ -934,8 +932,8 @@ static void vt_argument_buf_reset (VT *vt, const char *start)
 
 static inline void vt_argument_buf_add (VT *vt, int ch)
 {
-  if (vt->argument_buf_len + 1 >= 1024 * 1024 * 2)
-    { return; } // XXX : perhaps we should bail at 1mb + 1kb ?
+  if (vt->argument_buf_len + 1 >= 1024 * 1024 * 16)
+    { return; } 
   //
   if (vt->argument_buf_len + 1 >=
       vt->argument_buf_cap)
@@ -4010,6 +4008,7 @@ static void vt_state_osc (VT *vt, int byte)
                     else
                       {
                         fprintf (stderr, "image decoding problem %s\n", stbi_failure_reason());
+                        fprintf (stderr, "len: %i\n", bin_length);
                       }
                   }
                   if (image)
@@ -6295,16 +6294,29 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
   switch (event->type)
   {
     case CTX_MOTION:
-      sprintf (buf, "mouse-motion %.0f %.0f", x, y);
-      vt_feed_keystring (vt, buf);
+      if (event->device_no==1)
+      {
+        sprintf (buf, "mouse-motion %.0f %.0f", x, y);
+        vt_feed_keystring (vt, buf);
+      }
       break;
     case CTX_PRESS:
-      sprintf (buf, "mouse-press %.0f %.0f", x, y);
-      vt_feed_keystring (vt, buf);
+      if (event->device_no==1)
+      {
+        sprintf (buf, "mouse-press %.0f %.0f", x, y);
+        vt_feed_keystring (vt, buf);
+      }
+      else if (event->device_no==2)
+      {
+        fprintf (stderr, "paste!\n");
+      }
       break;
     case CTX_RELEASE:
-      sprintf (buf, "mouse-release %.0f %.0f", x, y);
-      vt_feed_keystring (vt, buf);
+      if (event->device_no==1)
+      {
+        sprintf (buf, "mouse-release %.0f %.0f", x, y);
+        vt_feed_keystring (vt, buf);
+      }
       break;
     default:
       break;
@@ -6410,37 +6422,19 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
            {
              VtLine *line = l->data;
              int r = vt->rows - row;
-             if (line->string.str[0] == 0 && r < vt->rows && 0)
-                     // this being 0 is not enough, the string as used
-                     // here is not neccesarily null terminated.
-             {
-               ctx_rectangle (ctx, x0, y - vt->ch, vt->cw * vt->cols, vt->ch);
-       if (vt->reverse_video)
-         {
-           ctx_rgba (ctx, 1,1,1,1);
-           ctx_fill  (ctx);
-           ctx_rgba (ctx, 0,0,0,1);
-         }
-       else
-         {
-           ctx_rgba (ctx, 0,0,0,1);
-           ctx_fill  (ctx);
-           ctx_rgba (ctx, 1,1,1,1);
-         }
-               continue;
-             }
              const char *data = line->string.str;
              const char *d = data;
              float x = x0;
              uint64_t style = 0;
              uint32_t unichar = 0;
              int in_scrolling_region = vt->in_smooth_scroll && ( (r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
-             int got_selection = 0;
              for (int col = 1; col <= vt->cols * 1.33 && x < vt->cols * vt->cw; col++)
                {
                  int c = col;
                  int real_cw;
                  int in_selected_region = 0;
+                 if (vt->in_alt_screen == 0)
+                 {
                  if (r > vt->select_start_row && r < vt->select_end_row)
                    {
                      in_selected_region = 1;
@@ -6458,12 +6452,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      in_selected_region = 1;
                      if (col > vt->select_end_col) { in_selected_region = 0; }
                    }
-                 got_selection |= in_selected_region;
-                 //if (vt->scroll || full)
-                   {
-                     /* this prevents draw_cell from using cache */
-            //       r = c = 0;
-                   }
+                 }
                  style = vt_line_get_style (line, col-1);
                  unichar = d?ctx_utf8_to_unichar (d) :' ';
                  real_cw=vt_draw_cell (vt, ctx, r, c, x, y, style, unichar, 1, 1,
