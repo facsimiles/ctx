@@ -53,7 +53,6 @@
 
 #include "ctx.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "vt-line.h"
@@ -6457,7 +6456,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                  //if (vt->scroll || full)
                    {
                      /* this prevents draw_cell from using cache */
-                     r = c = 0;
+            //       r = c = 0;
                    }
                  style = vt_line_get_style (line, col-1);
                  unichar = d?ctx_utf8_to_unichar (d) :' ';
@@ -6483,17 +6482,6 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      if (!*d) { d = NULL; }
                    }
                }
-#if 0
-            while (x < vt->cols * vt->cw)
-              {
-                x+=vt_draw_cell (vt, ctx, -1, -1, x, y, style, '-', 1, 1,
-                                 line->double_width,
-                                 line->double_height_top?1:
-                                 line->double_height_bottom?-1:0,
-                                 in_scrolling_region,
-                                 0);
-              }
-#endif
             for (int i = 0; i < 4; i++)
               {
                 Image *image = line->images[i];
