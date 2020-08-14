@@ -1208,6 +1208,12 @@ static void vt_scroll (VT *vt, int amount)
           vt->in_smooth_scroll = 1;
         }
     }
+
+  {
+    vt->select_begin_row += amount;
+    vt->select_end_row += amount;
+    vt->select_start_row += amount;
+  }
 }
 
 typedef struct Sequence
