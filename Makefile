@@ -1,10 +1,9 @@
-all: pre ctx.o ctx post
+all: pre ctx.o ctx 
 pre:
 	make -C tools
 	make -C fonts
-post:
+test: all
 	make -C tests
-
 
 clean:
 	rm -f test-renderpaths ctx ctx.asan ctx.O1
@@ -31,7 +30,7 @@ ctx.asan: ctx.c ctx.h Makefile
 	$(CC) -DASANBUILD=1 ctx.c -o $@ -g -O0 -I. -Ifonts `pkg-config --cflags --libs babl ` -lutil -lasan -fsanitize=address -lz -march=native -lm -Ideps
 
 sentry:
-	sentry Makefile ctx.h tests/*.ctx -- sh -c 'make ctx  post && make -C tests png'
+	sentry Makefile ctx.h tests/*.ctx -- sh -c 'make ctx  && make -C tests png'
 sentry-f:
 	sentry Makefile ctx.h tests/*.ctx -- make
 ctx.h.html: ctx.h Makefile
