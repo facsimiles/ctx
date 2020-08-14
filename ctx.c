@@ -34,7 +34,7 @@
 
 #include <immintrin.h> // is detected by ctx, and enables AVX2
 
-#define CTX_IMPLEMENTATION 1
+//#define CTX_IMPLEMENTATION 1
 //
 // we let the vt contain the implementation
 // since it has the biggest need for tuning

@@ -1643,10 +1643,10 @@ xmltok_lineno (MrgXml *t)
 
 void ctx_events_clear (Ctx *ctx)
 {
-  if (ctx->events.frozen)
+  if (ctx_events_frozen (ctx))
     return;
 
-  ctx_list_free (&ctx->events.items);
+  ctx_events_clear_items (ctx);
   //if (mrg->backend->mrg_clear)
   //  mrg->backend->mrg_clear (mrg);
 
@@ -1766,13 +1766,13 @@ static float _mrg_dynamic_edge_left (Mrg *mrg)
 int  mrg_width (Mrg *mrg)
 {
   if (!mrg) return 640;
-  return mrg->ctx->events.width / mrg->ddpx;
+  return ctx_events_width (mrg->ctx) / mrg->ddpx;
 }
 
 int  mrg_height (Mrg *mrg)
 {
   if (!mrg) return 480;
-  return mrg->ctx->events.height / mrg->ddpx;
+  return ctx_events_height (mrg->ctx) / mrg->ddpx;
 }
 
 static float _mrg_dynamic_edge_right (Mrg *mrg)

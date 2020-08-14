@@ -166,6 +166,9 @@ ctx_set_pixel_u8          (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t 
 void  ctx_global_alpha     (Ctx *ctx, float global_alpha);
 float ctx_get_global_alpha (Ctx *ctx);
 
+void ctx_named_source (Ctx *ctx, const char *name);
+// followed by a color, gradient or pattern definition
+
 void ctx_rgba   (Ctx *ctx, float r, float g, float b, float a);
 void ctx_rgb    (Ctx *ctx, float r, float g, float b);
 void ctx_gray   (Ctx *ctx, float gray);
@@ -477,11 +480,21 @@ void ctx_set_renderer (Ctx *ctx,
  * it provides the ability to register callbacks with the current path
  * that get delivered with transformed coordinates.
  */
+float ctx_get_float (Ctx *ctx, uint32_t hash);
+void ctx_set_float (Ctx *ctx, uint32_t hash, float value);
 
 long ctx_ticks (void);
 void ctx_flush (Ctx *ctx);
+char *ctx_strchr (const char *haystack, char needle);
 
 void _ctx_events_init     (Ctx *ctx);
+typedef struct _CtxRectangle CtxRectangle;
+struct _CtxRectangle {
+  int x;
+  int y;
+  int width;
+  int height;
+};
 
 
 typedef void (*CtxCb) (CtxEvent *event,
@@ -631,6 +644,10 @@ float ctx_pointer_x (Ctx *ctx);
 float ctx_pointer_y (Ctx *ctx);
 void  ctx_freeze (Ctx *ctx);
 void  ctx_thaw   (Ctx *ctx);
+int ctx_events_frozen (Ctx *ctx);
+void ctx_events_clear_items (Ctx *ctx);
+int ctx_events_width (Ctx *ctx);
+int ctx_events_height (Ctx *ctx);
 
 /* The following functions drive the event delivery, registered callbacks
  * are called in response to these being called.
@@ -2391,7 +2408,7 @@ static inline void ctx_strcpy (char *dst, const char *src)
   dst[i] = 0;
 }
 
-static char *ctx_strchr (const char *haystack, char needle)
+static char *_ctx_strchr (const char *haystack, char needle)
 {
   const char *p = haystack;
   while (*p && *p != needle)
@@ -2401,6 +2418,10 @@ static char *ctx_strchr (const char *haystack, char needle)
   if (*p == needle)
     { return (char *) p; }
   return NULL;
+}
+char *ctx_strchr (const char *haystack, char needle)
+{
+  return _ctx_strchr (haystack, needle);
 }
 
 
@@ -3533,13 +3554,6 @@ struct _CtxRasterizer
   uint8_t *clip_mask;
 };
 
-typedef struct _CtxRectangle CtxRectangle;
-struct _CtxRectangle {
-  int x;
-  int y;
-  int width;
-  int height;
-};
 
 typedef struct _CtxHasher CtxHasher;
 struct _CtxHasher
@@ -18795,7 +18809,9 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
 #include <stdatomic.h>
 
 static int ctx_native_events = 0;
+#if CTX_SDL
 static int ctx_sdl_events = 0;
+#endif
 static int ctx_nct_consume_events (Ctx *ctx);
 static int ctx_ctx_consume_events (Ctx *ctx);
 #if CTX_SDL
@@ -18901,6 +18917,7 @@ static CtxItem *_ctx_update_item (Ctx *ctx, int device_no, float x, float y, Ctx
     }
   }
   current = _ctx_detect (ctx, x, y, type);
+  fprintf (stderr, "%p\n", current);
   return current;
 }
 
@@ -19404,6 +19421,22 @@ void ctx_freeze           (Ctx *ctx)
 void ctx_thaw             (Ctx *ctx)
 {
   ctx->events.frozen --;
+}
+int ctx_events_frozen (Ctx *ctx)
+{
+  return ctx && ctx->events.frozen;
+}
+void ctx_events_clear_items (Ctx *ctx)
+{
+  ctx_list_free (&ctx->events.items);
+}
+int ctx_events_width (Ctx *ctx)
+{
+  return ctx->events.width;
+}
+int ctx_events_height (Ctx *ctx)
+{
+  return ctx->events.height;
 }
 
 float ctx_pointer_x (Ctx *ctx)
