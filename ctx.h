@@ -20498,8 +20498,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 1
-#define CTX_HASH_COLS 1
+#define CTX_HASH_ROWS 4
+#define CTX_HASH_COLS 4
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is

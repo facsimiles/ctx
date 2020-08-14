@@ -6707,11 +6707,11 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
         {
           vt->cursor_down = 1;
           vt->select_begin_col = x;
-          vt->select_begin_row = y;
+          vt->select_begin_row = y - (int)vt->scroll;
           vt->select_start_col = x;
-          vt->select_start_row = y;
+          vt->select_start_row = y - (int)vt->scroll;
           vt->select_end_col = x;
-          vt->select_end_row = y;
+          vt->select_end_row = y - (int)vt->scroll;
           vt->rev++;
         }
       else if (type == VT_MOUSE_RELEASE)
@@ -6720,17 +6720,17 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       }
       else if (type == VT_MOUSE_MOTION && vt->cursor_down)
         {
-          if ((y >= vt->select_begin_row) || ((y == vt->select_begin_row) && (x >= vt->select_begin_col)))
+          if ((y - (int)vt->scroll >= vt->select_begin_row) || ((y - (int)vt->scroll == vt->select_begin_row) && (x >= vt->select_begin_col)))
           {
             vt->select_start_col = vt->select_begin_col;
             vt->select_start_row = vt->select_begin_row;
             vt->select_end_col = x;
-            vt->select_end_row = y;
+            vt->select_end_row = y - (int)vt->scroll;
           }
           else
           {
             vt->select_start_col = x;
-            vt->select_start_row = y;
+            vt->select_start_row = y - (int)vt->scroll;
             vt->select_end_col = vt->select_begin_col;
             vt->select_end_row = vt->select_begin_row;
           }
