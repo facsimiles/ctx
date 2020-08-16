@@ -20777,7 +20777,6 @@ static int ctx_ctx_consume_events (Ctx *ctx)
       if (event)
       {
       sscanf (event, "%s %f %f %i", event_type, &x, &y, &b);
-      fprintf (stderr, "e: %s %f %f %i\n", event_type, x, y, b);
       if (!strcmp (event_type, "idle"))
       {
       }

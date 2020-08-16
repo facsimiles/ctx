@@ -6309,7 +6309,12 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       else if (event->device_no==2)
       {
       //  vt_feed_keystring (vt, ""); // get selection
-      char *text = SDL_GetClipboardText ();
+      char *text = NULL;
+
+      if (0)
+        text = SDL_GetClipboardText ();
+      else
+        text = vt_get_selection (vt);
       if (text)
         {
           if (vt)
