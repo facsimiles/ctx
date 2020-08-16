@@ -571,10 +571,16 @@ _file_get_contents (const char     *path,
   return 0;
 }
 
+int dirty = 1;
+float offset_x = 0.0;
+float offset_y = 0.0;
+float scale = 1.0f;
+
 static void ui_drag (CtxEvent *event, void *data1, void *data2)
 {
-  fprintf (stderr, "%f %f\n", event->x, event->y);
-  fprintf (stderr, "%f %f\n", event->delta_x, event->delta_y);
+  offset_x += event->delta_x;
+  offset_y += event->delta_y;
+  dirty++;
 }
 
 int main (int argc, char **argv)
@@ -778,10 +784,6 @@ int main (int argc, char **argv)
   fprintf (stderr, "%s [%s]\n", dest_path, get_suffix (dest_path) );
 #endif
   Ctx *ctx;
-  int dirty = 1;
-  float offset_x = 0.0;
-  float offset_y = 0.0;
-  float scale = 1.0f;
 again:
   ctx = ctx_new ();
   _ctx_set_transformation (ctx, 0);
@@ -830,20 +832,19 @@ again:
     {
       if (dirty)
       {
-      ctx_reset (ui);
-      ctx_save (ui);
-      ctx_translate (ui, offset_x, offset_y);
-      ctx_scale (ui, scale, scale);
-      ctx_render_ctx (ctx, ui);
-      ctx_restore (ui);
+        ctx_reset (ui);
+        ctx_save (ui);
+        ctx_translate (ui, offset_x, offset_y);
+        ctx_scale (ui, scale, scale);
+        ctx_render_ctx (ctx, ui);
+        ctx_restore (ui);
 #if 1
-      ctx_begin_path (ctx);
-      ctx_rectangle (ctx, 0, 0, width, height);
-      ctx_listen (ctx, CTX_MOTION, ui_drag, NULL, NULL);
-      ctx_begin_path (ctx);
+        ctx_begin_path (ui);
+        ctx_rectangle (ui, 0, 0, width, height);
+        ctx_listen (ui, CTX_DRAG_MOTION, ui_drag, NULL, NULL);
 #endif
-      ctx_flush (ui);
-      dirty = 0;
+        ctx_flush (ui);
+        dirty = 0;
       }
 
       CtxEvent *event;
@@ -854,6 +855,7 @@ again:
           case CTX_SCROLL:
              fprintf (stderr, "scroll!\n");
              break;
+#if 0
           case CTX_RELEASE:
              fprintf (stderr, "release\n");
              dirty++;
@@ -875,6 +877,7 @@ again:
              //fprintf (stderr, "motion\n");
              }
              break;
+#endif
           case CTX_KEY_DOWN:
              dirty++;
           if (!strcmp (event->string, "+")) scale *= 1.1;
