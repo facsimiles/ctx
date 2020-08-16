@@ -1025,7 +1025,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define CTX_MIN_EDGE_LIST_SIZE   128
 #endif
 
-/* The maximum size we permit the renderstream to grow to
+/* The maximum complexity of a single path
  */
 #ifndef CTX_MAX_EDGE_LIST_SIZE
 #define CTX_MAX_EDGE_LIST_SIZE   4096
@@ -1033,7 +1033,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 //#define CTX_STRINGPOOL_SIZE   6000 // needed for tiger
 //#define CTX_STRINGPOOL_SIZE   8000 // needed for debian logo in bw
-#define CTX_STRINGPOOL_SIZE   8500 // needed for debian logo in color
+#define CTX_STRINGPOOL_SIZE   18500 // needed for debian logo in color
 
 /* whether we dither or not for gradients
  */
@@ -20466,6 +20466,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
     } else if (!strcmp (event, "mouse-release"))
     {
       ctx_pointer_release (ctx, x, y, 0, 0);
+      braille->was_down = 0;
     } else if (!strcmp (event, "mouse-motion"))
     {
       //nct_set_cursor_pos (backend->term, ix, iy);
@@ -20571,11 +20572,11 @@ static void ctx_show_frame (CtxSDL *sdl)
   //
   if (sdl->threads_done == CTX_THREADS)
   {
-    SDL_UpdateTexture(sdl->texture, NULL,
+    SDL_UpdateTexture (sdl->texture, NULL,
                       (void*)sdl->pixels, sdl->width * sizeof (Uint32));
-    SDL_RenderClear(sdl->renderer);
-    SDL_RenderCopy(sdl->renderer, sdl->texture, NULL, NULL);
-    SDL_RenderPresent(sdl->renderer);
+    SDL_RenderClear (sdl->renderer);
+    SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
+    SDL_RenderPresent (sdl->renderer);
     sdl->shown_frame = sdl->render_frame;
     sdl->threads_done = 0;
     ctx_unlock_mutex (sdl->mutex);
@@ -20595,13 +20596,15 @@ static int ctx_sdl_consume_events (Ctx *ctx)
     {
       case SDL_MOUSEBUTTONDOWN:
         SDL_CaptureMouse (1);
-        ctx_pointer_press (ctx, event.button.x, event.button.y, 1, 0);
+        ctx_pointer_press (ctx, event.button.x, event.button.y, event.button.button, 0);
         break;
       case SDL_MOUSEBUTTONUP:
         SDL_CaptureMouse (0);
-        ctx_pointer_release (ctx, event.button.x, event.button.y, 1, 0);
+        ctx_pointer_release (ctx, event.button.x, event.button.y, event.button.button, 0);
         break;
       case SDL_MOUSEMOTION:
+        //  XXX : look at mask and generate motion for each pressed
+        //        button
         ctx_pointer_motion (ctx, event.motion.x, event.motion.y, 1, 0);
         break;
       case SDL_KEYUP:
@@ -20763,6 +20766,7 @@ static int ctx_ctx_consume_events (Ctx *ctx)
   if (ctx_native_events)
     {
       float x = 0, y = 0;
+      int b;
       char event_type[128]="";
       event = ctx_native_get_event (ctx, 50);
       {
@@ -20772,7 +20776,8 @@ static int ctx_ctx_consume_events (Ctx *ctx)
       }
       if (event)
       {
-      sscanf (event, "%s %f %f", event_type, &x, &y);
+      sscanf (event, "%s %f %f %i", event_type, &x, &y, &b);
+      fprintf (stderr, "e: %s %f %f %i\n", event_type, x, y, b);
       if (!strcmp (event_type, "idle"))
       {
       }

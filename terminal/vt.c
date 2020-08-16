@@ -6308,7 +6308,14 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       }
       else if (event->device_no==2)
       {
-        fprintf (stderr, "paste!\n");
+      //  vt_feed_keystring (vt, ""); // get selection
+      char *text = SDL_GetClipboardText ();
+      if (text)
+        {
+          if (vt)
+            vt_paste (vt, text);
+          free (text);
+        }
       }
       break;
     case CTX_RELEASE:
