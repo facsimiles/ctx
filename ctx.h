@@ -46,7 +46,9 @@ Ctx *ctx_new (void);
  * immediately.
  */
 Ctx *ctx_new_for_framebuffer (void *data,
-                              int width, int height, int stride,
+                              int   width,
+                              int   height,
+                              int   stride,
                               CtxPixelFormat pixel_format);
 /**
  * ctx_new_ui:
@@ -67,7 +69,6 @@ void ctx_free                  (Ctx *ctx);
 
 /* clears and resets a context */
 void ctx_reset          (Ctx *ctx);
-
 void ctx_begin_path     (Ctx *ctx);
 void ctx_save           (Ctx *ctx);
 void ctx_restore        (Ctx *ctx);
@@ -87,7 +88,6 @@ void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
 
 
 void  ctx_dirty_rect      (Ctx *ctx, int *x, int *y, int *width, int *height);
-
 void  ctx_font_size       (Ctx *ctx, float x);
 void  ctx_font            (Ctx *ctx, const char *font);
 void  ctx_scale           (Ctx *ctx, float x, float y);
@@ -644,10 +644,10 @@ float ctx_pointer_x (Ctx *ctx);
 float ctx_pointer_y (Ctx *ctx);
 void  ctx_freeze (Ctx *ctx);
 void  ctx_thaw   (Ctx *ctx);
-int ctx_events_frozen (Ctx *ctx);
-void ctx_events_clear_items (Ctx *ctx);
-int ctx_events_width (Ctx *ctx);
-int ctx_events_height (Ctx *ctx);
+int   ctx_events_frozen (Ctx *ctx);
+void  ctx_events_clear_items (Ctx *ctx);
+int   ctx_events_width (Ctx *ctx);
+int   ctx_events_height (Ctx *ctx);
 
 /* The following functions drive the event delivery, registered callbacks
  * are called in response to these being called.
@@ -7200,7 +7200,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
   tolerance = 1.0f/tolerance * 2;
-#if 0 // skipping this to preserve hash integrity
+#if 1 // skipping this to preserve hash integrity
   if (tolerance == 1.0f)
   {
   float maxx = ctx_maxf (x1,x2);
@@ -7219,7 +7219,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
         (minx > rasterizer->blit_x + rasterizer->blit_width) ||
         (miny > rasterizer->blit_y + rasterizer->blit_height) ||
         (maxx < rasterizer->blit_x) ||
-        (maxy < rasterizer->blit_y) ) )
+        (maxy < rasterizer->blit_y) )
     {
       // tolerance==1.0 is most likely screen-space -
       // skip subdivides for things outside
@@ -11980,6 +11980,20 @@ done:
   }
 #endif
   rasterizer->preserve = 0;
+}
+
+static void
+ctx_rasterizer_triangle (CtxRasterizer *rasterizer,
+                         int x0, int y0,
+                         int x1, int y1,
+                         int x2, int y2,
+                         int r0, int g0, int b0, int a0,
+                         int r1, int g1, int b1, int a1,
+                         int r2, int g2, int b2, int a2,
+                         int u0, int v0,
+                         int u1, int v1)
+{
+
 }
 
 static int _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke);
@@ -20508,7 +20522,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 3 threads 27fps
  // 4 threads 29fps
 
-#define CTX_THREADS  2
+#define CTX_THREADS  4
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL

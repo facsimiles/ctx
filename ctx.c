@@ -616,8 +616,11 @@ int main (int argc, char **argv)
           else if (!strcmp ( argv[i], "--ui") )
             {
               outputmode = CTX_OUTPUT_MODE_UI;
-              width = 640;
-              height = 480;
+              if (!getenv ("CTX_VERSION"))
+              {
+                width = 640;
+                height = 480;
+              }
             }
           else if (!strcmp ( argv[i], "--braille") )
             {
