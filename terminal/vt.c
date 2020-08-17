@@ -6775,22 +6775,24 @@ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
          vt->rev++;
        }
      else if (type == VT_MOUSE_RELEASE)
-     {
-       vt->cursor_down = 0;
-     }
+       {
+         vt->cursor_down = 0;
+       }
      else if (type == VT_MOUSE_MOTION && vt->cursor_down)
        {
-         if ((y - (int)vt->scroll >= vt->select_begin_row) || ((y - (int)vt->scroll == vt->select_begin_row) && (x >= vt->select_begin_col)))
+         int row = y - (int)vt->scroll;
+         int col = x;
+         if ((row > vt->select_begin_row) || ((row == vt->select_begin_row) && (col >= vt->select_begin_col)))
          {
            vt->select_start_col = vt->select_begin_col;
            vt->select_start_row = vt->select_begin_row;
-           vt->select_end_col = x;
-           vt->select_end_row = y - (int)vt->scroll;
+           vt->select_end_col = col;
+           vt->select_end_row = row;
          }
          else
          {
-           vt->select_start_col = x;
-           vt->select_start_row = y - (int)vt->scroll;
+           vt->select_start_col = col;
+           vt->select_start_row = row;
            vt->select_end_col = vt->select_begin_col;
            vt->select_end_row = vt->select_begin_row;
          }
