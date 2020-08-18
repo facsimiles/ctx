@@ -2,16 +2,12 @@
 typedef struct _VT VT;
 typedef struct _CT CT;
 
-VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing, int id);
-CT *ct_new (const char *command, int width, int height, int id, void *pixels);
-void        ct_feed_keystring     (CT *ct, const char *str);
-int         ct_get_width          (CT *ct);
-int         ct_get_height         (CT *ct);
-int         ct_poll               (CT *vt, int timeout);
-void        ct_destroy            (CT *vt);
-int         ct_is_done            (CT *vt);
+VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id);
 
 void vt_open_log (VT *vt, const char *path);
+
+void        vt_set_px_size        (VT *vt, int width, int height);
+void        vt_set_term_size      (VT *vt, int cols, int rows);
 
 int         vt_cw                 (VT *vt);
 int         vt_ch                 (VT *vt);
@@ -28,8 +24,7 @@ int         vt_is_done            (VT *vt);
 int         vt_poll               (VT *vt, int timeout);
 long        vt_rev                (VT *vt);
 void        vt_destroy            (VT *vt);
-void        vt_set_term_size      (VT *vt, int cols, int rows);
-int vt_has_blink (VT *vt);
+int         vt_has_blink (VT *vt);
 
 /* this is how mrg/mmm based key-events are fed into the vt engine
  */

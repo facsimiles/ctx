@@ -468,12 +468,14 @@ struct _VT
   uint8_t    tabs[MAX_COLS];
   int        inert;
 
+  int        width;
+  int        height;
 
-  float      font_to_cell_scale;
-  float      font_size; // should maybe be integer?
-  float      line_spacing; // char-aspect might be better variable to use..?
   int        cw; // cell width
   int        ch; // cell height
+  float      font_to_cell_scale;
+  float      font_size; // when set with set_font_size, cw and ch are recomputed
+  float      line_spacing; // using line_spacing
   float      scale_x;
   float      scale_y;
 
@@ -752,6 +754,7 @@ void vt_set_font_size (VT *vt, float font_size)
   vt->font_size = font_size;
   _vt_compute_cw_ch (vt);
 }
+
 float       vt_get_font_size      (VT *vt)
 {
   return vt->font_size;
@@ -763,7 +766,7 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
   _vt_compute_cw_ch (vt);
 }
 
-VT *vt_new (const char *command, int cols, int rows, float font_size, float line_spacing, int id)
+VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id)
 {
   VT *vt         = calloc (sizeof (VT), 1);
   vt->id = id;
@@ -800,9 +803,11 @@ VT *vt_new (const char *command, int cols, int rows, float font_size, float line
     {
       vt_run_command (vt, command, "xterm");
     }
-  if (cols <= 0) { cols = DEFAULT_COLS; }
-  if (rows <= 0) { cols = DEFAULT_ROWS; }
-  vt_set_term_size (vt, cols, rows);
+  if (width <= 0) width = 640;
+  if (height <= 0) width = 480;
+  vt_set_px_size (vt, width, height);
+  fprintf (stderr, "%i %i\n", vt->cols, vt->rows);
+
   vt->fg_color[0] = 216;
   vt->fg_color[1] = 216;
   vt->fg_color[2] = 216;
@@ -909,7 +914,7 @@ void vt_set_term_size (VT *vt, int icols, int irows)
     }
   vt->rows = irows;
   vt->cols = icols;
-  vt_resize (vt, vt->cols, vt->rows, vt->cols * vt->cw, vt->rows * vt->ch);
+  vt_resize (vt, vt->cols, vt->rows, vt->width, vt->height);
   vt_trimlines (vt, vt->rows);
   vt->margin_top     = 1;
   vt->margin_left    = 1;
@@ -917,6 +922,15 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   vt->margin_right   = vt->cols;
   vt->rev++;
   VT_info ("resize %i %i", irows, icols);
+}
+
+void vt_set_px_size (VT *vt, int width, int height)
+{
+  int cols = width / vt->cw;
+  int rows = height / vt->ch;
+  vt->width = width;
+  vt->height = height;
+  vt_set_term_size (vt, cols, rows);
 }
 
 
@@ -1661,7 +1675,7 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
             case 2: /* SGR@@Dim@@ */
               vt->cstyle |= STYLE_DIM;
               break;
-            case 3: /* SGR@@Rotalic@@ */
+            case 3: /* SGR@@Italic@@ */
               vt->cstyle |= STYLE_ITALIC;
               break;
             case 4: /* SGR@@Underscore@@ */
@@ -4500,28 +4514,24 @@ void vt_feed_keystring (VT *vt, const char *str)
            !strcmp (str, "control--") )
     {
       float font_size = vt_get_font_size (vt);
-      int vt_width = vt->cols * vt->cw;
-      int vt_height = vt->rows * vt->ch;
       font_size /= 1.15;
       font_size = (int) (font_size);
       if (font_size < 5) { font_size = 5; }
       vt_set_font_size (vt, font_size);
-      vt_set_term_size (vt, vt_width / vt_cw (vt), vt_height / vt_ch (vt) );
+      vt_set_px_size (vt, vt->width, vt->height);
       return;
     }
   else if (!strcmp (str, "shift-control-=") ||
            !strcmp (str, "control-=") )
     {
       float font_size = vt_get_font_size (vt);
-      int vt_width = vt->cols * vt->cw;
-      int vt_height = vt->rows * vt->ch;
       float old = font_size;
       font_size *= 1.15;
       font_size = (int) (font_size);
       if (old == font_size) { font_size = old+1; }
       if (font_size > 200) { font_size = 200; }
       vt_set_font_size (vt, font_size);
-      vt_set_term_size (vt, vt_width / vt_cw (vt), vt_height / vt_ch (vt) );
+      vt_set_px_size (vt, vt->width, vt->height);
       return;
     }
   else if (!strcmp (str, "shift-control-r") )
@@ -6663,7 +6673,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       float tot_lines = vt->line_count + vt->scrollback_count;
       float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
       float win_len = disp_lines / tot_lines;
-      ctx_rectangle (ctx, vt->cw * (vt->cols - 1.5),
+      ctx_rectangle (ctx, vt->width - vt->cw * 1.5,
                      0, 1.5 * vt->cw,
                      vt->rows * vt->ch);
       ctx_listen (ctx, CTX_PRESS, scrollbar_pressed, vt, NULL);
@@ -6674,7 +6684,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       else
         ctx_rgba (ctx, 0.5, 0.5, 0.5, .15);
       ctx_fill (ctx);
-      ctx_round_rectangle (ctx, vt->cw * (vt->cols - 1.5 + 0.1),
+      ctx_round_rectangle (ctx, vt->width - vt->cw * 1.5,
                            offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
                            win_len * vt->rows * vt->ch,
                            vt->cw * 1.5 /2);

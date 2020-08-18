@@ -876,7 +876,6 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 /* when AA is not forced, the slope below which full AA get enabled.
  */
 
-
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT    (2125/CTX_SUBDIV/rasterizer->aa)
 
 #ifndef CTX_RASTERIZER_AA_SLOPE_DEBUG
@@ -908,7 +907,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * occuring small shapes.
  */
 #ifndef CTX_SHAPE_CACHE
-#define CTX_SHAPE_CACHE       0
+#define CTX_SHAPE_CACHE           0
 #endif
 
 /* size (in pixels, w*h) that we cache rasterization for
@@ -1007,14 +1006,14 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * edgelist and renderstram.
  */
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   1024*10
+#define CTX_MIN_JOURNAL_SIZE   1024*32
 #endif
 
 /* The maximum size we permit the renderstream to grow to,
  * the memory used is this number * 9, where 9 is sizeof(CtxEntry)
  */
 #ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   1024*10
+#define CTX_MAX_JOURNAL_SIZE   1024*32
 #endif
 
 #ifndef CTX_RENDERSTREAM_STATIC

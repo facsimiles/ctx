@@ -155,7 +155,8 @@ CtxClient *add_client (const char *commandline, int x, int y, int width, int hei
 
   client->width = width;
   client->height = height;
-  client->vt = vt_new (commandline, width/font_size*2, height/font_size, font_size, line_spacing, client->id);
+  //client->vt = vt_new (commandline, width/font_size*2, height/font_size, font_size, line_spacing, client->id);
+  client->vt = vt_new (commandline, width, height, font_size, line_spacing, client->id);
   return client;
 }
 
@@ -325,7 +326,7 @@ int client_resize (int id, int width, int height)
    {
      client->width = width;
      client->height = height;
-     vt_set_term_size (client->vt, width / vt_cw (client->vt), height / vt_ch (client->vt) );
+     vt_set_px_size (client->vt, width, height);
      return 1;
    }
    return 0;
