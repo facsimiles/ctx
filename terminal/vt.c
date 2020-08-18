@@ -493,6 +493,8 @@ struct _VT
   int select_start_row;
   int select_end_col;
   int select_end_row;
+  int select_begin_x;
+  int select_active;
 
 };
 
@@ -6465,6 +6467,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      if (col > vt->select_end_col) { in_selected_region = 0; }
                    }
                  }
+                 if (vt->select_active == 0) in_selected_region = 0;
                  style = vt_line_get_style (line, col-1);
                  unichar = d?ctx_utf8_to_unichar (d) :' ';
                  real_cw=vt_draw_cell (vt, ctx, r, c, x, y, style, unichar, 1, 1,
@@ -6767,11 +6770,13 @@ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
        {
          vt->cursor_down = 1;
          vt->select_begin_col = x;
+         vt->select_begin_x = px_x;
          vt->select_begin_row = y - (int)vt->scroll;
          vt->select_start_col = x;
          vt->select_start_row = y - (int)vt->scroll;
          vt->select_end_col = x;
          vt->select_end_row = y - (int)vt->scroll;
+         vt->select_active = 0;
          vt->rev++;
        }
      else if (type == VT_MOUSE_RELEASE)
@@ -6782,7 +6787,8 @@ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
        {
          int row = y - (int)vt->scroll;
          int col = x;
-         if ((row > vt->select_begin_row) || ((row == vt->select_begin_row) && (col >= vt->select_begin_col)))
+         if ((row > vt->select_begin_row) ||
+             ((row == vt->select_begin_row) && (col >= vt->select_begin_col)))
          {
            vt->select_start_col = vt->select_begin_col;
            vt->select_start_row = vt->select_begin_row;
@@ -6796,6 +6802,13 @@ void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
            vt->select_end_col = vt->select_begin_col;
            vt->select_end_row = vt->select_begin_row;
          }
+         if (vt->select_end_row == vt->select_start_row &&
+             fabsf (vt->select_begin_x - px_x) < vt->cw/2)
+         {
+           vt->select_active = 0;
+         }
+         else
+           vt->select_active = 1;
 
          vt->rev++;
        }
