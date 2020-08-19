@@ -132,7 +132,7 @@ _CtxClient {
 };
 
 int   do_quit      = 0;
-float font_size    = 32.0;
+float font_size    = -1;
 float line_spacing = 2.0;
 
 static char *execute_self = NULL;
@@ -302,6 +302,18 @@ static void handle_event (const char *event)
     {
       active->do_quit = 1;
     }
+  else if (!strcmp (event, "shift-control-s") )
+    {
+      if (vt)
+      {
+        char *sel = vt_get_selection (vt);
+        if (sel)
+        {
+          vt_feed_keystring (vt, sel);
+          free (sel);
+        }
+      }
+    }
   else
     {
       if (vt)
@@ -370,15 +382,89 @@ static int update_vts (Ctx *ctx, int changes_in)
 
 void vt_set_ctx (VT *vt, Ctx *ctx);
 
+static int consume_toggle (char **argv, int *i)
+{
+ int j;
+ for (j = *i; argv[j]; j++)
+ {
+   argv[j-1] = argv[j];
+ }
+ argv[j-1]=0;
+ *i-=1;
+ return 1;
+}
+
+
+
+static float consume_float (char **argv, int *i)
+{
+ float ret = 0.0;
+ if (!argv[*i+1])
+ {
+   fprintf (stderr, "error parsing arguments\n");
+   exit (2);
+ }
+ ret = atof (argv[*i+1]);
+ (*i)++;
+  int j;
+  for (j = *i; argv[j]; j++)
+  {
+    argv[j-2] = argv[j];
+  }
+  argv[j-2]=0;
+  (*i)-=2;
+  return ret;
+}
+// good font size for 80col:
+//
+// 4 6 8 10 12 14 16 18 20 2
+
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
   execute_self = argv[0];
+
   int width = -1;
   int height = -1;
-  Ctx *ctx = ctx_new_ui (width, height);
-  width = ctx_width (ctx);
-  height = ctx_height (ctx);
+  int cols = -1;
+  int rows = -1;
+
+  for (int i = 1; argv[i]; i++)
+  {
+    if (argv[i][0]=='-')
+    {
+      switch (argv[i][1])
+      {
+        case 's': font_size = consume_float (argv, &i); break;
+        case 'c': cols = consume_float (argv, &i); break;
+        case 'r': rows = consume_float (argv, &i); break;
+        case 'w': width = consume_float (argv, &i); break;
+        case 'h': height = consume_float (argv, &i); break;
+      }
+    }
+  }
+
+  Ctx *ctx;
+  if (width < 0 && cols < 0) cols = 80;
+
+  if (cols > 0)
+  {
+    if (font_size < 0) font_size = 16.0;
+    if (rows < 0) rows = cols / 3;
+    height = rows * font_size;
+    width = cols * (int)(font_size / 2);
+    ctx  = ctx_new_ui (width, height);
+  }
+  else
+  {
+    ctx  = ctx_new_ui (width, height);
+    width = ctx_width (ctx);
+    height = ctx_height (ctx);
+    if (font_size < 0)
+      font_size = 2 * width / 80;
+    if ((int)(font_size /2) * 80 < width)
+      font_size -= 1;
+  }
   if (argv[1] == NULL)
   {
     active = add_client (vt_find_shell_command(), 0, 0, width, height, 0);

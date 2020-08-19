@@ -780,7 +780,7 @@ VT *vt_new (const char *command, int width, int height, float font_size, float l
   vt->read          = vtpty_read;
   vt->write         = vtpty_write;
   vt->resize        = vtpty_resize;
-  vt->font_to_cell_scale = 1.0;
+  vt->font_to_cell_scale = 0.98;
   vt->cursor_visible     = 1;
   vt->lines              = NULL;
   vt->line_count         = 0;
@@ -4547,8 +4547,8 @@ void vt_feed_keystring (VT *vt, const char *str)
     {
       float font_size = vt_get_font_size (vt);
       //font_size /= 1.15;
-      font_size --;//= roundf (font_size);
-      if (font_size < 5) { font_size = 5; }
+      font_size -=2;//= roundf (font_size);
+      if (font_size < 4) { font_size = 4; }
       vt_set_font_size (vt, font_size);
       vt_set_px_size (vt, vt->width, vt->height);
       return;
@@ -4561,7 +4561,7 @@ void vt_feed_keystring (VT *vt, const char *str)
       //font_size *= 1.15;
       //
       //font_size = roundf (font_size);
-      font_size++;
+      font_size+=2;
 
       if (old == font_size) { font_size = old+1; }
       if (font_size > 200) { font_size = 200; }
