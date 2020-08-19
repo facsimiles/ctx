@@ -369,6 +369,8 @@ static int update_vts (Ctx *ctx, int changes_in)
   return changes;
 }
 
+void vt_set_ctx (VT *vt, Ctx *ctx);
+
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
@@ -385,7 +387,13 @@ int main (int argc, char **argv)
   {
     active = add_client_argv ((void*)&argv[1], 0, 0, width, height, 0);
   }
+  vt_set_ctx (active->vt, ctx);
   signal (SIGCHLD,signal_child);
+
+  if (!active)
+    return 1;
+
+  vt_set_ctx (active->vt, ctx);
 
   int sleep_time = 200;
   while (clients)

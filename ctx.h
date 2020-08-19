@@ -483,7 +483,7 @@ void ctx_set_renderer (Ctx *ctx,
 float ctx_get_float (Ctx *ctx, uint32_t hash);
 void ctx_set_float (Ctx *ctx, uint32_t hash, float value);
 
-long ctx_ticks (void);
+unsigned long ctx_ticks (void);
 void ctx_flush (Ctx *ctx);
 char *ctx_strchr (const char *haystack, char needle);
 
@@ -11981,6 +11981,7 @@ done:
   rasterizer->preserve = 0;
 }
 
+#if 0
 static void
 ctx_rasterizer_triangle (CtxRasterizer *rasterizer,
                          int x0, int y0,
@@ -11994,6 +11995,7 @@ ctx_rasterizer_triangle (CtxRasterizer *rasterizer,
 {
 
 }
+#endif
 
 static int _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke);
 static void
@@ -18129,7 +18131,7 @@ _ctx_init_ticks (void)
   gettimeofday (&start_time, NULL);
 }
 
-static inline long
+static inline unsigned long
 _ctx_ticks (void)
 {
   struct timeval measure_time;
@@ -18137,7 +18139,7 @@ _ctx_ticks (void)
   return usecs (measure_time) - usecs (start_time);
 }
 
-long
+unsigned long
 ctx_ticks (void)
 {
   _ctx_init_ticks ();
@@ -18205,6 +18207,7 @@ typedef struct CtxIdleCb {
 
 
 
+
 void _ctx_events_init (Ctx *ctx)
 {
   CtxEvents *events = &ctx->events;
@@ -18215,6 +18218,44 @@ void _ctx_events_init (Ctx *ctx)
 
   events->tap_delay_hold = 1000;
   events->tap_hysteresis = 32;  /* XXX: should be ppi dependent */
+}
+
+
+void _ctx_idle_iteration (Ctx *ctx)
+{
+  static unsigned long prev_ticks = 0;
+  CtxList *l;
+  CtxList *to_remove = NULL;
+  unsigned long ticks = _ctx_ticks ();
+  unsigned long tick_delta = (prev_ticks == 0) ? 0 : ticks - prev_ticks;
+  prev_ticks = ticks;
+
+  if (!ctx->events.idles)
+  {
+    return;
+  }
+  for (l = ctx->events.idles; l; l = l->next)
+  {
+    CtxIdleCb *item = l->data;
+
+    if (item->ticks_remaining >= 0)
+      item->ticks_remaining -= tick_delta;
+
+    if (item->ticks_remaining < 0)
+    {
+      if (item->cb (ctx, item->idle_data) == 0)
+        ctx_list_prepend (&to_remove, item);
+      else
+        item->ticks_remaining = item->ticks_full;
+    }
+  }
+  for (l = to_remove; l; l = l->next)
+  {
+    CtxIdleCb *item = l->data;
+    if (item->destroy_notify)
+      item->destroy_notify (item->destroy_data);
+    ctx_list_remove (&ctx->events.idles, l->data);
+  }
 }
 
 
@@ -18835,6 +18876,7 @@ static int ctx_sdl_consume_events (Ctx *ctx);
 CtxEvent *ctx_get_event (Ctx *ctx)
 {
   static CtxEvent event_copy;
+  _ctx_idle_iteration (ctx);
   if (!ctx->events.ctx_get_event_enabled)
     ctx->events.ctx_get_event_enabled = 1;
 

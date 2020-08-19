@@ -496,6 +496,7 @@ struct _VT
   int select_end_col;
   int select_end_row;
   int select_begin_x;
+  int select_begin_y;
   int select_active;
 
 };
@@ -737,8 +738,8 @@ static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence)
     { vt->tabs[i] = i % 8 == 0? 1 : 0; }
   _vt_move_to (vt, vt->margin_top, vt->cursor_x);
   vt_carriage_return (vt);
-  if (vt->ctx)
-    { ctx_reset (vt->ctx); }
+  //if (vt->ctx)
+  //  { ctx_reset (vt->ctx); }
   vt->audio.bits = 8;
   vt->audio.channels = 1;
   vt->audio.type = 'u';
@@ -4773,8 +4774,8 @@ void vt_destroy (VT *vt)
     }
   if (vt->ctxp)
     ctx_parser_free (vt->ctxp);
-  if (vt->ctx)
-    { ctx_free (vt->ctx); }
+  //if (vt->ctx)
+  //  { ctx_free (vt->ctx); }
   free (vt->argument_buf);
   ctx_list_remove (&vts, vt);
   kill (vt->vtpty.pid, 9);
@@ -6780,10 +6781,22 @@ void vt_set_local (VT *vt, int local)
   vt->local_editing = local;
 }
 
+static unsigned long prev_press_time = 0;
+static int short_count = 0;
+
+static int single_tap (Ctx *ctx, void *data)
+{
+  VT *vt = data;
+  if (short_count == 0 && !vt->select_active)
+    fprintf (stderr, "single tap!\n");
+  return 0;
+}
+
 void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, int px_y)
 {
  char buf[64]="";
  int button_state = 0;
+ ctx_ticks();
  if (! (vt->mouse | vt->mouse_all | vt->mouse_drag) )
    {
      // regular mouse select, this is incomplete
@@ -6793,13 +6806,82 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
        {
          vt->cursor_down = 1;
          vt->select_begin_col = x;
-         vt->select_begin_x = px_x;
          vt->select_begin_row = y - (int)vt->scroll;
          vt->select_start_col = x;
          vt->select_start_row = y - (int)vt->scroll;
          vt->select_end_col = x;
          vt->select_end_row = y - (int)vt->scroll;
          vt->select_active = 0;
+         if ((ctx_ticks () - prev_press_time) < 1000*300 &&
+             fabs(px_x - vt->select_begin_x) + 
+             fabs(px_y - vt->select_begin_y) < 8)
+         {
+           short_count++;
+           switch (short_count)
+           {
+             case 1:
+                     {
+           int hit_space = 0;
+           int old_len = 0;
+           
+           while (vt->select_start_col > 1 && !hit_space)
+           {
+             vt->select_start_col --;
+             char *sel = vt_get_selection (vt);
+             if (sel[0] == ' ' || sel[0] == '\0')
+               hit_space = 1;
+             free (sel);
+           }
+           if (hit_space)
+             vt->select_start_col++;
+           {
+             char *sel = vt_get_selection (vt);
+             old_len = strlen (sel);
+             free (sel);
+           }
+           hit_space = 0;
+           while (vt->select_end_col < vt->cols && !hit_space)
+           {
+             vt->select_end_col ++;
+             char *sel = vt_get_selection (vt);
+             int len = strlen(sel);
+
+             if (len == (old_len + 1))
+             {
+               if (sel[len-1]==' ')
+                 hit_space = 1;
+               old_len = len;
+             }
+             free (sel);
+           }
+           if (hit_space)
+             vt->select_end_col--;
+
+           vt->select_active = 1;
+                     }
+                     break;
+             case 2:
+               vt->select_start_col = 1;
+               vt->select_end_col = vt->cols;
+               vt->select_active = 1;
+               break;
+             case 3:
+               short_count = 0;
+               vt->select_start_col = 
+               vt->select_end_col = vt->select_begin_col;
+               vt->select_active = 0;
+               break;
+           }
+         }
+         else
+         {
+           if (vt->ctx && short_count == 0)
+             ctx_add_timeout (vt->ctx, 400, single_tap, vt);
+           short_count = 0;
+         }
+         vt->select_begin_x = px_x;
+         vt->select_begin_y = px_y;
+         prev_press_time = ctx_ticks ();
          vt->rev++;
        }
      else if (type == VT_MOUSE_RELEASE)
@@ -6887,4 +6969,9 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
 pid_t vt_get_pid (VT *vt)
 {
   return vt->vtpty.pid;
+}
+
+void vt_set_ctx (VT *vt, Ctx *ctx)
+{
+  vt->ctx = ctx;
 }
