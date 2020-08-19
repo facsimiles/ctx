@@ -159,6 +159,7 @@ void ctx_preserve       (Ctx *ctx);
 void ctx_fill           (Ctx *ctx);
 void ctx_stroke         (Ctx *ctx);
 void ctx_paint          (Ctx *ctx);
+void ctx_parse (Ctx *ctx, const char *string);
 
 void
 ctx_set_pixel_u8          (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -11051,6 +11052,9 @@ ctx_fragment_other_CMYKAF (CtxRasterizer *rasterizer, float x, float y, void *ou
         ctx_fragment_radial_gradient_RGBAF (rasterizer, x, y, rgba);
         break;
 #endif
+      default:
+        rgba[0]=rgba[1]=rgba[2]=rgba[3]=0.0f;
+        break;
     }
   cmyka[4]=rgba[3];
   ctx_rgb_to_cmyk (rgba[0], rgba[1], rgba[2], &cmyka[0], &cmyka[1], &cmyka[2], &cmyka[3]);
