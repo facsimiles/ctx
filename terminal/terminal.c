@@ -288,12 +288,11 @@ static void handle_event (const char *event)
       pid_t pid;
       if ( (pid=fork() ) ==0)
         {
-          for (int i = 0; i<700; i++)
-            { close (i); }
-          execlp (execute_self, execute_self, NULL, NULL);
+          unsetenv ("CTX_VERSION");
+          execlp (execute_self, execute_self, NULL);
           exit (0);
         }
-      fprintf (stderr, "!\n");
+      fprintf (stderr, "!%s!\n", execute_self);
     }
   else if (!strcmp (event, "shift-control-q") )
     {
@@ -374,8 +373,9 @@ void vt_set_ctx (VT *vt, Ctx *ctx);
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
-  int width = 1280;
-  int height = 768;
+  execute_self = argv[0];
+  int width = -1;
+  int height = -1;
   Ctx *ctx = ctx_new_ui (width, height);
   width = ctx_width (ctx);
   height = ctx_height (ctx);

@@ -4496,14 +4496,45 @@ void vt_feed_keystring (VT *vt, const char *str)
 
   if (!strcmp (str, "idle") )
      return;
-  else if (!strcmp (str, "shift-page-up") )
+  else if (!strcmp (str, "shift-control-home"))
+    {
+      vt_set_scroll (vt, vt->scrollback_count);
+      vt_rev_inc (vt);
+      return;
+    }
+  else if (!strcmp (str, "shift-control-end"))
+    {
+      int new_scroll = 0;
+      vt_set_scroll (vt, new_scroll);
+      vt_rev_inc (vt);
+      return;
+    }
+  else if (!strcmp (str, "shift-down") ||
+           !strcmp (str, "shift-control-down"))
+    {
+      int new_scroll = vt_get_scroll (vt) - 1;
+      vt_set_scroll (vt, new_scroll);
+      vt_rev_inc (vt);
+      return;
+    }
+  else if (!strcmp (str, "shift-up") ||
+           !strcmp (str, "shift-control-up"))
+    {
+      int new_scroll = vt_get_scroll (vt) + 1;
+      vt_set_scroll (vt, new_scroll);
+      vt_rev_inc (vt);
+      return;
+    }
+  else if (!strcmp (str, "shift-page-up") ||
+           !strcmp (str, "shift-control-page-up"))
     {
       int new_scroll = vt_get_scroll (vt) + vt_get_rows (vt) /2;
       vt_set_scroll (vt, new_scroll);
       vt_rev_inc (vt);
       return;
     }
-  else if (!strcmp (str, "shift-page-down") )
+  else if (!strcmp (str, "shift-page-down") ||
+           !strcmp (str, "shift-control-page-down"))
     {
       int new_scroll = vt_get_scroll (vt) - vt_get_rows (vt) /2;
       if (new_scroll < 0) { new_scroll = 0; }

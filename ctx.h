@@ -18205,9 +18205,6 @@ typedef struct CtxIdleCb {
   int   id;
 } CtxIdleCb;
 
-
-
-
 void _ctx_events_init (Ctx *ctx)
 {
   CtxEvents *events = &ctx->events;
