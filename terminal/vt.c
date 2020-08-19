@@ -4514,8 +4514,8 @@ void vt_feed_keystring (VT *vt, const char *str)
            !strcmp (str, "control--") )
     {
       float font_size = vt_get_font_size (vt);
-      font_size /= 1.15;
-      font_size = (int) (font_size);
+      //font_size /= 1.15;
+      font_size --;//= roundf (font_size);
       if (font_size < 5) { font_size = 5; }
       vt_set_font_size (vt, font_size);
       vt_set_px_size (vt, vt->width, vt->height);
@@ -4526,8 +4526,11 @@ void vt_feed_keystring (VT *vt, const char *str)
     {
       float font_size = vt_get_font_size (vt);
       float old = font_size;
-      font_size *= 1.15;
-      font_size = (int) (font_size);
+      //font_size *= 1.15;
+      //
+      //font_size = roundf (font_size);
+      font_size++;
+
       if (old == font_size) { font_size = old+1; }
       if (font_size > 200) { font_size = 200; }
       vt_set_font_size (vt, font_size);
@@ -4558,13 +4561,13 @@ void vt_feed_keystring (VT *vt, const char *str)
               if (s)
                 {
                   y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_MOTION, x/cw + 1, y/ch + 1, x, y);
+                  vt_mouse (vt, VT_MOUSE_MOTION, 0, x/cw + 1, y/ch + 1, x, y);
                 }
             }
         }
       else if (!strncmp (str + 6, "press", 5) )
         {
-          int x = 0, y = 0;
+          int x = 0, y = 0, b = 0;
           char *s = strchr (str, ' ');
           if (s)
             {
@@ -4573,14 +4576,19 @@ void vt_feed_keystring (VT *vt, const char *str)
               if (s)
                 {
                   y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_PRESS, x/cw + 1, y/ch + 1, x, y);
+                  s = strchr (s + 1, ' ');
+                  if (s)
+                  {
+                    b = atoi (s);
+                  }
+                  vt_mouse (vt, VT_MOUSE_PRESS, b, x/cw + 1, y/ch + 1, x, y);
                 }
             }
           //clients[active].drawn_rev = 0;
         }
       else if (!strncmp (str + 6, "drag", 4) )
         {
-          int x = 0, y = 0;
+          int x = 0, y = 0, b = 0; // XXX initialize B
           char *s = strchr (str, ' ');
           if (s)
             {
@@ -4589,14 +4597,14 @@ void vt_feed_keystring (VT *vt, const char *str)
               if (s)
                 {
                   y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_DRAG, x/cw + 1, y/ch + 1, x, y);
+                  vt_mouse (vt, VT_MOUSE_DRAG, b, x/cw + 1, y/ch + 1, x, y);
                 }
             }
           //clients[active].drawn_rev = 0;
         }
       else if (!strncmp (str + 6, "release", 7) )
         {
-          int x = 0, y = 0;
+          int x = 0, y = 0, b = 0;
           char *s = strchr (str, ' ');
           if (s)
             {
@@ -4605,7 +4613,12 @@ void vt_feed_keystring (VT *vt, const char *str)
               if (s)
                 {
                   y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_RELEASE, x/cw + 1, y/ch + 1, x, y);
+                  s = strchr (s + 1, ' ');
+                  if (s)
+                  {
+                    b = atoi (s);
+                  }
+                  vt_mouse (vt, VT_MOUSE_RELEASE, b, x/cw + 1, y/ch + 1, x, y);
                 }
             }
           //clients[active].drawn_rev = 0;
@@ -5065,7 +5078,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         return 0;
       case 0x2502: // VT_BOX_DRAWINGS_LIGHT_VERTICAL:
         ctx_begin_path (ctx);
-        ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch);
+        ctx_rectangle (ctx, x + cw/2 - ch * 0.1 / 2, y - ch, ch * 0.1, ch + 1);
         ctx_fill (ctx);
         return 0;
       case 0x250c: //VT_BOX_DRAWINGS_LIGHT_DOWN_AND_RIGHT:
@@ -6141,11 +6154,11 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
         }
       if (dh)
         {
-          ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - ch - ch * (vt->scroll_offset)), cw, ch);
+          ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - ch - ch * (vt->scroll_offset)), cw, ch + 1);
         }
       else
         {
-          ctx_rectangle (ctx, x0, y0 - ch + ch * offset_y, cw, ch);
+          ctx_rectangle (ctx, x0, y0 - ch + ch * offset_y, cw, ch + 1);
         }
       ctx_fill (ctx);
 bg_done:
@@ -6767,7 +6780,7 @@ void vt_set_local (VT *vt, int local)
   vt->local_editing = local;
 }
 
-void vt_mouse (VT *vt, VtMouseEvent type, int x, int y, int px_x, int px_y)
+void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, int px_y)
 {
  char buf[64]="";
  int button_state = 0;
