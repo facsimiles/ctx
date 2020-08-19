@@ -14416,7 +14416,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
   rasterizer->texture_source = texture_source?texture_source:ctx;
-  rasterizer->aa          = 15;
+  rasterizer->aa          = 17;
   rasterizer->force_aa    = 0;
   ctx_state_init (rasterizer->state);
   rasterizer->buf         = data;
