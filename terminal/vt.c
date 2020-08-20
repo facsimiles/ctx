@@ -4567,6 +4567,7 @@ void vt_feed_keystring (VT *vt, const char *str)
       if (font_size > 200) { font_size = 200; }
       vt_set_font_size (vt, font_size);
       vt_set_px_size (vt, vt->width, vt->height);
+
       return;
     }
   else if (!strcmp (str, "shift-control-r") )
@@ -4734,10 +4735,10 @@ const char *vt_find_shell_command (void)
   struct stat stat_buf;
   static char *alts[][2] =
   {
-    {"/bin/bash",     "/bin/bash -i"},
-    {"/usr/bin/bash", "/usr/bin/bash -i"},
-    {"/bin/sh",       "/bin/sh -i"},
-    {"/usr/bin/sh",   "/usr/bin/sh -i"},
+    {"/bin/bash",     "/bin/bash"},
+    {"/usr/bin/bash", "/usr/bin/bash"},
+    {"/bin/sh",       "/bin/sh"},
+    {"/usr/bin/sh",   "/usr/bin/sh"},
     {NULL, NULL}
   };
   for (i = 0; alts[i][0] && !command; i++)
@@ -4777,8 +4778,10 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
       setenv ("TERM", term?term:"xterm", 1);
       setenv ("COLORTERM", "truecolor", 1);
       setenv ("CTX_VERSION", "0", 1);
-      //execlp ("/bin/bash", "/bin/bash", NULL);
-      system (command);
+      if (!strchr (command, ' '))
+        execlp (command, command, NULL);
+      else
+        system (command);
       //vt->done = 1;
       exit (0);
     }

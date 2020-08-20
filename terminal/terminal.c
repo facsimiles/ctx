@@ -431,7 +431,20 @@ int main (int argc, char **argv)
 
   for (int i = 1; argv[i]; i++)
   {
-    if (argv[i][0]=='-')
+    if (!strcmp (argv[i], "--help"))
+    {
+    }
+    else if (!strcmp (argv[i], "--width"))
+        width = consume_float (argv, &i);
+    else if (!strcmp (argv[i], "--height"))
+        height = consume_float (argv, &i);
+    else if (!strcmp (argv[i], "--cols"))
+        cols = consume_float (argv, &i);
+    else if (!strcmp (argv[i], "--rows"))
+        rows = consume_float (argv, &i);
+    else if (!strcmp (argv[i], "--font-size"))
+        font_size = consume_float (argv, &i);
+    else if (argv[i][0]=='-')
     {
       switch (argv[i][1])
       {
@@ -449,7 +462,7 @@ int main (int argc, char **argv)
 
   if (cols > 0)
   {
-    if (font_size < 0) font_size = 16.0;
+    if (font_size < 0) font_size = 26.0;
     if (rows < 0) rows = cols / 3;
     height = rows * font_size;
     width = cols * (int)(font_size / 2);
