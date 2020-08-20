@@ -4,7 +4,7 @@ pre:
 	make -C fonts
 test: all
 	make -C tests
-
+post: test
 clean:
 	rm -f test-renderpaths ctx ctx.asan ctx.O1
 	rm -f tests/index.html
