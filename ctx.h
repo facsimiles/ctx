@@ -20594,7 +20594,6 @@ struct _CtxSDL
    int           render_frame;
    int           rendered_frame[CTX_THREADS];
    Ctx          *host[CTX_THREADS];
-   atomic_int    threads_done;
    int           frame;
    int           pointer_down[3];
 
@@ -20606,9 +20605,22 @@ struct _CtxSDL
                                                            // responsible for a tile
 };
 
+static inline int
+render_threads_done (CtxSDL *sdl)
+{
+  int sum = 0;
+  for (int i = 0; i < CTX_THREADS; i++)
+  {
+     if (sdl->rendered_frame[i] == sdl->render_frame)
+       sum ++;
+  }
+  return sum;
+}
+
 static void ctx_show_frame (CtxSDL *sdl)
 {
-  if (sdl->threads_done == CTX_THREADS)
+  if (sdl->shown_frame != sdl->render_frame &&
+      render_threads_done (sdl) == CTX_THREADS)
   {
     SDL_UpdateTexture (sdl->texture, NULL,
                       (void*)sdl->pixels, sdl->width * sizeof (Uint32));
@@ -20616,7 +20628,6 @@ static void ctx_show_frame (CtxSDL *sdl)
     SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
     SDL_RenderPresent (sdl->renderer);
     sdl->shown_frame = sdl->render_frame;
-    sdl->threads_done = 0;
   }
 }
 
@@ -21003,9 +21014,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   if (count >= 10000)
   {
     fprintf (stderr, "!\n");
-    sdl->threads_done = CTX_THREADS;
     sdl->shown_frame = sdl->render_frame;
-    sdl->threads_done = 0;
   }
   if (sdl->shown_frame == sdl->render_frame)
   {
@@ -21046,7 +21055,6 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 
     sdl->render_frame = sdl->frame;
     sdl->frame++;
-    sdl->threads_done = 0;
     ctx_free (hasher);
   }
 }
@@ -21059,6 +21067,7 @@ void ctx_sdl_free (CtxSDL *sdl)
   free (sdl);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
+
 
 static
 void render_fun (void **data)
@@ -21104,11 +21113,10 @@ void render_fun (void **data)
           }
         }
       sdl->rendered_frame[no] = sdl->render_frame;
-      sdl->threads_done++;
 
       //ctx_render_stream (sdl->ctx_copy, stdout, 1);
 
-      if (sdl->threads_done == CTX_THREADS)
+      if (render_threads_done (sdl) == CTX_THREADS)
         ctx_reset (sdl->ctx_copy);
     }
     else
