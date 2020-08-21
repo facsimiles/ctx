@@ -20565,7 +20565,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 3 threads 27fps
  // 4 threads 29fps
 
-#define CTX_THREADS  4
+#define CTX_THREADS  2
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
@@ -20584,7 +20584,6 @@ struct _CtxSDL
    SDL_Window   *window;
    SDL_Renderer *renderer;
    SDL_Texture  *texture;
-   ctx_mutex_t  *mutex;
    int           quit;
    int           key_balance;
    int           key_repeat;
@@ -20609,9 +20608,6 @@ struct _CtxSDL
 
 static void ctx_show_frame (CtxSDL *sdl)
 {
-  // we can hang here, if two threads decrement
-  // at exactly the same time
-  //
   if (sdl->threads_done == CTX_THREADS)
   {
     SDL_UpdateTexture (sdl->texture, NULL,
@@ -20621,7 +20617,6 @@ static void ctx_show_frame (CtxSDL *sdl)
     SDL_RenderPresent (sdl->renderer);
     sdl->shown_frame = sdl->render_frame;
     sdl->threads_done = 0;
-    ctx_unlock_mutex (sdl->mutex);
   }
 }
 
@@ -20766,12 +20761,10 @@ static int ctx_sdl_consume_events (Ctx *ctx)
       case SDL_WINDOWEVENT:
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
-          while (sdl->threads_done != 0 &&
-                 sdl->threads_done != CTX_THREADS) {
+          while (sdl->shown_frame != sdl->render_frame) {
                   usleep (100);
-                  fprintf (stderr, ".");
+                  ctx_show_frame (sdl);
           }
-          ctx_lock_mutex (sdl->mutex);
           int width = event.window.data1;
           int height = event.window.data2;
           SDL_DestroyTexture (sdl->texture);
@@ -20791,7 +20784,6 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           }
           ctx_set_size (sdl->ctx, width, height);
           ctx_set_size (sdl->ctx_copy, width, height);
-          ctx_unlock_mutex (sdl->mutex);
         }
         break;
     }
@@ -21014,11 +21006,9 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     sdl->threads_done = CTX_THREADS;
     sdl->shown_frame = sdl->render_frame;
     sdl->threads_done = 0;
-    ctx_unlock_mutex (sdl->mutex);
   }
   if (sdl->shown_frame == sdl->render_frame)
   {
-    ctx_lock_mutex (sdl->mutex);
     Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
                       CTX_HASH_COLS, CTX_HASH_ROWS);
     ctx_reset (sdl->ctx_copy);
@@ -21118,7 +21108,6 @@ void render_fun (void **data)
 
       //ctx_render_stream (sdl->ctx_copy, stdout, 1);
 
-
       if (sdl->threads_done == CTX_THREADS)
         ctx_reset (sdl->ctx_copy);
     }
@@ -21141,7 +21130,8 @@ Ctx *ctx_new_sdl (int width, int height)
     height = 480;
   }
   sdl->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
-  sdl->renderer = SDL_CreateRenderer (sdl->window, -1, SDL_RENDERER_SOFTWARE);
+  //sdl->renderer = SDL_CreateRenderer (sdl->window, -1, SDL_RENDERER_SOFTWARE);
+  sdl->renderer = SDL_CreateRenderer (sdl->window, -1, 0);
   if (!sdl->renderer)
   {
      ctx_free (ctx);
@@ -21149,7 +21139,6 @@ Ctx *ctx_new_sdl (int width, int height)
      return NULL;
   }
   ctx_sdl_events = 1;
-  sdl->mutex = ctx_create_mutex ();
   sdl->texture = SDL_CreateTexture (sdl->renderer,
         SDL_PIXELFORMAT_ABGR8888,
         SDL_TEXTUREACCESS_STREAMING,
