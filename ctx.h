@@ -12,7 +12,29 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with ctx; if not, see <https://www.gnu.org/licenses/>.
  *
- * 2002, 2012, 2015, 2019, 2020 Øyvind Kolås <pippin@gimp.org>
+ * 2012, 2015, 2019, 2020 Øyvind Kolås <pippin@gimp.org>
+ *
+ * ctx is a single header 2d vector graphics processing framework.
+ *
+ * To use ctx in a project, do the following:
+ *
+ * #define CTX_IMPLEMENTATION
+ * #include "ctx.h"
+ *
+ * Ctx does not - yet - contain a minimal default fallback font, so
+ * you probably want to also include a font, and perhaps enable
+ * the cairo or SDL2 optional renderers, a more complete example
+ * could be:
+ *
+ * #include <cairo.h>
+ * #include <SDL.h>
+ * #include "ctx-font-regular.h"
+ * #define CTX_IMPLEMENTATION
+ * #include "ctx.h"
+ *
+ * The behavior of ctx can be tweaked, and additional features can
+ * be enabled with other includes, see further down in the start
+ * of this file for details.
  */
 
 #ifndef CTX_H
@@ -64,7 +86,20 @@ Ctx *ctx_new_ui (int width, int height);
  * Create a new drawing context for a pre-existing renderstream.
  */
 Ctx *ctx_new_for_renderstream (void *data, size_t length);
-void ctx_free                  (Ctx *ctx);
+
+
+/**
+ * ctx_dirty_rect:
+ *
+ * Query the dirtied bounding box of drawing commands thus far.
+ */
+void  ctx_dirty_rect      (Ctx *ctx, int *x, int *y, int *width, int *height);
+
+/**
+ * ctx_free:
+ * @ctx: a ctx context
+ */
+void ctx_free (Ctx *ctx);
 
 
 /* clears and resets a context */
@@ -86,8 +121,6 @@ void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                            float c,  float d,  // vskew,  vscale
                            float e,  float f); // htran,  vtran
 
-
-void  ctx_dirty_rect      (Ctx *ctx, int *x, int *y, int *width, int *height);
 void  ctx_font_size       (Ctx *ctx, float x);
 void  ctx_font            (Ctx *ctx, const char *font);
 void  ctx_scale           (Ctx *ctx, float x, float y);
@@ -113,13 +146,16 @@ void  ctx_round_rectangle (Ctx *ctx,
                            float x0, float y0,
                            float w, float h,
                            float radius);
-void  ctx_rel_line_to     (Ctx *ctx, float x, float y);
-void  ctx_rel_move_to     (Ctx *ctx, float x, float y);
+void  ctx_rel_line_to     (Ctx *ctx,
+                           float x, float y);
+void  ctx_rel_move_to     (Ctx *ctx,
+                           float x, float y);
 void  ctx_rel_curve_to    (Ctx *ctx,
                            float x0, float y0,
                            float x1, float y1,
                            float x2, float y2);
-void  ctx_rel_quad_to     (Ctx *ctx, float cx, float cy,
+void  ctx_rel_quad_to     (Ctx *ctx,
+                           float cx, float cy,
                            float x, float y);
 void  ctx_close_path      (Ctx *ctx);
 float ctx_get_font_size   (Ctx *ctx);
@@ -135,31 +171,37 @@ void  ctx_get_transform   (Ctx *ctx, float *a, float *b,
                            float *e, float *f);
 
 CtxGlyph *ctx_glyph_allocate (int n_glyphs);
-void      gtx_glyph_free     (CtxGlyph *glyphs);
+
+void gtx_glyph_free       (CtxGlyph *glyphs);
+
 int  ctx_glyph            (Ctx *ctx, uint32_t unichar, int stroke);
+
 void ctx_arc              (Ctx  *ctx,
                            float x, float y,
                            float radius,
                            float angle1, float angle2,
                            int   direction);
+
 void ctx_arc_to           (Ctx *ctx, float x1, float y1,
                            float x2, float y2, float radius);
 
-void ctx_quad_to        (Ctx *ctx, float cx, float cy,
-                         float x, float y);
-void ctx_arc            (Ctx  *ctx,
-                         float x, float y,
-                         float radius,
-                         float angle1, float angle2,
-                         int   direction);
-void ctx_arc_to         (Ctx *ctx, float x1, float y1,
-                         float x2, float y2, float radius);
+void ctx_quad_to          (Ctx *ctx, float cx, float cy,
+                           float x, float y);
 
-void ctx_preserve       (Ctx *ctx);
-void ctx_fill           (Ctx *ctx);
-void ctx_stroke         (Ctx *ctx);
-void ctx_paint          (Ctx *ctx);
-void ctx_parse (Ctx *ctx, const char *string);
+void ctx_arc              (Ctx  *ctx,
+                           float x, float y,
+                           float radius,
+                           float angle1, float angle2,
+                           int   direction);
+
+void ctx_arc_to           (Ctx *ctx, float x1, float y1,
+                           float x2, float y2, float radius);
+
+void ctx_preserve         (Ctx *ctx);
+void ctx_fill             (Ctx *ctx);
+void ctx_stroke           (Ctx *ctx);
+void ctx_paint            (Ctx *ctx);
+void ctx_parse            (Ctx *ctx, const char *string);
 
 void
 ctx_set_pixel_u8          (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -1325,25 +1367,25 @@ struct
     } get;
     struct
     {
-      uint8_t code;
-      float pad;
-      float pad2;
-      uint8_t code_data;
+      uint8_t  code;
+      float    pad;
+      float    pad2;
+      uint8_t  code_data;
       uint32_t stringlen;
       uint32_t blocklen;
-      uint8_t code_cont;
-      uint8_t utf8[8]; /* .. and continues */
+      uint8_t  code_cont;
+      uint8_t  utf8[8]; /* .. and continues */
     } text_stroke;
     struct
     {
-      uint8_t code;
-      float pad;
-      float pad2;
-      uint8_t code_data;
+      uint8_t  code;
+      float    pad;
+      float    pad2;
+      uint8_t  code_data;
       uint32_t stringlen;
       uint32_t blocklen;
-      uint8_t code_cont;
-      uint8_t utf8[8]; /* .. and continues */
+      uint8_t  code_cont;
+      uint8_t  utf8[8]; /* .. and continues */
     } set_font;
     struct
     {
@@ -13054,6 +13096,14 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         ctx_rasterizer_end_group (rasterizer);
         break;
 #endif
+
+#if 0
+      case CTX_SET:
+        ctx_state_set_string (rasterizer->state,
+                        c->set.key_hash,
+                        c->set.utf8);
+        break;
+#endif
       case CTX_ROTATE:
       case CTX_SCALE:
       case CTX_TRANSLATE:
@@ -17420,7 +17470,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         {
            if (parser->set_prop)
              ctx_parser_set (parser, parser->set_key_hash, (char*)parser->holding, parser->pos);
-           else
+           //else
              ctx_set (ctx, parser->set_key_hash, (char*)parser->holding, parser->pos);
         }
         parser->command = CTX_SET;
@@ -20565,7 +20615,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 3 threads 27fps
  // 4 threads 29fps
 
-#define CTX_THREADS  2
+#define CTX_THREADS  4
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
@@ -20597,8 +20647,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 4
-#define CTX_HASH_COLS 4
+#define CTX_HASH_ROWS 6
+#define CTX_HASH_COLS 3
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20635,11 +20685,27 @@ static int ctx_sdl_consume_events (Ctx *ctx)
 {
   CtxSDL *sdl = (void*)ctx->renderer;
   SDL_Event event;
+  int got_events = 0;
+  if(0){
+    const char *title = ctx_get (sdl->ctx, "title");
+    static char *set_title = NULL;
+    if (title)
+    {
+    if (set_title == NULL || strcmp (title, set_title))
+    {
+      if (set_title) free (set_title);
+      set_title = strdup (title);
+  //    SDL_SetWindowTitle (sdl->window, set_title);
+       fprintf (stderr, "%s\n", set_title);
+    }
+    }
+  }
 
   ctx_show_frame (sdl);
 
   while (SDL_PollEvent (&event))
   {
+    got_events ++;
     switch (event.type)
     {
       case SDL_MOUSEBUTTONDOWN:
@@ -20813,7 +20879,7 @@ static int ctx_ctx_consume_events (Ctx *ctx)
       float x = 0, y = 0;
       int b;
       char event_type[128]="";
-      event = ctx_native_get_event (ctx, 50);
+      event = ctx_native_get_event (ctx, 25);
       {
       //FILE *file = fopen ("/tmp/log", "a");
       //fprintf (file, "[%s]\n", event);
@@ -21053,9 +21119,8 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
         }
       }
 
-    sdl->render_frame = sdl->frame;
-    sdl->frame++;
     ctx_free (hasher);
+    sdl->render_frame = ++sdl->frame;
   }
 }
 
@@ -21068,11 +21133,10 @@ void ctx_sdl_free (CtxSDL *sdl)
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
-
 static
 void render_fun (void **data)
 {
-  int no = (size_t)data[0];
+  int      no = (size_t)data[0];
   CtxSDL *sdl = data[1];
 
   while (!sdl->quit)
@@ -21092,7 +21156,7 @@ void render_fun (void **data)
 
             Ctx *host = sdl->host[no];
             CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
-#if 1 // merge horizontally adjecant tiles of same affinity
+#if 1 // merge horizontally adjecant tiles of same affinity into one job
             while (col + 1 < CTX_HASH_COLS &&
                    sdl->tile_affinity[hno+1] == no)
             {
@@ -21114,16 +21178,16 @@ void render_fun (void **data)
         }
       sdl->rendered_frame[no] = sdl->render_frame;
 
-      //ctx_render_stream (sdl->ctx_copy, stdout, 1);
-
       if (render_threads_done (sdl) == CTX_THREADS)
+      {
+   //   ctx_render_stream (sdl->ctx_copy, stdout, 1);
         ctx_reset (sdl->ctx_copy);
+      }
     }
     else
     {
-      usleep (1000 * 15);
+      usleep (1000 * 5);
     }
-    // render
   }
 }
 
