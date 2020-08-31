@@ -7498,10 +7498,13 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
                      and keep a different count for items stored here, like
                      a heap and stack growing against each other
                   */
-                  rasterizer->edges[CTX_MAX_EDGES-1-rasterizer->pending_edges] =
+                  if (rasterizer->pending_edges < CTX_MAX_PENDING-1)
+                  {
+                    rasterizer->edges[CTX_MAX_EDGES-1-rasterizer->pending_edges] =
                     rasterizer->edges[no];
-                  rasterizer->active_edges--;
-                  rasterizer->pending_edges++;
+                    rasterizer->pending_edges++;
+                    rasterizer->active_edges--;
+                  }
                 }
 #endif
             }
@@ -20879,7 +20882,7 @@ static int ctx_ctx_consume_events (Ctx *ctx)
       float x = 0, y = 0;
       int b;
       char event_type[128]="";
-      event = ctx_native_get_event (ctx, 25);
+      event = ctx_native_get_event (ctx, 1000/60);
       {
       //FILE *file = fopen ("/tmp/log", "a");
       //fprintf (file, "[%s]\n", event);
@@ -20917,7 +20920,7 @@ static int ctx_ctx_consume_events (Ctx *ctx)
   else
     {
       float x, y;
-      event = ctx_nct_get_event (ctx, 50, &ix, &iy);
+      event = ctx_nct_get_event (ctx, 20, &ix, &iy);
 
       x = (ix - 1.0 + 0.5) / braille->cols * ctx->events.width;
       y = (iy - 1.0)       / braille->rows * ctx->events.height;
