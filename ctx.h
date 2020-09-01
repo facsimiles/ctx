@@ -20618,7 +20618,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 3 threads 27fps
  // 4 threads 29fps
 
-#define CTX_THREADS  4
+#define CTX_THREADS  2
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL

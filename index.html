@@ -1,5 +1,5 @@
 <html>
-        <head><title>ctx 2D vector graphics renderer and protocol</title>
+        <head><title>ctx 2D vector renderering protocol and framework</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 
         <style type='text/css'>
@@ -8,29 +8,11 @@
       </head>
 
     <body>
-        <div id='top'>
-          <div id='controlbar'>
-            <div id='controls'></div>
-            <!--<div id='location'><a style='color:black;text-decoration:none' href='http://ctx.graphics/'>ctx</a>-->
-            &nbsp;
-      <!--
-      <span style='float:right;'>&nbsp;pippin@gimp&middot;org</span>
-      <a style='float:right;padding-right:0.6em' href='https://twitter.com/hodefoting/'>twitter</a>
-      <a style='float:right;padding-right:0.6em' href='https://github.com/hodefoting/'>github</a>
-      <a style='float:right;padding-right:0.6em' href='https://pippin.gimp.org/bitcoin.html'>bitcoin</a>
-      <a style='float:right;padding-right:0.6em' href='https://patreon.com/pippin'>patreon</a>
-      -->
-      &nbsp;
-            </div>
-
-          </div>
-        </div>
-
-
        <div id='menu'>
                 <a href='http://ctx.graphics/'>ctx</a>
-                <a href='#downloads'>files</a>
-                <a href='#example'>hello</a>
+                <a href='log.html'>git</a>
+                <a href='files.html'>files</a>
+                <a href='#example'>hello world</a>
                 <br/>
                 <a href='#performance'>speed</a>
                 <a href='#codesize'>codesize</a>
@@ -44,23 +26,21 @@
                 <a href='glitch/'>glitch</a>
         </div>
 
-        <div id='root'>
-           <div id='page'>
-              <div class='content'>
+              <div id='page'>
         <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is a small footprint vector graphics protocol and <a href='rasterizer/'>rasterizer</a> 
+        <p>ctx is a small footprint vector graphics protocol, library and <a href='rasterizer/'>rasterizer</a> 
         based
-        on the HTML5 Canvas 2D context. It can drive resolution independent
-        antialiased interfaces on <a href='mcu/'>microcontrollers</a> as well
-        as provide color and CMYK processing capabilities as well as floating
-        point processing needed for content authoring.</p>
+        on the HTML5 Canvas 2D context. It can drive interactive resolution
+        independent antialiased interfaces on <a
+        href='mcu/'>microcontrollers</a> as well as provide color and CMYK
+        processing capabilities as well as floating point processing needed
+        for content authoring.</p>
 
-        <p>It provides both a C API and an efficient text based serialization of
-        the canvas drawing model. 
-        Almost the full W3C rendering API is covered,
-        currently missing is ellipse(), correct handling of path instead of
-        using bounding box in in_fill().</p>
+        <p>ctx provides both a C API and an efficient text based serialization
+        of the canvas drawing model.  Almost the full W3C rendering API is
+        covered, currently missing is ellipse(), correct handling of path
+        instead of using bounding box in in_fill().</p>
 
         <p>Render targets handled natively are 8bit sRGBA
         <tt>RGBA8</tt>, floating point scRGB <tt>RGBAF</tt> 8bit and floating
@@ -105,11 +85,11 @@ mode. The core ideas for a 2d vector vocabulary is however shared with PDF,
 cairo, OpenVG, directdraw and others all with a basis in postscript.
         </p>
 
-        <h2 id='protocol'>protocol reference</h2>
+        <h2 id='protocol'>protocol</h2>
 
-        <p>This is a terse technical reference on the command entries stores
-        internally when serializing drawing commands, it maps to the the <a href='ctx.h.html#l_33'>C API</a>
-        if you ruen <tt>camelCase</tt> into <tt>snake_case</tt>, and prefixing
+        <p>This is a terse technical reference on the command used in
+        ctx' drawlist it maps to the the <a href='ctx.h.html#l_33'>C API</a>
+        if you turn <tt>camelCase</tt> into <tt>snake_case</tt>, and prefixing
         each command with <tt>ctx_</tt>.  </p>
 
         <!-- http://diveintohtml5.info/canvas.html  -->
@@ -282,7 +262,7 @@ global alpha.</td></tr>
                 <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a></td><td>128K</td><td><a href='ctx-font-regular.h.html'>browse<td></td><td>Example font to use with ctx</td></tr>
                 <tr><td><a href='ctx.elf'>ctx.elf</a></td><td>168K<td><td>card10 l0dable</td>
                                         <tr><td><a href='hello.c'>hello.c</a></td><td>3K</td><td></td><td>Animated terminal test.</tr>
-                                        <tr><td><a href='test-size.c'>test-size.c</a></td><td>3K</td><td><td></td><td>minimal example</td></tr>
+                                        <tr><td><a href='test-size.c'>test-size.c</a></td><td>3K</td><td><td></td><td>example</td></tr>
         </table>
 
         <h2 id='performance'>is ctx fast <span style='color:gray'>yet</span>?</h2>
@@ -406,7 +386,7 @@ if the maximum number of vertices in a path is reduced this can be below
             existing code more autovectorizer friendly is a priority.)</li>
 	</ul>
 
-        <h3 id='example'>minimal example code</h3>
+        <h3 id='example'>example code</h3>
 <pre>
 
 #include &lt;stdint.h&gt;
@@ -490,7 +470,5 @@ run the following:
 mkdir foo;cd foo;wget http://ctx.graphics/{ctx.h,ctx-font-regular.h,hello.c};make hello &amp;&amp; ./hello</pre>
 </p>
               </div>
-           </div>
-        </div>
       </body>
 </html>
