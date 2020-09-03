@@ -51,6 +51,7 @@ updateweb: clean all post ctx.h.html ctx-font-regular.h.html
 	cp -R file/* ~/pgo/ctx.graphics/file
 	cp -R commit/* ~/pgo/ctx.graphics/commit
 	cp -R tests/* ~/pgo/ctx.graphics/tests
+	cp -R protocol/* ~/pgo/ctx.graphics/protocol
 	cp -R rasterizer/* ~/pgo/ctx.graphics/rasterizer
 	cp -R glitch/* ~/pgo/ctx.graphics/glitch
 	cp *.css *.html ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/

@@ -10,12 +10,12 @@
     <body>
        <div id='menu'>
                 <a href='http://ctx.graphics/'>ctx</a>
-                <a href='log.html'>git</a>
+                <a href='#code'>code</a>
                 <a href='#example'>hello world</a>
                 <br/>
                 <a href='#codesize'>codesize</a>
                 <a href='rasterizer/'>rasterizer</a>
-                <a href='#protocol'>protocol</a>
+                <a href='protocol/'>protocol</a>
                 <a href='#roadmap'>roadmap</a>
                 <a href='#license'>license</a>
                 <br/>
@@ -27,7 +27,7 @@
               <div id='page'>
         <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is vector graphics <a href='#protocol'>protocol</a>, library and <a href='rasterizer/'>rasterizer</a> 
+        <p>ctx is vector graphics <a href='protocol/'>protocol</a>, library and <a href='rasterizer/'>rasterizer</a> 
         based
         on the HTML5 Canvas 2D context. It can drive interactive resolution
         independent antialiased interfaces on <a
@@ -40,9 +40,10 @@
         covered, currently missing is ellipse(), correct handling of path
         instead of using bounding box in in_fill().</p>
 
-        <h3>Downloads</h3>
+        <h3 id='code'>Code</h3>
 
-        <p>The direct links below correspond to the dev branch in <a href='log.html'>git</a>.</p>
+        <p>The direct links below correspond to the latest commit <a
+                href='log.html'>in git</a>.</p>
 
         <table>
                 <tr><td style='width:14em'><a href='ctx.h'>ctx.h</a> <a href='ctx.h.html'>(browse)</td><td>580K</td><td>The singleheader library ctx.</tr>
@@ -61,8 +62,8 @@
 
 <h2 id='license'>license and funding</h2>
 <p>
-ctx is currently developed under <a href='https://www.gnu.org/licenses/lgpl-3.0.en.html'>LGPLv3+</a> you can encourage continued
-development of ctx and dissimilar technologies by supporting its developer,
+ctx is available under <a href='https://www.gnu.org/licenses/lgpl-3.0.en.html'>LGPLv3+</a> you can encourage continued
+development of ctx and dissimilar technologies by financially supporting its developer,
 if the <a href='https://pippin.gimp.org/'>authors</a> income through  <a href='https:/pippin.gimp.org/funding/'>patreon</a> and similar is above 4000USD per month for a year, or a similar amount
 in shorter time, ctx will be relicensed under the <a href='https://opensource.org/licenses/ISC'>ISC license</a>.
 </p>
@@ -78,7 +79,7 @@ cairo, OpenVG, directdraw and other API that have foundation in postscript.
 
 <h2 id='codesize'>optimization vs binary size</h2>
 
-<p>ctx is designed from the beginning to act as a GPU in software for modern
+<p>ctx is designed from the beginning to act as a software GPU for modern
 microcontrollers, some of which are more powerful than the PCs in the mid 90s.
 Different optimization settings of the compiler give a wide range for the
 performance/binary size tradeoff. But the small footprint in RAM and ability to
@@ -166,170 +167,6 @@ on-the-fly when copying out, for best performance.
 <p>For floating point compilers do a better job of autovectorizing code, SIMD
 implementations for normal + source-over does however still make sense.</p>
 
-        <h2 id='protocol'>protocol</h2>
-
-        <p>This is a terse technical reference on the command used in
-        ctx' drawlist it maps to the the <a href='ctx.h.html#l_33'>C API</a>
-        if you turn <tt>camelCase</tt> into <tt>snake_case</tt>, and prefixing
-        each command with <tt>ctx_</tt>.  </p>
-
-        <!-- http://diveintohtml5.info/canvas.html  -->
-
-        <p>The ctx text format is a direct serialization of the API.</p>
-
-        <p>
-        When a keyword is parsed the parser expects a series of commands of the
-        same type, that will consume arguments until a command change. There
-        are also short forms of the commands available, where applicable these
-        match the SVG path data syntax thus making ctx a superset of SVG path
-        data.
-        </p>
-        <p>
-        </p>
-
-        <table>
-<tr><td><tt>gray</tt></td><td>gray</td><td>sets gray source, and color model</td></tr>
-<tr><td><tt>graya</tt></td><td>gray alpha</td><td>sets gray alpha source, and color model</td></tr>
-<tr><td><tt>rgb</tt></td><td>r g b</td><td>sets rgb source</td></tr>
-<tr><td><tt>rgba</tt></td><td>r g b a</td><td>rgb alpha color source</td></tr>
-<tr><td><tt>cmyk</tt></td><td>c m y k</td><td>cmyk color source</td></tr>
-<tr><td><tt>cmyka</tt></td><td>c m y k a</td><td>cmyk alpha color source</td></tr>
-
-<tr><td><tt>drgb</tt></td><td>r g b</td><td>sets rgb source, in device space</td></tr>
-<tr><td><tt>drgba</tt></td><td>r g b a</td><td>rgb alpha color source, in device space</td></tr>
-<tr><td><tt>dcmyk</tt></td><td>c m y k</td><td>cmyk color source, in device space</td></tr>
-<tr><td><tt>dcmyka</tt></td><td>c m y k a</td><td>cmyk alpha color source, in device space</td></tr>
-
-<!--
-<tr><td>lab</td><td></td>sets lab color source</tr>
-<tr><td>laba</td><td></td>sets lab alpha color source</tr>
-<tr><td>lch</td><td></td>sets lch color source</tr>
-<tr><td>lcha</td><td></td>sets lch alpha color source</tr>
--->
-
-<tr><td><tt>a</tt> <tt>relArcTo</tt></td><td>5</td></tr>
-<tr><td><tt>b</tt> <tt>clip</tt></td><td></td></tr>
-<tr><td><tt>c</tt> <tt>relCurveTo</tt></td><td>6</td></tr>
-<tr><td><tt>g</tt> <tt>save</tt></td><td></td></tr>
-<tr><td><tt>e</tt> <tt>translate</tt></td><td>x y</td></tr>
-<tr><td><tt>f</tt> <tt>linearGradient</tt></td><td>x0 y0 x1 y1</td></tr>
-<tr><td><tt>h</tt> <tt>relHorLine</tt></td><td>x</td></tr>
-
-<tr><td><tt>ka</tt> <tt>globalAlpha</tt></td><td>alpha</td></tr>
-<tr><td><tt>kb</tt> <tt>textBaseline</tt></td><td><tt>alphabetic</tt> | <tt>top</tt> | <tt>bottom</tt> | <tt>middle</tt> | <tt>hanging</tt> | <tt>ideographic</tt></td></tr>
-<tr><td><tt>kB</tt> <tt>blendMode</tt></td><td><tt>normal</tt> | <tt>multiply</tt> | <tt>screen</tt> | <tt>overlay</tt> | <tt>darken</tt> | <tt>lighten</tt> | <tt>colorDodge</tt> | <tt>colorBurn</tt> | <tt>hardLight</tt> | <tt>softLight</tt> | <tt>difference</tt> | <tt>exclusion</tt> | <tt>hue</tt> | <tt>saturation</tt> | <tt>color</tt> | <tt>luminosity</tt> | <tt>divide</tt> | <tt>addition</tt> | <tt>subtract</tt></td></tr>
-<tr><td><tt>kc</tt> <tt>lineCap cap</tt></td><td><tt>none</tt> | <tt>round</tt> | <tt>square</tt></td></tr>
-<tr><td><tt>kC</tt> <tt>shadowColor</tt></td><td>color components</td><td>works like gradientAddStop</td></tr>
-<tr><td><tt>kf</tt> <tt>fontSize</tt></td><td>font_size</td></tr>
-<tr><td><tt>kj</tt> <tt>lineJoin join</tt></td><td><tt>bevel</tt> | <tt>round</tt> | <tt>miter</tt></td><td>0 1 or 2 are also valid values</td></tr>
-<tr><td><tt>kl</tt> <tt>miterLimit</tt></td><td>miter_limit</td></tr>
-<tr><td><tt>km</tt> <tt>compositingMode</tt></td><td><tt>sourceOver</tt> | <tt>copy</tt> | <tt>clear</tt> | <tt>sourceIn</tt> | <tt>sourceOut</tt> | <tt>sourceAtop</tt> | <tt>destinationOver</tt> | <tt>destination</tt> | <tt>destinationIn</tt> | <tt>destination_out</tt> | <tt>destinationAtop</tt> | <tt>xor</tt></td></tr>
-<tr><td><tt>ks</tt> <tt>shadowBlur</tt></td><td>blur_radius</td></tr>
-<tr><td><tt>kt</tt> <tt>textAlign</tt></td><td><tt>start</tt> | <tt>end</tt> | <tt>center</tt> | <tt>left</tt> | <tt>right</tt></td></tr>
-<tr><td><tt>kw</tt> <tt>lineWidth</tt></td><td>line_width</td></tr>
-
-<tr><td><tt>kx</tt> <tt>shadowOffsetX</tt></td><td>horizontal_offset</td></tr>
-<tr><td><tt>ky</tt> <tt>shadowOffsetY</tt></td><td>vertical_offset</td></tr>
-
-<tr><td><tt>l</tt> <tt>relLineTo</tt></td><td>x y</td></tr>
-<tr><td><tt>m</tt> <tt>relMoveTo</tt></td><td>x y</td></tr>
-<tr><td><tt>n</tt> <tt>font</tt></td><td>"font name"</td></tr>
-<tr><td><tt>o</tt> <tt>radialGradient</tt></td><td>6</td></tr>
-<tr><td><tt>p</tt> <tt>gradientAddStop</tt> <tt>addStop</tt></td><td>pos R G B A</td><td>arguments depend on current color model, you can change the color model without setting a color by specifying a color without arguments.</td></tr>
-<tr><td><tt>q</tt> <tt>relQuadTo</tt></td><td>cx cy x y</td></tr>
-<tr><td><tt>r</tt> <tt>rectangle</tt> <tt>rect</tt></td><td>x y width height</td></tr>
-<tr><td><tt>s</tt> <tt>relSmoothTo</tt></td><td>cx cy x y</td></tr>
-<tr><td><tt>t</tt> <tt>relSmoothQuadTo</tt></td><td>x y</td></tr>
-<tr><td><tt>u</tt> <tt>strokeText</tt></td><td>"utf8-string"</td></tr>
-<tr><td><tt>v</tt> <tt>relVerLine</tt></td><td>y</td></tr>
-<tr><td><tt>w</tt> <tt>glyph</tt></td><td>unichar</td><td>draws a single unicode character, the character no is currently passed in as decimal. (might be made internal), since a text string duplicates the API.</td></tr>
-<!--</tt> <tt>w glyph , single unicode char -->
-<tr><td><tt>x</tt> <tt>text</tt></td><td>"utf8-string" | kerning</td><td>Interspersed with utf8 sequences of text numbers can appear that shift the horizontal position.</td></tr>
-<tr><td><tt>y</tt> <tt>identity</tt></td><td></td></tr>
-<tr><td><tt>z</tt> <tt>closePath</tt></td><td></td></tr>
-
-<tr><td><tt>A</tt> <tt>arcTo</tt></td><td>x1 y1 x2 y2 radius</td></tr>
-<tr><td><tt>B</tt> <tt>arc</tt></td><td>x y radius angle1 angle2 direction</td></tr>
-<tr><td><tt>C</tt> <tt>curveTo</tt></td><td>cx1 cy1 cx2 cy2 x y</td></tr>
-<tr><td><tt>E</tt> <tt>stroke</tt></td><td></td></tr>
-<tr><td><tt>F</tt> <tt>fill</tt></td><td></td></tr>
-<tr><td><tt>G</tt> <tt>restore</tt></td><td></td></tr>
-<tr><td><tt>H</tt> <tt>horLineTo</tt></td><td>x</td></tr>
-<tr><td><tt>J</tt> <tt>rotate</tt></td><td>radians</td></tr>
-<!--
-<tr><td>K color</td><td>model component0 [component1 [component2..]]><td>number of arguments depend on color model, this is normally nor used, instead of the commands rgb, rgba, drgb, cmyk etc.</td> -->
-
-<tr><td><tt>L</tt> <tt>lineTo</tt></td><td>x y</td></tr>
-<tr><td><tt>M</tt> <tt>moveTo</tt></td><td>x y</td></tr>
-<tr><td><tt>N</tt> <tt>beginPath</tt></td><td></td></tr>
-<tr><td><tt>O</tt> <tt>scale</tt></td><td>scale_x scale_y</td></tr>
-<!-- P new-page -->
-<tr><td><tt>Q</tt> <tt>quadTo</tt></td><td>cx cy x y</td></tr>
-<!-- R media-box -->
-<tr><td><tt>S</tt> <tt>smoothTo</tt></td><td>cx cy x y</td></tr>
-<tr><td><tt>T</tt> <tt>smoothQuadTo</tt></td><td>x y</td></tr>
-<tr><td><tt>U</tt> <tt>reset</tt></td><td></td></tr>
-<tr><td><tt>V</tt> <tt>verLineTo</tt></td><td>y</td></tr>
-
-<tr><td><tt>X</tt> <tt>exit</tt></td><td></td></tr>
-<tr><td><tt>X</tt> <tt>done</tt></td><td></td></tr>
-
-</tr>
-
-<tr><td><tt>Z</tt> <tt>closePath</tt></td><td></td></tr>
-<tr><td><tt>W</tt> <tt>transform</tt></td><td>a b c d e f</td><td>applies the transformation matrix</td></tr>
-<tr><td><tt>{</tt> <tt>startGroup</tt></td><td></td><td>starts a compositing group</td></tr>
-<tr><td><tt>}</tt> <tt>endGroup</tt></td><td></td><td>ends a compositing group,
-                and blends and composites it with the content before the group
-                using the now current compositing mode, blending mode and
-global alpha.</td></tr>
-
-        </table>
-
-        <h3>Detailed syntax description</h3>
-        <p>The language consists of a stream of words, numbers and strings,
-        optionally separated by white space.  The characters 
-        <tt>,</tt><tt>=</tt><tt>(</tt><tt>)</tt><tt>;</tt> are also treated as white-space.
-        Words are substrings consisting of one or more characters in the ranges
-        <tt>a</tt>-<tt>z</tt> and <tt>A</tt>-<tt>Z</tt>. Numbers are sequences of <tt>0</tt>-<tt>9</tt>. Numbers can be followed by
-        the suffixes <tt>%</tt> or <tt>@</tt>, indicating that units of percent canvas width/height
-        should be used or a global em / cell-size. <tt>^</tt> is equivalent to CSS vh, and <tt>~</tt> vw,
-        this can be used to override the automatic choice done by <tt>%</tt>, which
-        favors height for dimensions that are independent of x/y like
-        <tt>lineWidth</tt> and <tt>shadowBlur</tt>.
-
-        Strings are raw binary UTF8 contained
-        in <tt>'</tt> or <tt>"</tt> pairs. <tt>"\n\r"</tt> etc from C are available for escaping newlines,
-        though they can also be directly included in the string.
-        <tt>#</tt> introduces a comment and the rest of the line is ignored.</p>
-
-        <p>Blobs can also be represented as a85</p>
-
-<!--    <h2>ctx renderstream</h2>
-
-        <p>Internally ctx uses a compact binary representation of the renderstream, ctx can render directly to a framebuffer or batch drawing commands
-        in a list for later playback, in immediate-mode the rasterizer is handed
-        commands as they are generated, and when recording to renderstream the
-        same data is built up in a compact binary representation.
-        </p>
-
-        <p>During rendering the renderstream memory is not touched by the
-        rasterizer, this permits multiple threads to render different
-        tiles/parts of a framebuffer without locking.</p>
-
-        <p>On one of the micro-controller tests this is instead done in serial,
-        generating the output framebuffer in chunks when the microcontroller
-        would be unable to fit a full copy in RAM.
-        </p>
-
-        <p>The renderer uses by a ctx context can be overriden, for now ctx
-        comes with backend for driving cairo - opening up for SVG and PDF output,
-        as well as backends for generating ctx syntax to a FILE * and a backend
-        that computes a grid of hashes, permitting improved re-rendering speed
-        for mostly static UIs.</p>
--->
-
-
 
 
         <h2 id='roadmap'>semi-ordered roadmap / wishlist</h2>
@@ -337,13 +174,14 @@ global alpha.</td></tr>
         <li>reduce size and improve performance</li>
         <li>Document/clean up network transparent UI protocol using ctx
             syntax. (<a href='not-really-a-demo.png'>test</a>, <a href='multi-client.png'>test</a>)</li>
-        <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
 	<li>point in fill/stroke, (current in_fill API uses path boundingbox)</li>
         <li>texture upload as part of ctx syntax</li>
         <li>ICC color management (provisions have been made in the API for this,
                 but RGBtoRGB and CMYKtoRGB RGBtoCMYK conversions are currently
                 done naively, instead of using <a href='http://gegl.org/babl/'>babl</a>.)</li>
+        <li>websockets + js + HTML5 Canvas renderer</li>
+        <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
 	<li>glyph fallback</li>
         <li>faster 1d-gaussian blur for shadow blur</li>
 	<li>gradients: use both circle centers</li>
@@ -402,7 +240,7 @@ int main (int argc, char **argv)
   ctx_rgba        (ctx, 1,0, 1.0, 1.0, 1.0);
   ctx_move_to     (ctx, 10, 9);
   ctx_text        (ctx, utf8);
-  ctx_free (ctx);
+  ctx_free        (ctx);
 
   static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
   int no=0;
