@@ -14765,7 +14765,7 @@ static const char *ctx_utf8_skip (const char *s, int utf8_length)
 }
 
 //  XXX  :  unused
-static inline int ctx_utf8_strlen (const char *s)
+int ctx_utf8_strlen (const char *s)
 {
   int count;
   if (!s)

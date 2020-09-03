@@ -53,6 +53,7 @@
 
 #include "ctx.h"
 
+//#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "vt-line.h"
@@ -593,7 +594,7 @@ long vt_rev (VT *vt)
 }
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
-static int ct_set_prop (VT *vt, uint32_t key_hash, const char *val);
+int ct_set_prop (VT *vt, uint32_t key_hash, const char *val);
 
 static void vt_set_title (VT *vt, const char *new_title)
 {
@@ -807,7 +808,6 @@ VT *vt_new (const char *command, int width, int height, float font_size, float l
   if (width <= 0) width = 640;
   if (height <= 0) width = 480;
   vt_set_px_size (vt, width, height);
-  fprintf (stderr, "%i %i\n", vt->cols, vt->rows);
 
   vt->fg_color[0] = 216;
   vt->fg_color[1] = 216;
@@ -2033,62 +2033,19 @@ static void vt_ctx_exit (void *data)
   //ctx_parser_free (vt->ctxp);
   //vt->ctxp = NULL;
 }
-
-static int ct_set_prop (VT *vt, uint32_t key_hash, const char *val)
-{
-#if 1
-  fprintf (stderr, "%i: %s\n", key_hash, val);
-#else
-  float fval = strtod (val, NULL);
-  CtxClient *client = client_by_id (ct->id);
-  uint32_t val_hash = ctx_strhash (val, 0);
-  if (!client)
-    return 0;
-
-  if (key_hash == ctx_strhash("start_move", 0))
-  {
-    start_moving (client);
-    moving_client = 1;
-    return 0;
-  }
-
-  //fprintf (stderr, "%i %s\n", key_hash, val);
-
-// set "pcm-hz"       "8000"
-// set "pcm-bits"     "8"
-// set "pcm-encoding" "ulaw"
-// set "play-pcm"     "d41ata312313"
-// set "play-pcm-ref" "foo.wav"
-
-// get "free"
-// storage of blobs for referencing when drawing or for playback
-// set "foo.wav"      "\3\1\1\4\"
-// set "fnord.png"    "PNG12.4a312"
-
-  switch (key_hash)
-  {
-    case CTX_title:  client_set_title (ct->id, val); break;
-    case CTX_x:      client->x = fval; break;
-    case CTX_y:      client->y = fval; break;
-    case CTX_width:  client_resize (ct->id, fval, client->height); break;
-    case CTX_height: client_resize (ct->id, client->width, fval); break;
-    case CTX_action:
-      switch (val_hash)
-      {
-        case CTX_maximize:     client_maximize (client); break;
-        case CTX_unmaximize:   client_unmaximize (client); break;
-        case CTX_lower:        client_lower (client); break;
-        case CTX_lower_bottom: client_lower_bottom (client);  break;
-        case CTX_raise:        client_raise (client); break;
-        case CTX_raise_top:    client_raise_top (client); break;
-      }
-      break;
-  }
-  ct->rev++;
-  fprintf (stderr, "%s: %i %s %i\n", __FUNCTION__, key_hash, val, len);
-#endif
-  return 0;
-}
+#define CTX_x            CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_y            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_lower_bottom CTX_STRH('l','o','w','e','r','-','b','o','t','t','o','m',0,0)
+#define CTX_lower        CTX_STRH('l','o','w','e','r',0,0,0,0,0,0,0,0,0)
+#define CTX_raise        CTX_STRH('r','a','i','s','e',0,0,0,0,0,0,0,0,0)
+#define CTX_raise_top    CTX_STRH('r','a','i','s','e','-','t','o','p',0,0,0,0,0)
+#define CTX_terminate    CTX_STRH('t','e','r','m','i','n','a','t','e',0,0,0,0,0)
+#define CTX_maximize     CTX_STRH('m','a','x','i','m','i','z','e',0,0,0,0,0,0)
+#define CTX_unmaximize   CTX_STRH('u','n','m','a','x','i','m','i','z','e',0,0,0,0)
+#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
+#define CTX_title        CTX_STRH('t','i','t','l','e',0,0,0,0,0,0,0,0,0)
+#define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
+#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
 static int ct_get_prop (VT *vt, const char *key, const char **val, int *len)
 {
@@ -2870,7 +2827,7 @@ ESC [ 2 0 0 ~,
     // [ Q is SEE - Set editing extent
     // [ R is CPR - active cursor position report
     {"[?", 'S', vtcmd_sixel_related_req},
-    {"[",  'S', vtcmd_scroll_up, VT100}, /* args:Pn id:SU Scroll Up */
+    {"[",  'S', vtcmd_scroll_up, VT100},   /* args:Pn id:SU Scroll Up */
     {"[",  'T', vtcmd_scroll_down, VT100}, /* args:Pn id:SD Scroll Down */
     {"[",/*SP*/'U', vtcmd_set_line_home, ANSI}, /* args:PnSP id=SLH Set Line Home */
     {"[",/*SP*/'V', vtcmd_set_line_limit, ANSI},/* args:PnSP id=SLL Set Line Limit */
@@ -2878,8 +2835,8 @@ ESC [ 2 0 0 ~,
     // [ Pn Y  - cursor line tabulation
     //
     {"[",  'X', vtcmd_erase_n_chars}, /* args:Pn id:ECH Erase Character */
-    {"[",  'Z', vtcmd_rev_n_tabs}, /* args:Pn id:CBT Cursor Backward Tabulation */
-    {"[",  '^', vtcmd_scroll_down}, /* muphry alternate from ECMA */
+    {"[",  'Z', vtcmd_rev_n_tabs},    /* args:Pn id:CBT Cursor Backward Tabulation */
+    {"[",  '^', vtcmd_scroll_down}  , /* muphry alternate from ECMA */
     {"[",  '@', vtcmd_insert_character, VT102}, /* args:Pn id:ICH Insert Character */
 
     {"[",  'a', vtcmd_cursor_forward, ANSI}, /* args:Pn id:HPR Horizontal Position Relative */
@@ -3175,10 +3132,6 @@ void vt_open_log (VT *vt, const char *path)
   unlink (path);
   vt->log = fopen (path, "w");
 }
-
-
-
-
 
 /* the function shared by sixels, kitty mode and iterm2 mode for
  * doing inline images. it attaches an image to the current line
@@ -4473,8 +4426,6 @@ static const char *keymap_general[][2]=
   {"F10",            "\033[21~"},
   {"F11",            "\033[22~"},
   {"F12",            "\033[23~"},
-
-
 };
 
 void vt_feed_keystring (VT *vt, const char *str)
@@ -4509,16 +4460,14 @@ void vt_feed_keystring (VT *vt, const char *str)
       vt_rev_inc (vt);
       return;
     }
-  else if (!strcmp (str, "shift-down") ||
-           !strcmp (str, "shift-control-down"))
+  else if (!strcmp (str, "shift-control-down"))
     {
       int new_scroll = vt_get_scroll (vt) - 1;
       vt_set_scroll (vt, new_scroll);
       vt_rev_inc (vt);
       return;
     }
-  else if (!strcmp (str, "shift-up") ||
-           !strcmp (str, "shift-control-up"))
+  else if (!strcmp (str, "shift-control-up"))
     {
       int new_scroll = vt_get_scroll (vt) + 1;
       vt_set_scroll (vt, new_scroll);
@@ -4789,8 +4738,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
     {
       VT_error ("forkpty failed (%s)", command);
     }
-  fprintf (stderr, "fpty %i\n", vt->vtpty.pid);
-  //fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
+  fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
 }
 
 void vt_destroy (VT *vt)
@@ -5980,8 +5928,8 @@ float vt_draw_cell (VT *vt, Ctx *ctx,
             }
         }
     }
-  float scale_x = 1.0f;
-  float scale_y = 1.0f;
+  float scale_x  = 1.0f;
+  float scale_y  = 1.0f;
   float offset_y = 0.0f;
   if (dw)
     {
@@ -6225,7 +6173,7 @@ bg_done:
     }
 
   if (unichar == ' ' && !(underline || double_underline || curved_underline))
-          hidden = 1;
+    hidden = 1;
 
   if (!hidden)
     {
@@ -6818,11 +6766,13 @@ void vt_set_local (VT *vt, int local)
 static unsigned long prev_press_time = 0;
 static int short_count = 0;
 
+void terminal_single_tap (Ctx *ctx, VT *vt);
+
 static int single_tap (Ctx *ctx, void *data)
 {
   VT *vt = data;
   if (short_count == 0 && !vt->select_active)
-    fprintf (stderr, "single tap!\n");
+    terminal_single_tap (ctx, vt);
   return 0;
 }
 
