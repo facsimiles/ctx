@@ -11,13 +11,11 @@
        <div id='menu'>
                 <a href='http://ctx.graphics/'>ctx</a>
                 <a href='log.html'>git</a>
-                <a href='files.html'>files</a>
                 <a href='#example'>hello world</a>
                 <br/>
-                <a href='#performance'>speed</a>
                 <a href='#codesize'>codesize</a>
-                <a href='#protocol'>protocol|API</a>
                 <a href='rasterizer/'>rasterizer</a>
+                <a href='#protocol'>protocol</a>
                 <a href='#roadmap'>roadmap</a>
                 <a href='#license'>license</a>
                 <br/>
@@ -29,7 +27,7 @@
               <div id='page'>
         <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is a small footprint vector graphics protocol, library and <a href='rasterizer/'>rasterizer</a> 
+        <p>ctx is vector graphics <a href='#protocol'>protocol</a>, library and <a href='rasterizer/'>rasterizer</a> 
         based
         on the HTML5 Canvas 2D context. It can drive interactive resolution
         independent antialiased interfaces on <a
@@ -42,17 +40,18 @@
         covered, currently missing is ellipse(), correct handling of path
         instead of using bounding box in in_fill().</p>
 
-        <p>Render targets handled natively are 8bit sRGBA
-        <tt>RGBA8</tt>, floating point scRGB <tt>RGBAF</tt> 8bit and floating
-        point grayscale with alpha. <tt>GRAYA8</tt> and <tt>GRAYAF</tt> and
-        floating point CMYK <tt>CMYKAF</tt>. Integration points are catered
-        for in API and protocol for color management, which will be done with
-        <a href='http://gegl.org/babl/'>babl</a>.
-        The formats
-        <tt>RGB332</tt>, <tt>RGB565</tt>, <tt>RGB565_BYTESWAPPED</tt>,
-        <tt>CMYKA8</tt>, <tt>RGB8</tt>, <tt>BGRA8</tt>, <tt>GRAY1</tt>,
-        <tt>GRAY2</tt>, <tt>GRAY4</tt>, <tt>GRAY8</tt> and <tt>GRAYF</tt> are
-        handled by converting processed scanlines back and forth to one of the supported targets.</p>
+        <h3>Downloads</h3>
+
+        <p>The direct links below correspond to the dev branch in <a href='log.html'>git</a>.</p>
+
+        <table>
+                <tr><td style='width:14em'><a href='ctx.h'>ctx.h</a> <a href='ctx.h.html'>(browse)</td><td>580K</td><td>The singleheader library ctx.</tr>
+                <tr><td><a href='ctx-font-ascii.h'>ctx-font-ascii.h</a> <a href='ctx-font-regular.h.html'>(browse)</td><td>72K</td><td>Example font to use with ctx, containing only ASCII</td></tr>
+                <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a> <a href='ctx-font-regular.h.html'>(browse)</td><td>128K</td><td>Example font to use with ctx</td></tr>
+                                        <tr><td><a href='hello.c'>hello.c</a></td><td>3K</td><td>Animated terminal test.</tr>
+                                        <tr><td><a href='test-size.c'>test-size.c</a></td><td>3K</td><td>example</td></tr>
+        </table>
+
 
         <p>SVG and PDF output can be generated with the <a
                                                                 href='https://cairographics.org/'>cairo</a>
@@ -71,19 +70,108 @@ parser.</p>
 <p>
 ctx is currently developed under <a href='https://www.gnu.org/licenses/lgpl-3.0.en.html'>LGPLv3+</a> you can encourage continued
 development of ctx and dissimilar technologies by supporting its developer,
-if <a href='https:/pippin.gimp.org/funding/'>income through patreon and
-        similar</a> is above 4000USD per month for a year, or a similar amount
-in shorter time, I will relicense ctx under the <a href='https://opensource.org/licenses/ISC'>ISC license</a>.
+if the <a href='https://pippin.gimp.org/'>authors</a> income through  <a href='https:/pippin.gimp.org/funding/'>patreon</a> and similar is above 4000USD per month for a year, or a similar amount
+in shorter time, ctx will be relicensed under the <a href='https://opensource.org/licenses/ISC'>ISC license</a>.
 </p>
 
         <h2 id='standards'>standards</h2>
-        <p>ctx uses the <a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 2d context</a> is the primary reference, The
+        <p>The implementation of ctx uses the <a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 2d context</a> as the primary reference, The
         compositing is according to <a
         href='https://drafts.fxtf.org/compositing/'>Compositing and Blending
 Level 2</a>; though ctx permits any combination of compositing and blending
 mode. The core ideas for a 2d vector vocabulary is however shared with PDF,
-cairo, OpenVG, directdraw and others all with a basis in postscript.
+cairo, OpenVG, directdraw and other API that have foundation in postscript.
         </p>
+
+<h2 id='codesize'>optimization vs binary size</h2>
+
+<p>ctx is designed from the beginning to act as a GPU in software for modern
+microcontrollers, some of which are more powerful than the PCs in the mid 90s.
+Different optimization settings of the compiler give a wide range for the
+performance/binary size tradeoff. But the small footprint in RAM and ability to
+use a shared read-only display list makes the ctx rasterizer core also useful
+in multi-threaded rendering.</p>
+
+<pre>
+font data size:    15291 bytes (A sans font subsetted to only ASCII)
+RGBA8 rasterizer:  38869 bytes (-Os ~38kb - with many features disabled ~29kb
+                                -O0  90-631kb
+                                -O2  57-114kb
+                                -Ofast/-O3  76-181kb, size bump due to
+                                SIMD tree-vectorizer)
+
+ctx parser:        20512 bytes (not needed for direct use from C, but also
+                                on embedded this can be useful for ease of
+                                integration with other languages or directly
+                                using ctx+mictrocontroller+display as a serial
+                                display.)
+</pre>
+
+<p>
+Even more agressive optimization with exponential compile time has been tested
+by forcing inlining and separate compilation of all combinations of blend,
+composite and image source modes - building ctx then takes 5-6minutes and
+the resulting binary is close to a megabyte, performance gains exist but
+in practice they are near neglible.</p>
+
+<p>The total RAM requirements are modest, with the most slim configuration
+&lt;16kb of RAM is required when directly rendering using the default limits,
+if the maximum number of vertices in a path is reduced this can be below
+10kb, when doing deferred rendering the additional RAM required/reserved
+impacts the size of the display list and thus the complexity of the vector scene.</p>
+
+        <h2 id='performance'>is ctx fast <span style='color:gray'>yet</span>?</h2>
+<p>This table contains fills of 1024px with various fill sources for all of ctx' supported targets, along with cairo included as a frame of reference. Small changes, like
+changing between inlining, forced inlinging and no inlining can lead to performance
+fluctuations, the numbers show that performance is decent in contrast with cairo.
+</p>
+<p>Ctx implements all combinations of compositing and blending modes, but
+normal with source over has received the most attentions, both with optional
+AVX256 acceleration and not.</p>
+
+<table id='perf'>
+        <tr>
+           <td>format</td>
+           <td>color a=1.0</td>
+           <td>color a=0.75</td>
+           <td>lgrad</td>
+           <td>rgrad</td>
+           <td>sAtop a=1.0</td>
+           <td>sAtop a=0.75</td>
+           <td>sAtop lgrad</td>
+           <td>sAtop rgrad</td>
+           <td>overlay a=1.0</td>
+           <td>overlay a=0.75</td>
+           <td>overlay lgrad</td>
+           <td>overlay rgrad</td>
+           <td colspan='2'>aTop overlay</td><td>..lgrad</td><td>..rgrad</td>
+        </tr>
+<tr><td>RGBA8 AVX2</td><td>3809</td><td>1996</td><td>281</td><td>181</td><td>145</td><td>126</td><td>92</td><td>92</td><td>100</td><td>88</td><td>56</td><td>56</td><td>103</td><td>97</td><td>56</td><td>56</td></tr>
+<tr><td>RGBA8</td><td>799</td><td>765</td><td>217</td><td>167</td><td>141</td><td>122</td><td>90</td><td>87</td><td>115</td><td>102</td><td>56</td><td>56</td><td>117</td><td>103</td><td>57</td><td>56</td></tr>
+
+<tr><td>cairo</td><td>2585</td><td>1148</td><td>115</td><td>66</td><td>644</td><td>560</td><td>115</td><td>69</td></tr>
+<tr><td>GRAYA8</td><td>1052</td><td>651</td><td>84</td><td>54</td><td>264</td><td>258</td><td>78</td><td>54</td><td>187</td><td>178</td><td>63</td><td>52</td><td>188</td><td>178</td><td>63</td><td>52</td></tr>
+<tr><td>GRAYAF</td><td>506</td><td>506</td><td>74</td><td>73</td><td>594</td><td>596</td><td>73</td><td>72</td><td>229</td><td>229</td><td>55</td><td>55</td><td>231</td><td>229</td><td>54</td><td>54</td></tr>
+<tr><td>RGBAF</td><td>513</td><td>671</td><td>214</td><td>160</td><td>507</td><td>537</td><td>176</td><td>148</td><td>129</td><td>126</td><td>52</td><td>50</td><td>119</td><td>117</td><td>50</td><td>48</td></tr>
+<tr><td>CMYKAF</td><td>532</td><td>405</td><td>42</td><td>54</td><td>379</td><td>381</td><td>50</td><td>58</td><td>145</td><td>144</td><td>36</td><td>39</td><td>148</td><td>148</td><td>36</td><td>39</td></tr>
+<tr><td>CMYKA8</td><td>133</td><td>131</td><td>38</td><td>44</td><td>129</td><td>127</td><td>40</td><td>44</td><td>81</td><td>80</td><td>30</td><td>32</td><td>80</td><td>82</td><td>30</td><td>33</td></tr>
+<tr><td>GRAY1</td><td>268</td><td>240</td><td>58</td><td>45</td><td>157</td><td>154</td><td>55</td><td>45</td><td>126</td><td>122</td><td>46</td><td>43</td><td>126</td><td>122</td><td>46</td><td>43</td></tr>
+
+</table>
+
+<h3>some observations on the above</h3>
+
+<p> To know how this compares with yet other renderers, compare with the
+numbers in <a href='https://blend2d.com/performance.html'>blend2d's
+benchmarks.</a>.</p>
+
+<p>When targeting a microcontroller that has a small enough framebuffer that
+it is possible to keep RGBA8 instead of RGB565, one should use RGBA8 and convert
+on-the-fly when copying out, for best performance.
+</p>
+
+<p>For floating point compilers do a better job of autovectorizing code, SIMD
+implementations for normal + source-over does however still make sense.</p>
 
         <h2 id='protocol'>protocol</h2>
 
@@ -248,111 +336,8 @@ global alpha.</td></tr>
         for mostly static UIs.</p>
 -->
 
-        <h2 id='downloads'>the code</h2>
 
-        <p>It is early stages for ctx, more instructions on integration and use
-        read the header file itself. A git repository with tests and examples
-        will eventually appear.</p>
 
-        <h3>Files</h3>
-
-        <table>
-                <tr><td><a href='ctx.h'>ctx.h</a></td><td>580K</td><td><a href='ctx.h.html'>browse<td></td>The singleheader library ctx.</tr>
-                <tr><td><a href='ctx-font-ascii.h'>ctx-font-ascii.h</a></td><td>72K</td><td><a href='ctx-font-regular.h.html'>browse<td></td><td>Example font to use with ctx, containing only ASCII</td></tr>
-                <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a></td><td>128K</td><td><a href='ctx-font-regular.h.html'>browse<td></td><td>Example font to use with ctx</td></tr>
-                <tr><td><a href='ctx.elf'>ctx.elf</a></td><td>168K<td><td>card10 l0dable</td>
-                                        <tr><td><a href='hello.c'>hello.c</a></td><td>3K</td><td></td><td>Animated terminal test.</tr>
-                                        <tr><td><a href='test-size.c'>test-size.c</a></td><td>3K</td><td><td></td><td>example</td></tr>
-        </table>
-
-        <h2 id='performance'>is ctx fast <span style='color:gray'>yet</span>?</h2>
-<p>This table contains fills of 1024px with various fill sources for all of ctx' supported targets, along with cairo included as a frame of reference. Small changes, like
-changing between inlining, forced inlinging and no inlining can lead to performance
-fluctuations, the numbers show that performance is decent in contrast with cairo.
-</p>
-<p>Ctx implements all combinations of compositing and blending modes, but
-normal with source over has received the most attentions, both with optional
-AVX256 acceleration and not.</p>
-
-<table id='perf'>
-        <tr>
-           <td>format</td>
-           <td>color a=1.0</td>
-           <td>color a=0.75</td>
-           <td>lgrad</td>
-           <td>rgrad</td>
-           <td>sAtop a=1.0</td>
-           <td>sAtop a=0.75</td>
-           <td>sAtop lgrad</td>
-           <td>sAtop rgrad</td>
-           <td>overlay a=1.0</td>
-           <td>overlay a=0.75</td>
-           <td>overlay lgrad</td>
-           <td>overlay rgrad</td>
-           <td colspan='2'>aTop overlay</td><td>..lgrad</td><td>..rgrad</td>
-        </tr>
-<tr><td>RGBA8 AVX2</td><td>3809</td><td>1996</td><td>281</td><td>181</td><td>145</td><td>126</td><td>92</td><td>92</td><td>100</td><td>88</td><td>56</td><td>56</td><td>103</td><td>97</td><td>56</td><td>56</td></tr>
-<tr><td>RGBA8</td><td>799</td><td>765</td><td>217</td><td>167</td><td>141</td><td>122</td><td>90</td><td>87</td><td>115</td><td>102</td><td>56</td><td>56</td><td>117</td><td>103</td><td>57</td><td>56</td></tr>
-
-<tr><td>cairo</td><td>2585</td><td>1148</td><td>115</td><td>66</td><td>644</td><td>560</td><td>115</td><td>69</td></tr>
-<tr><td>GRAYA8</td><td>1052</td><td>651</td><td>84</td><td>54</td><td>264</td><td>258</td><td>78</td><td>54</td><td>187</td><td>178</td><td>63</td><td>52</td><td>188</td><td>178</td><td>63</td><td>52</td></tr>
-<tr><td>GRAYAF</td><td>506</td><td>506</td><td>74</td><td>73</td><td>594</td><td>596</td><td>73</td><td>72</td><td>229</td><td>229</td><td>55</td><td>55</td><td>231</td><td>229</td><td>54</td><td>54</td></tr>
-<tr><td>RGBAF</td><td>513</td><td>671</td><td>214</td><td>160</td><td>507</td><td>537</td><td>176</td><td>148</td><td>129</td><td>126</td><td>52</td><td>50</td><td>119</td><td>117</td><td>50</td><td>48</td></tr>
-<tr><td>CMYKAF</td><td>532</td><td>405</td><td>42</td><td>54</td><td>379</td><td>381</td><td>50</td><td>58</td><td>145</td><td>144</td><td>36</td><td>39</td><td>148</td><td>148</td><td>36</td><td>39</td></tr>
-<tr><td>CMYKA8</td><td>133</td><td>131</td><td>38</td><td>44</td><td>129</td><td>127</td><td>40</td><td>44</td><td>81</td><td>80</td><td>30</td><td>32</td><td>80</td><td>82</td><td>30</td><td>33</td></tr>
-<tr><td>GRAY1</td><td>268</td><td>240</td><td>58</td><td>45</td><td>157</td><td>154</td><td>55</td><td>45</td><td>126</td><td>122</td><td>46</td><td>43</td><td>126</td><td>122</td><td>46</td><td>43</td></tr>
-
-</table>
-
-<h3>some observations on the above</h3>
-
-<p> To know how this compares with yet other renderers, compare with the
-numbers in <a href='https://blend2d.com/performance.html'>blend2d's
-benchmarks.</a>.</p>
-
-<p>When targeting a microcontroller that has a small enough framebuffer that
-it is possible to keep RGBA8 instead of RGB565, one should use RGBA8 and convert
-on-the-fly when copying out, for best performance.
-</p>
-
-<p>For floating point compilers do a better job of autovectorizing code, SIMD
-implementations for normal + source-over does however still make sense.</p>
-
-<h2 id='codesize'>optimization vs binary size</h2>
-
-<p>ctx is designed from the beginning to act as a GPU in software for modern
-micontrontrollers - powerful enough to have hundres of megahertz and possibly
-multiple cores.  Different optimization settings of the compiler give a wide
-range for the performance/binary size tradeoff. But the small footprint in RAM
-and ability to use a shared read-only display list makes the ctx rasterizer
-core also useful in multi-threaded rendering.</p>
-
-<pre>
-font data size:    15291 bytes (A sans font subsetted to only ASCII)
-RGBA8 rasterizer:  38869 bytes (-Os ~38kb - with many features disabled ~29kb
-                                -O0  90-631kb
-                                -O2  57-114kb
-                                -Ofast/-O3  76-181kb, size bump due to
-                                SIMD tree-vectorizer)
-
-ctx parser:        20512 bytes (not needed for direct use from C, but also
-                                on embedded this can be useful for ease of
-                                integration with other languages or directly
-                                using ctx+mictrocontroller+display as a serial
-                                display.)
-</pre>
-
-<p>
-Even more agressive optimization with exponential compile time has been tested
-by forcing inlining and separate compilation of all combinations of blend,
-composite and image source modes - building ctx then takes 5-6minutes and
-the resulting binary is close to a megabyte, performance gains exist but are
-near neglible.</p>
-
-<p>The total RAM requirements are modest, with the most slim configuration
-&lt;16kb of RAM is required when directly rendering using the default limits,
-if the maximum number of vertices in a path is reduced this can be below
-10kb.</p>
 
         <h2 id='roadmap'>semi-ordered roadmap / wishlist</h2>
 	<ul>
