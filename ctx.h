@@ -4203,16 +4203,20 @@ again:
           // 0.0 here is a common optimization - so check for it
           if (ret->data.s8[6]== 0 && ret->data.s8[7] == 0)
             { iterator->bitpack_length = 3; }
+          else
+            iterator->bitpack_length          = 4;
           goto again;
         case CTX_REL_LINE_TO_REL_CURVE_TO:
           ctx_iterator_expand_s8_args (iterator, ret);
           iterator->bitpack_command[0].code = CTX_REL_LINE_TO;
           iterator->bitpack_command[1].code = CTX_REL_CURVE_TO;
+          iterator->bitpack_length          = 2;
           goto again;
         case CTX_REL_CURVE_TO_REL_MOVE_TO:
           ctx_iterator_expand_s8_args (iterator, ret);
           iterator->bitpack_command[0].code = CTX_REL_CURVE_TO;
           iterator->bitpack_command[3].code = CTX_REL_MOVE_TO;
+          iterator->bitpack_length          = 4;
           goto again;
         case CTX_REL_LINE_TO_X4:
           ctx_iterator_expand_s8_args (iterator, ret);
@@ -4220,37 +4224,43 @@ again:
           iterator->bitpack_command[1].code =
           iterator->bitpack_command[2].code =
           iterator->bitpack_command[3].code = CTX_REL_LINE_TO;
+          iterator->bitpack_length          = 4;
           goto again;
         case CTX_REL_QUAD_TO_S16:
           ctx_iterator_expand_s16_args (iterator, ret);
           iterator->bitpack_command[0].code = CTX_REL_QUAD_TO;
+          iterator->bitpack_length          = 1;
           goto again;
         case CTX_REL_QUAD_TO_REL_QUAD_TO:
           ctx_iterator_expand_s8_args (iterator, ret);
           iterator->bitpack_command[0].code =
           iterator->bitpack_command[2].code = CTX_REL_QUAD_TO;
+          iterator->bitpack_length          = 3;
           goto again;
         case CTX_REL_LINE_TO_X2:
           ctx_iterator_expand_s16_args (iterator, ret);
           iterator->bitpack_command[0].code =
           iterator->bitpack_command[1].code = CTX_REL_LINE_TO;
+          iterator->bitpack_length          = 2;
           goto again;
         case CTX_REL_LINE_TO_REL_MOVE_TO:
           ctx_iterator_expand_s16_args (iterator, ret);
           iterator->bitpack_command[0].code = CTX_REL_LINE_TO;
           iterator->bitpack_command[1].code = CTX_REL_MOVE_TO;
+          iterator->bitpack_length          = 2;
           goto again;
         case CTX_MOVE_TO_REL_LINE_TO:
           ctx_iterator_expand_s16_args (iterator, ret);
           iterator->bitpack_command[0].code = CTX_MOVE_TO;
           iterator->bitpack_command[1].code = CTX_REL_MOVE_TO;
+          iterator->bitpack_length          = 2;
           goto again;
         case CTX_FILL_MOVE_TO:
-          iterator->bitpack_command[1] = *ret;
+          iterator->bitpack_command[1]      = *ret;
           iterator->bitpack_command[0].code = CTX_FILL;
           iterator->bitpack_command[1].code = CTX_MOVE_TO;
-          iterator->bitpack_pos = 0;
-          iterator->bitpack_length = 2;
+          iterator->bitpack_pos             = 0;
+          iterator->bitpack_length          = 2;
           goto again;
         case CTX_LINEAR_GRADIENT:
         case CTX_QUAD_TO:
