@@ -359,6 +359,7 @@ if the maximum number of vertices in a path is reduced this can be below
         <li>reduce size and improve performance</li>
         <li>Document/clean up network transparent UI protocol using ctx
             syntax. (<a href='not-really-a-demo.png'>test</a>, <a href='multi-client.png'>test</a>)</li>
+        <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
 	<li>point in fill/stroke, (current in_fill API uses path boundingbox)</li>
         <li>texture upload as part of ctx syntax</li>
@@ -384,6 +385,9 @@ if the maximum number of vertices in a path is reduced this can be below
         <li>More SIMD code (the common RGBA8 cases for AVX2 are the only bit
             covered thus far, for floating point formats making the
             existing code more autovectorizer friendly is a priority.)</li>
+        <li>A GPU renderer, using pathfinder or similar HTML5 2d canvas capable
+                library.
+        </li>
 	</ul>
 
         <h3 id='example'>example code</h3>

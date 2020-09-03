@@ -6238,10 +6238,14 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
           }
         break;
       case CTX_LINEAR_GRADIENT:
+        if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_SCREEN_SPACE) )
+        {
         ctx_user_to_device (state, &c->linear_gradient.x1, &c->linear_gradient.y1);
         ctx_user_to_device (state, &c->linear_gradient.x2, &c->linear_gradient.y2);
+        }
         break;
       case CTX_RADIAL_GRADIENT:
+        if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_SCREEN_SPACE) )
         {
           float temp;
           ctx_user_to_device (state, &c->radial_gradient.x1, &c->radial_gradient.y1);

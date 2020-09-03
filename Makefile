@@ -41,13 +41,16 @@ ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
 #git gc
 
 updateweb: clean all post ctx.h.html ctx-font-regular.h.html
+	stagit .
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
 	git update-server-info
 	rm -rf /home/pippin/pgo/ctx.graphics/.git || true
 	cp -Rv .git /home/pippin/pgo/ctx.graphics/.git
 	cp -R mcu/* ~/pgo/ctx.graphics/mcu
+	cp -R file/* ~/pgo/ctx.graphics/file
+	cp -R commit/* ~/pgo/ctx.graphics/commit
 	cp -R tests/* ~/pgo/ctx.graphics/tests
 	cp -R rasterizer/* ~/pgo/ctx.graphics/rasterizer
 	cp -R glitch/* ~/pgo/ctx.graphics/glitch
-	cp ctx.css index.html highlight.css ctx.h.html ctx-font-regular.h.html ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
+	cp *.css *.html highlight.css ctx.h.html ctx-font-regular.h.html ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
