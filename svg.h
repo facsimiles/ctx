@@ -1,4 +1,6 @@
-/* This file is not licensed (c) Øyvind Kolås pippin@gimp.org */
+/* This file is not licensed (c) Øyvind Kolås pippin@gimp.org,
+ * based on micro-raptor GUI
+  */
 
 #if CTX_EVENTS
 

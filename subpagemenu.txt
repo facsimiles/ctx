@@ -1,7 +1,6 @@
        <div id='menu'>
                 <a href='http://ctx.graphics/'>ctx</a>
                 <a href='../log.html'>git</a>
-                <a href='../files.html'>files</a>
                 <a href='../#example'>hello world</a>
                 <br/>
                 <a href='../#codesize'>codesize</a>
