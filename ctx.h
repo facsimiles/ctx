@@ -5761,8 +5761,6 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           float x1 = ctx_arg_float (2);
           float y1 = ctx_arg_float (3);
           float dx, dy, length, start, end;
-          ctx_user_to_device (state, &x0, &y0);
-          ctx_user_to_device (state, &x1, &y1);
           length = ctx_hypotf (x1-x0,y1-y0);
           dx = (x1-x0) / length;
           dy = (y1-y0) / length;
