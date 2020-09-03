@@ -1,6 +1,7 @@
 all: ctx-font-regular.h \
 	ctx-font-ascii.h \
-	ctx-font-mono.h \
+	ctx-font-mono.h
+extra:
 	ctx-font-emoji.h \
 	unscii-16.h \
 	DejaVuSans.h \
