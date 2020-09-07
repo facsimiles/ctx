@@ -903,7 +903,7 @@ void ctx_osk_draw (Ctx *ctx)
   ctx_restore (ctx);
 }
 
-int main (int argc, char **argv)
+int terminal_main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
   execute_self = argv[0];

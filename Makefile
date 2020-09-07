@@ -21,7 +21,7 @@ libctx.o: ctx-lib.c ctx.h Makefile
 	ccache $(CC) ctx-lib.c -shared -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 babl --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
 ctx: ctx.c ctx.h  Makefile svg.h
-	ccache $(CC) ctx.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 babl --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
+	ccache $(CC) ctx.c terminal/*.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 babl --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
 ctx.O1: ctx.c ctx.h  Makefile svg.h
 	ccache $(CC) ctx.c -o $@ -g -O1 -I. -Ifonts `pkg-config sdl2 babl --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -march=native

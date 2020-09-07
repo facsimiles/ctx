@@ -583,6 +583,8 @@ static void ui_drag (CtxEvent *event, void *data1, void *data2)
   dirty++;
 }
 
+int terminal_main (int argc, char **argv);
+
 int main (int argc, char **argv)
 {
   const char *source_path = NULL;
@@ -592,30 +594,15 @@ int main (int argc, char **argv)
   int height=-1;// = ctx_terminal_height ();
   float cols=-1;// = ctx_terminal_cols ();
   float rows=-1;// = ctx_terminal_rows ();
-
-#if 0
-  for (int i = 0; i < 100000; i++)
-  {
-     char buf[1024];
-     sprintf (buf, "id-%i", i);
-     printf ("%i\n", ctx_strhash (buf ,0));
-     sprintf (buf, "id%i", i);
-     printf ("%i\n", ctx_strhash (buf ,0));
-     sprintf (buf, "foo-%i", i);
-     printf ("%i\n", ctx_strhash (buf ,0));
-     sprintf (buf, "class-%i", i);
-     printf ("%i\n", ctx_strhash (buf ,0));
-     sprintf (buf, "div%i", i);
-     printf ("%i\n", ctx_strhash (buf ,0));
-  }
-  return 0;
-#endif
-
+  int do_convert = 0;
   for (int i = 1; argv[i]; i++)
     {
       if (argv[i][0] == '-')
         {
-          if (!strcmp ( argv[i], "--quarter") )
+          if (!strcmp ( argv[i], "--convert") ||
+              !strcmp ( argv[i], "-c"))
+            do_convert = 1;
+          else if (!strcmp ( argv[i], "--quarter") )
             {
               outputmode = CTX_OUTPUT_MODE_QUARTER;
             }
@@ -696,6 +683,10 @@ int main (int argc, char **argv)
             }
         }
     }
+  if (!do_convert)
+  {
+    return terminal_main (argc, argv);
+  }
 
   if (dest_path && strstr (dest_path, "GRAY2")) outputmode = CTX_OUTPUT_MODE_GRAYS;
   if (dest_path && strstr (dest_path, "GRAY4")) outputmode = CTX_OUTPUT_MODE_GRAYS;

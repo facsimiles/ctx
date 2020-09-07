@@ -53,7 +53,7 @@
 
 #include "ctx.h"
 
-//#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "vt-line.h"
@@ -6678,7 +6678,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       if (vt->scroll != 0 || scrollbar_focused)
         ctx_rgba (ctx, 0.5, 0.5, 0.5, .25);
       else
-        ctx_rgba (ctx, 0.5, 0.5, 0.5, .15);
+        ctx_rgba (ctx, 0.5, 0.5, 0.5, .10);
       ctx_fill (ctx);
       ctx_round_rectangle (ctx, vt->width - vt->cw * 1.5,
                            offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
@@ -6688,7 +6688,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       if (vt->scroll != 0 || scrollbar_focused)
         ctx_rgba (ctx, 1, 1, 1, .25);
       else
-        ctx_rgba (ctx, 1, 1, 1, .15);
+        ctx_rgba (ctx, 1, 1, 1, .10);
       ctx_fill (ctx);
     }
 }
