@@ -12,25 +12,25 @@ clean:
 	rm -rf $(PROGRAMS)
 
 text: text.c ../*.h ../fonts/*.h Makefile
-	ccache $(CC) $(PERF_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` 
+	$(CC) $(PERF_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` 
 
 %: %.c ../*.h ../fonts/*.h Makefile
-	ccache $(CC) $(SMALL_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` 
+	$(CC) $(SMALL_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` 
 
 perf.S: perf.c ../*.h ../fonts/*.h Makefile
-	ccache gcc-10 $(PERF_CFLAGS) $< -S -o $@ -I.. -I../fonts 
+	gcc-10 $(PERF_CFLAGS) $< -S -o $@ -I.. -I../fonts 
 perf.s: perf.S
 	as -alhnd perf.S > perf.s
 perf: perf.c ../*.h ../fonts/*.h Makefile
-	ccache gcc-10 $(PERF_CFLAGS) $< -o $@ -I.. -I../fonts 
+	gcc-10 $(PERF_CFLAGS) $< -o $@ -I.. -I../fonts 
 perf-circ: perf-circ.c ../*.h ../fonts/*.h Makefile
-	ccache gcc $(PERF_CFLAGS)  $< -o $@ -I.. -I../fonts `pkg-config cairo --cflags --libs` -lm
+	gcc $(PERF_CFLAGS)  $< -o $@ -I.. -I../fonts `pkg-config cairo --cflags --libs` -lm
 perf-text: perf-text.c ../*.h ../fonts/*.h Makefile
-	ccache gcc-10 $(PERF_CFLAGS) $< -o $@ -I.. -I../fonts 
+	gcc-10 $(PERF_CFLAGS) $< -o $@ -I.. -I../fonts 
 
 musl-static-%: %.c ../*.h ../fonts/*.h Makefile
-	ccache musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static
+	musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static
 
 mmm: mmm.c ../ctx.h  Makefile
-	ccache $(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs mmm` -Wall
+	$(CC) $< -o $@ -I.. -I../tools -I../fonts `pkg-config --cflags --libs mmm` -Wall
 
