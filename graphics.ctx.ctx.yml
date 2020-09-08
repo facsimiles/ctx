@@ -1,0 +1,18 @@
+app-id: graphics.ctx.ctx
+runtime: org.freedesktop.Platform
+runtime-version: '19.08'
+sdk: org.freedesktop.Sdk
+command: ctx
+build-options:
+        - cflags: -O3
+          cxxflags: -O3
+modules:
+        - name: ctx
+          buildsystem: simple
+          build-commands:
+                - make
+                - install -D ctx /app/bin/ctx
+          sources:
+           - type: git
+             url: http://ctx.graphics/.git
+             branch: dev
