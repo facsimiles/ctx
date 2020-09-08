@@ -40,7 +40,7 @@ ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
 	
 #git gc
 
-updateweb: clean all post ctx.h.html ctx-font-regular.h.html
+updateweb: all post ctx.h.html ctx-font-regular.h.html
 	stagit .
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
