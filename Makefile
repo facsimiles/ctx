@@ -56,3 +56,5 @@ updateweb: all post ctx.h.html ctx-font-regular.h.html
 	cp -R glitch/* ~/pgo/ctx.graphics/glitch
 	cp -R terminal/* ~/pgo/ctx.graphics/terminal
 	cp *.css *.html ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
+flatpak:
+	rm -rf build-dir;flatpak-builder --user --install build-dir graphics.ctx.ctx.yml  --no-shallow-clone

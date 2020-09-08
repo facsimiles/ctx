@@ -2,9 +2,13 @@ app-id: graphics.ctx.ctx
 runtime: org.freedesktop.Platform
 runtime-version: '19.08'
 sdk: org.freedesktop.Sdk
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=fallback-x11
 command: ctx
 build-options:
-        - cflags: -O3
+          cflags: -O3
           cxxflags: -O3
 modules:
         - name: ctx
