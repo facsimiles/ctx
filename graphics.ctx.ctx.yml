@@ -5,7 +5,9 @@ sdk: org.freedesktop.Sdk
 finish-args:
   - --share=ipc
   - --share=network
+  - --socket=pulseaudio
   - --socket=fallback-x11
+  - --talk-name=org.freedesktop.Flatpak
 command: ctx
 build-options:
           cflags: -O3
@@ -19,4 +21,5 @@ modules:
           sources:
            - type: git
              url: http://ctx.graphics/.git
+             disable-shallow-clone: true
              branch: dev
