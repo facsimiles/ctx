@@ -4681,7 +4681,21 @@ const char *vt_find_shell_command (void)
 {
   if (access ("/.flatpak-info", F_OK) != -1)
   {
-    return "flatpak-spawn --env=TERM=xterm --host /bin/bash";
+    static char ret[512];
+    char buf[256];
+    FILE *fp = popen("flatpak-spawn --host getent passwd $USER|cut -f 7 -d :", "r");
+   if (fp == NULL)
+   {
+     return "/bin/bash";
+   }
+   while (fgets (buf, sizeof(buf), fp) != NULL)
+   {
+     if (buf[strlen(buf)-1]=='\n')
+       buf[strlen(buf)-1]=0;
+     sprintf (ret, "flatpak-spawn --watch-bus --env=TERM=xterm --host %s", buf);
+   }
+   pclose (fp);
+   return ret;
   }
 
   if (getenv ("SHELL"))
