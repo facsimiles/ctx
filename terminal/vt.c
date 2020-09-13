@@ -4684,18 +4684,17 @@ const char *vt_find_shell_command (void)
     static char ret[512];
     char buf[256];
     FILE *fp = popen("flatpak-spawn --host getent passwd $USER|cut -f 7 -d :", "r");
-   if (fp == NULL)
-   {
-     return "/bin/bash";
-   }
-   while (fgets (buf, sizeof(buf), fp) != NULL)
-   {
-     if (buf[strlen(buf)-1]=='\n')
-       buf[strlen(buf)-1]=0;
-     sprintf (ret, "flatpak-spawn --watch-bus --env=TERM=xterm --host %s", buf);
-   }
-   pclose (fp);
-   return ret;
+    if (fp)
+    {
+      while (fgets (buf, sizeof(buf), fp) != NULL)
+      {
+        if (buf[strlen(buf)-1]=='\n')
+          buf[strlen(buf)-1]=0;
+        sprintf (ret, "flatpak-spawn --env=TERM=xterm --host %s", buf);
+      }
+      pclose (fp);
+      return ret;
+    }
   }
 
   if (getenv ("SHELL"))
@@ -4720,6 +4719,62 @@ const char *vt_find_shell_command (void)
         { command = alts[i][1]; }
     }
   return command;
+}
+
+static char *string_chop_head (char *orig) /* return pointer to reset after arg */
+{
+  int j=0;
+  int eat=0; /* number of chars to eat at start */
+
+  if(orig)
+    {
+      int got_more;
+      char *o = orig;
+      while(o[j] == ' ')
+        {j++;eat++;}
+
+      if (o[j]=='"')
+        {
+          eat++;j++;
+          while(o[j] != '"' &&
+                o[j] != 0)
+            j++;
+          o[j]='\0';
+          j++;
+        }
+      else if (o[j]=='\'')
+        {
+          eat++;j++;
+          while(o[j] != '\'' &&
+                o[j] != 0)
+            j++;
+          o[j]='\0';
+          j++;
+        }
+      else
+        {
+          while(o[j] != ' ' &&
+                o[j] != 0 &&
+                o[j] != ';')
+            j++;
+        }
+      if (o[j] == 0 ||
+          o[j] == ';')
+        got_more = 0;
+      else
+        got_more = 1;
+      o[j]=0; /* XXX: this is where foo;bar won't work but foo ;bar works*/
+
+      if(eat)
+       {
+         int k;
+         for (k=0; k<j-eat; k++)
+           orig[k] = orig[k+eat];
+       }
+      if (got_more)
+        return &orig[j+1];
+    }
+  return NULL;
 }
 
 
@@ -4750,10 +4805,26 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
       setenv ("TERM", term?term:"xterm", 1);
       setenv ("COLORTERM", "truecolor", 1);
       setenv ("CTX_VERSION", "0", 1);
-      if (!strchr (command, ' '))
-        execlp (command, command, NULL);
-      else
-        system (command);
+
+   // if (!strchr (command, ' '))
+   //   execlp (command, command, NULL);
+   // else
+      {
+        char *cargv[32];
+        int   cargc;
+        char *rest, *copy;
+        copy = calloc (strlen (command)+2, 1);
+        strcpy (copy, command);
+        rest = copy;
+        cargc = 0;
+        while (rest && cargc < 30 && rest[0] != ';')
+        {
+          cargv[cargc++] = rest;
+          rest = string_chop_head (rest);
+        }
+        cargv[cargc] = NULL;
+        execvp (cargv[0], cargv);
+      }
       //vt->done = 1;
       exit (0);
     }

@@ -2539,11 +2539,11 @@ struct _CtxColor
 #endif
 
 #if CTX_ENABLE_CM
-  int     space;   // a babl_space when not direct
-  // cmyk values are presumed to always be in
-  // ICC space and the color values set are not
-  // influenced by color management. RGB values
-  // however are. will lose prefix
+#if CTX_BABL
+  const Babl *space;
+#else
+  void   *space; // gets copied from state when color is declared
+#endif
   float   red;
   float   green;
   float   blue;
@@ -2663,9 +2663,15 @@ struct _CtxGState
   int16_t       clip_max_y;
 
 #if CTX_ENABLE_CM
-  int           device_space;
-  int           rgb_space;
-  int           cmyk_space;
+#if CTX_BABL
+  const Babl   *device_space;
+  const Babl   *rgb_space;       
+  const Babl   *cmyk_space;
+#else
+  void         *device_space;
+  void         *rgb_space;       
+  void         *cmyk_space;
+#endif
 #endif
   CtxCompositingMode  compositing_mode; // bitfield refs lead to
   CtxBlend                  blend_mode; // non-vectorization
@@ -2862,7 +2868,7 @@ struct _CtxState
 #define CTX_lineTo         CTX_STRH('l','i','n','e','T','o',0,0,0,0,0,0,0,0)
 #define CTX_line_width     CTX_STRH('l','i','n','e','_','w','i','d','t','h',0,0,0,0)
 #define CTX_lineWidth      CTX_STRH('l','i','n','e','W','i','d','t','h',0,0,0,0,0)
-#define CTX_setLineWidth      CTX_STRH('s','e','t','L','i','n','e','W','i','d','t','h',0,0)
+#define CTX_setLineWidth   CTX_STRH('s','e','t','L','i','n','e','W','i','d','t','h',0,0)
 #define CTX_view_box       CTX_STRH('v','i','e','w','_','b','o','x',0,0,0,0,0,0)
 #define CTX_viewBox        CTX_STRH('v','i','e','w','B','o','x',0,0,0,0,0,0,0)
 #define CTX_middle         CTX_STRH('m','i','d','d','l','e',0, 0, 0, 0, 0, 0,0,0)
@@ -3219,7 +3225,7 @@ static void ctx_color_set_drgba (CtxState *state, CtxColor *color, float r, floa
   color->device_green = g;
   color->device_blue  = b;
   color->alpha        = a;
-  color->space = state->gstate.device_space;
+  color->space        = state->gstate.device_space;
 #else
   ctx_color_set_rgba (state, color, r, g, b, a);
 #endif
@@ -3288,7 +3294,7 @@ static void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, flo
   color->device_key     = k;
   color->alpha          = a;
 #if CTX_ENABLE_CM
-  color->space = state->gstate.cmyk_space;
+  color->space = state->gstate.device_space;
 #endif
 }
 

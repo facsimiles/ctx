@@ -3,7 +3,6 @@ runtime: org.freedesktop.Platform
 runtime-version: '19.08'
 sdk: org.freedesktop.Sdk
 finish-args:
-  - --share=ipc
   - --socket=pulseaudio
   - --socket=ssh-auth
   - --socket=fallback-x11
@@ -11,14 +10,12 @@ finish-args:
   - --talk-name=org.freedesktop.Flatpak
 
 command: ctx
-build-options:
-          cflags: -O3
-          cxxflags: -O3
 modules:
         - name: ctx
           buildsystem: simple
           build-commands:
                 - make
+                - strip ctx
                 - install -D ctx /app/bin/ctx
           sources:
            - type: git
