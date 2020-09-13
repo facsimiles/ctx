@@ -4679,6 +4679,15 @@ void vt_paste (VT *vt, const char *str)
 
 const char *vt_find_shell_command (void)
 {
+  if (access ("/.flatpak-info", F_OK) != -1)
+  {
+    return "flatpak-spawn --env=TERM=xterm --host /bin/bash";
+  }
+
+  if (getenv ("SHELL"))
+  {
+    return getenv ("SHELL");
+  }
   int i;
   const char *command = NULL;
   struct stat stat_buf;

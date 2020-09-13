@@ -3,11 +3,14 @@ runtime: org.freedesktop.Platform
 runtime-version: '19.08'
 sdk: org.freedesktop.Sdk
 finish-args:
+  - --allow=devel
   - --share=ipc
-  - --share=network
   - --socket=pulseaudio
+  - --socket=ssh-auth
   - --socket=fallback-x11
+  - --device=dri
   - --talk-name=org.freedesktop.Flatpak
+
 command: ctx
 build-options:
           cflags: -O3
