@@ -3,7 +3,6 @@ runtime: org.freedesktop.Platform
 runtime-version: '19.08'
 sdk: org.freedesktop.Sdk
 finish-args:
-  - --allow=devel
   - --share=ipc
   - --socket=pulseaudio
   - --socket=ssh-auth
