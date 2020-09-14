@@ -1,4 +1,4 @@
-app-id: graphics.ctx.ctx
+app-id: graphics.ctx.terminal
 runtime: org.freedesktop.Platform
 runtime-version: '19.08'
 sdk: org.freedesktop.Sdk
