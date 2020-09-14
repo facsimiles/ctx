@@ -4832,7 +4832,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
     {
       VT_error ("forkpty failed (%s)", command);
     }
-  fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK);
+  fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
 }
 
 void vt_destroy (VT *vt)

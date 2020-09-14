@@ -239,6 +239,8 @@ CtxClient *add_client_argv (const char **argv, int x, int y, int width, int heig
   VtString *string = vt_string_new ("");
   for (int i = 0; argv[i]; i++)
   {
+    if (i > 0)
+      vt_string_append_byte (string, ' ');
     for (int c = 0; argv[i][c]; c++)
     {
        switch (argv[i][c])
@@ -248,7 +250,6 @@ CtxClient *add_client_argv (const char **argv, int x, int y, int width, int heig
          default:vt_string_append_byte (string, argv[i][c]);break;
        }
     }
-    vt_string_append_byte (string, ' ');
   }
   CtxClient *ret = add_client (string->str, x, y, width, height, ctx);
   vt_string_free (string, 1);

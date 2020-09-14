@@ -19,7 +19,6 @@ modules:
                 - install -D ctx /app/bin/ctx
           sources:
            - type: git
-             #url: http://ctx.graphics/.git
              url: file:///home/pippin/src/ctx/.git
              disable-shallow-clone: true
              branch: dev
