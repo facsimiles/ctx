@@ -6861,7 +6861,7 @@ static unsigned long prev_press_time = 0;
 static int short_count = 0;
 
 void terminal_single_tap (Ctx *ctx, VT *vt);
-
+static int long_tap_cb_id = 0;
 static int single_tap (Ctx *ctx, void *data)
 {
   VT *vt = data;
@@ -6890,6 +6890,12 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
          vt->select_end_col = x;
          vt->select_end_row = y - (int)vt->scroll;
          vt->select_active = 0;
+         if (long_tap_cb_id)
+           {
+             ctx_remove_idle (vt->ctx, long_tap_cb_id);
+             long_tap_cb_id = 0;
+           }
+         
          if ((ctx_ticks () - prev_press_time) < 1000*300 &&
              fabs(px_x - vt->select_begin_x) + 
              fabs(px_y - vt->select_begin_y) < 8)
@@ -6954,7 +6960,7 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
          else
          {
            if (vt->ctx && short_count == 0)
-             ctx_add_timeout (vt->ctx, 400, single_tap, vt);
+             long_tap_cb_id = ctx_add_timeout (vt->ctx, 1000, single_tap, vt);
            short_count = 0;
          }
          vt->select_begin_x = px_x;
@@ -6964,6 +6970,11 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
        }
      else if (type == VT_MOUSE_RELEASE)
        {
+         if (long_tap_cb_id)
+           {
+             ctx_remove_idle (vt->ctx, long_tap_cb_id);
+             long_tap_cb_id = 0;
+           }
          vt->cursor_down = 0;
        }
      else if (type == VT_MOUSE_MOTION && vt->cursor_down)
