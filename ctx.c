@@ -32,7 +32,7 @@
 //#define CTX_RASTERIZER_AA        5
 //#define CTX_RASTERIZER_FORCE_AA  1
 
-#include <immintrin.h> // is detected by ctx, and enables AVX2
+//#include <immintrin.h> // is detected by ctx, and enables AVX2
 
 #define CTX_IMPLEMENTATION 1
 //

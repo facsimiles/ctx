@@ -27,6 +27,9 @@
           body {
             font-family: 'Sans'; font-size: 12pt;
           }
+          dl dt {
+                  font-weight: bold;
+          }
           body pre {
             font-family: 'Courier';line-height:1em;
           }

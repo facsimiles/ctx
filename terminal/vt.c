@@ -2848,8 +2848,8 @@ ESC [ 2 0 0 ~,
     {"[g", 0,   vtcmd_clear_current_tab, VT100}, /* id:TBC clear current tab */
     {"[0g", 0,  vtcmd_clear_current_tab, VT100}, /* id:TBC clear current tab */
     {"[3g", 0,  vtcmd_clear_all_tabs, VT100},    /* id:TBC clear all tabs */
-    {"[",  'm', vtcmd_set_graphics_rendition}, /* args:Ps;Ps;.. id:SGR Select Graphics Rendition */
-    {"[",  'n', vtcmd_report},           /* id:DSR args:... CPR Cursor Position Report  */
+    {"[",  'm', vtcmd_set_graphics_rendition, VT100}, /* args:Ps;Ps;.. id:SGR Select Graphics Rendition */
+    {"[",  'n', vtcmd_report, VT200}, /* id:DSR args:... CPR Cursor Position Report  */
     {"[",  'r', vtcmd_set_top_and_bottom_margins, VT100}, /* args:Pt;Pb id:DECSTBM Set Top and Bottom Margins */
 #if 0
     // handled by set_left_and_right_margins - in if 0 to be documented
@@ -2867,10 +2867,10 @@ ESC [ 2 0 0 ~,
     {"[",  'z', vtcmd_DECELR}, /* id:DECELR set locator res  */
 
     {"5",   0,  vtcmd_char_at_cursor, VT300}, /* id:DECXMIT */
-    {"6",   0,  vtcmd_back_index, VT400}, /* id:DECBI Back index */
+    {"6",   0,  vtcmd_back_index, VT400}, /* id:DECBI Back index (hor. scroll) */
     {"7",   0,  vtcmd_save_cursor, VT100}, /* id:DECSC Save Cursor */
     {"8",   0,  vtcmd_restore_cursor, VT100}, /* id:DECRC Restore Cursor */
-    {"9",   0,  vtcmd_forward_index, VT400}, /* id:DECFI Forward index */
+    {"9",   0,  vtcmd_forward_index, VT400}, /* id:DECFI Forward index (hor. scroll)*/
 
     //{"Z", 0,  vtcmd_device_attributes},
     //{"%G",0,  vtcmd_set_default_font}, // set_alternate_font
@@ -6898,8 +6898,8 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
            }
          
          if ((ctx_ticks () - prev_press_time) < 1000*300 &&
-             fabs(px_x - vt->select_begin_x) + 
-             fabs(px_y - vt->select_begin_y) < 8)
+             abs(px_x - vt->select_begin_x) + 
+             abs(px_y - vt->select_begin_y) < 8)
          {
            short_count++;
            switch (short_count)
@@ -6998,7 +6998,7 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
            vt->select_end_row = vt->select_begin_row;
          }
          if (vt->select_end_row == vt->select_start_row &&
-             fabsf (vt->select_begin_x - px_x) < vt->cw/2)
+             abs (vt->select_begin_x - px_x) < vt->cw/2)
          {
            vt->select_active = 0;
          }
