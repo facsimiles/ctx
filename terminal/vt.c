@@ -452,7 +452,6 @@ struct _VT
   uint32_t   saved_style;
   int        saved_origin;
   int        cursor_key_application;
-  int        key_2017;
   int        margin_top;
   int        margin_bottom;
   int        margin_left;
@@ -462,6 +461,8 @@ struct _VT
 
   int        scrollback_limit;
   float      scroll;
+  int        scroll_on_input;
+  int        scroll_on_output;
 
   char       *argument_buf;
   int        argument_buf_len;
@@ -726,14 +727,16 @@ static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence)
   vt->cursor_key_application = 0;
   vt->argument_buf_len       = 0;
   vt->argument_buf[0]        = 0;
-  vt->vtpty.done              = 0;
+  vt->vtpty.done             = 0;
   vt->result                 = -1;
   vt->state                  = vt_state_neutral;
-  vt->unit_pixels   = 0;
-  vt->mouse         = 0;
-  vt->mouse_drag    = 0;
-  vt->mouse_all     = 0;
-  vt->mouse_decimal = 0;
+  vt->scroll_on_output       = 0;
+  vt->scroll_on_input        = 1;
+  vt->unit_pixels            = 0;
+  vt->mouse                  = 0;
+  vt->mouse_drag             = 0;
+  vt->mouse_all              = 0;
+  vt->mouse_decimal          = 0;
   _vt_compute_cw_ch (vt);
   for (int i = 0; i < MAX_COLS; i++)
     { vt->tabs[i] = i % 8 == 0? 1 : 0; }
@@ -1552,7 +1555,6 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
               return;
             }
           n = parse_int (s, 0);
-          /* SGR@38;5;n@\b256 color index foreground color@where n is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6\n                RGB cube and in the end a grayscale without white and black.@ */
           if (n == 5)
             {
               s++;
@@ -1570,7 +1572,6 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
             }
           else if (n == 2)
             {
-              /* SGR@38;2;50;70;180m@\b24 bit RGB foreground color@The example sets RGB the triplet 50 70 180@f@ */
               int r = 0, g = 0, b = 0;
               s++;
               if (strchr (s, ';') )
@@ -1612,7 +1613,6 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
               return;
             }
           n = parse_int (s, 0);
-          /* SGR@48;5;n@\b256 color index background color@where n is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6\n                RGB cube and in the end a grayscale without white and black.@ */
           if (n == 5)
             {
               s++;
@@ -1629,7 +1629,6 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
                   while (*s && *s >= '0' && *s <='9') { s++; }
                 }
             }
-          /* SGR@48;2;50;70;180m@\b24 bit RGB background color@The example sets RGB the triplet 50 70 180@ */
           else if (n == 2)
             {
               int r = 0, g = 0, b = 0;
@@ -1680,6 +1679,8 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
               vt->cstyle |= STYLE_ITALIC;
               break;
             case 4: /* SGR@@Underscore@@ */
+                    /* SGR@4:2@Double underscore@@ */
+                    /* SGR@4:3@Curvy underscore@@ */
               if (s[1] == ':')
                 {
                   switch (s[2])
@@ -1777,6 +1778,8 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
             case 37: /* SGR@@light gray text color@@ */
               set_fg_idx (7);
               break;
+          /* SGR@38;5;n@\b256 color index foreground color@where n is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6\n                RGB cube and in the end a grayscale without white and black.@ */
+              /* SGR@38;2;50;70;180@\b24 bit RGB foreground color@The example sets RGB the triplet 50 70 180@f@ */
             case 39: /* SGR@@default text color@@ */
               set_fg_idx (vt->reverse_video?0:15);
               vt->cstyle ^= (vt->cstyle & STYLE_FG_COLOR_SET);
@@ -1805,6 +1808,10 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
             case 47: /* SGR@@light gray background color@@ */
               set_bg_idx (7);
               break;
+
+          /* SGR@48;5;n@\b256 color index background color@where n is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6\n                RGB cube and in the end a grayscale without white and black.@ */
+          /* SGR@48;2;50;70;180@\b24 bit RGB background color@The example sets RGB the triplet 50 70 180@ */
+
             case 49: /* SGR@@default background color@@ */
               set_bg_idx (vt->reverse_video?15:0);
               vt->cstyle ^= (vt->cstyle & STYLE_BG_COLOR_SET);
@@ -2099,26 +2106,23 @@ qagain:
       qval = parse_int (sequence, 1);
       switch (qval)
         {
-          case 1: /*MODE;Cursor key mode;Application;Cursor;*/
+          case 1: /*MODE;DECCKM;Cursor key mode;Application;Cursor;*/
             vt->cursor_key_application = set;
             break;
-          case 2017: /*MODE;Cursor key mode;Application;Cursor;*/
-            vt->key_2017 = set;
-            break;
-          case 2: /*MODE;VT52 emulation;;enable; */
+          case 2: /*MODE;DECANM;VT52 emulation;on;off; */
             if (set==0)
               { vt->state = vt_state_vt52; }
             break;
-          case 3: /*MODE;Column mode;132 columns;80 columns;*/
+          case 3: /*MODE;DECCOLM;Column mode;132 columns;80 columns;*/
             vtcmd_set_132_col (vt, set);
             break; // set 132 col
-          case 4: /*MODE;Smooth scroll;Smooth;Jump;*/
+          case 4: /*MODE;DECSCLM;Scrolling mode;smooth;jump;*/
             vt->smooth_scroll = set;
             break; // set 132 col
-          case 5: /*MODE;DECSCNM Screen mode;Reverse;Normal;*/
+          case 5: /*MODE;DECSCNM;Screen mode;Reverse;Normal;*/
             vt->reverse_video = set;
             break;
-          case 6: /*MODE;DECOM Origin mode;Relative;Absolute;*/
+          case 6: /*MODE;DECOM;Origin mode;Relative;Absolute;*/
             vt->origin = set;
             if (set)
               {
@@ -2128,10 +2132,10 @@ qagain:
             else
               { _vt_move_to (vt, 1, 1); }
             break;
-          case 7: /*MODE;Wraparound;On;Off;*/
+          case 7: /*MODE;DECAWM;Autowrap;on;off;*/
             vt->autowrap = set;
             break;
-          case 8: /*MODE;Auto repeat;On;Off;*/
+          case 8: /*MODE;DECARM;Auto repeat;on;off;*/
             vt->keyrepeat = set;
             break;
           // 10 - Block DECEDM
@@ -2144,36 +2148,36 @@ qagain:
             break;
           case 34: // DECRLM - right to left mode
             break;
-          case 25:/*MODE;Cursor visible;On;Off; */
+          case 25:/*MODE;DECTCEM;Cursor visible;on;off; */
             vt->cursor_visible = set;
             break;
           case 60: // horizontal cursor coupling
           case 61: // vertical cursor coupling
             break;
-          case 69:/*MODE;DECVSSM Left right margin mode;On;Off; */
+          case 69:/*MODE;DECVSSM;Left right margin mode;on;off; */
             vt->left_right_margin_mode = set;
             break;
           case 80:/* DECSDM Sixel scrolling */
             break;
-          case 437:/*MODE;Encoding/cp437mode;cp437;utf8; */
+          case 437:/*MODE;;Encoding/cp437mode;cp437;utf8; */
             vt->encoding = set ? 1 : 0;
             break;
-          case 1000:/*MODE;Mouse reporting;On;Off;*/
+          case 1000:/*MODE;;Mouse reporting;on;off;*/
             vt->mouse = set;
             break;
-          case 1002:/*MODE;Mouse drag;On;Off;*/
+          case 1002:/*MODE;;Mouse drag;on;off;*/
             vt->mouse_drag = set;
             break;
-          case 1003:/*MODE;Mouse all;On;Off;*/
+          case 1003:/*MODE;;Mouse all;on;off;*/
             vt->mouse_all = set;
             break;
-          case 1006:/*MODE;Mouse decimal;On;Off;*/
+          case 1006:/*MODE;;Mouse decimal;on;off;*/
             vt->mouse_decimal = set;
             break;
           //case 47:
           //case 1047:
           //case 1048:
-          case 1049:/*MODE;Alt screen;On;Off;*/
+          case 1049:/*MODE;;Alt screen;on;off;*/
             if (set)
               {
                 if (vt->in_alt_screen)
@@ -2217,22 +2221,21 @@ qagain:
                   {
                   }
               }
-            //   vtcmd_reset_to_initial_state (vt, sequence);
             break; // alt screen
-          case 1010: // scroll to bottom on tty output (rxvt)
+          case 1010: /*MODE;;scroll on output;on;off; */ //rxvt
+            vt->scroll_on_output = set;
             break;
-          case 1011: // scroll to bottom on key press (rxvt)
+          case 1011:/*MODE:;scroll on input;on;off; */ //rxvt)
+            vt->scroll_on_input = set;
             break;
-          case 2004:  /* MODE;bracketed paste;On;Off; */
+          case 2004:/*MODE;;bracketed paste;on;off; */
             vt->bracket_paste = set;
             break;
-          //case 2020: /*MODE;wordwrap;On;Off;*/
-          //      vt->wordwrap = set; break;
-          case 6150:/*MODE;Ctx-events;On;Off;*/
+          case 6150:/*MODE;;ctx-events;on;off;*/
             vt->ctx_events = set;
             break;
           
-          case 7020:/*MODE;Ctx ascii;On;;*/
+          case 7020:/*MODE;;ctx ascii;on;;*/
             if (set)
               {
                 if (!vt->current_line->ctx)
@@ -2273,15 +2276,15 @@ again:
           case 3:/*CRM - control representation mode */
             /* show control chars? */
             break;
-          case 4:/*MODE2;IRM Insert Mode;Insert;Replace; */
+          case 4:/*MODE2;IRM;Insert Mode;Insert;Replace; */
             vt->insert_mode = set;
             break;
           case 9: /* interlace mode */
             break;
-          case 12:/*MODE2;Local echo;On;Off; */
+          case 12:/*MODE2;SRM;Local echo;on;off; */
             vt->echo = set;
             break;
-          case 20:/*MODE2;LNM Carriage Return on LF/Newline;On;Off;*/
+          case 20:/*MODE2;LNM;Carriage Return on LF/Newline;on;off;*/
             ;
             vt->cr_on_lf = set;
             break;
@@ -2319,10 +2322,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
           case 1:
             is_set = vt->cursor_key_application;
             break;
-          case 2017:
-            is_set = vt->key_2017;
-            break;
-          case 2: /*MODE;VT52 emulation;;enable; */
+          case 2: /*VT52 emulation;;enable; */
           //if (set==0) vt->in_vt52 = 1;
           case 3:
             break;
@@ -2369,12 +2369,16 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
             is_set = vt->bracket_paste;
             break;
           case 1010: // scroll to bottom on tty output (rxvt)
+            is_set = vt->scroll_on_output;
+            break;
           case 1011: // scroll to bottom on key press (rxvt)
+            is_set = vt->scroll_on_input;
+            break;
           case 1049:
             is_set = vt->in_alt_screen;
             break;
             break;
-          case 7020:/*MODE;Ctx ascii;On;;*/
+          case 7020:/*tx ascii;On;;*/
             is_set = (vt->state == vt_state_ctx);
             break;
           case 80:/* DECSDM Sixel scrolling */
@@ -2405,16 +2409,16 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
           case 3:/*CRM - control representation mode */
             sprintf (buf, "\033[%i;%i$y", val, 0);
             break;
-          case 4:/*MODE2;Insert Mode;Insert;Replace; */
+          case 4:/*Insert Mode;Insert;Replace; */
             sprintf (buf, "\033[%i;%i$y", val, vt->insert_mode?1:2);
             break;
           case 9: /* interlace mode */
             sprintf (buf, "\033[%i;%i$y", val, 0);
             break;
-          case 12:/*MODE2;Local echo;On;Off; */
+          case 12:
             sprintf (buf, "\033[%i;%i$y", val, vt->echo?1:2);
             break;
-          case 20:/*MODE2;Carriage Return on LF/Newline;On;Off;*/
+          case 20:/*Carriage Return on LF/Newline;on;off;*/
             ;
             sprintf (buf, "\033[%i;%i$y", val, vt->cr_on_lf?1:2);
             break;
@@ -2783,21 +2787,25 @@ ESC [ 2 0 0 ~,
     //{"B",  0,  vtcmd_break_permitted},
     //{"C",  0,  vtcmd_nobreak_here},
     {"D", 0,    vtcmd_index, VT100}, /* args: id:IND Index  */
-    {"E",  0,   vtcmd_next_line},
+    {"E",  0,   vtcmd_next_line}, /* ref:none id:  Next line */
     {"_", 'G',  vtcmd_graphics},
     {"H",   0,  vtcmd_horizontal_tab_set, VT100}, /* id:HTS Horizontal Tab Set */
 
     //{"I",  0,  vtcmd_char_tabulation_with_justification},
     //{"K",  0,  PLD partial line down
     //{"L",  0,  PLU partial line up
-    {"M",  0,   vtcmd_reverse_index, VT100}, /* id:RI Reverse Index */
+    {"M",  0,   vtcmd_reverse_index, VT100}, /* ref:none id:RI Reverse Index */
     //{"N",  0,  vtcmd_ignore}, /* Set Single Shift 2 - SS2*/
     //{"O",  0,  vtcmd_ignore}, /* Set Single Shift 3 - SS3*/
 
+#if 0
+    {"[0F", 0, vtcmd_justify, ANSI}, /* ref:none id:JFY disable justification and wordwrap  */ // needs special link to ANSI standard
+    {"[1F", 0, vtcmd_justify, ANSI}, /* ref:none id:JFY enable wordwrap  */
+#endif
 
     /* these need to occur before vtcmd_preceding_line to have precedence */
-    {"[0 F", 0, vtcmd_justify, ANSI}, /* id:JFY disable justification/wordwrap  */
-    {"[1 F", 0, vtcmd_justify, ANSI}, /* id:JFY enable wordwrap  */
+    {"[0 F", 0, vtcmd_justify, ANSI},
+    {"[1 F", 0, vtcmd_justify, ANSI},
     {"[2 F", 0, vtcmd_justify},
     {"[3 F", 0, vtcmd_justify},
     {"[4 F", 0, vtcmd_justify},
@@ -2810,8 +2818,8 @@ ESC [ 2 0 0 ~,
     {"[",  'B', vtcmd_cursor_down, VT100}, /* args:Pn    id:CUD Cursor Down */
     {"[",  'C', vtcmd_cursor_forward, VT100}, /* args:Pn id:CUF Cursor Forward */
     {"[",  'D', vtcmd_cursor_backward, VT100}, /* args:Pn id:CUB Cursor Backward */
-    {"[",  'j', vtcmd_cursor_backward, ANSI}, /* args:Pn id:HPB Horizontal Position Backward */
-    {"[",  'k', vtcmd_cursor_up, ANSI}, /* args:Pn id:VPB Vertical Position Backward */
+    {"[",  'j', vtcmd_cursor_backward, ANSI}, /* args:Pn ref:none id:HPB Horizontal Position Backward */
+    {"[",  'k', vtcmd_cursor_up, ANSI}, /* args:Pn ref:none id:VPB Vertical Position Backward */
     {"[",  'E', vtcmd_next_line, VT100}, /* args:Pn id:CNL Cursor Next Line */
     {"[",  'F', vtcmd_cursor_preceding_line, VT100}, /* args:Pn id:CPL Cursor Preceding Line */
     {"[",  'G', vtcmd_horizontal_position_absolute}, /* args:Pn id:CHA Cursor Horizontal Absolute */
@@ -2841,7 +2849,7 @@ ESC [ 2 0 0 ~,
 
     {"[",  'a', vtcmd_cursor_forward, ANSI}, /* args:Pn id:HPR Horizontal Position Relative */
     {"[",  'b', vtcmd_cursor_forward, ANSI}, /* REP previous char XXX incomplete */
-    {"[",  'c', vtcmd_report}, /* id:DA args:... Device Attributes */
+    {"[",  'c', vtcmd_report}, /* ref:none id:DA args:... Device Attributes */
     {"[",  'd', vtcmd_goto_row},       /* args:Pn id:VPA Vertical Position Absolute  */
     {"[",  'e', vtcmd_cursor_down},    /* args:Pn id:VPR Vertical Position Relative */
     {"[",  'f', vtcmd_cursor_position, VT100}, /* args:Pl;Pc id:HVP Cursor Position */
@@ -2853,9 +2861,9 @@ ESC [ 2 0 0 ~,
     {"[",  'r', vtcmd_set_top_and_bottom_margins, VT100}, /* args:Pt;Pb id:DECSTBM Set Top and Bottom Margins */
 #if 0
     // handled by set_left_and_right_margins - in if 0 to be documented
-    {"[s",  0,  vtcmd_save_cursor_position, VT100}, /*id:SCP Save Cursor Position */
+    {"[s",  0,  vtcmd_save_cursor_position, VT100}, /*ref:none id:SCP Save Cursor Position */
 #endif
-    {"[u",  0,  vtcmd_restore_cursor_position, VT100}, /*id:RCP Restore Cursor Position */
+    {"[u",  0,  vtcmd_restore_cursor_position, VT100}, /*ref:none id:RCP Restore Cursor Position */
     {"[",  's', vtcmd_set_left_and_right_margins, VT400}, /* args:Pl;Pr id:DECSLRM Set Left and Right Margins */
     {"[",  '`', vtcmd_horizontal_position_absolute, ANSI},  /* args:Pn id:HPA Horizontal Position Absolute */
 
@@ -2863,10 +2871,10 @@ ESC [ 2 0 0 ~,
     {"[",  'l', vtcmd_set_mode, VT100}, /* args:Pn[;...]  id:RM Reset Mode */
     {"[",  't', vtcmd_set_t},
     {"[",  'q', vtcmd_set_led, VT100}, /* args:Ps id:DECLL Load LEDs */
-    {"[",  'x', vtcmd_report}, /* id:DECREQTPARM */
-    {"[",  'z', vtcmd_DECELR}, /* id:DECELR set locator res  */
+    {"[",  'x', vtcmd_report}, /* ref:none id:DECREQTPARM */
+    {"[",  'z', vtcmd_DECELR}, /* ref:none id:DECELR set locator res  */
 
-    {"5",   0,  vtcmd_char_at_cursor, VT300}, /* id:DECXMIT */
+    {"5",   0,  vtcmd_char_at_cursor, VT300}, /* ref:none id:DECXMIT */
     {"6",   0,  vtcmd_back_index, VT400}, /* id:DECBI Back index (hor. scroll) */
     {"7",   0,  vtcmd_save_cursor, VT100}, /* id:DECSC Save Cursor */
     {"8",   0,  vtcmd_restore_cursor, VT100}, /* id:DECRC Restore Cursor */
@@ -2888,12 +2896,12 @@ ESC [ 2 0 0 ~,
     {")B",  0,   vtcmd_set_charmap},
     {"%G",  0,   vtcmd_set_charmap},
 
-    {"#3",  0,   vtcmd_set_double_width_double_height_top_line, VT100}, /*id: DECDHL Top half of double-width, double-height line */
+    {"#3",  0,   vtcmd_set_double_width_double_height_top_line, VT100}, /*id:DECDHL Top half of double-width, double-height line */
     {"#4",  0,   vtcmd_set_double_width_double_height_bottom_line, VT100}, /*id:DECDHL Bottom half of double-width, double-height line */
     {"#5",  0,   vtcmd_set_single_width_single_height_line, VT100}, /* id:DECSWL Single-width line */
     {"#6",  0,   vtcmd_set_double_width_single_height_line, VT100}, /* id:DECDWL Double-width line */
 
-    {"#8",  0,   vtcmd_screen_alignment_display, VT100}, /* id:DECALN Screen Alignment Display */
+    {"#8",  0,   vtcmd_screen_alignment_display, VT100}, /* id:DECALN Screen Alignment Pattern */
     {"=",   0,   vtcmd_ignore},  // keypad mode change
     {">",   0,   vtcmd_ignore},  // keypad mode change
     {"c",   0,   vtcmd_reset_to_initial_state, VT100}, /* id:RIS Reset to Initial State */
@@ -3798,9 +3806,15 @@ static void vt_state_osc (VT *vt, int byte)
       switch (n)
         {
           case 0:
+#if 0
+    {"]0;New_titleESC\",  0, , }, /* id: set window title */
+#endif
             vt_set_title (vt, vt->argument_buf + 3);
             break;
           case 10:
+#if 0
+    {"]11;",  0, , }, /* id: get foreground color */
+#endif
             {
               /* request current foreground color, xterm does this to
                  determine if it can use 256 colors, when this test fails,
@@ -3813,6 +3827,9 @@ static void vt_state_osc (VT *vt, int byte)
             }
             break;
           case 11:
+#if 0
+    {"]11;",  0, , }, /* id: get background color */
+#endif
             {
               /* get background color */
               char buf[128];
@@ -3821,6 +3838,9 @@ static void vt_state_osc (VT *vt, int byte)
               vt_write (vt, buf, strlen (buf) );
             }
             break;
+#if 0
+    {"]1337...ESC\",  0, vtcmd_erase_in_line, VT100}, /* args:keyvalue id: iterm2 graphics */
+#endif
           case 1337:
             if (!strncmp (&vt->argument_buf[6], "File=", 5) )
               {
@@ -4057,6 +4077,10 @@ static void vt_state_apc_generic (VT *vt, int byte)
     }
 }
 
+#if 0
+    {"_G..ESC\", 0, vtcmd_delete_n_chars, VT102}, /* ref:none id: kitty graphics */
+    {"_A..ESC\", 0, vtcmd_delete_n_chars, VT102}, /* args:Pn  PCM audio configuration*/
+#endif
 static void vt_state_apc (VT *vt, int byte)
 {
   if (byte == 'A')
@@ -4128,6 +4152,11 @@ static void vt_state_esc (VT *vt, int byte)
             vt->state = vt_state_esc_sequence;
           }
           break;
+
+#if 0
+    {"Psixel_dataESC\",  0, , }, /* id: sixels */
+#endif
+
         case 'P':
           {
             char tmp[]= {byte, '\0'};
@@ -4608,6 +4637,11 @@ void vt_feed_keystring (VT *vt, const char *str)
         }
       return;
     }
+
+  if (vt->scroll_on_input)
+  {
+    vt->scroll = 0.0;
+  }
 
 
   if (vt->state == vt_state_vt52)
