@@ -210,10 +210,8 @@ static CtxClient *client_by_id (int id);
 
 int client_resize (int id, int width, int height);
 
-void terminal_single_tap (Ctx *ctx, VT *vt)
+void terminal_long_tap (Ctx *ctx, VT *vt)
 {
-        // XXX replace with long tap
-  fprintf (stderr, "single tap! %p %p\n", ctx, vt);
   on_screen_keyboard = !on_screen_keyboard;
   vt_rev_inc (vt); // forcing redraw
 }

@@ -1778,8 +1778,8 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
             case 37: /* SGR@@light gray text color@@ */
               set_fg_idx (7);
               break;
-          /* SGR@38;5;n@\b256 color index foreground color@where n is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6\n                RGB cube and in the end a grayscale without white and black.@ */
-              /* SGR@38;2;50;70;180@\b24 bit RGB foreground color@The example sets RGB the triplet 50 70 180@f@ */
+          /* SGR@38;5;Pn@256 color index foreground color@where Pn is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6  RGB cube and in the end a grayscale without white and black.@ */
+              /* SGR@38;2;Pr;Pg;Pb@24 bit RGB foreground color each of Pr Pg and Pb have 0-255 range@@ */
             case 39: /* SGR@@default text color@@ */
               set_fg_idx (vt->reverse_video?0:15);
               vt->cstyle ^= (vt->cstyle & STYLE_FG_COLOR_SET);
@@ -1809,8 +1809,8 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
               set_bg_idx (7);
               break;
 
-          /* SGR@48;5;n@\b256 color index background color@where n is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6\n                RGB cube and in the end a grayscale without white and black.@ */
-          /* SGR@48;2;50;70;180@\b24 bit RGB background color@The example sets RGB the triplet 50 70 180@ */
+          /* SGR@48;5;Pn@256 color index background color@where Pn is 0-15 is system colors 16-(16+6*6*6) is a 6x6x6  RGB cube and in the end a grayscale without white and black.@ */
+          /* SGR@48;2;Pr;Pg;Pb@24 bit RGB background color@Where Pr Pg and Pb have 0-255 range@ */
 
             case 49: /* SGR@@default background color@@ */
               set_bg_idx (vt->reverse_video?15:0);
@@ -2442,7 +2442,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
       vt_write (vt, buf, strlen (buf) );
     }
 #if 0
-  {"[", 's',  vtcmd_save_cursor_position, VT100}, /*args:PnSP id:DECSWBV Set warning bell volume */
+  {"[", 's',  foo, VT100}, /*args:PnSP id:DECSWBV Set warning bell volume */
 #endif
   else if (sequence[strlen (sequence)-2]==' ') /* DECSWBV */
     {
@@ -3807,10 +3807,14 @@ static void vt_state_osc (VT *vt, int byte)
         {
           case 0:
 #if 0
-    {"]0;New_titleESC\",  0, , }, /* id: set window title */
+    {"]0;New_title\e\",  0, , }, /* id: set window title */
 #endif
             vt_set_title (vt, vt->argument_buf + 3);
             break;
+          case 4:
+            fprintf (stderr, "[%s]", vt->argument_buf);
+            break;
+
           case 10:
 #if 0
     {"]11;",  0, , }, /* id: get foreground color */
@@ -3839,7 +3843,7 @@ static void vt_state_osc (VT *vt, int byte)
             }
             break;
 #if 0
-    {"]1337...ESC\",  0, vtcmd_erase_in_line, VT100}, /* args:keyvalue id: iterm2 graphics */
+    {"]1337...\e\",  0, vtcmd_erase_in_line, VT100}, /* args:keyvalue id: iterm2 graphics */
 #endif
           case 1337:
             if (!strncmp (&vt->argument_buf[6], "File=", 5) )
@@ -4078,8 +4082,8 @@ static void vt_state_apc_generic (VT *vt, int byte)
 }
 
 #if 0
-    {"_G..ESC\", 0, vtcmd_delete_n_chars, VT102}, /* ref:none id: kitty graphics */
-    {"_A..ESC\", 0, vtcmd_delete_n_chars, VT102}, /* args:Pn  PCM audio configuration*/
+    {"_G..\e\", 0, vtcmd_delete_n_chars, VT102}, /* ref:none id: <a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a> */
+    {"_A..\e\", 0, vtcmd_delete_n_chars, VT102}, /* id:  <a href='https://github.com/hodefoting/atty/'>atty</a> audio input/output */
 #endif
 static void vt_state_apc (VT *vt, int byte)
 {
@@ -4154,7 +4158,7 @@ static void vt_state_esc (VT *vt, int byte)
           break;
 
 #if 0
-    {"Psixel_dataESC\",  0, , }, /* id: sixels */
+    {"Psixel_data\e\",  0, , }, /* id: sixels */
 #endif
 
         case 'P':
@@ -6895,13 +6899,13 @@ void vt_set_local (VT *vt, int local)
 static unsigned long prev_press_time = 0;
 static int short_count = 0;
 
-void terminal_single_tap (Ctx *ctx, VT *vt);
+void terminal_long_tap (Ctx *ctx, VT *vt);
 static int long_tap_cb_id = 0;
 static int single_tap (Ctx *ctx, void *data)
 {
   VT *vt = data;
   if (short_count == 0 && !vt->select_active)
-    terminal_single_tap (ctx, vt);
+    terminal_long_tap (ctx, vt);
   return 0;
 }
 
