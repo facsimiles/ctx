@@ -2325,6 +2325,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
           case 2: /*VT52 emulation;;enable; */
           //if (set==0) vt->in_vt52 = 1;
           case 3:
+            is_set = 1;
             break;
           case 4:
             is_set = vt->smooth_scroll;
@@ -2413,7 +2414,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
             sprintf (buf, "\033[%i;%i$y", val, vt->insert_mode?1:2);
             break;
           case 9: /* interlace mode */
-            sprintf (buf, "\033[%i;%i$y", val, 0);
+            sprintf (buf, "\033[%i;%i$y", val, 1);
             break;
           case 12:
             sprintf (buf, "\033[%i;%i$y", val, vt->echo?1:2);
@@ -2605,12 +2606,18 @@ static void vtcmd_report (VT *vt, const char *sequence)
     {
       sprintf (buf, "\033[?21n"); // locked
     }
+#if 0
+  {"[6n", 0, },  /* id:DSR  cursor position report, yields a reply <tt>\e[Pl;PcR</tt> */
+#endif
   else if (!strcmp (sequence, "[6n") ) // DSR cursor position report
     {
       sprintf (buf, "\033[%i;%iR", vt->cursor_y - (vt->origin? (vt->margin_top - 1) :0), (int) vt->cursor_x - (vt->origin? (VT_MARGIN_LEFT-1) :0) );
     }
   else if (!strcmp (sequence, "[?6n") ) // DECXPR extended cursor position report
     {
+#if 0
+  {"[?6n", 0, },  /* id:DEXCPR  extended cursor position report, yields a reply <tt>\e[Pl;PcR</tt> */
+#endif
       sprintf (buf, "\033[?%i;%i;1R", vt->cursor_y - (vt->origin? (vt->margin_top - 1) :0), (int) vt->cursor_x - (vt->origin? (VT_MARGIN_LEFT-1) :0) );
     }
   else if (!strcmp (sequence, "[5n") ) // DSR decide status report
@@ -2906,7 +2913,10 @@ ESC [ 2 0 0 ~,
     {">",   0,   vtcmd_ignore},  // keypad mode change
     {"c",   0,   vtcmd_reset_to_initial_state, VT100}, /* id:RIS Reset to Initial State */
     {"[!", 'p',  vtcmd_ignore},       // soft reset?
-    {"[",  'p',  vtcmd_request_mode}, // soft reset?
+    {"[",  'p',  vtcmd_request_mode}, /* args:Pa$ id:DECRQM Request ANSI Mode */
+#if 0
+    {"[?",  'p',  vtcmd_request_mode}, /* args:Pd$ id:DECRQM Request DEC Mode */
+#endif
 
     {NULL, 0, NULL}
   };
@@ -3843,7 +3853,7 @@ static void vt_state_osc (VT *vt, int byte)
             }
             break;
 #if 0
-    {"]1337...\e\",  0, vtcmd_erase_in_line, VT100}, /* args:keyvalue id: iterm2 graphics */
+    {"]1337;key=value:base64data\b\",  0, vtcmd_erase_in_line, VT100}, /* args:keyvalue id: iterm2 graphics */
 #endif
           case 1337:
             if (!strncmp (&vt->argument_buf[6], "File=", 5) )

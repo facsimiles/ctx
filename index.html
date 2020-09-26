@@ -1,5 +1,5 @@
 <html>
-        <head><title>ctx 2D vector renderering protocol and framework</title>
+        <head><title>ctx 2D vector renderering framework</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 
         <style type='text/css'>
@@ -27,18 +27,14 @@
               <div id='page'>
         <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is vector graphics <a href='protocol/'>protocol</a>, library and <a href='rasterizer/'>rasterizer</a> 
-        based
-        on the HTML5 Canvas 2D context. It can drive interactive resolution
-        independent antialiased interfaces on <a
-        href='mcu/'>microcontrollers</a> as well as provide color and CMYK
-        processing capabilities as well as floating point processing needed
-        for content authoring.</p>
-
-        <p>ctx provides both a C API and an efficient text based serialization
-        of the canvas drawing model.  Almost the full W3C rendering API is
-        covered, currently missing is ellipse(), correct handling of path
-        instead of using bounding box in in_fill().</p>
+        <p>ctx is a 2D vector graphics framework, <a href='protocol/'>text
+        protocol</a>, library and <a href='rasterizer/'>rasterizer</a> 
+        built around the HTML5 Canvas 2D context. It can render interactive
+        resolution independent antialiased interfaces on <a
+        href='mcu/'>microcontrollers</a> and handle CMYK as well as do remote
+        interactive vector graphics as a <a href='terminal/'>terminal</a>
+        extension.
+        </p>
 
         <h3 id='code'>Code</h3>
 
@@ -114,58 +110,6 @@ if the maximum number of vertices in a path is reduced this can be below
 10kb, when doing deferred rendering the additional RAM required/reserved
 impacts the size of the display list and thus the complexity of the vector scene.</p>
 
-        <h2 id='performance'>is ctx fast <span style='color:gray'>yet</span>?</h2>
-<p>This table contains fills of 1024px with various fill sources for all of ctx' supported targets, along with cairo included as a frame of reference. Small changes, like
-changing between inlining, forced inlinging and no inlining can lead to performance
-fluctuations, the numbers show that performance is decent in contrast with cairo.
-</p>
-<p>Ctx implements all combinations of compositing and blending modes, but
-normal with source over has received the most attentions, both with optional
-AVX256 acceleration and not.</p>
-
-<table id='perf'>
-        <tr>
-           <td>format</td>
-           <td>color a=1.0</td>
-           <td>color a=0.75</td>
-           <td>lgrad</td>
-           <td>rgrad</td>
-           <td>sAtop a=1.0</td>
-           <td>sAtop a=0.75</td>
-           <td>sAtop lgrad</td>
-           <td>sAtop rgrad</td>
-           <td>overlay a=1.0</td>
-           <td>overlay a=0.75</td>
-           <td>overlay lgrad</td>
-           <td>overlay rgrad</td>
-           <td colspan='2'>aTop overlay</td><td>..lgrad</td><td>..rgrad</td>
-        </tr>
-<tr><td>RGBA8 AVX2</td><td>3809</td><td>1996</td><td>281</td><td>181</td><td>145</td><td>126</td><td>92</td><td>92</td><td>100</td><td>88</td><td>56</td><td>56</td><td>103</td><td>97</td><td>56</td><td>56</td></tr>
-<tr><td>RGBA8</td><td>799</td><td>765</td><td>217</td><td>167</td><td>141</td><td>122</td><td>90</td><td>87</td><td>115</td><td>102</td><td>56</td><td>56</td><td>117</td><td>103</td><td>57</td><td>56</td></tr>
-
-<tr><td>cairo</td><td>2585</td><td>1148</td><td>115</td><td>66</td><td>644</td><td>560</td><td>115</td><td>69</td></tr>
-<tr><td>GRAYA8</td><td>1052</td><td>651</td><td>84</td><td>54</td><td>264</td><td>258</td><td>78</td><td>54</td><td>187</td><td>178</td><td>63</td><td>52</td><td>188</td><td>178</td><td>63</td><td>52</td></tr>
-<tr><td>GRAYAF</td><td>506</td><td>506</td><td>74</td><td>73</td><td>594</td><td>596</td><td>73</td><td>72</td><td>229</td><td>229</td><td>55</td><td>55</td><td>231</td><td>229</td><td>54</td><td>54</td></tr>
-<tr><td>RGBAF</td><td>513</td><td>671</td><td>214</td><td>160</td><td>507</td><td>537</td><td>176</td><td>148</td><td>129</td><td>126</td><td>52</td><td>50</td><td>119</td><td>117</td><td>50</td><td>48</td></tr>
-<tr><td>CMYKAF</td><td>532</td><td>405</td><td>42</td><td>54</td><td>379</td><td>381</td><td>50</td><td>58</td><td>145</td><td>144</td><td>36</td><td>39</td><td>148</td><td>148</td><td>36</td><td>39</td></tr>
-<tr><td>CMYKA8</td><td>133</td><td>131</td><td>38</td><td>44</td><td>129</td><td>127</td><td>40</td><td>44</td><td>81</td><td>80</td><td>30</td><td>32</td><td>80</td><td>82</td><td>30</td><td>33</td></tr>
-<tr><td>GRAY1</td><td>268</td><td>240</td><td>58</td><td>45</td><td>157</td><td>154</td><td>55</td><td>45</td><td>126</td><td>122</td><td>46</td><td>43</td><td>126</td><td>122</td><td>46</td><td>43</td></tr>
-
-</table>
-
-<h3>some observations on the above</h3>
-
-<p> To know how this compares with yet other renderers, compare with the
-numbers in <a href='https://blend2d.com/performance.html'>blend2d's
-benchmarks.</a>.</p>
-
-<p>When targeting a microcontroller that has a small enough framebuffer that
-it is possible to keep RGBA8 instead of RGB565, one should use RGBA8 and convert
-on-the-fly when copying out, for best performance.
-</p>
-
-<p>For floating point compilers do a better job of autovectorizing code, SIMD
-implementations for normal + source-over does however still make sense.</p>
 
 
 
