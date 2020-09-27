@@ -2476,10 +2476,37 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
 static void vtcmd_set_t (VT *vt, const char *sequence)
 {
   /* \e[21y is request title - allows inserting keychars */
-  if (!strcmp (sequence, "[14t") ) /* request terminal dimensions */
+  if      (!strcmp (sequence, "[1t") ) { }  /* deiconify */
+  else if (!strcmp (sequence, "[2t") ) { }  /* iconify */
+  else if (!strncmp (sequence, "[3;", 3) ) { }  /* move_to ;x;y */
+  else if (!strncmp (sequence, "[4;", 3) ) { }  /* resize_to ;h;w (px) */
+  else if (!strcmp (sequence, "[5t") ) { }  /* raise to front  */
+  else if (!strcmp (sequence, "[6t") ) { }  /* lower to bottom  */
+  else if (!strncmp (sequence, "[8;", 3) ) { }  /* resize_to ;h;w (cells) */
+  else if (!strcmp (sequence, "[9;0t") ) { }  /* unmaximize */
+  else if (!strcmp (sequence, "[9;1t") ) { }  /* maximize */
+  else if (!strcmp (sequence, "[11t") )  /* report window state  */
+    {
+      char buf[128];
+      sprintf (buf, "\033[1t"); // or 2 if iconified
+      vt_write (vt, buf, strlen (buf) );
+    }
+  else if (!strcmp (sequence, "[13t") ) /* request terminal position */
+    {
+      char buf[128];
+      sprintf (buf, "\033[3;%i;%it", 0, 0);
+      vt_write (vt, buf, strlen (buf) );
+    }
+  else if (!strcmp (sequence, "[14t") ) /* request terminal dimensions */
     {
       char buf[128];
       sprintf (buf, "\033[4;%i;%it", vt->rows * vt->ch, vt->cols * vt->cw);
+      vt_write (vt, buf, strlen (buf) );
+    }
+  else if (!strcmp (sequence, "[18t") ) /* request terminal dimensions */
+    {
+      char buf[128];
+      sprintf (buf, "\033[8;%i;%it", vt->rows, vt->cols);
       vt_write (vt, buf, strlen (buf) );
     }
 #if 0
@@ -2493,6 +2520,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
     }
   else
     {
+      // XXX: X for ints >=24 resize to that number of lines
       VT_info ("unhandled subsequence %s", sequence);
     }
 }
