@@ -2138,18 +2138,22 @@ qagain:
           case 8: /*MODE;DECARM;Auto repeat;on;off;*/
             vt->keyrepeat = set;
             break;
+          // case 9: // send mouse x & y on button press 
+
           // 10 - Block DECEDM
           // 18 - Print form feed  DECPFF  default off
-          // 19 - Print fullscreen DECPEX  default on
+          // 19 - Print extent fullscreen DECPEX  default on
           case 12:
             vtcmd_ignore (vt, sequence);
             break; // blinking_cursor
+          case 25:/*MODE;DECTCEM;Cursor visible;on;off; */
+            vt->cursor_visible = set;
+            break;
           case 30: // from rxvt - show/hide scrollbar
             break;
           case 34: // DECRLM - right to left mode
             break;
-          case 25:/*MODE;DECTCEM;Cursor visible;on;off; */
-            vt->cursor_visible = set;
+          case 38: // DECTEK - enter tektronix mode
             break;
           case 60: // horizontal cursor coupling
           case 61: // vertical cursor coupling
@@ -2165,6 +2169,7 @@ qagain:
           case 1000:/*MODE;;Mouse reporting;on;off;*/
             vt->mouse = set;
             break;
+          case 1001:
           case 1002:/*MODE;;Mouse drag;on;off;*/
             vt->mouse_drag = set;
             break;
@@ -2174,8 +2179,8 @@ qagain:
           case 1006:/*MODE;;Mouse decimal;on;off;*/
             vt->mouse_decimal = set;
             break;
-          //case 47:
-          //case 1047:
+          case 47:
+          case 1047:
           //case 1048:
           case 1049:/*MODE;;Alt screen;on;off;*/
             if (set)
@@ -2316,7 +2321,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
       int qval;
       sequence++;
       qval = parse_int (sequence, 1);
-      int is_set = -1;
+      int is_set = -1; // -1 undefiend   0 reset 1 set  1000 perm_reset  1001 perm_set
       switch (qval)
         {
           case 1:
@@ -2324,8 +2329,10 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
             break;
           case 2: /*VT52 emulation;;enable; */
           //if (set==0) vt->in_vt52 = 1;
+            is_set = 1001;
+            break;
           case 3:
-            is_set = 1;
+            is_set = 0;
             break;
           case 4:
             is_set = vt->smooth_scroll;
@@ -2342,8 +2349,27 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
           case 8:
             is_set = vt->keyrepeat;
             break;
+          case 9: // should be dynamic
+            is_set = 1000;
+            break;
+          case 10:
+          case 11:
+          case 12:
+          case 13:
+          case 14:
+          case 16:
+          case 18:
+          case 19:
+            is_set = 1000;
+            break;
           case 25:
             is_set = vt->cursor_visible;
+            break;
+          case 45:
+            is_set = 1000;
+            break;
+          case 47:
+            is_set = vt->in_alt_screen;
             break;
           case 69:
             is_set = vt->left_right_margin_mode;
@@ -2354,6 +2380,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
           case 1000:
             is_set = vt->mouse;
             break;
+            // 1001 hilite tracking
           case 1002:
             is_set = vt->mouse_drag;
             break;
@@ -2390,10 +2417,23 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
           default:
             break;
         }
-      if (is_set >= 0)
-        { sprintf (buf, "\033[?%i;%i$y", qval, is_set?1:2); }
-      else
-        { sprintf (buf, "\033[?%i;%i$y", qval, 0); }
+      switch (is_set)
+      {
+        case 0:
+          sprintf (buf, "\033[?%i;%i$y", qval, 2);
+          break;
+        case 1:
+          { sprintf (buf, "\033[?%i;%i$y", qval, 1); }
+          break;
+        case 1000:
+          sprintf (buf, "\033[?%i;%i$y", qval, 4);
+          break;
+        case 1001:
+          sprintf (buf, "\033[?%i;%i$y", qval, 3);
+          break;
+        case -1:
+          { sprintf (buf, "\033[?%i;%i$y", qval, 0); }
+      }
     }
   else
     {
@@ -6688,6 +6728,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 
             if (line->ctx)
               {
+                ctx_begin_path (ctx);
                 ctx_save (ctx);
                 ctx_translate (ctx, 0, (vt->rows-row-1) * (vt->ch) );
                 //float factor = vt->cols * vt->cw / 1000.0;
