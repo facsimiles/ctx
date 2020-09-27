@@ -2472,17 +2472,26 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
     { vt_write (vt, buf, strlen (buf) ); }
 }
 
-
 static void vtcmd_set_t (VT *vt, const char *sequence)
 {
   /* \e[21y is request title - allows inserting keychars */
   if      (!strcmp (sequence, "[1t") ) { }  /* deiconify */
   else if (!strcmp (sequence, "[2t") ) { }  /* iconify */
   else if (!strncmp (sequence, "[3;", 3) ) { }  /* move_to ;x;y */
-  else if (!strncmp (sequence, "[4;", 3) ) { }  /* resize_to ;h;w (px) */
+  else if (!strncmp (sequence, "[4;", 3) ) /* resize_to ;h;w (px) */
+  {
+    int width = 0, height = 0;
+    sscanf (sequence, "[4;%i;%ir", &height , &width);
+    fprintf (stderr, "[resize to %ix%i]\n", width, height);
+  }
   else if (!strcmp (sequence, "[5t") ) { }  /* raise to front  */
   else if (!strcmp (sequence, "[6t") ) { }  /* lower to bottom  */
-  else if (!strncmp (sequence, "[8;", 3) ) { }  /* resize_to ;h;w (cells) */
+  else if (!strncmp (sequence, "[8;", 3) ) /* resize_to ;h;w (cells) */
+  {
+    int cols = 0, rows = 0;
+    sscanf (sequence, "[8;%i;%ir", &rows, &cols);
+    fprintf (stderr, "[resize to %ix%icol]\n", cols, rows);
+  }
   else if (!strcmp (sequence, "[9;0t") ) { }  /* unmaximize */
   else if (!strcmp (sequence, "[9;1t") ) { }  /* maximize */
   else if (!strcmp (sequence, "[11t") )  /* report window state  */
@@ -2571,7 +2580,6 @@ static void vtcmd_set_double_width_double_height_top_line
   vt->current_line->double_width = 1;
   vt->current_line->double_height_top = 1;
   vt->current_line->double_height_bottom = 0;
-  //vt_cell_cache_clear_row (vt, vt->cursor_y);
 }
 static void vtcmd_set_double_width_double_height_bottom_line
 (VT *vt, const char *sequence)
@@ -2579,7 +2587,6 @@ static void vtcmd_set_double_width_double_height_bottom_line
   vt->current_line->double_width = 1;
   vt->current_line->double_height_top = 0;
   vt->current_line->double_height_bottom = 1;
-  //vt_cell_cache_clear_row (vt, vt->cursor_y);
 }
 static void vtcmd_set_single_width_single_height_line
 (VT *vt, const char *sequence)
@@ -2587,7 +2594,6 @@ static void vtcmd_set_single_width_single_height_line
   vt->current_line->double_width = 0;
   vt->current_line->double_height_top = 0;
   vt->current_line->double_height_bottom = 0;
-  //vt_cell_cache_clear_row (vt, vt->cursor_y);
 }
 static void
 vtcmd_set_double_width_single_height_line
@@ -2596,7 +2602,6 @@ vtcmd_set_double_width_single_height_line
   vt->current_line->double_width = 1;
   vt->current_line->double_height_top = 0;
   vt->current_line->double_height_bottom = 0;
-  //vt_cell_cache_clear_row (vt, vt->cursor_y);
 }
 
 static void vtcmd_set_led (VT *vt, const char *sequence)

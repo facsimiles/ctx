@@ -21215,7 +21215,6 @@ void render_fun (void **data)
 
 Ctx *ctx_new_sdl (int width, int height)
 {
-  Ctx *ctx = ctx_new ();
 #if CTX_RASTERIZER
   CtxSDL *sdl = calloc (sizeof (CtxSDL), 1);
   if (width <= 0 || height <= 0)
@@ -21228,7 +21227,7 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->renderer = SDL_CreateRenderer (sdl->window, -1, 0);
   if (!sdl->renderer)
   {
-     ctx_free (ctx);
+     ctx_free (sdl->ctx);
      free (sdl);
      return NULL;
   }
@@ -21241,17 +21240,17 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_StartTextInput ();
   SDL_EnableScreenSaver ();
 
-  sdl->ctx = ctx;
+  sdl->ctx = ctx_new ();
   sdl->ctx_copy = ctx_new ();
   sdl->width  = width;
   sdl->height = height;
   sdl->cols = 80;
   sdl->rows = 20;
   sdl->pixels = (uint8_t*)malloc (width * height * 4);
-  ctx_set_renderer (ctx, sdl);
+  ctx_set_renderer (sdl->ctx, sdl);
   ctx_set_renderer (sdl->ctx_copy, sdl);
 
-  ctx_set_size (ctx, width, height);
+  ctx_set_size (sdl->ctx, width, height);
   ctx_set_size (sdl->ctx_copy, width, height);
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->free  = (void*)ctx_sdl_free;
@@ -21289,8 +21288,8 @@ Ctx *ctx_new_sdl (int width, int height)
 #undef start_thread
 
 #endif
-  ctx_flush (ctx);
-  return ctx;
+  ctx_flush (sdl->ctx);
+  return sdl->ctx;
 }
 #endif
 
