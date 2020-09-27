@@ -43,7 +43,10 @@ Ctx *ctx = NULL; // initialized in main
 #define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
 #define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
-int ct_set_prop (VT *vt, uint32_t key_hash, const char *val)
+void ctx_sdl_set_title (void *self, const char *new_title);
+int ctx_renderer_is_sdl (Ctx *ctx);
+
+int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 {
 #if 1
 //fprintf (stderr, "%i: %s\n", key_hash, val);
@@ -51,6 +54,10 @@ int ct_set_prop (VT *vt, uint32_t key_hash, const char *val)
   {
     case CTX_title:  
      ctx_set (ctx, CTX_title, val, strlen (val));
+
+     if (ctx_renderer_is_sdl (ctx))
+       ctx_sdl_set_title (ctx_get_renderer (ctx), val);
+
      break;
   }
 #else

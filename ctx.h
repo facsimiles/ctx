@@ -517,6 +517,7 @@ typedef struct _CtxEvent CtxEvent;
 
 void ctx_set_renderer (Ctx *ctx,
                        void *renderer);
+void *ctx_get_renderer (Ctx *ctx);
 
 /* the following API is only available when CTX_EVENTS is defined to 1
  *
@@ -3726,7 +3727,7 @@ struct _CtxEvents
 #endif
 
 struct
-  _Ctx
+_Ctx
 {
   CtxImplementation *renderer;
   CtxRenderstream    renderstream;
@@ -3734,6 +3735,7 @@ struct
   int                transformation;
   CtxBuffer          texture[CTX_MAX_TEXTURES];
   int                rev;
+  void              *backend;
 #if CTX_EVENTS 
   CtxEvents          events;
   int                mouse_fd;
@@ -6523,6 +6525,11 @@ void ctx_set_renderer (Ctx  *ctx,
   if (ctx->renderer && ctx->renderer->free)
     ctx->renderer->free (ctx->renderer);
   ctx->renderer = (CtxImplementation*)renderer;
+}
+
+void *ctx_get_renderer (Ctx *ctx)
+{
+  return ctx->renderer;
 }
 
 Ctx *
@@ -20639,12 +20646,13 @@ static int ctx_nct_consume_events (Ctx *ctx)
 
 #define CTX_THREADS  2
 
+
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
 {
-   void (*render) (void *braille, CtxCommand *command);
-   void (*flush)  (void *braille);
-   void (*free)   (void *braille);
+   void (*render)    (void *braille, CtxCommand *command);
+   void (*flush)     (void *braille);
+   void (*free)      (void *braille);
    Ctx          *ctx;
    Ctx          *ctx_copy;
    int           width;
@@ -20677,6 +20685,12 @@ struct _CtxSDL
                                                            // responsible for a tile
 };
 
+void ctx_sdl_set_title (void *self, const char *new_title)
+{
+   CtxSDL *sdl = self;
+   SDL_SetWindowTitle (sdl->window, new_title);
+}
+
 static inline int
 render_threads_done (CtxSDL *sdl)
 {
@@ -20703,6 +20717,7 @@ static void ctx_show_frame (CtxSDL *sdl)
   }
 }
 
+
 static int ctx_sdl_consume_events (Ctx *ctx)
 {
   CtxSDL *sdl = (void*)ctx->renderer;
@@ -20717,7 +20732,6 @@ static int ctx_sdl_consume_events (Ctx *ctx)
     {
       if (set_title) free (set_title);
       set_title = strdup (title);
-  //    SDL_SetWindowTitle (sdl->window, set_title);
        fprintf (stderr, "%s\n", set_title);
     }
     }
@@ -21213,6 +21227,14 @@ void render_fun (void **data)
   }
 }
 
+int ctx_renderer_is_sdl (Ctx *ctx)
+{
+  if (ctx->renderer &&
+      ctx->renderer->free == ctx_sdl_free)
+          return 1;
+  return 0;
+}
+
 Ctx *ctx_new_sdl (int width, int height)
 {
 #if CTX_RASTERIZER
@@ -21334,15 +21356,15 @@ Ctx *ctx_new_ctx (int width, int height)
   {
     ctxctx->cols = ctx_terminal_cols ();
     ctxctx->rows = ctx_terminal_rows ();
-    width = ctxctx->width = ctx_terminal_width ();
+    width  = ctxctx->width  = ctx_terminal_width ();
     height = ctxctx->height = ctx_terminal_height ();
   }
   else
   {
     ctxctx->width  = width;
     ctxctx->height = height;
-    ctxctx->cols = width / 80;
-    ctxctx->rows = height / 24;
+    ctxctx->cols   = width / 80;
+    ctxctx->rows   = height / 24;
   }
   ctxctx->ctx = ctx;
   if (!ctx_native_events)

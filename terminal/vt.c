@@ -595,7 +595,7 @@ long vt_rev (VT *vt)
 }
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
-int ct_set_prop (VT *vt, uint32_t key_hash, const char *val);
+int vt_set_prop (VT *vt, uint32_t key_hash, const char *val);
 
 static void vt_set_title (VT *vt, const char *new_title)
 {
@@ -604,8 +604,7 @@ static void vt_set_title (VT *vt, const char *new_title)
   if (vt->title)
     { free (vt->title); }
   vt->title = strdup (new_title);
-  //client_set_title (vt->id, new_title);//vt->title);
-  ct_set_prop (vt, ctx_strhash ("title", 0), (char*)new_title);
+  vt_set_prop (vt, ctx_strhash ("title", 0), (char*)new_title);
 }
 
 const char *vt_get_title (VT *vt)
@@ -2054,7 +2053,7 @@ static void vt_ctx_exit (void *data)
 #define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
 #define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
-static int ct_get_prop (VT *vt, const char *key, const char **val, int *len)
+static int vt_get_prop (VT *vt, const char *key, const char **val, int *len)
 {
 #if 0
   uint32_t key_hash = ctx_strhash (key, 0);
@@ -2253,7 +2252,7 @@ qagain:
                 vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                                            vt->cols * vt->cw, vt->rows * vt->ch,
                                            vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
-                                           (void*)ct_set_prop, (void*)ct_get_prop, vt, vt_ctx_exit, vt);
+                                           (void*)vt_set_prop, (void*)vt_get_prop, vt, vt_ctx_exit, vt);
                 vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
                 vt->state = vt_state_ctx;
               }
