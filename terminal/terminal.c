@@ -210,7 +210,7 @@ int   on_screen_keyboard = 0;
 
 static char *execute_self = NULL;
 
-static CtxList *clients;//CtxClient clients[CTX_MAX_CLIENTS]={{NULL,},};
+static CtxList *clients;
 static CtxClient *active = NULL;
 
 static CtxClient *client_by_id (int id);
@@ -652,7 +652,6 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
         }
         else
         {
-
           const char *sequence = key->sequence;
 
           if (kb->fn && kb->shifted && key->sequence_fn_shifted)
@@ -676,26 +675,6 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
 
 KeyBoard en_intl = {
    {  
-#if 0
-     { {"Esc","Esc",NULL,NULL,1.0f,"escape","escape",NULL,NULL,0},
-       {"F1","F1",NULL,NULL,1.0f,"F1","F1",NULL,NULL,0},
-       {"F2","F2",NULL,NULL,1.0f,"F2","F2",NULL,NULL,0},
-       {"F3","F3",NULL,NULL,1.0f,"F3","F3",NULL,NULL,0},
-       {"F4","F4",NULL,NULL,1.0f,"F4","F4",NULL,NULL,0},
-       {"F5","F5",NULL,NULL,1.0f,"F5","F5",NULL,NULL,0},
-       {"F6","F6",NULL,NULL,1.0f,"F6","F6",NULL,NULL,0},
-       {"F7","F7",NULL,NULL,1.0f,"F7","F7",NULL,NULL,0},
-       {"F8","F8",NULL,NULL,1.0f,"F8","F8",NULL,NULL,0},
-       {"F9","F9",NULL,NULL,1.0f,"F9","F9",NULL,NULL,0},
-       {"F10","F10",NULL,NULL,1.0f,"F10","F10",NULL,NULL,0},
-       {"F11","F11",NULL,NULL,1.0f,"F11","F11",NULL,NULL,0},
-       {"F12","F12",NULL,NULL,1.0f,"F12","F12",NULL,NULL,0},
-       {"Home","Home",NULL,NULL,1.0f,"home","home",NULL,NULL,0},
-       {"End","End",NULL,NULL,1.0f,"end","end",NULL,NULL,0},
-       {"PgDn","PgDn",NULL,NULL,1.0f,"pagedown","pagedown",NULL,NULL,0},
-       {"PgUp","PgUp",NULL,NULL,1.0f,"pageup","pageup",NULL,NULL,0},
-       NULL },
-#endif
      { {"Esc","Esc","`","~",1.0f,"escape","escape","`","~",0},
        {"1","!","F1","F1",1.0f,"1","!","F1","F1",0},
        {"2","@","F2","F2",1.0f,"2","@","F2","F2",0},
@@ -710,7 +689,7 @@ KeyBoard en_intl = {
        {"-","_","F11","F11",1.0f,"-","_","F11","F11",0},
        {"=","+","F12","F12",1.0f,"=","+","F12","F12",0},
        {"⌫","⌫",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0},
-       NULL },
+       {NULL}},
      //⌨
      { {"Tab","Tab",NULL,NULL,1.3f,"tab","tab",NULL,NULL,0},
        {"q","Q",NULL,NULL,1.0f,"q","Q",NULL,NULL,0},
@@ -726,7 +705,7 @@ KeyBoard en_intl = {
        {"[","{",NULL,NULL,1.0f,"[","{",NULL,NULL,0},
        {"]","}",NULL,NULL,1.0f,"]","}",NULL,NULL,0},
        {"\\","|",NULL,NULL,1.0f,"\\","|",NULL,NULL,0},
-       NULL },
+       {NULL} },
      { {"Fn","Fn",NULL,NULL,1.5f," "," ",NULL,NULL,1},
        {"a","A",NULL,NULL,1.0f,"a","A",NULL,NULL,0},
        {"s","S",NULL,NULL,1.0f,"s","S",NULL,NULL,0},
@@ -740,7 +719,7 @@ KeyBoard en_intl = {
        {";",":",NULL,NULL,1.0f,";",":",NULL,NULL,0},
        {"'","\"",NULL,NULL,1.0f,"'","\"",NULL,NULL,0},
        {"⏎","⏎",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
-       NULL },
+       {NULL} },
      { {"Ctrl","Ctrl",NULL,NULL,1.7f,"","",NULL,NULL,1},
        {"z","Z",NULL,NULL,1.0f,"z","Z",NULL,NULL,0},
        {"x","X",NULL,NULL,1.0f,"x","X",NULL,NULL,0},
@@ -753,7 +732,7 @@ KeyBoard en_intl = {
        {".",">",NULL,NULL,1.0f,".",">",NULL,NULL,0},
        {"/","?",NULL,NULL,1.0f,"/","?",NULL,NULL,0},
        {"↑","↑","PgUp","PgUp",1.0f,"up","up","page-up","page-up",0},
-       NULL },
+       {NULL} },
      { {"Shift","Shift",NULL,NULL,1.3f,"","",NULL,NULL,1},
        {"Alt","Alt",NULL,NULL,1.3f,"","",NULL,NULL,1},
        {" "," ",NULL,NULL,8.1f,"space","space",NULL,NULL,0},
@@ -761,7 +740,7 @@ KeyBoard en_intl = {
        {"←","←","Home","Home",1.0f,"left","left","home","home",0},
        {"↓","↓","PgDn","PgDn",1.0f,"down","down","page-down","page-down",0},
        {"→","→","End","End",1.0f,"right","right","end","end",0},
-       NULL },
+       {NULL} },
      { {NULL}},
    }
 };
