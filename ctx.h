@@ -288,6 +288,12 @@ uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row);
 #endif
 
 #if CTX_SDL
+#define CTX_FB 1
+#else
+#define CTX_FB 0
+#endif
+
+#if CTX_SDL
 #define ctx_mutex_t            SDL_mutex
 #define ctx_create_mutex()     SDL_CreateMutex()
 #define ctx_lock_mutex(a)      SDL_LockMutex(a)
@@ -18945,11 +18951,18 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
 static int ctx_native_events = 0;
 #if CTX_SDL
 static int ctx_sdl_events = 0;
+static int ctx_sdl_consume_events (Ctx *ctx);
 #endif
+
+#if CTX_FB
+static int ctx_fb_events = 0;
+static int ctx_fb_consume_events (Ctx *ctx);
+#endif
+
+
 static int ctx_nct_consume_events (Ctx *ctx);
 static int ctx_ctx_consume_events (Ctx *ctx);
 #if CTX_SDL
-static int ctx_sdl_consume_events (Ctx *ctx);
 #endif
 
 
@@ -18963,6 +18976,11 @@ CtxEvent *ctx_get_event (Ctx *ctx)
 #if CTX_SDL
   if (ctx_sdl_events)
     ctx_sdl_consume_events (ctx);
+  else
+#endif
+#if CTX_FB
+  if (ctx_fb_events)
+    ctx_fb_consume_events (ctx);
   else
 #endif
   if (ctx_native_events)
@@ -20637,14 +20655,15 @@ static int ctx_nct_consume_events (Ctx *ctx)
   return 1;
 }
 
+#define CTX_THREADS      2
+
 #if CTX_SDL
 
  // 1 threads 13fps
  // 2 threads 20fps
  // 3 threads 27fps
  // 4 threads 29fps
-
-#define CTX_THREADS  2
+#define CTX_SDL_THREADS  CTX_THREADS
 
 
 typedef struct _CtxSDL CtxSDL;
@@ -20672,8 +20691,8 @@ struct _CtxSDL
    int           rctrl;
    int           shown_frame;
    int           render_frame;
-   int           rendered_frame[CTX_THREADS];
-   Ctx          *host[CTX_THREADS];
+   int           rendered_frame[CTX_SDL_THREADS];
+   Ctx          *host[CTX_SDL_THREADS];
    int           frame;
    int           pointer_down[3];
 
@@ -20692,10 +20711,10 @@ void ctx_sdl_set_title (void *self, const char *new_title)
 }
 
 static inline int
-render_threads_done (CtxSDL *sdl)
+sdl_render_threads_done (CtxSDL *sdl)
 {
   int sum = 0;
-  for (int i = 0; i < CTX_THREADS; i++)
+  for (int i = 0; i < CTX_SDL_THREADS; i++)
   {
      if (sdl->rendered_frame[i] == sdl->render_frame)
        sum ++;
@@ -20703,10 +20722,10 @@ render_threads_done (CtxSDL *sdl)
   return sum;
 }
 
-static void ctx_show_frame (CtxSDL *sdl)
+static void ctx_sdl_show_frame (CtxSDL *sdl)
 {
   if (sdl->shown_frame != sdl->render_frame &&
-      render_threads_done (sdl) == CTX_THREADS)
+      sdl_render_threads_done (sdl) == CTX_SDL_THREADS)
   {
     SDL_UpdateTexture (sdl->texture, NULL,
                       (void*)sdl->pixels, sdl->width * sizeof (Uint32));
@@ -20737,7 +20756,7 @@ static int ctx_sdl_consume_events (Ctx *ctx)
     }
   }
 
-  ctx_show_frame (sdl);
+  ctx_sdl_show_frame (sdl);
 
   while (SDL_PollEvent (&event))
   {
@@ -20876,7 +20895,7 @@ static int ctx_sdl_consume_events (Ctx *ctx)
         {
           while (sdl->shown_frame != sdl->render_frame) {
                   usleep (100);
-                  ctx_show_frame (sdl);
+                  ctx_sdl_show_frame (sdl);
           }
           int width = event.window.data1;
           int height = event.window.data2;
@@ -20897,6 +20916,254 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           }
           ctx_set_size (sdl->ctx, width, height);
           ctx_set_size (sdl->ctx_copy, width, height);
+        }
+        break;
+    }
+  }
+  return 1;
+}
+#endif
+
+
+#if CTX_FB
+
+ // 1 threads 13fps
+ // 2 threads 20fps
+ // 3 threads 27fps
+ // 4 threads 29fps
+#define CTX_FB_THREADS  CTX_THREADS
+
+
+typedef struct _CtxFb CtxFb;
+struct _CtxFb
+{
+   void (*render)    (void *braille, CtxCommand *command);
+   void (*flush)     (void *braille);
+   void (*free)      (void *braille);
+   Ctx          *ctx;
+   Ctx          *ctx_copy;
+   int           width;
+   int           height;
+   int           cols;
+   int           rows;
+   uint8_t      *pixels;
+   int           was_down;
+   SDL_Window   *window;
+   SDL_Renderer *renderer;
+   SDL_Texture  *texture;
+   int           quit;
+   int           key_balance;
+   int           key_repeat;
+   int           lctrl;
+   int           lalt;
+   int           rctrl;
+   int           shown_frame;
+   int           render_frame;
+   int           rendered_frame[CTX_SDL_THREADS];
+   Ctx          *host[CTX_SDL_THREADS];
+   int           frame;
+   int           pointer_down[3];
+
+#define CTX_HASH_ROWS 6
+#define CTX_HASH_COLS 3
+
+   uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+   int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
+                                                           // responsible for a tile
+};
+
+static inline int
+fb_render_threads_done (CtxFb *fb)
+{
+  int sum = 0;
+  for (int i = 0; i < CTX_FB_THREADS; i++)
+  {
+     if (fb->rendered_frame[i] == fb->render_frame)
+       sum ++;
+  }
+  return sum;
+}
+
+static void ctx_fb_show_frame (CtxFb *fb)
+{
+  if (fb->shown_frame != fb->render_frame &&
+      fb_render_threads_done (fb) == CTX_FB_THREADS)
+  {
+    SDL_UpdateTexture (fb->texture, NULL,
+                      (void*)fb->pixels, fb->width * sizeof (Uint32));
+    SDL_RenderClear (fb->renderer);
+    SDL_RenderCopy (fb->renderer, fb->texture, NULL, NULL);
+    SDL_RenderPresent (fb->renderer);
+    fb->shown_frame = fb->render_frame;
+  }
+}
+
+static int ctx_fb_consume_events (Ctx *ctx)
+{
+  CtxFb *fb = (void*)ctx->renderer;
+  SDL_Event event;
+  int got_events = 0;
+
+  ctx_fb_show_frame (fb);
+
+  while (SDL_PollEvent (&event))
+  {
+    got_events ++;
+    switch (event.type)
+    {
+      case SDL_MOUSEBUTTONDOWN:
+        SDL_CaptureMouse (1);
+        ctx_pointer_press (ctx, event.button.x, event.button.y, event.button.button, 0);
+        break;
+      case SDL_MOUSEBUTTONUP:
+        SDL_CaptureMouse (0);
+        ctx_pointer_release (ctx, event.button.x, event.button.y, event.button.button, 0);
+        break;
+      case SDL_MOUSEMOTION:
+        //  XXX : look at mask and generate motion for each pressed
+        //        button
+        ctx_pointer_motion (ctx, event.motion.x, event.motion.y, 1, 0);
+        break;
+      case SDL_KEYUP:
+        {
+           fb->key_balance --;
+           switch (event.key.keysym.sym)
+           {
+             case SDLK_LCTRL: fb->lctrl = 0; break;
+             case SDLK_RCTRL: fb->rctrl = 0; break;
+             case SDLK_LALT:  fb->lalt  = 0; break;
+           }
+        }
+        break;
+#if 1
+      case SDL_TEXTINPUT:
+    //  if (!active)
+    //    break;
+        if (!fb->lctrl && !fb->rctrl && !fb->lalt 
+           //&& ( (vt && vt_keyrepeat (vt) ) || (key_repeat==0) )
+           )
+          {
+            const char *name = event.text.text;
+            if (!strcmp (name, " ") ) { name = "space"; }
+            ctx_key_press (ctx, 0, name, 0);
+            //got_event = 1;
+          }
+        break;
+#endif
+      case SDL_KEYDOWN:
+        {
+          char buf[32] = "";
+          char *name = buf;
+          if (!event.key.repeat)
+          {
+            fb->key_balance ++;
+            fb->key_repeat = 0;
+          }
+          else
+          {
+            fb->key_repeat ++;
+          }
+          buf[ctx_unichar_to_utf8 (event.key.keysym.sym, (void*)buf)]=0;
+          switch (event.key.keysym.sym)
+          {
+            case SDLK_LCTRL: fb->lctrl = 1; break;
+            case SDLK_LALT:  fb->lalt = 1; break;
+            case SDLK_RCTRL: fb->rctrl = 1; break;
+            case SDLK_F1: name = "F1"; break;
+            case SDLK_F2: name = "F2"; break;
+            case SDLK_F3: name = "F3"; break;
+            case SDLK_F4: name = "F4"; break;
+            case SDLK_F5: name = "F5"; break;
+            case SDLK_F6: name = "F6"; break;
+            case SDLK_F7: name = "F7"; break;
+            case SDLK_F8: name = "F8"; break;
+            case SDLK_F9: name = "F9"; break;
+            case SDLK_F10: name = "F10"; break;
+            case SDLK_F11: name = "F11"; break;
+            case SDLK_F12: name = "F12"; break;
+            case SDLK_ESCAPE: name = "escape"; break;
+            case SDLK_DOWN: name = "down"; break;
+            case SDLK_LEFT: name = "left"; break;
+            case SDLK_UP: name = "up"; break;
+            case SDLK_RIGHT: name = "right"; break;
+            case SDLK_BACKSPACE: name = "backspace"; break;
+            case SDLK_SPACE: name = "space"; break;
+            case SDLK_TAB: name = "tab"; break;
+            case SDLK_DELETE: name = "delete"; break;
+            case SDLK_INSERT: name = "insert"; break;
+            case SDLK_RETURN:
+              //if (key_repeat == 0) // return never should repeat
+              name = "return";   // on a DEC like terminal
+              break;
+            case SDLK_HOME: name = "home"; break;
+            case SDLK_END: name = "end"; break;
+            case SDLK_PAGEDOWN: name = "page-down"; break;
+            case SDLK_PAGEUP: name = "page-up"; break;
+            default:
+              ;
+          }
+          if (strlen (name)
+              &&(event.key.keysym.mod & (KMOD_CTRL) ||
+                 event.key.keysym.mod & (KMOD_ALT) ||
+                 strlen (name) >= 2))
+          {
+            if (event.key.keysym.mod & (KMOD_CTRL) )
+              {
+                static char buf[64] = "";
+                sprintf (buf, "control-%s", name);
+                name = buf;
+              }
+            if (event.key.keysym.mod & (KMOD_ALT) )
+              {
+                static char buf[128] = "";
+                sprintf (buf, "alt-%s", name);
+                name = buf;
+              }
+            if (event.key.keysym.mod & (KMOD_SHIFT) )
+              {
+                static char buf[196] = "";
+                sprintf (buf, "shift-%s", name);
+                name = buf;
+              }
+            if (strcmp (name, "space"))
+              {
+               ctx_key_press (ctx, 0, name, 0);
+              }
+          }
+          else
+          {
+#if 0
+             ctx_key_press (ctx, 0, buf, 0);
+#endif
+          }
+        }
+        break;
+      case SDL_WINDOWEVENT:
+        if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+        {
+          while (fb->shown_frame != fb->render_frame) {
+                  usleep (100);
+                  ctx_fb_show_frame (fb);
+          }
+          int width = event.window.data1;
+          int height = event.window.data2;
+          SDL_DestroyTexture (fb->texture);
+          free (fb->pixels);
+          fb->texture = SDL_CreateTexture (fb->renderer, SDL_PIXELFORMAT_ABGR8888,
+                          SDL_TEXTUREACCESS_STREAMING, width, height);
+          fb->pixels = calloc (4, width * height);
+          fb->width = width;
+          fb->height = height;
+          for (int i = 0 ; i < CTX_THREADS; i++)
+          {
+            ctx_free (fb->host[i]);
+            fb->host[i] = ctx_new_for_framebuffer (&fb->pixels[width * 4 * (height/CTX_THREADS) * i],
+                   width / CTX_HASH_COLS, height/CTX_HASH_ROWS,
+                   width * 4, CTX_FORMAT_RGBA8);
+            ((CtxRasterizer*)fb->host[i]->renderer)->texture_source = ctx;
+          }
+          ctx_set_size (fb->ctx, width, height);
+          ctx_set_size (fb->ctx_copy, width, height);
         }
         break;
     }
@@ -21110,7 +21377,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   while (sdl->shown_frame != sdl->render_frame && count < 10000)
   {
     usleep (10);
-    ctx_show_frame (sdl);
+    ctx_sdl_show_frame (sdl);
     count++;
   }
   if (count >= 10000)
@@ -21170,7 +21437,7 @@ void ctx_sdl_free (CtxSDL *sdl)
 }
 
 static
-void render_fun (void **data)
+void sdl_render_fun (void **data)
 {
   int      no = (size_t)data[0];
   CtxSDL *sdl = data[1];
@@ -21214,7 +21481,7 @@ void render_fun (void **data)
         }
       sdl->rendered_frame[no] = sdl->render_frame;
 
-      if (render_threads_done (sdl) == CTX_THREADS)
+      if (sdl_render_threads_done (sdl) == CTX_THREADS)
       {
    //   ctx_render_stream (sdl->ctx_copy, stdout, 1);
         ctx_reset (sdl->ctx_copy);
@@ -21289,7 +21556,7 @@ Ctx *ctx_new_sdl (int width, int height)
   if(CTX_THREADS>no){ \
     static void *args[2]={(void*)no, };\
     args[1]=sdl;\
-    SDL_CreateThread ((void*)render_fun, "render", args);\
+    SDL_CreateThread ((void*)sdl_render_fun, "render", args);\
   }
   start_thread(0);
   start_thread(1);
@@ -21314,6 +21581,222 @@ Ctx *ctx_new_sdl (int width, int height)
   return sdl->ctx;
 }
 #endif
+
+#if CTX_FB
+
+inline static void ctx_fb_flush (CtxFb *sdl)
+{
+  //int width =  sdl->width;
+  int count = 0;
+  while (sdl->shown_frame != sdl->render_frame && count < 10000)
+  {
+    usleep (10);
+    ctx_fb_show_frame (sdl);
+    count++;
+  }
+  if (count >= 10000)
+  {
+    fprintf (stderr, "!\n");
+    sdl->shown_frame = sdl->render_frame;
+  }
+  if (sdl->shown_frame == sdl->render_frame)
+  {
+    Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
+                      CTX_HASH_COLS, CTX_HASH_ROWS);
+    ctx_reset (sdl->ctx_copy);
+    ctx_set_renderstream (sdl->ctx_copy, &sdl->ctx->renderstream.entries[0],
+                                         sdl->ctx->renderstream.count * 9);
+    ctx_render_ctx (sdl->ctx_copy, hasher);
+
+    int dirty_tiles = 0;
+    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int col = 0; col < CTX_HASH_COLS; col++)
+      {
+        uint32_t new_hash = ctx_hash_get_hash (hasher, col, row);
+        if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col] || 1)
+        {
+          sdl->hashes[row * CTX_HASH_COLS + col] = new_hash;
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+          dirty_tiles++;
+        }
+        else
+        {
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = -1;
+        }
+      }
+    int dirty_no = 0;
+    if (dirty_tiles)
+    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int col = 0; col < CTX_HASH_COLS; col++)
+      {
+        if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
+        {
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_THREADS-1) / dirty_tiles;
+          dirty_no++;
+        }
+      }
+
+    ctx_free (hasher);
+    sdl->render_frame = ++sdl->frame;
+  }
+}
+
+void ctx_fb_free (CtxFb *sdl)
+{
+  free (sdl->pixels);
+  for (int i = 0 ; i < CTX_THREADS; i++)
+    ctx_free (sdl->host[i]);
+  free (sdl);
+  /* we're not destoring the ctx member, this is function is called in ctx' teardown */
+}
+
+static
+void fb_render_fun (void **data)
+{
+  int      no = (size_t)data[0];
+  CtxFb *sdl = data[1];
+
+  while (!sdl->quit)
+  {
+    if (sdl->render_frame != sdl->rendered_frame[no])
+    {
+      int hno = 0;
+      for (int row = 0; row < CTX_HASH_ROWS; row++)
+        for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
+        {
+          if (sdl->tile_affinity[hno]==no)
+          {
+            int x0 = ((sdl->width)/CTX_HASH_COLS) * col;
+            int y0 = ((sdl->height)/CTX_HASH_ROWS) * row;
+            int width = sdl->width / CTX_HASH_COLS;
+            int height = sdl->height / CTX_HASH_ROWS;
+
+            Ctx *host = sdl->host[no];
+            CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
+#if 1 // merge horizontally adjecant tiles of same affinity into one job
+            while (col + 1 < CTX_HASH_COLS &&
+                   sdl->tile_affinity[hno+1] == no)
+            {
+              width += sdl->width / CTX_HASH_COLS;
+              col++;
+              hno++;
+            }
+#endif
+
+            ctx_rasterizer_init (rasterizer,
+                                 host, NULL, &host->state,
+                                 &sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
+                                 0, 0, width, height,
+                                 sdl->width*4, CTX_FORMAT_RGBA8);
+            ((CtxRasterizer*)host->renderer)->texture_source = sdl->ctx;
+            ctx_translate (host, -x0, -y0);
+            ctx_render_ctx (sdl->ctx_copy, host);
+          }
+        }
+      sdl->rendered_frame[no] = sdl->render_frame;
+
+      if (fb_render_threads_done (sdl) == CTX_FB_THREADS)
+      {
+   //   ctx_render_stream (sdl->ctx_copy, stdout, 1);
+        ctx_reset (sdl->ctx_copy);
+      }
+    }
+    else
+    {
+      usleep (1000 * 5);
+    }
+  }
+}
+
+int ctx_renderer_is_fb (Ctx *ctx)
+{
+  if (ctx->renderer &&
+      ctx->renderer->free == ctx_fb_free)
+          return 1;
+  return 0;
+}
+
+Ctx *ctx_new_fb (int width, int height)
+{
+#if CTX_RASTERIZER
+  CtxFb *fb = calloc (sizeof (CtxFb), 1);
+  if (width <= 0 || height <= 0)
+  {
+    width  = 640;
+    height = 480;
+  }
+  fb->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
+  //fb->renderer = SDL_CreateRenderer (fb->window, -1, SDL_RENDERER_SOFTWARE);
+  fb->renderer = SDL_CreateRenderer (fb->window, -1, 0);
+  if (!fb->renderer)
+  {
+     ctx_free (fb->ctx);
+     free (fb);
+     return NULL;
+  }
+  ctx_fb_events = 1;
+  fb->texture = SDL_CreateTexture (fb->renderer,
+        SDL_PIXELFORMAT_ABGR8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        width, height);
+
+  SDL_StartTextInput ();
+  SDL_EnableScreenSaver ();
+
+  fb->ctx = ctx_new ();
+  fb->ctx_copy = ctx_new ();
+  fb->width  = width;
+  fb->height = height;
+  fb->cols = 80;
+  fb->rows = 20;
+  fb->pixels = (uint8_t*)malloc (width * height * 4);
+  ctx_set_renderer (fb->ctx, fb);
+  ctx_set_renderer (fb->ctx_copy, fb);
+
+  ctx_set_size (fb->ctx, width, height);
+  ctx_set_size (fb->ctx_copy, width, height);
+  fb->flush = (void*)ctx_fb_flush;
+  fb->free  = (void*)ctx_fb_free;
+
+  for (int i = 0; i < CTX_FB_THREADS; i++)
+  {
+    fb->host[i] = ctx_new_for_framebuffer (fb->pixels,
+                   fb->width/CTX_HASH_COLS, fb->height/CTX_HASH_ROWS,
+                   fb->width * 4, CTX_FORMAT_RGBA8);
+    ((CtxRasterizer*)fb->host[i]->renderer)->texture_source = fb->ctx;
+  }
+
+#define start_thread(no)\
+  if(CTX_THREADS>no){ \
+    static void *args[2]={(void*)no, };\
+    args[1]=fb;\
+    SDL_CreateThread ((void*)fb_render_fun, "render", args);\
+  }
+  start_thread(0);
+  start_thread(1);
+  start_thread(2);
+  start_thread(3);
+  start_thread(4);
+  start_thread(5);
+  start_thread(6);
+  start_thread(7);
+  start_thread(8);
+  start_thread(9);
+  start_thread(10);
+  start_thread(11);
+  start_thread(12);
+  start_thread(13);
+  start_thread(14);
+  start_thread(15);
+#undef start_thread
+
+#endif
+  ctx_flush (fb->ctx);
+  return fb->ctx;
+}
+#endif
+
+
 
 typedef struct _CtxCtx CtxCtx;
 
@@ -21381,14 +21864,21 @@ Ctx *ctx_new_ui (int width, int height)
   if (getenv ("CTX_VERSION"))
           // full blown ctx - in terminal or standalone
     return ctx_new_ctx (width, height);
+  Ctx *ret = NULL;
+#if CTX_FB
+  ret = ctx_new_fb (width, height);
+  if (ret) return ret;
+#endif
 
 #if CTX_SDL
-  Ctx *ret = ctx_new_sdl (width, height);
+  ret = ctx_new_sdl (width, height);
   if (ret) return ret;
 #endif
 
   // braille in terminal
-  return ctx_new_braille (width, height);
+  if (!ret)
+    return ctx_new_braille (width, height);
+  return NULL;
 }
 
 #endif
