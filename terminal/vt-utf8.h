@@ -17,17 +17,6 @@ static inline int mrg_utf8_len (const unsigned char first_byte)
   return 1;
 }
 
-static inline int mrg_utf8_strlen (const char *s)
-{
-   int count;
-   if (!s)
-     return 0;
-   for (count = 0; *s; s++)
-     if ((*s & 0xC0) != 0x80)
-       count++;
-   return count;
-}
-
 static inline const char *mrg_utf8_skip (const char *s, int utf8_length)
 {
    int count;

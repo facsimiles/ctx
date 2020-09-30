@@ -1414,7 +1414,7 @@ static void vtcmd_erase_in_line (VT *vt, const char *sequence)
           for (int col = vt->cursor_x; col <= VT_MARGIN_RIGHT; col++)
             { vt_line_set_style (vt->current_line, col - 1, vt->cstyle); }
           vt->current_line->string.length = strlen (vt->current_line->string.str);
-          vt->current_line->string.utf8_length = mrg_utf8_strlen (vt->current_line->string.str);
+          vt->current_line->string.utf8_length = ctx_utf8_strlen (vt->current_line->string.str);
         }
         break;
       case 1: // clear from beginning to cursor
@@ -1426,7 +1426,7 @@ static void vtcmd_erase_in_line (VT *vt, const char *sequence)
           for (int col = VT_MARGIN_LEFT; col <= vt->cursor_x; col++)
             { vt_line_set_style (vt->current_line, col-1, vt->cstyle); }
           vt->current_line->string.length = strlen (vt->current_line->string.str);
-          vt->current_line->string.utf8_length = mrg_utf8_strlen (vt->current_line->string.str); // should be a nop
+          vt->current_line->string.utf8_length = ctx_utf8_strlen (vt->current_line->string.str); // should be a nop
         }
         break;
       case 2: // clear entire line
@@ -1447,7 +1447,7 @@ static void vtcmd_erase_in_display (VT *vt, const char *sequence)
           char *p = (char *) mrg_utf8_skip (vt->current_line->string.str, vt->cursor_x-1);
           if (p) { *p = 0; }
           vt->current_line->string.length = strlen (vt->current_line->string.str);
-          vt->current_line->string.utf8_length = mrg_utf8_strlen (vt->current_line->string.str);
+          vt->current_line->string.utf8_length = ctx_utf8_strlen (vt->current_line->string.str);
         }
         for (int col = vt->cursor_x; col <= VT_MARGIN_RIGHT; col++)
           { vt_line_set_style (vt->current_line, col-1, vt->cstyle); }

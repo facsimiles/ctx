@@ -266,6 +266,7 @@ void _ctx_set_transformation (Ctx *ctx, int transformation);
 
 Ctx *ctx_hasher_new (int width, int height, int cols, int rows);
 uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row);
+int ctx_utf8_strlen (const char *s);
 
 #ifdef _BABL_H
 #define CTX_BABL 1
@@ -464,9 +465,12 @@ _CtxGlyph
   float    y;
 };
 
-void ctx_fill_rule            (Ctx *ctx, CtxFillRule fill_rule);
-void ctx_line_cap             (Ctx *ctx, CtxLineCap cap);
-void ctx_line_join            (Ctx *ctx, CtxLineJoin join);
+void ctx_text_align           (Ctx *ctx, CtxTextAlign      align);
+void ctx_text_baseline        (Ctx *ctx, CtxTextBaseline   baseline);
+void ctx_text_direction       (Ctx *ctx, CtxTextDirection  direction);
+void ctx_fill_rule            (Ctx *ctx, CtxFillRule       fill_rule);
+void ctx_line_cap             (Ctx *ctx, CtxLineCap        cap);
+void ctx_line_join            (Ctx *ctx, CtxLineJoin       join);
 void ctx_compositing_mode     (Ctx *ctx, CtxCompositingMode mode);
 int  ctx_set_renderstream     (Ctx *ctx, void *data, int length);
 int  ctx_append_renderstream  (Ctx *ctx, void *data, int length);
@@ -5427,7 +5431,7 @@ void ctx_text_baseline (Ctx *ctx, CtxTextBaseline text_baseline)
 {
   CTX_PROCESS_U8 (CTX_TEXT_BASELINE, text_baseline);
 }
-void ctx_set_text_direction (Ctx *ctx, CtxTextDirection text_direction)
+void ctx_text_direction (Ctx *ctx, CtxTextDirection text_direction)
 {
   CTX_PROCESS_U8 (CTX_TEXT_DIRECTION, text_direction);
 }
@@ -17612,7 +17616,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_text_baseline (ctx, (CtxTextBaseline) arg(0) );
         break;
       case CTX_TEXT_DIRECTION:
-        ctx_set_text_direction (ctx, (CtxTextDirection) arg(0) );
+        ctx_text_direction (ctx, (CtxTextDirection) arg(0) );
         break;
       case CTX_IDENTITY:
         ctx_identity (ctx);
@@ -20936,6 +20940,32 @@ static int ctx_sdl_consume_events (Ctx *ctx)
  // 4 threads 29fps
 #define CTX_FB_THREADS  CTX_THREADS
 
+typedef struct _EvSource EvSource;
+
+struct _EvSource
+{
+  void   *priv; /* private storage  */
+
+  /* returns non 0 if there is events waiting */
+  int   (*has_event) (EvSource *ev_source);
+
+  /* get an event, the returned event should be freed by the caller  */
+  char *(*get_event) (EvSource *ev_source);
+
+  /* destroy/unref this instance */
+  void  (*destroy)   (EvSource *ev_source);
+
+  /* get the underlying fd, useful for using select on  */
+  int   (*get_fd)    (EvSource *ev_source);
+
+
+  void  (*set_coord) (EvSource *ev_source, double x, double y);
+  /* set_coord is needed to warp relative cursors into normalized range,
+   * like normal mice/trackpads/nipples - to obey edges and more.
+   */
+
+  /* if this returns non-0 select can be used for non-blocking.. */
+};
 
 typedef struct _CtxFb CtxFb;
 struct _CtxFb
@@ -20979,6 +21009,9 @@ struct _CtxFb
    int    fb_mapped_size;
    struct fb_var_screeninfo vinfo;
    struct fb_fix_screeninfo finfo;
+
+   EvSource *evsource[4];
+   int       evsource_count;
 };
 
 static inline int
@@ -21012,32 +21045,6 @@ static void ctx_fb_show_frame (CtxFb *fb)
   }
 }
 
-typedef struct _EvSource EvSource;
-
-struct _EvSource
-{
-  void   *priv; /* private storage  */
-
-  /* returns non 0 if there is events waiting */
-  int   (*has_event) (EvSource *ev_source);
-
-  /* get an event, the returned event should be freed by the caller  */
-  char *(*get_event) (EvSource *ev_source);
-
-  /* destroy/unref this instance */
-  void  (*destroy)   (EvSource *ev_source);
-
-  /* get the underlying fd, useful for using select on  */
-  int   (*get_fd)    (EvSource *ev_source);
-
-
-  void  (*set_coord) (EvSource *ev_source, double x, double y);
-  /* set_coord is needed to warp relative cursors into normalized range,
-   * like normal mice/trackpads/nipples - to obey edges and more.
-   */
-
-  /* if this returns non-0 select can be used for non-blocking.. */
-};
 
 #define evsource_has_event(es)   (es)->has_event((es))
 #define evsource_get_event(es)   (es)->get_event((es))
@@ -22253,6 +22260,7 @@ Ctx *ctx_new_fb (int width, int height)
 
   fb->fb_bpp = fb->vinfo.bits_per_pixel / 8;
   fb->fb_mapped_size = fb->finfo.smem_len;
+  fprintf (stderr, "%i %lu\n", fb->finfo.smem_len, fb->finfo.smem_start);
                                               
   fb->pixels = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
   ctx_fb_events = 1;
@@ -22331,6 +22339,11 @@ Ctx *ctx_new_fb (int width, int height)
 
 #endif
   ctx_flush (fb->ctx);
+
+  EvSource *kb = evsource_kb_new ();
+  fb->evsource[fb->evsource_count++] = kb;
+  kb->priv = fb;
+
   return fb->ctx;
 }
 #endif
@@ -22405,7 +22418,7 @@ Ctx *ctx_new_ui (int width, int height)
     return ctx_new_ctx (width, height);
   Ctx *ret = NULL;
 
-#if CTX_SDL
+#if CTX_SDLxxx
   ret = ctx_new_sdl (width, height);
   if (ret) return ret;
 #endif

@@ -208,7 +208,7 @@ void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
 #if 1
   int old_len = string->utf8_length;
 #else
-  int old_len = mrg_utf8_strlen (string->str);// string->utf8_length;
+  int old_len = ctx_utf8_strlen (string->str);// string->utf8_length;
 #endif
   char tmpg[3]=" ";
   if (pos == old_len)
@@ -260,7 +260,7 @@ void vt_string_replace_utf8 (VtString *string, int pos, const char *new_glyph)
   //string->length -= prev_len;
   free (rest);
   string->length = strlen (string->str);
-  string->utf8_length = mrg_utf8_strlen (string->str);
+  string->utf8_length = ctx_utf8_strlen (string->str);
 }
 
 void vt_string_replace_unichar (VtString *string, int pos, uint32_t unichar)
@@ -326,7 +326,7 @@ void vt_string_insert_utf8 (VtString *string, int pos, const char *new_glyph)
   memcpy (p + new_len, rest, strlen (rest) + 1);
   string->length += new_len;
   free (rest);
-  string->utf8_length = mrg_utf8_strlen (string->str);
+  string->utf8_length = ctx_utf8_strlen (string->str);
 }
 
 void vt_string_remove (VtString *string, int pos)
@@ -355,5 +355,5 @@ void vt_string_remove (VtString *string, int pos)
   string->str[string->length - prev_len] = 0;
   free (rest);
   string->length = strlen (string->str);
-  string->utf8_length = mrg_utf8_strlen (string->str);
+  string->utf8_length = ctx_utf8_strlen (string->str);
 }

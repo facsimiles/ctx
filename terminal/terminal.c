@@ -46,6 +46,9 @@ Ctx *ctx = NULL; // initialized in main
 void ctx_sdl_set_title (void *self, const char *new_title);
 int ctx_renderer_is_sdl (Ctx *ctx);
 
+void
+ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
+
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 {
 #if 1
@@ -475,6 +478,7 @@ static int update_vts (Ctx *ctx, int changes_in)
 
 void vt_set_ctx (VT *vt, Ctx *ctx);
 
+#if 0
 static int consume_toggle (char **argv, int *i)
 {
  int j;
@@ -486,6 +490,7 @@ static int consume_toggle (char **argv, int *i)
  *i-=1;
  return 1;
 }
+#endif
 
 static float consume_float (char **argv, int *i)
 {
@@ -540,16 +545,13 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
 {
   KeyCap *key = data1;
   KeyBoard *kb = data2;
-  KeyCap *active = NULL;
   float h = ctx_height (ctx);
   float w = ctx_width (ctx);
-  float m = h;
   int rows;
   for (int row = 0; kb->keys[row][0].label; row++)
     rows = row+1;
 
   float c = w / 14.5; // keycell
-  float x0 = 0.0f;
   float y0 = h - c * rows;
 
   key = NULL;
@@ -589,6 +591,8 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
   event->stop_propagate = 1;
   switch (event->type)
   {
+     default:
+       break;
      case CTX_DRAG_MOTION:
        if (!key)
          dirty ++;
@@ -761,12 +765,11 @@ void ctx_osk_draw (Ctx *ctx)
   float h = ctx_height (ctx);
   float w = ctx_width (ctx);
   float m = h;
-  int rows;
+  int rows = 0;
   for (int row = 0; kb->keys[row][0].label; row++)
     rows = row+1;
 
   float c = w / 14.5; // keycell
-  float x0 = 0.0f;
   float y0 = h - c * rows;
   if (w < h)
     m = w;

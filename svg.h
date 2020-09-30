@@ -6100,7 +6100,7 @@ static void cmd_down (CtxEvent *event, void *data1, void *data2)
     int strl = ctx_utf8_strlen (mrg->edited_str->str);
     for (no = mrg->cursor_pos + 1; no < mrg->cursor_pos + 256 && no < strl; no++)
     {
-      float x, y;
+      float x = 0, y = 0;
       float attempt_score = 0.0;
       mrg_set_xy (mrg, e_x, e_y);
       mrg_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
@@ -6143,7 +6143,7 @@ static void cmd_up (CtxEvent *event, void *data1, void *data2)
 {
   Mrg *mrg = data1;
   float e_x, e_y, e_s, e_e, e_em;
-  float cx, cy;
+  float cx = 0.0f, cy = 0.0f;
   mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
 
   mrg_set_edge_left  (mrg, e_s - PROP(padding_left));
@@ -6160,7 +6160,7 @@ static void cmd_up (CtxEvent *event, void *data1, void *data2)
     float best_score = 1000000000000.0;
     for (no = mrg->cursor_pos - 1; no>= mrg->cursor_pos - 256 && no > 0; no--)
     {
-      float x, y;
+      float x = 0, y = 0;
       float attempt_score = 0.0;
       mrg_set_xy (mrg, e_x, e_y);
       mrg_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
@@ -6909,6 +6909,9 @@ static MrgEntity entities[]={
   {0, NULL}
 };
 
+void
+ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
+
 static void
 mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
 {
@@ -6916,7 +6919,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
   {
     char *s;
     int numbers = 0;
-    double number[12];
+    double number[12]={0.0,};
     ctx_matrix_identity (matrix);
     s = (void*) ctx_strchr (str, '(');
     if (!s)
@@ -6943,7 +6946,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
   {
     char *s;
     int numbers = 0;
-    double number[12];
+    double number[12]={0,0};
     ctx_matrix_identity (matrix);
     s = (void*) ctx_strchr (str, '(');
     if (!s)
@@ -6959,7 +6962,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
         numbers++;
       }
     }
-    if (numbers == 1)
+    if (numbers <= 1)
       ctx_matrix_scale (matrix, number[0], number[0]);
     else
       ctx_matrix_scale (matrix, number[0], number[1]);
