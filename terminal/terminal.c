@@ -935,6 +935,8 @@ int terminal_main (int argc, char **argv)
     height = rows * font_size;
     width = cols * (int)(font_size / 2);
     ctx  = ctx_new_ui (width, height);
+    width = ctx_width (ctx);
+    height = ctx_height (ctx);
   }
   else
   {
@@ -946,6 +948,8 @@ int terminal_main (int argc, char **argv)
     if ((int)(font_size /2) * 80 < width)
       font_size -= 1;
   }
+
+
   if (argv[1] == NULL)
   {
     active = add_client (vt_find_shell_command(), 0, 0, width, height, 0);

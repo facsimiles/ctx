@@ -3081,7 +3081,8 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
 
   if (idx + len > CTX_STRINGPOOL_SIZE)
   {
-    fprintf (stderr, "blowing varpool size [%c%c%c..]\n", data[0],data[1], data[1]?data[2]:0);
+    fprintf (stderr, "blowing varpool size [%c..]\n", data[0]);
+    //fprintf (stderr, "blowing varpool size [%c%c%c..]\n", data[0],data[1], data[1]?data[2]:0);
 #if 0
     for (int i = 0; i< CTX_STRINGPOOL_SIZE; i++)
     {
@@ -3255,7 +3256,7 @@ static void ctx_cmyk_to_rgb (float c, float m, float y, float k, float *r, float
   *b = (1.0f-y) * (1.0f-k);
 }
 
-static void ctx_rgb_to_cmyk (float r, float g, float b,
+static inline void ctx_rgb_to_cmyk (float r, float g, float b,
                              float *c_out, float *m_out, float *y_out, float *k_out)
 {
   float c = 1.0f - r;
@@ -20655,7 +20656,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
   return 1;
 }
 
-#define CTX_THREADS      2
+#define CTX_THREADS      4
 
 #if CTX_SDL
 
@@ -20926,6 +20927,8 @@ static int ctx_sdl_consume_events (Ctx *ctx)
 
 
 #if CTX_FB
+  #include <linux/fb.h>
+  #include <sys/mman.h>
 
  // 1 threads 13fps
  // 2 threads 20fps
@@ -20937,20 +20940,18 @@ static int ctx_sdl_consume_events (Ctx *ctx)
 typedef struct _CtxFb CtxFb;
 struct _CtxFb
 {
-   void (*render)    (void *braille, CtxCommand *command);
-   void (*flush)     (void *braille);
-   void (*free)      (void *braille);
+   void (*render) (void *fb, CtxCommand *command);
+   void (*flush)  (void *fb);
+   void (*free)   (void *fb);
    Ctx          *ctx;
    Ctx          *ctx_copy;
    int           width;
    int           height;
    int           cols;
    int           rows;
+
    uint8_t      *pixels;
    int           was_down;
-   SDL_Window   *window;
-   SDL_Renderer *renderer;
-   SDL_Texture  *texture;
    int           quit;
    int           key_balance;
    int           key_repeat;
@@ -20970,6 +20971,14 @@ struct _CtxFb
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
+                                                           //
+   int    fb_fd;
+   char  *fb_path;
+   int    fb_bits;
+   int    fb_bpp;
+   int    fb_mapped_size;
+   struct fb_var_screeninfo vinfo;
+   struct fb_fix_screeninfo finfo;
 };
 
 static inline int
@@ -20989,11 +20998,15 @@ static void ctx_fb_show_frame (CtxFb *fb)
   if (fb->shown_frame != fb->render_frame &&
       fb_render_threads_done (fb) == CTX_FB_THREADS)
   {
+#if 0
     SDL_UpdateTexture (fb->texture, NULL,
                       (void*)fb->pixels, fb->width * sizeof (Uint32));
     SDL_RenderClear (fb->renderer);
     SDL_RenderCopy (fb->renderer, fb->texture, NULL, NULL);
     SDL_RenderPresent (fb->renderer);
+#endif
+    //__u32 dummy = 0;
+    ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
     fb->shown_frame = fb->render_frame;
   }
 }
@@ -21005,6 +21018,7 @@ static int ctx_fb_consume_events (Ctx *ctx)
   int got_events = 0;
 
   ctx_fb_show_frame (fb);
+  return 0;
 
   while (SDL_PollEvent (&event))
   {
@@ -21139,6 +21153,7 @@ static int ctx_fb_consume_events (Ctx *ctx)
         }
         break;
       case SDL_WINDOWEVENT:
+#if 0
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
           while (fb->shown_frame != fb->render_frame) {
@@ -21165,6 +21180,7 @@ static int ctx_fb_consume_events (Ctx *ctx)
           ctx_set_size (fb->ctx, width, height);
           ctx_set_size (fb->ctx_copy, width, height);
         }
+#endif
         break;
     }
   }
@@ -21497,7 +21513,7 @@ void sdl_render_fun (void **data)
 int ctx_renderer_is_sdl (Ctx *ctx)
 {
   if (ctx->renderer &&
-      ctx->renderer->free == ctx_sdl_free)
+      ctx->renderer->free == (void*)ctx_sdl_free)
           return 1;
   return 0;
 }
@@ -21643,9 +21659,12 @@ inline static void ctx_fb_flush (CtxFb *sdl)
 
 void ctx_fb_free (CtxFb *sdl)
 {
+#if 0
   free (sdl->pixels);
+#endif
   for (int i = 0 ; i < CTX_THREADS; i++)
     ctx_free (sdl->host[i]);
+
   free (sdl);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
@@ -21711,7 +21730,7 @@ void fb_render_fun (void **data)
 int ctx_renderer_is_fb (Ctx *ctx)
 {
   if (ctx->renderer &&
-      ctx->renderer->free == ctx_fb_free)
+      ctx->renderer->free == (void*)ctx_fb_free)
           return 1;
   return 0;
 }
@@ -21720,6 +21739,92 @@ Ctx *ctx_new_fb (int width, int height)
 {
 #if CTX_RASTERIZER
   CtxFb *fb = calloc (sizeof (CtxFb), 1);
+
+  fb->fb_fd = open ("/dev/fb0", O_RDWR);
+  if (fb->fb_fd > 0)
+    fb->fb_path = strdup ("/dev/fb0");
+  else
+  {
+    fb->fb_fd = open ("/dev/graphics/fb0", O_RDWR);
+    if (fb->fb_fd > 0)
+    {
+      fb->fb_path = strdup ("/dev/graphics/fb0");
+    }
+    else
+    {
+      free (fb);
+      return NULL;
+    }
+  }
+
+  if (ioctl(fb->fb_fd, FBIOGET_FSCREENINFO, &fb->finfo))
+    {
+      fprintf (stderr, "error getting fbinfo\n");
+      close (fb->fb_fd);
+      free (fb->fb_path);
+      free (fb);
+      return NULL;
+    }
+
+   if (ioctl(fb->fb_fd, FBIOGET_VSCREENINFO, &fb->vinfo))
+     {
+       fprintf (stderr, "error getting fbinfo\n");
+      close (fb->fb_fd);
+      free (fb->fb_path);
+      free (fb);
+      return NULL;
+     }
+
+
+  fprintf (stderr, "%s\n", fb->fb_path);
+  width = fb->width = fb->vinfo.xres;
+  height = fb->height = fb->vinfo.yres;
+
+  fb->fb_bits = fb->vinfo.bits_per_pixel;
+  fprintf (stderr, "fb bits: %i\n", fb->fb_bits);
+
+  if (fb->fb_bits == 16)
+    fb->fb_bits =
+      fb->vinfo.red.length +
+      fb->vinfo.green.length +
+      fb->vinfo.blue.length;
+
+   else if (fb->fb_bits == 8)
+  {
+    unsigned short red[256],  green[256],  blue[256];
+    unsigned short original_red[256];
+    unsigned short original_green[256];
+    unsigned short original_blue[256];
+    struct fb_cmap cmap = {0, 256, red, green, blue, NULL};
+    struct fb_cmap original_cmap = {0, 256, original_red, original_green, original_blue, NULL};
+    int i;
+
+    /* do we really need to restore it ? */
+    if (ioctl (fb->fb_fd, FBIOPUTCMAP, &original_cmap) == -1)
+    {
+      fprintf (stderr, "palette initialization problem %i\n", __LINE__);
+    }
+
+    for (i = 0; i < 256; i++)
+    {
+      red[i]   = ((( i >> 5) & 0x7) << 5) << 8;
+      green[i] = ((( i >> 2) & 0x7) << 5) << 8;
+      blue[i]  = ((( i >> 0) & 0x3) << 6) << 8;
+    }
+
+    if (ioctl (fb->fb_fd, FBIOPUTCMAP, &cmap) == -1)
+    {
+      fprintf (stderr, "palette initialization problem %i\n", __LINE__);
+    }
+  }
+
+  fb->fb_bpp = fb->vinfo.bits_per_pixel / 8;
+  fb->fb_mapped_size = fb->finfo.smem_len;
+                                              
+  fb->pixels = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
+  ctx_fb_events = 1;
+  //fprintf (stderr, "%i %ix%i %i\n", fb->fb_mapped_size, fb->width, fb->height, fb->width * fb->height * 4);
+#if 0
   if (width <= 0 || height <= 0)
   {
     width  = 640;
@@ -21734,7 +21839,6 @@ Ctx *ctx_new_fb (int width, int height)
      free (fb);
      return NULL;
   }
-  ctx_fb_events = 1;
   fb->texture = SDL_CreateTexture (fb->renderer,
         SDL_PIXELFORMAT_ABGR8888,
         SDL_TEXTUREACCESS_STREAMING,
@@ -21742,14 +21846,16 @@ Ctx *ctx_new_fb (int width, int height)
 
   SDL_StartTextInput ();
   SDL_EnableScreenSaver ();
+#endif
 
   fb->ctx = ctx_new ();
   fb->ctx_copy = ctx_new ();
   fb->width  = width;
   fb->height = height;
+  fprintf (stderr, ".. %i %i\n", width, height);
   fb->cols = 80;
   fb->rows = 20;
-  fb->pixels = (uint8_t*)malloc (width * height * 4);
+//fb->pixels = (uint8_t*)malloc (width * height * 4);
   ctx_set_renderer (fb->ctx, fb);
   ctx_set_renderer (fb->ctx_copy, fb);
 
@@ -21865,13 +21971,13 @@ Ctx *ctx_new_ui (int width, int height)
           // full blown ctx - in terminal or standalone
     return ctx_new_ctx (width, height);
   Ctx *ret = NULL;
-#if CTX_FB
-  ret = ctx_new_fb (width, height);
-  if (ret) return ret;
-#endif
 
 #if CTX_SDL
   ret = ctx_new_sdl (width, height);
+  if (ret) return ret;
+#endif
+#if CTX_FB
+  ret = ctx_new_fb (width, height);
   if (ret) return ret;
 #endif
 
