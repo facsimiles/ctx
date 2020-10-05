@@ -306,7 +306,6 @@ int ctx_utf8_strlen (const char *s);
 #define ctx_unlock_mutex(a)  
 #endif
 
-
 #if CTX_CAIRO
 
 /* render the deferred commands of a ctx context to a cairo
@@ -20660,7 +20659,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
   return 1;
 }
 
-#define CTX_THREADS      8
+#define CTX_THREADS      4
 
 #if CTX_SDL
 
@@ -20701,8 +20700,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 6
-#define CTX_HASH_COLS 3
+#define CTX_HASH_ROWS 4
+#define CTX_HASH_COLS 4
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20932,6 +20931,8 @@ static int ctx_sdl_consume_events (Ctx *ctx)
 
 #if CTX_FB
   #include <linux/fb.h>
+  #include <linux/vt.h>
+  #include <linux/kd.h>
   #include <sys/mman.h>
 
  // 1 threads 13fps
@@ -20980,7 +20981,10 @@ struct _CtxFb
    int           cols;
    int           rows;
 
-   uint8_t      *pixels;
+   //uint8_t      *pixels;
+   uint8_t      *scratch_fb;
+   uint8_t      *fb;
+
    int           was_down;
    int           quit;
    int           key_balance;
@@ -20995,8 +20999,6 @@ struct _CtxFb
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 6
-#define CTX_HASH_COLS 3
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -21009,7 +21011,9 @@ struct _CtxFb
    int    fb_mapped_size;
    struct fb_var_screeninfo vinfo;
    struct fb_fix_screeninfo finfo;
-
+   int       vt;
+   int       tty;
+   int       vt_active;
    EvSource *evsource[4];
    int       evsource_count;
 };
@@ -21038,9 +21042,24 @@ static void ctx_fb_show_frame (CtxFb *fb)
     SDL_RenderCopy (fb->renderer, fb->texture, NULL, NULL);
     SDL_RenderPresent (fb->renderer);
 #endif
+    if (fb->vt_active)
+    {
+#if 0
+     memcpy (fb->fb, fb->scratch_fb, fb->width * fb->height *  4);
+#else
+    int max = fb->width * fb->height * 4;
+    for (int o = 0; o < max; o+=4)
+    {
+      fb->fb[o+0] = fb->scratch_fb[o+2];
+      fb->fb[o+1] = fb->scratch_fb[o+1];
+      fb->fb[o+2] = fb->scratch_fb[o+0];
+    }
+#endif
+
     ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
     //__u32 dummy = 0;
     //ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
+    }
     fb->shown_frame = fb->render_frame;
   }
 }
@@ -21106,6 +21125,7 @@ static void real_evsource_kb_destroy (int sign)
              fprintf (stderr, "%i %i %i %i %i %i %i\n", SIGSEGV, SIGABRT, SIGBUS, SIGKILL, SIGINT, SIGTERM, SIGQUIT);
   }
   tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
+  fprintf (stderr, "evsource kb destroy\n");
 }
 
 static void evsource_kb_destroy (int sign)
@@ -21161,171 +21181,170 @@ static int evsource_kb_has_event (void)
  */
 typedef struct MmmKeyCode {
   char *nick;          /* programmers name for key */
-  char *label;         /* utf8 label for key */
   char  sequence[10];  /* terminal sequence */
 } MmmKeyCode;
 static const MmmKeyCode ufb_keycodes[]={
-  {"up",                  "↑",     "\e[A"},
-  {"down",                "↓",     "\e[B"},
-  {"right",               "→",     "\e[C"},
-  {"left",                "←",     "\e[D"},
+  {"up",                  "\e[A"},
+  {"down",                "\e[B"},
+  {"right",               "\e[C"},
+  {"left",                "\e[D"},
 
-  {"shift-up",            "⇧↑",    "\e[1;2A"},
-  {"shift-down",          "⇧↓",    "\e[1;2B"},
-  {"shift-right",         "⇧→",    "\e[1;2C"},
-  {"shift-left",          "⇧←",    "\e[1;2D"},
+  {"shift-up",            "\e[1;2A"},
+  {"shift-down",          "\e[1;2B"},
+  {"shift-right",         "\e[1;2C"},
+  {"shift-left",          "\e[1;2D"},
 
-  {"alt-up",              "^↑",    "\e[1;3A"},
-  {"alt-down",            "^↓",    "\e[1;3B"},
-  {"alt-right",           "^→",    "\e[1;3C"},
-  {"alt-left",            "^←",    "\e[1;3D"},
-  {"alt-shift-up",        "alt-s↑", "\e[1;4A"},
-  {"alt-shift-down",      "alt-s↓", "\e[1;4B"},
-  {"alt-shift-right",     "alt-s→", "\e[1;4C"},
-  {"alt-shift-left",      "alt-s←", "\e[1;4D"},
+  {"alt-up",              "\e[1;3A"},
+  {"alt-down",            "\e[1;3B"},
+  {"alt-right",           "\e[1;3C"},
+  {"alt-left",            "\e[1;3D"},
+  {"alt-shift-up",         "\e[1;4A"},
+  {"alt-shift-down",       "\e[1;4B"},
+  {"alt-shift-right",      "\e[1;4C"},
+  {"alt-shift-left",       "\e[1;4D"},
 
-  {"control-up",          "^↑",    "\e[1;5A"},
-  {"control-down",        "^↓",    "\e[1;5B"},
-  {"control-right",       "^→",    "\e[1;5C"},
-  {"control-left",        "^←",    "\e[1;5D"},
+  {"control-up",          "\e[1;5A"},
+  {"control-down",        "\e[1;5B"},
+  {"control-right",       "\e[1;5C"},
+  {"control-left",        "\e[1;5D"},
 
   /* putty */
-  {"control-up",          "^↑",    "\eOA"},
-  {"control-down",        "^↓",    "\eOB"},
-  {"control-right",       "^→",    "\eOC"},
-  {"control-left",        "^←",    "\eOD"},
+  {"control-up",          "\eOA"},
+  {"control-down",        "\eOB"},
+  {"control-right",       "\eOC"},
+  {"control-left",        "\eOD"},
 
-  {"control-shift-up",    "^⇧↑",   "\e[1;6A"},
-  {"control-shift-down",  "^⇧↓",   "\e[1;6B"},
-  {"control-shift-right", "^⇧→",   "\e[1;6C"},
-  {"control-shift-left",  "^⇧←",   "\e[1;6D"},
+  {"control-shift-up",    "\e[1;6A"},
+  {"control-shift-down",  "\e[1;6B"},
+  {"control-shift-right", "\e[1;6C"},
+  {"control-shift-left",  "\e[1;6D"},
 
-  {"control-up",          "^↑",    "\eOa"},
-  {"control-down",        "^↓",    "\eOb"},
-  {"control-right",       "^→",    "\eOc"},
-  {"control-left",        "^←",    "\eOd"},
+  {"control-up",          "\eOa"},
+  {"control-down",        "\eOb"},
+  {"control-right",       "\eOc"},
+  {"control-left",        "\eOd"},
 
-  {"shift-up",            "⇧↑",    "\e[a"},
-  {"shift-down",          "⇧↓",    "\e[b"},
-  {"shift-right",         "⇧→",    "\e[c"},
-  {"shift-left",          "⇧←",    "\e[d"},
+  {"shift-up",            "\e[a"},
+  {"shift-down",          "\e[b"},
+  {"shift-right",         "\e[c"},
+  {"shift-left",          "\e[d"},
 
-  {"insert",              "ins",   "\e[2~"},
-  {"delete",              "del",   "\e[3~"},
-  {"page-up",             "PgUp",  "\e[5~"},
-  {"page-down",           "PdDn",  "\e[6~"},
-  {"home",                "Home",  "\eOH"},
-  {"end",                 "End",   "\eOF"},
-  {"home",                "Home",  "\e[H"},
-  {"end",                 "End",   "\e[F"},
- {"control-delete",      "^del",  "\e[3;5~"},
-  {"shift-delete",        "⇧del",  "\e[3;2~"},
-  {"control-shift-delete","^⇧del", "\e[3;6~"},
+  {"insert",              "\e[2~"},
+  {"delete",              "\e[3~"},
+  {"page-up",             "\e[5~"},
+  {"page-down",           "\e[6~"},
+  {"home",                "\eOH"},
+  {"end",                 "\eOF"},
+  {"home",                "\e[H"},
+  {"end",                 "\e[F"},
+ {"control-delete",       "\e[3;5~"},
+  {"shift-delete",        "\e[3;2~"},
+  {"control-shift-delete","\e[3;6~"},
 
-  {"F1",        "F1",  "\e[11~"},
-  {"F2",        "F2",  "\e[12~"},
-  {"F3",        "F3",  "\e[13~"},
-  {"F4",        "F4",  "\e[14~"},
-  {"F1",        "F1",  "\eOP"},
-  {"F2",        "F2",  "\eOQ"},
-  {"F3",        "F3",  "\eOR"},
-  {"F4",        "F4",  "\eOS"},
-  {"F5",        "F5",  "\e[15~"},
-  {"F6",        "F6",  "\e[16~"},
-  {"F7",        "F7",  "\e[17~"},
-  {"F8",        "F8",  "\e[18~"},
-  {"F9",        "F9",  "\e[19~"},
-  {"F9",        "F9",  "\e[20~"},
-  {"F10",       "F10", "\e[21~"},
-  {"F11",       "F11", "\e[22~"},
-  {"F12",       "F12", "\e[23~"},
-  {"tab",       "↹",  {9, '\0'}},
-  {"shift-tab", "shift+↹",  "\e[Z"},
-  {"backspace", "⌫",  {127, '\0'}},
-  {"space",     "␣",   " "},
-  {"\e",        "␛",  "\e"},
-  {"return",    "⏎",  {10,0}},
-  {"return",    "⏎",  {13,0}},
+  {"F1",        "\e[11~"},
+  {"F2",        "\e[12~"},
+  {"F3",        "\e[13~"},
+  {"F4",        "\e[14~"},
+  {"F1",        "\eOP"},
+  {"F2",        "\eOQ"},
+  {"F3",        "\eOR"},
+  {"F4",        "\eOS"},
+  {"F5",        "\e[15~"},
+  {"F6",        "\e[16~"},
+  {"F7",        "\e[17~"},
+  {"F8",        "\e[18~"},
+  {"F9",        "\e[19~"},
+  {"F9",        "\e[20~"},
+  {"F10",       "\e[21~"},
+  {"F11",       "\e[22~"},
+  {"F12",       "\e[23~"},
+  {"tab",      {9, '\0'}},
+  {"shift-tab",  "\e[Z"},
+  {"backspace",{127, '\0'}},
+  {"space",     " "},
+  {"\e",       "\e"},
+  {"return",   {10,0}},
+  {"return",   {13,0}},
   /* this section could be autogenerated by code */
-  {"control-a", "^A",  {1,0}},
-  {"control-b", "^B",  {2,0}},
-  {"control-c", "^C",  {3,0}},
-  {"control-d", "^D",  {4,0}},
-  {"control-e", "^E",  {5,0}},
-  {"control-f", "^F",  {6,0}},
-  {"control-g", "^G",  {7,0}},
-  {"control-h", "^H",  {8,0}}, /* backspace? */
-  {"control-i", "^I",  {9,0}},
-  {"control-j", "^J",  {10,0}},
- {"control-k", "^K",  {11,0}},
-  {"control-l", "^L",  {12,0}},
-  {"control-n", "^N",  {14,0}},
-  {"control-o", "^O",  {15,0}},
-  {"control-p", "^P",  {16,0}},
-  {"control-q", "^Q",  {17,0}},
-  {"control-r", "^R",  {18,0}},
-  {"control-s", "^S",  {19,0}},
-  {"control-t", "^T",  {20,0}},
-  {"control-u", "^U",  {21,0}},
-  {"control-v", "^V",  {22,0}},
-  {"control-w", "^W",  {23,0}},
-  {"control-x", "^X",  {24,0}},
-  {"control-y", "^Y",  {25,0}},
-  {"control-z", "^Z",  {26,0}},
-  {"alt-0",     "%0",  "\e0"},
-  {"alt-1",     "%1",  "\e1"},
-  {"alt-2",     "%2",  "\e2"},
-  {"alt-3",     "%3",  "\e3"},
-  {"alt-4",     "%4",  "\e4"},
-  {"alt-5",     "%5",  "\e5"},
-  {"alt-6",     "%6",  "\e6"},
-  {"alt-7",     "%7",  "\e7"}, /* backspace? */
-  {"alt-8",     "%8",  "\e8"},
-  {"alt-9",     "%9",  "\e9"},
-  {"alt-+",     "%+",  "\e+"},
-  {"alt--",     "%-",  "\e-"},
-  {"alt-/",     "%/",  "\e/"},
-  {"alt-a",     "%A",  "\ea"},
-  {"alt-b",     "%B",  "\eb"},
-  {"alt-c",     "%C",  "\ec"},
-  {"alt-d",     "%D",  "\ed"},
-  {"alt-e",     "%E",  "\ee"},
-  {"alt-f",     "%F",  "\ef"},
-  {"alt-g",     "%G",  "\eg"},
-  {"alt-h",     "%H",  "\eh"}, /* backspace? */
-  {"alt-i",     "%I",  "\ei"},
-  {"alt-j",     "%J",  "\ej"},
-{"alt-k",     "%K",  "\ek"},
-  {"alt-l",     "%L",  "\el"},
-  {"alt-n",     "%N",  "\em"},
-  {"alt-n",     "%N",  "\en"},
-  {"alt-o",     "%O",  "\eo"},
-  {"alt-p",     "%P",  "\ep"},
-  {"alt-q",     "%Q",  "\eq"},
-  {"alt-r",     "%R",  "\er"},
-  {"alt-s",     "%S",  "\es"},
-  {"alt-t",     "%T",  "\et"},
-  {"alt-u",     "%U",  "\eu"},
-  {"alt-v",     "%V",  "\ev"},
-  {"alt-w",     "%W",  "\ew"},
-  {"alt-x",     "%X",  "\ex"},
-  {"alt-y",     "%Y",  "\ey"},
-  {"alt-z",     "%Z",  "\ez"},
+  {"control-a",   {1,0}},
+  {"control-b",   {2,0}},
+  {"control-c",   {3,0}},
+  {"control-d",   {4,0}},
+  {"control-e",   {5,0}},
+  {"control-f",   {6,0}},
+  {"control-g",   {7,0}},
+  {"control-h",   {8,0}}, /* backspace? */
+  {"control-i",   {9,0}},
+  {"control-j",   {10,0}},
+ {"control-k",  {11,0}},
+  {"control-l",   {12,0}},
+  {"control-n",   {14,0}},
+  {"control-o",   {15,0}},
+  {"control-p",   {16,0}},
+  {"control-q",   {17,0}},
+  {"control-r",   {18,0}},
+  {"control-s",   {19,0}},
+  {"control-t",   {20,0}},
+  {"control-u",   {21,0}},
+  {"control-v",   {22,0}},
+  {"control-w",   {23,0}},
+  {"control-x",   {24,0}},
+  {"control-y",   {25,0}},
+  {"control-z",   {26,0}},
+  {"alt-0",       "\e0"},
+  {"alt-1",       "\e1"},
+  {"alt-2",       "\e2"},
+  {"alt-3",       "\e3"},
+  {"alt-4",       "\e4"},
+  {"alt-5",       "\e5"},
+  {"alt-6",       "\e6"},
+  {"alt-7",       "\e7"}, /* backspace? */
+  {"alt-8",       "\e8"},
+  {"alt-9",       "\e9"},
+  {"alt-+",       "\e+"},
+  {"alt--",       "\e-"},
+  {"alt-/",       "\e/"},
+  {"alt-a",       "\ea"},
+  {"alt-b",       "\eb"},
+  {"alt-c",       "\ec"},
+  {"alt-d",       "\ed"},
+  {"alt-e",       "\ee"},
+  {"alt-f",       "\ef"},
+  {"alt-g",       "\eg"},
+  {"alt-h",       "\eh"}, /* backspace? */
+  {"alt-i",       "\ei"},
+  {"alt-j",       "\ej"},
+{"alt-k",     "\ek"},
+  {"alt-l",       "\el"},
+  {"alt-n",       "\em"},
+  {"alt-n",       "\en"},
+  {"alt-o",       "\eo"},
+  {"alt-p",       "\ep"},
+  {"alt-q",       "\eq"},
+  {"alt-r",       "\er"},
+  {"alt-s",       "\es"},
+  {"alt-t",       "\et"},
+  {"alt-u",       "\eu"},
+  {"alt-v",       "\ev"},
+  {"alt-w",       "\ew"},
+  {"alt-x",       "\ex"},
+  {"alt-y",       "\ey"},
+  {"alt-z",       "\ez"},
   /* Linux Console  */
-  {"home",      "Home", "\e[1~"},
-  {"end",       "End",  "\e[4~"},
-  {"F1",        "F1",   "\e[[A"},
-  {"F2",        "F2",   "\e[[B"},
-  {"F3",        "F3",   "\e[[C"},
-  {"F4",        "F4",   "\e[[D"},
-  {"F5",        "F5",   "\e[[E"},
-  {"F6",        "F6",   "\e[[F"},
-  {"F7",        "F7",   "\e[[G"},
-  {"F8",        "F8",   "\e[[H"},
-  {"F9",        "F9",   "\e[[I"},
-  {"F10",       "F10",  "\e[[J"},
-  {"F11",       "F11",  "\e[[K"},
-  {"F12",       "F12",  "\e[[L"},
+  {"home",       "\e[1~"},
+  {"end",        "\e[4~"},
+  {"F1",         "\e[[A"},
+  {"F2",         "\e[[B"},
+  {"F3",         "\e[[C"},
+  {"F4",         "\e[[D"},
+  {"F5",         "\e[[E"},
+  {"F6",         "\e[[F"},
+  {"F7",         "\e[[G"},
+  {"F8",         "\e[[H"},
+  {"F9",         "\e[[I"},
+  {"F10",        "\e[[J"},
+  {"F11",        "\e[[K"},
+  {"F12",        "\e[[L"},
   {NULL, }
 };
 static int fb_keyboard_match_keycode (const char *buf, int length, const MmmKeyCode **ret)
@@ -21450,6 +21469,28 @@ EvSource *evsource_kb_new (void)
   return NULL;
 }
 
+static int event_check_pending (CtxFb *fb)
+{
+  int events = 0;
+  for (int i = 0; i < fb->evsource_count; i++)
+  {
+    while (evsource_has_event (fb->evsource[i]))
+    {
+      char *event = evsource_get_event (fb->evsource[i]);
+      if (event)
+      {
+        //if (fb->vt_active)
+        {
+          //fprintf (stderr, "ev %s\n", event);
+          ctx_key_press (fb->ctx, 0, event, 0);
+          events++;
+        }
+        free (event);
+      }
+    }
+  }
+  return events;
+}
 
 static int ctx_fb_consume_events (Ctx *ctx)
 {
@@ -21458,6 +21499,7 @@ static int ctx_fb_consume_events (Ctx *ctx)
   int got_events = 0;
 
   ctx_fb_show_frame (fb);
+  event_check_pending (fb);
   return 0;
 
   while (SDL_PollEvent (&event))
@@ -22040,44 +22082,44 @@ Ctx *ctx_new_sdl (int width, int height)
 
 #if CTX_FB
 
-inline static void ctx_fb_flush (CtxFb *sdl)
+inline static void ctx_fb_flush (CtxFb *fb)
 {
   //int width =  sdl->width;
   int count = 0;
-  while (sdl->shown_frame != sdl->render_frame && count < 10000)
+  while (fb->shown_frame != fb->render_frame && count < 10000)
   {
     usleep (10);
-    ctx_fb_show_frame (sdl);
+    ctx_fb_show_frame (fb);
     count++;
   }
   if (count >= 10000)
   {
     fprintf (stderr, "!\n");
-    sdl->shown_frame = sdl->render_frame;
+    fb->shown_frame = fb->render_frame;
   }
-  if (sdl->shown_frame == sdl->render_frame)
+  if (fb->shown_frame == fb->render_frame)
   {
-    Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
+    Ctx *hasher = ctx_hasher_new (fb->width, fb->height,
                       CTX_HASH_COLS, CTX_HASH_ROWS);
-    ctx_reset (sdl->ctx_copy);
-    ctx_set_renderstream (sdl->ctx_copy, &sdl->ctx->renderstream.entries[0],
-                                         sdl->ctx->renderstream.count * 9);
-    ctx_render_ctx (sdl->ctx_copy, hasher);
+    ctx_reset (fb->ctx_copy);
+    ctx_set_renderstream (fb->ctx_copy, &fb->ctx->renderstream.entries[0],
+                                         fb->ctx->renderstream.count * 9);
+    ctx_render_ctx (fb->ctx_copy, hasher);
 
     int dirty_tiles = 0;
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
         uint32_t new_hash = ctx_hash_get_hash (hasher, col, row);
-        if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col] || 1)
+        if (new_hash != fb->hashes[row * CTX_HASH_COLS + col] || 1)
         {
-          sdl->hashes[row * CTX_HASH_COLS + col] = new_hash;
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+          fb->hashes[row * CTX_HASH_COLS + col] = new_hash;
+          fb->tile_affinity[row * CTX_HASH_COLS + col] = 1;
           dirty_tiles++;
         }
         else
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = -1;
+          fb->tile_affinity[row * CTX_HASH_COLS + col] = -1;
         }
       }
     int dirty_no = 0;
@@ -22085,27 +22127,28 @@ inline static void ctx_fb_flush (CtxFb *sdl)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
+        if (fb->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_THREADS-1) / dirty_tiles;
+          fb->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_THREADS-1) / dirty_tiles;
           dirty_no++;
         }
       }
 
     ctx_free (hasher);
-    sdl->render_frame = ++sdl->frame;
+    fb->render_frame = ++fb->frame;
   }
 }
 
-void ctx_fb_free (CtxFb *sdl)
+void ctx_fb_free (CtxFb *fb)
 {
-#if 0
-  free (sdl->pixels);
-#endif
+  free (fb->scratch_fb);
+  memset (fb->fb, 0, fb->width * fb->height *  4);
   for (int i = 0 ; i < CTX_THREADS; i++)
-    ctx_free (sdl->host[i]);
-
-  free (sdl);
+    ctx_free (fb->host[i]);
+  system("stty sane");
+  
+  ioctl (0, KDSETMODE, KD_TEXT);
+  free (fb);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
@@ -22113,30 +22156,30 @@ static
 void fb_render_fun (void **data)
 {
   int      no = (size_t)data[0];
-  CtxFb *sdl = data[1];
+  CtxFb *fb = data[1];
 
-  while (!sdl->quit)
+  while (!fb->quit)
   {
-    if (sdl->render_frame != sdl->rendered_frame[no])
+    if (fb->render_frame != fb->rendered_frame[no])
     {
       int hno = 0;
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
         {
-          if (sdl->tile_affinity[hno]==no)
+          if (fb->tile_affinity[hno]==no)
           {
-            int x0 = ((sdl->width)/CTX_HASH_COLS) * col;
-            int y0 = ((sdl->height)/CTX_HASH_ROWS) * row;
-            int width = sdl->width / CTX_HASH_COLS;
-            int height = sdl->height / CTX_HASH_ROWS;
+            int x0 = ((fb->width)/CTX_HASH_COLS) * col;
+            int y0 = ((fb->height)/CTX_HASH_ROWS) * row;
+            int width = fb->width / CTX_HASH_COLS;
+            int height = fb->height / CTX_HASH_ROWS;
 
-            Ctx *host = sdl->host[no];
+            Ctx *host = fb->host[no];
             CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
 #if 1 // merge horizontally adjecant tiles of same affinity into one job
             while (col + 1 < CTX_HASH_COLS &&
-                   sdl->tile_affinity[hno+1] == no)
+                   fb->tile_affinity[hno+1] == no)
             {
-              width += sdl->width / CTX_HASH_COLS;
+              width += fb->width / CTX_HASH_COLS;
               col++;
               hno++;
             }
@@ -22144,20 +22187,20 @@ void fb_render_fun (void **data)
 
             ctx_rasterizer_init (rasterizer,
                                  host, NULL, &host->state,
-                                 &sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
+                                 &fb->scratch_fb[fb->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
-                                 sdl->width*4, CTX_FORMAT_RGBA8);
-            ((CtxRasterizer*)host->renderer)->texture_source = sdl->ctx;
+                                 fb->width*4, CTX_FORMAT_RGBA8);
+            ((CtxRasterizer*)host->renderer)->texture_source = fb->ctx;
             ctx_translate (host, -x0, -y0);
-            ctx_render_ctx (sdl->ctx_copy, host);
+            ctx_render_ctx (fb->ctx_copy, host);
           }
         }
-      sdl->rendered_frame[no] = sdl->render_frame;
+      fb->rendered_frame[no] = fb->render_frame;
 
-      if (fb_render_threads_done (sdl) == CTX_FB_THREADS)
+      if (fb_render_threads_done (fb) == CTX_FB_THREADS)
       {
-   //   ctx_render_stream (sdl->ctx_copy, stdout, 1);
-        ctx_reset (sdl->ctx_copy);
+   //   ctx_render_stream (fb->ctx_copy, stdout, 1);
+        ctx_reset (fb->ctx_copy);
       }
     }
     else
@@ -22175,11 +22218,30 @@ int ctx_renderer_is_fb (Ctx *ctx)
   return 0;
 }
 
+static CtxFb *ctx_fb = NULL;
+static void vt_switch_cb (int sig)
+{
+  if (sig == SIGUSR1)
+  {
+    ioctl (0, VT_RELDISP, 1);
+    ctx_fb->vt_active = 0;
+    ioctl (0, KDSETMODE, KD_TEXT);
+  }
+  else
+  {
+    ioctl (0, VT_RELDISP, VT_ACKACQ);
+    ctx_fb->vt_active = 1;
+    // queue draw
+    ctx_fb->render_frame = ++ctx_fb->frame;
+    ioctl (0, KDSETMODE, KD_GRAPHICS);
+  }
+}
+
 Ctx *ctx_new_fb (int width, int height)
 {
 #if CTX_RASTERIZER
   CtxFb *fb = calloc (sizeof (CtxFb), 1);
-
+  fprintf (stderr, "\e[2J\e[H\e[?25l");
   fb->fb_fd = open ("/dev/fb0", O_RDWR);
   if (fb->fb_fd > 0)
     fb->fb_path = strdup ("/dev/fb0");
@@ -22214,14 +22276,14 @@ Ctx *ctx_new_fb (int width, int height)
       free (fb);
       return NULL;
      }
+  ctx_fb = fb;
 
-
-  fprintf (stderr, "%s\n", fb->fb_path);
+//fprintf (stderr, "%s\n", fb->fb_path);
   width = fb->width = fb->vinfo.xres;
   height = fb->height = fb->vinfo.yres;
 
   fb->fb_bits = fb->vinfo.bits_per_pixel;
-  fprintf (stderr, "fb bits: %i\n", fb->fb_bits);
+//fprintf (stderr, "fb bits: %i\n", fb->fb_bits);
 
   if (fb->fb_bits == 16)
     fb->fb_bits =
@@ -22260,9 +22322,10 @@ Ctx *ctx_new_fb (int width, int height)
 
   fb->fb_bpp = fb->vinfo.bits_per_pixel / 8;
   fb->fb_mapped_size = fb->finfo.smem_len;
-  fprintf (stderr, "%i %lu\n", fb->finfo.smem_len, fb->finfo.smem_start);
+//fprintf (stderr, "%i %lu\n", fb->finfo.smem_len, fb->finfo.smem_start);
                                               
-  fb->pixels = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
+  fb->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
+  fb->scratch_fb = calloc (fb->fb_mapped_size, 1);
   ctx_fb_events = 1;
   //fprintf (stderr, "%i %ix%i %i\n", fb->fb_mapped_size, fb->width, fb->height, fb->width * fb->height * 4);
 #if 0
@@ -22293,7 +22356,7 @@ Ctx *ctx_new_fb (int width, int height)
   fb->ctx_copy = ctx_new ();
   fb->width  = width;
   fb->height = height;
-  fprintf (stderr, ".. %i %i\n", width, height);
+//fprintf (stderr, ".. %i %i\n", width, height);
   fb->cols = 80;
   fb->rows = 20;
 //fb->pixels = (uint8_t*)malloc (width * height * 4);
@@ -22307,7 +22370,7 @@ Ctx *ctx_new_fb (int width, int height)
 
   for (int i = 0; i < CTX_FB_THREADS; i++)
   {
-    fb->host[i] = ctx_new_for_framebuffer (fb->pixels,
+    fb->host[i] = ctx_new_for_framebuffer (fb->scratch_fb,
                    fb->width/CTX_HASH_COLS, fb->height/CTX_HASH_ROWS,
                    fb->width * 4, CTX_FORMAT_RGBA8);
     ((CtxRasterizer*)fb->host[i]->renderer)->texture_source = fb->ctx;
@@ -22343,6 +22406,31 @@ Ctx *ctx_new_fb (int width, int height)
   EvSource *kb = evsource_kb_new ();
   fb->evsource[fb->evsource_count++] = kb;
   kb->priv = fb;
+
+  fb->vt_active = 1;
+//return fb->ctx;
+  signal (SIGUSR1, vt_switch_cb);
+  signal (SIGUSR2, vt_switch_cb);
+  //return fb->ctx;
+
+  struct vt_stat st;
+  if (ioctl (0, VT_GETSTATE, &st) == -1)
+    {
+  //  return NULL;
+    }
+    ioctl(0, KDSETMODE, KD_GRAPHICS);
+
+  fb->vt = st.v_active;
+
+  struct vt_mode mode;
+  mode.mode = VT_PROCESS;
+  mode.relsig = SIGUSR1;
+  mode.acqsig = SIGUSR2;
+  if (ioctl (0, VT_SETMODE, &mode) < 0)
+  {
+    fprintf (stderr, "VT_SET_MODE on vt %i failed\n", fb->vt);
+    exit (-1);
+  }
 
   return fb->ctx;
 }
@@ -22418,9 +22506,12 @@ Ctx *ctx_new_ui (int width, int height)
     return ctx_new_ctx (width, height);
   Ctx *ret = NULL;
 
-#if CTX_SDLxxx
-  ret = ctx_new_sdl (width, height);
-  if (ret) return ret;
+#if CTX_SDL
+  if (getenv ("DISPLAY"))
+  {
+    ret = ctx_new_sdl (width, height);
+    if (ret) return ret;
+  }
 #endif
 #if CTX_FB
   ret = ctx_new_fb (width, height);

@@ -3889,7 +3889,7 @@ static void vt_state_osc (VT *vt, int byte)
         {
           case 0:
 #if 0
-    {"]0;New_title\e\",  0, , }, /* id: set window title */
+    {"]0;New_title\e\",  0, , }, /* id: set window title */ "
 #endif
             vt_set_title (vt, vt->argument_buf + 3);
             break;
@@ -3925,7 +3925,7 @@ static void vt_state_osc (VT *vt, int byte)
             }
             break;
 #if 0
-    {"]1337;key=value:base64data\b\",  0, vtcmd_erase_in_line, VT100}, /* args:keyvalue id: iterm2 graphics */
+    {"]1337;key=value:base64data\b\",  0, vtcmd_erase_in_line, VT100}, /* args:keyvalue id: iterm2 graphics */ "
 #endif
           case 1337:
             if (!strncmp (&vt->argument_buf[6], "File=", 5) )
@@ -4164,8 +4164,8 @@ static void vt_state_apc_generic (VT *vt, int byte)
 }
 
 #if 0
-    {"_G..\e\", 0, vtcmd_delete_n_chars, VT102}, /* ref:none id: <a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a> */
-    {"_A..\e\", 0, vtcmd_delete_n_chars, VT102}, /* id:  <a href='https://github.com/hodefoting/atty/'>atty</a> audio input/output */
+    {"_G..\e\", 0, vtcmd_delete_n_chars, VT102}, /* ref:none id: <a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a> */ "
+    {"_A..\e\", 0, vtcmd_delete_n_chars, VT102}, /* id:  <a href='https://github.com/hodefoting/atty/'>atty</a> audio input/output */ "
 #endif
 static void vt_state_apc (VT *vt, int byte)
 {
@@ -4240,7 +4240,7 @@ static void vt_state_esc (VT *vt, int byte)
           break;
 
 #if 0
-    {"Psixel_data\e\",  0, , }, /* id: sixels */
+    {"Psixel_data\e\",  0, , }, /* id: sixels */ "
 #endif
 
         case 'P':
