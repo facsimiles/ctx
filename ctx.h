@@ -20680,7 +20680,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
   return 1;
 }
 
-#define CTX_THREADS      4
+#define CTX_THREADS      2
 
 #if CTX_SDL
 
@@ -20721,8 +20721,8 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 4
-#define CTX_HASH_COLS 4
+#define CTX_HASH_ROWS 8
+#define CTX_HASH_COLS 8
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -22669,26 +22669,54 @@ Ctx *ctx_new_ctx (int width, int height)
 
 Ctx *ctx_new_ui (int width, int height)
 {
+  const char *backend = getenv ("CTX_BACKEND");
+
+  if (backend && !strcmp (backend, "auto"))
+    backend = NULL;
+  if (backend && !strcmp (backend, "list"))
+  {
+    fprintf (stderr, "valid values for CTX_BACKEND:\n");
+    fprintf (stderr, " ctx");
+#if CTX_SDL
+    fprintf (stderr, " SDL");
+#endif
+#if CTX_FB
+    fprintf (stderr, " fbcon");
+#endif
+    fprintf (stderr, " braille");
+    fprintf (stderr, "\n");
+    exit (-1);
+  }
+
   if (getenv ("CTX_VERSION"))
+  {
+    if (!backend || !strcmp (backend, "ctx"))
           // full blown ctx - in terminal or standalone
-    return ctx_new_ctx (width, height);
+      return ctx_new_ctx (width, height);
+  }
   Ctx *ret = NULL;
 
 #if CTX_SDL
   if (getenv ("DISPLAY"))
   {
-    ret = ctx_new_sdl (width, height);
+    if ((backend==NULL) || (!strcmp (backend, "SDL")))
+      ret = ctx_new_sdl (width, height);
     if (ret) return ret;
   }
 #endif
+
 #if CTX_FB
-  ret = ctx_new_fb (width, height);
+    if ((backend==NULL) || (!strcmp (backend, "fbcon")))
+    ret = ctx_new_fb (width, height);
   if (ret) return ret;
 #endif
 
   // braille in terminal
   if (!ret)
+  {
+    if ((backend==NULL) || (!strcmp (backend, "braille")))
     return ctx_new_braille (width, height);
+  }
   return NULL;
 }
 
