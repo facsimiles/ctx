@@ -1,4 +1,8 @@
-all: pre ctx.o ctx 
+all: pre ctx.o ctx subdir_examples2
+
+subdir_examples2:
+	make -C  examples2
+
 pre:
 	make -C tools
 	make -C fonts
@@ -9,7 +13,8 @@ clean:
 	rm -f test-renderpaths ctx ctx.asan ctx.O1
 	rm -f tests/index.html
 	make -C fonts clean
-	make -C examples clean
+	make -C test-size clean
+	make -C examples2 clean
 
 CFLAGS= -O3 -g -march=native -Wno-array-bounds 
 

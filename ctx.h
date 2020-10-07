@@ -21927,7 +21927,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   sdl->quit = 1;
-  usleep (100);
+  usleep (1000); // XXX : wait for threads more explicitly instead
   if (sdl->pixels)
   {
     free (sdl->pixels);
