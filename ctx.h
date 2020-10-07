@@ -1060,14 +1060,14 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * edgelist and renderstram.
  */
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   1024*32
+#define CTX_MIN_JOURNAL_SIZE   1024*64
 #endif
 
 /* The maximum size we permit the renderstream to grow to,
  * the memory used is this number * 9, where 9 is sizeof(CtxEntry)
  */
 #ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   1024*32
+#define CTX_MAX_JOURNAL_SIZE   CTX_MIN_JOURNAL_SIZE
 #endif
 
 #ifndef CTX_RENDERSTREAM_STATIC
