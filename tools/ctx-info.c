@@ -1,22 +1,15 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include <libgen.h>
 
-#define CTX_MAX_RENDERSTREAM_SIZE 4096000
-#define CTX_BACKEND_TEXT 0
-#define CTX_AVX2         0
-#define CTX_PARSER       1
-#define CTX_ENABLE_CMYK  0
-#define CTX_ENABLE_CM    0
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "stb_truetype.h"
-#include <sys/time.h>
-#define CTX_EXTRAS 1
-#define CTX_IMPLEMENTATION
-#include "ctx.h"
 
-CtxRenderstream output_font={NULL,};
-uint32_t glyphs[65536];
-int n_glyphs = 0;
+#include "ctx-font-ascii.h"
+#include "../test-size/tiny-config.h"
+#undef CTX_PARSER
+#define CTX_PARSER          1
+#define CTX_IMPLEMENTATION
+
+#include "ctx.h"
 
 int main (int argc, char **argv)
 {

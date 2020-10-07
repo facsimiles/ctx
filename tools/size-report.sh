@@ -36,6 +36,7 @@ echo "ASCII font:      " $(($FONT)) " bytes"
 echo "RGBA8 Rasterizer:  " $(($TINY-$BASELINE-$FONT)) " bytes"
 echo "CTX text parser: " $(($SMALL-$TINY)) " bytes"
 
+echo Ctx + CtxRasterizer + CtxFont + CtxFontEngine + CtxParser
 echo $Ctx + $CtxRasterizer + $CtxFont + $CtxFontEngine + $CtxParser
 RAM=$(($Ctx + $CtxRasterizer + $CtxFont + $CtxFontEngine + $CtxParser ))
 #RAM=$(($CtxState + $CtxRasterizer + $CtxFont + $CtxFontEngine + $CtxParser ))

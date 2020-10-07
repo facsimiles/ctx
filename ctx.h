@@ -1060,7 +1060,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
  * edgelist and renderstram.
  */
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   1024*64
+#define CTX_MIN_JOURNAL_SIZE   1024*128
 #endif
 
 /* The maximum size we permit the renderstream to grow to,
@@ -1075,18 +1075,20 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 #ifndef CTX_MIN_EDGE_LIST_SIZE
-#define CTX_MIN_EDGE_LIST_SIZE   128
+#define CTX_MIN_EDGE_LIST_SIZE   1024
 #endif
 
 /* The maximum complexity of a single path
  */
 #ifndef CTX_MAX_EDGE_LIST_SIZE
-#define CTX_MAX_EDGE_LIST_SIZE   4096
+#define CTX_MAX_EDGE_LIST_SIZE   CTX_MIN_EDGE_LIST_SIZE
 #endif
 
-//#define CTX_STRINGPOOL_SIZE   6000 // needed for tiger
-//#define CTX_STRINGPOOL_SIZE   8000 // needed for debian logo in bw
-#define CTX_STRINGPOOL_SIZE   18500 // needed for debian logo in color
+#ifndef CTX_STRINGPOOL_SIZE
+  // XXX should be possible to make zero and disappear when codepaths not in use
+  //     to save size
+#define CTX_STRINGPOOL_SIZE   4000 // needed for tiger
+#endif
 
 /* whether we dither or not for gradients
  */
@@ -3768,7 +3770,15 @@ int ctx_height (Ctx *ctx)
 {
   return ctx->events.height;
 }
-
+#else
+int ctx_width (Ctx *ctx)
+{
+  return 512;
+}
+int ctx_height (Ctx *ctx)
+{
+  return 384;
+}
 #endif
 int ctx_rev (Ctx *ctx)
 {
@@ -4155,8 +4165,13 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
   if (ey2) *ey2 = maxy;
 }
 
-
+#else
+void
+ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
+{
+}
 #endif
+
 // 6024x4008
 #if CTX_BITPACK
 static void

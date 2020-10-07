@@ -1,7 +1,9 @@
-all: pre ctx.o ctx subdir_examples2
+all: pre ctx.o ctx subdirs
 
-subdir_examples2:
-	make -C  examples2
+SUBDIRS=examples2 test-size
+
+subdirs:
+	for a in $(SUBDIRS) do; make -C $$a; done
 
 pre:
 	make -C tools
@@ -13,30 +15,16 @@ clean:
 	rm -f test-renderpaths ctx ctx.asan ctx.O1
 	rm -f tests/index.html
 	make -C fonts clean
-	make -C test-size clean
-	make -C examples2 clean
+	for a in $(SUBDIRS) do; make -C $a clean; done
 
 CFLAGS= -O3 -g -march=native -Wno-array-bounds 
 
 ctx.o: ctx-lib.c ctx.h Makefile
 	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
-libctx.o: ctx-lib.c ctx.h Makefile
-	$(CC) ctx-lib.c -shared -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
-
 ctx: ctx.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch]
 	$(CC) ctx.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
-ctx.O1: ctx.c ctx.h  Makefile svg.h
-	$(CC) ctx.c -o $@ -g -O1 -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -march=native
-
-ctx.asan: ctx.c ctx.h Makefile
-	$(CC) -DASANBUILD=1 ctx.c -o $@ -g -O0 -I. -Ifonts `pkg-config --cflags --libs ` -lutil -lasan -fsanitize=address -lz -march=native -lm -Ideps
-
-sentry:
-	sentry Makefile ctx.h tests/*.ctx -- sh -c 'make ctx  && make -C tests png'
-sentry-f:
-	sentry Makefile ctx.h tests/*.ctx -- make
 ctx.h.html: ctx.h Makefile
 	highlight -l -a --encoding=utf8 -W ctx.h > ctx.h.html
 ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
