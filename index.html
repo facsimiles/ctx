@@ -83,8 +83,8 @@ use a shared read-only display list makes the ctx rasterizer core also useful
 in multi-threaded rendering.</p>
 
 <pre>
-font data size:    15291 bytes (A sans font subsetted to only ASCII)
-RGBA8 rasterizer:  38869 bytes (-Os ~38kb - with many features disabled ~29kb
+font data size:    12186 bytes (A sans font subsetted to only ASCII)
+RGBA8 rasterizer:  38869 bytes (-Os ~38kb - with many features disabled ~30kb
                                 -O0  90-631kb
                                 -O2  57-114kb
                                 -Ofast/-O3  76-181kb, size bump due to
@@ -104,11 +104,10 @@ composite and image source modes - building ctx then takes 5-6minutes and
 the resulting binary is close to a megabyte, performance gains exist but
 in practice they are near neglible.</p>
 
-<p>The total RAM requirements are modest, with the most slim configuration
-&lt;16kb of RAM is required when directly rendering using the default limits,
-if the maximum number of vertices in a path is reduced this can be below
-10kb, when doing deferred rendering the additional RAM required/reserved
-impacts the size of the display list and thus the complexity of the vector scene.</p>
+<p>The total RAM requirements are modest, with a slim configuration &lt;16kb of
+RAM is required when directly rendering using the default limits, by reducing
+the number of save/restore states handled and the complexity of the path
+rendered, RAM requirement can be reduced to ~6kb.</p>
 
 
 

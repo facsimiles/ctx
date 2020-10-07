@@ -1,28 +1,33 @@
-all: pre ctx.o ctx subdirs
+all: tools/ctx-fontgen pre_subdirs ctx.o ctx subdirs
 
+PRE_SUBDIRS=fonts
 SUBDIRS=examples2 test-size
 
-subdirs:
-	for a in $(SUBDIRS) do; make -C $$a; done
+pre_subdirs: tools/ctx-fontgen
+	for a in $(PRE_SUBDIRS); do make -C $$a; done
 
-pre:
-	make -C tools
-	make -C fonts
+subdirs: pre_subdirs ctx.o tools/ctx-info tools/ctx-info-32bit
+	for a in $(SUBDIRS); do make -C $$a; done
+
 test: all
 	make -C tests
 post: test
 clean:
 	rm -f test-renderpaths ctx ctx.asan ctx.O1
 	rm -f tests/index.html
-	make -C fonts clean
-	for a in $(SUBDIRS) do; make -C $a clean; done
+	for a in tools $(PRE_SUBDIRS) $(SUBDIRS); do make -C $$a clean; done
 
 CFLAGS= -O3 -g -march=native -Wno-array-bounds 
 
-ctx.o: ctx-lib.c ctx.h Makefile
+tools/%: tools/%.c ctx.h test-size/tiny-config.h
+	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
+tools/%-32bit: tools/%.c ctx.h test-size/tiny-config.h
+	i686-linux-gnu-gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
+
+ctx.o: ctx-lib.c ctx.h Makefile pre_subdirs
 	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
-ctx: ctx.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch]
+ctx: ctx.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o
 	$(CC) ctx.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
 ctx.h.html: ctx.h Makefile

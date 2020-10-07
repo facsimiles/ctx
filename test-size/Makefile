@@ -14,8 +14,11 @@ clean:
 text: text.c ../*.h ../fonts/*.h Makefile
 	$(CC) $(PERF_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` 
 
-%: %.c ../*.h ../fonts/*.h Makefile
+%: %.c ../*.h ../fonts/*.h Makefile tiny-config.h
 	$(CC) $(SMALL_CFLAGS)  $< -o $@ -I.. -I../fonts -march=native `pkg-config sdl2 --cflags --libs` 
+
+musl-static-%: %.c ../*.h ../fonts/*.h Makefile tiny-config.h
+	musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static
 
 perf.S: perf.c ../*.h ../fonts/*.h Makefile
 	gcc-10 $(PERF_CFLAGS) $< -S -o $@ -I.. -I../fonts 
@@ -26,5 +29,3 @@ perf: perf.c ../*.h ../fonts/*.h Makefile
 perf-circ: perf-circ.c ../*.h ../fonts/*.h Makefile
 	gcc $(PERF_CFLAGS)  $< -o $@ -I.. -I../fonts `pkg-config cairo --cflags --libs` -lm
 
-musl-static-%: %.c ../*.h ../fonts/*.h Makefile
-	musl-gcc $(SMALL_CFLAGS) $< -o $@ -I.. -I../fonts -static

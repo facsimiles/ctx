@@ -11,7 +11,7 @@
 
 int main (int argc, char **argv)
 {
-  uint8_t *pixels = (uint8_t*)malloc (WIDTH*HEIGHT*4);
+  uint8_t pixels[WIDTH*HEIGHT*4];
   Ctx *ctx = ctx_new_for_framebuffer (
     pixels, WIDTH, HEIGHT, WIDTH*4,
     CTX_FORMAT_RGBA8);
@@ -48,6 +48,5 @@ int main (int argc, char **argv)
   }
 #endif
   ctx_free (ctx);
-  free (pixels);
   return 0;
 }
