@@ -695,6 +695,7 @@ static void vtcmd_set_132_col (VT  *vt, int set)
 static void vt_line_feed (VT *vt);
 static void vt_carriage_return (VT *vt);
 
+static int vt_trimlines (VT *vt, int max);
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence)
 {
   VT_info ("reset %s", sequence);
@@ -751,6 +752,12 @@ static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence)
   vt->audio.encoding = 'a';
   vt->audio.compression = '0';
   vt->audio.mic = 0;
+  while (vt->scrollback)
+    {
+      vt_line_free (vt->scrollback->data, 1);
+      ctx_list_remove (&vt->scrollback, vt->scrollback->data);
+    }
+  vt->scrollback_count = 0;
 }
 
 void vt_set_font_size (VT *vt, float font_size)

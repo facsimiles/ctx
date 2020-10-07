@@ -27,14 +27,35 @@
               <div id='page'>
         <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is a 2D vector graphics framework, <a href='protocol/'>text
-        protocol</a>, library and <a href='rasterizer/'>rasterizer</a> 
-        built around the HTML5 Canvas 2D context. It can render interactive
-        resolution independent antialiased interfaces on <a
-        href='mcu/'>microcontrollers</a> and handle CMYK as well as do remote
-        interactive vector graphics as a <a href='terminal/'>terminal</a>
-        extension.
-        </p>
+        <p>ctx is a <a href='terminal/'>terminal</a>, single header library
+        and <a href='protocol/'>serial protocol</a> for interactive
+        vector graphics.</p>
+
+        <dl>
+                <dt><a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 Canvas 2D Context</a></dt><dd>Easily bindable C API and protocol builds directly on this standard.</dd>
+           <dt>Tiny footprint</dt><dd>Can be tuned for <a href='mcu/'>microcontrollers</a> down to ~5kb of RAM + 30kb of code + 12kb of fontdata</dd>
+           <dt>Threaded/deferred rendering</dt><dd>The protocol in both text and binary form split the API from the renderer, like a GPU, this can also be used to render framebuffers larger than RAM on microcontrollers.</dd>
+           <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, some of horizontal margins are supported, including smooth scroll and double width/height. From
+           ECMA-48 and xterm handling of colors, word-wrap, proportional text, mouse and more.</dd>
+           <dt><a href='https://pippin.gimp.org/ametameric/'>ametmeric palette</a></dt>
+                <dd>The terminal 16 color palette is optimized for legibility for both trichromats and dichromats</dd>
+     <dt><a href='https://github.com/hodefoting/atty/'>atty</a></dt>
+                <dd>audio recording and playback (only raw pcm for now, opus codec NYI)</dd>
+                <dt><a href='https://en.wikipedia.org/wiki/Sixel'>sixels</a></dt><dd>DEC terminal family standard for raster graphics transfer</dd>
+                <dt><a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a></dt><dd>kitty style raster graphics transfer</dd> 
+                <dt><a href='https://iterm2.com/documentation-images.html'>iterm2 inline images</a></dt><dd>iterm2 style raster grarphics transfer</dd>
+           <dt>utf8 native</dt><dd>Missing ligratures though, and beyond vttest
+           charset support is not good and RTL is missing - harfbuzz
+           intergration can fix this. Also currently lacking color emoji 😣.</dd>
+           <dt>mouse handling and copy+paste</dt><dd>also bracketed paste</dd>
+
+           <dt>SDL2</dt><dd>Optional backend that works better than the framebuffer that gets included when SDL.h is included before ctx.h</dd>
+           <dt>/dev/fb0</dt><dd>Applications built with the ctx library can run
+           directly on the linux framebuffer without X/wayland, for it to be
+           fast a fast framebuffer is needed. 
+           </dd>
+           <dt>RGB and CMYK</dt><dd>With an architecture that also can support spectral, ICC integration is Work in progress.</dd>
+        </dl>
 
         <h3 id='code'>Code</h3>
 
@@ -76,7 +97,7 @@ cairo, OpenVG, directdraw and other API that have foundation in postscript.
 <h2 id='codesize'>optimization vs binary size</h2>
 
 <p>ctx is designed from the beginning to act as a software GPU for modern
-microcontrollers, some of which are more powerful than the PCs in the mid 90s.
+<a hreaf='mcu/'>microcontrollers</a>, some of which are more powerful than the PCs in the mid 90s.
 Different optimization settings of the compiler give a wide range for the
 performance/binary size tradeoff. But the small footprint in RAM and ability to
 use a shared read-only display list makes the ctx rasterizer core also useful
@@ -87,8 +108,8 @@ font data size:    12186 bytes (A sans font subsetted to only ASCII)
 RGBA8 rasterizer:  38869 bytes (-Os ~38kb - with many features disabled ~30kb
                                 -O0  90-631kb
                                 -O2  57-114kb
-                                -Ofast/-O3  76-181kb, size bump due to
-                                SIMD tree-vectorizer)
+                                -Ofast/-O3  76-181kb, size (and compiletime)
+                                bump due to SIMD tree-vectorizer)
 
 ctx parser:        20512 bytes (not needed for direct use from C, but also
                                 on embedded this can be useful for ease of
@@ -104,13 +125,15 @@ composite and image source modes - building ctx then takes 5-6minutes and
 the resulting binary is close to a megabyte, performance gains exist but
 in practice they are near neglible.</p>
 
-<p>The total RAM requirements are modest, with a slim configuration &lt;16kb of
-RAM is required when directly rendering using the default limits, by reducing
-the number of save/restore states handled and the complexity of the path
-rendered, RAM requirement can be reduced to ~6kb.</p>
-
-
-
+<p>The RAM requirements are small and by tuning the engine to have only
+a couple of save/restore states, and paths with fewer than 256 edges,
+the total RAM footprint of the rasterizer can be as low as ~5kb on 32bit
+platforms, the parser for the ctx protocol needs an additional 1kb. Where
+framebuffer is too large to fit in RAM, the allocation needed for scanline(s)
+must be wheighed against RAM needed for renderstream. Commands take a multiple
+of 9bytes, there is code/provisions for runtime compacting of the renderstream
+in prior git revisions.
+</p>
 
         <h2 id='roadmap'>semi-ordered roadmap / wishlist</h2>
 	<ul>
