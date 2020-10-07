@@ -15125,7 +15125,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
                 { ctx_stroke (ctx); }
               else
                 {
-
+#if CTX_RASTERIZER
 #if CTX_ENABLE_SHADOW_BLUR
       if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
       {
@@ -15133,6 +15133,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
         ((CtxRasterizer*)(ctx->renderer))->in_shadow = 1;
       }
       else
+#endif
 #endif
          ctx_fill (ctx); 
                
@@ -15160,6 +15161,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   else
     { 
     
+#if CTX_RASTERIZER
 #if CTX_ENABLE_SHADOW_BLUR
       if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
       {
@@ -15167,6 +15169,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
         ((CtxRasterizer*)(ctx->renderer))->in_shadow = 1;
       }
       else
+#endif
 #endif
          ctx_fill (ctx); 
     }
@@ -20942,7 +20945,9 @@ static int ctx_sdl_consume_events (Ctx *ctx)
             sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/CTX_SDL_THREADS) * i],
                    width / CTX_HASH_COLS, height/CTX_HASH_ROWS,
                    width * 4, CTX_FORMAT_RGBA8);
+#if CTX_RASTERIZER
             ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = ctx;
+#endif
           }
           ctx_set_size (sdl->ctx, width, height);
           ctx_set_size (sdl->ctx_copy, width, height);
@@ -22528,13 +22533,20 @@ Ctx *ctx_new_ui (int width, int height)
   if (ret) return ret;
 #endif
 
+#if CTX_RASTERIZER
   // braille in terminal
   if (!ret)
   {
     if ((backend==NULL) || (!strcmp (backend, "braille")))
-    return ctx_new_braille (width, height);
+    ret = ctx_new_braille (width, height);
   }
-  return NULL;
+#endif
+  if (!ret)
+  {
+    fprintf (stderr, "no interactive ctx backend\n");
+    exit (2);
+  }
+  return ret;
 }
 
 #endif

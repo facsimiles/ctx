@@ -12,16 +12,8 @@
 #include <signal.h>
 #include <pty.h>
 
-#include <SDL.h>
+#include <SDL.h> // for clipboard texts
 
-#define CTX_EVENTS               1
-#include <immintrin.h> // is detected by ctx, and enables AVX2
-#define CTX_MAX_JOURNAL_SIZE     1024*128
-#define CTX_SHAPE_CACHE          0
-
-//#define CTX_IMPLEMENTATION
-//#include "ctx-font-regular.h"
-//#include "ctx-font-mono.h"
 #include "ctx.h"
 #include "vt-line.h"
 #include "terminal.h"
