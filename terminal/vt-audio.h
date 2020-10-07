@@ -16,7 +16,9 @@
  */
 
 
+#ifndef NO_SDL
 #include <SDL.h>
+#endif
 #include <zlib.h>
 
 static int ydec (const void *srcp, void *dstp, int count)
@@ -49,7 +51,9 @@ static int ydec (const void *srcp, void *dstp, int count)
   return out_len;
 }
 
+#ifndef NO_SDL
 static SDL_AudioDeviceID speaker_device = 0;
+#endif
 
 //#define AUDIO_CHUNK_SIZE 512
 
@@ -245,10 +249,12 @@ static void sdl_audio_init ()
   static int done = 0;
   if (!done)
   {
+#ifndef NO_SDL
   if (SDL_Init(SDL_INIT_AUDIO) < 0)
   {
     fprintf (stderr, "sdl audio init fail\n");
   }
+#endif
   done = 1;
   }
 }
@@ -256,6 +262,7 @@ static void sdl_audio_init ()
 static void audio_task (VT *vt, int click)
 {
   AudioState *audio = &vt->audio;
+#ifndef NO_SDL
 
   if (audio->mic)
   {
@@ -370,6 +377,7 @@ static void audio_task (VT *vt, int click)
       speaker_device = 0;
     }
   }
+#endif
 }
 
 void terminal_queue_pcm (int16_t sample_left, int16_t sample_right);

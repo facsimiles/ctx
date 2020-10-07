@@ -13,7 +13,6 @@
                 <a href='#code'>code</a>
                 <a href='#example'>hello world</a>
                 <br/>
-                <a href='#codesize'>codesize</a>
                 <a href='rasterizer/'>rasterizer</a>
                 <a href='protocol/'>protocol</a>
                 <a href='#roadmap'>roadmap</a>
@@ -94,46 +93,6 @@ mode. The core ideas for a 2d vector vocabulary is however shared with PDF,
 cairo, OpenVG, directdraw and other API that have foundation in postscript.
         </p>
 
-<h2 id='codesize'>optimization vs binary size</h2>
-
-<p>ctx is designed from the beginning to act as a software GPU for modern
-<a hreaf='mcu/'>microcontrollers</a>, some of which are more powerful than the PCs in the mid 90s.
-Different optimization settings of the compiler give a wide range for the
-performance/binary size tradeoff. But the small footprint in RAM and ability to
-use a shared read-only display list makes the ctx rasterizer core also useful
-in multi-threaded rendering.</p>
-
-<pre>
-font data size:    12186 bytes (A sans font subsetted to only ASCII)
-RGBA8 rasterizer:  38869 bytes (-Os ~38kb - with many features disabled ~30kb
-                                -O0  90-631kb
-                                -O2  57-114kb
-                                -Ofast/-O3  76-181kb, size (and compiletime)
-                                bump due to SIMD tree-vectorizer)
-
-ctx parser:        20512 bytes (not needed for direct use from C, but also
-                                on embedded this can be useful for ease of
-                                integration with other languages or directly
-                                using ctx+mictrocontroller+display as a serial
-                                display.)
-</pre>
-
-<p>
-Even more agressive optimization with exponential compile time has been tested
-by forcing inlining and separate compilation of all combinations of blend,
-composite and image source modes - building ctx then takes 5-6minutes and
-the resulting binary is close to a megabyte, performance gains exist but
-in practice they are near neglible.</p>
-
-<p>The RAM requirements are small and by tuning the engine to have only
-a couple of save/restore states, and paths with fewer than 256 edges,
-the total RAM footprint of the rasterizer can be as low as ~5kb on 32bit
-platforms, the parser for the ctx protocol needs an additional 1kb. Where
-framebuffer is too large to fit in RAM, the allocation needed for scanline(s)
-must be wheighed against RAM needed for renderstream. Commands take a multiple
-of 9bytes, there is code/provisions for runtime compacting of the renderstream
-in prior git revisions.
-</p>
 
         <h2 id='roadmap'>semi-ordered roadmap / wishlist</h2>
 	<ul>

@@ -6540,10 +6540,11 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       {
       //  vt_feed_keystring (vt, ""); // get selection
       char *text = NULL;
-
+#if 0
       if (0)
         text = SDL_GetClipboardText ();
       else
+#endif
         text = vt_get_selection (vt);
       if (text)
         {

@@ -1,7 +1,9 @@
 #include <stdint.h>
 #include <termios.h>
 #include <unistd.h>
+#ifndef NO_SDL
 #include <SDL.h>
+#endif
 #include <math.h>
 
 #include "ctx-font-regular.h"

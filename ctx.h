@@ -288,10 +288,12 @@ int ctx_utf8_strlen (const char *s);
 #define CTX_SDL 0
 #endif
 
+#ifndef CTX_FB
 #if CTX_SDL
 #define CTX_FB 1
 #else
 #define CTX_FB 0
+#endif
 #endif
 
 #if CTX_SDL
@@ -20704,6 +20706,8 @@ static int ctx_nct_consume_events (Ctx *ctx)
 }
 
 #define CTX_THREADS      2
+#define CTX_HASH_ROWS 8
+#define CTX_HASH_COLS 8
 
 #if CTX_SDL
 
@@ -20744,8 +20748,6 @@ struct _CtxSDL
    int           frame;
    int           pointer_down[3];
 
-#define CTX_HASH_ROWS 8
-#define CTX_HASH_COLS 8
 
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
@@ -20980,6 +20982,7 @@ static int ctx_sdl_consume_events (Ctx *ctx)
   #include <linux/vt.h>
   #include <linux/kd.h>
   #include <sys/mman.h>
+#include <threads.h>
 
  // 1 threads 13fps
  // 2 threads 20fps
@@ -21040,8 +21043,8 @@ struct _CtxFb
    int           rctrl;
    int           shown_frame;
    int           render_frame;
-   int           rendered_frame[CTX_SDL_THREADS];
-   Ctx          *host[CTX_SDL_THREADS];
+   int           rendered_frame[CTX_FB_THREADS];
+   Ctx          *host[CTX_FB_THREADS];
    int           frame;
    int           pointer_down[3];
 
@@ -22104,6 +22107,12 @@ Ctx *ctx_new_sdl (int width, int height)
   ctx_flush (sdl->ctx);
   return sdl->ctx;
 }
+#else
+
+int ctx_renderer_is_sdl (Ctx *ctx)
+{
+  return 0;
+}
 #endif
 
 #if CTX_FB
@@ -22382,8 +22391,9 @@ Ctx *ctx_new_fb (int width, int height)
 #define start_thread(no)\
   if(CTX_FB_THREADS>no){ \
     static void *args[2]={(void*)no, };\
+    thrd_t tid;\
     args[1]=fb;\
-    SDL_CreateThread ((void*)fb_render_fun, "render", args);\
+    thrd_create (&tid, (void*)fb_render_fun, args);\
   }
   start_thread(0);
   start_thread(1);

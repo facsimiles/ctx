@@ -1,3 +1,4 @@
+#include <string.h>
 #include "ctx.h"
 
 static int usage_main (int argc, char **argv)

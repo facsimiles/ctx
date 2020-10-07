@@ -3,7 +3,6 @@
                 <a href='../#code'>code</a>
                 <a href='../#example'>hello world</a>
                 <br/>
-                <a href='../#codesize'>codesize</a>
                 <a href='../rasterizer/'>rasterizer</a>
                 <a href='../protocol/'>protocol</a>
                 <a href='../#roadmap'>roadmap</a>

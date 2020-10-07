@@ -12,7 +12,9 @@
 #include <signal.h>
 #include <pty.h>
 
+#ifndef NO_SDL
 #include <SDL.h> // for clipboard texts
+#endif
 
 #include "ctx.h"
 #include "vt-line.h"
@@ -49,9 +51,10 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
   {
     case CTX_title:  
      ctx_set (ctx, CTX_title, val, strlen (val));
-
+#ifndef NO_SDL
      if (ctx_renderer_is_sdl (ctx))
        ctx_sdl_set_title (ctx_get_renderer (ctx), val);
+#endif
 
      break;
   }
@@ -340,6 +343,7 @@ static void handle_event (const char *event)
   else
   if (!strcmp (event, "shift-control-v") )
     {
+#ifndef NO_SDL
       char *text = SDL_GetClipboardText ();
       if (text)
         {
@@ -347,15 +351,18 @@ static void handle_event (const char *event)
             vt_paste (vt, text);
           free (text);
         }
+#endif
     }
   else if (!strcmp (event, "shift-control-c") && vt)
     {
+#ifndef NO_SDL
       char *text = vt_get_selection (vt);
       if (text)
         {
           SDL_SetClipboardText (text);
           free (text);
         }
+#endif
     }
 
   else if (!strcmp (event, "shift-control-n") )

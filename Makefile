@@ -27,8 +27,14 @@ tools/%-32bit: tools/%.c ctx.h test-size/tiny-config.h
 ctx.o: ctx-lib.c ctx.h Makefile pre_subdirs
 	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
-ctx: ctx.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o
-	$(CC) ctx.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
+ctx-nosdl.o: ctx-lib.c ctx.h Makefile pre_subdirs
+	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -DNO_SDL=1 -DCTX_FB=1
+
+ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o
+	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -lpthread
+
+ctx-nosdl: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-nosdl.o
+	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts ctx-nosdl.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -lpthread -DNO_SDL=1 -DCTX_FB=1 -static
 
 ctx.h.html: ctx.h Makefile
 	highlight -l -a --encoding=utf8 -W ctx.h > ctx.h.html
