@@ -2235,11 +2235,11 @@ qagain:
           case 2004:/*MODE;;bracketed paste;on;off; */
             vt->bracket_paste = set;
             break;
-          case 6150:/*MODE;;ctx-events;on;off;*/
+          case 201:/*MODE;;ctx-events;on;off;*/
             vt->ctx_events = set;
             break;
           
-          case 7020:/*MODE;;ctx ascii;on;;*/
+          case 200:/*MODE;;ctx ascii;on;;*/
             if (set)
               {
                 if (!vt->current_line->ctx)
@@ -2389,7 +2389,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
           case 1006:
             is_set = vt->mouse_decimal;
             break;
-          case 6150:
+          case 201:
             is_set = vt->ctx_events;
             break;
           case 2004:
@@ -2405,7 +2405,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
             is_set = vt->in_alt_screen;
             break;
             break;
-          case 7020:/*tx ascii;On;;*/
+          case 200:/*tx ascii;On;;*/
             is_set = (vt->state == vt_state_ctx);
             break;
           case 80:/* DECSDM Sixel scrolling */

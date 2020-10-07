@@ -2,7 +2,7 @@
 #!/usr/bin/env -S ctx bash
 
 cleanup() {
-  echo -ne "\e[2J\eH\e[?6150l"
+  echo -ne "\e[2J\eH\e[?201l"
   stty echo
 }
 trap cleanup EXIT
@@ -26,7 +26,7 @@ function vt_sync(){
 # received  frame_no
 # presented frame_no
 
-echo -ne "\e[2J\e[?6150h"
+echo -ne "\e[2J\e[?201h"
 stty -echo
 v=0
 event="event"
@@ -35,7 +35,7 @@ for a in b{1..1000000}; do
 
 #vt_sync # we call this to sync before rendering
 
-echo -ne "\e[2J\e[H\e[?7020h"
+echo -ne "\e[2J\e[H\e[?200h"
 echo -ne "reset
 rectangle 0%  0% 100% 100%
 rgba 0 0 0 1

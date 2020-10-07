@@ -14535,6 +14535,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   ctx_memset (rasterizer, 0, sizeof (CtxHasher) );
   rasterizer->vfuncs.process = ctx_hasher_process;
   rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
+  // XXX need own destructor to not leak ->hashes
   rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
@@ -20187,7 +20188,7 @@ nc_at_exit (void)
   _nc_noraw();
   fprintf (stdout, "\e[2J\e[H\e[?25h");
   //if (ctx_native_events)
-  fprintf (stdout, "\e[?6150l");
+  fprintf (stdout, "\e[?201l");
   fprintf (stdout, "\e[?1049l");
 }
 
@@ -21276,10 +21277,9 @@ static void real_evsource_kb_destroy (int sign)
     return;
   done = 1;
 
-  /* will be called from atexit without self */
   switch (sign)
   {
-    case  -11:break;
+    case  -11:break; /* will be called from atexit with sign==-11 */
     case   SIGSEGV: fprintf (stderr, " SIGSEGV\n");break;
     case   SIGABRT: fprintf (stderr, " SIGABRT\n");break;
     case   SIGBUS: fprintf (stderr, " SIGBUS\n");break;
@@ -21291,7 +21291,7 @@ static void real_evsource_kb_destroy (int sign)
              fprintf (stderr, "%i %i %i %i %i %i %i\n", SIGSEGV, SIGABRT, SIGBUS, SIGKILL, SIGINT, SIGTERM, SIGQUIT);
   }
   tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
-  fprintf (stderr, "evsource kb destroy\n");
+  //fprintf (stderr, "evsource kb destroy\n");
 }
 
 static void evsource_kb_destroy (int sign)
@@ -22093,10 +22093,22 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 
 void ctx_sdl_free (CtxSDL *sdl)
 {
-  free (sdl->pixels);
+  sdl->quit = 1;
+  usleep (100);
+  if (sdl->pixels)
+  {
+    free (sdl->pixels);
+  sdl->pixels = NULL;
   for (int i = 0 ; i < CTX_THREADS; i++)
+  {
     ctx_free (sdl->host[i]);
-  free (sdl);
+  }
+  SDL_DestroyTexture (sdl->texture);
+  SDL_DestroyRenderer (sdl->renderer);
+  SDL_DestroyWindow (sdl->window);
+  ctx_free (sdl->ctx_copy);
+  }
+  //free (sdl); // kept alive for threads quit check..
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
@@ -22307,14 +22319,15 @@ inline static void ctx_fb_flush (CtxFb *fb)
 
 void ctx_fb_free (CtxFb *fb)
 {
-  free (fb->scratch_fb);
   memset (fb->fb, 0, fb->width * fb->height *  4);
   for (int i = 0 ; i < CTX_THREADS; i++)
     ctx_free (fb->host[i]);
   system("stty sane");
   
   ioctl (0, KDSETMODE, KD_TEXT);
-  free (fb);
+
+  free (fb->scratch_fb);
+  //free (fb);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
@@ -22623,9 +22636,9 @@ struct _CtxCtx
 static void ctx_ctx_flush (CtxCtx *ctxctx)
 {
   if (ctx_native_events)
-    fprintf (stdout, "\e[?6150h");
+    fprintf (stdout, "\e[?201h");
   fprintf (stdout, "\e[?1049h");
-  fprintf (stdout, "\e[2J\e[H\e[?25l\e[?7020h reset\n");
+  fprintf (stdout, "\e[2J\e[H\e[?25l\e[?200h reset\n");
   ctx_render_stream (ctxctx->ctx, stdout, 0);
   fprintf (stdout, "\ndone\n\e");
   fflush (stdout);

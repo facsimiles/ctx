@@ -899,14 +899,14 @@ again:
   if (outputmode == CTX_OUTPUT_MODE_CTX)
     {
       // determine terminal size
-      fprintf (stdout, "\e[H\e[?25l\e[?7020h\nreset\n");
+      fprintf (stdout, "\e[H\e[?25l\e[?200h\nreset\n");
       ctx_render_stream (ctx, stdout, 1);
       fprintf (stdout, "\nX\n\e[?25h");
       exit (0);
     }
   if (outputmode == CTX_OUTPUT_MODE_CTX_COMPACT)
     {
-      fprintf (stdout, "\e[H\e[?25l\e[?7020h\nreset\n");
+      fprintf (stdout, "\e[H\e[?25l\e[?200h\nreset\n");
       ctx_render_stream (ctx, stdout, 0);
       fprintf (stdout, "\nX\n\[e?25h");
       exit (0);
