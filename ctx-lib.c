@@ -16,7 +16,6 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -34,10 +33,8 @@
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
 #define CTX_MATH                 1
 #define CTX_MAX_JOURNAL_SIZE     1024*64
-//#define CTX_RASTERIZER_AA        5
-//#define CTX_RASTERIZER_FORCE_AA  1
 
-#include <immintrin.h> // is detected by ctx, and enables AVX2
+//#include <immintrin.h> // is detected by ctx, and enables AVX2
 
 #define CTX_IMPLEMENTATION 1
 

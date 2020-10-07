@@ -913,7 +913,8 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #endif
 
 /* whether the font rendering happens in backend or front-end of API,
- * the option exists for generating ctx fonts.
+ * the option is used by the tool that converts ttf fonts to ctx internal
+ * representation.
  */
 #ifndef CTX_BACKEND_TEXT
 #define CTX_BACKEND_TEXT 1
@@ -11101,6 +11102,9 @@ ctx_RGBA8_to_BGRA8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
 static void
 ctx_composite_BGRA8 (CTX_COMPOSITE_ARGUMENTS)
 {
+  // for better performance, this could be done without a pre/post conversion,
+  // by swapping R and B of source instead... as long as it is a color instead
+  // of gradient or image
   uint8_t pixels[count * 4];
   ctx_BGRA8_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
   rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
@@ -11568,8 +11572,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
   int scan_end   = scan_start + rasterizer->blit_height * aa;
   int blit_width = rasterizer->blit_width;
   int blit_max_x = rasterizer->blit_x + blit_width;
-  int minx = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
-  int maxx = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - rasterizer->blit_x;
+  int minx       = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
+  int maxx       = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - rasterizer->blit_x;
 
 #if 1
   if (
@@ -20932,10 +20936,10 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           sdl->pixels = calloc (4, width * height);
           sdl->width = width;
           sdl->height = height;
-          for (int i = 0 ; i < CTX_THREADS; i++)
+          for (int i = 0 ; i < CTX_SDL_THREADS; i++)
           {
             ctx_free (sdl->host[i]);
-            sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/CTX_THREADS) * i],
+            sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/CTX_SDL_THREADS) * i],
                    width / CTX_HASH_COLS, height/CTX_HASH_ROWS,
                    width * 4, CTX_FORMAT_RGBA8);
             ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = ctx;
@@ -21057,17 +21061,10 @@ static void ctx_fb_show_frame (CtxFb *fb)
   if (fb->shown_frame != fb->render_frame &&
       fb_render_threads_done (fb) == CTX_FB_THREADS)
   {
-#if 0
-    SDL_UpdateTexture (fb->texture, NULL,
-                      (void*)fb->pixels, fb->width * sizeof (Uint32));
-    SDL_RenderClear (fb->renderer);
-    SDL_RenderCopy (fb->renderer, fb->texture, NULL, NULL);
-    SDL_RenderPresent (fb->renderer);
-#endif
     if (fb->vt_active)
     {
      fprintf (stderr, "\e[H\e[J");
-#if 0
+#if 1
      memcpy (fb->fb, fb->scratch_fb, fb->width * fb->height *  4);
 #else
     int max = fb->width * fb->height * 4;
@@ -21078,7 +21075,6 @@ static void ctx_fb_show_frame (CtxFb *fb)
       fb->fb[o+2] = fb->scratch_fb[o+0];
     }
 #endif
-
     ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
     //__u32 dummy = 0;
     //ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
@@ -21913,7 +21909,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       {
         if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_THREADS-1) / dirty_tiles;
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_SDL_THREADS-1) / dirty_tiles;
           dirty_no++;
         }
       }
@@ -21931,7 +21927,7 @@ void ctx_sdl_free (CtxSDL *sdl)
   {
     free (sdl->pixels);
   sdl->pixels = NULL;
-  for (int i = 0 ; i < CTX_THREADS; i++)
+  for (int i = 0 ; i < CTX_SDL_THREADS; i++)
   {
     ctx_free (sdl->host[i]);
   }
@@ -21989,7 +21985,7 @@ void sdl_render_fun (void **data)
         }
       sdl->rendered_frame[no] = sdl->render_frame;
 
-      if (sdl_render_threads_done (sdl) == CTX_THREADS)
+      if (sdl_render_threads_done (sdl) == CTX_SDL_THREADS)
       {
    //   ctx_render_stream (sdl->ctx_copy, stdout, 1);
         ctx_reset (sdl->ctx_copy);
@@ -22200,7 +22196,8 @@ void fb_render_fun (void **data)
                                  host, NULL, &host->state,
                                  &fb->scratch_fb[fb->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
-                                 fb->width*4, CTX_FORMAT_RGBA8);
+                                 fb->width*4, CTX_FORMAT_BGRA8);
+                                              /* this is the format used */
             ((CtxRasterizer*)host->renderer)->texture_source = fb->ctx;
             ctx_translate (host, -x0, -y0);
             ctx_render_ctx (fb->ctx_copy, host);
@@ -22333,44 +22330,18 @@ Ctx *ctx_new_fb (int width, int height)
 
   fb->fb_bpp = fb->vinfo.bits_per_pixel / 8;
   fb->fb_mapped_size = fb->finfo.smem_len;
-//fprintf (stderr, "%i %lu\n", fb->finfo.smem_len, fb->finfo.smem_start);
                                               
   fb->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
   fb->scratch_fb = calloc (fb->fb_mapped_size, 1);
   ctx_fb_events = 1;
-  //fprintf (stderr, "%i %ix%i %i\n", fb->fb_mapped_size, fb->width, fb->height, fb->width * fb->height * 4);
-#if 0
-  if (width <= 0 || height <= 0)
-  {
-    width  = 640;
-    height = 480;
-  }
-  fb->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
-  //fb->renderer = SDL_CreateRenderer (fb->window, -1, SDL_RENDERER_SOFTWARE);
-  fb->renderer = SDL_CreateRenderer (fb->window, -1, 0);
-  if (!fb->renderer)
-  {
-     ctx_free (fb->ctx);
-     free (fb);
-     return NULL;
-  }
-  fb->texture = SDL_CreateTexture (fb->renderer,
-        SDL_PIXELFORMAT_ABGR8888,
-        SDL_TEXTUREACCESS_STREAMING,
-        width, height);
-
-  SDL_StartTextInput ();
-  SDL_EnableScreenSaver ();
-#endif
 
   fb->ctx = ctx_new ();
   fb->ctx_copy = ctx_new ();
   fb->width  = width;
   fb->height = height;
-//fprintf (stderr, ".. %i %i\n", width, height);
   fb->cols = 80;
   fb->rows = 20;
-//fb->pixels = (uint8_t*)malloc (width * height * 4);
+
   ctx_set_renderer (fb->ctx, fb);
   ctx_set_renderer (fb->ctx_copy, fb);
 
@@ -22383,12 +22354,13 @@ Ctx *ctx_new_fb (int width, int height)
   {
     fb->host[i] = ctx_new_for_framebuffer (fb->scratch_fb,
                    fb->width/CTX_HASH_COLS, fb->height/CTX_HASH_ROWS,
-                   fb->width * 4, CTX_FORMAT_RGBA8);
+                   fb->width * 4, CTX_FORMAT_BGRA8); // this format
+                                  // is overriden in  thread
     ((CtxRasterizer*)fb->host[i]->renderer)->texture_source = fb->ctx;
   }
 
 #define start_thread(no)\
-  if(CTX_THREADS>no){ \
+  if(CTX_FB_THREADS>no){ \
     static void *args[2]={(void*)no, };\
     args[1]=fb;\
     SDL_CreateThread ((void*)fb_render_fun, "render", args);\

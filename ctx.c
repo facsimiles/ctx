@@ -2,44 +2,17 @@
 #include <termios.h>
 #include <unistd.h>
 #include <SDL.h>
-#include "ctx-font-regular.h"
-#include "ctx-font-mono.h"
 
-//#include "Roboto-Regular.h"
-
-//#include "DejaVuSansMono.h"
-//#include "DejaVuSans.h"
-//#include "0xA000-Mono.h"
-//#include "unscii-16.h"
-
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "stb_truetype.h"
-
-#define CTX_BACKEND_TEXT         1
-#define CTX_PARSER               1
-#define CTX_FORMATTER            1
-#define CTX_EVENTS               1
-#define CTX_BITPACK_PACKER       1
-#define CTX_GRADIENT_CACHE       1
-#define CTX_ENABLE_CMYK          1
-#define CTX_ENABLE_CM            1
-#define CTX_SHAPE_CACHE          0
-#define CTX_SHAPE_CACHE_MAX_DIM  96
-#define CTX_SHAPE_CACHE_DIM      (64*64)
-#define CTX_SHAPE_CACHE_ENTRIES  (512)
-#define CTX_MATH                 1
-#define CTX_MAX_JOURNAL_SIZE     1024*64
-//#define CTX_RASTERIZER_AA        5
-//#define CTX_RASTERIZER_FORCE_AA  1
-
-//#include <immintrin.h> // is detected by ctx, and enables AVX2
-
-#define CTX_IMPLEMENTATION 1
-//
-// we let the vt contain the implementation
-// since it has the biggest need for tuning
 #include "ctx.h"
+
+#if CTX_SVG
 #include "svg.h"
+#endif
+
+int ctx_terminal_rows (void);
+int ctx_terminal_cols (void);
+int ctx_terminal_width (void);
+int ctx_terminal_height (void);
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -778,6 +751,7 @@ int main (int argc, char **argv)
 again:
   ctx = ctx_new ();
   _ctx_set_transformation (ctx, 0);
+#if CTX_SVG
   if (!strcmp (get_suffix (source_path), ".html") ||
       !strcmp (get_suffix (source_path), ".svg") ||
       !strcmp (get_suffix (source_path), ".xml") )
@@ -788,7 +762,9 @@ again:
       _file_get_contents (source_path, &contents, &length);
       mrg_print_xml (mrg, (char *) contents);
     }
-  else if (!strcmp (get_suffix (source_path), ".ctx") )
+  else
+#endif
+          if (!strcmp (get_suffix (source_path), ".ctx") )
     {
       unsigned char *contents = NULL;
       long length;

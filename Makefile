@@ -12,7 +12,6 @@ clean:
 	make -C examples clean
 
 CFLAGS= -O3 -g -march=native -Wno-array-bounds 
-#CFLAGS=-Os -flto
 
 ctx.o: ctx-lib.c ctx.h Makefile
 	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
@@ -21,7 +20,7 @@ libctx.o: ctx-lib.c ctx.h Makefile
 	$(CC) ctx-lib.c -shared -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
 ctx: ctx.c ctx.h  Makefile svg.h terminal/*.[ch]
-	$(CC) ctx.c terminal/*.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
+	$(CC) ctx.c terminal/*.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
 
 ctx.O1: ctx.c ctx.h  Makefile svg.h
 	$(CC) ctx.c -o $@ -g -O1 -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -march=native

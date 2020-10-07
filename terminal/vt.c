@@ -53,7 +53,7 @@
 
 #include "ctx.h"
 
-#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include "vt-line.h"
@@ -2239,7 +2239,7 @@ qagain:
             vt->ctx_events = set;
             break;
           
-          case 200:/*MODE;;ctx ascii;on;;*/
+          case 200:/*MODE;;ctx vector graphics mode;on;;*/
             if (set)
               {
                 if (!vt->current_line->ctx)
