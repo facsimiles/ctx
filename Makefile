@@ -1,12 +1,12 @@
 all: tools/ctx-fontgen pre_subdirs ctx.o ctx subdirs
 
 PRE_SUBDIRS=fonts
-SUBDIRS=examples2
+SUBDIRS=clients
 
 pre_subdirs: tools/ctx-fontgen
 	for a in $(PRE_SUBDIRS); do make -C $$a; done
 
-subdirs: pre_subdirs ctx.o tools/ctx-info tools/ctx-info-32bit
+subdirs: pre_subdirs ctx.o tools/ctx-info
 	for a in $(SUBDIRS); do make -C $$a; done
 
 test: all
