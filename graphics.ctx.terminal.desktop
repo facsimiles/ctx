@@ -6,5 +6,5 @@ Name=ctx terminal
 TryExec=ctx
 Exec=ctx
 Icon=graphics.ctx.terminal.png
-Categories=utility;
+Categories=utility
 
