@@ -6735,13 +6735,14 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
         if (row >= vt->rows)
           {
             l = ctx_list_nth (vt->scrollback, row-vt->rows);
-            if (vt->in_alt_screen)
-               continue;
           }
         if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
           {
             VtLine *line = l->data;
 
+
+            if ((!vt->in_alt_screen && row >= vt->rows))
+            {
             for (int i = 0; i < 4; i++)
               {
                 Image *image = line->images[i];
@@ -6778,6 +6779,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                 ctx_render_ctx (line->ctx, ctx);
                 ctx_restore (ctx);
               }
+            }
           }
         y -= vt->ch;
       }
