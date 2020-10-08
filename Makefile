@@ -39,29 +39,22 @@ ctx-static: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-nosdl.o
 	strip -s -x $@
 	upx $@
 
-ctx.h.html: ctx.h Makefile
-	highlight -l -a --encoding=utf8 -W ctx.h > ctx.h.html
-ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
-	highlight -l -a --encoding=utf8 -W fonts/ctx-font-regular.h > ctx-font-regular.h.html
+docs/ctx.h.html: ctx.h Makefile
+	highlight -l -a --encoding=utf8 -W ctx.h > docs/ctx.h.html
+docs/ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
+	highlight -l -a --encoding=utf8 -W fonts/ctx-font-regular.h > docs/ctx-font-regular.h.html
 	
 #git gc
 
-updateweb: all post ctx.h.html ctx-font-regular.h.html
-	stagit .
+updateweb: all post docs/ctx.h.html docs/ctx-font-regular.h.html
+	(cd docs ; stagit .. )
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
 	git update-server-info
 	rm -rf /home/pippin/pgo/ctx.graphics/.git || true
 	cp -Rv .git /home/pippin/pgo/ctx.graphics/.git
-	cp -R mcu/* ~/pgo/ctx.graphics/mcu
-	cp -R file/* ~/pgo/ctx.graphics/file
-	cp -R commit/* ~/pgo/ctx.graphics/commit
-	cp -R binaries/* ~/pgo/ctx.graphics/binaries
+	cp -R docs/* ~/pgo/ctx.graphics/
 	cp -R tests/* ~/pgo/ctx.graphics/tests
-	cp -R protocol/* ~/pgo/ctx.graphics/protocol
-	cp -R rasterizer/* ~/pgo/ctx.graphics/rasterizer
-	cp -R glitch/* ~/pgo/ctx.graphics/glitch
-	cp -R terminal/* ~/pgo/ctx.graphics/terminal
 	cp *.css *.html ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
 flatpak:
 	rm -rf build-dir;flatpak-builder --user --install build-dir graphics.ctx.terminal.yml
