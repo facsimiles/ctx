@@ -1,0 +1,27 @@
+app-id: graphics.ctx.terminal
+runtime: org.freedesktop.Platform
+runtime-version: '19.08'
+sdk: org.freedesktop.Sdk
+finish-args:
+  - --socket=pulseaudio
+  - --socket=ssh-auth
+  - --socket=fallback-x11
+  - --device=dri
+  - --talk-name=org.freedesktop.Flatpak
+
+command: ctx
+modules:
+        - name: ctx
+          buildsystem: simple
+          build-commands:
+                - make
+                - strip ctx
+                - install -D ctx /app/bin/ctx
+                - install -D graphics.ctx.terminal.png /app/share/icons/hicolor/128x128/apps/graphics.ctx.terminal.png
+                - install -D graphics.ctx.terminal.desktop /app/share/desktop/graphics.ctx.desktop
+                - install -D graphics.ctx.terminal.appdata.xml /app/share/appdata/graphics.ctx.terminal.appdata.xml
+          sources:
+           - type: git
+             url: file:///home/pippin/src/ctx/.git
+             disable-shallow-clone: true
+             branch: dev
