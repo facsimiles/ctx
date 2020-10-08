@@ -22,7 +22,7 @@ clean:
 	rm -f tests/index.html fonts/*.h
 	for a in tools $(PRE_SUBDIRS) $(SUBDIRS); do make -C $$a clean; done
 
-CFLAGS= -O3 -g -march=native -Wno-array-bounds 
+CFLAGS= -O3 -g
 #CFLAGS= -Os 
 
 tools/%: tools/%.c ctx.h test-size/tiny-config.h 

@@ -6735,6 +6735,8 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
         if (row >= vt->rows)
           {
             l = ctx_list_nth (vt->scrollback, row-vt->rows);
+            if (vt->in_alt_screen)
+               continue;
           }
         if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
           {
