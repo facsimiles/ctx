@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=0.1.18
+Type=Application
+Terminal=true
+Name=ctx terminal
+TryExec=ctx
+Exec=ctx
+Icon=graphics.ctx.terminal.png
+Categories=utility;
+

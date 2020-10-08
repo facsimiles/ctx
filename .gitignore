@@ -6,5 +6,6 @@ examples/mmm
 examples/sdl2
 examples/test-renderpaths
 *.sw?
+*.sv?
 tests/*.gray?
 *.orig

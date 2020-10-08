@@ -13,7 +13,7 @@ test: all
 	make -C tests
 post: test
 clean:
-	rm -f test-renderpaths ctx ctx.asan ctx.O1
+	rm -f test-renderpaths ctx ctx.asan ctx.O1 ctx.static *.o
 	rm -f tests/index.html
 	for a in tools $(PRE_SUBDIRS) $(SUBDIRS); do make -C $$a clean; done
 
@@ -34,7 +34,7 @@ ctx-nosdl.o: ctx-lib.c ctx.h Makefile pre_subdirs
 ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o
 	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -lpthread
 
-ctx-static: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-nosdl.o
+ctx.static: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-nosdl.o
 	musl-gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts ctx-nosdl.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -lpthread -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
 	upx $@
@@ -53,7 +53,7 @@ updateweb: all post docs/ctx.h.html docs/ctx-font-regular.h.html
 	git update-server-info
 	rm -rf /home/pippin/pgo/ctx.graphics/.git || true
 	cp -Rv .git /home/pippin/pgo/ctx.graphics/.git
-	cp -R docs/* ~/pgo/ctx.graphics/
+	cp -Rf docs/* ~/pgo/ctx.graphics/
 	cp -R tests/* ~/pgo/ctx.graphics/tests
 	cp *.css *.html ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
 flatpak:
