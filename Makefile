@@ -1,13 +1,18 @@
-all: tools/ctx-fontgen pre_subdirs ctx.o ctx subdirs
+all: tools/ctx-fontgen ctx subdirs
 
-PRE_SUBDIRS=fonts
 SUBDIRS=clients
 
-pre_subdirs: tools/ctx-fontgen
-	for a in $(PRE_SUBDIRS); do make -C $$a; done
-
-subdirs: pre_subdirs ctx.o tools/ctx-info
+subdirs: ctx.o tools/ctx-info
 	for a in $(SUBDIRS); do make -C $$a; done
+
+fonts/ctx-font-ascii.h: tools/ctx-fontgen
+	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii > $@
+fonts/ctx-font-regular.h: tools/ctx-fontgen
+	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras > $@
+fonts/ctx-font-mono.h: tools/ctx-fontgen
+	./tools/ctx-fontgen fonts/ttf/DejaVuSansMono.ttf mono ascii-extras > $@
+
+used_fonts: fonts/ctx-font-ascii.h fonts/ctx-font-regular.h fonts/ctx-font-mono.h
 
 test: all
 	make -C tests
@@ -25,10 +30,10 @@ tools/%: tools/%.c ctx.h test-size/tiny-config.h
 tools/%-32bit: tools/%.c ctx.h test-size/tiny-config.h
 	i686-linux-gnu-gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
 
-ctx.o: ctx-lib.c ctx.h Makefile pre_subdirs
+ctx.o: ctx-lib.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
 	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps 
 
-ctx-nosdl.o: ctx-lib.c ctx.h Makefile pre_subdirs
+ctx-nosdl.o: ctx-lib.c ctx.h Makefile used_fonts
 	musl-gcc ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -DNO_SDL=1 -DCTX_FB=1
 
 ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o
