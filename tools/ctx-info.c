@@ -16,23 +16,23 @@ int main (int argc, char **argv)
   printf ("CTX_MAX_STATES %d\n", CTX_MAX_STATES);
   printf ("CTX_MAX_EDGES %d\n", CTX_MAX_EDGES);
 
-  printf ("sizeof(CtxRasterizer) = %li\n",      sizeof(CtxRasterizer));
-  printf ("sizeof(Ctx) = %li\n", sizeof(Ctx));
-  printf ("sizeof(CtxParser) = %li\n",            sizeof(CtxParser));
+  printf ("sizeof(CtxRasterizer) = %i\n",      (int)sizeof(CtxRasterizer));
+  printf ("sizeof(Ctx) = %i\n", (int)sizeof(Ctx));
+  printf ("sizeof(CtxParser) = %i\n",            (int)sizeof(CtxParser));
   printf ("\n");
-  printf ("sizeof(CtxState) = %li\n",             sizeof(CtxState));
-  printf ("sizeof(CtxGState) = %li\n",            sizeof(CtxGState));
-  printf ("sizeof(CtxColor) = %li\n",             sizeof(CtxColor));
-  printf ("sizeof(CtxFont) = %li\n",              sizeof(CtxFont));
-  printf ("sizeof(CtxFontEngine) = %li\n",        sizeof(CtxFontEngine));
-  printf ("sizeof(CtxEntry) = %li\n",             sizeof(CtxEntry));
-  printf ("sizeof(CtxSource) = %li\n",            sizeof(CtxSource));
-  printf ("sizeof(CtxIterator) = %li\n",          sizeof(CtxIterator));
-  printf ("sizeof(CtxGradient) = %li\n",          sizeof(CtxGradient));
-  printf ("sizeof(CtxBuffer) = %li\n",            sizeof(CtxBuffer));
-  printf ("sizeof(CtxRenderstream) = %li\n",      sizeof(CtxRenderstream));
-  printf ("sizeof(CtxPixelFormatInfo) = %li\n", sizeof(CtxPixelFormatInfo));
-  printf ("sizeof(CtxEdge) = %li\n", sizeof(CtxEdge));
+  printf ("sizeof(CtxState) = %i\n",             (int)sizeof(CtxState));
+  printf ("sizeof(CtxGState) = %i\n",            (int)sizeof(CtxGState));
+  printf ("sizeof(CtxColor) = %i\n",             (int)sizeof(CtxColor));
+  printf ("sizeof(CtxFont) = %i\n",              (int)sizeof(CtxFont));
+  printf ("sizeof(CtxFontEngine) = %i\n",        (int)sizeof(CtxFontEngine));
+  printf ("sizeof(CtxEntry) = %i\n",             (int)sizeof(CtxEntry));
+  printf ("sizeof(CtxSource) = %i\n",            (int)sizeof(CtxSource));
+  printf ("sizeof(CtxIterator) = %i\n",          (int)sizeof(CtxIterator));
+  printf ("sizeof(CtxGradient) = %i\n",          (int)sizeof(CtxGradient));
+  printf ("sizeof(CtxBuffer) = %i\n",            (int)sizeof(CtxBuffer));
+  printf ("sizeof(CtxRenderstream) = %i\n",      (int)sizeof(CtxRenderstream));
+  printf ("sizeof(CtxPixelFormatInfo) = %i\n", (int)sizeof(CtxPixelFormatInfo));
+  printf ("sizeof(CtxEdge) = %i\n", (int)sizeof(CtxEdge));
 
   return 0;
 }
