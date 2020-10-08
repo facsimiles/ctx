@@ -751,8 +751,8 @@ static int test_no;
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
-  //Ctx *ctx = ctx_new_ui (-1, -1);
-  Ctx *ctx = ctx_new_ui (1200, 1200);
+  Ctx *ctx = ctx_new_ui (-1, -1);
+  //Ctx *ctx = ctx_new_ui (1200, 1200);
 
   int quit = 0;
   int frame_no = 0;

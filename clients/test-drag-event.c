@@ -1,22 +1,4 @@
-#include <stdint.h>
-
-#include "ctx-font-ascii.h"
-#define CTX_LIMIT_FORMATS       1
-#define CTX_ENABLE_RGBA8        1
-#define CTX_ENABLE_CMYK         0
-#define CTX_ENABLE_CM           0
-#define CTX_PARSER              0
-#define CTX_DITHER              0 // implied by limit formats and only rgba being anbled, but we're explicit
-#define CTX_FORMATTER           1
-#define CTX_EVENTS              1
-#define CTX_BITPACK_PACKER      0
-#define CTX_GRADIENT_CACHE      0
-#define CTX_RENDERSTREAM_STATIC 0
-#define CTX_FONTS_FROM_FILE     0 /* leaves out code */
-
 #include "ctx.h"
-
-
 
 static void _analog_clock (Ctx     *ctx,
 		           uint32_t ms,
@@ -84,8 +66,8 @@ float x = 0;
 float y = 100;
 void red_rect (CtxEvent *event, void *userdata, void *userdata2)
 {
-   x += event->delta_x;// - 50;
-   y += event->delta_y;// - 50;
+   x += event->delta_x;;
+   y += event->delta_y;;
 }
 
 void green_rect (CtxEvent *event, void *userdata, void *userdata2)
@@ -110,10 +92,8 @@ int main (int argc, char **argv)
   const CtxEvent *event;
   int mx, my;
   int do_quit = 0;
-  //event = ctx_get_event (ctx, 1000, &mx, &my);
+  event = (void*)0x1;
   //fprintf (stderr, "[%s :%i %i]", event, mx, my);
-  //
-
   //
   while (!do_quit)
   {
@@ -125,20 +105,15 @@ int main (int argc, char **argv)
     ctx_compositing_mode (ctx, CTX_COMPOSITE_CLEAR);
     ctx_fill           (ctx);
     ctx_restore (ctx);
-  
-    ctx_rectangle      (ctx, 0, 0, width, height);
-    ctx_image_path (ctx, "rotvelt.png", 0, 0);
-    ctx_fill (ctx); 
-  
     ctx_move_to        (ctx, 10+x, height * 0.2);
-    ctx_font_size  (ctx, height * 0.1 + x/4.0);
+    //ctx_font_size  (ctx, height * 0.1 + x/4.0);
     ctx_line_width (ctx, 2);
     ctx_rgba       (ctx, 0, 0, 0, 1);
     ctx_text_stroke    (ctx, utf8);
     ctx_rgba8      (ctx, 255, 255, 255, 255);
     ctx_move_to        (ctx, height * 0.05 +x, height * 0.2);
     ctx_text           (ctx, utf8);
-    ctx_font_size  (ctx, height * 0.2);
+    //ctx_font_size  (ctx, height * 0.2);
 
     ctx_move_to        (ctx, height * 0.05, height * 0.4);
     ctx_rgb        (ctx, 1, 0,0);
@@ -147,6 +122,9 @@ int main (int argc, char **argv)
     ctx_rectangle (ctx, x,y,height * 0.2,height * 0.2);
     ctx_listen    (ctx, CTX_DRAG, red_rect, NULL, NULL);
     ctx_fill (ctx);
+    ctx_rgb   (ctx, 1, 1, 1);
+    ctx_move_to (ctx, x, y + height *  0.1);
+    ctx_text (ctx, "drag me");
 
     ctx_rgb        (ctx, 0, 1,0);
     ctx_rectangle (ctx, 0,height * 0.8,height * 0.2,height * 0.2);
@@ -177,7 +155,10 @@ int main (int argc, char **argv)
     //x+=0.25;
     if (x > ctx_width (ctx)) x= 0;
    
-    if (event = ctx_get_event (ctx))
+    int max_events_in_a_row = 8; /* without this - and without rate limiting
+                                     elsewhere, motion events can keep drawing
+                                     from happening */
+    while ((event = ctx_get_event (ctx)) &&  (max_events_in_a_row--))
     {
     switch (event->type)
     {
@@ -187,7 +168,6 @@ int main (int argc, char **argv)
          sprintf (message, "%s %.1f %.1f", 
                           ctx_pointer_is_down (ctx, 0)?
                          "drag":"motion", event->x, event->y);
-
          break;
        case CTX_PRESS:
          mx = event->x;
@@ -212,6 +192,8 @@ int main (int argc, char **argv)
          }
          if (strcmp (event->string, "idle"))
            sprintf (message, "key %s", event->string);
+         break;
+       default:
          break;
     }
     }

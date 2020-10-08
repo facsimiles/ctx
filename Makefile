@@ -60,6 +60,6 @@ updateweb: all post docs/ctx.h.html docs/ctx-font-regular.h.html
 	cp -Rv .git /home/pippin/pgo/ctx.graphics/.git
 	cp -Rf docs/* ~/pgo/ctx.graphics/
 	cp -Rf tests/* ~/pgo/ctx.graphics/tests
-	cp *.css *.html ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
+	cp ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
 flatpak:
 	rm -rf build-dir;flatpak-builder --user --install build-dir graphics.ctx.terminal.yml
