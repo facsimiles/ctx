@@ -1,7 +1,7 @@
 all: tools/ctx-fontgen pre_subdirs ctx.o ctx subdirs
 
 PRE_SUBDIRS=fonts
-SUBDIRS=examples2 test-size
+SUBDIRS=examples2
 
 pre_subdirs: tools/ctx-fontgen
 	for a in $(PRE_SUBDIRS); do make -C $$a; done
@@ -18,6 +18,7 @@ clean:
 	for a in tools $(PRE_SUBDIRS) $(SUBDIRS); do make -C $$a clean; done
 
 CFLAGS= -O3 -g -march=native -Wno-array-bounds 
+#CFLAGS= -Os 
 
 tools/%: tools/%.c ctx.h test-size/tiny-config.h
 	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
@@ -25,16 +26,18 @@ tools/%-32bit: tools/%.c ctx.h test-size/tiny-config.h
 	i686-linux-gnu-gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
 
 ctx.o: ctx-lib.c ctx.h Makefile pre_subdirs
-	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps
+	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps 
 
 ctx-nosdl.o: ctx-lib.c ctx.h Makefile pre_subdirs
-	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -DNO_SDL=1 -DCTX_FB=1
+	musl-gcc ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -DNO_SDL=1 -DCTX_FB=1
 
 ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o
 	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -lpthread
 
-ctx-nosdl: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-nosdl.o
-	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts ctx-nosdl.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -lpthread -DNO_SDL=1 -DCTX_FB=1 -static
+ctx-static: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-nosdl.o
+	musl-gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts ctx-nosdl.o -lutil -Wall  -lz -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-missing-field-initializers  -lm -Ideps -lpthread -DNO_SDL=1 -DCTX_FB=1 -static 
+	strip -s -x $@
+	upx $@
 
 ctx.h.html: ctx.h Makefile
 	highlight -l -a --encoding=utf8 -W ctx.h > ctx.h.html
@@ -53,6 +56,7 @@ updateweb: all post ctx.h.html ctx-font-regular.h.html
 	cp -R mcu/* ~/pgo/ctx.graphics/mcu
 	cp -R file/* ~/pgo/ctx.graphics/file
 	cp -R commit/* ~/pgo/ctx.graphics/commit
+	cp -R binaries/* ~/pgo/ctx.graphics/binaries
 	cp -R tests/* ~/pgo/ctx.graphics/tests
 	cp -R protocol/* ~/pgo/ctx.graphics/protocol
 	cp -R rasterizer/* ~/pgo/ctx.graphics/rasterizer
