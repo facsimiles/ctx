@@ -32,14 +32,12 @@ CFLAGS= -O3 -g $(CFLAGS_warnings)
 
 tools/%: tools/%.c ctx.h test-size/tiny-config.h 
 	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
-tools/%-32bit: tools/%.c ctx.h test-size/tiny-config.h
-	i686-linux-gnu-gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
 
-ctx.o: ctx-lib.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CC) ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -lm
+ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
+	$(CC) ctx.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -lm
 
-ctx-nosdl.o: ctx-lib.c ctx.h Makefile used_fonts
-	musl-gcc ctx-lib.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps -lutil -lz -lm -DNO_SDL=1 -DCTX_FB=1
+ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
+	musl-gcc ctx.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps -lutil -lz -lm -DNO_SDL=1 -DCTX_FB=1
 
 ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o
 	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -Ideps -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx.o -lutil -lz -lm -lpthread

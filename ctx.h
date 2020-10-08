@@ -21087,17 +21087,73 @@ static void ctx_fb_show_frame (CtxFb *fb)
     if (fb->vt_active)
     {
      fprintf (stderr, "\e[H\e[J");
-#if 1
-     memcpy (fb->fb, fb->scratch_fb, fb->width * fb->height *  4);
-#else
-    int max = fb->width * fb->height * 4;
-    for (int o = 0; o < max; o+=4)
-    {
-      fb->fb[o+0] = fb->scratch_fb[o+2];
-      fb->fb[o+1] = fb->scratch_fb[o+1];
-      fb->fb[o+2] = fb->scratch_fb[o+0];
-    }
-#endif
+     switch (fb->fb_bits)
+     {
+       case 32:
+         memcpy (fb->fb, fb->scratch_fb, fb->width * fb->height *  4);
+         break;
+         /* XXX  :  note: converting a scanline (or all) to target and
+          * then doing a bulk memcpy be faster (at least with som /dev/fbs)  */
+       case 24:
+         { int count = fb->width * fb->height;
+           const uint8_t *src = fb->scratch_fb;
+           uint8_t *dst = fb->fb;
+           while (count --)
+           {
+             dst[0] = src[0];
+             dst[1] = src[1];
+             dst[2] = src[2];
+             dst+=3;
+             src+=4;
+           }
+         }
+         break;
+       case 16:
+         { int count = fb->width * fb->height;
+           const uint8_t *src = fb->scratch_fb;
+           uint8_t *dst = fb->fb;
+           while (count --)
+           {
+             int big = ((src[0] >> 3)) +
+                ((src[1] >> 2)<<5) +
+                ((src[2] >> 3)<<11);
+             dst[0] = big & 255;
+             dst[1] = big >>  8;
+             dst+=2;
+             src+=4;
+           }
+         }
+         break;
+       case 15:
+         { int count = fb->width * fb->height;
+           const uint8_t *src = fb->scratch_fb;
+           uint8_t *dst = fb->fb;
+           while (count --)
+           {
+             int big = ((src[2] >> 3)) +
+                       ((src[1] >> 2)<<5) +
+                       ((src[0] >> 3)<<10);
+             dst[0] = big & 255;
+             dst[1] = big >>  8;
+             dst+=2;
+             src+=4;
+           }
+         }
+       case 8:
+         { int count = fb->width * fb->height;
+           const uint8_t *src = fb->scratch_fb;
+           uint8_t *dst = fb->fb;
+           while (count --)
+           {
+             dst[0] = ((src[0] >> 5)) +
+                      ((src[1] >> 5)<<3) +
+                      ((src[2] >> 6)<<6);
+             dst+=1;
+             src+=4;
+           }
+         }
+         break;
+     }
     ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
     //__u32 dummy = 0;
     //ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
