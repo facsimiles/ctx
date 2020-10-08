@@ -636,7 +636,7 @@ static void vtcmd_clear (VT *vt, const char *sequence)
 }
 
 #define set_fg_rgb(r, g, b) \
-    vt->cstyle ^= (vt->cstyle & (((1l<<24)-1)<<16));\
+    vt->cstyle ^= (vt->cstyle & (((uint64_t)((1l<<24)-1))<<16));\
     vt->cstyle |=  ((uint64_t)(r)<<16);\
     vt->cstyle |=  ((uint64_t)(g)<<(16+8));\
     vt->cstyle |=  ((uint64_t)(b)<<(16+8+8));\
@@ -644,7 +644,7 @@ static void vtcmd_clear (VT *vt, const char *sequence)
     vt->cstyle |= STYLE_FG24_COLOR_SET;\
 
 #define set_bg_rgb(r, g, b) \
-    vt->cstyle ^= (vt->cstyle & (((1l<<24)-1)<<40));\
+    vt->cstyle ^= (vt->cstyle & (((uint64_t)((1l<<24)-1))<<40));\
     vt->cstyle |=  ((uint64_t)(r)<<40);\
     vt->cstyle |=  ((uint64_t)(g)<<(40+8));\
     vt->cstyle |=  ((uint64_t)(b)<<(40+8+8));\
@@ -652,13 +652,13 @@ static void vtcmd_clear (VT *vt, const char *sequence)
     vt->cstyle |= STYLE_BG24_COLOR_SET;\
 
 #define set_fg_idx(idx) \
-    vt->cstyle ^= (vt->cstyle & (((1l<<24)-1)<<16));\
+    vt->cstyle ^= (vt->cstyle & (((uint64_t)((1l<<24)-1))<<16));\
     vt->cstyle ^= (vt->cstyle & STYLE_FG24_COLOR_SET);\
     vt->cstyle |=  ((idx)<<16);\
     vt->cstyle |= STYLE_FG_COLOR_SET;
 
 #define set_bg_idx(idx) \
-    vt->cstyle ^= (vt->cstyle & (((1l<<24)-1)<<40));\
+    vt->cstyle ^= (vt->cstyle & (((uint64_t)((1l<<24)-1))<<40));\
     vt->cstyle ^= (vt->cstyle & STYLE_BG24_COLOR_SET);\
     vt->cstyle |= ((int64_t)(idx)<<40) ;\
     vt->cstyle |= STYLE_BG_COLOR_SET;
