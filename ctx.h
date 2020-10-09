@@ -689,6 +689,14 @@ void  ctx_listen               (Ctx          *ctx,
                                 CtxCb         cb,
                                 void*         data1,
                                 void*         data2);
+void  ctx_listen_with_finalize (Ctx          *ctx,
+                                CtxEventType  types,
+                                CtxCb         cb,
+                                void*         data1,
+                                void*         data2,
+                      void   (*finalize)(void *listen_data, void *listen_data2,
+                                         void *finalize_data),
+                      void    *finalize_data);
 
 void ctx_init (int *argc, char ***argv); // is a no-op but could launch
                                          // terminal
@@ -18748,6 +18756,39 @@ void ctx_listen (Ctx          *ctx,
   if (types == CTX_DRAG_MOTION)
     types = CTX_DRAG_MOTION | CTX_DRAG_PRESS;
   return ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, NULL, NULL);
+}
+
+void  ctx_listen_with_finalize (Ctx          *ctx,
+                                CtxEventType  types,
+                                CtxCb         cb,
+                                void*         data1,
+                                void*         data2,
+                      void   (*finalize)(void *listen_data, void *listen_data2,
+                                         void *finalize_data),
+                      void    *finalize_data)
+{
+  float x, y, width, height;
+  /* generate bounding box of what to listen for - from current cairo path */
+  if (types & CTX_KEY)
+  {
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+  }
+  else
+  {
+     float ex1,ey1,ex2,ey2;
+     ctx_path_extents (ctx, &ex1, &ey1, &ex2, &ey2);
+     x = ex1;
+     y = ey1;
+     width = ex2 - ex1;
+     height = ey2 - ey1;
+  }
+
+  if (types == CTX_DRAG_MOTION)
+    types = CTX_DRAG_MOTION | CTX_DRAG_PRESS;
+  return ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, finalize, finalize_data);
 }
 
 
