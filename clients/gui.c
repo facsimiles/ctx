@@ -8,11 +8,6 @@ void pressed (void *userdata)
   fprintf (stderr, "pressed\n");
 }
 
-void fooed (CtxEvent *event, void *userdata, void *userdata2)
-{
-  fprintf (stderr, "fooed\n");
-}
-
 int do_quit = 0;
 void ui_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 {

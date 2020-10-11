@@ -34,7 +34,7 @@ tools/%: tools/%.c ctx.h test-size/tiny-config.h
 	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CC) ctx.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps `pkg-config sdl2 --cflags --libs` -lutil -Wall  -lz -lm
+	$(CC) ctx.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps `pkg-config sdl2 --cflags --libs` -lutil -lz -lm
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
 	musl-gcc ctx.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps -lutil -lz -lm -DNO_SDL=1 -DCTX_FB=1

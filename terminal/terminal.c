@@ -890,6 +890,19 @@ void ctx_osk_draw (Ctx *ctx)
   ctx_restore (ctx);
 }
 
+static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
+{
+  if (!strcmp (event->string, "resize-event"))
+  {
+     if (active)
+       client_resize (active->id, ctx_width (ctx), ctx_height (ctx));
+  }
+  else
+  {
+    handle_event (event->string);
+  }
+}
+
 int terminal_main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
@@ -1002,7 +1015,7 @@ int terminal_main (int argc, char **argv)
       {
         dirty = 0;
         ctx_osk_draw (ctx);
-
+        ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
 
         ctx_flush (ctx);
       }
@@ -1014,29 +1027,13 @@ int terminal_main (int argc, char **argv)
       CtxEvent *event;
       while ((event = ctx_get_event (ctx)))
       {
-        switch (event->type)
-        {
-          case CTX_KEY_DOWN:
-            if (!strcmp (event->string, "resize-event"))
-            {
-               if (active)
-                 client_resize (active->id, ctx_width (ctx), ctx_height (ctx));
-            }
-            else
-            {
-              handle_event (event->string);
-            }
-            break;
-          default:
-            break;
-        }
       }
       for (CtxList *l = clients; l; l = l->next)
       {
         CtxClient *client = l->data;
-          if (vt_poll (client->vt, sleep_time) )
-          {
-          }
+        if (vt_poll (client->vt, sleep_time) )
+        {
+        }
       }
     }
 
@@ -1044,6 +1041,5 @@ int terminal_main (int argc, char **argv)
     client_remove (clients->data);
 
   ctx_free (ctx);
-
   return 0;
 }
