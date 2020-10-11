@@ -2446,6 +2446,7 @@ static inline float ctx_sqrtf (float a)           { return sqrtf (a); }
 
 #ifdef CTX_IMPLEMENTATION
 #include <stdlib.h>
+#include <unistd.h>
 
 /* can balloon size and gcc itself is quite good at determining what to
  * inline
@@ -5249,7 +5250,6 @@ ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len)
   ctx_process_cmd_str (ctx, CTX_SET, string, key_hash, len);
 }
 
-#include <unistd.h>
 
 const char *
 ctx_get (Ctx *ctx, const char *key)
