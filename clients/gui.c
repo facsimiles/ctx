@@ -51,9 +51,15 @@ struct _CtxControls{
   float x0;
   float x;
   float y;
+
+  float stored_x; // for sameline()
+
   float font_size;
   float width;
   float value_pos;
+  float value_width;
+  float label_pos;
+
   float rel_ver_advance;
   float rel_baseline;
   float winx;
@@ -75,6 +81,9 @@ struct _CtxControls{
   CtxList *controls;
   CtxList *choices;
   int control_no;
+
+  int line_no;
+  int lines_drawn;
 };
 
 CtxControls *cctx_new (Ctx *ctx)
@@ -83,7 +92,9 @@ CtxControls *cctx_new (Ctx *ctx)
   cctx->ctx             = ctx;
   cctx->font_size       = 28;
   cctx->width           = cctx->font_size * 20;
-  cctx->value_pos       = 6;
+  cctx->value_width     = 0.4;
+  cctx->label_pos       = cctx->value_width + cctx->font_size;
+  cctx->value_pos       = 0.5;
   cctx->rel_ver_advance = 1.2;
   cctx->rel_baseline    = 0.77;
   cctx->dirty ++;
@@ -163,6 +174,16 @@ CtxControl *add_control (CtxControls *cctx, const char *label, float x, float y,
   return control;
 }
 
+static void ui_text (CtxControls *cctx, const char *text)
+{
+  Ctx *ctx = cctx->ctx;
+  ctx_rgb (ctx, 0, 0, 0);
+  ctx_move_to (ctx, cctx->x,  cctx->y + cctx->font_size * cctx->rel_baseline);
+  ctx_text (ctx, text);
+  cctx->x += ctx_text_width (ctx, text);
+}
+
+
 static void ui_base (CtxControls *cctx, const char *label, float x, float y, float width, float height, int focused)
 {
   Ctx *ctx = cctx->ctx;
@@ -172,25 +193,41 @@ static void ui_base (CtxControls *cctx, const char *label, float x, float y, flo
   else
     ctx_rgb (ctx, 0.9,0.9,0.9);
 
-  ctx_rectangle (ctx, x, y, width, height+2);
-  ctx_fill (ctx);
-  ctx_move_to (ctx, x + cctx->font_size * 0.5, y + cctx->font_size * cctx->rel_baseline);
-
-  ctx_rgb (ctx, 0, 0, 0);
-  ctx_text (ctx, label);
-
+  if (cctx->line_no >= cctx->lines_drawn)
+  {
+    ctx_rectangle (ctx, x, y, width, height);
+    ctx_fill (ctx);
+    cctx->lines_drawn = cctx->line_no -1;
+  }
 }
-
 
 void ui_newline (CtxControls *cctx)
 {
   cctx->y += cctx->font_size * cctx->rel_ver_advance;
+  cctx->stored_x = cctx->x;
   cctx->x = cctx->x0;
+  cctx->line_no++;
 }
 
 void ui_sameline (CtxControls *cctx)
 {
+  cctx->y -= cctx->font_size * cctx->rel_ver_advance;
+  cctx->x = cctx->stored_x;
+  cctx->line_no--;
+}
 
+void ui_seperator (CtxControls *cctx)
+{
+  Ctx *ctx = cctx->ctx;
+  char buf[100] = "";
+  ctx_save (ctx);
+  ui_base (cctx, NULL, cctx->x, cctx->y, cctx->width, cctx->font_size * cctx->rel_ver_advance / 4, 0);
+  ctx_rectangle (ctx, cctx->x, cctx->y, cctx->width, cctx->font_size * cctx->rel_ver_advance/4);
+  ctx_gray (ctx, 0.5);
+  ctx_fill (ctx);
+  ctx_restore (ctx);
+  ui_newline (cctx);
+  cctx->y -= cctx->font_size * cctx->rel_ver_advance * 0.75;
 }
 
 void ui_label (CtxControls *cctx, const char *label)
@@ -198,7 +235,8 @@ void ui_label (CtxControls *cctx, const char *label)
   Ctx *ctx = cctx->ctx;
   char buf[100] = "";
   ctx_save (ctx);
-  ui_base (cctx, label, cctx->x, cctx->y, cctx->width, cctx->font_size * cctx->rel_ver_advance, 0);
+  ui_base (cctx, NULL, cctx->x, cctx->y, cctx->width, cctx->font_size * cctx->rel_ver_advance, 0);
+  ui_text (cctx, label);
 
   ctx_restore (ctx);
   ui_newline (cctx);
@@ -229,8 +267,11 @@ void ui_titlebar (CtxControls *cctx, const char *label)
   ctx_listen_with_finalize (ctx, CTX_DRAG, titlebar_drag, control, cctx, control_finalize, NULL);
 
   ctx_begin_path (ctx);
-  ui_base (cctx, label, control->x, control->y, control->width, cctx->font_size * 2,
-                        cctx->focus_no == control->no);
+  cctx->line_no = 0;
+  cctx->lines_drawn = 0;
+  ui_base (cctx, label, control->x, control->y, control->width, cctx->font_size * cctx->rel_ver_advance, cctx->focus_no == control->no);
+  ui_text (cctx, label);
+  //cctx->lines_drawn = 1;
 
   ctx_restore (ctx);
   ui_newline (cctx);
@@ -267,7 +308,7 @@ void slider_drag (CtxEvent *event, void *userdata, void *userdata2)
   float *val = control->val;
   float new_val;
   
-  new_val = ((event->x - control->x) / control->width) * (control->max-control->min) + control->min;
+  new_val = ((event->x - control->x) / (control->width * cctx->value_width)) * (control->max-control->min) + control->min;
   ui_float_constrain (control, &new_val);
 
   *val = new_val;
@@ -293,7 +334,7 @@ void ui_slider (CtxControls *cctx, const char *label, float *val, float min, flo
   control->ref_count++;
   control->ref_count++;
 
-  ctx_rectangle (ctx, cctx->x, cctx->y, cctx->width, cctx->font_size * cctx->rel_ver_advance);
+  ctx_rectangle (ctx, cctx->x, cctx->y, cctx->width*cctx->value_width, cctx->font_size * cctx->rel_ver_advance);
 
   ctx_listen_with_finalize (ctx, CTX_DRAG, slider_drag, control, cctx, control_finalize, NULL);
   ctx_begin_path (ctx);
@@ -307,11 +348,14 @@ void ui_slider (CtxControls *cctx, const char *label, float *val, float min, flo
   ctx_text (ctx, buf);
 
   float rel_val = ((*val) - min) / (max-min);
-  ctx_rectangle (ctx, cctx->x + (cctx->width-cctx->font_size/4) * rel_val, cctx->y, cctx->font_size/4, control->height * 0.8);
+  ctx_rectangle (ctx, cctx->x + (cctx->width*cctx->value_width-cctx->font_size/4) * rel_val, cctx->y, cctx->font_size/4, control->height * 0.8);
   ctx_fill (ctx);
 
-  ctx_restore (ctx);
+  cctx->x += cctx->value_width * cctx->width;
+  ui_text (cctx, label);
   ui_newline (cctx);
+
+  ctx_restore (ctx);
 }
 
 
@@ -385,6 +429,8 @@ void ui_entry (CtxControls *cctx, const char *label, const char *fallback, char 
       }
     }
   }
+  cctx->x += cctx->value_width * cctx->width;
+  ui_text (cctx, label);
 
   ctx_restore (ctx);
   ui_newline (cctx);
@@ -400,6 +446,7 @@ void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
   cctx->focus_no = control->no;
   cctx->dirty++;
 }
+
 
 void ui_toggle (CtxControls *cctx, const char *label, int *val)
 {
@@ -418,20 +465,26 @@ void ui_toggle (CtxControls *cctx, const char *label, int *val)
   ui_base (cctx, label, control->x, control->y, control->width, cctx->font_size * 2,
                         cctx->focus_no == control->no);
 
+  ctx_rgba (ctx, 1, 0, 0, 1);
+  ctx_move_to (ctx, cctx->x + cctx->font_size * cctx->value_pos, cctx->y + cctx->font_size * cctx->rel_baseline);
   if (*val)
   {
-    ctx_rgba (ctx, 1, 1, 0, 1);
+    ctx_text (ctx, "X");
   }
   else
   {
-    ctx_rgba (ctx, 0.2, 0.6, 0, 1);
+    ctx_text (ctx, "V");
   }
 
-  ctx_rectangle (ctx, cctx->x + cctx->width-cctx->font_size * 4,  cctx->y, cctx->font_size*3, cctx->font_size * 2);
-  ctx_fill (ctx);
+  ctx_rgba (ctx, 0, 0, 0, 1);
+  cctx->x += ctx_text_width (ctx, "X") + cctx->font_size * cctx->value_pos;
+  if (label)
+  {
+    ui_text (cctx, label);
+  }
 
-  ctx_restore (ctx);
   ui_newline (cctx);
+  ctx_restore (ctx);
 }
 
 void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
@@ -460,19 +513,11 @@ int ui_expander (CtxControls *cctx, const char *label, int *val)
   ctx_begin_path (ctx);
   {
      char *tmp = malloc (strlen (label) + 10);
-     sprintf (tmp, "%s %s", *val?"V":">", label);
+     sprintf (tmp, "%s %s", *val?"V":"-", label);
      ui_base (cctx, label, control->x, control->y, control->width, cctx->font_size * 2,
               cctx->focus_no == control->no);
+     ui_text (cctx, tmp);
      free (tmp);
-  }
-
-  if (*val)
-  {
-    ctx_rgba (ctx, 1, 1, 0, 1);
-  }
-  else
-  {
-    ctx_rgba (ctx, 0.2, 0.6, 0, 1);
   }
 
   ctx_restore (ctx);
@@ -492,12 +537,45 @@ void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
   cctx->button_pressed = 1;
 }
 
+
+int ui_button2 (CtxControls *cctx, const char *label)
+{
+  Ctx *ctx = cctx->ctx;
+  ctx_font_size (ctx, cctx->font_size);
+  float width = ctx_text_width (ctx, label);
+  CtxControl *control = add_control (cctx, label, cctx->x, cctx->y, width, cctx->font_size * cctx->rel_ver_advance);
+  ui_base (cctx, label, cctx->x, cctx->y, width, cctx->font_size * cctx->rel_ver_advance, cctx->focus_no == control->no);
+  ctx_rgb (ctx, 0, 0, 1);
+  ctx_move_to (ctx, cctx->x,  cctx->y + cctx->font_size * cctx->rel_baseline);
+  ctx_text (ctx, label);
+
+  //control->action = action;
+  //control->val = user_data;
+  control->type = UI_BUTTON;
+  ctx_rectangle (ctx, cctx->x, cctx->y, width, cctx->font_size * cctx->rel_ver_advance);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, cctx, control_finalize, NULL);
+  //ctx_rgb (ctx, 0, 1, 1);
+  //ctx_fill (ctx);
+  ctx_begin_path (ctx);
+  cctx->x += width;
+
+  ui_newline (cctx);
+  if (control->no == cctx->focus_no && cctx->button_pressed)
+  {
+    cctx->button_pressed = 0;
+    cctx->dirty++;
+    return 1;
+  }
+  return 0;
+}
+
+
 int ui_button (CtxControls *cctx, const char *label, void (*action)(void *user_data), void *user_data)
 {
   Ctx *ctx = cctx->ctx;
   char buf[100] = "";
   ctx_save (ctx);
-  ctx_rgb (ctx, 1, 1, 1);
+  ctx_rgb (ctx, 1, 0, 1);
   CtxControl *control = add_control (cctx, label, cctx->x, cctx->y, cctx->width, cctx->font_size * cctx->rel_ver_advance);
   control->action = action;
   control->val = user_data;
@@ -508,14 +586,15 @@ int ui_button (CtxControls *cctx, const char *label, void (*action)(void *user_d
 
   ctx_fill (ctx);
   ctx_begin_path (ctx);
+  if (0)
   ui_base (cctx, label, control->x, control->y, control->width, cctx->font_size * 2,
            cctx->focus_no == control->no);
+  ctx_font_size (ctx, cctx->font_size);
+  ctx_rgb (ctx, 0,0,0);
+  ui_text (cctx, label);
 
-  ctx_rectangle (ctx, cctx->x + cctx->width-cctx->font_size * 4,  cctx->y, cctx->font_size*3, cctx->font_size * 2);
-  ctx_fill (ctx);
-
-  ctx_restore (ctx);
   ui_newline (cctx);
+  ctx_restore (ctx);
 
   if (control->no == cctx->focus_no && cctx->button_pressed)
   {
@@ -557,6 +636,8 @@ void ui_choice (CtxControls *cctx, const char *label, int *val, void (*action)(v
   ctx_fill (ctx);
   ctx_begin_path (ctx);
   ui_base (cctx, label, cctx->x, cctx->y, cctx->width, cctx->font_size * 2, cctx->focus_no == control->no);
+  cctx->x = cctx->x + cctx->width * cctx->value_width;
+  ui_text (cctx, label);
 
   ctx_restore (ctx);
   ui_newline (cctx);
@@ -1012,6 +1093,7 @@ int main (int argc, char **argv)
 
 #if 1
       ui_titlebar (cctx, "Test UI");
+      //ui_seperator (cctx);
         ui_entry (cctx, "Foo:", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL);
         ui_choice (cctx, "power: ", &chosen, NULL, NULL);
         ui_choice_add (cctx, 0, "on");
@@ -1028,15 +1110,22 @@ int main (int argc, char **argv)
       ui_slider (cctx, "width: ", &cctx->width, 5.0, 600.0, 1.0);
       ui_slider (cctx, "ver_advance: ", &cctx->rel_ver_advance, 0.1, 4.0, 0.01);
       ui_slider (cctx, "baseline: ", &cctx->rel_baseline, 0.1, 4.0, 0.01);
+      ui_slider (cctx, "label_pos: ", &cctx->label_pos, 0.0, 40.0, 0.1);
       ui_slider (cctx, "value_pos: ", &cctx->value_pos, 0.0, 40.0, 0.1);
+      ui_slider (cctx, "value_width: ", &cctx->value_width, 0.0, 40.0, 0.1);
       }
 
         ui_toggle (cctx, "baz: ", &baz);
-        ui_toggle (cctx, "bax: ", &bax);
-        if (ui_button (cctx, "press me", NULL, NULL))
+        if (ui_button2 (cctx, "press me "))
         {
           fprintf (stderr, "imgui style press\n");
         }
+        ui_sameline (cctx);
+        if (ui_button2 (cctx, "or me"))
+        {
+          fprintf (stderr, "imgui style press2\n");
+        }
+        ui_toggle (cctx, "barx: ", &bax);
 
         ui_done (cctx);
 #endif

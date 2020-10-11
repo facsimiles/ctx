@@ -1,4 +1,4 @@
-PROGRAMS=ctx-fontgen ctx-info
+PROGRAMS=ctx-fontgen
 
 all: $(PROGRAMS)
 
