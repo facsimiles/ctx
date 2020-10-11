@@ -7,10 +7,10 @@ all: $(PROGRAMS)
 clean:
 	rm -rf $(PROGRAMS) demo.static
 
-%: %.c ../*.h ../fonts/*.h Makefile ../ctx.o
+%: %.c ../*.h ../fonts/*.h Makefile ../ctx.o gui.h
 	$(CC) -g $< -o $@ -I.. -I../fonts ../ctx.o `pkg-config sdl2 --cflags --libs` -lm  -lpthread
 
-demo.static: demo.static.c ../*.h ../fonts/*.h Makefile
+demo.static: demo.static.c ../*.h ../fonts/*.h Makefile gui.h
 	$(CC) -g $< --static -o $@ -I.. -I../fonts -lm 
 
 ../ctx.o: ../ctx.h
