@@ -48,6 +48,7 @@ struct _UiChoice
 typedef struct _CtxControls CtxControls;
 struct _CtxControls{
   Ctx *ctx;
+  float x0;
   float x;
   float y;
   float font_size;
@@ -135,6 +136,7 @@ void ui_reset (CtxControls *cctx)
     ctx_list_remove (&cctx->choices, choice);
   }
   cctx->control_no = 0;
+  cctx->x0 =
   cctx->x = cctx->winx;
   cctx->y = cctx->winy;
 }
@@ -183,10 +185,12 @@ static void ui_base (CtxControls *cctx, const char *label, float x, float y, flo
 void ui_newline (CtxControls *cctx)
 {
   cctx->y += cctx->font_size * cctx->rel_ver_advance;
+  cctx->x = cctx->x0;
 }
 
 void ui_sameline (CtxControls *cctx)
 {
+
 }
 
 void ui_label (CtxControls *cctx, const char *label)
