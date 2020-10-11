@@ -5011,6 +5011,11 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
 
 static void _ctx_bindings_key_down (CtxEvent *event, void *data1, void *data2);
 
+static void bared (CtxEvent *event, void *data, void *data2)
+{
+        fprintf (stderr, "barred\n");
+}
+
 void ctx_reset (Ctx *ctx)
 {
   //CTX_PROCESS_VOID (CTX_RESET);
@@ -5024,15 +5029,21 @@ void ctx_reset (Ctx *ctx)
   if (ctx->events.ctx_get_event_enabled)
   {
     ctx_clear_bindings (ctx);
+    ctx_add_key_binding (ctx, "control-b", NULL, "bar", bared, NULL);
+
     ctx_listen_full (ctx, 0,0,0,0,
                      CTX_KEY_DOWN, _ctx_bindings_key_down, ctx, ctx,
                      NULL, NULL);
+#if 0
+    // should be enabled if a mask of CTX_KEY_DOWN|UP is passed to get_event?
     ctx_listen_full (ctx, 0, 0, 0,0,
                      CTX_KEY_DOWN, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
     ctx_listen_full (ctx, 0, 0, 0,0,
                      CTX_KEY_UP, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
+#endif
+
     ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
                      CTX_PRESS|CTX_RELEASE|CTX_MOTION, ctx_collect_events, ctx, ctx,
                      NULL, NULL);

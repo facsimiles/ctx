@@ -578,8 +578,9 @@ CtxControl *ui_focused_control(CtxControls *cctx)
   return NULL;
 }
 
-void ui_key_up (CtxControls *cctx)
+void ui_key_up (CtxEvent *event, void *data, void *data2)
 {
+  CtxControls *cctx = data;
   CtxControl *control = ui_focused_control (cctx);
 
   if (control && control->type == UI_CHOICE && ui_choice_active)
@@ -602,10 +603,13 @@ void ui_key_up (CtxControls *cctx)
   {
     ui_focus (cctx, -1);
   }
+  cctx->dirty++;
+  event->stop_propagate = 1;
 }
 
-void ui_key_down (CtxControls *cctx)
+void ui_key_down (CtxEvent *event, void *data, void *data2)
 {
+  CtxControls *cctx = data;
   CtxControl *control = ui_focused_control (cctx);
   if (control && control->type == UI_CHOICE && ui_choice_active)
   {
@@ -629,10 +633,13 @@ void ui_key_down (CtxControls *cctx)
   {
     ui_focus (cctx, 1);
   }
+  event->stop_propagate = 1;
+  cctx->dirty++;
 }
 
-void ui_key_left (CtxControls *cctx)
+void ui_key_left (CtxEvent *event, void *data, void *data2)
 {
+  CtxControls *cctx = data;
   CtxControl *control = ui_focused_control (cctx);
   if (!control) return;
   switch (control->type)
@@ -654,10 +661,13 @@ void ui_key_left (CtxControls *cctx)
       }
       break;
   }
+  event->stop_propagate = 1;
+  cctx->dirty++;
 }
 
-void ui_key_return (CtxControls *cctx)
+void ui_key_return (CtxEvent *event, void *data, void *data2)
 {
+  CtxControls *cctx = data;
   CtxControl *control = ui_focused_control (cctx);
   if (!control) return;
   if (control->no == cctx->focus_no)
@@ -701,10 +711,13 @@ void ui_key_return (CtxControls *cctx)
         break;
     }
   }
+  event->stop_propagate=1;
+  cctx->dirty++;
 }
 
-void ui_key_right (CtxControls *cctx)
+void ui_key_right (CtxEvent *event, void *data, void *data2)
 {
+  CtxControls *cctx = data;
   CtxControl *control = ui_focused_control (cctx);
   if (!control) return;
   switch (control->type)
@@ -713,7 +726,7 @@ void ui_key_right (CtxControls *cctx)
     case UI_EXPANDER:
     case UI_BUTTON:
     case UI_CHOICE:
-      ui_key_return (cctx);
+      ui_key_return (event, data, data2);
       break;
     case UI_ENTRY:
       {
@@ -725,7 +738,7 @@ void ui_key_right (CtxControls *cctx)
         }
         else
         {
-          ui_key_return (cctx);
+          ui_key_return (event, data, data2);
         }
       }
       break;
@@ -737,10 +750,13 @@ void ui_key_right (CtxControls *cctx)
       }
       break;
   }
+  event->stop_propagate = 1;
+  cctx->dirty++;
 }
 
-void ui_key_backspace (CtxControls *cctx)
+void ui_key_backspace (CtxEvent *event, void *data, void *data2)
 {
+  CtxControls *cctx = data;
   CtxControl *control = ui_focused_control (cctx);
   if (!control) return;
   switch (control->type)
@@ -756,18 +772,22 @@ void ui_key_backspace (CtxControls *cctx)
      }
      break;
   }
-  
+  event->stop_propagate = 1;
+  cctx->dirty++;
 }
 
-void ui_key_delete (CtxControls *cctx)
+void ui_key_delete (CtxEvent *event, void *data, void *data2)
 {
+  CtxControls *cctx = data;
   CtxControl *control = ui_focused_control (cctx);
   if (!control) return;
   if (strlen (cctx->entry_copy) > cctx->entry_pos)
   {
-    ui_key_right (cctx);
-    ui_key_backspace (cctx);
+    ui_key_right (event, data, data2);
+    ui_key_backspace (event, data, data2);
   }
+  event->stop_propagate = 1;
+  cctx->dirty++;
 }
 
 
@@ -819,6 +839,41 @@ void pressed (void *userdata)
   fprintf (stderr, "pressed\n");
 }
 
+void fooed (CtxEvent *event, void *userdata, void *userdata2)
+{
+  fprintf (stderr, "fooed\n");
+}
+
+  int do_quit = 0;
+void ui_key_quit (CtxEvent *event, void *userdata, void *userdata2)
+{
+        do_quit = 1;
+}
+
+void ui_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
+{
+  CtxControls *cctx = userdata;
+  if (cctx->entry_copy)
+    {
+      const char *str = event->string;
+      if (!strcmp (str, "space"))
+        str = " ";
+
+      char *tmp = malloc (strlen (cctx->entry_copy) + strlen (str) + 1);
+
+      char *rest = strdup (&cctx->entry_copy[cctx->entry_pos]);
+      cctx->entry_copy[cctx->entry_pos]=0;
+
+      sprintf (tmp, "%s%s%s", cctx->entry_copy, str, rest);
+      free (rest);
+      cctx->entry_pos+=strlen(str);
+      free (cctx->entry_copy);
+      cctx->entry_copy = tmp;
+      cctx->dirty++;
+    }
+  event->stop_propagate = 1;
+}
+
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
@@ -836,7 +891,6 @@ int main (int argc, char **argv)
 
   const CtxEvent *event;
   int mx, my;
-  int do_quit = 0;
   int   baz = 1;
   int   bax = 0;
   int chosen = 1;
@@ -926,14 +980,24 @@ int main (int argc, char **argv)
     ctx_fill (ctx);
 #endif
     
-    if (ctx_pointer_is_down (ctx, 0))
-    {
-      ctx_arc      (ctx, mx, my, 5.0, 0.0, CTX_PI*2, 0);
-      ctx_rgba (ctx, 1, 1, 1, 0.5);
-      ctx_fill     (ctx);
-    }
+      if (ctx_pointer_is_down (ctx, 0))
+      {
+        ctx_arc      (ctx, mx, my, 5.0, 0.0, CTX_PI*2, 0);
+        ctx_rgba (ctx, 1, 1, 1, 0.5);
+        ctx_fill     (ctx);
+      }
 
-    ctx_flush          (ctx);
+      ctx_add_key_binding (ctx, "control-q", NULL, "foo", ui_key_quit, NULL);
+      ctx_add_key_binding (ctx, "up", NULL, "focus prev", ui_key_up, cctx);
+      ctx_add_key_binding (ctx, "down", NULL, "focus next", ui_key_down, cctx);
+      ctx_add_key_binding (ctx, "right", NULL, "", ui_key_right, cctx);
+      ctx_add_key_binding (ctx, "left", NULL, "", ui_key_left, cctx);
+      ctx_add_key_binding (ctx, "return", NULL, "", ui_key_return, cctx);
+      ctx_add_key_binding (ctx, "backspace", NULL, "", ui_key_backspace, cctx);
+      ctx_add_key_binding (ctx, "delete", NULL, "", ui_key_delete, cctx);
+      ctx_add_key_binding (ctx, "unhandled", NULL, "", ui_key_unhandled, cctx);
+
+      ctx_flush          (ctx);
     }
     else
     {
@@ -944,8 +1008,10 @@ int main (int argc, char **argv)
                                      elsewhere, motion events can keep drawing
                                      from happening */
 #if 1
+
     while ((event = ctx_get_event (ctx)) &&  (max_events_in_a_row--))
     {
+#if 0
     switch (event->type)
     {
        case CTX_MOTION:
@@ -970,71 +1036,10 @@ int main (int argc, char **argv)
          my = event->y;
          sprintf (message, "drag %.1f %.1f", event->x, event->y);
          break;
-       case CTX_KEY_DOWN:
-         cctx->dirty++;
-         if (!strcmp (event->string, "up"))
-         {
-           ui_key_up (cctx);
-         }
-         else
-         if (!strcmp (event->string, "down"))
-         {
-           ui_key_down (cctx);
-         }
-         else if (!strcmp (event->string, "right"))
-         {
-           ui_key_right (cctx);
-         }
-         else if (!strcmp (event->string, "left"))
-         {
-           ui_key_left (cctx);
-         }
-         else if (!strcmp (event->string, "return"))
-         {
-           ui_key_return (cctx);
-         }
-         else if (!strcmp (event->string, "backspace"))
-         {
-           ui_key_backspace (cctx);
-         }
-         else if (!strcmp (event->string, "delete"))
-         {
-           ui_key_delete (cctx);
-         }
-         else if (!strcmp (event->string, "control-q"))
-         {
-            do_quit = 1;
-            fprintf (stderr, "quit!\n");
-         }
-         else
-         if (strcmp (event->string, "idle"))
-         {
-           if (cctx->entry_copy)
-           {
-             const char *str = event->string;
-             if (!strcmp (str, "space"))
-               str = " ";
-
-             char *tmp = malloc (strlen (cctx->entry_copy) + strlen (str) + 1);
-
-             char *rest = strdup (&cctx->entry_copy[cctx->entry_pos]);
-             cctx->entry_copy[cctx->entry_pos]=0;
-
-             sprintf (tmp, "%s%s%s", cctx->entry_copy, str, rest);
-             free (rest);
-             cctx->entry_pos+=strlen(str);
-             free (cctx->entry_copy);
-             cctx->entry_copy = tmp;
-           }
-           else
-           {
-             sprintf (message, "key %s", event->string);
-           }
-         }
-         break;
        default:
          break;
     }
+#endif
     }
 #endif
   }
