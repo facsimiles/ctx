@@ -6598,7 +6598,8 @@ ctx_renderstream_deinit (CtxRenderstream *renderstream)
 {
 #if !CTX_RENDERSTREAM_STATIC
   if (renderstream->entries && ! (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES) )
-    { free (renderstream->entries); }
+    { free (renderstream->entries); 
+    }
 #endif
   renderstream->entries = NULL;
 }

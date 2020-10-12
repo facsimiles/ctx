@@ -151,14 +151,16 @@ void ui_reset (CtxControls *cctx)
 CtxControl *add_control (CtxControls *cctx, const char *label, float x, float y, float width, float height)
 {
   CtxControl *control = calloc (sizeof (CtxControl), 1);
+  Ctx *ctx = cctx->ctx;
   control->label = strdup (label);
 
-  if (cctx->focus_label){
+if(0)  if (cctx->focus_label){
      if (!strcmp (cctx->focus_label, label))
      {
        cctx->focus_no = cctx->control_no;
      }
   }
+
 
   control->x = x;
   control->y = y;
@@ -167,6 +169,22 @@ CtxControl *add_control (CtxControls *cctx, const char *label, float x, float y,
   control->width = width;
   control->height = height;
   ctx_list_prepend (&cctx->controls, control);
+
+#if 0
+  float px = ctx_pointer_x (ctx);
+  float py = ctx_pointer_y (ctx);
+
+  if (px >= control->x &&  px < control->x +  control->width &&
+      py >= control->y &&  py < control->y +  control->height)
+  {
+    if (cctx->focus_no != control->no)
+    {
+      cctx->focus_no = control->no;
+      cctx->dirty++;
+    }
+  }
+#endif
+
   return control;
 }
 
@@ -478,6 +496,63 @@ void ui_toggle (CtxControls *cctx, const char *label, int *val)
   ctx_restore (ctx);
 }
 
+static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
+{
+  CtxControls *cctx = userdata2;
+  CtxControl *control = userdata;
+  if (control->action)
+    control->action (control->val);
+  event->stop_propagate = 1;
+  cctx->dirty ++;
+  cctx->focus_no = control->no;
+  cctx->button_pressed = 1;
+}
+
+int ui_radio (CtxControls *cctx, const char *label, int set)
+{
+  Ctx *ctx = cctx->ctx;
+  ctx_font_size (ctx, cctx->font_size);
+  float width = ctx_text_width (ctx, label);
+  CtxControl *control = add_control (cctx, label, cctx->x, cctx->y, width, cctx->font_size * cctx->rel_ver_advance);
+  ui_base (cctx, label, cctx->x, cctx->y, width, cctx->font_size * cctx->rel_ver_advance, cctx->focus_no == control->no);
+  ctx_rgb (ctx, 0, 0, 1);
+  ctx_move_to (ctx, cctx->x,  cctx->y + cctx->font_size * cctx->rel_baseline);
+  if (set)
+  ctx_text (ctx, "X");
+  else
+  ctx_text (ctx, "O");
+  ctx_text (ctx, label);
+
+  control->type = UI_RADIO;
+  ctx_rectangle (ctx, cctx->x, cctx->y, width, cctx->font_size * cctx->rel_ver_advance);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, cctx, control_finalize, NULL);
+  ctx_begin_path (ctx);
+  cctx->x += width;
+
+#if 1
+  float px = ctx_pointer_x (ctx);
+  float py = ctx_pointer_y (ctx);
+
+  if (px >= control->x &&  px < control->x +  control->width &&
+      py >= control->y &&  py < control->y +  control->height)
+  {
+    cctx->focus_no = control->no;
+  }
+#endif
+
+  ui_newline (cctx);
+  ctx_restore (ctx);
+  if (control->no == cctx->focus_no && cctx->button_pressed)
+  {
+    cctx->button_pressed = 0;
+    cctx->dirty++;
+    return 1;
+  }
+   return 0;
+}
+
+
+
 void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
   CtxControls *cctx = userdata2;
@@ -516,17 +591,6 @@ int ui_expander (CtxControls *cctx, const char *label, int *val)
   return *val;
 }
 
-static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
-{
-  CtxControls *cctx = userdata2;
-  CtxControl *control = userdata;
-  if (control->action)
-    control->action (control->val);
-  event->stop_propagate = 1;
-  cctx->dirty ++;
-  cctx->focus_no = control->no;
-  cctx->button_pressed = 1;
-}
 
 int ui_button2 (CtxControls *cctx, const char *label)
 {
@@ -544,6 +608,18 @@ int ui_button2 (CtxControls *cctx, const char *label)
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, cctx, control_finalize, NULL);
   ctx_begin_path (ctx);
   cctx->x += width;
+
+#if 0
+  float px = ctx_pointer_x (ctx);
+  float py = ctx_pointer_y (ctx);
+
+  if (px >= control->x &&  px < control->x +  control->width &&
+      py >= control->y &&  py < control->y +  control->height)
+  {
+    cctx->focus_no = control->no;
+  }
+#endif
+
 
   ui_newline (cctx);
   if (control->no == cctx->focus_no && cctx->button_pressed)
@@ -566,7 +642,7 @@ int ui_button (CtxControls *cctx, const char *label, void (*action)(void *user_d
   control->val = user_data;
   control->type = UI_BUTTON;
 
-  ctx_rectangle (ctx, cctx->x, cctx->y, cctx->width, cctx->font_size * 2);
+  ctx_rectangle (ctx, cctx->x, cctx->y, cctx->width, cctx->font_size * cctx->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, cctx, control_finalize, NULL);
 
   ctx_fill (ctx);
@@ -613,7 +689,7 @@ void ui_choice (CtxControls *cctx, const char *label, int *val, void (*action)(v
   control->val = val;
   control->type = UI_CHOICE;
 
-  ctx_rectangle (ctx, cctx->x, cctx->y, cctx->width, cctx->font_size * 2);
+  ctx_rectangle (ctx, cctx->x, cctx->y, cctx->width, cctx->font_size * cctx->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, choice_clicked, control, cctx, control_finalize, NULL);
 
   ctx_fill (ctx);
@@ -841,6 +917,7 @@ void ui_key_return (CtxEvent *event, void *data, void *data2)
           *val = !(*val);
         }
         break;
+      case UI_RADIO:
       case UI_BUTTON:
         {
           if (control->action)
@@ -898,6 +975,7 @@ void ui_key_right (CtxEvent *event, void *data, void *data2)
     case UI_EXPANDER:
     case UI_BUTTON:
     case UI_CHOICE:
+    case UI_RADIO:
       ui_key_return (event, data, data2);
       break;
     case UI_ENTRY:

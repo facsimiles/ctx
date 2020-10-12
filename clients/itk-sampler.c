@@ -1,7 +1,6 @@
 #include <unistd.h>
 #include "ctx.h"
-#include "gui.h"
-
+#include "itk.h"
 
 void pressed (void *userdata)
 {
@@ -20,8 +19,6 @@ int main (int argc, char **argv)
   Ctx *ctx = ctx_new_ui (-1, -1);
 
   CtxControls *cctx = cctx_new (ctx);
-
-  char message[256] = "hello there";
 
   const CtxEvent *event;
   int mx, my;
@@ -54,6 +51,33 @@ int main (int argc, char **argv)
 
       ui_titlebar (cctx, "Test UI");
       ui_seperator (cctx);
+
+      enum Mode
+      {
+        Mode_Copy,
+        Mode_Move,
+        Mode_Swap
+      };
+#if 1
+      static int mode = Mode_Move;
+      if (ui_radio(cctx, "copy", mode==Mode_Copy)){mode = Mode_Copy;};
+      ui_sameline (cctx);
+      if (ui_radio(cctx, "move", mode==Mode_Move)){mode = Mode_Move;};
+      ui_sameline (cctx);
+      if (ui_radio(cctx, "swap", mode==Mode_Swap)){mode = Mode_Swap;};
+#endif
+      static int presses = 0;
+
+      if (ui_button2 (cctx, "press me"))
+      {
+        presses ++;
+        fprintf (stderr, "%i %i\n", presses, presses % 1);
+      }
+      if (presses % 2)
+      {
+        ui_sameline (cctx);
+        ui_label (cctx, "thanks for pressing me");
+      }
       ui_entry (cctx, "Foo", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL);
       ui_choice (cctx, "power", &chosen, NULL, NULL);
       ui_choice_add (cctx, 0, "on");
@@ -63,7 +87,18 @@ int main (int argc, char **argv)
       ui_choice_add (cctx, 2030, "electric");
       ui_choice_add (cctx, 2040, "novel");
 
-      static int ui_settings = 1;
+      static int ui_items = 0;
+      if (ui_expander (cctx, "items", &ui_items))
+      {
+        for (int i = 0; i < 15; i++)
+        {
+          char buf[20];
+          sprintf (buf, "%i", i);
+          ui_button2 (cctx, buf);
+        }
+      }
+
+      static int ui_settings = 0;
       if (ui_expander (cctx, "Ui settings", &ui_settings))
       {
         ui_slider (cctx, "font-size ", &cctx->font_size, 5.0, 100.0, 0.1);
@@ -75,7 +110,7 @@ int main (int argc, char **argv)
       }
 
       ui_toggle (cctx, "baz ", &baz);
-      if (ui_button2 (cctx, "press me "))
+      if (ui_button2 (cctx, " press me "))
       {
         fprintf (stderr, "imgui style press\n");
       }
@@ -94,7 +129,6 @@ int main (int argc, char **argv)
       ui_done (cctx);
       ctx_add_key_binding (ctx, "control-q", NULL, "foo", ui_key_quit, NULL);
 
-
       ui_key_bindings (cctx);
 
       ctx_flush           (ctx);
@@ -105,7 +139,9 @@ int main (int argc, char **argv)
     }
     while (event = ctx_get_event (ctx))
     {
-      ;//
+      if (event->type == CTX_MOTION){
+              cctx->dirty++;
+      };//
     }
   }
   ctx_free (ctx);
