@@ -1,3 +1,26 @@
+
+
+typedef struct _CtxControls CtxControls;
+
+CtxControls *cctx_new (Ctx *ctx);
+void cctx_free (CtxControls *cctx);
+void ui_reset (CtxControls *cctx);
+void ui_newline (CtxControls *cctx);
+void ui_sameline (CtxControls *cctx);
+void ui_seperator (CtxControls *cctx);
+void ui_label (CtxControls *cctx, const char *label);
+void ui_titlebar (CtxControls *cctx, const char *label);
+void ui_slider  (CtxControls *cctx, const char *label, float *val, float min, float max, float step);
+void ui_entry   (CtxControls *cctx, const char *label, const char *fallback, char *val, int maxlen,
+                  void (*commit)(void *commit_data), void *commit_data);
+void ui_toggle  (CtxControls *cctx, const char *label, int *val);
+int  ui_radio    (CtxControls *cctx, const char *label, int set);
+int  ui_expander (CtxControls *cctx, const char *label, int *val);
+int  ui_button2  (CtxControls *cctx, const char *label);
+void ui_choice  (CtxControls *cctx, const char *label, int *val, void (*action)(void *user_data), void *user_data);
+void ui_choice_add (CtxControls *cctx, int value, const char *label);
+
+
 enum {
   UI_SLIDER = 1,
   UI_EXPANDER,
@@ -28,7 +51,7 @@ struct _CtxControl{
   float max;
   float step;
   void (*action)(void *user_data);
-  void (*commit)(CtxControl *control, void *commit_data);
+  void (*commit)(void *commit_data);
   void *commit_data;
 };
 
@@ -39,7 +62,6 @@ struct _UiChoice
   char *label;
 };
 
-typedef struct _CtxControls CtxControls;
 struct _CtxControls{
   Ctx *ctx;
   float x0;
@@ -148,6 +170,7 @@ void ui_reset (CtxControls *cctx)
   cctx->y = cctx->winy;
 }
 
+
 CtxControl *add_control (CtxControls *cctx, const char *label, float x, float y, float width, float height)
 {
   CtxControl *control = calloc (sizeof (CtxControl), 1);
@@ -214,6 +237,7 @@ static void ui_base (CtxControls *cctx, const char *label, float x, float y, flo
   }
 }
 
+
 void ui_newline (CtxControls *cctx)
 {
   cctx->y += cctx->font_size * cctx->rel_ver_advance;
@@ -229,6 +253,7 @@ void ui_sameline (CtxControls *cctx)
   cctx->line_no--;
 }
 
+
 void ui_seperator (CtxControls *cctx)
 {
   Ctx *ctx = cctx->ctx;
@@ -242,6 +267,7 @@ void ui_seperator (CtxControls *cctx)
   ui_newline (cctx);
   cctx->y -= cctx->font_size * cctx->rel_ver_advance * 0.75;
 }
+
 
 void ui_label (CtxControls *cctx, const char *label)
 {
@@ -379,7 +405,7 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
 }
 
 void ui_entry (CtxControls *cctx, const char *label, const char *fallback, char *val, int maxlen,
-                  void (*commit)(CtxControl *control, void *commit_data),
+                  void (*commit)(void *commit_data),
                                 void *commit_data)
 {
   Ctx *ctx = cctx->ctx;
@@ -563,6 +589,8 @@ void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
   cctx->dirty++;
 }
 
+
+
 int ui_expander (CtxControls *cctx, const char *label, int *val)
 {
   Ctx *ctx = cctx->ctx;
@@ -677,6 +705,7 @@ void choice_clicked (CtxEvent *event, void *userdata, void *userdata2)
   fprintf (stderr, "active!\n");
 }
 
+
 void ui_choice (CtxControls *cctx, const char *label, int *val, void (*action)(void *user_data), void *user_data)
 {
   Ctx *ctx = cctx->ctx;
@@ -743,7 +772,7 @@ void entry_commit (CtxControls *cctx)
          {
            if (control->commit)
            {
-             control->commit (control, control->commit_data);
+             control->commit (control->commit_data);
            }
            else
            {
