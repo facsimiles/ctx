@@ -49,12 +49,12 @@ int main (int argc, char **argv)
       itk->dirty=0;
       itk_reset                  (itk);
 
-      itk_panel_start           (itk, "panel", x, y, width, height);
       ctx_save                  (ctx);
       ctx_rectangle             (ctx, x, y, width, height);
       ctx_gray (ctx, 0);
       ctx_fill                  (ctx);
 
+      itk_panel_start           (itk, "panel", x, y, width, height);
       itk_titlebar (itk, "Test UI");
       itk_seperator (itk);
 
