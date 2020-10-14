@@ -20758,9 +20758,16 @@ static int ctx_nct_consume_events (Ctx *ctx)
   return 1;
 }
 
-#define CTX_THREADS      2
-#define CTX_HASH_ROWS 8
-#define CTX_HASH_COLS 8
+#ifndef CTX_THREADS
+#define CTX_THREADS   4
+#endif
+
+#ifndef CTX_HASH_ROWS
+#define CTX_HASH_ROWS 4
+#endif
+#ifndef CTX_HASH_COLS
+#define CTX_HASH_COLS 4
+#endif
 
 #if CTX_SDL
 

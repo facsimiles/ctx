@@ -46,7 +46,10 @@ struct _ITKPanel{
   int width;
   int height;
   int expanded;
+  int max_y;
+  float scroll_start_y;
   float scroll;
+
   const char *title;
 };
 
@@ -54,14 +57,16 @@ typedef struct _CtxControl CtxControl;
 struct _CtxControl{
   int no;
   int ref_count;
-  int type;
+  int type; /* this should be a pointer to the vfuncs/class struct
+               instead - along with one optional instance data per control */
   char *label;
   float x;
   float y;
   float width;
   float height;
-  char *fallback;
   void *val;
+
+  char *fallback;
   float min;
   float max;
   float step;
@@ -96,6 +101,7 @@ struct _ITK{
   float rel_baseline;
   float winx;
   float winy;
+  float scroll_speed;
 
   int   dirty;
   int   button_pressed;
@@ -125,12 +131,13 @@ ITK *itk_new (Ctx *ctx)
 {
   ITK *itk     = calloc (sizeof (ITK), 1);
   itk->ctx             = ctx;
-  itk->font_size       = 28;
+  itk->font_size       = 40;
   itk->width           = itk->font_size * 15;
   itk->value_width     = 0.4;
   itk->value_pos       = 0.5;
   itk->rel_ver_advance = 1.0;
   itk->rel_baseline    = 0.7;
+  itk->scroll_speed    = 3.0;
   itk->dirty ++;
 
   return itk;
@@ -218,13 +225,13 @@ CtxControl *add_control (ITK *itk, const char *label, float x, float y, float wi
   Ctx *ctx = itk->ctx;
   control->label = strdup (label);
 
+  // refind focus..
 if(0)  if (itk->focus_label){
      if (!strcmp (itk->focus_label, label))
      {
        itk->focus_no = itk->control_no;
      }
   }
-
 
   control->x = x;
   control->y = y;
@@ -234,20 +241,27 @@ if(0)  if (itk->focus_label){
   control->height = height;
   ctx_list_prepend (&itk->controls, control);
 
-#if 0
-  float px = ctx_pointer_x (ctx);
-  float py = ctx_pointer_y (ctx);
-
-  if (px >= control->x &&  px < control->x +  control->width &&
-      py >= control->y &&  py < control->y +  control->height)
+  if (itk->focus_no == control->no)
   {
-    if (itk->focus_no != control->no)
-    {
-      itk->focus_no = control->no;
-      itk->dirty++;
-    }
-  }
+     if (itk->y - itk->panel->scroll > itk->panel->y + itk->panel->height - itk->font_size * 2)
+     {
+        itk->panel->scroll += itk->scroll_speed;
+#if 0
+        if (itk->panel->scroll > itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y)) - itk->font_size * itk->rel_ver_advance;
+            itk->panel->scroll = itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y) - itk->font_size * itk->rel_ver_advance;
 #endif
+
+        itk->dirty++;
+     }
+     else if (itk->y - itk->panel->scroll < itk->font_size * 2)
+     {
+        itk->panel->scroll -= itk->scroll_speed;
+        if (itk->panel->scroll<0.0)
+          itk->panel->scroll=0.0;
+        itk->dirty++;
+     }
+
+  }
 
   return control;
 }
@@ -323,13 +337,19 @@ void itk_label (ITK *itk, const char *label)
   itk_newline (itk);
 }
 
-void titlebar_drag (CtxEvent *event, void *userdata, void *userdata2)
+static void titlebar_drag (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
-  CtxControl  *control = userdata;
+  ITKPanel *panel = userdata;
   
-  itk->winx += event->delta_x;
-  itk->winy += event->delta_y;
+#if 1
+  //fprintf (stderr, "%d %f %f\n", event->delta_x, event->delta_y);
+  panel->x += event->delta_x;
+  panel->y += event->delta_y;
+#else
+  panel->x = event->x - panel->width / 2;
+  panel->y = event->y;
+#endif
 
   event->stop_propagate = 1;
   itk->dirty++;
@@ -344,7 +364,7 @@ void itk_titlebar (ITK *itk, const char *label)
   control->type = UI_TITLEBAR;
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, itk->font_size * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_DRAG, titlebar_drag, control, itk, control_finalize, NULL);
+  ctx_listen_with_finalize (ctx, CTX_DRAG, titlebar_drag, itk->panel, itk, NULL, NULL);
 
   ctx_begin_path (ctx);
   itk->line_no = 0;
@@ -359,23 +379,97 @@ void itk_titlebar (ITK *itk, const char *label)
 void itk_panel_start (ITK *itk, const char *title,
                       int x, int y, int width, int height)
 {
-  height/=2;
+  Ctx *ctx = itk->ctx;
   ITKPanel *panel = add_panel (itk, title, x, y, width, height);
   itk->x0 = itk->x = panel->x;
   itk->y0 = itk->y = panel->y;
   itk->width  = panel->width;
   itk->height = panel->height;
+  itk->panel = panel;
   {
-    ctx_rgb (itk->ctx, .8, .8, .8);
-    ctx_begin_path (itk->ctx);
-    ctx_rectangle (itk->ctx, panel->x, panel->y, panel->width, panel->height);
-    fprintf (stderr, "%i %i %i %i\n", panel->x, panel->y, panel->width, panel->height);
-    ctx_fill (itk->ctx);
+    ctx_rgb (ctx, .8, .8, .8);
+    ctx_begin_path (ctx);
+    ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
+//  fprintf (stderr, "%i %i %i %i\n", panel->x, panel->y, panel->width, panel->height);
+    ctx_fill (ctx);
+    itk_titlebar (itk, title);
+
+    ctx_save (ctx);
+    itk->panel->scroll_start_y = itk->y;
+    ctx_rectangle (ctx, itk->x, itk->y, panel->width, panel->height - (itk->y - panel->y));
+    ctx_clip (ctx);
+    ctx_begin_path (ctx);
+    ctx_translate (ctx, 0.0, -panel->scroll);
   }
+}
+
+void itk_panel_scroll_drag (CtxEvent *event, void *data, void *data2)
+{
+  ITK *itk = data;
+  ITKPanel *panel = data2;
+  float scrollbar_height = panel->height - (panel->scroll_start_y - panel->y);
+  float scrollbar_width = itk->font_size;
+  float th = scrollbar_height * (scrollbar_height /  (panel->max_y-panel->scroll_start_y));
+  if (th > scrollbar_height)
+  {
+    panel->scroll = 0;
+    event->stop_propagate = 1;
+    return;
+  }
+
+  fprintf (stderr, "-%f\n", event->y);
+  panel->scroll = ((event->y - panel->scroll_start_y - th / 2) / (scrollbar_height-th)) *
+          (panel->max_y - panel->scroll_start_y - scrollbar_height)
+          ;
+  itk->focus_no = -1;
+
+  if (panel->scroll < 0) panel->scroll = 0;
+
+  event->stop_propagate = 1;
 }
 
 void itk_panel_end (ITK *itk)
 {
+  Ctx *ctx = itk->ctx;
+  ITKPanel *panel = itk->panel;
+  ctx_restore (ctx);
+  itk->panel->max_y = itk->y;
+
+  float scrollbar_height = panel->height - (panel->scroll_start_y - panel->y);
+  float scrollbar_width = itk->font_size;
+
+#if 1
+  ctx_begin_path (ctx);
+  ctx_rectangle (ctx, panel->x + panel->width- scrollbar_width,
+                      panel->scroll_start_y,
+                      scrollbar_width,
+                      scrollbar_height);
+  ctx_listen (ctx, CTX_DRAG, itk_panel_scroll_drag, itk, panel);
+  ctx_rgb (ctx, 1,1,0);
+  ctx_fill (ctx);
+#endif
+
+  ctx_begin_path (ctx);
+  float th = scrollbar_height * (scrollbar_height /  (panel->max_y-panel->scroll_start_y));
+  if (th > scrollbar_height) th = scrollbar_height;
+
+  ctx_rectangle (ctx, panel->x + panel->width- scrollbar_width,
+                      panel->scroll_start_y +
+                      (panel->scroll / (panel->max_y-panel->scroll_start_y)) * ( scrollbar_height ),
+                      scrollbar_width,
+                      th
+                      
+                      );
+
+  ctx_rgb (ctx, 1,0,0);
+  ctx_fill (ctx);
+
+
+  /* set global clip - workaround until we have better */
+  ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
+  ctx_clip (ctx);
+
+  itk->panel = NULL;
 }
 
 static void itk_float_constrain (CtxControl *control, float *val)
@@ -435,6 +529,7 @@ void itk_slider (ITK *itk, const char *label, float *val, float min, float max, 
 
   ctx_listen_with_finalize (ctx, CTX_DRAG, slider_drag, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
+
 
   itk_base (itk, label, control->x, control->y, control->width, itk->font_size * itk->rel_ver_advance,
                         itk->focus_no == control->no);
@@ -608,17 +703,6 @@ int itk_radio (ITK *itk, const char *label, int set)
   ctx_begin_path (ctx);
   itk->x += width;
 
-#if 1
-  float px = ctx_pointer_x (ctx);
-  float py = ctx_pointer_y (ctx);
-
-  if (px >= control->x &&  px < control->x +  control->width &&
-      py >= control->y &&  py < control->y +  control->height)
-  {
-    itk->focus_no = control->no;
-  }
-#endif
-
   itk_newline (itk);
   if (control->no == itk->focus_no && itk->button_pressed)
   {
@@ -685,18 +769,6 @@ int itk_button2 (ITK *itk, const char *label)
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
   itk->x += width;
-
-#if 0
-  float px = ctx_pointer_x (ctx);
-  float py = ctx_pointer_y (ctx);
-
-  if (px >= control->x &&  px < control->x +  control->width &&
-      py >= control->y &&  py < control->y +  control->height)
-  {
-    itk->focus_no = control->no;
-  }
-#endif
-
 
   itk_newline (itk);
   if (control->no == itk->focus_no && itk->button_pressed)
@@ -830,21 +902,32 @@ void entry_commit (ITK *itk)
 
 void itk_focus (ITK *itk, int dir)
 {
-   entry_commit (itk);
-   itk->focus_no += dir;
 
+   entry_commit (itk);
+   if (itk->focus_no < 0)
+   {
+     itk->focus_no = 0;
+     return;
+   }
+   itk->focus_no += dir;
+#if 0
    if (itk->focus_label){
      free (itk->focus_label);
      itk->focus_label = NULL;
    }
+#endif
 
    int n_controls = ctx_list_length (itk->controls);
    CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
    if (iter)
    {
      CtxControl *control = iter->data;
-     itk->focus_label = strdup (control->label);
+//   itk->focus_label = strdup (control->label);
      //fprintf (stderr, "%s\n", control_focus_label);
+   }
+   else
+   {
+     itk->focus_no = 0;
    }
 }
 
@@ -1216,4 +1299,6 @@ void itk_done (ITK *itk)
     }
   }
   ctx_restore (ctx);
+
+
 }

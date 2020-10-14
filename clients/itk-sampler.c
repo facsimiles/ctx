@@ -54,7 +54,7 @@ int main (int argc, char **argv)
       ctx_gray (ctx, 0);
       ctx_fill                  (ctx);
 
-      itk_panel_start           (itk, "panel", x, y, width, height);
+      itk_panel_start           (itk, "panel", x+30, y+30, width-60, height-100);
       itk_titlebar (itk, "Test UI");
       itk_seperator (itk);
 
@@ -109,12 +109,13 @@ int main (int argc, char **argv)
       if (itk_expander (itk, "Ui settings", &itk_settings))
       {
         itk_toggle (itk, "keybindings", &enable_keybindings);
-        itk_slider (itk, "font-size ", &itk->font_size, 5.0, 100.0, 0.1);
+        itk_slider (itk, "font size ", &itk->font_size, 5.0, 100.0, 0.1);
+        itk_slider (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.5);
   //    itk_slider (itk, "width", &itk->width, 5.0, 600.0, 1.0);
-        itk_slider (itk, "ver_advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
+        itk_slider (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
         itk_slider (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
-        itk_slider (itk, "value_pos", &itk->value_pos, 0.0, 40.0, 0.1);
-        itk_slider (itk, "value_width", &itk->value_width, 0.0, 40.0, 0.02);
+        itk_slider (itk, "value pos", &itk->value_pos, 0.0, 40.0, 0.1);
+        itk_slider (itk, "value width", &itk->value_width, 0.0, 40.0, 0.02);
       }
 
       itk_toggle (itk, "baz ", &baz);
@@ -151,9 +152,9 @@ int main (int argc, char **argv)
     }
     while (event = ctx_get_event (ctx))
     {
-      if (event->type == CTX_MOTION){
-              itk->dirty++;
-      };//
+   //   if (event->type == CTX_MOTION){
+   //           itk->dirty++;
+   //   };//
     }
   }
   ctx_free (ctx);
