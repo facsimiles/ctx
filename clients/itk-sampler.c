@@ -70,7 +70,7 @@ int main (int argc, char **argv)
         itk_label (itk, "thanks for pressing me");
       }
 
-      static float slide_float = 23.42;
+      static float slide_float = 10.0;
       itk_slider (itk, "slide float", &slide_float, 0.0, 100.0, 0.1);
 
       itk_entry (itk, "Foo", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL);

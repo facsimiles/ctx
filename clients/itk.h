@@ -613,7 +613,7 @@ void itk_slider (ITK *itk, const char *label, float *val, float min, float max, 
   itk_base (itk, label, control->x, control->y, control->width, itk->font_size * itk->rel_ver_advance,
                         itk->focus_no == control->no);
 
-  sprintf (buf, "%.5f", *val);
+  sprintf (buf, "%.3f", *val);
   ctx_move_to (ctx, itk->x + itk->font_size * itk->value_pos, itk->y + itk->font_size * itk->rel_baseline);
   itk_set_color (itk, ITK_SLIDER_TEXT);
 //ctx_save (ctx);
@@ -624,6 +624,10 @@ void itk_slider (ITK *itk, const char *label, float *val, float min, float max, 
   float rel_val = ((*val) - min) / (max-min);
   itk_set_color (itk, ITK_SLIDER_CURSOR);
   ctx_rectangle (ctx, itk->x + (itk->width*itk->value_width-itk->font_size/4) * rel_val, itk->y, itk->font_size/4, control->height);
+  ctx_fill (ctx);
+
+  ctx_rectangle (ctx, itk->x, itk->y + itk->font_size*5/6, itk->width * itk->value_width, itk->font_size/8);
+
   ctx_fill (ctx);
 
   itk->x += itk->value_width * itk->width;
