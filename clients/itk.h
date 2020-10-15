@@ -446,34 +446,19 @@ void itk_titlebar (ITK *itk, const char *label)
   itk_newline (itk);
 }
 
-void itk_panel_start (ITK *itk, const char *title,
-                      int x, int y, int width, int height)
+void itk_scroll_start (ITK *itk, float height)
 {
+  ITKPanel *panel = itk->panel;
   Ctx *ctx = itk->ctx;
-  ITKPanel *panel = add_panel (itk, title, x, y, width, height);
-  itk->x0 = itk->x = panel->x;
-  itk->y0 = itk->y = panel->y;
-  itk->width  = panel->width;
-  itk->height = panel->height;
-  itk->panel = panel;
-  {
-    itk_set_color (itk, ITK_BG);
-    ctx_begin_path (ctx);
-    ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
-//  fprintf (stderr, "%i %i %i %i\n", panel->x, panel->y, panel->width, panel->height);
-    ctx_fill (ctx);
-    itk_titlebar (itk, title);
-
-    ctx_save (ctx);
-    itk->panel->scroll_start_y = itk->y;
-    ctx_rectangle (ctx, itk->x, itk->y, panel->width, panel->height - (itk->y - panel->y));
-    ctx_clip (ctx);
-    ctx_begin_path (ctx);
-    ctx_translate (ctx, 0.0, -panel->scroll);
-  }
+  ctx_save (ctx);
+  itk->panel->scroll_start_y = itk->y;
+  ctx_rectangle (ctx, itk->x0, itk->y, panel->width, panel->height - (itk->y - panel->y));
+  ctx_clip (ctx);
+  ctx_begin_path (ctx);
+  ctx_translate (ctx, 0.0, -panel->scroll);
 }
 
-void itk_panel_scroll_drag (CtxEvent *event, void *data, void *data2)
+void itk_scroll_drag (CtxEvent *event, void *data, void *data2)
 {
   ITK *itk = data;
   ITKPanel *panel = data2;
@@ -500,20 +485,11 @@ void itk_panel_scroll_drag (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
-void itk_panel_resize_drag (CtxEvent *event, void *data, void *data2)
-{
-  ITK *itk = data2;
-  ITKPanel *panel = data;
-  panel->width += event->delta_x;
-  panel->height += event->delta_y;
-  itk->dirty++;
-  event->stop_propagate = 1;
-}
 
-void itk_panel_end (ITK *itk)
+void itk_scroll_end (ITK *itk)
 {
-  Ctx *ctx = itk->ctx;
   ITKPanel *panel = itk->panel;
+  Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   ctx_restore (ctx);
   itk->panel->max_y = itk->y;
@@ -527,7 +503,7 @@ void itk_panel_end (ITK *itk)
                       panel->scroll_start_y,
                       scrollbar_width,
                       scrollbar_height);
-  ctx_listen (ctx, CTX_DRAG, itk_panel_scroll_drag, itk, panel);
+  ctx_listen (ctx, CTX_DRAG, itk_scroll_drag, itk, panel);
   itk_set_color (itk, ITK_SCROLL_BG);
   ctx_fill (ctx);
 #endif
@@ -547,6 +523,51 @@ void itk_panel_end (ITK *itk)
   itk_set_color (itk, ITK_SCROLL_FG);
   ctx_fill (ctx);
 
+
+  /* set global clip - workaround until we have better */
+  ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
+  ctx_clip (ctx);
+
+}
+
+void itk_panel_start (ITK *itk, const char *title,
+                      int x, int y, int width, int height)
+{
+  Ctx *ctx = itk->ctx;
+  ITKPanel *panel = add_panel (itk, title, x, y, width, height);
+
+  itk->x0 = itk->x = panel->x;
+  itk->y0 = itk->y = panel->y;
+  itk->width  = panel->width;
+  itk->height = panel->height;
+
+  itk->panel = panel;
+  itk_set_color (itk, ITK_BG);
+  ctx_begin_path (ctx);
+  ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
+  ctx_fill (ctx);
+  itk_titlebar (itk, title);
+
+  itk_scroll_start (itk, panel->height - (itk->y - panel->y));
+}
+
+void itk_panel_resize_drag (CtxEvent *event, void *data, void *data2)
+{
+  ITK *itk = data2;
+  ITKPanel *panel = data;
+  panel->width += event->delta_x;
+  panel->height += event->delta_y;
+  itk->dirty++;
+  event->stop_propagate = 1;
+}
+
+void itk_panel_end (ITK *itk)
+{
+  Ctx *ctx = itk->ctx;
+  ITKPanel *panel = itk->panel;
+  float em = itk_em (itk);
+  itk_scroll_end (itk);
+
   ctx_rectangle (ctx, panel->x + panel->width - em,
                       panel->y + panel->height - em,
                       em,
@@ -562,10 +583,6 @@ void itk_panel_end (ITK *itk)
   ctx_rel_line_to (ctx, 0, em);
 #endif
   ctx_fill (ctx);
-
-  /* set global clip - workaround until we have better */
-  ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
-  ctx_clip (ctx);
 
   itk->panel = NULL;
 }
