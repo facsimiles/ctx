@@ -600,14 +600,20 @@ void slider_drag (CtxEvent *event, void *userdata, void *userdata2)
   CtxControl  *control = userdata;
   float *val = control->val;
   float new_val;
+
+  itk->focus_no = control->no;
+  event->stop_propagate = 1;
+  itk->dirty++;
+
+  if (event->x > control->x + control->width * itk->value_width)
+  {
+    return;
+  }
   
   new_val = ((event->x - control->x) / (control->width * itk->value_width)) * (control->max-control->min) + control->min;
   itk_float_constrain (control, &new_val);
 
-  itk->focus_no = control->no;
   *val = new_val;
-  event->stop_propagate = 1;
-  itk->dirty++;
 }
 
 void itk_slider (ITK *itk, const char *label, float *val, float min, float max, float step)
@@ -625,7 +631,7 @@ void itk_slider (ITK *itk, const char *label, float *val, float min, float max, 
   control->ref_count++;
   control->ref_count++;
 
-  ctx_rectangle (ctx, itk->x, itk->y, itk->width*itk->value_width, em * itk->rel_ver_advance);
+  ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
 
   ctx_listen_with_finalize (ctx, CTX_DRAG, slider_drag, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
