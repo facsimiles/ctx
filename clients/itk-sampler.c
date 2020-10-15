@@ -97,16 +97,27 @@ int main (int argc, char **argv)
       static int itk_settings = 0;
       if (itk_expander (itk, "Ui settings", &itk_settings))
       {
-        itk_toggle (itk, "keybindings", &enable_keybindings);
+        itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
+        itk_toggle (itk, "enable keybindings", &enable_keybindings);
+        itk_slider (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
         itk_slider (itk, "font size ", &itk->font_size, 4.0, 60.0, 0.25);
         itk_slider (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
         itk_slider (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
         itk_slider (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);
-  //    itk_slider (itk, "width", &itk->width, 5.0, 600.0, 1.0);
         itk_slider (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
         itk_slider (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
         itk_slider (itk, "value pos", &itk->value_pos, 0.0, 40.0, 0.1);
         itk_slider (itk, "value width", &itk->value_width, 0.0, 40.0, 0.02);
+
+        static int itk_panel_settings = 0;
+        if (itk_expander (itk, "panel settings", &itk_panel_settings))
+        {
+#if 0
+          itk_slider (itk, "panel x", &itk->panel->x, 0.0, 1000.0, 1);
+          itk_slider (itk, "panel y", &itk->panel->y, 0.0, 1000.0, 1);
+#endif
+
+        }
       }
 
       itk_toggle (itk, "baz ", &baz);

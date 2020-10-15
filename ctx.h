@@ -22076,6 +22076,7 @@ void ctx_sdl_free (CtxSDL *sdl)
   sdl->pixels = NULL;
   for (int i = 0 ; i < CTX_SDL_THREADS; i++)
   {
+          fprintf (stderr, "!");
     ctx_free (sdl->host[i]);
     sdl->host[i]=NULL;
   }
