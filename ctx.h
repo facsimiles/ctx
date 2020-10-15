@@ -6598,7 +6598,8 @@ ctx_renderstream_deinit (CtxRenderstream *renderstream)
 {
 #if !CTX_RENDERSTREAM_STATIC
   if (renderstream->entries && ! (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES) )
-    { free (renderstream->entries); 
+    {
+      free (renderstream->entries); 
     }
 #endif
   renderstream->entries = NULL;
@@ -14389,6 +14390,13 @@ static void
 ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
 {
   ctx_renderstream_deinit (&rasterizer->edge_list);
+#if CTX_ENABLE_CLIP
+  if (rasterizer->clip_buffer)
+  {
+    ctx_buffer_free (rasterizer->clip_buffer);
+    rasterizer->clip_buffer = NULL;
+  }
+#endif
   free (rasterizer);
 }
 
@@ -22061,7 +22069,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   sdl->quit = 1;
-  usleep (1000); // XXX : wait for threads more explicitly instead
+  usleep (40 * 1000); // XXX : properly wait for threads instead
   if (sdl->pixels)
   {
     free (sdl->pixels);
@@ -22069,6 +22077,7 @@ void ctx_sdl_free (CtxSDL *sdl)
   for (int i = 0 ; i < CTX_SDL_THREADS; i++)
   {
     ctx_free (sdl->host[i]);
+    sdl->host[i]=NULL;
   }
   SDL_DestroyTexture (sdl->texture);
   SDL_DestroyRenderer (sdl->renderer);
@@ -22102,7 +22111,7 @@ void sdl_render_fun (void **data)
 
             Ctx *host = sdl->host[no];
             CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
-#if 1 // merge horizontally adjecant tiles of same affinity into one job
+#if 0 // merge horizontally adjecant tiles of same affinity into one job
             while (col + 1 < CTX_HASH_COLS &&
                    sdl->tile_affinity[hno+1] == no)
             {
@@ -22135,6 +22144,7 @@ void sdl_render_fun (void **data)
       usleep (1000 * 5);
     }
   }
+
 }
 
 int ctx_renderer_is_sdl (Ctx *ctx)

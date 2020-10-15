@@ -1,5 +1,3 @@
-
-
 typedef struct _ITK ITK;
 
 ITK *itk_new (Ctx *ctx);
@@ -20,7 +18,7 @@ void itk_entry   (ITK *itk, const char *label, const char *fallback, char *val, 
 void itk_toggle  (ITK *itk, const char *label, int *val);
 int  itk_radio    (ITK *itk, const char *label, int set);
 int  itk_expander (ITK *itk, const char *label, int *val);
-int  itk_button2  (ITK *itk, const char *label);
+int  itk_button   (ITK *itk, const char *label);
 void itk_choice  (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data);
 void itk_choice_add (ITK *itk, int value, const char *label);
 
@@ -51,6 +49,48 @@ struct _ITKPanel{
   float scroll;
 
   const char *title;
+};
+
+typedef enum
+{
+  ITK_BG,
+  ITK_FG,
+  ITK_FOCUSED_BG,
+
+  ITK_ENTRY_BG,
+  ITK_ENTRY_FG,
+  ITK_ENTRY_CURSOR,
+  ITK_ENTRY_FALLBACK,
+
+  ITK_SCROLL_FG,
+  ITK_SCROLL_BG,
+  ITK_SCROLL_FOCUSED_BG,
+
+  ITK_BUTTON_FG,
+  ITK_BUTTON_BG,
+  ITK_BUTTON_FOCUSED_BG,
+  ITK_BUTTON_PRESSED_FG,
+  ITK_BUTTON_PRESSED_BG,
+
+  ITK_SLIDER_TEXT,
+  ITK_SLIDER_CURSOR
+} ItkControlType;
+
+uint8_t theme[][5]={
+  {ITK_BG,                 30,40,50,255},
+  {ITK_FOCUSED_BG,         60,70,80,255},
+  {ITK_FG,                 225,225,225,255},
+  {ITK_ENTRY_BG,           10,20,60,255},
+  {ITK_ENTRY_FG,           255,5,5,255},
+  {ITK_ENTRY_CURSOR,       225,245,140,255},
+  {ITK_ENTRY_FALLBACK,     225,245,140,255},
+  {ITK_BUTTON_FOCUSED_BG,  60,60,160,255},
+  {ITK_BUTTON_BG,          30,40,150,255},
+  {ITK_BUTTON_FG,          255,255,255,255},
+  {ITK_SCROLL_BG,          30,40,150,255},
+  {ITK_SCROLL_FG,          60,80,190,255},
+  {ITK_SLIDER_CURSOR,      255,0,0,127},
+  {ITK_SLIDER_TEXT,        255,255,255,127},
 };
 
 typedef struct _CtxControl CtxControl;
@@ -92,13 +132,15 @@ struct _ITK{
   float stored_x; // for sameline()
 
   float font_size;
-  int width;
-  int height;
+  int   width;
+  int   height;
   float value_pos;
   float value_width;
 
   float rel_ver_advance;
   float rel_baseline;
+  float rel_hgap;
+  float rel_vgap;
   float winx;
   float winy;
   float scroll_speed;
@@ -127,6 +169,21 @@ struct _ITK{
   int lines_drawn;
 };
 
+void itk_set_color (ITK *itk, int color)
+{
+  for (int i = 0; i < sizeof (theme)/sizeof(theme[0]); i++)
+  {
+    if (theme[i][0] == color)
+    {
+      ctx_rgba (itk->ctx, theme[i][1]/255.0,
+                          theme[i][2]/255.0,
+                          theme[i][3]/255.0,
+                          theme[i][4]/255.0);
+      return;
+    }
+  }
+}
+
 ITK *itk_new (Ctx *ctx)
 {
   ITK *itk     = calloc (sizeof (ITK), 1);
@@ -135,9 +192,11 @@ ITK *itk_new (Ctx *ctx)
   itk->width           = itk->font_size * 15;
   itk->value_width     = 0.4;
   itk->value_pos       = 0.5;
-  itk->rel_ver_advance = 1.0;
-  itk->rel_baseline    = 0.7;
-  itk->scroll_speed    = 3.0;
+  itk->rel_ver_advance = 1.1;
+  itk->rel_baseline    = 0.8;
+  itk->rel_hgap        = 1.0;
+  itk->rel_vgap        = 0.2;
+  itk->scroll_speed    = 0.1;
   itk->dirty ++;
 
   return itk;
@@ -174,6 +233,7 @@ void itk_reset (ITK *itk)
   Ctx *ctx = itk->ctx;
   ctx_reset                 (ctx);
   ctx_save (ctx);
+  ctx_font (ctx, "regular");
   ctx_font_size (ctx, itk->font_size);
 
   itk->panel = NULL;
@@ -195,7 +255,6 @@ void itk_reset (ITK *itk)
   }
   itk->control_no = 0;
 }
-
 
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)
 {
@@ -245,7 +304,7 @@ if(0)  if (itk->focus_label){
   {
      if (itk->y - itk->panel->scroll > itk->panel->y + itk->panel->height - itk->font_size * 2)
      {
-        itk->panel->scroll += itk->scroll_speed;
+        itk->panel->scroll += itk->scroll_speed * itk->font_size;
 #if 0
         if (itk->panel->scroll > itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y)) - itk->font_size * itk->rel_ver_advance;
             itk->panel->scroll = itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y) - itk->font_size * itk->rel_ver_advance;
@@ -255,7 +314,7 @@ if(0)  if (itk->focus_label){
      }
      else if (itk->y - itk->panel->scroll < itk->font_size * 2)
      {
-        itk->panel->scroll -= itk->scroll_speed;
+        itk->panel->scroll -= itk->scroll_speed * itk->font_size;
         if (itk->panel->scroll<0.0)
           itk->panel->scroll=0.0;
         itk->dirty++;
@@ -269,7 +328,7 @@ if(0)  if (itk->focus_label){
 static void itk_text (ITK *itk, const char *text)
 {
   Ctx *ctx = itk->ctx;
-  ctx_rgb (ctx, 0, 0, 0);
+  itk_set_color (itk, ITK_FG);
   ctx_move_to (ctx, itk->x,  itk->y + itk->font_size * itk->rel_baseline);
   ctx_text (ctx, text);
   itk->x += ctx_text_width (ctx, text);
@@ -280,13 +339,14 @@ static void itk_base (ITK *itk, const char *label, float x, float y, float width
   Ctx *ctx = itk->ctx;
   if (focused)
   {
-    ctx_rgb (ctx, 1, 1, 1);
+    itk_set_color (itk, ITK_FOCUSED_BG);
+
     ctx_rectangle (ctx, x, y, width, height);
     ctx_fill (ctx);
   }
 #if 0
   else
-    ctx_rgb (ctx, 0.9,0.9,0.9);
+    itk_set_color (itk, ITK_BG);
 
   if (itk->line_no >= itk->lines_drawn)
   {
@@ -297,10 +357,9 @@ static void itk_base (ITK *itk, const char *label, float x, float y, float width
 #endif
 }
 
-
 void itk_newline (ITK *itk)
 {
-  itk->y += itk->font_size * itk->rel_ver_advance;
+  itk->y += itk->font_size * (itk->rel_ver_advance + itk->rel_vgap);
   itk->stored_x = itk->x;
   itk->x = itk->x0;
   itk->line_no++;
@@ -308,11 +367,10 @@ void itk_newline (ITK *itk)
 
 void itk_sameline (ITK *itk)
 {
-  itk->y -= itk->font_size * itk->rel_ver_advance;
+  itk->y -= itk->font_size * (itk->rel_ver_advance + itk->rel_vgap);
   itk->x = itk->stored_x;
   itk->line_no--;
 }
-
 
 void itk_seperator (ITK *itk)
 {
@@ -326,7 +384,6 @@ void itk_seperator (ITK *itk)
   itk->y -= itk->font_size * itk->rel_ver_advance * 0.75;
 }
 
-
 void itk_label (ITK *itk, const char *label)
 {
   Ctx *ctx = itk->ctx;
@@ -334,6 +391,7 @@ void itk_label (ITK *itk, const char *label)
   itk_base (itk, NULL, itk->x, itk->y, itk->width, itk->font_size * itk->rel_ver_advance, 0);
   itk_text (itk, label);
 
+  itk->x += itk->rel_hgap * itk->font_size;
   itk_newline (itk);
 }
 
@@ -355,11 +413,10 @@ static void titlebar_drag (CtxEvent *event, void *userdata, void *userdata2)
   itk->dirty++;
 }
 
-
 void itk_titlebar (ITK *itk, const char *label)
 {
   Ctx *ctx = itk->ctx;
-  ctx_rgb (ctx, 1, 1, 1);
+
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, itk->font_size * itk->rel_ver_advance);
   control->type = UI_TITLEBAR;
 
@@ -387,7 +444,7 @@ void itk_panel_start (ITK *itk, const char *title,
   itk->height = panel->height;
   itk->panel = panel;
   {
-    ctx_rgb (ctx, .8, .8, .8);
+    itk_set_color (itk, ITK_BG);
     ctx_begin_path (ctx);
     ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
 //  fprintf (stderr, "%i %i %i %i\n", panel->x, panel->y, panel->width, panel->height);
@@ -428,6 +485,16 @@ void itk_panel_scroll_drag (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
+void itk_panel_resize_drag (CtxEvent *event, void *data, void *data2)
+{
+  ITK *itk = data2;
+  ITKPanel *panel = data;
+  panel->width += event->delta_x;
+  panel->height += event->delta_y;
+  fprintf (stderr, "foo!\n");
+  event->stop_propagate = 1;
+}
+
 void itk_panel_end (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
@@ -445,7 +512,7 @@ void itk_panel_end (ITK *itk)
                       scrollbar_width,
                       scrollbar_height);
   ctx_listen (ctx, CTX_DRAG, itk_panel_scroll_drag, itk, panel);
-  ctx_rgb (ctx, 1,1,0);
+  itk_set_color (itk, ITK_SCROLL_BG);
   ctx_fill (ctx);
 #endif
 
@@ -461,9 +528,24 @@ void itk_panel_end (ITK *itk)
                       
                       );
 
-  ctx_rgb (ctx, 1,0,0);
+  itk_set_color (itk, ITK_SCROLL_FG);
   ctx_fill (ctx);
 
+  ctx_rectangle (ctx, panel->x + panel->width - itk->font_size,
+                      panel->y + panel->height - itk->font_size,
+                      itk->font_size,
+                      itk->font_size);
+  ctx_listen (ctx, CTX_DRAG, itk_panel_resize_drag, panel, itk);
+  itk_set_color (itk, ITK_BUTTON_FG);
+  ctx_begin_path (ctx);
+  ctx_move_to (ctx, panel->x + panel->width,
+                    panel->y + panel->height);
+#if 1
+  ctx_rel_line_to (ctx, -itk->font_size, 0);
+  ctx_rel_line_to (ctx, itk->font_size, -itk->font_size);
+  ctx_rel_line_to (ctx, 0, itk->font_size);
+#endif
+  ctx_fill (ctx);
 
   /* set global clip - workaround until we have better */
   ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
@@ -515,7 +597,7 @@ void itk_slider (ITK *itk, const char *label, float *val, float min, float max, 
 {
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
-  ctx_rgb (ctx, 1, 1, 1);
+  itk_set_color (itk, ITK_BUTTON_BG);
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, itk->font_size * itk->rel_ver_advance);
   control->min = min;
   control->max = max;
@@ -534,13 +616,17 @@ void itk_slider (ITK *itk, const char *label, float *val, float min, float max, 
   itk_base (itk, label, control->x, control->y, control->width, itk->font_size * itk->rel_ver_advance,
                         itk->focus_no == control->no);
 
-  sprintf (buf, "%f", *val);
+  sprintf (buf, "%.5f", *val);
   ctx_move_to (ctx, itk->x + itk->font_size * itk->value_pos, itk->y + itk->font_size * itk->rel_baseline);
-  ctx_rgb (ctx, 1, 0, 0);
+  itk_set_color (itk, ITK_SLIDER_TEXT);
+//ctx_save (ctx);
+//ctx_font_size (ctx, itk->font_size * 0.6);
   ctx_text (ctx, buf);
+//ctx_restore (ctx);
 
   float rel_val = ((*val) - min) / (max-min);
-  ctx_rectangle (ctx, itk->x + (itk->width*itk->value_width-itk->font_size/4) * rel_val, itk->y, itk->font_size/4, control->height * 0.8);
+  itk_set_color (itk, ITK_SLIDER_CURSOR);
+  ctx_rectangle (ctx, itk->x + (itk->width*itk->value_width-itk->font_size/4) * rel_val, itk->y, itk->font_size/4, control->height);
   ctx_fill (ctx);
 
   itk->x += itk->value_width * itk->width;
@@ -582,21 +668,20 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
                         itk->focus_no == control->no);
 
   ctx_move_to (ctx, itk->x + itk->font_size * itk->value_pos, itk->y + itk->font_size * itk->rel_baseline);
-  ctx_rgb (ctx, 1, 0, 0);
   if (itk->entry_copy)
   {
     int backup = itk->entry_copy[itk->entry_pos];
     char buf[4]="|";
     itk->entry_copy[itk->entry_pos]=0;
-    ctx_rgb (ctx, 1, 0, 0);
+    itk_set_color (itk, ITK_ENTRY_FG);
     ctx_text (ctx, itk->entry_copy);
-    ctx_rgb (ctx, 0, 0, 0);
+    itk_set_color (itk, ITK_ENTRY_CURSOR);
     ctx_text (ctx, buf);
 
     buf[0]=backup;
     if (backup)
     {
-      ctx_rgb (ctx, 1, 0, 0);
+      itk_set_color (itk, ITK_ENTRY_FG);
       ctx_text (ctx, buf);
       ctx_text (ctx, &itk->entry_copy[itk->entry_pos+1]);
       itk->entry_copy[itk->entry_pos] = backup;
@@ -606,13 +691,14 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   {
     if (val[0])
     {
+      itk_set_color (itk, ITK_ENTRY_FG);
       ctx_text (ctx, val);
     }
     else
     {
       if (control->fallback)
       {
-        ctx_gray (ctx, 0.4);
+        itk_set_color (itk, ITK_ENTRY_FALLBACK);
         ctx_text (ctx, control->fallback);
       }
     }
@@ -638,7 +724,7 @@ void itk_toggle (ITK *itk, const char *label, int *val)
 {
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
-  ctx_rgb (ctx, 1, 1, 1);
+
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, itk->font_size * itk->rel_ver_advance);
   control->val = val;
   control->type = UI_TOGGLE;
@@ -650,7 +736,7 @@ void itk_toggle (ITK *itk, const char *label, int *val)
   itk_base (itk, label, control->x, control->y, control->width, itk->font_size * itk->rel_ver_advance,
                         itk->focus_no == control->no);
 
-  ctx_rgba (ctx, 1, 0, 0, 1);
+  itk_set_color (itk, ITK_ENTRY_FG);
   ctx_move_to (ctx, itk->x + itk->font_size * itk->value_pos, itk->y + itk->font_size * itk->rel_baseline);
   if (*val)
   {
@@ -668,6 +754,7 @@ void itk_toggle (ITK *itk, const char *label, int *val)
     itk_text (itk, label);
   }
 
+  itk->x += itk->rel_hgap * itk->font_size;
   itk_newline (itk);
 }
 
@@ -686,15 +773,16 @@ static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
 int itk_radio (ITK *itk, const char *label, int set)
 {
   Ctx *ctx = itk->ctx;
-  float width = ctx_text_width (ctx, label);
+  float width = ctx_text_width (ctx, label) + ctx_text_width (ctx, "X");
   CtxControl *control = add_control (itk, label, itk->x, itk->y, width, itk->font_size * itk->rel_ver_advance);
   itk_base (itk, label, itk->x, itk->y, width, itk->font_size * itk->rel_ver_advance, itk->focus_no == control->no);
-  ctx_rgb (ctx, 0, 0, 1);
+  itk_set_color (itk, ITK_ENTRY_FG);
   ctx_move_to (ctx, itk->x,  itk->y + itk->font_size * itk->rel_baseline);
   if (set)
   ctx_text (ctx, "X");
   else
   ctx_text (ctx, "O");
+  itk_set_color (itk, ITK_FG);
   ctx_text (ctx, label);
 
   control->type = UI_RADIO;
@@ -703,6 +791,7 @@ int itk_radio (ITK *itk, const char *label, int set)
   ctx_begin_path (ctx);
   itk->x += width;
 
+  itk->x += itk->rel_hgap * itk->font_size;
   itk_newline (itk);
   if (control->no == itk->focus_no && itk->button_pressed)
   {
@@ -713,8 +802,6 @@ int itk_radio (ITK *itk, const char *label, int set)
    return 0;
 }
 
-
-
 void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
@@ -724,8 +811,6 @@ void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
   itk->focus_no = control->no;
   itk->dirty++;
 }
-
-
 
 int itk_expander (ITK *itk, const char *label, int *val)
 {
@@ -753,14 +838,21 @@ int itk_expander (ITK *itk, const char *label, int *val)
   return *val;
 }
 
-
-int itk_button2 (ITK *itk, const char *label)
+int itk_button (ITK *itk, const char *label)
 {
   Ctx *ctx = itk->ctx;
   float width = ctx_text_width (ctx, label);
   CtxControl *control = add_control (itk, label, itk->x, itk->y, width, itk->font_size * itk->rel_ver_advance);
-  itk_base (itk, label, itk->x, itk->y, width, itk->font_size * itk->rel_ver_advance, itk->focus_no == control->no);
-  ctx_rgb (ctx, 0, 0, 1);
+
+  if (itk->focus_no == control->no)
+    itk_set_color (itk, ITK_BUTTON_FOCUSED_BG);
+  else
+    itk_set_color (itk, ITK_BUTTON_BG);
+
+  ctx_rectangle (ctx, itk->x, itk->y, width, itk->font_size * itk->rel_ver_advance);
+  ctx_fill (ctx);
+
+  itk_set_color (itk, ITK_BUTTON_FG);
   ctx_move_to (ctx, itk->x,  itk->y + itk->font_size * itk->rel_baseline);
   ctx_text (ctx, label);
 
@@ -769,40 +861,9 @@ int itk_button2 (ITK *itk, const char *label)
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
   itk->x += width;
+  itk->x += itk->rel_hgap * itk->font_size;
 
   itk_newline (itk);
-  if (control->no == itk->focus_no && itk->button_pressed)
-  {
-    itk->button_pressed = 0;
-    itk->dirty++;
-    return 1;
-  }
-  return 0;
-}
-
-int itk_button (ITK *itk, const char *label, void (*action)(void *user_data), void *user_data)
-{
-  Ctx *ctx = itk->ctx;
-  char buf[100] = "";
-  ctx_rgb (ctx, 1, 0, 1);
-  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, itk->font_size * itk->rel_ver_advance);
-  control->action = action;
-  control->val = user_data;
-  control->type = UI_BUTTON;
-
-  ctx_rectangle (ctx, itk->x, itk->y, itk->width, itk->font_size * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
-
-  ctx_fill (ctx);
-  ctx_begin_path (ctx);
-  if (0)
-  itk_base (itk, label, control->x, control->y, control->width, itk->font_size * itk->rel_ver_advance,
-           itk->focus_no == control->no);
-  ctx_rgb (ctx, 0,0,0);
-  itk_text (itk, label);
-
-  itk_newline (itk);
-
   if (control->no == itk->focus_no && itk->button_pressed)
   {
     itk->button_pressed = 0;
@@ -823,12 +884,11 @@ void choice_clicked (CtxEvent *event, void *userdata, void *userdata2)
   fprintf (stderr, "active!\n");
 }
 
-
 void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data)
 {
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
-  ctx_rgb (ctx, 1, 1, 1);
+  itk_set_color (itk, ITK_BG);
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, itk->font_size * itk->rel_ver_advance);
   control->action = action;
   control->commit_data = user_data;
@@ -1299,6 +1359,4 @@ void itk_done (ITK *itk)
     }
   }
   ctx_restore (ctx);
-
-
 }

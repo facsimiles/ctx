@@ -47,15 +47,14 @@ int main (int argc, char **argv)
       int x = 0;
       int y = 0;
       itk->dirty=0;
-      itk_reset                  (itk);
+      itk_reset (itk);
 
-      ctx_save                  (ctx);
-      ctx_rectangle             (ctx, x, y, width, height);
+      ctx_save (ctx);
+      ctx_rectangle (ctx, x, y, width, height);
       ctx_gray (ctx, 0);
-      ctx_fill                  (ctx);
+      ctx_fill (ctx);
 
-      itk_panel_start           (itk, "panel", x+30, y+30, width-60, height-100);
-      itk_titlebar (itk, "Test UI");
+      itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
       itk_seperator (itk);
 
       enum Mode
@@ -74,7 +73,7 @@ int main (int argc, char **argv)
 #endif
       static int presses = 0;
 
-      if (itk_button2 (itk, "press me"))
+      if (itk_button (itk, "press me"))
       {
         presses ++;
         fprintf (stderr, "%i %i\n", presses, presses % 1);
@@ -101,7 +100,7 @@ int main (int argc, char **argv)
         {
           char buf[20];
           sprintf (buf, "%i", i);
-          itk_button2 (itk, buf);
+          itk_button (itk, buf);
         }
       }
 
@@ -110,7 +109,9 @@ int main (int argc, char **argv)
       {
         itk_toggle (itk, "keybindings", &enable_keybindings);
         itk_slider (itk, "font size ", &itk->font_size, 5.0, 100.0, 0.1);
-        itk_slider (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.5);
+        itk_slider (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.1);
+        itk_slider (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.1);
+        itk_slider (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);
   //    itk_slider (itk, "width", &itk->width, 5.0, 600.0, 1.0);
         itk_slider (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
         itk_slider (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
@@ -119,18 +120,18 @@ int main (int argc, char **argv)
       }
 
       itk_toggle (itk, "baz ", &baz);
-      if (itk_button2 (itk, " press me "))
+      if (itk_button (itk, " press me "))
       {
         fprintf (stderr, "imgui style press\n");
       }
       itk_sameline (itk);
-      if (itk_button2 (itk, "or me"))
+      if (itk_button (itk, "or me"))
       {
         fprintf (stderr, "imgui style press2\n");
       }
       itk_toggle (itk, "barx: ", &bax);
       itk_sameline (itk);
-      if (itk_button2 (itk, "or me 3"))
+      if (itk_button (itk, "or me 3"))
       {
         fprintf (stderr, "imgui style press3\n");
       }
