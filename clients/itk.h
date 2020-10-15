@@ -100,6 +100,8 @@ struct _CtxControl{
   int type; /* this should be a pointer to the vfuncs/class struct
                instead - along with one optional instance data per control */
   char *label;
+  void *id; /* possibly unique identifier */
+
   float x;
   float y;
   float width;
@@ -166,6 +168,9 @@ struct _ITK{
   CtxList *panels;
   int control_no;
   int choice_active;
+
+  void *next_id; // to pre-empt a control and get it a more unique
+                 // identifier than the numeric pos
 
   int line_no;
   int lines_drawn;
@@ -293,6 +298,11 @@ CtxControl *add_control (ITK *itk, const char *label, float x, float y, float wi
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   control->label = strdup (label);
+  if (itk->next_id)
+  {
+    control->id = itk->next_id;
+    itk->next_id = NULL;
+  }
 
   // refind focus..
 if(0)  if (itk->focus_label){
@@ -456,6 +466,11 @@ void itk_scroll_start (ITK *itk, float height)
   ctx_clip (ctx);
   ctx_begin_path (ctx);
   ctx_translate (ctx, 0.0, -panel->scroll);
+}
+
+void itk_id (ITK *itk, void *id)
+{
+  itk->next_id = id; 
 }
 
 void itk_scroll_drag (CtxEvent *event, void *data, void *data2)
