@@ -201,6 +201,11 @@ struct _ITK{
   int control_no;
   int choice_active;
 
+  int popup_x;
+  int popup_y;
+  int popup_width;
+  int popup_height;
+
   void *next_id; // to pre-empt a control and get it a more unique
                  // identifier than the numeric pos
 
@@ -1017,6 +1022,13 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
   itk_text (itk, label);
 
   itk_newline (itk);
+  if (control->no == itk->focus_no)
+  {
+    itk->popup_x = control->x;
+    itk->popup_y = control->y + (itk->panel?-itk->panel->scroll:0);
+    itk->popup_width = control->width;
+    itk->popup_height = control->height;
+  }
 }
 
 void itk_choice_add (ITK *itk, int value, const char *label)
@@ -1445,15 +1457,18 @@ void itk_done (ITK *itk)
 
   if (control->type == UI_CHOICE && itk->choice_active)
   {
+    float x = control->x;
+    float y = itk->popup_y;
+
     itk_set_color (itk, ITK_BG);
-    ctx_rectangle (ctx, control->x,
-                        control->y,
+    ctx_rectangle (ctx, x,
+                        y,
                         em * 4,
                         em * (ctx_list_length (itk->choices) + 0.5));
     ctx_fill (ctx);
     itk_set_color (itk, ITK_FG);
-    ctx_rectangle (ctx, control->x,
-                        control->y,
+    ctx_rectangle (ctx, x,
+                        y,
                         em * 4,
                         em * (ctx_list_length (itk->choices) + 0.5));
     ctx_line_width (ctx, 2);
@@ -1469,14 +1484,14 @@ void itk_done (ITK *itk)
     for (CtxList *l = itk->choices; l; l = l->next, no++)
     {
       UiChoice *choice = l->data;
-      ctx_rectangle (ctx, control->x,
-                          control->y + em * (no),
+      ctx_rectangle (ctx, x,
+                          y + em * (no),
                           em * 4,
                           em * 1.5);
       ctx_listen (ctx, CTX_CLICK, ctx_choice_set, itk, (void*)((size_t)choice->val));
       ctx_begin_path (ctx);
-      ctx_move_to (ctx, control->x + em * (0.5),
-                        control->y + em * (no+1));
+      ctx_move_to (ctx, x + em * (0.5),
+                        y + em * (no+1));
       int *val = control->val;
       if (choice->val == *val)
         itk_set_color (itk, ITK_ENTRY_FG);
