@@ -2,11 +2,6 @@
 #include "ctx.h"
 #include "itk.h"
 
-void pressed (void *userdata)
-{
-  fprintf (stderr, "pressed\n");
-}
-
 int do_quit = 0;
 void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 {
@@ -30,24 +25,18 @@ int main (int argc, char **argv)
   ctx_get_event (ctx);
 
   event = (void*)0x1;
-  //fprintf (stderr, "[%s :%i %i]", event, mx, my);
   itk->dirty = 1;
   while (!do_quit)
   {
     float width = ctx_width (ctx);
-    if (itk->width != width)
-    {
-      itk->width = width;
-      itk->dirty++;
-    }
     if (itk->dirty)
     {
       int width = ctx_width (ctx);
       int height = ctx_height (ctx);
       int x = 0;
       int y = 0;
-      itk->dirty=0;
       itk_reset (itk);
+      itk->dirty=0;
 
       ctx_save (ctx);
       ctx_rectangle (ctx, x, y, width, height);
@@ -72,19 +61,20 @@ int main (int argc, char **argv)
       if (itk_radio(itk, "swap", mode==Mode_Swap)){mode = Mode_Swap;};
 #endif
       static int presses = 0;
-
       if (itk_button (itk, "press me"))
-      {
         presses ++;
-        fprintf (stderr, "%i %i\n", presses, presses % 1);
-      }
 
       if (presses % 2)
       {
         itk_sameline (itk);
         itk_label (itk, "thanks for pressing me");
       }
+
+      static float slide_float = 23.42;
+      itk_slider (itk, "slide float", &slide_float, 0.0, 100.0, 0.1);
+
       itk_entry (itk, "Foo", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL);
+
       itk_choice (itk, "power", &chosen, NULL, NULL);
       itk_choice_add (itk, 0, "on");
       itk_choice_add (itk, 1, "off");
@@ -108,9 +98,9 @@ int main (int argc, char **argv)
       if (itk_expander (itk, "Ui settings", &itk_settings))
       {
         itk_toggle (itk, "keybindings", &enable_keybindings);
-        itk_slider (itk, "font size ", &itk->font_size, 5.0, 100.0, 0.1);
-        itk_slider (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.1);
-        itk_slider (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.1);
+        itk_slider (itk, "font size ", &itk->font_size, 4.0, 60.0, 0.25);
+        itk_slider (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
+        itk_slider (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
         itk_slider (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);
   //    itk_slider (itk, "width", &itk->width, 5.0, 600.0, 1.0);
         itk_slider (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
@@ -135,7 +125,6 @@ int main (int argc, char **argv)
       {
         fprintf (stderr, "imgui style press3\n");
       }
-
       itk_panel_end (itk);
 
       itk_done (itk);

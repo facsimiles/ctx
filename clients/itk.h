@@ -132,8 +132,8 @@ struct _ITK{
   float stored_x; // for sameline()
 
   float font_size;
-  int   width;
-  int   height;
+  float width;
+  float height;
   float value_pos;
   float value_width;
 
@@ -141,8 +141,6 @@ struct _ITK{
   float rel_baseline;
   float rel_hgap;
   float rel_vgap;
-  float winx;
-  float winy;
   float scroll_speed;
 
   int   dirty;
@@ -196,7 +194,7 @@ ITK *itk_new (Ctx *ctx)
   itk->rel_baseline    = 0.8;
   itk->rel_hgap        = 1.0;
   itk->rel_vgap        = 0.2;
-  itk->scroll_speed    = 0.1;
+  itk->scroll_speed    = 0.333;
   itk->dirty ++;
 
   return itk;
@@ -474,7 +472,6 @@ void itk_panel_scroll_drag (CtxEvent *event, void *data, void *data2)
     return;
   }
 
-  fprintf (stderr, "-%f\n", event->y);
   panel->scroll = ((event->y - panel->scroll_start_y - th / 2) / (scrollbar_height-th)) *
           (panel->max_y - panel->scroll_start_y - scrollbar_height)
           ;
@@ -491,7 +488,6 @@ void itk_panel_resize_drag (CtxEvent *event, void *data, void *data2)
   ITKPanel *panel = data;
   panel->width += event->delta_x;
   panel->height += event->delta_y;
-  fprintf (stderr, "foo!\n");
   event->stop_propagate = 1;
 }
 
@@ -588,6 +584,7 @@ void slider_drag (CtxEvent *event, void *userdata, void *userdata2)
   new_val = ((event->x - control->x) / (control->width * itk->value_width)) * (control->max-control->min) + control->min;
   itk_float_constrain (control, &new_val);
 
+  itk->focus_no = control->no;
   *val = new_val;
   event->stop_propagate = 1;
   itk->dirty++;
@@ -881,7 +878,6 @@ void choice_clicked (CtxEvent *event, void *userdata, void *userdata2)
   itk->focus_no = control->no;
   event->stop_propagate = 1;
   itk->dirty++;
-  fprintf (stderr, "active!\n");
 }
 
 void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data)
@@ -916,7 +912,7 @@ void itk_choice_add (ITK *itk, int value, const char *label)
     if (*val == value)
     {
       ctx_move_to (ctx, itk->x + itk->font_size * itk->value_pos,
-                      itk->y + itk->font_size * itk->rel_baseline  - itk->font_size * itk->rel_ver_advance);
+                      itk->y + itk->font_size * itk->rel_baseline  - itk->font_size * (itk->rel_ver_advance + itk->rel_vgap));
       ctx_rgb (ctx, 1, 0, 0);
       ctx_text (ctx, label);
     }
