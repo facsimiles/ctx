@@ -828,41 +828,43 @@ void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
 void itk_toggle (ITK *itk, const char *label, int *val)
 {
   Ctx *ctx = itk->ctx;
-  char buf[100] = "";
   float em = itk_em (itk);
-
-  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-  control->val = val;
-  control->type = UI_TOGGLE;
-
-  ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
-
-  ctx_begin_path (ctx);
-  itk_base (itk, label, control->x, control->y, control->width, em * itk->rel_ver_advance,
-                        itk->focus_no == control->no);
+  float width = ctx_text_width (ctx, label) + em * 1 + em * itk->rel_hpad;
+  CtxControl *control = add_control (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
+  itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
 
   itk_set_color (itk, ITK_ENTRY_FG);
-  ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
+
+  ctx_begin_path (ctx);
+  ctx_rectangle (ctx, itk->x, itk->y, em, em);
+  ctx_line_width (ctx, 2.0);
+  ctx_stroke (ctx);
+
   if (*val)
   {
-    ctx_text (ctx, "1 ");
-  }
-  else
-  {
-    ctx_text (ctx, "0 ");
+    ctx_move_to (ctx, itk->x + em * 0.2, itk->y + em * 0.5);
+    ctx_line_to (ctx, itk->x + em * 0.5, itk->y + em * 0.8);
+    ctx_line_to (ctx, itk->x + em * 0.8, itk->y + em * 0.2);
+    ctx_line_width (ctx, 4.0);
+    ctx_stroke (ctx);
   }
 
-  ctx_rgba (ctx, 0, 0, 0, 1);
-  itk->x += ctx_text_width (ctx, "XX");
-  if (label)
-  {
-    itk_text (itk, label);
-  }
+  ctx_move_to (ctx, itk->x + em * 1 + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
+  itk_set_color (itk, ITK_FG);
+  ctx_text (ctx, label);
+
+  control->type = UI_TOGGLE;
+  control->val = val;
+  ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
+  ctx_begin_path (ctx);
+  itk->x += width;
 
   itk->x += itk->rel_hgap * em;
   itk_newline (itk);
 }
+
+
 
 static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
@@ -885,7 +887,7 @@ int itk_radio (ITK *itk, const char *label, int set)
   itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
 
   itk_set_color (itk, ITK_ENTRY_FG);
-
+  ctx_begin_path (ctx);
   ctx_arc (ctx, itk->x + em * 0.5, itk->y + em * 0.5, em * 0.4, 0.0, 6.0, 0);
   ctx_line_width (ctx, 2.0);
   ctx_stroke (ctx);
