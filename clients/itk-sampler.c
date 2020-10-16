@@ -46,6 +46,23 @@ int main (int argc, char **argv)
       //itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
       itk_panel_start (itk, "Immediate Toolkit", x+0, y+0, width, height);
       itk_seperator (itk);
+      itk_begin_menu_bar (itk, "main");
+       itk_begin_menu (itk, "foo");
+        itk_menu_item (itk, "foo 1");
+        itk_menu_item (itk, "foo 2");
+       itk_end_menu (itk);
+       itk_begin_menu (itk, "bar");
+        itk_menu_item (itk, "bar 1");
+        itk_menu_item (itk, "bar 2");
+ 
+        itk_begin_menu (itk, "baz");
+          itk_menu_item (itk, "baz 1");
+          itk_menu_item (itk, "baz 2");
+          itk_menu_item (itk, "baz 3");
+        itk_end_menu (itk);
+
+       itk_end_menu (itk);
+      itk_end_menu_bar (itk);
 
       static int presses = 0;
       if (itk_button (itk, "button"))
@@ -85,6 +102,8 @@ int main (int argc, char **argv)
       itk_choice_add (itk, 2030, "electric");
       itk_choice_add (itk, 2040, "novel");
 
+      itk_toggle (itk, "baz ", &baz);
+
       static int itk_items = 0;
       if (itk_expander (itk, "items", &itk_items))
       {
@@ -112,34 +131,8 @@ int main (int argc, char **argv)
         itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
         itk_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
         itk_slider_float (itk, "value width", &itk->value_width, 0.0, 40.0, 0.02);
-
-        static int itk_panel_settings = 0;
-        if (itk_expander (itk, "panel settings", &itk_panel_settings))
-        {
-#if 0
-          itk_slider (itk, "panel x", &itk->panel->x, 0.0, 1000.0, 1);
-          itk_slider (itk, "panel y", &itk->panel->y, 0.0, 1000.0, 1);
-#endif
-
-        }
       }
 
-      itk_toggle (itk, "baz ", &baz);
-      if (itk_button (itk, " press me "))
-      {
-        fprintf (stderr, "imgui style press\n");
-      }
-      itk_sameline (itk);
-      if (itk_button (itk, "or me"))
-      {
-        fprintf (stderr, "imgui style press2\n");
-      }
-      itk_toggle (itk, "barx: ", &bax);
-      itk_sameline (itk);
-      if (itk_button (itk, "or me 3"))
-      {
-        fprintf (stderr, "imgui style press3\n");
-      }
       itk_panel_end (itk);
 
       itk_done (itk);

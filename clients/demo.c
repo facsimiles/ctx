@@ -747,6 +747,31 @@ static Test tests[]={
 };
 
 static int test_no;
+static long start;
+static int quit = 0;
+
+static void do_quit (CtxEvent *event, void *data1, void *data2)
+{
+        quit = 1;
+}
+
+static void prev_test (CtxEvent *event, void *data1, void *data2)
+{
+      test_no --;
+      if (test_no < 0)
+        test_no = sizeof (tests) / sizeof (tests[0]) - 1;
+      frame_no = 0;
+      start = ctx_ticks ();
+}
+
+static void next_test (CtxEvent *event, void *data1, void *data2)
+{
+      test_no ++;
+      if (test_no >= sizeof (tests) / sizeof (tests[0]))
+        test_no = 0;
+      frame_no = 0;
+      start = ctx_ticks ();
+}
 
 int main (int argc, char **argv)
 {
@@ -754,16 +779,16 @@ int main (int argc, char **argv)
   Ctx *ctx = ctx_new_ui (-1, -1);
   //Ctx *ctx = ctx_new_ui (1200, 1200);
 
-  int quit = 0;
   int frame_no = 0;
 
   //ctx_set_antialias (ctx, CTX_ANTIALIAS_FAST);
-  long start = ctx_ticks ();
+  start = ctx_ticks ();
 
   long fps_sec = start / (1000 * 1000 );
   int fps_frames = 0;
 
   char fpsbuf[16]="";
+
   while (!quit)
   {
     width = ctx_width (ctx);
@@ -801,42 +826,16 @@ int main (int argc, char **argv)
       ctx_text (ctx, fpsbuf);
 
       ctx_flush (ctx);
+      ctx_add_key_binding (ctx, "left", NULL, "prev",  prev_test, NULL);
+      ctx_add_key_binding (ctx, "right", NULL, "next",  next_test, NULL);
+      ctx_add_key_binding (ctx, "q", NULL, "next",  do_quit, NULL);
+      ctx_add_key_binding (ctx, "control-q", NULL, "next",  do_quit, NULL);
     }
 
     frame_no ++;
 
-    CtxEvent *event;
-    while((event=ctx_get_event (ctx)))
+    while(ctx_get_event (ctx))
     {
-       switch (event->type)
-       {
-       case CTX_KEY_DOWN:
-         if (!strcmp (event->string, "q")) quit = 1;
-         else if (!strcmp (event->string, "left"))
-         {
-      test_no --;
-      if (test_no < 0)
-        test_no = sizeof (tests) / sizeof (tests[0]) - 1;
-      frame_no = 0;
-      start = ctx_ticks ();
-
-         }
-         else if (!strcmp (event->string, "right"))
-         {
-      test_no ++;
-      if (test_no >= sizeof (tests) / sizeof (tests[0]))
-        test_no = 0;
-      frame_no = 0;
-      start = ctx_ticks ();
-
-         }
-         else if (!strcmp (event->string, "return"))
-         {
-
-         }
-
-         break;
-       }
     }
   }
   ctx_free (ctx);

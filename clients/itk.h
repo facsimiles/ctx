@@ -209,6 +209,9 @@ struct _ITK{
   int popup_width;
   int popup_height;
 
+  char *active_menu_path;
+  char *menu_path;
+
   void *next_id; // to pre-empt a control and get it a more unique
                  // identifier than the numeric pos
 
@@ -216,6 +219,49 @@ struct _ITK{
   int lines_drawn;
   int light_mode;
 };
+
+void itk_begin_menu_bar (ITK *itk, const char *title)
+{
+  if (itk->menu_path)
+    free (itk->menu_path);
+  itk->menu_path = title?strdup (title):NULL;
+}
+
+void itk_begin_menu (ITK *itk, const char *title)
+{
+  char *tmp = malloc (strlen (title) + (itk->menu_path?strlen (itk->menu_path):0) + 2);
+  sprintf (tmp, "%s/%s", itk->menu_path?itk->menu_path:"", title);
+  if (itk->menu_path)
+          free (itk->menu_path);
+  itk->menu_path = tmp;
+  if (itk_button (itk, title))
+  {
+     if (itk->active_menu_path) free (itk->active_menu_path);
+     itk->active_menu_path = strdup (itk->menu_path);
+  }; itk_sameline (itk);
+}
+
+void itk_menu_item (ITK *itk, const char *title)
+{
+  char *tmp = malloc (strlen (title) + (itk->menu_path?strlen (itk->menu_path):0) + 2);
+  sprintf (tmp, "%s/%s", itk->menu_path?itk->menu_path:"", title);
+  //fprintf (stderr, "[%s]\n", tmp);
+  free (tmp);
+}
+
+void itk_end_menu (ITK *itk)
+{
+  if (itk->menu_path)
+  {
+    char *split = strrchr (itk->menu_path, '/');
+    if (split) *split = 0;
+  }
+}
+
+void itk_end_menu_bar (ITK *itk)
+{
+  itk_newline (itk);
+}
 
 void itk_set_color (ITK *itk, int color)
 {
@@ -248,6 +294,7 @@ ITK *itk_new (Ctx *ctx)
   itk->rel_ver_advance  = 1.2;
   itk->rel_baseline     = 0.8;
   itk->rel_hgap         = 0.5;
+  itk->menu_path = strdup ("main/foo");
   itk->rel_hpad         = 0.3;
   itk->rel_vgap         = 0.2;
   itk->scroll_speed     = 0.333;
@@ -675,6 +722,7 @@ static void itk_float_constrain (CtxControl *control, float *val)
   }
   *val = new_val;
 }
+void itk_set_focus (ITK *itk, int pos);
 
 void slider_float_drag (CtxEvent *event, void *userdata, void *userdata2)
 {
@@ -683,7 +731,7 @@ void slider_float_drag (CtxEvent *event, void *userdata, void *userdata2)
   float *val = control->val;
   float new_val;
 
-  itk->focus_no = control->no;
+  itk_set_focus (itk, control->no);
   event->stop_propagate = 1;
   itk->dirty++;
 
@@ -741,12 +789,53 @@ void itk_slider_float (ITK *itk, const char *label, float *val, float min, float
   itk_newline (itk);
 }
 
+void entry_commit (ITK *itk)
+{
+
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->no == itk->focus_no)
+    {
+      switch (control->type)
+      {
+        case UI_ENTRY:
+         if (itk->entry_copy)
+         {
+           if (control->commit)
+           {
+             control->commit (control->commit_data);
+           }
+           else
+           {
+             strcpy (control->val, itk->entry_copy);
+           }
+           free (itk->entry_copy);
+           itk->entry_copy = NULL;
+         }
+      }
+      return;
+    }
+  }
+}
 void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
   CtxControl *control = userdata;
   event->stop_propagate = 1;
-  itk->focus_no = control->no;
+
+  if (itk->entry_copy)
+  {
+    entry_commit (itk);
+  }
+  else
+  {
+    itk->entry_copy = strdup (control->val);
+    itk->entry_pos = strlen (control->val);
+  }
+
+
+  itk_set_focus (itk, control->no);
   itk->dirty++;
 }
 
@@ -828,7 +917,7 @@ void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
   int *val = control->val;
   *val = (*val)?0:1;
   event->stop_propagate = 1;
-  itk->focus_no = control->no;
+  itk_set_focus (itk, control->no);
   itk->dirty++;
 }
 
@@ -881,7 +970,7 @@ static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
     control->action (control->val);
   event->stop_propagate = 1;
   itk->dirty ++;
-  itk->focus_no = control->no;
+  itk_set_focus (itk, control->no);
   itk->button_pressed = 1;
 }
 
@@ -933,7 +1022,7 @@ void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
   CtxControl *control = userdata;
   int *val = control->val;
   *val = (*val)?0:1;
-  itk->focus_no = control->no;
+  itk_set_focus (itk, control->no);
   itk->dirty++;
 }
 
@@ -1034,7 +1123,7 @@ void choice_clicked (CtxEvent *event, void *userdata, void *userdata2)
   ITK *itk = userdata2;
   CtxControl *control = userdata;
   itk->choice_active = 1;
-  itk->focus_no = control->no;
+  itk_set_focus (itk, control->no);
   event->stop_propagate = 1;
   itk->dirty++;
 }
@@ -1101,34 +1190,14 @@ void itk_choice_add (ITK *itk, int value, const char *label)
   }
 }
 
-void entry_commit (ITK *itk)
+void itk_set_focus (ITK *itk, int pos)
 {
-
-  for (CtxList *l = itk->controls; l; l=l->next)
-  {
-    CtxControl *control = l->data;
-    if (control->no == itk->focus_no)
-    {
-      switch (control->type)
-      {
-        case UI_ENTRY:
-         if (itk->entry_copy)
-         {
-           if (control->commit)
-           {
-             control->commit (control->commit_data);
-           }
-           else
-           {
-             strcpy (control->val, itk->entry_copy);
-           }
-           free (itk->entry_copy);
-           itk->entry_copy = NULL;
-         }
-      }
-      return;
-    }
-  }
+   if (itk->focus_no != pos)
+   {
+     entry_commit (itk);
+     itk->focus_no = pos;
+     itk->dirty ++;
+   }
 }
 
 void itk_focus (ITK *itk, int dir)

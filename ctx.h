@@ -20767,7 +20767,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
 }
 
 #ifndef CTX_THREADS
-#define CTX_THREADS   4
+#define CTX_THREADS   8
 #endif
 
 #ifndef CTX_HASH_ROWS
@@ -22021,7 +22021,6 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   }
   if (count >= 10000)
   {
-    fprintf (stderr, "!\n");
     sdl->shown_frame = sdl->render_frame;
   }
   if (sdl->shown_frame == sdl->render_frame)

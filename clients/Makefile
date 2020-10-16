@@ -15,5 +15,5 @@ clean:
 demo.static: demo.static.c ../*.h ../fonts/*.h Makefile itk.h
 	$(CC) -g $< --static -o $@ -I.. -I../fonts -lm 
 
-../ctx.o: ../ctx.h
+../ctx.o: ../ctx.h ../ctx.c
 	make -C .. ctx.o
