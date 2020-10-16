@@ -46,29 +46,30 @@ int main (int argc, char **argv)
       itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
       itk_seperator (itk);
 
-      enum Mode
-      {
-        Mode_Copy,
-        Mode_Move,
-        Mode_Swap
-      };
-#if 1
-      static int mode = Mode_Move;
-      if (itk_radio(itk, "copy", mode==Mode_Copy)){mode = Mode_Copy;};
-      itk_sameline (itk);
-      if (itk_radio(itk, "move", mode==Mode_Move)){mode = Mode_Move;};
-      itk_sameline (itk);
-      if (itk_radio(itk, "swap", mode==Mode_Swap)){mode = Mode_Swap;};
-#endif
       static int presses = 0;
-      if (itk_button (itk, "press me"))
+      if (itk_button (itk, "button"))
         presses ++;
 
       if (presses % 2)
       {
         itk_sameline (itk);
-        itk_label (itk, "thanks for pressing me");
+        itk_label (itk, "label");
       }
+
+      enum Mode
+      {
+        Mode_Rew,
+        Mode_Fwd,
+        Mode_Play,
+      };
+
+      static int mode = Mode_Fwd;
+      if (itk_radio(itk, "rew", mode==Mode_Rew)){mode = Mode_Rew;};
+      itk_sameline (itk);
+      if (itk_radio(itk, "fwd", mode==Mode_Fwd)){mode = Mode_Fwd;};
+      itk_sameline (itk);
+      if (itk_radio(itk, "play", mode==Mode_Play)){mode = Mode_Play;};
+
 
       static float slide_float = 10.0;
       itk_slider (itk, "slide float", &slide_float, 0.0, 100.0, 0.1);

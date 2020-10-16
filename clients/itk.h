@@ -58,6 +58,7 @@ typedef enum
   ITK_FOCUSED_BG,
 
   ITK_INTERACTIVE,
+  ITK_INTERACTIVE_BG,
 
   ITK_ENTRY_CURSOR,
   ITK_ENTRY_FALLBACK,
@@ -70,6 +71,7 @@ typedef enum
   ITK_BUTTON_FOCUSED_BG,
   ITK_BUTTON_PRESSED_FG,
   ITK_BUTTON_PRESSED_BG,
+  ITK_BUTTON_SHADOW,
 
   ITK_SLIDER_TEXT,
   ITK_SLIDER_CURSOR,
@@ -90,10 +92,12 @@ IKTPal theme_dark[]={
   {ITK_FOCUSED_BG,         60,70,80,255},
   {ITK_FG,                 225,225,225,255},
   {ITK_INTERACTIVE,           255,5,5,255},
+  {ITK_INTERACTIVE_BG,     55,55,20,255},
   {ITK_ENTRY_CURSOR,       225,245,140,255},
   {ITK_ENTRY_FALLBACK,     225,245,140,255},
   {ITK_BUTTON_FOCUSED_BG,  60,60,160,255},
-  {ITK_BUTTON_BG,          30,40,150,255},
+  {ITK_BUTTON_SHADOW,      0,0,0,100},
+  {ITK_BUTTON_BG,          0,0,0,255},
   {ITK_BUTTON_FG,          255,255,255,255},
   {ITK_SCROLL_BG,          255,255,255,30},
   {ITK_SCROLL_FG,          255,255,255,100},
@@ -107,11 +111,13 @@ IKTPal theme_light[]={
   {ITK_FOCUSED_BG,         255,255,255,255},
   {ITK_FG,                 30,40,50,255},
   {ITK_INTERACTIVE,           255,5,5,255},
+  {ITK_INTERACTIVE_BG,     255,245,220,255},
   {ITK_ENTRY_CURSOR,       0,0,0,255},
   {ITK_ENTRY_FALLBACK,     225,245,140,255},
-  {ITK_BUTTON_FOCUSED_BG,  150,130,180,255},
-  {ITK_BUTTON_BG,          150,150,150,255},
-  {ITK_BUTTON_FG,          255,255,255,255},
+  {ITK_BUTTON_BG,          235,235,235,255},
+  {ITK_BUTTON_SHADOW,      0,0,0,100},
+  {ITK_BUTTON_FOCUSED_BG,  255,255,255,255},
+  {ITK_BUTTON_FG,          0,0,0,255},
   {ITK_SCROLL_BG,          0,0,0,30},
   {ITK_SCROLL_FG,          0,0,0,100},
   {ITK_SLIDER_CURSOR,      255,0,0,127},
@@ -436,8 +442,8 @@ void itk_seperator (ITK *itk)
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
   float em = itk_em (itk);
-  itk_base (itk, NULL, itk->x, itk->y, itk->width, em * itk->rel_ver_advance / 4, 0);
-  ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance/4);
+  itk_base (itk, NULL, itk->x0, itk->y, itk->width, em * itk->rel_ver_advance / 4, 0);
+  ctx_rectangle (ctx, itk->x0 - em * itk->rel_hmargin, itk->y, itk->width, em * itk->rel_ver_advance/4);
   ctx_gray (ctx, 0.5);
   ctx_fill (ctx);
   itk_newline (itk);
@@ -932,13 +938,14 @@ int itk_expander (ITK *itk, const char *label, int *val)
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   char buf[100] = "";
-  ctx_rgb (ctx, 1, 1, 1);
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   control->val = val;
   control->type = UI_EXPANDER;
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
+  itk_set_color (itk, ITK_INTERACTIVE_BG);
+  ctx_fill (ctx);
 
   ctx_begin_path (ctx);
   {
@@ -976,17 +983,26 @@ int itk_button (ITK *itk, const char *label)
   float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxControl *control = add_control (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
 
-  if (itk->focus_no == control->no)
-    itk_set_color (itk, ITK_BUTTON_FOCUSED_BG);
-  else
-    itk_set_color (itk, ITK_BUTTON_BG);
-
-  ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
+  itk_set_color (itk, ITK_BUTTON_SHADOW);
+  ctx_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, width, em * itk->rel_ver_advance);
   ctx_fill (ctx);
+
+#if 0
   itk_set_color (itk, ITK_INTERACTIVE);
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_line_width (ctx, 1);
   ctx_stroke (ctx);
+#endif
+
+
+  if (itk->focus_no == control->no)
+    itk_set_color (itk, ITK_BUTTON_FOCUSED_BG);
+  else
+    itk_set_color (itk, ITK_INTERACTIVE_BG);
+
+  ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
+  ctx_fill (ctx);
+
 
   itk_set_color (itk, ITK_BUTTON_FG);
   ctx_move_to (ctx, itk->x + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
@@ -1481,7 +1497,7 @@ void itk_done (ITK *itk)
 
     if (y + (ctx_list_length (itk->choices) + 0.5) * em > ctx_height (ctx))
     {
-      y = itk->popup_y - (ctx_list_length (itk->choices)) * em / 2;
+      y = itk->popup_y - (ctx_list_length (itk->choices) - 0.5) * em;
     }
 
     itk_set_color (itk, ITK_BG);
