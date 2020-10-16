@@ -43,8 +43,8 @@ int main (int argc, char **argv)
       ctx_gray (ctx, 0);
       ctx_fill (ctx);
 
-      //itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
-      itk_panel_start (itk, "Immediate Toolkit", x+0, y+0, width, height);
+      if(1)itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
+      else itk_panel_start (itk, "Immediate Toolkit", x+0, y+0, width, height);
       itk_seperator (itk);
       itk_begin_menu_bar (itk, "main");
        itk_begin_menu (itk, "foo");
@@ -63,6 +63,7 @@ int main (int argc, char **argv)
 
        itk_end_menu (itk);
       itk_end_menu_bar (itk);
+      itk_seperator (itk);
 
       static int presses = 0;
       if (itk_button (itk, "button"))

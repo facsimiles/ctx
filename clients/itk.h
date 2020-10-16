@@ -404,6 +404,7 @@ if(0)  if (itk->focus_label){
      }
   }
 
+  control->ref_count=2;
   control->x = x;
   control->y = y;
   control->no = itk->control_no;
@@ -426,10 +427,13 @@ if(0)  if (itk->focus_label){
      }
      else if (itk->y - itk->panel->scroll < em * 2)
      {
-        itk->panel->scroll -= itk->scroll_speed * em;
-        if (itk->panel->scroll<0.0)
-          itk->panel->scroll=0.0;
-        itk->dirty++;
+        if (itk->panel->scroll != 0.0f)
+        {
+          itk->panel->scroll -= itk->scroll_speed * em;
+          if (itk->panel->scroll<0.0)
+            itk->panel->scroll=0.0;
+          itk->dirty++;
+        }
      }
 
   }
@@ -757,8 +761,6 @@ void itk_slider_float (ITK *itk, const char *label, float *val, float min, float
   control->step = step;
   control->val = val;
   control->type = UI_SLIDER;
-  control->ref_count++;
-  control->ref_count++;
 
   if (itk->focus_no == control->no)
     itk_set_color (itk, ITK_FOCUSED_BG);
@@ -959,8 +961,6 @@ void itk_toggle (ITK *itk, const char *label, int *val)
   itk->x += itk->rel_hgap * em;
   itk_newline (itk);
 }
-
-
 
 static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
