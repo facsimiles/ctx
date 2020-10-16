@@ -28,6 +28,10 @@
         <p>ctx is an experimental terminal, single header library and <a
                 href='protocol/'>serial protocol</a> for interactive vector
         graphics.</p>
+        <p>The terminal used to be more performant - while still using ctx,
+        but in a more direct minimal-damage/recomputation manner, at
+        the moment this is sacrificed for a cleaner vector rendering drawlist.
+        </p>
 
         <dl>
            <dt><a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 Canvas 2D Context</a></dt><dd>Easily bindable C API and protocol builds directly on this standard.
@@ -110,9 +114,9 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 
         <h2 id='roadmap'>semi-ordered roadmap / wishlist</h2>
 	<ul>
-        <li>reduce size and improve performance</li>
-        <li>Document/clean up network transparent UI protocol using ctx
-            syntax. (<a href='not-really-a-demo.png'>test</a>, <a href='multi-client.png'>test</a>)</li>
+        <li>quickjs integration</li>
+        <li>improve performance</li>
+        <li>diff of frames in terminal protocol</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
 	<li>point in fill/stroke, (current in_fill API uses path boundingbox)</li>
         <li>texture upload as part of ctx syntax</li>
