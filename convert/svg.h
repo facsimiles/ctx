@@ -35,7 +35,6 @@
 #define CTX_alpha 	CTX_STRH('a','l','p','h','a',0,0,0,0,0,0,0,0,0)
 #define CTX_amp 	CTX_STRH('a','m','p',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_apos 	CTX_STRH('a','p','o','s',0,0,0,0,0,0,0,0,0,0)
-#define CTX_aqua 	CTX_STRH('a','q','u','a',0,0,0,0,0,0,0,0,0,0)
 #define CTX_aring 	CTX_STRH('a','r','i','n','g',0,0,0,0,0,0,0,0,0)
 #define CTX_Aring 	CTX_STRH('A','r','i','n','g',0,0,0,0,0,0,0,0,0)
 #define CTX_auto 	CTX_STRH('a','u','t','o',0,0,0,0,0,0,0,0,0,0)
@@ -59,10 +58,8 @@
 #define CTX_base  	CTX_STRH('b','a','s','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_bevel 	CTX_STRH('b','e','v','e','l',0,0,0,0,0,0,0,0,0)
 #define CTX_bidi_override 	CTX_STRH('b','i','d','i','-','o','v','e','r','r','i','d','e',0)
-#define CTX_black 	CTX_STRH('b','l','a','c','k',0,0,0,0,0,0,0,0,0)
 #define CTX_blink 	CTX_STRH('b','l','i','n','k',0,0,0,0,0,0,0,0,0)
 #define CTX_block 	CTX_STRH('b','l','o','c','k',0,0,0,0,0,0,0,0,0)
-#define CTX_blue 	CTX_STRH('b','l','u','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_body 	CTX_STRH('b','o','d','y',0,0,0,0,0,0,0,0,0,0)
 #define CTX_bold 	CTX_STRH('b','o','l','d',0,0,0,0,0,0,0,0,0,0)
 #define CTX_bolder 	CTX_STRH('b','o','l','d','e','r',0,0,0,0,0,0,0,0)
@@ -113,10 +110,8 @@
 #define CTX_context_menu 	CTX_STRH('c','o','n','t','e','x','t','-','m','e','n','u',0,0)
 #define CTX_crosshair 	CTX_STRH('c','r','o','s','s','h','a','i','r',0,0,0,0,0)
 #define CTX_curren 	CTX_STRH('c','u','r','r','e','n',0,0,0,0,0,0,0,0)
-#define CTX_currentColor 	CTX_STRH('c','u','r','r','e','n','t','C','o','l','o','r',0,0)
 #define CTX_cursor 	CTX_STRH('c','u','r','s','o','r',0,0,0,0,0,0,0,0)
 #define CTX_cursor_wait 	CTX_STRH('c','u','r','s','o','r','-','w','a','i','t',0,0,0)
-#define CTX_cyan 	CTX_STRH('c','y','a','n',0,0,0,0,0,0,0,0,0,0)
 #define CTX_d 	CTX_STRH('d',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_dd 	CTX_STRH('d','d',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_default 	CTX_STRH('d','e','f','a','u','l','t',0,0,0,0,0,0,0)
@@ -168,10 +163,7 @@
 #define CTX_font_variant_positoin CTX_STRH('f','o','n','t','-','v','a','r','i','a','n','t','-','p')
 #define CTX_font_weight CTX_STRH('f','o','n','t','-','w','e','i','g','h','t',0,0,0)
 #define CTX_font_variant CTX_STRH('f','o','n','t','-','v','a','r','i','a','n','t',0,0)
-#define CTX_fuchsia 	CTX_STRH('f','u','c','h','s','i','a',0,0,0,0,0,0,0)
 #define CTX_g           CTX_STRH('g',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_gray 	CTX_STRH('g','r','a','y',0,0,0,0,0,0,0,0,0,0)
-#define CTX_green 	CTX_STRH('g','r','e','e','n',0,0,0,0,0,0,0,0,0)
 #define CTX_grid  	CTX_STRH('g','r','i','d',0,0,0,0,0,0,0,0,0,0)
 #define CTX_gt          CTX_STRH('g','t',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_hanging_punctuation     CTX_STRH('h','a','a','n','g','i','n','g','-','p','u','n','c','t')
@@ -203,7 +195,6 @@
 #define CTX_letter_spacing 	CTX_STRH('l','e','t','t','e','r','-','s','p','a','c','i','n','g')
 #define CTX_left        CTX_STRH('l','e','f','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_li 	CTX_STRH('l','i',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_lime 	CTX_STRH('l','i','m','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_line_height 	CTX_STRH('l','i','n','e','-','h','e','i','g','h','t',0,0,0)
 #define CTX_linethrough 	CTX_STRH('l','i','n','e','t','h','r','o','u','g','h',0,0,0)
 #define CTX_line_width 	CTX_STRH('l','i','n','e','-','w','i','d','t','h',0,0,0,0)
@@ -216,13 +207,11 @@
 #define CTX_list_style_type     CTX_STRH('l','i','s','t','-','s','t','y','l','e','-','t','y','p')
 #define CTX_lt 	CTX_STRH('l','t',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_ltr 	CTX_STRH('l','t','r',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_magenta 	CTX_STRH('m','a','g','e','n','t','a',0,0,0,0,0,0,0)
 #define CTX_margin 	CTX_STRH('m','a','r','g','i','n',0,0,0,0,0,0,0,0)
 #define CTX_margin_bottom 	CTX_STRH('m','a','r','g','i','n','-','b','o','t','t','o','m',0)
 #define CTX_margin_left 	CTX_STRH('m','a','r','g','i','n','-','l','e','f','t',0,0,0)
 #define CTX_margin_right 	CTX_STRH('m','a','r','g','i','n','-','r','i','g','h','t',0,0)
 #define CTX_margin_top 	CTX_STRH('m','a','r','g','i','n','-','t','o','p',0,0,0,0)
-#define CTX_maroon 	CTX_STRH('m','a','r','o','o','n',0,0,0,0,0,0,0,0)
 #define CTX_matrix 	CTX_STRH('m','a','t','r','i','x',0,0,0,0,0,0,0,0)
 #define CTX_max_height	CTX_STRH('m','a','x','-','h','e','i','g','h','t',0,0,0,0)
 #define CTX_max_lines 	CTX_STRH('m','a','x','-','l','i','n','e','s',0,0,0,0,0)
@@ -236,7 +225,6 @@
 #define CTX_miter 	CTX_STRH('m','i','t','e','r',0,0,0,0,0,0,0,0,0)
 #define CTX_monochrome  CTX_STRH('m','o','n','o','c','h','r','o','m','e',0,0,0,0)
 #define CTX_move 	CTX_STRH('m','o','v','e',0,0,0,0,0,0,0,0,0,0)
-#define CTX_navy 	CTX_STRH('n','a','v','y',0,0,0,0,0,0,0,0,0,0)
 #define CTX_nbsp 	CTX_STRH('n','b','s','p',0,0,0,0,0,0,0,0,0,0)
 #define CTX_ne_resize 	CTX_STRH('n','e','-','r','e','s','i','z','e',0,0,0,0,0)
 #define CTX_nesw_resize 	CTX_STRH('n','e','s','w','-','r','e','s','i','z','e',0,0,0)
@@ -256,7 +244,6 @@
 #define CTX_object_position  CTX_STRH('o','b','j','e','c','t','-','p','o','s','i','t','i','o')
 #define CTX_oblique 	CTX_STRH('o','b','l','i','q','u','e',0,0,0,0,0,0,0)
 #define CTX_odd 	CTX_STRH('o','d','d',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_olive 	CTX_STRH('o','l','i','v','e',0,0,0,0,0,0,0,0,0)
 #define CTX_omega 	CTX_STRH('o','m','e','g','a',0,0,0,0,0,0,0,0,0)
 #define CTX_opacity 	CTX_STRH('o','p','a','c','i','t','y',0,0,0,0,0,0,0)
 #define CTX_ordm 	CTX_STRH('o','r','d','m',0,0,0,0,0,0,0,0,0,0)
@@ -298,12 +285,10 @@
 #define CTX_pre_wrap 	CTX_STRH('p','r','e','-','w','r','a','p',0,0,0,0,0,0)
 #define CTX_print_symbols 	CTX_STRH('p','r','i','n','t','-','s','y','m','b','o','l','s',0)
 #define CTX_progress 	CTX_STRH('p','r','o','g','r','e','s','s',0,0,0,0,0,0)
-#define CTX_purple 	CTX_STRH('p','u','r','p','l','e',0,0,0,0,0,0,0,0)
 #define CTX_quot 	CTX_STRH('q','u','o','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_quotes      CTX_STRH('q','u','o','t','e','s',0,0,0,0,0,0,0,0,0)
 #define CTX_raquo 	CTX_STRH('r','a','q','u','o',0,0,0,0,0,0,0,0,0)
 #define CTX_rect 	CTX_STRH('r','e','c','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_red 	CTX_STRH('r','e','d',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_rel 	CTX_STRH('r','e','l',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_reg 	CTX_STRH('r','e','g',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_relative 	CTX_STRH('r','e','l','a','t','i','v','e',0,0,0,0,0,0)
@@ -324,7 +309,6 @@
 #define CTX_select      CTX_STRH('s','e','l','e','c','t',0,0,0,0,0,0,0,0)
 #define CTX_se_resize 	CTX_STRH('s','e','-','r','e','s','i','z','e',0,0,0,0,0)
 #define CTX_shy 	CTX_STRH('s','h','y',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_silver 	CTX_STRH('s','i','l','v','e','r',0,0,0,0,0,0,0,0)
 #define CTX_size  	CTX_STRH('s','i','z','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_solid 	CTX_STRH('s','o','l','i','d',0,0,0,0,0,0,0,0,0)
 #define CTX_span  	CTX_STRH('s','p','a','n',0,0,0,0,0,0,0,0,0,0)
@@ -353,7 +337,6 @@
 #define CTX_tab_size 	CTX_STRH('t','a','b','-','s','i','z','e',0,0,0,0,0,0)
 #define CTX_td          CTX_STRH('t','d',0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_top         CTX_STRH('t','o','p',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_teal        CTX_STRH('t','e','a','l',0,0,0,0,0,0,0,0,0,0)
 #define CTX_text        CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_text_align 	CTX_STRH('t','e','x','t','-','a','l','i','g','n',0,0,0,0)
 #define CTX_textarea        	CTX_STRH('t','e','x','t','a','r','e','a',0,0,0,0,0,0)
@@ -383,7 +366,6 @@
 #define CTX_transform_style    CTX_STRH('t','r','a','n','s','f','o','r','m','-','s','t','y','l')
 #define CTX_backface_visibility CTX_STRH('b','a','c','k','f','a','c','e','-','v','i','s','i','b')
 #define CTX_translate   CTX_STRH('t','r','a','n','s','l','a','t','e',0,0,0,0,0)
-#define CTX_transparent CTX_STRH('t','r','a','n','s','p','a','r','e','n','t',0,0,0)
 #define CTX_true        CTX_STRH('t','r','u','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_underline   CTX_STRH('u','n','d','e','r','l','i','n','e',0,0,0,0,0)
 #define CTX_unicode_bidi    CTX_STRH('u','n','i','c','o','d','e','-','b','i','d','i',0,0)
@@ -392,7 +374,6 @@
 #define CTX_vertical_text   CTX_STRH('v','e','r','t','i','c','a','l','-','t','e','x','t',0)
 #define CTX_visibility 	CTX_STRH('v','i','s','i','b','i','l','i','t','y',0,0,0,0)
 #define CTX_visible 	CTX_STRH('v','i','s','i','b','l','e',0,0,0,0,0,0,0)
-#define CTX_white 	CTX_STRH('w','h','i','t','e',0,0,0,0,0,0,0,0,0)
 #define CTX_white_space CTX_STRH('w','h','i','t','e','-','s','p','a','c','e',0,0,0)
 #define CTX_width 	CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
 #define CTX_word_break   CTX_STRH('w','o','r','d','-','b','r','e','a','k',0,0,0,0)
@@ -402,7 +383,6 @@
 #define CTX_w_resize 	CTX_STRH('w','-','r','e','s','i','z','e',0,0,0,0,0,0)
 #define CTX_x           CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_y 	        CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_yellow 	CTX_STRH('y','e','l','l','o','w',0,0,0,0,0,0,0,0)
 #define CTX_yen 	CTX_STRH('y','e','n',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_yes 	CTX_STRH('y','e','s',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_z_index	CTX_STRH('z','-','i','n','d','e','x',0,0,0,0,0,0,0)
@@ -3010,196 +2990,6 @@ void mrg_stylesheet_add (Mrg *mrg, const char *css, const char *uri,
 void mrg_css_set (Mrg *mrg, const char *css);
 void mrg_css_add (Mrg *mrg, const char *css);
 
-/* XXX: missing CSS1:
- *
- *   EM { color: rgb(110%, 0%, 0%) }  // clipped to 100% 
- *
- *
- *   :first-letter
- *   :first-list
- *   :link :visited :active
- *
- */
-
-typedef struct ColorDef {
-  uint32_t name;
-  float r;
-  float g;
-  float b;
-  float a;
-} ColorDef;
-
-static ColorDef colors[]={
-  {CTX_black,    0, 0, 0, 1},
-  {CTX_red,      1, 0, 0, 1},
-  {CTX_green,    0, 1, 0, 1},
-  {CTX_yellow,   1, 1, 0, 1},
-  {CTX_blue,     0, 0, 1, 1},
-  {CTX_fuchsia,  1, 0, 1, 1},
-  {CTX_cyan,     0, 1, 1, 1},
-  {CTX_white,    1, 1, 1, 1},
-  {CTX_silver,   0.75294, 0.75294, 0.75294, 1},
-  {CTX_gray,     0.50196, 0.50196, 0.50196, 1},
-  {CTX_magenta,  0.50196, 0, 0.50196, 1},
-  {CTX_maroon,   0.50196, 0, 0, 1},
-  {CTX_purple,   0.50196, 0, 0.50196, 1},
-  {CTX_green,    0, 0.50196, 0, 1},
-  {CTX_lime,     0, 1, 0, 1},
-  {CTX_olive,    0.50196, 0.50196, 0, 1},
-  {CTX_navy,     0, 0,      0.50196, 1},
-  {CTX_teal,     0, 0.50196, 0.50196, 1},
-  {CTX_aqua,     0, 1, 1, 1},
-  {CTX_transparent, 0, 0, 0, 0},
-  {CTX_none,     0, 0, 0, 0},
-};
-
-static int xdigit_value(const char xdigit)
-{
-  if (xdigit >= '0' && xdigit <= '9')
-   return xdigit - '0';
-  switch (xdigit)
-  {
-    case 'A':case 'a': return 10;
-    case 'B':case 'b': return 11;
-    case 'C':case 'c': return 12;
-    case 'D':case 'd': return 13;
-    case 'E':case 'e': return 14;
-    case 'F':case 'f': return 15;
-  }
-  return 0;
-}
-
-float mrg_parse_float (Mrg *mrg, const char *str, char **endptr)
-{
-  return strtod (str, endptr); /* XXX: , vs . problem in some locales */
-}
-
-static int
-mrg_color_parse_rgb (CtxState *ctxstate, CtxColor *color, const char *color_string)
-{
-  float dcolor[4] = {0,0,0,1};
-  while (*color_string && *color_string != '(')
-    color_string++;
-  if (*color_string) color_string++;
-
-  {
-    int n_floats = 0;
-    char *p =    (void*)color_string;
-    char *prev = (void *)NULL;
-    for (; p && n_floats < 4 && p != prev && *p; )
-    {
-      float val;
-      prev = p;
-      val = mrg_parse_float (NULL, p, &p);
-      if (p != prev)
-      {
-        if (n_floats < 3)
-          dcolor[n_floats++] = val/255.0;
-        else
-          dcolor[n_floats++] = val;
-
-        while (*p == ' ' || *p == ',')
-        {
-          p++;
-          prev++;
-        }
-      }
-    }
-  }
-  ctx_color_set_rgba (ctxstate, color, dcolor[0], dcolor[1],dcolor[2],dcolor[3]);
-  return 0;
-}
-
-static int
-mrg_color_parse_hex (CtxState *ctxstate, CtxColor *color, const char *color_string)
-{
-  float dcolor[4]={0,0,0,1};
-  int string_length = strlen (color_string);
-  int i;
-  dcolor[3] = 1.0;
-
-  if (string_length == 7 ||  /* #rrggbb   */
-      string_length == 9)    /* #rrggbbaa */
-    {
-      int num_iterations = (string_length - 1) / 2;
-  
-      for (i = 0; i < num_iterations; ++i)
-        {
-          if (isxdigit (color_string[2 * i + 1]) &&
-              isxdigit (color_string[2 * i + 2]))
-            {
-              dcolor[i] = (xdigit_value (color_string[2 * i + 1]) << 4 |
-                           xdigit_value (color_string[2 * i + 2])) / 255.f;
-            }
-          else
-            {
-              return 0;
-            }
-        }
-      /* Successful #rrggbb(aa) parsing! */
-      ctx_color_set_rgba (ctxstate, color, dcolor[0], dcolor[1],dcolor[2],dcolor[3]);
-      return 1;
-    }
-  else if (string_length == 4 ||  /* #rgb  */
-           string_length == 5)    /* #rgba */
-    {
-      int num_iterations = string_length - 1;
-      for (i = 0; i < num_iterations; ++i)
-        {
-          if (isxdigit (color_string[i + 1]))
-            {
-              dcolor[i] = (xdigit_value (color_string[i + 1]) << 4 |
-                           xdigit_value (color_string[i + 1])) / 255.f;
-            }
-          else
-            {
-              return 0;
-            }
-        }
-      ctx_color_set_rgba (ctxstate, color, dcolor[0], dcolor[1],dcolor[2],dcolor[3]);
-      /* Successful #rgb(a) parsing! */
-      return 0;
-    }
-  /* String was of unsupported length. */
-  return 1;
-}
-
-int mrg_color_set_from_string (Mrg *mrg, CtxColor *color, const char *string)
-{
-  int i;
-  uint32_t hash = ctx_strhash (string, 0);
-
-  if (hash == CTX_currentColor)
-  {
-    float rgba[4];
-    CtxColor ccolor;
-    ctx_get_color (mrg->ctx, CTX_color, &ccolor);
-    ctx_color_get_rgba (&(mrg->ctx->state), &ccolor, rgba);
-    ctx_color_set_rgba (&(mrg->ctx->state), color, rgba[0], rgba[1], rgba[2], rgba[3]);
-    return 0;
-  }
-
-  for (i = (sizeof(colors)/sizeof(colors[0]))-1; i>=0; i--)
-  {
-    if (hash == colors[i].name)
-    {
-      ctx_color_set_rgba (&(mrg->ctx->state), color,
-       colors[i].r, colors[i].g, colors[i].b, colors[i].a);
-      return 0;
-    }
-  }
-
-
-  if (string[0] == '#')
-    mrg_color_parse_hex (&(mrg->ctx->state), color, string);
-  else if (string[0] == 'r' &&
-      string[1] == 'g' &&
-      string[2] == 'b'
-      )
-    mrg_color_parse_rgb (&(mrg->ctx->state), color, string);
-
-  return 0;
-}
 
 static inline float mrg_parse_px_x (Mrg *mrg, const char *str, char **endptr)
 {
@@ -3210,7 +3000,7 @@ static inline float mrg_parse_px_x (Mrg *mrg, const char *str, char **endptr)
   if (!str)
     return 0.0;
 
-  result = mrg_parse_float (mrg, str, &end);
+  result = _ctx_parse_float (str, &end);
   if (endptr)
     *endptr=end;
 
@@ -3291,7 +3081,7 @@ static inline float mrg_parse_px_y (Mrg *mrg, const char *str, char **endptr)
   if (!str)
     return 0.0;
 
-  result = mrg_parse_float (mrg, str, &end);
+  result = _ctx_parse_float (str, &end);
   if (endptr)
     *endptr=end;
 
@@ -3408,9 +3198,10 @@ static inline void mrg_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
   }
   else if (key == CTX_color)
   {
-    CtxColor color;
-    mrg_color_set_from_string (mrg, &color, value);
-    ctx_set_color (mrg->ctx, CTX_color, &color);
+    CtxColor *color = ctx_color_new ();
+    ctx_color_set_from_string (mrg->ctx, color, value);
+    ctx_set_color (mrg->ctx, CTX_color, color);
+    ctx_color_free (color);
   }
 }
 
@@ -3577,12 +3368,13 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       break;
     case CTX_border_color:
       {
-        CtxColor color;
-        mrg_color_set_from_string (mrg, &color, value);
-        ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
-        ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
-        ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
-        ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
+        CtxColor *color = ctx_color_new ();
+        ctx_color_set_from_string (mrg->ctx, color, value);
+        ctx_set_color (mrg->ctx, CTX_border_top_color, color);
+        ctx_set_color (mrg->ctx, CTX_border_left_color, color);
+        ctx_set_color (mrg->ctx, CTX_border_right_color, color);
+        ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+        ctx_color_free (color);
       }
       break;
     case CTX_border:
@@ -3613,12 +3405,13 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                            word_hash == CTX_dotted ||
                            word_hash == CTX_inset) {
                 } else {
-                  CtxColor color;
-                  mrg_color_set_from_string (mrg, &color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
-                  ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
-                  ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
-                  ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
+                  CtxColor *color = ctx_color_new ();
+                  ctx_color_set_from_string (mrg->ctx, color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_top_color, color);
+                  ctx_set_color (mrg->ctx, CTX_border_left_color, color);
+                  ctx_set_color (mrg->ctx, CTX_border_right_color, color);
+                  ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+                  ctx_color_free (color);
                 }
                 word[0]=0;
                 w=0;
@@ -3659,9 +3452,10 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                            word_hash == CTX_dotted ||
                            word_hash == CTX_inset) {
                 } else {
-                  CtxColor color;
-                  mrg_color_set_from_string (mrg, &color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_right_color, &color);
+                  CtxColor *color = ctx_color_new ();
+                  ctx_color_set_from_string (mrg->ctx, color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_right_color, color);
+                  ctx_color_free (color);
                 }
                 word[0]=0;
                 w=0;
@@ -3702,9 +3496,10 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                            word_hash == CTX_dotted ||
                            word_hash == CTX_inset) {
                 } else {
-                  CtxColor color;
-                  mrg_color_set_from_string (mrg, &color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_top_color, &color);
+                  CtxColor *color = ctx_color_new ();
+                  ctx_color_set_from_string (mrg->ctx, color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_top_color, color);
+                  ctx_color_free (color);
                 }
                 word[0]=0;
                 w=0;
@@ -3745,9 +3540,10 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                            word_hash == CTX_dotted ||
                            word_hash == CTX_inset) {
                 } else {
-                  CtxColor color;
-                  mrg_color_set_from_string (mrg, &color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_left_color, &color);
+                  CtxColor *color = ctx_color_new ();
+                  ctx_color_set_from_string (mrg->ctx, color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_left_color, color);
+                  ctx_color_free (color);
                 }
                 word[0]=0;
                 w=0;
@@ -3788,9 +3584,10 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                            word_hash == CTX_dotted ||
                            word_hash == CTX_inset) {
                 } else {
-                  CtxColor color;
-                  mrg_color_set_from_string (mrg, &color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_bottom_color, &color);
+                  CtxColor *color = ctx_color_new ();
+                  ctx_color_set_from_string (mrg->ctx, color, word);
+                  ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+                  ctx_color_free (color);
                 }
                 word[0]=0;
                 w=0;
@@ -3810,32 +3607,36 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_background_color:
     case CTX_background:
     {
-      CtxColor color;
-      mrg_color_set_from_string (mrg, &color, value);
-      ctx_set_color (mrg->ctx, CTX_background_color, &color);
+      CtxColor *color = ctx_color_new ();
+      ctx_color_set_from_string (mrg->ctx, color, value);
+      ctx_set_color (mrg->ctx, CTX_background_color, color);
+      ctx_color_free (color);
     }
       break;
     case CTX_fill_color:
     case CTX_fill:
     {
-      CtxColor color;
-      mrg_color_set_from_string (mrg, &color, value);
-      ctx_set_color (mrg->ctx, CTX_fill_color, &color);
+      CtxColor *color = ctx_color_new ();
+      ctx_color_set_from_string (mrg->ctx, color, value);
+      ctx_set_color (mrg->ctx, CTX_fill_color, color);
+      ctx_color_free (color);
     }
       break;
     case CTX_stroke_color:
     case CTX_stroke:
     {
-      CtxColor color;
-      mrg_color_set_from_string (mrg, &color, value);
-      ctx_set_color (mrg->ctx, CTX_stroke_color, &color);
+      CtxColor *color = ctx_color_new ();
+      ctx_color_set_from_string (mrg->ctx, color, value);
+      ctx_set_color (mrg->ctx, CTX_stroke_color, color);
+      ctx_color_free (color);
     }
       break;
     case CTX_text_stroke_color:
     {
-      CtxColor color;
-      mrg_color_set_from_string (mrg, &color, value);
-      ctx_set_color (mrg->ctx, CTX_text_stroke_color, &color);
+      CtxColor *color = ctx_color_new ();
+      ctx_color_set_from_string (mrg->ctx, color, value);
+      ctx_set_color (mrg->ctx, CTX_text_stroke_color, color);
+      ctx_color_free (color);
     }
       break;
     case CTX_text_stroke:
@@ -3845,16 +3646,17 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   
       if (col)
       {
-        CtxColor color;
-        mrg_color_set_from_string (mrg, &color, col + 1);
-        ctx_set_color (mrg->ctx, CTX_text_stroke_color, &color);
+        CtxColor *color = ctx_color_new ();
+        ctx_color_set_from_string (mrg->ctx, color, col + 1);
+        ctx_set_color (mrg->ctx, CTX_text_stroke_color, color);
+        ctx_color_free (color);
       }
     }
       break;
     case CTX_opacity:
     {
-      ctx_global_alpha (mrg->ctx, mrg_parse_float (mrg, value, NULL));
-      SET_PROP(opacity, mrg_parse_float (mrg, value, NULL));
+      ctx_global_alpha (mrg->ctx, _ctx_parse_float (value, NULL));
+      SET_PROP(opacity, _ctx_parse_float (value, NULL));
     }
     break;
     case CTX_print_symbols:
@@ -4388,45 +4190,46 @@ static void
 mrg_ctx_set_source_color (Ctx *ctx, CtxColor *color)
 {
    float rgba[4];
-   ctx_color_get_rgba (&ctx->state, color, rgba);
+   ctx_color_get_rgba (ctx_get_state (ctx), color, rgba);
    ctx_rgba (ctx, rgba[0], rgba[1], rgba[2], rgba[3]);
 }
 
 static void mrg_path_fill_stroke (Mrg *mrg)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor fill_color;
-  CtxColor stroke_color;
+  CtxColor *fill_color = ctx_color_new ();
+  CtxColor *stroke_color = ctx_color_new ();
 
-  fill_color.alpha = 0.0f;
-  ctx_get_color (ctx, CTX_fill_color, &fill_color);
-  ctx_get_color (ctx, CTX_stroke_color, &stroke_color);
+  ctx_get_color (ctx, CTX_fill_color, fill_color);
+  ctx_get_color (ctx, CTX_stroke_color, stroke_color);
 
-  if (fill_color.alpha > 0.001f)
+  if (!ctx_color_is_transparent (fill_color))
   {
-    mrg_ctx_set_source_color (ctx, &fill_color);
-    if (PROP(stroke_width) > 0.001 && stroke_color.alpha > 0.001)
+    mrg_ctx_set_source_color (ctx, fill_color);
+    if (PROP(stroke_width) > 0.001 && !ctx_color_is_transparent (stroke_color))
       ctx_preserve (ctx);
     ctx_fill (ctx);
   }
 
-  if (PROP(stroke_width) > 0.001 && stroke_color.alpha > 0.001)
+  if (PROP(stroke_width) > 0.001 && !ctx_color_is_transparent (stroke_color))
   {
     ctx_line_width (ctx, PROP(stroke_width));
-    mrg_ctx_set_source_color (ctx, &stroke_color);
+    mrg_ctx_set_source_color (ctx, stroke_color);
     ctx_stroke (ctx);
   }
+  ctx_color_free (fill_color);
+  ctx_color_free (stroke_color);
 }
 
 void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
 
-  CtxColor color;
-  ctx_get_color (ctx, CTX_border_top_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_border_top_color, color);
 
   if (PROP(border_top_width) > 0.01f &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4436,20 +4239,21 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, -PROP(border_right_width), PROP(border_top_width));
     ctx_rel_line_to (ctx, - (width + PROP(padding_right) + PROP(padding_left)), 0);
 
-    mrg_ctx_set_source_color (ctx, &color);
+    mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
+  ctx_color_free (color);
 }
 
 void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor color;
-  ctx_get_color (ctx, CTX_border_top_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_border_top_color, color);
 
   if (PROP(border_bottom_width) > 0.01 &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4458,21 +4262,22 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
     ctx_rel_line_to (ctx, PROP(border_left_width), -PROP(border_bottom_width));
 
-    mrg_ctx_set_source_color (ctx, &color);
+    mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
 
+  ctx_color_free (color);
 }
 
 void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *cr = mrg_cr (mrg);
-  CtxColor color;
-  ctx_get_color (cr, CTX_border_top_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (cr, CTX_border_top_color, color);
 
   if (PROP(border_top_width) > 0.01 &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (cr);
     ctx_begin_path (cr);
@@ -4481,19 +4286,20 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (cr, -PROP(border_right_width), PROP(border_top_width));
     ctx_rel_line_to (cr, - (width + PROP(padding_right)), 0);
 
-    mrg_ctx_set_source_color (cr, &color);
+    mrg_ctx_set_source_color (cr, color);
     ctx_fill (cr);
   ctx_restore (cr);
   }
+  ctx_color_free (color);
 }
 void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor color;
-  ctx_get_color (ctx, CTX_border_bottom_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_border_bottom_color, color);
 
   if (PROP(border_bottom_width) &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4502,21 +4308,22 @@ void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
     ctx_rel_line_to (ctx, PROP(border_left_width), -PROP(border_bottom_width));
 
-    mrg_ctx_set_source_color (ctx, &color);
+    mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
 
+  ctx_color_free (color);
 }
 
 void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor color;
-  ctx_get_color (ctx, CTX_border_top_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_border_top_color, color);
 
   if (PROP(border_top_width) > 0.01 &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4526,19 +4333,20 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, 0, PROP(border_top_width));
     ctx_rel_line_to (ctx, - (width + PROP(padding_left)), 0);
 
-    mrg_ctx_set_source_color (ctx, &color);
+    mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
+  ctx_color_free (color);
 }
 void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor color;
-  ctx_get_color (ctx, CTX_border_bottom_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_border_bottom_color, color);
 
   if (PROP(border_bottom_width) > 0.01 &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4547,22 +4355,23 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(border_left_width)), 0);
     ctx_rel_line_to (ctx, PROP(border_left_width), -PROP(border_bottom_width));
 
-    mrg_ctx_set_source_color (ctx, &color);
+    mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
 
+  ctx_color_free (color);
 }
 
 
 void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor color;
-  ctx_get_color (ctx, CTX_border_top_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_border_top_color, color);
 
   if (PROP(border_top_width) &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4572,19 +4381,20 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, 0, PROP(border_top_width));
     ctx_rel_line_to (ctx, -width, 0);
 
-    mrg_ctx_set_source_color (ctx, &color);
+    mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
+  ctx_color_free (color);
 }
 void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor color;
-  ctx_get_color (ctx, CTX_border_bottom_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_border_bottom_color, color);
 
   if (PROP(border_bottom_width) &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4593,20 +4403,21 @@ void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, - width, 0);
     ctx_rel_line_to (ctx, 0, -PROP(border_bottom_width));
 
-    mrg_ctx_set_source_color (ctx, &color);
+    mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
 
+  ctx_color_free (color);
 }
 void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor color;
-  ctx_get_color (ctx, CTX_border_left_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_border_left_color, color);
 
   if (PROP(border_left_width) &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4615,20 +4426,21 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, PROP(border_left_width), PROP(border_top_width));
     ctx_rel_line_to (ctx, 0, height + PROP(padding_top) + PROP(padding_bottom) );
     ctx_rel_line_to (ctx, -PROP(border_left_width), PROP(border_bottom_width));
-    mrg_ctx_set_source_color (ctx, &color);
+    mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
 
+  ctx_color_free (color);
 }
 void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor color;
-  ctx_get_color (ctx, CTX_border_right_color, &color);
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_border_right_color, color);
 
   if (PROP(border_right_width) > 0.01 &&
-      color.alpha > 0.001)
+      !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4637,11 +4449,12 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
     ctx_rel_line_to (ctx, 0, - (height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width)));
     ctx_rel_line_to (ctx, -PROP(border_right_width), PROP(border_top_width));
 
-    mrg_ctx_set_source_color (ctx, &color);
+    mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
   ctx_restore (ctx);
   }
 
+  ctx_color_free (color);
 }
 
 static void mrg_box (Mrg *mrg, int x, int y, int width, int height)
@@ -4656,10 +4469,13 @@ static void mrg_box (Mrg *mrg, int x, int y, int width, int height)
 static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float width, float height)
 {
   Ctx *ctx = mrg_cr (mrg);
-  CtxColor background_color;
-  ctx_get_color (ctx, CTX_background_color, &background_color);
-  if (background_color.alpha <= 0.0001)
+  CtxColor *background_color = ctx_color_new ();
+  ctx_get_color (ctx, CTX_background_color, background_color);
+  if (ctx_color_is_transparent (background_color))
+  {
+    ctx_color_free (background_color);
     return;
+  }
 
   height = ctx_floorf (y + height) - ctx_floorf(y);
   y = ctx_floorf (y);
@@ -4674,10 +4490,11 @@ static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float wid
     ctx_rel_line_to (ctx, 0, -(height ));
 
     ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
-    mrg_ctx_set_source_color (ctx, &background_color);
+    mrg_ctx_set_source_color (ctx, background_color);
     ctx_fill (ctx);
   }
   ctx_restore (ctx);
+  ctx_color_free (background_color);
 }
 
 /*
@@ -5068,7 +4885,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
     temp_string = strdup (string);
     for (i = 0, t = temp_string ;i < utf8_len && *t; i++)
     {
-      t += ctx_utf8_len (*t);
+      t += _ctx_utf8_len (*t);
     }
     *(char *)t = 0;
     string = temp_string;
@@ -5119,21 +4936,23 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
 
     if (PROP(text_stroke_width) > 0.01)
     {
-      CtxColor color;
-      ctx_get_color (cr, CTX_text_stroke_color, &color);
-      mrg_ctx_set_source_color (cr, &color);
+      CtxColor *color = ctx_color_new ();
+      ctx_get_color (cr, CTX_text_stroke_color, color);
+      mrg_ctx_set_source_color (cr, color);
       ctx_begin_path (cr);
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
       ctx_line_width (cr, PROP(text_stroke_width));
       ctx_line_join (cr, CTX_JOIN_ROUND);
       ctx_text_stroke (cr, string);
+      ctx_color_free (color);
     }
 
 
     {
-    CtxColor color;
-    ctx_get_color (cr, CTX_color, &color);
-    mrg_ctx_set_source_color (cr, &color);
+    CtxColor *color = ctx_color_new ();
+    ctx_get_color (cr, CTX_color, color);
+    mrg_ctx_set_source_color (cr, color);
+    ctx_color_free (color);
     }
     ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
     ctx_current_point (cr, &old_x, NULL);
@@ -5217,10 +5036,10 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
   Ctx *cr = mrg_cr (mrg);
   if (style->display != MRG_DISPLAY_INLINE)
     return 0.0;
-  CtxColor background_color;
-  ctx_get_color (cr, CTX_background_color, &background_color);
+  CtxColor *background_color = ctx_color_new ();
+  ctx_get_color (cr, CTX_background_color, background_color);
 
-  if (background_color.alpha > 0.001)
+  if (!ctx_color_is_transparent (background_color))
   {
     ctx_save (cr);
     ctx_rectangle (cr, x,
@@ -5228,7 +5047,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
                          ,
                          width + PROP(padding_right),
                          mrg_em (mrg) * style->line_height);
-    mrg_ctx_set_source_color (cr, &background_color);
+    mrg_ctx_set_source_color (cr, background_color);
     ctx_fill (cr);
     ctx_restore (cr);
   }
@@ -5237,6 +5056,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
   _mrg_border_bottom_r (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
   _mrg_border_right (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
 
+  ctx_color_free (background_color);
   return PROP(padding_right) + PROP(border_right_width);
 }
 
@@ -5252,8 +5072,8 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
   if (style->display != MRG_DISPLAY_INLINE)
     return 0.0;
 
-  CtxColor background_color;
-  ctx_get_color (cr, CTX_background_color, &background_color);
+  CtxColor *background_color = ctx_color_new ();
+  ctx_get_color (cr, CTX_background_color, background_color);
 
   if (!mrg->state->span_bg_started)
   {
@@ -5262,7 +5082,7 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
     mrg->state->span_bg_started = 1;
   }
 
-  if (background_color.alpha > 0.001)
+  if (!ctx_color_is_transparent (background_color))
   {
     ctx_save (cr);
     ctx_rectangle (cr, x + left_border,
@@ -5270,7 +5090,7 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
                          ,
                          width + left_pad,
                          mrg_em (mrg) * style->line_height);
-    mrg_ctx_set_source_color (cr, &background_color);
+    mrg_ctx_set_source_color (cr, background_color);
     ctx_fill (cr);
     ctx_restore (cr);
   }
@@ -5287,6 +5107,8 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
     _mrg_border_bottom_m (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
   }
 
+  ctx_color_free (background_color);
+
   return left_pad + left_border;
 }
 
@@ -5300,11 +5122,11 @@ mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length)
   {
     float tx = x;
     float ty = y;
-    ctx_user_to_device (&(mrg_cr (mrg)->state), &tx, &ty);
-    if (ty > mrg->ctx->events.height * 2 ||
-        tx > mrg->ctx->events.width * 2 ||
-        tx < -mrg->ctx->events.width * 2 ||
-        ty < -mrg->ctx->events.height * 2)
+    ctx_user_to_device (mrg_cr (mrg), &tx, &ty);
+    if (ty > ctx_height (mrg->ctx) * 2 ||
+        tx > ctx_width (mrg->ctx)* 2 ||
+        tx < -ctx_width (mrg->ctx) * 2 ||
+        ty < -ctx_height (mrg->ctx) * 2)
     {
       /* bailing early*/
     }
@@ -7269,7 +7091,7 @@ again:
     switch (*s)
     {
       case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
-      number[numbers] = mrg_parse_float (mrg, s, &s);
+      number[numbers] = _ctx_parse_float (s, &s);
       s--;
       numbers++;
 
@@ -7363,7 +7185,7 @@ int split_uri (char *uri,
   *path =
   *fragment = NULL;
 
-  if (ctx_strstr (uri, "//") || ctx_strchr(uri, ':'))
+  if (strstr (uri, "//") || strchr(uri, ':'))
   {
     int mr = URI_STATE_IN_PROTOCOL;
 
@@ -8242,7 +8064,7 @@ mrg_printf_xml (Mrg *mrg, const char *format, ...)
 
 void mrg_set_size (Mrg *mrg, int width, int height)
 {
-  if (mrg->ctx->events.width != width || mrg->ctx->events.height != height)
+  if (ctx_width (mrg->ctx) != width || ctx_height (mrg->ctx) != height)
   {
     ctx_set_size (mrg->ctx, width, height);
     mrg_queue_draw (mrg, NULL);
@@ -8453,9 +8275,10 @@ void _mrg_init (Mrg *mrg, int width, int height)
   mrg->state->style.color.alpha = 1;
 #endif
   {
-    CtxColor color;
-    ctx_color_set_rgba (&mrg->ctx->state, &color, 0, 0, 0, 1);
-    ctx_set_color (mrg->ctx, CTX_color, &color);
+    CtxColor *color = ctx_color_new ();
+    ctx_color_set_rgba (ctx_get_state (mrg->ctx), color, 0, 0, 0, 1);
+    ctx_set_color (mrg->ctx, CTX_color, color);
+    ctx_color_free (color);
   }
 
   mrg->ddpx = 1;
@@ -8505,14 +8328,16 @@ void mrg_style_defaults (Mrg *mrg)
 
   SET_PROP(stroke_width, 1.0f);
   {
-    CtxColor color;
-    mrg_color_set_from_string (mrg, &color, "transparent");
-    ctx_set_color (ctx, CTX_stroke_color, &color);
+    CtxColor *color = ctx_color_new ();
+    ctx_color_set_from_string (mrg->ctx, color, "transparent");
+    ctx_set_color (ctx, CTX_stroke_color, color);
+    ctx_color_free (color);
   }
   {
-    CtxColor color;
-    mrg_color_set_from_string (mrg, &color, "black");
-    ctx_set_color (ctx, CTX_fill_color, &color);
+    CtxColor *color = ctx_color_new ();
+    ctx_color_set_from_string (mrg->ctx, color, "black");
+    ctx_set_color (ctx, CTX_fill_color, color);
+    ctx_color_free (color);
   }
 
   mrg_stylesheet_clear (mrg);

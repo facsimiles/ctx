@@ -27,7 +27,8 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-parameter \
 		 -Wno-missing-field-initializers 
 
-CFLAGS= -O3 -g $(CFLAGS_warnings)
+#CFLAGS= -O3 -g $(CFLAGS_warnings)
+CFLAGS= -O2 -g $(CFLAGS_warnings)
 #CFLAGS= -Os 
 
 tools/%: tools/%.c ctx.h test-size/tiny-config.h 

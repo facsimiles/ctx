@@ -4,7 +4,7 @@
 
 #include "ctx.h"
 
-#define CTX_SVG 0
+#define CTX_SVG 1
 
 #if CTX_SVG
 #include "svg.h"

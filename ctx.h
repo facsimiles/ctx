@@ -726,6 +726,7 @@ int ctx_pointer_press     (Ctx *ctx, float x, float y, int device_no, uint32_t t
 int ctx_pointer_drop      (Ctx *ctx, float x, float y, int device_no, uint32_t time,
                            char *string);
 
+
 ////////////////////
 
 typedef enum
@@ -1323,7 +1324,12 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
 #if CTX_FONTS_FROM_FILE
 int   ctx_load_font_ttf_file (const char *name, const char *path);
+int
+_ctx_file_get_contents (const char     *path,
+                        unsigned char **contents,
+                        long           *length);
 #endif
+
 
 int ctx_get_renderstream_count (Ctx *ctx);
 
@@ -2444,6 +2450,54 @@ static inline float ctx_expf (float p)            { return expf (p); }
 static inline float ctx_sqrtf (float a)           { return sqrtf (a); }
 #endif
 
+static inline float _ctx_parse_float (const char *str, char **endptr)
+{
+  return strtod (str, endptr); /* XXX: , vs . problem in some locales */
+}
+
+const char *ctx_get_string (Ctx *ctx, uint32_t hash);
+void ctx_set_string (Ctx *ctx, uint32_t hash, const char *value);
+typedef struct _CtxColor CtxColor;
+typedef struct _CtxBuffer CtxBuffer;
+
+typedef struct _CtxMatrix     CtxMatrix;
+struct
+  _CtxMatrix
+{
+  float m[3][2];
+};
+void ctx_get_matrix (Ctx *ctx, CtxMatrix *matrix);
+
+typedef struct _CtxState CtxState;
+CtxColor *ctx_color_new ();
+CtxState *ctx_get_state (Ctx *ctx);
+void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out);
+void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
+void ctx_color_free (CtxColor *color);
+void ctx_set_color (Ctx *ctx, uint32_t hash, CtxColor *color);
+int  ctx_get_color (Ctx *ctx, uint32_t hash, CtxColor *color);
+int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string);
+
+int ctx_color_is_transparent (CtxColor *color);
+int _ctx_utf8_len (const unsigned char first_byte);
+
+void ctx_user_to_device          (Ctx *ctx, float *x, float *y);
+void ctx_user_to_device_distance (Ctx *ctx, float *x, float *y);
+const char *ctx_utf8_skip (const char *s, int utf8_length);
+void ctx_apply_matrix (Ctx *ctx, CtxMatrix *matrix);
+void ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y);
+void ctx_matrix_invert (CtxMatrix *m);
+void ctx_matrix_identity (CtxMatrix *matrix);
+void ctx_matrix_scale (CtxMatrix *matrix, float x, float y);
+void ctx_matrix_rotate (CtxMatrix *matrix, float angle);
+void ctx_matrix_multiply (CtxMatrix       *result,
+                          const CtxMatrix *t,
+                          const CtxMatrix *s);
+void
+ctx_matrix_translate (CtxMatrix *matrix, float x, float y);
+int ctx_is_set_now (Ctx *ctx, uint32_t hash);
+void ctx_set_size (Ctx *ctx, int width, int height);
+
 #ifdef CTX_IMPLEMENTATION
 #include <stdlib.h>
 #include <unistd.h>
@@ -2490,7 +2544,6 @@ char *ctx_strchr (const char *haystack, char needle)
   return _ctx_strchr (haystack, needle);
 }
 
-
 inline static float ctx_fast_hypotf (float x, float y)
 {
   if (x < 0) { x = -x; }
@@ -2501,16 +2554,9 @@ inline static float ctx_fast_hypotf (float x, float y)
     { return 0.96f * x + 0.4f * y; }
 }
 
-
 typedef struct _CtxRasterizer CtxRasterizer;
 typedef struct _CtxGState     CtxGState;
 typedef struct _CtxState      CtxState;
-typedef struct _CtxMatrix     CtxMatrix;
-struct
-  _CtxMatrix
-{
-  float m[3][2];
-};
 
 typedef struct _CtxSource CtxSource;
 
@@ -2531,7 +2577,6 @@ typedef struct _CtxSource CtxSource;
 //_ctx_target_space (ctx, icc);
 //_ctx_space (ctx);
 
-typedef struct _CtxColor CtxColor;
 struct _CtxColor
 {
   uint8_t magic; // for colors used in keydb, set to a non valid start of
@@ -2574,6 +2619,22 @@ struct _CtxColor
 #endif
 };
 
+CtxColor *ctx_color_new ()
+{
+  CtxColor *color = calloc (sizeof (CtxColor), 1);
+  return color;
+}
+
+int ctx_color_is_transparent (CtxColor *color)
+{
+  return color->alpha <= 0.001f;
+}
+
+void ctx_color_free (CtxColor *color)
+{
+  free (color);
+}
+
 typedef struct _CtxGradientStop CtxGradientStop;
 
 struct _CtxGradientStop
@@ -2594,7 +2655,6 @@ enum _CtxSourceType
 
 typedef struct _CtxPixelFormatInfo CtxPixelFormatInfo;
 
-typedef struct _CtxBuffer CtxBuffer;
 
 struct _CtxBuffer
 {
@@ -2609,8 +2669,9 @@ struct _CtxBuffer
   void               *user_data;
 };
 
-void ctx_user_to_device          (CtxState *state, float *x, float *y);
-void ctx_user_to_device_distance (CtxState *state, float *x, float *y);
+static void _ctx_user_to_device          (CtxState *state, float *x, float *y);
+static void _ctx_user_to_device_distance (CtxState *state, float *x, float *y);
+
 
 typedef struct _CtxGradient CtxGradient;
 struct _CtxGradient
@@ -3140,6 +3201,7 @@ static void ctx_state_set_string (CtxState *state, uint32_t key, const char *str
   ctx_state_set_blob (state, key, (uint8_t*)string, strlen(string));
 }
 
+
 static int ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
 {
   CtxColor *stored = (CtxColor*)ctx_state_get_blob (state, key);
@@ -3225,7 +3287,7 @@ static void ctx_color_set_graya_ (CtxColor *color, const float *in)
 }
 #endif
 
-static void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a)
+void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a)
 {
 #if CTX_ENABLE_CM
   color->original = color->valid = CTX_VALID_RGBA;
@@ -3388,7 +3450,7 @@ static void ctx_color_get_drgba (CtxState *state, CtxColor *color, float *out)
   out[3] = color->alpha;
 }
 
-CTX_INLINE static void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
+void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
 {
 #if CTX_ENABLE_CM
   if (! (color->valid & CTX_VALID_RGBA) )
@@ -3791,9 +3853,24 @@ int ctx_height (Ctx *ctx)
   return 384;
 }
 #endif
+
+
+void ctx_user_to_device          (Ctx *ctx, float *x, float *y)
+{
+  _ctx_user_to_device (&ctx->state, x, y);
+}
+void ctx_user_to_device_distance (Ctx *ctx, float *x, float *y)
+{
+  _ctx_user_to_device_distance (&ctx->state, x, y);
+}
+
 int ctx_rev (Ctx *ctx)
 {
   return ctx->rev;
+}
+CtxState *ctx_get_state (Ctx *ctx)
+{
+  return &ctx->state;
 }
 
 const char *ctx_get_string (Ctx *ctx, uint32_t hash)
@@ -3915,7 +3992,7 @@ ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, 
   matrix->m[2][1] = f;
 }
 
-static void
+void
 ctx_matrix_identity (CtxMatrix *matrix)
 {
   matrix->m[0][0] = 1.0f;
@@ -3926,7 +4003,7 @@ ctx_matrix_identity (CtxMatrix *matrix)
   matrix->m[2][1] = 0.0f;
 }
 
-static void
+void
 ctx_matrix_multiply (CtxMatrix       *result,
                      const CtxMatrix *t,
                      const CtxMatrix *s)
@@ -3941,7 +4018,8 @@ ctx_matrix_multiply (CtxMatrix       *result,
   *result = r;
 }
 
-static void
+
+void
 ctx_matrix_translate (CtxMatrix *matrix, float x, float y)
 {
   CtxMatrix transform;
@@ -3954,7 +4032,7 @@ ctx_matrix_translate (CtxMatrix *matrix, float x, float y)
   ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
-static void
+void
 ctx_matrix_scale (CtxMatrix *matrix, float x, float y)
 {
   CtxMatrix transform;
@@ -3967,7 +4045,7 @@ ctx_matrix_scale (CtxMatrix *matrix, float x, float y)
   ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
-static void
+void
 ctx_matrix_rotate (CtxMatrix *matrix, float angle)
 {
   CtxMatrix transform;
@@ -5682,7 +5760,7 @@ ctx_flush (Ctx *ctx)
 
 ////////////////////////////////////////
 
-static void
+void
 ctx_matrix_invert (CtxMatrix *m)
 {
   CtxMatrix t = *m;
@@ -5911,7 +5989,7 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
     }
 }
 
-static inline void
+void
 ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 {
   float x_in = *x;
@@ -5920,14 +5998,14 @@ ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
   *y = ( (y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
 }
 
-void
-ctx_user_to_device (CtxState *state, float *x, float *y)
+static void
+_ctx_user_to_device (CtxState *state, float *x, float *y)
 {
   ctx_matrix_apply_transform (&state->gstate.transform, x, y);
 }
 
-void
-ctx_user_to_device_distance (CtxState *state, float *x, float *y)
+static void
+_ctx_user_to_device_distance (CtxState *state, float *x, float *y)
 {
   const CtxMatrix *m = &state->gstate.transform;
   ctx_matrix_apply_transform (m, x, y);
@@ -6286,7 +6364,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
           float y = c->c.y0;
           if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_SCREEN_SPACE) )
             {
-              ctx_user_to_device (state, &x, &y);
+              _ctx_user_to_device (state, &x, &y);
               ctx_arg_float (0) = x;
               ctx_arg_float (1) = y;
             }
@@ -6296,28 +6374,28 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_SCREEN_SPACE) )
           {
             float temp;
-            ctx_user_to_device (state, &c->arc.x, &c->arc.y);
+            _ctx_user_to_device (state, &c->arc.x, &c->arc.y);
             temp = 0;
-            ctx_user_to_device_distance (state, &c->arc.radius, &temp);
+            _ctx_user_to_device_distance (state, &c->arc.radius, &temp);
           }
         break;
       case CTX_LINEAR_GRADIENT:
         if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_SCREEN_SPACE) )
         {
-        ctx_user_to_device (state, &c->linear_gradient.x1, &c->linear_gradient.y1);
-        ctx_user_to_device (state, &c->linear_gradient.x2, &c->linear_gradient.y2);
+        _ctx_user_to_device (state, &c->linear_gradient.x1, &c->linear_gradient.y1);
+        _ctx_user_to_device (state, &c->linear_gradient.x2, &c->linear_gradient.y2);
         }
         break;
       case CTX_RADIAL_GRADIENT:
         if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_SCREEN_SPACE) )
         {
           float temp;
-          ctx_user_to_device (state, &c->radial_gradient.x1, &c->radial_gradient.y1);
+          _ctx_user_to_device (state, &c->radial_gradient.x1, &c->radial_gradient.y1);
           temp = 0;
-          ctx_user_to_device_distance (state, &c->radial_gradient.r1, &temp);
-          ctx_user_to_device (state, &c->radial_gradient.x2, &c->radial_gradient.y2);
+          _ctx_user_to_device_distance (state, &c->radial_gradient.r1, &temp);
+          _ctx_user_to_device (state, &c->radial_gradient.x2, &c->radial_gradient.y2);
           temp = 0;
-          ctx_user_to_device_distance (state, &c->radial_gradient.r2, &temp);
+          _ctx_user_to_device_distance (state, &c->radial_gradient.r2, &temp);
         }
         break;
       case CTX_CURVE_TO:
@@ -6327,7 +6405,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
               {
                 float x = entry[c].data.f[0];
                 float y = entry[c].data.f[1];
-                ctx_user_to_device (state, &x, &y);
+                _ctx_user_to_device (state, &x, &y);
                 entry[c].data.f[0] = x;
                 entry[c].data.f[1] = y;
               }
@@ -6340,7 +6418,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
               {
                 float x = entry[c].data.f[0];
                 float y = entry[c].data.f[1];
-                ctx_user_to_device (state, &x, &y);
+                _ctx_user_to_device (state, &x, &y);
                 entry[c].data.f[0] = x;
                 entry[c].data.f[1] = y;
               }
@@ -6354,7 +6432,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
               {
                 float x = state->x;
                 float y = state->y;
-                ctx_user_to_device (state, &x, &y);
+                _ctx_user_to_device (state, &x, &y);
                 entry[c].data.f[0] = x;
                 entry[c].data.f[1] = y;
               }
@@ -6374,7 +6452,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
                 {
                   float x = nx + entry[c].data.f[0];
                   float y = ny + entry[c].data.f[1];
-                  ctx_user_to_device (state, &x, &y);
+                  _ctx_user_to_device (state, &x, &y);
                   entry[c].data.f[0] = x;
                   entry[c].data.f[1] = y;
                 }
@@ -6392,7 +6470,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
                 {
                   float x = nx + entry[c].data.f[0];
                   float y = ny + entry[c].data.f[1];
-                  ctx_user_to_device (state, &x, &y);
+                  _ctx_user_to_device (state, &x, &y);
                   entry[c].data.f[0] = x;
                   entry[c].data.f[1] = y;
                 }
@@ -6404,7 +6482,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
   if ((((Ctx *) (data) )->transformation & CTX_TRANSFORMATION_RELATIVE))
     {
       int components = 0;
-      ctx_user_to_device (state, &start_x, &start_y);
+      _ctx_user_to_device (state, &start_x, &start_y);
       switch (entry->code)
         {
           case CTX_MOVE_TO:
@@ -7210,7 +7288,7 @@ inline static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
   float oy = rasterizer->y;
   if (rasterizer->uses_transforms)
     {
-      ctx_user_to_device (rasterizer->state, &tx, &ty);
+      _ctx_user_to_device (rasterizer->state, &tx, &ty);
     }
   tx -= rasterizer->blit_x;
 
@@ -7221,7 +7299,7 @@ inline static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
       {
         // storing transformed would save some processing for a tiny
         // amount of runtime RAM XXX
-        ctx_user_to_device (rasterizer->state, &ox, &oy);
+        _ctx_user_to_device (rasterizer->state, &ox, &oy);
       }
       ox -= rasterizer->blit_x;
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[0] = ox * CTX_SUBDIV;
@@ -12134,8 +12212,8 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   float ty = rasterizer->state->y - rasterizer->state->gstate.font_size;
   float tx2 = rasterizer->state->x + rasterizer->state->gstate.font_size;
   float ty2 = rasterizer->state->y + rasterizer->state->gstate.font_size;
-  ctx_user_to_device (rasterizer->state, &tx, &ty);
-  ctx_user_to_device (rasterizer->state, &tx2, &ty2);
+  _ctx_user_to_device (rasterizer->state, &tx, &ty);
+  _ctx_user_to_device (rasterizer->state, &tx2, &ty2);
 
   if (tx2 < rasterizer->blit_x || ty2 < rasterizer->blit_y) return;
   if (tx  > rasterizer->blit_x + rasterizer->blit_width ||
@@ -14792,7 +14870,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 /****  end of engine ****/
 
 #if CTX_FONTS_FROM_FILE
-static int
+int
 _ctx_file_get_contents (const char     *path,
                         unsigned char **contents,
                         long           *length)
@@ -14842,8 +14920,12 @@ static inline int ctx_utf8_len (const unsigned char first_byte)
     { return 4; }
   return 1;
 }
+int _ctx_utf8_len (const unsigned char first_byte)
+{
+  return ctx_utf8_len (first_byte);
+}
 
-static const char *ctx_utf8_skip (const char *s, int utf8_length)
+const char *ctx_utf8_skip (const char *s, int utf8_length)
 {
   int count;
   if (!s)
@@ -18690,8 +18772,8 @@ void ctx_listen_full (Ctx     *ctx,
       float ty = y;
       float tw = width;
       float th = height;
-      ctx_user_to_device (&ctx->state, &tx, &ty);
-      ctx_user_to_device_distance (&ctx->state, &tw, &th);
+      _ctx_user_to_device (&ctx->state, &tx, &ty);
+      _ctx_user_to_device_distance (&ctx->state, &tw, &th);
       if (ty > ctx->events.height * 2 ||
           tx > ctx->events.width * 2 ||
           tx + tw < 0 ||
@@ -20777,7 +20859,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
 }
 
 #ifndef CTX_THREADS
-#define CTX_THREADS   8
+#define CTX_THREADS   4
 #endif
 
 #ifndef CTX_HASH_ROWS
@@ -22024,14 +22106,15 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
   //int width =  sdl->width;
   int count = 0;
-  while (sdl->shown_frame != sdl->render_frame && count < 10000)
+  while (sdl->shown_frame != sdl->render_frame && count < 1000)
   {
-    usleep (10);
+    usleep (100);
     ctx_sdl_show_frame (sdl);
     count++;
   }
   if (count >= 10000)
   {
+    fprintf (stderr, "!\n");
     sdl->shown_frame = sdl->render_frame;
   }
   if (sdl->shown_frame == sdl->render_frame)
@@ -22260,13 +22343,12 @@ inline static void ctx_fb_flush (CtxFb *fb)
   int count = 0;
   while (fb->shown_frame != fb->render_frame && count < 10000)
   {
-    usleep (10);
+    usleep (100);
     ctx_fb_show_frame (fb);
     count++;
   }
   if (count >= 10000)
   {
-    fprintf (stderr, "!\n");
     fb->shown_frame = fb->render_frame;
   }
   if (fb->shown_frame == fb->render_frame)
@@ -22313,6 +22395,7 @@ inline static void ctx_fb_flush (CtxFb *fb)
 
 void ctx_fb_free (CtxFb *fb)
 {
+
   memset (fb->fb, 0, fb->width * fb->height *  4);
   for (int i = 0 ; i < CTX_THREADS; i++)
     ctx_free (fb->host[i]);
@@ -22379,7 +22462,7 @@ void fb_render_fun (void **data)
     }
     else
     {
-      usleep (1000 * 5);
+      usleep (1000);
     }
   }
 }
@@ -22713,6 +22796,222 @@ Ctx *ctx_new_ui (int width, int height)
 
 #endif
 
+
+/* XXX: missing CSS1:
+ *
+ *   EM { color: rgb(110%, 0%, 0%) }  // clipped to 100% 
+ *
+ *
+ *   :first-letter
+ *   :first-list
+ *   :link :visited :active
+ *
+ */
+
+typedef struct ColorDef {
+  uint32_t name;
+  float r;
+  float g;
+  float b;
+  float a;
+} ColorDef;
+
+#define CTX_silver 	CTX_STRH('s','i','l','v','e','r',0,0,0,0,0,0,0,0)
+#define CTX_fuchsia 	CTX_STRH('f','u','c','h','s','i','a',0,0,0,0,0,0,0)
+#define CTX_gray 	CTX_STRH('g','r','a','y',0,0,0,0,0,0,0,0,0,0)
+#define CTX_yellow 	CTX_STRH('y','e','l','l','o','w',0,0,0,0,0,0,0,0)
+#define CTX_white 	CTX_STRH('w','h','i','t','e',0,0,0,0,0,0,0,0,0)
+#define CTX_maroon 	CTX_STRH('m','a','r','o','o','n',0,0,0,0,0,0,0,0)
+#define CTX_magenta 	CTX_STRH('m','a','g','e','n','t','a',0,0,0,0,0,0,0)
+#define CTX_blue 	CTX_STRH('b','l','u','e',0,0,0,0,0,0,0,0,0,0)
+#define CTX_green 	CTX_STRH('g','r','e','e','n',0,0,0,0,0,0,0,0,0)
+#define CTX_red 	CTX_STRH('r','e','d',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_purple 	CTX_STRH('p','u','r','p','l','e',0,0,0,0,0,0,0,0)
+#define CTX_olive 	CTX_STRH('o','l','i','v','e',0,0,0,0,0,0,0,0,0)
+#define CTX_teal        CTX_STRH('t','e','a','l',0,0,0,0,0,0,0,0,0,0)
+#define CTX_black 	CTX_STRH('b','l','a','c','k',0,0,0,0,0,0,0,0,0)
+#define CTX_cyan 	CTX_STRH('c','y','a','n',0,0,0,0,0,0,0,0,0,0)
+#define CTX_navy 	CTX_STRH('n','a','v','y',0,0,0,0,0,0,0,0,0,0)
+#define CTX_lime 	CTX_STRH('l','i','m','e',0,0,0,0,0,0,0,0,0,0)
+#define CTX_aqua 	CTX_STRH('a','q','u','a',0,0,0,0,0,0,0,0,0,0)
+#define CTX_transparent CTX_STRH('t','r','a','n','s','p','a','r','e','n','t',0,0,0)
+
+static ColorDef colors[]={
+  {CTX_black,    0, 0, 0, 1},
+  {CTX_red,      1, 0, 0, 1},
+  {CTX_green,    0, 1, 0, 1},
+  {CTX_yellow,   1, 1, 0, 1},
+  {CTX_blue,     0, 0, 1, 1},
+  {CTX_fuchsia,  1, 0, 1, 1},
+  {CTX_cyan,     0, 1, 1, 1},
+  {CTX_white,    1, 1, 1, 1},
+  {CTX_silver,   0.75294, 0.75294, 0.75294, 1},
+  {CTX_gray,     0.50196, 0.50196, 0.50196, 1},
+  {CTX_magenta,  0.50196, 0, 0.50196, 1},
+  {CTX_maroon,   0.50196, 0, 0, 1},
+  {CTX_purple,   0.50196, 0, 0.50196, 1},
+  {CTX_green,    0, 0.50196, 0, 1},
+  {CTX_lime,     0, 1, 0, 1},
+  {CTX_olive,    0.50196, 0.50196, 0, 1},
+  {CTX_navy,     0, 0,      0.50196, 1},
+  {CTX_teal,     0, 0.50196, 0.50196, 1},
+  {CTX_aqua,     0, 1, 1, 1},
+  {CTX_transparent, 0, 0, 0, 0},
+  {CTX_none,     0, 0, 0, 0},
+};
+
+static int xdigit_value(const char xdigit)
+{
+  if (xdigit >= '0' && xdigit <= '9')
+   return xdigit - '0';
+  switch (xdigit)
+  {
+    case 'A':case 'a': return 10;
+    case 'B':case 'b': return 11;
+    case 'C':case 'c': return 12;
+    case 'D':case 'd': return 13;
+    case 'E':case 'e': return 14;
+    case 'F':case 'f': return 15;
+  }
+  return 0;
+}
+
+static int
+ctx_color_parse_rgb (CtxState *ctxstate, CtxColor *color, const char *color_string)
+{
+  float dcolor[4] = {0,0,0,1};
+  while (*color_string && *color_string != '(')
+    color_string++;
+  if (*color_string) color_string++;
+
+  {
+    int n_floats = 0;
+    char *p =    (void*)color_string;
+    char *prev = (void *)NULL;
+    for (; p && n_floats < 4 && p != prev && *p; )
+    {
+      float val;
+      prev = p;
+      val = _ctx_parse_float (p, &p);
+      if (p != prev)
+      {
+        if (n_floats < 3)
+          dcolor[n_floats++] = val/255.0;
+        else
+          dcolor[n_floats++] = val;
+
+        while (*p == ' ' || *p == ',')
+        {
+          p++;
+          prev++;
+        }
+      }
+    }
+  }
+  ctx_color_set_rgba (ctxstate, color, dcolor[0], dcolor[1],dcolor[2],dcolor[3]);
+  return 0;
+}
+
+static int ctx_isxdigit (uint8_t ch)
+{
+  if (ch >= '0' && ch <= '0') return 1;
+  if (ch >= 'a' && ch <= 'f') return 1;
+  if (ch >= 'A' && ch <= 'F') return 1;
+  return 0;
+}
+
+static int
+mrg_color_parse_hex (CtxState *ctxstate, CtxColor *color, const char *color_string)
+{
+  float dcolor[4]={0,0,0,1};
+  int string_length = strlen (color_string);
+  int i;
+  dcolor[3] = 1.0;
+
+  if (string_length == 7 ||  /* #rrggbb   */
+      string_length == 9)    /* #rrggbbaa */
+    {
+      int num_iterations = (string_length - 1) / 2;
+  
+      for (i = 0; i < num_iterations; ++i)
+        {
+          if (ctx_isxdigit (color_string[2 * i + 1]) &&
+              ctx_isxdigit (color_string[2 * i + 2]))
+            {
+              dcolor[i] = (xdigit_value (color_string[2 * i + 1]) << 4 |
+                           xdigit_value (color_string[2 * i + 2])) / 255.f;
+            }
+          else
+            {
+              return 0;
+            }
+        }
+      /* Successful #rrggbb(aa) parsing! */
+      ctx_color_set_rgba (ctxstate, color, dcolor[0], dcolor[1],dcolor[2],dcolor[3]);
+      return 1;
+    }
+  else if (string_length == 4 ||  /* #rgb  */
+           string_length == 5)    /* #rgba */
+    {
+      int num_iterations = string_length - 1;
+      for (i = 0; i < num_iterations; ++i)
+        {
+          if (ctx_isxdigit (color_string[i + 1]))
+            {
+              dcolor[i] = (xdigit_value (color_string[i + 1]) << 4 |
+                           xdigit_value (color_string[i + 1])) / 255.f;
+            }
+          else
+            {
+              return 0;
+            }
+        }
+      ctx_color_set_rgba (ctxstate, color, dcolor[0], dcolor[1],dcolor[2],dcolor[3]);
+      /* Successful #rgb(a) parsing! */
+      return 0;
+    }
+  /* String was of unsupported length. */
+  return 1;
+}
+
+#define CTX_currentColor 	CTX_STRH('c','u','r','r','e','n','t','C','o','l','o','r',0,0)
+
+int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
+{
+  int i;
+  uint32_t hash = ctx_strhash (string, 0);
+
+  if (hash == CTX_currentColor)
+  {
+    float rgba[4];
+    CtxColor ccolor;
+    ctx_get_color (ctx, CTX_color, &ccolor);
+    ctx_color_get_rgba (&(ctx->state), &ccolor, rgba);
+    ctx_color_set_rgba (&(ctx->state), color, rgba[0], rgba[1], rgba[2], rgba[3]);
+    return 0;
+  }
+
+  for (i = (sizeof(colors)/sizeof(colors[0]))-1; i>=0; i--)
+  {
+    if (hash == colors[i].name)
+    {
+      ctx_color_set_rgba (&(ctx->state), color,
+       colors[i].r, colors[i].g, colors[i].b, colors[i].a);
+      return 0;
+    }
+  }
+
+
+  if (string[0] == '#')
+    mrg_color_parse_hex (&(ctx->state), color, string);
+  else if (string[0] == 'r' &&
+      string[1] == 'g' &&
+      string[2] == 'b'
+      )
+    ctx_color_parse_rgb (&(ctx->state), color, string);
+
+  return 0;
+}
 
 #endif
 
