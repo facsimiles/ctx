@@ -22914,7 +22914,7 @@ ctx_color_parse_rgb (CtxState *ctxstate, CtxColor *color, const char *color_stri
 
 static int ctx_isxdigit (uint8_t ch)
 {
-  if (ch >= '0' && ch <= '0') return 1;
+  if (ch >= '0' && ch <= '9') return 1;
   if (ch >= 'a' && ch <= 'f') return 1;
   if (ch >= 'A' && ch <= 'F') return 1;
   return 0;
@@ -22980,6 +22980,9 @@ int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
 {
   int i;
   uint32_t hash = ctx_strhash (string, 0);
+//  ctx_color_set_rgba (&(ctx->state), color, 0.4,0.1,0.9,1.0);
+//  return 0;
+    //rgba[0], rgba[1], rgba[2], rgba[3]);
 
   if (hash == CTX_currentColor)
   {
@@ -23000,7 +23003,6 @@ int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
       return 0;
     }
   }
-
 
   if (string[0] == '#')
     mrg_color_parse_hex (&(ctx->state), color, string);
