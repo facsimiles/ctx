@@ -3547,9 +3547,6 @@ struct _CtxRasterizer
      correct for axis aligned clips - proper rasterization of a clipping path
      would be yet another refinement on top.
    */
-#if CTX_ENABLE_CLIP
-  CtxBuffer *clip_buffer;
-#endif
 
 #if CTX_ENABLE_SHADOW_BLUR
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
@@ -3623,6 +3620,9 @@ struct _CtxRasterizer
 #define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ coverage, int count
 
   void (*comp_op)(CTX_COMPOSITE_ARGUMENTS);
+#if CTX_ENABLE_CLIP
+  CtxBuffer *clip_buffer;
+#endif
 
   uint8_t *clip_mask;
 };
@@ -4408,7 +4408,7 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
   int new_size = desired_size;
   int min_size = CTX_MIN_JOURNAL_SIZE;
   int max_size = CTX_MAX_JOURNAL_SIZE;
-  if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
+  if ((renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST))
     {
       min_size = CTX_MIN_EDGE_LIST_SIZE;
       max_size = CTX_MAX_EDGE_LIST_SIZE;
@@ -4422,6 +4422,7 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
     {
       ctx_renderstream_compact (renderstream);
     }
+
   if (new_size < renderstream->size)
     { return; }
   if (renderstream->size == max_size)
@@ -4432,10 +4433,9 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
     { new_size = renderstream->count + 4; }
   if (new_size >= max_size)
     { new_size = max_size; }
-  if (new_size != min_size)
+  if (new_size != renderstream->size)
     {
-      //ctx_log ("growing renderstream %p to %d\n", renderstream, new_size);
-    }
+      //fprintf (stderr, "growing renderstream %p %i to %d from %d\n", renderstream, renderstream->flags, new_size, renderstream->size);
   if (renderstream->entries)
     {
       //printf ("grow %p to %d from %d\n", renderstream, new_size, renderstream->size);
@@ -4451,6 +4451,7 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
       renderstream->entries = (CtxEntry *) malloc (sizeof (CtxEntry) * new_size);
     }
   renderstream->size = new_size;
+    }
   //printf ("renderstream %p is %d\n", renderstream, renderstream->size);
 #endif
 }
@@ -6627,6 +6628,9 @@ void ctx_free (Ctx *ctx)
 {
   if (!ctx)
     { return; }
+#if CTX_EVENTS
+  ctx_clear_bindings (ctx);
+#endif
   ctx_deinit (ctx);
 #if !CTX_RENDERSTREAM_STATIC
   free (ctx);
@@ -6651,8 +6655,7 @@ ctx_pixel_format_info (CtxPixelFormat format);
 
 CtxBuffer *ctx_buffer_new_bare (void)
 {
-  CtxBuffer *buffer = (CtxBuffer *) malloc (sizeof (CtxBuffer) );
-  ctx_memset (buffer, 0, sizeof (CtxBuffer) );
+  CtxBuffer *buffer = (CtxBuffer *) calloc (sizeof (CtxBuffer), 1);
   return buffer;
 }
 
@@ -14551,6 +14554,13 @@ ctx_pixel_format_info (CtxPixelFormat format)
 static CtxRasterizer *
 ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
 {
+#if CTX_ENABLE_CLIP
+  if (rasterizer->clip_buffer)
+    ctx_buffer_free (rasterizer->clip_buffer);
+#endif
+  if (rasterizer->edge_list.count)
+    ctx_renderstream_deinit (&rasterizer->edge_list);
+
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer) );
   rasterizer->vfuncs.process = ctx_rasterizer_process;
   rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
@@ -14629,10 +14639,10 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                          CtxPixelFormat pixel_format)
 {
   Ctx *ctx = ctx_new ();
-  ctx_set_renderer (ctx,
-                    ctx_rasterizer_init ( (CtxRasterizer *) malloc (sizeof (CtxRasterizer) ),
+  CtxRasterizer *r = ctx_rasterizer_init ( (CtxRasterizer *) calloc (sizeof (CtxRasterizer), 1),
                                           ctx, NULL, &ctx->state, data, 0, 0, width, height,
-                                          stride, pixel_format) );
+                                          stride, pixel_format);
+  ctx_set_renderer (ctx, r);
   return ctx;
 }
 
@@ -14653,7 +14663,7 @@ Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
 {
   Ctx *ctx = ctx_new ();
   CtxState    *state    = &ctx->state;
-  CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxHasher) );
+  CtxRasterizer *rasterizer = (CtxRasterizer *) calloc (sizeof (CtxHasher), 1);
   ctx_hasher_init (rasterizer, ctx, state, width, height, cols, rows);
   ctx_set_renderer (ctx, (void*)rasterizer);
   return ctx;
@@ -16757,7 +16767,7 @@ CtxParser *ctx_parser_new (
   void (*exit) (void *exit_data),
   void *exit_data)
 {
-  return ctx_parser_init ( (CtxParser *) malloc (sizeof (CtxParser) ),
+  return ctx_parser_init ( (CtxParser *) calloc (sizeof (CtxParser), 1),
                            ctx,
                            width, height,
                            cell_width, cell_height,
@@ -20804,6 +20814,7 @@ struct _CtxSDL
    SDL_Renderer *renderer;
    SDL_Texture  *texture;
    int           quit;
+   int           thread_quit;
    int           key_balance;
    int           key_repeat;
    int           lctrl;
@@ -22068,14 +22079,15 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   sdl->quit = 1;
-  usleep (40 * 1000); // XXX : properly wait for threads instead
+  while (sdl->thread_quit < CTX_SDL_THREADS)
+    usleep (1000); // XXX : properly wait for threads instead
   if (sdl->pixels)
   {
     free (sdl->pixels);
   sdl->pixels = NULL;
   for (int i = 0 ; i < CTX_SDL_THREADS; i++)
   {
-          fprintf (stderr, "!");
+    fprintf (stderr, "!");
     ctx_free (sdl->host[i]);
     sdl->host[i]=NULL;
   }
@@ -22093,6 +22105,7 @@ void sdl_render_fun (void **data)
 {
   int      no = (size_t)data[0];
   CtxSDL *sdl = data[1];
+  Ctx *host = sdl->host[no];
 
   while (!sdl->quit)
   {
@@ -22109,7 +22122,6 @@ void sdl_render_fun (void **data)
             int width = sdl->width / CTX_HASH_COLS;
             int height = sdl->height / CTX_HASH_ROWS;
 
-            Ctx *host = sdl->host[no];
             CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
 #if 0 // merge horizontally adjecant tiles of same affinity into one job
             while (col + 1 < CTX_HASH_COLS &&
@@ -22120,7 +22132,6 @@ void sdl_render_fun (void **data)
               hno++;
             }
 #endif
-
             ctx_rasterizer_init (rasterizer,
                                  host, NULL, &host->state,
                                  &sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
@@ -22145,6 +22156,16 @@ void sdl_render_fun (void **data)
     }
   }
 
+  { 
+          CtxRasterizer *rasterizer = host->renderer;
+  if (rasterizer->clip_buffer)
+  {
+    ctx_buffer_free (rasterizer->clip_buffer);
+    rasterizer->clip_buffer = NULL;
+  }
+  }
+
+  sdl->thread_quit++; // need atomic?
 }
 
 int ctx_renderer_is_sdl (Ctx *ctx)
