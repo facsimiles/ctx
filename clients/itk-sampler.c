@@ -43,7 +43,8 @@ int main (int argc, char **argv)
       ctx_gray (ctx, 0);
       ctx_fill (ctx);
 
-      itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
+      //itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
+      itk_panel_start (itk, "Immediate Toolkit", x+0, y+0, width, height);
       itk_seperator (itk);
 
       static int presses = 0;
@@ -72,7 +73,7 @@ int main (int argc, char **argv)
 
 
       static float slide_float = 10.0;
-      itk_slider (itk, "slide float", &slide_float, 0.0, 100.0, 0.1);
+      itk_slider_float (itk, "slide float", &slide_float, 0.0, 100.0, 0.1);
 
       itk_entry (itk, "Foo", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL);
 
@@ -101,16 +102,16 @@ int main (int argc, char **argv)
         itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
         itk_toggle (itk, "enable keybindings", &enable_keybindings);
         itk_toggle (itk, "light mode", &itk->light_mode);
-        itk_slider (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
-        itk_slider (itk, "font size ", &itk->font_size, 4.0, 60.0, 0.25);
-        itk_slider (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
-        itk_slider (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
-        itk_slider (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);
-        itk_slider (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
-        itk_slider (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
-        itk_slider (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
-        itk_slider (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
-        itk_slider (itk, "value width", &itk->value_width, 0.0, 40.0, 0.02);
+        itk_slider_float (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
+        itk_slider_float (itk, "font size ", &itk->font_size, 4.0, 60.0, 0.25);
+        itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
+        itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
+        itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);
+        itk_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
+        itk_slider_float (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
+        itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
+        itk_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
+        itk_slider_float (itk, "value width", &itk->value_width, 0.0, 40.0, 0.02);
 
         static int itk_panel_settings = 0;
         if (itk_expander (itk, "panel settings", &itk_panel_settings))

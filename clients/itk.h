@@ -92,7 +92,7 @@ IKTPal theme_dark[]={
   {ITK_FOCUSED_BG,         60,70,80,255},
   {ITK_FG,                 225,225,225,255},
   {ITK_INTERACTIVE,           255,5,5,255},
-  {ITK_INTERACTIVE_BG,     55,55,20,255},
+  {ITK_INTERACTIVE_BG,     50,40,50,255},
   {ITK_ENTRY_CURSOR,       225,245,140,255},
   {ITK_ENTRY_FALLBACK,     225,245,140,255},
   {ITK_BUTTON_FOCUSED_BG,  60,60,160,255},
@@ -101,7 +101,7 @@ IKTPal theme_dark[]={
   {ITK_BUTTON_FG,          255,255,255,255},
   {ITK_SCROLL_BG,          255,255,255,30},
   {ITK_SCROLL_FG,          255,255,255,100},
-  {ITK_SLIDER_CURSOR,      255,0,0,127},
+  {ITK_SLIDER_CURSOR,      255,0,0,255},
   {ITK_SLIDER_TEXT,        255,255,255,127},
   {ITK_LAST_COLOR}
 };
@@ -120,7 +120,7 @@ IKTPal theme_light[]={
   {ITK_BUTTON_FG,          0,0,0,255},
   {ITK_SCROLL_BG,          0,0,0,30},
   {ITK_SCROLL_FG,          0,0,0,100},
-  {ITK_SLIDER_CURSOR,      255,0,0,127},
+  {ITK_SLIDER_CURSOR,      255,0,0,255},
   {ITK_SLIDER_TEXT,        0,0,0,127},
   {ITK_LAST_COLOR}
 };
@@ -676,7 +676,7 @@ static void itk_float_constrain (CtxControl *control, float *val)
   *val = new_val;
 }
 
-void slider_drag (CtxEvent *event, void *userdata, void *userdata2)
+void slider_float_drag (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
   CtxControl  *control = userdata;
@@ -698,13 +698,12 @@ void slider_drag (CtxEvent *event, void *userdata, void *userdata2)
   *val = new_val;
 }
 
-void itk_slider (ITK *itk, const char *label, float *val, float min, float max, float step)
+void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step)
 {
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
-  itk_set_color (itk, ITK_BUTTON_BG);
   float em = itk_em (itk);
-  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
   control->min = min;
   control->max = max;
   control->step = step;
@@ -713,14 +712,15 @@ void itk_slider (ITK *itk, const char *label, float *val, float min, float max, 
   control->ref_count++;
   control->ref_count++;
 
+  if (itk->focus_no == control->no)
+    itk_set_color (itk, ITK_FOCUSED_BG);
+  else
+    itk_set_color (itk, ITK_INTERACTIVE_BG);
+  ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
+  ctx_fill (ctx);
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-
-  ctx_listen_with_finalize (ctx, CTX_DRAG, slider_drag, control, itk, control_finalize, NULL);
+  ctx_listen_with_finalize (ctx, CTX_DRAG, slider_float_drag, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
-
-
-  itk_base (itk, label, control->x, control->y, control->width, em * itk->rel_ver_advance,
-                        itk->focus_no == control->no);
 
   sprintf (buf, "%.3f", *val);
   ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
@@ -729,7 +729,7 @@ void itk_slider (ITK *itk, const char *label, float *val, float min, float max, 
 
   float rel_val = ((*val) - min) / (max-min);
   itk_set_color (itk, ITK_SLIDER_CURSOR);
-  ctx_rectangle (ctx, itk->x + (itk->width*itk->value_width-em/4) * rel_val, itk->y, em/4, control->height);
+  ctx_rectangle (ctx, itk->x + (itk->width*itk->value_width-em/8) * rel_val, itk->y, em/8, control->height);
   ctx_fill (ctx);
 
   ctx_rectangle (ctx, itk->x, itk->y + em*5/6, itk->width * itk->value_width, em/8);
@@ -757,7 +757,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
   float em = itk_em (itk);
-  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
   control->val = val;
   control->type = UI_ENTRY;
   if (fallback)
@@ -772,8 +772,12 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   ctx_listen_with_finalize (ctx, CTX_CLICK, entry_clicked, control, itk, control_finalize, NULL);
 
   ctx_begin_path (ctx);
-  itk_base (itk, label, control->x, control->y, control->width, em * itk->rel_ver_advance,
-                        itk->focus_no == control->no);
+  if (itk->focus_no == control->no)
+    itk_set_color (itk, ITK_FOCUSED_BG);
+  else
+    itk_set_color (itk, ITK_INTERACTIVE_BG);
+  ctx_rectangle (ctx, control->x, control->y, control->width, control->height);
+  ctx_fill (ctx);
 
   ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
   if (itk->entry_copy)
@@ -1041,7 +1045,7 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
   float em = itk_em (itk);
   char buf[100] = "";
   itk_set_color (itk, ITK_BG);
-  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
   control->action = action;
   control->commit_data = user_data;
   control->val = val;
@@ -1050,9 +1054,16 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, choice_clicked, control, itk, control_finalize, NULL);
 
-  ctx_fill (ctx);
   ctx_begin_path (ctx);
-  itk_base (itk, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance, itk->focus_no == control->no);
+  if (itk->focus_no == control->no)
+    itk_set_color (itk, ITK_FOCUSED_BG);
+  else
+    itk_set_color (itk, ITK_INTERACTIVE_BG);
+  ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
+  ctx_fill (ctx);
+
+
+
   itk->x = itk->x + itk->width * itk->value_width;
   itk_text (itk, label);
 
@@ -1500,7 +1511,7 @@ void itk_done (ITK *itk)
       y = itk->popup_y - (ctx_list_length (itk->choices) - 0.5) * em;
     }
 
-    itk_set_color (itk, ITK_BG);
+    itk_set_color (itk, ITK_FOCUSED_BG);
     ctx_rectangle (ctx, x,
                         y,
                         em * 4,
