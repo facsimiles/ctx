@@ -57,14 +57,13 @@ typedef enum
   ITK_FG,
   ITK_FOCUSED_BG,
 
-  ITK_ENTRY_BG,
-  ITK_ENTRY_FG,
+  ITK_INTERACTIVE,
+
   ITK_ENTRY_CURSOR,
   ITK_ENTRY_FALLBACK,
 
   ITK_SCROLL_FG,
   ITK_SCROLL_BG,
-  ITK_SCROLL_FOCUSED_BG,
 
   ITK_BUTTON_FG,
   ITK_BUTTON_BG,
@@ -90,8 +89,7 @@ IKTPal theme_dark[]={
   {ITK_BG,                 30,40,50,255},
   {ITK_FOCUSED_BG,         60,70,80,255},
   {ITK_FG,                 225,225,225,255},
-  {ITK_ENTRY_BG,           10,20,60,255},
-  {ITK_ENTRY_FG,           255,5,5,255},
+  {ITK_INTERACTIVE,           255,5,5,255},
   {ITK_ENTRY_CURSOR,       225,245,140,255},
   {ITK_ENTRY_FALLBACK,     225,245,140,255},
   {ITK_BUTTON_FOCUSED_BG,  60,60,160,255},
@@ -108,8 +106,7 @@ IKTPal theme_light[]={
   {ITK_BG,                 220,220,220,255},
   {ITK_FOCUSED_BG,         255,255,255,255},
   {ITK_FG,                 30,40,50,255},
-  {ITK_ENTRY_BG,           10,20,60,255},
-  {ITK_ENTRY_FG,           255,5,5,255},
+  {ITK_INTERACTIVE,           255,5,5,255},
   {ITK_ENTRY_CURSOR,       0,0,0,255},
   {ITK_ENTRY_FALLBACK,     225,245,140,255},
   {ITK_BUTTON_FOCUSED_BG,  150,130,180,255},
@@ -778,7 +775,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
     int backup = itk->entry_copy[itk->entry_pos];
     char buf[4]="|";
     itk->entry_copy[itk->entry_pos]=0;
-    itk_set_color (itk, ITK_ENTRY_FG);
+    itk_set_color (itk, ITK_INTERACTIVE);
     ctx_text (ctx, itk->entry_copy);
     itk_set_color (itk, ITK_ENTRY_CURSOR);
     ctx_text (ctx, buf);
@@ -786,7 +783,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
     buf[0]=backup;
     if (backup)
     {
-      itk_set_color (itk, ITK_ENTRY_FG);
+      itk_set_color (itk, ITK_INTERACTIVE);
       ctx_text (ctx, buf);
       ctx_text (ctx, &itk->entry_copy[itk->entry_pos+1]);
       itk->entry_copy[itk->entry_pos] = backup;
@@ -796,7 +793,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   {
     if (val[0])
     {
-      itk_set_color (itk, ITK_ENTRY_FG);
+      itk_set_color (itk, ITK_INTERACTIVE);
       ctx_text (ctx, val);
     }
     else
@@ -833,7 +830,7 @@ void itk_toggle (ITK *itk, const char *label, int *val)
   CtxControl *control = add_control (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
   itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
 
-  itk_set_color (itk, ITK_ENTRY_FG);
+  itk_set_color (itk, ITK_INTERACTIVE);
 
   ctx_begin_path (ctx);
   ctx_rectangle (ctx, itk->x, itk->y, em, em);
@@ -886,9 +883,10 @@ int itk_radio (ITK *itk, const char *label, int set)
   CtxControl *control = add_control (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
   itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
 
-  itk_set_color (itk, ITK_ENTRY_FG);
+  itk_set_color (itk, ITK_INTERACTIVE);
   ctx_begin_path (ctx);
   ctx_arc (ctx, itk->x + em * 0.5, itk->y + em * 0.5, em * 0.4, 0.0, 6.0, 0);
+  ctx_close_path (ctx);
   ctx_line_width (ctx, 2.0);
   ctx_stroke (ctx);
 
@@ -944,12 +942,27 @@ int itk_expander (ITK *itk, const char *label, int *val)
 
   ctx_begin_path (ctx);
   {
-     char *tmp = malloc (strlen (label) + 10);
-     sprintf (tmp, "%s %s", *val?"V":"-", label);
      itk_base (itk, label, control->x, control->y, control->width, em * itk->rel_ver_advance,
               itk->focus_no == control->no);
-     itk_text (itk, tmp);
-     free (tmp);
+     itk_set_color (itk, ITK_INTERACTIVE);
+     if (*val)
+     {
+       ctx_move_to (ctx, itk->x, itk->y);
+
+       ctx_rel_move_to (ctx, em*0.1, em*0.1);
+       ctx_rel_line_to (ctx, em*0.8, 0);
+       ctx_rel_line_to (ctx, -0.4*em, em*0.8);
+     }
+     else
+     {
+       ctx_move_to (ctx, itk->x, itk->y);
+       ctx_rel_move_to (ctx, em*0.1, em*0.1);
+       ctx_rel_line_to (ctx, 0, em*0.8);
+       ctx_rel_line_to (ctx, em*0.8, -0.4*em);
+     }
+     ctx_fill (ctx);
+     itk->x += em * (1 + itk->rel_hpad);
+     itk_text (itk, label);
   }
 
   itk_newline (itk);
@@ -970,6 +983,10 @@ int itk_button (ITK *itk, const char *label)
 
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_fill (ctx);
+  itk_set_color (itk, ITK_INTERACTIVE);
+  ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
+  ctx_line_width (ctx, 1);
+  ctx_stroke (ctx);
 
   itk_set_color (itk, ITK_BUTTON_FG);
   ctx_move_to (ctx, itk->x + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
@@ -1462,6 +1479,11 @@ void itk_done (ITK *itk)
     float x = control->x;
     float y = itk->popup_y;
 
+    if (y + (ctx_list_length (itk->choices) + 0.5) * em > ctx_height (ctx))
+    {
+      y = itk->popup_y - (ctx_list_length (itk->choices)) * em / 2;
+    }
+
     itk_set_color (itk, ITK_BG);
     ctx_rectangle (ctx, x,
                         y,
@@ -1496,7 +1518,7 @@ void itk_done (ITK *itk)
                         y + em * (no+1));
       int *val = control->val;
       if (choice->val == *val)
-        itk_set_color (itk, ITK_ENTRY_FG);
+        itk_set_color (itk, ITK_INTERACTIVE);
       else
         itk_set_color (itk, ITK_FG);
       ctx_text (ctx, choice->label);
