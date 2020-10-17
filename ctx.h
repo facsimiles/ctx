@@ -20890,7 +20890,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
 }
 
 #ifndef CTX_THREADS
-#define CTX_THREADS   2
+#define CTX_THREADS   4
 #endif
 
 #ifndef CTX_HASH_ROWS
@@ -22203,7 +22203,8 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       {
         if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_SDL_THREADS-1) / dirty_tiles;
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_SDL_THREADS) / dirty_tiles;
+          //fprintf (stderr, "{%i %i}", sdl->tile_affinity[row * CTX_HASH_COLS + col], dirty_tiles);
           dirty_no++;
         }
       }
@@ -22259,7 +22260,7 @@ void sdl_render_fun (void **data)
             int height = sdl->height / CTX_HASH_ROWS;
 
             CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
-#if 0 // merge horizontally adjecant tiles of same affinity into one job
+#if 1 // merge horizontally adjecant tiles of same affinity into one job
             while (col + 1 < CTX_HASH_COLS &&
                    sdl->tile_affinity[hno+1] == no)
             {
@@ -22437,7 +22438,7 @@ inline static void ctx_fb_flush (CtxFb *fb)
       {
         if (fb->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          fb->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_THREADS-1) / dirty_tiles;
+          fb->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_THREADS) / dirty_tiles;
           dirty_no++;
         }
       }
