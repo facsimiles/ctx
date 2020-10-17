@@ -1535,6 +1535,10 @@ void itk_key_bindings (ITK *itk)
   Ctx *ctx = itk->ctx;
   ctx_add_key_binding (ctx, "up", NULL, "focus prev",   itk_key_up,        itk);
   ctx_add_key_binding (ctx, "down", NULL, "focus next", itk_key_down,      itk);
+
+  // XXX simplify callbacks, and do binding based on selected control
+  //     (with per control-type vfunc)
+
   ctx_add_key_binding (ctx, "right", NULL, "",          itk_key_right,     itk);
   ctx_add_key_binding (ctx, "left", NULL, "",           itk_key_left,      itk);
   ctx_add_key_binding (ctx, "return", NULL, "",         itk_key_return,    itk);

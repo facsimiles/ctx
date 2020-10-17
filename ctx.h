@@ -20890,7 +20890,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
 }
 
 #ifndef CTX_THREADS
-#define CTX_THREADS   4
+#define CTX_THREADS   2
 #endif
 
 #ifndef CTX_HASH_ROWS
@@ -21271,6 +21271,16 @@ fb_render_threads_done (CtxFb *fb)
   return sum;
 }
 
+inline static uint32_t
+ctx_swap_red_green2 (uint32_t orig)
+{
+  uint32_t  green_alpha = (orig & 0xff00ff00);
+  uint32_t  red_blue    = (orig & 0x00ff00ff);
+  uint32_t  red         = red_blue << 16;
+  uint32_t  blue        = red_blue >> 16;
+  return green_alpha | red | blue;
+}
+
 static void ctx_fb_show_frame (CtxFb *fb)
 {
   if (fb->shown_frame != fb->render_frame &&
@@ -21282,7 +21292,20 @@ static void ctx_fb_show_frame (CtxFb *fb)
      switch (fb->fb_bits)
      {
        case 32:
+#if 0
          memcpy (fb->fb, fb->scratch_fb, fb->width * fb->height *  4);
+#else
+         { int count = fb->width * fb->height;
+           const uint32_t *src = (void*)fb->scratch_fb;
+           uint32_t *dst = (void*)fb->fb;
+           while (count --)
+           {
+             dst[0] = ctx_swap_red_green2 (src[0]);
+             src++;
+             dst++;
+           }
+         }
+#endif
          break;
          /* XXX  :  note: converting a scanline (or all) to target and
           * then doing a bulk memcpy be faster (at least with som /dev/fbs)  */
@@ -22162,7 +22185,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
         uint32_t new_hash = ctx_hash_get_hash (hasher, col, row);
-        if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col] || 1)
+        if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col])
         {
           sdl->hashes[row * CTX_HASH_COLS + col] = new_hash;
           sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
@@ -22396,7 +22419,7 @@ inline static void ctx_fb_flush (CtxFb *fb)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
         uint32_t new_hash = ctx_hash_get_hash (hasher, col, row);
-        if (new_hash != fb->hashes[row * CTX_HASH_COLS + col] || 1)
+        if (new_hash != fb->hashes[row * CTX_HASH_COLS + col])
         {
           fb->hashes[row * CTX_HASH_COLS + col] = new_hash;
           fb->tile_affinity[row * CTX_HASH_COLS + col] = 1;
@@ -22476,7 +22499,7 @@ void fb_render_fun (void **data)
                                  host, NULL, &host->state,
                                  &fb->scratch_fb[fb->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
-                                 fb->width*4, CTX_FORMAT_BGRA8);
+                                 fb->width*4, CTX_FORMAT_RGBA8);
                                               /* this is the format used */
             ((CtxRasterizer*)host->renderer)->texture_source = fb->ctx;
             ctx_translate (host, -x0, -y0);

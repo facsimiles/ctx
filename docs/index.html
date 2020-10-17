@@ -25,9 +25,23 @@
         <div id='page'>
         <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is an experimental terminal, single header library and <a
-           href='protocol/'>serial protocol</a>/terminal extension
-         for interactive vector graphics.</p>
+        <p>ctx is a <a href='mcu/'>lightweight</a> 2D vector graphics stack with focus on remote
+        and deferred rendering building on top of the HTML5 canvas 2D context
+        specification. The project provides as single header library
+        which implements both a binary and textual <a
+        href='protocol/'>drawlist protocol</a>. The ctx single-header
+        library provides APIs for registering keybindings and pointer events
+        with callbacks in user-relative coordinates. Events and rendering are
+        abstracted for linux framebuffer, SDL2, braille in terminal and running
+        in the ctx terminal. The ctx terminal is the binary built in the
+        toplevel of a <a href='/.git/'>ctx git</a> checkout. This terminal
+        serves as a demanding example for app-development with ctx, it used to
+        be faster - but peformance of minimal framebuffer touching has been
+        replaced with well-formed vector output, which permits the terminal to
+        run inside itself with minimal overhead. From within the terminal even
+        <a href='https://ctx.graphics/file/clients/clock.sh.html'>shell
+        scripts</a> get the ability to render vector graphics.
+        </p>
 
         <img style='max-width:100%' src='terminal.png'/>
 

@@ -33,7 +33,8 @@
 #define CTX_GRADIENT_CACHE       1
 #define CTX_ENABLE_CMYK          1
 #define CTX_ENABLE_CM            1
-#define CTX_SHAPE_CACHE          0
+
+#define CTX_SHAPE_CACHE          0 // disabled - it is buggy with threads
 #define CTX_SHAPE_CACHE_MAX_DIM  96
 #define CTX_SHAPE_CACHE_DIM      (64*64)
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
