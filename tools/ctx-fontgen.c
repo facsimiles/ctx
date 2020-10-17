@@ -2,9 +2,10 @@
 #include <libgen.h>
 
 #define CTX_MAX_RENDERSTREAM_SIZE 4096000
-#define CTX_BACKEND_TEXT 0
+#define CTX_BACKEND_TEXT 0 // we keep then non-backend code paths
+                           // for code handling aroud, this should
+                           // be run-time to permit doing text_to_path
 #define CTX_RASTERIZER  0
-#define CTX_GLYPH_CACHE 0
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 #include <sys/time.h>
@@ -18,6 +19,7 @@ static int usage(){
   fprintf (stderr, "\n");
   fprintf (stderr, "usage: ctx-fontgen <file.ttf> [name [set1-set2-set3]]\n");
   fprintf (stderr, "\nrecognized sets: latin1, ascii, extra, all, emoji\n");
+  fprintf (stderr, "\na final argument of \"binary\" might be appended, causing\nthe generated file to be binary ctx.\n");
   return -1;
 }
 
