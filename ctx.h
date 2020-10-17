@@ -6682,6 +6682,7 @@ ctx_renderstream_deinit (CtxRenderstream *renderstream)
     }
 #endif
   renderstream->entries = NULL;
+  renderstream->size = 0;
 }
 
 #if CTX_RASTERIZER
@@ -14636,7 +14637,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   if (rasterizer->clip_buffer)
     ctx_buffer_free (rasterizer->clip_buffer);
 #endif
-  if (rasterizer->edge_list.count)
+  if (rasterizer->edge_list.size)
     ctx_renderstream_deinit (&rasterizer->edge_list);
 
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer) );
