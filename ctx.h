@@ -5101,7 +5101,9 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
 }
 #endif
 
+#if CTX_EVENTS
 static void _ctx_bindings_key_down (CtxEvent *event, void *data1, void *data2);
+#endif
 
 static void bared (CtxEvent *event, void *data, void *data2)
 {
@@ -21289,6 +21291,63 @@ ctx_swap_red_green2 (uint32_t orig)
   return green_alpha | red | blue;
 }
 
+static int fb_cursor_drawn = 0;
+static int fb_cursor_drawn_x = 0;
+static int fb_cursor_drawn_y = 0;
+
+static void ctx_fb_draw_cursor (CtxFb *fb)
+  {
+    int cursor_x = ctx_pointer_x (fb->ctx);
+    int cursor_y = ctx_pointer_y (fb->ctx);
+#define CURSOR_SIZE 48
+    static uint8_t backup[CURSOR_SIZE*CURSOR_SIZE*4];
+
+    int no = 0;
+
+    if (fb_cursor_drawn)
+    {
+      if (cursor_x == fb_cursor_drawn_x &&
+          cursor_y == fb_cursor_drawn_y)
+        return;
+    no = 0;
+    for (int y = 0; y < CURSOR_SIZE; y++)
+      for (int x = 0; x < CURSOR_SIZE; x++, no+=4)
+      {
+        if (x + fb_cursor_drawn_x < fb->width && y + fb_cursor_drawn_y < fb->height)
+        {
+        int o = ((fb_cursor_drawn_y + y) * fb->width + (fb_cursor_drawn_x + x)) * 4;
+        fb->fb[o+0] = backup[no+0];
+        fb->fb[o+1] = backup[no+1];
+        fb->fb[o+2] = backup[no+2];
+        fb->fb[o+3] = backup[no+3];
+      }
+      }
+    }
+
+    no = 0;
+    for (int y = 0; y < CURSOR_SIZE; y++)
+      for (int x = 0; x < CURSOR_SIZE; x++, no+=4)
+      {
+        if (x + cursor_x < fb->width && y + cursor_y < fb->height)
+        {
+        int o = ((cursor_y + y) * fb->width + (cursor_x + x)) * 4;
+        backup[no+0] = fb->fb[o+0];
+        backup[no+1] = fb->fb[o+1];
+        backup[no+2] = fb->fb[o+2];
+        backup[no+3] = fb->fb[o+3];
+        if (x < y && x > y / 16)
+        {
+          fb->fb[o+0]+=127;
+          fb->fb[o+1]+=127;
+          fb->fb[o+2]+=127;
+        }
+        }
+      }
+    fb_cursor_drawn = 1;
+    fb_cursor_drawn_x = cursor_x;
+    fb_cursor_drawn_y = cursor_y;
+  }
+
 static void ctx_fb_show_frame (CtxFb *fb)
 {
   if (fb->shown_frame != fb->render_frame &&
@@ -21377,27 +21436,25 @@ static void ctx_fb_show_frame (CtxFb *fb)
          }
          break;
      }
+    fb_cursor_drawn = 0;
+    ctx_fb_draw_cursor (fb);
     ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
     //__u32 dummy = 0;
     //ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
-    }
     fb->shown_frame = fb->render_frame;
+    }
   }
-
-
+  else
   {
-    int cursor_x = ctx_pointer_x (fb->ctx);
-    int cursor_y = ctx_pointer_y (fb->ctx);
-    for (int y = -2; y < 5; y++)
-      for (int x = -2; x < 5; x++)
-      {
-        int o = ((cursor_y + y) * fb->width + (cursor_x + x)) * 4;
-        fb->fb[o+0]=255;
-        fb->fb[o+1]=255;
-        fb->fb[o+2]=255;
-        fb->fb[o+3]=255;
-      }
+    if (fb->vt_active)
+    {
+      ctx_fb_draw_cursor (fb);
+    }
   }
+
+
+
+
 }
 
 
@@ -21500,12 +21557,22 @@ static char *mice_get_event ()
   const char *ret = "mouse-motion";
   double relx, rely;
   signed char buf[3];
+  CtxFb *fb = ev_src_mice.priv;
   read (mrg_mice_this->fd, buf, 3);
   relx = buf[1];
   rely = -buf[2];
 
   mrg_mice_this->x += relx;
   mrg_mice_this->y += rely;
+
+  if (mrg_mice_this->x < 0)
+    mrg_mice_this->x = 0;
+  if (mrg_mice_this->y < 0)
+    mrg_mice_this->y = 0;
+  if (mrg_mice_this->x >= fb->width)
+    mrg_mice_this->x = fb->width -1;
+  if (mrg_mice_this->y >= fb->height)
+    mrg_mice_this->y = fb->height -1;
 
   if ((mrg_mice_this->prev_state & 1) != (buf[0] & 1))
     {
@@ -22718,7 +22785,9 @@ Ctx *ctx_new_fb (int width, int height)
 
   fb->evsource[fb->evsource_count++] = kb;
   kb->priv = fb;
-  fb->evsource[fb->evsource_count++] = evsource_mice_new ();
+  EvSource *mice  = evsource_mice_new ();
+  fb->evsource[fb->evsource_count++] = mice;
+  mice->priv = fb;
 
   fb->vt_active = 1;
 //return fb->ctx;

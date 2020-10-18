@@ -956,7 +956,7 @@ int terminal_main (int argc, char **argv)
 
   if (cols > 0)
   {
-    if (font_size < 0) font_size = 17 * global_scale;
+    if (font_size < 0) font_size = 23 * global_scale;
     if (rows < 0) rows = cols / 3;
     height = rows * font_size;
     width = cols * (int)(font_size / 2);
@@ -1027,11 +1027,6 @@ int terminal_main (int argc, char **argv)
         dirty = 0;
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
-
-        ctx_begin_path (ctx);
-        ctx_rectangle (ctx, ctx_pointer_x (ctx)-2, ctx_pointer_y(ctx)-2,  5, 5);
-        ctx_rgba (ctx, 1, 1, 1, 0.5);
-        ctx_fill (ctx);
         ctx_flush (ctx);
       }
       else
