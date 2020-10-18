@@ -6,123 +6,193 @@
     </style>
   </head>
 
-    <body>
-       <div id='menu'>
-                <a href='http://ctx.graphics/'>ctx</a>
-                <a href='#downloads'>downloads</a>
-                <a href='#example'>hello world</a>
-                <br/>
-                <a href='rasterizer/'>rasterizer</a>
-                <a href='protocol/'>protocol</a>
-                <a href='#roadmap'>roadmap</a>
-                <a href='#license'>license</a>
-                <br/>
-                <a href='mcu/'>videos</a>
-                <a href='tests/'>tests</a>
-                <a href='glitch/'>glitch</a>
-        </div>
+  <body>
+     <div id='menu'>
+              <a href='http://ctx.graphics/'>ctx</a>
+              <a href='#downloads'>downloads</a>
+              <a href='#example'>hello world</a>
+              <br/>
+              <a href='rasterizer/'>rasterizer</a>
+              <a href='protocol/'>protocol</a>
+              <a href='#roadmap'>roadmap</a>
+              <a href='#license'>license</a>
+              <br/>
+              <a href='mcu/'>videos</a>
+              <a href='tests/'>tests</a>
+              <a href='glitch/'>glitch</a>
+      </div>
 
-        <div id='page'>
-        <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
+      <div id='page'>
+      <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-        <p>ctx is a <a href='mcu/'>lightweight</a> 2D vector graphics stack with focus on remote
-        and deferred rendering building on top of the HTML5 canvas 2D context
-        specification. The project provides as single header library
-        which implements both a binary and textual <a
-        href='protocol/'>drawlist protocol</a>. The ctx single-header
-        library provides APIs for registering keybindings and pointer events
-        with callbacks in user-relative coordinates. Events and rendering are
-        abstracted for linux framebuffer, SDL2, braille in terminal and running
-        in the ctx terminal. The ctx terminal is the binary built in the
-        toplevel of a <a href='/.git/'>ctx git</a> checkout. This terminal
-        serves as a demanding example for app-development with ctx, it used to
-        be faster - but peformance of minimal framebuffer touching has been
-        replaced with well-formed vector output, which permits the terminal to
-        run inside itself with minimal overhead. From within the terminal even
-        <a href='https://ctx.graphics/file/clients/clock.sh.html'>shell
-        scripts</a> get the ability to render vector graphics.
-        </p>
+      <p>ctx is a <a href='mcu/'>lightweight</a> 2D vector graphics stack with focus on remote
+      and deferred rendering building on top of the HTML5 canvas 2D context
+      specification. The project provides as single header library
+      which implements both a binary and textual <a
+      href='protocol/'>drawlist protocol</a>. The ctx single-header
+      library provides APIs for registering keybindings and pointer events
+      with callbacks in user-relative coordinates. Events and rendering are
+      abstracted for linux framebuffer, SDL2, braille in terminal and running
+      in the ctx terminal. The ctx terminal is the binary built in the
+      toplevel of a <a href='/.git/'>ctx git</a> checkout. This terminal
+      serves as a demanding example for app-development with ctx, it used to
+      be faster - but peformance of minimal framebuffer touching has been
+      replaced with well-formed vector output, which permits the terminal to
+      run inside itself with minimal overhead. From within the terminal even
+      <a href='https://ctx.graphics/file/clients/clock.sh.html'>shell
+      scripts</a> get the ability to render vector graphics.
+      </p>
 
-        <img style='max-width:100%' src='terminal.png'/>
+      <p>There are extensions for sending raster graphics with terminals,
+      ranging from sixels through iterm2 base64 upload to kitty - that permit
+      uploading buffers. With the increased pixel density of modern displays
+      sending full framebuffers over the wire is too expensive for updating a
+      buffer.</p>
 
-        <dl>
-           <dt><a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 Canvas 2D Context</a></dt><dd>Easily bindable C API and protocol builds directly on this standard.
-        Compositing and blending is according to <a
-        href='https://drafts.fxtf.org/compositing/'>Compositing and Blending
+      <img style='max-width:100%' src='terminal.png'/>
+
+      <p>When programming in DOS or with SVGAlib the mono-spaced text
+      rectangle can be upgraded to graphics mode. Similarly terminals have
+      also not only provided a grid of monospaced text. Examples are DECs VTs
+      with ReGIS, tektronix, BBSs with RIPscript and in some ways Display
+      PostScript and NEWS.</p>
+
+      <p>The ctx terminal adds an escape code <tt>\e[?200h</tt>which opens a
+      2D vector drawing context with coordinate origin at the start of the
+      current line. After this command has been issued, the temrinal is no
+      longer in ANSI/VT mode but in ctx mode, and commands according to the
+      <a href='protocol/'>ctx protocol</a> are accepted. This protocol
+      is a superset of the SVG path data format, which includes an encoding
+      of the 2D canvas context API. Commands have a long form in additon to
+      the short, so for verbosity (and ease of prototyping), 
+      <tt>moveTo</tt>,<tt>curveTo</tt> can be used in place of <tt>m</tt>
+      and <tt>l</tt> in addition <tt>(</tt>,<tt>,</tt>,<tt>)</tt> and
+      <tt>;</tt> are as a bonus treated as whitespace making
+      some snippets almost copy pastable with javascript bits of code
+      the parser for this format also supports suffixes, the
+      <a href='https://ctx.graphics/file/clients/clock.sh.html'>clock.sh</a>
+      example uses this to create a clock proportional to the size
+      of the terminal.
+      </p>
+      <img style='max-width:100%' src='clock.sh.png'/>
+
+      <p>The ctx parser in the terminal that clock.sh creates a
+      binary in-memory dawlist.
+
+      This drawlist is played back
+      in-place during the drawing commands used to draw the terminal
+      with ctx. The terminal and its clients are thus merged into
+      a single drawlist - which can include multiple tabs/windows.</p>
+
+      <p>The single drawlist is used for read-only access by independent
+      worker-threads.  The framebuffer to update is split into a grid (of at
+      least 4 by 4) where each cell is a render job. Hashes of the drawlist
+      are computed in parallel for all cells - and the cells where the hash
+      differs from the last update are spread among the render threads.
+      This permits for low latency updates for small changes, it is less
+      optimal for fullscreen scrolling of large buffers. A cache that captures
+      the rasterization of smallish shapes is currently disabled, since it
+      glitches under threading - disabling it has the advantage of the threads
+      being fully independent.
+      </p>
+
+      <p>The rasterizer used in each thread renders to RGBA u8 and conversion
+      to BGRX u8, RGB565 etc is either not done or done when copying to
+      the destination framebuffer. This since RGBA u8 is the most optimized
+      of the supported formats.
+      </p>
+
+      <p>One of ctx' backends is the ctx backend this backend outputs the ctx
+      protocol on stdout and accepts keyboard/pointer input either as
+      standard terminal escape sequences or in a passthrough mode of ctx' own
+      event format, inherited from <a
+              href='https://github.com/hodefoting/mrg'>microraptor gui</a>.
+      Sending full frames of vectors also becomes bandwidth intensive with
+      comples UIs, this can be remediated by allowing to reuse bits of the
+      previous frames bytestream, this is currently not implemented - and
+      matters most over low bandwidth ssh.
+      </p>
+
+      <h3>Features/References</h3>
+
+      <dl>
+         <dt><a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 Canvas 2D Context</a></dt><dd>Easily bindable C API and protocol builds directly on this standard.
+      Compositing and blending is according to <a
+      href='https://drafts.fxtf.org/compositing/'>Compositing and Blending
 Level 2</a>; ctx goes further than the standard and permits all blending modes
 to be combined with all compositing modes.  The core ideas for a 2d vector
 vocabulary is however shared with PDF, cairo, OpenVG, directdraw and other API
 that have foundation in postscript.
 
-           </dd>
+         </dd>
 
-           <dt>Small footprint</dt><dd>Can be tuned for <a
-                   href='mcu/'>microcontrollers</a> down to ~5kb of RAM + 30kb
-           of code + 12kb of fontdata, combined with immediate mode UI that can
-           be re-run, it is sufficient to have a framebuffer covering one
-           scanline - making microcontrollers with 8kb of RAM a possible
-           target - this has not yet been attempted.</dd>
+         <dt>Small footprint</dt><dd>Can be tuned for <a
+                 href='mcu/'>microcontrollers</a> down to ~5kb of RAM + 30kb
+         of code + 12kb of fontdata, combined with immediate mode UI that can
+         be re-run, it is sufficient to have a framebuffer covering one
+         scanline - making microcontrollers with 8kb of RAM a possible
+         target - this has not yet been attempted.</dd>
 
-           <dt>Threaded/deferred rendering</dt><dd>The compact ctx protocol - in both text and binary form - can split the drawing from the renderering. 
-           Separate render threads each with a small RAM footprint can
-           render shared read-only from the binary representation. The
-           binary representation is also suitable for driving other backends
-           like cairo or an external GPU renderer.
-           .</dd>
+         <dt>Threaded/deferred rendering</dt><dd>The compact ctx protocol - in both text and binary form - can split the drawing from the renderering. 
+         Separate render threads each with a small RAM footprint can
+         render shared read-only from the binary representation. The
+         binary representation is also suitable for driving other backends
+         like cairo or an external GPU renderer.
+         .</dd>
 
-           <dt>utf8 native</dt><dd>Missing ligratures though, and beyond vttest
-           charset support is not good and RTL is missing - harfbuzz
-           intergration can fix this and more. Also currently lacking color
-           emoji. The most efficient font format is the binary
-           representation of the ctx protocol.</dd>
+         <dt>utf8 native</dt><dd>Missing ligratures though, and beyond vttest
+         charset support is not good and RTL is missing - harfbuzz
+         intergration can fix this and more. Also currently lacking color
+         emoji. The most efficient font format is the binary
+         representation of the ctx protocol.</dd>
 
-           <dt>stb_truetype.h</dt><dd>If the declarations for stb_truetype are
-           included before ctx.h - functions to load fonts from TTF/OTF files
-           become available.</dd>
+         <dt>stb_truetype.h</dt><dd>If the declarations for stb_truetype are
+         included before ctx.h - functions to load fonts from TTF/OTF files
+         become available.</dd>
 
-           <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, some of horizontal margins are supported, including smooth scroll and double width/height. From
-           ECMA-48 and xterm handling of colors, word-wrap, proportional text, mouse and more.</dd>
-           <dt><a href='https://pippin.gimp.org/ametameric/'>ametmeric palette</a></dt>
-                <dd>The terminal 16 color palette is optimized for legibility for both trichromats and dichromats</dd>
-     <dt><a href='https://github.com/hodefoting/atty/'>atty</a></dt>
-                <dd>audio recording and playback (only raw pcm for now, opus codec NYI)</dd>
-                <dt><a href='https://en.wikipedia.org/wiki/Sixel'>sixels</a></dt><dd>DEC terminal family standard for raster graphics transfer</dd>
-                <dt><a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a></dt><dd>kitty style raster graphics transfer</dd> 
-                <dt><a href='https://iterm2.com/documentation-images.html'>iterm2 inline images</a></dt><dd>iterm2 style raster grarphics transfer</dd>
+         <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, some of horizontal margins are supported, including smooth scroll and double width/height. From
+         ECMA-48 and xterm handling of colors, word-wrap, proportional text, mouse and more.</dd>
+         <dt><a href='https://pippin.gimp.org/ametameric/'>ametmeric palette</a></dt>
+              <dd>The terminal 16 color palette is optimized for legibility for both trichromats and dichromats</dd>
+   <dt><a href='https://github.com/hodefoting/atty/'>atty</a></dt>
+              <dd>audio recording and playback (only raw pcm for now, opus codec NYI)</dd>
+              <dt><a href='https://en.wikipedia.org/wiki/Sixel'>sixels</a></dt><dd>DEC terminal family standard for raster graphics transfer</dd>
+              <dt><a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a></dt><dd>kitty style raster graphics transfer</dd> 
+              <dt><a href='https://iterm2.com/documentation-images.html'>iterm2 inline images</a></dt><dd>iterm2 style raster grarphics transfer</dd>
 
-           <dt>bracketed paste</dt>
+         <dt>bracketed paste</dt>
 
-           <dt>SDL2</dt><dd>Optional backend that works better than the framebuffer that gets included when SDL.h is included before ctx.h</dd>
+         <dt>SDL2</dt><dd>Optional backend that works better than the framebuffer that gets included when SDL.h is included before ctx.h</dd>
 
-           <dt><a href='https://cairographics.org/'>cairo</a></dt><dd>support code to render to cairo contexts if cairo.h is included before ctx.h, useful for conformance verfication and SVG and PDF output.</dd>
+         <dt><a href='https://cairographics.org/'>cairo</a></dt><dd>support code to render to cairo contexts if cairo.h is included before ctx.h, useful for conformance verfication and SVG and PDF output.</dd>
 
-           <dt>/dev/fb0</dt><dd>Applications built with the ctx library can run
-           directly on the linux framebuffer without X/wayland, for it to be
-           fast a fast framebuffer is needed. 
-           </dd>
+         <dt>/dev/fb0</dt><dd>Applications built with the ctx library can run
+         directly on the linux framebuffer without X/wayland, for it to be
+         fast a fast framebuffer is needed. 
+         </dd>
 
-           <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>Already supporting RGB332, 565 and grayscale modes, with an architecture that also can support spectral, ICC integration is planned for.</dd>
-        </dl>
+         <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>Already supporting RGB332, 565 and grayscale modes, with an architecture that also can support spectral, ICC integration is planned for.</dd>
+      </dl>
 
-        <h3 id='downloads'>Downloads</h3>
+      <h3 id='downloads'>Downloads</h3>
 
-        <p>There is no tarball releases yet, but the development version
-        can be cloned and contains some example/test clients in C and bash,
-        if you've got the development headers for SDL2 the following
-        builds a ctx binary.
-        </p>
-        <pre>$ git clone <a href='https://ctx.graphics/.git'>https://ctx.graphics/.git</a>
-$ cd ctx.graphics
-$ make</pre>
+      <p>There is no tarball releases yet, but the development version
+      can be cloned and contains some example/test clients in C and bash,
+      if you've got the development headers for SDL2 the following
+      builds a ctx binary.
+      </p>
+      <pre>$ git clone <a href='https://ctx.graphics/.git'>https://ctx.graphics/.git</a>
+$  ctx.graphics
+$ ke</pre>
 
-        <table>
-                <tr><td style='width:14em'><a href='ctx.h'>ctx.h</a> <a href='ctx.h.html'>(browse)</td><td>580K</td><td>The singleheader library ctx.</tr>
-                <tr><td><a href='ctx-font-ascii.h'>ctx-font-ascii.h</a> <a href='ctx-font-regular.h.html'>(browse)</td><td>72K</td><td>Example font to use with ctx, containing only ASCII</td></tr>
-                <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a> <a href='ctx-font-regular.h.html'>(browse)</td><td>128K</td><td>Example font to use with ctx</td></tr>
-                <tr><td><a href='test-size.c'>test-size.c</a></td><td>3K</td><td>example</td></tr>
-                <tr><td><a href='binaries/ctx-x86_64-SDL2'>ctx-x86_64-SDL2</a><td>400kb (packed with UPX)</td><td>ELF 64bit binary for linux dynamically linked against SDL2, should work in most distros.</tr>
-                <tr><td><a href='binaries/ctx-x86_64-static'>ctx-x86_64-static</a><td>512K</td><td>ELF 64bit static linux binary - should work in more distros, but has only /dev/fb0 and braille rendering.</tr>
-        </table>
+      <table>
+              <tr><td style='width:14em'><a href='ctx.h'>ctx.h</a> <a href='ctx.h.html'>(browse)</td><td>580K</td><td>The singleheader library ctx.</tr>
+              <tr><td><a href='ctx-font-ascii.h'>ctx-font-ascii.h</a> <a href='ctx-font-regular.h.html'>(browse)</td><td>72K</td><td>Example font to use with ctx, containing only ASCII</td></tr>
+              <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a> <a href='ctx-font-regular.h.html'>(browse)</td><td>128K</td><td>Example font to use with ctx</td></tr>
+              <tr><td><a href='test-size.c'>test-size.c</a></td><td>3K</td><td>example</td></tr>
+              <tr><td><a href='binaries/ctx-x86_64-SDL2'>ctx-x86_64-SDL2</a><td>400kb (packed with UPX)</td><td>ELF 64bit binary for linux dynamically linked against SDL2, should work in most distros.</tr>
+              <tr><td><a href='binaries/ctx-x86_64-static'>ctx-x86_64-static</a><td>512K</td><td>ELF 64bit static linux binary - should work in more distros, but has only /dev/fb0 and braille rendering.</tr>
+      </table>
 
 
 <h2 id='license'>license and funding</h2>
