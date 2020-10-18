@@ -120,7 +120,30 @@
       implemented but will provide signficant bandwidth savings.
       </p>
 
-      <p></p>
+      <p>ctx is a work in progress and there is <a href='#bugs'>known bugs</a>, on one important ergonomic measure, in this regard ctx seem to already
+      be competetive with GPU accelerated terminals.  Due to how
+      framebuffer caching is done latency is higher with large updates and
+      scrolling than without. It still is almost nice enough for the
+      main author to be configured as his systems default terminal - but
+      not quite.
+      </p>
+
+      <img src='latency-openbox.png' style='width:48%;float:right;padding-left:1em'/>
+
+      <p>The benchmarks to the right are shown in <a href='https://github.com/pavelfatin/typometer'>typometer</a>, a utility to measure time from
+      keyboard event to display update. The benchmarks have been done under
+      the Xorg session with openbox on a debian system. ctx is using the SDL2
+      backend and is thus having higher overhead than should be neccesary
+      using a more dedicated backend.</p>
+
+      <br style='clear:both;'/>
+
+      <img src='latency.png' style='width:48%;float:right;padding-left:1em;'/>
+
+      <p>The measurements to the right are done under an xorg session of
+      GNOME, the extra steps of compositing does increase latency somewhat.</p>
+
+      <br style='clear:both;'/>
 
       <h3>Features and references</h3>
 
@@ -132,8 +155,8 @@ Level 2</a>; ctx goes further than the standard and permits all blending modes
 to be combined with all compositing modes.  The core ideas for a 2d vector
 vocabulary is however shared with PDF, cairo, OpenVG, directdraw and other API
 that have foundation in postscript.
-
          </dd>
+
 
          <dt>Small footprint</dt><dd>Can be tuned for <a
                  href='mcu/'>microcontrollers</a> down to ~5kb of RAM + 30kb
