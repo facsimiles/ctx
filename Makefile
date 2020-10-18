@@ -30,27 +30,28 @@ CFLAGS_warnings= -Wall \
 CFLAGS= -O3 -g $(CFLAGS_warnings)
 #CFLAGS= -Os 
 
+CFLAGS+=-I. -Ifonts -Ideps -lutil -lz -lm -lpthread
+
 tools/%: tools/%.c ctx.h test-size/tiny-config.h 
 	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CC) ctx.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps `pkg-config sdl2 --cflags --libs` -lutil -lz -lm
+	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs`
 
 ctx-avx2.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CC) ctx.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps `pkg-config sdl2 --cflags --libs` -lutil -lz -lm -DCTX_AVX2=1 -march=native
+	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` -DCTX_AVX2=1 -march=native
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
-	musl-gcc ctx.c -c -o $@ $(CFLAGS) -I. -Ifonts -Ideps -lutil -lz -lm -DNO_SDL=1 -DCTX_FB=1
-
+	musl-gcc ctx.c -c -o $@ $(CFLAGS) -DNO_SDL=1 -DCTX_FB=1
 
 ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o
-	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -Ideps -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx.o -lutil -lz -lm -lpthread
+	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` ctx.o
 
 ctx.avx2: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-avx2.o
-	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -Ideps -I. -Ifonts `pkg-config sdl2 --cflags --libs` ctx-avx2.o -lutil -lz -lm -lpthread 
+	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o
 
 ctx.static: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-nosdl.o
-	musl-gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) -I. -Ifonts -Ideps ctx-nosdl.o -lutil -lz -lm -lpthread -DNO_SDL=1 -DCTX_FB=1 -static 
+	musl-gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
 	upx $@
 
