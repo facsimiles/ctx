@@ -261,13 +261,9 @@ CtxClient *add_client_argv (const char **argv, int x, int y, int width, int heig
 
 extern float ctx_shape_cache_rate;
 
-static int last_x = 0;
-static int last_y = 0;
 static CtxClient *find_active (int x, int y)
 {
   CtxClient *ret = 0;
-  last_x = x;
-  last_y = y;
   for (CtxList *l = clients; l; l = l->next)
   {
      CtxClient *c = l->data;
@@ -319,7 +315,7 @@ void client_remove (CtxClient *client)
 
   if (client == active)
   {
-    active = find_active (last_x, last_y);
+    active = NULL;//find_active (last_x, last_y);
   }
   free (client);
 }
@@ -450,7 +446,7 @@ int update_vt (Ctx *ctx, CtxClient *client, int is_reset)
       prepare_for_draw (ctx);
 
       client->drawn_rev = vt_rev (vt);
-      vt_draw (vt, ctx, 0, 0);
+      vt_draw (vt, ctx, client->x, client->y);
       return 1;
     }
   return 0;
@@ -468,7 +464,7 @@ static int update_vts (Ctx *ctx, int changes_in)
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-      if (client->vt && update_vt (ctx, client, changes + changes_in))
+      if (client->vt && update_vt (ctx, client, dirt + changes + changes_in))
           changes++;
   }
   dirt += changes;
@@ -975,7 +971,6 @@ int terminal_main (int argc, char **argv)
       font_size -= 1;
   }
 
-
   if (argv[1] == NULL)
   {
     active = add_client (vt_find_shell_command(), 0, 0, width, height, 0);
@@ -984,19 +979,24 @@ int terminal_main (int argc, char **argv)
   {
     active = add_client_argv ((void*)&argv[1], 0, 0, width, height, 0);
   }
-  vt_set_ctx (active->vt, ctx);
-  signal (SIGCHLD,signal_child);
-
   if (!active)
     return 1;
+  vt_set_ctx (active->vt, ctx);
+
+#if 0
+  active=add_client (vt_find_shell_command(), width/2, height/2, width/2, height/2, 0);
 
   vt_set_ctx (active->vt, ctx);
+#endif
+  signal (SIGCHLD,signal_child);
+
 
   int sleep_time = 200;
   while (clients)
     {
       CtxList *to_remove = NULL;
       int changes = 0;
+      active = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
 
       for (CtxList *l = clients; l; l = l->next)
       {

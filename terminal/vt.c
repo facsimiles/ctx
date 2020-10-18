@@ -6612,6 +6612,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
   int image_id = 0;
   ctx_save (ctx);
+  ctx_translate (ctx, x0, y0);
+  x0 = 0;
+  y0 = 0;
   ctx_font (ctx, "mono");
   vt->font_is_mono = 0;
   ctx_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
@@ -6625,6 +6628,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   cursor_y_px = y0 + (vt->cursor_y - 1) * vt->ch;
   cursor_w = vt->cw;
   cursor_h = vt->ch;
+  ctx_save (ctx);
   //if (vt->scroll || full)
     {
       ctx_begin_path (ctx);
@@ -6653,7 +6657,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 #endif
 
    {
-     for (int row = 0; row <= (vt->scroll) + vt->rows; row ++)
+     for (int row = 0; row < (vt->scroll) + vt->rows; row ++)
        {
          CtxList *l = ctx_list_nth (vt->lines, row);
          float y = y0 + vt->ch * (vt->rows - row);
@@ -6919,6 +6923,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
         ctx_rgba (ctx, 1, 1, 1, .10);
       ctx_fill (ctx);
     }
+    ctx_restore (ctx);
 }
 
 int vt_is_done (VT *vt)
