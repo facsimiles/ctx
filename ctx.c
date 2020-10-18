@@ -40,8 +40,11 @@
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
 #define CTX_MATH                 1
 #define CTX_MAX_JOURNAL_SIZE     1024*64
-#define CTX_AVX2 0
-//#include <immintrin.h> // is detected by ctx, and enables AVX2
+#ifndef CTX_AVX2
+#define CTX_AVX2 0 // forcing AVX2 even if immintrin is detected -
+#else
+#include <immintrin.h> // is detected by ctx, and enables AVX2
+#endif
 
 #define CTX_IMPLEMENTATION 1
 
