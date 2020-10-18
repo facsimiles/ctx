@@ -18428,9 +18428,22 @@ enum _CtxFlags {
    CTX_FLAG_DIRECT = (1<<0),
 };
 
+#ifndef CTX_MAX_THREADS
+#define CTX_MAX_THREADS   8
+#endif
+
+static int _ctx_threads = 1;
+
 void
 ctx_init (int *argc, char ***argv)
 {
+  if (getenv ("CTX_THREADS"))
+  {
+    int val = atoi (getenv ("CTX_THREADS"));
+    if (val < 1) val = 1;
+    if (val > CTX_MAX_THREADS) val = CTX_MAX_THREADS;
+    _ctx_threads = val;
+  }
 #if 0
   if (!getenv ("CTX_VERSION"))
   {
@@ -20889,9 +20902,6 @@ static int ctx_nct_consume_events (Ctx *ctx)
   return 1;
 }
 
-#ifndef CTX_THREADS
-#define CTX_THREADS   4
-#endif
 
 #ifndef CTX_HASH_ROWS
 #define CTX_HASH_ROWS 4
@@ -20906,7 +20916,6 @@ static int ctx_nct_consume_events (Ctx *ctx)
  // 2 threads 20fps
  // 3 threads 27fps
  // 4 threads 29fps
-#define CTX_SDL_THREADS  CTX_THREADS
 
 
 typedef struct _CtxSDL CtxSDL;
@@ -20935,8 +20944,8 @@ struct _CtxSDL
    int           rctrl;
    int           shown_frame;
    int           render_frame;
-   int           rendered_frame[CTX_SDL_THREADS];
-   Ctx          *host[CTX_SDL_THREADS];
+   int           rendered_frame[CTX_MAX_THREADS];
+   Ctx          *host[CTX_MAX_THREADS];
    int           frame;
    int           pointer_down[3];
 
@@ -20956,7 +20965,7 @@ static inline int
 sdl_render_threads_done (CtxSDL *sdl)
 {
   int sum = 0;
-  for (int i = 0; i < CTX_SDL_THREADS; i++)
+  for (int i = 0; i < _ctx_threads; i++)
   {
      if (sdl->rendered_frame[i] == sdl->render_frame)
        sum ++;
@@ -20967,7 +20976,7 @@ sdl_render_threads_done (CtxSDL *sdl)
 static void ctx_sdl_show_frame (CtxSDL *sdl)
 {
   if (sdl->shown_frame != sdl->render_frame &&
-      sdl_render_threads_done (sdl) == CTX_SDL_THREADS)
+      sdl_render_threads_done (sdl) == _ctx_threads)
   {
     SDL_UpdateTexture (sdl->texture, NULL,
                       (void*)sdl->pixels, sdl->width * sizeof (Uint32));
@@ -21148,10 +21157,10 @@ static int ctx_sdl_consume_events (Ctx *ctx)
           sdl->pixels = calloc (4, width * height);
           sdl->width = width;
           sdl->height = height;
-          for (int i = 0 ; i < CTX_SDL_THREADS; i++)
+          for (int i = 0 ; i < _ctx_threads; i++)
           {
             ctx_free (sdl->host[i]);
-            sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/CTX_SDL_THREADS) * i],
+            sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/_ctx_threads) * i],
                    width / CTX_HASH_COLS, height/CTX_HASH_ROWS,
                    width * 4, CTX_FORMAT_RGBA8);
 #if CTX_RASTERIZER
@@ -21180,7 +21189,6 @@ static int ctx_sdl_consume_events (Ctx *ctx)
  // 2 threads 20fps
  // 3 threads 27fps
  // 4 threads 29fps
-#define CTX_FB_THREADS  CTX_THREADS
 
 typedef struct _EvSource EvSource;
 
@@ -21235,8 +21243,8 @@ struct _CtxFb
    int           rctrl;
    int           shown_frame;
    int           render_frame;
-   int           rendered_frame[CTX_FB_THREADS];
-   Ctx          *host[CTX_FB_THREADS];
+   int           rendered_frame[CTX_MAX_THREADS];
+   Ctx          *host[CTX_MAX_THREADS];
    int           frame;
    int           pointer_down[3];
 
@@ -21263,7 +21271,7 @@ static inline int
 fb_render_threads_done (CtxFb *fb)
 {
   int sum = 0;
-  for (int i = 0; i < CTX_FB_THREADS; i++)
+  for (int i = 0; i < _ctx_threads; i++)
   {
      if (fb->rendered_frame[i] == fb->render_frame)
        sum ++;
@@ -21284,7 +21292,7 @@ ctx_swap_red_green2 (uint32_t orig)
 static void ctx_fb_show_frame (CtxFb *fb)
 {
   if (fb->shown_frame != fb->render_frame &&
-      fb_render_threads_done (fb) == CTX_FB_THREADS)
+      fb_render_threads_done (fb) == _ctx_threads)
   {
     if (fb->vt_active)
     {
@@ -21374,6 +21382,21 @@ static void ctx_fb_show_frame (CtxFb *fb)
     //ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
     }
     fb->shown_frame = fb->render_frame;
+  }
+
+
+  {
+    int cursor_x = ctx_pointer_x (fb->ctx);
+    int cursor_y = ctx_pointer_y (fb->ctx);
+    for (int y = -2; y < 5; y++)
+      for (int x = -2; x < 5; x++)
+      {
+        int o = ((cursor_y + y) * fb->width + (cursor_x + x)) * 4;
+        fb->fb[o+0]=255;
+        fb->fb[o+1]=255;
+        fb->fb[o+2]=255;
+        fb->fb[o+3]=255;
+      }
   }
 }
 
@@ -22203,7 +22226,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       {
         if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_SDL_THREADS) / dirty_tiles;
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_threads) / dirty_tiles;
           //fprintf (stderr, "{%i %i}", sdl->tile_affinity[row * CTX_HASH_COLS + col], dirty_tiles);
           dirty_no++;
         }
@@ -22217,13 +22240,13 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   sdl->quit = 1;
-  while (sdl->thread_quit < CTX_SDL_THREADS)
+  while (sdl->thread_quit < _ctx_threads)
     usleep (1000); // XXX : properly wait for threads instead
   if (sdl->pixels)
   {
     free (sdl->pixels);
   sdl->pixels = NULL;
-  for (int i = 0 ; i < CTX_SDL_THREADS; i++)
+  for (int i = 0 ; i < _ctx_threads; i++)
   {
     ctx_free (sdl->host[i]);
     sdl->host[i]=NULL;
@@ -22281,7 +22304,7 @@ void sdl_render_fun (void **data)
         }
       sdl->rendered_frame[no] = sdl->render_frame;
 
-      if (sdl_render_threads_done (sdl) == CTX_SDL_THREADS)
+      if (sdl_render_threads_done (sdl) == _ctx_threads)
       {
    //   ctx_render_stream (sdl->ctx_copy, stdout, 1);
         ctx_reset (sdl->ctx_copy);
@@ -22346,7 +22369,7 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->free  = (void*)ctx_sdl_free;
 
-  for (int i = 0; i < CTX_THREADS; i++)
+  for (int i = 0; i < _ctx_threads; i++)
   {
     sdl->host[i] = ctx_new_for_framebuffer (sdl->pixels,
                    sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
@@ -22355,7 +22378,7 @@ Ctx *ctx_new_sdl (int width, int height)
   }
 
 #define start_thread(no)\
-  if(CTX_THREADS>no){ \
+  if(_ctx_threads>no){ \
     static void *args[2]={(void*)no, };\
     args[1]=sdl;\
     SDL_CreateThread ((void*)sdl_render_fun, "render", args);\
@@ -22438,7 +22461,7 @@ inline static void ctx_fb_flush (CtxFb *fb)
       {
         if (fb->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          fb->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (CTX_THREADS) / dirty_tiles;
+          fb->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_threads) / dirty_tiles;
           dirty_no++;
         }
       }
@@ -22452,7 +22475,7 @@ void ctx_fb_free (CtxFb *fb)
 {
 
   memset (fb->fb, 0, fb->width * fb->height *  4);
-  for (int i = 0 ; i < CTX_THREADS; i++)
+  for (int i = 0 ; i < _ctx_threads; i++)
     ctx_free (fb->host[i]);
   system("stty sane");
   
@@ -22509,7 +22532,7 @@ void fb_render_fun (void **data)
         }
       fb->rendered_frame[no] = fb->render_frame;
 
-      if (fb_render_threads_done (fb) == CTX_FB_THREADS)
+      if (fb_render_threads_done (fb) == _ctx_threads)
       {
    //   ctx_render_stream (fb->ctx_copy, stdout, 1);
         ctx_reset (fb->ctx_copy);
@@ -22654,7 +22677,7 @@ Ctx *ctx_new_fb (int width, int height)
   fb->flush = (void*)ctx_fb_flush;
   fb->free  = (void*)ctx_fb_free;
 
-  for (int i = 0; i < CTX_FB_THREADS; i++)
+  for (int i = 0; i < _ctx_threads; i++)
   {
     fb->host[i] = ctx_new_for_framebuffer (fb->scratch_fb,
                    fb->width/CTX_HASH_COLS, fb->height/CTX_HASH_ROWS,
@@ -22664,7 +22687,7 @@ Ctx *ctx_new_fb (int width, int height)
   }
 
 #define start_thread(no)\
-  if(CTX_FB_THREADS>no){ \
+  if(_ctx_threads>no){ \
     static void *args[2]={(void*)no, };\
     thrd_t tid;\
     args[1]=fb;\

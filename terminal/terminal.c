@@ -592,6 +592,9 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
   {
      default:
        break;
+     case CTX_MOTION:
+         dirty ++;
+       break;
      case CTX_DRAG_MOTION:
        if (!key)
          dirty ++;
@@ -1025,11 +1028,15 @@ int terminal_main (int argc, char **argv)
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
 
+        ctx_begin_path (ctx);
+        ctx_rectangle (ctx, ctx_pointer_x (ctx)-2, ctx_pointer_y(ctx)-2,  5, 5);
+        ctx_rgba (ctx, 1, 1, 1, 0.5);
+        ctx_fill (ctx);
         ctx_flush (ctx);
       }
       else
       {
-        usleep (1000 *  15);
+        usleep (1000 * 5);
       }
 
       CtxEvent *event;
