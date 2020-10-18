@@ -8,10 +8,11 @@ function cleanup {
 }
 trap cleanup EXIT # restore terminal state on ctrl+c and regular exit
 
-for a in b{1..1000}; do
+for a in b{1..10000}; do
 hour_radians=`bc <<<"scale=3;(($(date +%H|sed 's/^0//')+($(date +%M|sed s'/^6//')/60.0))/12.0+0.75)*3.14152*2"`
 minute_radians=`bc <<<"scale=3;($(date +%M|sed 's/^0//')/60.0+0.75)*3.14152*2"`
-second_radians=`bc <<<"scale=3;($(date +%S|sed 's/^0//')/60.0+0.75)*3.14152*2"`
+#second_radians=`bc <<<"scale=3;($(date +%S|sed 's/^0//')/60.0+0.75)*3.14152*2"`  # use this for "jumpy" second hand
+second_radians=`bc <<<"scale=3;(($(date +%N)/1000000000.0+$(date +%S|sed 's/^0//'))/60.0+0.75)*3.14152*2"`
 radius=45
 echo -ne "\e[2J\e[H"
 echo -ne "\e[?200h
@@ -30,4 +31,4 @@ moveTo 50% 50%
 arc 50% 50% $((radius * 90 / 100))%  $second_radians $second_radians 0
 rgba 1 0.1 0.1 1
 stroke
-done "; sleep 0.25; done
+done "; done

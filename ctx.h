@@ -18434,7 +18434,7 @@ enum _CtxFlags {
 #define CTX_MAX_THREADS   8
 #endif
 
-static int _ctx_threads = 1;
+int _ctx_threads = 1;
 
 void
 ctx_init (int *argc, char ***argv)
@@ -21299,8 +21299,10 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
   {
     int cursor_x = ctx_pointer_x (fb->ctx);
     int cursor_y = ctx_pointer_y (fb->ctx);
-#define CURSOR_SIZE 48
+    int cursor_size = ctx_height (fb->ctx) / 20;
+#define CURSOR_SIZE 64
     static uint8_t backup[CURSOR_SIZE*CURSOR_SIZE*4];
+    if (cursor_size>64)cursor_size=64;
 
     int no = 0;
 
@@ -21310,8 +21312,8 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
           cursor_y == fb_cursor_drawn_y)
         return;
     no = 0;
-    for (int y = 0; y < CURSOR_SIZE; y++)
-      for (int x = 0; x < CURSOR_SIZE; x++, no+=4)
+    for (int y = 0; y < cursor_size; y++)
+      for (int x = 0; x < cursor_size; x++, no+=4)
       {
         if (x + fb_cursor_drawn_x < fb->width && y + fb_cursor_drawn_y < fb->height)
         {
@@ -21325,8 +21327,8 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     }
 
     no = 0;
-    for (int y = 0; y < CURSOR_SIZE; y++)
-      for (int x = 0; x < CURSOR_SIZE; x++, no+=4)
+    for (int y = 0; y < cursor_size; y++)
+      for (int x = 0; x < cursor_size; x++, no+=4)
       {
         if (x + cursor_x < fb->width && y + cursor_y < fb->height)
         {
@@ -22212,16 +22214,28 @@ void ctx_braille_free (CtxBraille *braille)
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
+int ctx_renderer_is_braille (Ctx *ctx)
+{
+  if (ctx->renderer &&
+      ctx->renderer->free == (void*)ctx_braille_free)
+          return 1;
+  return 0;
+}
+
 Ctx *ctx_new_braille (int width, int height)
 {
   Ctx *ctx = ctx_new ();
 #if CTX_RASTERIZER
   CtxBraille *braille = calloc (sizeof (CtxBraille), 1);
+  int maxwidth = ctx_terminal_cols  () * 2;
+  int maxheight = (ctx_terminal_rows ()-1) * 4;
   if (width <= 0 || height <= 0)
   {
-    width  = ctx_terminal_cols  () * 2;
-    height = (ctx_terminal_rows ()-1) * 4;
+    width = maxwidth;
+    height = maxheight;
   }
+  if (width > maxwidth) width = maxwidth;
+  if (height > maxheight) height = maxheight;
   braille->ctx = ctx;
   braille->width  = width;
   braille->height = height;
@@ -22332,10 +22346,10 @@ void sdl_render_fun (void **data)
 {
   int      no = (size_t)data[0];
   CtxSDL *sdl = data[1];
-  Ctx *host = sdl->host[no];
 
   while (!sdl->quit)
   {
+    Ctx *host = sdl->host[no];
     if (sdl->render_frame != sdl->rendered_frame[no])
     {
       int hno = 0;
@@ -22611,6 +22625,7 @@ void fb_render_fun (void **data)
     }
   }
 }
+
 
 int ctx_renderer_is_fb (Ctx *ctx)
 {
@@ -22920,9 +22935,12 @@ Ctx *ctx_new_ui (int width, int height)
 #endif
 
 #if CTX_FB
+  if (!getenv ("DISPLAY"))
+  {
     if ((backend==NULL) || (!strcmp (backend, "fbcon")))
     ret = ctx_new_fb (width, height);
-  if (ret) return ret;
+    if (ret) return ret;
+  }
 #endif
 
 #if CTX_RASTERIZER

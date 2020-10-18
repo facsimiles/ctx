@@ -8,6 +8,8 @@ void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
   do_quit = 1;
 }
 
+extern int _ctx_threads;
+
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
@@ -116,8 +118,17 @@ int main (int argc, char **argv)
         }
       }
 
+      static int ctx_settings = 0;
+      if (itk_expander (itk, "CTX settings", &ctx_settings))
+      {
+        //itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
+        static float val;
+        val = _ctx_threads;
+        itk_slider_float (itk, "threads", &val, 1.0, 8.0, 1.0);
+      }
+
       static int itk_settings = 0;
-      if (itk_expander (itk, "Ui settings", &itk_settings))
+      if (itk_expander (itk, "ITK settings", &itk_settings))
       {
         itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
         itk_toggle (itk, "enable keybindings", &enable_keybindings);

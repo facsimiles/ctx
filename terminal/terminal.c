@@ -263,7 +263,7 @@ extern float ctx_shape_cache_rate;
 
 static CtxClient *find_active (int x, int y)
 {
-  CtxClient *ret = 0;
+  CtxClient *ret = NULL;
   for (CtxList *l = clients; l; l = l->next)
   {
      CtxClient *c = l->data;
@@ -271,7 +271,7 @@ static CtxClient *find_active (int x, int y)
          y > c->y && y < c->y+c->height)
        ret = c;
   }
-  active = ret;
+  //active = ret;
   return ret;
 }
 
@@ -911,7 +911,7 @@ int terminal_main (int argc, char **argv)
   int height = -1;
   int cols = -1;
   int rows = -1;
-
+#if 0
   if (getenv ("CTX_BACKEND") && !strcmp(getenv("CTX_BACKEND"),"braille"))
   {
     global_scale = 1.0;
@@ -919,6 +919,7 @@ int terminal_main (int argc, char **argv)
     rows = 9;
     font_size = 10;
   } 
+#endif
 
   for (int i = 1; argv[i]; i++)
   {
@@ -952,7 +953,7 @@ int terminal_main (int argc, char **argv)
 
   if (cols > 0)
   {
-    if (font_size < 0) font_size = 23 * global_scale;
+    if (font_size < 0) font_size = 18 * global_scale;
     if (rows < 0) rows = cols / 3;
     height = rows * font_size;
     width = cols * (int)(font_size / 2);
@@ -996,7 +997,9 @@ int terminal_main (int argc, char **argv)
     {
       CtxList *to_remove = NULL;
       int changes = 0;
-      active = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
+      CtxClient *client = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
+      if (client)
+        active = client;
 
       for (CtxList *l = clients; l; l = l->next)
       {
