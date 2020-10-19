@@ -10,6 +10,7 @@ void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 
 extern int _ctx_threads;
 
+
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
@@ -18,6 +19,7 @@ int main (int argc, char **argv)
   ITK *itk = itk_new (ctx);
 
   const CtxEvent *event;
+  uint8_t abc = 11;
   int mx, my;
   int   baz = 1;
   int   bax = 0;
@@ -94,7 +96,13 @@ int main (int argc, char **argv)
 
       static float slide_float = 10.0;
       itk_slider_float (itk, "slide float", &slide_float, 0.0, 100.0, 0.1);
-
+      //itk_slider_cb    (itk, "slide cb", &slide_float, -10.0, 10.0, 0.5, NULL, get_float, set_float, NULL);
+      //0.0, 100.0, 0.1);
+      static int   slide_int = 10;
+      //itk_slider_int   (itk, "slide int", &slide_int, 0, 100);
+      //
+      itk_slider_uint8  (itk, "slide byte", &abc, 0, 100, 1);
+      
       itk_entry (itk, "Foo", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL);
 
       itk_choice (itk, "power", &chosen, NULL, NULL);

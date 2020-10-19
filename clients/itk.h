@@ -145,9 +145,17 @@ struct _CtxControl{
   float min;
   float max;
   float step;
-  void (*action)(void *user_data);
-  void (*commit)(void *commit_data);
-  void *commit_data;
+
+
+
+  void (*action)(void *data);
+  void (*commit)(void *data);
+  double (*get_val)(void *valp, void *data);
+  void(*set_val)(void *valp, double val, void *data);
+  void(*finalize)(void *data);
+
+
+  void *data;
 };
 
 typedef struct _UiChoice  UiChoice;
@@ -318,6 +326,9 @@ void control_unref (CtxControl *control)
   if (control->ref_count < 0)
   {
     CtxControl *w = control;
+
+    if (control->finalize)
+      control->finalize (control->data);
 
     if (w->label)
       free (w->label);
@@ -728,7 +739,7 @@ static void itk_float_constrain (CtxControl *control, float *val)
 }
 void itk_set_focus (ITK *itk, int pos);
 
-void slider_float_drag (CtxEvent *event, void *userdata, void *userdata2)
+void slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
   CtxControl  *control = userdata;
@@ -738,28 +749,28 @@ void slider_float_drag (CtxEvent *event, void *userdata, void *userdata2)
   itk_set_focus (itk, control->no);
   event->stop_propagate = 1;
   itk->dirty++;
-
-  if (event->x > control->x + control->width * itk->value_width)
-  {
-    return;
-  }
   
   new_val = ((event->x - control->x) / (control->width * itk->value_width)) * (control->max-control->min) + control->min;
   itk_float_constrain (control, &new_val);
 
-  *val = new_val;
+  if (control->set_val)
+    control->set_val (control->val, new_val, control->data);
 }
 
-void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step)
+void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double max, double step, void *data, double(*get_val)(void *val, void *data), void(*set_val)(void *valp, double val, void *data), void(*finalize)(void *data))
 {
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
   float em = itk_em (itk);
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
-  control->min = min;
-  control->max = max;
+  control->data = data;
+  control->set_val = set_val;
+  control->get_val = get_val;
+  control->finalize = finalize;
+  control->val  = val;
+  control->min  = min;
+  control->max  = max;
   control->step = step;
-  control->val = val;
   control->type = UI_SLIDER;
 
   if (itk->focus_no == control->no)
@@ -769,26 +780,164 @@ void itk_slider_float (ITK *itk, const char *label, float *val, float min, float
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
   ctx_fill (ctx);
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_DRAG, slider_float_drag, control, itk, control_finalize, NULL);
+  ctx_listen_with_finalize (ctx, CTX_DRAG, slider_cb_drag, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
 
-  sprintf (buf, "%.3f", *val);
+  double fval = get_val (val, data);
+
+  if (step == 1.0)
+  {
+    sprintf (buf, "%.0f", fval);
+  }
+  else
+  {
+    sprintf (buf, "%.3f", fval);
+  }
   ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
   itk_set_color (itk, ITK_SLIDER_TEXT);
   ctx_text (ctx, buf);
 
-  float rel_val = ((*val) - min) / (max-min);
+  float rel_val = ((fval) - min) / (max-min);
   itk_set_color (itk, ITK_SLIDER_CURSOR);
   ctx_rectangle (ctx, itk->x + (itk->width*itk->value_width-em/8) * rel_val, itk->y, em/8, control->height);
   ctx_fill (ctx);
-
   ctx_rectangle (ctx, itk->x, itk->y + em*5/6, itk->width * itk->value_width, em/8);
-
   ctx_fill (ctx);
 
   itk->x += itk->value_width * itk->width;
   itk_text (itk, label);
   itk_newline (itk);
+}
+
+static double itk_slider_get_int8 (void *valp, void *data)
+{
+  return *((int8_t*)(valp));
+}
+
+static void itk_slider_set_int8 (void *valp, double val, void *data)
+{
+  *((int8_t*)valp) = val;
+}
+
+static double itk_slider_get_uint8 (void *valp, void *data)
+{
+  return *((uint8_t*)(valp));
+}
+
+static void itk_slider_set_uint8 (void *valp, double val, void *data)
+{
+  *((uint8_t*)valp) = val;
+}
+
+static void itk_slider_set_int16 (void *valp, double val, void *data)
+{
+  *((int16_t*)valp) = val;
+}
+
+static double itk_slider_get_int16 (void *valp, void *data)
+{
+  return *((int16_t*)(valp));
+}
+
+static double itk_slider_get_uint16 (void *valp, void *data)
+{
+  return *((uint16_t*)(valp));
+}
+
+static void itk_slider_set_uint16 (void *valp, double val, void *data)
+{
+  *((uint16_t*)valp) = val;
+}
+
+static double itk_slider_get_uint32 (void *valp, void *data)
+{
+  return *((uint32_t*)(valp));
+}
+
+static void itk_slider_set_uint32 (void *valp, double val, void *data)
+{
+  *((uint32_t*)valp) = val;
+}
+
+static double itk_slider_get_int32 (void *valp, void *data)
+{
+  return *((int32_t*)(valp));
+}
+
+static void itk_slider_set_int32 (void *valp, double val, void *data)
+{
+  *((int32_t*)valp) = val;
+}
+
+static double itk_slider_get_int (void *valp, void *data)
+{
+  return *((int*)(valp));
+}
+
+static void itk_slider_set_int (void *valp, double val, void *data)
+{
+  *((int*)valp) = val;
+}
+
+static double itk_slider_get_float (void *valp, void *data)
+{
+  return *((float*)(valp));
+}
+
+static void itk_slider_set_float (void *valp, double val, void *data)
+{
+  *((float *)valp) = val;
+}
+
+static double itk_slider_get_double (void *valp, void *data)
+{
+  return *((double*)(valp));
+}
+
+static void itk_slider_set_double (void *valp, double val, void *data)
+{
+  *((double *)valp) = val;
+}
+
+void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step)
+{
+  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_float, itk_slider_set_float, NULL);
+}
+
+void itk_slider_double (ITK *itk, const char *label, double *val, double min, double max, double step)
+{
+  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_double, itk_slider_set_double, NULL);
+}
+
+void itk_slider_uint8 (ITK *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step)
+{
+  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_uint8, itk_slider_set_uint8, NULL);
+}
+
+void itk_slider_uint16 (ITK *itk, const char *label, uint16_t *val, uint16_t min, uint16_t max, uint16_t step)
+{
+  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_uint16, itk_slider_set_uint16, NULL);
+}
+
+void itk_slider_uint32 (ITK *itk, const char *label, uint32_t *val, uint32_t min, uint32_t max, uint32_t step)
+{
+  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_uint32, itk_slider_set_uint32, NULL);
+}
+
+
+void itk_slider_int8 (ITK *itk, const char *label, int8_t *val, int8_t min, int8_t max, int8_t step)
+{
+  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_int8, itk_slider_set_int8, NULL);
+}
+
+void itk_slider_int16 (ITK *itk, const char *label, int16_t *val, int16_t min, int16_t max, int16_t step)
+{
+  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_int16, itk_slider_set_int16, NULL);
+}
+
+void itk_slider_int32 (ITK *itk, const char *label, int32_t *val, int32_t min, int32_t max, int32_t step)
+{
+  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_int32, itk_slider_set_int32, NULL);
 }
 
 void entry_commit (ITK *itk)
@@ -806,7 +955,7 @@ void entry_commit (ITK *itk)
          {
            if (control->commit)
            {
-             control->commit (control->commit_data);
+             control->commit (control->data);
            }
            else
            {
@@ -856,7 +1005,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   control->ref_count++;
   control->ref_count++;
   control->commit = commit;
-  control->commit_data = commit_data;
+  control->data = commit_data;
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
 
@@ -1136,7 +1285,7 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
   itk_set_color (itk, ITK_BG);
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
   control->action = action;
-  control->commit_data = user_data;
+  control->data = user_data;
   control->val = val;
   control->type = UI_CHOICE;
 
@@ -1420,9 +1569,11 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
       break;
     case UI_SLIDER:
       {
-        float *val = control->val;
-        *val -= control->step;
-        if (*val < control->min) *val = control->min;
+        double val = control->get_val (control->val, control->data);
+        val -= control->step;
+        if (val < control->min) val = control->min;
+
+        control->set_val (control->val, val, control->data);
       }
       break;
   }
@@ -1460,9 +1611,11 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
       break;
     case UI_SLIDER:
       {
-        float *val = control->val;
-        *val += control->step;
-        if (*val > control->max) *val = control->max;
+        double val = control->get_val (control->val, control->data);
+        val += control->step;
+        if (val > control->max) val = control->max;
+
+        control->set_val (control->val, val, control->data);
       }
       break;
   }
