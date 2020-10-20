@@ -426,16 +426,6 @@ int client_resize (int id, int width, int height)
    return 0;
 }
 
-int is_reset = 0;
-void prepare_for_draw (Ctx *ctx)
-{
-  if (!is_reset)
-  {
-    ctx_reset (ctx);
-    is_reset = 1;
-  }
-}
-
 static int dirty = 0;
 
 
@@ -446,22 +436,19 @@ static int dirt = 0;
 static int vt_dirty_count (void)
 {
   int changes = 0;
-  is_reset = 0;
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
      if ((client->drawn_rev != vt_rev (client->vt) ) ||
          vt_has_blink (client->vt))
-       return 1;
+       changes++;
   }
-  return 0;
+  return changes;
 }
 
-static int update_vts (Ctx *ctx, int changes_in)
+static int draw_vts (Ctx *ctx)
 {
   int changes = 0;
-  is_reset = 0;
-  prepare_for_draw (ctx);
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
@@ -775,8 +762,6 @@ void ctx_osk_draw (Ctx *ctx)
   if (w < h)
     m = w;
       
-  prepare_for_draw (ctx);
-
   ctx_save (ctx);
 #if 1
   ctx_round_rectangle (ctx, 0,
@@ -1013,15 +998,11 @@ int terminal_main (int argc, char **argv)
 
       changes += vt_dirty_count ();
 
-      if (dirty)
-        changes ++;
-      dirty += changes;
-
-
       if (changes || dirty)
       {
         dirty = 0;
-        update_vts (ctx, changes);
+        ctx_reset (ctx);
+        draw_vts (ctx);
         if (enable_terminal_menu)
         {
           ctx_rectangle (ctx, 10, 10, 100, 100);
