@@ -19772,17 +19772,17 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
   if (!strcmp (event_type, "mouse-motion") ||
       !strcmp (event_type, "mouse-drag"))
   {
-    ctx_pointer_motion (ctx, x, y, 1, 0);
+    ctx_pointer_motion (ctx, x, y, b, 0);
     return 0;
   }
   else if (!strcmp (event_type, "mouse-press"))
   {
-    ctx_pointer_press (ctx, x, y, 1, 0);
+    ctx_pointer_press (ctx, x, y, b, 0);
     return 0;
   }
   else if (!strcmp (event_type, "mouse-release"))
   {
-    ctx_pointer_release (ctx, x, y, 1, 0);
+    ctx_pointer_release (ctx, x, y, b, 0);
     return 0;
   }
 
@@ -21510,6 +21510,7 @@ typedef struct Mice
   int     fd;
   double  x;
   double  y;
+  int     button;
   int     prev_state;
 } Mice;
 
@@ -21591,7 +21592,8 @@ static char *mice_get_event ()
     mrg_mice_this->x = fb->width -1;
   if (mrg_mice_this->y >= fb->height)
     mrg_mice_this->y = fb->height -1;
-
+  int button = 0;
+  
   if ((mrg_mice_this->prev_state & 1) != (buf[0] & 1))
     {
       if (buf[0] & 1)
@@ -21602,9 +21604,56 @@ static char *mice_get_event ()
         {
           ret = "mouse-release";
         }
+      button = 1;
     }
   else if (buf[0] & 1)
+  {
     ret = "mouse-drag";
+    button = 1;
+  }
+
+  if (!button)
+  {
+    if ((mrg_mice_this->prev_state & 2) != (buf[0] & 2))
+    {
+      if (buf[0] & 2)
+        {
+          ret = "mouse-press";
+        }
+      else
+        {
+          ret = "mouse-release";
+        }
+      button = 3;
+    }
+    else if (buf[0] & 2)
+    {
+      ret = "mouse-drag";
+      button = 3;
+    }
+  }
+
+  if (!button)
+  {
+    if ((mrg_mice_this->prev_state & 4) != (buf[0] & 4))
+    {
+      if (buf[0] & 4)
+        {
+          ret = "mouse-press";
+        }
+      else
+        {
+          ret = "mouse-release";
+        }
+      button = 2;
+    }
+    else if (buf[0] & 4)
+    {
+      ret = "mouse-drag";
+      button = 2;
+    }
+  }
+
 
   mrg_mice_this->prev_state = buf[0];
 
@@ -21613,7 +21662,7 @@ static char *mice_get_event ()
 
   {
     char *r = malloc (64);
-    sprintf (r, "%s %.0f %.0f %i", ret, mrg_mice_this->x, mrg_mice_this->y, mrg_mice_this->fd);
+    sprintf (r, "%s %.0f %.0f %i", ret, mrg_mice_this->x, mrg_mice_this->y, button);
     return r;
   }
 
