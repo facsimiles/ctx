@@ -288,6 +288,11 @@ void itk_set_color (ITK *itk, int color)
   }
 }
 
+void itk_set_font_size (ITK *itk, float font_size)
+{
+  itk->font_size = font_size;
+}
+
 ITK *itk_new (Ctx *ctx)
 {
   ITK *itk              = calloc (sizeof (ITK), 1);
@@ -371,6 +376,7 @@ void itk_reset (ITK *itk)
     ctx_list_remove (&itk->choices, choice);
   }
   itk->control_no = 0;
+  itk->dirty = 0;
 }
 
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)

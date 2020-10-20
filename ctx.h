@@ -18435,7 +18435,7 @@ enum _CtxFlags {
 #endif
 
 int _ctx_threads = 1;
-int _ctx_enable_hash_cache = 0;
+int _ctx_enable_hash_cache = 1;
 
 void
 ctx_init (int *argc, char ***argv)
@@ -20907,10 +20907,10 @@ static int ctx_nct_consume_events (Ctx *ctx)
 
 
 #ifndef CTX_HASH_ROWS
-#define CTX_HASH_ROWS 4
+#define CTX_HASH_ROWS 8
 #endif
 #ifndef CTX_HASH_COLS
-#define CTX_HASH_COLS 4
+#define CTX_HASH_COLS 8
 #endif
 
 #if CTX_SDL

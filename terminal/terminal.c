@@ -20,6 +20,7 @@
 #include "vt-line.h"
 #include "terminal.h"
 #include "vt.h"
+#include "../clients/itk.h"
 
 Ctx *ctx = NULL; // initialized in main
 
@@ -291,6 +292,12 @@ int id_to_no (int id)
   return -1;
 }
 
+void add_tab ()
+{
+    active = add_client (vt_find_shell_command(), ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height (ctx)/2, 0);
+    vt_set_ctx (active->vt, ctx);
+}
+
 static CtxClient *client_by_id (int id)
 {
   for (CtxList *l = clients; l; l = l->next)
@@ -363,8 +370,7 @@ static void handle_event (const char *event)
     }
   else if (!strcmp (event, "shift-control-t") )
   {
-    active = add_client (vt_find_shell_command(), ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height (ctx)/2, 0);
-    vt_set_ctx (active->vt, ctx);
+    add_tab ();
   }
   else if (!strcmp (event, "shift-control-n") )
     {
@@ -959,6 +965,7 @@ int terminal_main (int argc, char **argv)
   if (!active)
     return 1;
   vt_set_ctx (active->vt, ctx);
+  ITK *itk = itk_new (ctx);
 
 #if 0
   active=add_client (vt_find_shell_command(), width/2, height/2, width/2, height/2, 0);
@@ -976,6 +983,9 @@ int terminal_main (int argc, char **argv)
       CtxClient *client = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
       if (client)
         active = client;
+
+      itk->scale = 1.0;
+      itk->font_size = font_size;
 
       for (CtxList *l = clients; l; l = l->next)
       {
@@ -998,16 +1008,39 @@ int terminal_main (int argc, char **argv)
 
       changes += vt_dirty_count ();
 
-      if (changes || dirty)
+      if (changes || dirty || itk->dirty)
       {
         dirty = 0;
         ctx_reset (ctx);
         draw_vts (ctx);
         if (enable_terminal_menu)
         {
-          ctx_rectangle (ctx, 10, 10, 100, 100);
-          ctx_rgb (ctx, 1,0,0);
-          ctx_fill (ctx);
+          itk_reset (itk);
+
+          float width = ctx_width (ctx);
+          float height = ctx_height (ctx);
+          itk_panel_start (itk, "ctx terminal", 0,0, width * 0.5, height * 0.5);
+          itk_seperator (itk);
+
+          
+
+          if (itk_button (itk, "add tab"))
+          {
+            add_tab ();
+          }
+          itk_sameline (itk);
+          if (itk_button (itk, "close settings"))
+          {
+            enable_terminal_menu = 0;
+          }
+          itk_toggle (itk, "on screen keyboard", &on_screen_keyboard);
+          itk_panel_end (itk);
+
+          itk_done (itk);
+        }
+        else
+        {
+          itk->dirty = 0;
         }
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);

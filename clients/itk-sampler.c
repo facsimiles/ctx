@@ -41,7 +41,6 @@ int main (int argc, char **argv)
       int x = 0;
       int y = 0;
       itk_reset (itk);
-      itk->dirty=0;
 
       ctx_save (ctx);
       ctx_rectangle (ctx, x, y, width, height);
