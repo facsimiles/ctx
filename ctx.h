@@ -18435,6 +18435,7 @@ enum _CtxFlags {
 #endif
 
 int _ctx_threads = 1;
+int _ctx_enable_hash_cache = 0;
 
 void
 ctx_init (int *argc, char ***argv)
@@ -21295,6 +21296,8 @@ static int fb_cursor_drawn = 0;
 static int fb_cursor_drawn_x = 0;
 static int fb_cursor_drawn_y = 0;
 
+static int fb_cursor_same_pos = 0;
+
 static void ctx_fb_draw_cursor (CtxFb *fb)
   {
     int cursor_x = ctx_pointer_x (fb->ctx);
@@ -21305,6 +21308,13 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     if (cursor_size>64)cursor_size=64;
 
     int no = 0;
+
+    if (cursor_x == fb_cursor_drawn_x &&
+        cursor_y == fb_cursor_drawn_y)
+      fb_cursor_same_pos ++;
+    else
+      fb_cursor_same_pos = 0;
+
 
     if (fb_cursor_drawn)
     {
@@ -21324,6 +21334,12 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
         fb->fb[o+3] = backup[no+3];
       }
       }
+    fb_cursor_drawn = 0;
+    }
+
+    if (fb_cursor_same_pos > 200)
+    {
+      return;
     }
 
     no = 0;
@@ -22277,14 +22293,17 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   }
   if (sdl->shown_frame == sdl->render_frame)
   {
-    Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
-                      CTX_HASH_COLS, CTX_HASH_ROWS);
     ctx_reset (sdl->ctx_copy);
+    int dirty_tiles = 0;
+
     ctx_set_renderstream (sdl->ctx_copy, &sdl->ctx->renderstream.entries[0],
                                          sdl->ctx->renderstream.count * 9);
+    if (_ctx_enable_hash_cache)
+    {
+    Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
+                      CTX_HASH_COLS, CTX_HASH_ROWS);
     ctx_render_ctx (sdl->ctx_copy, hasher);
 
-    int dirty_tiles = 0;
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
@@ -22300,6 +22319,17 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
           sdl->tile_affinity[row * CTX_HASH_COLS + col] = -1;
         }
       }
+    ctx_free (hasher);
+    }
+    else
+    {
+    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int col = 0; col < CTX_HASH_COLS; col++)
+        {
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+          dirty_tiles++;
+        }
+    }
     int dirty_no = 0;
     if (dirty_tiles)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
@@ -22313,7 +22343,6 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
         }
       }
 
-    ctx_free (hasher);
     sdl->render_frame = ++sdl->frame;
   }
 }
@@ -22414,8 +22443,8 @@ Ctx *ctx_new_sdl (int width, int height)
   CtxSDL *sdl = calloc (sizeof (CtxSDL), 1);
   if (width <= 0 || height <= 0)
   {
-    width  = 640;
-    height = 480;
+    width  = 1024;
+    height = 768;
   }
   sdl->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   //sdl->renderer = SDL_CreateRenderer (sdl->window, -1, SDL_RENDERER_SOFTWARE);
@@ -22512,14 +22541,16 @@ inline static void ctx_fb_flush (CtxFb *fb)
   }
   if (fb->shown_frame == fb->render_frame)
   {
-    Ctx *hasher = ctx_hasher_new (fb->width, fb->height,
-                      CTX_HASH_COLS, CTX_HASH_ROWS);
     ctx_reset (fb->ctx_copy);
     ctx_set_renderstream (fb->ctx_copy, &fb->ctx->renderstream.entries[0],
                                          fb->ctx->renderstream.count * 9);
+    int dirty_tiles = 0;
+    if (_ctx_enable_hash_cache)
+    {
+    Ctx *hasher = ctx_hasher_new (fb->width, fb->height,
+                      CTX_HASH_COLS, CTX_HASH_ROWS);
     ctx_render_ctx (fb->ctx_copy, hasher);
 
-    int dirty_tiles = 0;
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
@@ -22535,6 +22566,18 @@ inline static void ctx_fb_flush (CtxFb *fb)
           fb->tile_affinity[row * CTX_HASH_COLS + col] = -1;
         }
       }
+    ctx_free (hasher);
+    }
+    else
+    {
+    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int col = 0; col < CTX_HASH_COLS; col++)
+      {
+        fb->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+        dirty_tiles++;
+      }
+    }
+
     int dirty_no = 0;
     if (dirty_tiles)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
@@ -22547,7 +22590,6 @@ inline static void ctx_fb_flush (CtxFb *fb)
         }
       }
 
-    ctx_free (hasher);
     fb->render_frame = ++fb->frame;
   }
 }

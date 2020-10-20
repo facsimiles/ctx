@@ -9,6 +9,7 @@ void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 }
 
 extern int _ctx_threads;
+extern int _ctx_enable_hash_cache;
 
 
 int main (int argc, char **argv)
@@ -47,7 +48,7 @@ int main (int argc, char **argv)
       ctx_gray (ctx, 0);
       ctx_fill (ctx);
 
-      if(1)itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
+      if(0)itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
       else itk_panel_start (itk, "Immediate Toolkit", x+0, y+0, width, height);
       itk_seperator (itk);
       itk_begin_menu_bar (itk, "main");
@@ -129,7 +130,7 @@ int main (int argc, char **argv)
       static int ctx_settings = 0;
       if (itk_expander (itk, "CTX settings", &ctx_settings))
       {
-        //itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
+        itk_toggle (itk, "hash cache", &_ctx_enable_hash_cache);
         static float val;
         val = _ctx_threads;
         itk_slider_float (itk, "threads", &val, 1.0, 8.0, 1.0);

@@ -257,6 +257,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
           <li>pastes are without newlines/tabs</li>
           <li>in_fill is using bounding box - and most reliably works with rectangle.</li>
           <li>radial gradient is only using one center</li>
+          <li>hash-caching has some small glitches - like missing text change, and big glitches with large transforms - like in scrollback, it still is enabled by default as it is needed to make ctx behave with expected performance.</li>
           <li>dimensions of drop-shadow are not transformed</li>
           <li>some terminal escape sequences should be recognized
           also in ctx-mode, this would give a way of setting colors

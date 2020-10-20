@@ -39,6 +39,7 @@ Ctx *ctx = NULL; // initialized in main
 
 void ctx_sdl_set_title (void *self, const char *new_title);
 int ctx_renderer_is_sdl (Ctx *ctx);
+int ctx_renderer_is_braille (Ctx *ctx);
 
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
@@ -451,7 +452,6 @@ int update_vt (Ctx *ctx, CtxClient *client, int is_reset)
     }
   return 0;
 }
-
 
 int ctx_count (Ctx *ctx);
 
@@ -906,20 +906,10 @@ int terminal_main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
   execute_self = argv[0];
-  float global_scale = 1.5;
+  float global_scale = 1.0;
   int width = -1;
   int height = -1;
   int cols = -1;
-  int rows = -1;
-#if 0
-  if (getenv ("CTX_BACKEND") && !strcmp(getenv("CTX_BACKEND"),"braille"))
-  {
-    global_scale = 1.0;
-    cols = 32;
-    rows = 9;
-    font_size = 10;
-  } 
-#endif
 
   for (int i = 1; argv[i]; i++)
   {
@@ -932,8 +922,6 @@ int terminal_main (int argc, char **argv)
         height = consume_float (argv, &i);
     else if (!strcmp (argv[i], "--cols"))
         cols = consume_float (argv, &i);
-    else if (!strcmp (argv[i], "--rows"))
-        rows = consume_float (argv, &i);
     else if (!strcmp (argv[i], "--font-size"))
         font_size = consume_float (argv, &i) * global_scale;
     else if (argv[i][0]=='-')
@@ -942,35 +930,33 @@ int terminal_main (int argc, char **argv)
       {
         case 's': font_size = consume_float (argv, &i) * global_scale; break;
         case 'c': cols = consume_float (argv, &i); break;
-        case 'r': rows = consume_float (argv, &i); break;
         case 'w': width = consume_float (argv, &i); break;
         case 'h': height = consume_float (argv, &i); break;
       }
     }
   }
 
-  if (width < 0 && cols < 0) cols = 80;
+  if (font_size > 0 && width <0 && cols < 0)
+  {
+    cols = 80;
+    width = font_size * cols / 2;
+    height = font_size * 25;
+  }
 
-  if (cols > 0)
+  ctx  = ctx_new_ui (width, height);
+  width = ctx_width (ctx);
+  height = ctx_height (ctx);
+
+  if (ctx_renderer_is_braille (ctx) && font_size <= 0)
   {
-    if (font_size < 0) font_size = 18 * global_scale;
-    if (rows < 0) rows = cols / 3;
-    height = rows * font_size;
-    width = cols * (int)(font_size / 2);
-    ctx  = ctx_new_ui (width, height);
-    width = ctx_width (ctx);
-    height = ctx_height (ctx);
+    font_size = 10.0;
   }
-  else
-  {
-    ctx  = ctx_new_ui (width, height);
-    width = ctx_width (ctx);
-    height = ctx_height (ctx);
-    if (font_size < 0)
-      font_size = 2 * width / 80;
-    if ((int)(font_size /2) * 80 < width)
-      font_size -= 1;
-  }
+
+  if (cols < 0)
+    cols = 80;
+
+  if (font_size < 0)
+    font_size = 2 * width / cols;
 
   if (argv[1] == NULL)
   {

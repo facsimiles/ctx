@@ -668,23 +668,22 @@ void dots_1000(Ctx *ctx, int frame_no)
 {
     ctx_save(ctx);
 
-    ctx_rgba(ctx, 1, 1, 1, 0.5);
+    ctx_rgba(ctx, 1, 1, 1, 1.0);
+    float siz = ctx_height (ctx) * 0.012;
+    float width = ctx_width (ctx);
+    float height = ctx_height (ctx);
     for (int i = 0; i < 1000; i ++)
     {
-      float x = ctx_width (ctx)/ 2;
-      float y = ctx_height (ctx) / 2;
-      float siz = ctx_height (ctx) * 0.0125;
+      float x = width/2;
+      float y = height/2;
 
-      float dist = i * (ctx_height (ctx)/ 2) / 1000.0;
+      float dist = i * (height/ 2) / 1000.0;
 
       float twist = i * (12000 + frame_no) * 0.000033;
       x += cos (twist) * dist;
       y += sin (twist) * dist;
 
       dot (ctx, x, y, siz);
-      // dot (ctx, ((int)(x*8))/8.0, ((int)(y*8))/8.0, siz);
-        dot (ctx, ((int)(x*4))/4.0, ((int)(y*4))/4.0, siz);
-
     }
 
     ctx_restore (ctx);
@@ -776,8 +775,8 @@ static void next_test (CtxEvent *event, void *data1, void *data2)
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
-  Ctx *ctx = ctx_new_ui (-1, -1);
-  //Ctx *ctx = ctx_new_ui (1200, 1200);
+  //Ctx *ctx = ctx_new_ui (-1, -1);
+  Ctx *ctx = ctx_new_ui (1920, 1080);
 
   int frame_no = 0;
 
