@@ -66,6 +66,7 @@ int         vt_get_local (VT *vt);
 void        vt_set_local (VT *vt, int local);
 void        vt_rev_inc              (VT *vt);
 int vt_mic (VT *vt);
+void vt_set_ctx (VT *vt, Ctx *ctx);
 
 typedef enum VtMouseEvent
 {

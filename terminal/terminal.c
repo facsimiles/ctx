@@ -361,7 +361,11 @@ static void handle_event (const char *event)
         }
 #endif
     }
-
+  else if (!strcmp (event, "shift-control-t") )
+  {
+    active = add_client (vt_find_shell_command(), ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height (ctx)/2, 0);
+    vt_set_ctx (active->vt, ctx);
+  }
   else if (!strcmp (event, "shift-control-n") )
     {
       pid_t pid;
@@ -434,44 +438,44 @@ void prepare_for_draw (Ctx *ctx)
 
 static int dirty = 0;
 
-int update_vt (Ctx *ctx, CtxClient *client, int is_reset)
-{
-  VT *vt = client->vt;
-  int in_scroll = (vt_has_blink (client->vt) >= 10);
-
-  if ( (client->drawn_rev != vt_rev (vt) ) ||
-       vt_has_blink (vt) ||
-       in_scroll ||
-       dirty)
-    {
-      prepare_for_draw (ctx);
-
-      client->drawn_rev = vt_rev (vt);
-      vt_draw (vt, ctx, client->x, client->y);
-      return 1;
-    }
-  return 0;
-}
 
 int ctx_count (Ctx *ctx);
 
 static int dirt = 0;
 
-static int update_vts (Ctx *ctx, int changes_in)
+static int vt_dirty_count (void)
 {
   int changes = 0;
   is_reset = 0;
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-      if (client->vt && update_vt (ctx, client, dirt + changes + changes_in))
-          changes++;
+     if ((client->drawn_rev != vt_rev (client->vt) ) ||
+         vt_has_blink (client->vt))
+       return 1;
+  }
+  return 0;
+}
+
+static int update_vts (Ctx *ctx, int changes_in)
+{
+  int changes = 0;
+  is_reset = 0;
+  prepare_for_draw (ctx);
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    VT *vt = client->vt;
+    if (vt)
+    {
+      vt_draw (vt, ctx, client->x, client->y);
+      client->drawn_rev = vt_rev (vt);
+    }
   }
   dirt += changes;
   return changes;
 }
 
-void vt_set_ctx (VT *vt, Ctx *ctx);
 
 #if 0
 static int consume_toggle (char **argv, int *i)
@@ -509,7 +513,6 @@ static float consume_float (char **argv, int *i)
 // good font size for 80col:
 //
 // 4 6 8 10 12 14 16 18 20 2
-//
 
 typedef struct KeyCap {
   char *label;
@@ -902,6 +905,8 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
   }
 }
 
+int enable_terminal_menu = 0;
+
 int terminal_main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
@@ -1006,14 +1011,23 @@ int terminal_main (int argc, char **argv)
         ctx_list_remove (&to_remove, to_remove->data);
       }
 
+      changes += vt_dirty_count ();
+
       if (dirty)
         changes ++;
-      changes += update_vts (ctx, changes);
+      dirty += changes;
 
 
-      if (changes)
+      if (changes || dirty)
       {
         dirty = 0;
+        update_vts (ctx, changes);
+        if (enable_terminal_menu)
+        {
+          ctx_rectangle (ctx, 10, 10, 100, 100);
+          ctx_rgb (ctx, 1,0,0);
+          ctx_fill (ctx);
+        }
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_flush (ctx);

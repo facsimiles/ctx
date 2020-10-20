@@ -4671,6 +4671,7 @@ void vt_feed_keystring (VT *vt, const char *str)
         }
       else if (!strncmp (str + 6, "press", 5) )
         {
+                fprintf (stderr, "{{{%s\n", str);
           int x = 0, y = 0, b = 0;
           char *s = strchr (str, ' ');
           if (s)
@@ -6514,26 +6515,28 @@ int vt_has_blink (VT *vt)
   return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
 }
 
+extern int enable_terminal_menu;
+
 void vt_mouse_event (CtxEvent *event, void *data, void *data2)
 {
   VT *vt = data;
   float x = event->x;
   float y = event->y;
+  int device_no = event->device_no;
   char buf[128]="";
-
   switch (event->type)
   {
     case CTX_MOTION:
       if (event->device_no==1)
       {
-        sprintf (buf, "mouse-motion %.0f %.0f", x, y);
+        sprintf (buf, "mouse-motion %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, buf);
       }
       break;
     case CTX_PRESS:
       if (event->device_no==1)
       {
-        sprintf (buf, "mouse-press %.0f %.0f", x, y);
+        sprintf (buf, "mouse-press %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, buf);
       }
       else if (event->device_no==2)
@@ -6553,17 +6556,23 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
           free (text);
         }
       }
+      else if (event->device_no==3)
+      {
+        vt->rev++;
+        enable_terminal_menu = !enable_terminal_menu;
+      }
       break;
     case CTX_RELEASE:
       if (event->device_no==1)
       {
-        sprintf (buf, "mouse-release %.0f %.0f", x, y);
+        sprintf (buf, "mouse-release %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, buf);
       }
       break;
     default:
       break;
   }
+  event->stop_propagate = 1;
 }
 
 static int scrollbar_focused = 0;
@@ -6611,6 +6620,7 @@ static void scroll_handle_drag (CtxEvent *event, void *data, void *data2)
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
   int image_id = 0;
+  ctx_begin_path (ctx);
   ctx_save (ctx);
   ctx_translate (ctx, x0, y0);
   x0 = 0;
