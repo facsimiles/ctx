@@ -281,6 +281,8 @@ CtxClient *add_client_argv (const char **argv, int x, int y, int width, int heig
 extern float ctx_shape_cache_rate;
 extern int _ctx_threads;
 
+int focus_follows_mouse = 1;
+
 static CtxClient *find_active (int x, int y)
 {
   CtxClient *ret = NULL;
@@ -1052,9 +1054,19 @@ int terminal_main (int argc, char **argv)
     {
       CtxList *to_remove = NULL;
       int changes = 0;
-      CtxClient *client = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
-      if (client)
-        active = client;
+     
+      if (focus_follows_mouse)
+      {
+        CtxClient *client = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
+        if (client)
+        {
+          if (active != client)
+          {
+            active = client;
+            changes ++;
+          }
+        }
+      }
 
       itk->scale = 1.0;
       itk->font_size = font_size;
@@ -1104,6 +1116,7 @@ int terminal_main (int argc, char **argv)
             enable_terminal_menu = 0;
           }
           itk_toggle (itk, "on screen keyboard", &on_screen_keyboard);
+          itk_toggle (itk, "focus follows mouse", &focus_follows_mouse);
           itk_toggle (itk, "ctx hash cache", &_ctx_enable_hash_cache);
           itk_labelf (itk, " threads : %i", _ctx_threads);
 
