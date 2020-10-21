@@ -20907,7 +20907,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
 
 
 #ifndef CTX_HASH_ROWS
-#define CTX_HASH_ROWS 2
+#define CTX_HASH_ROWS 4
 #endif
 #ifndef CTX_HASH_COLS
 #define CTX_HASH_COLS 4
@@ -21251,7 +21251,10 @@ struct _CtxFb
    int           frame;
    int           pointer_down[3];
 
-
+   int       min_col; // hasher cols and rows
+   int       min_row;
+   int       max_col;
+   int       max_row;
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
@@ -21373,6 +21376,16 @@ static void ctx_fb_show_frame (CtxFb *fb)
   {
     if (fb->vt_active)
     {
+       int pre_skip = fb->min_row * fb->height/CTX_HASH_ROWS * fb->width;
+       int post_skip = (CTX_HASH_ROWS-fb->max_row-1) * fb->height/CTX_HASH_ROWS * fb->width;
+
+    fb->min_row = 100;
+    fb->max_row = 0;
+    fb->min_col = 100;
+    fb->max_col = 0;
+
+     __u32 dummy = 0;
+     ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
      fprintf (stderr, "\e[H\e[J");
      switch (fb->fb_bits)
      {
@@ -21383,7 +21396,11 @@ static void ctx_fb_show_frame (CtxFb *fb)
          { int count = fb->width * fb->height;
            const uint32_t *src = (void*)fb->scratch_fb;
            uint32_t *dst = (void*)fb->fb;
-           while (count --)
+           count-= pre_skip;
+           src+= pre_skip;
+           dst+= pre_skip;
+           count-= post_skip;
+           while (count -- > 0)
            {
              dst[0] = ctx_swap_red_green2 (src[0]);
              src++;
@@ -21398,7 +21415,11 @@ static void ctx_fb_show_frame (CtxFb *fb)
          { int count = fb->width * fb->height;
            const uint8_t *src = fb->scratch_fb;
            uint8_t *dst = fb->fb;
-           while (count --)
+           count-= pre_skip;
+           src+= pre_skip * 4;
+           dst+= pre_skip * 3;
+           count-= post_skip;
+           while (count -- > 0)
            {
              dst[0] = src[0];
              dst[1] = src[1];
@@ -21412,7 +21433,11 @@ static void ctx_fb_show_frame (CtxFb *fb)
          { int count = fb->width * fb->height;
            const uint8_t *src = fb->scratch_fb;
            uint8_t *dst = fb->fb;
-           while (count --)
+           count-= post_skip;
+           count-= pre_skip;
+           src+= pre_skip * 4;
+           dst+= pre_skip * 2;
+           while (count -- > 0)
            {
              int big = ((src[0] >> 3)) +
                 ((src[1] >> 2)<<5) +
@@ -21428,7 +21453,11 @@ static void ctx_fb_show_frame (CtxFb *fb)
          { int count = fb->width * fb->height;
            const uint8_t *src = fb->scratch_fb;
            uint8_t *dst = fb->fb;
-           while (count --)
+           count-= post_skip;
+           count-= pre_skip;
+           src+= pre_skip * 4;
+           dst+= pre_skip * 2;
+           while (count -- > 0)
            {
              int big = ((src[2] >> 3)) +
                        ((src[1] >> 2)<<5) +
@@ -21443,7 +21472,11 @@ static void ctx_fb_show_frame (CtxFb *fb)
          { int count = fb->width * fb->height;
            const uint8_t *src = fb->scratch_fb;
            uint8_t *dst = fb->fb;
-           while (count --)
+           count-= post_skip;
+           count-= pre_skip;
+           src+= pre_skip * 4;
+           dst+= pre_skip;
+           while (count -- > 0)
            {
              dst[0] = ((src[0] >> 5)) +
                       ((src[1] >> 5)<<3) +
@@ -21457,8 +21490,6 @@ static void ctx_fb_show_frame (CtxFb *fb)
     fb_cursor_drawn = 0;
     ctx_fb_draw_cursor (fb);
     ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
-    //__u32 dummy = 0;
-    //ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
     fb->shown_frame = fb->render_frame;
     }
   }
@@ -22627,6 +22658,7 @@ inline static void ctx_fb_flush (CtxFb *fb)
       }
     }
 
+
     int dirty_no = 0;
     if (dirty_tiles)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
@@ -22636,6 +22668,10 @@ inline static void ctx_fb_flush (CtxFb *fb)
         {
           fb->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_threads) / dirty_tiles;
           dirty_no++;
+          if (col > fb->max_col) fb->max_col = col;
+          if (col < fb->min_col) fb->min_col = col;
+          if (row > fb->max_row) fb->max_row = row;
+          if (row < fb->min_row) fb->min_row = row;
         }
       }
 
