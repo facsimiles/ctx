@@ -45,68 +45,8 @@ int ctx_renderer_is_braille (Ctx *ctx);
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 
-int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
-{
-#if 1
-  switch (key_hash)
-  {
-    case CTX_title:  
-     ctx_set (ctx, CTX_title, val, strlen (val));
-#ifndef NO_SDL
-     if (ctx_renderer_is_sdl (ctx))
-       ctx_sdl_set_title (ctx_get_renderer (ctx), val);
-#endif
-
-     break;
-  }
-#else
-  float fval = strtod (val, NULL);
-  CtxClient *client = client_by_id (ct->id);
-  uint32_t val_hash = ctx_strhash (val, 0);
-  if (!client)
-    return 0;
-
-  if (key_hash == ctx_strhash("start_move", 0))
-  {
-    start_moving (client);
-    moving_client = 1;
-    return 0;
-  }
-
-// set "pcm-hz"       "8000"
-// set "pcm-bits"     "8"
-// set "pcm-encoding" "ulaw"
-// set "play-pcm"     "d41ata312313"
-// set "play-pcm-ref" "foo.wav"
-
-// get "free"
-// storage of blobs for referencing when drawing or for playback
-// set "foo.wav"      "\3\1\1\4\"
-// set "fnord.png"    "PNG12.4a312"
-
-  switch (key_hash)
-  {
-    case CTX_title:  client_set_title (ct->id, val); break;
-    case CTX_x:      client->x = fval; break;
-    case CTX_y:      client->y = fval; break;
-    case CTX_width:  client_resize (ct->id, fval, client->height); break;
-    case CTX_height: client_resize (ct->id, client->width, fval); break;
-    case CTX_action:
-      switch (val_hash)
-      {
-        case CTX_maximize:     client_maximize (client); break;
-        case CTX_unmaximize:   client_unmaximize (client); break;
-        case CTX_lower:        client_lower (client); break;
-        case CTX_lower_bottom: client_lower_bottom (client);  break;
-        case CTX_raise:        client_raise (client); break;
-        case CTX_raise_top:    client_raise_top (client); break;
-      }
-      break;
-  }
-  ct->rev++;
-#endif
-  return 0;
-}
+typedef struct _CtxClient CtxClient;
+CtxClient *vt_find_client (VT *vt);
 
 
 int vtpty_waitdata (void  *data, int timeout)
@@ -132,7 +72,6 @@ int vtpty_waitdata (void  *data, int timeout)
   return 0;
 }
 
-typedef struct _CtxClient CtxClient;
 
 CtxList *vts = NULL;
 
@@ -198,6 +137,78 @@ _CtxClient {
   int           id;
 };
 
+int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
+{
+#if 1
+  switch (key_hash)
+  {
+    case CTX_title:  
+     ctx_set (ctx, CTX_title, val, strlen (val));
+#ifndef NO_SDL
+     if (ctx_renderer_is_sdl (ctx))
+       ctx_sdl_set_title (ctx_get_renderer (ctx), val);
+#endif
+     {
+       CtxClient *client = vt_find_client (vt);
+       if (client)
+       {
+         if (client->title) free (client->title);
+         client->title = strdup (val);
+       }
+     }
+
+     break;
+  }
+#else
+  float fval = strtod (val, NULL);
+  CtxClient *client = client_by_id (ct->id);
+  uint32_t val_hash = ctx_strhash (val, 0);
+  if (!client)
+    return 0;
+
+  if (key_hash == ctx_strhash("start_move", 0))
+  {
+    start_moving (client);
+    moving_client = 1;
+    return 0;
+  }
+
+// set "pcm-hz"       "8000"
+// set "pcm-bits"     "8"
+// set "pcm-encoding" "ulaw"
+// set "play-pcm"     "d41ata312313"
+// set "play-pcm-ref" "foo.wav"
+
+// get "free"
+// storage of blobs for referencing when drawing or for playback
+// set "foo.wav"      "\3\1\1\4\"
+// set "fnord.png"    "PNG12.4a312"
+
+  switch (key_hash)
+  {
+    case CTX_title:  client_set_title (ct->id, val); break;
+    case CTX_x:      client->x = fval; break;
+    case CTX_y:      client->y = fval; break;
+    case CTX_width:  client_resize (ct->id, fval, client->height); break;
+    case CTX_height: client_resize (ct->id, client->width, fval); break;
+    case CTX_action:
+      switch (val_hash)
+      {
+        case CTX_maximize:     client_maximize (client); break;
+        case CTX_unmaximize:   client_unmaximize (client); break;
+        case CTX_lower:        client_lower (client); break;
+        case CTX_lower_bottom: client_lower_bottom (client);  break;
+        case CTX_raise:        client_raise (client); break;
+        case CTX_raise_top:    client_raise_top (client); break;
+      }
+      break;
+  }
+  ct->rev++;
+#endif
+  return 0;
+}
+
+
 int   do_quit      = 0;
 float font_size    = -1;
 float line_spacing = 2.0;
@@ -217,6 +228,17 @@ void terminal_long_tap (Ctx *ctx, VT *vt)
 {
   on_screen_keyboard = !on_screen_keyboard;
   vt_rev_inc (vt); // forcing redraw
+}
+
+CtxClient *vt_find_client (VT *vt)
+{
+  for (CtxList *l = clients; l; l =l->next)
+  {
+    CtxClient *client = l->data;
+    if (client->vt == vt)
+            return client;
+  }
+  return NULL;
 }
 
 CtxClient *add_client (const char *commandline, int x, int y, int width, int height, int ctx)
@@ -290,7 +312,7 @@ int id_to_no (int id)
 
 void add_tab ()
 {
-    active = add_client (vt_find_shell_command(), ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height (ctx)/2, 0);
+    active = add_client (vt_find_shell_command(), ctx_width(ctx)/2, ctx_height(ctx)/40.0, ctx_width(ctx)/2, ctx_height (ctx)/2, 0);
     vt_set_ctx (active->vt, ctx);
 }
 
@@ -447,15 +469,55 @@ static int vt_dirty_count (void)
   return changes;
 }
 
+static void client_drag (CtxEvent *event, void *data, void *data2)
+{
+  //Ctx *ctx = event->ctx;
+  CtxClient *client = data;
+
+  client->x += event->delta_x;
+  client->y += event->delta_y;
+  if (client->vt) // XXX hack, forcing redraw
+    vt_rev_inc (client->vt);
+
+  event->stop_propagate = 1;
+}
+
 static int draw_vts (Ctx *ctx)
 {
   int changes = 0;
+  float view_height = ctx_height (ctx);
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
     VT *vt = client->vt;
     if (vt)
     {
+      float border = 2;
+      ctx_rectangle (ctx, client->x - border, client->y - view_height/40 - border,
+                     client->width + border * 2, view_height/40 + border * 2);
+      if (client == active)
+        ctx_rgb (ctx, 1, 1, 1);
+      else
+        ctx_gray (ctx, 0.7);
+
+      ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
+      ctx_fill (ctx);
+
+      ctx_move_to (ctx, client->x + view_height/40 * 0.01, client->y - view_height/40 * 0.2);
+      if (client == active)
+        ctx_rgb (ctx, 0, 0, 0);
+      else
+        ctx_rgb (ctx, 0.1, 0.1, 0.1);
+
+      ctx_font_size (ctx, view_height/40);
+      if (client->title)
+      {
+        ctx_text (ctx, client->title);
+      }
+      else
+      {
+        ctx_text (ctx, "untitled");
+      }
       vt_draw (vt, ctx, client->x, client->y);
       client->drawn_rev = vt_rev (vt);
     }
