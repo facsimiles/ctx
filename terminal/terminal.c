@@ -145,6 +145,7 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
     case CTX_title:  
      ctx_set (ctx, CTX_title, val, strlen (val));
 #ifndef NO_SDL
+     // XXX also check we're first/only client?
      if (ctx_renderer_is_sdl (ctx))
        ctx_sdl_set_title (ctx_get_renderer (ctx), val);
 #endif
@@ -1065,6 +1066,11 @@ int terminal_main (int argc, char **argv)
           if (active != client)
           {
             active = client;
+            if (client != clients->data)
+            {
+              ctx_list_remove (&clients, client);
+              ctx_list_append (&clients, client);
+            }
             changes ++;
           }
         }
