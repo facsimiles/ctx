@@ -1,3 +1,5 @@
+#include <stdarg.h>
+
 typedef struct _ITK ITK;
 
 ITK *itk_new (Ctx *ctx);
@@ -507,7 +509,7 @@ void itk_seperator (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
-  itk_base (itk, NULL, itk->x0, itk->y, itk->width, em * itk->rel_ver_advance / 4, 0);
+//itk_base (itk, NULL, itk->x0, itk->y, itk->width, em * itk->rel_ver_advance / 4, 0);
   ctx_rectangle (ctx, itk->x0 - em * itk->rel_hmargin, itk->y, itk->width, em * itk->rel_ver_advance/4);
   ctx_gray (ctx, 0.5);
   ctx_fill (ctx);
@@ -517,12 +519,28 @@ void itk_seperator (ITK *itk)
 
 void itk_label (ITK *itk, const char *label)
 {
-  float em = itk_em (itk);
-  itk_base (itk, NULL, itk->x, itk->y, itk->width, em * itk->rel_ver_advance, 0);
+//float em = itk_em (itk);
+//itk_base (itk, NULL, itk->x, itk->y, itk->width, em * itk->rel_ver_advance, 0);
   itk_text (itk, label);
 
   itk->x += itk->rel_hgap * itk->font_size;
   itk_newline (itk);
+}
+
+void itk_labelf (ITK *itk, const char *format, ...)
+{
+  va_list ap;
+  size_t needed;
+  char *buffer;
+  va_start (ap, format);
+  needed = vsnprintf (NULL, 0, format, ap) + 1;
+  buffer = malloc (needed);
+  va_end (ap);
+  va_start (ap, format);
+  vsnprintf (buffer, needed, format, ap);
+  va_end (ap);
+  itk_label (itk, buffer);
+  free (buffer);
 }
 
 static void titlebar_drag (CtxEvent *event, void *userdata, void *userdata2)
