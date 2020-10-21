@@ -2473,6 +2473,7 @@ struct
 };
 void ctx_get_matrix (Ctx *ctx, CtxMatrix *matrix);
 
+int ctx_color (Ctx *ctx, const char *string);
 typedef struct _CtxState CtxState;
 CtxColor *ctx_color_new ();
 CtxState *ctx_get_state (Ctx *ctx);
@@ -21315,8 +21316,6 @@ static inline int ctx_is_in_cursor (int x, int y)
 
 static void ctx_fb_undraw_cursor (CtxFb *fb)
   {
-    int cursor_x = ctx_pointer_x (fb->ctx);
-    int cursor_y = ctx_pointer_y (fb->ctx);
     int cursor_size = ctx_height (fb->ctx) / 20;
 
     if (fb_cursor_drawn)
@@ -23327,6 +23326,17 @@ int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
 
   return 0;
 }
+
+int ctx_color (Ctx *ctx, const char *string)
+{
+  CtxColor color;
+  ctx_color_set_from_string (ctx, &color, string);
+  float rgba[4];
+  ctx_color_get_rgba (&(ctx->state), &color, rgba);
+  ctx_rgba (ctx, rgba[0],rgba[1],rgba[2],rgba[3]);
+  return 0;
+}
+
 
 #endif
 
