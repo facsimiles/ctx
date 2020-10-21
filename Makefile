@@ -44,7 +44,7 @@ ctx-avx2.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
 	musl-gcc ctx.c -c -o $@ $(CFLAGS) -DNO_SDL=1 -DCTX_FB=1
 
-ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o
+ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o clients/itk.h
 	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` ctx.o
 
 ctx.avx2: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-avx2.o

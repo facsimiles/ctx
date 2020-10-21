@@ -896,6 +896,7 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
   }
 }
 
+extern int _ctx_enable_hash_cache;
 int enable_terminal_menu = 0;
 
 int terminal_main (int argc, char **argv)
@@ -1022,8 +1023,6 @@ int terminal_main (int argc, char **argv)
           itk_panel_start (itk, "ctx terminal", 0,0, width * 0.5, height * 0.5);
           itk_seperator (itk);
 
-          
-
           if (itk_button (itk, "add tab"))
           {
             add_tab ();
@@ -1034,6 +1033,7 @@ int terminal_main (int argc, char **argv)
             enable_terminal_menu = 0;
           }
           itk_toggle (itk, "on screen keyboard", &on_screen_keyboard);
+          itk_toggle (itk, "ctx hash cache", &_ctx_enable_hash_cache);
           itk_panel_end (itk);
 
           itk_done (itk);

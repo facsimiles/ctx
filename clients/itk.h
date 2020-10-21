@@ -382,7 +382,6 @@ void itk_reset (ITK *itk)
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)
 {
   ITKPanel *panel;
-  Ctx *ctx = itk->ctx;
   for (CtxList *l = itk->panels; l; l = l->next)
   {
     ITKPanel *panel = l->data;
@@ -404,7 +403,6 @@ ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width,
 CtxControl *add_control (ITK *itk, const char *label, float x, float y, float width, float height)
 {
   CtxControl *control = calloc (sizeof (CtxControl), 1);
-  Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   control->label = strdup (label);
   if (itk->next_id)
@@ -508,7 +506,6 @@ void itk_sameline (ITK *itk)
 void itk_seperator (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
-  char buf[100] = "";
   float em = itk_em (itk);
   itk_base (itk, NULL, itk->x0, itk->y, itk->width, em * itk->rel_ver_advance / 4, 0);
   ctx_rectangle (ctx, itk->x0 - em * itk->rel_hmargin, itk->y, itk->width, em * itk->rel_ver_advance/4);
@@ -520,9 +517,7 @@ void itk_seperator (ITK *itk)
 
 void itk_label (ITK *itk, const char *label)
 {
-  Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
-  char buf[100] = "";
   itk_base (itk, NULL, itk->x, itk->y, itk->width, em * itk->rel_ver_advance, 0);
   itk_text (itk, label);
 
@@ -590,9 +585,7 @@ void itk_scroll_drag (CtxEvent *event, void *data, void *data2)
 {
   ITK *itk = data;
   ITKPanel *panel = data2;
-  float em = itk_em (itk);
   float scrollbar_height = panel->height - (panel->scroll_start_y - panel->y);
-  float scrollbar_width = em;
   float th = scrollbar_height * (scrollbar_height /  (panel->max_y-panel->scroll_start_y));
   if (th > scrollbar_height)
   {
@@ -749,7 +742,6 @@ void slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
   CtxControl  *control = userdata;
-  float *val = control->val;
   float new_val;
 
   itk_set_focus (itk, control->no);
@@ -910,6 +902,11 @@ void itk_slider_float (ITK *itk, const char *label, float *val, float min, float
   itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_float, itk_slider_set_float, NULL);
 }
 
+void itk_slider_int (ITK *itk, const char *label, int *val, int min, int max, int step)
+{
+  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_int, itk_slider_set_int, NULL);
+}
+
 void itk_slider_double (ITK *itk, const char *label, double *val, double min, double max, double step)
 {
   itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_double, itk_slider_set_double, NULL);
@@ -1001,7 +998,6 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
                                 void *commit_data)
 {
   Ctx *ctx = itk->ctx;
-  char buf[100] = "";
   float em = itk_em (itk);
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
   control->val = val;
@@ -1185,7 +1181,6 @@ int itk_expander (ITK *itk, const char *label, int *val)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
-  char buf[100] = "";
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   control->val = val;
   control->type = UI_EXPANDER;
@@ -1287,7 +1282,6 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
-  char buf[100] = "";
   itk_set_color (itk, ITK_BG);
   CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
   control->action = action;
@@ -1376,7 +1370,7 @@ void itk_focus (ITK *itk, int dir)
    CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
    if (iter)
    {
-     CtxControl *control = iter->data;
+ //  CtxControl *control = iter->data;
 //   itk->focus_label = strdup (control->label);
      //fprintf (stderr, "%s\n", control_focus_label);
    }
@@ -1606,7 +1600,7 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
         if (itk->entry_copy)
         {
           itk->entry_pos ++;
-          if (itk->entry_pos > strlen (itk->entry_copy))
+          if (itk->entry_pos > (int)strlen (itk->entry_copy))
             itk->entry_pos = strlen (itk->entry_copy);
         }
         else
@@ -1656,7 +1650,7 @@ void itk_key_delete (CtxEvent *event, void *data, void *data2)
   ITK *itk = data;
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
-  if (strlen (itk->entry_copy) > itk->entry_pos)
+  if ((int)strlen (itk->entry_copy) > itk->entry_pos)
   {
     itk_key_right (event, data, data2);
     itk_key_backspace (event, data, data2);
