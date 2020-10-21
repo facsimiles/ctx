@@ -21300,14 +21300,14 @@ static int fb_cursor_drawn_x = 0;
 static int fb_cursor_drawn_y = 0;
 
 static int fb_cursor_same_pos = 0;
+#define CURSOR_SIZE 64
+static uint8_t backup_cursor[CURSOR_SIZE*CURSOR_SIZE*4];
 
-static void ctx_fb_draw_cursor (CtxFb *fb)
+static void ctx_fb_undraw_cursor (CtxFb *fb)
   {
     int cursor_x = ctx_pointer_x (fb->ctx);
     int cursor_y = ctx_pointer_y (fb->ctx);
     int cursor_size = ctx_height (fb->ctx) / 20;
-#define CURSOR_SIZE 64
-    static uint8_t backup[CURSOR_SIZE*CURSOR_SIZE*4];
     if (cursor_size>64)cursor_size=64;
 
     int no = 0;
@@ -21321,9 +21321,6 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
 
     if (fb_cursor_drawn)
     {
-      if (cursor_x == fb_cursor_drawn_x &&
-          cursor_y == fb_cursor_drawn_y)
-        return;
     no = 0;
     for (int y = 0; y < cursor_size; y++)
       for (int x = 0; x < cursor_size; x++, no+=4)
@@ -21331,14 +21328,38 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
         if (x + fb_cursor_drawn_x < fb->width && y + fb_cursor_drawn_y < fb->height)
         {
         int o = ((fb_cursor_drawn_y + y) * fb->width + (fb_cursor_drawn_x + x)) * 4;
-        fb->fb[o+0] = backup[no+0];
-        fb->fb[o+1] = backup[no+1];
-        fb->fb[o+2] = backup[no+2];
-        fb->fb[o+3] = backup[no+3];
+        fb->fb[o+0] = backup_cursor[no+0];
+        fb->fb[o+1] = backup_cursor[no+1];
+        fb->fb[o+2] = backup_cursor[no+2];
+        fb->fb[o+3] = backup_cursor[no+3];
       }
       }
     fb_cursor_drawn = 0;
     }
+
+
+}
+
+static void ctx_fb_draw_cursor (CtxFb *fb)
+  {
+    int cursor_x = ctx_pointer_x (fb->ctx);
+    int cursor_y = ctx_pointer_y (fb->ctx);
+    int cursor_size = ctx_height (fb->ctx) / 20;
+#define CURSOR_SIZE 64
+    if (cursor_size>64)cursor_size=64;
+
+    int no = 0;
+
+    if (cursor_x == fb_cursor_drawn_x &&
+        cursor_y == fb_cursor_drawn_y)
+      fb_cursor_same_pos ++;
+    else
+      fb_cursor_same_pos = 0;
+
+    if (fb_cursor_same_pos && fb_cursor_drawn)
+      return;
+
+    ctx_fb_undraw_cursor (fb);
 
     if (fb_cursor_same_pos > 200)
     {
@@ -21352,10 +21373,10 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
         if (x + cursor_x < fb->width && y + cursor_y < fb->height)
         {
         int o = ((cursor_y + y) * fb->width + (cursor_x + x)) * 4;
-        backup[no+0] = fb->fb[o+0];
-        backup[no+1] = fb->fb[o+1];
-        backup[no+2] = fb->fb[o+2];
-        backup[no+3] = fb->fb[o+3];
+        backup_cursor[no+0] = fb->fb[o+0];
+        backup_cursor[no+1] = fb->fb[o+1];
+        backup_cursor[no+2] = fb->fb[o+2];
+        backup_cursor[no+3] = fb->fb[o+3];
         if (x < y && x > y / 16)
         {
           fb->fb[o+0]+=127;
@@ -21383,6 +21404,8 @@ static void ctx_fb_show_frame (CtxFb *fb)
     fb->max_row = 0;
     fb->min_col = 100;
     fb->max_col = 0;
+
+     ctx_fb_undraw_cursor (fb);
 
      __u32 dummy = 0;
      ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
