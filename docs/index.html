@@ -247,7 +247,9 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         still does not fully realize a minimal system demonstrating
         it's capabilities - some features are also broken and need
         repair - and for third party use probably morge urgently
-        than the following wishlist.
+        than the following wishlist. When this list is nearing 0
+        it is time for a tarball release of ctx - event if the
+        single header ctx.h already is the rolling release.
         </p>
         <ul>
           <li>clip does not clip event boxes/shapes</li>
@@ -265,6 +267,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
           <li>dash pattern for storking is missing</li>
+          <li>fbdev not properly redrawn upon vt switch</li>
           </ul>
         </li>
         </ul>
@@ -274,6 +277,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <li>diff of frames in terminal protocol</li>
         <li>texture upload as part of ctx syntax</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
+        <li>support CSS ways of setting colors</li>
         <li>ICC color management (provisions have been made in the API for this,
                 but RGBtoRGB and CMYKtoRGB RGBtoCMYK conversions are currently
                 done naively, instead of using <a href='http://gegl.org/babl/'>babl</a>.)</li>

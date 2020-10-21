@@ -11239,6 +11239,8 @@ ctx_composite_BGRA8 (CTX_COMPOSITE_ARGUMENTS)
   // for better performance, this could be done without a pre/post conversion,
   // by swapping R and B of source instead... as long as it is a color instead
   // of gradient or image
+  //
+  //
   uint8_t pixels[count * 4];
   ctx_BGRA8_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
   rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
@@ -21301,53 +21303,48 @@ static int fb_cursor_drawn_y = 0;
 
 static int fb_cursor_same_pos = 0;
 #define CURSOR_SIZE 64
-static uint8_t backup_cursor[CURSOR_SIZE*CURSOR_SIZE*4];
+
+static inline int ctx_is_in_cursor (int x, int y)
+{
+  if (x < y && x > y / 16)
+  {
+    return 1;
+  }
+  return 0;
+}
 
 static void ctx_fb_undraw_cursor (CtxFb *fb)
   {
     int cursor_x = ctx_pointer_x (fb->ctx);
     int cursor_y = ctx_pointer_y (fb->ctx);
     int cursor_size = ctx_height (fb->ctx) / 20;
-    if (cursor_size>64)cursor_size=64;
-
-    int no = 0;
-
-    if (cursor_x == fb_cursor_drawn_x &&
-        cursor_y == fb_cursor_drawn_y)
-      fb_cursor_same_pos ++;
-    else
-      fb_cursor_same_pos = 0;
-
 
     if (fb_cursor_drawn)
     {
-    no = 0;
-    for (int y = 0; y < cursor_size; y++)
+      int no = 0;
+      for (int y = 0; y < cursor_size; y++)
       for (int x = 0; x < cursor_size; x++, no+=4)
       {
         if (x + fb_cursor_drawn_x < fb->width && y + fb_cursor_drawn_y < fb->height)
         {
-        int o = ((fb_cursor_drawn_y + y) * fb->width + (fb_cursor_drawn_x + x)) * 4;
-        fb->fb[o+0] = backup_cursor[no+0];
-        fb->fb[o+1] = backup_cursor[no+1];
-        fb->fb[o+2] = backup_cursor[no+2];
-        fb->fb[o+3] = backup_cursor[no+3];
-      }
+          if (ctx_is_in_cursor (x, y))
+          {
+            int o = ((fb_cursor_drawn_y + y) * fb->width + (fb_cursor_drawn_x + x)) * 4;
+            fb->fb[o+0]^=0x88;
+            fb->fb[o+1]^=0x88;
+            fb->fb[o+2]^=0x88;
+          }
+        }
       }
     fb_cursor_drawn = 0;
     }
-
-
 }
 
 static void ctx_fb_draw_cursor (CtxFb *fb)
   {
-    int cursor_x = ctx_pointer_x (fb->ctx);
-    int cursor_y = ctx_pointer_y (fb->ctx);
+    int cursor_x    = ctx_pointer_x (fb->ctx);
+    int cursor_y    = ctx_pointer_y (fb->ctx);
     int cursor_size = ctx_height (fb->ctx) / 20;
-#define CURSOR_SIZE 64
-    if (cursor_size>64)cursor_size=64;
-
     int no = 0;
 
     if (cursor_x == fb_cursor_drawn_x &&
@@ -21356,15 +21353,24 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     else
       fb_cursor_same_pos = 0;
 
+
+    // we only want to show the cursor after movement, and for a slight delay
+    // 240 frames i 4s on 60fps
+    if (fb_cursor_same_pos > 240)
+    {
+      if (fb_cursor_drawn)
+        ctx_fb_undraw_cursor (fb);
+      return;
+    }
+
+    /* no need to flicker when stationary, motion flicker can also be removed
+     * by combining the previous and next position masks when a motion has
+     * occured..
+     */
     if (fb_cursor_same_pos && fb_cursor_drawn)
       return;
 
     ctx_fb_undraw_cursor (fb);
-
-    if (fb_cursor_same_pos > 200)
-    {
-      return;
-    }
 
     no = 0;
     for (int y = 0; y < cursor_size; y++)
@@ -21372,17 +21378,13 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
       {
         if (x + cursor_x < fb->width && y + cursor_y < fb->height)
         {
-        int o = ((cursor_y + y) * fb->width + (cursor_x + x)) * 4;
-        backup_cursor[no+0] = fb->fb[o+0];
-        backup_cursor[no+1] = fb->fb[o+1];
-        backup_cursor[no+2] = fb->fb[o+2];
-        backup_cursor[no+3] = fb->fb[o+3];
-        if (x < y && x > y / 16)
-        {
-          fb->fb[o+0]+=127;
-          fb->fb[o+1]+=127;
-          fb->fb[o+2]+=127;
-        }
+          if (ctx_is_in_cursor (x, y))
+          {
+            int o = ((cursor_y + y) * fb->width + (cursor_x + x)) * 4;
+            fb->fb[o+0]^=0x88;
+            fb->fb[o+1]^=0x88;
+            fb->fb[o+2]^=0x88;
+          }
         }
       }
     fb_cursor_drawn = 1;
@@ -21400,10 +21402,10 @@ static void ctx_fb_show_frame (CtxFb *fb)
        int pre_skip = fb->min_row * fb->height/CTX_HASH_ROWS * fb->width;
        int post_skip = (CTX_HASH_ROWS-fb->max_row-1) * fb->height/CTX_HASH_ROWS * fb->width;
 
-    fb->min_row = 100;
-    fb->max_row = 0;
-    fb->min_col = 100;
-    fb->max_col = 0;
+      fb->min_row = 100;
+      fb->max_row = 0;
+      fb->min_col = 100;
+      fb->max_col = 0;
 
      ctx_fb_undraw_cursor (fb);
 
@@ -21523,10 +21525,6 @@ static void ctx_fb_show_frame (CtxFb *fb)
       ctx_fb_draw_cursor (fb);
     }
   }
-
-
-
-
 }
 
 
@@ -22913,7 +22911,7 @@ Ctx *ctx_new_fb (int width, int height)
   {
     fb->host[i] = ctx_new_for_framebuffer (fb->scratch_fb,
                    fb->width/CTX_HASH_COLS, fb->height/CTX_HASH_ROWS,
-                   fb->width * 4, CTX_FORMAT_BGRA8); // this format
+                   fb->width * 4, CTX_FORMAT_RGBA8); // this format
                                   // is overriden in  thread
     ((CtxRasterizer*)fb->host[i]->renderer)->texture_source = fb->ctx;
   }
