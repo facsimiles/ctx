@@ -20907,10 +20907,10 @@ static int ctx_nct_consume_events (Ctx *ctx)
 
 
 #ifndef CTX_HASH_ROWS
-#define CTX_HASH_ROWS 8
+#define CTX_HASH_ROWS 2
 #endif
 #ifndef CTX_HASH_COLS
-#define CTX_HASH_COLS 8
+#define CTX_HASH_COLS 4
 #endif
 
 #if CTX_SDL

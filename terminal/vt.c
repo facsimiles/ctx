@@ -4671,7 +4671,6 @@ void vt_feed_keystring (VT *vt, const char *str)
         }
       else if (!strncmp (str + 6, "press", 5) )
         {
-                fprintf (stderr, "{{{%s\n", str);
           int x = 0, y = 0, b = 0;
           char *s = strchr (str, ' ');
           if (s)

@@ -775,8 +775,8 @@ static void next_test (CtxEvent *event, void *data1, void *data2)
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
-  //Ctx *ctx = ctx_new_ui (-1, -1);
-  Ctx *ctx = ctx_new_ui (1920, 1080);
+  Ctx *ctx = ctx_new_ui (-1, -1);
+  //Ctx *ctx = ctx_new_ui (1920, 1080);
 
   int frame_no = 0;
 

@@ -48,7 +48,6 @@ ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 {
 #if 1
-//fprintf (stderr, "%i: %s\n", key_hash, val);
   switch (key_hash)
   {
     case CTX_title:  
@@ -73,8 +72,6 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
     moving_client = 1;
     return 0;
   }
-
-  //fprintf (stderr, "%i %s\n", key_hash, val);
 
 // set "pcm-hz"       "8000"
 // set "pcm-bits"     "8"
@@ -107,7 +104,6 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
       break;
   }
   ct->rev++;
-  fprintf (stderr, "%s: %i %s %i\n", __FUNCTION__, key_hash, val, len);
 #endif
   return 0;
 }
@@ -234,7 +230,6 @@ CtxClient *add_client (const char *commandline, int x, int y, int width, int hei
 
   client->width = width;
   client->height = height;
-  //client->vt = vt_new (commandline, width/font_size*2, height/font_size, font_size, line_spacing, client->id);
   client->vt = vt_new (commandline, width, height, font_size, line_spacing, client->id);
   return client;
 }
@@ -262,6 +257,7 @@ CtxClient *add_client_argv (const char **argv, int x, int y, int width, int heig
 }
 
 extern float ctx_shape_cache_rate;
+extern int _ctx_threads;
 
 static CtxClient *find_active (int x, int y)
 {
@@ -381,7 +377,6 @@ static void handle_event (const char *event)
           execlp (execute_self, execute_self, NULL);
           exit (0);
         }
-      fprintf (stderr, "!%s!\n", execute_self);
     }
   else if (!strcmp (event, "shift-control-q") )
     {
@@ -1034,9 +1029,19 @@ int terminal_main (int argc, char **argv)
           }
           itk_toggle (itk, "on screen keyboard", &on_screen_keyboard);
           itk_toggle (itk, "ctx hash cache", &_ctx_enable_hash_cache);
+          itk_labelf (itk, " threads : %i", _ctx_threads);
+
+
+          if (active)
+          {
+            itk_labelf (itk, " font size: %f", vt_get_font_size (active->vt));
+          }
+
           itk_panel_end (itk);
 
           itk_done (itk);
+
+          itk_key_bindings (itk);
         }
         else
         {
