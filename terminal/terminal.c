@@ -281,16 +281,17 @@ CtxClient *add_client_argv (const char **argv, int x, int y, int width, int heig
 extern float ctx_shape_cache_rate;
 extern int _ctx_threads;
 
-int focus_follows_mouse = 1;
+static int focus_follows_mouse = 0;
 
 static CtxClient *find_active (int x, int y)
 {
   CtxClient *ret = NULL;
+  float view_height = ctx_height (ctx);
   for (CtxList *l = clients; l; l = l->next)
   {
      CtxClient *c = l->data;
      if (x > c->x && x < c->x+c->width &&
-         y > c->y && y < c->y+c->height)
+         y > c->y - view_height/40 && y < c->y+c->height + view_height/40)
        ret = c;
   }
   //active = ret;
@@ -1055,7 +1056,8 @@ int terminal_main (int argc, char **argv)
       CtxList *to_remove = NULL;
       int changes = 0;
      
-      if (focus_follows_mouse)
+      if (focus_follows_mouse || ctx_pointer_is_down (ctx, 0) ||
+                      ctx_pointer_is_down (ctx, 1))
       {
         CtxClient *client = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
         if (client)
