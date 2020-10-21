@@ -310,10 +310,18 @@ int id_to_no (int id)
   return -1;
 }
 
+float add_x = 0;
+float add_y = 0;
+
 void add_tab ()
 {
-    active = add_client (vt_find_shell_command(), ctx_width(ctx)/2, ctx_height(ctx)/40.0, ctx_width(ctx)/2, ctx_height (ctx)/2, 0);
-    vt_set_ctx (active->vt, ctx);
+  add_y += ctx_height (ctx) / 40;
+
+  active = add_client (vt_find_shell_command(), add_x, add_y, ctx_width(ctx)/2, ctx_height (ctx)/2, 0);
+  vt_set_ctx (active->vt, ctx);
+  add_y += ctx_height (ctx) / 40;
+  add_x += ctx_height (ctx) / 40;
+  add_x += ctx_height (ctx) / 40;
 }
 
 static CtxClient *client_by_id (int id)
@@ -386,7 +394,8 @@ static void handle_event (const char *event)
         }
 #endif
     }
-  else if (!strcmp (event, "shift-control-t") )
+  else if (!strcmp (event, "shift-control-t") ||
+           !strcmp (event, "control-t") )
   {
     add_tab ();
   }
@@ -503,7 +512,7 @@ static int draw_vts (Ctx *ctx)
       ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
       ctx_fill (ctx);
 
-      ctx_move_to (ctx, client->x + view_height/40 * 0.01, client->y - view_height/40 * 0.2);
+      ctx_move_to (ctx, client->x, client->y - view_height/40 * 0.2);
       if (client == active)
         ctx_rgb (ctx, 0, 0, 0);
       else
