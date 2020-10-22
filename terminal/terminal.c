@@ -316,16 +316,36 @@ int id_to_no (int id)
 
 float add_x = 0;
 float add_y = 0;
+static int tab_no = 0;
 
 void add_tab ()
 {
+  switch (ctx_list_length (clients))
+  {
+    case 1:
+      add_x = ctx_width(ctx)/2;
+      add_y = 0;
+      break;
+    case 0:
+    case 2:
+      add_x = 0;
+      add_y = 0;
+      break;
+  }
+  tab_no++;
+
   add_y += ctx_height (ctx) / 40;
 
   active = add_client (vt_find_shell_command(), add_x, add_y, ctx_width(ctx)/2, ctx_height (ctx)/2, 0);
   vt_set_ctx (active->vt, ctx);
   add_y += ctx_height (ctx) / 40;
   add_x += ctx_height (ctx) / 40;
-  add_x += ctx_height (ctx) / 40;
+
+  if (add_y + ctx_height(ctx)/2 > ctx_height (ctx))
+  {
+    add_y = 0;
+    add_x -= ctx_height (ctx) / 40 * 4;
+  }
 }
 
 static CtxClient *client_by_id (int id)
@@ -1058,7 +1078,7 @@ int terminal_main (int argc, char **argv)
       int changes = 0;
      
       if (focus_follows_mouse || ctx_pointer_is_down (ctx, 0) ||
-                      ctx_pointer_is_down (ctx, 1))
+          ctx_pointer_is_down (ctx, 1) || (active==NULL))
       {
         CtxClient *client = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
         if (client)
