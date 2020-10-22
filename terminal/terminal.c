@@ -40,6 +40,7 @@ Ctx *ctx = NULL; // initialized in main
 
 void ctx_sdl_set_title (void *self, const char *new_title);
 int ctx_renderer_is_sdl (Ctx *ctx);
+int ctx_renderer_is_fb (Ctx *ctx);
 int ctx_renderer_is_braille (Ctx *ctx);
 
 void
@@ -432,7 +433,7 @@ static void handle_event (const char *event)
 #endif
     }
   else if (!strcmp (event, "shift-control-t") ||
-           !strcmp (event, "control-t") )
+           (ctx_renderer_is_fb (ctx) &&   !strcmp (event, "control-t") ))
   {
     add_tab ();
   }

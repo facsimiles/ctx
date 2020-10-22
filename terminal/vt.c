@@ -4548,6 +4548,34 @@ static const char *keymap_general[][2]=
   {"F10",            "\033[21~"},
   {"F11",            "\033[22~"},
   {"F12",            "\033[23~"},
+  {"control-/",       "\037"},
+  {"shift-control-/", "\037"},
+  {"control-[",       "\033"},
+  {"control-]",       "\035"},
+  {"shift-control-[", "\033"},
+  {"shift-control-]", "\031"},
+  {"shift-control-`", "\036"},
+  {"control-'",       "'"},
+  {"shift-control-'", "'"},
+  {"control-;",       ";"},
+  {"shift-control-;", ";"},
+  {"control-.",       "."},
+  {"shift-control-.", "."},
+  {"control-,",       ","},
+  {"shift-control-,", ","},
+  {"control-\\",      "\034"},
+  {"control-1",       "1"},
+  {"control-3",       "\033"},
+  {"control-4",       "\034"},
+  {"control-5",       "\035"},
+  {"control-6",       "\036"},
+  {"shift-control-6", "\036"},
+  {"control-7",       "\037"},
+  {"shift-control-7", "\036"},
+  {"control-8",       "\177"},
+  {"control-9",       "9"},
+
+
 };
 
 void vt_feed_keystring (VT *vt, const char *str)
@@ -4762,7 +4790,11 @@ void vt_feed_keystring (VT *vt, const char *str)
         { str = "\r"; }
       goto done;
     }
-  if (!strcmp (str, "control-space") )
+  if (!strcmp (str, "control-space") ||
+      !strcmp (str, "control-`") ||
+      !strcmp (str, "control-2") ||
+      !strcmp (str, "shift-control-2") ||
+      !strcmp (str, "shift-control-space") )
     {
       str = "\0\0";
       vt_write (vt, str, 1);
