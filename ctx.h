@@ -3704,7 +3704,7 @@ struct _CtxHasher
   CtxRasterizer rasterizer;
   int           cols;
   int           rows;
-  uint32_t     *hashes;
+  uint64_t     *hashes;
 };
 
 struct _CtxPixelFormatInfo
@@ -13364,7 +13364,7 @@ ctx_rect_intersect (const CtxRectangle *a, const CtxRectangle *b)
 }
 
 static void
-_ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, uint32_t hash)
+_ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, uint64_t hash)
 {
   CtxRectangle rect = {0,0, hasher->rasterizer.blit_width/hasher->cols,
                             hasher->rasterizer.blit_height/hasher->rows};
@@ -13441,7 +13441,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
           float height = ctx_get_font_size (rasterizer->ctx);
 
-          int hash = ctx_strhash (ctx_arg_string(), 0); // clips strings XXX
+          int64_t hash = ctx_strhash (ctx_arg_string(), 0); // clips strings XXX
 
            CtxRectangle shape_rect = {
               rasterizer->x, rasterizer->y - height,
@@ -20956,7 +20956,7 @@ struct _CtxSDL
    int           pointer_down[3];
 
 
-   uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+   uint64_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
 };
@@ -21258,7 +21258,7 @@ struct _CtxFb
    int       min_row;
    int       max_col;
    int       max_row;
-   uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+   uint64_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
                                                            //
@@ -22407,7 +22407,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        uint32_t new_hash = ctx_hash_get_hash (hasher, col, row);
+        uint64_t new_hash = ctx_hash_get_hash (hasher, col, row);
         if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col])
         {
           sdl->hashes[row * CTX_HASH_COLS + col] = new_hash;
@@ -22654,7 +22654,7 @@ inline static void ctx_fb_flush (CtxFb *fb)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        uint32_t new_hash = ctx_hash_get_hash (hasher, col, row);
+        uint64_t new_hash = ctx_hash_get_hash (hasher, col, row);
         if (new_hash != fb->hashes[row * CTX_HASH_COLS + col])
         {
           fb->hashes[row * CTX_HASH_COLS + col] = new_hash;
