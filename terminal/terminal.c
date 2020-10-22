@@ -1044,7 +1044,7 @@ int terminal_main (int argc, char **argv)
     if (((double)(width))/height <= (16.0/10.0))
       cols = 80;
     else
-      cols = 132;
+      cols = 160;
   }
 
   if (font_size < 0)
