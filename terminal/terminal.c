@@ -227,8 +227,11 @@ int client_resize (int id, int width, int height);
 
 void terminal_long_tap (Ctx *ctx, VT *vt)
 {
+#if 0
+  // triggers undesirably under fbdev
   on_screen_keyboard = !on_screen_keyboard;
   vt_rev_inc (vt); // forcing redraw
+#endif
 }
 
 CtxClient *vt_find_client (VT *vt)
@@ -318,6 +321,8 @@ float add_x = 0;
 float add_y = 0;
 static int tab_no = 0;
 
+void client_move (int id, int x, int y);
+int client_resize (int id, int w, int h);
 void add_tab ()
 {
   switch (ctx_list_length (clients))
@@ -327,7 +332,15 @@ void add_tab ()
       add_y = 0;
       break;
     case 0:
+      add_x = 0;
+      add_y = 0;
+      break;
     case 2:
+      {
+      float titlebar_h = ctx_height (ctx)/40;
+      client_resize (0, ctx_width (ctx), ctx_height (ctx)/2-titlebar_h*4);
+      client_move (0, 0, ctx_height (ctx)/2+titlebar_h*4);
+      }
       add_x = 0;
       add_y = 0;
       break;
@@ -336,7 +349,7 @@ void add_tab ()
 
   add_y += ctx_height (ctx) / 40;
 
-  active = add_client (vt_find_shell_command(), add_x, add_y, ctx_width(ctx)/2, ctx_height (ctx)/2, 0);
+  active = add_client (vt_find_shell_command(), add_x, add_y, ctx_width(ctx)/2, (ctx_width (ctx)/2) * 0.6, 0);
   vt_set_ctx (active->vt, ctx);
   add_y += ctx_height (ctx) / 40;
   add_x += ctx_height (ctx) / 40;
@@ -556,6 +569,7 @@ static int draw_vts (Ctx *ctx)
     }
   }
   dirt += changes;
+
   return changes;
 }
 
