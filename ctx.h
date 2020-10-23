@@ -13528,10 +13528,10 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
               width, height * 2
         };
 
-        hash *= 21129;
-        hash += shape_rect.x;
-        hash *= 124229;
-        hash += shape_rect.y;
+        hash *= 2112;
+        hash ^= shape_rect.x;
+        hash *= 1242;
+        hash ^= shape_rect.y;
 
         hash *=111;
         uint32_t color;
@@ -21644,6 +21644,36 @@ static char *mice_get_event ()
   read (mrg_mice_this->fd, buf, 3);
   relx = buf[1];
   rely = -buf[2];
+
+  if (relx < 0)
+  {
+    if (relx > -6)
+    relx = - relx*relx;
+    else
+    relx = -36;
+  }
+  else
+  {
+    if (relx < 6)
+    relx = relx*relx;
+    else
+    relx = 36;
+  }
+
+  if (rely < 0)
+  {
+    if (rely > -6)
+    rely = - rely*rely;
+    else
+    rely = -36;
+  }
+  else
+  {
+    if (rely < 6)
+    rely = rely*rely;
+    else
+    rely = 36;
+  }
 
   mrg_mice_this->x += relx;
   mrg_mice_this->y += rely;
