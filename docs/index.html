@@ -10,7 +10,6 @@
      <div id='menu'>
               <a href='http://ctx.graphics/'>ctx</a>
               <a href='#downloads'>downloads</a>
-              <a href='#example'>hello world</a>
               <br/>
               <a href='rasterizer/'>rasterizer</a>
               <a href='protocol/'>protocol</a>
@@ -25,8 +24,9 @@
       <div id='page'>
       <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-      <p>ctx is a configurable and <a href='mcu/'>lightweight</a> 2D vector graphics stack with focus on remote
-      and deferred rendering building on top of the HTML5 canvas 2D context
+      <p>ctx is a configurable and <a href='mcu/'>lightweight</a> 2D vector
+      graphics stack with focus on remote and deferred rendering building on
+      top of the HTML5 canvas 2D context
       specification. The project provides as single header library
       which implements both a binary and textual <a
       href='protocol/'>drawlist protocol</a>. The ctx single-header
@@ -37,7 +37,8 @@
       toplevel of a <a href='/.git/'>ctx git</a> checkout. This terminal
       serves as a demanding example for app-development with ctx, it used to
       be faster - but peformance of minimal framebuffer touching has been
-      replaced with well-formed vector output, which permits the terminal to
+      replaced with well-formed vector output - for /dev/fb0 usage fbterm is
+      a *lot* faster - but lacks the richer media of ctx, which permits the terminal to
       run inside itself with minimal overhead. From within the terminal even
       <a href='https://ctx.graphics/file/clients/clock.sh.html'>shell
       scripts</a> get the ability to render vector graphics.
@@ -47,7 +48,12 @@
       ranging from sixels through iterm2 base64 upload to kitty - that permit
       uploading buffers. With the increased pixel density of modern displays
       sending full framebuffers over the wire is too expensive for updating a
-      buffer.</p>
+      buffer. <b>WARNING:</b> ctx is a work in progress, some terminal
+      interactions are wonky - and display latency is good only for localized
+      changes like text editing - global scrolling works less well, ctx is also
+      relying on stb_image for image decoding support as well as providing
+      in-band access to your microphone.
+      </p>
 
       <img style='max-width:100%' src='terminal.png'/>
 
@@ -268,6 +274,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
           <li>dash pattern for storking is missing</li>
           <li>fbdev not properly redrawn upon vt switch</li>
+          <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
           </ul>
         </li>
         </ul>
@@ -286,7 +293,8 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <li>bindings to a javascript engine like quickjs, for running canvas js content as
             apps.</li>
         <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
-	<li>glyph fallback</li>
+	<li>glyph fallbacks</li>
+        <li>rewrap on resize</li>
         <li>faster 1d-gaussian blur for shadow blur</li>
         <li>analytical instead of raster clipping</li>
         <li>SVG/HTML parser renderer (in progress, from mrg)</li>
@@ -299,7 +307,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
             existing code more autovectorizer friendly is a priority.)</li>
         <li>A GPU renderer, using pathfinder or similar HTML5 2d canvas matching library.</li>
 	</ul>
-
+<!--
         <h3 id='example'>example code</h3>
 <pre>
 
@@ -383,6 +391,8 @@ run the following:
 <pre>
 mkdir foo;cd foo;wget http://ctx.graphics/{ctx.h,ctx-font-regular.h,hello.c};make hello &amp;&amp; ./hello</pre>
 </p>
+
+  -->
               </div>
       </body>
 </html>

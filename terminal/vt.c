@@ -6698,7 +6698,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 #endif
 
    {
-     for (int row = 0; row < (vt->scroll) + vt->rows; row ++)
+     for (int row = (vt->scroll!=0.0f)?vt->scroll-2:0; row < (vt->scroll) + vt->rows; row ++)
        {
          CtxList *l = ctx_list_nth (vt->lines, row);
          float y = y0 + vt->ch * (vt->rows - row);

@@ -491,7 +491,6 @@ struct _MrgHtml
   MrgHtmlState *state;
   int state_no;
   CtxList *geo_cache;
-
   //char  attribute[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_ATTRIBUTE_LEN];
   //char  value[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_VALUE_LEN];
   //int   attributes;
@@ -6546,7 +6545,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
   float height = PROP(height);
   float width = PROP(width);
   
-  /* ad>ust cursor back to before display */
+  /* adjust cursor back to before display */
 
   if ((style->display == MRG_DISPLAY_BLOCK || style->float_) &&
        height != 0.0)
