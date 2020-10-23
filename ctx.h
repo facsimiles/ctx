@@ -13380,7 +13380,7 @@ _ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, uint64_t hash)
       if (ctx_rect_intersect (shape_rect, &rect))
       {
         int high_bits = hasher->hashes[row * hasher->cols + col] >> 48;
-        hasher->hashes[row * hasher->cols + col] *= 117;
+        hasher->hashes[row * hasher->cols + col] *= 11;
         hasher->hashes[row * hasher->cols + col] ^= hash;
         hasher->hashes[row * hasher->cols + col] |= high_bits;
       }
@@ -13507,8 +13507,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           string[ctx_unichar_to_utf8 (c->u32.a0, string)]=0;
           float width = ctx_text_width (rasterizer->ctx, (char*)string);
           float height = ctx_get_font_size (rasterizer->ctx);
-        float tmul = 64;
-        int   hmul = 3;
+        float tmul = 128;
+        int   hmul = 5;
         uint64_t hash = 0;
         hash ^= (int64_t)(rasterizer->state->gstate.transform.m[0][0]*tmul);
         hash *=hmul;
@@ -13521,18 +13521,17 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         hash ^= (int64_t)(rasterizer->state->gstate.transform.m[2][0]*tmul);
         hash *=hmul;
         hash ^= (int64_t)(rasterizer->state->gstate.transform.m[2][1]*tmul);
+        hash ^= ctx_strhash ((char*)string, 0);
 
-          hash ^= ctx_strhash ((char*)string, 0);
-
-           CtxRectangle shape_rect = {
+        CtxRectangle shape_rect = {
               rasterizer->x, rasterizer->y - height,
               width, height * 2
-           };
+        };
 
-           hash *= 21129;
-           hash += shape_rect.x;
-           hash *= 124229;
-           hash += shape_rect.y;
+        hash *= 21129;
+        hash += shape_rect.x;
+        hash *= 124229;
+        hash += shape_rect.y;
 
         hash *=111;
         uint32_t color;

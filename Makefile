@@ -67,7 +67,7 @@ updateweb: all post docs/ctx.h.html docs/ctx-font-regular.h.html
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
 	git update-server-info
-	cp -ru .git/* /home/pippin/pgo/ctx.graphics/.git
+	cp -fru .git/* /home/pippin/pgo/ctx.graphics/.git
 	cp -ru docs/* ~/pgo/ctx.graphics/
 	cp -ru tests/* ~/pgo/ctx.graphics/tests
 	cp ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
