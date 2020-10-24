@@ -21,16 +21,13 @@ int main (int argc, char **argv)
 
   const CtxEvent *event;
   uint8_t abc = 11;
-  int mx, my;
   int   baz = 1;
-  int   bax = 0;
   int chosen = 1;
   int enable_keybindings = 1;
   char input[256]="fnord";
   itk->dirty = 1;
   while (!do_quit)
   {
-    float width = ctx_width (ctx);
     if (itk->dirty)
     {
       int width = ctx_width (ctx);
@@ -96,7 +93,7 @@ int main (int argc, char **argv)
       //itk_slider_cb    (itk, "slide cb", &slide_float, -10.0, 10.0, 0.5, NULL, get_float, set_float, NULL);
       //0.0, 100.0, 0.1);
       static int   slide_int = 10;
-      //itk_slider_int   (itk, "slide int", &slide_int, 0, 100);
+      itk_slider_int   (itk, "slide int", &slide_int, 0, 100, 1);
       //
       itk_slider_uint8  (itk, "slide byte", &abc, 0, 100, 1);
       
@@ -165,7 +162,7 @@ int main (int argc, char **argv)
     {
       usleep (10000);
     }
-    while (event = ctx_get_event (ctx))
+    while ((event = ctx_get_event (ctx)))
     {
    //   if (event->type == CTX_MOTION){
    //           itk->dirty++;

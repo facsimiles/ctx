@@ -6636,9 +6636,9 @@ static void scrollbar_pressed (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
+#if 0
 static void scroll_handle_drag (CtxEvent *event, void *data, void *data2)
 {
-#if 0
   VT *vt = data;
   float tot_lines = vt->line_count + vt->scrollback_count;
   if (event->type == CTX_DRAG_MOTION)
@@ -6649,8 +6649,8 @@ static void scroll_handle_drag (CtxEvent *event, void *data, void *data2)
   if (vt->scroll > vt->scrollback_count) { vt->scroll = vt->scrollback_count; }
   vt->rev++;
   event->stop_propagate = 1;
-#endif
 }
+#endif
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
