@@ -1055,7 +1055,7 @@ int terminal_main (int argc, char **argv)
 
   if (cols < 0)
   {
-    if (((double)(width))/height <= (16.0/10.0))
+    if (((double)(width))/height < (16.0/9.0))
       cols = 80;
     else
       cols = 160;

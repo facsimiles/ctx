@@ -22577,7 +22577,7 @@ Ctx *ctx_new_sdl (int width, int height)
   CtxSDL *sdl = calloc (sizeof (CtxSDL), 1);
   if (width <= 0 || height <= 0)
   {
-    width  = 1024;
+    width  = 1280;
     height = 768;
   }
   sdl->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
