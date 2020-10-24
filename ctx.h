@@ -13379,8 +13379,9 @@ _ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, uint64_t hash)
       rect.y = row * rect.height;
       if (ctx_rect_intersect (shape_rect, &rect))
       {
-        int high_bits = hasher->hashes[row * hasher->cols + col] >> 48;
-        hasher->hashes[row * hasher->cols + col] *= 11;
+        int high_bits = hasher->hashes[row * hasher->cols + col] >> 48 >> 8;
+        high_bits = high_bits * 8;
+        hasher->hashes[row * hasher->cols + col] *= 3;
         hasher->hashes[row * hasher->cols + col] ^= hash;
         hasher->hashes[row * hasher->cols + col] |= high_bits;
       }
@@ -13447,7 +13448,6 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           float height = ctx_get_font_size (rasterizer->ctx);
 
           uint64_t hash = ctx_strhash (ctx_arg_string(), 0); // clips strings XXX
-
            CtxRectangle shape_rect = {
               rasterizer->x, rasterizer->y - height,
               width, height * 2
@@ -13458,10 +13458,10 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         c->s16.a2 = shape_rect.x + shape_rect.width - 1;
         c->s16.a3 = shape_rect.y + shape_rect.height - 1;
 #endif
-           hash *= 21129;
-           hash += shape_rect.x;
-           hash *= 124229;
-           hash += shape_rect.y;
+           hash *= 2119;
+           hash ^= shape_rect.x;
+           hash *= 4229;
+           hash ^= shape_rect.y;
 
           _ctx_add_hash (hasher, &shape_rect, hash);
 
@@ -13481,16 +13481,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
               width, height * 2
            };
 
-#if 0
-        c->s16.a0 = shape_rect.x;
-        c->s16.a1 = shape_rect.y;
-        c->s16.a2 = shape_rect.x + shape_rect.width - 1;
-        c->s16.a3 = shape_rect.y + shape_rect.height - 1;
-#endif
-           hash *= 21129;
-           hash += shape_rect.x;
-           hash *= 124229;
-           hash += shape_rect.y;
+        hash ^= (shape_rect.x * 11);
+        hash ^= (shape_rect.y * 23);
+
         uint32_t color;
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
         hash ^= color;
@@ -13507,8 +13500,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           string[ctx_unichar_to_utf8 (c->u32.a0, string)]=0;
           float width = ctx_text_width (rasterizer->ctx, (char*)string);
           float height = ctx_get_font_size (rasterizer->ctx);
-        float tmul = 128;
-        int   hmul = 5;
+        float tmul = 64;
+        int   hmul = 2;
         uint64_t hash = 0;
         hash ^= (int64_t)(rasterizer->state->gstate.transform.m[0][0]*tmul);
         hash *=hmul;
@@ -13528,10 +13521,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
               width, height * 2
         };
 
-        hash *= 2112;
-        hash ^= shape_rect.x;
-        hash *= 1242;
-        hash ^= shape_rect.y;
+        hash ^= (shape_rect.x * 11);
+        hash ^= (shape_rect.y * 23);
 
         hash *=111;
         uint32_t color;
@@ -21315,7 +21306,9 @@ static int fb_cursor_drawn = 0;
 static int fb_cursor_drawn_x = 0;
 static int fb_cursor_drawn_y = 0;
 
-static int fb_cursor_same_pos = 0;
+#define CTX_FB_HIDE_CURSOR_FRAMES 200
+
+static int fb_cursor_same_pos = CTX_FB_HIDE_CURSOR_FRAMES;
 #define CURSOR_SIZE 64
 
 static inline int ctx_is_in_cursor (int x, int y)
@@ -21366,9 +21359,7 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
       fb_cursor_same_pos = 0;
 
 
-    // we only want to show the cursor after movement, and for a slight delay
-    // 240 frames i 4s on 60fps
-    if (fb_cursor_same_pos > 240)
+    if (fb_cursor_same_pos >= CTX_FB_HIDE_CURSOR_FRAMES)
     {
       if (fb_cursor_drawn)
         ctx_fb_undraw_cursor (fb);

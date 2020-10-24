@@ -27,9 +27,6 @@ int main (int argc, char **argv)
   int chosen = 1;
   int enable_keybindings = 1;
   char input[256]="fnord";
-  ctx_get_event (ctx);
-
-  event = (void*)0x1;
   itk->dirty = 1;
   while (!do_quit)
   {
