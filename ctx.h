@@ -13380,7 +13380,7 @@ _ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, char *hash)
       if (ctx_rect_intersect (shape_rect, &rect))
       {
         for (int i = 0; i <20;i++)
-           hasher->hashes[(row * hasher->cols + col)  *20 + i] ^= hash[i];
+           hasher->hashes[(row * hasher->cols + col)  *20 + i] += hash[i];
       }
     }
 }
@@ -13526,7 +13526,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           sha1_state sha1;
           sha1_init (&sha1);
           char sha1_hash[20];
-        int hash = ctx_rasterizer_poly_to_hash (rasterizer);
+        uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
         CtxRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV,
           rasterizer->scan_min / aa,
@@ -13537,25 +13537,17 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           (rasterizer->scan_max + aa-1)/ aa -
           rasterizer->scan_min / aa
         };
-        //fprintf (stderr, "%i,%i %ix%i \n", shape_rect.x, shape_rect.y, shape_rect.width, shape_rect.height);
-        //
-        /* set bounding box on fill command */
-#if 0
-        c->s16.a0 = shape_rect.x;
-        c->s16.a1 = shape_rect.y;
-        c->s16.a2 = shape_rect.x + shape_rect.width - 1;
-        c->s16.a3 = shape_rect.y + shape_rect.height - 1;
-#endif
 
         // XXX state is only partially captured in hash 
         hash ^= (rasterizer->state->gstate.fill_rule * 23);
         hash ^= (rasterizer->state->gstate.source.type * 117);
 
+        sha1_process(&sha1, (unsigned char*)&hash, 8);
+
         uint32_t color;
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
-        hash ^= color;
 
-           sha1_process(&sha1, (unsigned char*)&hash, 8);
+          sha1_process(&sha1, (unsigned char*)&color, 4);
            sha1_done(&sha1, (void*)sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, sha1_hash);
 
@@ -13569,7 +13561,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           sha1_state sha1;
           sha1_init (&sha1);
           char sha1_hash[20];
-        int hash = ctx_rasterizer_poly_to_hash (rasterizer);
+        uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
         CtxRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV,
           rasterizer->scan_min / aa,
@@ -13585,20 +13577,18 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         shape_rect.height += rasterizer->state->gstate.line_width * 2;
         shape_rect.x -= rasterizer->state->gstate.line_width;
         shape_rect.y -= rasterizer->state->gstate.line_width;
-#if 0
-        c->s16.a0 = shape_rect.x;
-        c->s16.a1 = shape_rect.y;
-        c->s16.a2 = shape_rect.x + shape_rect.width - 1;
-        c->s16.a3 = shape_rect.y + shape_rect.height - 1;
-#endif
+
         hash ^= (int)(rasterizer->state->gstate.line_width * 110);
         hash ^= (rasterizer->state->gstate.line_cap * 23);
         hash ^= (rasterizer->state->gstate.source.type * 117);
+
+        sha1_process(&sha1, (unsigned char*)&hash, 8);
+
         uint32_t color;
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
-        hash ^= color;
 
-           sha1_process(&sha1, (unsigned char*)&hash, 8);
+          sha1_process(&sha1, (unsigned char*)&color, 4);
+
            sha1_done(&sha1, (void*)sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, sha1_hash);
         }
