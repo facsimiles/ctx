@@ -314,7 +314,10 @@ ITK *itk_new (Ctx *ctx)
   itk->rel_vgap         = 0.2;
   itk->scroll_speed     = 0.333;
   itk->light_mode       = 1;
-  itk->dirty ++;
+  itk->dirty            = 1;
+
+  ctx_get_event (ctx); // XXX hack that turns on keybindings
+
   return itk;
 }
 
