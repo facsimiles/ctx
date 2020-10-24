@@ -161,7 +161,7 @@ static void snippet_curve_to (Ctx *ctx, int frame_no)
   ctx_stroke (ctx);
 }
 
-
+#if 0
 static void snippet_dash (Ctx *ctx, int frame_no)
 {
 #if 0
@@ -185,6 +185,7 @@ static void snippet_dash (Ctx *ctx, int frame_no)
 
   ctx_stroke (ctx);
 }
+#endif
 
 
 static void snippet_fill_rule (Ctx *ctx, int frame_no)
@@ -237,9 +238,9 @@ ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 1.9 * CTX_PI, 0);
 ctx_fill (ctx);
 }
 
+#if 0
 static void snippet_image (Ctx *ctx, int frame_no)
 {
-#if 0
 int              w, h;
 ctx_surface_t *image;
 
@@ -255,12 +256,10 @@ ctx_translate (ctx, -0.5*w, -0.5*h);
 ctx_source_surface (ctx, image, 0, 0);
 ctx_paint (ctx);
 ctx_surface_destroy (image);
-#endif
 }
 
 static void snippet_image_pattern (Ctx *Ctx, int frame_no)
 {
-#if 0
 int              w, h;
 ctx_surface_t *image;
 ctx_pattern_t *pattern;
@@ -288,8 +287,8 @@ ctx_fill (ctx);
 
 ctx_pattern_destroy (pattern);
 ctx_surface_destroy (image);
-#endif
 }
+#endif
 
 
 static void snippet_multi_segment_caps (Ctx *ctx, int frame_no)
@@ -323,7 +322,6 @@ static void slider (Ctx *ctx, float x0, float y0, float width, float pos)
 
 static void snippet_rounded_rectangle (Ctx *ctx, int frame_no)
 {
-  int frame_no_b = frame_no % 330;
   frame_no = frame_no % 400;
   /* a custom shape that could be wrapped in a function */
 
@@ -517,6 +515,7 @@ static void _analog_clock (Ctx     *ctx,
   ctx_restore (ctx);
 }
 
+#if 0
 static void __analog_clock (Ctx     *ctx,
 		           uint32_t ms,
 			   float    x,
@@ -575,6 +574,7 @@ static void __analog_clock (Ctx     *ctx,
 
   ctx_restore (ctx);
 }
+#endif
 
 static void analog_clock (Ctx *ctx, int frame_no)
 {
@@ -606,14 +606,11 @@ static void gradient_text (Ctx *ctx, int frame_no)
 uint32_t ctx_glyph_no (Ctx *ctx, int no);
 
 static int glyph_no = 0;
-static int unichar = 0;
 static void font_unicode (Ctx *ctx, int frame_no)
 {
-  char buf[64];
   frame_no = frame_no % 2000;
   ctx_rgba8 (ctx, 0,0,0,255);
 
-  int i = 0;
 #define SYMBOL_WIDTH 28
 #define SYMBOL_SIZE  28
 
@@ -621,7 +618,6 @@ static void font_unicode (Ctx *ctx, int frame_no)
   ctx_font_size (ctx, SYMBOL_SIZE);
   ctx_rgba8 (ctx, 255,0,0,255);
 
-  i = 0;
   for (int j = 0; j < 10 && SYMBOL_WIDTH * j < width; j ++)
   {
     int unichar = ctx_glyph_no (ctx, glyph_no + j);
@@ -766,7 +762,7 @@ static void prev_test (CtxEvent *event, void *data1, void *data2)
 static void next_test (CtxEvent *event, void *data1, void *data2)
 {
       test_no ++;
-      if (test_no >= sizeof (tests) / sizeof (tests[0]))
+      if ((unsigned)test_no >= sizeof (tests) / sizeof (tests[0]))
         test_no = 0;
       frame_no = 0;
       start = ctx_ticks ();
@@ -794,7 +790,7 @@ int main (int argc, char **argv)
     height = ctx_height (ctx);
     //epicfb_start_frame ();
 
-    if (ctx_ticks () / (1000*1000) != fps_sec)
+    if (ctx_ticks () / (1000*1000) != (unsigned)fps_sec)
     {
       fps_sec = ctx_ticks () / (1000*1000);
       sprintf (fpsbuf, "\r%ifps  ", fps_frames);

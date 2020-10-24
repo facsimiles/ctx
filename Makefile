@@ -85,6 +85,6 @@ updateweb: all test docs/ctx.h.html docs/ctx-font-regular.h.html
 flatpak:
 	rm -rf build-dir;flatpak-builder --user --install build-dir graphics.ctx.terminal.yml
 
-clients/%: clients/%.c used_fonts Makefile ctx.o clients/itk.h
+clients/%: clients/%.c Makefile ctx.o clients/itk.h
 	$(CC) -g $< -o $@ $(CFLAGS) ctx.o $(LIBS) `pkg-config sdl2 --cflags --libs`
 

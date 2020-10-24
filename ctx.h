@@ -265,7 +265,7 @@ void _ctx_set_store_clear (Ctx *ctx);
 void _ctx_set_transformation (Ctx *ctx, int transformation);
 
 Ctx *ctx_hasher_new (int width, int height, int cols, int rows);
-uint64_t ctx_hasher_get_hash (Ctx *ctx, int col, int row);
+uint8_t *ctx_hasher_get_hash (Ctx *ctx, int col, int row);
 
 int ctx_utf8_strlen (const char *s);
 
@@ -3210,7 +3210,6 @@ static void ctx_state_set_string (CtxState *state, uint32_t key, const char *str
   ctx_state_set_blob (state, key, (uint8_t*)string, strlen(string));
 }
 
-
 static int ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
 {
   CtxColor *stored = (CtxColor*)ctx_state_get_blob (state, key);
@@ -3705,7 +3704,7 @@ struct _CtxHasher
   CtxRasterizer rasterizer;
   int           cols;
   int           rows;
-  uint64_t     *hashes;
+  uint8_t      *hashes;
 };
 
 struct _CtxPixelFormatInfo
@@ -13368,7 +13367,7 @@ ctx_rect_intersect (const CtxRectangle *a, const CtxRectangle *b)
 }
 
 static void
-_ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, uint64_t hash)
+_ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, char *hash)
 {
   CtxRectangle rect = {0,0, hasher->rasterizer.blit_width/hasher->cols,
                             hasher->rasterizer.blit_height/hasher->rows};
@@ -13380,11 +13379,8 @@ _ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, uint64_t hash)
       rect.y = row * rect.height;
       if (ctx_rect_intersect (shape_rect, &rect))
       {
-        int high_bits = hasher->hashes[row * hasher->cols + col] >> 48 >> 8;
-        high_bits = high_bits * 8;
-        hasher->hashes[row * hasher->cols + col] *= 3;
-        hasher->hashes[row * hasher->cols + col] ^= hash;
-        hasher->hashes[row * hasher->cols + col] |= high_bits;
+        for (int i = 0; i <20;i++)
+           hasher->hashes[(row * hasher->cols + col)  *20 + i] ^= hash[i];
       }
     }
 }
@@ -13432,6 +13428,9 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
  */
 }
 
+#define SHA1_IMPLEMENTATION
+#include "sha1.h"
+
 static void
 ctx_hasher_process (void *user_data, CtxCommand *command)
 {
@@ -13445,26 +13444,23 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
     {
       case CTX_TEXT:
         {
+          sha1_state sha1;
+          sha1_init (&sha1);
+          char sha1_hash[20];
           float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
           float height = ctx_get_font_size (rasterizer->ctx);
-
-          uint64_t hash = ctx_strhash (ctx_arg_string(), 0); // clips strings XXX
            CtxRectangle shape_rect = {
               rasterizer->x, rasterizer->y - height,
               width, height * 2
            };
-#if 0
-        c->s16.a0 = shape_rect.x;
-        c->s16.a1 = shape_rect.y;
-        c->s16.a2 = shape_rect.x + shape_rect.width - 1;
-        c->s16.a3 = shape_rect.y + shape_rect.height - 1;
-#endif
-           hash *= 2119;
-           hash ^= shape_rect.x;
-           hash *= 4229;
-           hash ^= shape_rect.y;
-
-          _ctx_add_hash (hasher, &shape_rect, hash);
+          uint32_t color;
+          ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
+          sha1_process(&sha1, (void*)ctx_arg_string(), strlen  (ctx_arg_string()));
+          sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
+          sha1_process(&sha1, (unsigned char*)&color, 4);
+          sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
+          sha1_done(&sha1, (void*)sha1_hash);
+          _ctx_add_hash (hasher, &shape_rect, sha1_hash);
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
         }
@@ -13472,24 +13468,25 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         break;
       case CTX_TEXT_STROKE:
         {
+          sha1_state sha1;
+          sha1_init (&sha1);
+          char sha1_hash[20];
           float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
           float height = ctx_get_font_size (rasterizer->ctx);
-
-          int hash = 99+ctx_strhash (ctx_arg_string(), 0); // clips strings XXX
 
            CtxRectangle shape_rect = {
               rasterizer->x, rasterizer->y - height,
               width, height * 2
            };
 
-        hash ^= (shape_rect.x * 11);
-        hash ^= (shape_rect.y * 23);
-
-        uint32_t color;
-        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
-        hash ^= color;
-
-          _ctx_add_hash (hasher, &shape_rect, hash);
+          uint32_t color;
+          ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
+          sha1_process(&sha1, (void*)ctx_arg_string(), strlen  (ctx_arg_string()));
+          sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
+          sha1_process(&sha1, (unsigned char*)&color, 4);
+          sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
+          sha1_done(&sha1, (void*)sha1_hash);
+          _ctx_add_hash (hasher, &shape_rect, sha1_hash);
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
         }
@@ -13497,41 +13494,28 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         break;
       case CTX_GLYPH:
          {
+          sha1_state sha1;
+          sha1_init (&sha1);
+
+          char sha1_hash[20];
           uint8_t string[8];
           string[ctx_unichar_to_utf8 (c->u32.a0, string)]=0;
           float width = ctx_text_width (rasterizer->ctx, (char*)string);
           float height = ctx_get_font_size (rasterizer->ctx);
-        float tmul = 64;
-        int   hmul = 2;
-        uint64_t hash = 0;
-        hash ^= (int64_t)(rasterizer->state->gstate.transform.m[0][0]*tmul);
-        hash *=hmul;
-        hash ^= (int64_t)(rasterizer->state->gstate.transform.m[1][1]*tmul);
-        hash *=hmul;
-        hash ^= (int64_t)(rasterizer->state->gstate.transform.m[0][1]*tmul);
-        hash *=hmul;
-        hash ^= (int64_t)(rasterizer->state->gstate.transform.m[1][0]*tmul);
-        hash *=hmul;
-        hash ^= (int64_t)(rasterizer->state->gstate.transform.m[2][0]*tmul);
-        hash *=hmul;
-        hash ^= (int64_t)(rasterizer->state->gstate.transform.m[2][1]*tmul);
-        hash ^= ctx_strhash ((char*)string, 0);
 
-        CtxRectangle shape_rect = {
+          CtxRectangle shape_rect = {
               rasterizer->x, rasterizer->y - height,
               width, height * 2
-        };
+          };
 
-        hash ^= (shape_rect.x * 11);
-        hash ^= (shape_rect.y * 23);
-
-        hash *=111;
-        uint32_t color;
-        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
-        hash ^= color;
-
-
-          _ctx_add_hash (hasher, &shape_rect, hash);
+          uint32_t color;
+          ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
+          sha1_process(&sha1, string, strlen ((void*)string));
+          sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
+          sha1_process(&sha1, (unsigned char*)&color, 4);
+          sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
+          sha1_done(&sha1, (void*)sha1_hash);
+          _ctx_add_hash (hasher, &shape_rect, sha1_hash);
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
           ctx_rasterizer_reset (rasterizer);
@@ -13539,6 +13523,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         break;
       case CTX_FILL:
         {
+          sha1_state sha1;
+          sha1_init (&sha1);
+          char sha1_hash[20];
         int hash = ctx_rasterizer_poly_to_hash (rasterizer);
         CtxRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV,
@@ -13568,7 +13555,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
         hash ^= color;
 
-        _ctx_add_hash (hasher, &shape_rect, hash);
+           sha1_process(&sha1, (unsigned char*)&hash, 8);
+           sha1_done(&sha1, (void*)sha1_hash);
+          _ctx_add_hash (hasher, &shape_rect, sha1_hash);
 
         if (!rasterizer->preserve)
           ctx_rasterizer_reset (rasterizer);
@@ -13577,6 +13566,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         break;
       case CTX_STROKE:
         {
+          sha1_state sha1;
+          sha1_init (&sha1);
+          char sha1_hash[20];
         int hash = ctx_rasterizer_poly_to_hash (rasterizer);
         CtxRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV,
@@ -13606,7 +13598,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
         hash ^= color;
 
-        _ctx_add_hash (hasher, &shape_rect, hash);
+           sha1_process(&sha1, (unsigned char*)&hash, 8);
+           sha1_done(&sha1, (void*)sha1_hash);
+          _ctx_add_hash (hasher, &shape_rect, sha1_hash);
         }
         if (!rasterizer->preserve)
           ctx_rasterizer_reset (rasterizer);
@@ -14716,7 +14710,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   hasher->rows = rows;
   hasher->cols = cols;
 
-  hasher->hashes   = calloc (sizeof(uint64_t), rows * cols);
+  hasher->hashes = calloc (20, rows * cols);
 
   return rasterizer;
 }
@@ -14769,7 +14763,7 @@ Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
   ctx_set_renderer (ctx, (void*)rasterizer);
   return ctx;
 }
-uint64_t ctx_hasher_get_hash (Ctx *ctx, int col, int row)
+uint8_t *ctx_hasher_get_hash (Ctx *ctx, int col, int row)
 {
   CtxHasher *hasher = (CtxHasher*)ctx->renderer;
   if (row < 0) row =0;
@@ -14777,7 +14771,7 @@ uint64_t ctx_hasher_get_hash (Ctx *ctx, int col, int row)
   if (row >= hasher->rows) row = hasher->rows-1;
   if (col >= hasher->cols) col = hasher->cols-1;
 
-  return hasher->hashes[row*hasher->cols+col];
+  return &hasher->hashes[(row*hasher->cols+col)*20];
 }
 
 #endif
@@ -20961,7 +20955,7 @@ struct _CtxSDL
    int           pointer_down[3];
 
 
-   uint64_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+   uint8_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS * 20];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
 };
@@ -21263,7 +21257,7 @@ struct _CtxFb
    int       min_row;
    int       max_col;
    int       max_row;
-   uint64_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+   uint8_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS *  20];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
                                                            //
@@ -22442,10 +22436,10 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        uint64_t new_hash = ctx_hasher_get_hash (hasher, col, row);
-        if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col])
+        uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
+        if (new_hash && memcmp (new_hash, &sdl->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
         {
-          sdl->hashes[row * CTX_HASH_COLS + col] = new_hash;
+          memcpy (&sdl->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
           sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
           dirty_tiles++;
         }
@@ -22689,10 +22683,10 @@ inline static void ctx_fb_flush (CtxFb *fb)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        uint64_t new_hash = ctx_hasher_get_hash (hasher, col, row);
-        if (new_hash != fb->hashes[row * CTX_HASH_COLS + col])
+        uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
+        if (new_hash && memcmp (new_hash, &fb->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
         {
-          fb->hashes[row * CTX_HASH_COLS + col] = new_hash;
+          memcpy (&fb->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
           fb->tile_affinity[row * CTX_HASH_COLS + col] = 1;
           dirty_tiles++;
         }
@@ -23371,6 +23365,7 @@ int ctx_color (Ctx *ctx, const char *string)
   ctx_rgba (ctx, rgba[0],rgba[1],rgba[2],rgba[3]);
   return 0;
 }
+
 
 
 #endif
