@@ -30,8 +30,7 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-parameter \
 		 -Wno-missing-field-initializers 
 
-CFLAGS= -O3 -g $(CFLAGS_warnings)
-#CFLAGS= -Os 
+CFLAGS= -g $(CFLAGS_warnings)
 
 install: ctx
 	install -d $(DESTIDR)$(PREFIX)/bin
@@ -45,19 +44,19 @@ tools/%: tools/%.c ctx.h test-size/tiny-config.h
 	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs`
+	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` -O1
 
 ctx-avx2.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` -DCTX_AVX2=1 -march=native
+	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` -DCTX_AVX2=1 -march=native -O3
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
 	musl-gcc ctx.c -c -o $@ $(CFLAGS) -DNO_SDL=1 -DCTX_FB=1
 
 ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o clients/itk.h
-	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` ctx.o
+	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` ctx.o -O1
 
 ctx.avx2: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-avx2.o
-	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o
+	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o -O1
 
 ctx.static: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-nosdl.o
 	musl-gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o -DNO_SDL=1 -DCTX_FB=1 -static 

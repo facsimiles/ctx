@@ -33,9 +33,7 @@ int main (int argc, char **argv)
     if (!strcmp ( argv[i], "--help"))
       return usage_main (argc, argv);
 
-  for (int i = 1; argv[i]; i++)
-    if (!strcmp ( argv[i], "--convert") ||
-        !strcmp ( argv[i], "-c"))
-      return convert_main (argc, argv);
+  if (argv[1] && !strcmp (argv[1], "convert"))
+    return convert_main (argc-1, argv+1);
   return terminal_main (argc, argv);
 }

@@ -89,32 +89,32 @@ clean:
 	make -C .. ctx
 
 gray1/%: %.ctx ../ctx Makefile
-	../ctx --convert $< --width 160 --height 80 --rows 6 --cols 23 GRAY1 > $@
+	../ctx convert $< --width 160 --height 80 --rows 6 --cols 23 GRAY1 > $@
 png/%.png: %.ctx ../ctx Makefile
-	../ctx --convert $< $@ --width 160 --height 80 --cols 31 --rows 8
+	../ctx convert $< $@ --width 160 --height 80 --cols 31 --rows 8
 png/%.png: %.svg ../ctx Makefile
-	../ctx --convert $< $@ --width 160 --height 80 --cols 31 --rows 8
+	../ctx convert $< $@ --width 160 --height 80 --cols 31 --rows 8
 gray1/%: %.svg ../ctx Makefile
-	../ctx --convert $< --width 160 --height 80 GRAY1 --cols 19 --rows 8 > $@
+	../ctx convert $< --width 160 --height 80 GRAY1 --cols 19 --rows 8 > $@
 png-80x160/%.png: %.ctx ../ctx  Makefile
-	../ctx --convert $< $@ --width 80 --height 160 --rows 15 --cols 15
+	../ctx convert $< $@ --width 80 --height 160 --rows 15 --cols 15
 png-80x160/%.png: %.svg ../ctx  Makefile
-	../ctx --convert $< $@ --width 80 --height 160 --rows 15 --cols 15
+	../ctx convert $< $@ --width 80 --height 160 --rows 15 --cols 15
 png-640x240/%.png: %.ctx ../ctx Makefile
-	../ctx --convert $< $@ --width 640 --height 240 --rows 16 --cols 82 
+	../ctx convert $< $@ --width 640 --height 240 --rows 16 --cols 82 
 png-640x240/%.png: %.svg ../ctx  Makefile
-	../ctx --convert $< $@ --width 640 --height 240 --rows 16 --cols 82
+	../ctx convert $< $@ --width 640 --height 240 --rows 16 --cols 82
 
 png-320x240/%.png: %.ctx ../ctx  Makefile
-	../ctx --convert $< $@ --width 320 --height 240 --rows 32 --cols 81
+	../ctx convert $< $@ --width 320 --height 240 --rows 32 --cols 81
 png-320x240/%.png: %.svg ../ctx  Makefile
-	../ctx --convert $< $@ --width 320 --height 240 --rows 32 --cols 81
+	../ctx convert $< $@ --width 320 --height 240 --rows 32 --cols 81
 
 png-480x640/%.png: %.ctx ../ctx  Makefile
-	../ctx --convert $< $@ --width 480 --height 640 --rows 56 --cols 81
+	../ctx convert $< $@ --width 480 --height 640 --rows 56 --cols 81
 png-480x640/%.png: %.svg ../ctx Makefile
-	../ctx --convert $< $@ --width 480 --height 640 --rows 56 --cols 81
+	../ctx convert $< $@ --width 480 --height 640 --rows 56 --cols 81
 gray8/%: %.ctx ../ctx Makefile
-	../ctx --convert $< GRAY8 --width 80 --height 24 --rows 4 --cols 12 > $@
+	../ctx convert $< GRAY8 --width 80 --height 24 --rows 4 --cols 12 > $@
 gray8/%: %.svg ../ctx Makefile
-	../ctx --convert $< GRAY8 --width 80 --height 24 --rows 4 --cols 12 > $@
+	../ctx convert $< GRAY8 --width 80 --height 24 --rows 4 --cols 12 > $@

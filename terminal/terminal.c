@@ -474,6 +474,13 @@ static void handle_event (const char *event)
     }
 }
 
+int client_height (int id)
+{
+  CtxClient *client = client_by_id (id);
+  if (!client) return 0;
+  return client->height;
+}
+
 void client_move (int id, int x, int y)
 {
    CtxClient *client = client_by_id (id);
@@ -1053,7 +1060,7 @@ int terminal_main (int argc, char **argv)
     font_size = 10.0;
   }
 
-  if (cols < 0)
+  if (cols <= 0)
   {
     if (((double)(width))/height < (16.0/9.0))
       cols = 80;

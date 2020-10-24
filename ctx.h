@@ -265,7 +265,8 @@ void _ctx_set_store_clear (Ctx *ctx);
 void _ctx_set_transformation (Ctx *ctx, int transformation);
 
 Ctx *ctx_hasher_new (int width, int height, int cols, int rows);
-uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row);
+uint64_t ctx_hasher_get_hash (Ctx *ctx, int col, int row);
+
 int ctx_utf8_strlen (const char *s);
 
 #ifdef _BABL_H
@@ -14768,7 +14769,7 @@ Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
   ctx_set_renderer (ctx, (void*)rasterizer);
   return ctx;
 }
-uint64_t ctx_hash_get_hash (Ctx *ctx, int col, int row)
+uint64_t ctx_hasher_get_hash (Ctx *ctx, int col, int row)
 {
   CtxHasher *hasher = (CtxHasher*)ctx->renderer;
   if (row < 0) row =0;
@@ -22441,7 +22442,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        uint64_t new_hash = ctx_hash_get_hash (hasher, col, row);
+        uint64_t new_hash = ctx_hasher_get_hash (hasher, col, row);
         if (new_hash != sdl->hashes[row * CTX_HASH_COLS + col])
         {
           sdl->hashes[row * CTX_HASH_COLS + col] = new_hash;
@@ -22688,7 +22689,7 @@ inline static void ctx_fb_flush (CtxFb *fb)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        uint64_t new_hash = ctx_hash_get_hash (hasher, col, row);
+        uint64_t new_hash = ctx_hasher_get_hash (hasher, col, row);
         if (new_hash != fb->hashes[row * CTX_HASH_COLS + col])
         {
           fb->hashes[row * CTX_HASH_COLS + col] = new_hash;
@@ -23373,5 +23374,3 @@ int ctx_color (Ctx *ctx, const char *string)
 
 
 #endif
-
-
