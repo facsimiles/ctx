@@ -756,7 +756,7 @@ static void itk_float_constrain (CtxControl *control, float *val)
 }
 void itk_set_focus (ITK *itk, int pos);
 
-void slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2)
+static void itk_slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
   CtxControl  *control = userdata;
@@ -765,8 +765,8 @@ void slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2)
   itk_set_focus (itk, control->no);
   event->stop_propagate = 1;
   itk->dirty++;
-  
-  new_val = ((event->x - control->x) / (control->width * itk->value_width)) * (control->max-control->min) + control->min;
+  new_val = ((event->x - control->x) / (control->width)) * (control->max-control->min) + control->min;
+
   itk_float_constrain (control, &new_val);
 
   if (control->set_val)
@@ -795,8 +795,8 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
     itk_set_color (itk, ITK_INTERACTIVE_BG);
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
   ctx_fill (ctx);
-  ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_DRAG, slider_cb_drag, control, itk, control_finalize, NULL);
+  ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
+  ctx_listen_with_finalize (ctx, CTX_DRAG, itk_slider_cb_drag, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
 
   double fval = get_val (val, data);
@@ -945,7 +945,6 @@ void itk_slider_uint32 (ITK *itk, const char *label, uint32_t *val, uint32_t min
   itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_uint32, itk_slider_set_uint32, NULL);
 }
 
-
 void itk_slider_int8 (ITK *itk, const char *label, int8_t *val, int8_t min, int8_t max, int8_t step)
 {
   itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_int8, itk_slider_set_int8, NULL);
@@ -990,6 +989,7 @@ void entry_commit (ITK *itk)
     }
   }
 }
+
 void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
@@ -1005,7 +1005,6 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
     itk->entry_copy = strdup (control->val);
     itk->entry_pos = strlen (control->val);
   }
-
 
   itk_set_focus (itk, control->no);
   itk->dirty++;
@@ -1255,7 +1254,6 @@ int itk_button (ITK *itk, const char *label)
   ctx_stroke (ctx);
 #endif
 
-
   if (itk->focus_no == control->no)
     itk_set_color (itk, ITK_BUTTON_FOCUSED_BG);
   else
@@ -1286,7 +1284,7 @@ int itk_button (ITK *itk, const char *label)
   return 0;
 }
 
-void choice_clicked (CtxEvent *event, void *userdata, void *userdata2)
+static void itk_choice_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
   CtxControl *control = userdata;
@@ -1308,7 +1306,7 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
   control->type = UI_CHOICE;
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_CLICK, choice_clicked, control, itk, control_finalize, NULL);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, itk_choice_clicked, control, itk, control_finalize, NULL);
 
   ctx_begin_path (ctx);
   if (itk->focus_no == control->no)
