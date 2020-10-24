@@ -1,3 +1,6 @@
+DESTDIR ?=
+PREFIX  ?= /usr/local
+
 all: tools/ctx-fontgen ctx subdirs tools/ctx-info
 
 subdirs: ctx.o
@@ -29,6 +32,12 @@ CFLAGS_warnings= -Wall \
 
 CFLAGS= -O3 -g $(CFLAGS_warnings)
 #CFLAGS= -Os 
+
+install: ctx
+	install -d $(DESTIDR)$(PREFIX)/bin
+	install -m755 ctx $(DESTIDR)$(PREFIX)/bin
+uninstall:
+	rm -rf $(DESTDIR)$(PREFIX)/bin/ctx
 
 CFLAGS+=-I. -Ifonts -Ideps -lutil -lz -lm -lpthread
 
