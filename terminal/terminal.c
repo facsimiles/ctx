@@ -498,7 +498,6 @@ int client_resize (int id, int width, int height)
 
 static int dirty = 0;
 
-
 int ctx_count (Ctx *ctx);
 
 static int dirt = 0;
@@ -1063,7 +1062,7 @@ int terminal_main (int argc, char **argv)
   }
 
   if (font_size < 0)
-    font_size = 2 * width / cols;
+    font_size = floorf (2 * width / cols /2) * 2;
 
   if (argv[1] == NULL)
   {

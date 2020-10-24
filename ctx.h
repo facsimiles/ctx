@@ -9333,7 +9333,7 @@ ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, u
 ctx_u8_blend_define_seperable(multiply,     blended[c] = (b[c] * s[c])/255;)
 ctx_u8_blend_define_seperable(screen,       blended[c] = s[c] + b[c] - (s[c] * b[c])/255;)
 ctx_u8_blend_define_seperable(overlay,      blended[c] = b[c] < 127 ? (s[c] * b[c])/255 :
-                                                          s[c] + b[c] - (s[c] * b[c])/255;)
+                                                         s[c] + b[c] - (s[c] * b[c])/255;)
 ctx_u8_blend_define_seperable(darken,       blended[c] = ctx_mini (b[c], s[c]))
 ctx_u8_blend_define_seperable(lighten,      blended[c] = ctx_maxi (b[c], s[c]))
 ctx_u8_blend_define_seperable(color_dodge,  blended[c] = b[c] == 0 ? 0 :
@@ -20923,7 +20923,7 @@ static int ctx_nct_consume_events (Ctx *ctx)
 
 
 #ifndef CTX_HASH_ROWS
-#define CTX_HASH_ROWS 4
+#define CTX_HASH_ROWS 8
 #endif
 #ifndef CTX_HASH_COLS
 #define CTX_HASH_COLS 4
