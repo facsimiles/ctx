@@ -1105,16 +1105,16 @@ void itk_toggle (ITK *itk, const char *label, int *val)
   itk_set_color (itk, ITK_INTERACTIVE);
 
   ctx_begin_path (ctx);
-  ctx_rectangle (ctx, itk->x, itk->y, em, em);
-  ctx_line_width (ctx, 2.0);
+  ctx_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, em, em);
+  ctx_line_width (ctx, em * 0.07);
   ctx_stroke (ctx);
 
   if (*val)
   {
-    ctx_move_to (ctx, itk->x + em * 0.2, itk->y + em * 0.5);
-    ctx_line_to (ctx, itk->x + em * 0.5, itk->y + em * 0.8);
-    ctx_line_to (ctx, itk->x + em * 0.8, itk->y + em * 0.2);
-    ctx_line_width (ctx, 4.0);
+    ctx_move_to (ctx, itk->x + em * 0.3, itk->y + em * 0.6);
+    ctx_line_to (ctx, itk->x + em * 0.6, itk->y + em * 0.9);
+    ctx_line_to (ctx, itk->x + em * 0.9, itk->y + em * 0.3);
+  //ctx_line_width (ctx, em * 0.1);
     ctx_stroke (ctx);
   }
 
@@ -1155,14 +1155,14 @@ int itk_radio (ITK *itk, const char *label, int set)
 
   itk_set_color (itk, ITK_INTERACTIVE);
   ctx_begin_path (ctx);
-  ctx_arc (ctx, itk->x + em * 0.5, itk->y + em * 0.5, em * 0.4, 0.0, 6.0, 0);
+  ctx_arc (ctx, itk->x + em * 0.55, itk->y + em * 0.57, em * 0.4, 0.0, 6.0, 0);
   ctx_close_path (ctx);
-  ctx_line_width (ctx, 2.0);
+  ctx_line_width (ctx, em * 0.07);
   ctx_stroke (ctx);
 
   if (set)
   {
-    ctx_arc (ctx, itk->x + em * 0.5, itk->y + em * 0.5, em * 0.2, 0.0, 5.0, 0);
+    ctx_arc (ctx, itk->x + em * 0.55, itk->y + em * 0.57, em * 0.2, 0.0, 5.0, 0);
     ctx_fill (ctx);
   }
 

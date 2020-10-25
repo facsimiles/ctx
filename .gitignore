@@ -5,6 +5,7 @@ fonts/ctx-fontgen
 examples/mmm
 examples/sdl2
 examples/test-renderpaths
+*.o
 *.sw?
 *.sv?
 tests/*.gray?
