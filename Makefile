@@ -7,6 +7,9 @@ CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 TERMINAL_CFILES = $(wildcard terminal/*.c)
 TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
 
+SRC_CFILES = $(wildcard src/*.c)
+SRC_OBJS   = $(SRC_CFILES:.c=.o)
+
 clients/%: clients/%.c Makefile ctx.o clients/itk.h
 	$(CC) -g $< -o $@ $(CFLAGS) ctx.o $(LIBS) `pkg-config sdl2 --cflags --libs`
 
@@ -28,9 +31,10 @@ test: ctx
 	make -C tests
 
 clean:
-	rm -f ctx ctx.avx2 ctx.static ctx.O0 *.o
+	rm -f ctx.h ctx ctx.avx2 ctx.static ctx.O0 *.o
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
+	rm -f $(SPLIT_OBJS)
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
 CFLAGS_warnings= -Wall \
@@ -57,12 +61,16 @@ tools/%: tools/%.c ctx.h
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
 	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O2
 
+ctx-split.o: $(SRC_OBJS)
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
 	musl-gcc ctx.c -c -o $@ $(CFLAGS) -DNO_SDL=1 -DCTX_FB=1
 
-terminal/%.o: terminal/%.c *.h terminal/*.h
+src/%.o: src/%.c split/*.h
 	$(CC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS)
+
+terminal/%.o: terminal/%.c *.h terminal/*.h
+	$(CC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS) 
 
 ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS)
 	$(CC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx.o -O2
@@ -77,10 +85,10 @@ ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fo
 	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O0
 
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS)
-	$(CC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o -O0
+	$(CC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-O0.o -O0
 
 ctx.static: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) ctx-nosdl.o 
-	musl-gcc main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) ctx-nosdl.o -DNO_SDL=1 -DCTX_FB=1 -static 
+	musl-gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) $(LIBS) ctx-nosdl.o -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
 	upx $@
 
@@ -102,4 +110,7 @@ updateweb: all test docs/ctx.h.html docs/ctx-font-regular.h.html
 	cp ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
 flatpak:
 	rm -rf build-dir;flatpak-builder --user --install build-dir graphics.ctx.terminal.yml
+
+ctx.h: src/*
+	(cd src;cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
 
