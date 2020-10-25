@@ -191,6 +191,8 @@ vt_string_free (VtString *string, int freealloc)
       { free (line->style); }
     if (line->ctx)
       { ctx_free (line->ctx); }
+    if (line->ctx_copy)
+      { ctx_free (line->ctx_copy); }
   }
   free (string);
 }

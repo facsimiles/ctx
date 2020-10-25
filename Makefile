@@ -1,7 +1,17 @@
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
-all: tools/ctx-fontgen ctx clients/demo clients/itk-sampler clients/dots ctx.avx2
+CLIENTS_CFILES = $(wildcard clients/*.c)
+CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
+
+TERMINAL_CFILES = $(wildcard terminal/*.c)
+TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
+
+clients/%: clients/%.c Makefile ctx.o clients/itk.h
+	$(CC) -g $< -o $@ $(CFLAGS) ctx.o $(LIBS) `pkg-config sdl2 --cflags --libs`
+
+
+all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii > $@
@@ -18,8 +28,9 @@ test: ctx
 	make -C tests
 
 clean:
-	rm -f test-renderpaths ctx ctx.asan ctx.O1 ctx.static *.o
-	rm -f terminal/*.o
+	rm -f ctx ctx.avx2 ctx.static ctx.O0 *.o
+	rm -f $(CLIENTS_BINS)
+	rm -f $(TERMINAL_OBJS)
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
 CFLAGS_warnings= -Wall \
@@ -44,10 +55,8 @@ tools/%: tools/%.c ctx.h
 	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O1
+	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O2
 
-ctx-avx2.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -DCTX_AVX2=1 -march=native -O3
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
 	musl-gcc ctx.c -c -o $@ $(CFLAGS) -DNO_SDL=1 -DCTX_FB=1
@@ -55,14 +64,23 @@ ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
 terminal/%.o: terminal/%.c *.h terminal/*.h
 	$(CC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS)
 
-ctx: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx.o clients/itk.h terminal/vt.o terminal/terminal.o terminal/vt-line.o
-	$(CC) main.c terminal/*.o convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx.o -O1
+ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS)
+	$(CC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx.o -O2
 
-ctx.avx2: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-avx2.o terminal/vt.o terminal/terminal.o terminal/vt-line.o
-	$(CC) main.c terminal/*.o convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o -O1
+ctx-avx2.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
+	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -DCTX_AVX2=1 -march=native -O3
 
-ctx.static: main.c ctx.h  Makefile terminal/*.[ch] convert/*.[ch] ctx-nosdl.o terminal/vt.o terminal/terminal.o terminal/vt-line.o
-	musl-gcc main.c terminal/*.o convert/*.c -o $@ $(CFLAGS) $(LIBS) ctx-nosdl.o -DNO_SDL=1 -DCTX_FB=1 -static 
+ctx.avx2: main.c ctx.h  Makefile convert/*.[ch] ctx-avx2.o $(TERMINAL_OBJS)
+	$(CC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o -O2
+
+ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
+	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O0
+
+ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS)
+	$(CC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o -O0
+
+ctx.static: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) ctx-nosdl.o 
+	musl-gcc main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) ctx-nosdl.o -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
 	upx $@
 
@@ -84,7 +102,4 @@ updateweb: all test docs/ctx.h.html docs/ctx-font-regular.h.html
 	cp ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
 flatpak:
 	rm -rf build-dir;flatpak-builder --user --install build-dir graphics.ctx.terminal.yml
-
-clients/%: clients/%.c Makefile ctx.o clients/itk.h
-	$(CC) -g $< -o $@ $(CFLAGS) ctx.o $(LIBS) `pkg-config sdl2 --cflags --libs`
 

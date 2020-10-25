@@ -2043,6 +2043,10 @@ static void vt_ctx_exit (void *data)
 {
   VT *vt = data;
   vt->state = vt_state_neutral;
+  vt->rev ++;
+  void *tmp = vt->current_line->ctx;
+  vt->current_line->ctx = vt->current_line->ctx_copy;
+  vt->current_line->ctx_copy = tmp;
   //ctx_parser_free (vt->ctxp);
   //vt->ctxp = NULL;
 }
@@ -2252,6 +2256,7 @@ qagain:
                 if (!vt->current_line->ctx)
                   {
                     vt->current_line->ctx = ctx_new ();
+                    vt->current_line->ctx_copy = ctx_new ();
                     _ctx_set_transformation (vt->current_line->ctx, 0);
                   }
                 if (vt->ctxp)
@@ -6702,7 +6707,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 #endif
 
    {
-     for (int row = (vt->scroll!=0.0f)?vt->scroll-2:0; row < (vt->scroll) + vt->rows; row ++)
+     for (int row = (vt->scroll!=0.0f)?vt->scroll:0; row < (vt->scroll) + vt->rows; row ++)
        {
          CtxList *l = ctx_list_nth (vt->lines, row);
          float y = y0 + vt->ch * (vt->rows - row);
@@ -6775,22 +6780,20 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   }
 
   {
-    /* draw sixels/kitty/iterm2 graphics */
-    float y = y0 + vt->ch * vt->rows;
-    for (int row = 0; y > - (vt->scroll + vt->rows*4) * vt->ch; row ++)
+    /* draw graphics */
+     for (int row = ((vt->scroll!=0.0f)?vt->scroll:0); row < (vt->scroll) + vt->rows * 4; row ++)
       {
         CtxList *l = ctx_list_nth (vt->lines, row);
+        float y = y0 + vt->ch * (vt->rows - row);
 
-        if (row >= vt->rows)
+        if (row >= vt->rows && !vt->in_alt_screen)
           {
             l = ctx_list_nth (vt->scrollback, row-vt->rows);
           }
+
         if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
           {
             VtLine *line = l->data;
-
-
-            if ((!vt->in_alt_screen && row >= vt->rows))
             {
             for (int i = 0; i < 4; i++)
               {
@@ -6818,72 +6821,17 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                   }
               }
 
-            if (line->ctx)
+            if (line->ctx_copy)
               {
                 ctx_begin_path (ctx);
                 ctx_save (ctx);
                 ctx_translate (ctx, 0, (vt->rows-row-1) * (vt->ch) );
                 //float factor = vt->cols * vt->cw / 1000.0;
                 //ctx_scale (ctx, factor, factor);
-                ctx_render_ctx (line->ctx, ctx);
+                ctx_render_ctx (line->ctx_copy, ctx);
                 ctx_restore (ctx);
               }
             }
-          }
-        y -= vt->ch;
-      }
-  }
-
-  {
-    /* draw ctx graphics */
-    float y = y0 + vt->ch * vt->rows;
-    for (int row = 0; y > - (vt->scroll + vt->rows*2) * vt->ch; row ++)
-      {
-        CtxList *l = ctx_list_nth (vt->lines, row);
-
-        if (row >= vt->rows)
-          {
-            l = ctx_list_nth (vt->scrollback, row-vt->rows);
-          }
-        if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
-          {
-            VtLine *line = l->data;
-
-            for (int i = 0; i < 4; i++)
-              {
-                Image *image = line->images[i];
-                if (image)
-                  {
-                    int u = (line->image_col[i]-1) * vt->cw + (line->image_X[i] * vt->cw);
-                    int v = y - vt->ch + (line->image_Y[i] * vt->ch);
-                //  int rows = (image->height + (vt->ch-1) ) /vt->ch;
-                //
-                //
-                    if (v + image->height +vt->scroll * vt->ch > 0.0)
-                    {
-                    ctx_save (ctx);
-                    // we give each texture a unique-id - if we use more ids than
-                    // there is, ctx will alias the first image.
-                    ctx_texture_init (ctx, image_id, image->width, image->height, image->kitty_format,
-                                      image->data, NULL, NULL);
-                    ctx_texture (ctx, image_id, u, v);
-                    image_id ++;
-                    ctx_rectangle (ctx, u, v, image->width, image->height);
-                    ctx_fill (ctx);
-                    ctx_restore (ctx);
-                    }
-                  }
-              }
-
-            if (line->ctx)
-              {
-                ctx_save (ctx);
-                ctx_translate (ctx, 0, (vt->rows-row-1) * (vt->ch) );
-                //float factor = vt->cols * vt->cw / 1000.0;
-                //ctx_scale (ctx, factor, factor);
-                ctx_render_ctx (line->ctx, ctx);
-                ctx_restore (ctx);
-              }
           }
         y -= vt->ch;
       }

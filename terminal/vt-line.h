@@ -42,6 +42,7 @@ struct _VtLine
   int       style_size;
 
   void     *ctx; // each line can have an attached ctx context;
+  void     *ctx_copy; // each line can have an attached ctx context;
   // clearing should be brutal enough to unset the context of the current
   // at least in alt-screen mode
   int       double_width;

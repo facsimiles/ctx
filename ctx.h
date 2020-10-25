@@ -13775,10 +13775,15 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           float width = ctx_text_width (rasterizer->ctx, (char*)string);
           float height = ctx_get_font_size (rasterizer->ctx);
 
-          CtxRectangle shape_rect = {
-              rasterizer->x, rasterizer->y - height,
-              width, height * 2
-          };
+          float tx = rasterizer->x;
+          float ty = rasterizer->y;
+          float tw = width;
+          float th = height * 2;
+
+          _ctx_user_to_device (rasterizer->state, &tx, &ty);
+          _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
+          CtxRectangle shape_rect = {tx,ty,tw,th};
+
 
           uint32_t color;
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
@@ -13798,6 +13803,11 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           sha1_state sha1;
           sha1_init (&sha1);
           char sha1_hash[20];
+
+          /* we eant this hasher to be as good as possible internally,
+           * since it is also used in the small shapes rasterization
+           * cache
+           */
         uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
         CtxRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV,
@@ -16407,7 +16417,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_LINE_JOIN:            return "lineJoin"; break;
           case CTX_LINE_CAP:             return "lineCap"; break;
           case CTX_LINE_WIDTH:           return "lineWidth"; break;
-          case CTX_SHADOW_BLUR:          return "setShadowBlur";  break;
+          case CTX_SHADOW_BLUR:          return "shadowBlur";  break;
           case CTX_FILL_RULE:            return "fillRule"; break;
           case CTX_SET:                  return "setProp"; break;
         }
@@ -23293,7 +23303,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   if (ctx_native_events)
     fprintf (stdout, "\e[?201h");
   fprintf (stdout, "\e[?1049h");
-  fprintf (stdout, "\e[2J\e[H\e[?25l\e[?200h reset\n");
+  fprintf (stdout, "\e[H\e[?25l\e[?200h reset\n");
   ctx_render_stream (ctxctx->ctx, stdout, 0);
   fprintf (stdout, "\ndone\n\e");
   fflush (stdout);
