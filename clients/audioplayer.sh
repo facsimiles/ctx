@@ -153,11 +153,11 @@ function keyboard_events()
         fi
      fi
      case "$seq" in
-       "ESC"|"q") echo -e "\e[2J\e[H"; quit=1 ;;
-       "ESC[A"|"ESC[5~") set_song_no $((song_no-2));pos=$((pos+100000)) ;;
+       "ESC"|"q")            quit=1;pos=10000000  ;;
+       "ESC[A"|"ESC[5~")     set_song_no $((song_no-2));pos=10000000 ;;
        "ESC[B"|"n"|"ESC[6~") pos=$((pos+100000)) ;;
-       "ESC[C")  pos=$(($pos+10)) ;;
-       "ESC[D")  pos=$(($pos-10)) ;if [ $pos -lt 0 ] ; then pos=0; fi ;;
+       "ESC[C")              pos=$(($pos+10)) ;;
+       "ESC[D")              pos=$(($pos-10)) ;if [ $pos -lt 0 ] ; then pos=0; fi ;;
         ' ')  if [ $paused == 0 ];then paused=1;else paused=0;fi  ;;
         *)    ;;
       esac
@@ -183,7 +183,7 @@ function main()
      set_song_no $((song_no+1))
   done
   rm -f /tmp/audio.*
+  echo -en "\e[H\e[2J"
 }
 
 main
-

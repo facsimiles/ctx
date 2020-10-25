@@ -1222,6 +1222,7 @@ int itk_expander (ITK *itk, const char *label, int *val)
        ctx_rel_move_to (ctx, em*0.1, em*0.1);
        ctx_rel_line_to (ctx, em*0.8, 0);
        ctx_rel_line_to (ctx, -0.4*em, em*0.8);
+       ctx_fill (ctx);
      }
      else
      {
@@ -1229,8 +1230,10 @@ int itk_expander (ITK *itk, const char *label, int *val)
        ctx_rel_move_to (ctx, em*0.1, em*0.1);
        ctx_rel_line_to (ctx, 0, em*0.8);
        ctx_rel_line_to (ctx, em*0.8, -0.4*em);
+       ctx_close_path (ctx);
+       ctx_line_width (ctx, em * 0.07);
+       ctx_stroke (ctx);
      }
-     ctx_fill (ctx);
      itk->x += em * (1 + itk->rel_hpad);
      itk_text (itk, label);
   }

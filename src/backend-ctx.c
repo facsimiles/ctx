@@ -6,7 +6,6 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
 {
   if (ctx_native_events)
     fprintf (stdout, "\e[?201h");
-  fprintf (stdout, "\e[?1049h");
   fprintf (stdout, "\e[H\e[?25l\e[?200h reset\n");
   ctx_render_stream (ctxctx->ctx, stdout, 0);
   fprintf (stdout, "\ndone\n\e");
@@ -46,6 +45,8 @@ Ctx *ctx_new_ctx (int width, int height)
   ctx_set_size (ctx, width, height);
   ctxctx->flush = (void*)ctx_ctx_flush;
   ctxctx->free  = (void*)ctx_ctx_free;
+  fprintf (stdout, "\e[?1049h");
+  fflush (stdout);
   return ctx;
 }
 
