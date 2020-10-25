@@ -1467,6 +1467,18 @@ typedef enum
 } CtxColorModel;
 
 
+typedef enum _CtxAntialias CtxAntialias;
+enum _CtxAntialias
+{
+  CTX_ANTIALIAS_DEFAULT,
+  CTX_ANTIALIAS_NONE, //
+  CTX_ANTIALIAS_FAST, // aa 3
+  CTX_ANTIALIAS_GOOD, // aa 5
+  CTX_ANTIALIAS_BEST  // aa 17
+};
+
+void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);
+CtxAntialias ctx_get_antialias (Ctx *ctx);
 
 typedef struct _CtxParser CtxParser;
   CtxParser *ctx_parser_new (

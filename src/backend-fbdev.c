@@ -43,6 +43,7 @@ struct _EvSource
   /* if this returns non-0 select can be used for non-blocking.. */
 };
 
+
 typedef struct _CtxFb CtxFb;
 struct _CtxFb
 {
@@ -56,24 +57,15 @@ struct _CtxFb
    int           cols;
    int           rows;
    int           was_down;
-
-   //uint8_t      *pixels;
+   Ctx          *host[CTX_MAX_THREADS];
+   CtxAntialias  antialias;
    uint8_t      *scratch_fb;
-   uint8_t      *fb;
-
    int           quit;
-   int           key_balance;
-   int           key_repeat;
-   int           lctrl;
-   int           lalt;
-   int           rctrl;
+   _Atomic int   thread_quit;
    int           shown_frame;
    int           render_frame;
    int           rendered_frame[CTX_MAX_THREADS];
-   Ctx          *host[CTX_MAX_THREADS];
    int           frame;
-   int           pointer_down[3];
-
    int       min_col; // hasher cols and rows
    int       min_row;
    int       max_col;
@@ -82,18 +74,29 @@ struct _CtxFb
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
                                                            //
-   int    fb_fd;
-   char  *fb_path;
-   int    fb_bits;
-   int    fb_bpp;
-   int    fb_mapped_size;
-   struct fb_var_screeninfo vinfo;
-   struct fb_fix_screeninfo finfo;
-   int       vt;
-   int       tty;
-   int       vt_active;
-   EvSource *evsource[4];
-   int       evsource_count;
+
+
+   int           pointer_down[3];
+   int           key_balance;
+   int           key_repeat;
+   int           lctrl;
+   int           lalt;
+   int           rctrl;
+
+   uint8_t      *fb;
+
+   int          fb_fd;
+   char        *fb_path;
+   int          fb_bits;
+   int          fb_bpp;
+   int          fb_mapped_size;
+   struct       fb_var_screeninfo vinfo;
+   struct       fb_fix_screeninfo finfo;
+   int          vt;
+   int          tty;
+   int          vt_active;
+   EvSource    *evsource[4];
+   int          evsource_count;
 };
 
 static inline int
@@ -1141,7 +1144,8 @@ void fb_render_fun (void **data)
                                  host, NULL, &host->state,
                                  &fb->scratch_fb[fb->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
-                                 fb->width*4, CTX_FORMAT_RGBA8);
+                                 fb->width*4, CTX_FORMAT_RGBA8,
+                                 fb->antialias);
                                               /* this is the format used */
             ((CtxRasterizer*)host->renderer)->texture_source = fb->ctx;
             ctx_translate (host, -x0, -y0);

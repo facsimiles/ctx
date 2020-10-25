@@ -10,11 +10,13 @@ TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
 SRC_CFILES = $(wildcard src/*.c)
 SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
+all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
+
 clients/%: clients/%.c Makefile ctx.o clients/itk.h
 	$(CC) -g $< -o $@ $(CFLAGS) ctx.o $(LIBS) `pkg-config sdl2 --cflags --libs`
 
 
-all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
+
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii > $@

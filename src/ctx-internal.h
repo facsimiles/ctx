@@ -658,6 +658,25 @@ struct _CtxCtx
    int  was_down;
 };
 
+// XXX the common members of sdl and fbdev
+typedef struct _CtxThreaded CtxThreaded;
+struct _CtxThreaded
+{
+   void (*render) (void *fb, CtxCommand *command);
+   void (*flush)  (void *fb);
+   void (*free)   (void *fb);
+   Ctx          *ctx;
+   Ctx          *ctx_copy;
+   int           width;
+   int           height;
+   int           cols;
+   int           rows;
+   int           was_down;
+   Ctx          *host[CTX_MAX_THREADS];
+   CtxAntialias  antialias;
+};
+
+
 extern int _ctx_threads;
 extern int _ctx_enable_hash_cache;
 void

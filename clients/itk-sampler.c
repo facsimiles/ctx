@@ -127,6 +127,24 @@ int main (int argc, char **argv)
         static float val;
         val = _ctx_threads;
         itk_slider_float (itk, "threads", &val, 1.0, 8.0, 1.0);
+
+        /* perhaps providing this abstraction is more concice for this case?
+         *
+         *   if (itk_choice_changed ()) { ctx_set_antialias (ctx, itk_choice_value());  } 
+         */
+        static int choice = CTX_ANTIALIAS_DEFAULT;
+        int set = ctx_get_antialias (ctx);
+        itk_choice (itk, "AA", &choice, NULL, NULL);
+        itk_choice_add (itk, CTX_ANTIALIAS_DEFAULT, "default");
+        itk_choice_add (itk, CTX_ANTIALIAS_NONE,    "none");
+        itk_choice_add (itk, CTX_ANTIALIAS_GOOD,    "good");
+        itk_choice_add (itk, CTX_ANTIALIAS_BEST,    "best");
+        itk_choice_add (itk, CTX_ANTIALIAS_FAST,    "fast");
+        if (set != choice)
+        {
+          ctx_set_antialias (ctx, choice);
+
+        }
       }
 
       static int itk_settings = 0;

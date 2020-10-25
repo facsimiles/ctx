@@ -6395,39 +6395,63 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
     }
 }
 
-typedef enum _CtxAntialias CtxAntialias;
-enum _CtxAntialias
-{
-  CTX_ANTIALIAS_DEFAULT,
-  CTX_ANTIALIAS_NONE, //
-  CTX_ANTIALIAS_FAST, // aa 3
-  CTX_ANTIALIAS_GOOD, // aa 5
-  CTX_ANTIALIAS_BEST  // aa 17
-};
+int ctx_renderer_is_sdl (Ctx *ctx);
+int ctx_renderer_is_fb  (Ctx *ctx);
 
 static int _ctx_is_rasterizer (Ctx *ctx);
+CtxAntialias ctx_get_antialias (Ctx *ctx)
+{
+  if (ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx))
+  {
+     CtxThreaded *fb = (CtxThreaded*)(ctx->renderer);
+     return fb->antialias;
+  }
+  if (!_ctx_is_rasterizer (ctx)) return CTX_ANTIALIAS_DEFAULT;
+
+  switch (((CtxRasterizer*)(ctx->renderer))->aa)
+  {
+    case 1: return CTX_ANTIALIAS_NONE;
+    case 3: return CTX_ANTIALIAS_FAST;
+    case 5: return CTX_ANTIALIAS_GOOD;
+    default:
+    case 15: return CTX_ANTIALIAS_DEFAULT;
+    case 17: return CTX_ANTIALIAS_BEST;
+  }
+}
+
+int _ctx_antialias_to_aa (CtxAntialias antialias)
+{
+  switch (antialias)
+  {
+    case CTX_ANTIALIAS_NONE: return 1;
+    case CTX_ANTIALIAS_FAST: return 3;
+    case CTX_ANTIALIAS_GOOD: return 5;
+    default:
+    case CTX_ANTIALIAS_DEFAULT: return 15;
+    case CTX_ANTIALIAS_BEST: return 17;
+  }
+}
+
 void
 ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 {
-  if (!_ctx_is_rasterizer (ctx)) return;
-  switch (antialias)
+  if (ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx))
   {
-    case CTX_ANTIALIAS_NONE:
-      ((CtxRasterizer*)(ctx->renderer))->aa = 1;
-      break;
-    case CTX_ANTIALIAS_FAST:
-      ((CtxRasterizer*)(ctx->renderer))->aa = 3;
-      break;
-    case CTX_ANTIALIAS_GOOD:
-      ((CtxRasterizer*)(ctx->renderer))->aa = 5;
-      break;
-    case CTX_ANTIALIAS_DEFAULT:
-      ((CtxRasterizer*)(ctx->renderer))->aa = 15;
-      break;
-    case CTX_ANTIALIAS_BEST:
-      ((CtxRasterizer*)(ctx->renderer))->aa = 17;
-      break;
+     CtxThreaded *fb = (CtxThreaded*)(ctx->renderer);
+     fb->antialias = antialias;
+     for (int i = 0; i < _ctx_threads; i++)
+     {
+       ctx_set_antialias (fb->host[i], antialias);
+          fprintf (stderr, "%p!\n",fb->host[i]);
+     }
+     return;
   }
+          fprintf (stderr, "%p?\n", ctx);
+  if (!_ctx_is_rasterizer (ctx)) return;
+          fprintf (stderr, "%p!!\n", ctx);
+
+  ((CtxRasterizer*)(ctx->renderer))->aa = 
+     _ctx_antialias_to_aa (antialias);
 /* vertical level of supersampling at full/forced AA.
  *
  * 1 is none, 3 is fast 5 is good 15 or 17 is best for 8bit
@@ -7345,7 +7369,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 
 
 static CtxRasterizer *
-ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format)
+ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format, CtxAntialias antialias)
 {
 #if CTX_ENABLE_CLIP
   if (rasterizer->clip_buffer)
@@ -7361,7 +7385,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
   rasterizer->texture_source = texture_source?texture_source:ctx;
-  rasterizer->aa          = 17;
+  rasterizer->aa          = _ctx_antialias_to_aa (antialias);
   rasterizer->force_aa    = 0;
   ctx_state_init (rasterizer->state);
   rasterizer->buf         = data;
@@ -7389,7 +7413,8 @@ ctx_new_for_buffer (CtxBuffer *buffer)
                     ctx_rasterizer_init ( (CtxRasterizer *) malloc (sizeof (CtxRasterizer) ),
                                           ctx, NULL, &ctx->state,
                                           buffer->data, 0, 0, buffer->width, buffer->height,
-                                          buffer->stride, buffer->format->pixel_format) );
+                                          buffer->stride, buffer->format->pixel_format,
+                                          CTX_ANTIALIAS_DEFAULT));
   return ctx;
 }
 
@@ -7401,7 +7426,7 @@ ctx_new_for_framebuffer (void *data, int width, int height,
   Ctx *ctx = ctx_new ();
   CtxRasterizer *r = ctx_rasterizer_init ( (CtxRasterizer *) calloc (sizeof (CtxRasterizer), 1),
                                           ctx, NULL, &ctx->state, data, 0, 0, width, height,
-                                          stride, pixel_format);
+                                          stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
   ctx_set_renderer (ctx, r);
   return ctx;
 }
@@ -7415,7 +7440,7 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
   CtxState    *state    = (CtxState *) malloc (sizeof (CtxState) );
   CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxRenderer) );
   ctx_rasterizer_init (rasterizer, state, data, x, y, width, height,
-                       stride, pixel_format);
+                       stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
 }
 #endif
 

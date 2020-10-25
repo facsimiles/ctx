@@ -20,29 +20,36 @@ struct _CtxSDL
    int           height;
    int           cols;
    int           rows;
-   uint8_t      *pixels;
    int           was_down;
-   SDL_Window   *window;
-   SDL_Renderer *renderer;
-   SDL_Texture  *texture;
+   Ctx          *host[CTX_MAX_THREADS];
+   CtxAntialias  antialias;
+   uint8_t      *pixels;
    int           quit;
    _Atomic int   thread_quit;
+
+   int           shown_frame;
+   int           render_frame;
+   int           rendered_frame[CTX_MAX_THREADS];
+   int           frame;
+   int       min_col; // hasher cols and rows
+   int       min_row;
+   int       max_col;
+   int       max_row;
+   uint8_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS *  20];
+   int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
+                                                           // responsible for a tile
+                                                           //
+
+   int           pointer_down[3];
    int           key_balance;
    int           key_repeat;
    int           lctrl;
    int           lalt;
    int           rctrl;
-   int           shown_frame;
-   int           render_frame;
-   int           rendered_frame[CTX_MAX_THREADS];
-   Ctx          *host[CTX_MAX_THREADS];
-   int           frame;
-   int           pointer_down[3];
 
-
-   uint8_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS * 20];
-   int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
-                                                           // responsible for a tile
+   SDL_Window   *window;
+   SDL_Renderer *renderer;
+   SDL_Texture  *texture;
 };
 
 void ctx_sdl_set_title (void *self, const char *new_title)
@@ -399,7 +406,8 @@ void sdl_render_fun (void **data)
                                  host, NULL, &host->state,
                                  &sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
-                                 sdl->width*4, CTX_FORMAT_RGBA8);
+                                 sdl->width*4, CTX_FORMAT_RGBA8,
+                                 sdl->antialias);
             ((CtxRasterizer*)host->renderer)->texture_source = sdl->ctx;
             ctx_translate (host, -x0, -y0);
             ctx_render_ctx (sdl->ctx_copy, host);
