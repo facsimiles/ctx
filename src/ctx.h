@@ -935,11 +935,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define ctx_assert(a)
 #endif
 
-
-
-
 int ctx_get_renderstream_count (Ctx *ctx);
-
 
 struct
   _CtxCommand
