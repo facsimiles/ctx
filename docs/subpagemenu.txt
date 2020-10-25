@@ -1,5 +1,6 @@
        <div id='menu'>
-                <a href='http://ctx.graphics/'>ctx</a>
+                <a href='https://ctx.graphics/'>ctx</a>
+                <a href='https://ctx.graphics/.git/'>git</a>
                 <a href='../#downloads'>code</a>
                 <br/>
                 <a href='../rasterizer/'>rasterizer</a>
