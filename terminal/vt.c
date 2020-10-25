@@ -4114,6 +4114,9 @@ static void vt_state_osc (VT *vt, int byte)
             break;
           case 104:
             break;
+          case 8:
+            fprintf (stderr, "unhandled OSC 8, hyperlink\n");
+            break;
           default:
             fprintf (stderr, "unhandled OSC %i\n", n);
             break;
