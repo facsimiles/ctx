@@ -1175,11 +1175,11 @@ int terminal_main (int argc, char **argv)
         static int choice = CTX_ANTIALIAS_DEFAULT;
         int set = ctx_get_antialias (ctx);
         itk_choice (itk, "AA", &choice, NULL, NULL);
-        itk_choice_add (itk, CTX_ANTIALIAS_DEFAULT, "default");
         itk_choice_add (itk, CTX_ANTIALIAS_NONE,    "none");
-        itk_choice_add (itk, CTX_ANTIALIAS_GOOD,    "good");
-        itk_choice_add (itk, CTX_ANTIALIAS_BEST,    "best");
         itk_choice_add (itk, CTX_ANTIALIAS_FAST,    "fast");
+        itk_choice_add (itk, CTX_ANTIALIAS_GOOD,    "good");
+        itk_choice_add (itk, CTX_ANTIALIAS_DEFAULT, "default");
+        itk_choice_add (itk, CTX_ANTIALIAS_BEST,    "best");
         if (set != choice)
         {
           ctx_set_antialias (ctx, choice);

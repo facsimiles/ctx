@@ -6401,11 +6401,13 @@ int ctx_renderer_is_fb  (Ctx *ctx);
 static int _ctx_is_rasterizer (Ctx *ctx);
 CtxAntialias ctx_get_antialias (Ctx *ctx)
 {
+#if CTX_EVENTS
   if (ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx))
   {
      CtxThreaded *fb = (CtxThreaded*)(ctx->renderer);
      return fb->antialias;
   }
+#endif
   if (!_ctx_is_rasterizer (ctx)) return CTX_ANTIALIAS_DEFAULT;
 
   switch (((CtxRasterizer*)(ctx->renderer))->aa)
@@ -6435,6 +6437,7 @@ int _ctx_antialias_to_aa (CtxAntialias antialias)
 void
 ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 {
+#if CTX_EVENTS
   if (ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx))
   {
      CtxThreaded *fb = (CtxThreaded*)(ctx->renderer);
@@ -6442,13 +6445,11 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
      for (int i = 0; i < _ctx_threads; i++)
      {
        ctx_set_antialias (fb->host[i], antialias);
-          fprintf (stderr, "%p!\n",fb->host[i]);
      }
      return;
   }
-          fprintf (stderr, "%p?\n", ctx);
+#endif
   if (!_ctx_is_rasterizer (ctx)) return;
-          fprintf (stderr, "%p!!\n", ctx);
 
   ((CtxRasterizer*)(ctx->renderer))->aa = 
      _ctx_antialias_to_aa (antialias);

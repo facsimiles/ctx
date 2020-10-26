@@ -17,9 +17,9 @@ modules:
                 - make
                 - strip ctx
                 - install -D ctx /app/bin/ctx
-                - install -D graphics.ctx.terminal.png /app/share/icons/hicolor/128x128/apps/graphics.ctx.terminal.png
-                - install -D graphics.ctx.terminal.desktop /app/share/desktop/graphics.ctx.terminal.desktop
-                - install -D graphics.ctx.terminal.appdata.xml /app/share/appdata/graphics.ctx.terminal.appdata.xml
+                - install -D meta/graphics.ctx.terminal.png /app/share/icons/hicolor/128x128/apps/graphics.ctx.terminal.png
+                - install -D meta/graphics.ctx.terminal.desktop /app/share/desktop/graphics.ctx.terminal.desktop
+                - install -D meta/graphics.ctx.terminal.appdata.xml /app/share/appdata/graphics.ctx.terminal.appdata.xml
           sources:
            - type: git
              url: file:///home/pippin/src/ctx/.git

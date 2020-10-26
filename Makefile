@@ -111,7 +111,7 @@ updateweb: all test docs/ctx.h.html docs/ctx-font-regular.h.html
 	cp -ru tests/* ~/pgo/ctx.graphics/tests
 	cp ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
 flatpak:
-	rm -rf build-dir;flatpak-builder --user --install build-dir graphics.ctx.terminal.yml
+	rm -rf build-dir;flatpak-builder --user --install build-dir meta/graphics.ctx.terminal.yml
 
 ctx.h: src/*
 	(cd src;cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)

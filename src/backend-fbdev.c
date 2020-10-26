@@ -1372,5 +1372,10 @@ Ctx *ctx_new_fb (int width, int height)
 
   return fb->ctx;
 }
+#else
 
+int ctx_renderer_is_fb (Ctx *ctx)
+{
+  return 0;
+}
 #endif
