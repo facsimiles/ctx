@@ -6685,8 +6685,8 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   //if (vt->scroll || full)
     {
       ctx_begin_path (ctx);
-      ctx_rectangle (ctx, 0, 0, (vt->cols + 1) * vt->cw,
-                     (vt->rows + 1) * vt->ch);
+      ctx_rectangle (ctx, 0, 0, (vt->cols) * vt->cw,
+                     (vt->rows) * vt->ch);
       if (vt->reverse_video)
         {
           ctx_rgba (ctx, 1,1,1,1);

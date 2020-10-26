@@ -320,38 +320,64 @@ int id_to_no (int id)
 
 float add_x = 0;
 float add_y = 0;
-static int tab_no = 0;
+
 
 void client_move (int id, int x, int y);
 int client_resize (int id, int w, int h);
-void add_tab ()
+
+void ensure_layout ()
 {
+  float titlebar_h = ctx_height (ctx)/40;
   switch (ctx_list_length (clients))
   {
-    case 1:
-      add_x = ctx_width(ctx)/2;
-      add_y = 0;
-      break;
-    case 0:
-      add_x = 0;
-      add_y = 0;
-      break;
-    case 2:
-      {
-      float titlebar_h = ctx_height (ctx)/40;
-      client_resize (0, ctx_width (ctx), ctx_height (ctx)/2-titlebar_h*4);
-      client_move (0, 0, ctx_height (ctx)/2+titlebar_h*4);
-      }
-      add_x = 0;
-      add_y = 0;
-      break;
+     case 1:
+       client_resize (0, ctx_width (ctx), ctx_height (ctx) - titlebar_h);
+       client_move (0, 0, titlebar_h);
+       add_x = 0;
+       add_y = 0;
+       break;
+     case 2:
+       client_resize (0, ctx_width (ctx), ctx_height (ctx) - titlebar_h);
+       client_move (0, 0, titlebar_h);
+       {
+       CtxClient *client = clients->next->data;
+       client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
+       client_move (client->id, ctx_width (ctx)/2, titlebar_h);
+       }
+
+       add_x = 0;
+       add_y = 0;
+       break;
+     case 3:
+       client_resize (0, ctx_width (ctx), (ctx_height (ctx) - titlebar_h*2)/2);
+       client_move (0, 0, ctx_height(ctx)/2 + titlebar_h);
+       {
+       CtxClient *client = clients->next->data;
+       client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
+       client_move (client->id, ctx_width (ctx)/2, titlebar_h);
+
+       client = clients->next->next->data;
+       client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
+       client_move (client->id, 0, titlebar_h);
+       }
+
+       add_x = 0;
+       add_y = 0;
+       break;
+     case 4:
+       break;
+     case 5:
+       break;
   }
-  tab_no++;
+}
 
-  add_y += ctx_height (ctx) / 40;
-
-  active = add_client (vt_find_shell_command(), add_x, add_y, ctx_width(ctx)/2, (ctx_width (ctx)/2) * 0.6, 0);
+void add_tab ()
+{
+  float titlebar_h = ctx_height (ctx)/40;
+  active = add_client (vt_find_shell_command(), add_x, add_y,
+                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, 0);
   vt_set_ctx (active->vt, ctx);
+  ensure_layout ();
   add_y += ctx_height (ctx) / 40;
   add_x += ctx_height (ctx) / 40;
 
@@ -390,6 +416,7 @@ void client_remove (CtxClient *client)
     active = NULL;//find_active (last_x, last_y);
   }
   free (client);
+  ensure_layout();
 }
 
 #if 0
