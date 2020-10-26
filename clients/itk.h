@@ -38,7 +38,6 @@ enum {
   UI_RADIO
 };
 
-
 typedef struct _ITKPanel ITKPanel;
 struct _ITKPanel{
   int x;
@@ -1800,4 +1799,45 @@ void itk_done (ITK *itk)
     }
   }
   ctx_restore (ctx);
+}
+
+void
+itk_ctx_settings (ITK *itk)
+{
+  static int ctx_settings = 0;
+  static int inited = 0;
+  static int threads;
+  static int hash_cache_enabled;
+  Ctx *ctx = itk->ctx;
+  if (!inited){
+    inited = 1;
+    threads = ctx_get_render_threads (ctx);
+    hash_cache_enabled = ctx_get_hash_cache (ctx);
+  }
+  if (itk_expander (itk, "CTX settings", &ctx_settings))
+  {
+
+    itk_toggle (itk, "hash cache", &hash_cache_enabled);
+    if (hash_cache_enabled != ctx_get_hash_cache (ctx)){
+      ctx_set_hash_cache (ctx, hash_cache_enabled);
+    }
+    itk_slider_int (itk, "threads", &threads, 1, CTX_MAX_THREADS, 1);
+    if (threads != ctx_get_render_threads (ctx))
+    {
+      ctx_set_render_threads (ctx, threads);
+    }
+
+    static int choice = CTX_ANTIALIAS_DEFAULT;
+    int set = ctx_get_antialias (ctx);
+    itk_choice (itk, "Antialiasing", &choice, NULL, NULL);
+    itk_choice_add (itk, CTX_ANTIALIAS_NONE,    "none");
+    itk_choice_add (itk, CTX_ANTIALIAS_FAST,    "fast = 3");
+    itk_choice_add (itk, CTX_ANTIALIAS_GOOD,    "good = 5");
+    itk_choice_add (itk, CTX_ANTIALIAS_DEFAULT, "default = 15");
+    itk_choice_add (itk, CTX_ANTIALIAS_BEST,    "best = 17");
+    if (set != choice)
+    {
+      ctx_set_antialias (ctx, choice);
+    }
+  }
 }

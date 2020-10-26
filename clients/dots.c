@@ -48,8 +48,8 @@ int main (int argc, char **argv)
 
       itk_reset (itk);
       itk_panel_start (itk, "spiraling dots", ctx_width(ctx)*3/4,0,ctx_width(ctx)/4, ctx_height(ctx)/3);
-      itk_slider_int (itk, "count",          &dot_count, 1,   4000, 1);
-      itk_slider_float (itk, "dot scale",    &dot_scale, 2.0, 100.0, 0.5);
+      itk_slider_int (itk, "count",          &dot_count, 1,   4000, 10);
+      itk_slider_float (itk, "radius",    &dot_scale, 2.0, 200.0, 4.5);
       itk_slider_float (itk, "twist amount", &twist, -3.14152, 3.14152, 0.0005);
       if (itk_button (itk, "+0.0001"))
       {
@@ -59,6 +59,8 @@ int main (int argc, char **argv)
       {
         twist -= 0.0001;
       }
+
+      itk_ctx_settings (itk);
       itk_panel_end (itk);
       itk_done (itk);
 

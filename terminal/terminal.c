@@ -1166,25 +1166,7 @@ int terminal_main (int argc, char **argv)
           }
           itk_toggle (itk, "on screen keyboard", &on_screen_keyboard);
           itk_toggle (itk, "focus follows mouse", &focus_follows_mouse);
-          itk_toggle (itk, "ctx hash cache", &_ctx_enable_hash_cache);
-          itk_labelf (itk, " threads : %i", _ctx_threads);
-        /* perhaps providing this abstraction is more concice for this case?
-         *
-         *   if (itk_choice_changed ()) { ctx_set_antialias (ctx, itk_choice_value());  } 
-         */
-        static int choice = CTX_ANTIALIAS_DEFAULT;
-        int set = ctx_get_antialias (ctx);
-        itk_choice (itk, "AA", &choice, NULL, NULL);
-        itk_choice_add (itk, CTX_ANTIALIAS_NONE,    "none");
-        itk_choice_add (itk, CTX_ANTIALIAS_FAST,    "fast");
-        itk_choice_add (itk, CTX_ANTIALIAS_GOOD,    "good");
-        itk_choice_add (itk, CTX_ANTIALIAS_DEFAULT, "default");
-        itk_choice_add (itk, CTX_ANTIALIAS_BEST,    "best");
-        if (set != choice)
-        {
-          ctx_set_antialias (ctx, choice);
-
-        }
+          itk_ctx_settings (itk);
 
 
           if (active)

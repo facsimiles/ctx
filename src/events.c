@@ -1579,4 +1579,21 @@ void _ctx_debug_overlays (Ctx *ctx)
   ctx_restore (ctx);
 }
 
+void ctx_set_render_threads   (Ctx *ctx, int n_threads)
+{
+  // XXX
+}
+int ctx_get_render_threads   (Ctx *ctx)
+{
+  return _ctx_threads;
+}
+void ctx_set_hash_cache (Ctx *ctx, int enable_hash_cache)
+{
+  _ctx_enable_hash_cache = enable_hash_cache;
+}
+int ctx_get_hash_cache (Ctx *ctx)
+{
+  return _ctx_enable_hash_cache;
+}
+
 #endif
