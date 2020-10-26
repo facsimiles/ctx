@@ -263,14 +263,6 @@ static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
 
 static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_model);
 
-#if CTX_POSTEL_PRINCIPLED_INPUT
-  #define OPT(code)   code
-#else
-  #define OPT(code)
-#endif
-
-
-
 static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 {
   uint32_t ret = str[0]; /* if it is single char it already is the CtxCode */
@@ -320,16 +312,14 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 #define CTX_function CTX_STRH('f','u','n','c','t','i','o','n',0,0,0,0,0,0)
 #define CTX_endfun CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
 
-          OPT(case CTX_function:  ret = CTX_FUNCTION; break;)
+          case CTX_function:  ret = CTX_FUNCTION; break;
           //case CTX_endfun:    ret = CTX_ENDFUN; break;
 #endif
           /* first a list of mappings to one_char hashes, handled in a
            * separate fast path switch without hashing
            */
-          OPT(case CTX_arc_to:)
           case CTX_arcTo:         ret = CTX_ARC_TO; break;
           case CTX_arc:            ret = CTX_ARC; break;
-          OPT(case CTX_curve_to:)
           case CTX_curveTo:       ret = CTX_CURVE_TO; break;
           case CTX_setkey:         ret = CTX_SET; parser->t_args=0;break;
           case CTX_getkey:         ret = CTX_GET; break;
@@ -337,47 +327,31 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_stroke:         ret = CTX_STROKE; break;
           case CTX_fill:           ret = CTX_FILL; break;
           case CTX_flush:          ret = CTX_FLUSH; break;
-          OPT(case CTX_hor_line_to:)
           case CTX_horLineTo:      ret = CTX_HOR_LINE_TO; break;
           case CTX_rotate:         ret = CTX_ROTATE; break;
           case CTX_color:          ret = CTX_COLOR; break;
-          OPT(case CTX_line_to:)
           case CTX_lineTo:         ret = CTX_LINE_TO; break;
-          OPT(case CTX_move_to:)
           case CTX_moveTo:         ret = CTX_MOVE_TO; break;
           case CTX_scale:          ret = CTX_SCALE; break;
-          OPT(case CTX_new_page:)
           case CTX_newPage:        ret = CTX_NEW_PAGE; break;
-          OPT(case CTX_quad_to:)
           case CTX_quadTo:         ret = CTX_QUAD_TO; break;
-          OPT(case CTX_view_box:)
           case CTX_viewBox:       ret = CTX_VIEW_BOX; break;
-          OPT(case CTX_smoothTo:)
           case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
-          OPT(case CTX_smoothQuadTo:)
           case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
 
           case CTX_clear:          ret = CTX_COMPOSITE_CLEAR; break;
           case CTX_copy:           ret = CTX_COMPOSITE_COPY; break;
-          OPT(case CTX_destination_over:)
           case CTX_destinationOver: ret = CTX_COMPOSITE_DESTINATION_OVER; break;
 
           case CTX_destinationIn:
-          OPT(case CTX_destination_in:)
                                     ret = CTX_COMPOSITE_DESTINATION_IN; break;
           case CTX_destinationOut:
-          OPT(case CTX_destination_out:)
                                     ret = CTX_COMPOSITE_DESTINATION_OUT; break;
-          OPT(case CTX_source_over:)
           case CTX_sourceOver:
                                      ret = CTX_COMPOSITE_SOURCE_OVER; break;
-          OPT(case CTX_source_atop:)
           case CTX_sourceAtop:       ret = CTX_COMPOSITE_SOURCE_ATOP; break;
-          OPT(case CTX_destination_atop:)
           case CTX_destinationAtop: ret = CTX_COMPOSITE_DESTINATION_ATOP; break;
-          OPT(case CTX_source_out:)
           case CTX_sourceOut:       ret = CTX_COMPOSITE_SOURCE_OUT; break;
-          OPT(case CTX_source_in:)
           case CTX_sourceIn:      ret = CTX_COMPOSITE_SOURCE_IN; break;
           case CTX_xor:            ret = CTX_COMPOSITE_XOR; break;
           case CTX_darken:         ret = CTX_BLEND_DARKEN; break;
@@ -394,116 +368,76 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_screen:         ret = CTX_BLEND_SCREEN;break;
           case CTX_difference:     ret = CTX_BLEND_DIFFERENCE; break;
           case CTX_reset:          ret = CTX_RESET; break;
-          OPT(case CTX_ver_line_to:)
           case CTX_verLineTo:  ret = CTX_VER_LINE_TO; break;
           case CTX_exit:
           case CTX_done:           ret = CTX_EXIT; break;
-          OPT(case CTX_close_path:)
           case CTX_closePath:      ret =  CTX_CLOSE_PATH; break;
-          OPT(case CTX_new_path:)
-          OPT(case CTX_begin_path:)
           case CTX_beginPath:
           case CTX_newPath:        ret =  CTX_BEGIN_PATH; break;
-          OPT(case CTX_rel_arc_to:)
           case CTX_relArcTo:       ret = CTX_REL_ARC_TO; break;
           case CTX_clip:           ret = CTX_CLIP; break;
-          OPT(case CTX_rel_curve_to:)
           case CTX_relCurveTo:     ret = CTX_REL_CURVE_TO; break;
-          OPT(case CTX_start_group:)
           case CTX_startGroup:     ret = CTX_START_GROUP; break;
-          OPT(case CTX_end_group:)
           case CTX_endGroup:       ret = CTX_END_GROUP; break;
           case CTX_save:           ret = CTX_SAVE; break;
           case CTX_translate:      ret = CTX_TRANSLATE; break;
-          OPT(case CTX_linear_gradient:)
           case CTX_linearGradient: ret = CTX_LINEAR_GRADIENT; break;
-          OPT(case CTX_rel_hor_line_to:)
           case CTX_relHorLineTo:   ret = CTX_REL_HOR_LINE_TO; break;
-          OPT(case CTX_rel_line_to:)
           case CTX_relLineTo:      ret = CTX_REL_LINE_TO; break;
-          OPT(case CTX_rel_move_to:)
           case CTX_relMoveTo:      ret = CTX_REL_MOVE_TO; break;
           case CTX_font:           ret = CTX_FONT; break;
-          OPT(case CTX_radial_gradient:)
           case CTX_radialGradient:ret = CTX_RADIAL_GRADIENT; break;
-          OPT(case CTX_gradient_add_stop:)
-          OPT(case CTX_add_stop:)
           case CTX_gradientAddStop:
           case CTX_addStop:        ret = CTX_GRADIENT_STOP; break;
-          OPT(case CTX_rel_quad_to:)
           case CTX_relQuadTo:      ret = CTX_REL_QUAD_TO; break;
           case CTX_rectangle:
           case CTX_rect:           ret = CTX_RECTANGLE; break;
-          OPT(case CTX_round_rectangle:)
           case CTX_roundRectangle: ret = CTX_ROUND_RECTANGLE; break;
-          OPT(case CTX_rel_smooth_to:)
           case CTX_relSmoothTo:    ret = CTX_REL_SMOOTH_TO; break;
-          case CTX_relSmoothqTo:
-          OPT(case CTX_rel_smoothq_to:)
-                                    ret = CTX_REL_SMOOTHQ_TO; break;
-          OPT(case CTX_text_stroke:)
+          case CTX_relSmoothqTo:   ret = CTX_REL_SMOOTHQ_TO; break;
           case CTX_textStroke:     ret = CTX_TEXT_STROKE; break;
-          OPT(case CTX_rel_ver_line_to:)
           case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
           case CTX_text:           ret = CTX_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
           case CTX_texture:        ret = CTX_TEXTURE; break;
-
-          OPT(case CTX_rgb_space:)
           case CTX_rgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
           case CTX_cmykSpace:
-          OPT(case CTX_cmyk_space:)
             return ctx_parser_set_command (parser, CTX_SET_CMYK_SPACE);
-          OPT(case CTX_drgb_space:)
           case CTX_drgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_DRGB_SPACE);
-          OPT(case CTX_fill_rule:)
           case CTX_fillRule:
             return ctx_parser_set_command (parser, CTX_FILL_RULE);
-          OPT(case CTX_font_size:)
           case CTX_fontSize:
           case CTX_setFontSize:
             return ctx_parser_set_command (parser, CTX_FONT_SIZE);
-
-          OPT(case CTX_composite:)
-          OPT(case CTX_compositing_mode:)
           case CTX_compositingMode:
             return ctx_parser_set_command (parser, CTX_COMPOSITING_MODE);
 
           case CTX_blend:
           case CTX_blending:
-          OPT(case CTX_blending_mode:)
-          OPT(case CTX_blend_mode:)
           case CTX_blendMode:
             return ctx_parser_set_command (parser, CTX_BLEND_MODE);
 
-          OPT(case CTX_miter_limit:)
           case CTX_miterLimit:
             return ctx_parser_set_command (parser, CTX_MITER_LIMIT);
-          OPT(case CTX_text_align:)
           case CTX_textAlign:
             return ctx_parser_set_command (parser, CTX_TEXT_ALIGN);
-          OPT(case CTX_text_baseline:)
           case CTX_textBaseline:
             return ctx_parser_set_command (parser, CTX_TEXT_BASELINE);
-          OPT(case CTX_text_direction:)
           case CTX_textDirection:
             return ctx_parser_set_command (parser, CTX_TEXT_DIRECTION);
           case CTX_join:
-          OPT(case CTX_line_join:)
           case CTX_lineJoin:
           case CTX_setLineJoin:
             return ctx_parser_set_command (parser, CTX_LINE_JOIN);
           case CTX_glyph:
             return ctx_parser_set_command (parser, CTX_GLYPH);
           case CTX_cap:
-          OPT(case CTX_line_cap:)
           case CTX_lineCap:
           case CTX_setLineCap:
             return ctx_parser_set_command (parser, CTX_LINE_CAP);
-          OPT(case CTX_line_width:)
           case CTX_lineWidth:
           case CTX_setLineWidth:
             return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
@@ -515,7 +449,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
             return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_X);
           case CTX_shadowOffsetY:
             return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_Y);
-          OPT(case CTX_global_alpha:)
           case CTX_globalAlpha:
             return ctx_parser_set_command (parser, CTX_GLOBAL_ALPHA);
           /* strings are handled directly here,
@@ -589,8 +522,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
   /* handling single char, and ret = foo; break;  in cases above*/
   return ctx_parser_set_command (parser, (CtxCode) ret);
 }
-
-#undef OPT
 
 enum
 {

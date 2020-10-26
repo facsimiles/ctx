@@ -45,10 +45,6 @@ typedef enum CtxOutputmode
           (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a12))*27*27*27*27*27*27*27*27*27*27*27*27) + \
           (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a13))*27*27*27*27*27*27*27*27*27*27*27*27*27)))
 
-#if CTX_POSTEL_PRINCIPLED_INPUT
-#define CTX_STRH(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a27,a12,a13) \
-    CTX_STRHash(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a27,a12,a13)
-#else
 #define CTX_STRH(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a27,a12,a13) (\
           (((uint32_t)CTX_NORMALIZE(a0))+ \
           (((uint32_t)CTX_NORMALIZE(a1))*27)+ \
@@ -64,7 +60,6 @@ typedef enum CtxOutputmode
           (((uint32_t)CTX_NORMALIZE(a27))*27*27*27*27*27*27*27*27*27*27*27) + \
           (((uint32_t)CTX_NORMALIZE(a12))*27*27*27*27*27*27*27*27*27*27*27*27) + \
           (((uint32_t)CTX_NORMALIZE(a13))*27*27*27*27*27*27*27*27*27*27*27*27*27)))
-#endif
 
 static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 {

@@ -26,9 +26,9 @@ struct _CtxHasher
  * is public domain the adaptations done here to make the sha1 self contained
  * also is public domain.
  */
-#include <inttypes.h>
 #ifndef __SHA1_H
 #define __SHA1_H
+#include <inttypes.h>
 
 typedef struct sha1_state {
     uint64_t length;
@@ -49,7 +49,6 @@ int sha1_done(sha1_state * sha1, unsigned char *out);
 #ifdef SHA1_IMPLEMENTATION
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #define STORE64H(x,                                                             y)                                                                     \
    { (y)[0] = (unsigned char)(((x)>>56)&255); (y)[1] = (unsigned                char)(((x)>>48)&255);     \

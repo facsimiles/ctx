@@ -793,9 +793,6 @@ ctx_exit (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_EXIT);
 }
 
-#include <stdio.h>
-#include <unistd.h>
-
 void
 ctx_flush (Ctx *ctx)
 {

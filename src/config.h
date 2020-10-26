@@ -59,11 +59,12 @@
 #define CTX_BITPACK           1
 #endif
 
-/* whether we have a shape-cache where we keep pre-rasterized bitmaps of commonly
- * occuring small shapes.
+/* whether we have a shape-cache where we keep pre-rasterized bitmaps of
+ * commonly occuring small shapes, disabled by default since it has some
+ * glitches (and potential hangs with multi threading).
  */
 #ifndef CTX_SHAPE_CACHE
-#define CTX_SHAPE_CACHE           0
+#define CTX_SHAPE_CACHE        0
 #endif
 
 /* size (in pixels, w*h) that we cache rasterization for
@@ -177,19 +178,19 @@
 #endif
 
 #ifndef CTX_MIN_EDGE_LIST_SIZE
-#define CTX_MIN_EDGE_LIST_SIZE   1024
+#define CTX_MIN_EDGE_LIST_SIZE  1024
 #endif
 
 /* The maximum complexity of a single path
  */
 #ifndef CTX_MAX_EDGE_LIST_SIZE
-#define CTX_MAX_EDGE_LIST_SIZE   CTX_MIN_EDGE_LIST_SIZE
+#define CTX_MAX_EDGE_LIST_SIZE  CTX_MIN_EDGE_LIST_SIZE
 #endif
 
 #ifndef CTX_STRINGPOOL_SIZE
   // XXX should be possible to make zero and disappear when codepaths not in use
   //     to save size
-#define CTX_STRINGPOOL_SIZE   4000 // needed for tiger
+#define CTX_STRINGPOOL_SIZE     4000 // needed for tiger
 #endif
 
 /* whether we dither or not for gradients
@@ -210,15 +211,7 @@
  *  critical paths.
  */
 #ifndef CTX_FORCE_INLINES
-#define CTX_FORCE_INLINES       1
-#endif
-
-/* this enables alternate syntax in parsing, like _ instead of camel case,
- * surprisingly permitting some aliases does not increase the size of the
- * generated parser.
- */
-#ifndef  CTX_POSTEL_PRINCIPLED_INPUT
-#define CTX_POSTEL_PRINCIPLED_INPUT     0
+#define CTX_FORCE_INLINES               1
 #endif
 
 /* create one-off inlined inner loop for normal blend mode
@@ -235,6 +228,10 @@
 #define CTX_BRAILLE_TEXT        0
 #endif
 
+/* including immintrin.h triggers building of AVX2 code paths, if - like
+ * sometimes when including SDL one does want it at all do a
+ * #define CTX_AVX2 0  before including ctx.h for implementation.
+ */
 #ifndef CTX_AVX2
 #ifdef _IMMINTRIN_H_INCLUDED
 #define CTX_AVX2         1
@@ -243,22 +240,25 @@
 #endif
 #endif
 
-/* do 
+/* Build code paths for grayscale rasterization, normally this is handled
+ * by the RGBA8 codepaths; on microcontrollers with eink this might be
+ * a better option.
  */
 #ifndef CTX_NATIVE_GRAYA8
 #define CTX_NATIVE_GRAYA8       0
 #endif
 
+/* enable CMYK rasterization targets
+ */
 #ifndef CTX_ENABLE_CMYK
 #define CTX_ENABLE_CMYK         1
 #endif
 
+/* enable color management, slightly increases CtxColor struct size, can
+ * be disabled for microcontrollers.
+ */
 #ifndef CTX_ENABLE_CM
 #define CTX_ENABLE_CM           1
-#endif
-
-#ifndef CTX_RENDER_CTX
-#define CTX_RENDER_CTX          1
 #endif
 
 #ifndef CTX_EVENTS
