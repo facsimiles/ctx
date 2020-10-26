@@ -1,6 +1,5 @@
 #include <stdint.h>
 
-#include "ctx-font-ascii.h"
 #include "tiny-config.h"
 #undef CTX_PARSER
 #define CTX_PARSER          1

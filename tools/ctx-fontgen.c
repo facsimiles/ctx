@@ -12,7 +12,7 @@
 #define CTX_EXTRAS 1
 #define CTX_AVX2 0
 #define CTX_IMPLEMENTATION
-#include "ctx.h"
+#include "ctx-nofont.h"
 
 static int usage(){
   fprintf (stderr, "tool to generate native ctx embedded font format\n");

@@ -10,7 +10,7 @@
 #endif
 #include <math.h>
 
-#include "ctx-font-regular.h"
+//#include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
 
 //#include "Roboto-Regular.h"

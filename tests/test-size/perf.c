@@ -1,6 +1,5 @@
 #include <stdint.h>
 
-#include "ctx-font-ascii.h"
 #define CTX_LIMIT_FORMATS   0
 #define CTX_EVENTS          1
 #define CTX_ENABLE_CM       0

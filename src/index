@@ -1,4 +1,5 @@
 ctx.h
+../fonts/ctx-font-ascii.h
 ctx-list.h
 config.h
 ctx-extra.h

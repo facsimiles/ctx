@@ -15,13 +15,10 @@ all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
 clients/%: clients/%.c Makefile ctx.o clients/itk.h
 	$(CC) -g $< -o $@ $(CFLAGS) ctx.o $(LIBS) `pkg-config sdl2 --cflags --libs`
 
-
-
-
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
-	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii > $@
+	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
 fonts/ctxf/ascii.ctxf: tools/ctx-fontgen
-	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii binary > $@
+	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii binary > $@
 fonts/ctx-font-regular.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras > $@
 fonts/ctx-font-mono.h: tools/ctx-fontgen
@@ -57,7 +54,7 @@ uninstall:
 CFLAGS+=-I. -Ifonts -Ideps
 LIBS   =-lutil -lz -lm -lpthread
 
-tools/%: tools/%.c ctx.h 
+tools/%: tools/%.c ctx-nofont.h 
 	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
@@ -71,7 +68,7 @@ ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
 src/%.o: src/%.c split/*.h
 	$(CC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS)
 
-terminal/%.o: terminal/%.c *.h terminal/*.h
+terminal/%.o: terminal/%.c ctx.h terminal/*.h
 	$(CC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS) 
 
 ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS)
@@ -113,6 +110,8 @@ updateweb: all test docs/ctx.h.html docs/ctx-font-regular.h.html
 flatpak:
 	rm -rf build-dir;flatpak-builder --user --install build-dir meta/graphics.ctx.terminal.yml
 
-ctx.h: src/*
+ctx.h: src/* fonts/ctx-font-ascii.h
 	(cd src;cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
 
+ctx-nofont.h: src/*
+	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
