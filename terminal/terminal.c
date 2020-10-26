@@ -331,8 +331,16 @@ void ensure_layout ()
   switch (ctx_list_length (clients))
   {
      case 1:
-       client_resize (0, ctx_width (ctx), ctx_height (ctx) - titlebar_h);
-       client_move (0, 0, titlebar_h);
+       if (ctx_renderer_is_fb (ctx))
+       {
+         client_resize (0, ctx_width (ctx), ctx_height (ctx) - titlebar_h);
+         client_move (0, 0, titlebar_h);
+       }
+       else
+       {
+         client_resize (0, ctx_width (ctx), ctx_height (ctx));
+         client_move (0, 0, 0);
+       }
        add_x = 0;
        add_y = 0;
        break;
@@ -345,8 +353,8 @@ void ensure_layout ()
        client_move (client->id, ctx_width (ctx)/2, titlebar_h);
        }
 
-       add_x = 0;
-       add_y = 0;
+       add_y = ctx_height (ctx) / 40;
+       add_x = ctx_height (ctx) / 40;
        break;
      case 3:
        client_resize (0, ctx_width (ctx), (ctx_height (ctx) - titlebar_h*2)/2);
@@ -361,8 +369,8 @@ void ensure_layout ()
        client_move (client->id, 0, titlebar_h);
        }
 
-       add_x = 0;
-       add_y = 0;
+       add_y = ctx_height (ctx) / 40;
+       add_x = ctx_height (ctx) / 40;
        break;
      case 4:
        break;
@@ -378,8 +386,8 @@ void add_tab ()
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, 0);
   vt_set_ctx (active->vt, ctx);
   ensure_layout ();
-  add_y += ctx_height (ctx) / 40;
-  add_x += ctx_height (ctx) / 40;
+  add_y += ctx_height (ctx) / 20;
+  add_x += ctx_height (ctx) / 20;
 
   if (add_y + ctx_height(ctx)/2 > ctx_height (ctx))
   {
@@ -1025,8 +1033,8 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
 {
   if (!strcmp (event->string, "resize-event"))
   {
-     if (active)
-       client_resize (active->id, ctx_width (ctx), ctx_height (ctx));
+     ensure_layout ();
+     dirty++;
   }
   else
   {
@@ -1079,6 +1087,7 @@ int terminal_main (int argc, char **argv)
   }
 
   ctx  = ctx_new_ui (width, height);
+  ctx_set_antialias (ctx, CTX_ANTIALIAS_GOOD);
   width = ctx_width (ctx);
   height = ctx_height (ctx);
 
@@ -1118,14 +1127,22 @@ int terminal_main (int argc, char **argv)
 #endif
   signal (SIGCHLD,signal_child);
 
-
   int sleep_time = 200;
   while (clients)
     {
       CtxList *to_remove = NULL;
       int changes = 0;
-     
-      if (focus_follows_mouse || ctx_pointer_is_down (ctx, 0) ||
+      int n_clients = ctx_list_length (clients);
+      int follow_mouse = focus_follows_mouse;
+      if (n_clients <= 3)
+      {
+        follow_mouse = 1;
+        ensure_layout ();
+      }
+
+
+
+      if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
           ctx_pointer_is_down (ctx, 1) || (active==NULL))
       {
         CtxClient *client = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
@@ -1134,10 +1151,15 @@ int terminal_main (int argc, char **argv)
           if (active != client)
           {
             active = client;
-            if (client != clients->data)
+            if (follow_mouse == 0 ||
+                (ctx_pointer_is_down (ctx, 0) ||
+                 ctx_pointer_is_down (ctx, 1)))
             {
-              ctx_list_remove (&clients, client);
-              ctx_list_append (&clients, client);
+              if (client != clients->data)
+              {
+                ctx_list_remove (&clients, client);
+                ctx_list_append (&clients, client);
+              }
             }
             changes ++;
           }
