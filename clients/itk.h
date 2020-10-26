@@ -1801,6 +1801,9 @@ void itk_done (ITK *itk)
   ctx_restore (ctx);
 }
 
+int ctx_renderer_is_sdl (Ctx *ctx);
+int ctx_renderer_is_fb  (Ctx *ctx);
+
 void
 itk_ctx_settings (ITK *itk)
 {
@@ -1809,7 +1812,10 @@ itk_ctx_settings (ITK *itk)
   static int threads;
   static int hash_cache_enabled;
   Ctx *ctx = itk->ctx;
+
   if (!inited){
+    if (!(ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx)))
+       return;
     inited = 1;
     threads = ctx_get_render_threads (ctx);
     hash_cache_enabled = ctx_get_hash_cache (ctx);

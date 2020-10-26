@@ -1201,7 +1201,7 @@ int terminal_main (int argc, char **argv)
 
           float width = ctx_width (ctx);
           float height = ctx_height (ctx);
-          itk_panel_start (itk, "ctx terminal", 0,0, width * 0.5, height * 0.5);
+          itk_panel_start (itk, "ctx terminal", width*0.25,height*0.2, width * 0.5, height * 0.6);
           itk_seperator (itk);
 
           if (itk_button (itk, "add tab"))

@@ -248,22 +248,13 @@ int ctx_sdl_consume_events (Ctx *ctx)
           int width = event.window.data1;
           int height = event.window.data2;
           SDL_DestroyTexture (sdl->texture);
-          free (sdl->pixels);
           sdl->texture = SDL_CreateTexture (sdl->renderer, SDL_PIXELFORMAT_ABGR8888,
                           SDL_TEXTUREACCESS_STREAMING, width, height);
+          free (sdl->pixels);
           sdl->pixels = calloc (4, width * height);
-          sdl->width = width;
+
+          sdl->width  = width;
           sdl->height = height;
-          for (int i = 0 ; i < _ctx_threads; i++)
-          {
-            ctx_free (sdl->host[i]);
-            sdl->host[i] = ctx_new_for_framebuffer (&sdl->pixels[width * 4 * (height/_ctx_threads) * i],
-                   width / CTX_HASH_COLS, height/CTX_HASH_ROWS,
-                   width * 4, CTX_FORMAT_RGBA8);
-#if CTX_RASTERIZER
-            ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = ctx;
-#endif
-          }
           ctx_set_size (sdl->ctx, width, height);
           ctx_set_size (sdl->ctx_copy, width, height);
         }
@@ -288,14 +279,11 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   }
   if (count >= 10000)
   {
-    fprintf (stderr, "!\n");
     sdl->shown_frame = sdl->render_frame;
   }
   if (sdl->shown_frame == sdl->render_frame)
   {
-    ctx_reset (sdl->ctx_copy);
     int dirty_tiles = 0;
-
     ctx_set_renderstream (sdl->ctx_copy, &sdl->ctx->renderstream.entries[0],
                                          sdl->ctx->renderstream.count * 9);
     if (_ctx_enable_hash_cache)
@@ -418,7 +406,7 @@ void sdl_render_fun (void **data)
       if (sdl_render_threads_done (sdl) == _ctx_threads)
       {
    //   ctx_render_stream (sdl->ctx_copy, stdout, 1);
-        ctx_reset (sdl->ctx_copy);
+   //   ctx_reset (sdl->ctx_copy);
       }
     }
     else

@@ -33,7 +33,7 @@ clean:
 	rm -f ctx.h ctx ctx.avx2 ctx.static ctx.O0 *.o
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
-	rm -f $(SPLIT_OBJS)
+	rm -f $(SRC_OBJS)
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
 CFLAGS_warnings= -Wall \
