@@ -124,6 +124,18 @@ int ctx_sdl_consume_events (Ctx *ctx)
         //        button
         ctx_pointer_motion (ctx, event.motion.x, event.motion.y, 1, 0);
         break;
+      case SDL_FINGERMOTION:
+        fprintf (stderr, "%i\n", __LINE__);
+        ctx_pointer_motion (ctx, event.tfinger.x * sdl->width, event.tfinger.y * sdl->height, event.tfinger.fingerId + 3, 0);
+        break;
+      case SDL_FINGERDOWN:
+        fprintf (stderr, "%i\n", __LINE__);
+        ctx_pointer_press (ctx, event.tfinger.x *sdl->width, event.tfinger.y * sdl->height, event.tfinger.fingerId + 3, 0);
+        break;
+      case SDL_FINGERUP:
+        fprintf (stderr, "%i\n", __LINE__);
+        ctx_pointer_release (ctx, event.tfinger.x * sdl->width, event.tfinger.y * sdl->height, event.tfinger.fingerId + 3, 0);
+        break;
       case SDL_KEYUP:
         {
            sdl->key_balance --;
