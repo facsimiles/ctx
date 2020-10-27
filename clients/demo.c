@@ -1,226 +1,191 @@
+#include <unistd.h>
 #include <math.h>
 #include "ctx.h"
+#include "itk.h"
 
+typedef void (*TestFun)(ITK *itk, int frame_no);
+typedef struct Test{
+  const char *title;
+  TestFun     fun;
+}Test;
+
+extern Test tests[];
+extern int n_tests;
+int test_no = 0;
 int frame_no = 0;
-float width = 10;
-float height = 10;
 
-typedef void (*Test)(Ctx *ctx, int frame_no);
-
-#if 0
-static const signed char *rocket_op (Ctx *ctx, const signed char *g)
+int do_quit = 0;
+void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 {
-  switch (*g++) {
+  do_quit = 1;
+}
 
-    case ' ': ctx_new_path (ctx); break;
-    /* all of these path commands are directly in integer coordinates */
-    case 'm':
-      ctx_move_to  (ctx, g[0], g[1]); g += 2;
-break;
-    case 'l': ctx_line_to  (ctx, g[0], g[1]); g += 2; break;
-    case 'c': ctx_curve_to (ctx, g[0], g[1], g[2], g[3], g[4], g[5]); g += 6; break;
-    case 'z': ctx_close_path (ctx); break;
+extern int _ctx_threads;
+extern int _ctx_enable_hash_cache;
 
-    case 'g': ctx_rgba8 (ctx, g[0]*10, g[0]*10, g[0]*10, 255); g ++; break;
+int main (int argc, char **argv)
+{
+  ctx_init (&argc, &argv);
+  Ctx *ctx = ctx_new_ui (-1, -1);
 
-    case 'f': ctx_fill (ctx); break;
-    case 's': break;
-    default:
-    case '\0':
-    case '.':  /* end */
-      return NULL;
+  ITK *itk = itk_new (ctx);
+
+  const CtxEvent *event;
+  uint8_t abc = 11;
+  int   baz = 1;
+  int chosen = 1;
+  int enable_keybindings = 1;
+  char input[256]="fnord";
+  itk->dirty = 1;
+  while (!do_quit)
+  {
+    int width = ctx_width (ctx);
+    int height = ctx_height (ctx);
+      itk_reset (itk);
+#if 0
+    ctx_save (ctx);
+    ctx_rectangle (ctx, 0, 0, width, height);
+    ctx_gray (ctx, 0);
+    ctx_fill (ctx);
+#endif
+    tests[test_no].fun (itk, frame_no++);
+
+//  itk->dirty=1;
+//  if (itk->dirty)
+    {
+      itk_panel_start (itk, "Immediate Toolkit", 0, 0, width*0.2, height);
+      itk_seperator (itk);
+      itk_begin_menu_bar (itk, "main");
+       itk_begin_menu (itk, "foo");
+        itk_menu_item (itk, "foo 1");
+        itk_menu_item (itk, "foo 2");
+       itk_end_menu (itk);
+       itk_begin_menu (itk, "bar");
+        itk_menu_item (itk, "bar 1");
+        itk_menu_item (itk, "bar 2");
+ 
+        itk_begin_menu (itk, "baz");
+          itk_menu_item (itk, "baz 1");
+          itk_menu_item (itk, "baz 2");
+          itk_menu_item (itk, "baz 3");
+        itk_end_menu (itk);
+
+       itk_end_menu (itk);
+      itk_end_menu_bar (itk);
+      itk_seperator (itk);
+
+      itk_slider_int   (itk, "demo no", &test_no, 0, n_tests-1, 1);
+
+      static int itk_widgets = 0;
+      if (itk_expander (itk, "ITK widgets", &itk_widgets))
+      {
+
+      static int presses = 0;
+      if (itk_button (itk, "button"))
+        presses ++;
+
+      if (presses % 2)
+      {
+        itk_sameline (itk);
+        itk_label (itk, "label");
+      }
+
+      enum Mode
+      {
+        Mode_Rew,
+        Mode_Fwd,
+        Mode_Play,
+      };
+
+      static int mode = Mode_Fwd;
+      if (itk_radio(itk, "rew", mode==Mode_Rew)){mode = Mode_Rew;};
+      itk_sameline (itk);
+      if (itk_radio(itk, "fwd", mode==Mode_Fwd)){mode = Mode_Fwd;};
+      itk_sameline (itk);
+      if (itk_radio(itk, "play", mode==Mode_Play)){mode = Mode_Play;};
+
+
+      static float slide_float = 10.0;
+      itk_slider_float (itk, "slide float", &slide_float, 0.0, 100.0, 0.1);
+      //itk_slider_cb    (itk, "slide cb", &slide_float, -10.0, 10.0, 0.5, NULL, get_float, set_float, NULL);
+      //0.0, 100.0, 0.1);
+      static int   slide_int = 10;
+      itk_slider_int   (itk, "slide int", &slide_int, 0, 100, 1);
+      //
+      itk_slider_uint8  (itk, "slide byte", &abc, 0, 100, 1);
+      
+      itk_entry (itk, "Foo", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL);
+
+      itk_choice (itk, "power", &chosen, NULL, NULL);
+      itk_choice_add (itk, 0, "on");
+      itk_choice_add (itk, 1, "off");
+      itk_choice_add (itk, 2, "good");
+      itk_choice_add (itk, 2025, "green");
+      itk_choice_add (itk, 2030, "electric");
+      itk_choice_add (itk, 2040, "novel");
+
+      itk_toggle (itk, "baz ", &baz);
+      }
+
+      static int itk_items = 0;
+      if (itk_expander (itk, "items", &itk_items))
+      {
+        for (int i = 0; i < 15; i++)
+        {
+          char buf[20];
+          sprintf (buf, "%i", i);
+          itk_button (itk, buf);
+        }
+      }
+
+
+      itk_ctx_settings (itk);
+
+      static int itk_settings = 0;
+      if (itk_expander (itk, "ITK settings", &itk_settings))
+      {
+        itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
+        itk_toggle (itk, "enable keybindings", &enable_keybindings);
+        itk_toggle (itk, "light mode", &itk->light_mode);
+        itk_slider_float (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
+        itk_slider_float (itk, "font size ", &itk->font_size, 4.0, 60.0, 0.25);
+        itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
+        itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
+        itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);
+        itk_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
+        itk_slider_float (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
+        itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
+        itk_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
+        itk_slider_float (itk, "value width", &itk->value_width, 0.0, 40.0, 0.02);
+      }
+
+      itk_panel_end (itk);
+
+      itk_done (itk);
+
+      ctx_add_key_binding (ctx, "control-q", NULL, "foo", itk_key_quit, NULL);
+
+      if (enable_keybindings)
+        itk_key_bindings (itk);
+
+      ctx_flush (ctx);
     }
-  return g;
+    while ((event = ctx_get_event (ctx)))
+    {
+   //   if (event->type == CTX_MOTION){
+   //           itk->dirty++;
+   //   };//
+    }
+  }
+  ctx_free (ctx);
+  return 0;
 }
 
-static void
-render_rocket (Ctx *ctx, float x, float y, float scale, float angle)
+static void card_gradients (ITK *itk, int frame_no)
 {
-static signed char rakett[] = {
-  ' ',
-  'm',38,6,
-  'c',38,6,36,13,36,15,
-  'c',24,22,23,26,21,32,'c',19,41,23,61,23,61,'c',15,73,14,95,17,110,'l',26,109,'c',26,102,26,87,30,83,'c',30,83,30,88,30,95,'c',31,103,31,108,31,108,'l',36,108,'c',36,108,35,98,36,91,'c',37,83,38,80,38,80,'c',41,79,43,80,47,79,'c',56,85,56,89,58,99,'c',58,103,58,108,58,108,'l',68,108,'c',67,89,69,73,54,58,'c',54,58,56,41,53,31,'c',50,21,40,15,40,15,'l',38,6,'z','g',100,'f','g',100,'s',
-  ' ',
-  'm',33,20,'c',31,20,29,21,27,22,'c',25,24,23,27,22,29,'c',20,35,21,38,21,38,'c',26,38,29,36,34,33,'c',38,31,42,24,34,21,'c',34,21,33,20,33,20,'z','g', 50,'f','.'
-};
-  ctx_save (ctx);
-  ctx_global_alpha (ctx, 0.8);
-  for (const signed char *g = rakett; g; g = rocket_op (ctx, g));
-  ctx_restore (ctx);
-}
-#endif
-
-static void snippet_card10 (Ctx *ctx, int frame_no)
-{
-  ctx_save (ctx);
-  ctx_translate (ctx, width/2, height/2);
-  ctx_scale (ctx, 1.0 + frame_no / 1000.0, 1.0 + frame_no / 1000.0);
-  ctx_translate (ctx, -width/2, -height/2);
-  ctx_parse (ctx, "M 78.6,74 112,39 c 2.6,-3.15 5.4,-8.9 3.6,-18 -1.6,-4.6 -7.36,-14.8 -19.6,-14.9 -9.9,-0.0 -16,8 -16,8.1 0,0 -6.0,-8.7 -17.2,-8.57 C 51.3,5.5 44.6,12.75 42.8,19.1 c -1.74,6.3 0.34,14.7 4.8,19.74 ");
-  ctx_linear_gradient (ctx, 44, 0, 121, 0);
-  ctx_gradient_add_stop_u8 (ctx, 0.0f, 255,0,0,255);
-  ctx_gradient_add_stop_u8 (ctx, 0.1f, 255,0,255,255);
-  ctx_gradient_add_stop_u8 (ctx, 0.13f, 255,0,255,255);
-  ctx_gradient_add_stop_u8 (ctx, 0.25, 0,0,255,255);
-  ctx_gradient_add_stop_u8 (ctx, 0.35, 0,255,255,255);
-  ctx_gradient_add_stop_u8 (ctx, 0.4, 0,255,255,255);
-  ctx_gradient_add_stop_u8 (ctx, 0.5, 0,255,0,255);
-  ctx_gradient_add_stop_u8 (ctx, 0.6, 255,255,0,255);
-  ctx_gradient_add_stop_u8 (ctx, 0.7, 255,235,0,255);
-  ctx_gradient_add_stop_u8 (ctx, 0.95, 255,0,0,255);
-  ctx_gradient_add_stop_u8 (ctx, 1.0, 255,0,0,255);
-  ctx_fill (ctx);
-  ctx_parse (ctx, "M 48.5,38 l 16.578324,0 8.5,-13.25 9.5,25 10.3,-17.7 21,0");
-  ctx_rgba (ctx, 1,0,0,1);
-  ctx_line_width (ctx, 4.0);
-  ctx_stroke (ctx);
-  ctx_restore (ctx);
-}
-
-static void snippet_arc (Ctx *ctx, int frame_no)
-{
-  frame_no = frame_no % 300;
-
-  ctx_translate (ctx, 40.0, 0);
-  ctx_scale (ctx, 0.33, 0.33);
-  float xc = 128.0;
-  float yc = 128.0;
-  float radius = 100.0;
-  float angle1 = (15.0 + frame_no/2)  * (CTX_PI/180.0);  /* angles are specified */
-  float angle2 = 180.0 * (CTX_PI/180.0);  /* in radians           */
-
-  ctx_line_width (ctx, 10.0);
-  ctx_arc (ctx, xc, yc, radius, angle1, angle2, 0);
-  ctx_stroke (ctx);
-
-  /* draw helping lines */
-  ctx_rgba (ctx, 1, 0.2, 0.2, 0.6);
-  ctx_line_width (ctx, 6.0);
-
-  ctx_arc (ctx, xc, yc, 10.0, 0, 2*CTX_PI, 0);
-  ctx_fill (ctx);
-
-  ctx_move_to (ctx, xc, yc);
-  ctx_arc (ctx, xc, yc, radius, angle1, angle1, 0);
-  ctx_move_to (ctx, xc, yc);
-  ctx_arc (ctx, xc, yc, radius, angle2, angle2, 0);
-  ctx_stroke (ctx);
-}
-
-static void snippet_arc_negative (Ctx *ctx, int frame_no)
-{
-  frame_no = frame_no % 300;
-
-  ctx_translate (ctx, 40.0, 0);
-  ctx_scale (ctx, 0.33, 0.33);
-  float xc = 128.0;
-  float yc = 128.0;
-  float radius = 100.0;
-  float angle1 = (15.0 +frame_no/2)  * (CTX_PI/180.0);  /* angles are specified */
-  float angle2 = 180.0 * (CTX_PI/180.0);  /* in radians           */
-
-  ctx_line_width (ctx, 10.0);
-  ctx_arc (ctx, xc, yc, radius, angle1, angle2, 1);
-  ctx_stroke (ctx);
-
-  /* draw helping lines */
-  ctx_rgba (ctx, 1, 0.2, 0.2, 0.6);
-  ctx_line_width (ctx, 6.0);
-
-  ctx_arc (ctx, xc, yc, 10.0, 0, 2*CTX_PI, 0);
-  ctx_fill (ctx);
-
-  ctx_move_to (ctx, xc, yc);
-  ctx_arc (ctx, xc, yc, radius, angle1, angle1, 0);
-  ctx_move_to (ctx, xc, yc);
-  ctx_arc (ctx, xc, yc, radius, angle2, angle2, 0);
-  ctx_stroke (ctx);
-}
-
-static void snippet_curve_to (Ctx *ctx, int frame_no)
-{
-  frame_no %= 400;
-  ctx_translate (ctx, 40.0, 0);
-  ctx_scale (ctx, 0.33, 0.33);
-  float x=25.6,  y=128.0;
-  float x1=102.4 + frame_no - 102, y1=230.4,
-        x2=153.6, y2=25.6 + frame_no,
-        x3=230.4, y3=128.0;
-
-  ctx_move_to (ctx, x, y);
-  ctx_curve_to (ctx, x1, y1, x2, y2, x3, y3);
-
-  ctx_line_width (ctx, 10.0);
-  ctx_stroke (ctx);
-
-  ctx_rgba (ctx, 1, 0.2, 0.2, 0.6);
-  ctx_line_width (ctx, 6.0);
-  ctx_move_to (ctx,x,y);   ctx_line_to (ctx,x1,y1);
-  ctx_move_to (ctx,x2,y2); ctx_line_to (ctx,x3,y3);
-  ctx_stroke (ctx);
-}
-
-#if 0
-static void snippet_dash (Ctx *ctx, int frame_no)
-{
-#if 0
-  float dashes[] = {50.0,  /* ink */
-                    10.0,  /* skip */
-                    10.0,  /* ink */
-                    10.0   /* skip*/
-                   };
-  int    ndash  = sizeof (dashes)/sizeof(dashes[0]);
-  float offset = -50.0;
-  ctx_dash (ctx, dashes, ndash, offset);
-#endif
-
-  ctx_scale (ctx, 0.33, 0.33);
-  ctx_line_width (ctx, 10.0);
-
-  ctx_move_to (ctx, 128.0, 25.6);
-  ctx_line_to (ctx, 230.4, 230.4);
-  ctx_rel_line_to (ctx, -102.4, 0.0);
-  ctx_curve_to (ctx, 51.2, 230.4, 51.2, 128.0, 128.0, 128.0);
-
-  ctx_stroke (ctx);
-}
-#endif
-
-static void snippet_fill_rule (Ctx *ctx, int frame_no)
-{
-  ctx_translate (ctx, 40.0, 0);
-  ctx_scale (ctx, 2.4, 2.4);
-  ctx_line_width (ctx, 6);
-
-  ctx_arc (ctx, 64, 64, 40, 0, 1.9*CTX_PI, 0);
-  ctx_close_path (ctx);
-  ctx_arc (ctx, 192, 64, 40, 0, -1.9*CTX_PI, 1);
-  ctx_close_path (ctx);
-  ctx_rectangle (ctx, 12, 12, 232, 70);
-
-  ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
-  ctx_rgba (ctx, 0, 0.7, 0, 1);
-  ctx_preserve (ctx);
-  ctx_fill (ctx);
-  ctx_rgba (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
-
-  ctx_translate (ctx, 0, 128);
-  ctx_arc (ctx, 64, 64, 40, 0, 1.9*CTX_PI, 0);
-  ctx_close_path (ctx);
-  ctx_arc (ctx, 192, 64, 40, 0, -1.9*CTX_PI, 1);
-  ctx_close_path (ctx);
-  ctx_rectangle (ctx, 12, 12, 232, 70);
-
-  ctx_fill_rule (ctx, CTX_FILL_RULE_WINDING);
-  ctx_rgba (ctx, 0, 0, 0.9, 1);
-  ctx_preserve (ctx);
-  ctx_fill (ctx);
-  ctx_rgba (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
-}
-
-static void snippet_gradient (Ctx *ctx, int frame_no)
-{
+  Ctx *ctx = itk->ctx;
+  int width  = ctx_width (ctx);
+  int height = ctx_height(ctx);
   frame_no %= 256;
 
   ctx_linear_gradient (ctx, 0.0, 0.0,  0.0, height);
@@ -237,79 +202,52 @@ static void snippet_gradient (Ctx *ctx, int frame_no)
   ctx_fill (ctx);
 }
 
-#if 0
-static void snippet_image (Ctx *ctx, int frame_no)
+static void card_dots (ITK *itk, int frame_no)
 {
-int              w, h;
-ctx_surface_t *image;
+  Ctx *ctx = itk->ctx;
+  static int   dot_count = 100;
+  static float twist = -0.1619;
+  static float dot_scale = 160.0;
 
-image = ctx_image_surface_create_from_png ("data/romedalen.png");
-w = ctx_image_surface_get_width (image);
-h = ctx_image_surface_get_height (image);
+      /* clear */
+      ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+      ctx_rgba8 (ctx, 0,0,0,255);
+      ctx_fill (ctx);
 
-ctx_translate (ctx, 128.0, 128.0);
-ctx_rotate (ctx, 45* CTX_PI/180);
-ctx_scale  (ctx, 256.0/w, 256.0/h);
-ctx_translate (ctx, -0.5*w, -0.5*h);
+      ctx_rgba(ctx, 1, 1, 1, 0.5);
+      for (int i = 0; i < dot_count; i ++)
+      {
+        float x = ctx_width (ctx)/ 2;
+        float y = ctx_height (ctx) / 2;
+        float radius = ctx_height (ctx) / dot_scale;
+        float dist = i * (ctx_height (ctx)/ 2) / (dot_count * 1.0f);
+        float twisted = (i * twist);
+        x += cos (twisted) * dist;
+        y += sin (twisted) * dist;
+        ctx_arc (ctx, x, y, radius, 0, CTX_PI * 2.1, 0);
+        ctx_fill (ctx);
+      }
 
-ctx_source_surface (ctx, image, 0, 0);
-ctx_paint (ctx);
-ctx_surface_destroy (image);
-}
+      itk_panel_start (itk, "spiraling dots", ctx_width(ctx)*3/4,0,ctx_width(ctx)/4, ctx_height(ctx)/3);
+      itk_slider_int (itk, "count",          &dot_count, 1,   4000, 10);
+      itk_slider_float (itk, "radius",    &dot_scale, 2.0, 200.0, 4.5);
+      itk_slider_float (itk, "twist amount", &twist, -3.14152, 3.14152, 0.0005);
+      if (itk_button (itk, "+0.0001"))
+      {
+        twist += 0.0001;
+      }
+      if (itk_button (itk, "-0.0001"))
+      {
+        twist -= 0.0001;
+      }
 
-static void snippet_image_pattern (Ctx *Ctx, int frame_no)
-{
-int              w, h;
-ctx_surface_t *image;
-ctx_pattern_t *pattern;
-ctx_matrix_t   matrix;
-
-image = ctx_image_surface_create_from_png ("data/romedalen.png");
-w = ctx_image_surface_get_width (image);
-h = ctx_image_surface_get_height (image);
-
-pattern = ctx_pattern_create_for_surface (image);
-ctx_pattern_extend (pattern, CAIRO_EXTEND_REPEAT);
-
-ctx_translate (ctx, 128.0, 128.0);
-ctx_rotate (ctx, CTX_PI / 4);
-ctx_scale (ctx, 1 / sqrt (2), 1 / sqrt (2));
-ctx_translate (ctx, -128.0, -128.0);
-
-ctx_matrix_init_scale (&matrix, w/256.0 * 5.0, h/256.0 * 5.0);
-ctx_pattern_matrix (pattern, &matrix);
-
-ctx_source (ctx, pattern);
-
-ctx_rectangle (ctx, 0, 0, 256.0, 256.0);
-ctx_fill (ctx);
-
-ctx_pattern_destroy (pattern);
-ctx_surface_destroy (image);
-}
-#endif
-
-
-static void snippet_multi_segment_caps (Ctx *ctx, int frame_no)
-{
-  ctx_scale (ctx, 0.33, 0.33);
-
-  ctx_move_to (ctx, 50.0, 75.0);
-  ctx_line_to (ctx, 200.0, 75.0);
-
-  ctx_move_to (ctx, 50.0, 125.0);
-  ctx_line_to (ctx, 200.0, 125.0);
-
-  ctx_move_to (ctx, 50.0, 175.0);
-  ctx_line_to (ctx, 200.0, 175.0);
-
-  ctx_line_width (ctx, 30.0);
-  ctx_line_cap (ctx, CTX_CAP_ROUND);
-  ctx_stroke (ctx);
+      itk_ctx_settings (itk);
+      itk_panel_end (itk);
 }
 
 static void slider (Ctx *ctx, float x0, float y0, float width, float pos)
 {
+  int height = ctx_height (ctx);
   ctx_gray (ctx, 1.0);
   ctx_line_width (ctx, height * 0.025);
   ctx_move_to (ctx, x0, y0);
@@ -319,8 +257,11 @@ static void slider (Ctx *ctx, float x0, float y0, float width, float pos)
   ctx_fill (ctx);
 }
 
-static void snippet_rounded_rectangle (Ctx *ctx, int frame_no)
+static void card_sliders (ITK *itk, int frame_no)
 {
+  Ctx *ctx = itk->ctx;
+  int height = ctx_height (ctx);
+  int width = ctx_width (ctx);
   frame_no = frame_no % 400;
   /* a custom shape that could be wrapped in a function */
 
@@ -334,96 +275,6 @@ static void snippet_rounded_rectangle (Ctx *ctx, int frame_no)
   slider (ctx, height * 0.2, height * 0.4, width - height * 0.4, (frame_no  % 400) / 400.0);
   slider (ctx, height * 0.2, height * 0.5, width - height * 0.4, (frame_no  % 330) / 330.0);
   slider (ctx, height * 0.2, height * 0.6, width - height * 0.4, (frame_no  % 100) / 100.0);
-}
-
-static void snippet_text (Ctx *ctx, int frame_no)
-{
-  frame_no = frame_no % 200;
-
-  ctx_translate (ctx, 40.0, 0);
-  ctx_scale (ctx, 0.1 + frame_no/100.0, 0.1 + frame_no / 100.0);
-  ctx_font_size (ctx, height*0.2);
-
-  ctx_rgba (ctx, 1.0, 0.5, 1, 1);
-  ctx_move_to (ctx, height * 0.1 + frame_no * height * 0.001, height * 0.4);
-  ctx_text (ctx, "Hello");
-
-  ctx_move_to (ctx, height * 0.1 + frame_no * height * 0.001, height * 0.8);
-  ctx_rgba (ctx, 0.5, 0.5, 1, 1);
-  ctx_text (ctx, "void");
-
-  ctx_move_to (ctx, height * 0.1 + frame_no * height * 0.001, height * 0.3);
-  ctx_rgba (ctx, 0, 0, 0, 1);
-  ctx_line_width (ctx, 2.56);
-  ctx_text_stroke (ctx, "void");
-}
-
-
-static void scope (Ctx *ctx, int frame_no)
-{
-  ctx_rgba8 (ctx, 255,0,0,255);
-  ctx_line_width (ctx, CTX_LINE_WIDTH_FAST);
-  for (int i = 0; i < 180; i++)
-  {
-    float x = i;
-    float y = height*0.5f*ctx_sinf ((x+frame_no) / 10.0)+height/2;
-    if (i == 0)
-      ctx_move_to (ctx, x, y);
-    else
-      ctx_line_to (ctx, x, y);
-  }
-  ctx_stroke (ctx);
-}
-
-static void scope2 (Ctx *ctx, int frame_no)
-{
-  ctx_rgba8 (ctx, 255,0,0,255);
-  ctx_line_width (ctx, CTX_LINE_WIDTH_FAST);
-  for (int i = 0; i < 180; i++)
-  {
-    float x = i;
-    float y = height / 2 *
-      ctx_sinf ((x+frame_no)/7.0f) * ctx_cosf((x+frame_no)/3.0f) + height/2;
-    if (i == 0)
-      ctx_move_to (ctx, x, y);
-    else
-      ctx_line_to (ctx, x, y);
-  }
-  ctx_stroke (ctx);
-}
-
-static void scope_aa (Ctx *ctx, int frame_no)
-{
-  ctx_rgba8 (ctx, 255,0,0,255);
-  ctx_line_width (ctx, 1);
-  for (int i = 0; i < 180; i++)
-  {
-    float x = i;
-    float y = height*0.5f*ctx_sinf ((x+frame_no) / 10.0)+height/2;
-    if (i == 0)
-      ctx_move_to (ctx, x, y);
-    else
-      ctx_line_to (ctx, x, y);
-  }
-  ctx_stroke (ctx);
-}
-
-
-static void scope2_aa (Ctx *ctx, int frame_no)
-{
-  ctx_rgba8 (ctx, 255,0,0,255);
-  ctx_line_width (ctx, 1);
-  for (int i = 0; i < 180; i++)
-  {
-    float x = i;
-    float y = height / 2 *
-      ctx_sinf ((x+frame_no)/7.0f) * ctx_cosf((x+frame_no)/3.0f) + height/2;
-    if (i == 0)
-      ctx_move_to (ctx, x, y);
-    else
-      ctx_line_to (ctx, x, y);
-  }
-  ctx_stroke (ctx);
 }
 
 static void _analog_clock (Ctx     *ctx,
@@ -514,324 +365,98 @@ static void _analog_clock (Ctx     *ctx,
   ctx_restore (ctx);
 }
 
-#if 0
-static void __analog_clock (Ctx     *ctx,
-		           uint32_t ms,
-			   float    x,
-			   float    y,
-			   float    radius,
-			   int smoothstep)
+static void card_clock1 (ITK *itk, int frame_no)
 {
-  uint32_t s = ms / 1000;
-  uint32_t m = s / 60;
-  uint32_t h = m / 60;
-
-  ms = ((uint32_t)(ms))%1000;
-  s %= 60;
-  m %= 60;
-  h %= 12;
-
-  float r;
-  ctx_save (ctx);
-
-  ctx_rgba8 (ctx, 127, 127, 127, 255);
-//ctx_move_to (ctx, x, y);
-  ctx_arc (ctx, x, y, radius * 0.9, 0.0, CTX_PI * 1.9, 0);
-  ctx_line_width (ctx, radius * 0.2);
-  ctx_line_cap (ctx, CTX_CAP_NONE);
-  ctx_stroke (ctx);
-
-  ctx_line_width (ctx, 7);
-  ctx_line_cap (ctx, CTX_CAP_ROUND);
-  ctx_rgba8 (ctx, 188,188,188,255);
-
-  r = m * CTX_PI * 2/ 60.0 - CTX_PI/2;
-	  ;
-#if 1
-  ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + ctx_cosf(r) * radius * 0.7f, y + ctx_sinf (r) * radius * 0.61f);
-  ctx_stroke (ctx);
-#endif
-
-  r = h * CTX_PI * 2/ 12.0 - CTX_PI/2;
-  ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + ctx_cosf(r) * radius * 0.4f, y + ctx_sinf (r) * radius * 0.4f);
-  ctx_stroke (ctx);
-
-
-  ctx_line_width (ctx, 2);
-  ctx_line_cap (ctx, CTX_CAP_ROUND);
-  ctx_rgba8 (ctx, 255,0,0,127);
-
-  if (smoothstep)
-    r = (s + ms/1000.0f) * CTX_PI * 2/ 60 - CTX_PI/2;
-  else
-    r = (s ) * CTX_PI * 2/ 60 - CTX_PI/2;
-  ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + ctx_cosf(r) * radius * 0.75f, y + ctx_sinf (r) * radius * 0.75f);
-  ctx_stroke (ctx);
-
-  ctx_restore (ctx);
-}
-#endif
-
-static void analog_clock (Ctx *ctx, int frame_no)
-{
+  Ctx *ctx = itk->ctx;
   uint64_t ms64 = ctx_ticks() / 1000;
+  int width = ctx_width (ctx);
+  int height = ctx_height (ctx);
   _analog_clock (ctx, ms64, width/2, height/2, height/2, 1);
 }
 
-static void analog_clock2 (Ctx *ctx, int frame_no)
+static void card_clock2 (ITK *itk, int frame_no)
 {
+  Ctx *ctx = itk->ctx;
   uint64_t ms64 = ctx_ticks()/ 1000;
+  int width = ctx_width (ctx);
+  int height = ctx_height (ctx);
   _analog_clock (ctx, ms64, width/2, height/2, height/2, 0);
 }
 
-static void gradient_text (Ctx *ctx, int frame_no)
+static void card_fill_rule (ITK *itk, int frame_no)
 {
-  frame_no = frame_no % 400;
-  float r = frame_no * 0.01;
+  Ctx *ctx = itk->ctx;
+  int width = ctx_width (ctx);
+
   ctx_save (ctx);
-  ctx_linear_gradient (ctx, 12, 12, 200, 200);
-  ctx_translate (ctx, width/2, height/2);
-  ctx_rotate (ctx, r * 1.66);
-  ctx_translate (ctx, -width/2, -height/2);
-  ctx_move_to (ctx, 0, 40);
-  ctx_font_size (ctx, 24);
-  ctx_text (ctx, "card10+ctx");
+  ctx_translate (ctx, 40.0, 0);
+  ctx_scale (ctx, 2.4, 2.4);
+  ctx_line_width (ctx, 6);
+
+  ctx_arc (ctx, 64, 64, 40, 0, 1.9*CTX_PI, 0);
+  ctx_close_path (ctx);
+  ctx_arc (ctx, 192, 64, 40, 0, -1.9*CTX_PI, 1);
+  ctx_close_path (ctx);
+  ctx_rectangle (ctx, 12, 12, 232, 70);
+
+  ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
+  ctx_rgba (ctx, 0, 0.7, 0, 1);
+  ctx_preserve (ctx);
+  ctx_fill (ctx);
+  ctx_rgba (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
+
+  ctx_translate (ctx, 0, 128);
+  ctx_arc (ctx, 64, 64, 40, 0, 1.9*CTX_PI, 0);
+  ctx_close_path (ctx);
+  ctx_arc (ctx, 192, 64, 40, 0, -1.9*CTX_PI, 1);
+  ctx_close_path (ctx);
+  ctx_rectangle (ctx, 12, 12, 232, 70);
+
+  ctx_fill_rule (ctx, CTX_FILL_RULE_WINDING);
+  ctx_rgba (ctx, 0, 0, 0.9, 1);
+  ctx_preserve (ctx);
+  ctx_fill (ctx);
+  ctx_rgba (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
   ctx_restore (ctx);
 }
 
-uint32_t ctx_glyph_no (Ctx *ctx, int no);
-
-static int glyph_no = 0;
-static void font_unicode (Ctx *ctx, int frame_no)
+static void card_curve_to (ITK *itk, int frame_no)
 {
-  frame_no = frame_no % 2000;
-  ctx_rgba8 (ctx, 0,0,0,255);
+  Ctx *ctx = itk->ctx;
+  int width = ctx_width (ctx);
+  int height = ctx_height (ctx);
+  ctx_save (ctx);
+  frame_no %= 400;
+  ctx_translate (ctx, 40.0, 0);
+  ctx_scale (ctx, 0.33, 0.33);
+  float x=25.6,  y=128.0;
+  float x1=102.4 + frame_no - 102, y1=230.4,
+        x2=153.6, y2=25.6 + frame_no,
+        x3=230.4, y3=128.0;
 
-#define SYMBOL_WIDTH 28
-#define SYMBOL_SIZE  28
+  ctx_move_to (ctx, x, y);
+  ctx_curve_to (ctx, x1, y1, x2, y2, x3, y3);
 
-  ctx_font (ctx, "symbol");
-  ctx_font_size (ctx, SYMBOL_SIZE);
-  ctx_rgba8 (ctx, 255,0,0,255);
+  ctx_line_width (ctx, 10.0);
+  ctx_stroke (ctx);
 
-  for (int j = 0; j < 10 && SYMBOL_WIDTH * j < width; j ++)
-  {
-    int unichar = ctx_glyph_no (ctx, glyph_no + j);
-    ctx_move_to (ctx, j * SYMBOL_WIDTH - (frame_no-1)%SYMBOL_WIDTH, 70);
-    ctx_glyph (ctx, unichar, 0);
-  }
-
-  if (frame_no % SYMBOL_WIDTH == 0)
-    glyph_no++;
-  if (ctx_glyph_no (ctx, glyph_no) == 0) glyph_no = 0;
+  ctx_rgba (ctx, 1, 0.2, 0.2, 0.6);
+  ctx_line_width (ctx, 6.0);
+  ctx_move_to (ctx,x,y);   ctx_line_to (ctx,x1,y1);
+  ctx_move_to (ctx,x2,y2); ctx_line_to (ctx,x3,y3);
+  ctx_stroke (ctx);
+  ctx_restore (ctx);
 }
 
-
-static void font_scaling (Ctx *ctx, int frame_no)
+Test tests[]=
 {
-  char buf[64]="  px 0123456789\n";
-  frame_no = frame_no % 7000;
-  int font_size = height * 0.02 + frame_no * height * 0.01;
-  ctx_gray (ctx, 1.0);
-
-  buf[0] = '0' + (font_size/10);
-  buf[1] = '0' + (font_size%10);
-
-  ctx_font (ctx, "regular");
-  ctx_font_size (ctx, font_size);
-  ctx_move_to (ctx, height*0.02, font_size);
-  ctx_text (ctx, buf);
-  ctx_text (ctx, "text can be tricky\nbut we do seem\nto be fast now!");
-
-  //ctx_font (ctx, "regular");
-  //ctx_font_size (ctx, 18);
-  //ctx_move_to (ctx, 5, 15);
-  //sprintf (buf, "%i", 10 + frame_no/40);
-  //ctx_text (ctx, buf);
-}
-
-void dot (Ctx *ctx, float x, float y, float radius)
-{
-  ctx_arc (ctx, x, y, radius, 0, CTX_PI * 2.1, 0);
-  ctx_fill (ctx);
-}
-
-void dots_1000(Ctx *ctx, int frame_no)
-{
-    ctx_save(ctx);
-
-    ctx_rgba(ctx, 1, 1, 1, 1.0);
-    float siz = ctx_height (ctx) * 0.012;
-    float width = ctx_width (ctx);
-    float height = ctx_height (ctx);
-    for (int i = 0; i < 1000; i ++)
-    {
-      float x = width/2;
-      float y = height/2;
-
-      float dist = i * (height/ 2) / 1000.0;
-
-      float twist = i * (12000 + frame_no) * 0.000033;
-      x += cos (twist) * dist;
-      y += sin (twist) * dist;
-
-      dot (ctx, x, y, siz);
-    }
-
-    ctx_restore (ctx);
-}
-
-
-void dots_100 (Ctx *ctx, int frame_no)
-{
-  {
-    ctx_save(ctx);
-
-    ctx_rgba(ctx, 1, 1, 1, 1);
-    for (int i = 0; i < 100; i ++)
-    {
-      float x = ctx_width (ctx) / 2;
-      float y = ctx_height (ctx) / 2;
-//      float siz = ctx_height (ctx) * (0.005 + 0.02 *((frame_no-500)/400.0));
-
-      float siz = 0.5 + i/100.0 * 6.0;
-      float dist = i * (ctx_height (ctx) / 2) / 100;
-      float twist = i * frame_no * 0.00031415*2;
-      x += cos (twist) * dist;
-      y += sin (twist) * dist;
-
-      //dot (ctx, x, y, siz);
-//      dot (ctx, ((int)(x*8))/8.0, ((int)(y*8))/8.0, siz);
-//      dot (ctx, ((int)(x*6))/6.0, ((int)(y*6))/6.0, siz);
-
-        dot (ctx, ((int)(x*4))/4.0, ((int)(y*4))/4.0, siz);
-    }
-
-    ctx_restore (ctx);
-  }
-}
-
-static Test tests[]={
-  analog_clock,
-  dots_100,
-  dots_1000,
-  analog_clock2,
-  gradient_text,
-  snippet_gradient,
-  font_unicode,
-  font_scaling,
-  snippet_text,
-  snippet_card10,
-  snippet_arc,
-  snippet_arc_negative,
-  snippet_curve_to,
-  snippet_rounded_rectangle,
-  //snippet_dash,
-  snippet_fill_rule,
-//snippet_image,
-//snippet_image_pattern,
-  snippet_multi_segment_caps,
-  scope2,
-  scope_aa,
-  scope2_aa,
-  scope,
+  {"gradients", card_gradients},
+  {"dots",       card_dots},
+  {"sliders",   card_sliders},
+  {"clock1",     card_clock1},
+  {"clock2",     card_clock2},
+  {"fill rule",  card_fill_rule},
+  {"curve to",  card_curve_to},
 };
+int n_tests = sizeof(tests)/sizeof(tests[0]);
 
-static int test_no;
-static long start;
-static int quit = 0;
-
-static void do_quit (CtxEvent *event, void *data1, void *data2)
-{
-        quit = 1;
-}
-
-static void prev_test (CtxEvent *event, void *data1, void *data2)
-{
-      test_no --;
-      if (test_no < 0)
-        test_no = sizeof (tests) / sizeof (tests[0]) - 1;
-      frame_no = 0;
-      start = ctx_ticks ();
-}
-
-static void next_test (CtxEvent *event, void *data1, void *data2)
-{
-      test_no ++;
-      if ((unsigned)test_no >= sizeof (tests) / sizeof (tests[0]))
-        test_no = 0;
-      frame_no = 0;
-      start = ctx_ticks ();
-}
-
-int main (int argc, char **argv)
-{
-  ctx_init (&argc, &argv);
-  Ctx *ctx = ctx_new_ui (-1, -1);
-  //Ctx *ctx = ctx_new_ui (1920, 1080);
-
-  int frame_no = 0;
-
-  //ctx_set_antialias (ctx, CTX_ANTIALIAS_FAST);
-  start = ctx_ticks ();
-
-  long fps_sec = start / (1000 * 1000 );
-  int fps_frames = 0;
-
-  char fpsbuf[16]="";
-
-  while (!quit)
-  {
-    width = ctx_width (ctx);
-    height = ctx_height (ctx);
-    //epicfb_start_frame ();
-
-    if (ctx_ticks () / (1000*1000) != (unsigned)fps_sec)
-    {
-      fps_sec = ctx_ticks () / (1000*1000);
-      sprintf (fpsbuf, "\r%ifps  ", fps_frames);
-      fps_frames=0;
-    }
-    fps_frames++;
-
-    {
-      ctx_reset (ctx);
-
-#if 1
-      /* clear */
-      ctx_rectangle (ctx, 0, 0, width, height);
-      ctx_rgba8 (ctx, 0,0,0,255);
-      ctx_fill (ctx);
-#else
-      for (int i = 0; i < width * height; i++) pixels[i] = 0xffff;
-#endif
-
-      ctx_begin_path (ctx);
-      ctx_save (ctx);
-      tests[test_no](ctx, frame_no);
-      ctx_restore (ctx);
-
-      ctx_font_size (ctx, ctx_height(ctx)*0.1);
-      ctx_move_to (ctx, 0.0, ctx_height(ctx)*0.1);
-      ctx_rgba8 (ctx,255,0,0,255);
-      ctx_text (ctx, fpsbuf);
-
-      ctx_flush (ctx);
-      ctx_add_key_binding (ctx, "left", NULL, "prev",  prev_test, NULL);
-      ctx_add_key_binding (ctx, "right", NULL, "next",  next_test, NULL);
-      ctx_add_key_binding (ctx, "q", NULL, "next",  do_quit, NULL);
-      ctx_add_key_binding (ctx, "control-q", NULL, "next",  do_quit, NULL);
-    }
-
-    frame_no ++;
-
-    while(ctx_get_event (ctx))
-    {
-    }
-  }
-  ctx_free (ctx);
-  return 0;
-}
