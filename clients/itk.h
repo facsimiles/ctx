@@ -1762,7 +1762,10 @@ void itk_done (ITK *itk)
   CtxControl *control = itk_focused_control (itk);
 
   float em = itk_em (itk);
-  if (!control) return;
+  if (!control){
+    ctx_restore (ctx);
+    return;
+  }
 
   if (control->type == UI_CHOICE && itk->choice_active)
   {
@@ -1849,8 +1852,10 @@ itk_ctx_settings (ITK *itk)
       ctx_set_render_threads (ctx, threads);
     }
 
-    static int choice = CTX_ANTIALIAS_DEFAULT;
+    static int choice = -1;
     int set = ctx_get_antialias (ctx);
+    if (choice < 0)
+      choice = set;
     itk_choice (itk, "Antialiasing", &choice, NULL, NULL);
     itk_choice_add (itk, CTX_ANTIALIAS_NONE,    "none");
     itk_choice_add (itk, CTX_ANTIALIAS_FAST,    "fast = 3");
@@ -1858,8 +1863,6 @@ itk_ctx_settings (ITK *itk)
     itk_choice_add (itk, CTX_ANTIALIAS_DEFAULT, "default = 15");
     itk_choice_add (itk, CTX_ANTIALIAS_BEST,    "best = 17");
     if (set != choice)
-    {
       ctx_set_antialias (ctx, choice);
-    }
   }
 }

@@ -550,9 +550,9 @@ static int vt_dirty_count (void)
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-     if ((client->drawn_rev != vt_rev (client->vt) ) ||
-         vt_has_blink (client->vt))
-       changes++;
+    if ((client->drawn_rev != vt_rev (client->vt) ) ||
+        vt_has_blink (client->vt))
+      changes++;
   }
   return changes;
 }
@@ -1087,9 +1087,10 @@ int terminal_main (int argc, char **argv)
   }
 
   ctx  = ctx_new_ui (width, height);
-  ctx_set_antialias (ctx, CTX_ANTIALIAS_GOOD);
   width = ctx_width (ctx);
   height = ctx_height (ctx);
+
+  ctx_set_antialias (ctx, CTX_ANTIALIAS_GOOD);
 
   if (ctx_renderer_is_braille (ctx) && font_size <= 0)
   {
@@ -1120,11 +1121,6 @@ int terminal_main (int argc, char **argv)
   vt_set_ctx (active->vt, ctx);
   ITK *itk = itk_new (ctx);
 
-#if 0
-  active=add_client (vt_find_shell_command(), width/2, height/2, width/2, height/2, 0);
-
-  vt_set_ctx (active->vt, ctx);
-#endif
   signal (SIGCHLD,signal_child);
 
   int sleep_time = 200;
