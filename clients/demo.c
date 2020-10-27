@@ -386,7 +386,6 @@ static void card_clock2 (ITK *itk, int frame_no)
 static void card_fill_rule (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk->ctx;
-  int width = ctx_width (ctx);
 
   ctx_save (ctx);
   ctx_translate (ctx, 40.0, 0);
@@ -423,8 +422,6 @@ static void card_fill_rule (ITK *itk, int frame_no)
 static void card_curve_to (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk->ctx;
-  int width = ctx_width (ctx);
-  int height = ctx_height (ctx);
   ctx_save (ctx);
   frame_no %= 400;
   ctx_translate (ctx, 40.0, 0);
@@ -448,8 +445,45 @@ static void card_curve_to (ITK *itk, int frame_no)
   ctx_restore (ctx);
 }
 
+float rect1_x = 0.1;
+float rect1_y = 0.1;
+float rect2_x = 0.4;
+float rect2_y = 0.4;
+
+static void rect_drag (CtxEvent *event, void *data1, void *data2)
+{
+  float *x = data1;
+  float *y = data2;
+  *x += event->delta_x;
+  *y += event->delta_y;
+}
+
+static void card_drag (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  float width = ctx_width (ctx);
+  float height = ctx_height (ctx);
+  ctx_save (ctx);
+  frame_no %= 400;
+
+  ctx_scale (ctx, width, height);
+
+  ctx_rectangle (ctx, rect1_x, rect1_y, 0.2, 0.2);
+  ctx_rgb (ctx, 1,0,0);
+  ctx_listen (ctx, CTX_DRAG, rect_drag, &rect1_x, &rect1_y);
+  ctx_fill (ctx);
+
+  ctx_rectangle (ctx, rect2_x, rect2_y, 0.2, 0.2);
+  ctx_rgb (ctx, 1,1,0);
+  ctx_listen (ctx, CTX_DRAG, rect_drag, &rect2_x, &rect2_y);
+  ctx_fill (ctx);
+
+  ctx_restore (ctx);
+}
+
 Test tests[]=
 {
+  {"drag",      card_drag},
   {"gradients", card_gradients},
   {"dots",       card_dots},
   {"sliders",   card_sliders},
