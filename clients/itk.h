@@ -415,14 +415,6 @@ CtxControl *add_control (ITK *itk, const char *label, float x, float y, float wi
     itk->next_id = NULL;
   }
 
-  // refind focus..
-if(0)  if (itk->focus_label){
-     if (!strcmp (itk->focus_label, label))
-     {
-       itk->focus_no = itk->control_no;
-     }
-  }
-
   control->ref_count=2;
   control->x = x;
   control->y = y;
@@ -1380,7 +1372,7 @@ void itk_focus (ITK *itk, int dir)
      return;
    }
    itk->focus_no += dir;
-#if 0
+#if 1
    if (itk->focus_label){
      free (itk->focus_label);
      itk->focus_label = NULL;
@@ -1391,8 +1383,9 @@ void itk_focus (ITK *itk, int dir)
    CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
    if (iter)
    {
- //  CtxControl *control = iter->data;
-//   itk->focus_label = strdup (control->label);
+     CtxControl *control = iter->data;
+     if (control->label)
+       itk->focus_label = strdup (control->label);
      //fprintf (stderr, "%s\n", control_focus_label);
    }
    else
@@ -1420,8 +1413,29 @@ CtxControl *itk_focused_control(ITK *itk)
   {
     CtxControl *control = l->data;
     if (control->no == itk->focus_no)
-      return control;
+    {
+      if (itk->focus_label)
+      {
+        if (control->label && !strcmp (itk->focus_label, control->label))
+          return control;
+      }
+      else
+        return control;
+    }
   }
+
+  if (itk->focus_label)
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->label && !strcmp (itk->focus_label, control->label))
+    {
+       itk->focus_no = control->no;
+       itk->dirty++;
+       return control;
+    }
+  }
+
   return NULL;
 }
 
@@ -1744,7 +1758,9 @@ void ctx_event_block (CtxEvent *event, void *data, void *data2)
 void itk_done (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
+
   CtxControl *control = itk_focused_control (itk);
+
   float em = itk_em (itk);
   if (!control) return;
 

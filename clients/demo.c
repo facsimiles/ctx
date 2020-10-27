@@ -187,7 +187,6 @@ static void snippet_dash (Ctx *ctx, int frame_no)
 }
 #endif
 
-
 static void snippet_fill_rule (Ctx *ctx, int frame_no)
 {
   ctx_translate (ctx, 40.0, 0);
@@ -224,18 +223,18 @@ static void snippet_gradient (Ctx *ctx, int frame_no)
 {
   frame_no %= 256;
 
-ctx_linear_gradient (ctx, 0.0, 0.0,  0.0, height);
-ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);
-ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
-ctx_rectangle (ctx, 0, 0, width, height);
-ctx_fill (ctx);
+  ctx_linear_gradient (ctx, 0.0, 0.0,  0.0, height);
+  ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);
+  ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
+  ctx_rectangle (ctx, 0, 0, width, height);
+  ctx_fill (ctx);
 
-ctx_radial_gradient (ctx, width * 0.4 + frame_no, height * 0.4, height * 0.1,
-                          width * 0.4 + frame_no, height * 0.4, height * 0.4);
-ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);
-ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
-ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 1.9 * CTX_PI, 0);
-ctx_fill (ctx);
+  ctx_radial_gradient (ctx, width * 0.4 + frame_no, height * 0.4, height * 0.1,
+                            width * 0.4 + frame_no, height * 0.4, height * 0.4);
+  ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);
+  ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
+  ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 1.9 * CTX_PI, 0);
+  ctx_fill (ctx);
 }
 
 #if 0

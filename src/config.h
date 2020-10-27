@@ -131,19 +131,19 @@
 #endif
 
 #ifndef CTX_FORMATTER
-#define CTX_FORMATTER 1
+#define CTX_FORMATTER       1
 #endif
 
 #ifndef CTX_PARSER
-#define CTX_PARSER 1
+#define CTX_PARSER          1
 #endif
 
 #ifndef CTX_CURRENT_PATH
-#define CTX_CURRENT_PATH 1
+#define CTX_CURRENT_PATH    1
 #endif
 
 #ifndef CTX_XML
-#define CTX_XML 1
+#define CTX_XML             1
 #endif
 
 /* when ctx_math is defined, which it is by default, we use ctx' own
@@ -174,11 +174,11 @@
 #endif
 
 #ifndef CTX_RENDERSTREAM_STATIC
-#define CTX_RENDERSTREAM_STATIC 0
+#define CTX_RENDERSTREAM_STATIC  0
 #endif
 
 #ifndef CTX_MIN_EDGE_LIST_SIZE
-#define CTX_MIN_EDGE_LIST_SIZE  1024
+#define CTX_MIN_EDGE_LIST_SIZE   1024
 #endif
 
 /* The maximum complexity of a single path

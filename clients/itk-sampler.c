@@ -1,6 +1,18 @@
 #include <unistd.h>
+#include <math.h>
 #include "ctx.h"
 #include "itk.h"
+
+typedef void (*TestFun)(ITK *itk, int frame_no);
+typedef struct Test{
+  const char *title;
+  TestFun     fun;
+}Test;
+
+extern Test tests[];
+extern int n_tests;
+int test_no = 0;
+int frame_no = 0;
 
 int do_quit = 0;
 void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
@@ -10,7 +22,6 @@ void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 
 extern int _ctx_threads;
 extern int _ctx_enable_hash_cache;
-
 
 int main (int argc, char **argv)
 {
@@ -28,21 +39,21 @@ int main (int argc, char **argv)
   itk->dirty = 1;
   while (!do_quit)
   {
-    if (itk->dirty)
-    {
-      int width = ctx_width (ctx);
-      int height = ctx_height (ctx);
-      int x = 0;
-      int y = 0;
+    int width = ctx_width (ctx);
+    int height = ctx_height (ctx);
       itk_reset (itk);
+#if 0
+    ctx_save (ctx);
+    ctx_rectangle (ctx, 0, 0, width, height);
+    ctx_gray (ctx, 0);
+    ctx_fill (ctx);
+#endif
+    tests[test_no].fun (itk, frame_no++);
 
-      ctx_save (ctx);
-      ctx_rectangle (ctx, x, y, width, height);
-      ctx_gray (ctx, 0);
-      ctx_fill (ctx);
-
-      if(0)itk_panel_start (itk, "Immediate Toolkit", x+30, y+30, width-60, height-100);
-      else itk_panel_start (itk, "Immediate Toolkit", x+0, y+0, width, height);
+//  itk->dirty=1;
+//  if (itk->dirty)
+    {
+      itk_panel_start (itk, "Immediate Toolkit", 0, 0, width*0.2, height);
       itk_seperator (itk);
       itk_begin_menu_bar (itk, "main");
        itk_begin_menu (itk, "foo");
@@ -62,6 +73,12 @@ int main (int argc, char **argv)
        itk_end_menu (itk);
       itk_end_menu_bar (itk);
       itk_seperator (itk);
+
+      itk_slider_int   (itk, "demo no", &test_no, 0, n_tests-1, 1);
+
+      static int itk_widgets = 0;
+      if (itk_expander (itk, "ITK widgets", &itk_widgets))
+      {
 
       static int presses = 0;
       if (itk_button (itk, "button"))
@@ -108,6 +125,7 @@ int main (int argc, char **argv)
       itk_choice_add (itk, 2040, "novel");
 
       itk_toggle (itk, "baz ", &baz);
+      }
 
       static int itk_items = 0;
       if (itk_expander (itk, "items", &itk_items))
@@ -119,6 +137,7 @@ int main (int argc, char **argv)
           itk_button (itk, buf);
         }
       }
+
 
       itk_ctx_settings (itk);
 
@@ -151,10 +170,6 @@ int main (int argc, char **argv)
 
       ctx_flush (ctx);
     }
-    else
-    {
-      usleep (10000);
-    }
     while ((event = ctx_get_event (ctx)))
     {
    //   if (event->type == CTX_MOTION){
@@ -165,3 +180,97 @@ int main (int argc, char **argv)
   ctx_free (ctx);
   return 0;
 }
+
+static void card_gradients (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  int width  = ctx_width (ctx);
+  int height = ctx_height(ctx);
+  frame_no %= 256;
+
+  ctx_linear_gradient (ctx, 0.0, 0.0,  0.0, height);
+  ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);
+  ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
+  ctx_rectangle (ctx, 0, 0, width, height);
+  ctx_fill (ctx);
+
+  ctx_radial_gradient (ctx, width * 0.4 + frame_no, height * 0.4, height * 0.1,
+                            width * 0.4 + frame_no, height * 0.4, height * 0.4);
+  ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);
+  ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
+  ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 1.9 * CTX_PI, 0);
+  ctx_fill (ctx);
+}
+
+static void card_foo (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  int width  = ctx_width (ctx);
+  int height = ctx_height(ctx);
+  frame_no %= 101;
+
+  ctx_linear_gradient (ctx, 0.0, 0.0,  0.0, height);
+  ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);
+  ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
+  ctx_rectangle (ctx, 0, 0, width, height);
+  ctx_fill (ctx);
+
+  ctx_radial_gradient (ctx, width * (100.0/frame_no), height * 0.4, height * 0.1,
+                            width * (100.0/frame_no), height * 0.4, height * 0.4);
+  ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);
+  ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
+  ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 1.9 * CTX_PI, 0);
+  ctx_fill (ctx);
+}
+
+static void card_bar (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  static int   dot_count = 100;
+  static float twist = -0.1619;
+  static float dot_scale = 160.0;
+
+      /* clear */
+      ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+      ctx_rgba8 (ctx, 0,0,0,255);
+      ctx_fill (ctx);
+
+      ctx_rgba(ctx, 1, 1, 1, 0.5);
+      for (int i = 0; i < dot_count; i ++)
+      {
+        float x = ctx_width (ctx)/ 2;
+        float y = ctx_height (ctx) / 2;
+        float radius = ctx_height (ctx) / dot_scale;
+        float dist = i * (ctx_height (ctx)/ 2) / (dot_count * 1.0f);
+        float twisted = (i * twist);
+        x += cos (twisted) * dist;
+        y += sin (twisted) * dist;
+        ctx_arc (ctx, x, y, radius, 0, CTX_PI * 2.1, 0);
+        ctx_fill (ctx);
+      }
+
+      itk_panel_start (itk, "spiraling dots", ctx_width(ctx)*3/4,0,ctx_width(ctx)/4, ctx_height(ctx)/3);
+      itk_slider_int (itk, "count",          &dot_count, 1,   4000, 10);
+      itk_slider_float (itk, "radius",    &dot_scale, 2.0, 200.0, 4.5);
+      itk_slider_float (itk, "twist amount", &twist, -3.14152, 3.14152, 0.0005);
+      if (itk_button (itk, "+0.0001"))
+      {
+        twist += 0.0001;
+      }
+      if (itk_button (itk, "-0.0001"))
+      {
+        twist -= 0.0001;
+      }
+
+      itk_ctx_settings (itk);
+      itk_panel_end (itk);
+}
+
+Test tests[]=
+{
+  {"gradients", card_gradients},
+  {"foo",       card_foo},
+  {"bar",       card_bar},
+};
+int n_tests = sizeof(tests)/sizeof(tests[0]);
+
