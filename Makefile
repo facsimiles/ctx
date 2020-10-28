@@ -1,6 +1,20 @@
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
+CFLAGS_warnings= -Wall \
+                 -Wextra \
+		 -Wno-array-bounds \
+                 -Wno-implicit-fallthrough \
+		 -Wno-unused-parameter \
+		 -Wno-unused-function \
+		 -Wno-missing-field-initializers 
+
+CFLAGS= -g $(CFLAGS_warnings)
+
+CFLAGS+= -I. -Ifonts -Ideps
+LIBS   = -lutil -lz -lm -lpthread
+
+
 CLIENTS_CFILES = $(wildcard clients/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
@@ -36,26 +50,15 @@ clean:
 	rm -f $(SRC_OBJS)
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
-CFLAGS_warnings= -Wall \
-                 -Wextra \
-		 -Wno-array-bounds \
-                 -Wno-implicit-fallthrough \
-		 -Wno-unused-parameter \
-		 -Wno-missing-field-initializers 
-
-CFLAGS= -g $(CFLAGS_warnings)
-
 install: ctx
 	install -d $(DESTIDR)$(PREFIX)/bin
 	install -m755 ctx $(DESTIDR)$(PREFIX)/bin
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/ctx
 
-CFLAGS+=-I. -Ifonts -Ideps
-LIBS   =-lutil -lz -lm -lpthread
 
 tools/%: tools/%.c ctx-nofont.h 
-	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps
+	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
 	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O2
