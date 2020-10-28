@@ -53,8 +53,9 @@ int main (int argc, char **argv)
 //  itk->dirty=1;
 //  if (itk->dirty)
     {
-      itk_panel_start (itk, "Immediate Toolkit", 0, 0, width*0.2, height);
+      itk_panel_start (itk, "ctx and itk demo", 0, 0, width*0.2, height);
       itk_seperator (itk);
+#if 0
       itk_begin_menu_bar (itk, "main");
        itk_begin_menu (itk, "foo");
         itk_menu_item (itk, "foo 1");
@@ -73,6 +74,7 @@ int main (int argc, char **argv)
        itk_end_menu (itk);
       itk_end_menu_bar (itk);
       itk_seperator (itk);
+#endif
 
       itk_slider_int   (itk, "demo no", &test_no, 0, n_tests-1, 1);
 
@@ -456,6 +458,7 @@ static void rect_drag (CtxEvent *event, void *data1, void *data2)
   float *y = data2;
   *x += event->delta_x;
   *y += event->delta_y;
+  event->stop_propagate=1;
 }
 
 static void card_drag (ITK *itk, int frame_no)
@@ -464,6 +467,9 @@ static void card_drag (ITK *itk, int frame_no)
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
   ctx_save (ctx);
+  ctx_rectangle (ctx, 0, 0, width, height);
+  ctx_gray (ctx, 0);
+  ctx_fill (ctx);
   frame_no %= 400;
 
   ctx_scale (ctx, width, height);
@@ -483,9 +489,9 @@ static void card_drag (ITK *itk, int frame_no)
 
 Test tests[]=
 {
-  {"drag",      card_drag},
   {"gradients", card_gradients},
   {"dots",       card_dots},
+  {"drag",      card_drag},
   {"sliders",   card_sliders},
   {"clock1",     card_clock1},
   {"clock2",     card_clock2},
