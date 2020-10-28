@@ -100,9 +100,9 @@ static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
 }
 
 #if CTX_FORCE_INLINES
-#define CTX_INLINE  inline __attribute__((always_inline))
+#define CTX_INLINE inline __attribute__((always_inline))
 #else
-#define CTX_INLINE  inline
+#define CTX_INLINE inline
 #endif
 
 static inline float ctx_pow2 (float a) { return a * a; }

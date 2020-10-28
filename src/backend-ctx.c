@@ -22,7 +22,7 @@ void ctx_ctx_free (CtxCtx *ctx)
 Ctx *ctx_new_ctx (int width, int height)
 {
   Ctx *ctx = ctx_new ();
-  CtxCtx *ctxctx = calloc (sizeof (CtxCtx), 1);
+  CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
   ctx_native_events = 1;
   if (width <= 0 || height <= 0)
   {
@@ -43,8 +43,8 @@ Ctx *ctx_new_ctx (int width, int height)
     _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_renderer (ctx, ctxctx);
   ctx_set_size (ctx, width, height);
-  ctxctx->flush = (void*)ctx_ctx_flush;
-  ctxctx->free  = (void*)ctx_ctx_free;
+  ctxctx->flush = (void(*)(void *))ctx_ctx_flush;
+  ctxctx->free  = (void(*)(void *))ctx_ctx_free;
   fprintf (stdout, "\e[2J");
   fprintf (stdout, "\e[?1049h");
   fflush (stdout);
@@ -55,7 +55,7 @@ Ctx *ctx_new_ctx (int width, int height)
 int ctx_ctx_consume_events (Ctx *ctx)
 {
   int ix, iy;
-  CtxCtx *braille = (void*)ctx->renderer;
+  CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
   const char *event = NULL;
   if (ctx_native_events)
     {
@@ -104,13 +104,13 @@ int ctx_ctx_consume_events (Ctx *ctx)
       float x, y;
       event = ctx_nct_get_event (ctx, 20, &ix, &iy);
 
-      x = (ix - 1.0 + 0.5) / braille->cols * ctx->events.width;
-      y = (iy - 1.0)       / braille->rows * ctx->events.height;
+      x = (ix - 1.0 + 0.5) / ctxctx->cols * ctx->events.width;
+      y = (iy - 1.0)       / ctxctx->rows * ctx->events.height;
 
       if (!strcmp (event, "mouse-press"))
       {
         ctx_pointer_press (ctx, x, y, 0, 0);
-        braille->was_down = 1;
+        ctxctx->was_down = 1;
       } else if (!strcmp (event, "mouse-release"))
       {
         ctx_pointer_release (ctx, x, y, 0, 0);
@@ -118,10 +118,10 @@ int ctx_ctx_consume_events (Ctx *ctx)
       {
         //nct_set_cursor_pos (backend->term, ix, iy);
         //nct_flush (backend->term);
-        if (braille->was_down)
+        if (ctxctx->was_down)
         {
           ctx_pointer_release (ctx, x, y, 0, 0);
-          braille->was_down = 0;
+          ctxctx->was_down = 0;
         }
         ctx_pointer_motion (ctx, x, y, 0, 0);
       } else if (!strcmp (event, "mouse-drag"))

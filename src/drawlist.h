@@ -85,6 +85,8 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos);
 
 CTX_STATIC void
 ctx_renderstream_compact (CtxRenderstream *renderstream);
+CTX_STATIC void
+ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1);
 
 #endif
 

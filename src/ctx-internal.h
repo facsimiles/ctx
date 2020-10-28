@@ -78,7 +78,6 @@ struct _CtxGradientStop
   CtxColor color;
 };
 
-typedef enum _CtxSourceType CtxSourceType;
 
 enum _CtxSourceType
 {
@@ -87,6 +86,8 @@ enum _CtxSourceType
   CTX_SOURCE_LINEAR_GRADIENT,
   CTX_SOURCE_RADIAL_GRADIENT,
 };
+
+typedef enum _CtxSourceType CtxSourceType;
 
 typedef struct _CtxPixelFormatInfo CtxPixelFormatInfo;
 
@@ -691,7 +692,153 @@ Ctx *ctx_new_sdl (int width, int height);
 Ctx *ctx_new_braille (int width, int height);
 
 int ctx_resolve_font (const char *name);
-float ctx_u8_float[256];
+extern float ctx_u8_float[256];
+#define ctx_u8_to_float(val_u8) ctx_u8_float[((uint8_t)(val_u8))]
+//#define ctx_u8_to_float(val_u8) (val_u8/255.0f)
+//
+//
+
+
+static uint8_t ctx_float_to_u8 (float val_f)
+{
+   return (val_f * 255.99f);
+#if 0
+  int val_i = val_f * 255.999f;
+  if (val_i < 0) { return 0; }
+  else if (val_i > 255) { return 255; }
+  return val_i;
+#endif
+}
+
+
+#define CTX_CSS_LUMINANCE_RED   0.3f
+#define CTX_CSS_LUMINANCE_GREEN 0.59f
+#define CTX_CSS_LUMINANCE_BLUE  0.11f
+
+/* works on both float and uint8_t */
+#define CTX_CSS_RGB_TO_LUMINANCE(rgb)  (\
+  (rgb[0]) * CTX_CSS_LUMINANCE_RED + \
+  (rgb[1]) * CTX_CSS_LUMINANCE_GREEN +\
+  (rgb[2]) * CTX_CSS_LUMINANCE_BLUE)
+
+const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y);
+const char *ctx_native_get_event (Ctx *n, int timeoutms);
+CTX_STATIC void
+ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out);
+CTX_STATIC void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out);
+CTX_STATIC float ctx_float_color_rgb_to_gray (CtxState *state, const float *rgb);
+CTX_STATIC void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out);
+CTX_STATIC void ctx_rgb_to_cmyk (float r, float g, float b,
+              float *c_out, float *m_out, float *y_out, float *k_out);
+#if CTX_ENABLE_CMYK
+CTX_STATIC void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
+#endif
+CTX_STATIC void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
+CTX_STATIC void ctx_color_set_drgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
+CTX_STATIC void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
+CTX_STATIC void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a);
+CTX_STATIC void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a);
+CTX_STATIC void ctx_color_set_graya (CtxState *state, CtxColor *color, float gray, float alpha);
+CTX_STATIC uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb);
+
+CTX_STATIC int ctx_color_model_get_components (CtxColorModel model);
+
+void ctx_state_set (CtxState *state, uint32_t key, float value);
+CTX_STATIC void
+ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f);
+CTX_STATIC void ctx_font_setup ();
+float ctx_state_get (CtxState *state, uint32_t hash);
+CTX_STATIC void
+ctx_rasterizer_rel_move_to (CtxRasterizer *rasterizer, float x, float y);
+CTX_STATIC void
+ctx_rasterizer_rel_line_to (CtxRasterizer *rasterizer, float x, float y);
+
+CTX_STATIC void
+ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y);
+CTX_STATIC void
+ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y);
+CTX_STATIC void
+ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
+                         float x0, float y0,
+                         float x1, float y1,
+                         float x2, float y2);
+CTX_STATIC void
+ctx_rasterizer_rel_curve_to (CtxRasterizer *rasterizer,
+                         float x0, float y0,
+                         float x1, float y1,
+                         float x2, float y2);
+
+CTX_STATIC void
+ctx_rasterizer_reset (CtxRasterizer *rasterizer);
+CTX_STATIC uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer);
+CTX_STATIC void
+ctx_rasterizer_arc (CtxRasterizer *rasterizer,
+                    float        x,
+                    float        y,
+                    float        radius,
+                    float        start_angle,
+                    float        end_angle,
+                    int          anticlockwise);
+
+CTX_STATIC void
+ctx_rasterizer_quad_to (CtxRasterizer *rasterizer,
+                        float        cx,
+                        float        cy,
+                        float        x,
+                        float        y);
+
+CTX_STATIC void
+ctx_rasterizer_rel_quad_to (CtxRasterizer *rasterizer,
+                        float        cx,
+                        float        cy,
+                        float        x,
+                        float        y);
+
+CTX_STATIC void
+ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
+                          float x,
+                          float y,
+                          float width,
+                          float height);
+
+CTX_STATIC void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer);
+CTX_STATIC void ctx_rasterizer_clip (CtxRasterizer *rasterizer);
+CTX_STATIC void
+ctx_rasterizer_set_font (CtxRasterizer *rasterizer, const char *font_name);
+
+CTX_STATIC void
+ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *rgba);
+CTX_STATIC void
+ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
+                          uint16_t x,
+                          uint16_t y,
+                          uint8_t r,
+                          uint8_t g,
+                          uint8_t b,
+                          uint8_t a);
+CTX_STATIC void
+ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
+                          float x,
+                          float y,
+                          float width,
+                          float height);
+CTX_STATIC void
+ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, float width, float height, float corner_radius);
+
+
+#if CTX_ENABLE_CM // XXX to be moved to ctx.h
+void
+ctx_set_drgb_space (Ctx *ctx, int device_space);
+void
+ctx_set_dcmyk_space (Ctx *ctx, int device_space);
+void
+ctx_rgb_space (Ctx *ctx, int device_space);
+void
+ctx_set_cmyk_space (Ctx *ctx, int device_space);
+#endif
+
+
 
 #endif
 

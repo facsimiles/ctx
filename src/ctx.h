@@ -49,7 +49,47 @@ extern "C" {
 #include <stdio.h>
 
 typedef struct _Ctx            Ctx;
+
+/* The pixel formats supported as render targets
+ */
+enum _CtxPixelFormat
+{
+  CTX_FORMAT_GRAY8,
+  CTX_FORMAT_GRAYA8,
+  CTX_FORMAT_RGB8,
+  CTX_FORMAT_RGBA8,
+  CTX_FORMAT_BGRA8,
+  CTX_FORMAT_RGB565,
+  CTX_FORMAT_RGB565_BYTESWAPPED,
+  CTX_FORMAT_RGB332,
+  CTX_FORMAT_RGBAF,
+  CTX_FORMAT_GRAYF,
+  CTX_FORMAT_GRAYAF,
+  CTX_FORMAT_GRAY1,
+  CTX_FORMAT_GRAY2,
+  CTX_FORMAT_GRAY4,
+  CTX_FORMAT_CMYK8,
+  CTX_FORMAT_CMYKA8,
+  CTX_FORMAT_CMYKAF,
+  CTX_FORMAT_DEVICEN1,
+  CTX_FORMAT_DEVICEN2,
+  CTX_FORMAT_DEVICEN3,
+  CTX_FORMAT_DEVICEN4,
+  CTX_FORMAT_DEVICEN5,
+  CTX_FORMAT_DEVICEN6,
+  CTX_FORMAT_DEVICEN7,
+  CTX_FORMAT_DEVICEN8,
+  CTX_FORMAT_DEVICEN9,
+  CTX_FORMAT_DEVICEN10,
+  CTX_FORMAT_DEVICEN11,
+  CTX_FORMAT_DEVICEN12,
+  CTX_FORMAT_DEVICEN13,
+  CTX_FORMAT_DEVICEN14,
+  CTX_FORMAT_DEVICEN15,
+  CTX_FORMAT_DEVICEN16
+};
 typedef enum   _CtxPixelFormat CtxPixelFormat;
+
 typedef struct _CtxGlyph       CtxGlyph;
 
 /**
@@ -344,44 +384,6 @@ int ctx_add_single      (Ctx *ctx, void *entry);
 uint32_t ctx_utf8_to_unichar (const char *input);
 int      ctx_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 
-/* The pixel formats supported as render targets
- */
-enum _CtxPixelFormat
-{
-  CTX_FORMAT_GRAY8,
-  CTX_FORMAT_GRAYA8,
-  CTX_FORMAT_RGB8,
-  CTX_FORMAT_RGBA8,
-  CTX_FORMAT_BGRA8,
-  CTX_FORMAT_RGB565,
-  CTX_FORMAT_RGB565_BYTESWAPPED,
-  CTX_FORMAT_RGB332,
-  CTX_FORMAT_RGBAF,
-  CTX_FORMAT_GRAYF,
-  CTX_FORMAT_GRAYAF,
-  CTX_FORMAT_GRAY1,
-  CTX_FORMAT_GRAY2,
-  CTX_FORMAT_GRAY4,
-  CTX_FORMAT_CMYK8,
-  CTX_FORMAT_CMYKA8,
-  CTX_FORMAT_CMYKAF,
-  CTX_FORMAT_DEVICEN1,
-  CTX_FORMAT_DEVICEN2,
-  CTX_FORMAT_DEVICEN3,
-  CTX_FORMAT_DEVICEN4,
-  CTX_FORMAT_DEVICEN5,
-  CTX_FORMAT_DEVICEN6,
-  CTX_FORMAT_DEVICEN7,
-  CTX_FORMAT_DEVICEN8,
-  CTX_FORMAT_DEVICEN9,
-  CTX_FORMAT_DEVICEN10,
-  CTX_FORMAT_DEVICEN11,
-  CTX_FORMAT_DEVICEN12,
-  CTX_FORMAT_DEVICEN13,
-  CTX_FORMAT_DEVICEN14,
-  CTX_FORMAT_DEVICEN15,
-  CTX_FORMAT_DEVICEN16
-};
 
 typedef enum
 {
@@ -1462,11 +1464,6 @@ typedef enum
   // RGB  device and  RGB  ?
 } CtxColorModel;
 
-
-
-
-
-typedef enum _CtxAntialias CtxAntialias;
 enum _CtxAntialias
 {
   CTX_ANTIALIAS_DEFAULT,
@@ -1475,6 +1472,7 @@ enum _CtxAntialias
   CTX_ANTIALIAS_GOOD, // aa 5
   CTX_ANTIALIAS_BEST  // aa 17
 };
+typedef enum _CtxAntialias CtxAntialias;
 
 void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);
 CtxAntialias ctx_get_antialias (Ctx *ctx);

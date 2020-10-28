@@ -339,11 +339,11 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
            };
           uint32_t color;
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
-          sha1_process(&sha1, (void*)ctx_arg_string(), strlen  (ctx_arg_string()));
+          sha1_process(&sha1, (const unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
           sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           sha1_process(&sha1, (unsigned char*)&color, 4);
           sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
-          sha1_done(&sha1, (void*)sha1_hash);
+          sha1_done(&sha1, (unsigned char*)sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, sha1_hash);
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
@@ -365,11 +365,11 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
           uint32_t color;
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
-          sha1_process(&sha1, (void*)ctx_arg_string(), strlen  (ctx_arg_string()));
+          sha1_process(&sha1, (unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
           sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           sha1_process(&sha1, (unsigned char*)&color, 4);
           sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
-          sha1_done(&sha1, (void*)sha1_hash);
+          sha1_done(&sha1, (unsigned char*)sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, sha1_hash);
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
@@ -399,11 +399,11 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
           uint32_t color;
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
-          sha1_process(&sha1, string, strlen ((void*)string));
+          sha1_process(&sha1, string, strlen ((const char*)string));
           sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           sha1_process(&sha1, (unsigned char*)&color, 4);
           sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
-          sha1_done(&sha1, (void*)sha1_hash);
+          sha1_done(&sha1, (unsigned char*)sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, sha1_hash);
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
@@ -441,7 +441,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, (uint8_t*)(&color));
 
           sha1_process(&sha1, (unsigned char*)&color, 4);
-           sha1_done(&sha1, (void*)sha1_hash);
+          sha1_done(&sha1, (unsigned char*)sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, sha1_hash);
 
         if (!rasterizer->preserve)
@@ -482,7 +482,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
           sha1_process(&sha1, (unsigned char*)&color, 4);
 
-           sha1_done(&sha1, (void*)sha1_hash);
+          sha1_done(&sha1, (unsigned char*)sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, sha1_hash);
         }
         if (!rasterizer->preserve)
@@ -643,7 +643,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   hasher->rows = rows;
   hasher->cols = cols;
 
-  hasher->hashes = calloc (20, rows * cols);
+  hasher->hashes = (uint8_t*)calloc (20, rows * cols);
 
   return rasterizer;
 }

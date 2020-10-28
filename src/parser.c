@@ -936,7 +936,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         {
           int blend_mode = arg(0);
           if (blend_mode == CTX_COLOR) blend_mode = CTX_BLEND_COLOR;
-          ctx_blend_mode (ctx, blend_mode);
+          ctx_blend_mode (ctx, (CtxBlend)blend_mode);
         }
         break;
       case CTX_FILL_RULE:

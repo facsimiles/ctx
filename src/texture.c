@@ -42,10 +42,10 @@ CtxBuffer *ctx_buffer_new (int width, int height,
   CtxPixelFormatInfo *info = ctx_pixel_format_info (pixel_format);
   CtxBuffer *buffer = ctx_buffer_new_bare ();
   int stride = width * info->ebpp;
-  uint8_t *pixels = calloc (stride, height + 1);
+  uint8_t *pixels = (uint8_t*)calloc (stride, height + 1);
 
   ctx_buffer_set_data (buffer, pixels, width, height, stride, pixel_format,
-                       (void*)free, NULL);
+                       (void(*)(void*, void*))free, NULL);
   return buffer;
 }
 

@@ -26,7 +26,7 @@ void ctx_user_to_device_distance (Ctx *ctx, float *x, float *y)
   _ctx_user_to_device_distance (&ctx->state, x, y);
 }
 
-static void // XXX unused
+CTX_STATIC void
 ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f)
 {
   matrix->m[0][0] = a;

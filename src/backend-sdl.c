@@ -448,7 +448,7 @@ int ctx_renderer_is_sdl (Ctx *ctx)
 Ctx *ctx_new_sdl (int width, int height)
 {
 #if CTX_RASTERIZER
-  CtxSDL *sdl = calloc (sizeof (CtxSDL), 1);
+  CtxSDL *sdl = (CtxSDL*)calloc (sizeof (CtxSDL), 1);
   if (width <= 0 || height <= 0)
   {
     width  = 1280;

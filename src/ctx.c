@@ -304,13 +304,13 @@ ctx_event_free (CtxEvent *event)
 static void
 ctx_collect_events (CtxEvent *event, void *data, void *data2)
 {
-  Ctx *ctx = data;
+  Ctx *ctx = (Ctx*)data;
   CtxEvent *copy;
   if (event->type == CTX_KEY_DOWN && !strcmp (event->string, "idle"))
     return;
-  copy = malloc (sizeof (CtxEvent));
+  copy = (CtxEvent*)malloc (sizeof (CtxEvent));
   *copy = *event;
-  ctx_list_append_full (&ctx->events.events, copy, (void*)ctx_event_free, NULL);
+  ctx_list_append_full (&ctx->events.events, copy, (void(*)(void*, void*))ctx_event_free, NULL);
 }
 #endif
 
@@ -346,7 +346,7 @@ void ctx_reset (Ctx *ctx)
 #endif
 
     ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
-                     CTX_PRESS|CTX_RELEASE|CTX_MOTION, ctx_collect_events, ctx, ctx,
+                     (CtxEventType)(CTX_PRESS|CTX_RELEASE|CTX_MOTION), ctx_collect_events, ctx, ctx,
                      NULL, NULL);
   }
 #endif

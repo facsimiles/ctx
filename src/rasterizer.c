@@ -2,7 +2,7 @@
 
 #if CTX_RASTERIZER
 
-static void
+CTX_STATIC void
 ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *rgba)
 {
   CtxGradient *gradient = &rasterizer->state->gradient;
@@ -201,7 +201,7 @@ static void ctx_shape_entry_release (CtxShapeEntry *entry)
 #endif
 
 
-static uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
+CTX_STATIC uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
 {
   int16_t x = 0;
   int16_t y = 0;
@@ -287,9 +287,9 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 #endif
 }
 
-inline static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y);
+CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y);
 
-static void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
+CTX_STATIC void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 {
   if (rasterizer->has_shape && rasterizer->has_prev)
     {
@@ -298,7 +298,7 @@ static void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
     }
 }
 
-inline static void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
+CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx; float ty;
   int aa = rasterizer->aa;
@@ -320,7 +320,7 @@ inline static void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
     { rasterizer->col_max = tx; }
 }
 
-inline static void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
+CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx = x;
   float ty = y;
@@ -432,7 +432,7 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
                                 tolerance);
 }
 
-static void
+CTX_STATIC void
 ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x0, float y0,
                          float x1, float y1,
@@ -491,7 +491,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   ctx_rasterizer_line_to (rasterizer, x2, y2);
 }
 
-static void
+CTX_STATIC void
 ctx_rasterizer_rel_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
   if (x == 0.f && y == 0.f)
@@ -501,7 +501,7 @@ ctx_rasterizer_rel_move_to (CtxRasterizer *rasterizer, float x, float y)
   ctx_rasterizer_move_to (rasterizer, x, y);
 }
 
-static void
+CTX_STATIC void
 ctx_rasterizer_rel_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   if (x== 0.f && y==0.f)
@@ -511,7 +511,7 @@ ctx_rasterizer_rel_line_to (CtxRasterizer *rasterizer, float x, float y)
   ctx_rasterizer_line_to (rasterizer, x, y);
 }
 
-static void
+CTX_STATIC void
 ctx_rasterizer_rel_curve_to (CtxRasterizer *rasterizer,
                              float x0, float y0, float x1, float y1, float x2, float y2)
 {
@@ -4085,7 +4085,7 @@ static void
 ctx_fragment_color_GRAYAF (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   CtxSource *g = &rasterizer->state->gstate.source;
-  ctx_color_get_graya (rasterizer->state, &g->color, out);
+  ctx_color_get_graya (rasterizer->state, &g->color, (float*)out);
 }
 
 static void ctx_fragment_image_GRAYAF (CtxRasterizer *rasterizer, float x, float y, void *out)
@@ -4715,7 +4715,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 #undef CTX_EDGE_Y0
 #undef CTX_EDGE
 
-static void
+CTX_STATIC void
 ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 {
 #if CTX_RASTERIZER_FORCE_AA==0
@@ -5328,13 +5328,13 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
 
 void
 _ctx_font (Ctx *ctx, const char *name);
-static void
+CTX_STATIC void
 ctx_rasterizer_set_font (CtxRasterizer *rasterizer, const char *font_name)
 {
   _ctx_font (rasterizer->ctx, font_name);
 }
 
-inline static void
+CTX_STATIC void
 ctx_rasterizer_arc (CtxRasterizer *rasterizer,
                     float        x,
                     float        y,
@@ -5401,7 +5401,7 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
                           y + ctx_sinf (end_angle) * radius);
 }
 
-static void
+CTX_STATIC void
 ctx_rasterizer_quad_to (CtxRasterizer *rasterizer,
                         float        cx,
                         float        cy,
@@ -5417,7 +5417,7 @@ ctx_rasterizer_quad_to (CtxRasterizer *rasterizer,
                            x,                              y);
 }
 
-static void
+CTX_STATIC void
 ctx_rasterizer_rel_quad_to (CtxRasterizer *rasterizer,
                             float cx, float cy, float x, float y)
 {
@@ -5721,7 +5721,7 @@ foo:
 #define CTX_CLIP_FORMAT CTX_FORMAT_GRAY8
 #endif
 
-static void
+CTX_STATIC void
 ctx_rasterizer_clip (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->edge_list.count;
@@ -5848,7 +5848,7 @@ ctx_rasterizer_load_image (CtxRasterizer *rasterizer,
 }
 #endif
 
-static void
+CTX_STATIC void
 ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
                           uint16_t x,
                           uint16_t y,
@@ -5870,7 +5870,7 @@ ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
 #endif
 }
 
-static void
+CTX_STATIC void
 ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
                           float x,
                           float y,
@@ -5915,7 +5915,7 @@ ctx_compute_gaussian_kernel (int dim, float radius, float *kernel)
 }
 #endif
 
-static void
+CTX_STATIC void
 ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, float width, float height, float corner_radius)
 {
   float aspect  = 1.0f;
@@ -6005,7 +6005,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
                   rasterizer->blit_width,
                   rasterizer->blit_height,
                   rasterizer->format->ebpp * 8,
-                  rasterizer->group[no]->data,
+                  (uint8_t*)rasterizer->group[no]->data,
                   NULL, NULL);
   {
      CtxEntry commands[2] =

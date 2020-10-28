@@ -2,7 +2,7 @@
 #define __CTX_COLOR
 #include "ctx-split.h"
 
-static inline int ctx_color_model_get_components (CtxColorModel model)
+CTX_STATIC int ctx_color_model_get_components (CtxColorModel model)
 {
   switch (model)
     {
@@ -34,17 +34,6 @@ static inline int ctx_color_model_get_components (CtxColorModel model)
   return 0;
 }
 
-static uint8_t ctx_float_to_u8 (float val_f)
-{
-   return (val_f * 255.99f);
-#if 0
-  int val_i = val_f * 255.999f;
-  if (val_i < 0) { return 0; }
-  else if (val_i > 255) { return 255; }
-  return val_i;
-#endif
-}
-
 #if 0
 
 inline static float ctx_u8_to_float (uint8_t val_u8)
@@ -54,14 +43,12 @@ inline static float ctx_u8_to_float (uint8_t val_u8)
 }
 #else
 float ctx_u8_float[256];
-#define ctx_u8_to_float(val_u8) ctx_u8_float[((uint8_t)(val_u8))]
-//#define ctx_u8_to_float(val_u8) (val_u8/255.0f)
 
 #endif
 
 CtxColor *ctx_color_new ()
 {
-  CtxColor *color = calloc (sizeof (CtxColor), 1);
+  CtxColor *color = (CtxColor*)calloc (sizeof (CtxColor), 1);
   return color;
 }
 
@@ -76,7 +63,7 @@ void ctx_color_free (CtxColor *color)
   free (color);
 }
 
-static void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+CTX_STATIC void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   color->original = color->valid = CTX_VALID_RGBA_U8;
   color->rgba[0] = r;
@@ -95,7 +82,7 @@ static void ctx_color_set_RGBA8_ (CtxColor *color, const uint8_t *in)
 }
 #endif
 
-static void ctx_color_set_graya (CtxState *state, CtxColor *color, float gray, float alpha)
+CTX_STATIC void ctx_color_set_graya (CtxState *state, CtxColor *color, float gray, float alpha)
 {
   color->original = color->valid = CTX_VALID_GRAYA;
   color->l = gray;
@@ -125,7 +112,7 @@ void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, flo
   color->alpha        = a;
 }
 
-static void ctx_color_set_drgba (CtxState *state, CtxColor *color, float r, float g, float b, float a)
+CTX_STATIC void ctx_color_set_drgba (CtxState *state, CtxColor *color, float r, float g, float b, float a)
 {
 #if CTX_ENABLE_CM
   color->original     = color->valid = CTX_VALID_RGBA_DEVICE;
@@ -156,8 +143,8 @@ static void ctx_cmyk_to_rgb (float c, float m, float y, float k, float *r, float
   *b = (1.0f-y) * (1.0f-k);
 }
 
-static inline void ctx_rgb_to_cmyk (float r, float g, float b,
-                             float *c_out, float *m_out, float *y_out, float *k_out)
+CTX_STATIC void ctx_rgb_to_cmyk (float r, float g, float b,
+              float *c_out, float *m_out, float *y_out, float *k_out)
 {
   float c = 1.0f - r;
   float m = 1.0f - g;
@@ -180,7 +167,7 @@ static inline void ctx_rgb_to_cmyk (float r, float g, float b,
 }
 
 #if CTX_ENABLE_CMYK
-static void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a)
+CTX_STATIC void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a)
 {
   color->original = color->valid = CTX_VALID_CMYKA;
   color->cyan     = c;
@@ -193,7 +180,7 @@ static void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, floa
 #endif
 }
 
-static void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a)
+CTX_STATIC void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a)
 {
   color->original       = color->valid = CTX_VALID_DCMYKA;
   color->device_cyan    = c;
@@ -293,28 +280,19 @@ void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
 #endif
 }
 
-#define CTX_CSS_LUMINANCE_RED   0.3f
-#define CTX_CSS_LUMINANCE_GREEN 0.59f
-#define CTX_CSS_LUMINANCE_BLUE  0.11f
 
-/* works on both float and uint8_t */
-#define CTX_CSS_RGB_TO_LUMINANCE(rgb)  (\
-  (rgb[0]) * CTX_CSS_LUMINANCE_RED + \
-  (rgb[1]) * CTX_CSS_LUMINANCE_GREEN +\
-  (rgb[2]) * CTX_CSS_LUMINANCE_BLUE)
-
-CTX_INLINE static float ctx_float_color_rgb_to_gray (CtxState *state, const float *rgb)
+CTX_STATIC float ctx_float_color_rgb_to_gray (CtxState *state, const float *rgb)
 {
         // XXX todo replace with correct according to primaries
   return CTX_CSS_RGB_TO_LUMINANCE(rgb);
 }
-CTX_INLINE static uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb)
+CTX_STATIC uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb)
 {
         // XXX todo replace with correct according to primaries
   return CTX_CSS_RGB_TO_LUMINANCE(rgb);
 }
 
-static void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
+CTX_STATIC void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
 {
   if (! (color->valid & CTX_VALID_GRAYA) )
     {
@@ -328,7 +306,7 @@ static void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
 }
 
 #if CTX_ENABLE_CMYK
-CTX_INLINE static void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out)
+CTX_STATIC void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out)
 {
   if (! (color->valid & CTX_VALID_CMYKA) )
     {
@@ -373,7 +351,7 @@ static void ctx_color_get_cmyka_u8 (CtxState *state, CtxColor *color, uint8_t *o
 #endif
 #endif
 
-CTX_INLINE static void
+CTX_STATIC void
 ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (! (color->valid & CTX_VALID_RGBA_U8) )
@@ -390,7 +368,7 @@ ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
   out[3] = color->rgba[3];
 }
 
-CTX_INLINE static void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
+CTX_STATIC void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (! (color->valid & CTX_VALID_GRAYA_U8) )
     {
@@ -647,8 +625,8 @@ ctx_color_parse_rgb (CtxState *ctxstate, CtxColor *color, const char *color_stri
 
   {
     int n_floats = 0;
-    char *p =    (void*)color_string;
-    char *prev = (void *)NULL;
+    char *p =    (char*)color_string;
+    char *prev = (char*)NULL;
     for (; p && n_floats < 4 && p != prev && *p; )
     {
       float val;

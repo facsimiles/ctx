@@ -607,7 +607,7 @@ int ctx_resolve_font (const char *name)
   return 0;
 }
 
-static void ctx_font_setup ()
+CTX_STATIC void ctx_font_setup ()
 {
   static int initialized = 0;
   if (initialized) { return; }

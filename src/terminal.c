@@ -37,252 +37,6 @@ int ctx_terminal_rows (void)
 
 
 
-static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
-{
-  int c;
-  int diff = 0;
-  for (c = 0; c<3;c++)
-    diff += ctx_pow2(a[c]-b[c]);
-  return diff;
-}
-
-
-static inline void _ctx_utf8_output_buf (uint8_t *pixels,
-                          int format,
-                          int width,
-                          int height,
-                          int stride,
-                          int reverse)
-{
-  char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
-  int no = 0;
-  switch (format)
-    {
-      case CTX_FORMAT_GRAY2:
-        {
-          for (int y= 0; y < height; y++)
-            {
-              no = y * stride;
-              for (int x = 0; x < width; x++)
-                {
-                  int val4= (pixels[no] & (3 << ( (x % 4) *2) ) ) >> ( (x%4) *2);
-                  int val = (int) CTX_CLAMP (5.0 * val4 / 3.0, 0, 5);
-                  if (!reverse)
-                  { val = 5-val; }
-                  printf ("%s", utf8_gray_scale[val]);
-                  if ( (x % 4) == 3)
-                    { no++; }
-                }
-              printf ("\n");
-            }
-        }
-        break;
-      case CTX_FORMAT_GRAY1:
-        for (int row = 0; row < height/4; row++)
-          {
-            for (int col = 0; col < width /2; col++)
-              {
-                int unicode = 0;
-                int bitno = 0;
-                for (int x = 0; x < 2; x++)
-                  for (int y = 0; y < 3; y++)
-                    {
-                      int no = (row * 4 + y) * stride + (col*2+x) /8;
-                      int set = pixels[no] & (1<< ( (col * 2 + x) % 8) );
-                      if (reverse) { set = !set; }
-                      if (set)
-                        { unicode |=  (1<< (bitno) ); }
-                      bitno++;
-                    }
-                {
-                  int x = 0;
-                  int y = 3;
-                  int no = (row * 4 + y) * stride + (col*2+x) /8;
-                  int setA = pixels[no] & (1<< ( (col * 2 + x) % 8) );
-                  no = (row * 4 + y) * stride + (col*2+x+1) /8;
-                  int setB = pixels[no] & (1<< (   (col * 2 + x + 1) % 8) );
-                  if (reverse) { setA = !setA; }
-                  if (reverse) { setB = !setB; }
-                  if (setA != 0 && setB==0)
-                    { unicode += 0x2840; }
-                  else if (setA == 0 && setB)
-                    { unicode += 0x2880; }
-                  else if ( (setA != 0) && (setB != 0) )
-                    { unicode += 0x28C0; }
-                  else
-                    { unicode += 0x2800; }
-                  uint8_t utf8[5];
-                  utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
-                  printf ("%s", utf8);
-                }
-              }
-            printf ("\n");
-          }
-        break;
-      case CTX_FORMAT_RGBA8:
-        {
-        for (int row = 0; row < height/4; row++)
-          {
-            for (int col = 0; col < width /2; col++)
-              {
-                int unicode = 0;
-                int bitno = 0;
-
-                uint8_t rgba2[4] = {0,0,0,255};
-                uint8_t rgba1[4] = {0,0,0,255};
-                int     rgbasum[4] = {0,};
-                int     col_count = 0;
-
-                for (int xi = 0; xi < 2; xi++)
-                  for (int yi = 0; yi < 4; yi++)
-                      {
-                        int noi = (row * 4 + yi) * stride + (col*2+xi) * 4;
-                        int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba2);
-                        if (diff > 32*32)
-                        {
-                          for (int c = 0; c < 3; c++)
-                          {
-                            rgbasum[c] += pixels[noi+c];
-                          }
-                          col_count++;
-                        }
-                      }
-                if (col_count)
-                for (int c = 0; c < 3; c++)
-                {
-                  rgba1[c] = rgbasum[c] / col_count;
-                }
-
-
-
-                // to determine color .. find two most different
-                // colors in set.. and threshold between them..
-                // even better dither between them.
-                //
-  printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
-  //printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
-
-                for (int x = 0; x < 2; x++)
-                  for (int y = 0; y < 3; y++)
-                    {
-                      int no = (row * 4 + y) * stride + (col*2+x) * 4;
-#define CHECK_IS_SET \
-      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba1)< \
-       _ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
-
-                      int set = CHECK_IS_SET;
-                      if (reverse) { set = !set; }
-                      if (set)
-                        { unicode |=  (1<< (bitno) ); }
-                      bitno++;
-                    }
-                {
-                  int x = 0;
-                  int y = 3;
-                  int no = (row * 4 + y) * stride + (col*2+x) * 4;
-                  int setA = CHECK_IS_SET;
-                  no = (row * 4 + y) * stride + (col*2+x+1) * 4;
-                  int setB = CHECK_IS_SET;
-#undef CHECK_IS_SET
-                  if (reverse) { setA = !setA; }
-                  if (reverse) { setB = !setB; }
-                  if (setA != 0 && setB==0)
-                    { unicode += 0x2840; }
-                  else if (setA == 0 && setB)
-                    { unicode += 0x2880; }
-                  else if ( (setA != 0) && (setB != 0) )
-                    { unicode += 0x28C0; }
-                  else
-                    { unicode += 0x2800; }
-                  uint8_t utf8[5];
-                  utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
-                  printf ("%s", utf8);
-                }
-              }
-            printf ("\n\r");
-          }
-          printf ("\e[38;2;%i;%i;%im", 255,255,255);
-        }
-        break;
-
-      case CTX_FORMAT_GRAY4:
-        {
-          int no = 0;
-          for (int y= 0; y < height; y++)
-            {
-              no = y * stride;
-              for (int x = 0; x < width; x++)
-                {
-                  int val = (pixels[no] & (15 << ( (x % 2) *4) ) ) >> ( (x%2) *4);
-                  val = val * 6 / 16;
-                  if (reverse) { val = 5-val; }
-                  val = CTX_CLAMP (val, 0, 4);
-                  printf ("%s", utf8_gray_scale[val]);
-                  if (x % 2 == 1)
-                    { no++; }
-                }
-              printf ("\n");
-            }
-        }
-        break;
-      case CTX_FORMAT_CMYK8:
-        {
-          for (int c = 0; c < 4; c++)
-            {
-              int no = 0;
-              for (int y= 0; y < height; y++)
-                {
-                  for (int x = 0; x < width; x++, no+=4)
-                    {
-                      int val = (int) CTX_CLAMP (pixels[no+c]/255.0*6.0, 0, 5);
-                      if (reverse)
-                        { val = 5-val; }
-                      printf ("%s", utf8_gray_scale[val]);
-                    }
-                  printf ("\n");
-                }
-            }
-        }
-        break;
-      case CTX_FORMAT_RGB8:
-        {
-          for (int c = 0; c < 3; c++)
-            {
-              int no = 0;
-              for (int y= 0; y < height; y++)
-                {
-                  for (int x = 0; x < width; x++, no+=3)
-                    {
-                      int val = (int) CTX_CLAMP (pixels[no+c]/255.0*6.0, 0, 5);
-                      if (reverse)
-                        { val = 5-val; }
-                      printf ("%s", utf8_gray_scale[val]);
-                    }
-                  printf ("\n");
-                }
-            }
-        }
-        break;
-      case CTX_FORMAT_CMYKAF:
-        {
-          for (int c = 0; c < 5; c++)
-            {
-              int no = 0;
-              for (int y= 0; y < height; y++)
-                {
-                  for (int x = 0; x < width; x++, no+=5)
-                    {
-                      int val = (int) CTX_CLAMP ( (pixels[no+c]*6.0), 0, 5);
-                      if (reverse)
-                        { val = 5-val; }
-                      printf ("%s", utf8_gray_scale[val]);
-                    }
-                  printf ("\n");
-                }
-            }
-        }
-    }
-}
 
 
 #define DECTCEM_CURSOR_SHOW      "\033[?25h"
@@ -319,9 +73,9 @@ static const char *mouse_modes[]=
 /* note that a nick can have multiple occurences, the labels
  * should be kept the same for all occurences of a combination. */
 typedef struct NcKeyCode {
-  char *nick;          /* programmers name for key (combo) */
-  char *label;         /* utf8 label for key */
-  char  sequence[10];  /* terminal sequence */
+  const char *nick;          /* programmers name for key (combo) */
+  const char *label;         /* utf8 label for key */
+  const char  sequence[10];  /* terminal sequence */
 } NcKeyCode;
 static const NcKeyCode keycodes[]={  
   {"up",                  "↑",     "\033[A"},
@@ -767,7 +521,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
               return "esc";
           }
 
-        switch (match_keycode ((void*)buf, length + 1, &match))
+        switch (match_keycode ((const char*)buf, length + 1, &match))
           {
             case 1: /* unique match */
               if (!match)
@@ -835,13 +589,13 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
                   {
                     read (STDIN_FILENO, &buf[length+1], ctx_utf8_len(buf[0])-1);
                     buf[ctx_utf8_len(buf[0])]=0;
-                    strcpy (ret, (void*)buf);
+                    strcpy (ret, (const char*)buf);
                     return ret;
                   }
                 if (length == 0) /* ascii */
                   {
                     buf[1]=0;
-                    strcpy (ret, (void*)buf);
+                    strcpy (ret, (const char*)buf);
                     return ret;
                   }
                 sprintf (ret, "unhandled %i:'%c' %i:'%c' %i:'%c' %i:'%c' %i:'%c' %i:'%c' %i:'%c'",
@@ -867,7 +621,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
 int ctx_nct_consume_events (Ctx *ctx)
 {
   int ix, iy;
-  CtxCtx *ctxctx = (void*)ctx->renderer;
+  CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
   const char *event = NULL;
 
   {
@@ -981,7 +735,7 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
          if (buf[length]=='\n')
          {
            buf[length]=0;
-           return (void*)buf;
+           return (const char*)buf;
          }
       }
   return NULL;
