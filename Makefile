@@ -68,7 +68,7 @@ ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
 src/%.o: src/%.c split/*.h
 	$(CC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS)
 
-terminal/%.o: terminal/%.c ctx.h terminal/*.h
+terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
 	$(CC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS) 
 
 ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS)
