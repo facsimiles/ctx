@@ -4737,6 +4737,10 @@ void vt_feed_keystring (VT *vt, const char *str)
               if (s)
                 {
                   y = atoi (s);
+                  if (s)
+                  {
+                    b = atoi (s);
+                  }
                   vt_mouse (vt, VT_MOUSE_DRAG, b, x/cw + 1, y/ch + 1, x, y);
                 }
             }
@@ -6566,19 +6570,14 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
   switch (event->type)
   {
     case CTX_MOTION:
-      if (event->device_no==1)
+      //if (event->device_no==1)
       {
         sprintf (buf, "mouse-motion %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, buf);
       }
       break;
     case CTX_PRESS:
-      if (event->device_no==1)
-      {
-        sprintf (buf, "mouse-press %.0f %.0f %i", x, y, device_no);
-        vt_feed_keystring (vt, buf);
-      }
-      else if (event->device_no==2)
+      if (event->device_no==2)
       {
       //  vt_feed_keystring (vt, ""); // get selection
       char *text = NULL;
@@ -6597,12 +6596,18 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       }
       else if (event->device_no==3)
       {
+              // XXX disable in alt-screen ?
         vt->rev++;
         enable_terminal_menu = !enable_terminal_menu;
       }
+      else
+      {
+        sprintf (buf, "mouse-press %.0f %.0f %i", x, y, device_no);
+        vt_feed_keystring (vt, buf);
+      }
       break;
     case CTX_RELEASE:
-      if (event->device_no==1)
+      //if (event->device_no==1)
       {
         sprintf (buf, "mouse-release %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, buf);

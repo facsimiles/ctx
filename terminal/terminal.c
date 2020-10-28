@@ -1136,12 +1136,11 @@ int terminal_main (int argc, char **argv)
         ensure_layout ();
       }
 
-
-
       if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
           ctx_pointer_is_down (ctx, 1) || (active==NULL))
       {
-        CtxClient *client = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
+        CtxClient *client = find_active (ctx_pointer_x (ctx),
+                                         ctx_pointer_y (ctx));
         if (client)
         {
           if (active != client)
