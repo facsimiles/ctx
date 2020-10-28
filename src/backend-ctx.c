@@ -45,6 +45,7 @@ Ctx *ctx_new_ctx (int width, int height)
   ctx_set_size (ctx, width, height);
   ctxctx->flush = (void*)ctx_ctx_flush;
   ctxctx->free  = (void*)ctx_ctx_free;
+  fprintf (stdout, "\e[2J");
   fprintf (stdout, "\e[?1049h");
   fflush (stdout);
   return ctx;
@@ -59,14 +60,16 @@ int ctx_ctx_consume_events (Ctx *ctx)
   if (ctx_native_events)
     {
       float x = 0, y = 0;
-      int b;
+      int b = 0;
       char event_type[128]="";
       event = ctx_native_get_event (ctx, 1000/60);
-      {
-      //FILE *file = fopen ("/tmp/log", "a");
-      //fprintf (file, "[%s]\n", event);
-      //fclose (file);
+#if 0
+      if(event){
+        FILE *file = fopen ("/tmp/log", "a");
+        fprintf (file, "[%s]\n", event);
+        fclose (file);
       }
+#endif
       if (event)
       {
       sscanf (event, "%s %f %f %i", event_type, &x, &y, &b);
@@ -75,16 +78,16 @@ int ctx_ctx_consume_events (Ctx *ctx)
       }
       else if (!strcmp (event_type, "mouse-press"))
       {
-        ctx_pointer_press (ctx, x, y, 1, 0);
+        ctx_pointer_press (ctx, x, y, b, 0);
       }
       else if (!strcmp (event_type, "mouse-drag")||
                !strcmp (event_type, "mouse-motion"))
       {
-        ctx_pointer_motion (ctx, x, y, 1, 0);
+        ctx_pointer_motion (ctx, x, y, b, 0);
       }
       else if (!strcmp (event_type, "mouse-release"))
       {
-        ctx_pointer_release (ctx, x, y, 1, 0);
+        ctx_pointer_release (ctx, x, y, b, 0);
       }
       else if (!strcmp (event_type, "message"))
       {
