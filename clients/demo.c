@@ -452,6 +452,19 @@ float rect1_y = 0.1;
 float rect2_x = 0.4;
 float rect2_y = 0.4;
 
+typedef struct DragObject
+{
+  float x;
+  float y;
+  float width;
+  float height;
+  float red;
+  float green;
+  float blue;
+  float alpha;
+} DragObject;
+
+
 static void rect_drag (CtxEvent *event, void *data1, void *data2)
 {
   float *x = data1;
@@ -461,8 +474,32 @@ static void rect_drag (CtxEvent *event, void *data1, void *data2)
   event->stop_propagate=1;
 }
 
+static void object_drag (CtxEvent *event, void *data1, void *data2)
+{
+  DragObject *obj = data1;
+  obj->x += event->delta_x;
+  obj->y += event->delta_y;
+  event->stop_propagate=1;
+}
+
 static void card_drag (ITK *itk, int frame_no)
 {
+  static DragObject objects[4];
+  static int first_run = 1;
+  if (first_run)
+  for (int i = 0; i <  4; i++)
+  {
+    objects[i].x = (i+1) * 0.1;
+    objects[i].y = (i+1) * 0.1;
+    objects[i].width = 0.2;
+    objects[i].height = 0.2;
+    objects[i].red = 0.5;
+    objects[i].red = 0.1;
+    objects[i].red = 0.9;
+    objects[i].alpha = 0.6;
+    first_run = 0;
+  }
+
   Ctx *ctx = itk->ctx;
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
@@ -474,6 +511,14 @@ static void card_drag (ITK *itk, int frame_no)
 
   ctx_scale (ctx, width, height);
 
+  for (int i = 0; i <  4; i++)
+  {
+    ctx_rectangle (ctx, objects[i].x, objects[i].y, objects[i].width, objects[i].height);
+    ctx_rgba (ctx, objects[i].red, objects[i].green, objects[i].blue, objects[i].alpha);
+    ctx_listen (ctx, CTX_DRAG, object_drag, &objects[i], objects);
+    ctx_fill (ctx);
+  }
+#if 0
   ctx_rectangle (ctx, rect1_x, rect1_y, 0.2, 0.2);
   ctx_rgb (ctx, 1,0,0);
   ctx_listen (ctx, CTX_DRAG, rect_drag, &rect1_x, &rect1_y);
@@ -483,6 +528,7 @@ static void card_drag (ITK *itk, int frame_no)
   ctx_rgb (ctx, 1,1,0);
   ctx_listen (ctx, CTX_DRAG, rect_drag, &rect2_x, &rect2_y);
   ctx_fill (ctx);
+#endif
 
   ctx_restore (ctx);
 }

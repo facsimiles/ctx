@@ -9,7 +9,7 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
 
-CFLAGS= -g $(CFLAGS_warnings)
+CFLAGS+= -g $(CFLAGS_warnings)
 
 CFLAGS+= -I. -Ifonts -Ideps
 LIBS   = -lutil -lz -lm -lpthread
@@ -38,7 +38,7 @@ fonts/ctx-font-regular.h: tools/ctx-fontgen
 fonts/ctx-font-mono.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSansMono.ttf mono ascii-extras > $@
 
-used_fonts: fonts/ctx-font-ascii.h fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf
+used_fonts: fonts/ctx-font-ascii.h fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf 
 
 test: ctx
 	make -C tests
@@ -60,13 +60,13 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
-ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
+ctx.o: ctx.c ctx.h Makefile used_fonts
 	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O2
 
 ctx-split.o: $(SRC_OBJS)
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
-	musl-gcc ctx.c -c -o $@ $(CFLAGS) -DNO_SDL=1 -DCTX_FB=1
+	gcc ctx.c -c -o $@ $(CFLAGS) -DNO_SDL=1 -DCTX_FB=1
 
 src/%.o: src/%.c split/*.h
 	$(CC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS)
@@ -89,19 +89,19 @@ ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fo
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS)
 	$(CC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-O0.o -O0
 
-ctx.static: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) ctx-nosdl.o 
-	musl-gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) $(LIBS) ctx-nosdl.o -DNO_SDL=1 -DCTX_FB=1 -static 
+ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o 
+	gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) $(LIBS) ctx-nosdl.o -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
-	upx $@
 
 docs/ctx.h.html: ctx.h Makefile
 	highlight -l -a --encoding=utf8 -W ctx.h > docs/ctx.h.html
 docs/ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
-	highlight -l -a --encoding=utf8 -W fonts/ctx-font-regular.h > docs/ctx-font-regular.h.html
-	
+	highlight -l -a --encoding=utf8 -W fonts/ctx-font-regular.h > docs/ctx-font-regular.h.htm
+
 #git gc
 
-updateweb: all test docs/ctx.h.html docs/ctx-font-regular.h.html
+foo: ctx
+updateweb: all ctx.static ctx.avx2 test docs/ctx.h.html docs/ctx-font-regular.h.html 
 	(cd docs ; stagit .. )
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
@@ -110,6 +110,17 @@ updateweb: all test docs/ctx.h.html docs/ctx-font-regular.h.html
 	cp -ru docs/* ~/pgo/ctx.graphics/
 	cp -ru tests/* ~/pgo/ctx.graphics/tests
 	cp ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
+	cp -f ctx docs/binaries/ctx-x86_64-SDL2
+	cp -f ctx.static docs/binaries/ctx-x86_64-static
+	cp -f ctx.avx2 docs/binaries/ctx-x86_64-SDL2-AVX2
+	upx docs/binaries/ctx-x86_64-SDL2
+	upx docs/binaries/ctx-x86_64-SDL2-AVX2
+	upx docs/binaries/ctx-x86_64-static
+	make clean
+	proot -r /home/pippin/src/isthmus/i486 -b /dev -b /proc -b /sys -b /home/pippin/src/ctx make ctx.static
+	cp -f ctx.static docs/binaries/ctx-i486-static
+	upx docs/binaries/ctx-i486-static
+
 flatpak:
 	rm -rf build-dir;flatpak-builder --user --install build-dir meta/graphics.ctx.terminal.yml
 

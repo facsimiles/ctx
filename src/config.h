@@ -306,7 +306,8 @@
  * built-in fonts using ctx renderstream encoding is enabled
  */
 #if CTX_FONT_regular || CTX_FONT_mono || CTX_FONT_bold \
-  || CTX_FONT_italic || CTX_FONT_sans || CTX_FONT_serif
+  || CTX_FONT_italic || CTX_FONT_sans || CTX_FONT_serif \
+  || CTX_FONT_ascii
 #ifndef CTX_FONT_ENGINE_CTX
 #define CTX_FONT_ENGINE_CTX        1
 #endif

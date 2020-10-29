@@ -614,6 +614,10 @@ CTX_STATIC void ctx_font_setup ()
   initialized = 1;
 #if CTX_FONT_ENGINE_CTX
   ctx_font_count = 0; // oddly - this is needed in arduino
+
+#if CTX_FONT_ascii
+  ctx_load_font_ctx ("sans-ctx", ctx_font_ascii, sizeof (ctx_font_ascii) );
+#endif
 #if CTX_FONT_regular
   ctx_load_font_ctx ("sans-ctx", ctx_font_regular, sizeof (ctx_font_regular) );
 #endif
