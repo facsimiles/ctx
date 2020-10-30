@@ -5072,11 +5072,11 @@ int vt_get_cursor_y (VT *vt)
 
 static void draw_braille_bit (Ctx *ctx, float x, float y, float cw, float ch, int u, int v)
 {
-  ctx_begin_path (ctx);
+  //ctx_begin_path (ctx);
   ctx_rectangle (ctx, 0.167 * cw + x + u * cw * 0.5,
                  y - ch + 0.080 * ch + v * ch * 0.25,
                  0.33 *cw, 0.33 * cw);
-  ctx_fill (ctx);
+  //ctx_fill (ctx);
 }
 
 int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int unichar)
@@ -5671,6 +5671,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
                 }
             }
         }
+        ctx_fill (ctx);
         return 0;
       case 0x2880:
       case 0x2881:
@@ -5757,6 +5758,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
                 }
             }
         }
+        ctx_fill (ctx);
         return 0;
       case 0x28C0:
       case 0x28C1:
@@ -5822,6 +5824,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
       case 0x28FD:
       case 0x28FE:
       case 0x28FF:
+        ctx_begin_path (ctx);
         draw_braille_bit (ctx, x, y, cw, ch, 0, 3);
         draw_braille_bit (ctx, x, y, cw, ch, 1, 3);
         {
@@ -5843,6 +5846,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
                 }
             }
         }
+        ctx_fill (ctx);
         return 0;
     }
   return -1;
