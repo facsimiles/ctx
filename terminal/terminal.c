@@ -11,6 +11,7 @@
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <pty.h>
+#include <math.h>
 
 #ifndef NO_SDL
 #include <SDL.h> // for clipboard texts

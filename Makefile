@@ -58,15 +58,15 @@ uninstall:
 
 
 tools/%: tools/%.c ctx-nofont.h 
-	gcc $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
+	$(CC) $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
 ctx.o: ctx.c ctx.h Makefile used_fonts
-	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O2
+	$(CC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3
 
 ctx-split.o: $(SRC_OBJS)
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
-	gcc ctx.c -c -o $@ $(CFLAGS) -DNO_SDL=1 -DCTX_FB=1
+	$(CC) ctx.c -c -o $@ $(CFLAGS) -O3 -DNO_SDL=1 -DCTX_FB=1
 
 src/%.o: src/%.c split/*.h
 	$(CC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS)
@@ -89,8 +89,8 @@ ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fo
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS)
 	$(CC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-O0.o -O0
 
-ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o 
-	gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) $(LIBS) ctx-nosdl.o -DNO_SDL=1 -DCTX_FB=1 -static 
+ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o terminal/*.[ch]
+	$(CC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o $(LIBS) -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile
