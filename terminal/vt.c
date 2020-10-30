@@ -3075,7 +3075,7 @@ static void vt_line_feed (VT *vt)
 
 #include "vt-encodings.h"
 
-#if 1
+#ifndef NO_SDL
 #include "vt-audio.h"
 
 static void vt_state_apc_audio (VT *vt, int byte)
