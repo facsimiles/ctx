@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <math.h>
 #include <sys/select.h> 
 
 typedef struct _CtxRasterizer CtxRasterizer;
