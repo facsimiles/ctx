@@ -237,7 +237,7 @@ static void ctx_fb_show_frame (CtxFb *fb)
      switch (fb->fb_bits)
      {
        case 32:
-#if 0
+#if 1
          memcpy (fb->fb, fb->scratch_fb, fb->width * fb->height *  4);
 #else
          { int count = fb->width * fb->height;

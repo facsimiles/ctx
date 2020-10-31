@@ -3093,7 +3093,7 @@ static void vt_state_apc_audio (VT *vt, int byte)
 
 #else
 
-static void audio_task (AudioState *audio, int click)
+static void audio_task (VT *vt, int click)
 {
 }
 
@@ -4362,7 +4362,7 @@ int vt_poll (VT *vt, int timeout)
   int got_data = 0;
   int remaining_chars = read_size * 10;
   int len = 0;
-  audio_task (vt, 0);
+  //audio_task (vt, 0);
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
     {
