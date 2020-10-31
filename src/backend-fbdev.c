@@ -1113,11 +1113,13 @@ void fb_render_fun (void **data)
   int      no = (size_t)data[0];
   CtxFb *fb = data[1];
 
+  int sleep_time = 2000;
   while (!fb->quit)
   {
     if (fb->render_frame != fb->rendered_frame[no])
     {
       int hno = 0;
+      sleep_time = 2000;
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
         {
@@ -1162,9 +1164,13 @@ void fb_render_fun (void **data)
     }
     else
     {
-      usleep (1000);
+      usleep (sleep_time);
+      sleep_time *= 2;
+      if (sleep_time > 1000000/8)
+          sleep_time = 1000000/8;
     }
   }
+  fb->thread_quit ++;
 }
 
 
