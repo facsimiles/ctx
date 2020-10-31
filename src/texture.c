@@ -24,6 +24,8 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
   buffer->user_data = user_data;
 }
 
+
+
 CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     int stride,
                                     CtxPixelFormat pixel_format,
@@ -36,6 +38,12 @@ CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
   return buffer;
 }
 
+
+static void ctx_buffer_pixels_free (void *pixels, void *userdata)
+{
+  free (pixels);
+}
+
 CtxBuffer *ctx_buffer_new (int width, int height,
                            CtxPixelFormat pixel_format)
 {
@@ -45,7 +53,7 @@ CtxBuffer *ctx_buffer_new (int width, int height,
   uint8_t *pixels = (uint8_t*)calloc (stride, height + 1);
 
   ctx_buffer_set_data (buffer, pixels, width, height, stride, pixel_format,
-                       (void(*)(void*, void*))free, NULL);
+                       ctx_buffer_pixels_free, NULL);
   return buffer;
 }
 

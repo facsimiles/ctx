@@ -577,6 +577,8 @@ void *ctx_get_renderer (Ctx *ctx);
  * it provides the ability to register callbacks with the current path
  * that get delivered with transformed coordinates.
  */
+int ctx_is_dirty (Ctx *ctx);
+void ctx_set_dirty (Ctx *ctx, int dirty);
 float ctx_get_float (Ctx *ctx, uint32_t hash);
 void ctx_set_float (Ctx *ctx, uint32_t hash, float value);
 
@@ -1481,15 +1483,6 @@ int          ctx_get_render_threads   (Ctx *ctx);
 
 void         ctx_set_hash_cache (Ctx *ctx, int enable_hash_cache);
 int          ctx_get_hash_cache (Ctx *ctx);
-
-
-
-
-
-
-
-
-
 
 
 typedef struct _CtxParser CtxParser;

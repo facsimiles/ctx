@@ -35,4 +35,5 @@ moveTo 50% 50%
 arc 50% 50% $((radius * 90 / 100))%  $second_radians $second_radians 0
 rgba 1 0.1 0.1 1
 stroke
+flush
 done "; done

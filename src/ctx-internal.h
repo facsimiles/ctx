@@ -429,6 +429,7 @@ _Ctx
   int                rev;
   void              *backend;
 #if CTX_EVENTS 
+  int                dirty;
   CtxEvents          events;
   int                mouse_fd;
   int                mouse_x;

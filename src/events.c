@@ -1596,4 +1596,13 @@ int ctx_get_hash_cache (Ctx *ctx)
   return _ctx_enable_hash_cache;
 }
 
+int ctx_is_dirty (Ctx *ctx)
+{
+  return ctx->dirty;
+}
+void ctx_set_dirty (Ctx *ctx, int dirty)
+{
+  ctx->dirty = dirty;
+}
+
 #endif

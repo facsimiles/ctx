@@ -41,18 +41,19 @@ int main (int argc, char **argv)
   {
     int width = ctx_width (ctx);
     int height = ctx_height (ctx);
-      itk_reset (itk);
 #if 0
     ctx_save (ctx);
     ctx_rectangle (ctx, 0, 0, width, height);
     ctx_gray (ctx, 0);
     ctx_fill (ctx);
 #endif
-    tests[test_no].fun (itk, frame_no++);
 
 //  itk->dirty=1;
-//  if (itk->dirty)
+    if (itk->dirty)
     {
+      ctx_reset (ctx);
+      itk_reset (itk);
+      tests[test_no].fun (itk, frame_no++);
       itk_panel_start (itk, "ctx and itk demo", 0, 0, width*0.2, height);
       itk_seperator (itk);
 #if 0
@@ -202,6 +203,7 @@ static void card_gradients (ITK *itk, int frame_no)
   ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
   ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 1.9 * CTX_PI, 0);
   ctx_fill (ctx);
+  itk->dirty ++;
 }
 
 static void card_dots (ITK *itk, int frame_no)
@@ -277,6 +279,7 @@ static void card_sliders (ITK *itk, int frame_no)
   slider (ctx, height * 0.2, height * 0.4, width - height * 0.4, (frame_no  % 400) / 400.0);
   slider (ctx, height * 0.2, height * 0.5, width - height * 0.4, (frame_no  % 330) / 330.0);
   slider (ctx, height * 0.2, height * 0.6, width - height * 0.4, (frame_no  % 100) / 100.0);
+  itk->dirty++;
 }
 
 static void _analog_clock (Ctx     *ctx,
@@ -477,9 +480,11 @@ static void rect_drag (CtxEvent *event, void *data1, void *data2)
 static void object_drag (CtxEvent *event, void *data1, void *data2)
 {
   DragObject *obj = data1;
+  ITK *itk = data2;
   obj->x += event->delta_x;
   obj->y += event->delta_y;
   event->stop_propagate=1;
+  itk->dirty ++;
 }
 
 static void card_drag (ITK *itk, int frame_no)
@@ -515,7 +520,7 @@ static void card_drag (ITK *itk, int frame_no)
   {
     ctx_rectangle (ctx, objects[i].x, objects[i].y, objects[i].width, objects[i].height);
     ctx_rgba (ctx, objects[i].red, objects[i].green, objects[i].blue, objects[i].alpha);
-    ctx_listen (ctx, CTX_DRAG, object_drag, &objects[i], objects);
+    ctx_listen (ctx, CTX_DRAG, object_drag, &objects[i], itk);
     ctx_fill (ctx);
   }
 #if 0

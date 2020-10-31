@@ -233,7 +233,7 @@ char* string =
   for (int i = 0; i < output_font.count; i++)
   {
     CtxEntry *entry = &output_font.entries[i];
-    for (int c = 0; c <  sizeof (CtxEntry); c++)
+    for (int c = 0; c <  (int)sizeof (CtxEntry); c++)
       printf ("%c",((uint8_t*)(entry))[c]);
   }
   }

@@ -296,7 +296,7 @@ void _ctx_set_store_clear (Ctx *ctx)
 
 #if CTX_EVENTS
 static void
-ctx_event_free (CtxEvent *event)
+ctx_event_free (void *event, void *user_data)
 {
   free (event);
 }
@@ -310,7 +310,7 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
     return;
   copy = (CtxEvent*)malloc (sizeof (CtxEvent));
   *copy = *event;
-  ctx_list_append_full (&ctx->events.events, copy, (void(*)(void*, void*))ctx_event_free, NULL);
+  ctx_list_append_full (&ctx->events.events, copy, ctx_event_free, NULL);
 }
 #endif
 

@@ -1124,9 +1124,9 @@ int terminal_main (int argc, char **argv)
 
   signal (SIGCHLD,signal_child);
 
-  int sleep_time = 200;
   while (clients)
     {
+      int sleep_time = 200;
       CtxList *to_remove = NULL;
       int changes = 0;
       int n_clients = ctx_list_length (clients);
@@ -1232,20 +1232,25 @@ int terminal_main (int argc, char **argv)
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_flush (ctx);
+        sleep_time     = 200;
       }
       else
       {
-        usleep (1000 * 5);
+        sleep_time *= 10;
+        if (sleep_time > 1000000/8)
+            sleep_time = 1000000/8;
+        usleep (sleep_time/2);
       }
 
       CtxEvent *event;
       while ((event = ctx_get_event (ctx)))
       {
       }
+      long int fractional_sleep = sleep_time / ctx_list_length (clients);
       for (CtxList *l = clients; l; l = l->next)
       {
         CtxClient *client = l->data;
-        if (vt_poll (client->vt, sleep_time) )
+        if (vt_poll (client->vt, fractional_sleep/2))
         {
         }
       }
