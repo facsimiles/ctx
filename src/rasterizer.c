@@ -6395,6 +6395,20 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
     }
 }
 
+void
+ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
+{
+  ctx_renderstream_deinit (&rasterizer->edge_list);
+#if CTX_ENABLE_CLIP
+  if (rasterizer->clip_buffer)
+  {
+    ctx_buffer_free (rasterizer->clip_buffer);
+    rasterizer->clip_buffer = NULL;
+  }
+#endif
+  free (rasterizer);
+}
+
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb  (Ctx *ctx);
 
@@ -6462,6 +6476,7 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
  *
  */
 }
+
 
 
 #if CTX_ENABLE_RGB8
@@ -7219,19 +7234,6 @@ ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, v
 
 #endif
 
-void
-ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
-{
-  ctx_renderstream_deinit (&rasterizer->edge_list);
-#if CTX_ENABLE_CLIP
-  if (rasterizer->clip_buffer)
-  {
-    ctx_buffer_free (rasterizer->clip_buffer);
-    rasterizer->clip_buffer = NULL;
-  }
-#endif
-  free (rasterizer);
-}
 
 static CtxPixelFormatInfo ctx_pixel_formats[]=
 {

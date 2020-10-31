@@ -1,6 +1,7 @@
-SMALL_CFLAGS=-Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant
+SMALL_CFLAGS=-Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant -DNO_SDL
 #SMALL_CFLAGS=-Ofast -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program 
 PERF_CFLAGS=-Ofast  -g
+CC=i686-linux-gnu-gcc
 
 PROGRAMS=tiny small baseline musl-static-tiny musl-static-small musl-static-baseline ctx-info-32bit
 
@@ -12,10 +13,10 @@ clean:
 	rm -rf $(PROGRAMS)
 
 text: text.c ../../*.h ../../fonts/*.h Makefile
-	$(CC) $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts -march=native `pkg-config sdl2 --cflags --libs` 
+	$(CC) $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts -march=native --cflags --libs` 
 
 %: %.c ../../*.h ../../fonts/*.h Makefile tiny-config.h
-	$(CC) $(SMALL_CFLAGS)  $< -o $@ -I../../ -I../../fonts -march=native `pkg-config sdl2 --cflags --libs` 
+	$(CC) $(SMALL_CFLAGS)  $< -o $@ -I../../ -I../../fonts -march=native
 	strip -sx $@
 
 musl-static-%: %.c ../../*.h ../../fonts/*.h Makefile tiny-config.h
