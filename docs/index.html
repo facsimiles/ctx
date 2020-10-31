@@ -283,6 +283,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <li>improved performance</li>
         <li>diff of frames in terminal protocol (locally it might help some things, but bandwidth of the pty should be optimized - also for high fidelity audio and possibly video streams.)</li>
         <li>texture upload as part of terminal protocol</li>
+        <li>terminal rewrap on resize</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
         <li>support HTML/CSS ways of setting colors as strings</li>
         <li>ICC color management (provisions have been made in the API for this,
@@ -295,10 +296,10 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
             apps.</li>
         <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
 	<li>glyph fallbacks</li>
-        <li>rewrap on resize</li>
+        <li>number of render threads changeable at runtime (and automatically due to load)</li>
         <li>faster 1d-gaussian blur for shadow blur</li>
         <li>analytical instead of raster clipping</li>
-        <li>SVG/HTML parser renderer (in progress, from mrg)</li>
+        <li>SVG/HTML/CSS parsing renderer (in progress, from mrg)</li>
         <li>PDF/SVG generation (can already be done through cairo integration)</li>
         <li>Add API for integrating device-N with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
         <li>32bit float coverage from rasterizer - right now we support 32f images; but composite them with 8bit alpha masks.</li>

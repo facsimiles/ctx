@@ -308,8 +308,13 @@ _ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, char *hash)
       rect.y = row * rect.height;
       if (ctx_rect_intersect (shape_rect, &rect))
       {
-        for (int i = 0; i <20;i++)
-           hasher->hashes[(row * hasher->cols + col)  *20 + i] += hash[i];
+        int temp = hasher->hashes[(row * hasher->cols + col)  *20 + 0];
+        for (int i = 0; i <19;i++)
+           hasher->hashes[(row * hasher->cols + col)  *20 + i] =
+             hasher->hashes[(row * hasher->cols + col)  *20 + i+1]^
+             hash[i];
+        hasher->hashes[(row * hasher->cols + col)  *20 + 19] =
+                temp ^ hash[19];
       }
     }
 }
