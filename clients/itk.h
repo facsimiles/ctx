@@ -1031,7 +1031,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   ctx_fill (ctx);
 
   ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
-  if (itk->entry_copy)
+  if (itk->entry_copy && itk->focus_no == control->no)
   {
     int backup = itk->entry_copy[itk->entry_pos];
     char buf[4]="|";
