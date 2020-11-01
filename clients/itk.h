@@ -16,7 +16,7 @@ void itk_label (ITK *itk, const char *label);
 void itk_titlebar (ITK *itk, const char *label);
 void itk_slider  (ITK *itk, const char *label, float *val, float min, float max, float step);
 void itk_entry   (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
-                  void (*commit)(void *commit_data), void *commit_data);
+                  void (*commit)(ITK *itk, void *commit_data), void *commit_data);
 void itk_toggle  (ITK *itk, const char *label, int *val);
 int  itk_radio    (ITK *itk, const char *label, int set);
 int  itk_expander (ITK *itk, const char *label, int *val);
@@ -92,7 +92,7 @@ IKTPal theme_dark[]={
   {ITK_BG,                 30,40,50,255},
   {ITK_FOCUSED_BG,         60,70,80,255},
   {ITK_FG,                 225,225,225,255},
-  {ITK_INTERACTIVE,           255,5,5,255},
+  {ITK_INTERACTIVE,        255,5,5,255},
   {ITK_INTERACTIVE_BG,     50,40,50,255},
   {ITK_ENTRY_CURSOR,       225,245,140,255},
   {ITK_ENTRY_FALLBACK,     225,245,140,255},
@@ -111,7 +111,7 @@ IKTPal theme_light[]={
   {ITK_BG,                 220,220,220,255},
   {ITK_FOCUSED_BG,         255,255,255,255},
   {ITK_FG,                 30,40,50,255},
-  {ITK_INTERACTIVE,           255,5,5,255},
+  {ITK_INTERACTIVE,        255,5,5,255},
   {ITK_INTERACTIVE_BG,     255,245,220,255},
   {ITK_ENTRY_CURSOR,       0,0,0,255},
   {ITK_ENTRY_FALLBACK,     225,245,140,255},
@@ -150,7 +150,7 @@ struct _CtxControl{
 
 
   void (*action)(void *data);
-  void (*commit)(void *data);
+  void (*commit)(ITK *itk, void *data);
   double (*get_val)(void *valp, void *data);
   void(*set_val)(void *valp, double val, void *data);
   void(*finalize)(void *data);
@@ -172,6 +172,8 @@ struct _ITK{
   float y0;
   float x;
   float y;
+
+  /// ITK ancestors.. for css
 
   float stored_x; // for sameline()
 
@@ -967,7 +969,7 @@ void entry_commit (ITK *itk)
          {
            if (control->commit)
            {
-             control->commit (control->data);
+             control->commit (itk, control->data);
            }
            else
            {
@@ -1003,7 +1005,8 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
 }
 
 void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
-                  void (*commit)(void *commit_data),
+                  void (*commit)(ITK *itk,
+                                 void *commit_data),
                                 void *commit_data)
 {
   Ctx *ctx = itk->ctx;

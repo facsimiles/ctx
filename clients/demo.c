@@ -543,8 +543,147 @@ static void card_drag (ITK *itk, int frame_no)
   ctx_restore (ctx);
 }
 
+
+static void card_7GUI1 (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  itk_panel_start (itk, "7gui1 - counter", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+  static int value = 0;
+  itk_labelf (itk, "%i\n", value);
+  itk_sameline (itk);
+  if (itk_button (itk, "count")){
+    value++;
+  }
+  itk_panel_end (itk);
+}
+
+static char celcius_val[20]="";
+static char fahrenheit_val[20]="";
+
+static void commit_celcius (ITK *itk, void *data)
+{
+  float celcius;
+  CtxControl *control = itk_focused_control (itk);
+  strcpy (control->val, itk->entry_copy);
+  for (int i = 0; celcius_val[i]; i++)
+    if (!((celcius_val[i] >= '0' && celcius_val[i] <= '9') || celcius_val[i]=='.'))
+      return;
+  celcius = atof (celcius_val);
+  sprintf (fahrenheit_val, "%.2f", celcius * (9/5.0) + 32);
+}
+
+static void commit_fahrenheit (ITK *itk, void *data)
+{
+  float fahrenheit;
+  CtxControl *control = itk_focused_control (itk);
+  strcpy (control->val, itk->entry_copy);
+  for (int i = 0; fahrenheit_val[i]; i++)
+    if (!((fahrenheit_val[i] >= '0' && fahrenheit_val[i] <= '9') || fahrenheit_val[i]=='.'))
+      return;
+  fahrenheit = atof (fahrenheit_val);
+  sprintf (celcius_val, "%.2f", (fahrenheit - 32) * (5/9.0));
+}
+
+
+static void card_7GUI2 (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  itk_panel_start (itk, "7gui1 - tempconv", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+
+  itk_entry (itk, "celcius", "C", celcius_val, 20-1, commit_celcius, NULL);
+  itk_entry (itk, "fahrenheit", "F", fahrenheit_val, 20-1, commit_fahrenheit, NULL);
+  itk_panel_end (itk);
+}
+
+static void card_7GUI3 (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  static char depart_date[20]="22.09.1957";
+  static char return_date[20]="22.09.1957";
+  itk_panel_start (itk, "7gui3 - book flight", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+
+  static int return_flight = 0;
+  itk_choice (itk, "", &return_flight, NULL, NULL);
+  itk_choice_add (itk, 0, "one-way flight");
+  itk_choice_add (itk, 1, "return flight");
+  itk_entry (itk, "depart", "dd.mm.yyyy", depart_date, 20-1, NULL, NULL);
+  itk_entry (itk, "return", "dd.mm.yyyy", return_date, 20-1, NULL, NULL);
+
+  if (itk_button (itk, "Book"))
+  {
+  }
+
+  itk_panel_end (itk);
+}
+
+static void card_7GUI4 (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  static float e = 0.0;
+  static float d = 10.0;
+
+  itk_panel_start (itk, "7gui4 - timer", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+
+  itk_slider_float (itk, "elapsed", &e, 0.0, d, 0.1);
+  itk_labelf (itk, "%.1f of %.1f", e, d);
+  itk_slider_float (itk, "duration", &d, 0.0, 300.0, 0.5);
+
+  static unsigned long prev_ticks = 0;
+  unsigned long ticks = ctx_ticks ();
+
+  if (e<d)
+  {
+    if (prev_ticks)
+      e += (ticks-prev_ticks)/1000.0/1000.0;
+  }
+
+  prev_ticks = ticks;
+
+  if (itk_button (itk, "Reset"))
+    e = 0.0;
+
+  itk_panel_end (itk);
+  ctx_set_dirty (itk->ctx, 1);
+}
+
+static void card_7GUI5 (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  static float e = 0.0;
+  static float d = 10.0;
+
+  itk_panel_start (itk, "7gui5 - crud", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+
+  itk_slider_float (itk, "elapsed", &e, 0.0, d, 0.1);
+  itk_labelf (itk, "%.1f of %.1f", e, d);
+  itk_slider_float (itk, "duration", &d, 0.0, 300.0, 0.5);
+
+  static unsigned long prev_ticks = 0;
+  unsigned long ticks = ctx_ticks ();
+
+  if (e<d)
+  {
+    if (prev_ticks)
+      e += (ticks-prev_ticks)/1000.0/1000.0;
+  }
+
+  prev_ticks = ticks;
+
+  if (itk_button (itk, "Reset"))
+    e = 0.0;
+
+  itk_panel_end (itk);
+  ctx_set_dirty (itk->ctx, 1);
+}
+
+
 Test tests[]=
 {
+  {"7gui 5",     card_7GUI5},
+  {"7gui 4",     card_7GUI4},
+  {"7gui 3",     card_7GUI3},
+  {"7gui 1",     card_7GUI1},
+  {"7gui 2",     card_7GUI2},
   {"gradients", card_gradients},
   {"dots",       card_dots},
   {"drag",      card_drag},
@@ -553,6 +692,8 @@ Test tests[]=
   {"clock2",     card_clock2},
   {"fill rule",  card_fill_rule},
   {"curve to",  card_curve_to},
+
+
 };
 int n_tests = sizeof(tests)/sizeof(tests[0]);
 
