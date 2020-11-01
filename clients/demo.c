@@ -51,8 +51,9 @@ int main (int argc, char **argv)
 //  itk->dirty=1;
     if (ctx_is_dirty (ctx))
     {
+ //   ctx_set_dirty (ctx, 0);
       ctx_reset (ctx);
-      itk_reset (itk);
+      itk_reset (itk); // does set_dirty 0
       tests[test_no].fun (itk, frame_no++);
       itk_panel_start (itk, "ctx and itk demo", 0, 0, width*0.2, height);
       itk_seperator (itk);
@@ -172,6 +173,11 @@ int main (int argc, char **argv)
         itk_key_bindings (itk);
 
       ctx_flush (ctx);
+      fprintf (stderr, "%i", ctx_is_dirty (ctx));
+    }
+    else
+    {
+       usleep (1000 * 20);
     }
     while ((event = ctx_get_event (ctx)))
     {
