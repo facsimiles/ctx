@@ -914,7 +914,7 @@ static char *evsource_kb_get_event (void)
             FD_SET (STDIN_FILENO, &rfds);
             tv.tv_sec = 0;
             tv.tv_usec = 1000 * 120;
-            if (select (1, &rfds, NULL, NULL, &tv) == 0)
+            if (select (STDIN_FILENO+1, &rfds, NULL, NULL, &tv) == 0)
               return strdup ("escape");
           }
 

@@ -1605,4 +1605,56 @@ void ctx_set_dirty (Ctx *ctx, int dirty)
   ctx->dirty = dirty;
 }
 
+/*
+ * centralized global API for managing file descriptors that
+ * wake us up, this to remove sleeping and polling
+ */
+
+#define CTX_MAX_LISTEN_FDS 8
+static int _ctx_listen_fd[CTX_MAX_LISTEN_FDS];
+static int _ctx_listen_fds = 0;
+static int _ctx_listen_max_fd = 0;
+
+void _ctx_add_listen_fd (int fd)
+{
+  _ctx_listen_fd[_ctx_listen_fds++]=fd;
+  if (fd > _ctx_listen_max_fd)
+    _ctx_listen_max_fd = fd;
+}
+
+void _ctx_remove_listen_fd (int fd)
+{
+  for (int i = 0; i < _ctx_listen_fds; i++)
+  {
+    if (_ctx_listen_fd[i] == fd)
+    {
+      _ctx_listen_fd[i] = _ctx_listen_fd[_ctx_listen_fds-1];
+      _ctx_listen_fds--;
+      return;
+    }
+  }
+}
+
+int _ctx_data_pending (int timeout)
+{
+  struct timeval tv;
+  fd_set fdset;
+  FD_ZERO (&fdset);
+  for (int i = 0; i < _ctx_listen_fds; i++)
+  {
+    FD_SET (_ctx_listen_fd[i], &fdset);
+  }
+  tv.tv_sec = 0;
+  tv.tv_usec = timeout;
+  tv.tv_sec = timeout / 1000000;
+  tv.tv_usec = timeout % 1000000;
+  int retval = select (_ctx_listen_max_fd, &fdset, NULL, NULL, &tv);
+  if (retval == -1)
+  {
+    perror ("select");
+    return 0;
+  }
+  return retval;
+}
+
 #endif
