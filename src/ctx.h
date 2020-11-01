@@ -577,6 +577,7 @@ void *ctx_get_renderer (Ctx *ctx);
  * it provides the ability to register callbacks with the current path
  * that get delivered with transformed coordinates.
  */
+unsigned long ctx_ticks (void);
 int ctx_is_dirty (Ctx *ctx);
 void ctx_set_dirty (Ctx *ctx, int dirty);
 float ctx_get_float (Ctx *ctx, uint32_t hash);
