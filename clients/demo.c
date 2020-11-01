@@ -36,7 +36,7 @@ int main (int argc, char **argv)
   int chosen = 1;
   int enable_keybindings = 1;
   char input[256]="fnord";
-  itk->dirty = 1;
+  //ctx_set_dirty (ctx, 1);
   while (!do_quit)
   {
     int width = ctx_width (ctx);
@@ -49,7 +49,7 @@ int main (int argc, char **argv)
 #endif
 
 //  itk->dirty=1;
-    if (itk->dirty)
+    if (ctx_is_dirty (ctx))
     {
       ctx_reset (ctx);
       itk_reset (itk);
@@ -203,7 +203,7 @@ static void card_gradients (ITK *itk, int frame_no)
   ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
   ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 1.9 * CTX_PI, 0);
   ctx_fill (ctx);
-  itk->dirty ++;
+  ctx_set_dirty (ctx, 1);
 }
 
 static void card_dots (ITK *itk, int frame_no)
@@ -279,7 +279,7 @@ static void card_sliders (ITK *itk, int frame_no)
   slider (ctx, height * 0.2, height * 0.4, width - height * 0.4, (frame_no  % 400) / 400.0);
   slider (ctx, height * 0.2, height * 0.5, width - height * 0.4, (frame_no  % 330) / 330.0);
   slider (ctx, height * 0.2, height * 0.6, width - height * 0.4, (frame_no  % 100) / 100.0);
-  itk->dirty++;
+  ctx_set_dirty (ctx, 1);
 }
 
 static void _analog_clock (Ctx     *ctx,
@@ -480,11 +480,10 @@ static void rect_drag (CtxEvent *event, void *data1, void *data2)
 static void object_drag (CtxEvent *event, void *data1, void *data2)
 {
   DragObject *obj = data1;
-  ITK *itk = data2;
   obj->x += event->delta_x;
   obj->y += event->delta_y;
   event->stop_propagate=1;
-  itk->dirty ++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 static void card_drag (ITK *itk, int frame_no)

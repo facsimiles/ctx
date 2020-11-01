@@ -191,7 +191,6 @@ struct _ITK{
   float rel_vgap;
   float scroll_speed;
 
-  int   dirty;
   int   button_pressed;
 
   int focus_wraparound;
@@ -313,7 +312,7 @@ ITK *itk_new (Ctx *ctx)
   itk->rel_vgap         = 0.2;
   itk->scroll_speed     = 0.333;
   itk->light_mode       = 1;
-  itk->dirty            = 1;
+  ctx_set_dirty (ctx, 1);
 
   ctx_get_event (ctx); // XXX hack that turns on keybindings
 
@@ -380,7 +379,7 @@ void itk_reset (ITK *itk)
     ctx_list_remove (&itk->choices, choice);
   }
   itk->control_no = 0;
-  itk->dirty = 0;
+  ctx_set_dirty (itk->ctx, 0);
 }
 
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)
@@ -434,7 +433,7 @@ CtxControl *add_control (ITK *itk, const char *label, float x, float y, float wi
             itk->panel->scroll = itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y) - em * itk->rel_ver_advance;
 #endif
 
-        itk->dirty++;
+        ctx_set_dirty (itk->ctx, 1);
      }
      else if (itk->y - itk->panel->scroll < em * 2)
      {
@@ -443,7 +442,7 @@ CtxControl *add_control (ITK *itk, const char *label, float x, float y, float wi
           itk->panel->scroll -= itk->scroll_speed * em;
           if (itk->panel->scroll<0.0)
             itk->panel->scroll=0.0;
-          itk->dirty++;
+          ctx_set_dirty (itk->ctx, 1);
         }
      }
 
@@ -552,7 +551,7 @@ static void titlebar_drag (CtxEvent *event, void *userdata, void *userdata2)
 #endif
 
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (itk->ctx, 1);
 }
 
 void itk_titlebar (ITK *itk, const char *label)
@@ -603,14 +602,14 @@ void itk_scroll_drag (CtxEvent *event, void *data, void *data2)
   {
     panel->scroll = 0;
     event->stop_propagate = 1;
-    itk->dirty++;
+    ctx_set_dirty (itk->ctx, 1);
     return;
   }
   panel->scroll = ((event->y - panel->scroll_start_y - th / 2) / (scrollbar_height-th)) *
                (panel->max_y - panel->scroll_start_y - scrollbar_height)
           ;
   itk->focus_no = -1;
-  itk->dirty++;
+  ctx_set_dirty (itk->ctx, 1);
 
   if (panel->scroll < 0) panel->scroll = 0;
 
@@ -691,11 +690,10 @@ void itk_panel_start (ITK *itk, const char *title,
 
 void itk_panel_resize_drag (CtxEvent *event, void *data, void *data2)
 {
-  ITK *itk = data2;
   ITKPanel *panel = data;
   panel->width += event->delta_x;
   panel->height += event->delta_y;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
@@ -758,7 +756,7 @@ static void itk_slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2
 
   itk_set_focus (itk, control->no);
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
   new_val = ((event->x - control->x) / (control->width)) * (control->max-control->min) + control->min;
 
   itk_float_constrain (control, &new_val);
@@ -1001,7 +999,7 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
   }
 
   itk_set_focus (itk, control->no);
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
@@ -1082,7 +1080,7 @@ void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
   *val = (*val)?0:1;
   event->stop_propagate = 1;
   itk_set_focus (itk, control->no);
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_toggle (ITK *itk, const char *label, int *val)
@@ -1131,7 +1129,7 @@ static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
   if (control->action)
     control->action (control->val);
   event->stop_propagate = 1;
-  itk->dirty ++;
+  ctx_set_dirty (event->ctx, 1);
   itk_set_focus (itk, control->no);
   itk->button_pressed = 1;
 }
@@ -1172,7 +1170,7 @@ int itk_radio (ITK *itk, const char *label, int set)
   if (control->no == itk->focus_no && itk->button_pressed)
   {
     itk->button_pressed = 0;
-    itk->dirty++;
+    ctx_set_dirty (ctx, 1);
     return 1;
   }
    return 0;
@@ -1185,7 +1183,7 @@ void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
   int *val = control->val;
   *val = (*val)?0:1;
   itk_set_focus (itk, control->no);
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 int itk_expander (ITK *itk, const char *label, int *val)
@@ -1275,7 +1273,7 @@ int itk_button (ITK *itk, const char *label)
   if (control->no == itk->focus_no && itk->button_pressed)
   {
     itk->button_pressed = 0;
-    itk->dirty++;
+    ctx_set_dirty (ctx, 1);
     return 1;
   }
   return 0;
@@ -1288,7 +1286,7 @@ static void itk_choice_clicked (CtxEvent *event, void *userdata, void *userdata2
   itk->choice_active = 1;
   itk_set_focus (itk, control->no);
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data)
@@ -1358,7 +1356,7 @@ void itk_set_focus (ITK *itk, int pos)
    {
      entry_commit (itk);
      itk->focus_no = pos;
-     itk->dirty ++;
+     ctx_set_dirty (itk->ctx, 1);
    }
 }
 
@@ -1431,7 +1429,7 @@ CtxControl *itk_focused_control(ITK *itk)
     if (control->label && !strcmp (itk->focus_label, control->label))
     {
        itk->focus_no = control->no;
-       itk->dirty++;
+       ctx_set_dirty (itk->ctx, 1);
        return control;
     }
   }
@@ -1464,7 +1462,7 @@ void itk_key_up (CtxEvent *event, void *data, void *data2)
   {
     itk_focus (itk, -1);
   }
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
@@ -1495,7 +1493,7 @@ void itk_key_down (CtxEvent *event, void *data, void *data2)
     itk_focus (itk, 1);
   }
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_key_tab (CtxEvent *event, void *data, void *data2)
@@ -1510,7 +1508,7 @@ void itk_key_tab (CtxEvent *event, void *data, void *data2)
   itk_focus (itk, 1);
 
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_key_shift_tab (CtxEvent *event, void *data, void *data2)
@@ -1525,7 +1523,7 @@ void itk_key_shift_tab (CtxEvent *event, void *data, void *data2)
   itk_focus (itk, -1);
 
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_key_return (CtxEvent *event, void *data, void *data2)
@@ -1578,7 +1576,7 @@ void itk_key_return (CtxEvent *event, void *data, void *data2)
     }
   }
   event->stop_propagate=1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_key_left (CtxEvent *event, void *data, void *data2)
@@ -1613,7 +1611,7 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
       break;
   }
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_key_right (CtxEvent *event, void *data, void *data2)
@@ -1655,7 +1653,7 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
       break;
   }
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_key_backspace (CtxEvent *event, void *data, void *data2)
@@ -1677,7 +1675,7 @@ void itk_key_backspace (CtxEvent *event, void *data, void *data2)
      break;
   }
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_key_delete (CtxEvent *event, void *data, void *data2)
@@ -1691,7 +1689,7 @@ void itk_key_delete (CtxEvent *event, void *data, void *data2)
     itk_key_backspace (event, data, data2);
   }
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
@@ -1713,7 +1711,7 @@ void itk_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
       itk->entry_pos+=strlen(str);
       free (itk->entry_copy);
       itk->entry_copy = tmp;
-      itk->dirty++;
+      ctx_set_dirty (event->ctx, 1);
     }
   event->stop_propagate = 1;
 }
@@ -1743,7 +1741,7 @@ void ctx_choice_set (CtxEvent *event, void *data, void *data2)
   CtxControl *control = itk_focused_control (itk);
   int *val = control->val;
   *val = (size_t)(data2);
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
@@ -1752,7 +1750,7 @@ void ctx_event_block (CtxEvent *event, void *data, void *data2)
   ITK *itk = data;
   itk->choice_active = 0;
   event->stop_propagate = 1;
-  itk->dirty++;
+  ctx_set_dirty (event->ctx, 1);
 }
 
 void itk_done (ITK *itk)

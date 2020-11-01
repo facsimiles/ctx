@@ -1186,7 +1186,7 @@ int terminal_main (int argc, char **argv)
 
       changes += vt_dirty_count ();
 
-      if (changes || dirty || itk->dirty)
+      if (changes || dirty || ctx_is_dirty (ctx))
       {
         dirty = 0;
         ctx_reset (ctx);
@@ -1227,7 +1227,7 @@ int terminal_main (int argc, char **argv)
         }
         else
         {
-          itk->dirty = 0;
+          ctx_set_dirty (ctx, 0);
         }
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
