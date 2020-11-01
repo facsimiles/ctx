@@ -4950,6 +4950,8 @@ static char *string_chop_head (char *orig) /* return pointer to reset after arg 
   return NULL;
 }
 
+void _ctx_add_listen_fd (int fd);
+void _ctx_remove_listen_fd (int fd);
 
 static void vt_run_command (VT *vt, const char *command, const char *term)
 {
@@ -5007,6 +5009,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
       VT_error ("forkpty failed (%s)", command);
     }
   fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
+  _ctx_add_listen_fd (vt->vtpty.pty);
 }
 
 void vt_destroy (VT *vt)
@@ -5029,6 +5032,7 @@ void vt_destroy (VT *vt)
   free (vt->argument_buf);
   ctx_list_remove (&vts, vt);
   kill (vt->vtpty.pid, 9);
+  _ctx_remove_listen_fd (vt->vtpty.pty);
   close (vt->vtpty.pty);
 #if 1
   if (vt->title)
