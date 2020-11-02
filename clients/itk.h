@@ -547,6 +547,7 @@ static void titlebar_drag (CtxEvent *event, void *userdata, void *userdata2)
   //fprintf (stderr, "%d %f %f\n", event->delta_x, event->delta_y);
   panel->x += event->delta_x;
   panel->y += event->delta_y;
+  if (panel->y < 0) panel->y = 0;
 #else
   panel->x = event->x - panel->width / 2;
   panel->y = event->y;

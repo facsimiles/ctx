@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <math.h>
+#include <ctype.h>
 #include "ctx.h"
 #include "itk.h"
 
@@ -54,6 +55,10 @@ int main (int argc, char **argv)
  //   ctx_set_dirty (ctx, 0);
       ctx_reset (ctx);
       itk_reset (itk); // does set_dirty 0
+
+      if (enable_keybindings)
+        itk_key_bindings (itk);
+
       tests[test_no].fun (itk, frame_no++);
       itk_panel_start (itk, "ctx and itk demo", 0, 0, width*0.2, height);
       itk_seperator (itk);
@@ -169,8 +174,6 @@ int main (int argc, char **argv)
 
       ctx_add_key_binding (ctx, "control-q", NULL, "foo", itk_key_quit, NULL);
 
-      if (enable_keybindings)
-        itk_key_bindings (itk);
 
       ctx_flush (ctx);
       fprintf (stderr, "%i", ctx_is_dirty (ctx));
@@ -646,48 +649,718 @@ static void card_7GUI4 (ITK *itk, int frame_no)
   ctx_set_dirty (itk->ctx, 1);
 }
 
+static char name[20]="";
+static char surname[20]="";
+
+#define MAX_NAMES 23
+
+typedef struct _name
+{ char name[80];
+  char surname[80];
+  int  id;
+} Name;
+
+static Name name_list[MAX_NAMES]={{"Unknown", "Slaritbartfast"},
+                                  {"Øyvind", "Kolås"}};
+static int name_count = 2;
+
+
 static void card_7GUI5 (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk->ctx;
-  static float e = 0.0;
-  static float d = 10.0;
+  static char filter_prefix[20];
 
-  itk_panel_start (itk, "7gui5 - crud", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+  itk_panel_start (itk, "7gui5 - CRUD", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
 
-  itk_slider_float (itk, "elapsed", &e, 0.0, d, 0.1);
-  itk_labelf (itk, "%.1f of %.1f", e, d);
-  itk_slider_float (itk, "duration", &d, 0.0, 300.0, 0.5);
+  itk->width/=2;
+  itk_entry (itk, "Filter prefix:", "", filter_prefix, 20-1, NULL, NULL);
 
-  static unsigned long prev_ticks = 0;
-  unsigned long ticks = ctx_ticks ();
+  int saved_y = itk->y;
+  itk->x += itk->width;
+  itk->x0 += itk->width;
+  itk_entry (itk, "Name:", "",    name, 20-1, NULL, NULL);
+  itk_entry (itk, "Surname:", "", surname, 20-1, NULL, NULL);
+  itk->x -= itk->width;
+  itk->x0 -= itk->width;
 
-  if (e<d)
+  itk->y=saved_y;
+
+  for (int i = 0; i < name_count; i++)
   {
-    if (prev_ticks)
-      e += (ticks-prev_ticks)/1000.0/1000.0;
+    int show = 1;
+    if (filter_prefix[0])
+    {
+      for (int j = 0; filter_prefix[j] && j<20; j++)
+      {
+        if (tolower(name_list[i].surname[j]) != tolower(filter_prefix[j]))
+          show = 0;
+      }
+    }
+    if (show)
+      itk_labelf (itk, "%s, %s", name_list[i].surname, name_list[i].name);
   }
 
-  prev_ticks = ticks;
+  if (itk_button (itk, "Create"))
+  {
+    strcpy (name_list[name_count].name, name);
+    strcpy (name_list[name_count].surname, surname);
+    name_count++;
+  }
+  itk_sameline (itk);
+  if (itk_button (itk, "Update"))
+  {
+  }
+  itk_sameline (itk);
+  if (itk_button (itk, "Delete"))
+  {
+  }
+  itk_sameline (itk);
 
-  if (itk_button (itk, "Reset"))
-    e = 0.0;
+  itk->width*=2;
+  itk_panel_end (itk);
+}
+
+typedef struct _Circle
+{
+  float x;
+  float y;
+  float radius;
+} Circle;
+
+#define MAX_CIRCLES 20
+static Circle circle_list[MAX_CIRCLES];
+static int circle_count = 0;
+
+static void circle_editor_release_cb (CtxEvent *event, void *data1, void *data2)
+{
+  circle_list[circle_count].x = event->x;
+  circle_list[circle_count].y = event->y;
+  circle_list[circle_count].radius = 100;
+  circle_count++;
+  event->stop_propagate = 1;
+  ctx_set_dirty (event->ctx, 1);
+}
+
+static void circle_editor_circle_release_cb (CtxEvent *event, void *data1, void *data2)
+{
+  fprintf (stderr, "!!!!!!\n");
+  event->stop_propagate = 1;
+  ctx_set_dirty (event->ctx, 1);
+}
+
+static int nearest_circle = -1;
+
+static void circle_editor_motion_cb (CtxEvent *event, void *data1, void *data2)
+{
+  float nearest_sq_dist = 4096*4096;
+  int nearest = -1;
+  for (int i = 0; i < circle_count; i ++)
+  {
+     float sq_dist = (circle_list[i].x-event->x)*
+                     (circle_list[i].x-event->x)+
+                     (circle_list[i].y-event->y)*
+                     (circle_list[i].y-event->y);
+     if (sq_dist < circle_list[i].radius * circle_list[i].radius)
+     if (sq_dist < nearest_sq_dist)
+     {
+       nearest_sq_dist = sq_dist;
+       nearest = i;
+     }
+  }
+  if (nearest != nearest_circle)
+  {
+    // it's changed
+    nearest_circle = nearest;
+    ctx_set_dirty (event->ctx, 1);
+  }
+
+  event->stop_propagate = 1;
+}
+
+static void card_7GUI6 (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  itk_panel_start (itk, "7gui6 - circle editor", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+
+  if (itk_button (itk, "Undo"))
+  {
+  }
+  itk_sameline (itk);
+  if (itk_button (itk, "Redo"))
+  {
+  }
+
+  ctx_rectangle (ctx, itk->x, itk->y,
+                  itk->width, itk->panel->height - (itk->y-itk->panel->y));
+  ctx_listen (ctx, CTX_RELEASE, circle_editor_release_cb, NULL, NULL);
+  ctx_listen (ctx, CTX_MOTION, circle_editor_motion_cb, NULL, NULL);
+
+  ctx_rgb (ctx, 1,0,0);
+  ctx_fill (ctx);
+
+  for (int i = 0; i < circle_count; i ++)
+  {
+     if (i == nearest_circle)
+       ctx_gray (ctx, 0.5);
+     else
+       ctx_gray (ctx, 1.0);
+     ctx_arc (ctx, circle_list[i].x, circle_list[i].y, circle_list[i].radius, 0.0, 3*2, 0);
+     ctx_fill (ctx);
+     ctx_rectangle (ctx, circle_list[i].x - circle_list[i].radius,
+                     circle_list[i].y - circle_list[i].radius,
+                     circle_list[i].radius * 2, circle_list[i].radius * 2);
+     ctx_listen (ctx, CTX_RELEASE, circle_editor_circle_release_cb, NULL, NULL);
+     ctx_begin_path (ctx);
+  }
+
 
   itk_panel_end (itk);
-  ctx_set_dirty (itk->ctx, 1);
+}
+
+typedef struct _Cell Cell;
+struct _Cell {
+  char  display[40];
+  char  value[80];
+  int   dirty;
+  int   is_number;
+  double number;
+  Cell *dependencies[30];
+  int   dependencies_count;
+};
+
+static void cell_formula_compute(Cell *cell);
+static void update_cell (Cell *cell)
+{
+  if (cell->dirty)
+  {
+    if (cell->value[0]==0)
+    {
+      cell->display[0] = 0;
+      cell->dirty = 0;
+      cell->is_number = 0;
+      cell->number = 0.0;
+      return;
+    }
+    int is_number = 1;
+    for (int i = 0; cell->value[i]; i++)
+    {
+      int val = cell->value[i];
+      if ( ! ((val >= '0' && val <= '9')  || val == '.'))
+        is_number = 0;
+    }
+
+    if (is_number)
+    {
+      cell->number = atof (cell->value); // XXX - locale dependent
+      sprintf (cell->display, "%.2f", cell->number);
+    }
+    else
+    {
+      cell->number = -11;
+      if (cell->value[0]=='=')
+      {
+        cell->number = -12;
+        cell_formula_compute (cell);
+      }
+      else
+      {
+        sprintf (cell->display, "[%s]", cell->value);
+      }
+    }
+    cell->dirty = 0;
+  }
+}
+
+static int str_is_number (const char *str, double *number)
+{
+  int is_number = 1;
+  int len = 0;
+  if (str[0] == 0) return 0;
+  for (int i = 0; str[i]; i++)
+  {
+    if (!((str[i]>='0' && str[i]<='9') || str[i] == '.'))
+    {
+      break; 
+    }
+    len = i + 1;
+  }
+  if (((str[0]>='0' && str[0]<='9') || str[0] == '.'))
+  {
+    if (number) *number = atof (str); // XXX locale dependent
+    return len;
+  }
+  return 0;
+}
+
+static int str_is_coord (const char *str, int *colp, int *rowp)
+{
+  int len = 0;
+  if (str[0] >= 'A' && str[1] <= 'Z')
+  {
+    int col = str[0]-'A';
+    if (str[1] && str[1] >= '0' && str[1] <= '9')
+    {
+      int row = 0;
+      if (str[2] && str[2] >= '0' && str[2] <= '9')
+      {
+        row = (str[1] - '0') * 10 + (str[2]-'0');
+        len = 3;
+      }
+      else
+      {
+        row = (str[1] - '0');
+        len = 2;
+      }
+      if (colp) *colp = col;
+      if (rowp) *rowp = row;
+      return len;
+    }
+  }
+  return 0;
+}
+
+
+#define SPREADSHEET_COLS 26
+#define SPREADSHEET_ROWS 100
+
+static Cell spreadsheet[SPREADSHEET_ROWS][SPREADSHEET_COLS]={0,};
+static float col_width[SPREADSHEET_COLS];
+
+static void cell_formula_compute(Cell *cell)
+{
+  double arg1 = 0.0;
+  int operator = 0;
+  double arg2 = 0.0;
+  int arg1_col=0;
+  int arg1_row=0;
+  int arg2_col=0;
+  int arg2_row=0;
+  int len=0;
+  int len2=0;
+
+  int rest = 0;
+  cell->number = -14;
+
+  if ((len=str_is_coord (cell->value+1, &arg1_col, &arg1_row)))
+  {
+    if (cell == &spreadsheet[arg1_row][arg1_col])
+    {
+      sprintf (cell->display, "circular ref");
+      return;
+    }
+    update_cell (&spreadsheet[arg1_row][arg1_col]);
+    arg1 = spreadsheet[arg1_row][arg1_col].number;
+    rest = len + 1;
+  }
+  else if ((len=str_is_number (cell->value+1, &arg1)))
+  {
+    rest = len + 1;
+  }
+
+  if (rest)(operator = cell->value[rest]);
+  if (operator && cell->value[rest+1])
+  {
+    if ((len2 = str_is_coord (cell->value+rest+1, &arg2_col, &arg2_row)))
+    {
+      if (cell == &spreadsheet[arg2_row][arg2_col])
+      {
+        sprintf (cell->display, "circular ref");
+        return;
+      }
+      update_cell (&spreadsheet[arg2_row][arg2_col]);
+      arg2 = spreadsheet[arg2_row][arg2_col].number;
+    }
+    else if ((len2 = str_is_number (cell->value+rest+1, &arg2)))
+    {
+    }
+  }
+
+  switch (operator)
+  {
+    case 0:
+            if (cell->value[1]=='S'&&
+                cell->value[2]=='U'&&
+                cell->value[3]=='M')
+            {
+              len = str_is_coord (cell->value+4+1, &arg1_col, &arg1_row);
+              len2 = str_is_coord (cell->value+4+1 + len + 1, &arg2_col, &arg2_row);
+              if (len && len2)
+              {
+                double sum = 0.0f;
+                for (int v = arg1_row; v <= arg2_row; v++)
+                  for (int u = arg1_col; u <= arg2_col; u++)
+                  {
+                     if (&spreadsheet[v][u] != cell)
+                     {
+                       update_cell (&spreadsheet[v][u]);
+                       sum += spreadsheet[v][u].number;
+                     }
+                     else
+                     {
+                       sprintf (cell->display, "circular ref");
+                       return;
+                     }
+                  }
+                cell->number = sum;
+              }
+            }
+            else
+            {
+              cell->number = arg1;
+            }
+            break;
+    case '+':
+            cell->number = arg1 + arg2;
+            break;
+    case '-':
+            cell->number = arg1 - arg2;
+            break;
+    case '*':
+            cell->number = arg1 * arg2;
+            break;
+    case '/':
+            cell->number = arg1 / arg2;
+            break;
+    default:
+            cell->number=-1000;
+            break;
+  }
+  sprintf (cell->display, "%.2f", cell->number);
+}
+
+
+static int spreadsheet_col = 0;
+static int spreadsheet_row = 0;
+
+static void spreadsheet_keynav (CtxEvent *event, void *data, void *data2)
+{
+  if (!strcmp (event->string, "up"))
+  {
+    spreadsheet_row --;
+    if (spreadsheet_row < 0) spreadsheet_row = 0;
+  }
+  else if (!strcmp (event->string, "down"))
+  {
+    spreadsheet_row ++;
+  }
+  else if (!strcmp (event->string, "left"))
+  {
+    spreadsheet_col --;
+    if (spreadsheet_col < 0) spreadsheet_col = 0;
+  }
+  else if (!strcmp (event->string, "right"))
+  {
+    spreadsheet_col ++;
+  }
+
+  fprintf (stderr, "%s %p %p\n", event->string, data, data2);
+  event->stop_propagate=1;
+  ctx_set_dirty (event->ctx, 1);
+}
+
+static void dirty_cell (Cell *cell)
+{
+  cell->dirty = 1;
+  for (int i = 0; i < cell->dependencies_count; i++)
+  {
+    dirty_cell (cell->dependencies[i]);
+  }
+}
+
+static void cell_mark_dep (Cell *cell, Cell *dependency)
+{
+  if (cell != dependency)
+  cell->dependencies[cell->dependencies_count++]=dependency;
+}
+
+static void cell_unmark_dep (Cell *cell, Cell *dependency)
+{
+  if (cell != dependency)
+  for (int i = 0; i < cell->dependencies_count; i++)
+  {
+    if (cell->dependencies[i] == dependency)
+    {
+       cell->dependencies[i] = 
+         cell->dependencies[cell->dependencies_count-1];
+       cell->dependencies_count--;
+       return;
+    }
+  }
+  fprintf (stderr, "tried unmarking nonexisting dep\n");
+}
+
+static void formula_update_deps (Cell *cell, const char *formula, int unmark)
+{
+  for (int i = 0; formula[i]; i++)
+  {
+    if (formula[i] >= 'A' && formula[i] <= 'Z')
+    {
+      int col = formula[i] - 'A';
+      int row = 0 ;
+      if (formula[i+1] && formula[i+1]>='0' && formula[i+1]<='9')
+      {
+        int n = 0;
+        if (formula[i+2] && formula[i+2]>='0' && formula[i+2]<='9')
+        {
+          row = (formula[i+1] - '0') * 10 +
+                (formula[i+2] - '0')
+                ;
+          n = i + 3;
+        }
+        else
+        {
+          row = formula[i+1] - '0';
+          n = i + 2;
+        }
+
+        if (formula[n]==':')
+        {
+           int target_row = row;
+           int target_col = col;
+           n++;
+
+    if (formula[n] >= 'A' && formula[n] <= 'Z')
+    {
+      target_col = formula[n] - 'A';
+      if (formula[n+1] && formula[n+1]>='0' && formula[n+1]<='9')
+      {
+        if (formula[n+2] && formula[n+2]>='0' && formula[n+2]<='9')
+        {
+          target_row = (formula[i+1] - '0') * 10 +
+                (formula[n+2] - '0')
+                ;
+        }
+        else
+        {
+          target_row = formula[n+1] - '0';
+        }
+      }
+    }
+    fprintf (stderr, "<<%i> %i,%i  : %i,%i\n", !unmark,
+                    row, col, target_row, target_col);
+           for (int v = row; v <= target_row; v++)
+           for (int u = col; u <= target_col; u++)
+           {
+
+        if (u >= 0 && u <= 26 && v >= 0 && v <= 99)
+        {
+          fprintf (stderr, "<%i> %i %i\n", !unmark, v, u);
+          if (unmark)
+            cell_unmark_dep (&spreadsheet[v][u], cell);
+          else
+            cell_mark_dep (&spreadsheet[v][u], cell);
+        }
+
+           }
+        }
+        else
+        {
+
+        if (col >= 0 && col <= 26 && row >= 0 && row <= 99)
+        {
+          if (unmark)
+            cell_unmark_dep (&spreadsheet[row][col], cell);
+          else
+            cell_mark_dep (&spreadsheet[row][col], cell);
+        }
+
+        }
+
+      }
+    }
+  }
+}
+
+static void cell_set_value (Cell *cell, const char *value)
+{
+  formula_update_deps (cell, cell->value, 1);
+  formula_update_deps (cell, value, 0);
+  strcpy (cell->value, value);
+  dirty_cell (cell);
+}
+
+static void commit_cell (ITK *itk, void *data)
+{
+  CtxControl *control = itk_focused_control (itk);
+  Cell *cell = data;
+  cell_set_value (cell, itk->entry_copy);
+}
+
+static void card_7GUI7 (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  float em = itk_em (itk);
+  float row_height = em * 1.2;
+  static int inited = 0;
+  if (!inited)
+  {
+    for (int i = 0; i < SPREADSHEET_COLS; i++)
+      col_width[i] = em * 8;
+    inited = 1;
+
+    cell_set_value (&spreadsheet[0][0], "1");
+    cell_set_value (&spreadsheet[1][0], "2");
+    cell_set_value (&spreadsheet[2][0], "=A0+A1");
+
+
+    cell_set_value (&spreadsheet[0][2], "1");
+    cell_set_value (&spreadsheet[1][2], "2");
+    cell_set_value (&spreadsheet[2][2], "3");
+    cell_set_value (&spreadsheet[3][2], "4");
+    cell_set_value (&spreadsheet[4][1], "=C4");
+    cell_set_value (&spreadsheet[4][2], "=SUM(C0:C3)");
+  }
+  itk_panel_start (itk, "7gui7 - spreadsheet", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+  float saved_x = itk->x;
+  float saved_x0 = itk->x0;
+  float saved_y = itk->y;
+
+  if (!itk->entry_copy)
+  {
+    ctx_add_key_binding (ctx, "left", NULL, "foo", spreadsheet_keynav, NULL);
+    ctx_add_key_binding (ctx, "right", NULL, "foo", spreadsheet_keynav, NULL);
+    ctx_add_key_binding (ctx, "up", NULL, "foo", spreadsheet_keynav, NULL);
+    ctx_add_key_binding (ctx, "down", NULL, "foo", spreadsheet_keynav, NULL);
+  }
+
+  ctx_gray (ctx, 1.0);
+  ctx_rectangle (ctx, saved_x, saved_y, itk->width, ctx_height (ctx));
+  ctx_fill (ctx);
+
+  ctx_rectangle (ctx, saved_x, saved_y, itk->width, row_height);
+  ctx_gray (ctx, 0.7);
+  ctx_fill (ctx);
+  ctx_rectangle (ctx, saved_x, saved_y, em, ctx_height (ctx));
+  ctx_fill (ctx);
+
+  ctx_font_size (ctx, em);
+  ctx_gray (ctx, 0.0);
+
+  float x = saved_x + em * 1;
+  for (int col = 0; col < 7; col ++)
+  {
+    float y = saved_y + em;
+    char label[4]="E";
+
+    ctx_move_to (ctx, x + col_width[col]/2, y);
+    label[0]=col+'A';
+    ctx_text (ctx, label);
+    x += col_width[col];
+  }
+
+  x = saved_x + em * 1;
+  for (int col = 0; col < 7; col ++)
+  {
+    float y = saved_y + em;
+    ctx_move_to (ctx, x, y - row_height);
+    ctx_rel_line_to (ctx, 0, itk->panel->height);
+    ctx_line_width (ctx, 1.0);
+    ctx_stroke (ctx);
+    x += col_width[col];
+  }
+
+  x = saved_x + em * 0.2;
+  {
+    float y = saved_y + row_height + em;
+    for (int row = 0; row < 7; row ++)
+    {
+      char label[10];
+      sprintf (label, "%i", row);
+      ctx_move_to (ctx, x, y);
+      ctx_text (ctx, label);
+      y += row_height;
+    }
+  }
+  {
+    float y = saved_y + row_height;
+    for (int row = 0; row < 7; row ++)
+    {
+      ctx_move_to (ctx, x, y);
+      ctx_rel_line_to (ctx, itk->width, 0);
+      ctx_line_width (ctx, 1.0);
+      ctx_stroke (ctx);
+      y += row_height;
+    }
+  }
+
+  x = saved_x + em * 1;
+  for (int col = 0; col < 7; col ++)
+  {
+    float y = saved_y + row_height + em;
+    for (int row = 0; row < 7; row ++)
+    {
+      Cell *cell = &spreadsheet[row][col];
+      int drawn = 0;
+
+      if (spreadsheet_col ==col && spreadsheet_row == row)
+      {
+        drawn = 1;
+        itk->x = x;
+        itk->y = y - em;
+        itk->width = col_width[col];
+        itk_entry (itk, "", "", cell->value, sizeof(cell->value)-1, commit_cell, cell);
+        itk->focus_no = itk->control_no-1;
+        if (itk->focus_label){
+                free (itk->focus_label);
+                itk->focus_label = NULL;
+        }
+
+        ctx_gray (ctx, 0);
+        ctx_rectangle (ctx, x-em*0.1, y - em-em*0.1, col_width[col]+em*0.2, row_height+em*0.2);
+        ctx_line_width (ctx, em*0.2);
+        ctx_stroke (ctx);
+        ctx_gray (ctx, 1);
+        ctx_rectangle (ctx, x-em*0.1, y - em-em*0.1, col_width[col]+em*0.2, row_height+em*0.2);
+        ctx_line_width (ctx, em*0.1);
+        ctx_stroke (ctx);
+        ctx_gray (ctx, 0);
+      }
+      else
+      {
+
+      }
+      if (!drawn)
+      {
+        update_cell (cell);
+        ctx_move_to (ctx, x + col_width[col]/2, y);
+        if (cell->display[0])
+        {
+          ctx_text (ctx, cell->display);
+        }
+        else
+        {
+          ctx_text (ctx, "-");
+        }
+      }
+
+      y += row_height;
+    }
+    x += col_width[col];
+  }
+
+  itk->x = saved_x;
+  itk->x0 = saved_x0;
+  itk->y = saved_y;
+
+  itk_panel_end (itk);
 }
 
 
 Test tests[]=
 {
-  {"7gui 5",     card_7GUI5},
-  {"7gui 4",     card_7GUI4},
-  {"7gui 3",     card_7GUI3},
-  {"7gui 1",     card_7GUI1},
-  {"7gui 2",     card_7GUI2},
   {"gradients", card_gradients},
   {"dots",       card_dots},
   {"drag",      card_drag},
   {"sliders",   card_sliders},
+
+  {"7gui 1",     card_7GUI1},
+  {"7gui 2",     card_7GUI2},
+  {"7gui 3",     card_7GUI3},
+  {"7gui 4",     card_7GUI4},
+  {"7gui 5",     card_7GUI5},
+  {"7gui 6",     card_7GUI6},
+  {"7gui 7",     card_7GUI7},
+
   {"clock1",     card_clock1},
   {"clock2",     card_clock2},
   {"fill rule",  card_fill_rule},
