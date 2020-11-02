@@ -176,7 +176,6 @@ int main (int argc, char **argv)
 
 
       ctx_flush (ctx);
-      fprintf (stderr, "%i", ctx_is_dirty (ctx));
     }
     else
     {
@@ -873,7 +872,7 @@ static void update_cell (Cell *cell)
 
 static int str_is_number (const char *str, double *number)
 {
-  int is_number = 1;
+  //int is_number = 1;
   int len = 0;
   if (str[0] == 0) return 0;
   for (int i = 0; str[i]; i++)
@@ -919,12 +918,14 @@ static int str_is_coord (const char *str, int *colp, int *rowp)
   return 0;
 }
 
-
 #define SPREADSHEET_COLS 26
 #define SPREADSHEET_ROWS 100
 
 static Cell spreadsheet[SPREADSHEET_ROWS][SPREADSHEET_COLS]={0,};
 static float col_width[SPREADSHEET_COLS];
+
+static int spreadsheet_first_row = 30;
+static int spreadsheet_first_col = 0;
 
 static void cell_formula_compute(Cell *cell)
 {
@@ -1053,7 +1054,6 @@ static void spreadsheet_keynav (CtxEvent *event, void *data, void *data2)
     spreadsheet_col ++;
   }
 
-  fprintf (stderr, "%s %p %p\n", event->string, data, data2);
   event->stop_propagate=1;
   ctx_set_dirty (event->ctx, 1);
 }
@@ -1136,15 +1136,12 @@ static void formula_update_deps (Cell *cell, const char *formula, int unmark)
         }
       }
     }
-    fprintf (stderr, "<<%i> %i,%i  : %i,%i\n", !unmark,
-                    row, col, target_row, target_col);
            for (int v = row; v <= target_row; v++)
            for (int u = col; u <= target_col; u++)
            {
 
         if (u >= 0 && u <= 26 && v >= 0 && v <= 99)
         {
-          fprintf (stderr, "<%i> %i %i\n", !unmark, v, u);
           if (unmark)
             cell_unmark_dep (&spreadsheet[v][u], cell);
           else
@@ -1181,7 +1178,7 @@ static void cell_set_value (Cell *cell, const char *value)
 
 static void commit_cell (ITK *itk, void *data)
 {
-  CtxControl *control = itk_focused_control (itk);
+  //CtxControl *control = itk_focused_control (itk);
   Cell *cell = data;
   cell_set_value (cell, itk->entry_copy);
 }
@@ -1195,7 +1192,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   if (!inited)
   {
     for (int i = 0; i < SPREADSHEET_COLS; i++)
-      col_width[i] = em * 8;
+      col_width[i] = em * 4;
     inited = 1;
 
     cell_set_value (&spreadsheet[0][0], "1");
@@ -1223,10 +1220,12 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     ctx_add_key_binding (ctx, "down", NULL, "foo", spreadsheet_keynav, NULL);
   }
 
+  /* draw white background */
   ctx_gray (ctx, 1.0);
   ctx_rectangle (ctx, saved_x, saved_y, itk->width, ctx_height (ctx));
   ctx_fill (ctx);
 
+  /* draw gray gutters for col/row headers */
   ctx_rectangle (ctx, saved_x, saved_y, itk->width, row_height);
   ctx_gray (ctx, 0.7);
   ctx_fill (ctx);
@@ -1236,8 +1235,9 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   ctx_font_size (ctx, em);
   ctx_gray (ctx, 0.0);
 
+  /* draw col labels */
   float x = saved_x + em * 1;
-  for (int col = 0; col < 7; col ++)
+  for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
     float y = saved_y + em;
     char label[4]="E";
@@ -1248,8 +1248,9 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     x += col_width[col];
   }
 
+  /* draw vertical lines */
   x = saved_x + em * 1;
-  for (int col = 0; col < 7; col ++)
+  for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
     float y = saved_y + em;
     ctx_move_to (ctx, x, y - row_height);
@@ -1259,10 +1260,11 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     x += col_width[col];
   }
 
+  /* row header labels */
   x = saved_x + em * 0.2;
   {
     float y = saved_y + row_height + em;
-    for (int row = 0; row < 7; row ++)
+    for (int row = spreadsheet_first_row; y < itk->panel->y + itk->panel->height; row++)
     {
       char label[10];
       sprintf (label, "%i", row);
@@ -1271,9 +1273,10 @@ static void card_7GUI7 (ITK *itk, int frame_no)
       y += row_height;
     }
   }
+  /* draw horizontal lines */
   {
     float y = saved_y + row_height;
-    for (int row = 0; row < 7; row ++)
+    for (int row = spreadsheet_first_row; y < itk->panel->y + itk->panel->height; row++)
     {
       ctx_move_to (ctx, x, y);
       ctx_rel_line_to (ctx, itk->width, 0);
@@ -1284,15 +1287,15 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   }
 
   x = saved_x + em * 1;
-  for (int col = 0; col < 7; col ++)
+  for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
     float y = saved_y + row_height + em;
-    for (int row = 0; row < 7; row ++)
+    for (int row = spreadsheet_first_row; y < itk->panel->y + itk->panel->height; row++)
     {
       Cell *cell = &spreadsheet[row][col];
       int drawn = 0;
 
-      if (spreadsheet_col ==col && spreadsheet_row == row)
+      if (spreadsheet_col == col && spreadsheet_row == row)
       {
         drawn = 1;
         itk->x = x;
@@ -1329,7 +1332,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
         }
         else
         {
-          ctx_text (ctx, "-");
+          //ctx_text (ctx, "-");
         }
       }
 
@@ -1348,6 +1351,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
 
 Test tests[]=
 {
+  {"7gui 7",     card_7GUI7},
   {"gradients", card_gradients},
   {"dots",       card_dots},
   {"drag",      card_drag},
@@ -1359,7 +1363,6 @@ Test tests[]=
   {"7gui 4",     card_7GUI4},
   {"7gui 5",     card_7GUI5},
   {"7gui 6",     card_7GUI6},
-  {"7gui 7",     card_7GUI7},
 
   {"clock1",     card_clock1},
   {"clock2",     card_clock2},
