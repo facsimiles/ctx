@@ -924,7 +924,7 @@ static int str_is_coord (const char *str, int *colp, int *rowp)
 static Cell spreadsheet[SPREADSHEET_ROWS][SPREADSHEET_COLS]={0,};
 static float col_width[SPREADSHEET_COLS];
 
-static int spreadsheet_first_row = 30;
+static int spreadsheet_first_row = 0;
 static int spreadsheet_first_col = 0;
 
 static void cell_formula_compute(Cell *cell)
@@ -946,7 +946,7 @@ static void cell_formula_compute(Cell *cell)
   {
     if (cell == &spreadsheet[arg1_row][arg1_col])
     {
-      sprintf (cell->display, "circular ref");
+      sprintf (cell->display, "¡CIRCREF!");
       return;
     }
     update_cell (&spreadsheet[arg1_row][arg1_col]);
@@ -965,7 +965,7 @@ static void cell_formula_compute(Cell *cell)
     {
       if (cell == &spreadsheet[arg2_row][arg2_col])
       {
-        sprintf (cell->display, "circular ref");
+        sprintf (cell->display, "¡CIRCREF!");
         return;
       }
       update_cell (&spreadsheet[arg2_row][arg2_col]);
@@ -979,9 +979,9 @@ static void cell_formula_compute(Cell *cell)
   switch (operator)
   {
     case 0:
-            if (cell->value[1]=='S'&&
-                cell->value[2]=='U'&&
-                cell->value[3]=='M')
+            if (cell->value[1]=='s'&&
+                cell->value[2]=='u'&&
+                cell->value[3]=='m')
             {
               len = str_is_coord (cell->value+4+1, &arg1_col, &arg1_row);
               len2 = str_is_coord (cell->value+4+1 + len + 1, &arg2_col, &arg2_row);
@@ -998,7 +998,7 @@ static void cell_formula_compute(Cell *cell)
                      }
                      else
                      {
-                       sprintf (cell->display, "circular ref");
+                       sprintf (cell->display, "¡CIRCREF!");
                        return;
                      }
                   }
@@ -1126,7 +1126,7 @@ static void formula_update_deps (Cell *cell, const char *formula, int unmark)
       {
         if (formula[n+2] && formula[n+2]>='0' && formula[n+2]<='9')
         {
-          target_row = (formula[i+1] - '0') * 10 +
+          target_row = (formula[n+1] - '0') * 10 +
                 (formula[n+2] - '0')
                 ;
         }
@@ -1206,6 +1206,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     cell_set_value (&spreadsheet[3][2], "4");
     cell_set_value (&spreadsheet[4][1], "=C4");
     cell_set_value (&spreadsheet[4][2], "=SUM(C0:C3)");
+    cell_set_value (&spreadsheet[10][10], "=SUM(A0:F9)");
   }
   itk_panel_start (itk, "7gui7 - spreadsheet", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
   float saved_x = itk->x;
@@ -1234,6 +1235,48 @@ static void card_7GUI7 (ITK *itk, int frame_no)
 
   ctx_font_size (ctx, em);
   ctx_gray (ctx, 0.0);
+
+  // ensure current cell is within viewport 
+  if (spreadsheet_col < spreadsheet_first_col)
+    spreadsheet_first_col = spreadsheet_col;
+  else
+  {
+  float x = saved_x + em * 1;
+  int found = 0;
+  for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
+  {
+    if (col == spreadsheet_col)
+    {
+       if (x + col_width[col] > itk->panel->x + itk->panel->width)
+         spreadsheet_first_col++;
+       found = 1;
+    }
+    x += col_width[col];
+  }
+  if (!found)
+    spreadsheet_first_col++;
+  }
+
+
+  if (spreadsheet_row < spreadsheet_first_row)
+    spreadsheet_first_row = spreadsheet_row;
+  else
+  {
+  float y = saved_y + em;
+  int found = 0;
+  for (int row = spreadsheet_first_row; y < itk->panel->y + itk->panel->height; row++)
+  {
+    if (row == spreadsheet_row)
+    {
+       if (y + row_height > itk->panel->y + itk->panel->height)
+         spreadsheet_first_row++;
+       found = 1;
+    }
+    y += row_height;
+  }
+  if (!found)
+    spreadsheet_first_row++;
+  }
 
   /* draw col labels */
   float x = saved_x + em * 1;
@@ -1352,10 +1395,10 @@ static void card_7GUI7 (ITK *itk, int frame_no)
 Test tests[]=
 {
   {"7gui 7",     card_7GUI7},
-  {"gradients", card_gradients},
+  {"gradients",  card_gradients},
   {"dots",       card_dots},
-  {"drag",      card_drag},
-  {"sliders",   card_sliders},
+  {"drag",       card_drag},
+  {"sliders",    card_sliders},
 
   {"7gui 1",     card_7GUI1},
   {"7gui 2",     card_7GUI2},
@@ -1367,7 +1410,7 @@ Test tests[]=
   {"clock1",     card_clock1},
   {"clock2",     card_clock2},
   {"fill rule",  card_fill_rule},
-  {"curve to",  card_curve_to},
+  {"curve to",   card_curve_to},
 
 
 };
