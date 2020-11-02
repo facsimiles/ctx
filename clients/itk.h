@@ -1665,6 +1665,7 @@ void itk_key_backspace (CtxEvent *event, void *data, void *data2)
   ITK *itk = data;
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
+  if (!itk->entry_copy) return;
   switch (control->type)
   {
     case UI_ENTRY:
@@ -1687,6 +1688,7 @@ void itk_key_delete (CtxEvent *event, void *data, void *data2)
   ITK *itk = data;
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
+  if (!itk->entry_copy) return;
   if ((int)strlen (itk->entry_copy) > itk->entry_pos)
   {
     itk_key_right (event, data, data2);
