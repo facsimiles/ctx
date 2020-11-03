@@ -1243,7 +1243,8 @@ int itk_button (ITK *itk, const char *label)
   CtxControl *control = add_control (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
 
   itk_set_color (itk, ITK_BUTTON_SHADOW);
-  ctx_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, width, em * itk->rel_ver_advance);
+  ctx_begin_path (ctx);
+  ctx_round_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, width, em * itk->rel_ver_advance, em*0.33);
   ctx_fill (ctx);
 
 #if 0
@@ -1258,7 +1259,7 @@ int itk_button (ITK *itk, const char *label)
   else
     itk_set_color (itk, ITK_INTERACTIVE_BG);
 
-  ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
+  ctx_round_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance, em * 0.33);
   ctx_fill (ctx);
 
 
@@ -1784,13 +1785,13 @@ void itk_done (ITK *itk)
     itk_set_color (itk, ITK_FOCUSED_BG);
     ctx_rectangle (ctx, x,
                         y,
-                        em * 4,
+                        itk->popup_width,
                         em * (ctx_list_length (itk->choices) + 0.5));
     ctx_fill (ctx);
     itk_set_color (itk, ITK_FG);
     ctx_rectangle (ctx, x,
                         y,
-                        em * 4,
+                        itk->popup_width,
                         em * (ctx_list_length (itk->choices) + 0.5));
     ctx_line_width (ctx, 2);
     ctx_stroke (ctx);

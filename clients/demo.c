@@ -1379,7 +1379,10 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     x += col_width[col];
   }
   if (!found)
+  {
     spreadsheet_first_col++;
+    ctx_set_dirty (ctx, 1);
+  }
   }
 
   if (spreadsheet_row < spreadsheet_first_row)
@@ -1399,7 +1402,10 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     y += row_height;
   }
   if (!found)
+  {
     spreadsheet_first_row++;
+    ctx_set_dirty (ctx, 1);
+  }
   }
 
   /* draw col labels */
@@ -1411,7 +1417,6 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   {
     float y = saved_y + em;
     char label[4]="E";
-
     ctx_move_to (ctx, x + col_width[col]/2, y);
     label[0]=col+'A';
     ctx_text (ctx, label);
@@ -1450,6 +1455,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   }
   ctx_restore (ctx);
   ctx_gray (ctx, 0.5);
+  x = saved_x;
   /* draw horizontal lines */
   {
     float y = saved_y + row_height;
@@ -1545,6 +1551,22 @@ static void card_7GUI7 (ITK *itk, int frame_no)
                  (itk->panel->x+itk->panel->width - saved_x) - row_header_width - em,
                  row_height);
   ctx_rgb (ctx, 0,1,0);
+  ctx_fill (ctx);
+  ctx_rgb (ctx, 1,0,0);
+  float avg_col_width = (col_width[0] + col_width[1] + col_width[2])/3.0;
+  ctx_rectangle (ctx,
+                 saved_x + row_header_width + (itk->panel->width-row_header_width-em) * (spreadsheet_first_col / 27.0),
+                 saved_y + itk->panel->height - row_height * 2,
+                   
+                   (itk->panel->width-row_header_width-em) *
+                   ((itk->panel->width-row_header_width-em) / (avg_col_width * 27))
+
+
+
+                  
+                   ,
+                 row_height);
+
   ctx_fill (ctx);
 
   ctx_rectangle (ctx, itk->panel->x + itk->panel->width - 
