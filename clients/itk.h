@@ -486,13 +486,15 @@ CtxControl *itk_add_control (ITK *itk,
   }
 
   ctx_rectangle (itk->ctx, x, y, width, height);
-  if (itk->focus_no == control->no)
+  if (itk->focus_no == control->no &&
+      control->type != UI_BUTTON)  // own-bg
   {
     itk_set_color (itk, ITK_FOCUSED_BG);
     ctx_fill (itk->ctx);
   }
   else
   {
+    if (control->flags & ITK_FLAG_ACTIVE)
     if (control->type != UI_LABEL && // no-bg
         control->type != UI_BUTTON)  // own-bg
     {
@@ -1092,16 +1094,12 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
 
+  if (control->flags && ITK_FLAG_ACTIVE)
+  {
   ctx_listen_with_finalize (ctx, CTX_CLICK, entry_clicked, control, itk, control_finalize, NULL);
+  }
 
   ctx_begin_path (ctx);
-  if (itk->focus_no == control->no)
-    itk_set_color (itk, ITK_FOCUSED_BG);
-  else
-    itk_set_color (itk, ITK_INTERACTIVE_BG);
-  ctx_rectangle (ctx, control->x, control->y, control->width, control->height);
-  ctx_fill (ctx);
-
   ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
   if (itk->entry_copy && itk->focus_no == control->no)
   {
@@ -1126,7 +1124,10 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   {
     if (val[0])
     {
-      itk_set_color (itk, ITK_INTERACTIVE);
+      if (control->flags & ITK_FLAG_ACTIVE)
+        itk_set_color (itk, ITK_INTERACTIVE);
+      else
+        itk_set_color (itk, ITK_FG);
       ctx_text (ctx, val);
     }
     else
@@ -1431,6 +1432,39 @@ void itk_set_focus (ITK *itk, int pos)
    }
 }
 
+
+CtxControl *itk_focused_control(ITK *itk)
+{
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->no == itk->focus_no)
+    {
+      if (itk->focus_label)
+      {
+        if (control->label && !strcmp (itk->focus_label, control->label))
+          return control;
+      }
+      else
+        return control;
+    }
+  }
+
+  if (itk->focus_label)
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->label && !strcmp (itk->focus_label, control->label))
+    {
+       itk->focus_no = control->no;
+       ctx_set_dirty (itk->ctx, 1);
+       return control;
+    }
+  }
+
+  return NULL;
+}
+
 void itk_focus (ITK *itk, int dir)
 {
 
@@ -1474,38 +1508,12 @@ void itk_focus (ITK *itk, int dir)
          itk->focus_no = itk->control_no - 1;
      }
    }
-}
 
-CtxControl *itk_focused_control(ITK *itk)
-{
-  for (CtxList *l = itk->controls; l; l=l->next)
-  {
-    CtxControl *control = l->data;
-    if (control->no == itk->focus_no)
-    {
-      if (itk->focus_label)
-      {
-        if (control->label && !strcmp (itk->focus_label, control->label))
-          return control;
-      }
-      else
-        return control;
-    }
-  }
-
-  if (itk->focus_label)
-  for (CtxList *l = itk->controls; l; l=l->next)
-  {
-    CtxControl *control = l->data;
-    if (control->label && !strcmp (itk->focus_label, control->label))
-    {
-       itk->focus_no = control->no;
-       ctx_set_dirty (itk->ctx, 1);
-       return control;
-    }
-  }
-
-  return NULL;
+   // XXX no control means inifinie loop?
+   CtxControl *control = itk_focused_control (itk);
+   if (!(control->flags & ITK_FLAG_ACTIVE)){
+     itk_focus (itk, dir);
+   }
 }
 
 void itk_key_up (CtxEvent *event, void *data, void *data2)
