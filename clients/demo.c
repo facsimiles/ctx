@@ -702,7 +702,10 @@ static void card_7GUI5 (ITK *itk, int frame_no)
       }
     }
     if (show)
+    {
+      itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, itk->width, itk_em(itk) * itk->rel_ver_advance);
       itk_labelf (itk, "%s, %s", name_list[i].surname, name_list[i].name);
+    }
   }
 
   if (itk_button (itk, "Create"))
@@ -736,11 +739,13 @@ typedef struct _Circle
 static Circle circle_list[MAX_CIRCLES];
 static int circle_count = 0;
 
+static int nearest_circle = -1;
 static void circle_editor_release_cb (CtxEvent *event, void *data1, void *data2)
 {
   circle_list[circle_count].x = event->x;
   circle_list[circle_count].y = event->y;
   circle_list[circle_count].radius = 100;
+  nearest_circle = circle_count;
   circle_count++;
   event->stop_propagate = 1;
   ctx_set_dirty (event->ctx, 1);
@@ -753,7 +758,6 @@ static void circle_editor_circle_release_cb (CtxEvent *event, void *data1, void 
   ctx_set_dirty (event->ctx, 1);
 }
 
-static int nearest_circle = -1;
 
 static void circle_editor_motion_cb (CtxEvent *event, void *data1, void *data2)
 {
@@ -1642,7 +1646,7 @@ static void card_files (ITK *itk, int frame_no)
         sprintf (newpath, "%s%s%s", path, PATH_SEP, namelist[i]->d_name);
       lstat (newpath, &stat_buf);
       free (newpath);
-      itk_add_control (itk, "foo", itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+      itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
       itk_labelf (itk, "%s %i", namelist[i]->d_name, stat_buf.st_size);
     }
   }

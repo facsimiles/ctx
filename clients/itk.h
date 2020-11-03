@@ -405,6 +405,9 @@ ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width,
   return panel;
 }
 
+#define ITK_FLAG_SKIP_BG    1
+
+
 /* adds a control - should be done before the drawing of the
  * control itself - as this call might draw a highlight in
  * the background.
@@ -414,6 +417,7 @@ ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width,
  * useful for accesibility.
  */
 CtxControl *itk_add_control (ITK *itk,
+                             int type,
                              const char *label,
                              float x, float y,
                              float width, float height)
@@ -427,6 +431,7 @@ CtxControl *itk_add_control (ITK *itk,
     itk->next_id = NULL;
   }
 
+  control->type = type;
   control->ref_count=2;
   control->x = x;
   control->y = y;
@@ -461,17 +466,20 @@ CtxControl *itk_add_control (ITK *itk,
 
   }
 
+  ctx_rectangle (itk->ctx, x, y, width, height);
   if (itk->focus_no == control->no)
   {
-    ctx_save (itk->ctx);
-    ctx_rectangle (itk->ctx, x, y, width, height);
     itk_set_color (itk, ITK_FOCUSED_BG);
     ctx_fill (itk->ctx);
-    ctx_restore (itk->ctx);
   }
   else
   {
-  //itk_set_color (itk, ITK_INTERACTIVE_BG);
+    if (control->type != UI_LABEL && // no-bg
+        control->type != UI_BUTTON)  // own-bg
+    {
+      itk_set_color (itk, ITK_INTERACTIVE_BG);
+      ctx_fill (itk->ctx);
+    }
   }
 
   return control;
@@ -586,8 +594,7 @@ void itk_titlebar (ITK *itk, const char *label)
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
 
-  CtxControl *control = itk_add_control (itk, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-  control->type = UI_TITLEBAR;
+  //CtxControl *control = itk_add_control (itk, UI_TITLEBAR, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_DRAG, titlebar_drag, itk->panel, itk, NULL, NULL);
@@ -595,7 +602,7 @@ void itk_titlebar (ITK *itk, const char *label)
   ctx_begin_path (ctx);
   itk->line_no = 0;
   itk->lines_drawn = 0;
-  itk_base (itk, label, control->x, control->y, control->width - em * itk->rel_hmargin, em * itk->rel_ver_advance, itk->focus_no == control->no);
+  //itk_base (itk, label, control->x, control->y, control->width - em * itk->rel_hmargin, em * itk->rel_ver_advance, itk->focus_no == control->no);
   itk_text (itk, label);
   //itk->lines_drawn = 1;
 
@@ -802,7 +809,7 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
   itk_text (itk, label);
   itk->x = new_x;
 
-  CtxControl *control = itk_add_control (itk, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width), em * itk->rel_ver_advance);
+  CtxControl *control = itk_add_control (itk, UI_SLIDER, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width), em * itk->rel_ver_advance);
   control->data = data;
   control->set_val = set_val;
   control->get_val = get_val;
@@ -811,7 +818,6 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
   control->min  = min;
   control->max  = max;
   control->step = step;
-  control->type = UI_SLIDER;
 
   if (itk->focus_no == control->no)
     itk_set_color (itk, ITK_FOCUSED_BG);
@@ -1043,13 +1049,12 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   float new_x = itk->x + itk->label_width * itk->width;
   itk_text (itk, label);
   itk->x = new_x;
-  CtxControl *control = itk_add_control (itk, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width), em * itk->rel_ver_advance);
+  CtxControl *control = itk_add_control (itk, UI_ENTRY, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width), em * itk->rel_ver_advance);
   control->val = val;
-  control->type = UI_ENTRY;
   if (fallback)
     control->fallback = strdup (fallback);
-  control->ref_count++;
-  control->ref_count++;
+//control->ref_count++;
+//control->ref_count++;
   control->commit = commit;
   control->data = commit_data;
 
@@ -1121,8 +1126,8 @@ void itk_toggle (ITK *itk, const char *label, int *val)
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   float width = ctx_text_width (ctx, label) + em * 1 + em * itk->rel_hpad;
-  CtxControl *control = itk_add_control (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
-  itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
+  CtxControl *control = itk_add_control (itk, UI_TOGGLE, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
+ // itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
 
   itk_set_color (itk, ITK_INTERACTIVE);
 
@@ -1172,8 +1177,8 @@ int itk_radio (ITK *itk, const char *label, int set)
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   float width = ctx_text_width (ctx, label) + em * 1 + em * itk->rel_hpad;
-  CtxControl *control = itk_add_control (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
-  itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
+  CtxControl *control = itk_add_control (itk, UI_RADIO, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
+//  itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
 
   itk_set_color (itk, ITK_INTERACTIVE);
   ctx_begin_path (ctx);
@@ -1223,19 +1228,17 @@ int itk_expander (ITK *itk, const char *label, int *val)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
-  CtxControl *control = itk_add_control (itk, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+  CtxControl *control = itk_add_control (itk, UI_EXPANDER, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   control->val = val;
-  control->type = UI_EXPANDER;
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
-  itk_set_color (itk, ITK_INTERACTIVE_BG);
-  ctx_fill (ctx);
+  //itk_set_color (itk, ITK_INTERACTIVE_BG);
+  //ctx_fill (ctx);
 
   ctx_begin_path (ctx);
   {
-     itk_base (itk, label, control->x, control->y, control->width, em * itk->rel_ver_advance,
-              itk->focus_no == control->no);
+     //itk_base (itk, label, control->x, control->y, control->width, em * itk->rel_ver_advance, itk->focus_no == control->no);
      itk_set_color (itk, ITK_INTERACTIVE);
      if (*val)
      {
@@ -1269,7 +1272,7 @@ int itk_button (ITK *itk, const char *label)
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
-  CtxControl *control = itk_add_control (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
+  CtxControl *control = itk_add_control (itk, UI_BUTTON, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
 
   itk_set_color (itk, ITK_BUTTON_SHADOW);
   ctx_begin_path (ctx);
@@ -1333,11 +1336,10 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
   itk->x = new_x;
 
   itk_set_color (itk, ITK_BG);
-  CtxControl *control = itk_add_control (itk, label, itk->x, itk->y, itk->width * (1.0-itk->label_width), em * itk->rel_ver_advance);
+  CtxControl *control = itk_add_control (itk, UI_CHOICE, label, itk->x, itk->y, itk->width * (1.0-itk->label_width), em * itk->rel_ver_advance);
   control->action = action;
   control->data = user_data;
   control->val = val;
-  control->type = UI_CHOICE;
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, itk_choice_clicked, control, itk, control_finalize, NULL);
