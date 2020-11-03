@@ -816,12 +816,19 @@ static void card_7GUI6 (ITK *itk, int frame_no)
   itk_panel_end (itk);
 }
 
+typedef enum {
+  CELL_TYPE_NIL,
+  CELL_TYPE_NUMBER,
+  CELL_TYPE_FORMULA,
+  CELL_TYPE_LABEL
+} CellType;
+
 typedef struct _Cell Cell;
 struct _Cell {
   char  display[40];
   char  value[80];
   int   dirty;
-  int   is_number;
+  CellType type;
   double number;
   Cell *dependencies[30];
   int   dependencies_count;
@@ -832,12 +839,13 @@ static void update_cell (Cell *cell)
 {
   if (cell->dirty)
   {
-    cell->is_number = 0;
+    cell->type = CELL_TYPE_NIL;
     if (cell->value[0]==0)
     {
       cell->display[0] = 0;
       cell->dirty = 0;
       cell->number = 0.0;
+      cell->type = CELL_TYPE_NIL;
       return;
     }
     int is_number = 1;
@@ -851,19 +859,21 @@ static void update_cell (Cell *cell)
     if (is_number)
     {
       cell->number = atof (cell->value); // XXX - locale dependent
-      sprintf (cell->display, "%.2f", cell->number);
-      cell->is_number = 1;
+      //sprintf (cell->display, "%.2f", cell->number);
+      strcpy (cell->display, cell->value);
+      cell->type = CELL_TYPE_NUMBER;
     }
     else
     {
       if (cell->value[0]=='=')
       {
         cell_formula_compute (cell);
-        cell->is_number = 1;
+        cell->type = CELL_TYPE_FORMULA;
       }
       else
       {
         sprintf (cell->display, "%s", cell->value);
+        cell->type = CELL_TYPE_LABEL;
       }
     }
     cell->dirty = 0;
@@ -918,7 +928,7 @@ static int str_is_coord (const char *str, int *colp, int *rowp)
   return 0;
 }
 
-#define SPREADSHEET_COLS 26
+#define SPREADSHEET_COLS 27
 #define SPREADSHEET_ROWS 100
 
 static Cell spreadsheet[SPREADSHEET_ROWS][SPREADSHEET_COLS]={0,};
@@ -1180,21 +1190,146 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   static int inited = 0;
   if (!inited)
   {
+    int row = 0;
     for (int i = 0; i < SPREADSHEET_COLS; i++)
       col_width[i] = em * 4;
     inited = 1;
 
-    cell_set_value (&spreadsheet[0][0], "1");
-    cell_set_value (&spreadsheet[1][0], "2");
-    cell_set_value (&spreadsheet[2][0], "=A0+A1");
+    cell_set_value (&spreadsheet[row][0], "5");
+    cell_set_value (&spreadsheet[row][1], "3");
+    cell_set_value (&spreadsheet[row][2], "4");
+    cell_set_value (&spreadsheet[row][3], "6");
+    cell_set_value (&spreadsheet[row][4], "7");
+    cell_set_value (&spreadsheet[row][5], "8");
+    cell_set_value (&spreadsheet[row][6], "9");
+    cell_set_value (&spreadsheet[row][7], "1");
+    cell_set_value (&spreadsheet[row][8], "2");
+    cell_set_value (&spreadsheet[row][9], "=sum(A0:I0)");
 
-    cell_set_value (&spreadsheet[0][2], "1");
-    cell_set_value (&spreadsheet[1][2], "2");
-    cell_set_value (&spreadsheet[2][2], "3");
-    cell_set_value (&spreadsheet[3][2], "4");
-    cell_set_value (&spreadsheet[4][1], "=C4");
-    cell_set_value (&spreadsheet[4][2], "=sum(C0:C3)");
-    cell_set_value (&spreadsheet[10][10], "=sum(A0:F9)");
+    row++;
+    cell_set_value (&spreadsheet[row][0], "6");
+    cell_set_value (&spreadsheet[row][1], "7");
+    cell_set_value (&spreadsheet[row][2], "2");
+    cell_set_value (&spreadsheet[row][3], "1");
+    cell_set_value (&spreadsheet[row][4], "9");
+    cell_set_value (&spreadsheet[row][5], "5");
+    cell_set_value (&spreadsheet[row][6], "3");
+    cell_set_value (&spreadsheet[row][7], "4");
+    cell_set_value (&spreadsheet[row][8], "8");
+    cell_set_value (&spreadsheet[row][9], "=sum(A1:I1)");
+
+    row++;
+    cell_set_value (&spreadsheet[row][0], "1");
+    cell_set_value (&spreadsheet[row][1], "9");
+    cell_set_value (&spreadsheet[row][2], "8");
+    cell_set_value (&spreadsheet[row][3], "3");
+    cell_set_value (&spreadsheet[row][4], "4");
+    cell_set_value (&spreadsheet[row][5], "2");
+    cell_set_value (&spreadsheet[row][6], "5");
+    cell_set_value (&spreadsheet[row][7], "6");
+    cell_set_value (&spreadsheet[row][8], "7");
+    cell_set_value (&spreadsheet[row][9], "=sum(A2:I2)");
+
+    row++;
+    cell_set_value (&spreadsheet[row][0], "8");
+    cell_set_value (&spreadsheet[row][1], "5");
+    cell_set_value (&spreadsheet[row][2], "9");
+    cell_set_value (&spreadsheet[row][3], "7");
+    cell_set_value (&spreadsheet[row][4], "6");
+    cell_set_value (&spreadsheet[row][5], "1");
+    cell_set_value (&spreadsheet[row][6], "4");
+    cell_set_value (&spreadsheet[row][7], "2");
+    cell_set_value (&spreadsheet[row][8], "3");
+    cell_set_value (&spreadsheet[row][9], "=sum(A3:I3)");
+
+
+    row++;
+    cell_set_value (&spreadsheet[row][0], "4");
+    cell_set_value (&spreadsheet[row][1], "2");
+    cell_set_value (&spreadsheet[row][2], "6");
+    cell_set_value (&spreadsheet[row][3], "8");
+    cell_set_value (&spreadsheet[row][4], "5");
+    cell_set_value (&spreadsheet[row][5], "3");
+    cell_set_value (&spreadsheet[row][6], "7");
+    cell_set_value (&spreadsheet[row][7], "9");
+    cell_set_value (&spreadsheet[row][8], "1");
+    cell_set_value (&spreadsheet[row][9], "=sum(A4:I4)");
+
+
+    row++;
+    cell_set_value (&spreadsheet[row][0], "7");
+    cell_set_value (&spreadsheet[row][1], "1");
+    cell_set_value (&spreadsheet[row][2], "3");
+    cell_set_value (&spreadsheet[row][3], "9");
+    cell_set_value (&spreadsheet[row][4], "2");
+    cell_set_value (&spreadsheet[row][5], "4");
+    cell_set_value (&spreadsheet[row][6], "8");
+    cell_set_value (&spreadsheet[row][7], "5");
+    cell_set_value (&spreadsheet[row][8], "6");
+    cell_set_value (&spreadsheet[row][9], "=sum(A5:I5)");
+
+    row++;
+    cell_set_value (&spreadsheet[row][0], "9");
+    cell_set_value (&spreadsheet[row][1], "6");
+    cell_set_value (&spreadsheet[row][2], "1");
+    cell_set_value (&spreadsheet[row][3], "5");
+    cell_set_value (&spreadsheet[row][4], "3");
+    cell_set_value (&spreadsheet[row][5], "7");
+    cell_set_value (&spreadsheet[row][6], "2");
+    cell_set_value (&spreadsheet[row][7], "8");
+    cell_set_value (&spreadsheet[row][8], "4");
+    cell_set_value (&spreadsheet[row][9], "=sum(A6:I6)");
+
+
+    row++;
+    cell_set_value (&spreadsheet[row][0], "2");
+    cell_set_value (&spreadsheet[row][1], "8");
+    cell_set_value (&spreadsheet[row][2], "7");
+    cell_set_value (&spreadsheet[row][3], "4");
+    cell_set_value (&spreadsheet[row][4], "1");
+    cell_set_value (&spreadsheet[row][5], "9");
+    cell_set_value (&spreadsheet[row][6], "6");
+    cell_set_value (&spreadsheet[row][7], "3");
+    cell_set_value (&spreadsheet[row][8], "5");
+    cell_set_value (&spreadsheet[row][9], "=sum(A7:I7)");
+
+    row++;
+    cell_set_value (&spreadsheet[row][0], "3");
+    cell_set_value (&spreadsheet[row][1], "4");
+    cell_set_value (&spreadsheet[row][2], "5");
+    cell_set_value (&spreadsheet[row][3], "2");
+    cell_set_value (&spreadsheet[row][4], "8");
+    cell_set_value (&spreadsheet[row][5], "6");
+    cell_set_value (&spreadsheet[row][6], "1");
+    cell_set_value (&spreadsheet[row][7], "7");
+    cell_set_value (&spreadsheet[row][8], "9");
+    cell_set_value (&spreadsheet[row][9], "=sum(A8:I8)");
+
+    row=9;
+    cell_set_value (&spreadsheet[row][0], "=sum(A0:A8)");
+    cell_set_value (&spreadsheet[row][1], "=sum(B0:B8)");
+    cell_set_value (&spreadsheet[row][2], "=sum(C0:C8)");
+    cell_set_value (&spreadsheet[row][3], "=sum(D0:D8)");
+    cell_set_value (&spreadsheet[row][4], "=sum(E0:E8)");
+    cell_set_value (&spreadsheet[row][5], "=sum(F0:F8)");
+    cell_set_value (&spreadsheet[row][6], "=sum(G0:G8)");
+    cell_set_value (&spreadsheet[row][7], "=sum(H0:H8)");
+    cell_set_value (&spreadsheet[row][8], "=sum(I0:I8)");
+
+    row=11;
+    cell_set_value (&spreadsheet[row][0], "=sum(A0:C2)");
+    cell_set_value (&spreadsheet[row][1], "=sum(D0:F2)");
+    cell_set_value (&spreadsheet[row][2], "=sum(G0:I2)");
+    row++;
+    cell_set_value (&spreadsheet[row][0], "=sum(A3:C5)");
+    cell_set_value (&spreadsheet[row][1], "=sum(D3:F5)");
+    cell_set_value (&spreadsheet[row][2], "=sum(G3:I5)");
+    row++;
+    cell_set_value (&spreadsheet[row][0], "=sum(A6:C8)");
+    cell_set_value (&spreadsheet[row][1], "=sum(D6:F8)");
+    cell_set_value (&spreadsheet[row][2], "=sum(G6:I8)");
+
+
   }
   itk_panel_start (itk, "7gui7 - spreadsheet", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
   float saved_x = itk->x;
@@ -1247,7 +1382,6 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     spreadsheet_first_col++;
   }
 
-
   if (spreadsheet_row < spreadsheet_first_row)
     spreadsheet_first_row = spreadsheet_row;
   else
@@ -1271,6 +1405,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   /* draw col labels */
   float x = saved_x + row_header_width;
   ctx_save (ctx);
+  ctx_gray (ctx, 0.1);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
@@ -1286,10 +1421,11 @@ static void card_7GUI7 (ITK *itk, int frame_no)
 
   /* draw vertical lines */
   x = saved_x + row_header_width;
+  ctx_gray (ctx, 0.5);
   for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
     float y = saved_y + em;
-    ctx_move_to (ctx, x, y - row_height);
+    ctx_move_to (ctx, floor(x)+0.5, y - row_height);
     ctx_rel_line_to (ctx, 0, itk->panel->height);
     ctx_line_width (ctx, 1.0);
     ctx_stroke (ctx);
@@ -1300,6 +1436,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   ctx_save (ctx);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_RIGHT);
   x = saved_x + row_header_width - em * 0.1;
+  ctx_gray (ctx, 0.1);
   {
     float y = saved_y + row_height + em;
     for (int row = spreadsheet_first_row; y < itk->panel->y + itk->panel->height; row++)
@@ -1312,13 +1449,13 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     }
   }
   ctx_restore (ctx);
+  ctx_gray (ctx, 0.5);
   /* draw horizontal lines */
   {
     float y = saved_y + row_height;
     for (int row = spreadsheet_first_row; y < itk->panel->y + itk->panel->height; row++)
     {
-      y = floor (y);
-      ctx_move_to (ctx, x, y);
+      ctx_move_to (ctx, x, floor(y)+0.5);
       ctx_rel_line_to (ctx, itk->width, 0);
       ctx_line_width (ctx, 1.0);
       ctx_stroke (ctx);
@@ -1326,6 +1463,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     }
   }
 
+  ctx_gray (ctx, 0.0);
   x = saved_x + row_header_width;
   for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
@@ -1344,8 +1482,8 @@ static void card_7GUI7 (ITK *itk, int frame_no)
         itk_entry (itk, "", "", cell->value, sizeof(cell->value)-1, commit_cell, cell);
         itk->focus_no = itk->control_no-1;
         if (itk->focus_label){
-                free (itk->focus_label);
-                itk->focus_label = NULL;
+          free (itk->focus_label);
+          itk->focus_label = NULL;
         }
 
         /* draw cursor around selected cell */
@@ -1369,18 +1507,30 @@ static void card_7GUI7 (ITK *itk, int frame_no)
 
         if (cell->display[0])
         {
-          if (cell->is_number)
+          switch (cell->type)
           {
-            ctx_save (ctx);
-            ctx_text_align (ctx, CTX_TEXT_ALIGN_RIGHT);
-            ctx_move_to (ctx, x + col_width[col] - em * 0.1, y);
-            ctx_text (ctx, cell->display);
-            ctx_restore (ctx);
-          }
-          else
-          {
-            ctx_move_to (ctx, x + em * 0.1, y);
-            ctx_text (ctx, cell->display);
+            case CELL_TYPE_NUMBER:
+            case CELL_TYPE_FORMULA:
+              ctx_save (ctx);
+              ctx_text_align (ctx, CTX_TEXT_ALIGN_RIGHT);
+              ctx_move_to (ctx, x + col_width[col] - em * 0.1, y);
+              if (cell->display[0]=='!')
+              {
+                ctx_save (ctx);
+                ctx_rgb (ctx, 1,0,0);
+                ctx_text (ctx, cell->display);
+                ctx_restore (ctx);
+              }
+              else
+              {
+                ctx_text (ctx, cell->display);
+              }
+              ctx_restore (ctx);
+              break;
+            default:
+              ctx_move_to (ctx, x + em * 0.1, y);
+              ctx_text (ctx, cell->display);
+              break;
           }
         }
       }
@@ -1390,9 +1540,23 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     x += col_width[col];
   }
 
-  itk->x = saved_x;
+  ctx_rectangle (ctx, saved_x + row_header_width,
+                 saved_y + itk->panel->height - row_height*2,
+                 (itk->panel->x+itk->panel->width - saved_x) - row_header_width - em,
+                 row_height);
+  ctx_rgb (ctx, 0,1,0);
+  ctx_fill (ctx);
+
+  ctx_rectangle (ctx, itk->panel->x + itk->panel->width - 
+                 em,
+                 saved_y + row_height,
+                 em, itk->panel->height - row_height * 3);
+  ctx_rgb (ctx, 0,1,0);
+  ctx_fill (ctx);
+
+  itk->x  = saved_x;
   itk->x0 = saved_x0;
-  itk->y = saved_y;
+  itk->y  = saved_y;
 
   itk_panel_end (itk);
 }
@@ -1405,20 +1569,15 @@ Test tests[]=
   {"dots",       card_dots},
   {"drag",       card_drag},
   {"sliders",    card_sliders},
-
   {"7gui 1",     card_7GUI1},
   {"7gui 2",     card_7GUI2},
   {"7gui 3",     card_7GUI3},
   {"7gui 4",     card_7GUI4},
   {"7gui 5",     card_7GUI5},
   {"7gui 6",     card_7GUI6},
-
   {"clock1",     card_clock1},
   {"clock2",     card_clock2},
   {"fill rule",  card_fill_rule},
   {"curve to",   card_curve_to},
-
-
 };
 int n_tests = sizeof(tests)/sizeof(tests[0]);
-
