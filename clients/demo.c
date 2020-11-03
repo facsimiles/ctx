@@ -1642,7 +1642,7 @@ static void card_files (ITK *itk, int frame_no)
         sprintf (newpath, "%s%s%s", path, PATH_SEP, namelist[i]->d_name);
       lstat (newpath, &stat_buf);
       free (newpath);
-      add_control (itk, "foo", itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+      itk_add_control (itk, "foo", itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
       itk_labelf (itk, "%s %i", namelist[i]->d_name, stat_buf.st_size);
     }
   }
