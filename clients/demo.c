@@ -1546,35 +1546,51 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     x += col_width[col];
   }
 
+  float page_len = 
+                 (itk->panel->x+itk->panel->width - saved_x) - row_header_width - em;
+  float page_max = 27.0;
+  float page_pos = spreadsheet_first_col / page_max;
+
   ctx_rectangle (ctx, saved_x + row_header_width,
                  saved_y + itk->panel->height - row_height*2,
-                 (itk->panel->x+itk->panel->width - saved_x) - row_header_width - em,
+                 page_len,
                  row_height);
   ctx_rgb (ctx, 0,1,0);
   ctx_fill (ctx);
   ctx_rgb (ctx, 1,0,0);
   float avg_col_width = (col_width[0] + col_width[1] + col_width[2])/3.0;
   ctx_rectangle (ctx,
-                 saved_x + row_header_width + (itk->panel->width-row_header_width-em) * (spreadsheet_first_col / 27.0),
+                 saved_x + row_header_width + page_len * page_pos,
                  saved_y + itk->panel->height - row_height * 2,
-                   
-                   (itk->panel->width-row_header_width-em) *
-                   ((itk->panel->width-row_header_width-em) / (avg_col_width * 27))
-
-
-
-                  
+                   page_len *
+                   (page_len / (avg_col_width * page_max))
                    ,
                  row_height);
+  ctx_fill (ctx);
 
+
+
+
+  page_len = itk->panel->height - row_height * 3;
+  page_max = 99;
+  page_pos = spreadsheet_first_row / page_max;
+  ctx_rectangle (ctx, itk->panel->x + itk->panel->width - 
+                 em,
+                 saved_y + row_height,
+                 em, page_len);
+  ctx_rgb (ctx, 0,1,0);
   ctx_fill (ctx);
 
   ctx_rectangle (ctx, itk->panel->x + itk->panel->width - 
                  em,
-                 saved_y + row_height,
-                 em, itk->panel->height - row_height * 3);
-  ctx_rgb (ctx, 0,1,0);
+                 saved_y + row_height + page_len * page_pos,
+                 em, 
+                   page_len *
+                   (page_len / (avg_col_width * page_max)));
+
+  ctx_rgb (ctx, 1,0,0);
   ctx_fill (ctx);
+
 
   itk->x  = saved_x;
   itk->x0 = saved_x0;
