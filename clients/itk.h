@@ -182,7 +182,7 @@ struct _ITK{
   float height;
   float rel_hmargin;
   float rel_vmargin;
-  float value_width;
+  float label_width;
 
   float scale;
 
@@ -303,7 +303,7 @@ ITK *itk_new (Ctx *ctx)
   itk->scale            = 1.5;
   itk->font_size        = 18;
   itk->width            = itk->font_size * 15;
-  itk->value_width      = 0.4;
+  itk->label_width      = 0.5;
   itk->rel_vmargin      = 0.5;
   itk->rel_hmargin      = 0.5;
   itk->rel_ver_advance  = 1.2;
@@ -773,7 +773,12 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
   float em = itk_em (itk);
-  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
+
+  float new_x = itk->x + (itk->label_width) * itk->width;
+  itk_text (itk, label);
+  itk->x = new_x;
+
+  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width), em * itk->rel_ver_advance);
   control->data = data;
   control->set_val = set_val;
   control->get_val = get_val;
@@ -810,13 +815,12 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
 
   float rel_val = ((fval) - min) / (max-min);
   itk_set_color (itk, ITK_SLIDER_CURSOR);
-  ctx_rectangle (ctx, itk->x + (itk->width*itk->value_width-em/8) * rel_val, itk->y, em/8, control->height);
+  ctx_rectangle (ctx, itk->x + (itk->width*(1.0-itk->label_width)-em/8) * rel_val, itk->y, em/8, control->height);
   ctx_fill (ctx);
-  ctx_rectangle (ctx, itk->x, itk->y + em*5/6, itk->width * itk->value_width, em/8);
+  ctx_rectangle (ctx, itk->x, itk->y + em*5/6, itk->width * (1.0-itk->label_width), em/8);
   ctx_fill (ctx);
 
-  itk->x += itk->value_width * itk->width;
-  itk_text (itk, label);
+  itk->x += (1.0 - itk->label_width) * itk->width;
   itk_newline (itk);
 }
 
@@ -1012,7 +1016,10 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
-  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
+  float new_x = itk->x + itk->label_width * itk->width;
+  itk_text (itk, label);
+  itk->x = new_x;
+  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width), em * itk->rel_ver_advance);
   control->val = val;
   control->type = UI_ENTRY;
   if (fallback)
@@ -1070,9 +1077,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
       }
     }
   }
-  itk->x += itk->value_width * itk->width;
-  itk_text (itk, label);
-
+  itk->x += (1.0-itk->label_width) * itk->width;
   itk_newline (itk);
 }
 
@@ -1298,8 +1303,13 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
+
+  float new_x = itk->x + itk->width * (itk->label_width);
+  itk_text (itk, label);
+  itk->x = new_x;
+
   itk_set_color (itk, ITK_BG);
-  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * itk->value_width, em * itk->rel_ver_advance);
+  CtxControl *control = add_control (itk, label, itk->x, itk->y, itk->width * (1.0-itk->label_width), em * itk->rel_ver_advance);
   control->action = action;
   control->data = user_data;
   control->val = val;
@@ -1316,10 +1326,7 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
   ctx_fill (ctx);
 
-
-
-  itk->x = itk->x + itk->width * itk->value_width;
-  itk_text (itk, label);
+  //itk->x = itk->x + itk->width * (1.0-itk->label_width);
 
   itk_newline (itk);
   if (control->no == itk->focus_no)
@@ -1340,7 +1347,8 @@ void itk_choice_add (ITK *itk, int value, const char *label)
     int *val = control->val;
     if (*val == value)
     {
-      ctx_move_to (ctx, itk->x,
+      ctx_move_to (ctx, itk->x + itk->label_width * itk->width
+                      ,
                       itk->y + em * itk->rel_baseline  - em * (itk->rel_ver_advance + itk->rel_vgap));
       ctx_rgb (ctx, 1, 0, 0);
       ctx_text (ctx, label);

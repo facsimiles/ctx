@@ -165,7 +165,7 @@ int main (int argc, char **argv)
         itk_slider_float (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
         itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
         itk_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
-        itk_slider_float (itk, "value width", &itk->value_width, 0.0, 40.0, 0.02);
+        itk_slider_float (itk, "label width", &itk->label_width, 0.0, 40.0, 0.02);
       }
 
       itk_panel_end (itk);
@@ -1602,9 +1602,9 @@ static void card_7GUI7 (ITK *itk, int frame_no)
 
 Test tests[]=
 {
+  {"dots",       card_dots},
   {"7gui 7",     card_7GUI7},
   {"gradients",  card_gradients},
-  {"dots",       card_dots},
   {"drag",       card_drag},
   {"sliders",    card_sliders},
   {"7gui 1",     card_7GUI1},
