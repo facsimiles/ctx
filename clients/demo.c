@@ -832,11 +832,11 @@ static void update_cell (Cell *cell)
 {
   if (cell->dirty)
   {
+    cell->is_number = 0;
     if (cell->value[0]==0)
     {
       cell->display[0] = 0;
       cell->dirty = 0;
-      cell->is_number = 0;
       cell->number = 0.0;
       return;
     }
@@ -852,18 +852,18 @@ static void update_cell (Cell *cell)
     {
       cell->number = atof (cell->value); // XXX - locale dependent
       sprintf (cell->display, "%.2f", cell->number);
+      cell->is_number = 1;
     }
     else
     {
-      cell->number = -11;
       if (cell->value[0]=='=')
       {
-        cell->number = -12;
         cell_formula_compute (cell);
+        cell->is_number = 1;
       }
       else
       {
-        sprintf (cell->display, "[%s]", cell->value);
+        sprintf (cell->display, "%s", cell->value);
       }
     }
     cell->dirty = 0;
@@ -983,7 +983,7 @@ static void cell_formula_compute(Cell *cell)
                 cell->value[2]=='u'&&
                 cell->value[3]=='m')
             {
-              len = str_is_coord (cell->value+4+1, &arg1_col, &arg1_row);
+              len  = str_is_coord (cell->value+4+1, &arg1_col, &arg1_row);
               len2 = str_is_coord (cell->value+4+1 + len + 1, &arg2_col, &arg2_row);
               if (len && len2)
               {
@@ -1010,25 +1010,14 @@ static void cell_formula_compute(Cell *cell)
               cell->number = arg1;
             }
             break;
-    case '+':
-            cell->number = arg1 + arg2;
-            break;
-    case '-':
-            cell->number = arg1 - arg2;
-            break;
-    case '*':
-            cell->number = arg1 * arg2;
-            break;
-    case '/':
-            cell->number = arg1 / arg2;
-            break;
-    default:
-            cell->number=-1000;
-            break;
+    case '+': cell->number = arg1 + arg2; break;
+    case '-': cell->number = arg1 - arg2; break;
+    case '*': cell->number = arg1 * arg2; break;
+    case '/': cell->number = arg1 / arg2; break;
+    default: sprintf(cell->display, "!ERROR"); return;
   }
   sprintf (cell->display, "%.2f", cell->number);
 }
-
 
 static int spreadsheet_col = 0;
 static int spreadsheet_row = 0;
@@ -1199,14 +1188,13 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     cell_set_value (&spreadsheet[1][0], "2");
     cell_set_value (&spreadsheet[2][0], "=A0+A1");
 
-
     cell_set_value (&spreadsheet[0][2], "1");
     cell_set_value (&spreadsheet[1][2], "2");
     cell_set_value (&spreadsheet[2][2], "3");
     cell_set_value (&spreadsheet[3][2], "4");
     cell_set_value (&spreadsheet[4][1], "=C4");
-    cell_set_value (&spreadsheet[4][2], "=SUM(C0:C3)");
-    cell_set_value (&spreadsheet[10][10], "=SUM(A0:F9)");
+    cell_set_value (&spreadsheet[4][2], "=sum(C0:C3)");
+    cell_set_value (&spreadsheet[10][10], "=sum(A0:F9)");
   }
   itk_panel_start (itk, "7gui7 - spreadsheet", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
   float saved_x = itk->x;
@@ -1226,11 +1214,13 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   ctx_rectangle (ctx, saved_x, saved_y, itk->width, ctx_height (ctx));
   ctx_fill (ctx);
 
+  float row_header_width = em * 1.5;
+
   /* draw gray gutters for col/row headers */
   ctx_rectangle (ctx, saved_x, saved_y, itk->width, row_height);
   ctx_gray (ctx, 0.7);
   ctx_fill (ctx);
-  ctx_rectangle (ctx, saved_x, saved_y, em, ctx_height (ctx));
+  ctx_rectangle (ctx, saved_x, saved_y, row_header_width, ctx_height (ctx));
   ctx_fill (ctx);
 
   ctx_font_size (ctx, em);
@@ -1241,7 +1231,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     spreadsheet_first_col = spreadsheet_col;
   else
   {
-  float x = saved_x + em * 1;
+  float x = saved_x + row_header_width;
   int found = 0;
   for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
@@ -1279,7 +1269,9 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   }
 
   /* draw col labels */
-  float x = saved_x + em * 1;
+  float x = saved_x + row_header_width;
+  ctx_save (ctx);
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
     float y = saved_y + em;
@@ -1290,9 +1282,10 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     ctx_text (ctx, label);
     x += col_width[col];
   }
+  ctx_restore (ctx);
 
   /* draw vertical lines */
-  x = saved_x + em * 1;
+  x = saved_x + row_header_width;
   for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
     float y = saved_y + em;
@@ -1304,7 +1297,9 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   }
 
   /* row header labels */
-  x = saved_x + em * 0.2;
+  ctx_save (ctx);
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_RIGHT);
+  x = saved_x + row_header_width - em * 0.1;
   {
     float y = saved_y + row_height + em;
     for (int row = spreadsheet_first_row; y < itk->panel->y + itk->panel->height; row++)
@@ -1316,11 +1311,13 @@ static void card_7GUI7 (ITK *itk, int frame_no)
       y += row_height;
     }
   }
+  ctx_restore (ctx);
   /* draw horizontal lines */
   {
     float y = saved_y + row_height;
     for (int row = spreadsheet_first_row; y < itk->panel->y + itk->panel->height; row++)
     {
+      y = floor (y);
       ctx_move_to (ctx, x, y);
       ctx_rel_line_to (ctx, itk->width, 0);
       ctx_line_width (ctx, 1.0);
@@ -1329,7 +1326,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     }
   }
 
-  x = saved_x + em * 1;
+  x = saved_x + row_header_width;
   for (int col = spreadsheet_first_col; x < itk->panel->x + itk->panel->width; col++)
   {
     float y = saved_y + row_height + em;
@@ -1351,6 +1348,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
                 itk->focus_label = NULL;
         }
 
+        /* draw cursor around selected cell */
         ctx_gray (ctx, 0);
         ctx_rectangle (ctx, x-em*0.1, y - em-em*0.1, col_width[col]+em*0.2, row_height+em*0.2);
         ctx_line_width (ctx, em*0.2);
@@ -1368,14 +1366,22 @@ static void card_7GUI7 (ITK *itk, int frame_no)
       if (!drawn)
       {
         update_cell (cell);
-        ctx_move_to (ctx, x + col_width[col]/2, y);
+
         if (cell->display[0])
         {
-          ctx_text (ctx, cell->display);
-        }
-        else
-        {
-          //ctx_text (ctx, "-");
+          if (cell->is_number)
+          {
+            ctx_save (ctx);
+            ctx_text_align (ctx, CTX_TEXT_ALIGN_RIGHT);
+            ctx_move_to (ctx, x + col_width[col] - em * 0.1, y);
+            ctx_text (ctx, cell->display);
+            ctx_restore (ctx);
+          }
+          else
+          {
+            ctx_move_to (ctx, x + em * 0.1, y);
+            ctx_text (ctx, cell->display);
+          }
         }
       }
 
