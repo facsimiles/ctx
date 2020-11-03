@@ -385,6 +385,7 @@ static void card_clock1 (ITK *itk, int frame_no)
   int width = ctx_width (ctx);
   int height = ctx_height (ctx);
   _analog_clock (ctx, ms64, width/2, height/2, height/2, 1);
+  ctx_set_dirty (ctx, 1);
 }
 
 static void card_clock2 (ITK *itk, int frame_no)
@@ -394,6 +395,7 @@ static void card_clock2 (ITK *itk, int frame_no)
   int width = ctx_width (ctx);
   int height = ctx_height (ctx);
   _analog_clock (ctx, ms64, width/2, height/2, height/2, 0);
+  ctx_set_dirty (ctx, 1);
 }
 
 static void card_fill_rule (ITK *itk, int frame_no)
@@ -549,7 +551,7 @@ static void card_drag (ITK *itk, int frame_no)
 static void card_7GUI1 (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk->ctx;
-  itk_panel_start (itk, "7gui1 - counter", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+  itk_panel_start (itk, "7gui - Counter", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
   static int value = 0;
   itk_labelf (itk, "%i\n", value);
   itk_sameline (itk);
@@ -590,7 +592,7 @@ static void commit_fahrenheit (ITK *itk, void *data)
 static void card_7GUI2 (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk->ctx;
-  itk_panel_start (itk, "7gui1 - tempconv", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+  itk_panel_start (itk, "7gui - Temperature Converter", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
 
   itk_entry (itk, "celcius", "C", celcius_val, 20-1, commit_celcius, NULL);
   itk_entry (itk, "fahrenheit", "F", fahrenheit_val, 20-1, commit_fahrenheit, NULL);
@@ -602,7 +604,7 @@ static void card_7GUI3 (ITK *itk, int frame_no)
   Ctx *ctx = itk->ctx;
   static char depart_date[20]="22.09.1957";
   static char return_date[20]="22.09.1957";
-  itk_panel_start (itk, "7gui3 - book flight", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+  itk_panel_start (itk, "7gui - Flight Booker", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
 
   static int return_flight = 0;
   itk_choice (itk, "", &return_flight, NULL, NULL);
@@ -624,28 +626,30 @@ static void card_7GUI4 (ITK *itk, int frame_no)
   static float e = 0.0;
   static float d = 10.0;
 
-  itk_panel_start (itk, "7gui4 - timer", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
-
-  itk_slider_float (itk, "elapsed", &e, 0.0, d, 0.1);
-  itk_labelf (itk, "%.1f of %.1f", e, d);
-  itk_slider_float (itk, "duration", &d, 0.0, 300.0, 0.5);
-
+  /* timer part */
   static unsigned long prev_ticks = 0;
   unsigned long ticks = ctx_ticks ();
-
   if (e<d)
   {
     if (prev_ticks)
       e += (ticks-prev_ticks)/1000.0/1000.0;
+    ctx_set_dirty (itk->ctx, 1); // queue a redraw
+                                 // causing our in-place timer to work
   }
-
   prev_ticks = ticks;
+
+  itk_panel_start (itk, "7gui - Timer",
+                  ctx_width(ctx)*0.2, 0,
+                  ctx_width (ctx) * 0.8, ctx_height (ctx));
+
+  itk_slider_float (itk, "elapsed", &e, 0.0, d, 0.1);
+  itk_labelf (itk, "%.1f", e);
+  itk_slider_float (itk, "duration", &d, 0.0, 300.0, 0.5);
 
   if (itk_button (itk, "Reset"))
     e = 0.0;
 
   itk_panel_end (itk);
-  ctx_set_dirty (itk->ctx, 1);
 }
 
 static char name[20]="";
@@ -669,7 +673,9 @@ static void card_7GUI5 (ITK *itk, int frame_no)
   Ctx *ctx = itk->ctx;
   static char filter_prefix[20];
 
-  itk_panel_start (itk, "7gui5 - CRUD", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+  itk_panel_start (itk, "7gui - CRUD",
+                  ctx_width(ctx)*0.2, 0,
+                  ctx_width (ctx) * 0.8, ctx_height (ctx));
 
   itk->width/=2;
   itk_entry (itk, "Filter prefix:", "", filter_prefix, 20-1, NULL, NULL);
@@ -779,7 +785,9 @@ static void circle_editor_motion_cb (CtxEvent *event, void *data1, void *data2)
 static void card_7GUI6 (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk->ctx;
-  itk_panel_start (itk, "7gui6 - circle editor", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+  itk_panel_start (itk, "7gui - Circle Editor",
+                  ctx_width(ctx)*0.2, 0,
+                  ctx_width (ctx) * 0.8, ctx_height (ctx));
 
   if (itk_button (itk, "Undo"))
   {
@@ -1331,7 +1339,11 @@ static void card_7GUI7 (ITK *itk, int frame_no)
 
 
   }
-  itk_panel_start (itk, "7gui7 - spreadsheet", 300, 0, ctx_width (ctx) - 300, ctx_height (ctx));
+
+  itk_panel_start (itk, "7gui - Cells",
+                  ctx_width(ctx)*0.2, 0,
+                  ctx_width (ctx) * 0.8, ctx_height (ctx));
+
   float saved_x = itk->x;
   float saved_x0 = itk->x0;
   float saved_y = itk->y;
@@ -1599,23 +1611,64 @@ static void card_7GUI7 (ITK *itk, int frame_no)
   itk_panel_end (itk);
 }
 
+#include <dirent.h>
+#include <sys/stat.h>
+
+static void card_files (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  float em = itk_em (itk);
+  float row_height = em * 1.2;
+  itk_panel_start (itk, "files", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
+  struct dirent **namelist;
+  char *path = "/home/pippin/src/ctx";
+#define PATH_SEP "/"
+  int n = scandir (path, &namelist, NULL, alphasort);
+  if (!n)
+  {
+    itk_labelf (itk, "no files\n");
+  }
+
+  for (int i = 0; i < n; i++)
+  {
+  //if (strcmp (namelist[i]->d_name, "."))
+    if (namelist[i]->d_name[0] != '.')
+    {
+      struct stat stat_buf;
+      char *newpath = malloc (strlen(path)+strlen(namelist[i]->d_name) + 2);
+      if (!strcmp (path, PATH_SEP))
+        sprintf (newpath, "%s%s", PATH_SEP, namelist[i]->d_name);
+      else
+        sprintf (newpath, "%s%s%s", path, PATH_SEP, namelist[i]->d_name);
+      lstat (newpath, &stat_buf);
+      free (newpath);
+      add_control (itk, "foo", itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+      itk_labelf (itk, "%s %i", namelist[i]->d_name, stat_buf.st_size);
+    }
+  }
+
+
+  itk_panel_end (itk);
+}
+
 
 Test tests[]=
 {
+  {"files",      card_files},
   {"dots",       card_dots},
-  {"7gui 7",     card_7GUI7},
   {"gradients",  card_gradients},
   {"drag",       card_drag},
   {"sliders",    card_sliders},
+  {"clock1",     card_clock1},
+  {"clock2",     card_clock2},
+//{"fill rule",  card_fill_rule},
+//{"curve to",   card_curve_to},
   {"7gui 1",     card_7GUI1},
   {"7gui 2",     card_7GUI2},
   {"7gui 3",     card_7GUI3},
   {"7gui 4",     card_7GUI4},
   {"7gui 5",     card_7GUI5},
   {"7gui 6",     card_7GUI6},
-  {"clock1",     card_clock1},
-  {"clock2",     card_clock2},
-  {"fill rule",  card_fill_rule},
-  {"curve to",   card_curve_to},
+  {"7gui 7",     card_7GUI7},
 };
 int n_tests = sizeof(tests)/sizeof(tests[0]);

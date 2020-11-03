@@ -6828,6 +6828,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
 int
 mrg_parse_svg_path (Mrg *mrg, const char *str)
 {
+  /* this function is the seed of the ctx parser */
   Ctx *ctx = mrg_cr (mrg);
   char  command = 'm';
   char *s;
@@ -8241,7 +8242,6 @@ mrg_get_contents_default (const char  *referer,
 
   return mrg_get_contents_default (referer, input_uri, contents, length, ignored_user_data);
 }
-
 
 void _mrg_init (Mrg *mrg, int width, int height)
 {
