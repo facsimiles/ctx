@@ -1,5 +1,14 @@
 #include <stdarg.h>
 
+/*
+ *
+ * TODO:
+ *   - more than one scroll per panel
+ *   - horizontal scroll
+ *
+ *   - CSS
+ */
+
 typedef struct _ITK ITK;
 
 ITK *itk_new (Ctx *ctx);
@@ -9,19 +18,19 @@ void itk_reset (ITK *itk);
 void itk_panel_start (ITK *itk, const char *title, int x, int y, int width, int height);
 void itk_panel_end (ITK *itk);
 
-void itk_newline (ITK *itk);
-void itk_sameline (ITK *itk);
+void itk_newline   (ITK *itk);
+void itk_sameline  (ITK *itk);
 void itk_seperator (ITK *itk);
-void itk_label (ITK *itk, const char *label);
+void itk_label    (ITK *itk, const char *label);
 void itk_titlebar (ITK *itk, const char *label);
-void itk_slider  (ITK *itk, const char *label, float *val, float min, float max, float step);
-void itk_entry   (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
+void itk_slider   (ITK *itk, const char *label, float *val, float min, float max, float step);
+void itk_entry    (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
                   void (*commit)(ITK *itk, void *commit_data), void *commit_data);
-void itk_toggle  (ITK *itk, const char *label, int *val);
+void itk_toggle   (ITK *itk, const char *label, int *val);
 int  itk_radio    (ITK *itk, const char *label, int set);
 int  itk_expander (ITK *itk, const char *label, int *val);
 int  itk_button   (ITK *itk, const char *label);
-void itk_choice  (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data);
+void itk_choice   (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data);
 void itk_choice_add (ITK *itk, int value, const char *label);
 
 enum {
@@ -36,6 +45,12 @@ enum {
   UI_MENU,
   UI_SEPARATOR,
   UI_RADIO
+};
+
+enum {
+  ITK_FLAG_SHOW_LABEL = (1<<0),
+  ITK_FLAG_ACTIVE     = (1<<1),
+  ITK_FLAG_DEFAULT    = (ITK_FLAG_SHOW_LABEL|ITK_FLAG_ACTIVE)
 };
 
 typedef struct _ITKPanel ITKPanel;
@@ -131,6 +146,7 @@ typedef struct _CtxControl CtxControl;
 struct _CtxControl{
   int no;
   int ref_count;
+  uint64_t flags;
   int type; /* this should be a pointer to the vfuncs/class struct
                instead - along with one optional instance data per control */
   char *label;
@@ -222,6 +238,7 @@ struct _ITK{
   char *active_menu_path;
   char *menu_path;
 
+  uint64_t next_flags;
   void *next_id; // to pre-empt a control and get it a more unique
                  // identifier than the numeric pos
 
@@ -363,6 +380,7 @@ void itk_reset (ITK *itk)
   ctx_font (ctx, "regular");
   ctx_font_size (ctx, itk_em (itk));
 
+  itk->next_flags = ITK_FLAG_DEFAULT;
   itk->panel = NULL;
 
   while (itk->old_controls)
@@ -405,7 +423,6 @@ ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width,
   return panel;
 }
 
-#define ITK_FLAG_SKIP_BG    1
 
 
 /* adds a control - should be done before the drawing of the
@@ -424,6 +441,8 @@ CtxControl *itk_add_control (ITK *itk,
 {
   CtxControl *control = calloc (sizeof (CtxControl), 1);
   float em = itk_em (itk);
+  control->flags = itk->next_flags;
+  itk->next_flags = ITK_FLAG_DEFAULT;
   control->label = strdup (label);
   if (itk->next_id)
   {
@@ -624,6 +643,19 @@ void itk_scroll_start (ITK *itk, float height)
 void itk_id (ITK *itk, void *id)
 {
   itk->next_id = id; 
+}
+
+void itk_set_flag (ITK *itk, int flag, int on)
+{
+  if (on)
+  {
+    itk->next_flags |= flag;
+  }
+  else
+  {
+    if (itk->next_flags & flag)
+      itk->next_flags -= flag;
+  }
 }
 
 void itk_scroll_drag (CtxEvent *event, void *data, void *data2)

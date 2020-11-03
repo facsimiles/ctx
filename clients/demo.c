@@ -758,7 +758,6 @@ static void circle_editor_circle_release_cb (CtxEvent *event, void *data1, void 
   ctx_set_dirty (event->ctx, 1);
 }
 
-
 static void circle_editor_motion_cb (CtxEvent *event, void *data1, void *data2)
 {
   float nearest_sq_dist = 4096*4096;
@@ -1622,7 +1621,7 @@ static void card_files (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
-  float row_height = em * 1.2;
+  //float row_height = em * 1.2;
   itk_panel_start (itk, "files", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
   struct dirent **namelist;
   char *path = "/home/pippin/src/ctx";
