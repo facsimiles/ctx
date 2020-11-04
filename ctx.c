@@ -1,5 +1,5 @@
 /* this file contains a default configuration, it produces ctx.o
- * which is reused by the other targets in the build system.
+ * which is reused by the other targets in the build system
  */
 
 #include <stdint.h>

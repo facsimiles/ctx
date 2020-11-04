@@ -2,15 +2,9 @@
 
 #if CTX_FORMATTER
 
-typedef enum CtxFormatter
+static void _ctx_print_endcmd (FILE *stream, int longform)
 {
-  CTX_FORMATTER_COMPACT=0,
-  CTX_FORMATTER_VERBOSE
-} CtxFormatter;
-
-static void _ctx_print_endcmd (FILE *stream, int formatter)
-{
-  if (formatter)
+  if (longform)
     {
       fwrite (");\n", 3, 1, stream);
     }
@@ -109,11 +103,11 @@ const char *_ctx_code_to_name (int code)
       return NULL;
 }
 
-static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
+static void _ctx_print_name (FILE *stream, int code, int longform, int *indent)
 {
 #define CTX_VERBOSE_NAMES 1
 #if CTX_VERBOSE_NAMES
-  if (formatter)
+  if (longform)
     {
       const char *name = NULL;
       _ctx_indent (stream, *indent);
@@ -192,22 +186,22 @@ static void _ctx_print_name (FILE *stream, int code, int formatter, int *indent)
       }
     fwrite (name, 1, strlen ( (char *) name), stream);
     fwrite (" ", 1, 1, stream);
-    if (formatter)
+    if (longform)
       { fwrite ("(", 1, 1, stream); }
   }
 }
 
 static void
-ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry, int args)
+ctx_print_entry_enum (FILE *stream, int longform, int *indent, CtxEntry *entry, int args)
 {
-  _ctx_print_name (stream, entry->code, formatter, indent);
+  _ctx_print_name (stream, entry->code, longform, indent);
   for (int i = 0; i <  args; i ++)
     {
       int val = ctx_arg_u8 (i);
       if (i>0)
         { fwrite (" ", 1, 1, stream); }
 #if CTX_VERBOSE_NAMES
-      if (formatter)
+      if (longform)
         {
           const char *str = NULL;
           switch (entry->code)
@@ -345,7 +339,7 @@ ctx_print_entry_enum (FILE *stream, int formatter, int *indent, CtxEntry *entry,
           fprintf (stream, "%i", val);
         }
     }
-  _ctx_print_endcmd (stream, formatter);
+  _ctx_print_endcmd (stream, longform);
 }
 
 static void
@@ -392,51 +386,75 @@ ctx_print_float (FILE *stream, float val)
 }
 
 static void
-ctx_print_entry (FILE *stream, int formatter, int *indent, CtxEntry *entry, int args)
+ctx_print_entry (FILE *stream, int longform, int *indent, CtxEntry *entry, int args)
 {
-  _ctx_print_name (stream, entry->code, formatter, indent);
+  _ctx_print_name (stream, entry->code, longform, indent);
   for (int i = 0; i <  args; i ++)
     {
       float val = ctx_arg_float (i);
       if (i>0 && val >= 0.0f)
         {
-          switch (formatter)
+          if (longform)
             {
-              case CTX_FORMATTER_VERBOSE:
                 fwrite (", ", 2, 1, stream);
-                break;
-              case CTX_FORMATTER_COMPACT:
-                if (val >= 0.0f)
-                  { fwrite (" ", 1, 1, stream); }
-                break;
-              default:
-                fwrite (" ", 1, 1, stream);
-                break;
+            }
+          else
+            {
+              if (val >= 0.0f)
+                { fwrite (" ", 1, 1, stream); }
             }
         }
       ctx_print_float (stream, val);
     }
-  _ctx_print_endcmd (stream, formatter);
+  _ctx_print_endcmd (stream, longform);
 }
 
 static void
-ctx_print_glyph (FILE *stream, int formatter, int *indent, CtxEntry *entry, int args)
+ctx_print_glyph (FILE *stream, int longform, int *indent, CtxEntry *entry, int args)
 {
   char buf[32];
-  _ctx_print_name (stream, entry->code, formatter, indent);
-  switch (formatter)
-    {
-      case CTX_FORMATTER_VERBOSE:
-        sprintf (buf, "%i", entry->data.u32[0]);
-        break;
-      case CTX_FORMATTER_COMPACT:
-      default:
-        sprintf (buf, "%i", entry->data.u32[0]);
-        break;
-    }
+  _ctx_print_name (stream, entry->code, longform, indent);
+  if (longform)
+  {
+    sprintf (buf, "%i", entry->data.u32[0]);
+  }
+  else
+  {
+    sprintf (buf, "%i", entry->data.u32[0]);
+  }
   fwrite (buf, 1, strlen (buf), stream);
 
-  _ctx_print_endcmd (stream, formatter);
+  _ctx_print_endcmd (stream, longform);
+}
+
+static void
+ctx_stream_process (void *user_data, CtxCommand *c);
+
+typedef struct _CtxFormatter  CtxFormatter;
+struct _CtxFormatter 
+{
+  void *target; // FILE
+  int   longform;
+  int   indent;
+
+  void (*add_str)(CtxFormatter *formatter, int len, const char *str);
+};
+
+
+void
+ctx_render_stream (Ctx *ctx, FILE *stream, int longform)
+{
+  CtxIterator iterator;
+  CtxFormatter formatter;
+  formatter.target= stream;
+  formatter.longform = longform;
+  formatter.indent = 0;
+  CtxCommand *command;
+  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
+                     CTX_ITERATOR_EXPAND_BITPACK);
+  while ( (command = ctx_iterator_next (&iterator) ) )
+    { ctx_stream_process (&formatter, command); }
+  fprintf (stream, "\n");
 }
 
 
@@ -444,15 +462,16 @@ static void
 ctx_stream_process (void *user_data, CtxCommand *c)
 {
   CtxEntry *entry = &c->entry;
-  void **user_data_array = (void **) user_data;
-  FILE *stream    = (FILE *) user_data_array[0];
-  int   formatter = (size_t) (user_data_array[1]);
-  int  *indent    = (int *) &user_data_array[2];
+  CtxFormatter *formatter = user_data;
+  FILE *stream    = formatter->target;
+  int   longform  = formatter->longform;
+  int  *indent    = &(formatter->indent);
+
   switch (entry->code)
   //switch ((CtxCode)(entry->code))
     {
       case CTX_GLYPH:
-        ctx_print_glyph (stream, formatter, indent, entry, 1);
+        ctx_print_glyph (stream, longform, indent, entry, 1);
         break;
         break;
       case CTX_LINE_TO:
@@ -463,22 +482,22 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_REL_MOVE_TO:
       case CTX_SMOOTHQ_TO:
       case CTX_REL_SMOOTHQ_TO:
-        ctx_print_entry (stream, formatter, indent, entry, 2);
+        ctx_print_entry (stream, longform, indent, entry, 2);
         break;
       case CTX_TEXTURE:
-        ctx_print_entry (stream, formatter, indent, entry, 3);
+        ctx_print_entry (stream, longform, indent, entry, 3);
         break;
       case CTX_REL_ARC_TO:
       case CTX_ARC_TO:
       case CTX_ROUND_RECTANGLE:
-        ctx_print_entry (stream, formatter, indent, entry, 5);
+        ctx_print_entry (stream, longform, indent, entry, 5);
         break;
       case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
       case CTX_ARC:
       case CTX_RADIAL_GRADIENT:
       case CTX_APPLY_TRANSFORM:
-        ctx_print_entry (stream, formatter, indent, entry, 6);
+        ctx_print_entry (stream, longform, indent, entry, 6);
         break;
       case CTX_QUAD_TO:
       case CTX_RECTANGLE:
@@ -487,7 +506,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_VIEW_BOX:
       case CTX_SMOOTH_TO:
       case CTX_REL_SMOOTH_TO:
-        ctx_print_entry (stream, formatter, indent, entry, 4);
+        ctx_print_entry (stream, longform, indent, entry, 4);
         break;
       case CTX_FONT_SIZE:
       case CTX_MITER_LIMIT:
@@ -501,10 +520,10 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_HOR_LINE_TO:
       case CTX_REL_VER_LINE_TO:
       case CTX_REL_HOR_LINE_TO:
-        ctx_print_entry (stream, formatter, indent, entry, 1);
+        ctx_print_entry (stream, longform, indent, entry, 1);
         break;
       case CTX_SET:
-        _ctx_print_name (stream, entry->code, formatter, indent);
+        _ctx_print_name (stream, entry->code, longform, indent);
         switch (c->set.key_hash)
         {
            case CTX_x: fprintf (stream, " 'x' "); break;
@@ -517,10 +536,10 @@ ctx_stream_process (void *user_data, CtxCommand *c)
         fprintf (stream, "\"");
         ctx_print_escaped_string (stream, (char*)c->set.utf8);
         fprintf (stream, "\"");
-        _ctx_print_endcmd (stream, formatter);
+        _ctx_print_endcmd (stream, longform);
         break;
       case CTX_COLOR:
-        if (formatter ||  1)
+        if (longform ||  1)
           {
             _ctx_indent (stream, *indent);
             switch ( (int) c->set_color.model)
@@ -629,11 +648,11 @@ ctx_stream_process (void *user_data, CtxCommand *c)
           }
         else
           {
-            ctx_print_entry (stream, formatter, indent, entry, 1);
+            ctx_print_entry (stream, longform, indent, entry, 1);
           }
         break;
       case CTX_SET_RGBA_U8:
-        if (formatter)
+        if (longform)
           {
             _ctx_indent (stream, *indent);
             fwrite ("rgba (", 6, 1, stream);
@@ -646,14 +665,14 @@ ctx_stream_process (void *user_data, CtxCommand *c)
           {
             if (c)
               {
-                if (formatter == CTX_FORMATTER_VERBOSE)
+                if (longform)
                   { fwrite (", ", 2, 1, stream); }
                 else
                   { fwrite (" ", 1, 1, stream); }
               }
             ctx_print_float (stream, ctx_u8_to_float (ctx_arg_u8 (c) ) );
           }
-        _ctx_print_endcmd (stream, formatter);
+        _ctx_print_endcmd (stream, longform);
         break;
       case CTX_SET_PIXEL:
 #if 0
@@ -678,7 +697,7 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_NEW_PAGE:
       case CTX_END_GROUP:
       case CTX_RESTORE:
-        ctx_print_entry (stream, formatter, indent, entry, 0);
+        ctx_print_entry (stream, longform, indent, entry, 0);
         break;
       case CTX_TEXT_ALIGN:
       case CTX_TEXT_BASELINE:
@@ -688,26 +707,26 @@ ctx_stream_process (void *user_data, CtxCommand *c)
       case CTX_LINE_JOIN:
       case CTX_COMPOSITING_MODE:
       case CTX_BLEND_MODE:
-        ctx_print_entry_enum (stream, formatter, indent, entry, 1);
+        ctx_print_entry_enum (stream, longform, indent, entry, 1);
         break;
       case CTX_GRADIENT_STOP:
-        _ctx_print_name (stream, entry->code, formatter, indent);
+        _ctx_print_name (stream, entry->code, longform, indent);
         for (int c = 0; c < 4; c++)
           {
             if (c)
               { fwrite ("  ", 1, 1, stream); }
             ctx_print_float (stream, ctx_u8_to_float (ctx_arg_u8 (4+c) ) );
           }
-        _ctx_print_endcmd (stream, formatter);
+        _ctx_print_endcmd (stream, longform);
         break;
       case CTX_TEXT:
       case CTX_TEXT_STROKE:
       case CTX_FONT:
-        _ctx_print_name (stream, entry->code, formatter, indent);
+        _ctx_print_name (stream, entry->code, longform, indent);
         fprintf (stream, "\"");
         ctx_print_escaped_string (stream, ctx_arg_string() );
         fprintf (stream, "\"");
-        _ctx_print_endcmd (stream, formatter);
+        _ctx_print_endcmd (stream, longform);
         break;
       case CTX_CONT:
       case CTX_EDGE:
@@ -719,17 +738,6 @@ ctx_stream_process (void *user_data, CtxCommand *c)
     }
 }
 
-void
-ctx_render_stream (Ctx *ctx, FILE *stream, int formatter)
-{
-  CtxIterator iterator;
-  void *user_data[3]= {stream, (void *) (size_t) (formatter), NULL};
-  CtxCommand *command;
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
-                     CTX_ITERATOR_EXPAND_BITPACK);
-  while ( (command = ctx_iterator_next (&iterator) ) )
-    { ctx_stream_process (user_data, command); }
-  fprintf (stream, "\n");
-}
+
 
 #endif
