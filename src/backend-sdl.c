@@ -258,6 +258,9 @@ int ctx_sdl_consume_events (Ctx *ctx)
           }
         }
         break;
+      case SDL_QUIT:
+        ctx_quit (ctx);
+        break;
       case SDL_WINDOWEVENT:
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
