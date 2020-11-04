@@ -7,13 +7,16 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   if (ctx_native_events)
     fprintf (stdout, "\e[?201h");
   fprintf (stdout, "\e[H\e[?25l\e[?200h reset\n");
-#if 1
+#if 0
   ctx_render_stream (ctxctx->ctx, stdout, 0);
 #else
-  CtxString *string = ctx_string_new("");
-  
-
-  ctx_string_free (string, 1);
+  {
+    int len = 0;
+    char *frame_contents = ctx_render_string (ctxctx->ctx, 0, &len);
+    //fprintf (stdout, "%s", frame_contents);
+    fwrite (frame_contents, len, 1, stdout);
+    free (frame_contents);
+  }
 #endif
 
 

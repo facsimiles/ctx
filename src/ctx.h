@@ -372,6 +372,9 @@ void  ctx_render_cairo  (Ctx *ctx, cairo_t *cr);
 Ctx * ctx_new_for_cairo (cairo_t *cr);
 #endif
 
+/* free with free() */
+char *ctx_render_string (Ctx *ctx, int longform, int *retlen);
+
 void ctx_render_stream  (Ctx *ctx, FILE *stream, int formatter);
 
 void ctx_render_ctx     (Ctx *ctx, Ctx *d_ctx);
