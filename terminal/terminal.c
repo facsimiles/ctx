@@ -212,7 +212,6 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 }
 
 
-int   do_quit      = 0;
 float font_size    = -1;
 float line_spacing = 2.0;
 
@@ -408,7 +407,7 @@ static CtxClient *client_by_id (int id)
   return NULL;
 }
 
-void client_remove (CtxClient *client)
+void client_remove (Ctx *ctx, CtxClient *client)
 {
   if (client->vt)
     vt_destroy (client->vt);
@@ -418,7 +417,7 @@ void client_remove (CtxClient *client)
 
   ctx_list_remove (&clients, client);
   if (clients == NULL)
-    do_quit = 1;
+    ctx_quit (ctx);//
 
   if (client == active)
   {
@@ -437,7 +436,7 @@ void client_remove_by_id (int id)
 }
 #endif
 
-static void handle_event (const char *event)
+static void handle_event (Ctx *ctx, const char *event)
 {
   if (!active)
     return;
@@ -485,7 +484,7 @@ static void handle_event (const char *event)
     }
   else if (!strcmp (event, "shift-control-q") )
     {
-      do_quit = 1; // global?
+      ctx_quit (ctx);
     }
   else if (!strcmp (event, "shift-control-w") )
     {
@@ -1039,7 +1038,7 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
   }
   else
   {
-    handle_event (event->string);
+    handle_event (ctx, event->string);
   }
 }
 
@@ -1124,7 +1123,7 @@ int terminal_main (int argc, char **argv)
 
   signal (SIGCHLD,signal_child);
 
-  while (clients)
+  while (clients && !ctx_has_quit (ctx))
     {
       int sleep_time = 200;
       CtxList *to_remove = NULL;
@@ -1176,7 +1175,7 @@ int terminal_main (int argc, char **argv)
       }
       for (CtxList *l = to_remove; l; l = l->next)
       {
-        client_remove (l->data);
+        client_remove (ctx, l->data);
         changes++;
       }
       while (to_remove)
@@ -1257,7 +1256,7 @@ int terminal_main (int argc, char **argv)
     }
 
   while (clients)
-    client_remove (clients->data);
+    client_remove (ctx, clients->data);
 
   ctx_free (ctx);
   return 0;

@@ -429,6 +429,7 @@ _Ctx
   int                rev;
   void              *backend;
 #if CTX_EVENTS 
+  int                quit;
   int                dirty;
   CtxEvents          events;
   int                mouse_fd;
@@ -840,8 +841,6 @@ ctx_rgb_space (Ctx *ctx, int device_space);
 void
 ctx_set_cmyk_space (Ctx *ctx, int device_space);
 #endif
-
-
 
 #endif
 

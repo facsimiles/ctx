@@ -1440,3 +1440,13 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
   while ( (command = ctx_iterator_next (&iterator) ) )
     { ctx_process (d_ctx, &command->entry); }
 }
+
+void ctx_quit (Ctx *ctx)
+{
+  ctx->quit ++;
+}
+
+int  ctx_has_quit (Ctx *ctx)
+{
+  return (ctx->quit);
+}

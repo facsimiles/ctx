@@ -15,10 +15,9 @@ extern int n_tests;
 int test_no = 0;
 int frame_no = 0;
 
-int do_quit = 0;
 void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 {
-  do_quit = 1;
+  ctx_quit (event->ctx);
 }
 
 extern int _ctx_threads;
@@ -38,9 +37,9 @@ int main (int argc, char **argv)
   int enable_keybindings = 1;
   char input[256]="fnord";
   //ctx_set_dirty (ctx, 1);
-  while (!do_quit)
+  while (!ctx_has_quit (ctx))
   {
-    int width = ctx_width (ctx);
+    int width  = ctx_width (ctx);
     int height = ctx_height (ctx);
 #if 0
     ctx_save (ctx);
@@ -173,7 +172,6 @@ int main (int argc, char **argv)
       itk_done (itk);
 
       ctx_add_key_binding (ctx, "control-q", NULL, "foo", itk_key_quit, NULL);
-
 
       ctx_flush (ctx);
     }

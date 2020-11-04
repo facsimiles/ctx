@@ -595,6 +595,8 @@ struct _CtxRectangle {
   int height;
 };
 
+void ctx_quit (Ctx *ctx);
+int  ctx_has_quit (Ctx *ctx);
 
 typedef void (*CtxCb) (CtxEvent *event,
                        void     *data,
