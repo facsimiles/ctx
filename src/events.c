@@ -51,13 +51,6 @@ int _ctx_enable_hash_cache = 1;
 void
 ctx_init (int *argc, char ***argv)
 {
-  if (getenv ("CTX_THREADS"))
-  {
-    int val = atoi (getenv ("CTX_THREADS"));
-    if (val < 1) val = 1;
-    if (val > CTX_MAX_THREADS) val = CTX_MAX_THREADS;
-    _ctx_threads = val;
-  }
 #if 0
   if (!getenv ("CTX_VERSION"))
   {
@@ -83,6 +76,13 @@ int ctx_count (Ctx *ctx)
 
 Ctx *ctx_new_ui (int width, int height)
 {
+  if (getenv ("CTX_THREADS"))
+  {
+    int val = atoi (getenv ("CTX_THREADS"));
+    if (val < 1) val = 1;
+    if (val > CTX_MAX_THREADS) val = CTX_MAX_THREADS;
+    _ctx_threads = val;
+  }
   const char *backend = getenv ("CTX_BACKEND");
 
   if (backend && !strcmp (backend, "auto"))

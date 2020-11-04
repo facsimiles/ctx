@@ -1047,7 +1047,6 @@ int enable_terminal_menu = 0;
 
 int terminal_main (int argc, char **argv)
 {
-  ctx_init (&argc, &argv);
   execute_self = argv[0];
   float global_scale = 1.0;
   int width = -1;

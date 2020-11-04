@@ -25,7 +25,6 @@ extern int _ctx_enable_hash_cache;
 
 int main (int argc, char **argv)
 {
-  ctx_init (&argc, &argv);
   Ctx *ctx = ctx_new_ui (-1, -1);
 
   ITK *itk = itk_new (ctx);
