@@ -15,26 +15,17 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MRG_STRING_H
-#define MRG_STRING_H
+#ifndef VT_LINE_H
+#define VT_LINE_H
 
 #include "vt-utf8.h"
+#include "ctx.h"
 
-typedef struct _VtString VtString;
 typedef struct _VtLine   VtLine;
-
-struct _VtString
-{
-  char *str;
-  int   length;
-  int   utf8_length;
-  int   allocated_length;
-  int   is_line;
-};
 
 struct _VtLine
 {
-  VtString string;
+  CtxString string;
   
   /* the line should extend the string  */
 
@@ -95,110 +86,102 @@ static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
 VtLine *vt_line_new_with_size (const char *initial, int initial_size);
 VtLine *vt_line_new (const char *initial);
 
-VtString   *vt_string_new_with_size  (const char *initial, int initial_size);
-VtString   *vt_string_new            (const char *initial);
-void        vt_string_free           (VtString *string, int freealloc);
-const char *vt_string_get            (VtString *string);
-uint32_t    vt_string_get_unichar    (VtString *string, int pos);
-int         vt_string_get_length     (VtString *string);
-void        vt_string_set            (VtString *string, const char *new_string);
-void        vt_string_clear          (VtString *string);
-void        vt_string_append_str     (VtString *string, const char *str);
-void        vt_string_append_byte    (VtString *string, char  val);
-void        vt_string_append_string  (VtString *string, VtString *string2);
-void        vt_string_append_unichar (VtString *string, unsigned int unichar);
-void        vt_string_append_data    (VtString *string, const char *data, int len);
-
-void        vt_string_append_utf8char (VtString *string, const char *str);
-void        vt_string_append_printf  (VtString *string, const char *format, ...);
-void        vt_string_replace_utf8   (VtString *string, int pos, const char *new_glyph);
-void        vt_string_insert_utf8    (VtString *string, int pos, const char *new_glyph);
-void        vt_string_replace_unichar (VtString *string, int pos, uint32_t unichar);
-void        vt_string_remove         (VtString *string, int pos);
-
-
 static inline void        vt_line_free           (VtLine *line, int freealloc)
 {
-  VtString *string = (VtString*)line;
-  vt_string_free (string, freealloc);
+  CtxString *string = (CtxString*)line;
+
+#if 1
+  //if (string->is_line)
+  {
+    VtLine *line = (VtLine*)string;
+    if (line->style)
+      { free (line->style); }
+    if (line->ctx)
+      { ctx_free (line->ctx); }
+    if (line->ctx_copy)
+      { ctx_free (line->ctx_copy); }
+  }
+#endif
+
+  ctx_string_free (string, freealloc);
 }
 static inline const char *vt_line_get            (VtLine *line)
 {
-  VtString *string = (VtString*)line;
-  return vt_string_get (string);
+  CtxString *string = (CtxString*)line;
+  return ctx_string_get (string);
 }
 static inline uint32_t    vt_line_get_unichar    (VtLine *line, int pos)
 {
-  VtString *string = (VtString*)line;
-  return vt_string_get_unichar (string, pos);
+  CtxString *string = (CtxString*)line;
+  return ctx_string_get_unichar (string, pos);
 }
 static inline int         vt_line_get_length     (VtLine *line)
 {
-  VtString *string = (VtString*)line;
-  return vt_string_get_length (string);
+  CtxString *string = (CtxString*)line;
+  return ctx_string_get_length (string);
 }
 static inline void        vt_line_set            (VtLine *line, const char *new_string)
 {
-  VtString *string = (VtString*)line;
-  vt_string_set (string, new_string);
+  CtxString *string = (CtxString*)line;
+  ctx_string_set (string, new_string);
 }
 static inline void        vt_line_clear          (VtLine *line)
 {
-  VtString *string = (VtString*)line;
-  vt_string_clear (string);
+  CtxString *string = (CtxString*)line;
+  ctx_string_clear (string);
 }
 static inline void        vt_line_append_str     (VtLine *line, const char *str)
 {
-  VtString *string = (VtString*)line;
-  vt_string_append_str (string, str);
+  CtxString *string = (CtxString*)line;
+  ctx_string_append_str (string, str);
 }
 static inline void        vt_line_append_byte    (VtLine *line, char  val)
 {
-  VtString *string = (VtString*)line;
-  vt_string_append_byte (string, val);
+  CtxString *string = (CtxString*)line;
+  ctx_string_append_byte (string, val);
 }
-static inline void        vt_line_append_string  (VtLine *line, VtString *string2)
+static inline void        vt_line_append_string  (VtLine *line, CtxString *string2)
 {
-  VtString *string = (VtString*)line;
-  vt_string_append_string (string, string2);
+  CtxString *string = (CtxString*)line;
+  ctx_string_append_string (string, string2);
 }
 static inline void        vt_line_append_unichar (VtLine *line, unsigned int unichar)
 {
-  VtString *string = (VtString*)line;
-  vt_string_append_unichar (string, unichar);
+  CtxString *string = (CtxString*)line;
+  ctx_string_append_unichar (string, unichar);
 }
 static inline void        vt_line_append_data    (VtLine *line, const char *data, int len)
 {
-  VtString *string = (VtString*)line;
-  vt_string_append_data (string, data, len);
+  CtxString *string = (CtxString*)line;
+  ctx_string_append_data (string, data, len);
 }
 static inline void        vt_line_append_utf8char (VtLine *line, const char *str)
 {
-  VtString *string = (VtString*)line;
-  vt_string_append_utf8char (string, str);
+  CtxString *string = (CtxString*)line;
+  ctx_string_append_utf8char (string, str);
 }
 static inline void        vt_line_replace_utf8   (VtLine *line, int pos, const char *new_glyph)
 {
-  VtString *string = (VtString*)line;
-  vt_string_replace_utf8 (string, pos, new_glyph);
+  CtxString *string = (CtxString*)line;
+  ctx_string_replace_utf8 (string, pos, new_glyph);
 }
 static inline void        vt_line_insert_utf8    (VtLine *line, int pos, const char *new_glyph)
 {
-  VtString *string = (VtString*)line;
-  vt_string_insert_utf8 (string, pos, new_glyph);
+  CtxString *string = (CtxString*)line;
+  ctx_string_insert_utf8 (string, pos, new_glyph);
 }
 static inline void        vt_line_replace_unichar (VtLine *line, int pos, uint32_t unichar)
 {
-  VtString *string = (VtString*)line;
-  vt_string_replace_unichar (string, pos, unichar);
+  CtxString *string = (CtxString*)line;
+  ctx_string_replace_unichar (string, pos, unichar);
 }
                                       /* bad naming, since it is encoding
                                        * independent.
                                       */
 static inline void        vt_line_remove (VtLine *line, int pos)
 { 
-  VtString *string = (VtString*)line;
-  vt_string_remove (string, pos);
+  CtxString *string = (CtxString*)line;
+  ctx_string_remove (string, pos);
 }
 
 #ifndef TRUE

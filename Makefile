@@ -38,7 +38,7 @@ fonts/ctx-font-regular.h: tools/ctx-fontgen
 fonts/ctx-font-mono.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSansMono.ttf mono ascii-extras > $@
 
-used_fonts: fonts/ctx-font-ascii.h fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf 
+used_fonts: fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf 
 
 test: ctx
 	make -C tests
@@ -60,7 +60,7 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
-ctx.o: ctx.c ctx.h Makefile
+ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3
 
 ctx-split.o: $(SRC_OBJS)

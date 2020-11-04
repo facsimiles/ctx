@@ -1,5 +1,8 @@
 ctx.h
+ctx-string.h
+pre-font
 ../fonts/ctx-font-ascii.h
+post-font
 ctx-list.h
 config.h
 ctx-extra.h
@@ -21,6 +24,7 @@ terminal.c
 events.c
 parser.c
 text.c
+ctx-string.c
 renderer-cairo.c
 backend-ctx.c
 backend-fbdev.c

@@ -282,10 +282,13 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 	<ul>
         <li>improved performance</li>
         <li>diff of frames in terminal protocol (locally it might help some things, but bandwidth of the pty should be optimized - also for high fidelity audio and possibly video streams.)</li>
+        <li>Ensure maximum bandwidth for pty's in terminals - probably
+        with a separate UI thread.</li>
         <li>texture upload as part of terminal protocol</li>
         <li>terminal rewrap on resize</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
         <li>support HTML/CSS ways of setting colors as strings</li>
+        <li>CSS styling</li>
         <li>ICC color management (provisions have been made in the API for this,
                 but RGBtoRGB and CMYKtoRGB RGBtoCMYK conversions are currently
                 done naively, instead of using <a href='http://gegl.org/babl/'>babl</a>.)</li>

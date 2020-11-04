@@ -263,23 +263,23 @@ CtxClient *add_client (const char *commandline, int x, int y, int width, int hei
 
 CtxClient *add_client_argv (const char **argv, int x, int y, int width, int height, int ctx)
 {
-  VtString *string = vt_string_new ("");
+  CtxString *string = ctx_string_new ("");
   for (int i = 0; argv[i]; i++)
   {
     if (i > 0)
-      vt_string_append_byte (string, ' ');
+      ctx_string_append_byte (string, ' ');
     for (int c = 0; argv[i][c]; c++)
     {
        switch (argv[i][c])
        {
-         case '"':vt_string_append_str (string, "\\\"");break;
-         case '\'':vt_string_append_str (string, "\\\'");break;
-         default:vt_string_append_byte (string, argv[i][c]);break;
+         case '"':ctx_string_append_str (string, "\\\"");break;
+         case '\'':ctx_string_append_str (string, "\\\'");break;
+         default:ctx_string_append_byte (string, argv[i][c]);break;
        }
     }
   }
   CtxClient *ret = add_client (string->str, x, y, width, height, ctx);
-  vt_string_free (string, 1);
+  ctx_string_free (string, 1);
   return ret;
 }
 

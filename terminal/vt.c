@@ -5049,7 +5049,7 @@ int vt_get_line_count (VT *vt)
 const char *vt_get_line (VT *vt, int no)
 {
   CtxList *l= ctx_list_nth (vt->lines, no);
-  VtString *str;
+  CtxString *str;
   if (!l)
     { return NULL; }
   str = l->data;
@@ -6977,7 +6977,7 @@ int vt_get_scroll (VT *vt)
 char *
 vt_get_selection (VT *vt)
 {
-  VtString *str = vt_string_new ("");
+  CtxString *str = ctx_string_new ("");
   char *ret;
   for (int row = vt->select_start_row; row <= vt->select_end_row; row++)
     {
@@ -6989,11 +6989,11 @@ vt_get_selection (VT *vt)
             { continue; }
           if (row == vt->select_start_row && col < vt->select_start_col)
             { continue; }
-          vt_string_append_utf8char (str, c);
+          ctx_string_append_utf8char (str, c);
         }
     }
   ret = str->str;
-  vt_string_free (str, 0);
+  ctx_string_free (str, 0);
   return ret;
 }
 

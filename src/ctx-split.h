@@ -9,5 +9,6 @@
 #include "util.h"
 #include "libc.c"
 #include "drawlist.h"
+#include "ctx-string.h"
 
 
