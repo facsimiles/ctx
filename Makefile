@@ -61,7 +61,7 @@ tools/%: tools/%.c ctx-nofont.h
 	$(CCC) $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O2
 
 ctx-split.o: $(SRC_OBJS)
 

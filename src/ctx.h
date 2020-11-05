@@ -1517,6 +1517,13 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte);
 
 void ctx_parser_free (CtxParser *parser);
 
+#ifndef CTX_CODEC_CHAR
+//#define CTX_CODEC_CHAR '\035'
+//#define CTX_CODEC_CHAR 'a'
+#define CTX_CODEC_CHAR '\077'
+//#define CTX_CODEC_CHAR '^'
+#endif
+
 
 #ifndef assert
 #define assert(a)
