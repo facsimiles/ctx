@@ -2,21 +2,6 @@
 
 #if CTX_EVENTS
 
-#if 0
-static char *encode_in_terms_of_previous (
-                const char *src,  int src_len,
-                const char *prev, int prev_len,
-                int *out_len)
-{
-  CtxString *string = ctx_string_new ("");
-  ctx_string_append_data (string, src, src_len);
-  char *ret = string->str;
-  if (out_len) *out_len = string->length;
-  ctx_string_free (string, 0);
-  return ret;
-}
-#else
-
 
 static int ctx_find_largest_matching_substring
  (const char *X, const char *Y, int m, int n, int *offsetY, int *offsetX) 
@@ -165,6 +150,7 @@ static char *encode_in_terms_of_previous (
   return ret;
 }
 
+#if 0 // for documentation/reference purposes
 static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int prev_len, int *out_len)
 {
   CtxString *string = ctx_string_new ("");
@@ -220,8 +206,8 @@ static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int
 }
 #endif
 
-#define CTX_START_STRING " reset "
-#define CTX_END_STRING   "\ndone"
+#define CTX_START_STRING "U\n"  // or " reset "
+#define CTX_END_STRING   "\nX"  // or "\ndone"
 #define CTX_END_STRING2   "\n\e"
 
 static void ctx_ctx_flush (CtxCtx *ctxctx)
@@ -266,7 +252,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
 #if 0
       fprintf (debug, "---prev-frame(%i)\n%s", (int)strlen(prev_frame_contents), prev_frame_contents);
       fprintf (debug, "---cur-frame(%i)\n%s", (int)strlen(cur_frame_contents), cur_frame_contents);
-      fprintf (debug, "---encoded(%.4fms %i)---\n%s--------\n",
+      fprintf (debug, "---encoded(%.4f %i)---\n%s--------\n",
                       (ticks_end-ticks_start)/1000.0,
                       (int)strlen(encoded), encoded);
 #endif
