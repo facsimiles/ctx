@@ -14,7 +14,7 @@
               <br/>
               <a href='rasterizer/'>rasterizer</a>
               <a href='protocol/'>protocol</a>
-              <a href='#roadmap'>roadmap</a>
+              <a href='#future'>future</a>
               <a href='#license'>license</a>
               <br/>
               <a href='mcu/'>videos</a>
@@ -107,7 +107,7 @@
       is the ctx backend which outputs the ctx
       protocol on stdout and accepts keyboard/pointer input either as
       standard terminal escape sequences or in a passthrough mode of ctx' own
-      event format, inherited from <a
+      event format, inherited - among other bits - from <a
               href='https://github.com/hodefoting/mrg'>microraptor gui</a>.
 
       Pointer events can be handled as global events like the ones
@@ -120,11 +120,8 @@
       ones.
       </p>
 
-      <p>
-      Sending full frames of vectors becomes bandwidth intensive with
-      complex interfaces, this will be remediated by reusing
-      ranges from the previous frames bytestream, this is currently not
-      implemented but will provide signficant bandwidth savings.
+      <p>Successive frames become a long string of rendering commands, instead
+      of sending the full frames ctx transmits a detailed diff about how to construct the frame from literal text spans and copies form the previous decoded frame.
       </p>
 
       <p>ctx is a work in progress and there is <a href='#bugs'>known bugs</a>, on one important ergonomic measure, in this regard ctx seem to already
@@ -278,10 +275,12 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
           </ul>
         </li>
         </ul>
-        <h2 id='roadmap'>semi-ordered roadmap / wishlist</h2>
+        <h2 id='future'>some potential improvements</h2>
 	<ul>
         <li>improved performance</li>
-        <li>diff of frames in terminal protocol (locally it might help some things, but bandwidth of the pty should be optimized - also for high fidelity audio and possibly video streams.)</li>
+	<li>glyph fallbacks</li>
+        <li>number of render threads changeable at runtime (and automatically due to load)</li>
+        <li>analytical instead of raster clipping</li>
         <li>Ensure maximum bandwidth for pty's in terminals - probably
         with a separate UI thread.</li>
         <li>texture upload as part of terminal protocol</li>
@@ -298,10 +297,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <li>bindings to a javascript engine like quickjs, for running canvas js content as
             apps.</li>
         <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
-	<li>glyph fallbacks</li>
-        <li>number of render threads changeable at runtime (and automatically due to load)</li>
         <li>faster 1d-gaussian blur for shadow blur</li>
-        <li>analytical instead of raster clipping</li>
         <li>SVG/HTML/CSS parsing renderer (in progress, from mrg)</li>
         <li>PDF/SVG generation (can already be done through cairo integration)</li>
         <li>Add API for integrating device-N with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
