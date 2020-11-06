@@ -2702,7 +2702,11 @@ static void vtcmd_graphics (VT *vt, const char *sequence)
 static void vtcmd_report (VT *vt, const char *sequence)
 {
   char buf[64]="";
-  if (!strcmp (sequence, "[?15n") ) // printer status
+  if (!strcmp (sequence, "[5n") ) // DSR device status report
+    {
+      sprintf (buf, "\033[0n"); // we're always OK :)
+    }
+  else if (!strcmp (sequence, "[?15n") ) // printer status
     {
       sprintf (buf, "\033[?13n"); // no printer
     }
@@ -2727,10 +2731,6 @@ static void vtcmd_report (VT *vt, const char *sequence)
   {"[?6n", 0, },  /* id:DEXCPR  extended cursor position report, yields a reply <tt>\e[Pl;PcR</tt> */
 #endif
       sprintf (buf, "\033[?%i;%i;1R", vt->cursor_y - (vt->origin? (vt->margin_top - 1) :0), (int) vt->cursor_x - (vt->origin? (VT_MARGIN_LEFT-1) :0) );
-    }
-  else if (!strcmp (sequence, "[5n") ) // DSR decide status report
-    {
-      sprintf (buf, "\033[0n"); // we're always OK :)
     }
   else if (!strcmp (sequence, "[>c") )
     {
