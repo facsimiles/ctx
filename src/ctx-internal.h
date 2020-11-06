@@ -646,6 +646,7 @@ int ctx_terminal_width  (void);
 int ctx_terminal_height (void);
 int ctx_terminal_cols   (void);
 int ctx_terminal_rows   (void);
+extern int ctx_frame_ack;
 
 int ctx_nct_consume_events (Ctx *ctx);
 

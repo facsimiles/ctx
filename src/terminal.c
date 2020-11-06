@@ -78,6 +78,7 @@ typedef struct NcKeyCode {
   const char  sequence[10];  /* terminal sequence */
 } NcKeyCode;
 static const NcKeyCode keycodes[]={  
+
   {"up",                  "↑",     "\033[A"},
   {"down",                "↓",     "\033[B"},
   {"right",               "→",     "\033[C"},
@@ -240,6 +241,7 @@ static const NcKeyCode keycodes[]={
   {"F10",       "F10",  "\033[[J"},
   {"F11",       "F11",  "\033[[K"},
   {"F12",       "F12",  "\033[[L"}, 
+  {"ok",        "",     "\033[0n"},
   {NULL, }
 };
 
@@ -526,6 +528,11 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
             case 1: /* unique match */
               if (!match)
                 return NULL;
+              if (!strcmp(match->nick, "ok"))
+              {
+                ctx_frame_ack = 1;
+                return NULL;
+              }
               return match->nick;
               break;
             case 9001: /* mouse event */
@@ -732,7 +739,13 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
   for (length = 0; length < 200; length ++)
     if (read (STDIN_FILENO, &buf[length], 1) != -1)
       {
-         if (buf[length]=='\n')
+         buf[length+1] = 0;
+         if (!strcmp ((char*)buf, "\e[0n"))
+         {
+           ctx_frame_ack = 1;
+           return NULL;
+         }
+         else if (buf[length]=='\n')
          {
            buf[length]=0;
            return (const char*)buf;

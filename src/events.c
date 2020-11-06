@@ -881,14 +881,8 @@ int ctx_ctx_consume_events (Ctx *ctx);
 #if CTX_SDL
 #endif
 
-
-CtxEvent *ctx_get_event (Ctx *ctx)
+void ctx_consume_events (Ctx *ctx)
 {
-  static CtxEvent event_copy;
-  _ctx_idle_iteration (ctx);
-  if (!ctx->events.ctx_get_event_enabled)
-    ctx->events.ctx_get_event_enabled = 1;
-
 #if CTX_SDL
   if (ctx_sdl_events)
     ctx_sdl_consume_events (ctx);
@@ -903,6 +897,16 @@ CtxEvent *ctx_get_event (Ctx *ctx)
     ctx_ctx_consume_events (ctx);
   else
     ctx_nct_consume_events (ctx);
+}
+
+CtxEvent *ctx_get_event (Ctx *ctx)
+{
+  static CtxEvent event_copy;
+  _ctx_idle_iteration (ctx);
+  if (!ctx->events.ctx_get_event_enabled)
+    ctx->events.ctx_get_event_enabled = 1;
+
+  ctx_consume_events (ctx);
 
   if (ctx->events.events)
     {

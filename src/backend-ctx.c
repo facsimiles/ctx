@@ -210,6 +210,8 @@ static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int
 #define CTX_END_STRING   "\nX"  // or "\ndone"
 #define CTX_END_STRING2   "\n\e"
 
+int ctx_frame_ack = -1;
+
 static void ctx_ctx_flush (CtxCtx *ctxctx)
 {
 #if 0
@@ -274,7 +276,13 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
 #endif
   fprintf (stdout, CTX_END_STRING2);
 
+  fprintf (stdout, "\e[5n");
   fflush (stdout);
+
+  ctx_frame_ack = 0;
+  do {
+     ctx_consume_events (ctxctx->ctx);
+  } while (ctx_frame_ack != 1);
 }
 
 void ctx_ctx_free (CtxCtx *ctx)
