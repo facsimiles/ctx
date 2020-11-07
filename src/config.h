@@ -402,7 +402,7 @@
 #endif
 
 #ifndef CTX_HASH_ROWS
-#define CTX_HASH_ROWS            4
+#define CTX_HASH_ROWS            8
 #endif
 #ifndef CTX_HASH_COLS
 #define CTX_HASH_COLS            4
