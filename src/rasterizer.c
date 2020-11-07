@@ -2176,6 +2176,11 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
       int cov = coverage[0];
       if (cov)
       {
+        if (cov == 255)
+        {
+          *((uint32_t*)(dst)) = si;
+        }
+        else
         {
         int r_cov = 255-cov;
         uint32_t di = *((uint32_t*)(dst));
@@ -2291,6 +2296,12 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
         int cov = *coverage;
         if (cov)
         {
+        if (cov == 255 && (tsrc[3]==255))
+        {
+          *((uint32_t*)(dst)) = si;
+        }
+        else
+        {
           uint32_t di = *((uint32_t*)(dst));
           uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
           uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
@@ -2298,6 +2309,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
           *((uint32_t*)(dst)) = 
            (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
            (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
+        }
         }
         dst += 4;
         coverage ++;
