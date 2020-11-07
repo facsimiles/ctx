@@ -50,9 +50,7 @@ int main (int argc, char **argv)
 //  itk->dirty=1;
     if (ctx_is_dirty (ctx))
     {
- //   ctx_set_dirty (ctx, 0);
-      ctx_reset (ctx);
-      itk_reset (itk); // does set_dirty 0
+      itk_reset (itk);
 
       if (enable_keybindings)
         itk_key_bindings (itk);
@@ -80,7 +78,6 @@ int main (int argc, char **argv)
       itk_end_menu_bar (itk);
       itk_seperator (itk);
 #endif
-
       itk_slider_int   (itk, "demo no", &test_no, 0, n_tests-1, 1);
 
       static int itk_widgets = 0;
@@ -124,9 +121,9 @@ int main (int argc, char **argv)
       itk_entry (itk, "Foo", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL);
 
       itk_choice (itk, "power", &chosen, NULL, NULL);
-      itk_choice_add (itk, 0, "on");
-      itk_choice_add (itk, 1, "off");
-      itk_choice_add (itk, 2, "good");
+      itk_choice_add (itk, 0,    "on");
+      itk_choice_add (itk, 1,    "off");
+      itk_choice_add (itk, 2,    "good");
       itk_choice_add (itk, 2025, "green");
       itk_choice_add (itk, 2030, "electric");
       itk_choice_add (itk, 2040, "novel");
@@ -216,9 +213,9 @@ static void card_gradients (ITK *itk, int frame_no)
 static void card_dots (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk->ctx;
-  static int   dot_count = 100;
-  static float twist = -0.1619;
-  static float dot_scale = 160.0;
+  static int   dot_count = 500;
+  static float twist = 2.9645;
+  static float dot_scale = 42.0;
 
       /* clear */
       ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
@@ -1666,7 +1663,7 @@ static void card_files (ITK *itk, int frame_no)
   //float row_height = em * 1.2;
   itk_panel_start (itk, "files", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
   struct dirent **namelist;
-  char *path = "/home/pippin/src/ctx";
+  char *path = "./";///home/pippin/src/ctx";
 #define PATH_SEP "/"
   int n = scandir (path, &namelist, NULL, alphasort);
   if (!n)
@@ -1688,7 +1685,10 @@ static void card_files (ITK *itk, int frame_no)
       lstat (newpath, &stat_buf);
       free (newpath);
       itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-      itk_labelf (itk, "%s %i", namelist[i]->d_name, stat_buf.st_size);
+      itk_labelf (itk, "%s\n", namelist[i]->d_name);
+      itk_sameline (itk);
+      itk->x = itk->x0 + itk_em (itk) * 10;
+      itk_labelf (itk, "%i", stat_buf.st_size);
     }
   }
 
@@ -1699,13 +1699,13 @@ static void card_files (ITK *itk, int frame_no)
 
 Test tests[]=
 {
-  {"files",      card_files},
-  {"gradients",  card_gradients},
   {"dots",       card_dots},
-  {"drag",       card_drag},
   {"sliders",    card_sliders},
+  {"gradients",  card_gradients},
+  {"drag",       card_drag},
   {"clock1",     card_clock1},
-  {"clock2",     card_clock2},
+  {"files",      card_files},
+//{"clock2",     card_clock2},
 //{"fill rule",  card_fill_rule},
 //{"curve to",   card_curve_to},
   {"7gui 1",     card_7GUI1},
