@@ -4253,6 +4253,7 @@ static void vt_state_sixel (VT *vt, int byte)
     }
 }
 
+void add_tab (const char *commandline);
 
 static void vt_state_apc_generic (VT *vt, int byte)
 {
@@ -4262,6 +4263,20 @@ static void vt_state_apc_generic (VT *vt, int byte)
         {
           vt_gfx (vt, vt->argument_buf);
         }
+      else if (vt->argument_buf[1] == 'C') /* launch terminal */
+      {
+        vt_bell (vt);
+
+        {
+          char *sep = strchr(vt->argument_buf, ';');
+          if (sep)
+          {
+            fprintf (stderr, "[%s]", sep +  1);
+            add_tab (sep + 1);
+          }
+        }
+
+      }
       vt->state = ( (byte == 27) ?  vt_state_swallow : vt_state_neutral);
     }
   else
@@ -4273,6 +4288,7 @@ static void vt_state_apc_generic (VT *vt, int byte)
 #if 0
     {"_G..\e\", 0, vtcmd_delete_n_chars, VT102}, /* ref:none id: <a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a> */ "
     {"_A..\e\", 0, vtcmd_delete_n_chars, VT102}, /* id:  <a href='https://github.com/hodefoting/atty/'>atty</a> audio input/output */ "
+    {"_C..\e\", 0, vtcmd_delete_n_chars, VT102}, /* id:  run command */ "
 #endif
 static void vt_state_apc (VT *vt, int byte)
 {

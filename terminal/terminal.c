@@ -379,10 +379,10 @@ void ensure_layout ()
   }
 }
 
-void add_tab ()
+void add_tab (const char *commandline)
 {
   float titlebar_h = ctx_height (ctx)/40;
-  active = add_client (vt_find_shell_command(), add_x, add_y,
+  active = add_client (commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, 0);
   vt_set_ctx (active->vt, ctx);
   ensure_layout ();
@@ -470,7 +470,7 @@ static void handle_event (Ctx *ctx, const char *event)
   else if (!strcmp (event, "shift-control-t") ||
            (ctx_renderer_is_fb (ctx) &&   !strcmp (event, "control-t") ))
   {
-    add_tab ();
+    add_tab (vt_find_shell_command());
   }
   else if (!strcmp (event, "shift-control-n") )
     {
@@ -1200,7 +1200,7 @@ int terminal_main (int argc, char **argv)
 
           if (itk_button (itk, "add tab"))
           {
-            add_tab ();
+            add_tab (vt_find_shell_command());
           }
           itk_sameline (itk);
           if (itk_button (itk, "close settings"))

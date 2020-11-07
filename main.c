@@ -24,6 +24,16 @@ static int usage_main (int argc, char **argv)
 int terminal_main (int argc, char **argv);
 int convert_main (int argc, char **argv);
 
+int launch_main (int argc, char **argv)
+{
+  // check that we have a term
+  // and that we can launch
+  //
+  // escape subsequent arguments so that we dont have to pass a string?
+  fprintf (stdout, "\e_C;%s\e\\", argv[1]);
+  return 0;
+}
+
 int main (int argc, char **argv)
 {
   /* we should also do busybox dispatch based on name of argv[0]
@@ -35,5 +45,7 @@ int main (int argc, char **argv)
 
   if (argv[1] && !strcmp (argv[1], "convert"))
     return convert_main (argc-1, argv+1);
+  if (argv[1] && !strcmp (argv[1], "launch"))
+    return launch_main (argc-1, argv+1);
   return terminal_main (argc, argv);
 }
