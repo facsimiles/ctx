@@ -134,6 +134,7 @@ int main (int argc, char **argv)
       itk_toggle (itk, "baz ", &baz);
       }
 
+#if 0
       static int itk_items = 0;
       if (itk_expander (itk, "items", &itk_items))
       {
@@ -144,7 +145,7 @@ int main (int argc, char **argv)
           itk_button (itk, buf);
         }
       }
-
+#endif
 
       itk_ctx_settings (itk);
 
@@ -1699,8 +1700,8 @@ static void card_files (ITK *itk, int frame_no)
 Test tests[]=
 {
   {"files",      card_files},
-  {"dots",       card_dots},
   {"gradients",  card_gradients},
+  {"dots",       card_dots},
   {"drag",       card_drag},
   {"sliders",    card_sliders},
   {"clock1",     card_clock1},

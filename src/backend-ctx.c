@@ -2,33 +2,32 @@
 
 #if CTX_EVENTS
 
-
 static int ctx_find_largest_matching_substring
  (const char *X, const char *Y, int m, int n, int *offsetY, int *offsetX) 
 { 
-    int LCSuff[2][n+1]; 
-    int result = 0;
-  
-    for (int i=0; i<=m; i++) 
-    { 
-        for (int j=0; j<=n; j++) 
-        { 
-            if (i == 0 || j == 0) 
-                LCSuff[i%2][j] = 0; 
-            else if (X[i-1] == Y[j-1]) 
-            { 
-                LCSuff[i%2][j] = LCSuff[(i-1)%2][j-1] + 1; 
-                if (result < LCSuff[i%2][j])
-                {
-                  result = LCSuff[i%2][j];
-                  if (offsetY) *offsetY = j - result;
-                  if (offsetX) *offsetX = i - result;
-                }
-            } 
-            else LCSuff[i%2][j] = 0; 
-        } 
-    } 
-    return result; 
+  int longest_common_suffix[2][n+1];
+  int best_length = 0;
+  for (int i=0; i<=m; i++)
+  {
+    for (int j=0; j<=n; j++)
+    {
+      if (i == 0 || j == 0 || !(X[i-1] == Y[j-1]))
+      {
+        longest_common_suffix[i%2][j] = 0;
+      }
+      else
+      {
+          longest_common_suffix[i%2][j] = longest_common_suffix[(i-1)%2][j-1] + 1;
+          if (best_length < longest_common_suffix[i%2][j])
+          {
+            best_length = longest_common_suffix[i%2][j];
+            if (offsetY) *offsetY = j - best_length;
+            if (offsetX) *offsetX = i - best_length;
+          }
+      }
+    }
+  }
+  return best_length;
 } 
 
 
@@ -38,6 +37,29 @@ typedef struct CtxSpan {
   int length;
 } CtxSpan;
 
+#define CHUNK_SIZE 32      // becomes the max matches substring length
+#define MIN_MATCH  7       // minimum match length to be encoded
+#define WINDOW_PADDING 32  // look-aside amount
+
+#if 0
+static void _dassert(int line, int condition, const char *str, int foo, int bar, int baz)
+{
+  if (!condition)
+  {
+    FILE *f = fopen ("/tmp/cdebug", "a");
+    fprintf (f, "%i: %s    %i %i %i\n", line, str, foo, bar, baz);
+    fclose (f);
+  }
+}
+#define dassert(cond, foo, bar, baz) _dassert(__LINE__, cond, #cond, foo, bar ,baz)
+#endif
+#define dassert(cond, foo, bar, baz)
+
+/* XXX repeated substring matching is slow, we'll be
+ * better off with a hash-table with linked lists of
+ * matching 3-4 characters in previous.. or even
+ * a naive approach that expects rough alignment..
+ */
 static char *encode_in_terms_of_previous (
                 const char *src,  int src_len,
                 const char *prev, int prev_len,
@@ -46,59 +68,98 @@ static char *encode_in_terms_of_previous (
   CtxString *string = ctx_string_new ("");
   CtxList *encoded_list = NULL;
 
-  CtxSpan *span = calloc (sizeof (CtxSpan), 1);
+  /* TODO : make expected position offset in prev slide based on
+   * matches and not be constant */
 
-  span->start = 0;
-  span->length = src_len;
-  span->from_prev = 0;
-
-  ctx_list_append (&encoded_list, span);
+  int start = 0;
+  int length = CHUNK_SIZE;
+  for (start = 0; start < src_len; start += length)
+  {
+    CtxSpan *span = calloc (sizeof (CtxSpan), 1);
+    span->start = start;
+    if (start + length > src_len)
+      span->length = src_len - start;
+    else
+      span->length = length;
+    span->from_prev = 0;
+    ctx_list_append (&encoded_list, span);
+  }
 
   for (CtxList *l = encoded_list; l; l = l->next)
   {
     CtxSpan *span = l->data;
     if (!span->from_prev)
     {
-      if (span->length > 8)
+      if (span->length >= MIN_MATCH)
       {
-         int foo_pos = 0;
-         int bar_pos = 0;
-         int match_len = ctx_find_largest_matching_substring(prev, src + span->start, prev_len, span->length, &bar_pos, &foo_pos);
-         if (match_len > 5)
+         int prev_pos = 0;
+         int curr_pos = 0;
+         assert(1);
+#if 0
+         int prev_start =  0;
+         int prev_window_length = prev_len;
+#else
+         int window_padding = WINDOW_PADDING;
+         int prev_start = span->start - window_padding;
+         if (prev_start < 0)
+           prev_start = 0;
+
+         dassert(span->start>=0 , 0,0,0);
+
+         int prev_window_length = prev_len - prev_start;
+         if (prev_window_length > span->length + window_padding * 2 + span->start)
+           prev_window_length = span->length + window_padding * 2 + span->start;
+#endif
+         int match_len = 0;
+         if (prev_window_length > 0)
+           match_len = ctx_find_largest_matching_substring(prev + prev_start, src + span->start, prev_window_length, span->length, &curr_pos, &prev_pos);
+#if 1
+         prev_pos += prev_start;
+#endif
+
+         if (match_len >= MIN_MATCH)
          {
-            int start = span->start;
+            int start  = span->start;
             int length = span->length;
 
-            if (bar_pos)
+            span->from_prev = 1;
+            span->start     = prev_pos;
+            span->length    = match_len;
+            dassert (span->start >= 0, prev_pos, prev_start, span->start);
+            dassert (span->length > 0, prev_pos, prev_start, span->length);
+
+            if (curr_pos)
             {
               CtxSpan *prev = calloc (sizeof (CtxSpan), 1);
               prev->start = start;
-              prev->length =  bar_pos;
+              prev->length =  curr_pos;
+            dassert (prev->start >= 0, prev_pos, prev_start, prev->start);
+            dassert (prev->length > 0, prev_pos, prev_start, prev->length);
               prev->from_prev = 0;
               ctx_list_insert_before (&encoded_list, l, prev);
             }
 
-            span->from_prev = 1;
-            span->start  = foo_pos;
-            span->length = match_len;
 
-            if (length + bar_pos + match_len > 0)
+            if (match_len + curr_pos < start + length)
             {
               CtxSpan *next = calloc (sizeof (CtxSpan), 1);
-              next->start = start + bar_pos + match_len;
+              next->start = start + curr_pos + match_len;
               next->length = (start + length) - next->start;
+            dassert (next->start >= 0, prev_pos, prev_start, next->start);
+      //    dassert (next->length > 0, prev_pos, prev_start, next->length);
               next->from_prev = 0;
               if (next->length)
               {
-              if (l->next)
-                ctx_list_insert_before (&encoded_list, l->next, next);
-              else
-                ctx_list_append (&encoded_list, next);
+                if (l->next)
+                  ctx_list_insert_before (&encoded_list, l->next, next);
+                else
+                  ctx_list_append (&encoded_list, next);
               }
               else
                 free (next);
             }
-            if (bar_pos)
+
+            if (curr_pos) // step one item back for forloop
             {
               CtxList *tmp = encoded_list;
               int found = 0;
@@ -107,11 +168,33 @@ static char *encode_in_terms_of_previous (
                 if (tmp->next == l)
                 {
                   l = tmp;
+                  break;
                 }
                 tmp = tmp->next;
               }
             }
          }
+      }
+    }
+  }
+
+  /* merge adjecant prev span references  */
+  {
+    for (CtxList *l = encoded_list; l; l = l->next)
+    {
+      CtxSpan *span = l->data;
+again:
+      if (l->next)
+      {
+        CtxSpan *next_span = l->next->data;
+        if (span->from_prev && next_span->from_prev &&
+            span->start + span->length == 
+            next_span->start)
+        {
+           span->length += next_span->length;
+           ctx_list_remove (&encoded_list, next_span);
+           goto again;
+        }
       }
     }
   }
@@ -149,6 +232,7 @@ static char *encode_in_terms_of_previous (
   ctx_string_free (string, 0);
   return ret;
 }
+
 
 #if 0 // for documentation/reference purposes
 static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int prev_len, int *out_len)
@@ -248,9 +332,11 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
       //uint64_t ticks_start = ctx_ticks ();
 
       encoded = encode_in_terms_of_previous (cur_frame_contents, cur_frame_len, prev_frame_contents, prev_frame_len, &encoded_len);
+//    encoded = strdup (cur_frame_contents);
       //uint64_t ticks_end = ctx_ticks ();
 
       fwrite (encoded, encoded_len, 1, stdout);
+//    fwrite (encoded, cur_frame_len, 1, stdout);
 #if 0
       fprintf (debug, "---prev-frame(%i)\n%s", (int)strlen(prev_frame_contents), prev_frame_contents);
       fprintf (debug, "---cur-frame(%i)\n%s", (int)strlen(cur_frame_contents), cur_frame_contents);
@@ -264,15 +350,15 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
     {
       fwrite (cur_frame_contents, cur_frame_len, 1, stdout);
     }
-#if 0
-    fclose (debug);
-#endif
 
     if (prev_frame_contents)
       free (prev_frame_contents);
     prev_frame_contents = cur_frame_contents;
     prev_frame_len = cur_frame_len;
   }
+#endif
+#if 0
+    fclose (debug);
 #endif
   fprintf (stdout, CTX_END_STRING2);
 

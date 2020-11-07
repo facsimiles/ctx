@@ -3884,6 +3884,7 @@ static void vt_state_ctx (VT *vt, int byte)
       if (start >= (prev_length))start = prev_length-1;
       if (len + start > prev_length)
         len = prev_length - start;
+
       //fprintf (stderr, "%i-%i\n", start, len);
 
       if (start == 0 && len == 0)
@@ -3893,7 +3894,10 @@ static void vt_state_ctx (VT *vt, int byte)
       else
       {
         for (int i = 0; i < len; i++)
-           vt_ctx_unrled (vt, prev[start + i]);
+        {
+           if (prev && start + i < prev_length) // XXX move out of loop
+             vt_ctx_unrled (vt, prev[start + i]);
+        }
       }
       vt->ref_len = 0;
       vt->reference[0]=0;
