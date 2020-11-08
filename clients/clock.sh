@@ -10,7 +10,6 @@ function cleanup {
 }
 trap cleanup EXIT # restore terminal state on ctrl+c and regular exit
 
-
 for a in b{1..10000}; do
 hour_radians=`bc <<<"scale=3;(($(date +%H|sed 's/^0//')+($(date +%M|sed s'/^6//')/60.0))/12.0+0.75)*3.14152*2"`
 minute_radians=`bc <<<"scale=3;($(date +%M|sed 's/^0//')/60.0+0.75)*3.14152*2"`
@@ -19,7 +18,7 @@ second_radians=`bc <<<"scale=3;(($(date +%N)/1000000000.0+$(date +%S|sed 's/^0//
 radius=45
 echo -ne "\e[H"
 echo -ne "\e[?200h
-reset # clears out the previously drawn frame for home-line context
+reset 
 rgba 1 1 1 0.5 # bbbb
 arc 50% 50% $radius% 0.0 6.4 0
 lineWidth $((radius/10))%
@@ -36,4 +35,11 @@ arc 50% 50% $((radius * 90 / 100))%  $second_radians $second_radians 0
 rgba 1 0.1 0.1 1
 stroke
 flush
-done "; done
+done ";
+echo -ne "\e[5n" # query terminal status, expect \e[0n back, wait for the n
+foo=x; while [ "x$foo" != "xn" ] ;do read -s -n 1 foo; done
+
+
+
+done
+
