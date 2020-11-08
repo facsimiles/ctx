@@ -1237,7 +1237,7 @@ int terminal_main (int argc, char **argv)
         sleep_time *= 10;
         if (sleep_time > 1000000/8)
             sleep_time = 1000000/8;
-        usleep (sleep_time/2);
+        //usleep (sleep_time/2);
       }
 
       CtxEvent *event;

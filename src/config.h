@@ -402,10 +402,10 @@
 #endif
 
 #ifndef CTX_HASH_ROWS
-#define CTX_HASH_ROWS            8
+#define CTX_HASH_ROWS            6
 #endif
 #ifndef CTX_HASH_COLS
-#define CTX_HASH_COLS            4
+#define CTX_HASH_COLS            6
 #endif
 
 #ifndef CTX_MAX_THREADS
