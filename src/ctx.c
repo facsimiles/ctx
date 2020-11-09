@@ -1409,24 +1409,15 @@ Ctx *ctx_new_for_renderstream (void *data, size_t length)
   return ctx;
 }
 
-////////////////////////////////////
-
-
-#if CTX_GRADIENTS
-#if CTX_GRADIENT_CACHE
-void
-ctx_gradient_cache_reset (void);
-#endif
-
-#else
-void
-ctx_gradient_cache_reset (void)
-{
-}
+#ifdef CTX_HAVE_SIMD
+void ctx_simd_setup ();
 #endif
 
 static void ctx_setup ()
 {
+#ifdef CTX_HAVE_SIMD
+  ctx_simd_setup ();
+#endif
   ctx_font_setup ();
 }
 

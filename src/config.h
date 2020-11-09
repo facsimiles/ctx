@@ -419,13 +419,14 @@
 #else
 #undef CTX_IMPLEMENTATION
 #define CTX_IMPLEMENTATION 1
+#endif
 
 
 #ifdef CTX_RASTERIZER
 #undef CTX_RASTERIZER
 #define CTX_RASTERIZER 1
 #else
-#define CTX_RASTERIZER 1
+#define CTX_RASTERIZER 0
 #endif
 
 
@@ -439,5 +440,4 @@
 #endif
 #endif
 
-
-#endif
+#define CTX_GRADIENT_CACHE_ELEMENTS 256

@@ -13,14 +13,14 @@
 #include <pty.h>
 #include <math.h>
 
-#ifndef NO_SDL
-#include <SDL.h> // for clipboard texts
-#endif
 
 #include "vt-line.h"
 #include "terminal.h"
 #include "vt.h"
 #include "../clients/itk.h"
+#ifndef NO_SDL
+#include <SDL.h> // for clipboard texts
+#endif
 
 Ctx *ctx = NULL; // initialized in main
 

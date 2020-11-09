@@ -36,9 +36,6 @@ int launch_main (int argc, char **argv)
 
 int main (int argc, char **argv)
 {
-  /* we should also do busybox dispatch based on name of argv[0]
-   */
-
   for (int i = 1; argv[i]; i++)
     if (!strcmp ( argv[i], "--help"))
       return usage_main (argc, argv);

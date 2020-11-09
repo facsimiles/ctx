@@ -26,8 +26,8 @@ SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
 all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
 
-clients/%: clients/%.c Makefile ctx.o clients/itk.h deps.o
-	$(CCC) -g $< -o $@ $(CFLAGS) ctx.o deps.o $(LIBS) `pkg-config sdl2 --cflags --libs`
+clients/%: clients/%.c Makefile ctx.o clients/itk.h deps.o ctx-avx2.o
+	$(CCC) -g $< -o $@ $(CFLAGS) ctx.o deps.o $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
@@ -44,7 +44,7 @@ test: ctx
 	make -C tests
 
 clean:
-	rm -f ctx-nofont.h ctx.h ctx ctx.avx2 ctx.static ctx.O0 *.o
+	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(SRC_OBJS)
@@ -61,18 +61,18 @@ tools/%: tools/%.c ctx-nofont.h
 	$(CCC) $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3 -DCTX_HAVE_SIMD
 
 deps.o: deps.c Makefile
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare -O2
 
-ctx-compositor.o: ctx-compositor.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
-	$(CCC) ctx-compositor.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3 -DCTX_AVX2=1 -march=native 
+ctx-avx2.o: ctx-avx2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
+	$(CCC) ctx-avx2.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3 -DCTX_AVX2=1 -march=native 
 
 ctx-split.o: $(SRC_OBJS)
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) -O3 -DNO_SDL=1 -DCTX_FB=1
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) -O3 -DNO_SDL=1 -DCTX_FB=1 -DCTX_HAVE_SIMD
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS)
@@ -80,14 +80,8 @@ src/%.o: src/%.c split/*.h
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
 	$(CCC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS) 
 
-ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS) deps.o
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx.o deps.o -O2
-
-ctx-avx2.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -DCTX_AVX2=1 -march=native -O3
-
-ctx.avx2: main.c ctx.h  Makefile convert/*.[ch] ctx-avx2.o $(TERMINAL_OBJS) deps.o
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o deps.o -O2
+ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS) deps.o ctx-avx2.o
+	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx.o deps.o -O2 ctx-avx2.o
 
 ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O0
@@ -95,8 +89,8 @@ ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fo
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
 	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-O0.o deps.o -O0
 
-ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o deps.o terminal/*.[ch]
-	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o deps.o $(LIBS) -DNO_SDL=1 -DCTX_FB=1 -static 
+ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o deps.o terminal/*.[ch] ctx-avx2.o
+	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o ctx-avx2.o deps.o $(LIBS) -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile
@@ -107,17 +101,15 @@ docs/ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
 #git gc
 
 foo: ctx
-updateweb: all ctx.static ctx.avx2 test docs/ctx.h.html docs/ctx-font-regular.h.html 
+updateweb: all ctx.static test docs/ctx.h.html docs/ctx-font-regular.h.html 
 	(cd docs ; stagit .. )
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
 	git update-server-info
-	strip -s -x ctx ctx.avx2 ctx.static
+	strip -s -x ctx ctx.static
 	cp -f ctx docs/binaries/ctx-x86_64-SDL2
 	cp -f ctx.static docs/binaries/ctx-x86_64-static
-	cp -f ctx.avx2 docs/binaries/ctx-x86_64-SDL2-AVX2
 	upx docs/binaries/ctx-x86_64-SDL2
-	upx docs/binaries/ctx-x86_64-SDL2-AVX2
 	upx docs/binaries/ctx-x86_64-static
 	cp -ru tests/* ~/pgo/ctx.graphics/tests
 	make clean

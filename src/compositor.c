@@ -20,8 +20,6 @@
 #if CTX_GRADIENT_CACHE
 
 
-#define CTX_GRADIENT_CACHE_ELEMENTS 256
-
 inline static int ctx_grad_index (float v)
 {
   int ret = v * (CTX_GRADIENT_CACHE_ELEMENTS - 1.0f) + 0.5f;
@@ -32,11 +30,11 @@ inline static int ctx_grad_index (float v)
   return 0;
 }
 
-static uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
-static uint8_t ctx_gradient_cache_u8_a[CTX_GRADIENT_CACHE_ELEMENTS][4];
-static int ctx_gradient_cache_valid = 0;
+extern uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
+extern uint8_t ctx_gradient_cache_u8_a[CTX_GRADIENT_CACHE_ELEMENTS][4];
+extern int ctx_gradient_cache_valid;
 
-void
+static void
 ctx_gradient_cache_reset (void)
 {
   ctx_gradient_cache_valid = 0;
@@ -44,14 +42,6 @@ ctx_gradient_cache_reset (void)
 
 
 #endif
-void
-ctx_state_gradient_clear_stops (CtxState *state)
-{
-#if CTX_GRADIENT_CACHE
-  ctx_gradient_cache_reset ();
-#endif
-  state->gradient.n_stops = 0;
-}
 
 CTX_INLINE static void
 _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
@@ -105,7 +95,6 @@ _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, ui
     }
   ctx_color_get_rgba8 (rasterizer->state, color, rgba);
 }
-
 
 #if CTX_GRADIENT_CACHE
 static void
@@ -4660,10 +4649,11 @@ CtxPixelFormatInfo CTX_COMPOSITOR_SUFFIX(ctx_pixel_formats)[]=
 
 
 void
-ctx_compositor_setup (CtxRasterizer *rasterizer)
+CTX_COMPOSITOR_SUFFIX(ctx_compositor_setup) (CtxRasterizer *rasterizer)
 {
   if (rasterizer->format->setup)
   {
+    // event if _default is used we get to work
     rasterizer->format->setup (rasterizer);
   }
 #if CTX_GRADIENTS

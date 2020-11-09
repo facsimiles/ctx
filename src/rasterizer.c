@@ -1,7 +1,7 @@
 #include "ctx-split.h"
 #if CTX_RASTERIZER
 
-void ctx_compositor_setup (CtxRasterizer *rasterizer);
+void ctx_compositor_setup_default (CtxRasterizer *rasterizer);
 
 inline static void
 ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
@@ -1004,7 +1004,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
   uint8_t *coverage = &_coverage[0];
 
-  ctx_compositor_setup (rasterizer);
+  ctx_compositor_setup_default (rasterizer);
 
 #if CTX_SHAPE_CACHE
   if (shape)
@@ -1224,7 +1224,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   y0 /= aa;
   uint8_t coverage[x1-x0 + 1];
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
-  ctx_compositor_setup (rasterizer);
+  ctx_compositor_setup_default (rasterizer);
   ctx_memset (coverage, 0xff, sizeof (coverage) );
   if (x0 < rasterizer->blit_x)
     { x0 = rasterizer->blit_x; }
@@ -1319,7 +1319,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       goto done;
     }
 #endif
-  ctx_compositor_setup (rasterizer);
+  ctx_compositor_setup_default (rasterizer);
 
   rasterizer->state->min_x =
     ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
@@ -2771,8 +2771,10 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
 }
 #endif
 
-static CtxPixelFormatInfo *ctx_pixel_formats = NULL;
+CtxPixelFormatInfo *ctx_pixel_formats = NULL;
+
 extern CtxPixelFormatInfo ctx_pixel_formats_default[];
+
 
 CtxPixelFormatInfo *
 ctx_pixel_format_info (CtxPixelFormat format)
@@ -2780,6 +2782,7 @@ ctx_pixel_format_info (CtxPixelFormat format)
   if (!ctx_pixel_formats)
   {
     ctx_pixel_formats = ctx_pixel_formats_default;
+
   }
 
   for (unsigned int i = 0; ctx_pixel_formats[i].pixel_format; i++)
@@ -2900,5 +2903,18 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 #endif
     }
 }
+
+void
+ctx_state_gradient_clear_stops (CtxState *state)
+{
+//#if CTX_GRADIENT_CACHE
+//  ctx_gradient_cache_reset ();
+//#endif
+  state->gradient.n_stops = 0;
+}
+
+uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
+uint8_t ctx_gradient_cache_u8_a[CTX_GRADIENT_CACHE_ELEMENTS][4];
+int ctx_gradient_cache_valid = 0;
 
 /****  end of engine ****/

@@ -38,7 +38,7 @@
 #define CTX_MATH                 1
 #define CTX_MAX_JOURNAL_SIZE     1024*64
 #ifndef CTX_AVX2
-#define CTX_AVX2 0 // forcing AVX2 even if immintrin is detected -
+#define CTX_AVX2 0 
 #else
 #include <immintrin.h> // is detected by ctx, and enables AVX2
 #endif
@@ -47,3 +47,17 @@
 #define CTX_RASTERIZER 1
 
 #include "ctx.h"
+
+extern CtxPixelFormatInfo *ctx_pixel_formats;
+extern CtxPixelFormatInfo  ctx_pixel_formats_avx2[];
+
+void ctx_simd_setup ()
+{
+  static int done = 0;
+  if (done) return;
+  done = 1;
+  if(__builtin_cpu_supports("avx2"))
+  {
+    ctx_pixel_formats = ctx_pixel_formats_avx2;
+  }
+}
