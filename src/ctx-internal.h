@@ -731,24 +731,24 @@ static uint8_t ctx_float_to_u8 (float val_f)
 
 const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y);
 const char *ctx_native_get_event (Ctx *n, int timeoutms);
-CTX_STATIC void
+void
 ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out);
-CTX_STATIC void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out);
-CTX_STATIC float ctx_float_color_rgb_to_gray (CtxState *state, const float *rgb);
-CTX_STATIC void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out);
-CTX_STATIC void ctx_rgb_to_cmyk (float r, float g, float b,
+void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out);
+float ctx_float_color_rgb_to_gray (CtxState *state, const float *rgb);
+void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out);
+void ctx_rgb_to_cmyk (float r, float g, float b,
               float *c_out, float *m_out, float *y_out, float *k_out);
+uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb);
 #if CTX_ENABLE_CMYK
-CTX_STATIC void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
+void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
 #endif
 CTX_STATIC void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
 CTX_STATIC void ctx_color_set_drgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
-CTX_STATIC void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
+void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
 CTX_STATIC void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a);
 CTX_STATIC void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a);
 CTX_STATIC void ctx_color_set_graya (CtxState *state, CtxColor *color, float gray, float alpha);
-CTX_STATIC uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb);
 
 CTX_STATIC int ctx_color_model_get_components (CtxColorModel model);
 
@@ -851,6 +851,21 @@ ctx_set_cmyk_space (Ctx *ctx, int device_space);
 CtxRasterizer *
 ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format, CtxAntialias antialias);
 
+
+CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
+{
+#if 0
+  return v0 + ((v1-v0) * dx)/255;
+#else
+  return ( ( ( ( (v0) <<8) + (dx) * ( (v1) - (v0) ) ) ) >>8);
+#endif
+}
+
+CTX_INLINE static float
+ctx_lerpf (float v0, float v1, float dx)
+{
+  return v0 + (v1-v0) * dx;
+}
 
 #endif
 

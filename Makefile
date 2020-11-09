@@ -67,7 +67,7 @@ deps.o: deps.c Makefile
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare -O2
 
 ctx-compositor.o: ctx-compositor.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
-	$(CCC) ctx-compositor.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O2
+	$(CCC) ctx-compositor.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3 -DCTX_AVX2=1 -march=native 
 
 ctx-split.o: $(SRC_OBJS)
 

@@ -16,14 +16,6 @@ ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
     rasterizer->comp_op (rasterizer, dst, rasterizer->color, x, coverage, count);
 }
 
-CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
-{
-#if 0
-  return v0 + ((v1-v0) * dx)/255;
-#else
-  return ( ( ( ( (v0) <<8) + (dx) * ( (v1) - (v0) ) ) ) >>8);
-#endif
-}
 
 CTX_STATIC void
 ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *rgba)
@@ -384,11 +376,6 @@ CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, floa
   rasterizer->x         = x;
 }
 
-CTX_INLINE static float
-ctx_lerpf (float v0, float v1, float dx)
-{
-  return v0 + (v1-v0) * dx;
-}
 
 CTX_INLINE static float
 ctx_bezier_sample_1d (float x0, float x1, float x2, float x3, float dt)

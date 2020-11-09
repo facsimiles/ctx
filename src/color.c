@@ -143,7 +143,8 @@ static void ctx_cmyk_to_rgb (float c, float m, float y, float k, float *r, float
   *b = (1.0f-y) * (1.0f-k);
 }
 
-CTX_STATIC void ctx_rgb_to_cmyk (float r, float g, float b,
+// XXX needs state
+void ctx_rgb_to_cmyk (float r, float g, float b,
               float *c_out, float *m_out, float *y_out, float *k_out)
 {
   float c = 1.0f - r;
@@ -281,18 +282,18 @@ void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out)
 }
 
 
-CTX_STATIC float ctx_float_color_rgb_to_gray (CtxState *state, const float *rgb)
+float ctx_float_color_rgb_to_gray (CtxState *state, const float *rgb)
 {
         // XXX todo replace with correct according to primaries
   return CTX_CSS_RGB_TO_LUMINANCE(rgb);
 }
-CTX_STATIC uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb)
+uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb)
 {
         // XXX todo replace with correct according to primaries
   return CTX_CSS_RGB_TO_LUMINANCE(rgb);
 }
 
-CTX_STATIC void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
+void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
 {
   if (! (color->valid & CTX_VALID_GRAYA) )
     {
@@ -306,7 +307,7 @@ CTX_STATIC void ctx_color_get_graya (CtxState *state, CtxColor *color, float *ou
 }
 
 #if CTX_ENABLE_CMYK
-CTX_STATIC void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out)
+void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out)
 {
   if (! (color->valid & CTX_VALID_CMYKA) )
     {
@@ -351,7 +352,7 @@ static void ctx_color_get_cmyka_u8 (CtxState *state, CtxColor *color, uint8_t *o
 #endif
 #endif
 
-CTX_STATIC void
+void
 ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (! (color->valid & CTX_VALID_RGBA_U8) )
@@ -368,7 +369,7 @@ ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
   out[3] = color->rgba[3];
 }
 
-CTX_STATIC void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
+void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (! (color->valid & CTX_VALID_GRAYA_U8) )
     {

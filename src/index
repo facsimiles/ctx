@@ -9,8 +9,8 @@ config.h
 ctx-extra.h
 constants.h
 libc.c
-start-implementation
 ctx-internal.h
+start-implementation
 drawlist.h
 util.h
 drawlist.c
@@ -33,6 +33,6 @@ backend-braille.c
 backend-sdl.c
 formatter.c
 ctx.c
-compositor.c
 end-implementation
+compositor.c
 endguard
