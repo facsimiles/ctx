@@ -580,9 +580,10 @@ static int draw_vts (Ctx *ctx)
     VT *vt = client->vt;
     if (vt)
     {
+      float titlebar_height = view_height/40;
       float border = 2;
-      ctx_rectangle (ctx, client->x - border, client->y - view_height/40 - border,
-                     client->width + border * 2, view_height/40 + border * 2);
+      ctx_rectangle (ctx, client->x - border, client->y - titlebar_height - border,
+                     client->width + border * 2, titlebar_height + border * 2);
       if (client == active)
         ctx_rgb (ctx, 1, 1, 1);
       else
@@ -591,13 +592,13 @@ static int draw_vts (Ctx *ctx)
       ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
       ctx_fill (ctx);
 
-      ctx_move_to (ctx, client->x, client->y - view_height/40 * 0.2);
+      ctx_move_to (ctx, client->x, client->y - titlebar_height * 0.22);
       if (client == active)
         ctx_rgb (ctx, 0, 0, 0);
       else
         ctx_rgb (ctx, 0.1, 0.1, 0.1);
 
-      ctx_font_size (ctx, view_height/40);
+      ctx_font_size (ctx, titlebar_height * 0.95);
       if (client->title)
       {
         ctx_text (ctx, client->title);
