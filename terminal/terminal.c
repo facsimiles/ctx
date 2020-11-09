@@ -245,7 +245,7 @@ CtxClient *vt_find_client (VT *vt)
   return NULL;
 }
 
-CtxClient *add_client (const char *commandline, int x, int y, int width, int height, int ctx)
+CtxClient *add_client (const char *commandline, int x, int y, int width, int height, int ctx, int can_launch)
 {
   static int global_id = 0;
   CtxClient *client = calloc (sizeof (CtxClient), 1);
@@ -256,11 +256,11 @@ CtxClient *add_client (const char *commandline, int x, int y, int width, int hei
 
   client->width = width;
   client->height = height;
-  client->vt = vt_new (commandline, width, height, font_size, line_spacing, client->id);
+  client->vt = vt_new (commandline, width, height, font_size, line_spacing, client->id, can_launch);
   return client;
 }
 
-CtxClient *add_client_argv (const char **argv, int x, int y, int width, int height, int ctx)
+CtxClient *add_client_argv (const char **argv, int x, int y, int width, int height, int ctx, int can_launch)
 {
   CtxString *string = ctx_string_new ("");
   for (int i = 0; argv[i]; i++)
@@ -277,7 +277,7 @@ CtxClient *add_client_argv (const char **argv, int x, int y, int width, int heig
        }
     }
   }
-  CtxClient *ret = add_client (string->str, x, y, width, height, ctx);
+  CtxClient *ret = add_client (string->str, x, y, width, height, ctx, can_launch);
   ctx_string_free (string, 1);
   return ret;
 }
@@ -378,11 +378,11 @@ void ensure_layout ()
   }
 }
 
-void add_tab (const char *commandline)
+void add_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
   active = add_client (commandline, add_x, add_y,
-                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, 0);
+                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, 0, can_launch);
   vt_set_ctx (active->vt, ctx);
   ensure_layout ();
   add_y += ctx_height (ctx) / 20;
@@ -469,7 +469,7 @@ static void handle_event (Ctx *ctx, const char *event)
   else if (!strcmp (event, "shift-control-t") ||
            (ctx_renderer_is_fb (ctx) &&   !strcmp (event, "control-t") ))
   {
-    add_tab (vt_find_shell_command());
+    add_tab (vt_find_shell_command(), 1);
   }
   else if (!strcmp (event, "shift-control-n") )
     {
@@ -1108,11 +1108,11 @@ int terminal_main (int argc, char **argv)
 
   if (argv[1] == NULL)
   {
-    active = add_client (vt_find_shell_command(), 0, 0, width, height, 0);
+    active = add_client (vt_find_shell_command(), 0, 0, width, height, 0, 1);
   }
   else
   {
-    active = add_client_argv ((void*)&argv[1], 0, 0, width, height, 0);
+    active = add_client_argv ((void*)&argv[1], 0, 0, width, height, 0, 1);
   }
   if (!active)
     return 1;
@@ -1199,7 +1199,7 @@ int terminal_main (int argc, char **argv)
 
           if (itk_button (itk, "add tab"))
           {
-            add_tab (vt_find_shell_command());
+            add_tab (vt_find_shell_command(), 1);
           }
           itk_sameline (itk);
           if (itk_button (itk, "close settings"))

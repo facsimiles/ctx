@@ -28,9 +28,89 @@ int launch_main (int argc, char **argv)
 {
   // check that we have a term
   // and that we can launch
-  //
+  int   can_launch = 0;
+  int   no_title = 0;
+  int   no_move = 0;
+  int   no_resize = 0;
+  int   layer = 0;
   // escape subsequent arguments so that we dont have to pass a string?
-  fprintf (stdout, "\e_C;%s\e\\", argv[1]);
+  int   no = 1;
+  float x = -1.0;
+  float y = -1.0;
+  float width = -1.0;
+  float height = -1.0;
+  for (no = 1; argv[no] && argv[no][0]=='-'; no++)
+  {
+    if (!strcmp (argv[no], "--no-title"))
+    {
+      no_title = 1;
+    }
+    if (!strcmp (argv[no], "--no-move"))
+    {
+      no_move = 1;
+    }
+    if (!strcmp (argv[no], "--no-resize"))
+    {
+      no_resize = 1;
+    }
+    if (!strcmp (argv[no], "--can-launch"))
+    {
+      can_launch = 1;
+    }
+    if (!strcmp (argv[no], "--can-launch=1"))
+    {
+      can_launch = 1;
+    }
+    else if (!strcmp (argv[no], "-z=0"))
+    {
+      layer = 0;
+    }
+    else if (!strcmp (argv[no], "-z=-1"))
+    {
+      layer = -1;
+    }
+    else if (!strcmp (argv[no], "-z=1"))
+    {
+      layer = 1;
+    }
+    else if (!strcmp (argv[no], "--layer=background"))
+    {
+      layer = -1;
+    }
+    else if (!strcmp (argv[no], "--layer=foreground"))
+    {
+      layer = 1;
+    }
+    else if (strstr (argv[no], "--x="))
+    {
+      x = atof (argv[no + strlen ("--x=")]);
+    }
+    else if (strstr (argv[no], "--y="))
+    {
+      y = atof (argv[no + strlen ("--y=")]);
+    }
+    else if (strstr (argv[no], "--width="))
+    {
+      width = atof (argv[no + strlen ("--width=")]);
+    }
+    else if (strstr (argv[no], "--height="))
+    {
+      height = atof (argv[no + strlen ("--height=")]);
+    }
+  }
+
+  fprintf (stdout, "\e_C");
+  if (layer == -1) fprintf (stdout, "z=-1,");
+  if (layer ==  1) fprintf (stdout, "z=1,");
+  if (can_launch)  fprintf (stdout, "can_launch=1,");
+  if (x>0)         fprintf (stdout, "x=%.0f,", x);
+  if (y>0)         fprintf (stdout, "y=%.0f,", y);
+  if (width>0)     fprintf (stdout, "width=%.0f,", x);
+  if (height>0)    fprintf (stdout, "height=%.0f,", y);
+  if (no_title)    fprintf (stdout, "no_title=1,");
+  if (no_move)     fprintf (stdout, "no_move=1,");
+  if (no_resize)   fprintf (stdout, "no_resize=1,");
+  fprintf (stdout, ";%s\e\\", argv[no]);
   return 0;
 }
 

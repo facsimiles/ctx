@@ -405,12 +405,15 @@ struct _VT
   int       palette_no;
   int       has_blink; // if any of the set characters are blinking
   // updated on each draw of the screen
+  
+  int can_launch;
 
   int unit_pixels;
   int mouse;
   int mouse_drag;
   int mouse_all;
   int mouse_decimal;
+
 
   uint8_t    utf8_holding[64]; /* only 4 needed for utf8 - but it's purpose
                                  is also overloaded for ctx journal command
@@ -780,7 +783,7 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
   _vt_compute_cw_ch (vt);
 }
 
-VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id)
+VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id, int can_launch)
 {
   VT *vt         = calloc (sizeof (VT), 1);
   vt->id = id;
@@ -788,6 +791,7 @@ VT *vt_new (const char *command, int width, int height, float font_size, float l
   vt->lasty = -1;
   vt->state         = vt_state_neutral;
   vt->smooth_scroll = 0;
+  vt->can_launch = can_launch;
   vt->scroll_offset = 0.0;
   vt->waitdata      = vtpty_waitdata;
   vt->read          = vtpty_read;
@@ -4253,7 +4257,7 @@ static void vt_state_sixel (VT *vt, int byte)
     }
 }
 
-void add_tab (const char *commandline);
+void add_tab (const char *commandline, int can_launch);
 
 static void vt_state_apc_generic (VT *vt, int byte)
 {
@@ -4263,16 +4267,47 @@ static void vt_state_apc_generic (VT *vt, int byte)
         {
           vt_gfx (vt, vt->argument_buf);
         }
-      else if (vt->argument_buf[1] == 'C') /* launch terminal */
+      else if (vt->argument_buf[1] == 'C') /* launch command */
       {
-        vt_bell (vt);
-
+        if (vt->can_launch)
         {
+          int   can_launch = 0;
+          int   no_title = 0;
+          int   no_move = 0;
+          int   no_resize = 0;
+          int   layer = 0;
+  // escape subsequent arguments so that we dont have to pass a string?
+          float x = -1.0;
+          float y = -1.0;
+          int   z = 0;
+          float width = -1.0;
+          float height = -1.0;
+
+          for (int i=2; vt->argument_buf[i]; i++)
+          {
+            if (!strncmp (&vt->argument_buf[i], "can_launch=1", strlen ("can_launch=1")))
+              can_launch = 1;
+            if (!strncmp (&vt->argument_buf[i], "no_title=1", strlen("no_title=1")))
+              no_title = 1;
+            if (!strncmp (&vt->argument_buf[i], "no_move=1", strlen("no_move=1")))
+              no_move = 1;
+            else if (!strncmp (&vt->argument_buf[i], "z=", 2))
+              z=atoi(&vt->argument_buf[i]+strlen("z="));
+            else if (!strncmp (&vt->argument_buf[i], "x=", 2))
+              x=atof(&vt->argument_buf[i]+strlen("x="));
+            else if (!strncmp (&vt->argument_buf[i], "y=", 2))
+              y=atof(&vt->argument_buf[i]+strlen("y="));
+            else if (!strncmp (&vt->argument_buf[i], "width=", 6))
+              width=atof(&vt->argument_buf[i]+strlen("width="));
+            else if (!strncmp (&vt->argument_buf[i], "height=", 7))
+              height=atof(&vt->argument_buf[i]+strlen("height="));
+          }
+
           char *sep = strchr(vt->argument_buf, ';');
           if (sep)
           {
             fprintf (stderr, "[%s]", sep +  1);
-            add_tab (sep + 1);
+            add_tab (sep + 1, can_launch);
           }
         }
 

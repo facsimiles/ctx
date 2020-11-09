@@ -2,7 +2,7 @@
 typedef struct _VT VT;
 typedef struct _CT CT;
 
-VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id);
+VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id, int can_launch);
 
 void vt_open_log (VT *vt, const char *path);
 
