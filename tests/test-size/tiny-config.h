@@ -30,3 +30,4 @@
 #define CTX_MIN_EDGE_LIST_SIZE  512 // is also MIN_RENDERSTREAM_SIZE with RENDERSTREAM_STATIC
 #define CTX_RENDERSTREAM_STATIC 1
 #define CTX_FONTS_FROM_FILE     0 /* leaves out code */
+#define CTX_RASTERIZER          1

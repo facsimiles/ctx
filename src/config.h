@@ -410,8 +410,8 @@
 
 #define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
 
-#ifndef CTX_COMPOSITOR_SUFFIX
-#define CTX_COMPOSITOR_SUFFIX(symbol)     symbol##_default
+#ifndef CTX_COMPOSITE_SUFFIX
+#define CTX_COMPOSITE_SUFFIX(symbol)     symbol##_default
 #endif
 
 #ifndef CTX_IMPLEMENTATION
@@ -431,12 +431,12 @@
 
 
 #if CTX_RASTERIZER
-#ifndef CTX_COMPOSITOR
-#define CTX_COMPOSITOR 1
+#ifndef CTX_COMPOSITE
+#define CTX_COMPOSITE 1
 #endif
 #else
-#ifndef CTX_COMPOSITOR
-#define CTX_COMPOSITOR 0
+#ifndef CTX_COMPOSITE
+#define CTX_COMPOSITE 0
 #endif
 #endif
 

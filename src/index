@@ -34,5 +34,5 @@ backend-sdl.c
 formatter.c
 ctx.c
 end-implementation
-compositor.c
+composite.c
 endguard

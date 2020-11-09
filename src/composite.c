@@ -1,6 +1,6 @@
 #include "ctx-split.h"
 
-#if CTX_COMPOSITOR
+#if CTX_COMPOSITE
 
 
 #define CTX_RGBA8_R_SHIFT  0
@@ -4509,7 +4509,7 @@ ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, v
 
 #endif
 
-CtxPixelFormatInfo CTX_COMPOSITOR_SUFFIX(ctx_pixel_formats)[]=
+CtxPixelFormatInfo CTX_COMPOSITE_SUFFIX(ctx_pixel_formats)[]=
 {
 #if CTX_ENABLE_RGBA8
   {
@@ -4649,7 +4649,7 @@ CtxPixelFormatInfo CTX_COMPOSITOR_SUFFIX(ctx_pixel_formats)[]=
 
 
 void
-CTX_COMPOSITOR_SUFFIX(ctx_compositor_setup) (CtxRasterizer *rasterizer)
+CTX_COMPOSITE_SUFFIX(ctx_compositor_setup) (CtxRasterizer *rasterizer)
 {
   if (rasterizer->format->setup)
   {

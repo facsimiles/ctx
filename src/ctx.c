@@ -1434,10 +1434,16 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
 void ctx_quit (Ctx *ctx)
 {
+#if CTX_EVENTS
   ctx->quit ++;
+#endif
 }
 
 int  ctx_has_quit (Ctx *ctx)
 {
+#if CTX_EVENTS
   return (ctx->quit);
+#else
+  return 1; 
+#endif
 }

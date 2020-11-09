@@ -13,6 +13,6 @@
 #define CTX_MATH                 1
 #include <immintrin.h> // is detected by ctx, and enables AVX2
 
-#define CTX_COMPOSITOR 1
-#define CTX_COMPOSITOR_SUFFIX(a)  a##_avx2
+#define CTX_COMPOSITE 1
+#define CTX_COMPOSITE_SUFFIX(a)  a##_avx2
 #include "ctx.h"
