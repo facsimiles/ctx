@@ -26,8 +26,8 @@ SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
 all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
 
-clients/%: clients/%.c Makefile ctx.o clients/itk.h deps.o ctx-avx2.o ctx-sse2.o
-	$(CCC) -g $< -o $@ $(CFLAGS) ctx.o deps.o $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o ctx-sse2.o
+clients/%: clients/%.c Makefile ctx.o clients/itk.h deps.o ctx-avx2.o ctx-mmx.o ctx-sse2.o
+	$(CCC) -g $< -o $@ $(CFLAGS) ctx.o deps.o $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o ctx-sse2.o ctx-mmx.o
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
@@ -61,21 +61,24 @@ tools/%: tools/%.c ctx-nofont.h
 	$(CCC) $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3 -DCTX_HAVE_SIMD
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O2
 
 deps.o: deps.c Makefile
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare -O2
 
 ctx-avx2.o: ctx-avx2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
-	$(CCC) ctx-avx2.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3 -DCTX_AVX2=1 -mavx -mavx2 -mfpmath=sse
+	$(CCC) ctx-avx2.c -c -o $@ $(CFLAGS) -O3 -DCTX_AVX2=1 -mavx -mavx2 -mfpmath=sse -ftree-vectorize -funsafe-math-optimizations
 
 ctx-sse2.o: ctx-sse2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
-	$(CCC) ctx-sse2.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3 -msse2 -msse -mfpmath=sse
+	$(CCC) ctx-sse2.c -c -o $@ $(CFLAGS)  -O3 -march=core2 -ftree-vectorize -funsafe-math-optimizations
+
+ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
+	$(CCC) ctx-mmx.c -c -o $@ $(CFLAGS) -O3 -mmmx -ftree-vectorize -funsafe-math-optimizations
 
 ctx-split.o: $(SRC_OBJS)
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) -O3 -DNO_SDL=1 -DCTX_FB=1 -DCTX_HAVE_SIMD
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) -O2 -DNO_SDL=1 -DCTX_FB=1
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS)
@@ -83,8 +86,8 @@ src/%.o: src/%.c split/*.h
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
 	$(CCC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS) 
 
-ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS) deps.o ctx-avx2.o ctx-sse2.o
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx.o deps.o -O2 ctx-avx2.o ctx-sse2.o
+ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS) deps.o ctx-avx2.o ctx-sse2.o ctx-mmx.o
+	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx.o deps.o -O2 ctx-avx2.o ctx-sse2.o ctx-mmx.o
 
 ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O0
@@ -92,8 +95,8 @@ ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fo
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
 	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-O0.o deps.o -O0
 
-ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o deps.o terminal/*.[ch] ctx-avx2.o ctx-sse2.o
-	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o ctx-avx2.o ctx-sse2.o deps.o $(LIBS) -DNO_SDL=1 -DCTX_FB=1 -static 
+ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o deps.o terminal/*.[ch] ctx-avx2.o ctx-sse2.o ctx-mmx.o
+	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile

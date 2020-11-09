@@ -173,7 +173,9 @@ to be combined with all compositing modes.
          of code + 12kb of fontdata, combined with immediate mode UI that can
          be re-run, it is sufficient to have a framebuffer covering one
          scanline - making microcontrollers with 8kb of RAM a possible
-         target - this has not yet been attempted.</dd>
+         target - this has not yet been attempted. The desktop build of ctx
+         is more wasteful with duplicated code paths compiled for different
+         x86_64 SIMD capabilities.</dd>
 
          <dt>Threaded/deferred rendering</dt><dd>The compact ctx protocol - in both text and binary form is a serialization of HTML5 Canvas 2D context API with
          extensions.
@@ -199,12 +201,17 @@ to be combined with all compositing modes.
               <dt><a href='https://iterm2.com/documentation-images.html'>iterm2 inline images</a></dt><dd>iterm2 style raster grarphics transfer</dd>
 
 
-         <dt>/dev/fb0</dt><dd>Applications built with the ctx library can run
+         <dt>/dev/fb0</dt><dd>Both ctx as a terminal/platform and
+         applications built with the ctx library can run
          directly on the linux framebuffer without X/wayland, for it to be
-         fast a fast framebuffer is needed. 
+         fast a fast framebuffer is needed.
          </dd>
 
-         <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>Already supporting RGB332, 565 and grayscale modes with generic code that also will handle more components than CMYKA</dd>
+         <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>Already
+         supporting RGB332, 565 and grayscale modes with generic code
+         that also will handle more components than CMYKA - the
+         protocol/API has provisions for colorspaces but proper conversions are
+         not done yet.</dd>
 
          <dt><a href='https://github.com/hodefoting/atty/'>atty</a></dt>
               <dd>audio recording and playback (only raw pcm for now, opus codec NYI)</dd>
@@ -236,7 +243,7 @@ $ make</pre>
 
       <table>
               <tr><td style='width:14em'><a href='ctx.h'>ctx.h</a><td>760K</td><td>The singleheader library ctx.</tr>
-              <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a><td>128K</td><td>Example font to use with ctx</td></tr>
+              <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a><td>128K</td><td>Example font to use with ctx, to be a true single header solution - the ascii subset of this is included by default.</td></tr>
               <!--<tr><td><a href='test-size.c'>test-size.c</a></td><td>example</td></tr>-->
               <tr><td><a href='binaries/ctx-x86_64-SDL2'>ctx-x86_64-SDL2</a></td><td>ELF 64bit binary for linux dynamically linked against SDL2, should work in most distros.</tr>
               <tr><td><a href='binaries/ctx-x86_64-static'>ctx-x86_64-static</a></td><td>64bit static linux binary - should work in more distros, but has only /dev/fb0 and braille rendering.</tr>

@@ -43,6 +43,8 @@
 #include <immintrin.h> // is detected by ctx, and enables AVX2
 #endif
 
+#define CTX_HAVE_SIMD  1 // makes ctx call our SIMD-setup dispatcher
+
 #define CTX_IMPLEMENTATION 1
 #define CTX_RASTERIZER 1
 
@@ -51,20 +53,23 @@
 extern CtxPixelFormatInfo *ctx_pixel_formats;
 extern CtxPixelFormatInfo  ctx_pixel_formats_avx2[];
 extern CtxPixelFormatInfo  ctx_pixel_formats_sse2[];
+extern CtxPixelFormatInfo  ctx_pixel_formats_mmx[];
 
 void ctx_simd_setup ()
 {
   static int done = 0;
   if (done) return;
   done = 1;
-  if(__builtin_cpu_supports("sse2"))
+  if(__builtin_cpu_supports("mmx"))
   {
-    fprintf (stderr, "enabling sse2\n");
+    ctx_pixel_formats = ctx_pixel_formats_mmx;
+  }
+  if(__builtin_cpu_supports("sse3"))
+  {
     ctx_pixel_formats = ctx_pixel_formats_sse2;
   }
   if(__builtin_cpu_supports("avx2"))
   {
-    fprintf (stderr, "enabling avx2\n");
     ctx_pixel_formats = ctx_pixel_formats_avx2;
   }
 }

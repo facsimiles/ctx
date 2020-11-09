@@ -7,12 +7,11 @@ struct
   _CtxCairo
 {
   CtxImplementation vfuncs;
-  Ctx *ctx;
-  cairo_t *cr;
-  cairo_pattern_t *pat;
-  cairo_surface_t *image;
-  int preserve;
-
+  Ctx              *ctx;
+  cairo_t          *cr;
+  cairo_pattern_t  *pat;
+  cairo_surface_t  *image;
+  int               preserve;
 };
 
 static void
@@ -211,7 +210,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
         break;
       case CTX_BLEND_MODE:
         {
-          // XXX does not map to cairo
+          // does not map to cairo
         }
         break;
       case CTX_COMPOSITING_MODE:
@@ -301,7 +300,9 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
         break;
 #endif
       case CTX_TEXT:
-        /* XXX: implement some linebreaking/wrap behavior here */
+        /* XXX: implement some linebreaking/wrap, positioning
+         *      behavior here
+         */
         cairo_show_text (cr, ctx_arg_string () );
         break;
       case CTX_CONT:

@@ -79,10 +79,20 @@ Ctx *ctx_new_ui (int width, int height)
   if (getenv ("CTX_THREADS"))
   {
     int val = atoi (getenv ("CTX_THREADS"));
-    if (val < 1) val = 1;
-    if (val > CTX_MAX_THREADS) val = CTX_MAX_THREADS;
     _ctx_threads = val;
   }
+  else
+  {
+    _ctx_threads = 2;
+#ifdef _SC_NPROCESSORS_ONLN
+    _ctx_threads = sysconf (_SC_NPROCESSORS_ONLN)/2; // default to half the cores
+#endif
+  }
+
+  if (_ctx_threads < 1) _ctx_threads = 1;
+  if (_ctx_threads > CTX_MAX_THREADS) _ctx_threads = CTX_MAX_THREADS;
+
+  fprintf (stderr, "ctx using %i threads\n", _ctx_threads);
   const char *backend = getenv ("CTX_BACKEND");
 
   if (backend && !strcmp (backend, "auto"))
