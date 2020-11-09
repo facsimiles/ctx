@@ -32,6 +32,8 @@ int launch_main (int argc, char **argv)
   int   no_title = 0;
   int   no_move = 0;
   int   no_resize = 0;
+ // int   lock_relative_size = 0; // will make a fullscreen continue being so,
+ //                               // and panels or other things git 
   int   layer = 0;
   // escape subsequent arguments so that we dont have to pass a string?
   int   no = 1;

@@ -1188,6 +1188,12 @@ int terminal_main (int argc, char **argv)
       {
         dirty = 0;
         ctx_reset (ctx);
+
+        // draw bg/wallpaper
+        ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+        ctx_rgb (ctx, 0.1, 0.2, 0.3);
+        ctx_fill (ctx);
+
         draw_vts (ctx);
         if (enable_terminal_menu)
         {
