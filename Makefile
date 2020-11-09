@@ -44,7 +44,7 @@ test: ctx
 	make -C tests
 
 clean:
-	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o
+	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o highlight.css
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(SRC_OBJS)
@@ -67,7 +67,7 @@ deps.o: deps.c Makefile
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare -O2
 
 ctx-avx2.o: ctx-avx2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
-	$(CCC) ctx-avx2.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3 -DCTX_AVX2=1 -march=native 
+	$(CCC) ctx-avx2.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O3 -DCTX_AVX2=1 -march=core-avx2
 
 ctx-split.o: $(SRC_OBJS)
 
