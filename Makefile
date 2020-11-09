@@ -9,7 +9,7 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
 
-CFLAGS+= -g $(CFLAGS_warnings)
+CFLAGS+= -g $(CFLAGS_warnings) -fPIC
 
 CFLAGS+= -I. -Ifonts -Ideps
 LIBS   = -lutil -lz -lm -lpthread
@@ -26,8 +26,8 @@ SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
 all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
 
-clients/%: clients/%.c Makefile ctx.o clients/itk.h deps.o ctx-avx2.o ctx-mmx.o ctx-sse2.o
-	$(CCC) -g $< -o $@ $(CFLAGS) ctx.o deps.o $(LIBS) `pkg-config sdl2 --cflags --libs` ctx-avx2.o ctx-sse2.o ctx-mmx.o
+clients/%: clients/%.c Makefile ctx.o clients/itk.h libctx.a
+	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) `pkg-config sdl2 --cflags --libs`
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
@@ -85,13 +85,14 @@ src/%.o: src/%.c split/*.h
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
 	$(CCC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS) 
-libctx.a: ctx-nosdl.o ctx-sse2.o ctx-avx2.o ctx-mmx.o
+libctx.a: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o Makefile
 	$(AR) rcs $@ $?
-libctx.so: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o
-	$(LD) --retain-symbols-file=symbols -shared -lpthread $? `pkg-config sdl2 --libs`  -o $@
+libctx.so: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o
+	$(LD) -shared $(LIBS) $? `pkg-config sdl2 --libs`  -o $@
+	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? `pkg-config sdl2 --libs`  -o $@
 
-ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS) deps.o ctx-avx2.o ctx-sse2.o ctx-mmx.o
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx.o deps.o -O2 ctx-avx2.o ctx-sse2.o ctx-mmx.o
+ctx: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) libctx.a
+	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) `pkg-config sdl2 --cflags --libs` -lpthread -O2
 
 ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` -O0
