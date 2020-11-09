@@ -85,6 +85,10 @@ src/%.o: src/%.c split/*.h
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
 	$(CCC) -c $< -o $@ `pkg-config --cflags sdl2` -O2 $(CFLAGS) 
+libctx.a: ctx-nosdl.o ctx-sse2.o ctx-avx2.o ctx-mmx.o
+	$(AR) rcs $@ $?
+libctx.so: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o
+	$(LD) --retain-symbols-file=symbols -shared -lpthread $? `pkg-config sdl2 --libs`  -o $@
 
 ctx: main.c ctx.h  Makefile convert/*.[ch] ctx.o $(TERMINAL_OBJS) deps.o ctx-avx2.o ctx-sse2.o ctx-mmx.o
 	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config sdl2 --cflags --libs` ctx.o deps.o -O2 ctx-avx2.o ctx-sse2.o ctx-mmx.o

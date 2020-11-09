@@ -338,7 +338,7 @@ int
 ctx_load_font_ctx_file (const char *name, const char *path);
 #endif
 
-CtxFontEngine ctx_font_engine_ctx =
+static CtxFontEngine ctx_font_engine_ctx =
 {
 #if CTX_FONTS_FROM_FILE
   ctx_load_font_ctx_file,
