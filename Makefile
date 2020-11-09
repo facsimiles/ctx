@@ -44,7 +44,7 @@ test: ctx
 	make -C tests
 
 clean:
-	rm -f ctx.h ctx ctx.avx2 ctx.static ctx.O0 *.o
+	rm -f ctx-nofont.h ctx.h ctx ctx.avx2 ctx.static ctx.O0 *.o
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(SRC_OBJS)
