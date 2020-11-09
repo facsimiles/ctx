@@ -19,10 +19,7 @@
 //#include "0xA000-Mono.h"
 //#include "unscii-16.h"
 
-#define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
-
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #define CTX_BACKEND_TEXT         1
