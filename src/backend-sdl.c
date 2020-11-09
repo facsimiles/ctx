@@ -527,9 +527,11 @@ Ctx *ctx_new_sdl (int width, int height)
   start_thread(15);
 #undef start_thread
 
-#endif
   ctx_flush (sdl->ctx);
   return sdl->ctx;
+#else
+  return NULL;
+#endif
 }
 #else
 

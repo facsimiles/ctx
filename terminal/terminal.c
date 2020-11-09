@@ -17,7 +17,6 @@
 #include <SDL.h> // for clipboard texts
 #endif
 
-#include "ctx.h"
 #include "vt-line.h"
 #include "terminal.h"
 #include "vt.h"

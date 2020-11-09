@@ -1,3 +1,6 @@
+
+#if CTX_IMPLEMENTATION|CTX_COMPOSITOR
+
 #ifndef __CTX_INTERNAL_H
 #define __CTX_INTERNAL_H
 
@@ -842,6 +845,12 @@ ctx_rgb_space (Ctx *ctx, int device_space);
 void
 ctx_set_cmyk_space (Ctx *ctx, int device_space);
 #endif
+
+#endif
+
+CtxRasterizer *
+ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format, CtxAntialias antialias);
+
 
 #endif
 

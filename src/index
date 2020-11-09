@@ -1,4 +1,5 @@
 ctx.h
+guard
 ctx-string.h
 pre-font
 ../fonts/ctx-font-ascii.h
@@ -9,9 +10,9 @@ ctx-extra.h
 constants.h
 libc.c
 start-implementation
+ctx-internal.h
 drawlist.h
 util.h
-ctx-internal.h
 drawlist.c
 transform.c
 color.c
@@ -32,4 +33,6 @@ backend-braille.c
 backend-sdl.c
 formatter.c
 ctx.c
+compositor.c
 end-implementation
+endguard

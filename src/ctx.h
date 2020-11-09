@@ -54,6 +54,7 @@ typedef struct _Ctx            Ctx;
  */
 enum _CtxPixelFormat
 {
+  CTX_FORMAT_NONE=0,
   CTX_FORMAT_GRAY8,
   CTX_FORMAT_GRAYA8,
   CTX_FORMAT_RGB8,

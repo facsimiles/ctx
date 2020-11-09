@@ -1141,7 +1141,6 @@ void fb_render_fun (void **data)
               hno++;
             }
 #endif
-
             ctx_rasterizer_init (rasterizer,
                                  host, NULL, &host->state,
                                  &fb->scratch_fb[fb->width * 4 * y0 + x0 * 4],
@@ -1340,7 +1339,6 @@ Ctx *ctx_new_fb (int width, int height)
   start_thread(15);
 #undef start_thread
 
-#endif
   ctx_flush (fb->ctx);
 
   EvSource *kb = evsource_kb_new ();
@@ -1377,6 +1375,9 @@ Ctx *ctx_new_fb (int width, int height)
   }
 
   return fb->ctx;
+#else
+  return NULL;
+#endif
 }
 #else
 

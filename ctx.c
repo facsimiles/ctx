@@ -44,5 +44,6 @@
 #endif
 
 #define CTX_IMPLEMENTATION 1
+#define CTX_RASTERIZER 1
 
 #include "ctx.h"

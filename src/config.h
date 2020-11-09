@@ -9,11 +9,6 @@
  *
  */
 
-#ifndef CTX_RASTERIZER  // set to 0 before to disable rasterizer code, useful for clients that only
-// build journals.
-#define CTX_RASTERIZER   1
-#endif
-
 /* whether the font rendering happens in backend or front-end of API,
  * the option is used by the tool that converts ttf fonts to ctx internal
  * representation.
@@ -417,4 +412,32 @@
 
 #ifndef CTX_COMPOSITOR_SUFFIX
 #define CTX_COMPOSITOR_SUFFIX(symbol)     symbol##_default
+#endif
+
+#ifndef CTX_IMPLEMENTATION
+#define CTX_IMPLEMENTATION 0
+#else
+#undef CTX_IMPLEMENTATION
+#define CTX_IMPLEMENTATION 1
+
+
+#ifdef CTX_RASTERIZER
+#undef CTX_RASTERIZER
+#define CTX_RASTERIZER 1
+#else
+#define CTX_RASTERIZER 1
+#endif
+
+
+#if CTX_RASTERIZER
+#ifndef CTX_COMPOSITOR
+#define CTX_COMPOSITOR 1
+#endif
+#else
+#ifndef CTX_COMPOSITOR
+#define CTX_COMPOSITOR 0
+#endif
+#endif
+
+
 #endif
