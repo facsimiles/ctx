@@ -563,8 +563,9 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
 
   client->x += event->delta_x;
   client->y += event->delta_y;
-  if (client->vt) // XXX hack, forcing redraw
-    vt_rev_inc (client->vt);
+//if (client->vt) // XXX hack, forcing redraw
+//  vt_rev_inc (client->vt);
+  ctx_set_dirty (event->ctx, 1);
 
   event->stop_propagate = 1;
 }

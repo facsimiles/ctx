@@ -45,6 +45,7 @@ test: ctx
 
 clean:
 	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o highlight.css
+	rm -f libctx.a libctx.so
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(SRC_OBJS)
