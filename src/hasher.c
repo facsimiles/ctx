@@ -399,7 +399,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
           _ctx_user_to_device (rasterizer->state, &tx, &ty);
           _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
-          CtxRectangle shape_rect = {tx,ty,tw,th};
+          CtxRectangle shape_rect = {tx,ty-th/2,tw,th};
 
 
           uint32_t color;
