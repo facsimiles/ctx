@@ -1949,7 +1949,46 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
   rasterizer->state->gstate.clipped=1;
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
+  int minx = 5000;
+  int miny = 5000;
+  int maxx = -5000;
+  int maxy = -5000;
+  int prev_x = 0;
+  int prev_y = 0;
+  for (int i = 0; i < count; i++)
+    {
+      CtxEntry *entry = &rasterizer->edge_list.entries[i];
+      float x, y;
+      if (entry->code == CTX_NEW_EDGE)
+        {
+          prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
+          prev_y = entry->data.s16[1] * 1.0f / aa;
+          if (prev_x < minx) { minx = prev_x; }
+          if (prev_y < miny) { miny = prev_y; }
+          if (prev_x > maxx) { maxx = prev_x; }
+          if (prev_y > maxy) { maxy = prev_y; }
+        }
+      x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
+      y = entry->data.s16[3] * 1.0f / aa;
+      if (x < minx) { minx = x; }
+      if (y < miny) { miny = y; }
+      if (x > maxx) { maxx = x; }
+      if (y > maxy) { maxy = y; }
+    }
+
 #if CTX_ENABLE_CLIP
+  if (minx == maxx && miny == maxy) // XXX : reset hack
+  {
+    if (rasterizer->clip_buffer)
+     ctx_buffer_free (rasterizer->clip_buffer);
+    rasterizer->clip_buffer = NULL;
+    rasterizer->state->gstate.clip_min_x = rasterizer->blit_x;
+    rasterizer->state->gstate.clip_min_y = rasterizer->blit_y;
+
+    rasterizer->state->gstate.clip_max_x = rasterizer->blit_x + rasterizer->blit_width - 1;
+    rasterizer->state->gstate.clip_max_y = rasterizer->blit_y + rasterizer->blit_height - 1;
+    goto done;
+  }
   if (!rasterizer->clip_buffer)
   {
     rasterizer->clip_buffer = ctx_buffer_new (rasterizer->blit_width,
@@ -1987,32 +2026,8 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
     ctx_free (ctx);
   }
 #endif
-  int minx = 5000;
-  int miny = 5000;
-  int maxx = -5000;
-  int maxy = -5000;
-  int prev_x = 0;
-  int prev_y = 0;
-  for (int i = 0; i < count; i++)
-    {
-      CtxEntry *entry = &rasterizer->edge_list.entries[i];
-      float x, y;
-      if (entry->code == CTX_NEW_EDGE)
-        {
-          prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-          prev_y = entry->data.s16[1] * 1.0f / aa;
-          if (prev_x < minx) { minx = prev_x; }
-          if (prev_y < miny) { miny = prev_y; }
-          if (prev_x > maxx) { maxx = prev_x; }
-          if (prev_y > maxy) { maxy = prev_y; }
-        }
-      x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-      y = entry->data.s16[3] * 1.0f / aa;
-      if (x < minx) { minx = x; }
-      if (y < miny) { miny = y; }
-      if (x > maxx) { maxx = x; }
-      if (y > maxy) { maxy = y; }
-    }
+
+
   rasterizer->state->gstate.clip_min_x = ctx_maxi (minx,
                                          rasterizer->state->gstate.clip_min_x);
   rasterizer->state->gstate.clip_min_y = ctx_maxi (miny,
@@ -2021,6 +2036,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
                                          rasterizer->state->gstate.clip_max_x);
   rasterizer->state->gstate.clip_max_y = ctx_mini (maxy,
                                          rasterizer->state->gstate.clip_max_y);
+done:
   ctx_rasterizer_reset (rasterizer);
   if (rasterizer->preserve)
     {
