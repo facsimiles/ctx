@@ -73,7 +73,6 @@ int vtpty_waitdata (void  *data, int timeout)
   return 0;
 }
 
-
 CtxList *vts = NULL;
 
 static void signal_child (int signum)
@@ -287,16 +286,38 @@ extern int _ctx_max_threads;
 
 static int focus_follows_mouse = 0;
 
-static CtxClient *find_active (int x, int y)
+static CtxClient *find_active (int x, int y, int *windowpart)
 {
   CtxClient *ret = NULL;
   float view_height = ctx_height (ctx);
+  float titlebar_height = view_height/40;
+
   for (CtxList *l = clients; l; l = l->next)
   {
+     int resize_border = titlebar_height/2;
      CtxClient *c = l->data;
-     if (x > c->x && x < c->x+c->width &&
-         y > c->y - view_height/40 && y < c->y+c->height + view_height/40)
+     if (x > c->x - resize_border && x < c->x+c->width + resize_border &&
+         y > c->y - titlebar_height && y < c->y+c->height + resize_border)
+     {
        ret = c;
+
+       if (y > c->y)
+       {
+         if (x > c->x && x < c->x+c->width &&
+             y > c->y - titlebar_height && y < c->y+c->height )
+         {
+           *windowpart = 0;
+         }
+         else
+         {
+           *windowpart = 1;
+         }
+       }
+       else
+       {
+         *windowpart = 1;
+       }
+     }
   }
   //active = ret;
   return ret;
@@ -560,14 +581,36 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
   //Ctx *ctx = event->ctx;
   CtxClient *client = data;
 
-  client->x += event->delta_x;
-  client->y += event->delta_y;
-//if (client->vt) // XXX hack, forcing redraw
-//  vt_rev_inc (client->vt);
+//client->x += event->delta_x;
+//client->y += event->delta_y;
+
+  client_move (client->id, client->x + event->delta_x,
+                           client->y + event->delta_y);
+
+
   ctx_set_dirty (event->ctx, 1);
 
   event->stop_propagate = 1;
 }
+
+static void client_resize_se (CtxEvent *event, void *data, void *data2)
+{
+  //Ctx *ctx = event->ctx;
+  CtxClient *client = data;
+
+  //client->x += event->delta_x;
+  //client->y += event->delta_y;
+
+  client_resize (client->id, client->width + event->delta_x,
+                             client->height + event->delta_y);
+
+  if (client->vt) // XXX hack, forcing redraw
+    vt_rev_inc (client->vt);
+  ctx_set_dirty (event->ctx, 1);
+
+  event->stop_propagate = 1;
+}
+
 
 static void client_close (CtxEvent *event, void *data, void *data2)
 {
@@ -606,6 +649,19 @@ static int draw_vts (Ctx *ctx)
 
       ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
       ctx_fill (ctx);
+
+      if (client == active)
+      {
+        itk_style_color (ctx, "titlebar-focused-bg");
+        ctx_rectangle (ctx,
+                       client->x + client->width - titlebar_height/2,
+                       client->y + client->height - titlebar_height/2,
+                       titlebar_height, titlebar_height);
+        ctx_listen (ctx, CTX_DRAG, client_resize_se, client, NULL);
+        ctx_fill (ctx);
+      }
+
+
       ctx_font_size (ctx, titlebar_height * 0.85);
 
 #if 0
@@ -1177,8 +1233,18 @@ int terminal_main (int argc, char **argv)
       if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
           ctx_pointer_is_down (ctx, 1) || (active==NULL))
       {
+        int window_part  = 0;
         CtxClient *client = find_active (ctx_pointer_x (ctx),
-                                         ctx_pointer_y (ctx));
+                                         ctx_pointer_y (ctx),
+                                         &window_part);
+        if (window_part)
+        {
+          ctx_set_cursor (ctx, CTX_CURSOR_RESIZE);
+        }
+        else
+        {
+          ctx_set_cursor (ctx, CTX_CURSOR_DEFAULT);
+        }
         if (client)
         {
           if (active != client)

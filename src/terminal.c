@@ -154,7 +154,7 @@ static const NcKeyCode keycodes[]={
   {"F10",       "F10", "\033[21~"},
   {"F11",       "F11", "\033[22~"},
   {"F12",       "F12", "\033[23~"},
-  {"tab",       "↹",  {9, '\0'}},
+  {"tab",       "↹",     {9, '\0'}},
   {"shift-tab", "shift+↹",  "\033[Z"},
   {"backspace", "⌫",  {127, '\0'}},
   {"space",     "␣",   " "},
@@ -170,7 +170,7 @@ static const NcKeyCode keycodes[]={
   {"control-f", "^F",  {6,0}},
   {"control-g", "^G",  {7,0}},
   {"control-h", "^H",  {8,0}}, /* backspace? */
-  {"control-i", "^I",  {9,0}},
+  {"control-i", "^I",  {9,0}}, /* tab */
   {"control-j", "^J",  {10,0}},
   {"control-k", "^K",  {11,0}},
   {"control-l", "^L",  {12,0}},
@@ -226,6 +226,7 @@ static const NcKeyCode keycodes[]={
   {"alt-x",     "%X",  "\033x"},
   {"alt-y",     "%Y",  "\033y"},
   {"alt-z",     "%Z",  "\033z"},
+  {"shift-tab", "shift-↹", {27, 9, 0}},
   /* Linux Console  */
   {"home",      "Home", "\033[1~"},
   {"end",       "End",  "\033[4~"},

@@ -382,6 +382,9 @@ Ctx *ctx_new_ctx (int width, int height)
 {
   Ctx *ctx = ctx_new ();
   CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
+  fprintf (stderr, "\e[H");
+  fprintf (stderr, "\e[2J");
+  fprintf (stderr, "\e[?1049h");
   ctx_native_events = 1;
   if (width <= 0 || height <= 0)
   {
@@ -404,9 +407,6 @@ Ctx *ctx_new_ctx (int width, int height)
   ctx_set_size (ctx, width, height);
   ctxctx->flush = (void(*)(void *))ctx_ctx_flush;
   ctxctx->free  = (void(*)(void *))ctx_ctx_free;
-  fprintf (stdout, "\e[2J");
-  fprintf (stdout, "\e[?1049h");
-  fflush (stdout);
   return ctx;
 }
 
@@ -421,7 +421,7 @@ int ctx_ctx_consume_events (Ctx *ctx)
       float x = 0, y = 0;
       int b = 0;
       char event_type[128]="";
-      event = ctx_native_get_event (ctx, 1000/60);
+      event = ctx_native_get_event (ctx, 1000/120);
 #if 0
       if(event){
         FILE *file = fopen ("/tmp/log", "a");

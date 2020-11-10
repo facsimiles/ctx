@@ -6748,7 +6748,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
           free (text);
         }
       }
-      else if (event->device_no==3)
+      else if (event->device_no==3 && !vt->in_alt_screen)
       {
               // XXX disable in alt-screen ?
         vt->rev++;

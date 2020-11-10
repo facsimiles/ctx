@@ -269,29 +269,28 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <p>The current status of ctx is beyond proof of concept - but
         still does not fully realize a minimal system demonstrating
         it's capabilities - some features are also broken and need
-        repair - and for third party use probably morge urgently
+        repair - and for third party use probably more urgently
         than the following wishlist. When this list is nearing 0
         it is time for a tarball release of ctx - event if the
         single header ctx.h already is the rolling release.
         </p>
         <ul>
           <li>clip does not clip event boxes/shapes</li>
-          <li>clip is not well behaved across save/restore</li>
-          <li>arc not well behaved for edge-cases</li>
-          <li>flicker of vector uis in terminal with low bandwidth</li>
+          <li>clip is not well behaved across save/restore - doing a clip of a 0x0 rectangle is currently recognized as "reset clip"</li>
+          <li>arc not well behaved for edge-cases around full-circle</li>
           <li>pastes are without newlines/tabs</li>
           <li>in_fill is using bounding box - and most reliably works with rectangle.</li>
           <li>radial gradient is only using one center</li>
           <li>dimensions of drop-shadow are not transformed</li>
           <li>some terminal escape sequences should be recognized
-          also in ctx-mode, this would give a way of setting colors
-          from terminal palette.</li>
+              also in ctx-mode, this would give a way of setting colors
+              from terminal palette.</li>
 
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
           <li>dash pattern for stroking is missing</li>
           <li>fbdev not properly redrawn upon vt switch</li>
           <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
-          <li>pty throughput is lower than desired when running under framebuffer, </li>
+          <li>pty throughput seems lower than desired when running under framebuffer - for uses like streaming audio, uploading bitmaps and possibly encoded video streams improving this is crucial. For now this means also local rendering benefits from cross-frame compression.</li>
           </ul>
         </li>
         </ul>
@@ -306,8 +305,6 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <li>texture upload as part of terminal protocol</li>
         <li>terminal rewrap on resize</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
-        <li>support HTML/CSS ways of setting colors as strings</li>
-        <li>CSS styling</li>
         <li>ICC color management (provisions have been made in the API for this,
                 but RGBtoRGB and CMYKtoRGB RGBtoCMYK conversions are currently
                 done naively, instead of using <a href='http://gegl.org/babl/'>babl</a>.)</li>
@@ -318,8 +315,8 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
             apps.</li>
         <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
         <li>faster 1d-gaussian blur for shadow blur</li>
-        <li>SVG/HTML/CSS parsing renderer (in progress, from mrg)</li>
-        <li>PDF/SVG generation (can already be done through cairo integration)</li>
+        <li>SVG/HTML/CSS parsing renderer (in progress, with code coming from mrg and being cleaned up) - doing this as a javascript client instead would be neat.</li>
+        <li>PDF/SVG generation (in addition to existing cairo integration)</li>
         <li>Add API for integrating device-N with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
         <li>32bit float coverage from rasterizer - right now we support 32f images; but composite them with 8bit alpha masks.</li>
         <li>More SIMD code (the common RGBA8 cases for AVX2 are the only bit
