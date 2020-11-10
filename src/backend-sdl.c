@@ -62,7 +62,7 @@ static inline int
 sdl_render_threads_done (CtxSDL *sdl)
 {
   int sum = 0;
-  for (int i = 0; i < _ctx_threads; i++)
+  for (int i = 0; i < _ctx_max_threads; i++)
   {
      if (sdl->rendered_frame[i] == sdl->render_frame)
        sum ++;
@@ -73,7 +73,7 @@ sdl_render_threads_done (CtxSDL *sdl)
 static void ctx_sdl_show_frame (CtxSDL *sdl)
 {
   if (sdl->shown_frame != sdl->render_frame &&
-      sdl_render_threads_done (sdl) == _ctx_threads)
+      sdl_render_threads_done (sdl) == _ctx_max_threads)
   {
     SDL_UpdateTexture (sdl->texture, NULL,
                       (void*)sdl->pixels, sdl->width * sizeof (Uint32));
@@ -348,7 +348,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       {
         if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_threads) / dirty_tiles;
+          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_max_threads) / dirty_tiles;
           dirty_no++;
         }
       }
@@ -360,13 +360,13 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   sdl->quit = 1;
-  while (sdl->thread_quit < _ctx_threads)
+  while (sdl->thread_quit < _ctx_max_threads)
     usleep (1000); // XXX : properly wait for threads instead
   if (sdl->pixels)
   {
     free (sdl->pixels);
   sdl->pixels = NULL;
-  for (int i = 0 ; i < _ctx_threads; i++)
+  for (int i = 0 ; i < _ctx_max_threads; i++)
   {
     ctx_free (sdl->host[i]);
     sdl->host[i]=NULL;
@@ -427,7 +427,7 @@ void sdl_render_fun (void **data)
         }
       sdl->rendered_frame[no] = sdl->render_frame;
 
-      if (sdl_render_threads_done (sdl) == _ctx_threads)
+      if (sdl_render_threads_done (sdl) == _ctx_max_threads)
       {
    //   ctx_render_stream (sdl->ctx_copy, stdout, 1);
    //   ctx_reset (sdl->ctx_copy);
@@ -495,7 +495,7 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->free  = (void*)ctx_sdl_free;
 
-  for (int i = 0; i < _ctx_threads; i++)
+  for (int i = 0; i < _ctx_max_threads; i++)
   {
     sdl->host[i] = ctx_new_for_framebuffer (sdl->pixels,
                    sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
@@ -504,7 +504,7 @@ Ctx *ctx_new_sdl (int width, int height)
   }
 
 #define start_thread(no)\
-  if(_ctx_threads>no){ \
+  if(_ctx_max_threads>no){ \
     static void *args[2]={(void*)no, };\
     args[1]=sdl;\
     SDL_CreateThread ((void*)sdl_render_fun, "render", args);\

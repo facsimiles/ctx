@@ -337,6 +337,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           sha1_init (&sha1);
           char sha1_hash[20];
           float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
+
+          // XXX : doesn't take text-alignment into account
+
           float height = ctx_get_font_size (rasterizer->ctx);
            CtxRectangle shape_rect = {
               rasterizer->x, rasterizer->y - height,

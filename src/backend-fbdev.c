@@ -103,7 +103,7 @@ static inline int
 fb_render_threads_done (CtxFb *fb)
 {
   int sum = 0;
-  for (int i = 0; i < _ctx_threads; i++)
+  for (int i = 0; i < _ctx_max_threads; i++)
   {
      if (fb->rendered_frame[i] == fb->render_frame)
        sum ++;
@@ -217,7 +217,7 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
 static void ctx_fb_show_frame (CtxFb *fb)
 {
   if (fb->shown_frame != fb->render_frame &&
-      fb_render_threads_done (fb) == _ctx_threads)
+      fb_render_threads_done (fb) == _ctx_max_threads)
   {
     if (fb->vt_active)
     {
@@ -1079,7 +1079,7 @@ inline static void ctx_fb_flush (CtxFb *fb)
       {
         if (fb->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          fb->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_threads) / dirty_tiles;
+          fb->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_max_threads) / dirty_tiles;
           dirty_no++;
           if (col > fb->max_col) fb->max_col = col;
           if (col < fb->min_col) fb->min_col = col;
@@ -1096,7 +1096,7 @@ void ctx_fb_free (CtxFb *fb)
 {
 
   memset (fb->fb, 0, fb->width * fb->height *  4);
-  for (int i = 0 ; i < _ctx_threads; i++)
+  for (int i = 0 ; i < _ctx_max_threads; i++)
     ctx_free (fb->host[i]);
   system("stty sane");
   
@@ -1155,7 +1155,7 @@ void fb_render_fun (void **data)
         }
       fb->rendered_frame[no] = fb->render_frame;
 
-      if (fb_render_threads_done (fb) == _ctx_threads)
+      if (fb_render_threads_done (fb) == _ctx_max_threads)
       {
    //   ctx_render_stream (fb->ctx_copy, stdout, 1);
         ctx_reset (fb->ctx_copy);
@@ -1305,7 +1305,7 @@ Ctx *ctx_new_fb (int width, int height)
   fb->flush = (void*)ctx_fb_flush;
   fb->free  = (void*)ctx_fb_free;
 
-  for (int i = 0; i < _ctx_threads; i++)
+  for (int i = 0; i < _ctx_max_threads; i++)
   {
     fb->host[i] = ctx_new_for_framebuffer (fb->scratch_fb,
                    fb->width/CTX_HASH_COLS, fb->height/CTX_HASH_ROWS,
@@ -1315,7 +1315,7 @@ Ctx *ctx_new_fb (int width, int height)
   }
 
 #define start_thread(no)\
-  if(_ctx_threads>no){ \
+  if(_ctx_max_threads>no){ \
     static void *args[2]={(void*)no, };\
     thrd_t tid;\
     args[1]=fb;\

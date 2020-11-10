@@ -45,7 +45,7 @@ enum _CtxFlags {
 };
 
 
-int _ctx_threads = 1;
+int _ctx_max_threads = 1;
 int _ctx_enable_hash_cache = 1;
 
 void
@@ -79,20 +79,20 @@ Ctx *ctx_new_ui (int width, int height)
   if (getenv ("CTX_THREADS"))
   {
     int val = atoi (getenv ("CTX_THREADS"));
-    _ctx_threads = val;
+    _ctx_max_threads = val;
   }
   else
   {
-    _ctx_threads = 2;
+    _ctx_max_threads = 2;
 #ifdef _SC_NPROCESSORS_ONLN
-    _ctx_threads = sysconf (_SC_NPROCESSORS_ONLN)/2; // default to half the cores
+    _ctx_max_threads = sysconf (_SC_NPROCESSORS_ONLN)/2; // default to half the cores
 #endif
   }
 
-  if (_ctx_threads < 1) _ctx_threads = 1;
-  if (_ctx_threads > CTX_MAX_THREADS) _ctx_threads = CTX_MAX_THREADS;
+  if (_ctx_max_threads < 1) _ctx_max_threads = 1;
+  if (_ctx_max_threads > CTX_MAX_THREADS) _ctx_max_threads = CTX_MAX_THREADS;
 
-  fprintf (stderr, "ctx using %i threads\n", _ctx_threads);
+  fprintf (stderr, "ctx using %i threads\n", _ctx_max_threads);
   const char *backend = getenv ("CTX_BACKEND");
 
   if (backend && !strcmp (backend, "auto"))
@@ -1599,7 +1599,7 @@ void ctx_set_render_threads   (Ctx *ctx, int n_threads)
 }
 int ctx_get_render_threads   (Ctx *ctx)
 {
-  return _ctx_threads;
+  return _ctx_max_threads;
 }
 void ctx_set_hash_cache (Ctx *ctx, int enable_hash_cache)
 {

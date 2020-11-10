@@ -283,7 +283,7 @@ CtxClient *add_client_argv (const char **argv, int x, int y, int width, int heig
 }
 
 extern float ctx_shape_cache_rate;
-extern int _ctx_threads;
+extern int _ctx_max_threads;
 
 static int focus_follows_mouse = 0;
 
@@ -615,7 +615,6 @@ static int draw_vts (Ctx *ctx)
 
   return changes;
 }
-
 
 #if 0
 static int consume_toggle (char **argv, int *i)

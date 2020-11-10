@@ -4505,7 +4505,7 @@ int vt_poll (VT *vt, int timeout)
   int got_data = 0;
   int remaining_chars = read_size * 10;
   int len = 0;
-  //audio_task (vt, 0);
+  audio_task (vt, 0);
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
     {

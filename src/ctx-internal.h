@@ -686,7 +686,7 @@ struct _CtxThreaded
 };
 
 
-extern int _ctx_threads;
+extern int _ctx_max_threads;
 extern int _ctx_enable_hash_cache;
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);

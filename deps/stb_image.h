@@ -6781,6 +6781,7 @@ static void *stbi__load_gif_main(stbi__context *s, int **delays, int *x, int *y,
       if (delays) {
          *delays = 0;
       }
+      if (delays_size){};
 
       do {
          u = stbi__gif_load_next(s, &g, comp, req_comp, two_back);

@@ -33,6 +33,8 @@ int  itk_button   (ITK *itk, const char *label);
 void itk_choice   (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data);
 void itk_choice_add (ITK *itk, int value, const char *label);
 
+
+
 enum {
   UI_SLIDER = 1,
   UI_EXPANDER,
@@ -288,6 +290,60 @@ void itk_end_menu (ITK *itk)
 void itk_end_menu_bar (ITK *itk)
 {
   itk_newline (itk);
+}
+
+static char *itk_style=
+"wallpaper: rgb(0.1,0.2,0.3)\n"
+"titlebar-bg: rgb(0.1,0.2,0.3)\n"
+"titlebar-fg: rgb(0.1,0.2,0.3)\n"
+"titlebar-focused-bg: rgb(0.1,0.2,0.3)\n"
+"titlebar-focused-fg: rgb(0.1,0.2,0.3)\n";
+
+const char *itk_style_string (ITK *itk, const char *name)
+{
+  char *p = itk_style;
+  static char ret[64];
+  int name_len = strlen (name);
+
+  while (p)
+  {
+    if (!strncmp (p, name, name_len))
+    {
+      if (p[name_len]==':')
+      {
+        for (int i = 2; p[name_len+i] && p[name_len+i] != ';' && p[name_len+i] != '\n'; i++)
+        {
+          ret[i-2]=p[name_len+i];
+          ret[i-1]=0;
+          return ret;
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
+float itk_style_float (ITK *itk, const char *name)
+{
+   const char *str = itk_style_string (itk, name);
+   if (str)
+   {
+     return atof (str);
+   }
+   return 0.0f;
+}
+
+void itk_style_color (ITK *itk, const char *name)
+{
+   const char *str = itk_style_string (itk, name);
+   if (str)
+   {
+     ctx_color (itk->ctx, str);
+   }
+   else
+   {
+     ctx_rgb (itk->ctx, 1, 0, 1);
+   }
 }
 
 void itk_set_color (ITK *itk, int color)

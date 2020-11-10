@@ -2674,7 +2674,7 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
   {
      CtxThreaded *fb = (CtxThreaded*)(ctx->renderer);
      fb->antialias = antialias;
-     for (int i = 0; i < _ctx_threads; i++)
+     for (int i = 0; i < _ctx_max_threads; i++)
      {
        ctx_set_antialias (fb->host[i], antialias);
      }
