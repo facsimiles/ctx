@@ -1483,6 +1483,17 @@ enum _CtxAntialias
 };
 typedef enum _CtxAntialias CtxAntialias;
 
+enum _CtxCursor
+{
+  CTX_CURSOR_DEFAULT,
+  CTX_CURSOR_ARROW,
+  CTX_CURSOR_RESIZE,
+  CTX_CURSOR_MOVE
+};
+typedef enum _CtxCursor CtxCursor;
+
+void         ctx_set_cursor (Ctx *ctx, CtxCursor cursor);
+CtxCursor    ctx_get_cursor (Ctx *ctx);
 void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);
 CtxAntialias ctx_get_antialias (Ctx *ctx);
 void         ctx_set_render_threads   (Ctx *ctx, int n_threads);

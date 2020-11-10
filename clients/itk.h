@@ -105,43 +105,6 @@ typedef struct ITKPal{
   uint8_t a;
 } IKTPal;
 
-IKTPal theme_dark[]={
-  {ITK_BG,                 30,40,50,255},
-  {ITK_FOCUSED_BG,         60,70,80,255},
-  {ITK_FG,                 225,225,225,255},
-  {ITK_INTERACTIVE,        255,5,5,255},
-  {ITK_INTERACTIVE_BG,     50,40,50,255},
-  {ITK_ENTRY_CURSOR,       225,245,140,255},
-  {ITK_ENTRY_FALLBACK,     225,245,140,255},
-  {ITK_BUTTON_FOCUSED_BG,  60,60,160,255},
-  {ITK_BUTTON_SHADOW,      0,0,0,100},
-  {ITK_BUTTON_BG,          0,0,0,255},
-  {ITK_BUTTON_FG,          255,255,255,255},
-  {ITK_SCROLL_BG,          255,255,255,30},
-  {ITK_SCROLL_FG,          255,255,255,100},
-  {ITK_SLIDER_CURSOR,      255,0,0,255},
-  {ITK_SLIDER_TEXT,        255,255,255,127},
-  {ITK_LAST_COLOR}
-};
-
-IKTPal theme_light[]={
-  {ITK_BG,                 220,220,220,255},
-  {ITK_FOCUSED_BG,         255,255,255,255},
-  {ITK_FG,                 30,40,50,255},
-  {ITK_INTERACTIVE,        255,5,5,255},
-  {ITK_INTERACTIVE_BG,     255,245,220,255},
-  {ITK_ENTRY_CURSOR,       0,0,0,255},
-  {ITK_ENTRY_FALLBACK,     225,245,140,255},
-  {ITK_BUTTON_BG,          235,235,235,255},
-  {ITK_BUTTON_SHADOW,      0,0,0,100},
-  {ITK_BUTTON_FOCUSED_BG,  255,255,255,255},
-  {ITK_BUTTON_FG,          0,0,0,255},
-  {ITK_SCROLL_BG,          0,0,0,30},
-  {ITK_SCROLL_FG,          0,0,0,100},
-  {ITK_SLIDER_CURSOR,      255,0,0,255},
-  {ITK_SLIDER_TEXT,        0,0,0,127},
-  {ITK_LAST_COLOR}
-};
 
 
 typedef struct _CtxControl CtxControl;
@@ -350,23 +313,6 @@ void itk_style_color (Ctx *ctx, const char *name)
    }
 }
 
-void itk_set_color (ITK *itk, int color)
-{
-  IKTPal *theme = itk->light_mode?theme_light:theme_dark;
-
-  for (int i = 0; theme[i].id != ITK_LAST_COLOR; i++)
-  {
-    if (theme[i].id == color)
-    {
-      ctx_rgba (itk->ctx, theme[i].r/255.0,
-                          theme[i].g/255.0,
-                          theme[i].b/255.0,
-                          theme[i].a/255.0);
-      return;
-    }
-  }
-}
-
 void itk_set_font_size (ITK *itk, float font_size)
 {
   itk->font_size = font_size;
@@ -568,7 +514,6 @@ CtxControl *itk_add_control (ITK *itk,
   if (itk->focus_no == control->no &&
       control->type != UI_BUTTON)  // own-bg
   {
-    //itk_set_color (itk, ITK_FOCUSED_BG);
     itk_style_color (itk->ctx, "itk-focused-bg");
     ctx_fill (itk->ctx);
   }
@@ -578,7 +523,6 @@ CtxControl *itk_add_control (ITK *itk,
     if (control->type != UI_LABEL && // no-bg
         control->type != UI_BUTTON)  // own-bg
     {
-    //  itk_set_color (itk, ITK_INTERACTIVE_BG);
       itk_style_color (itk->ctx, "itk-interactive-bg");
       ctx_fill (itk->ctx);
     }
@@ -804,7 +748,7 @@ void itk_scroll_end (ITK *itk)
 
 
   /* set global clip - workaround until we have better */
-  ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
+  ctx_rectangle (ctx, 0,0, 0,0);
   ctx_clip (ctx);
 
 }

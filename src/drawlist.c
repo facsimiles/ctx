@@ -906,3 +906,5 @@ ctx_renderstream_compact (CtxRenderstream *renderstream)
   ctx_renderstream_bitpack (renderstream, last_history);
 #endif
 }
+
+

@@ -1447,3 +1447,14 @@ int  ctx_has_quit (Ctx *ctx)
   return 1; 
 #endif
 }
+
+#if CTX_EVENTS
+void         ctx_set_cursor (Ctx *ctx, CtxCursor cursor)
+{
+  ctx->cursor = cursor;
+}
+CtxCursor    ctx_get_cursor (Ctx *ctx)
+{
+  return ctx->cursor;
+}
+#endif

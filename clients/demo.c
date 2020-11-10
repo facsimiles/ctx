@@ -56,6 +56,7 @@ int main (int argc, char **argv)
         itk_key_bindings (itk);
 
       tests[test_no].fun (itk, frame_no++);
+#if 1
       itk_panel_start (itk, "ctx and itk demo", 0, 0, width*0.2, height);
       itk_seperator (itk);
 #if 0
@@ -165,6 +166,7 @@ int main (int argc, char **argv)
       }
 
       itk_panel_end (itk);
+#endif
 
       itk_done (itk);
 

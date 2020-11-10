@@ -432,6 +432,7 @@ _Ctx
   int                rev;
   void              *backend;
 #if CTX_EVENTS 
+  CtxCursor          cursor;
   int                quit;
   int                dirty;
   CtxEvents          events;
