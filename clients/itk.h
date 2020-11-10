@@ -292,40 +292,43 @@ void itk_end_menu_bar (ITK *itk)
   itk_newline (itk);
 }
 
-static char *itk_style=
-"wallpaper: rgb(0.1,0.2,0.3)\n"
-"titlebar-bg: rgb(0.1,0.2,0.3)\n"
-"titlebar-fg: rgb(0.1,0.2,0.3)\n"
-"titlebar-focused-bg: rgb(0.1,0.2,0.3)\n"
-"titlebar-focused-fg: rgb(0.1,0.2,0.3)\n";
+static char *itk_style=NULL;
 
-const char *itk_style_string (ITK *itk, const char *name)
+const char *itk_style_string (const char *name)
 {
+  if (!itk_style)
+    return NULL;
   char *p = itk_style;
   static char ret[64];
   int name_len = strlen (name);
-
-  while (p)
+  while (p && *p)
   {
+    while (*p == ' ')p++;
     if (!strncmp (p, name, name_len))
     {
       if (p[name_len]==':')
       {
-        for (int i = 2; p[name_len+i] && p[name_len+i] != ';' && p[name_len+i] != '\n'; i++)
+        for (int i = 2; p[name_len+i] && (p[name_len+i] != ';')
+                        && (p[name_len+i] != '\n'); i++)
         {
           ret[i-2]=p[name_len+i];
           ret[i-1]=0;
-          return ret;
         }
+        return ret;
       }
+    }
+    else
+    {
+      p = strchr (p, '\n');
+      if (p) p++;
     }
   }
   return NULL;
 }
 
-float itk_style_float (ITK *itk, const char *name)
+float itk_style_float (char *name)
 {
-   const char *str = itk_style_string (itk, name);
+   const char *str = itk_style_string (name);
    if (str)
    {
      return atof (str);
@@ -333,16 +336,17 @@ float itk_style_float (ITK *itk, const char *name)
    return 0.0f;
 }
 
-void itk_style_color (ITK *itk, const char *name)
+void itk_style_color (Ctx *ctx, const char *name)
 {
-   const char *str = itk_style_string (itk, name);
+   const char *str = itk_style_string (name);
    if (str)
    {
-     ctx_color (itk->ctx, str);
+     while (*str == ' ')str++;
+     ctx_color (ctx, str);
    }
    else
    {
-     ctx_rgb (itk->ctx, 1, 0, 1);
+     ctx_rgb (ctx, 1, 0, 1);
    }
 }
 
@@ -432,6 +436,25 @@ void itk_reset (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
   ctx_reset                 (ctx);
+
+  if (itk_style)
+    free (itk_style);
+  unsigned char *style = NULL;
+  _ctx_file_get_contents ("/tmp/itk-style", &style, NULL);
+  if (style)
+  {
+    itk_style = style;
+  }
+  else
+  {
+    itk_style = strdup (
+"wallpaper: rgb(10,20,30)\n"
+"titlebar-bg: #463\n"
+"titlebar-focused-bg: #aaa\n"
+"titlebar-fg: rgb(0.1,0.2,0.3)\n"
+"titlebar-focused-fg: rgb(0.1,0.2,0.3)\n");
+  }
+
   ctx_save (ctx);
   ctx_font (ctx, "regular");
   ctx_font_size (ctx, itk_em (itk));
@@ -545,7 +568,8 @@ CtxControl *itk_add_control (ITK *itk,
   if (itk->focus_no == control->no &&
       control->type != UI_BUTTON)  // own-bg
   {
-    itk_set_color (itk, ITK_FOCUSED_BG);
+    //itk_set_color (itk, ITK_FOCUSED_BG);
+    itk_style_color (itk->ctx, "itk-focused-bg");
     ctx_fill (itk->ctx);
   }
   else
@@ -554,7 +578,8 @@ CtxControl *itk_add_control (ITK *itk,
     if (control->type != UI_LABEL && // no-bg
         control->type != UI_BUTTON)  // own-bg
     {
-      itk_set_color (itk, ITK_INTERACTIVE_BG);
+    //  itk_set_color (itk, ITK_INTERACTIVE_BG);
+      itk_style_color (itk->ctx, "itk-interactive-bg");
       ctx_fill (itk->ctx);
     }
   }
@@ -565,7 +590,7 @@ CtxControl *itk_add_control (ITK *itk,
 static void itk_text (ITK *itk, const char *text)
 {
   Ctx *ctx = itk->ctx;
-  itk_set_color (itk, ITK_FG);
+  itk_style_color (itk->ctx, "itk-fg");
   ctx_move_to (ctx, itk->x,  itk->y + itk_em (itk) * itk->rel_baseline);
   ctx_text (ctx, text);
   itk->x += ctx_text_width (ctx, text);
@@ -576,14 +601,14 @@ static void itk_base (ITK *itk, const char *label, float x, float y, float width
   Ctx *ctx = itk->ctx;
   if (focused)
   {
-    itk_set_color (itk, ITK_FOCUSED_BG);
+    itk_style_color (itk->ctx, "itk-focused-bg");
 
     ctx_rectangle (ctx, x, y, width, height);
     ctx_fill (ctx);
   }
 #if 0
   else
-    itk_set_color (itk, ITK_BG);
+    itk_style_color (itk->ctx, "itk-bg");
 
   if (itk->line_no >= itk->lines_drawn)
   {
@@ -758,7 +783,7 @@ void itk_scroll_end (ITK *itk)
                       scrollbar_width,
                       scrollbar_height);
   ctx_listen (ctx, CTX_DRAG, itk_scroll_drag, itk, panel);
-  itk_set_color (itk, ITK_SCROLL_BG);
+  itk_style_color (itk->ctx, "itk-scroll-bg");
   ctx_fill (ctx);
 #endif
 
@@ -774,7 +799,7 @@ void itk_scroll_end (ITK *itk)
                       
                       );
 
-  itk_set_color (itk, ITK_SCROLL_FG);
+  itk_style_color (itk->ctx, "itk-scroll-fg");
   ctx_fill (ctx);
 
 
@@ -797,13 +822,13 @@ void itk_panel_start (ITK *itk, const char *title,
 
   itk->panel = panel;
 
-  itk_set_color (itk, ITK_FG);
+  itk_style_color (itk->ctx, "itk-fg");
   ctx_begin_path (ctx);
   ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
   ctx_line_width (ctx, 2);
   ctx_stroke (ctx);
 
-  itk_set_color (itk, ITK_BG);
+  itk_style_color (itk->ctx, "itk-bg");
   ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
   ctx_fill (ctx);
 
@@ -833,7 +858,7 @@ void itk_panel_end (ITK *itk)
                       em,
                       em);
   ctx_listen (ctx, CTX_DRAG, itk_panel_resize_drag, panel, itk);
-  itk_set_color (itk, ITK_BUTTON_FG);
+  itk_style_color (itk->ctx, "itk-button-fg");
   ctx_begin_path (ctx);
   ctx_move_to (ctx, panel->x + panel->width,
                     panel->y + panel->height);
@@ -910,9 +935,9 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
   control->step = step;
 
   if (itk->focus_no == control->no)
-    itk_set_color (itk, ITK_FOCUSED_BG);
+    itk_style_color (itk->ctx, "itk-focused-bg");
   else
-    itk_set_color (itk, ITK_INTERACTIVE_BG);
+    itk_style_color (itk->ctx, "itk-interactive-bg");
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
   ctx_fill (ctx);
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
@@ -930,11 +955,11 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
     sprintf (buf, "%.3f", fval);
   }
   ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
-  itk_set_color (itk, ITK_SLIDER_TEXT);
+  itk_style_color (itk->ctx, "itk-slider-text");
   ctx_text (ctx, buf);
 
   float rel_val = ((fval) - min) / (max-min);
-  itk_set_color (itk, ITK_SLIDER_CURSOR);
+  itk_style_color (itk->ctx, "itk-slider-cursor");
   ctx_rectangle (ctx, itk->x + (itk->width*(1.0-itk->label_width)-em/8) * rel_val, itk->y, em/8, control->height);
   ctx_fill (ctx);
   ctx_rectangle (ctx, itk->x, itk->y + em*5/6, itk->width * (1.0-itk->label_width), em/8);
@@ -1162,15 +1187,15 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
     int backup = itk->entry_copy[itk->entry_pos];
     char buf[4]="|";
     itk->entry_copy[itk->entry_pos]=0;
-    itk_set_color (itk, ITK_INTERACTIVE);
+    itk_style_color (itk->ctx, "itk-interactive");
     ctx_text (ctx, itk->entry_copy);
-    itk_set_color (itk, ITK_ENTRY_CURSOR);
+    itk_style_color (itk->ctx, "itk-entry-cursor");
     ctx_text (ctx, buf);
 
     buf[0]=backup;
     if (backup)
     {
-      itk_set_color (itk, ITK_INTERACTIVE);
+      itk_style_color (itk->ctx, "itk-interactive");
       ctx_text (ctx, buf);
       ctx_text (ctx, &itk->entry_copy[itk->entry_pos+1]);
       itk->entry_copy[itk->entry_pos] = backup;
@@ -1181,16 +1206,16 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
     if (val[0])
     {
       if (control->flags & ITK_FLAG_ACTIVE)
-        itk_set_color (itk, ITK_INTERACTIVE);
+        itk_style_color (itk->ctx, "itk-interactive");
       else
-        itk_set_color (itk, ITK_FG);
+        itk_style_color (itk->ctx, "itk-fg");
       ctx_text (ctx, val);
     }
     else
     {
       if (control->fallback)
       {
-        itk_set_color (itk, ITK_ENTRY_FALLBACK);
+        itk_style_color (itk->ctx, "itk-entry-fallback");
         ctx_text (ctx, control->fallback);
       }
     }
@@ -1218,7 +1243,7 @@ void itk_toggle (ITK *itk, const char *label, int *val)
   CtxControl *control = itk_add_control (itk, UI_TOGGLE, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
  // itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
 
-  itk_set_color (itk, ITK_INTERACTIVE);
+  itk_style_color (itk->ctx, "itk-interactive");
 
   ctx_begin_path (ctx);
   ctx_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, em, em);
@@ -1235,7 +1260,7 @@ void itk_toggle (ITK *itk, const char *label, int *val)
   }
 
   ctx_move_to (ctx, itk->x + em * 1 + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
-  itk_set_color (itk, ITK_FG);
+  itk_style_color (itk->ctx, "itk-fg");
   ctx_text (ctx, label);
 
   control->type = UI_TOGGLE;
@@ -1269,7 +1294,7 @@ int itk_radio (ITK *itk, const char *label, int set)
   CtxControl *control = itk_add_control (itk, UI_RADIO, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
 //  itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
 
-  itk_set_color (itk, ITK_INTERACTIVE);
+  itk_style_color (itk->ctx, "itk-interactive");
   ctx_begin_path (ctx);
   ctx_arc (ctx, itk->x + em * 0.55, itk->y + em * 0.57, em * 0.4, 0.0, 6.0, 0);
   ctx_close_path (ctx);
@@ -1283,7 +1308,7 @@ int itk_radio (ITK *itk, const char *label, int set)
   }
 
   ctx_move_to (ctx, itk->x + em * 1 + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
-  itk_set_color (itk, ITK_FG);
+  itk_style_color (itk->ctx, "itk-fg");
   ctx_text (ctx, label);
 
   control->type = UI_RADIO;
@@ -1322,13 +1347,13 @@ int itk_expander (ITK *itk, const char *label, int *val)
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
-  //itk_set_color (itk, ITK_INTERACTIVE_BG);
+  //itk_style_color (itk->ctx, "itk-interactive-bg");
   //ctx_fill (ctx);
 
   ctx_begin_path (ctx);
   {
      //itk_base (itk, label, control->x, control->y, control->width, em * itk->rel_ver_advance, itk->focus_no == control->no);
-     itk_set_color (itk, ITK_INTERACTIVE);
+     itk_style_color (itk->ctx, "itk-interactive");
      if (*val)
      {
        ctx_move_to (ctx, itk->x, itk->y);
@@ -1363,28 +1388,28 @@ int itk_button (ITK *itk, const char *label)
   float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxControl *control = itk_add_control (itk, UI_BUTTON, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
 
-  itk_set_color (itk, ITK_BUTTON_SHADOW);
+  itk_style_color (itk->ctx, "itk-button-shadow");
   ctx_begin_path (ctx);
   ctx_round_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, width, em * itk->rel_ver_advance, em*0.33);
   ctx_fill (ctx);
 
 #if 0
-  itk_set_color (itk, ITK_INTERACTIVE);
+  itk_style_color (itk->ctx, "itk-interactive");
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_line_width (ctx, 1);
   ctx_stroke (ctx);
 #endif
 
   if (itk->focus_no == control->no)
-    itk_set_color (itk, ITK_BUTTON_FOCUSED_BG);
+    itk_style_color (itk->ctx, "itk-button-focused-bg");
   else
-    itk_set_color (itk, ITK_INTERACTIVE_BG);
+    itk_style_color (itk->ctx, "itk-interactive-bg");
 
   ctx_round_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance, em * 0.33);
   ctx_fill (ctx);
 
 
-  itk_set_color (itk, ITK_BUTTON_FG);
+  itk_style_color (itk->ctx, "itk-button-fg");
   ctx_move_to (ctx, itk->x + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
   ctx_text (ctx, label);
 
@@ -1424,7 +1449,7 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
   itk_text (itk, label);
   itk->x = new_x;
 
-  itk_set_color (itk, ITK_BG);
+  itk_style_color (itk->ctx, "itk-bg");
   CtxControl *control = itk_add_control (itk, UI_CHOICE, label, itk->x, itk->y, itk->width * (1.0-itk->label_width), em * itk->rel_ver_advance);
   control->action = action;
   control->data = user_data;
@@ -1435,9 +1460,9 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
 
   ctx_begin_path (ctx);
   if (itk->focus_no == control->no)
-    itk_set_color (itk, ITK_FOCUSED_BG);
+    itk_style_color (itk->ctx, "itk-focused-bg");
   else
-    itk_set_color (itk, ITK_INTERACTIVE_BG);
+    itk_style_color (itk->ctx, "itk-interactive-bg");
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
   ctx_fill (ctx);
 
@@ -1912,13 +1937,13 @@ void itk_done (ITK *itk)
       y = itk->popup_y - (ctx_list_length (itk->choices) - 0.5) * em;
     }
 
-    itk_set_color (itk, ITK_FOCUSED_BG);
+    itk_style_color (itk->ctx, "itk-focused-bg");
     ctx_rectangle (ctx, x,
                         y,
                         itk->popup_width,
                         em * (ctx_list_length (itk->choices) + 0.5));
     ctx_fill (ctx);
-    itk_set_color (itk, ITK_FG);
+    itk_style_color (itk->ctx, "itk-fg");
     ctx_rectangle (ctx, x,
                         y,
                         itk->popup_width,
@@ -1946,9 +1971,9 @@ void itk_done (ITK *itk)
                         y + em * (no+1));
       int *val = control->val;
       if (choice->val == *val)
-        itk_set_color (itk, ITK_INTERACTIVE);
+        itk_style_color (itk->ctx, "itk-interactive");
       else
-        itk_set_color (itk, ITK_FG);
+        itk_style_color (itk->ctx, "itk-fg");
       ctx_text (ctx, choice->label);
     }
   }

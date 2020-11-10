@@ -317,8 +317,8 @@ int id_to_no (int id)
   return -1;
 }
 
-float add_x = 0;
-float add_y = 0;
+float add_x = 10;
+float add_y = 100;
 
 
 void client_move (int id, int x, int y);
@@ -327,6 +327,7 @@ int client_resize (int id, int w, int h);
 void ensure_layout ()
 {
   float titlebar_h = ctx_height (ctx)/40;
+  return;
   switch (ctx_list_length (clients))
   {
      case 1:
@@ -359,15 +360,13 @@ void ensure_layout ()
        client_resize (0, ctx_width (ctx), (ctx_height (ctx) - titlebar_h*2)/2);
        client_move (0, 0, ctx_height(ctx)/2 + titlebar_h);
        {
-       CtxClient *client = clients->next->data;
-       client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
-       client_move (client->id, ctx_width (ctx)/2, titlebar_h);
-
-       client = clients->next->next->data;
-       client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
-       client_move (client->id, 0, titlebar_h);
+         CtxClient *client = clients->next->data;
+         client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
+         client_move (client->id, ctx_width (ctx)/2, titlebar_h);
+         client = clients->next->next->data;
+         client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
+         client_move (client->id, 0, titlebar_h);
        }
-
        add_y = ctx_height (ctx) / 40;
        add_x = ctx_height (ctx) / 40;
        break;
@@ -588,6 +587,8 @@ static int draw_vts (Ctx *ctx)
 {
   int changes = 0;
   float view_height = ctx_height (ctx);
+  float px = ctx_pointer_x (ctx);
+  float py = ctx_pointer_y (ctx);
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
@@ -599,12 +600,20 @@ static int draw_vts (Ctx *ctx)
       ctx_rectangle (ctx, client->x - border, client->y - titlebar_height - border,
                      client->width + border * 2, titlebar_height + border * 2);
       if (client == active)
-        ctx_rgb (ctx, 1, 1, 1);
+         itk_style_color (ctx, "titlebar-focused-bg");
       else
-        ctx_gray (ctx, 0.7);
+         itk_style_color (ctx, "titlebar-bg");
 
       ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
       ctx_fill (ctx);
+      ctx_font_size (ctx, titlebar_height * 0.85);
+
+#if 0
+      if (px >= client->x - border && px <= client->x - border + client->width + border * 2 &&
+          py >= client->y - titlebar_height - border && py <= client->y - titlebar_height - border + titlebar_height + border * 2)
+#endif
+      {
+
 #if 1
       ctx_rectangle (ctx, client->x + client->width - titlebar_height,
                       client->y - titlebar_height, titlebar_height,
@@ -615,15 +624,15 @@ static int draw_vts (Ctx *ctx)
       //ctx_fill (ctx);
       ctx_begin_path (ctx);
       ctx_move_to (ctx, client->x + client->width - titlebar_height * 0.8, client->y - titlebar_height * 0.22);
-      ctx_rgb (ctx, 1,0,0);
-      ctx_font_size (ctx, titlebar_height * 0.95);
+      itk_style_color (ctx, "titlebar-close");
       ctx_text (ctx, "X");
+      }
 
       ctx_move_to (ctx, client->x, client->y - titlebar_height * 0.22);
       if (client == active)
-        ctx_rgb (ctx, 0, 0, 0);
+        itk_style_color (ctx, "titlebar-focused-fg");
       else
-        ctx_rgb (ctx, 0.1, 0.1, 0.1);
+        itk_style_color (ctx, "titlebar-fg");
 
       if (client->title)
       {
@@ -1079,6 +1088,8 @@ int terminal_main (int argc, char **argv)
   int height = -1;
   int cols = -1;
 
+  fprintf (stderr, "");
+
   for (int i = 1; argv[i]; i++)
   {
     if (!strcmp (argv[i], "--help"))
@@ -1135,11 +1146,13 @@ int terminal_main (int argc, char **argv)
 
   if (argv[1] == NULL)
   {
-    active = add_client (vt_find_shell_command(), 0, 0, width, height, 0, 1);
+    //active = add_client (vt_find_shell_command(), 0, 0, width, height, 0, 1);
+    add_tab (vt_find_shell_command(), 1);
   }
   else
   {
-    active = add_client_argv ((void*)&argv[1], 0, 0, width, height, 0, 1);
+    //active = add_client_argv ((void*)&argv[1], 0, 0, width, height, 0, 1);
+    add_tab ((void*)&argv[1], 1);
   }
   if (!active)
     return 1;
@@ -1213,17 +1226,15 @@ int terminal_main (int argc, char **argv)
       if (changes || dirty || ctx_is_dirty (ctx))
       {
         dirty = 0;
-        ctx_reset (ctx);
+        itk_reset (itk);
 
-        // draw bg/wallpaper
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
-        ctx_rgb (ctx, 0.1, 0.2, 0.3);
+        itk_style_color (ctx, "wallpaper");
         ctx_fill (ctx);
 
         draw_vts (ctx);
         if (enable_terminal_menu)
         {
-          itk_reset (itk);
 
           float width = ctx_width (ctx);
           float height = ctx_height (ctx);
