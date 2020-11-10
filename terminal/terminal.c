@@ -570,6 +570,20 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
+static void client_close (CtxEvent *event, void *data, void *data2)
+{
+  //Ctx *ctx = event->ctx;
+  CtxClient *client = data;
+
+ // client->do_quit = 1;
+  
+  client_remove (event->ctx, client);
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
+
+
 static int draw_vts (Ctx *ctx)
 {
   int changes = 0;
@@ -591,6 +605,19 @@ static int draw_vts (Ctx *ctx)
 
       ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
       ctx_fill (ctx);
+#if 1
+      ctx_rectangle (ctx, client->x + client->width - titlebar_height,
+                      client->y - titlebar_height, titlebar_height,
+                      titlebar_height);
+#endif
+      ctx_rgb (ctx, 1, 0,0);
+      ctx_listen (ctx, CTX_PRESS, client_close, client, NULL);
+      //ctx_fill (ctx);
+      ctx_begin_path (ctx);
+      ctx_move_to (ctx, client->x + client->width - titlebar_height * 0.8, client->y - titlebar_height * 0.22);
+      ctx_rgb (ctx, 1,0,0);
+      ctx_font_size (ctx, titlebar_height * 0.95);
+      ctx_text (ctx, "X");
 
       ctx_move_to (ctx, client->x, client->y - titlebar_height * 0.22);
       if (client == active)
@@ -598,7 +625,6 @@ static int draw_vts (Ctx *ctx)
       else
         ctx_rgb (ctx, 0.1, 0.1, 0.1);
 
-      ctx_font_size (ctx, titlebar_height * 0.95);
       if (client->title)
       {
         ctx_text (ctx, client->title);

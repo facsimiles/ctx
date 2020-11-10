@@ -1184,7 +1184,7 @@ static short MuLawDecompressTable[256] =
 };
 
 
-static void vt_bell (VT *vt)
+void vt_bell (VT *vt)
 {
   if (vt->bell < 2)
     return;

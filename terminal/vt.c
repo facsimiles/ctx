@@ -3125,7 +3125,7 @@ static void audio_task (VT *vt, int click)
 {
 }
 
-static void vt_bell (VT *vt)
+void vt_bell (VT *vt)
 {
 }
 static void vt_state_apc_audio (VT *vt, int byte)
