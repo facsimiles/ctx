@@ -370,8 +370,9 @@ static void ctx_fb_show_frame (CtxFb *fb)
      switch (fb->fb_bits)
      {
        case 32:
-#if 0
+#if 1
          memcpy (fb->fb, fb->scratch_fb, fb->width * fb->height *  4);
+         // we instruct the rasterizer to pre-swap red and greens for us
 #else
          { int count = fb->width * fb->height;
            const uint32_t *src = (void*)fb->scratch_fb;
@@ -1232,6 +1233,8 @@ void ctx_fb_free (CtxFb *fb)
   if (fb->is_drm)
   {
     ctx_fbdrm_close (fb);
+    ioctl (0, KDSETMODE, KD_TEXT);
+    system("stty sane");
     return ;
   }
 
@@ -1290,6 +1293,8 @@ void fb_render_fun (void **data)
                                  fb->width*4, CTX_FORMAT_RGBA8,
                                  fb->antialias);
                                               /* this is the format used */
+            if (fb->fb_bits = 32)
+              rasterizer->swap_red_green = 1; 
             ((CtxRasterizer*)host->renderer)->texture_source = fb->ctx;
             ctx_translate (host, -x0, -y0);
             ctx_render_ctx (fb->ctx_copy, host);
@@ -1342,14 +1347,15 @@ static void vt_switch_cb (int sig)
   }
 }
 
-Ctx *ctx_new_fb (int width, int height)
+Ctx *ctx_new_fb (int width, int height, int drm)
 {
 #if CTX_RASTERIZER
   CtxFb *fb = calloc (sizeof (CtxFb), 1);
   fprintf (stderr, "\e[2J\e[H\e[?25l");
 
   ctx_fb = fb;
-  fb->fb = ctx_fbdrm_new (fb, &fb->width, &fb->height);
+  if (drm)
+    fb->fb = ctx_fbdrm_new (fb, &fb->width, &fb->height);
   if (fb->fb)
   {
     fprintf (stderr, "amazing, using drm\n");
@@ -1445,6 +1451,8 @@ Ctx *ctx_new_fb (int width, int height)
                                               
   fb->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
   }
+  if (!fb->fb)
+    return NULL;
   fb->scratch_fb = calloc (fb->fb_mapped_size, 1);
   ctx_fb_events = 1;
 

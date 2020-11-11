@@ -602,6 +602,7 @@ struct _CtxRasterizer
   int shadow_y;
 
   CtxFragment         fragment;
+  int swap_red_green;
   uint8_t             color[4*5];
 
 #define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ coverage, int count
@@ -696,7 +697,7 @@ ctx_get (Ctx *ctx, const char *key);
 
 int ctx_renderer_is_braille (Ctx *ctx);
 Ctx *ctx_new_ctx (int width, int height);
-Ctx *ctx_new_fb (int width, int height);
+Ctx *ctx_new_fb (int width, int height, int drm);
 Ctx *ctx_new_sdl (int width, int height);
 Ctx *ctx_new_braille (int width, int height);
 

@@ -94,6 +94,12 @@ _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, ui
       color = & (g->stops[g->n_stops-1].color);
     }
   ctx_color_get_rgba8 (rasterizer->state, color, rgba);
+  if (rasterizer->swap_red_green)
+  {
+    uint8_t tmp = rgba[0];
+    rgba[0] = rgba[2];
+    rgba[2] = tmp;
+  }
 }
 
 #if CTX_GRADIENT_CACHE
@@ -318,6 +324,12 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
               { rgba[c] = src[c]; }
             break;
         }
+      if (rasterizer->swap_red_green)
+      {
+        uint8_t tmp = rgba[0];
+        rgba[0] = rgba[2];
+        rgba[2] = tmp;
+      }
     }
 }
 
@@ -451,6 +463,13 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
       src += v * buffer->stride + u * bpp;
       for (int c = 0; c < 4; c++)
         { rgba[c] = src[c]; }
+
+  if (rasterizer->swap_red_green)
+  {
+    uint8_t tmp = rgba[0];
+    rgba[0] = rgba[2];
+    rgba[2] = tmp;
+  }
     }
 #if CTX_DITHER
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -516,6 +535,12 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void
       for (int c = 0; c < 3; c++)
         { rgba[c] = src[c]; }
       rgba[3] = 255;
+  if (rasterizer->swap_red_green)
+  {
+    uint8_t tmp = rgba[0];
+    rgba[0] = rgba[2];
+    rgba[2] = tmp;
+  }
     }
 #if CTX_DITHER
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -569,6 +594,12 @@ ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source;
   ctx_color_get_rgba8 (rasterizer->state, &g->color, rgba);
+  if (rasterizer->swap_red_green)
+  {
+    int tmp = rgba[0];
+    rgba[0] = rgba[2];
+    rgba[2] = tmp;
+  }
 }
 
 #if CTX_GRADIENTS
@@ -2485,6 +2516,13 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
+      if (rasterizer->swap_red_green)
+      {
+        uint8_t *rgba = &rasterizer->color[0];
+        uint8_t tmp = rgba[0];
+        rgba[0] = rgba[2];
+        rgba[2] = tmp;
+      }
 
       switch (gstate->blend_mode)
       {

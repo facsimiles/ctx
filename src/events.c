@@ -99,23 +99,27 @@ Ctx *ctx_new_ui (int width, int height)
     backend = NULL;
   if (backend && !strcmp (backend, "list"))
   {
-    fprintf (stderr, "valid values for CTX_BACKEND:\n");
+    fprintf (stderr, "possible values for CTX_BACKEND:\n");
     fprintf (stderr, " ctx");
 #if CTX_SDL
     fprintf (stderr, " SDL");
 #endif
 #if CTX_FB
-    fprintf (stderr, " fbcon");
+    fprintf (stderr, " fb");
+    fprintf (stderr, " drm");
 #endif
     fprintf (stderr, " braille");
     fprintf (stderr, "\n");
     exit (-1);
   }
 
+  /* FIXME: to a terminal query instead - to avoid relying on
+   * environment variables
+   */
   if (getenv ("CTX_VERSION"))
   {
     if (!backend || !strcmp (backend, "ctx"))
-          // full blown ctx - in terminal or standalone
+      // full blown ctx protocol - in terminal or standalone
       return ctx_new_ctx (width, height);
   }
   Ctx *ret = NULL;
@@ -132,10 +136,16 @@ Ctx *ctx_new_ui (int width, int height)
 #if CTX_FB
   if (!getenv ("DISPLAY"))
   {
-    if ((backend==NULL) || (!strcmp (backend, "fbcon")))
-    ret = ctx_new_fb (width, height);
+
+    if ((backend==NULL) || (!strcmp (backend, "fb")))
+    ret = ctx_new_fb (width, height, 0);
+    if (ret) return ret;
+    if ((backend==NULL) || (!strcmp (backend, "drm")))
+    ret = ctx_new_fb (width, height, 1);
     if (ret) return ret;
   }
+
+
 #endif
 
 #if CTX_RASTERIZER

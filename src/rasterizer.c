@@ -2744,6 +2744,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->scan_min    = 5000;
   rasterizer->scan_max    = -5000;
   rasterizer->format = ctx_pixel_format_info (pixel_format);
+
   return rasterizer;
 }
 
