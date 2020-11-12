@@ -263,7 +263,7 @@ nc_at_exit (void)
   printf (TERMINAL_MOUSE_OFF);
   printf (XTERM_ALTSCREEN_OFF);
   _nc_noraw();
-  fprintf (stdout, "\e[2J\e[H\e[?25h");
+  fprintf (stdout, "\e[?25h");
   //if (ctx_native_events)
   fprintf (stdout, "\e[?201l");
   fprintf (stdout, "\e[?1049l");

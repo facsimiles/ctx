@@ -1238,8 +1238,6 @@ void ctx_fb_free (CtxFb *fb)
     return ;
   }
 
-
-
   memset (fb->fb, 0, fb->width * fb->height *  4);
   for (int i = 0 ; i < _ctx_max_threads; i++)
     ctx_free (fb->host[i]);
@@ -1258,13 +1256,13 @@ void fb_render_fun (void **data)
   int      no = (size_t)data[0];
   CtxFb *fb = data[1];
 
-  int sleep_time = 2000;
+  int sleep_time = 1000;
   while (!fb->quit)
   {
     if (fb->render_frame != fb->rendered_frame[no])
     {
       int hno = 0;
-      sleep_time = 2000;
+      sleep_time = 1000;
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
         {

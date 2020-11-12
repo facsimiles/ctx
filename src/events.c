@@ -92,7 +92,7 @@ Ctx *ctx_new_ui (int width, int height)
   if (_ctx_max_threads < 1) _ctx_max_threads = 1;
   if (_ctx_max_threads > CTX_MAX_THREADS) _ctx_max_threads = CTX_MAX_THREADS;
 
-  fprintf (stderr, "ctx using %i threads\n", _ctx_max_threads);
+  //fprintf (stderr, "ctx using %i threads\n", _ctx_max_threads);
   const char *backend = getenv ("CTX_BACKEND");
 
   if (backend && !strcmp (backend, "auto"))

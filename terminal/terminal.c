@@ -630,8 +630,8 @@ static int draw_vts (Ctx *ctx)
 {
   int changes = 0;
   float view_height = ctx_height (ctx);
-  float px = ctx_pointer_x (ctx);
-  float py = ctx_pointer_y (ctx);
+  //float px = ctx_pointer_x (ctx);
+  //float py = ctx_pointer_y (ctx);
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
@@ -1143,8 +1143,6 @@ int terminal_main (int argc, char **argv)
   int width = -1;
   int height = -1;
   int cols = -1;
-
-  fprintf (stderr, "");
 
   for (int i = 1; argv[i]; i++)
   {

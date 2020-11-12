@@ -177,7 +177,7 @@ int main (int argc, char **argv)
     }
     else
     {
-       usleep (1000 * 20);
+       //usleep (1000 * 20);
     }
     while ((event = ctx_get_event (ctx)))
     {

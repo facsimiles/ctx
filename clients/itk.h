@@ -389,7 +389,7 @@ void itk_reset (ITK *itk)
   _ctx_file_get_contents ("/tmp/itk-style", &style, NULL);
   if (style)
   {
-    itk_style = style;
+    itk_style = (void*)style;
   }
   else
   {
