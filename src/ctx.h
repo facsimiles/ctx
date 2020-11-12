@@ -1485,9 +1485,9 @@ typedef enum _CtxAntialias CtxAntialias;
 
 enum _CtxCursor
 {
-  CTX_CURSOR_DEFAULT,
+  CTX_CURSOR_NONE,
   CTX_CURSOR_ARROW,
-  CTX_CURSOR_RESIZE,
+  CTX_CURSOR_RESIZE_ALL,
   CTX_CURSOR_MOVE
 };
 typedef enum _CtxCursor CtxCursor;

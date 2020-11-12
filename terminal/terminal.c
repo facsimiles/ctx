@@ -1237,11 +1237,11 @@ int terminal_main (int argc, char **argv)
                                          &window_part);
         if (window_part)
         {
-          ctx_set_cursor (ctx, CTX_CURSOR_RESIZE);
+          ctx_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
         }
         else
         {
-          ctx_set_cursor (ctx, CTX_CURSOR_DEFAULT);
+          ctx_set_cursor (ctx, CTX_CURSOR_ARROW);
         }
         if (client)
         {
@@ -1351,7 +1351,7 @@ int terminal_main (int argc, char **argv)
       while ((event = ctx_get_event (ctx)))
       {
       }
-      long int fractional_sleep = sleep_time / ctx_list_length (clients);
+      long int fractional_sleep = sleep_time / (n_clients?n_clients:1);
       for (CtxList *l = clients; l; l = l->next)
       {
         CtxClient *client = l->data;

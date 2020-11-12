@@ -63,17 +63,15 @@ struct _CtxFb
    int           render_frame;
    int           rendered_frame[CTX_MAX_THREADS];
    int           frame;
-   int       min_col; // hasher cols and rows
-   int       min_row;
-   int       max_col;
-   int       max_row;
-   uint8_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS *  20];
-   int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
+   int           min_col; // hasher cols and rows
+   int           min_row;
+   int           max_col;
+   int           max_row;
+   uint8_t       hashes[CTX_HASH_ROWS * CTX_HASH_COLS *  20];
+   int8_t        tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
                                                            //
 
-      int          is_drm;
-   struct drm_mode_crtc crtc;
 
 
    int           pointer_down[3];
@@ -97,6 +95,8 @@ struct _CtxFb
    int          vt_active;
    EvSource    *evsource[4];
    int          evsource_count;
+   int          is_drm;
+   struct drm_mode_crtc crtc;
 };
 
 void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)

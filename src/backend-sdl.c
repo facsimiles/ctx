@@ -26,9 +26,7 @@ struct _CtxSDL
    uint8_t      *pixels;
    int           quit;
    _Atomic int   thread_quit;
-
    int           shown_frame;
-   int           shown_cursor;
    int           render_frame;
    int           rendered_frame[CTX_MAX_THREADS];
    int           frame;
@@ -48,6 +46,9 @@ struct _CtxSDL
    int           lalt;
    int           rctrl;
 
+   CtxCursor     shown_cursor;
+
+   /* where we diverge from fb*/
    SDL_Window   *window;
    SDL_Renderer *renderer;
    SDL_Texture  *texture;
@@ -75,29 +76,28 @@ static void ctx_sdl_show_frame (CtxSDL *sdl)
 {
   if (sdl->shown_cursor != sdl->ctx->cursor)
   {
-          fprintf (stderr, "!%i\n", __LINE__);
     sdl->shown_cursor = sdl->ctx->cursor;
     SDL_Cursor *new_cursor =  NULL;
     switch (sdl->shown_cursor)
     {
-      //case CTX_CURSOR_NONE:
-      //  break;
-      case CTX_CURSOR_DEFAULT:
+      case CTX_CURSOR_NONE:
+        new_cursor = NULL;
+        break;
+      case CTX_CURSOR_ARROW:
         new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
         break;
-      case CTX_CURSOR_RESIZE:
+      case CTX_CURSOR_RESIZE_ALL:
+#if 0
         SDL_SYSTEM_CURSOR_SIZENWSE;
         SDL_SYSTEM_CURSOR_SIZENESW;
         SDL_SYSTEM_CURSOR_SIZEWE;
         SDL_SYSTEM_CURSOR_SIZENS;
-        new_cursor = SDL_CreateSystemCursor(
-          SDL_SYSTEM_CURSOR_SIZEALL
-                        );
+#endif
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
         break;
     }
     if (new_cursor)
     {
-            fprintf (stderr, "changing SDL  cursor\n");
       SDL_Cursor *old_cursor = SDL_GetCursor();
       SDL_SetCursor (new_cursor);
       SDL_ShowCursor (1);
@@ -121,7 +121,6 @@ static void ctx_sdl_show_frame (CtxSDL *sdl)
     sdl->shown_frame = sdl->render_frame;
   }
 }
-
 
 int ctx_sdl_consume_events (Ctx *ctx)
 {
