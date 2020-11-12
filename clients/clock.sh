@@ -10,7 +10,7 @@ function cleanup {
 }
 trap cleanup EXIT # restore terminal state on ctrl+c and regular exit
 
-while [ 1 == 1 ]; do
+while [ 1 == 1 ]; do # infinite loop
 hour_radians=`bc <<<"scale=3;(($(date +%H|sed 's/^0//')+($(date +%M|sed s'/^6//')/60.0))/12.0+0.75)*3.14152*2"`
 minute_radians=`bc <<<"scale=3;($(date +%M|sed 's/^0//')/60.0+0.75)*3.14152*2"`
 #second_radians=`bc <<<"scale=3;($(date +%S|sed 's/^0//')/60.0+0.75)*3.14152*2"`  # use this for "jumpy" second hand

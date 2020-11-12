@@ -1158,19 +1158,19 @@ inline static void ctx_fb_flush (CtxFb *fb)
 {
   //int width =  sdl->width;
   int count = 0;
-  while (fb->shown_frame != fb->render_frame && count < 10000)
+  while (fb->shown_frame != fb->render_frame && count < 1000)
   {
     usleep (100);
     ctx_fb_show_frame (fb);
     count++;
   }
-  if (count >= 10000)
+  if (count >= 1000)
   {
     fb->shown_frame = fb->render_frame;
   }
   if (fb->shown_frame == fb->render_frame)
   {
-    ctx_reset (fb->ctx_copy);
+    //ctx_reset (fb->ctx_copy);
     ctx_set_renderstream (fb->ctx_copy, &fb->ctx->renderstream.entries[0],
                                          fb->ctx->renderstream.count * 9);
     int dirty_tiles = 0;
@@ -1303,7 +1303,7 @@ void fb_render_fun (void **data)
       if (fb_render_threads_done (fb) == _ctx_max_threads)
       {
    //   ctx_render_stream (fb->ctx_copy, stdout, 1);
-        ctx_reset (fb->ctx_copy);
+   //   ctx_reset (fb->ctx_copy);
       }
     }
     else

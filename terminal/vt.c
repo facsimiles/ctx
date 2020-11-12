@@ -6709,7 +6709,8 @@ bg_done:
 
 int vt_has_blink (VT *vt)
 {
-  return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
+  return (vt->in_smooth_scroll ?  10 : 0);
+  //return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
 }
 
 extern int enable_terminal_menu;

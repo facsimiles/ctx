@@ -277,18 +277,16 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <ul>
           <li>clip does not clip event boxes/shapes</li>
           <li>clip is not well behaved across save/restore - doing a clip of a 0x0 rectangle is currently recognized as "reset clip"</li>
+          <li>clipping not working for events</li>
           <li>arc not well behaved for edge-cases around full-circle</li>
           <li>pastes are without newlines/tabs</li>
           <li>in_fill is using bounding box - and most reliably works with rectangle.</li>
           <li>radial gradient is only using one center</li>
           <li>dimensions of drop-shadow are not transformed</li>
-          <li>some terminal escape sequences should be recognized
-              also in ctx-mode, this would give a way of setting colors
-              from terminal palette.</li>
 
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
           <li>dash pattern for stroking is missing</li>
-          <li>fbdev not properly redrawn upon vt switch</li>
+          <li>fbdev not properly redrawn upon vt switch, drm dumbbuffers are though - and more likely to be used now that they are implemented.</li>
           <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
           <li>pty throughput seems lower than desired when running under framebuffer - for uses like streaming audio, uploading bitmaps and possibly encoded video streams improving this is crucial. For now this means also local rendering benefits from cross-frame compression.</li>
           </ul>
@@ -297,6 +295,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <h2 id='future'>some potential improvements</h2>
 	<ul>
         <li>improved performance</li>
+        <li>code refactoring</li>
 	<li>glyph fallbacks</li>
         <li>number of render threads changeable at runtime (and automatically due to load)</li>
         <li>analytical instead of raster clipping</li>
@@ -310,7 +309,6 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
                 done naively, instead of using <a href='http://gegl.org/babl/'>babl</a>.)</li>
         <li>websockets + js + HTML5 Canvas renderer/client for protocols</li>
         <li>wayland/libinput support</li>
-        <li>DRM backend - for likely faster graphics than /dev/fb</li>
         <li>bindings to a javascript engine like quickjs, for running canvas js content as
             apps.</li>
         <li>(optional) use of floating point instead of fixed point in rasterizer.</li>

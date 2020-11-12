@@ -337,7 +337,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     ctx_sdl_show_frame (sdl);
     count++;
   }
-  if (count >= 10000)
+  if (count >= 1000)
   {
     sdl->shown_frame = sdl->render_frame;
   }
@@ -496,8 +496,8 @@ Ctx *ctx_new_sdl (int width, int height)
   CtxSDL *sdl = (CtxSDL*)calloc (sizeof (CtxSDL), 1);
   if (width <= 0 || height <= 0)
   {
-    width  = 1280;
-    height = 768;
+    width  = 1920;
+    height = 1080;
   }
   sdl->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
   //sdl->renderer = SDL_CreateRenderer (sdl->window, -1, SDL_RENDERER_SOFTWARE);
