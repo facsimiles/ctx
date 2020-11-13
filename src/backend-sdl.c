@@ -86,14 +86,27 @@ static void ctx_sdl_show_frame (CtxSDL *sdl)
       case CTX_CURSOR_ARROW:
         new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
         break;
+      case CTX_CURSOR_WAIT:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
+        break;
       case CTX_CURSOR_RESIZE_ALL:
-#if 0
-        SDL_SYSTEM_CURSOR_SIZENWSE;
-        SDL_SYSTEM_CURSOR_SIZENESW;
-        SDL_SYSTEM_CURSOR_SIZEWE;
-        SDL_SYSTEM_CURSOR_SIZENS;
-#endif
         new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+        break;
+      case CTX_CURSOR_RESIZE_N:
+      case CTX_CURSOR_RESIZE_S:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+        break;
+      case CTX_CURSOR_RESIZE_E:
+      case CTX_CURSOR_RESIZE_W:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+        break;
+      case CTX_CURSOR_RESIZE_NE:
+      case CTX_CURSOR_RESIZE_SW:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+        break;
+      case CTX_CURSOR_RESIZE_NW:
+      case CTX_CURSOR_RESIZE_SE:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
         break;
     }
     if (new_cursor)

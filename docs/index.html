@@ -245,9 +245,9 @@ $ make</pre>
               <tr><td style='width:14em'><a href='ctx.h'>ctx.h</a><td>760K</td><td>The singleheader library ctx.</tr>
               <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a><td>128K</td><td>Example font to use with ctx, to be a true single header solution - the ascii subset of this is included by default.</td></tr>
               <!--<tr><td><a href='test-size.c'>test-size.c</a></td><td>example</td></tr>-->
-              <tr><td><a href='binaries/ctx-x86_64-SDL2'>ctx-x86_64-SDL2</a></td><td>ELF 64bit binary for linux dynamically linked against SDL2, should work in most distros.</tr>
-              <tr><td><a href='binaries/ctx-x86_64-static'>ctx-x86_64-static</a></td><td>64bit static linux binary - should work in more distros, but has only /dev/fb0 and braille rendering.</tr>
-              <tr><td><a href='binaries/ctx-i486-static'>ctx-i486-static</a></td><td>32bit static linux binary - should work in more distros, but has only /dev/fb0 and braille rendering.</tr>
+              <!--<tr><td><a href='binaries/ctx-x86_64-SDL2'>ctx-x86_64-SDL2</a></td><td>ELF 64bit binary for linux dynamically linked against SDL2, should work in most distros.</tr>-->
+              <tr><td><a href='binaries/ctx-x86_64-static'>ctx-x86_64-static</a></td><td>64bit static linux binary - should work in mant distros, but has only DRM, /dev/fb0 and braille rendering not SDL2</tr>
+              <tr><td><a href='binaries/ctx-i486-static'>ctx-i486-static</a></td><td>32bit static linux binary - should work in mant distros, but has only DRM, /dev/fb0 and braille rendering not SDL2</tr>
       </table>
 
 
@@ -286,9 +286,10 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
           <li>dash pattern for stroking is missing</li>
+          <li>some form of built in palm supression is needed with /dev/mice</li>
           <li>fbdev not properly redrawn upon vt switch, drm dumbbuffers are though - and more likely to be used now that they are implemented.</li>
           <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
-          <li>pty throughput seems lower than desired when running under framebuffer - for uses like streaming audio, uploading bitmaps and possibly encoded video streams improving this is crucial. For now this means also local rendering benefits from cross-frame compression.</li>
+          <li>pty throughpult seems lower than desired when running under framebuffer - for uses like streaming audio, uploading bitmaps and possibly encoded video streams improving this is crucial. For now this means also local rendering benefits from cross-frame compression.</li>
           </ul>
         </li>
         </ul>
@@ -297,7 +298,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <li>improved performance</li>
         <li>code refactoring</li>
 	<li>glyph fallbacks</li>
-        <li>number of render threads changeable at runtime (and automatically due to load)</li>
+        <li>number of render threads changing dynamicaldynchangeable at runtime (and automatically due to load)</li>
         <li>analytical instead of raster clipping</li>
         <li>Ensure maximum bandwidth for pty's in terminals - probably
         with a separate UI thread.</li>

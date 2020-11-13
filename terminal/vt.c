@@ -6849,13 +6849,15 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      (vt->rows) * vt->ch);
       if (vt->reverse_video)
         {
-          ctx_rgba (ctx, 1,1,1,0.8);
+          //ctx_rgba (ctx, 1,1,1,0.8);
+          itk_style_color (ctx, "terminal-bg-reverse");
           ctx_fill  (ctx);
           ctx_rgba (ctx, 0,0,0,1);
         }
       else
         {
-          ctx_rgba (ctx, 0,0,0,0.8);
+          itk_style_color (ctx, "terminal-bg");
+          //ctx_rgba (ctx, 0,0,0,0.8);
           ctx_fill  (ctx);
           ctx_rgba (ctx, 1,1,1,1);
         }
