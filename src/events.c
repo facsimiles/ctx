@@ -1360,6 +1360,10 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
     {
       ctx_set_cursor (ctx, cursor_item->cursor);
     }
+    else
+    {
+      ctx_set_cursor (ctx, CTX_CURSOR_ARROW);
+    }
   }
 
   event->delta_x = x - event->prev_x;

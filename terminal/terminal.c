@@ -288,7 +288,7 @@ extern int _ctx_max_threads;
 
 static int focus_follows_mouse = 0;
 
-static CtxClient *find_active (int x, int y, int *windowpart)
+static CtxClient *find_active (int x, int y)
 {
   CtxClient *ret = NULL;
   float view_height = ctx_height (ctx);
@@ -302,35 +302,8 @@ static CtxClient *find_active (int x, int y, int *windowpart)
          y > c->y - titlebar_height && y < c->y+c->height + resize_border)
      {
        ret = c;
-
-       if (windowpart)
-       {
-       if (y > c->y)
-       {
-         if (x > c->x && x < c->x+c->width &&
-             y > c->y - titlebar_height && y < c->y+c->height )
-         {
-           if (windowpart)*windowpart = 0;
-         }
-         else
-         {
-           int val = 0;
-           if (x < c->x) val += 8;
-           if (x > c->x + c->width) val+=2;
-           if (y < c->y) val  += 1;
-           if (y > c->y + c->height) val +=4;
-
-           *windowpart = val;
-         }
-       }
-       else
-       {
-         *windowpart = 1;
-       }
-       }
      }
   }
-  //active = ret;
   return ret;
 }
 
@@ -452,7 +425,7 @@ void client_remove (Ctx *ctx, CtxClient *client)
 
   if (client == active)
   {
-    active = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx), NULL);
+    active = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
     if (!active) active = clients?clients->data:NULL;
   }
   free (client);
@@ -699,6 +672,7 @@ static int draw_vts (Ctx *ctx)
          itk_style_color (ctx, "titlebar-bg");
 
       ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
+      ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
       ctx_fill (ctx);
 
       if (client == active)
@@ -709,9 +683,9 @@ static int draw_vts (Ctx *ctx)
                        client->y + client->height,
                        titlebar_height/2, titlebar_height/2);
         ctx_listen (ctx, CTX_DRAG, client_resize_se, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_SE);
         ctx_fill (ctx);
       }
-
 
       ctx_font_size (ctx, titlebar_height * 0.85);
 
@@ -728,6 +702,7 @@ static int draw_vts (Ctx *ctx)
 #endif
       ctx_rgb (ctx, 1, 0,0);
       ctx_listen (ctx, CTX_PRESS, client_close, client, NULL);
+      ctx_listen_set_cursor (ctx, CTX_CURSOR_ARROW);
       //ctx_fill (ctx);
       ctx_begin_path (ctx);
       ctx_move_to (ctx, client->x + client->width - titlebar_height * 0.8, client->y - titlebar_height * 0.22);
@@ -1293,41 +1268,8 @@ int terminal_main (int argc, char **argv)
   //    ensure_layout ();
       }
 
-        int window_part  = 0;
         CtxClient *client = find_active (ctx_pointer_x (ctx),
-                                         ctx_pointer_y (ctx),
-                                         &window_part);
-        if (window_part)
-        {
- //# N = 1 E = 2 S  = 4 W = 8
-          switch (window_part)
-          {
-            case 8:
-              ctx_set_cursor (ctx, CTX_CURSOR_RESIZE_W);
-              break;
-            case 2:
-              ctx_set_cursor (ctx, CTX_CURSOR_RESIZE_E);
-              break;
-            case 4:
-              ctx_set_cursor (ctx, CTX_CURSOR_RESIZE_S);
-              break;
-            case 2 +  4:
-              ctx_set_cursor (ctx, CTX_CURSOR_RESIZE_SE);
-              break;
-            case 8 +  4:
-              ctx_set_cursor (ctx, CTX_CURSOR_RESIZE_SW);
-              break;
-
-            default:
-              ctx_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
-              break;
-          }
-        }
-        else
-        {
-          ctx_set_cursor (ctx, CTX_CURSOR_ARROW);
-        }
-
+                                         ctx_pointer_y (ctx));
       if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
           ctx_pointer_is_down (ctx, 1) || (active==NULL))
       {
