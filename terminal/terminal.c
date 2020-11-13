@@ -594,6 +594,7 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
 {
   //Ctx *ctx = event->ctx;
   CtxClient *client = data;
+  float titlebar_height = ctx_height (event->ctx)/40;
 
 //client->x += event->delta_x;
 //client->y += event->delta_y;
@@ -607,10 +608,21 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
     prev_drag_end_time = event->time;
   }
 
+  float new_x = client->x +  event->delta_x;
+  float new_y = client->y +  event->delta_y;
 
-  client_move (client->id, client->x + event->delta_x,
-                           client->y + event->delta_y);
+  float snap_threshold = 8;
 
+  float min_window_y_pos = titlebar_height;
+  float max_window_y_pos = ctx_height (event->ctx);
+
+  if (new_y < min_window_y_pos) new_y = min_window_y_pos;
+  if (new_y > max_window_y_pos) new_y = max_window_y_pos;
+
+  if (fabs (new_x - 0) < snap_threshold) new_x = 0.0;
+  if (fabs (ctx_width (event->ctx) - (new_x + client->width)) < snap_threshold) new_x = ctx_width (ctx) - client->width;
+
+  client_move (client->id, new_x, new_y);
 
   ctx_set_dirty (event->ctx, 1);
 
