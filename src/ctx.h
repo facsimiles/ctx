@@ -627,6 +627,8 @@ enum _CtxEventType {
   CTX_MESSAGE        = 1 << 13,
   CTX_DROP           = 1 << 14,
 
+  CTX_SET_CURSOR= 1 << 15, // used internally
+
   /* client should store state - preparing
                                  * for restart
                                  */
@@ -1485,6 +1487,7 @@ typedef enum _CtxAntialias CtxAntialias;
 
 enum _CtxCursor
 {
+  CTX_CURSOR_UNSET,
   CTX_CURSOR_NONE,
   CTX_CURSOR_ARROW,
   CTX_CURSOR_IBEAM,
@@ -1504,6 +1507,14 @@ enum _CtxCursor
 };
 typedef enum _CtxCursor CtxCursor;
 
+/* to be used immediately after a ctx_listen or ctx_listen_full causing the
+ * cursor to change when hovering the listen area.
+ */
+void ctx_listen_set_cursor (Ctx      *ctx,
+                            CtxCursor cursor);
+
+/* lower level cursor setting that is independent of ctx event handling
+ */
 void         ctx_set_cursor (Ctx *ctx, CtxCursor cursor);
 CtxCursor    ctx_get_cursor (Ctx *ctx);
 void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);

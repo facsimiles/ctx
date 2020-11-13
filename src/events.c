@@ -500,6 +500,15 @@ path_equal (void *path,
   return 0;
 }
 
+void ctx_listen_set_cursor (Ctx      *ctx,
+                            CtxCursor cursor)
+{
+  if (ctx->events.last_item)
+  {
+    ctx->events.last_item->cursor = cursor;
+  }
+}
+
 void ctx_listen_full (Ctx     *ctx,
                       float    x,
                       float    y,
@@ -509,7 +518,8 @@ void ctx_listen_full (Ctx     *ctx,
                       CtxCb    cb,
                       void    *data1,
                       void    *data2,
-                      void   (*finalize)(void *listen_data, void *listen_data2,
+                      void   (*finalize)(void *listen_data,
+                                         void *listen_data2,
                                          void *finalize_data),
                       void    *finalize_data)
 {
@@ -517,8 +527,8 @@ void ctx_listen_full (Ctx     *ctx,
   {
     CtxItem *item;
 
-
     /* early bail for listeners outside screen  */
+    /* XXX: fixme respect clipping */
     {
       float tx = x;
       float ty = y;
@@ -576,12 +586,12 @@ void ctx_listen_full (Ctx     *ctx,
           free (item);
           item2->cb_count++;
           item2->types |= types;
-          /* increment ref_count? */
-         return;
+          return;
         }
       }
     }
-    item->ref_count = 1;
+    item->ref_count       = 1;
+    ctx->events.last_item = item;
     ctx_list_prepend_full (&ctx->events.items, item, (void*)_ctx_item_unref, NULL);
   }
 }
@@ -780,7 +790,8 @@ CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
 
     if (u >= item->x0 && v >= item->y0 &&
         u <  item->x1 && v <  item->y1 && 
-        item->types & type)
+        ((item->types & type) || ((type == CTX_SET_CURSOR) &&
+        item->cursor)))
     {
       if (item->path)
       {
@@ -1305,12 +1316,9 @@ int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t tim
   return 0;
 }
 
-/*  for multi-touch, need a list of active grabs - thus a grab corresponds to
+/*  for multi-touch, we use a list of active grabs - thus a grab corresponds to
  *  a device id. even during drag-grabs events propagate; to stop that stop
- *e
- propagation like for other events.
- *
- *
+ *  propagation.
  */
 int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
@@ -1325,10 +1333,10 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
   if (time == 0)
     time = ctx_ms (ctx);
 
-  event->ctx  = ctx;
-  event->x    = x;
-  event->y    = y;
-  event->time = time;
+  event->ctx       = ctx;
+  event->x         = x;
+  event->y         = y;
+  event->time      = time;
   event->device_no = device_no;
   event->stop_propagate = 0;
   
@@ -1343,10 +1351,16 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
 
   /* XXX: too brutal; should use enter/leave events */
   //if (getenv ("CTX_FAST") == NULL)
- // mrg_queue_draw (mrg, NULL); /* XXX: not really needed for all backends,
- //                                     needs more tinkering */
   grablist = device_get_grabs (ctx, device_no);
   _ctx_update_item (ctx, device_no, x, y, CTX_MOTION, &hitlist);
+
+  {
+    CtxItem  *cursor_item = _ctx_detect (ctx, x, y, CTX_SET_CURSOR);
+    if (cursor_item)
+    {
+      ctx_set_cursor (ctx, cursor_item->cursor);
+    }
+  }
 
   event->delta_x = x - event->prev_x;
   event->delta_y = y - event->prev_y;

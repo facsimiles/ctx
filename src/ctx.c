@@ -327,6 +327,7 @@ void ctx_reset (Ctx *ctx)
   ctx_state_init (&ctx->state);
 #if CTX_EVENTS
   ctx_list_free (&ctx->events.items);
+  ctx->events.last_item = NULL;
 
   if (ctx->events.ctx_get_event_enabled)
   {

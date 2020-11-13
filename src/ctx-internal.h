@@ -382,6 +382,9 @@ typedef struct CtxItem {
   void *path;
   double          path_hash;
 
+  CtxCursor       cursor; /* if 0 then UNSET and no cursor change is requested
+                           */
+
   CtxEventType   types;   /* all cb's ored together */
   CtxItemCb cb[CTX_MAX_CBS];
   int       cb_count;
@@ -411,6 +414,7 @@ struct _CtxEvents
   int              width;
   int              height;
   CtxList         *items;
+  CtxItem         *last_item;
   CtxModifierState modifier_state;
   int              tap_delay_min;
   int              tap_delay_max;
