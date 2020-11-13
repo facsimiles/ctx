@@ -101,16 +101,15 @@ struct _CtxFb
 
 void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
 {
-        return NULL;
    fb->fb_fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
    if (!fb->fb_fd)
      return NULL;
 
-   static uint64_t res_fb_buf[20]={0};
-   static uint64_t res_crtc_buf[20]={0};
-   static uint64_t res_conn_buf[20]={0};
-   static uint64_t res_enc_buf[20]={0};
-   static struct drm_mode_card_res res={0};
+   uint64_t res_fb_buf[20]={0};
+   uint64_t res_crtc_buf[20]={0};
+   uint64_t res_conn_buf[20]={0};
+   uint64_t res_enc_buf[20]={0};
+   struct drm_mode_card_res res={0};
 
    //Become the "master" of the DRI device
    ioctl(fb->fb_fd, DRM_IOCTL_SET_MASTER, 0);
@@ -131,12 +130,12 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
    int i;
    for (i=0;i<res.count_connectors;i++)
    {
-     static struct drm_mode_modeinfo conn_mode_buf[20]={0};
-     static uint64_t conn_prop_buf[20]={0},
+     struct drm_mode_modeinfo conn_mode_buf[20]={0};
+     uint64_t conn_prop_buf[20]={0},
                      conn_propval_buf[20]={0},
                      conn_enc_buf[20]={0};
 
-     static struct drm_mode_get_connector conn={0};
+     struct drm_mode_get_connector conn={0};
 
      conn.connector_id=res_conn_buf[i];
 
@@ -154,9 +153,9 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
 //------------------------------------------------------------------------------
 //Creating a dumb buffer
 //------------------------------------------------------------------------------
-     static struct drm_mode_create_dumb create_dumb={0};
-     static struct drm_mode_map_dumb    map_dumb={0};
-     static struct drm_mode_fb_cmd      cmd_dumb={0};
+     struct drm_mode_create_dumb create_dumb={0};
+     struct drm_mode_map_dumb    map_dumb={0};
+     struct drm_mode_fb_cmd      cmd_dumb={0};
    create_dumb.width = conn_mode_buf[0].hdisplay;
      create_dumb.height = conn_mode_buf[0].vdisplay;
      create_dumb.bpp = 32;
@@ -188,7 +187,7 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
      //printf("%d : mode: %d, prop: %d, enc: %d\n",conn.connection,conn.count_modes,conn.count_props,conn.count_encoders);
      //printf("modes: %dx%d FB: %p\n",conn_mode_buf[0].hdisplay,conn_mode_buf[0].vdisplay,fb_base[i]);
 
-     static struct drm_mode_get_encoder enc={0};
+     struct drm_mode_get_encoder enc={0};
 
      enc.encoder_id=conn.encoder_id;
      ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETENCODER, &enc);    //get encoder
