@@ -363,21 +363,38 @@ static void ctx_fb_show_frame (CtxFb *fb)
        int pre_skip = fb->min_row * fb->height/CTX_HASH_ROWS * fb->width;
        int post_skip = (CTX_HASH_ROWS-fb->max_row-1) * fb->height/CTX_HASH_ROWS * fb->width;
 
+       if (pre_skip < 0) pre_skip = 0;
+       if (post_skip < 0) post_skip = 0;
+
+     __u32 dummy = 0;
+
+       if (fb->min_row == 100){
+          pre_skip = 0;
+          post_skip = 0;
+          // not when drm ?
+          ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
+          ctx_fb_undraw_cursor (fb);
+       }
+       else
+       {
+
       fb->min_row = 100;
       fb->max_row = 0;
       fb->min_col = 100;
       fb->max_col = 0;
 
-     ctx_fb_undraw_cursor (fb);
 
-     __u32 dummy = 0;
+     // not when drm ?
      ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
-     fprintf (stderr, "\e[H\e[J");
+     //fprintf (stderr, "\e[H\e[J");
+     ctx_fb_undraw_cursor (fb);
      switch (fb->fb_bits)
      {
        case 32:
 #if 1
-         memcpy (fb->fb, fb->scratch_fb, fb->width * fb->height *  4);
+         memcpy (fb->fb + pre_skip * 4, fb->scratch_fb + pre_skip * 4, ((fb->width * fb->height) - (pre_skip + post_skip)) *  4);
+         //memcpy (fb->fb, fb->scratch_fb, ((fb->width * fb->height) - (post_skip)) *  4);
+         //memcpy (fb->fb, fb->scratch_fb, (fb->width * fb->height) * 4);
          // we instruct the rasterizer to pre-swap red and greens for us
 #else
          { int count = fb->width * fb->height;
@@ -474,6 +491,7 @@ static void ctx_fb_show_frame (CtxFb *fb)
          }
          break;
      }
+    }
     fb_cursor_drawn = 0;
     ctx_fb_draw_cursor (fb);
     ctx_fb_flip (fb);
@@ -899,10 +917,6 @@ static const MmmKeyCode ufb_keycodes[]={
   {"shift-delete",        "\e[3;2~"},
   {"control-shift-delete","\e[3;6~"},
 
-
-
-
-
   {"F1",         "\e[25~"},
   {"F2",         "\e[26~"},
   {"F3",         "\e[27~"},
@@ -1308,7 +1322,7 @@ void fb_render_fun (void **data)
                                  fb->width*4, CTX_FORMAT_RGBA8,
                                  fb->antialias);
                                               /* this is the format used */
-            if (fb->fb_bits = 32)
+            if (fb->fb_bits == 32)
               rasterizer->swap_red_green = 1; 
             ((CtxRasterizer*)host->renderer)->texture_source = fb->ctx;
             ctx_translate (host, -x0, -y0);

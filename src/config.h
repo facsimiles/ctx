@@ -404,8 +404,9 @@
 #endif
 
 #ifndef CTX_MAX_THREADS
-#define CTX_MAX_THREADS          8
+#define CTX_MAX_THREADS          8 // runtime is max of cores/2 and this
 #endif
+
 
 
 #define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
