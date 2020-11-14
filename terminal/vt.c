@@ -5135,6 +5135,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
       unsetenv ("COLOR_TERM");
       unsetenv ("COLORTERM");
       unsetenv ("VTE_VERSION");
+      unsetenv ("CTX_BACKEND");
       //setenv ("TERM", "ansi", 1);
       //setenv ("TERM", "vt102", 1);
       //setenv ("TERM", "vt100", 1);
