@@ -384,7 +384,7 @@ void ensure_layout ()
   }
 }
 
-void add_tab (const char *commandline, int can_launch)
+int add_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
   active = add_client (commandline, add_x, add_y,
@@ -399,6 +399,7 @@ void add_tab (const char *commandline, int can_launch)
     add_y = 0;
     add_x -= ctx_height (ctx) / 40 * 4;
   }
+  return active->id;
 }
 
 static CtxClient *client_by_id (int id)
@@ -1447,7 +1448,7 @@ int terminal_main (int argc, char **argv)
   if (argv[1] == NULL)
   {
     //active = add_client (vt_find_shell_command(), 0, 0, width, height, 0, 1);
-    add_tab (vt_find_shell_command(), 1);
+    client_maximize (add_tab (vt_find_shell_command(), 1));
   }
   else
   {
