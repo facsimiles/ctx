@@ -697,6 +697,26 @@ static int vt_dirty_count (void)
   return changes;
 }
 
+
+static void client_drag_maximized (CtxEvent *event, void *data, void *data2)
+{
+  CtxClient *client = data;
+  float titlebar_height = ctx_height (event->ctx)/40;
+
+  if (event->type == CTX_DRAG_RELEASE)
+  {
+    static int prev_drag_end_time = 0;
+    if (event->time - prev_drag_end_time < 500)
+    {
+      //client_shade_toggle (client->id);
+      client_maximized_toggle (client->id);
+    }
+    prev_drag_end_time = event->time;
+  }
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
+
 static void client_drag (CtxEvent *event, void *data, void *data2)
 {
   //Ctx *ctx = event->ctx;
@@ -853,7 +873,11 @@ static int draw_vts (Ctx *ctx)
       else
          itk_style_color (ctx, "titlebar-bg");
 
-      if (!client->maximized)
+      if (client->maximized)
+      {
+        ctx_listen (ctx, CTX_DRAG, client_drag_maximized, client, NULL);
+      }
+      else
       {
         ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
