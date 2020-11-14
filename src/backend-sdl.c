@@ -86,6 +86,9 @@ static void ctx_sdl_show_frame (CtxSDL *sdl)
       case CTX_CURSOR_ARROW:
         new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
         break;
+      case CTX_CURSOR_CROSSHAIR:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+        break;
       case CTX_CURSOR_WAIT:
         new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
         break;
@@ -95,6 +98,7 @@ static void ctx_sdl_show_frame (CtxSDL *sdl)
       case CTX_CURSOR_IBEAM:
         new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
         break;
+      case CTX_CURSOR_MOVE:
       case CTX_CURSOR_RESIZE_ALL:
         new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
         break;

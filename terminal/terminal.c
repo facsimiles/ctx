@@ -578,7 +578,15 @@ void client_maximize (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
+   if (client->maximized)
+     return;
    client->maximized = 1;
+   client->unmaximized_x = client->x;
+   client->unmaximized_y = client->y;
+   client->unmaximized_width  = client->width;
+   client->unmaximized_height = client->height;
+   client_resize (id, ctx_width (ctx), ctx_height(ctx) * 39 / 40);
+   client_move (id, 0, ctx_height (ctx)/40);
 }
 
 int client_is_maximized (int id)
@@ -588,11 +596,23 @@ int client_is_maximized (int id)
    return client->maximized;
 }
 
+void client_maximized_toggle (int id)
+{
+  if (client_is_maximized (id))
+    client_unmaximize (id);
+  else
+    client_maximize (id);
+}
+
 void client_unmaximize (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
+   if (client->maximized == 0)
+     return;
    client->maximized = 0;
+   client_resize (id, client->unmaximized_width, client->unmaximized_height);
+   client_move (id, client->unmaximized_x, client->unmaximized_y);
 }
 
 
@@ -678,7 +698,8 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
     static int prev_drag_end_time = 0;
     if (event->time - prev_drag_end_time < 500)
     {
-      client_shade_toggle (client->id);
+      //client_shade_toggle (client->id);
+      client_maximized_toggle (client->id);
     }
     prev_drag_end_time = event->time;
   }
