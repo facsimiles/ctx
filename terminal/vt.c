@@ -59,6 +59,20 @@
 #include "vt-line.h"
 #include "vt.h"
 
+int client_height (int id);
+int client_x (int id);
+int client_y (int id);
+void client_move (int id, int x, int y);
+int client_resize (int id, int width, int height);
+void client_raise_top (int id);
+void client_lower_bottom (int id);
+void client_shade (int id);
+void client_unshade (int id);
+void client_iconify (int id);
+void client_deiconify (int id);
+void client_maximize (int id);
+void client_unmaximize (int id);
+
 
 #define VT_LOG_INFO     (1<<0)
 #define VT_LOG_CURSOR   (1<<1)
@@ -2445,7 +2459,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
             is_set = vt->in_alt_screen;
             break;
             break;
-          case 200:/*tx ascii;On;;*/
+          case 200:/*ctx protocol;On;;*/
             is_set = (vt->state == vt_state_ctx);
             break;
           case 80:/* DECSDM Sixel scrolling */
@@ -2514,25 +2528,29 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
 static void vtcmd_set_t (VT *vt, const char *sequence)
 {
   /* \e[21y is request title - allows inserting keychars */
-  if      (!strcmp (sequence, "[1t") ) { }  /* deiconify */
-  else if (!strcmp (sequence, "[2t") ) { }  /* iconify */
-  else if (!strncmp (sequence, "[3;", 3) ) { }  /* move_to ;x;y */
-  else if (!strncmp (sequence, "[4;", 3) ) /* resize_to ;h;w (px) */
+  if      (!strcmp (sequence,  "[1t")) { client_unshade (vt->id); }
+  else if (!strcmp (sequence,  "[2t")) { client_shade (vt->id); } 
+  else if (!strncmp (sequence, "[3;", 3)) {
+    int x=0,y=0;
+    sscanf (sequence, "[3;%i;%ir", &x, &y);
+    client_move (vt->id, x, y);
+  }
+  else if (!strncmp (sequence, "[4;", 3))
   {
     int width = 0, height = 0;
     sscanf (sequence, "[4;%i;%ir", &height , &width);
-    fprintf (stderr, "[resize to %ix%i]\n", width, height);
+    client_resize (vt->id, width, height);
   }
-  else if (!strcmp (sequence, "[5t") ) { }  /* raise to front  */
-  else if (!strcmp (sequence, "[6t") ) { }  /* lower to bottom  */
-  else if (!strncmp (sequence, "[8;", 3) ) /* resize_to ;h;w (cells) */
+  else if (!strcmp (sequence, "[5t") ) { client_raise_top (vt->id); } 
+  else if (!strcmp (sequence, "[6t") ) { client_lower_bottom (vt->id); } 
+  else if (!strncmp (sequence, "[8;", 3) )
   {
     int cols = 0, rows = 0;
     sscanf (sequence, "[8;%i;%ir", &rows, &cols);
-    fprintf (stderr, "[resize to %ix%icol]\n", cols, rows);
+    client_resize (vt->id, cols * vt->cw, rows * vt->ch);
   }
-  else if (!strcmp (sequence, "[9;0t") ) { }  /* unmaximize */
-  else if (!strcmp (sequence, "[9;1t") ) { }  /* maximize */
+  else if (!strcmp (sequence, "[9;0t") ) { client_unmaximize (vt->id); } 
+  else if (!strcmp (sequence, "[9;1t") ) { client_maximize (vt->id);} 
   else if (!strcmp (sequence, "[11t") )  /* report window state  */
     {
       char buf[128];
@@ -2542,10 +2560,10 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   else if (!strcmp (sequence, "[13t") ) /* request terminal position */
     {
       char buf[128];
-      sprintf (buf, "\033[3;%i;%it", 0, 0);
+      sprintf (buf, "\033[3;%i;%it", client_x (vt->id), client_y (vt->id));
       vt_write (vt, buf, strlen (buf) );
     }
-  else if (!strcmp (sequence, "[14t") ) /* request terminal dimensions */
+  else if (!strcmp (sequence, "[14t") ) /* request terminal dimensions in px */
     {
       char buf[128];
       sprintf (buf, "\033[4;%i;%it", vt->rows * vt->ch, vt->cols * vt->cw);
@@ -6788,7 +6806,6 @@ static void scrollbar_leave (CtxEvent *event, void *data, void *data2)
   vt->rev++;
   scrollbar_focused = 0;
 }
-int client_height (int id);
 
 static void scrollbar_pressed (CtxEvent *event, void *data, void *data2)
 {

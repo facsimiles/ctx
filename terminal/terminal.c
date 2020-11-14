@@ -129,6 +129,7 @@ _CtxClient {
   int           width;
   int           height;
   int           shaded;
+  int           iconified;
   int           maximized;
   int           unmaximized_x;
   int           unmaximized_y;
@@ -521,6 +522,80 @@ int client_height (int id)
   return client->height;
 }
 
+int client_x (int id)
+{
+  CtxClient *client = client_by_id (id);
+  if (!client) return 0;
+  return client->x;
+}
+
+int client_y (int id)
+{
+  CtxClient *client = client_by_id (id);
+  if (!client) return 0;
+  return client->y;
+}
+
+void client_raise_top (int id)
+{
+  CtxClient *client = client_by_id (id);
+  if (!client) return;
+  ctx_list_remove (&clients, client);
+  ctx_list_append (&clients, client);
+}
+
+void client_lower_bottom (int id)
+{
+  CtxClient *client = client_by_id (id);
+  if (!client) return;
+  ctx_list_remove (&clients, client);
+  ctx_list_prepend (&clients, client);
+}
+
+
+void client_iconify (int id)
+{
+   CtxClient *client = client_by_id (id);
+   if (!client) return;
+   client->iconified = 1;
+}
+
+int client_is_iconified (int id)
+{
+   CtxClient *client = client_by_id (id);
+   if (!client) return -1;
+   return client->iconified;
+}
+
+void client_uniconify (int id)
+{
+   CtxClient *client = client_by_id (id);
+   if (!client) return;
+   client->iconified = 0;
+}
+
+void client_maximize (int id)
+{
+   CtxClient *client = client_by_id (id);
+   if (!client) return;
+   client->maximized = 1;
+}
+
+int client_is_maximized (int id)
+{
+   CtxClient *client = client_by_id (id);
+   if (!client) return -1;
+   return client->maximized;
+}
+
+void client_unmaximize (int id)
+{
+   CtxClient *client = client_by_id (id);
+   if (!client) return;
+   client->maximized = 0;
+}
+
+
 void client_shade (int id)
 {
    CtxClient *client = client_by_id (id);
@@ -742,8 +817,8 @@ static int draw_vts (Ctx *ctx)
       if (!client->shaded)
       {
         vt_draw (vt, ctx, client->x, client->y);
-        client->drawn_rev = vt_rev (vt);
       }
+      client->drawn_rev = vt_rev (vt);
     }
   }
   dirt += changes;
