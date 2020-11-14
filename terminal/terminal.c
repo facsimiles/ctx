@@ -334,6 +334,17 @@ void client_shade_toggle (int id);
 void ensure_layout ()
 {
   float titlebar_h = ctx_height (ctx)/40;
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (client->maximized)
+    {
+      client_resize (client->id, ctx_width (ctx), ctx_height(ctx) * 39 / 40);
+      client_move (client->id, 0, ctx_height (ctx)/40);
+    }
+  }
+
+
   return;
   switch (ctx_list_length (clients))
   {
@@ -842,11 +853,14 @@ static int draw_vts (Ctx *ctx)
       else
          itk_style_color (ctx, "titlebar-bg");
 
-      ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
-      ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
+      if (!client->maximized)
+      {
+        ctx_listen (ctx, CTX_DRAG, client_drag, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
+      }
       ctx_fill (ctx);
 
-      if (client == active && !client->shaded)
+      if (client == active && !client->shaded &&  !client->maximized)
       {
         itk_style_color (ctx, "titlebar-focused-bg");
 
