@@ -596,14 +596,6 @@ int client_is_maximized (int id)
    return client->maximized;
 }
 
-void client_maximized_toggle (int id)
-{
-  if (client_is_maximized (id))
-    client_unmaximize (id);
-  else
-    client_maximize (id);
-}
-
 void client_unmaximize (int id)
 {
    CtxClient *client = client_by_id (id);
@@ -613,6 +605,14 @@ void client_unmaximize (int id)
    client->maximized = 0;
    client_resize (id, client->unmaximized_width, client->unmaximized_height);
    client_move (id, client->unmaximized_x, client->unmaximized_y);
+}
+
+void client_maximized_toggle (int id)
+{
+  if (client_is_maximized (id))
+    client_unmaximize (id);
+  else
+    client_maximize (id);
 }
 
 
@@ -727,22 +727,78 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
 
 static void client_resize_se (CtxEvent *event, void *data, void *data2)
 {
-  //Ctx *ctx = event->ctx;
   CtxClient *client = data;
-
-  //client->x += event->delta_x;
-  //client->y += event->delta_y;
-
   client_resize (client->id, client->width + event->delta_x,
                              client->height + event->delta_y);
+  if (client->vt) // force redraw
+    vt_rev_inc (client->vt);
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
 
-  if (client->vt) // XXX hack, forcing redraw
+static void client_resize_e (CtxEvent *event, void *data, void *data2)
+{
+  CtxClient *client = data;
+  client_resize (client->id, client->width + event->delta_x,
+                             client->height);
+  if (client->vt) // force redraw
+    vt_rev_inc (client->vt);
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
+
+static void client_resize_s (CtxEvent *event, void *data, void *data2)
+{
+  CtxClient *client = data;
+  client_resize (client->id, client->width,
+                             client->height + event->delta_y);
+  if (client->vt) // force redraw
+    vt_rev_inc (client->vt);
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
+
+static void client_resize_n (CtxEvent *event, void *data, void *data2)
+{
+  CtxClient *client = data;
+  float new_y = client->y +  event->delta_y;
+  client_resize (client->id, client->width,
+                             client->height - event->delta_y);
+  client_move (client->id, client->x, new_y);
+  if (client->vt) // force redraw
+    vt_rev_inc (client->vt);
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
+
+static void client_resize_sw (CtxEvent *event, void *data, void *data2)
+{
+  CtxClient *client = data;
+
+  float new_x = client->x +  event->delta_x;
+  client_resize (client->id, client->width - event->delta_x,
+                             client->height + event->delta_y);
+  client_move (client->id, new_x, client->y);
+  if (client->vt) // force redraw
+    vt_rev_inc (client->vt);
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
+
+static void client_resize_w (CtxEvent *event, void *data, void *data2)
+{
+  CtxClient *client = data;
+
+  float new_x = client->x +  event->delta_x;
+  client_resize (client->id, client->width - event->delta_x,
+                             client->height);
+  client_move (client->id, new_x, client->y);
+  if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
 
   event->stop_propagate = 1;
 }
-
 
 static void client_close (CtxEvent *event, void *data, void *data2)
 {
@@ -772,6 +828,12 @@ static int draw_vts (Ctx *ctx)
     {
       float titlebar_height = view_height/40;
       float border = 2;
+
+      if (!client->shaded)
+      {
+        vt_draw (vt, ctx, client->x, client->y);
+      }
+
       ctx_rectangle (ctx, client->x - border, client->y - titlebar_height - border,
                      client->width + border * 2, titlebar_height + border * 2);
       if (client == active)
@@ -786,13 +848,55 @@ static int draw_vts (Ctx *ctx)
       if (client == active && !client->shaded)
       {
         itk_style_color (ctx, "titlebar-focused-bg");
+
+        ctx_rectangle (ctx,
+                       client->x,
+                       client->y - titlebar_height * 2,
+                       client->width, titlebar_height);
+        ctx_listen (ctx, CTX_DRAG, client_resize_n, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_N);
+        ctx_begin_path (ctx); //ctx_fill (ctx);
+
+        ctx_rectangle (ctx,
+                       client->x,
+                       client->y + client->height - titlebar_height,
+                       client->width, titlebar_height * 2);
+        ctx_listen (ctx, CTX_DRAG, client_resize_s, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_S);
+        ctx_begin_path (ctx); //ctx_fill (ctx);
+
         ctx_rectangle (ctx,
                        client->x + client->width,
-                       client->y + client->height,
-                       titlebar_height/2, titlebar_height/2);
+                       client->y - titlebar_height,
+                       titlebar_height, client->height + titlebar_height);
+        ctx_listen (ctx, CTX_DRAG, client_resize_e, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_E);
+        ctx_begin_path (ctx); //ctx_fill (ctx);
+
+        ctx_rectangle (ctx,
+                       client->x - titlebar_height,
+                       client->y - titlebar_height,
+                       titlebar_height, client->height + titlebar_height);
+        ctx_listen (ctx, CTX_DRAG, client_resize_w, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_W);
+        ctx_begin_path (ctx); //ctx_fill (ctx);
+
+        ctx_rectangle (ctx,
+                       client->x - titlebar_height,
+                       client->y + client->height - titlebar_height,
+                       titlebar_height * 2, titlebar_height * 2);
+        ctx_listen (ctx, CTX_DRAG, client_resize_sw, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_SW);
+        ctx_begin_path (ctx); //ctx_fill (ctx);
+
+        ctx_rectangle (ctx,
+                       client->x + client->width - titlebar_height,
+                       client->y + client->height - titlebar_height,
+                       titlebar_height * 2, titlebar_height * 2);
         ctx_listen (ctx, CTX_DRAG, client_resize_se, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_SE);
-        ctx_fill (ctx);
+        ctx_begin_path (ctx); //ctx_fill (ctx);
+
       }
 
       ctx_font_size (ctx, titlebar_height * 0.85);
@@ -834,10 +938,6 @@ static int draw_vts (Ctx *ctx)
       else
       {
         ctx_text (ctx, "untitled");
-      }
-      if (!client->shaded)
-      {
-        vt_draw (vt, ctx, client->x, client->y);
       }
       client->drawn_rev = vt_rev (vt);
     }
