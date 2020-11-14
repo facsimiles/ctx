@@ -136,16 +136,18 @@ Ctx *ctx_new_ui (int width, int height)
 #if CTX_FB
   if (!getenv ("DISPLAY"))
   {
-
     if ((backend==NULL) || (!strcmp (backend, "fb")))
     ret = ctx_new_fb (width, height, 0);
     if (ret) return ret;
+
+    /* XXX: when DRM backend works more properly wrt mouse and
+     *      restoring state when quitting, move drm avove
+     *      fb
+     */
     if ((backend==NULL) || (!strcmp (backend, "drm")))
     ret = ctx_new_fb (width, height, 1);
     if (ret) return ret;
   }
-
-
 #endif
 
 #if CTX_RASTERIZER

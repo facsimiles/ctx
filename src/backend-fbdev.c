@@ -105,9 +105,10 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
    if (!fb->fb_fd)
      return NULL;
 
+   static uint64_t res_conn_buf[20]={0};
+
    uint64_t res_fb_buf[20]={0};
    uint64_t res_crtc_buf[20]={0};
-   uint64_t res_conn_buf[20]={0};
    uint64_t res_enc_buf[20]={0};
    struct drm_mode_card_res res={0};
 
@@ -179,6 +180,12 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
   void *base = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED, fb->fb_fd, map_dumb.offset);
      *width = create_dumb.width;
      *height = create_dumb.height;
+     if (!base)
+     {
+        //Stop being the "master" of the DRI device
+       ioctl(fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
+       return NULL;
+     }
 
 //------------------------------------------------------------------------------
 //Kernel Mode Setting (KMS)
@@ -892,6 +899,16 @@ static const MmmKeyCode ufb_keycodes[]={
   {"shift-delete",        "\e[3;2~"},
   {"control-shift-delete","\e[3;6~"},
 
+
+
+
+
+  {"F1",         "\e[25~"},
+  {"F2",         "\e[26~"},
+  {"F3",         "\e[27~"},
+  {"F4",         "\e[26~"},
+
+
   {"F1",         "\e[11~"},
   {"F2",         "\e[12~"},
   {"F3",         "\e[13~"},
@@ -944,6 +961,7 @@ static const MmmKeyCode ufb_keycodes[]={
   {"control-x",   {24,0}},
   {"control-y",   {25,0}},
   {"control-z",   {26,0}},
+  {"alt-`",       "\e`"},
   {"alt-0",       "\e0"},
   {"alt-1",       "\e1"},
   {"alt-2",       "\e2"},
@@ -1399,7 +1417,6 @@ Ctx *ctx_new_fb (int width, int height, int drm)
       free (fb);
       return NULL;
      }
-  ctx_fb = fb;
 
 //fprintf (stderr, "%s\n", fb->fb_path);
   width = fb->width = fb->vinfo.xres;
@@ -1513,28 +1530,29 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   mice->priv = fb;
 
   fb->vt_active = 1;
-//return fb->ctx;
-  signal (SIGUSR1, vt_switch_cb);
-  signal (SIGUSR2, vt_switch_cb);
-  //return fb->ctx;
+  if (!fb->is_drm)
+  {
+    signal (SIGUSR1, vt_switch_cb);
+    signal (SIGUSR2, vt_switch_cb);
 
-  struct vt_stat st;
-  if (ioctl (0, VT_GETSTATE, &st) == -1)
+    struct vt_stat st;
+    if (ioctl (0, VT_GETSTATE, &st) == -1)
     {
   //  return NULL;
     }
     ioctl(0, KDSETMODE, KD_GRAPHICS);
 
-  fb->vt = st.v_active;
+    fb->vt = st.v_active;
 
-  struct vt_mode mode;
-  mode.mode = VT_PROCESS;
-  mode.relsig = SIGUSR1;
-  mode.acqsig = SIGUSR2;
-  if (ioctl (0, VT_SETMODE, &mode) < 0)
-  {
-    fprintf (stderr, "VT_SET_MODE on vt %i failed\n", fb->vt);
-    exit (-1);
+    struct vt_mode mode;
+    mode.mode = VT_PROCESS;
+    mode.relsig = SIGUSR1;
+    mode.acqsig = SIGUSR2;
+    if (ioctl (0, VT_SETMODE, &mode) < 0)
+    {
+      fprintf (stderr, "VT_SET_MODE on vt %i failed\n", fb->vt);
+      return NULL;
+    }
   }
 
   return fb->ctx;
