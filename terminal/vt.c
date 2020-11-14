@@ -376,10 +376,10 @@ struct _VT
 
   void  *client;
 
-  ssize_t (*write) (void *serial_obj, const void *buf, size_t count);
-  ssize_t (*read) (void *serial_obj, void *buf, size_t count);
+  ssize_t (*write)   (void *serial_obj, const void *buf, size_t count);
+  ssize_t (*read)    (void *serial_obj, void *buf, size_t count);
   int    (*waitdata) (void *serial_obj, int timeout);
-  void  (*resize) (void *serial_obj, int cols, int rows, int px_width, int px_height);
+  void  (*resize)    (void *serial_obj, int cols, int rows, int px_width, int px_height);
 
 
   char     *title;
@@ -799,18 +799,18 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
 
 VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id, int can_launch)
 {
-  VT *vt         = calloc (sizeof (VT), 1);
-  vt->id = id;
-  vt->lastx = -1;
-  vt->lasty = -1;
-  vt->state         = vt_state_neutral;
-  vt->smooth_scroll = 0;
-  vt->can_launch = can_launch;
-  vt->scroll_offset = 0.0;
-  vt->waitdata      = vtpty_waitdata;
-  vt->read          = vtpty_read;
-  vt->write         = vtpty_write;
-  vt->resize        = vtpty_resize;
+  VT *vt                 = calloc (sizeof (VT), 1);
+  vt->id                 = id;
+  vt->lastx              = -1;
+  vt->lasty              = -1;
+  vt->state              = vt_state_neutral;
+  vt->smooth_scroll      = 0;
+  vt->can_launch         = can_launch;
+  vt->scroll_offset      = 0.0;
+  vt->waitdata           = vtpty_waitdata;
+  vt->read               = vtpty_read;
+  vt->write              = vtpty_write;
+  vt->resize             = vtpty_resize;
   vt->font_to_cell_scale = 0.98;
   vt->cursor_visible     = 1;
   vt->lines              = NULL;
@@ -867,7 +867,12 @@ static int vt_trimlines (VT *vt, int max)
   CtxList *l;
   int i;
   if (vt->line_count < max)
-    { return 0; }
+    { 
+      for (int i = vt->line_count; i <  max; i++)
+      {
+      }
+      return 0;
+    }
   for (l = vt->lines, i = 0; l && i < max-1; l = l->next, i++);
   if (l)
     {
@@ -925,12 +930,13 @@ void vt_set_term_size (VT *vt, int icols, int irows)
           vt->scrollback_count--;
           ctx_list_append (&vt->lines, vt->scrollback->data);
           ctx_list_remove (&vt->scrollback, vt->scrollback->data);
+          vt->cursor_y++;
         }
       else
         {
-          ctx_list_append (&vt->lines, vt_line_new_with_size ("", vt->cols) );
+          ctx_list_prepend (&vt->lines, vt_line_new_with_size ("", vt->cols) );
         }
-      vt->cursor_y++;
+      vt->line_count++;
       vt->rows++;
     }
   while (irows < vt->rows)
@@ -946,6 +952,7 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   vt->margin_left    = 1;
   vt->margin_bottom  = vt->rows;
   vt->margin_right   = vt->cols;
+  _vt_move_to (vt, vt->cursor_y, vt->cursor_x);
   vt->rev++;
   VT_info ("resize %i %i", irows, icols);
 }
@@ -4510,8 +4517,6 @@ static void vt_state_neutral (VT *vt, int byte)
     }
 }
 
-
-
 int vt_poll (VT *vt, int timeout)
 {
   int read_size = sizeof (vt->buf);
@@ -4555,7 +4560,6 @@ int vt_poll (VT *vt, int timeout)
     }
   return got_data;
 }
-
 
 /******/
 
