@@ -1349,8 +1349,6 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
     ctx->events.pointer_y[0] = y;
   }
 
-  /* XXX: too brutal; should use enter/leave events */
-  //if (getenv ("CTX_FAST") == NULL)
   grablist = device_get_grabs (ctx, device_no);
   _ctx_update_item (ctx, device_no, x, y, CTX_MOTION, &hitlist);
 
@@ -1364,6 +1362,13 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
     {
       ctx_set_cursor (ctx, CTX_CURSOR_ARROW);
     }
+    CtxItem  *hovered_item = _ctx_detect (ctx, x, y, CTX_ANY);
+    static CtxItem *prev_hovered_item = NULL;
+    if (prev_hovered_item != hovered_item)
+    {
+      ctx_set_dirty (ctx, 1);
+    }
+    prev_hovered_item = hovered_item;
   }
 
   event->delta_x = x - event->prev_x;

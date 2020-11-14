@@ -677,6 +677,7 @@ int ctx_nct_consume_events (Ctx *ctx)
       mrg_set_size (mrg, width, height);
       mrg_queue_draw (mrg, NULL);
 #endif
+
     }
     else
     {

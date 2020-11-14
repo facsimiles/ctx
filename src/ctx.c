@@ -1452,7 +1452,11 @@ int  ctx_has_quit (Ctx *ctx)
 #if CTX_EVENTS
 void         ctx_set_cursor (Ctx *ctx, CtxCursor cursor)
 {
-  ctx->cursor = cursor;
+  if (ctx->cursor != cursor)
+  {
+    ctx_set_dirty (ctx, 1);
+    ctx->cursor = cursor;
+  }
 }
 CtxCursor    ctx_get_cursor (Ctx *ctx)
 {

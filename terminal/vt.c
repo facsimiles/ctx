@@ -861,11 +861,6 @@ int vt_ch (VT *vt)
   return vt->ch;
 }
 
-void vt_set_mmm (VT *vt, void *mmm)
-{
-  vt->mmm = mmm;
-}
-
 static int vt_trimlines (VT *vt, int max)
 {
   CtxList *chop_point = NULL;

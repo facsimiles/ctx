@@ -762,7 +762,7 @@ static int draw_vts (Ctx *ctx)
       ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
       ctx_fill (ctx);
 
-      if (client == active)
+      if (client == active && !client->shaded)
       {
         itk_style_color (ctx, "titlebar-focused-bg");
         ctx_rectangle (ctx,

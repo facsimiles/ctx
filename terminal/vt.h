@@ -77,4 +77,3 @@ typedef enum VtMouseEvent
 } VtMouseEvent;
 
 void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, int px_y);
-void vt_set_mmm (VT *vt, void *mmm);

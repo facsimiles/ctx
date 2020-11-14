@@ -192,6 +192,7 @@ struct _ITK{
   CtxList *controls;
   CtxList *choices;
   CtxList *panels;
+  int hovered_no;
   int control_no;
   int choice_active;
 
@@ -1344,10 +1345,23 @@ int itk_button (ITK *itk, const char *label)
   ctx_stroke (ctx);
 #endif
 
+  {
+    float px = ctx_pointer_x (itk->ctx);
+    float py = ctx_pointer_y (itk->ctx);
+    if (px >= control->x && px <= control->x + control->width &&
+        py >= control->y && py <= control->y + control->height)
+    {
+      itk_style_color (itk->ctx, "itk-button-hover-bg");
+    }
+  else
+    {
   if (itk->focus_no == control->no)
     itk_style_color (itk->ctx, "itk-button-focused-bg");
   else
     itk_style_color (itk->ctx, "itk-interactive-bg");
+  }
+  }
+
 
   ctx_round_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance, em * 0.33);
   ctx_fill (ctx);
@@ -1457,6 +1471,21 @@ void itk_set_focus (ITK *itk, int pos)
    }
 }
 
+CtxControl *itk_hovered_control(ITK *itk)
+{
+  float px = ctx_pointer_x (itk->ctx);
+  float py = ctx_pointer_y (itk->ctx);
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (px >= control->x && px <= control->x + control->width &&
+        py >= control->y && py <= control->y + control->height)
+    {
+      return control;
+    }
+  }
+  return NULL;
+}
 
 CtxControl *itk_focused_control(ITK *itk)
 {
@@ -1864,6 +1893,16 @@ void itk_done (ITK *itk)
   Ctx *ctx = itk->ctx;
 
   CtxControl *control = itk_focused_control (itk);
+#if 0
+  CtxControl *hovered_control = itk_hovered_control (itk);
+  int hovered_no = hovered_control ? hovered_control->no : -1;
+
+  if (itk->hovered_no != hovered_no)
+  {
+    itk->hovered_no = hovered_no;
+    ctx_set_dirty (ctx, 1);
+  }
+#endif
 
   float em = itk_em (itk);
   if (!control){
