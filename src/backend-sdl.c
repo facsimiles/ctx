@@ -7,6 +7,7 @@
  // 3 threads 27fps
  // 4 threads 29fps
 
+#include <threads.h>
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
@@ -52,6 +53,9 @@ struct _CtxSDL
    SDL_Window   *window;
    SDL_Renderer *renderer;
    SDL_Texture  *texture;
+
+   cnd_t  cond;
+   mtx_t  mtx;
 };
 
 void ctx_sdl_set_title (void *self, const char *new_title)
@@ -557,11 +561,15 @@ Ctx *ctx_new_sdl (int width, int height)
     ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = sdl->ctx;
   }
 
+  mtx_init (&sdl->mtx, mtx_plain);
+  cnd_init (&sdl->cond);
+
 #define start_thread(no)\
   if(_ctx_max_threads>no){ \
     static void *args[2]={(void*)no, };\
+    thrd_t tid;\
     args[1]=sdl;\
-    SDL_CreateThread ((void*)sdl_render_fun, "render", args);\
+    thrd_create (&tid, (void*)sdl_render_fun, args);\
   }
   start_thread(0);
   start_thread(1);
