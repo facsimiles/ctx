@@ -1618,7 +1618,7 @@ int terminal_main (int argc, char **argv)
       }
       else
       {
-        sleep_time *= 10;
+        sleep_time *= 4;
         if (sleep_time > 1000000/8)
             sleep_time = 1000000/8;
         //usleep (sleep_time/2);

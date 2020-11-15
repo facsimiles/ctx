@@ -4531,7 +4531,7 @@ int vt_poll (VT *vt, int timeout)
     }
 #endif
   read_size = MIN (read_size, remaining_chars);
-  while (timeout > 100 &&
+  while (timeout >= 10 &&
          remaining_chars > 0 &&
          vt_waitdata (vt, timeout) )
     {
