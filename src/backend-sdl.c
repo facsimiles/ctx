@@ -13,6 +13,7 @@ typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
 {
    void (*render)    (void *braille, CtxCommand *command);
+   // XXX need reset!   
    void (*flush)     (void *braille);
    void (*free)      (void *braille);
    Ctx          *ctx;

@@ -133,7 +133,7 @@ again:
   ret = _ctx_iterator_next (iterator);
 #if CTX_BITPACK
   if (ret && expand_bitpack)
-    switch (ret->code)
+    switch ((CtxCode)(ret->code))
       {
         case CTX_REL_CURVE_TO_REL_LINE_TO:
           ctx_iterator_expand_s8_args (iterator, ret);
@@ -147,6 +147,58 @@ again:
           else
             iterator->bitpack_length          = 4;
           goto again;
+        case CTX_FILL:
+        case CTX_NOP:
+        case CTX_MOVE_TO:
+        case CTX_LINE_TO:
+        case CTX_REL_MOVE_TO:
+        case CTX_REL_LINE_TO:
+        case CTX_VER_LINE_TO:
+        case CTX_REL_VER_LINE_TO:
+        case CTX_HOR_LINE_TO:
+        case CTX_REL_HOR_LINE_TO:
+        case CTX_ROTATE:
+        case CTX_FLUSH:
+        case CTX_TEXT_ALIGN:
+        case CTX_TEXT_BASELINE:
+        case CTX_TEXT_DIRECTION:
+        case CTX_MITER_LIMIT:
+        case CTX_GLOBAL_ALPHA:
+        case CTX_COMPOSITING_MODE:
+        case CTX_BLEND_MODE:
+        case CTX_SHADOW_BLUR:
+        case CTX_SHADOW_OFFSET_X:
+        case CTX_SHADOW_OFFSET_Y:
+        case CTX_RESET:
+        case CTX_EXIT:
+        case CTX_BEGIN_PATH:
+        case CTX_CLOSE_PATH:
+        case CTX_SAVE:
+        case CTX_CLIP:
+        case CTX_PRESERVE:
+        case CTX_DEFINE_GLYPH:
+        case CTX_IDENTITY:
+        case CTX_FONT_SIZE:
+        case CTX_START_GROUP:
+        case CTX_END_GROUP:
+        case CTX_RESTORE:
+        case CTX_LINE_WIDTH:
+        case CTX_STROKE:
+        case CTX_KERNING_PAIR:
+        case CTX_SCALE:
+        case CTX_GLYPH:
+        case CTX_GET:
+        case CTX_SET_PIXEL:
+        case CTX_FILL_RULE:
+        case CTX_LINE_CAP:
+        case CTX_LINE_JOIN:
+        case CTX_NEW_PAGE:
+        case CTX_SET_KEY:
+        case CTX_TRANSLATE:
+        case CTX_GRADIENT_STOP: // XXX is currently u8 hard-coded
+        case CTX_CONT: // shouldnt happen
+          iterator->bitpack_length = 0;
+          return (CtxCommand *) ret;
         case CTX_REL_LINE_TO_REL_CURVE_TO:
           ctx_iterator_expand_s8_args (iterator, ret);
           iterator->bitpack_command[0].code = CTX_REL_LINE_TO;
@@ -236,7 +288,8 @@ again:
         case CTX_SET:
           iterator->bitpack_length = 0;
           return (CtxCommand *) ret;
-        default:
+#if 0
+        default: // XXX remove - and get better warnings
           iterator->bitpack_command[0] = ret[0];
           iterator->bitpack_command[1] = ret[1];
           iterator->bitpack_command[2] = ret[2];
@@ -245,6 +298,7 @@ again:
           iterator->bitpack_pos = 0;
           iterator->bitpack_length = 1;
           goto again;
+#endif
       }
 #endif
   return (CtxCommand *) ret;

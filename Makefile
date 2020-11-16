@@ -15,6 +15,9 @@ CFLAGS+= -I. -Ifonts -Ideps
 LIBS   = -lutil -lz -lm -lpthread
 CCC=`which ccache` $(CC)
 
+# CFLAGS+= -fsanitize=address
+# LIBS+= -lasan
+
 OFLAGS_HARD=-O3
 OFLAGS_LIGHT=-O2
 
