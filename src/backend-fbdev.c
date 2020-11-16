@@ -1391,6 +1391,7 @@ static void vt_switch_cb (int sig)
     ioctl (0, KDSETMODE, KD_GRAPHICS);
     if (ctx_fb->is_drm)
       ioctl(ctx_fb->fb_fd, DRM_IOCTL_SET_MASTER, 0);
+    ctx_fb_flip (ctx_fb);
   }
 }
 

@@ -142,9 +142,9 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     int count = 0;
     while (sdl_render_threads_done (sdl) != _ctx_max_threads)
     {
-      usleep (500);
+      usleep (50);
       count ++;
-      if (count > 1000)
+      if (count > 20000)
       {
         sdl->shown_frame = sdl->render_frame;
         return;
