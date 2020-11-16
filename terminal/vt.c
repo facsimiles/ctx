@@ -4521,7 +4521,7 @@ int vt_poll (VT *vt, int timeout)
 {
   int read_size = sizeof (vt->buf);
   int got_data = 0;
-  int remaining_chars = read_size * 10;
+  int remaining_chars = read_size * 1024;
   int len = 0;
   audio_task (vt, 0);
 #if 1
@@ -4531,9 +4531,11 @@ int vt_poll (VT *vt, int timeout)
     }
 #endif
   read_size = MIN (read_size, remaining_chars);
-  while (timeout >= 10 &&
-         remaining_chars > 0 &&
-         vt_waitdata (vt, timeout) )
+  long start_ticks = ctx_ticks ();
+  long ticks = start_ticks;
+  while (remaining_chars > 0 &&
+         vt_waitdata (vt, 0) &&
+         ticks - start_ticks < timeout)
     {
   if (vt->in_smooth_scroll)
     {
@@ -4541,15 +4543,14 @@ int vt_poll (VT *vt, int timeout)
       // XXX : need a bail condition -
       // /// so that we can stop accepting data until autowrap or similar
     }
-
       len = vt_read (vt, vt->buf, read_size);
       for (int i = 0; i < len; i++)
         { vt->state (vt, vt->buf[i]); }
       // XXX allow state to break out in ctx mode on flush
       got_data+=len;
       remaining_chars -= len;
-      timeout -= 10;
       audio_task (vt, 0);
+      ticks = ctx_ticks ();
     }
   if (got_data < 0)
     {
