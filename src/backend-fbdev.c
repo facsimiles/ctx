@@ -1549,7 +1549,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
 
   fb->vt_active = 1;
   ioctl(0, KDSETMODE, KD_GRAPHICS);
-  if (!fb->is_drm)
+  //if (!fb->is_drm)
   {
     signal (SIGUSR1, vt_switch_cb);
     signal (SIGUSR2, vt_switch_cb);
