@@ -1614,15 +1614,15 @@ int terminal_main (int argc, char **argv)
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_flush (ctx);
-        sleep_time     = 200;
+        sleep_time     = 20000;
       }
       else
       {
-        sleep_time *= 4;
+        sleep_time *= 10;
         if (sleep_time > 1000000/8)
             sleep_time = 1000000/8;
-        //usleep (sleep_time/2);
       }
+      usleep (sleep_time/2);
 
       CtxEvent *event;
       while ((event = ctx_get_event (ctx)))

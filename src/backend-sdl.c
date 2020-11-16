@@ -329,7 +329,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
           while (sdl->shown_frame != sdl->render_frame) {
-                  usleep (100);
+                  usleep (1000);
                   ctx_sdl_show_frame (sdl);
           }
           int width = event.window.data1;
@@ -360,7 +360,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   int count = 0;
   while (sdl->shown_frame != sdl->render_frame && count < 1000)
   {
-    usleep (100);
+    usleep (1000);
     ctx_sdl_show_frame (sdl);
     count++;
   }
@@ -429,6 +429,10 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 void ctx_sdl_free (CtxSDL *sdl)
 {
   sdl->quit = 1;
+  mtx_lock (&sdl->mtx);
+  cnd_broadcast (&sdl->cond);
+  mtx_unlock (&sdl->mtx);
+
   while (sdl->thread_quit < _ctx_max_threads)
     usleep (1000); // XXX : properly wait for threads instead
   if (sdl->pixels)

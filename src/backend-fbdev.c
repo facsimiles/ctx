@@ -1240,7 +1240,6 @@ inline static void ctx_fb_flush (CtxFb *fb)
       }
     }
 
-
     int dirty_no = 0;
     if (dirty_tiles)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
@@ -1267,24 +1266,23 @@ inline static void ctx_fb_flush (CtxFb *fb)
 
 void ctx_fb_free (CtxFb *fb)
 {
-  if (fb->is_drm)
-  {
-    ctx_fbdrm_close (fb);
-    ioctl (0, KDSETMODE, KD_TEXT);
-    system("stty sane");
-    return ;
-  }
+  mtx_lock (&fb->mtx);
+  cnd_broadcast (&fb->cond);
+  mtx_unlock (&fb->mtx);
 
   memset (fb->fb, 0, fb->width * fb->height *  4);
   for (int i = 0 ; i < _ctx_max_threads; i++)
     ctx_free (fb->host[i]);
-  system("stty sane");
-  
-  ioctl (0, KDSETMODE, KD_TEXT);
 
+  if (fb->is_drm)
+  {
+    ctx_fbdrm_close (fb);
+  }
+
+  ioctl (0, KDSETMODE, KD_TEXT);
+  system("stty sane");
   free (fb->scratch_fb);
   //free (fb);
-  /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
 static
@@ -1550,17 +1548,16 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   mice->priv = fb;
 
   fb->vt_active = 1;
+  ioctl(0, KDSETMODE, KD_GRAPHICS);
   if (!fb->is_drm)
   {
     signal (SIGUSR1, vt_switch_cb);
     signal (SIGUSR2, vt_switch_cb);
-
     struct vt_stat st;
     if (ioctl (0, VT_GETSTATE, &st) == -1)
     {
   //  return NULL;
     }
-    ioctl(0, KDSETMODE, KD_GRAPHICS);
 
     fb->vt = st.v_active;
 
