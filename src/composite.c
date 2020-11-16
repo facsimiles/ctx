@@ -1357,7 +1357,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
 #endif
 
 static void
-ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
+CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENTS)
 {
 #if 0
   ctx_u8_source_over_normal_color (4, rasterizer, dst, src, clip, x0, coverage, count);
@@ -1534,7 +1534,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 }
 
 static void
-ctx_RGBA8_copy_normal (CTX_COMPOSITE_ARGUMENTS)
+CTX_COMPOSITE_SUFFIX(ctx_RGBA8_copy_normal) (CTX_COMPOSITE_ARGUMENTS)
 {
   ctx_u8_copy_normal (4, rasterizer, dst, src, x0, coverage, count);
 }
@@ -2442,7 +2442,7 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
  */
 #define ctx_u8_porter_duff(comp_format, components, source, fragment, blend) \
 static void \
-ctx_##comp_format##_porter_duff_##source (CTX_COMPOSITE_ARGUMENTS) \
+CTX_COMPOSITE_SUFFIX(ctx_##comp_format##_porter_duff_##source) (CTX_COMPOSITE_ARGUMENTS) \
 { \
   _ctx_u8_porter_duffs(comp_format, components, source, fragment, blend);\
 }
@@ -2474,7 +2474,7 @@ ctx_u8_porter_duff_blend(RGBA8, 4, CTX_BLEND_NORMAL, normal)
 
 
 static void
-ctx_RGBA8_nop (CTX_COMPOSITE_ARGUMENTS)
+CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop) (CTX_COMPOSITE_ARGUMENTS)
 {
 }
 
@@ -2484,7 +2484,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   CtxGState *gstate = &rasterizer->state->gstate;
   int components = 4;
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
-  rasterizer->comp_op = ctx_RGBA8_porter_duff_generic;
+  rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_generic);
 #if 1
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
   {
@@ -2529,23 +2529,23 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
         case CTX_BLEND_NORMAL:
           if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
           {
-            rasterizer->comp_op = ctx_RGBA8_copy_normal;
+            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_copy_normal);
             return;
           }
           else if (gstate->global_alpha_u8 == 0)
           {
-            rasterizer->comp_op = ctx_RGBA8_nop;
+            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
           }
           else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
           {
              if (rasterizer->color[components-1] == 0)
-                 rasterizer->comp_op = ctx_RGBA8_nop;
+                 rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
              else
-                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
+                 rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color);
          }
          break;
       default:
-         rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
+         rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_color);
          break;
     }
     //rasterizer->comp_op = ctx_RGBA8_porter_duff_color; // XXX overide to make all go
@@ -2563,10 +2563,10 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
             return; // exhaustively handled above;
 #if CTX_GRADIENTS
           case CTX_SOURCE_LINEAR_GRADIENT:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_linear_gradient_normal;
+            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_linear_gradient_normal);
             break;
           case CTX_SOURCE_RADIAL_GRADIENT:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_radial_gradient_normal;
+            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_radial_gradient_normal);
             break;
 #endif
           case CTX_SOURCE_IMAGE:
@@ -2575,19 +2575,19 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
                switch (g->image.buffer->format->bpp)
                {
                  case 32:
-                   rasterizer->comp_op = ctx_RGBA8_porter_duff_image_rgba8_normal;
+                   rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_image_rgba8_normal);
                    break;
                  case 24:
-                   rasterizer->comp_op = ctx_RGBA8_porter_duff_image_rgb8_normal;
+                   rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_image_rgb8_normal);
                  break;
                  default:
-                   rasterizer->comp_op = ctx_RGBA8_porter_duff_generic_normal;
+                   rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_generic_normal);
                    break;
                }
             }
             break;
           default:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_generic_normal;
+            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_generic_normal);
             break;
         }
         return;
@@ -3215,7 +3215,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
         }
         else if (gstate->global_alpha_u8 == 0)
         {
-          rasterizer->comp_op = ctx_RGBA8_nop;
+          rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
         }
         else
         switch (gstate->source.type)
@@ -3224,7 +3224,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
               if (((float*)(rasterizer->color))[components-1] == 0.0f)
-                rasterizer->comp_op = ctx_RGBA8_nop;
+                rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
               else if (((float*)(rasterizer->color))[components-1] == 1.0f)
                 rasterizer->comp_op = ctx_RGBAF_source_over_normal_opaque_color;
               else
@@ -3413,7 +3413,7 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
           rasterizer->comp_op = ctx_GRAYAF_copy_normal;
         }
         else if (gstate->global_alpha_u8 == 0)
-          rasterizer->comp_op = ctx_RGBA8_nop;
+          rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
         else
         switch (gstate->source.type)
         {
@@ -3421,7 +3421,7 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
               if (((float*)rasterizer->color)[components-1] == 0.0f)
-                rasterizer->comp_op = ctx_RGBA8_nop;
+                rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
               else if (((float*)rasterizer->color)[components-1] == 0.0f)
                 rasterizer->comp_op = ctx_GRAYAF_source_over_normal_opaque_color;
               else
@@ -3640,7 +3640,7 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
           rasterizer->comp_op = ctx_CMYKAF_copy_normal;
         }
         else if (gstate->global_alpha_u8 == 0)
-          rasterizer->comp_op = ctx_RGBA8_nop;
+          rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
         else
         switch (gstate->source.type)
         {
@@ -3648,7 +3648,7 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
               if (((float*)rasterizer->color)[components-1] == 0.0f)
-                rasterizer->comp_op = ctx_RGBA8_nop;
+                rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
               else if (((float*)rasterizer->color)[components-1] == 1.0f)
                 rasterizer->comp_op = ctx_CMYKAF_source_over_normal_opaque_color;
               else
@@ -4338,7 +4338,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
           rasterizer->comp_op = ctx_GRAYA8_copy_normal;
         }
         else if (gstate->global_alpha_u8 == 0)
-          rasterizer->comp_op = ctx_RGBA8_nop;
+          rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
         else
         switch (gstate->source.type)
         {
@@ -4346,7 +4346,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
               if (rasterizer->color[components-1] == 0)
-                rasterizer->comp_op = ctx_RGBA8_nop;
+                rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
               else if (rasterizer->color[components-1] == 255)
                 rasterizer->comp_op = ctx_GRAYA8_source_over_normal_opaque_color;
               else
