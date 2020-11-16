@@ -1977,7 +1977,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
     }
 
 #if CTX_ENABLE_CLIP
-  if (minx == maxx && miny == maxy) // XXX : reset hack
+  if ((minx == maxx) || (miny == maxy)) // XXX : reset hack
   {
     if (rasterizer->clip_buffer)
      ctx_buffer_free (rasterizer->clip_buffer);
