@@ -360,6 +360,12 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 {
   if (fb->shown_frame == fb->render_frame)
   {
+    if (block == 0) // consume event call
+    {
+      ctx_fb_draw_cursor (fb);
+      ctx_fb_flip (fb);
+    }
+
     return;
   }
 
@@ -368,9 +374,9 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
     int count = 0;
     while (fb_render_threads_done (fb) != _ctx_max_threads)
     {
-      usleep (500);
+      usleep (50);
       count ++;
-      if (count > 1000)
+      if (count > 10000)
       {
         fb->shown_frame = fb->render_frame;
         return;
