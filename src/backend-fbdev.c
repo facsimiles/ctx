@@ -394,6 +394,12 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
        int pre_skip = fb->min_row * fb->height/CTX_HASH_ROWS * fb->width;
        int post_skip = (CTX_HASH_ROWS-fb->max_row-1) * fb->height/CTX_HASH_ROWS * fb->width;
 
+       int rows = ((fb->width * fb->height) - pre_skip - post_skip)/fb->width;
+
+       int col_pre_skip = fb->min_col * fb->width/CTX_HASH_COLS;
+       int col_post_skip = (CTX_HASH_COLS-fb->max_col-1) * fb->width/CTX_HASH_COLS;
+
+
        if (pre_skip < 0) pre_skip = 0;
        if (post_skip < 0) post_skip = 0;
 
@@ -422,10 +428,23 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
      {
        case 32:
 #if 1
-         memcpy (fb->fb + pre_skip * 4, fb->scratch_fb + pre_skip * 4, ((fb->width * fb->height) - (pre_skip + post_skip)) *  4);
-         //memcpy (fb->fb, fb->scratch_fb, ((fb->width * fb->height) - (post_skip)) *  4);
-         //memcpy (fb->fb, fb->scratch_fb, (fb->width * fb->height) * 4);
-         // we instruct the rasterizer to pre-swap red and greens for us
+         {
+           uint8_t *dst = fb->fb + pre_skip * 4;
+           uint8_t *src = fb->scratch_fb + pre_skip * 4;
+           int pre = col_pre_skip * 4;
+           int post = col_post_skip * 4;
+           int core = fb->width * 4 - pre - post;
+           for (int i = 0; i < rows; i++)
+           {
+             dst  += pre;
+             src  += pre;
+             memcpy (dst, src, core);
+             src  += core;
+             dst  += core;
+             dst  += post;
+             src  += post;
+           }
+         }
 #else
          { int count = fb->width * fb->height;
            const uint32_t *src = (void*)fb->scratch_fb;
