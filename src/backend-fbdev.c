@@ -1390,8 +1390,21 @@ static void vt_switch_cb (int sig)
     ctx_fb->render_frame = ++ctx_fb->frame;
     ioctl (0, KDSETMODE, KD_GRAPHICS);
     if (ctx_fb->is_drm)
+    {
       ioctl(ctx_fb->fb_fd, DRM_IOCTL_SET_MASTER, 0);
-    ctx_fb_flip (ctx_fb);
+      ctx_fb_flip (ctx_fb);
+    }
+    else
+    {
+      ctx_fb->ctx->dirty=1;
+
+    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int col = 0; col < CTX_HASH_COLS; col++)
+      {
+        ctx_fb->hashes[(row * CTX_HASH_COLS + col) *  20] += 1;
+      }
+    }
+
   }
 }
 
