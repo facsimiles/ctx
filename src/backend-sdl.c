@@ -420,7 +420,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     sdl->render_frame = ++sdl->frame;
 
     mtx_lock (&sdl->mtx);
-      cnd_broadcast (&sdl->cond);
+    cnd_broadcast (&sdl->cond);
     mtx_unlock (&sdl->mtx);
 
   }
@@ -460,7 +460,7 @@ void sdl_render_fun (void **data)
     Ctx *host = sdl->host[no];
 
     mtx_lock (&sdl->mtx);
-      cnd_wait(&sdl->cond, &sdl->mtx);
+    cnd_wait(&sdl->cond, &sdl->mtx);
     mtx_unlock (&sdl->mtx);
 
     if (sdl->render_frame != sdl->rendered_frame[no])

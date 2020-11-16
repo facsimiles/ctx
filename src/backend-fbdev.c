@@ -96,6 +96,8 @@ struct _CtxFb
    EvSource    *evsource[4];
    int          evsource_count;
    int          is_drm;
+   cnd_t        cond;
+   mtx_t        mtx;
    struct drm_mode_crtc crtc;
 };
 
@@ -1256,6 +1258,10 @@ inline static void ctx_fb_flush (CtxFb *fb)
       }
 
     fb->render_frame = ++fb->frame;
+
+    mtx_lock (&fb->mtx);
+    cnd_broadcast (&fb->cond);
+    mtx_unlock (&fb->mtx);
   }
 }
 
@@ -1290,10 +1296,14 @@ void fb_render_fun (void **data)
   int sleep_time = 100;
   while (!fb->quit)
   {
+    mtx_lock (&fb->mtx);
+    cnd_wait (&fb->cond, &fb->mtx);
+    mtx_unlock (&fb->mtx);
+
     if (fb->render_frame != fb->rendered_frame[no])
     {
       int hno = 0;
-      sleep_time = 100;
+
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
         {
@@ -1336,13 +1346,6 @@ void fb_render_fun (void **data)
    //   ctx_render_stream (fb->ctx_copy, stdout, 1);
    //   ctx_reset (fb->ctx_copy);
       }
-    }
-    else
-    {
-      usleep (sleep_time);
-      sleep_time *= 1.2;
-      if (sleep_time > 1000000/8)
-          sleep_time = 1000000/8;
     }
   }
   fb->thread_quit ++;
@@ -1507,6 +1510,9 @@ Ctx *ctx_new_fb (int width, int height, int drm)
                                   // is overriden in  thread
     ((CtxRasterizer*)fb->host[i]->renderer)->texture_source = fb->ctx;
   }
+
+  mtx_init (&fb->mtx, mtx_plain);
+  cnd_init (&fb->cond);
 
 #define start_thread(no)\
   if(_ctx_max_threads>no){ \
