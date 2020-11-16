@@ -73,17 +73,16 @@ const char *_ctx_code_to_name (int code)
 {
       switch (code)
         {
-
-                case CTX_REL_LINE_TO_X4: return "relLinetoX4"; break;
-                case CTX_REL_LINE_TO_REL_CURVE_TO: return "relLineToRelCurveTo"; break;
-  case CTX_REL_CURVE_TO_REL_LINE_TO: return "relCurveToRelLineTo"; break;
-  case CTX_REL_CURVE_TO_REL_MOVE_TO: return "relCurveToRelMoveTo"; break;
-  case CTX_REL_LINE_TO_X2:           return "relLineToX2"; break;
-  case CTX_MOVE_TO_REL_LINE_TO:      return "moveToRelLineTo"; break;
-  case CTX_REL_LINE_TO_REL_MOVE_TO:  return "relLineToRelMoveTo"; break;
-  case CTX_FILL_MOVE_TO:             return "fillMoveTo"; break;
-  case CTX_REL_QUAD_TO_REL_QUAD_TO:  return "relQuadToRelQuadTo"; break;
-  case CTX_REL_QUAD_TO_S16:          return "relQuadToS16"; break;
+          case CTX_REL_LINE_TO_X4:           return "relLinetoX4"; break;
+          case CTX_REL_LINE_TO_REL_CURVE_TO: return "relLineToRelCurveTo"; break;
+          case CTX_REL_CURVE_TO_REL_LINE_TO: return "relCurveToRelLineTo"; break;
+          case CTX_REL_CURVE_TO_REL_MOVE_TO: return "relCurveToRelMoveTo"; break;
+          case CTX_REL_LINE_TO_X2:           return "relLineToX2"; break;
+          case CTX_MOVE_TO_REL_LINE_TO:      return "moveToRelLineTo"; break;
+          case CTX_REL_LINE_TO_REL_MOVE_TO:  return "relLineToRelMoveTo"; break;
+          case CTX_FILL_MOVE_TO:             return "fillMoveTo"; break;
+          case CTX_REL_QUAD_TO_REL_QUAD_TO:  return "relQuadToRelQuadTo"; break;
+          case CTX_REL_QUAD_TO_S16:          return "relQuadToS16"; break;
 
           case CTX_SET_KEY:              return "setParam"; break;
           case CTX_COLOR:                return "setColor"; break;
@@ -119,7 +118,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_PRESERVE:             return "preserve"; break;
           case CTX_FLUSH:                return "flush"; break;
           case CTX_RESET:                return "reset"; break;
-          case CTX_FONT:             return "font"; break;
+          case CTX_FONT:                 return "font"; break;
           case CTX_STROKE:               return "stroke"; break;
           case CTX_CLIP:                 return "clip"; break;
           case CTX_ARC:                  return "arc"; break;
@@ -184,54 +183,22 @@ static void _ctx_print_name (CtxFormatter *formatter, int code)
     name[2]='\0';
     switch (code)
       {
-        case CTX_GLOBAL_ALPHA:
-          name[1]='a';
-          break;
-        case CTX_COMPOSITING_MODE:
-          name[1]='m';
-          break;
-        case CTX_BLEND_MODE:
-          name[1]='B';
-          break;
-        case CTX_TEXT_ALIGN:
-          name[1]='t';
-          break;
-        case CTX_TEXT_BASELINE:
-          name[1]='b';
-          break;
-        case CTX_TEXT_DIRECTION:
-          name[1]='d';
-          break;
-        case CTX_FONT_SIZE:
-          name[1]='f';
-          break;
-        case CTX_MITER_LIMIT:
-          name[1]='l';
-          break;
-        case CTX_LINE_JOIN:
-          name[1]='j';
-          break;
-        case CTX_LINE_CAP:
-          name[1]='c';
-          break;
-        case CTX_LINE_WIDTH:
-          name[1]='w';
-          break;
-        case CTX_SHADOW_BLUR:
-          name[1]='s';
-          break;
-        case CTX_SHADOW_COLOR:
-          name[1]='C';
-          break;
-        case CTX_SHADOW_OFFSET_X:
-          name[1]='x';
-          break;
-        case CTX_SHADOW_OFFSET_Y:
-          name[1]='y';
-          break;
-        case CTX_FILL_RULE:
-          name[1]='r';
-          break;
+        case CTX_GLOBAL_ALPHA:      name[1]='a'; break;
+        case CTX_COMPOSITING_MODE:  name[1]='m'; break;
+        case CTX_BLEND_MODE:        name[1]='B'; break;
+        case CTX_TEXT_ALIGN:        name[1]='t'; break;
+        case CTX_TEXT_BASELINE:     name[1]='b'; break;
+        case CTX_TEXT_DIRECTION:    name[1]='d'; break;
+        case CTX_FONT_SIZE:         name[1]='f'; break;
+        case CTX_MITER_LIMIT:       name[1]='l'; break;
+        case CTX_LINE_JOIN:         name[1]='j'; break;
+        case CTX_LINE_CAP:          name[1]='c'; break;
+        case CTX_LINE_WIDTH:        name[1]='w'; break;
+        case CTX_SHADOW_BLUR:       name[1]='s'; break;
+        case CTX_SHADOW_COLOR:      name[1]='C'; break;
+        case CTX_SHADOW_OFFSET_X:   name[1]='x'; break;
+        case CTX_SHADOW_OFFSET_Y:   name[1]='y'; break;
+        case CTX_FILL_RULE:         name[1]='r'; break;
         default:
           name[0] = code;
           name[1] = 0;
@@ -265,83 +232,45 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
               case CTX_TEXT_BASELINE:
                 switch (val)
                   {
-                    case CTX_TEXT_BASELINE_ALPHABETIC:
-                      str = "alphabetic";
-                      break;
-                    case CTX_TEXT_BASELINE_TOP:
-                      str = "top";
-                      break;
-                    case CTX_TEXT_BASELINE_BOTTOM:
-                      str = "bottom";
-                      break;
-                    case CTX_TEXT_BASELINE_HANGING:
-                      str = "hanging";
-                      break;
-                    case CTX_TEXT_BASELINE_MIDDLE:
-                      str = "middle";
-                      break;
-                    case CTX_TEXT_BASELINE_IDEOGRAPHIC:
-                      str = "ideographic";
-                      break;
+                    case CTX_TEXT_BASELINE_ALPHABETIC: str = "alphabetic"; break;
+                    case CTX_TEXT_BASELINE_TOP:        str = "top";        break;
+                    case CTX_TEXT_BASELINE_BOTTOM:     str = "bottom";     break;
+                    case CTX_TEXT_BASELINE_HANGING:    str = "hanging";    break;
+                    case CTX_TEXT_BASELINE_MIDDLE:     str = "middle";     break;
+                    case CTX_TEXT_BASELINE_IDEOGRAPHIC:str = "ideographic";break;
                   }
                 break;
               case CTX_TEXT_ALIGN:
                 switch (val)
                   {
-                    case CTX_TEXT_ALIGN_LEFT:
-                      str = "left";
-                      break;
-                    case CTX_TEXT_ALIGN_RIGHT:
-                      str = "right";
-                      break;
-                    case CTX_TEXT_ALIGN_START:
-                      str = "start";
-                      break;
-                    case CTX_TEXT_ALIGN_END:
-                      str = "end";
-                      break;
-                    case CTX_TEXT_ALIGN_CENTER:
-                      str = "center";
-                      break;
+                    case CTX_TEXT_ALIGN_LEFT:   str = "left"; break;
+                    case CTX_TEXT_ALIGN_RIGHT:  str = "right"; break;
+                    case CTX_TEXT_ALIGN_START:  str = "start"; break;
+                    case CTX_TEXT_ALIGN_END:    str = "end"; break;
+                    case CTX_TEXT_ALIGN_CENTER: str = "center"; break;
                   }
                 break;
               case CTX_LINE_CAP:
                 switch (val)
                   {
-                    case CTX_CAP_NONE:
-                      str = "none";
-                      break;
-                    case CTX_CAP_ROUND:
-                      str = "round";
-                      break;
-                    case CTX_CAP_SQUARE:
-                      str = "square";
-                      break;
+                    case CTX_CAP_NONE:   str = "none"; break;
+                    case CTX_CAP_ROUND:  str = "round"; break;
+                    case CTX_CAP_SQUARE: str = "square"; break;
                   }
                 break;
               case CTX_LINE_JOIN:
                 switch (val)
                   {
-                    case CTX_JOIN_MITER:
-                      str = "miter";
-                      break;
-                    case CTX_JOIN_ROUND:
-                      str = "round";
-                      break;
-                    case CTX_JOIN_BEVEL:
-                      str = "bevel";
-                      break;
+                    case CTX_JOIN_MITER: str = "miter"; break;
+                    case CTX_JOIN_ROUND: str = "round"; break;
+                    case CTX_JOIN_BEVEL: str = "bevel"; break;
                   }
                 break;
               case CTX_FILL_RULE:
                 switch (val)
                   {
-                    case CTX_FILL_RULE_WINDING:
-                      str = "winding";
-                      break;
-                    case CTX_FILL_RULE_EVEN_ODD:
-                      str = "evenodd";
-                      break;
+                    case CTX_FILL_RULE_WINDING:  str = "winding"; break;
+                    case CTX_FILL_RULE_EVEN_ODD: str = "evenodd"; break;
                   }
                 break;
               case CTX_BLEND_MODE:
@@ -472,17 +401,8 @@ ctx_print_entry (CtxFormatter *formatter, CtxEntry *entry, int args)
 static void
 ctx_print_glyph (CtxFormatter *formatter, CtxEntry *entry, int args)
 {
-  char buf[32];
   _ctx_print_name (formatter, entry->code);
-  if (formatter->longform)
-  {
-    sprintf (buf, "%i", entry->data.u32[0]);
-  }
-  else
-  {
-    sprintf (buf, "%i", entry->data.u32[0]);
-  }
-  ctx_formatter_addstr (formatter, buf, -1);
+  ctx_formatter_addstrf (formatter, "%i", entry->data.u32[0]);
   _ctx_print_endcmd (formatter);
 }
 
