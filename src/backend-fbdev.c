@@ -1370,6 +1370,8 @@ static void vt_switch_cb (int sig)
 {
   if (sig == SIGUSR1)
   {
+    if (ctx_fb->is_drm)
+      ioctl(ctx_fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
     ioctl (0, VT_RELDISP, 1);
     ctx_fb->vt_active = 0;
     ioctl (0, KDSETMODE, KD_TEXT);
@@ -1381,6 +1383,8 @@ static void vt_switch_cb (int sig)
     // queue draw
     ctx_fb->render_frame = ++ctx_fb->frame;
     ioctl (0, KDSETMODE, KD_GRAPHICS);
+    if (ctx_fb->is_drm)
+      ioctl(ctx_fb->fb_fd, DRM_IOCTL_SET_MASTER, 0);
   }
 }
 
