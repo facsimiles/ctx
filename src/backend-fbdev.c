@@ -356,11 +356,33 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     fb_cursor_drawn_y = cursor_y;
   }
 
-static void ctx_fb_show_frame (CtxFb *fb)
+static void ctx_fb_show_frame (CtxFb *fb, int block)
 {
-  if (fb->shown_frame != fb->render_frame &&
-      fb_render_threads_done (fb) == _ctx_max_threads)
+  if (fb->shown_frame == fb->render_frame)
   {
+    return;
+  }
+
+  if (block)
+  {
+    int count = 0;
+    while (fb_render_threads_done (fb) != _ctx_max_threads)
+    {
+      usleep (500);
+      count ++;
+      if (count > 1000)
+      {
+        fb->shown_frame = fb->render_frame;
+        return;
+      }
+    }
+  }
+  else
+  {
+    if (fb_render_threads_done (fb) != _ctx_max_threads)
+      return;
+  }
+
     if (fb->vt_active)
     {
        int pre_skip = fb->min_row * fb->height/CTX_HASH_ROWS * fb->width;
@@ -385,7 +407,6 @@ static void ctx_fb_show_frame (CtxFb *fb)
       fb->max_row = 0;
       fb->min_col = 100;
       fb->max_col = 0;
-
 
      // not when drm ?
      ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
@@ -499,14 +520,6 @@ static void ctx_fb_show_frame (CtxFb *fb)
     ctx_fb_draw_cursor (fb);
     ctx_fb_flip (fb);
     fb->shown_frame = fb->render_frame;
-    }
-  }
-  else
-  {
-    if (fb->vt_active)
-    {
-      ctx_fb_draw_cursor (fb);
-    }
   }
 }
 
@@ -1183,24 +1196,14 @@ static int event_check_pending (CtxFb *fb)
 int ctx_fb_consume_events (Ctx *ctx)
 {
   CtxFb *fb = (void*)ctx->renderer;
-  ctx_fb_show_frame (fb);
+  ctx_fb_show_frame (fb, 0);
   event_check_pending (fb);
   return 0;
 }
 
 inline static void ctx_fb_reset (CtxFb *fb)
 {
-  int count = 0;
-  while (fb->shown_frame != fb->render_frame && count < 1000)
-  {
-    usleep (1000);
-    ctx_fb_show_frame (fb);
-    count++;
-  }
-  if (count >= 1000)
-  {
-    fb->shown_frame = fb->render_frame;
-  }
+  ctx_fb_show_frame (fb, 1);
 }
 
 inline static void ctx_fb_flush (CtxFb *fb)

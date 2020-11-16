@@ -71,7 +71,7 @@ sdl_render_threads_done (CtxSDL *sdl)
   return sum;
 }
 
-static void ctx_sdl_show_frame (CtxSDL *sdl)
+static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
 {
   if (sdl->shown_cursor != sdl->ctx->cursor)
   {
@@ -132,16 +132,37 @@ static void ctx_sdl_show_frame (CtxSDL *sdl)
     }
   }
 
-  if (sdl->shown_frame != sdl->render_frame &&
-      sdl_render_threads_done (sdl) == _ctx_max_threads)
+  if (sdl->shown_frame == sdl->render_frame)
   {
-    SDL_UpdateTexture (sdl->texture, NULL,
-                      (void*)sdl->pixels, sdl->width * sizeof (Uint32));
-    SDL_RenderClear (sdl->renderer);
-    SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
-    SDL_RenderPresent (sdl->renderer);
-    sdl->shown_frame = sdl->render_frame;
+    return;
   }
+
+  if (block)
+  {
+    int count = 0;
+    while (sdl_render_threads_done (sdl) != _ctx_max_threads)
+    {
+      usleep (500);
+      count ++;
+      if (count > 1000)
+      {
+        sdl->shown_frame = sdl->render_frame;
+        return;
+      }
+    }
+  }
+  else
+  {
+    if (sdl_render_threads_done (sdl) != _ctx_max_threads)
+      return;
+  }
+
+  SDL_UpdateTexture (sdl->texture, NULL,
+                    (void*)sdl->pixels, sdl->width * sizeof (Uint32));
+  SDL_RenderClear (sdl->renderer);
+  SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
+  SDL_RenderPresent (sdl->renderer);
+  sdl->shown_frame = sdl->render_frame;
 }
 
 int ctx_sdl_consume_events (Ctx *ctx)
@@ -162,7 +183,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
     }
   }
 
-  ctx_sdl_show_frame (sdl);
+  ctx_sdl_show_frame (sdl, 0);
 
   while (SDL_PollEvent (&event))
   {
@@ -323,10 +344,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
       case SDL_WINDOWEVENT:
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
-          while (sdl->shown_frame != sdl->render_frame) {
-                  usleep (1000);
-                  ctx_sdl_show_frame (sdl);
-          }
+          ctx_sdl_show_frame (sdl, 1);
           int width = event.window.data1;
           int height = event.window.data2;
           SDL_DestroyTexture (sdl->texture);
@@ -351,17 +369,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
 
 inline static void ctx_sdl_reset (CtxSDL *sdl)
 {
-  int count = 0;
-  while (sdl->shown_frame != sdl->render_frame && count < 1000)
-  {
-    usleep (1000);
-    ctx_sdl_show_frame (sdl);
-    count++;
-  }
-  if (count >= 1000)
-  {
-    sdl->shown_frame = sdl->render_frame;
-  }
+  ctx_sdl_show_frame (sdl, 1);
 }
 
 inline static void ctx_sdl_flush (CtxSDL *sdl)
