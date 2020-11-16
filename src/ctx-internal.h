@@ -663,6 +663,7 @@ typedef struct _CtxCtx CtxCtx;
 struct _CtxCtx
 {
    void (*render) (void *ctxctx, CtxCommand *command);
+   void (*reset)  (void *ctxvtx);
    void (*flush)  (void *ctxctx);
    void (*free)   (void *ctxctx);
    Ctx *ctx;
@@ -673,11 +674,12 @@ struct _CtxCtx
    int  was_down;
 };
 
-// XXX the common members of sdl and fbdev
+// XXX common members of sdl and fbdev, it is more!
 typedef struct _CtxThreaded CtxThreaded;
 struct _CtxThreaded
 {
    void (*render) (void *fb, CtxCommand *command);
+   void (*reset)  (void *fb);
    void (*flush)  (void *fb);
    void (*free)   (void *fb);
    Ctx          *ctx;

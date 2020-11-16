@@ -1,19 +1,13 @@
 #include "ctx-split.h"
 
 #if CTX_SDL
-
- // 1 threads 13fps
- // 2 threads 20fps
- // 3 threads 27fps
- // 4 threads 29fps
-
 #include <threads.h>
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
 {
    void (*render)    (void *braille, CtxCommand *command);
-   // XXX need reset!   
+   void (*reset)     (void *braille);
    void (*flush)     (void *braille);
    void (*free)      (void *braille);
    Ctx          *ctx;
@@ -355,9 +349,8 @@ int ctx_sdl_consume_events (Ctx *ctx)
 
 #if CTX_SDL
 
-inline static void ctx_sdl_flush (CtxSDL *sdl)
+inline static void ctx_sdl_reset (CtxSDL *sdl)
 {
-  //int width =  sdl->width;
   int count = 0;
   while (sdl->shown_frame != sdl->render_frame && count < 1000)
   {
@@ -369,6 +362,11 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   {
     sdl->shown_frame = sdl->render_frame;
   }
+}
+
+inline static void ctx_sdl_flush (CtxSDL *sdl)
+{
+  //int width =  sdl->width;
   if (sdl->shown_frame == sdl->render_frame)
   {
     int dirty_tiles = 0;
@@ -557,6 +555,7 @@ Ctx *ctx_new_sdl (int width, int height)
   ctx_set_size (sdl->ctx, width, height);
   ctx_set_size (sdl->ctx_copy, width, height);
   sdl->flush = (void*)ctx_sdl_flush;
+  sdl->reset = (void*)ctx_sdl_reset;
   sdl->free  = (void*)ctx_sdl_free;
 
   for (int i = 0; i < _ctx_max_threads; i++)

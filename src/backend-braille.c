@@ -8,6 +8,7 @@ typedef struct _CtxBraille CtxBraille;
 struct _CtxBraille
 {
    void (*render) (void *braille, CtxCommand *command);
+   void (*reset)  (void *braille);
    void (*flush)  (void *braille);
    void (*free)   (void *braille);
    Ctx     *ctx;

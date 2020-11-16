@@ -320,6 +320,14 @@ static void _ctx_bindings_key_down (CtxEvent *event, void *data1, void *data2);
 
 void ctx_reset (Ctx *ctx)
 {
+        /* we do the callback reset first - maybe we need two cbs,
+         * one for before and one after default impl?
+         *
+         * threaded fb and sdl needs to sync
+         */
+  if (ctx->renderer && ctx->renderer->reset)
+    ctx->renderer->reset (ctx->renderer);
+
   //CTX_PROCESS_VOID (CTX_RESET);
   //if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
   //  { return; }

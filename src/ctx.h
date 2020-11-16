@@ -1424,6 +1424,7 @@ typedef struct _CtxImplementation CtxImplementation;
 struct _CtxImplementation
 {
   void (*process) (void *renderer, CtxCommand *entry);
+  void (*reset)   (void *renderer);
   void (*flush)   (void *renderer);
   void (*free)    (void *renderer);
 };

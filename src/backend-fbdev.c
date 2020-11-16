@@ -45,6 +45,7 @@ typedef struct _CtxFb CtxFb;
 struct _CtxFb
 {
    void (*render) (void *fb, CtxCommand *command);
+   void (*reset)  (void *fb);
    void (*flush)  (void *fb);
    void (*free)   (void *fb);
    Ctx          *ctx;
@@ -1187,13 +1188,12 @@ int ctx_fb_consume_events (Ctx *ctx)
   return 0;
 }
 
-inline static void ctx_fb_flush (CtxFb *fb)
+inline static void ctx_fb_reset (CtxFb *fb)
 {
-  //int width =  sdl->width;
   int count = 0;
   while (fb->shown_frame != fb->render_frame && count < 1000)
   {
-    usleep (100);
+    usleep (1000);
     ctx_fb_show_frame (fb);
     count++;
   }
@@ -1201,6 +1201,10 @@ inline static void ctx_fb_flush (CtxFb *fb)
   {
     fb->shown_frame = fb->render_frame;
   }
+}
+
+inline static void ctx_fb_flush (CtxFb *fb)
+{
   if (fb->shown_frame == fb->render_frame)
   {
     //ctx_reset (fb->ctx_copy);
@@ -1498,6 +1502,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   ctx_set_size (fb->ctx, width, height);
   ctx_set_size (fb->ctx_copy, width, height);
   fb->flush = (void*)ctx_fb_flush;
+  fb->reset = (void*)ctx_fb_reset;
   fb->free  = (void*)ctx_fb_free;
 
   for (int i = 0; i < _ctx_max_threads; i++)
