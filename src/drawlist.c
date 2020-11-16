@@ -638,10 +638,6 @@ ctx_last_history (CtxRenderstream *renderstream)
   while (i < renderstream->count)
     {
       CtxEntry *entry = &renderstream->entries[i];
-      if (entry->code == CTX_REPEAT_HISTORY)
-        {
-          last_history = i;
-        }
       i += (ctx_conts_for_entry (entry) + 1);
     }
   return last_history;

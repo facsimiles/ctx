@@ -310,7 +310,6 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
       case CTX_DATA:
       case CTX_DATA_REV:
       case CTX_FLUSH:
-      case CTX_REPEAT_HISTORY:
         break;
     }
   ctx_process (ctx_cairo->ctx, entry);

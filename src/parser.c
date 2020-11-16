@@ -218,7 +218,6 @@ static int ctx_arguments_for_code (CtxCode code)
         case CTX_NEW_EDGE:
         case CTX_EDGE:
         case CTX_EDGE_FLIPPED:
-        case CTX_REPEAT_HISTORY:
         case CTX_CONT:
         case CTX_DATA:
         case CTX_DATA_REV:

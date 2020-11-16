@@ -886,7 +886,7 @@ typedef enum
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
   //
-  // unused:  . , : backslash  #  % ^ { } < > ? & /
+  // unused:  . , : backslash  #  % ^ { } < > ? & / ]
   //           i 
   //
   CTX_CONT             = '\0', // - contains args from preceding entry
@@ -900,7 +900,6 @@ typedef enum
   CTX_EDGE             = '|', // x0 y0 x1 y1 - s16
   CTX_EDGE_FLIPPED     = '`', // x0 y0 x1 y1 - s16
 
-  CTX_REPEAT_HISTORY   = ']', //
   CTX_DATA             = '(', // size size-in-entries - u32
   CTX_DATA_REV         = ')', // reverse traversal data marker
   // needed to be able to do backwards

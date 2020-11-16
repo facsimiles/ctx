@@ -682,7 +682,6 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_DATA:
       case CTX_DATA_REV:
       case CTX_FLUSH:
-      case CTX_REPEAT_HISTORY:
         break;
     }
 }
