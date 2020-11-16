@@ -1385,20 +1385,18 @@ Ctx *ctx_new_fb (int width, int height, int drm)
 {
 #if CTX_RASTERIZER
   CtxFb *fb = calloc (sizeof (CtxFb), 1);
-  fprintf (stderr, "\e[2J\e[H\e[?25l");
 
   ctx_fb = fb;
   if (drm)
     fb->fb = ctx_fbdrm_new (fb, &fb->width, &fb->height);
   if (fb->fb)
   {
-    fprintf (stderr, "amazing, using drm\n");
-    fb->is_drm = 1;
-    width = fb->width;
-    height = fb->height;
+    fb->is_drm         = 1;
+    width              = fb->width;
+    height             = fb->height;
     fb->fb_mapped_size = fb->width * fb->height * 4;
-    fb->fb_bits = 32;
-    fb->fb_bpp  = 4;
+    fb->fb_bits        = 32;
+    fb->fb_bpp         = 4;
   }
   else
   {
