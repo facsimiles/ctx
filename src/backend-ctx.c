@@ -37,9 +37,9 @@ typedef struct CtxSpan {
   int length;
 } CtxSpan;
 
-#define CHUNK_SIZE 32      // becomes the max matches substring length
-#define MIN_MATCH  7       // minimum match length to be encoded
-#define WINDOW_PADDING 32  // look-aside amount
+#define CHUNK_SIZE 32
+#define MIN_MATCH  7        // minimum match length to be encoded
+#define WINDOW_PADDING 16   // look-aside amount
 
 #if 0
 static void _dassert(int line, int condition, const char *str, int foo, int bar, int baz)
@@ -63,7 +63,8 @@ static void _dassert(int line, int condition, const char *str, int foo, int bar,
 static char *encode_in_terms_of_previous (
                 const char *src,  int src_len,
                 const char *prev, int prev_len,
-                int *out_len)
+                int *out_len,
+                int max_ticks)
 {
   CtxString *string = ctx_string_new ("");
   CtxList *encoded_list = NULL;
@@ -71,6 +72,7 @@ static char *encode_in_terms_of_previous (
   /* TODO : make expected position offset in prev slide based on
    * matches and not be constant */
 
+  long ticks_start = ctx_ticks ();
   int start = 0;
   int length = CHUNK_SIZE;
   for (start = 0; start < src_len; start += length)
@@ -176,6 +178,9 @@ static char *encode_in_terms_of_previous (
          }
       }
     }
+
+    if (ctx_ticks ()-ticks_start > max_ticks)
+      break;
   }
 
   /* merge adjecant prev span references  */
@@ -331,8 +336,9 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
       int encoded_len = 0;
       //uint64_t ticks_start = ctx_ticks ();
 
-      encoded = encode_in_terms_of_previous (cur_frame_contents, cur_frame_len, prev_frame_contents, prev_frame_len, &encoded_len);
+      encoded = encode_in_terms_of_previous (cur_frame_contents, cur_frame_len, prev_frame_contents, prev_frame_len, &encoded_len, 1000 * 10);
 //    encoded = strdup (cur_frame_contents);
+//    encoded_len = strlen (encoded);
       //uint64_t ticks_end = ctx_ticks ();
 
       fwrite (encoded, encoded_len, 1, stdout);
