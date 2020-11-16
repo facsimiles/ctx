@@ -592,8 +592,7 @@ static int mmm_evsource_mice_init ()
   mrg_mice_this->fd = open ("/dev/input/mice", O_RDONLY | O_NONBLOCK);
   if (mrg_mice_this->fd == -1)
   {
-    fprintf (stderr, "error opening /dev/input/mice device, maybe add to input group if such group exist, or otherwise make the rights be satisfied.\n");
-//  sleep (1);
+    fprintf (stderr, "error opening /dev/input/mice device, maybe add user to input group if such group exist, or otherwise make the rights be satisfied.\n");
     return -1;
   }
   write (mrg_mice_this->fd, reset, 1);
@@ -1398,7 +1397,7 @@ static void vt_switch_cb (int sig)
     {
       ctx_fb->ctx->dirty=1;
 
-    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
         ctx_fb->hashes[(row * CTX_HASH_COLS + col) *  20] += 1;
@@ -1574,8 +1573,11 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   fb->evsource[fb->evsource_count++] = kb;
   kb->priv = fb;
   EvSource *mice  = evsource_mice_new ();
-  fb->evsource[fb->evsource_count++] = mice;
-  mice->priv = fb;
+  if (mice)
+  {
+    fb->evsource[fb->evsource_count++] = mice;
+    mice->priv = fb;
+  }
 
   fb->vt_active = 1;
   ioctl(0, KDSETMODE, KD_GRAPHICS);
