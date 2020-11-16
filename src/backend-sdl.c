@@ -418,6 +418,11 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
       }
 
     sdl->render_frame = ++sdl->frame;
+
+    mtx_lock (&sdl->mtx);
+      cnd_broadcast (&sdl->cond);
+    mtx_unlock (&sdl->mtx);
+
   }
 }
 
@@ -450,14 +455,17 @@ void sdl_render_fun (void **data)
   int      no = (size_t)data[0];
   CtxSDL *sdl = data[1];
 
-  int sleep_time = 200;
   while (!sdl->quit)
   {
     Ctx *host = sdl->host[no];
+
+    mtx_lock (&sdl->mtx);
+      cnd_wait(&sdl->cond, &sdl->mtx);
+    mtx_unlock (&sdl->mtx);
+
     if (sdl->render_frame != sdl->rendered_frame[no])
     {
       int hno = 0;
-      sleep_time = 200;
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
         {
@@ -490,13 +498,6 @@ void sdl_render_fun (void **data)
           }
         }
       sdl->rendered_frame[no] = sdl->render_frame;
-    }
-    else
-    {
-      usleep (sleep_time);
-      sleep_time *= 1.5;
-      if (sleep_time > 1000000/8)
-          sleep_time = 1000000/8;
     }
   }
 
