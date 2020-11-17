@@ -47,6 +47,8 @@ struct _CtxFb
    void (*render) (void *fb, CtxCommand *command);
    void (*reset)  (void *fb);
    void (*flush)  (void *fb);
+   char *(*get_clipboard) (void *ctxctx);
+   void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)   (void *fb);
    Ctx          *ctx;
    Ctx          *ctx_copy;

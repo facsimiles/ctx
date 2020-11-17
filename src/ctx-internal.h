@@ -665,6 +665,8 @@ struct _CtxCtx
    void (*render) (void *ctxctx, CtxCommand *command);
    void (*reset)  (void *ctxvtx);
    void (*flush)  (void *ctxctx);
+   char *(*get_clipboard) (void *ctxctx);
+   void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)   (void *ctxctx);
    Ctx *ctx;
    int  width;
@@ -681,6 +683,8 @@ struct _CtxThreaded
    void (*render) (void *fb, CtxCommand *command);
    void (*reset)  (void *fb);
    void (*flush)  (void *fb);
+   char *(*get_clipboard) (void *ctxctx);
+   void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)   (void *fb);
    Ctx          *ctx;
    Ctx          *ctx_copy;

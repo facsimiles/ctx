@@ -9,6 +9,8 @@ struct _CtxSDL
    void (*render)    (void *braille, CtxCommand *command);
    void (*reset)     (void *braille);
    void (*flush)     (void *braille);
+   char *(*get_clipboard) (void *ctxctx);
+   void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)      (void *braille);
    Ctx          *ctx;
    Ctx          *ctx_copy;
@@ -367,6 +369,17 @@ int ctx_sdl_consume_events (Ctx *ctx)
 
 #if CTX_SDL
 
+static void ctx_sdl_set_clipboard (CtxSDL *sdl, const char *text)
+{
+  if (text)
+    SDL_SetClipboardText (text);
+}
+
+static char *ctx_sdl_get_clipboard (CtxSDL *sdl)
+{
+  return SDL_GetClipboardText ();
+}
+
 inline static void ctx_sdl_reset (CtxSDL *sdl)
 {
   ctx_sdl_show_frame (sdl, 1);
@@ -565,6 +578,8 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->reset = (void*)ctx_sdl_reset;
   sdl->free  = (void*)ctx_sdl_free;
+  sdl->set_clipboard = (void*)ctx_sdl_set_clipboard;
+  sdl->get_clipboard = (void*)ctx_sdl_get_clipboard;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {

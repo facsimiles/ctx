@@ -590,6 +590,9 @@ void ctx_set_float (Ctx *ctx, uint32_t hash, float value);
 unsigned long ctx_ticks (void);
 void ctx_flush (Ctx *ctx);
 
+void ctx_set_clipboard (Ctx *ctx, const char *text);
+char *ctx_get_clipboard (Ctx *ctx);
+
 void _ctx_events_init     (Ctx *ctx);
 typedef struct _CtxRectangle CtxRectangle;
 struct _CtxRectangle {
@@ -1429,6 +1432,8 @@ struct _CtxImplementation
   void (*process) (void *renderer, CtxCommand *entry);
   void (*reset)   (void *renderer);
   void (*flush)   (void *renderer);
+  char *(*get_clipboard) (void *ctxctx);
+  void (*set_clipboard) (void *ctxctx, const char *text);
   void (*free)    (void *renderer);
 };
 

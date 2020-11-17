@@ -1470,4 +1470,23 @@ CtxCursor    ctx_get_cursor (Ctx *ctx)
 {
   return ctx->cursor;
 }
+
+void ctx_set_clipboard (Ctx *ctx, const char *text)
+{
+  if (ctx->renderer && ctx->renderer->set_clipboard)
+  {
+    ctx->renderer->set_clipboard (ctx->renderer, text);
+    return;
+  }
+}
+
+char *ctx_get_clipboard (Ctx *ctx)
+{
+  if (ctx->renderer && ctx->renderer->get_clipboard)
+  {
+    return ctx->renderer->get_clipboard (ctx->renderer);
+  }
+  return strdup ("");
+}
+
 #endif

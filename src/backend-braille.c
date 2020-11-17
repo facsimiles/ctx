@@ -10,6 +10,8 @@ struct _CtxBraille
    void (*render) (void *braille, CtxCommand *command);
    void (*reset)  (void *braille);
    void (*flush)  (void *braille);
+   char *(*get_clipboard) (void *ctxctx);
+   void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)   (void *braille);
    Ctx     *ctx;
    int      width;

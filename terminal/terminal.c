@@ -19,9 +19,6 @@
 #include "terminal.h"
 #include "vt.h"
 #include "../clients/itk.h"
-#ifndef NO_SDL
-#include <SDL.h> // for clipboard texts
-#endif
 
 Ctx *ctx = NULL; // initialized in main
 
@@ -149,8 +146,8 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
      ctx_set (ctx, CTX_title, val, strlen (val));
 #ifndef NO_SDL
      // XXX also check we're first/only client?
-     if (ctx_renderer_is_sdl (ctx))
-       ctx_sdl_set_title (ctx_get_renderer (ctx), val);
+  // if (ctx_renderer_is_sdl (ctx))
+  //   ctx_sdl_set_title (ctx_get_renderer (ctx), val);
 #endif
      {
        CtxClient *client = vt_find_client (vt);
@@ -464,26 +461,22 @@ static void handle_event (Ctx *ctx, const char *event)
   else
   if (!strcmp (event, "shift-control-v") )
     {
-#ifndef NO_SDL
-      char *text = SDL_GetClipboardText ();
+      char *text = ctx_get_clipboard (ctx);
       if (text)
         {
           if (vt)
             vt_paste (vt, text);
           free (text);
         }
-#endif
     }
   else if (!strcmp (event, "shift-control-c") && vt)
     {
-#ifndef NO_SDL
       char *text = vt_get_selection (vt);
       if (text)
         {
-          SDL_SetClipboardText (text);
+          ctx_set_clipboard (ctx, text);
           free (text);
         }
-#endif
     }
   else if (!strcmp (event, "shift-control-t") ||
            (ctx_renderer_is_fb (ctx) &&   !strcmp (event, "control-t") ))
