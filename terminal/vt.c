@@ -6772,6 +6772,8 @@ int vt_has_blink (VT *vt)
 
 void ctx_set_popup (Ctx *ctx, void (*popup)(Ctx *ctx, void *data), void *popup_data);
 
+static char *primary = NULL;
+
 void vt_mouse_event (CtxEvent *event, void *data, void *data2)
 {
   VT *vt = data;
@@ -6792,18 +6794,16 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       if (event->device_no==2)
       {
       //  vt_feed_keystring (vt, ""); // get selection
-      char *text = NULL;
 #if 0
+      char *text = NULL;
       if (0)
         text = SDL_GetClipboardText ();
       else
 #endif
-        text = vt_get_selection (vt);
-      if (text)
+      if (primary)
         {
           if (vt)
-            vt_paste (vt, text);
-          free (text);
+            vt_paste (vt, primary);
         }
       }
       else if (event->device_no==3 && !vt->in_alt_screen)
@@ -7235,6 +7235,14 @@ void vt_set_local (VT *vt, int local)
 static unsigned long prev_press_time = 0;
 static int short_count = 0;
 
+
+void terminal_set_primary (const char *text)
+{
+  if (primary) free (primary);
+  primary = NULL;
+  if (text) primary = strdup (text);
+}
+
 void terminal_long_tap (Ctx *ctx, VT *vt);
 static int long_tap_cb_id = 0;
 static int single_tap (Ctx *ctx, void *data)
@@ -7317,18 +7325,35 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
              vt->select_end_col--;
 
            vt->select_active = 1;
+
+               { char *sel = vt_get_selection (vt);
+                 if (sel){
+                    terminal_set_primary (sel);
+                    free (sel);
+                 }
+               }
+
                      }
                      break;
              case 2:
                vt->select_start_col = 1;
                vt->select_end_col = vt->cols;
                vt->select_active = 1;
+
+               { char *sel = vt_get_selection (vt);
+                 if (sel){
+                    terminal_set_primary (sel);
+                    free (sel);
+                 }
+               }
+
                break;
              case 3:
                short_count = 0;
                vt->select_start_col = 
                vt->select_end_col = vt->select_begin_col;
                vt->select_active = 0;
+               terminal_set_primary ("");
                break;
            }
          }
@@ -7377,7 +7402,15 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
            vt->select_active = 0;
          }
          else
+         {
            vt->select_active = 1;
+           char *selection = vt_get_selection (vt);
+           if (selection)
+           {
+             terminal_set_primary (selection);
+             free (selection);
+           }
+         }
 
          vt->rev++;
        }
