@@ -4355,7 +4355,7 @@ static void vt_state_apc_generic (VT *vt, int byte)
               height=atof(&vt->argument_buf[i]+strlen("height="));
           }
 
-          if (width + height + x + y + no_title + no_move);
+          if (width + no_resize + layer + height + x + y + no_title + no_move + z) {};
 
           char *sep = strchr(vt->argument_buf, ';');
           if (sep)
@@ -6890,6 +6890,8 @@ static void test_popup (Ctx *ctx, void *data)
   ctx_rgb (ctx, 1,0,0);
   ctx_fill (ctx);
 }
+
+void itk_style_color (Ctx *ctx, const char *name); // only itk fun used in vt
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {

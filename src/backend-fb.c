@@ -124,33 +124,31 @@ static char *ctx_fb_get_clipboard (CtxFb *sdl)
 
 void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
 {
+   int got_master = 0;
    fb->fb_fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
    if (!fb->fb_fd)
      return NULL;
-
-   static uint64_t res_conn_buf[20]={0};
-
+   static uint64_t res_conn_buf[20]={0}; // this is static since its contents
+                                         // are used by the flip callback
    uint64_t res_fb_buf[20]={0};
    uint64_t res_crtc_buf[20]={0};
    uint64_t res_enc_buf[20]={0};
-   struct drm_mode_card_res res={0};
+   struct   drm_mode_card_res res={0};
 
-   //Become the "master" of the DRI device
-   ioctl(fb->fb_fd, DRM_IOCTL_SET_MASTER, 0);
+   if (ioctl(fb->fb_fd, DRM_IOCTL_SET_MASTER, 0))
+     goto cleanup;
+   got_master = 1;
 
-   //Get resource counts
-   ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETRESOURCES, &res);
+   if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETRESOURCES, &res))
+     goto cleanup;
    res.fb_id_ptr=(uint64_t)res_fb_buf;
    res.crtc_id_ptr=(uint64_t)res_crtc_buf;
    res.connector_id_ptr=(uint64_t)res_conn_buf;
    res.encoder_id_ptr=(uint64_t)res_enc_buf;
-   //Get resource IDs
-   ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETRESOURCES, &res);
-
-   //printf("fb: %d, crtc: %d, conn: %d, enc: %d\n",res.count_fbs,res.count_crtcs,res.count_connectors,res.count_encoders);
+   if(ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETRESOURCES, &res))
+      goto cleanup;
 
 
-/* find first connected connector */
    int i;
    for (i=0;i<res.count_connectors;i++)
    {
@@ -163,12 +161,16 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
 
      conn.connector_id=res_conn_buf[i];
 
-     ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCONNECTOR, &conn);    //get connector resource counts
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCONNECTOR, &conn))
+       goto cleanup;
+
      conn.modes_ptr=(uint64_t)conn_mode_buf;
      conn.props_ptr=(uint64_t)conn_prop_buf;
      conn.prop_values_ptr=(uint64_t)conn_propval_buf;
      conn.encoders_ptr=(uint64_t)conn_enc_buf;
-     ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCONNECTOR, &conn);    //get connector resources
+
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCONNECTOR, &conn))
+       goto cleanup;
 
      //Check if the connector is OK to use (connected to something)
      if (conn.count_encoders<1 || conn.count_modes<1 || !conn.encoder_id || !conn.connection)
@@ -180,50 +182,47 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
      struct drm_mode_create_dumb create_dumb={0};
      struct drm_mode_map_dumb    map_dumb={0};
      struct drm_mode_fb_cmd      cmd_dumb={0};
-   create_dumb.width = conn_mode_buf[0].hdisplay;
+     create_dumb.width  = conn_mode_buf[0].hdisplay;
      create_dumb.height = conn_mode_buf[0].vdisplay;
-     create_dumb.bpp = 32;
+     create_dumb.bpp   = 32;
      create_dumb.flags = 0;
      create_dumb.pitch = 0;
-     create_dumb.size = 0;
+     create_dumb.size  = 0;
      create_dumb.handle = 0;
-     ioctl(fb->fb_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb) ||
+         !create_dumb.handle)
+       goto cleanup;
 
-     cmd_dumb.width=create_dumb.width;
+     cmd_dumb.width =create_dumb.width;
      cmd_dumb.height=create_dumb.height;
-     cmd_dumb.bpp=create_dumb.bpp;
-     cmd_dumb.pitch=create_dumb.pitch;
-     cmd_dumb.depth=24;
+     cmd_dumb.bpp   =create_dumb.bpp;
+     cmd_dumb.pitch =create_dumb.pitch;
+     cmd_dumb.depth =24;
      cmd_dumb.handle=create_dumb.handle;
-     ioctl(fb->fb_fd,DRM_IOCTL_MODE_ADDFB,&cmd_dumb);
+     if (ioctl(fb->fb_fd,DRM_IOCTL_MODE_ADDFB,&cmd_dumb))
+       goto cleanup;
 
      map_dumb.handle=create_dumb.handle;
-     ioctl(fb->fb_fd,DRM_IOCTL_MODE_MAP_DUMB,&map_dumb);
+     if (ioctl(fb->fb_fd,DRM_IOCTL_MODE_MAP_DUMB,&map_dumb))
+       goto cleanup;
 
-  void *base = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED, fb->fb_fd, map_dumb.offset);
-     *width = create_dumb.width;
-     *height = create_dumb.height;
+     void *base = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED,
+                       fb->fb_fd, map_dumb.offset);
      if (!base)
      {
-        //Stop being the "master" of the DRI device
-       ioctl(fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
-       return NULL;
+       goto cleanup;
      }
-
-//------------------------------------------------------------------------------
-//Kernel Mode Setting (KMS)
-//------------------------------------------------------------------------------
-
-     //printf("%d : mode: %d, prop: %d, enc: %d\n",conn.connection,conn.count_modes,conn.count_props,conn.count_encoders);
-     //printf("modes: %dx%d FB: %p\n",conn_mode_buf[0].hdisplay,conn_mode_buf[0].vdisplay,fb_base[i]);
+     *width  = create_dumb.width;
+     *height = create_dumb.height;
 
      struct drm_mode_get_encoder enc={0};
-
      enc.encoder_id=conn.encoder_id;
-     ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETENCODER, &enc);    //get encoder
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETENCODER, &enc))
+        goto cleanup;
 
      fb->crtc.crtc_id=enc.crtc_id;
-    ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCRTC, &fb->crtc);
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCRTC, &fb->crtc))
+        goto cleanup;
 
      fb->crtc.fb_id=cmd_dumb.fb_id;
      fb->crtc.set_connectors_ptr=(uint64_t)&res_conn_buf[i];
@@ -232,6 +231,9 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
      fb->crtc.mode_valid=1;
      return base;
    }
+cleanup:
+   if (got_master)
+     ioctl(fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
    fb->fb_fd = 0;
    return NULL;
 }
@@ -247,7 +249,6 @@ void ctx_fbdrm_close (CtxFb *fb)
 {
   if (!fb->fb_fd)
     return;
-  //Stop being the "master" of the DRI device
   ioctl(fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
   close (fb->fb_fd);
   fb->fb_fd = 0;

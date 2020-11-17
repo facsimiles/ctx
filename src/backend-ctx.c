@@ -179,7 +179,7 @@ static char *encode_in_terms_of_previous (
       }
     }
 
-    if (ctx_ticks ()-ticks_start > max_ticks)
+    if (ctx_ticks ()-ticks_start > (unsigned long)max_ticks)
       break;
   }
 

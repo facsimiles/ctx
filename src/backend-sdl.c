@@ -81,6 +81,9 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     SDL_Cursor *new_cursor =  NULL;
     switch (sdl->shown_cursor)
     {
+      case CTX_CURSOR_UNSET: // XXX: document how this differs from none
+                             //      perhaps falling back to arrow?
+        break;
       case CTX_CURSOR_NONE:
         new_cursor = NULL;
         break;
