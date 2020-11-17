@@ -28,7 +28,7 @@ text.c
 ctx-string.c
 renderer-cairo.c
 backend-ctx.c
-backend-fbdev.c
+backend-fb.c
 backend-braille.c
 backend-sdl.c
 formatter.c
