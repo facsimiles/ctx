@@ -7216,6 +7216,7 @@ vt_get_selection (VT *vt)
             { continue; }
           ctx_string_append_utf8char (str, c);
         }
+      ctx_string_append_byte (str, '\n');
     }
   ret = str->str;
   ctx_string_free (str, 0);
