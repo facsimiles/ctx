@@ -305,9 +305,9 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
       return 0;
 
     case CTX_CURSOR_RESIZE_SE:
-    //case CTX_CURSOR_RESIZE_NW:
+    case CTX_CURSOR_RESIZE_NW:
     case CTX_CURSOR_RESIZE_SW:
-    //case CTX_CURSOR_RESIZE_NE:
+    case CTX_CURSOR_RESIZE_NE:
       {
         float theta = -45.0/180 * M_PI;
         float cos_theta;

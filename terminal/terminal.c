@@ -806,6 +806,19 @@ static void client_resize_n (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
+static void client_resize_ne (CtxEvent *event, void *data, void *data2)
+{
+  CtxClient *client = data;
+  float new_y = client->y +  event->delta_y;
+  client_resize (client->id, client->width + event->delta_x,
+                             client->height - event->delta_y);
+  client_move (client->id, client->x, new_y);
+  if (client->vt) // force redraw
+    vt_rev_inc (client->vt);
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
+
 static void client_resize_sw (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
@@ -814,6 +827,20 @@ static void client_resize_sw (CtxEvent *event, void *data, void *data2)
   client_resize (client->id, client->width - event->delta_x,
                              client->height + event->delta_y);
   client_move (client->id, new_x, client->y);
+  if (client->vt) // force redraw
+    vt_rev_inc (client->vt);
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
+
+static void client_resize_nw (CtxEvent *event, void *data, void *data2)
+{
+  CtxClient *client = data;
+  float new_x = client->x +  event->delta_x;
+  float new_y = client->y +  event->delta_y;
+  client_resize (client->id, client->width - event->delta_x,
+                             client->height - event->delta_y);
+  client_move (client->id, new_x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
@@ -922,6 +949,23 @@ static int draw_vts (Ctx *ctx)
         ctx_listen (ctx, CTX_DRAG, client_resize_w, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_W);
         ctx_begin_path (ctx); //ctx_fill (ctx);
+
+        ctx_rectangle (ctx,
+                       client->x + client->width - titlebar_height,
+                       client->y - titlebar_height * 2,
+                       titlebar_height * 2, titlebar_height * 2);
+        ctx_listen (ctx, CTX_DRAG, client_resize_ne, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_NE);
+        ctx_begin_path (ctx);
+
+        ctx_rectangle (ctx,
+                       client->x - titlebar_height,
+                       client->y - titlebar_height * 2,
+                       titlebar_height * 2, titlebar_height * 2);
+        ctx_listen (ctx, CTX_DRAG, client_resize_nw, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_NW);
+        ctx_begin_path (ctx);
+
 
         ctx_rectangle (ctx,
                        client->x - titlebar_height,
