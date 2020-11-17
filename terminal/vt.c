@@ -522,6 +522,8 @@ struct _VT
   int select_begin_y;
   int select_active;
 
+  
+  int popped;
 };
 
 
@@ -4353,6 +4355,8 @@ static void vt_state_apc_generic (VT *vt, int byte)
               height=atof(&vt->argument_buf[i]+strlen("height="));
           }
 
+          if (width + height + x + y + no_title + no_move);
+
           char *sep = strchr(vt->argument_buf, ';');
           if (sep)
           {
@@ -6763,7 +6767,10 @@ int vt_has_blink (VT *vt)
   //return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
 }
 
-extern int enable_terminal_menu;
+//extern int enable_terminal_menu;
+//
+
+void ctx_set_popup (Ctx *ctx, void (*popup)(Ctx *ctx, void *data), void *popup_data);
 
 void vt_mouse_event (CtxEvent *event, void *data, void *data2)
 {
@@ -6801,9 +6808,8 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       }
       else if (event->device_no==3 && !vt->in_alt_screen)
       {
-              // XXX disable in alt-screen ?
         vt->rev++;
-        enable_terminal_menu = !enable_terminal_menu;
+        vt->popped = 1;
       }
       else
       {
@@ -6812,6 +6818,11 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       }
       break;
     case CTX_RELEASE:
+      if (event->device_no==3 && !vt->in_alt_screen)
+      {
+        vt->popped = 0;
+        ctx_set_dirty (event->ctx, 1);
+      }
       //if (event->device_no==1)
       {
         sprintf (buf, "mouse-release %.0f %.0f %i", x, y, device_no);
@@ -6868,6 +6879,17 @@ static void scroll_handle_drag (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 #endif
+
+static void test_popup (Ctx *ctx, void *data)
+{
+  VT *vt = data;
+
+  float x = client_x (vt->id);
+  float y = client_y (vt->id);
+  ctx_rectangle (ctx, x, y, 100, 100);
+  ctx_rgb (ctx, 1,0,0);
+  ctx_fill (ctx);
+}
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
@@ -7131,6 +7153,11 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       ctx_fill (ctx);
     }
     ctx_restore (ctx);
+
+    if (vt->popped)
+    {
+       ctx_set_popup (ctx, test_popup, vt);
+    }
 }
 
 int vt_is_done (VT *vt)

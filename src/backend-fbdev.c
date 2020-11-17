@@ -104,6 +104,24 @@ struct _CtxFb
    struct drm_mode_crtc crtc;
 };
 
+static char *ctx_fb_clipboard = NULL;
+static void ctx_fb_set_clipboard (CtxFb *fb, const char *text)
+{
+  if (ctx_fb_clipboard)
+    free (ctx_fb_clipboard);
+  ctx_fb_clipboard = NULL;
+  if (text)
+  {
+    ctx_fb_clipboard = strdup (text);
+  }
+}
+
+static char *ctx_fb_get_clipboard (CtxFb *sdl)
+{
+  if (ctx_fb_clipboard) return strdup (ctx_fb_clipboard);
+  return strdup ("");
+}
+
 void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
 {
    fb->fb_fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
@@ -1627,6 +1645,8 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   fb->flush = (void*)ctx_fb_flush;
   fb->reset = (void*)ctx_fb_reset;
   fb->free  = (void*)ctx_fb_free;
+  fb->set_clipboard = (void*)ctx_fb_set_clipboard;
+  fb->get_clipboard = (void*)ctx_fb_get_clipboard;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {

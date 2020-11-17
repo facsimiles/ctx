@@ -1424,6 +1424,24 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
 extern int _ctx_enable_hash_cache;
 int enable_terminal_menu = 0;
 
+static void (*_popup)(Ctx *ctx, void *data) = NULL;
+static void *_popup_data = NULL;
+
+void ctx_set_popup (Ctx *ctx, void (*popup)(Ctx *ctx, void *data), void *popup_data)
+{
+  _popup = popup;
+  _popup_data = popup_data;
+}
+
+void ctx_popups (Ctx *ctx)
+{
+  if (_popup)
+  {
+    _popup (ctx, _popup_data);
+  }
+  _popup = NULL;
+}
+
 int terminal_main (int argc, char **argv)
 {
   execute_self = argv[0];
@@ -1577,6 +1595,8 @@ int terminal_main (int argc, char **argv)
         ctx_fill (ctx);
 
         draw_vts (ctx);
+        ctx_popups (ctx);
+
         if (enable_terminal_menu)
         {
 
