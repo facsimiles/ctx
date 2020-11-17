@@ -263,37 +263,113 @@ ctx_swap_red_green2 (uint32_t orig)
   return green_alpha | red | blue;
 }
 
-static int fb_cursor_drawn = 0;
-static int fb_cursor_drawn_x = 0;
-static int fb_cursor_drawn_y = 0;
+static int       fb_cursor_drawn   = 0;
+static int       fb_cursor_drawn_x = 0;
+static int       fb_cursor_drawn_y = 0;
+static CtxCursor fb_cursor_drawn_shape = CTX_CURSOR_ARROW;
+
 
 #define CTX_FB_HIDE_CURSOR_FRAMES 200
 
 static int fb_cursor_same_pos = CTX_FB_HIDE_CURSOR_FRAMES;
-#define CURSOR_SIZE 64
 
-static inline int ctx_is_in_cursor (int x, int y)
+static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
 {
-  if (x < y && x > y / 16)
+  switch (shape)
   {
-    return 1;
+    case CTX_CURSOR_ARROW:
+      if (x > ((size * 4)-y*4)) return 0;
+      if (x < y && x > y / 16)
+        return 1;
+      return 0;
+
+    case CTX_CURSOR_RESIZE_SE:
+    //case CTX_CURSOR_RESIZE_NW:
+    case CTX_CURSOR_RESIZE_SW:
+    //case CTX_CURSOR_RESIZE_NE:
+      {
+        float theta = -45.0/180 * M_PI;
+        float cos_theta;
+        float sin_theta;
+
+        if ((shape == CTX_CURSOR_RESIZE_SW) ||
+            (shape == CTX_CURSOR_RESIZE_NE))
+        {
+          theta = -theta;
+          cos_theta = cos (theta);
+          sin_theta = sin (theta);
+        }
+        else
+        {
+          //cos_theta = -0.707106781186548;
+          cos_theta = cos (theta);
+          sin_theta = sin (theta);
+        }
+        int rot_x = x * cos_theta - y * sin_theta;
+        int rot_y = y * cos_theta + x * sin_theta;
+        x = rot_x;
+        y = rot_y;
+      }
+    case CTX_CURSOR_RESIZE_W:
+    case CTX_CURSOR_RESIZE_E:
+    case CTX_CURSOR_RESIZE_ALL:
+      if (abs (x) < size/2 && abs (y) < size/2)
+      {
+        if (abs(y) < size/10)
+        {
+          return 1;
+        }
+      }
+      if ((abs (x) - size/ (shape == CTX_CURSOR_RESIZE_ALL?2:2.7)) >= 0)
+      {
+        if (abs(y) < (size/2.8)-(abs(x) - (size/2)))
+          return 1;
+      }
+      if (shape != CTX_CURSOR_RESIZE_ALL)
+        break;
+    case CTX_CURSOR_RESIZE_S:
+    case CTX_CURSOR_RESIZE_N:
+      if (abs (y) < size/2 && abs (x) < size/2)
+      {
+        if (abs(x) < size/10)
+        {
+          return 1;
+        }
+      }
+      if ((abs (y) - size/ (shape == CTX_CURSOR_RESIZE_ALL?2:2.7)) >= 0)
+      {
+        if (abs(x) < (size/2.8)-(abs(y) - (size/2)))
+          return 1;
+      }
+      break;
+#if 0
+    case CTX_CURSOR_RESIZE_ALL:
+      if (abs (x) < size/2 && abs (y) < size/2)
+      {
+        if (abs (x) < size/10 || abs(y) < size/10)
+          return 1;
+      }
+      break;
+#endif
+    default:
+      return (x ^ y) & 1;
   }
   return 0;
 }
 
 static void ctx_fb_undraw_cursor (CtxFb *fb)
   {
-    int cursor_size = ctx_height (fb->ctx) / 20;
+    int cursor_size = ctx_height (fb->ctx) / 28;
 
     if (fb_cursor_drawn)
     {
       int no = 0;
-      for (int y = 0; y < cursor_size; y++)
-      for (int x = 0; x < cursor_size; x++, no+=4)
+      for (int y = -cursor_size; y < cursor_size; y++)
+      for (int x = -cursor_size; x < cursor_size; x++, no+=4)
       {
         if (x + fb_cursor_drawn_x < fb->width && y + fb_cursor_drawn_y < fb->height)
         {
-          if (ctx_is_in_cursor (x, y))
+          if (ctx_is_in_cursor (x, y, cursor_size, fb_cursor_drawn_shape))
           {
             int o = ((fb_cursor_drawn_y + y) * fb->width + (fb_cursor_drawn_x + x)) * 4;
             fb->fb[o+0]^=0x88;
@@ -310,15 +386,16 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
   {
     int cursor_x    = ctx_pointer_x (fb->ctx);
     int cursor_y    = ctx_pointer_y (fb->ctx);
-    int cursor_size = ctx_height (fb->ctx) / 20;
+    int cursor_size = ctx_height (fb->ctx) / 28;
+    CtxCursor cursor_shape = fb->ctx->cursor;
     int no = 0;
 
     if (cursor_x == fb_cursor_drawn_x &&
-        cursor_y == fb_cursor_drawn_y)
+        cursor_y == fb_cursor_drawn_y &&
+        cursor_shape == fb_cursor_drawn_shape)
       fb_cursor_same_pos ++;
     else
       fb_cursor_same_pos = 0;
-
 
     if (fb_cursor_same_pos >= CTX_FB_HIDE_CURSOR_FRAMES)
     {
@@ -337,12 +414,12 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     ctx_fb_undraw_cursor (fb);
 
     no = 0;
-    for (int y = 0; y < cursor_size; y++)
-      for (int x = 0; x < cursor_size; x++, no+=4)
+    for (int y = -cursor_size; y < cursor_size; y++)
+      for (int x = -cursor_size; x < cursor_size; x++, no+=4)
       {
         if (x + cursor_x < fb->width && y + cursor_y < fb->height)
         {
-          if (ctx_is_in_cursor (x, y))
+          if (ctx_is_in_cursor (x, y, cursor_size, cursor_shape))
           {
             int o = ((cursor_y + y) * fb->width + (cursor_x + x)) * 4;
             fb->fb[o+0]^=0x88;
@@ -354,6 +431,7 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     fb_cursor_drawn = 1;
     fb_cursor_drawn_x = cursor_x;
     fb_cursor_drawn_y = cursor_y;
+    fb_cursor_drawn_shape = cursor_shape;
   }
 
 static void ctx_fb_show_frame (CtxFb *fb, int block)

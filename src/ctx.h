@@ -831,7 +831,7 @@ typedef enum
   CTX_SET_KEY          = 'k', // - used together with another char to identify a key to set
   CTX_REL_LINE_TO      = 'l', // x y
   CTX_REL_MOVE_TO      = 'm', // x y
-  CTX_FONT         = 'n', // as used by text parser
+  CTX_FONT             = 'n', // as used by text parser
   CTX_RADIAL_GRADIENT  = 'o', // x1 y1 radius1 x2 y2 radius2
   CTX_GRADIENT_STOP    = 'p', //   , count depends on current color model
   CTX_REL_QUAD_TO      = 'q', // cx cy x y
@@ -847,6 +847,9 @@ typedef enum
 
   CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
   CTX_SET              = 'D', // key value - will take over k/K spots?
+                              //           , doing this refactoring is
+                              //           good future proofing in that
+                              //           it frees up many symbols.
   CTX_GET              = 'd', // key -
   /* these commands have single byte binary representations,
    * but are two chars in text, values below 9 are used for
@@ -858,7 +861,8 @@ typedef enum
   CTX_SET_DCMYK_SPACE      = 24, //
 
   /* though expressed as two chars in serialization we have
-   * dedicated byte commands for these setters
+   * dedicated byte commands for these setters - they should be folded
+   * into CTX_SET
    */
   CTX_TEXT_ALIGN           = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
   CTX_TEXT_BASELINE        = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
@@ -906,7 +910,7 @@ typedef enum
   // traversal
   CTX_DEFINE_GLYPH     = '@', // unichar width - u32
   CTX_KERNING_PAIR     = '[', // glA glB kerning, glA and glB in u16 kerning in s32
-  CTX_SET_PIXEL        = '-', // r g b a x y - u8 for rgba, and u16 for x,y
+  CTX_SET_PIXEL        = '-', // 8bit "fast-path" r g b a x y - u8 for rgba, and u16 for x,y
 
   /* optimizations that reduce the number of entries used,
    * not visible outside the draw-stream compression -

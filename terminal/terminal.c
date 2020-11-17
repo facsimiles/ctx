@@ -649,6 +649,16 @@ void client_unshade (int id)
    client->shaded = 0;
 }
 
+void client_toggle_maximized (int id)
+{
+   CtxClient *client = client_by_id (id);
+   if (!client) return;
+   if (client->maximized)
+     client_unmaximize (id);
+   else
+     client_maximize (id);
+}
+
 void client_shade_toggle (int id)
 {
    CtxClient *client = client_by_id (id);
@@ -1502,9 +1512,9 @@ int terminal_main (int argc, char **argv)
 
   ctx_add_timeout (ctx, 1000 * 32, malloc_trim_cb, NULL);
 
+  int sleep_time = 200;
   while (clients && !ctx_has_quit (ctx))
     {
-      int sleep_time = 200;
       CtxList *to_remove = NULL;
       int changes = 0;
       int n_clients = ctx_list_length (clients);
@@ -1614,16 +1624,18 @@ int terminal_main (int argc, char **argv)
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_flush (ctx);
-        sleep_time     = 20000;
+        sleep_time     = 50;
       }
       else
       {
-        sleep_time *= 10;
-        if (sleep_time > 1000000/8)
-            sleep_time = 1000000/8;
-      }
+        sleep_time += 50;
+        if (sleep_time > 50000)
+            sleep_time = 50000;
         usleep (sleep_time/2);
+      }
 
+      if (!ctx_is_dirty (ctx))
+      {
       CtxEvent *event;
       while ((event = ctx_get_event (ctx)))
       {
@@ -1635,6 +1647,7 @@ int terminal_main (int argc, char **argv)
         if (vt_poll (client->vt, fractional_sleep/2))
         {
         }
+      }
       }
     }
 

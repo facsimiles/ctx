@@ -72,6 +72,8 @@ void client_iconify (int id);
 void client_deiconify (int id);
 void client_maximize (int id);
 void client_unmaximize (int id);
+void client_toggle_maximized (int id);
+int client_is_iconified (int id);
 
 
 #define VT_LOG_INFO     (1<<0)
@@ -503,7 +505,6 @@ struct _VT
 
   int        ctx_pos;  // 1 is graphics above text, 0 or -1 is below text
   Ctx       *ctx;
-  void      *mmm;
 
   int        blink_state;
 
@@ -2545,6 +2546,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   }
   else if (!strcmp (sequence, "[5t") ) { client_raise_top (vt->id); } 
   else if (!strcmp (sequence, "[6t") ) { client_lower_bottom (vt->id); } 
+  else if (!strcmp (sequence, "[7t") ) { vt->rev++; /* refresh */ }
   else if (!strncmp (sequence, "[8;", 3) )
   {
     int cols = 0, rows = 0;
@@ -2553,10 +2555,19 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   }
   else if (!strcmp (sequence, "[9;0t") ) { client_unmaximize (vt->id); } 
   else if (!strcmp (sequence, "[9;1t") ) { client_maximize (vt->id);} 
+
+  /* should actually be full-screen */
+  else if (!strcmp (sequence, "[10;0t") ) { client_unmaximize (vt->id); } 
+  else if (!strcmp (sequence, "[10;1t") ) { client_maximize (vt->id);} 
+  else if (!strcmp (sequence, "[10;2t") ) { client_toggle_maximized (vt->id);} 
+
   else if (!strcmp (sequence, "[11t") )  /* report window state  */
     {
       char buf[128];
-      sprintf (buf, "\033[1t"); // or 2 if iconified
+      if (client_is_iconified (vt->id))
+        sprintf (buf, "\033[2t");
+      else
+        sprintf (buf, "\033[1t");
       vt_write (vt, buf, strlen (buf) );
     }
   else if (!strcmp (sequence, "[13t") ) /* request terminal position */
@@ -2571,12 +2582,31 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
       sprintf (buf, "\033[4;%i;%it", vt->rows * vt->ch, vt->cols * vt->cw);
       vt_write (vt, buf, strlen (buf) );
     }
+  else if (!strcmp (sequence, "[15t") ) /* request root dimensions in px */
+    {
+      char buf[128];
+      sprintf (buf, "\033[5;%i;%it", ctx_width (vt->ctx), ctx_height(vt->ctx));
+      vt_write (vt, buf, strlen (buf) );
+    }
+  else if (!strcmp (sequence, "[16t") ) /* request char dimensions in px */
+    {
+      char buf[128];
+      sprintf (buf, "\033[6;%i;%it", vt->ch, vt->cw);
+      vt_write (vt, buf, strlen (buf) );
+    }
   else if (!strcmp (sequence, "[18t") ) /* request terminal dimensions */
     {
       char buf[128];
       sprintf (buf, "\033[8;%i;%it", vt->rows, vt->cols);
       vt_write (vt, buf, strlen (buf) );
     }
+  else if (!strcmp (sequence, "[19t") ) /* request root window size in char */
+    {
+      char buf[128];
+      sprintf (buf, "\033[9;%i;%it", ctx_width (vt->ctx)/vt->cw, ctx_height(vt->ctx)/vt->ch);
+      vt_write (vt, buf, strlen (buf) );
+    }
+
 #if 0
   {"[", 's',  foo, VT100}, /*args:PnSP id:DECSWBV Set warning bell volume */
 #endif
@@ -4437,6 +4467,7 @@ static void vt_state_esc (VT *vt, int byte)
           break;
         case '^':  // privacy message
         case '_':  // APC
+        case 'X':  // SOS
           {
             char tmp[]= {byte, '\0'};
             vt_argument_buf_reset (vt, tmp);
