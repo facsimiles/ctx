@@ -7046,6 +7046,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     if (v + image->height +vt->scroll * vt->ch > 0.0)
                     {
                     ctx_save (ctx);
+                    ctx_rectangle (ctx, x0, y0 - vt->scroll * vt->ch, vt->cw * vt->cols,
+                                    vt->ch * vt->rows);
+                    ctx_clip (ctx);
                     // we give each texture a unique-id - if we use more ids than
                     // there is, ctx will alias the first image.
                     ctx_texture_init (ctx, image_id, image->width, image->height, image->kitty_format,
@@ -7054,6 +7057,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     image_id ++;
                     ctx_rectangle (ctx, u, v, image->width, image->height);
                     ctx_fill (ctx);
+
+                    ctx_rectangle (ctx, 0, 0, 0, 0);
+                    ctx_clip (ctx); // XXX hack to be removed when clip works better
                     ctx_restore (ctx);
                     }
                   }
