@@ -54,8 +54,8 @@ struct _CtxFb
    Ctx          *ctx_copy;
    int           width;
    int           height;
-   int           cols;
-   int           rows;
+   int           cols; // unused
+   int           rows; // unused
    int           was_down;
    Ctx          *host[CTX_MAX_THREADS];
    CtxAntialias  antialias;
@@ -1629,12 +1629,10 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   fb->scratch_fb = calloc (fb->fb_mapped_size, 1);
   ctx_fb_events = 1;
 
-  fb->ctx = ctx_new ();
+  fb->ctx      = ctx_new ();
   fb->ctx_copy = ctx_new ();
-  fb->width  = width;
-  fb->height = height;
-  fb->cols = 80;
-  fb->rows = 20;
+  fb->width    = width;
+  fb->height   = height;
 
   ctx_set_renderer (fb->ctx, fb);
   ctx_set_renderer (fb->ctx_copy, fb);
@@ -1687,9 +1685,11 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   ctx_flush (fb->ctx);
 
   EvSource *kb = evsource_kb_new ();
-
-  fb->evsource[fb->evsource_count++] = kb;
-  kb->priv = fb;
+  if (kb)
+  {
+    fb->evsource[fb->evsource_count++] = kb;
+    kb->priv = fb;
+  }
   EvSource *mice  = evsource_mice_new ();
   if (mice)
   {
@@ -1699,27 +1699,25 @@ Ctx *ctx_new_fb (int width, int height, int drm)
 
   fb->vt_active = 1;
   ioctl(0, KDSETMODE, KD_GRAPHICS);
-  //if (!fb->is_drm)
+  signal (SIGUSR1, vt_switch_cb);
+  signal (SIGUSR2, vt_switch_cb);
+  struct vt_stat st;
+  if (ioctl (0, VT_GETSTATE, &st) == -1)
   {
-    signal (SIGUSR1, vt_switch_cb);
-    signal (SIGUSR2, vt_switch_cb);
-    struct vt_stat st;
-    if (ioctl (0, VT_GETSTATE, &st) == -1)
-    {
-  //  return NULL;
-    }
+    ctx_log ("VT_GET_MODE on vt %i failed\n", fb->vt);
+    return NULL;
+  }
 
-    fb->vt = st.v_active;
+  fb->vt = st.v_active;
 
-    struct vt_mode mode;
-    mode.mode = VT_PROCESS;
-    mode.relsig = SIGUSR1;
-    mode.acqsig = SIGUSR2;
-    if (ioctl (0, VT_SETMODE, &mode) < 0)
-    {
-      fprintf (stderr, "VT_SET_MODE on vt %i failed\n", fb->vt);
-      return NULL;
-    }
+  struct vt_mode mode;
+  mode.mode   = VT_PROCESS;
+  mode.relsig = SIGUSR1;
+  mode.acqsig = SIGUSR2;
+  if (ioctl (0, VT_SETMODE, &mode) < 0)
+  {
+    ctx_log ("VT_SET_MODE on vt %i failed\n", fb->vt);
+    return NULL;
   }
 
   return fb->ctx;
