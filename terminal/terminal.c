@@ -1468,7 +1468,9 @@ void ctx_osk_draw (Ctx *ctx)
 
 static int malloc_trim_cb (Ctx *ctx, void *data)
 {
-  malloc_trim (0);
+#if GNU_C
+  malloc_trim (64*1024);
+#endif
   return 1;
 }
 
