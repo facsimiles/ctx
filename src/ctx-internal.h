@@ -879,5 +879,13 @@ ctx_lerpf (float v0, float v1, float dx)
   return v0 + (v1-v0) * dx;
 }
 
+
+#ifndef CTX_MIN
+#define CTX_MIN(a,b)  (((a)<(b))?(a):(b))
+#endif
+#ifndef CTX_MAX
+#define CTX_MAX(a,b)  (((a)>(b))?(a):(b))
+#endif
+
 #endif
 

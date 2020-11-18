@@ -654,12 +654,6 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 #define evsource_set_coord(es,x,y) do{if((es)->set_coord)(es)->set_coord((es),(x),(y));}while(0)
 #define evsource_get_fd(es)      ((es)->get_fd?(es)->get_fd((es)):0)
 
-#ifndef CTX_MIN
-#define CTX_MIN(a,b)  (((a)<(b))?(a):(b))
-#endif
-#ifndef CTX_MAX
-#define CTX_MAX(a,b)  (((a)>(b))?(a):(b))
-#endif
 
 
 static int mice_has_event ();

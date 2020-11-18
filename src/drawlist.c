@@ -400,8 +400,10 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
     }
   if (ret + 8 >= renderstream->size - 20)
     {
-      ctx_renderstream_resize (renderstream, renderstream->size * 2);
+      int new = CTX_MAX (renderstream->size * 2, ret + 8);
+      ctx_renderstream_resize (renderstream, new);
     }
+
   if (renderstream->count >= max_size - 20)
     {
       return 0;
@@ -411,6 +413,9 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
   renderstream->count++;
   return ret;
 }
+
+
+
 
 int
 ctx_add_single (Ctx *ctx, void *entry)
@@ -435,7 +440,7 @@ int ctx_append_renderstream (Ctx *ctx, void *data, int length)
   CtxEntry *entries = (CtxEntry *) data;
   if (length % sizeof (CtxEntry) )
     {
-      //ctx_log("err\n");
+      ctx_log("drawlist not multiple of 9\n");
       return -1;
     }
   for (unsigned int i = 0; i < length / sizeof (CtxEntry); i++)
@@ -447,10 +452,19 @@ int ctx_append_renderstream (Ctx *ctx, void *data, int length)
 
 int ctx_set_renderstream (Ctx *ctx, void *data, int length)
 {
+  CtxRenderstream *renderstream = &ctx->renderstream;
   ctx->renderstream.count = 0;
-  ctx_append_renderstream (ctx, data, length);
-  return 0;
+  if (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
+    {
+      return -1;
+    }
+  if (length % 9) return -1;
+  ctx_renderstream_resize (renderstream, length/9);
+  memcpy (renderstream->entries, data, length);
+  renderstream->count = length / 9;
+  return length;
 }
+
 
 int ctx_get_renderstream_count (Ctx *ctx)
 {
