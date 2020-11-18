@@ -1444,7 +1444,12 @@ void fb_render_fun (void **data)
 
             Ctx *host = fb->host[no];
             CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
-#if 1 // merge horizontally adjecant tiles of same affinity into one job
+      /* merge horizontally adjecant tiles of same affinity into one job
+       * this reduces redundant overhead and gets better cache behavior
+       *
+       * giving different threads more explicitly different rows
+       * could be a good idea.
+       */
             while (col + 1 < CTX_HASH_COLS &&
                    fb->tile_affinity[hno+1] == no)
             {
@@ -1452,7 +1457,6 @@ void fb_render_fun (void **data)
               col++;
               hno++;
             }
-#endif
             ctx_rasterizer_init (rasterizer,
                                  host, NULL, &host->state,
                                  &fb->scratch_fb[fb->width * 4 * y0 + x0 * 4],
