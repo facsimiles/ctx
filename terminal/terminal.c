@@ -760,11 +760,16 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
+static float min_win_dim = 32;
+
 static void client_resize_se (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
-  client_resize (client->id, client->width + event->delta_x,
-                             client->height + event->delta_y);
+  int new_w = client->width + event->delta_x;
+  int new_h = client->height + event->delta_y;
+  if (new_w <= min_win_dim) new_w = min_win_dim;
+  if (new_h <= min_win_dim) new_h = min_win_dim;
+  client_resize (client->id, new_w, new_h);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
@@ -774,7 +779,9 @@ static void client_resize_se (CtxEvent *event, void *data, void *data2)
 static void client_resize_e (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
-  client_resize (client->id, client->width + event->delta_x,
+  int new_w = client->width + event->delta_x;
+  if (new_w <= min_win_dim) new_w = min_win_dim;
+  client_resize (client->id, new_w,
                              client->height);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
@@ -785,8 +792,9 @@ static void client_resize_e (CtxEvent *event, void *data, void *data2)
 static void client_resize_s (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
-  client_resize (client->id, client->width,
-                             client->height + event->delta_y);
+  int new_h = client->height + event->delta_y;
+  if (new_h <= min_win_dim) new_h = min_win_dim;
+  client_resize (client->id, client->width, new_h);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
@@ -797,8 +805,9 @@ static void client_resize_n (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
   float new_y = client->y +  event->delta_y;
-  client_resize (client->id, client->width,
-                             client->height - event->delta_y);
+  int new_h = client->height - event->delta_y;
+  if (new_h <= min_win_dim) new_h = min_win_dim;
+  client_resize (client->id, client->width, new_h);
   client_move (client->id, client->x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
@@ -810,8 +819,11 @@ static void client_resize_ne (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
   float new_y = client->y +  event->delta_y;
-  client_resize (client->id, client->width + event->delta_x,
-                             client->height - event->delta_y);
+  int new_h = client->height - event->delta_y;
+  int new_w = client->width + event->delta_x;
+  if (new_h <= min_win_dim) new_h = min_win_dim;
+  if (new_w <= min_win_dim) new_w = min_win_dim;
+  client_resize (client->id, new_w, new_h);
   client_move (client->id, client->x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
@@ -824,8 +836,12 @@ static void client_resize_sw (CtxEvent *event, void *data, void *data2)
   CtxClient *client = data;
 
   float new_x = client->x +  event->delta_x;
-  client_resize (client->id, client->width - event->delta_x,
-                             client->height + event->delta_y);
+  int new_w = client->width - event->delta_x;
+  int new_h = client->height + event->delta_y;
+
+  if (new_h <= min_win_dim) new_h = min_win_dim;
+  if (new_w <= min_win_dim) new_w = min_win_dim;
+  client_resize (client->id, new_w, new_h);
   client_move (client->id, new_x, client->y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
@@ -838,8 +854,11 @@ static void client_resize_nw (CtxEvent *event, void *data, void *data2)
   CtxClient *client = data;
   float new_x = client->x +  event->delta_x;
   float new_y = client->y +  event->delta_y;
-  client_resize (client->id, client->width - event->delta_x,
-                             client->height - event->delta_y);
+  int new_w = client->width - event->delta_x;
+  int new_h = client->height - event->delta_y;
+  if (new_h <= min_win_dim) new_h = min_win_dim;
+  if (new_w <= min_win_dim) new_w = min_win_dim;
+  client_resize (client->id, new_w, new_h);
   client_move (client->id, new_x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
@@ -852,8 +871,9 @@ static void client_resize_w (CtxEvent *event, void *data, void *data2)
   CtxClient *client = data;
 
   float new_x = client->x +  event->delta_x;
-  client_resize (client->id, client->width - event->delta_x,
-                             client->height);
+  int new_w = client->width - event->delta_x;
+  if (new_w <= min_win_dim) new_w = min_win_dim;
+  client_resize (client->id, new_w, client->height);
   client_move (client->id, new_x, client->y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);

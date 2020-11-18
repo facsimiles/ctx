@@ -4048,12 +4048,15 @@ static void vt_state_osc (VT *vt, int byte)
       switch (n)
         {
           case 0:
+          case 1:
+          case 2:
 #if 0
     {"]0;New_title\e\",  0, , }, /* id: set window title */ "
 #endif
             vt_set_title (vt, vt->argument_buf + 3);
             break;
           case 4:
+
             fprintf (stderr, "[%s]", vt->argument_buf);
             break;
 
@@ -7294,57 +7297,43 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
            switch (short_count)
            {
              case 1:
-                     {
-           int hit_space = 0;
-           int old_len = 0;
-           
-           while (vt->select_start_col > 1 && !hit_space)
-           {
-             vt->select_start_col --;
-             char *sel = vt_get_selection (vt);
-             if (sel[0] == ' ' || sel[0] == '\0')
-               hit_space = 1;
-             free (sel);
-           }
-           if (hit_space)
-             vt->select_start_col++;
-           {
-             char *sel = vt_get_selection (vt);
-             old_len = strlen (sel);
-             free (sel);
-           }
-           hit_space = 0;
-           while (vt->select_end_col < vt->cols && !hit_space)
-           {
-             vt->select_end_col ++;
-             char *sel = vt_get_selection (vt);
-             int len = strlen(sel);
-
-             if (len == (old_len + 1))
              {
-               if (sel[len-1]==' ')
-                 hit_space = 1;
-               old_len = len;
-             }
-             free (sel);
-           }
-           if (hit_space)
-             vt->select_end_col--;
-
-           vt->select_active = 1;
-
-               { char *sel = vt_get_selection (vt);
-                 if (sel){
-                    terminal_set_primary (sel);
-                    free (sel);
-                 }
+               int hit_space = 0;
+               int old_len = 0;
+           
+               while (vt->select_start_col > 1 && !hit_space)
+               {
+                 vt->select_start_col --;
+                 char *sel = vt_get_selection (vt);
+                 if (sel[0] == ' ' || sel[0] == '\0')
+                   hit_space = 1;
+                 free (sel);
                }
+               if (hit_space)
+                 vt->select_start_col++;
+               {
+                 char *sel = vt_get_selection (vt);
+                 old_len = strlen (sel);
+                 free (sel);
+               }
+               hit_space = 0;
+               while (vt->select_end_col < vt->cols && !hit_space)
+               {
+                 vt->select_end_col ++;
+                 char *sel = vt_get_selection (vt);
+                 int len = strlen(sel);
 
-                     }
-                     break;
-             case 2:
-               vt->select_start_col = 1;
-               vt->select_end_col = vt->cols;
+                 if (len == (old_len + 1))
+                 {
+                   if (sel[len-1]==' ')
+                     hit_space = 1;
+                   old_len = len;
+                 }
+                 free (sel);
+               }
+               if (hit_space)
+                 vt->select_end_col--;
+
                vt->select_active = 1;
 
                { char *sel = vt_get_selection (vt);
@@ -7353,7 +7342,19 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
                     free (sel);
                  }
                }
-
+               }
+               break;
+             case 2:
+               vt->select_start_col = 1;
+               vt->select_end_col = vt->cols;
+               vt->select_active = 1;
+               {
+                 char *sel = vt_get_selection (vt);
+                 if (sel){
+                    terminal_set_primary (sel);
+                    free (sel);
+                 }
+               }
                break;
              case 3:
                short_count = 0;
