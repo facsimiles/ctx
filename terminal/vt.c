@@ -5249,12 +5249,26 @@ int vt_get_line_count (VT *vt)
 
 const char *vt_get_line (VT *vt, int no)
 {
-  CtxList *l= ctx_list_nth (vt->lines, no);
-  CtxString *str;
-  if (!l)
-    { return NULL; }
-  str = l->data;
-  return str->str;
+  if (no >= vt->rows)
+  {
+    CtxList *l = ctx_list_nth (vt->scrollback, no - vt->rows);
+    if (!l)
+      { 
+         return "";
+      }
+    CtxString *str = l->data;
+    return str->str;
+  }
+  else
+  {
+    CtxList *l = ctx_list_nth (vt->lines, no);
+    if (!l)
+      { 
+         return "-";
+      }
+    CtxString *str = l->data;
+    return str->str;
+  }
 }
 
 int vt_get_cols (VT *vt)
