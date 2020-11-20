@@ -7433,6 +7433,8 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
              free (selection);
            }
          }
+         if (y < 1) vt->scroll += 1.0;
+         else if (y > vt->rows)  vt->scroll -= 1.0;
 
          vt->rev++;
        }
