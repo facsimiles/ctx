@@ -279,7 +279,7 @@ again:
           iterator->bitpack_command[0] = ret[0];
           iterator->bitpack_command[1] = ret[1];
           iterator->bitpack_command[2] = ret[2];
-          iterator->bitpack_pos = 0;
+          iterator->bitpack_pos    = 0;
           iterator->bitpack_length = 3;
           goto again;
         case CTX_TEXT:
@@ -288,7 +288,7 @@ again:
         case CTX_SET:
           iterator->bitpack_length = 0;
           return (CtxCommand *) ret;
-#if 0
+#if 1
         default: // XXX remove - and get better warnings
           iterator->bitpack_command[0] = ret[0];
           iterator->bitpack_command[1] = ret[1];
@@ -377,7 +377,7 @@ ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
     }
   renderstream->size = new_size;
     }
-  //printf ("renderstream %p is %d\n", renderstream, renderstream->size);
+  //fprintf (stderr, "renderstream %p is %d\n", renderstream, renderstream->size);
 #endif
 }
 
