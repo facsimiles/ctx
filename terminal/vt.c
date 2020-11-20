@@ -6800,14 +6800,14 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
   char buf[128]="";
   switch (event->type)
   {
-    case CTX_MOTION:
+    case CTX_DRAG_MOTION:
       //if (event->device_no==1)
       {
         sprintf (buf, "mouse-motion %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, buf);
       }
       break;
-    case CTX_PRESS:
+    case CTX_DRAG_PRESS:
       if (event->device_no==2)
       {
       //  vt_feed_keystring (vt, ""); // get selection
@@ -6834,7 +6834,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
         vt_feed_keystring (vt, buf);
       }
       break;
-    case CTX_RELEASE:
+    case CTX_DRAG_RELEASE:
       if (event->device_no==3 && !vt->in_alt_screen)
       {
         vt->popped = 0;
@@ -7145,7 +7145,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
        }
    }
     ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
-    ctx_listen (ctx, CTX_PRESS|CTX_RELEASE|CTX_MOTION, vt_mouse_event, vt, NULL);
+    ctx_listen (ctx, CTX_DRAG, vt_mouse_event, vt, NULL);
     ctx_begin_path (ctx);
 
     /* scrollbar */
