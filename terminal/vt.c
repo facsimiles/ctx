@@ -6876,8 +6876,8 @@ static void scrollbar_pressed (CtxEvent *event, void *data, void *data2)
   vt->scroll = tot_lines - disp_lines - (event->y*1.0/ client_height (vt->id)) * tot_lines + disp_lines/2;
   if (vt->scroll < 0) { vt->scroll = 0.0; }
   if (vt->scroll > vt->scrollback_count) { vt->scroll = vt->scrollback_count; }
-  fprintf (stderr, "press %f %f scroll:%f\n", event->x, event->y, vt->scroll);
-  vt->rev++;
+//vt->rev++;
+  ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
@@ -7433,8 +7433,20 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
              free (selection);
            }
          }
-         if (y < 1) vt->scroll += 1.0;
-         else if (y > vt->rows)  vt->scroll -= 1.0;
+
+
+         if (y < 1)
+         {
+           vt->scroll += 1.0f;
+           if (vt->scroll > vt->scrollback_count)
+             vt->scroll = vt->scrollback_count;
+         }
+         else if (y > vt->rows)
+         {
+           vt->scroll -= 1.0f;
+           if (vt->scroll < 0)
+             vt->scroll = 0.0f;
+         }
 
          vt->rev++;
        }
