@@ -1211,8 +1211,14 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          y1)
 {
   int aa = rasterizer->aa;
-  if (x0>x1 || y0>y1) { return 1; } // XXX : maybe this only happens under
-  //       memory corruption
+  if (x0>x1 && y0>y1) { 
+     int tmp = x1;
+     x1 = x0;
+     x0 = tmp;
+     tmp = y1;
+     y1 = y0;
+     y0 = tmp;
+  }
   if (x1 % CTX_SUBDIV ||
       x0 % CTX_SUBDIV ||
       y1 % aa ||
@@ -1346,7 +1352,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
            && !rasterizer->in_shadow
 #endif
          )
-        {
+        if(1){
           if (ctx_rasterizer_fill_rect (rasterizer,
                                         entry3->data.s16[2],
                                         entry3->data.s16[3],
@@ -1527,7 +1533,7 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
     int row = rasterizer->y / 4 + 1;
     for (int i = 0; string[i]; i++, col++)
     {
-      CtxTermGlyph *glyph = calloc (sizeof (CtxTermGlyph), 1);
+      CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
       ctx_list_prepend (&rasterizer->glyphs, glyph);
       glyph->unichar = string[i];
       glyph->col = col;
@@ -2093,7 +2099,8 @@ ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
 {
   rasterizer->state->gstate.source.type = CTX_SOURCE_COLOR;
   ctx_color_set_RGBA8 (rasterizer->state, &rasterizer->state->gstate.source.color, r, g, b, a);
-#if 1
+#if 0
+  // XXX : doesn't take transforms into account
   ctx_rasterizer_pset (rasterizer, x, y, 255);
 #else
   ctx_rasterizer_move_to (rasterizer, x, y);
@@ -2588,9 +2595,11 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 #endif
         ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
         rasterizer->in_text--;
+        ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_TEXT_STROKE:
         ctx_rasterizer_text (rasterizer, ctx_arg_string(), 1);
+        ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_GLYPH:
         ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
@@ -2768,7 +2777,7 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                          CtxPixelFormat pixel_format)
 {
   Ctx *ctx = ctx_new ();
-  CtxRasterizer *r = ctx_rasterizer_init ( (CtxRasterizer *) calloc (sizeof (CtxRasterizer), 1),
+  CtxRasterizer *r = ctx_rasterizer_init ( (CtxRasterizer *) ctx_calloc (sizeof (CtxRasterizer), 1),
                                           ctx, NULL, &ctx->state, data, 0, 0, width, height,
                                           stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
   ctx_set_renderer (ctx, r);
