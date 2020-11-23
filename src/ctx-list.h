@@ -7,6 +7,15 @@
  * wherever it is used.
  */
 
+static inline void *ctx_calloc (size_t size, size_t count)
+{
+  size_t byte_size = size * count;
+  char *ret = malloc (byte_size);
+  for (size_t i = 0; i < byte_size; i++)
+     ret[i] = 0;
+  return ret;
+}
+
 typedef struct _CtxList CtxList;
 struct _CtxList {
   void *data;
@@ -19,7 +28,7 @@ static inline void ctx_list_prepend_full (CtxList **list, void *data,
     void (*freefunc)(void *data, void *freefunc_data),
     void *freefunc_data)
 {
-  CtxList *new_= (CtxList*)calloc (sizeof (CtxList), 1);
+  CtxList *new_= (CtxList*)ctx_calloc (sizeof (CtxList), 1);
   new_->next = *list;
   new_->data=data;
   new_->freefunc=freefunc;
@@ -37,7 +46,7 @@ static inline int ctx_list_length (CtxList *list)
 
 static inline void ctx_list_prepend (CtxList **list, void *data)
 {
-  CtxList *new_ = (CtxList*) calloc (sizeof (CtxList), 1);
+  CtxList *new_ = (CtxList*) ctx_calloc (sizeof (CtxList), 1);
   new_->next= *list;
   new_->data=data;
   *list = new_;
@@ -70,7 +79,7 @@ ctx_list_insert_before (CtxList **list, CtxList *sibling,
         }
       if (prev)
         {
-          CtxList *new_ = (CtxList*)calloc (sizeof (CtxList), 1);
+          CtxList *new_ = (CtxList*)ctx_calloc (sizeof (CtxList), 1);
           new_->next = sibling;
           new_->data = data;
           prev->next=new_;
@@ -135,7 +144,7 @@ static inline void ctx_list_append_full (CtxList **list, void *data,
     void (*freefunc)(void *data, void *freefunc_data),
     void *freefunc_data)
 {
-  CtxList *new_ = (CtxList*) calloc (sizeof (CtxList), 1);
+  CtxList *new_ = (CtxList*) ctx_calloc (sizeof (CtxList), 1);
   new_->data=data;
   new_->freefunc = freefunc;
   new_->freefunc_data = freefunc_data;
@@ -177,7 +186,7 @@ ctx_list_insert_at (CtxList **list,
         }
       if (prev)
         {
-          CtxList *new_ = (CtxList*)calloc (sizeof (CtxList), 1);
+          CtxList *new_ = (CtxList*)ctx_calloc (sizeof (CtxList), 1);
           new_->next = sibling;
           new_->data = data;
           prev->next=new_;

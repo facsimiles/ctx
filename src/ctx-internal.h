@@ -887,5 +887,7 @@ ctx_lerpf (float v0, float v1, float dx)
 #define CTX_MAX(a,b)  (((a)>(b))?(a):(b))
 #endif
 
+static inline void *ctx_calloc (size_t size, size_t count);
+
 #endif
 

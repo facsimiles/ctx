@@ -651,7 +651,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   hasher->rows = rows;
   hasher->cols = cols;
 
-  hasher->hashes = (uint8_t*)calloc (20, rows * cols);
+  hasher->hashes = (uint8_t*)ctx_calloc (20, rows * cols);
 
   return rasterizer;
 }
@@ -660,7 +660,7 @@ Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
 {
   Ctx *ctx = ctx_new ();
   CtxState    *state    = &ctx->state;
-  CtxRasterizer *rasterizer = (CtxRasterizer *) calloc (sizeof (CtxHasher), 1);
+  CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_calloc (sizeof (CtxHasher), 1);
   ctx_hasher_init (rasterizer, ctx, state, width, height, cols, rows);
   ctx_set_renderer (ctx, (void*)rasterizer);
   return ctx;

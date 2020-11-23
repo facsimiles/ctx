@@ -48,7 +48,7 @@ float ctx_u8_float[256];
 
 CtxColor *ctx_color_new ()
 {
-  CtxColor *color = (CtxColor*)calloc (sizeof (CtxColor), 1);
+  CtxColor *color = (CtxColor*)ctx_calloc (sizeof (CtxColor), 1);
   return color;
 }
 

@@ -37,6 +37,11 @@ clients/%: clients/%.c Makefile ctx.o clients/itk.h libctx.a
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
+fonts/ctx-font-ascii-spacing.h: fonts/ctx-font-ascii.h
+	grep -v "},$$" $< > $@
+fonts/ctx-font-regular-spacing.h: fonts/ctx-font-regular.h
+	grep -v "},$$" $< > $@
+
 fonts/ctxf/ascii.ctxf: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii binary > $@
 fonts/ctx-font-regular.h: tools/ctx-fontgen

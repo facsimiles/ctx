@@ -1,8 +1,9 @@
 #include "ctx-split.h"
-#include <fcntl.h>
-#include <sys/ioctl.h>
 
 #if CTX_EVENTS
+
+#include <fcntl.h>
+#include <sys/ioctl.h>
 
 typedef struct _CtxBraille CtxBraille;
 struct _CtxBraille

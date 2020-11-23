@@ -159,6 +159,7 @@ char* string =
 
   if (!binary)
   {
+  printf ("#ifndef CTX_FONT_%s\n", name);
   printf ("/* this is a ctx encoded font based on %s */\n", basename (argv[1]));
   printf ("/* CTX_SUBDIV:%i  CTX_BAKE_FONT_SIZE:%i */\n", CTX_SUBDIV, CTX_BAKE_FONT_SIZE);
 
@@ -227,6 +228,7 @@ char* string =
   }
   printf ("};\n");
   printf ("#define CTX_FONT_%s 1\n", name);
+  printf ("#endif\n");
   }
   else
   {

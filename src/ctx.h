@@ -28,13 +28,12 @@
  *
  * #include <cairo.h>
  * #include <SDL.h>
- * #include "ctx-font-regular.h"
  * #define CTX_IMPLEMENTATION
  * #include "ctx.h"
  *
- * The behavior of ctx can be tweaked, and additional features can
- * be enabled with other includes, see further down in the start
- * of this file for details.
+ * The behavior of ctx can be tweaked, and features can be configured, enabled
+ * or disabled with other #defines, see further down in the start of this file
+ * for details.
  */
 
 #ifndef CTX_H

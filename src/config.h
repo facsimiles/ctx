@@ -424,12 +424,13 @@
 
 
 #ifdef CTX_RASTERIZER
+#if CTX_RASTERIZER==0
+#elif CTX_RASTERIZER==1
+#else
 #undef CTX_RASTERIZER
 #define CTX_RASTERIZER 1
-#else
-#define CTX_RASTERIZER 0
 #endif
-
+#endif
 
 #if CTX_RASTERIZER
 #ifndef CTX_COMPOSITE

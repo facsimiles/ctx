@@ -1589,7 +1589,7 @@ int terminal_main (int argc, char **argv)
 
   ctx_add_timeout (ctx, 1000 * 32, malloc_trim_cb, NULL);
 
-  int sleep_time = 200;
+  int sleep_time = 50;
   while (clients && !ctx_has_quit (ctx))
     {
       CtxList *to_remove = NULL;
@@ -1703,14 +1703,14 @@ int terminal_main (int argc, char **argv)
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_flush (ctx);
-        sleep_time     = 50;
+        sleep_time     = (10+sleep_time)/2;
       }
       else
       {
-        sleep_time += 50;
-        if (sleep_time > 50000)
-            sleep_time = 50000;
-        usleep (sleep_time/2);
+        sleep_time *= 1.5;
+        if (sleep_time > 100)
+            sleep_time = 100;
+        usleep (1000 * sleep_time/2);
       }
 
       if (!ctx_is_dirty (ctx))

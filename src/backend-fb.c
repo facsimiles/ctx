@@ -1,5 +1,7 @@
 #include "ctx-split.h"
 
+#if CTX_EVENTS
+
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <signal.h>
@@ -1731,4 +1733,5 @@ int ctx_renderer_is_fb (Ctx *ctx)
 {
   return 0;
 }
+#endif
 #endif

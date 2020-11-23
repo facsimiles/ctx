@@ -4557,6 +4557,7 @@ static void vt_state_neutral (VT *vt, int byte)
 
 int vt_poll (VT *vt, int timeout)
 {
+  timeout *= 1000;
   int read_size = sizeof (vt->buf);
   int got_data = 0;
   int remaining_chars = read_size * 1024;

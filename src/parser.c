@@ -15,7 +15,7 @@ struct
   int        line; /*  for error reporting */
   int        col;  /*  for error reporting */
   int        pos;
-  double     numbers[12];
+  float      numbers[12];
   int        n_numbers;
   int        decimal;
   CtxCode    command;
@@ -107,7 +107,7 @@ CtxParser *ctx_parser_new (
   void (*exit) (void *exit_data),
   void *exit_data)
 {
-  return ctx_parser_init ( (CtxParser *) calloc (sizeof (CtxParser), 1),
+  return ctx_parser_init ( (CtxParser *) ctx_calloc (sizeof (CtxParser), 1),
                            ctx,
                            width, height,
                            cell_width, cell_height,

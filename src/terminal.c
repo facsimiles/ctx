@@ -1,3 +1,5 @@
+#if CTX_EVENTS
+
 #include "ctx-split.h"
 
 #include <fcntl.h>
@@ -269,7 +271,6 @@ nc_at_exit (void)
   fprintf (stdout, "\e[?1049l");
 }
 
-#if CTX_EVENTS 
 static const char *mouse_get_event_int (Ctx *n, int *x, int *y)
 {
   static int prev_state = 0;
@@ -777,5 +778,6 @@ void _ctx_mouse (Ctx *term, int mode)
   }
   mouse_mode = mode;
 }
+
 
 #endif
