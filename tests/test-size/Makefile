@@ -3,9 +3,9 @@ SMALL_CFLAGS=-Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-s
 PERF_CFLAGS=-Ofast  -g
 CC=i686-linux-gnu-gcc
 
-PROGRAMS=tiny small baseline musl-static-tiny musl-static-small musl-static-baseline ctx-info-32bit
+PROGRAMS=medium musl-static-medium tiny small baseline musl-static-tiny musl-static-small musl-static-baseline ctx-info-32bit
 
-report: all
+report: all ../../fonts/ctxf/ascii.ctxf
 	./size-report.sh
 
 all: $(PROGRAMS)
@@ -14,6 +14,9 @@ clean:
 
 text: text.c ../../*.h ../../fonts/*.h Makefile
 	$(CC) $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts -march=native --cflags --libs` 
+
+../../fonts/ctxf/ascii.ctxf:
+	make -C ../.. fonts/ctxf/ascii.ctxf
 
 %: %.c ../../*.h ../../fonts/*.h Makefile tiny-config.h
 	$(CC) $(SMALL_CFLAGS)  $< -o $@ -I../../ -I../../fonts -march=native
