@@ -395,7 +395,7 @@ int
 ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
 #if CTX_BACKEND_TEXT
-  CtxEntry commands[1];
+  CtxEntry commands[3]; // 3 to silence incorrect warning from static analysis
   ctx_memset (commands, 0, sizeof (commands) );
   commands[0] = ctx_u32 (CTX_GLYPH, unichar, 0);
   commands[0].data.u8[4] = stroke;

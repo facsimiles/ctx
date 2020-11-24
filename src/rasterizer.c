@@ -30,7 +30,7 @@ ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *r
 
 static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 {
-  int16_t args[4];
+  CtxEntry entry = {CTX_EDGE, {{0},}};
   if (y1 < rasterizer->scan_min)
     { rasterizer->scan_min = y1; }
   if (y1 > rasterizer->scan_max)
@@ -39,11 +39,9 @@ static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
     { rasterizer->col_min = x1; }
   if (x1 > rasterizer->col_max)
     { rasterizer->col_max = x1; }
-  args[0]=0;
-  args[1]=0;
-  args[2]=x1;
-  args[3]=y1;
-  return ctx_renderstream_add_u32 (&rasterizer->edge_list, CTX_EDGE, (uint32_t *) args);
+  entry.data.s16[2]=x1;
+  entry.data.s16[3]=y1;
+  return ctx_renderstream_add_single (&rasterizer->edge_list, &entry);
 }
 
 #define CTX_SHAPE_CACHE_PRIME1   7853

@@ -800,8 +800,10 @@ ctx_u8_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
         {
           case 1: dst[0] = 0; break;
           case 3: dst[2] = 0;
+           __attribute__ ((fallthrough));
           case 2: *((uint16_t*)(dst)) = 0; break;
           case 5: dst[4] = 0;
+           __attribute__ ((fallthrough));
           case 4: *((uint32_t*)(dst)) = 0; break;
           default:
             for (int c = 0; c < components; c ++)
@@ -1554,12 +1556,14 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
   {
      case 3:
        ((uint8_t*)(blended))[2] = ((uint8_t*)(src))[2];
+      __attribute__ ((fallthrough));
      case 2:
        *((uint16_t*)(blended)) = *((uint16_t*)(src));
        ctx_u8_associate_alpha (components, blended);
        break;
      case 5:
        ((uint8_t*)(blended))[4] = ((uint8_t*)(src))[4];
+      __attribute__ ((fallthrough));
      case 4:
        *((uint32_t*)(blended)) = *((uint32_t*)(src));
        ctx_u8_associate_alpha (components, blended);

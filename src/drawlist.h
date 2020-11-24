@@ -28,7 +28,7 @@ const CtxEntry *ctx_get_renderstream (Ctx *ctx);
 int
 ctx_add_data (Ctx *ctx, void *data, int length);
 
-CTX_STATIC int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code, uint32_t u32[2]);
+int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code, uint32_t u32[2]);
 int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, int length);
 
 CTX_STATIC CtxEntry

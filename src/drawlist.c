@@ -493,7 +493,7 @@ ctx_add_data (Ctx *ctx, void *data, int length)
   return ctx_renderstream_add_entry (&ctx->renderstream, (CtxEntry *) data);
 }
 
-CTX_STATIC int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code, uint32_t u32[2])
+int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code, uint32_t u32[2])
 {
   CtxEntry entry = {code, {{0},}};
   entry.data.u32[0] = u32[0];
