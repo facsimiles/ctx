@@ -75,13 +75,13 @@ CTX_STATIC int
 ctx_last_history (CtxRenderstream *renderstream);
 #endif
 
-#if CTX_BITPACK
+#if CTX_BITPACK_PACKER
 CTX_STATIC void
 ctx_renderstream_remove_tiny_curves (CtxRenderstream *renderstream, int start_pos);
-#endif
 
 CTX_STATIC void
 ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos);
+#endif
 
 CTX_STATIC void
 ctx_renderstream_compact (CtxRenderstream *renderstream);

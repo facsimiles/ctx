@@ -704,7 +704,7 @@ static int vt_dirty_count (void)
 static void client_drag_maximized (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
-  float titlebar_height = ctx_height (event->ctx)/40;
+  //float titlebar_height = ctx_height (event->ctx)/40;
 
   if (event->type == CTX_DRAG_RELEASE)
   {

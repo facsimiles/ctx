@@ -34,11 +34,11 @@ extern uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
 extern uint8_t ctx_gradient_cache_u8_a[CTX_GRADIENT_CACHE_ELEMENTS][4];
 extern int ctx_gradient_cache_valid;
 
-static void
-ctx_gradient_cache_reset (void)
-{
-  ctx_gradient_cache_valid = 0;
-}
+//static void
+//ctx_gradient_cache_reset (void)
+//{
+//  ctx_gradient_cache_valid = 0;
+//}
 
 
 #endif
@@ -601,6 +601,7 @@ ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
     rgba[2] = tmp;
   }
 }
+#if CTX_ENABLE_FLOAT
 
 #if CTX_GRADIENTS
 static void
@@ -664,6 +665,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBAF (CtxRasterizer *rasterizer)
     }
   return ctx_fragment_color_RGBAF;
 }
+#endif
 
 static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 {
@@ -2614,7 +2616,7 @@ ctx_composite_convert (CTX_COMPOSITE_ARGUMENTS)
   rasterizer->format->from_comp (rasterizer, x0, &pixels[0], dst, count);
 }
 
-
+#if CTX_ENABLE_FLOAT
 static void
 ctx_float_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 {
@@ -3131,6 +3133,7 @@ ctx_##compformat##_porter_duff_##source (CTX_COMPOSITE_ARGUMENTS) \
        break;\
    }\
 }
+#endif
 
 #if CTX_ENABLE_RGBAF
 

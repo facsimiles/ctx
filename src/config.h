@@ -264,6 +264,10 @@
 #define CTX_LIMIT_FORMATS       0
 #endif
 
+#ifndef CTX_ENABLE_FLOAT
+#define CTX_ENABLE_FLOAT 0
+#endif
+
 /* by default ctx includes all pixel formats, on microcontrollers
  * it can be useful to slim down code and runtime size by only
  * defining the used formats, set CTX_LIMIT_FORMATS to 1, and
@@ -283,18 +287,20 @@
 #define CTX_ENABLE_RGB8                 1
 #define CTX_ENABLE_RGBA8                1
 #define CTX_ENABLE_BGRA8                1
-
 #define CTX_ENABLE_RGB332               1
 #define CTX_ENABLE_RGB565               1
 #define CTX_ENABLE_RGB565_BYTESWAPPED   1
 #define CTX_ENABLE_RGBAF                1
+#ifdef CTX_ENABLE_FLOAT
+#undef CTX_ENABLE_FLOAT
+#endif
+#define CTX_ENABLE_FLOAT                1
 
 #if CTX_ENABLE_CMYK
 #define CTX_ENABLE_CMYK8                1
 #define CTX_ENABLE_CMYKA8               1
 #define CTX_ENABLE_CMYKAF               1
 #endif
-
 #endif
 
 /* by including ctx-font-regular.h, or ctx-font-mono.h the
@@ -344,6 +350,49 @@
   #endif
   #define CTX_ENABLE_RGBA8  1
 #endif
+
+#ifdef CTX_ENABLE_CMYKF
+#ifdef CTX_ENABLE_FLOAT
+#undef CTX_ENABLE_FLOAT
+#endif
+#define CTX_ENABLE_FLOAT 1
+#endif
+
+#ifdef CTX_ENABLE_GRAYF
+#ifdef CTX_ENABLE_FLOAT
+#undef CTX_ENABLE_FLOAT
+#endif
+#define CTX_ENABLE_FLOAT 1
+#endif
+
+#ifdef CTX_ENABLE_GRAYAF
+#ifdef CTX_ENABLE_FLOAT
+#undef CTX_ENABLE_FLOAT
+#endif
+#define CTX_ENABLE_FLOAT 1
+#endif
+
+#ifdef CTX_ENABLE_RGBAF
+#ifdef CTX_ENABLE_FLOAT
+#undef CTX_ENABLE_FLOAT
+#endif
+#define CTX_ENABLE_FLOAT 1
+#endif
+
+#ifdef CTX_ENABLE_CMYKAF
+#ifdef CTX_ENABLE_FLOAT
+#undef CTX_ENABLE_FLOAT
+#endif
+#define CTX_ENABLE_FLOAT 1
+#endif
+
+#ifdef CTX_ENABLE_CMYKF
+#ifdef CTX_ENABLE_FLOAT
+#undef CTX_ENABLE_FLOAT
+#endif
+#define CTX_ENABLE_FLOAT 1
+#endif
+
 
 /* enable cmykf which is cmyk intermediate format
  */

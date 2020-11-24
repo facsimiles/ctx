@@ -151,7 +151,7 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
       goto cleanup;
 
 
-   int i;
+   unsigned int i;
    for (i=0;i<res.count_connectors;i++)
    {
      struct drm_mode_modeinfo conn_mode_buf[20]={0};
@@ -1417,7 +1417,6 @@ void fb_render_fun (void **data)
   int      no = (size_t)data[0];
   CtxFb *fb = data[1];
 
-  int sleep_time = 100;
   while (!fb->quit)
   {
     mtx_lock (&fb->mtx);
@@ -1478,7 +1477,6 @@ void fb_render_fun (void **data)
   }
   fb->thread_quit ++;
 }
-
 
 int ctx_renderer_is_fb (Ctx *ctx)
 {
