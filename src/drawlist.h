@@ -42,7 +42,7 @@ CTX_STATIC CtxEntry
 ctx_s32 (CtxCode code, int32_t x, int32_t y);
 #endif
 
-CTX_STATIC CtxEntry
+CtxEntry
 ctx_s16 (CtxCode code, int x0, int y0, int x1, int y1);
 CTX_STATIC CtxEntry
 ctx_u8 (CtxCode code,

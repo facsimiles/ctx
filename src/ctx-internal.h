@@ -762,13 +762,16 @@ CTX_STATIC void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, 
 CTX_STATIC void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a);
 CTX_STATIC void ctx_color_set_graya (CtxState *state, CtxColor *color, float gray, float alpha);
 
-CTX_STATIC int ctx_color_model_get_components (CtxColorModel model);
+int ctx_color_model_get_components (CtxColorModel model);
 
 void ctx_state_set (CtxState *state, uint32_t key, float value);
 CTX_STATIC void
 ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f);
 CTX_STATIC void ctx_font_setup ();
 float ctx_state_get (CtxState *state, uint32_t hash);
+
+#if CTX_RASTERIZER
+
 CTX_STATIC void
 ctx_rasterizer_rel_move_to (CtxRasterizer *rasterizer, float x, float y);
 CTX_STATIC void
@@ -846,6 +849,7 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
 CTX_STATIC void
 ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, float width, float height, float corner_radius);
 
+#endif
 
 #if CTX_ENABLE_CM // XXX to be moved to ctx.h
 void

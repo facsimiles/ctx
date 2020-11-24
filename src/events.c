@@ -404,7 +404,7 @@ int ctx_add_idle (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idl
 /* using bigger primes would be a good idea, this falls apart due to rounding
  * when zoomed in close
  */
-static double path_hash (void *path)
+static inline double ctx_path_hash (void *path)
 {
   double ret = 0;
 #if 0
@@ -559,7 +559,7 @@ void ctx_listen_full (Ctx     *ctx,
     item->cb_count = 1;
     item->types = types;
     //item->path = cairo_copy_path (cr); // XXX
-    item->path_hash = path_hash (item->path);
+    item->path_hash = ctx_path_hash (item->path);
     ctx_get_matrix (ctx, &item->inv_matrix);
     ctx_matrix_invert (&item->inv_matrix);
 

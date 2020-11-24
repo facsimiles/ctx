@@ -2,7 +2,7 @@
 #define __CTX_COLOR
 #include "ctx-split.h"
 
-CTX_STATIC int ctx_color_model_get_components (CtxColorModel model)
+int ctx_color_model_get_components (CtxColorModel model)
 {
   switch (model)
     {
