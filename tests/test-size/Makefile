@@ -5,7 +5,7 @@ CC=i686-linux-gnu-gcc
 
 PROGRAMS=medium musl-static-medium tiny small baseline musl-static-tiny musl-static-small musl-static-baseline ctx-info-32bit
 
-report: all ../../fonts/ctxf/ascii.ctxf
+report: all ../../fonts/ctxf/ascii.ctxf ../../fonts/ctxf/regular.ctxf
 	./size-report.sh
 
 all: $(PROGRAMS)
@@ -17,6 +17,8 @@ text: text.c ../../*.h ../../fonts/*.h Makefile
 
 ../../fonts/ctxf/ascii.ctxf:
 	make -C ../.. fonts/ctxf/ascii.ctxf
+../../fonts/ctxf/regular.ctxf:
+	make -C ../.. fonts/ctxf/regular.ctxf
 
 %: %.c ../../*.h ../../fonts/*.h Makefile tiny-config.h
 	$(CC) $(SMALL_CFLAGS)  $< -o $@ -I../../ -I../../fonts -march=native

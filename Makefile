@@ -44,6 +44,8 @@ fonts/ctx-font-regular-spacing.h: fonts/ctx-font-regular.h
 
 fonts/ctxf/ascii.ctxf: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii binary > $@
+fonts/ctxf/regular.ctxf: tools/ctx-fontgen
+	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras binary > $@
 fonts/ctx-font-regular.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras > $@
 fonts/ctx-font-mono.h: tools/ctx-fontgen
