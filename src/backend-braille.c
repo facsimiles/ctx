@@ -43,6 +43,7 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
 {
   const char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
   int no = 0;
+  printf ("\e[?25l"); // cursor off
   switch (format)
     {
       case CTX_FORMAT_GRAY2:
@@ -269,6 +270,7 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
             }
         }
     }
+  printf ("\e[?25h"); // cursor on
 }
 
 inline static void ctx_braille_flush (CtxBraille *braille)
