@@ -6,6 +6,8 @@ static struct timeval start_time;
 
 #define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
+#if CTX_EVENTS
+
 static void
 _ctx_init_ticks (void)
 {
@@ -36,7 +38,6 @@ uint32_t ctx_ms (Ctx *ctx)
   return _ctx_ticks () / 1000;
 }
 
-#if CTX_EVENTS
 
 typedef enum _CtxFlags CtxFlags;
 
