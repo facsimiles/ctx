@@ -712,9 +712,9 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
 //if (mouse_mode) // XXX too often to do it all the time!
 //  printf(mouse_modes[mouse_mode]);
 
+    int got_event = 0;
   {
     int elapsed = 0;
-    int got_event = 0;
 
     do {
       if (size_changed)
@@ -739,7 +739,8 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
     } while (!got_event);
   }
 
-  for (length = 0; length < 200; length ++)
+  for (length = 0; got_event && length < 200; length ++)
+  {
     if (read (STDIN_FILENO, &buf[length], 1) != -1)
       {
          buf[length+1] = 0;
@@ -754,6 +755,8 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
            return (const char*)buf;
          }
       }
+      got_event = ctx_has_event (n, 5);
+    }
   return NULL;
 }
 

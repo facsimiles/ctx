@@ -317,6 +317,7 @@ Ctx *ctx_new_braille (int width, int height)
 {
   Ctx *ctx = ctx_new ();
 #if CTX_RASTERIZER
+  fprintf (stdout, "\e[?1049h");
   CtxBraille *braille = (CtxBraille*)calloc (sizeof (CtxBraille), 1);
   int maxwidth = ctx_terminal_cols  () * 2;
   int maxheight = (ctx_terminal_rows ()-1) * 4;
@@ -346,6 +347,8 @@ Ctx *ctx_new_braille (int width, int height)
   braille->flush = (void(*)(void*))ctx_braille_flush;
   braille->free  = (void(*)(void*))ctx_braille_free;
 #endif
+
+
   return ctx;
 }
 

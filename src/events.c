@@ -114,36 +114,38 @@ Ctx *ctx_new_ui (int width, int height)
     exit (-1);
   }
 
+  Ctx *ret = NULL;
   /* FIXME: to a terminal query instead - to avoid relying on
    * environment variables
    */
   if (getenv ("CTX_VERSION"))
   {
     if (!backend || !strcmp (backend, "ctx"))
+    {
       // full blown ctx protocol - in terminal or standalone
-      return ctx_new_ctx (width, height);
+      ret = ctx_new_ctx (width, height);
+    }
   }
-  Ctx *ret = NULL;
 
 #if CTX_SDL
-  if (getenv ("DISPLAY"))
+  if (!ret && getenv ("DISPLAY"))
   {
     if ((backend==NULL) || (!strcmp (backend, "SDL")))
       ret = ctx_new_sdl (width, height);
-    if (ret) return ret;
   }
 #endif
 
 #if CTX_FB
-  if (!getenv ("DISPLAY"))
+  if (!ret && !getenv ("DISPLAY"))
   {
     if ((backend==NULL) || (!strcmp (backend, "drm")))
     ret = ctx_new_fb (width, height, 1);
-    if (ret) return ret;
 
-    if ((backend==NULL) || (!strcmp (backend, "fb")))
-    ret = ctx_new_fb (width, height, 0);
-    if (ret) return ret;
+    if (!ret)
+    {
+      if ((backend==NULL) || (!strcmp (backend, "fb")))
+        ret = ctx_new_fb (width, height, 0);
+    }
   }
 #endif
 
@@ -160,6 +162,7 @@ Ctx *ctx_new_ui (int width, int height)
     fprintf (stderr, "no interactive ctx backend\n");
     exit (2);
   }
+  ctx_get_event (ret); // enables events
   return ret;
 }
 
