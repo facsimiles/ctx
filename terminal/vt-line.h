@@ -186,6 +186,11 @@ static inline void        vt_line_remove (VtLine *line, int pos)
 { 
   CtxString *string = (CtxString*)line;
   ctx_string_remove (string, pos);
+
+  for (int i = pos; i < line->style_size-1; i++)
+  {
+    line->style[i] = line->style[i+1];
+  }
 }
 
 #ifndef TRUE
