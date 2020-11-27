@@ -7038,6 +7038,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      if (!*d) { d = NULL; }
                    }
                }
+             ctx_begin_path (ctx);
           }
       }
   }
