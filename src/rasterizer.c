@@ -2928,17 +2928,19 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
     }
 }
 
+int ctx_gradient_cache_valid = 0;
+
 void
 ctx_state_gradient_clear_stops (CtxState *state)
 {
 //#if CTX_GRADIENT_CACHE
 //  ctx_gradient_cache_reset ();
 //#endif
+  ctx_gradient_cache_valid = 0;
   state->gradient.n_stops = 0;
 }
 
 uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
 uint8_t ctx_gradient_cache_u8_a[CTX_GRADIENT_CACHE_ELEMENTS][4];
-int ctx_gradient_cache_valid = 0;
 
 /****  end of engine ****/
