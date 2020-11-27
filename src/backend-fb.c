@@ -339,6 +339,7 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
         x = rot_x;
         y = rot_y;
       }
+      /*FALLTHROUGH*/
     case CTX_CURSOR_RESIZE_W:
     case CTX_CURSOR_RESIZE_E:
     case CTX_CURSOR_RESIZE_ALL:
@@ -356,6 +357,7 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
       }
       if (shape != CTX_CURSOR_RESIZE_ALL)
         break;
+      /* FALLTHROUGH */
     case CTX_CURSOR_RESIZE_S:
     case CTX_CURSOR_RESIZE_N:
       if (abs (y) < size/2 && abs (x) < size/2)
@@ -472,7 +474,6 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
       ctx_fb_draw_cursor (fb);
       ctx_fb_flip (fb);
     }
-
     return;
   }
 
@@ -628,6 +629,7 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
              src+=4;
            }
          }
+         break;
        case 8:
          { int count = fb->width * fb->height;
            const uint8_t *src = fb->scratch_fb;

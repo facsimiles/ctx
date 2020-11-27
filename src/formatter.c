@@ -422,7 +422,6 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_GLYPH:
         ctx_print_glyph (formatter, entry, 1);
         break;
-        break;
       case CTX_LINE_TO:
       case CTX_REL_LINE_TO:
       case CTX_SCALE:
@@ -516,6 +515,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                     ctx_print_float (formatter, c->rgba.a);
                     break;
                   }
+                  /* FALLTHROUGH */
                 case CTX_RGB:
                   if (c->rgba.r == c->rgba.g && c->rgba.g == c->rgba.b)
                   {

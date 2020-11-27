@@ -549,6 +549,7 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
     {
       case CTX_GRAYA:
         *alpha = parser->numbers[offset + 1];
+        /* FALLTHROUGH */
       case CTX_GRAY:
         *red = *green = *blue = parser->numbers[offset + 0];
         break;
@@ -557,6 +558,7 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
       case CTX_LCHA: // NYI - needs RGB profile
       case CTX_RGBA:
         *alpha = parser->numbers[offset + 3];
+        /* FALLTHROUGH */
       case CTX_LAB: // NYI
       case CTX_LCH: // NYI
       case CTX_RGB:
@@ -566,6 +568,7 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
         break;
       case CTX_CMYKA:
         *alpha = parser->numbers[offset + 4];
+        /* FALLTHROUGH */
       case CTX_CMYK:
         /* should use profile instead  */
         *red = (1.0-parser->numbers[offset + 0]) *
@@ -1074,6 +1077,7 @@ static void ctx_parser_transform_percent (CtxParser *parser, CtxCode code, int a
           { *value *= ( (parser->height) /100.0); }
           return;
         }
+        /* FALLTHROUGH */
       default: // even means x coord
         if (arg_no % 2 == 0)
           { *value  *= ( (parser->width) /100.0); }

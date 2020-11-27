@@ -4,7 +4,6 @@ PREFIX  ?= /usr/local
 CFLAGS_warnings= -Wall \
                  -Wextra \
 		 -Wno-array-bounds \
-                 -Wno-implicit-fallthrough \
 		 -Wno-unused-parameter \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 

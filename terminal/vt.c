@@ -3576,17 +3576,20 @@ void vt_gfx (VT *vt, const char *command)
                           {
                             case 'A':
                               free_resource = 1;
+                              /* FALLTHROUGH */
                             case 'a': /* all images visible on screen */
                               match = 1;
                               break;
                             case 'I':
                               free_resource = 1;
+                              /* FALLTHROUGH */
                             case 'i': /* all images with specified id */
                               if ( ( (Image *) (line->images[i]) )->id == vt->gfx.id)
                                 { match = 1; }
                               break;
                             case 'P':
                               free_resource = 1;
+                              /* FALLTHROUGH */
                             case 'p': /* all images intersecting cell
           specified with x and y */
                               if (line->image_col[i] == vt->gfx.x &&
@@ -3595,6 +3598,7 @@ void vt_gfx (VT *vt, const char *command)
                               break;
                             case 'Q':
                               free_resource = 1;
+                              /* FALLTHROUGH */
                             case 'q': /* all images with specified cell (x), row(y) and z */
                               if (line->image_col[i] == vt->gfx.x &&
                                   row == vt->gfx.y)
@@ -3602,18 +3606,21 @@ void vt_gfx (VT *vt, const char *command)
                               break;
                             case 'Y':
                               free_resource = 1;
+                              /* FALLTHROUGH */
                             case 'y': /* all images with specified row (y) */
                               if (row == vt->gfx.y)
                                 { match = 1; }
                               break;
                             case 'X':
                               free_resource = 1;
+                              /* FALLTHROUGH */
                             case 'x': /* all images with specified column (x) */
                               if (line->image_col[i] == vt->gfx.x)
                                 { match = 1; }
                               break;
                             case 'Z':
                               free_resource = 1;
+                              /* FALLTHROUGH */
                             case 'z': /* all images with specified z-index (z) */
                               break;
                           }
