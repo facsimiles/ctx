@@ -1,39 +1,35 @@
 #include <stdarg.h>
 
-/*
+/* A small immediate mode toolkit for ctx
  *
- * TODO:
+ * TODO/BUGS:
  *   - more than one scroll per panel
  *   - horizontal scroll
- *
- *   - CSS
  */
 
 typedef struct _ITK ITK;
 
-ITK *itk_new (Ctx *ctx);
-void itk_free (ITK *itk);
+ITK *itk_new   (Ctx *ctx);
+void itk_free  (ITK *itk);
 void itk_reset (ITK *itk);
 
 void itk_panel_start (ITK *itk, const char *title, int x, int y, int width, int height);
-void itk_panel_end (ITK *itk);
+void itk_panel_end   (ITK *itk);
 
-void itk_newline   (ITK *itk);
-void itk_sameline  (ITK *itk);
-void itk_seperator (ITK *itk);
-void itk_label    (ITK *itk, const char *label);
-void itk_titlebar (ITK *itk, const char *label);
-void itk_slider   (ITK *itk, const char *label, float *val, float min, float max, float step);
-void itk_entry    (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
-                  void (*commit)(ITK *itk, void *commit_data), void *commit_data);
-void itk_toggle   (ITK *itk, const char *label, int *val);
-int  itk_radio    (ITK *itk, const char *label, int set);
-int  itk_expander (ITK *itk, const char *label, int *val);
-int  itk_button   (ITK *itk, const char *label);
-void itk_choice   (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data);
+void itk_newline    (ITK *itk);
+void itk_sameline   (ITK *itk);
+void itk_seperator  (ITK *itk);
+void itk_label      (ITK *itk, const char *label);
+void itk_titlebar   (ITK *itk, const char *label);
+void itk_slider     (ITK *itk, const char *label, float *val, float min, float max, float step);
+void itk_entry      (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
+                     void (*commit)(ITK *itk, void *commit_data), void *commit_data);
+void itk_toggle     (ITK *itk, const char *label, int *val);
+int  itk_radio      (ITK *itk, const char *label, int set);
+int  itk_expander   (ITK *itk, const char *label, int *val);
+int  itk_button     (ITK *itk, const char *label);
+void itk_choice     (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data);
 void itk_choice_add (ITK *itk, int value, const char *label);
-
-
 
 enum {
   UI_SLIDER = 1,
@@ -104,8 +100,6 @@ typedef struct ITKPal{
   uint8_t b;
   uint8_t a;
 } IKTPal;
-
-
 
 typedef struct _CtxControl CtxControl;
 struct _CtxControl{

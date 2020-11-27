@@ -178,10 +178,9 @@ to be combined with all compositing modes.
                  href='mcu/'>microcontrollers</a> down to ~7kb of RAM + 30kb
          of code + 12kb of fontdata, combined with immediate mode UI that can
          be re-run, it is sufficient to have a framebuffer covering one
-         scanline - making microcontrollers with 8kb of RAM a possible
-         target - this has not yet been attempted. The desktop build of ctx
-         is more wasteful with duplicated code paths compiled for different
-         x86_64 SIMD capabilities.</dd>
+         or a few scanlines. More RAM permits more flexible arrangement
+         of more components using the CTX protocol.
+         </dd>
 
          <dt>Threaded/deferred rendering</dt><dd>The compact ctx protocol - in both text and binary form is a serialization of HTML5 Canvas 2D context API with
          extensions.

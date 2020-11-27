@@ -238,7 +238,6 @@ again:
   return ret;
 }
 
-
 #if 0 // for documentation/reference purposes
 static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int prev_len, int *out_len)
 {
@@ -300,6 +299,8 @@ static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int
 #define CTX_END_STRING2   "\n\e"
 
 int ctx_frame_ack = -1;
+static char *prev_frame_contents = NULL;
+static int   prev_frame_len = 0;
 
 static void ctx_ctx_flush (CtxCtx *ctxctx)
 {
@@ -318,8 +319,6 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
 #else
   {
     int cur_frame_len = 0;
-    static char *prev_frame_contents = NULL;
-    static int   prev_frame_len = 0;
     char *rest = ctx_render_string (ctxctx->ctx, 0, &cur_frame_len);
     char *cur_frame_contents = malloc (cur_frame_len + strlen(CTX_START_STRING) + strlen (CTX_END_STRING) + 1);
 
@@ -416,7 +415,6 @@ Ctx *ctx_new_ctx (int width, int height)
   return ctx;
 }
 
-
 int ctx_ctx_consume_events (Ctx *ctx)
 {
   int ix, iy;
@@ -457,6 +455,21 @@ int ctx_ctx_consume_events (Ctx *ctx)
       else if (!strcmp (event_type, "message"))
       {
         ctx_incoming_message (ctx, event + strlen ("message"), 0);
+      } else if (!strcmp (event, "size-changed"))
+      {
+        fprintf (stdout, "\e[H\e[2J\e[?25l");
+        ctxctx->cols = ctx_terminal_cols ();
+        ctxctx->rows = ctx_terminal_rows ();
+        ctxctx->width  = ctx_terminal_width ();
+        ctxctx->height = ctx_terminal_height ();
+        ctx_set_size (ctx, ctxctx->width, ctxctx->height);
+
+        if (prev_frame_contents)
+           free (prev_frame_contents);
+        prev_frame_contents = NULL;
+        prev_frame_len = 0;
+        ctx_set_dirty (ctx, 1);
+        ctx_key_press (ctx, 0, "size-changed", 0);
       }
       else
       {
@@ -494,21 +507,19 @@ int ctx_ctx_consume_events (Ctx *ctx)
         ctx_pointer_motion (ctx, x, y, 0, 0);
       } else if (!strcmp (event, "size-changed"))
       {
-#if 0
-        int width = nct_sys_terminal_width ();
-        int height = nct_sys_terminal_height ();
-        nct_set_size (backend->term, width, height);
-        width *= CPX;
-        height *= CPX;
-        free (mrg->glyphs);
-        free (mrg->styles);
-        free (backend->nct_pixels);
-        backend->nct_pixels = calloc (width * height * 4, 1);
-        mrg->glyphs = calloc ((width/CPX) * (height/CPX) * 4, 1);
-        mrg->styles = calloc ((width/CPX) * (height/CPX) * 1, 1);
-        mrg_set_size (mrg, width, height);
-        mrg_queue_draw (mrg, NULL);
-#endif
+        fprintf (stdout, "\e[H\e[2J\e[?25l");
+        ctxctx->cols = ctx_terminal_cols ();
+        ctxctx->rows = ctx_terminal_rows ();
+        ctxctx->width  = ctx_terminal_width ();
+        ctxctx->height = ctx_terminal_height ();
+        ctx_set_size (ctx, ctxctx->width, ctxctx->height);
+
+        if (prev_frame_contents)
+           free (prev_frame_contents);
+        prev_frame_contents = NULL;
+        prev_frame_len = 0;
+        ctx_set_dirty (ctx, 1);
+        ctx_key_press (ctx, 0, "size-changed", 0);
       }
       else
       {

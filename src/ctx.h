@@ -1428,12 +1428,12 @@ struct
 typedef struct _CtxImplementation CtxImplementation;
 struct _CtxImplementation
 {
-  void (*process) (void *renderer, CtxCommand *entry);
-  void (*reset)   (void *renderer);
-  void (*flush)   (void *renderer);
+  void (*process)        (void *renderer, CtxCommand *entry);
+  void (*reset)          (void *renderer);
+  void (*flush)          (void *renderer);
   char *(*get_clipboard) (void *ctxctx);
-  void (*set_clipboard) (void *ctxctx, const char *text);
-  void (*free)    (void *renderer);
+  void (*set_clipboard)  (void *ctxctx, const char *text);
+  void (*free)           (void *renderer);
 };
 
 CtxCommand *ctx_iterator_next (CtxIterator *iterator);
