@@ -404,7 +404,7 @@ int add_tab (const char *commandline, int can_launch)
 
   if (add_y + ctx_height(ctx)/2 > ctx_height (ctx))
   {
-    add_y = 0;
+    add_y = ctx_height (ctx) / 40;
     add_x -= ctx_height (ctx) / 40 * 4;
   }
   return active->id;
