@@ -2,11 +2,11 @@
 
 #include <sys/time.h>
 
-static struct timeval start_time;
 
 #define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
 #if CTX_EVENTS
+static struct timeval start_time;
 
 static void
 _ctx_init_ticks (void)
