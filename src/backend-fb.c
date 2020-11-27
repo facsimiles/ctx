@@ -124,17 +124,23 @@ static char *ctx_fb_get_clipboard (CtxFb *sdl)
   return strdup ("");
 }
 
+#if UINTPTR_MAX == 0xffFFffFF
+  #define fbdrmuint_t uint32_t
+#elif UINTPTR_MAX == 0xffFFffFFffFFffFF
+  #define fbdrmuint_t uint64_t
+#endif
+
 void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
 {
    int got_master = 0;
    fb->fb_fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
    if (!fb->fb_fd)
      return NULL;
-   static uint64_t res_conn_buf[20]={0}; // this is static since its contents
+   static fbdrmuint_t res_conn_buf[20]={0}; // this is static since its contents
                                          // are used by the flip callback
-   uint64_t res_fb_buf[20]={0};
-   uint64_t res_crtc_buf[20]={0};
-   uint64_t res_enc_buf[20]={0};
+   fbdrmuint_t res_fb_buf[20]={0};
+   fbdrmuint_t res_crtc_buf[20]={0};
+   fbdrmuint_t res_enc_buf[20]={0};
    struct   drm_mode_card_res res={0};
 
    if (ioctl(fb->fb_fd, DRM_IOCTL_SET_MASTER, 0))
@@ -143,10 +149,10 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
 
    if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETRESOURCES, &res))
      goto cleanup;
-   res.fb_id_ptr=(uint64_t)res_fb_buf;
-   res.crtc_id_ptr=(uint64_t)res_crtc_buf;
-   res.connector_id_ptr=(uint64_t)res_conn_buf;
-   res.encoder_id_ptr=(uint64_t)res_enc_buf;
+   res.fb_id_ptr=(fbdrmuint_t)res_fb_buf;
+   res.crtc_id_ptr=(fbdrmuint_t)res_crtc_buf;
+   res.connector_id_ptr=(fbdrmuint_t)res_conn_buf;
+   res.encoder_id_ptr=(fbdrmuint_t)res_enc_buf;
    if(ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETRESOURCES, &res))
       goto cleanup;
 
@@ -155,7 +161,7 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
    for (i=0;i<res.count_connectors;i++)
    {
      struct drm_mode_modeinfo conn_mode_buf[20]={0};
-     uint64_t conn_prop_buf[20]={0},
+     fbdrmuint_t conn_prop_buf[20]={0},
                      conn_propval_buf[20]={0},
                      conn_enc_buf[20]={0};
 
@@ -166,10 +172,10 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
      if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCONNECTOR, &conn))
        goto cleanup;
 
-     conn.modes_ptr=(uint64_t)conn_mode_buf;
-     conn.props_ptr=(uint64_t)conn_prop_buf;
-     conn.prop_values_ptr=(uint64_t)conn_propval_buf;
-     conn.encoders_ptr=(uint64_t)conn_enc_buf;
+     conn.modes_ptr=(fbdrmuint_t)conn_mode_buf;
+     conn.props_ptr=(fbdrmuint_t)conn_prop_buf;
+     conn.prop_values_ptr=(fbdrmuint_t)conn_propval_buf;
+     conn.encoders_ptr=(fbdrmuint_t)conn_enc_buf;
 
      if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCONNECTOR, &conn))
        goto cleanup;
@@ -227,7 +233,7 @@ void *ctx_fbdrm_new (CtxFb *fb, int *width, int *height)
         goto cleanup;
 
      fb->crtc.fb_id=cmd_dumb.fb_id;
-     fb->crtc.set_connectors_ptr=(uint64_t)&res_conn_buf[i];
+     fb->crtc.set_connectors_ptr=(fbdrmuint_t)&res_conn_buf[i];
      fb->crtc.count_connectors=1;
      fb->crtc.mode=conn_mode_buf[0];
      fb->crtc.mode_valid=1;
