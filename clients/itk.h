@@ -340,8 +340,6 @@ ITK *itk_new (Ctx *ctx)
   itk->light_mode       = 1;
   ctx_set_dirty (ctx, 1);
 
-  ctx_get_event (ctx); // XXX hack that turns on keybindings
-
   return itk;
 }
 

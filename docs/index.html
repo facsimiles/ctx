@@ -1,5 +1,5 @@
 <html>
-    <head><title>ctx - interactive vector protocol and platform</title>
+    <head><title>ctx - vector graphics terminal</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <style type='text/css'>
       @import url(ctx.css);
@@ -25,10 +25,13 @@
       <div id='page'>
       <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-      <p>ctx is a platform for (interactive) 2d vector graphics, built
-      around a serialization <a href='protocol/'>format/protocol</a> for HTML5s
-      2D canvas which can be used as an alternate profile for work an <a href='terminal/'>ANSI/VT terminal.</a>
+      <p>ctx is a <a href='protocol/'>protocol</a>/library/platform/terminal
+      for 2D vector graphics. Supporting the drawing vocabulary of
+      cairo/canvas.  Interactive applications written with it can be used
+      transparently over serial communication (like ssh) as well as directly
+      on /dev/fb0 or /dev/dri/card0.
       </p>
+
       <!--
 good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       -->
@@ -172,7 +175,7 @@ to be combined with all compositing modes.
          </dd>
 
          <dt>Small footprint</dt><dd>Can be tuned for <a
-                 href='mcu/'>microcontrollers</a> down to ~5kb of RAM + 30kb
+                 href='mcu/'>microcontrollers</a> down to ~7kb of RAM + 30kb
          of code + 12kb of fontdata, combined with immediate mode UI that can
          be re-run, it is sufficient to have a framebuffer covering one
          scanline - making microcontrollers with 8kb of RAM a possible
