@@ -984,8 +984,8 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
         {
       float vv = ( ( (linear_gradient_dx * u0 + linear_gradient_dy * v0) / linear_gradient_length) -
             linear_gradient_start) * (linear_gradient_rdelta);
-#if CTX_GRADIENT_CACHE
       uint32_t *tsrci = (uint32_t*)tsrc;
+#if CTX_GRADIENT_CACHE
       uint32_t *cachei = ((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
       *tsrci = *cachei;
 #else
