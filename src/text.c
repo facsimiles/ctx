@@ -387,7 +387,7 @@ int
 _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
-
+  ctx_begin_path (ctx);
   return font->engine->glyph (font, ctx, unichar, stroke);
 }
 
