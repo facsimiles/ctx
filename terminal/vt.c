@@ -1117,8 +1117,8 @@ static void _vt_backspace (VT *vt)
 static void vtcmd_set_top_and_bottom_margins (VT *vt, const char *sequence)
 {
   int top = 1, bottom = vt->rows;
-  /* XXX: w3m issues this; causing reset of cursor position, why it is issued
-   *  is unknown 
+  /* w3m issues this; causing reset of cursor position, why it is issued
+   * is unknown 
    */
   if (!strcmp (sequence, "[?1001r"))
     return;
@@ -1536,7 +1536,14 @@ static void vtcmd_erase_in_display (VT *vt, const char *sequence)
             }
         }
         break;
-      case 3: // XXX also clear scrollback
+      case 3: // also clear scrollback
+        while (vt->scrollback)
+        {
+           vt_line_free (vt->scrollback->data, 1);
+           ctx_list_remove (&vt->scrollback, vt->scrollback->data);
+         }
+        vt->scrollback_count = 0;
+        /* FALLTHROUGH */
       case 2: // clear entire screen but keep cursor;
         {
           int tx = vt->cursor_x;
@@ -3279,7 +3286,6 @@ static int _vt_handle_control (VT *vt, int byte)
       case '\f': /* VF form feed */
       case '\n': /* LF line ffed */
         vt_line_feed (vt);
-        // XXX : if we are at left margin, keep it!
         return 1;
       case '\r': /* CR carriage return */
         vt_carriage_return (vt);
