@@ -49,7 +49,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
   uint32_t args[2] = {glyph, ctx_glyph_width (ctx, glyph) * 256};
   ctx_renderstream_add_u32 (&output_font, CTX_DEFINE_GLYPH, args);
 
-  for (int i = 2; i < ctx->renderstream.count - 1; i++)
+  for (int i = 3; i < ctx->renderstream.count - 1; i++)
   {
     CtxEntry *entry = &ctx->renderstream.entries[i];
     args[0] = entry->data.u32[0];
