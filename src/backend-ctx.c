@@ -469,7 +469,7 @@ int ctx_ctx_consume_events (Ctx *ctx)
         prev_frame_contents = NULL;
         prev_frame_len = 0;
         ctx_set_dirty (ctx, 1);
-        ctx_key_press (ctx, 0, "size-changed", 0);
+        //ctx_key_press (ctx, 0, "size-changed", 0);
       }
       else
       {
@@ -519,7 +519,7 @@ int ctx_ctx_consume_events (Ctx *ctx)
         prev_frame_contents = NULL;
         prev_frame_len = 0;
         ctx_set_dirty (ctx, 1);
-        ctx_key_press (ctx, 0, "size-changed", 0);
+        //ctx_key_press (ctx, 0, "size-changed", 0);
       }
       else
       {

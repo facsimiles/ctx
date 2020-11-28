@@ -84,12 +84,12 @@ int client_is_iconified (int id);
 #define VT_LOG_INPUT    (1<<5)
 #define VT_LOG_ALL       0xff
 
-//static int vt_log_mask = VT_LOG_INPUT;
+static int vt_log_mask = VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR;// | VT_LOG_COMMAND;// | VT_LOG_INFO | VT_LOG_COMMAND;
 //static int vt_log_mask = VT_LOG_WARNING | VT_LOG_ERROR | VT_LOG_INFO | VT_LOG_COMMAND | VT_LOG_INPUT;
 //static int vt_log_mask = VT_LOG_ALL;
 
-#if 1
+#if 0
 #define vt_log(domain, fmt, ...)
 
 #define VT_input(str, ...)
@@ -1114,6 +1114,11 @@ static void _vt_backspace (VT *vt)
 static void vtcmd_set_top_and_bottom_margins (VT *vt, const char *sequence)
 {
   int top = 1, bottom = vt->rows;
+  /* XXX: w3m issues this; causing reset of cursor position, why it is issued
+   *  is unknown 
+   */
+  if (!strcmp (sequence, "[?1001r"))
+    return;
   if (strlen (sequence) > 2)
     {
       sscanf (sequence, "[%i;%ir", &top, &bottom);
@@ -1984,7 +1989,6 @@ static void vtcmd_delete_n_chars (VT *vt, const char *sequence)
     {
       vt_line_remove (vt->current_line, vt->cursor_x - 1);
     }
-  // XXX need style
 }
 
 static void vtcmd_delete_n_lines (VT *vt, const char *sequence)
@@ -4590,6 +4594,10 @@ int vt_poll (VT *vt, int timeout)
       // /// so that we can stop accepting data until autowrap or similar
     }
       len = vt_read (vt, vt->buf, read_size);
+      if (vt->log && len >0)
+      {
+        fwrite (vt->buf, len, 1, vt->log);
+      }
       for (int i = 0; i < len; i++)
         { vt->state (vt, vt->buf[i]); }
       // XXX allow state to break out in ctx mode on flush
@@ -4889,6 +4897,7 @@ void vt_feed_keystring (VT *vt, const char *str)
   else if (!strcmp (str, "shift-control-r") )
     {
       vt_open_log (vt, "/tmp/ctx-vt");
+      return;
     }
   else if (!strcmp (str, "shift-control-l") )
     {

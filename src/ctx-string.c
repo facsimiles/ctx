@@ -64,14 +64,14 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
 {
   if ( (val & 0xC0) != 0x80)
     { string->utf8_length++; }
-  if (string->length + 1 >= string->allocated_length)
+  if (string->length + 2 >= string->allocated_length)
     {
       char *old = string->str;
-      string->allocated_length *= 2;
+      string->allocated_length = CTX_MAX (string->allocated_length * 2, string->length + 2);
       string->str = malloc (string->allocated_length);
       if (old)
       {
-        memcpy (string->str, old, string->allocated_length/2);
+        memcpy (string->str, old, string->length);
         free (old);
       }
     }

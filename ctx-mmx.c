@@ -1,4 +1,4 @@
-/* This is a declaration for building with extra CFLAGS adding sse2
+/* This is a declaration for building with extra CFLAGS adding mmx
  */
 
 #include <stdint.h>

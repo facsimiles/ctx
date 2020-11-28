@@ -1,5 +1,7 @@
-/* This is a declaration for building only AVX2 compositor
- * support, with a generated pixel_format db array suffixed with _avx2
+/* This is a declaration for building only AVX2 compositor support, with a
+ * generated pixel_format db array suffixed with _avx2 compositors with all
+ * pixel formats get compiled with avx2 support including the crucial
+ * conditional intrinsics based RGBA8 fast path.
  */
 
 #include <stdint.h>
