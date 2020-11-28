@@ -327,6 +327,8 @@ float add_y = 100;
 void client_move (int id, int x, int y);
 int client_resize (int id, int w, int h);
 void client_shade_toggle (int id);
+static float client_min_y_pos (Ctx *ctx);
+static float client_max_y_pos (Ctx *ctx);
 
 void ensure_layout ()
 {
@@ -336,8 +338,9 @@ void ensure_layout ()
     CtxClient *client = l->data;
     if (client->maximized)
     {
-      client_resize (client->id, ctx_width (ctx), ctx_height(ctx) * 39 / 40);
-      client_move (client->id, 0, ctx_height (ctx)/40);
+      client_resize (client->id, ctx_width (ctx), ctx_height(ctx) -
+                      client_min_y_pos (ctx));
+      client_move (client->id, 0, client_min_y_pos (ctx));
     }
   }
 
@@ -392,6 +395,7 @@ void ensure_layout ()
   }
 }
 
+
 int add_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
@@ -402,9 +406,9 @@ int add_tab (const char *commandline, int can_launch)
   add_y += ctx_height (ctx) / 20;
   add_x += ctx_height (ctx) / 20;
 
-  if (add_y + ctx_height(ctx)/2 > ctx_height (ctx))
+  if (add_y + ctx_height(ctx)/2 > client_max_y_pos (ctx))
   {
-    add_y = ctx_height (ctx) / 40;
+    add_y = client_min_y_pos (ctx);
     add_x -= ctx_height (ctx) / 40 * 4;
   }
   return active->id;
@@ -590,8 +594,8 @@ void client_maximize (int id)
    client->unmaximized_y = client->y;
    client->unmaximized_width  = client->width;
    client->unmaximized_height = client->height;
-   client_resize (id, ctx_width (ctx), ctx_height(ctx) * 39 / 40);
-   client_move (id, 0, ctx_height (ctx)/40);
+   client_resize (id, ctx_width (ctx), ctx_height(ctx) - client_min_y_pos (ctx));
+   client_move (id, 0, client_min_y_pos (ctx));
 }
 
 int client_is_maximized (int id)
@@ -720,11 +724,22 @@ static void client_drag_maximized (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
+static float client_min_y_pos (Ctx *ctx)
+{
+  float titlebar_height = ctx_height (ctx)/40;
+  return titlebar_height * 2; // a titlebar and a panel
+}
+
+static float client_max_y_pos (Ctx *ctx)
+{
+  return ctx_height (ctx);
+}
+
 static void client_drag (CtxEvent *event, void *data, void *data2)
 {
   //Ctx *ctx = event->ctx;
   CtxClient *client = data;
-  float titlebar_height = ctx_height (event->ctx)/40;
+  //float titlebar_height = ctx_height (event->ctx)/40;
 
 //client->x += event->delta_x;
 //client->y += event->delta_y;
@@ -744,11 +759,8 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
 
   float snap_threshold = 8;
 
-  float min_window_y_pos = titlebar_height;
-  float max_window_y_pos = ctx_height (event->ctx);
-
-  if (new_y < min_window_y_pos) new_y = min_window_y_pos;
-  if (new_y > max_window_y_pos) new_y = max_window_y_pos;
+  if (new_y < client_min_y_pos (ctx)) new_y = client_min_y_pos (ctx);
+  if (new_y > client_max_y_pos (ctx)) new_y = client_max_y_pos (ctx);
 
   if (fabs (new_x - 0) < snap_threshold) new_x = 0.0;
   if (fabs (ctx_width (event->ctx) - (new_x + client->width)) < snap_threshold) new_x = ctx_width (ctx) - client->width;
@@ -1508,6 +1520,32 @@ void ctx_popups (Ctx *ctx)
   _popup = NULL;
 }
 
+#include <sys/time.h>
+#include <time.h>
+
+void draw_panel (Ctx *ctx)
+{
+  struct tm local_time_res;
+  struct timeval tv;
+  gettimeofday (&tv, NULL);
+  localtime_r (&tv.tv_sec, &local_time_res);
+
+  float titlebar_height = ctx_height (ctx)/40;
+
+  ctx_save (ctx);
+  ctx_rectangle (ctx, 0, 0, ctx_width (ctx), titlebar_height);
+  ctx_gray (ctx, 0.0);
+  ctx_fill (ctx);
+  ctx_font_size (ctx, titlebar_height * 0.9);
+  ctx_move_to (ctx, ctx_width (ctx), titlebar_height * 0.8);
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_END);
+  ctx_gray (ctx, 1.0);
+  char buf[128];
+  sprintf (buf, "%02i:%02i:%02i", local_time_res.tm_hour, local_time_res.tm_min, local_time_res.tm_sec);
+  ctx_text (ctx, buf);
+  ctx_restore (ctx);
+}
+
 int terminal_main (int argc, char **argv)
 {
   execute_self = argv[0];
@@ -1661,7 +1699,10 @@ int terminal_main (int argc, char **argv)
         ctx_fill (ctx);
 
         draw_vts (ctx);
+
         ctx_popups (ctx);
+
+        draw_panel (ctx);
 
         if (enable_terminal_menu)
         {
@@ -1708,12 +1749,12 @@ int terminal_main (int argc, char **argv)
       else
       {
         sleep_time *= 1.5;
-        if (sleep_time > 100)
-            sleep_time = 100;
+        if (sleep_time > 50)
+            sleep_time = 50;
         usleep (1000 * sleep_time/2);
       }
 
-      if (!ctx_is_dirty (ctx))
+      //if (!ctx_is_dirty (ctx))
       {
       CtxEvent *event;
       while ((event = ctx_get_event (ctx)))
