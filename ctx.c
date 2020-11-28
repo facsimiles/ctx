@@ -10,6 +10,7 @@
 #endif
 #include <math.h>
 
+#define _CTX_INTERNAL_FONT_ // drops ascii in favor of regular
 #include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
 
@@ -26,7 +27,7 @@
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1
 #define CTX_EVENTS               1
-#define CTX_BITPACK_PACKER       0
+#define CTX_BITPACK_PACKER       0 // turned of due to asan report
 #define CTX_GRADIENT_CACHE       1
 #define CTX_ENABLE_CMYK          1
 #define CTX_ENABLE_CM            1
@@ -49,6 +50,7 @@
 
 #define CTX_IMPLEMENTATION 1
 #define CTX_RASTERIZER 1
+
 
 #include "ctx.h"
 

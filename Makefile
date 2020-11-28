@@ -51,7 +51,6 @@ fonts/ctx-font-mono.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSansMono.ttf mono ascii-extras > $@
 
 used_fonts: fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf 
-
 test: ctx
 	make -C tests
 
