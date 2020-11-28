@@ -958,6 +958,9 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   _vt_move_to (vt, vt->cursor_y, vt->cursor_x);
   vt->rev++;
   VT_info ("resize %i %i", irows, icols);
+  if (vt->ctxp)
+          ctx_parser_free (vt->ctxp);
+  vt->ctxp = NULL;
 }
 
 void vt_set_px_size (VT *vt, int width, int height)
@@ -7451,7 +7454,6 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
              free (selection);
            }
          }
-
 
          if (y < 1)
          {
