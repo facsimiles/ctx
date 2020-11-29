@@ -387,7 +387,8 @@ void itk_reset (ITK *itk)
   else
   {
     itk_style = strdup (
-"wallpaper: #677\n"
+"wallpaper: #355\n"
+//"wallpaper: #677\n"
 "\n"
 "titlebar-bg:          #0007;\n"
 "titlebar-fg:          #fffb\n"
@@ -396,8 +397,10 @@ void itk_reset (ITK *itk)
 "titlebar-focused-bg:  #333b;\n"
 "titlebar-focused-fg:  #fffb;\n"
 "\n"
-"terminal-bg:         #000f;\n"
-"terminal-bg-reverse: #dddf;\n"
+"terminal-bg:         #000b;\n"
+"terminal-bg-reverse: #dddb;\n"
+"terminal-active-bg:         #000b;\n"
+"terminal-acitve-bg-reverse: #dddb;\n"
 "\n"
 "itk-bg:             rgba(30,40,50, 0.8);\n"
 "itk-focused-bg:     rgb(70,70,90);\n"
