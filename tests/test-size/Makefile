@@ -1,4 +1,4 @@
-SMALL_CFLAGS=-Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant -DNO_SDL
+SMALL_CFLAGS=-s -Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant -DNO_SDL
 #SMALL_CFLAGS=-Ofast -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program 
 PERF_CFLAGS=-Ofast  -g
 CC=i686-linux-gnu-gcc
@@ -22,11 +22,9 @@ text: text.c ../../*.h ../../fonts/*.h Makefile
 
 %: %.c ../../*.h ../../fonts/*.h Makefile tiny-config.h
 	$(CC) $(SMALL_CFLAGS)  $< -o $@ -I../../ -I../../fonts -march=native
-	strip -sx $@
 
 musl-static-%: %.c ../../*.h ../../fonts/*.h Makefile tiny-config.h
 	musl-gcc $(SMALL_CFLAGS) $< -o $@ -I../.. -I../../fonts -static
-	strip -sx $@
 
 perf.S: perf.c ../../*.h ../../fonts/*.h Makefile
 	gcc-10 $(PERF_CFLAGS) $< -S -o $@ -I../.. -I../../fonts 
