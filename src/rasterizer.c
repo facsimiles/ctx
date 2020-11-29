@@ -35,10 +35,12 @@ static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
     { rasterizer->scan_min = y1; }
   if (y1 > rasterizer->scan_max)
     { rasterizer->scan_max = y1; }
+
   if (x1 < rasterizer->col_min)
     { rasterizer->col_min = x1; }
   if (x1 > rasterizer->col_max)
     { rasterizer->col_max = x1; }
+
   entry.data.s16[2]=x1;
   entry.data.s16[3]=y1;
   return ctx_renderstream_add_single (&rasterizer->edge_list, &entry);
@@ -313,16 +315,21 @@ CTX_STATIC void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 
 CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
-  float tx; float ty;
+  float tx = x; float ty = y;
   int aa = rasterizer->aa;
   rasterizer->x        = x;
   rasterizer->y        = y;
   rasterizer->first_x  = x;
   rasterizer->first_y  = y;
   rasterizer->has_prev = -1;
+  if (rasterizer->uses_transforms)
+    {
+      _ctx_user_to_device (rasterizer->state, &tx, &ty);
+    }
 
-  tx = (x - rasterizer->blit_x) * CTX_SUBDIV;
-  ty = y * aa;
+  tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
+  ty = ty * aa;
+
   if (ty < rasterizer->scan_min)
     { rasterizer->scan_min = ty; }
   if (ty > rasterizer->scan_max)
