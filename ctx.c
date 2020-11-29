@@ -23,6 +23,7 @@
 #include "stb_truetype.h"
 #include "stb_image.h"
 
+#define CTX_DAMAGE_CONTROL      0// visualize damage in fb/sdl backends
 #define CTX_BACKEND_TEXT         1
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1

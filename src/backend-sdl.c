@@ -175,18 +175,6 @@ int ctx_sdl_consume_events (Ctx *ctx)
   CtxSDL *sdl = (void*)ctx->renderer;
   SDL_Event event;
   int got_events = 0;
-  if(0){
-    const char *title = ctx_get (sdl->ctx, "title");
-    static char *set_title = NULL;
-    if (title)
-    {
-    if (set_title == NULL || strcmp (title, set_title))
-    {
-      if (set_title) free (set_title);
-      set_title = strdup (title);
-    }
-    }
-  }
 
   ctx_sdl_show_frame (sdl, 0);
 
@@ -390,7 +378,6 @@ inline static void ctx_sdl_reset (CtxSDL *sdl)
 
 inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
-  //int width =  sdl->width;
   if (sdl->shown_frame == sdl->render_frame)
   {
     int dirty_tiles = 0;
@@ -439,6 +426,17 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
           dirty_no++;
         }
       }
+
+#if CTX_DAMAGE_CONTROL
+    for (int i = 0; i < sdl->width * sdl->height; i++)
+    {
+      int new = (sdl->pixels[i*4+0]+ sdl->pixels[i*4+1]+ sdl->pixels[i*4+2])/3;
+      if (new>1) new--;
+      sdl->pixels[i*4]= (sdl->pixels[i*4] + new)/2;
+      sdl->pixels[i*4+1]= (sdl->pixels[i*4+1] + new)/2;
+      sdl->pixels[i*4+2]= (sdl->pixels[i*4+1] + new)/2;
+    }
+#endif
 
     sdl->render_frame = ++sdl->frame;
 

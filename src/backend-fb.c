@@ -482,9 +482,9 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
     int count = 0;
     while (fb_render_threads_done (fb) != _ctx_max_threads)
     {
-      usleep (50);
+      usleep (500);
       count ++;
-      if (count > 10000)
+      if (count > 2000)
       {
         fb->shown_frame = fb->render_frame;
         return;
@@ -506,7 +506,9 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 
        int col_pre_skip = fb->min_col * fb->width/CTX_HASH_COLS;
        int col_post_skip = (CTX_HASH_COLS-fb->max_col-1) * fb->width/CTX_HASH_COLS;
-
+#if CTX_DAMAGE_CONTROL
+       pre_skip = post_skip = col_pre_skip = col_post_skip = 0;
+#endif
 
        if (pre_skip < 0) pre_skip = 0;
        if (post_skip < 0) post_skip = 0;
@@ -530,7 +532,6 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 
      // not when drm ?
      ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
-     //fprintf (stderr, "\e[H\e[J");
      ctx_fb_undraw_cursor (fb);
      switch (fb->fb_bits)
      {
@@ -858,7 +859,6 @@ static char *mice_get_event ()
       button = 2;
     }
   }
-
 
   mrg_mice_this->prev_state = buf[0];
 
@@ -1309,8 +1309,7 @@ static int event_check_pending (CtxFb *fb)
       {
         if (fb->vt_active)
         {
-          //fprintf (stderr, "ev %s\n", event);
-          ctx_key_press (fb->ctx, 0, event, 0);
+          ctx_key_press (fb->ctx, 0, event, 0); // we deliver all events as key-press, it disamibuates
           events++;
         }
         free (event);
@@ -1337,10 +1336,9 @@ inline static void ctx_fb_flush (CtxFb *fb)
 {
   if (fb->shown_frame == fb->render_frame)
   {
-    //ctx_reset (fb->ctx_copy);
+    int dirty_tiles = 0;
     ctx_set_renderstream (fb->ctx_copy, &fb->ctx->renderstream.entries[0],
                                          fb->ctx->renderstream.count * 9);
-    int dirty_tiles = 0;
     if (_ctx_enable_hash_cache)
     {
     Ctx *hasher = ctx_hasher_new (fb->width, fb->height,
@@ -1389,6 +1387,18 @@ inline static void ctx_fb_flush (CtxFb *fb)
           if (row < fb->min_row) fb->min_row = row;
         }
       }
+
+#if CTX_DAMAGE_CONTROL
+    for (int i = 0; i < fb->width * fb->height; i++)
+    {
+      int new = (fb->scratch_fb[i*4+0]+ fb->scratch_fb[i*4+1]+ fb->scratch_fb[i*4+2])/3;
+      if (new>1) new--;
+      fb->scratch_fb[i*4]= (fb->scratch_fb[i*4] + new)/2;
+      fb->scratch_fb[i*4+1]= (fb->scratch_fb[i*4+1] + new)/2;
+      fb->scratch_fb[i*4+2]= (fb->scratch_fb[i*4+1] + new)/2;
+    }
+#endif
+
 
     fb->render_frame = ++fb->frame;
 

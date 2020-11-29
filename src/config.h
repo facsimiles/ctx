@@ -491,4 +491,9 @@
 #endif
 #endif
 
+#ifndef CTX_DAMAGE_CONTROL
+#define CTX_DAMAGE_CONTROL 0
+#endif
+
+
 #define CTX_GRADIENT_CACHE_ELEMENTS 256
