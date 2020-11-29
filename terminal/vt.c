@@ -771,7 +771,7 @@ static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence)
   vt->audio.channels = 1;
   vt->audio.type = 'u';
   vt->audio.samplerate = 8000;
-  vt->audio.buffer_size = 512;
+  vt->audio.buffer_size = 1024;
   vt->audio.encoding = 'a';
   vt->audio.compression = '0';
   vt->audio.mic = 0;
@@ -4580,7 +4580,7 @@ int vt_poll (VT *vt, int timeout)
   timeout *= 1000;
   int read_size = sizeof (vt->buf);
   int got_data = 0;
-  int remaining_chars = read_size * 1024;
+  int remaining_chars = read_size * 4;
   int len = 0;
   audio_task (vt, 0);
 #if 1
@@ -4612,7 +4612,7 @@ int vt_poll (VT *vt, int timeout)
       // XXX allow state to break out in ctx mode on flush
       got_data+=len;
       remaining_chars -= len;
-      audio_task (vt, 0);
+      //audio_task (vt, 0);
       ticks = ctx_ticks ();
     }
   if (got_data < 0)
@@ -5319,11 +5319,9 @@ int vt_get_cursor_y (VT *vt)
 
 static void draw_braille_bit (Ctx *ctx, float x, float y, float cw, float ch, int u, int v)
 {
-  //ctx_begin_path (ctx);
   ctx_rectangle (ctx, 0.167 * cw + x + u * cw * 0.5,
                  y - ch + 0.080 * ch + v * ch * 0.25,
                  0.33 *cw, 0.33 * cw);
-  //ctx_fill (ctx);
 }
 
 int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int unichar)
@@ -6174,7 +6172,6 @@ static uint8_t palettes[][16][3]=
   },
 
   {
-
     {0, 0, 0},
     {127, 0, 0},
     {90, 209, 88},

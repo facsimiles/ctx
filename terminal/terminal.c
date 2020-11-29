@@ -1625,9 +1625,9 @@ int terminal_main (int argc, char **argv)
 
   signal (SIGCHLD,signal_child);
 
-  ctx_add_timeout (ctx, 1000 * 32, malloc_trim_cb, NULL);
+  ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 
-  int sleep_time = 50;
+  int sleep_time =15;
   while (clients && !ctx_has_quit (ctx))
     {
       CtxList *to_remove = NULL;
@@ -1732,9 +1732,7 @@ int terminal_main (int argc, char **argv)
           }
 
           itk_panel_end (itk);
-
           itk_done (itk);
-
           itk_key_bindings (itk);
         }
         else
@@ -1760,6 +1758,9 @@ int terminal_main (int argc, char **argv)
       while ((event = ctx_get_event (ctx)))
       {
       }
+      /* record amount of time spent - and adjust time of reading for
+       * vts?
+       */
       long int fractional_sleep = sleep_time / (n_clients?n_clients:1);
       for (CtxList *l = clients; l; l = l->next)
       {
