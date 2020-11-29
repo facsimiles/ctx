@@ -4577,10 +4577,9 @@ static void vt_state_neutral (VT *vt, int byte)
 
 int vt_poll (VT *vt, int timeout)
 {
-  timeout *= 1000;
   int read_size = sizeof (vt->buf);
   int got_data = 0;
-  int remaining_chars = read_size * 4;
+  int remaining_chars = read_size * 100;
   int len = 0;
   audio_task (vt, 0);
 #if 1
