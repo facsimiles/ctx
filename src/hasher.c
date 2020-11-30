@@ -441,24 +441,12 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
            * cache
            */
         uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
-#if 0
-        CtxRectangle shape_rect = {
-          rasterizer->col_min / CTX_SUBDIV,
-          rasterizer->scan_min / aa,
-
-          (rasterizer->col_max - rasterizer->col_min) / CTX_SUBDIV,
-
-          (rasterizer->scan_max + aa-1)/ aa -
-          rasterizer->scan_min / aa
-        };
-#else
         CtxRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV,
           rasterizer->scan_min / aa,
           (rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV,
           (rasterizer->scan_max - rasterizer->scan_min + 1) / aa
         };
-#endif
 
         hash ^= (rasterizer->state->gstate.fill_rule * 23);
         hash ^= (rasterizer->state->gstate.source.type * 117);
@@ -484,14 +472,10 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           char sha1_hash[20];
         uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
         CtxRectangle shape_rect = {
-          rasterizer->col_min / CTX_SUBDIV,
-          rasterizer->scan_min / aa,
-
-          (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
-          rasterizer->col_min / CTX_SUBDIV,
-
-          (rasterizer->scan_max + aa-1)/ aa -
-          rasterizer->scan_min / aa
+          rasterizer->col_min / CTX_SUBDIV - rasterizer->state.gstate.line_width,
+          rasterizer->scan_min / aa - rasterizer->state.gstate.line_width,
+          (rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV + rasterizer->state.gstate.line_width,
+          (rasterizer->scan_max - rasterizer->scan_min + 1) / aa + rasterizer->state.gstate.line_width
         };
 
         shape_rect.width += rasterizer->state->gstate.line_width * 2;
