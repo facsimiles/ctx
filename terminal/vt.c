@@ -2546,18 +2546,23 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
 
 static void vtcmd_set_t (VT *vt, const char *sequence)
 {
+    fprintf (stderr, "{%s}\n", sequence);
   /* \e[21y is request title - allows inserting keychars */
   if      (!strcmp (sequence,  "[1t")) { client_unshade (vt->id); }
   else if (!strcmp (sequence,  "[2t")) { client_shade (vt->id); } 
   else if (!strncmp (sequence, "[3;", 3)) {
     int x=0,y=0;
-    sscanf (sequence, "[3;%i;%ir", &x, &y);
+    sscanf (sequence, "[3;%i;%ir", &y, &x);
     client_move (vt->id, x, y);
   }
   else if (!strncmp (sequence, "[4;", 3))
   {
     int width = 0, height = 0;
     sscanf (sequence, "[4;%i;%ir", &height , &width);
+    if (width < 0) width = vt->cols * vt->cw;
+    if (height < 0) height = vt->rows * vt->ch;
+    if (width == 0) width = ctx_width (vt->ctx);
+    if (height == 0) height = ctx_height (vt->ctx);
     client_resize (vt->id, width, height);
   }
   else if (!strcmp (sequence, "[5t") ) { client_raise_top (vt->id); } 
@@ -2567,6 +2572,10 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   {
     int cols = 0, rows = 0;
     sscanf (sequence, "[8;%i;%ir", &rows, &cols);
+    if (cols < 0) cols = vt->cols;
+    if (rows < 0) rows = vt->rows;
+    if (cols == 0) cols = ctx_width (vt->ctx) / vt->cw;
+    if (rows == 0) rows = ctx_height (vt->ctx) / vt->ch;
     client_resize (vt->id, cols * vt->cw, rows * vt->ch);
   }
   else if (!strcmp (sequence, "[9;0t") ) { client_unmaximize (vt->id); } 
@@ -2589,7 +2598,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   else if (!strcmp (sequence, "[13t") ) /* request terminal position */
     {
       char buf[128];
-      sprintf (buf, "\033[3;%i;%it", client_x (vt->id), client_y (vt->id));
+      sprintf (buf, "\033[3;%i;%it", client_y (vt->id), client_x (vt->id));
       vt_write (vt, buf, strlen (buf) );
     }
   else if (!strcmp (sequence, "[14t") ) /* request terminal dimensions in px */
@@ -2601,7 +2610,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   else if (!strcmp (sequence, "[15t") ) /* request root dimensions in px */
     {
       char buf[128];
-      sprintf (buf, "\033[5;%i;%it", ctx_width (vt->ctx), ctx_height(vt->ctx));
+      sprintf (buf, "\033[5;%i;%it", ctx_height (vt->ctx), ctx_width(vt->ctx));
       vt_write (vt, buf, strlen (buf) );
     }
   else if (!strcmp (sequence, "[16t") ) /* request char dimensions in px */
@@ -2619,7 +2628,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   else if (!strcmp (sequence, "[19t") ) /* request root window size in char */
     {
       char buf[128];
-      sprintf (buf, "\033[9;%i;%it", ctx_width (vt->ctx)/vt->cw, ctx_height(vt->ctx)/vt->ch);
+      sprintf (buf, "\033[9;%i;%it", ctx_height(vt->ctx)/vt->ch, ctx_width (vt->ctx)/vt->cw);
       vt_write (vt, buf, strlen (buf) );
     }
 
