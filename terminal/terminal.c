@@ -1628,6 +1628,8 @@ int terminal_main (int argc, char **argv)
   ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 
   int sleep_time = 1000;
+  int fetched_bytes = 1;
+
   while (clients && !ctx_has_quit (ctx))
     {
       CtxList *to_remove = NULL;
@@ -1742,15 +1744,16 @@ int terminal_main (int argc, char **argv)
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_flush (ctx);
-        sleep_time     = (20000+sleep_time)/2;
+        if (fetched_bytes * 1000 / sleep_time > 1000)
+        {
+          sleep_time     = (200000+sleep_time)/2;
+        }
+        else
+          sleep_time     = (2000+sleep_time)/2;
       }
       else
       {
-#if 1
-        sleep_time *= 1.05;
-        if (sleep_time > 1000 * 100)
-            sleep_time = 1000 * 100;
-#endif
+        sleep_time     = 100000 * 0.05 + 0.95 * sleep_time;
         usleep (sleep_time/2);
       }
 
@@ -1760,6 +1763,10 @@ int terminal_main (int argc, char **argv)
       while ((event = ctx_get_event (ctx)))
       {
       }
+
+
+      fetched_bytes = 0;
+
       /* record amount of time spent - and adjust time of reading for
        * vts?
        */
@@ -1767,9 +1774,7 @@ int terminal_main (int argc, char **argv)
       for (CtxList *l = clients; l; l = l->next)
       {
         CtxClient *client = l->data;
-        if (vt_poll (client->vt, fractional_sleep))
-        {
-        }
+        fetched_bytes += vt_poll (client->vt, fractional_sleep);
       }
       }
     }

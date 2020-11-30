@@ -2546,7 +2546,6 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
 
 static void vtcmd_set_t (VT *vt, const char *sequence)
 {
-    fprintf (stderr, "{%s}\n", sequence);
   /* \e[21y is request title - allows inserting keychars */
   if      (!strcmp (sequence,  "[1t")) { client_unshade (vt->id); }
   else if (!strcmp (sequence,  "[2t")) { client_shade (vt->id); } 
