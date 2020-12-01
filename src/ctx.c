@@ -102,6 +102,13 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
           y += command->curve_to.y;
           got_coord++;
           break;
+        case CTX_ARC:
+          minx = ctx_minf (minx, command->arc.x - command->arc.radius);
+          miny = ctx_minf (miny, command->arc.y - command->arc.radius);
+          maxx = ctx_maxf (maxx, command->arc.x + command->arc.radius);
+          maxy = ctx_maxf (maxy, command->arc.y + command->arc.radius);
+
+          break;
         case CTX_RECTANGLE:
         case CTX_ROUND_RECTANGLE:
           x = command->rectangle.x;
@@ -124,6 +131,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
       maxy = ctx_maxf (maxy, y);
     }
   }
+
   if (ex1) *ex1 = minx;
   if (ey1) *ey1 = miny;
   if (ex2) *ex2 = maxx;
