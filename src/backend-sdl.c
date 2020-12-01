@@ -162,11 +162,29 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
       return;
   }
 
-  SDL_UpdateTexture (sdl->texture, NULL,
-                    (void*)sdl->pixels, sdl->width * sizeof (Uint32));
-  SDL_RenderClear (sdl->renderer);
-  SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
-  SDL_RenderPresent (sdl->renderer);
+  if (sdl->min_row == 100)
+  {
+  }
+  else
+  {
+    int x = sdl->min_col * sdl->width/CTX_HASH_COLS;
+    int y = sdl->min_row * sdl->height/CTX_HASH_ROWS;
+    int height = (sdl->max_row-sdl->min_row+1) * sdl->height/CTX_HASH_ROWS;
+    int width  = (sdl->max_col-sdl->min_col+1) * sdl->width/CTX_HASH_COLS;
+
+    sdl->min_row = 100;
+    sdl->max_row = 0;
+    sdl->min_col = 100;
+    sdl->max_col = 0;
+
+    SDL_Rect r = {x, y, width, height};
+    SDL_UpdateTexture (sdl->texture, &r,
+                      (void*)(sdl->pixels + y * sdl->width * 4 + x * 4), sdl->width * sizeof (Uint32));
+    SDL_RenderClear (sdl->renderer);
+    SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
+    SDL_RenderPresent (sdl->renderer);
+  }
+
   sdl->shown_frame = sdl->render_frame;
 }
 
@@ -424,6 +442,10 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
         {
           sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_max_threads) / dirty_tiles;
           dirty_no++;
+          if (col > sdl->max_col) sdl->max_col = col;
+          if (col < sdl->min_col) sdl->min_col = col;
+          if (row > sdl->max_row) sdl->max_row = row;
+          if (row < sdl->min_row) sdl->min_row = row;
         }
       }
 
