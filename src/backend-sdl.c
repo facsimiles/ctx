@@ -407,26 +407,27 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
                                          sdl->ctx->renderstream.count * 9);
     if (_ctx_enable_hash_cache)
     {
-    Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
-                      CTX_HASH_COLS, CTX_HASH_ROWS);
-    ctx_render_ctx (sdl->ctx_copy, hasher);
+      Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
+                        CTX_HASH_COLS, CTX_HASH_ROWS);
+      ctx_render_ctx (sdl->ctx_copy, hasher);
 
-    for (int row = 0; row < CTX_HASH_ROWS; row++)
-      for (int col = 0; col < CTX_HASH_COLS; col++)
-      {
-        uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
-        if (new_hash && memcmp (new_hash, &sdl->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
+      for (int row = 0; row < CTX_HASH_ROWS; row++)
+        for (int col = 0; col < CTX_HASH_COLS; col++)
         {
-          memcpy (&sdl->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
-          dirty_tiles++;
+          uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
+          if (new_hash && memcmp (new_hash, &sdl->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
+          {
+            memcpy (&sdl->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
+            sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+            dirty_tiles++;
+          }
+          else
+          {
+            sdl->tile_affinity[row * CTX_HASH_COLS + col] = -1;
+          }
         }
-        else
-        {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = -1;
-        }
-      }
-    ctx_free (hasher);
+      free (((CtxHasher*)(hasher->renderer))->hashes);
+      ctx_free (hasher);
     }
     else
     {

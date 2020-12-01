@@ -1144,9 +1144,18 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   float new_x = itk->x + itk->label_width * itk->width;
-  itk_text (itk, label);
-  itk->x = new_x;
-  CtxControl *control = itk_add_control (itk, UI_ENTRY, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width), em * itk->rel_ver_advance);
+
+  float ewidth = itk->width * (1.0 - itk->label_width);
+
+  if (label[0]) {
+    itk_text (itk, label);
+    itk->x = new_x;
+  }
+  else
+  {
+    ewidth = itk->width;
+  }
+  CtxControl *control = itk_add_control (itk, UI_ENTRY, label, itk->x, itk->y, ewidth, em * itk->rel_ver_advance);
   control->val = val;
   if (fallback)
     control->fallback = strdup (fallback);
@@ -1202,7 +1211,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
       }
     }
   }
-  itk->x += (1.0-itk->label_width) * itk->width;
+  itk->x += ewidth;
   itk_newline (itk);
 }
 

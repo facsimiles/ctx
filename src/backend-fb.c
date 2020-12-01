@@ -1341,26 +1341,27 @@ inline static void ctx_fb_flush (CtxFb *fb)
                                          fb->ctx->renderstream.count * 9);
     if (_ctx_enable_hash_cache)
     {
-    Ctx *hasher = ctx_hasher_new (fb->width, fb->height,
-                      CTX_HASH_COLS, CTX_HASH_ROWS);
-    ctx_render_ctx (fb->ctx_copy, hasher);
+      Ctx *hasher = ctx_hasher_new (fb->width, fb->height,
+                        CTX_HASH_COLS, CTX_HASH_ROWS);
+      ctx_render_ctx (fb->ctx_copy, hasher);
 
-    for (int row = 0; row < CTX_HASH_ROWS; row++)
-      for (int col = 0; col < CTX_HASH_COLS; col++)
-      {
-        uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
-        if (new_hash && memcmp (new_hash, &fb->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
+      for (int row = 0; row < CTX_HASH_ROWS; row++)
+        for (int col = 0; col < CTX_HASH_COLS; col++)
         {
-          memcpy (&fb->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
-          fb->tile_affinity[row * CTX_HASH_COLS + col] = 1;
-          dirty_tiles++;
+          uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
+          if (new_hash && memcmp (new_hash, &fb->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
+          {
+            memcpy (&fb->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
+            fb->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+            dirty_tiles++;
+          }
+          else
+          {
+            fb->tile_affinity[row * CTX_HASH_COLS + col] = -1;
+          }
         }
-        else
-        {
-          fb->tile_affinity[row * CTX_HASH_COLS + col] = -1;
-        }
-      }
-    ctx_free (hasher);
+      free (((CtxHasher*)(hasher->renderer))->hashes);
+      ctx_free (hasher);
     }
     else
     {
