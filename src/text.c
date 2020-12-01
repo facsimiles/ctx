@@ -387,7 +387,7 @@ int
 _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
-  ctx_begin_path (ctx);
+  // a begin-path here did not remove stray spikes in terminal
   return font->engine->glyph (font, ctx, unichar, stroke);
 }
 
@@ -643,9 +643,7 @@ CTX_STATIC void ctx_font_setup ()
   ctx_load_font_ctx ("emoji-ctx", ctx_font_emoji, sizeof (ctx_font_emoji) );
 #endif
 #endif
-#if CTX_FONT_sgi
-  ctx_load_font_monobitmap ("bitmap", ' ', '~', 8, 13, &sgi_font[0][0]);
-#endif
+
 #if DEJAVU_SANS_MONO
   ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf, ttf_DejaVuSansMono_ttf_len);
 #endif

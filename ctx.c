@@ -32,7 +32,7 @@
 #define CTX_GRADIENT_CACHE       1
 #define CTX_ENABLE_CMYK          1
 #define CTX_ENABLE_CM            1
-#define CTX_RASTERIZER_AA        5
+#define CTX_RASTERIZER_AA        3
 #define CTX_FORCE_AA             1
 
 #define CTX_SHAPE_CACHE          0 // disabled - it is buggy with threads
