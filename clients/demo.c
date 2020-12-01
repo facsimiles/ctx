@@ -496,15 +496,15 @@ static void object_drag (CtxEvent *event, void *data1, void *data2)
 
 static void card_drag (ITK *itk, int frame_no)
 {
-  static DragObject objects[4];
+  static DragObject objects[8];
   static int first_run = 1;
   if (first_run)
-  for (int i = 0; i <  4; i++)
+  for (int i = 0; i <  8; i++)
   {
-    objects[i].x = (i+1) * 0.1;
-    objects[i].y = (i+1) * 0.1;
-    objects[i].width = 0.2;
-    objects[i].height = 0.2;
+    objects[i].x = (i+1) * 10;
+    objects[i].y = (i+1) * 10;
+    objects[i].width = 20;
+    objects[i].height = 20;
     objects[i].red = 0.5;
     objects[i].red = 0.1;
     objects[i].red = 0.9;
@@ -521,11 +521,35 @@ static void card_drag (ITK *itk, int frame_no)
   ctx_fill (ctx);
   frame_no %= 400;
 
-  ctx_scale (ctx, width, height);
+  ctx_scale (ctx, width/100, height/100);
 
-  for (int i = 0; i <  4; i++)
+  for (int i = 0; i <  8; i++)
   {
-    ctx_rectangle (ctx, objects[i].x, objects[i].y, objects[i].width, objects[i].height);
+    switch (i)
+    {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+         ctx_rectangle (ctx, objects[i].x, objects[i].y, objects[i].width, objects[i].height);
+         break;
+      case 4:
+        ctx_move_to (ctx, objects[i].x, objects[i].y);
+        ctx_rel_line_to (ctx, 0, objects[i].height);
+        ctx_rel_line_to (ctx, objects[i].width, 0);
+        break;
+      case 5:
+        ctx_move_to (ctx, objects[i].x, objects[i].y);
+        ctx_line_to (ctx, objects[i].x +  objects[i].width, objects[i].y);
+        ctx_line_to (ctx, objects[i].x +  objects[i].width, objects[i].y+objects[i].height);
+        break;
+      case 6:
+      case 7:
+        ctx_arc (ctx, objects[i].x+objects[i].width/2, objects[i].y+objects[i].width/2,
+                      objects[i].width/2,
+                      0.0, CTX_PI *  1.9, 0);
+        break;
+    }
     ctx_rgba (ctx, objects[i].red, objects[i].green, objects[i].blue, objects[i].alpha);
     ctx_listen (ctx, CTX_DRAG, object_drag, &objects[i], itk);
     ctx_fill (ctx);
