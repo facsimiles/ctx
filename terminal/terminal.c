@@ -1742,17 +1742,21 @@ int terminal_main (int argc, char **argv)
         ctx_osk_draw (ctx);
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_flush (ctx);
-        if (fetched_bytes * 1000 / sleep_time > 1000)
-        {
-          sleep_time     = (200000+sleep_time)/2;
-        }
+
+        float bytespeed = fetched_bytes * 1000.0 / sleep_time;
+        static float avg_bytespeed = 0.0;
+        avg_bytespeed = bytespeed * 0.2 + avg_bytespeed * 0.8;
+        //fprintf (stderr, "%f %i/%i\n", bytespeed, avg_bytespeed, fetched_bytes, sleep_time);
+        //if (bytespeed > 200)
+        if (fetched_bytes > 300)
+          sleep_time = 50000;
         else
-          sleep_time     = (2000+sleep_time)/2;
+          sleep_time = 12;
       }
       else
       {
-        sleep_time     = 100000 * 0.05 + 0.95 * sleep_time;
-        usleep (sleep_time/2);
+        usleep (sleep_time);
+        sleep_time     = 30000 * 0.01 + 0.99 * sleep_time;
       }
 
       //if (!ctx_is_dirty (ctx))
@@ -1764,15 +1768,16 @@ int terminal_main (int argc, char **argv)
 
 
       fetched_bytes = 0;
-
-      /* record amount of time spent - and adjust time of reading for
-       * vts?
-       */
-      long int fractional_sleep = sleep_time / (n_clients?n_clients:1);
-      for (CtxList *l = clients; l; l = l->next)
       {
-        CtxClient *client = l->data;
-        fetched_bytes += vt_poll (client->vt, fractional_sleep);
+        /* record amount of time spent - and adjust time of reading for
+         * vts?
+         */
+        long int fractional_sleep = sleep_time / (n_clients?n_clients:1);
+        for (CtxList *l = clients; l; l = l->next)
+        {
+          CtxClient *client = l->data;
+          fetched_bytes += vt_poll (client->vt, fractional_sleep);
+        }
       }
       }
     }
