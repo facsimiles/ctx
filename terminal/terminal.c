@@ -1590,11 +1590,9 @@ int terminal_main (int argc, char **argv)
   width = ctx_width (ctx);
   height = ctx_height (ctx);
 
-  ctx_set_antialias (ctx, CTX_ANTIALIAS_GOOD);
-
   if (ctx_renderer_is_braille (ctx) && font_size <= 0)
   {
-    font_size = 10.0;
+    font_size = 11.0;
   }
 
   if (cols <= 0)

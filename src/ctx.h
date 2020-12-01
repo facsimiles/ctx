@@ -1486,7 +1486,7 @@ typedef enum
 enum _CtxAntialias
 {
   CTX_ANTIALIAS_DEFAULT,
-  CTX_ANTIALIAS_NONE, //
+  CTX_ANTIALIAS_NONE, // non-antialiased
   CTX_ANTIALIAS_FAST, // aa 3
   CTX_ANTIALIAS_GOOD, // aa 5
   CTX_ANTIALIAS_BEST  // aa 17

@@ -2691,7 +2691,7 @@ int _ctx_antialias_to_aa (CtxAntialias antialias)
     case CTX_ANTIALIAS_FAST: return 3;
     case CTX_ANTIALIAS_GOOD: return 5;
     default:
-    case CTX_ANTIALIAS_DEFAULT: return 15;
+    case CTX_ANTIALIAS_DEFAULT: return CTX_RASTERIZER_AA;
     case CTX_ANTIALIAS_BEST: return 17;
   }
 }

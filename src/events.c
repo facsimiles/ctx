@@ -86,7 +86,7 @@ Ctx *ctx_new_ui (int width, int height)
   {
     _ctx_max_threads = 2;
 #ifdef _SC_NPROCESSORS_ONLN
-    _ctx_max_threads = sysconf (_SC_NPROCESSORS_ONLN); 
+    _ctx_max_threads = sysconf (_SC_NPROCESSORS_ONLN) / 2;
 #endif
   }
 
@@ -116,7 +116,8 @@ Ctx *ctx_new_ui (int width, int height)
 
   Ctx *ret = NULL;
   /* FIXME: to a terminal query instead - to avoid relying on
-   * environment variables
+   * environment variables - thus making it work reliably over
+   * ssh without configuration.
    */
   if (getenv ("CTX_VERSION"))
   {
