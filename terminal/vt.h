@@ -39,7 +39,7 @@ void        vt_paste              (VT *vt, const char *str);
 //void        vt_feed_byte          (VT *vt, int byte);
 
 //)#define DEFAULT_SCROLLBACK   (1<<16)
-#define DEFAULT_SCROLLBACK   (1<<14)
+#define DEFAULT_SCROLLBACK   (1<<13)
 #define DEFAULT_ROWS         24
 #define DEFAULT_COLS         80
 

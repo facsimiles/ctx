@@ -176,6 +176,10 @@
 #define CTX_MIN_EDGE_LIST_SIZE   1024
 #endif
 
+#ifndef CTX_RASTERIZER_AA
+#define CTX_RASTERIZER_AA 5   // vertical-AA of CTX_ANTIALIAS_DEFAULT
+#endif
+
 /* The maximum complexity of a single path
  */
 #ifndef CTX_MAX_EDGE_LIST_SIZE
@@ -184,8 +188,12 @@
 
 #ifndef CTX_STRINGPOOL_SIZE
   // XXX should be possible to make zero and disappear when codepaths not in use
-  //     to save size
-#define CTX_STRINGPOOL_SIZE     4000 // needed for tiger
+  //     to save size, for card10 this is defined as a low number (some text
+  //     properties still make use of it)
+  //     
+  //     for desktop-use this should be fully dynamic, possibly
+  //     with chained pools
+#define CTX_STRINGPOOL_SIZE     10000 //
 #endif
 
 /* whether we dither or not for gradients

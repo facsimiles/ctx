@@ -263,8 +263,9 @@ struct _CtxState
   int           min_y;
   int           max_x;
   int           max_y;
-  CtxKeyDbEntry keydb[CTX_MAX_KEYDB];
-  char          stringpool[CTX_STRINGPOOL_SIZE];
+  int16_t       gstate_no;
+  CtxGState     gstate;
+  CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 #if CTX_GRADIENTS
   CtxGradient   gradient; /* we keep only one gradient,
                              this goes icky with multiple
@@ -274,9 +275,8 @@ struct _CtxState
                              can be stored there.
                            */
 #endif
-  int16_t       gstate_no;
-  CtxGState     gstate;
-  CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
+  CtxKeyDbEntry keydb[CTX_MAX_KEYDB];
+  char          stringpool[CTX_STRINGPOOL_SIZE];
 };
 
 
@@ -430,11 +430,11 @@ _Ctx
 {
   CtxImplementation *renderer;
   CtxRenderstream    renderstream;
-  CtxState           state;        /**/
   int                transformation;
   CtxBuffer          texture[CTX_MAX_TEXTURES];
   int                rev;
   void              *backend;
+  CtxState           state;        /**/
 #if CTX_EVENTS 
   CtxCursor          cursor;
   int                quit;

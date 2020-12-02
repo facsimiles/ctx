@@ -35,12 +35,17 @@
 #define CTX_RASTERIZER_AA        5
 #define CTX_FORCE_AA             1
 
+#define CTX_STRINGPOOL_SIZE      1000 //  for misc storage
+
+#define CTX_MATH                 1
+#define CTX_MIN_JOURNAL_SIZE     1024*128
+#define CTX_MIN_EDGE_LIST_SIZE   2048
+
 #define CTX_SHAPE_CACHE          0 // disabled - it is buggy with threads
 #define CTX_SHAPE_CACHE_MAX_DIM  96
 #define CTX_SHAPE_CACHE_DIM      (64*64)
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
-#define CTX_MATH                 1
-#define CTX_MAX_JOURNAL_SIZE     1024*64
+
 #ifndef CTX_AVX2
 #define CTX_AVX2 0 
 #else
