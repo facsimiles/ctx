@@ -347,9 +347,14 @@ void itk_free (ITK *itk)
   free (itk);
 }
 
-void control_unref (CtxControl *control)
+static inline void control_ref (CtxControl *control)
 {
-  if (control->ref_count < 0)
+  control->ref_count ++;
+}
+
+static inline void control_unref (CtxControl *control)
+{
+  if (control->ref_count <= 0)
   {
     CtxControl *w = control;
 
@@ -514,7 +519,7 @@ CtxControl *itk_add_control (ITK *itk,
   }
 
   control->type = type;
-  control->ref_count=2;
+  control->ref_count=0;
   control->x = x;
   control->y = y;
   control->no = itk->control_no;
@@ -924,6 +929,7 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
   ctx_fill (ctx);
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_DRAG, itk_slider_cb_drag, control, itk, control_finalize, NULL);
+  control_ref (control);
   ctx_begin_path (ctx);
 
   double fval = get_val (val, data);
@@ -1169,6 +1175,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   if (control->flags && ITK_FLAG_ACTIVE)
   {
   ctx_listen_with_finalize (ctx, CTX_CLICK, entry_clicked, control, itk, control_finalize, NULL);
+  control_ref (control);
   }
 
   ctx_begin_path (ctx);
@@ -1258,6 +1265,7 @@ void itk_toggle (ITK *itk, const char *label, int *val)
   control->val = val;
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
+  control_ref (control);
   ctx_begin_path (ctx);
   itk->x += width;
 
@@ -1305,6 +1313,7 @@ int itk_radio (ITK *itk, const char *label, int set)
   control->type = UI_RADIO;
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
+  control_ref (control);
   ctx_begin_path (ctx);
   itk->x += width;
 
@@ -1338,6 +1347,7 @@ int itk_expander (ITK *itk, const char *label, int *val)
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
+  control_ref (control);
   //itk_style_color (itk->ctx, "itk-interactive-bg");
   //ctx_fill (ctx);
 
@@ -1420,6 +1430,7 @@ int itk_button (ITK *itk, const char *label)
   control->type = UI_BUTTON;
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
+  control_ref (control);
   ctx_begin_path (ctx);
   itk->x += width;
   itk->x += itk->rel_hgap * em;
@@ -1461,6 +1472,7 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, itk_choice_clicked, control, itk, control_finalize, NULL);
+  control_ref (control);
 
   ctx_begin_path (ctx);
   if (itk->focus_no == control->no)
