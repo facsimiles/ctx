@@ -9,17 +9,17 @@
  *
  */
 
-/* whether the font rendering happens in backend or front-end of API,
- * the option is used by the tool that converts ttf fonts to ctx internal
- * representation.
+/* whether the font rendering happens in backend or front-end of API, the
+ * option is used set to 0 by the tool that converts ttf fonts to ctx internal
+ * representation - both should be possible so that this tool can be made
+ * into a TTF/OTF font import at runtime (perhaps even with live subsetting).
  */
 #ifndef CTX_BACKEND_TEXT
 #define CTX_BACKEND_TEXT 1
 #endif
 
-
-
-/* force full antialising */
+/* force full antialising - turns of adaptive AA when set to 1 
+ */
 #ifndef CTX_RASTERIZER_FORCE_AA
 #define CTX_RASTERIZER_FORCE_AA  0
 #endif
@@ -43,12 +43,15 @@
 // 16   12 68 40 24
 /* scale-factor for font outlines prior to bit quantization by CTX_SUBDIV
  *
- * changing this also changes font file format
+ * changing this also changes font file format - the value should be baked
+ * into the ctxf files making them less dependent on the ctx used to
+ * generate them
  */
 #define CTX_BAKE_FONT_SIZE    160
 
-/* pack some linetos/curvetos/movetos into denser renderstream indstructions,
- * permitting more vectors to be stored in the same space.
+/* pack some linetos/curvetos/movetos into denser renderstream instructions,
+ * permitting more vectors to be stored in the same space, experimental
+ * feature with added overhead.
  */
 #ifndef CTX_BITPACK
 #define CTX_BITPACK           1
@@ -72,6 +75,13 @@
 #define CTX_SHAPE_CACHE_MAX_DIM  32
 #endif
 
+/* maximum number of entries in shape cache
+ */
+#ifndef CTX_SHAPE_CACHE_ENTRIES
+#define CTX_SHAPE_CACHE_ENTRIES  160
+#endif
+
+
 #ifndef CTX_PARSER_MAXLEN
 #define CTX_PARSER_MAXLEN  1024 // this is the largest text string we support
 #endif
@@ -83,42 +93,37 @@
 /* maximum nesting level of compositing groups
  */
 #ifndef CTX_GROUP_MAX
-#define CTX_GROUP_MAX     8
+#define CTX_GROUP_MAX             8
 #endif
 
 #ifndef CTX_ENABLE_CLIP
-#define CTX_ENABLE_CLIP   1
+#define CTX_ENABLE_CLIP           1
 #endif
 
 /* use a 1bit clip buffer, saving RAM on microcontrollers, other rendering
  * will still be antialiased.
  */
 #ifndef CTX_1BIT_CLIP
-#define CTX_1BIT_CLIP 0
+#define CTX_1BIT_CLIP             0
 #endif
 
-/* maximum number of entries in shape cache
- */
-#ifndef CTX_SHAPE_CACHE_ENTRIES
-#define CTX_SHAPE_CACHE_ENTRIES  160
-#endif
 
 #ifndef CTX_ENABLE_SHADOW_BLUR
 #define CTX_ENABLE_SHADOW_BLUR    1
 #endif
 
 #ifndef CTX_GRADIENTS
-#define CTX_GRADIENTS      1
+#define CTX_GRADIENTS             1
 #endif
 
 /* some optinal micro-optimizations that are known to increase code size
  */
 #ifndef CTX_BLOATY_FAST_PATHS
-#define CTX_BLOATY_FAST_PATHS 1
+#define CTX_BLOATY_FAST_PATHS     1
 #endif
 
 #ifndef CTX_GRADIENT_CACHE
-#define CTX_GRADIENT_CACHE 1
+#define CTX_GRADIENT_CACHE        1
 #endif
 
 #ifndef CTX_FONTS_FROM_FILE
@@ -158,7 +163,7 @@
  * edgelist and renderstram.
  */
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   1024*128
+#define CTX_MIN_JOURNAL_SIZE   1024*64
 #endif
 
 /* The maximum size we permit the renderstream to grow to,
@@ -193,7 +198,7 @@
   //     
   //     for desktop-use this should be fully dynamic, possibly
   //     with chained pools
-#define CTX_STRINGPOOL_SIZE     10000 //
+#define CTX_STRINGPOOL_SIZE     1000 //
 #endif
 
 /* whether we dither or not for gradients
@@ -345,7 +350,7 @@
 /* include the bitpack packer, can be opted out of to decrease code size
  */
 #ifndef CTX_BITPACK_PACKER
-#define CTX_BITPACK_PACKER 1
+#define CTX_BITPACK_PACKER 0
 #endif
 
 /* enable RGBA8 intermediate format for
@@ -442,22 +447,23 @@
 #endif
 
 #ifndef CTX_MAX_LINGERING_EDGES
-#define CTX_MAX_LINGERING_EDGES  32
+#define CTX_MAX_LINGERING_EDGES  64
+#endif
+
+
+#ifndef CTX_MAX_PENDING
+#define CTX_MAX_PENDING          128
 #endif
 
 #ifndef CTX_MAX_TEXTURES
 #define CTX_MAX_TEXTURES         16
 #endif
 
-#ifndef CTX_MAX_PENDING
-#define CTX_MAX_PENDING          128
-#endif
-
 #ifndef CTX_HASH_ROWS
 #define CTX_HASH_ROWS            16
 #endif
 #ifndef CTX_HASH_COLS
-#define CTX_HASH_COLS            32
+#define CTX_HASH_COLS            16
 #endif
 
 #ifndef CTX_MAX_THREADS
@@ -504,4 +510,6 @@
 #endif
 
 
+#ifndef CTX_GRADIENT_CACHE_ELEMENTS
 #define CTX_GRADIENT_CACHE_ELEMENTS 256
+#endif

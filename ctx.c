@@ -23,8 +23,7 @@
 #include "stb_truetype.h"
 #include "stb_image.h"
 
-#define CTX_DAMAGE_CONTROL      0// visualize damage in fb/sdl backends
-#define CTX_BACKEND_TEXT         1
+#define CTX_DAMAGE_CONTROL       0// visualize damage in fb/sdl backends
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1
 #define CTX_EVENTS               1
@@ -35,8 +34,8 @@
 #define CTX_RASTERIZER_AA        5
 #define CTX_FORCE_AA             1
 
-#define CTX_STRINGPOOL_SIZE      1000 //  for misc storage
-
+#define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/
+                                       // variable size for each save|restore
 #define CTX_MATH                 1
 #define CTX_MIN_JOURNAL_SIZE     1024*128
 #define CTX_MIN_EDGE_LIST_SIZE   2048

@@ -1,6 +1,6 @@
 
-#define CTX_MAX_STATES      3 // lowered from 10, saving quite a few kb, 2 is also possible
-                              // but then there is no save/restore for the user, with 3 there is one
+#define CTX_MAX_STATES      4 // lowered from 10, saving quite a few kb, 2 is also possible
+                              // but then there is no save/restore for the user, with 4 there is two
 
 #define CTX_MATH            1
 #define CTX_LIMIT_FORMATS   1
@@ -26,8 +26,8 @@
 #define CTX_COMPOSITING_GROUPS       0
 #define CTX_BLENDING_AND_COMPOSITING 0   // 4392 bytes of code difference
 #define CTX_INLINED_NORMAL           0   // 328 bytes of difference, big speed impact
-#define CTX_STRINGPOOL_SIZE     1   // XXX : should be factored our
-#define CTX_MIN_EDGE_LIST_SIZE  256 // is also MIN_RENDERSTREAM_SIZE with RENDERSTREAM_STATIC
+#define CTX_STRINGPOOL_SIZE     8   // XXX : should be factored out
+#define CTX_MIN_EDGE_LIST_SIZE  196 // is also MIN_RENDERSTREAM_SIZE with RENDERSTREAM_STATIC
 #define CTX_RENDERSTREAM_STATIC 1
 #define CTX_FONTS_FROM_FILE     0 /* leaves out code */
 #define CTX_RASTERIZER          1

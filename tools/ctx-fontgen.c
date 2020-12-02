@@ -6,6 +6,8 @@
                            // for code handling aroud, this should
                            // be run-time to permit doing text_to_path
 #define CTX_RASTERIZER  0
+#define CTX_BITPACK_PACKER     1  // pack vectors
+#define CTX_BITPACK            1  // pack vectors
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 #include <sys/time.h>
