@@ -1785,6 +1785,7 @@ int terminal_main (int argc, char **argv)
   while (clients)
     client_remove (ctx, clients->data);
 
+  itk_free (itk);
   ctx_free (ctx);
   return 0;
 }
