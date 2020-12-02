@@ -1550,11 +1550,13 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
         ctx_flush (ctx);
 #endif
         if (event.stop_propagate)
+        {
+          free ((void*)event.string);
           return event.stop_propagate;
+        }
       }
     }
-
-    
+    free ((void*)event.string);
   }
   return 0;
 }
