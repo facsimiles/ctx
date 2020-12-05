@@ -1950,16 +1950,27 @@ foo:
 #define CTX_CLIP_FORMAT CTX_FORMAT_GRAY8
 #endif
 
+
 CTX_STATIC void
-ctx_rasterizer_clip (CtxRasterizer *rasterizer)
+ctx_rasterizer_clip_reset (CtxRasterizer *rasterizer)
 {
-  int count = rasterizer->edge_list.count;
+  if (rasterizer->clip_buffer)
+   ctx_buffer_free (rasterizer->clip_buffer);
+  rasterizer->clip_buffer = NULL;
+  rasterizer->state->gstate.clip_min_x = rasterizer->blit_x;
+  rasterizer->state->gstate.clip_min_y = rasterizer->blit_y;
+
+  rasterizer->state->gstate.clip_max_x = rasterizer->blit_x + rasterizer->blit_width - 1;
+  rasterizer->state->gstate.clip_max_y = rasterizer->blit_y + rasterizer->blit_height - 1;
+}
+
+CTX_STATIC void
+ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
+                           CtxEntry      *edges)
+{
+  int count = edges[0].data.u32[0];
   int aa = rasterizer->aa;
-  CtxEntry temp[count]; /* copy of already built up path's poly line  */
-  rasterizer->state->has_clipped=1;
-  rasterizer->state->gstate.clipped=1;
-  if (rasterizer->preserve)
-    { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
+
   int minx = 5000;
   int miny = 5000;
   int maxx = -5000;
@@ -1968,7 +1979,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
   int prev_y = 0;
   for (int i = 0; i < count; i++)
     {
-      CtxEntry *entry = &rasterizer->edge_list.entries[i];
+      CtxEntry *entry = &edges[i+1];
       float x, y;
       if (entry->code == CTX_NEW_EDGE)
         {
@@ -1990,21 +2001,31 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
 #if CTX_ENABLE_CLIP
   if ((minx == maxx) || (miny == maxy)) // XXX : reset hack
   {
-    if (rasterizer->clip_buffer)
-     ctx_buffer_free (rasterizer->clip_buffer);
-    rasterizer->clip_buffer = NULL;
-    rasterizer->state->gstate.clip_min_x = rasterizer->blit_x;
-    rasterizer->state->gstate.clip_min_y = rasterizer->blit_y;
-
-    rasterizer->state->gstate.clip_max_x = rasterizer->blit_x + rasterizer->blit_width - 1;
-    rasterizer->state->gstate.clip_max_y = rasterizer->blit_y + rasterizer->blit_height - 1;
-    goto done;
+    ctx_rasterizer_clip_reset (rasterizer);
+    return;//goto done;
   }
+
+  int we_made_it = 0;
+  CtxBuffer *clip_buffer;
+ 
+
   if (!rasterizer->clip_buffer)
   {
     rasterizer->clip_buffer = ctx_buffer_new (rasterizer->blit_width,
                                               rasterizer->blit_height,
                                               CTX_CLIP_FORMAT);
+    clip_buffer = rasterizer->clip_buffer;
+    we_made_it = 1;
+    if (CTX_CLIP_FORMAT == CTX_FORMAT_GRAY1)
+    memset (rasterizer->clip_buffer->data, 0, rasterizer->blit_width * rasterizer->blit_height/8);
+    else
+    memset (rasterizer->clip_buffer->data, 0, rasterizer->blit_width * rasterizer->blit_height);
+  }
+  else
+  {
+    clip_buffer = ctx_buffer_new (rasterizer->blit_width,
+                                  rasterizer->blit_height,
+                                  CTX_CLIP_FORMAT);
   }
 
   // for now only one level of clipping is supported
@@ -2013,14 +2034,13 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
   int prev_x = 0;
   int prev_y = 0;
 
-    Ctx *ctx = ctx_new_for_framebuffer (rasterizer->clip_buffer->data, rasterizer->blit_width, rasterizer->blit_height,
+    Ctx *ctx = ctx_new_for_framebuffer (clip_buffer->data, rasterizer->blit_width, rasterizer->blit_height,
        rasterizer->blit_width,
        CTX_CLIP_FORMAT);
-    memset (rasterizer->clip_buffer->data, 0, rasterizer->blit_width * rasterizer->blit_height);
 
   for (int i = 0; i < count; i++)
     {
-      CtxEntry *entry = &rasterizer->edge_list.entries[i];
+      CtxEntry *entry = &edges[i+1];
       float x, y;
       if (entry->code == CTX_NEW_EDGE)
         {
@@ -2036,9 +2056,29 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
     ctx_fill (ctx);
     ctx_free (ctx);
   }
+
+  if (CTX_CLIP_FORMAT == CTX_FORMAT_GRAY1)
+  {
+    for (int i = 0; i < rasterizer->blit_width * rasterizer->blit_height/8; i++)
+    {
+      ((uint8_t*)rasterizer->clip_buffer->data)[i] =
+      (((uint8_t*)rasterizer->clip_buffer->data)[i] &
+      ((uint8_t*)clip_buffer->data)[i]);
+    }
+  }
+  else
+  {
+    for (int i = 0; i < rasterizer->blit_width * rasterizer->blit_height; i++)
+    {
+      ((uint8_t*)rasterizer->clip_buffer->data)[i] =
+      (((uint8_t*)rasterizer->clip_buffer->data)[i] *
+      ((uint8_t*)clip_buffer->data)[i])/255;
+    }
+  }
+  if (!we_made_it)
+   ctx_buffer_free (clip_buffer);
 #endif
-
-
+  
   rasterizer->state->gstate.clip_min_x = ctx_maxi (minx,
                                          rasterizer->state->gstate.clip_min_x);
   rasterizer->state->gstate.clip_min_y = ctx_maxi (miny,
@@ -2047,11 +2087,30 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
                                          rasterizer->state->gstate.clip_max_x);
   rasterizer->state->gstate.clip_max_y = ctx_mini (maxy,
                                          rasterizer->state->gstate.clip_max_y);
-done:
+//done:
+
+}
+
+CTX_STATIC void
+ctx_rasterizer_clip (CtxRasterizer *rasterizer)
+{
+  int count = rasterizer->edge_list.count;
+  int aa = rasterizer->aa;
+  CtxEntry temp[count+1]; /* copy of already built up path's poly line  */
+  rasterizer->state->has_clipped=1;
+  rasterizer->state->gstate.clipped=1;
+  //if (rasterizer->preserve)
+    { memcpy (temp + 1, rasterizer->edge_list.entries, sizeof (temp) - sizeof (temp[0]));
+      temp[0].code = CTX_NOP;
+      temp[0].data.u32[0] = count;
+      ctx_state_set_blob (rasterizer->state, CTX_clip, (void*)temp, sizeof(temp));
+    }
+  ctx_rasterizer_clip_apply (rasterizer, temp);
+
   ctx_rasterizer_reset (rasterizer);
   if (rasterizer->preserve)
     {
-      memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
+      memcpy (rasterizer->edge_list.entries, temp + 1, sizeof (temp) - sizeof(temp[0]));
       rasterizer->edge_list.count = count;
       rasterizer->preserve = 0;
     }
@@ -2423,6 +2482,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
   CtxRasterizer *rasterizer = (CtxRasterizer *) user_data;
   CtxState *state = rasterizer->state;
   CtxCommand *c = (CtxCommand *) entry;
+  int clear_clip = 0;
   switch (c->code)
     {
 #if CTX_ENABLE_SHADOW_BLUR
@@ -2572,14 +2632,40 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
                         c->set.utf8);
         break;
 #endif
+      case CTX_RESTORE:
+        for (int i = state->gstate_no?state->gstate_stack[state->gstate_no-1].keydb_pos:0;
+             i < state->gstate.keydb_pos; i++)
+        {
+          if (state->keydb[i].key == CTX_clip)
+          {
+            clear_clip = 1;
+          }
+        }
+        /* FALLTHROUGH */
       case CTX_ROTATE:
       case CTX_SCALE:
       case CTX_TRANSLATE:
       case CTX_SAVE:
-      case CTX_RESTORE:
         rasterizer->comp_op = NULL;
         rasterizer->uses_transforms = 1;
         ctx_interpret_transforms (rasterizer->state, entry, NULL);
+        if (clear_clip)
+        {
+          ctx_rasterizer_clip_reset (rasterizer);
+        for (int i = state->gstate_no?state->gstate_stack[state->gstate_no-1].keydb_pos:0;
+             i < state->gstate.keydb_pos; i++)
+        {
+          if (state->keydb[i].key == CTX_clip)
+          {
+            int idx = ctx_float_to_string_index (state->keydb[i].value);
+            if (idx >=0)
+            {
+              CtxEntry *edges = &state->stringpool[idx];
+              ctx_rasterizer_clip_apply (rasterizer, edges);
+            }
+          }
+        }
+        }
         break;
       case CTX_STROKE:
 #if CTX_ENABLE_SHADOW_BLUR

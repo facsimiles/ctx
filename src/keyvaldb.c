@@ -64,8 +64,10 @@ void *ctx_state_get_blob (CtxState *state, uint32_t key)
   int idx = ctx_float_to_string_index (stored);
   if (idx >= 0)
   {
+     // can we know length?
      return &state->stringpool[idx];
   }
+
   // format number as string?
   return NULL;
 }
@@ -124,6 +126,9 @@ CTX_STATIC void ctx_state_set_string (CtxState *state, uint32_t key, const char 
  
   // XXX should special case when the string modified is at the
   //     end of the stringpool.
+  //
+  //     for clips the behavior is howevre ideal, since
+  //     we can have more than one clip per save/restore level
   ctx_state_set_blob (state, key, (uint8_t*)string, strlen(string));
 }
 
