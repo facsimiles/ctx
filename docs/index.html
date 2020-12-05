@@ -281,9 +281,6 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         </p>
         <ul>
           <li>clip does not clip event boxes/shapes</li>
-          <li>clip is not well behaved across save/restore - doing a clip of a 0,0,0x0 rectangle is currently recognized as "reset clip",
-          and can be used in front of the ctx_restore, which will become a no-op
-          when clipping is properly implemented</li>
           <li>arc not well behaved for edge-cases around full-circle</li>
           <li>in_fill is using bounding box - and most reliably works with rectangles.</li>
           <li>radial gradient is only using one center</li>
