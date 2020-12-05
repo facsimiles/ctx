@@ -7103,8 +7103,6 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     ctx_rectangle (ctx, u, v, image->width, image->height);
                     ctx_fill (ctx);
 
-                    ctx_rectangle (ctx, 0, 0, 0, 0);
-                    ctx_clip (ctx); // XXX hack to be removed when clip works better
                     ctx_restore (ctx);
                     }
                   }

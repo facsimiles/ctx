@@ -790,10 +790,6 @@ void itk_scroll_end (ITK *itk)
   ctx_fill (ctx);
 
 
-  /* set global clip - workaround until we have better */
-  ctx_rectangle (ctx, 0,0, 0,0);
-  ctx_clip (ctx);
-
 }
 
 void itk_panel_start (ITK *itk, const char *title,
