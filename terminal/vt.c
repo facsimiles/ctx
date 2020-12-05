@@ -7112,7 +7112,11 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
               {
                 ctx_begin_path (ctx);
                 ctx_save (ctx);
-                ctx_translate (ctx, 0, (vt->rows-row-1) * (vt->ch) );
+                ctx_rectangle (ctx, x0, y0 - vt->scroll * vt->ch, vt->cw * vt->cols,
+                                    vt->ch * vt->rows);
+                ctx_clip (ctx);
+                ctx_translate (ctx, 0.0, y - vt->ch);
+                //(vt->rows-row-1) * (vt->ch) );
                 //float factor = vt->cols * vt->cw / 1000.0;
                 //ctx_scale (ctx, factor, factor);
                 ctx_render_ctx (line->ctx_copy, ctx);
@@ -7120,7 +7124,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
               }
             }
           }
-        y -= vt->ch;
+    //  y -= vt->ch;
       }
   }
 
