@@ -425,6 +425,8 @@ ctx_text_width (Ctx        *ctx,
                 const char *string)
 {
   float sum = 0.0;
+  if (!string)
+    return 0.0f;
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1) )
     {
       sum += ctx_glyph_width (ctx, ctx_utf8_to_unichar (utf8) );
@@ -557,6 +559,8 @@ void
 ctx_text (Ctx        *ctx,
           const char *string)
 {
+  if (!string)
+    return;
 #if CTX_BACKEND_TEXT
   ctx_process_cmd_str (ctx, CTX_TEXT, string, 0, 0);
   _ctx_text (ctx, string, 0, 0);
@@ -569,6 +573,8 @@ void
 ctx_text_stroke (Ctx        *ctx,
                  const char *string)
 {
+  if (!string)
+    return;
 #if CTX_BACKEND_TEXT
   ctx_process_cmd_str (ctx, CTX_TEXT_STROKE, string, 0, 0);
   _ctx_text (ctx, string, 1, 0);
