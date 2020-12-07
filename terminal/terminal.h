@@ -10,7 +10,7 @@ ssize_t vtpty_read     (void *vtpty, void *buf, size_t count);
 ssize_t vtpty_write    (void *vtpty, const void *buf, size_t count);
 void    vtpty_resize   (void *vtpty, int cols, int rows,
                         int px_width, int px_height);
-int     vtpty_waitvtpty (void  *vtpty, int timeout);
+int     vtpty_waitdata (void  *vtpty, int timeout);
 extern  CtxList *vts;
 
 #endif
