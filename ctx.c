@@ -11,12 +11,11 @@
 #include <math.h>
 
 #define _CTX_INTERNAL_FONT_ // drops ascii in favor of regular
-#include "ctx-font-regular.h"
+//#include "ctx-font-regular.h"
 //#include "ctx-font-mono.h"
 //#include "DejaVuSansMono.h"
+#include "Roboto-Regular.h"
 #include "NotoMono-Regular.h"
-
-//#include "Roboto-Regular.h"
 //#include "DejaVuSansMono.h"
 //#include "DejaVuSans.h"
 //#include "0xA000-Mono.h"

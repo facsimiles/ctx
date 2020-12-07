@@ -52,6 +52,9 @@ fonts/ctx-font-mono.h: tools/ctx-fontgen
 fonts/NotoMono-Regular.h: Makefile
 	cd fonts; xxd -i ttf/NotoMono-Regular.ttf > NotoMono-Regular.h
 	echo '#define NOTO_MONO_REGULAR 1' >> $@
+fonts/Roboto-Regular.h: Makefile
+	cd fonts; xxd -i ttf/Roboto-Regular.ttf > Roboto-Regular.h
+	echo '#define ROBOTO_REGULAR 1' >> $@
 
 
 used_fonts: fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf fonts/NotoMono-Regular.h
@@ -76,7 +79,7 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
-ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/NotoMono-Regular.h
+ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/NotoMono-Regular.h fonts/Roboto-Regular.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` $(OFLAGS_LIGHT)
 
 deps.o: deps.c Makefile
