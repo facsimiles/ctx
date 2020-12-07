@@ -1043,12 +1043,14 @@ static int draw_vts (Ctx *ctx)
       ctx_text (ctx, "X");
       }
 
-      ctx_move_to (ctx, client->x, client->y - titlebar_height * 0.22);
+      ctx_move_to (ctx, client->x +  client->width/2, client->y - titlebar_height * 0.22);
       if (client == active)
         itk_style_color (ctx, "titlebar-focused-fg");
       else
         itk_style_color (ctx, "titlebar-fg");
 
+      ctx_save (ctx);
+      ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
       if (client->title)
       {
         ctx_text (ctx, client->title);
@@ -1057,6 +1059,7 @@ static int draw_vts (Ctx *ctx)
       {
         ctx_text (ctx, "untitled");
       }
+      ctx_restore (ctx);
       client->drawn_rev = vt_rev (vt);
     }
   }

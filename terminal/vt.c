@@ -5213,9 +5213,6 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
       setenv ("COLORTERM", "truecolor", 1);
       setenv ("CTX_VERSION", "0", 1);
 
-   // if (!strchr (command, ' '))
-   //   execlp (command, command, NULL);
-   // else
       {
         char *cargv[32];
         int   cargc;
@@ -5232,7 +5229,6 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
         cargv[cargc] = NULL;
         execvp (cargv[0], cargv);
       }
-      //vt->done = 1;
       exit (0);
     }
   else if (vt->vtpty.pid < 0)
