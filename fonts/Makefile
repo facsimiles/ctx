@@ -17,6 +17,7 @@ extra:
 	Roboto-Light.h \
 	Roboto-Regular.h \
 	NotoEmoji-Regular.h
+	NotoMono-Regular.h
 
 
 clean:
@@ -62,6 +63,10 @@ Roboto-Light.h: Makefile
 Roboto-Regular.h: Makefile
 	xxd -i ttf/Roboto-Regular.ttf > $@
 	echo '#define ROBOTO_REGULAR 1' >> $@
+
+NotoMono-Regular.h: Makefile
+	xxd -i ttf/NotoMono-Regular.ttf > $@
+	echo '#define NOTO_MONO_REGULAR 1' >> $@
 
 NotoEmoji-Regular.h: Makefile
 	xxd -i ttf/NotoEmoji-Regular.ttf > $@

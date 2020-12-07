@@ -461,7 +461,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
   tolerance = 1.0f/tolerance * 2;
-#if 1 // skipping this to preserve hash integrity
+#if 0 // skipping this to preserve hash integrity
   if (tolerance == 1.0f)
   {
   float maxx = ctx_maxf (x1,x2);
@@ -476,12 +476,18 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   float miny = ctx_minf (y1,y2);
   miny = ctx_minf (miny, oy);
   miny = ctx_minf (miny, y0);
+  
     if(
         (minx > rasterizer->blit_x + rasterizer->blit_width) ||
         (miny > rasterizer->blit_y + rasterizer->blit_height) ||
         (maxx < rasterizer->blit_x) ||
         (maxy < rasterizer->blit_y) )
     {
+         fprintf (stderr, "%f %i %f %i %f %i %f %i\n", minx , rasterizer->blit_x + rasterizer->blit_width,
+         miny , rasterizer->blit_y + rasterizer->blit_height,
+
+         maxx , rasterizer->blit_x,
+         maxy , rasterizer->blit_y);
       // tolerance==1.0 is most likely screen-space -
       // skip subdivides for things outside
     }
@@ -1638,7 +1644,10 @@ ctx_rasterizer_quad_to (CtxRasterizer *rasterizer,
                         float        y)
 {
   /* XXX : it is probably cheaper/faster to do quad interpolation directly -
-   *       though it will increase the code-size
+   *       though it will increase the code-size, an
+   *       alternative is to turn everything into cubic
+   *       and deal with cubics more directly during
+   *       rasterization
    */
   ctx_rasterizer_curve_to (rasterizer,
                            (cx * 2 + rasterizer->x) / 3.0f, (cy * 2 + rasterizer->y) / 3.0f,
@@ -1648,7 +1657,8 @@ ctx_rasterizer_quad_to (CtxRasterizer *rasterizer,
 
 CTX_STATIC void
 ctx_rasterizer_rel_quad_to (CtxRasterizer *rasterizer,
-                            float cx, float cy, float x, float y)
+                            float cx, float cy,
+                            float x,  float y)
 {
   ctx_rasterizer_quad_to (rasterizer, cx + rasterizer->x, cy + rasterizer->y,
                           x  + rasterizer->x, y  + rasterizer->y);

@@ -48,9 +48,13 @@ fonts/ctxf/regular.ctxf: tools/ctx-fontgen
 fonts/ctx-font-regular.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras > $@
 fonts/ctx-font-mono.h: tools/ctx-fontgen
-	./tools/ctx-fontgen fonts/ttf/DejaVuSansMono.ttf mono ascii-extras > $@
+	./tools/ctx-fontgen fonts/ttf/NotoMono-Regular.ttf mono ascii-extras > $@
+fonts/NotoMono-Regular.h: Makefile
+	cd fonts; xxd -i ttf/NotoMono-Regular.ttf > NotoMono-Regular.h
+	echo '#define NOTO_MONO_REGULAR 1' >> $@
 
-used_fonts: fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf 
+
+used_fonts: fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf fonts/NotoMono-Regular.h
 test: ctx
 	make -C tests
 
@@ -72,7 +76,7 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
-ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
+ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/NotoMono-Regular.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config sdl2 --cflags` $(OFLAGS_LIGHT)
 
 deps.o: deps.c Makefile

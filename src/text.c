@@ -647,6 +647,9 @@ CTX_STATIC void ctx_font_setup ()
 #if DEJAVU_SANS_MONO
   ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf, ttf_DejaVuSansMono_ttf_len);
 #endif
+#if NOTO_MONO_REGULAR
+  ctx_load_font_ttf ("mono-NotoMono_Regular", ttf_NotoMono_Regular_ttf, ttf_NotoMono_Regular_ttf_len);
+#endif
 #if NOTO_EMOJI_REGULAR
   ctx_load_font_ttf ("sans-NotoEmoji_Regular", ttf_NotoEmoji_Regular_ttf, ttf_NotoEmoji_Regular_ttf_len);
 #endif

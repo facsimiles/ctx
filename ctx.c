@@ -12,7 +12,9 @@
 
 #define _CTX_INTERNAL_FONT_ // drops ascii in favor of regular
 #include "ctx-font-regular.h"
-#include "ctx-font-mono.h"
+//#include "ctx-font-mono.h"
+//#include "DejaVuSansMono.h"
+#include "NotoMono-Regular.h"
 
 //#include "Roboto-Regular.h"
 //#include "DejaVuSansMono.h"
@@ -39,6 +41,9 @@
 #define CTX_MATH                 1
 #define CTX_MIN_JOURNAL_SIZE     1024*128
 #define CTX_MIN_EDGE_LIST_SIZE   2048
+
+//#define CTX_HASH_COLS  1
+//#define CTX_HASH_ROWS  1
 
 #define CTX_SHAPE_CACHE          0 // disabled - it is buggy with threads
 #define CTX_SHAPE_CACHE_MAX_DIM  96
