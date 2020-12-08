@@ -219,10 +219,12 @@ static char *execute_self = NULL;
 
 static CtxList *clients;
 static CtxClient *active = NULL;
+static CtxClient *active_tab = NULL;
 
 static CtxClient *client_by_id (int id);
 
 int client_resize (int id, int width, int height);
+void client_maximize (int id);
 
 void terminal_long_tap (Ctx *ctx, VT *vt)
 {
@@ -291,11 +293,23 @@ static CtxClient *find_active (int x, int y)
   CtxClient *ret = NULL;
   float view_height = ctx_height (ctx);
   float titlebar_height = view_height/40;
+  int resize_border = titlebar_height/2;
 
   for (CtxList *l = clients; l; l = l->next)
   {
-     int resize_border = titlebar_height/2;
      CtxClient *c = l->data;
+     if (c->maximized && c == active_tab)
+     if (x > c->x - resize_border && x < c->x+c->width + resize_border &&
+         y > c->y - titlebar_height && y < c->y+c->height + resize_border)
+     {
+       ret = c;
+     }
+  }
+
+  for (CtxList *l = clients; l; l = l->next)
+  {
+     CtxClient *c = l->data;
+     if (!c->maximized)
      if (x > c->x - resize_border && x < c->x+c->width + resize_border &&
          y > c->y - titlebar_height && y < c->y+c->height + resize_border)
      {
@@ -333,6 +347,9 @@ static float client_max_y_pos (Ctx *ctx);
 void ensure_layout ()
 {
   float titlebar_h = ctx_height (ctx)/40;
+ 
+
+
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
@@ -341,6 +358,8 @@ void ensure_layout ()
       client_resize (client->id, ctx_width (ctx), ctx_height(ctx) -
                       client_min_y_pos (ctx));
       client_move (client->id, 0, client_min_y_pos (ctx));
+      if (active_tab == NULL)
+        active_tab = client;
     }
   }
 
@@ -399,12 +418,21 @@ void ensure_layout ()
 int add_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
+  int was_maximized = 0;
+  if (active) was_maximized = active->maximized;
+
   active = add_client (commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, 0, can_launch);
   vt_set_ctx (active->vt, ctx);
   ensure_layout ();
   add_y += ctx_height (ctx) / 20;
   add_x += ctx_height (ctx) / 20;
+
+  if (was_maximized)
+  {
+    client_maximize (active->id);
+    active_tab = active;
+  }
 
   if (add_y + ctx_height(ctx)/2 > client_max_y_pos (ctx))
   {
@@ -437,6 +465,11 @@ void client_remove (Ctx *ctx, CtxClient *client)
   if (clients == NULL)
     ctx_quit (ctx);//
 
+  if (client == active_tab)
+  {
+    active_tab = NULL;
+  }
+
   if (client == active)
   {
     active = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
@@ -455,15 +488,35 @@ void client_remove_by_id (int id)
 }
 #endif
 
+void switch_to_tab (int desired_no)
+{
+  int no = 0;
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (client->maximized)
+    {
+      if (no == desired_no)
+      {
+        active = active_tab = client;
+        vt_rev_inc (active->vt);
+        return;
+      }
+      no++;
+    }
+  }
+}
+
 static void handle_event (Ctx *ctx, const char *event)
 {
   if (!active)
     return;
   VT *vt = active->vt;
   if (!strcmp (event, "shift-return"))
-   event = "return";
-  else
-  if (!strcmp (event, "shift-control-v") )
+  {
+    vt_feed_keystring (vt, "return");
+  }
+  else if (!strcmp (event, "shift-control-v") )
     {
       char *text = ctx_get_clipboard (ctx);
       if (text)
@@ -497,6 +550,18 @@ static void handle_event (Ctx *ctx, const char *event)
           exit (0);
         }
     }
+
+
+  else if (!strcmp (event, "alt-1"))   switch_to_tab(0);
+  else if (!strcmp (event, "alt-2"))   switch_to_tab(1);
+  else if (!strcmp (event, "alt-3"))   switch_to_tab(2);
+  else if (!strcmp (event, "alt-4"))   switch_to_tab(3);
+  else if (!strcmp (event, "alt-5"))   switch_to_tab(4);
+  else if (!strcmp (event, "alt-6"))   switch_to_tab(5);
+  else if (!strcmp (event, "alt-7"))   switch_to_tab(6);
+  else if (!strcmp (event, "alt-8"))   switch_to_tab(7);
+  else if (!strcmp (event, "alt-9"))   switch_to_tab(8);
+  else if (!strcmp (event, "alt-0"))   switch_to_tab(9);
   else if (!strcmp (event, "shift-control-q") )
     {
       ctx_quit (ctx);
@@ -596,6 +661,7 @@ void client_maximize (int id)
    client->unmaximized_height = client->height;
    client_resize (id, ctx_width (ctx), ctx_height(ctx) - client_min_y_pos (ctx));
    client_move (id, 0, client_min_y_pos (ctx));
+   active_tab = client;
 }
 
 int client_is_maximized (int id)
@@ -614,6 +680,7 @@ void client_unmaximize (int id)
    client->maximized = 0;
    client_resize (id, client->unmaximized_width, client->unmaximized_height);
    client_move (id, client->unmaximized_x, client->unmaximized_y);
+   active_tab = NULL;
 }
 
 void client_maximized_toggle (int id)
@@ -689,8 +756,6 @@ static int dirty = 0;
 
 int ctx_count (Ctx *ctx);
 
-static int dirt = 0;
-
 static int vt_dirty_count (void)
 {
   int changes = 0;
@@ -704,19 +769,20 @@ static int vt_dirty_count (void)
   return changes;
 }
 
-
 static void client_drag_maximized (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
-  //float titlebar_height = ctx_height (event->ctx)/40;
 
+  active = active_tab = client;
   if (event->type == CTX_DRAG_RELEASE)
   {
     static int prev_drag_end_time = 0;
     if (event->time - prev_drag_end_time < 500)
     {
       //client_shade_toggle (client->id);
-      client_maximized_toggle (client->id);
+      client_unmaximize (client->id);
+      client_raise_top (client->id);
+      active_tab = NULL;
     }
     prev_drag_end_time = event->time;
   }
@@ -907,37 +973,29 @@ static void client_close (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
-
-static int draw_vts (Ctx *ctx)
+void draw_titlebar (Ctx *ctx, CtxClient *client,
+                    float x, float y, float width, float titlebar_height)
 {
-  int changes = 0;
-  float view_height = ctx_height (ctx);
-  //float px = ctx_pointer_x (ctx);
-  //float py = ctx_pointer_y (ctx);
-  for (CtxList *l = clients; l; l = l->next)
-  {
-    CtxClient *client = l->data;
-    VT *vt = client->vt;
-    if (vt)
-    {
-      float titlebar_height = view_height/40;
-      float border = 2;
+#if 0
+  ctx_move_to (ctx, x, y + height * 0.8);
+  if (client == active)
+    ctx_rgba (ctx, 1, 1,0.4, 1.0);
+  else
+    ctx_rgba (ctx, 1, 1,1, 0.8);
+  ctx_text (ctx, client->title);
+#else
 
-      if (!client->shaded)
-      {
-        vt_draw (vt, ctx, client->x, client->y);
-      }
-
-      ctx_rectangle (ctx, client->x - border, client->y - titlebar_height - border,
-                     client->width + border * 2, titlebar_height + border * 2);
+      ctx_rectangle (ctx, x, y - titlebar_height,
+                     width, titlebar_height);
       if (client == active)
          itk_style_color (ctx, "titlebar-focused-bg");
       else
          itk_style_color (ctx, "titlebar-bg");
 
-      if (client->maximized)
+      if (client->maximized || y == titlebar_height)
       {
         ctx_listen (ctx, CTX_DRAG, client_drag_maximized, client, NULL);
+        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
       }
       else
       {
@@ -945,7 +1003,93 @@ static int draw_vts (Ctx *ctx)
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
       }
       ctx_fill (ctx);
+      ctx_font_size (ctx, titlebar_height * 0.85);
 
+      if (client == active &&
+          (client->maximized || y != titlebar_height))
+      {
+
+#if 1
+      ctx_rectangle (ctx, x + width - titlebar_height,
+                      y - titlebar_height, titlebar_height,
+                      titlebar_height);
+#endif
+      ctx_rgb (ctx, 1, 0,0);
+      ctx_listen (ctx, CTX_PRESS, client_close, client, NULL);
+      ctx_listen_set_cursor (ctx, CTX_CURSOR_ARROW);
+      //ctx_fill (ctx);
+      ctx_begin_path (ctx);
+      ctx_move_to (ctx, x + width - titlebar_height * 0.8, y - titlebar_height * 0.22);
+      if (client == active)
+        itk_style_color (ctx, "titlebar-focused-close");
+      else
+        itk_style_color (ctx, "titlebar-close");
+      ctx_text (ctx, "X");
+      }
+
+      ctx_move_to (ctx, x +  width/2, y - titlebar_height * 0.22);
+      if (client == active)
+        itk_style_color (ctx, "titlebar-focused-fg");
+      else
+        itk_style_color (ctx, "titlebar-fg");
+
+      ctx_save (ctx);
+      ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+      if (client->title)
+      {
+        ctx_text (ctx, client->title);
+      }
+      else
+      {
+        ctx_text (ctx, "untitled");
+      }
+      ctx_restore (ctx);
+#endif
+}
+
+
+static int draw_vts (Ctx *ctx)
+{
+  int changes = 0;
+  float view_height = ctx_height (ctx);
+  float titlebar_height = view_height/40;
+
+#if 0
+  if (active && active->maximized)
+  {
+    VT *vt = active->vt;
+    vt_draw (vt, ctx, 0, titlebar_height);
+    return changes;
+  }
+#endif
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (client == active_tab)
+    {
+      vt_draw (client->vt, ctx, 0, titlebar_height);
+    }
+    if (client->maximized)
+      client->drawn_rev = vt_rev (client->vt);
+  }
+
+
+  //float px = ctx_pointer_x (ctx);
+  //float py = ctx_pointer_y (ctx);
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    VT *vt = client->vt;
+    if (vt && !client->maximized)
+    {
+
+      if (!client->shaded)
+      {
+        vt_draw (vt, ctx, client->x, client->y);
+      }
+
+
+      // register resize regions
       if (client == active && !client->shaded &&  !client->maximized)
       {
         itk_style_color (ctx, "titlebar-focused-bg");
@@ -998,7 +1142,6 @@ static int draw_vts (Ctx *ctx)
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_NW);
         ctx_begin_path (ctx);
 
-
         ctx_rectangle (ctx,
                        client->x - titlebar_height,
                        client->y + client->height - titlebar_height,
@@ -1017,53 +1160,11 @@ static int draw_vts (Ctx *ctx)
 
       }
 
-      ctx_font_size (ctx, titlebar_height * 0.85);
+      draw_titlebar (ctx, client, client->x, client->y, client->width, titlebar_height);
 
-#if 0
-      if (px >= client->x - border && px <= client->x - border + client->width + border * 2 &&
-          py >= client->y - titlebar_height - border && py <= client->y - titlebar_height - border + titlebar_height + border * 2)
-#endif
-      {
-
-#if 1
-      ctx_rectangle (ctx, client->x + client->width - titlebar_height,
-                      client->y - titlebar_height, titlebar_height,
-                      titlebar_height);
-#endif
-      ctx_rgb (ctx, 1, 0,0);
-      ctx_listen (ctx, CTX_PRESS, client_close, client, NULL);
-      ctx_listen_set_cursor (ctx, CTX_CURSOR_ARROW);
-      //ctx_fill (ctx);
-      ctx_begin_path (ctx);
-      ctx_move_to (ctx, client->x + client->width - titlebar_height * 0.8, client->y - titlebar_height * 0.22);
-      if (client == active)
-        itk_style_color (ctx, "titlebar-focused-close");
-      else
-        itk_style_color (ctx, "titlebar-close");
-      ctx_text (ctx, "X");
-      }
-
-      ctx_move_to (ctx, client->x +  client->width/2, client->y - titlebar_height * 0.22);
-      if (client == active)
-        itk_style_color (ctx, "titlebar-focused-fg");
-      else
-        itk_style_color (ctx, "titlebar-fg");
-
-      ctx_save (ctx);
-      ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-      if (client->title)
-      {
-        ctx_text (ctx, client->title);
-      }
-      else
-      {
-        ctx_text (ctx, "untitled");
-      }
-      ctx_restore (ctx);
       client->drawn_rev = vt_rev (vt);
     }
   }
-  dirt += changes;
 
   return changes;
 }
@@ -1526,6 +1627,7 @@ void ctx_popups (Ctx *ctx)
 #include <sys/time.h>
 #include <time.h>
 
+
 void draw_panel (Ctx *ctx)
 {
   struct tm local_time_res;
@@ -1534,6 +1636,7 @@ void draw_panel (Ctx *ctx)
   localtime_r (&tv.tv_sec, &local_time_res);
 
   float titlebar_height = ctx_height (ctx)/40;
+  float tab_width = ctx_width (ctx) - titlebar_height * 4;
 
   ctx_save (ctx);
   ctx_rectangle (ctx, 0, 0, ctx_width (ctx), titlebar_height);
@@ -1547,6 +1650,29 @@ void draw_panel (Ctx *ctx)
   sprintf (buf, "%02i:%02i:%02i", local_time_res.tm_hour, local_time_res.tm_min, local_time_res.tm_sec);
   ctx_text (ctx, buf);
   ctx_restore (ctx);
+
+  int tabs = 0;
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (client->maximized)
+    tabs ++;
+  }
+
+  if (tabs)
+  tab_width /= tabs;
+
+  float x = 0.0;
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (client->maximized)
+    {
+      ctx_begin_path (ctx);
+      draw_titlebar (ctx, client, x, titlebar_height, tab_width, titlebar_height);
+    }
+      x += tab_width;
+  }
 }
 
 int terminal_main (int argc, char **argv)
@@ -1613,6 +1739,7 @@ int terminal_main (int argc, char **argv)
   {
     //active = add_client (vt_find_shell_command(), 0, 0, width, height, 0, 1);
     client_maximize (add_tab (vt_find_shell_command(), 1));
+    active_tab = active;
   }
   else
   {
@@ -1642,6 +1769,8 @@ int terminal_main (int argc, char **argv)
   //    follow_mouse = 1;
   //    ensure_layout ();
       }
+      ensure_layout ();
+
 
         CtxClient *client = find_active (ctx_pointer_x (ctx),
                                          ctx_pointer_y (ctx));
@@ -1658,6 +1787,7 @@ int terminal_main (int argc, char **argv)
                  ctx_pointer_is_down (ctx, 1)))
             {
               //if (client != clients->data)
+              if (!client->maximized)
               {
                 ctx_list_remove (&clients, client);
                 ctx_list_append (&clients, client);
@@ -1727,7 +1857,6 @@ int terminal_main (int argc, char **argv)
           itk_toggle (itk, "on screen keyboard", &on_screen_keyboard);
           itk_toggle (itk, "focus follows mouse", &focus_follows_mouse);
           itk_ctx_settings (itk);
-
 
           if (active)
           {

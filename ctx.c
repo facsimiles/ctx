@@ -1,7 +1,3 @@
-/* this file contains a default configuration, it produces ctx.o
- * which is reused by the other targets in the build system
- */
-
 #include <stdint.h>
 #include <termios.h>
 #include <unistd.h>
@@ -11,13 +7,13 @@
 #include <math.h>
 
 #define _CTX_INTERNAL_FONT_ // drops ascii in favor of regular
-//#include "ctx-font-regular.h"
-//#include "ctx-font-mono.h"
-//#include "DejaVuSansMono.h"
-#include "Roboto-Regular.h"
-#include "NotoMono-Regular.h"
+#include "ctx-font-regular.h"
+#include "ctx-font-mono.h"
 //#include "DejaVuSansMono.h"
 //#include "DejaVuSans.h"
+//#include "Roboto-Regular.h"
+//#include "NotoMono-Regular.h"
+//#include "DejaVuSansMono.h"
 //#include "0xA000-Mono.h"
 //#include "unscii-16.h"
 

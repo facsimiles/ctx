@@ -7181,7 +7181,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       float tot_lines = vt->line_count + vt->scrollback_count;
       float offset = (tot_lines - disp_lines - vt->scroll) / tot_lines;
       float win_len = disp_lines / tot_lines;
-      ctx_rectangle (ctx, vt->width - vt->cw * 1.5,
+      ctx_rectangle (ctx, (vt->cols*vt->cw) - vt->cw * 1.5,
                      0, 1.5 * vt->cw,
                      vt->rows * vt->ch);
       ctx_listen (ctx, CTX_DRAG, scrollbar_pressed, vt, NULL);
@@ -7192,7 +7192,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       else
         ctx_rgba (ctx, 0.5, 0.5, 0.5, .10);
       ctx_fill (ctx);
-      ctx_round_rectangle (ctx, vt->width - vt->cw * 1.5,
+      ctx_round_rectangle (ctx, (vt->cols*vt->cw) - vt->cw * 1.5,
                            offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
                            win_len * vt->rows * vt->ch,
                            vt->cw * 1.5 /2);

@@ -59,6 +59,14 @@ static inline CtxList *ctx_list_nth (CtxList *list, int no)
   return list;
 }
 
+static inline void *ctx_list_nth_data (CtxList *list, int no)
+{
+  CtxList *l = ctx_list_nth (list, no);
+  if (l)
+    return l->data;
+  return NULL;
+}
+
 
 static inline void
 ctx_list_insert_before (CtxList **list, CtxList *sibling,
