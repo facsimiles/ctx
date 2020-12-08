@@ -109,6 +109,7 @@ ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   float origin_y = baseline;
   float scale    = stbtt_ScaleForPixelHeight (ttf_info, font_size);;
   stbtt_vertex *vertices = NULL;
+  ctx_begin_path (ctx);
   int num_verts = stbtt_GetGlyphShape (ttf_info, glyph, &vertices);
   for (int i = 0; i < num_verts; i++)
     {
@@ -222,6 +223,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   float origin_x = state->x;
   float origin_y = state->y;
   ctx_current_point (ctx, &origin_x, &origin_y);
+  ctx_begin_path (ctx);
   int in_glyph = 0;
   float font_size = state->gstate.font_size;
   int start = 0;
@@ -230,6 +232,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
     { return -1; }  // XXX : fallback
   ctx_iterator_init (&iterator, &renderstream, start, CTX_ITERATOR_EXPAND_BITPACK);
   CtxCommand *command;
+  /* XXX :  do a binary search instead of a linear search */
   while ( (command= ctx_iterator_next (&iterator) ) )
     {
       CtxEntry *entry = &command->entry;
@@ -264,8 +267,8 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
           in_glyph = 1;
           ctx_save (ctx);
           ctx_translate (ctx, origin_x, origin_y);
-          ctx_begin_path (ctx);
           ctx_move_to (ctx, 0, 0);
+          ctx_begin_path (ctx);
           ctx_scale (ctx, font_size / CTX_BAKE_FONT_SIZE,
                      font_size / CTX_BAKE_FONT_SIZE);
         }
