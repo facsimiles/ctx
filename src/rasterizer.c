@@ -461,8 +461,8 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
   tolerance = 1.0f/tolerance * 2;
-#if 0 // skipping this to preserve hash integrity
-  if (tolerance == 1.0f)
+#if 1 // skipping this to preserve hash integrity
+  if (tolerance == 1.0f || 1)
   {
   float maxx = ctx_maxf (x1,x2);
   maxx = ctx_maxf (maxx, ox);
@@ -477,19 +477,15 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   miny = ctx_minf (miny, oy);
   miny = ctx_minf (miny, y0);
   
+  _ctx_user_to_device (rasterizer->state, &minx, &miny);
+  _ctx_user_to_device (rasterizer->state, &maxx, &maxy);
+
     if(
         (minx > rasterizer->blit_x + rasterizer->blit_width) ||
         (miny > rasterizer->blit_y + rasterizer->blit_height) ||
         (maxx < rasterizer->blit_x) ||
         (maxy < rasterizer->blit_y) )
     {
-         fprintf (stderr, "%f %i %f %i %f %i %f %i\n", minx , rasterizer->blit_x + rasterizer->blit_width,
-         miny , rasterizer->blit_y + rasterizer->blit_height,
-
-         maxx , rasterizer->blit_x,
-         maxy , rasterizer->blit_y);
-      // tolerance==1.0 is most likely screen-space -
-      // skip subdivides for things outside
     }
     else
     {
