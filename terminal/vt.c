@@ -5234,6 +5234,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
   else if (vt->vtpty.pid < 0)
     {
       VT_error ("forkpty failed (%s)", command);
+      return;
     }
   fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
   _ctx_add_listen_fd (vt->vtpty.pty);

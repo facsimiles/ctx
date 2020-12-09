@@ -2101,7 +2101,6 @@ CTX_STATIC void
 ctx_rasterizer_clip (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->edge_list.count;
-  int aa = rasterizer->aa;
   CtxEntry temp[count+1]; /* copy of already built up path's poly line  */
   rasterizer->state->has_clipped=1;
   rasterizer->state->gstate.clipped=1;
@@ -2666,7 +2665,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
             int idx = ctx_float_to_string_index (state->keydb[i].value);
             if (idx >=0)
             {
-              CtxEntry *edges = &state->stringpool[idx];
+              CtxEntry *edges = (CtxEntry*)&state->stringpool[idx];
               ctx_rasterizer_clip_apply (rasterizer, edges);
             }
           }
