@@ -346,10 +346,6 @@ static float client_max_y_pos (Ctx *ctx);
 
 void ensure_layout ()
 {
-  float titlebar_h = ctx_height (ctx)/40;
- 
-
-
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
@@ -362,58 +358,7 @@ void ensure_layout ()
         active_tab = client;
     }
   }
-
-
-  return;
-  switch (ctx_list_length (clients))
-  {
-     case 1:
-       if (ctx_renderer_is_fb (ctx))
-       {
-         client_resize (0, ctx_width (ctx), ctx_height (ctx) - titlebar_h);
-         client_move (0, 0, titlebar_h);
-       }
-       else
-       {
-         client_resize (0, ctx_width (ctx), ctx_height (ctx));
-         client_move (0, 0, 0);
-       }
-       add_x = 0;
-       add_y = 0;
-       break;
-     case 2:
-       client_resize (0, ctx_width (ctx), ctx_height (ctx) - titlebar_h);
-       client_move (0, 0, titlebar_h);
-       {
-       CtxClient *client = clients->next->data;
-       client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
-       client_move (client->id, ctx_width (ctx)/2, titlebar_h);
-       }
-
-       add_y = ctx_height (ctx) / 40;
-       add_x = ctx_height (ctx) / 40;
-       break;
-     case 3:
-       client_resize (0, ctx_width (ctx), (ctx_height (ctx) - titlebar_h*2)/2);
-       client_move (0, 0, ctx_height(ctx)/2 + titlebar_h);
-       {
-         CtxClient *client = clients->next->data;
-         client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
-         client_move (client->id, ctx_width (ctx)/2, titlebar_h);
-         client = clients->next->next->data;
-         client_resize (client->id, ctx_width (ctx)/2, (ctx_height (ctx) - titlebar_h *2)/2);
-         client_move (client->id, 0, titlebar_h);
-       }
-       add_y = ctx_height (ctx) / 40;
-       add_x = ctx_height (ctx) / 40;
-       break;
-     case 4:
-       break;
-     case 5:
-       break;
-  }
 }
-
 
 int add_tab (const char *commandline, int can_launch)
 {
@@ -1764,11 +1709,6 @@ int terminal_main (int argc, char **argv)
       int changes = 0;
       int n_clients = ctx_list_length (clients);
       int follow_mouse = focus_follows_mouse;
-      if (n_clients <= 3)
-      {
-  //    follow_mouse = 1;
-  //    ensure_layout ();
-      }
       ensure_layout ();
 
 

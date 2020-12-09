@@ -15,11 +15,6 @@ extern int n_tests;
 int test_no = 0;
 int frame_no = 0;
 
-void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
-{
-  ctx_quit (event->ctx);
-}
-
 extern int _ctx_max_threads;
 extern int _ctx_enable_hash_cache;
 

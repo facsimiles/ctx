@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include "ctx.h"
 
 /* A small immediate mode toolkit for ctx
  *
@@ -2062,4 +2063,39 @@ itk_ctx_settings (ITK *itk)
     if (set != choice)
       ctx_set_antialias (ctx, choice);
   }
+}
+
+void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
+{
+  ctx_quit (event->ctx);
+}
+
+ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
+{
+  Ctx *ctx = ctx_new_ui (-1, -1);
+  ITK  *itk = itk_new (ctx);
+  int   ret_val = 0;
+
+  const CtxEvent *event;
+  while (!ctx_has_quit (ctx) && (ret_val == 0))
+  {
+    if (ctx_is_dirty (ctx))
+    {
+      itk_reset (itk);
+      itk_key_bindings (itk);
+      ret_val = ui_fun (itk, ui_data);
+      ctx_add_key_binding (itk->ctx, "control-q", NULL, "foo", itk_key_quit, NULL);
+
+      itk_done (itk);
+      ctx_flush (ctx);
+    }
+    else
+    {
+      usleep (1000 * 10);
+    }
+    while ((event = ctx_get_event (ctx))){}
+  }
+  itk_free (itk);
+  ctx_free (ctx);
+  return NULL;
 }
