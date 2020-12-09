@@ -386,6 +386,11 @@ int add_tab (const char *commandline, int can_launch)
   }
   return active->id;
 }
+static void add_tab_cb (CtxEvent *event, void *data, void *data2)
+{
+  event->stop_propagate = 1;
+  add_tab (vt_find_shell_command(), 1);
+}
 
 static CtxClient *client_by_id (int id)
 {
@@ -1581,7 +1586,7 @@ void draw_panel (Ctx *ctx)
   localtime_r (&tv.tv_sec, &local_time_res);
 
   float titlebar_height = ctx_height (ctx)/40;
-  float tab_width = ctx_width (ctx) - titlebar_height * 4;
+  float tab_width = ctx_width (ctx) - titlebar_height * 4 - titlebar_height * 2;
 
   ctx_save (ctx);
   ctx_rectangle (ctx, 0, 0, ctx_width (ctx), titlebar_height);
@@ -1590,11 +1595,10 @@ void draw_panel (Ctx *ctx)
   ctx_font_size (ctx, titlebar_height * 0.9);
   ctx_move_to (ctx, ctx_width (ctx), titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_END);
-  ctx_gray (ctx, 1.0);
+  ctx_gray (ctx, 0.9);
   char buf[128];
   sprintf (buf, "%02i:%02i:%02i", local_time_res.tm_hour, local_time_res.tm_min, local_time_res.tm_sec);
   ctx_text (ctx, buf);
-  ctx_restore (ctx);
 
   int tabs = 0;
   for (CtxList *l = clients; l; l = l->next)
@@ -1607,7 +1611,14 @@ void draw_panel (Ctx *ctx)
   if (tabs)
   tab_width /= tabs;
 
-  float x = 0.0;
+  ctx_rectangle (ctx, 0, 0, titlebar_height * 1.5, titlebar_height);
+  ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
+  ctx_move_to (ctx, titlebar_height * 1.5/2, titlebar_height * 0.8);
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+  ctx_gray (ctx, 0.9);
+  ctx_text (ctx, "+");
+
+  float x = titlebar_height * 1.5;
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
@@ -1618,6 +1629,7 @@ void draw_panel (Ctx *ctx)
     }
       x += tab_width;
   }
+  ctx_restore (ctx);
 }
 
 int terminal_main (int argc, char **argv)
