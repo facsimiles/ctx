@@ -339,6 +339,13 @@
 #define CTX_FONT_ENGINE_STB        0
 #endif
 
+#ifdef _BABL_H
+#define CTX_BABL 1
+#else
+#define CTX_BABL 0
+#endif
+
+
 /* force add format if we have shape cache */
 #if CTX_SHAPE_CACHE
 #ifdef CTX_ENABLE_GRAY8

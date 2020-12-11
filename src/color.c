@@ -201,19 +201,55 @@ CTX_STATIC void ctx_color_set_dcmyka (CtxState *state, CtxColor *color, float c,
 static void ctx_rgb_user_to_device (CtxState *state, float rin, float gin, float bin,
                                     float *rout, float *gout, float *bout)
 {
-  /* babl plug-in point */
-  *rout = rin ;
-  *gout = gin ;
-  *bout = bin ;
+#if CTX_BABL
+#if 0
+  fprintf (stderr, "-[%p %p\n",
+    state->gstate.fish_rgbaf_user_to_device,
+    state->gstate.fish_rgbaf_device_to_user);
+#endif
+  if (state->gstate.fish_rgbaf_user_to_device)
+  {
+    float rgbaf[4]={rin,gin,bin,1.0};
+    float rgbafo[4];
+    babl_process (state->gstate.fish_rgbaf_user_to_device,
+                  rgbaf, rgbafo, 1);
+
+    *rout = rgbafo[0];
+    *gout = rgbafo[1];
+    *bout = rgbafo[2];
+    return;
+  }
+#endif
+  *rout = rin;
+  *gout = gin;
+  *bout = bin;
 }
 
 static void ctx_rgb_device_to_user (CtxState *state, float rin, float gin, float bin,
                                     float *rout, float *gout, float *bout)
 {
-  /* babl plug-in point */
-  *rout = rin ;
-  *gout = gin ;
-  *bout = bin ;
+#if CTX_BABL
+#if 0
+  fprintf (stderr, "=[%p %p\n",
+    state->gstate.fish_rgbaf_user_to_device,
+    state->gstate.fish_rgbaf_device_to_user);
+#endif
+  if (state->gstate.fish_rgbaf_device_to_user)
+  {
+    float rgbaf[4]={rin,gin,bin,1.0};
+    float rgbafo[4];
+    babl_process (state->gstate.fish_rgbaf_device_to_user,
+                  rgbaf, rgbafo, 1);
+
+    *rout = rgbafo[0];
+    *gout = rgbafo[1];
+    *bout = rgbafo[2];
+    return;
+  }
+#endif
+  *rout = rin;
+  *gout = gin;
+  *bout = bin;
 }
 #endif
 
@@ -779,3 +815,66 @@ ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 }
 
 #endif 
+
+
+#if CTX_BABL
+void ctx_colorspace_babl (CtxState      *state,
+                          CtxColorSpace  icc_slot,
+                          const Babl *space)
+{
+  switch (icc_slot)
+  {
+    case CTX_COLOR_SPACE_DEVICE_RGB:
+      state->gstate.device_space = space;
+      break;
+    case CTX_COLOR_SPACE_DEVICE_CMYK:
+      state->gstate.device_space = space;
+      break;
+    case CTX_COLOR_SPACE_USER_RGB:
+      state->gstate.rgb_space = space;
+      break;
+    case CTX_COLOR_SPACE_USER_CMYK:
+      state->gstate.cmyk_space = space;
+      break;
+  }
+
+
+  if (!state->gstate.device_space) 
+       state->gstate.device_space = babl_space ("sRGB");
+  if (!state->gstate.rgb_space) 
+       state->gstate.rgb_space = babl_space ("sRGB");
+
+  state->gstate.fish_rgbaf_device_to_user = babl_fish (
+       babl_format_with_space ("R'G'B'A float", state->gstate.device_space),
+       babl_format_with_space ("R'G'B'A float", state->gstate.rgb_space));
+  state->gstate.fish_rgbaf_user_to_device = babl_fish (
+       babl_format_with_space ("R'G'B'A float", state->gstate.rgb_space),
+       babl_format_with_space ("R'G'B'A float", state->gstate.device_space));
+
+}
+#endif
+
+void ctx_colorspace_icc (Ctx           *ctx,
+                         CtxColorSpace  icc_slot,
+                         unsigned char *icc_data,
+                         int            icc_length)
+{
+#if CTX_BABL
+   const char *error = NULL;
+   const Babl *space = babl_space_from_icc (icc_data, icc_length, BABL_ICC_INTENT_RELATIVE_COLORIMETRIC, &error);
+   if (space)
+   {
+     ctx_colorspace_babl (&ctx->state, icc_slot, space);
+   }
+#endif
+}
+
+///
+//
+//  deviceRGB .. settable when creating an RGB image surface..
+//               queryable/and internally settable when running in terminal
+//
+//  userRGB - settable at any time, stored in save|restore 
+//
+//
+//

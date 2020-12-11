@@ -1305,6 +1305,12 @@ ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data)
   ctx_interpret_pos_bare (state, entry, data);
 }
 
+#if CTX_BABL
+void ctx_colorspace_babl (CtxState   *state,
+                          CtxColorSpace  icc_slot,
+                          const Babl *space);
+#endif
+
 CTX_STATIC void
 ctx_state_init (CtxState *state)
 {
@@ -1319,6 +1325,12 @@ ctx_state_init (CtxState *state)
   state->max_x                  = -8192;
   state->max_y                  = -8192;
   ctx_matrix_identity (&state->gstate.transform);
+#if CTX_CM
+#if CTX_BABL
+  ctx_colorspace_babl (state, CTX_COLOR_SPACE_USER_RGB,   babl_space ("sRGB"));
+  ctx_colorspace_babl (state, CTX_COLOR_SPACE_DEVICE_RGB, babl_space ("ACEScg"));
+#endif
+#endif
 }
 
 void _ctx_set_transformation (Ctx *ctx, int transformation)
@@ -1333,6 +1345,7 @@ _ctx_init (Ctx *ctx)
     ctx_u8_float[i] = i/255.0f;
 
   ctx_state_init (&ctx->state);
+
   ctx->renderer = NULL;
 #if CTX_CURRENT_PATH
   ctx->current_path.flags |= CTX_RENDERSTREAM_CURRENT_PATH;

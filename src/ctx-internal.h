@@ -65,9 +65,9 @@ struct _CtxColor
 
 #if CTX_ENABLE_CM
 #if CTX_BABL
-  const Babl *space;
+  const Babl *space; // gets copied from state when color is declared
 #else
-  void   *space; // gets copied from state when color is declared
+  void   *space; // gets copied from state when color is declared, 
 #endif
   float   red;
   float   green;
@@ -192,10 +192,15 @@ struct _CtxGState
   const Babl   *device_space;
   const Babl   *rgb_space;       
   const Babl   *cmyk_space;
+
+  const Babl   *fish_rgbaf_user_to_device;
+  const Babl   *fish_rgbaf_device_to_user;
 #else
   void         *device_space;
   void         *rgb_space;       
   void         *cmyk_space;
+  void         *fish_rgbaf_user_to_device; // dummy padding
+  void         *fish_rgbaf_device_to_user; // dummy padding
 #endif
 #endif
   CtxCompositingMode  compositing_mode; // bitfield refs lead to

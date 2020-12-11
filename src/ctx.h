@@ -857,10 +857,10 @@ typedef enum
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
-  CTX_SET_DRGB_SPACE       = 21, // hacks integer for now
-  CTX_SET_RGB_SPACE        = 22, //
-  CTX_SET_CMYK_SPACE       = 23, //
-  CTX_SET_DCMYK_SPACE      = 24, //
+  CTX_SET_DRGB_SPACE   = 21, // hacks integer for now
+  CTX_SET_RGB_SPACE    = 22, //
+  CTX_SET_CMYK_SPACE   = 23, //
+  CTX_SET_DCMYK_SPACE  = 24, //
 
   /* though expressed as two chars in serialization we have
    * dedicated byte commands for these setters - they should be folded
@@ -1548,6 +1548,20 @@ typedef struct _CtxParser CtxParser;
   void  *prop_data,
   void (*exit) (void *exit_data),
   void *exit_data);
+
+
+typedef enum _CtxColorSpace CtxColorSpace;
+enum _CtxColorSpace
+{
+  CTX_COLOR_SPACE_DEVICE_RGB,
+  CTX_COLOR_SPACE_DEVICE_CMYK,
+  CTX_COLOR_SPACE_USER_RGB,
+  CTX_COLOR_SPACE_USER_CMYK,
+};
+void ctx_colorspace_icc (Ctx           *ctx,
+                         CtxColorSpace  icc_slot,
+                         unsigned char *icc_data,
+                         int            icc_length);
 
 void
 ctx_parser_set_size (CtxParser *parser,
