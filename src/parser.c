@@ -533,6 +533,7 @@ enum
   CTX_PARSER_STRING_QUOT,
   CTX_PARSER_STRING_APOS_ESCAPED,
   CTX_PARSER_STRING_QUOT_ESCAPED,
+  CTX_PARSER_STRING_A85,
 } CTX_STATE;
 
 static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_model)
@@ -1243,6 +1244,11 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
               parser->pos = 0;
               parser->holding[0] = 0;
               break;
+            case '~':
+              parser->state = CTX_PARSER_STRING_A85;
+              parser->pos = 0;
+              parser->holding[0] = 0;
+              break;
             case '"':
               parser->state = CTX_PARSER_STRING_QUOT;
               parser->pos = 0;
@@ -1459,6 +1465,19 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
         if (parser->state != CTX_PARSER_WORD)
           {
             ctx_parser_word_done (parser);
+          }
+        break;
+      case CTX_PARSER_STRING_A85:
+        switch (byte)
+          {
+            case '~': parser->state = CTX_PARSER_NEUTRAL;
+              ctx_parser_holding_append (parser, '~');
+              ctx_a85dec (parser->holding, parser->holding, parser->pos);
+              ctx_parser_string_done (parser);
+              break;
+            default:
+              ctx_parser_holding_append (parser, byte);
+              break;
           }
         break;
       case CTX_PARSER_STRING_APOS:
