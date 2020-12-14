@@ -1471,8 +1471,12 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
         switch (byte)
           {
             case '~': parser->state = CTX_PARSER_NEUTRAL;
-              ctx_parser_holding_append (parser, '~');
-              ctx_a85dec (parser->holding, parser->holding, parser->pos);
+#if 0
+              ctx_parser_holding_append (parser, '~'); // XXX : todo rewrite
+                                                      // ctx_a85dec to not need
+                                                      // this
+                                                     #endif
+              parser->pos = ctx_a85dec (parser->holding, parser->holding, parser->pos);
               ctx_parser_string_done (parser);
               break;
             default:

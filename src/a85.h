@@ -46,20 +46,22 @@ static int ctx_a85dec (const char *src, char *dst, int count)
   int out_len = 0;
   uint32_t val = 0;
   int k = 0;
-
-  for (int i = 0; i < count; i ++, k++)
+  int i = 0;
+  for (i = 0; i < count; i ++)
   {
     val *= 85;
 
     if (src[i] == '~')
+    {
       break;
+    }
     else if (src[i] == 'z')
     {
       for (int j = 0; j < 4; j++)
         dst[out_len++] = 0;
       k = 0;
     }
-    else
+    else if (src[i] >= '!' && src[i] <= 'u')
     {
       val += src[i]-'!';
       if (k % 5 == 4)
@@ -71,7 +73,12 @@ static int ctx_a85dec (const char *src, char *dst, int count)
          }
          val = 0;
       }
+      k++;
     }
+  }
+  if (src[i] != '~')
+  { 
+    val *= 85;
   }
   k = k % 5;
   if (k)
@@ -90,7 +97,7 @@ static int ctx_a85dec (const char *src, char *dst, int count)
     }
     val = 0;
   }
-  dst[out_len]=0;
+  dst[out_len] = 0;
   return out_len;
 }
 
@@ -99,7 +106,7 @@ static int ctx_a85len (const char *src, int count)
   int out_len = 0;
   int k = 0;
 
-  for (int i = 0; i < count; i ++, k++)
+  for (int i = 0; i < count; i ++)
   {
     if (src[i] == '~')
       break;
@@ -109,12 +116,13 @@ static int ctx_a85len (const char *src, int count)
         out_len++;
       k = 0;
     }
-    else
+    else if (src[i] >= '!' && src[i] <= 'u')
     {
       if (k % 5 == 4)
       {
          out_len += 4;
       }
+      k++;
     }
   }
   k = k % 5;
@@ -127,4 +135,3 @@ static int ctx_a85len (const char *src, int count)
   }
   return out_len;
 }
-
