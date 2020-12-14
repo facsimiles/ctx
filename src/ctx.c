@@ -897,6 +897,12 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       case CTX_MITER_LIMIT:
         state->gstate.miter_limit = ctx_arg_float (0);
         break;
+      case CTX_COLOR_SPACE:
+        /* move this out of this function and only do it in rasterizer? XXX */
+        ctx_rasterizer_colorspace_icc (state, c->get.pad0,
+                                              (char*)c->get.utf8,
+                                              c->get.stringlen);
+        break;
 
       case CTX_COLOR:
         {

@@ -457,33 +457,6 @@ ctx_get_graya (Ctx *ctx, float *ya)
   ctx_color_get_graya (& (ctx->state), &ctx->state.gstate.source.color, ya);
 }
 
-#if CTX_ENABLE_CM
-void
-ctx_set_drgb_space (Ctx *ctx, int device_space)
-{
-  CTX_PROCESS_U8 (CTX_SET_DRGB_SPACE, device_space);
-}
-
-void
-ctx_set_dcmyk_space (Ctx *ctx, int device_space)
-{
-  CTX_PROCESS_U8 (CTX_SET_DCMYK_SPACE, device_space);
-}
-
-void
-ctx_rgb_space (Ctx *ctx, int device_space)
-{
-  CTX_PROCESS_U8 (CTX_SET_RGB_SPACE, device_space);
-}
-
-void
-ctx_set_cmyk_space (Ctx *ctx, int device_space)
-{
-  CTX_PROCESS_U8 (CTX_SET_CMYK_SPACE, device_space);
-}
-#endif
-
-
 void ctx_drgba (Ctx *ctx, float r, float g, float b, float a)
 {
   CtxEntry command[3]=
@@ -818,11 +791,11 @@ ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 
 
 #if CTX_BABL
-void ctx_colorspace_babl (CtxState      *state,
-                          CtxColorSpace  icc_slot,
-                          const Babl *space)
+void ctx_rasterizer_colorspace_babl (CtxState      *state,
+                                     CtxColorSpace  space_slot,
+                                     const Babl    *space)
 {
-  switch (icc_slot)
+  switch (space_slot)
   {
     case CTX_COLOR_SPACE_DEVICE_RGB:
       state->gstate.device_space = space;
@@ -854,27 +827,44 @@ void ctx_colorspace_babl (CtxState      *state,
 }
 #endif
 
-void ctx_colorspace_icc (Ctx           *ctx,
-                         CtxColorSpace  icc_slot,
-                         unsigned char *icc_data,
-                         int            icc_length)
+void ctx_rasterizer_colorspace_icc (CtxState      *state,
+                                    CtxColorSpace  space_slot,
+                                    char          *icc_data,
+                                    int            icc_length)
 {
 #if CTX_BABL
    const char *error = NULL;
-   const Babl *space = babl_space_from_icc (icc_data, icc_length, BABL_ICC_INTENT_RELATIVE_COLORIMETRIC, &error);
+   const Babl *space = NULL;
+   if (icc_data == NULL) space = babl_space ("sRGB");
+   if (!space && !strcmp (icc_data, "sRGB"))   space = babl_space ("sRGB");
+   if (!space && !strcmp (icc_data, "ACEScg")) space = babl_space ("ACEScg");
+
+   if (!space)
+     space = babl_space_from_icc (icc_data, icc_length, BABL_ICC_INTENT_RELATIVE_COLORIMETRIC, &error);
    if (space)
    {
-     ctx_colorspace_babl (&ctx->state, icc_slot, space);
+     ctx_rasterizer_colorspace_babl (state, space_slot, space);
    }
 #endif
 }
 
-///
-//
+void ctx_colorspace (Ctx           *ctx,
+                     CtxColorSpace  space_slot,
+                     unsigned char *data,
+                     int            data_length)
+{
+  if (data)
+  {
+    ctx_process_cmd_str_with_len (ctx, CTX_COLOR_SPACE, (char*)data, space_slot, 0, data_length);
+  }
+  else
+  {
+    ctx_process_cmd_str_with_len (ctx, CTX_COLOR_SPACE, "sRGB", space_slot, 0, 4);
+  }
+}
+
 //  deviceRGB .. settable when creating an RGB image surface..
-//               queryable/and internally settable when running in terminal
+//               queryable when running in terminal - is it really needed?
+//               though it is also settable.. 
 //
 //  userRGB - settable at any time, stored in save|restore 
-//
-//
-//

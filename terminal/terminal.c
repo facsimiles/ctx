@@ -1631,10 +1631,6 @@ void draw_panel (Ctx *ctx)
   }
   ctx_restore (ctx);
 }
-#include <babl/babl.h>
-void ctx_colorspace_babl (Ctx        *ctx,
-                          CtxColorSpace  icc_slot,
-                          const Babl *space);
 
 int terminal_main (int argc, char **argv)
 {
@@ -1781,20 +1777,12 @@ int terminal_main (int argc, char **argv)
       if (changes || dirty || ctx_is_dirty (ctx))
       {
         dirty = 0;
-
-  ctx_colorspace_babl (ctx, CTX_COLOR_SPACE_USER_RGB, babl_space ("sRGB"));
-  ctx_colorspace_babl (ctx, CTX_COLOR_SPACE_DEVICE_RGB, babl_space ("ACEScg"));
-
         itk_reset (itk);
-
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         itk_style_color (ctx, "wallpaper");
         ctx_fill (ctx);
-
         draw_vts (ctx);
-
         ctx_popups (ctx);
-
         draw_panel (ctx);
 
         if (enable_terminal_menu)

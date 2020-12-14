@@ -2,7 +2,9 @@
 #include <termios.h>
 #include <unistd.h>
 
+#ifndef NO_BABL
 #include <babl/babl.h>
+#endif
 
 #ifndef NO_SDL
 #include <SDL.h>
@@ -84,5 +86,7 @@ void ctx_simd_setup ()
   {
     ctx_pixel_formats = ctx_pixel_formats_avx2;
   }
+#ifndef NO_BABL
   babl_init ();
+#endif
 }

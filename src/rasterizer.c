@@ -16,7 +16,6 @@ ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
     rasterizer->comp_op (rasterizer, dst, rasterizer->color, x, coverage, count);
 }
 
-
 CTX_STATIC void
 ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *rgba)
 {
@@ -1960,9 +1959,11 @@ foo:
 CTX_STATIC void
 ctx_rasterizer_clip_reset (CtxRasterizer *rasterizer)
 {
+#if CTX_ENABLE_CLIP
   if (rasterizer->clip_buffer)
    ctx_buffer_free (rasterizer->clip_buffer);
   rasterizer->clip_buffer = NULL;
+#endif
   rasterizer->state->gstate.clip_min_x = rasterizer->blit_x;
   rasterizer->state->gstate.clip_min_y = rasterizer->blit_y;
 

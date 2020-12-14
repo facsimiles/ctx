@@ -22,6 +22,9 @@ OFLAGS_LIGHT=-O2
 #OFLAGS_HARD=-O2
 #OFLAGS_LIGHT=-O1
 
+DEP_CFLAGS=`pkg-config sdl2 babl --cflags`
+DEP_LIBS=`pkg-config sdl2 babl --libs`
+
 CLIENTS_CFILES = $(wildcard clients/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
@@ -34,7 +37,7 @@ SRC_OBJS   = $(SRC_CFILES:.c=.o)
 all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
 
 clients/%: clients/%.c Makefile ctx.o clients/itk.h libctx.a
-	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) `pkg-config sdl2 babl --cflags --libs` $(OFLAGS_LIGHT)
+	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
@@ -82,7 +85,7 @@ tools/%: tools/%.c ctx-nofont.h
 	$(CCC) $< -o $@ -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h 
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config babl sdl2 --cflags` $(OFLAGS_LIGHT)
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(DEP_CFLAGS) $(OFLAGS_LIGHT)
 
 deps.o: deps.c Makefile
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
@@ -99,30 +102,30 @@ ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono
 ctx-split.o: $(SRC_OBJS)
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) `pkg-config --cflags babl` -DNO_SDL=1 -DCTX_FB=1
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) $(DEP_CFLAGS) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1
 
 src/%.o: src/%.c split/*.h
-	$(CCC) -c $< -o $@ `pkg-config --cflags sdl2 babl` $(OFLAGS_LIGHT) $(CFLAGS)
+	$(CCC) -c $< -o $@ $(DEP_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
-	$(CCC) -c $< -o $@ `pkg-config --cflags sdl2 babl` $(OFLAGS_LIGHT) $(CFLAGS) 
+	$(CCC) -c $< -o $@ $(DEP_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o Makefile
 	$(AR) rcs $@ $?
 libctx.so: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o
-	$(LD) -shared $(LIBS) $? `pkg-config sdl2 --libs babl`  -o $@
-	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? `pkg-config sdl2 --libs`  -o $@
+	$(LD) -shared $(LIBS) $? $(DEP_LIBS) -o $@
+	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(DEP_LIBS)  -o $@
 
 ctx: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) `pkg-config sdl2 babl --cflags --libs` -lpthread $(OFLAGS_LIGHT)
+	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) -lpthread $(OFLAGS_LIGHT)
 
 ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) `pkg-config babl sdl2 --cflags` -O0
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(DEP_CFLAGS) -O0
 
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) `pkg-config babl sdl2 --cflags --libs` ctx-O0.o deps.o -O0
+	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) ctx-O0.o deps.o -O0
 
 ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o deps.o terminal/*.[ch] ctx-avx2.o ctx-sse2.o ctx-mmx.o
-	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_SDL=1 -DCTX_FB=1 -static 
+	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile

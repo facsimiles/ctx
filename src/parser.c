@@ -33,6 +33,8 @@ struct
   int        cursor_x;    // <- leaking in from terminal
   int        cursor_y;
 
+  int        color_space_slot;
+
   void (*exit) (void *exit_data);
   void *exit_data;
   int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len);
@@ -161,10 +163,6 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_FONT:
       case CTX_ROTATE:
       case CTX_GLYPH:
-      case CTX_SET_RGB_SPACE:
-      case CTX_SET_CMYK_SPACE:
-      case CTX_SET_DCMYK_SPACE:
-      case CTX_SET_DRGB_SPACE:
         return 1;
       case CTX_TRANSLATE:
       case CTX_REL_SMOOTHQ_TO:
@@ -197,8 +195,16 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_TEXT: // special case
       case CTX_SET:
       case CTX_GET:
+   // case CTX_SET_DRGB_SPACE:
+   // case CTX_SET_RGB_SPACE:
+   // case CTX_SET_DCMYK_SPACE:
+   // case CTX_SET_CMYK_SPACE:
+      case CTX_COLOR_SPACE:
         return 100; /* 100 is a special value,
                    which means string|number accepted
+                   when parser->n_numbers is 1 a number was encountered
+                   otherwise a string/blob is in parser->holding of
+                   length parser->pos
                  */
       //case CTX_SET_KEY:
       case CTX_COLOR:
@@ -334,7 +340,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_scale:          ret = CTX_SCALE; break;
           case CTX_newPage:        ret = CTX_NEW_PAGE; break;
           case CTX_quadTo:         ret = CTX_QUAD_TO; break;
-          case CTX_viewBox:       ret = CTX_VIEW_BOX; break;
+          case CTX_viewBox:        ret = CTX_VIEW_BOX; break;
           case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
           case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
 
@@ -351,7 +357,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_sourceAtop:       ret = CTX_COMPOSITE_SOURCE_ATOP; break;
           case CTX_destinationAtop: ret = CTX_COMPOSITE_DESTINATION_ATOP; break;
           case CTX_sourceOut:       ret = CTX_COMPOSITE_SOURCE_OUT; break;
-          case CTX_sourceIn:      ret = CTX_COMPOSITE_SOURCE_IN; break;
+          case CTX_sourceIn:       ret = CTX_COMPOSITE_SOURCE_IN; break;
           case CTX_xor:            ret = CTX_COMPOSITE_XOR; break;
           case CTX_darken:         ret = CTX_BLEND_DARKEN; break;
           case CTX_lighten:        ret = CTX_BLEND_LIGHTEN; break;
@@ -370,9 +376,9 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_verLineTo:  ret = CTX_VER_LINE_TO; break;
           case CTX_exit:
           case CTX_done:           ret = CTX_EXIT; break;
-          case CTX_closePath:      ret =  CTX_CLOSE_PATH; break;
+          case CTX_closePath:      ret = CTX_CLOSE_PATH; break;
           case CTX_beginPath:
-          case CTX_newPath:        ret =  CTX_BEGIN_PATH; break;
+          case CTX_newPath:        ret = CTX_BEGIN_PATH; break;
           case CTX_relArcTo:       ret = CTX_REL_ARC_TO; break;
           case CTX_clip:           ret = CTX_CLIP; break;
           case CTX_relCurveTo:     ret = CTX_REL_CURVE_TO; break;
@@ -400,12 +406,16 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
           case CTX_texture:        ret = CTX_TEXTURE; break;
+#if 0
           case CTX_rgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
           case CTX_cmykSpace:
             return ctx_parser_set_command (parser, CTX_SET_CMYK_SPACE);
           case CTX_drgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_DRGB_SPACE);
+#endif
+          case CTX_colorSpace:
+            return ctx_parser_set_command (parser, CTX_COLOR_SPACE);
           case CTX_fillRule:
             return ctx_parser_set_command (parser, CTX_FILL_RULE);
           case CTX_fontSize:
@@ -510,6 +520,11 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_alphabetic:  return CTX_TEXT_BASELINE_ALPHABETIC;
           case CTX_hanging:     return CTX_TEXT_BASELINE_HANGING;
           case CTX_ideographic: return CTX_TEXT_BASELINE_IDEOGRAPHIC;
+
+          case CTX_userRGB:     return CTX_COLOR_SPACE_USER_RGB;
+          case CTX_deviceRGB:   return CTX_COLOR_SPACE_DEVICE_RGB;
+          case CTX_userCMYK:    return CTX_COLOR_SPACE_USER_CMYK;
+          case CTX_deviceCMYK:  return CTX_COLOR_SPACE_DEVICE_CMYK;
 #undef STR
 #undef LOWER
           default:
@@ -641,17 +656,16 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_restore (ctx);
         break;
 #if CTX_ENABLE_CM
-      case CTX_SET_DRGB_SPACE:
-        ctx_set_drgb_space (ctx, arg (0) );
-        break;
-      case CTX_SET_DCMYK_SPACE:
-        ctx_set_dcmyk_space (ctx, arg (0) );
-        break;
-      case CTX_SET_RGB_SPACE:
-        ctx_rgb_space (ctx, arg (0) );
-        break;
-      case CTX_SET_CMYK_SPACE:
-        ctx_set_cmyk_space (ctx, arg (0) );
+      case CTX_COLOR_SPACE:
+        if (parser->n_numbers == 1)
+        {
+          parser->color_space_slot = arg(0);
+        }
+        else
+        {
+          ctx_colorspace (ctx, parser->color_space_slot,
+                               parser->holding, parser->pos);
+        }
         break;
 #endif
       case CTX_COLOR:
@@ -1476,7 +1490,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                                                       // ctx_a85dec to not need
                                                       // this
                                                      #endif
-              parser->pos = ctx_a85dec (parser->holding, parser->holding, parser->pos);
+              parser->pos = ctx_a85dec ((char*)parser->holding, (char*)parser->holding, parser->pos);
               ctx_parser_string_done (parser);
               break;
             default:

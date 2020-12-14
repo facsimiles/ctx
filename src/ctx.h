@@ -857,10 +857,14 @@ typedef enum
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
-  CTX_SET_DRGB_SPACE   = 21, // hacks integer for now
-  CTX_SET_RGB_SPACE    = 22, //
-  CTX_SET_CMYK_SPACE   = 23, //
-  CTX_SET_DCMYK_SPACE  = 24, //
+ // CTX_SET_DRGB_SPACE   = 21, //
+ // CTX_SET_RGB_SPACE    = 22, //
+ // CTX_SET_CMYK_SPACE   = 23, //
+ // CTX_SET_DCMYK_SPACE  = 24, //
+    CTX_COLOR_SPACE      = 24, // IccSlot  data  data_len,
+                             //    data can be a string with a name,
+                             //    icc data or perhaps our own serialization
+                             //    of profile data
 
   /* though expressed as two chars in serialization we have
    * dedicated byte commands for these setters - they should be folded
@@ -1223,68 +1227,68 @@ struct
     struct
     {
       uint8_t code;
-      float x0;
-      float y0;
+      float   x0;
+      float   y0;
       uint8_t pad0;
-      float x1;
-      float y1;
+      float   x1;
+      float   y1;
       uint8_t pad1;
-      float x2;
-      float y2;
+      float   x2;
+      float   y2;
       uint8_t pad2;
-      float x3;
-      float y3;
+      float   x3;
+      float   y3;
       uint8_t pad3;
-      float x4;
-      float y4;
+      float   x4;
+      float   y4;
     } c;
     struct
     {
       uint8_t code;
-      float a0;
-      float a1;
+      float   a0;
+      float   a1;
       uint8_t pad0;
-      float a2;
-      float a3;
+      float   a2;
+      float   a3;
       uint8_t pad1;
-      float a4;
-      float a5;
+      float   a4;
+      float   a5;
       uint8_t pad2;
-      float a6;
-      float a7;
+      float   a6;
+      float   a7;
       uint8_t pad3;
-      float a8;
-      float a9;
+      float   a8;
+      float   a9;
     } f;
     struct
     {
-      uint8_t code;
+      uint8_t  code;
       uint32_t a0;
       uint32_t a1;
-      uint8_t pad0;
+      uint8_t  pad0;
       uint32_t a2;
       uint32_t a3;
-      uint8_t pad1;
+      uint8_t  pad1;
       uint32_t a4;
       uint32_t a5;
-      uint8_t pad2;
+      uint8_t  pad2;
       uint32_t a6;
       uint32_t a7;
-      uint8_t pad3;
+      uint8_t  pad3;
       uint32_t a8;
       uint32_t a9;
     } u32;
     struct
     {
-      uint8_t code;
+      uint8_t  code;
       uint64_t a0;
-      uint8_t pad0;
+      uint8_t  pad0;
       uint64_t a1;
-      uint8_t pad1;
+      uint8_t  pad1;
       uint64_t a2;
-      uint8_t pad2;
+      uint8_t  pad2;
       uint64_t a3;
-      uint8_t pad3;
+      uint8_t  pad3;
       uint64_t a4;
     } u64;
     struct
@@ -1558,10 +1562,11 @@ enum _CtxColorSpace
   CTX_COLOR_SPACE_USER_RGB,
   CTX_COLOR_SPACE_USER_CMYK,
 };
-void ctx_colorspace_icc (Ctx           *ctx,
-                         CtxColorSpace  icc_slot,
-                         unsigned char *icc_data,
-                         int            icc_length);
+
+void ctx_colorspace (Ctx           *ctx,
+                     CtxColorSpace  space_slot,
+                     unsigned char *data,
+                     int            data_length);
 
 void
 ctx_parser_set_size (CtxParser *parser,
@@ -1580,7 +1585,6 @@ void ctx_parser_free (CtxParser *parser);
 #define CTX_CODEC_CHAR '\077'
 //#define CTX_CODEC_CHAR '^'
 #endif
-
 
 #ifndef assert
 #define assert(a)

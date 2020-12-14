@@ -896,7 +896,7 @@ typedef enum {
 
 typedef struct _Cell Cell;
 struct _Cell {
-  char  display[40];
+  char  display[80];
   char  value[80];
   int   dirty;
   CellType type;
