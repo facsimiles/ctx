@@ -1333,8 +1333,8 @@ ctx_state_init (CtxState *state)
   ctx_matrix_identity (&state->gstate.transform);
 #if CTX_CM
 #if CTX_BABL
-  ctx_colorspace_babl (state, CTX_COLOR_SPACE_USER_RGB,   babl_space ("sRGB"));
-  ctx_colorspace_babl (state, CTX_COLOR_SPACE_DEVICE_RGB, babl_space ("ACEScg"));
+  //ctx_colorspace_babl (state, CTX_COLOR_SPACE_USER_RGB,   babl_space ("sRGB"));
+  //ctx_colorspace_babl (state, CTX_COLOR_SPACE_DEVICE_RGB, babl_space ("ACEScg"));
 #endif
 #endif
 }

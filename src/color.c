@@ -777,6 +777,7 @@ int ctx_color (Ctx *ctx, const char *string)
 void
 ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
+#if 0
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
 
   uint8_t rgba[4];
@@ -785,6 +786,9 @@ ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
      return;
 
   ctx_process (ctx, &command);
+#else
+  ctx_rgba (ctx, r/255.0f, g/255.0f, b/255.0f, a/255.0f);
+#endif
 }
 
 #endif 

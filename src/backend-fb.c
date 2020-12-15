@@ -1430,6 +1430,9 @@ void ctx_fb_free (CtxFb *fb)
   //free (fb);
 }
 
+static char *fb_icc = NULL;
+static int fb_icc_length = 0;
+
 static
 void fb_render_fun (void **data)
 {
@@ -1480,6 +1483,8 @@ void fb_render_fun (void **data)
                                               /* this is the format used */
             if (fb->fb_bits == 32)
               rasterizer->swap_red_green = 1; 
+            if (fb_icc_length)
+              ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, fb_icc, fb_icc_length);
             ((CtxRasterizer*)host->renderer)->texture_source = fb->ctx;
             ctx_translate (host, -x0, -y0);
             ctx_render_ctx (fb->ctx_copy, host);
@@ -1672,6 +1677,8 @@ Ctx *ctx_new_fb (int width, int height, int drm)
                                   // is overriden in  thread
     ((CtxRasterizer*)fb->host[i]->renderer)->texture_source = fb->ctx;
   }
+
+  _ctx_file_get_contents ("/tmp/ctx.icc", &fb_icc, &fb_icc_length);
 
   mtx_init (&fb->mtx, mtx_plain);
   cnd_init (&fb->cond);

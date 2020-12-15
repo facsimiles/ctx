@@ -501,6 +501,9 @@ void ctx_sdl_free (CtxSDL *sdl)
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
+static char *sdl_icc = NULL;
+static int sdl_icc_length = 0;
+
 static
 void sdl_render_fun (void **data)
 {
@@ -545,6 +548,9 @@ void sdl_render_fun (void **data)
                                  sdl->width*4, CTX_FORMAT_RGBA8,
                                  sdl->antialias);
             ((CtxRasterizer*)host->renderer)->texture_source = sdl->ctx;
+            if (sdl_icc_length)
+              ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
+
             ctx_translate (host, -x0, -y0);
             ctx_render_ctx (sdl->ctx_copy, host);
           }
@@ -563,6 +569,7 @@ int ctx_renderer_is_sdl (Ctx *ctx)
           return 1;
   return 0;
 }
+
 
 Ctx *ctx_new_sdl (int width, int height)
 {
@@ -591,6 +598,8 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_StartTextInput ();
   SDL_EnableScreenSaver ();
 
+  _ctx_file_get_contents ("/tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
+
   sdl->ctx = ctx_new ();
   sdl->ctx_copy = ctx_new ();
   sdl->width  = width;
@@ -600,6 +609,14 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->pixels = (uint8_t*)malloc (width * height * 4);
   ctx_set_renderer (sdl->ctx, sdl);
   ctx_set_renderer (sdl->ctx_copy, sdl);
+
+#if 0
+  if (icc_length)
+  {
+    ctx_colorspace (sdl->ctx, CTX_COLOR_SPACE_DEVICE_RGB, icc, icc_length);
+    ctx_colorspace (sdl->ctx_copy, CTX_COLOR_SPACE_DEVICE_RGB, icc, icc_length);
+  }
+#endif
 
   ctx_set_size (sdl->ctx, width, height);
   ctx_set_size (sdl->ctx_copy, width, height);
@@ -612,8 +629,8 @@ Ctx *ctx_new_sdl (int width, int height)
   for (int i = 0; i < _ctx_max_threads; i++)
   {
     sdl->host[i] = ctx_new_for_framebuffer (sdl->pixels,
-                   sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
-                   sdl->width * 4, CTX_FORMAT_RGBA8);
+                     sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
+                     sdl->width * 4, CTX_FORMAT_RGBA8);
     ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = sdl->ctx;
   }
 
