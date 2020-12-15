@@ -793,7 +793,6 @@ ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 
 #endif 
 
-
 #if CTX_BABL
 void ctx_rasterizer_colorspace_babl (CtxState      *state,
                                      CtxColorSpace  space_slot,
@@ -827,7 +826,6 @@ void ctx_rasterizer_colorspace_babl (CtxState      *state,
   state->gstate.fish_rgbaf_user_to_device = babl_fish (
        babl_format_with_space ("R'G'B'A float", state->gstate.rgb_space),
        babl_format_with_space ("R'G'B'A float", state->gstate.device_space));
-
 }
 #endif
 
@@ -840,8 +838,12 @@ void ctx_rasterizer_colorspace_icc (CtxState      *state,
    const char *error = NULL;
    const Babl *space = NULL;
    if (icc_data == NULL) space = babl_space ("sRGB");
-   if (!space && !strcmp (icc_data, "sRGB"))   space = babl_space ("sRGB");
-   if (!space && !strcmp (icc_data, "ACEScg")) space = babl_space ("ACEScg");
+   if (!space && !strcmp (icc_data, "sRGB"))       space = babl_space ("sRGB");
+   if (!space && !strcmp (icc_data, "ACEScg"))     space = babl_space ("ACEScg");
+   if (!space && !strcmp (icc_data, "Adobish"))    space = babl_space ("Adobish");
+   if (!space && !strcmp (icc_data, "Apple"))      space = babl_space ("Apple");
+   if (!space && !strcmp (icc_data, "Rec2020"))    space = babl_space ("Rec2020");
+   if (!space && !strcmp (icc_data, "ACES2065-1")) space = babl_space ("ACES2065-1");
 
    if (!space)
      space = babl_space_from_icc (icc_data, icc_length, BABL_ICC_INTENT_RELATIVE_COLORIMETRIC, &error);
