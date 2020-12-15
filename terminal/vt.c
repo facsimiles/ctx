@@ -7129,13 +7129,14 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   /* draw cursor */
   if (vt->cursor_visible)
     {
-      ctx_rgba (ctx, 1.0, 1.0, 0.0, 0.3333);
+      ctx_rgba (ctx, 0.9, 0.8, 0.0, 0.5333);
       ctx_begin_path (ctx);
       ctx_rectangle (ctx,
                      cursor_x_px, cursor_y_px,
                      cursor_w, cursor_h);
       ctx_fill (ctx);
     }
+
   for (int i = 0; i < 4; i++)
     {
       if (vt->leds[i])
