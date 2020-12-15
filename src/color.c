@@ -267,9 +267,11 @@ static void ctx_color_get_drgba (CtxState *state, CtxColor *color, float *out)
 #endif
         if (color->valid & CTX_VALID_RGBA_U8)
           {
-            color->device_red   = ctx_u8_to_float (color->rgba[0]);
-            color->device_green = ctx_u8_to_float (color->rgba[1]);
-            color->device_blue  = ctx_u8_to_float (color->rgba[2]);
+            float red = ctx_u8_to_float (color->rgba[0]);
+            float green = ctx_u8_to_float (color->rgba[1]);
+            float blue = ctx_u8_to_float (color->rgba[2]);
+            ctx_rgb_user_to_device (state, red, green, blue,
+                                  & (color->device_red), & (color->device_green), & (color->device_blue) );
             color->alpha        = ctx_u8_to_float (color->rgba[3]);
           }
 #if CTX_ENABLE_CMYK
