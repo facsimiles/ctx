@@ -857,10 +857,6 @@ typedef enum
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
    */
- // CTX_SET_DRGB_SPACE   = 21, //
- // CTX_SET_RGB_SPACE    = 22, //
- // CTX_SET_CMYK_SPACE   = 23, //
- // CTX_SET_DCMYK_SPACE  = 24, //
     CTX_COLOR_SPACE      = 24, // IccSlot  data  data_len,
                              //    data can be a string with a name,
                              //    icc data or perhaps our own serialization
@@ -946,9 +942,6 @@ ctx_current_path (Ctx *ctx);
 void
 ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 
-
-
-
 #define CTX_ASSERT               0
 
 #if CTX_ASSERT==1
@@ -1019,6 +1012,16 @@ struct
       uint8_t  code_cont;
       uint8_t  utf8[8]; /* .. and continues */
     } get;
+    struct {
+      uint8_t  code;
+      uint32_t space_slot;
+      float    pad1;
+      uint8_t  code_data;
+      uint32_t data_len;
+      uint32_t blocklen;
+      uint8_t  code_cont;
+      uint8_t  data[8]; /* .. and continues */
+    } colorspace;
     struct
     {
       uint8_t  code;

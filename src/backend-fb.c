@@ -1430,8 +1430,8 @@ void ctx_fb_free (CtxFb *fb)
   //free (fb);
 }
 
-static char *fb_icc = NULL;
-static int fb_icc_length = 0;
+static unsigned char *fb_icc = NULL;
+static long fb_icc_length = 0;
 
 static
 void fb_render_fun (void **data)

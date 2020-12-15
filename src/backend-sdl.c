@@ -501,8 +501,8 @@ void ctx_sdl_free (CtxSDL *sdl)
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
-static char *sdl_icc = NULL;
-static int sdl_icc_length = 0;
+static unsigned char *sdl_icc = NULL;
+static long sdl_icc_length = 0;
 
 static
 void sdl_render_fun (void **data)
