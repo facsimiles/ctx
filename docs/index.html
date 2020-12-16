@@ -264,9 +264,9 @@ can encourage continued development of ctx and dissimilar technologies by
 financially supporting me, <a href='https://pippin.gimp.org'>Øyvind Kolås</a> who is doing independent pro-bono R&amp;D through
        <a href='https:/pippin.gimp.org/funding/'>patreon</a> and
        similar. If my income through such sources is above 4000USD per
-               month for a year, or a similar amount in shorter time the
-          protocol and rasterizer parts of ctx will be relicensed under
-          the <a
+               month for a year, or a similar amount in shorter time I want
+               to relicense the rasterizer and protocol parts of ctx
+          under the <a
 href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 
         <h2 id='bugs'>bugs</h2>
@@ -279,6 +279,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         single header ctx.h already is the rolling release.
         </p>
         <ul>
+          <li>dash pattern for stroking is missing</li>
           <li>clip does not clip event boxes/shapes</li>
           <li>arc not well behaved for edge-cases around full-circle</li>
           <li>in_fill is using bounding box - and most reliably works with rectangles.</li>
@@ -286,7 +287,6 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
           <li>dimensions of drop-shadow are not transformed</li>
 
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
-          <li>dash pattern for stroking is missing</li>
           <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
           <li>some form of built in palm supression is needed in drm/fbdev backend</li>
           </ul>
@@ -294,16 +294,13 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         </ul>
         <h2 id='future'>some potential improvements</h2>
 	<ul>
-        <li>improved performance</li>
+        <li>performance (always possible - ctx looks at code/RAM budgets as well)</li>
         <li>code refactoring</li>
 	<li>glyph fallbacks</li>
         <li>analytical instead of raster clipping</li>
         <li>texture upload as part of terminal protocol</li>
         <li>terminal rewrap on resize</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
-        <li>ICC color management (provisions have been made in the API for this,
-                but RGBtoRGB and CMYKtoRGB RGBtoCMYK conversions are currently
-                done naively, instead of using <a href='http://gegl.org/babl/'>babl</a>.)</li>
         <li>websockets + js + HTML5 Canvas renderer/client for protocols</li>
         <li>wayland/libinput support</li>
         <li>bindings to a javascript engine like quickjs, for running canvas js content as apps.</li>
@@ -315,8 +312,9 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <li>More SIMD code (the common RGBA8 cases for AVX2 are the only bit
             covered thus far, for floating point formats making the
             existing code more autovectorizer friendly is a priority.)</li>
-        <li>A GPU renderer, using pathfinder or similar HTML5 2d canvas matching library or even make ctx act as the cpu side
-        vertex and fragment input buffer cook for a GPU based approach.</li>
+        <li>A GPU renderer, using pathfinder or similar HTML5 2d canvas
+            matching library or even make ctx act as the cpu side vertex
+            and fragment input buffer cook for a GPU based approach.</li>
 	</ul>
 <!--
         <h3 id='example'>example code</h3>
