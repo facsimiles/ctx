@@ -2535,7 +2535,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         break;
 #endif
       case CTX_LINE_DASH:
-        fprintf (stderr, "line dashing %i\n", c->line_dash.count);
+        fprintf (stderr, "line dashing %p %i\n", c, c->line_dash.count);
         for (int i = 0; i < c->line_dash.count; i ++)
         {
           fprintf (stderr, " %i : %f\n",i, c->line_dash.data[i]);
@@ -3021,6 +3021,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       ctx_renderstream_add_entry (&ctx->renderstream, entry);
 #if 1
       if (entry->code == CTX_TEXT ||
+          entry->code == CTX_LINE_DASH ||
           entry->code == CTX_SET ||
           entry->code == CTX_TEXT_STROKE ||
           entry->code == CTX_FONT)
