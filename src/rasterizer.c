@@ -3023,6 +3023,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       if (entry->code == CTX_TEXT ||
           entry->code == CTX_LINE_DASH ||
           entry->code == CTX_SET ||
+          entry->code == CTX_COLOR_SPACE ||
           entry->code == CTX_TEXT_STROKE ||
           entry->code == CTX_FONT)
         {
