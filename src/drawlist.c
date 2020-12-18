@@ -286,6 +286,7 @@ again:
         case CTX_TEXT_STROKE:
         case CTX_FONT:
         case CTX_SET:
+        case CTX_LINE_DASH:
           iterator->bitpack_length = 0;
           return (CtxCommand *) ret;
 #if 1
@@ -303,7 +304,6 @@ again:
 #endif
   return (CtxCommand *) ret;
 }
-
 
 CTX_STATIC void ctx_renderstream_compact (CtxRenderstream *renderstream);
 CTX_STATIC void

@@ -2534,6 +2534,13 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         }
         break;
 #endif
+      case CTX_LINE_DASH:
+        fprintf (stderr, "line dashing %i\n", c->line_dash.count);
+        for (int i = 0; i < c->line_dash.count; i ++)
+        {
+          fprintf (stderr, " %i : %f\n",i, c->line_dash.data[i]);
+        }
+        break;
 
       case CTX_LINE_TO:
         ctx_rasterizer_line_to (rasterizer, c->c.x0, c->c.y0);

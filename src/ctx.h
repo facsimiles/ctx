@@ -1018,14 +1018,14 @@ struct
     } get;
     struct {
       uint8_t  code;
-      uint32_t entries; /* better than byte_len in code, but needs to then be set   */
+      uint32_t count; /* better than byte_len in code, but needs to then be set   */
       float    pad1;
       uint8_t  code_data;
       uint32_t byte_len;
       uint32_t blocklen;
       uint8_t  code_cont;
-      uint8_t  data[8]; /* .. and - possibly continues */
-    } linedash;
+      float    data[2]; /* .. and - possibly continues */
+    } line_dash;
     struct {
       uint8_t  code;
       uint32_t space_slot;

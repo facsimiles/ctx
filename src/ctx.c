@@ -414,10 +414,7 @@ void ctx_line_width (Ctx *ctx, float x)
 
 void ctx_line_dash (Ctx *ctx, float *dashes, int count)
 {
-  for (int i = 0; i < count; i++)
-  {
-    fprintf (stderr, "  %f\n", dashes[i]);
-  }
+  ctx_process_cmd_str_with_len (ctx, CTX_LINE_DASH, (char*)(dashes), count, 0, count * 4);
 }
 
 void ctx_shadow_blur (Ctx *ctx, float x)

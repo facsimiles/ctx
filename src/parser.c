@@ -1207,7 +1207,6 @@ static void ctx_parser_word_done (CtxParser *parser)
       }
 
       parser->command = (CtxCode) command;
-      parser->n_args = ctx_arguments_for_code (command);
       if (parser->n_args == 0)
         {
           ctx_parser_dispatch_command (parser);
