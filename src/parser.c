@@ -4,7 +4,6 @@
 #if CTX_PARSER
 
 /* ctx parser, */
-#define CTX_PARSER_MAX_ARGS 20
 
 struct
   _CtxParser

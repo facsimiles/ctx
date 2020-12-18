@@ -206,6 +206,9 @@ struct _CtxGState
   CtxCompositingMode  compositing_mode; // bitfield refs lead to
   CtxBlend                  blend_mode; // non-vectorization
 
+  float dashes[CTX_PARSER_MAX_ARGS];
+  int n_dashes;
+
   CtxColorModel color_model;
   /* bitfield-pack small state-parts */
   CtxLineCap                  line_cap:2;

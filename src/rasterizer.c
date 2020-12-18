@@ -1,4 +1,4 @@
-#include "ctx-split.h"
+/include "ctx-split.h"
 #if CTX_RASTERIZER
 
 void ctx_compositor_setup_default (CtxRasterizer *rasterizer);
@@ -2482,6 +2482,22 @@ ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
 #endif
 
 static void
+ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, int count, float *dashes)
+{
+  if (!dashes)
+  {
+    rasterizer->state->gstate.n_dashes = 0;
+    return;
+  }
+  count = CTX_MIN(count, CTX_PARSER_MAX_ARGS-1);
+  rasterizer->state->gstate.n_dashes = count;
+  for (int i = 0; i < count; i ++)
+  {
+    rasterizer->state->gstate.dashes[i] = dashes[i];
+  }
+}
+
+static void
 ctx_rasterizer_process (void *user_data, CtxCommand *command)
 {
   CtxEntry *entry = &command->entry;
@@ -2535,11 +2551,10 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         break;
 #endif
       case CTX_LINE_DASH:
-        fprintf (stderr, "line dashing %p %i\n", c, c->line_dash.count);
-        for (int i = 0; i < c->line_dash.count; i ++)
-        {
-          fprintf (stderr, " %i : %f\n",i, c->line_dash.data[i]);
-        }
+        if (c->line_dash.count)
+        ctx_rasterizer_line_dash (rasterizer, c->line_dash.count, c->line_dash.data);
+        else
+        ctx_rasterizer_line_dash (rasterizer, 0, NULL);
         break;
 
       case CTX_LINE_TO:
@@ -2686,6 +2701,105 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
             !rasterizer->in_text)
           ctx_rasterizer_shadow_stroke (rasterizer);
 #endif
+        if (rasterizer->state->gstate.n_dashes)
+        {
+          int n_dashes = rasterizer->state->gstate.n_dashes;
+          float *dashes = rasterizer->state->gstate.dashes;
+          int count = rasterizer->edge_list.count;
+          int aa = rasterizer->aa;
+          CtxEntry temp[count]; /* copy of already built up path's poly line  */
+          memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
+          int start = 0;
+          int end   = 0;
+      CtxMatrix transform_backup = rasterizer->state->gstate.transform;
+      ctx_matrix_identity (&rasterizer->state->gstate.transform);
+      ctx_rasterizer_reset (rasterizer); /* for dashing we create
+                                            a dashed path to stroke */
+      float prev_x = 0.0f;
+      float prev_y = 0.0f;
+      float pos = 0.0;
+
+      int   dash_no  = 0.0;
+      float dash_lpos = 0.0;
+      int   is_down = 1;
+
+          while (start < count)
+          {
+            int started = 0;
+            int i;
+            for (i = start; i < count; i++)
+            {
+              CtxEntry *entry = &temp[i];
+              float x, y;
+              if (entry->code == CTX_NEW_EDGE)
+                {
+                  if (started)
+                    {
+                      end = i - 1;
+                      dash_no = 0;
+                      dash_lpos = 0.0;
+                      is_down = 1;
+                      goto foo;
+                    }
+                  prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
+                  prev_y = entry->data.s16[1] * 1.0f / aa;
+                  started = 1;
+                  start = i;
+                  is_down = 0;
+                }
+again:
+              x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
+              y = entry->data.s16[3] * 1.0f / aa;
+              float dx = x - prev_x;
+              float dy = y - prev_y;
+              float length = ctx_fast_hypotf (dx, dy);
+
+              if (dash_lpos + length >= dashes[dash_no])
+              {
+                float p = (dashes[dash_no] - dash_lpos) / length;
+                float splitx = x * p + (1.0f - p) * prev_x;
+                float splity = y * p + (1.0f - p) * prev_y;
+                if (is_down)
+                {
+                  ctx_rasterizer_line_to (rasterizer, splitx, splity);
+                  is_down = 0;
+                }
+                else
+                {
+                  ctx_rasterizer_move_to (rasterizer, splitx, splity);
+                  is_down = 1;
+                }
+                prev_x = splitx;
+                prev_y = splity;
+                dash_no++;
+                dash_lpos=0;
+                if (dash_no >= n_dashes) dash_no = 0;
+                goto again;
+              }
+              else
+              {
+                pos += length;
+                {
+                  if (entry->code == CTX_NEW_EDGE)
+                  {
+                    ctx_rasterizer_move_to (rasterizer, prev_x, prev_y);
+                  }
+                  if (is_down)
+                    ctx_rasterizer_line_to (rasterizer, x, y);
+                  //else
+                  //  ctx_rasterizer_move_to (rasterizer, x, y);
+                }
+              }
+              prev_x = x;
+              prev_y = y;
+            }
+          end = i-1;
+foo:
+          start = end+1;
+        }
+      rasterizer->state->gstate.transform = transform_backup;
+        }
+
         ctx_rasterizer_stroke (rasterizer);
         break;
       case CTX_FONT:
