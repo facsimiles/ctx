@@ -161,7 +161,7 @@ void ctx_line_width       (Ctx *ctx, float x);
 void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                            float c,  float d,  // vskew,  vscale
                            float e,  float f); // htran,  vtran
-
+void  ctx_line_dash       (Ctx *ctx, float *dashes, int count);
 void  ctx_font_size       (Ctx *ctx, float x);
 void  ctx_font            (Ctx *ctx, const char *font);
 void  ctx_scale           (Ctx *ctx, float x, float y);
@@ -853,6 +853,9 @@ typedef enum
                               //           good future proofing in that
                               //           it frees up many symbols.
   CTX_GET              = 'd', // key -
+
+
+
   /* these commands have single byte binary representations,
    * but are two chars in text, values below 9 are used for
    * low integers of enum values. and can thus not be used here
@@ -887,12 +890,13 @@ typedef enum
   CTX_END_GROUP            = '}',
 
   CTX_FUNCTION             = 25,
+  CTX_LINE_DASH            = ']', // in binary encoding followed by DATA of dashes
   //CTX_ENDFUN = 26,
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes
   //
-  // unused:  . , : backslash  #  % ^ { } < > ? & / ]
+  // unused:  . , : backslash  #  % ^ < > ? & / 
   //           i 
   //
   CTX_CONT             = '\0', // - contains args from preceding entry
@@ -1012,6 +1016,16 @@ struct
       uint8_t  code_cont;
       uint8_t  utf8[8]; /* .. and continues */
     } get;
+    struct {
+      uint8_t  code;
+      uint32_t entries; /* better than byte_len in code, but needs to then be set   */
+      float    pad1;
+      uint8_t  code_data;
+      uint32_t byte_len;
+      uint32_t blocklen;
+      uint8_t  code_cont;
+      uint8_t  data[8]; /* .. and - possibly continues */
+    } linedash;
     struct {
       uint8_t  code;
       uint32_t space_slot;

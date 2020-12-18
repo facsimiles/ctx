@@ -4,6 +4,7 @@
 #if CTX_PARSER
 
 /* ctx parser, */
+#define CTX_PARSER_MAX_ARGS 20
 
 struct
   _CtxParser
@@ -15,7 +16,7 @@ struct
   int        line; /*  for error reporting */
   int        col;  /*  for error reporting */
   int        pos;
-  float      numbers[12];
+  float      numbers[CTX_PARSER_MAX_ARGS+1];
   int        n_numbers;
   int        decimal;
   CtxCode    command;
@@ -122,6 +123,11 @@ void ctx_parser_free (CtxParser *parser)
   free (parser);
 }
 
+#define CTX_ARG_COLLECT_NUMBERS             50
+#define CTX_ARG_STRING_OR_NUMBER            100
+#define CTX_ARG_NUMBER_OF_COMPONENTS        200
+#define CTX_ARG_NUMBER_OF_COMPONENTS_PLUS_1 201
+
 static int ctx_arguments_for_code (CtxCode code)
 {
   switch (code)
@@ -200,18 +206,16 @@ static int ctx_arguments_for_code (CtxCode code)
    // case CTX_SET_DCMYK_SPACE:
    // case CTX_SET_CMYK_SPACE:
       case CTX_COLOR_SPACE:
-        return 100; /* 100 is a special value,
-                   which means string|number accepted
-                   when parser->n_numbers is 1 a number was encountered
-                   otherwise a string/blob is in parser->holding of
-                   length parser->pos
-                 */
+        return CTX_ARG_STRING_OR_NUMBER;
+      case CTX_LINE_DASH: /* append to current dashes for each argument encountered */
+        return CTX_ARG_COLLECT_NUMBERS;
       //case CTX_SET_KEY:
       case CTX_COLOR:
       case CTX_SHADOW_COLOR:
-        return 200;  /* 200 means number of components */
+        return CTX_ARG_NUMBER_OF_COMPONENTS;
       case CTX_GRADIENT_STOP:
-        return 201;  /* 201 means number of components+1 */
+        return CTX_ARG_NUMBER_OF_COMPONENTS_PLUS_1;
+
       case CTX_FUNCTION: /* special interpretation   */
         return 300;
         default:
@@ -247,21 +251,13 @@ static int ctx_arguments_for_code (CtxCode code)
 
 static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
 {
-        //fprintf (stderr, "%i %s\n", code, parser->holding);
   if (code < 127 && code > 16)
   {
   parser->n_args = ctx_arguments_for_code (code);
-  if (parser->n_args >= 200)
+  if (parser->n_args >= CTX_ARG_NUMBER_OF_COMPONENTS)
     {
       parser->n_args = (parser->n_args % 100) + parser->color_components;
     }
-  //parser->t_args = 0;
-#if 0
-  else if (parser->n_args >= 100)
-    {
-      parser->n_args = (parser->n_args % 100);
-    }
-#endif
   }
   return code;
 }
@@ -317,15 +313,15 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 #define CTX_function CTX_STRH('f','u','n','c','t','i','o','n',0,0,0,0,0,0)
 #define CTX_endfun CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
 
-          case CTX_function:  ret = CTX_FUNCTION; break;
+          case CTX_function:    ret = CTX_FUNCTION; break;
           //case CTX_endfun:    ret = CTX_ENDFUN; break;
 #endif
           /* first a list of mappings to one_char hashes, handled in a
            * separate fast path switch without hashing
            */
-          case CTX_arcTo:         ret = CTX_ARC_TO; break;
+          case CTX_arcTo:          ret = CTX_ARC_TO; break;
           case CTX_arc:            ret = CTX_ARC; break;
-          case CTX_curveTo:       ret = CTX_CURVE_TO; break;
+          case CTX_curveTo:        ret = CTX_CURVE_TO; break;
           case CTX_setkey:         ret = CTX_SET; parser->t_args=0;break;
           case CTX_getkey:         ret = CTX_GET; break;
           case CTX_restore:        ret = CTX_RESTORE; break;
@@ -343,24 +339,19 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_viewBox:        ret = CTX_VIEW_BOX; break;
           case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
           case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
-
           case CTX_clear:          ret = CTX_COMPOSITE_CLEAR; break;
           case CTX_copy:           ret = CTX_COMPOSITE_COPY; break;
           case CTX_destinationOver: ret = CTX_COMPOSITE_DESTINATION_OVER; break;
-
-          case CTX_destinationIn:
-                                    ret = CTX_COMPOSITE_DESTINATION_IN; break;
-          case CTX_destinationOut:
-                                    ret = CTX_COMPOSITE_DESTINATION_OUT; break;
-          case CTX_sourceOver:
-                                     ret = CTX_COMPOSITE_SOURCE_OVER; break;
+          case CTX_destinationIn:    ret = CTX_COMPOSITE_DESTINATION_IN; break;
+          case CTX_destinationOut:   ret = CTX_COMPOSITE_DESTINATION_OUT; break;
+          case CTX_sourceOver:       ret = CTX_COMPOSITE_SOURCE_OVER; break;
           case CTX_sourceAtop:       ret = CTX_COMPOSITE_SOURCE_ATOP; break;
-          case CTX_destinationAtop: ret = CTX_COMPOSITE_DESTINATION_ATOP; break;
-          case CTX_sourceOut:       ret = CTX_COMPOSITE_SOURCE_OUT; break;
-          case CTX_sourceIn:       ret = CTX_COMPOSITE_SOURCE_IN; break;
-          case CTX_xor:            ret = CTX_COMPOSITE_XOR; break;
-          case CTX_darken:         ret = CTX_BLEND_DARKEN; break;
-          case CTX_lighten:        ret = CTX_BLEND_LIGHTEN; break;
+          case CTX_destinationAtop:  ret = CTX_COMPOSITE_DESTINATION_ATOP; break;
+          case CTX_sourceOut:        ret = CTX_COMPOSITE_SOURCE_OUT; break;
+          case CTX_sourceIn:         ret = CTX_COMPOSITE_SOURCE_IN; break;
+          case CTX_xor:              ret = CTX_COMPOSITE_XOR; break;
+          case CTX_darken:           ret = CTX_BLEND_DARKEN; break;
+          case CTX_lighten:          ret = CTX_BLEND_LIGHTEN; break;
           //case CTX_color:          ret = CTX_BLEND_COLOR; break;
           //
           //  XXX check that he special casing for color works
@@ -447,6 +438,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_lineCap:
           case CTX_setLineCap:
             return ctx_parser_set_command (parser, CTX_LINE_CAP);
+          case CTX_lineDash:
+            return ctx_parser_set_command (parser, CTX_LINE_DASH);
           case CTX_lineWidth:
           case CTX_setLineWidth:
             return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
@@ -621,7 +614,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
   Ctx *ctx = parser->ctx;
-  if (parser->n_args != 100 &&
+  if (parser->n_args != CTX_ARG_STRING_OR_NUMBER &&
+      parser->n_args != CTX_ARG_COLLECT_NUMBERS &&
       parser->n_args != parser->n_numbers)
     {
       ctx_log ("ctx:%i:%i %c got %i instead of %i args\n",
@@ -714,6 +708,17 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                 break;
             }
         }
+        break;
+      case CTX_LINE_DASH:
+        if (parser->n_numbers)
+        {
+          ctx_line_dash (ctx, parser->numbers, parser->n_numbers);
+        }
+        else
+        {
+          ctx_line_dash (ctx, NULL, 0);
+        }
+        //append_dash_val (ctx, arg(0));
         break;
       case CTX_ARC_TO:
         ctx_arc_to (ctx, arg (0), arg (1), arg (2), arg (3), arg (4) );
@@ -1089,15 +1094,15 @@ static void ctx_parser_transform_percent (CtxParser *parser, CtxCode code, int a
       case CTX_ROUND_RECTANGLE:
         if (arg_no == 4)
         {
-          { *value *= ( (parser->height) /100.0); }
+          { *value *= ((parser->height)/100.0); }
           return;
         }
         /* FALLTHROUGH */
       default: // even means x coord
         if (arg_no % 2 == 0)
-          { *value  *= ( (parser->width) /100.0); }
+          { *value  *= ((parser->width)/100.0); }
         else
-          { *value *= ( (parser->height) /100.0); }
+          { *value *= ((parser->height)/100.0); }
         break;
     }
 }
@@ -1176,6 +1181,7 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
 static void ctx_parser_word_done (CtxParser *parser)
 {
   parser->holding[parser->pos]=0;
+  int old_args = parser->n_args;
   int command = ctx_parser_resolve_command (parser, parser->holding);
   if ((command >= 0 && command < 16) 
       || (command > 127) || (command < 0)
@@ -1191,7 +1197,17 @@ static void ctx_parser_word_done (CtxParser *parser)
     }
   else if (command > 0)
     {
+      if (old_args == CTX_ARG_COLLECT_NUMBERS)
+      {
+        int tmp1 = parser->command;
+        int tmp2 = parser->n_args;
+        ctx_parser_dispatch_command (parser);
+        parser->command = tmp1;
+        parser->n_args = tmp2;
+      }
+
       parser->command = (CtxCode) command;
+      parser->n_args = ctx_arguments_for_code (command);
       if (parser->n_args == 0)
         {
           ctx_parser_dispatch_command (parser);
@@ -1435,8 +1451,9 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                 {
                   ctx_parser_dispatch_command (parser);
                 }
-              if (parser->n_numbers > 10)
-                { parser->n_numbers = 10; }
+              if (parser->n_numbers > CTX_PARSER_MAX_ARGS)
+                { parser->n_numbers = CTX_PARSER_MAX_ARGS;
+                }
             }
         }
         break;
