@@ -1,6 +1,12 @@
  /* Copyright (C) 2020 Øyvind Kolås <pippin@gimp.org>
  */
 
+/* returns the maximum string length including terminating \0 */
+static int ctx_a85enc_len (int input_length)
+{
+  return (input_length / 4 + 1) * 5;
+}
+
 static int ctx_a85enc (const void *srcp, char *dst, int count)
 {
   const uint8_t *src = srcp;
@@ -33,10 +39,7 @@ static int ctx_a85enc (const void *srcp, char *dst, int count)
       }
     }
   }
-
   out_len -= padding;
-
-  dst[out_len++]='~';
   dst[out_len]=0;
   return out_len;
 }
@@ -50,7 +53,6 @@ static int ctx_a85dec (const char *src, char *dst, int count)
   for (i = 0; i < count; i ++)
   {
     val *= 85;
-
     if (src[i] == '~')
     {
       break;
@@ -59,6 +61,12 @@ static int ctx_a85dec (const char *src, char *dst, int count)
     {
       for (int j = 0; j < 4; j++)
         dst[out_len++] = 0;
+      k = 0;
+    }
+    else if (src[i] == 'y') /* we support this extension */
+    {
+      for (int j = 0; j < 4; j++)
+        dst[out_len++] = 32;
       k = 0;
     }
     else if (src[i] >= '!' && src[i] <= 'u')
@@ -75,6 +83,7 @@ static int ctx_a85dec (const char *src, char *dst, int count)
       }
       k++;
     }
+    // we treat all other chars as whitespace
   }
   if (src[i] != '~')
   { 
@@ -105,7 +114,6 @@ static int ctx_a85len (const char *src, int count)
 {
   int out_len = 0;
   int k = 0;
-
   for (int i = 0; i < count; i ++)
   {
     if (src[i] == '~')
@@ -119,19 +127,13 @@ static int ctx_a85len (const char *src, int count)
     else if (src[i] >= '!' && src[i] <= 'u')
     {
       if (k % 5 == 4)
-      {
-         out_len += 4;
-      }
+        out_len += 4;
       k++;
     }
+    // we treat all other chars as whitespace
   }
   k = k % 5;
   if (k)
-  {
-    for (int j = 0; j < k-1; j++)
-    {
-      out_len++;
-    }
-  }
+    out_len += k-1;
   return out_len;
 }
