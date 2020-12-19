@@ -5,13 +5,12 @@ lineWidth=10%
 arc 50% 50% 30% 0.785375 3.1415 1
 stroke
 
+beginPath
 lineWidth=5%
 rgb 1 0 0
 moveTo 50% 50%
-arc 50% 50% 30% 0.785375 0.78375 1
+arc 50% 50% 30% 0.785375 0.78375 0
 stroke
 moveTo 50% 50%
-arc 50% 50% 30% 3.1415  3.1415 1
+arc 50% 50% 30% 3.1415  3.1415 0
 stroke
-
-

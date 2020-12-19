@@ -1579,7 +1579,7 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
     { full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS; }
   float step = CTX_PI*2.0/full_segments;
   int steps;
-  if (end_angle == start_angle)
+  if (end_angle == start_angle && 0)
     {
 //  if (rasterizer->has_prev!=0)
       ctx_rasterizer_line_to (rasterizer, x + ctx_cosf (end_angle) * radius,
@@ -1606,7 +1606,7 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
     }
   if (anticlockwise) { step = step * -1; }
   int first = 1;
-  if (steps == 0 || steps==full_segments -1  || (anticlockwise && steps == full_segments) )
+  if (steps == 0 /* || steps==full_segments -1  || (anticlockwise && steps == full_segments) */)
     {
       float xv = x + ctx_cosf (start_angle) * radius;
       float yv = y + ctx_sinf (start_angle) * radius;
