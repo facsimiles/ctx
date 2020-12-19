@@ -2705,6 +2705,13 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         {
           int n_dashes = rasterizer->state->gstate.n_dashes;
           float *dashes = rasterizer->state->gstate.dashes;
+
+          float factor = 
+              ctx_maxf (ctx_maxf (ctx_fabsf (state->gstate.transform.m[0][0]),
+                                  ctx_fabsf (state->gstate.transform.m[0][1]) ),
+                        ctx_maxf (ctx_fabsf (state->gstate.transform.m[1][0]),
+                                  ctx_fabsf (state->gstate.transform.m[1][1]) ) );
+
           int count = rasterizer->edge_list.count;
           int aa = rasterizer->aa;
           CtxEntry temp[count]; /* copy of already built up path's poly line  */
@@ -2721,12 +2728,24 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 
       int   dash_no  = 0.0;
       float dash_lpos = 0.0;
-      int   is_down = 1;
+      int   is_down = 0;
 
           while (start < count)
           {
             int started = 0;
             int i;
+            is_down = 0;
+
+            if (!is_down)
+            {
+              CtxEntry *entry = &temp[0];
+              prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
+              prev_y = entry->data.s16[1] * 1.0f / aa;
+              ctx_rasterizer_move_to (rasterizer, prev_x, prev_y);
+              is_down = 1;
+            }
+
+
             for (i = start; i < count; i++)
             {
               CtxEntry *entry = &temp[i];
@@ -2738,25 +2757,28 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
                       end = i - 1;
                       dash_no = 0;
                       dash_lpos = 0.0;
-                      is_down = 1;
                       goto foo;
                     }
                   prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
                   prev_y = entry->data.s16[1] * 1.0f / aa;
                   started = 1;
                   start = i;
-                  is_down = 0;
+                  is_down = 1;
+                  ctx_rasterizer_move_to (rasterizer, prev_x, prev_y);
                 }
+
 again:
+
               x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
               y = entry->data.s16[3] * 1.0f / aa;
               float dx = x - prev_x;
               float dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
 
-              if (dash_lpos + length >= dashes[dash_no])
+
+              if (dash_lpos + length >= dashes[dash_no] * factor)
               {
-                float p = (dashes[dash_no] - dash_lpos) / length;
+                float p = (dashes[dash_no] * factor - dash_lpos) / length;
                 float splitx = x * p + (1.0f - p) * prev_x;
                 float splity = y * p + (1.0f - p) * prev_y;
                 if (is_down)
@@ -2780,14 +2802,8 @@ again:
               {
                 pos += length;
                 {
-                  if (entry->code == CTX_NEW_EDGE)
-                  {
-                    ctx_rasterizer_move_to (rasterizer, prev_x, prev_y);
-                  }
                   if (is_down)
                     ctx_rasterizer_line_to (rasterizer, x, y);
-                  //else
-                  //  ctx_rasterizer_move_to (rasterizer, x, y);
                 }
               }
               prev_x = x;
