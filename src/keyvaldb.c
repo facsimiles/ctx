@@ -88,7 +88,7 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
   if (idx + len > CTX_STRINGPOOL_SIZE)
   {
     ctx_log ("blowing varpool size [%c..]\n", data[0]);
-    fprintf (stderr, "blowing varpool size [%c%c%c..]\n", data[0],data[1], data[1]?data[2]:0);
+    //fprintf (stderr, "blowing varpool size [%c%c%c..]\n", data[0],data[1], data[1]?data[2]:0);
 #if 0
     for (int i = 0; i< CTX_STRINGPOOL_SIZE; i++)
     {

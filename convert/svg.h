@@ -1284,117 +1284,117 @@ init_statetable (void) {
         return;
     inited=1;
     memset(state_table,0,sizeof(state_table));
-    a(s_start,        "<",  0,0,            c_eat,            s_tag);
-    a(s_start,        c_ws, 0,0,            c_eat+c_store,    s_whitespace);
-    a(s_start,        "&",  0,0,            c_eat,            s_entitystart);
+    a(s_start,        "<",  0,0,              c_eat,            s_tag);
+    a(s_start,        c_ws, 0,0,              c_eat+c_store,    s_whitespace);
+    a(s_start,        "&",  0,0,              c_eat,            s_entitystart);
     a(s_start,        NULL, 0,255,            c_eat+c_store,    s_word);
-    a(s_tag,          c_ws, 0,0,            c_eat,            s_tag);
-    a(s_tag,          "/",  0,0,            c_eat,            s_tagclose);
-    a(s_tag,          "!",  0,0,            c_eat,            s_tagexcl);
-    a(s_tag,          "?",  0,0,            c_eat,            s_prolog);
+    a(s_tag,          c_ws, 0,0,              c_eat,            s_tag);
+    a(s_tag,          "/",  0,0,              c_eat,            s_tagclose);
+    a(s_tag,          "!",  0,0,              c_eat,            s_tagexcl);
+    a(s_tag,          "?",  0,0,              c_eat,            s_prolog);
     a(s_tag,          NULL, 0,255,            c_eat+c_store,    s_tagnamestart);
-    a(s_tagclose,     NULL,    0,255,            c_eat+c_store,    s_tagclosenamestart);
+    a(s_tagclose,     NULL,    0,255,         c_eat+c_store,    s_tagclosenamestart);
     a(s_tagclosenamestart,    ">",    0,0,    c_eat,            s_tagclosedone);
-    a(s_tagclosenamestart,    NULL,    0,255,    c_eat+c_store,    s_tagclosename);
-    a(s_tagclosename,    ">",    0,0,        c_eat,            s_tagclosedone);
-    a(s_tagclosename,    NULL,    0,255,        c_eat+c_store,    s_tagclosename);
+    a(s_tagclosenamestart,    NULL,    0,255, c_eat+c_store,    s_tagclosename);
+    a(s_tagclosename,    ">",    0,0,         c_eat,            s_tagclosedone);
+    a(s_tagclosename,    NULL,    0,255,      c_eat+c_store,    s_tagclosename);
     r(s_tagclosedone,    t_closetag,                            s_start);
 
-    a(s_whitespace,        c_ws,    0,0,        c_eat+c_store,    s_whitespace);
-    a(s_whitespace,        NULL,    0,255,        c_nil,            s_whitespacedone);
+    a(s_whitespace,        c_ws,    0,0,      c_eat+c_store,    s_whitespace);
+    a(s_whitespace,        NULL,    0,255,    c_nil,            s_whitespacedone);
     r(s_whitespacedone,    t_whitespace,                        s_start);
 
-    a(s_entitystart,";",    0,0,            c_eat,            s_entitydone);
-    a(s_entitystart,NULL,    0,255,            c_eat+c_store,    s_entity);
-    a(s_entity,        ";",    0,0,            c_eat,            s_entitydone);
+    a(s_entitystart,";",    0,0,              c_eat,            s_entitydone);
+    a(s_entitystart,NULL,    0,255,           c_eat+c_store,    s_entity);
+    a(s_entity,        ";",    0,0,           c_eat,            s_entitydone);
     a(s_entity,NULL,        0,255,            c_eat+c_store,    s_entity);
     r(s_entitydone,    t_entity,                                s_start);
 
     a(s_word,        c_ws,    0,0,            c_nil,            s_worddone);
     a(s_word,        "<&",    0,0,            c_nil,            s_worddone);
-    a(s_word,        NULL,    0,255,            c_eat+c_store,    s_word);
+    a(s_word,        NULL,    0,255,          c_eat+c_store,    s_word);
     r(s_worddone,    t_word,                                    s_start);
 
     a(s_tagnamestart,c_ws,    0,0,            c_nil,            s_tagnamedone);
     a(s_tagnamestart,    "/>",    0,0,        c_nil,            s_tagnamedone);
-    a(s_tagnamestart,NULL,    0,255,            c_eat+c_store,    s_tagname);
-    a(s_tagname,    c_ws,    0,0,            c_nil,            s_tagnamedone);
-    a(s_tagname,    "/>",    0,0,            c_nil,            s_tagnamedone);
-    a(s_tagname,    NULL,    0,255,            c_eat+c_store,    s_tagname);
+    a(s_tagnamestart,NULL,    0,255,          c_eat+c_store,    s_tagname);
+    a(s_tagname,    c_ws,    0,0,             c_nil,            s_tagnamedone);
+    a(s_tagname,    "/>",    0,0,             c_nil,            s_tagnamedone);
+    a(s_tagname,    NULL,    0,255,           c_eat+c_store,    s_tagname);
     r(s_tagnamedone,    t_tag,                                s_intag);
 
-    a(s_intag,        c_ws,    0,0,            c_eat,            s_intag);
+    a(s_intag,        c_ws,    0,0,           c_eat,            s_intag);
     a(s_intag,        ">",    0,0,            c_eat,            s_tagend);
     a(s_intag,        "/",    0,0,            c_eat,            s_empty);
-    a(s_intag,        NULL,    0,255,            c_eat+c_store,    s_attstart);
+    a(s_intag,        NULL,    0,255,         c_eat+c_store,    s_attstart);
 
     a(s_attstart,    c_ws,    0,0,            c_eat,            s_attdone);
-    a(s_attstart,    "=/>",    0,0,            c_nil,            s_attdone);
-    a(s_attstart,    NULL,    0,255,            c_eat+c_store,    s_attname);
+    a(s_attstart,    "=/>",    0,0,           c_nil,            s_attdone);
+    a(s_attstart,    NULL,    0,255,          c_eat+c_store,    s_attname);
     a(s_attname,    "=/>",    0,0,            c_nil,            s_attdone);
-    a(s_attname,    c_ws,    0,0,            c_eat,            s_attdone);
-    a(s_attname,    NULL,    0,255,            c_eat+c_store,    s_attname);
+    a(s_attname,    c_ws,    0,0,             c_eat,            s_attdone);
+    a(s_attname,    NULL,    0,255,           c_eat+c_store,    s_attname);
     r(s_attdone,    t_att,                                    s_att);
-    a(s_att,        c_ws,    0,0,            c_eat,            s_att);
-    a(s_att,        "=",    0,0,            c_eat,            s_atteq);
-    a(s_att,        NULL,    0,255,            c_eat,            s_intag);
+    a(s_att,        c_ws,    0,0,             c_eat,            s_att);
+    a(s_att,        "=",    0,0,              c_eat,            s_atteq);
+    a(s_att,        NULL,    0,255,           c_eat,            s_intag);
     a(s_atteq,        "'",    0,0,            c_eat,            s_eqapos);
-    a(s_atteq,        "\"",    0,0,            c_eat,            s_eqquot);
-    a(s_atteq,        c_ws,    0,0,            c_eat,            s_atteq);
-    a(s_atteq,        NULL,    0,255,            c_nil,            s_eqval);
+    a(s_atteq,        "\"",    0,0,           c_eat,            s_eqquot);
+    a(s_atteq,        c_ws,    0,0,           c_eat,            s_atteq);
+    a(s_atteq,        NULL,    0,255,         c_nil,            s_eqval);
 
-    a(s_eqapos,        "'",    0,0,            c_eat,            s_eqaposvaldone);
-    a(s_eqapos,        NULL,    0,255,            c_eat+c_store,    s_eqaposval);
+    a(s_eqapos,        "'",    0,0,           c_eat,            s_eqaposvaldone);
+    a(s_eqapos,        NULL,    0,255,        c_eat+c_store,    s_eqaposval);
     a(s_eqaposval,        "'",    0,0,        c_eat,            s_eqaposvaldone);
-    a(s_eqaposval,        NULL,    0,255,        c_eat+c_store,    s_eqaposval);
+    a(s_eqaposval,        NULL,    0,255,     c_eat+c_store,    s_eqaposval);
     r(s_eqaposvaldone,    t_val,                                    s_intag);
 
-    a(s_eqquot,        "\"",    0,0,            c_eat,            s_eqquotvaldone);
-    a(s_eqquot,        NULL,    0,255,            c_eat+c_store,    s_eqquotval);
-    a(s_eqquotval,        "\"",    0,0,        c_eat,            s_eqquotvaldone);
-    a(s_eqquotval,        NULL,    0,255,        c_eat+c_store,    s_eqquotval);
-    r(s_eqquotvaldone,    t_val,                                    s_intag);
+    a(s_eqquot,        "\"",    0,0,          c_eat,            s_eqquotvaldone);
+    a(s_eqquot,        NULL,    0,255,        c_eat+c_store,    s_eqquotval);
+    a(s_eqquotval,     "\"",    0,0,          c_eat,            s_eqquotvaldone);
+    a(s_eqquotval,     NULL,    0,255,        c_eat+c_store,    s_eqquotval);
+    r(s_eqquotvaldone, t_val,                                    s_intag);
 
-    a(s_eqval,        c_ws,    0,0,            c_nil,            s_eqvaldone);
-    a(s_eqval,        "/>",    0,0,            c_nil,            s_eqvaldone);
-    a(s_eqval,        NULL,    0,255,            c_eat+c_store,    s_eqval);
+    a(s_eqval,        c_ws,    0,0,          c_nil,            s_eqvaldone);
+    a(s_eqval,        "/>",    0,0,          c_nil,            s_eqvaldone);
+    a(s_eqval,        NULL,    0,255,        c_eat+c_store,    s_eqval);
 
-    r(s_eqvaldone,    t_val,                                    s_intag);
+    r(s_eqvaldone,    t_val,                 s_intag);
 
-    r(s_tagend,        t_endtag,                s_start);
+    r(s_tagend,       t_endtag,              s_start);
 
-    r(s_empty,              t_endtag,                               s_inempty);
-    a(s_inempty,        ">",0,0,                c_eat,            s_emptyend);
-    a(s_inempty,        NULL,0,255,                c_eat,            s_inempty);
-    r(s_emptyend,    t_closeemptytag,                        s_start);
+    r(s_empty,          t_endtag,                               s_inempty);
+    a(s_inempty,        ">",0,0,             c_eat,            s_emptyend);
+    a(s_inempty,        NULL,0,255,          c_eat,            s_inempty);
+    r(s_emptyend,    t_closeemptytag,        s_start);
 
-    a(s_prolog,        "?",0,0,                c_eat,            s_prologq);
-    a(s_prolog,        NULL,0,255,                c_eat+c_store,    s_prolog);
+    a(s_prolog,        "?",0,0,              c_eat,            s_prologq);
+    a(s_prolog,        NULL,0,255,           c_eat+c_store,    s_prolog);
 
-    a(s_prologq,    ">",0,0,                c_eat,            s_prologdone);
-    a(s_prologq,    NULL,0,255,                c_eat+c_store,    s_prolog);
-    r(s_prologdone,    t_prolog,                s_start);
+    a(s_prologq,    ">",0,0,                 c_eat,            s_prologdone);
+    a(s_prologq,    NULL,0,255,              c_eat+c_store,    s_prolog);
+    r(s_prologdone,    t_prolog,             s_start);
 
-    a(s_tagexcl,    "-",0,0,                c_eat,            s_commentdash1);
-    a(s_tagexcl,    "D",0,0,                c_nil,            s_dtd);
-    a(s_tagexcl,    NULL,0,255,                c_eat,            s_start);
+    a(s_tagexcl,    "-",0,0,                 c_eat,            s_commentdash1);
+    a(s_tagexcl,    "D",0,0,                 c_nil,            s_dtd);
+    a(s_tagexcl,    NULL,0,255,              c_eat,            s_start);
 
-    a(s_commentdash1,    "-",0,0,                c_eat,            s_commentdash2);
-    a(s_commentdash1,    NULL,0,255,                c_eat,            s_error);
+    a(s_commentdash1,    "-",0,0,            c_eat,            s_commentdash2);
+    a(s_commentdash1,    NULL,0,255,         c_eat,            s_error);
 
-    a(s_commentdash2,    "-",0,0,                c_eat,            s_commentenddash1);
-    a(s_commentdash2,    NULL,0,255,                c_eat+c_store,    s_incomment);
+    a(s_commentdash2,    "-",0,0,            c_eat,            s_commentenddash1);
+    a(s_commentdash2,    NULL,0,255,         c_eat+c_store,    s_incomment);
 
-    a(s_incomment,    "-",0,0,                c_eat,            s_commentenddash1);
-    a(s_incomment,    NULL,0,255,                c_eat+c_store,    s_incomment);
+    a(s_incomment,       "-",0,0,            c_eat,            s_commentenddash1);
+    a(s_incomment,       NULL,0,255,         c_eat+c_store,    s_incomment);
 
     a(s_commentenddash1, "-",0,0,            c_eat,            s_commentenddash2);
-    a(s_commentenddash1, NULL,0,255,            c_eat+c_store,    s_incomment);
+    a(s_commentenddash1, NULL,0,255,         c_eat+c_store,    s_incomment);
 
     a(s_commentenddash2, ">",0,0,            c_eat,            s_commentdone);
-    a(s_commentenddash2, NULL,0,255,            c_eat+c_store,    s_incomment);
+    a(s_commentenddash2, NULL,0,255,         c_eat+c_store,    s_incomment);
 
-    r(s_commentdone,     t_comment,                s_start);
+    r(s_commentdone,     t_comment,          s_start);
 
 }
 
@@ -8365,6 +8365,4 @@ void mrg_destroy (Mrg *mrg)
   mrg->edited_str = NULL;
   free (mrg);
 }
-
-
 #endif
