@@ -198,12 +198,6 @@ static int ctx_arguments_for_code (CtxCode code)
         return 6;
       case CTX_TEXT_STROKE:
       case CTX_TEXT: // special case
-      case CTX_SET:
-      case CTX_GET:
-   // case CTX_SET_DRGB_SPACE:
-   // case CTX_SET_RGB_SPACE:
-   // case CTX_SET_DCMYK_SPACE:
-   // case CTX_SET_CMYK_SPACE:
       case CTX_COLOR_SPACE:
         return CTX_ARG_STRING_OR_NUMBER;
       case CTX_LINE_DASH: /* append to current dashes for each argument encountered */
@@ -310,8 +304,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_arcTo:          ret = CTX_ARC_TO; break;
           case CTX_arc:            ret = CTX_ARC; break;
           case CTX_curveTo:        ret = CTX_CURVE_TO; break;
-          case CTX_setkey:         ret = CTX_SET; parser->t_args=0;break;
-          case CTX_getkey:         ret = CTX_GET; break;
           case CTX_restore:        ret = CTX_RESTORE; break;
           case CTX_stroke:         ret = CTX_STROKE; break;
           case CTX_fill:           ret = CTX_FILL; break;
@@ -835,36 +827,6 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_FONT:
         ctx_font (ctx, (char *) parser->holding);
-        break;
-      case CTX_SET:
-        parser->t_args++;
-        if (parser->t_args % 2 == 1)
-        {
-           if (parser->n_numbers == 1)
-           {
-             parser->set_key_hash = parser->numbers[0];
-           }
-           else
-           {
-             parser->set_key_hash = ctx_strhash ((char*)parser->holding, 0);
-           }
-        }
-        else
-        {
-           if (parser->set_prop)
-             ctx_parser_set (parser, parser->set_key_hash, (char*)parser->holding, parser->pos);
-           //else
-             ctx_set (ctx, parser->set_key_hash, (char*)parser->holding, parser->pos);
-        }
-        parser->command = CTX_SET;
-        break;
-      case CTX_GET:
-        {
-        char *val = ctx_parser_get (parser, (char*)parser->holding);
-        if (val)
-          free (val);
-        parser->command = CTX_GET;
-        }
         break;
 
       case CTX_TEXT_STROKE:

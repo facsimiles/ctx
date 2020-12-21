@@ -814,11 +814,6 @@ typedef enum
   CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius
   CTX_ARC              = 'B', // x y radius angle1 angle2 direction
   CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y
-  CTX_SET              = 'D', // key value - will take over k/K spots?
-                              //           , doing this refactoring is
-                              //           good future proofing in that
-                              //           it frees up many symbols for
-                              //           actual commands
   CTX_STROKE           = 'E', //
   CTX_FILL             = 'F', //
   CTX_RESTORE          = 'G', //
@@ -852,7 +847,6 @@ typedef enum
   CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius
   CTX_CLIP             = 'b',
   CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y
-  CTX_GET              = 'd', // key -
   CTX_TRANSLATE        = 'e', // x y
   CTX_LINEAR_GRADIENT  = 'f', // x1 y1 x2 y2
   CTX_SAVE             = 'g',

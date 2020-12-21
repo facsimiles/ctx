@@ -382,11 +382,6 @@ void ctx_clip (Ctx *ctx)
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 
-void ctx_start_move (Ctx *ctx)
-{
-  ctx_set (ctx, CTX_start_move, "", 0);
-}
-
 void ctx_save (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_SAVE);
@@ -493,6 +488,7 @@ _ctx_font (Ctx *ctx, const char *name)
   ctx->state.gstate.font = ctx_resolve_font (name);
 }
 
+#if 0
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len)
 {
@@ -514,6 +510,7 @@ ctx_get (Ctx *ctx, const char *key)
     }
   return retbuf;
 }
+#endif
 
 void
 ctx_font (Ctx *ctx, const char *name)

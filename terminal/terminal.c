@@ -143,7 +143,7 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
   switch (key_hash)
   {
     case CTX_title:  
-     ctx_set (ctx, CTX_title, val, strlen (val));
+  // ctx_set (ctx, CTX_title, val, strlen (val));
 #ifndef NO_SDL
      // XXX also check we're first/only client?
   // if (ctx_renderer_is_sdl (ctx))

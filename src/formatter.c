@@ -150,7 +150,6 @@ const char *_ctx_code_to_name (int code)
           case CTX_LINE_WIDTH:           return "lineWidth"; break;
           case CTX_SHADOW_BLUR:          return "shadowBlur";  break;
           case CTX_FILL_RULE:            return "fillRule"; break;
-          case CTX_SET:                  return "setProp"; break;
         }
       return NULL;
 }
@@ -470,6 +469,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_REL_HOR_LINE_TO:
         ctx_print_entry (formatter, entry, 1);
         break;
+#if 0
       case CTX_SET:
         _ctx_print_name (formatter, entry->code);
         switch (c->set.key_hash)
@@ -486,6 +486,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         ctx_formatter_addstrf (formatter, "\"");
         _ctx_print_endcmd (formatter);
         break;
+#endif
       case CTX_COLOR:
         if (formatter->longform ||  1)
           {

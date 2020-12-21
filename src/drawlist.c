@@ -222,7 +222,6 @@ again:
         case CTX_TEXT:
         case CTX_TEXT_STROKE:
         case CTX_FONT:
-        case CTX_SET:
         case CTX_LINE_DASH:
         case CTX_FILL:
         case CTX_NOP:
@@ -264,7 +263,6 @@ again:
         case CTX_KERNING_PAIR:
         case CTX_SCALE:
         case CTX_GLYPH:
-        case CTX_GET:
         case CTX_SET_PIXEL:
         case CTX_FILL_RULE:
         case CTX_LINE_CAP:

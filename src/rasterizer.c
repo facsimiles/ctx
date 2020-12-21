@@ -2653,13 +2653,6 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         break;
 #endif
 
-#if 0
-      case CTX_SET:
-        ctx_state_set_string (rasterizer->state,
-                        c->set.key_hash,
-                        c->set.utf8);
-        break;
-#endif
       case CTX_RESTORE:
         for (int i = state->gstate_no?state->gstate_stack[state->gstate_no-1].keydb_pos:0;
              i < state->gstate.keydb_pos; i++)
@@ -3152,7 +3145,6 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 #if 1
       if (entry->code == CTX_TEXT ||
           entry->code == CTX_LINE_DASH ||
-          entry->code == CTX_SET ||
           entry->code == CTX_COLOR_SPACE ||
           entry->code == CTX_TEXT_STROKE ||
           entry->code == CTX_FONT)
