@@ -220,7 +220,6 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_TEXTURE:
         case CTX_SET_RGBA_U8:
         case CTX_BITPIX:
-        case CTX_BITPIX_DATA:
         case CTX_NOP:
         case CTX_NEW_EDGE:
         case CTX_EDGE:

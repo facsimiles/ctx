@@ -202,23 +202,26 @@ ctx_texture_load (Ctx *ctx, int id, const char *path)
   return id;
 }
 
-int ctx_texture_init (Ctx *ctx, int id, int width, int height, int bpp,
+int ctx_texture_init (Ctx *ctx, int id, int width, int height,
+                      int bpp,
                       uint8_t *pixels,
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data)
 {
   /* .. how to relay? ..
    * fully serializing is one needed option
-   * another is knowing a ctx context that needs relaying from,
-   * or a context to use as texturing source?
    *
-   * texturing source seems like a good option for multi threaded render
+   * a context to use as texturing source
+   *   implemented,
    */
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
     { return id; }
   ctx_buffer_deinit (&ctx->texture[id]);
   ctx_buffer_set_data (&ctx->texture[id],
-                       pixels, width, height, width * (bpp/8), bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8, freefunc, user_data);
+                       pixels, width, height, width * (bpp/8),
+                       bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8,
+                       freefunc, user_data);
   return id;
 }
+

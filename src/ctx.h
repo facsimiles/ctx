@@ -780,27 +780,79 @@ int ctx_pointer_press     (Ctx *ctx, float x, float y, int device_no, uint32_t t
 int ctx_pointer_drop      (Ctx *ctx, float x, float y, int device_no, uint32_t time,
                            char *string);
 
-
+#if 0
 ////////////////////
+typedef enum {
+
+  CTX_FILL_RULE        = 'r', // fillrule - u8
+  CTX_SHADOW_OFFSET_Y  = 'y',
+  CTX_BLEND_MODE       = 'B',
+  CTX_SHADOW_BLUR      = 's',
+  CTX_SHADOW_COLOR     = 'C',
+  CTX_SHADOW_OFFSET_X  = 'x',
+  CTX_TEXT_ALIGN       = 't', // align - u8, default = CTX_TEXT_ALIGN_START
+  CTX_TEXT_BASELINE    = 'b', // baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
+  CTX_TEXT_DIRECTION   = 'd', // direction - u8
+  CTX_MITER_LIMIT      = 'm', // km limit - float, default = 0.0
+
+  CTX_GLOBAL_ALPHA     = 'a', // ka alpha - default=1.0
+  CTX_COMPOSITING_MODE = 'c', // kc mode - u8 , default=0
+  CTX_FONT_SIZE        = 'f', // kf size - float, default=?
+  CTX_LINE_JOIN        = 'j', // kj join - u8 , default=0
+  CTX_LINE_CAP         = 'c', // kc cap - u8, default = 0
+  CTX_LINE_WIDTH       = 'w' // kw width, default = 2.0
+} CTX_GSTATE_KEYS;
+#endif
 
 typedef enum
 {
-  // items marked with % are currently only for the parser
-  // for instance for svg compatibility or simulated/converted color spaces
-  // not the serialization/internal render stream
-  //
-  // unless specified, the arguments expected are 32bit float numbers.
-  //
+  CTX_CONT             = '\0', // - contains args from preceding entry
+  CTX_NOP              = ' ', //
+  CTX_FILL_RULE        = '!', // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
+  CTX_SHADOW_OFFSET_Y  = '&', // ky
+  CTX_DATA             = '(', // size size-in-entries - u32
+  CTX_DATA_REV         = ')', // reverse traversal data marker
+  CTX_SET_RGBA_U8      = '*', // r g b a - u8
+  CTX_NEW_EDGE         = '+', // x0 y0 x1 y1 - s16
+  // set pixel might want a shorter ascii form? or keep it an embedded
+  // only option?
+  CTX_SET_PIXEL        = '-', // 8bit "fast-path" r g b a x y - u8 for rgba, and u16 for x,y
+  CTX_BLEND_MODE       = '/',// kB mode - u8 , default=0
+  /* optimizations that reduce the number of entries used,
+   * not visible outside the drawlist compression, thus
+   * using entries that cannot be used directly as commands
+   * since they would be interpreted as numbers.
+   */
+  CTX_REL_LINE_TO_X4            = '0', // x1 y1 x2 y2 x3 y3 x4 y4   -- s8
+  CTX_REL_LINE_TO_REL_CURVE_TO  = '1', // x1 y1 cx1 cy1 cx2 cy2 x y -- s8
+  CTX_REL_CURVE_TO_REL_LINE_TO  = '2', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
+  CTX_REL_CURVE_TO_REL_MOVE_TO  = '3', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
+  CTX_REL_LINE_TO_X2            = '4', // x1 y1 x2 y2 -- s16
+  CTX_MOVE_TO_REL_LINE_TO       = '5', // x1 y1 x2 y2 -- s16
+  CTX_REL_LINE_TO_REL_MOVE_TO   = '6', // x1 y1 x2 y2 -- s16
+  CTX_FILL_MOVE_TO              = '7', // x y
+  CTX_REL_QUAD_TO_REL_QUAD_TO   = '8', // cx1 x1 cy1 y1 cx1 x2 cy1 y1 -- s8
+  CTX_REL_QUAD_TO_S16           = '9', // cx1 cy1 x y                 - s16
+  // expand with: , . : 
   CTX_FLUSH            = ';',
+  CTX_SHADOW_BLUR      = '<', // ks
+  CTX_SHADOW_COLOR     = '>', // kC
+  CTX_SHADOW_OFFSET_X  = '?', // kx
+
+  CTX_DEFINE_GLYPH     = '@', // unichar width - u32
   CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius
   CTX_ARC              = 'B', // x y radius angle1 angle2 direction
   CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y
-
+  CTX_SET              = 'D', // key value - will take over k/K spots?
+                              //           , doing this refactoring is
+                              //           good future proofing in that
+                              //           it frees up many symbols for
+                              //           actual commands
   CTX_STROKE           = 'E', //
   CTX_FILL             = 'F', //
   CTX_RESTORE          = 'G', //
   CTX_HOR_LINE_TO      = 'H', // x
-
+  CTX_BITPIX           = 'I', // x, y, width, height, scale // NYI
   CTX_ROTATE           = 'J', // radians
   CTX_COLOR            = 'K', // model, c1 c2 c3 ca - has a variable set of
   // arguments.
@@ -808,7 +860,7 @@ typedef enum
   CTX_MOVE_TO          = 'M', // x y
   CTX_BEGIN_PATH       = 'N',
   CTX_SCALE            = 'O', // xscale yscale
-  CTX_NEW_PAGE         = 'P', // - NYI
+  CTX_NEW_PAGE         = 'P', // - NYI - optional page-size
   CTX_QUAD_TO          = 'Q', // cx cy x y
   CTX_VIEW_BOX         = 'R', // x y width height
   CTX_SMOOTH_TO        = 'S', // cx cy x y
@@ -817,20 +869,27 @@ typedef enum
   CTX_VER_LINE_TO      = 'V', // y
   CTX_APPLY_TRANSFORM  = 'W', // a b c d e f - for set_transform combine with identity
   CTX_EXIT             = 'X', //
+  CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
 
   CTX_CLOSE_PATH2      = 'Z', //
+  CTX_KERNING_PAIR     = '[', // glA glB kerning, glA and glB in u16 kerning in s32
+  CTX_COLOR_SPACE      = ']', // IccSlot  data  data_len,
+                         //    data can be a string with a name,
+                         //    icc data or perhaps our own serialization
+                         //    of profile data
+  CTX_EDGE_FLIPPED     = '`', // x0 y0 x1 y1 - s16
   CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius
   CTX_CLIP             = 'b',
   CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y
-
+  CTX_GET              = 'd', // key -
   CTX_TRANSLATE        = 'e', // x y
   CTX_LINEAR_GRADIENT  = 'f', // x1 y1 x2 y2
   CTX_SAVE             = 'g',
   CTX_REL_HOR_LINE_TO  = 'h', // x
   CTX_TEXTURE          = 'i',
-  CTX_PRESERVE         = 'j', // - make the following fill, stroke or clip leave the path
-
-  CTX_SET_KEY          = 'k', // - used together with another char to identify a key to set
+  CTX_PRESERVE         = 'j', // 
+  CTX_SET_KEY          = 'k', // - used together with another char to identify
+                              //   a key to set
   CTX_REL_LINE_TO      = 'l', // x y
   CTX_REL_MOVE_TO      = 'm', // x y
   CTX_FONT             = 'n', // as used by text parser
@@ -846,91 +905,29 @@ typedef enum
   CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
   CTX_IDENTITY         = 'y', //
   CTX_CLOSE_PATH       = 'z', //
-
-  CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
-
-  CTX_SET              = 'D', // key value - will take over k/K spots?
-                              //           , doing this refactoring is
-                              //           good future proofing in that
-                              //           it frees up many symbols for
-                              //           actual commands
-  CTX_GET              = 'd', // key -
-
-
-
-  /* these commands have single byte binary representations,
-   * but are two chars in text, values below 9 are used for
-   * low integers of enum values. and can thus not be used here
-   */
-    CTX_COLOR_SPACE      = 24, // IccSlot  data  data_len,
-                             //    data can be a string with a name,
-                             //    icc data or perhaps our own serialization
-                             //    of profile data
+  CTX_START_GROUP      = '{',
+  CTX_LINE_DASH        = '|', // x0 y0 x1 y1 - s16
+  CTX_END_GROUP        = '}',
+  CTX_EDGE             = ',',
 
   /* though expressed as two chars in serialization we have
    * dedicated byte commands for these setters - they should be folded
    * into CTX_SET
    */
-  CTX_TEXT_ALIGN           = 17, // kt align - u8, default = CTX_TEXT_ALIGN_START
-  CTX_TEXT_BASELINE        = 18, // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
-  CTX_TEXT_DIRECTION       = 19, // kd
-  CTX_MITER_LIMIT          = 20, // km limit - float, default = 0.0
-  CTX_GLOBAL_ALPHA         = 26, // ka alpha - default=1.0
-  CTX_COMPOSITING_MODE     = 27, // kc mode - u8 , default=0
-  CTX_BLEND_MODE           = '$',// kB mode - u8 , default=0
-                                 // kb - text baseline
-  CTX_FONT_SIZE            = 28, // kf size - float, default=?
-  CTX_LINE_JOIN            = 29, // kj join - u8 , default=0
-  CTX_LINE_CAP             = 30, // kc cap - u8, default = 0
-  CTX_LINE_WIDTH           = 31, // kw width, default = 2.0
-  CTX_FILL_RULE            = '!', // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
-  CTX_SHADOW_BLUR          = '<', // ks
-  CTX_SHADOW_COLOR         = '>', // kC
-  CTX_SHADOW_OFFSET_X      = '?', // kx
-  CTX_SHADOW_OFFSET_Y      = '&', // ky
-  CTX_START_GROUP          = '{',
-  CTX_END_GROUP            = '}',
+  CTX_TEXT_ALIGN       = '#', // kt align - u8, default = CTX_TEXT_ALIGN_START
+  CTX_TEXT_BASELINE    = ':', // kb baseline - u8, default = CTX_TEXT_ALIGN_ALPHABETIC
+  CTX_TEXT_DIRECTION   = '.', // kd
+  CTX_MITER_LIMIT      = '^', // km limit - float, default = 0.0
 
-  // non-alphabetic chars that get filtered out when parsing
-  // are used for internal purposes
-  //
-  // unused:  . , : backslash  #  % ^ < > ? & / 
-  //           i 
-  //
-  CTX_CONT             = '\0', // - contains args from preceding entry
-  CTX_SET_RGBA_U8      = '*', // r g b a - u8
-  // NYI
-  CTX_BITPIX           = 'I', // x, y, width, height, scale
-  CTX_BITPIX_DATA      = 'j', //
-
-  CTX_NOP              = ' ', //
-  CTX_NEW_EDGE         = '+', // x0 y0 x1 y1 - s16
-  CTX_EDGE             = '|', // x0 y0 x1 y1 - s16
-  CTX_EDGE_FLIPPED     = '`', // x0 y0 x1 y1 - s16
-
-  CTX_DATA             = '(', // size size-in-entries - u32
-  CTX_DATA_REV         = ')', // reverse traversal data marker
-  // needed to be able to do backwards
-  // traversal
-  CTX_DEFINE_GLYPH     = '@', // unichar width - u32
-  CTX_KERNING_PAIR     = '[', // glA glB kerning, glA and glB in u16 kerning in s32
-  CTX_SET_PIXEL        = '-', // 8bit "fast-path" r g b a x y - u8 for rgba, and u16 for x,y
-
-  /* optimizations that reduce the number of entries used,
-   * not visible outside the draw-stream compression -
-   * these are using values that would mean numbers in an
-   * SVG path.
-   */
-  CTX_REL_LINE_TO_X4            = '0', // x1 y1 x2 y2 x3 y3 x4 y4   -- s8
-  CTX_REL_LINE_TO_REL_CURVE_TO  = '1', // x1 y1 cx1 cy1 cx2 cy2 x y -- s8
-  CTX_REL_CURVE_TO_REL_LINE_TO  = '2', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
-  CTX_REL_CURVE_TO_REL_MOVE_TO  = '3', // cx1 cy1 cx2 cy2 x y x1 y1 -- s8
-  CTX_REL_LINE_TO_X2            = '4', // x1 y1 x2 y2 -- s16
-  CTX_MOVE_TO_REL_LINE_TO       = '5', // x1 y1 x2 y2 -- s16
-  CTX_REL_LINE_TO_REL_MOVE_TO   = '6', // x1 y1 x2 y2 -- s16
-  CTX_FILL_MOVE_TO              = '7', // x y
-  CTX_REL_QUAD_TO_REL_QUAD_TO   = '8', // cx1 x1 cy1 y1 cx1 x2 cy1 y1 -- s8
-  CTX_REL_QUAD_TO_S16           = '9', // cx1 cy1 x y                 - s16
+  CTX_GLOBAL_ALPHA     = '_', // ka alpha - default=1.0
+  CTX_COMPOSITING_MODE = '=', // kc mode - u8 , default=0
+  CTX_FONT_SIZE        = '%', // kf size - float, default=?
+  CTX_LINE_JOIN        = '\\', // kj join - u8 , default=0
+  CTX_LINE_CAP         = '\'', // kc cap - u8, default = 0
+  CTX_LINE_WIDTH       = '"', // kw width, default = 2.0
+  // items marked with % are currently only for the parser
+  // for instance for svg compatibility or simulated/converted color spaces
+  // not the serialization/internal render stream
 } CtxCode;
 
 

@@ -197,7 +197,7 @@ void ctx_texture (Ctx *ctx, int id, float x, float y)
   CtxEntry commands[2];
   if (id < 0) { return; }
   commands[0] = ctx_u32 (CTX_TEXTURE, id, 0);
-  commands[1] = ctx_f  (CTX_CONT, x, y);
+  commands[1] = ctx_f   (CTX_CONT, x, y);
   ctx_process (ctx, commands);
 }
 
