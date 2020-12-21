@@ -570,26 +570,6 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
     }
 }
 
-static void ctx_parser_set (CtxParser *parser, uint32_t key_hash,
-                            const char *value, int val_len)
-{
-  if (parser->set_prop)
-  {
-     parser->set_prop (parser->prop_data, key_hash, value, val_len);
-  }
-}
-
-char *ctx_parser_get (CtxParser *parser, const char *key)
-{
-  char *ret = NULL;
-  int len = 0;
-  if (parser->get_prop)
-  {
-     parser->get_prop (parser->prop_data, key, &ret, &len);
-  }
-  return ret;
-}
-
 static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
@@ -1451,11 +1431,6 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
         switch (byte)
           {
             case '~': parser->state = CTX_PARSER_NEUTRAL;
-#if 0
-              ctx_parser_holding_append (parser, '~'); // XXX : todo rewrite
-                                                      // ctx_a85dec to not need
-                                                      // this
-                                                     #endif
               parser->pos = ctx_a85dec ((char*)parser->holding, (char*)parser->holding, parser->pos);
               ctx_parser_string_done (parser);
               break;

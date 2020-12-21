@@ -1,6 +1,8 @@
  /* Copyright (C) 2020 Øyvind Kolås <pippin@gimp.org>
  */
 
+#if CTX_FORMATTER
+
 /* returns the maximum string length including terminating \0 */
 static int ctx_a85enc_len (int input_length)
 {
@@ -43,6 +45,9 @@ static int ctx_a85enc (const void *srcp, char *dst, int count)
   dst[out_len]=0;
   return out_len;
 }
+#endif
+
+#if CTX_PARSER
 
 static int ctx_a85dec (const char *src, char *dst, int count)
 {
@@ -110,6 +115,7 @@ static int ctx_a85dec (const char *src, char *dst, int count)
   return out_len;
 }
 
+#if 0
 static int ctx_a85len (const char *src, int count)
 {
   int out_len = 0;
@@ -137,3 +143,6 @@ static int ctx_a85len (const char *src, int count)
     out_len += k-1;
   return out_len;
 }
+#endif
+
+#endif

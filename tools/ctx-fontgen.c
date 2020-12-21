@@ -14,6 +14,7 @@
 #define CTX_EXTRAS 1
 #define CTX_AVX2 0
 #define CTX_IMPLEMENTATION
+#define CTX_PARSER 1
 #include "ctx-nofont.h"
 
 static int usage(){
