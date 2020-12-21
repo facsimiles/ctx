@@ -848,10 +848,12 @@ typedef enum
   CTX_CLOSE_PATH       = 'z', //
 
   CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
+
   CTX_SET              = 'D', // key value - will take over k/K spots?
                               //           , doing this refactoring is
                               //           good future proofing in that
-                              //           it frees up many symbols.
+                              //           it frees up many symbols for
+                              //           actual commands
   CTX_GET              = 'd', // key -
 
 
@@ -888,10 +890,6 @@ typedef enum
   CTX_SHADOW_OFFSET_Y      = '&', // ky
   CTX_START_GROUP          = '{',
   CTX_END_GROUP            = '}',
-
-  CTX_FUNCTION             = 25,
-  CTX_LINE_DASH            = ']', // in binary encoding followed by DATA of dashes
-  //CTX_ENDFUN = 26,
 
   // non-alphabetic chars that get filtered out when parsing
   // are used for internal purposes

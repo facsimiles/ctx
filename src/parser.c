@@ -215,8 +215,6 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_GRADIENT_STOP:
         return CTX_ARG_NUMBER_OF_COMPONENTS_PLUS_1;
 
-      case CTX_FUNCTION: /* special interpretation   */
-        return 300;
         default:
 #if 1
       case CTX_TEXTURE:
@@ -307,14 +305,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
       str_hash = ctx_strhash ( (char *) str, 0);
       switch (str_hash)
         {
-#define CTX_ENABLE_DEFUN 1
-#if CTX_ENABLE_DEFUN
-#define CTX_function CTX_STRH('f','u','n','c','t','i','o','n',0,0,0,0,0,0)
-#define CTX_endfun CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
-
-          case CTX_function:    ret = CTX_FUNCTION; break;
-          //case CTX_endfun:    ret = CTX_ENDFUN; break;
-#endif
           /* first a list of mappings to one_char hashes, handled in a
            * separate fast path switch without hashing
            */
