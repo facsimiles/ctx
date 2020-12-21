@@ -167,12 +167,14 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
   }
   else
   {
+#if 0
     int x = sdl->min_col * sdl->width/CTX_HASH_COLS;
     int y = sdl->min_row * sdl->height/CTX_HASH_ROWS;
     int x1 = (sdl->max_col+1) * sdl->width/CTX_HASH_COLS;
     int y1 = (sdl->max_row+1) * sdl->height/CTX_HASH_ROWS;
-    //int width = x1 - x;
-    //int height = y1 - y;
+    int width = x1 - x;
+    int height = y1 - y;
+#endif
     sdl->min_row = 100;
     sdl->max_row = 0;
     sdl->min_col = 100;

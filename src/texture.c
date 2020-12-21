@@ -203,7 +203,7 @@ ctx_texture_load (Ctx *ctx, int id, const char *path)
 }
 
 int ctx_texture_init (Ctx *ctx, int id, int width, int height,
-                      int bpp,
+                      CtxPixelFormat format,
                       uint8_t *pixels,
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data)
@@ -217,10 +217,15 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height,
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
     { return id; }
+  int bpp;
+  if (format == CTX_FORMAT_RGBA8)
+    bpp = 32;
+  else
+    bpp = 24;
   ctx_buffer_deinit (&ctx->texture[id]);
   ctx_buffer_set_data (&ctx->texture[id],
                        pixels, width, height, width * (bpp/8),
-                       bpp==32?CTX_FORMAT_RGBA8:CTX_FORMAT_RGB8,
+                       format,
                        freefunc, user_data);
   return id;
 }

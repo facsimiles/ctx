@@ -7093,7 +7093,10 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     ctx_clip (ctx);
                     // we give each texture a unique-id - if we use more ids than
                     // there is, ctx will alias the first image.
-                    ctx_texture_init (ctx, image_id, image->width, image->height, image->kitty_format,
+                    int format = CTX_FORMAT_RGB8;
+                    if (image->kitty_format == 32)
+                      format = CTX_FORMAT_RGBA8;
+                    ctx_texture_init (ctx, image_id, image->width, image->height, format,
                                       image->data, NULL, NULL);
                     ctx_texture (ctx, image_id, u, v);
                     image_id ++;

@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <unistd.h>
 #include "ctx.h"
 
 /* A small immediate mode toolkit for ctx
