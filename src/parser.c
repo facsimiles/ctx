@@ -241,7 +241,7 @@ static int ctx_arguments_for_code (CtxCode code)
 
 static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
 {
-  if (code < 127 && code > 16)
+  if (code < 150 && code > 16)
   {
   parser->n_args = ctx_arguments_for_code (code);
   if (parser->n_args >= CTX_ARG_NUMBER_OF_COMPONENTS)
@@ -1114,7 +1114,7 @@ static void ctx_parser_word_done (CtxParser *parser)
   int old_args = parser->n_args;
   int command = ctx_parser_resolve_command (parser, parser->holding);
   if ((command >= 0 && command < 16) 
-      || (command > 127) || (command < 0)
+      || (command > 150) || (command < 0)
       )  // special case low enum values
     {                   // and enum values too high to be
                         // commands - permitting passing words
