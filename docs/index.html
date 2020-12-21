@@ -25,10 +25,11 @@
       <div id='page'>
       <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-      <p>ctx is a <a href='protocol/'>protocol</a>/library/platform/terminal
-      for 2D vector graphics. With modular components built around serializations of a superset of
-      the HTML5 canvas 2D context it can be used to create threaded,
-      networked and interactive immediate mode user interfaces.
+      <p>ctx is a 2D vector graphics <a
+              href='protocol/'>protocol</a>/library/platform/terminal.  With
+      modular components built around serializations of a superset of the HTML5
+      canvas 2D context it can be used to create threaded, networked and
+      interactive immediate mode user interfaces.
       </p>
 
       <!--
@@ -280,14 +281,13 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         </p>
         <ul>
           <li>clip does not clip event boxes/shapes</li>
-          <li>arc not well behaved for edge-cases around full-circle</li>
           <li>in_fill is using bounding box - and most reliably works with rectangles.</li>
           <li>radial gradient is only using one center</li>
           <li>dimensions of drop-shadow are not transformed</li>
 
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
           <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
-          <li>some form of built in palm supression is needed in drm/fbdev backend</li>
+          <li>some form of built in palm supression is desirable in drm/fbdev backend</li>
           </ul>
         </li>
         </ul>

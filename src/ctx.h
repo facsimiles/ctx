@@ -795,7 +795,8 @@ typedef enum
   /* optimizations that reduce the number of entries used,
    * not visible outside the drawlist compression, thus
    * using entries that cannot be used directly as commands
-   * since they would be interpreted as numbers.
+   * since they would be interpreted as numbers - if values>127
+   * then the embedded font data is harder to escape.
    */
   CTX_REL_LINE_TO_X4            = '0', // x1 y1 x2 y2 x3 y3 x4 y4   -- s8
   CTX_REL_LINE_TO_REL_CURVE_TO  = '1', // x1 y1 cx1 cy1 cx2 cy2 x y -- s8
@@ -824,7 +825,7 @@ typedef enum
   // arguments.
   CTX_LINE_TO          = 'L', // x y
   CTX_MOVE_TO          = 'M', // x y
-  CTX_BEGIN_PATH       = 'N',
+  CTX_BEGIN_PATH       = 'N', //
   CTX_SCALE            = 'O', // xscale yscale
   CTX_NEW_PAGE         = 'P', // - NYI - optional page-size
   CTX_QUAD_TO          = 'Q', // cx cy x y
@@ -847,6 +848,7 @@ typedef enum
   CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius
   CTX_CLIP             = 'b',
   CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y
+  CTX_LINE_DASH        = 'd', // dashlen0 [dashlen1 ...]
   CTX_TRANSLATE        = 'e', // x y
   CTX_LINEAR_GRADIENT  = 'f', // x1 y1 x2 y2
   CTX_SAVE             = 'g',
@@ -859,7 +861,7 @@ typedef enum
   CTX_REL_MOVE_TO      = 'm', // x y
   CTX_FONT             = 'n', // as used by text parser
   CTX_RADIAL_GRADIENT  = 'o', // x1 y1 radius1 x2 y2 radius2
-  CTX_GRADIENT_STOP    = 'p', //   , count depends on current color model
+  CTX_GRADIENT_STOP    = 'p', // argument count depends on current color model
   CTX_REL_QUAD_TO      = 'q', // cx cy x y
   CTX_RECTANGLE        = 'r', // x y width height
   CTX_REL_SMOOTH_TO    = 's', // cx cy x y
@@ -871,7 +873,6 @@ typedef enum
   CTX_IDENTITY         = 'y', //
   CTX_CLOSE_PATH       = 'z', //
   CTX_START_GROUP      = '{',
-  CTX_LINE_DASH        = '|', // x0 y0 x1 y1 - s16
   CTX_END_GROUP        = '}',
   CTX_EDGE             = ',',
 
@@ -879,7 +880,7 @@ typedef enum
    * dedicated byte commands for the setters to keep the dispatch
    * simpler. There is no need for these to be human readable thus we go >128
    *
-   * unused/reserved: !&<=>?#:.^_=/~%\'"
+   * unused/reserved: D!&<=>?#:.^_=/~%\'"
    *
    */
   CTX_FILL_RULE        = 128, // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
