@@ -102,7 +102,7 @@ ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono
 ctx-split.o: $(SRC_OBJS)
 
 ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) $(DEP_CFLAGS) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(DEP_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
