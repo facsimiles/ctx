@@ -2503,7 +2503,8 @@ ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, int count, float *dashes)
   rasterizer->state->gstate.n_dashes = count;
   for (int i = 0; i < count; i ++)
   {
-    rasterizer->state->gstate.dashes[i] = dashes[i];
+    if (dashes[i] < 0.0001f) rasterizer->state->gstate.dashes[i] = 0.0001f; // hang protection
+    else rasterizer->state->gstate.dashes[i] = dashes[i];
   }
 }
 
