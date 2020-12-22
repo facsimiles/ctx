@@ -217,11 +217,7 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height,
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
     { return id; }
-  int bpp;
-  if (format == CTX_FORMAT_RGBA8)
-    bpp = 32;
-  else
-    bpp = 24;
+  int bpp = ctx_pixel_format_bpp (format);
   ctx_buffer_deinit (&ctx->texture[id]);
   ctx_buffer_set_data (&ctx->texture[id],
                        pixels, width, height, width * (bpp/8),
@@ -229,4 +225,3 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height,
                        freefunc, user_data);
   return id;
 }
-

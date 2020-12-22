@@ -1518,4 +1518,29 @@ char *ctx_get_clipboard (Ctx *ctx)
   return strdup ("");
 }
 
+int ctx_pixel_format_bpp (CtxPixelFormat format)
+{
+  CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
+  if (info)
+    return info->bpp;
+  return -1;
+}
+
+int ctx_pixel_format_ebpp (CtxPixelFormat format)
+{
+  CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
+  if (info)
+    return info->ebpp;
+  return -1;
+}
+
+int ctx_pixel_format_components (CtxPixelFormat format)
+{
+  CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
+  if (info)
+    return info->components;
+  return -1;
+}
+
+
 #endif

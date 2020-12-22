@@ -311,6 +311,9 @@ void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
 typedef struct _CtxRenderstream CtxRenderstream;
 typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
 
+int ctx_pixel_format_bpp        (CtxPixelFormat format);
+int ctx_pixel_format_components (CtxPixelFormat format);
+
 void _ctx_set_store_clear (Ctx *ctx);
 void _ctx_set_transformation (Ctx *ctx, int transformation);
 
