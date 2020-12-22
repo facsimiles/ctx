@@ -1579,6 +1579,16 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
     { full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS; }
   float step = CTX_PI*2.0/full_segments;
   int steps;
+
+  if (end_angle < -10.0)
+    end_angle = -10.0;
+  if (start_angle < -10.0)
+    start_angle = -10.0;
+  if (end_angle > 10.0)
+    end_angle = 10.0;
+  if (start_angle > 10.0)
+    start_angle = 10.0;
+
   if (end_angle == start_angle && 0)
     {
 //  if (rasterizer->has_prev!=0)
