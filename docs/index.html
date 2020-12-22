@@ -25,11 +25,10 @@
       <div id='page'>
       <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-      <p>ctx is a 2D vector graphics <a
-              href='protocol/'>protocol</a>/library/platform/terminal.  With
-      modular components built around serializations of a superset of the HTML5
-      canvas 2D context it can be used to create threaded, networked and
-      interactive immediate mode user interfaces.
+      <p>ctx is a 2D vector graphics platform/<a
+              href='protocol/'>protocol</a>/library/terminal.  With modular
+      components that can be used to user interfaces ranging from
+      microcontrollers to desktops.
       </p>
 
       <!--
@@ -182,8 +181,8 @@ to be combined with all compositing modes.
          of more components using the CTX protocol.
          </dd>
 
-         <dt>Threaded/deferred rendering</dt><dd>The compact ctx protocol - in both text and binary form is a serialization of HTML5 Canvas 2D context API with
-         extensions.
+         <dt>Efficient serializations</dt><dd>All of ctx is built around a
+         textual serialization/drawlist of a 2D context.
          Thes drawlist representations are used for larger than RAM
          framebuffers on microcontrollers, multi threaded SDL2 and /dev/fb0
          rendering and network transparent rendering inside ctx terminal. When
@@ -192,11 +191,10 @@ to be combined with all compositing modes.
          fragments of the preceding (reference) frames drawlist.
          .</dd>
 
-         <dt>utf8 native</dt><dd>Ligature handling is missing, and beyond
-           vttest charset support is not good and RTL is missing -
-           harfbuzz intergration can fix this and more. Also currently
-           lacking color emoji. The most efficient font format is the
-           binary representation of the ctx protocol.</dd>
+         <dt>utf8 native</dt><dd>Ligature handling is missing, and beyond RTL
+         is missing.  Also currently lacking color emoji. The most
+         efficient font format is the binary representation of the ctx
+         protocol.</dd>
 
          <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - as well as a growing subset of vt400 and other relevant terminal escape sequences.</dd>
          <dt><a href='https://pippin.gimp.org/ametameric/'>ametameric palette</a></dt>
@@ -294,26 +292,28 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <h2 id='future'>some potential improvements</h2>
 	<ul>
         <li>performance (always possible - ctx looks at code/RAM budgets as well)</li>
-        <li>code refactoring</li>
-	<li>glyph fallbacks</li>
-        <li>analytical instead of raster clipping</li>
+        <li>continued code refactoring</li>
+	<li>glyph fallbacks between fonts</li>
         <li>texture upload as part of terminal protocol</li>
         <li>terminal rewrap on resize</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
+        <li>binary search for glyphs in ctxf font backend, making it scale well for wide unicode coverage.</li>
         <li>websockets + js + HTML5 Canvas renderer/client for protocols</li>
         <li>wayland/libinput support</li>
+        <li>analytical instead of raster clipping</li>
         <li>bindings to a javascript engine like quickjs, for running canvas js content as apps.</li>
         <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
         <li>faster 1d-gaussian blur for shadow blur</li>
         <li>PDF/SVG generation (in addition to existing cairo integration)</li>
         <li>Add API for integrating device-N with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
-        <li>32bit float coverage from rasterizer - right now we support 32f images; but composite them with 8bit alpha masks.</li>
+        <li>32bit float coverage from rasterizer - right now we support 32f images/color; but composite using 8bit alpha masks.</li>
         <li>More SIMD code (the common RGBA8 cases for AVX2 are the only bit
             covered thus far, for floating point formats making the
             existing code more autovectorizer friendly is a priority.)</li>
-        <li>A GPU renderer, using pathfinder or similar HTML5 2d canvas
-            matching library or even make ctx act as the cpu side vertex
-            and fragment input buffer cook for a GPU based approach.</li>
+        <li>A GPU renderer, the information needed for precomputation and
+            spatial organization in many GPU rendering approaches is already
+            present - alternatively backends sitting on top of exisitng
+        libraries.</li>
 	</ul>
 <!--
         <h3 id='example'>example code</h3>
