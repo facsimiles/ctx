@@ -155,6 +155,11 @@ updateweb: all ctx.static test docs/ctx.h.html docs/ctx-font-regular.h.html
 	cp -ru docs/* ~/pgo/ctx.graphics/
 	cp ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
 
+afl/ctx: ctx.h
+	make clean
+	CC=../afl/afl-2.52b/afl-gcc make ctx -j5
+	cp ctx afl/ctx
+
 flatpak:
 	rm -rf build-dir;flatpak-builder --user --install build-dir meta/graphics.ctx.terminal.yml
 

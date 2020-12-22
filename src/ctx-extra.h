@@ -137,11 +137,34 @@ ctx_invsqrtf (float x)
 CTX_INLINE static float
 ctx_sinf (float x)
 {
-  /* source : http://mooooo.ooo/chebyshev-sine-approximation/ */
+  if (x < -CTX_PI * 2)
+    {
+      x = -x;
+      long ix = x / (CTX_PI * 2);
+      x = x - ix * CTX_PI * 2;
+      x = -x;
+    }
+  if (x < -CTX_PI * 1000)
+  {
+    x = -0.5;
+  }
+  if (x > CTX_PI * 1000)
+  {
+          // really large numbers tend to cause practically inifinite
+          // loops since the > CTX_PI * 2 seemingly fails
+    x = 0.5;
+  }
+  if (x > CTX_PI * 2)
+    { 
+      long ix = x / (CTX_PI * 2);
+      x = x - (ix * CTX_PI * 2);
+    }
   while (x < -CTX_PI)
     { x += CTX_PI * 2; }
   while (x > CTX_PI)
     { x -= CTX_PI * 2; }
+
+  /* source : http://mooooo.ooo/chebyshev-sine-approximation/ */
   float coeffs[]=
   {
     -0.10132118f,           // x
