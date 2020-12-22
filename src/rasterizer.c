@@ -2325,7 +2325,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
   int id = ctx_texture_init (rasterizer->ctx, -1,
                   rasterizer->blit_width,
                   rasterizer->blit_height,
-                  rasterizer->format->ebpp * 8,
+                  rasterizer->format->pixel_format,
                   (uint8_t*)rasterizer->group[no]->data,
                   NULL, NULL);
   {
