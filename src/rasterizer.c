@@ -1217,7 +1217,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          y1)
 {
   int aa = rasterizer->aa;
-  if (x0>x1 && y0>y1) { 
+  if (x0>x1) { // && y0>y1) { 
      int tmp = x1;
      x1 = x0;
      x0 = tmp;
