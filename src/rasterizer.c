@@ -1589,14 +1589,18 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
   if (start_angle > 10.0)
     start_angle = 10.0;
 
-  if (end_angle == start_angle && 0)
+  if (radius <= 0.0001)
+          return;
+
+  if (end_angle == start_angle)
+          // XXX also detect arcs fully outside render view
     {
-//  if (rasterizer->has_prev!=0)
+    if (rasterizer->has_prev!=0)
       ctx_rasterizer_line_to (rasterizer, x + ctx_cosf (end_angle) * radius,
                               y + ctx_sinf (end_angle) * radius);
-//    else
-//    ctx_rasterizer_move_to (rasterizer, x + ctx_cosf (end_angle) * radius,
-//                          y + ctx_sinf (end_angle) * radius);
+      else
+      ctx_rasterizer_move_to (rasterizer, x + ctx_cosf (end_angle) * radius,
+                            y + ctx_sinf (end_angle) * radius);
       return;
     }
 #if 0
@@ -1610,7 +1614,8 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
 #endif
     {
       steps = (end_angle - start_angle) / (CTX_PI*2) * full_segments;
-      //if (steps < 0) steps += full_segments;
+      if (steps > full_segments)
+              steps = full_segments;
       if (anticlockwise)
         { steps = full_segments - steps; };
     }
