@@ -712,7 +712,7 @@ again:
     }
   else
 #endif
-          if (!strcmp (get_suffix (source_path), ".ctx") )
+    //      if (!strcmp (get_suffix (source_path), ".ctx") )
     {
       unsigned char *contents = NULL;
       long length;
@@ -728,11 +728,13 @@ again:
           free (contents);
         }
     }
+#if 0
   else
     {
       fprintf (stderr, "nothing to do\n");
       exit(0);
     }
+#endif
 
   if (outputmode == CTX_OUTPUT_MODE_UI)
   {
