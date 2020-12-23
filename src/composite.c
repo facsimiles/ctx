@@ -1767,13 +1767,13 @@ static void ctx_u8_set_lum (int components, uint8_t *c, uint8_t lum)
   int n = ctx_int_get_min (components, tc);
   int x = ctx_int_get_max (components, tc);
 
-  if (n < 0)
+  if (n < 0 && l!=n)
   {
     for (int i = 0; i < components - 1; i++)
       tc[i] = l + (((tc[i] - l) * l) / (l-n));
   }
 
-  if (x > 255)
+  if (x > 255 && x!=l)
   {
     for (int i = 0; i < components - 1; i++)
       tc[i] = l + (((tc[i] - l) * (255 - l)) / (x-l));
@@ -2852,13 +2852,13 @@ static void ctx_float_set_lum (int components, float *c, float lum)
   float n = ctx_float_get_min (components, tc);
   float x = ctx_float_get_max (components, tc);
 
-  if (n < 0.0f)
+  if (n < 0.0f && l != n)
   {
     for (int i = 0; i < components - 1; i++)
       tc[i] = l + (((tc[i] - l) * l) / (l-n));
   }
 
-  if (x > 1.0f)
+  if (x > 1.0f && x != l)
   {
     for (int i = 0; i < components - 1; i++)
       tc[i] = l + (((tc[i] - l) * (1.0f - l)) / (x-l));
