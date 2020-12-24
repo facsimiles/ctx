@@ -1004,7 +1004,8 @@ again:
       memset (pixels, 0, sizeof (stride*height) );
       ctx_render_ctx (ctx, dctx);
       ctx_free (dctx);
-      stbi_write_png (dest_path, width, height, 4, pixels, stride);
+      if(!strstr(dest_path, "skip-save"))
+        stbi_write_png (dest_path, width, height, 4, pixels, stride);
       free (pixels);
     }
   ctx_free (ctx);
