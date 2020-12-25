@@ -2810,6 +2810,7 @@ again:
               else
               {
                 pos += length;
+                dash_lpos += length;
                 {
                   if (is_down)
                     ctx_rasterizer_line_to (rasterizer, x, y);

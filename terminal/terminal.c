@@ -609,7 +609,10 @@ void client_maximize (int id)
    client->unmaximized_y = client->y;
    client->unmaximized_width  = client->width;
    client->unmaximized_height = client->height;
-   client_resize (id, ctx_width (ctx), ctx_height(ctx) - client_min_y_pos (ctx));
+
+   // enforce_layout does the size
+   //client_resize (id, ctx_width (ctx), ctx_height(ctx) - client_min_y_pos (ctx));
+   
    client_move (id, 0, client_min_y_pos (ctx));
    active_tab = client;
 }
