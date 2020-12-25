@@ -181,20 +181,32 @@ to be combined with all compositing modes.
          of more components using the CTX protocol.
          </dd>
 
-         <dt>Efficient serializations</dt><dd>All of ctx is built around a
-         textual serialization/drawlist of a 2D context.
+         <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>
+         Supporting RGB332, RGB565 and grayscale + 1bit mode.
+         With ICC based management of RGB user/device spaces through babl.
+         </p>
+
+         <dt>Efficient serializations</dt><dd>ctx is built around a binary -
+         and - textual serialization/drawlist of a 2D context.
          Thes drawlist representations are used for larger than RAM
-         framebuffers on microcontrollers, multi threaded SDL2 and /dev/fb0
-         rendering and network transparent rendering inside ctx terminal. When
+         framebuffers on microcontrollers, multi threaded cached rendering through
+         SDL2 and /dev/fb0 backends
+         and network transparent rendering inside ctx terminal. When
          used for graphical clients inside terminals; ctx is even applying
-         inter-frame compression; building the current frames drawlist out of
-         fragments of the preceding (reference) frames drawlist.
+         inter-frame compression; reusing frames from the preceding drawlist
+         by reference.
          .</dd>
 
-         <dt>utf8 native</dt><dd>Ligature handling is missing, and beyond RTL
-         is missing.  Also currently lacking color emoji. The most
-         efficient font format is the binary representation of the ctx
-         protocol.</dd>
+         <dt>text rendering</dt><dd>UTF8 native, there is two font backends
+             driven by stb_trutetype reading glyph paths on demand from
+             a TTF/OTF file loaded in RAM/ROM and a native ctx drawlist
+             representation, separated by '@' define-glyph commands, the
+             latter provides minimal overhead on micro controllers in
+             realtime translation of glyph outlines to framebuffer contents.
+
+             Shaping is currently limited to horizontal advances +
+             horizontal kerning, no ligatures.
+         </dd>
 
          <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - as well as a growing subset of vt400 and other relevant terminal escape sequences.</dd>
          <dt><a href='https://pippin.gimp.org/ametameric/'>ametameric palette</a></dt>
@@ -209,12 +221,6 @@ to be combined with all compositing modes.
          directly on the linux framebuffer without X/wayland, for it to be
          fast a fast framebuffer is needed.
          </dd>
-
-         <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>Already
-         supporting RGB332, 565 and grayscale modes with generic code
-         that also will handle more components than CMYKA - the
-         protocol/API has provisions for colorspaces but proper conversions are
-         not done yet.</dd>
 
          <dt><a href='https://github.com/hodefoting/atty/'>atty</a></dt>
               <dd>audio recording and playback (only raw pcm for now, opus codec NYI)</dd>
