@@ -1,4 +1,4 @@
-/include "ctx-split.h"
+#include "ctx-split.h"
 #if CTX_RASTERIZER
 
 void ctx_compositor_setup_default (CtxRasterizer *rasterizer);
@@ -1722,6 +1722,14 @@ ctx_rasterizer_stroke_1px (CtxRasterizer *rasterizer)
   int aa = rasterizer->aa;
   int start = 0;
   int end = 0;
+#if 0
+  float factor = 
+     ctx_maxf (ctx_maxf (ctx_fabsf (state->gstate.transform.m[0][0]),
+                         ctx_fabsf (state->gstate.transform.m[0][1]) ),
+               ctx_maxf (ctx_fabsf (state->gstate.transform.m[1][0]),
+                         ctx_fabsf (state->gstate.transform.m[1][1]) ) );
+#endif
+
   while (start < count)
     {
       int started = 0;
@@ -1778,14 +1786,20 @@ foo:
 static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
+  CtxState *state = rasterizer->state;
   int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;
+  // YYY
+  float factor = ctx_maxf (ctx_maxf (ctx_fabsf (state->gstate.transform.m[0][0]),
+                                  ctx_fabsf (state->gstate.transform.m[0][1]) ),
+                        ctx_maxf (ctx_fabsf (state->gstate.transform.m[1][0]),
+                                  ctx_fabsf (state->gstate.transform.m[1][1]) ) );
   int aa = rasterizer->aa;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 #if 1
-  if (rasterizer->state->gstate.line_width <= 0.0f &&
-      rasterizer->state->gstate.line_width > -10.0f)
+  if (rasterizer->state->gstate.line_width * factor <= 0.0f &&
+      rasterizer->state->gstate.line_width * factor > -10.0f)
     {
       ctx_rasterizer_stroke_1px (rasterizer);
     }
@@ -1797,8 +1811,8 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       ctx_matrix_identity (&rasterizer->state->gstate.transform);
       float prev_x = 0.0f;
       float prev_y = 0.0f;
-      float half_width_x = rasterizer->state->gstate.line_width/2;
-      float half_width_y = rasterizer->state->gstate.line_width/2;
+      float half_width_x = rasterizer->state->gstate.line_width * factor/2;
+      float half_width_y = rasterizer->state->gstate.line_width * factor/2;
       if (rasterizer->state->gstate.line_width <= 0.0f)
         {
           half_width_x = .5;
@@ -2869,17 +2883,6 @@ foo:
     }
   ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
   ctx_interpret_style (rasterizer->state, entry, NULL);
-  if (command->code == CTX_LINE_WIDTH)
-    {
-      float x = state->gstate.line_width;
-      /* normalize line width according to scaling factor
-       */
-      x = x * ctx_maxf (ctx_maxf (ctx_fabsf (state->gstate.transform.m[0][0]),
-                                  ctx_fabsf (state->gstate.transform.m[0][1]) ),
-                        ctx_maxf (ctx_fabsf (state->gstate.transform.m[1][0]),
-                                  ctx_fabsf (state->gstate.transform.m[1][1]) ) );
-      state->gstate.line_width = x;
-    }
 }
 
 void
