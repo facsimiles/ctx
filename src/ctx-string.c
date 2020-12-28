@@ -40,7 +40,7 @@ void ctx_string_init (CtxString *string, int initial_size)
   string->allocated_length = initial_size;
   string->length = 0;
   string->utf8_length = 0;
-  string->str = malloc (string->allocated_length + 1);
+  string->str = (char*)malloc (string->allocated_length + 1);
   string->str[0]='\0';
 }
 
@@ -68,7 +68,7 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
     {
       char *old = string->str;
       string->allocated_length = CTX_MAX (string->allocated_length * 2, string->length + 2);
-      string->str = malloc (string->allocated_length);
+      string->str = (char*)malloc (string->allocated_length);
       if (old)
       {
         memcpy (string->str, old, string->length);
@@ -125,7 +125,7 @@ void ctx_string_append_str (CtxString *string, const char *str)
 
 CtxString *ctx_string_new_with_size (const char *initial, int initial_size)
 {
-  CtxString *string = ctx_calloc (sizeof (CtxString), 1);
+  CtxString *string = (CtxString*)ctx_calloc (sizeof (CtxString), 1);
   ctx_string_init (string, initial_size);
   if (initial)
     { _ctx_string_append_str (string, initial); }
@@ -196,7 +196,7 @@ ctx_string_set (CtxString *string, const char *new_string)
 CTX_STATIC char *ctx_strdup (const char *str)
 {
   int len = strlen (str);
-  char *ret = malloc (len + 1);
+  char *ret = (char*)malloc (len + 1);
   memcpy (ret, str, len);
   ret[len]=0;
   return ret;
@@ -234,13 +234,13 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
       char *tmp;
       char *defer;
       string->allocated_length = string->length + new_len + 2;
-      tmp = ctx_calloc (string->allocated_length + 1 + 8, 1);
+      tmp = (char*) ctx_calloc (string->allocated_length + 1 + 8, 1);
       strcpy (tmp, string->str);
       defer = string->str;
       string->str = tmp;
       free (defer);
     }
-  char *p = (void *) ctx_utf8_skip (string->str, pos);
+  char *p = (char *) ctx_utf8_skip (string->str, pos);
   int prev_len = ctx_utf8_len (*p);
   char *rest;
   if (*p == 0 || * (p+prev_len) == 0)
@@ -272,7 +272,7 @@ void ctx_string_replace_unichar (CtxString *string, int pos, uint32_t unichar)
 
 uint32_t ctx_string_get_unichar (CtxString *string, int pos)
 {
-  char *p = (void *) ctx_utf8_skip (string->str, pos);
+  char *p = (char *) ctx_utf8_skip (string->str, pos);
   if (!p)
     { return 0; }
   return ctx_utf8_to_unichar (p);
@@ -305,13 +305,13 @@ void ctx_string_insert_utf8 (CtxString *string, int pos, const char *new_glyph)
       char *tmp;
       char *defer;
       string->allocated_length = string->length + new_len + 1;
-      tmp = ctx_calloc (string->allocated_length + 1, 1);
+      tmp = (char*) ctx_calloc (string->allocated_length + 1, 1);
       strcpy (tmp, string->str);
       defer = string->str;
       string->str = tmp;
       free (defer);
     }
-  char *p = (void *) ctx_utf8_skip (string->str, pos);
+  char *p = (char *) ctx_utf8_skip (string->str, pos);
   int prev_len = ctx_utf8_len (*p);
   char *rest;
   if ( (*p == 0 || * (p+prev_len) == 0) && pos != 0)
@@ -339,7 +339,7 @@ void ctx_string_remove (CtxString *string, int pos)
         old_len++;
       }
   }
-  char *p = (void *) ctx_utf8_skip (string->str, pos);
+  char *p = (char *) ctx_utf8_skip (string->str, pos);
   int prev_len = ctx_utf8_len (*p);
   char *rest;
   if (*p == 0 || * (p+prev_len) == 0)

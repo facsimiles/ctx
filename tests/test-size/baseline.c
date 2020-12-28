@@ -12,7 +12,7 @@
 
 int main (int argc, char **argv)
 {
-  uint8_t *pixels = malloc (WIDTH*HEIGHT*4);
+  uint8_t *pixels = (uint8_t*)malloc (WIDTH*HEIGHT*4);
 
   for (int i = 0; i < WIDTH*HEIGHT*4; i++)
     pixels[i] = 0;

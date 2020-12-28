@@ -24,7 +24,7 @@ static void ctx_formatter_addstrf (CtxFormatter *formatter, const char *format, 
    char *buffer;
    va_start (ap, format);
    needed = vsnprintf (NULL, 0, format, ap) + 1;
-   buffer = malloc (needed);
+   buffer = (char*) malloc (needed);
    va_end (ap);
    va_start (ap, format);
    vsnprintf (buffer, needed, format, ap);
@@ -40,7 +40,7 @@ static void _ctx_stream_addstr (CtxFormatter *formatter, const char *str, int le
     return;
   }
   if (len < 0) len = strlen (str);
-  fwrite (str, len, 1, formatter->target);
+  fwrite (str, len, 1, (FILE*)formatter->target);
 }
 
 void _ctx_string_addstr (CtxFormatter *formatter, const char *str, int len)
@@ -413,7 +413,7 @@ static void
 ctx_formatter_process (void *user_data, CtxCommand *c)
 {
   CtxEntry *entry = &c->entry;
-  CtxFormatter *formatter = user_data;
+  CtxFormatter *formatter = (CtxFormatter*)user_data;
 
   switch (entry->code)
   //switch ((CtxCode)(entry->code))

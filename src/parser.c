@@ -1132,7 +1132,7 @@ static void ctx_parser_word_done (CtxParser *parser)
         int tmp1 = parser->command;
         int tmp2 = parser->n_args;
         ctx_parser_dispatch_command (parser);
-        parser->command = tmp1;
+        parser->command = (CtxCode)tmp1;
         parser->n_args = tmp2;
       }
 

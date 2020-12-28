@@ -901,7 +901,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         break;
       case CTX_COLOR_SPACE:
         /* move this out of this function and only do it in rasterizer? XXX */
-        ctx_rasterizer_colorspace_icc (state, c->colorspace.space_slot,
+        ctx_rasterizer_colorspace_icc (state, (CtxColorSpace)c->colorspace.space_slot,
                                               (char*)c->colorspace.data,
                                               c->colorspace.data_len);
         break;
