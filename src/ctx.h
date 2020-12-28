@@ -297,8 +297,14 @@ void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_
  * return value: the actual id assigned, if id is out of range - or later
  * when -1 as id will mean auto-assign.
  */
-int ctx_texture_init (Ctx *ctx, int id, int width, int height, CtxPixelFormat format,
+int ctx_texture_init (Ctx *ctx,
+                      int id,
+                      int width,
+                      int height,
+                      int stride,
+                      CtxPixelFormat format,
                       uint8_t *pixels,
+                      /* XXX : add stride - in bytes ? */
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data);
 int ctx_texture_load        (Ctx *ctx, int id, const char *path);

@@ -7096,7 +7096,10 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     int format = CTX_FORMAT_RGB8;
                     if (image->kitty_format == 32)
                       format = CTX_FORMAT_RGBA8;
-                    ctx_texture_init (ctx, image_id, image->width, image->height, format,
+                    ctx_texture_init (ctx, image_id, image->width,
+                                      image->height,
+                                      image->width * (format == CTX_FORMAT_RGB8?3:4),
+                                      format,
                                       image->data, NULL, NULL);
                     ctx_texture (ctx, image_id, u, v);
                     image_id ++;

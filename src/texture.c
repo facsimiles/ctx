@@ -202,14 +202,19 @@ ctx_texture_load (Ctx *ctx, int id, const char *path)
   return id;
 }
 
-int ctx_texture_init (Ctx *ctx, int id, int width, int height,
+int ctx_texture_init (Ctx *ctx,
+                      int  id,
+                      int  width,
+                      int  height,
+                      int  stride,
                       CtxPixelFormat format,
                       uint8_t *pixels,
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data)
 {
   /* .. how to relay? ..
-   * fully serializing is one needed option
+   * fully serializing is one needed option - for that there is no free
+   * func..
    *
    * a context to use as texturing source
    *   implemented,
@@ -219,8 +224,14 @@ int ctx_texture_init (Ctx *ctx, int id, int width, int height,
     { return id; }
   int bpp = ctx_pixel_format_bpp (format);
   ctx_buffer_deinit (&ctx->texture[id]);
+
+  if (!stride)
+  {
+    stride = width * (bpp/8);
+  }
+
   ctx_buffer_set_data (&ctx->texture[id],
-                       pixels, width, height, width * (bpp/8),
+                       pixels, width, height, stride,
                        format,
                        freefunc, user_data);
   return id;
