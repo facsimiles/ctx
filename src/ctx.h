@@ -1553,7 +1553,6 @@ typedef struct _CtxParser CtxParser;
   void *exit_data);
 
 
-typedef enum _CtxColorSpace CtxColorSpace;
 enum _CtxColorSpace
 {
   CTX_COLOR_SPACE_DEVICE_RGB,
@@ -1561,6 +1560,7 @@ enum _CtxColorSpace
   CTX_COLOR_SPACE_USER_RGB,
   CTX_COLOR_SPACE_USER_CMYK,
 };
+typedef enum _CtxColorSpace CtxColorSpace;
 
 void ctx_colorspace (Ctx           *ctx,
                      CtxColorSpace  space_slot,

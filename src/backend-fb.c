@@ -1392,11 +1392,11 @@ inline static void ctx_fb_flush (CtxFb *fb)
 #if CTX_DAMAGE_CONTROL
     for (int i = 0; i < fb->width * fb->height; i++)
     {
-      int new = (fb->scratch_fb[i*4+0]+ fb->scratch_fb[i*4+1]+ fb->scratch_fb[i*4+2])/3;
-      if (new>1) new--;
-      fb->scratch_fb[i*4]= (fb->scratch_fb[i*4] + new)/2;
-      fb->scratch_fb[i*4+1]= (fb->scratch_fb[i*4+1] + new)/2;
-      fb->scratch_fb[i*4+2]= (fb->scratch_fb[i*4+1] + new)/2;
+      int new_ = (fb->scratch_fb[i*4+0]+ fb->scratch_fb[i*4+1]+ fb->scratch_fb[i*4+2])/3;
+      if (new_>1) new_--;
+      fb->scratch_fb[i*4]= (fb->scratch_fb[i*4] + new_)/2;
+      fb->scratch_fb[i*4+1]= (fb->scratch_fb[i*4+1] + new_)/2;
+      fb->scratch_fb[i*4+2]= (fb->scratch_fb[i*4+1] + new_)/2;
     }
 #endif
 

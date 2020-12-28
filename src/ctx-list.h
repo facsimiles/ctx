@@ -10,7 +10,7 @@
 static inline void *ctx_calloc (size_t size, size_t count)
 {
   size_t byte_size = size * count;
-  char *ret = malloc (byte_size);
+  char *ret = (char*)malloc (byte_size);
   for (size_t i = 0; i < byte_size; i++)
      ret[i] = 0;
   return ret;

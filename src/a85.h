@@ -11,7 +11,7 @@ static int ctx_a85enc_len (int input_length)
 
 static int ctx_a85enc (const void *srcp, char *dst, int count)
 {
-  const uint8_t *src = srcp;
+  const uint8_t *src = (uint8_t*)srcp;
   int out_len = 0;
 
   int padding = 4-(count % 4);

@@ -385,8 +385,8 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
     }
   if (ret + 8 >= renderstream->size - 20)
     {
-      int new = CTX_MAX (renderstream->size * 2, ret + 8);
-      ctx_renderstream_resize (renderstream, new);
+      int new_ = CTX_MAX (renderstream->size * 2, ret + 8);
+      ctx_renderstream_resize (renderstream, new_);
     }
 
   if (renderstream->count >= max_size - 20)

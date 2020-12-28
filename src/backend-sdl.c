@@ -459,11 +459,11 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
 #if CTX_DAMAGE_CONTROL
     for (int i = 0; i < sdl->width * sdl->height; i++)
     {
-      int new = (sdl->pixels[i*4+0]+ sdl->pixels[i*4+1]+ sdl->pixels[i*4+2])/3;
-      //if (new>1) new--;
+      int new_ = (sdl->pixels[i*4+0]+ sdl->pixels[i*4+1]+ sdl->pixels[i*4+2])/3;
+      //if (new_>1) new_--;
       sdl->pixels[i*4]  = (sdl->pixels[i*4] + 255)/2;
-      sdl->pixels[i*4+1]= (sdl->pixels[i*4+1] + new)/2;
-      sdl->pixels[i*4+2]= (sdl->pixels[i*4+1] + new)/2;
+      sdl->pixels[i*4+1]= (sdl->pixels[i*4+1] + new_)/2;
+      sdl->pixels[i*4+2]= (sdl->pixels[i*4+1] + new_)/2;
     }
 #endif
 

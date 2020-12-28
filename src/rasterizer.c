@@ -2138,7 +2138,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
     { memcpy (temp + 1, rasterizer->edge_list.entries, sizeof (temp) - sizeof (temp[0]));
       temp[0].code = CTX_NOP;
       temp[0].data.u32[0] = count;
-      ctx_state_set_blob (rasterizer->state, CTX_clip, (void*)temp, sizeof(temp));
+      ctx_state_set_blob (rasterizer->state, CTX_clip, (uint8_t*)temp, sizeof(temp));
     }
   ctx_rasterizer_clip_apply (rasterizer, temp);
 
