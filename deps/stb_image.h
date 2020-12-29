@@ -6829,6 +6829,8 @@ static void *stbi__load_gif_main(stbi__context *s, int **delays, int *x, int *y,
          }
       } while (u != 0);
 
+      if (out_size){}; // silencing gcc warning
+
       // free temp buffer;
       STBI_FREE(g.out);
       STBI_FREE(g.history);
