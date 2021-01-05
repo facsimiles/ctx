@@ -194,7 +194,7 @@ void ctx_rotate (Ctx *ctx, float x)
     return;
   CTX_PROCESS_F1 (CTX_ROTATE, x);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
-    { ctx->renderstream.count--; }
+    { ctx->drawlist.count--; }
 }
 
 void ctx_scale (Ctx *ctx, float x, float y)
@@ -203,7 +203,7 @@ void ctx_scale (Ctx *ctx, float x, float y)
     return;
   CTX_PROCESS_F (CTX_SCALE, x, y);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
-    { ctx->renderstream.count--; }
+    { ctx->drawlist.count--; }
 }
 
 void ctx_translate (Ctx *ctx, float x, float y)
@@ -212,7 +212,7 @@ void ctx_translate (Ctx *ctx, float x, float y)
     return;
   CTX_PROCESS_F (CTX_TRANSLATE, x, y);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
-    { ctx->renderstream.count--; }
+    { ctx->drawlist.count--; }
 }
 
 void

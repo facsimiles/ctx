@@ -347,7 +347,7 @@ struct
 {
   int              pos;
   int              in_history;
-  CtxRenderstream *renderstream;
+  CtxRenderstream *drawlist;
   int              end_pos;
   int              flags;
 
@@ -437,7 +437,7 @@ struct
 _Ctx
 {
   CtxImplementation *renderer;
-  CtxRenderstream    renderstream;
+  CtxRenderstream    drawlist;
   int                transformation;
   CtxBuffer          texture[CTX_MAX_TEXTURES];
   int                rev;
@@ -505,7 +505,7 @@ CTX_STATIC void ctx_state_init (CtxState *state);
 void
 ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data);
 void
-ctx_renderstream_deinit (CtxRenderstream *renderstream);
+ctx_drawlist_deinit (CtxRenderstream *drawlist);
 
 CtxPixelFormatInfo *
 ctx_pixel_format_info (CtxPixelFormat format);

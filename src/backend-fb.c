@@ -1337,8 +1337,8 @@ inline static void ctx_fb_flush (CtxFb *fb)
   if (fb->shown_frame == fb->render_frame)
   {
     int dirty_tiles = 0;
-    ctx_set_renderstream (fb->ctx_copy, &fb->ctx->renderstream.entries[0],
-                                         fb->ctx->renderstream.count * 9);
+    ctx_set_drawlist (fb->ctx_copy, &fb->ctx->drawlist.entries[0],
+                                         fb->ctx->drawlist.count * 9);
     if (_ctx_enable_hash_cache)
     {
       Ctx *hasher = ctx_hasher_new (fb->width, fb->height,

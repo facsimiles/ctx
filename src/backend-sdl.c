@@ -405,8 +405,8 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
   if (sdl->shown_frame == sdl->render_frame)
   {
     int dirty_tiles = 0;
-    ctx_set_renderstream (sdl->ctx_copy, &sdl->ctx->renderstream.entries[0],
-                                         sdl->ctx->renderstream.count * 9);
+    ctx_set_drawlist (sdl->ctx_copy, &sdl->ctx->drawlist.entries[0],
+                                         sdl->ctx->drawlist.count * 9);
     if (_ctx_enable_hash_cache)
     {
       Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,

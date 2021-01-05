@@ -72,7 +72,7 @@ ctx_init (int *argc, char ***argv)
 
 int ctx_count (Ctx *ctx)
 {
-  return ctx->renderstream.count;
+  return ctx->drawlist.count;
 }
 
 Ctx *ctx_new_ui (int width, int height)

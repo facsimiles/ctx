@@ -5,9 +5,10 @@
 #define CTX_BACKEND_TEXT 0 // we keep then non-backend code paths
                            // for code handling aroud, this should
                            // be run-time to permit doing text_to_path
-#define CTX_RASTERIZER  0
+#define CTX_RASTERIZER         0
+
 #define CTX_BITPACK_PACKER     1  // pack vectors
-#define CTX_BITPACK            1  // pack vectors
+#define CTX_BITPACK            1
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 #include <sys/time.h>
@@ -44,20 +45,20 @@ add_glyph (Ctx *ctx, uint32_t glyph)
   if (ctx_glyph (ctx, glyph, 1))
     return;
   glyphs[n_glyphs++] = glyph;
-  ctx->renderstream.flags  = CTX_TRANSFORMATION_BITPACK;
-  ctx_renderstream_compact (&ctx->renderstream);
+  ctx->drawlist.flags = CTX_TRANSFORMATION_BITPACK;
+  ctx_drawlist_compact (&ctx->drawlist);
 
   char buf[44]={0,0,0,0,0};
   ctx_unichar_to_utf8 (glyph, (uint8_t*)buf);
   uint32_t args[2] = {glyph, ctx_glyph_width (ctx, glyph) * 256};
-  ctx_renderstream_add_u32 (&output_font, CTX_DEFINE_GLYPH, args);
+  ctx_drawlist_add_u32 (&output_font, CTX_DEFINE_GLYPH, args);
 
-  for (int i = 3; i < ctx->renderstream.count - 1; i++)
+  for (int i = 3; i < ctx->drawlist.count - 1; i++)
   {
-    CtxEntry *entry = &ctx->renderstream.entries[i];
+    CtxEntry *entry = &ctx->drawlist.entries[i];
     args[0] = entry->data.u32[0];
     args[1] = entry->data.u32[1];
-    ctx_renderstream_add_u32 (&output_font, entry->code, &args[0]);
+    ctx_drawlist_add_u32 (&output_font, entry->code, &args[0]);
   }
 }
 
@@ -154,7 +155,7 @@ char* string =
         uint16_t args[4]={glyphs[i],glyphs[j], 0, 0};
         int32_t *iargs = (void*)(&args[0]);
         iargs[1] = kerning * 256;
-        ctx_renderstream_add_u32 (&output_font, CTX_KERNING_PAIR, (void*)&args[0]);
+        ctx_drawlist_add_u32 (&output_font, CTX_KERNING_PAIR, (void*)&args[0]);
       }
     }
 

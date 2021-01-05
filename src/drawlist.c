@@ -51,16 +51,16 @@ ctx_conts_for_entry (CtxEntry *entry)
 
 CTX_STATIC void
 ctx_iterator_init (CtxIterator      *iterator,
-                   CtxRenderstream  *renderstream,
+                   CtxRenderstream  *drawlist,
                    int               start_pos,
                    int               flags)
 {
-  iterator->renderstream   = renderstream;
+  iterator->drawlist   = drawlist;
   iterator->flags          = flags;
   iterator->bitpack_pos    = 0;
   iterator->bitpack_length = 0;
   iterator->pos            = start_pos;
-  iterator->end_pos        = renderstream->count;
+  iterator->end_pos        = drawlist->count;
   iterator->in_history     = -1; // -1 is a marker used for first run
   ctx_memset (iterator->bitpack_command, 0, sizeof (iterator->bitpack_command) );
 }
@@ -68,7 +68,7 @@ ctx_iterator_init (CtxIterator      *iterator,
 CTX_STATIC CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
 {
   int ret = iterator->pos;
-  CtxEntry *entry = &iterator->renderstream->entries[ret];
+  CtxEntry *entry = &iterator->drawlist->entries[ret];
   if (ret >= iterator->end_pos)
     { return NULL; }
   if (iterator->in_history == 0)
@@ -76,7 +76,7 @@ CTX_STATIC CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
   iterator->in_history = 0;
   if (iterator->pos >= iterator->end_pos)
     { return NULL; }
-  return &iterator->renderstream->entries[iterator->pos];
+  return &iterator->drawlist->entries[iterator->pos];
 }
 
 // 6024x4008
@@ -290,112 +290,112 @@ again:
   return (CtxCommand *) ret;
 }
 
-CTX_STATIC void ctx_renderstream_compact (CtxRenderstream *renderstream);
+CTX_STATIC void ctx_drawlist_compact (CtxRenderstream *drawlist);
 CTX_STATIC void
-ctx_renderstream_resize (CtxRenderstream *renderstream, int desired_size)
+ctx_drawlist_resize (CtxRenderstream *drawlist, int desired_size)
 {
 #if CTX_RENDERSTREAM_STATIC
-  if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
+  if (drawlist->flags & CTX_RENDERSTREAM_EDGE_LIST)
     {
       static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
-      renderstream->entries = &sbuf[0];
-      renderstream->size = CTX_MAX_EDGE_LIST_SIZE;
+      drawlist->entries = &sbuf[0];
+      drawlist->size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  else if (renderstream->flags & CTX_RENDERSTREAM_CURRENT_PATH)
+  else if (drawlist->flags & CTX_RENDERSTREAM_CURRENT_PATH)
     {
       static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
-      renderstream->entries = &sbuf[0];
-      renderstream->size = CTX_MAX_EDGE_LIST_SIZE;
+      drawlist->entries = &sbuf[0];
+      drawlist->size = CTX_MAX_EDGE_LIST_SIZE;
     }
   else
     {
       static CtxEntry sbuf[CTX_MAX_JOURNAL_SIZE];
-      renderstream->entries = &sbuf[0];
-      renderstream->size = CTX_MAX_JOURNAL_SIZE;
-      ctx_renderstream_compact (renderstream);
+      drawlist->entries = &sbuf[0];
+      drawlist->size = CTX_MAX_JOURNAL_SIZE;
+      ctx_drawlist_compact (drawlist);
     }
 #else
   int new_size = desired_size;
   int min_size = CTX_MIN_JOURNAL_SIZE;
   int max_size = CTX_MAX_JOURNAL_SIZE;
-  if ((renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST))
+  if ((drawlist->flags & CTX_RENDERSTREAM_EDGE_LIST))
     {
       min_size = CTX_MIN_EDGE_LIST_SIZE;
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  else if (renderstream->flags & CTX_RENDERSTREAM_CURRENT_PATH)
+  else if (drawlist->flags & CTX_RENDERSTREAM_CURRENT_PATH)
     {
       min_size = CTX_MIN_EDGE_LIST_SIZE;
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
   else
     {
-      ctx_renderstream_compact (renderstream);
+      ctx_drawlist_compact (drawlist);
     }
 
-  if (new_size < renderstream->size)
+  if (new_size < drawlist->size)
     { return; }
-  if (renderstream->size == max_size)
+  if (drawlist->size == max_size)
     { return; }
   if (new_size < min_size)
     { new_size = min_size; }
-  if (new_size < renderstream->count)
-    { new_size = renderstream->count + 4; }
+  if (new_size < drawlist->count)
+    { new_size = drawlist->count + 4; }
   if (new_size >= max_size)
     { new_size = max_size; }
-  if (new_size != renderstream->size)
+  if (new_size != drawlist->size)
     {
-      //fprintf (stderr, "growing renderstream %p %i to %d from %d\n", renderstream, renderstream->flags, new_size, renderstream->size);
-  if (renderstream->entries)
+      //fprintf (stderr, "growing drawlist %p %i to %d from %d\n", drawlist, drawlist->flags, new_size, drawlist->size);
+  if (drawlist->entries)
     {
-      //printf ("grow %p to %d from %d\n", renderstream, new_size, renderstream->size);
+      //printf ("grow %p to %d from %d\n", drawlist, new_size, drawlist->size);
       CtxEntry *ne =  (CtxEntry *) malloc (sizeof (CtxEntry) * new_size);
-      memcpy (ne, renderstream->entries, renderstream->size * sizeof (CtxEntry) );
-      free (renderstream->entries);
-      renderstream->entries = ne;
-      //renderstream->entries = (CtxEntry*)malloc (renderstream->entries, sizeof (CtxEntry) * new_size);
+      memcpy (ne, drawlist->entries, drawlist->size * sizeof (CtxEntry) );
+      free (drawlist->entries);
+      drawlist->entries = ne;
+      //drawlist->entries = (CtxEntry*)malloc (drawlist->entries, sizeof (CtxEntry) * new_size);
     }
   else
     {
-      //printf ("allocating for %p %d\n", renderstream, new_size);
-      renderstream->entries = (CtxEntry *) malloc (sizeof (CtxEntry) * new_size);
+      //printf ("allocating for %p %d\n", drawlist, new_size);
+      drawlist->entries = (CtxEntry *) malloc (sizeof (CtxEntry) * new_size);
     }
-  renderstream->size = new_size;
+  drawlist->size = new_size;
     }
-  //fprintf (stderr, "renderstream %p is %d\n", renderstream, renderstream->size);
+  //fprintf (stderr, "drawlist %p is %d\n", drawlist, drawlist->size);
 #endif
 }
 
 CTX_STATIC int
-ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
+ctx_drawlist_add_single (CtxRenderstream *drawlist, CtxEntry *entry)
 {
   int max_size = CTX_MAX_JOURNAL_SIZE;
-  int ret = renderstream->count;
-  if (renderstream->flags & CTX_RENDERSTREAM_EDGE_LIST)
+  int ret = drawlist->count;
+  if (drawlist->flags & CTX_RENDERSTREAM_EDGE_LIST)
     {
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  else if (renderstream->flags & CTX_RENDERSTREAM_CURRENT_PATH)
+  else if (drawlist->flags & CTX_RENDERSTREAM_CURRENT_PATH)
     {
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  if (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
+  if (drawlist->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
     {
       return ret;
     }
-  if (ret + 8 >= renderstream->size - 20)
+  if (ret + 8 >= drawlist->size - 20)
     {
-      int new_ = CTX_MAX (renderstream->size * 2, ret + 8);
-      ctx_renderstream_resize (renderstream, new_);
+      int new_ = CTX_MAX (drawlist->size * 2, ret + 8);
+      ctx_drawlist_resize (drawlist, new_);
     }
 
-  if (renderstream->count >= max_size - 20)
+  if (drawlist->count >= max_size - 20)
     {
       return 0;
     }
-  renderstream->entries[renderstream->count] = *entry;
-  ret = renderstream->count;
-  renderstream->count++;
+  drawlist->entries[drawlist->count] = *entry;
+  ret = drawlist->count;
+  drawlist->count++;
   return ret;
 }
 
@@ -405,22 +405,22 @@ ctx_renderstream_add_single (CtxRenderstream *renderstream, CtxEntry *entry)
 int
 ctx_add_single (Ctx *ctx, void *entry)
 {
-  return ctx_renderstream_add_single (&ctx->renderstream, (CtxEntry *) entry);
+  return ctx_drawlist_add_single (&ctx->drawlist, (CtxEntry *) entry);
 }
 
 int
-ctx_renderstream_add_entry (CtxRenderstream *renderstream, CtxEntry *entry)
+ctx_drawlist_add_entry (CtxRenderstream *drawlist, CtxEntry *entry)
 {
   int length = ctx_conts_for_entry (entry) + 1;
   int ret = 0;
   for (int i = 0; i < length; i ++)
     {
-      ret = ctx_renderstream_add_single (renderstream, &entry[i]);
+      ret = ctx_drawlist_add_single (drawlist, &entry[i]);
     }
   return ret;
 }
 
-int ctx_append_renderstream (Ctx *ctx, void *data, int length)
+int ctx_append_drawlist (Ctx *ctx, void *data, int length)
 {
   CtxEntry *entries = (CtxEntry *) data;
   if (length % sizeof (CtxEntry) )
@@ -430,35 +430,35 @@ int ctx_append_renderstream (Ctx *ctx, void *data, int length)
     }
   for (unsigned int i = 0; i < length / sizeof (CtxEntry); i++)
     {
-      ctx_renderstream_add_single (&ctx->renderstream, &entries[i]);
+      ctx_drawlist_add_single (&ctx->drawlist, &entries[i]);
     }
   return 0;
 }
 
-int ctx_set_renderstream (Ctx *ctx, void *data, int length)
+int ctx_set_drawlist (Ctx *ctx, void *data, int length)
 {
-  CtxRenderstream *renderstream = &ctx->renderstream;
-  ctx->renderstream.count = 0;
-  if (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
+  CtxRenderstream *drawlist = &ctx->drawlist;
+  ctx->drawlist.count = 0;
+  if (drawlist->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
     {
       return -1;
     }
   if (length % 9) return -1;
-  ctx_renderstream_resize (renderstream, length/9);
-  memcpy (renderstream->entries, data, length);
-  renderstream->count = length / 9;
+  ctx_drawlist_resize (drawlist, length/9);
+  memcpy (drawlist->entries, data, length);
+  drawlist->count = length / 9;
   return length;
 }
 
 
-int ctx_get_renderstream_count (Ctx *ctx)
+int ctx_get_drawlist_count (Ctx *ctx)
 {
-  return ctx->renderstream.count;
+  return ctx->drawlist.count;
 }
 
-const CtxEntry *ctx_get_renderstream (Ctx *ctx)
+const CtxEntry *ctx_get_drawlist (Ctx *ctx)
 {
-  return ctx->renderstream.entries;
+  return ctx->drawlist.entries;
 }
 
 int
@@ -473,44 +473,44 @@ ctx_add_data (Ctx *ctx, void *data, int length)
    * verify that it is well-formed up to length?
    *
    * also - it would be very useful to stop processing
-   * upon flush - and do renderstream resizing.
+   * upon flush - and do drawlist resizing.
    */
-  return ctx_renderstream_add_entry (&ctx->renderstream, (CtxEntry *) data);
+  return ctx_drawlist_add_entry (&ctx->drawlist, (CtxEntry *) data);
 }
 
-int ctx_renderstream_add_u32 (CtxRenderstream *renderstream, CtxCode code, uint32_t u32[2])
+int ctx_drawlist_add_u32 (CtxRenderstream *drawlist, CtxCode code, uint32_t u32[2])
 {
   CtxEntry entry = {code, {{0},}};
   entry.data.u32[0] = u32[0];
   entry.data.u32[1] = u32[1];
-  return ctx_renderstream_add_single (renderstream, &entry);
+  return ctx_drawlist_add_single (drawlist, &entry);
 }
 
-int ctx_renderstream_add_data (CtxRenderstream *renderstream, const void *data, int length)
+int ctx_drawlist_add_data (CtxRenderstream *drawlist, const void *data, int length)
 {
   CtxEntry entry = {CTX_DATA, {{0},}};
   entry.data.u32[0] = 0;
   entry.data.u32[1] = 0;
-  int ret = ctx_renderstream_add_single (renderstream, &entry);
+  int ret = ctx_drawlist_add_single (drawlist, &entry);
   if (!data) { return -1; }
   int length_in_blocks;
   if (length <= 0) { length = strlen ( (char *) data) + 1; }
   length_in_blocks = length / sizeof (CtxEntry);
   length_in_blocks += (length % sizeof (CtxEntry) ) ?1:0;
-  if (renderstream->count + length_in_blocks + 4 > renderstream->size)
-    { ctx_renderstream_resize (renderstream, renderstream->count * 1.2 + length_in_blocks + 32); }
-  if (renderstream->count >= renderstream->size)
+  if (drawlist->count + length_in_blocks + 4 > drawlist->size)
+    { ctx_drawlist_resize (drawlist, drawlist->count * 1.2 + length_in_blocks + 32); }
+  if (drawlist->count >= drawlist->size)
     { return -1; }
-  renderstream->count += length_in_blocks;
-  renderstream->entries[ret].data.u32[0] = length;
-  renderstream->entries[ret].data.u32[1] = length_in_blocks;
-  memcpy (&renderstream->entries[ret+1], data, length);
+  drawlist->count += length_in_blocks;
+  drawlist->entries[ret].data.u32[0] = length;
+  drawlist->entries[ret].data.u32[1] = length_in_blocks;
+  memcpy (&drawlist->entries[ret+1], data, length);
   {
-    //int reverse = ctx_renderstream_add (renderstream, CTX_DATA_REV);
+    //int reverse = ctx_drawlist_add (drawlist, CTX_DATA_REV);
     CtxEntry entry = {CTX_DATA_REV, {{0},}};
     entry.data.u32[0] = length;
     entry.data.u32[1] = length_in_blocks;
-    ctx_renderstream_add_single (renderstream, &entry);
+    ctx_drawlist_add_single (drawlist, &entry);
     /* this reverse marker exist to enable more efficient
        front to back traversal, can be ignored in other
        direction, is this needed after string setters as well?
@@ -630,13 +630,13 @@ ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, 
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC int
-ctx_last_history (CtxRenderstream *renderstream)
+ctx_last_history (CtxRenderstream *drawlist)
 {
   int last_history = 0;
   int i = 0;
-  while (i < renderstream->count)
+  while (i < drawlist->count)
     {
-      CtxEntry *entry = &renderstream->entries[i];
+      CtxEntry *entry = &drawlist->entries[i];
       i += (ctx_conts_for_entry (entry) + 1);
     }
   return last_history;
@@ -681,13 +681,13 @@ pack_s16_args (CtxEntry *entry, int npairs)
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC void
-ctx_renderstream_remove_tiny_curves (CtxRenderstream *renderstream, int start_pos)
+ctx_drawlist_remove_tiny_curves (CtxRenderstream *drawlist, int start_pos)
 {
   CtxIterator iterator;
-  if ( (renderstream->flags & CTX_TRANSFORMATION_BITPACK) == 0)
+  if ( (drawlist->flags & CTX_TRANSFORMATION_BITPACK) == 0)
     { return; }
-  ctx_iterator_init (&iterator, renderstream, start_pos, CTX_ITERATOR_FLAT);
-  iterator.end_pos = renderstream->count - 5;
+  ctx_iterator_init (&iterator, drawlist, start_pos, CTX_ITERATOR_FLAT);
+  iterator.end_pos = drawlist->count - 5;
   CtxCommand *command = NULL;
   while ( (command = ctx_iterator_next (&iterator) ) )
     {
@@ -713,21 +713,21 @@ ctx_renderstream_remove_tiny_curves (CtxRenderstream *renderstream, int start_po
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC void
-ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
+ctx_drawlist_bitpack (CtxRenderstream *drawlist, int start_pos)
 {
 #if CTX_BITPACK
   int i = 0;
-  if ( (renderstream->flags & CTX_TRANSFORMATION_BITPACK) == 0)
+  if ( (drawlist->flags & CTX_TRANSFORMATION_BITPACK) == 0)
     { return; }
-  ctx_renderstream_remove_tiny_curves (renderstream, renderstream->bitpack_pos);
-  i = renderstream->bitpack_pos;
+  ctx_drawlist_remove_tiny_curves (drawlist, drawlist->bitpack_pos);
+  i = drawlist->bitpack_pos;
   if (start_pos > i)
     { i = start_pos; }
-  while (i < renderstream->count - 4) /* the -4 is to avoid looking past
+  while (i < drawlist->count - 4) /* the -4 is to avoid looking past
                                     initialized data we're not ready
                                     to bitpack yet*/
     {
-      CtxEntry *entry = &renderstream->entries[i];
+      CtxEntry *entry = &drawlist->entries[i];
       if (entry[0].code == CTX_SET_RGBA_U8 &&
           entry[1].code == CTX_MOVE_TO &&
           entry[2].code == CTX_REL_LINE_TO &&
@@ -915,19 +915,19 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
 #endif
       i += (ctx_conts_for_entry (entry) + 1);
     }
-  int source = renderstream->bitpack_pos;
-  int target = renderstream->bitpack_pos;
+  int source = drawlist->bitpack_pos;
+  int target = drawlist->bitpack_pos;
   int removed = 0;
   /* remove nops that have been inserted as part of shortenings
    */
-  while (source < renderstream->count)
+  while (source < drawlist->count)
     {
-      CtxEntry *sentry = &renderstream->entries[source];
-      CtxEntry *tentry = &renderstream->entries[target];
-      while (sentry->code == CTX_NOP && source < renderstream->count)
+      CtxEntry *sentry = &drawlist->entries[source];
+      CtxEntry *tentry = &drawlist->entries[target];
+      while (sentry->code == CTX_NOP && source < drawlist->count)
         {
           source++;
-          sentry = &renderstream->entries[source];
+          sentry = &drawlist->entries[source];
           removed++;
         }
       if (sentry != tentry)
@@ -935,24 +935,24 @@ ctx_renderstream_bitpack (CtxRenderstream *renderstream, int start_pos)
       source ++;
       target ++;
     }
-  renderstream->count -= removed;
-  renderstream->bitpack_pos = renderstream->count;
+  drawlist->count -= removed;
+  drawlist->bitpack_pos = drawlist->count;
 #endif
 }
 
 #endif
 
 CTX_STATIC void
-ctx_renderstream_compact (CtxRenderstream *renderstream)
+ctx_drawlist_compact (CtxRenderstream *drawlist)
 {
 #if CTX_BITPACK_PACKER
   int last_history;
-  last_history = ctx_last_history (renderstream);
+  last_history = ctx_last_history (drawlist);
 #else
-  if (renderstream) {};
+  if (drawlist) {};
 #endif
 #if CTX_BITPACK_PACKER
-  ctx_renderstream_bitpack (renderstream, last_history);
+  ctx_drawlist_bitpack (drawlist, last_history);
 #endif
 }
 

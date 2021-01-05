@@ -121,11 +121,11 @@ Ctx *ctx_new_for_framebuffer (void *data,
 Ctx *ctx_new_ui (int width, int height);
 
 /**
- * ctx_new_for_renderstream:
+ * ctx_new_for_drawlist:
  *
- * Create a new drawing context for a pre-existing renderstream.
+ * Create a new drawing context for a pre-existing drawlist.
  */
-Ctx *ctx_new_for_renderstream (void *data, size_t length);
+Ctx *ctx_new_for_drawlist (void *data, size_t length);
 
 
 /**
@@ -315,7 +315,7 @@ void ctx_texture            (Ctx *ctx, int id, float x, float y);
 void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
 
 typedef struct _CtxRenderstream CtxRenderstream;
-typedef void (*CtxFullCb) (CtxRenderstream *renderstream, void *data);
+typedef void (*CtxFullCb) (CtxRenderstream *drawlist, void *data);
 
 int ctx_pixel_format_bpp        (CtxPixelFormat format);
 int ctx_pixel_format_components (CtxPixelFormat format);
@@ -500,7 +500,7 @@ void ctx_fill_rule            (Ctx *ctx, CtxFillRule       fill_rule);
 void ctx_line_cap             (Ctx *ctx, CtxLineCap        cap);
 void ctx_line_join            (Ctx *ctx, CtxLineJoin       join);
 void ctx_compositing_mode     (Ctx *ctx, CtxCompositingMode mode);
-int  ctx_set_renderstream     (Ctx *ctx, void *data, int length);
+int  ctx_set_drawlist     (Ctx *ctx, void *data, int length);
 typedef struct _CtxEntry CtxEntry;
 /* we only care about the tight packing for this specific
  * structx as we do indexing across members in arrays of it,
@@ -528,8 +528,8 @@ struct
   // aglinment and cacheline behavior.
 };
 #pragma pack(pop)
-const CtxEntry *ctx_get_renderstream (Ctx *ctx);
-int  ctx_append_renderstream  (Ctx *ctx, void *data, int length);
+const CtxEntry *ctx_get_drawlist (Ctx *ctx);
+int  ctx_append_drawlist  (Ctx *ctx, void *data, int length);
 
 /* these are only needed for clients rendering text, as all text gets
  * converted to paths.
@@ -936,7 +936,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define ctx_assert(a)
 #endif
 
-int ctx_get_renderstream_count (Ctx *ctx);
+int ctx_get_drawlist_count (Ctx *ctx);
 
 struct
   _CtxCommand

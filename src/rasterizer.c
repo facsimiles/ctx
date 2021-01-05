@@ -42,7 +42,7 @@ static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 
   entry.data.s16[2]=x1;
   entry.data.s16[3]=y1;
-  return ctx_renderstream_add_single (&rasterizer->edge_list, &entry);
+  return ctx_drawlist_add_single (&rasterizer->edge_list, &entry);
 }
 
 #define CTX_SHAPE_CACHE_PRIME1   7853
@@ -2889,7 +2889,7 @@ foo:
 void
 ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
 {
-  ctx_renderstream_deinit (&rasterizer->edge_list);
+  ctx_drawlist_deinit (&rasterizer->edge_list);
 #if CTX_ENABLE_CLIP
   if (rasterizer->clip_buffer)
   {
@@ -2976,7 +2976,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
     ctx_buffer_free (rasterizer->clip_buffer);
 #endif
   if (rasterizer->edge_list.size)
-    ctx_renderstream_deinit (&rasterizer->edge_list);
+    ctx_drawlist_deinit (&rasterizer->edge_list);
 
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer) );
   rasterizer->vfuncs.process = ctx_rasterizer_process;
@@ -3144,7 +3144,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       case CTX_REL_ARC_TO:
       case CTX_RECTANGLE:
       case CTX_ROUND_RECTANGLE:
-        ctx_renderstream_add_entry (&ctx->current_path, entry);
+        ctx_drawlist_add_entry (&ctx->current_path, entry);
         break;
       default:
         break;
@@ -3157,12 +3157,12 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
   else
     {
       /* these functions might alter the code and coordinates of
-         command that in the end gets added to the renderstream
+         command that in the end gets added to the drawlist
        */
       ctx_interpret_style (&ctx->state, entry, ctx);
       ctx_interpret_transforms (&ctx->state, entry, ctx);
       ctx_interpret_pos (&ctx->state, entry, ctx);
-      ctx_renderstream_add_entry (&ctx->renderstream, entry);
+      ctx_drawlist_add_entry (&ctx->drawlist, entry);
 #if 1
       if (entry->code == CTX_TEXT ||
           entry->code == CTX_LINE_DASH ||
@@ -3172,8 +3172,8 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
         {
           /* the image command and its data is submitted as one unit,
            */
-          ctx_renderstream_add_entry (&ctx->renderstream, entry+1);
-          ctx_renderstream_add_entry (&ctx->renderstream, entry+2);
+          ctx_drawlist_add_entry (&ctx->drawlist, entry+1);
+          ctx_drawlist_add_entry (&ctx->drawlist, entry+2);
         }
 #endif
     }

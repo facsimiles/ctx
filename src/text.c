@@ -216,7 +216,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxState *state = &ctx->state;
   CtxIterator iterator;
-  CtxRenderstream  renderstream = { (CtxEntry *) font->ctx.data,
+  CtxRenderstream  drawlist = { (CtxEntry *) font->ctx.data,
                                     font->ctx.length,
                                     font->ctx.length, 0, 0
                                   };
@@ -230,7 +230,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   start = ctx_font_find_glyph (font, unichar);
   if (start < 0)
     { return -1; }  // XXX : fallback
-  ctx_iterator_init (&iterator, &renderstream, start, CTX_ITERATOR_EXPAND_BITPACK);
+  ctx_iterator_init (&iterator, &drawlist, start, CTX_ITERATOR_EXPAND_BITPACK);
   CtxCommand *command;
   /* XXX :  do a binary search instead of a linear search */
   while ( (command= ctx_iterator_next (&iterator) ) )

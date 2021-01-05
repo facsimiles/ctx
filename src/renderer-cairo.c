@@ -330,7 +330,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
   CtxIterator iterator;
   CtxCommand *command;
   CtxCairo    ctx_cairo = {{(void*)ctx_cairo_process, NULL, NULL}, ctx, cr, NULL, NULL};
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
+  ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
     { ctx_cairo_process (&ctx_cairo, command); }

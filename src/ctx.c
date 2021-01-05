@@ -292,8 +292,8 @@ static void ctx_empty (Ctx *ctx)
   if (ctx->renderer == NULL)
 #endif
     {
-      ctx->renderstream.count = 0;
-      ctx->renderstream.bitpack_pos = 0;
+      ctx->drawlist.count = 0;
+      ctx->drawlist.bitpack_pos = 0;
     }
 }
 
@@ -823,10 +823,10 @@ ctx_flush (Ctx *ctx)
 //  CTX_PROCESS_VOID (CTX_FLUSH);
 #if 0
   //printf (" \e[?2222h");
-  ctx_renderstream_compact (&ctx->renderstream);
-  for (int i = 0; i < ctx->renderstream.count - 1; i++)
+  ctx_drawlist_compact (&ctx->drawlist);
+  for (int i = 0; i < ctx->drawlist.count - 1; i++)
     {
-      CtxEntry *entry = &ctx->renderstream.entries[i];
+      CtxEntry *entry = &ctx->drawlist.entries[i];
       fwrite (entry, 9, 1, stdout);
 #if 0
       uint8_t  *buf = (void *) entry;
@@ -839,7 +839,7 @@ ctx_flush (Ctx *ctx)
 #endif
   if (ctx->renderer && ctx->renderer->flush)
     ctx->renderer->flush (ctx->renderer);
-  ctx->renderstream.count = 0;
+  ctx->drawlist.count = 0;
   ctx_state_init (&ctx->state);
 }
 
@@ -1361,7 +1361,7 @@ _ctx_init (Ctx *ctx)
   //ctx->transformation |= (CtxTransformation) CTX_TRANSFORMATION_SCREEN_SPACE;
   //ctx->transformation |= (CtxTransformation) CTX_TRANSFORMATION_RELATIVE;
 #if CTX_BITPACK
-  ctx->renderstream.flags |= CTX_TRANSFORMATION_BITPACK;
+  ctx->drawlist.flags |= CTX_TRANSFORMATION_BITPACK;
 #endif
 }
 
@@ -1399,16 +1399,16 @@ ctx_new (void)
 }
 
 void
-ctx_renderstream_deinit (CtxRenderstream *renderstream)
+ctx_drawlist_deinit (CtxRenderstream *drawlist)
 {
 #if !CTX_RENDERSTREAM_STATIC
-  if (renderstream->entries && ! (renderstream->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES) )
+  if (drawlist->entries && ! (drawlist->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES) )
     {
-      free (renderstream->entries); 
+      free (drawlist->entries); 
     }
 #endif
-  renderstream->entries = NULL;
-  renderstream->size = 0;
+  drawlist->entries = NULL;
+  drawlist->size = 0;
 }
 
 static void ctx_deinit (Ctx *ctx)
@@ -1419,9 +1419,9 @@ static void ctx_deinit (Ctx *ctx)
         ctx->renderer->free (ctx->renderer);
       ctx->renderer    = NULL;
     }
-  ctx_renderstream_deinit (&ctx->renderstream);
+  ctx_drawlist_deinit (&ctx->drawlist);
 #if CTX_CURRENT_PATH
-  ctx_renderstream_deinit (&ctx->current_path);
+  ctx_drawlist_deinit (&ctx->current_path);
 #endif
 }
 
@@ -1438,12 +1438,12 @@ void ctx_free (Ctx *ctx)
 #endif
 }
 
-Ctx *ctx_new_for_renderstream (void *data, size_t length)
+Ctx *ctx_new_for_drawlist (void *data, size_t length)
 {
   Ctx *ctx = ctx_new ();
-  ctx->renderstream.flags   |= CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES;
-  ctx->renderstream.entries  = (CtxEntry *) data;
-  ctx->renderstream.count    = length / sizeof (CtxEntry);
+  ctx->drawlist.flags   |= CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES;
+  ctx->drawlist.entries  = (CtxEntry *) data;
+  ctx->drawlist.count    = length / sizeof (CtxEntry);
   return ctx;
 }
 
@@ -1464,7 +1464,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 {
   CtxIterator iterator;
   CtxCommand *command;
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
+  ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
     { ctx_process (d_ctx, &command->entry); }

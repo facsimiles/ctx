@@ -697,7 +697,7 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int longform)
   formatter.indent = 0;
   formatter.add_str = _ctx_stream_addstr;
   CtxCommand *command;
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
+  ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
     { ctx_formatter_process (&formatter, command); }
@@ -715,7 +715,7 @@ ctx_render_string (Ctx *ctx, int longform, int *retlen)
   formatter.indent = 0;
   formatter.add_str = _ctx_string_addstr;
   CtxCommand *command;
-  ctx_iterator_init (&iterator, &ctx->renderstream, 0,
+  ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
     { ctx_formatter_process (&formatter, command); }

@@ -34,7 +34,7 @@
 #endif
 
 
-/* subpixel-aa coordinates used in BITPACKing of renderstream
+/* subpixel-aa coordinates used in BITPACKing of drawlist
  */
 #define CTX_SUBDIV   4 // higher gives higher quality, but 4096wide rendering
                        // stops working
@@ -49,7 +49,7 @@
  */
 #define CTX_BAKE_FONT_SIZE    160
 
-/* pack some linetos/curvetos/movetos into denser renderstream instructions,
+/* pack some linetos/curvetos/movetos into denser drawlist instructions,
  * permitting more vectors to be stored in the same space, experimental
  * feature with added overhead.
  */
@@ -166,7 +166,7 @@
 #define CTX_MIN_JOURNAL_SIZE   1024*64
 #endif
 
-/* The maximum size we permit the renderstream to grow to,
+/* The maximum size we permit the drawlist to grow to,
  * the memory used is this number * 9, where 9 is sizeof(CtxEntry)
  */
 #ifndef CTX_MAX_JOURNAL_SIZE
@@ -317,7 +317,7 @@
 #endif
 
 /* by including ctx-font-regular.h, or ctx-font-mono.h the
- * built-in fonts using ctx renderstream encoding is enabled
+ * built-in fonts using ctx drawlist encoding is enabled
  */
 #if CTX_FONT_regular || CTX_FONT_mono || CTX_FONT_bold \
   || CTX_FONT_italic || CTX_FONT_sans || CTX_FONT_serif \
