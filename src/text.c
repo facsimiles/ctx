@@ -57,7 +57,7 @@ ctx_load_font_ttf_file (const char *name, const char *path)
 #endif
 
 static int
-ctx_glyph_stb_find (CtxFont *font, int unichar)
+ctx_glyph_stb_find (CtxFont *font, uint32_t unichar)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
   int index = font->stb.cache_index;
@@ -150,25 +150,58 @@ ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 
 #if CTX_FONT_ENGINE_CTX
 
+/* XXX: todo remove this, and rely on a binary search instead
+ */
+static int ctx_font_find_glyph_cached (CtxFont *font, uint32_t glyph)
+{
+  for (int i = 0; i < font->ctx.glyphs; i++)
+    {
+      if (font->ctx.index[i * 2] == glyph)
+        { return font->ctx.index[i * 2 + 1]; }
+    }
+  return -1;
+}
+
+static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
+{
+  int ret = ctx_font_find_glyph_cached (font, unichar);
+  if (ret >= 0) return ret;
+
+  for (int i = 0; i < font->ctx.length; i++)
+  {
+    CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
+    if (entry->code == CTX_DEFINE_GLYPH &&
+        entry->data.u32[0] == unichar)
+    {
+       return i;
+       // XXX this could be prone to insertion of valid header
+       // data in included bitmaps.. is that an issue?
+       //   
+    }
+  }
+  return -1;
+}
+
+
 static float
 ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
 {
   float font_size = ctx->state.gstate.font_size;
-  if (font->ctx.first_kern == -1)
-    { return 0.0; }
-  for (int i = font->ctx.first_kern; i < font->ctx.length; i++)
+  int first_kern = ctx_glyph_find_ctx (font, ctx, unicharA);
+  return 0.0;
+  if (first_kern < 0) return 0.0;
+  for (int i = first_kern + 1; i < font->ctx.length; i++)
     {
       CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
       if (entry->code == CTX_KERNING_PAIR)
         {
-          if (font->ctx.first_kern == 0) { font->ctx.first_kern = i; }
           if (entry->data.u16[0] == unicharA && entry->data.u16[1] == unicharB)
             { return entry->data.s32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE; }
         }
+      if (entry->code == CTX_DEFINE_GLYPH)
+        return 0.0;
     }
-  if (font->ctx.first_kern == 0)
-    { font->ctx.first_kern = -1; }
-  return 0;
+  return 0.0;
 }
 #if 0
 static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
@@ -183,22 +216,13 @@ static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
 }
 #endif
 
-static int ctx_font_find_glyph (CtxFont *font, uint32_t glyph)
-{
-  for (int i = 0; i < font->ctx.glyphs; i++)
-    {
-      if (font->ctx.index[i * 2] == glyph)
-        { return font->ctx.index[i * 2 + 1]; }
-    }
-  return -1;
-}
 
 static float
 ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
   CtxState *state = &ctx->state;
   float font_size = state->gstate.font_size;
-  int   start     = ctx_font_find_glyph (font, unichar);
+  int   start     = ctx_glyph_find_ctx (font, ctx, unichar);
   if (start < 0)
     { return 0.0; }  // XXX : fallback
   for (int i = start; i < font->ctx.length; i++)
@@ -227,9 +251,9 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   int in_glyph = 0;
   float font_size = state->gstate.font_size;
   int start = 0;
-  start = ctx_font_find_glyph (font, unichar);
+  start = ctx_glyph_find_ctx (font, ctx, unichar);
   if (start < 0)
-    { return -1; }  // XXX : fallback
+    { return -1; }  // XXX : fallback glyph
   ctx_iterator_init (&iterator, &drawlist, start, CTX_ITERATOR_EXPAND_BITPACK);
   CtxCommand *command;
   /* XXX :  do a binary search instead of a linear search */

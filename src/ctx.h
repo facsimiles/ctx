@@ -1172,6 +1172,15 @@ struct
       uint8_t pad1;
       float radius;
     } rectangle;
+
+    struct
+    {
+      uint8_t code;
+      uint16_t glyph_before;
+      uint16_t glyph_after;
+       int32_t amount;
+    } kern;
+
     struct
     {
       uint8_t code;

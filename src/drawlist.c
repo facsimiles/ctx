@@ -61,8 +61,13 @@ ctx_iterator_init (CtxIterator      *iterator,
   iterator->bitpack_length = 0;
   iterator->pos            = start_pos;
   iterator->end_pos        = drawlist->count;
-  iterator->in_history     = -1; // -1 is a marker used for first run
+  iterator->first_run      = 1; // -1 is a marker used for first run
   ctx_memset (iterator->bitpack_command, 0, sizeof (iterator->bitpack_command) );
+}
+
+int ctx_iterator_pos (CtxIterator *iterator)
+{
+  return iterator->pos;
 }
 
 CTX_STATIC CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
@@ -71,9 +76,9 @@ CTX_STATIC CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
   CtxEntry *entry = &iterator->drawlist->entries[ret];
   if (ret >= iterator->end_pos)
     { return NULL; }
-  if (iterator->in_history == 0)
+  if (iterator->first_run == 0)
     { iterator->pos += (ctx_conts_for_entry (entry) + 1); }
-  iterator->in_history = 0;
+  iterator->first_run = 0;
   if (iterator->pos >= iterator->end_pos)
     { return NULL; }
   return &iterator->drawlist->entries[iterator->pos];
@@ -418,6 +423,38 @@ ctx_drawlist_add_entry (CtxRenderstream *drawlist, CtxEntry *entry)
       ret = ctx_drawlist_add_single (drawlist, &entry[i]);
     }
   return ret;
+}
+
+#if 0
+int
+ctx_drawlist_insert_entry (CtxRenderstream *drawlist, int pos, CtxEntry *entry)
+{
+  int length = ctx_conts_for_entry (entry) + 1;
+  int tmp_pos = ctx_drawlist_add_entry (drawlist, entry);
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = pos + i + 1; j < tmp_pos; j++)
+      drawlist->entries[j] = entry[j-1];
+    drawlist->entries[pos + i] = entry[i];
+  }
+  return pos;
+}
+#endif
+int
+ctx_drawlist_insert_entry (CtxRenderstream *drawlist, int pos, CtxEntry *entry)
+{
+  int length = ctx_conts_for_entry (entry) + 1;
+  int tmp_pos = ctx_drawlist_add_entry (drawlist, entry);
+#if 1
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = tmp_pos; j > pos + i; j--)
+      drawlist->entries[j] = drawlist->entries[j-1];
+    drawlist->entries[pos + i] = entry[i];
+  }
+  return pos;
+#endif
+  return tmp_pos;
 }
 
 int ctx_append_drawlist (Ctx *ctx, void *data, int length)

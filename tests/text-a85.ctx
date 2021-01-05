@@ -1,0 +1,23 @@
+linearGradient 0 0 80% 0
+gradientAddStop 0 0 0 0 1
+gradientAddStop 0.5 0.5 0.5 0.5 1
+rectangle 0 0 100% 100%
+fill
+
+rgba 1 0 0 0.5
+moveTo 50% 0%
+lineTo 50% 100%
+moveTo 0% 50%
+lineTo 100% 50%
+lineWidth 2%
+stroke
+
+
+rgb 1 1 1
+
+fontSize 1.2@
+moveTo 50% 50%
+textAlign center
+textBaseline middle
+text ~BOu!rD]iP3GQ~
+

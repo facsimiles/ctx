@@ -313,7 +313,6 @@ struct _CtxFont
     {
       CtxEntry *data;
       int length;
-      int first_kern;
       /* we've got ~110 bytes to fill to cover as
          much data as stbtt_fontinfo */
       //int16_t glyph_pos[26]; // for a..z
@@ -346,7 +345,7 @@ struct
   _CtxIterator
 {
   int              pos;
-  int              in_history;
+  int              first_run;
   CtxRenderstream *drawlist;
   int              end_pos;
   int              flags;

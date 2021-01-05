@@ -11,6 +11,7 @@ ctx_iterator_init (CtxIterator      *iterator,
 
 CtxCommand *
 ctx_iterator_next (CtxIterator *iterator);
+int ctx_iterator_pos (CtxIterator *iterator);
 
 CTX_STATIC void ctx_drawlist_compact (CtxRenderstream *drawlist);
 CTX_STATIC void
@@ -19,8 +20,9 @@ CTX_STATIC int
 ctx_drawlist_add_single (CtxRenderstream *drawlist, CtxEntry *entry);
 int
 ctx_add_single (Ctx *ctx, void *entry);
+int ctx_drawlist_add_entry (CtxRenderstream *drawlist, CtxEntry *entry);
 int
-ctx_drawlist_add_entry (CtxRenderstream *drawlist, CtxEntry *entry);
+ctx_drawlist_insert_entry (CtxRenderstream *drawlist, int pos, CtxEntry *entry);
 int ctx_append_drawlist (Ctx *ctx, void *data, int length);
 int ctx_set_drawlist (Ctx *ctx, void *data, int length);
 int ctx_get_drawlist_count (Ctx *ctx);

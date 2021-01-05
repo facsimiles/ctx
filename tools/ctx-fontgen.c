@@ -62,6 +62,22 @@ add_glyph (Ctx *ctx, uint32_t glyph)
   }
 }
 
+static int find_glyph (CtxRenderstream *drawlist, int unichar)
+{
+  for (int i = 0; i < drawlist->count; i++)
+  {
+    if (drawlist->entries[i].code == CTX_DEFINE_GLYPH &&
+        drawlist->entries[i].data.u32[0] == unichar)
+    {
+       return i;
+       // XXX this could be prone to insertion of valid header
+       // data in included bitmaps.. is that an issue?
+    }
+  }
+  fprintf (stderr, "Eeeek %i\n", unichar);
+  return -1;
+}
+
 int main (int argc, char **argv)
 {
   int binary = 0;
@@ -145,17 +161,24 @@ char* string =
     add_glyph (ctx, ctx_utf8_to_unichar (utf8));
   }
 
-  if(1)
   for (int i = 0; i < n_glyphs; i++)
     for (int j = 0; j < n_glyphs; j++)
     {
       float kerning = ctx_glyph_kern (ctx, glyphs[i], glyphs[j]);
       if (kerning > 0.2)
       {
-        uint16_t args[4]={glyphs[i],glyphs[j], 0, 0};
-        int32_t *iargs = (void*)(&args[0]);
-        iargs[1] = kerning * 256;
-        ctx_drawlist_add_u32 (&output_font, CTX_KERNING_PAIR, (void*)&args[0]);
+        CtxCommand command;
+        int pos = find_glyph (&output_font, glyphs[i]);
+        pos ++;
+        while (pos < output_font.count &&
+               output_font.entries[pos].code != CTX_DEFINE_GLYPH)
+          pos++;
+
+        command.code = CTX_KERNING_PAIR;
+        command.kern.glyph_before = glyphs[i];
+        command.kern.glyph_after = glyphs[j];
+        command.kern.amount = kerning * 256;
+        ctx_drawlist_insert_entry (&output_font, pos, (CtxEntry*)&command);
       }
     }
 
