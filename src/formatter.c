@@ -87,6 +87,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_SET_KEY:              return "setParam"; break;
           case CTX_COLOR:                return "setColor"; break;
           case CTX_DEFINE_GLYPH:         return "defineGlyph"; break;
+          case CTX_KERNING_PAIR:         return "kerningPair"; break;
           case CTX_SET_PIXEL:            return "setPixel"; break;
           case CTX_GLOBAL_ALPHA:         return "globalAlpha"; break;
           case CTX_TEXT:                 return "text"; break;
@@ -683,6 +684,36 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_DATA:
       case CTX_DATA_REV:
       case CTX_FLUSH:
+        break;
+      case CTX_KERNING_PAIR:
+        _ctx_print_name (formatter, entry->code);
+        ctx_formatter_addstrf (formatter, "\"");
+        {
+           char utf8[16];
+           utf8[ctx_unichar_to_utf8 (c->kern.glyph_before, utf8)]=0;
+           ctx_print_escaped_string (formatter, utf8);
+           ctx_formatter_addstrf (formatter, "\", \"");
+           utf8[ctx_unichar_to_utf8 (c->kern.glyph_after, utf8)]=0;
+           ctx_print_escaped_string (formatter, utf8);
+           ctx_formatter_addstrf (formatter, "\"");
+           sprintf (utf8, ", %f", c->amount / 256.0);
+           ctx_print_escaped_string (formatter, utf8);
+        }
+        _ctx_print_endcmd (formatter);
+        break;
+
+      case CTX_DEFINE_GLYPH:
+        _ctx_print_name (formatter, entry->code);
+        ctx_formatter_addstrf (formatter, "\"");
+        {
+           char utf8[16];
+           utf8[ctx_unichar_to_utf8 (entry->data.u32[0], utf8)]=0;
+           ctx_print_escaped_string (formatter, utf8);
+           ctx_formatter_addstrf (formatter, "\"");
+           sprintf (utf8, ", %f", entry->data.u32[1]/256.0);
+           ctx_print_escaped_string (formatter, utf8);
+        }
+        _ctx_print_endcmd (formatter);
         break;
     }
 }
