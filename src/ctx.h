@@ -243,7 +243,6 @@ void ctx_arc_to           (Ctx *ctx, float x1, float y1,
 void ctx_preserve         (Ctx *ctx);
 void ctx_fill             (Ctx *ctx);
 void ctx_stroke           (Ctx *ctx);
-void ctx_paint            (Ctx *ctx);
 void ctx_parse            (Ctx *ctx, const char *string);
 
 void ctx_shadow_rgba      (Ctx *ctx, float r, float g, float b, float a);
