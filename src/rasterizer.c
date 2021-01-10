@@ -2521,10 +2521,11 @@ ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, int count, float *dashes)
   }
   count = CTX_MIN(count, CTX_PARSER_MAX_ARGS-1);
   rasterizer->state->gstate.n_dashes = count;
+  memcpy(&rasterizer->state->gstate.dashes[0], dashes, count * sizeof(float));
   for (int i = 0; i < count; i ++)
   {
-    if (dashes[i] < 0.0001f) rasterizer->state->gstate.dashes[i] = 0.0001f; // hang protection
-    else rasterizer->state->gstate.dashes[i] = dashes[i];
+    if (rasterizer->state->gstate.dashes[i] < 0.0001f)
+      rasterizer->state->gstate.dashes[i] = 0.0001f; // hang protection
   }
 }
 
@@ -2584,9 +2585,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_LINE_DASH:
         if (c->line_dash.count)
           {
-            float dashes[CTX_PARSER_MAX_ARGS];
-            memcpy(dashes, c->line_dash.data, c->line_dash.count * sizeof(float));
-            ctx_rasterizer_line_dash (rasterizer, c->line_dash.count, dashes);
+            ctx_rasterizer_line_dash (rasterizer, c->line_dash.count, c->line_dash.data);
           }
         else
         ctx_rasterizer_line_dash (rasterizer, 0, NULL);
