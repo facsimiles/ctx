@@ -2583,7 +2583,11 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 #endif
       case CTX_LINE_DASH:
         if (c->line_dash.count)
-        ctx_rasterizer_line_dash (rasterizer, c->line_dash.count, c->line_dash.data);
+          {
+            float dashes[CTX_PARSER_MAX_ARGS];
+            memcpy(dashes, c->line_dash.data, c->line_dash.count * sizeof(float));
+            ctx_rasterizer_line_dash (rasterizer, c->line_dash.count, dashes);
+          }
         else
         ctx_rasterizer_line_dash (rasterizer, 0, NULL);
         break;
