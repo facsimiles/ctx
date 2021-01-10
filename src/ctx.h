@@ -1183,6 +1183,13 @@ struct
     struct
     {
       uint8_t code;
+      uint32_t glyph;
+      uint32_t advance; // * 256
+    } define_glyph;
+
+    struct
+    {
+      uint8_t code;
       uint8_t rgba[4];
       uint16_t x;
       uint16_t y;

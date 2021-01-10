@@ -36,6 +36,8 @@
 #define CTX_curve_to       CTX_STRH('c','u','r','v','e','_','t','o',0,0,0,0,0,0)
 #define CTX_curveTo        CTX_STRH('c','u','r','v','e','T','o',0,0,0,0,0,0,0)
 #define CTX_darken         CTX_STRH('d','a','r','k','e','n',0,0,0,0,0,0,0,0)
+#define CTX_defineGlyph    CTX_STRH('d','e','f','i','n','e','G','l','y','p','h',0,0,0)
+#define CTX_kerningPair    CTX_STRH('k','e','r','n','i','n','g','P','a','i','r',0,0,0)
 #define CTX_destinationIn  CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','I','n',0)
 #define CTX_destination_in CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','_','i','n')
 #define CTX_destinationAtop CTX_STRH('d','e','s','t','i','n','a','t','i','o','n','A','t','o')

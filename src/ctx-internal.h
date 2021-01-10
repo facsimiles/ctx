@@ -324,7 +324,7 @@ struct _CtxFont
     {
       stbtt_fontinfo ttf_info;
       int cache_index;
-      int cache_unichar;
+      uint32_t cache_unichar;
     } stb;
 #endif
     struct { int start; int end; int gw; int gh; const uint8_t *data;} monobitmap;

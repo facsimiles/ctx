@@ -19,6 +19,8 @@ struct
   int        n_numbers;
   int        decimal;
   CtxCode    command;
+  int        expected_args; /* low digits are literal higher values
+                               carry special meaning */
   int        n_args;
   uint32_t   set_key_hash;
   float      pcx;
@@ -199,6 +201,8 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_TEXT_STROKE:
       case CTX_TEXT: // special case
       case CTX_COLOR_SPACE:
+      case CTX_DEFINE_GLYPH:
+      case CTX_KERNING_PAIR:
         return CTX_ARG_STRING_OR_NUMBER;
       case CTX_LINE_DASH: /* append to current dashes for each argument encountered */
         return CTX_ARG_COLLECT_NUMBERS;
@@ -221,8 +225,6 @@ static int ctx_arguments_for_code (CtxCode code)
         case CTX_CONT:
         case CTX_DATA:
         case CTX_DATA_REV:
-        case CTX_DEFINE_GLYPH:
-        case CTX_KERNING_PAIR:
         case CTX_SET_PIXEL:
         case CTX_REL_LINE_TO_X4:
         case CTX_REL_LINE_TO_REL_CURVE_TO:
@@ -243,10 +245,11 @@ static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
 {
   if (code < 150 && code >= 32)
   {
-  parser->n_args = ctx_arguments_for_code (code);
-  if (parser->n_args >= CTX_ARG_NUMBER_OF_COMPONENTS)
+  parser->expected_args = ctx_arguments_for_code (code);
+  parser->n_args = 0;
+  if (parser->expected_args >= CTX_ARG_NUMBER_OF_COMPONENTS)
     {
-      parser->n_args = (parser->n_args % 100) + parser->color_components;
+      parser->expected_args = (parser->expected_args % 100) + parser->color_components;
     }
   }
   return code;
@@ -385,6 +388,11 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_drgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_DRGB_SPACE);
 #endif
+          case CTX_defineGlyph:
+            return ctx_parser_set_command (parser, CTX_DEFINE_GLYPH);
+          case CTX_kerningPair:
+            return ctx_parser_set_command (parser, CTX_KERNING_PAIR);
+
           case CTX_colorSpace:
             return ctx_parser_set_command (parser, CTX_COLOR_SPACE);
           case CTX_fillRule:
@@ -574,13 +582,13 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
   Ctx *ctx = parser->ctx;
-  if (parser->n_args != CTX_ARG_STRING_OR_NUMBER &&
-      parser->n_args != CTX_ARG_COLLECT_NUMBERS &&
-      parser->n_args != parser->n_numbers)
+  if (parser->expected_args != CTX_ARG_STRING_OR_NUMBER &&
+      parser->expected_args != CTX_ARG_COLLECT_NUMBERS &&
+      parser->expected_args != parser->n_numbers)
     {
       ctx_log ("ctx:%i:%i %c got %i instead of %i args\n",
                parser->line, parser->col,
-               cmd, parser->n_numbers, parser->n_args);
+               cmd, parser->n_numbers, parser->expected_args);
     }
 #define arg(a)  (parser->numbers[a])
   parser->command = CTX_NOP;
@@ -614,6 +622,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         if (parser->n_numbers == 1)
         {
           parser->color_space_slot = arg(0);
+          parser->command = CTX_COLOR_SPACE; // did this work without?
         }
         else
         {
@@ -622,6 +631,46 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         }
         break;
 #endif
+      case CTX_KERNING_PAIR:
+        switch (parser->n_args)
+        {
+          case 0:
+            parser->numbers[0] = ctx_utf8_to_unichar ((char*)parser->holding);
+            break;
+          case 1:
+            parser->numbers[1] = ctx_utf8_to_unichar ((char*)parser->holding);
+            break;
+          case 2:
+            parser->numbers[2] = ctx_utf8_to_unichar ((char*)parser->holding);
+            {
+              CtxEntry e = {CTX_KERNING_PAIR, };
+              e.data.u16[0] = parser->numbers[0];
+              e.data.u16[1] = parser->numbers[1];
+              e.data.s32[2] = parser->numbers[2] * 256;
+              ctx_process (ctx, &e);
+            }
+            break;
+        }
+        parser->command = CTX_KERNING_PAIR;
+        parser->n_args ++; // make this more generic?
+        break;             
+      case CTX_DEFINE_GLYPH:
+        /* XXX : reuse n_args logic - to enforce order */
+        if (parser->n_numbers == 1)
+        {
+          CtxEntry e = {CTX_DEFINE_GLYPH, };
+          e.data.u32[0] = parser->color_space_slot;
+          e.data.u32[1] = arg(0) * 256;
+          ctx_process (ctx, &e);
+        }
+        else
+        {
+          int unichar = ctx_utf8_to_unichar ((char*)parser->holding);
+          parser->color_space_slot = unichar;
+        }
+        parser->command = CTX_DEFINE_GLYPH;
+        break;             
+
       case CTX_COLOR:
         {
           switch (parser->color_model)
@@ -1111,7 +1160,7 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
 static void ctx_parser_word_done (CtxParser *parser)
 {
   parser->holding[parser->pos]=0;
-  int old_args = parser->n_args;
+  int old_args = parser->expected_args;
   int command = ctx_parser_resolve_command (parser, parser->holding);
   if ((command >= 0 && command < 32)
       || (command > 150) || (command < 0)
@@ -1130,14 +1179,14 @@ static void ctx_parser_word_done (CtxParser *parser)
       if (old_args == CTX_ARG_COLLECT_NUMBERS)
       {
         int tmp1 = parser->command;
-        int tmp2 = parser->n_args;
+        int tmp2 = parser->expected_args;
         ctx_parser_dispatch_command (parser);
         parser->command = (CtxCode)tmp1;
-        parser->n_args = tmp2;
+        parser->expected_args = tmp2;
       }
 
       parser->command = (CtxCode) command;
-      if (parser->n_args == 0)
+      if (parser->expected_args == 0)
         {
           ctx_parser_dispatch_command (parser);
         }
@@ -1152,7 +1201,7 @@ static void ctx_parser_word_done (CtxParser *parser)
           parser->command = (CtxCode) ctx_parser_resolve_command (parser, buf);
           if (parser->command > 0)
             {
-              if (parser->n_args == 0)
+              if (parser->expected_args == 0)
                 {
                   ctx_parser_dispatch_command (parser);
                 }
@@ -1164,6 +1213,7 @@ static void ctx_parser_word_done (CtxParser *parser)
         }
     }
   parser->n_numbers = 0;
+  parser->n_args = 0;
 }
 
 static void ctx_parser_string_done (CtxParser *parser)
@@ -1376,7 +1426,8 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
             {
               parser->n_numbers ++;
               //parser->t_args ++;
-              if (parser->n_numbers == parser->n_args || parser->n_args == 100)
+              if (parser->n_numbers == parser->expected_args ||
+                  parser->expected_args == 100)
                 {
                   ctx_parser_dispatch_command (parser);
                 }

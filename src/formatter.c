@@ -689,15 +689,15 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         _ctx_print_name (formatter, entry->code);
         ctx_formatter_addstrf (formatter, "\"");
         {
-           char utf8[16];
+           uint8_t utf8[16];
            utf8[ctx_unichar_to_utf8 (c->kern.glyph_before, utf8)]=0;
-           ctx_print_escaped_string (formatter, utf8);
+           ctx_print_escaped_string (formatter, (char*)utf8);
            ctx_formatter_addstrf (formatter, "\", \"");
            utf8[ctx_unichar_to_utf8 (c->kern.glyph_after, utf8)]=0;
-           ctx_print_escaped_string (formatter, utf8);
+           ctx_print_escaped_string (formatter, (char*)utf8);
            ctx_formatter_addstrf (formatter, "\"");
-           sprintf (utf8, ", %f", c->amount / 256.0);
-           ctx_print_escaped_string (formatter, utf8);
+           sprintf ((char*)utf8, ", %f", c->kern.amount / 256.0);
+           ctx_print_escaped_string (formatter, (char*)utf8);
         }
         _ctx_print_endcmd (formatter);
         break;
@@ -706,12 +706,12 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         _ctx_print_name (formatter, entry->code);
         ctx_formatter_addstrf (formatter, "\"");
         {
-           char utf8[16];
+           uint8_t utf8[16];
            utf8[ctx_unichar_to_utf8 (entry->data.u32[0], utf8)]=0;
-           ctx_print_escaped_string (formatter, utf8);
+           ctx_print_escaped_string (formatter, (char*)utf8);
            ctx_formatter_addstrf (formatter, "\"");
-           sprintf (utf8, ", %f", entry->data.u32[1]/256.0);
-           ctx_print_escaped_string (formatter, utf8);
+           sprintf ((char*)utf8, ", %f", entry->data.u32[1]/256.0);
+           ctx_print_escaped_string (formatter, (char*)utf8);
         }
         _ctx_print_endcmd (formatter);
         break;

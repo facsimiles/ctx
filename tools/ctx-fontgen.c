@@ -62,7 +62,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
   }
 }
 
-static int find_glyph (CtxRenderstream *drawlist, int unichar)
+static int find_glyph (CtxRenderstream *drawlist, uint32_t unichar)
 {
   for (int i = 0; i < drawlist->count; i++)
   {
