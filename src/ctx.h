@@ -313,8 +313,8 @@ void ctx_texture            (Ctx *ctx, int id, float x, float y);
 
 void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
 
-typedef struct _CtxRenderstream CtxRenderstream;
-typedef void (*CtxFullCb) (CtxRenderstream *drawlist, void *data);
+typedef struct _CtxDrawlist CtxDrawlist;
+typedef void (*CtxFullCb) (CtxDrawlist *drawlist, void *data);
 
 int ctx_pixel_format_bpp        (CtxPixelFormat format);
 int ctx_pixel_format_components (CtxPixelFormat format);

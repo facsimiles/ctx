@@ -327,6 +327,9 @@
 #endif
 #endif
 
+#ifndef CTX_FONT_ENGINE_CTX_FS
+#define CTX_FONT_ENGINE_CTX_FS 0
+#endif
 
 /* If stb_strutype.h is included before ctx.h add integration code for runtime loading
  * of opentype fonts.

@@ -5,7 +5,7 @@ CTX_STATIC int
 ctx_conts_for_entry (CtxEntry *entry);
 CTX_STATIC void
 ctx_iterator_init (CtxIterator      *iterator,
-                   CtxRenderstream  *drawlist,
+                   CtxDrawlist  *drawlist,
                    int               start_pos,
                    int               flags);
 
@@ -13,16 +13,16 @@ CtxCommand *
 ctx_iterator_next (CtxIterator *iterator);
 int ctx_iterator_pos (CtxIterator *iterator);
 
-CTX_STATIC void ctx_drawlist_compact (CtxRenderstream *drawlist);
+CTX_STATIC void ctx_drawlist_compact (CtxDrawlist *drawlist);
 CTX_STATIC void
-ctx_drawlist_resize (CtxRenderstream *drawlist, int desired_size);
+ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size);
 CTX_STATIC int
-ctx_drawlist_add_single (CtxRenderstream *drawlist, CtxEntry *entry);
+ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry);
 int
 ctx_add_single (Ctx *ctx, void *entry);
-int ctx_drawlist_add_entry (CtxRenderstream *drawlist, CtxEntry *entry);
+int ctx_drawlist_add_entry (CtxDrawlist *drawlist, CtxEntry *entry);
 int
-ctx_drawlist_insert_entry (CtxRenderstream *drawlist, int pos, CtxEntry *entry);
+ctx_drawlist_insert_entry (CtxDrawlist *drawlist, int pos, CtxEntry *entry);
 int ctx_append_drawlist (Ctx *ctx, void *data, int length);
 int ctx_set_drawlist (Ctx *ctx, void *data, int length);
 int ctx_get_drawlist_count (Ctx *ctx);
@@ -30,8 +30,8 @@ const CtxEntry *ctx_get_drawlist (Ctx *ctx);
 int
 ctx_add_data (Ctx *ctx, void *data, int length);
 
-int ctx_drawlist_add_u32 (CtxRenderstream *drawlist, CtxCode code, uint32_t u32[2]);
-int ctx_drawlist_add_data (CtxRenderstream *drawlist, const void *data, int length);
+int ctx_drawlist_add_u32 (CtxDrawlist *drawlist, CtxCode code, uint32_t u32[2]);
+int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length);
 
 CTX_STATIC CtxEntry
 ctx_void (CtxCode code);
@@ -74,19 +74,19 @@ ctx_u8 (CtxCode code,
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC int
-ctx_last_history (CtxRenderstream *drawlist);
+ctx_last_history (CtxDrawlist *drawlist);
 #endif
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC void
-ctx_drawlist_remove_tiny_curves (CtxRenderstream *drawlist, int start_pos);
+ctx_drawlist_remove_tiny_curves (CtxDrawlist *drawlist, int start_pos);
 
 CTX_STATIC void
-ctx_drawlist_bitpack (CtxRenderstream *drawlist, int start_pos);
+ctx_drawlist_bitpack (CtxDrawlist *drawlist, int start_pos);
 #endif
 
 CTX_STATIC void
-ctx_drawlist_compact (CtxRenderstream *drawlist);
+ctx_drawlist_compact (CtxDrawlist *drawlist);
 CTX_STATIC void
 ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1);
 CTX_STATIC void

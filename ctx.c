@@ -35,12 +35,13 @@
 #define CTX_ENABLE_CM            1
 #define CTX_RASTERIZER_AA        5
 #define CTX_FORCE_AA             1
-
 #define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/
                                        // variable size for each save|restore
 #define CTX_MATH                 1
 #define CTX_MIN_JOURNAL_SIZE     1024*128
 #define CTX_MIN_EDGE_LIST_SIZE   2048
+
+//#define CTX_FONT_ENGINE_CTX_FS   1
 
 //#define CTX_HASH_COLS  1
 //#define CTX_HASH_ROWS  1

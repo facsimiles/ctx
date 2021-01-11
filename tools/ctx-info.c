@@ -30,7 +30,7 @@ int main (int argc, char **argv)
   printf ("sizeof(CtxIterator) = %i\n",          (int)sizeof(CtxIterator));
   printf ("sizeof(CtxGradient) = %i\n",          (int)sizeof(CtxGradient));
   printf ("sizeof(CtxBuffer) = %i\n",            (int)sizeof(CtxBuffer));
-  printf ("sizeof(CtxRenderstream) = %i\n",      (int)sizeof(CtxRenderstream));
+  printf ("sizeof(CtxDrawlist) = %i\n",      (int)sizeof(CtxDrawlist));
   printf ("sizeof(CtxPixelFormatInfo) = %i\n", (int)sizeof(CtxPixelFormatInfo));
   printf ("sizeof(CtxEdge) = %i\n", (int)sizeof(CtxEdge));
 

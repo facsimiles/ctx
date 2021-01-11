@@ -1399,7 +1399,7 @@ ctx_new (void)
 }
 
 void
-ctx_drawlist_deinit (CtxRenderstream *drawlist)
+ctx_drawlist_deinit (CtxDrawlist *drawlist)
 {
 #if !CTX_RENDERSTREAM_STATIC
   if (drawlist->entries && ! (drawlist->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES) )

@@ -235,7 +235,7 @@ typedef enum
 #define CTX_RENDERSTREAM_CURRENT_PATH         512
 // BITPACK
 
-struct _CtxRenderstream
+struct _CtxDrawlist
 {
   CtxEntry *entries;
   int       count;
@@ -319,6 +319,10 @@ struct _CtxFont
       int       glyphs; // number of glyphs
       uint32_t *index;
     } ctx;
+    struct
+    {
+      char *path;
+    } ctx_fs;
 #if CTX_FONT_ENGINE_STB
     struct
     {
@@ -346,7 +350,7 @@ struct
 {
   int              pos;
   int              first_run;
-  CtxRenderstream *drawlist;
+  CtxDrawlist *drawlist;
   int              end_pos;
   int              flags;
 
@@ -436,7 +440,7 @@ struct
 _Ctx
 {
   CtxImplementation *renderer;
-  CtxRenderstream    drawlist;
+  CtxDrawlist        drawlist;
   int                transformation;
   CtxBuffer          texture[CTX_MAX_TEXTURES];
   int                rev;
@@ -452,7 +456,7 @@ _Ctx
   int                mouse_y;
 #endif
 #if CTX_CURRENT_PATH
-  CtxRenderstream    current_path; // possibly transformed coordinates !
+  CtxDrawlist    current_path; // possibly transformed coordinates !
   CtxIterator        current_path_iterator;
 #endif
 };
@@ -504,7 +508,7 @@ CTX_STATIC void ctx_state_init (CtxState *state);
 void
 ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data);
 void
-ctx_drawlist_deinit (CtxRenderstream *drawlist);
+ctx_drawlist_deinit (CtxDrawlist *drawlist);
 
 CtxPixelFormatInfo *
 ctx_pixel_format_info (CtxPixelFormat format);
@@ -570,7 +574,7 @@ struct _CtxRasterizer
   CtxList   *glyphs;
 #endif
 
-  CtxRenderstream edge_list;
+  CtxDrawlist edge_list;
 
   CtxState  *state;
   Ctx       *ctx;

@@ -27,7 +27,7 @@ static int usage(){
   return -1;
 }
 
-CtxRenderstream output_font={NULL,};
+CtxDrawlist output_font={NULL,};
 uint32_t glyphs[65536];
 int n_glyphs = 0;
 
@@ -62,7 +62,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
   }
 }
 
-static int find_glyph (CtxRenderstream *drawlist, uint32_t unichar)
+static int find_glyph (CtxDrawlist *drawlist, uint32_t unichar)
 {
   for (int i = 0; i < drawlist->count; i++)
   {

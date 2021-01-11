@@ -51,7 +51,7 @@ ctx_conts_for_entry (CtxEntry *entry)
 
 CTX_STATIC void
 ctx_iterator_init (CtxIterator      *iterator,
-                   CtxRenderstream  *drawlist,
+                   CtxDrawlist  *drawlist,
                    int               start_pos,
                    int               flags)
 {
@@ -295,9 +295,9 @@ again:
   return (CtxCommand *) ret;
 }
 
-CTX_STATIC void ctx_drawlist_compact (CtxRenderstream *drawlist);
+CTX_STATIC void ctx_drawlist_compact (CtxDrawlist *drawlist);
 CTX_STATIC void
-ctx_drawlist_resize (CtxRenderstream *drawlist, int desired_size)
+ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
 {
 #if CTX_RENDERSTREAM_STATIC
   if (drawlist->flags & CTX_RENDERSTREAM_EDGE_LIST)
@@ -372,7 +372,7 @@ ctx_drawlist_resize (CtxRenderstream *drawlist, int desired_size)
 }
 
 CTX_STATIC int
-ctx_drawlist_add_single (CtxRenderstream *drawlist, CtxEntry *entry)
+ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 {
   int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = drawlist->count;
@@ -414,7 +414,7 @@ ctx_add_single (Ctx *ctx, void *entry)
 }
 
 int
-ctx_drawlist_add_entry (CtxRenderstream *drawlist, CtxEntry *entry)
+ctx_drawlist_add_entry (CtxDrawlist *drawlist, CtxEntry *entry)
 {
   int length = ctx_conts_for_entry (entry) + 1;
   int ret = 0;
@@ -427,7 +427,7 @@ ctx_drawlist_add_entry (CtxRenderstream *drawlist, CtxEntry *entry)
 
 #if 0
 int
-ctx_drawlist_insert_entry (CtxRenderstream *drawlist, int pos, CtxEntry *entry)
+ctx_drawlist_insert_entry (CtxDrawlist *drawlist, int pos, CtxEntry *entry)
 {
   int length = ctx_conts_for_entry (entry) + 1;
   int tmp_pos = ctx_drawlist_add_entry (drawlist, entry);
@@ -441,7 +441,7 @@ ctx_drawlist_insert_entry (CtxRenderstream *drawlist, int pos, CtxEntry *entry)
 }
 #endif
 int
-ctx_drawlist_insert_entry (CtxRenderstream *drawlist, int pos, CtxEntry *entry)
+ctx_drawlist_insert_entry (CtxDrawlist *drawlist, int pos, CtxEntry *entry)
 {
   int length = ctx_conts_for_entry (entry) + 1;
   int tmp_pos = ctx_drawlist_add_entry (drawlist, entry);
@@ -474,7 +474,7 @@ int ctx_append_drawlist (Ctx *ctx, void *data, int length)
 
 int ctx_set_drawlist (Ctx *ctx, void *data, int length)
 {
-  CtxRenderstream *drawlist = &ctx->drawlist;
+  CtxDrawlist *drawlist = &ctx->drawlist;
   ctx->drawlist.count = 0;
   if (drawlist->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
     {
@@ -515,7 +515,7 @@ ctx_add_data (Ctx *ctx, void *data, int length)
   return ctx_drawlist_add_entry (&ctx->drawlist, (CtxEntry *) data);
 }
 
-int ctx_drawlist_add_u32 (CtxRenderstream *drawlist, CtxCode code, uint32_t u32[2])
+int ctx_drawlist_add_u32 (CtxDrawlist *drawlist, CtxCode code, uint32_t u32[2])
 {
   CtxEntry entry = {code, {{0},}};
   entry.data.u32[0] = u32[0];
@@ -523,7 +523,7 @@ int ctx_drawlist_add_u32 (CtxRenderstream *drawlist, CtxCode code, uint32_t u32[
   return ctx_drawlist_add_single (drawlist, &entry);
 }
 
-int ctx_drawlist_add_data (CtxRenderstream *drawlist, const void *data, int length)
+int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
 {
   CtxEntry entry = {CTX_DATA, {{0},}};
   entry.data.u32[0] = 0;
@@ -667,7 +667,7 @@ ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, 
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC int
-ctx_last_history (CtxRenderstream *drawlist)
+ctx_last_history (CtxDrawlist *drawlist)
 {
   int last_history = 0;
   int i = 0;
@@ -718,7 +718,7 @@ pack_s16_args (CtxEntry *entry, int npairs)
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC void
-ctx_drawlist_remove_tiny_curves (CtxRenderstream *drawlist, int start_pos)
+ctx_drawlist_remove_tiny_curves (CtxDrawlist *drawlist, int start_pos)
 {
   CtxIterator iterator;
   if ( (drawlist->flags & CTX_TRANSFORMATION_BITPACK) == 0)
@@ -750,7 +750,7 @@ ctx_drawlist_remove_tiny_curves (CtxRenderstream *drawlist, int start_pos)
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC void
-ctx_drawlist_bitpack (CtxRenderstream *drawlist, int start_pos)
+ctx_drawlist_bitpack (CtxDrawlist *drawlist, int start_pos)
 {
 #if CTX_BITPACK
   int i = 0;
@@ -980,7 +980,7 @@ ctx_drawlist_bitpack (CtxRenderstream *drawlist, int start_pos)
 #endif
 
 CTX_STATIC void
-ctx_drawlist_compact (CtxRenderstream *drawlist)
+ctx_drawlist_compact (CtxDrawlist *drawlist)
 {
 #if CTX_BITPACK_PACKER
   int last_history;
