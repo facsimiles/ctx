@@ -1290,7 +1290,6 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
       case CTX_PARSER_NUMBER:
       case CTX_PARSER_NEGATIVE_NUMBER:
         {
-          int new_neg = 0;
           switch (byte)
             {
               case 0:
@@ -1343,9 +1342,11 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                 parser->state = CTX_PARSER_COMMENT;
                 break;
               case '-':
+                if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
+                  { parser->numbers[parser->n_numbers] *= -1; }
                 parser->state = CTX_PARSER_NEGATIVE_NUMBER;
-                new_neg = 1;
                 parser->numbers[parser->n_numbers+1] = 0;
+                parser->n_numbers ++;
                 parser->decimal = 0;
                 break;
               case '.':
@@ -1421,8 +1422,8 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                 ctx_parser_holding_append (parser, byte);
                 break;
             }
-          if ( (parser->state != CTX_PARSER_NUMBER &&
-                parser->state != CTX_PARSER_NEGATIVE_NUMBER) || new_neg)
+          if ( (parser->state != CTX_PARSER_NUMBER) &&
+               (parser->state != CTX_PARSER_NEGATIVE_NUMBER))
             {
               parser->n_numbers ++;
               //parser->t_args ++;
