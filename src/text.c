@@ -347,7 +347,7 @@ static void ctx_font_init_ctx (CtxFont *font)
         { glyph_count ++; }
     }
   font->ctx.glyphs = glyph_count;
-#if CTX_RENDERSTREAM_STATIC
+#if CTX_DRAWLIST_STATIC
   static uint32_t idx[512]; // one might have to adjust this for
   // larger fonts XXX
   // should probably be made a #define

@@ -639,7 +639,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   rasterizer->vfuncs.process = ctx_hasher_process;
   rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
   // XXX need own destructor to not leak ->hashes
-  rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
+  rasterizer->edge_list.flags |= CTX_DRAWLIST_EDGE_LIST;
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
   ctx_state_init (rasterizer->state);

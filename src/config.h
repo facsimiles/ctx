@@ -160,7 +160,7 @@
 //#define ctx_log(str, a...) fprintf(stderr, str, ##a)
 
 /* the initial journal size - for both rasterizer
- * edgelist and renderstram.
+ * edgelist and drawlist.
  */
 #ifndef CTX_MIN_JOURNAL_SIZE
 #define CTX_MIN_JOURNAL_SIZE   1024*64
@@ -173,8 +173,8 @@
 #define CTX_MAX_JOURNAL_SIZE   CTX_MIN_JOURNAL_SIZE
 #endif
 
-#ifndef CTX_RENDERSTREAM_STATIC
-#define CTX_RENDERSTREAM_STATIC  0
+#ifndef CTX_DRAWLIST_STATIC
+#define CTX_DRAWLIST_STATIC  0
 #endif
 
 #ifndef CTX_MIN_EDGE_LIST_SIZE

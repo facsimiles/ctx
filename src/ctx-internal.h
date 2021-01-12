@@ -230,9 +230,9 @@ typedef enum
   CTX_TRANSFORMATION_STORE_CLEAR  = 16,
 } CtxTransformation;
 
-#define CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES   64
-#define CTX_RENDERSTREAM_EDGE_LIST            128
-#define CTX_RENDERSTREAM_CURRENT_PATH         512
+#define CTX_DRAWLIST_DOESNT_OWN_ENTRIES   64
+#define CTX_DRAWLIST_EDGE_LIST            128
+#define CTX_DRAWLIST_CURRENT_PATH         512
 // BITPACK
 
 struct _CtxDrawlist

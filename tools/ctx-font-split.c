@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <libgen.h>
 
-#define CTX_MAX_RENDERSTREAM_SIZE 4096000
+#define CTX_MAX_DRAWLIST_SIZE 4096000
 #define CTX_BACKEND_TEXT 0 // we keep then non-backend code paths
                            // for code handling aroud, this should
                            // be run-time to permit doing text_to_path

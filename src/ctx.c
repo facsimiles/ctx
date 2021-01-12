@@ -1356,7 +1356,7 @@ _ctx_init (Ctx *ctx)
 
   ctx->renderer = NULL;
 #if CTX_CURRENT_PATH
-  ctx->current_path.flags |= CTX_RENDERSTREAM_CURRENT_PATH;
+  ctx->current_path.flags |= CTX_DRAWLIST_CURRENT_PATH;
 #endif
   //ctx->transformation |= (CtxTransformation) CTX_TRANSFORMATION_SCREEN_SPACE;
   //ctx->transformation |= (CtxTransformation) CTX_TRANSFORMATION_RELATIVE;
@@ -1367,7 +1367,7 @@ _ctx_init (Ctx *ctx)
 
 static void ctx_setup ();
 
-#if CTX_RENDERSTREAM_STATIC
+#if CTX_DRAWLIST_STATIC
 static Ctx ctx_state;
 #endif
 
@@ -1388,7 +1388,7 @@ Ctx *
 ctx_new (void)
 {
   ctx_setup ();
-#if CTX_RENDERSTREAM_STATIC
+#if CTX_DRAWLIST_STATIC
   Ctx *ctx = &ctx_state;
 #else
   Ctx *ctx = (Ctx *) malloc (sizeof (Ctx) );
@@ -1401,8 +1401,8 @@ ctx_new (void)
 void
 ctx_drawlist_deinit (CtxDrawlist *drawlist)
 {
-#if !CTX_RENDERSTREAM_STATIC
-  if (drawlist->entries && ! (drawlist->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES) )
+#if !CTX_DRAWLIST_STATIC
+  if (drawlist->entries && ! (drawlist->flags & CTX_DRAWLIST_DOESNT_OWN_ENTRIES) )
     {
       free (drawlist->entries); 
     }
@@ -1433,7 +1433,7 @@ void ctx_free (Ctx *ctx)
   ctx_clear_bindings (ctx);
 #endif
   ctx_deinit (ctx);
-#if !CTX_RENDERSTREAM_STATIC
+#if !CTX_DRAWLIST_STATIC
   free (ctx);
 #endif
 }
@@ -1441,7 +1441,7 @@ void ctx_free (Ctx *ctx)
 Ctx *ctx_new_for_drawlist (void *data, size_t length)
 {
   Ctx *ctx = ctx_new ();
-  ctx->drawlist.flags   |= CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES;
+  ctx->drawlist.flags   |= CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
   ctx->drawlist.entries  = (CtxEntry *) data;
   ctx->drawlist.count    = length / sizeof (CtxEntry);
   return ctx;

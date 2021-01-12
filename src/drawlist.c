@@ -299,14 +299,14 @@ CTX_STATIC void ctx_drawlist_compact (CtxDrawlist *drawlist);
 CTX_STATIC void
 ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
 {
-#if CTX_RENDERSTREAM_STATIC
-  if (drawlist->flags & CTX_RENDERSTREAM_EDGE_LIST)
+#if CTX_DRAWLIST_STATIC
+  if (drawlist->flags & CTX_DRAWLIST_EDGE_LIST)
     {
       static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
       drawlist->entries = &sbuf[0];
       drawlist->size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  else if (drawlist->flags & CTX_RENDERSTREAM_CURRENT_PATH)
+  else if (drawlist->flags & CTX_DRAWLIST_CURRENT_PATH)
     {
       static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
       drawlist->entries = &sbuf[0];
@@ -323,12 +323,12 @@ ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
   int new_size = desired_size;
   int min_size = CTX_MIN_JOURNAL_SIZE;
   int max_size = CTX_MAX_JOURNAL_SIZE;
-  if ((drawlist->flags & CTX_RENDERSTREAM_EDGE_LIST))
+  if ((drawlist->flags & CTX_DRAWLIST_EDGE_LIST))
     {
       min_size = CTX_MIN_EDGE_LIST_SIZE;
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  else if (drawlist->flags & CTX_RENDERSTREAM_CURRENT_PATH)
+  else if (drawlist->flags & CTX_DRAWLIST_CURRENT_PATH)
     {
       min_size = CTX_MIN_EDGE_LIST_SIZE;
       max_size = CTX_MAX_EDGE_LIST_SIZE;
@@ -376,15 +376,15 @@ ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 {
   int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = drawlist->count;
-  if (drawlist->flags & CTX_RENDERSTREAM_EDGE_LIST)
+  if (drawlist->flags & CTX_DRAWLIST_EDGE_LIST)
     {
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  else if (drawlist->flags & CTX_RENDERSTREAM_CURRENT_PATH)
+  else if (drawlist->flags & CTX_DRAWLIST_CURRENT_PATH)
     {
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  if (drawlist->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
+  if (drawlist->flags & CTX_DRAWLIST_DOESNT_OWN_ENTRIES)
     {
       return ret;
     }
@@ -476,7 +476,7 @@ int ctx_set_drawlist (Ctx *ctx, void *data, int length)
 {
   CtxDrawlist *drawlist = &ctx->drawlist;
   ctx->drawlist.count = 0;
-  if (drawlist->flags & CTX_RENDERSTREAM_DOESNT_OWN_ENTRIES)
+  if (drawlist->flags & CTX_DRAWLIST_DOESNT_OWN_ENTRIES)
     {
       return -1;
     }

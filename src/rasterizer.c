@@ -2984,7 +2984,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   ctx_memset (rasterizer, 0, sizeof (CtxRasterizer) );
   rasterizer->vfuncs.process = ctx_rasterizer_process;
   rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
-  rasterizer->edge_list.flags |= CTX_RENDERSTREAM_EDGE_LIST;
+  rasterizer->edge_list.flags |= CTX_DRAWLIST_EDGE_LIST;
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
   rasterizer->texture_source = texture_source?texture_source:ctx;
