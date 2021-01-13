@@ -1475,7 +1475,7 @@ void fb_render_fun (void **data)
               hno++;
             }
             ctx_rasterizer_init (rasterizer,
-                                 host, NULL, &host->state,
+                                 host, fb->ctx, &host->state,
                                  &fb->scratch_fb[fb->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
                                  fb->width*4, CTX_FORMAT_RGBA8,
@@ -1485,7 +1485,6 @@ void fb_render_fun (void **data)
               rasterizer->swap_red_green = 1; 
             if (fb_icc_length)
               ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, fb_icc, fb_icc_length);
-            ((CtxRasterizer*)host->renderer)->texture_source = fb->ctx;
             ctx_translate (host, -x0, -y0);
             ctx_render_ctx (fb->ctx_copy, host);
           }
@@ -1675,7 +1674,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
                    fb->width/CTX_HASH_COLS, fb->height/CTX_HASH_ROWS,
                    fb->width * 4, CTX_FORMAT_RGBA8); // this format
                                   // is overriden in  thread
-    ((CtxRasterizer*)fb->host[i]->renderer)->texture_source = fb->ctx;
+    ctx_set_texture_source (fb->host[i], fb->ctx);
   }
 
   _ctx_file_get_contents ("/tmp/ctx.icc", &fb_icc, &fb_icc_length);

@@ -3008,7 +3008,6 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   return rasterizer;
 }
 
-
 Ctx *
 ctx_new_for_buffer (CtxBuffer *buffer)
 {

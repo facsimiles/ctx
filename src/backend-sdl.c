@@ -544,12 +544,11 @@ void sdl_render_fun (void **data)
             }
 #endif
             ctx_rasterizer_init (rasterizer,
-                                 host, NULL, &host->state,
+                                 host, sdl->ctx, &host->state,
                                  &sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
                                  sdl->width*4, CTX_FORMAT_RGBA8,
                                  sdl->antialias);
-            ((CtxRasterizer*)host->renderer)->texture_source = sdl->ctx;
             if (sdl_icc_length)
               ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
 
@@ -633,7 +632,7 @@ Ctx *ctx_new_sdl (int width, int height)
     sdl->host[i] = ctx_new_for_framebuffer (sdl->pixels,
                      sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
                      sdl->width * 4, CTX_FORMAT_RGBA8);
-    ((CtxRasterizer*)sdl->host[i]->renderer)->texture_source = sdl->ctx;
+    ctx_set_texture_source (sdl->host[i], sdl->ctx);
   }
 
   mtx_init (&sdl->mtx, mtx_plain);

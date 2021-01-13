@@ -1543,6 +1543,9 @@ char *ctx_get_clipboard (Ctx *ctx)
   return strdup ("");
 }
 
-
+void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source)
+{
+  ((CtxRasterizer*)ctx->renderer)->texture_source = texture_source;
+}
 
 #endif
