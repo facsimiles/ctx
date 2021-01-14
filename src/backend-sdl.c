@@ -59,6 +59,7 @@ struct _CtxSDL
 
 void ctx_screenshot (Ctx *ctx, const char *output_path)
 {
+#if CTX_SCREENSHOT
   int valid = 0;
   CtxSDL *sdl = (void*)ctx->renderer;
 
@@ -69,7 +70,6 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
 
   if (!valid)
     return;
-  fprintf (stderr, "saving to %s", output_path);
 
 #if CTX_FB
   for (int i = 0; i < sdl->width * sdl->height; i++)
@@ -90,8 +90,7 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
     sdl->pixels[i*4 + 2] = tmp;
   }
 #endif
-  fprintf (stderr, "\n");
-  fprintf (stderr, "%ix%i\n",  sdl->width, sdl->height);
+#endif
 }
 
 void ctx_sdl_set_title (void *self, const char *new_title)

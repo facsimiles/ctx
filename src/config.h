@@ -528,3 +528,7 @@
 #define CTX_PARSER_MAX_ARGS 20
 #endif
 
+
+#ifndef CTX_SCREENSHOT
+#define CTX_SCREENSHOT 0
+#endif

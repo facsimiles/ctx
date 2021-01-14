@@ -51,6 +51,9 @@
 #define CTX_SHAPE_CACHE_DIM      (64*64)
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
 
+#define CTX_SCREENSHOT           0  // it brings in stb_save_image dep so is not default,
+                                    // rewrite as ppm?
+
 #ifndef CTX_AVX2
 #define CTX_AVX2 0 
 #else
