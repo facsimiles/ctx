@@ -4338,6 +4338,7 @@ static void vt_state_sixel (VT *vt, int byte)
 }
 
 void add_tab (const char *commandline, int can_launch);
+void vt_screenshot (const char *output_path);
 
 static void vt_state_apc_generic (VT *vt, int byte)
 {
@@ -4388,8 +4389,15 @@ static void vt_state_apc_generic (VT *vt, int byte)
           char *sep = strchr(vt->argument_buf, ';');
           if (sep)
           {
-            fprintf (stderr, "[%s]", sep +  1);
-            add_tab (sep + 1, can_launch);
+            //fprintf (stderr, "[%s]", sep +  1);
+            if (!strncmp (sep + 1, "fbsave", 6))
+            {
+              vt_screenshot (sep + 8);
+            }
+            else
+            {
+              add_tab (sep + 1, can_launch);
+            }
           }
         }
 

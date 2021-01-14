@@ -904,5 +904,7 @@ ctx_lerpf (float v0, float v1, float dx)
 
 static inline void *ctx_calloc (size_t size, size_t count);
 
+void ctx_screenshot (Ctx *ctx, const char *output_path);
+
 #endif
 

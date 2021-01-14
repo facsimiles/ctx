@@ -47,6 +47,11 @@ ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 typedef struct _CtxClient CtxClient;
 CtxClient *vt_find_client (VT *vt);
 
+void
+vt_screenshot (const char *output_path)
+{
+  ctx_screenshot (ctx, output_path);
+}
 
 int vtpty_waitdata (void  *data, int timeout)
 {

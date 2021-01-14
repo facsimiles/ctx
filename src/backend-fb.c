@@ -53,15 +53,15 @@ struct _CtxFb
    void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)   (void *fb);
    Ctx          *ctx;
-   Ctx          *ctx_copy;
    int           width;
    int           height;
    int           cols; // unused
    int           rows; // unused
    int           was_down;
+   uint8_t      *scratch_fb;
+   Ctx          *ctx_copy;
    Ctx          *host[CTX_MAX_THREADS];
    CtxAntialias  antialias;
-   uint8_t      *scratch_fb;
    int           quit;
    _Atomic int   thread_quit;
    int           shown_frame;

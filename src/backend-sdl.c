@@ -13,15 +13,15 @@ struct _CtxSDL
    void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)      (void *braille);
    Ctx          *ctx;
-   Ctx          *ctx_copy;
    int           width;
    int           height;
    int           cols;
    int           rows;
    int           was_down;
+   uint8_t      *pixels;
+   Ctx          *ctx_copy;
    Ctx          *host[CTX_MAX_THREADS];
    CtxAntialias  antialias;
-   uint8_t      *pixels;
    int           quit;
    _Atomic int   thread_quit;
    int           shown_frame;
@@ -54,6 +54,45 @@ struct _CtxSDL
    cnd_t  cond;
    mtx_t  mtx;
 };
+
+#include "stb_image_write.h"
+
+void ctx_screenshot (Ctx *ctx, const char *output_path)
+{
+  int valid = 0;
+  CtxSDL *sdl = (void*)ctx->renderer;
+
+  if (ctx_renderer_is_sdl (ctx)) valid = 1;
+#if CTX_FB
+  if (ctx_renderer_is_fb  (ctx)) valid = 1;
+#endif
+
+  if (!valid)
+    return;
+  fprintf (stderr, "saving to %s", output_path);
+
+#if CTX_FB
+  for (int i = 0; i < sdl->width * sdl->height; i++)
+  {
+    int tmp = sdl->pixels[i*4];
+    sdl->pixels[i*4] = sdl->pixels[i*4 + 2];
+    sdl->pixels[i*4 + 2] = tmp;
+  }
+#endif
+
+  stbi_write_png (output_path, sdl->width, sdl->height, 4, sdl->pixels, sdl->width*4);
+
+#if CTX_FB
+  for (int i = 0; i < sdl->width * sdl->height; i++)
+  {
+    int tmp = sdl->pixels[i*4];
+    sdl->pixels[i*4] = sdl->pixels[i*4 + 2];
+    sdl->pixels[i*4 + 2] = tmp;
+  }
+#endif
+  fprintf (stderr, "\n");
+  fprintf (stderr, "%ix%i\n",  sdl->width, sdl->height);
+}
 
 void ctx_sdl_set_title (void *self, const char *new_title)
 {

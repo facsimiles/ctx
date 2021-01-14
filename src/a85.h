@@ -32,6 +32,7 @@ static int ctx_a85enc (const void *srcp, char *dst, int count)
     {
         dst[out_len++] = 'z';
     }
+    /* todo: encode 4 spaces as 'y' */
     else
     {
       for (int j = 0; j < 5; j++)
@@ -68,7 +69,7 @@ static int ctx_a85dec (const char *src, char *dst, int count)
         dst[out_len++] = 0;
       k = 0;
     }
-    else if (src[i] == 'y') /* we support this extension */
+    else if (src[i] == 'y') /* lets support this extension */
     {
       for (int j = 0; j < 4; j++)
         dst[out_len++] = 32;
