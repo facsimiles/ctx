@@ -351,14 +351,27 @@ static float client_max_y_pos (Ctx *ctx);
 
 void ensure_layout ()
 {
+  int n_clients = ctx_list_length (clients);
+  if (n_clients == 1)
+  {
+    CtxClient *client = clients->data;
+    if (client->maximized)
+    {
+      client_move (client->id, 0, 0);
+      client_resize (client->id, ctx_width (ctx), ctx_height(ctx));
+      if (active_tab == NULL)
+        active_tab = client;
+    }
+  }
+  else
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
     if (client->maximized)
     {
-      client_resize (client->id, ctx_width (ctx), ctx_height(ctx) -
-                      client_min_y_pos (ctx));
       client_move (client->id, 0, client_min_y_pos (ctx));
+      client_resize (client->id, ctx_width (ctx), ctx_height(ctx) -
+                      client_min_y_pos (ctx) / 2);   // /2 to counter the double titlebar of non-maximized
       if (active_tab == NULL)
         active_tab = client;
     }
@@ -374,7 +387,6 @@ int add_tab (const char *commandline, int can_launch)
   active = add_client (commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, 0, can_launch);
   vt_set_ctx (active->vt, ctx);
-  ensure_layout ();
   add_y += ctx_height (ctx) / 20;
   add_x += ctx_height (ctx) / 20;
 
@@ -389,6 +401,7 @@ int add_tab (const char *commandline, int can_launch)
     add_y = client_min_y_pos (ctx);
     add_x -= ctx_height (ctx) / 40 * 4;
   }
+  ensure_layout ();
   return active->id;
 }
 static void add_tab_cb (CtxEvent *event, void *data, void *data2)
@@ -1008,22 +1021,21 @@ void draw_titlebar (Ctx *ctx, CtxClient *client,
 
 static int draw_vts (Ctx *ctx)
 {
-  int changes = 0;
   float view_height = ctx_height (ctx);
   float titlebar_height = view_height/40;
-
-#if 0
-  if (active && active->maximized)
+  int n_clients = ctx_list_length (clients);
+#if 1
+  if (active && active->maximized && n_clients == 1)
   {
-    VT *vt = active->vt;
-    vt_draw (vt, ctx, 0, titlebar_height);
-    return changes;
+    vt_draw (active->vt, ctx, 0, 0);//titlebar_height);
+    active->drawn_rev = vt_rev (active->vt);
+    return 0;
   }
 #endif
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (client == active_tab)
+    if (client == active_tab && client->maximized)
     {
       vt_draw (client->vt, ctx, 0, titlebar_height);
     }
@@ -1031,9 +1043,20 @@ static int draw_vts (Ctx *ctx)
       client->drawn_rev = vt_rev (client->vt);
   }
 
-
+#if 0
   //float px = ctx_pointer_x (ctx);
   //float py = ctx_pointer_y (ctx);
+  if (clients &&  clients->next == NULL &&  ((CtxClient*)(clients->data))->maximized)
+  {
+    CtxClient *client = clients->data;
+    VT *vt = client->vt;
+    vt_draw (vt, ctx, client->x, client->y);
+    client->drawn_rev = vt_rev (vt);
+    //vt_draw (vt, ctx, 0, 0);
+  }
+  else
+#endif
+  {
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
@@ -1123,8 +1146,9 @@ static int draw_vts (Ctx *ctx)
       client->drawn_rev = vt_rev (vt);
     }
   }
+  }
 
-  return changes;
+  return 0;
 }
 
 #if 0
@@ -1791,7 +1815,8 @@ int terminal_main (int argc, char **argv)
         ctx_fill (ctx);
         draw_vts (ctx);
         ctx_popups (ctx);
-        draw_panel (ctx);
+        if (n_clients != 1 || (((CtxClient*)clients->data))->maximized == 0)
+          draw_panel (ctx);
 
         if (enable_terminal_menu)
         {

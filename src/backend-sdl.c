@@ -419,6 +419,10 @@ int ctx_sdl_consume_events (Ctx *ctx)
   }
   return 1;
 }
+#else
+void ctx_screenshot (Ctx *ctx, const char *path)
+{
+}
 #endif
 
 #if CTX_SDL
