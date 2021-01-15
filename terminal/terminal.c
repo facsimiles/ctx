@@ -1227,6 +1227,9 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
   float c = w / 14.5; // keycell
   float y0 = h - c * rows;
 
+  if (event->y < y0)
+    return;
+
   key = NULL;
 
   for (int row = 0; kb->keys[row][0].label; row++)
@@ -1451,7 +1454,6 @@ void ctx_osk_draw (Ctx *ctx)
     m = w;
       
   ctx_save (ctx);
-#if 1
   ctx_round_rectangle (ctx, 0,
                             y0,
                             w,
@@ -1467,7 +1469,6 @@ void ctx_osk_draw (Ctx *ctx)
 #if 0
   ctx_rgba (ctx, 1,1,1, 0.5);
   ctx_stroke (ctx);
-#endif
 #endif
 
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
@@ -1555,7 +1556,7 @@ void ctx_osk_draw (Ctx *ctx)
       if (cap->down || (cap->hovered && kb->down))
         ctx_rgba (ctx, 0,0,0, fade);
       else
-        ctx_rgba (ctx, 1,1,1, fade);
+        ctx_rgba (ctx, 1,0,0, fade);
 
       ctx_text (ctx, label);
 
@@ -1689,6 +1690,13 @@ int terminal_main (int argc, char **argv)
   int width = -1;
   int height = -1;
   int cols = -1;
+  if (getpid () == 1)
+  {
+    system ("pkill plymouth"); // needed to enable keyboard input.. with the initrd that
+                               // gets used with systemd
+    system ("mount -o remount,rw /");
+    system ("mount -a");
+  }
 
   for (int i = 1; argv[i]; i++)
   {
@@ -1764,6 +1772,7 @@ int terminal_main (int argc, char **argv)
 
   int sleep_time = 1000;
   int fetched_bytes = 1;
+
 
   while (clients && !ctx_has_quit (ctx))
     {
@@ -1920,5 +1929,14 @@ int terminal_main (int argc, char **argv)
 
   itk_free (itk);
   ctx_free (ctx);
+
+  if (getpid () == 1)
+  {
+    system ("sync");
+    system ("mount -o remount,ro /");
+    system ("sync");
+    fprintf (stderr, "\e[H\e[2JPANIC");
+  }
+
   return 0;
 }

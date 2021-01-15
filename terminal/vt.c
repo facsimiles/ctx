@@ -5195,6 +5195,11 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
 {
   struct winsize ws;
   //signal (SIGCHLD,signal_child);
+#if 0
+  int was_pidone = (getpid () == 1);
+#else
+  int was_pidone = 0; // lets just leave it as root in initrd env
+#endif
   signal (SIGINT,SIG_DFL);
   ws.ws_row = vt->rows;
   ws.ws_col = vt->cols;
@@ -5204,7 +5209,14 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
   if (vt->vtpty.pid == 0)
     {
       int i;
-      for (i = 3; i<768; i++) { close (i); } /*hack, trying to close xcb */
+      if (was_pidone)
+      {
+        setuid(1000);
+      }
+      else
+      {
+        for (i = 3; i<768; i++) { close (i); } /*hack, trying to close xcb */
+      }
       unsetenv ("TERM");
       unsetenv ("COLUMNS");
       unsetenv ("LINES");
