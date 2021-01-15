@@ -47,6 +47,7 @@ ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 typedef struct _CtxClient CtxClient;
 CtxClient *vt_find_client (VT *vt);
 
+void ctx_screenshot (Ctx *ctx, const char *path);
 void
 vt_screenshot (const char *output_path)
 {
@@ -1664,6 +1665,23 @@ void draw_panel (Ctx *ctx)
   ctx_restore (ctx);
 }
 
+void draw_mini_panel (Ctx *ctx)
+{
+  float titlebar_height = ctx_height (ctx)/40;
+
+  ctx_save (ctx);
+  ctx_font_size (ctx, titlebar_height * 0.9);
+
+  ctx_rectangle (ctx, 0, 0, titlebar_height * 1.5, titlebar_height);
+  ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
+  ctx_move_to (ctx, titlebar_height * 1.5/2, titlebar_height * 0.8);
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+  ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
+  ctx_text (ctx, "+");
+
+  ctx_restore (ctx);
+}
+
 int terminal_main (int argc, char **argv)
 {
   execute_self = argv[0];
@@ -1817,6 +1835,8 @@ int terminal_main (int argc, char **argv)
         ctx_popups (ctx);
         if (n_clients != 1 || (((CtxClient*)clients->data))->maximized == 0)
           draw_panel (ctx);
+        else
+          draw_mini_panel (ctx);
 
         if (enable_terminal_menu)
         {
