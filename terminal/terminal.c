@@ -1220,7 +1220,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
   KeyBoard *kb = data2;
   float h = ctx_height (ctx);
   float w = ctx_width (ctx);
-  int rows;
+  int rows = 0;
   for (int row = 0; kb->keys[row][0].label; row++)
     rows = row+1;
 
@@ -1932,10 +1932,7 @@ int terminal_main (int argc, char **argv)
 
   if (getpid () == 1)
   {
-    system ("sync");
-    system ("mount -o remount,ro /");
-    system ("sync");
-    fprintf (stderr, "\e[H\e[2JPANIC");
+    system ("reboot --force");
   }
 
   return 0;
