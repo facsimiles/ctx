@@ -1842,7 +1842,7 @@ int terminal_main (int argc, char **argv)
         ctx_fill (ctx);
         draw_vts (ctx);
         ctx_popups (ctx);
-        if (n_clients != 1 || (((CtxClient*)clients->data))->maximized == 0)
+        if ((n_clients != 1) || (clients && ((((CtxClient*)clients->data))->maximized == 0)))
           draw_panel (ctx);
         else
           draw_mini_panel (ctx);
