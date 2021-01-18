@@ -95,6 +95,31 @@ ctx_list_insert_before (CtxList **list, CtxList *sibling,
     }
 }
 
+static inline void ctx_list_remove_link (CtxList **list, CtxList *link)
+{
+  CtxList *iter, *prev = NULL;
+  if ((*list) == link)
+    {
+      if ((*list)->freefunc)
+        (*list)->freefunc ((*list)->data, (*list)->freefunc_data);
+      prev = (*list)->next;
+      free (*list);
+      *list = prev;
+      return;
+    }
+  for (iter = *list; iter; iter = iter->next)
+    if (iter == link)
+      {
+        if (iter->freefunc)
+          iter->freefunc (iter->data, iter->freefunc_data);
+        prev->next = iter->next;
+        free (iter);
+        break;
+      }
+    else
+      prev = iter;
+}
+
 static inline void ctx_list_remove (CtxList **list, void *data)
 {
   CtxList *iter, *prev = NULL;
@@ -148,6 +173,18 @@ static inline void *ctx_list_last (CtxList *list)
   return NULL;
 }
 
+static inline void ctx_list_concat (CtxList **list, CtxList *list_b)
+{
+  if (*list)
+    {
+      CtxList *last;
+      for (last = *list; last->next; last=last->next);
+      last->next = list_b;
+      return;
+    }
+  *list = list_b;
+}
+
 static inline void ctx_list_append_full (CtxList **list, void *data,
     void (*freefunc)(void *data, void *freefunc_data),
     void *freefunc_data)
@@ -156,15 +193,7 @@ static inline void ctx_list_append_full (CtxList **list, void *data,
   new_->data=data;
   new_->freefunc = freefunc;
   new_->freefunc_data = freefunc_data;
-  if (*list)
-    {
-      CtxList *last;
-      for (last = *list; last->next; last=last->next);
-      last->next = new_;
-      return;
-    }
-  *list = new_;
-  return;
+  ctx_list_concat (list, new_);
 }
 
 static inline void ctx_list_append (CtxList **list, void *data)
@@ -281,6 +310,30 @@ static inline void ctx_list_sort (CtxList **head,
   ctx_list_sort (&list1, compare, userdata);
   ctx_list_sort (&list2, compare, userdata);
   *head = ctx_list_merge_sorted (list1, list2, compare, userdata);
+}
+
+static inline void ctx_list_insert_sorted (CtxList **list,
+                                           void     *item,
+    int(*compare)(const void *a, const void *b, void *userdata),
+                                           void     *userdata)
+{
+  ctx_list_prepend (list, item);
+  ctx_list_sort (list, compare, userdata);
+}
+
+
+static inline CtxList *ctx_list_find_custom (CtxList *list,
+                                         void    *needle,
+                                         int(*compare)(const void *a, const void *b),
+                                         void *userdata)
+{
+  CtxList *l;
+  for (l = list; l; l = l->next)
+  {
+    if (compare (l->data, needle) == 0)
+      return l;
+  }
+  return NULL;
 }
 
 #endif
