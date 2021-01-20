@@ -1748,7 +1748,7 @@ int terminal_main (int argc, char **argv)
   }
 
   if (font_size < 0)
-    font_size = floorf (2 * width / cols /2) * 2;
+    font_size = floorf (2 * width / cols /2) * 3;
 
   if (argv[1] == NULL)
   {

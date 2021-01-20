@@ -48,6 +48,7 @@ void        ctx_string_replace_utf8   (CtxString *string, int pos, const char *n
 void        ctx_string_insert_utf8    (CtxString *string, int pos, const char *new_glyph);
 void        ctx_string_replace_unichar (CtxString *string, int pos, uint32_t unichar);
 void        ctx_string_remove         (CtxString *string, int pos);
+char       *ctx_strdup_printf         (const char *format, ...);
 
 #ifndef TRUE
 #define TRUE 1

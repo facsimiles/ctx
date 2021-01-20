@@ -67,6 +67,22 @@ _ctx_file_get_contents (const char     *path,
   buffer[size] = 0;
   return 0;
 }
+
+void
+_ctx_file_set_contents (const char     *path,
+                        const unsigned char  *contents,
+                        long            length)
+{
+  FILE *file;
+  file = fopen (path, "wb");
+  if (!file)
+    { return; }
+  if (length < 0) length = strlen ((const char*)contents);
+  fwrite (contents, 1, length, file);
+  fclose (file);
+}
+
+
 #endif
 
 

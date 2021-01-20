@@ -357,3 +357,34 @@ void ctx_string_remove (CtxString *string, int pos)
   string->length = strlen (string->str);
   string->utf8_length = ctx_utf8_strlen (string->str);
 }
+
+char *ctx_strdup_printf (const char *format, ...)
+{
+  va_list ap;
+  size_t needed;
+  char *buffer;
+  va_start (ap, format);
+  needed = vsnprintf (NULL, 0, format, ap) + 1;
+  buffer = malloc (needed);
+  va_end (ap);
+  va_start (ap, format);
+  vsnprintf (buffer, needed, format, ap);
+  va_end (ap);
+  return buffer;
+}
+
+void ctx_string_append_printf (CtxString *string, const char *format, ...)
+{
+  va_list ap;
+  size_t needed;
+  char *buffer;
+  va_start (ap, format);
+  needed = vsnprintf (NULL, 0, format, ap) + 1;
+  buffer = malloc (needed);
+  va_end (ap);
+  va_start (ap, format);
+  vsnprintf (buffer, needed, format, ap);
+  va_end (ap);
+  ctx_string_append_str (string, buffer);
+  free (buffer);
+}

@@ -409,7 +409,7 @@ void itk_reset (ITK *itk)
 "terminal-active-bg:         #000b;\n"
 "terminal-acitve-bg-reverse: #dddb;\n"
 "\n"
-"itk-bg:             rgba(30,40,50, 0.8);\n"
+"itk-bg:             rgba(30,40,50, 1.0);\n"
 "itk-focused-bg:     rgb(70,70,90);\n"
 "itk-fg:             rgb(225,225,225);\n"
 "itk-interactive:    rgb(255,5,5);\n"

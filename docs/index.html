@@ -27,11 +27,10 @@
       <div id='page'>
       <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-      <p>ctx is a 2D vector graphics platform/<a
-              href='protocol/'>protocol</a>/library/terminal.  With modular
-      components that can be used to user interfaces ranging from
-      microcontrollers to desktops.
-      </p>
+      <p>ctx is a 2D vector graphics terminal, built on standards, providing a
+      <a href='protocol/'>protocol</a> and implementation of a client libraray
+      and host/rasterizer implementation. With modular components that can be
+      used to user interfaces ranging from microcontrollers to desktops.</p>
 
       <a href='pid1.png'><img style='max-width:100%' src='pid1.png'/></a>
 
@@ -193,19 +192,18 @@ to be combined with all compositing modes.
          incorporated.</dd>
 
          <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>
-         Supporting RGB332, RGB565 and grayscale + 1bit mode.
-         With ICC based management of RGB user/device spaces through babl.
+         Supporting RGB332, RGB565 and grayscale + 1bit mode render targets.
+         ICC based management of RGB user/device spaces is supported through <a href='https://gegl.org/babl/'>babl</a>.
          </p>
 
-         <dt>Efficient serializations</dt><dd>ctx is built around a binary -
-         and - textual serialization/drawlist of a 2D context.
-         Thes drawlist representations are used for larger than RAM
-         framebuffers on microcontrollers, multi threaded cached rendering through
-         SDL2 and /dev/fb0 backends
-         and network transparent rendering inside ctx terminal. When
-         used for graphical clients inside terminals; ctx is even applying
-         inter-frame compression; reusing frames from the preceding drawlist
-         by reference.
+         <dt>deferred rendering</dt><dd>Tokenizing the rasterization as a protocol is core to ctx' operation. Issuing a draw command prepares a token that is either appended to a drawlist or acted upon immediately; depending on the configuration of the context. Drawlists can be converted to both compact and verbose textual representation with little overhead.
+
+         These drawlist representations are used for scanline/chunk-based
+         rendering on microcontrollers where framebuffer is to large to fit in
+         RAM and threaded cached rendering through SDL2 and /dev/fb0 backends
+         and network transparent rendering inside ctx terminal. When used for
+         graphical clients inside terminals; ctx is even applying inter-frame
+         compression; reusing frames from the preceding drawlist by reference.
          .</dd>
 
          <dt>text rendering</dt><dd>UTF8 native, there is two font backends
@@ -301,21 +299,24 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
           <li>dimensions of drop-shadow are not transformed</li>
 
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
+          <li>square line ends</li>
           <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
-          <li>some form of built in palm supression is desirable in drm/fbdev backend</li>
+          <li>palm supression during typing in drm/fbdev backend</li>
+        
+          <li>terminal rewrap on resize</li>
+          <li>double/triple clicking to select needs improvements</li>
           </ul>
         </li>
         </ul>
-p
-      <a href='ctx-wm.png'><img style='max-width:100%' src='ctx-wm.png'/></a>
+
+        <a href='ctx-wm.png'><img style='max-width:100%' src='ctx-wm.png'/></a>
 
         <h2 id='future'>some potential improvements</h2>
 	<ul>
-        <li>performance (always possible - ctx looks at code/RAM budgets as well)</li>
+        <li>performance</li>
         <li>continued code refactoring</li>
 	<li>glyph fallbacks between fonts</li>
         <li>texture upload as part of terminal protocol</li>
-        <li>terminal rewrap on resize</li>
         <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
         <li>binary search for glyphs in ctxf font backend, making it scale well for wide unicode coverage.</li>
         <li>websockets + js + HTML5 Canvas renderer/client for protocols</li>
