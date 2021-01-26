@@ -100,21 +100,18 @@ static inline void ctx_list_remove_link (CtxList **list, CtxList *link)
   CtxList *iter, *prev = NULL;
   if ((*list) == link)
     {
-      if ((*list)->freefunc)
-        (*list)->freefunc ((*list)->data, (*list)->freefunc_data);
       prev = (*list)->next;
-      free (*list);
       *list = prev;
+      link->next = NULL;
       return;
     }
   for (iter = *list; iter; iter = iter->next)
     if (iter == link)
       {
-        if (iter->freefunc)
-          iter->freefunc (iter->data, iter->freefunc_data);
-        prev->next = iter->next;
-        free (iter);
-        break;
+        if (prev)
+          prev->next = iter->next;
+        link->next = NULL;
+        return;
       }
     else
       prev = iter;
