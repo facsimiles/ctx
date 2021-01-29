@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# A basic audioplayer for atty/ctxterm 
+# A basic audioplayer for atty/ctx terminal
 # that uses the passed in arguments for a playlist
 #
 
