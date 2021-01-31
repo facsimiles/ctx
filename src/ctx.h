@@ -306,8 +306,9 @@ int ctx_texture_init (Ctx *ctx,
                       /* XXX : add stride - in bytes ? */
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data);
-int ctx_texture_load        (Ctx *ctx, int id, const char *path);
-int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length);
+
+int ctx_texture_load        (Ctx *ctx, int id, const char *path, int *width, int *height);
+int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length, int *width, int *height);
 void ctx_texture_release    (Ctx *ctx, int id);
 void ctx_texture            (Ctx *ctx, int id, float x, float y);
 

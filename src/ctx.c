@@ -204,7 +204,7 @@ void ctx_texture (Ctx *ctx, int id, float x, float y)
 void
 ctx_image_path (Ctx *ctx, const char *path, float x, float y)
 {
-  int id = ctx_texture_load (ctx, -1, path);
+  int id = ctx_texture_load (ctx, -1, path, NULL, NULL);
   ctx_texture (ctx, id, x, y);
 
   // query if image exists .. 

@@ -74,22 +74,19 @@ void ctx_buffer_free (CtxBuffer *buffer)
 
 /* load the png into the buffer */
 static int ctx_buffer_load_png (CtxBuffer *buffer,
-                                const char *path)
+                                const char *path,
+                                int *tw, int *th)
 {
   ctx_buffer_deinit (buffer);
-#ifdef UPNG_H
-  upng_t *upng = upng_new_from_file (path);
-  int components;
-  if (upng == NULL)
-    { return -1; }
-  upng_header (upng);
-  upng_decode (upng);
-  components = upng_get_components (upng);
-  buffer->width = upng_get_width (upng);
-  buffer->height = upng_get_height (upng);
-  buffer->data = upng_steal_buffer (upng);
-  upng_free (upng);
-  buffer->stride = buffer->width * components;
+#ifdef STBI_INCLUDE_STB_IMAGE_H
+  int w, h, components;
+  unsigned char *data = stbi_load (path, &w, &h, &components, 0);
+  if (data)
+  {
+    buffer->width = w;
+    buffer->height = h;
+    buffer->data = data;
+    buffer->stride = w * components;
   switch (components)
     {
       case 1:
@@ -107,7 +104,14 @@ static int ctx_buffer_load_png (CtxBuffer *buffer,
     }
   buffer->free_func = (void *) free;
   buffer->user_data = NULL;
+  if (tw) *tw = buffer->width;
+  if (th) *th = buffer->height;
   return 0;
+  }
+  else
+  {
+    return -1;
+  }
 #else
   if (path) {};
   return -1;
@@ -128,6 +132,9 @@ static int ctx_allocate_texture_id (Ctx *ctx, int id)
       for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
         if (ctx->texture[i].data == NULL)
           { return i; }
+      int sacrifice = random()%CTX_MAX_TEXTURES; // better to bias towards old
+      ctx_texture_release (ctx, sacrifice);
+      return sacrifice;
       return -1; // eeek
     }
   return id;
@@ -136,7 +143,9 @@ static int ctx_allocate_texture_id (Ctx *ctx, int id)
 /* load the png into the buffer */
 static int ctx_buffer_load_memory (CtxBuffer *buffer,
                                    const char *data,
-                                   int length)
+                                   int length,
+                                   int *width,
+                                   int *height)
 {
   ctx_buffer_deinit (buffer);
 #ifdef UPNG_H
@@ -177,12 +186,12 @@ static int ctx_buffer_load_memory (CtxBuffer *buffer,
 }
 
 int
-ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length)
+ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length, int *width, int *height)
 {
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
     { return id; }
-  if (ctx_buffer_load_memory (&ctx->texture[id], data, length) )
+  if (ctx_buffer_load_memory (&ctx->texture[id], data, length, width, height) )
     {
       return -1;
     }
@@ -190,12 +199,12 @@ ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length)
 }
 
 int
-ctx_texture_load (Ctx *ctx, int id, const char *path)
+ctx_texture_load (Ctx *ctx, int id, const char *path, int *width, int *height)
 {
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
     { return id; }
-  if (ctx_buffer_load_png (&ctx->texture[id], path) )
+  if (ctx_buffer_load_png (&ctx->texture[id], path, width, height) )
     {
       return -1;
     }
@@ -208,7 +217,7 @@ int ctx_texture_init (Ctx *ctx,
                       int  height,
                       int  stride,
                       CtxPixelFormat format,
-                      uint8_t *pixels,
+                      uint8_t       *pixels,
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data)
 {
@@ -216,8 +225,11 @@ int ctx_texture_init (Ctx *ctx,
    * fully serializing is one needed option - for that there is no free
    * func..
    *
+   * mmap texute bank - that is one of many in compositor, prefixed with "pid-",
+   * ... we want string identifiers instead of integers.
+   *
    * a context to use as texturing source
-   *   implemented,
+   *   implemented.
    */
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
@@ -231,8 +243,8 @@ int ctx_texture_init (Ctx *ctx,
   }
 
   ctx_buffer_set_data (&ctx->texture[id],
-                       pixels, width, height, stride,
-                       format,
+                       pixels, width, height,
+                       stride, format,
                        freefunc, user_data);
   return id;
 }
