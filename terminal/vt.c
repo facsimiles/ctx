@@ -7376,8 +7376,9 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
            {
              case 1:
              {
+               /* extend selection until space, XXX  should handle utf8 instead of ascii here!  */
+
                int hit_space = 0;
-               int old_len = 0;
            
                while (vt->select_start_col > 1 && !hit_space)
                {
@@ -7389,24 +7390,16 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
                }
                if (hit_space)
                  vt->select_start_col++;
-               {
-                 char *sel = vt_get_selection (vt);
-                 old_len = strlen (sel);
-                 free (sel);
-               }
+
                hit_space = 0;
-               while (vt->select_end_col < vt->cols && !hit_space)
+               while ((hit_space == 0) &&
+                      (vt->select_end_col < vt->cols))
                {
                  vt->select_end_col ++;
                  char *sel = vt_get_selection (vt);
                  int len = strlen(sel);
-
-                 if (len == (old_len + 1))
-                 {
-                   if (sel[len-1]==' ')
-                     hit_space = 1;
-                   old_len = len;
-                 }
+                 if (sel[len-2]==' ')
+                   hit_space = 1;
                  free (sel);
                }
                if (hit_space)
@@ -7448,6 +7441,8 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
            if (vt->ctx && short_count == 0)
              long_tap_cb_id = ctx_add_timeout (vt->ctx, 1000, single_tap, vt);
            short_count = 0;
+           //vt->select_start_col = 
+           //vt->select_end_col = vt->select_begin_col;
          }
          vt->select_begin_x = px_x;
          vt->select_begin_y = px_y;
