@@ -4,13 +4,14 @@
 static int usage_main (int argc, char **argv)
 {
   printf (
-    "Usage: ctx [command [args..]]\n"
+    "Usage: ctx \"command-line with args\"\n"
     "  launch a terminal, if no command is specified a new instance of\n"
     "  the users shell is invoked.\n"
     "\n"
     "or: ctx --convert [options] <source.ctx> <destination>\n"
     "  convert source.ctx to destination, where destination is a\n"
     "  path with a .png suffix, or the string GRAY1 or GRAY8\n"
+    "  to generate a terminal visualization on stdout\n"
     "\n"
     "  options:\n"
     "  --color         use color in output\n"

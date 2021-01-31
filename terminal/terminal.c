@@ -1750,17 +1750,11 @@ int terminal_main (int argc, char **argv)
   if (font_size < 0)
     font_size = floorf (2 * width / cols /2) * 3;
 
-  if (argv[1] == NULL)
-  {
-    //active = add_client (vt_find_shell_command(), 0, 0, width, height, 0, 1);
-    client_maximize (add_tab (vt_find_shell_command(), 1));
-    active_tab = active;
-  }
-  else
-  {
-    //active = add_client_argv ((void*)&argv[1], 0, 0, width, height, 0, 1);
-    add_tab ((void*)&argv[1], 1);
-  }
+  const char *command = argv[1];
+  if (!command)
+    command = vt_find_shell_command();
+  client_maximize (add_tab (command, 1));
+
   if (!active)
     return 1;
   vt_set_ctx (active->vt, ctx);
