@@ -643,6 +643,10 @@ Ctx *ctx_new_sdl (int width, int height)
 
   _ctx_file_get_contents ("/tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
 
+#if CTX_BABL
+  babl_init ();
+#endif
+
   sdl->ctx = ctx_new ();
   sdl->ctx_copy = ctx_new ();
   sdl->width  = width;
@@ -652,6 +656,7 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->pixels = (uint8_t*)malloc (width * height * 4);
   ctx_set_renderer (sdl->ctx, sdl);
   ctx_set_renderer (sdl->ctx_copy, sdl);
+
 
 #if 0
   if (icc_length)

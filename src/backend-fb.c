@@ -1652,6 +1652,10 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   fb->scratch_fb = calloc (fb->fb_mapped_size, 1);
   ctx_fb_events = 1;
 
+#if CTX_BABL
+  babl_init ();
+#endif
+
   fb->ctx      = ctx_new ();
   fb->ctx_copy = ctx_new ();
   fb->width    = width;

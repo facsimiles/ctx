@@ -1955,7 +1955,7 @@ foo:
                   y = entry->data.s16[3] * 1.0f / aa;
                   if (entry[1].code == CTX_EDGE)
                     {
-                      ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*3, 0, 1);
+                      ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*2, 0, 1);
                       ctx_rasterizer_finish_shape (rasterizer);
                     }
                 }
