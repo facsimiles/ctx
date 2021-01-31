@@ -1302,14 +1302,14 @@ int itk_radio (ITK *itk, const char *label, int set)
 
   itk_style_color (itk->ctx, "itk-interactive");
   ctx_begin_path (ctx);
-  ctx_arc (ctx, itk->x + em * 0.55, itk->y + em * 0.57, em * 0.4, 0.0, 6.0, 0);
+  ctx_arc (ctx, itk->x + em * 0.55, itk->y + em * 0.57, em * 0.4, 0.0, 6.3, 0);
   ctx_close_path (ctx);
   ctx_line_width (ctx, em * 0.07);
   ctx_stroke (ctx);
 
   if (set)
   {
-    ctx_arc (ctx, itk->x + em * 0.55, itk->y + em * 0.57, em * 0.2, 0.0, 5.0, 0);
+    ctx_arc (ctx, itk->x + em * 0.55, itk->y + em * 0.57, em * 0.2, 0.0, 6.3, 0);
     ctx_fill (ctx);
   }
 
