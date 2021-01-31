@@ -1543,6 +1543,3 @@ void vt_audio (VT *vt, const char *command)
     audio->data = NULL;
     audio->data_size=0;
 }
-
-
-// YYYYY

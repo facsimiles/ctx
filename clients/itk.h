@@ -321,7 +321,7 @@ ITK *itk_new (Ctx *ctx)
   itk->ctx              = ctx;
   itk->focus_wraparound = 1;
   itk->scale            = 1.5;
-  itk->font_size        = 18;
+  itk->font_size        = getenv("ITK_FONT_SIZE")?atoi(getenv("ITK_FONT_SIZE")):20;
   itk->width            = itk->font_size * 15;
   itk->label_width      = 0.5;
   itk->rel_vmargin      = 0.5;
@@ -332,7 +332,7 @@ ITK *itk_new (Ctx *ctx)
   itk->menu_path = strdup ("main/foo");
   itk->rel_hpad         = 0.3;
   itk->rel_vgap         = 0.2;
-  itk->scroll_speed     = 0.333;
+  itk->scroll_speed     = 0.8;
   itk->light_mode       = 1;
   ctx_set_dirty (ctx, 1);
 
@@ -571,6 +571,15 @@ CtxControl *itk_add_control (ITK *itk,
       itk_style_color (itk->ctx, "itk-interactive-bg");
       ctx_fill (itk->ctx);
     }
+  }
+
+  switch (control->type)
+  {
+    case UI_SLIDER:
+      control->ref_count++;
+      break;
+    default:
+      break;
   }
 
   return control;
@@ -1621,7 +1630,8 @@ void itk_focus (ITK *itk, int dir)
 
    // XXX no control means inifinie loop?
    CtxControl *control = itk_focused_control (itk);
-   if (!(control->flags & ITK_FLAG_ACTIVE)){
+   if (!control || 
+       !(control->flags & ITK_FLAG_ACTIVE)){
      itk_focus (itk, dir);
    }
 }

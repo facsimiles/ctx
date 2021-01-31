@@ -36,6 +36,9 @@ SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
 all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
 
+dm/dm: dm/*.[ch] Makefile ctx.o clients/itk.h libctx.a
+	$(CCC) -g dm/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) $(OFLAGS_LIGHT) -Iclients
+
 clients/%: clients/%.c Makefile ctx.o clients/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) $(OFLAGS_LIGHT)
 
@@ -47,8 +50,10 @@ fonts/ctx-font-regular-spacing.h: fonts/ctx-font-regular.h
 	grep -v "},$$" $< > $@
 
 fonts/ctxf/ascii.ctxf: tools/ctx-fontgen
+	@mkdir fonts/ctxf || true
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii binary > $@
 fonts/ctxf/regular.ctxf: tools/ctx-fontgen
+	@mkdir fonts/ctxf || true
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras binary > $@
 fonts/ctx-font-regular.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras > $@
