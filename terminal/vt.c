@@ -836,7 +836,7 @@ VT *vt_new (const char *command, int width, int height, float font_size, float l
   vt_set_line_spacing (vt, line_spacing);
   if (command)
     {
-      vt_run_command (vt, command, "xterm");
+      vt_run_command (vt, command, NULL);
     }
   if (width <= 0) width = 640;
   if (height <= 0) width = 480;
@@ -5228,8 +5228,8 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
       //setenv ("TERM", "ansi", 1);
       //setenv ("TERM", "vt102", 1);
       //setenv ("TERM", "vt100", 1);
-      //setenv ("TERM", "xterm-256color", 1);
-      setenv ("TERM", term?term:"xterm", 1);
+      // setenv ("TERM", term?term:"xterm", 1);
+      setenv ("TERM", term?term:"xterm-256color", 1);
       setenv ("COLORTERM", "truecolor", 1);
       setenv ("CTX_VERSION", "0", 1);
 
