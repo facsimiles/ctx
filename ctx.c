@@ -35,7 +35,7 @@
 #define CTX_ENABLE_CM            1
 #define CTX_RASTERIZER_AA        5
 #define CTX_FORCE_AA             1
-#define CTX_MAX_TEXTURES         256
+#define CTX_MAX_TEXTURES         32
 #define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/
                                        // variable size for each save|restore
 #define CTX_MATH                 1

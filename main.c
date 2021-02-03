@@ -1,5 +1,7 @@
 #include <string.h>
 #include "ctx.h"
+#include <sys/stat.h>
+#include <sys/types.h>
 
 static int usage_main (int argc, char **argv)
 {
@@ -117,12 +119,136 @@ int launch_main (int argc, char **argv)
   return 0;
 }
 
+#include "stb_image.h"
+#include "stb_image_write.h"
+
+typedef struct _CtxSHA1 CtxSHA1;
+CtxSHA1 *ctx_sha1_new (void);
+void ctx_sha1_free (CtxSHA1 *sha1);
+int ctx_sha1_process(CtxSHA1 *sha1, const unsigned char * msg, unsigned long len);
+int ctx_sha1_done(CtxSHA1 * sha1, unsigned char *out);
+
+void ctx_mkdir_ancestors (const char *path, unsigned int mode)
+{
+  char *tmppaths=strdup (path);
+  char *sl = strchr (tmppaths, '/');
+  while (sl && *sl)
+  {
+    sl ++;
+    sl = strchr (sl, '/');
+    if (sl)
+    {
+      *sl = '\0';
+      mkdir (tmppaths, mode);
+      *sl = '/';
+    }
+  }
+  free (tmppaths);
+}
+
+int make_thumb (const char *src_path, const char *dst_path)
+{
+  int width, height, components, stride;
+  uint8_t *data = stbi_load (src_path, &width, &height, &components, 4);
+  int idim = 256; // largest width or height
+  stride = width * 4;
+  float dim = idim;
+  int was_jpg = strstr(src_path, "jpg")?1:0;
+  if (!data)
+     return -1;
+  if (dim > width && dim > height)
+  {
+    if (was_jpg)
+      stbi_write_jpg (dst_path, width, height, 4, data, stride);
+    else
+      stbi_write_png (dst_path, width, height, 4, data, stride);
+    return 0;
+  }
+  uint8_t *tdata = calloc (idim * idim, 4);
+
+  float factor = width / dim;
+  if (height / dim >  factor) factor = height / dim;
+
+  int outw = width / factor;
+  int outh = height / factor;
+
+  /* this is the crudest thumbnailer that almost works :]
+   * missing any color management or nicer than nearest
+   * neighbor.
+   */
+
+  int i = 0;
+  for (int y = 0; y < outh; y ++)
+  for (int x = 0; x < outw; x ++, i+=4)
+  {
+    int u = x * factor;
+    int v = y * factor;
+    if (u < 0 ||  v < 0 || u >= width ||
+        v >= height)
+    {
+      // leave pixel blank - doesn't happen now that we keep aspect
+    }
+    else
+    for (int c = 0; c < 4; c ++)
+    {
+      tdata[i+c] = data[v * stride + u * 4 + c];
+    }
+  }
+  if (was_jpg)
+    stbi_write_jpg (dst_path, outw, outh, 4, tdata, outw * 4);
+  else
+    stbi_write_png (dst_path, outw, outh, 4, tdata, outw * 4);
+  free (tdata);
+  return 0;
+}
+
+char *ctx_thumb_path (const char *path)
+{
+  char *hex="0123456789abcdefghijkl";
+  unsigned char path_hash[40];
+  char path_hash_hex[41];
+  CtxSHA1 *sha1 = ctx_sha1_new ();
+  ctx_sha1_process (sha1, (uint8_t*)"file://", strlen ("file://"));
+  ctx_sha1_process (sha1, (uint8_t*)path, strlen (path));
+  ctx_sha1_done(sha1, path_hash);
+  ctx_sha1_free (sha1);
+  for (int j = 0; j < 20; j++)
+  {
+    path_hash_hex[j*2+0]=hex[path_hash[j]/16];
+    path_hash_hex[j*2+1]=hex[path_hash[j]%16];
+  }
+  path_hash_hex[40]=0;
+  return ctx_strdup_printf ("%s/.ctx-thumbnails/%s", getenv ("HOME"), path_hash_hex);
+}
+
+int thumb_main (int argc, char **argv)
+{
+  if (!argv[1])
+  {
+    fprintf (stderr, "usage: ctx thumb <path1> [path2 [path3 ..]]\n");
+    return -1;
+  }
+  for (int i = 1; argv[i]; i++)
+  {
+    char *thumb_path = ctx_thumb_path (argv[i]);
+    ctx_mkdir_ancestors (thumb_path, 0777);
+    fprintf (stderr, "%s", argv[i]);
+    make_thumb (argv[i], thumb_path);
+    fprintf (stderr, "\n");
+    free (thumb_path);
+  }
+
+  return 0;
+}
+
 int main (int argc, char **argv)
 {
   for (int i = 1; argv[i]; i++)
     if (!strcmp ( argv[i], "--help"))
       return usage_main (argc, argv);
 
+  if (argv[1] && !strcmp (argv[1], "thumb"))
+    return thumb_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "convert"))
     return convert_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "launch"))

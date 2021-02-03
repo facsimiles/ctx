@@ -826,6 +826,8 @@ void ctx_rasterizer_colorspace_babl (CtxState      *state,
   if (!state->gstate.rgb_space) 
        state->gstate.rgb_space = babl_space ("sRGB");
 
+  //fprintf (stderr, "%s\n", babl_get_name (state->gstate.device_space));
+
   state->gstate.fish_rgbaf_device_to_user = babl_fish (
        babl_format_with_space ("R'G'B'A float", state->gstate.device_space),
        babl_format_with_space ("R'G'B'A float", state->gstate.rgb_space));
@@ -852,7 +854,9 @@ void ctx_rasterizer_colorspace_icc (CtxState      *state,
    if (!space && !strcmp (icc_data, "ACES2065-1")) space = babl_space ("ACES2065-1");
 
    if (!space)
+   {
      space = babl_space_from_icc (icc_data, icc_length, BABL_ICC_INTENT_RELATIVE_COLORIMETRIC, &error);
+   }
    if (space)
    {
      ctx_rasterizer_colorspace_babl (state, space_slot, space);

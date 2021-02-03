@@ -617,7 +617,9 @@ int ctx_renderer_is_sdl (Ctx *ctx)
 Ctx *ctx_new_sdl (int width, int height)
 {
 #if CTX_RASTERIZER
+
   CtxSDL *sdl = (CtxSDL*)calloc (sizeof (CtxSDL), 1);
+  _ctx_file_get_contents ("/tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
   if (width <= 0 || height <= 0)
   {
     width  = 1920;
@@ -632,6 +634,10 @@ Ctx *ctx_new_sdl (int width, int height)
      free (sdl);
      return NULL;
   }
+#if CTX_BABL
+  babl_init ();
+#endif
+
   ctx_sdl_events = 1;
   sdl->texture = SDL_CreateTexture (sdl->renderer,
         SDL_PIXELFORMAT_ABGR8888,
@@ -641,32 +647,18 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_StartTextInput ();
   SDL_EnableScreenSaver ();
 
-  _ctx_file_get_contents ("/tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
-
-#if CTX_BABL
-  babl_init ();
-#endif
-
   sdl->ctx = ctx_new ();
   sdl->ctx_copy = ctx_new ();
   sdl->width  = width;
   sdl->height = height;
   sdl->cols = 80;
   sdl->rows = 20;
-  sdl->pixels = (uint8_t*)malloc (width * height * 4);
   ctx_set_renderer (sdl->ctx, sdl);
   ctx_set_renderer (sdl->ctx_copy, sdl);
 
+  sdl->pixels = (uint8_t*)malloc (width * height * 4);
 
-#if 0
-  if (icc_length)
-  {
-    ctx_colorspace (sdl->ctx, CTX_COLOR_SPACE_DEVICE_RGB, icc, icc_length);
-    ctx_colorspace (sdl->ctx_copy, CTX_COLOR_SPACE_DEVICE_RGB, icc, icc_length);
-  }
-#endif
-
-  ctx_set_size (sdl->ctx, width, height);
+  ctx_set_size (sdl->ctx,      width, height);
   ctx_set_size (sdl->ctx_copy, width, height);
   sdl->flush = (void*)ctx_sdl_flush;
   sdl->reset = (void*)ctx_sdl_reset;

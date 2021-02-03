@@ -1656,13 +1656,24 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   babl_init ();
 #endif
 
+  _ctx_file_get_contents ("/tmp/ctx.icc", &fb_icc, &fb_icc_length);
+
   fb->ctx      = ctx_new ();
   fb->ctx_copy = ctx_new ();
   fb->width    = width;
   fb->height   = height;
 
+
   ctx_set_renderer (fb->ctx, fb);
   ctx_set_renderer (fb->ctx_copy, fb);
+
+#if 0
+  if (fb_icc_length)
+  {
+    ctx_colorspace (fb->ctx, CTX_COLOR_SPACE_DEVICE_RGB, fb_icc, fb_icc_length);
+    ctx_colorspace (fb->ctx_copy, CTX_COLOR_SPACE_DEVICE_RGB, fb_icc, fb_icc_length);
+  }
+#endif
 
   ctx_set_size (fb->ctx, width, height);
   ctx_set_size (fb->ctx_copy, width, height);
@@ -1681,7 +1692,6 @@ Ctx *ctx_new_fb (int width, int height, int drm)
     ctx_set_texture_source (fb->host[i], fb->ctx);
   }
 
-  _ctx_file_get_contents ("/tmp/ctx.icc", &fb_icc, &fb_icc_length);
 
   mtx_init (&fb->mtx, mtx_plain);
   cnd_init (&fb->cond);

@@ -906,5 +906,12 @@ static inline void *ctx_calloc (size_t size, size_t count);
 
 void ctx_screenshot (Ctx *ctx, const char *output_path);
 
+typedef struct _CtxSHA1 CtxSHA1;
+
+CtxSHA1 *ctx_sha1_new (void);
+void ctx_sha1_free (CtxSHA1 *sha1);
+int ctx_sha1_process(CtxSHA1 *sha1, const unsigned char * msg, unsigned long len);
+int ctx_sha1_done(CtxSHA1 * sha1, unsigned char *out);
+
 #endif
 
