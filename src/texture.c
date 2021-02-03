@@ -72,52 +72,6 @@ void ctx_buffer_free (CtxBuffer *buffer)
   free (buffer);
 }
 
-/* load png,gif,jpg into the buffer */
-static int ctx_buffer_load_stb (CtxBuffer *buffer,
-                                const char *path,
-                                int *tw, int *th)
-{
-  ctx_buffer_deinit (buffer);
-#ifdef STBI_INCLUDE_STB_IMAGE_H
-  int w, h, components;
-  unsigned char *data = stbi_load (path, &w, &h, &components, 0);
-  if (data)
-  {
-    buffer->width = w;
-    buffer->height = h;
-    buffer->data = data;
-    buffer->stride = w * components;
-  switch (components)
-    {
-      case 1:
-        buffer->format = ctx_pixel_format_info (CTX_FORMAT_GRAY8);
-        break;
-      case 2:
-        buffer->format = ctx_pixel_format_info (CTX_FORMAT_GRAYA8);
-        break;
-      case 3:
-        buffer->format = ctx_pixel_format_info (CTX_FORMAT_RGB8);
-        break;
-      case 4:
-        buffer->format = ctx_pixel_format_info (CTX_FORMAT_RGBA8);
-        break;
-    }
-  buffer->free_func = (void *) free;
-  buffer->user_data = NULL;
-  if (tw) *tw = buffer->width;
-  if (th) *th = buffer->height;
-  return 0;
-  }
-  else
-  {
-    return -1;
-  }
-#else
-  if (path) {};
-  return -1;
-#endif
-}
-
 void ctx_texture_release (Ctx *ctx, int id)
 {
   if (id < 0 || id >= CTX_MAX_TEXTURES)
@@ -140,21 +94,8 @@ static int ctx_allocate_texture_id (Ctx *ctx, int id)
   return id;
 }
 
-int
-ctx_texture_load (Ctx *ctx, int id, const char *path, int *width, int *height)
-{
-  id = ctx_allocate_texture_id (ctx, id);
-  if (id < 0)
-    { return id; }
-  if (ctx_buffer_load_stb (&ctx->texture[id], path, width, height) )
-    {
-      return -1;
-    }
-  return id;
-}
-
 int ctx_texture_init (Ctx *ctx,
-                      int  id,
+                      int  id,     /*  should be a string? - also the auto-ids*/
                       int  width,
                       int  height,
                       int  stride,
@@ -189,4 +130,29 @@ int ctx_texture_init (Ctx *ctx,
                        stride, format,
                        freefunc, user_data);
   return id;
+}
+
+int
+ctx_texture_load (Ctx *ctx, int id, const char *path, int *tw, int *th)
+{
+#ifdef STBI_INCLUDE_STB_IMAGE_H
+  int w, h, components;
+  unsigned char *data = stbi_load (path, &w, &h, &components, 0);
+  if (data)
+  {
+    CtxPixelFormat pixel_format = CTX_FORMAT_RGBA8;
+    switch (components)
+    {
+      case 1: pixel_format = CTX_FORMAT_GRAY8; break;
+      case 2: pixel_format = CTX_FORMAT_GRAYA8; break;
+      case 3: pixel_format = CTX_FORMAT_RGB8; break;
+      case 4: pixel_format = CTX_FORMAT_RGBA8; break;
+    }
+    if (tw) *tw = w;
+    if (th) *th = h;
+    return ctx_texture_init (ctx, id, w, h, w * components, pixel_format, data, 
+                             ctx_buffer_pixels_free, NULL);
+  }
+#endif
+  return -1;
 }
