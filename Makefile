@@ -36,9 +36,6 @@ SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
 all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
 
-dm/dm: dm/*.[ch] Makefile ctx.o clients/itk.h libctx.a
-	$(CCC) -g dm/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) $(OFLAGS_LIGHT) -Iclients
-
 clients/%: clients/%.c Makefile ctx.o clients/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) $(OFLAGS_LIGHT)
 

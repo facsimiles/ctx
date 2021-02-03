@@ -303,14 +303,19 @@ int ctx_texture_init (Ctx *ctx,
                       int stride,
                       CtxPixelFormat format,
                       uint8_t *pixels,
-                      /* XXX : add stride - in bytes ? */
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data);
 
-int ctx_texture_load        (Ctx *ctx, int id, const char *path, int *width, int *height);
-int ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length, int *width, int *height);
+int  ctx_texture_load       (Ctx *ctx, int id, const char *path, int *width, int *height);
 void ctx_texture_release    (Ctx *ctx, int id);
+
+/* sets the paint source to be a texture from the texture bank*/
 void ctx_texture            (Ctx *ctx, int id, float x, float y);
+
+/* global used to use the textures from a different context, used
+ * by the render threads of fb and sdl backends.
+ */
+void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source);
 
 void ctx_image_path (Ctx *ctx, const char *path, float x, float y);
 
@@ -556,7 +561,6 @@ float ctx_glyph_width   (Ctx *ctx, int unichar);
 
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 
-void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source);
 
 
 enum _CtxModifierState

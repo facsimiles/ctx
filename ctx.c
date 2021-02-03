@@ -39,8 +39,8 @@
 #define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/
                                        // variable size for each save|restore
 #define CTX_MATH                 1
-#define CTX_MIN_JOURNAL_SIZE     1024*128
-#define CTX_MIN_EDGE_LIST_SIZE   2048
+#define CTX_MIN_JOURNAL_SIZE     1024*256
+#define CTX_MIN_EDGE_LIST_SIZE   4096*2
 
 //#define CTX_FONT_ENGINE_CTX_FS   1
 

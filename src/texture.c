@@ -72,8 +72,8 @@ void ctx_buffer_free (CtxBuffer *buffer)
   free (buffer);
 }
 
-/* load the png into the buffer */
-static int ctx_buffer_load_png (CtxBuffer *buffer,
+/* load png,gif,jpg into the buffer */
+static int ctx_buffer_load_stb (CtxBuffer *buffer,
                                 const char *path,
                                 int *tw, int *th)
 {
@@ -140,71 +140,13 @@ static int ctx_allocate_texture_id (Ctx *ctx, int id)
   return id;
 }
 
-/* load the png into the buffer */
-static int ctx_buffer_load_memory (CtxBuffer *buffer,
-                                   const char *data,
-                                   int length,
-                                   int *width,
-                                   int *height)
-{
-  ctx_buffer_deinit (buffer);
-#ifdef UPNG_H
-  upng_t *upng = upng_new_from_bytes (data, length);
-  int components;
-  if (upng == NULL)
-    { return -1; }
-  upng_header (upng);
-  upng_decode (upng);
-  components     = upng_get_components (upng);
-  buffer->width  = upng_get_width (upng);
-  buffer->height = upng_get_height (upng);
-  buffer->data   = upng_steal_buffer (upng);
-  upng_free (upng);
-  buffer->stride = buffer->width * components;
-  switch (components)
-    {
-      case 1:
-        buffer->format = ctx_pixel_format_info (CTX_FORMAT_GRAY8);
-        break;
-      case 2:
-        buffer->format = ctx_pixel_format_info (CTX_FORMAT_GRAYA8);
-        break;
-      case 3:
-        buffer->format = ctx_pixel_format_info (CTX_FORMAT_RGB8);
-        break;
-      case 4:
-        buffer->format = ctx_pixel_format_info (CTX_FORMAT_RGBA8);
-        break;
-    }
-  buffer->free_func = (void *) free;
-  buffer->user_data = NULL;
-  return 0;
-#else
-  if (data && length) {};
-  return -1;
-#endif
-}
-
-int
-ctx_texture_load_memory (Ctx *ctx, int id, const char *data, int length, int *width, int *height)
-{
-  id = ctx_allocate_texture_id (ctx, id);
-  if (id < 0)
-    { return id; }
-  if (ctx_buffer_load_memory (&ctx->texture[id], data, length, width, height) )
-    {
-      return -1;
-    }
-  return id;
-}
-
 int
 ctx_texture_load (Ctx *ctx, int id, const char *path, int *width, int *height)
 {
   id = ctx_allocate_texture_id (ctx, id);
   if (id < 0)
     { return id; }
-  if (ctx_buffer_load_png (&ctx->texture[id], path, width, height) )
+  if (ctx_buffer_load_stb (&ctx->texture[id], path, width, height) )
     {
       return -1;
     }
