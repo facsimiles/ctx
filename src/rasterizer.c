@@ -93,7 +93,7 @@ static long misses = 0;
 /* this returns the buffer to use for rendering, it always
    succeeds..
  */
-static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height, uint32_t time)
+static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t hash, int width, int height, uint32_t time)
 {
   int entry_no = ( (hash >> 10) ^ (hash & 1023) ) % CTX_SHAPE_CACHE_ENTRIES;
   int i;
@@ -108,6 +108,15 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
         misses = 0;
       }
   }
+
+  if (!ctx_shape_cache_mutex)
+  {
+    // racy - but worst that happens is visual glitches
+    ctx_shape_cache_mutex = ctx_create_mutex ();
+  }
+  // lock shape cache mutex
+  ctx_lock_mutex (ctx_shape_cache_mutex);
+
   i = entry_no;
   if (ctx_cache.entries[i])
     {
@@ -120,61 +129,10 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
           if (ctx_cache.entries[i]->uses < 1<<30)
             { ctx_cache.entries[i]->uses++; }
           hits ++;
+          ctx_unlock_mutex (ctx_shape_cache_mutex);
           return ctx_cache.entries[i];
         }
-#if 0
-      else if (i < CTX_SHAPE_CACHE_ENTRIES-2)
-        {
-          if (ctx_cache.entries[i+1])
-            {
-              if (ctx_cache.entries[i+1]->hash == hash &&
-                  ctx_cache.entries[i+1]->width == width &&
-                  ctx_cache.entries[i+1]->height == height)
-                {
-                  ctx_cache.entries[i+1]->refs++;
-                  ctx_cache.entries[i+1]->age = time;
-                  if (ctx_cache.entries[i+1]->uses < 1<<30)
-                    { ctx_cache.entries[i+1]->uses++; }
-                  hits ++;
-                  return ctx_cache.entries[i+1];
-                }
-              else if (i < CTX_SHAPE_CACHE_ENTRIES-3)
-                {
-                  if (ctx_cache.entries[i+2])
-                    {
-                      if (ctx_cache.entries[i+2]->hash == hash &&
-                          ctx_cache.entries[i+2]->width == width &&
-                          ctx_cache.entries[i+2]->height == height)
-                        {
-                          ctx_cache.entries[i+2]->refs++;
-                          ctx_cache.entries[i+2]->age = time;
-                          if (ctx_cache.entries[i+2]->uses < 1<<30)
-                            { ctx_cache.entries[i+2]->uses++; }
-                          hits ++;
-                          return ctx_cache.entries[i+2];
-                        }
-                    }
-                  else
-                    {
-                      i+=2;
-                    }
-                }
-            }
-          else
-            {
-              i++;
-            }
-        }
-#endif
     }
-
-  if (!ctx_shape_cache_mutex)
-  {
-    // racy - but worst that happens is visual glitches
-    ctx_shape_cache_mutex = ctx_create_mutex ();
-  }
-  // lock shape cache mutex
-  ctx_lock_mutex (ctx_shape_cache_mutex);
 
   misses ++;
 // XXX : this 1 one is needed  to silence a false positive:
@@ -208,7 +166,7 @@ static CtxShapeEntry *ctx_shape_entry_find (uint32_t hash, int width, int height
   return ctx_cache.entries[i];
 }
 
-static void ctx_shape_entry_release (CtxShapeEntry *entry)
+static void ctx_shape_entry_release (CtxRasterizer *rasterizer, CtxShapeEntry *entry)
 {
   entry->refs--;
 }
@@ -1387,18 +1345,13 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     {
       int scan_min = rasterizer->scan_min;
       int col_min = rasterizer->col_min;
-      CtxShapeEntry *shape = ctx_shape_entry_find (hash, width, height, ctx_shape_time++);
-      if (shape->uses == 0)
-        {
-          ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule, shape);
-        }
       scan_min -= (scan_min % aa);
       rasterizer->scanline = scan_min;
       int y0 = rasterizer->scanline / aa;
-      int y1 = y0 + shape->height;
+      int y1 = y0 + height;
       int x0 = col_min / CTX_SUBDIV;
       int ymin = y0;
-      int x1 = x0 + shape->width;
+      int x1 = x0 + width;
       int clip_x_min = rasterizer->blit_x;
       int clip_x_max = rasterizer->blit_x + rasterizer->blit_width - 1;
       int clip_y_min = rasterizer->blit_y;
@@ -1419,14 +1372,36 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
           clip_y_max)
         { clip_y_max = rasterizer->state->gstate.clip_max_y; }
 #endif
+      int dont_cache = 0;
       if (x1 >= clip_x_max)
-        { x1 = clip_x_max; }
+        { x1 = clip_x_max;
+          dont_cache = 1;
+        }
       int xo = 0;
       if (x0 < clip_x_min)
         {
           xo = clip_x_min - x0;
           x0 = clip_x_min;
+          dont_cache = 1;
         }
+      if (y0 < clip_y_min || y1 >= clip_y_max)
+        dont_cache = 1;
+      if (dont_cache)
+      {
+        ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
+#if CTX_SHAPE_CACHE
+                                      , NULL
+#endif
+                                     );
+        goto done;
+      }
+      CtxShapeEntry *shape = ctx_shape_entry_find (rasterizer, hash, width, height, ctx_shape_time++);
+
+      if (shape->uses == 0)
+        {
+          ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule, shape);
+        }
+
       int ewidth = x1 - x0;
       if (ewidth>0)
         for (int y = y0; y < y1; y++)
@@ -1444,12 +1419,14 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
         {
           ctx_rasterizer_reset (rasterizer);
         }
-      ctx_shape_entry_release (shape);
+      ctx_shape_entry_release (rasterizer, shape);
       goto done;
     }
   else
 #else
-  ctx_rasterizer_poly_to_edges (rasterizer);
+  {
+    ctx_rasterizer_poly_to_edges (rasterizer);
+  }
 #endif
 
     {

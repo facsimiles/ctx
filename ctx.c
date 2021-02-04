@@ -47,7 +47,7 @@
 //#define CTX_HASH_COLS  1
 //#define CTX_HASH_ROWS  1
 
-#define CTX_SHAPE_CACHE          0 // disabled - it is buggy with threads
+#define CTX_SHAPE_CACHE          1 // disabled - it is buggy with threads
 #define CTX_SHAPE_CACHE_MAX_DIM  96
 #define CTX_SHAPE_CACHE_DIM      (64*64)
 #define CTX_SHAPE_CACHE_ENTRIES  (512)
