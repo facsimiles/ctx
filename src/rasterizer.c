@@ -104,7 +104,7 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
 // ==90718==    by 0x118E57: ctx_rasterizer_rasterize_edges (ctx.h:4907)
 //
   int size = sizeof (CtxShapeEntry) + width * height + 1;
-  CtxShapeEntry *new_entry = (CtxShapeEntry *) malloc (size);
+  CtxShapeEntry *new_entry = (CtxShapeEntry *) calloc (size, 1);
   new_entry->refs = 1;
   if (rasterizer->shape_cache.entries[i])
     {
@@ -1325,8 +1325,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       if (rasterizer->state->gstate.clip_max_x <
           clip_x_max)
         { clip_x_max = rasterizer->state->gstate.clip_max_x; }
-#endif
-#if 0
       if (rasterizer->state->gstate.clip_min_y>
           clip_y_min)
         { clip_y_min = rasterizer->state->gstate.clip_min_y; }
