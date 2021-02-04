@@ -53,9 +53,6 @@ static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 float ctx_shape_cache_rate = 0.0;
 #if CTX_SHAPE_CACHE
 
-static uint32_t ctx_shape_time = 0;
-
-
 //static CtxShapeCache ctx_cache = {{NULL,}, 0};
 
 static long hits = 0;
@@ -65,7 +62,7 @@ static long misses = 0;
 /* this returns the buffer to use for rendering, it always
    succeeds..
  */
-static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t hash, int width, int height, uint32_t time)
+static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t hash, int width, int height)
 {
   int entry_no = ( (hash >> 10) ^ (hash & 1023) ) % CTX_SHAPE_CACHE_ENTRIES;
   int i;
@@ -88,7 +85,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
           rasterizer->shape_cache.entries[i]->width == width &&
           rasterizer->shape_cache.entries[i]->height == height)
         {
-          rasterizer->shape_cache.entries[i]->age = time;
           if (rasterizer->shape_cache.entries[i]->uses < 1<<30)
             { rasterizer->shape_cache.entries[i]->uses++; }
           hits ++;
@@ -117,7 +113,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
       rasterizer->shape_cache.entries[i] = new_entry;
     }
   rasterizer->shape_cache.size += size;
-  rasterizer->shape_cache.entries[i]->age = time;
   rasterizer->shape_cache.entries[i]->hash=hash;
   rasterizer->shape_cache.entries[i]->width=width;
   rasterizer->shape_cache.entries[i]->height=height;
@@ -1351,7 +1346,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                                      );
         goto done;
       }
-      CtxShapeEntry *shape = ctx_shape_entry_find (rasterizer, hash, width, height, ctx_shape_time++);
+      CtxShapeEntry *shape = ctx_shape_entry_find (rasterizer, hash, width, height); 
 
       if (shape->uses == 0)
         {
