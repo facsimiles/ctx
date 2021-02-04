@@ -83,7 +83,6 @@ struct _CtxShapeCache
 
 typedef struct _CtxShapeCache CtxShapeCache;
 
-static ctx_mutex_t  *ctx_shape_cache_mutex;
 static CtxShapeCache ctx_cache = {{NULL,}, 0};
 
 static long hits = 0;
@@ -109,14 +108,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
       }
   }
 
-  if (!ctx_shape_cache_mutex)
-  {
-    // racy - but worst that happens is visual glitches
-    ctx_shape_cache_mutex = ctx_create_mutex ();
-  }
-  // lock shape cache mutex
-  ctx_lock_mutex (ctx_shape_cache_mutex);
-
   i = entry_no;
   if (ctx_cache.entries[i])
     {
@@ -129,7 +120,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
           if (ctx_cache.entries[i]->uses < 1<<30)
             { ctx_cache.entries[i]->uses++; }
           hits ++;
-          ctx_unlock_mutex (ctx_shape_cache_mutex);
           return ctx_cache.entries[i];
         }
     }
@@ -162,7 +152,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
   ctx_cache.entries[i]->width=width;
   ctx_cache.entries[i]->height=height;
   ctx_cache.entries[i]->uses = 0;
-  ctx_unlock_mutex (ctx_shape_cache_mutex);
   return ctx_cache.entries[i];
 }
 
