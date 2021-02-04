@@ -55,35 +55,8 @@ float ctx_shape_cache_rate = 0.0;
 
 static uint32_t ctx_shape_time = 0;
 
-/* to get better cache usage-  */
 
-struct _CtxShapeEntry
-{
-  uint32_t hash;
-  uint16_t width;
-  uint16_t height;
-  uint32_t refs;
-  uint32_t age;   // time last used
-  uint32_t uses;  // instrumented for longer keep-alive
-  uint8_t  data[];
-};
-
-typedef struct _CtxShapeEntry CtxShapeEntry;
-
-
-// this needs a max-size
-// and a more agressive freeing when
-// size is about to be exceeded
-
-struct _CtxShapeCache
-{
-  CtxShapeEntry *entries[CTX_SHAPE_CACHE_ENTRIES];
-  long size;
-};
-
-typedef struct _CtxShapeCache CtxShapeCache;
-
-static CtxShapeCache ctx_cache = {{NULL,}, 0};
+//static CtxShapeCache ctx_cache = {{NULL,}, 0};
 
 static long hits = 0;
 static long misses = 0;
@@ -109,18 +82,18 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
   }
 
   i = entry_no;
-  if (ctx_cache.entries[i])
+  if (rasterizer->shape_cache.entries[i])
     {
-      if (ctx_cache.entries[i]->hash == hash &&
-          ctx_cache.entries[i]->width == width &&
-          ctx_cache.entries[i]->height == height)
+      if (rasterizer->shape_cache.entries[i]->hash == hash &&
+          rasterizer->shape_cache.entries[i]->width == width &&
+          rasterizer->shape_cache.entries[i]->height == height)
         {
-          ctx_cache.entries[i]->refs++;
-          ctx_cache.entries[i]->age = time;
-          if (ctx_cache.entries[i]->uses < 1<<30)
-            { ctx_cache.entries[i]->uses++; }
+          rasterizer->shape_cache.entries[i]->refs++;
+          rasterizer->shape_cache.entries[i]->age = time;
+          if (rasterizer->shape_cache.entries[i]->uses < 1<<30)
+            { rasterizer->shape_cache.entries[i]->uses++; }
           hits ++;
-          return ctx_cache.entries[i];
+          return rasterizer->shape_cache.entries[i];
         }
     }
 
@@ -133,26 +106,26 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
   int size = sizeof (CtxShapeEntry) + width * height + 1;
   CtxShapeEntry *new_entry = (CtxShapeEntry *) malloc (size);
   new_entry->refs = 1;
-  if (ctx_cache.entries[i])
+  if (rasterizer->shape_cache.entries[i])
     {
-      CtxShapeEntry *entry = ctx_cache.entries[i];
-      while (entry->refs) {};
-      ctx_cache.entries[i] = new_entry;
-      ctx_cache.size -= entry->width * entry->height;
-      ctx_cache.size -= sizeof (CtxShapeEntry);
+      CtxShapeEntry *entry = rasterizer->shape_cache.entries[i];
+      //while (entry->refs) {};  //  XXX  !!!  ??? infinite loop
+      rasterizer->shape_cache.entries[i] = new_entry;
+      rasterizer->shape_cache.size -= entry->width * entry->height;
+      rasterizer->shape_cache.size -= sizeof (CtxShapeEntry);
       free (entry);
     }
   else
     {
-      ctx_cache.entries[i] = new_entry;
+      rasterizer->shape_cache.entries[i] = new_entry;
     }
-  ctx_cache.size += size;
-  ctx_cache.entries[i]->age = time;
-  ctx_cache.entries[i]->hash=hash;
-  ctx_cache.entries[i]->width=width;
-  ctx_cache.entries[i]->height=height;
-  ctx_cache.entries[i]->uses = 0;
-  return ctx_cache.entries[i];
+  rasterizer->shape_cache.size += size;
+  rasterizer->shape_cache.entries[i]->age = time;
+  rasterizer->shape_cache.entries[i]->hash=hash;
+  rasterizer->shape_cache.entries[i]->width=width;
+  rasterizer->shape_cache.entries[i]->height=height;
+  rasterizer->shape_cache.entries[i]->uses = 0;
+  return rasterizer->shape_cache.entries[i];
 }
 
 static void ctx_shape_entry_release (CtxRasterizer *rasterizer, CtxShapeEntry *entry)

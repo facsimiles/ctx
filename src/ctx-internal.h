@@ -541,6 +541,33 @@ typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *
 
 #define CTX_MAX_GAUSSIAN_KERNEL_DIM    512
 
+struct _CtxShapeEntry
+{
+  uint32_t hash;
+  uint16_t width;
+  uint16_t height;
+  uint32_t refs;
+  uint32_t age;   // time last used
+  uint32_t uses;  // instrumented for longer keep-alive
+  uint8_t  data[];
+};
+
+typedef struct _CtxShapeEntry CtxShapeEntry;
+
+
+// this needs a max-size
+// and a more agressive freeing when
+// size is about to be exceeded
+
+struct _CtxShapeCache
+{
+  CtxShapeEntry *entries[CTX_SHAPE_CACHE_ENTRIES];
+  long size;
+};
+
+typedef struct _CtxShapeCache CtxShapeCache;
+
+
 struct _CtxRasterizer
 {
   CtxImplementation vfuncs;
@@ -628,6 +655,9 @@ struct _CtxRasterizer
 #endif
 
   uint8_t *clip_mask;
+#if CTX_SHAPE_CACHE
+  CtxShapeCache shape_cache;
+#endif
 };
 
 #if CTX_RASTERIZER
@@ -912,6 +942,9 @@ CtxSHA1 *ctx_sha1_new (void);
 void ctx_sha1_free (CtxSHA1 *sha1);
 int ctx_sha1_process(CtxSHA1 *sha1, const unsigned char * msg, unsigned long len);
 int ctx_sha1_done(CtxSHA1 * sha1, unsigned char *out);
+
+
+
 
 #endif
 

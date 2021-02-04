@@ -63,7 +63,6 @@ fonts/Roboto-Regular.h: Makefile
 	cd fonts; xxd -i ttf/Roboto-Regular.ttf > Roboto-Regular.h
 	echo '#define ROBOTO_REGULAR 1' >> $@
 
-
 used_fonts: fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf 
 test: ctx
 	make -C tests
@@ -81,7 +80,6 @@ install: ctx
 	install -m755 ctx $(DESTIDR)$(PREFIX)/bin
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/ctx
-
 
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
