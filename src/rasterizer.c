@@ -88,7 +88,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
           rasterizer->shape_cache.entries[i]->width == width &&
           rasterizer->shape_cache.entries[i]->height == height)
         {
-          rasterizer->shape_cache.entries[i]->refs++;
           rasterizer->shape_cache.entries[i]->age = time;
           if (rasterizer->shape_cache.entries[i]->uses < 1<<30)
             { rasterizer->shape_cache.entries[i]->uses++; }
@@ -105,11 +104,9 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
 //
   int size = sizeof (CtxShapeEntry) + width * height + 1;
   CtxShapeEntry *new_entry = (CtxShapeEntry *) calloc (size, 1);
-  new_entry->refs = 1;
   if (rasterizer->shape_cache.entries[i])
     {
       CtxShapeEntry *entry = rasterizer->shape_cache.entries[i];
-      //while (entry->refs) {};  //  XXX  !!!  ??? infinite loop
       rasterizer->shape_cache.entries[i] = new_entry;
       rasterizer->shape_cache.size -= entry->width * entry->height;
       rasterizer->shape_cache.size -= sizeof (CtxShapeEntry);
@@ -130,7 +127,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
 
 static void ctx_shape_entry_release (CtxRasterizer *rasterizer, CtxShapeEntry *entry)
 {
-  entry->refs--;
 }
 #endif
 

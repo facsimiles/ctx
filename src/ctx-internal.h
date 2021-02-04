@@ -546,7 +546,6 @@ struct _CtxShapeEntry
   uint32_t hash;
   uint16_t width;
   uint16_t height;
-  uint32_t refs;
   uint32_t age;   // time last used
   uint32_t uses;  // instrumented for longer keep-alive
   uint8_t  data[];
