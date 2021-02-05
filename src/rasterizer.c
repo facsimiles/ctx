@@ -45,10 +45,17 @@ static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
   return ctx_drawlist_add_single (&rasterizer->edge_list, &entry);
 }
 
+#if 0
 #define CTX_SHAPE_CACHE_PRIME1   7853
 #define CTX_SHAPE_CACHE_PRIME2   4129
 #define CTX_SHAPE_CACHE_PRIME3   3371
 #define CTX_SHAPE_CACHE_PRIME4   4221
+#else
+#define CTX_SHAPE_CACHE_PRIME1   283
+#define CTX_SHAPE_CACHE_PRIME2   599
+#define CTX_SHAPE_CACHE_PRIME3   101
+#define CTX_SHAPE_CACHE_PRIME4   661
+#endif
 
 float ctx_shape_cache_rate = 0.0;
 #if CTX_SHAPE_CACHE
@@ -69,7 +76,7 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
   {
     static int i = 0;
     i++;
-    if (i>512)
+    if (i>1000)
       {
         ctx_shape_cache_rate = hits * 100.0  / (hits+misses);
         i = 0;
@@ -121,7 +128,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
 }
 
 #endif
-
 
 CTX_STATIC uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
 {
@@ -724,8 +730,6 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
   }
 }
 
-
-
 inline static void
 ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   int            minx,
@@ -1272,7 +1276,9 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     int height = (rasterizer->scan_max + (aa-1) ) / aa - rasterizer->scan_min / aa + 1;
     if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
         && width < CTX_SHAPE_CACHE_MAX_DIM
-        && height < CTX_SHAPE_CACHE_MAX_DIM && !rasterizer->state->gstate.clipped
+        && height < CTX_SHAPE_CACHE_MAX_DIM 
+        && !rasterizer->state->gstate.clipped // XXX  - this causes any clipping, also rectangular -
+                                              //        to disable caching
 #if CTX_ENABLE_SHADOW_BLUR
         && !rasterizer->in_shadow
 #endif

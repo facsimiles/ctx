@@ -242,7 +242,6 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
   float origin_x = state->x;
   float origin_y = state->y;
   ctx_current_point (ctx, &origin_x, &origin_y);
-  ctx_begin_path (ctx);
   int in_glyph = 0;
   float font_size = state->gstate.font_size;
   int start = 0;
