@@ -393,7 +393,7 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
     { return -1; }
   if (ctx_font_count >= CTX_MAX_FONTS)
     { return -1; }
-  ctx_fonts[ctx_font_count].type = 2;
+  ctx_fonts[ctx_font_count].type = 0;
   ctx_fonts[ctx_font_count].name = name;
   ctx_fonts[ctx_font_count].ctx.data = (CtxEntry *) data;
   ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
