@@ -120,9 +120,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
   return rasterizer->shape_cache.entries[i];
 }
 
-static void ctx_shape_entry_release (CtxRasterizer *rasterizer, CtxShapeEntry *entry)
-{
-}
 #endif
 
 
@@ -1204,12 +1201,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   if (rasterizer->preserve)
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
 
-  if (ctx_is_transparent (rasterizer))
-  {
-     ctx_rasterizer_reset (rasterizer);
-     goto done;
-  }
-
 #if CTX_ENABLE_SHADOW_BLUR
   if (rasterizer->in_shadow)
   {
@@ -1226,170 +1217,141 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   }
 #endif
 
-#if 1
-  if (rasterizer->scan_min / aa > rasterizer->blit_y + rasterizer->blit_height ||
-      rasterizer->scan_max / aa < rasterizer->blit_y)
-    {
-      ctx_rasterizer_reset (rasterizer);
-      goto done;
-    }
-#endif
-#if 1
-  if (rasterizer->col_min / CTX_SUBDIV > rasterizer->blit_x + rasterizer->blit_width ||
+  if (ctx_is_transparent (rasterizer) ||
+      rasterizer->scan_min / aa > rasterizer->blit_y + rasterizer->blit_height ||
+      rasterizer->scan_max / aa < rasterizer->blit_y ||
+      rasterizer->col_min / CTX_SUBDIV > rasterizer->blit_x + rasterizer->blit_width ||
       rasterizer->col_max / CTX_SUBDIV < rasterizer->blit_x)
     {
       ctx_rasterizer_reset (rasterizer);
-      goto done;
-    }
-#endif
-  ctx_compositor_setup_default (rasterizer);
-
-  rasterizer->state->min_x =
-    ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
-  rasterizer->state->max_x =
-    ctx_maxi (rasterizer->state->max_x, rasterizer->col_max / CTX_SUBDIV);
-  rasterizer->state->min_y =
-    ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / aa);
-  rasterizer->state->max_y =
-    ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / aa);
-  if (rasterizer->edge_list.count == 6)
-    {
-      CtxEntry *entry0 = &rasterizer->edge_list.entries[0];
-      CtxEntry *entry1 = &rasterizer->edge_list.entries[1];
-      CtxEntry *entry2 = &rasterizer->edge_list.entries[2];
-      CtxEntry *entry3 = &rasterizer->edge_list.entries[3];
-      if (!rasterizer->state->gstate.clipped &&
-           (entry0->data.s16[2] == entry1->data.s16[2]) &&
-           (entry0->data.s16[3] == entry3->data.s16[3]) &&
-           (entry1->data.s16[3] == entry2->data.s16[3]) &&
-           (entry2->data.s16[2] == entry3->data.s16[2]) &&
-           ((entry3->data.s16[2] & (CTX_SUBDIV-1)) == 0)  &&
-           ((entry3->data.s16[3] & (aa-1)) == 0)
-#if CTX_ENABLE_SHADOW_BLUR
-           && !rasterizer->in_shadow
-#endif
-         )
-        if(1){
-          if (ctx_rasterizer_fill_rect (rasterizer,
-                                        entry3->data.s16[2],
-                                        entry3->data.s16[3],
-                                        entry1->data.s16[2],
-                                        entry1->data.s16[3]) )
-            {
-              ctx_rasterizer_reset (rasterizer);
-              goto done;
-            }
-        }
-    }
-  ctx_rasterizer_finish_shape (rasterizer);
-
-
-#if CTX_SHAPE_CACHE
-  uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
-  int width = (rasterizer->col_max + (CTX_SUBDIV-1) ) / CTX_SUBDIV - rasterizer->col_min/CTX_SUBDIV + 1;
-  int height = (rasterizer->scan_max + (aa-1) ) / aa - rasterizer->scan_min / aa + 1;
-  if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
-      && width < CTX_SHAPE_CACHE_MAX_DIM
-      && height < CTX_SHAPE_CACHE_MAX_DIM && !rasterizer->state->gstate.clipped &&
-#if CTX_ENABLE_SHADOW_BLUR
-      !rasterizer->in_shadow
-#endif
-      )
-    {
-      int scan_min = rasterizer->scan_min;
-      int col_min = rasterizer->col_min;
-      scan_min -= (scan_min % aa);
-      rasterizer->scanline = scan_min;
-      int y0 = rasterizer->scanline / aa;
-      int y1 = y0 + height;
-      int x0 = col_min / CTX_SUBDIV;
-      int ymin = y0;
-      int x1 = x0 + width;
-      int clip_x_min = rasterizer->blit_x;
-      int clip_x_max = rasterizer->blit_x + rasterizer->blit_width - 1;
-      int clip_y_min = rasterizer->blit_y;
-      int clip_y_max = rasterizer->blit_y + rasterizer->blit_height - 1;
-#if 0
-      if (rasterizer->state->gstate.clip_min_x>
-          clip_x_min)
-        { clip_x_min = rasterizer->state->gstate.clip_min_x; }
-      if (rasterizer->state->gstate.clip_max_x <
-          clip_x_max)
-        { clip_x_max = rasterizer->state->gstate.clip_max_x; }
-      if (rasterizer->state->gstate.clip_min_y>
-          clip_y_min)
-        { clip_y_min = rasterizer->state->gstate.clip_min_y; }
-      if (rasterizer->state->gstate.clip_max_y <
-          clip_y_max)
-        { clip_y_max = rasterizer->state->gstate.clip_max_y; }
-#endif
-      int dont_cache = 0;
-      if (x1 >= clip_x_max)
-        { x1 = clip_x_max;
-          dont_cache = 1;
-        }
-      int xo = 0;
-      if (x0 < clip_x_min)
-        {
-          xo = clip_x_min - x0;
-          x0 = clip_x_min;
-          dont_cache = 1;
-        }
-      if (y0 < clip_y_min || y1 >= clip_y_max)
-        dont_cache = 1;
-      if (dont_cache)
-      {
-        ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
-#if CTX_SHAPE_CACHE
-                                      , NULL
-#endif
-                                     );
-        goto done;
-      }
-      CtxShapeEntry *shape = ctx_shape_entry_find (rasterizer, hash, width, height); 
-
-      if (shape->uses == 0)
-        {
-          ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule, shape);
-        }
-
-      int ewidth = x1 - x0;
-      if (ewidth>0)
-        for (int y = y0; y < y1; y++)
-          {
-            if ( (y >= clip_y_min) && (y <= clip_y_max) )
-              {
-                ctx_rasterizer_apply_coverage (rasterizer,
-                                               ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->bpp/8,
-                                               x0,
-                                               &shape->data[shape->width * (int) (y-ymin) + xo],
-                                               ewidth );
-              }
-          }
-      if (shape->uses != 0)
-        {
-          ctx_rasterizer_reset (rasterizer);
-        }
-      ctx_shape_entry_release (rasterizer, shape);
-      goto done;
     }
   else
-#else
   {
-    ctx_rasterizer_poly_to_edges (rasterizer);
-  }
-#endif
+    ctx_compositor_setup_default (rasterizer);
 
-    {
-      //fprintf (stderr, "%i %i\n", width, height);
-      ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
+    rasterizer->state->min_x =
+      ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
+    rasterizer->state->max_x =
+      ctx_maxi (rasterizer->state->max_x, rasterizer->col_max / CTX_SUBDIV);
+    rasterizer->state->min_y =
+      ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / aa);
+    rasterizer->state->max_y =
+      ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / aa);
+    if (rasterizer->edge_list.count == 6)
+      {
+        CtxEntry *entry0 = &rasterizer->edge_list.entries[0];
+        CtxEntry *entry1 = &rasterizer->edge_list.entries[1];
+        CtxEntry *entry2 = &rasterizer->edge_list.entries[2];
+        CtxEntry *entry3 = &rasterizer->edge_list.entries[3];
+        if (!rasterizer->state->gstate.clipped &&
+             (entry0->data.s16[2] == entry1->data.s16[2]) &&
+             (entry0->data.s16[3] == entry3->data.s16[3]) &&
+             (entry1->data.s16[3] == entry2->data.s16[3]) &&
+             (entry2->data.s16[2] == entry3->data.s16[2]) &&
+             ((entry3->data.s16[2] & (CTX_SUBDIV-1)) == 0)  &&
+             ((entry3->data.s16[3] & (aa-1)) == 0)
+#if CTX_ENABLE_SHADOW_BLUR
+             && !rasterizer->in_shadow
+#endif
+           )
+        if (ctx_rasterizer_fill_rect (rasterizer,
+                                      entry3->data.s16[2],
+                                      entry3->data.s16[3],
+                                      entry1->data.s16[2],
+                                      entry1->data.s16[3]) )
+          {
+            ctx_rasterizer_reset (rasterizer);
+            goto done;
+          }
+      }
+    ctx_rasterizer_finish_shape (rasterizer);
+
+    uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
 #if CTX_SHAPE_CACHE
-                                      , NULL
+    int width = (rasterizer->col_max + (CTX_SUBDIV-1) ) / CTX_SUBDIV - rasterizer->col_min/CTX_SUBDIV + 1;
+    int height = (rasterizer->scan_max + (aa-1) ) / aa - rasterizer->scan_min / aa + 1;
+    if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
+        && width < CTX_SHAPE_CACHE_MAX_DIM
+        && height < CTX_SHAPE_CACHE_MAX_DIM && !rasterizer->state->gstate.clipped
+#if CTX_ENABLE_SHADOW_BLUR
+        && !rasterizer->in_shadow
 #endif
-                                     );
-    }
+        )
+      {
+        int scan_min = rasterizer->scan_min;
+        int col_min = rasterizer->col_min;
+        scan_min -= (scan_min % aa);
+        int y0 = scan_min / aa;
+        int y1 = y0 + height;
+        int x0 = col_min / CTX_SUBDIV;
+        int ymin = y0;
+        int x1 = x0 + width;
+        int clip_x_min = rasterizer->blit_x;
+        int clip_x_max = rasterizer->blit_x + rasterizer->blit_width - 1;
+        int clip_y_min = rasterizer->blit_y;
+        int clip_y_max = rasterizer->blit_y + rasterizer->blit_height - 1;
 
-done:
+        int dont_cache = 0;
+        if (x1 >= clip_x_max)
+          { x1 = clip_x_max;
+            dont_cache = 1;
+          }
+        int xo = 0;
+        if (x0 < clip_x_min)
+          {
+            xo = clip_x_min - x0;
+            x0 = clip_x_min;
+            dont_cache = 1;
+          }
+        if (y0 < clip_y_min || y1 >= clip_y_max)
+          dont_cache = 1;
+        if (dont_cache)
+        {
+          ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
+#if CTX_SHAPE_CACHE
+                                        , NULL
+#endif
+                                       );
+        }
+        else
+        {
+
+        rasterizer->scanline = scan_min;
+        CtxShapeEntry *shape = ctx_shape_entry_find (rasterizer, hash, width, height); 
+
+        if (shape->uses == 0)
+          {
+            ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule, shape);
+          }
+
+        int ewidth = x1 - x0;
+        if (ewidth>0)
+          for (int y = y0; y < y1; y++)
+            {
+              if ( (y >= clip_y_min) && (y <= clip_y_max) )
+                {
+                  ctx_rasterizer_apply_coverage (rasterizer,
+                                                 ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->bpp/8,
+                                                 x0,
+                                                 &shape->data[shape->width * (int) (y-ymin) + xo],
+                                                 ewidth );
+                }
+            }
+        if (shape->uses != 0)
+          {
+            ctx_rasterizer_reset (rasterizer);
+          }
+        }
+      }
+    else
+#endif
+    ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
+#if CTX_SHAPE_CACHE
+                                    , NULL
+#endif
+                                   );
+  }
+  done:
   if (rasterizer->preserve)
     {
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );

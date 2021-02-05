@@ -291,6 +291,8 @@ void ctx_gradient_add_stop (Ctx *ctx, float pos, float r, float g, float b, floa
 
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
+
+
 /*ctx_texture_init:
  *
  * return value: the actual id assigned, if id is out of range - or later

@@ -546,16 +546,13 @@ struct _CtxShapeEntry
   uint32_t hash;
   uint16_t width;
   uint16_t height;
+  int      last_frame; // xxx
   uint32_t uses;  // instrumented for longer keep-alive
   uint8_t  data[];
 };
 
 typedef struct _CtxShapeEntry CtxShapeEntry;
 
-
-// this needs a max-size
-// and a more agressive freeing when
-// size is about to be exceeded
 
 struct _CtxShapeCache
 {
@@ -940,8 +937,6 @@ CtxSHA1 *ctx_sha1_new (void);
 void ctx_sha1_free (CtxSHA1 *sha1);
 int ctx_sha1_process(CtxSHA1 *sha1, const unsigned char * msg, unsigned long len);
 int ctx_sha1_done(CtxSHA1 * sha1, unsigned char *out);
-
-
 
 
 #endif
