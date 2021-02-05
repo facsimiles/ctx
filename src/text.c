@@ -296,7 +296,8 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
         }
     }
   if (stroke)
-    { ctx_stroke (ctx);}
+    { ctx_stroke (ctx);
+    }
   else
     { 
     

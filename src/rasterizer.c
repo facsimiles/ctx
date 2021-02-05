@@ -71,6 +71,7 @@ static long misses = 0;
  */
 static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t hash, int width, int height)
 {
+  /* use both some high and some low bits  */
   int entry_no = ( (hash >> 10) ^ (hash & 1023) ) % CTX_SHAPE_CACHE_ENTRIES;
   int i;
   {
@@ -1271,6 +1272,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     ctx_rasterizer_finish_shape (rasterizer);
 
     uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
+
 #if CTX_SHAPE_CACHE
     int width = (rasterizer->col_max + (CTX_SUBDIV-1) ) / CTX_SUBDIV - rasterizer->col_min/CTX_SUBDIV + 1;
     int height = (rasterizer->scan_max + (aa-1) ) / aa - rasterizer->scan_min / aa + 1;
@@ -1329,6 +1331,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
           {
             ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule, shape);
           }
+        rasterizer->scanline = scan_min;
 
         int ewidth = x1 - x0;
         if (ewidth>0)
@@ -1342,6 +1345,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                                                  &shape->data[shape->width * (int) (y-ymin) + xo],
                                                  ewidth );
                 }
+               rasterizer->scanline += aa;
             }
         if (shape->uses != 0)
           {
