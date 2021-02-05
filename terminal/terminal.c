@@ -1767,6 +1767,9 @@ int terminal_main (int argc, char **argv)
   int sleep_time = 1000;
   int fetched_bytes = 1;
 
+  int print_shape_cache_rate = 0;
+  if (getenv ("CTX_DEBUG_SHAPE_CACHE"))
+    print_shape_cache_rate = 1;
 
   while (clients && !ctx_has_quit (ctx))
     {
@@ -1776,8 +1779,10 @@ int terminal_main (int argc, char **argv)
       int follow_mouse = focus_follows_mouse;
       ensure_layout ();
 
+      if (print_shape_cache_rate)
+        fprintf (stderr, "\r%f ", ctx_shape_cache_rate);
 
-        CtxClient *client = find_active (ctx_pointer_x (ctx),
+      CtxClient *client = find_active (ctx_pointer_x (ctx),
                                          ctx_pointer_y (ctx));
       if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
           ctx_pointer_is_down (ctx, 1) || (active==NULL))
