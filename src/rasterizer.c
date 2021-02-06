@@ -85,41 +85,47 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
         misses = 0;
       }
   }
-
-  i = entry_no;
-  if (rasterizer->shape_cache.entries[i])
-    {
-      if (rasterizer->shape_cache.entries[i]->hash == hash &&
-          rasterizer->shape_cache.entries[i]->width == width &&
-          rasterizer->shape_cache.entries[i]->height == height)
-        {
-          if (rasterizer->shape_cache.entries[i]->uses < 1<<30)
-            { rasterizer->shape_cache.entries[i]->uses++; }
-          hits ++;
-          return rasterizer->shape_cache.entries[i];
-        }
-    }
-
-  misses ++;
 // XXX : this 1 one is needed  to silence a false positive:
 // ==90718== Invalid write of size 1
 // ==90718==    at 0x1189EF: ctx_rasterizer_generate_coverage (ctx.h:4786)
 // ==90718==    by 0x118E57: ctx_rasterizer_rasterize_edges (ctx.h:4907)
 //
   int size = sizeof (CtxShapeEntry) + width * height + 1;
-  CtxShapeEntry *new_entry = (CtxShapeEntry *) calloc (size, 1);
+
+  i = entry_no;
   if (rasterizer->shape_cache.entries[i])
     {
       CtxShapeEntry *entry = rasterizer->shape_cache.entries[i];
-      rasterizer->shape_cache.entries[i] = new_entry;
-      rasterizer->shape_cache.size -= entry->width * entry->height;
-      rasterizer->shape_cache.size -= sizeof (CtxShapeEntry);
-      free (entry);
+      int old_size = sizeof (CtxShapeEntry) + width + height + 1;
+      if (entry->hash == hash &&
+          entry->width == width &&
+          entry->height == height)
+        {
+          if (entry->uses < 1<<30)
+            { entry->uses++; }
+          hits ++;
+          return entry;
+        }
+
+      if (old_size >= size)
+      {
+      }
+      else
+      {
+        rasterizer->shape_cache.entries[i] = NULL;
+        rasterizer->shape_cache.size -= entry->width * entry->height;
+        rasterizer->shape_cache.size -= sizeof (CtxShapeEntry);
+        free (entry);
+        rasterizer->shape_cache.entries[i] =(CtxShapeEntry *) calloc (size, 1);
+      }
     }
   else
     {
-      rasterizer->shape_cache.entries[i] = new_entry;
+        rasterizer->shape_cache.entries[i] =(CtxShapeEntry *) calloc (size, 1);
     }
+
+  misses ++;
+  
   rasterizer->shape_cache.size += size;
   rasterizer->shape_cache.entries[i]->hash=hash;
   rasterizer->shape_cache.entries[i]->width=width;
@@ -2799,6 +2805,15 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
     ctx_buffer_free (rasterizer->clip_buffer);
     rasterizer->clip_buffer = NULL;
   }
+#endif
+#if CTX_SHAPE_CACHE
+  for (int i = 0; i < CTX_SHAPE_CACHE_ENTRIES; i ++)
+    if (rasterizer->shape_cache.entries[i])
+    {
+      free (rasterizer->shape_cache.entries[i]);
+      rasterizer->shape_cache.entries[i] = NULL;
+    }
+
 #endif
   free (rasterizer);
 }
