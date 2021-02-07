@@ -465,7 +465,7 @@ int ctx_ctx_consume_events (Ctx *ctx)
         ctx_set_size (ctx, ctxctx->width, ctxctx->height);
 
         if (prev_frame_contents)
-           free (prev_frame_contents);
+          free (prev_frame_contents);
         prev_frame_contents = NULL;
         prev_frame_len = 0;
         ctx_set_dirty (ctx, 1);
@@ -537,6 +537,14 @@ int ctx_ctx_consume_events (Ctx *ctx)
     }
 
   return 1;
+}
+
+int ctx_renderer_is_ctx (Ctx *ctx)
+{
+  if (ctx->renderer &&
+      ctx->renderer->free == (void*)ctx_ctx_free)
+          return 1;
+  return 0;
 }
 
 #endif
