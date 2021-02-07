@@ -205,7 +205,7 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
   }
   else
   {
-#if 0
+#if 1
     int x = sdl->min_col * sdl->width/CTX_HASH_COLS;
     int y = sdl->min_row * sdl->height/CTX_HASH_ROWS;
     int x1 = (sdl->max_col+1) * sdl->width/CTX_HASH_COLS;
@@ -218,12 +218,12 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     sdl->min_col = 100;
     sdl->max_col = 0;
 
-    //SDL_Rect r = {x, y, width, height};
-    SDL_UpdateTexture (sdl->texture, NULL, //&r,
-                      (void*)sdl->pixels,
-                      //(void*)(sdl->pixels + y * sdl->width * 4 + x * 4),
+    SDL_Rect r = {x, y, width, height};
+    SDL_UpdateTexture (sdl->texture, &r,
+                      //(void*)sdl->pixels,
+                      (void*)(sdl->pixels + y * sdl->width * 4 + x * 4),
                       
-                      sdl->width * sizeof (Uint32));
+                      sdl->width * 4);
     SDL_RenderClear (sdl->renderer);
     SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
     SDL_RenderPresent (sdl->renderer);
