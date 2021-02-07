@@ -346,7 +346,7 @@ char *ctx_strdup_printf (const char *format, ...)
   char *buffer;
   va_start (ap, format);
   needed = vsnprintf (NULL, 0, format, ap) + 1;
-  buffer = malloc (needed);
+  buffer = (char*)malloc (needed);
   va_end (ap);
   va_start (ap, format);
   vsnprintf (buffer, needed, format, ap);
@@ -361,7 +361,7 @@ void ctx_string_append_printf (CtxString *string, const char *format, ...)
   char *buffer;
   va_start (ap, format);
   needed = vsnprintf (NULL, 0, format, ap) + 1;
-  buffer = malloc (needed);
+  buffer = (char*)malloc (needed);
   va_end (ap);
   va_start (ap, format);
   vsnprintf (buffer, needed, format, ap);

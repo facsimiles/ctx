@@ -39,7 +39,7 @@ struct _CtxSHA1 {
 int ctx_sha1_init(CtxSHA1 * sha1);
 CtxSHA1 *ctx_sha1_new (void)
 {
-  CtxSHA1 *state = calloc (sizeof (CtxSHA1), 1);
+  CtxSHA1 *state = (CtxSHA1*)calloc (sizeof (CtxSHA1), 1);
   ctx_sha1_init (state);
   return state;
 }

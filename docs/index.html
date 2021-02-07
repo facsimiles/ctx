@@ -179,7 +179,7 @@ Level 2</a>; ctx goes further than the standard and permits all blending modes
 to be combined with all compositing modes.
          </dd>
 
-         <dt>ctx, DRM, fbdev, SDL2, braille<dt>
+         <dt>backends: ctx, DRM, fbdev, SDL2, braille<dt>
          <dd>ctx comes with 5 main backends, the ctx backend renders the
              ctx protocol to stdout, and reads input - it is meant to
              be used from the ctx terminal. DRM and fbdev are available
@@ -227,9 +227,10 @@ to be combined with all compositing modes.
          of more components using the CTX protocol.
          </dd>
 
-         <dt>Portable</dt><dd>C99 code, with simple make basd build system and
-                 only optional dependencies, and thus should run on most CPU
-                 architectures.</dd>
+         <dt>Portable</dt><dd>The core rasterizer is C99 code that also
+                 compiles as C++, with simple make basd build system and only
+                 optional dependencies, and thus should run on most CPU
+         architectures.</dd>
 
          <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, like xterm, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - as well as a growing subset of vt420 and other relevant terminal escape sequences.</dd>
          <dt><a href='https://pippin.gimp.org/ametameric/'>ametameric palette</a></dt>
