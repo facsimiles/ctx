@@ -200,21 +200,24 @@ to be combined with all compositing modes.
 
          These drawlist representations are used for scanline/chunk-based
          rendering on microcontrollers where framebuffer is to large to fit in
-         RAM and threaded cached rendering through SDL2 and /dev/fb0 backends
-         and network transparent rendering inside ctx terminal. When used for
-         graphical clients inside terminals; ctx is even applying inter-frame
-         compression; reusing frames from the preceding drawlist by reference.
+         RAM and <a href='caching-and-threading/'>threaded cached rendering</a>
+         through SDL2 and /dev/fb0 backends and network transparent rendering
+         inside ctx terminal.
          .</dd>
 
-         <dt>text rendering</dt><dd>UTF8 native, there is two font backends
+         <dt>text rendering</dt><dd>UTF8 native, there is three font backends
              driven by stb_trutetype reading glyph paths on demand from
-             a TTF/OTF file loaded in RAM/ROM and a native ctx drawlist
-             representation, separated by '@' define-glyph commands, the
-             latter provides minimal overhead on micro controllers in
-             realtime translation of glyph outlines to framebuffer contents.
-
-             Shaping is currently limited to horizontal advances +
-             horizontal kerning, no ligatures.
+             a TTF/OTF file loaded in RAM/ROM.<br/>
+             Using binary ctx drawlist representation, separated by '@'
+             define-glyph commands.
+             <br/>
+             And an experimental backend permits rendering each glyph loaded
+             on-the fly from the filesystem as ctx ascii protocol, combined
+             with a UI shape editor, ctx would have a live font-editor.
+             <br/>
+             The text-shaping is currently limited to horizontal advances +
+             horizontal kerning, no ligatures - interacting directly with
+             harfbuzz could give us wider support.
          </dd>
 
          <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - as well as a growing subset of vt400 and other relevant terminal escape sequences.</dd>
@@ -284,57 +287,61 @@ financially supporting me, <a href='https://pippin.gimp.org'>Øyvind Kolås</a> 
 href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 
         <h2 id='bugs'>bugs</h2>
-        <p>The current status of ctx is beyond proof of concept - but
-        still does not fully realize a minimal system demonstrating
-        it's capabilities - some features are also broken and need
-        repair - and for third party use probably more urgently
-        than the following wishlist. When this list is nearing 0
-        it is time for a tarball release of ctx - event if the
-        single header ctx.h already is the rolling release.
+        <p>The current status of ctx is beyond proof of concept - but still
+        does not fully realize a minimal system demonstrating it's capabilities
+        - some features are also broken and need repair - and for third party
+        use probably more urgently than the following wishlist. When this list
+        is nearing 0 it is time for a tarball/versioned release of ctx. The
+        single header ctx.h linked from this page is a rolling release.
         </p>
         <ul>
           <li>clip does not clip event boxes/shapes</li>
-          <li>in_fill is using bounding box - and most reliably works with rectangles.</li>
+
+          <li>some low-level rasterizer glitches</li>
+          <li>arcs doesn't fmod &gt;2PI values well</li>
+          <li>in_fill is using bounding box</li>
+
           <li>radial gradient is only using one center</li>
           <li>dimensions of drop-shadow are not transformed</li>
 
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
           <li>square line ends</li>
+
           <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
           <li>palm supression during typing in drm/fbdev backend</li>
         
           <li>terminal rewrap on resize</li>
-          <li>double/triple clicking to select needs improvements</li>
           </ul>
         </li>
         </ul>
 
         <a href='ctx-wm.png'><img style='max-width:100%' src='ctx-wm.png'/></a>
 
-        <h2 id='future'>some potential improvements</h2>
+        <h2 id='future'>directions</h2>
 	<ul>
-        <li>performance</li>
+        <li>performance, there always seem to be room for improvement.</li>
         <li>continued code refactoring</li>
 	<li>glyph fallbacks between fonts</li>
         <li>texture upload as part of terminal protocol</li>
-        <li>swap uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
+        <li>swap some uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx</li>
         <li>binary search for glyphs in ctxf font backend, making it scale well for wide unicode coverage.</li>
         <li>websockets + js + HTML5 Canvas renderer/client for protocols</li>
         <li>wayland/libinput support</li>
         <li>analytical instead of raster clipping</li>
         <li>bindings to a javascript engine like quickjs, for running canvas js content as apps.</li>
         <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
-        <li>faster 1d-gaussian blur for shadow blur</li>
+        <li>faster and correctly transformed 1d-gaussian blur for shadow blur</li>
         <li>PDF/SVG generation (in addition to existing cairo integration)</li>
         <li>Add API for integrating device-N with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
         <li>32bit float coverage from rasterizer - right now we support 32f images/color; but composite using 8bit alpha masks.</li>
-        <li>More SIMD code (the common RGBA8 cases for AVX2 are the only bit
-            covered thus far, for floating point formats making the
-            existing code more autovectorizer friendly is a priority.)</li>
+        <li>More SIMD code (the common RGBA8 cases for handled as manual
+            simulated 64bit SIMD and AVX2 are the only bits covered thus
+            far, for the floating point formats making the existing code more
+            autovectorizer friendly is a priority.)</li>
         <li>A GPU renderer, the information needed for precomputation and
             spatial organization in many GPU rendering approaches is already
             present - alternatively backends sitting on top of exisitng
-        libraries.</li>
+            libraries.</li>
 	</ul>
 <!--
         <h3 id='example'>example code</h3>

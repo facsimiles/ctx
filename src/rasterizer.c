@@ -1339,13 +1339,14 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 
         int ewidth = x1 - x0;
         if (ewidth>0)
+        {
+          if (rasterizer->clip_buffer)
+          {
+          uint8_t composite[ewidth];
           for (int y = y0; y < y1; y++)
             {
               if ( (y >= clip_y_min) && (y <= clip_y_max) )
                 {
-                  if (rasterizer->clip_buffer)
-                  {
-                    uint8_t composite[ewidth];
                     for (int x = 0; x < ewidth; x++)
                     {
                       int val = shape->data[shape->width * (int)(y-ymin) + xo + x];
@@ -1359,18 +1360,24 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                                                  x0, // is 0
                                                  composite,
                                                  ewidth );
-                  }
-                  else
-                  {
+               rasterizer->scanline += aa;
+            }
+          }
+          }
+          else
+          for (int y = y0; y < y1; y++)
+            {
+              if ( (y >= clip_y_min) && (y <= clip_y_max) )
+                {
                     ctx_rasterizer_apply_coverage (rasterizer,
                                                  ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->bpp/8,
                                                  x0,
                                                  &shape->data[shape->width * (int) (y-ymin) + xo],
                                                  ewidth );
-                  }
                 }
                rasterizer->scanline += aa;
             }
+        }
         if (shape->uses != 0)
           {
             ctx_rasterizer_reset (rasterizer);
@@ -1498,20 +1505,20 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
                     int          anticlockwise)
 {
   int full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS;
-  full_segments = radius * CTX_PI;
+  full_segments = radius * CTX_PI * 2;
   if (full_segments > CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS)
     { full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS; }
   float step = CTX_PI*2.0/full_segments;
   int steps;
 
-  if (end_angle < -10.0)
-    end_angle = -10.0;
-  if (start_angle < -10.0)
-    start_angle = -10.0;
-  if (end_angle > 10.0)
-    end_angle = 10.0;
-  if (start_angle > 10.0)
-    start_angle = 10.0;
+  if (end_angle < -30.0)
+    end_angle = -30.0;
+  if (start_angle < -30.0)
+    start_angle = -30.0;
+  if (end_angle > 30.0)
+    end_angle = 30.0;
+  if (start_angle > 30.0)
+    start_angle = 30.0;
 
   if (radius <= 0.0001)
           return;
