@@ -1280,12 +1280,15 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
 
 #if CTX_SHAPE_CACHE
+    static int aggressive_shape_cache = 0;
+    if (getenv ("CTX_SHAPE_CACHE_AGGRESSIVE"))
+      aggressive_shape_cache = 1;
     int width = (rasterizer->col_max + (CTX_SUBDIV-1) ) / CTX_SUBDIV - rasterizer->col_min/CTX_SUBDIV + 1;
     int height = (rasterizer->scan_max + (aa-1) ) / aa - rasterizer->scan_min / aa + 1;
     if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
         && width < CTX_SHAPE_CACHE_MAX_DIM
         && height < CTX_SHAPE_CACHE_MAX_DIM 
-        && !rasterizer->state->gstate.clipped // XXX  - this causes any clipping, also rectangular -
+        && (aggressive_shape_cache || !rasterizer->state->gstate.clipped)
                                               //        to disable caching
 #if CTX_ENABLE_SHADOW_BLUR
         && !rasterizer->in_shadow
