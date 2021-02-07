@@ -1280,16 +1280,11 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
 
 #if CTX_SHAPE_CACHE
-    static int aggressive_shape_cache = 0;
-    if (getenv ("CTX_SHAPE_CACHE_AGGRESSIVE"))
-      aggressive_shape_cache = 1;
     int width = (rasterizer->col_max + (CTX_SUBDIV-1) ) / CTX_SUBDIV - rasterizer->col_min/CTX_SUBDIV + 1;
     int height = (rasterizer->scan_max + (aa-1) ) / aa - rasterizer->scan_min / aa + 1;
     if (width * height < CTX_SHAPE_CACHE_DIM && width >=1 && height >= 1
         && width < CTX_SHAPE_CACHE_MAX_DIM
         && height < CTX_SHAPE_CACHE_MAX_DIM 
-        && (aggressive_shape_cache || !rasterizer->state->gstate.clipped)
-                                              //        to disable caching
 #if CTX_ENABLE_SHADOW_BLUR
         && !rasterizer->in_shadow
 #endif
@@ -1348,11 +1343,31 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
             {
               if ( (y >= clip_y_min) && (y <= clip_y_max) )
                 {
-                  ctx_rasterizer_apply_coverage (rasterizer,
+                  if (rasterizer->clip_buffer)
+                  {
+                    uint8_t composite[ewidth];
+                    for (int x = 0; x < ewidth; x++)
+                    {
+                      int val = shape->data[shape->width * (int)(y-ymin) + xo + x];
+                      // XXX : not valid for 1bit clip buffers
+                      val = (val*((uint8_t*)rasterizer->clip_buffer->data) [
+                              ((y-rasterizer->blit_y) * rasterizer->blit_width) + x0 + x])/255;
+                      composite[x] = val;
+                    }
+                    ctx_rasterizer_apply_coverage (rasterizer,
+                                                 ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->bpp/8,
+                                                 x0, // is 0
+                                                 composite,
+                                                 ewidth );
+                  }
+                  else
+                  {
+                    ctx_rasterizer_apply_coverage (rasterizer,
                                                  ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->bpp/8,
                                                  x0,
                                                  &shape->data[shape->width * (int) (y-ymin) + xo],
                                                  ewidth );
+                  }
                 }
                rasterizer->scanline += aa;
             }
