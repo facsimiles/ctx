@@ -27,13 +27,15 @@
       <div id='page'>
       <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-      <p>ctx is a 2D vector graphics terminal, built on standards, providing a
-      <a href='protocol/'>protocol</a> and implementation of a client libraray
-      and host/rasterizer implementation. With modular components that can be
-      used to user interfaces ranging from microcontrollers to desktops.</p>
+      <p>ctx is an audio-capable 2D vector graphics terminal. A <a
+        href='protocol/'>protocol</a> serializing HTML5 canvas 2D context
+      as SVG path data. And a minimal application development platform, the
+      terminal itself is written in ctx and can be self-hosted. </p>
 
       <a href='pid1.png'><img style='max-width:100%' src='pid1.png'/></a>
-
+     
+      <p>The self-contained static builds are sufficient to run minimalistic
+      desktop+shells only sessions with very low RAM requirements.</p>
 
       <!--
 good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
@@ -177,19 +179,16 @@ Level 2</a>; ctx goes further than the standard and permits all blending modes
 to be combined with all compositing modes.
          </dd>
 
-         <dt>Small footprint</dt><dd>Can be tuned for <a
-                 href='mcu/'>microcontrollers</a> down to ~7kb of RAM + 30kb
-         of code + 12kb of fontdata, combined with immediate mode UI that can
-         be re-run, it is sufficient to have a framebuffer covering one
-         or a few scanlines. More RAM permits more flexible arrangement
-         of more components using the CTX protocol.
+         <dt>ctx, DRM, fbdev, SDL2, braille<dt>
+         <dd>ctx comes with 5 main backends, the ctx backend renders the
+             ctx protocol to stdout, and reads input - it is meant to
+             be used from the ctx terminal. DRM and fbdev are available
+             without any dependencies in the static builds, this
+             backend - like the braille backend, take keyboard input
+             from stdin; mouse events are read from /dev/input/mice.
+             The SDL2 backend permits using ctx clients under wayland/X11.
          </dd>
 
-         <dt>Portable</dt><dd>C99 code, with simple make basd build system and
-                 only optional dependencies. It is not a research prototype
-                 relying on vendor specific GPU drivers/frameworks. Within the
-         architecture of ctx; baking of datastructures for GPU rendering can be
-         incorporated.</dd>
 
          <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>
          Supporting RGB332, RGB565 and grayscale + 1bit mode render targets.
@@ -220,19 +219,24 @@ to be combined with all compositing modes.
              harfbuzz could give us wider support.
          </dd>
 
-         <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - as well as a growing subset of vt400 and other relevant terminal escape sequences.</dd>
+         <dt>Small footprint</dt><dd>Can be tuned for <a
+                 href='mcu/'>microcontrollers</a> down to ~7kb of RAM + 30kb
+         of code + 12kb of fontdata, combined with immediate mode UI that can
+         be re-run, it is sufficient to have a framebuffer covering one
+         or a few scanlines. More RAM permits more flexible arrangement
+         of more components using the CTX protocol.
+         </dd>
+
+         <dt>Portable</dt><dd>C99 code, with simple make basd build system and
+                 only optional dependencies, and thus should run on most CPU
+                 architectures.</dd>
+
+         <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, like xterm, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - as well as a growing subset of vt420 and other relevant terminal escape sequences.</dd>
          <dt><a href='https://pippin.gimp.org/ametameric/'>ametameric palette</a></dt>
-              <dd>The terminal 16 color palette is optimized for legibility for both trichromats and dichromats</dd>
+              <dd>The terminal 16 color palette is optimized for legibility for both main varieties dichromats as well as trichromats.</dd>
               <dt><a href='https://en.wikipedia.org/wiki/Sixel'>sixels</a></dt><dd>DEC terminal family standard for raster graphics transfer</dd>
               <dt><a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a></dt><dd>kitty style raster graphics transfer</dd> 
               <dt><a href='https://iterm2.com/documentation-images.html'>iterm2 inline images</a></dt><dd>iterm2 style raster grarphics transfer</dd>
-
-
-         <dt>/dev/fb0</dt><dd>Both ctx as a terminal/platform and
-         applications built with the ctx library can run
-         directly on the linux framebuffer without X/wayland, for it to be
-         fast a fast framebuffer is needed.
-         </dd>
 
          <dt><a href='https://github.com/hodefoting/atty/'>atty</a></dt>
               <dd>audio recording and playback (only raw pcm for now, opus codec NYI)</dd>
