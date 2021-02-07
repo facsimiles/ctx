@@ -923,6 +923,15 @@ void vt_set_term_size (VT *vt, int icols, int irows)
 {
   if (vt->rows == irows && vt->cols == icols)
     { return; }
+
+  if (vt->state == vt_state_ctx)
+  {
+    // we should queue a pending resize instead,
+    // .. or set a flag indicating that the last
+    // rendered frame is discarded?
+    return;
+  }
+
   while (irows > vt->rows)
     {
       if (vt->scrollback_count)
@@ -956,7 +965,7 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   vt->rev++;
   VT_info ("resize %i %i", irows, icols);
   if (vt->ctxp)
-          ctx_parser_free (vt->ctxp);
+    ctx_parser_free (vt->ctxp);
   vt->ctxp = NULL;
 }
 

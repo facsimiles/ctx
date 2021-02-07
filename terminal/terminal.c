@@ -716,7 +716,7 @@ int client_resize (int id, int width, int height)
 
    if (client && ((height != client->height) || (width != client->width) ))
    {
-     client->width = width;
+     client->width  = width;
      client->height = height;
      vt_set_px_size (client->vt, width, height);
      return 1;
@@ -831,8 +831,7 @@ static void client_resize_e (CtxEvent *event, void *data, void *data2)
   CtxClient *client = data;
   int new_w = client->width + event->delta_x;
   if (new_w <= min_win_dim) new_w = min_win_dim;
-  client_resize (client->id, new_w,
-                             client->height);
+  client_resize (client->id, new_w, client->height);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
@@ -1064,12 +1063,10 @@ static int draw_vts (Ctx *ctx)
     VT *vt = client->vt;
     if (vt && !client->maximized)
     {
-
       if (!client->shaded)
       {
         vt_draw (vt, ctx, client->x, client->y);
       }
-
 
       // register resize regions
       if (client == active && !client->shaded &&  !client->maximized)
@@ -1212,7 +1209,6 @@ typedef struct KeyBoard {
   int fn;
   int down;
 } KeyBoard;
-
 
 static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
 {
