@@ -53,7 +53,7 @@ fonts/ctxf/regular.ctxf: tools/ctx-fontgen
 fonts/ctx-font-regular.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras > $@
 fonts/ctx-font-mono.h: tools/ctx-fontgen
-	./tools/ctx-fontgen fonts/ttf/NotoMono-Regular.ttf mono ascii-extras > $@
+	./tools/ctx-fontgen fonts/ttf/DejaVuSansMono.ttf mono ascii-extras > $@
 fonts/NotoMono-Regular.h: Makefile
 	cd fonts; xxd -i ttf/NotoMono-Regular.ttf > NotoMono-Regular.h
 	echo '#define NOTO_MONO_REGULAR 1' >> $@
