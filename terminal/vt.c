@@ -30,6 +30,7 @@
 
 #define _BSD_SOURCE
 #define _DEFAULT_SOURCE
+#define _XOPEN_SOURCE 600 // for posix_openpt
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -47,9 +48,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 #include <zlib.h>
 
-#include <pty.h>
 
 #include "ctx.h"
 
@@ -5200,6 +5202,52 @@ static char *string_chop_head (char *orig) /* return pointer to reset after arg 
 void _ctx_add_listen_fd (int fd);
 void _ctx_remove_listen_fd (int fd);
 
+static pid_t
+vt_forkpty (int  *amaster,
+            char *aname,
+            const struct termios *termp,
+            const struct winsize *winsize)
+{
+  pid_t pid;
+  int master = posix_openpt (O_RDWR|O_NOCTTY);
+  int slave;
+  char *name = NULL;
+
+  if (master < 0)
+    return -1;
+  if (grantpt (master) != 0)
+    return -1;
+  if (unlockpt (master) != 0)
+    return -1;
+  if ((name = ptsname (master)) == NULL)
+    return -1;
+
+  slave = open(name, O_RDWR|O_NOCTTY);
+
+  if (termp)   tcsetattr(slave, TCSAFLUSH, termp);
+  if (winsize) ioctl(slave, TIOCSWINSZ, winsize);
+
+  pid = fork();
+  if (pid < 0)
+  {
+    return pid;
+  } else if (pid == 0)
+  {
+    close (master);
+    setsid ();
+    dup2 (slave, STDIN_FILENO);
+    dup2 (slave, STDOUT_FILENO);
+    dup2 (slave, STDERR_FILENO);
+
+    close (slave);
+    return 0;
+  }
+  ioctl (slave, TIOCSCTTY, NULL);
+  close (slave);
+  *amaster = master;
+  return pid;
+}
+
 static void vt_run_command (VT *vt, const char *command, const char *term)
 {
   struct winsize ws;
@@ -5207,14 +5255,15 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
 #if 0
   int was_pidone = (getpid () == 1);
 #else
-  int was_pidone = 0; // lets just leave it as root in initrd env
+  int was_pidone = 0; // do no special treatment, all child processes belong
+                      // to root
 #endif
   signal (SIGINT,SIG_DFL);
   ws.ws_row = vt->rows;
   ws.ws_col = vt->cols;
   ws.ws_xpixel = ws.ws_col * vt->cw;
   ws.ws_ypixel = ws.ws_row * vt->ch;
-  vt->vtpty.pid = forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
+  vt->vtpty.pid = vt_forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
   if (vt->vtpty.pid == 0)
     {
       int i;
@@ -7312,7 +7361,8 @@ vt_get_selection (VT *vt)
             { continue; }
           ctx_string_append_utf8char (str, c);
         }
-      ctx_string_append_byte (str, '\n');
+      if (row < vt->select_end_row)
+        ctx_string_append_byte (str, '\n');
     }
   ret = str->str;
   ctx_string_free (str, 0);
@@ -7407,7 +7457,7 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
                  vt->select_end_col ++;
                  char *sel = vt_get_selection (vt);
                  int len = strlen(sel);
-                 if (sel[len-2]==' ')
+                 if (sel[len-1]==' ')
                    hit_space = 1;
                  free (sel);
                }

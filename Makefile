@@ -11,7 +11,7 @@ CFLAGS_warnings= -Wall \
 CFLAGS+= -g $(CFLAGS_warnings) -fPIC -ffast-math
 
 CFLAGS+= -I. -Ifonts -Ideps
-LIBS   = -lutil -lz -lm -lpthread
+LIBS   = -lz -lm -lpthread
 CCC=`which ccache` $(CC)
 
 #CFLAGS+= -fsanitize=address
