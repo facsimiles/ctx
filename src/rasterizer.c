@@ -1333,7 +1333,10 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 
         if (shape->uses == 0)
           {
+            CtxBuffer *buffer_backup = rasterizer->clip_buffer;
+            rasterizer->clip_buffer = NULL;
             ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule, shape);
+            rasterizer->clip_buffer = buffer_backup;
           }
         rasterizer->scanline = scan_min;
 
