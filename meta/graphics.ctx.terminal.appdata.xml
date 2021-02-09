@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright 2019 Nick Richards -->
+<!-- Copyright 2021 Øyvind Kolås -->
 <component type="desktop">
-  <id>graphics.ctx.terminal</id>
+        <id>graphics.ctx.terminal</id>
+        <launchable type='desktop-id'>graphics.ctx.terminal.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>LGPL-2.1</project_license>
+  <project_license>LGPL-2.1+</project_license>
   <content_rating type="oars-1.1" />
 
   <name>ctx terminal</name>
+  <categories>
+    <category>Utilty</category>
+  </categories>
   <summary>media and vectors in the terminal revisited</summary>
   <description>
     <p>A terminal emulator with UTF8 support, sixels, ctx vector graphics, kitty graphics, iterm2 graphics, VT102, VT220 and partial VT4xx escape code coverage.
@@ -15,17 +19,17 @@
 
   <screenshots>
     <screenshot type="default">
-       <image>https://ctx.graphics/protocol/ctx-clock.png</image>
+       <image>https://ctx.graphics/pid1.png</image>
     </screenshot>
   </screenshots>
 
   <url type="homepage">https://ctx.graphics/</url>
 
-  <developer_name>GNOME</developer_name>
+  <developer_name>Øyvind Kolås</developer_name>
   <update_contact>pippin_at_gimp.org</update_contact>
 
   <launchable type="desktop-id">ctx.graphics.terminal.desktop</launchable>
   <releases>
-    <release version="0.0.0" date="2020-10-08" />
+    <release version="0.0.0" date="2021-02-08" />
   </releases>
 </component>

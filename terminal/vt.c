@@ -7457,7 +7457,8 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
                vt->select_active = 1;
 
                { char *sel = vt_get_selection (vt);
-                 if (sel){
+                 if (sel)
+                 {
                     terminal_set_primary (sel);
                     free (sel);
                  }
