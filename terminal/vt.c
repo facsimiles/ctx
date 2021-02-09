@@ -624,7 +624,7 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val);
 
 static void vt_set_title (VT *vt, const char *new_title)
 {
-  if (vt->inert) { return; }
+  if (vt->inert) return;
 
   if (vt->title)
     { free (vt->title); }
@@ -698,8 +698,8 @@ static void _vt_compute_cw_ch (VT *vt)
 static void vtcmd_set_132_col (VT  *vt, int set)
 {
   // this should probably force the window as well
-  if (set == 0 && vt->scale_x == 1.0f) { return; }
-  if (set == 1 && vt->scale_x != 1.0f) { return; }
+  if (set == 0 && vt->scale_x == 1.0f) return;
+  if (set == 1 && vt->scale_x != 1.0f) return;
   if (set) // 132 col
     {
       vt->scale_x = 74.0/132.0; // show all - po
@@ -924,7 +924,7 @@ static int vt_trimlines (VT *vt, int max)
 void vt_set_term_size (VT *vt, int icols, int irows)
 {
   if (vt->rows == irows && vt->cols == icols)
-    { return; }
+    return;
 
   if (vt->state == vt_state_ctx)
   {
@@ -996,7 +996,7 @@ static void vt_argument_buf_reset (VT *vt, const char *start)
 static inline void vt_argument_buf_add (VT *vt, int ch)
 {
   if (vt->argument_buf_len + 1 >= 1024 * 1024 * 16)
-    { return; } 
+    return; 
   //
   if (vt->argument_buf_len + 1 >=
       vt->argument_buf_cap)
@@ -1083,7 +1083,7 @@ static void _vt_add_str (VT *vt, const char *str)
               vt_line_replace_unichar (old_line, old_x-1-chars+i, ' ');
             }
           if (str[0] == ' ')
-            { return; }
+            return;
         }
       else
         {
@@ -2698,30 +2698,30 @@ static void vtcmd_rev_n_tabs (VT *vt, const char *sequence)
 static void vtcmd_set_double_width_double_height_top_line
 (VT *vt, const char *sequence)
 {
-  vt->current_line->double_width = 1;
-  vt->current_line->double_height_top = 1;
+  vt->current_line->double_width         = 1;
+  vt->current_line->double_height_top    = 1;
   vt->current_line->double_height_bottom = 0;
 }
 static void vtcmd_set_double_width_double_height_bottom_line
 (VT *vt, const char *sequence)
 {
-  vt->current_line->double_width = 1;
-  vt->current_line->double_height_top = 0;
+  vt->current_line->double_width         = 1;
+  vt->current_line->double_height_top    = 0;
   vt->current_line->double_height_bottom = 1;
 }
 static void vtcmd_set_single_width_single_height_line
 (VT *vt, const char *sequence)
 {
-  vt->current_line->double_width = 0;
-  vt->current_line->double_height_top = 0;
+  vt->current_line->double_width         = 0;
+  vt->current_line->double_height_top    = 0;
   vt->current_line->double_height_bottom = 0;
 }
 static void
 vtcmd_set_double_width_single_height_line
 (VT *vt, const char *sequence)
 {
-  vt->current_line->double_width = 1;
-  vt->current_line->double_height_top = 0;
+  vt->current_line->double_width         = 1;
+  vt->current_line->double_height_top    = 0;
   vt->current_line->double_height_bottom = 0;
 }
 
@@ -2733,21 +2733,11 @@ static void vtcmd_set_led (VT *vt, const char *sequence)
     {
       switch (*s)
         {
-          case '0':
-            val = 0;
-            break;
-          case '1':
-            val = 1;
-            break;
-          case '2':
-            val = 2;
-            break;
-          case '3':
-            val = 3;
-            break;
-          case '4':
-            val = 4;
-            break;
+          case '0': val = 0; break;
+          case '1': val = 1; break;
+          case '2': val = 2; break;
+          case '3': val = 3; break;
+          case '4': val = 4; break;
           case ';':
           case 'q':
             if (val == 0)
@@ -3795,7 +3785,7 @@ static void vt_sixels (VT *vt, const char *sixels)
   if (*p == ';') { p ++; }
   height = atoi (p);
   if (width * height > 2048 * 2048)
-    { return; }
+    return;
   if (width <= 0 || height <=0)
     {
       width = 0;
@@ -4539,7 +4529,7 @@ static void vt_state_esc (VT *vt, int byte)
 static void vt_state_neutral (VT *vt, int byte)
 {
   if (_vt_handle_control (vt, byte) != 0)
-    { return; }
+    return;
   switch (byte)
     {
       case 27: /* ESCape */
@@ -4547,7 +4537,7 @@ static void vt_state_neutral (VT *vt, int byte)
         break;
       default:
         if (vt_decoder_feed (vt, byte) )
-          { return; }
+          return;
         if (vt->charset[vt->shifted_in] != 0 &&
             vt->charset[vt->shifted_in] != 'B')
           {
@@ -6180,11 +6170,11 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
 {
   int did_save = 0;
   if (unichar <= ' ')
-    { return; }
+    return;
   scale_x *= vt->scale_x;
   scale_y *= vt->scale_y;
   if (!vt_special_glyph (ctx, vt, x, y + offset_y * vt->ch, vt->cw * scale_x, vt->ch * scale_y, unichar) )
-    { return; }
+    return;
 
   if (scale_x != 1.0 || scale_y != 1.0)
     {
@@ -7331,7 +7321,7 @@ int  vt_get_scrollback_lines (VT *vt)
 void vt_set_scroll (VT *vt, int scroll)
 {
   if (vt->scroll == scroll)
-    { return; }
+    return;
   vt->scroll = scroll;
   if (vt->scroll > ctx_list_length (vt->scrollback) )
     { vt->scroll = ctx_list_length (vt->scrollback); }
@@ -7580,23 +7570,23 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
    {
      case VT_MOUSE_MOTION:
        if (!vt->mouse_all)
-         { return; }
+         return;
        if (x==vt->lastx && y==vt->lasty)
-         { return; }
+         return;
        vt->lastx = x;
        vt->lasty = y;
 //     sprintf (buf, "\033[<35;%i;%iM", x, y);
        break;
      case VT_MOUSE_RELEASE:
        if (vt->mouse_decimal == 0)
-         { button_state = 3; }
+         button_state = 3;
        break;
      case VT_MOUSE_PRESS:
        button_state = 0;
        break;
      case VT_MOUSE_DRAG: // XXX not really used - remove
        if (! (vt->mouse_all || vt->mouse_drag) )
-         { return; }
+         return;
        button_state = 32;
        break;
    }
