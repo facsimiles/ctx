@@ -103,8 +103,9 @@ struct _CtxBuffer
   int                 width;
   int                 height;
   int                 stride;
-  int                 revision; // XXX NYI, number to update when contents change
-                                //
+  char               *eid;        // might be NULL, when not - should be unique for pixel contents
+  int                 frame;      // last frame used in, everything > 3 can be removed,
+                                  // as clients wont rely on it.
   CtxPixelFormatInfo *format;
   void (*free_func) (void *pixels, void *user_data);
   void               *user_data;
@@ -436,8 +437,7 @@ struct _CtxEvents
 
 #endif
 
-struct
-_Ctx
+struct _Ctx
 {
   CtxImplementation *renderer;
   CtxDrawlist        drawlist;
@@ -446,6 +446,7 @@ _Ctx
   int                rev;
   void              *backend;
   CtxState           state;        /**/
+  int                frame; /* used for texture lifetime */
 #if CTX_EVENTS 
   CtxCursor          cursor;
   int                quit;
@@ -931,7 +932,6 @@ static inline void *ctx_calloc (size_t size, size_t count);
 
 void ctx_screenshot (Ctx *ctx, const char *output_path);
 
-typedef struct _CtxSHA1 CtxSHA1;
 
 CtxSHA1 *ctx_sha1_new (void);
 void ctx_sha1_free (CtxSHA1 *sha1);

@@ -1723,7 +1723,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   CtxState *state = rasterizer->state;
   int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;
-  // YYY
   float factor = ctx_maxf (ctx_maxf (ctx_fabsf (state->gstate.transform.m[0][0]),
                                   ctx_fabsf (state->gstate.transform.m[0][1]) ),
                         ctx_maxf (ctx_fabsf (state->gstate.transform.m[1][0]),
@@ -1977,7 +1976,6 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
   int we_made_it = 0;
   CtxBuffer *clip_buffer;
- 
 
   if (!rasterizer->clip_buffer)
   {
@@ -2085,12 +2083,34 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
     }
 }
 
+static int
+ctx_rasterizer_find_texture (CtxRasterizer *rasterizer,
+                             const char *eid)
+{
+  int no;
+  for (no = 0; no < CTX_MAX_TEXTURES; no++)
+  {
+    if (rasterizer->texture_source->texture[no].data &&
+        rasterizer->texture_source->texture[no].eid &&
+        !strcmp (rasterizer->texture_source->texture[no].eid, eid))
+    {
+      return no;
+    }
+    else
+    {
+    }
+
+  }
+  return -1;
+}
+
 static void
 ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
-                            int   no,
+                            const char *eid,
                             float x,
                             float y)
 {
+  int no = ctx_rasterizer_find_texture (rasterizer, eid);
   if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
   if (rasterizer->texture_source->texture[no].data == NULL)
     {
@@ -2275,17 +2295,28 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
   {
     rasterizer->buf = rasterizer->group[no-1]->data;
   }
-  int id = ctx_texture_init (rasterizer->ctx, -1,
-                  rasterizer->blit_width,
-                  rasterizer->blit_height,
+   ctx_texture_init (rasterizer->ctx, ".ctx-group", // XXX ? count groups..
+                  rasterizer->blit_width,  // or have group based on thread-id?
+                  rasterizer->blit_height, // .. this would mean threadsafe
+                                           // allocation
                   rasterizer->blit_width * rasterizer->format->bpp/8,
                   rasterizer->format->pixel_format,
                   (uint8_t*)rasterizer->group[no]->data,
                   NULL, NULL);
   {
-     CtxEntry commands[2] =
-      {ctx_u32 (CTX_TEXTURE, id, 0),
-       ctx_f  (CTX_CONT, rasterizer->blit_x, rasterizer->blit_y)};
+     char *eid = ".ctx-group";
+     int   eid_len = strlen (eid);
+
+     CtxEntry commands[4] =
+      {
+       ctx_f  (CTX_TEXTURE, rasterizer->blit_x, rasterizer->blit_y), 
+       ctx_u32 (CTX_DATA, eid_len, eid_len/9+1),
+       ctx_u32 (CTX_CONT, 0,0),
+       ctx_u32 (CTX_CONT, 0,0)
+      };
+     memcpy( (char *) &commands[2].data.u8[0], eid, eid_len);
+     ( (char *) (&commands[2].data.u8[0]) ) [eid_len]=0;
+
      ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
   }
   {
@@ -2300,7 +2331,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
     CtxEntry commands[1]= { ctx_void (CTX_FILL) };
     ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
   }
-  ctx_texture_release (rasterizer->ctx, id);
+  ctx_texture_release (rasterizer->ctx, ".ctx-group");
   ctx_buffer_free (rasterizer->group[no]);
   rasterizer->group[no] = 0;
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
@@ -2573,8 +2604,8 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
                                   c->set_pixel.rgba[3]);
         break;
       case CTX_TEXTURE:
-        ctx_rasterizer_set_texture (rasterizer, ctx_arg_u32 (0),
-                                    ctx_arg_float (2), ctx_arg_float (3) );
+        ctx_rasterizer_set_texture (rasterizer, c->texture.eid,
+                                    c->texture.x, c->texture.y);
         rasterizer->comp_op = NULL;
         break;
 #if 0
@@ -3113,9 +3144,10 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
           entry->code == CTX_LINE_DASH ||
           entry->code == CTX_COLOR_SPACE ||
           entry->code == CTX_TEXT_STROKE ||
+          entry->code == CTX_TEXTURE ||
           entry->code == CTX_FONT)
         {
-          /* the image command and its data is submitted as one unit,
+          /* the command and its data is submitted as one unit,
            */
           ctx_drawlist_add_entry (&ctx->drawlist, entry+1);
           ctx_drawlist_add_entry (&ctx->drawlist, entry+2);

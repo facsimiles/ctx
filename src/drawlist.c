@@ -24,7 +24,6 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_VIEW_BOX:
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
-      case CTX_TEXTURE:
         return 1;
       default:
         return 0;
@@ -663,6 +662,17 @@ ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, 
 {
   ctx_process_cmd_str_with_len (ctx, code, string, arg0, arg1, strlen (string));
 }
+
+CTX_STATIC void
+ctx_process_cmd_str_float (Ctx *ctx, CtxCode code, const char *string, float arg0, float arg1)
+{
+  uint32_t iarg0;
+  uint32_t iarg1;
+  memcpy (&iarg0, &arg0, sizeof (iarg0));
+  memcpy (&iarg1, &arg1, sizeof (iarg1));
+  ctx_process_cmd_str_with_len (ctx, code, string, iarg0, iarg1, strlen (string));
+}
+
 
 
 #if CTX_BITPACK_PACKER

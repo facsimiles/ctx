@@ -11,6 +11,7 @@ ctx-extra.h
 constants.h
 libc.c
 ctx-internal.h
+sha1.c
 start-implementation
 drawlist.h
 util.h

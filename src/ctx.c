@@ -49,7 +49,6 @@ void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height)
   if (y) { *y = ctx->state.min_y; }
   if (width) { *width = ctx->state.max_x - ctx->state.min_x; }
   if (height) { *height = ctx->state.max_y - ctx->state.min_y; }
-  //fprintf (stderr, "%i %i %ix%i\n", *x, *y, *width, *height);
 }
 
 #if CTX_CURRENT_PATH
@@ -175,7 +174,6 @@ ctx_close_path (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_CLOSE_PATH);
 }
 
-
 uint8_t *
 ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, int format, int stride)
 {
@@ -190,27 +188,19 @@ ctx_put_image_data (Ctx *ctx, uint8_t *data, int w, int h, int format, int strid
 {
    // NYI
 }
-                    
 
-void ctx_texture (Ctx *ctx, int id, float x, float y)
+void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
 {
-  CtxEntry commands[2];
-  if (id < 0) { return; }
-  commands[0] = ctx_u32 (CTX_TEXTURE, id, 0);
-  commands[1] = ctx_f   (CTX_CONT, x, y);
-  ctx_process (ctx, commands);
+  ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
 }
 
 void
 ctx_image_path (Ctx *ctx, const char *path, float x, float y)
 {
-  int id = ctx_texture_load (ctx, -1, path, NULL, NULL);
-  ctx_texture (ctx, id, x, y);
-
-  // query if image exists .. 
-  //   if it doesnt load, decode, encode, upload to path/
+  const char *eid = ctx_texture_load (ctx, path, NULL, NULL);
+  if (eid)
+    ctx_texture (ctx, eid, x, y);
 }
-
 
 void
 ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
@@ -220,7 +210,6 @@ ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_
   command.data.u16[3]=y;
   ctx_process (ctx, &command);
 }
-
 
 void
 ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1)
@@ -839,6 +828,7 @@ ctx_flush (Ctx *ctx)
 #endif
   if (ctx->renderer && ctx->renderer->flush)
     ctx->renderer->flush (ctx->renderer);
+  ctx->frame++;
   ctx->drawlist.count = 0;
   ctx_state_init (&ctx->state);
 }

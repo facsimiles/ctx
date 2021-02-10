@@ -246,7 +246,6 @@ int main (int argc, char **argv)
   for (int i = 1; argv[i]; i++)
     if (!strcmp ( argv[i], "--help"))
       return usage_main (argc, argv);
-  fprintf (stdout, "fnord\n");
   if (argv[1] && !strcmp (argv[1], "thumb"))
     return thumb_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "convert"))

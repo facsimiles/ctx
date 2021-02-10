@@ -433,7 +433,16 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         ctx_print_entry (formatter, entry, 2);
         break;
       case CTX_TEXTURE:
-        ctx_print_entry (formatter, entry, 3);
+        _ctx_print_name (formatter, entry->code);
+        ctx_formatter_addstrf (formatter, "\"");
+        ctx_print_escaped_string (formatter, c->texture.eid);
+        ctx_formatter_addstrf (formatter, "\", ");
+        ctx_print_float (formatter, c->texture.x);
+        ctx_formatter_addstrf (formatter, "\", ");
+        ctx_print_float (formatter, c->texture.y);
+        _ctx_print_endcmd (formatter);
+        break;
+
         break;
       case CTX_REL_ARC_TO:
       case CTX_ARC_TO:

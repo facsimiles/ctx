@@ -90,6 +90,8 @@ ctx_drawlist_compact (CtxDrawlist *drawlist);
 CTX_STATIC void
 ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1);
 CTX_STATIC void
+ctx_process_cmd_str_float (Ctx *ctx, CtxCode code, const char *string, float arg0, float arg1);
+CTX_STATIC void
 ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1, int len);
 
 #endif

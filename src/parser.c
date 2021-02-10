@@ -199,10 +199,12 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_RADIAL_GRADIENT:
         return 6;
       case CTX_TEXT_STROKE:
-      case CTX_TEXT: // special case
+      case CTX_TEXT:
       case CTX_COLOR_SPACE:
       case CTX_DEFINE_GLYPH:
       case CTX_KERNING_PAIR:
+      case CTX_TEXTURE:
+      case CTX_DEFINE_TEXTURE:
         return CTX_ARG_STRING_OR_NUMBER;
       case CTX_LINE_DASH: /* append to current dashes for each argument encountered */
         return CTX_ARG_COLLECT_NUMBERS;
@@ -215,9 +217,7 @@ static int ctx_arguments_for_code (CtxCode code)
 
         default:
 #if 1
-      case CTX_TEXTURE:
         case CTX_SET_RGBA_U8:
-        case CTX_BITPIX:
         case CTX_NOP:
         case CTX_NEW_EDGE:
         case CTX_EDGE:
@@ -380,6 +380,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
           case CTX_texture:        ret = CTX_TEXTURE; break;
+          case CTX_defineTexture:  ret = CTX_DEFINE_TEXTURE; break;
 #if 0
           case CTX_rgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
@@ -641,7 +642,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
             parser->numbers[1] = ctx_utf8_to_unichar ((char*)parser->holding);
             break;
           case 2:
-            parser->numbers[2] = ctx_utf8_to_unichar ((char*)parser->holding);
+            parser->numbers[2] = strtod ((char*)parser->holding, NULL);
             {
               CtxEntry e = {CTX_KERNING_PAIR, };
               e.data.u16[0] = parser->numbers[0];
@@ -654,6 +655,41 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->command = CTX_KERNING_PAIR;
         parser->n_args ++; // make this more generic?
         break;             
+      case CTX_TEXTURE:
+        switch (parser->n_args)
+        {
+          case 0:
+             fprintf (stderr, "t \'%s\' ", parser->holding);
+             break;
+          case 1:
+             break;
+          case 2:
+             fprintf (stderr, "%f %f\n", arg(1), arg(2));
+             ctx_texture (ctx, "", arg(1), arg(2));
+             break;
+        }
+
+        parser->n_args++;
+        break;
+      case CTX_DEFINE_TEXTURE:
+        switch (parser->n_args)
+        {
+          case 0:
+             fprintf (stderr, "dt \'%s\' ", parser->holding);
+             break;
+          case 1:
+             fprintf (stderr, "\'%f\' ", arg(1));
+             break;
+          case 2:
+             fprintf (stderr, "\'%f\'\n", arg(2));
+             ctx_texture (ctx, "", arg(1), arg(2));
+             break;
+        }
+
+        parser->n_args++;
+        break;
+
+
       case CTX_DEFINE_GLYPH:
         /* XXX : reuse n_args logic - to enforce order */
         if (parser->n_numbers == 1)
@@ -980,9 +1016,6 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_GLOBAL_ALPHA:
         ctx_global_alpha (ctx, arg(0) );
         break;
-      case CTX_TEXTURE:
-        ctx_texture (ctx, arg(0), arg(1), arg(2));
-        break;
       case CTX_BEGIN_PATH:
         ctx_begin_path (ctx);
         break;
@@ -1218,7 +1251,23 @@ static void ctx_parser_word_done (CtxParser *parser)
 
 static void ctx_parser_string_done (CtxParser *parser)
 {
-  ctx_parser_dispatch_command (parser);
+  if (parser->expected_args == CTX_ARG_STRING_OR_NUMBER)
+  {
+    int tmp1 = parser->command;
+    int tmp2 = parser->expected_args;
+    int tmp3 = parser->n_numbers;
+    int tmp4 = parser->n_args;
+    ctx_parser_dispatch_command (parser);
+    parser->command = (CtxCode)tmp1;
+    parser->expected_args = tmp2;
+    parser->n_numbers = tmp3;
+    parser->n_args = tmp4;
+    //fprintf (stderr, "!!!\n");
+  }
+  else
+  {
+    ctx_parser_dispatch_command (parser);
+  }
 }
 
 void ctx_parser_feed_byte (CtxParser *parser, int byte)
@@ -1237,7 +1286,11 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
       case CTX_PARSER_NEUTRAL:
         switch (byte)
           {
-            case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 11: case 12: case 14: case 15: case 16: case 17: case 18: case 19: case 20: case 21: case 22: case 23: case 24: case 25: case 26: case 27: case 28: case 29: case 30: case 31:
+            case  0: case  1: case  2: case  3:  case 4:  case 5:
+            case  6: case  7: case  8: case 11: case 12: case 14:
+            case 15: case 16: case 17: case 18: case 19: case 20:
+            case 21: case 22: case 23: case 24: case 25: case 26:
+            case 27: case 28: case 29: case 30: case 31:
               break;
             case ' ': case '\t': case '\r': case '\n':
             case ';': case ',':
@@ -1292,35 +1345,12 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
         {
           switch (byte)
             {
-              case 0:
-              case 1:
-              case 2:
-              case 3:
-              case 4:
-              case 5:
-              case 6:
-              case 7:
-              case 8:
-              case 11:
-              case 12:
-              case 14:
-              case 15:
-              case 16:
-              case 17:
-              case 18:
-              case 19:
-              case 20:
-              case 21:
-              case 22:
-              case 23:
-              case 24:
-              case 25:
-              case 26:
-              case 27:
-              case 28:
-              case 29:
-              case 30:
-              case 31:
+              case 0: case 1: case 2: case 3: case 4: case 5:
+              case 6: case 7: case 8:
+              case 11: case 12: case 14: case 15: case 16:
+              case 17: case 18: case 19: case 20: case 21:
+              case 22: case 23: case 24: case 25: case 26:
+              case 27: case 28: case 29: case 30: case 31:
                 parser->state = CTX_PARSER_NEUTRAL;
                 break;
               case ' ':
@@ -1353,16 +1383,8 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                 //if (parser->decimal) // TODO permit .13.32.43 to equivalent to .12 .32 .43
                 parser->decimal = 1;
                 break;
-              case '0':
-              case '1':
-              case '2':
-              case '3':
-              case '4':
-              case '5':
-              case '6':
-              case '7':
-              case '8':
-              case '9':
+              case '0': case '1': case '2': case '3': case '4':
+              case '5': case '6': case '7': case '8': case '9':
                 if (parser->decimal)
                   {
                     parser->decimal *= 10;
@@ -1426,7 +1448,6 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                (parser->state != CTX_PARSER_NEGATIVE_NUMBER))
             {
               parser->n_numbers ++;
-              //parser->t_args ++;
               if (parser->n_numbers == parser->expected_args ||
                   parser->expected_args == 100)
                 {
@@ -1496,7 +1517,8 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
           {
             case '\\': parser->state = CTX_PARSER_STRING_APOS_ESCAPED; break;
             case '\'': parser->state = CTX_PARSER_NEUTRAL;
-              ctx_parser_string_done (parser); break;
+              ctx_parser_string_done (parser);
+              break;
             default:
               ctx_parser_holding_append (parser, byte); break;
           }

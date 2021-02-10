@@ -60,7 +60,10 @@ CtxBuffer *ctx_buffer_new (int width, int height,
 void ctx_buffer_deinit (CtxBuffer *buffer)
 {
   if (buffer->free_func)
-    { buffer->free_func (buffer->data, buffer->user_data); }
+    buffer->free_func (buffer->data, buffer->user_data);
+  if (buffer->eid)
+    free (buffer->eid);
+  buffer->eid = NULL;
   buffer->data = NULL;
   buffer->free_func = NULL;
   buffer->user_data  = NULL;
@@ -72,12 +75,13 @@ void ctx_buffer_free (CtxBuffer *buffer)
   free (buffer);
 }
 
-void ctx_texture_release (Ctx *ctx, int id)
+void ctx_texture_release (Ctx *ctx, const char *name)
 {
-  if (id < 0 || id >= CTX_MAX_TEXTURES)
-    { return; }
-  ctx_buffer_deinit (&ctx->texture[id]);
+//  if (id < 0 || id >= CTX_MAX_TEXTURES)
+//    return;
+//  ctx_buffer_deinit (&ctx->texture[id]);
 }
+#if 0
 
 static int ctx_allocate_texture_id (Ctx *ctx, int id)
 {
@@ -85,7 +89,7 @@ static int ctx_allocate_texture_id (Ctx *ctx, int id)
     {
       for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
         if (ctx->texture[i].data == NULL)
-          { return i; }
+          return i;
       int sacrifice = random()%CTX_MAX_TEXTURES; // better to bias towards old
       ctx_texture_release (ctx, sacrifice);
       return sacrifice;
@@ -93,30 +97,59 @@ static int ctx_allocate_texture_id (Ctx *ctx, int id)
     }
   return id;
 }
+#endif
 
-int ctx_texture_init (Ctx *ctx,
-                      int  id,     /*  should be a string? - also the auto-ids*/
-                      int  width,
-                      int  height,
-                      int  stride,
-                      CtxPixelFormat format,
-                      uint8_t       *pixels,
-                      void (*freefunc) (void *pixels, void *user_data),
-                      void *user_data)
+static int
+ctx_texture_check_eid (Ctx *ctx, const char *eid)
 {
-  /* .. how to relay? ..
-   * fully serializing is one needed option - for that there is no free
-   * func..
-   *
-   * mmap texute bank - that is one of many in compositor, prefixed with "pid-",
-   * ... we want string identifiers instead of integers.
-   *
-   * a context to use as texturing source
-   *   implemented.
-   */
-  id = ctx_allocate_texture_id (ctx, id);
-  if (id < 0)
-    { return id; }
+  for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
+  {
+    if (ctx->texture[i].data &&
+        ctx->texture[i].eid &&
+        !strcmp (ctx->texture[i].eid, eid))
+    {
+      ctx->texture[i].frame = ctx->frame;
+      return i;
+    }
+  }
+  return -1;
+}
+
+const char* ctx_texture_init (Ctx *ctx,
+                              const char *eid,
+                              int  width,
+                              int  height,
+                              int  stride,
+                              CtxPixelFormat format,
+                              uint8_t       *pixels,
+                              void (*freefunc) (void *pixels, void *user_data),
+                              void *user_data)
+{
+  int id = 0;
+  if (eid)
+  {
+    for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
+    {
+      if (ctx->texture[i].data &&
+          ctx->texture[i].eid &&
+          !strcmp (ctx->texture[i].eid, eid))
+      {
+        ctx->texture[i].frame = ctx->frame;
+        return ctx->texture[i].eid;
+      }
+      if (ctx->texture[i].data == NULL 
+          ||   (ctx->frame - ctx->texture[i].frame > 2))
+        id = i;
+    }
+  } else
+  {
+    for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
+    {
+      if (ctx->texture[i].data == NULL 
+          || (ctx->frame - ctx->texture[i].frame > 2))
+        id = i;
+    }
+  }
   int bpp = ctx_pixel_format_bpp (format);
   ctx_buffer_deinit (&ctx->texture[id]);
 
@@ -129,12 +162,42 @@ int ctx_texture_init (Ctx *ctx,
                        pixels, width, height,
                        stride, format,
                        freefunc, user_data);
-  return id;
+  ctx->texture[id].frame = ctx->frame;
+  if (eid)
+    ctx->texture[id].eid = strdup (eid);
+  else
+  {
+    uint8_t hash[20];
+    char ascii[41];
+
+    CtxSHA1 *sha1 = ctx_sha1_new ();
+    ctx_sha1_process (sha1, pixels, stride * height);
+    ctx_sha1_done (sha1, hash);
+    ctx_sha1_free (sha1);
+    const char *hex="0123456789abcdef";
+    for (int i = 0; i < 20; i ++)
+    {
+       ascii[i*2]=hex[hash[i]/16];
+       ascii[i*2+1]=hex[hash[i]%16];
+    }
+    ascii[40]=0;
+    ctx->texture[id].eid = strdup (ascii);
+  }
+  return ctx->texture[id].eid;
 }
 
-int
-ctx_texture_load (Ctx *ctx, int id, const char *path, int *tw, int *th)
+
+const char *
+ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th)
 {
+  int id = ctx_texture_check_eid (ctx, path);
+  if (id>=0)
+  {
+    if (tw) *tw = ctx->texture[id].width;
+    if (th) *th = ctx->texture[id].height;
+    return ctx->texture[id].eid;
+  }
+
 #ifdef STBI_INCLUDE_STB_IMAGE_H
   int w, h, components;
   unsigned char *data = stbi_load (path, &w, &h, &components, 0);
@@ -150,9 +213,9 @@ ctx_texture_load (Ctx *ctx, int id, const char *path, int *tw, int *th)
     }
     if (tw) *tw = w;
     if (th) *th = h;
-    return ctx_texture_init (ctx, id, w, h, w * components, pixel_format, data, 
+    return ctx_texture_init (ctx, path, w, h, w * components, pixel_format, data, 
                              ctx_buffer_pixels_free, NULL);
   }
 #endif
-  return -1;
+  return NULL;
 }

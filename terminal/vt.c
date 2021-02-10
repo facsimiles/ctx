@@ -6201,7 +6201,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
   if (bold)
     {
       ctx_move_to (ctx, x, y);
-      ctx_line_width (ctx, vt->font_size/35.0);
+      ctx_line_width (ctx, vt->font_size/30.0);
       ctx_glyph (ctx, unichar, 1);
     }
   ctx_move_to (ctx, x, y);
@@ -7004,7 +7004,7 @@ void itk_style_color (Ctx *ctx, const char *name); // only itk fun used in vt
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
-  int image_id = 0;
+  //int image_id = 0;
   ctx_begin_path (ctx);
   ctx_save (ctx);
   ctx_translate (ctx, x0, y0);
@@ -7164,13 +7164,16 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     int format = CTX_FORMAT_RGB8;
                     if (image->kitty_format == 32)
                       format = CTX_FORMAT_RGBA8;
-                    ctx_texture_init (ctx, image_id, image->width,
+              //    char texture_name[32];
+              //    sprintf (texture_name, "%d", image_id);
+                    // passing NULL as eid, makes the texture content addressed
+                    const char *texture_n = ctx_texture_init (ctx, NULL, image->width,
                                       image->height,
                                       image->width * (format == CTX_FORMAT_RGB8?3:4),
                                       format,
                                       image->data, NULL, NULL);
-                    ctx_texture (ctx, image_id, u, v);
-                    image_id ++;
+                    ctx_texture (ctx, texture_n, u, v);
+                    //image_id ++;
                     ctx_rectangle (ctx, u, v, image->width, image->height);
                     ctx_fill (ctx);
 
@@ -7222,7 +7225,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
     }
   ctx_restore (ctx);
 //#define SCROLL_SPEED 0.25;
-#define SCROLL_SPEED 0.1;
+#define SCROLL_SPEED 0.001;
   if (vt->in_smooth_scroll)
    {
      if (vt->in_smooth_scroll<0)
