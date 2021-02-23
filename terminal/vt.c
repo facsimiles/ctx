@@ -5259,7 +5259,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
       int i;
       if (was_pidone)
       {
-        setuid(1000);
+        if (setuid(1000)) fprintf (stderr, "setuid failed\n");
       }
       else
       {

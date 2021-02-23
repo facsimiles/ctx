@@ -718,7 +718,10 @@ static int mmm_evsource_mice_init ()
     fprintf (stderr, "error opening /dev/input/mice device, maybe add user to input group if such group exist, or otherwise make the rights be satisfied.\n");
     return -1;
   }
-  write (mrg_mice_this->fd, reset, 1);
+  if (write (mrg_mice_this->fd, reset, 1) == -1)
+  {
+    // might happen if we're a regular user with only read permission
+  }
   _mrg_evsrc_coord = mrg_mice_this;
   return 0;
 }
@@ -752,8 +755,11 @@ static char *mice_get_event ()
   const char *ret = "mouse-motion";
   double relx, rely;
   signed char buf[3];
+  int n_read = 0;
   CtxFb *fb = ev_src_mice.priv;
-  read (mrg_mice_this->fd, buf, 3);
+  n_read = read (mrg_mice_this->fd, buf, 3);
+  if (n_read == 0)
+     return strdup ("");
   relx = buf[1];
   rely = -buf[2];
 
@@ -1237,15 +1243,18 @@ static char *evsource_kb_get_event (void)
               break;
             case 0: /* no matches, bail*/
              {
-                static char ret[256];
+                static char ret[256]="";
                 if (length == 0 && ctx_utf8_len (buf[0])>1) /* read a
                                                              * single unicode
                                                              * utf8 character
                                                              */
                   {
-                    read (STDIN_FILENO, &buf[length+1], ctx_utf8_len(buf[0])-1);
-                    buf[ctx_utf8_len(buf[0])]=0;
-                    strcpy (ret, (void*)buf);
+                    int bytes = read (STDIN_FILENO, &buf[length+1], ctx_utf8_len(buf[0])-1);
+                    if (bytes)
+                    {
+                      buf[ctx_utf8_len(buf[0])]=0;
+                      strcpy (ret, (void*)buf);
+                    }
                     return strdup(ret); //XXX: simplify
                   }
                 if (length == 0) /* ascii */
@@ -1425,7 +1434,7 @@ void ctx_fb_free (CtxFb *fb)
   }
 
   ioctl (0, KDSETMODE, KD_TEXT);
-  system("stty sane");
+  if (system("stty sane")){};
   free (fb->scratch_fb);
   //free (fb);
 }

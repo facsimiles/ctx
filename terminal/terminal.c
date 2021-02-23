@@ -1688,10 +1688,12 @@ int terminal_main (int argc, char **argv)
   int cols = -1;
   if (getpid () == 1)
   {
-    system ("pkill plymouth"); // needed to enable keyboard input.. with the initrd that
+    int ign;
+    ign = system ("pkill plymouth"); // needed to enable keyboard input.. with the initrd that
                                // gets used with systemd
-    system ("mount -o remount,rw /");
-    system ("mount -a");
+    ign = system ("mount -o remount,rw /");
+    ign = system ("mount -a");
+    if (ign) {};
   }
 
   for (int i = 1; argv[i]; i++)
@@ -1927,7 +1929,7 @@ int terminal_main (int argc, char **argv)
 
   if (getpid () == 1)
   {
-    system ("reboot --force");
+    if (system ("reboot --force")){};
   }
 
   return 0;

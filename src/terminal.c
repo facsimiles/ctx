@@ -596,9 +596,13 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
                 if (length == 0 && ctx_utf8_len (buf[0])>1) /* single unicode
                                                                char */
                   {
+                    int n_read = 
                     read (STDIN_FILENO, &buf[length+1], ctx_utf8_len(buf[0])-1);
-                    buf[ctx_utf8_len(buf[0])]=0;
-                    strcpy (ret, (const char*)buf);
+                    if (n_read)
+                    {
+                      buf[ctx_utf8_len(buf[0])]=0;
+                      strcpy (ret, (const char*)buf);
+                    }
                     return ret;
                   }
                 if (length == 0) /* ascii */
