@@ -295,7 +295,7 @@ ctx_swap_red_green2 (uint32_t orig)
 static int       fb_cursor_drawn   = 0;
 static int       fb_cursor_drawn_x = 0;
 static int       fb_cursor_drawn_y = 0;
-static CtxCursor fb_cursor_drawn_shape = CTX_CURSOR_ARROW;
+static CtxCursor fb_cursor_drawn_shape = 0;
 
 
 #define CTX_FB_HIDE_CURSOR_FRAMES 200
@@ -330,7 +330,6 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
         }
         else
         {
-          //cos_theta = -0.707106781186548;
           cos_theta = cos (theta);
           sin_theta = sin (theta);
         }
@@ -448,7 +447,7 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     for (int y = -cursor_size; y < cursor_size; y++)
       for (int x = -cursor_size; x < cursor_size; x++, no+=4)
       {
-        if (x + cursor_x < fb->width && y + cursor_y < fb->height)
+        if (x + cursor_x < fb->width && x >=0 && y + cursor_y < fb->height && y >=0)
         {
           if (ctx_is_in_cursor (x, y, cursor_size, cursor_shape))
           {
@@ -939,7 +938,7 @@ static void real_evsource_kb_destroy (int sign)
   switch (sign)
   {
     case  -11:break; /* will be called from atexit with sign==-11 */
-    case   SIGSEGV: fprintf (stderr, " SIGSEGV\n");break;
+    case   SIGSEGV: break;//fprintf (stderr, " SIGSEGV\n");break;
     case   SIGABRT: fprintf (stderr, " SIGABRT\n");break;
     case   SIGBUS: fprintf (stderr, " SIGBUS\n");break;
     case   SIGKILL: fprintf (stderr, " SIGKILL\n");break;
