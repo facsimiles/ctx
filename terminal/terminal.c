@@ -150,11 +150,6 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
   {
     case CTX_title:  
   // ctx_set (ctx, CTX_title, val, strlen (val));
-#ifndef NO_SDL
-     // XXX also check we're first/only client?
-  // if (ctx_renderer_is_sdl (ctx))
-  //   ctx_sdl_set_title (ctx_get_renderer (ctx), val);
-#endif
      {
        CtxClient *client = vt_find_client (vt);
        if (client)
@@ -1679,6 +1674,28 @@ void draw_mini_panel (Ctx *ctx)
   ctx_restore (ctx);
 }
 
+static char *set_title = NULL;
+
+static void
+terminal_update_title (const char *title)
+{
+  if (!title)title="NULL";
+  if (set_title)
+  {
+    if (!strcmp (set_title, title))
+    {
+      return;
+    }
+    free (set_title);
+  }
+  set_title = strdup (title);
+#ifndef NO_SDL
+     // XXX also check we're first/only client?
+   if (ctx_renderer_is_sdl (ctx))
+     ctx_sdl_set_title (ctx_get_renderer (ctx), set_title);
+#endif
+}
+
 int terminal_main (int argc, char **argv)
 {
   execute_self = argv[0];
@@ -1756,6 +1773,7 @@ int terminal_main (int argc, char **argv)
   if (!active)
     return 1;
   vt_set_ctx (active->vt, ctx);
+
   ITK *itk = itk_new (ctx);
 
   signal (SIGCHLD,signal_child);
@@ -1782,6 +1800,7 @@ int terminal_main (int argc, char **argv)
 
       CtxClient *client = find_active (ctx_pointer_x (ctx),
                                          ctx_pointer_y (ctx));
+
       if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
           ctx_pointer_is_down (ctx, 1) || (active==NULL))
       {
@@ -1805,6 +1824,8 @@ int terminal_main (int argc, char **argv)
           }
         }
       }
+      if (active)
+        terminal_update_title (active->title);
 
       itk->scale = 1.0;
       itk->font_size = font_size;
