@@ -583,14 +583,17 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
   Ctx *ctx = parser->ctx;
+#if 0
   if (parser->expected_args != CTX_ARG_STRING_OR_NUMBER &&
       parser->expected_args != CTX_ARG_COLLECT_NUMBERS &&
       parser->expected_args != parser->n_numbers)
     {
-      ctx_log ("ctx:%i:%i %c got %i instead of %i args\n",
+      fprintf (stderr, "ctx:%i:%i %c got %i instead of %i args\n",
                parser->line, parser->col,
                cmd, parser->n_numbers, parser->expected_args);
     }
+#endif
+
 #define arg(a)  (parser->numbers[a])
   parser->command = CTX_NOP;
   switch (cmd)
@@ -656,37 +659,53 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->n_args ++; // make this more generic?
         break;             
       case CTX_TEXTURE:
-        switch (parser->n_args)
+        switch (parser->n_numbers)
         {
           case 0:
              fprintf (stderr, "t \'%s\' ", parser->holding);
              break;
           case 1:
+             fprintf (stderr, " %f", arg(0));
              break;
           case 2:
-             fprintf (stderr, "%f %f\n", arg(1), arg(2));
+             fprintf (stderr, " %f\n", arg(1));
+             break;
+          case 3:
+             fprintf (stderr, ":;\n");
              ctx_texture (ctx, "", arg(1), arg(2));
              break;
+          default:
+             fprintf (stderr, ":::");
         }
-
         parser->n_args++;
         break;
       case CTX_DEFINE_TEXTURE:
-        switch (parser->n_args)
+        switch (parser->n_numbers)
         {
           case 0:
              fprintf (stderr, "dt \'%s\' ", parser->holding);
              break;
           case 1:
-             fprintf (stderr, "\'%f\' ", arg(1));
+             fprintf (stderr, "%f ", arg(0));
              break;
           case 2:
-             fprintf (stderr, "\'%f\'\n", arg(2));
-             ctx_texture (ctx, "", arg(1), arg(2));
+             fprintf (stderr, "%f ", arg(1));
+             break;
+          case 3:
+             fprintf (stderr, "%f ", arg(2));
+             fprintf (stderr, "\'%s\'\n", parser->holding);
+             parser->n_numbers = 0;
+             break;
+          case 4:
+             fprintf (stderr, "\'%s\'\n", parser->holding);
+             break;
+          case 5:
+             fprintf (stderr, "!!!!!\n");
+             //fprintf (stderr, "\'%f\'\n", arg(2));
+             //ctx_texture (ctx, "", arg(1), arg(2));
              break;
         }
-
-        parser->n_args++;
+        //parser->n_args++;
         break;
 
 
@@ -1042,7 +1061,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
     }
 #undef arg
-  parser->n_numbers = 0;
+//  parser->n_numbers = 0;
 }
 
 static void ctx_parser_holding_append (CtxParser *parser, int byte)
@@ -1190,6 +1209,11 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
 
 // %h %v %m %M
 
+static void ctx_parser_number_done (CtxParser *parser)
+{
+
+}
+
 static void ctx_parser_word_done (CtxParser *parser)
 {
   parser->holding[parser->pos]=0;
@@ -1209,16 +1233,23 @@ static void ctx_parser_word_done (CtxParser *parser)
     }
   else if (command > 0)
     {
-      if (old_args == CTX_ARG_COLLECT_NUMBERS)
+      if (old_args == CTX_ARG_COLLECT_NUMBERS ||
+          old_args == CTX_ARG_STRING_OR_NUMBER)
       {
         int tmp1 = parser->command;
         int tmp2 = parser->expected_args;
+        int tmp3 = parser->n_numbers;
+        int tmp4 = parser->n_args;
         ctx_parser_dispatch_command (parser);
         parser->command = (CtxCode)tmp1;
         parser->expected_args = tmp2;
+        parser->n_numbers = tmp3;
+        parser->n_args = tmp4;
       }
 
       parser->command = (CtxCode) command;
+      parser->n_numbers = 0;
+      parser->n_args = 0;
       if (parser->expected_args == 0)
         {
           ctx_parser_dispatch_command (parser);
@@ -1232,6 +1263,8 @@ static void ctx_parser_word_done (CtxParser *parser)
         {
           buf[0] = parser->holding[i];
           parser->command = (CtxCode) ctx_parser_resolve_command (parser, buf);
+          parser->n_numbers = 0;
+          parser->n_args = 0;
           if (parser->command > 0)
             {
               if (parser->expected_args == 0)
@@ -1245,14 +1278,21 @@ static void ctx_parser_word_done (CtxParser *parser)
             }
         }
     }
-  parser->n_numbers = 0;
-  parser->n_args = 0;
 }
 
 static void ctx_parser_string_done (CtxParser *parser)
 {
   if (parser->expected_args == CTX_ARG_STRING_OR_NUMBER)
   {
+          /*
+    if (parser->state != CTX_PARSER_NUMBER &&
+        parser->state != CTX_PARSER_NEGATIVE_NUMBER &&
+        parser->state != CTX_PARSER_STRING_A85 &&
+        parser->state != CTX_PARSER_STRING_APOS &&
+        parser->state != CTX_PARSER_STRING_QUOT
+        )
+        */
+    {
     int tmp1 = parser->command;
     int tmp2 = parser->expected_args;
     int tmp3 = parser->n_numbers;
@@ -1262,7 +1302,7 @@ static void ctx_parser_string_done (CtxParser *parser)
     parser->expected_args = tmp2;
     parser->n_numbers = tmp3;
     parser->n_args = tmp4;
-    //fprintf (stderr, "!!!\n");
+    }
   }
   else
   {
@@ -1448,10 +1488,21 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                (parser->state != CTX_PARSER_NEGATIVE_NUMBER))
             {
               parser->n_numbers ++;
+              ctx_parser_number_done (parser);
+
               if (parser->n_numbers == parser->expected_args ||
-                  parser->expected_args == 100)
+                  parser->expected_args == CTX_ARG_COLLECT_NUMBERS ||
+                  parser->expected_args == CTX_ARG_STRING_OR_NUMBER)
                 {
+                  int tmp1 = parser->n_numbers;
+                  int tmp2 = parser->n_args;
+                  int tmp3 = parser->command;
+                  int tmp4 = parser->expected_args;
                   ctx_parser_dispatch_command (parser);
+                  parser->n_numbers = tmp1;
+                  parser->n_args = tmp2;
+                  parser->command = tmp3;
+                  parser->expected_args = tmp4;
                 }
               if (parser->n_numbers > CTX_PARSER_MAX_ARGS)
                 { parser->n_numbers = CTX_PARSER_MAX_ARGS;

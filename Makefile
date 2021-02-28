@@ -17,7 +17,7 @@ CCC=`which ccache` $(CC)
 #CFLAGS+= -fsanitize=address
 #LIBS+= -lasan
 
-OFLAGS_HARD=-O3
+OFLAGS_HARD=-O2
 OFLAGS_LIGHT=-O2
 
 DEP_CFLAGS=`pkg-config sdl2 babl --cflags`
