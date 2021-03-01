@@ -274,7 +274,6 @@ CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, floa
 #define MIN_Y -1000
 #define MAX_Y 1400
 
-
   if (ty < MIN_Y) ty = MIN_Y;
   if (ty > MAX_Y) ty = MAX_Y;
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * rasterizer->aa);
@@ -461,6 +460,29 @@ ctx_rasterizer_rel_curve_to (CtxRasterizer *rasterizer,
   ctx_rasterizer_curve_to (rasterizer, x0, y0, x1, y1, x2, y2);
 }
 
+
+static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
+                                           const char *eid,
+                                           int width,
+                                           int height,
+                                           int format,
+                                           const char unsigned *data)
+{
+  //fprintf (stderr, "dt %s %i %i %i %p %i %i %i %i\n", eid, width, height, format, data, data[0], data[1], data[2], data[3]);
+  _ctx_texture_lock ();
+  ctx_texture_init (rasterizer->texture_source,
+                    eid,
+                    width,
+                    height,
+                    width * format,
+                    format,
+                    data,
+                    ctx_buffer_pixels_free, (void*)23);
+
+  _ctx_texture_unlock ();
+}
+
+
 CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
 {
   const CtxEntry *a = (const CtxEntry *) ap;
@@ -511,6 +533,7 @@ static void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
       ctx_edge_qsort (& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
     }
 }
+
 
 static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
@@ -2295,6 +2318,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
   {
     rasterizer->buf = rasterizer->group[no-1]->data;
   }
+  // XXX use texture_source ?
    ctx_texture_init (rasterizer->ctx, ".ctx-group", // XXX ? count groups..
                   rasterizer->blit_width,  // or have group based on thread-id?
                   rasterizer->blit_height, // .. this would mean threadsafe
@@ -2331,7 +2355,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
     CtxEntry commands[1]= { ctx_void (CTX_FILL) };
     ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
   }
-  ctx_texture_release (rasterizer->ctx, ".ctx-group");
+  //ctx_texture_release (rasterizer->ctx, ".ctx-group");
   ctx_buffer_free (rasterizer->group[no]);
   rasterizer->group[no] = 0;
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
@@ -2494,6 +2518,7 @@ ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, int count, float *dashes)
   }
 }
 
+
 static void
 ctx_rasterizer_process (void *user_data, CtxCommand *command)
 {
@@ -2603,7 +2628,21 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
                                   c->set_pixel.rgba[2],
                                   c->set_pixel.rgba[3]);
         break;
+      case CTX_DEFINE_TEXTURE:
+        {
+
+
+        uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
+
+        assert (pixel_data);
+        ctx_rasterizer_define_texture (rasterizer, c->define_texture.eid,
+                                       c->define_texture.width, c->define_texture.height,
+                                       c->define_texture.format,
+                                       pixel_data);
+        }
+        break;
       case CTX_TEXTURE:
+        //fprintf (stderr, "sett %s\n", c->texture.eid);
         ctx_rasterizer_set_texture (rasterizer, c->texture.eid,
                                     c->texture.x, c->texture.y);
         rasterizer->comp_op = NULL;
@@ -3150,8 +3189,32 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
           /* the command and its data is submitted as one unit,
            */
           ctx_drawlist_add_entry (&ctx->drawlist, entry+1);
-          ctx_drawlist_add_entry (&ctx->drawlist, entry+2);
+          //ctx_drawlist_add_entry (&ctx->drawlist, entry+1 + ctx_conts_for_entry (entry+1) + 1);
         }
+      else
+      if (entry->code == CTX_DEFINE_TEXTURE)
+      {
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+2);
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+2 + 1 + ctx_conts_for_entry (entry+2));
+        //ctx_drawlist_add_entry (&ctx->drawlist, entry+2 + ctx_conts_for_entry (entry+2) + 2);
+#if 0
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+4);
+
+
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+5);
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+6);
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+7);
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+8);
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+9);
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+10);
+        ctx_drawlist_add_entry (&ctx->drawlist, entry+11);
+#endif
+        //int eid_len = ctx_conts_for_entry (entry+2) + 1;
+        //ctx_drawlist_add_entry (&ctx->drawlist, entry+2+eid_len);
+
+        // 0    1  2    3 4 5
+        //fprintf (stderr, " [%s]", &(entry[3].data.u8)[0]);
+      }
 #endif
     }
 }

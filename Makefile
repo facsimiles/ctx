@@ -80,7 +80,7 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/ctx
 
 tools/%: tools/%.c ctx-nofont.h 
-	$(CCC) $< -o $@ -g -lm -I. -Ifonts -Wall -lm -Ideps $(CFLAGS_warnings)
+	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings)
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h 
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(DEP_CFLAGS) $(OFLAGS_LIGHT)

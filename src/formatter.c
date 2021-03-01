@@ -114,6 +114,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_REL_ARC_TO:           return "relArcTo"; break;
           case CTX_GLYPH:                return "glyph"; break;
           case CTX_TEXTURE:              return "texture"; break;
+          case CTX_DEFINE_TEXTURE:       return "defineTexture"; break;
           case CTX_IDENTITY:             return "identity"; break;
           case CTX_CLOSE_PATH:           return "closePath"; break;
           case CTX_PRESERVE:             return "preserve"; break;
@@ -331,6 +332,18 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
   _ctx_print_endcmd (formatter);
 }
 
+
+static void
+ctx_print_a85 (CtxFormatter *formatter, uint8_t *data, int length)
+{
+  char *tmp = malloc (ctx_a85enc_len (length));
+  ctx_a85enc (data, tmp, length);
+  ctx_formatter_addstr (formatter, " ~", 2);
+  ctx_formatter_addstr (formatter, tmp, -1);
+  ctx_formatter_addstr (formatter, "~ ", 2);
+  free (tmp);
+}
+
 static void
 ctx_print_escaped_string (CtxFormatter *formatter, const char *string)
 {
@@ -372,6 +385,12 @@ ctx_print_float (CtxFormatter *formatter, float val)
   if (temp[j]=='.')
     { temp[j]='\0'; }
   ctx_formatter_addstr (formatter, temp, -1);
+}
+
+static void
+ctx_print_int (CtxFormatter *formatter, int val)
+{
+  ctx_formatter_addstrf (formatter, "%i", val);
 }
 
 static void
@@ -438,8 +457,48 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         ctx_print_escaped_string (formatter, c->texture.eid);
         ctx_formatter_addstrf (formatter, "\", ");
         ctx_print_float (formatter, c->texture.x);
-        ctx_formatter_addstrf (formatter, "\", ");
+        ctx_formatter_addstrf (formatter, ", ");
         ctx_print_float (formatter, c->texture.y);
+        ctx_formatter_addstrf (formatter, " ");
+        _ctx_print_endcmd (formatter);
+        break;
+
+      case CTX_DEFINE_TEXTURE:
+        _ctx_print_name (formatter, entry->code);
+        ctx_formatter_addstrf (formatter, "\"");
+        ctx_print_escaped_string (formatter, c->define_texture.eid);
+        ctx_formatter_addstrf (formatter, "\", ");
+        ctx_print_int (formatter, c->define_texture.width);
+        ctx_formatter_addstrf (formatter, ", ");
+        ctx_print_int (formatter, c->define_texture.height);
+        ctx_formatter_addstrf (formatter, ", ");
+        switch (c->define_texture.format)
+        {
+          case CTX_FORMAT_GRAY8:
+            ctx_formatter_addstrf (formatter, "1, ");
+            break;
+          case CTX_FORMAT_RGB8:
+            ctx_formatter_addstrf (formatter, "3, ");
+            break;
+          case CTX_FORMAT_RGBA8:
+            ctx_formatter_addstrf (formatter, "4, ");
+            break;
+        }
+        //ctx_print_int (formatter, c->define_texture.height);
+        //ctx_print_escaped_string (formatter, c->define_texture.eid);
+
+        uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
+#if 1
+
+        int stride = c->define_texture.width * c->define_texture.format; // XXX only valid for 1-4
+        ctx_print_a85 (formatter, pixel_data, c->define_texture.height * stride);
+#else
+        ctx_formatter_addstrf (formatter, "\"");
+        ctx_print_escaped_string (formatter, pixel_data);
+        ctx_formatter_addstrf (formatter, "\" ");
+
+#endif
+
         _ctx_print_endcmd (formatter);
         break;
 

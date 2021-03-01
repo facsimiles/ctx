@@ -938,6 +938,10 @@ void ctx_sha1_free (CtxSHA1 *sha1);
 int ctx_sha1_process(CtxSHA1 *sha1, const unsigned char * msg, unsigned long len);
 int ctx_sha1_done(CtxSHA1 * sha1, unsigned char *out);
 
+void _ctx_texture_lock (void);
+void _ctx_texture_unlock (void);
+uint8_t *ctx_define_texture_pixel_data (CtxEntry *entry);
+void ctx_buffer_pixels_free (void *pixels, void *userdata);
 
 #endif
 

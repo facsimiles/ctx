@@ -6,6 +6,7 @@
 #define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
 #if CTX_EVENTS
+#include <threads.h>
 static struct timeval start_time;
 
 static void
@@ -48,6 +49,19 @@ enum _CtxFlags {
 
 int _ctx_max_threads = 1;
 int _ctx_enable_hash_cache = 1;
+
+static mtx_t _ctx_texture_mtx;
+
+void _ctx_texture_lock (void)
+{
+  mtx_lock (&_ctx_texture_mtx);
+}
+
+void _ctx_texture_unlock (void)
+{
+  mtx_unlock (&_ctx_texture_mtx);
+}
+
 
 void
 ctx_init (int *argc, char ***argv)
@@ -126,6 +140,8 @@ Ctx *ctx_new_ui (int width, int height)
     _ctx_max_threads = sysconf (_SC_NPROCESSORS_ONLN) / 2;
 #endif
   }
+  
+  mtx_init (&_ctx_texture_mtx, mtx_plain);
 
   if (_ctx_max_threads < 1) _ctx_max_threads = 1;
   if (_ctx_max_threads > CTX_MAX_THREADS) _ctx_max_threads = CTX_MAX_THREADS;

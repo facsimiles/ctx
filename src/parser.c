@@ -5,6 +5,9 @@
 
 /* ctx parser, */
 
+#define CTX_ID_MAXLEN 64 // in use should not be more than 40!
+                         // to offer headroom for multiplexing
+
 struct
   _CtxParser
 {
@@ -22,6 +25,8 @@ struct
   int        expected_args; /* low digits are literal higher values
                                carry special meaning */
   int        n_args;
+  int        texture_done;
+  uint8_t    texture_id[CTX_ID_MAXLEN]; // used in defineTexture only
   uint32_t   set_key_hash;
   float      pcx;
   float      pcy;
@@ -247,6 +252,7 @@ static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
   {
   parser->expected_args = ctx_arguments_for_code (code);
   parser->n_args = 0;
+  parser->texture_done = 0;
   if (parser->expected_args >= CTX_ARG_NUMBER_OF_COMPONENTS)
     {
       parser->expected_args = (parser->expected_args % 100) + parser->color_components;
@@ -583,7 +589,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
   Ctx *ctx = parser->ctx;
-#if 0
+#if 1
   if (parser->expected_args != CTX_ARG_STRING_OR_NUMBER &&
       parser->expected_args != CTX_ARG_COLLECT_NUMBERS &&
       parser->expected_args != parser->n_numbers)
@@ -596,6 +602,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 
 #define arg(a)  (parser->numbers[a])
   parser->command = CTX_NOP;
+  //parser->n_args = 0;
   switch (cmd)
     {
       default:
@@ -659,53 +666,54 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->n_args ++; // make this more generic?
         break;             
       case CTX_TEXTURE:
-        switch (parser->n_numbers)
+        if (parser->texture_done)
         {
-          case 0:
-             fprintf (stderr, "t \'%s\' ", parser->holding);
-             break;
-          case 1:
-             fprintf (stderr, " %f", arg(0));
-             break;
-          case 2:
-             fprintf (stderr, " %f\n", arg(1));
-             break;
-          case 3:
-             fprintf (stderr, ":;\n");
-             ctx_texture (ctx, "", arg(1), arg(2));
-             break;
-          default:
-             fprintf (stderr, ":::");
         }
-        parser->n_args++;
+        else
+        if (parser->n_numbers == 2)
+        {
+          const char *eid = (char*)parser->holding;
+          float x0 = arg(0);
+          float x1 = arg(1);
+          ctx_texture (ctx, eid, x0, x1);
+          parser->texture_done = 1;
+        }
+        parser->command = CTX_TEXTURE;
+        //parser->n_args++;
         break;
       case CTX_DEFINE_TEXTURE:
+        if (parser->texture_done)
+        {
+          if (parser->texture_done++ == 1)
+          {
+             const char *eid = (char*)parser->texture_id;
+             int width = arg(0);
+             int height = arg(1);
+             int format = arg(2);
+             
+             ctx_define_texture (ctx, eid, width, height, format, parser->holding, NULL);
+          }
+        }
+        else
+        {
         switch (parser->n_numbers)
         {
           case 0:
-             fprintf (stderr, "dt \'%s\' ", parser->holding);
+             strncpy ((char*)parser->texture_id, (char*)parser->holding, sizeof(parser->texture_id));
+             parser->texture_id[sizeof(parser->texture_id)-1]=0;
              break;
           case 1:
-             fprintf (stderr, "%f ", arg(0));
-             break;
           case 2:
-             fprintf (stderr, "%f ", arg(1));
              break;
           case 3:
-             fprintf (stderr, "%f ", arg(2));
-             fprintf (stderr, "\'%s\'\n", parser->holding);
-             parser->n_numbers = 0;
+             parser->texture_done = 1;
              break;
-          case 4:
-             fprintf (stderr, "\'%s\'\n", parser->holding);
-             break;
-          case 5:
-             fprintf (stderr, "!!!!!\n");
-             //fprintf (stderr, "\'%f\'\n", arg(2));
-             //ctx_texture (ctx, "", arg(1), arg(2));
+          default:
+             fprintf (stderr, "!!%i\n", parser->n_numbers);
              break;
         }
-        //parser->n_args++;
+        }
+        parser->command = CTX_DEFINE_TEXTURE;
         break;
 
 
@@ -1217,7 +1225,7 @@ static void ctx_parser_number_done (CtxParser *parser)
 static void ctx_parser_word_done (CtxParser *parser)
 {
   parser->holding[parser->pos]=0;
-  int old_args = parser->expected_args;
+  //int old_args = parser->expected_args;
   int command = ctx_parser_resolve_command (parser, parser->holding);
   if ((command >= 0 && command < 32)
       || (command > 150) || (command < 0)
@@ -1233,19 +1241,21 @@ static void ctx_parser_word_done (CtxParser *parser)
     }
   else if (command > 0)
     {
+#if 0
       if (old_args == CTX_ARG_COLLECT_NUMBERS ||
           old_args == CTX_ARG_STRING_OR_NUMBER)
       {
         int tmp1 = parser->command;
         int tmp2 = parser->expected_args;
         int tmp3 = parser->n_numbers;
-        int tmp4 = parser->n_args;
+ //     int tmp4 = parser->n_args;
         ctx_parser_dispatch_command (parser);
         parser->command = (CtxCode)tmp1;
         parser->expected_args = tmp2;
         parser->n_numbers = tmp3;
-        parser->n_args = tmp4;
+ //     parser->n_args = tmp4;
       }
+#endif
 
       parser->command = (CtxCode) command;
       parser->n_numbers = 0;
@@ -1495,12 +1505,12 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                   parser->expected_args == CTX_ARG_STRING_OR_NUMBER)
                 {
                   int tmp1 = parser->n_numbers;
-                  int tmp2 = parser->n_args;
+                  //int tmp2 = parser->n_args;
                   int tmp3 = parser->command;
                   int tmp4 = parser->expected_args;
                   ctx_parser_dispatch_command (parser);
                   parser->n_numbers = tmp1;
-                  parser->n_args = tmp2;
+                  //parser->n_args = tmp2;
                   parser->command = tmp3;
                   parser->expected_args = tmp4;
                 }

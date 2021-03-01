@@ -166,8 +166,6 @@ ctx_gstate_pop (CtxState *state)
 }
 
 
-
-
 void
 ctx_close_path (Ctx *ctx)
 {
@@ -192,6 +190,89 @@ ctx_put_image_data (Ctx *ctx, uint8_t *data, int w, int h, int format, int strid
 void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
 {
   ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
+}
+
+void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int format, void *data, char *ret_eid)
+{
+  int stride = width;
+
+  uint8_t hash[20]="";
+  char ascii[41]="";
+
+  //fprintf (stderr, "DT '%s' %i %i %i \'%s\'\n", eid, width, height, format, (char*)data);
+
+  switch (format)
+  {
+    case 0:
+    case 1:
+      break;
+    case 2:
+      stride *= 2;
+      break;
+    case 3:
+      stride *= 3;
+      break;
+    case 4:
+      stride *= 4;
+      break;
+  }
+  int data_len = height * stride;
+
+  if (eid == NULL)
+  {
+    CtxSHA1 *sha1 = ctx_sha1_new ();
+    ctx_sha1_process (sha1, data, data_len);
+    ctx_sha1_done (sha1, hash);
+    ctx_sha1_free (sha1);
+    const char *hex="0123456789abcdef";
+    for (int i = 0; i < 20; i ++)
+    {
+       ascii[i*2]=hex[hash[i]/16];
+       ascii[i*2+1]=hex[hash[i]%16];
+    }
+    ascii[40]=0;
+    eid = ascii;
+  }
+
+  int eid_len = strlen (eid);
+
+  //data_len = strlen (data);
+  {
+    /* bottleneck,  we can avoid copying sometimes - and even when copying
+     * we should take more shortcuts avoiding at least one full copy.
+     *
+     */
+    CtxEntry *commands = calloc (sizeof (CtxEntry), 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8);
+    //ctx_memset (commands, 0, sizeof (commands));
+    commands[0] = ctx_u32 (CTX_DEFINE_TEXTURE, width, height);
+    commands[1].data.u16[0] = format;
+
+    int pos = 2;
+
+    commands[pos].code = CTX_DATA;
+    commands[pos].data.u32[0] = eid_len;
+    commands[pos].data.u32[1] = (eid_len+1+1)/9 + 1;
+    memcpy ((char *) &commands[pos+1].data.u8[0], eid, eid_len);
+    ((char *) &commands[pos+1].data.u8[0])[eid_len]=0;
+
+    pos = 2 + 1 + ctx_conts_for_entry (&commands[2]);
+    commands[pos].code = CTX_DATA;
+    commands[pos].data.u32[0] = data_len;
+    commands[pos].data.u32[1] = (data_len+1+1)/9 + 1;
+    memcpy ((char *) &commands[pos+1].data.u8[0], data, data_len);
+    ((char *) &commands[pos+1].data.u8[0])[data_len]=0;
+
+    ctx_process (ctx, commands);
+    //uint8_t *dat = ctx_define_texture_pixel_data (commands);
+  //fprintf (stderr, "!dt %s %i %i %i %p %i %i %i %i\n", eid, width, height, format, data, dat[0], dat[1], dat[2], dat[3]);
+    free (commands);
+  }
+
+  if (ret_eid)
+  {
+    strcpy (ret_eid, eid);
+    ret_eid[64]=0;
+  }
 }
 
 void
@@ -1475,7 +1556,6 @@ int  ctx_has_quit (Ctx *ctx)
   return 1; 
 #endif
 }
-
 
 int ctx_pixel_format_bpp (CtxPixelFormat format)
 {

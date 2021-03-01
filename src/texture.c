@@ -24,8 +24,6 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
   buffer->user_data = user_data;
 }
 
-
-
 CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     int stride,
                                     CtxPixelFormat pixel_format,
@@ -38,8 +36,7 @@ CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
   return buffer;
 }
 
-
-static void ctx_buffer_pixels_free (void *pixels, void *userdata)
+void ctx_buffer_pixels_free (void *pixels, void *userdata)
 {
   free (pixels);
 }
@@ -75,39 +72,17 @@ void ctx_buffer_free (CtxBuffer *buffer)
   free (buffer);
 }
 
-void ctx_texture_release (Ctx *ctx, const char *name)
-{
-//  if (id < 0 || id >= CTX_MAX_TEXTURES)
-//    return;
-//  ctx_buffer_deinit (&ctx->texture[id]);
-}
-#if 0
-
-static int ctx_allocate_texture_id (Ctx *ctx, int id)
-{
-  if (id < 0 || id >= CTX_MAX_TEXTURES)
-    {
-      for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
-        if (ctx->texture[i].data == NULL)
-          return i;
-      int sacrifice = random()%CTX_MAX_TEXTURES; // better to bias towards old
-      ctx_texture_release (ctx, sacrifice);
-      return sacrifice;
-      return -1; // eeek
-    }
-  return id;
-}
-#endif
-
 static int
-ctx_texture_check_eid (Ctx *ctx, const char *eid)
+ctx_texture_check_eid (Ctx *ctx, const char *eid, int *tw, int *th)
 {
   for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
   {
     if (ctx->texture[i].data &&
-        ctx->texture[i].eid &&
+        ctx->texture[i].eid  &&
         !strcmp (ctx->texture[i].eid, eid))
     {
+      if (tw) *tw = ctx->texture[i].width;
+      if (th) *th = ctx->texture[i].height;
       ctx->texture[i].frame = ctx->frame;
       return i;
     }
@@ -115,11 +90,11 @@ ctx_texture_check_eid (Ctx *ctx, const char *eid)
   return -1;
 }
 
-const char* ctx_texture_init (Ctx *ctx,
-                              const char *eid,
-                              int  width,
-                              int  height,
-                              int  stride,
+const char* ctx_texture_init (Ctx           *ctx,
+                              const char    *eid,
+                              int            width,
+                              int            height,
+                              int            stride,
                               CtxPixelFormat format,
                               uint8_t       *pixels,
                               void (*freefunc) (void *pixels, void *user_data),
@@ -135,6 +110,8 @@ const char* ctx_texture_init (Ctx *ctx,
           !strcmp (ctx->texture[i].eid, eid))
       {
         ctx->texture[i].frame = ctx->frame;
+        if (freefunc && user_data != (void*)23)
+          freefunc (pixels, user_data);
         return ctx->texture[i].eid;
       }
       if (ctx->texture[i].data == NULL 
@@ -153,9 +130,16 @@ const char* ctx_texture_init (Ctx *ctx,
   int bpp = ctx_pixel_format_bpp (format);
   ctx_buffer_deinit (&ctx->texture[id]);
 
-  if (!stride)
+  if (stride<=0)
   {
     stride = width * (bpp/8);
+  }
+
+  if (freefunc == ctx_buffer_pixels_free && user_data == (void*)23)
+  {
+     uint8_t *tmp = malloc (height * stride);
+     memcpy (tmp, pixels, height * stride);
+     pixels = tmp;
   }
 
   ctx_buffer_set_data (&ctx->texture[id],
@@ -186,15 +170,12 @@ const char* ctx_texture_init (Ctx *ctx,
   return ctx->texture[id].eid;
 }
 
-
 const char *
 ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th)
 {
-  int id = ctx_texture_check_eid (ctx, path);
+  int id = ctx_texture_check_eid (ctx, path, tw, th);
   if (id>=0)
   {
-    if (tw) *tw = ctx->texture[id].width;
-    if (th) *th = ctx->texture[id].height;
     return ctx->texture[id].eid;
   }
 

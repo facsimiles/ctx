@@ -16,6 +16,7 @@
   #include <libdrm/drm_mode.h>
 
 typedef struct _EvSource EvSource;
+ 
 
 struct _EvSource
 {
@@ -1766,6 +1767,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
     ctx_log ("VT_SET_MODE on vt %i failed\n", fb->vt);
     return NULL;
   }
+
 
   return fb->ctx;
 #else

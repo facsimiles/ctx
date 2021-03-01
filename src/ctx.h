@@ -54,11 +54,11 @@ typedef struct _Ctx            Ctx;
 enum _CtxPixelFormat
 {
   CTX_FORMAT_NONE=0,
-  CTX_FORMAT_GRAY8,
-  CTX_FORMAT_GRAYA8,
-  CTX_FORMAT_RGB8,
-  CTX_FORMAT_RGBA8,
-  CTX_FORMAT_BGRA8,
+  CTX_FORMAT_GRAY8,  // 1  - these enum values are not coincidence
+  CTX_FORMAT_GRAYA8, // 2  -
+  CTX_FORMAT_RGB8,   // 3  -
+  CTX_FORMAT_RGBA8,  // 4  -
+  CTX_FORMAT_BGRA8,  // but the rest are..
   CTX_FORMAT_RGB565,
   CTX_FORMAT_RGB565_BYTESWAPPED,
   CTX_FORMAT_RGB332,
@@ -71,22 +71,6 @@ enum _CtxPixelFormat
   CTX_FORMAT_CMYK8,
   CTX_FORMAT_CMYKA8,
   CTX_FORMAT_CMYKAF,
-  CTX_FORMAT_DEVICEN1,
-  CTX_FORMAT_DEVICEN2,
-  CTX_FORMAT_DEVICEN3,
-  CTX_FORMAT_DEVICEN4,
-  CTX_FORMAT_DEVICEN5,
-  CTX_FORMAT_DEVICEN6,
-  CTX_FORMAT_DEVICEN7,
-  CTX_FORMAT_DEVICEN8,
-  CTX_FORMAT_DEVICEN9,
-  CTX_FORMAT_DEVICEN10,
-  CTX_FORMAT_DEVICEN11,
-  CTX_FORMAT_DEVICEN12,
-  CTX_FORMAT_DEVICEN13,
-  CTX_FORMAT_DEVICEN14,
-  CTX_FORMAT_DEVICEN15,
-  CTX_FORMAT_DEVICEN16
 };
 typedef enum   _CtxPixelFormat CtxPixelFormat;
 
@@ -308,7 +292,7 @@ const char *ctx_texture_init (
                       void *user_data);
 const char *ctx_texture_load (Ctx *ctx, const char *path, int *width, int *height);
 
-void ctx_texture_release    (Ctx *ctx, const char *eid);
+
 
 /* sets the paint source to be a texture from the texture bank*/
 void ctx_texture            (Ctx *ctx, const char *eid, float x, float y);
@@ -509,7 +493,7 @@ void ctx_compositing_mode     (Ctx *ctx, CtxCompositingMode mode);
 int  ctx_set_drawlist     (Ctx *ctx, void *data, int length);
 typedef struct _CtxEntry CtxEntry;
 /* we only care about the tight packing for this specific
- * structx as we do indexing across members in arrays of it,
+ * struct as we do indexing across members in arrays of it,
  * to make sure its size becomes 9bytes -
  * the pack pragma is also sufficient on recent gcc versions
  */
@@ -1041,6 +1025,22 @@ struct
       uint8_t  code_cont;
       char     eid[8]; /* .. and continues */
     } texture;
+    struct
+    {
+      uint8_t  code;
+      uint32_t width;
+      uint32_t height;
+      uint8_t  code_cont0;
+      uint16_t format;
+      uint16_t pad0;
+      uint32_t pad1;
+      uint8_t  code_data;
+      uint32_t stringlen;
+      uint32_t blocklen;
+      uint8_t  code_cont1;
+      char     eid[8]; /* .. and continues */
+      // followed by - in variable offset code_Data, data_len, datablock_len, cont, pixeldata
+    } define_texture;
     struct
     {
       uint8_t  code;
@@ -1605,6 +1605,7 @@ void ctx_colorspace (Ctx           *ctx,
                      CtxColorSpace  space_slot,
                      unsigned char *data,
                      int            data_length);
+void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int format, void *data, char *ret_eid);
 
 void
 ctx_parser_set_size (CtxParser *parser,

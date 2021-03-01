@@ -8,6 +8,7 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_DATA:
         return entry->data.u32[1];
       case CTX_LINEAR_GRADIENT:
+      case CTX_DEFINE_TEXTURE:
         return 1;
       case CTX_RADIAL_GRADIENT:
       case CTX_ARC:
@@ -274,6 +275,7 @@ again:
         case CTX_NEW_PAGE:
         case CTX_SET_KEY:
         case CTX_TRANSLATE:
+        case CTX_DEFINE_TEXTURE:
         case CTX_GRADIENT_STOP:
         case CTX_CONT: // shouldnt happen
           iterator->bitpack_length = 0;
@@ -486,7 +488,6 @@ int ctx_set_drawlist (Ctx *ctx, void *data, int length)
   return length;
 }
 
-
 int ctx_get_drawlist_count (Ctx *ctx)
 {
   return ctx->drawlist.count;
@@ -646,12 +647,12 @@ ctx_u8 (CtxCode code,
 CTX_STATIC void
 ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1, int len)
 {
-  CtxEntry commands[1 + 2 + len/8];
+  CtxEntry commands[1 + 2 + (len+1+1)/9];
   ctx_memset (commands, 0, sizeof (commands) );
   commands[0] = ctx_u32 (code, arg0, arg1);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = len;
-  commands[1].data.u32[1] = len/9+1;
+  commands[1].data.u32[1] = (len+1+1)/9 + 1;
   memcpy( (char *) &commands[2].data.u8[0], string, len);
   ( (char *) (&commands[2].data.u8[0]) ) [len]=0;
   ctx_process (ctx, commands);
@@ -1003,4 +1004,7 @@ ctx_drawlist_compact (CtxDrawlist *drawlist)
 #endif
 }
 
-
+uint8_t *ctx_define_texture_pixel_data (CtxEntry *entry)
+{
+  return &entry[2 + 1 + 1 + ctx_conts_for_entry (&entry[2])].data.u8[0];
+}

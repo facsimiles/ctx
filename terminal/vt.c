@@ -257,6 +257,7 @@ typedef struct Image
   int width;
   int height;
   int id;
+  int eid_no;
   int size;
   uint8_t *data;
 } Image;
@@ -275,6 +276,8 @@ static Image *image_query (int id)
     }
   return NULL;
 }
+
+static int image_eid_no = 0;
 
 static Image *image_add (int width,
                          int height,
@@ -304,6 +307,7 @@ static Image *image_add (int width,
   image->id     = id;
   image->size   = size;
   image->data   = data;
+  image->eid_no = image_eid_no++;
   return image;
 }
 
@@ -3949,6 +3953,7 @@ static void vt_ctx_unrled (VT *vt, int byte)
 
 static void vt_state_ctx (VT *vt, int byte)
 {
+        //fprintf (stderr, "%c", byte);
   if (byte == CTX_CODEC_CHAR)
   {
     if (vt->in_prev_match)
@@ -7005,7 +7010,6 @@ void itk_style_color (Ctx *ctx, const char *name); // only itk fun used in vt
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
-  //int image_id = 0;
   ctx_begin_path (ctx);
   ctx_save (ctx);
   ctx_translate (ctx, x0, y0);
@@ -7162,19 +7166,15 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     ctx_clip (ctx);
                     // we give each texture a unique-id - if we use more ids than
                     // there is, ctx will alias the first image.
-                    int format = CTX_FORMAT_RGB8;
-                    if (image->kitty_format == 32)
-                      format = CTX_FORMAT_RGBA8;
-              //    char texture_name[32];
-              //    sprintf (texture_name, "%d", image_id);
                     // passing NULL as eid, makes the texture content addressed
-                    const char *texture_n = ctx_texture_init (ctx, NULL, image->width,
+                    char texture_n[65]; // and returned in nexture_n
+
+                    sprintf (texture_n, "vtimg%i", image->eid_no);
+                    ctx_define_texture (ctx, texture_n, image->width,
                                       image->height,
-                                      image->width * (format == CTX_FORMAT_RGB8?3:4),
-                                      format,
-                                      image->data, NULL, NULL);
+                                      image->kitty_format == 32 ? CTX_FORMAT_RGBA8 : CTX_FORMAT_RGB8,
+                                      image->data, NULL);
                     ctx_texture (ctx, texture_n, u, v);
-                    //image_id ++;
                     ctx_rectangle (ctx, u, v, image->width, image->height);
                     ctx_fill (ctx);
 
