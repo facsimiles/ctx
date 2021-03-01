@@ -5279,7 +5279,8 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
       // setenv ("TERM", term?term:"xterm", 1);
       setenv ("TERM", term?term:"xterm-256color", 1);
       setenv ("COLORTERM", "truecolor", 1);
-      setenv ("CTX_VERSION", "0", 1);
+      //setenv ("CTX_VERSION", "0", 1);
+      setenv ("CTX_BACKEND", "ctx", 1); // speeds up launching of clients
 
       {
         char *cargv[32];
