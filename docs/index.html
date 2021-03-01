@@ -3,6 +3,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <style type='text/css'>
       @import url(ctx.css);
+      @import url(https://pippin.gimp.org/ametameric/ametamer.css?20200423);
     </style>
   </head>
 
@@ -33,11 +34,14 @@
       <p>
 
       <a href='pid1.png'><img style='max-width:100%' src='pid1.png'/></a>
+
+      <p>The clock in the above screenshot is <a href='https://ctx.graphics/file/clients/clock.sh.html'>a shellscript</a> the <a href='ctx.h'>ctx header/library</a> provides
+      a C API for more compact rendering and event handling. for clients.</p>
      
       <p>The self-contained static builds are sufficient to run minimalistic
-      desktop+shells only sessions with very low RAM requirements. The
+      desktop+shells only sessions with low RAM requirements. The
       rasterizer which for multi-core use is used in parallell for multiple
-      threads, is compact enough to run on <a href='mcu/'>microntrollers like the ESP32</a>.</p>
+      threads, is compact enough to run on <a href='mcu/'>microntrollers</a>.</p>
 
       <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
 
@@ -73,7 +77,7 @@ good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       buffer. <b>WARNING:</b> ctx is a work in progress, some terminal
       interactions are wonky - and display latency is good only for localized
       changes like text editing - global scrolling works less well, ctx is also
-      relying on stb_image for image decoding support as well as providing
+      relying on stb_image for image decoding support and providing
       in-band access to your microphone.
       </p>
 
@@ -176,16 +180,35 @@ good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       <!--<h3>Features and references</h3>-->
 
       <dl>
+         <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, like xterm, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - and a growing subset of vt420 and other relevant terminal escape sequences.</dd>
+         <dt><a href='https://pippin.gimp.org/ametameric/' style='text-decoration:none; color: white; '>
 
-         <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, like xterm, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - as well as a growing subset of vt420 and other relevant terminal escape sequences.</dd>
-         <dt><a href='https://pippin.gimp.org/ametameric/'>ametameric palette</a></dt>
-              <dd>The terminals 16 color palette is optimized for legibility for both main varieties dichromats as well as trichromats.</dd>
+ <span class='bg-red'>&nbsp;&nbsp;</span
+        ><span class='bg-bright-red'>Am</span
+        ><span class='bg-yellow'>et</span
+        ><span class='bg-bright-green'>am</span
+        ><span class='bg-green'>er</span
+        ><span class='bg-cyan'>ic</span
+        ><span class='bg-bright-cyan'>&nbsp;&nbsp;</span
+        ><span class='bg-bright-blue'>&nbsp;&nbsp;</span
+        ><span class='bg-blue'>&nbsp;&nbsp;</span
+        ><span class='bg-magenta'>&nbsp;&nbsp;</span
+        ><span class='bg-bright-magenta'>&nbsp;&nbsp;</span
+        ><span class='bg-white' style='border-top:1px solid gray;border-bottom:1px solid gray;'>&nbsp;&nbsp;</span
+        ><span class='bg-bright-gray'>&nbsp;&nbsp;</span
+        ><span class='bg-gray'>&nbsp;&nbsp;</span
+        ><span class='bg-brown'>&nbsp;&nbsp;</span
+        ><span class='bg-black'>&nbsp;&nbsp;</span>
+                 </a></dt>
+
+              <dd>
+                      The terminals 16 color palette called <a href='https://pippin.gimp.org/ametameric/'>ametameric</a> is optimized for legibility for both main varieties dichromats as well as trichromats.</dd>
 
 
-         <dt><a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 Canvas 2D Context</a></dt><dd>Easily bindable C API and protocol builds directly on this standard.
+         <dt><a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 canvas 2D context</a></dt><dd>Easily bindable C API and protocol builds directly on this standard.
       Compositing and blending is according to <a
-      href='https://drafts.fxtf.org/compositing/'>Compositing and Blending
-Level 2</a>; ctx goes further than the standard and permits all blending modes
+      href='https://drafts.fxtf.org/compositing/'>compositing and blending
+level 2</a>; ctx goes further than the standard and permits all blending modes
 to be combined with all compositing modes.
          </dd>
 
@@ -204,7 +227,9 @@ to be combined with all compositing modes.
 
          <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>
          Supporting RGB332, RGB565 and grayscale + 1bit mode render targets.
-         ICC based management of RGB user/device spaces is supported through <a href='https://gegl.org/babl/'>babl</a>.
+         ICC based color management of RGB user/device spaces is supported using <a href='https://gegl.org/babl/'>babl</a> as an optional dependency. CMYK colors can be generated on the fly
+         from RGB or set and retained in CMYK mode - when set in CMYK mode the
+         colors correspond directly to the device colors in CMYK mode.
          </p>
 
          <dt>deferred rendering</dt><dd>
@@ -213,10 +238,12 @@ to be combined with all compositing modes.
          RAM and <a href='caching-and-threading/'>multi-threaded rendering on multi-core systems</a>
          with SDL2 and /dev/fb0 backends and network transparent rendering
          inside ctx terminal. Another way to drive larger than RAM
-         is to re-render the whole scene graph per-chunk clipped correspondingly.
+         is to re-render the frame for each segment instead of buffering it,
+         buffering is however useful when doing networked rendering, ctx
+         can be configured and adapted to deal with a wide range of scenarios.
          .</dd>
 
-         <dt>text rendering</dt><dd>UTF8 native - for the simplest rasterization engine for embedded use, the glyphs are directly encoded as the binary form of the ctx protocol. The optional stb_truetype driver is used to generate ctx-format font files. Another optional font-backend intended for font authoring does live rendering for ctx protocol fonts, as seen in the following screenshot editing the '@' glyph. A basic graphical editor for the protocol 
+         <dt>text rendering</dt><dd>self-contained UTF8 ctx driver, for the simplest rasterization engine for embedded use, the glyphs are directly encoded as the binary form of the ctx protocol. The optional stb_truetype driver is used to generate ctx-format font files. Another optional font-backend intended for font authoring does live rendering for ctx protocol fonts, as seen in the following screenshot editing the '@' glyph. A basic graphical editor for the protocol 
              <br/>
 
         <a href='ctx-wm.png'><img style='max-width:100%' src='ctx-wm.png'/></a>
@@ -243,7 +270,7 @@ to be combined with all compositing modes.
          <dt><a href='https://cairographics.org/'>cairo</a></dt><dd>support code to render to cairo contexts if cairo.h is included before ctx.h, useful for conformance verfication and SVG and PDF output.</dd>
       </dl>
 
-      <h3 id='downloads'>Downloads</h3>
+      <h3 id='downloads'>downloads / sources</h3>
 
       <p>The single header and static binaries for download are autogenerated
       together with this website each time the git repository is synched.
@@ -258,9 +285,9 @@ to be combined with all compositing modes.
                                       <pre>$ git clone <a href='https://ctx.graphics/.git/'>https://ctx.graphics/.git</a>
                                       </pre>
                                       The repository contains the sources for
-                                      examples and tests, as well as the
+                                      examples and tests, and the
                                       implementation of 2D vector rasterization
-                                      for 
+                                      and protocl parser and serializer.
                                       </td>
               </tr>
 
@@ -299,7 +326,6 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         </p>
         <ul>
           <li>configure fonts</li>
-          <li></li>
           <li>clip does not clip event boxes/shapes</li>
 
           <li>some low-level rasterizer glitches</li>
@@ -322,6 +348,8 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 
         <h2 id='future'>directions</h2>
 	<ul>
+        <li>multi-head, both for DRM when plugging in HDMI/VGA and networked
+        connect to ESP32 / html5 canvas clients.</li>
         <li>performance, there always seem to be room for improvement.</li>
         <li>continued code refactoring</li>
 	<li>glyph fallbacks between fonts</li>
