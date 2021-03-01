@@ -75,6 +75,43 @@ int ctx_count (Ctx *ctx)
   return ctx->drawlist.count;
 }
 
+
+static int is_in_ctx (void)
+{
+  char buf[1024];
+  struct termios orig_attr;
+  struct termios raw;
+  tcgetattr (STDIN_FILENO, &orig_attr);
+  raw = orig_attr;
+  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+  raw.c_oflag &= ~(OPOST);
+  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+  raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
+  if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
+    return 0;
+  fprintf (stderr, "\e[?200$p");
+  //tcflush(STDIN_FILENO, 1);
+  tcdrain(STDIN_FILENO);
+  int length = 0;
+  usleep (1000 *  100); /* this adds 100ms startup time to ctx clients!, but
+                           for ssh we do need to wait.. perhaps add ability
+                           to configure larger timeout XXX
+                           */
+  length = read (STDIN_FILENO, &buf[length], 10);
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
+  if (length == -1)
+  {
+    return 0;
+  }
+  char *semi = strchr (buf, ';');
+  buf[length]=0;
+  if (semi &&  semi[1] == '2')
+  {
+    return 1;
+  }
+  return 0;
+}
+
 Ctx *ctx_new_ui (int width, int height)
 {
   if (getenv ("CTX_THREADS"))
@@ -96,6 +133,8 @@ Ctx *ctx_new_ui (int width, int height)
   //fprintf (stderr, "ctx using %i threads\n", _ctx_max_threads);
   const char *backend = getenv ("CTX_BACKEND");
 
+  if (backend && !strcmp (backend, ""))
+    backend = NULL;
   if (backend && !strcmp (backend, "auto"))
     backend = NULL;
   if (backend && !strcmp (backend, "list"))
@@ -115,11 +154,12 @@ Ctx *ctx_new_ui (int width, int height)
   }
 
   Ctx *ret = NULL;
-  /* FIXME: to a terminal query instead - to avoid relying on
-   * environment variables - thus making it work reliably over
-   * ssh without configuration.
+
+  /* we do the query on auto but not on directly set ctx
+   *
    */
-  if (getenv ("CTX_VERSION"))
+  if ((backend && !strcmp(backend, "ctx")) ||
+      (backend == NULL && is_in_ctx ()))
   {
     if (!backend || !strcmp (backend, "ctx"))
     {
