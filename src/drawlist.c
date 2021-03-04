@@ -363,7 +363,7 @@ ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
     }
   else
     {
-      //printf ("allocating for %p %d\n", drawlist, new_size);
+      //fprintf (stderr, "allocating for %p %d\n", drawlist, new_size);
       drawlist->entries = (CtxEntry *) malloc (sizeof (CtxEntry) * new_size);
     }
   drawlist->size = new_size;
@@ -389,9 +389,9 @@ ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
     {
       return ret;
     }
-  if (ret + 8 >= drawlist->size - 20)
+  if (ret + 1024 >= drawlist->size - 40)
     {
-      int new_ = CTX_MAX (drawlist->size * 2, ret + 8);
+      int new_ = CTX_MAX (drawlist->size * 2, ret + 1024);
       ctx_drawlist_resize (drawlist, new_);
     }
 

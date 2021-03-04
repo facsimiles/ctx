@@ -84,6 +84,7 @@
 
 #ifndef CTX_PARSER_MAXLEN
 #define CTX_PARSER_MAXLEN  1024*1024*8 // this is the largest text string we support
+                                       //
 #endif
 
 #ifndef CTX_COMPOSITING_GROUPS
@@ -163,7 +164,7 @@
  * edgelist and drawlist.
  */
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   1024*1024 //XXX
+#define CTX_MIN_JOURNAL_SIZE   1024*1024*8 //XXX
 #endif
 
 /* The maximum size we permit the drawlist to grow to,

@@ -107,11 +107,18 @@ static int is_in_ctx (void)
   //tcflush(STDIN_FILENO, 1);
   tcdrain(STDIN_FILENO);
   int length = 0;
-  usleep (1000 *  100); /* this adds 100ms startup time to ctx clients!, but
-                           for ssh we do need to wait.. perhaps add ability
-                           to configure larger timeout XXX
-                           */
-  length = read (STDIN_FILENO, &buf[length], 10);
+  usleep (1000 * 20);
+  struct timeval tv = {0,0};
+  fd_set rfds;
+  
+  FD_ZERO(&rfds);
+  FD_SET(0, &rfds);
+  tv.tv_usec = 1000 * 5;
+
+  for (int n = 0; select(1, &rfds, NULL, NULL, &tv) && n < 20; n++)
+  {
+    length += read (STDIN_FILENO, &buf[length], 1);
+  }
   tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
   if (length == -1)
   {
