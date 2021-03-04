@@ -1605,7 +1605,7 @@ void ctx_colorspace (Ctx           *ctx,
                      CtxColorSpace  space_slot,
                      unsigned char *data,
                      int            data_length);
-void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int format, void *data, char *ret_eid);
+void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int stride, int format, void *data, char *ret_eid);
 
 void
 ctx_parser_set_size (CtxParser *parser,

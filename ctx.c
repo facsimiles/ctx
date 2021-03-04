@@ -61,10 +61,10 @@
 #include <immintrin.h> // is detected by ctx, and enables AVX2
 #endif
 
-#define CTX_HAVE_SIMD  1 // makes ctx call our SIMD-setup dispatcher
+#define CTX_HAVE_SIMD      1 // makes ctx call our SIMD-setup dispatcher
 
 #define CTX_IMPLEMENTATION 1
-#define CTX_RASTERIZER 1
+#define CTX_RASTERIZER     1
 
 
 #include "ctx.h"

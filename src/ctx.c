@@ -194,36 +194,45 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
   ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
 }
 
-void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int format, void *data, char *ret_eid)
+void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int stride, int format, void *data, char *ret_eid)
 {
-  int stride = width;
-
   uint8_t hash[20]="";
   char ascii[41]="";
-
+  int dst_stride = width;
   //fprintf (stderr, "DT '%s' %i %i %i \'%s\'\n", eid, width, height, format, (char*)data);
 
+  if (stride <= 0)
   switch (format)
   {
     case 0:
-    case 1:
-      break;
-    case 2:
-      stride *= 2;
-      break;
-    case 3:
-      stride *= 3;
-      break;
-    case 4:
-      stride *= 4;
-      break;
+    case 1: stride = width; break;
+    case 2: stride = width * 2; break;
+    case 3: stride = width * 3; break;
+    case 4: stride = width * 4; break;
   }
-  int data_len = height * stride;
+  switch (format)
+  {
+    case 0:
+    case 1: dst_stride = width; break;
+    case 2: dst_stride = width * 2; break;
+    case 3: dst_stride = width * 3; break;
+    case 4: dst_stride = width * 4; break;
+  }
+  int data_len = height * dst_stride;
 
   if (eid == NULL)
   {
     CtxSHA1 *sha1 = ctx_sha1_new ();
-    ctx_sha1_process (sha1, data, data_len);
+
+    {
+      uint8_t *src = data;
+      for (int y = 0; y < height; y++)
+      {
+         ctx_sha1_process (sha1, src, dst_stride);
+         src += stride;
+      }
+    }
+
     ctx_sha1_done (sha1, hash);
     ctx_sha1_free (sha1);
     const char *hex="0123456789abcdef";
@@ -261,7 +270,16 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int f
     commands[pos].code = CTX_DATA;
     commands[pos].data.u32[0] = data_len;
     commands[pos].data.u32[1] = (data_len+1+1)/9 + 1;
-    memcpy ((char *) &commands[pos+1].data.u8[0], data, data_len);
+    {
+      uint8_t *src = data;
+      uint8_t *dst = &commands[pos+1].data.u8[0];
+      for (int y = 0; y < height; y++)
+      {
+         memcpy (dst, src, dst_stride);
+         src += stride;
+         dst += dst_stride;
+      }
+    }
     ((char *) &commands[pos+1].data.u8[0])[data_len]=0;
 
     ctx_process (ctx, commands);
