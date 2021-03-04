@@ -290,7 +290,7 @@ const char *ctx_texture_init (
                       uint8_t    *pixels,
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data);
-const char *ctx_texture_load (Ctx *ctx, const char *path, int *width, int *height);
+void ctx_texture_load (Ctx *ctx, const char *path, int *width, int *height, char *reid);
 
 
 

@@ -148,7 +148,10 @@ const char* ctx_texture_init (Ctx           *ctx,
                        freefunc, user_data);
   ctx->texture[id].frame = ctx->frame;
   if (eid)
+  {
+    /* we got an eid, this is the fast path */
     ctx->texture[id].eid = strdup (eid);
+  }
   else
   {
     uint8_t hash[20];
@@ -170,8 +173,8 @@ const char* ctx_texture_init (Ctx           *ctx,
   return ctx->texture[id].eid;
 }
 
-const char *
-ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th)
+void
+ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
 {
   int id = ctx_texture_check_eid (ctx, path, tw, th);
   if (id>=0)
@@ -194,8 +197,9 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th)
     }
     if (tw) *tw = w;
     if (th) *th = h;
-    return ctx_texture_init (ctx, path, w, h, w * components, pixel_format, data, 
-                             ctx_buffer_pixels_free, NULL);
+    ctx_define_texture (ctx, path, w, h, w * components, pixel_format, data, 
+                             reid);
+    free (data);
   }
 #endif
   return NULL;
