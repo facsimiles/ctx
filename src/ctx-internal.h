@@ -477,6 +477,12 @@ void ctx_interpret_transforms    (CtxState *state, CtxEntry *entry, void *data);
 void ctx_interpret_pos           (CtxState *state, CtxEntry *entry, void *data);
 void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
 
+struct _CtxInternalFsEntry
+{
+  char *path;
+  int   length;
+  char *data;
+};
 
 struct _CtxPixelFormatInfo
 {

@@ -148,7 +148,9 @@ Ctx *ctx_new_ui (int width, int height)
 #endif
   }
   
+#if CTX_EVENTS
   mtx_init (&_ctx_texture_mtx, mtx_plain);
+#endif
 
   if (_ctx_max_threads < 1) _ctx_max_threads = 1;
   if (_ctx_max_threads > CTX_MAX_THREADS) _ctx_max_threads = CTX_MAX_THREADS;
@@ -228,6 +230,13 @@ Ctx *ctx_new_ui (int width, int height)
   }
   ctx_get_event (ret); // enables events
   return ret;
+}
+#else
+void _ctx_texture_unlock (void)
+{
+}
+void _ctx_texture_lock (void)
+{
 }
 
 #endif
