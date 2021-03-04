@@ -165,26 +165,28 @@ ctx_gstate_pop (CtxState *state)
   state->gstate_no--;
 }
 
-
 void
 ctx_close_path (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_CLOSE_PATH);
 }
 
-uint8_t *
-ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, int format, int stride)
+void
+ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, int format, int stride,
+                    uint8_t *data)
 {
    // NYI
-   return NULL;
 }
 
 void
-ctx_put_image_data (Ctx *ctx, uint8_t *data, int w, int h, int format, int stride,
+ctx_put_image_data (Ctx *ctx, int w, int h, int format, int stride, uint8_t *data,
                     int dx, int dy, int dirtyX, int dirtyY,
                     int dirtyWidth, int dirtyHeight)
 {
    // NYI
+   //  perhaps build it from save  defineTexture rectangle fill
+   //  makes it not work in some circumstances - since it clobbers the path
+   //
 }
 
 void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
@@ -273,6 +275,8 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int f
     strcpy (ret_eid, eid);
     ret_eid[64]=0;
   }
+
+  ctx_texture (ctx, eid, 0.0, 0.0);
 }
 
 void

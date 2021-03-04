@@ -7170,12 +7170,12 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     char texture_n[65]; // and returned in nexture_n
 
                     sprintf (texture_n, "vtimg%i", image->eid_no);
+                    ctx_rectangle (ctx, u, v, image->width, image->height);
+                    ctx_translate (ctx, u, v);
                     ctx_define_texture (ctx, texture_n, image->width,
                                       image->height,
                                       image->kitty_format == 32 ? CTX_FORMAT_RGBA8 : CTX_FORMAT_RGB8,
                                       image->data, NULL);
-                    ctx_texture (ctx, texture_n, u, v);
-                    ctx_rectangle (ctx, u, v, image->width, image->height);
                     ctx_fill (ctx);
 
                     ctx_restore (ctx);

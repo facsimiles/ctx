@@ -469,7 +469,8 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                                            const char unsigned *data)
 {
   //fprintf (stderr, "dt %s %i %i %i %p %i %i %i %i\n", eid, width, height, format, data, data[0], data[1], data[2], data[3]);
-  _ctx_texture_lock ();
+  _ctx_texture_lock (); // we're using the same texture_source from all threads, keeping allocaitons down
+                        // need synchronizing (it could be better to do a pre-pass)
   ctx_texture_init (rasterizer->texture_source,
                     eid,
                     width,
@@ -478,6 +479,9 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                     format,
                     data,
                     ctx_buffer_pixels_free, (void*)23);
+                    /*  when userdata for ctx_buffer_pixels_free is 23, texture_init dups the data on
+                     *  use
+                     */
 
   _ctx_texture_unlock ();
 }
@@ -2630,15 +2634,11 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         break;
       case CTX_DEFINE_TEXTURE:
         {
-
-
-        uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
-
-        assert (pixel_data);
-        ctx_rasterizer_define_texture (rasterizer, c->define_texture.eid,
-                                       c->define_texture.width, c->define_texture.height,
-                                       c->define_texture.format,
-                                       pixel_data);
+          uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
+          ctx_rasterizer_define_texture (rasterizer, c->define_texture.eid,
+                                         c->define_texture.width, c->define_texture.height,
+                                         c->define_texture.format,
+                                         pixel_data);
         }
         break;
       case CTX_TEXTURE:
