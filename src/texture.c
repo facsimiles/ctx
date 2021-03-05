@@ -115,7 +115,7 @@ const char* ctx_texture_init (Ctx           *ctx,
         return ctx->texture[i].eid;
       }
       if (ctx->texture[i].data == NULL 
-          ||   (ctx->frame - ctx->texture[i].frame > 2))
+          ||   (ctx->frame - ctx->texture[i].frame >= 2))
         id = i;
     }
   } else

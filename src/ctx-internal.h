@@ -437,12 +437,21 @@ struct _CtxEvents
 
 #endif
 
+typedef struct _CtxEidInfo
+{
+  char *eid;
+  int   frame;
+  int   width;
+  int   height;
+} CtxEidInfo;
+
 struct _Ctx
 {
   CtxImplementation *renderer;
   CtxDrawlist        drawlist;
   int                transformation;
   CtxBuffer          texture[CTX_MAX_TEXTURES];
+  CtxList           *eid_db;
   int                rev;
   void              *backend;
   CtxState           state;        /**/

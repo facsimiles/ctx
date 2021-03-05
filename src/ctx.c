@@ -198,6 +198,42 @@ ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format, uint8_t *dat
    ctx_restore (ctx);
 }
 
+
+int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
+{
+  CtxList *to_remove = NULL;
+  int ret = 0;
+  for (CtxList *l = ctx->eid_db; l; l = l->next)
+  {
+    CtxEidInfo *eid_info = l->data;
+    if (ctx->frame - eid_info->frame >= 2)
+    {
+            // XXX do the removal one frame advance instead
+            //     for lower overhead
+      ctx_list_prepend (&to_remove, eid_info);
+    }
+    else if (!strcmp (eid_info->eid, eid) &&
+             ctx->frame - eid_info->frame < 2)
+    {
+      eid_info->frame = ctx->frame;
+      if (w) *w = eid_info->width;
+      if (h) *h = eid_info->height;
+      ret = 1;
+    }
+  }
+done:
+  while (to_remove)
+  {
+    CtxEidInfo *eid_info = to_remove->data;
+    fprintf (stderr, "client removing %s\n", eid_info->eid);
+    free (eid_info->eid);
+    free (eid_info);
+    ctx_list_remove (&ctx->eid_db, eid_info);
+    ctx_list_remove (&to_remove, eid_info);
+  }
+  return ret;
+}
+
 void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
 {
   int eid_len = strlen (eid);
@@ -218,7 +254,14 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
     ascii[40]=0;
     eid=ascii;
   }
-  ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
+  if (ctx_eid_valid (ctx, eid, 0, 0))
+  {
+    ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
+  }
+  else
+  {
+    fprintf (stderr, "tried setting invalid texture eid %s\n", eid);
+  }
 }
 
 void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int stride, int format, void *data, char *ret_eid)
@@ -292,6 +335,14 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     eid_len = 40;
   }
 
+  // we now have eid
+
+  if (ctx_eid_valid (ctx, eid, 0, 0))
+  {
+    ctx_texture (ctx, eid, 0.0, 0.0);
+  }
+  else
+
   {
     /* bottleneck,  we can avoid copying sometimes - and even when copying
      * we should cut this down to one copy, direct to the drawlist.
@@ -328,6 +379,13 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
 
     ctx_process (ctx, commands);
     free (commands);
+
+    CtxEidInfo *eid_info = calloc (sizeof (CtxEidInfo), 1);
+    eid_info->eid = strdup (eid);
+    eid_info->width = width;
+    eid_info->height = height;
+    eid_info->frame = ctx->frame;
+    ctx_list_prepend (&ctx->eid_db, eid_info);
   }
 
   if (ret_eid)
@@ -336,7 +394,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     ret_eid[64]=0;
   }
 
-  ctx_texture (ctx, eid, 0.0, 0.0);
+  //ctx_texture (ctx, eid, 0.0, 0.0);
 }
 
 

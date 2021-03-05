@@ -461,6 +461,55 @@ ctx_rasterizer_rel_curve_to (CtxRasterizer *rasterizer,
 }
 
 
+static int
+ctx_rasterizer_find_texture (CtxRasterizer *rasterizer,
+                             const char *eid)
+{
+  int no;
+  for (no = 0; no < CTX_MAX_TEXTURES; no++)
+  {
+    if (rasterizer->texture_source->texture[no].data &&
+        rasterizer->texture_source->texture[no].eid &&
+        !strcmp (rasterizer->texture_source->texture[no].eid, eid))
+    {
+      return no;
+    }
+    else
+    {
+    }
+
+  }
+  return -1;
+}
+
+static void
+ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
+                            const char *eid,
+                            float x,
+                            float y)
+{
+  int no = ctx_rasterizer_find_texture (rasterizer, eid);
+  if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
+  if (rasterizer->texture_source->texture[no].data == NULL)
+    {
+      fprintf (stderr, "failed setting texture %s  %i\n", eid, no);
+      return;
+    }
+  else
+  {
+    rasterizer->texture_source->texture[no].frame = rasterizer->texture_source->frame;
+  }
+  rasterizer->state->gstate.source.type = CTX_SOURCE_IMAGE;
+  rasterizer->state->gstate.source.image.buffer = &rasterizer->texture_source->texture[no];
+  //ctx_user_to_device (rasterizer->state, &x, &y);
+  rasterizer->state->gstate.source.image.x0 = 0;
+  rasterizer->state->gstate.source.image.y0 = 0;
+  rasterizer->state->gstate.source.transform = rasterizer->state->gstate.transform;
+  ctx_matrix_translate (&rasterizer->state->gstate.source.transform, x, y);
+  ctx_matrix_invert (&rasterizer->state->gstate.source.transform);
+}
+
+
 static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                                            const char *eid,
                                            int width,
@@ -484,6 +533,7 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                      */
 
   _ctx_texture_unlock ();
+  ctx_rasterizer_set_texture (rasterizer, eid, 0.0, 0.0);
 }
 
 
@@ -2110,49 +2160,6 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
     }
 }
 
-static int
-ctx_rasterizer_find_texture (CtxRasterizer *rasterizer,
-                             const char *eid)
-{
-  int no;
-  for (no = 0; no < CTX_MAX_TEXTURES; no++)
-  {
-    if (rasterizer->texture_source->texture[no].data &&
-        rasterizer->texture_source->texture[no].eid &&
-        !strcmp (rasterizer->texture_source->texture[no].eid, eid))
-    {
-      return no;
-    }
-    else
-    {
-    }
-
-  }
-  return -1;
-}
-
-static void
-ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
-                            const char *eid,
-                            float x,
-                            float y)
-{
-  int no = ctx_rasterizer_find_texture (rasterizer, eid);
-  if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
-  if (rasterizer->texture_source->texture[no].data == NULL)
-    {
-      ctx_log ("failed setting texture %i\n", no);
-      return;
-    }
-  rasterizer->state->gstate.source.type = CTX_SOURCE_IMAGE;
-  rasterizer->state->gstate.source.image.buffer = &rasterizer->texture_source->texture[no];
-  //ctx_user_to_device (rasterizer->state, &x, &y);
-  rasterizer->state->gstate.source.image.x0 = 0;
-  rasterizer->state->gstate.source.image.y0 = 0;
-  rasterizer->state->gstate.source.transform = rasterizer->state->gstate.transform;
-  ctx_matrix_translate (&rasterizer->state->gstate.source.transform, x, y);
-  ctx_matrix_invert (&rasterizer->state->gstate.source.transform);
-}
 
 #if 0
 static void
