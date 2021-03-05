@@ -173,34 +173,3 @@ const char* ctx_texture_init (Ctx           *ctx,
   return ctx->texture[id].eid;
 }
 
-void
-ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
-{
-  int id = ctx_texture_check_eid (ctx, path, tw, th);
-  if (id>=0)
-  {
-    return ctx->texture[id].eid;
-  }
-
-#ifdef STBI_INCLUDE_STB_IMAGE_H
-  int w, h, components;
-  unsigned char *data = stbi_load (path, &w, &h, &components, 0);
-  if (data)
-  {
-    CtxPixelFormat pixel_format = CTX_FORMAT_RGBA8;
-    switch (components)
-    {
-      case 1: pixel_format = CTX_FORMAT_GRAY8; break;
-      case 2: pixel_format = CTX_FORMAT_GRAYA8; break;
-      case 3: pixel_format = CTX_FORMAT_RGB8; break;
-      case 4: pixel_format = CTX_FORMAT_RGBA8; break;
-    }
-    if (tw) *tw = w;
-    if (th) *th = h;
-    ctx_define_texture (ctx, path, w, h, w * components, pixel_format, data, 
-                             reid);
-    free (data);
-  }
-#endif
-  return NULL;
-}

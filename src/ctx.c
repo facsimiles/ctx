@@ -179,14 +179,23 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, int format, int st
 }
 
 void
-ctx_put_image_data (Ctx *ctx, int w, int h, int format, int stride, uint8_t *data,
-                    int dx, int dy, int dirtyX, int dirtyY,
-                    int dirtyWidth, int dirtyHeight)
+ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format, uint8_t *data,
+                    int ox, int oy) // XXX more parameters needed!
+        /*, int dirtyX, int dirtyY,
+                    int dirtyWidth, int dirtyHeight)*/
 {
-   // NYI
-   //  perhaps build it from save  defineTexture rectangle fill
-   //  makes it not work in some circumstances - since it clobbers the path
-   //
+   char eid[65]="";
+   ctx_save (ctx);
+   ctx_identity (ctx);
+   ctx_define_texture (ctx, NULL, w, h, stride, format, data, eid);
+   if (eid[0])
+   {
+     ctx_texture (ctx, eid, ox, oy);
+     ctx_rectangle (ctx, ox, oy, w, h);
+     // XXX set compositor to source
+     ctx_fill (ctx);
+   }
+   ctx_restore (ctx);
 }
 
 void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
@@ -328,6 +337,41 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
   }
 
   ctx_texture (ctx, eid, 0.0, 0.0);
+}
+
+
+void
+ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
+{
+#if 0
+  int id = ctx_texture_check_eid (ctx, path, tw, th);
+  if (id>=0)
+  {
+    return ctx->texture[id].eid;
+  }
+#endif
+
+#ifdef STBI_INCLUDE_STB_IMAGE_H
+  int w, h, components;
+  unsigned char *data = stbi_load (path, &w, &h, &components, 0);
+  if (data)
+  {
+    CtxPixelFormat pixel_format = CTX_FORMAT_RGBA8;
+    switch (components)
+    {
+      case 1: pixel_format = CTX_FORMAT_GRAY8; break;
+      case 2: pixel_format = CTX_FORMAT_GRAYA8; break;
+      case 3: pixel_format = CTX_FORMAT_RGB8; break;
+      case 4: pixel_format = CTX_FORMAT_RGBA8; break;
+    }
+    if (tw) *tw = w;
+    if (th) *th = h;
+    ctx_define_texture (ctx, path, w, h, w * components, pixel_format, data, 
+                             reid);
+    free (data);
+  }
+#endif
+  return NULL;
 }
 
 void
