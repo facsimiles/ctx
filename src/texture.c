@@ -15,6 +15,8 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
 {
   if (buffer->free_func)
     { buffer->free_func (buffer->data, buffer->user_data); }
+  if (stride <= 0)
+    stride = ctx_pixel_format_get_stride (pixel_format, width);
   buffer->data      = data;
   buffer->width     = width;
   buffer->height    = height;
@@ -44,9 +46,9 @@ void ctx_buffer_pixels_free (void *pixels, void *userdata)
 CtxBuffer *ctx_buffer_new (int width, int height,
                            CtxPixelFormat pixel_format)
 {
-  CtxPixelFormatInfo *info = ctx_pixel_format_info (pixel_format);
+  //CtxPixelFormatInfo *info = ctx_pixel_format_info (pixel_format);
   CtxBuffer *buffer = ctx_buffer_new_bare ();
-  int stride = width * info->ebpp;
+  int stride = ctx_pixel_format_get_stride (pixel_format, width);
   uint8_t *pixels = (uint8_t*)ctx_calloc (stride, height + 1);
 
   ctx_buffer_set_data (buffer, pixels, width, height, stride, pixel_format,
@@ -127,12 +129,12 @@ const char* ctx_texture_init (Ctx           *ctx,
         id = i;
     }
   }
-  int bpp = ctx_pixel_format_bpp (format);
+  //int bpp = ctx_pixel_format_bits_per_pixel (format);
   ctx_buffer_deinit (&ctx->texture[id]);
 
   if (stride<=0)
   {
-    stride = width * (bpp/8);
+    stride = ctx_pixel_format_get_stride (format, width);
   }
 
   if (freefunc == ctx_buffer_pixels_free && user_data == (void*)23)

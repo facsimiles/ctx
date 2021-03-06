@@ -524,7 +524,7 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                     eid,
                     width,
                     height,
-                    width * format,
+                    ctx_pixel_format_get_stride (format, width),
                     format,
                     data,
                     ctx_buffer_pixels_free, (void*)23);

@@ -268,23 +268,10 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
   int dst_stride = width;
   //fprintf (stderr, "DT '%s' %i %i %i \'%s\'\n", eid, width, height, format, (char*)data);
 
+  dst_stride = ctx_pixel_format_get_stride (format, width);
   if (stride <= 0)
-  switch (format)
-  {
-    case 0:
-    case 1: stride = width; break;
-    case 2: stride = width * 2; break;
-    case 3: stride = width * 3; break;
-    case 4: stride = width * 4; break;
-  }
-  switch (format)
-  {
-    case 0:
-    case 1: dst_stride = width; break;
-    case 2: dst_stride = width * 2; break;
-    case 3: dst_stride = width * 3; break;
-    case 4: dst_stride = width * 4; break;
-  }
+    stride = dst_stride;
+
   int data_len = height * dst_stride;
 
   if (eid == NULL)
@@ -456,6 +443,31 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
 }
 
 void
+ctx_draw_texture (Ctx *ctx, const char *eid, float x, float y, float w, float h)
+{
+  int width;
+  int height;
+  if (ctx_eid_valid (ctx, eid , &width, &height))
+  {
+    ctx_rectangle (ctx, x, y, w, h);
+    ctx_save (ctx);
+    ctx_scale (ctx, w/width, h / height);
+    ctx_texture (ctx, eid, x, y);
+    ctx_fill (ctx);
+    ctx_restore (ctx);
+  }
+}
+
+void ctx_draw_texture_clipped (Ctx *ctx, const char *eid, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight)
+{
+  ctx_save (ctx);
+  ctx_rectangle (ctx, sx, sy, swidth, sheight);
+  ctx_clip (ctx);
+  ctx_draw_texture (ctx, eid, x, y, w, h);
+  ctx_restore (ctx);
+}
+
+void
 ctx_draw_image (Ctx *ctx, const char *path, float x, float y, float w, float h)
 {
   char reteid[65];
@@ -463,22 +475,19 @@ ctx_draw_image (Ctx *ctx, const char *path, float x, float y, float w, float h)
   ctx_texture_load (ctx, path, &width, &height, reteid);
   if (reteid[0])
   {
-    ctx_rectangle (ctx, x, y, w, h);
-    ctx_save (ctx);
-    ctx_scale (ctx, w/width, h / height);
-    ctx_texture (ctx, reteid, x, y);
-    ctx_fill (ctx);
-    ctx_restore (ctx);
+    ctx_draw_texture (ctx, reteid, x, y, w, h);
   }
 }
 
 void ctx_draw_image_clipped (Ctx *ctx, const char *path, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight)
 {
-  ctx_save (ctx);
-  ctx_rectangle (ctx, sx, sy, swidth, sheight);
-  ctx_clip (ctx);
-  ctx_draw_image (ctx, path, x, y, w, h);
-  ctx_restore (ctx);
+  char reteid[65];
+  int width, height;
+  ctx_texture_load (ctx, path, &width, &height, reteid);
+  if (reteid[0])
+  {
+    ctx_draw_texture_clipped (ctx, reteid, x, y, w, h, sx, sy, swidth, sheight);
+  }
 }
 
 void
@@ -1755,12 +1764,33 @@ int  ctx_has_quit (Ctx *ctx)
 #endif
 }
 
-int ctx_pixel_format_bpp (CtxPixelFormat format)
+int ctx_pixel_format_bits_per_pixel (CtxPixelFormat format)
 {
   CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
   if (info)
     return info->bpp;
   return -1;
+}
+
+int ctx_pixel_format_get_stride (CtxPixelFormat format, int width)
+{
+  CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
+  if (info)
+  {
+    switch (info->bpp)
+    {
+      case 0:
+      case 1:
+        return (width + 7)/8;
+      case 2:
+        return (width + 3)/4;
+      case 4:
+        return (width + 1)/2;
+      default:
+        return width * (info->bpp / 8);
+    }
+  }
+  return width;
 }
 
 int ctx_pixel_format_ebpp (CtxPixelFormat format)

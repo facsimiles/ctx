@@ -302,12 +302,17 @@ void ctx_texture_load (Ctx        *ctx,
 
 /* sets the paint source to be a texture by eid
  */
-void ctx_texture            (Ctx *ctx, const char *eid, float x, float y);
+void ctx_texture              (Ctx *ctx, const char *eid, float x, float y);
 
-/* */
-void ctx_draw_image (Ctx *ctx, const char *path, float x, float y, float w, float h);
+void ctx_draw_texture         (Ctx *ctx, const char *eid, float x, float y, float w, float h);
 
-void ctx_draw_image_clipped (Ctx *ctx, const char *path, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight);
+void ctx_draw_texture_clipped (Ctx *ctx, const char *eid, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight);
+
+void ctx_draw_image           (Ctx *ctx, const char *path, float x, float y, float w, float h);
+
+void ctx_draw_image_clipped   (Ctx *ctx, const char *path, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight);
+
+
 
 
 /* global used to use the textures from a different context, used
@@ -318,7 +323,8 @@ void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source);
 typedef struct _CtxDrawlist CtxDrawlist;
 typedef void (*CtxFullCb) (CtxDrawlist *drawlist, void *data);
 
-int ctx_pixel_format_bpp        (CtxPixelFormat format);
+int ctx_pixel_format_bits_per_pixel (CtxPixelFormat format); // bits per pixel
+int ctx_pixel_format_get_stride (CtxPixelFormat format, int width);
 int ctx_pixel_format_components (CtxPixelFormat format);
 
 void _ctx_set_store_clear (Ctx *ctx);

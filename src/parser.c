@@ -690,7 +690,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
              int width = arg(0);
              int height = arg(1);
              int format = arg(2);
-             int stride = width *  format; // XXX  fix 
+             int stride = ctx_pixel_format_get_stride (format, width);
              ctx_define_texture (ctx, eid, width, height, stride, format, parser->holding, NULL);
           }
         }
