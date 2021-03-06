@@ -1782,6 +1782,14 @@ static void card_textures (ITK *itk, int frame_no)
     ctx_fill (ctx);
 
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
+    ctx_define_texture (ctx, NULL,
+                      TEXTURE_W, TEXTURE_H, TEXTURE_W,
+                      8,
+                      &texture_gray[0], eid);
+    ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
+    ctx_fill (ctx);
+
+    ctx_translate (ctx, 0, TEXTURE_H * 1.2);
 
     ctx_draw_image (ctx, "/home/pippin/src/ctx/c.png",
                          0.0, 0.0, 512.0, 512.0);

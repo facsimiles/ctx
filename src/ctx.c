@@ -180,9 +180,9 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, int format, int st
 
 void
 ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format, uint8_t *data,
-                    int ox, int oy) // XXX more parameters needed!
-        /*, int dirtyX, int dirtyY,
-                    int dirtyWidth, int dirtyHeight)*/
+                    int ox, int oy,
+                    int dirtyX, int dirtyY,
+                    int dirtyWidth, int dirtyHeight)
 {
    char eid[65]="";
    ctx_save (ctx);
@@ -190,16 +190,13 @@ ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format, uint8_t *dat
    ctx_define_texture (ctx, NULL, w, h, stride, format, data, eid);
    if (eid[0])
    {
-     ctx_texture (ctx, eid, ox, oy);
-     ctx_rectangle (ctx, ox, oy, w, h);
      // XXX set compositor to source
-     ctx_fill (ctx);
+     ctx_draw_texture_clipped (ctx, eid, ox, oy, w, h, dirtyX, dirtyY, dirtyWidth, dirtyHeight);
    }
    ctx_restore (ctx);
 }
 
-
-int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
+static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
 {
   CtxList *to_remove = NULL;
   int ret = 0;
@@ -380,7 +377,6 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
   //ctx_texture (ctx, eid, 0.0, 0.0);
 }
 
-
 void
 ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
 {
@@ -443,40 +439,36 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
 }
 
 void
-ctx_draw_texture (Ctx *ctx, const char *eid, float x, float y, float w, float h)
+ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
+                           float x, float y,
+                           float width, float height,
+                           float clip_x, float clip_y,
+                           float clip_width, float clip_height)
 {
-  int width;
-  int height;
-  if (ctx_eid_valid (ctx, eid , &width, &height))
+  int tex_width  = 0;
+  int tex_height = 0;
+  if (ctx_eid_valid (ctx, eid , &tex_width, &tex_height))
   {
-    ctx_rectangle (ctx, x, y, w, h);
-    ctx_save (ctx);
-    ctx_scale (ctx, w/width, h / height);
-    ctx_texture (ctx, eid, x, y);
-    ctx_fill (ctx);
-    ctx_restore (ctx);
+    if (width && height)
+    {
+      if (clip_width > 0.0f)
+      {
+        ctx_rectangle (ctx, clip_x, clip_y, clip_width, clip_height);
+        ctx_clip (ctx);
+      }
+      ctx_rectangle (ctx, x, y, width, height);
+      ctx_save (ctx);
+      ctx_scale (ctx, width/tex_width, height/tex_height);
+      ctx_texture (ctx, eid, x, y);
+      ctx_fill (ctx);
+      ctx_restore (ctx);
+    }
   }
 }
 
-void ctx_draw_texture_clipped (Ctx *ctx, const char *eid, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight)
+void ctx_draw_texture (Ctx *ctx, const char *eid, float x, float y, float w, float h)
 {
-  ctx_save (ctx);
-  ctx_rectangle (ctx, sx, sy, swidth, sheight);
-  ctx_clip (ctx);
-  ctx_draw_texture (ctx, eid, x, y, w, h);
-  ctx_restore (ctx);
-}
-
-void
-ctx_draw_image (Ctx *ctx, const char *path, float x, float y, float w, float h)
-{
-  char reteid[65];
-  int width, height;
-  ctx_texture_load (ctx, path, &width, &height, reteid);
-  if (reteid[0])
-  {
-    ctx_draw_texture (ctx, reteid, x, y, w, h);
-  }
+  ctx_draw_texture_clipped (ctx, eid, x, y, w, h, 0,0,0,0);
 }
 
 void ctx_draw_image_clipped (Ctx *ctx, const char *path, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight)
@@ -488,6 +480,12 @@ void ctx_draw_image_clipped (Ctx *ctx, const char *path, float x, float y, float
   {
     ctx_draw_texture_clipped (ctx, reteid, x, y, w, h, sx, sy, swidth, sheight);
   }
+}
+
+void
+ctx_draw_image (Ctx *ctx, const char *path, float x, float y, float w, float h)
+{
+  ctx_draw_image_clipped (ctx, path, x, y, w, h, 0,0,0,0);
 }
 
 void
