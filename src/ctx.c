@@ -208,8 +208,6 @@ int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
     CtxEidInfo *eid_info = l->data;
     if (ctx->frame - eid_info->frame >= 2)
     {
-            // XXX do the removal one frame advance instead
-            //     for lower overhead
       ctx_list_prepend (&to_remove, eid_info);
     }
     else if (!strcmp (eid_info->eid, eid) &&
@@ -224,7 +222,7 @@ int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
   while (to_remove)
   {
     CtxEidInfo *eid_info = to_remove->data;
-    fprintf (stderr, "client removing %s\n", eid_info->eid);
+    //fprintf (stderr, "client removing %s\n", eid_info->eid);
     free (eid_info->eid);
     free (eid_info);
     ctx_list_remove (&ctx->eid_db, eid_info);
@@ -458,12 +456,29 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
 }
 
 void
-ctx_image_path (Ctx *ctx, const char *path, float x, float y)
+ctx_draw_image (Ctx *ctx, const char *path, float x, float y, float w, float h)
 {
   char reteid[65];
-  ctx_texture_load (ctx, path, NULL, NULL, reteid);
+  int width, height;
+  ctx_texture_load (ctx, path, &width, &height, reteid);
   if (reteid[0])
+  {
+    ctx_rectangle (ctx, x, y, w, h);
+    ctx_save (ctx);
+    ctx_scale (ctx, w/width, h / height);
     ctx_texture (ctx, reteid, x, y);
+    ctx_fill (ctx);
+    ctx_restore (ctx);
+  }
+}
+
+void ctx_draw_image_clipped (Ctx *ctx, const char *path, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight)
+{
+  ctx_save (ctx);
+  ctx_rectangle (ctx, sx, sy, swidth, sheight);
+  ctx_clip (ctx);
+  ctx_draw_image (ctx, path, x, y, w, h);
+  ctx_restore (ctx);
 }
 
 void

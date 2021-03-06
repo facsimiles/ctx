@@ -1718,8 +1718,8 @@ static void card_files (ITK *itk, int frame_no)
 }
 
 static int textures_inited = 0;
-#define TEXTURE_W 10
-#define TEXTURE_H 10
+#define TEXTURE_W 128
+#define TEXTURE_H 128
 static uint8_t texture_rgba[TEXTURE_W *  TEXTURE_H * 4];
 static uint8_t texture_gray[TEXTURE_W *  TEXTURE_H * 4];
 static uint8_t texture_graya[TEXTURE_W *  TEXTURE_H * 4];
@@ -1780,6 +1780,12 @@ static void card_textures (ITK *itk, int frame_no)
                       &texture_graya[0], eid);
     ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
     ctx_fill (ctx);
+
+    ctx_translate (ctx, 0, TEXTURE_H * 1.2);
+
+    ctx_draw_image (ctx, "/home/pippin/src/ctx/c.png",
+                         0.0, 0.0, 512.0, 512.0);
+
 
   ctx_restore (ctx);
   itk_panel_end (itk);
