@@ -1850,6 +1850,7 @@ int terminal_main (int argc, char **argv)
       }
 
       changes += vt_dirty_count ();
+        static float avg_bytespeed = 0.0;
 
       if (changes || dirty || ctx_is_dirty (ctx))
       {
@@ -1903,20 +1904,25 @@ int terminal_main (int argc, char **argv)
         ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_flush (ctx);
 
-        float bytespeed = fetched_bytes * 1000.0 / sleep_time;
-        static float avg_bytespeed = 0.0;
-        avg_bytespeed = bytespeed * 0.2 + avg_bytespeed * 0.8;
-        //fprintf (stderr, "%f %i/%i\n", bytespeed, avg_bytespeed, fetched_bytes, sleep_time);
         //if (bytespeed > 200)
-        if (fetched_bytes > 300)
-          sleep_time = 50000;
+        //if (avg_bytespeed > 8.0 * 1024 * 1024)
+        //  sleep_time = 250000;
+        //else
+        if (avg_bytespeed > 4.0 * 1024 * 1024)
+          sleep_time = 100000; /* at more than 4mb second ratelimit to 10 fps */
+        else if (avg_bytespeed > 2.0 * 1024 * 1024)
+          sleep_time = 33333;
+        else if (avg_bytespeed > 1.0 * 1024 * 1024)
+          sleep_time = 15000;
+        else if (avg_bytespeed > 0.5 * 1024 * 1024)
+          sleep_time = 4000;
         else
-          sleep_time = 12;
+          sleep_time = 10;
       }
       else
       {
         usleep (sleep_time);
-        sleep_time     = 30000 * 0.01 + 0.99 * sleep_time;
+        sleep_time     = 33333 * 0.01 + 0.99 * sleep_time;
       }
 
       //if (!ctx_is_dirty (ctx))
@@ -1928,6 +1934,7 @@ int terminal_main (int argc, char **argv)
 
 
       fetched_bytes = 0;
+      long time_start = ctx_ticks ();
       {
         /* record amount of time spent - and adjust time of reading for
          * vts?
@@ -1939,7 +1946,14 @@ int terminal_main (int argc, char **argv)
           fetched_bytes += vt_poll (client->vt, fractional_sleep);
         }
       }
+      long time_end = ctx_ticks ();
+
+        int timed = (time_end-time_start);
+        float bytespeed = fetched_bytes / ((timed)/ (1000.0f * 1000.0f));
+        avg_bytespeed = bytespeed * 0.2 + avg_bytespeed * 0.8;
+      //  fprintf (stderr, "%.2fmb/s %i/%i  %i                    \r", avg_bytespeed/1024/1024, fetched_bytes, timed, sleep_time);
       }
+
     }
 
   while (clients)
