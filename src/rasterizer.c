@@ -515,7 +515,7 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                                            int width,
                                            int height,
                                            int format,
-                                           const char unsigned *data)
+                                           char unsigned *data)
 {
   //fprintf (stderr, "dt %s %i %i %i %p %i %i %i %i\n", eid, width, height, format, data, data[0], data[1], data[2], data[3]);
   _ctx_texture_lock (); // we're using the same texture_source from all threads, keeping allocaitons down

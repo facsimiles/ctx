@@ -1717,10 +1717,79 @@ static void card_files (ITK *itk, int frame_no)
   itk_panel_end (itk);
 }
 
+static int textures_inited = 0;
+#define TEXTURE_W 10
+#define TEXTURE_H 10
+static uint8_t texture_rgba[TEXTURE_W *  TEXTURE_H * 4];
+static uint8_t texture_gray[TEXTURE_W *  TEXTURE_H * 4];
+static uint8_t texture_graya[TEXTURE_W *  TEXTURE_H * 4];
+
+static void init_textures  (void)
+{
+  if (textures_inited)
+    return;
+
+  int i = 0;
+  for (int v = 0; v <  TEXTURE_H; v++)
+  for (int u = 0; u <  TEXTURE_W; u++, i++)
+  {
+     uint8_t r = u * 255 / (TEXTURE_W-1);
+     uint8_t g = v * 255 / (TEXTURE_W-1);
+     uint8_t b = (u+v) * 255 / (TEXTURE_W + TEXTURE_H - 1 -1);
+     uint8_t a = 255;
+     texture_gray[i+0] = g;
+     texture_graya[i*2+0] = g;
+     texture_graya[i*2+1] = a;
+
+     texture_rgba[i*4+0] = r;
+     texture_rgba[i*4+1] = g;
+     texture_rgba[i*4+2] = b;
+     texture_rgba[i*4+3] = a;
+  }
+  textures_inited = 1;
+}
+
+
+static void card_textures (ITK *itk, int frame_no)
+{
+  Ctx *ctx = itk->ctx;
+  init_textures  ();
+
+  itk_panel_start (itk, "textures", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
+  ctx_save(ctx);
+  ctx_translate (ctx, 400, 50);
+    char eid[65]="";
+    ctx_define_texture (ctx, NULL,
+                      TEXTURE_W, TEXTURE_H, TEXTURE_W * 4,
+                      CTX_FORMAT_RGBA8,
+                      &texture_rgba[0], eid);
+    ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
+    ctx_fill (ctx);
+    ctx_translate (ctx, 0, TEXTURE_H * 1.2);
+    ctx_define_texture (ctx, NULL,
+                      TEXTURE_W, TEXTURE_H, TEXTURE_W,
+                      CTX_FORMAT_GRAY8,
+                      &texture_gray[0], eid);
+    ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
+    ctx_fill (ctx);
+
+    ctx_translate (ctx, 0, TEXTURE_H * 1.2);
+    ctx_define_texture (ctx, NULL,
+                      TEXTURE_W, TEXTURE_H, TEXTURE_W,
+                      CTX_FORMAT_GRAYA8,
+                      &texture_graya[0], eid);
+    ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
+    ctx_fill (ctx);
+
+  ctx_restore (ctx);
+  itk_panel_end (itk);
+}
+
 
 Test tests[]=
 {
   {"dots",       card_dots},
+  {"textures",   card_textures},
   {"sliders",    card_sliders},
   {"gradients",  card_gradients},
   {"drag",       card_drag},

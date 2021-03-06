@@ -221,7 +221,6 @@ int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
       ret = 1;
     }
   }
-done:
   while (to_remove)
   {
     CtxEidInfo *eid_info = to_remove->data;
@@ -242,7 +241,7 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
   {
     CtxSHA1 *sha1 = ctx_sha1_new ();
     uint8_t hash[20]="";
-    ctx_sha1_process (sha1, eid, eid_len);
+    ctx_sha1_process (sha1, (uint8_t*)eid, eid_len);
     ctx_sha1_done (sha1, hash);
     ctx_sha1_free (sha1);
     const char *hex="0123456789abcdef";
@@ -320,8 +319,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
   {
     CtxSHA1 *sha1 = ctx_sha1_new ();
     uint8_t hash[20]="";
-    char ascii[41]="";
-    ctx_sha1_process (sha1, eid, eid_len);
+    ctx_sha1_process (sha1, (uint8_t*)eid, eid_len);
     ctx_sha1_done (sha1, hash);
     ctx_sha1_free (sha1);
     const char *hex="0123456789abcdef";
@@ -331,7 +329,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
        ascii[i*2+1]=hex[hash[i]%16];
     }
     ascii[40]=0;
-    strcpy (eid, ascii);
+    eid = ascii;
     eid_len = 40;
   }
 
@@ -408,6 +406,34 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     return ctx->texture[id].eid;
   }
 #endif
+  const char *eid = path;
+  char ascii[41]="";
+  int eid_len = strlen (eid);
+  if (eid_len > 50)
+  {
+    CtxSHA1 *sha1 = ctx_sha1_new ();
+    uint8_t hash[20]="";
+    ctx_sha1_process (sha1, (uint8_t*)eid, eid_len);
+    ctx_sha1_done (sha1, hash);
+    ctx_sha1_free (sha1);
+    const char *hex="0123456789abcdef";
+    for (int i = 0; i < 20; i ++)
+    {
+       ascii[i*2]=hex[hash[i]/16];
+       ascii[i*2+1]=hex[hash[i]%16];
+    }
+    ascii[40]=0;
+    eid = ascii;
+  }
+
+  if (ctx_eid_valid (ctx, eid , tw, th))
+  {
+     if (reid)
+     {
+       strcpy (reid, eid);
+     }
+     return;
+  }
 
 #ifdef STBI_INCLUDE_STB_IMAGE_H
   int w, h, components;
@@ -424,12 +450,11 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     }
     if (tw) *tw = w;
     if (th) *th = h;
-    ctx_define_texture (ctx, path, w, h, w * components, pixel_format, data, 
+    ctx_define_texture (ctx, eid, w, h, w * components, pixel_format, data, 
                              reid);
     free (data);
   }
 #endif
-  return NULL;
 }
 
 void
