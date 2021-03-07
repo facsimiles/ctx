@@ -277,6 +277,7 @@ again:
         case CTX_TRANSLATE:
         case CTX_DEFINE_TEXTURE:
         case CTX_GRADIENT_STOP:
+        case CTX_DATA: // XXX : would be better if we hide the DATAs
         case CTX_CONT: // shouldnt happen
           iterator->bitpack_length = 0;
           return (CtxCommand *) ret;

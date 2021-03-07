@@ -2098,7 +2098,6 @@ static void vt_ctx_exit (void *data)
   vt->rev ++;
   if (!vt->current_line)
     return;
-  void *tmp = vt->current_line->ctx;
 #if 0
   fprintf (stderr, "\n");
   if (vt->current_line->prev)
@@ -2118,8 +2117,13 @@ static void vt_ctx_exit (void *data)
     ctx_string_free (vt->current_line->frame, 0);
     vt->current_line->frame = NULL;
   }
+
+  void *tmp = vt->current_line->ctx;
   vt->current_line->ctx = vt->current_line->ctx_copy;
   vt->current_line->ctx_copy = tmp;
+  if (vt->ctxp) // XXX: ugly hack to enable double buffering
+    ((void**)vt->ctxp)[0]= vt->current_line->ctx;
+
   //ctx_parser_free (vt->ctxp);
   //vt->ctxp = NULL;
 }
@@ -2331,6 +2335,7 @@ qagain:
                     vt->current_line->ctx = ctx_new ();
                     vt->current_line->ctx_copy = ctx_new ();
                     _ctx_set_transformation (vt->current_line->ctx, 0);
+                    _ctx_set_transformation (vt->current_line->ctx_copy, 0);
                   }
                 if (vt->ctxp)
                   ctx_parser_free (vt->ctxp);
@@ -4621,9 +4626,10 @@ int vt_poll (VT *vt, int timeout)
       // /// so that we can stop accepting data until autowrap or similar
     }
       len = vt_read (vt, vt->buf, read_size);
-      if (vt->log && len >0)
+      if (len >0)
       {
-        fwrite (vt->buf, len, 1, vt->log);
+     // fwrite (vt->buf, len, 1, vt->log);
+     // fwrite (vt->buf, len, 1, stdout);
       }
       for (int i = 0; i < len; i++)
         { vt->state (vt, vt->buf[i]); }

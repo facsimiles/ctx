@@ -671,7 +671,7 @@ Ctx *ctx_new_sdl (int width, int height)
     sdl->host[i] = ctx_new_for_framebuffer (sdl->pixels,
                      sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
                      sdl->width * 4, CTX_FORMAT_RGBA8);
-    ctx_set_texture_source (sdl->host[i], sdl->ctx);
+    //ctx_set_texture_source (sdl->host[i], sdl->ctx);
   }
 
   mtx_init (&sdl->mtx, mtx_plain);

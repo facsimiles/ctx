@@ -802,7 +802,6 @@ int ctx_pointer_press     (Ctx *ctx, float x, float y, int device_no, uint32_t t
 int ctx_pointer_drop      (Ctx *ctx, float x, float y, int device_no, uint32_t time,
                            char *string);
 
-
 typedef enum
 {
   CTX_CONT             = '\0', // - contains args from preceding entry

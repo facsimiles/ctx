@@ -471,26 +471,14 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         ctx_print_int (formatter, c->define_texture.width);
         ctx_formatter_addstrf (formatter, ", ");
         ctx_print_int (formatter, c->define_texture.height);
-        ctx_formatter_addstrf (formatter, ", ");
-        switch (c->define_texture.format)
-        {
-          case CTX_FORMAT_GRAY8:
-            ctx_formatter_addstrf (formatter, "1, ");
-            break;
-          case CTX_FORMAT_RGB8:
-            ctx_formatter_addstrf (formatter, "3, ");
-            break;
-          case CTX_FORMAT_RGBA8:
-            ctx_formatter_addstrf (formatter, "4, ");
-            break;
-        }
+        ctx_formatter_addstrf (formatter, ",%i, ", c->define_texture.format);
         //ctx_print_int (formatter, c->define_texture.height);
         //ctx_print_escaped_string (formatter, c->define_texture.eid);
 
         uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
 #if 1
 
-        int stride = c->define_texture.width * c->define_texture.format; // XXX only valid for 1-4
+        int stride = ctx_pixel_format_get_stride (c->define_texture.format, c->define_texture.width);
         ctx_print_a85 (formatter, pixel_data, c->define_texture.height * stride);
 #else
         ctx_formatter_addstrf (formatter, "\"");

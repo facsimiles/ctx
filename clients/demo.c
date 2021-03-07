@@ -1721,8 +1721,9 @@ static int textures_inited = 0;
 #define TEXTURE_W 128
 #define TEXTURE_H 128
 static uint8_t texture_rgba[TEXTURE_W *  TEXTURE_H * 4];
-static uint8_t texture_gray[TEXTURE_W *  TEXTURE_H * 4];
-static uint8_t texture_graya[TEXTURE_W *  TEXTURE_H * 4];
+static uint8_t texture_rgb[TEXTURE_W *  TEXTURE_H * 3];
+static uint8_t texture_gray[TEXTURE_W *  TEXTURE_H * 1];
+static uint8_t texture_graya[TEXTURE_W *  TEXTURE_H * 2];
 
 static void init_textures  (void)
 {
@@ -1741,6 +1742,10 @@ static void init_textures  (void)
      texture_graya[i*2+0] = g;
      texture_graya[i*2+1] = a;
 
+     texture_rgb[i*3+0] = r;
+     texture_rgb[i*3+1] = g;
+     texture_rgb[i*3+2] = b;
+
      texture_rgba[i*4+0] = r;
      texture_rgba[i*4+1] = g;
      texture_rgba[i*4+2] = b;
@@ -1748,7 +1753,6 @@ static void init_textures  (void)
   }
   textures_inited = 1;
 }
-
 
 static void card_textures (ITK *itk, int frame_no)
 {
@@ -1760,11 +1764,20 @@ static void card_textures (ITK *itk, int frame_no)
   ctx_translate (ctx, 400, 50);
     char eid[65]="";
     ctx_define_texture (ctx, NULL,
-                      TEXTURE_W, TEXTURE_H, TEXTURE_W * 4,
+                      TEXTURE_W, TEXTURE_H, 0,
                       CTX_FORMAT_RGBA8,
                       &texture_rgba[0], eid);
     ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
     ctx_fill (ctx);
+
+    ctx_translate (ctx, 0, TEXTURE_H * 1.2);
+    ctx_define_texture (ctx, NULL,
+                      TEXTURE_W, TEXTURE_H, 0,
+                      CTX_FORMAT_RGB8,
+                      &texture_rgb[0], eid);
+    ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
+    ctx_fill (ctx);
+
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
     ctx_define_texture (ctx, NULL,
                       TEXTURE_W, TEXTURE_H, TEXTURE_W,
@@ -1775,28 +1788,30 @@ static void card_textures (ITK *itk, int frame_no)
 
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
     ctx_define_texture (ctx, NULL,
-                      TEXTURE_W, TEXTURE_H, TEXTURE_W,
+                      TEXTURE_W, TEXTURE_H, 0,
                       CTX_FORMAT_GRAYA8,
                       &texture_graya[0], eid);
     ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
     ctx_fill (ctx);
+#if 1
 
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
+    //ctx_rgb (ctx, 1 ,0,0);
     ctx_define_texture (ctx, NULL,
-                      TEXTURE_W, TEXTURE_H, TEXTURE_W,
-                      8,
+                      TEXTURE_W, TEXTURE_H, 0,
+                      12,
                       &texture_gray[0], eid);
     ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
     ctx_fill (ctx);
 
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
 
-    ctx_draw_image (ctx, "/home/pippin/src/ctx/c.png",
+    ctx_draw_image (ctx, "/home/pippin/t.gif",
                          0.0, 0.0, 512.0, 512.0);
+#endif
 
-
-  ctx_restore (ctx);
-  itk_panel_end (itk);
+    ctx_restore (ctx);
+    itk_panel_end (itk);
 }
 
 

@@ -1565,7 +1565,9 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
         switch (byte)
           {
             case '~': parser->state = CTX_PARSER_NEUTRAL;
+                      fprintf (stderr, "got %i\n", parser->pos);
               parser->pos = ctx_a85dec ((char*)parser->holding, (char*)parser->holding, parser->pos);
+                      fprintf (stderr, "dec got %i\n", parser->pos);
               ctx_parser_string_done (parser);
               break;
             default:
