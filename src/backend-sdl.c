@@ -1,58 +1,24 @@
 #include "ctx-split.h"
 
 #if CTX_SDL
-#include <threads.h>
 
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
 {
-   void (*render)    (void *braille, CtxCommand *command);
-   void (*reset)     (void *braille);
-   void (*flush)     (void *braille);
-   char *(*get_clipboard) (void *ctxctx);
-   void (*set_clipboard) (void *ctxctx, const char *text);
-   void (*free)      (void *braille);
-   Ctx          *ctx;
-   int           width;
-   int           height;
-   int           cols;
-   int           rows;
-   int           was_down;
-   uint8_t      *pixels;
-   Ctx          *ctx_copy;
-   Ctx          *host[CTX_MAX_THREADS];
-   CtxAntialias  antialias;
-   int           quit;
-   _Atomic int   thread_quit;
-   int           shown_frame;
-   int           render_frame;
-   int           rendered_frame[CTX_MAX_THREADS];
-   int           frame;
-   int       min_col; // hasher cols and rows
-   int       min_row;
-   int       max_col;
-   int       max_row;
-   uint8_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS *  20];
-   int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
-                                                           // responsible for a tile
-                                                           //
-
-   int           pointer_down[3];
+   CtxThreaded  threaded;
+   /* where we diverge from fb*/
    int           key_balance;
    int           key_repeat;
    int           lctrl;
    int           lalt;
    int           rctrl;
 
-   CtxCursor     shown_cursor;
-
-   /* where we diverge from fb*/
    SDL_Window   *window;
    SDL_Renderer *renderer;
    SDL_Texture  *texture;
 
-   cnd_t  cond;
-   mtx_t  mtx;
+// cnd_t  cond;
+// mtx_t  mtx;
 };
 
 #include "stb_image_write.h"
@@ -72,6 +38,7 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
     return;
 
 #if CTX_FB
+  // we rely on the same layout
   for (int i = 0; i < sdl->width * sdl->height; i++)
   {
     int tmp = sdl->pixels[i*4];
@@ -100,12 +67,12 @@ void ctx_sdl_set_title (void *self, const char *new_title)
 }
 
 static inline int
-sdl_render_threads_done (CtxSDL *sdl)
+ctx_threaded_threads_done (CtxThreaded *threaded)
 {
   int sum = 0;
   for (int i = 0; i < _ctx_max_threads; i++)
   {
-     if (sdl->rendered_frame[i] == sdl->render_frame)
+     if (threaded->rendered_frame[i] == threaded->render_frame)
        sum ++;
   }
   return sum;
@@ -113,11 +80,12 @@ sdl_render_threads_done (CtxSDL *sdl)
 
 static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
 {
-  if (sdl->shown_cursor != sdl->ctx->cursor)
+  CtxThreaded *threaded = &sdl->threaded;
+  if (threaded->shown_cursor != threaded->ctx->cursor)
   {
-    sdl->shown_cursor = sdl->ctx->cursor;
+    threaded->shown_cursor = threaded->ctx->cursor;
     SDL_Cursor *new_cursor =  NULL;
-    switch (sdl->shown_cursor)
+    switch (threaded->shown_cursor)
     {
       case CTX_CURSOR_UNSET: // XXX: document how this differs from none
                              //      perhaps falling back to arrow?
@@ -175,7 +143,7 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     }
   }
 
-  if (sdl->shown_frame == sdl->render_frame)
+  if (threaded->shown_frame == threaded->render_frame)
   {
     return;
   }
@@ -183,57 +151,58 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
   if (block)
   {
     int count = 0;
-    while (sdl_render_threads_done (sdl) != _ctx_max_threads)
+    while (ctx_threaded_threads_done (threaded) != _ctx_max_threads)
     {
       usleep (50);
       count ++;
       if (count > 2000)
       {
-        sdl->shown_frame = sdl->render_frame;
+        threaded->shown_frame = threaded->render_frame;
         return;
       }
     }
   }
   else
   {
-    if (sdl_render_threads_done (sdl) != _ctx_max_threads)
+    if (ctx_threaded_threads_done (threaded) != _ctx_max_threads)
       return;
   }
 
-  if (sdl->min_row == 100)
+  if (threaded->min_row == 100)
   {
   }
   else
   {
 #if 1
-    int x = sdl->min_col * sdl->width/CTX_HASH_COLS;
-    int y = sdl->min_row * sdl->height/CTX_HASH_ROWS;
-    int x1 = (sdl->max_col+1) * sdl->width/CTX_HASH_COLS;
-    int y1 = (sdl->max_row+1) * sdl->height/CTX_HASH_ROWS;
+    int x = threaded->min_col * threaded->width/CTX_HASH_COLS;
+    int y = threaded->min_row * threaded->height/CTX_HASH_ROWS;
+    int x1 = (threaded->max_col+1) * threaded->width/CTX_HASH_COLS;
+    int y1 = (threaded->max_row+1) * threaded->height/CTX_HASH_ROWS;
     int width = x1 - x;
     int height = y1 - y;
 #endif
-    sdl->min_row = 100;
-    sdl->max_row = 0;
-    sdl->min_col = 100;
-    sdl->max_col = 0;
+    threaded->min_row = 100;
+    threaded->max_row = 0;
+    threaded->min_col = 100;
+    threaded->max_col = 0;
 
     SDL_Rect r = {x, y, width, height};
     SDL_UpdateTexture (sdl->texture, &r,
                       //(void*)sdl->pixels,
-                      (void*)(sdl->pixels + y * sdl->width * 4 + x * 4),
+                      (void*)(threaded->pixels + y * threaded->width * 4 + x * 4),
                       
-                      sdl->width * 4);
+                      threaded->width * 4);
     SDL_RenderClear (sdl->renderer);
     SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
     SDL_RenderPresent (sdl->renderer);
   }
 
-  sdl->shown_frame = sdl->render_frame;
+  threaded->shown_frame = threaded->render_frame;
 }
 
 int ctx_sdl_consume_events (Ctx *ctx)
 {
+  CtxThreaded *threaded = (void*)ctx->renderer;
   CtxSDL *sdl = (void*)ctx->renderer;
   SDL_Event event;
   int got_events = 0;
@@ -259,7 +228,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
         ctx_pointer_motion (ctx, event.motion.x, event.motion.y, 1, 0);
         break;
       case SDL_FINGERMOTION:
-        ctx_pointer_motion (ctx, event.tfinger.x * sdl->width, event.tfinger.y * sdl->height,
+        ctx_pointer_motion (ctx, event.tfinger.x * threaded->width, event.tfinger.y * threaded->height,
             (event.tfinger.fingerId%10) + 4, 0);
         break;
       case SDL_FINGERDOWN:
@@ -270,13 +239,13 @@ int ctx_sdl_consume_events (Ctx *ctx)
                         // mirrored as mouse events, later ones not - at
                         // least under wayland
         {
-          ctx_pointer_press (ctx, event.tfinger.x *sdl->width, event.tfinger.y * sdl->height, 
+          ctx_pointer_press (ctx, event.tfinger.x * threaded->width, event.tfinger.y * threaded->height, 
           (event.tfinger.fingerId%10) + 4, 0);
         }
         }
         break;
       case SDL_FINGERUP:
-        ctx_pointer_release (ctx, event.tfinger.x * sdl->width, event.tfinger.y * sdl->height,
+        ctx_pointer_release (ctx, event.tfinger.x * threaded->width, event.tfinger.y * threaded->height,
           (event.tfinger.fingerId%10) + 4, 0);
         break;
       case SDL_KEYUP:
@@ -405,13 +374,13 @@ int ctx_sdl_consume_events (Ctx *ctx)
           SDL_DestroyTexture (sdl->texture);
           sdl->texture = SDL_CreateTexture (sdl->renderer, SDL_PIXELFORMAT_ABGR8888,
                           SDL_TEXTUREACCESS_STREAMING, width, height);
-          free (sdl->pixels);
-          sdl->pixels = calloc (4, width * height);
+          free (threaded->pixels);
+          threaded->pixels = calloc (4, width * height);
 
-          sdl->width  = width;
-          sdl->height = height;
-          ctx_set_size (sdl->ctx, width, height);
-          ctx_set_size (sdl->ctx_copy, width, height);
+          threaded->width  = width;
+          threaded->height = height;
+          ctx_set_size (threaded->ctx, width, height);
+          ctx_set_size (threaded->ctx_copy, width, height);
         }
         break;
     }
@@ -442,32 +411,64 @@ inline static void ctx_sdl_reset (CtxSDL *sdl)
   ctx_sdl_show_frame (sdl, 1);
 }
 
+void ctx_threaded_free (CtxThreaded *threaded)
+{
+  CtxThreaded *threaded = (void*)sdl;
+  threaded->quit = 1;
+  mtx_lock (&threaded->mtx);
+  cnd_broadcast (&threaded->cond);
+  mtx_unlock (&threaded->mtx);
+
+  while (threaded->thread_quit < _ctx_max_threads)
+    usleep (1000);
+
+  if (threaded->pixels)
+  {
+    free (threaded->pixels);
+  threaded->pixels = NULL;
+  for (int i = 0 ; i < _ctx_max_threads; i++)
+  {
+    ctx_free (threaded->host[i]);
+    threaded->host[i]=NULL;
+  }
+
+  ctx_free (threaded->ctx_copy);
+  }
+  // leak?
+}
+
+inline static void ctx_threaded_flush (CtxThreaded *threaded)
+{
+
+}
+
 inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
-  if (sdl->shown_frame == sdl->render_frame)
+  CtxThreaded *threaded = (void*)sdl;
+  if (threaded->shown_frame == threaded->render_frame)
   {
     int dirty_tiles = 0;
-    ctx_set_drawlist (sdl->ctx_copy, &sdl->ctx->drawlist.entries[0],
-                                         sdl->ctx->drawlist.count * 9);
+    ctx_set_drawlist (threaded->ctx_copy, &threaded->ctx->drawlist.entries[0],
+                                           threaded->ctx->drawlist.count * 9);
     if (_ctx_enable_hash_cache)
     {
-      Ctx *hasher = ctx_hasher_new (sdl->width, sdl->height,
+      Ctx *hasher = ctx_hasher_new (threaded->width, threaded->height,
                         CTX_HASH_COLS, CTX_HASH_ROWS);
-      ctx_render_ctx (sdl->ctx_copy, hasher);
+      ctx_render_ctx (threaded->ctx_copy, hasher);
 
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++)
         {
           uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
-          if (new_hash && memcmp (new_hash, &sdl->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
+          if (new_hash && memcmp (new_hash, &threaded->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
           {
-            memcpy (&sdl->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
-            sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+            memcpy (&threaded->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
+            threaded->tile_affinity[row * CTX_HASH_COLS + col] = 1;
             dirty_tiles++;
           }
           else
           {
-            sdl->tile_affinity[row * CTX_HASH_COLS + col] = -1;
+            threaded->tile_affinity[row * CTX_HASH_COLS + col] = -1;
           }
         }
       free (((CtxHasher*)(hasher->renderer))->hashes);
@@ -478,7 +479,7 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+          threaded->tile_affinity[row * CTX_HASH_COLS + col] = 1;
           dirty_tiles++;
         }
     }
@@ -487,122 +488,108 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        if (sdl->tile_affinity[row * CTX_HASH_COLS + col] != -1)
+        if (threaded->tile_affinity[row * CTX_HASH_COLS + col] != -1)
         {
-          sdl->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_max_threads) / dirty_tiles;
+          threaded->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_max_threads) / dirty_tiles;
           dirty_no++;
-          if (col > sdl->max_col) sdl->max_col = col;
-          if (col < sdl->min_col) sdl->min_col = col;
-          if (row > sdl->max_row) sdl->max_row = row;
-          if (row < sdl->min_row) sdl->min_row = row;
+          if (col > threaded->max_col) threaded->max_col = col;
+          if (col < threaded->min_col) threaded->min_col = col;
+          if (row > threaded->max_row) threaded->max_row = row;
+          if (row < threaded->min_row) threaded->min_row = row;
         }
       }
 
 #if CTX_DAMAGE_CONTROL
-    for (int i = 0; i < sdl->width * sdl->height; i++)
+    for (int i = 0; i < threaded->width * threaded->height; i++)
     {
-      int new_ = (sdl->pixels[i*4+0]+ sdl->pixels[i*4+1]+ sdl->pixels[i*4+2])/3;
+      int new_ = (threaded->pixels[i*4+0]+ threaded->pixels[i*4+1]+ threaded->pixels[i*4+2])/3;
       //if (new_>1) new_--;
-      sdl->pixels[i*4]  = (sdl->pixels[i*4] + 255)/2;
-      sdl->pixels[i*4+1]= (sdl->pixels[i*4+1] + new_)/2;
-      sdl->pixels[i*4+2]= (sdl->pixels[i*4+1] + new_)/2;
+      threaded->pixels[i*4]  = (threaded->pixels[i*4] + 255)/2;
+      threaded->pixels[i*4+1]= (threaded->pixels[i*4+1] + new_)/2;
+      threaded->pixels[i*4+2]= (threaded->pixels[i*4+1] + new_)/2;
     }
 #endif
 
-    sdl->render_frame = ++sdl->frame;
+    threaded->render_frame = ++threaded->frame;
 
-    mtx_lock (&sdl->mtx);
-    cnd_broadcast (&sdl->cond);
-    mtx_unlock (&sdl->mtx);
-
+    mtx_lock (&threaded->mtx);
+    cnd_broadcast (&threaded->cond);
+    mtx_unlock (&threaded->mtx);
   }
 }
 
+
 void ctx_sdl_free (CtxSDL *sdl)
 {
-  sdl->quit = 1;
-  mtx_lock (&sdl->mtx);
-  cnd_broadcast (&sdl->cond);
-  mtx_unlock (&sdl->mtx);
 
-  while (sdl->thread_quit < _ctx_max_threads)
-    usleep (1000); // XXX : properly wait for threads instead
-  if (sdl->pixels)
-  {
-    free (sdl->pixels);
-  sdl->pixels = NULL;
-  for (int i = 0 ; i < _ctx_max_threads; i++)
-  {
-    ctx_free (sdl->host[i]);
-    sdl->host[i]=NULL;
-  }
+  if (sdl->texture)
   SDL_DestroyTexture (sdl->texture);
+  if (sdl->renderer)
   SDL_DestroyRenderer (sdl->renderer);
+  if (sdl->window)
   SDL_DestroyWindow (sdl->window);
-  ctx_free (sdl->ctx_copy);
-  }
-  //free (sdl); // kept alive for threads quit check..
-  /* we're not destoring the ctx member, this is function is called in ctx' teardown */
+
+  ctx_threaded_free ((CtxThreaded*)sdl);
 }
 
 static unsigned char *sdl_icc = NULL;
 static long sdl_icc_length = 0;
 
 static
-void sdl_render_fun (void **data)
+void ctx_threaded_render_fun (void **data)
 {
   int      no = (size_t)data[0];
-  CtxSDL *sdl = data[1];
+  CtxThreaded *threaded = data[1];
 
-  while (!sdl->quit)
+  while (!threaded->quit)
   {
-    Ctx *host = sdl->host[no];
+    Ctx *host = threaded->host[no];
 
-    mtx_lock (&sdl->mtx);
-    cnd_wait(&sdl->cond, &sdl->mtx);
-    mtx_unlock (&sdl->mtx);
+    mtx_lock (&threaded->mtx);
+    cnd_wait(&threaded->cond, &threaded->mtx);
+    mtx_unlock (&threaded->mtx);
 
-    if (sdl->render_frame != sdl->rendered_frame[no])
+    if (threaded->render_frame != threaded->rendered_frame[no])
     {
       int hno = 0;
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
         {
-          if (sdl->tile_affinity[hno]==no)
+          if (threaded->tile_affinity[hno]==no)
           {
-            int x0 = ((sdl->width)/CTX_HASH_COLS) * col;
-            int y0 = ((sdl->height)/CTX_HASH_ROWS) * row;
-            int width = sdl->width / CTX_HASH_COLS;
-            int height = sdl->height / CTX_HASH_ROWS;
+            int x0 = ((threaded->width)/CTX_HASH_COLS) * col;
+            int y0 = ((threaded->height)/CTX_HASH_ROWS) * row;
+            int width = threaded->width / CTX_HASH_COLS;
+            int height = threaded->height / CTX_HASH_ROWS;
 
             CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
 #if 1 // merge horizontally adjecant tiles of same affinity into one job
             while (col + 1 < CTX_HASH_COLS &&
-                   sdl->tile_affinity[hno+1] == no)
+                   threaded->tile_affinity[hno+1] == no)
             {
-              width += sdl->width / CTX_HASH_COLS;
+              width += threaded->width / CTX_HASH_COLS;
               col++;
               hno++;
             }
 #endif
             ctx_rasterizer_init (rasterizer,
-                                 host, sdl->ctx, &host->state,
-                                 &sdl->pixels[sdl->width * 4 * y0 + x0 * 4],
+                                 host, threaded->ctx, &host->state,
+                                 &threaded->pixels[threaded->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
-                                 sdl->width*4, CTX_FORMAT_RGBA8,
-                                 sdl->antialias);
+                                 threaded->width*4, CTX_FORMAT_RGBA8,
+                                 threaded->antialias);
             if (sdl_icc_length)
               ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
 
             ctx_translate (host, -x0, -y0);
-            ctx_render_ctx (sdl->ctx_copy, host);
+            ctx_render_ctx (threaded->ctx_copy, host);
           }
         }
-      sdl->rendered_frame[no] = sdl->render_frame;
+      threaded->rendered_frame[no] = threaded->render_frame;
     }
   }
 
-  sdl->thread_quit++; // need atomic?
+  threaded->thread_quit++; // need atomic?
 }
 
 int ctx_renderer_is_sdl (Ctx *ctx)
@@ -619,6 +606,8 @@ Ctx *ctx_new_sdl (int width, int height)
 #if CTX_RASTERIZER
 
   CtxSDL *sdl = (CtxSDL*)calloc (sizeof (CtxSDL), 1);
+  CtxThreaded *threaded = (void*)sdl;
+
   _ctx_file_get_contents ("/tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
   if (width <= 0 || height <= 0)
   {
@@ -630,7 +619,7 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->renderer = SDL_CreateRenderer (sdl->window, -1, 0);
   if (!sdl->renderer)
   {
-     ctx_free (sdl->ctx);
+     ctx_free (threaded->ctx);
      free (sdl);
      return NULL;
   }
@@ -647,42 +636,43 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_StartTextInput ();
   SDL_EnableScreenSaver ();
 
-  sdl->ctx = ctx_new ();
-  sdl->ctx_copy = ctx_new ();
-  sdl->width  = width;
-  sdl->height = height;
-  sdl->cols = 80;
-  sdl->rows = 20;
-  ctx_set_renderer (sdl->ctx, sdl);
-  ctx_set_renderer (sdl->ctx_copy, sdl);
+  threaded->ctx = ctx_new ();
+  threaded->ctx_copy = ctx_new ();
+  threaded->width  = width;
+  threaded->height = height;
+  threaded->cols = 80;
+  threaded->rows = 20;
+  ctx_set_renderer (threaded->ctx, sdl);
+  ctx_set_renderer (threaded->ctx_copy, sdl);
 
-  sdl->pixels = (uint8_t*)malloc (width * height * 4);
+  threaded->pixels = (uint8_t*)malloc (width * height * 4);
 
-  ctx_set_size (sdl->ctx,      width, height);
-  ctx_set_size (sdl->ctx_copy, width, height);
-  sdl->flush = (void*)ctx_sdl_flush;
-  sdl->reset = (void*)ctx_sdl_reset;
-  sdl->free  = (void*)ctx_sdl_free;
-  sdl->set_clipboard = (void*)ctx_sdl_set_clipboard;
-  sdl->get_clipboard = (void*)ctx_sdl_get_clipboard;
+  ctx_set_size (threaded->ctx,      width, height);
+  ctx_set_size (threaded->ctx_copy, width, height);
+
+  threaded->flush = (void*)ctx_sdl_flush;
+  threaded->reset = (void*)ctx_sdl_reset;
+  threaded->free  = (void*)ctx_sdl_free;
+  threaded->set_clipboard = (void*)ctx_sdl_set_clipboard;
+  threaded->get_clipboard = (void*)ctx_sdl_get_clipboard;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {
-    sdl->host[i] = ctx_new_for_framebuffer (sdl->pixels,
-                     sdl->width/CTX_HASH_COLS, sdl->height/CTX_HASH_ROWS,
-                     sdl->width * 4, CTX_FORMAT_RGBA8);
-    //ctx_set_texture_source (sdl->host[i], sdl->ctx);
+    threaded->host[i] = ctx_new_for_framebuffer (threaded->pixels,
+                     threaded->width/CTX_HASH_COLS, threaded->height/CTX_HASH_ROWS,
+                     threaded->width * 4, CTX_FORMAT_RGBA8);
+    ctx_set_texture_source (threaded->host[i], threaded->ctx);
   }
 
-  mtx_init (&sdl->mtx, mtx_plain);
-  cnd_init (&sdl->cond);
+  mtx_init (&threaded->mtx, mtx_plain);
+  cnd_init (&threaded->cond);
 
 #define start_thread(no)\
   if(_ctx_max_threads>no){ \
     static void *args[2]={(void*)no, };\
     thrd_t tid;\
     args[1]=sdl;\
-    thrd_create (&tid, (void*)sdl_render_fun, args);\
+    thrd_create (&tid, (void*)ctx_threaded_render_fun, args);\
   }
   start_thread(0);
   start_thread(1);
@@ -702,8 +692,8 @@ Ctx *ctx_new_sdl (int width, int height)
   start_thread(15);
 #undef start_thread
 
-  ctx_flush (sdl->ctx);
-  return sdl->ctx;
+  ctx_flush (threaded->ctx);
+  return threaded->ctx;
 #else
   return NULL;
 #endif

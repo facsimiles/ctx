@@ -728,27 +728,6 @@ struct _CtxCtx
    int  was_down;
 };
 
-// XXX common members of sdl and fbdev, it is more!
-typedef struct _CtxThreaded CtxThreaded;
-struct _CtxThreaded
-{
-   void (*render) (void *fb, CtxCommand *command);
-   void (*reset)  (void *fb);
-   void (*flush)  (void *fb);
-   char *(*get_clipboard) (void *ctxctx);
-   void (*set_clipboard) (void *ctxctx, const char *text);
-   void (*free)   (void *fb);
-   Ctx          *ctx;
-   Ctx          *ctx_copy;
-   int           width;
-   int           height;
-   int           cols;
-   int           rows;
-   int           was_down;
-   Ctx          *host[CTX_MAX_THREADS];
-   CtxAntialias  antialias;
-};
-
 
 extern int _ctx_max_threads;
 extern int _ctx_enable_hash_cache;
@@ -972,6 +951,54 @@ const char *ctx_texture_init (
                       uint8_t    *pixels,
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data);
+
+#if CTX_THREADED
+#include <threads.h>
+#endif
+typedef struct _CtxThreaded CtxThreaded;
+
+struct _CtxThreaded
+{
+   void (*render)    (void *braille, CtxCommand *command);
+   void (*reset)     (void *braille);
+   void (*flush)     (void *braille);
+   char *(*get_clipboard) (void *ctxctx);
+   void (*set_clipboard) (void *ctxctx, const char *text);
+   void (*free)      (void *braille);
+   Ctx          *ctx;
+   int           width;
+   int           height;
+   int           cols;
+   int           rows;
+   int           was_down;
+   uint8_t      *pixels;
+   Ctx          *ctx_copy;
+   Ctx          *host[CTX_MAX_THREADS];
+   CtxAntialias  antialias;
+   int           quit;
+   _Atomic int   thread_quit;
+   int           shown_frame;
+   int           render_frame;
+   int           rendered_frame[CTX_MAX_THREADS];
+   int           frame;
+   int       min_col; // hasher cols and rows
+   int       min_row;
+   int       max_col;
+   int       max_row;
+   uint8_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS *  20];
+   int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
+                                                           // responsible for a tile
+                                                           //
+
+   int           pointer_down[3];
+
+   CtxCursor     shown_cursor;
+#if CTX_THREADED
+   cnd_t  cond;
+   mtx_t  mtx;
+#endif
+};
+
 
 #endif
 

@@ -327,6 +327,9 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         </p>
         <ul>
           <li>configure fonts</li>
+          <li>use separate configured fonts for mono/italic/bold
+              (keeping current fallback synthesizing code)</li>
+          <li>fonts with color emoji</li>
           <li>clip does not clip event boxes/shapes</li>
 
           <li>some low-level rasterizer glitches</li>
@@ -341,7 +344,11 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
           <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
           <li>palm supression during typing in drm/fbdev backend</li>
         
-          <li>terminal rewrap on resize</li>
+          <li>missing terminal content rewrapping on resize</li>
+
+          <li>texture transmission not working reliably through terminal.</li>
+
+          <li>hyperlink protocol</li>
           </ul>
         </li>
         </ul>

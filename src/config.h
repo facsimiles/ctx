@@ -532,3 +532,13 @@
 #ifndef CTX_SCREENSHOT
 #define CTX_SCREENSHOT 0
 #endif
+
+
+#ifndef CTX_THREADED
+#if CTX_SDL || CTX_FB
+#define CTX_THREADED 1
+#else
+#define CTX_THREADED 0
+#endif
+#endif
+
