@@ -534,11 +534,11 @@
 #endif
 
 
-#ifndef CTX_THREADED
+#ifndef CTX_TILED
 #if CTX_SDL || CTX_FB
-#define CTX_THREADED 1
+#define CTX_TILED 1
 #else
-#define CTX_THREADED 0
+#define CTX_TILED 0
 #endif
 #endif
 

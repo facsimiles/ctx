@@ -2932,7 +2932,7 @@ CtxAntialias ctx_get_antialias (Ctx *ctx)
 #if CTX_EVENTS
   if (ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx))
   {
-     CtxThreaded *fb = (CtxThreaded*)(ctx->renderer);
+     CtxTiled *fb = (CtxTiled*)(ctx->renderer);
      return fb->antialias;
   }
 #endif
@@ -2968,7 +2968,7 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 #if CTX_EVENTS
   if (ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx))
   {
-     CtxThreaded *fb = (CtxThreaded*)(ctx->renderer);
+     CtxTiled *fb = (CtxTiled*)(ctx->renderer);
      fb->antialias = antialias;
      for (int i = 0; i < _ctx_max_threads; i++)
      {

@@ -952,12 +952,12 @@ const char *ctx_texture_init (
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data);
 
-#if CTX_THREADED
+#if CTX_TILED
 #include <threads.h>
 #endif
-typedef struct _CtxThreaded CtxThreaded;
+typedef struct _CtxTiled CtxTiled;
 
-struct _CtxThreaded
+struct _CtxTiled
 {
    void (*render)    (void *braille, CtxCommand *command);
    void (*reset)     (void *braille);
@@ -993,7 +993,7 @@ struct _CtxThreaded
    int           pointer_down[3];
 
    CtxCursor     shown_cursor;
-#if CTX_THREADED
+#if CTX_TILED
    cnd_t  cond;
    mtx_t  mtx;
 #endif

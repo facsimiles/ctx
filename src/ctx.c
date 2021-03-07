@@ -606,7 +606,7 @@ void ctx_reset (Ctx *ctx)
         /* we do the callback reset first - maybe we need two cbs,
          * one for before and one after default impl?
          *
-         * threaded fb and sdl needs to sync
+         * tiled fb and sdl needs to sync
          */
   if (ctx->renderer && ctx->renderer->reset)
     ctx->renderer->reset (ctx->renderer);
