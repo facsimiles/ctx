@@ -439,12 +439,6 @@ void ctx_tiled_free (CtxTiled *tiled)
 
 inline static void ctx_tiled_flush (CtxTiled *tiled)
 {
-
-}
-
-inline static void ctx_sdl_flush (CtxSDL *sdl)
-{
-  CtxTiled *tiled = (void*)sdl;
   if (tiled->shown_frame == tiled->render_frame)
   {
     int dirty_tiles = 0;
@@ -516,6 +510,12 @@ inline static void ctx_sdl_flush (CtxSDL *sdl)
     cnd_broadcast (&tiled->cond);
     mtx_unlock (&tiled->mtx);
   }
+}
+
+inline static void ctx_sdl_flush (CtxSDL *sdl)
+{
+  ctx_tiled_flush ((void*)sdl);
+  //CtxTiled *tiled = (void*)sdl;
 }
 
 
