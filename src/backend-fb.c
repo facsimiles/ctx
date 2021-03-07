@@ -1,10 +1,187 @@
 #include "ctx-split.h"
 
+#if CTX_TILED
+static inline int
+ctx_tiled_threads_done (CtxTiled *tiled)
+{
+  int sum = 0;
+  for (int i = 0; i < _ctx_max_threads; i++)
+  {
+     if (tiled->rendered_frame[i] == tiled->render_frame)
+       sum ++;
+  }
+  return sum;
+}
+
+void ctx_tiled_free (CtxTiled *tiled)
+{
+  tiled->quit = 1;
+  mtx_lock (&tiled->mtx);
+  cnd_broadcast (&tiled->cond);
+  mtx_unlock (&tiled->mtx);
+
+  while (tiled->thread_quit < _ctx_max_threads)
+    usleep (1000);
+
+  if (tiled->pixels)
+  {
+    free (tiled->pixels);
+  tiled->pixels = NULL;
+  for (int i = 0 ; i < _ctx_max_threads; i++)
+  {
+    ctx_free (tiled->host[i]);
+    tiled->host[i]=NULL;
+  }
+
+  ctx_free (tiled->ctx_copy);
+  }
+  // leak?
+}
+
+inline static void ctx_tiled_flush (CtxTiled *tiled)
+{
+  if (tiled->shown_frame == tiled->render_frame)
+  {
+    int dirty_tiles = 0;
+    ctx_set_drawlist (tiled->ctx_copy, &tiled->ctx->drawlist.entries[0],
+                                           tiled->ctx->drawlist.count * 9);
+    if (_ctx_enable_hash_cache)
+    {
+      Ctx *hasher = ctx_hasher_new (tiled->width, tiled->height,
+                        CTX_HASH_COLS, CTX_HASH_ROWS);
+      ctx_render_ctx (tiled->ctx_copy, hasher);
+
+      for (int row = 0; row < CTX_HASH_ROWS; row++)
+        for (int col = 0; col < CTX_HASH_COLS; col++)
+        {
+          uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
+          if (new_hash && memcmp (new_hash, &tiled->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
+          {
+            memcpy (&tiled->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
+            tiled->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+            dirty_tiles++;
+          }
+          else
+          {
+            tiled->tile_affinity[row * CTX_HASH_COLS + col] = -1;
+          }
+        }
+      free (((CtxHasher*)(hasher->renderer))->hashes);
+      ctx_free (hasher);
+    }
+    else
+    {
+    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int col = 0; col < CTX_HASH_COLS; col++)
+        {
+          tiled->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+          dirty_tiles++;
+        }
+    }
+    int dirty_no = 0;
+    if (dirty_tiles)
+    for (int row = 0; row < CTX_HASH_ROWS; row++)
+      for (int col = 0; col < CTX_HASH_COLS; col++)
+      {
+        if (tiled->tile_affinity[row * CTX_HASH_COLS + col] != -1)
+        {
+          tiled->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_max_threads) / dirty_tiles;
+          dirty_no++;
+          if (col > tiled->max_col) tiled->max_col = col;
+          if (col < tiled->min_col) tiled->min_col = col;
+          if (row > tiled->max_row) tiled->max_row = row;
+          if (row < tiled->min_row) tiled->min_row = row;
+        }
+      }
+
+#if CTX_DAMAGE_CONTROL
+    for (int i = 0; i < tiled->width * tiled->height; i++)
+    {
+      int new_ = (tiled->pixels[i*4+0]+ tiled->pixels[i*4+1]+ tiled->pixels[i*4+2])/3;
+      //if (new_>1) new_--;
+      tiled->pixels[i*4]  = (tiled->pixels[i*4] + 255)/2;
+      tiled->pixels[i*4+1]= (tiled->pixels[i*4+1] + new_)/2;
+      tiled->pixels[i*4+2]= (tiled->pixels[i*4+1] + new_)/2;
+    }
+#endif
+
+    tiled->render_frame = ++tiled->frame;
+
+    mtx_lock (&tiled->mtx);
+    cnd_broadcast (&tiled->cond);
+    mtx_unlock (&tiled->mtx);
+  }
+}
+static unsigned char *sdl_icc = NULL;
+static long sdl_icc_length = 0;
+
+static
+void ctx_tiled_render_fun (void **data)
+{
+  int      no = (size_t)data[0];
+  CtxTiled *tiled = data[1];
+
+  while (!tiled->quit)
+  {
+    Ctx *host = tiled->host[no];
+
+    mtx_lock (&tiled->mtx);
+    cnd_wait(&tiled->cond, &tiled->mtx);
+    mtx_unlock (&tiled->mtx);
+
+    if (tiled->render_frame != tiled->rendered_frame[no])
+    {
+      int hno = 0;
+      for (int row = 0; row < CTX_HASH_ROWS; row++)
+        for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
+        {
+          if (tiled->tile_affinity[hno]==no)
+          {
+            int x0 = ((tiled->width)/CTX_HASH_COLS) * col;
+            int y0 = ((tiled->height)/CTX_HASH_ROWS) * row;
+            int width = tiled->width / CTX_HASH_COLS;
+            int height = tiled->height / CTX_HASH_ROWS;
+
+            CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
+#if 1 // merge horizontally adjecant tiles of same affinity into one job
+            while (col + 1 < CTX_HASH_COLS &&
+                   tiled->tile_affinity[hno+1] == no)
+            {
+              width += tiled->width / CTX_HASH_COLS;
+              col++;
+              hno++;
+            }
+#endif
+            int swap_red_green = ((CtxRasterizer*)(host->renderer))->swap_red_green;
+            ctx_rasterizer_init (rasterizer,
+                                 host, tiled->ctx, &host->state,
+                                 &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
+                                 0, 0, width, height,
+                                 tiled->width*4, CTX_FORMAT_RGBA8,
+                                 tiled->antialias);
+            ((CtxRasterizer*)(host->renderer))->swap_red_green = swap_red_green;
+            if (sdl_icc_length)
+              ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
+
+            ctx_translate (host, -x0, -y0);
+            ctx_render_ctx (tiled->ctx_copy, host);
+          }
+        }
+      tiled->rendered_frame[no] = tiled->render_frame;
+    }
+  }
+  tiled->thread_quit++; // need atomic?
+}
+
+#endif
+
+
 #if CTX_EVENTS
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <signal.h>
+
 
 #if CTX_FB
   #include <linux/fb.h>
@@ -47,6 +224,8 @@ struct _EvSource
 typedef struct _CtxFb CtxFb;
 struct _CtxFb
 {
+   CtxTiled tiled;
+#if 0
    void (*render) (void *fb, CtxCommand *command);
    void (*reset)  (void *fb);
    void (*flush)  (void *fb);
@@ -59,7 +238,7 @@ struct _CtxFb
    int           cols; // unused
    int           rows; // unused
    int           was_down;
-   uint8_t      *scratch_fb;
+   uint8_t      *pixels;
    Ctx          *ctx_copy;
    Ctx          *host[CTX_MAX_THREADS];
    CtxAntialias  antialias;
@@ -79,8 +258,8 @@ struct _CtxFb
                                                            //
 
 
-
    int           pointer_down[3];
+#endif
    int           key_balance;
    int           key_repeat;
    int           lctrl;
@@ -271,18 +450,6 @@ static void ctx_fb_flip (CtxFb *fb)
     ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
 }
 
-static inline int
-fb_render_threads_done (CtxFb *fb)
-{
-  int sum = 0;
-  for (int i = 0; i < _ctx_max_threads; i++)
-  {
-     if (fb->rendered_frame[i] == fb->render_frame)
-       sum ++;
-  }
-  return sum;
-}
-
 inline static uint32_t
 ctx_swap_red_green2 (uint32_t orig)
 {
@@ -389,8 +556,9 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
 }
 
 static void ctx_fb_undraw_cursor (CtxFb *fb)
-  {
-    int cursor_size = ctx_height (fb->ctx) / 28;
+{
+    CtxTiled *tiled = (void*)fb;
+    int cursor_size = ctx_height (tiled->ctx) / 28;
 
     if (fb_cursor_drawn)
     {
@@ -398,11 +566,11 @@ static void ctx_fb_undraw_cursor (CtxFb *fb)
       for (int y = -cursor_size; y < cursor_size; y++)
       for (int x = -cursor_size; x < cursor_size; x++, no+=4)
       {
-        if (x + fb_cursor_drawn_x < fb->width && y + fb_cursor_drawn_y < fb->height)
+        if (x + fb_cursor_drawn_x < tiled->width && y + fb_cursor_drawn_y < tiled->height)
         {
           if (ctx_is_in_cursor (x, y, cursor_size, fb_cursor_drawn_shape))
           {
-            int o = ((fb_cursor_drawn_y + y) * fb->width + (fb_cursor_drawn_x + x)) * 4;
+            int o = ((fb_cursor_drawn_y + y) * tiled->width + (fb_cursor_drawn_x + x)) * 4;
             fb->fb[o+0]^=0x88;
             fb->fb[o+1]^=0x88;
             fb->fb[o+2]^=0x88;
@@ -414,11 +582,12 @@ static void ctx_fb_undraw_cursor (CtxFb *fb)
 }
 
 static void ctx_fb_draw_cursor (CtxFb *fb)
-  {
-    int cursor_x    = ctx_pointer_x (fb->ctx);
-    int cursor_y    = ctx_pointer_y (fb->ctx);
-    int cursor_size = ctx_height (fb->ctx) / 28;
-    CtxCursor cursor_shape = fb->ctx->cursor;
+{
+    CtxTiled *tiled = (void*)fb;
+    int cursor_x    = ctx_pointer_x (tiled->ctx);
+    int cursor_y    = ctx_pointer_y (tiled->ctx);
+    int cursor_size = ctx_height (tiled->ctx) / 28;
+    CtxCursor cursor_shape = tiled->ctx->cursor;
     int no = 0;
 
     if (cursor_x == fb_cursor_drawn_x &&
@@ -448,11 +617,11 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     for (int y = -cursor_size; y < cursor_size; y++)
       for (int x = -cursor_size; x < cursor_size; x++, no+=4)
       {
-        if (x + cursor_x < fb->width && x >=0 && y + cursor_y < fb->height && y >=0)
+        if (x + cursor_x < tiled->width && x >=0 && y + cursor_y < tiled->height && y >=0)
         {
           if (ctx_is_in_cursor (x, y, cursor_size, cursor_shape))
           {
-            int o = ((cursor_y + y) * fb->width + (cursor_x + x)) * 4;
+            int o = ((cursor_y + y) * tiled->width + (cursor_x + x)) * 4;
             fb->fb[o+0]^=0x88;
             fb->fb[o+1]^=0x88;
             fb->fb[o+2]^=0x88;
@@ -463,11 +632,12 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     fb_cursor_drawn_x = cursor_x;
     fb_cursor_drawn_y = cursor_y;
     fb_cursor_drawn_shape = cursor_shape;
-  }
+}
 
 static void ctx_fb_show_frame (CtxFb *fb, int block)
 {
-  if (fb->shown_frame == fb->render_frame)
+  CtxTiled *tiled = (void*)fb;
+  if (tiled->shown_frame == tiled->render_frame)
   {
     if (block == 0) // consume event call
     {
@@ -480,32 +650,32 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
   if (block)
   {
     int count = 0;
-    while (fb_render_threads_done (fb) != _ctx_max_threads)
+    while (ctx_tiled_threads_done (tiled) != _ctx_max_threads)
     {
       usleep (500);
       count ++;
       if (count > 2000)
       {
-        fb->shown_frame = fb->render_frame;
+        tiled->shown_frame = tiled->render_frame;
         return;
       }
     }
   }
   else
   {
-    if (fb_render_threads_done (fb) != _ctx_max_threads)
+    if (ctx_tiled_threads_done (tiled) != _ctx_max_threads)
       return;
   }
 
     if (fb->vt_active)
     {
-       int pre_skip = fb->min_row * fb->height/CTX_HASH_ROWS * fb->width;
-       int post_skip = (CTX_HASH_ROWS-fb->max_row-1) * fb->height/CTX_HASH_ROWS * fb->width;
+       int pre_skip = tiled->min_row * tiled->height/CTX_HASH_ROWS * tiled->width;
+       int post_skip = (CTX_HASH_ROWS-tiled->max_row-1) * tiled->height/CTX_HASH_ROWS * tiled->width;
 
-       int rows = ((fb->width * fb->height) - pre_skip - post_skip)/fb->width;
+       int rows = ((tiled->width * tiled->height) - pre_skip - post_skip)/tiled->width;
 
-       int col_pre_skip = fb->min_col * fb->width/CTX_HASH_COLS;
-       int col_post_skip = (CTX_HASH_COLS-fb->max_col-1) * fb->width/CTX_HASH_COLS;
+       int col_pre_skip = tiled->min_col * tiled->width/CTX_HASH_COLS;
+       int col_post_skip = (CTX_HASH_COLS-tiled->max_col-1) * tiled->width/CTX_HASH_COLS;
 #if CTX_DAMAGE_CONTROL
        pre_skip = post_skip = col_pre_skip = col_post_skip = 0;
 #endif
@@ -515,7 +685,7 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 
      __u32 dummy = 0;
 
-       if (fb->min_row == 100){
+       if (tiled->min_row == 100){
           pre_skip = 0;
           post_skip = 0;
           // not when drm ?
@@ -525,10 +695,10 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
        else
        {
 
-      fb->min_row = 100;
-      fb->max_row = 0;
-      fb->min_col = 100;
-      fb->max_col = 0;
+      tiled->min_row = 100;
+      tiled->max_row = 0;
+      tiled->min_col = 100;
+      tiled->max_col = 0;
 
      // not when drm ?
      ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
@@ -539,10 +709,10 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 #if 1
          {
            uint8_t *dst = fb->fb + pre_skip * 4;
-           uint8_t *src = fb->scratch_fb + pre_skip * 4;
+           uint8_t *src = tiled->pixels + pre_skip * 4;
            int pre = col_pre_skip * 4;
            int post = col_post_skip * 4;
-           int core = fb->width * 4 - pre - post;
+           int core = tiled->width * 4 - pre - post;
            for (int i = 0; i < rows; i++)
            {
              dst  += pre;
@@ -555,8 +725,8 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
            }
          }
 #else
-         { int count = fb->width * fb->height;
-           const uint32_t *src = (void*)fb->scratch_fb;
+         { int count = tiled->width * tiled->height;
+           const uint32_t *src = (void*)tiled->pixels;
            uint32_t *dst = (void*)fb->fb;
            count-= pre_skip;
            src+= pre_skip;
@@ -574,8 +744,8 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
          /* XXX  :  note: converting a scanline (or all) to target and
           * then doing a bulk memcpy be faster (at least with som /dev/fbs)  */
        case 24:
-         { int count = fb->width * fb->height;
-           const uint8_t *src = fb->scratch_fb;
+         { int count = tiled->width * tiled->height;
+           const uint8_t *src = tiled->pixels;
            uint8_t *dst = fb->fb;
            count-= pre_skip;
            src+= pre_skip * 4;
@@ -592,8 +762,8 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
          }
          break;
        case 16:
-         { int count = fb->width * fb->height;
-           const uint8_t *src = fb->scratch_fb;
+         { int count = tiled->width * tiled->height;
+           const uint8_t *src = tiled->pixels;
            uint8_t *dst = fb->fb;
            count-= post_skip;
            count-= pre_skip;
@@ -612,8 +782,8 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
          }
          break;
        case 15:
-         { int count = fb->width * fb->height;
-           const uint8_t *src = fb->scratch_fb;
+         { int count = tiled->width * tiled->height;
+           const uint8_t *src = tiled->pixels;
            uint8_t *dst = fb->fb;
            count-= post_skip;
            count-= pre_skip;
@@ -632,8 +802,8 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
          }
          break;
        case 8:
-         { int count = fb->width * fb->height;
-           const uint8_t *src = fb->scratch_fb;
+         { int count = tiled->width * tiled->height;
+           const uint8_t *src = tiled->pixels;
            uint8_t *dst = fb->fb;
            count-= post_skip;
            count-= pre_skip;
@@ -654,7 +824,7 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
     fb_cursor_drawn = 0;
     ctx_fb_draw_cursor (fb);
     ctx_fb_flip (fb);
-    fb->shown_frame = fb->render_frame;
+    tiled->shown_frame = tiled->render_frame;
   }
 }
 
@@ -757,6 +927,7 @@ static char *mice_get_event ()
   signed char buf[3];
   int n_read = 0;
   CtxFb *fb = ev_src_mice.priv;
+  CtxTiled *tiled = (void*)fb;
   n_read = read (mrg_mice_this->fd, buf, 3);
   if (n_read == 0)
      return strdup ("");
@@ -800,10 +971,10 @@ static char *mice_get_event ()
     mrg_mice_this->x = 0;
   if (mrg_mice_this->y < 0)
     mrg_mice_this->y = 0;
-  if (mrg_mice_this->x >= fb->width)
-    mrg_mice_this->x = fb->width -1;
-  if (mrg_mice_this->y >= fb->height)
-    mrg_mice_this->y = fb->height -1;
+  if (mrg_mice_this->x >= tiled->width)
+    mrg_mice_this->x = tiled->width -1;
+  if (mrg_mice_this->y >= tiled->height)
+    mrg_mice_this->y = tiled->height -1;
   int button = 0;
   
   if ((mrg_mice_this->prev_state & 1) != (buf[0] & 1))
@@ -941,9 +1112,9 @@ static void real_evsource_kb_destroy (int sign)
     case  -11:break; /* will be called from atexit with sign==-11 */
     case   SIGSEGV: break;//fprintf (stderr, " SIGSEGV\n");break;
     case   SIGABRT: fprintf (stderr, " SIGABRT\n");break;
-    case   SIGBUS: fprintf (stderr, " SIGBUS\n");break;
+    case   SIGBUS:  fprintf (stderr, " SIGBUS\n");break;
     case   SIGKILL: fprintf (stderr, " SIGKILL\n");break;
-    case   SIGINT: fprintf (stderr, " SIGINT\n");break;
+    case   SIGINT:  fprintf (stderr, " SIGINT\n");break;
     case   SIGTERM: fprintf (stderr, " SIGTERM\n");break;
     case   SIGQUIT: fprintf (stderr, " SIGQUIT\n");break;
     default: fprintf (stderr, "sign: %i\n", sign);
@@ -1308,6 +1479,7 @@ EvSource *evsource_kb_new (void)
 
 static int event_check_pending (CtxFb *fb)
 {
+  CtxTiled *tiled = (void*)fb;
   int events = 0;
   for (int i = 0; i < fb->evsource_count; i++)
   {
@@ -1318,7 +1490,7 @@ static int event_check_pending (CtxFb *fb)
       {
         if (fb->vt_active)
         {
-          ctx_key_press (fb->ctx, 0, event, 0); // we deliver all events as key-press, it disamibuates
+          ctx_key_press (tiled->ctx, 0, event, 0); // we deliver all events as key-press, it disamibuates
           events++;
         }
         free (event);
@@ -1343,91 +1515,11 @@ inline static void ctx_fb_reset (CtxFb *fb)
 
 inline static void ctx_fb_flush (CtxFb *fb)
 {
-  if (fb->shown_frame == fb->render_frame)
-  {
-    int dirty_tiles = 0;
-    ctx_set_drawlist (fb->ctx_copy, &fb->ctx->drawlist.entries[0],
-                                         fb->ctx->drawlist.count * 9);
-    if (_ctx_enable_hash_cache)
-    {
-      Ctx *hasher = ctx_hasher_new (fb->width, fb->height,
-                        CTX_HASH_COLS, CTX_HASH_ROWS);
-      ctx_render_ctx (fb->ctx_copy, hasher);
-
-      for (int row = 0; row < CTX_HASH_ROWS; row++)
-        for (int col = 0; col < CTX_HASH_COLS; col++)
-        {
-          uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
-          if (new_hash && memcmp (new_hash, &fb->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
-          {
-            memcpy (&fb->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
-            fb->tile_affinity[row * CTX_HASH_COLS + col] = 1;
-            dirty_tiles++;
-          }
-          else
-          {
-            fb->tile_affinity[row * CTX_HASH_COLS + col] = -1;
-          }
-        }
-      free (((CtxHasher*)(hasher->renderer))->hashes);
-      ctx_free (hasher);
-    }
-    else
-    {
-    for (int row = 0; row < CTX_HASH_ROWS; row++)
-      for (int col = 0; col < CTX_HASH_COLS; col++)
-      {
-        fb->tile_affinity[row * CTX_HASH_COLS + col] = 1;
-        dirty_tiles++;
-      }
-    }
-
-    int dirty_no = 0;
-    if (dirty_tiles)
-    for (int row = 0; row < CTX_HASH_ROWS; row++)
-      for (int col = 0; col < CTX_HASH_COLS; col++)
-      {
-        if (fb->tile_affinity[row * CTX_HASH_COLS + col] != -1)
-        {
-          fb->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_max_threads) / dirty_tiles;
-          dirty_no++;
-          if (col > fb->max_col) fb->max_col = col;
-          if (col < fb->min_col) fb->min_col = col;
-          if (row > fb->max_row) fb->max_row = row;
-          if (row < fb->min_row) fb->min_row = row;
-        }
-      }
-
-#if CTX_DAMAGE_CONTROL
-    for (int i = 0; i < fb->width * fb->height; i++)
-    {
-      int new_ = (fb->scratch_fb[i*4+0]+ fb->scratch_fb[i*4+1]+ fb->scratch_fb[i*4+2])/3;
-      if (new_>1) new_--;
-      fb->scratch_fb[i*4]= (fb->scratch_fb[i*4] + new_)/2;
-      fb->scratch_fb[i*4+1]= (fb->scratch_fb[i*4+1] + new_)/2;
-      fb->scratch_fb[i*4+2]= (fb->scratch_fb[i*4+1] + new_)/2;
-    }
-#endif
-
-
-    fb->render_frame = ++fb->frame;
-
-    mtx_lock (&fb->mtx);
-    cnd_broadcast (&fb->cond);
-    mtx_unlock (&fb->mtx);
-  }
+  ctx_tiled_flush ((CtxTiled*)fb);
 }
 
 void ctx_fb_free (CtxFb *fb)
 {
-  mtx_lock (&fb->mtx);
-  cnd_broadcast (&fb->cond);
-  mtx_unlock (&fb->mtx);
-
-  memset (fb->fb, 0, fb->width * fb->height *  4);
-  for (int i = 0 ; i < _ctx_max_threads; i++)
-    ctx_free (fb->host[i]);
-
   if (fb->is_drm)
   {
     ctx_fbdrm_close (fb);
@@ -1435,80 +1527,12 @@ void ctx_fb_free (CtxFb *fb)
 
   ioctl (0, KDSETMODE, KD_TEXT);
   if (system("stty sane")){};
-  free (fb->scratch_fb);
+  ctx_tiled_free ((CtxTiled*)fb);
   //free (fb);
 }
 
-static unsigned char *fb_icc = NULL;
-static long fb_icc_length = 0;
-
-static
-void fb_render_fun (void **data)
-{
-  int      no = (size_t)data[0];
-  CtxFb *fb = data[1];
-
-  while (!fb->quit)
-  {
-    mtx_lock (&fb->mtx);
-    cnd_wait (&fb->cond, &fb->mtx);
-    mtx_unlock (&fb->mtx);
-
-    if (fb->render_frame != fb->rendered_frame[no])
-    {
-      int hno = 0;
-
-      for (int row = 0; row < CTX_HASH_ROWS; row++)
-        for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
-        {
-          if (fb->tile_affinity[hno]==no)
-          {
-            int x0 = ((fb->width)/CTX_HASH_COLS) * col;
-            int y0 = ((fb->height)/CTX_HASH_ROWS) * row;
-            int width = fb->width / CTX_HASH_COLS;
-            int height = fb->height / CTX_HASH_ROWS;
-
-            Ctx *host = fb->host[no];
-            CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
-      /* merge horizontally adjecant tiles of same affinity into one job
-       * this reduces redundant overhead and gets better cache behavior
-       *
-       * giving different threads more explicitly different rows
-       * could be a good idea.
-       */
-            while (col + 1 < CTX_HASH_COLS &&
-                   fb->tile_affinity[hno+1] == no)
-            {
-              width += fb->width / CTX_HASH_COLS;
-              col++;
-              hno++;
-            }
-            ctx_rasterizer_init (rasterizer,
-                                 host, fb->ctx, &host->state,
-                                 &fb->scratch_fb[fb->width * 4 * y0 + x0 * 4],
-                                 0, 0, width, height,
-                                 fb->width*4, CTX_FORMAT_RGBA8,
-                                 fb->antialias);
-                                              /* this is the format used */
-            if (fb->fb_bits == 32)
-              rasterizer->swap_red_green = 1; 
-            if (fb_icc_length)
-              ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, fb_icc, fb_icc_length);
-            ctx_translate (host, -x0, -y0);
-            ctx_render_ctx (fb->ctx_copy, host);
-          }
-        }
-      fb->rendered_frame[no] = fb->render_frame;
-
-      if (fb_render_threads_done (fb) == _ctx_max_threads)
-      {
-   //   ctx_render_stream (fb->ctx_copy, stdout, 1);
-   //   ctx_reset (fb->ctx_copy);
-      }
-    }
-  }
-  fb->thread_quit ++;
-}
+//static unsigned char *fb_icc = NULL;
+//static long fb_icc_length = 0;
 
 int ctx_renderer_is_fb (Ctx *ctx)
 {
@@ -1521,6 +1545,7 @@ int ctx_renderer_is_fb (Ctx *ctx)
 static CtxFb *ctx_fb = NULL;
 static void vt_switch_cb (int sig)
 {
+  CtxTiled *tiled = (void*)ctx_fb;
   if (sig == SIGUSR1)
   {
     if (ctx_fb->is_drm)
@@ -1534,7 +1559,7 @@ static void vt_switch_cb (int sig)
     ioctl (0, VT_RELDISP, VT_ACKACQ);
     ctx_fb->vt_active = 1;
     // queue draw
-    ctx_fb->render_frame = ++ctx_fb->frame;
+    tiled->render_frame = ++tiled->frame;
     ioctl (0, KDSETMODE, KD_GRAPHICS);
     if (ctx_fb->is_drm)
     {
@@ -1543,15 +1568,14 @@ static void vt_switch_cb (int sig)
     }
     else
     {
-      ctx_fb->ctx->dirty=1;
+      tiled->ctx->dirty=1;
 
       for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        ctx_fb->hashes[(row * CTX_HASH_COLS + col) *  20] += 1;
+        tiled->hashes[(row * CTX_HASH_COLS + col) *  20] += 1;
       }
     }
-
   }
 }
 
@@ -1560,15 +1584,21 @@ Ctx *ctx_new_fb (int width, int height, int drm)
 #if CTX_RASTERIZER
   CtxFb *fb = calloc (sizeof (CtxFb), 1);
 
+  CtxTiled *tiled = (void*)fb;
   ctx_fb = fb;
   if (drm)
-    fb->fb = ctx_fbdrm_new (fb, &fb->width, &fb->height);
+    fb->fb = ctx_fbdrm_new (fb, &tiled->width, &tiled->height);
   if (fb->fb)
   {
     fb->is_drm         = 1;
-    width              = fb->width;
-    height             = fb->height;
-    fb->fb_mapped_size = fb->width * fb->height * 4;
+    width              = tiled->width;
+    height             = tiled->height;
+    /*
+       we're ignoring the input width and height ,
+       maybe turn them into properties - for
+       more generic handling.
+     */
+    fb->fb_mapped_size = tiled->width * tiled->height * 4;
     fb->fb_bits        = 32;
     fb->fb_bpp         = 4;
   }
@@ -1610,8 +1640,8 @@ Ctx *ctx_new_fb (int width, int height, int drm)
      }
 
 //fprintf (stderr, "%s\n", fb->fb_path);
-  width = fb->width = fb->vinfo.xres;
-  height = fb->height = fb->vinfo.yres;
+  width = tiled->width = fb->vinfo.xres;
+  height = tiled->height = fb->vinfo.yres;
 
   fb->fb_bits = fb->vinfo.bits_per_pixel;
 //fprintf (stderr, "fb bits: %i\n", fb->fb_bits);
@@ -1658,59 +1688,51 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   }
   if (!fb->fb)
     return NULL;
-  fb->scratch_fb = calloc (fb->fb_mapped_size, 1);
+  tiled->pixels = calloc (fb->fb_mapped_size, 1);
   ctx_fb_events = 1;
 
 #if CTX_BABL
   babl_init ();
 #endif
 
-  _ctx_file_get_contents ("/tmp/ctx.icc", &fb_icc, &fb_icc_length);
+  _ctx_file_get_contents ("/tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
 
-  fb->ctx      = ctx_new ();
-  fb->ctx_copy = ctx_new ();
-  fb->width    = width;
-  fb->height   = height;
+  tiled->ctx      = ctx_new ();
+  tiled->ctx_copy = ctx_new ();
+  tiled->width    = width;
+  tiled->height   = height;
 
+  ctx_set_renderer (tiled->ctx, fb);
+  ctx_set_renderer (tiled->ctx_copy, fb);
 
-  ctx_set_renderer (fb->ctx, fb);
-  ctx_set_renderer (fb->ctx_copy, fb);
+  ctx_set_size (tiled->ctx, width, height);
+  ctx_set_size (tiled->ctx_copy, width, height);
 
-#if 0
-  if (fb_icc_length)
-  {
-    ctx_colorspace (fb->ctx, CTX_COLOR_SPACE_DEVICE_RGB, fb_icc, fb_icc_length);
-    ctx_colorspace (fb->ctx_copy, CTX_COLOR_SPACE_DEVICE_RGB, fb_icc, fb_icc_length);
-  }
-#endif
-
-  ctx_set_size (fb->ctx, width, height);
-  ctx_set_size (fb->ctx_copy, width, height);
-  fb->flush = (void*)ctx_fb_flush;
-  fb->reset = (void*)ctx_fb_reset;
-  fb->free  = (void*)ctx_fb_free;
-  fb->set_clipboard = (void*)ctx_fb_set_clipboard;
-  fb->get_clipboard = (void*)ctx_fb_get_clipboard;
+  tiled->flush = (void*)ctx_fb_flush;
+  tiled->reset = (void*)ctx_fb_reset;
+  tiled->free  = (void*)ctx_fb_free;
+  tiled->set_clipboard = (void*)ctx_fb_set_clipboard;
+  tiled->get_clipboard = (void*)ctx_fb_get_clipboard;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {
-    fb->host[i] = ctx_new_for_framebuffer (fb->scratch_fb,
-                   fb->width/CTX_HASH_COLS, fb->height/CTX_HASH_ROWS,
-                   fb->width * 4, CTX_FORMAT_RGBA8); // this format
+    tiled->host[i] = ctx_new_for_framebuffer (tiled->pixels,
+                   tiled->width/CTX_HASH_COLS, tiled->height/CTX_HASH_ROWS,
+                   tiled->width * 4, CTX_FORMAT_RGBA8); // this format
                                   // is overriden in  thread
-    ctx_set_texture_source (fb->host[i], fb->ctx);
+    ((CtxRasterizer*)(tiled->host[i]->renderer))->swap_red_green = 1;
+    ctx_set_texture_source (tiled->host[i], tiled->ctx);
   }
 
-
-  mtx_init (&fb->mtx, mtx_plain);
-  cnd_init (&fb->cond);
+  mtx_init (&tiled->mtx, mtx_plain);
+  cnd_init (&tiled->cond);
 
 #define start_thread(no)\
   if(_ctx_max_threads>no){ \
     static void *args[2]={(void*)no, };\
     thrd_t tid;\
     args[1]=fb;\
-    thrd_create (&tid, (void*)fb_render_fun, args);\
+    thrd_create (&tid, (void*)ctx_tiled_render_fun, args);\
   }
   start_thread(0);
   start_thread(1);
@@ -1730,7 +1752,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   start_thread(15);
 #undef start_thread
 
-  ctx_flush (fb->ctx);
+  ctx_flush (tiled->ctx);
 
   EvSource *kb = evsource_kb_new ();
   if (kb)
@@ -1768,8 +1790,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
     return NULL;
   }
 
-
-  return fb->ctx;
+  return tiled->ctx;
 #else
   return NULL;
 #endif

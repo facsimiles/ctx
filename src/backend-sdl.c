@@ -2,6 +2,8 @@
 
 #if CTX_SDL
 
+/**/
+
 typedef struct _CtxSDL CtxSDL;
 struct _CtxSDL
 {
@@ -64,18 +66,6 @@ void ctx_sdl_set_title (void *self, const char *new_title)
 {
    CtxSDL *sdl = self;
    SDL_SetWindowTitle (sdl->window, new_title);
-}
-
-static inline int
-ctx_tiled_threads_done (CtxTiled *tiled)
-{
-  int sum = 0;
-  for (int i = 0; i < _ctx_max_threads; i++)
-  {
-     if (tiled->rendered_frame[i] == tiled->render_frame)
-       sum ++;
-  }
-  return sum;
 }
 
 static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
@@ -196,7 +186,6 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
     SDL_RenderPresent (sdl->renderer);
   }
-
   tiled->shown_frame = tiled->render_frame;
 }
 
@@ -411,113 +400,11 @@ inline static void ctx_sdl_reset (CtxSDL *sdl)
   ctx_sdl_show_frame (sdl, 1);
 }
 
-void ctx_tiled_free (CtxTiled *tiled)
-{
-  CtxTiled *tiled = (void*)sdl;
-  tiled->quit = 1;
-  mtx_lock (&tiled->mtx);
-  cnd_broadcast (&tiled->cond);
-  mtx_unlock (&tiled->mtx);
-
-  while (tiled->thread_quit < _ctx_max_threads)
-    usleep (1000);
-
-  if (tiled->pixels)
-  {
-    free (tiled->pixels);
-  tiled->pixels = NULL;
-  for (int i = 0 ; i < _ctx_max_threads; i++)
-  {
-    ctx_free (tiled->host[i]);
-    tiled->host[i]=NULL;
-  }
-
-  ctx_free (tiled->ctx_copy);
-  }
-  // leak?
-}
-
-inline static void ctx_tiled_flush (CtxTiled *tiled)
-{
-  if (tiled->shown_frame == tiled->render_frame)
-  {
-    int dirty_tiles = 0;
-    ctx_set_drawlist (tiled->ctx_copy, &tiled->ctx->drawlist.entries[0],
-                                           tiled->ctx->drawlist.count * 9);
-    if (_ctx_enable_hash_cache)
-    {
-      Ctx *hasher = ctx_hasher_new (tiled->width, tiled->height,
-                        CTX_HASH_COLS, CTX_HASH_ROWS);
-      ctx_render_ctx (tiled->ctx_copy, hasher);
-
-      for (int row = 0; row < CTX_HASH_ROWS; row++)
-        for (int col = 0; col < CTX_HASH_COLS; col++)
-        {
-          uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
-          if (new_hash && memcmp (new_hash, &tiled->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
-          {
-            memcpy (&tiled->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
-            tiled->tile_affinity[row * CTX_HASH_COLS + col] = 1;
-            dirty_tiles++;
-          }
-          else
-          {
-            tiled->tile_affinity[row * CTX_HASH_COLS + col] = -1;
-          }
-        }
-      free (((CtxHasher*)(hasher->renderer))->hashes);
-      ctx_free (hasher);
-    }
-    else
-    {
-    for (int row = 0; row < CTX_HASH_ROWS; row++)
-      for (int col = 0; col < CTX_HASH_COLS; col++)
-        {
-          tiled->tile_affinity[row * CTX_HASH_COLS + col] = 1;
-          dirty_tiles++;
-        }
-    }
-    int dirty_no = 0;
-    if (dirty_tiles)
-    for (int row = 0; row < CTX_HASH_ROWS; row++)
-      for (int col = 0; col < CTX_HASH_COLS; col++)
-      {
-        if (tiled->tile_affinity[row * CTX_HASH_COLS + col] != -1)
-        {
-          tiled->tile_affinity[row * CTX_HASH_COLS + col] = dirty_no * (_ctx_max_threads) / dirty_tiles;
-          dirty_no++;
-          if (col > tiled->max_col) tiled->max_col = col;
-          if (col < tiled->min_col) tiled->min_col = col;
-          if (row > tiled->max_row) tiled->max_row = row;
-          if (row < tiled->min_row) tiled->min_row = row;
-        }
-      }
-
-#if CTX_DAMAGE_CONTROL
-    for (int i = 0; i < tiled->width * tiled->height; i++)
-    {
-      int new_ = (tiled->pixels[i*4+0]+ tiled->pixels[i*4+1]+ tiled->pixels[i*4+2])/3;
-      //if (new_>1) new_--;
-      tiled->pixels[i*4]  = (tiled->pixels[i*4] + 255)/2;
-      tiled->pixels[i*4+1]= (tiled->pixels[i*4+1] + new_)/2;
-      tiled->pixels[i*4+2]= (tiled->pixels[i*4+1] + new_)/2;
-    }
-#endif
-
-    tiled->render_frame = ++tiled->frame;
-
-    mtx_lock (&tiled->mtx);
-    cnd_broadcast (&tiled->cond);
-    mtx_unlock (&tiled->mtx);
-  }
-}
-
 inline static void ctx_sdl_flush (CtxSDL *sdl)
 {
   ctx_tiled_flush ((void*)sdl);
   //CtxTiled *tiled = (void*)sdl;
 }
-
 
 void ctx_sdl_free (CtxSDL *sdl)
 {
@@ -532,65 +419,6 @@ void ctx_sdl_free (CtxSDL *sdl)
   ctx_tiled_free ((CtxTiled*)sdl);
 }
 
-static unsigned char *sdl_icc = NULL;
-static long sdl_icc_length = 0;
-
-static
-void ctx_tiled_render_fun (void **data)
-{
-  int      no = (size_t)data[0];
-  CtxTiled *tiled = data[1];
-
-  while (!tiled->quit)
-  {
-    Ctx *host = tiled->host[no];
-
-    mtx_lock (&tiled->mtx);
-    cnd_wait(&tiled->cond, &tiled->mtx);
-    mtx_unlock (&tiled->mtx);
-
-    if (tiled->render_frame != tiled->rendered_frame[no])
-    {
-      int hno = 0;
-      for (int row = 0; row < CTX_HASH_ROWS; row++)
-        for (int col = 0; col < CTX_HASH_COLS; col++, hno++)
-        {
-          if (tiled->tile_affinity[hno]==no)
-          {
-            int x0 = ((tiled->width)/CTX_HASH_COLS) * col;
-            int y0 = ((tiled->height)/CTX_HASH_ROWS) * row;
-            int width = tiled->width / CTX_HASH_COLS;
-            int height = tiled->height / CTX_HASH_ROWS;
-
-            CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
-#if 1 // merge horizontally adjecant tiles of same affinity into one job
-            while (col + 1 < CTX_HASH_COLS &&
-                   tiled->tile_affinity[hno+1] == no)
-            {
-              width += tiled->width / CTX_HASH_COLS;
-              col++;
-              hno++;
-            }
-#endif
-            ctx_rasterizer_init (rasterizer,
-                                 host, tiled->ctx, &host->state,
-                                 &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
-                                 0, 0, width, height,
-                                 tiled->width*4, CTX_FORMAT_RGBA8,
-                                 tiled->antialias);
-            if (sdl_icc_length)
-              ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
-
-            ctx_translate (host, -x0, -y0);
-            ctx_render_ctx (tiled->ctx_copy, host);
-          }
-        }
-      tiled->rendered_frame[no] = tiled->render_frame;
-    }
-  }
-
-  tiled->thread_quit++; // need atomic?
-}
 
 int ctx_renderer_is_sdl (Ctx *ctx)
 {
@@ -636,12 +464,12 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_StartTextInput ();
   SDL_EnableScreenSaver ();
 
-  tiled->ctx = ctx_new ();
+  tiled->ctx      = ctx_new ();
   tiled->ctx_copy = ctx_new ();
-  tiled->width  = width;
-  tiled->height = height;
-  tiled->cols = 80;
-  tiled->rows = 20;
+  tiled->width    = width;
+  tiled->height   = height;
+  tiled->cols     = 80;
+  tiled->rows     = 20;
   ctx_set_renderer (tiled->ctx, sdl);
   ctx_set_renderer (tiled->ctx_copy, sdl);
 

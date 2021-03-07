@@ -28,9 +28,10 @@
       <div id='page'>
       <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-      <p>ctx is a VT220+ terminal with extensions providing HTML5
-      canvas 2D context rendering in escape sequences using the
-      <a href='protocol/'>ctx protocol</a>.
+      <p>ctx is a 2D vector rendering framework, including
+      a VT220+ terminal with extensions for 2D vector graphics/interfaces
+      using <a href='protocol/'>ctx protocol</a> and terminal escape
+      sequences from other standards.
       <p>
 
       <a href='pid1.png'><img style='max-width:100%' src='pid1.png'/></a>
@@ -236,7 +237,7 @@ to be combined with all compositing modes.
          <dt>deferred rendering</dt><dd>
          These drawlist representations are used for scanline/chunk-based
          rendering on microcontrollers where framebuffer is to large to fit in
-         RAM and <a href='caching-and-threading/'>multi-threaded rendering on multi-core systems</a>
+         RAM and <a href='caching-and-threading/'>tiles and threaded rendering on multi-core systems</a>
          with SDL2 and /dev/fb0 backends and network transparent rendering
          inside ctx terminal. Another way to drive larger than RAM
          is to re-render the frame for each segment instead of buffering it,
