@@ -1637,7 +1637,7 @@ typedef struct _CtxSHA1 CtxSHA1;
 #ifndef CTX_CODEC_CHAR
 //#define CTX_CODEC_CHAR '\035'
 //#define CTX_CODEC_CHAR 'a'
-#define CTX_CODEC_CHAR '\077'
+#define CTX_CODEC_CHAR '\020' // datalink escape
 //#define CTX_CODEC_CHAR '^'
 #endif
 
