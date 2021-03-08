@@ -8,7 +8,7 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_DATA:
         return entry->data.u32[1];
       case CTX_LINEAR_GRADIENT:
-      case CTX_DEFINE_TEXTURE:
+      //case CTX_DEFINE_TEXTURE:
         return 1;
       case CTX_RADIAL_GRADIENT:
       case CTX_ARC:
@@ -26,6 +26,24 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
         return 1;
+
+      case CTX_TEXT:
+      case CTX_LINE_DASH:
+      case CTX_COLOR_SPACE:
+      case CTX_TEXT_STROKE:
+      case CTX_FONT:
+      case CTX_TEXTURE:
+        {
+          int eid_len = entry[1].data.u32[1];
+          return eid_len + 1;
+        }
+      case CTX_DEFINE_TEXTURE:
+        {
+          int eid_len = entry[2].data.u32[1];
+          int pix_len = entry[2 + eid_len + 1].data.u32[1];
+          return eid_len + pix_len + 2 + 1;
+        }
+
       default:
         return 0;
     }

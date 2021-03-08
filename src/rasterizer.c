@@ -3185,44 +3185,6 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       ctx_interpret_transforms (&ctx->state, entry, ctx);
       ctx_interpret_pos (&ctx->state, entry, ctx);
       ctx_drawlist_add_entry (&ctx->drawlist, entry);
-#if 1
-      if (entry->code == CTX_TEXT ||
-          entry->code == CTX_LINE_DASH ||
-          entry->code == CTX_COLOR_SPACE ||
-          entry->code == CTX_TEXT_STROKE ||
-          entry->code == CTX_TEXTURE ||
-          entry->code == CTX_FONT)
-        {
-          /* the command and its data is submitted as one unit,
-           */
-          ctx_drawlist_add_entry (&ctx->drawlist, entry+1);
-          //ctx_drawlist_add_entry (&ctx->drawlist, entry+1 + ctx_conts_for_entry (entry+1) + 1);
-        }
-      else
-      if (entry->code == CTX_DEFINE_TEXTURE)
-      {
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+2);
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+2 + 1 + ctx_conts_for_entry (entry+2));
-        //ctx_drawlist_add_entry (&ctx->drawlist, entry+2 + ctx_conts_for_entry (entry+2) + 2);
-#if 0
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+4);
-
-
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+5);
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+6);
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+7);
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+8);
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+9);
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+10);
-        ctx_drawlist_add_entry (&ctx->drawlist, entry+11);
-#endif
-        //int eid_len = ctx_conts_for_entry (entry+2) + 1;
-        //ctx_drawlist_add_entry (&ctx->drawlist, entry+2+eid_len);
-
-        // 0    1  2    3 4 5
-        //fprintf (stderr, " [%s]", &(entry[3].data.u8)[0]);
-      }
-#endif
     }
 }
 
