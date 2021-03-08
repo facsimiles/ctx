@@ -215,6 +215,7 @@ ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format, uint8_t *dat
 
 static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
 {
+  ctx = ctx->texture_cache;
   CtxList *to_remove = NULL;
   int ret = 0;
   for (CtxList *l = ctx->eid_db; l; l = l->next)
@@ -381,8 +382,8 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     eid_info->eid = strdup (eid);
     eid_info->width = width;
     eid_info->height = height;
-    eid_info->frame = ctx->frame;
-    ctx_list_prepend (&ctx->eid_db, eid_info);
+    eid_info->frame = ctx->texture_cache->frame;
+    ctx_list_prepend (&ctx->texture_cache->eid_db, eid_info);
   }
 
   if (ret_eid)
@@ -1131,7 +1132,7 @@ ctx_flush (Ctx *ctx)
 #endif
   if (ctx->renderer && ctx->renderer->flush)
     ctx->renderer->flush (ctx->renderer);
-  ctx->frame++;
+  ctx->texture_cache->frame++;
   ctx->drawlist.count = 0;
   ctx_state_init (&ctx->state);
 }
@@ -1656,6 +1657,7 @@ _ctx_init (Ctx *ctx)
 #if CTX_BITPACK
   ctx->drawlist.flags |= CTX_TRANSFORMATION_BITPACK;
 #endif
+  ctx->texture_cache = ctx;
 }
 
 static void ctx_setup ();
@@ -1874,5 +1876,11 @@ void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source)
 {
   ((CtxRasterizer*)ctx->renderer)->texture_source = texture_source;
 }
+
+void ctx_set_texture_cache (Ctx *ctx, Ctx *texture_cache)
+{
+  ctx->texture_cache = texture_cache;
+}
+
 
 #endif

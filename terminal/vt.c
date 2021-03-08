@@ -2336,6 +2336,7 @@ qagain:
                   {
                     vt->current_line->ctx = ctx_new ();
                     vt->current_line->ctx_copy = ctx_new ();
+                    ctx_set_texture_cache (vt->current_line->ctx_copy, vt->current_line->ctx);
                     _ctx_set_transformation (vt->current_line->ctx, 0);
                     _ctx_set_transformation (vt->current_line->ctx_copy, 0);
                   }

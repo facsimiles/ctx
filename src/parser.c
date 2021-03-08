@@ -11,8 +11,8 @@
 struct
   _CtxParser
 {
-  int        t_args; // total number of arguments seen for current command
   Ctx       *ctx;
+  int        t_args; // total number of arguments seen for current command
   int        state;
   uint8_t    holding[CTX_PARSER_MAXLEN]; /*  */
   int        line; /*  for error reporting */

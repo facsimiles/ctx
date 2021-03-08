@@ -315,10 +315,12 @@ void ctx_draw_image_clipped   (Ctx *ctx, const char *path, float x, float y, flo
 
 
 
-/* global used to use the textures from a different context, used
- * by the render threads of fb and sdl backends.
+/* used by the render threads of fb and sdl backends.
  */
 void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source);
+/* used when sharing cache state of eids between clients
+ */
+void ctx_set_texture_cache (Ctx *ctx, Ctx *texture_cache);
 
 typedef struct _CtxDrawlist CtxDrawlist;
 typedef void (*CtxFullCb) (CtxDrawlist *drawlist, void *data);

@@ -472,6 +472,7 @@ Ctx *ctx_new_sdl (int width, int height)
   tiled->rows     = 20;
   ctx_set_renderer (tiled->ctx, sdl);
   ctx_set_renderer (tiled->ctx_copy, sdl);
+  ctx_set_texture_cache (tiled->ctx_copy, tiled->ctx);
 
   tiled->pixels = (uint8_t*)malloc (width * height * 4);
 
