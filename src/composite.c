@@ -507,7 +507,9 @@ ctx_fragment_image_gray1_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
       else
         {
           for (int c = 0; c < 4; c++)
-            { rgba[c] = g->image.rgba[c]; }
+            { rgba[c] = 255;
+            }//g->image.rgba[c];
+            //}
         }
     }
 }

@@ -1702,6 +1702,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
 
   ctx_set_renderer (tiled->ctx, fb);
   ctx_set_renderer (tiled->ctx_copy, fb);
+  ctx_set_texture_cache (tiled->ctx_copy, tiled->ctx);
 
   ctx_set_size (tiled->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
