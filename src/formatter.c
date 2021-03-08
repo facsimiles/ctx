@@ -477,7 +477,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
 #if 1
 
         int stride = ctx_pixel_format_get_stride (c->define_texture.format, c->define_texture.width);
-        fprintf (stderr, "encoding %i bytes\n", c->define_texture.height *stride);
+        //fprintf (stderr, "encoding %i bytes\n", c->define_texture.height *stride);
         ctx_print_a85 (formatter, pixel_data, c->define_texture.height * stride);
 #else
         ctx_formatter_addstrf (formatter, "\"");

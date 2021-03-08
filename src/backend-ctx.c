@@ -329,7 +329,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
     free (rest);
     cur_frame_len += strlen (CTX_START_STRING) + strlen (CTX_END_STRING);
 
-    if (prev_frame_contents) 
+    if (prev_frame_contents)  // XXX : 
     {
       char *encoded;
       int encoded_len = 0;
