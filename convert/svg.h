@@ -7492,6 +7492,7 @@ _ctx_str_get_float (const char *string, int no)
   float ret = 0.0f;
   int number_no = 0;
   const char *s = string;
+  if (!string) return ret;
 
   while (*s == ' ')s++;
 
@@ -7799,12 +7800,15 @@ void mrg_xml_render (Mrg *mrg,
         else if (data_hash == CTX_svg)
         {
           const char *vbox = PROPS(viewbox);
-          float x = _ctx_str_get_float (vbox, 0);
-          float y = _ctx_str_get_float (vbox, 1);
-          float width = _ctx_str_get_float (vbox, 2);
-          float height = _ctx_str_get_float (vbox, 3);
-          fprintf (stderr, "viewBox:%s   %f %f %f %f\n", vbox, x, y, width, height);
-          ctx_view_box (mrg->ctx, x, y, width, height);
+          if (vbox)
+          {
+            float x = _ctx_str_get_float (vbox, 0);
+            float y = _ctx_str_get_float (vbox, 1);
+            float width = _ctx_str_get_float (vbox, 2);
+            float height = _ctx_str_get_float (vbox, 3);
+            fprintf (stderr, "viewBox:%s   %f %f %f %f\n", vbox, x, y, width, height);
+            ctx_view_box (mrg->ctx, x, y, width, height);
+          }
         }
 
         else if (data_hash == CTX_polygon)
