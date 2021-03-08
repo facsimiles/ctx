@@ -472,13 +472,12 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         ctx_formatter_addstrf (formatter, ", ");
         ctx_print_int (formatter, c->define_texture.height);
         ctx_formatter_addstrf (formatter, ",%i, ", c->define_texture.format);
-        //ctx_print_int (formatter, c->define_texture.height);
-        //ctx_print_escaped_string (formatter, c->define_texture.eid);
 
         uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
 #if 1
 
         int stride = ctx_pixel_format_get_stride (c->define_texture.format, c->define_texture.width);
+        fprintf (stderr, "encoding %i bytes\n", c->define_texture.height *stride);
         ctx_print_a85 (formatter, pixel_data, c->define_texture.height * stride);
 #else
         ctx_formatter_addstrf (formatter, "\"");

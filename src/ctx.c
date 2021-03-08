@@ -1760,7 +1760,21 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
-    { ctx_process (d_ctx, &command->entry); }
+    {
+#if 0
+     //  if (command->entry.code == 'i' ||
+     //      command->entry.code == 'I')
+       {
+
+       if (command->entry.code < 32 ||
+           command->entry.code > '~')
+       fprintf (stderr, "[%i]", command->entry.code);
+       else
+       fprintf (stderr, "%c", command->entry.code);
+       }
+#endif
+       ctx_process (d_ctx, &command->entry);
+    }
 }
 
 void ctx_quit (Ctx *ctx)

@@ -688,10 +688,24 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           if (parser->texture_done++ == 1)
           {
              const char *eid = (char*)parser->texture_id;
-             int width = arg(0);
+             int width  = arg(0);
              int height = arg(1);
              int format = arg(2);
              int stride = ctx_pixel_format_get_stride (format, width);
+
+
+             if (parser->pos != stride * height)
+             {
+             fprintf (stderr, "unexpected datasize for define texture %s %ix%i\n size:%i != expected:%i - start of data: %i %i %i %i\n", eid, width, height,
+                               parser->pos,
+                               stride * height,
+                               parser->holding[0],
+                               parser->holding[1],
+                               parser->holding[2],
+                               parser->holding[3]
+                               );
+             }
+             else
              ctx_define_texture (ctx, eid, width, height, stride, format, parser->holding, NULL);
           }
         }
@@ -1565,10 +1579,11 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
       case CTX_PARSER_STRING_A85:
         switch (byte)
           {
-            case '~': parser->state = CTX_PARSER_NEUTRAL;
-                      fprintf (stderr, "got %i\n", parser->pos);
+            case '~':
+              parser->state = CTX_PARSER_NEUTRAL;
+                 //   fprintf (stderr, "got %i\n", parser->pos);
               parser->pos = ctx_a85dec ((char*)parser->holding, (char*)parser->holding, parser->pos);
-                      fprintf (stderr, "dec got %i\n", parser->pos);
+                 //   fprintf (stderr, "dec got %i\n", parser->pos);
               ctx_parser_string_done (parser);
               break;
             default:

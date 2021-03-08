@@ -2121,8 +2121,10 @@ static void vt_ctx_exit (void *data)
   void *tmp = vt->current_line->ctx;
   vt->current_line->ctx = vt->current_line->ctx_copy;
   vt->current_line->ctx_copy = tmp;
-  if (vt->ctxp) // XXX: ugly hack to enable double buffering
+#if 1
+  if (vt->ctxp) // XXX: ugly hack to aid double buffering
     ((void**)vt->ctxp)[0]= vt->current_line->ctx;
+#endif
 
   //ctx_parser_free (vt->ctxp);
   //vt->ctxp = NULL;

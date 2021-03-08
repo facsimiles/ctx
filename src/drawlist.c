@@ -297,9 +297,10 @@ again:
         case CTX_GRADIENT_STOP:
         case CTX_DATA: // XXX : would be better if we hide the DATAs
         case CTX_CONT: // shouldnt happen
+        default:
           iterator->bitpack_length = 0;
           return (CtxCommand *) ret;
-#if 1
+#if 0
         default: // XXX remove - and get better warnings
           iterator->bitpack_command[0] = ret[0];
           iterator->bitpack_command[1] = ret[1];

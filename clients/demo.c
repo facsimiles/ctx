@@ -1718,8 +1718,8 @@ static void card_files (ITK *itk, int frame_no)
 }
 
 static int textures_inited = 0;
-#define TEXTURE_W 128
-#define TEXTURE_H 128
+#define TEXTURE_W 32
+#define TEXTURE_H 32
 static uint8_t texture_rgba[TEXTURE_W *  TEXTURE_H * 4];
 static uint8_t texture_rgb[TEXTURE_W *  TEXTURE_H * 3];
 static uint8_t texture_gray[TEXTURE_W *  TEXTURE_H * 1];
@@ -1769,7 +1769,6 @@ static void card_textures (ITK *itk, int frame_no)
                       &texture_rgba[0], eid);
     ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
     ctx_fill (ctx);
-#if 0
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
     ctx_define_texture (ctx, NULL,
                       TEXTURE_W, TEXTURE_H, 0,
@@ -1777,6 +1776,7 @@ static void card_textures (ITK *itk, int frame_no)
                       &texture_rgb[0], eid);
     ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
     ctx_fill (ctx);
+#if 0
 
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
     ctx_define_texture (ctx, NULL,
