@@ -174,24 +174,31 @@ ctx_close_path (Ctx *ctx)
 int _ctx_is_rasterizer (Ctx *ctx);
 
 void
-ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, CtxPixelFormat format, int stride,
-                    uint8_t *data)
+ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, CtxPixelFormat format, int dst_stride,
+                    uint8_t *dst_data)
 {
-   // NYI
-   // XXX  -- depending othe backend, need to do conversions and more, but if
-   // we're a direct rasterizer - of the corresponding format, the shortcut
-   // memcpy is nice.
 #if CTX_RASTERIZER
    if (_ctx_is_rasterizer (ctx))
    {
      CtxRasterizer *rasterizer = (void*)ctx->renderer;
      if (rasterizer->format->pixel_format == format)
      {
-       fprintf (stderr, "bingo!\n");
-       //
-       //
+       int bytes_per_pix = rasterizer->format->bpp/8;
+       //fprintf (stderr, "bingo!\n");
+       int y = 0;
+       for (int v = sy; u < sy + sh; sy++, y++)
+       {
+         int x = 0;
+         for (int u = sx; u < sx + sw; sx++, x++)
+         {
+            memcpy (&dst_data[y * dst_stride + x * bytes_per_pix], &rasterizer->buf[sy * rasterizer->blit_stride + sx * bytes_per_pix], bytes_per_pix);
+         }
+       }
+       return;
      }
+     fprintf (stderr, "get_pix on rasterizer but wrong format\n");
    }
+   fprintf (stderr, "get_pix on non-rasterizer\n");
 #endif
 }
 
