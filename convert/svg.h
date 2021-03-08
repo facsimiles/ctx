@@ -299,6 +299,7 @@
 #define CTX_solid 	CTX_STRH('s','o','l','i','d',0,0,0,0,0,0,0,0,0)
 #define CTX_span  	CTX_STRH('s','p','a','n',0,0,0,0,0,0,0,0,0,0)
 #define CTX_src 	CTX_STRH('s','r','c',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_svg 	CTX_STRH('s','v','g',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_s_resize 	CTX_STRH('s','-','r','e','s','i','z','e',0,0,0,0,0,0)
 #define CTX_static 	CTX_STRH('s','t','a','t','i','c',0,0,0,0,0,0,0,0)
 #define CTX_stroke 	CTX_STRH('s','t','r','o','k','e',0,0,0,0,0,0,0,0)
@@ -353,6 +354,7 @@
 #define CTX_unicode_range CTX_STRH('u','n','i','c','o','d','e','-','r','a','n','g','e',0)
 #define CTX_vertical_align  CTX_STRH('v','e','r','t','i','c','a','l','-','a','l','i','g','n')
 #define CTX_vertical_text   CTX_STRH('v','e','r','t','i','c','a','l','-','t','e','x','t',0)
+#define CTX_viewbox     	CTX_STRH('v','i','e','w','b','o','x',0,0,0,0,0,0,0)
 #define CTX_visibility 	CTX_STRH('v','i','s','i','b','i','l','i','t','y',0,0,0,0)
 #define CTX_visible 	CTX_STRH('v','i','s','i','b','l','e',0,0,0,0,0,0,0)
 #define CTX_white_space CTX_STRH('w','h','i','t','e','-','s','p','a','c','e',0,0,0)
@@ -7484,6 +7486,27 @@ char *_mrg_resolve_uri (const char *base_uri, const char *uri)
   return ret;
 }
 
+static float
+_ctx_str_get_float (const char *string, int no)
+{
+  float ret = 0.0f;
+  int number_no = 0;
+  const char *s = string;
+
+  while (*s == ' ')s++;
+
+  while (*s && number_no < no)
+  {
+     while ( *s && ((*s >= '0' && *s <= '9') || (*s=='.') || (*s=='-'))) s ++;
+     number_no ++;
+     while (*s == ' ')s++;
+  }
+  if (*s)
+    return atof (s);
+
+  return ret;
+}
+
 void mrg_xml_render (Mrg *mrg,
                      char *uri_base,
                      void (*link_cb) (CtxEvent *event, void *href, void *link_data),
@@ -7626,6 +7649,7 @@ void mrg_xml_render (Mrg *mrg,
         //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
         //  strncpy (htmlctx->attribute[htmlctx->attributes], data, MRG_XML_MAX_ATTRIBUTE_LEN-1);
         att = ctx_strhash (data, 0);
+        //fprintf (stderr, "  %s:%i\n", data, att);
         break;
       case t_val:
         //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
@@ -7644,6 +7668,7 @@ void mrg_xml_render (Mrg *mrg,
               CTX_stroke_miterlimit,
               CTX_stroke_linejoin,
               CTX_stroke,
+              //CTX_viewBox,
               CTX_color,
               CTX_background_color,
               CTX_background,
@@ -7660,6 +7685,7 @@ void mrg_xml_render (Mrg *mrg,
               "stroke_miterlimit",
               "stroke_linejoin",
               "stroke",
+              //"viewBox",
               "color",
               "background_color",
               "background",
@@ -7768,6 +7794,17 @@ void mrg_xml_render (Mrg *mrg,
               mrg_parse_transform (mrg, &matrix, transform);
               ctx_apply_matrix (mrg_cr (mrg), &matrix);
             }
+        }
+
+        else if (data_hash == CTX_svg)
+        {
+          const char *vbox = PROPS(viewbox);
+          float x = _ctx_str_get_float (vbox, 0);
+          float y = _ctx_str_get_float (vbox, 1);
+          float width = _ctx_str_get_float (vbox, 2);
+          float height = _ctx_str_get_float (vbox, 3);
+          fprintf (stderr, "viewBox:%s   %f %f %f %f\n", vbox, x, y, width, height);
+          ctx_view_box (mrg->ctx, x, y, width, height);
         }
 
         else if (data_hash == CTX_polygon)

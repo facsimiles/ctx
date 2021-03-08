@@ -1211,6 +1211,14 @@ struct
       uint8_t pad1;
       float radius;
     } rectangle;
+    struct {
+      uint8_t code;
+      float x;
+      float y;
+      uint8_t pad0;
+      float width;
+      float height;
+    } view_box;
 
     struct
     {

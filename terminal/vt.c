@@ -3960,7 +3960,7 @@ static void vt_ctx_unrled (VT *vt, int byte)
 
 static void vt_state_ctx (VT *vt, int byte)
 {
-        //fprintf (stderr, "%c", byte);
+  //fprintf (stderr, "%c", byte);
   if (byte == CTX_CODEC_CHAR)
   {
     if (vt->in_prev_match)
