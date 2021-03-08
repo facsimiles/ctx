@@ -1073,8 +1073,6 @@ EvSource *evsource_mice_new (void)
   return NULL;
 }
 
-
-
 static int evsource_kb_has_event (void);
 static char *evsource_kb_get_event (void);
 static void evsource_kb_destroy (int sign);

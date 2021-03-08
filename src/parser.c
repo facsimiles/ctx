@@ -594,7 +594,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       parser->expected_args != CTX_ARG_COLLECT_NUMBERS &&
       parser->expected_args != parser->n_numbers)
     {
-      fprintf (stderr, "ctx:%i:%i %c got %i instead of %i args\n",
+      if (0)
+         fprintf (stderr, "ctx:%i:%i %c got %i instead of %i args\n",
                parser->line, parser->col,
                cmd, parser->n_numbers, parser->expected_args);
     }

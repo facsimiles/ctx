@@ -1769,7 +1769,7 @@ static void card_textures (ITK *itk, int frame_no)
                       &texture_rgba[0], eid);
     ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
     ctx_fill (ctx);
-
+#if 0
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
     ctx_define_texture (ctx, NULL,
                       TEXTURE_W, TEXTURE_H, 0,
@@ -1803,7 +1803,7 @@ static void card_textures (ITK *itk, int frame_no)
                       &texture_gray[0], eid);
     ctx_rectangle (ctx, 0, 0, TEXTURE_W, TEXTURE_H);
     ctx_fill (ctx);
-
+#endif
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
 
     ctx_draw_image (ctx, "/home/pippin/t.gif",

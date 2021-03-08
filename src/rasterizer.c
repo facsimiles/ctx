@@ -2264,7 +2264,7 @@ ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, flo
 static void
 ctx_rasterizer_process (void *user_data, CtxCommand *command);
 
-static int
+int
 _ctx_is_rasterizer (Ctx *ctx)
 {
   if (ctx->renderer && ctx->renderer->process == ctx_rasterizer_process)
@@ -2926,7 +2926,7 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb  (Ctx *ctx);
 
-static int _ctx_is_rasterizer (Ctx *ctx);
+int _ctx_is_rasterizer (Ctx *ctx);
 CtxAntialias ctx_get_antialias (Ctx *ctx)
 {
 #if CTX_EVENTS
