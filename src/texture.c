@@ -88,7 +88,7 @@ ctx_texture_check_eid (Ctx *ctx, const char *eid, int *tw, int *th)
     {
       if (tw) *tw = ctx->texture[i].width;
       if (th) *th = ctx->texture[i].height;
-      ctx->texture[i].frame = ctx->frame;
+      ctx->texture[i].frame = ctx->texture_cache->frame;
       return i;
     }
   }
@@ -114,13 +114,13 @@ const char* ctx_texture_init (Ctx           *ctx,
           ctx->texture[i].eid &&
           !strcmp (ctx->texture[i].eid, eid))
       {
-        ctx->texture[i].frame = ctx->frame;
+        ctx->texture[i].frame = ctx->texture_cache->frame;
         if (freefunc && user_data != (void*)23)
           freefunc (pixels, user_data);
         return ctx->texture[i].eid;
       }
       if (ctx->texture[i].data == NULL 
-          ||   (ctx->frame - ctx->texture[i].frame >= 2))
+          ||   (ctx->texture_cache->frame - ctx->texture[i].frame >= 2))
         id = i;
     }
   } else
@@ -128,7 +128,7 @@ const char* ctx_texture_init (Ctx           *ctx,
     for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
     {
       if (ctx->texture[i].data == NULL 
-          || (ctx->frame - ctx->texture[i].frame > 2))
+          || (ctx->texture_cache->frame - ctx->texture[i].frame > 2))
         id = i;
     }
   }
@@ -151,7 +151,7 @@ const char* ctx_texture_init (Ctx           *ctx,
                        pixels, width, height,
                        stride, format,
                        freefunc, user_data);
-  ctx->texture[id].frame = ctx->frame;
+  ctx->texture[id].frame = ctx->texture_cache->frame;
   if (eid)
   {
     /* we got an eid, this is the fast path */

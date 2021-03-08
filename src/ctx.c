@@ -174,7 +174,8 @@ ctx_close_path (Ctx *ctx)
 int _ctx_is_rasterizer (Ctx *ctx);
 
 void
-ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, CtxPixelFormat format, int dst_stride,
+ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
+                    CtxPixelFormat format, int dst_stride,
                     uint8_t *dst_data)
 {
 #if CTX_RASTERIZER
@@ -183,22 +184,21 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh, CtxPixelFormat for
      CtxRasterizer *rasterizer = (void*)ctx->renderer;
      if (rasterizer->format->pixel_format == format)
      {
+       if (dst_stride <= 0) dst_stride = ctx_pixel_format_get_stride (format, sw);
        int bytes_per_pix = rasterizer->format->bpp/8;
-       //fprintf (stderr, "bingo!\n");
        int y = 0;
-       for (int v = sy; u < sy + sh; sy++, y++)
+       for (int v = sy; v < sy + sh; v++, y++)
        {
          int x = 0;
-         for (int u = sx; u < sx + sw; sx++, x++)
+         for (int u = sx; u < sx + sw; u++, x++)
          {
-            memcpy (&dst_data[y * dst_stride + x * bytes_per_pix], &rasterizer->buf[sy * rasterizer->blit_stride + sx * bytes_per_pix], bytes_per_pix);
+            uint8_t* src_buf = rasterizer->buf;
+            memcpy (&dst_data[y * dst_stride + x * bytes_per_pix], &src_buf[v * rasterizer->blit_stride + u * bytes_per_pix], bytes_per_pix);
          }
        }
        return;
      }
-     fprintf (stderr, "get_pix on rasterizer but wrong format\n");
    }
-   fprintf (stderr, "get_pix on non-rasterizer\n");
 #endif
 }
 
