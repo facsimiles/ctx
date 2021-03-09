@@ -948,7 +948,7 @@ void draw_titlebar (Ctx *ctx, CtxClient *client,
     ctx_rgba (ctx, 1, 1,0.4, 1.0);
   else
     ctx_rgba (ctx, 1, 1,1, 0.8);
-  ctx_text (ctx, client->title);
+  ctx_fill_text (ctx, client->title);
 #else
 
       ctx_rectangle (ctx, x, y - titlebar_height,
@@ -990,7 +990,7 @@ void draw_titlebar (Ctx *ctx, CtxClient *client,
         itk_style_color (ctx, "titlebar-focused-close");
       else
         itk_style_color (ctx, "titlebar-close");
-      ctx_text (ctx, "X");
+      ctx_fill_text (ctx, "X");
       }
 
       ctx_move_to (ctx, x +  width/2, y - titlebar_height * 0.22);
@@ -1003,11 +1003,11 @@ void draw_titlebar (Ctx *ctx, CtxClient *client,
       ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
       if (client->title)
       {
-        ctx_text (ctx, client->title);
+        ctx_fill_text (ctx, client->title);
       }
       else
       {
-        ctx_text (ctx, "untitled");
+        ctx_fill_text (ctx, "untitled");
       }
       ctx_restore (ctx);
 #endif
@@ -1549,7 +1549,7 @@ void ctx_osk_draw (Ctx *ctx)
       else
         ctx_rgba (ctx, 1,0,0, fade);
 
-      ctx_text (ctx, label);
+      ctx_fill_text (ctx, label);
 
       x += cap->wfactor * c;
     }
@@ -1623,7 +1623,7 @@ void draw_panel (Ctx *ctx)
   ctx_gray (ctx, 0.9);
   char buf[128];
   sprintf (buf, "%02i:%02i:%02i", local_time_res.tm_hour, local_time_res.tm_min, local_time_res.tm_sec);
-  ctx_text (ctx, buf);
+  ctx_fill_text (ctx, buf);
 
   int tabs = 0;
   for (CtxList *l = clients; l; l = l->next)
@@ -1641,7 +1641,7 @@ void draw_panel (Ctx *ctx)
   ctx_move_to (ctx, titlebar_height * 1.5/2, titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_gray (ctx, 0.9);
-  ctx_text (ctx, "+");
+  ctx_fill_text (ctx, "+");
 
   float x = titlebar_height * 1.5;
   for (CtxList *l = clients; l; l = l->next)
@@ -1669,7 +1669,7 @@ void draw_mini_panel (Ctx *ctx)
   ctx_move_to (ctx, titlebar_height * 1.5/2, titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
-  ctx_text (ctx, "+");
+  ctx_fill_text (ctx, "+");
 
   ctx_restore (ctx);
 }
