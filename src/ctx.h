@@ -126,7 +126,6 @@ void  ctx_dirty_rect      (Ctx *ctx, int *x, int *y, int *width, int *height);
  */
 void ctx_free (Ctx *ctx);
 
-
 /* clears and resets a context */
 void ctx_reset          (Ctx *ctx);
 void ctx_begin_path     (Ctx *ctx);
@@ -138,7 +137,6 @@ void ctx_clip           (Ctx *ctx);
 void ctx_identity       (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
 
-
 void ctx_image_smoothing     (Ctx *ctx, int enabled);
 int  ctx_get_image_smoothing (Ctx *ctx);
 
@@ -149,8 +147,9 @@ void ctx_miter_limit (Ctx *ctx, float limit);
 void ctx_line_width       (Ctx *ctx, float x);
 void ctx_line_dash_offset (Ctx *ctx, float line_dash);
 void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
-                           float c,  float d,  // vskew,  vscale
-                           float e,  float f); // htran,  vtran
+                                     float c,  float d,  // vskew,  vscale
+                                     float e,  float f); // htran,  vtran
+void ctx_set_transform    (Ctx *ctx, float a, float b, float c, float d, float e, float f);
 void  ctx_line_dash       (Ctx *ctx, float *dashes, int count);
 void  ctx_font_size       (Ctx *ctx, float x);
 void  ctx_font            (Ctx *ctx, const char *font);

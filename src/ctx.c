@@ -1905,5 +1905,11 @@ void ctx_set_texture_cache (Ctx *ctx, Ctx *texture_cache)
   ctx->texture_cache = texture_cache;
 }
 
+void ctx_set_transform (Ctx *ctx, float a, float b, float c, float d, float e, float f)
+{
+  ctx_identity (ctx);
+  ctx_apply_transform (ctx, a, b, c, d, e, f);
+}
+
 
 #endif
