@@ -110,6 +110,7 @@
 #define CTX_line_to        CTX_STRH('l','i','n','e','_','t','o',0,0,0,0,0,0,0)
 #define CTX_lineTo         CTX_STRH('l','i','n','e','T','o',0,0,0,0,0,0,0,0)
 #define CTX_lineDash       CTX_STRH('l','i','n','e','D','a','s','h',0,0,0,0,0,0)
+#define CTX_lineDashOffset CTX_STRH('l','i','n','e','D','a','s','h','O','f','f','s','e','t')
 #define CTX_line_width     CTX_STRH('l','i','n','e','_','w','i','d','t','h',0,0,0,0)
 #define CTX_lineWidth      CTX_STRH('l','i','n','e','W','i','d','t','h',0,0,0,0,0)
 #define CTX_setLineWidth   CTX_STRH('s','e','t','L','i','n','e','W','i','d','t','h',0,0)

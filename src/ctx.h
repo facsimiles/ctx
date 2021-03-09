@@ -21,13 +21,14 @@
  * #define CTX_IMPLEMENTATION
  * #include "ctx.h"
  *
- * Ctx does not - yet - contain a minimal default fallback font, so
+ * Ctx contains a minimal default fallback font with only ascii, so
  * you probably want to also include a font, and perhaps enable
  * the cairo or SDL2 optional renderers, a more complete example
  * could be:
  *
  * #include <cairo.h>
  * #include <SDL.h>
+ * #include "ctx-font-regular.h"
  * #define CTX_IMPLEMENTATION
  * #include "ctx.h"
  *
@@ -146,6 +147,7 @@ int  ctx_get_image_smoothing (Ctx *ctx);
 #define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line */
 void ctx_miter_limit (Ctx *ctx, float limit);
 void ctx_line_width       (Ctx *ctx, float x);
+void ctx_line_dash_offset (Ctx *ctx, float line_dash);
 void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                            float c,  float d,  // vskew,  vscale
                            float e,  float f); // htran,  vtran
@@ -231,6 +233,7 @@ void ctx_arc_to           (Ctx *ctx, float x1, float y1,
 void ctx_preserve         (Ctx *ctx);
 void ctx_fill             (Ctx *ctx);
 void ctx_stroke           (Ctx *ctx);
+
 void ctx_parse            (Ctx *ctx, const char *string);
 
 void ctx_shadow_rgba      (Ctx *ctx, float r, float g, float b, float a);
@@ -315,9 +318,6 @@ void ctx_draw_texture_clipped (Ctx *ctx, const char *eid, float x, float y, floa
 void ctx_draw_image           (Ctx *ctx, const char *path, float x, float y, float w, float h);
 
 void ctx_draw_image_clipped   (Ctx *ctx, const char *path, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight);
-
-
-
 
 /* used by the render threads of fb and sdl backends.
  */
@@ -931,6 +931,7 @@ typedef enum
   CTX_SHADOW_OFFSET_X  = 142, // kx
   CTX_SHADOW_OFFSET_Y  = 143, // ky
   CTX_IMAGE_SMOOTHING  = 144, // kS
+  CTX_LINE_DASH_OFFSET = 145, // kD lineDashOffset
   // items marked with % are currently only for the parser
   // for instance for svg compatibility or simulated/converted color spaces
   // not the serialization/internal render stream

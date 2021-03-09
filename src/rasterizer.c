@@ -2768,7 +2768,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       float pos = 0.0;
 
       int   dash_no  = 0.0;
-      float dash_lpos = 0.0;
+      float dash_lpos = rasterizer->state->gstate.line_dash_offset * factor;
       int   is_down = 0;
 
           while (start < count)

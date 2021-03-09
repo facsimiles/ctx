@@ -174,6 +174,7 @@ struct _CtxGState
   uint8_t       global_alpha_u8;
 
   float         line_width;
+  float         line_dash_offset;
   float         miter_limit;
   float         font_size;
 #if CTX_ENABLE_SHADOW_BLUR

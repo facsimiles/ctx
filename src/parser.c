@@ -160,6 +160,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_LINE_JOIN:
       case CTX_LINE_CAP:
       case CTX_LINE_WIDTH:
+      case CTX_LINE_DASH_OFFSET:
       case CTX_IMAGE_SMOOTHING:
       case CTX_SHADOW_BLUR:
       case CTX_SHADOW_OFFSET_X:
@@ -286,6 +287,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
       case 'j': return ctx_parser_set_command (parser, CTX_LINE_JOIN);
       case 'c': return ctx_parser_set_command (parser, CTX_LINE_CAP);
       case 'w': return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
+      case 'D': return ctx_parser_set_command (parser, CTX_LINE_DASH_OFFSET);
       case 'S': return ctx_parser_set_command (parser, CTX_IMAGE_SMOOTHING);
       case 'C': return ctx_parser_set_command (parser, CTX_SHADOW_COLOR);
       case 's': return ctx_parser_set_command (parser, CTX_SHADOW_BLUR);
@@ -445,6 +447,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_lineWidth:
           case CTX_setLineWidth:
             return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
+          case CTX_lineDashOffset:
+            return ctx_parser_set_command (parser, CTX_LINE_DASH_OFFSET);
           case CTX_imageSmoothing:
             return ctx_parser_set_command (parser, CTX_IMAGE_SMOOTHING);
           case CTX_shadowColor:
@@ -999,6 +1003,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_LINE_WIDTH:
         ctx_line_width (ctx, arg(0));
         break;
+      case CTX_LINE_DASH_OFFSET:
+        ctx_line_dash_offset (ctx, arg(0));
+        break;
       case CTX_IMAGE_SMOOTHING:
         ctx_image_smoothing (ctx, arg(0));
         break;
@@ -1147,6 +1154,7 @@ static void ctx_parser_transform_percent (CtxParser *parser, CtxCode code, int a
       case CTX_FONT_SIZE:
       case CTX_MITER_LIMIT:
       case CTX_LINE_WIDTH:
+      case CTX_LINE_DASH_OFFSET:
         {
           *value *= (small/100.0);
         }
@@ -1219,6 +1227,7 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
       case CTX_MITER_LIMIT:
       case CTX_FONT_SIZE:
       case CTX_LINE_WIDTH:
+      case CTX_LINE_DASH_OFFSET:
         {
           *value *= parser->cell_height;
         }

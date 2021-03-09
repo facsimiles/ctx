@@ -284,6 +284,7 @@ again:
         case CTX_END_GROUP:
         case CTX_RESTORE:
         case CTX_LINE_WIDTH:
+        case CTX_LINE_DASH_OFFSET:
         case CTX_STROKE:
         case CTX_KERNING_PAIR:
         case CTX_SCALE:

@@ -707,6 +707,12 @@ void ctx_line_width (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_LINE_WIDTH, x);
 }
 
+void ctx_line_dash_offset (Ctx *ctx, float x)
+{
+  if (ctx->state.gstate.line_dash_offset != x)
+    CTX_PROCESS_F1 (CTX_LINE_DASH_OFFSET, x);
+}
+
 void ctx_image_smoothing (Ctx *ctx, int enabled)
 {
   if (ctx->state.gstate.image_smoothing != enabled)
@@ -1158,6 +1164,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
   CtxCommand *c = (CtxCommand *) entry;
   switch (entry->code)
     {
+      case CTX_LINE_DASH_OFFSET:
+        state->gstate.line_dash_offset = ctx_arg_float (0);
+        break;
       case CTX_LINE_WIDTH:
         state->gstate.line_width = ctx_arg_float (0);
         break;

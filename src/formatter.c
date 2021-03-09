@@ -150,6 +150,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_LINE_JOIN:            return "lineJoin"; break;
           case CTX_LINE_CAP:             return "lineCap"; break;
           case CTX_LINE_WIDTH:           return "lineWidth"; break;
+          case CTX_LINE_DASH_OFFSET:     return "lineDashOffset"; break;
           case CTX_IMAGE_SMOOTHING:      return "imageSmoothing"; break;
           case CTX_SHADOW_BLUR:          return "shadowBlur";  break;
           case CTX_FILL_RULE:            return "fillRule"; break;
@@ -196,6 +197,7 @@ static void _ctx_print_name (CtxFormatter *formatter, int code)
         case CTX_LINE_JOIN:         name[1]='j'; break;
         case CTX_LINE_CAP:          name[1]='c'; break;
         case CTX_LINE_WIDTH:        name[1]='w'; break;
+        case CTX_LINE_DASH_OFFSET:  name[1]='D'; break;
         case CTX_IMAGE_SMOOTHING:   name[1]='S'; break;
         case CTX_SHADOW_BLUR:       name[1]='s'; break;
         case CTX_SHADOW_COLOR:      name[1]='C'; break;
@@ -517,6 +519,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_MITER_LIMIT:
       case CTX_ROTATE:
       case CTX_LINE_WIDTH:
+      case CTX_LINE_DASH_OFFSET:
       case CTX_GLOBAL_ALPHA:
       case CTX_SHADOW_BLUR:
       case CTX_SHADOW_OFFSET_X:
