@@ -273,6 +273,7 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
     ascii[40]=0;
     eid=ascii;
   }
+
   if (ctx_eid_valid (ctx, eid, 0, 0))
   {
     ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
@@ -713,11 +714,17 @@ void ctx_line_dash_offset (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_LINE_DASH_OFFSET, x);
 }
 
+int ctx_get_image_smoothing (Ctx *ctx)
+{
+  return ctx->state.gstate.image_smoothing;
+}
+
 void ctx_image_smoothing (Ctx *ctx, int enabled)
 {
-  if (ctx->state.gstate.image_smoothing != enabled)
+  if (ctx_get_image_smoothing (ctx) != enabled)
     CTX_PROCESS_U8 (CTX_IMAGE_SMOOTHING, enabled);
 }
+
 
 void ctx_line_dash (Ctx *ctx, float *dashes, int count)
 {

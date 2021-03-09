@@ -6475,15 +6475,15 @@ int vt_keyrepeat (VT *vt)
   return vt->keyrepeat;
 }
 
-float vt_draw_cell (VT *vt, Ctx *ctx,
-                    int   row, int col, // pass 0 to force draw - like
-                    float x0, float y0, // for scrollback visible
+float vt_draw_cell (VT      *vt, Ctx *ctx,
+                    int      row, int col, // pass 0 to force draw - like
+                    float    x0, float y0, // for scrollback visible
                     uint64_t style,
                     uint32_t unichar,
                     int      bg, int fg,
                     int      dw, int dh,
-                    int in_smooth_scroll,
-                    int in_select)
+                    int      in_smooth_scroll,
+                    int      in_select)
 // dw is 0 or 1
 // dh is 0 1 or -1  1 is upper -1 is lower
 {
@@ -6883,7 +6883,6 @@ bg_done:
     }
   return cw;
 }
-
 
 int vt_has_blink (VT *vt)
 {

@@ -101,6 +101,7 @@ const char* ctx_texture_init (Ctx           *ctx,
                               int            height,
                               int            stride,
                               CtxPixelFormat format,
+                              void          *space,
                               uint8_t       *pixels,
                               void (*freefunc) (void *pixels, void *user_data),
                               void *user_data)
@@ -151,6 +152,7 @@ const char* ctx_texture_init (Ctx           *ctx,
                        pixels, width, height,
                        stride, format,
                        freefunc, user_data);
+  ctx->texture[id].space = space;
   ctx->texture[id].frame = ctx->texture_cache->frame;
   if (eid)
   {

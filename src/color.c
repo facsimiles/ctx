@@ -818,13 +818,18 @@ void ctx_rasterizer_colorspace_babl (CtxState      *state,
     case CTX_COLOR_SPACE_USER_CMYK:
       state->gstate.cmyk_space = space;
       break;
+    case CTX_COLOR_SPACE_TEXTURE:
+      state->gstate.texture_space = space;
+      break;
   }
 
-
+  const Babl *srgb = babl_space ("sRGB");
+  if (!state->gstate.texture_space) 
+       state->gstate.texture_space = srgb;
   if (!state->gstate.device_space) 
-       state->gstate.device_space = babl_space ("sRGB");
+       state->gstate.device_space = srgb;
   if (!state->gstate.rgb_space) 
-       state->gstate.rgb_space = babl_space ("sRGB");
+       state->gstate.rgb_space = srgb;
 
   //fprintf (stderr, "%s\n", babl_get_name (state->gstate.device_space));
 
@@ -833,6 +838,9 @@ void ctx_rasterizer_colorspace_babl (CtxState      *state,
        babl_format_with_space ("R'G'B'A float", state->gstate.rgb_space));
   state->gstate.fish_rgbaf_user_to_device = babl_fish (
        babl_format_with_space ("R'G'B'A float", state->gstate.rgb_space),
+       babl_format_with_space ("R'G'B'A float", state->gstate.device_space));
+  state->gstate.fish_rgbaf_texture_to_device = babl_fish (
+       babl_format_with_space ("R'G'B'A float", state->gstate.texture_space),
        babl_format_with_space ("R'G'B'A float", state->gstate.device_space));
 }
 #endif
@@ -845,13 +853,23 @@ void ctx_rasterizer_colorspace_icc (CtxState      *state,
 #if CTX_BABL
    const char *error = NULL;
    const Babl *space = NULL;
+
    if (icc_data == NULL) space = babl_space ("sRGB");
-   if (!space && !strcmp (icc_data, "sRGB"))       space = babl_space ("sRGB");
-   if (!space && !strcmp (icc_data, "ACEScg"))     space = babl_space ("ACEScg");
-   if (!space && !strcmp (icc_data, "Adobish"))    space = babl_space ("Adobish");
-   if (!space && !strcmp (icc_data, "Apple"))      space = babl_space ("Apple");
-   if (!space && !strcmp (icc_data, "Rec2020"))    space = babl_space ("Rec2020");
-   if (!space && !strcmp (icc_data, "ACES2065-1")) space = babl_space ("ACES2065-1");
+   else if (icc_length < 16)
+   {
+      char tmp[24];
+      int i;
+      for (i = 0; i < icc_length; i++)
+        tmp[i]= (icc_data[i]>='A' && icc_data[i]<='Z')?icc_data[i]+('a'-'A'):icc_data[i];
+      tmp[icc_length]=0;
+      if (!strcmp (tmp, "srgb"))            space = babl_space ("sRGB");
+      else if (!strcmp (tmp, "scrgb"))      space = babl_space ("scRGB");
+      else if (!strcmp (tmp, "acescg"))     space = babl_space ("ACEScg");
+      else if (!strcmp (tmp, "adobe"))      space = babl_space ("Adobe");
+      else if (!strcmp (tmp, "apple"))      space = babl_space ("Apple");
+      else if (!strcmp (tmp, "rec2020"))    space = babl_space ("Rec2020");
+      else if (!strcmp (tmp, "aces2065-1")) space = babl_space ("ACES2065-1");
+   }
 
    if (!space)
    {
@@ -871,6 +889,7 @@ void ctx_colorspace (Ctx           *ctx,
 {
   if (data)
   {
+    if (data_length <= 0) data_length = strlen (data);
     ctx_process_cmd_str_with_len (ctx, CTX_COLOR_SPACE, (char*)data, space_slot, 0, data_length);
   }
   else
@@ -881,6 +900,7 @@ void ctx_colorspace (Ctx           *ctx,
 
 //  deviceRGB .. settable when creating an RGB image surface..
 //               queryable when running in terminal - is it really needed?
-//               though it is also settable.. 
+//               though it is settable ; and functional for changing this state at runtime..
 //
 //  userRGB - settable at any time, stored in save|restore 
+//  texture - set as the space of data on subsequent 

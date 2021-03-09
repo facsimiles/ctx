@@ -30,9 +30,6 @@ typedef struct _CtxSource CtxSource;
 #define CTX_VALID_GRAYA_U8    (1<<6)
 #define CTX_VALID_LABA        ((1<<7) | CTX_VALID_GRAYA)
 
-//_ctx_target_space (ctx, icc);
-//_ctx_space (ctx);
-
 struct _CtxColor
 {
   uint8_t magic; // for colors used in keydb, set to a non valid start of
@@ -109,6 +106,19 @@ struct _CtxBuffer
   CtxPixelFormatInfo *format;
   void (*free_func) (void *pixels, void *user_data);
   void               *user_data;
+
+#if CTX_ENABLE_CM
+#if CTX_BABL
+  const Babl *space;
+#else
+  void       *space; 
+#endif
+#endif
+#if 0
+  CtxBuffer          *color_managed; /* only valid for one render target, cache
+                                        for a specific space
+                                        */
+#endif
 };
 
 //void _ctx_user_to_device          (CtxState *state, float *x, float *y);
@@ -192,16 +202,21 @@ struct _CtxGState
 #if CTX_ENABLE_CM
 #if CTX_BABL
   const Babl   *device_space;
+  const Babl   *texture_space;
   const Babl   *rgb_space;       
   const Babl   *cmyk_space;
 
   const Babl   *fish_rgbaf_user_to_device;
+  const Babl   *fish_rgbaf_texture_to_device;
   const Babl   *fish_rgbaf_device_to_user;
+
 #else
   void         *device_space;
+  void         *texture_space;
   void         *rgb_space;       
   void         *cmyk_space;
   void         *fish_rgbaf_user_to_device; // dummy padding
+  void         *fish_rgbaf_texture_to_device; // dummy padding
   void         *fish_rgbaf_device_to_user; // dummy padding
 #endif
 #endif
@@ -211,15 +226,15 @@ struct _CtxGState
   float dashes[CTX_PARSER_MAX_ARGS];
   int n_dashes;
 
-  CtxColorModel color_model;
+  CtxColorModel    color_model;
   /* bitfield-pack small state-parts */
-  CtxLineCap                  line_cap:2;
-  CtxLineJoin                line_join:2;
-  CtxFillRule                fill_rule:1;
-  unsigned int         image_smoothing:1;
-  unsigned int                    font:6;
-  unsigned int                    bold:1;
-  unsigned int                  italic:1;
+  CtxLineCap          line_cap:2;
+  CtxLineJoin        line_join:2;
+  CtxFillRule        fill_rule:1;
+  unsigned int image_smoothing:1;
+  unsigned int            font:6;
+  unsigned int            bold:1;
+  unsigned int          italic:1;
 };
 
 typedef enum
@@ -950,6 +965,7 @@ const char *ctx_texture_init (
                       int         height,
                       int         stride,
                       CtxPixelFormat format,
+                      void       *space,
                       uint8_t    *pixels,
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data);

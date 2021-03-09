@@ -526,6 +526,7 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                     height,
                     ctx_pixel_format_get_stride (format, width),
                     format,
+                    NULL, // space
                     data,
                     ctx_buffer_pixels_free, (void*)23);
                     /*  when userdata for ctx_buffer_pixels_free is 23, texture_init dups the data on
@@ -2336,6 +2337,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
                                            // allocation
                   rasterizer->blit_width * rasterizer->format->bpp/8,
                   rasterizer->format->pixel_format,
+                  NULL, // space
                   (uint8_t*)rasterizer->group[no]->data,
                   NULL, NULL);
   {

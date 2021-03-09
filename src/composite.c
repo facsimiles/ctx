@@ -495,6 +495,8 @@ static void
 ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
 {
   uint8_t *rgba = (uint8_t *) out;
+  fprintf (stderr, "%p %p", rasterizer->state->gstate.texture_space,
+                            rasterizer->state->gstate.device_space);
   CtxSource *g = &rasterizer->state->gstate.source;
   CtxBuffer *buffer = g->image.buffer;
   ctx_assert (rasterizer);

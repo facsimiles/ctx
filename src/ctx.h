@@ -1632,13 +1632,23 @@ enum _CtxColorSpace
   CTX_COLOR_SPACE_DEVICE_CMYK,
   CTX_COLOR_SPACE_USER_RGB,
   CTX_COLOR_SPACE_USER_CMYK,
+  CTX_COLOR_SPACE_TEXTURE
 };
 typedef enum _CtxColorSpace CtxColorSpace;
 
-void ctx_colorspace (Ctx           *ctx,
-                     CtxColorSpace  space_slot,
-                     unsigned char *data,
-                     int            data_length);
+/* sets the color space for a slot, the space is either a string of
+ * "sRGB" "rec2020" .. etc or an icc profile.
+ *
+ * The slots device_rgb and device_cmyk is mostly to be handled outside drawing 
+ * code, and user_rgb and user_cmyk is to be used. With no user_cmyk set
+ * user_cmyk == device_cmyk.
+ *
+ * The set profiles follows the graphics state.
+ */
+void ctx_color_space (Ctx           *ctx,
+                      CtxColorSpace  space_slot,
+                      unsigned char *data,
+                      int            data_length);
 
 void
 ctx_parser_set_size (CtxParser *parser,

@@ -578,8 +578,6 @@ ctx_text_width (Ctx        *ctx,
   return sum;
 }
 
-
-
 static void
 _ctx_glyphs (Ctx     *ctx,
              CtxGlyph *glyphs,
@@ -624,11 +622,11 @@ _ctx_text (Ctx        *ctx,
     {
       case CTX_TEXT_BASELINE_HANGING:
         /* XXX : crude */
-        baseline_offset = ctx->state.gstate.font_size * 0.55;
+        baseline_offset = ctx->state.gstate.font_size  * 0.55;
         break;
       case CTX_TEXT_BASELINE_TOP:
         /* XXX : crude */
-        baseline_offset = ctx->state.gstate.font_size * 0.7;
+        baseline_offset = ctx->state.gstate.font_size  * 0.7;
         break;
       case CTX_TEXT_BASELINE_BOTTOM:
         baseline_offset = -ctx->state.gstate.font_size * 0.1;
