@@ -199,7 +199,7 @@
 #define CTX_textDirection  CTX_STRH('t','e','x','t','D','i','r','e','c','t','i','o','n',0)
 #define CTX_text_indent    CTX_STRH('t','e','x','t','_','i','n','d','e','n','t', 0,0,0)
 #define CTX_text_stroke    CTX_STRH('t','e','x','t','_','s','t','r','o','k','e', 0,0,0)
-#define CTX_textStroke     CTX_STRH('t','e','x','t','S','t','r','o','k','e', 0, 0,0,0)
+#define CTX_strokeText     CTX_STRH('s','t','r','o','k','e','T','e','x','t',0, 0,0,0)
 #define CTX_top            CTX_STRH('t','o','p',0,0,0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_transform      CTX_STRH('t','r','a','n','s','f','o','r','m',0,0,0,0,0)
 #define CTX_translate      CTX_STRH('t','r','a','n','s','l','a','t','e',0,0,0,0,0)

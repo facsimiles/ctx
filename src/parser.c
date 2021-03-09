@@ -380,7 +380,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_roundRectangle: ret = CTX_ROUND_RECTANGLE; break;
           case CTX_relSmoothTo:    ret = CTX_REL_SMOOTH_TO; break;
           case CTX_relSmoothqTo:   ret = CTX_REL_SMOOTHQ_TO; break;
-          case CTX_textStroke:     ret = CTX_TEXT_STROKE; break;
+          case CTX_strokeText:     ret = CTX_TEXT_STROKE; break;
           case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
           case CTX_text:           ret = CTX_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;

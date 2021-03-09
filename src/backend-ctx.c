@@ -30,7 +30,6 @@ static int ctx_find_largest_matching_substring
   return best_length;
 } 
 
-
 typedef struct CtxSpan {
   int from_prev;
   int start;
@@ -329,7 +328,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
     free (rest);
     cur_frame_len += strlen (CTX_START_STRING) + strlen (CTX_END_STRING);
 
-    if (prev_frame_contents)  // XXX : 
+    if (prev_frame_contents && 0)  // XXX : 
     {
       char *encoded;
       int encoded_len = 0;
