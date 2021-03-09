@@ -4323,16 +4323,17 @@ static void vt_state_osc (VT *vt, int byte)
             }
             }
             break;
-          case 12:
+          case 12: // text cursor color
             break;
-          case 17:
+          case 17: // highlight color
             break;
-          case 19:
+          case 19: // ??
             break;
 
-          case 10:
+          case 10: // text fg
 #if 0
-    {"]11;",  0, , }, /* id: get foreground color */
+#if 0
+    {"]11;",  0, , }, /* id: set foreground color */
 #endif
             {
               /* request current foreground color, xterm does this to
@@ -4344,11 +4345,11 @@ static void vt_state_osc (VT *vt, int byte)
                        vt->fg_color[0], vt->fg_color[1], vt->fg_color[2]);
               vt_write (vt, buf, strlen (buf) );
             }
+#endif
             break;
-          case 11:
+          case 11: // text bg
 #if 0
     {"]11;",  0, , }, /* id: get background color */
-#endif
             {
               /* get background color */
               char buf[128];
@@ -4356,6 +4357,7 @@ static void vt_state_osc (VT *vt, int byte)
                        vt->bg_color[0], vt->bg_color[1], vt->bg_color[2]);
               vt_write (vt, buf, strlen (buf) );
             }
+#endif
             break;
 #if 0
     {"]1337;key=value:base64data\b\",  0, vtcmd_erase_in_line, VT100}, /* args:keyvalue id: iterm2 graphics */ "
