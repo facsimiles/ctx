@@ -411,7 +411,7 @@ typedef struct _MrgHtmlState MrgHtmlState;
 
 void mrg_clear (Mrg *mrg);
 
-static void mrg_queue_draw (Mrg *mrg, CtxRectangle *rect)
+static void mrg_queue_draw (Mrg *mrg, CtxIntRectangle *rect)
 {
 }
 
@@ -743,8 +743,8 @@ struct _Mrg {
   int              quit;
   float            x; /* in px */
   float            y; /* in px */
-  CtxRectangle     dirty;
-  CtxRectangle     dirty_during_paint; // queued during painting
+  CtxIntRectangle     dirty;
+  CtxIntRectangle     dirty_during_paint; // queued during painting
   MrgState        *state;
   CtxList         *geo_cache;
   MrgState         states[MRG_MAX_STATE_DEPTH];

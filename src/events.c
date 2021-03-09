@@ -1074,7 +1074,7 @@ static CtxItem *_ctx_update_item (Ctx *ctx, int device_no, float x, float y, Ctx
     {
       {
 #if 0
-        CtxRectangle rect = {floor(ctx->events.prev[device_no]->x0-focus_radius),
+        CtxIntRectangle rect = {floor(ctx->events.prev[device_no]->x0-focus_radius),
                              floor(ctx->events.prev[device_no]->y0-focus_radius),
                              ceil(ctx->events.prev[device_no]->x1)-floor(ctx->events.prev[device_no]->x0) + focus_radius * 2,
                              ceil(ctx->events.prev[device_no]->y1)-floor(ctx->events.prev[device_no]->y0) + focus_radius * 2};
@@ -1090,7 +1090,7 @@ static CtxItem *_ctx_update_item (Ctx *ctx, int device_no, float x, float y, Ctx
     {
 #if 0
       {
-        CtxRectangle rect = {floor(current->x0-focus_radius),
+        CtxIntRectangle rect = {floor(current->x0-focus_radius),
                              floor(current->y0-focus_radius),
                              ceil(current->x1)-floor(current->x0) + focus_radius * 2,
                              ceil(current->y1)-floor(current->y0) + focus_radius * 2};

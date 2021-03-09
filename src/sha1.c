@@ -43,7 +43,7 @@ void ctx_sha1_free (CtxSHA1 *sha1)
 #if 0
           CtxSHA1 sha1;
           ctx_sha1_init (&sha1);
-          ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
+          ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
 #endif
 

@@ -12,7 +12,7 @@ struct _CtxHasher
 
 
 static int
-ctx_rect_intersect (const CtxRectangle *a, const CtxRectangle *b)
+ctx_rect_intersect (const CtxIntRectangle *a, const CtxIntRectangle *b)
 {
   if (a->x >= b->x + b->width ||
       b->x >= a->x + a->width ||
@@ -23,9 +23,9 @@ ctx_rect_intersect (const CtxRectangle *a, const CtxRectangle *b)
 }
 
 static void
-_ctx_add_hash (CtxHasher *hasher, CtxRectangle *shape_rect, char *hash)
+_ctx_add_hash (CtxHasher *hasher, CtxIntRectangle *shape_rect, char *hash)
 {
-  CtxRectangle rect = {0,0, hasher->rasterizer.blit_width/hasher->cols,
+  CtxIntRectangle rect = {0,0, hasher->rasterizer.blit_width/hasher->cols,
                             hasher->rasterizer.blit_height/hasher->rows};
   int hno = 0;
   for (int row = 0; row < hasher->rows; row++)
@@ -67,7 +67,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
 
           float height = ctx_get_font_size (rasterizer->ctx);
-           CtxRectangle shape_rect;
+           CtxIntRectangle shape_rect;
           
            shape_rect.x=rasterizer->x;
            shape_rect.y=rasterizer->y - height,
@@ -93,7 +93,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           ctx_sha1_process(&sha1, (const unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
           ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
-          ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
+          ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, ctx_sha1_hash);
 
@@ -109,7 +109,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
           float height = ctx_get_font_size (rasterizer->ctx);
 
-           CtxRectangle shape_rect = {
+           CtxIntRectangle shape_rect = {
               rasterizer->x, rasterizer->y - height,
               width, height * 2
            };
@@ -119,7 +119,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           ctx_sha1_process(&sha1, (unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
           ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
-          ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
+          ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, ctx_sha1_hash);
 
@@ -145,7 +145,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
           _ctx_user_to_device (rasterizer->state, &tx, &ty);
           _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
-          CtxRectangle shape_rect = {tx,ty-th/2,tw,th};
+          CtxIntRectangle shape_rect = {tx,ty-th/2,tw,th};
 
 
           uint32_t color;
@@ -153,7 +153,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           ctx_sha1_process(&sha1, string, strlen ((const char*)string));
           ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
-          ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxRectangle));
+          ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, ctx_sha1_hash);
 
@@ -172,7 +172,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
            * cache
            */
         uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
-        CtxRectangle shape_rect = {
+        CtxIntRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV,
           rasterizer->scan_min / aa,
           (rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV,
@@ -202,7 +202,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           ctx_sha1_init (&sha1);
           char ctx_sha1_hash[20];
         uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
-        CtxRectangle shape_rect = {
+        CtxIntRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV - rasterizer->state->gstate.line_width,
           rasterizer->scan_min / aa - rasterizer->state->gstate.line_width,
           (rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV + rasterizer->state->gstate.line_width,

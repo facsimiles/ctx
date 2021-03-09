@@ -620,8 +620,8 @@ void ctx_set_clipboard (Ctx *ctx, const char *text);
 char *ctx_get_clipboard (Ctx *ctx);
 
 void _ctx_events_init     (Ctx *ctx);
-typedef struct _CtxRectangle CtxRectangle;
-struct _CtxRectangle {
+typedef struct _CtxIntRectangle CtxIntRectangle;
+struct _CtxIntRectangle {
   int x;
   int y;
   int width;
