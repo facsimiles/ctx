@@ -2591,6 +2591,9 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         else
         ctx_rasterizer_line_dash (rasterizer, 0, NULL);
         break;
+      case CTX_IMAGE_SMOOTHING:
+        rasterizer->state->gstate.image_smoothing = c->entry.data.u8[0];
+        break;
 
       case CTX_LINE_TO:
         ctx_rasterizer_line_to (rasterizer, c->c.x0, c->c.y0);
@@ -3187,6 +3190,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       ctx_drawlist_add_entry (&ctx->drawlist, entry);
     }
 }
+
 
 int ctx_gradient_cache_valid = 0;
 

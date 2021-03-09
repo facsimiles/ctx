@@ -707,6 +707,12 @@ void ctx_line_width (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_LINE_WIDTH, x);
 }
 
+void ctx_image_smoothing (Ctx *ctx, int enabled)
+{
+  if (ctx->state.gstate.image_smoothing != enabled)
+    CTX_PROCESS_U8 (CTX_IMAGE_SMOOTHING, enabled);
+}
+
 void ctx_line_dash (Ctx *ctx, float *dashes, int count)
 {
   ctx_process_cmd_str_with_len (ctx, CTX_LINE_DASH, (char*)(dashes), count, 0, count * 4);
@@ -1628,6 +1634,7 @@ ctx_state_init (CtxState *state)
   state->gstate.global_alpha_f  = 1.0;
   state->gstate.font_size       = 12;
   state->gstate.line_width      = 2.0;
+  state->gstate.image_smoothing = 1;
   ctx_state_set (state, CTX_line_spacing, 1.0f);
   state->min_x                  = 8192;
   state->min_y                  = 8192;

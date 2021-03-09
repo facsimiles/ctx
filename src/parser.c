@@ -160,6 +160,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_LINE_JOIN:
       case CTX_LINE_CAP:
       case CTX_LINE_WIDTH:
+      case CTX_IMAGE_SMOOTHING:
       case CTX_SHADOW_BLUR:
       case CTX_SHADOW_OFFSET_X:
       case CTX_SHADOW_OFFSET_Y:
@@ -283,6 +284,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
       case 'j': return ctx_parser_set_command (parser, CTX_LINE_JOIN);
       case 'c': return ctx_parser_set_command (parser, CTX_LINE_CAP);
       case 'w': return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
+      case 'S': return ctx_parser_set_command (parser, CTX_IMAGE_SMOOTHING);
       case 'C': return ctx_parser_set_command (parser, CTX_SHADOW_COLOR);
       case 's': return ctx_parser_set_command (parser, CTX_SHADOW_BLUR);
       case 'x': return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_X);
@@ -353,7 +355,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_screen:         ret = CTX_BLEND_SCREEN;break;
           case CTX_difference:     ret = CTX_BLEND_DIFFERENCE; break;
           case CTX_reset:          ret = CTX_RESET; break;
-          case CTX_verLineTo:  ret = CTX_VER_LINE_TO; break;
+          case CTX_verLineTo:      ret = CTX_VER_LINE_TO; break;
           case CTX_exit:
           case CTX_done:           ret = CTX_EXIT; break;
           case CTX_closePath:      ret = CTX_CLOSE_PATH; break;
@@ -382,6 +384,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_relSmoothqTo:   ret = CTX_REL_SMOOTHQ_TO; break;
           case CTX_strokeText:     ret = CTX_TEXT_STROKE; break;
           case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
+          case CTX_fillText:       
           case CTX_text:           ret = CTX_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
@@ -438,6 +441,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_lineWidth:
           case CTX_setLineWidth:
             return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
+          case CTX_imageSmoothing:
+            return ctx_parser_set_command (parser, CTX_IMAGE_SMOOTHING);
           case CTX_shadowColor:
             return ctx_parser_set_command (parser, CTX_SHADOW_COLOR);
           case CTX_shadowBlur:
@@ -988,7 +993,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->left_margin = ctx_x (ctx);
         break;
       case CTX_LINE_WIDTH:
-        ctx_line_width (ctx, arg(0) );
+        ctx_line_width (ctx, arg(0));
+        break;
+      case CTX_IMAGE_SMOOTHING:
+        ctx_image_smoothing (ctx, arg(0));
         break;
       case CTX_SHADOW_COLOR:
         ctx_shadow_rgba (ctx, arg(0), arg(1), arg(2), arg(3));

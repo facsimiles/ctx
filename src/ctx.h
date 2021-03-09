@@ -137,6 +137,10 @@ void ctx_clip           (Ctx *ctx);
 void ctx_identity       (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
 
+
+void ctx_image_smoothing     (Ctx *ctx, int enabled);
+int  ctx_get_image_smoothing (Ctx *ctx);
+
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0
 #define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line */
@@ -926,6 +930,7 @@ typedef enum
   CTX_SHADOW_COLOR     = 141, // kC
   CTX_SHADOW_OFFSET_X  = 142, // kx
   CTX_SHADOW_OFFSET_Y  = 143, // ky
+  CTX_IMAGE_SMOOTHING  = 144, // kS
   // items marked with % are currently only for the parser
   // for instance for svg compatibility or simulated/converted color spaces
   // not the serialization/internal render stream

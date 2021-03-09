@@ -215,6 +215,7 @@ struct _CtxGState
   CtxLineCap                  line_cap:2;
   CtxLineJoin                line_join:2;
   CtxFillRule                fill_rule:1;
+  unsigned int         image_smoothing:1;
   unsigned int                    font:6;
   unsigned int                    bold:1;
   unsigned int                  italic:1;
@@ -480,7 +481,6 @@ void ctx_buffer_free (CtxBuffer *buffer);
 
 void
 ctx_state_gradient_clear_stops (CtxState *state);
-
 
 void ctx_interpret_style         (CtxState *state, CtxEntry *entry, void *data);
 void ctx_interpret_transforms    (CtxState *state, CtxEntry *entry, void *data);

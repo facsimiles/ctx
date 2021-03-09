@@ -1806,8 +1806,9 @@ static void card_textures (ITK *itk, int frame_no)
 #endif
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
 
+    ctx_image_smoothing (ctx, 0);
     ctx_draw_image (ctx, "/home/pippin/t.gif",
-                         0.0, 0.0, 512.0, 512.0);
+                         0.0, 0.0, 6120.0, 6120.0);
 #endif
 
     ctx_restore (ctx);

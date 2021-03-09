@@ -119,7 +119,6 @@ ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uin
 }
 #endif
 
-
 CTX_INLINE static void
 ctx_RGBA8_associate_alpha (uint8_t *u8)
 {
@@ -141,7 +140,6 @@ ctx_RGBA8_associate_alpha (uint8_t *u8)
     }
   }
 }
-
 
 CTX_INLINE static void
 ctx_u8_associate_alpha (int components, uint8_t *u8)
@@ -302,7 +300,8 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
   else
     {
       int bpp = buffer->format->bpp/8;
-#if 1
+      if (rasterizer->state->gstate.image_smoothing)
+      {
       uint8_t *src00 = (uint8_t *) buffer->data;
       src00 += v * buffer->stride + u * bpp;
       uint8_t *src01 = src00;
@@ -349,7 +348,9 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
                 
         }
       }
-#else
+      }
+      else
+      {
       uint8_t *src = (uint8_t *) buffer->data;
       src += v * buffer->stride + u * bpp;
       switch (bpp)
@@ -374,7 +375,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
               { rgba[c] = src[c]; }
             break;
         }
-#endif
+      }
       if (rasterizer->swap_red_green)
       {
         uint8_t tmp = rgba[0];
@@ -510,34 +511,45 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
   else
     {
       int bpp = 4;
-      uint8_t *src00 = (uint8_t *) buffer->data;
-      src00 += v * buffer->stride + u * bpp;
-      uint8_t *src01 = src00;
-      if ( u + 1 < buffer->width)
+      if (rasterizer->state->gstate.image_smoothing)
       {
-        src01 = src00 + bpp;
-      }
-      uint8_t *src11 = src01;
-      uint8_t *src10 = src00;
-      if ( v + 1 < buffer->height)
-      {
-        src10 = src00 + buffer->stride;
-        src11 = src01 + buffer->stride;
-      }
-      float dx = (x-(int)(x)) * 255.9;
-      float dy = (y-(int)(y)) * 255.9;
-      for (int c = 0; c < bpp; c++)
-        { rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
+        uint8_t *src00 = (uint8_t *) buffer->data;
+        src00 += v * buffer->stride + u * bpp;
+        uint8_t *src01 = src00;
+        if ( u + 1 < buffer->width)
+        {
+          src01 = src00 + bpp;
+        }
+        uint8_t *src11 = src01;
+        uint8_t *src10 = src00;
+        if ( v + 1 < buffer->height)
+        {
+          src10 = src00 + buffer->stride;
+          src11 = src01 + buffer->stride;
+        }
+        float dx = (x-(int)(x)) * 255.9;
+        float dy = (y-(int)(y)) * 255.9;
+        for (int c = 0; c < bpp; c++)
+        {
+          rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
                                  ctx_lerp_u8 (src10[c], src11[c], dx), dy);
                 
         }
+      }
+      else
+      {
+        uint8_t *src00 = (uint8_t *) buffer->data;
+        src00 += v * buffer->stride + u * bpp;
+        for (int c = 0; c < bpp; c++)
+          { rgba[c] = src00[c]; }
+      }
 
-  if (rasterizer->swap_red_green)
-  {
-    uint8_t tmp = rgba[0];
-    rgba[0] = rgba[2];
-    rgba[2] = tmp;
-  }
+      if (rasterizer->swap_red_green)
+      {
+        uint8_t tmp = rgba[0];
+        rgba[0] = rgba[2];
+        rgba[2] = tmp;
+      }
     }
 #if CTX_DITHER
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -600,35 +612,37 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void
   else
     {
       int bpp = 3;
-#if 0
-      uint8_t *src = (uint8_t *) buffer->data;
-      src += v * buffer->stride + u * bpp;
-      for (int c = 0; c < 3; c++)
-        { rgba[c] = src[c]; }
-      rgba[3] = 255;
-#else
-      uint8_t *src00 = (uint8_t *) buffer->data;
-      src00 += v * buffer->stride + u * bpp;
-      uint8_t *src01 = src00;
-      if ( u + 1 < buffer->width)
+      if (rasterizer->state->gstate.image_smoothing)
       {
-        src01 = src00 + bpp;
-      }
-      uint8_t *src11 = src01;
-      uint8_t *src10 = src00;
-      if ( v + 1 < buffer->height)
-      {
-        src10 = src00 + buffer->stride;
-        src11 = src01 + buffer->stride;
-      }
-      float dx = (x-(int)(x)) * 255.9;
-      float dy = (y-(int)(y)) * 255.9;
-      for (int c = 0; c < 3; c++)
-        { rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
-                                 ctx_lerp_u8 (src10[c], src11[c], dx), dy);
-                
+        uint8_t *src00 = (uint8_t *) buffer->data;
+        src00 += v * buffer->stride + u * bpp;
+        uint8_t *src01 = src00;
+        if ( u + 1 < buffer->width)
+        {
+          src01 = src00 + bpp;
         }
-#endif
+        uint8_t *src11 = src01;
+        uint8_t *src10 = src00;
+        if ( v + 1 < buffer->height)
+        {
+          src10 = src00 + buffer->stride;
+          src11 = src01 + buffer->stride;
+        }
+        float dx = (x-(int)(x)) * 255.9;
+        float dy = (y-(int)(y)) * 255.9;
+        for (int c = 0; c < 3; c++)
+          { rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
+                                   ctx_lerp_u8 (src10[c], src11[c], dx), dy);
+          }
+      }
+      else
+      {
+        uint8_t *src = (uint8_t *) buffer->data;
+        src += v * buffer->stride + u * bpp;
+        for (int c = 0; c < 3; c++)
+          { rgba[c] = src[c]; }
+        rgba[3] = 255;
+      }
 
   if (rasterizer->swap_red_green)
   {
