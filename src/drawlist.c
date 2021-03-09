@@ -21,16 +21,18 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_ROUND_RECTANGLE:
       case CTX_SHADOW_COLOR:
         return 2;
+      case CTX_FILL_RECT:
+      case CTX_STROKE_RECT:
       case CTX_RECTANGLE:
       case CTX_VIEW_BOX:
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
         return 1;
 
-      case CTX_TEXT:
+      case CTX_FILL_TEXT:
       case CTX_LINE_DASH:
       case CTX_COLOR_SPACE:
-      case CTX_TEXT_STROKE:
+      case CTX_STROKE_TEXT:
       case CTX_FONT:
       case CTX_TEXTURE:
         {
@@ -242,8 +244,8 @@ again:
         case CTX_REL_CURVE_TO:
         case CTX_APPLY_TRANSFORM:
         case CTX_ROUND_RECTANGLE:
-        case CTX_TEXT:
-        case CTX_TEXT_STROKE:
+        case CTX_FILL_TEXT:
+        case CTX_STROKE_TEXT:
         case CTX_FONT:
         case CTX_LINE_DASH:
         case CTX_FILL:

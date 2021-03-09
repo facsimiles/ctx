@@ -19,5 +19,5 @@ fontSize 1.2@
 moveTo 50% 50%
 textAlign center
 textBaseline middle
-text "centered"
+fillText "centered"
 

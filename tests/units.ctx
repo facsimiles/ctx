@@ -3,101 +3,101 @@ rgb 0 0 0
 
 fontSize 1.0@
 moveTo 0 1@
-text "text in 1.0@ units"
+fillText "fillText in 1.0@ units"
 
 fontSize 4
 moveTo 5% 30%
-text "4"
+fillText "4"
 fontSize 5
 moveTo 9% 30%
-text "5"
+fillText "5"
 fontSize 6
 moveTo 14% 30%
-text "6"
+fillText "6"
 fontSize 7
 moveTo 20% 30%
-text "7"
+fillText "7"
 fontSize 8
 moveTo 27% 30%
-text "8"
+fillText "8"
 fontSize 9
 moveTo 33% 30%
-text "9"
+fillText "9"
 fontSize 10
 moveTo 43% 30%
-text "10"
+fillText "10"
 fontSize 11
 moveTo 53% 30%
-text "11"
+fillText "11"
 fontSize 12
 moveTo 63% 30%
-text "12"
+fillText "12"
 fontSize 13
 moveTo 73% 30%
-text "13.0"
+fillText "13.0"
 fontSize 13.5
 moveTo 80% 30%
-text "13.50"
+fillText "13.50"
 fontSize 14.0
 moveTo 88% 30%
-text "14.0"
+fillText "14.0"
 
 fontSize 1%
 moveTo 5% 70%
-text "1%"
+fillText "1%"
 fontSize 1.5%
 moveTo 9% 70%
-text "1.5%"
+fillText "1.5%"
 fontSize 2%
 moveTo 14% 70%
-text "2%"
+fillText "2%"
 fontSize 3%
 moveTo 20% 70%
-text "3%"
+fillText "3%"
 fontSize 4%
 moveTo 27% 70%
-text "4%"
+fillText "4%"
 fontSize 5%
 moveTo 33% 70%
-text "5%"
+fillText "5%"
 fontSize 10%
 moveTo 38% 70%
-text "10%"
+fillText "10%"
 fontSize 15%
 moveTo 49% 70%
-text "15%"
+fillText "15%"
 fontSize 30%
 moveTo 65% 70%
-text "30%"
+fillText "30%"
 
 
 fontSize 0.5@
 moveTo 5% 90%
-text "0.5@"
+fillText "0.5@"
 fontSize 1@
 moveTo 10% 90%
-text "1@"
+fillText "1@"
 fontSize 2@
 moveTo 20% 90%
-text "2@"
+fillText "2@"
 fontSize 2.5@
 moveTo 30% 90%
-text "2.5@"
+fillText "2.5@"
 fontSize 3@
 moveTo 40% 90%
-text "3@"
+fillText "3@"
 fontSize 3.5@
 moveTo 50% 90%
-text "3.5@"
+fillText "3.5@"
 fontSize 4@
 moveTo 60% 90%
-text "4@"
+fillText "4@"
 fontSize 4.5@
 moveTo 70% 90%
-text "4.5@"
+fillText "4.5@"
 fontSize 5@
 moveTo 90% 90%
-text "5@"
+fillText "5@"
 
 
 

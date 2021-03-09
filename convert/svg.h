@@ -4785,7 +4785,7 @@ static void mrg_hl_token (Ctx *cr, const char *word)
       break;
   }
 
-  ctx_text (cr, word);
+  ctx_fill_text (cr, word);
 }
 
 /* hook syntax highlighter in here..  */
@@ -4925,7 +4925,7 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
       ctx_line_width (cr, PROP(text_stroke_width));
       ctx_line_join (cr, CTX_JOIN_ROUND);
-      ctx_text_stroke (cr, string);
+      ctx_stroke_text (cr, string);
       ctx_color_free (color);
     }
 
@@ -4947,11 +4947,11 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
     if (!syntax_highlight) syntax_highlight = "";
 
     if (syntax_highlight[0] == 0)
-      ctx_text (cr, string);
+      ctx_fill_text (cr, string);
     else if (!strcmp (syntax_highlight, "C"))
       mrg_hl_text (cr, string);
     else
-      ctx_text (cr, string);
+      ctx_fill_text (cr, string);
 
     ctx_current_point (cr, &new_x, NULL);
 

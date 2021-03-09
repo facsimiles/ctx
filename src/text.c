@@ -700,27 +700,34 @@ ctx_glyphs_stroke (Ctx        *ctx,
 }
 
 void
-ctx_text (Ctx        *ctx,
-          const char *string)
+ctx_fill_text (Ctx        *ctx,
+               const char *string)
 {
   if (!string)
     return;
 #if CTX_BACKEND_TEXT
-  ctx_process_cmd_str (ctx, CTX_TEXT, string, 0, 0);
+  ctx_process_cmd_str (ctx, CTX_FILL_TEXT, string, 0, 0);
   _ctx_text (ctx, string, 0, 0);
 #else
   _ctx_text (ctx, string, 0, 1);
 #endif
 }
 
+
 void
-ctx_text_stroke (Ctx        *ctx,
+ctx_text (Ctx *ctx, const char *string)
+{
+  ctx_fill_text (ctx, string);
+}
+
+void
+ctx_stroke_text (Ctx        *ctx,
                  const char *string)
 {
   if (!string)
     return;
 #if CTX_BACKEND_TEXT
-  ctx_process_cmd_str (ctx, CTX_TEXT_STROKE, string, 0, 0);
+  ctx_process_cmd_str (ctx, CTX_STROKE_TEXT, string, 0, 0);
   _ctx_text (ctx, string, 1, 0);
 #else
   _ctx_text (ctx, string, 1, 1);

@@ -2863,7 +2863,7 @@ foo:
       case CTX_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
         break;
-      case CTX_TEXT:
+      case CTX_FILL_TEXT:
         rasterizer->in_text++;
 #if CTX_ENABLE_SHADOW_BLUR
         if (rasterizer->state->gstate.shadow_blur > 0.0)
@@ -2873,7 +2873,7 @@ foo:
         rasterizer->in_text--;
         ctx_rasterizer_reset (rasterizer);
         break;
-      case CTX_TEXT_STROKE:
+      case CTX_STROKE_TEXT:
         ctx_rasterizer_text (rasterizer, ctx_arg_string(), 1);
         ctx_rasterizer_reset (rasterizer);
         break;
@@ -3142,8 +3142,8 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 #if CTX_CURRENT_PATH
   switch (entry->code)
     {
-      case CTX_TEXT:
-      case CTX_TEXT_STROKE:
+      case CTX_FILL_TEXT:
+      case CTX_STROKE_TEXT:
       case CTX_BEGIN_PATH:
         ctx->current_path.count = 0;
         break;

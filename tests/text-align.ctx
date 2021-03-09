@@ -16,22 +16,22 @@ rgb 1 1 1
 fontSize 1@
 moveTo 50% 20%
 textAlign start
-text "start"
+fillText "start"
 
 moveTo 50% 37%
 
 textAlign center
-text "center"
+fillText "center"
 
 moveTo 50% 60%
 textAlign end
-text "end"
+fillText "end"
 
 moveTo 50% 77%
 textAlign left
-text "left"
+fillText "left"
 
 moveTo 50% 95%
 textAlign=right
-text "right"
+fillText "right"
 

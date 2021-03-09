@@ -3,23 +3,23 @@ rgb 0 0 0
 
 fontSize 0.5@
 moveTo 1@ 1@
-text "0.5@ units"
+fillText "0.5@ units"
 
 
 fontSize 1@
 moveTo 1@ 2@
-text "1@ units"
+fillText "1@ units"
 
 fontSize 1.5@
 moveTo 1@ 4@
-text "1.5@ units"
+fillText "1.5@ units"
 
 fontSize 1@
 moveTo 1@ 9@
 moveTo 1@ 18@
-text "18"
+fillText "18"
 moveTo 1@ 19@
-text "19"
+fillText "19"
 moveTo 1@ 20@
-text "20"
+fillText "20"
 

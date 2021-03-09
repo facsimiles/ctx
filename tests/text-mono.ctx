@@ -3,7 +3,7 @@ rgb 0 0 0
 font "mono"
 fontSize 1@
 moveTo 0@ 1@
-text "This is mono
+fillText "This is mono
 spaced size 1@
 3
 4 3456789012345678901234567890123456789012345678901234567890123456789012345678901234

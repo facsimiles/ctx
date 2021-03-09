@@ -555,10 +555,10 @@ void  ctx_glyphs_stroke (Ctx       *ctx,
                          CtxGlyph   *glyphs,
                          int         n_glyphs);
 
-void  ctx_text          (Ctx        *ctx,
+void  ctx_fill_text     (Ctx        *ctx,
                          const char *string);
 
-void  ctx_text_stroke   (Ctx        *ctx,
+void  ctx_stroke_text   (Ctx        *ctx,
                          const char *string);
 
 /* returns the total horizontal advance if string had been rendered */
@@ -893,10 +893,10 @@ typedef enum
   CTX_RECTANGLE        = 'r', // x y width height
   CTX_REL_SMOOTH_TO    = 's', // cx cy x y
   CTX_REL_SMOOTHQ_TO   = 't', // x y
-  CTX_TEXT_STROKE      = 'u', // string - utf8 string
+  CTX_STROKE_TEXT      = 'u', // string - utf8 string
   CTX_REL_VER_LINE_TO  = 'v', // y
   CTX_GLYPH            = 'w', // unichar fontsize
-  CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
+  CTX_FILL_TEXT        = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
   CTX_IDENTITY         = 'y', //
   CTX_CLOSE_PATH       = 'z', //
   CTX_START_GROUP      = '{',
@@ -934,6 +934,9 @@ typedef enum
   // items marked with % are currently only for the parser
   // for instance for svg compatibility or simulated/converted color spaces
   // not the serialization/internal render stream
+  //
+  CTX_STROKE_RECT      = 200, // strokeRect - only exist in long form
+  CTX_FILL_RECT        = 201, // fillRect - only exist in long form
 } CtxCode;
 
 

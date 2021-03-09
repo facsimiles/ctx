@@ -190,6 +190,8 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
       case CTX_RECTANGLE:
+      case CTX_FILL_RECT:
+      case CTX_STROKE_RECT:
       case CTX_REL_SMOOTH_TO:
       case CTX_VIEW_BOX:
       case CTX_SMOOTH_TO:
@@ -204,8 +206,8 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_APPLY_TRANSFORM:
       case CTX_RADIAL_GRADIENT:
         return 6;
-      case CTX_TEXT_STROKE:
-      case CTX_TEXT:
+      case CTX_STROKE_TEXT:
+      case CTX_FILL_TEXT:
       case CTX_COLOR_SPACE:
       case CTX_DEFINE_GLYPH:
       case CTX_KERNING_PAIR:
@@ -382,10 +384,12 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_roundRectangle: ret = CTX_ROUND_RECTANGLE; break;
           case CTX_relSmoothTo:    ret = CTX_REL_SMOOTH_TO; break;
           case CTX_relSmoothqTo:   ret = CTX_REL_SMOOTHQ_TO; break;
-          case CTX_strokeText:     ret = CTX_TEXT_STROKE; break;
+          case CTX_strokeText:     ret = CTX_STROKE_TEXT; break;
+          case CTX_strokeRect:     ret = CTX_STROKE_RECT; break;
+          case CTX_fillRect:       ret = CTX_FILL_RECT; break;
           case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
           case CTX_fillText:       
-          case CTX_text:           ret = CTX_TEXT; break;
+          case CTX_text:           ret = CTX_FILL_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
           case CTX_texture:        ret = CTX_TEXTURE; break;
@@ -941,8 +945,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_font (ctx, (char *) parser->holding);
         break;
 
-      case CTX_TEXT_STROKE:
-      case CTX_TEXT:
+      case CTX_STROKE_TEXT:
+      case CTX_FILL_TEXT:
         if (parser->n_numbers == 1)
           { ctx_rel_move_to (ctx, -parser->numbers[0], 0.0); }  //  XXX : scale by font(size)
         else
@@ -957,10 +961,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                  * implicit ones from move_to's .. making move_to work within
                  * margins.
                  */
-                if (cmd == CTX_TEXT_STROKE)
-                  { ctx_text_stroke (ctx, c); }
+                if (cmd == CTX_STROKE_TEXT)
+                  { ctx_stroke_text (ctx, c); }
                 else
-                  { ctx_text (ctx, c); }
+                  { ctx_fill_text (ctx, c); }
                 if (next_nl)
                   {
                     *next_nl = '\n'; // swap it newline back in
@@ -976,10 +980,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                   }
               }
           }
-        if (cmd == CTX_TEXT_STROKE)
-          { parser->command = CTX_TEXT_STROKE; }
+        if (cmd == CTX_STROKE_TEXT)
+          { parser->command = CTX_STROKE_TEXT; }
         else
-          { parser->command = CTX_TEXT; }
+          { parser->command = CTX_FILL_TEXT; }
         break;
       case CTX_REL_LINE_TO:
         ctx_rel_line_to (ctx, arg(0), arg(1) );
@@ -1043,6 +1047,14 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_RECTANGLE:
         ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3) );
+        break;
+      case CTX_FILL_RECT:
+        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3) );
+        ctx_fill (ctx);
+        break;
+      case CTX_STROKE_RECT:
+        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3) );
+        ctx_stroke (ctx);
         break;
       case CTX_ROUND_RECTANGLE:
         ctx_round_rectangle (ctx, arg(0), arg(1), arg(2), arg(3), arg(4));

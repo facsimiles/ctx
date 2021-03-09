@@ -58,7 +58,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
   int aa = rasterizer->aa;
   switch (c->code)
     {
-      case CTX_TEXT:
+      case CTX_FILL_TEXT:
         {
           CtxSHA1 sha1;
           ctx_sha1_init (&sha1);
@@ -101,7 +101,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         }
         ctx_rasterizer_reset (rasterizer);
         break;
-      case CTX_TEXT_STROKE:
+      case CTX_STROKE_TEXT:
         {
           CtxSHA1 sha1;
           ctx_sha1_init (&sha1);
