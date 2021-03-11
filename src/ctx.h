@@ -556,11 +556,20 @@ void  ctx_glyphs_stroke (Ctx       *ctx,
                          CtxGlyph   *glyphs,
                          int         n_glyphs);
 
-void  ctx_fill_text     (Ctx        *ctx,
+void  ctx_text          (Ctx        *ctx,
+                         const char *string);
+void  ctx_text_stroke   (Ctx        *ctx,
                          const char *string);
 
+void  ctx_fill_text     (Ctx        *ctx,
+                         const char *string,
+                         float       x,
+                         float       y);
+
 void  ctx_stroke_text   (Ctx        *ctx,
-                         const char *string);
+                         const char *string,
+                         float       x,
+                         float       y);
 
 /* returns the total horizontal advance if string had been rendered */
 float ctx_text_width    (Ctx        *ctx,

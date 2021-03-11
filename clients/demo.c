@@ -1494,7 +1494,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
     char label[4]="E";
     ctx_move_to (ctx, x + col_width[col]/2, y);
     label[0]=col+'A';
-    ctx_fill_text (ctx, label);
+    ctx_text (ctx, label);
     x += col_width[col];
   }
   ctx_restore (ctx);
@@ -1524,7 +1524,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
       char label[10];
       sprintf (label, "%i", row);
       ctx_move_to (ctx, x, y);
-      ctx_fill_text (ctx, label);
+      ctx_text (ctx, label);
       y += row_height;
     }
   }
@@ -1599,18 +1599,18 @@ static void card_7GUI7 (ITK *itk, int frame_no)
               {
                 ctx_save (ctx);
                 ctx_rgb (ctx, 1,0,0);
-                ctx_fill_text (ctx, cell->display);
+                ctx_text (ctx, cell->display);
                 ctx_restore (ctx);
               }
               else
               {
-                ctx_fill_text (ctx, cell->display);
+                ctx_text (ctx, cell->display);
               }
               ctx_restore (ctx);
               break;
             default:
               ctx_move_to (ctx, x + em * 0.1, y);
-              ctx_fill_text (ctx, cell->display);
+              ctx_text (ctx, cell->display);
               break;
           }
         }

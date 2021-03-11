@@ -966,9 +966,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                  * margins.
                  */
                 if (cmd == CTX_STROKE_TEXT)
-                  { ctx_stroke_text (ctx, c); }
+                  { ctx_text_stroke (ctx, c); }
                 else
-                  { ctx_fill_text (ctx, c); }
+                  { ctx_text (ctx, c); }
                 if (next_nl)
                   {
                     *next_nl = '\n'; // swap it newline back in

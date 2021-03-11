@@ -700,8 +700,8 @@ ctx_glyphs_stroke (Ctx        *ctx,
 }
 
 void
-ctx_fill_text (Ctx        *ctx,
-               const char *string)
+ctx_text (Ctx        *ctx,
+          const char *string)
 {
   if (!string)
     return;
@@ -715,13 +715,15 @@ ctx_fill_text (Ctx        *ctx,
 
 
 void
-ctx_text (Ctx *ctx, const char *string)
+ctx_fill_text (Ctx *ctx, const char *string,
+               float x, float y)
 {
-  ctx_fill_text (ctx, string);
+  ctx_move_to (ctx, x, y);
+  ctx_text (ctx, string);
 }
 
 void
-ctx_stroke_text (Ctx        *ctx,
+ctx_text_stroke (Ctx        *ctx,
                  const char *string)
 {
   if (!string)
@@ -732,6 +734,14 @@ ctx_stroke_text (Ctx        *ctx,
 #else
   _ctx_text (ctx, string, 1, 1);
 #endif
+}
+
+void
+ctx_stroke_text (Ctx *ctx, const char *string,
+               float x, float y)
+{
+  ctx_move_to (ctx, x, y);
+  ctx_text_stroke (ctx, string);
 }
 
 static int _ctx_resolve_font (const char *name)
