@@ -22,6 +22,7 @@ modules:
         - name: ctx
           buildsystem: simple
           build-commands:
+                - ./configure.sh
                 - make
                 - strip ctx
                 - install -D ctx /app/bin/ctx
