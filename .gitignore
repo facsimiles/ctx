@@ -1,6 +1,4 @@
 ctx
-ctx-tiny
-ctx-tiny-static-musl
 fonts/ctx-fontgen
 examples/mmm
 examples/sdl2
@@ -10,3 +8,4 @@ examples/test-renderpaths
 *.sv?
 tests/*.gray?
 *.orig
+build.conf

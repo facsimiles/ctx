@@ -21,9 +21,6 @@ CCC=`which ccache` $(CC)
 OFLAGS_HARD=-O3
 OFLAGS_LIGHT=-O2
 
-DEP_CFLAGS=`pkg-config sdl2 babl --cflags`
-DEP_LIBS=`pkg-config sdl2 babl --libs`
-
 CLIENTS_CFILES = $(wildcard clients/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
@@ -33,10 +30,18 @@ TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
 SRC_CFILES = $(wildcard src/*.c)
 SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
-all: tools/ctx-fontgen ctx $(CLIENTS_BINS)
+all: build.conf tools/ctx-fontgen ctx $(CLIENTS_BINS)
+include build.conf
+build.conf:
+	@echo "You have not run configure, running it ./configure for you"
+	@echo "you will have to run make again after this.";echo
+	./configure.sh
+	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";
+	@echo "!! now run Make again !!";
+	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
 clients/%: clients/%.c Makefile ctx.o clients/itk.h libctx.a
-	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) $(OFLAGS_LIGHT)
+	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
@@ -68,7 +73,7 @@ test: ctx
 
 clean:
 	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o highlight.css
-	rm -f libctx.a libctx.so
+	rm -f libctx.a libctx.so build.*
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(SRC_OBJS)
@@ -84,7 +89,7 @@ tools/%: tools/%.c ctx-nofont.h
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings)
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h 
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(DEP_CFLAGS) $(OFLAGS_LIGHT)
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) $(OFLAGS_LIGHT)
 
 deps.o: deps.c Makefile
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
@@ -104,24 +109,24 @@ ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1
 
 src/%.o: src/%.c split/*.h
-	$(CCC) -c $< -o $@ $(DEP_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
+	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
-	$(CCC) -c $< -o $@ $(DEP_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
+	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o Makefile
 	$(AR) rcs $@ $?
 libctx.so: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o
-	$(LD) -shared $(LIBS) $? $(DEP_LIBS) -o $@
-	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(DEP_LIBS)  -o $@
+	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@
+	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
 ctx: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) -lpthread $(OFLAGS_LIGHT)
+	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
 
 ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(DEP_CFLAGS) -O0
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) -O0
 
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(DEP_CFLAGS) $(DEP_LIBS) ctx-O0.o deps.o -O0
+	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
 
 ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o deps.o terminal/*.[ch] ctx-avx2.o ctx-sse2.o ctx-mmx.o
 	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -static 
@@ -167,3 +172,4 @@ ctx.h: src/* fonts/ctx-font-ascii.h
 
 ctx-nofont.h: src/*
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
+
