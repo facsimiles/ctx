@@ -556,6 +556,8 @@ ctx_unichar_to_utf8 (uint32_t  ch,
 
 uint32_t
 ctx_utf8_to_unichar (const char *input);
+
+
 typedef struct _CtxHasher CtxHasher;
 
 typedef struct CtxEdge
@@ -686,6 +688,14 @@ struct _CtxRasterizer
 #if CTX_SHAPE_CACHE
   CtxShapeCache shape_cache;
 #endif
+};
+
+struct _CtxHasher
+{
+  CtxRasterizer rasterizer;
+  int           cols;
+  int           rows;
+  uint8_t      *hashes;
 };
 
 #if CTX_RASTERIZER

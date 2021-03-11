@@ -2,13 +2,6 @@
 
 #if CTX_RASTERIZER
 
-struct _CtxHasher
-{
-  CtxRasterizer rasterizer;
-  int           cols;
-  int           rows;
-  uint8_t      *hashes;
-};
 
 
 static int

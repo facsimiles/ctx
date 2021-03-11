@@ -144,8 +144,10 @@ int  ctx_get_image_smoothing (Ctx *ctx);
 #define CTX_LINE_WIDTH_ALIASED  -1.0
 #define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line */
 void ctx_miter_limit (Ctx *ctx, float limit);
+float ctx_get_miter_limit (Ctx *ctx);
 void ctx_line_width       (Ctx *ctx, float x);
 void ctx_line_dash_offset (Ctx *ctx, float line_dash);
+float ctx_get_line_dash_offset (Ctx *ctx);
 void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                                      float c,  float d,  // vskew,  vscale
                                      float e,  float f); // htran,  vtran
@@ -191,6 +193,7 @@ void  ctx_rel_quad_to     (Ctx *ctx,
                            float x, float y);
 void  ctx_close_path      (Ctx *ctx);
 float ctx_get_font_size   (Ctx *ctx);
+const char *ctx_get_font  (Ctx *ctx);
 float ctx_get_line_width  (Ctx *ctx);
 int   ctx_width           (Ctx *ctx);
 int   ctx_height          (Ctx *ctx);
@@ -207,15 +210,6 @@ CtxGlyph *ctx_glyph_allocate (int n_glyphs);
 void gtx_glyph_free       (CtxGlyph *glyphs);
 
 int  ctx_glyph            (Ctx *ctx, uint32_t unichar, int stroke);
-
-void ctx_arc              (Ctx  *ctx,
-                           float x, float y,
-                           float radius,
-                           float angle1, float angle2,
-                           int   direction);
-
-void ctx_arc_to           (Ctx *ctx, float x1, float y1,
-                           float x2, float y2, float radius);
 
 void ctx_quad_to          (Ctx *ctx, float cx, float cy,
                            float x, float y);
@@ -504,6 +498,14 @@ _CtxGlyph
   float    x;
   float    y;
 };
+
+CtxTextAlign ctx_get_text_align (Ctx *ctx);
+CtxTextBaseline ctx_get_text_baseline (Ctx *ctx);
+CtxTextDirection ctx_get_text_direction (Ctx *ctx);
+CtxFillRule ctx_get_fill_rule (Ctx *ctx);
+CtxLineCap ctx_get_line_cap (Ctx *ctx);
+CtxLineJoin ctx_get_line_join (Ctx *ctx);
+CtxCompositingMode ctx_get_compositing_mode (Ctx *ctx);
 
 void ctx_text_align           (Ctx *ctx, CtxTextAlign      align);
 void ctx_text_baseline        (Ctx *ctx, CtxTextBaseline   baseline);

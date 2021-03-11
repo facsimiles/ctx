@@ -8,7 +8,8 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
 
-CFLAGS+= -g $(CFLAGS_warnings) -fPIC -ffast-math
+CFLAGS+= -g $(CFLAGS_warnings) -fPIC 
+#  -ffast-math   gets rejected by duktape
 
 CFLAGS+= -I. -Ifonts -Ideps
 LIBS   = -lz -lm -lpthread

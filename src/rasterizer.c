@@ -492,7 +492,7 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
   if (rasterizer->texture_source->texture[no].data == NULL)
     {
-      fprintf (stderr, "failed setting texture %s  %i\n", eid, no);
+      fprintf (stderr, "ctx tex fail %s %i\n", eid, no);
       return;
     }
   else
@@ -1356,6 +1356,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     ctx_rasterizer_finish_shape (rasterizer);
 
     uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
+    if (hash){};
 
 #if CTX_SHAPE_CACHE
     int width = (rasterizer->col_max + (CTX_SUBDIV-1) ) / CTX_SUBDIV - rasterizer->col_min/CTX_SUBDIV + 1;

@@ -708,6 +708,16 @@ void ctx_line_width (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_LINE_WIDTH, x);
 }
 
+float ctx_get_miter_limit (Ctx *ctx)
+{
+  return ctx->state.gstate.miter_limit;
+}
+
+float ctx_get_line_dash_offset (Ctx *ctx)
+{
+  return ctx->state.gstate.line_dash_offset;
+}
+
 void ctx_line_dash_offset (Ctx *ctx, float x)
 {
   if (ctx->state.gstate.line_dash_offset != x)
@@ -836,9 +846,16 @@ ctx_font (Ctx *ctx, const char *name)
 {
 #if CTX_BACKEND_TEXT
   ctx_process_cmd_str (ctx, CTX_FONT, name, 0, 0);
+  _ctx_font (ctx, name);
 #else
   _ctx_font (ctx, name);
 #endif
+}
+
+const char *
+ctx_get_font (Ctx *ctx)
+{
+  return ctx_fonts[ctx->state.gstate.font].name;
 }
 
 void ctx_line_to (Ctx *ctx, float x, float y)
@@ -922,11 +939,37 @@ void ctx_rel_move_to (Ctx *ctx, float x, float y)
   CTX_PROCESS_F (CTX_REL_MOVE_TO,x,y);
 }
 
+CtxLineJoin ctx_get_line_join (Ctx *ctx)
+{
+  return ctx->state.gstate.line_join;
+}
+
+CtxTextAlign ctx_get_text_align  (Ctx *ctx)
+{
+  return ctx_state_get (&ctx->state, CTX_text_align);
+}
+
+CtxTextBaseline ctx_get_text_baseline (Ctx *ctx)
+{
+  return ctx_state_get (&ctx->state, CTX_text_baseline);
+}
+
+CtxLineCap ctx_get_line_cap (Ctx *ctx)
+{
+  return ctx->state.gstate.line_cap;
+}
+
+CtxFillRule ctx_get_fill_rule (Ctx *ctx)
+{
+  return ctx->state.gstate.fill_rule;
+}
+
 void ctx_line_cap (Ctx *ctx, CtxLineCap cap)
 {
   if (ctx->state.gstate.line_cap != cap)
     CTX_PROCESS_U8 (CTX_LINE_CAP, cap);
 }
+
 void ctx_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
 {
   if (ctx->state.gstate.fill_rule != fill_rule)

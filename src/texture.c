@@ -152,7 +152,9 @@ const char* ctx_texture_init (Ctx           *ctx,
                        pixels, width, height,
                        stride, format,
                        freefunc, user_data);
+#if CTX_ENABLE_CM
   ctx->texture[id].space = space;
+#endif
   ctx->texture[id].frame = ctx->texture_cache->frame;
   if (eid)
   {

@@ -889,7 +889,7 @@ void ctx_colorspace (Ctx           *ctx,
 {
   if (data)
   {
-    if (data_length <= 0) data_length = strlen (data);
+    if (data_length <= 0) data_length = (int)strlen ((char*)data);
     ctx_process_cmd_str_with_len (ctx, CTX_COLOR_SPACE, (char*)data, space_slot, 0, data_length);
   }
   else
