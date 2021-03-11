@@ -152,6 +152,7 @@ updateweb: all ctx.static test docs/ctx.h.html docs/ctx-font-regular.h.html
 	upx docs/binaries/ctx-x86_64-static
 	cp -ru tests/* ~/pgo/ctx.graphics/tests
 	make clean
+	proot -r /home/pippin/src/isthmus/i486 -b /dev -b /proc -b /sys -b /home/pippin/src/ctx ./configure.sh
 	proot -r /home/pippin/src/isthmus/i486 -b /dev -b /proc -b /sys -b /home/pippin/src/ctx make ctx.static 
 	cp -f ctx.static docs/binaries/ctx-i486-static
 	upx docs/binaries/ctx-i486-static
