@@ -475,7 +475,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
       signal (SIGWINCH, nc_resize_term);
     }
   if (mouse_mode) // XXX too often to do it all the time!
-    printf(mouse_modes[mouse_mode]);
+    printf("%s", mouse_modes[mouse_mode]);
 
   {
     int elapsed = 0;
@@ -714,7 +714,7 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
       signal (SIGWINCH, nc_resize_term);
     }
 //if (mouse_mode) // XXX too often to do it all the time!
-//  printf(mouse_modes[mouse_mode]);
+//  printf("%s", mouse_modes[mouse_mode]);
 
     int got_event = 0;
   {
@@ -780,7 +780,7 @@ void _ctx_mouse (Ctx *term, int mode)
   //  mode = 1;
   if (mode != mouse_mode)
   {
-    printf (mouse_modes[mode]);
+    printf ("%s", mouse_modes[mode]);
     fflush (stdout);
   }
   mouse_mode = mode;
