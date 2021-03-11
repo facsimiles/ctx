@@ -70,10 +70,11 @@ fonts/Roboto-Regular.h: Makefile
 used_fonts: fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf 
 test: ctx
 	make -C tests
-
+distclean: clean
+	rm -f build.*
 clean:
 	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o highlight.css
-	rm -f libctx.a libctx.so build.*
+	rm -f libctx.a libctx.so
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(SRC_OBJS)
@@ -88,24 +89,24 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings)
 
-ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h 
+ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) $(OFLAGS_LIGHT)
 
 deps.o: deps.c Makefile
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
-ctx-avx2.o: ctx-avx2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
+ctx-avx2.o: ctx-avx2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx-avx2.c -c -o $@ $(CFLAGS) $(OFLAGS_HARD) -DCTX_AVX2=1 -mavx -mavx2 -mfpmath=sse -ftree-vectorize -funsafe-math-optimizations
 
-ctx-sse2.o: ctx-sse2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
+ctx-sse2.o: ctx-sse2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx-sse2.c -c -o $@ $(CFLAGS)  $(OFLAGS_HARD) -march=core2 -ftree-vectorize -funsafe-math-optimizations
 
-ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h
+ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx-mmx.c -c -o $@ $(CFLAGS) $(OFLAGS_HARD) -mmmx -ftree-vectorize -funsafe-math-optimizations
 
 ctx-split.o: $(SRC_OBJS)
 
-ctx-nosdl.o: ctx.c ctx.h Makefile used_fonts
+ctx-static.o: ctx.c ctx.h Makefile used_fonts build.conf
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1
 
 src/%.o: src/%.c split/*.h
@@ -128,8 +129,8 @@ ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fo
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
 	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
 
-ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-nosdl.o deps.o terminal/*.[ch] ctx-avx2.o ctx-sse2.o ctx-mmx.o
-	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-nosdl.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -static 
+ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o ctx-sse2.o ctx-mmx.o
+	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile

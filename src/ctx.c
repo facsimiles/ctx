@@ -181,7 +181,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
 #if CTX_RASTERIZER
    if (_ctx_is_rasterizer (ctx))
    {
-     CtxRasterizer *rasterizer = (void*)ctx->renderer;
+     CtxRasterizer *rasterizer = (CtxRasterizer*)ctx->renderer;
      if (rasterizer->format->pixel_format == format)
      {
        if (dst_stride <= 0) dst_stride = ctx_pixel_format_get_stride (format, sw);
@@ -192,7 +192,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
          int x = 0;
          for (int u = sx; u < sx + sw; u++, x++)
          {
-            uint8_t* src_buf = rasterizer->buf;
+            uint8_t* src_buf = (uint8_t*)rasterizer->buf;
             memcpy (&dst_data[y * dst_stride + x * bytes_per_pix], &src_buf[v * rasterizer->blit_stride + u * bytes_per_pix], bytes_per_pix);
          }
        }
@@ -227,7 +227,7 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
   int ret = 0;
   for (CtxList *l = ctx->eid_db; l; l = l->next)
   {
-    CtxEidInfo *eid_info = l->data;
+    CtxEidInfo *eid_info = (CtxEidInfo*)l->data;
     if (ctx->frame - eid_info->frame >= 2)
     {
       ctx_list_prepend (&to_remove, eid_info);
@@ -243,7 +243,7 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
   }
   while (to_remove)
   {
-    CtxEidInfo *eid_info = to_remove->data;
+    CtxEidInfo *eid_info = (CtxEidInfo*)to_remove->data;
     //fprintf (stderr, "client removing %s\n", eid_info->eid);
     free (eid_info->eid);
     free (eid_info);
@@ -291,7 +291,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
   int dst_stride = width;
   //fprintf (stderr, "DT '%s' %i %i %i \'%s\'\n", eid, width, height, format, (char*)data);
 
-  dst_stride = ctx_pixel_format_get_stride (format, width);
+  dst_stride = ctx_pixel_format_get_stride ((CtxPixelFormat)format, width);
   if (stride <= 0)
     stride = dst_stride;
 
@@ -302,7 +302,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     CtxSHA1 *sha1 = ctx_sha1_new ();
 
     {
-      uint8_t *src = data;
+      uint8_t *src = (uint8_t*)data;
       for (int y = 0; y < height; y++)
       {
          ctx_sha1_process (sha1, src, dst_stride);
@@ -354,7 +354,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
      * we should cut this down to one copy, direct to the drawlist.
      *
      */
-    CtxEntry *commands = calloc (sizeof (CtxEntry), 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8);
+    CtxEntry *commands = (CtxEntry*)calloc (sizeof (CtxEntry), 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8);
     //ctx_memset (commands, 0, sizeof (commands));
     commands[0] = ctx_u32 (CTX_DEFINE_TEXTURE, width, height);
     commands[1].data.u16[0] = format;
@@ -372,7 +372,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     commands[pos].data.u32[0] = data_len;
     commands[pos].data.u32[1] = (data_len+1+1)/9 + 1;
     {
-      uint8_t *src = data;
+      uint8_t *src = (uint8_t*)data;
       uint8_t *dst = &commands[pos+1].data.u8[0];
       for (int y = 0; y < height; y++)
       {
@@ -386,7 +386,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     ctx_process (ctx, commands);
     free (commands);
 
-    CtxEidInfo *eid_info = calloc (sizeof (CtxEidInfo), 1);
+    CtxEidInfo *eid_info = (CtxEidInfo*)calloc (sizeof (CtxEidInfo), 1);
     eid_info->eid = strdup (eid);
     eid_info->width = width;
     eid_info->height = height;
@@ -946,12 +946,12 @@ CtxLineJoin ctx_get_line_join (Ctx *ctx)
 
 CtxTextAlign ctx_get_text_align  (Ctx *ctx)
 {
-  return ctx_state_get (&ctx->state, CTX_text_align);
+  return (CtxTextAlign)ctx_state_get (&ctx->state, CTX_text_align);
 }
 
 CtxTextBaseline ctx_get_text_baseline (Ctx *ctx)
 {
-  return ctx_state_get (&ctx->state, CTX_text_baseline);
+  return (CtxTextBaseline)ctx_state_get (&ctx->state, CTX_text_baseline);
 }
 
 CtxLineCap ctx_get_line_cap (Ctx *ctx)

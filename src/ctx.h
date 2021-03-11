@@ -906,7 +906,7 @@ typedef enum
   CTX_STROKE_TEXT      = 'u', // string - utf8 string
   CTX_REL_VER_LINE_TO  = 'v', // y
   CTX_GLYPH            = 'w', // unichar fontsize
-  CTX_FILL_TEXT        = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
+  CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
   CTX_IDENTITY         = 'y', //
   CTX_CLOSE_PATH       = 'z', //
   CTX_START_GROUP      = '{',
@@ -947,7 +947,7 @@ typedef enum
   // not the serialization/internal render stream
   //
   CTX_STROKE_RECT      = 200, // strokeRect - only exist in long form
-  CTX_FILL_RECT        = 201, // fillRect - only exist in long form
+  CTX_FILL_RECT        = 201, // fillRect   - only exist in long form
 } CtxCode;
 
 

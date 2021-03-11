@@ -706,7 +706,7 @@ ctx_text (Ctx        *ctx,
   if (!string)
     return;
 #if CTX_BACKEND_TEXT
-  ctx_process_cmd_str (ctx, CTX_FILL_TEXT, string, 0, 0);
+  ctx_process_cmd_str (ctx, CTX_TEXT, string, 0, 0);
   _ctx_text (ctx, string, 0, 0);
 #else
   _ctx_text (ctx, string, 0, 1);

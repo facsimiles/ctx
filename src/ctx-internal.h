@@ -1004,7 +1004,9 @@ struct _CtxTiled
    Ctx          *host[CTX_MAX_THREADS];
    CtxAntialias  antialias;
    int           quit;
+#if CTX_TILED
    _Atomic int   thread_quit;
+#endif
    int           shown_frame;
    int           render_frame;
    int           rendered_frame[CTX_MAX_THREADS];

@@ -138,12 +138,12 @@ const char* ctx_texture_init (Ctx           *ctx,
 
   if (stride<=0)
   {
-    stride = ctx_pixel_format_get_stride (format, width);
+    stride = ctx_pixel_format_get_stride ((CtxPixelFormat)format, width);
   }
 
   if (freefunc == ctx_buffer_pixels_free && user_data == (void*)23)
   {
-     uint8_t *tmp = malloc (height * stride);
+     uint8_t *tmp = (uint8_t*)malloc (height * stride);
      memcpy (tmp, pixels, height * stride);
      pixels = tmp;
   }

@@ -524,8 +524,8 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                     eid,
                     width,
                     height,
-                    ctx_pixel_format_get_stride (format, width),
-                    format,
+                    ctx_pixel_format_get_stride ((CtxPixelFormat)format, width),
+                    (CtxPixelFormat)format,
                     NULL, // space
                     data,
                     ctx_buffer_pixels_free, (void*)23);
@@ -2866,7 +2866,7 @@ foo:
       case CTX_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
         break;
-      case CTX_FILL_TEXT:
+      case CTX_TEXT:
         rasterizer->in_text++;
 #if CTX_ENABLE_SHADOW_BLUR
         if (rasterizer->state->gstate.shadow_blur > 0.0)
@@ -3145,7 +3145,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 #if CTX_CURRENT_PATH
   switch (entry->code)
     {
-      case CTX_FILL_TEXT:
+      case CTX_TEXT:
       case CTX_STROKE_TEXT:
       case CTX_BEGIN_PATH:
         ctx->current_path.count = 0;

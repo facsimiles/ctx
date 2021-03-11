@@ -208,7 +208,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_RADIAL_GRADIENT:
         return 6;
       case CTX_STROKE_TEXT:
-      case CTX_FILL_TEXT:
+      case CTX_TEXT:
       case CTX_COLOR_SPACE:
       case CTX_DEFINE_GLYPH:
       case CTX_KERNING_PAIR:
@@ -391,7 +391,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_fillRect:       ret = CTX_FILL_RECT; break;
           case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
           case CTX_fillText:       
-          case CTX_text:           ret = CTX_FILL_TEXT; break;
+          case CTX_text:           ret = CTX_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
           case CTX_texture:        ret = CTX_TEXTURE; break;
@@ -950,7 +950,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
 
       case CTX_STROKE_TEXT:
-      case CTX_FILL_TEXT:
+      case CTX_TEXT:
         if (parser->n_numbers == 1)
           { ctx_rel_move_to (ctx, -parser->numbers[0], 0.0); }  //  XXX : scale by font(size)
         else
@@ -987,7 +987,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         if (cmd == CTX_STROKE_TEXT)
           { parser->command = CTX_STROKE_TEXT; }
         else
-          { parser->command = CTX_FILL_TEXT; }
+          { parser->command = CTX_TEXT; }
         break;
       case CTX_REL_LINE_TO:
         ctx_rel_line_to (ctx, arg(0), arg(1) );
