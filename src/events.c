@@ -107,7 +107,9 @@ static int is_in_ctx (void)
   //tcflush(STDIN_FILENO, 1);
   tcdrain(STDIN_FILENO);
   int length = 0;
-  usleep (1000 * 20);
+  usleep (1000 * 60); // to account for possibly lowish latency ssh,
+                      // should be made configurable ; perhaps in
+                      // an env var
   struct timeval tv = {0,0};
   fd_set rfds;
   

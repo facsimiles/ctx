@@ -13,7 +13,6 @@ CFLAGS+= -g $(CFLAGS_warnings) -fPIC
 
 CFLAGS+= -I. -Ifonts -Ideps
 LIBS   = -lz -lm -lpthread
-CCC=`which ccache` $(CC)
 
 #CFLAGS+= -fsanitize=address
 #LIBS+= -lasan
@@ -32,6 +31,8 @@ SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
 all: build.conf tools/ctx-fontgen ctx $(CLIENTS_BINS)
 include build.conf
+
+CCC=$(CCACHE) $(CC)
 build.conf:
 	@echo "You have not run configure, running it ./configure for you"
 	@echo "you will have to run make again after this.";echo
