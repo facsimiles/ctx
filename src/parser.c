@@ -671,7 +671,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
               CtxEntry e = {CTX_KERNING_PAIR, };
               e.data.u16[0] = parser->numbers[0];
               e.data.u16[1] = parser->numbers[1];
-              e.data.s32[2] = parser->numbers[2] * 256;
+              e.data.s32[1] = parser->numbers[2] * 256;
               ctx_process (ctx, &e);
             }
             break;
