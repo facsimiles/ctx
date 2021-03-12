@@ -1869,7 +1869,14 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
                       ctx_rasterizer_move_to (rasterizer, prev_x+dy, prev_y-dx);
                     }
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
+                  
+                  // we need to know the slope of the other side
+
                   // XXX possible miter line-to
+                  //ctx_rasterizer_line_to (rasterizer, prev_x-dy+4, prev_y+dx+10);
+                  //ctx_rasterizer_line_to (rasterizer, prev_x-dy+8, prev_y+dx+0);
+
+
                   ctx_rasterizer_line_to (rasterizer, x-dy, y+dx);
                 }
               prev_x = x;
@@ -1892,6 +1899,7 @@ foo:
                 {
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
                   // XXX possible miter line-to
+             //   ctx_rasterizer_line_to (rasterizer, prev_x-dy+10, prev_y+dx+10);
                   ctx_rasterizer_line_to (rasterizer, x-dy,      y+dx);
                 }
               prev_x = x;

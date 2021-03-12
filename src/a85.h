@@ -65,6 +65,7 @@ static int ctx_a85dec (const char *src, char *dst, int count)
     {
       break;
     }
+#if 0
     else if (src[i] == 'z')
     {
       for (int j = 0; j < 4; j++)
@@ -77,6 +78,7 @@ static int ctx_a85dec (const char *src, char *dst, int count)
         dst[out_len++] = 32;
       k = 0;
     }
+#endif
     else if (src[i] >= '!' && src[i] <= 'u')
     {
       val += src[i]-'!';
