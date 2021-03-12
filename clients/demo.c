@@ -216,10 +216,10 @@ static void card_dots (ITK *itk, int frame_no)
 
       /* clear */
       ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
-      ctx_rgba8 (ctx, 0,0,0,255);
+      ctx_rgba8_fill (ctx, 0,0,0,255);
       ctx_fill (ctx);
 
-      ctx_rgba(ctx, 1, 1, 1, 0.5);
+      ctx_rgba_fill (ctx, 1, 1, 1, 0.5);
       for (int i = 0; i < dot_count; i ++)
       {
         float x = ctx_width (ctx)/ 2;
@@ -274,7 +274,7 @@ static void card_sliders (ITK *itk, int frame_no)
                             width - height * 0.2,
                             height - height * 0.2,
                             height * 0.1);
-  ctx_rgba (ctx, 0.5, 0.5, 1, 1);
+  ctx_rgba_fill (ctx, 0.5, 0.5, 1, 1);
   ctx_fill (ctx);
 
   slider (ctx, height * 0.2, height * 0.4, width - height * 0.4, (frame_no  % 400) / 400.0);
@@ -302,7 +302,7 @@ static void _analog_clock (Ctx     *ctx,
   float r;
   ctx_save (ctx);
 
-  ctx_rgba8 (ctx, 255, 255, 255, 196);
+  ctx_rgba8_fill (ctx, 255, 255, 255, 196);
 
 #if 0
   ctx_set_rgba_u8 (ctx, 127, 127, 127, 255);
@@ -407,10 +407,10 @@ static void card_fill_rule (ITK *itk, int frame_no)
   ctx_rectangle (ctx, 12, 12, 232, 70);
 
   ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
-  ctx_rgba (ctx, 0, 0.7, 0, 1);
+  ctx_rgba_fill (ctx, 0, 0.7, 0, 1);
   ctx_preserve (ctx);
   ctx_fill (ctx);
-  ctx_rgba (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
+  ctx_rgba_fill (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
 
   ctx_translate (ctx, 0, 128);
   ctx_arc (ctx, 64, 64, 40, 0, 1.9*CTX_PI, 0);
@@ -420,10 +420,10 @@ static void card_fill_rule (ITK *itk, int frame_no)
   ctx_rectangle (ctx, 12, 12, 232, 70);
 
   ctx_fill_rule (ctx, CTX_FILL_RULE_WINDING);
-  ctx_rgba (ctx, 0, 0, 0.9, 1);
+  ctx_rgba_fill (ctx, 0, 0, 0.9, 1);
   ctx_preserve (ctx);
   ctx_fill (ctx);
-  ctx_rgba (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
+  ctx_rgba_fill (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
   ctx_restore (ctx);
 }
 
@@ -445,7 +445,7 @@ static void card_curve_to (ITK *itk, int frame_no)
   ctx_line_width (ctx, 10.0);
   ctx_stroke (ctx);
 
-  ctx_rgba (ctx, 1, 0.2, 0.2, 0.6);
+  ctx_rgba_fill (ctx, 1, 0.2, 0.2, 0.6);
   ctx_line_width (ctx, 6.0);
   ctx_move_to (ctx,x,y);   ctx_line_to (ctx,x1,y1);
   ctx_move_to (ctx,x2,y2); ctx_line_to (ctx,x3,y3);
@@ -545,18 +545,18 @@ static void card_drag (ITK *itk, int frame_no)
                       0.0, CTX_PI *  1.9, 0);
         break;
     }
-    ctx_rgba (ctx, objects[i].red, objects[i].green, objects[i].blue, objects[i].alpha);
+    ctx_rgba_fill (ctx, objects[i].red, objects[i].green, objects[i].blue, objects[i].alpha);
     ctx_listen (ctx, CTX_DRAG, object_drag, &objects[i], itk);
     ctx_fill (ctx);
   }
 #if 0
   ctx_rectangle (ctx, rect1_x, rect1_y, 0.2, 0.2);
-  ctx_rgb (ctx, 1,0,0);
+  ctx_rgb_fill (ctx, 1,0,0);
   ctx_listen (ctx, CTX_DRAG, rect_drag, &rect1_x, &rect1_y);
   ctx_fill (ctx);
 
   ctx_rectangle (ctx, rect2_x, rect2_y, 0.2, 0.2);
-  ctx_rgb (ctx, 1,1,0);
+  ctx_rgb_fill (ctx, 1,1,0);
   ctx_listen (ctx, CTX_DRAG, rect_drag, &rect2_x, &rect2_y);
   ctx_fill (ctx);
 #endif
@@ -865,7 +865,7 @@ static void card_7GUI6 (ITK *itk, int frame_no)
   ctx_listen (ctx, CTX_RELEASE, circle_editor_release_cb, NULL, NULL);
   ctx_listen (ctx, CTX_MOTION, circle_editor_motion_cb, NULL, NULL);
 
-  ctx_rgb (ctx, 1,0,0);
+  ctx_rgb_fill (ctx, 1,0,0);
   ctx_fill (ctx);
 
   for (int i = 0; i < circle_count; i ++)
@@ -1598,7 +1598,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
               if (cell->display[0]=='!')
               {
                 ctx_save (ctx);
-                ctx_rgb (ctx, 1,0,0);
+                ctx_rgb_fill (ctx, 1,0,0);
                 ctx_text (ctx, cell->display);
                 ctx_restore (ctx);
               }
@@ -1630,9 +1630,9 @@ static void card_7GUI7 (ITK *itk, int frame_no)
                  saved_y + itk->panel->height - row_height*2,
                  page_len,
                  row_height);
-  ctx_rgb (ctx, 0,1,0);
+  ctx_rgb_fill (ctx, 0,1,0);
   ctx_fill (ctx);
-  ctx_rgb (ctx, 1,0,0);
+  ctx_rgb_fill (ctx, 1,0,0);
   float avg_col_width = (col_width[0] + col_width[1] + col_width[2])/3.0;
   ctx_rectangle (ctx,
                  saved_x + row_header_width + page_len * page_pos,
@@ -1653,7 +1653,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
                  em,
                  saved_y + row_height,
                  em, page_len);
-  ctx_rgb (ctx, 0,1,0);
+  ctx_rgb_fill (ctx, 0,1,0);
   ctx_fill (ctx);
 
   ctx_rectangle (ctx, itk->panel->x + itk->panel->width - 
@@ -1663,7 +1663,7 @@ static void card_7GUI7 (ITK *itk, int frame_no)
                    page_len *
                    (page_len / (avg_col_width * page_max)));
 
-  ctx_rgb (ctx, 1,0,0);
+  ctx_rgb_fill (ctx, 1,0,0);
   ctx_fill (ctx);
 
 
@@ -1797,7 +1797,7 @@ static void card_textures (ITK *itk, int frame_no)
 #if 0
 
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
-    //ctx_rgb (ctx, 1 ,0,0);
+    //ctx_rgb_fill (ctx, 1 ,0,0);
     ctx_define_texture (ctx, NULL,
                       TEXTURE_W, TEXTURE_H, 0,
                       12,

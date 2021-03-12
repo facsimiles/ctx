@@ -178,8 +178,8 @@ struct _CtxGState
   int           stringpool_pos;
 
   CtxMatrix     transform;
-  //CtxSource   source_stroke;
-  CtxSource     source;
+  CtxSource     source_stroke;
+  CtxSource     source_fill;
   float         global_alpha_f;
   uint8_t       global_alpha_u8;
 

@@ -245,10 +245,14 @@ float ctx_get_global_alpha (Ctx *ctx);
 void ctx_named_source (Ctx *ctx, const char *name);
 // followed by a color, gradient or pattern definition
 
-void ctx_rgba   (Ctx *ctx, float r, float g, float b, float a);
-void ctx_rgb    (Ctx *ctx, float r, float g, float b);
+void ctx_rgba_stroke   (Ctx *ctx, float r, float g, float b, float a);
+void ctx_rgb_stroke    (Ctx *ctx, float r, float g, float b);
+
+void ctx_rgba_fill   (Ctx *ctx, float r, float g, float b, float a);
+void ctx_rgb_fill    (Ctx *ctx, float r, float g, float b);
+void ctx_rgba8_fill  (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
 void ctx_gray   (Ctx *ctx, float gray);
-void ctx_rgba8  (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void ctx_drgba  (Ctx *ctx, float r, float g, float b, float a);
 void ctx_cmyka  (Ctx *ctx, float c, float m, float y, float k, float a);
 void ctx_cmyk   (Ctx *ctx, float c, float m, float y, float k);

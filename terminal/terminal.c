@@ -945,9 +945,9 @@ void draw_titlebar (Ctx *ctx, CtxClient *client,
 #if 0
   ctx_move_to (ctx, x, y + height * 0.8);
   if (client == active)
-    ctx_rgba (ctx, 1, 1,0.4, 1.0);
+    ctx_rgba_fill (ctx, 1, 1,0.4, 1.0);
   else
-    ctx_rgba (ctx, 1, 1,1, 0.8);
+    ctx_rgba_fill (ctx, 1, 1,1, 0.8);
   ctx_text (ctx, client->title);
 #else
 
@@ -980,7 +980,7 @@ void draw_titlebar (Ctx *ctx, CtxClient *client,
                       y - titlebar_height, titlebar_height,
                       titlebar_height);
 #endif
-      ctx_rgb (ctx, 1, 0,0);
+      ctx_rgb_fill (ctx, 1, 0,0);
       ctx_listen (ctx, CTX_PRESS, client_close, client, NULL);
       ctx_listen_set_cursor (ctx, CTX_CURSOR_ARROW);
       //ctx_fill (ctx);
@@ -1451,14 +1451,14 @@ void ctx_osk_draw (Ctx *ctx)
                             c * rows,
                             c * 0.0);
   ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, NULL, &en_intl);
-  ctx_rgba (ctx, 0,0,0, 0.5 * fade);
+  ctx_rgba_fill (ctx, 0,0,0, 0.5 * fade);
   ctx_preserve (ctx);
   if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
     ctx_fill (ctx);
   //ctx_line_width (ctx, m * 0.01);
   ctx_begin_path (ctx);
 #if 0
-  ctx_rgba (ctx, 1,1,1, 0.5);
+  ctx_rgba_fill (ctx, 1,1,1, 0.5);
   ctx_stroke (ctx);
 #endif
 
@@ -1517,22 +1517,22 @@ void ctx_osk_draw (Ctx *ctx)
       
       if (cap->down || (cap->hovered && kb->down))
       {
-        ctx_rgba (ctx, 1,1,1, fade);
+        ctx_rgba_fill (ctx, 1,1,1, fade);
 #if 1
       ctx_fill (ctx);
 #else
       ctx_preserve (ctx);
       ctx_fill (ctx);
 
-      ctx_rgba (ctx, 0,0,0, fade);
+      ctx_rgba_fill (ctx, 0,0,0, fade);
 
       ctx_stroke (ctx);
 #endif
       }
       if (cap->down || (cap->hovered && kb->down))
-        ctx_rgba (ctx, 1,1,1, fade);
+        ctx_rgba_fill (ctx, 1,1,1, fade);
       else
-        ctx_rgba (ctx, 0,0,0, fade);
+        ctx_rgba_fill (ctx, 0,0,0, fade);
 
       ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
       ctx_text_baseline (ctx, CTX_TEXT_BASELINE_MIDDLE);
@@ -1545,9 +1545,9 @@ void ctx_osk_draw (Ctx *ctx)
       ctx_move_to (ctx, x + cap->wfactor * c*0.5, y + c * 0.5);
 
       if (cap->down || (cap->hovered && kb->down))
-        ctx_rgba (ctx, 0,0,0, fade);
+        ctx_rgba_fill (ctx, 0,0,0, fade);
       else
-        ctx_rgba (ctx, 1,0,0, fade);
+        ctx_rgba_fill (ctx, 1,0,0, fade);
 
       ctx_text (ctx, label);
 
@@ -1668,7 +1668,7 @@ void draw_mini_panel (Ctx *ctx)
   ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
   ctx_move_to (ctx, titlebar_height * 1.5/2, titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-  ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
+  ctx_rgba_fill (ctx, 0.9, 0.9, 0.9, 0.5);
   ctx_text (ctx, "+");
 
   ctx_restore (ctx);

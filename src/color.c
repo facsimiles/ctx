@@ -425,7 +425,7 @@ void ctx_color_get_graya_u8 (CtxState *state, CtxColor *color, uint8_t *out)
   out[1] = color->rgba[3];
 }
 
-
+#if 0
 void
 ctx_get_rgba (Ctx *ctx, float *rgba)
 {
@@ -437,6 +437,7 @@ ctx_get_drgba (Ctx *ctx, float *rgba)
 {
   ctx_color_get_drgba (& (ctx->state), &ctx->state.gstate.source.color, rgba);
 }
+#endif
 
 int ctx_in_fill (Ctx *ctx, float x, float y)
 {
@@ -451,17 +452,21 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
 
 
 #if CTX_ENABLE_CMYK
+#if 0
 void
 ctx_get_cmyka (Ctx *ctx, float *cmyka)
 {
   ctx_color_get_cmyka (& (ctx->state), &ctx->state.gstate.source.color, cmyka);
 }
 #endif
+#endif
+#if 0
 void
 ctx_get_graya (Ctx *ctx, float *ya)
 {
   ctx_color_get_graya (& (ctx->state), &ctx->state.gstate.source.color, ya);
 }
+#endif
 
 void ctx_drgba (Ctx *ctx, float r, float g, float b, float a)
 {
@@ -474,24 +479,43 @@ void ctx_drgba (Ctx *ctx, float r, float g, float b, float a)
   ctx_process (ctx, command);
 }
 
-void ctx_rgba (Ctx *ctx, float r, float g, float b, float a)
+void ctx_rgba_raw (Ctx *ctx, float r, float g, float b, float a, int stroke)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_COLOR, CTX_RGBA, r),
+    ctx_f (CTX_COLOR, CTX_RGBA + stroke * 512, r),
     ctx_f (CTX_CONT, g, b),
     ctx_f (CTX_CONT, a, 0)
   };
   float rgba[4];
-  ctx_color_get_rgba (&ctx->state, &ctx->state.gstate.source.color, rgba);
+  if (stroke)
+    ctx_color_get_rgba (&ctx->state, &ctx->state.gstate.source_stroke.color, rgba);
+  else
+    ctx_color_get_rgba (&ctx->state, &ctx->state.gstate.source_fill.color, rgba);
+  // XXX check that the type is right
   if (rgba[0] == r && rgba[1] == g && rgba[2] == b && rgba[3] == a)
      return;
   ctx_process (ctx, command);
 }
 
-void ctx_rgb (Ctx *ctx, float   r, float   g, float   b)
+void ctx_rgba_fill (Ctx *ctx, float r, float g, float b, float a)
 {
-  ctx_rgba (ctx, r, g, b, 1.0f);
+  ctx_rgba_raw (ctx, r, g, b, a, 0);
+}
+
+void ctx_rgba_stroke (Ctx *ctx, float r, float g, float b, float a)
+{
+  ctx_rgba_raw (ctx, r, g, b, a, 1);
+}
+
+void ctx_rgb_fill (Ctx *ctx, float   r, float   g, float   b)
+{
+  ctx_rgba_fill (ctx, r, g, b, 1.0f);
+}
+
+void ctx_rgb_stroke (Ctx *ctx, float   r, float   g, float   b)
+{
+  ctx_rgba_stroke (ctx, r, g, b, 1.0f);
 }
 
 void ctx_gray (Ctx *ctx, float gray)
@@ -770,18 +794,28 @@ int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
   return 0;
 }
 
-int ctx_color (Ctx *ctx, const char *string)
+int ctx_color_fill (Ctx *ctx, const char *string)
 {
   CtxColor color = {0,};
   ctx_color_set_from_string (ctx, &color, string);
   float rgba[4];
   ctx_color_get_rgba (&(ctx->state), &color, rgba);
-  ctx_rgba (ctx, rgba[0],rgba[1],rgba[2],rgba[3]);
+  ctx_rgba_fill (ctx, rgba[0],rgba[1],rgba[2],rgba[3]);
+  return 0;
+}
+
+int ctx_color_stroke (Ctx *ctx, const char *string)
+{
+  CtxColor color = {0,};
+  ctx_color_set_from_string (ctx, &color, string);
+  float rgba[4];
+  ctx_color_get_rgba (&(ctx->state), &color, rgba);
+  ctx_rgba_stroke  (ctx, rgba[0],rgba[1],rgba[2],rgba[3]);
   return 0;
 }
 
 void
-ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+ctx_rgba8_fill (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
 #if 0
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
@@ -793,7 +827,7 @@ ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 
   ctx_process (ctx, &command);
 #else
-  ctx_rgba (ctx, r/255.0f, g/255.0f, b/255.0f, a/255.0f);
+  ctx_rgba_fill (ctx, r/255.0f, g/255.0f, b/255.0f, a/255.0f);
 #endif
 }
 

@@ -296,7 +296,8 @@ struct
 };
 void ctx_get_matrix (Ctx *ctx, CtxMatrix *matrix);
 
-int ctx_color (Ctx *ctx, const char *string);
+int ctx_color_fill (Ctx *ctx, const char *string);
+int ctx_color_stroke (Ctx *ctx, const char *string);
 typedef struct _CtxState CtxState;
 CtxColor *ctx_color_new ();
 CtxState *ctx_get_state (Ctx *ctx);

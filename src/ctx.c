@@ -1274,9 +1274,18 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
 
       case CTX_COLOR:
         {
-          CtxColor *color = &state->gstate.source.color;
-          state->gstate.source.type = CTX_SOURCE_COLOR;
-          switch ( (int) ctx_arg_float (0) )
+          CtxColor *color = &state->gstate.source_fill.color;
+
+          if ( ((int) ctx_arg_float (0)) & 512)
+          {
+             color = &state->gstate.source_stroke.color;
+             state->gstate.source_stroke.type = CTX_SOURCE_COLOR;
+          }
+          else
+          {
+             state->gstate.source_fill.type = CTX_SOURCE_COLOR;
+          }
+          switch ( ((int) ctx_arg_float (0)) & 511)
             {
               case CTX_RGB:
                 ctx_color_set_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, 1.0f);
@@ -1312,8 +1321,8 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         break;
       case CTX_SET_RGBA_U8:
         //ctx_source_deinit (&state->gstate.source);
-        state->gstate.source.type = CTX_SOURCE_COLOR;
-        ctx_color_set_RGBA8 (state, &state->gstate.source.color,
+        state->gstate.source_fill.type = CTX_SOURCE_COLOR;
+        ctx_color_set_RGBA8 (state, &state->gstate.source_fill.color,
                              ctx_arg_u8 (0),
                              ctx_arg_u8 (1),
                              ctx_arg_u8 (2),
@@ -1345,15 +1354,15 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           dy = (y1-y0) / length;
           start = (x0 * dx + y0 * dy) / length;
           end =   (x1 * dx + y1 * dy) / length;
-          state->gstate.source.linear_gradient.length = length;
-          state->gstate.source.linear_gradient.dx = dx;
-          state->gstate.source.linear_gradient.dy = dy;
-          state->gstate.source.linear_gradient.start = start;
-          state->gstate.source.linear_gradient.end = end;
-          state->gstate.source.linear_gradient.rdelta = (end-start)!=0.0?1.0f/(end - start):1.0;
-          state->gstate.source.type = CTX_SOURCE_LINEAR_GRADIENT;
-          state->gstate.source.transform = state->gstate.transform;
-          ctx_matrix_invert (&state->gstate.source.transform);
+          state->gstate.source_fill.linear_gradient.length = length;
+          state->gstate.source_fill.linear_gradient.dx = dx;
+          state->gstate.source_fill.linear_gradient.dy = dy;
+          state->gstate.source_fill.linear_gradient.start = start;
+          state->gstate.source_fill.linear_gradient.end = end;
+          state->gstate.source_fill.linear_gradient.rdelta = (end-start)!=0.0?1.0f/(end - start):1.0;
+          state->gstate.source_fill.type = CTX_SOURCE_LINEAR_GRADIENT;
+          state->gstate.source_fill.transform = state->gstate.transform;
+          ctx_matrix_invert (&state->gstate.source_fill.transform);
         }
         break;
       case CTX_RADIAL_GRADIENT:
@@ -1364,16 +1373,16 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           float x1 = ctx_arg_float (3);
           float y1 = ctx_arg_float (4);
           float r1 = ctx_arg_float (5);
-          state->gstate.source.radial_gradient.x0 = x0;
-          state->gstate.source.radial_gradient.y0 = y0;
-          state->gstate.source.radial_gradient.r0 = r0;
-          state->gstate.source.radial_gradient.x1 = x1;
-          state->gstate.source.radial_gradient.y1 = y1;
-          state->gstate.source.radial_gradient.r1 = r1;
-          state->gstate.source.radial_gradient.rdelta = (r1 - r0) != 0.0 ? 1.0f/(r1-r0):0.0;
-          state->gstate.source.type      = CTX_SOURCE_RADIAL_GRADIENT;
-          state->gstate.source.transform = state->gstate.transform;
-          ctx_matrix_invert (&state->gstate.source.transform);
+          state->gstate.source_fill.radial_gradient.x0 = x0;
+          state->gstate.source_fill.radial_gradient.y0 = y0;
+          state->gstate.source_fill.radial_gradient.r0 = r0;
+          state->gstate.source_fill.radial_gradient.x1 = x1;
+          state->gstate.source_fill.radial_gradient.y1 = y1;
+          state->gstate.source_fill.radial_gradient.r1 = r1;
+          state->gstate.source_fill.radial_gradient.rdelta = (r1 - r0) != 0.0 ? 1.0f/(r1-r0):0.0;
+          state->gstate.source_fill.type      = CTX_SOURCE_RADIAL_GRADIENT;
+          state->gstate.source_fill.transform = state->gstate.transform;
+          ctx_matrix_invert (&state->gstate.source_fill.transform);
         }
         break;
     }

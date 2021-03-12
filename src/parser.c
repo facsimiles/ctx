@@ -770,10 +770,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                 ctx_gray (ctx, arg (0) );
                 break;
               case CTX_GRAYA:
-                ctx_rgba (ctx, arg (0), arg (0), arg (0), arg (1) );
+                ctx_rgba_fill (ctx, arg (0), arg (0), arg (0), arg (1) );
                 break;
               case CTX_RGB:
-                ctx_rgb (ctx, arg (0), arg (1), arg (2) );
+                ctx_rgb_fill (ctx, arg (0), arg (1), arg (2) );
                 break;
 #if CTX_ENABLE_CMYK
               case CTX_CMYK:
@@ -793,12 +793,12 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                   ctx_cmyk_to_rgb (arg (0), arg (1), arg (2), arg (3), &r, &g, &b);
                   if (parser->color_model == CTX_CMYKA)
                     { a = arg (4); }
-                  ctx_rgba (ctx, r, g, b, a);
+                  ctx_rgba_fill (ctx, r, g, b, a);
                 }
                 break;
 #endif
               case CTX_RGBA:
-                ctx_rgba (ctx, arg (0), arg (1), arg (2), arg (3) );
+                ctx_rgba_fill (ctx, arg (0), arg (1), arg (2), arg (3) );
                 break;
               case CTX_DRGB:
                 ctx_drgba (ctx, arg (0), arg (1), arg (2), 1.0);

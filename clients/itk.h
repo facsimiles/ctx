@@ -302,11 +302,11 @@ void itk_style_color (Ctx *ctx, const char *name)
    if (str)
    {
      while (*str == ' ')str++;
-     ctx_color (ctx, str);
+     ctx_color_fill (ctx, str);
    }
    else
    {
-     ctx_rgb (ctx, 1, 0, 1);
+     ctx_rgb_fill (ctx, 1, 0, 1);
    }
 }
 
@@ -1513,7 +1513,7 @@ void itk_choice_add (ITK *itk, int value, const char *label)
       ctx_move_to (ctx, itk->x + itk->label_width * itk->width
                       ,
                       itk->y + em * itk->rel_baseline  - em * (itk->rel_ver_advance + itk->rel_vgap));
-      ctx_rgb (ctx, 1, 0, 0);
+      ctx_rgb_fill (ctx, 1, 0, 0);
       ctx_text (ctx, label);
     }
   }

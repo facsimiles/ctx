@@ -4173,7 +4173,7 @@ mrg_ctx_set_source_color (Ctx *ctx, CtxColor *color)
 {
    float rgba[4];
    ctx_color_get_rgba (ctx_get_state (ctx), color, rgba);
-   ctx_rgba (ctx, rgba[0], rgba[1], rgba[2], rgba[3]);
+   ctx_rgba_fill (ctx, rgba[0], rgba[1], rgba[2], rgba[3]);
 }
 
 static void mrg_path_fill_stroke (Mrg *mrg)
@@ -4764,24 +4764,24 @@ static void mrg_hl_token (Ctx *cr, const char *word)
   {
     case MRG_HL_NEUTRAL:
       if (is_a_number (word))
-        ctx_rgb (cr, 0.5, 0.0, 0.0);
+        ctx_rgb_fill (cr, 0.5, 0.0, 0.0);
       else if (is_one_of (word, hl_punctuation))
-        ctx_rgb (cr, 0.4, 0.4, 0.4);
+        ctx_rgb_fill (cr, 0.4, 0.4, 0.4);
       else if (is_one_of (word, hl_operators))
-        ctx_rgb (cr, 0, 0.5, 0);
+        ctx_rgb_fill (cr, 0, 0.5, 0);
       else if (is_one_of (word, hl_types))
-        ctx_rgb (cr, 0.2, 0.2, 0.5);
+        ctx_rgb_fill (cr, 0.2, 0.2, 0.5);
       else 
-        ctx_rgb (cr, 0, 0, 0);
+        ctx_rgb_fill (cr, 0, 0, 0);
       break;
     case MRG_HL_STRING:
     case MRG_HL_QSTRING:
-        ctx_rgb (cr, 1, 0, 0.5);
+        ctx_rgb_fill (cr, 1, 0, 0.5);
       break;
     case MRG_HL_COMMENT:
     case MRG_HL_COMMENT_STAR:
     case MRG_HL_LINECOMMENT:
-        ctx_rgb (cr, 0.4, 0.4, 1);
+        ctx_rgb_fill (cr, 0.4, 0.4, 1);
       break;
   }
 
@@ -4825,7 +4825,7 @@ void mrg_hl_text (Ctx *cr, const char *text)
         mrg_string_set (word, "");
         break;
       default:
-        ctx_rgb (cr, 0,0,0);
+        ctx_rgb_fill (cr, 0,0,0);
         mrg_string_append_byte (word, text[i]);
         break;
     }
@@ -5203,7 +5203,7 @@ static void _mrg_spaces (Mrg *mrg, int count)
           {
             Ctx *cr = mrg_cr (mrg);
             ctx_rectangle (cr, mrg->x + diff*0.1, mrg->y + mrg_em(mrg)*0.2, diff*0.8, -mrg_em (mrg)*1.1);
-            ctx_rgb (cr, 1,1,1);
+            ctx_rgb_fill (cr, 1,1,1);
             ctx_fill (cr);
           }
         }

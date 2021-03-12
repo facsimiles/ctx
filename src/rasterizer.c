@@ -499,14 +499,14 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   {
     rasterizer->texture_source->texture[no].frame = rasterizer->texture_source->frame;
   }
-  rasterizer->state->gstate.source.type = CTX_SOURCE_IMAGE;
-  rasterizer->state->gstate.source.image.buffer = &rasterizer->texture_source->texture[no];
+  rasterizer->state->gstate.source_fill.type = CTX_SOURCE_IMAGE;
+  rasterizer->state->gstate.source_fill.image.buffer = &rasterizer->texture_source->texture[no];
   //ctx_user_to_device (rasterizer->state, &x, &y);
-  rasterizer->state->gstate.source.image.x0 = 0;
-  rasterizer->state->gstate.source.image.y0 = 0;
-  rasterizer->state->gstate.source.transform = rasterizer->state->gstate.transform;
-  ctx_matrix_translate (&rasterizer->state->gstate.source.transform, x, y);
-  ctx_matrix_invert (&rasterizer->state->gstate.source.transform);
+  rasterizer->state->gstate.source_fill.image.x0 = 0;
+  rasterizer->state->gstate.source_fill.image.y0 = 0;
+  rasterizer->state->gstate.source_fill.transform = rasterizer->state->gstate.transform;
+  ctx_matrix_translate (&rasterizer->state->gstate.source_fill.transform, x, y);
+  ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);
 }
 
 
@@ -1262,15 +1262,15 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
 }
 
 inline static int
-ctx_is_transparent (CtxRasterizer *rasterizer)
+ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   if (gstate->global_alpha_u8 == 0)
     return 1;
-  if (gstate->source.type == CTX_SOURCE_COLOR)
+  if (gstate->source_fill.type == CTX_SOURCE_COLOR)
   {
     uint8_t ga[2];
-    ctx_color_get_graya_u8 (rasterizer->state, &gstate->source.color, ga);
+    ctx_color_get_graya_u8 (rasterizer->state, &gstate->source_fill.color, ga);
     if (ga[1] == 0)
       return 1;
   }
@@ -1306,7 +1306,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   }
 #endif
 
-  if (ctx_is_transparent (rasterizer) ||
+  if (ctx_is_transparent (rasterizer, 0) ||
       rasterizer->scan_min / aa > rasterizer->blit_y + rasterizer->blit_height ||
       rasterizer->scan_max / aa < rasterizer->blit_y ||
       rasterizer->col_min / CTX_SUBDIV > rasterizer->blit_x + rasterizer->blit_width ||
@@ -1557,7 +1557,7 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
       glyph->unichar = string[i];
       glyph->col = col;
       glyph->row = row;
-      ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color,
+      ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color,
                       glyph->rgba_fg);
     }
     //_ctx_text (rasterizer->ctx, string, stroke, 1);
@@ -1699,7 +1699,7 @@ ctx_rasterizer_pset (CtxRasterizer *rasterizer, int x, int y, uint8_t cov)
       y >= rasterizer->blit_height)
     { return; }
   uint8_t fg_color[4];
-  ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source.color, fg_color);
+  ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, fg_color);
   uint8_t pixel[4];
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
   dst += y * rasterizer->blit_stride;
@@ -1799,6 +1799,8 @@ foo:
 static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
+  CtxSource source_backup = rasterizer->state->gstate.source_fill;
+  rasterizer->state->gstate.source_fill = rasterizer->state->gstate.source_stroke;
   CtxState *state = rasterizer->state;
   int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;
@@ -1988,6 +1990,7 @@ foo:
       rasterizer->edge_list.count = count;
       rasterizer->preserve = 0;
     }
+  rasterizer->state->gstate.source_fill = source_backup;
 }
 
 #if CTX_1BIT_CLIP
@@ -2186,8 +2189,8 @@ ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
                           uint8_t b,
                           uint8_t a)
 {
-  rasterizer->state->gstate.source.type = CTX_SOURCE_COLOR;
-  ctx_color_set_RGBA8 (rasterizer->state, &rasterizer->state->gstate.source.color, r, g, b, a);
+  rasterizer->state->gstate.source_fill.type = CTX_SOURCE_COLOR;
+  ctx_color_set_RGBA8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, r, g, b, a);
 #if 0
   // XXX : doesn't take transforms into account
   ctx_rasterizer_pset (rasterizer, x, y, 255);
@@ -2548,7 +2551,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         {
           CtxColor  col;
           CtxColor *color = &col;
-          //state->gstate.source.type = CTX_SOURCE_COLOR;
+          //state->gstate.source_fill.type = CTX_SOURCE_COLOR;
           switch ((int)c->rgba.model)
             {
               case CTX_RGB:
