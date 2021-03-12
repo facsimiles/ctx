@@ -14,6 +14,10 @@
 #define CTX_FORMATTER       0
 #define CTX_CURRENT_PATH    0
 #define CTX_SHAPE_CACHE     0
+
+#define CTX_PARSER_FIXED_TEMP 1
+#define CTX_PARSER_MAXLEN     1024
+
 #define CTX_GRADIENT_CACHE  0
 #define CTX_ENABLE_CLIP     0  // < 60 bytes extra - but stringpool size
                                //   should be increased to store poly-lines

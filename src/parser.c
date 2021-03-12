@@ -15,7 +15,7 @@ struct
   Ctx       *ctx;
   int        t_args; // total number of arguments seen for current command
   int        state;
-#if CTX_PARSER_STATIC_MAX
+#if CTX_PARSER_FIXED_TEMP
   uint8_t    holding[CTX_PARSER_MAXLEN]; /*  */
 #else
   uint8_t   *holding;
@@ -134,7 +134,7 @@ CtxParser *ctx_parser_new (
 
 void ctx_parser_free (CtxParser *parser)
 {
-#if !CTX_PARSER_STATIC_MAX
+#if !CTX_PARSER_FIXED_TEMP
   if (parser->holding)
     free (parser->holding);
 #endif
@@ -779,20 +779,17 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           switch (parser->color_model)
             {
               case CTX_GRAY:
-                ctx_gray (ctx, arg (0) );
-                break;
               case CTX_GRAYA:
-                ctx_rgba (ctx, arg (0), arg (0), arg (0), arg (1) );
-                break;
               case CTX_RGB:
-                ctx_rgb (ctx, arg (0), arg (1), arg (2) );
+              case CTX_RGBA:
+              case CTX_DRGB:
+              case CTX_DRGBA:
+                ctx_color_raw (ctx, parser->color_model, parser->numbers, 0);
                 break;
 #if CTX_ENABLE_CMYK
               case CTX_CMYK:
-                ctx_cmyk (ctx, arg (0), arg (1), arg (2), arg (3) );
-                break;
               case CTX_CMYKA:
-                ctx_cmyka (ctx, arg (0), arg (1), arg (2), arg (3), arg (4) );
+                ctx_color_raw (ctx, parser->color_model, parser->numbers, 0);
                 break;
 #else
               /* when there is no cmyk support at all in rasterizer
@@ -802,22 +799,13 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
               case CTX_CMYKA:
                 {
                   float r,g,b,a = 1.0f;
-                  ctx_cmyk_to_rgb (arg (0), arg (1), arg (2), arg (3), &r, &g, &b);
+                  ctx_cmyk_to_rgb (arg(0), arg(1), arg(2), arg(3), &r, &g, &b);
                   if (parser->color_model == CTX_CMYKA)
-                    { a = arg (4); }
+                    { a = arg(4); }
                   ctx_rgba (ctx, r, g, b, a);
                 }
                 break;
 #endif
-              case CTX_RGBA:
-                ctx_rgba (ctx, arg (0), arg (1), arg (2), arg (3) );
-                break;
-              case CTX_DRGB:
-                ctx_drgba (ctx, arg (0), arg (1), arg (2), 1.0);
-                break;
-              case CTX_DRGBA:
-                ctx_drgba (ctx, arg (0), arg (1), arg (2), arg (3) );
-                break;
             }
         }
         break;
@@ -833,10 +821,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         //append_dash_val (ctx, arg(0));
         break;
       case CTX_ARC_TO:
-        ctx_arc_to (ctx, arg (0), arg (1), arg (2), arg (3), arg (4) );
+        ctx_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4));
         break;
       case CTX_REL_ARC_TO:
-        ctx_rel_arc_to (ctx, arg (0), arg (1), arg (2), arg (3), arg (4) );
+        ctx_rel_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4) );
         break;
       case CTX_REL_SMOOTH_TO:
         {
@@ -844,24 +832,24 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           float cy = parser->pcy;
           float ax = 2 * ctx_x (ctx) - cx;
           float ay = 2 * ctx_y (ctx) - cy;
-          ctx_curve_to (ctx, ax, ay, arg (0) +  cx, arg (1) + cy,
-                        arg (2) + cx, arg (3) + cy);
-          parser->pcx = arg (0) + cx;
-          parser->pcy = arg (1) + cy;
+          ctx_curve_to (ctx, ax, ay, arg(0) +  cx, arg(1) + cy,
+                        arg(2) + cx, arg(3) + cy);
+          parser->pcx = arg(0) + cx;
+          parser->pcy = arg(1) + cy;
         }
         break;
       case CTX_SMOOTH_TO:
         {
           float ax = 2 * ctx_x (ctx) - parser->pcx;
           float ay = 2 * ctx_y (ctx) - parser->pcy;
-          ctx_curve_to (ctx, ax, ay, arg (0), arg (1),
-                        arg (2), arg (3) );
-          parser->pcx = arg (0);
-          parser->pcx = arg (1);
+          ctx_curve_to (ctx, ax, ay, arg(0), arg(1),
+                        arg(2), arg(3) );
+          parser->pcx = arg(0);
+          parser->pcx = arg(1);
         }
         break;
       case CTX_SMOOTHQ_TO:
-        ctx_quad_to (ctx, parser->pcx, parser->pcy, arg (0), arg (1) );
+        ctx_quad_to (ctx, parser->pcx, parser->pcy, arg(0), arg(1) );
         break;
       case CTX_REL_SMOOTHQ_TO:
         {
@@ -869,93 +857,93 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           float cy = parser->pcy;
           parser->pcx = 2 * ctx_x (ctx) - parser->pcx;
           parser->pcy = 2 * ctx_y (ctx) - parser->pcy;
-          ctx_quad_to (ctx, parser->pcx, parser->pcy, arg (0) +  cx, arg (1) + cy);
+          ctx_quad_to (ctx, parser->pcx, parser->pcy, arg(0) +  cx, arg(1) + cy);
         }
         break;
       case CTX_VER_LINE_TO:
-        ctx_line_to (ctx, ctx_x (ctx), arg (0) );
+        ctx_line_to (ctx, ctx_x (ctx), arg(0) );
         parser->command = CTX_VER_LINE_TO;
         parser->pcx = ctx_x (ctx);
         parser->pcy = ctx_y (ctx);
         break;
       case CTX_HOR_LINE_TO:
-        ctx_line_to (ctx, arg (0), ctx_y (ctx) );
+        ctx_line_to (ctx, arg(0), ctx_y (ctx) );
         parser->command = CTX_HOR_LINE_TO;
         parser->pcx = ctx_x (ctx);
         parser->pcy = ctx_y (ctx);
         break;
       case CTX_REL_HOR_LINE_TO:
-        ctx_rel_line_to (ctx, arg (0), 0.0f);
+        ctx_rel_line_to (ctx, arg(0), 0.0f);
         parser->command = CTX_REL_HOR_LINE_TO;
         parser->pcx = ctx_x (ctx);
         parser->pcy = ctx_y (ctx);
         break;
       case CTX_REL_VER_LINE_TO:
-        ctx_rel_line_to (ctx, 0.0f, arg (0) );
+        ctx_rel_line_to (ctx, 0.0f, arg(0) );
         parser->command = CTX_REL_VER_LINE_TO;
         parser->pcx = ctx_x (ctx);
         parser->pcy = ctx_y (ctx);
         break;
       case CTX_ARC:
-        ctx_arc (ctx, arg (0), arg (1), arg (2), arg (3), arg (4), arg (5) );
+        ctx_arc (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
         break;
       case CTX_APPLY_TRANSFORM:
-        ctx_apply_transform (ctx, arg (0), arg (1), arg (2), arg (3), arg (4), arg (5) );
+        ctx_apply_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
         break;
       case CTX_CURVE_TO:
-        ctx_curve_to (ctx, arg (0), arg (1), arg (2), arg (3), arg (4), arg (5) );
-        parser->pcx = arg (2);
-        parser->pcy = arg (3);
+        ctx_curve_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
+        parser->pcx = arg(2);
+        parser->pcy = arg(3);
         parser->command = CTX_CURVE_TO;
         break;
       case CTX_REL_CURVE_TO:
-        parser->pcx = arg (2) + ctx_x (ctx);
-        parser->pcy = arg (3) + ctx_y (ctx);
-        ctx_rel_curve_to (ctx, arg (0), arg (1), arg (2), arg (3), arg (4), arg (5) );
+        parser->pcx = arg(2) + ctx_x (ctx);
+        parser->pcy = arg(3) + ctx_y (ctx);
+        ctx_rel_curve_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
         parser->command = CTX_REL_CURVE_TO;
         break;
       case CTX_LINE_TO:
-        ctx_line_to (ctx, arg (0), arg (1) );
+        ctx_line_to (ctx, arg(0), arg(1) );
         parser->command = CTX_LINE_TO;
-        parser->pcx = arg (0);
-        parser->pcy = arg (1);
+        parser->pcx = arg(0);
+        parser->pcy = arg(1);
         break;
       case CTX_MOVE_TO:
-        ctx_move_to (ctx, arg (0), arg (1) );
+        ctx_move_to (ctx, arg(0), arg(1) );
         parser->command = CTX_LINE_TO;
-        parser->pcx = arg (0);
-        parser->pcy = arg (1);
+        parser->pcx = arg(0);
+        parser->pcy = arg(1);
         parser->left_margin = parser->pcx;
         break;
       case CTX_FONT_SIZE:
-        ctx_font_size (ctx, arg (0) );
+        ctx_font_size (ctx, arg(0) );
         break;
       case CTX_MITER_LIMIT:
-        ctx_miter_limit (ctx, arg (0) );
+        ctx_miter_limit (ctx, arg(0) );
         break;
       case CTX_SCALE:
-        ctx_scale (ctx, arg (0), arg (1) );
+        ctx_scale (ctx, arg(0), arg(1) );
         break;
       case CTX_QUAD_TO:
-        parser->pcx = arg (0);
-        parser->pcy = arg (1);
-        ctx_quad_to (ctx, arg (0), arg (1), arg (2), arg (3) );
+        parser->pcx = arg(0);
+        parser->pcy = arg(1);
+        ctx_quad_to (ctx, arg(0), arg(1), arg(2), arg(3) );
         parser->command = CTX_QUAD_TO;
         break;
       case CTX_REL_QUAD_TO:
-        parser->pcx = arg (0) + ctx_x (ctx);
-        parser->pcy = arg (1) + ctx_y (ctx);
-        ctx_rel_quad_to (ctx, arg (0), arg (1), arg (2), arg (3) );
+        parser->pcx = arg(0) + ctx_x (ctx);
+        parser->pcy = arg(1) + ctx_y (ctx);
+        ctx_rel_quad_to (ctx, arg(0), arg(1), arg(2), arg(3) );
         parser->command = CTX_REL_QUAD_TO;
         break;
       case CTX_CLIP:
         ctx_clip (ctx);
         break;
       case CTX_TRANSLATE:
-        ctx_translate (ctx, arg (0), arg (1) );
+        ctx_translate (ctx, arg(0), arg(1) );
         break;
       case CTX_ROTATE:
-        ctx_rotate (ctx, arg (0) );
+        ctx_rotate (ctx, arg(0) );
         break;
       case CTX_FONT:
         ctx_font (ctx, (char *) parser->holding);
@@ -1128,7 +1116,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 
 static void ctx_parser_holding_append (CtxParser *parser, int byte)
 {
-#if !CTX_PARSER_STATIC_MAX
+#if !CTX_PARSER_FIXED_TEMP
   if (parser->hold_len < parser->pos + 1 + 1)
   {
     int new_len = parser->hold_len * 1.5;
@@ -1139,7 +1127,7 @@ static void ctx_parser_holding_append (CtxParser *parser, int byte)
 #endif
 
   parser->holding[parser->pos++]=byte;
-#if CTX_PARSER_STATIC_MAX
+#if CTX_PARSER_FIXED_TEMP
   if (parser->pos > (int) sizeof (parser->holding)-2)
     { parser->pos = sizeof (parser->holding)-2; }
 #endif

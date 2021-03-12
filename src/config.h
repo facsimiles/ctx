@@ -82,12 +82,19 @@
 #endif
 
 
-#define CTX_PARSER_STATIC_MAX 0
-
-
+#ifndef CTX_PARSER_FIXED_TEMP
+#define CTX_PARSER_FIXED_TEMP 0
+         // when 1  CTX_PARSER_MAXLEN is the fixed max stringlen
+#endif   // and no allocations happens beyond creating the parser,
+         // when 0 the scratchbuf for parsing is a separate dynamically
+         // growing buffer, that maxes out at CTX_PARSER_MAXLEN
+         //
 #ifndef CTX_PARSER_MAXLEN
-#define CTX_PARSER_MAXLEN  1024*1024*2 // this is the largest text string we support
-                                       //
+#if CTX_PARSER_FIXED_TEMP
+#define CTX_PARSER_MAXLEN  1024*128        // This is the maximum texture/string size supported
+#else
+#define CTX_PARSER_MAXLEN  1024*1024*16    // 16mb
+#endif
 #endif
 
 #ifndef CTX_COMPOSITING_GROUPS
