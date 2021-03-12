@@ -350,11 +350,22 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
   else
 
   {
+    CtxEntry *commands;
+    int command_size = 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8;
+    if (ctx->renderer && ctx->renderer->process)
+    {
+       commands = (CtxEntry*)calloc (sizeof (CtxEntry), command_size);
+    }
+    else
+    {
+       commands = NULL;
+       ctx_drawlist_resize (&ctx->drawlist, ctx->drawlist.count + command_size);
+       commands = &(ctx->drawlist.entries[ctx->drawlist.count]);
+    }
     /* bottleneck,  we can avoid copying sometimes - and even when copying
      * we should cut this down to one copy, direct to the drawlist.
      *
      */
-    CtxEntry *commands = (CtxEntry*)calloc (sizeof (CtxEntry), 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8);
     //ctx_memset (commands, 0, sizeof (commands));
     commands[0] = ctx_u32 (CTX_DEFINE_TEXTURE, width, height);
     commands[1].data.u16[0] = format;
@@ -383,8 +394,15 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     }
     ((char *) &commands[pos+1].data.u8[0])[data_len]=0;
 
-    ctx_process (ctx, commands);
-    free (commands);
+    if (ctx->renderer && ctx->renderer->process)
+    {
+      ctx_process (ctx, commands);
+      free (commands);
+    }
+    else
+    {
+       ctx->drawlist.count += ctx_conts_for_entry (commands) + 1;
+    }
 
     CtxEidInfo *eid_info = (CtxEidInfo*)calloc (sizeof (CtxEidInfo), 1);
     eid_info->eid = strdup (eid);

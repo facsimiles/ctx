@@ -262,8 +262,6 @@ struct _CtxDrawlist
   int       bitpack_pos;  // stream is bitpacked up to this offset
 };
 
-
-
 #define CTX_MAX_KEYDB 64 // number of entries in keydb
                          // entries are "copy-on-change" between states
 
