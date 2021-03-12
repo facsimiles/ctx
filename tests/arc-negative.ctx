@@ -1,13 +1,13 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
-rgb 0 0 0
+rgbS 0 0 0
 lineWidth=10%
 arc 50% 50% 30% 0.785375 3.1415 1
 stroke
 
 beginPath
 lineWidth=5%
-rgb 1 0 0
+rgbS 1 0 0
 moveTo 50% 50%
 arc 50% 50% 30% 0.785375 0.78375 0
 stroke

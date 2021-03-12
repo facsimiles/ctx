@@ -1,13 +1,14 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
 rgb 0 0 0
+rgbS 0 0 0
 lineWidth= 10%
 
 moveTo 10% 50%
 curveTo 45% 90% 75% 10% 90% 50%
 
 stroke
-rgb 1 0 0
+rgbS 1 0 0
 lineWidth= 5%
 beginPath
 moveTo 10% 50%

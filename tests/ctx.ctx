@@ -203,7 +203,7 @@ save
   join round
   moveTo 5% 100%
   lineWidth 5^
-  rgba 1 1 .8 1
+  rgbaS 1 1 .8 1
   textStroke "ctx"
 
   rgba 0.1 0.2 0.3 1
@@ -250,9 +250,10 @@ save
   gray 0
   fill
   lineWidth 2^
-  gray 1
+  grayS 1
   roundRectangle 0 0 40^ 30^ 3^
   stroke
+  gray 1
   fontSize 8^
   moveTo 2^ 9^
   text "$ _"

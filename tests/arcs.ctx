@@ -2,7 +2,7 @@ rgb 1 1 1 rectangle 0 0 100% 100% fill
 
 lineWidth=5%
 
-rgb 0 0 0
+rgbS 0 0 0
 arc 10% 15% 10% 0.0 4.2 0
 stroke
 

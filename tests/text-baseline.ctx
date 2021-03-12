@@ -4,7 +4,7 @@ gradientAddStop 0.5 0.5 0.5 0.5 1
 rectangle 0 0 100% 100%
 fill
 
-rgba 1 0 0 0.5
+rgbaS 1 0 0 0.5
 moveTo 0% 33%
 lineTo 100% 33%
 moveTo 0% 66%
