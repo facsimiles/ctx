@@ -212,34 +212,34 @@ save
   rgb shadowColor 0 0 0
   shadowOffsetX 1^
   shadowOffsetY 1^
-  fillText "ctx"
+  text "ctx"
 restore
 
 save
   fontSize 0.8@
   moveTo 0.4@ 1@
   gray 0
-  fillText "black\n"
+  text "black\n"
   gray 1.0
-  fillText "white\n"
+  text "white\n"
   cmyk 1 0 0 0
-  fillText "cyan\n"
+  text "cyan\n"
   cmyk 0 1 0 0
-  fillText "magenta\n"
+  text "magenta\n"
   cmyk 0 0 1 0
-  fillText "yellow\n"
+  text "yellow\n"
   cmyk 1 1 1 1
-  fillText "cmyk overprint\n"
+  text "cmyk overprint\n"
   rgb 1 0 0
-  fillText "red\n"
+  text "red\n"
   rgb 0 1 0
-  fillText "green\n"
+  text "green\n"
   rgb 0 0 1
-  fillText "blue\n"
+  text "blue\n"
   rgba 1 0 0 0.5
-  fillText "red 0.5 alpha\n"
+  text "red 0.5 alpha\n"
   cmyka 0 1 0 0 0.5
-  fillText "magenta 0.5 alpha\n"
+  text "magenta 0.5 alpha\n"
 
 restore
 save
@@ -255,6 +255,6 @@ save
   stroke
   fontSize 8^
   moveTo 2^ 9^
-  fillText "$ _"
+  text "$ _"
 restore
 

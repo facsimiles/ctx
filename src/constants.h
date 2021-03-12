@@ -210,7 +210,6 @@
 #define CTX_text_baseline  CTX_STRH('t','e','x','t','_','b','a','s','e','l','i','n','e',0)
 #define CTX_text_baseline  CTX_STRH('t','e','x','t','_','b','a','s','e','l','i','n','e',0)
 #define CTX_textBaseline   CTX_STRH('t','e','x','t','B','a','s','e','l','i','n','e',0,0)
-#define CTX_fillText       CTX_STRH('f','i','l','l','T','e','x','t',0,0,0,0,0,0)
 #define CTX_fillRect       CTX_STRH('f','i','l','l','R','e','c','t',0,0,0,0,0,0)
 #define CTX_text           CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0,0,0)
 #define CTX_text_direction CTX_STRH('t','e','x','t','_','d','i','r','e','c','t','i','o','n')

@@ -17,25 +17,25 @@ rgb 1 1 1
 fontSize 1@
 moveTo 2% 33%
 textBaseline top
-fillText "Top"
+text "Top"
 
 moveTo 2% 66%
 textBaseline bottom
-fillText "Bottom"
+text "Bottom"
 
 moveTo 70% 33%
 textBaseline middle
-fillText "Middle"
+text "Middle"
 
 moveTo 2% 33%
 textBaseline alphabetic
-fillText "Alphabetic"
+text "Alphabetic"
 
 moveTo 30% 66%
 textBaseline hanging
-fillText "Hanging"
+text "Hanging"
 
 moveTo 55% 66%
 textBaseline ideographic
-fillText "Ideographic"
+text "Ideographic"
 

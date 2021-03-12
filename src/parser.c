@@ -404,7 +404,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_strokeRect:     ret = CTX_STROKE_RECT; break;
           case CTX_fillRect:       ret = CTX_FILL_RECT; break;
           case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
-          case CTX_fillText:       
           case CTX_text:           ret = CTX_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;

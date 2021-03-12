@@ -19,7 +19,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "dAtop"
+  text "dAtop"
 restore
 
 save
@@ -36,7 +36,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "sOver"
+  text "sOver"
 restore
 
 save
@@ -53,7 +53,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "copy"
+  text "copy"
 restore
 
 save
@@ -70,7 +70,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "sIn"
+  text "sIn"
 restore
 
 save
@@ -87,7 +87,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "sOut"
+  text "sOut"
 restore
 
 save
@@ -104,7 +104,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "sAtop"
+  text "sAtop"
 restore
 
 
@@ -122,7 +122,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "xor"
+  text "xor"
 restore
 
 
@@ -140,7 +140,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "dOvr"
+  text "dOvr"
 restore
 
 save
@@ -157,7 +157,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "dest"
+  text "dest"
 restore
 
 save
@@ -174,7 +174,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "dIn"
+  text "dIn"
 restore
 
 save
@@ -191,7 +191,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "clear"
+  text "clear"
 restore
 
 save
@@ -208,7 +208,7 @@ save
   gray 0
   moveTo 5^ 48^
   compositingMode sourceOver
-  fillText "dOut"
+  text "dOut"
 restore
 
 

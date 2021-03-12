@@ -30,7 +30,7 @@ rgba shadowColor 1 0 0 1
 
 rgb 1 1 1
 
-fillText "light"
+text "light"
 
 rgb 1 0 0
 
@@ -45,7 +45,7 @@ rgba shadowColor 0 0 0 1
 
 rgb 0.5 1 0.8
 
-fillText "shadow"
+text "shadow"
 shadowBlur 2%
 shadowOffsetX 1%
 shadowOffsetY 1%
