@@ -28,12 +28,14 @@ static int ctx_a85enc (const void *srcp, char *dst, int count)
     }
 
     int divisor = 85 * 85 * 85 * 85;
+#if 0
     if (input == 0)
     {
         dst[out_len++] = 'z';
     }
     /* todo: encode 4 spaces as 'y' */
     else
+#endif
     {
       for (int j = 0; j < 5; j++)
       {
