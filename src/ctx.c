@@ -417,20 +417,11 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     strcpy (ret_eid, eid);
     ret_eid[64]=0;
   }
-
-  //ctx_texture (ctx, eid, 0.0, 0.0);
 }
 
 void
 ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
 {
-#if 0
-  int id = ctx_texture_check_eid (ctx, path, tw, th);
-  if (id>=0)
-  {
-    return ctx->texture[id].eid;
-  }
-#endif
   const char *eid = path;
   char ascii[41]="";
   int eid_len = strlen (eid);

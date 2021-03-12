@@ -428,9 +428,6 @@ ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
   return ret;
 }
 
-
-
-
 int
 ctx_add_single (Ctx *ctx, void *entry)
 {
@@ -696,8 +693,6 @@ ctx_process_cmd_str_float (Ctx *ctx, CtxCode code, const char *string, float arg
   memcpy (&iarg1, &arg1, sizeof (iarg1));
   ctx_process_cmd_str_with_len (ctx, code, string, iarg0, iarg1, strlen (string));
 }
-
-
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC int
