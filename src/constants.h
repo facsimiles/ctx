@@ -21,6 +21,8 @@
 #define CTX_closePath      CTX_STRH('c','l','o','s','e','P','a','t','h',0,0,0,0,0)
 #define CTX_cmyka          CTX_STRH('c','m','y','k','a',0,0,0,0,0,0,0,0,0)
 #define CTX_cmyk           CTX_STRH('c','m','y','k',0,0,0,0,0,0,0,0,0,0)
+#define CTX_cmykaS         CTX_STRH('c','m','y','k','a','S',0,0,0,0,0,0,0,0)
+#define CTX_cmykS          CTX_STRH('c','m','y','k','S',0,0,0,0,0,0,0,0,0)
 #define CTX_color          CTX_STRH('c','o','l','o','r',0,0,0,0,0,0,0,0,0)
 
 #define CTX_blending       CTX_STRH('b','l','e','n','d','i','n','g',0,0,0,0,0,0)
@@ -51,6 +53,8 @@
 #define CTX_done           CTX_STRH('d','o','n','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_drgba          CTX_STRH('d','r','g','b','a',0,0,0,0,0,0,0,0,0)
 #define CTX_drgb           CTX_STRH('d','r','g','b',0,0,0,0,0,0,0,0,0,0)
+#define CTX_drgbaS         CTX_STRH('d','r','g','b','a','S',0,0,0,0,0,0,0,0)
+#define CTX_drgbS          CTX_STRH('d','r','g','b','S',0,0,0,0,0,0,0,0,0)
 #define CTX_end            CTX_STRH('e','n','d',0,0,0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_endfun         CTX_STRH('e','n','d','f','u','n',0,0,0,0,0,0,0,0)
 
@@ -80,6 +84,8 @@
 #define CTX_gradientAddStop CTX_STRH('g','r','a','d','i','e','n','t','A','d','d','S','t','o')
 #define CTX_graya          CTX_STRH('g','r','a','y','a',0,0,0,0,0,0,0,0,0)
 #define CTX_gray           CTX_STRH('g','r','a','y',0,0,0,0,0,0,0,0,0,0)
+#define CTX_grayaS         CTX_STRH('g','r','a','y','a','S',0,0,0,0,0,0,0,0)
+#define CTX_grayS          CTX_STRH('g','r','a','y','S',0,0,0,0,0,0,0,0,0)
 #define CTX_H
 #define CTX_hanging        CTX_STRH('h','a','n','g','i','n','g',0,0,0,0,0,0,0)
 #define CTX_height         CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
@@ -94,6 +100,12 @@
 #define CTX_lab            CTX_STRH('l','a','b',0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_lcha           CTX_STRH('l','c','h','a',0,0,0,0,0,0,0,0,0,0)
 #define CTX_lch            CTX_STRH('l','c','h',0,0,0,0,0,0,0,0,0,0,0)
+
+#define CTX_labaS          CTX_STRH('l','a','b','a','S',0,0,0,0,0,0,0,0,0)
+#define CTX_labS           CTX_STRH('l','a','b','S',0,0,0,0,0,0,0,0,0,0)
+#define CTX_lchaS          CTX_STRH('l','c','h','a','S',0,0,0,0,0,0,0,0,0)
+#define CTX_lchS           CTX_STRH('l','c','h','S',0,0,0,0,0,0,0,0,0,0)
+
 #define CTX_left           CTX_STRH('l','e','f','t',0,0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_lighter        CTX_STRH('l','i','g','h','t','e','r',0,0,0,0,0,0,0)
 #define CTX_lighten        CTX_STRH('l','i','g','h','t','e','n',0,0,0,0,0,0,0)
@@ -158,6 +170,8 @@
 #define CTX_reset          CTX_STRH('r','e','s','e','t',0,0,0,0,0,0,0,0,0)
 #define CTX_rgba           CTX_STRH('r','g','b','a',0,0,0,0,0,0,0,0,0,0)
 #define CTX_rgb            CTX_STRH('r','g','b',0,0,0,0,0,0,0,0,0,0,0)
+#define CTX_rgbaS          CTX_STRH('r','g','b','a','S',0,0,0,0,0,0,0,0,0)
+#define CTX_rgbS           CTX_STRH('r','g','b','S',0,0,0,0,0,0,0,0,0,0)
 #define CTX_right          CTX_STRH('r','i','g','h','t',0, 0, 0, 0, 0, 0, 0,0,0)
 #define CTX_rotate         CTX_STRH('r','o','t','a','t','e',0,0,0,0,0,0,0,0)
 #define CTX_round          CTX_STRH('r','o','u','n','d',0, 0, 0, 0, 0, 0, 0,0,0)

@@ -39,6 +39,7 @@ struct
   float      pcx;
   float      pcy;
   int        color_components;
+  int        color_stroke; // 0 is fill source  1 is stroke source
   int        color_model; // 1 gray 3 rgb 4 cmyk
   float      left_margin; // set by last user provided move_to
   int        width;       // <- maybe should be float
@@ -102,6 +103,7 @@ ctx_parser_init (CtxParser *parser,
   parser->exit             = exit;
   parser->exit_data        = exit_data;
   parser->color_model      = CTX_RGBA;
+  parser->color_stroke     = 0;
   parser->color_components = 4;
   parser->command          = CTX_MOVE_TO;
   parser->set_prop         = set_prop;
@@ -277,7 +279,7 @@ static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
   return code;
 }
 
-static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_model);
+static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_model, int stroke);
 
 static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 {
@@ -348,7 +350,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
           case CTX_clear:          ret = CTX_COMPOSITE_CLEAR; break;
           case CTX_copy:           ret = CTX_COMPOSITE_COPY; break;
-          case CTX_destinationOver: ret = CTX_COMPOSITE_DESTINATION_OVER; break;
+          case CTX_destinationOver:  ret = CTX_COMPOSITE_DESTINATION_OVER; break;
           case CTX_destinationIn:    ret = CTX_COMPOSITE_DESTINATION_IN; break;
           case CTX_destinationOut:   ret = CTX_COMPOSITE_DESTINATION_OUT; break;
           case CTX_sourceOver:       ret = CTX_COMPOSITE_SOURCE_OVER; break;
@@ -473,45 +475,85 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
             return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_Y);
           case CTX_globalAlpha:
             return ctx_parser_set_command (parser, CTX_GLOBAL_ALPHA);
+
           /* strings are handled directly here,
            * instead of in the one-char handler, using return instead of break
            */
           case CTX_gray:
-            ctx_parser_set_color_model (parser, CTX_GRAY);
+            ctx_parser_set_color_model (parser, CTX_GRAY, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_graya:
-            ctx_parser_set_color_model (parser, CTX_GRAYA);
+            ctx_parser_set_color_model (parser, CTX_GRAYA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_rgb:
-            ctx_parser_set_color_model (parser, CTX_RGB);
+            ctx_parser_set_color_model (parser, CTX_RGB, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_drgb:
-            ctx_parser_set_color_model (parser, CTX_DRGB);
+            ctx_parser_set_color_model (parser, CTX_DRGB, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_rgba:
-            ctx_parser_set_color_model (parser, CTX_RGBA);
+            ctx_parser_set_color_model (parser, CTX_RGBA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_drgba:
-            ctx_parser_set_color_model (parser, CTX_DRGBA);
+            ctx_parser_set_color_model (parser, CTX_DRGBA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_cmyk:
-            ctx_parser_set_color_model (parser, CTX_CMYK);
+            ctx_parser_set_color_model (parser, CTX_CMYK, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_cmyka:
-            ctx_parser_set_color_model (parser, CTX_CMYKA);
+            ctx_parser_set_color_model (parser, CTX_CMYKA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_lab:
-            ctx_parser_set_color_model (parser, CTX_LAB);
+            ctx_parser_set_color_model (parser, CTX_LAB, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_laba:
-            ctx_parser_set_color_model (parser, CTX_LABA);
+            ctx_parser_set_color_model (parser, CTX_LABA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_lch:
-            ctx_parser_set_color_model (parser, CTX_LCH);
+            ctx_parser_set_color_model (parser, CTX_LCH, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
           case CTX_lcha:
-            ctx_parser_set_color_model (parser, CTX_LCHA);
+            ctx_parser_set_color_model (parser, CTX_LCHA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
+
+          /* and a full repeat of the above, with S for Stroke suffix */
+          case CTX_grayS:
+            ctx_parser_set_color_model (parser, CTX_GRAY, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_grayaS:
+            ctx_parser_set_color_model (parser, CTX_GRAYA, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_rgbS:
+            ctx_parser_set_color_model (parser, CTX_RGB, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_drgbS:
+            ctx_parser_set_color_model (parser, CTX_DRGB, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_rgbaS:
+            ctx_parser_set_color_model (parser, CTX_RGBA, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_drgbaS:
+            ctx_parser_set_color_model (parser, CTX_DRGBA, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_cmykS:
+            ctx_parser_set_color_model (parser, CTX_CMYK, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_cmykaS:
+            ctx_parser_set_color_model (parser, CTX_CMYKA, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_labS:
+            ctx_parser_set_color_model (parser, CTX_LAB, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_labaS:
+            ctx_parser_set_color_model (parser, CTX_LABA, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_lchS:
+            ctx_parser_set_color_model (parser, CTX_LCH, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+          case CTX_lchaS:
+            ctx_parser_set_color_model (parser, CTX_LCHA, 1);
+            return ctx_parser_set_command (parser, CTX_COLOR);
+
           /* words that correspond to low integer constants
           */
           case CTX_winding:     return CTX_FILL_RULE_WINDING;
@@ -564,9 +606,10 @@ enum
   CTX_PARSER_STRING_A85,
 } CTX_STATE;
 
-static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_model)
+static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_model, int stroke)
 {
   parser->color_model      = color_model;
+  parser->color_stroke     = stroke;
   parser->color_components = ctx_color_model_get_components (color_model);
 }
 
@@ -784,12 +827,12 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
               case CTX_RGBA:
               case CTX_DRGB:
               case CTX_DRGBA:
-                ctx_color_raw (ctx, parser->color_model, parser->numbers, 0);
+                ctx_color_raw (ctx, parser->color_model, parser->numbers, parser->color_stroke);
                 break;
 #if CTX_ENABLE_CMYK
               case CTX_CMYK:
               case CTX_CMYKA:
-                ctx_color_raw (ctx, parser->color_model, parser->numbers, 0);
+                ctx_color_raw (ctx, parser->color_model, parser->numbers, parser->color_stroke);
                 break;
 #else
               /* when there is no cmyk support at all in rasterizer
@@ -798,11 +841,12 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
               case CTX_CMYK:
               case CTX_CMYKA:
                 {
-                  float r,g,b,a = 1.0f;
-                  ctx_cmyk_to_rgb (arg(0), arg(1), arg(2), arg(3), &r, &g, &b);
+                  float rgba[4] = {1,1,1,1.0f};
+
+                  ctx_cmyk_to_rgb (arg(0), arg(1), arg(2), arg(3), &rgba[0], &rgba[1], &rgba[2]);
                   if (parser->color_model == CTX_CMYKA)
-                    { a = arg(4); }
-                  ctx_rgba (ctx, r, g, b, a);
+                    { rgba[3] = arg(4); }
+                  ctx_color_raw (ctx, CTX_RGBA, rgba, parser->color_stroke);
                 }
                 break;
 #endif

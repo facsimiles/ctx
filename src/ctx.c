@@ -1285,6 +1285,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           {
              state->gstate.source_fill.type = CTX_SOURCE_COLOR;
           }
+          //float components[5]={c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a};
           switch ( ((int) ctx_arg_float (0)) & 511)
             {
               case CTX_RGB:
