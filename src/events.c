@@ -1683,7 +1683,7 @@ void _ctx_debug_overlays (Ctx *ctx)
   ctx_save (ctx);
 
   ctx_line_width (ctx, 2);
-  ctx_rgba_fill (ctx, 0,0,0.8,0.5);
+  ctx_rgba (ctx, 0,0,0.8,0.5);
   for (a = ctx->events.items; a; a = a->next)
   {
     float current_x = ctx_pointer_x (ctx);

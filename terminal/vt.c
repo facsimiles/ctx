@@ -6515,7 +6515,7 @@ void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity)
       float val = gray * 255 / 24;
       r = g = b = val;
     }
-  ctx_rgba8_fill (ctx, r, g, b, 255);
+  ctx_rgba8 (ctx, r, g, b, 255);
 }
 
 int vt_keyrepeat (VT *vt)
@@ -6735,7 +6735,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
             { r= g = b = 30; }
           if (r == 0 && g == r && b == g)
             goto bg_done;
-          ctx_rgba8_fill (ctx, r, g, b, 255);
+          ctx_rgba8 (ctx, r, g, b, 255);
         }
       else
         {
@@ -6778,7 +6778,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
                 }
               if (rgb[0] == 0 && rgb[0] == rgb[1] && rgb[2] == rgb[1])
                 goto bg_done;
-              ctx_rgba8_fill (ctx, rgb[0], rgb[1], rgb[2], 255);
+              ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
             }
         }
       if (dh)
@@ -6831,7 +6831,7 @@ bg_done:
           int g = temp & 0xff;
           temp >>= 8;
           int b = temp & 0xff;
-          ctx_rgba8_fill (ctx, r, g, b, 255);
+          ctx_rgba8 (ctx, r, g, b, 255);
         }
       else
         {
@@ -6856,7 +6856,7 @@ bg_done:
                     for (int i = 0; i <3 ; i++)
                       { rgb[i] = vt->fg_color[i]; }
                 }
-              ctx_rgba8_fill (ctx, rgb[0],
+              ctx_rgba8 (ctx, rgb[0],
                              rgb[1],
                              rgb[2], 255);
             }
@@ -7058,7 +7058,7 @@ static void test_popup (Ctx *ctx, void *data)
   float x = client_x (vt->id);
   float y = client_y (vt->id);
   ctx_rectangle (ctx, x, y, 100, 100);
-  ctx_rgb_fill (ctx, 1,0,0);
+  ctx_rgb (ctx, 1,0,0);
   ctx_fill (ctx);
 }
 
@@ -7092,17 +7092,17 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      (vt->rows) * vt->ch);
       if (vt->reverse_video)
         {
-          //ctx_rgba_fill (ctx, 1,1,1,0.8);
+          //ctx_rgba (ctx, 1,1,1,0.8);
           itk_style_color (ctx, "terminal-bg-reverse");
           ctx_fill  (ctx);
-          ctx_rgba_fill (ctx, 0,0,0,1);
+          ctx_rgba (ctx, 0,0,0,1);
         }
       else
         {
           itk_style_color (ctx, "terminal-bg");
-          //ctx_rgba_fill (ctx, 0,0,0,0.8);
+          //ctx_rgba (ctx, 0,0,0,0.8);
           ctx_fill  (ctx);
-          ctx_rgba_fill (ctx, 1,1,1,1);
+          ctx_rgba (ctx, 1,1,1,1);
         }
       if (vt->scroll != 0.0f)
         ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
@@ -7267,7 +7267,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   /* draw cursor */
   if (vt->cursor_visible)
     {
-      ctx_rgba_fill (ctx, 0.9, 0.8, 0.0, 0.5333);
+      ctx_rgba (ctx, 0.9, 0.8, 0.0, 0.5333);
       ctx_begin_path (ctx);
       ctx_rectangle (ctx,
                      cursor_x_px, cursor_y_px,
@@ -7279,7 +7279,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
     {
       if (vt->leds[i])
         {
-          ctx_rgba_fill (ctx, .5,1,.5,0.8);
+          ctx_rgba (ctx, .5,1,.5,0.8);
           ctx_rectangle (ctx, vt->cw * i + vt->cw * 0.25, vt->ch * 0.25, vt->cw/2, vt->ch/2);
           ctx_fill (ctx);
         }
@@ -7326,7 +7326,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       ctx_rectangle (ctx, (vt->cols *vt->cw), 0, 
                        (vt->width) - (vt->cols * vt->cw),
                        vt->rows *  vt->ch);
-      ctx_rgb_fill (ctx,1,0,0);
+      ctx_rgb (ctx,1,0,0);
       ctx_fill (ctx);
 #endif
 
@@ -7338,9 +7338,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       ctx_listen (ctx, CTX_ENTER, scrollbar_enter, vt, NULL);
       ctx_listen (ctx, CTX_LEAVE, scrollbar_leave, vt, NULL);
       if (vt->scroll != 0 || scrollbar_focused)
-        ctx_rgba_fill (ctx, 0.5, 0.5, 0.5, .25);
+        ctx_rgba (ctx, 0.5, 0.5, 0.5, .25);
       else
-        ctx_rgba_fill (ctx, 0.5, 0.5, 0.5, .10);
+        ctx_rgba (ctx, 0.5, 0.5, 0.5, .10);
       ctx_fill (ctx);
       ctx_round_rectangle (ctx, (vt->width) - vt->cw * 1.5,
                            offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
@@ -7348,9 +7348,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                            vt->cw * 1.5 /2);
       //ctx_listen (ctx, CTX_DRAG, scroll_handle_drag, vt, NULL);
       if (vt->scroll != 0 || scrollbar_focused)
-        ctx_rgba_fill (ctx, 1, 1, 1, .25);
+        ctx_rgba (ctx, 1, 1, 1, .25);
       else
-        ctx_rgba_fill (ctx, 1, 1, 1, .10);
+        ctx_rgba (ctx, 1, 1, 1, .10);
       ctx_fill (ctx);
     }
     ctx_restore (ctx);

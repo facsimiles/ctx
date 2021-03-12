@@ -498,7 +498,7 @@ void ctx_rgba_raw (Ctx *ctx, float r, float g, float b, float a, int stroke)
   ctx_process (ctx, command);
 }
 
-void ctx_rgba_fill (Ctx *ctx, float r, float g, float b, float a)
+void ctx_rgba (Ctx *ctx, float r, float g, float b, float a)
 {
   ctx_rgba_raw (ctx, r, g, b, a, 0);
 }
@@ -508,9 +508,9 @@ void ctx_rgba_stroke (Ctx *ctx, float r, float g, float b, float a)
   ctx_rgba_raw (ctx, r, g, b, a, 1);
 }
 
-void ctx_rgb_fill (Ctx *ctx, float   r, float   g, float   b)
+void ctx_rgb (Ctx *ctx, float   r, float   g, float   b)
 {
-  ctx_rgba_fill (ctx, r, g, b, 1.0f);
+  ctx_rgba (ctx, r, g, b, 1.0f);
 }
 
 void ctx_rgb_stroke (Ctx *ctx, float   r, float   g, float   b)
@@ -518,60 +518,104 @@ void ctx_rgb_stroke (Ctx *ctx, float   r, float   g, float   b)
   ctx_rgba_stroke (ctx, r, g, b, 1.0f);
 }
 
-void ctx_gray (Ctx *ctx, float gray)
+static void ctx_gray_raw (Ctx *ctx, float gray, int stroke)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_COLOR, CTX_GRAY, gray),
+    ctx_f (CTX_COLOR, CTX_GRAY + stroke * 512, gray),
     ctx_f (CTX_CONT, 1.0f, 0.0f),
     ctx_f (CTX_CONT, 0.0f, 0.0f)
   };
   ctx_process (ctx, command);
 }
+void ctx_gray_stroke   (Ctx *ctx, float gray)
+{
+  ctx_gray_raw (ctx, gray, 1);
+}
+void ctx_gray (Ctx *ctx, float gray)
+{
+  ctx_gray_raw (ctx, gray, 0);
+}
+
 
 #if CTX_ENABLE_CMYK
+
+static void ctx_cmyka_raw (Ctx *ctx, float c, float m, float y, float k, float a, int stroke)
+{
+  CtxEntry command[3]=
+  {
+    ctx_f (CTX_COLOR, CTX_CMYKA + 512 * stroke, c),
+    ctx_f (CTX_CONT, m, y),
+    ctx_f (CTX_CONT, k, a)
+  };
+  ctx_process (ctx, command);
+}
+void ctx_cmyka_stroke (Ctx *ctx, float c, float m, float y, float k, float a)
+{
+  ctx_cmyka_raw (ctx, c, m, y, k, a, 1);
+}
+void ctx_cmyka (Ctx *ctx, float c, float m, float y, float k, float a)
+{
+  ctx_cmyka_raw (ctx, c, m, y, k, a, 0);
+}
+
+static void ctx_cmyk_raw (Ctx *ctx, float c, float m, float y, float k, int stroke)
+{
+  CtxEntry command[3]=
+  {
+    ctx_f (CTX_COLOR, CTX_CMYKA + 512 * stroke, c),
+    ctx_f (CTX_CONT, m, y),
+    ctx_f (CTX_CONT, k, 1.0f)
+  };
+  ctx_process (ctx, command);
+}
+void ctx_cmyk_stroke   (Ctx *ctx, float c, float m, float y, float k)
+{
+  ctx_cmyk_raw (ctx, c, m, y, k, 1);
+}
 void ctx_cmyk (Ctx *ctx, float c, float m, float y, float k)
 {
+  ctx_cmyk_raw (ctx, c, m, y, k, 0);
+}
+
+static void ctx_dcmyk_raw (Ctx *ctx, float c, float m, float y, float k, int stroke)
+{
   CtxEntry command[3]=
   {
-    ctx_f (CTX_COLOR, CTX_CMYKA, c),
+    ctx_f (CTX_COLOR, CTX_DCMYKA + stroke * 512, c),
     ctx_f (CTX_CONT, m, y),
     ctx_f (CTX_CONT, k, 1.0f)
   };
   ctx_process (ctx, command);
 }
 
-void ctx_cmyka      (Ctx *ctx, float c, float m, float y, float k, float a)
+static void ctx_dcmyka_raw (Ctx *ctx, float c, float m, float y, float k, float a, int stroke)
 {
   CtxEntry command[3]=
   {
-    ctx_f (CTX_COLOR, CTX_CMYKA, c),
+    ctx_f (CTX_COLOR, CTX_DCMYKA + 512 * stroke, c),
     ctx_f (CTX_CONT, m, y),
     ctx_f (CTX_CONT, k, a)
   };
   ctx_process (ctx, command);
 }
 
+void ctx_dcmyk_stroke   (Ctx *ctx, float c, float m, float y, float k)
+{
+  ctx_dcmyk_raw (ctx, c, m, y, k, 1);
+}
 void ctx_dcmyk (Ctx *ctx, float c, float m, float y, float k)
 {
-  CtxEntry command[3]=
-  {
-    ctx_f (CTX_COLOR, CTX_DCMYKA, c),
-    ctx_f (CTX_CONT, m, y),
-    ctx_f (CTX_CONT, k, 1.0f)
-  };
-  ctx_process (ctx, command);
+  ctx_dcmyk_raw (ctx, c, m, y, k, 0);
 }
 
+void ctx_dcmyka_stroke   (Ctx *ctx, float c, float m, float y, float k, float a)
+{
+  ctx_dcmyka_raw (ctx, c, m, y, k, a, 1);
+}
 void ctx_dcmyka (Ctx *ctx, float c, float m, float y, float k, float a)
 {
-  CtxEntry command[3]=
-  {
-    ctx_f (CTX_COLOR, CTX_DCMYKA, c),
-    ctx_f (CTX_CONT, m, y),
-    ctx_f (CTX_CONT, k, a)
-  };
-  ctx_process (ctx, command);
+  ctx_dcmyka_raw (ctx, c, m, y, k, a, 0);
 }
 
 #endif
@@ -800,7 +844,7 @@ int ctx_color_fill (Ctx *ctx, const char *string)
   ctx_color_set_from_string (ctx, &color, string);
   float rgba[4];
   ctx_color_get_rgba (&(ctx->state), &color, rgba);
-  ctx_rgba_fill (ctx, rgba[0],rgba[1],rgba[2],rgba[3]);
+  ctx_rgba (ctx, rgba[0],rgba[1],rgba[2],rgba[3]);
   return 0;
 }
 
@@ -815,7 +859,7 @@ int ctx_color_stroke (Ctx *ctx, const char *string)
 }
 
 void
-ctx_rgba8_fill (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
 #if 0
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
@@ -827,9 +871,10 @@ ctx_rgba8_fill (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 
   ctx_process (ctx, &command);
 #else
-  ctx_rgba_fill (ctx, r/255.0f, g/255.0f, b/255.0f, a/255.0f);
+  ctx_rgba (ctx, r/255.0f, g/255.0f, b/255.0f, a/255.0f);
 #endif
 }
+
 
 #endif 
 

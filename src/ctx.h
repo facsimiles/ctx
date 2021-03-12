@@ -247,10 +247,18 @@ void ctx_named_source (Ctx *ctx, const char *name);
 
 void ctx_rgba_stroke   (Ctx *ctx, float r, float g, float b, float a);
 void ctx_rgb_stroke    (Ctx *ctx, float r, float g, float b);
+void ctx_gray_stroke   (Ctx *ctx, float gray);
+void ctx_drgba_stroke  (Ctx *ctx, float r, float g, float b, float a);
+void ctx_cmyka_stroke  (Ctx *ctx, float c, float m, float y, float k, float a);
+void ctx_cmyk_stroke   (Ctx *ctx, float c, float m, float y, float k);
+void ctx_dcmyka_stroke (Ctx *ctx, float c, float m, float y, float k, float a);
+void ctx_dcmyk_stroke  (Ctx *ctx, float c, float m, float y, float k);
 
-void ctx_rgba_fill   (Ctx *ctx, float r, float g, float b, float a);
-void ctx_rgb_fill    (Ctx *ctx, float r, float g, float b);
-void ctx_rgba8_fill  (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+
+void ctx_rgba   (Ctx *ctx, float r, float g, float b, float a);
+void ctx_rgb    (Ctx *ctx, float r, float g, float b);
+void ctx_rgba8  (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 void ctx_gray   (Ctx *ctx, float gray);
 void ctx_drgba  (Ctx *ctx, float r, float g, float b, float a);
