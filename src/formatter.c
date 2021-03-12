@@ -90,7 +90,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_KERNING_PAIR:         return "kerningPair"; break;
           case CTX_SET_PIXEL:            return "setPixel"; break;
           case CTX_GLOBAL_ALPHA:         return "globalAlpha"; break;
-          case CTX_TEXT:            return "fillText"; break;
+          case CTX_TEXT:                 return "fillText"; break;
           case CTX_STROKE_TEXT:          return "strokeText"; break;
           case CTX_SAVE:                 return "save"; break;
           case CTX_RESTORE:              return "restore"; break;
@@ -552,14 +552,21 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         if (formatter->longform ||  1)
           {
             _ctx_indent (formatter);
-            switch ( (int) c->set_color.model)
+            int model = (int) c->set_color.model;
+            const char *suffix="";
+            if (model & 512)
+            {
+              model = model & 511;
+              suffix = "S";
+            }
+            switch (model)
               {
                 case CTX_GRAY:
-                  ctx_formatter_addstrf (formatter, "gray ");
+                  ctx_formatter_addstrf (formatter, "gray%s ", suffix);
                   ctx_print_float (formatter, c->graya.g);
                   break;
                 case CTX_GRAYA:
-                  ctx_formatter_addstrf (formatter, "graya ");
+                  ctx_formatter_addstrf (formatter, "graya%s ", suffix);
                   ctx_print_float (formatter, c->graya.g);
                   ctx_formatter_addstrf (formatter, " ");
                   ctx_print_float (formatter, c->graya.a);
@@ -567,7 +574,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                 case CTX_RGBA:
                   if (c->rgba.a != 1.0)
                   {
-                    ctx_formatter_addstrf (formatter, "rgba ");
+                    ctx_formatter_addstrf (formatter, "rgba%s ", suffix);
                     ctx_print_float (formatter, c->rgba.r);
                     ctx_formatter_addstrf (formatter, " ");
                     ctx_print_float (formatter, c->rgba.g);
@@ -581,12 +588,12 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                 case CTX_RGB:
                   if (c->rgba.r == c->rgba.g && c->rgba.g == c->rgba.b)
                   {
-                    ctx_formatter_addstrf (formatter, "gray ");
+                    ctx_formatter_addstrf (formatter, "gray%s ", suffix);
                     ctx_print_float (formatter, c->rgba.r);
                     ctx_formatter_addstrf (formatter, " ");
                     break;
                   }
-                  ctx_formatter_addstrf (formatter, "rgb ");
+                  ctx_formatter_addstrf (formatter, "rgb%s ", suffix);
                   ctx_print_float (formatter, c->rgba.r);
                   ctx_formatter_addstrf (formatter, " ");
                   ctx_print_float (formatter, c->rgba.g);
@@ -594,7 +601,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                   ctx_print_float (formatter, c->rgba.b);
                   break;
                 case CTX_DRGB:
-                  ctx_formatter_addstrf (formatter, "drgb ");
+                  ctx_formatter_addstrf (formatter, "drgb%s ", suffix);
                   ctx_print_float (formatter, c->rgba.r);
                   ctx_formatter_addstrf (formatter, " ");
                   ctx_print_float (formatter, c->rgba.g);
@@ -602,7 +609,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                   ctx_print_float (formatter, c->rgba.b);
                   break;
                 case CTX_DRGBA:
-                  ctx_formatter_addstrf (formatter, "drgba ");
+                  ctx_formatter_addstrf (formatter, "drgba%s ", suffix);
                   ctx_print_float (formatter, c->rgba.r);
                   ctx_formatter_addstrf (formatter, " ");
                   ctx_print_float (formatter, c->rgba.g);
@@ -612,7 +619,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                   ctx_print_float (formatter, c->rgba.a);
                   break;
                 case CTX_CMYK:
-                  ctx_formatter_addstrf (formatter, "cmyk ");
+                  ctx_formatter_addstrf (formatter, "cmyk%s ", suffix);
                   ctx_print_float (formatter, c->cmyka.c);
                   ctx_formatter_addstrf (formatter, " ");
                   ctx_print_float (formatter, c->cmyka.m);
@@ -622,7 +629,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                   ctx_print_float (formatter, c->cmyka.k);
                   break;
                 case CTX_CMYKA:
-                  ctx_formatter_addstrf (formatter, "cmyka ");
+                  ctx_formatter_addstrf (formatter, "cmyka%s ", suffix);
                   ctx_print_float (formatter, c->cmyka.c);
                   ctx_formatter_addstrf (formatter, " ");
                   ctx_print_float (formatter, c->cmyka.m);
@@ -634,7 +641,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                   ctx_print_float (formatter, c->cmyka.a);
                   break;
                 case CTX_DCMYK:
-                  ctx_formatter_addstrf (formatter, "dcmyk ");
+                  ctx_formatter_addstrf (formatter, "dcmyk%s ", suffix);
                   ctx_print_float (formatter, c->cmyka.c);
                   ctx_formatter_addstrf (formatter, " ");
                   ctx_print_float (formatter, c->cmyka.m);
@@ -644,7 +651,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                   ctx_print_float (formatter, c->cmyka.k);
                   break;
                 case CTX_DCMYKA:
-                  ctx_formatter_addstrf (formatter, "dcmyka ");
+                  ctx_formatter_addstrf (formatter, "dcmyka%s ", suffix);
                   ctx_print_float (formatter, c->cmyka.c);
                   ctx_formatter_addstrf (formatter, " ");
                   ctx_print_float (formatter, c->cmyka.m);
