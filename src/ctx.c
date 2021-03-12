@@ -178,8 +178,11 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
                     CtxPixelFormat format, int dst_stride,
                     uint8_t *dst_data)
 {
+   if (0)
+   {
+   }
 #if CTX_RASTERIZER
-   if (_ctx_is_rasterizer (ctx))
+   else if (_ctx_is_rasterizer (ctx))
    {
      CtxRasterizer *rasterizer = (CtxRasterizer*)ctx->renderer;
      if (rasterizer->format->pixel_format == format)
@@ -194,6 +197,33 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
          {
             uint8_t* src_buf = (uint8_t*)rasterizer->buf;
             memcpy (&dst_data[y * dst_stride + x * bytes_per_pix], &src_buf[v * rasterizer->blit_stride + u * bytes_per_pix], bytes_per_pix);
+         }
+       }
+       return;
+     }
+   }
+#endif
+#if CTX_FB
+   else if (format == CTX_FORMAT_RGBA8 &&
+                   (
+                   ctx_renderer_is_fb (ctx)
+#if CTX_SDL
+                   || ctx_renderer_is_sdl (ctx)
+#endif
+                   ))
+   {
+     CtxTiled *tiled = (CtxTiled*)ctx->renderer;
+     {
+       if (dst_stride <= 0) dst_stride = ctx_pixel_format_get_stride (format, sw);
+       int bytes_per_pix = 4;
+       int y = 0;
+       for (int v = sy; v < sy + sh; v++, y++)
+       {
+         int x = 0;
+         for (int u = sx; u < sx + sw; u++, x++)
+         {
+            uint8_t* src_buf = (uint8_t*)tiled->pixels;
+            memcpy (&dst_data[y * dst_stride + x * bytes_per_pix], &src_buf[v * tiled->width * bytes_per_pix + u * bytes_per_pix], bytes_per_pix);
          }
        }
        return;
