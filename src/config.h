@@ -82,8 +82,11 @@
 #endif
 
 
+#define CTX_PARSER_STATIC_MAX 0
+
+
 #ifndef CTX_PARSER_MAXLEN
-#define CTX_PARSER_MAXLEN  1024*1024*8 // this is the largest text string we support
+#define CTX_PARSER_MAXLEN  1024*1024*2 // this is the largest text string we support
                                        //
 #endif
 
@@ -164,14 +167,15 @@
  * edgelist and drawlist.
  */
 #ifndef CTX_MIN_JOURNAL_SIZE
-#define CTX_MIN_JOURNAL_SIZE   1024*1024*8 //XXX
+#define CTX_MIN_JOURNAL_SIZE      512
 #endif
 
 /* The maximum size we permit the drawlist to grow to,
  * the memory used is this number * 9, where 9 is sizeof(CtxEntry)
  */
 #ifndef CTX_MAX_JOURNAL_SIZE
-#define CTX_MAX_JOURNAL_SIZE   CTX_MIN_JOURNAL_SIZE
+//#define CTX_MAX_JOURNAL_SIZE   CTX_MIN_JOURNAL_SIZE
+#define CTX_MAX_JOURNAL_SIZE 1024*1024*16
 #endif
 
 #ifndef CTX_DRAWLIST_STATIC
@@ -198,7 +202,7 @@
   //     properties still make use of it)
   //     
   //     for desktop-use this should be fully dynamic, possibly
-  //     with chained pools
+  //     with chained pools, gradients are stored here.
 #define CTX_STRINGPOOL_SIZE     1000 //
 #endif
 

@@ -8,16 +8,24 @@
 #define CTX_ID_MAXLEN 64 // in use should not be more than 40!
                          // to offer headroom for multiplexing
 
+
 struct
   _CtxParser
 {
   Ctx       *ctx;
   int        t_args; // total number of arguments seen for current command
   int        state;
+#if CTX_PARSER_STATIC_MAX
   uint8_t    holding[CTX_PARSER_MAXLEN]; /*  */
+#else
+  uint8_t   *holding;
+#endif
+  int        hold_len;
+  int        pos;
+
+
   int        line; /*  for error reporting */
   int        col;  /*  for error reporting */
-  int        pos;
   float      numbers[CTX_PARSER_MAX_ARGS+1];
   int        n_numbers;
   int        decimal;
@@ -126,6 +134,10 @@ CtxParser *ctx_parser_new (
 
 void ctx_parser_free (CtxParser *parser)
 {
+#if !CTX_PARSER_STATIC_MAX
+  if (parser->holding)
+    free (parser->holding);
+#endif
   free (parser);
 }
 
@@ -1116,9 +1128,21 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 
 static void ctx_parser_holding_append (CtxParser *parser, int byte)
 {
+#if !CTX_PARSER_STATIC_MAX
+  if (parser->hold_len < parser->pos + 1 + 1)
+  {
+    int new_len = parser->hold_len * 1.5;
+    if (new_len < 512) new_len = 512;
+    parser->holding = realloc (parser->holding, new_len);
+    parser->hold_len = new_len;
+  }
+#endif
+
   parser->holding[parser->pos++]=byte;
+#if CTX_PARSER_STATIC_MAX
   if (parser->pos > (int) sizeof (parser->holding)-2)
     { parser->pos = sizeof (parser->holding)-2; }
+#endif
   parser->holding[parser->pos]=0;
 }
 
