@@ -1783,4 +1783,13 @@ int _ctx_data_pending (int timeout)
   return retval;
 }
 
+void ctx_set_title (Ctx *ctx, const char *title)
+{
+#if CTX_SDL
+     // XXX also check we're first/only client?
+   if (ctx_renderer_is_sdl (ctx))
+     ctx_sdl_set_title (ctx_get_renderer (ctx), title);
+#endif
+}
+
 #endif

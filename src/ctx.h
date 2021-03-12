@@ -775,6 +775,8 @@ int   ctx_add_idle           (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data
 
 void ctx_add_hit_region (Ctx *ctx, const char *id);
 
+void ctx_set_title (Ctx *ctx, const char *title);
+
 void ctx_listen_full (Ctx     *ctx,
                       float    x,
                       float    y,

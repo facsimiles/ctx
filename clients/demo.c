@@ -253,6 +253,7 @@ static void card_dots (ITK *itk, int frame_no)
 static void slider (Ctx *ctx, float x0, float y0, float width, float pos)
 {
   int height = ctx_height (ctx);
+  ctx_gray_stroke (ctx, 1.0);
   ctx_gray (ctx, 1.0);
   ctx_line_width (ctx, height * 0.025);
   ctx_move_to (ctx, x0, y0);
@@ -302,7 +303,8 @@ static void _analog_clock (Ctx     *ctx,
   float r;
   ctx_save (ctx);
 
-  ctx_rgba8 (ctx, 255, 255, 255, 196);
+  ctx_rgba_stroke (ctx, 1,1,1,0.8);
+  ctx_rgba (ctx, 1,1,1,0.8);
 
 #if 0
   ctx_set_rgba_u8 (ctx, 127, 127, 127, 255);
@@ -410,7 +412,7 @@ static void card_fill_rule (ITK *itk, int frame_no)
   ctx_rgba (ctx, 0, 0.7, 0, 1);
   ctx_preserve (ctx);
   ctx_fill (ctx);
-  ctx_rgba (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
+  ctx_rgba_stroke (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
 
   ctx_translate (ctx, 0, 128);
   ctx_arc (ctx, 64, 64, 40, 0, 1.9*CTX_PI, 0);
@@ -423,7 +425,7 @@ static void card_fill_rule (ITK *itk, int frame_no)
   ctx_rgba (ctx, 0, 0, 0.9, 1);
   ctx_preserve (ctx);
   ctx_fill (ctx);
-  ctx_rgba (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
+  ctx_rgba_stroke (ctx, 1, 1, 1, 1); ctx_stroke (ctx);
   ctx_restore (ctx);
 }
 
@@ -1569,14 +1571,17 @@ static void card_7GUI7 (ITK *itk, int frame_no)
 
         /* draw cursor around selected cell */
         ctx_gray (ctx, 0);
+        ctx_gray_stroke (ctx, 0);
         ctx_rectangle (ctx, x-em*0.1, y - em-em*0.1, col_width[col]+em*0.2, row_height+em*0.2);
         ctx_line_width (ctx, em*0.2);
         ctx_stroke (ctx);
         ctx_gray (ctx, 1);
+        ctx_gray_stroke (ctx, 1);
         ctx_rectangle (ctx, x-em*0.1, y - em-em*0.1, col_width[col]+em*0.2, row_height+em*0.2);
         ctx_line_width (ctx, em*0.1);
         ctx_stroke (ctx);
         ctx_gray (ctx, 0);
+        ctx_gray_stroke (ctx, 0);
       }
       else
       {

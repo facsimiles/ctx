@@ -36,7 +36,6 @@ Ctx *ctx = NULL; // initialized in main
 #define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
 #define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
-void ctx_sdl_set_title (void *self, const char *new_title);
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb (Ctx *ctx);
 int ctx_renderer_is_braille (Ctx *ctx);
@@ -1689,11 +1688,7 @@ terminal_update_title (const char *title)
     free (set_title);
   }
   set_title = strdup (title);
-#ifndef NO_SDL
-     // XXX also check we're first/only client?
-   if (ctx_renderer_is_sdl (ctx))
-     ctx_sdl_set_title (ctx_get_renderer (ctx), set_title);
-#endif
+  ctx_set_title (ctx, set_title);
 }
 
 int terminal_main (int argc, char **argv)
