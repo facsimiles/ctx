@@ -1,0 +1,246 @@
+<html>
+        <head><title>ctx protocol</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+
+        <style type='text/css'>
+          @import url(../ctx.css);
+
+img{image-rendering: -moz-crisp-edges; image-rendering:   -o-crisp-edges;            image-rendering: -webkit-optimize-contrast;    image-rendering: crisp-edges;    -ms-interpolation-mode: nearest-neighbor;  }
+        </style>
+      </head>
+
+    <body>
+       <div id='menu'>
+                <a href='https://ctx.graphics/'>ctx</a>
+                <a href='https://ctx.graphics/.git/'>git</a>
+                <a href='../#downloads'>downloads</a>
+                <br/>
+                <a href='../rasterizer/'>rasterizer</a>
+                <a href='../protocol/'>protocol</a>
+                <a href='../#future'>future</a>
+                <a href='../#license'>license</a>
+                <br/>
+                <a href='../mcu/'>videos</a>
+                <a href='../color/'>color</a>
+                <a href='../eink/'>eink</a>
+                <a href='../tests/'>tests</a>
+                <a href='../glitch/'>glitch</a>
+        </div>
+
+           <div id='page'>
+        <img style='max-width:100%' src='../tests/png-640x240/ctx.png'/>
+
+        <h1 id='protocol'>the ctx protocol</h1>
+
+        <p>The ctx text format is a direct serialization of the canvas API.
+        This protocol permits sending rendering commands over serial, ptys and
+        other forms of network - enabling remote and/or sandboxed
+        rendering.</p>
+
+        <p>When used in the ctx terminal, the ctx rendering mode is entered by
+        issuing the escape sequence <tt>\e[?200h</tt> this makes the terminal
+        interpret commands for a ctx context created for the line the cursor
+        currently is in.  To end ctx mode transmit <tt>&nbsp;X&nbsp;</tt> or
+        <tt>&nbsp;DONE&nbsp;</tt>.  </p>
+
+        <p>The bash example <a href='ctx-clock.sh'>ctx-clock.sh</a>, renders an
+        analog clock that scales with the terminal window.</p>
+
+<pre>
+#!/bin/bash
+echo -ne "\e[?1049h" # alt-screen on
+echo -ne "\e[?25l"   # text-cursor off
+function cleanup {
+  echo -ne " X "        # leave ctx mode; in case we're there
+  echo -ne "\e[?1049l"  # alt-screen off
+  echo -ne "\e[?25h"    # text-cursor on
+}
+trap cleanup EXIT # restore terminal state on ctrl+c and regular exit
+
+for a in b{1..1000}; do
+hour_radians=`bc &lt;&lt;&lt;"scale=3;(($(date +%H|sed 's/^0//')+($(date +%M|sed s'/^6//')/60.0))/12.0+0.75)*3.14152*2"`
+minute_radians=`bc &lt;&lt;&lt;"scale=3;($(date +%M|sed 's/^0//')/60.0+0.75)*3.14152*2"`
+second_radians=`bc &lt;&lt;&lt;"scale=3;($(date +%S|sed 's/^0//')/60.0+0.75)*3.14152*2"`
+radius=45
+echo -ne "\e[2J\e[H" # clear screen and go to top left corner
+echo -e "\e[?200h"   # enter ctx mode
+rgbaS 1 1 1 0.5
+arc 50% 50% $radius% 0.0 6.4 0
+lineWidth $((radius/10))%
+stroke
+lineCap round
+moveTo 50% 50%
+arc 50% 50% $(($radius * 70 / 100))% $minute_radians $minute_radians 0
+moveTo 50% 50%
+arc 50% 50% $(($radius * 50 / 100))% $hour_radians $hour_radians 0
+stroke
+lineWidth $((radius/40))%
+moveTo 50% 50%
+arc 50% 50% $((radius * 90 / 100))%  $second_radians $second_radians 0
+rgbaS 1 0.1 0.1 1
+stroke
+done "; sleep 0.1; done
+
+</pre>
+
+        <img style='width:100%' src='ctx-clock.png'/>
+
+        <p>This format maps to the <a href='../ctx.h.html#l_33'>C API</a>
+        if you turn <tt>camelCase</tt> into <tt>snake_case</tt>, and prefix
+        each command with <tt>ctx_</tt>.</p>
+
+        <!-- http://diveintohtml5.info/canvas.html  -->
+        <p>
+        When a keyword is parsed the parser expects a series of commands of the
+        same type, following arguments will be consumed in chunks as the number
+        of arguments fill up, until a command change. Each command also has a
+        short one-byte long name, where applicable these match the SVG
+        path data format.
+        </p>
+        <p>
+        </p>
+
+        <table>
+<tr><td><tt>gray</tt></td><td>gray</td><td>sets gray source, and color model</td></tr>
+<tr><td><tt>graya</tt></td><td>gray alpha</td><td>sets gray alpha source, and color model</td></tr>
+<tr><td><tt>rgb</tt></td><td>r g b</td><td>sets rgb source</td></tr>
+<tr><td><tt>rgba</tt></td><td>r g b a</td><td>rgb alpha color source</td></tr>
+<tr><td><tt>cmyk</tt></td><td>c m y k</td><td>cmyk color source</td></tr>
+<tr><td><tt>cmyka</tt></td><td>c m y k a</td><td>cmyk alpha color source</td></tr>
+
+<tr><td><tt>drgb</tt></td><td>r g b</td><td>sets rgb source, in device space</td></tr>
+<tr><td><tt>drgba</tt></td><td>r g b a</td><td>rgb alpha color source, in device space</td></tr>
+<tr><td><tt>dcmyk</tt></td><td>c m y k</td><td>cmyk color source, in device space</td></tr>
+<tr><td><tt>dcmyka</tt></td><td>c m y k a</td><td>cmyk alpha color source, in device space</td></tr>
+
+
+<tr><td><tt>grayS</tt></td><td>gray</td><td>sets gray stroke source, and color model</td></tr>
+<tr><td><tt>grayaS</tt></td><td>gray alpha</td><td>sets gray alpha stroke source, and color model</td></tr>
+<tr><td><tt>rgbS</tt></td><td>r g b</td><td>sets rgb stroke source</td></tr>
+<tr><td><tt>rgbaS</tt></td><td>r g b a</td><td>rgb alpha color stroke source</td></tr>
+<tr><td><tt>cmykS</tt></td><td>c m y k</td><td>cmyk color stroke source</td></tr>
+<tr><td><tt>cmykaS</tt></td><td>c m y k a</td><td>cmyk alpha color stroke source</td></tr>
+
+<tr><td><tt>drgbS</tt></td><td>r g b</td><td>sets rgb stroke source, in device space</td></tr>
+<tr><td><tt>drgbaS</tt></td><td>r g b a</td><td>rgb alpha color stroke source, in device space</td></tr>
+<tr><td><tt>dcmykS</tt></td><td>c m y k</td><td>cmyk color stroke source, in device space</td></tr>
+<tr><td><tt>dcmykaS</tt></td><td>c m y k a</td><td>cmyk alpha color stroke source, in device space</td></tr>
+
+<!--
+<tr><td>lab</td><td></td>sets lab color source</tr>
+<tr><td>laba</td><td></td>sets lab alpha color source</tr>
+<tr><td>lch</td><td></td>sets lch color source</tr>
+<tr><td>lcha</td><td></td>sets lch alpha color source</tr>
+-->
+
+<tr><td><tt>a</tt> <tt>relArcTo</tt></td><td>5</td></tr>
+<tr><td><tt>b</tt> <tt>clip</tt></td><td></td></tr>
+<tr><td><tt>c</tt> <tt>relCurveTo</tt></td><td>6</td></tr>
+<tr><td><tt>d</tt> <tt>lineDash</tt></td><td>1-N</td><td>specify stroke dashing pattern, empty to reset</td></tr>
+<tr><td><tt>e</tt> <tt>translate</tt></td><td>x y</td></tr>
+<tr><td><tt>f</tt> <tt>linearGradient</tt></td><td>x0 y0 x1 y1</td></tr>
+<tr><td><tt>g</tt> <tt>save</tt></td><td></td></tr>
+<tr><td><tt>h</tt> <tt>relHorLine</tt></td><td>x</td></tr>
+
+<tr><td><tt>ka</tt> <tt>globalAlpha</tt></td><td>alpha</td></tr>
+<tr><td><tt>kb</tt> <tt>textBaseline</tt></td><td><tt>alphabetic</tt> | <tt>top</tt> | <tt>bottom</tt> | <tt>middle</tt> | <tt>hanging</tt> | <tt>ideographic</tt></td></tr>
+<tr><td><tt>kB</tt> <tt>blendMode</tt></td><td><tt>normal</tt> | <tt>multiply</tt> | <tt>screen</tt> | <tt>overlay</tt> | <tt>darken</tt> | <tt>lighten</tt> | <tt>colorDodge</tt> | <tt>colorBurn</tt> | <tt>hardLight</tt> | <tt>softLight</tt> | <tt>difference</tt> | <tt>exclusion</tt> | <tt>hue</tt> | <tt>saturation</tt> | <tt>color</tt> | <tt>luminosity</tt> | <tt>divide</tt> | <tt>addition</tt> | <tt>subtract</tt></td></tr>
+<tr><td><tt>kc</tt> <tt>lineCap cap</tt></td><td><tt>none</tt> | <tt>round</tt> | <tt>square</tt></td></tr>
+<!--
+<tr><td><tt>kC</tt> <tt>shadowColor</tt></td><td>color components</td><td>works like gradientAddStop</td></tr>
+-->
+<tr><td><tt>kD</tt> <tt>lineDashOffset</tt></td><td>phase</td><td>floating point value in same units as dashes</td></tr>
+<tr><td><tt>kf</tt> <tt>fontSize</tt></td><td>font_size</td></tr>
+<tr><td><tt>kj</tt> <tt>lineJoin join</tt></td><td><tt>bevel</tt> | <tt>round</tt> | <tt>miter</tt></td><td>0 1 or 2 are also valid values</td></tr>
+<tr><td><tt>kl</tt> <tt>miterLimit</tt></td><td>miter_limit</td></tr>
+<tr><td><tt>km</tt> <tt>compositingMode</tt></td><td><tt>sourceOver</tt> | <tt>copy</tt> | <tt>clear</tt> | <tt>sourceIn</tt> | <tt>sourceOut</tt> | <tt>sourceAtop</tt> | <tt>destinationOver</tt> | <tt>destination</tt> | <tt>destinationIn</tt> | <tt>destination_out</tt> | <tt>destinationAtop</tt> | <tt>xor</tt></td></tr>
+<!--
+<tr><td><tt>ks</tt> <tt>shadowBlur</tt></td><td>blur_radius</td></tr>
+-->
+<tr><td><tt>kt</tt> <tt>textAlign</tt></td><td><tt>start</tt> | <tt>end</tt> | <tt>center</tt> | <tt>left</tt> | <tt>right</tt></td></tr>
+<tr><td><tt>kw</tt> <tt>lineWidth</tt></td><td>line_width</td></tr>
+<tr><td><tt>kS</tt> <tt>imageSmoothing</tt></td><td><tt>0</tt>|<tt>1</tt></td><td>Defaults to 1, when 0 nearest neighbor resampling is used.</td></tr>
+<!--
+<tr><td><tt>kx</tt> <tt>shadowOffsetX</tt></td><td>horizontal_offset</td></tr>
+<tr><td><tt>ky</tt> <tt>shadowOffsetY</tt></td><td>vertical_offset</td></tr>
+-->
+<tr><td><tt>i</tt> <tt>texture</tt></td><td>"eid" x y</td><td>sets active texture at offset x, y - can be used after defineTexture in and in frames immediately after other frames where the texture has been used.</td></tr>
+<tr><td><tt>l</tt> <tt>relLineTo</tt></td><td>x y</td></tr>
+<tr><td><tt>m</tt> <tt>relMoveTo</tt></td><td>x y</td></tr>
+<tr><td><tt>n</tt> <tt>font</tt></td><td>"font name"</td></tr>
+<tr><td><tt>o</tt> <tt>radialGradient</tt></td><td>6</td></tr>
+<tr><td><tt>p</tt> <tt>gradientAddStop</tt> <tt>addStop</tt></td><td>pos R G B A</td><td>arguments depend on current color model, you can change the color model without setting a color by specifying a color without arguments.</td></tr>
+<tr><td><tt>q</tt> <tt>relQuadTo</tt></td><td>cx cy x y</td></tr>
+<tr><td><tt>r</tt> <tt>rectangle</tt> <tt>rect</tt></td><td>x y width height</td></tr>
+<tr><td><tt>s</tt> <tt>relSmoothTo</tt></td><td>cx cy x y</td></tr>
+<tr><td><tt>t</tt> <tt>relSmoothQuadTo</tt></td><td>x y</td></tr>
+<tr><td><tt>u</tt> <tt>strokeText</tt></td><td>"utf8-string"</td></tr>
+<tr><td><tt>v</tt> <tt>relVerLine</tt></td><td>y</td></tr>
+<tr><td><tt>w</tt> <tt>glyph</tt></td><td>unichar</td><td>draws a single unicode character, the character no is currently passed in as decimal. (might be made internal), since a text string duplicates the API.</td></tr>
+<!--</tt> <tt>w glyph , single unicode char -->
+<tr><td><tt>x</tt> <tt>fillText</tt></td><td>"utf8-string" | kerning</td><td>Interspersed with utf8 sequences of text numbers can appear that shift the horizontal position.</td></tr>
+<tr><td><tt>y</tt> <tt>identity</tt></td><td></td></tr>
+<tr><td><tt>z</tt> <tt>closePath</tt></td><td></td></tr>
+
+<tr><td><tt>A</tt> <tt>arcTo</tt></td><td>x1 y1 x2 y2 radius</td></tr>
+<tr><td><tt>B</tt> <tt>arc</tt></td><td>x y radius angle1 angle2 direction</td></tr>
+<tr><td><tt>C</tt> <tt>curveTo</tt></td><td>cx1 cy1 cx2 cy2 x y</td></tr>
+<tr><td><tt>E</tt> <tt>stroke</tt></td><td></td></tr>
+<tr><td><tt>F</tt> <tt>fill</tt></td><td></td></tr>
+<tr><td><tt>G</tt> <tt>restore</tt></td><td></td></tr>
+<tr><td><tt>H</tt> <tt>horLineTo</tt></td><td>x</td></tr>
+<tr><td><tt>I</tt> <tt>defineTexture</tt></td><td>"eid" width height format ~a85encodedpixels~</td><td>defines a texture, for now format is an integer that for 1-4 corresponds to GRAY8, GRAYA8, RGB8 and RGBA8, higher integer values correspond to the pixel formats used internally in ctx; but the protocol does as of yet not have a way to refer to pixelformat by a non-integer values.</td></tr>
+<tr><td><tt>J</tt> <tt>rotate</tt></td><td>radians</td></tr>
+<!--
+<tr><td>K color</td><td>model component0 [component1 [component2..]]><td>number of arguments depend on color model, this is normally nor used, instead of the commands rgb, rgba, drgb, cmyk etc.</td> -->
+
+<tr><td><tt>L</tt> <tt>lineTo</tt></td><td>x y</td></tr>
+<tr><td><tt>M</tt> <tt>moveTo</tt></td><td>x y</td></tr>
+<tr><td><tt>N</tt> <tt>beginPath</tt></td><td></td></tr>
+<tr><td><tt>O</tt> <tt>scale</tt></td><td>scale_x scale_y</td></tr>
+<!-- P new-page -->
+<tr><td><tt>Q</tt> <tt>quadTo</tt></td><td>cx cy x y</td></tr>
+<!-- R media-box -->
+<tr><td><tt>S</tt> <tt>smoothTo</tt></td><td>cx cy x y</td></tr>
+<tr><td><tt>T</tt> <tt>smoothQuadTo</tt></td><td>x y</td></tr>
+<tr><td><tt>U</tt> <tt>reset</tt></td><td></td></tr>
+<tr><td><tt>V</tt> <tt>verLineTo</tt></td><td>y</td></tr>
+<tr><td><tt>W</tt> <tt>transform</tt></td><td>a b c d e f</td><td>applies the transformation matrix</td></tr>
+
+<tr><td><tt>X</tt> <tt>exit</tt></td><td></td></tr>
+<tr><td><tt>X</tt> <tt>done</tt></td><td></td></tr>
+<tr><td><tt>Y</tt> <tt>roundRectangle</tt></td><td>x y width nheight radius</td></tr>
+
+<tr><td><tt>Z</tt> <tt>closePath</tt></td><td></td></tr>
+<tr><td><tt>]</tt> <tt>colorSpace</tt></td><td><tt>userRGB</tt>|<tt>userCMYK</tt> ~a85encoded icc profile~</td><td>sets the color space of a given space in rasterizer.</td></tr>
+<tr><td><tt>{</tt> <tt>startGroup</tt></td><td></td><td>starts a compositing group</td></tr>
+<tr><td><tt>}</tt> <tt>endGroup</tt></td><td></td><td>ends a compositing group,
+                and blends and composites it with the content before the group
+                using the now current compositing mode, blending mode and
+global alpha.</td></tr>
+
+        </table>
+
+        <h3>Detailed syntax description</h3>
+        <p>The language consists of a stream of words, numbers and strings,
+        optionally separated by white space.  The characters 
+        <tt>,</tt><tt>=</tt><tt>(</tt><tt>)</tt><tt>;</tt> are also treated as white-space.
+        Words are substrings consisting of one or more characters in the ranges
+        <tt>a</tt>-<tt>z</tt> and <tt>A</tt>-<tt>Z</tt>. Numbers are sequences of <tt>0</tt>-<tt>9</tt>. Numbers can be followed by
+        the suffixes <tt>%</tt> or <tt>@</tt>, indicating that units of percent canvas width/height
+        should be used or a global em / cell-size. <tt>^</tt> is equivalent to CSS vh, and <tt>~</tt> vw,
+        this can be used to override the automatic choice done by <tt>%</tt>, which
+        favors height for dimensions that are independent of x/y like
+        <tt>lineWidth</tt> and <tt>shadowBlur</tt>.
+
+        Strings are raw binary UTF8 contained
+        in <tt>'</tt> or <tt>"</tt> pairs. <tt>"\n\r"</tt> etc from C are available for escaping newlines,
+        though they can also be directly included in the string.
+        <tt>#</tt> introduces a comment and the rest of the line is ignored.</p>
+
+        <p>Blobs are represented as strings using a85 ~~ as quotemarks. (optional compression
+        makses sense to add here).</p>
+
+           </div>
+      </body>
+</html>

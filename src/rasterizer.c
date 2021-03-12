@@ -526,7 +526,7 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                     height,
                     ctx_pixel_format_get_stride ((CtxPixelFormat)format, width),
                     (CtxPixelFormat)format,
-                    NULL, // space
+                    rasterizer->state->gstate.texture_space,
                     data,
                     ctx_buffer_pixels_free, (void*)23);
                     /*  when userdata for ctx_buffer_pixels_free is 23, texture_init dups the data on

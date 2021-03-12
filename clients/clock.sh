@@ -18,7 +18,7 @@ second_radians=`bc <<<"scale=3;(($(date +%N)/1000000000.0+$(date +%S|sed 's/^0//
 radius=45
 echo -ne "\e[H\e[?200h
 reset 
-rgba 1 1 1 0.5 # bbbb
+rgbaS 1 1 1 0.5 # bbbb
 arc 50% 50% $radius% 0.0 6.4 0
 lineWidth $((radius/10))%
 stroke
@@ -31,7 +31,7 @@ stroke
 lineWidth $((radius/40))%
 moveTo 50% 50%
 arc 50% 50% $((radius * 90 / 100))%  $second_radians $second_radians 0
-rgba 1 0.1 0.1 1
+rgbaS 1 0.1 0.1 1
 stroke
 flush
 done ";
