@@ -233,7 +233,8 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
 }
 
 void
-ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format, uint8_t *data,
+ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format,
+                    uint8_t *data,
                     int ox, int oy,
                     int dirtyX, int dirtyY,
                     int dirtyWidth, int dirtyHeight)
@@ -245,6 +246,7 @@ ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format, uint8_t *dat
    if (eid[0])
    {
      // XXX set compositor to source
+     ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
      ctx_draw_texture_clipped (ctx, eid, ox, oy, w, h, dirtyX, dirtyY, dirtyWidth, dirtyHeight);
    }
    ctx_restore (ctx);
@@ -435,10 +437,10 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     }
 
     CtxEidInfo *eid_info = (CtxEidInfo*)calloc (sizeof (CtxEidInfo), 1);
-    eid_info->eid = strdup (eid);
-    eid_info->width = width;
-    eid_info->height = height;
-    eid_info->frame = ctx->texture_cache->frame;
+    eid_info->eid        = strdup (eid);
+    eid_info->width      = width;
+    eid_info->height     = height;
+    eid_info->frame      = ctx->texture_cache->frame;
     ctx_list_prepend (&ctx->texture_cache->eid_db, eid_info);
   }
 
@@ -489,10 +491,10 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     CtxPixelFormat pixel_format = CTX_FORMAT_RGBA8;
     switch (components)
     {
-      case 1: pixel_format = CTX_FORMAT_GRAY8; break;
+      case 1: pixel_format = CTX_FORMAT_GRAY8;  break;
       case 2: pixel_format = CTX_FORMAT_GRAYA8; break;
-      case 3: pixel_format = CTX_FORMAT_RGB8; break;
-      case 4: pixel_format = CTX_FORMAT_RGBA8; break;
+      case 3: pixel_format = CTX_FORMAT_RGB8;   break;
+      case 4: pixel_format = CTX_FORMAT_RGBA8;  break;
     }
     if (tw) *tw = w;
     if (th) *th = h;
@@ -585,30 +587,6 @@ ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0, float x1, float y1,
   ctx_process (ctx, command);
 }
 
-void ctx_gradient_add_stop_u8
-(Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-  CtxEntry entry = ctx_f (CTX_GRADIENT_STOP, pos, 0);
-  entry.data.u8[4+0] = r;
-  entry.data.u8[4+1] = g;
-  entry.data.u8[4+2] = b;
-  entry.data.u8[4+3] = a;
-  ctx_process (ctx, &entry);
-}
-
-void ctx_gradient_add_stop
-(Ctx *ctx, float pos, float r, float g, float b, float a)
-{
-  int ir = r * 255;
-  int ig = g * 255;
-  int ib = b * 255;
-  int ia = a * 255;
-  ir = CTX_CLAMP (ir, 0,255);
-  ig = CTX_CLAMP (ig, 0,255);
-  ib = CTX_CLAMP (ib, 0,255);
-  ia = CTX_CLAMP (ia, 0,255);
-  ctx_gradient_add_stop_u8 (ctx, pos, ir, ig, ib, ia);
-}
 
 void ctx_preserve (Ctx *ctx)
 {
@@ -983,6 +961,16 @@ CtxLineJoin ctx_get_line_join (Ctx *ctx)
   return ctx->state.gstate.line_join;
 }
 
+CtxCompositingMode ctx_get_compositing_mode (Ctx *ctx)
+{
+  return ctx->state.gstate.compositing_mode;
+}
+
+CtxBlend ctx_get_blend_mode (Ctx *ctx)
+{
+  return ctx->state.gstate.blend_mode;
+}
+
 CtxTextAlign ctx_get_text_align  (Ctx *ctx)
 {
   return (CtxTextAlign)ctx_state_get (&ctx->state, CTX_text_align);
@@ -1021,11 +1009,13 @@ void ctx_line_join (Ctx *ctx, CtxLineJoin join)
 }
 void ctx_blend_mode (Ctx *ctx, CtxBlend mode)
 {
-  CTX_PROCESS_U8 (CTX_BLEND_MODE, mode);
+  if (ctx->state.gstate.blend_mode != mode)
+    CTX_PROCESS_U8 (CTX_BLEND_MODE, mode);
 }
 void ctx_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
 {
-  CTX_PROCESS_U8 (CTX_COMPOSITING_MODE, mode);
+  if (ctx->state.gstate.compositing_mode != mode)
+    CTX_PROCESS_U8 (CTX_COMPOSITING_MODE, mode);
 }
 void ctx_text_align (Ctx *ctx, CtxTextAlign text_align)
 {

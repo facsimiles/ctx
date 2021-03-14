@@ -992,6 +992,41 @@ void ctx_colorspace (Ctx           *ctx,
   }
 }
 
+void ctx_gradient_add_stop_u8
+(Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+  CtxEntry entry = ctx_f (CTX_GRADIENT_STOP, pos, 0);
+  entry.data.u8[4+0] = r;
+  entry.data.u8[4+1] = g;
+  entry.data.u8[4+2] = b;
+  entry.data.u8[4+3] = a;
+  ctx_process (ctx, &entry);
+}
+
+void ctx_gradient_add_stop
+(Ctx *ctx, float pos, float r, float g, float b, float a)
+{
+  int ir = r * 255;
+  int ig = g * 255;
+  int ib = b * 255;
+  int ia = a * 255;
+  ir = CTX_CLAMP (ir, 0,255);
+  ig = CTX_CLAMP (ig, 0,255);
+  ib = CTX_CLAMP (ib, 0,255);
+  ia = CTX_CLAMP (ia, 0,255);
+  ctx_gradient_add_stop_u8 (ctx, pos, ir, ig, ib, ia);
+}
+
+void ctx_gradient_add_stop_string
+(Ctx *ctx, float pos, const char *string)
+{
+  CtxColor color = {0,};
+  ctx_color_set_from_string (ctx, &color, string);
+  float rgba[4];
+  ctx_color_get_rgba (&(ctx->state), &color, rgba);
+  ctx_gradient_add_stop (ctx, pos, rgba[0], rgba[1], rgba[2], rgba[3]);
+}
+
 //  deviceRGB .. settable when creating an RGB image surface..
 //               queryable when running in terminal - is it really needed?
 //               though it is settable ; and functional for changing this state at runtime..

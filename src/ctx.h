@@ -300,6 +300,19 @@ void ctx_define_texture (Ctx *ctx,
                          void       *data,
                          char       *ret_eid);
 
+void
+ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
+                    CtxPixelFormat format, int dst_stride,
+                    uint8_t *dst_data);
+
+void
+ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format,
+                    uint8_t *data,
+                    int ox, int oy,
+                    int dirtyX, int dirtyY,
+                    int dirtyWidth, int dirtyHeight);
+
+
 /* loads an image file from disk into texture, returning pixel width, height
  * and eid, the eid is based on the path; not the contents - avoiding doing
  * sha1 checksum of contents. The width and height of the image is returned
@@ -518,6 +531,9 @@ CtxFillRule ctx_get_fill_rule (Ctx *ctx);
 CtxLineCap ctx_get_line_cap (Ctx *ctx);
 CtxLineJoin ctx_get_line_join (Ctx *ctx);
 CtxCompositingMode ctx_get_compositing_mode (Ctx *ctx);
+CtxBlend ctx_get_blend_mode (Ctx *ctx);
+
+void ctx_gradient_add_stop_string (Ctx *ctx, float pos, const char *color);
 
 void ctx_text_align           (Ctx *ctx, CtxTextAlign      align);
 void ctx_text_baseline        (Ctx *ctx, CtxTextBaseline   baseline);
