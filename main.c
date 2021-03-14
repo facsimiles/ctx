@@ -24,6 +24,7 @@ static int usage_main (int argc, char **argv)
   return 0;
 }
 
+int js_main (int argc, char **argv);
 int terminal_main (int argc, char **argv);
 int convert_main (int argc, char **argv);
 
@@ -250,6 +251,8 @@ int main (int argc, char **argv)
     return thumb_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "convert"))
     return convert_main (argc-1, argv+1);
+  if (argv[1] && !strcmp (argv[1], "js"))
+    return js_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "launch"))
     return launch_main (argc-1, argv+1);
   return terminal_main (argc, argv);

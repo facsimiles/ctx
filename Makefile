@@ -17,14 +17,19 @@ LIBS   = -lz -lm -lpthread
 #CFLAGS+= -fsanitize=address
 #LIBS+= -lasan
 
-OFLAGS_HARD=-O3
-OFLAGS_LIGHT=-O2
+OFLAGS_HARD=-Os
+OFLAGS_LIGHT=-Os
+#OFLAGS_HARD=-O3
+#OFLAGS_LIGHT=-O2
 
 CLIENTS_CFILES = $(wildcard clients/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
 TERMINAL_CFILES = $(wildcard terminal/*.c)
 TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
+
+JS_CFILES = $(wildcard js/*.c)
+JS_OBJS   = $(JS_CFILES:.c=.o)
 
 SRC_CFILES = $(wildcard src/*.c)
 SRC_OBJS   = $(SRC_CFILES:.c=.o)
@@ -78,6 +83,7 @@ clean:
 	rm -f libctx.a libctx.so
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
+	rm -f $(JS_OBJS)
 	rm -f $(SRC_OBJS)
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
@@ -121,14 +127,14 @@ libctx.so: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o
 	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
-ctx: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
+ctx: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) $(JS_OBJS) libctx.a
+	$(CCC) main.c $(TERMINAL_OBJS) $(JS_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
 
 ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) -O0
 
-ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
+ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) $(JS_OBJS) deps.o
+	$(CCC) main.c $(TERMINAL_OBJS) $(JS_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
 
 ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o ctx-sse2.o ctx-mmx.o
 	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -static 
@@ -175,4 +181,7 @@ ctx.h: src/* fonts/ctx-font-ascii.h
 
 ctx-nofont.h: src/*
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
-
+js/main.o: js/ecma_eventloop.js.inc js/bootstrap.js.inc
+js/%.js.inc: js/%.js 
+	cat $< | sed 's/"/\\"/g' |sed 's/$$/\\n"/' | sed 's/^/"/' > $@
+	
