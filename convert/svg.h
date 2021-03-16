@@ -6519,7 +6519,6 @@ void _mrg_set_post_nl (Mrg *mrg,
   mrg->state->post_nl_data = post_nl_data;
 }
 
-
 void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
 {
   Ctx *ctx = mrg->ctx;

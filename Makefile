@@ -79,6 +79,7 @@ test: ctx
 distclean: clean
 	rm -f build.*
 clean:
+	rm -f js/*.inc
 	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o highlight.css
 	rm -f libctx.a libctx.so
 	rm -f $(CLIENTS_BINS)
@@ -184,7 +185,7 @@ ctx.h: src/* fonts/ctx-font-ascii.h
 
 ctx-nofont.h: src/*
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
-js/main.o: js/ecma_eventloop.js.inc js/bootstrap.js.inc
+js/main.o: js/ecma_eventloop.js.inc js/bootstrap.js.inc js/htmlparser.js.inc js/jsdomparser.js.inc
 js/%.js.inc: js/%.js 
-	cat $< | sed 's/"/\\"/g' |sed 's/$$/\\n"/' | sed 's/^/"/' > $@
+	cat $< | sed 's/\\/\\\\/g'   |sed 's/"/\\"/g' |sed 's/$$/\\n"/' | sed 's/^/"/' > $@
 	
