@@ -155,6 +155,7 @@ void ctx_set_transform    (Ctx *ctx, float a, float b, float c, float d, float e
 void  ctx_line_dash       (Ctx *ctx, float *dashes, int count);
 void  ctx_font_size       (Ctx *ctx, float x);
 void  ctx_font            (Ctx *ctx, const char *font);
+void  ctx_font_family     (Ctx *ctx, const char *font_family);
 void  ctx_scale           (Ctx *ctx, float x, float y);
 void  ctx_translate       (Ctx *ctx, float x, float y);
 void  ctx_line_to         (Ctx *ctx, float x, float y);

@@ -859,7 +859,7 @@ ctx_get (Ctx *ctx, const char *key)
 #endif
 
 void
-ctx_font (Ctx *ctx, const char *name)
+ctx_font_family (Ctx *ctx, const char *name)
 {
 #if CTX_BACKEND_TEXT
   ctx_process_cmd_str (ctx, CTX_FONT, name, 0, 0);
@@ -867,6 +867,13 @@ ctx_font (Ctx *ctx, const char *name)
 #else
   _ctx_font (ctx, name);
 #endif
+}
+
+void
+ctx_font (Ctx *ctx, const char *family_name)
+{
+  // should also parse size
+  ctx_font_family (ctx, family_name);
 }
 
 const char *
