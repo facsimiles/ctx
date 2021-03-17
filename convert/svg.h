@@ -4929,7 +4929,6 @@ float mrg_draw_string (Mrg *mrg, MrgStyle *style,
       ctx_color_free (color);
     }
 
-
     {
     CtxColor *color = ctx_color_new ();
     ctx_get_color (cr, CTX_color, color);
