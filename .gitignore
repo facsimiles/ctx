@@ -4,6 +4,7 @@ examples/mmm
 examples/sdl2
 examples/test-renderpaths
 *.o
+js/*.inc
 *.sw?
 *.sv?
 tests/*.gray?

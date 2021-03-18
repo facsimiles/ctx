@@ -6356,7 +6356,6 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
       } else if (style->float_ == MRG_FLOAT_LEFT)
       {
         float left, y;
-
         float width = PROP(width);
 
         if (width == 0.0)
