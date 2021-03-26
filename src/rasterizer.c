@@ -1616,21 +1616,22 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
                             y + ctx_sinf (end_angle) * radius);
       return;
     }
-#if 0
-  if ( (!anticlockwise && (end_angle - start_angle >= CTX_PI*2) ) ||
-       ( (anticlockwise && (start_angle - end_angle >= CTX_PI*2) ) ) )
+#if 1
+  if ( (!anticlockwise && fabsf((end_angle - start_angle) - CTX_PI*2) < 0.01f)  ||
+       ( (anticlockwise && fabsf((start_angle - end_angle) - CTX_PI*2) < 0.01f ) ) 
+  ||   (anticlockwise && fabsf((end_angle - start_angle) - CTX_PI*2) < 0.01f)  ||  (!anticlockwise && fabsf((start_angle - end_angle) - CTX_PI*2) < 0.01f )  )
     {
-      end_angle = start_angle;
+      start_angle = start_angle;
       steps = full_segments - 1;
     }
   else
 #endif
     {
       steps = (end_angle - start_angle) / (CTX_PI*2) * full_segments;
-      if (steps > full_segments)
-              steps = full_segments;
       if (anticlockwise)
         { steps = full_segments - steps; };
+   // if (steps > full_segments)
+   //   steps = full_segments;
     }
   if (anticlockwise) { step = step * -1; }
   int first = 1;
