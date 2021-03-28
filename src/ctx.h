@@ -650,8 +650,8 @@ int ctx_renderer_is_braille (Ctx *ctx);
 unsigned long ctx_ticks (void);
 int ctx_is_dirty (Ctx *ctx);
 void ctx_set_dirty (Ctx *ctx, int dirty);
-float ctx_get_float (Ctx *ctx, uint32_t hash);
-void ctx_set_float (Ctx *ctx, uint32_t hash, float value);
+float ctx_get_float (Ctx *ctx, uint64_t hash);
+void ctx_set_float (Ctx *ctx, uint64_t hash, float value);
 
 unsigned long ctx_ticks (void);
 void ctx_flush (Ctx *ctx);
@@ -1661,7 +1661,7 @@ typedef struct _CtxParser CtxParser;
   float      cell_height,
   int        cursor_x,
   int        cursor_y,
-  int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len),
+  int   (*set_prop)(void *prop_data, uint64_t key, const char *data,  int len),
   int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
   void  *prop_data,
   void (*exit) (void *exit_data),

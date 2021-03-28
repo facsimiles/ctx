@@ -13,6 +13,7 @@ libc.c
 ctx-internal.h
 sha1.c
 start-implementation
+thash.h
 drawlist.h
 util.h
 drawlist.c

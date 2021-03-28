@@ -24,353 +24,353 @@
 #define SET_PROPSh(a,v)  (ctx_set_string(mrg->ctx, a, v))
 
 #if CTX_XML
-#define CTX_1           CTX_STRH('1',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_a           CTX_STRH('a',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_absolute 	CTX_STRH('a','b','s','o','l','u','t','e',0,0,0,0,0,0)
-#define CTX_aelig 	CTX_STRH('a','e','l','i','g',0,0,0,0,0,0,0,0,0)
-#define CTX_Aelig 	CTX_STRH('A','e','l','i','g',0,0,0,0,0,0,0,0,0)
-#define CTX_AElig 	CTX_STRH('A','E','l','i','g',0,0,0,0,0,0,0,0,0)
-#define CTX_alias 	CTX_STRH('a','l','i','a','s',0,0,0,0,0,0,0,0,0)
-#define CTX_all_scroll 	CTX_STRH('a','l','l','-','s','c','r','o','l','l',0,0,0,0)
-#define CTX_alpha 	CTX_STRH('a','l','p','h','a',0,0,0,0,0,0,0,0,0)
-#define CTX_amp 	CTX_STRH('a','m','p',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_apos 	CTX_STRH('a','p','o','s',0,0,0,0,0,0,0,0,0,0)
-#define CTX_aring 	CTX_STRH('a','r','i','n','g',0,0,0,0,0,0,0,0,0)
-#define CTX_Aring 	CTX_STRH('A','r','i','n','g',0,0,0,0,0,0,0,0,0)
-#define CTX_auto 	CTX_STRH('a','u','t','o',0,0,0,0,0,0,0,0,0,0)
-#define CTX_align       CTX_STRH('a','l','i','g','n',0,0,0,0,0,0,0,0)
-#define CTX_align_content  CTX_STRH('a','l','i','g','n','-','c','o','n','t','e','n','t',0)
-#define CTX_align_items    CTX_STRH('a','l','i','g','n','-','i','t','e','m','s',0,0,0)
-#define CTX_align_self     CTX_STRH('a','l','i','g','n','-','s','e','l','f',0,0,0,0)
-#define CTX_aspect_ratio CTX_STRH('a','s','p','e','c','t','-','r','a','t','i','o',0,0)
-#define CTX_avoid       CTX_STRH('a','v','o','i','d',0,0,0,0,0,0,0,0)
-#define CTX_background 	CTX_STRH('b','a','c','k','g','r','o','u','n','d',0,0,0,0)
-#define CTX_background_color 	CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','c','o','l')
-#define CTX_background_clip     CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','c','l','i')
-#define CTX_background_attachment       CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','a','t','t')
-#define CTX_background_image    CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','i','m','a')
-#define CTX_background_origin   CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','o','r','i')
-#define CTX_background_size     CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','s','i','z')
-#define CTX_background_position CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','p','o','s')
-#define CTX_background_position_x CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','p','o','s') // XXX
-#define CTX_background_position_y CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','p','o','s') // XXX
-#define CTX_background_repeat   CTX_STRH('b','a','c','k','g','r','o','u','n','d','-','r','e','p')
-#define CTX_base  	CTX_STRH('b','a','s','e',0,0,0,0,0,0,0,0,0,0)
-#define CTX_bidi_override 	CTX_STRH('b','i','d','i','-','o','v','e','r','r','i','d','e',0)
-#define CTX_blink 	CTX_STRH('b','l','i','n','k',0,0,0,0,0,0,0,0,0)
-#define CTX_block 	CTX_STRH('b','l','o','c','k',0,0,0,0,0,0,0,0,0)
-#define CTX_body 	CTX_STRH('b','o','d','y',0,0,0,0,0,0,0,0,0,0)
-#define CTX_bold 	CTX_STRH('b','o','l','d',0,0,0,0,0,0,0,0,0,0)
-#define CTX_bolder 	CTX_STRH('b','o','l','d','e','r',0,0,0,0,0,0,0,0)
-#define CTX_border 	CTX_STRH('b','o','r','d','e','r',0,0,0,0,0,0,0,0)
-#define CTX_border_bottom 	CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m',0)
-#define CTX_border_bottom_width CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m','-')
-#define CTX_border_bottom_color CTX_STRH('b','o','r','d','e','r','-','b','o','t','t','o','m','c') // XXX
-#define CTX_border_box 	CTX_STRH('b','o','r','d','e','r','-','b','o','x',0,0,0,0)
-#define CTX_border_collapse CTX_STRH('b','o','r','d','e','r','-','c','o','l','l','a','p','s') // XXX
-#define CTX_border_color 	CTX_STRH('b','o','r','d','e','r','-','c','o','l','o','r',0,0)
-#define CTX_border_image 	CTX_STRH('b','o','r','d','e','r','-','i','m','a','g','e',0,0)
-#define CTX_border_left 	CTX_STRH('b','o','r','d','e','r','-','l','e','f','t',0,0,0)
-#define CTX_border_left_width 	CTX_STRH('b','o','r','d','e','r','-','l','e','f','t','-','w','i')
-#define CTX_border_left_color 	CTX_STRH('b','o','r','d','e','r','-','l','e','f','t','-','c','o')
-#define CTX_border_radius    	CTX_STRH('b','o','r','d','e','r','-','r','a','d','i','u','s',0)
-#define CTX_border_right 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t',0,0)
-#define CTX_border_right_width 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t','-','w')
-#define CTX_border_right_color 	CTX_STRH('b','o','r','d','e','r','-','r','i','g','h','t','-','c')
-#define CTX_border_style  	CTX_STRH('b','o','r','d','e','r','-','s','t','y','l','e',0,0)
-#define CTX_border_spacing   	CTX_STRH('b','o','r','d','e','r','-','s','p','a','c','i','n','g')
-#define CTX_border_top 	CTX_STRH('b','o','r','d','e','r','-','t','o','p',0,0,0,0)
-#define CTX_border_top_color 	CTX_STRH('b','o','r','d','e','r','-','t','o','p','-','c','o','l')
-#define CTX_border_top_width 	CTX_STRH('b','o','r','d','e','r','-','t','o','p','-','w','i','d')
-#define CTX_border_width 	CTX_STRH('b','o','r','d','e','r','-','w','i','d','t','h',0,0)
-#define CTX_both 	CTX_STRH('b','o','t','h',0,0,0,0,0,0,0,0,0,0)
-#define CTX_bottom 	CTX_STRH('b','o','t','t','o','m',0,0,0,0,0,0,0,0)
-#define CTX_box_decoration_break CTX_STRH('b','o','x','-','d','e','c','o','r','a','t','i','o','n')
-#define CTX_box_shadow 	CTX_STRH('b','o','x','-','s','h','a','d','o','w',0,0,0,0)
-#define CTX_box_sizing 	CTX_STRH('b','o','x','-','s','i','z','i','n','g',0,0,0,0)
-#define CTX_br 	CTX_STRH('b','r',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_bull 	CTX_STRH('b','u','l','l',0,0,0,0,0,0,0,0,0,0)
-#define CTX_butt 	CTX_STRH('b','u','t','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_button      CTX_STRH('b','u','t','t','o','n',0,0,0,0,0,0,0,0)
-#define CTX_caption_side	CTX_STRH('c','a','p','t','i','o','n','-','s','i','d','e',0,0)
-#define CTX_cedil 	CTX_STRH('c','e','d','i','l',0,0,0,0,0,0,0,0,0)
-#define CTX_cell 	CTX_STRH('c','e','l','l',0,0,0,0,0,0,0,0,0,0)
-#define CTX_cent 	CTX_STRH('c','e','n','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_class 	CTX_STRH('c','l','a','s','s',0,0,0,0,0,0,0,0,0)
-#define CTX_clear 	CTX_STRH('c','l','e','a','r',0,0,0,0,0,0,0,0,0)
-#define CTX_color 	CTX_STRH('c','o','l','o','r',0,0,0,0,0,0,0,0,0)
-#define CTX_copy  	CTX_STRH('c','o','p','y',0,0,0,0,0,0,0,0,0,0)
-#define CTX_color_index 	CTX_STRH('c','o','l','o','r','-','i','n','d','e','x',0,0,0)
-#define CTX_content     CTX_STRH('c','o','n','t','e','n','t',0,0,0,0,0,0,0)
-#define CTX_col_resize 	CTX_STRH('c','o','l','-','r','e','s','i','z','e',0,0,0,0)
-#define CTX_counter_increment    CTX_STRH('c','o','u','n','t','e','r','-','i','n','c','r','e','m')
-#define CTX_counter_reset        CTX_STRH('c','o','u','n','t','e','r','-','r','e','s','e','t',0)
-#define CTX_context_menu 	CTX_STRH('c','o','n','t','e','x','t','-','m','e','n','u',0,0)
-#define CTX_crosshair 	CTX_STRH('c','r','o','s','s','h','a','i','r',0,0,0,0,0)
-#define CTX_curren 	CTX_STRH('c','u','r','r','e','n',0,0,0,0,0,0,0,0)
-#define CTX_cursor 	CTX_STRH('c','u','r','s','o','r',0,0,0,0,0,0,0,0)
-#define CTX_cursor_wait 	CTX_STRH('c','u','r','s','o','r','-','w','a','i','t',0,0,0)
-#define CTX_d 	CTX_STRH('d',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_dd 	CTX_STRH('d','d',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_default 	CTX_STRH('d','e','f','a','u','l','t',0,0,0,0,0,0,0)
-#define CTX_device_width CTX_STRH('d','e','v','i','c','e','-','w','i','d','t','h',0,0)
-#define CTX_device_height CTX_STRH('d','e','v','i','c','e','-','h','e','i','g','h','t',0)
-#define CTX_device_aspect_ratio CTX_STRH('d','e','v','i','c','e','-','a','s','p','e','c','t','-')
-#define CTX_deg 	CTX_STRH('d','e','g',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_dim 	CTX_STRH('d','i','m',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_div 	CTX_STRH('d','i','v',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_dir 	CTX_STRH('d','i','r',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_direction 	CTX_STRH('d','i','r','e','c','t','i','o','n',0,0,0,0,0)
-#define CTX_display 	CTX_STRH('d','i','s','p','l','a','y',0,0,0,0,0,0,0)
-#define CTX_dotted 	CTX_STRH('d','o','t','t','e','d',0,0,0,0,0,0,0,0)
-#define CTX_dt 	CTX_STRH('d','t',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_embed 	CTX_STRH('e','m','b','e','d',0,0,0,0,0,0,0,0,0)
-#define CTX_empty_cells CTX_STRH('e','m','p','t','y','-','c','e','l','l','s',0,0,0)
-#define CTX_e_resize 	CTX_STRH('e','-','r','e','s','i','z','e',0,0,0,0,0,0)
-#define CTX_euro 	CTX_STRH('e','u','r','o',0,0,0,0,0,0,0,0,0,0)
-#define CTX_even 	CTX_STRH('e','v','e','n',0,0,0,0,0,0,0,0,0,0)
-#define CTX_evenodd 	CTX_STRH('e','v','e','n','o','d','d',0,0,0,0,0,0,0)
-#define CTX_ew_resize 	CTX_STRH('e','w','-','r','e','s','i','z','e',0,0,0,0,0)
-#define CTX_fill 	CTX_STRH('f','i','l','l',0,0,0,0,0,0,0,0,0,0)
-#define CTX_file 	CTX_STRH('f','i','l','e',0,0,0,0,0,0,0,0,0,0)
-#define CTX_fill_color 	CTX_STRH('f','i','l','l','-','c','o','l','o','r',0,0,0,0)
-#define CTX_first_child CTX_STRH('f','i','r','s','t','-','c','h','i','l','d',0,0,0)
-#define CTX_fixed 	CTX_STRH('f','i','x','e','d',0,0,0,0,0,0,0,0,0)
-#define CTX_flex  	CTX_STRH('f','l','e','x',0,0,0,0,0,0,0,0,0,0)
-#define CTX_flex_direction CTX_STRH('f','l','e','x','-','d','i','r','e','c','t','i','o','n')
-#define CTX_flex_flow   CTX_STRH('f','l','e','x','-','f','l','o','w',0,0,0,0,0)
-#define CTX_flex_grow   CTX_STRH('f','l','e','x','-','g','r','o','w',0,0,0,0,0)
-#define CTX_flex_wrap   CTX_STRH('f','l','e','x','-','w','r','a','p',0,0,0,0,0)
-#define CTX_flex_shrink CTX_STRH('f','l','e','x','-','s','h','r','i','n','k',0,0,0)
-#define CTX_float 	CTX_STRH('f','l','o','a','t',0,0,0,0,0,0,0,0,0)
-#define CTX_font_family 	CTX_STRH('f','o','n','t','-','f','a','m','i','l','y',0,0,0)
-#define CTX_font_size_adjust 	CTX_STRH('f','o','n','t','-','s','i','z','e','-','a','d','j','u')
-#define CTX_font_style 	CTX_STRH('f','o','n','t','-','s','t','y','l','e',0,0,0,0)
-#define CTX_font_stretch 	CTX_STRH('f','o','n','t','-','s','t','r','e','t','c','h',0,0)
-#define CTX_font_feature_settings CTX_STRH('f','o','n','t','-','f','e','a','t','u','r','-','s','e')
-#define CTX_font_kerning          CTX_STRH('f','o','n','t','-','k','e','r','n','i','n','g',0,0)
-#define CTX_font_language_override CTX_STRH('f','o','n','t','-','l','a','n','g','u','a','g','e','-')
-#define CTX_font_synthesis CTX_STRH('f','o','n','t','-','s','y','n','t','h','e','s','i','s')
-#define CTX_font_variant_alternates CTX_STRH('f','o','n','t','-','v','a','r','i','a','n','t','-','a')
-#define CTX_font_variant_caps CTX_STRH('f','o','n','t','-','v','a','r','i','a','n','t','-','c')
-#define CTX_font_variant_east_asian CTX_STRH('f','o','n','t','-','v','a','r','i','a','n','t','-','e')
-#define CTX_font_variant_ligatures CTX_STRH('f','o','n','t','-','v','a','r','i','a','n','t','-','l')
-#define CTX_font_variant_numeric CTX_STRH('f','o','n','t','-','v','a','r','i','a','n','t','-','n')
-#define CTX_font_variant_positoin CTX_STRH('f','o','n','t','-','v','a','r','i','a','n','t','-','p')
-#define CTX_font_weight CTX_STRH('f','o','n','t','-','w','e','i','g','h','t',0,0,0)
-#define CTX_font_variant CTX_STRH('f','o','n','t','-','v','a','r','i','a','n','t',0,0)
-#define CTX_g           CTX_STRH('g',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_grid  	CTX_STRH('g','r','i','d',0,0,0,0,0,0,0,0,0,0)
-#define CTX_gt          CTX_STRH('g','t',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_hanging_punctuation     CTX_STRH('h','a','a','n','g','i','n','g','-','p','u','n','c','t')
-#define CTX_head 	CTX_STRH('h','e','a','d',0,0,0,0,0,0,0,0,0,0)
-#define CTX_height 	CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
-#define CTX_hellip 	CTX_STRH('h','e','l','l','i','p',0,0,0,0,0,0,0,0)
-#define CTX_help 	CTX_STRH('h','e','l','p',0,0,0,0,0,0,0,0,0,0)
-#define CTX_hidden 	CTX_STRH('h','i','d','d','e','n',0,0,0,0,0,0,0,0)
-#define CTX_hr          CTX_STRH('h','r',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_href 	CTX_STRH('h','r','e','f',0,0,0,0,0,0,0,0,0,0)
-#define CTX_http 	CTX_STRH('h','t','t','p',0,0,0,0,0,0,0,0,0,0)
-#define CTX_hyphens	CTX_STRH('h','y','p','h','e','n','s',0,0,0,0,0,0,0)
-#define CTX_id          CTX_STRH('i','d',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_iexcl 	CTX_STRH('i','e','x','c','l',0,0,0,0,0,0,0,0,0)
-#define CTX_image_orientation 	CTX_STRH('i','m','a','g','e','-','o','r','i','e','n','t','a','t')
-#define CTX_img 	CTX_STRH('i','m','g',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_inline_block 	CTX_STRH('i','n','l','i','n','e','-','b','l','o','c','k',0,0)
-#define CTX_input 	CTX_STRH('i','n','p','u','t',0,0,0,0,0,0,0,0,0)
-#define CTX_inset 	CTX_STRH('i','n','s','e','t',0,0,0,0,0,0,0,0,0)
-#define CTX_italic 	CTX_STRH('i','t','a','l','i','c',0,0,0,0,0,0,0,0)
-#define CTX_justify 	CTX_STRH('j','u','s','t','i','f','y',0,0,0,0,0,0,0)
-#define CTX_justify_content 	CTX_STRH('j','u','s','t','i','f','y','-','c','o','n','t','e','n')
-#define CTX_justify_items   	CTX_STRH('j','u','s','t','i','f','y','-','i','t','e','m','s',0)
-#define CTX_justify_self    	CTX_STRH('j','u','s','t','i','f','y','-','s','e','l','f',0,0)
-#define CTX_label 	CTX_STRH('l','a','b','e','l',0,0,0,0,0,0,0,0,0)
-#define CTX_lang  	CTX_STRH('l','a','n','g',0,0,0,0,0,0,0,0,0,0)
-#define CTX_laquo 	CTX_STRH('l','a','q','u','o',0,0,0,0,0,0,0,0,0)
-#define CTX_letter_spacing 	CTX_STRH('l','e','t','t','e','r','-','s','p','a','c','i','n','g')
-#define CTX_li 	CTX_STRH('l','i',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_linethrough 	CTX_STRH('l','i','n','e','t','h','r','o','u','g','h',0,0,0)
-#define CTX_line_break   CTX_STRH('l','i','n','e','-','b','r','e','a','k',0,0,0,0)
-#define CTX_link 	CTX_STRH('l','i','n','k',0,0,0,0,0,0,0,0,0,0)
-#define CTX_list_item 	CTX_STRH('l','i','s','t','-','i','t','e','m',0,0,0,0,0)
-#define CTX_list_style	CTX_STRH('l','i','s','t','-','s','t','y','l','e',0,0,0,0)
-#define CTX_list_style_image	CTX_STRH('l','i','s','t','-','s','t','y','l','e','-','i','m','a')
-#define CTX_list_style_position CTX_STRH('l','i','s','t','-','s','t','y','l','e','-','p','o','s')
-#define CTX_list_style_type     CTX_STRH('l','i','s','t','-','s','t','y','l','e','-','t','y','p')
-#define CTX_lt 	CTX_STRH('l','t',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_ltr 	CTX_STRH('l','t','r',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_margin 	CTX_STRH('m','a','r','g','i','n',0,0,0,0,0,0,0,0)
-#define CTX_margin_bottom 	CTX_STRH('m','a','r','g','i','n','-','b','o','t','t','o','m',0)
-#define CTX_margin_left 	CTX_STRH('m','a','r','g','i','n','-','l','e','f','t',0,0,0)
-#define CTX_margin_right 	CTX_STRH('m','a','r','g','i','n','-','r','i','g','h','t',0,0)
-#define CTX_margin_top 	CTX_STRH('m','a','r','g','i','n','-','t','o','p',0,0,0,0)
-#define CTX_matrix 	CTX_STRH('m','a','t','r','i','x',0,0,0,0,0,0,0,0)
-#define CTX_max_height	CTX_STRH('m','a','x','-','h','e','i','g','h','t',0,0,0,0)
-#define CTX_max_lines 	CTX_STRH('m','a','x','-','l','i','n','e','s',0,0,0,0,0)
-#define CTX_max_width 	CTX_STRH('m','a','x','-','w','i','d','t','h',0,0,0,0,0)
-#define CTX_mdash 	CTX_STRH('m','d','a','s','h',0,0,0,0,0,0,0,0,0)
-#define CTX_meta 	CTX_STRH('m','e','t','a',0,0,0,0,0,0,0,0,0,0)
-#define CTX_middot 	CTX_STRH('m','i','d','d','o','t',0,0,0,0,0,0,0,0)
-#define CTX_min_height 	CTX_STRH('m','i','n','-','h','e','i','g','h','t',0,0,0,0)
-#define CTX_min_width 	CTX_STRH('m','i','n','-','w','i','d','t','h',0,0,0,0,0)
-#define CTX_monochrome  CTX_STRH('m','o','n','o','c','h','r','o','m','e',0,0,0,0)
-#define CTX_move 	CTX_STRH('m','o','v','e',0,0,0,0,0,0,0,0,0,0)
-#define CTX_nbsp 	CTX_STRH('n','b','s','p',0,0,0,0,0,0,0,0,0,0)
-#define CTX_ne_resize 	CTX_STRH('n','e','-','r','e','s','i','z','e',0,0,0,0,0)
-#define CTX_nesw_resize 	CTX_STRH('n','e','s','w','-','r','e','s','i','z','e',0,0,0)
-#define CTX_no_drop 	CTX_STRH('n','o','-','d','r','o','p',0,0,0,0,0,0,0)
-#define CTX_nonzero 	CTX_STRH('n','o','n','z','e','r','o',0,0,0,0,0,0,0)
-#define CTX_normal 	CTX_STRH('n','o','r','m','a','l',0,0,0,0,0,0,0,0)
-#define CTX_not_allowed 	CTX_STRH('n','o','t','-','a','l','l','o','w','e','d',0,0,0)
-#define CTX_nowrap 	CTX_STRH('n','o','w','r','a','p',0,0,0,0,0,0,0,0)
-#define CTX_n_resize 	CTX_STRH('n','-','r','e','s','i','z','e',0,0,0,0,0,0)
-#define CTX_ns_resize 	CTX_STRH('n','s','-','r','e','s','i','z','e',0,0,0,0,0)
-#define CTX_nth_child 	CTX_STRH('n','t','h','-','c','h','i','l','d',0,0,0,0,0)
-#define CTX_nw_resize 	CTX_STRH('n','w','-','r','e','s','i','z','e',0,0,0,0,0)
-#define CTX_object   t  CTX_STRH('o','b','j','e','c','t',0,0,0,0,0,0,0,0)
-#define CTX_object_fit  CTX_STRH('o','b','j','e','c','t','-','f','i','t',0,0,0,0)
-#define CTX_object_position  CTX_STRH('o','b','j','e','c','t','-','p','o','s','i','t','i','o')
-#define CTX_oblique 	CTX_STRH('o','b','l','i','q','u','e',0,0,0,0,0,0,0)
-#define CTX_odd 	CTX_STRH('o','d','d',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_omega 	CTX_STRH('o','m','e','g','a',0,0,0,0,0,0,0,0,0)
-#define CTX_opacity 	CTX_STRH('o','p','a','c','i','t','y',0,0,0,0,0,0,0)
-#define CTX_ordm 	CTX_STRH('o','r','d','m',0,0,0,0,0,0,0,0,0,0)
-#define CTX_order	CTX_STRH('o','r','d','m','e','r',0,0,0,0,0,0,0,0)
-#define CTX_oslash 	CTX_STRH('o','s','l','a','s','h',0,0,0,0,0,0,0,0)
-#define CTX_Oslash 	CTX_STRH('O','s','l','a','s','h',0,0,0,0,0,0,0,0)
-#define CTX_orphans  	CTX_STRH('o','r','p','h','a','n','s',0,0,0,0,0,0,0)
-#define CTX_outline  	CTX_STRH('o','u','t','l','i','n','e',0,0,0,0,0,0,0)
-#define CTX_outline_color  	CTX_STRH('o','u','t','l','i','n','e','-','c','o','l','o','r',0)
-#define CTX_outline_style  	CTX_STRH('o','u','t','l','i','n','e','-','s','t','y','l','e',0)
-#define CTX_outline_width  	CTX_STRH('o','u','t','l','i','n','e','-','w','i','d','t','h',0)
-#define CTX_overflow 	CTX_STRH('o','v','e','r','f','l','o','w',0,0,0,0,0,0)
-#define CTX_overflow_x  CTX_STRH('o','v','e','r','f','l','o','w','-','x',0,0,0,0)
-#define CTX_overflow_y  CTX_STRH('o','v','e','r','f','l','o','w','-','y',0,0,0,0)
-#define CTX_overflow_wrap  CTX_STRH('o','v','e','r','f','l','o','w','-','w','r','a','p',0)
-#define CTX_overline 	CTX_STRH('o','v','e','r','l','i','n','e',0,0,0,0,0,0)
-#define CTX_orientation CTX_STRH('o','r','i','e','n','t','a','t','i','o','n',0,0,0)
-#define CTX_p 	CTX_STRH('p',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_page     	CTX_STRH('p','a','g','e',0,0,0,0,0,0,0,0,0,0)
 
-#define CTX_page_break_before  CTX_STRH('p','a','g','e','-','b','r','e','a','k','-','b','e','f')
-#define CTX_page_break_after  CTX_STRH('p','a','g','e','-','b','r','e','a','k','-','a','f','t')
-#define CTX_page_break_inside CTX_STRH('p','a','g','e','-','b','r','e','a','k','-','i','n','s')
-#define CTX_padding 	CTX_STRH('p','a','d','d','i','n','g',0,0,0,0,0,0,0)
-#define CTX_padding_bottom 	CTX_STRH('p','a','d','d','i','n','g','-','b','o','t','t','o','m')
-#define CTX_padding_left 	CTX_STRH('p','a','d','d','i','n','g','-','l','e','f','t',0,0)
-#define CTX_padding_right 	CTX_STRH('p','a','d','d','i','n','g','-','r','i','g','h','t',0)
-#define CTX_padding_top 	CTX_STRH('p','a','d','d','i','n','g','-','t','o','p',0,0,0)
-#define CTX_para 	CTX_STRH('p','a','r','a',0,0,0,0,0,0,0,0,0,0)
-#define CTX_path 	CTX_STRH('p','a','t','h',0,0,0,0,0,0,0,0,0,0)
-#define CTX_phi 	CTX_STRH('p','h','i',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_plusmn 	CTX_STRH('p','l','u','s','m','n',0,0,0,0,0,0,0,0)
-#define CTX_pointer 	CTX_STRH('p','o','i','n','t','e','r',0,0,0,0,0,0,0)
-#define CTX_polygon 	CTX_STRH('p','o','l','y','g','o','n',0,0,0,0,0,0,0)
-#define CTX_position 	CTX_STRH('p','o','s','i','t','i','o','n',0,0,0,0,0,0)
-#define CTX_pound 	CTX_STRH('p','o','u','n','d',0,0,0,0,0,0,0,0,0)
-#define CTX_pre 	CTX_STRH('p','r','e',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_pre_line 	CTX_STRH('p','r','e','-','l','i','n','e',0,0,0,0,0,0)
-#define CTX_pre_wrap 	CTX_STRH('p','r','e','-','w','r','a','p',0,0,0,0,0,0)
-#define CTX_print_symbols 	CTX_STRH('p','r','i','n','t','-','s','y','m','b','o','l','s',0)
-#define CTX_progress 	CTX_STRH('p','r','o','g','r','e','s','s',0,0,0,0,0,0)
-#define CTX_quot 	CTX_STRH('q','u','o','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_quotes      CTX_STRH('q','u','o','t','e','s',0,0,0,0,0,0,0,0,0)
-#define CTX_raquo 	CTX_STRH('r','a','q','u','o',0,0,0,0,0,0,0,0,0)
-#define CTX_rect 	CTX_STRH('r','e','c','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_rel 	CTX_STRH('r','e','l',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_reg 	CTX_STRH('r','e','g',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_relative 	CTX_STRH('r','e','l','a','t','i','v','e',0,0,0,0,0,0)
-#define CTX_reverse 	CTX_STRH('r','e','v','e','r','s','e',0,0,0,0,0,0,0)
-#define CTX_resize 	CTX_STRH('r','e','s','i','z','e',0,0,0,0,0,0,0,0)
-#define CTX_resolution  CTX_STRH('r','e','s','o','l','u','t','i','o','n',0,0,0,0)
-#define CTX_rotate 	CTX_STRH('r','o','t','a','t','e',0,0,0,0,0,0,0,0)
-#define CTX_row_resize 	CTX_STRH('r','o','w','-','r','e','s','i','z','e',0,0,0,0)
-#define CTX_rtl 	CTX_STRH('r','t','l',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_scale 	CTX_STRH('s','c','a','l','e',0,0,0,0,0,0,0,0,0)
-#define CTX_scan  	CTX_STRH('s','c','a','n',0,0,0,0,0,0,0,0,0,0)
-#define CTX_scroll 	CTX_STRH('s','c','r','o','l','l',0,0,0,0,0,0,0,0)
-#define CTX_sans_serif 	CTX_STRH('s','a','n','s','-','s','e','r','i','f',0,0,0,0)
-#define CTX_serif 	CTX_STRH('s','e','r','i','f',0,0,0,0,0,0,0,0,0)
-#define CTX_sect 	CTX_STRH('s','e','c','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_select      CTX_STRH('s','e','l','e','c','t',0,0,0,0,0,0,0,0)
-#define CTX_se_resize 	CTX_STRH('s','e','-','r','e','s','i','z','e',0,0,0,0,0)
-#define CTX_shy 	CTX_STRH('s','h','y',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_size  	CTX_STRH('s','i','z','e',0,0,0,0,0,0,0,0,0,0)
-#define CTX_solid 	CTX_STRH('s','o','l','i','d',0,0,0,0,0,0,0,0,0)
-#define CTX_span  	CTX_STRH('s','p','a','n',0,0,0,0,0,0,0,0,0,0)
-#define CTX_src 	CTX_STRH('s','r','c',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_svg 	CTX_STRH('s','v','g',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_s_resize 	CTX_STRH('s','-','r','e','s','i','z','e',0,0,0,0,0,0)
-#define CTX_static 	CTX_STRH('s','t','a','t','i','c',0,0,0,0,0,0,0,0)
-#define CTX_stroke 	CTX_STRH('s','t','r','o','k','e',0,0,0,0,0,0,0,0)
-#define CTX_strong 	CTX_STRH('s','t','r','o','n','g',0,0,0,0,0,0,0,0)
-#define CTX_stroke_color 	CTX_STRH('s','t','r','o','k','e','-','c','o','l','o','r',0,0)
-#define CTX_stroke_linecap 	CTX_STRH('s','t','r','o','k','e','-','l','i','n','e','c','a','p')
-#define CTX_stroke_linejoin 	CTX_STRH('s','t','r','o','k','e','-','l','i','n','e','j','o','i')
-#define CTX_stroke_miterlimit 	CTX_STRH('s','t','r','o','k','e','-','m','i','t','e','r','l','i')
-#define CTX_stroke_width 	CTX_STRH('s','t','r','o','k','e','-','w','i','d','t','h',0,0)
-#define CTX_style 	CTX_STRH('s','t','y','l','e',0,0,0,0,0,0,0,0,0)
-#define CTX_sub 	CTX_STRH('s','u','b',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_sup1 	CTX_STRH('s','u','p','1',0,0,0,0,0,0,0,0,0,0)
-#define CTX_sup2 	CTX_STRH('s','u','p','2',0,0,0,0,0,0,0,0,0,0)
-#define CTX_sup3 	CTX_STRH('s','u','p','3',0,0,0,0,0,0,0,0,0,0)
-#define CTX_super 	CTX_STRH('s','u','p','e','r',0,0,0,0,0,0,0,0,0)
-#define CTX_sw_resize 	CTX_STRH('s','w','-','r','e','s','i','z','e',0,0,0,0,0)
-#define CTX_syntax_highlight 	CTX_STRH('s','y','n','t','a','x','-','h','i','g','h','l','i','g')
-#define CTX_table    	CTX_STRH('t','a','b','l','e',0,0,0,0,0,0,0,0,0)
-#define CTX_table_cell  CTX_STRH('t','a','b','l','e','-','c','e','l','l',0,0,0,0)
-#define CTX_table_layout        CTX_STRH('t','a','b','l','e','-','l','a','y','o','u','t',0,0)
-#define CTX_tab_size 	CTX_STRH('t','a','b','-','s','i','z','e',0,0,0,0,0,0)
-#define CTX_td          CTX_STRH('t','d',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_text        CTX_STRH('t','e','x','t',0,0,0,0,0,0,0,0,0,0)
-#define CTX_textarea        	CTX_STRH('t','e','x','t','a','r','e','a',0,0,0,0,0,0)
-#define CTX_text_align_last 	CTX_STRH('t','e','x','t','-','a','l','i','g','n','l','a','s','t')
-#define CTX_text_combine_horizontal CTX_STRH('t','e','x','t','-','c','o','m','b','i','n','e','-','h')
-#define CTX_text_emphasis   	CTX_STRH('t','e','x','t','-','e','m','p','h','a','s','i','s',0)
-#define CTX_text_indent    CTX_STRH('t','e','x','t','_','i','n','d','e','n','t', 0,0,0)
+#define CTX_1 	TOKENHASH(103)
+#define CTX_a 	TOKENHASH(6)
+#define CTX_absolute 	TOKENHASH(529854998790)
+#define CTX_aelig 	TOKENHASH(19624390)
+#define CTX_Aelig 	TOKENHASH(501202923625)
+#define CTX_AElig 	TOKENHASH(855902617705)
+#define CTX_alias 	TOKENHASH(44260230)
+#define CTX_all_scroll 	TOKENHASH(3268960118207366)
+#define CTX_alpha 	TOKENHASH(6984582)
+#define CTX_amp 	TOKENHASH(37830)
+#define CTX_apos 	TOKENHASH(1412230)
+#define CTX_aring 	TOKENHASH(19946758)
+#define CTX_Aring 	TOKENHASH(511738820713)
+#define CTX_auto 	TOKENHASH(1160646)
+#define CTX_align 	TOKENHASH(34167686)
+#define CTX_align_content 	TOKENHASH(2606962164579372)
+#define CTX_align_items 	TOKENHASH(7297118317015274)
+#define CTX_align_self 	TOKENHASH(2846062327454598)
+#define CTX_aspect_ratio 	TOKENHASH(8166496422664930)
+#define CTX_avoid 	TOKENHASH(13340166)
+#define CTX_background 	TOKENHASH(2710815067941064)
+#define CTX_background_color 	TOKENHASH(3177803431375976)
+#define CTX_background_clip 	TOKENHASH(2914056124330724)
+#define CTX_background_attachment 	TOKENHASH(2512803186293804)
+#define CTX_background_image 	TOKENHASH(3177803443804750)
+#define CTX_background_origin 	TOKENHASH(2610518813264608)
+#define CTX_background_size 	TOKENHASH(2914056125374222)
+#define CTX_background_position 	TOKENHASH(7040348332645472)
+#define CTX_background_position_x 	TOKENHASH(3557288836169844)
+#define CTX_background_position_y 	TOKENHASH(3557288836169846)
+#define CTX_background_repeat 	TOKENHASH(2610518987782380)
+#define CTX_base 	TOKENHASH(501960)
+#define CTX_bidi_override 	TOKENHASH(8481725464467854)
+#define CTX_blink 	TOKENHASH(28334984)
+#define CTX_block 	TOKENHASH(27626376)
+#define CTX_body 	TOKENHASH(1782856)
+#define CTX_bold 	TOKENHASH(422984)
+#define CTX_bolder 	TOKENHASH(1357280328)
+#define CTX_border 	TOKENHASH(1357292616)
+#define CTX_border_bottom 	TOKENHASH(2366644322350174)
+#define CTX_border_bottom_width 	TOKENHASH(2582853865649556)
+#define CTX_border_bottom_color 	TOKENHASH(2582853824115816)
+#define CTX_border_box 	TOKENHASH(4119048940332104)
+#define CTX_border_collapse 	TOKENHASH(2758986357249358)
+#define CTX_border_color 	TOKENHASH(2607232425469032)
+#define CTX_border_image 	TOKENHASH(7533044517904974)
+#define CTX_border_left 	TOKENHASH(2775279501347116)
+#define CTX_border_left_width 	TOKENHASH(8200479962772884)
+#define CTX_border_left_color 	TOKENHASH(8200479921239144)
+#define CTX_border_radius 	TOKENHASH(2366644322328042)
+#define CTX_border_right 	TOKENHASH(8166363215504044)
+#define CTX_border_right_width 	TOKENHASH(3457599117407636)
+#define CTX_border_right_color 	TOKENHASH(3457599075873896)
+#define CTX_border_style 	TOKENHASH(8236731959681934)
+#define CTX_border_spacing 	TOKENHASH(3675024276151314)
+#define CTX_border_top 	TOKENHASH(3557335937492040)
+#define CTX_border_top_color 	TOKENHASH(7222769271010408)
+#define CTX_border_top_width 	TOKENHASH(7222769312544148)
+#define CTX_border_width 	TOKENHASH(8518206936393108)
+#define CTX_both 	TOKENHASH(701512)
+#define CTX_bottom 	TOKENHASH(1043772488)
+#define CTX_box_decoration_break 	TOKENHASH(3825304109070554)
+#define CTX_box_shadow 	TOKENHASH(4048821288031304)
+#define CTX_box_sizing 	TOKENHASH(2921119709516872)
+#define CTX_br 	TOKENHASH(1288)
+#define CTX_bull 	TOKENHASH(947656)
+#define CTX_butt 	TOKENHASH(1488328)
+#define CTX_button 	TOKENHASH(1110881736)
+#define CTX_caption_side 	TOKENHASH(2358546297727374)
+#define CTX_cedil 	TOKENHASH(30093770)
+#define CTX_cell 	TOKENHASH(946634)
+#define CTX_cent 	TOKENHASH(1475018)
+#define CTX_class 	TOKENHASH(45423498)
+#define CTX_clear 	TOKENHASH(42154890)
+#define CTX_color 	TOKENHASH(43086922)
+#define CTX_copy 	TOKENHASH(1807434)
+#define CTX_color_index 	TOKENHASH(7213555718719860)
+#define CTX_content 	TOKENHASH(48334537802)
+#define CTX_col_resize 	TOKENHASH(2806755197285450)
+#define CTX_counter_increment 	TOKENHASH(3908020017773612)
+#define CTX_counter_reset 	TOKENHASH(3676115627780588)
+#define CTX_context_menu 	TOKENHASH(6875949946711086)
+#define CTX_crosshair 	TOKENHASH(44743538347274)
+#define CTX_curren 	TOKENHASH(1089775050)
+#define CTX_cursor 	TOKENHASH(1379247562)
+#define CTX_cursor_wait 	TOKENHASH(7021594110376300)
+#define CTX_d 	TOKENHASH(12)
+#define CTX_dd 	TOKENHASH(396)
+#define CTX_default 	TOKENHASH(48232612300)
+#define CTX_device_width 	TOKENHASH(8517309631509908)
+#define CTX_device_height 	TOKENHASH(6841530193431212)
+#define CTX_device_aspect_ratio 	TOKENHASH(7193396020228834)
+#define CTX_deg 	TOKENHASH(18892)
+#define CTX_dim 	TOKENHASH(31436)
+#define CTX_div 	TOKENHASH(49868)
+#define CTX_dir 	TOKENHASH(41676)
+#define CTX_direction 	TOKENHASH(36377712894668)
+#define CTX_display 	TOKENHASH(58213968588)
+#define CTX_dotted 	TOKENHASH(418821196)
+#define CTX_dt 	TOKENHASH(1420)
+#define CTX_embed 	TOKENHASH(13050830)
+#define CTX_empty_cells 	TOKENHASH(7756302626486762)
+#define CTX_e_resize 	TOKENHASH(541948616782)
+#define CTX_euro 	TOKENHASH(1156558)
+#define CTX_even 	TOKENHASH(1064462)
+#define CTX_evenodd 	TOKENHASH(13324271118)
+#define CTX_ew_resize 	TOKENHASH(17342355738190)
+#define CTX_fill 	TOKENHASH(946896)
+#define CTX_file 	TOKENHASH(488144)
+#define CTX_fill_color 	TOKENHASH(3697557011067600)
+#define CTX_first_child 	TOKENHASH(7551793126201868)
+#define CTX_fixed 	TOKENHASH(13095632)
+#define CTX_flex 	TOKENHASH(1719184)
+#define CTX_flex_direction 	TOKENHASH(7181613625924704)
+#define CTX_flex_flow 	TOKENHASH(56174417951632)
+#define CTX_flex_grow 	TOKENHASH(56187369962384)
+#define CTX_flex_wrap 	TOKENHASH(39833208241040)
+#define CTX_flex_shrink 	TOKENHASH(3070568878797338)
+#define CTX_float 	TOKENHASH(46369680)
+#define CTX_font_family 	TOKENHASH(7562664428472886)
+#define CTX_font_size_adjust 	TOKENHASH(3836282183400812)
+#define CTX_font_style 	TOKENHASH(2777071431877712)
+#define CTX_font_stretch 	TOKENHASH(8212599603806548)
+#define CTX_font_feature_settings 	TOKENHASH(2748039710868074)
+#define CTX_font_kerning 	TOKENHASH(3675464871789586)
+#define CTX_font_language_override 	TOKENHASH(2747800329935246)
+#define CTX_font_synthesis 	TOKENHASH(8236889438399210)
+#define CTX_font_variant_alternates 	TOKENHASH(2495220608643562)
+#define CTX_font_variant_caps 	TOKENHASH(7919268337622186)
+#define CTX_font_variant_east_asian 	TOKENHASH(2752468521146592)
+#define CTX_font_variant_ligatures 	TOKENHASH(6857330001420778)
+#define CTX_font_variant_numeric 	TOKENHASH(3426182886826698)
+#define CTX_font_variant_positoin 	TOKENHASH(3803386100484832)
+#define CTX_font_weight 	TOKENHASH(7413442232224300)
+#define CTX_font_variant 	TOKENHASH(8171024320381996)
+#define CTX_g 	TOKENHASH(18)
+#define CTX_grid 	TOKENHASH(417042)
+#define CTX_gt 	TOKENHASH(1426)
+#define CTX_hanging_punctuation 	TOKENHASH(7494663648205920)
+#define CTX_head 	TOKENHASH(399828)
+#define CTX_height 	TOKENHASH(1497979348)
+#define CTX_hellip 	TOKENHASH(1231974868)
+#define CTX_help 	TOKENHASH(1208788)
+#define CTX_hidden 	TOKENHASH(1088828116)
+#define CTX_hr 	TOKENHASH(1300)
+#define CTX_href 	TOKENHASH(539924)
+#define CTX_http 	TOKENHASH(1226132)
+#define CTX_hyphens 	TOKENHASH(46186272468)
+#define CTX_id 	TOKENHASH(406)
+#define CTX_iexcl 	TOKENHASH(29741526)
+#define CTX_image_orientation 	TOKENHASH(2496683153185888)
+#define CTX_img 	TOKENHASH(19414)
+#define CTX_inline_block 	TOKENHASH(7039589605726554)
+#define CTX_input 	TOKENHASH(47682582)
+#define CTX_inset 	TOKENHASH(46640150)
+#define CTX_italic 	TOKENHASH(359538070)
+#define CTX_justify 	TOKENHASH(58543484376)
+#define CTX_justify_content 	TOKENHASH(3075727852715052)
+#define CTX_justify_items 	TOKENHASH(4170152709733354)
+#define CTX_justify_self 	TOKENHASH(2382117085864848)
+#define CTX_label 	TOKENHASH(29827292)
+#define CTX_lang 	TOKENHASH(622812)
+#define CTX_laquo 	TOKENHASH(37198044)
+#define CTX_letter_spacing 	TOKENHASH(3676127432629266)
+#define CTX_li 	TOKENHASH(732)
+#define CTX_linethrough 	TOKENHASH(3909061681634196)
+#define CTX_line_break 	TOKENHASH(3173714814796508)
+#define CTX_link 	TOKENHASH(885468)
+#define CTX_list_item 	TOKENHASH(33514371590876)
+#define CTX_list_style 	TOKENHASH(2777071431887580)
+#define CTX_list_style_image 	TOKENHASH(3846877744142926)
+#define CTX_list_style_position 	TOKENHASH(7744035774422112)
+#define CTX_list_style_type 	TOKENHASH(2372014743936142)
+#define CTX_lt 	TOKENHASH(1436)
+#define CTX_ltr 	TOKENHASH(42396)
+#define CTX_margin 	TOKENHASH(1097441502)
+#define CTX_margin_bottom 	TOKENHASH(2358129521046622)
+#define CTX_margin_left 	TOKENHASH(2775271186111468)
+#define CTX_margin_right 	TOKENHASH(8166097127963308)
+#define CTX_margin_top 	TOKENHASH(3557335677640926)
+#define CTX_matrix 	TOKENHASH(1769255134)
+#define CTX_max_height 	TOKENHASH(3822545006612702)
+#define CTX_max_lines 	TOKENHASH(46695652118750)
+#define CTX_max_width 	TOKENHASH(23515736690910)
+#define CTX_mdash 	TOKENHASH(22354334)
+#define CTX_meta 	TOKENHASH(242142)
+#define CTX_middot 	TOKENHASH(1512452830)
+#define CTX_min_height 	TOKENHASH(3822545006592734)
+#define CTX_min_width 	TOKENHASH(23515736670942)
+#define CTX_monochrome 	TOKENHASH(2778578235262046)
+#define CTX_move 	TOKENHASH(509022)
+#define CTX_nbsp 	TOKENHASH(1222944)
+#define CTX_ne_resize 	TOKENHASH(17342355737056)
+#define CTX_nesw_resize 	TOKENHASH(3072559594945550)
+#define CTX_no_drop 	TOKENHASH(39837895776)
+#define CTX_nonzero 	TOKENHASH(37865948256)
+#define CTX_normal 	TOKENHASH(946840672)
+#define CTX_not_allowed 	TOKENHASH(8552993783188492)
+#define CTX_nowrap 	TOKENHASH(1215614048)
+#define CTX_n_resize 	TOKENHASH(541948616800)
+#define CTX_ns_resize 	TOKENHASH(17342355737952)
+#define CTX_nth_child 	TOKENHASH(14180516189600)
+#define CTX_nw_resize 	TOKENHASH(17342355738208)
+#define CTX_object 	TOKENHASH(1487364386)
+#define CTX_object_fit 	TOKENHASH(3824654832066850)
+#define CTX_object_position 	TOKENHASH(7123470713773152)
+#define CTX_oblique 	TOKENHASH(16616485154)
+#define CTX_odd 	TOKENHASH(12706)
+#define CTX_omega 	TOKENHASH(6896610)
+#define CTX_opacity 	TOKENHASH(59481857186)
+#define CTX_ordm 	TOKENHASH(996642)
+#define CTX_order 	TOKENHASH(42415394)
+#define CTX_oslash 	TOKENHASH(715355490)
+#define CTX_Oslash 	TOKENHASH(18900842691561)
+#define CTX_orphans 	TOKENHASH(46177883426)
+#define CTX_outline 	TOKENHASH(16130160098)
+#define CTX_outline_color 	TOKENHASH(2780352899806312)
+#define CTX_outline_style 	TOKENHASH(2780352899832718)
+#define CTX_outline_width 	TOKENHASH(2780352899790228)
+#define CTX_overflow 	TOKENHASH(1755451768354)
+#define CTX_overflow_x 	TOKENHASH(4085341637328418)
+#define CTX_overflow_y 	TOKENHASH(4155710381506082)
+#define CTX_overflow_wrap 	TOKENHASH(3479448017019108)
+#define CTX_overline 	TOKENHASH(516164959778)
+#define CTX_orientation 	TOKENHASH(3074489003517024)
+#define CTX_p 	TOKENHASH(36)
+#define CTX_page 	TOKENHASH(477412)
+#define CTX_page_break_before 	TOKENHASH(7396554590162190)
+#define CTX_page_break_after 	TOKENHASH(2764417119334888)
+#define CTX_page_break_inside 	TOKENHASH(7396555079637390)
+#define CTX_padding 	TOKENHASH(20424569060)
+#define CTX_padding_bottom 	TOKENHASH(3402314418664542)
+#define CTX_padding_left 	TOKENHASH(6846682943951404)
+#define CTX_padding_right 	TOKENHASH(2921072092662444)
+#define CTX_padding_top 	TOKENHASH(3802764795059364)
+#define CTX_para 	TOKENHASH(237796)
+#define CTX_path 	TOKENHASH(700644)
+#define CTX_phi 	TOKENHASH(23204)
+#define CTX_plusmn 	TOKENHASH(1106623396)
+#define CTX_pointer 	TOKENHASH(43466644580)
+#define CTX_polygon 	TOKENHASH(35521262692)
+#define CTX_position 	TOKENHASH(1136803949668)
+#define CTX_pound 	TOKENHASH(13679716)
+#define CTX_pre 	TOKENHASH(15652)
+#define CTX_pre_line 	TOKENHASH(516163714340)
+#define CTX_pre_wrap 	TOKENHASH(1244787719460)
+#define CTX_print_symbols 	TOKENHASH(8236889061624746)
+#define CTX_progress 	TOKENHASH(1488718499108)
+#define CTX_quot 	TOKENHASH(1478118)
+#define CTX_quotes 	TOKENHASH(1425444326)
+#define CTX_raquo 	TOKENHASH(37198056)
+#define CTX_rect 	TOKENHASH(1452520)
+#define CTX_rel 	TOKENHASH(29160)
+#define CTX_reg 	TOKENHASH(18920)
+#define CTX_relative 	TOKENHASH(533360505320)
+#define CTX_reverse 	TOKENHASH(16484123112)
+#define CTX_resize 	TOKENHASH(529246696)
+#define CTX_resolution 	TOKENHASH(3415887848778216)
+#define CTX_rotate 	TOKENHASH(516142184)
+#define CTX_row_resize 	TOKENHASH(2806755197308008)
+#define CTX_rtl 	TOKENHASH(30120)
+#define CTX_scale 	TOKENHASH(15604074)
+#define CTX_scan 	TOKENHASH(1055082)
+#define CTX_scroll 	TOKENHASH(970039658)
+#define CTX_sans_serif 	TOKENHASH(2840329857630442)
+#define CTX_serif 	TOKENHASH(17539562)
+#define CTX_sect 	TOKENHASH(1452522)
+#define CTX_select 	TOKENHASH(1487368682)
+#define CTX_se_resize 	TOKENHASH(17342355737066)
+#define CTX_shy 	TOKENHASH(55978)
+#define CTX_size 	TOKENHASH(516842)
+#define CTX_solid 	TOKENHASH(13333610)
+#define CTX_span 	TOKENHASH(1055914)
+#define CTX_src 	TOKENHASH(11562)
+#define CTX_svg 	TOKENHASH(20010)
+#define CTX_s_resize 	TOKENHASH(541948616810)
+#define CTX_static 	TOKENHASH(360062378)
+#define CTX_stroke 	TOKENHASH(498181546)
+#define CTX_strong 	TOKENHASH(638690730)
+#define CTX_stroke_color 	TOKENHASH(2606352695733352)
+#define CTX_stroke_linecap 	TOKENHASH(2774181026932964)
+#define CTX_stroke_linejoin 	TOKENHASH(7708999569672928)
+#define CTX_stroke_miterlimit 	TOKENHASH(3709012722547436)
+#define CTX_stroke_width 	TOKENHASH(8517327206657428)
+#define CTX_style 	TOKENHASH(15654314)
+#define CTX_sub 	TOKENHASH(9706)
+#define CTX_sup1 	TOKENHASH(109024746)
+#define CTX_sup2 	TOKENHASH(176133610)
+#define CTX_sup3 	TOKENHASH(243242474)
+#define CTX_super 	TOKENHASH(42440170)
+#define CTX_sw_resize 	TOKENHASH(17342355738218)
+#define CTX_syntax_highlight 	TOKENHASH(8340597409270444)
+#define CTX_table 	TOKENHASH(15605996)
+#define CTX_table_cell 	TOKENHASH(3268240414220524)
+#define CTX_table_layout 	TOKENHASH(6997376699184620)
+#define CTX_tab_size 	TOKENHASH(541948190956)
+#define CTX_td 	TOKENHASH(428)
+#define CTX_text 	TOKENHASH(1495532)
+#define CTX_textarea 	TOKENHASH(222540780012)
+#define CTX_text_align_last 	TOKENHASH(6875949915053420)
+#define CTX_text_combine_horizontal 	TOKENHASH(2994270578454748)
+#define CTX_text_emphasis 	TOKENHASH(7826441491622634)
+#define CTX_text_indent 	TOKENHASH(2758698411376044)
+#define CTX_text_justify 	TOKENHASH(8284548916294198)
+#define CTX_text_decoration 	TOKENHASH(6875949919788128)
+#define CTX_text_orientation 	TOKENHASH(3857616555367520)
+#define CTX_text_shadow 	TOKENHASH(2681341755407794)
+#define CTX_text_stroke_color 	TOKENHASH(8601906892076136)
+#define CTX_text_stroke_width 	TOKENHASH(8601906933609876)
+#define CTX_text_transform 	TOKENHASH(3803679388372254)
+#define CTX_title 	TOKENHASH(15643372)
+#define CTX_thead 	TOKENHASH(12794540)
+#define CTX_tbody 	TOKENHASH(57051436)
+#define CTX_tfoot 	TOKENHASH(47286828)
+#define CTX_thin 	TOKENHASH(1071788)
+#define CTX_tr 	TOKENHASH(1324)
+#define CTX_trade 	TOKENHASH(15080748)
+#define CTX_transform 	TOKENHASH(34396827557164)
+#define CTX_transform_origin 	TOKENHASH(3385719608003296)
+#define CTX_transform_style 	TOKENHASH(3764978443541390)
+#define CTX_backface_visibility 	TOKENHASH(7062530697354678)
+#define CTX_translate 	TOKENHASH(16912418348332)
+#define CTX_true 	TOKENHASH(507180)
+#define CTX_underline 	TOKENHASH(16517278676014)
+#define CTX_unicode_bidi 	TOKENHASH(2338010904443286)
+#define CTX_unicode_range 	TOKENHASH(2758754904277582)
+#define CTX_vertical_align 	TOKENHASH(7132987716950624)
+#define CTX_vertical_text 	TOKENHASH(6978305307197100)
+#define CTX_viewbox 	TOKENHASH(56985467632)
+#define CTX_visibility 	TOKENHASH(4200921144470256)
+#define CTX_visible 	TOKENHASH(15981062896)
+#define CTX_white_space 	TOKENHASH(2503934237955662)
+#define CTX_width 	TOKENHASH(22426354)
+#define CTX_word_break 	TOKENHASH(3173714814739570)
+#define CTX_word_wrap 	TOKENHASH(39833206957170)
+#define CTX_word_spacing 	TOKENHASH(2503934167075858)
+#define CTX_writing_mode 	TOKENHASH(6846684029307278)
+#define CTX_w_resize 	TOKENHASH(541948616818)
+#define CTX_x 	TOKENHASH(52)
+#define CTX_y 	TOKENHASH(54)
+#define CTX_yen 	TOKENHASH(33270)
+#define CTX_yes 	TOKENHASH(43510)
+#define CTX_z_index 	TOKENHASH(56317991032)
+#define CTX_zoom_in 	TOKENHASH(35101052024)
+#define CTX_zoom_out 	TOKENHASH(1562364578936)
 
-#define CTX_text_justify    	CTX_STRH('t','e','x','t','-','j','u','s','t','i','f','y',0,0)
-#define CTX_text_decoration 	CTX_STRH('t','e','x','t','-','d','e','c','o','r','a','t','i','o')
-#define CTX_text_orientation	CTX_STRH('t','e','x','t','-','o','r','i','e','n','t','a','t','i')
-#define CTX_text_shadow 	CTX_STRH('t','e','x','t','-','s','h','a','d','o','w',0,0,0)
-#define CTX_text_stroke_color 	CTX_STRH('t','e','x','t','-','s','t','r','o','k','e','-','c','o')
-#define CTX_text_stroke_width 	CTX_STRH('t','e','x','t','-','s','t','r','o','k','e','-','w','i')
-#define CTX_text_transform    	CTX_STRH('t','e','x','t','-','t','r','a','n','s','f','o','r','m')
-#define CTX_title       CTX_STRH('t','i','t','l','e',0,0,0,0,0,0,0,0,0)
-#define CTX_thead       CTX_STRH('t','h','e','a','d',0,0,0,0,0,0,0,0,0)
-#define CTX_tbody       CTX_STRH('t','b','o','d','y',0,0,0,0,0,0,0,0,0)
-#define CTX_tfoot       CTX_STRH('t','f','o','o','t',0,0,0,0,0,0,0,0,0)
-#define CTX_thin        CTX_STRH('t','h','i','n',0,0,0,0,0,0,0,0,0,0)
-#define CTX_tr          CTX_STRH('t','r',0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_trade       CTX_STRH('t','r','a','d','e',0,0,0,0,0,0,0,0,0)
-#define CTX_transform   CTX_STRH('t','r','a','n','s','f','o','r','m',0,0,0,0,0)
-#define CTX_transform_origin   CTX_STRH('t','r','a','n','s','f','o','r','m','-''o','r','i','g')
-#define CTX_transform_style    CTX_STRH('t','r','a','n','s','f','o','r','m','-','s','t','y','l')
-#define CTX_backface_visibility CTX_STRH('b','a','c','k','f','a','c','e','-','v','i','s','i','b')
-#define CTX_translate   CTX_STRH('t','r','a','n','s','l','a','t','e',0,0,0,0,0)
-#define CTX_true        CTX_STRH('t','r','u','e',0,0,0,0,0,0,0,0,0,0)
-#define CTX_underline   CTX_STRH('u','n','d','e','r','l','i','n','e',0,0,0,0,0)
-#define CTX_unicode_bidi    CTX_STRH('u','n','i','c','o','d','e','-','b','i','d','i',0,0)
-#define CTX_unicode_range CTX_STRH('u','n','i','c','o','d','e','-','r','a','n','g','e',0)
-#define CTX_vertical_align  CTX_STRH('v','e','r','t','i','c','a','l','-','a','l','i','g','n')
-#define CTX_vertical_text   CTX_STRH('v','e','r','t','i','c','a','l','-','t','e','x','t',0)
-#define CTX_viewbox     	CTX_STRH('v','i','e','w','b','o','x',0,0,0,0,0,0,0)
-#define CTX_visibility 	CTX_STRH('v','i','s','i','b','i','l','i','t','y',0,0,0,0)
-#define CTX_visible 	CTX_STRH('v','i','s','i','b','l','e',0,0,0,0,0,0,0)
-#define CTX_white_space CTX_STRH('w','h','i','t','e','-','s','p','a','c','e',0,0,0)
-#define CTX_width 	CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
-#define CTX_word_break   CTX_STRH('w','o','r','d','-','b','r','e','a','k',0,0,0,0)
-#define CTX_word_wrap    CTX_STRH('w','o','r','d','-','w','r','a','p',0,0,0,0,0)
-#define CTX_word_spacing CTX_STRH('w','o','r','d','-','s','p','a','c','i','n','g',0,0)
-#define CTX_writing_mode CTX_STRH('w','r','i','t','i','n','g','-','m','o','d','e',0,0)
-#define CTX_w_resize 	CTX_STRH('w','-','r','e','s','i','z','e',0,0,0,0,0,0)
-#define CTX_x           CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_y 	        CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_yen 	CTX_STRH('y','e','n',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_yes 	CTX_STRH('y','e','s',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_z_index	CTX_STRH('z','-','i','n','d','e','x',0,0,0,0,0,0,0)
-#define CTX_zoom_in 	CTX_STRH('z','o','o','m','-','i','n',0,0,0,0,0,0,0)
-#define CTX_zoom_out 	CTX_STRH('z','o','o','m','-','o','u','t',0,0,0,0,0,0)
 
 
 #ifndef TRUE
@@ -425,13 +425,13 @@ struct _MrgStyleNode
 {
   int         is_direct_parent; /* for use in selector chains with > */
   const char *id;
-  uint32_t id_hash;
-  uint32_t element_hash;
-  uint32_t classes_hash[MRG_STYLE_MAX_CLASSES];
+  uint64_t id_hash;
+  uint64_t element_hash;
+  uint64_t classes_hash[MRG_STYLE_MAX_CLASSES];
   const char *pseudo[MRG_STYLE_MAX_PSEUDO];
               // TODO : to hash pseudos we need to store
               //   argument (like for nth-child)
-  uint32_t pseudo_hash[MRG_STYLE_MAX_PSEUDO];
+  uint64_t pseudo_hash[MRG_STYLE_MAX_PSEUDO];
 };
 
 typedef enum {
@@ -1908,6 +1908,8 @@ void mrg_start_with_style (Mrg        *mrg,
                            const char *style);
 void mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
                             const char *format, ...);
+uint64_t ctx_strhash(const char *str, int ignored) ;
+
 static void mrg_parse_style_id (Mrg          *mrg,
                                 const char   *style_id,
                                 MrgStyleNode *node)
@@ -3157,7 +3159,7 @@ static inline int mrg_parse_pxs (Mrg *mrg, const char *str, float *vals)
 }
 
 
-static inline void mrg_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
+static inline void mrg_css_handle_property_pass0 (Mrg *mrg, uint64_t key,
                                                   const char *value)
 {
   /* pass0 deals with properties that parsing of many other property
@@ -3187,11 +3189,11 @@ static inline void mrg_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
   }
 }
 
-static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
+static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
                                            const char *value)
 {
   MrgStyle *s = mrg_style (mrg);
-  uint32_t val_hash = ctx_strhash (value, 0);
+  uint64_t val_hash = ctx_strhash (value, 0);
 
   switch (key)
   {
@@ -3375,7 +3377,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case '\0':
               if (w)
               {
-                uint32_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word, 0);
                 if ((word[0] >= '0' && word[0]<='9') || word[0] == '.')
                 {
                   float valf = mrg_parse_px_y (mrg, word, NULL);
@@ -3425,7 +3427,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case '\0':
               if (w)
               {
-                uint32_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word, 0);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
@@ -3469,7 +3471,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case '\0':
               if (w)
               {
-                uint32_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word, 0);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
@@ -3513,7 +3515,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case '\0':
               if (w)
               {
-                uint32_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word, 0);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
@@ -3557,7 +3559,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             case '\0':
               if (w)
               {
-                uint32_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word, 0);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
@@ -3890,7 +3892,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   }
 }
 
-static void mrg_css_handle_property_pass1med (Mrg *mrg, uint32_t key,
+static void mrg_css_handle_property_pass1med (Mrg *mrg, uint64_t key,
                                               const char *value)
 {
   MrgStyle *s = mrg_style (mrg);
@@ -3925,7 +3927,7 @@ enum
 };
 
 static void css_parse_properties (Mrg *mrg, const char *style,
-  void (*handle_property) (Mrg *mrg, uint32_t key,
+  void (*handle_property) (Mrg *mrg, uint64_t key,
                            const char *value))
 {
   const char *p;
@@ -4023,7 +4025,7 @@ static void css_parse_properties (Mrg *mrg, const char *style,
 }
 
 
-static void mrg_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
+static void mrg_css_handle_property_pass2 (Mrg *mrg, uint64_t key,
                                            const char *value)
 {
   /* this pass contains things that might depend on values
@@ -6659,7 +6661,7 @@ enum {
 };
 
 typedef struct MrgEntity {
-   uint32_t    name;
+   uint64_t    name;
    const char *value;
 } MrgEntity;
 
@@ -6716,7 +6718,7 @@ static MrgEntity entities[]={
 };
 
 void
-ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
+ctx_set (Ctx *ctx, uint64_t key_hash, const char *string, int len);
 
 static void
 mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
@@ -7516,7 +7518,7 @@ void mrg_xml_render (Mrg *mrg,
   char *html;
   MrgXml *xmltok;
   MrgHtml *htmlctx        = &mrg->html;
-  uint32_t tag[MRG_MAX_STATE_DEPTH];
+  uint64_t tag[MRG_MAX_STATE_DEPTH];
   int pos             = 0;
   int type            = t_none;
   static int depth    = 0;
@@ -7525,7 +7527,7 @@ void mrg_xml_render (Mrg *mrg,
   int tagpos          = 0;
   MrgString *style = mrg_string_new ("");
   int whitespaces = 0;
-  uint32_t att = 0;
+  uint64_t att = 0;
 
   html = malloc (strlen (html_) + 3);
   sprintf (html, "%s ", html_);
@@ -7574,7 +7576,7 @@ void mrg_xml_render (Mrg *mrg,
           }
           else
           {
-            uint32_t hash = ctx_strhash (data, 0);
+            uint64_t hash = ctx_strhash (data, 0);
           for (i = 0; entities[i].name && !dealt_with; i++)
             if (hash == entities[i].name)
             {
@@ -7654,7 +7656,7 @@ void mrg_xml_render (Mrg *mrg,
         //  strncpy (htmlctx->value[htmlctx->attributes++], data, MRG_XML_MAX_VALUE_LEN-1);
         ctx_set_string (mrg->ctx, att, data);
         {
-            uint32_t style_attribute[] ={
+            uint64_t style_attribute[] ={
               CTX_fill_rule,
               CTX_font_size,
               CTX_font_family,
@@ -7701,7 +7703,7 @@ void mrg_xml_render (Mrg *mrg,
         break;
       case t_endtag:
         {
-          uint32_t data_hash = ctx_strhash (data, 0);
+          uint64_t data_hash = ctx_strhash (data, 0);
 
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
@@ -7925,7 +7927,7 @@ void mrg_xml_render (Mrg *mrg,
       case t_closetag:
         if (!should_be_empty)
         {
-          uint32_t data_hash = ctx_strhash (data, 0);
+          uint64_t data_hash = ctx_strhash (data, 0);
           if (!strcmp (data, "a"))
           {
             mrg_text_listen_done (mrg);
@@ -8153,7 +8155,7 @@ _mr_get_contents (const char  *referer,
   char *port = NULL;
   char *path = NULL;
   char *fragment = NULL;
-  uint32_t protocol_hash;
+  uint64_t protocol_hash;
 #if 0
   if (!strncmp (uri, "mrg:", 4))
   {

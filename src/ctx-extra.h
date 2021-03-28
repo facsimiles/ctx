@@ -20,84 +20,9 @@ typedef enum CtxOutputmode
   CTX_OUTPUT_MODE_UI
 } CtxOutputmode;
 
-#define CTX_NORMALIZE(a)            (((a)=='-')?'_':(a))
-#define CTX_NORMALIZE_CASEFOLDED(a) (((a)=='-')?'_':((((a)>='A')&&((a)<='Z'))?(a)+32:(a)))
 
 
-/* We use the preprocessor to compute case invariant hashes
- * of strings directly, if there is collisions in our vocabulary
- * the compiler tells us.
- */
 
-#define CTX_STRHash(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a27,a12,a13) (\
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a0))+ \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a1))*27)+ \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a2))*27*27)+ \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a3))*27*27*27)+ \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a4))*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a5))*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a6))*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a7))*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a8))*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a9))*27*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a10))*27*27*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a27))*27*27*27*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a12))*27*27*27*27*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE_CASEFOLDED(a13))*27*27*27*27*27*27*27*27*27*27*27*27*27)))
-
-#define CTX_STRH(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a27,a12,a13) (\
-          (((uint32_t)CTX_NORMALIZE(a0))+ \
-          (((uint32_t)CTX_NORMALIZE(a1))*27)+ \
-          (((uint32_t)CTX_NORMALIZE(a2))*27*27)+ \
-          (((uint32_t)CTX_NORMALIZE(a3))*27*27*27)+ \
-          (((uint32_t)CTX_NORMALIZE(a4))*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE(a5))*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE(a6))*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE(a7))*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE(a8))*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE(a9))*27*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE(a10))*27*27*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE(a27))*27*27*27*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE(a12))*27*27*27*27*27*27*27*27*27*27*27*27) + \
-          (((uint32_t)CTX_NORMALIZE(a13))*27*27*27*27*27*27*27*27*27*27*27*27*27)))
-
-static inline uint32_t ctx_strhash (const char *str, int case_insensitive)
-{
-  uint32_t ret;
-  if (!str) return 0;
-  int len = strlen (str);
-  if (case_insensitive)
-    ret =CTX_STRHash(len>=0?str[0]:0,
-                       len>=1?str[1]:0,
-                       len>=2?str[2]:0,
-                       len>=3?str[3]:0,
-                       len>=4?str[4]:0,
-                       len>=5?str[5]:0,
-                       len>=6?str[6]:0,
-                       len>=7?str[7]:0,
-                       len>=8?str[8]:0,
-                       len>=9?str[9]:0,
-                       len>=10?str[10]:0,
-                       len>=11?str[11]:0,
-                       len>=12?str[12]:0,
-                       len>=13?str[13]:0);
-  else
-    ret =CTX_STRH(len>=0?str[0]:0,
-                    len>=1?str[1]:0,
-                    len>=2?str[2]:0,
-                    len>=3?str[3]:0,
-                    len>=4?str[4]:0,
-                    len>=5?str[5]:0,
-                    len>=6?str[6]:0,
-                    len>=7?str[7]:0,
-                    len>=8?str[8]:0,
-                    len>=9?str[9]:0,
-                    len>=10?str[10]:0,
-                    len>=11?str[11]:0,
-                    len>=12?str[12]:0,
-                    len>=13?str[13]:0);
-                  return ret;
-}
 
 #if CTX_FORCE_INLINES
 #define CTX_INLINE inline __attribute__((always_inline))
@@ -283,8 +208,8 @@ static inline float _ctx_parse_float (const char *str, char **endptr)
   return strtod (str, endptr); /* XXX: , vs . problem in some locales */
 }
 
-const char *ctx_get_string (Ctx *ctx, uint32_t hash);
-void ctx_set_string (Ctx *ctx, uint32_t hash, const char *value);
+const char *ctx_get_string (Ctx *ctx, uint64_t hash);
+void ctx_set_string (Ctx *ctx, uint64_t hash, const char *value);
 typedef struct _CtxColor CtxColor;
 typedef struct _CtxBuffer CtxBuffer;
 
@@ -304,8 +229,8 @@ CtxState *ctx_get_state (Ctx *ctx);
 void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out);
 void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
 void ctx_color_free (CtxColor *color);
-void ctx_set_color (Ctx *ctx, uint32_t hash, CtxColor *color);
-int  ctx_get_color (Ctx *ctx, uint32_t hash, CtxColor *color);
+void ctx_set_color (Ctx *ctx, uint64_t hash, CtxColor *color);
+int  ctx_get_color (Ctx *ctx, uint64_t hash, CtxColor *color);
 int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string);
 
 int ctx_color_is_transparent (CtxColor *color);
@@ -325,7 +250,7 @@ void ctx_matrix_multiply (CtxMatrix       *result,
                           const CtxMatrix *s);
 void
 ctx_matrix_translate (CtxMatrix *matrix, float x, float y);
-int ctx_is_set_now (Ctx *ctx, uint32_t hash);
+int ctx_is_set_now (Ctx *ctx, uint64_t hash);
 void ctx_set_size (Ctx *ctx, int width, int height);
 
 #if CTX_FONTS_FROM_FILE

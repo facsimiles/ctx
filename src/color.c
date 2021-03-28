@@ -647,13 +647,14 @@ void ctx_dcmyka (Ctx *ctx, float c, float m, float y, float k, float a)
  */
 
 typedef struct ColorDef {
-  uint32_t name;
+  uint64_t name;
   float r;
   float g;
   float b;
   float a;
 } ColorDef;
 
+#if 0
 #define CTX_silver 	CTX_STRH('s','i','l','v','e','r',0,0,0,0,0,0,0,0)
 #define CTX_fuchsia 	CTX_STRH('f','u','c','h','s','i','a',0,0,0,0,0,0,0)
 #define CTX_gray 	CTX_STRH('g','r','a','y',0,0,0,0,0,0,0,0,0,0)
@@ -673,6 +674,7 @@ typedef struct ColorDef {
 #define CTX_lime 	CTX_STRH('l','i','m','e',0,0,0,0,0,0,0,0,0,0)
 #define CTX_aqua 	CTX_STRH('a','q','u','a',0,0,0,0,0,0,0,0,0,0)
 #define CTX_transparent CTX_STRH('t','r','a','n','s','p','a','r','e','n','t',0,0,0)
+#endif
 
 static ColorDef colors[]={
   {CTX_black,    0, 0, 0, 1},
@@ -812,12 +814,12 @@ mrg_color_parse_hex (CtxState *ctxstate, CtxColor *color, const char *color_stri
   return 1;
 }
 
-#define CTX_currentColor 	CTX_STRH('c','u','r','r','e','n','t','C','o','l','o','r',0,0)
+//#define CTX_currentColor 	CTX_STRH('c','u','r','r','e','n','t','C','o','l','o','r',0,0)
 
 int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
 {
   int i;
-  uint32_t hash = ctx_strhash (string, 0);
+  uint64_t hash = ctx_strhash (string, 0);
 //  ctx_color_set_rgba (&(ctx->state), color, 0.4,0.1,0.9,1.0);
 //  return 0;
     //rgba[0], rgba[1], rgba[2], rgba[3]);

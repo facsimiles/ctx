@@ -1783,6 +1783,7 @@ int _ctx_data_pending (int timeout)
   return retval;
 }
 
+void ctx_sdl_set_title (void *self, const char *new_title);
 void ctx_set_title (Ctx *ctx, const char *title)
 {
 #if CTX_SDL

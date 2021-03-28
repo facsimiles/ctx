@@ -625,6 +625,7 @@ long vt_rev (VT *vt)
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val);
+uint64_t ctx_strhash (const char *utf8, int ignored);
 
 static void vt_set_title (VT *vt, const char *new_title)
 {
@@ -2129,6 +2130,7 @@ static void vt_ctx_exit (void *data)
   //ctx_parser_free (vt->ctxp);
   //vt->ctxp = NULL;
 }
+#if 0
 #define CTX_x            CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_y            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
 #define CTX_lower_bottom CTX_STRH('l','o','w','e','r','-','b','o','t','t','o','m',0,0)
@@ -2142,6 +2144,8 @@ static void vt_ctx_exit (void *data)
 #define CTX_title        CTX_STRH('t','i','t','l','e',0,0,0,0,0,0,0,0,0)
 #define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
 #define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
+#endif
+
 
 static int vt_get_prop (VT *vt, const char *key, const char **val, int *len)
 {

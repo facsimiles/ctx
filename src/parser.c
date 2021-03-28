@@ -35,7 +35,7 @@ struct
   int        n_args;
   int        texture_done;
   uint8_t    texture_id[CTX_ID_MAXLEN]; // used in defineTexture only
-  uint32_t   set_key_hash;
+  uint64_t   set_key_hash;
   float      pcx;
   float      pcy;
   int        color_components;
@@ -53,7 +53,7 @@ struct
 
   void (*exit) (void *exit_data);
   void *exit_data;
-  int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len);
+  int   (*set_prop)(void *prop_data, uint64_t key, const char *data,  int len);
   int   (*get_prop)(void *prop_data, const char *key, char **data, int *len);
   void *prop_data;
 };
@@ -84,7 +84,7 @@ ctx_parser_init (CtxParser *parser,
                  float      cell_height,
                  int        cursor_x,
                  int        cursor_y,
-  int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len),
+  int   (*set_prop)(void *prop_data, uint64_t key, const char *data,  int len),
   int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
                  void  *prop_data,
                  void (*exit) (void *exit_data),
@@ -120,7 +120,7 @@ CtxParser *ctx_parser_new (
   float      cell_height,
   int        cursor_x,
   int        cursor_y,
-  int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len),
+  int   (*set_prop)(void *prop_data, uint64_t key, const char *data,  int len),
   int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
   void  *prop_data,
   void (*exit) (void *exit_data),
@@ -283,7 +283,7 @@ static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_m
 
 static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 {
-  uint32_t ret = str[0]; /* if it is single char it already is the CtxCode */
+  uint64_t ret = str[0]; /* if it is single char it already is the CtxCode */
 
   /* this is handled outside the hashing to make it possible to be case insensitive
    * with the rest.
@@ -315,7 +315,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 
   if (str[0] && str[1])
     {
-      uint32_t str_hash;
+      uint64_t str_hash;
       /* trim ctx_ and CTX_ prefix */
       if ( (str[0] == 'c' && str[1] == 't' && str[2] == 'x' && str[3] == '_') ||
            (str[0] == 'C' && str[1] == 'T' && str[2] == 'X' && str[3] == '_') )
