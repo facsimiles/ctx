@@ -378,6 +378,8 @@ void ctx_clear_bindings (Ctx *ctx)
   events->n_bindings = 0;
 }
 
+static void
+ctx_collect_events (CtxEvent *event, void *data, void *data2);
 static void _ctx_bindings_key_down (CtxEvent *event, void *data1, void *data2)
 {
   Ctx *ctx = event->ctx;
@@ -407,6 +409,7 @@ static void _ctx_bindings_key_down (CtxEvent *event, void *data1, void *data2)
           return;
       }
     }
+  ctx_collect_events (event, data1, data2);
 }
 
 CtxBinding *ctx_get_bindings (Ctx *ctx)

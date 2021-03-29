@@ -636,6 +636,8 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
     return;
   copy = (CtxEvent*)malloc (sizeof (CtxEvent));
   *copy = *event;
+  if (copy->string)
+    copy->string = strdup (event->string);
   ctx_list_append_full (&ctx->events.events, copy, ctx_event_free, NULL);
 }
 #endif
