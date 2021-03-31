@@ -1650,7 +1650,7 @@ int ctx_key_down (Ctx *ctx, unsigned int keyval,
   {
     int i;
     event.ctx = ctx;
-    event.type = CTX_KEY_PRESS;
+    event.type = CTX_KEY_DOWN;
     event.unicode = keyval; 
     event.string = strdup(string);
     event.stop_propagate = 0;
@@ -1686,7 +1686,7 @@ int ctx_key_up (Ctx *ctx, unsigned int keyval,
   {
     int i;
     event.ctx = ctx;
-    event.type = CTX_KEY_PRESS;
+    event.type = CTX_KEY_UP;
     event.unicode = keyval; 
     event.string = strdup(string);
     event.stop_propagate = 0;

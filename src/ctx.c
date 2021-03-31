@@ -668,9 +668,15 @@ void ctx_reset (Ctx *ctx)
   if (ctx->events.ctx_get_event_enabled)
   {
     ctx_clear_bindings (ctx);
-
     ctx_listen_full (ctx, 0,0,0,0,
                      CTX_KEY_PRESS, _ctx_bindings_key_press, ctx, ctx,
+                     NULL, NULL);
+
+    ctx_listen_full (ctx, 0,0,0,0,
+                     CTX_KEY_UP, ctx_collect_events, ctx, ctx,
+                     NULL, NULL);
+    ctx_listen_full (ctx, 0,0,0,0,
+                     CTX_KEY_DOWN, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
 
     ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,

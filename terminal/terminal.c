@@ -1017,13 +1017,23 @@ static void key_down (CtxEvent *event, void *data1, void *data2)
 {
   fprintf (stderr, "down %i %s\n", event->unicode, event->string);
 }
+static void key_up (CtxEvent *event, void *data1, void *data2)
+{
+  fprintf (stderr, "up %i %s\n", event->unicode, event->string);
+}
+static void key_press (CtxEvent *event, void *data1, void *data2)
+{
+  fprintf (stderr, "press %i %s\n", event->unicode, event->string);
+}
 
 static int draw_vts (Ctx *ctx)
 {
   float view_height = ctx_height (ctx);
   float titlebar_height = view_height/40;
   int n_clients = ctx_list_length (clients);
-  ctx_listen (ctx, CTX_KEY_DOWN, key_down, NULL, NULL);
+  //ctx_listen (ctx, CTX_KEY_DOWN, key_down, NULL, NULL);
+  //ctx_listen (ctx, CTX_KEY_UP, key_up, NULL, NULL);
+  //ctx_listen (ctx, CTX_KEY_PRESS, key_press, NULL, NULL);
 #if 1
   if (active && active->maximized && n_clients == 1)
   {

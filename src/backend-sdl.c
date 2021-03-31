@@ -315,8 +315,26 @@ int ctx_sdl_consume_events (Ctx *ctx)
            )
           {
             const char *name = event.text.text;
+            int keycode = 0;
             if (!strcmp (name, " ") ) { name = "space"; }
-            ctx_key_press (ctx, 0, name, 0);
+            if (name[0] && name[1] == 0)
+            {
+              keycode = name[0];
+              keycode = toupper (keycode);
+              switch (keycode)
+              {
+                case '.':  keycode = 190; break;
+                case ';':  keycode = 59; break;
+                case ',':  keycode = 188; break;
+                case '/':  keycode = 191; break;
+                case '\'': keycode = 222; break;
+                case '`':  keycode = 192; break;
+                case '[':  keycode = 219; break;
+                case ']':  keycode = 221; break;
+                case '\\': keycode = 220; break;
+              }
+            }
+            ctx_key_press (ctx, keycode, name, 0);
             //got_event = 1;
           }
         break;
@@ -371,7 +389,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
               }
             if (strcmp (name, "space"))
               {
-               ctx_key_press (ctx, 0, name, 0);
+               ctx_key_press (ctx, keycode, name, 0);
               }
           }
           else

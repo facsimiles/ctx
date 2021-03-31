@@ -526,9 +526,8 @@ int ctx_ctx_consume_events (Ctx *ctx)
           ctx_key_press (ctx, 0, "escape", 0);
         else if (!strcmp (event, "space"))
           ctx_key_press (ctx, 0, "space", 0);
-        else if (!strcmp (event, "enter"))
-          ctx_key_press (ctx, 0, "\n", 0);
-        else if (!strcmp (event, "return"))
+        else if (!strcmp (event, "enter")||
+                 !strcmp (event, "return"))
           ctx_key_press (ctx, 0, "\n", 0);
         else
         ctx_key_press (ctx, 0, event, 0);
