@@ -14,6 +14,8 @@ struct _CtxSDL
    int           lctrl;
    int           lalt;
    int           rctrl;
+   int           lshift;
+   int           rshift;
 
    SDL_Window   *window;
    SDL_Renderer *renderer;
@@ -242,6 +244,8 @@ int ctx_sdl_consume_events (Ctx *ctx)
            sdl->key_balance --;
            switch (event.key.keysym.sym)
            {
+             case SDLK_LSHIFT: sdl->lshift = 0; break;
+             case SDLK_RSHIFT: sdl->rshift = 0; break;
              case SDLK_LCTRL: sdl->lctrl = 0; break;
              case SDLK_RCTRL: sdl->rctrl = 0; break;
              case SDLK_LALT:  sdl->lalt  = 0; break;
@@ -279,6 +283,8 @@ int ctx_sdl_consume_events (Ctx *ctx)
           buf[ctx_unichar_to_utf8 (event.key.keysym.sym, (void*)buf)]=0;
           switch (event.key.keysym.sym)
           {
+            case SDLK_LSHIFT: sdl->lshift = 1; break;
+            case SDLK_RSHIFT: sdl->rshift = 1; break;
             case SDLK_LCTRL: sdl->lctrl = 1; break;
             case SDLK_LALT:  sdl->lalt = 1; break;
             case SDLK_RCTRL: sdl->rctrl = 1; break;

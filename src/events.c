@@ -770,7 +770,9 @@ void ctx_add_hit_region (Ctx *ctx, const char *id)
      height = ey2 - ey1;
   }
   
-  return ctx_listen_full (ctx, x, y, width, height, CTX_POINTER, ctx_report_hit_region, id_copy, NULL, (void*)free, NULL);
+  return ctx_listen_full (ctx, x, y, width, height,
+                          CTX_POINTER, ctx_report_hit_region,
+                          id_copy, NULL, (void*)free, NULL);
 }
 
 typedef struct _CtxGrab CtxGrab;
@@ -986,11 +988,8 @@ int ctx_fb_events = 0;
 int ctx_fb_consume_events (Ctx *ctx);
 #endif
 
-
 int ctx_nct_consume_events (Ctx *ctx);
 int ctx_ctx_consume_events (Ctx *ctx);
-#if CTX_SDL
-#endif
 
 void ctx_consume_events (Ctx *ctx)
 {
