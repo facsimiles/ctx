@@ -677,26 +677,27 @@ typedef void (*CtxCb) (CtxEvent *event,
 typedef void (*CtxDestroyNotify) (void *data);
 
 enum _CtxEventType {
-  CTX_PRESS          = 1 << 0,
-  CTX_MOTION         = 1 << 1,
-  CTX_RELEASE        = 1 << 2,
-  CTX_ENTER          = 1 << 3,
-  CTX_LEAVE          = 1 << 4,
-  CTX_TAP            = 1 << 5,
-  CTX_TAP_AND_HOLD   = 1 << 6,
+  CTX_PRESS        = 1 << 0,
+  CTX_MOTION       = 1 << 1,
+  CTX_RELEASE      = 1 << 2,
+  CTX_ENTER        = 1 << 3,
+  CTX_LEAVE        = 1 << 4,
+  CTX_TAP          = 1 << 5,
+  CTX_TAP_AND_HOLD = 1 << 6,
 
   /* NYI: SWIPE, ZOOM ROT_ZOOM, */
 
-  CTX_DRAG_PRESS     = 1 << 7,
-  CTX_DRAG_MOTION    = 1 << 8,
-  CTX_DRAG_RELEASE   = 1 << 9,
-  CTX_KEY_DOWN       = 1 << 10,
-  CTX_KEY_UP         = 1 << 11,
-  CTX_SCROLL         = 1 << 12,
-  CTX_MESSAGE        = 1 << 13,
-  CTX_DROP           = 1 << 14,
+  CTX_DRAG_PRESS   = 1 << 7,
+  CTX_DRAG_MOTION  = 1 << 8,
+  CTX_DRAG_RELEASE = 1 << 9,
+  CTX_KEY_PRESS    = 1 << 10,
+  CTX_KEY_DOWN     = 1 << 11,
+  CTX_KEY_UP       = 1 << 12,
+  CTX_SCROLL       = 1 << 13,
+  CTX_MESSAGE      = 1 << 14,
+  CTX_DROP         = 1 << 15,
 
-  CTX_SET_CURSOR= 1 << 15, // used internally
+  CTX_SET_CURSOR   = 1 << 16, // used internally
 
   /* client should store state - preparing
                                  * for restart
@@ -705,7 +706,7 @@ enum _CtxEventType {
   CTX_TAPS     = (CTX_TAP | CTX_TAP_AND_HOLD),
   CTX_CROSSING = (CTX_ENTER | CTX_LEAVE),
   CTX_DRAG     = (CTX_DRAG_PRESS | CTX_DRAG_MOTION | CTX_DRAG_RELEASE),
-  CTX_KEY      = (CTX_KEY_DOWN | CTX_KEY_UP),
+  CTX_KEY      = (CTX_KEY_DOWN | CTX_KEY_UP | CTX_KEY_PRESS),
   CTX_MISC     = (CTX_MESSAGE),
   CTX_ANY      = (CTX_POINTER | CTX_DRAG | CTX_CROSSING | CTX_KEY | CTX_MISC | CTX_TAPS),
 };
@@ -721,10 +722,10 @@ struct _CtxEvent {
 
   CtxModifierState state;
 
-  int      device_no; /* 0 = left mouse button / virtual focus */
-                      /* 1 = middle mouse button */
-                      /* 2 = right mouse button */
-                      /* 3 = first multi-touch .. (NYI) */
+  int     device_no; /* 0 = left mouse button / virtual focus */
+                     /* 1 = middle mouse button */
+                     /* 2 = right mouse button */
+                     /* 3 = first multi-touch .. (NYI) */
 
   float   device_x; /* untransformed (device) coordinates  */
   float   device_y;

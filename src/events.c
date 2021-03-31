@@ -380,7 +380,7 @@ void ctx_clear_bindings (Ctx *ctx)
 
 static void
 ctx_collect_events (CtxEvent *event, void *data, void *data2);
-static void _ctx_bindings_key_down (CtxEvent *event, void *data1, void *data2)
+static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2)
 {
   Ctx *ctx = event->ctx;
   CtxEvents *events = &ctx->events;
@@ -844,6 +844,7 @@ CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
 
   if (type == CTX_KEY_DOWN ||
       type == CTX_KEY_UP ||
+      type == CTX_KEY_PRESS ||
       type == CTX_MESSAGE ||
       type == (CTX_KEY_DOWN|CTX_MESSAGE) ||
       type == (CTX_KEY_DOWN|CTX_KEY_UP) ||
@@ -1279,7 +1280,7 @@ int ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 
 void _ctx_resized (Ctx *ctx, int width, int height, long time)
 {
-  CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_DOWN);
+  CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_PRESS);
   CtxEvent event = {0, };
 
   if (!time)
@@ -1293,7 +1294,7 @@ void _ctx_resized (Ctx *ctx, int width, int height, long time)
   if (item)
   {
     event.stop_propagate = 0;
-    _ctx_emit_cb_item (ctx, item, &event, CTX_KEY_DOWN, 0, 0);
+    _ctx_emit_cb_item (ctx, item, &event, CTX_KEY_PRESS, 0, 0);
   }
 
 }
@@ -1599,7 +1600,7 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
   }
 
 
-  CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_DOWN);
+  CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_PRESS);
   CtxEvent event = {0,};
 
   if (time == 0)
@@ -1608,7 +1609,7 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
   {
     int i;
     event.ctx = ctx;
-    event.type = CTX_KEY_DOWN;
+    event.type = CTX_KEY_PRESS;
     event.unicode = keyval; 
     event.string = strdup(string);
     event.stop_propagate = 0;
@@ -1616,7 +1617,7 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
 
     for (i = 0; i < item->cb_count; i++)
     {
-      if (item->cb[i].types & (CTX_KEY_DOWN))
+      if (item->cb[i].types & (CTX_KEY_PRESS))
       {
         event.state = ctx->events.modifier_state;
         item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);

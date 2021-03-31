@@ -632,7 +632,7 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
 {
   Ctx *ctx = (Ctx*)data;
   CtxEvent *copy;
-  if (event->type == CTX_KEY_DOWN && !strcmp (event->string, "idle"))
+  if (event->type == CTX_KEY_PRESS && !strcmp (event->string, "idle"))
     return;
   copy = (CtxEvent*)malloc (sizeof (CtxEvent));
   *copy = *event;
@@ -643,7 +643,7 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
 #endif
 
 #if CTX_EVENTS
-static void _ctx_bindings_key_down (CtxEvent *event, void *data1, void *data2);
+static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2);
 #endif
 
 void ctx_reset (Ctx *ctx)
@@ -670,17 +670,8 @@ void ctx_reset (Ctx *ctx)
     ctx_clear_bindings (ctx);
 
     ctx_listen_full (ctx, 0,0,0,0,
-                     CTX_KEY_DOWN, _ctx_bindings_key_down, ctx, ctx,
+                     CTX_KEY_PRESS, _ctx_bindings_key_press, ctx, ctx,
                      NULL, NULL);
-#if 0
-    // should be enabled if a mask of CTX_KEY_DOWN|UP is passed to get_event?
-    ctx_listen_full (ctx, 0, 0, 0,0,
-                     CTX_KEY_DOWN, ctx_collect_events, ctx, ctx,
-                     NULL, NULL);
-    ctx_listen_full (ctx, 0, 0, 0,0,
-                     CTX_KEY_UP, ctx_collect_events, ctx, ctx,
-                     NULL, NULL);
-#endif
 
     ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
                      (CtxEventType)(CTX_PRESS|CTX_RELEASE|CTX_MOTION), ctx_collect_events, ctx, ctx,

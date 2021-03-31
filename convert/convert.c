@@ -795,7 +795,7 @@ again:
              }
              break;
 #endif
-          case CTX_KEY_DOWN:
+          case CTX_KEY_PRESS:
              dirty++;
           if (!strcmp (event->string, "+")) scale *= 1.1;
           else if (!strcmp (event->string, "=")) scale *= 1.1;

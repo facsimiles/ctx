@@ -170,7 +170,6 @@
 #define CTX_round_rectangle 	TOKENHASH(4332080966833870)
 #define CTX_roundRectangle 	TOKENHASH(8317255488676642)
 #define CTX_save 	TOKENHASH(508138)
-#define CTX_save 	TOKENHASH(508138)
 #define CTX_scale 	TOKENHASH(15604074)
 #define CTX_screen 	TOKENHASH(1088921962)
 #define CTX_setkey 	TOKENHASH(1827516906)
