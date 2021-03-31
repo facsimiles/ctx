@@ -470,6 +470,16 @@ int ctx_ctx_consume_events (Ctx *ctx)
         ctx_set_dirty (ctx, 1);
         //ctx_key_press (ctx, 0, "size-changed", 0);
       }
+      else if (!strcmp (event_type, "keyup"))
+      {
+        uint8_t buf[4]={ x, 0 };
+        ctx_key_up (ctx, (int)x, buf, 0);
+      }
+      else if (!strcmp (event_type, "keydown"))
+      {
+        uint8_t buf[4]={ x, 0 };
+        ctx_key_down (ctx, (int)x, buf, 0);
+      }
       else
       {
         ctx_key_press (ctx, 0, event, 0);

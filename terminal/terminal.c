@@ -14,7 +14,6 @@
 #include <math.h>
 #include <malloc.h>
 
-
 #include "vt-line.h"
 #include "terminal.h"
 #include "vt.h"
@@ -471,7 +470,7 @@ void switch_to_tab (int desired_no)
   }
 }
 
-static void handle_event (Ctx *ctx, const char *event)
+static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 {
   if (!active)
     return;
@@ -1582,14 +1581,33 @@ static int malloc_trim_cb (Ctx *ctx, void *data)
 
 static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
 {
-  if (!strcmp (event->string, "resize-event"))
+  if (event->type == CTX_KEY_PRESS &&
+      event->string &&
+      !strcmp (event->string, "resize-event"))
   {
-     ensure_layout ();
-     dirty++;
+    ensure_layout ();
+    dirty++;
   }
   else
   {
-    handle_event (ctx, event->string);
+    switch (event->type)
+    {
+      case CTX_KEY_PRESS:
+        handle_event (ctx, event, event->string);
+        break;
+      case CTX_KEY_UP:
+        { char buf[1024];
+          snprintf (buf, sizeof(buf)-1, "keyup %i %i", event->unicode, event->state);
+          handle_event (ctx, event, buf);
+        }
+        break;
+      case CTX_KEY_DOWN:
+        { char buf[1024];
+          snprintf (buf, sizeof(buf)-1, "keydown %i %i", event->unicode, event->state);
+          handle_event (ctx, event, buf);
+        }
+        break;
+    }
   }
 }
 
@@ -1912,7 +1930,10 @@ int terminal_main (int argc, char **argv)
           ctx_set_dirty (ctx, 0);
         }
         ctx_osk_draw (ctx);
-        ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
+        //ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
+        ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
+        ctx_listen (ctx, CTX_KEY_DOWN, terminal_key_any, NULL, NULL);
+        ctx_listen (ctx, CTX_KEY_UP, terminal_key_any, NULL, NULL);
         ctx_flush (ctx);
 
         //if (bytespeed > 200)

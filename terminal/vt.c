@@ -5088,6 +5088,10 @@ void vt_feed_keystring (VT *vt, const char *str)
     vt_write (vt, "\n", 1);
     return;
   }
+  if (!strncmp (str, "keyup",   5)) return;
+  if (!strncmp (str, "keydown", 7)) return;
+
+
 #if 0
   if (!strstr (str, "-page"))
     vt_set_scroll (vt, 0);
