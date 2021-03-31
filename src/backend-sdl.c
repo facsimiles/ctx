@@ -360,6 +360,18 @@ int ctx_sdl_consume_events (Ctx *ctx)
             case SDLK_LALT:   sdl->lalt = 1; break;
             case SDLK_RCTRL:  sdl->rctrl = 1; break;
           }
+          if (sdl->lshift | sdl->rshift | sdl->lctrl | sdl->lalt | sdl->rctrl)
+          {
+            ctx->events.modifier_state ^= ~(CTX_MODIFIER_STATE_CONTROL|
+                                            CTX_MODIFIER_STATE_ALT|
+                                            CTX_MODIFIER_STATE_SHIFT);
+            if (sdl->lshift | sdl->rshift)
+              ctx->events.modifier_state |= CTX_MODIFIER_STATE_SHIFT;
+            if (sdl->lctrl | sdl->rctrl)
+              ctx->events.modifier_state |= CTX_MODIFIER_STATE_CONTROL;
+            if (sdl->lalt)
+              ctx->events.modifier_state |= CTX_MODIFIER_STATE_ALT;
+          }
           int keycode;
           name = ctx_sdl_keysym_to_name (event.key.keysym.sym, &keycode);
           ctx_key_down (ctx, keycode, name, 0);
@@ -411,6 +423,20 @@ int ctx_sdl_consume_events (Ctx *ctx)
              case SDLK_RCTRL: sdl->rctrl = 0; break;
              case SDLK_LALT:  sdl->lalt  = 0; break;
            }
+
+          {
+            ctx->events.modifier_state ^= ~(CTX_MODIFIER_STATE_CONTROL|
+                                            CTX_MODIFIER_STATE_ALT|
+                                            CTX_MODIFIER_STATE_SHIFT);
+            if (sdl->lshift | sdl->rshift)
+              ctx->events.modifier_state |= CTX_MODIFIER_STATE_SHIFT;
+            if (sdl->lctrl | sdl->rctrl)
+              ctx->events.modifier_state |= CTX_MODIFIER_STATE_CONTROL;
+            if (sdl->lalt)
+              ctx->events.modifier_state |= CTX_MODIFIER_STATE_ALT;
+          }
+
+
            int keycode;
            const char *name = ctx_sdl_keysym_to_name (event.key.keysym.sym, &keycode);
            ctx_key_up (ctx, keycode, name, 0);
