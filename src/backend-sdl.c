@@ -342,7 +342,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
       case SDL_KEYDOWN:
         {
           char buf[32] = "";
-          char *name = buf;
+          const char *name = buf;
           if (!event.key.repeat)
           {
             sdl->key_balance ++;
@@ -435,7 +435,6 @@ int ctx_sdl_consume_events (Ctx *ctx)
             if (sdl->lalt)
               ctx->events.modifier_state |= CTX_MODIFIER_STATE_ALT;
           }
-
 
            int keycode;
            const char *name = ctx_sdl_keysym_to_name (event.key.keysym.sym, &keycode);
