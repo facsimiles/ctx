@@ -741,7 +741,7 @@ struct _CtxEvent {
   float   delta_y; /* y - prev_y, redundant - ..  */
 
 
-  unsigned int unicode; /* only valid for key-events */
+  unsigned int unicode; /* only valid for key-events, re-use as keycode? */
   const char *string;   /* as key can be "up" "down" "space" "backspace" "a" "b" "ø" etc .. */
                         /* this is also where the message is delivered for
                          * MESSAGE events
@@ -840,8 +840,14 @@ int   ctx_events_height (Ctx *ctx);
  * are called in response to these being called.
  */
 
+int ctx_key_down  (Ctx *ctx, unsigned int keyval,
+                   const char *string, uint32_t time);
+int ctx_key_up    (Ctx *ctx, unsigned int keyval,
+                   const char *string, uint32_t time);
 int ctx_key_press (Ctx *ctx, unsigned int keyval,
                    const char *string, uint32_t time);
+
+
 int ctx_scrolled  (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time);
 void ctx_incoming_message (Ctx *ctx, const char *message, long time);
 int ctx_pointer_motion    (Ctx *ctx, float x, float y, int device_no, uint32_t time);

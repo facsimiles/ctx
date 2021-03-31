@@ -191,6 +191,73 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
   tiled->shown_frame = tiled->render_frame;
 }
 
+static const char *ctx_sdl_keysym_to_name (unsigned int sym, int *r_keycode)
+{
+  static char buf[16]="";
+  buf[ctx_unichar_to_utf8 (sym, (void*)buf)]=0;
+  int code = sym;
+  const char *name = &buf[0];
+   switch (sym)
+   {
+     case SDLK_RSHIFT: code = 16 ; break;
+     case SDLK_LSHIFT: code = 16 ; break;
+     case SDLK_LCTRL: code = 17 ; break;
+     case SDLK_RCTRL: code = 17 ; break;
+     case SDLK_LALT:  code = 18 ; break;
+     case SDLK_RALT:  code = 18 ; break;
+     case SDLK_CAPSLOCK: name = "capslock"; code = 20 ; break;
+     //case SDLK_NUMLOCK: name = "numlock"; code = 144 ; break;
+     //case SDLK_SCROLLLOCK: name = "scrollock"; code = 145 ; break;
+
+     case SDLK_F1:     name = "F1"; code = 112; break;
+     case SDLK_F2:     name = "F2"; code = 113; break;
+     case SDLK_F3:     name = "F3"; code = 114; break;
+     case SDLK_F4:     name = "F4"; code = 115; break;
+     case SDLK_F5:     name = "F5"; code = 116; break;
+     case SDLK_F6:     name = "F6"; code = 117; break;
+     case SDLK_F7:     name = "F7"; code = 118; break;
+     case SDLK_F8:     name = "F8"; code = 119; break;
+     case SDLK_F9:     name = "F9"; code = 120; break;
+     case SDLK_F10:    name = "F10"; code = 121; break;
+     case SDLK_F11:    name = "F11"; code = 122; break;
+     case SDLK_F12:    name = "F12"; code = 123; break;
+     case SDLK_ESCAPE: name = "escape"; break;
+     case SDLK_DOWN:   name = "down"; code = 40; break;
+     case SDLK_LEFT:   name = "left"; code = 37; break;
+     case SDLK_UP:     name = "up"; code = 38;  break;
+     case SDLK_RIGHT:  name = "right"; code = 39; break;
+     case SDLK_BACKSPACE: name = "backspace"; break;
+     case SDLK_SPACE:  name = "space"; break;
+     case SDLK_TAB:    name = "tab"; break;
+     case SDLK_DELETE: name = "delete"; code = 46; break;
+     case SDLK_INSERT: name = "insert"; code = 45; break;
+     case SDLK_RETURN:
+       //if (key_repeat == 0) // return never should repeat
+       name = "return";   // on a DEC like terminal
+       break;
+     case SDLK_HOME:     name = "home"; code = 36; break;
+     case SDLK_END:      name = "end"; code = 35; break;
+     case SDLK_PAGEDOWN: name = "page-down"; code = 34; break;
+     case SDLK_PAGEUP:   name = "page-up"; code = 33; break;
+     case ',': code = 188; break;
+     case '.': code = 190; break;
+     case '/': code = 191; break;
+     case '`': code = 192; break;
+     case '[': code = 219; break;
+     case '\\': code = 220; break;
+     case ']':  code = 221; break;
+     case '\'': code = 222; break;
+     default:
+       ;
+   }
+   if (sym >= 'a' && sym <='z') code -= 32;
+   if (r_keycode)
+   {
+     *r_keycode = code;
+   }
+   return name;
+}
+
 int ctx_sdl_consume_events (Ctx *ctx)
 {
   CtxTiled *tiled = (void*)ctx->renderer;
@@ -239,19 +306,6 @@ int ctx_sdl_consume_events (Ctx *ctx)
         ctx_pointer_release (ctx, event.tfinger.x * tiled->width, event.tfinger.y * tiled->height,
           (event.tfinger.fingerId%10) + 4, 0);
         break;
-      case SDL_KEYUP:
-        {
-           sdl->key_balance --;
-           switch (event.key.keysym.sym)
-           {
-             case SDLK_LSHIFT: sdl->lshift = 0; break;
-             case SDLK_RSHIFT: sdl->rshift = 0; break;
-             case SDLK_LCTRL: sdl->lctrl = 0; break;
-             case SDLK_RCTRL: sdl->rctrl = 0; break;
-             case SDLK_LALT:  sdl->lalt  = 0; break;
-           }
-        }
-        break;
 #if 1
       case SDL_TEXTINPUT:
     //  if (!active)
@@ -280,47 +334,18 @@ int ctx_sdl_consume_events (Ctx *ctx)
           {
             sdl->key_repeat ++;
           }
-          buf[ctx_unichar_to_utf8 (event.key.keysym.sym, (void*)buf)]=0;
           switch (event.key.keysym.sym)
           {
             case SDLK_LSHIFT: sdl->lshift = 1; break;
             case SDLK_RSHIFT: sdl->rshift = 1; break;
-            case SDLK_LCTRL: sdl->lctrl = 1; break;
-            case SDLK_LALT:  sdl->lalt = 1; break;
-            case SDLK_RCTRL: sdl->rctrl = 1; break;
-            case SDLK_F1: name = "F1"; break;
-            case SDLK_F2: name = "F2"; break;
-            case SDLK_F3: name = "F3"; break;
-            case SDLK_F4: name = "F4"; break;
-            case SDLK_F5: name = "F5"; break;
-            case SDLK_F6: name = "F6"; break;
-            case SDLK_F7: name = "F7"; break;
-            case SDLK_F8: name = "F8"; break;
-            case SDLK_F9: name = "F9"; break;
-            case SDLK_F10: name = "F10"; break;
-            case SDLK_F11: name = "F11"; break;
-            case SDLK_F12: name = "F12"; break;
-            case SDLK_ESCAPE: name = "escape"; break;
-            case SDLK_DOWN: name = "down"; break;
-            case SDLK_LEFT: name = "left"; break;
-            case SDLK_UP: name = "up"; break;
-            case SDLK_RIGHT: name = "right"; break;
-            case SDLK_BACKSPACE: name = "backspace"; break;
-            case SDLK_SPACE: name = "space"; break;
-            case SDLK_TAB: name = "tab"; break;
-            case SDLK_DELETE: name = "delete"; break;
-            case SDLK_INSERT: name = "insert"; break;
-            case SDLK_RETURN:
-              //if (key_repeat == 0) // return never should repeat
-              name = "return";   // on a DEC like terminal
-              break;
-            case SDLK_HOME: name = "home"; break;
-            case SDLK_END: name = "end"; break;
-            case SDLK_PAGEDOWN: name = "page-down"; break;
-            case SDLK_PAGEUP: name = "page-up"; break;
-            default:
-              ;
+            case SDLK_LCTRL:  sdl->lctrl = 1; break;
+            case SDLK_LALT:   sdl->lalt = 1; break;
+            case SDLK_RCTRL:  sdl->rctrl = 1; break;
           }
+          int keycode;
+          name = ctx_sdl_keysym_to_name (event.key.keysym.sym, &keycode);
+          ctx_key_down (ctx, keycode, name, 0);
+
           if (strlen (name)
               &&(event.key.keysym.mod & (KMOD_CTRL) ||
                  event.key.keysym.mod & (KMOD_ALT) ||
@@ -355,6 +380,22 @@ int ctx_sdl_consume_events (Ctx *ctx)
              ctx_key_press (ctx, 0, buf, 0);
 #endif
           }
+        }
+        break;
+      case SDL_KEYUP:
+        {
+           sdl->key_balance --;
+           switch (event.key.keysym.sym)
+           {
+             case SDLK_LSHIFT: sdl->lshift = 0; break;
+             case SDLK_RSHIFT: sdl->rshift = 0; break;
+             case SDLK_LCTRL: sdl->lctrl = 0; break;
+             case SDLK_RCTRL: sdl->rctrl = 0; break;
+             case SDLK_LALT:  sdl->lalt  = 0; break;
+           }
+           int keycode;
+           const char *name = ctx_sdl_keysym_to_name (event.key.keysym.sym, &keycode);
+           ctx_key_up (ctx, keycode, name, 0);
         }
         break;
       case SDL_QUIT:

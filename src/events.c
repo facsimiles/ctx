@@ -696,6 +696,7 @@ void ctx_listen (Ctx          *ctx,
     y = 0;
     width = 0;
     height = 0;
+    fprintf (stderr, "!");
   }
   else
   {
@@ -1576,6 +1577,16 @@ int ctx_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_directio
   return 0;
 }
 
+static int ctx_str_has_prefix (const char *string, const char *prefix)
+{
+  for (int i = 0; prefix[i]; i++)
+  {
+    if (!string[i]) return 0;
+    if (string[i] != prefix[i]) return 0;
+  }
+  return 0;
+}
+
 int ctx_key_press (Ctx *ctx, unsigned int keyval,
                    const char *string, uint32_t time)
 {
@@ -1584,21 +1595,15 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
   sscanf (string, "%s %f %f %i", event_type, &x, &y, &b);
   if (!strcmp (event_type, "mouse-motion") ||
       !strcmp (event_type, "mouse-drag"))
-  {
-    ctx_pointer_motion (ctx, x, y, b, 0);
-    return 0;
-  }
+    return ctx_pointer_motion (ctx, x, y, b, 0);
   else if (!strcmp (event_type, "mouse-press"))
-  {
-    ctx_pointer_press (ctx, x, y, b, 0);
-    return 0;
-  }
+    return ctx_pointer_press (ctx, x, y, b, 0);
   else if (!strcmp (event_type, "mouse-release"))
-  {
-    ctx_pointer_release (ctx, x, y, b, 0);
-    return 0;
-  }
-
+    return ctx_pointer_release (ctx, x, y, b, 0);
+  else if (!strcmp (event_type, "keydown"))
+    return ctx_key_down (ctx, keyval, string + 8, time);
+  else if (!strcmp (event_type, "keyup"))
+    return ctx_key_up (ctx, keyval, string + 6, time);
 
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_PRESS);
   CtxEvent event = {0,};
@@ -1621,11 +1626,6 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
       {
         event.state = ctx->events.modifier_state;
         item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
-#if 0
-        char buf[256];
-        ctx_set (ctx, ctx_strhash ("title", 0), buf, strlen(buf));
-        ctx_flush (ctx);
-#endif
         if (event.stop_propagate)
         {
           free ((void*)event.string);
@@ -1635,6 +1635,80 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
     }
     free ((void*)event.string);
   }
+  return 0;
+}
+
+int ctx_key_down (Ctx *ctx, unsigned int keyval,
+                  const char *string, uint32_t time)
+{
+  CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_DOWN);
+  CtxEvent event = {0,};
+
+  if (time == 0)
+    time = ctx_ms (ctx);
+  if (item)
+  {
+    int i;
+    event.ctx = ctx;
+    event.type = CTX_KEY_PRESS;
+    event.unicode = keyval; 
+    event.string = strdup(string);
+    event.stop_propagate = 0;
+    event.time = time;
+
+    for (i = 0; i < item->cb_count; i++)
+    {
+      if (item->cb[i].types & (CTX_KEY_DOWN))
+      {
+        event.state = ctx->events.modifier_state;
+        item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
+        if (event.stop_propagate)
+        {
+          free ((void*)event.string);
+          return event.stop_propagate;
+        }
+      }
+    }
+    free ((void*)event.string);
+  }
+  return 0;
+}
+
+int ctx_key_up (Ctx *ctx, unsigned int keyval,
+                const char *string, uint32_t time)
+{
+  CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_UP);
+  CtxEvent event = {0,};
+
+  if (time == 0)
+    time = ctx_ms (ctx);
+  if (item)
+  {
+    int i;
+    event.ctx = ctx;
+    event.type = CTX_KEY_PRESS;
+    event.unicode = keyval; 
+    event.string = strdup(string);
+    event.stop_propagate = 0;
+    event.time = time;
+
+    for (i = 0; i < item->cb_count; i++)
+    {
+      if (item->cb[i].types & (CTX_KEY_UP))
+      {
+        event.state = ctx->events.modifier_state;
+        item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
+        if (event.stop_propagate)
+        {
+          free ((void*)event.string);
+          return event.stop_propagate;
+        }
+      }
+    }
+    free ((void*)event.string);
+  }
+  return 0;
+
   return 0;
 }
 

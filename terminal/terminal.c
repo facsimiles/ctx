@@ -1013,12 +1013,17 @@ void draw_titlebar (Ctx *ctx, CtxClient *client,
 #endif
 }
 
+static void key_down (CtxEvent *event, void *data1, void *data2)
+{
+  fprintf (stderr, "down %i %s\n", event->unicode, event->string);
+}
 
 static int draw_vts (Ctx *ctx)
 {
   float view_height = ctx_height (ctx);
   float titlebar_height = view_height/40;
   int n_clients = ctx_list_length (clients);
+  ctx_listen (ctx, CTX_KEY_DOWN, key_down, NULL, NULL);
 #if 1
   if (active && active->maximized && n_clients == 1)
   {
