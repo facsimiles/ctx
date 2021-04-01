@@ -472,12 +472,12 @@ int ctx_ctx_consume_events (Ctx *ctx)
       }
       else if (!strcmp (event_type, "keyup"))
       {
-        uint8_t buf[4]={ x, 0 };
+        char buf[4]={ x, 0 };
         ctx_key_up (ctx, (int)x, buf, 0);
       }
       else if (!strcmp (event_type, "keydown"))
       {
-        uint8_t buf[4]={ x, 0 };
+        char buf[4]={ x, 0 };
         ctx_key_down (ctx, (int)x, buf, 0);
       }
       else

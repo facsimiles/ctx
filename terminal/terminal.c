@@ -1607,6 +1607,8 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
           handle_event (ctx, event, buf);
         }
         break;
+      default:
+        break;
     }
   }
 }

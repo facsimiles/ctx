@@ -55,8 +55,8 @@ if [ $HAVE_SDL = 1 ];  then echo "    SDL2 yes";
                        else echo "    SDL2 no";fi
 if [ $HAVE_BABL = 1 ]; then echo "    babl yes";
                        else echo "    babl no";fi
-if [ $HAVE_LIBCURL=1 ];then echo " libcurl yes";
-                       else echo "    babl no";fi
+if [ $HAVE_LIBCURL = 1 ];then echo " libcurl yes";
+                       else echo " libcurl no";fi
 echo
 echo "Ready to build"
 

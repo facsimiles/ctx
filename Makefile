@@ -115,7 +115,7 @@ ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono
 ctx-split.o: $(SRC_OBJS)
 
 ctx-static.o: ctx.c ctx.h Makefile used_fonts build.conf
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
@@ -141,7 +141,7 @@ ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) $(JS_OBJ
 	$(CCC) main.c $(TERMINAL_OBJS) $(JS_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
 
 ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o ctx-sse2.o ctx-mmx.o js/*.[ch]
-	$(CCC) main.c terminal/*.c convert/*.c js/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -static 
+	$(CCC) main.c terminal/*.c convert/*.c js/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile
