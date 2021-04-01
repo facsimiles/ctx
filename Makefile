@@ -19,8 +19,8 @@ LIBS   = -lz -lm -lpthread
 
 #OFLAGS_HARD=-Os
 #OFLAGS_LIGHT=-Os
-#OFLAGS_HARD=-O3
-#OFLAGS_LIGHT=-O2
+OFLAGS_HARD=-O3
+OFLAGS_LIGHT=-O2
 
 CLIENTS_CFILES = $(wildcard clients/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
@@ -185,7 +185,7 @@ ctx.h: src/* fonts/ctx-font-ascii.h
 
 ctx-nofont.h: src/*
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
-js/main.o: js/ecma_eventloop.js.inc js/bootstrap.js.inc js/dom.js.inc js/htmlparser.js.inc
+js/main.o: js/ecma_eventloop.js.inc js/bootstrap.js.inc js/dom.js.inc js/htmlparser.js.inc js/garrulus.js.inc
 js/%.js.inc: js/%.js 
 	cat $< | sed 's/\\/\\\\/g'   |sed 's/"/\\"/g' |sed 's/$$/\\n"/' | sed 's/^/"/' > $@
 	

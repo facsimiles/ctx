@@ -272,7 +272,10 @@ int main (int argc, char **argv)
   if (argv[1] && !strcmp (argv[1], "launch"))
     return launch_main (argc-1, argv+1);
 
-  if (argv[1] && strstr(argv[1], ".js")  && strstr(argv[1], ".js")[3]==0)
+  if (argv[1])
+  if ((strstr(argv[1], ".js")  && strstr(argv[1], ".js")[3]==0) ||
+      (strstr(argv[1], ".html")  && strstr(argv[1], ".html")[5]==0) ||
+      (!strncmp (argv[1], "http", 4)))
     return js_main (argc, argv);
 
   return terminal_main (argc, argv);
