@@ -1728,6 +1728,7 @@ terminal_update_title (const char *title)
 int terminal_main (int argc, char **argv)
 {
   execute_self = argv[0];
+  const char *commandline = NULL;
   float global_scale = 1.0;
   int width = -1;
   int height = -1;
@@ -1746,6 +1747,11 @@ int terminal_main (int argc, char **argv)
   {
     if (!strcmp (argv[i], "--help"))
     {
+    }
+    else if (!strcmp (argv[i], "-e"))
+    {
+      commandline = argv[i+1];
+      i++;
     }
     else if (!strcmp (argv[i], "--width"))
         width = consume_float (argv, &i);
@@ -1794,10 +1800,9 @@ int terminal_main (int argc, char **argv)
   if (font_size < 0)
     font_size = floorf (2 * width / cols /2) * 3;
 
-  const char *command = argv[1];
-  if (!command)
-    command = vt_find_shell_command();
-  client_maximize (add_tab (command, 1));
+  if (!commandline)
+    commandline = vt_find_shell_command();
+  client_maximize (add_tab (commandline, 1));
 
   if (!active)
     return 1;

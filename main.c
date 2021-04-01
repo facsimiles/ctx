@@ -6,11 +6,11 @@
 static int usage_main (int argc, char **argv)
 {
   printf (
-    "Usage: ctx \"command-line with args\"\n"
+    "Usage: ctx [-e \"command-line with args\"]\n"
     "  launch a terminal, if no command is specified a new instance of\n"
     "  the users shell is invoked.\n"
     "\n"
-    "or: ctx --convert [options] <source.ctx> <destination>\n"
+    "or: ctx [options] <source.ctx> -o <destination>\n"
     "  convert source.ctx to destination, where destination is a\n"
     "  path with a .png suffix, or the string GRAY1 or GRAY8\n"
     "  to generate a terminal visualization on stdout\n"
@@ -242,18 +242,37 @@ int thumb_main (int argc, char **argv)
   return 0;
 }
 
+static char *output_path = NULL;
+static char *commandline = NULL;
+
 int main (int argc, char **argv)
 {
   for (int i = 1; argv[i]; i++)
-    if (!strcmp ( argv[i], "--help"))
+  {
+    char *a = argv[i];
+    if (!strcmp ( a, "--help"))
       return usage_main (argc, argv);
+    if (!strcmp (a, "-o"))
+    {
+      output_path = argv[i+1];
+      i++;
+    }
+    if (!strcmp (a, "-e"))
+    {
+      commandline = argv[i+1];
+      i++;
+    }
+  }
+
+  if (output_path)
+    return convert_main (argc, argv);
+
   if (argv[1] && !strcmp (argv[1], "thumb"))
     return thumb_main (argc-1, argv+1);
-  if (argv[1] && !strcmp (argv[1], "convert"))
-    return convert_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "js"))
     return js_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "launch"))
     return launch_main (argc-1, argv+1);
+
   return terminal_main (argc, argv);
 }

@@ -1488,7 +1488,7 @@ static int event_check_pending (CtxFb *fb)
       {
         if (fb->vt_active)
         {
-          ctx_key_press (tiled->ctx, 0, event, 0); // we deliver all events as key-press, it disamibuates
+          ctx_key_press (tiled->ctx, 0, event, 0); // we deliver all events as key-press, the key_press handler disambiguates
           events++;
         }
         free (event);
