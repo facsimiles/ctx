@@ -17,10 +17,10 @@ LIBS   = -lz -lm -lpthread
 #CFLAGS+= -fsanitize=address
 #LIBS+= -lasan
 
-#OFLAGS_HARD=-Os
-#OFLAGS_LIGHT=-Os
-OFLAGS_HARD=-O3
-OFLAGS_LIGHT=-O2
+OFLAGS_HARD=-Os
+OFLAGS_LIGHT=-Os
+#OFLAGS_HARD=-O3
+#OFLAGS_LIGHT=-O2
 
 CLIENTS_CFILES = $(wildcard clients/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)

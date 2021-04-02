@@ -563,8 +563,13 @@ static void ctx_fb_undraw_cursor (CtxFb *fb)
     if (fb_cursor_drawn)
     {
       int no = 0;
-      for (int y = -cursor_size; y < cursor_size; y++)
-      for (int x = -cursor_size; x < cursor_size; x++, no+=4)
+      int startx = -cursor_size;
+      int starty = -cursor_size;
+      if (fb_cursor_drawn_shape == CTX_CURSOR_ARROW)
+        startx = starty = 0;
+
+      for (int y = starty; y < cursor_size; y++)
+      for (int x = startx; x < cursor_size; x++, no+=4)
       {
         if (x + fb_cursor_drawn_x < tiled->width && y + fb_cursor_drawn_y < tiled->height)
         {
@@ -577,6 +582,7 @@ static void ctx_fb_undraw_cursor (CtxFb *fb)
           }
         }
       }
+
     fb_cursor_drawn = 0;
     }
 }
@@ -614,10 +620,17 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     ctx_fb_undraw_cursor (fb);
 
     no = 0;
-    for (int y = -cursor_size; y < cursor_size; y++)
-      for (int x = -cursor_size; x < cursor_size; x++, no+=4)
+
+    int startx = -cursor_size;
+    int starty = -cursor_size;
+
+    if (cursor_shape == CTX_CURSOR_ARROW)
+      startx = starty = 0;
+
+    for (int y = starty; y < cursor_size; y++)
+      for (int x = startx; x < cursor_size; x++, no+=4)
       {
-        if (x + cursor_x < tiled->width && x >=0 && y + cursor_y < tiled->height && y >=0)
+        if (x + cursor_x < tiled->width && y + cursor_y < tiled->height)
         {
           if (ctx_is_in_cursor (x, y, cursor_size, cursor_shape))
           {
