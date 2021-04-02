@@ -17,10 +17,10 @@ LIBS   = -lz -lm -lpthread
 #CFLAGS+= -fsanitize=address
 #LIBS+= -lasan
 
-OFLAGS_HARD=-Os
-OFLAGS_LIGHT=-Os
-#OFLAGS_HARD=-O3
-#OFLAGS_LIGHT=-O2
+#OFLAGS_HARD=-Os
+#OFLAGS_LIGHT=-Os
+OFLAGS_HARD=-O3
+OFLAGS_LIGHT=-O2
 
 CLIENTS_CFILES = $(wildcard clients/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
@@ -109,8 +109,8 @@ ctx-avx2.o: ctx-avx2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mo
 ctx-sse2.o: ctx-sse2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx-sse2.c -c -o $@ $(CFLAGS)  $(OFLAGS_HARD) -march=core2 -ftree-vectorize -funsafe-math-optimizations
 
-ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) ctx-mmx.c -c -o $@ $(CFLAGS) $(OFLAGS_HARD) -mmmx -ftree-vectorize -funsafe-math-optimizations
+#ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+#	$(CCC) ctx-mmx.c -c -o $@ $(CFLAGS) $(OFLAGS_HARD) -mmmx -ftree-vectorize -funsafe-math-optimizations
 
 ctx-split.o: $(SRC_OBJS)
 
@@ -125,7 +125,7 @@ js/%.o: js/%.c ctx.h
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-libctx.a: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o Makefile
+libctx.a: ctx.o ctx-sse2.o ctx-avx2.o deps.o Makefile
 	$(AR) rcs $@ $?
 libctx.so: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o
 	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@

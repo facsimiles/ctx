@@ -74,17 +74,12 @@
 extern CtxPixelFormatInfo *ctx_pixel_formats;
 extern CtxPixelFormatInfo  ctx_pixel_formats_avx2[];
 extern CtxPixelFormatInfo  ctx_pixel_formats_sse2[];
-extern CtxPixelFormatInfo  ctx_pixel_formats_mmx[];
 
 void ctx_simd_setup ()
 {
   static int done = 0;
   if (done) return;
   done = 1;
-  if(__builtin_cpu_supports("mmx"))
-  {
-    ctx_pixel_formats = ctx_pixel_formats_mmx;
-  }
   if(__builtin_cpu_supports("sse3"))
   {
     ctx_pixel_formats = ctx_pixel_formats_sse2;

@@ -351,7 +351,7 @@ void thash_decode_utf5_bytes (int is_utf5,
 
 const char *thash_decode (uint64_t hash)
 {
-  if (!interned_sorted)
+  if (!interned_sorted && interned)
   {
     qsort (interned, n_interned, sizeof (Interned), interned_compare);
     interned_sorted = 1;
