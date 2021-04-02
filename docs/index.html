@@ -28,50 +28,38 @@
       <div id='page'>
       <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-      <p>ctx is a full-stack vector graphics rasterization experiment, built
-      around a textual serialization format that is a superset of SVG path
-      data. The textual serialization has a direct internal binary
-      representation that is used by the core rasterizer as well as
-      sharing data among threads.
-      </p>
-
-      <p>The core graphics library is a C implementation of a
-      combination of ideas from HTML5 Canvas, cairo, postscript, SVG and PDF.
-      The library also contains event handling abstractions and
-      buffer display capabilities for SDL2 and direct frame buffer output
-      without wayland/X11, as well as an event handling backend that
-      operates ctx through custom ANSI terminal escape sequences.
-      It is self-contained and usable dropped into a source tree, <a href='ctx.h'>ctx header/library</a>, when built as a library the full header is
-      also installed.
-      </p>
+      <p>ctx is a media-rich terminal and a vector graphics stack, built
+      around a textual serialization <a href='protocol/'>protocol</a>. The
+      textual serialization has a corresponding binary representation that
+      is used by the core rasterizer as well as sharing data among threads.
+      The ctx protocol is available as an extension to ANSI escape sequences
+      in the ctx terminal - the terminal launched when running the ctx
+      binary with no arguments. This extension allows scripts in any
+      language to output vector graphics in addition to or instead of
+      monospace text in each tab/window, and also provides network
+      transparent rendering.</p>
 
       <a href='pid1.png'><img style='max-width:100%' src='pid1.png'/></a>
-
-      <p>The ctx binary is a terminal written with ctx. Though "terminal"
-      might be selling it short, it has detachable tabs. Developing
-      applications can be done as usual for a modern DEC family derived
-      terminal. And then, like with modern graphics cards - there is
-      a vector graphics mode, though it is not tektronix or similar,
-      but the ctx protocol - making each tab a full interactive UI window.
+      <p>
       The clock in the above screenshot is <a href='https://ctx.graphics/file/clients/clock.sh.html'>a shellscript</a>.
       </p>
 
-      <p>The ctx binary can also do other tasks, like convert ctx protocol data
-      to png or display it as unicode in a terminal. Duktype is bundled as a
-      javascript interpreter which allows running sometimes unmodified .js
-      canvas HTML snippets. Providing the ability to run javascript canvas apps
-      in both the terminal and on the web.
+      <h3>library</h3>
+      <p>
+      Ctx is usable as a single header library, to be dropped into a source tree, <a href='ctx.h'>ctx header/library</a>, it can also be installed system-wide.
+      The ctx library abstracts over multiple graphics output and
+      input backends, including SDL2 (X11/wayland), fbdev/DRM and as a client
+      program inside ctx terminal. The event system provides the ability to
+      install callbacks on the active path as well as registering key-bindings,
+      providing a native correspondent to HTML5 canvas with richer events.
       </p>
 
-      <p>Having terminals gives us editors and enough for many to stay
-      productive, but the available web browsers leave something to be
-      desired. The CSS and XML layout engines from microraptor gui is
-      being ported to javascript for testing the duktype binding
+      <h3>javascript</h3>
+      <p>Through the inclusion of duktape, ctx is able to
+      execute some interactive HTML5 Canvases unmodified or with slight
+      adaptations as native applications.
       </p>
 
-      </p>
-
-     
       <p>The self-contained static builds are sufficient to run minimalistic
       desktop+shells only sessions with low RAM requirements. The
       rasterizer which for multi-core use is used in parallell for multiple
@@ -330,11 +318,7 @@ to be combined with all compositing modes.
               <!--<tr><td><a href='binaries/ctx-x86_64-SDL2'>ctx-x86_64-SDL2</a></td><td>ELF 64bit binary for linux dynamically linked against SDL2, should work in most distros.</tr>-->
               <tr><td><a href='binaries/ctx-x86_64-static'>ctx-x86_64-static</a></td><td>64bit static linux binary - should work in mant distros, but has only DRM, /dev/fb0 and braille backends</tr>
               <tr><td><a href='binaries/ctx-i486-static'>ctx-i486-static</a></td><td>32bit static linux binary - should work in mant distros, but has only DRM, /dev/fb0 and braille backends.</tr>
-
-
-
       </table>
-
 
 <h2 id='license'>license and funding</h2>
 <p> The terminal is available under <a
@@ -350,7 +334,8 @@ financially supporting me, <a href='https://pippin.gimp.org'>Øyvind Kolås</a> 
           under the <a
 href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 
-        <h2 id='bugs'>some possible paths ahead</h2>
+        <h2 id='future'>future work</h2>
+        <h3 id='bugs'>pressing issues</h3>
         <p>The current status of ctx is beyond proof of concept - but still
         does not fully realize a minimal system demonstrating it's capabilities
         - some features are also broken and need repair - and for third party
@@ -384,25 +369,24 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         </li>
         </ul>
 
-
-        <h2 id='future'>directions</h2>
+        <h3>improvements</h3>
 	<ul>
-        <li>multi-head, both for DRM when plugging in HDMI/VGA and networked
-        connect to ESP32 / html5 canvas clients.</li>
         <li>performance, there always seem to be room for improvement.</li>
         <li>continued code refactoring</li>
 	<li>glyph fallbacks between fonts</li>
+        <li>color manage textures (only solids and gradients are currently color managed)</li>
+        <li>multi-head, both for DRM when plugging in HDMI/VGA and networked
+        connect to ESP32 / html5 canvas clients.</li>
         <li>swap some uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx, pass ctx data
         as buffers, or have ctx backed buffers in GEGL.</li>
         <li>binary search for glyphs in ctxf font backend, making it scale well for wide unicode coverage.</li>
         <li>websockets + js + HTML5 Canvas renderer/client for protocols</li>
         <li>wayland/libinput support</li>
         <li>analytical instead of raster clipping</li>
-        <li>bindings to a javascript engine like quickjs, for running canvas js content as apps.</li>
         <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
         <li>faster and correctly transformed 1d-gaussian blur for shadow blur</li>
         <li>PDF/SVG generation (in addition to existing cairo integration)</li>
-        <li>Add API for integrating device-N with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
+        <li>Add API for integrating device-N and spectral with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
         <li>32bit float coverage from rasterizer - right now we support 32f images/color; but composite using 8bit alpha masks.</li>
         <li>More SIMD code (the common RGBA8 cases for handled as manual
             simulated 64bit SIMD and AVX2 are the only bits covered thus

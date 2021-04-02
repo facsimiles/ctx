@@ -334,7 +334,7 @@ ITK *itk_new (Ctx *ctx)
   itk->menu_path = strdup ("main/foo");
   itk->rel_hpad         = 0.3;
   itk->rel_vgap         = 0.2;
-  itk->scroll_speed     = 0.8;
+  itk->scroll_speed     = 4.0;
   itk->light_mode       = 1;
   ctx_set_dirty (ctx, 1);
 

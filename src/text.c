@@ -458,11 +458,9 @@ ctx_glyph_width_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar)
   if (data){
     Ctx *glyph_ctx = ctx_new ();
     ctx_parse (glyph_ctx, data);
-    //fprintf (stderr, "\n");
     for (int i = 0; i < glyph_ctx->drawlist.count; i++)
     {
       CtxEntry *e = &glyph_ctx->drawlist.entries[i];
-   // fprintf (stderr, "%c:", e->code);
       if (e->code == CTX_DEFINE_GLYPH)
         ret = e->data.u32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE;
     }
@@ -480,7 +478,6 @@ ctx_glyph_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   uint8_t *data = NULL;
   long int len_bytes = 0;
   _ctx_file_get_contents (path, &data, &len_bytes);
-//fprintf (stderr, "%s %li\n", path, len_bytes);
 
   if (data){
     Ctx *glyph_ctx = ctx_new ();
