@@ -17,10 +17,10 @@ LIBS   = -lz -lm -lpthread
 #CFLAGS+= -fsanitize=address
 #LIBS+= -lasan
 
-#OFLAGS_HARD=-Os
-#OFLAGS_LIGHT=-Os
 OFLAGS_HARD=-O3
-OFLAGS_LIGHT=-O2
+OFLAGS_LIGHT=-Os
+#OFLAGS_HARD=-O3
+#OFLAGS_LIGHT=-O2
 
 CLIENTS_CFILES = $(wildcard clients/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
@@ -140,7 +140,7 @@ ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fo
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) $(JS_OBJS) deps.o
 	$(CCC) main.c $(TERMINAL_OBJS) $(JS_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
 
-ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o js/*.[ch]
+ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o js/*.[ch] js/ecma_eventloop.js.inc js/bootstrap.js.inc js/dom.js.inc js/htmlparser.js.inc js/garrulus.js.inc
 	$(CCC) main.c terminal/*.c convert/*.c js/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
 	strip -s -x $@
 
