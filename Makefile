@@ -106,8 +106,8 @@ deps.o: deps.c Makefile
 ctx-avx2.o: ctx-avx2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx-avx2.c -c -o $@ $(CFLAGS) $(OFLAGS_HARD) -DCTX_AVX2=1 -mavx -mavx2 -mfpmath=sse -ftree-vectorize -funsafe-math-optimizations
 
-ctx-sse2.o: ctx-sse2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) ctx-sse2.c -c -o $@ $(CFLAGS)  $(OFLAGS_HARD) -march=core2 -ftree-vectorize -funsafe-math-optimizations
+#ctx-sse2.o: ctx-sse2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+#	$(CCC) ctx-sse2.c -c -o $@ $(CFLAGS)  $(OFLAGS_HARD) -march=core2 -ftree-vectorize -funsafe-math-optimizations
 
 #ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 #	$(CCC) ctx-mmx.c -c -o $@ $(CFLAGS) $(OFLAGS_HARD) -mmmx -ftree-vectorize -funsafe-math-optimizations
@@ -125,9 +125,9 @@ js/%.o: js/%.c ctx.h
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-libctx.a: ctx.o ctx-sse2.o ctx-avx2.o deps.o Makefile
+libctx.a: ctx.o ctx-avx2.o deps.o Makefile
 	$(AR) rcs $@ $?
-libctx.so: ctx.o ctx-sse2.o ctx-avx2.o ctx-mmx.o deps.o
+libctx.so: ctx.o ctx-avx2.o deps.o
 	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
@@ -140,8 +140,8 @@ ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fo
 ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) $(JS_OBJS) deps.o
 	$(CCC) main.c $(TERMINAL_OBJS) $(JS_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
 
-ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o ctx-sse2.o ctx-mmx.o js/*.[ch]
-	$(CCC) main.c terminal/*.c convert/*.c js/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o ctx-sse2.o ctx-mmx.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
+ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o js/*.[ch]
+	$(CCC) main.c terminal/*.c convert/*.c js/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile
