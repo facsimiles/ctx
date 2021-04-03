@@ -127,20 +127,20 @@ __ctx_file_get_contents (const char     *path,
 #include <limits.h>
 
 int
-ctx_get_contents (const char     *path,
-                   unsigned char **contents,
-                   long           *length)
+ctx_get_contents (const char     *uri,
+                  unsigned char **contents,
+                  long           *length)
 {
   char temp_uri[PATH_MAX];
-  if (path[0] == '/')
+  if (uri[0] == '/')
   {
-    snprintf (temp_uri, sizeof (temp_uri)-1, "file://%s", path);
-    path = temp_uri;
+    snprintf (temp_uri, sizeof (temp_uri)-1, "file://%s", uri);
+    uri = temp_uri;
   }
   for (CtxList *l = registered_contents; l; l = l->next)
   {
     CtxFileContent *c = l->data;
-    if (!strcmp (c->path, path))
+    if (!strcmp (c->path, uri))
     {
       contents = malloc (c->length+1);
       contents[c->length]=0;
@@ -148,7 +148,11 @@ ctx_get_contents (const char     *path,
       return 0;
     }
   }
-  return __ctx_file_get_contents (path, contents, length);
+
+  if (!strncmp (uri, "file://", 7))
+    return __ctx_file_get_contents (uri + 7, contents, length);
+  else
+    return __ctx_file_get_contents (uri, contents, length);
 }
 
 
