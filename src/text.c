@@ -46,7 +46,7 @@ ctx_load_font_ttf_file (const char *name, const char *path)
 {
   uint8_t *contents = NULL;
   long length = 0;
-  _ctx_file_get_contents (path, &contents, &length);
+  ctx_get_contents (path, &contents, &length);
   if (!contents)
     {
       ctx_log ( "File load failed\n");
@@ -409,7 +409,7 @@ ctx_load_font_ctx_file (const char *name, const char *path)
 {
   uint8_t *contents = NULL;
   long length = 0;
-  _ctx_file_get_contents (path, &contents, &length);
+  ctx_get_contents (path, &contents, &length);
   if (!contents)
     {
       ctx_log ( "File load failed\n");
@@ -452,7 +452,7 @@ ctx_glyph_width_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar)
   sprintf (path, "%s/%010p", font->ctx_fs.path, unichar);
   uint8_t *data = NULL;
   long int len_bytes = 0;
-  _ctx_file_get_contents (path, &data, &len_bytes);
+  ctx_get_contents (path, &data, &len_bytes);
   float ret = 0.0;
   float font_size = state->gstate.font_size;
   if (data){
@@ -474,10 +474,10 @@ static int
 ctx_glyph_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
   char path[1024];
-  sprintf (path, "%s/%010p", font->ctx_fs.path, unichar);
+  sprintf (path, "file://%s/%010p", font->ctx_fs.path, unichar);
   uint8_t *data = NULL;
   long int len_bytes = 0;
-  _ctx_file_get_contents (path, &data, &len_bytes);
+  ctx_get_contents (path, &data, &len_bytes);
 
   if (data){
     Ctx *glyph_ctx = ctx_new ();

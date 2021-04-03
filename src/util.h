@@ -44,10 +44,10 @@ typedef struct CtxFileContent
 CtxList *registered_contents = NULL;
 
 void
-ctx_file_register_contents (const char *path,
-                            const unsigned char *contents,
-                            long length,
-                            int  free_data)
+ctx_register_contents (const char *path,
+                       const unsigned char *contents,
+                       long length,
+                       int  free_data)
 {
   // if (path[0] != '/') && strchr(path, ':')) 
   //   with this check regular use is faster, but we lose
@@ -74,8 +74,22 @@ ctx_file_register_contents (const char *path,
   ctx_list_append (&registered_contents, c);
 }
 
-int
-_ctx_file_get_contents (const char     *path,
+void
+_ctx_file_set_contents (const char     *path,
+                        const unsigned char  *contents,
+                        long            length)
+{
+  FILE *file;
+  file = fopen (path, "wb");
+  if (!file)
+    { return; }
+  if (length < 0) length = strlen ((const char*)contents);
+  fwrite (contents, 1, length, file);
+  fclose (file);
+}
+
+static int
+__ctx_file_get_contents (const char     *path,
                         unsigned char **contents,
                         long           *length)
 {
@@ -83,18 +97,6 @@ _ctx_file_get_contents (const char     *path,
   long  size;
   long  remaining;
   char *buffer;
-  for (CtxList *l = registered_contents; l; l = l->next)
-  {
-    CtxFileContent *c = l->data;
-    if (!strcmp (c->path, path))
-    {
-      contents = malloc (c->length+1);
-      contents[c->length]=0;
-      if (length) *length = c->length;
-      return 0;
-    }
-  }
-
   file = fopen (path, "rb");
   if (!file)
     { return -1; }
@@ -122,20 +124,33 @@ _ctx_file_get_contents (const char     *path,
   return 0;
 }
 
+#include <limits.h>
 
-void
-_ctx_file_set_contents (const char     *path,
-                        const unsigned char  *contents,
-                        long            length)
+int
+ctx_get_contents (const char     *path,
+                   unsigned char **contents,
+                   long           *length)
 {
-  FILE *file;
-  file = fopen (path, "wb");
-  if (!file)
-    { return; }
-  if (length < 0) length = strlen ((const char*)contents);
-  fwrite (contents, 1, length, file);
-  fclose (file);
+  char temp_uri[PATH_MAX];
+  if (path[0] == '/')
+  {
+    snprintf (temp_uri, sizeof (temp_uri)-1, "file://%s", path);
+    path = temp_uri;
+  }
+  for (CtxList *l = registered_contents; l; l = l->next)
+  {
+    CtxFileContent *c = l->data;
+    if (!strcmp (c->path, path))
+    {
+      contents = malloc (c->length+1);
+      contents[c->length]=0;
+      if (length) *length = c->length;
+      return 0;
+    }
+  }
+  return __ctx_file_get_contents (path, contents, length);
 }
+
 
 
 #endif

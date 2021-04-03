@@ -85,7 +85,7 @@ int main (int argc, char **argv)
   }
 
   int length = 0;
-  _ctx_file_get_contents (path, &font.entries, &length);
+  ctx_get_contents (path, &font.entries, &length);
   if (length % 9)
   {
     fprintf (stderr, "file size not a multiple of 9\n");

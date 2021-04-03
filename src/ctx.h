@@ -1708,6 +1708,11 @@ ctx_parser_set_size (CtxParser *parser,
 
 void ctx_parser_feed_byte (CtxParser *parser, int byte);
 
+int
+ctx_get_contents (const char     *path,
+                   unsigned char **contents,
+                   long           *length);
+
 void ctx_parser_free (CtxParser *parser);
 typedef struct _CtxSHA1 CtxSHA1;
 

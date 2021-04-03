@@ -526,7 +526,7 @@ Ctx *ctx_new_sdl (int width, int height)
   CtxSDL *sdl = (CtxSDL*)calloc (sizeof (CtxSDL), 1);
   CtxTiled *tiled = (void*)sdl;
 
-  _ctx_file_get_contents ("/tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
+  ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
   if (width <= 0 || height <= 0)
   {
     width  = 1920;

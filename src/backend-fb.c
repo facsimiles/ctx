@@ -1706,7 +1706,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   babl_init ();
 #endif
 
-  _ctx_file_get_contents ("/tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
+  ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
 
   tiled->ctx      = ctx_new ();
   tiled->ctx_copy = ctx_new ();

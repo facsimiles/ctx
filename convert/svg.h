@@ -8191,7 +8191,7 @@ _mr_get_contents (const char  *referer,
     char *path2 = malloc (strlen (path) + 2);
     int ret;
     sprintf (path2, "/%s", path);
-    ret = _ctx_file_get_contents (path2, (uint8_t**)contents, length);
+    ret = ctx_get_contents (path2, (uint8_t**)contents, length);
 
     free (path2);
     free (uri_dup);

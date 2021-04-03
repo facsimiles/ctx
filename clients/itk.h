@@ -388,7 +388,7 @@ void itk_reset (ITK *itk)
   if (itk_style)
     free (itk_style);
   unsigned char *style = NULL;
-  _ctx_file_get_contents ("/tmp/itk-style", &style, NULL);
+  ctx_get_contents ("/tmp/itk-style", &style, NULL);
   if (style)
   {
     itk_style = (void*)style;
