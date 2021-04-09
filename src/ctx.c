@@ -484,11 +484,28 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
   }
 
 #ifdef STBI_INCLUDE_STB_IMAGE_H
-  int w, h, components;
-  unsigned char *data = stbi_load (path, &w, &h, &components, 0);
-  if (data)
-  {
     CtxPixelFormat pixel_format = CTX_FORMAT_RGBA8;
+  int w, h, components;
+  unsigned char *pixels = NULL;
+
+  if (!strncmp (path, "file://", 7))
+  {
+    pixels = stbi_load (path + 7, &w, &h, &components, 0);
+  }
+  else
+  {
+    unsigned char *data = NULL;
+    long length = 0;
+    ctx_get_contents (path, &data, &length);
+    if (data)
+    {
+       pixels = stbi_load_from_memory (data, length, &w, &h, &components, 0);
+       free (data);
+    }
+  }
+
+  if (pixels)
+  {
     switch (components)
     {
       case 1: pixel_format = CTX_FORMAT_GRAY8;  break;
@@ -498,9 +515,13 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     }
     if (tw) *tw = w;
     if (th) *th = h;
-    ctx_define_texture (ctx, eid, w, h, w * components, pixel_format, data, 
+    ctx_define_texture (ctx, eid, w, h, w * components, pixel_format, pixels, 
                              reid);
-    free (data);
+    free (pixels);
+  }
+  else
+  {
+    fprintf (stderr, "texture loading problem for %s\n", path);
   }
 #endif
 }
@@ -1236,7 +1257,9 @@ ctx_flush (Ctx *ctx)
 #endif
   if (ctx->renderer && ctx->renderer->flush)
     ctx->renderer->flush (ctx->renderer);
-  ctx->texture_cache->frame++;
+  ctx->frame++;
+  if (ctx->texture_cache != ctx)
+    ctx->texture_cache->frame++;
   ctx->drawlist.count = 0;
   ctx_state_init (&ctx->state);
 }

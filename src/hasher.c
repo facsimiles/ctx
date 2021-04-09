@@ -164,7 +164,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
            * since it is also used in the small shapes rasterization
            * cache
            */
-        uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
+        uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer) + hasher->salt;
         CtxIntRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV,
           rasterizer->scan_min / aa,
@@ -177,10 +177,27 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
         ctx_sha1_process(&sha1, (unsigned char*)&hash, 8);
 
-        uint32_t color;
-        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
-
+        //
+        //fprintf (stderr, "t:%i\n", rasterizer->state->gstate.source_fill.type == CTX_SOURCE_IMAGE);
+        //
+        if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_IMAGE)
+        {
+          ctx_sha1_process(&sha1, &rasterizer->state->gstate.source_fill, sizeof (CtxSource));//(unsigned char*)&color, 4);
+          if (rasterizer->state->gstate.source_fill.image.buffer->eid)
+          {
+          ctx_sha1_process(&sha1, rasterizer->state->gstate.source_fill.image.buffer->eid, 
+          strlen (rasterizer->state->gstate.source_fill.image.buffer->eid));
+          fprintf (stderr, "%s:%i:%s\n", __FILE__, __LINE__, rasterizer->state->gstate.source_fill.image.buffer->eid);
+          }
+                          
+        }
+        else if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+        {
+          uint32_t color;
+          ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
           ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
+        }
+
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, ctx_sha1_hash);
 
@@ -276,12 +293,15 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
                                   c->set_pixel.rgba[2],
                                   c->set_pixel.rgba[3]);
         break;
-      case CTX_TEXTURE:
 #if 0
-        ctx_rasterizer_set_texture (rasterizer, ctx_arg_u32 (0),
-                                    ctx_arg_float (2), ctx_arg_float (3) );
+      case CTX_TEXTURE:
+        hasher->salt++;
+#if 0
+        ctx_rasterizer_set_texture (rasterizer, c->texture.eid,
+                        c->texture.x, c->texture.y);
 #endif
         break;
+#endif
 #if 0
       case CTX_LOAD_IMAGE:
         ctx_rasterizer_load_image (rasterizer, ctx_arg_string(),
@@ -333,6 +353,25 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         break;
       case CTX_CLOSE_PATH:
         ctx_rasterizer_finish_shape (rasterizer);
+        break;
+      case CTX_DEFINE_TEXTURE:
+        {
+#if 0
+          uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
+          ctx_rasterizer_define_texture (rasterizer, c->define_texture.eid,
+                                         c->define_texture.width, c->define_texture.height,
+                                         c->define_texture.format,
+                                         pixel_data);
+#endif
+        hasher->salt = ctx_strhash (c->define_texture.eid, 0);
+        }
+        break;
+      case CTX_TEXTURE:
+        //fprintf (stderr, "sett %s\n", c->texture.eid);
+    //  ctx_rasterizer_set_texture (rasterizer, c->texture.eid,
+    //                              c->texture.x, c->texture.y);
+        hasher->salt = ctx_strhash (c->texture.eid, 0);
+        rasterizer->comp_op = NULL;
         break;
     }
   ctx_interpret_pos_bare (rasterizer->state, entry, NULL);

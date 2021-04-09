@@ -497,9 +497,11 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->image.buffer;
+#if 0
   ctx_assert (rasterizer);
   ctx_assert (g);
   ctx_assert (buffer);
+#endif
   int u = x - g->image.x0;
   int v = y - g->image.y0;
   if ( u < 0 || v < 0 ||

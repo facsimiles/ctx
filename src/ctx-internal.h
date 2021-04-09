@@ -694,6 +694,7 @@ struct _CtxHasher
   int           cols;
   int           rows;
   uint8_t      *hashes;
+  int           salt;
 };
 
 #if CTX_RASTERIZER
