@@ -2091,7 +2091,6 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
                                   CTX_CLIP_FORMAT);
   }
 
-  // for now only one level of clipping is supported
   {
 
   int prev_x = 0;
@@ -2150,8 +2149,6 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
                                          rasterizer->state->gstate.clip_max_x);
   rasterizer->state->gstate.clip_max_y = ctx_mini (maxy,
                                          rasterizer->state->gstate.clip_max_y);
-//done:
-
 }
 
 CTX_STATIC void
