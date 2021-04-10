@@ -4860,7 +4860,7 @@ int vt_poll (VT *vt, int timeout)
   long ticks = start_ticks;
   while (remaining_chars > 0 &&
          vt_waitdata (vt, 0) &&
-         ticks - start_ticks < timeout)
+         ( ticks - start_ticks < timeout ||  vt->state == vt_state_ctx))
     {
   if (vt->in_smooth_scroll)
     {
@@ -4879,6 +4879,12 @@ int vt_poll (VT *vt, int timeout)
       // XXX allow state to break out in ctx mode on flush
       got_data+=len;
       remaining_chars -= len;
+      if (vt->state == vt_state_ctx) {
+         if (remaining_chars < read_size)
+         {
+           remaining_chars = read_size;
+         }
+      }
       //audio_task (vt, 0);
       ticks = ctx_ticks ();
     }

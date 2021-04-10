@@ -18,7 +18,7 @@ LIBS   = -lz -lm -lpthread
 #LIBS+= -lasan
 
 OFLAGS_HARD=-O3
-OFLAGS_LIGHT=-Os
+OFLAGS_LIGHT=-O3
 #OFLAGS_HARD=-O3
 #OFLAGS_LIGHT=-O2
 

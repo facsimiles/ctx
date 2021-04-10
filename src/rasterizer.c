@@ -2121,7 +2121,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
   if (CTX_CLIP_FORMAT == CTX_FORMAT_GRAY1)
   {
-    for (int i = 0; i < rasterizer->blit_width * rasterizer->blit_height/8; i++)
+    int count = rasterizer->blit_width * rasterizer->blit_height / 8;
+    for (int i = 0; i < count; i++)
     {
       ((uint8_t*)rasterizer->clip_buffer->data)[i] =
       (((uint8_t*)rasterizer->clip_buffer->data)[i] &
@@ -2130,7 +2131,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   }
   else
   {
-    for (int i = 0; i < rasterizer->blit_width * rasterizer->blit_height; i++)
+    int count = rasterizer->blit_width * rasterizer->blit_height;
+    for (int i = 0; i < count; i++)
     {
       ((uint8_t*)rasterizer->clip_buffer->data)[i] =
       (((uint8_t*)rasterizer->clip_buffer->data)[i] *
