@@ -2340,9 +2340,12 @@ qagain:
                   {
                     vt->current_line->ctx = ctx_new ();
                     vt->current_line->ctx_copy = ctx_new ();
-                    ctx_set_texture_cache (vt->current_line->ctx_copy, vt->current_line->ctx);
+                    //ctx_set_texture_cache (vt->current_line->ctx_copy, vt->current_line->ctx);
                     _ctx_set_transformation (vt->current_line->ctx, 0);
                     _ctx_set_transformation (vt->current_line->ctx_copy, 0);
+
+                    ctx_set_texture_cache (vt->current_line->ctx, vt->ctx);
+                    ctx_set_texture_cache (vt->current_line->ctx_copy, vt->ctx);
                   }
                 if (vt->ctxp)
                   ctx_parser_free (vt->ctxp);
@@ -2744,7 +2747,7 @@ vtcmd_set_double_width_single_height_line
 static void vtcmd_set_led (VT *vt, const char *sequence)
 {
   int val = 0;
-  fprintf (stderr, "%s\n", sequence);
+  //fprintf (stderr, "%s\n", sequence);
   for (const char *s = sequence; *s; s++)
     {
       switch (*s)
@@ -2788,7 +2791,7 @@ static void vtcmd_DECELR (VT *vt, const char *sequence)
 
 static void vtcmd_graphics (VT *vt, const char *sequence)
 {
-  fprintf (stderr, "gfx intro [%s]\n",sequence);
+  fprintf (stderr, "gfx intro [%s]\n",sequence); // maybe implement such as well?
 }
 
 static void vtcmd_report (VT *vt, const char *sequence)
@@ -7228,22 +7231,21 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     ctx_rectangle (ctx, x0, y0 - vt->scroll * vt->ch, vt->cw * vt->cols,
                                     vt->ch * vt->rows);
                     ctx_clip (ctx);
-                    // we give each texture a unique-id - if we use more ids than
-                    // there is, ctx will alias the first image.
-                    // passing NULL as eid, makes the texture content addressed
-                    char texture_n[65]; // and returned in nexture_n
+                    char texture_n[65]; 
 
                     sprintf (texture_n, "vtimg%i", image->eid_no);
                     ctx_rectangle (ctx, u, v, image->width, image->height);
                     ctx_translate (ctx, u, v);
                      
+                    //replace this texture_n with NULL to
+                    // be content addressed - but bit slower
                     ctx_define_texture (ctx, texture_n, image->width,
                                         image->height,
                                         0,
                                         image->kitty_format == 32 ?
                                                  CTX_FORMAT_RGBA8 :
                                                  CTX_FORMAT_RGB8,
-                                        image->data, NULL);
+                                        image->data, texture_n);
                     ctx_fill (ctx);
 
                     ctx_restore (ctx);

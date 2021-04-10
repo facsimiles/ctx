@@ -267,6 +267,9 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
     else if (!strcmp (eid_info->eid, eid) &&
              ctx->frame - eid_info->frame < 2)
     {
+    FILE  *f  = fopen ("/tmp/l", "a");
+      fprintf (f, "%i good:%i %i %s\n", getpid(), ctx->frame, eid_info->frame, eid);
+    fclose (f);
       eid_info->frame = ctx->frame;
       if (w) *w = eid_info->width;
       if (h) *h = eid_info->height;
@@ -276,7 +279,9 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
   while (to_remove)
   {
     CtxEidInfo *eid_info = (CtxEidInfo*)to_remove->data;
-    //fprintf (stderr, "client removing %s\n", eid_info->eid);
+    FILE  *f  = fopen ("/tmp/l", "a");
+    fprintf (f, "%i client removing %s\n", getpid(), eid_info->eid);
+    fclose (f);
     free (eid_info->eid);
     free (eid_info);
     ctx_list_remove (&ctx->eid_db, eid_info);
@@ -306,14 +311,22 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
     eid=ascii;
   }
 
+    FILE  *f = fopen ("/tmp/l", "a");
   if (ctx_eid_valid (ctx, eid, 0, 0))
   {
     ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
+    fprintf (f, "setting texture eid %s\n", eid);
   }
   else
   {
-    fprintf (stderr, "tried setting invalid texture eid %s\n", eid);
+    fprintf (f, "tried setting invalid texture eid %s\n", eid);
   }
+    fclose (f);
+}
+int
+_ctx_frame (Ctx *ctx)
+{
+        return ctx->frame;
 }
 
 void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int stride, int format, void *data, char *ret_eid)
