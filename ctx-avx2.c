@@ -10,6 +10,7 @@
 #include <math.h>
 
 #define CTX_GRADIENT_CACHE       0
+#define CTX_NATIVE_GRAYA8        1
 #define CTX_ENABLE_CMYK          1
 #define CTX_ENABLE_CM            1
 #define CTX_MATH                 1

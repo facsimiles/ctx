@@ -30,6 +30,9 @@
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1
 #define CTX_EVENTS               1
+
+#define CTX_NATIVE_GRAYA8        1
+
 #define CTX_GRADIENT_CACHE       0 // does not work well with threads
 #define CTX_BITPACK_PACKER       0 // turned of due to asan report
 #define CTX_ENABLE_CMYK          1

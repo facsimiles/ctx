@@ -821,7 +821,7 @@ ctx_init_uv (CtxRasterizer *rasterizer,
   *vd = (v1-*v0) / (count);
 }
 
-#if 0
+#if 1
 static void
 ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
@@ -1003,7 +1003,7 @@ ctx_porter_duff_factors(mode, foo, bar)\
   }\
 }
 
-#if 0
+#if 1
 static void
 ctx_u8_source_over_normal_color (int components,
                                  CtxRasterizer         *rasterizer,
@@ -4262,12 +4262,9 @@ inline static void
 ctx_RGBA8_to_GRAY8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
 {
   uint8_t *pixel = (uint8_t *) buf;
-  while (count--)
+  for (int i = 0; i < count; i ++)
     {
-      pixel[0] = ctx_u8_color_rgb_to_gray (rasterizer->state, rgba);
-      // for internal uses... using only green would work
-      pixel+=1;
-      rgba +=4;
+      pixel[i] = ctx_u8_color_rgb_to_gray (rasterizer->state, rgba + i * 4);
     }
 }
 #endif
@@ -4414,13 +4411,13 @@ ctx_GRAYA8_clear_normal (CTX_COMPOSITE_ARGUMENTS)
 }
 
 static void
-ctx_GRAYA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
+CTX_COMPOSITE_SUFFIX (ctx_GRAYA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENTS)
 {
   ctx_u8_source_over_normal_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
 }
 
 static void
-ctx_GRAYA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
+CTX_COMPOSITE_SUFFIX (ctx_GRAYA8_source_over_normal_opaque_color) (CTX_COMPOSITE_ARGUMENTS)
 {
   ctx_u8_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
 }
@@ -4448,7 +4445,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
   int components = 2;
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
-      rasterizer->comp_op = ctx_GRAYA8_porter_duff_color;
+      rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_GRAYA8_porter_duff_color);
       rasterizer->fragment = NULL;
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source_fill.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
@@ -4460,7 +4457,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
   else
   {
     rasterizer->fragment = ctx_rasterizer_get_fragment_GRAYA8 (rasterizer);
-    rasterizer->comp_op  = ctx_GRAYA8_porter_duff_generic;
+    rasterizer->comp_op  = CTX_COMPOSITE_SUFFIX(ctx_GRAYA8_porter_duff_generic);
   }
 
 #if CTX_INLINED_NORMAL
@@ -4485,19 +4482,19 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
               if (rasterizer->color[components-1] == 0)
                 rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop);
               else if (rasterizer->color[components-1] == 255)
-                rasterizer->comp_op = ctx_GRAYA8_source_over_normal_opaque_color;
+                rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_GRAYA8_source_over_normal_opaque_color);
               else
-                rasterizer->comp_op = ctx_GRAYA8_source_over_normal_color;
+                rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_GRAYA8_source_over_normal_color);
               rasterizer->fragment = NULL;
             }
             else
             {
-              rasterizer->comp_op = ctx_GRAYA8_porter_duff_color_normal;
+              rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_GRAYA8_porter_duff_color_normal);
               rasterizer->fragment = NULL;
             }
             break;
           default:
-            rasterizer->comp_op = ctx_GRAYA8_porter_duff_generic_normal;
+            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_GRAYA8_porter_duff_generic_normal);
             break;
         }
         break;
@@ -4505,11 +4502,11 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
         switch (gstate->source_fill.type)
         {
           case CTX_SOURCE_COLOR:
-            rasterizer->comp_op = ctx_GRAYA8_porter_duff_color;
+            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_GRAYA8_porter_duff_color);
             rasterizer->fragment = NULL;
             break;
           default:
-            rasterizer->comp_op = ctx_GRAYA8_porter_duff_generic;
+            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_GRAYA8_porter_duff_generic);
             break;
         }
         break;
