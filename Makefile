@@ -18,7 +18,7 @@ LIBS   = -lz -lm -lpthread
 #LIBS+= -lasan
 
 OFLAGS_HARD=-O3
-OFLAGS_LIGHT=-O3
+OFLAGS_LIGHT=-O2
 #OFLAGS_HARD=-O3
 #OFLAGS_LIGHT=-O2
 
@@ -95,7 +95,7 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/ctx
 
 tools/%: tools/%.c ctx-nofont.h 
-	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings)
+	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DNO_LIBCURL
 
 ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) $(OFLAGS_LIGHT)

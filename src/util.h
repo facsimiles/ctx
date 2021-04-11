@@ -129,31 +129,7 @@ __ctx_file_get_contents (const char     *path,
 int
 ctx_get_contents (const char     *uri,
                   unsigned char **contents,
-                  long           *length)
-{
-  char temp_uri[PATH_MAX];
-  if (uri[0] == '/')
-  {
-    snprintf (temp_uri, sizeof (temp_uri)-1, "file://%s", uri);
-    uri = temp_uri;
-  }
-  for (CtxList *l = registered_contents; l; l = l->next)
-  {
-    CtxFileContent *c = l->data;
-    if (!strcmp (c->path, uri))
-    {
-      contents = malloc (c->length+1);
-      contents[c->length]=0;
-      if (length) *length = c->length;
-      return 0;
-    }
-  }
-
-  if (!strncmp (uri, "file://", 7))
-    return __ctx_file_get_contents (uri + 7, contents, length);
-  else
-    return __ctx_file_get_contents (uri, contents, length);
-}
+                  long           *length);
 
 
 

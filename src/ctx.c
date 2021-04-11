@@ -504,12 +504,14 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
   if (!strncmp (path, "file://", 7))
   {
     pixels = stbi_load (path + 7, &w, &h, &components, 0);
+          fprintf (stderr, "%p %i %i\n", pixels, w, h);
   }
   else
   {
     unsigned char *data = NULL;
     long length = 0;
     ctx_get_contents (path, &data, &length);
+    fprintf (stderr, "%p %li!\n", data, length);
     if (data)
     {
        pixels = stbi_load_from_memory (data, length, &w, &h, &components, 0);
@@ -2041,7 +2043,80 @@ void ctx_set_transform (Ctx *ctx, float a, float b, float c, float d, float e, f
   ctx_identity (ctx);
   ctx_apply_transform (ctx, a, b, c, d, e, f);
 }
+#ifndef NO_LIBCURL
+#include <curl/curl.h>
+static size_t
+ctx_string_append_callback (void *contents, size_t size, size_t nmemb, void *userp)
+{
+  CtxString *string = (CtxString*)userp;
+  ctx_string_append_data ((CtxString*)string, contents, size * nmemb);
+  return size * nmemb;
+}
 
+#endif
+
+int
+ctx_get_contents (const char     *uri,
+                  unsigned char **contents,
+                  long           *length)
+{
+  char temp_uri[PATH_MAX];
+  if (uri[0] == '/')
+  {
+    snprintf (temp_uri, sizeof (temp_uri)-1, "file://%s", uri);
+    uri = temp_uri;
+  }
+  for (CtxList *l = registered_contents; l; l = l->next)
+  {
+    CtxFileContent *c = l->data;
+    if (!strcmp (c->path, uri))
+    {
+      contents = malloc (c->length+1);
+      contents[c->length]=0;
+      if (length) *length = c->length;
+      return 0;
+    }
+  }
+
+  if (!strncmp (uri, "file://", 7))
+    return __ctx_file_get_contents (uri + 7, contents, length);
+  else
+  {
+#ifndef NO_LIBCURL
+  CURL *curl = curl_easy_init ();
+  CURLcode res;
+
+  curl_easy_setopt(curl, CURLOPT_URL, uri);
+  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    CtxString *string = ctx_string_new ("");
+
+      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, ctx_string_append_callback);
+   /* we pass our 'chunk' struct to the callback function */
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)string);
+
+  curl_easy_setopt(curl, CURLOPT_USERAGENT, "ctx/0.0");
+
+   res = curl_easy_perform(curl);
+  /* check for errors */
+  if(res != CURLE_OK) {
+          fprintf(stderr, "curl_easy_perform() failed: %s\n",
+            curl_easy_strerror(res));
+     curl_easy_cleanup (curl);
+  }
+  else
+  {
+     *contents = (char*)string->str;
+     *length = string->length;
+     ctx_string_free (string, 0);
+     curl_easy_cleanup (curl);
+     return 0;
+  }
+#else
+    return __ctx_file_get_contents (uri, contents, length);
+#endif
+  }
+  return -1;
+}
 
 
 #endif
