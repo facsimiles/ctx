@@ -62,7 +62,7 @@ void ctx_buffer_deinit (CtxBuffer *buffer)
     buffer->free_func (buffer->data, buffer->user_data);
   if (buffer->eid)
   {
-    //fprintf (stderr, "freeing %s\n", buffer->eid);
+    fprintf (stderr, "freeing %s\n", buffer->eid);
     free (buffer->eid);
   }
   buffer->eid = NULL;

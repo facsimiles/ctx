@@ -396,6 +396,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
 
   {
     CtxEntry *commands;
+  fprintf (stderr, "@dt %p %p %p %s %ix%i\n", ctx, ctx->texture_cache, ctx->renderer,  eid, width, height);
     int command_size = 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8;
     if (ctx->renderer && ctx->renderer->process)
     {
@@ -411,7 +412,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
      * we should cut this down to one copy, direct to the drawlist.
      *
      */
-    //ctx_memset (commands, 0, sizeof (commands));
+    ctx_memset (commands, 0, sizeof (commands));
     commands[0] = ctx_u32 (CTX_DEFINE_TEXTURE, width, height);
     commands[1].data.u16[0] = format;
 
@@ -454,6 +455,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     eid_info->width      = width;
     eid_info->height     = height;
     eid_info->frame      = ctx->texture_cache->frame;
+    //fprintf (stderr, "%i\n", eid_info->frame);
     ctx_list_prepend (&ctx->texture_cache->eid_db, eid_info);
   }
 
@@ -516,6 +518,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     {
        pixels = stbi_load_from_memory (data, length, &w, &h, &components, 0);
        free (data);
+          fprintf (stderr, "%p %i %i\n", pixels, w, h);
     }
   }
 

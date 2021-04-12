@@ -1813,7 +1813,7 @@ static void card_textures (ITK *itk, int frame_no)
     ctx_translate (ctx, 0, TEXTURE_H * 1.2);
 
     ctx_image_smoothing (ctx, 0);
-    ctx_draw_image (ctx, "/home/pippin/t.gif",
+    ctx_draw_image (ctx, "file:///home/pippin/src/ctx/tig.png",
                          0.0, 0.0, 6120.0, 6120.0);
 #endif
 
