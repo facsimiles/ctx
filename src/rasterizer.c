@@ -471,18 +471,7 @@ ctx_rasterizer_find_texture (CtxRasterizer *rasterizer,
     if (rasterizer->texture_source->texture[no].data &&
         rasterizer->texture_source->texture[no].eid &&
         !strcmp (rasterizer->texture_source->texture[no].eid, eid))
-    {
       return no;
-    }
-    else
-    {
-            if (0)
-      if (rasterizer->texture_source->texture[no].eid)
-        fprintf (stderr, "mismatchtex %i %s != %s\n",  no,
-          rasterizer->texture_source->texture[no].eid, eid
-        );
-    }
-
   }
   return -1;
 }
@@ -522,7 +511,6 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                                            int format,
                                            char unsigned *data)
 {
-  fprintf (stderr, "dt %p %s %i %i %i %p %i %i %i %i\n", rasterizer->texture_source, eid, width, height, format, data, data[0], data[1], data[2], data[3]);
   _ctx_texture_lock (); // we're using the same texture_source from all threads, keeping allocaitons down
                         // need synchronizing (it could be better to do a pre-pass)
   ctx_texture_init (rasterizer->texture_source,
@@ -1347,7 +1335,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
              (entry1->data.s16[3] == entry2->data.s16[3]) &&
              (entry2->data.s16[2] == entry3->data.s16[2]) &&
              ((entry3->data.s16[2] & (CTX_SUBDIV-1)) == 0)  &&
-             ((entry3->data.s16[3] & (aa-1)) == 0)
+             ((entry3->data.s16[3] & (aa-1)) == 0) 
 #if CTX_ENABLE_SHADOW_BLUR
              && !rasterizer->in_shadow
 #endif
@@ -2146,16 +2134,16 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
     int x0 = 0;
     int y0 = 0;
     int width = -1;
-    int height = -1;
     int next_stage = 0;
+    uint8_t *p_data = (uint8_t*)rasterizer->clip_buffer->data;
+    uint8_t *data = (uint8_t*)clip_buffer->data;
 
     i=0;
     /* find upper left */
     for (; i < count && !next_stage && maybe_rect; i++)
     {
-      uint8_t val =(((uint8_t*)rasterizer->clip_buffer->data)[i] *
-                     ((uint8_t*)clip_buffer->data)[i])/255;
-      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+      uint8_t val = (p_data[i] * data[i])/255;
+      data[i] = val;
 
       switch (val)
       {
@@ -2178,9 +2166,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
     {
       int x = i % rasterizer->blit_width;
       int y = i / rasterizer->blit_width;
-      uint8_t val =(((uint8_t*)rasterizer->clip_buffer->data)[i] *
-                     ((uint8_t*)clip_buffer->data)[i])/255;
-      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+      uint8_t val = (p_data[i] * data[i])/255;
+      data[i] = val;
 
       if (y == y0)
       {
@@ -2204,10 +2191,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
     for (; i < count && !next_stage && maybe_rect; i++)
     {
       int x = i % rasterizer->blit_width;
-      int y = i / rasterizer->blit_width;
-      uint8_t val =(((uint8_t*)rasterizer->clip_buffer->data)[i] *
-                     ((uint8_t*)clip_buffer->data)[i])/255;
-      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+      uint8_t val = (p_data[i] * data[i])/255;
+      data[i] = val;
 
       if (x < x0)
       {
@@ -2218,17 +2203,14 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
       } else {
         if (val != 0){ maybe_rect = 0; next_stage = 1; }
       }
-
-      height = y - y0 + 1;
     }
 
     next_stage = 0;
     /* foot */
     for (; i < count && !next_stage && maybe_rect; i++)
     {
-      uint8_t val =(((uint8_t*)rasterizer->clip_buffer->data)[i] *
-                     ((uint8_t*)clip_buffer->data)[i])/255;
-      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+      uint8_t val = (p_data[i] * data[i])/255;
+      data[i] = val;
 
       if (val != 0){ maybe_rect = 0; next_stage = 1; }
     }
@@ -2236,20 +2218,12 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
     for (; i < count; i++)
     {
-      uint8_t val = (((uint8_t*)rasterizer->clip_buffer->data)[i] *
-                    ((uint8_t*)clip_buffer->data)[i])/255;
-      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+      uint8_t val = (p_data[i] * data[i])/255;
+      data[i] = val;
     }
 
-    if (maybe_rect && width >0 && height >0)
-    {
+    if (maybe_rect)
        rasterizer->clip_rectangle = 1;
-       rasterizer->clip_x = x0;
-       rasterizer->clip_y = y0;
-       rasterizer->clip_width = width;
-       rasterizer->clip_height = height;
-    }
-
   }
   if (!we_made_it)
    ctx_buffer_free (clip_buffer);
@@ -2263,18 +2237,6 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
                                          rasterizer->state->gstate.clip_max_x);
   rasterizer->state->gstate.clip_max_y = ctx_mini (maxy,
                                          rasterizer->state->gstate.clip_max_y);
-
-  if (rasterizer->clip_rectangle && 0)
-  {
-    fprintf (stderr, "CR0: %i,%i %ix%i\n", rasterizer->clip_x, rasterizer->clip_y,
-                                           rasterizer->clip_width, rasterizer->clip_height);
-    fprintf (stderr, "CR1: %i,%i %ix%i\n", 
-  rasterizer->state->gstate.clip_min_x,
-  rasterizer->state->gstate.clip_min_y,
-  rasterizer->state->gstate.clip_max_x - rasterizer->state->gstate.clip_min_x +1,
-  rasterizer->state->gstate.clip_max_y - rasterizer->state->gstate.clip_min_y +1);
-             
-  }
 }
 
 CTX_STATIC void
@@ -2785,7 +2747,6 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         break;
       case CTX_DEFINE_TEXTURE:
         {
-        fprintf (stderr, "%p deft %s\n", rasterizer, c->define_texture.eid);
           uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
           ctx_rasterizer_define_texture (rasterizer, c->define_texture.eid,
                                          c->define_texture.width, c->define_texture.height,
@@ -2794,7 +2755,6 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         }
         break;
       case CTX_TEXTURE:
-        fprintf (stderr, "%p sett %s\n", rasterizer, c->texture.eid);
         ctx_rasterizer_set_texture (rasterizer, c->texture.eid,
                                     c->texture.x, c->texture.y);
         rasterizer->comp_op = NULL;

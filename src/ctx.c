@@ -334,7 +334,6 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
   uint8_t hash[20]="";
   char ascii[41]="";
   int dst_stride = width;
-  //fprintf (stderr, "DT '%s' %i %i %i \'%s\'\n", eid, width, height, format, (char*)data);
 
   dst_stride = ctx_pixel_format_get_stride ((CtxPixelFormat)format, width);
   if (stride <= 0)
@@ -396,7 +395,6 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
 
   {
     CtxEntry *commands;
-  fprintf (stderr, "@dt %p %p %p %s %ix%i\n", ctx, ctx->texture_cache, ctx->renderer,  eid, width, height);
     int command_size = 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8;
     if (ctx->renderer && ctx->renderer->process)
     {
@@ -407,12 +405,12 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
        commands = NULL;
        ctx_drawlist_resize (&ctx->drawlist, ctx->drawlist.count + command_size);
        commands = &(ctx->drawlist.entries[ctx->drawlist.count]);
+       memset (commands, 0, sizeof (CtxEntry) * command_size);
     }
     /* bottleneck,  we can avoid copying sometimes - and even when copying
      * we should cut this down to one copy, direct to the drawlist.
      *
      */
-    ctx_memset (commands, 0, sizeof (commands));
     commands[0] = ctx_u32 (CTX_DEFINE_TEXTURE, width, height);
     commands[1].data.u16[0] = format;
 
@@ -506,19 +504,16 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
   if (!strncmp (path, "file://", 7))
   {
     pixels = stbi_load (path + 7, &w, &h, &components, 0);
-          fprintf (stderr, "%p %i %i\n", pixels, w, h);
   }
   else
   {
     unsigned char *data = NULL;
     long length = 0;
     ctx_get_contents (path, &data, &length);
-    fprintf (stderr, "%p %li!\n", data, length);
     if (data)
     {
        pixels = stbi_load_from_memory (data, length, &w, &h, &components, 0);
        free (data);
-          fprintf (stderr, "%p %i %i\n", pixels, w, h);
     }
   }
 
@@ -2108,7 +2103,7 @@ ctx_get_contents (const char     *uri,
   }
   else
   {
-     *contents = (char*)string->str;
+     *contents = (unsigned char*)string->str;
      *length = string->length;
      ctx_string_free (string, 0);
      curl_easy_cleanup (curl);
