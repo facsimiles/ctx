@@ -682,7 +682,8 @@ struct _CtxRasterizer
   CtxBuffer *clip_buffer;
 #endif
 
-  uint8_t *clip_mask;
+  int clip_rectangle;
+
 #if CTX_SHAPE_CACHE
   CtxShapeCache shape_cache;
 #endif

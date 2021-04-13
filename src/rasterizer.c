@@ -1431,7 +1431,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
         int ewidth = x1 - x0;
         if (ewidth>0)
         {
-          if (rasterizer->clip_buffer)
+          if (rasterizer->clip_buffer && !rasterizer->clip_rectangle)
           {
           uint8_t composite[ewidth];
           for (int y = y0; y < y1; y++)
@@ -2124,6 +2124,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
     ctx_free (ctx);
   }
 
+  rasterizer->clip_rectangle = 0;
+
   if (CTX_CLIP_FORMAT == CTX_FORMAT_GRAY1)
   {
     int count = rasterizer->blit_width * rasterizer->blit_height / 8;
@@ -2137,12 +2139,117 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   else
   {
     int count = rasterizer->blit_width * rasterizer->blit_height;
-    for (int i = 0; i < count; i++)
+
+    int maybe_rect = 1;
+
+    int i;
+    int x0 = 0;
+    int y0 = 0;
+    int width = -1;
+    int height = -1;
+    int next_stage = 0;
+
+    i=0;
+    /* find upper left */
+    for (; i < count && !next_stage && maybe_rect; i++)
     {
-      ((uint8_t*)rasterizer->clip_buffer->data)[i] =
-      (((uint8_t*)rasterizer->clip_buffer->data)[i] *
-      ((uint8_t*)clip_buffer->data)[i])/255;
+      uint8_t val =(((uint8_t*)rasterizer->clip_buffer->data)[i] *
+                     ((uint8_t*)clip_buffer->data)[i])/255;
+      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+
+      switch (val)
+      {
+        case 255:
+                {
+                  x0 = i % rasterizer->blit_width;
+                  y0 = i / rasterizer->blit_width;
+                  next_stage = 1;
+                }
+                break;
+        case 0: break;
+        default: maybe_rect = 0;
+                break;
+      }
     }
+
+    next_stage = 0;
+    /* figure out with */
+    for (; i < count && !next_stage && maybe_rect; i++)
+    {
+      int x = i % rasterizer->blit_width;
+      int y = i / rasterizer->blit_width;
+      uint8_t val =(((uint8_t*)rasterizer->clip_buffer->data)[i] *
+                     ((uint8_t*)clip_buffer->data)[i])/255;
+      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+
+      if (y == y0)
+      {
+        switch (val)
+        {
+          case 255:
+                  width = x - x0 + 1;
+                  break;
+          case 0: next_stage = 1;
+                  break;
+          default: maybe_rect = 0;
+                  break;
+        }
+        if (x % rasterizer->blit_width == rasterizer->blit_width - 1) next_stage = 1;
+      }
+      else next_stage = 1;
+    }
+
+    next_stage = 0;
+    /* body */
+    for (; i < count && !next_stage && maybe_rect; i++)
+    {
+      int x = i % rasterizer->blit_width;
+      int y = i / rasterizer->blit_width;
+      uint8_t val =(((uint8_t*)rasterizer->clip_buffer->data)[i] *
+                     ((uint8_t*)clip_buffer->data)[i])/255;
+      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+
+      if (x < x0)
+      {
+        if (val != 0){ maybe_rect = 0; next_stage = 1; }
+      } else if (x < x0 + width)
+      {
+        if (val != 255){ if (val != 0) maybe_rect = 0; next_stage = 1; }
+      } else {
+        if (val != 0){ maybe_rect = 0; next_stage = 1; }
+      }
+
+      height = y - y0 + 1;
+    }
+
+    next_stage = 0;
+    /* foot */
+    for (; i < count && !next_stage && maybe_rect; i++)
+    {
+      uint8_t val =(((uint8_t*)rasterizer->clip_buffer->data)[i] *
+                     ((uint8_t*)clip_buffer->data)[i])/255;
+      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+
+      if (val != 0){ maybe_rect = 0; next_stage = 1; }
+    }
+
+
+    for (; i < count; i++)
+    {
+      uint8_t val = (((uint8_t*)rasterizer->clip_buffer->data)[i] *
+                    ((uint8_t*)clip_buffer->data)[i])/255;
+      ((uint8_t*)rasterizer->clip_buffer->data)[i] = val;
+    }
+
+    if (maybe_rect && width >0 && height >0)
+    {
+       rasterizer->clip_rectangle = 1;
+       rasterizer->clip_x = x0;
+       rasterizer->clip_y = y0;
+       rasterizer->clip_width = width;
+       rasterizer->clip_height = height;
+    }
+
   }
   if (!we_made_it)
    ctx_buffer_free (clip_buffer);
@@ -2156,6 +2263,18 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
                                          rasterizer->state->gstate.clip_max_x);
   rasterizer->state->gstate.clip_max_y = ctx_mini (maxy,
                                          rasterizer->state->gstate.clip_max_y);
+
+  if (rasterizer->clip_rectangle && 0)
+  {
+    fprintf (stderr, "CR0: %i,%i %ix%i\n", rasterizer->clip_x, rasterizer->clip_y,
+                                           rasterizer->clip_width, rasterizer->clip_height);
+    fprintf (stderr, "CR1: %i,%i %ix%i\n", 
+  rasterizer->state->gstate.clip_min_x,
+  rasterizer->state->gstate.clip_min_y,
+  rasterizer->state->gstate.clip_max_x - rasterizer->state->gstate.clip_min_x +1,
+  rasterizer->state->gstate.clip_max_y - rasterizer->state->gstate.clip_min_y +1);
+             
+  }
 }
 
 CTX_STATIC void
@@ -2172,7 +2291,6 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
       ctx_state_set_blob (rasterizer->state, CTX_clip, (uint8_t*)temp, sizeof(temp));
     }
   ctx_rasterizer_clip_apply (rasterizer, temp);
-
   ctx_rasterizer_reset (rasterizer);
   if (rasterizer->preserve)
     {
