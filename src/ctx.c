@@ -550,16 +550,26 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
   int tex_height = 0;
   if (ctx_eid_valid (ctx, eid , &tex_width, &tex_height))
   {
-    if (width && height)
+    if (width > 0.0 && height > 0.0)
     {
       ctx_save (ctx);
+#if 0
       if (clip_width > 0.0f)
       {
         ctx_rectangle (ctx, clip_x, clip_y, clip_width, clip_height);
         ctx_clip (ctx);
       }
+#endif
       ctx_rectangle (ctx, x, y, width, height);
-      ctx_scale (ctx, width/tex_width, height/tex_height);
+      if (clip_width > 0.0f)
+      {
+        ctx_translate (ctx, -clip_x, -clip_y);
+        ctx_scale (ctx, width/clip_width, height/clip_height);
+      }
+      else
+      {
+        ctx_scale (ctx, width/tex_width, height/tex_height);
+      }
       ctx_texture (ctx, eid, x, y);
       ctx_fill (ctx);
       ctx_restore (ctx);
