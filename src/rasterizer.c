@@ -1505,6 +1505,18 @@ ctx_rasterizer_triangle (CtxRasterizer *rasterizer,
 }
 #endif
 
+
+typedef struct _CtxTermGlyph CtxTermGlyph;
+
+struct _CtxTermGlyph
+{
+  uint32_t unichar;
+  int      col;
+  int      row;
+  uint8_t  rgba_bg[4];
+  uint8_t  rgba_fg[4];
+};
+
 static int _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke);
 static void
 ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
@@ -1520,19 +1532,29 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   if (tx  > rasterizer->blit_x + rasterizer->blit_width ||
       ty  > rasterizer->blit_y + rasterizer->blit_height)
           return;
+
+#if CTX_BRAILLE_TEXT
+  if (rasterizer->term_glyphs && !stroke)
+  {
+    int col = rasterizer->x / 2 + 1;
+    int row = rasterizer->y / 4 + 1;
+  //for (int i = 0; string[i]; i++, col++)
+    {
+      CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
+      ctx_list_prepend (&rasterizer->glyphs, glyph);
+      glyph->unichar = unichar;
+      glyph->col = col;
+      glyph->row = row;
+      ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color,
+                      glyph->rgba_fg);
+    }
+    //_ctx_text (rasterizer->ctx, string, stroke, 1);
+  }
+  else
+#endif
   _ctx_glyph (rasterizer->ctx, unichar, stroke);
 }
 
-typedef struct _CtxTermGlyph CtxTermGlyph;
-
-struct _CtxTermGlyph
-{
-  uint32_t unichar;
-  int      col;
-  int      row;
-  uint8_t  rgba_bg[4];
-  uint8_t  rgba_fg[4];
-};
 
 static void
 _ctx_text (Ctx        *ctx,

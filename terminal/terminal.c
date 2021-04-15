@@ -1788,7 +1788,7 @@ int terminal_main (int argc, char **argv)
 
   if (ctx_renderer_is_braille (ctx) && font_size <= 0)
   {
-    font_size = 11.0;
+    font_size = 4.0;
   }
 
   if (cols <= 0)
