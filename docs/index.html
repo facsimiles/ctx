@@ -44,20 +44,33 @@
       The clock in the above screenshot is <a href='https://ctx.graphics/file/clients/clock.sh.html'>a shellscript</a>.
       </p>
 
-      <h3>library</h3>
+      <h3>Library</h3>
       <p>
-      Ctx is usable as a single header library, to be dropped into a source tree, <a href='ctx.h'>ctx header/library</a>, it can also be installed system-wide.
-      The ctx library abstracts over multiple graphics output and
-      input backends, including SDL2 (X11/wayland), fbdev/DRM and as a client
-      program inside ctx terminal. The event system provides the ability to
-      install callbacks on the active path as well as registering key-bindings,
-      providing a native correspondent to HTML5 canvas with richer events.
+      Ctx is usable as a single header library, to be dropped into a source
+      tree, <a href='ctx.h'>ctx header/library</a>, it can also be installed
+      system-wide.
+      </p>
+      
+      <p>Applications written using the C library can run either inside the
+      ctx terminal, or stand-alone using SDL2, fbdev/DRM or in-terminal
+      braille as output.
+
+      <p>Mouse and touch events are registered for the currently active path,
+      with propagation control to earlier registered interactions.</p>
+
+      <p>Running directly with the SDL2 or framebuffer backends
+      has higher performance than going through the terminal abstraction,
+      reducing this gap through tuning and refactoring is a work in progress,
+      for applications the difference between 12fps and 120fps is smaller
+      and small rather than global updates are done.
       </p>
 
       <h3>javascript</h3>
+
       <p>Through the inclusion of duktape, ctx is able to
       execute some interactive HTML5 Canvases unmodified or with slight
-      adaptations as native applications.
+      adaptations as native applications. One example that runs
+      unmodified is <a href='https://github.com/rembound/Bubble-Shooter-HTML5'>github.com/rembound/Bubble-Shooter-HTML5</a>.
       </p>
 
       <p>The self-contained static builds are sufficient to run minimalistic
