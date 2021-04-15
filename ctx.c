@@ -30,7 +30,7 @@
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1
 #define CTX_EVENTS               1
-#define CTX_BRAILLE_TEXT         0
+#define CTX_BRAILLE_TEXT         1
 #define CTX_NATIVE_GRAYA8        1
 
 #define CTX_GRADIENT_CACHE       0 // does not work well with threads

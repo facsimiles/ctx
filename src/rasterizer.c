@@ -1534,7 +1534,18 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
           return;
 
 #if CTX_BRAILLE_TEXT
-  if (rasterizer->term_glyphs && !stroke)
+  float font_size = 0;
+  if (rasterizer->term_glyphs)
+  {
+    float tx = 0;
+    float ty = rasterizer->state->gstate.font_size;
+    _ctx_user_to_device (rasterizer->state, &tx, &ty);
+    font_size = ty;
+  }
+  if (rasterizer->term_glyphs && !stroke &&
+      font_size > 3.5 &&
+      font_size < 4.5 
+    )
   {
     int col = rasterizer->x / 2 + 1;
     int row = rasterizer->y / 4 + 1;
@@ -1565,7 +1576,16 @@ static void
 ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
 {
 #if CTX_BRAILLE_TEXT
-  if (rasterizer->term_glyphs && !stroke)
+  float font_size = 0;
+  if (rasterizer->term_glyphs)
+  {
+  float tx = 0;
+  float ty = rasterizer->state->gstate.font_size;
+  _ctx_user_to_device (rasterizer->state, &tx, &ty);
+  font_size = ty;
+  }
+
+  if (rasterizer->term_glyphs && !stroke && font_size >= 3.5 && font_size < 4.5)
   {
     int col = rasterizer->x / 2 + 1;
     int row = rasterizer->y / 4 + 1;

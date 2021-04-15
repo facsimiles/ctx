@@ -1,6 +1,8 @@
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
+CCACHE=`which ccache`
+
 CFLAGS_warnings= -Wall \
                  -Wextra \
 		 -Wno-array-bounds \
