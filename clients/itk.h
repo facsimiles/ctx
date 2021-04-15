@@ -124,14 +124,11 @@ struct _CtxControl{
   float max;
   float step;
 
-
-
   void (*action)(void *data);
   void (*commit)(ITK *itk, void *data);
   double (*get_val)(void *valp, void *data);
   void(*set_val)(void *valp, double val, void *data);
   void(*finalize)(void *data);
-
 
   void *data;
 };
@@ -171,6 +168,8 @@ struct _ITK{
   float scroll_speed;
 
   int   button_pressed;
+
+  int   active;  // currently in edit-mode of focused widget
 
   int focus_wraparound;
 
@@ -1112,7 +1111,7 @@ void entry_commit (ITK *itk)
       switch (control->type)
       {
         case UI_ENTRY:
-         if (itk->entry_copy)
+         if (itk->active && itk->entry_copy)
          {
            if (control->commit)
            {
@@ -1137,14 +1136,16 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
   CtxControl *control = userdata;
   event->stop_propagate = 1;
 
-  if (itk->entry_copy)
+  if (itk->active)
   {
     entry_commit (itk);
+    itk->active = 0;
   }
   else
   {
     itk->entry_copy = strdup (control->val);
     itk->entry_pos = strlen (control->val);
+    itk->active = 1;
   }
 
   itk_set_focus (itk, control->no);
@@ -1189,7 +1190,8 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
 
   ctx_begin_path (ctx);
   ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
-  if (itk->entry_copy && itk->focus_no == control->no)
+  if (itk->active &&
+      itk->entry_copy && itk->focus_no == control->no)
   {
     int backup = itk->entry_copy[itk->entry_pos];
     char buf[4]="|";
@@ -1427,7 +1429,6 @@ int itk_button (ITK *itk, const char *label)
   }
   }
 
-
   ctx_round_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance, em * 0.33);
   ctx_fill (ctx);
 
@@ -1662,6 +1663,7 @@ void itk_key_up (CtxEvent *event, void *data, void *data2)
   else
   {
     itk_focus (itk, -1);
+    itk->active = 0;
   }
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
@@ -1692,6 +1694,7 @@ void itk_key_down (CtxEvent *event, void *data, void *data2)
   else
   {
     itk_focus (itk, 1);
+    itk->active = 0;
   }
   event->stop_propagate = 1;
   ctx_set_dirty (event->ctx, 1);
@@ -1707,6 +1710,7 @@ void itk_key_tab (CtxEvent *event, void *data, void *data2)
 
   }
   itk_focus (itk, 1);
+  itk->active = 0;
 
   event->stop_propagate = 1;
   ctx_set_dirty (event->ctx, 1);
@@ -1722,6 +1726,7 @@ void itk_key_shift_tab (CtxEvent *event, void *data, void *data2)
 
   }
   itk_focus (itk, -1);
+  itk->active = 0;
 
   event->stop_propagate = 1;
   ctx_set_dirty (event->ctx, 1);
@@ -1743,20 +1748,26 @@ void itk_key_return (CtxEvent *event, void *data, void *data2)
        break;
       case UI_ENTRY:
        {
-         if (itk->entry_copy)
+         if (itk->active)
          {
            entry_commit (itk);
+           itk->active = 0;
          }
          else
          {
            itk->entry_copy = strdup (control->val);
            itk->entry_pos = strlen (control->val);
+           itk->active = 1;
          }
        }
        break;
       case UI_SLIDER:
+        if (itk->active){
+          itk->active = 0;
+        }
+        else
         {
-           // XXX edit value
+          itk->active = 1;
         }
         break;
       case UI_TOGGLE:
@@ -1790,11 +1801,12 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
     case UI_TOGGLE:
     case UI_EXPANDER:
     case UI_CHOICE:
-      itk_key_return (event, data, data2);
+      if (itk->active)
+        itk_key_return (event, data, data2);
       break;
     case UI_ENTRY:
       {
-        if (itk->entry_copy)
+        if (itk->active)
         {
           itk->entry_pos --;
           if (itk->entry_pos < 0) itk->entry_pos = 0;
@@ -1802,6 +1814,7 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
       }
       break;
     case UI_SLIDER:
+      if (itk->active)
       {
         double val = control->get_val (control->val, control->data);
         val -= control->step;
@@ -1827,11 +1840,11 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
     case UI_BUTTON:
     case UI_CHOICE:
     case UI_RADIO:
-      itk_key_return (event, data, data2);
+      // itk_key_return (event, data, data2);
       break;
     case UI_ENTRY:
       {
-        if (itk->entry_copy)
+        if (itk->active)
         {
           itk->entry_pos ++;
           if (itk->entry_pos > (int)strlen (itk->entry_copy))
@@ -1844,6 +1857,7 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
       }
       break;
     case UI_SLIDER:
+      if (itk->active)
       {
         double val = control->get_val (control->val, control->data);
         val += control->step;
@@ -1863,11 +1877,13 @@ void itk_key_backspace (CtxEvent *event, void *data, void *data2)
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
   if (!itk->entry_copy) return;
+  if (!itk->active) return;
+
   switch (control->type)
   {
     case UI_ENTRY:
      {
-       if (itk->entry_copy && itk->entry_pos > 0)
+       if (itk->active && itk->entry_pos > 0)
        {
          memmove (&itk->entry_copy[itk->entry_pos-1], &itk->entry_copy[itk->entry_pos],
                    strlen (&itk->entry_copy[itk->entry_pos] )+ 1);
@@ -1886,6 +1902,7 @@ void itk_key_delete (CtxEvent *event, void *data, void *data2)
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
   if (!itk->entry_copy) return;
+  if (!itk->active) return;
   if ((int)strlen (itk->entry_copy) > itk->entry_pos)
   {
     itk_key_right (event, data, data2);
@@ -1898,7 +1915,8 @@ void itk_key_delete (CtxEvent *event, void *data, void *data2)
 void itk_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata;
-  if (itk->entry_copy)
+
+  if (itk->active && itk->entry_copy)
     {
       const char *str = event->string;
       if (!strcmp (str, "space"))
