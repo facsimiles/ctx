@@ -6465,9 +6465,9 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
   y -= vt->font_size * 0.22;
   if (bold)
     {
-      ctx_move_to (ctx, x, y);
-      ctx_line_width (ctx, vt->font_size/30.0);
-      ctx_glyph (ctx, unichar, 1);
+      ctx_move_to (ctx, x - vt->font_size/30.0, y);
+      //ctx_line_width (ctx, vt->font_size/30.0);
+      ctx_glyph (ctx, unichar, 0);
     }
   ctx_move_to (ctx, x, y);
   ctx_glyph (ctx, unichar, 0);
