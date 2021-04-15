@@ -935,9 +935,9 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
     itk_style_color (itk->ctx, "itk-interactive-bg");
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
   ctx_fill (ctx);
+  control_ref (control);
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_DRAG, itk_slider_cb_drag, control, itk, control_finalize, NULL);
-  control_ref (control);
   ctx_begin_path (ctx);
 
   double fval = get_val (val, data);
@@ -1274,9 +1274,9 @@ void itk_toggle (ITK *itk, const char *label, int *val)
 
   control->type = UI_TOGGLE;
   control->val = val;
+  control_ref (control);
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
-  control_ref (control);
   ctx_begin_path (ctx);
   itk->x += width;
 
@@ -1322,9 +1322,9 @@ int itk_radio (ITK *itk, const char *label, int set)
   ctx_text (ctx, label);
 
   control->type = UI_RADIO;
+  control_ref (control);
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
-  control_ref (control);
   ctx_begin_path (ctx);
   itk->x += width;
 
@@ -1356,9 +1356,10 @@ int itk_expander (ITK *itk, const char *label, int *val)
   CtxControl *control = itk_add_control (itk, UI_EXPANDER, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   control->val = val;
 
+  //control_ref (control);
+  control_ref (control);
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
-  control_ref (control);
   //itk_style_color (itk->ctx, "itk-interactive-bg");
   //ctx_fill (ctx);
 
@@ -1437,10 +1438,10 @@ int itk_button (ITK *itk, const char *label)
   ctx_move_to (ctx, itk->x + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
   ctx_text (ctx, label);
 
+  control_ref (control);
   control->type = UI_BUTTON;
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
-  control_ref (control);
   ctx_begin_path (ctx);
   itk->x += width;
   itk->x += itk->rel_hgap * em;
@@ -1480,9 +1481,9 @@ void itk_choice (ITK *itk, const char *label, int *val, void (*action)(void *use
   control->data = user_data;
   control->val = val;
 
+  control_ref (control);
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, itk_choice_clicked, control, itk, control_finalize, NULL);
-  control_ref (control);
 
   ctx_begin_path (ctx);
   if (itk->focus_no == control->no)
@@ -1639,6 +1640,8 @@ void itk_focus (ITK *itk, int dir)
    }
 }
 
+#include <math.h>
+
 void itk_key_up (CtxEvent *event, void *data, void *data2)
 {
   ITK *itk = data;
@@ -1660,14 +1663,31 @@ void itk_key_up (CtxEvent *event, void *data, void *data2)
       prev_val = choice->val;
     }
   }
-  else
+  else if (control)
   {
-    itk_focus (itk, -1);
+    CtxControl *best = control;
+    float best_dist = 10000000000.0;
+    for (CtxList *iter = itk->controls; iter; iter=iter->next)
+    {
+      CtxControl *candidate = iter->data;
+      float dist = hypotf (candidate->x - control->x,
+                           candidate->y - control->y);
+      if ((candidate != control) && 
+          (dist < best_dist) &&
+          (candidate->y < control->y))
+      {
+        best_dist = dist;
+        best      = candidate;
+      }
+    }
+    entry_commit (itk);
+    itk->focus_no = best->no;
     itk->active = 0;
   }
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
+
 
 void itk_key_down (CtxEvent *event, void *data, void *data2)
 {
@@ -1691,9 +1711,25 @@ void itk_key_down (CtxEvent *event, void *data, void *data2)
       }
     }
   }
-  else
+  else if (control)
   {
-    itk_focus (itk, 1);
+    CtxControl *best = control;
+    float best_dist = 10000000000.0;
+    for (CtxList *iter = itk->controls; iter; iter=iter->next)
+    {
+      CtxControl *candidate = iter->data;
+      float dist = hypotf (candidate->x - control->x,
+                           candidate->y - control->y);
+      if ((candidate != control) && 
+          (dist < best_dist) &&
+          (candidate->y > control->y))
+      {
+        best_dist = dist;
+        best      = candidate;
+      }
+    }
+    entry_commit (itk);
+    itk->focus_no = best->no;
     itk->active = 0;
   }
   event->stop_propagate = 1;
@@ -1796,34 +1832,54 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
   ITK *itk = data;
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
+
+  if (itk->active)
+  {
   switch (control->type)
   {
     case UI_TOGGLE:
     case UI_EXPANDER:
     case UI_CHOICE:
-      if (itk->active)
-        itk_key_return (event, data, data2);
+      itk_key_return (event, data, data2);
       break;
     case UI_ENTRY:
-      {
-        if (itk->active)
-        {
-          itk->entry_pos --;
-          if (itk->entry_pos < 0) itk->entry_pos = 0;
-        }
-      }
+      itk->entry_pos --;
+      if (itk->entry_pos < 0)
+        itk->entry_pos = 0;
       break;
     case UI_SLIDER:
-      if (itk->active)
       {
         double val = control->get_val (control->val, control->data);
         val -= control->step;
-        if (val < control->min) val = control->min;
-
+        if (val < control->min)
+          val = control->min;
         control->set_val (control->val, val, control->data);
       }
       break;
   }
+  }
+  else
+  {
+    CtxControl *best = control;
+    float best_dist = 10000000000.0;
+    for (CtxList *iter = itk->controls; iter; iter=iter->next)
+    {
+      CtxControl *candidate = iter->data;
+      float dist = hypotf (candidate->x - control->x,
+                           candidate->y - control->y);
+      if ((candidate != control) && 
+          (dist < best_dist) &&
+          (candidate->x < control->x))
+      {
+        best_dist = dist;
+        best      = candidate;
+      }
+    }
+    entry_commit (itk);
+    itk->focus_no = best->no;
+    itk->active = 0;
+  }
+
   event->stop_propagate = 1;
   ctx_set_dirty (event->ctx, 1);
 }
@@ -1833,6 +1889,9 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
   ITK *itk = data;
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
+
+  if (itk->active)
+  {
   switch (control->type)
   {
     case UI_TOGGLE:
@@ -1843,21 +1902,11 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
       // itk_key_return (event, data, data2);
       break;
     case UI_ENTRY:
-      {
-        if (itk->active)
-        {
-          itk->entry_pos ++;
-          if (itk->entry_pos > (int)strlen (itk->entry_copy))
-            itk->entry_pos = strlen (itk->entry_copy);
-        }
-        else
-        {
-          itk_key_return (event, data, data2);
-        }
-      }
+     itk->entry_pos ++;
+     if (itk->entry_pos > (int)strlen (itk->entry_copy))
+       itk->entry_pos = strlen (itk->entry_copy);
       break;
     case UI_SLIDER:
-      if (itk->active)
       {
         double val = control->get_val (control->val, control->data);
         val += control->step;
@@ -1867,6 +1916,30 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
       }
       break;
   }
+  }
+  else
+  {
+    CtxControl *best = control;
+    float best_dist = 10000000000.0;
+    for (CtxList *iter = itk->controls; iter; iter=iter->next)
+    {
+      CtxControl *candidate = iter->data;
+      float dist = hypotf (candidate->x - control->x,
+                           candidate->y - control->y);
+      if ((candidate != control) && 
+          (dist < best_dist) &&
+          (candidate->x > control->x))
+      {
+        best_dist = dist;
+        best      = candidate;
+      }
+    }
+    entry_commit (itk);
+    itk->focus_no = best->no;
+    itk->active = 0;
+  }
+
+
   event->stop_propagate = 1;
   ctx_set_dirty (event->ctx, 1);
 }
