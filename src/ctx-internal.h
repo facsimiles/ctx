@@ -625,9 +625,6 @@ struct _CtxRasterizer
   int        col_min;
   int        col_max;
 
-#if CTX_BRAILLE_TEXT
-  CtxList   *glyphs;
-#endif
 
   CtxDrawlist edge_list;
 
@@ -637,10 +634,12 @@ struct _CtxRasterizer
 
   void      *buf;
 
+
 #if CTX_COMPOSITING_GROUPS
   void      *saved_buf; // when group redirected
   CtxBuffer *group[CTX_GROUP_MAX];
 #endif
+
 
   float      x;  // < redundant? use state instead?
   float      y;
@@ -652,9 +651,6 @@ struct _CtxRasterizer
   int        has_prev:2;
   int        preserve:1;
   int        uses_transforms:1;
-#if CTX_BRAILLE_TEXT
-  int        term_glyphs:1; // store appropriate glyphs for redisplay
-#endif
 
   int16_t    blit_x;
   int16_t    blit_y;
@@ -686,6 +682,10 @@ struct _CtxRasterizer
 
 #if CTX_SHAPE_CACHE
   CtxShapeCache shape_cache;
+#endif
+#if CTX_BRAILLE_TEXT
+  int        term_glyphs:1; // store appropriate glyphs for redisplay
+  CtxList   *glyphs;
 #endif
 };
 
