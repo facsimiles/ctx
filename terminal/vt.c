@@ -5158,7 +5158,7 @@ void vt_feed_keystring (VT *vt, const char *str)
       float font_size = vt_get_font_size (vt);
       //font_size /= 1.15;
       font_size -=2;//= roundf (font_size);
-      if (font_size < 4) { font_size = 4; }
+      if (font_size < 2) { font_size = 2; }
       vt_set_font_size (vt, font_size);
       vt_set_px_size (vt, vt->width, vt->height);
       return;
