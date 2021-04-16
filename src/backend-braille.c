@@ -14,14 +14,14 @@ struct _CtxBraille
    char *(*get_clipboard) (void *ctxctx);
    void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)   (void *braille);
-   Ctx     *ctx;
-   int      width;
-   int      height;
-   int      cols;
-   int      rows;
-   int      was_down;
-   uint8_t *pixels;
-   Ctx     *host;
+   Ctx      *ctx;
+   int       width;
+   int       height;
+   int       cols;
+   int       rows;
+   int       was_down;
+   uint8_t  *pixels;
+   Ctx      *host;
 };
 
 static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
@@ -267,10 +267,11 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
   printf ("\e[?25h"); // cursor on
 }
 
-inline static void ctx_braille_render (CtxBraille *braille,
+inline static void ctx_braille_render (void *ctx,
                                        CtxCommand *command)
 {
-  /* we directly forward */
+  CtxBraille *braille = (void*)ctx;
+  /* directly forward */
   ctx_process (braille->host, &command->entry);
 }
 
@@ -278,7 +279,6 @@ inline static void ctx_braille_flush (CtxBraille *braille)
 {
   int width =  braille->width;
   int height = braille->height;
-  //ctx_render_ctx (braille->ctx, braille->host);
   printf ("\e[H");
   _ctx_utf8_output_buf (braille->pixels,
                         CTX_FORMAT_RGBA8,
@@ -327,6 +327,7 @@ inline static void ctx_braille_flush (CtxBraille *braille)
       printf ("\e[%i;%iH%c", glyph->row, glyph->col, glyph->unichar);
       free (glyph);
   }
+  printf ("\e[0m");
   fflush(NULL);
   while (rasterizer->glyphs)
     ctx_list_remove (&rasterizer->glyphs, rasterizer->glyphs->data);
