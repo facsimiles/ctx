@@ -4882,7 +4882,7 @@ int vt_poll (VT *vt, int timeout)
       if (vt->state == vt_state_ctx) {
          if (remaining_chars < read_size)
          {
-           remaining_chars = read_size;
+           remaining_chars = read_size * 2;
          }
       }
       //audio_task (vt, 0);

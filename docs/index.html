@@ -65,6 +65,7 @@
       and small rather than global updates are done.
       </p>
 
+      <!--
       <h3>javascript</h3>
 
       <p>Through the inclusion of duktape, ctx is able to
@@ -72,11 +73,16 @@
       adaptations as native applications. One example that runs
       unmodified is <a href='https://github.com/rembound/Bubble-Shooter-HTML5'>github.com/rembound/Bubble-Shooter-HTML5</a>.
       </p>
+      -->
+
+      <h3>multiplexing</h3>
 
       <p>The self-contained static builds are sufficient to run minimalistic
-      desktop+shells only sessions with low RAM requirements. The
-      rasterizer which for multi-core use is used in parallell for multiple
-      threads, is compact enough to run on <a href='mcu/'>microntrollers</a>.</p>
+      desktop+shells only sessions with low RAM requirements. The rasterizer
+      which for multi-core use is used in parallell for multiple threads,
+      started off written to fit on <a href='mcu/'>microntrollers</a>, with the
+      right defines a RGBA 8bit rasterizer can be made to fit in 32kb of code
+      also for 64bit x86.</p>
 
       <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
 
@@ -278,14 +284,20 @@ to be combined with all compositing modes.
          can be configured and adapted to deal with a wide range of scenarios.
          .</dd>
 
-         <dt>text rendering</dt><dd>self-contained UTF8 ctx driver, for the simplest rasterization engine for embedded use, the glyphs are directly encoded as the binary form of the ctx protocol. The optional stb_truetype driver is used to generate ctx-format font files. Another optional font-backend intended for font authoring does live rendering for ctx protocol fonts, as seen in the following screenshot editing the '@' glyph. A basic graphical editor for the protocol 
-             <br/>
+         <dt>text rendering</dt><dd>Three font loading backends, stb_truetype, native-ctx and ctx-fs. The ctx.h header ships with a built-in native-ctx font.
+
+          In following screenshot a text-file with the commands for the @ glyph
+          is being edited in vim, with instant update across all clients. This
+          massively slows down the UI but not enough to be unusuable. With
+          a simple visual vector editor working directly with the ctx-protocol
+          this provides for an almost complete live font-editor.
+          <br/>
 
         <a href='ctx-wm.png'><img style='max-width:100%' src='ctx-wm.png'/></a>
 
-             The text-shaping is currently limited to horizontal advances +
-             horizontal kerning, no ligatures, RTL or vertical glyph advances -
-             interacting directly with harfbuzz could give us wider support.
+          The text-shaping is currently limited to horizontal advances +
+          horizontal kerning, no ligatures, RTL or vertical glyph advances -
+          interacting directly with harfbuzz could give us wider support.
          </dd>
 
 

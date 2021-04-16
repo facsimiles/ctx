@@ -2068,12 +2068,21 @@ ctx_get_contents (const char     *uri,
                   unsigned char **contents,
                   long           *length)
 {
-  char temp_uri[PATH_MAX];
+  char temp_uri[PATH_MAX]; // XXX XXX breaks with data uri's
   if (uri[0] == '/')
   {
     snprintf (temp_uri, sizeof (temp_uri)-1, "file://%s", uri);
     uri = temp_uri;
   }
+  else
+  {
+    snprintf (temp_uri, sizeof (temp_uri)-1, uri);
+    uri = temp_uri;
+  }
+
+  if (strchr (uri, '#'))
+   strchr (uri, '#')[0]=0;
+
   for (CtxList *l = registered_contents; l; l = l->next)
   {
     CtxFileContent *c = l->data;
@@ -2084,6 +2093,12 @@ ctx_get_contents (const char     *uri,
       if (length) *length = c->length;
       return 0;
     }
+  }
+
+  if (!strncmp (uri, "file://", 5))
+  {
+    if (strchr (uri, '?'))
+     strchr (uri, '?')[0]=0;
   }
 
   if (!strncmp (uri, "file://", 7))
