@@ -1549,17 +1549,28 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   {
     int col = rasterizer->x / 2 + 1;
     int row = rasterizer->y / 4 + 1;
-  //for (int i = 0; string[i]; i++, col++)
+    CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
+    ctx_list_prepend (&rasterizer->glyphs, glyph);
+    glyph->unichar = unichar;
+    glyph->col = col;
+    glyph->row = row;
+    ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color,
+                         &glyph->rgba_fg[0]);
+
+#if 0  // these pixels are not rendered yet?
+    uint8_t *pixels = (uint8_t*)rasterizer->buf;
+    long rgb_sum[3]={0,0,0};
+    for (int v = 0; v <  1; v ++)
+    for (int u = 0; u <  1; u ++)
     {
-      CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
-      ctx_list_prepend (&rasterizer->glyphs, glyph);
-      glyph->unichar = unichar;
-      glyph->col = col;
-      glyph->row = row;
-      ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color,
-                      glyph->rgba_fg);
+      int i = (rasterizer->y + v) * rasterizer->blit_width + 
+              (rasterizer->x + u);
+      for (int c = 0; c < 3; c ++)
+        rgb_sum[c] += pixels[i*4+c];
     }
-    //_ctx_text (rasterizer->ctx, string, stroke, 1);
+    for (int c = 0; c < 3; c ++)
+      glyph->rgba_bg[c] = rgb_sum[c];// / (4 * 2);
+#endif
   }
   else
 #endif

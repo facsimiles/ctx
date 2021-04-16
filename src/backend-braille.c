@@ -285,12 +285,31 @@ inline static void ctx_braille_flush (CtxBraille *braille)
 #if CTX_BRAILLE_TEXT
   CtxRasterizer *rasterizer = (CtxRasterizer*)(braille->host->renderer);
   // XXX instead sort and inject along with braille
+  //
+
+  uint8_t rgba_bg[4]={0,0,0,0};
+  uint8_t rgba_fg[4]={255,0,255,255};
+
+  printf ("\e[0m");
   for (CtxList *l = rasterizer->glyphs; l; l = l->next)
   {
       CtxTermGlyph *glyph = l->data;
-      printf ("\e[0m\e[%i;%iH%c", glyph->row, glyph->col, glyph->unichar);
+      
+      if (memcmp (&glyph->rgba_fg[0],  &rgba_fg[0], 3))
+      {
+        memcpy (&rgba_fg[0], &glyph->rgba_fg[0], 3);
+        printf ("\e[38;2;%i;%i;%im", rgba_fg[0], rgba_fg[1], rgba_fg[2]);
+      }
+      if (memcmp (&glyph->rgba_bg[0],  &rgba_bg[0], 3))
+      {
+        memcpy (&rgba_bg[0], &glyph->rgba_bg[0], 3);
+        printf ("\e[48;2;%i;%i;%im", rgba_fg[0], rgba_fg[1], rgba_fg[2]);
+      }
+
+      printf ("\e[%i;%iH%c", glyph->row, glyph->col, glyph->unichar);
       free (glyph);
   }
+  fflush(NULL);
   while (rasterizer->glyphs)
     ctx_list_remove (&rasterizer->glyphs, rasterizer->glyphs->data);
 #endif
