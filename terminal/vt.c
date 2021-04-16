@@ -6463,7 +6463,9 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
     ctx_translate (ctx, 0, vt->font_size * offset_y);
   }
   y -= vt->font_size * 0.22;
-  if (bold)
+  if (bold
+      && !ctx_renderer_is_braille (ctx)
+     )
     {
       ctx_move_to (ctx, x - vt->font_size/30.0, y);
       //ctx_line_width (ctx, vt->font_size/30.0);
