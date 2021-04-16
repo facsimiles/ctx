@@ -141,12 +141,6 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                   rgba1[c] = rgbasum[c] / col_count;
                 }
 
-
-
-                // to determine color .. find two most different
-                // colors in set.. and threshold between them..
-                // even better dither between them.
-                //
   printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
   //printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
 
@@ -273,11 +267,18 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
   printf ("\e[?25h"); // cursor on
 }
 
+inline static void ctx_braille_render (CtxBraille *braille,
+                                       CtxCommand *command)
+{
+  /* we directly forward */
+  ctx_process (braille->host, &command->entry);
+}
+
 inline static void ctx_braille_flush (CtxBraille *braille)
 {
   int width =  braille->width;
   int height = braille->height;
-  ctx_render_ctx (braille->ctx, braille->host);
+  //ctx_render_ctx (braille->ctx, braille->host);
   printf ("\e[H");
   _ctx_utf8_output_buf (braille->pixels,
                         CTX_FORMAT_RGBA8,
@@ -294,6 +295,23 @@ inline static void ctx_braille_flush (CtxBraille *braille)
   for (CtxList *l = rasterizer->glyphs; l; l = l->next)
   {
       CtxTermGlyph *glyph = l->data;
+
+#if 1  // we do it in the rasterizer instead - now that we
+       // are not accumulating a drawlist but directly forwarding to
+       // host with ctx_process()
+    uint8_t *pixels = braille->pixels;
+    long rgb_sum[4]={0,0,0};
+    for (int v = 0; v <  4; v ++)
+    for (int u = 0; u <  2; u ++)
+    {
+      int i = ((glyph->row-1) * 4 + v) * rasterizer->blit_width + 
+              ((glyph->col-1) * 2 + u);
+      for (int c = 0; c < 3; c ++)
+        rgb_sum[c] += pixels[i*4+c];
+    }
+    for (int c = 0; c < 3; c ++)
+      glyph->rgba_bg[c] = rgb_sum[c] / (4 * 2);
+#endif
       
       if (memcmp (&glyph->rgba_fg[0],  &rgba_fg[0], 3))
       {
@@ -303,7 +321,7 @@ inline static void ctx_braille_flush (CtxBraille *braille)
       if (memcmp (&glyph->rgba_bg[0],  &rgba_bg[0], 3))
       {
         memcpy (&rgba_bg[0], &glyph->rgba_bg[0], 3);
-        printf ("\e[48;2;%i;%i;%im", rgba_fg[0], rgba_fg[1], rgba_fg[2]);
+        printf ("\e[48;2;%i;%i;%im", rgba_bg[0], rgba_bg[1], rgba_bg[2]);
       }
 
       printf ("\e[%i;%iH%c", glyph->row, glyph->col, glyph->unichar);
@@ -363,6 +381,7 @@ Ctx *ctx_new_braille (int width, int height)
   ctx_set_renderer (ctx, braille);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, 4.0f);
+  braille->render = ctx_braille_render;
   braille->flush = (void(*)(void*))ctx_braille_flush;
   braille->free  = (void(*)(void*))ctx_braille_free;
 #endif
