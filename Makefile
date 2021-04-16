@@ -30,8 +30,6 @@ CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 TERMINAL_CFILES = $(wildcard terminal/*.c)
 TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
 
-JS_CFILES = $(wildcard js/*.c)
-JS_OBJS   = $(JS_CFILES:.c=.o)
 
 SRC_CFILES = $(wildcard src/*.c)
 SRC_OBJS   = $(SRC_CFILES:.c=.o)
@@ -81,12 +79,10 @@ test: ctx
 distclean: clean
 	rm -f build.*
 clean:
-	rm -f js/*.inc
 	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o highlight.css
 	rm -f libctx.a libctx.so
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
-	rm -f $(JS_OBJS)
 	rm -f $(SRC_OBJS)
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
@@ -122,9 +118,6 @@ ctx-static.o: ctx.c ctx.h Makefile used_fonts build.conf
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
-js/%.o: js/%.c ctx.h
-	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
-
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o ctx-avx2.o deps.o Makefile
@@ -133,17 +126,17 @@ libctx.so: ctx.o ctx-avx2.o deps.o
 	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
-ctx: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) $(JS_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) $(JS_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
+ctx: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) libctx.a
+	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
 
 ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) -O0
 
-ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) $(JS_OBJS) deps.o
-	$(CCC) main.c $(TERMINAL_OBJS) $(JS_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
+ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
+	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
 
-ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o js/*.[ch] js/ecma_eventloop.js.inc js/bootstrap.js.inc js/dom.js.inc js/htmlparser.js.inc js/garrulus.js.inc
-	$(CCC) main.c terminal/*.c convert/*.c js/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
+ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o 
+	musl-gcc main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile
@@ -187,7 +180,3 @@ ctx.h: src/* fonts/ctx-font-ascii.h
 
 ctx-nofont.h: src/*
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
-js/main.o: js/ecma_eventloop.js.inc js/bootstrap.js.inc js/dom.js.inc js/htmlparser.js.inc js/garrulus.js.inc
-js/%.js.inc: js/%.js 
-	cat $< | sed 's/\\/\\\\/g'   |sed 's/"/\\"/g' |sed 's/$$/\\n"/' | sed 's/^/"/' > $@
-	
