@@ -5,6 +5,24 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
+typedef struct CtxBrailleCell
+{
+  char    utf8[5];
+  uint8_t fg[4];
+  uint8_t bg[4];
+
+  char    prev_utf8[5];
+  uint8_t prev_fg[4];
+  uint8_t prev_bg[4];
+} CtxBrailleCell;
+
+typedef struct CtxBrailleLine
+{
+  CtxBrailleCell *cells;
+  int maxcol;
+  int size;
+} CtxBrailleLine;
+
 typedef struct _CtxBraille CtxBraille;
 struct _CtxBraille
 {
@@ -22,7 +40,77 @@ struct _CtxBraille
    int       was_down;
    uint8_t  *pixels;
    Ctx      *host;
+   CtxList  *lines;
 };
+
+void ctx_braille_set (CtxBraille *braille,
+                      int col, int row, const char *utf8,
+                      uint8_t *fg, uint8_t *bg)
+{
+  while (ctx_list_length (braille->lines) < row)
+  {
+    ctx_list_append (&braille->lines, calloc (sizeof (CtxBrailleLine), 1));
+  }
+  CtxBrailleLine *line = ctx_list_nth_data (braille->lines, row-1);
+  assert (line);
+  if (line->size < col)
+  {
+     int new_size = (col + 128)%128;
+     line->cells = realloc (line->cells, sizeof (CtxBrailleCell) * new_size);
+     line->size = new_size;
+  }
+  if (col > line->maxcol) line->maxcol = col;
+  strncpy (line->cells[col-1].utf8, (char*)utf8, 4);
+  memcpy  (line->cells[col-1].fg, fg, 3);
+  memcpy  (line->cells[col-1].bg, bg, 3);
+}
+
+void ctx_braille_scanout (CtxBraille *braille)
+{
+  int row = 1;
+  printf ("\e[H");
+//  printf ("\e[?25l");
+  printf ("\e[0m");
+  uint8_t rgba_bg[4]={0,0,0,0};
+  uint8_t rgba_fg[4]={255,255,255,255};
+  for (CtxList *l = braille->lines; l; l = l->next)
+  {
+    CtxBrailleLine *line = l->data;
+    for (int col = 1; col < line->maxcol; col++)
+    {
+      CtxBrailleCell *cell = &line->cells[col-1];
+
+      if (strcmp(cell->utf8, cell->prev_utf8) ||
+          memcmp(cell->fg, cell->prev_fg, 3) ||
+          memcmp(cell->bg, cell->prev_bg, 3))
+      {
+        if (memcmp (&cell->fg[0],  &rgba_fg[0], 3))
+        {
+          memcpy (&rgba_fg[0], &cell->fg[0], 3);
+          printf ("\e[38;2;%i;%i;%im", rgba_fg[0], rgba_fg[1], rgba_fg[2]);
+        }
+        if (memcmp (&cell->bg[0],  &rgba_bg[0], 3))
+        {
+          memcpy (&rgba_bg[0], &cell->bg[0], 3);
+          printf ("\e[48;2;%i;%i;%im", rgba_bg[0], rgba_bg[1], rgba_bg[2]);
+        }
+        printf ("%s", cell->utf8);
+      }
+      else
+      {
+        // TODO: accumulate succesive such, and compress them
+        // into one
+        printf ("\e[C");
+      }
+      strcpy (cell->prev_utf8, cell->utf8);
+    }
+    row ++;
+    printf ("\n\r");
+  }
+  printf ("\e[0m");
+  //printf ("\e[?25h");
+  //
+}
 
 static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
 {
@@ -33,17 +121,18 @@ static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   return diff;
 }
 
-
 static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                           int format,
                           int width,
                           int height,
                           int stride,
-                          int reverse)
+                          int reverse,
+                          CtxBraille *braille)
 {
   const char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
   int no = 0;
-  printf ("\e[?25l"); // cursor off
+  assert (braille);
+//  printf ("\e[?25l"); // cursor off
   switch (format)
     {
       case CTX_FORMAT_GRAY2:
@@ -99,8 +188,8 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                     { unicode += 0x28C0; }
                   else
                     { unicode += 0x2800; }
-                  uint8_t utf8[5];
-                  utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
+                  char utf8[5];
+                  utf8[ctx_unichar_to_utf8 (unicode, (uint8_t*)utf8)]=0;
                   printf ("%s", utf8);
                 }
               }
@@ -116,6 +205,7 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                 int unicode = 0;
                 int bitno = 0;
 
+                uint8_t rgba_black[4] = {0,0,0,255};
                 uint8_t rgba2[4] = {0,0,0,255};
                 uint8_t rgba1[4] = {0,0,0,255};
                 int     rgbasum[4] = {0,};
@@ -140,10 +230,12 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                 {
                   rgba1[c] = rgbasum[c] / col_count;
                 }
-
+#if NOT_CTX_BRAILLE
   printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
   //printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
+#endif
 
+                int pixels_set = 0;
                 for (int x = 0; x < 2; x++)
                   for (int y = 0; y < 3; y++)
                     {
@@ -155,7 +247,9 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                       int set = CHECK_IS_SET;
                       if (reverse) { set = !set; }
                       if (set)
-                        { unicode |=  (1<< (bitno) ); }
+                        { unicode |=  (1<< (bitno) ); 
+                          pixels_set ++; 
+                        }
                       bitno++;
                     }
                 {
@@ -165,6 +259,9 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                   int setA = CHECK_IS_SET;
                   no = (row * 4 + y) * stride + (col*2+x+1) * 4;
                   int setB = CHECK_IS_SET;
+
+                  pixels_set += setA;
+                  pixels_set += setB;
 #undef CHECK_IS_SET
                   if (reverse) { setA = !setA; }
                   if (reverse) { setB = !setB; }
@@ -176,14 +273,34 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                     { unicode += 0x28C0; }
                   else
                     { unicode += 0x2800; }
-                  uint8_t utf8[5];
-                  utf8[ctx_unichar_to_utf8 (unicode, utf8)]=0;
+                  char utf8[5];
+                  utf8[ctx_unichar_to_utf8 (unicode, (uint8_t*)utf8)]=0;
+#if NOT_CTX_BRAILLE_CACHING
                   printf ("%s", utf8);
+#endif
+
+                  if (pixels_set >= 6)
+                  {
+                  ctx_braille_set (braille, col +1, row + 1, " ",
+                                 rgba_black, rgba1);
+                  }
+                  else
+                  {
+                  ctx_braille_set (braille, col +1, row + 1, utf8,
+                                 rgba1, rgba_black);
+                  }
+                      //int col, int row, const char *utf8,
+                      //uint8_t *fg, uint8_t *bg)
+
                 }
               }
+#if NOT_CTX_BRAILLE_CACHING
             printf ("\n\r");
+#endif
           }
+#if NOT_CTX_BRAILLE_CACHING
           printf ("\e[38;2;%i;%i;%im", 255,255,255);
+#endif
         }
         break;
 
@@ -264,7 +381,7 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
             }
         }
     }
-  printf ("\e[?25h"); // cursor on
+//  printf ("\e[?25h"); // cursor on
 }
 
 inline static void ctx_braille_render (void *ctx,
@@ -282,14 +399,14 @@ inline static void ctx_braille_flush (CtxBraille *braille)
   printf ("\e[H");
   _ctx_utf8_output_buf (braille->pixels,
                         CTX_FORMAT_RGBA8,
-                        width, height, width * 4, 0);
+                        width, height, width * 4, 0, braille);
 #if CTX_BRAILLE_TEXT
   CtxRasterizer *rasterizer = (CtxRasterizer*)(braille->host->renderer);
   // XXX instead sort and inject along with braille
   //
 
-  uint8_t rgba_bg[4]={0,0,0,0};
-  uint8_t rgba_fg[4]={255,0,255,255};
+  //uint8_t rgba_bg[4]={0,0,0,0};
+  //uint8_t rgba_fg[4]={255,0,255,255};
 
   printf ("\e[0m");
   for (CtxList *l = rasterizer->glyphs; l; l = l->next)
@@ -312,7 +429,7 @@ inline static void ctx_braille_flush (CtxBraille *braille)
     for (int c = 0; c < 3; c ++)
       glyph->rgba_bg[c] = rgb_sum[c] / (4 * 2);
 #endif
-      
+#if 0
       if (memcmp (&glyph->rgba_fg[0],  &rgba_fg[0], 3))
       {
         memcpy (&rgba_fg[0], &glyph->rgba_fg[0], 3);
@@ -323,10 +440,16 @@ inline static void ctx_braille_flush (CtxBraille *braille)
         memcpy (&rgba_bg[0], &glyph->rgba_bg[0], 3);
         printf ("\e[48;2;%i;%i;%im", rgba_bg[0], rgba_bg[1], rgba_bg[2]);
       }
+#endif
 
-      printf ("\e[%i;%iH%c", glyph->row, glyph->col, glyph->unichar);
+      //printf ("\e[%i;%iH%c", glyph->row, glyph->col, glyph->unichar);
+      char utf8[8];
+      utf8[ctx_unichar_to_utf8(glyph->unichar, (uint8_t*)utf8)]=0;
+      ctx_braille_set (braille, glyph->col, glyph->row, 
+                       utf8, glyph->rgba_fg, glyph->rgba_bg);
       free (glyph);
   }
+  ctx_braille_scanout (braille);
   printf ("\e[0m");
   fflush(NULL);
   while (rasterizer->glyphs)
@@ -336,6 +459,12 @@ inline static void ctx_braille_flush (CtxBraille *braille)
 
 void ctx_braille_free (CtxBraille *braille)
 {
+  while (braille->lines)
+  {
+    free (braille->lines->data);
+    ctx_list_remove (&braille->lines, braille->lines->data);
+  }
+  printf ("\e[?25h"); // cursor on
   nc_at_exit ();
   free (braille->pixels);
   ctx_free (braille->host);
@@ -356,6 +485,7 @@ Ctx *ctx_new_braille (int width, int height)
   Ctx *ctx = ctx_new ();
 #if CTX_RASTERIZER
   fprintf (stdout, "\e[?1049h");
+  fprintf (stdout, "\e[?25l"); // cursor off
   CtxBraille *braille = (CtxBraille*)calloc (sizeof (CtxBraille), 1);
   int maxwidth = ctx_terminal_cols  () * 2;
   int maxheight = (ctx_terminal_rows ()-1) * 4;
@@ -371,6 +501,7 @@ Ctx *ctx_new_braille (int width, int height)
   braille->height = height;
   braille->cols = (width + 1) / 2;
   braille->rows = (height + 3) / 4;
+  braille->lines = 0;
   braille->pixels = (uint8_t*)malloc (width * height * 4);
   braille->host = ctx_new_for_framebuffer (braille->pixels,
                                            width, height,

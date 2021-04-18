@@ -533,7 +533,7 @@ CtxControl *itk_add_control (ITK *itk,
 
   if (itk->focus_no == control->no)
   {
-     if (itk->y - itk->panel->scroll > itk->panel->y + itk->panel->height - em * 2)
+     if (itk->y - itk->panel->scroll +  control->height > itk->panel->y + itk->panel->height - em * 2)
      {
         itk->panel->scroll += itk->scroll_speed * em;
 #if 0
