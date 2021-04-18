@@ -6438,8 +6438,13 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
     return;
   scale_x *= vt->scale_x;
   scale_y *= vt->scale_y;
-  if (!vt_special_glyph (ctx, vt, x, y + offset_y * vt->ch, vt->cw * scale_x, vt->ch * scale_y, unichar) )
-    return;
+
+  if (!ctx_renderer_is_braille (ctx))
+  {
+    // TODO : use our own special glyphs when glyphs are not passed through
+    if (!vt_special_glyph (ctx, vt, x, y + offset_y * vt->ch, vt->cw * scale_x, vt->ch * scale_y, unichar) )
+      return;
+  }
 
   if (scale_x != 1.0 || scale_y != 1.0)
     {
