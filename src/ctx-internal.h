@@ -768,6 +768,7 @@ Ctx *ctx_new_ctx (int width, int height);
 Ctx *ctx_new_fb (int width, int height, int drm);
 Ctx *ctx_new_sdl (int width, int height);
 Ctx *ctx_new_braille (int width, int height);
+Ctx *ctx_new_termimg (int width, int height);
 
 int ctx_resolve_font (const char *name);
 extern float ctx_u8_float[256];

@@ -176,6 +176,7 @@ Ctx *ctx_new_ui (int width, int height)
     fprintf (stderr, " drm");
 #endif
     fprintf (stderr, " braille");
+    fprintf (stderr, " termimg");
     fprintf (stderr, "\n");
     exit (-1);
   }
@@ -223,6 +224,11 @@ Ctx *ctx_new_ui (int width, int height)
   {
     if ((backend==NULL) || (!strcmp (backend, "braille")))
     ret = ctx_new_braille (width, height);
+  }
+  if (!ret)
+  {
+    if ((backend==NULL) || (!strcmp (backend, "termimg")))
+    ret = ctx_new_termimg (width, height);
   }
 #endif
   if (!ret)

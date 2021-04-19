@@ -33,6 +33,7 @@ renderer-cairo.c
 backend-ctx.c
 backend-fb.c
 backend-braille.c
+backend-termimg.c
 backend-sdl.c
 formatter.c
 ctx.c

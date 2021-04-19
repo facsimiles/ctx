@@ -1,25 +1,103 @@
 #if CTX_EVENTS
 
 #include "ctx-split.h"
+#include <termios.h>
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
 int ctx_terminal_width (void)
 {
-  struct winsize ws; 
-  if (ioctl(0,TIOCGWINSZ,&ws)!=0)
-    return 80;
-  return ws.ws_xpixel;
-} 
+  int ret = 0;
+  char buf[1024];
+  struct termios orig_attr;
+  struct termios raw;
+  tcgetattr (STDIN_FILENO, &orig_attr);
+  raw = orig_attr;
+  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+  raw.c_oflag &= ~(OPOST);
+  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+  raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
+  if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
+    return 0;
+  fprintf (stderr, "\e[14t");
+  //tcflush(STDIN_FILENO, 1);
+  tcdrain(STDIN_FILENO);
+  int length = 0;
+  usleep (1000 * 60); // to account for possibly lowish latency ssh,
+                      // should be made configurable ; perhaps in
+                      // an env var
+  struct timeval tv = {0,0};
+  fd_set rfds;
+  
+  FD_ZERO(&rfds);
+  FD_SET(0, &rfds);
+  tv.tv_usec = 1000 * 5;
+
+  for (int n = 0; select(1, &rfds, NULL, NULL, &tv) && n < 20; n++)
+  {
+    length += read (STDIN_FILENO, &buf[length], 1);
+  }
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
+  if (length == -1)
+  {
+    return 0;
+  }
+  char *semi = strchr (buf, ';');
+  buf[length]=0;
+  if (semi) {semi++; semi = strchr (semi, ';');}
+  if (semi)
+  {
+    return atoi(semi + 1);
+  }
+  return 0;
+}
 
 int ctx_terminal_height (void)
 {
-  struct winsize ws; 
-  if (ioctl(0,TIOCGWINSZ,&ws)!=0)
-    return 80;
-  return ws.ws_ypixel;
-} 
+  int ret = 0;
+  char buf[1024];
+  struct termios orig_attr;
+  struct termios raw;
+  tcgetattr (STDIN_FILENO, &orig_attr);
+  raw = orig_attr;
+  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+  raw.c_oflag &= ~(OPOST);
+  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+  raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
+  if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
+    return 0;
+  fprintf (stderr, "\e[14t");
+  //tcflush(STDIN_FILENO, 1);
+  tcdrain(STDIN_FILENO);
+  int length = 0;
+  usleep (1000 * 60); // to account for possibly lowish latency ssh,
+                      // should be made configurable ; perhaps in
+                      // an env var
+  struct timeval tv = {0,0};
+  fd_set rfds;
+  
+  FD_ZERO(&rfds);
+  FD_SET(0, &rfds);
+  tv.tv_usec = 1000 * 5;
+
+  for (int n = 0; select(1, &rfds, NULL, NULL, &tv) && n < 20; n++)
+  {
+    length += read (STDIN_FILENO, &buf[length], 1);
+  }
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
+  if (length == -1)
+  {
+    return 0;
+  }
+  char *semi = strchr (buf, ';');
+  buf[length]=0;
+  if (semi)
+  {
+    return atoi(semi + 1);
+  }
+  return 0;
+}
 
 int ctx_terminal_cols (void)
 {
