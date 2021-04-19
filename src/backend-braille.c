@@ -55,7 +55,7 @@ void ctx_braille_set (CtxBraille *braille,
   assert (line);
   if (line->size < col)
   {
-     int new_size = (col + 128)%128;
+     int new_size = ((col + 128)/128)*128;
      line->cells = realloc (line->cells, sizeof (CtxBrailleCell) * new_size);
      line->size = new_size;
   }
@@ -132,7 +132,7 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
   const char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
   int no = 0;
   assert (braille);
-//  printf ("\e[?25l"); // cursor off
+  printf ("\e[?25l"); // cursor off
   switch (format)
     {
       case CTX_FORMAT_GRAY2:
@@ -205,7 +205,6 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                 int unicode = 0;
                 int bitno = 0;
 
-                uint8_t rgba_black[4] = {0,0,0,255};
                 uint8_t rgba2[4] = {0,0,0,255};
                 uint8_t rgba1[4] = {0,0,0,255};
                 int     rgbasum[4] = {0,};
@@ -230,10 +229,7 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                 {
                   rgba1[c] = rgbasum[c] / col_count;
                 }
-#if NOT_CTX_BRAILLE
   printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
-  //printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
-#endif
 
                 int pixels_set = 0;
                 for (int x = 0; x < 2; x++)
@@ -275,32 +271,12 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                     { unicode += 0x2800; }
                   char utf8[5];
                   utf8[ctx_unichar_to_utf8 (unicode, (uint8_t*)utf8)]=0;
-#if NOT_CTX_BRAILLE_CACHING
                   printf ("%s", utf8);
-#endif
-
-                  if (pixels_set >= 6)
-                  {
-                  ctx_braille_set (braille, col +1, row + 1, " ",
-                                 rgba_black, rgba1);
-                  }
-                  else
-                  {
-                  ctx_braille_set (braille, col +1, row + 1, utf8,
-                                 rgba1, rgba_black);
-                  }
-                      //int col, int row, const char *utf8,
-                      //uint8_t *fg, uint8_t *bg)
-
                 }
               }
-#if NOT_CTX_BRAILLE_CACHING
             printf ("\n\r");
-#endif
           }
-#if NOT_CTX_BRAILLE_CACHING
           printf ("\e[38;2;%i;%i;%im", 255,255,255);
-#endif
         }
         break;
 
@@ -381,8 +357,113 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
             }
         }
     }
-//  printf ("\e[?25h"); // cursor on
+  printf ("\e[?25h"); // cursor on
 }
+
+static inline void ctx_braille_output_buf (uint8_t *pixels,
+                          int format,
+                          int width,
+                          int height,
+                          int stride,
+                          int reverse,
+                          CtxBraille *braille)
+{
+  const char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
+
+  assert (braille);
+  switch (format)
+    {
+      case CTX_FORMAT_RGBA8:
+        {
+        for (int row = 0; row < height/4; row++)
+          {
+            for (int col = 0; col < width /2; col++)
+              {
+                int     unicode = 0;
+                int     bitno = 0;
+                uint8_t rgba_black[4] = {0,0,0,255};
+                uint8_t rgba2[4] = {0,0,0,255};
+                uint8_t rgba1[4] = {0,0,0,255};
+                int     rgbasum[4] = {0,};
+                int     col_count = 0;
+
+                for (int xi = 0; xi < 2; xi++)
+                  for (int yi = 0; yi < 4; yi++)
+                      {
+                        int noi = (row * 4 + yi) * stride + (col*2+xi) * 4;
+                        int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba2);
+                        if (diff > 32*32)
+                        {
+                          for (int c = 0; c < 3; c++)
+                          {
+                            rgbasum[c] += pixels[noi+c];
+                          }
+                          col_count++;
+                        }
+                      }
+                if (col_count)
+                for (int c = 0; c < 3; c++)
+                {
+                  rgba1[c] = rgbasum[c] / col_count;
+                }
+                int pixels_set = 0;
+                for (int x = 0; x < 2; x++)
+                  for (int y = 0; y < 3; y++)
+                    {
+                      int no = (row * 4 + y) * stride + (col*2+x) * 4;
+#define CHECK_IS_SET \
+      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba1)< \
+       _ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
+
+                      int set = CHECK_IS_SET;
+                      if (reverse) { set = !set; }
+                      if (set)
+                        { unicode |=  (1<< (bitno) ); 
+                          pixels_set ++; 
+                        }
+                      bitno++;
+                    }
+                {
+                  int x = 0;
+                  int y = 3;
+                  int no = (row * 4 + y) * stride + (col*2+x) * 4;
+                  int setA = CHECK_IS_SET;
+                  no = (row * 4 + y) * stride + (col*2+x+1) * 4;
+                  int setB = CHECK_IS_SET;
+
+                  pixels_set += setA;
+                  pixels_set += setB;
+#undef CHECK_IS_SET
+                  if (reverse) { setA = !setA; }
+                  if (reverse) { setB = !setB; }
+                  if (setA != 0 && setB==0)
+                    { unicode += 0x2840; }
+                  else if (setA == 0 && setB)
+                    { unicode += 0x2880; }
+                  else if ( (setA != 0) && (setB != 0) )
+                    { unicode += 0x28C0; }
+                  else
+                    { unicode += 0x2800; }
+                  char utf8[5];
+                  utf8[ctx_unichar_to_utf8 (unicode, (uint8_t*)utf8)]=0;
+                  if (pixels_set >= 6)
+                  {
+                    ctx_braille_set (braille, col +1, row + 1, " ",
+                                     rgba_black, rgba1);
+                  }
+                  else
+                  {
+                    ctx_braille_set (braille, col +1, row + 1, utf8,
+                                     rgba1, rgba_black);
+                  }
+                }
+              }
+          }
+        }
+        break;
+    }
+}
+
 
 inline static void ctx_braille_render (void *ctx,
                                        CtxCommand *command)
@@ -397,9 +478,9 @@ inline static void ctx_braille_flush (CtxBraille *braille)
   int width =  braille->width;
   int height = braille->height;
   printf ("\e[H");
-  _ctx_utf8_output_buf (braille->pixels,
-                        CTX_FORMAT_RGBA8,
-                        width, height, width * 4, 0, braille);
+  ctx_braille_output_buf (braille->pixels,
+                          CTX_FORMAT_RGBA8,
+                          width, height, width * 4, 0, braille);
 #if CTX_BRAILLE_TEXT
   CtxRasterizer *rasterizer = (CtxRasterizer*)(braille->host->renderer);
   // XXX instead sort and inject along with braille
