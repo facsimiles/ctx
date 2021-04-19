@@ -38,7 +38,7 @@ Ctx *ctx = NULL; // initialized in main
 
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb (Ctx *ctx);
-int ctx_renderer_is_braille (Ctx *ctx);
+int ctx_renderer_is_term (Ctx *ctx);
 
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
@@ -1786,7 +1786,7 @@ int terminal_main (int argc, char **argv)
   width = ctx_width (ctx);
   height = ctx_height (ctx);
 
-  if (ctx_renderer_is_braille (ctx) && font_size <= 0)
+  if (ctx_renderer_is_term (ctx) && font_size <= 0)
   {
     font_size = 4.0;
   }

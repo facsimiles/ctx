@@ -175,7 +175,7 @@ Ctx *ctx_new_ui (int width, int height)
     fprintf (stderr, " fb");
     fprintf (stderr, " drm");
 #endif
-    fprintf (stderr, " braille");
+    fprintf (stderr, " term");
     fprintf (stderr, " termimg");
     fprintf (stderr, "\n");
     exit (-1);
@@ -222,8 +222,8 @@ Ctx *ctx_new_ui (int width, int height)
   // braille in terminal
   if (!ret)
   {
-    if ((backend==NULL) || (!strcmp (backend, "braille")))
-    ret = ctx_new_braille (width, height);
+    if ((backend==NULL) || (!strcmp (backend, "term")))
+    ret = ctx_new_term (width, height);
   }
   if (!ret)
   {

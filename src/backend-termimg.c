@@ -35,17 +35,35 @@ inline static void ctx_termimg_flush (CtxTermImg *termimg)
 {
   int width =  termimg->width;
   int height = termimg->height;
+  if (!termimg->pixels) return;
   uint8_t *encoded = malloc (width * height * 3 * 3);
   ctx_bin2base64 (termimg->pixels, width * height * 3,
                   encoded);
   int encoded_len = strlen (encoded);
 
+  int i = 0;
+
   printf ("\e[H");
-  printf ("\e_Gf=24,s=%i,v=%i,t=d,a=T;", width, height);
-  printf ("%s", encoded);
+  printf ("\e_Gf=24,s=%i,v=%i,t=d,a=T,m=1;\e\\", width, height);
+  while (i <  encoded_len)
+  {
+     if (i + 4096 <  encoded_len)
+     {
+       printf  ("\e_Gm=1;");
+     }
+     else
+     {
+       printf  ("\e_Gm=0;");
+     }
+     for (int n = 0; n < 4096 && i < encoded_len; n++)
+     {
+       printf ("%c", encoded[i]);
+       i++;
+     }
+     printf ("\e\\");
+  }
   free (encoded);
   
-  printf ("\e\\");
   fflush (NULL);
 }
 
@@ -79,7 +97,13 @@ Ctx *ctx_new_termimg (int width, int height)
   fprintf (stdout, "\e[?1049h");
   fprintf (stdout, "\e[?25l"); // cursor off
   CtxTermImg *termimg = (CtxTermImg*)calloc (sizeof (CtxTermImg), 1);
+
+
   int maxwidth = ctx_terminal_width ();
+
+  int colwidth = maxwidth/ctx_terminal_cols ();
+  maxwidth-=colwidth;
+
   int maxheight = ctx_terminal_height ();
   if (width <= 0 || height <= 0)
   {
@@ -96,7 +120,7 @@ Ctx *ctx_new_termimg (int width, int height)
   termimg->host = ctx_new_for_framebuffer (termimg->pixels,
                                            width, height,
                                            width * 3, CTX_FORMAT_RGB8);
-  _ctx_mouse (ctx, NC_MOUSE_DRAG);
+  //_ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_renderer (ctx, termimg);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, 14.0f);

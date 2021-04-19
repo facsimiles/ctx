@@ -763,11 +763,11 @@ ctx_set (Ctx *ctx, uint64_t key_hash, const char *string, int len);
 const char *
 ctx_get (Ctx *ctx, const char *key);
 
-int ctx_renderer_is_braille (Ctx *ctx);
+int ctx_renderer_is_term (Ctx *ctx);
 Ctx *ctx_new_ctx (int width, int height);
 Ctx *ctx_new_fb (int width, int height, int drm);
 Ctx *ctx_new_sdl (int width, int height);
-Ctx *ctx_new_braille (int width, int height);
+Ctx *ctx_new_term (int width, int height);
 Ctx *ctx_new_termimg (int width, int height);
 
 int ctx_resolve_font (const char *name);
@@ -988,12 +988,12 @@ typedef struct _CtxTiled CtxTiled;
 
 struct _CtxTiled
 {
-   void (*render)    (void *braille, CtxCommand *command);
-   void (*reset)     (void *braille);
-   void (*flush)     (void *braille);
+   void (*render)    (void *term, CtxCommand *command);
+   void (*reset)     (void *term);
+   void (*flush)     (void *term);
    char *(*get_clipboard) (void *ctxctx);
    void (*set_clipboard) (void *ctxctx, const char *text);
-   void (*free)      (void *braille);
+   void (*free)      (void *term);
    Ctx          *ctx;
    int           width;
    int           height;

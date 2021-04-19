@@ -33,9 +33,9 @@ ctx-string.c
 renderer-cairo.c
 backend-ctx.c
 backend-fb.c
-backend-braille.c
-backend-termimg.c
 backend-sdl.c
+backend-term.c
+backend-termimg.c
 formatter.c
 ctx.c
 end-implementation

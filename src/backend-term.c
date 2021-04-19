@@ -5,7 +5,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
-typedef struct CtxBrailleCell
+typedef struct CtxTermCell
 {
   char    utf8[5];
   uint8_t fg[4];
@@ -14,24 +14,24 @@ typedef struct CtxBrailleCell
   char    prev_utf8[5];
   uint8_t prev_fg[4];
   uint8_t prev_bg[4];
-} CtxBrailleCell;
+} CtxTermCell;
 
-typedef struct CtxBrailleLine
+typedef struct CtxTermLine
 {
-  CtxBrailleCell *cells;
+  CtxTermCell *cells;
   int maxcol;
   int size;
-} CtxBrailleLine;
+} CtxTermLine;
 
-typedef struct _CtxBraille CtxBraille;
-struct _CtxBraille
+typedef struct _CtxTerm CtxTerm;
+struct _CtxTerm
 {
-   void (*render) (void *braille, CtxCommand *command);
-   void (*reset)  (void *braille);
-   void (*flush)  (void *braille);
+   void (*render) (void *term, CtxCommand *command);
+   void (*reset)  (void *term);
+   void (*flush)  (void *term);
    char *(*get_clipboard) (void *ctxctx);
    void (*set_clipboard) (void *ctxctx, const char *text);
-   void (*free)   (void *braille);
+   void (*free)   (void *term);
    Ctx      *ctx;
    int       width;
    int       height;
@@ -43,20 +43,20 @@ struct _CtxBraille
    CtxList  *lines;
 };
 
-void ctx_braille_set (CtxBraille *braille,
+void ctx_term_set (CtxTerm *term,
                       int col, int row, const char *utf8,
                       uint8_t *fg, uint8_t *bg)
 {
-  while (ctx_list_length (braille->lines) < row)
+  while (ctx_list_length (term->lines) < row)
   {
-    ctx_list_append (&braille->lines, calloc (sizeof (CtxBrailleLine), 1));
+    ctx_list_append (&term->lines, calloc (sizeof (CtxTermLine), 1));
   }
-  CtxBrailleLine *line = ctx_list_nth_data (braille->lines, row-1);
+  CtxTermLine *line = ctx_list_nth_data (term->lines, row-1);
   assert (line);
   if (line->size < col)
   {
      int new_size = ((col + 128)/128)*128;
-     line->cells = realloc (line->cells, sizeof (CtxBrailleCell) * new_size);
+     line->cells = realloc (line->cells, sizeof (CtxTermCell) * new_size);
      line->size = new_size;
   }
   if (col > line->maxcol) line->maxcol = col;
@@ -65,7 +65,7 @@ void ctx_braille_set (CtxBraille *braille,
   memcpy  (line->cells[col-1].bg, bg, 3);
 }
 
-void ctx_braille_scanout (CtxBraille *braille)
+void ctx_term_scanout (CtxTerm *term)
 {
   int row = 1;
   printf ("\e[H");
@@ -73,12 +73,12 @@ void ctx_braille_scanout (CtxBraille *braille)
   printf ("\e[0m");
   uint8_t rgba_bg[4]={0,0,0,0};
   uint8_t rgba_fg[4]={255,255,255,255};
-  for (CtxList *l = braille->lines; l; l = l->next)
+  for (CtxList *l = term->lines; l; l = l->next)
   {
-    CtxBrailleLine *line = l->data;
+    CtxTermLine *line = l->data;
     for (int col = 1; col < line->maxcol; col++)
     {
-      CtxBrailleCell *cell = &line->cells[col-1];
+      CtxTermCell *cell = &line->cells[col-1];
 
       if (strcmp(cell->utf8, cell->prev_utf8) ||
           memcmp(cell->fg, cell->prev_fg, 3) ||
@@ -127,11 +127,11 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
                           int height,
                           int stride,
                           int reverse,
-                          CtxBraille *braille)
+                          CtxTerm *term)
 {
   const char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
   int no = 0;
-  assert (braille);
+  assert (term);
   printf ("\e[?25l"); // cursor off
   switch (format)
     {
@@ -360,17 +360,17 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
   printf ("\e[?25h"); // cursor on
 }
 
-static inline void ctx_braille_output_buf (uint8_t *pixels,
+static inline void ctx_term_output_buf (uint8_t *pixels,
                           int format,
                           int width,
                           int height,
                           int stride,
                           int reverse,
-                          CtxBraille *braille)
+                          CtxTerm *term)
 {
   const char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
 
-  assert (braille);
+  assert (term);
   switch (format)
     {
       case CTX_FORMAT_RGBA8:
@@ -448,12 +448,12 @@ static inline void ctx_braille_output_buf (uint8_t *pixels,
                   utf8[ctx_unichar_to_utf8 (unicode, (uint8_t*)utf8)]=0;
                   if (pixels_set >= 6)
                   {
-                    ctx_braille_set (braille, col +1, row + 1, " ",
+                    ctx_term_set (term, col +1, row + 1, " ",
                                      rgba_black, rgba1);
                   }
                   else
                   {
-                    ctx_braille_set (braille, col +1, row + 1, utf8,
+                    ctx_term_set (term, col +1, row + 1, utf8,
                                      rgba1, rgba_black);
                   }
                 }
@@ -465,24 +465,24 @@ static inline void ctx_braille_output_buf (uint8_t *pixels,
 }
 
 
-inline static void ctx_braille_render (void *ctx,
+inline static void ctx_term_render (void *ctx,
                                        CtxCommand *command)
 {
-  CtxBraille *braille = (void*)ctx;
+  CtxTerm *term = (void*)ctx;
   /* directly forward */
-  ctx_process (braille->host, &command->entry);
+  ctx_process (term->host, &command->entry);
 }
 
-inline static void ctx_braille_flush (CtxBraille *braille)
+inline static void ctx_term_flush (CtxTerm *term)
 {
-  int width =  braille->width;
-  int height = braille->height;
+  int width =  term->width;
+  int height = term->height;
   printf ("\e[H");
-  ctx_braille_output_buf (braille->pixels,
+  ctx_term_output_buf (term->pixels,
                           CTX_FORMAT_RGBA8,
-                          width, height, width * 4, 0, braille);
+                          width, height, width * 4, 0, term);
 #if CTX_BRAILLE_TEXT
-  CtxRasterizer *rasterizer = (CtxRasterizer*)(braille->host->renderer);
+  CtxRasterizer *rasterizer = (CtxRasterizer*)(term->host->renderer);
   // XXX instead sort and inject along with braille
   //
 
@@ -497,7 +497,7 @@ inline static void ctx_braille_flush (CtxBraille *braille)
 #if 1  // we do it in the rasterizer instead - now that we
        // are not accumulating a drawlist but directly forwarding to
        // host with ctx_process()
-    uint8_t *pixels = braille->pixels;
+    uint8_t *pixels = term->pixels;
     long rgb_sum[4]={0,0,0};
     for (int v = 0; v <  4; v ++)
     for (int u = 0; u <  2; u ++)
@@ -526,11 +526,11 @@ inline static void ctx_braille_flush (CtxBraille *braille)
       //printf ("\e[%i;%iH%c", glyph->row, glyph->col, glyph->unichar);
       char utf8[8];
       utf8[ctx_unichar_to_utf8(glyph->unichar, (uint8_t*)utf8)]=0;
-      ctx_braille_set (braille, glyph->col, glyph->row, 
+      ctx_term_set (term, glyph->col, glyph->row, 
                        utf8, glyph->rgba_fg, glyph->rgba_bg);
       free (glyph);
   }
-  ctx_braille_scanout (braille);
+  ctx_term_scanout (term);
   printf ("\e[0m");
   fflush(NULL);
   while (rasterizer->glyphs)
@@ -538,36 +538,36 @@ inline static void ctx_braille_flush (CtxBraille *braille)
 #endif
 }
 
-void ctx_braille_free (CtxBraille *braille)
+void ctx_term_free (CtxTerm *term)
 {
-  while (braille->lines)
+  while (term->lines)
   {
-    free (braille->lines->data);
-    ctx_list_remove (&braille->lines, braille->lines->data);
+    free (term->lines->data);
+    ctx_list_remove (&term->lines, term->lines->data);
   }
   printf ("\e[?25h"); // cursor on
   nc_at_exit ();
-  free (braille->pixels);
-  ctx_free (braille->host);
-  free (braille);
+  free (term->pixels);
+  ctx_free (term->host);
+  free (term);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
-int ctx_renderer_is_braille (Ctx *ctx)
+int ctx_renderer_is_term (Ctx *ctx)
 {
   if (ctx->renderer &&
-      ctx->renderer->free == (void*)ctx_braille_free)
+      ctx->renderer->free == (void*)ctx_term_free)
           return 1;
   return 0;
 }
 
-Ctx *ctx_new_braille (int width, int height)
+Ctx *ctx_new_term (int width, int height)
 {
   Ctx *ctx = ctx_new ();
 #if CTX_RASTERIZER
   fprintf (stdout, "\e[?1049h");
   fprintf (stdout, "\e[?25l"); // cursor off
-  CtxBraille *braille = (CtxBraille*)calloc (sizeof (CtxBraille), 1);
+  CtxTerm *term = (CtxTerm*)calloc (sizeof (CtxTerm), 1);
   int maxwidth = ctx_terminal_cols  () * 2;
   int maxheight = (ctx_terminal_rows ()-1) * 4;
   if (width <= 0 || height <= 0)
@@ -577,26 +577,26 @@ Ctx *ctx_new_braille (int width, int height)
   }
   if (width > maxwidth) width = maxwidth;
   if (height > maxheight) height = maxheight;
-  braille->ctx = ctx;
-  braille->width  = width;
-  braille->height = height;
-  braille->cols = (width + 1) / 2;
-  braille->rows = (height + 3) / 4;
-  braille->lines = 0;
-  braille->pixels = (uint8_t*)malloc (width * height * 4);
-  braille->host = ctx_new_for_framebuffer (braille->pixels,
+  term->ctx = ctx;
+  term->width  = width;
+  term->height = height;
+  term->cols = (width + 1) / 2;
+  term->rows = (height + 3) / 4;
+  term->lines = 0;
+  term->pixels = (uint8_t*)malloc (width * height * 4);
+  term->host = ctx_new_for_framebuffer (term->pixels,
                                            width, height,
                                            width * 4, CTX_FORMAT_RGBA8);
 #if CTX_BRAILLE_TEXT
-  ((CtxRasterizer*)braille->host->renderer)->term_glyphs=1;
+  ((CtxRasterizer*)term->host->renderer)->term_glyphs=1;
 #endif
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
-  ctx_set_renderer (ctx, braille);
+  ctx_set_renderer (ctx, term);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, 4.0f);
-  braille->render = ctx_braille_render;
-  braille->flush = (void(*)(void*))ctx_braille_flush;
-  braille->free  = (void(*)(void*))ctx_braille_free;
+  term->render = ctx_term_render;
+  term->flush = (void(*)(void*))ctx_term_flush;
+  term->free  = (void(*)(void*))ctx_term_free;
 #endif
 
 

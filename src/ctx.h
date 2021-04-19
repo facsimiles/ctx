@@ -642,7 +642,7 @@ void *ctx_get_renderer (Ctx *ctx);
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb (Ctx *ctx);
 int ctx_renderer_is_ctx (Ctx *ctx);
-int ctx_renderer_is_braille (Ctx *ctx);
+int ctx_renderer_is_term (Ctx *ctx);
 
 /* the following API is only available when CTX_EVENTS is defined to 1
  *

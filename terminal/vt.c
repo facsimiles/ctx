@@ -3368,7 +3368,12 @@ static void display_image (VT *vt, Image *image,
                           )
 {
   int i = 0;
-  for (i = 0; vt->current_line->images[i] && i < 4; i++);
+  for (i = 0; vt->current_line->images[i] && i < 4; i++)
+  {
+     if (vt->current_line->image_col[i] == vt->cursor_x)
+       break;
+  }
+  //for (i = 0; vt->current_line->images[i] && i < 4; i++);
   if (i >= 4) { i = 3; }
   /* this needs a struct and dynamic allocation */
   vt->current_line->images[i] = image;
@@ -3382,6 +3387,8 @@ static void display_image (VT *vt, Image *image,
   vt->current_line->image_rows[i] = rows;
   vt->current_line->image_cols[i] = cols;
 }
+
+static int vt_gfx_pending=0;
 
 void vt_gfx (VT *vt, const char *command)
 {
@@ -3680,7 +3687,10 @@ cleanup:
       vt->gfx.data = NULL;
       vt->gfx.data_size=0;
       vt->gfx.multichunk=0;
+      vt_gfx_pending = 0;
     }
+  else
+     vt_gfx_pending = 1;
 }
 
 static void vt_state_vt52 (VT *vt, int byte)
@@ -6438,7 +6448,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
   scale_x *= vt->scale_x;
   scale_y *= vt->scale_y;
 
-  if (!ctx_renderer_is_braille (ctx))
+  if (!ctx_renderer_is_term (ctx))
   {
     // TODO : use our own special glyphs when glyphs are not passed through
     if (!vt_special_glyph (ctx, vt, x, y + offset_y * vt->ch, vt->cw * scale_x, vt->ch * scale_y, unichar) )
@@ -6468,7 +6478,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
   }
   y -= vt->font_size * 0.22;
   if (bold
-      && !ctx_renderer_is_braille (ctx)
+      && !ctx_renderer_is_term (ctx)
      )
     {
       ctx_move_to (ctx, x - vt->font_size/30.0, y);
