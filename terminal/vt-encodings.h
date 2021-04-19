@@ -173,9 +173,9 @@ static void bin2base64_group (const unsigned char *in, int remaining, char *out)
 }
 
 void
-bin2base64 (const void *bin,
-               int         bin_length,
-               char       *ascii)
+ctx_bin2base64 (const void *bin,
+                int         bin_length,
+                char       *ascii)
 {
   /* this allocation is a hack to ensure we always produce the same result,
    * regardless of padding data accidentally taken into account.
@@ -216,9 +216,9 @@ static void base64_revmap_init (void)
 }
 
 int
-base642bin (const char    *ascii,
-               int           *length,
-               unsigned char *bin)
+ctx_base642bin (const char    *ascii,
+                int           *length,
+                unsigned char *bin)
 {
   int i;
   int charno = 0;

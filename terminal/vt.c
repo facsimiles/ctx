@@ -52,7 +52,6 @@
 #include <termios.h>
 #include <zlib.h>
 
-
 #include "ctx.h"
 
 //#define STB_IMAGE_IMPLEMENTATION
@@ -3504,9 +3503,9 @@ void vt_gfx (VT *vt, const char *command)
       {
         int bin_length = vt->gfx.data_size;
         uint8_t *data2 = malloc (vt->gfx.data_size);
-        bin_length = base642bin ( (char *) vt->gfx.data,
-                                  &bin_length,
-                                  data2);
+        bin_length = ctx_base642bin ( (char *) vt->gfx.data,
+                                     &bin_length,
+                                     data2);
         memcpy (vt->gfx.data, data2, bin_length + 1);
         vt->gfx.data_size = bin_length;
         free (data2);
@@ -4510,9 +4509,9 @@ static void vt_state_osc (VT *vt, int byte)
                   {
                     int bin_length = vt->argument_buf_len;
                     uint8_t *data2 = malloc (bin_length);
-                    bin_length = base642bin ( (char *) p,
-                                              &bin_length,
-                                              data2);
+                    bin_length = ctx_base642bin ( (char *) p,
+                                                 &bin_length,
+                                                 data2);
                     int channels = 4;
                     int buf_width = 0;
                     int buf_height = 0;
