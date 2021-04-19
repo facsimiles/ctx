@@ -14,6 +14,7 @@ ctx-internal.h
 sha1.c
 start-implementation
 thash.h
+base64.h
 drawlist.h
 util.h
 drawlist.c

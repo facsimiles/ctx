@@ -1718,6 +1718,15 @@ ctx_get_contents (const char     *path,
 void ctx_parser_free (CtxParser *parser);
 typedef struct _CtxSHA1 CtxSHA1;
 
+void
+ctx_bin2base64 (const void *bin,
+                int         bin_length,
+                char       *ascii);
+int
+ctx_base642bin (const char    *ascii,
+                int           *length,
+                unsigned char *bin);
+
 #ifndef CTX_CODEC_CHAR
 //#define CTX_CODEC_CHAR '\035'
 //#define CTX_CODEC_CHAR 'a'
