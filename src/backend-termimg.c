@@ -35,9 +35,15 @@ inline static void ctx_termimg_flush (CtxTermImg *termimg)
 {
   int width =  termimg->width;
   int height = termimg->height;
+  uint8_t *encoded = malloc (width * height * 3 * 3);
+  ctx_bin2base64 (termimg->pixels, width * height * 3,
+                  encoded);
+  int encoded_len = strlen (encoded);
 
   printf ("\e[H");
-  printf ("\e_Gf=32,s=%i,v=%i;", width, height);
+  printf ("\e_Gf=24,s=%i,v=%i,t=d,a=T;", width, height);
+  printf ("%s", encoded);
+  free (encoded);
   
   printf ("\e\\");
   fflush (NULL);
@@ -93,7 +99,7 @@ Ctx *ctx_new_termimg (int width, int height)
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_renderer (ctx, termimg);
   ctx_set_size (ctx, width, height);
-  ctx_font_size (ctx, 4.0f);
+  ctx_font_size (ctx, 14.0f);
   termimg->render = ctx_termimg_render;
   termimg->flush = (void(*)(void*))ctx_termimg_flush;
   termimg->free  = (void(*)(void*))ctx_termimg_free;
