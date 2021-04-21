@@ -17,7 +17,10 @@ struct _CtxTermImg
    Ctx      *ctx;
    int       width;
    int       height;
+   int       cols;
+   int       rows;
    int       was_down;
+   // we need to have the above members in that order up to here
    uint8_t  *pixels;
    Ctx      *host;
    CtxList  *lines;
@@ -36,7 +39,7 @@ inline static void ctx_termimg_flush (CtxTermImg *termimg)
   int width =  termimg->width;
   int height = termimg->height;
   if (!termimg->pixels) return;
-  uint8_t *encoded = malloc (width * height * 3 * 3);
+  char *encoded = malloc (width * height * 3 * 3);
   ctx_bin2base64 (termimg->pixels, width * height * 3,
                   encoded);
   int encoded_len = strlen (encoded);
@@ -55,7 +58,7 @@ inline static void ctx_termimg_flush (CtxTermImg *termimg)
      {
        printf  ("\e_Gm=0;");
      }
-     for (int n = 0; n < 4096 && i < encoded_len; n++)
+     for (int n = 0; n < 4000 && i < encoded_len; n++)
      {
        printf ("%c", encoded[i]);
        i++;
@@ -120,7 +123,7 @@ Ctx *ctx_new_termimg (int width, int height)
   termimg->host = ctx_new_for_framebuffer (termimg->pixels,
                                            width, height,
                                            width * 3, CTX_FORMAT_RGB8);
-  //_ctx_mouse (ctx, NC_MOUSE_DRAG);
+  _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_renderer (ctx, termimg);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, 14.0f);

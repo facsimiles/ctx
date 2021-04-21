@@ -8,7 +8,6 @@
 
 int ctx_terminal_width (void)
 {
-  int ret = 0;
   char buf[1024];
   struct termios orig_attr;
   struct termios raw;
@@ -55,7 +54,6 @@ int ctx_terminal_width (void)
 
 int ctx_terminal_height (void)
 {
-  int ret = 0;
   char buf[1024];
   struct termios orig_attr;
   struct termios raw;

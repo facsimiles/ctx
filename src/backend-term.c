@@ -47,6 +47,7 @@ void ctx_term_set (CtxTerm *term,
                       int col, int row, const char *utf8,
                       uint8_t *fg, uint8_t *bg)
 {
+  if (col < 1 || row < 1 || col > term->cols  || row > term->rows) return;
   while (ctx_list_length (term->lines) < row)
   {
     ctx_list_append (&term->lines, calloc (sizeof (CtxTermLine), 1));
@@ -383,12 +384,9 @@ static void ctx_term_output_buf (uint8_t *pixels,
               {
                 int     unicode = 0;
                 int     bitno = 0;
-                uint8_t rgba_black[4] = {0,0,0,255};
                 uint8_t rgba[2][4] = {
                                    {255,255,255,255},
                                    {0,0,0,255}};
-                int     col_count = 0;
-
                 int i = 0;
 
                 int  rgbasum[2][4] = {0,};
