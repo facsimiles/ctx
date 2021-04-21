@@ -124,9 +124,125 @@ static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   int diff = 0;
   for (c = 0; c<3;c++)
     diff += ctx_pow2(a[c]-b[c]);
+  return sqrtf(diff);
   return diff;
-  //return sqrtf(diff);
 }
+
+
+static void ctx_term_output_buf_half (uint8_t *pixels,
+                          int width,
+                          int height,
+                          CtxTerm *term)
+{
+  int stride = width * 4;
+  const char *sextants[]={
+   " ","▘","▝","▀","▖","▌", "▞", "▛", "▗", "▚", "▐", "▜","▄","▙","▟","█"
+
+  };
+  for (int row = 0; row < height/2; row++)
+    {
+      for (int col = 0; col < width /2; col++)
+        {
+          int     unicode = 0;
+          int     bitno = 0;
+          uint8_t rgba[2][4] = {
+                             {255,255,255,0},
+                             {0,0,0,0}};
+          int i = 0;
+
+          int  rgbasum[2][4] = {0,};
+          int  sumcount[2];
+
+          int curdiff = 0;
+          /* first find starting point colors */
+          for (int yi = 0; yi < ctx_term_ch; yi++)
+            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
+                {
+                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
+
+                  if (rgba[0][3] == 0)
+                  {
+                    for (int c = 0; c < 3; c++)
+                      rgba[0][c] = pixels[noi + c];
+                    rgba[0][3] = 255; // used only as mark of in-use
+                  }
+                  else
+                  {
+                    int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
+                    if (diff > curdiff)
+                    {
+                      curdiff = diff;
+                      for (int c = 0; c < 3; c++)
+                        rgba[1][c] = pixels[noi + c];
+                    }
+                  }
+
+                }
+
+          for (int iters = 0; iters < 1; iters++)
+          {
+                  i= 0;
+          for (int i = 0; i < 4; i ++)
+             rgbasum[0][i] = rgbasum[1][i]=0;
+          sumcount[0] = sumcount[1] = 0;
+
+          for (int yi = 0; yi < ctx_term_ch; yi++)
+            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
+                {
+                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
+
+                  int diff1 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
+                  int diff2 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[1]);
+                  int cluster = 0;
+                  if (diff1 <= diff2)
+                    cluster = 0;
+                  else
+                    cluster = 1;
+                  sumcount[cluster]++;
+                  for (int c = 0; c < 3; c++)
+                    rgbasum[cluster][c] += pixels[noi+c];
+                }
+
+
+          if (sumcount[0])
+          for (int c = 0; c < 3; c++)
+          {
+            rgba[0][c] = rgbasum[0][c] / sumcount[0];
+          }
+          if (sumcount[1])
+          for (int c = 0; c < 3; c++)
+          {
+            rgba[1][c] = rgbasum[1][c] / sumcount[1];
+          }
+          }
+
+          int pixels_set = 0;
+          for (int y = 0; y < ctx_term_ch; y++)
+            for (int x = 0; x < ctx_term_cw; x++)
+              {
+                int no = (row * ctx_term_ch + y) * stride + (col*ctx_term_cw+x) * 4;
+#define CHECK_IS_SET \
+      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba[0])< \
+       _ctx_rgba8_manhattan_diff (&pixels[no], rgba[1]))
+
+                int set = CHECK_IS_SET;
+#undef CHECK_IS_SET
+                if (set)
+                  { unicode |=  (1<< (bitno) ); 
+                    pixels_set ++; 
+                  }
+                bitno++;
+              }
+           if (pixels_set == 4)
+             ctx_term_set (term, col +1, row + 1, " ",
+                           rgba[1], rgba[0]);
+           else
+             ctx_term_set (term, col +1, row + 1, sextants[unicode],
+                           rgba[0], rgba[1]);
+        }
+    }
+}
+
 
 
 static void ctx_term_output_buf_quarters (uint8_t *pixels,

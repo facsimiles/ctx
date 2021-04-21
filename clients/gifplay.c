@@ -312,7 +312,7 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
   float scaleh = ctx_height (ctx) * 1.0 / stb_h;
   if (scaleh < scale) scale = scaleh;
   ctx_scale (ctx, scale, scale);
-  ctx_image_smoothing (ctx, 0);
+  //ctx_image_smoothing (ctx, 0);
   ctx_define_texture (ctx, NULL, stb_w, stb_h, stb_w * 4, CTX_FORMAT_RGBA8,
                       gifbuf, eid);
   ctx_fill (ctx);
