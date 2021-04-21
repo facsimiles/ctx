@@ -5667,6 +5667,13 @@ static void draw_braille_bit (Ctx *ctx, float x, float y, float cw, float ch, in
                  0.33 *cw, 0.33 * cw);
 }
 
+static void draw_sextant_bit (Ctx *ctx, float x, float y, float cw, float ch, int u, int v)
+{
+  ctx_rectangle (ctx,  x + u * cw * 0.5,
+                       y - ch + v * ch * 0.3333,
+                       0.5 *cw, 0.3333 * ch);
+}
+
 int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int unichar)
 {
   switch (unichar)
@@ -6436,6 +6443,88 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         }
         ctx_fill (ctx);
         return 0;
+      case 0x1fb00:
+      case 0x1fb01:
+      case 0x1fb02:
+      case 0x1fb03:
+      case 0x1fb04:
+      case 0x1fb05:
+      case 0x1fb06:
+      case 0x1fb07:
+      case 0x1fb08:
+      case 0x1fb09:
+      case 0x1fb0a:
+      case 0x1fb0b:
+      case 0x1fb0c:
+      case 0x1fb0d:
+      case 0x1fb0e:
+      case 0x1fb0f:
+      case 0x1fb10:
+      case 0x1fb11:
+      case 0x1fb12:
+      case 0x1fb13:
+      case 0x1fb14:
+      case 0x1fb15:
+      case 0x1fb16:
+      case 0x1fb17:
+      case 0x1fb18:
+      case 0x1fb19:
+      case 0x1fb1a:
+      case 0x1fb1b:
+      case 0x1fb1c:
+      case 0x1fb1d:
+      case 0x1fb1e:
+      case 0x1fb1f:
+      case 0x1fb20:
+      case 0x1fb21:
+      case 0x1fb22:
+      case 0x1fb23:
+      case 0x1fb24:
+      case 0x1fb25:
+      case 0x1fb26:
+      case 0x1fb27:
+      case 0x1fb28:
+      case 0x1fb29:
+      case 0x1fb2a:
+      case 0x1fb2b:
+      case 0x1fb2c:
+      case 0x1fb2d:
+      case 0x1fb2e:
+      case 0x1fb2f:
+      case 0x1fb30:
+      case 0x1fb31:
+      case 0x1fb32:
+      case 0x1fb33:
+      case 0x1fb34:
+      case 0x1fb35:
+      case 0x1fb36:
+      case 0x1fb37:
+      case 0x1fb38:
+      case 0x1fb39:
+      case 0x1fb3a:
+      case 0x1fb3b:
+
+        {
+          ctx_begin_path (ctx);
+          uint32_t bitmask = (unichar - 0x1fb00) + 1;
+          if (bitmask > 20) bitmask ++;
+          if (bitmask > 41) bitmask ++;
+
+          int bit = 0;
+          for (int v = 0; v < 3; v ++)
+          for (int u = 0; u < 2; u ++, bit ++)
+          {
+            if (bitmask & (1<<bit))
+            {
+              draw_sextant_bit (ctx, x, y, cw, ch, u, v);
+            }
+          }
+          ctx_fill (ctx);
+        }
+
+
+        break;
+
     }
   return -1;
 }
