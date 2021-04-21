@@ -118,7 +118,7 @@ static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   int diff = 0;
   for (c = 0; c<3;c++)
     diff += ctx_pow2(a[c]-b[c]);
-  return diff;
+  return sqrtf(diff);
 }
 
 static inline void
@@ -384,44 +384,64 @@ static void ctx_term_output_buf (uint8_t *pixels,
                 int     unicode = 0;
                 int     bitno = 0;
                 uint8_t rgba_black[4] = {0,0,0,255};
-                uint8_t rgba2[4] = {0,0,0,255};
-                uint8_t rgba1[4] = {0,0,0,255};
-                int     rgbasum[4] = {0,};
+                uint8_t rgba[2][4] = {
+                                   {255,255,255,255},
+                                   {0,0,0,255}};
                 int     col_count = 0;
 
-                // initialize two colors ceneters..
-                // first pixel with 1 member vs     no members = trans black
-                //
+                int i = 0;
+
+                int  rgbasum[2][4] = {0,};
+                int  sumcount[2];
+
+                for (int iters = 0; iters < 2; iters++)
+                {
+                        i= 0;
+                for (int i = 0; i < 4; i ++)
+                   rgbasum[0][i] = rgbasum[1][i]=0;
+                sumcount[0] = sumcount[1] = 0;
 
                 for (int yi = 0; yi < 3; yi++)
-                  for (int xi = 0; xi < 2; xi++)
+                  for (int xi = 0; xi < 2; xi++, i++)
                       {
                         int noi = (row * 3 + yi) * stride + (col*2+xi) * 4;
-                        int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba2);
-                        if (diff > 32*32)
-                        {
-                          for (int c = 0; c < 3; c++)
-                          {
-                            rgbasum[c] += pixels[noi+c];
-                          }
-                          col_count++;
-                        }
+
+                        int diff1 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
+                        int diff2 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[1]);
+                        int cluster = 0;
+                        if (diff1 <= diff2)
+                          cluster = 0;
+                        else
+                          cluster = 1;
+                        sumcount[cluster]++;
+                        for (int c = 0; c < 3; c++)
+                          rgbasum[cluster][c] += pixels[noi+c];
                       }
-                if (col_count)
+
+
+                if (sumcount[0])
                 for (int c = 0; c < 3; c++)
                 {
-                  rgba1[c] = rgbasum[c] / col_count;
+                  rgba[0][c] = rgbasum[0][c] / sumcount[0];
                 }
+                if (sumcount[1])
+                for (int c = 0; c < 3; c++)
+                {
+                  rgba[1][c] = rgbasum[1][c] / sumcount[1];
+                }
+                }
+
                 int pixels_set = 0;
                 for (int y = 0; y < 3; y++)
                   for (int x = 0; x < 2; x++)
                     {
                       int no = (row * 3 + y) * stride + (col*2+x) * 4;
 #define CHECK_IS_SET \
-      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba1)< \
-       _ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
+      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba[0])< \
+       _ctx_rgba8_manhattan_diff (&pixels[no], rgba[1]))
 
                       int set = CHECK_IS_SET;
+#undef CHECK_IS_SET
                       if (reverse) { set = !set; }
                       if (set)
                         { unicode |=  (1<< (bitno) ); 
@@ -430,7 +450,7 @@ static void ctx_term_output_buf (uint8_t *pixels,
                       bitno++;
                     }
                  ctx_term_set (term, col +1, row + 1, sextants[unicode],
-                               rgba1, rgba_black);
+                               rgba[0], rgba[1]);
 
               }
           }
@@ -559,11 +579,8 @@ inline static void ctx_term_flush (CtxTerm *term)
   printf ("\e[0m");
   for (CtxList *l = rasterizer->glyphs; l; l = l->next)
   {
-      CtxTermGlyph *glyph = l->data;
+    CtxTermGlyph *glyph = l->data;
 
-#if 1  // we do it in the rasterizer instead - now that we
-       // are not accumulating a drawlist but directly forwarding to
-       // host with ctx_process()
     uint8_t *pixels = term->pixels;
     long rgb_sum[4]={0,0,0};
     for (int v = 0; v <  3; v ++)
@@ -576,26 +593,11 @@ inline static void ctx_term_flush (CtxTerm *term)
     }
     for (int c = 0; c < 3; c ++)
       glyph->rgba_bg[c] = rgb_sum[c] / (3 * 2);
-#endif
-#if 0
-      if (memcmp (&glyph->rgba_fg[0],  &rgba_fg[0], 3))
-      {
-        memcpy (&rgba_fg[0], &glyph->rgba_fg[0], 3);
-        printf ("\e[38;2;%i;%i;%im", rgba_fg[0], rgba_fg[1], rgba_fg[2]);
-      }
-      if (memcmp (&glyph->rgba_bg[0],  &rgba_bg[0], 3))
-      {
-        memcpy (&rgba_bg[0], &glyph->rgba_bg[0], 3);
-        printf ("\e[48;2;%i;%i;%im", rgba_bg[0], rgba_bg[1], rgba_bg[2]);
-      }
-#endif
-
-      //printf ("\e[%i;%iH%c", glyph->row, glyph->col, glyph->unichar);
-      char utf8[8];
-      utf8[ctx_unichar_to_utf8(glyph->unichar, (uint8_t*)utf8)]=0;
-      ctx_term_set (term, glyph->col, glyph->row, 
-                       utf8, glyph->rgba_fg, glyph->rgba_bg);
-      free (glyph);
+    char utf8[8];
+    utf8[ctx_unichar_to_utf8(glyph->unichar, (uint8_t*)utf8)]=0;
+    ctx_term_set (term, glyph->col, glyph->row, 
+                     utf8, glyph->rgba_fg, glyph->rgba_bg);
+    free (glyph);
   }
   ctx_term_scanout (term);
   printf ("\e[0m");
