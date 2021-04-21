@@ -40,12 +40,12 @@ struct _CtxTerm
    int       was_down;
    uint8_t  *pixels;
 
-   int       cx;  // cell-x native pixels per char
-   int       cy;  // cell-y
-
    Ctx      *host;
    CtxList  *lines;
 };
+
+static int ctx_term_ch = 8;
+static int ctx_term_cw = 8;
 
 void ctx_term_set (CtxTerm *term,
                       int col, int row, const char *utf8,
@@ -160,10 +160,10 @@ static void ctx_term_output_buf (uint8_t *pixels,
 
                 int curdiff = 0;
                 /* first find starting point colors */
-                for (int yi = 0; yi < term->cy; yi++)
-                  for (int xi = 0; xi < term->cx; xi++, i++)
+                for (int yi = 0; yi < ctx_term_ch; yi++)
+                  for (int xi = 0; xi < ctx_term_cw; xi++, i++)
                       {
-                        int noi = (row * term->cy + yi) * stride + (col*term->cx+xi) * 4;
+                        int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
 
                         if (rgba[0][3] == 0)
                         {
@@ -191,10 +191,10 @@ static void ctx_term_output_buf (uint8_t *pixels,
                    rgbasum[0][i] = rgbasum[1][i]=0;
                 sumcount[0] = sumcount[1] = 0;
 
-                for (int yi = 0; yi < term->cy; yi++)
-                  for (int xi = 0; xi < term->cx; xi++, i++)
+                for (int yi = 0; yi < ctx_term_ch; yi++)
+                  for (int xi = 0; xi < ctx_term_cw; xi++, i++)
                       {
-                        int noi = (row * term->cy + yi) * stride + (col*term->cx+xi) * 4;
+                        int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
 
                         int diff1 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
                         int diff2 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[1]);
@@ -222,10 +222,10 @@ static void ctx_term_output_buf (uint8_t *pixels,
                 }
 
                 int pixels_set = 0;
-                for (int y = 0; y < term->cy; y++)
-                  for (int x = 0; x < term->cx; x++)
+                for (int y = 0; y < ctx_term_ch; y++)
+                  for (int x = 0; x < ctx_term_cw; x++)
                     {
-                      int no = (row * term->cy + y) * stride + (col*term->cx+x) * 4;
+                      int no = (row * ctx_term_ch + y) * stride + (col*ctx_term_cw+x) * 4;
 #define CHECK_IS_SET \
       (_ctx_rgba8_manhattan_diff (&pixels[no], rgba[0])< \
        _ctx_rgba8_manhattan_diff (&pixels[no], rgba[1]))
@@ -357,7 +357,6 @@ inline static void ctx_term_flush (CtxTerm *term)
 {
   int width =  term->width;
   int height = term->height;
-  printf ("\e[H");
   ctx_term_output_buf (term->pixels,
                           CTX_FORMAT_RGBA8,
                           width, height, width * 4, 0, term);
@@ -369,29 +368,31 @@ inline static void ctx_term_flush (CtxTerm *term)
   //uint8_t rgba_bg[4]={0,0,0,0};
   //uint8_t rgba_fg[4]={255,0,255,255};
 
-  printf ("\e[0m");
   for (CtxList *l = rasterizer->glyphs; l; l = l->next)
   {
     CtxTermGlyph *glyph = l->data;
 
     uint8_t *pixels = term->pixels;
     long rgb_sum[4]={0,0,0};
-    for (int v = 0; v <  3; v ++)
-    for (int u = 0; u <  2; u ++)
+    for (int v = 0; v <  ctx_term_ch; v ++)
+    for (int u = 0; u <  ctx_term_cw; u ++)
     {
-      int i = ((glyph->row-1) * 3 + v) * rasterizer->blit_width + 
-              ((glyph->col-1) * 2 + u);
+      int i = ((glyph->row-1) * ctx_term_ch + v) * rasterizer->blit_width + 
+              ((glyph->col-1) * ctx_term_cw + u);
       for (int c = 0; c < 3; c ++)
         rgb_sum[c] += pixels[i*4+c];
     }
     for (int c = 0; c < 3; c ++)
-      glyph->rgba_bg[c] = rgb_sum[c] / (3 * 2);
+      glyph->rgba_bg[c] = rgb_sum[c] / (ctx_term_ch * ctx_term_cw);
     char utf8[8];
     utf8[ctx_unichar_to_utf8(glyph->unichar, (uint8_t*)utf8)]=0;
     ctx_term_set (term, glyph->col, glyph->row, 
                      utf8, glyph->rgba_fg, glyph->rgba_bg);
     free (glyph);
   }
+
+  printf ("\e[H");
+  printf ("\e[0m");
   ctx_term_scanout (term);
   printf ("\e[0m");
   fflush(NULL);
@@ -423,6 +424,16 @@ int ctx_renderer_is_term (Ctx *ctx)
   return 0;
 }
 
+float ctx_term_get_cell_width (Ctx *ctx)
+{
+  return ctx_term_cw;
+}
+
+float ctx_term_get_cell_height (Ctx *ctx)
+{
+  return ctx_term_ch;
+}
+
 Ctx *ctx_new_term (int width, int height)
 {
   Ctx *ctx = ctx_new ();
@@ -431,11 +442,11 @@ Ctx *ctx_new_term (int width, int height)
   fprintf (stdout, "\e[?25l"); // cursor off
   CtxTerm *term = (CtxTerm*)calloc (sizeof (CtxTerm), 1);
  
-  term->cx = 2;
-  term->cy = 3;
+  ctx_term_cw = 2;
+  ctx_term_ch = 3;
 
-  int maxwidth = ctx_terminal_cols  () * term->cx;
-  int maxheight = (ctx_terminal_rows ()-1) * term->cy;
+  int maxwidth = ctx_terminal_cols  () * ctx_term_cw;
+  int maxheight = (ctx_terminal_rows ()-1) * ctx_term_ch;
   if (width <= 0 || height <= 0)
   {
     width = maxwidth;
@@ -447,8 +458,8 @@ Ctx *ctx_new_term (int width, int height)
   term->width  = width;
   term->height = height;
 
-  term->cols = (width + 1) / term->cx;
-  term->rows = (height + 2) / term->cy;
+  term->cols = (width + 1) / ctx_term_cw;
+  term->rows = (height + 2) / ctx_term_ch;
   term->lines = 0;
   term->pixels = (uint8_t*)malloc (width * height * 4);
   term->host = ctx_new_for_framebuffer (term->pixels,
@@ -460,7 +471,7 @@ Ctx *ctx_new_term (int width, int height)
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_renderer (ctx, term);
   ctx_set_size (ctx, width, height);
-  ctx_font_size (ctx, term->cy); 
+  ctx_font_size (ctx, ctx_term_ch); 
   term->render = ctx_term_render;
   term->flush = (void(*)(void*))ctx_term_flush;
   term->free  = (void(*)(void*))ctx_term_free;

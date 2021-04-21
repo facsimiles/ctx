@@ -1726,6 +1726,8 @@ int
 ctx_base642bin (const char    *ascii,
                 int           *length,
                 unsigned char *bin);
+float ctx_term_get_cell_width (Ctx *ctx);
+float ctx_term_get_cell_height (Ctx *ctx);
 
 #ifndef CTX_CODEC_CHAR
 //#define CTX_CODEC_CHAR '\035'

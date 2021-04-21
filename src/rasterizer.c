@@ -1535,23 +1535,28 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
 
 #if CTX_BRAILLE_TEXT
   float font_size = 0;
+  int ch = 1;
+  int cw = 1;
+
   if (rasterizer->term_glyphs)
   {
     float tx = 0;
     float ty = rasterizer->state->gstate.font_size;
     float txb = 0;
     float tyb = 0;
+
+    ch = ctx_term_get_cell_height (rasterizer->ctx);
+    cw = ctx_term_get_cell_width (rasterizer->ctx);
+
     _ctx_user_to_device (rasterizer->state, &tx, &ty);
     _ctx_user_to_device (rasterizer->state, &txb, &tyb);
     font_size = ty-tyb;
   }
   if (rasterizer->term_glyphs && !stroke &&
-      font_size >= 2.9 &&
-      font_size < 4.5 
-    )
+      fabs (font_size - ch) < 0.5)
   {
-    int col = rasterizer->x / 2 + 1;
-    int row = rasterizer->y / 3 + 1;
+    int col = rasterizer->x / cw + 1;
+    int row = rasterizer->y / ch + 1;
     CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
     ctx_list_append (&rasterizer->glyphs, glyph);
     glyph->unichar = unichar;
@@ -1583,11 +1588,14 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
   _ctx_user_to_device (rasterizer->state, &tx, &ty);
   font_size = ty;
   }
+  int   ch = ctx_term_get_cell_height (rasterizer->ctx);
+  int   cw = ctx_term_get_cell_width (rasterizer->ctx);
 
-  if (rasterizer->term_glyphs && !stroke && font_size >= 2.9 && font_size < 4.5)
+  if (rasterizer->term_glyphs && !stroke &&
+      fabs (font_size - ch) < 0.5)
   {
-    int col = rasterizer->x / 2 + 1;
-    int row = rasterizer->y / 3 + 1;
+    int col = rasterizer->x / cw + 1;
+    int row = rasterizer->y / ch + 1;
     for (int i = 0; string[i]; i++, col++)
     {
       CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);

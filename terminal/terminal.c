@@ -1788,7 +1788,7 @@ int terminal_main (int argc, char **argv)
 
   if (ctx_renderer_is_term (ctx) && font_size <= 0)
   {
-    font_size = 3.0;
+    font_size = ctx_term_get_cell_height (ctx);
   }
 
   if (cols <= 0)
