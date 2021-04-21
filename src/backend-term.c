@@ -121,13 +121,14 @@ static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   return diff;
 }
 
-static inline void _ctx_utf8_output_buf (uint8_t *pixels,
-                          int format,
-                          int width,
-                          int height,
-                          int stride,
-                          int reverse,
-                          CtxTerm *term)
+static inline void
+_ctx_utf8_output_buf (uint8_t *pixels,
+                      int      format,
+                      int      width,
+                      int      height,
+                      int      stride,
+                      int      reverse,
+                      CtxTerm *term)
 {
   const char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
   int no = 0;
@@ -360,7 +361,7 @@ static inline void _ctx_utf8_output_buf (uint8_t *pixels,
   printf ("\e[?25h"); // cursor on
 }
 
-static inline void ctx_term_output_buf (uint8_t *pixels,
+static void ctx_term_output_buf (uint8_t *pixels,
                           int format,
                           int width,
                           int height,
@@ -368,9 +369,75 @@ static inline void ctx_term_output_buf (uint8_t *pixels,
                           int reverse,
                           CtxTerm *term)
 {
-  const char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
+  //reverse = !reverse;
+  const char *sextants[]={
+   " ","🬀","🬁","🬂","🬃","🬄","🬅","🬆","🬇","🬈","🬉","🬊","🬋","🬌","🬍","🬎","🬏","🬐","🬑","🬒","🬓","▌","🬔","🬕","🬖","🬗","🬘","🬙","🬚","🬛","🬜","🬝","🬞","🬟","🬠","🬡","🬢","🬣","🬤","🬥","🬦","🬧","▐","🬨","🬩","🬪","🬫","🬬","🬭","🬮","🬯","🬰","🬱","🬲","🬳","🬴","🬵","🬶","🬷","🬸","🬹","🬺","🬻","█"
+  };
+  switch (format)
+    {
+      case CTX_FORMAT_RGBA8:
+        {
+        for (int row = 0; row < height/3; row++)
+          {
+            for (int col = 0; col < width /2; col++)
+              {
+                int     unicode = 0;
+                int     bitno = 0;
+                uint8_t rgba_black[4] = {0,0,0,255};
+                uint8_t rgba2[4] = {0,0,0,255};
+                uint8_t rgba1[4] = {0,0,0,255};
+                int     rgbasum[4] = {0,};
+                int     col_count = 0;
 
-  assert (term);
+                // initialize two colors ceneters..
+                // first pixel with 1 member vs     no members = trans black
+                //
+
+                for (int yi = 0; yi < 3; yi++)
+                  for (int xi = 0; xi < 2; xi++)
+                      {
+                        int noi = (row * 3 + yi) * stride + (col*2+xi) * 4;
+                        int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba2);
+                        if (diff > 32*32)
+                        {
+                          for (int c = 0; c < 3; c++)
+                          {
+                            rgbasum[c] += pixels[noi+c];
+                          }
+                          col_count++;
+                        }
+                      }
+                if (col_count)
+                for (int c = 0; c < 3; c++)
+                {
+                  rgba1[c] = rgbasum[c] / col_count;
+                }
+                int pixels_set = 0;
+                for (int y = 0; y < 3; y++)
+                  for (int x = 0; x < 2; x++)
+                    {
+                      int no = (row * 3 + y) * stride + (col*2+x) * 4;
+#define CHECK_IS_SET \
+      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba1)< \
+       _ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
+
+                      int set = CHECK_IS_SET;
+                      if (reverse) { set = !set; }
+                      if (set)
+                        { unicode |=  (1<< (bitno) ); 
+                          pixels_set ++; 
+                        }
+                      bitno++;
+                    }
+                 ctx_term_set (term, col +1, row + 1, sextants[unicode],
+                               rgba1, rgba_black);
+
+              }
+          }
+        }
+        break;
+    }
+  return;
   switch (format)
     {
       case CTX_FORMAT_RGBA8:
@@ -499,16 +566,16 @@ inline static void ctx_term_flush (CtxTerm *term)
        // host with ctx_process()
     uint8_t *pixels = term->pixels;
     long rgb_sum[4]={0,0,0};
-    for (int v = 0; v <  4; v ++)
+    for (int v = 0; v <  3; v ++)
     for (int u = 0; u <  2; u ++)
     {
-      int i = ((glyph->row-1) * 4 + v) * rasterizer->blit_width + 
+      int i = ((glyph->row-1) * 3 + v) * rasterizer->blit_width + 
               ((glyph->col-1) * 2 + u);
       for (int c = 0; c < 3; c ++)
         rgb_sum[c] += pixels[i*4+c];
     }
     for (int c = 0; c < 3; c ++)
-      glyph->rgba_bg[c] = rgb_sum[c] / (4 * 2);
+      glyph->rgba_bg[c] = rgb_sum[c] / (3 * 2);
 #endif
 #if 0
       if (memcmp (&glyph->rgba_fg[0],  &rgba_fg[0], 3))
@@ -569,7 +636,7 @@ Ctx *ctx_new_term (int width, int height)
   fprintf (stdout, "\e[?25l"); // cursor off
   CtxTerm *term = (CtxTerm*)calloc (sizeof (CtxTerm), 1);
   int maxwidth = ctx_terminal_cols  () * 2;
-  int maxheight = (ctx_terminal_rows ()-1) * 4;
+  int maxheight = (ctx_terminal_rows ()-1) * 3;
   if (width <= 0 || height <= 0)
   {
     width = maxwidth;
@@ -581,7 +648,7 @@ Ctx *ctx_new_term (int width, int height)
   term->width  = width;
   term->height = height;
   term->cols = (width + 1) / 2;
-  term->rows = (height + 3) / 4;
+  term->rows = (height + 2) / 3;
   term->lines = 0;
   term->pixels = (uint8_t*)malloc (width * height * 4);
   term->host = ctx_new_for_framebuffer (term->pixels,
@@ -593,7 +660,7 @@ Ctx *ctx_new_term (int width, int height)
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_renderer (ctx, term);
   ctx_set_size (ctx, width, height);
-  ctx_font_size (ctx, 4.0f);
+  ctx_font_size (ctx, 3.0f);
   term->render = ctx_term_render;
   term->flush = (void(*)(void*))ctx_term_flush;
   term->free  = (void(*)(void*))ctx_term_free;
