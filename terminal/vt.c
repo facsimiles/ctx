@@ -5671,7 +5671,7 @@ static void draw_sextant_bit (Ctx *ctx, float x, float y, float cw, float ch, in
 {
   ctx_rectangle (ctx,  x + u * cw * 0.5,
                        y - ch + v * ch * 0.3333,
-                       0.5 *cw, 0.3333 * ch);
+                       0.5 *cw, 0.34 * ch);
 }
 
 int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int unichar)
@@ -6905,11 +6905,11 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
         }
       if (dh)
         {
-          ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - ch - ch * (vt->scroll_offset)), cw, ch + 1);
+          ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - 1 - ch - ch * (vt->scroll_offset)), cw, ch + 1);
         }
       else
         {
-          ctx_rectangle (ctx, x0, y0 - ch + ch * offset_y, cw, ch + 1);
+          ctx_rectangle (ctx, x0, y0 - 1 - ch + ch * offset_y, cw, ch + 1);
         }
       ctx_fill (ctx);
 bg_done:
