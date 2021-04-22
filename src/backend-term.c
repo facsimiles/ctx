@@ -29,7 +29,6 @@ typedef enum
   CTX_TERM_SEXTANT,
   CTX_TERM_BRAILLE,
   CTX_TERM_QUARTER,
-  CTX_TERM_BLOCK,
 } CtxTermMode;
 
 typedef struct _CtxTerm CtxTerm;
@@ -294,7 +293,6 @@ for (int y = y0; y < y0 + h; y++)
 
           for (int iters = 0; iters < 1; iters++)
           {
-           int  i= 0;
           for (int i = 0; i < 4; i ++)
              rgbasum[0][i] = rgbasum[1][i]=0;
           sumcount[0] = sumcount[1] = 0;
@@ -434,60 +432,6 @@ static void ctx_term_output_buf_sextant (uint8_t *pixels,
         }
     }
 }
-
-
-static void ctx_term_output_buf_block (uint8_t *pixels,
-                          int width,
-                          int height,
-                          CtxTerm *term)
-{
-  int stride = width * 4;
-  const char *sextants[]={
-   " ","🬀","🬁","🬂","🬃","🬄","🬅","🬆","🬇","🬈","🬉","🬊","🬋","🬌","🬍","🬎","🬏","🬐","🬑","🬒","🬓","▌","🬔","🬕","🬖","🬗","🬘","🬙","🬚","🬛","🬜","🬝","🬞","🬟","🬠","🬡","🬢","🬣","🬤","🬥","🬦","🬧","▐","🬨","🬩","🬪","🬫","🬬","🬭","🬮","🬯","🬰","🬱","🬲","🬳","🬴","🬵","🬶","🬷","🬸","🬹","🬺","🬻","█"
-  };
-  for (int row = 0; row < height/ctx_term_ch; row++)
-    {
-      for (int col = 0; col < width /ctx_term_cw; col++)
-        {
-          int     unicode = 0;
-          int     bitno = 0;
-          uint8_t rgba[2][4] = {
-                             {255,255,255,0},
-                             {0,0,0,0}};
-          int i = 0;
-
-          ctx_term_find_color_pair (term, col * ctx_term_cw,
-                                    row * ctx_term_ch,
-                                    ctx_term_cw,
-                                    ctx_term_ch, rgba);
-
-          int pixels_set = 0;
-          for (int y = 0; y < 3; y++)
-            for (int x = 0; x < 2; x++)
-              {
-                int no = (row * ctx_term_ch + y) * stride + (col*ctx_term_cw+x) * 4;
-#define CHECK_IS_SET \
-      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba[0])< \
-       _ctx_rgba8_manhattan_diff (&pixels[no], rgba[1]))
-
-                int set = CHECK_IS_SET;
-#undef CHECK_IS_SET
-                if (set)
-                  { unicode |=  (1<< (bitno) ); 
-                    pixels_set ++; 
-                  }
-                bitno++;
-              }
-           if (pixels_set == 6)
-             ctx_term_set (term, col +1, row + 1, " ",
-                           rgba[1], rgba[0]);
-           else
-             ctx_term_set (term, col +1, row + 1, sextants[unicode],
-                           rgba[0], rgba[1]);
-        }
-    }
-}
-
 
 static void ctx_term_output_buf_ascii (uint8_t *pixels,
                           int width,
@@ -752,10 +696,6 @@ inline static void ctx_term_flush (CtxTerm *term)
        ctx_term_output_buf_braille (term->pixels,
                                 width, height, term);
        break;
-    case CTX_TERM_BLOCK:
-       ctx_term_output_buf_block (term->pixels,
-                                width, height, term);
-       break;
   }
 #if CTX_BRAILLE_TEXT
   CtxRasterizer *rasterizer = (CtxRasterizer*)(term->host->renderer);
@@ -844,11 +784,6 @@ Ctx *ctx_new_term (int width, int height)
   if (!mode) term->mode = CTX_TERM_SEXTANT;
   else if (!strcmp (mode, "sextant")) term->mode = CTX_TERM_SEXTANT;
   else if (!strcmp (mode, "ascii")) term->mode = CTX_TERM_ASCII;
-  else if (!strcmp (mode, "block")) {
-     term->mode = CTX_TERM_BLOCK;
-     ctx_term_cw = 3;
-     ctx_term_ch = 6;
-  }
   else if (!strcmp (mode, "quarter")) term->mode = CTX_TERM_QUARTER;
   else if (!strcmp (mode, "braille")){
     term->mode = CTX_TERM_BRAILLE;
@@ -897,247 +832,6 @@ Ctx *ctx_new_term (int width, int height)
 
 
   return ctx;
-}
-
-// unused?
-static inline void
-_ctx_utf8_output_buf (uint8_t *pixels,
-                      int      format,
-                      int      width,
-                      int      height,
-                      int      stride,
-                      int      reverse,
-                      CtxTerm *term)
-{
-  const char *utf8_gray_scale[]= {" ","░","▒","▓","█","█", NULL};
-  int no = 0;
-  assert (term);
-  printf ("\e[?25l"); // cursor off
-  switch (format)
-    {
-      case CTX_FORMAT_GRAY2:
-        {
-          for (int y= 0; y < height; y++)
-            {
-              no = y * stride;
-              for (int x = 0; x < width; x++)
-                {
-                  int val4= (pixels[no] & (3 << ( (x % 4) *2) ) ) >> ( (x%4) *2);
-                  int val = (int) CTX_CLAMP (5.0 * val4 / 3.0, 0, 5);
-                  if (!reverse)
-                  { val = 5-val; }
-                  printf ("%s", utf8_gray_scale[val]);
-                  if ( (x % 4) == 3)
-                    { no++; }
-                }
-              printf ("\n");
-            }
-        }
-        break;
-      case CTX_FORMAT_GRAY1:
-        for (int row = 0; row < height/4; row++)
-          {
-            for (int col = 0; col < width /2; col++)
-              {
-                int unicode = 0;
-                int bitno = 0;
-                for (int x = 0; x < 2; x++)
-                  for (int y = 0; y < 3; y++)
-                    {
-                      int no = (row * 4 + y) * stride + (col*2+x) /8;
-                      int set = pixels[no] & (1<< ( (col * 2 + x) % 8) );
-                      if (reverse) { set = !set; }
-                      if (set)
-                        { unicode |=  (1<< (bitno) ); }
-                      bitno++;
-                    }
-                {
-                  int x = 0;
-                  int y = 3;
-                  int no = (row * 4 + y) * stride + (col*2+x) /8;
-                  int setA = pixels[no] & (1<< ( (col * 2 + x) % 8) );
-                  no = (row * 4 + y) * stride + (col*2+x+1) /8;
-                  int setB = pixels[no] & (1<< (   (col * 2 + x + 1) % 8) );
-                  if (reverse) { setA = !setA; }
-                  if (reverse) { setB = !setB; }
-                  if (setA != 0 && setB==0)
-                    { unicode += 0x2840; }
-                  else if (setA == 0 && setB)
-                    { unicode += 0x2880; }
-                  else if ( (setA != 0) && (setB != 0) )
-                    { unicode += 0x28C0; }
-                  else
-                    { unicode += 0x2800; }
-                  char utf8[5];
-                  utf8[ctx_unichar_to_utf8 (unicode, (uint8_t*)utf8)]=0;
-                  printf ("%s", utf8);
-                }
-              }
-            printf ("\n");
-          }
-        break;
-      case CTX_FORMAT_RGBA8:
-        {
-        for (int row = 0; row < height/4; row++)
-          {
-            for (int col = 0; col < width /2; col++)
-              {
-                int unicode = 0;
-                int bitno = 0;
-
-                uint8_t rgba2[4] = {0,0,0,255};
-                uint8_t rgba1[4] = {0,0,0,255};
-                int     rgbasum[4] = {0,};
-                int     col_count = 0;
-
-                for (int xi = 0; xi < 2; xi++)
-                  for (int yi = 0; yi < 4; yi++)
-                      {
-                        int noi = (row * 4 + yi) * stride + (col*2+xi) * 4;
-                        int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba2);
-                        if (diff > 32*32)
-                        {
-                          for (int c = 0; c < 3; c++)
-                          {
-                            rgbasum[c] += pixels[noi+c];
-                          }
-                          col_count++;
-                        }
-                      }
-                if (col_count)
-                for (int c = 0; c < 3; c++)
-                {
-                  rgba1[c] = rgbasum[c] / col_count;
-                }
-  printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
-
-                int pixels_set = 0;
-                for (int x = 0; x < 2; x++)
-                  for (int y = 0; y < 3; y++)
-                    {
-                      int no = (row * 4 + y) * stride + (col*2+x) * 4;
-#define CHECK_IS_SET \
-      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba1)< \
-       _ctx_rgba8_manhattan_diff (&pixels[no], rgba2))
-
-                      int set = CHECK_IS_SET;
-                      if (reverse) { set = !set; }
-                      if (set)
-                        { unicode |=  (1<< (bitno) ); 
-                          pixels_set ++; 
-                        }
-                      bitno++;
-                    }
-                {
-                  int x = 0;
-                  int y = 3;
-                  int no = (row * 4 + y) * stride + (col*2+x) * 4;
-                  int setA = CHECK_IS_SET;
-                  no = (row * 4 + y) * stride + (col*2+x+1) * 4;
-                  int setB = CHECK_IS_SET;
-
-                  pixels_set += setA;
-                  pixels_set += setB;
-#undef CHECK_IS_SET
-                  if (reverse) { setA = !setA; }
-                  if (reverse) { setB = !setB; }
-                  if (setA != 0 && setB==0)
-                    { unicode += 0x2840; }
-                  else if (setA == 0 && setB)
-                    { unicode += 0x2880; }
-                  else if ( (setA != 0) && (setB != 0) )
-                    { unicode += 0x28C0; }
-                  else
-                    { unicode += 0x2800; }
-                  char utf8[5];
-                  utf8[ctx_unichar_to_utf8 (unicode, (uint8_t*)utf8)]=0;
-                  printf ("%s", utf8);
-                }
-              }
-            printf ("\n\r");
-          }
-          printf ("\e[38;2;%i;%i;%im", 255,255,255);
-        }
-        break;
-
-      case CTX_FORMAT_GRAY4:
-        {
-          int no = 0;
-          for (int y= 0; y < height; y++)
-            {
-              no = y * stride;
-              for (int x = 0; x < width; x++)
-                {
-                  int val = (pixels[no] & (15 << ( (x % 2) *4) ) ) >> ( (x%2) *4);
-                  val = val * 6 / 16;
-                  if (reverse) { val = 5-val; }
-                  val = CTX_CLAMP (val, 0, 4);
-                  printf ("%s", utf8_gray_scale[val]);
-                  if (x % 2 == 1)
-                    { no++; }
-                }
-              printf ("\n");
-            }
-        }
-        break;
-      case CTX_FORMAT_CMYK8:
-        {
-          for (int c = 0; c < 4; c++)
-            {
-              int no = 0;
-              for (int y= 0; y < height; y++)
-                {
-                  for (int x = 0; x < width; x++, no+=4)
-                    {
-                      int val = (int) CTX_CLAMP (pixels[no+c]/255.0*6.0, 0, 5);
-                      if (reverse)
-                        { val = 5-val; }
-                      printf ("%s", utf8_gray_scale[val]);
-                    }
-                  printf ("\n");
-                }
-            }
-        }
-        break;
-      case CTX_FORMAT_RGB8:
-        {
-          for (int c = 0; c < 3; c++)
-            {
-              int no = 0;
-              for (int y= 0; y < height; y++)
-                {
-                  for (int x = 0; x < width; x++, no+=3)
-                    {
-                      int val = (int) CTX_CLAMP (pixels[no+c]/255.0*6.0, 0, 5);
-                      if (reverse)
-                        { val = 5-val; }
-                      printf ("%s", utf8_gray_scale[val]);
-                    }
-                  printf ("\n");
-                }
-            }
-        }
-        break;
-      case CTX_FORMAT_CMYKAF:
-        {
-          for (int c = 0; c < 5; c++)
-            {
-              int no = 0;
-              for (int y= 0; y < height; y++)
-                {
-                  for (int x = 0; x < width; x++, no+=5)
-                    {
-                      int val = (int) CTX_CLAMP ( (pixels[no+c]*6.0), 0, 5);
-                      if (reverse)
-                        { val = 5-val; }
-                      printf ("%s", utf8_gray_scale[val]);
-                    }
-                  printf ("\n");
-                }
-            }
-        }
-    }
-  printf ("\e[?25h"); // cursor on
 }
 
 #endif
