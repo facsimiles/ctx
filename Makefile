@@ -3,6 +3,9 @@ PREFIX  ?= /usr/local
 
 CCACHE=`which ccache`
 
+all: build.conf tools/ctx-fontgen ctx $(CLIENTS_BINS)
+include build.conf
+
 CFLAGS_warnings= -Wall \
                  -Wextra \
 		 -Wno-array-bounds \
@@ -14,13 +17,13 @@ CFLAGS+= -g $(CFLAGS_warnings) -fPIC
 #  -ffast-math   gets rejected by duktape
 
 CFLAGS+= -I. -Ifonts -Ideps
-LIBS   = -lz -lm -lpthread
+LIBS  += -lz -lm -lpthread
 
 #CFLAGS+= -fsanitize=address
 #LIBS+= -lasan
 
-OFLAGS_HARD=-O3
-OFLAGS_LIGHT=-O2
+#OFLAGS_HARD =-O3
+#OFLAGS_LIGHT =-O2
 
 CLIENTS_CFILES = $(wildcard clients/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
@@ -32,8 +35,6 @@ TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
 SRC_CFILES = $(wildcard src/*.c)
 SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
-all: build.conf tools/ctx-fontgen ctx $(CLIENTS_BINS)
-include build.conf
 
 CCC=$(CCACHE) $(CC)
 build.conf:
@@ -44,7 +45,7 @@ build.conf:
 	@echo "!! now run Make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
-clients/%: clients/%.c Makefile ctx.o clients/itk.h libctx.a
+clients/%: clients/%.c build.conf Makefile build.conf ctx.o clients/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
@@ -64,10 +65,10 @@ fonts/ctx-font-regular.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras > $@
 fonts/ctx-font-mono.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSansMono.ttf mono ascii-extras > $@
-fonts/NotoMono-Regular.h: Makefile
+fonts/NotoMono-Regular.h: build.conf Makefile
 	cd fonts; xxd -i ttf/NotoMono-Regular.ttf > NotoMono-Regular.h
 	echo '#define NOTO_MONO_REGULAR 1' >> $@
-fonts/Roboto-Regular.h: Makefile
+fonts/Roboto-Regular.h: build.conf Makefile
 	cd fonts; xxd -i ttf/Roboto-Regular.ttf > Roboto-Regular.h
 	echo '#define ROBOTO_REGULAR 1' >> $@
 
@@ -93,24 +94,24 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DNO_LIBCURL
 
-ctx.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) $(OFLAGS_LIGHT)
 
-deps.o: deps.c Makefile
+deps.o: deps.c build.conf Makefile
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
-ctx-avx2.o: ctx-avx2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+ctx-avx2.o: ctx-avx2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx-avx2.c -c -o $@ $(CFLAGS) $(OFLAGS_HARD) -DCTX_AVX2=1 -mavx -mavx2 -mfpmath=sse -ftree-vectorize -funsafe-math-optimizations
 
-#ctx-sse2.o: ctx-sse2.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+#ctx-sse2.o: ctx-sse2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 #	$(CCC) ctx-sse2.c -c -o $@ $(CFLAGS)  $(OFLAGS_HARD) -march=core2 -ftree-vectorize -funsafe-math-optimizations
 
-#ctx-mmx.o: ctx-mmx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+#ctx-mmx.o: ctx-mmx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 #	$(CCC) ctx-mmx.c -c -o $@ $(CFLAGS) $(OFLAGS_HARD) -mmmx -ftree-vectorize -funsafe-math-optimizations
 
 ctx-split.o: $(SRC_OBJS)
 
-ctx-static.o: ctx.c ctx.h Makefile used_fonts build.conf
+ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts build.conf
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1
 
 src/%.o: src/%.c split/*.h
@@ -118,28 +119,28 @@ src/%.o: src/%.c split/*.h
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-libctx.a: ctx.o ctx-avx2.o deps.o Makefile
+libctx.a: ctx.o ctx-avx2.o deps.o build.conf Makefile
 	$(AR) rcs $@ $?
 libctx.so: ctx.o ctx-avx2.o deps.o
 	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
-ctx: main.c ctx.h  Makefile convert/*.[ch] $(TERMINAL_OBJS) libctx.a
+ctx: main.c ctx.h  build.conf Makefile convert/*.[ch] $(TERMINAL_OBJS) libctx.a
 	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
 
-ctx-O0.o: ctx.c ctx.h Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
+ctx-O0.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) -O0
 
-ctx.O0: main.c ctx.h  Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
+ctx.O0: main.c ctx.h  build.conf Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
 	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
 
-ctx.static: main.c ctx.h  Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o 
+ctx.static: main.c ctx.h  build.conf Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o 
 	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
 	strip -s -x $@
 
-docs/ctx.h.html: ctx.h Makefile
+docs/ctx.h.html: ctx.h Makefile build.conf
 	highlight -l -a --encoding=utf8 -W ctx.h > docs/ctx.h.html
-docs/ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile
+docs/ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile build.conf
 	highlight -l -a --encoding=utf8 -W fonts/ctx-font-regular.h > docs/ctx-font-regular.h.htm
 
 #git gc

@@ -6,11 +6,15 @@ HAVE_BABL=0
 pkg-config babl && HAVE_BABL=1
 HAVE_LIBCURL=0
 pkg-config libcurl && HAVE_LIBCURL=1
+CFLAGS='-O3'
+
 
 while test $# -gt 0
 do
     case "$1" in
      "--without-sdl") HAVE_SDL=0    ;;
+     "--debug") CFLAGS=''    ;;
+     "--asan") CFLAGS="$CFLAGS -fsanitize=address";LIBS=' -lasan'  ;;
      "--without-babl") HAVE_BABL=0 ;;
      "--without-libcurl") HAVE_LIBCURL=0 ;;
      *|"--help") 
@@ -43,6 +47,8 @@ else
   echo "PKG_CFLAGS+= '-DNO_LIBCURL'" >> build.conf
 fi
 
+echo "CFLAGS=$CFLAGS" >> build.conf
+echo "LIBS=$LIBS" >> build.conf
 
 echo CCACHE=`which ccache` >> build.conf
 
