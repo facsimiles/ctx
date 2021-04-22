@@ -23,6 +23,14 @@ typedef struct CtxTermLine
   int size;
 } CtxTermLine;
 
+typedef enum
+{
+  CTX_TERM_ASCII,
+  CTX_TERM_SEXTANT,
+  CTX_TERM_BRAILLE,
+  CTX_TERM_QUARTER,
+} CtxTermMode;
+
 typedef struct _CtxTerm CtxTerm;
 struct _CtxTerm
 {
@@ -43,11 +51,11 @@ struct _CtxTerm
 
    Ctx      *host;
    CtxList  *lines;
+   CtxTermMode mode;
 };
 
 static int ctx_term_ch = 8;
 static int ctx_term_cw = 8;
-static int ctx_term_quarters = 0;
 
 void ctx_term_set (CtxTerm *term,
                       int col, int row, const char *utf8,
@@ -119,6 +127,11 @@ void ctx_term_scanout (CtxTerm *term)
   //printf ("\e[?25h");
   //
 }
+
+// xx
+// xx
+// xx
+//
 
 static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
 {
@@ -247,7 +260,7 @@ static void ctx_term_output_buf_half (uint8_t *pixels,
 
 
 
-static void ctx_term_output_buf_quarters (uint8_t *pixels,
+static void ctx_term_output_buf_quarter (uint8_t *pixels,
                           int width,
                           int height,
                           CtxTerm *term)
@@ -371,7 +384,7 @@ static void ctx_term_output_buf_quarters (uint8_t *pixels,
     }
 }
 
-static void ctx_term_output_buf_sextants (uint8_t *pixels,
+static void ctx_term_output_buf_sextant (uint8_t *pixels,
                           int width,
                           int height,
                           CtxTerm *term)
@@ -791,24 +804,24 @@ inline static void ctx_term_flush (CtxTerm *term)
 {
   int width =  term->width;
   int height = term->height;
-  switch (ctx_term_ch)
+  switch (term->mode)
   {
-    case 2:
-    case 3:
-#if 0
-      if (ctx_term_quarters)
-      ctx_term_output_buf_quarters (term->pixels,
-                                    width, height, term);
-      else
-#else
-      ctx_term_output_buf_sextants (term->pixels,
-                                    width, height, term);
-#endif
-      break;
-    case 4:
-      ctx_term_output_buf_braille (term->pixels,
-                                   width, height, term);
-      break;
+    case CTX_TERM_QUARTER:
+       ctx_term_output_buf_quarter (term->pixels,
+                                width, height, term);
+       break;
+    case CTX_TERM_ASCII:
+       ctx_term_output_buf_ascii (term->pixels,
+                                width, height, term);
+       break;
+    case CTX_TERM_SEXTANT:
+       ctx_term_output_buf_sextant (term->pixels,
+                                width, height, term);
+       break;
+    case CTX_TERM_BRAILLE:
+       ctx_term_output_buf_braille (term->pixels,
+                                width, height, term);
+       break;
   }
 #if CTX_BRAILLE_TEXT
   CtxRasterizer *rasterizer = (CtxRasterizer*)(term->host->renderer);
@@ -892,10 +905,23 @@ Ctx *ctx_new_term (int width, int height)
   fprintf (stdout, "\e[?25l"); // cursor off
   CtxTerm *term = (CtxTerm*)calloc (sizeof (CtxTerm), 1);
  
+  const char *mode = getenv ("CTX_TERM_MODE");
   ctx_term_cw = 2;
   ctx_term_ch = 3;
 
-  ctx_term_quarters = 0;
+  if (!mode) term->mode = CTX_TERM_SEXTANT;
+  else if (!strcmp (mode, "sextant")) term->mode = CTX_TERM_SEXTANT;
+  else if (!strcmp (mode, "ascii")) term->mode = CTX_TERM_ASCII;
+  else if (!strcmp (mode, "quarter")) term->mode = CTX_TERM_QUARTER;
+  else if (!strcmp (mode, "braille")){
+    term->mode = CTX_TERM_BRAILLE;
+    ctx_term_ch = 4;
+  }
+  else {
+    fprintf (stderr, "recognized values for CTX_TERM_MODE:\n"
+                    " sextant ascii quarter braille\n");
+    exit (1);
+  }
 
   int maxwidth = ctx_terminal_cols  () * ctx_term_cw;
   int maxheight = (ctx_terminal_rows ()) * ctx_term_ch;
