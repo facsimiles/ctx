@@ -18,7 +18,7 @@ do
      "--without-babl") HAVE_BABL=0 ;;
      "--without-libcurl") HAVE_LIBCURL=0 ;;
      *|"--help") 
-       echo "usage: ./configure [--without-sdl] [--without-babl] [--without-libcurl]"
+       echo "usage: ./configure [--without-sdl] [--without-babl] [--without-libcurl] [--debug] [--asan]"
        exit 0
        ;;
     esac

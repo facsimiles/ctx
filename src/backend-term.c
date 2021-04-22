@@ -29,6 +29,7 @@ typedef enum
   CTX_TERM_SEXTANT,
   CTX_TERM_BRAILLE,
   CTX_TERM_QUARTER,
+  CTX_TERM_BLOCK,
 } CtxTermMode;
 
 typedef struct _CtxTerm CtxTerm;
@@ -258,82 +259,53 @@ static void ctx_term_output_buf_half (uint8_t *pixels,
     }
 }
 
-
-
-static void ctx_term_output_buf_quarter (uint8_t *pixels,
-                          int width,
-                          int height,
-                          CtxTerm *term)
+void ctx_term_find_color_pair (CtxTerm *term, int x0, int y0, int w, int h,
+                uint8_t rgba[2][4])
+        //uint8_t *rgba0, uint8_t *rgba1)
 {
-  int stride = width * 4;
-  const char *sextants[]={
-   " ","▘","▝","▀","▖","▌", "▞", "▛", "▗", "▚", "▐", "▜","▄","▙","▟","█"
+int curdiff = 0;
+int stride = term->width * 4;
+uint8_t *pixels = term->pixels;
+/* first find starting point colors */
+for (int y = y0; y < y0 + h; y++)
+  for (int x = x0; x < x0 + w; x++)
+      {
+        int noi = (y) * stride + (x) * 4;
 
-  };
-  for (int row = 0; row < height/3; row++)
-    {
-      for (int col = 0; col < width /2; col++)
+        if (rgba[0][3] == 0)
         {
-          int     unicode = 0;
-          int     bitno = 0;
-          uint8_t rgba[2][4] = {
-                             {255,255,255,0},
-                             {0,0,0,0}};
-          int i = 0;
-
+          for (int c = 0; c < 3; c++)
+            rgba[0][c] = pixels[noi + c];
+          rgba[0][3] = 255; // used only as mark of in-use
+        }
+        else
+        {
+          int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], &rgba[0][0]);
+          if (diff > curdiff)
+          {
+            curdiff = diff;
+            for (int c = 0; c < 3; c++)
+              rgba[1][c] = pixels[noi + c];
+          }
+        }
+      }
           int  rgbasum[2][4] = {0,};
           int  sumcount[2];
 
-          int curdiff = 0;
-          /* first find starting point colors */
-          for (int yi = 0; yi < 3; yi++)
-            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
-                {
-                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
-
-                  if (rgba[0][3] == 0)
-                  {
-                    for (int c = 0; c < 3; c++)
-                      rgba[0][c] = pixels[noi + c];
-                    rgba[0][3] = 255; // used only as mark of in-use
-                  }
-                  else
-                  {
-                    int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
-                    if (diff > curdiff)
-                    {
-                      curdiff = diff;
-                      for (int c = 0; c < 3; c++)
-                        rgba[1][c] = pixels[noi + c];
-                    }
-                  }
-                }
-
           for (int iters = 0; iters < 1; iters++)
           {
-                  i= 0;
+           int  i= 0;
           for (int i = 0; i < 4; i ++)
              rgbasum[0][i] = rgbasum[1][i]=0;
           sumcount[0] = sumcount[1] = 0;
 
-          for (int yi = 0; yi < 2; yi++)
-            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
+for (int y = y0; y < y0 + h; y++)
+  for (int x = x0; x < x0 + w; x++)
                 {
-                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
-                  uint8_t color[4];
-                  memcpy (color, &pixels[noi], 4);
-                  if (yi == 1 && row * ctx_term_ch + yi + 1 < term->height)
-                  {
-                    uint8_t color2[4];
-                    int noi2 = noi + stride;
-                    memcpy (color2, &pixels[noi2], 4);
-                    for (int i = 0; i < 4; i ++)
-                      color[i] = (color[i] + color2[i])/2;
-                  }
+                  int noi = (y) * stride + (x) * 4;
 
                   int diff1 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
                   int diff2 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[1]);
-
                   int cluster = 0;
                   if (diff1 <= diff2)
                     cluster = 0;
@@ -356,6 +328,34 @@ static void ctx_term_output_buf_quarter (uint8_t *pixels,
             rgba[1][c] = rgbasum[1][c] / sumcount[1];
           }
           }
+
+}
+
+
+
+static void ctx_term_output_buf_quarter (uint8_t *pixels,
+                          int width,
+                          int height,
+                          CtxTerm *term)
+{
+  int stride = width * 4;
+  const char *sextants[]={
+   " ","▘","▝","▀","▖","▌", "▞", "▛", "▗", "▚", "▐", "▜","▄","▙","▟","█"
+
+  };
+  for (int row = 0; row < height/ctx_term_ch; row++)
+    {
+      for (int col = 0; col < width /ctx_term_cw; col++)
+        {
+          int     unicode = 0;
+          int     bitno = 0;
+          uint8_t rgba[2][4] = {
+                             {255,255,255,0},
+                             {0,0,0,0}};
+          ctx_term_find_color_pair (term, col * ctx_term_cw,
+                                    row * ctx_term_ch,
+                                    ctx_term_cw,
+                                    ctx_term_ch, rgba);
 
           int pixels_set = 0;
           for (int y = 0; y < 2; y++)
@@ -393,82 +393,20 @@ static void ctx_term_output_buf_sextant (uint8_t *pixels,
   const char *sextants[]={
    " ","🬀","🬁","🬂","🬃","🬄","🬅","🬆","🬇","🬈","🬉","🬊","🬋","🬌","🬍","🬎","🬏","🬐","🬑","🬒","🬓","▌","🬔","🬕","🬖","🬗","🬘","🬙","🬚","🬛","🬜","🬝","🬞","🬟","🬠","🬡","🬢","🬣","🬤","🬥","🬦","🬧","▐","🬨","🬩","🬪","🬫","🬬","🬭","🬮","🬯","🬰","🬱","🬲","🬳","🬴","🬵","🬶","🬷","🬸","🬹","🬺","🬻","█"
   };
-  for (int row = 0; row < height/3; row++)
+  for (int row = 0; row < height/ctx_term_ch; row++)
     {
-      for (int col = 0; col < width /2; col++)
+      for (int col = 0; col < width /ctx_term_cw; col++)
         {
           int     unicode = 0;
           int     bitno = 0;
           uint8_t rgba[2][4] = {
                              {255,255,255,0},
                              {0,0,0,0}};
-          int i = 0;
 
-          int  rgbasum[2][4] = {0,};
-          int  sumcount[2];
-
-          int curdiff = 0;
-          /* first find starting point colors */
-          for (int yi = 0; yi < ctx_term_ch; yi++)
-            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
-                {
-                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
-
-                  if (rgba[0][3] == 0)
-                  {
-                    for (int c = 0; c < 3; c++)
-                      rgba[0][c] = pixels[noi + c];
-                    rgba[0][3] = 255; // used only as mark of in-use
-                  }
-                  else
-                  {
-                    int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
-                    if (diff > curdiff)
-                    {
-                      curdiff = diff;
-                      for (int c = 0; c < 3; c++)
-                        rgba[1][c] = pixels[noi + c];
-                    }
-                  }
-
-                }
-
-          for (int iters = 0; iters < 1; iters++)
-          {
-                  i= 0;
-          for (int i = 0; i < 4; i ++)
-             rgbasum[0][i] = rgbasum[1][i]=0;
-          sumcount[0] = sumcount[1] = 0;
-
-          for (int yi = 0; yi < ctx_term_ch; yi++)
-            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
-                {
-                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
-
-                  int diff1 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
-                  int diff2 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[1]);
-                  int cluster = 0;
-                  if (diff1 <= diff2)
-                    cluster = 0;
-                  else
-                    cluster = 1;
-                  sumcount[cluster]++;
-                  for (int c = 0; c < 3; c++)
-                    rgbasum[cluster][c] += pixels[noi+c];
-                }
-
-
-          if (sumcount[0])
-          for (int c = 0; c < 3; c++)
-          {
-            rgba[0][c] = rgbasum[0][c] / sumcount[0];
-          }
-          if (sumcount[1])
-          for (int c = 0; c < 3; c++)
-          {
-            rgba[1][c] = rgbasum[1][c] / sumcount[1];
-          }
-          }
+          ctx_term_find_color_pair (term, col * ctx_term_cw,
+                                    row * ctx_term_ch,
+                                    ctx_term_cw,
+                                    ctx_term_ch, rgba);
 
           int pixels_set = 0;
           for (int y = 0; y < ctx_term_ch; y++)
@@ -497,25 +435,77 @@ static void ctx_term_output_buf_sextant (uint8_t *pixels,
     }
 }
 
-static void ctx_term_output_buf_ascii (uint8_t *pixels,
+
+static void ctx_term_output_buf_block (uint8_t *pixels,
                           int width,
                           int height,
                           CtxTerm *term)
 {
   int stride = width * 4;
   const char *sextants[]={
+   " ","🬀","🬁","🬂","🬃","🬄","🬅","🬆","🬇","🬈","🬉","🬊","🬋","🬌","🬍","🬎","🬏","🬐","🬑","🬒","🬓","▌","🬔","🬕","🬖","🬗","🬘","🬙","🬚","🬛","🬜","🬝","🬞","🬟","🬠","🬡","🬢","🬣","🬤","🬥","🬦","🬧","▐","🬨","🬩","🬪","🬫","🬬","🬭","🬮","🬯","🬰","🬱","🬲","🬳","🬴","🬵","🬶","🬷","🬸","🬹","🬺","🬻","█"
+  };
+  for (int row = 0; row < height/ctx_term_ch; row++)
+    {
+      for (int col = 0; col < width /ctx_term_cw; col++)
+        {
+          int     unicode = 0;
+          int     bitno = 0;
+          uint8_t rgba[2][4] = {
+                             {255,255,255,0},
+                             {0,0,0,0}};
+          int i = 0;
+
+          ctx_term_find_color_pair (term, col * ctx_term_cw,
+                                    row * ctx_term_ch,
+                                    ctx_term_cw,
+                                    ctx_term_ch, rgba);
+
+          int pixels_set = 0;
+          for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 2; x++)
+              {
+                int no = (row * ctx_term_ch + y) * stride + (col*ctx_term_cw+x) * 4;
+#define CHECK_IS_SET \
+      (_ctx_rgba8_manhattan_diff (&pixels[no], rgba[0])< \
+       _ctx_rgba8_manhattan_diff (&pixels[no], rgba[1]))
+
+                int set = CHECK_IS_SET;
+#undef CHECK_IS_SET
+                if (set)
+                  { unicode |=  (1<< (bitno) ); 
+                    pixels_set ++; 
+                  }
+                bitno++;
+              }
+           if (pixels_set == 6)
+             ctx_term_set (term, col +1, row + 1, " ",
+                           rgba[1], rgba[0]);
+           else
+             ctx_term_set (term, col +1, row + 1, sextants[unicode],
+                           rgba[0], rgba[1]);
+        }
+    }
+}
+
+
+static void ctx_term_output_buf_ascii (uint8_t *pixels,
+                          int width,
+                          int height,
+                          CtxTerm *term)
+{
+  /* this is a crude ascii-mode built on a quick mapping of sexels to ascii */
+  int stride = width * 4;
+  const char *sextants[]={
    " ","`","'","^","🬃","`","~","\"","-","\"","'","\"","-","\"","~","^",",",";",
-
    "=","//","i","[","p","P","z",")","/","7","f",">","/","F",",","\\",":",":",
-
    "\\","\\","(","T","j","T","]","?","s","\\","<","q","_","=","=","=","c","L",
-
    "Q","C","a","b","J","]","m","b","d","@"
   };
   uint8_t black[4] = {0,0,0,255};
-  for (int row = 0; row < height/3; row++)
+  for (int row = 0; row < height/ctx_term_ch; row++)
     {
-      for (int col = 0; col < width /2; col++)
+      for (int col = 0; col < width /ctx_term_cw; col++)
         {
           int     unicode = 0;
           int     bitno = 0;
@@ -642,83 +632,23 @@ static void ctx_term_output_buf_braille (uint8_t *pixels,
   int reverse = 0;
   int stride = width * 4;
   uint8_t black[4] = {0,0,0,255};
-  for (int row = 0; row < height/4; row++)
+  for (int row = 0; row < height/ctx_term_ch; row++)
     {
-      for (int col = 0; col < width /2; col++)
+      for (int col = 0; col < width /ctx_term_cw; col++)
         {
           int     unicode = 0;
           int     bitno = 0;
           uint8_t rgba[2][4] = {
                              {255,255,255,0},
                              {0,0,0,0}};
-          int i = 0;
 
-          int  rgbasum[2][4] = {0,};
-          int  sumcount[2];
-
-          int curdiff = 0;
-          /* first find starting point colors */
-          for (int yi = 0; yi < ctx_term_ch; yi++)
-            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
-                {
-                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
-
-                  if (rgba[0][3] == 0)
-                  {
-                    for (int c = 0; c < 3; c++)
-                      rgba[0][c] = pixels[noi + c];
-                    rgba[0][3] = 255; // used only as mark of in-use
-                  }
-                  else
-                  {
-                    int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
-                    if (diff > curdiff)
-                    {
-                      curdiff = diff;
-                      for (int c = 0; c < 3; c++)
-                        rgba[1][c] = pixels[noi + c];
-                    }
-                  }
-
-                }
-
-          for (int iters = 0; iters < 1; iters++)
-          {
-                  i= 0;
-          for (int i = 0; i < 4; i ++)
-             rgbasum[0][i] = rgbasum[1][i]=0;
-          sumcount[0] = sumcount[1] = 0;
-
-          for (int yi = 0; yi < ctx_term_ch; yi++)
-            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
-                {
-                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
-
-                  int diff1 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
-                  int diff2 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[1]);
-                  int cluster = 0;
-                  if (diff1 <= diff2)
-                    cluster = 0;
-                  else
-                    cluster = 1;
-                  sumcount[cluster]++;
-                  for (int c = 0; c < 3; c++)
-                    rgbasum[cluster][c] += pixels[noi+c];
-                }
+          ctx_term_find_color_pair (term, col * ctx_term_cw,
+                                    row * ctx_term_ch,
+                                    ctx_term_cw,
+                                    ctx_term_ch, rgba);
 
 
-          if (sumcount[0])
-          for (int c = 0; c < 3; c++)
-          {
-            rgba[0][c] = rgbasum[0][c] / sumcount[0];
-          }
-          if (sumcount[1])
-          for (int c = 0; c < 3; c++)
-          {
-            rgba[1][c] = rgbasum[1][c] / sumcount[1];
-          }
-          }
-
+          /* make darkest consistently be background  */
           if (_ctx_rgba8_manhattan_diff (black, rgba[1]) >
               _ctx_rgba8_manhattan_diff (black, rgba[0]))
           {
@@ -822,6 +752,10 @@ inline static void ctx_term_flush (CtxTerm *term)
        ctx_term_output_buf_braille (term->pixels,
                                 width, height, term);
        break;
+    case CTX_TERM_BLOCK:
+       ctx_term_output_buf_block (term->pixels,
+                                width, height, term);
+       break;
   }
 #if CTX_BRAILLE_TEXT
   CtxRasterizer *rasterizer = (CtxRasterizer*)(term->host->renderer);
@@ -901,8 +835,6 @@ Ctx *ctx_new_term (int width, int height)
 {
   Ctx *ctx = ctx_new ();
 #if CTX_RASTERIZER
-  fprintf (stdout, "\e[?1049h");
-  fprintf (stdout, "\e[?25l"); // cursor off
   CtxTerm *term = (CtxTerm*)calloc (sizeof (CtxTerm), 1);
  
   const char *mode = getenv ("CTX_TERM_MODE");
@@ -912,6 +844,11 @@ Ctx *ctx_new_term (int width, int height)
   if (!mode) term->mode = CTX_TERM_SEXTANT;
   else if (!strcmp (mode, "sextant")) term->mode = CTX_TERM_SEXTANT;
   else if (!strcmp (mode, "ascii")) term->mode = CTX_TERM_ASCII;
+  else if (!strcmp (mode, "block")) {
+     term->mode = CTX_TERM_BLOCK;
+     ctx_term_cw = 3;
+     ctx_term_ch = 6;
+  }
   else if (!strcmp (mode, "quarter")) term->mode = CTX_TERM_QUARTER;
   else if (!strcmp (mode, "braille")){
     term->mode = CTX_TERM_BRAILLE;
@@ -922,6 +859,9 @@ Ctx *ctx_new_term (int width, int height)
                     " sextant ascii quarter braille\n");
     exit (1);
   }
+
+  fprintf (stdout, "\e[?1049h");
+  fprintf (stdout, "\e[?25l"); // cursor off
 
   int maxwidth = ctx_terminal_cols  () * ctx_term_cw;
   int maxheight = (ctx_terminal_rows ()) * ctx_term_ch;
@@ -958,7 +898,6 @@ Ctx *ctx_new_term (int width, int height)
 
   return ctx;
 }
-
 
 // unused?
 static inline void
