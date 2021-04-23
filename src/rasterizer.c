@@ -1555,8 +1555,11 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   if (rasterizer->term_glyphs && !stroke &&
       fabs (font_size - ch) < 0.5)
   {
-    int col = rasterizer->x / cw + 1;
-    int row = rasterizer->y / ch + 1;
+    float tx = rasterizer->x;
+    float ty = rasterizer->y;
+    _ctx_user_to_device (rasterizer->state, &tx, &ty);
+    int col = tx / cw + 1;
+    int row = ty / ch + 1;
     CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
     ctx_list_append (&rasterizer->glyphs, glyph);
     glyph->unichar = unichar;
@@ -1594,8 +1597,11 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
   if (rasterizer->term_glyphs && !stroke &&
       fabs (font_size - ch) < 0.5)
   {
-    int col = rasterizer->x / cw + 1;
-    int row = rasterizer->y / ch + 1;
+    float tx = rasterizer->x;
+    float ty = rasterizer->y;
+    _ctx_user_to_device (rasterizer->state, &tx, &ty);
+    int col = tx / cw + 1;
+    int row = ty / ch + 1;
     for (int i = 0; string[i]; i++, col++)
     {
       CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
