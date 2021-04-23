@@ -27,6 +27,7 @@ typedef enum
 {
   CTX_TERM_ASCII,
   CTX_TERM_SEXTANT,
+  CTX_TERM_BRAILLE_MONO,
   CTX_TERM_BRAILLE,
   CTX_TERM_QUARTER,
 } CtxTermMode;
@@ -120,7 +121,7 @@ void ctx_term_scanout (CtxTerm *term)
       strcpy (cell->prev_utf8, cell->utf8);
     }
     if (row != term->rows)
-      printf ("\n\r%i %i\r", row, term->rows);
+      printf ("\n\r");
     row ++;
   }
   printf ("\e[0m");
@@ -571,7 +572,8 @@ static void ctx_term_output_buf_ascii (uint8_t *pixels,
 static void ctx_term_output_buf_braille (uint8_t *pixels,
                           int width,
                           int height,
-                          CtxTerm *term)
+                          CtxTerm *term,
+                          int mono)
 {
   int reverse = 0;
   int stride = width * 4;
@@ -602,6 +604,12 @@ static void ctx_term_output_buf_braille (uint8_t *pixels,
               rgba[0][c] = rgba[1][c];
               rgba[1][c] = tmp;
             }
+          }
+          if (mono)
+          {
+            rgba[1][0] = 0;
+            rgba[1][1] = 0;
+            rgba[1][2] = 0;
           }
 
           int pixels_set = 0;
@@ -645,7 +653,7 @@ static void ctx_term_output_buf_braille (uint8_t *pixels,
             char utf8[5];
             utf8[ctx_unichar_to_utf8 (unicode, (uint8_t*)utf8)]=0;
 
-#if 1
+#if 0
             if (pixels_set == 8)
             {
               if (rgba[0][0] < 32 && rgba[0][1] < 32 && rgba[0][2] < 32)
@@ -694,7 +702,11 @@ inline static void ctx_term_flush (CtxTerm *term)
        break;
     case CTX_TERM_BRAILLE:
        ctx_term_output_buf_braille (term->pixels,
-                                width, height, term);
+                                width, height, term, 0);
+       break;
+    case CTX_TERM_BRAILLE_MONO:
+       ctx_term_output_buf_braille (term->pixels,
+                                width, height, term, 1);
        break;
   }
 #if CTX_BRAILLE_TEXT
@@ -789,9 +801,13 @@ Ctx *ctx_new_term (int width, int height)
     term->mode = CTX_TERM_BRAILLE;
     ctx_term_ch = 4;
   }
+  else if (!strcmp (mode, "braille-mono")){
+    term->mode = CTX_TERM_BRAILLE_MONO;
+    ctx_term_ch = 4;
+  }
   else {
     fprintf (stderr, "recognized values for CTX_TERM_MODE:\n"
-                    " sextant ascii quarter braille\n");
+                    " sextant ascii quarter braille braille-mono\n");
     exit (1);
   }
 

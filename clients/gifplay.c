@@ -385,6 +385,7 @@ int main(int argc, char *argv[])
         h = 0;
         break;
     }
+    int frame_start = ctx_ticks ();
 
     if (path)
     {
@@ -458,9 +459,10 @@ repeat:
 
     if (delay>=0) /* only gifs set it non-0 */
     {
-      int frame_start = ctx_ticks ();
       int now = ctx_ticks ();
-      usleep (1000 * (delay - (now-frame_start)));
+      //if (10 * delay > (now-frame_start))
+      if (1000 * (delay) > (now-frame_start) )
+      usleep (1000 * (delay) - (now-frame_start) );// - (now-frame_start)));
     }
 
     if (slideshow)

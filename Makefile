@@ -2,6 +2,8 @@ DESTDIR ?=
 PREFIX  ?= /usr/local
 
 CCACHE=`which ccache`
+CLIENTS_CFILES = $(wildcard clients/*.c)
+CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
 all: build.conf tools/ctx-fontgen ctx $(CLIENTS_BINS)
 include build.conf
@@ -25,8 +27,6 @@ LIBS  += -lz -lm -lpthread
 #OFLAGS_HARD =-O3
 #OFLAGS_LIGHT =-O2
 
-CLIENTS_CFILES = $(wildcard clients/*.c)
-CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
 TERMINAL_CFILES = $(wildcard terminal/*.c)
 TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
