@@ -26,6 +26,7 @@ typedef struct CtxTermLine
 typedef enum
 {
   CTX_TERM_ASCII,
+  CTX_TERM_ASCII_MONO,
   CTX_TERM_SEXTANT,
   CTX_TERM_BRAILLE_MONO,
   CTX_TERM_BRAILLE,
@@ -437,13 +438,14 @@ static void ctx_term_output_buf_sextant (uint8_t *pixels,
 static void ctx_term_output_buf_ascii (uint8_t *pixels,
                           int width,
                           int height,
-                          CtxTerm *term)
+                          CtxTerm *term,
+                          int mono)
 {
   /* this is a crude ascii-mode built on a quick mapping of sexels to ascii */
   int stride = width * 4;
   const char *sextants[]={
    " ","`","'","^","🬃","`","~","\"","-","\"","'","\"","-","\"","~","^",",",";",
-   "=","//","i","[","p","P","z",")","/","7","f",">","/","F",",","\\",":",":",
+   "=","/","i","[","p","P","z",")","/","7","f",">","/","F",",","\\",":",":",
    "\\","\\","(","T","j","T","]","?","s","\\","<","q","_","=","=","=","c","L",
    "Q","C","a","b","J","]","m","b","d","@"
   };
@@ -457,73 +459,11 @@ static void ctx_term_output_buf_ascii (uint8_t *pixels,
           uint8_t rgba[2][4] = {
                              {255,255,255,0},
                              {0,0,0,0}};
-          int i = 0;
 
-          int  rgbasum[2][4] = {0,};
-          int  sumcount[2];
-
-          int curdiff = 0;
-          /* first find starting point colors */
-          for (int yi = 0; yi < ctx_term_ch; yi++)
-            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
-                {
-                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
-
-                  if (rgba[0][3] == 0)
-                  {
-                    for (int c = 0; c < 3; c++)
-                      rgba[0][c] = pixels[noi + c];
-                    rgba[0][3] = 255; // used only as mark of in-use
-                  }
-                  else
-                  {
-                    int diff = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
-                    if (diff > curdiff)
-                    {
-                      curdiff = diff;
-                      for (int c = 0; c < 3; c++)
-                        rgba[1][c] = pixels[noi + c];
-                    }
-                  }
-
-                }
-
-          for (int iters = 0; iters < 1; iters++)
-          {
-                  i= 0;
-          for (int i = 0; i < 4; i ++)
-             rgbasum[0][i] = rgbasum[1][i]=0;
-          sumcount[0] = sumcount[1] = 0;
-
-          for (int yi = 0; yi < ctx_term_ch; yi++)
-            for (int xi = 0; xi < ctx_term_cw; xi++, i++)
-                {
-                  int noi = (row * ctx_term_ch + yi) * stride + (col*ctx_term_cw+xi) * 4;
-
-                  int diff1 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[0]);
-                  int diff2 = _ctx_rgba8_manhattan_diff (&pixels[noi], rgba[1]);
-                  int cluster = 0;
-                  if (diff1 <= diff2)
-                    cluster = 0;
-                  else
-                    cluster = 1;
-                  sumcount[cluster]++;
-                  for (int c = 0; c < 3; c++)
-                    rgbasum[cluster][c] += pixels[noi+c];
-                }
-
-
-          if (sumcount[0])
-          for (int c = 0; c < 3; c++)
-          {
-            rgba[0][c] = rgbasum[0][c] / sumcount[0];
-          }
-          if (sumcount[1])
-          for (int c = 0; c < 3; c++)
-          {
-            rgba[1][c] = rgbasum[1][c] / sumcount[1];
-          }
-          }
+          ctx_term_find_color_pair (term, col * ctx_term_cw,
+                                    row * ctx_term_ch,
+                                    ctx_term_cw,
+                                    ctx_term_ch, rgba);
 
 
           if (_ctx_rgba8_manhattan_diff (black, rgba[1]) >
@@ -536,6 +476,14 @@ static void ctx_term_output_buf_ascii (uint8_t *pixels,
               rgba[1][c] = tmp;
             }
           }
+          if (mono)
+          {
+            rgba[1][0] = 0;
+            rgba[1][1] = 0;
+            rgba[1][2] = 0;
+          }
+
+
           int brightest_dark_diff = _ctx_rgba8_manhattan_diff (black, rgba[0]);
 
           int pixels_set = 0;
@@ -694,7 +642,11 @@ inline static void ctx_term_flush (CtxTerm *term)
        break;
     case CTX_TERM_ASCII:
        ctx_term_output_buf_ascii (term->pixels,
-                                width, height, term);
+                                width, height, term, 0);
+       break;
+    case CTX_TERM_ASCII_MONO:
+       ctx_term_output_buf_ascii (term->pixels,
+                                width, height, term, 1);
        break;
     case CTX_TERM_SEXTANT:
        ctx_term_output_buf_sextant (term->pixels,
@@ -796,6 +748,7 @@ Ctx *ctx_new_term (int width, int height)
   if (!mode) term->mode = CTX_TERM_SEXTANT;
   else if (!strcmp (mode, "sextant")) term->mode = CTX_TERM_SEXTANT;
   else if (!strcmp (mode, "ascii")) term->mode = CTX_TERM_ASCII;
+  else if (!strcmp (mode, "ascii-mono")) term->mode = CTX_TERM_ASCII_MONO;
   else if (!strcmp (mode, "quarter")) term->mode = CTX_TERM_QUARTER;
   else if (!strcmp (mode, "braille")){
     term->mode = CTX_TERM_BRAILLE;
