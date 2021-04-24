@@ -769,7 +769,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBAF (CtxRasterizer *rasterizer)
   CtxGState *gstate = &rasterizer->state->gstate;
   switch (gstate->source_fill.type)
     {
-      case CTX_SOURCE_IMAGE:           return ctx_fragment_image_RGBAF;
+      case CTX_SOURCE_TEXTURE:           return ctx_fragment_image_RGBAF;
       case CTX_SOURCE_COLOR:           return ctx_fragment_color_RGBAF;
 #if CTX_GRADIENTS
       case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_RGBAF;
@@ -786,7 +786,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
   CtxBuffer *buffer = gstate->source_fill.image.buffer;
   switch (gstate->source_fill.type)
     {
-      case CTX_SOURCE_IMAGE:
+      case CTX_SOURCE_TEXTURE:
         switch (buffer->format->bpp)
           {
             case 1:  return ctx_fragment_image_gray1_RGBA8;
@@ -2705,7 +2705,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
             rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_radial_gradient_normal);
             break;
 #endif
-          case CTX_SOURCE_IMAGE:
+          case CTX_SOURCE_TEXTURE:
             {
                CtxSource *g = &rasterizer->state->gstate.source_fill;
                switch (g->image.buffer->format->bpp)
@@ -3382,7 +3382,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
             rasterizer->comp_op = ctx_RGBAF_porter_duff_radial_gradient_normal;
             break;
 #endif
-          case CTX_SOURCE_IMAGE:
+          case CTX_SOURCE_TEXTURE:
             rasterizer->comp_op = ctx_RGBAF_porter_duff_image_normal;
             break;
           default:
@@ -3405,7 +3405,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
             rasterizer->comp_op = ctx_RGBAF_porter_duff_radial_gradient;
             break;
 #endif
-          case CTX_SOURCE_IMAGE:
+          case CTX_SOURCE_TEXTURE:
             rasterizer->comp_op = ctx_RGBAF_porter_duff_image;
             break;
           default:
@@ -3481,7 +3481,7 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYAF (CtxRasterizer *rasterizer
   CtxGState *gstate = &rasterizer->state->gstate;
   switch (gstate->source_fill.type)
     {
-      case CTX_SOURCE_IMAGE:           return ctx_fragment_image_GRAYAF;
+      case CTX_SOURCE_TEXTURE:           return ctx_fragment_image_GRAYAF;
       case CTX_SOURCE_COLOR:           return ctx_fragment_color_GRAYAF;
 #if CTX_GRADIENTS
       case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_GRAYAF;
@@ -3672,7 +3672,7 @@ ctx_fragment_other_CMYKAF (CtxRasterizer *rasterizer, float x, float y, void *ou
   CtxGState *gstate = &rasterizer->state->gstate;
   switch (gstate->source_fill.type)
     {
-      case CTX_SOURCE_IMAGE:
+      case CTX_SOURCE_TEXTURE:
         ctx_fragment_image_RGBAF (rasterizer, x, y, rgba);
         break;
       case CTX_SOURCE_COLOR:
@@ -4380,7 +4380,7 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYA8 (CtxRasterizer *rasterizer
   CtxGState *gstate = &rasterizer->state->gstate;
   switch (gstate->source_fill.type)
     {
-      case CTX_SOURCE_IMAGE:           return ctx_fragment_image_GRAYA8;
+      case CTX_SOURCE_TEXTURE:           return ctx_fragment_image_GRAYA8;
 #if CTX_GRADIENTS
       case CTX_SOURCE_COLOR:           return ctx_fragment_color_GRAYA8;
       case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_GRAYA8;

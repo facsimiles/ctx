@@ -493,7 +493,7 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   {
     rasterizer->texture_source->texture[no].frame = rasterizer->texture_source->frame;
   }
-  rasterizer->state->gstate.source_fill.type = CTX_SOURCE_IMAGE;
+  rasterizer->state->gstate.source_fill.type = CTX_SOURCE_TEXTURE;
   rasterizer->state->gstate.source_fill.image.buffer = &rasterizer->texture_source->texture[no];
   //ctx_user_to_device (rasterizer->state, &x, &y);
   rasterizer->state->gstate.source_fill.image.x0 = 0;

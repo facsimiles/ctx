@@ -84,7 +84,7 @@ struct _CtxGradientStop
 enum _CtxSourceType
 {
   CTX_SOURCE_COLOR = 0,
-  CTX_SOURCE_IMAGE,
+  CTX_SOURCE_TEXTURE,
   CTX_SOURCE_LINEAR_GRADIENT,
   CTX_SOURCE_RADIAL_GRADIENT,
 };
@@ -114,7 +114,7 @@ struct _CtxBuffer
   void       *space; 
 #endif
 #endif
-#if 0
+#if 1
   CtxBuffer          *color_managed; /* only valid for one render target, cache
                                         for a specific space
                                         */

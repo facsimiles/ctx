@@ -178,9 +178,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         ctx_sha1_process(&sha1, (unsigned char*)&hash, 8);
 
         //
-        //fprintf (stderr, "t:%i\n", rasterizer->state->gstate.source_fill.type == CTX_SOURCE_IMAGE);
+        //fprintf (stderr, "t:%i\n", rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE);
         //
-        if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_IMAGE)
+        if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE)
         {
           ctx_sha1_process(&sha1, (unsigned char*)&rasterizer->state->gstate.source_fill, sizeof (CtxSource));//(unsigned char*)&color, 4);
           if (rasterizer->state->gstate.source_fill.image.buffer->eid)
