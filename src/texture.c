@@ -68,6 +68,14 @@ void ctx_buffer_deinit (CtxBuffer *buffer)
   buffer->data = NULL;
   buffer->free_func = NULL;
   buffer->user_data  = NULL;
+  if (buffer->color_managed)
+  {
+    if (buffer->color_managed != buffer)
+    {
+      ctx_buffer_free (buffer->color_managed);
+    }
+    buffer->color_managed = NULL;
+  }
 }
 
 void ctx_buffer_free (CtxBuffer *buffer)

@@ -285,7 +285,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer;
+  CtxBuffer *buffer = g->texture.buffer->color_managed;
   ctx_assert (rasterizer);
   ctx_assert (g);
   ctx_assert (buffer);
@@ -496,7 +496,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer;
+  CtxBuffer *buffer = g->texture.buffer->color_managed;
 #if 0
   ctx_assert (rasterizer);
   ctx_assert (g);
@@ -599,7 +599,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer;
+  CtxBuffer *buffer = g->texture.buffer->color_managed;
   ctx_assert (rasterizer);
   ctx_assert (g);
   ctx_assert (buffer);
@@ -2614,6 +2614,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop) (CTX_COMPOSITE_ARGUMENTS)
 {
 }
 
+
 static void
 ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 {
@@ -2622,10 +2623,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_generic);
 
-  if (gstate->source_fill.type == CTX_SOURCE_TEXTURE)
-  {
-    assert (gstate->source_fill.texture.buffer);
-  }
 
 #if 1
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
@@ -4826,9 +4823,55 @@ CtxPixelFormatInfo CTX_COMPOSITE_SUFFIX(ctx_pixel_formats)[]=
 };
 
 
+static void
+ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
+                                      CtxBuffer     *buffer)
+{
+   switch (buffer->format->pixel_format)
+   {
+#ifndef NO_BABL
+#if CTX_BABL
+     case CTX_FORMAT_RGBA8:
+        {
+          buffer->color_managed = ctx_buffer_new (buffer->width, buffer->height,
+                                                  CTX_FORMAT_RGBA8);
+          babl_process (
+             babl_fish (babl_format_with_space ("R'G'B'A u8", buffer->space),
+                        babl_format_with_space ("R'G'B'A u8", rasterizer->state->gstate.device_space)),
+             buffer->data, buffer->color_managed->data,
+             buffer->width * buffer->height
+             );
+       }
+       break;
+     case CTX_FORMAT_RGB8:
+       {
+       buffer->color_managed = ctx_buffer_new (buffer->width, buffer->height,
+                                               CTX_FORMAT_RGB8);
+          babl_process (
+             babl_fish (babl_format_with_space ("R'G'B' u8", buffer->space),
+                        babl_format_with_space ("R'G'B' u8", rasterizer->state->gstate.device_space)),
+             buffer->data, buffer->color_managed->data,
+             buffer->width * buffer->height
+             );
+       }
+       break;
+#endif
+#endif
+     default:
+       buffer->color_managed = buffer;
+   }
+}
+
 void
 CTX_COMPOSITE_SUFFIX(ctx_compositor_setup) (CtxRasterizer *rasterizer)
 {
+  if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE)
+  {
+    if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
+      ctx_texture_prepare_color_management (rasterizer,
+        rasterizer->state->gstate.source_fill.texture.buffer);
+  }
+
   if (rasterizer->format->setup)
   {
     // event if _default is used we get to work

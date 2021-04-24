@@ -268,7 +268,7 @@ to be combined with all compositing modes.
 
          <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>
          Supporting RGB332, RGB565 and grayscale + 1bit mode render targets.
-         ICC based color management of RGB user/device spaces is supported using <a href='https://gegl.org/babl/'>babl</a> as an optional dependency. CMYK colors can be generated on the fly
+         ICC based color management of RGB user/device spaces through <a href='https://gegl.org/babl/'>babl</a> as an optional dependency. CMYK colors can be generated on the fly
          from RGB or set and retained in CMYK mode - when set in CMYK mode the
          colors correspond directly to the device colors in CMYK mode.
          </p>
@@ -389,7 +389,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         
           <li>missing terminal content rewrapping on resize</li>
 
-          <li>hyperlink protocol</li>
+          <li>hyperlink escape sequences</li>
           </ul>
         </li>
         </ul>
@@ -403,7 +403,6 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         are detected - but the raster processing work of creating the clipping mask is still done, there is room for even faster path that knows all clips are rectangles and only update the clipping bounds.</li>
         <li>analytical instead of raster clipping</li>
         <li>double-width glyphs, for emoji and asian scripts</li>
-        <li>color manage textures (only solids and gradients are currently color managed)</li>
         <li>multi-head, both for DRM when plugging in HDMI/VGA and networked
         connect to ESP32 / html5 canvas clients.</li>
         <li>swap some uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx, pass ctx data

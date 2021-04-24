@@ -9,6 +9,10 @@
 #include <unistd.h>
 #include <math.h>
 
+#ifndef NO_BABL
+#include <babl/babl.h>
+#endif
+
 #define CTX_GRADIENT_CACHE       0
 #define CTX_NATIVE_GRAYA8        1
 #define CTX_ENABLE_CMYK          1
