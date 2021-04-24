@@ -494,10 +494,10 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
     rasterizer->texture_source->texture[no].frame = rasterizer->texture_source->frame;
   }
   rasterizer->state->gstate.source_fill.type = CTX_SOURCE_TEXTURE;
-  rasterizer->state->gstate.source_fill.image.buffer = &rasterizer->texture_source->texture[no];
+  rasterizer->state->gstate.source_fill.texture.buffer = &rasterizer->texture_source->texture[no];
   //ctx_user_to_device (rasterizer->state, &x, &y);
-  rasterizer->state->gstate.source_fill.image.x0 = 0;
-  rasterizer->state->gstate.source_fill.image.y0 = 0;
+  rasterizer->state->gstate.source_fill.texture.x0 = 0;
+  rasterizer->state->gstate.source_fill.texture.y0 = 0;
   rasterizer->state->gstate.source_fill.transform = rasterizer->state->gstate.transform;
   ctx_matrix_translate (&rasterizer->state->gstate.source_fill.transform, x, y);
   ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);

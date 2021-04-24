@@ -183,11 +183,11 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE)
         {
           ctx_sha1_process(&sha1, (unsigned char*)&rasterizer->state->gstate.source_fill, sizeof (CtxSource));//(unsigned char*)&color, 4);
-          if (rasterizer->state->gstate.source_fill.image.buffer->eid)
+          if (rasterizer->state->gstate.source_fill.texture.buffer->eid)
           {
-          ctx_sha1_process(&sha1, (unsigned char*)rasterizer->state->gstate.source_fill.image.buffer->eid, 
-          strlen (rasterizer->state->gstate.source_fill.image.buffer->eid));
-          fprintf (stderr, "%s:%i:%s\n", __FILE__, __LINE__, rasterizer->state->gstate.source_fill.image.buffer->eid);
+          ctx_sha1_process(&sha1, (unsigned char*)rasterizer->state->gstate.source_fill.texture.buffer->eid, 
+          strlen (rasterizer->state->gstate.source_fill.texture.buffer->eid));
+          fprintf (stderr, "%s:%i:%s\n", __FILE__, __LINE__, rasterizer->state->gstate.source_fill.texture.buffer->eid);
           }
                           
         }

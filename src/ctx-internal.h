@@ -145,7 +145,7 @@ struct _CtxSource
       float x0;
       float y0;
       CtxBuffer *buffer;
-    } image;
+    } texture;
     struct
     {
       float x0;

@@ -285,12 +285,12 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->image.buffer;
+  CtxBuffer *buffer = g->texture.buffer;
   ctx_assert (rasterizer);
   ctx_assert (g);
   ctx_assert (buffer);
-  int u = x - g->image.x0;
-  int v = y - g->image.y0;
+  int u = x - g->texture.x0;
+  int v = y - g->texture.y0;
   if ( u < 0 || v < 0 ||
        u >= buffer->width ||
        v >= buffer->height)
@@ -496,14 +496,14 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->image.buffer;
+  CtxBuffer *buffer = g->texture.buffer;
 #if 0
   ctx_assert (rasterizer);
   ctx_assert (g);
   ctx_assert (buffer);
 #endif
-  int u = x - g->image.x0;
-  int v = y - g->image.y0;
+  int u = x - g->texture.x0;
+  int v = y - g->texture.y0;
   if ( u < 0 || v < 0 ||
        u >= buffer->width ||
        v >= buffer->height)
@@ -564,12 +564,12 @@ ctx_fragment_image_gray1_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->image.buffer;
+  CtxBuffer *buffer = g->texture.buffer;
   ctx_assert (rasterizer);
   ctx_assert (g);
   ctx_assert (buffer);
-  int u = x - g->image.x0;
-  int v = y - g->image.y0;
+  int u = x - g->texture.x0;
+  int v = y - g->texture.y0;
   if ( u < 0 || v < 0 ||
        u >= buffer->width ||
        v >= buffer->height)
@@ -588,7 +588,7 @@ ctx_fragment_image_gray1_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
         {
           for (int c = 0; c < 4; c++)
             { rgba[c] = 255;
-            }//g->image.rgba[c];
+            }//g->texture.rgba[c];
             //}
         }
     }
@@ -599,12 +599,12 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->image.buffer;
+  CtxBuffer *buffer = g->texture.buffer;
   ctx_assert (rasterizer);
   ctx_assert (g);
   ctx_assert (buffer);
-  int u = x - g->image.x0;
-  int v = y - g->image.y0;
+  int u = x - g->texture.x0;
+  int v = y - g->texture.y0;
   if ( (u < 0) || (v < 0) ||
        (u >= buffer->width-1) ||
        (v >= buffer->height-1) )
@@ -753,7 +753,7 @@ static void ctx_fragment_image_RGBAF (CtxRasterizer *rasterizer, float x, float 
   float *outf = (float *) out;
   uint8_t rgba[4];
   CtxGState *gstate = &rasterizer->state->gstate;
-  CtxBuffer *buffer = gstate->source_fill.image.buffer;
+  CtxBuffer *buffer = gstate->source_fill.texture.buffer;
   switch (buffer->format->bpp)
     {
       case 1:  ctx_fragment_image_gray1_RGBA8 (rasterizer, x, y, rgba); break;
@@ -783,7 +783,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBAF (CtxRasterizer *rasterizer)
 static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
-  CtxBuffer *buffer = gstate->source_fill.image.buffer;
+  CtxBuffer *buffer = gstate->source_fill.texture.buffer;
   switch (gstate->source_fill.type)
     {
       case CTX_SOURCE_TEXTURE:
@@ -2621,6 +2621,12 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   int components = 4;
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_generic);
+
+  if (gstate->source_fill.type == CTX_SOURCE_TEXTURE)
+  {
+    assert (gstate->source_fill.texture.buffer);
+  }
+
 #if 1
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
   {
@@ -2708,7 +2714,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           case CTX_SOURCE_TEXTURE:
             {
                CtxSource *g = &rasterizer->state->gstate.source_fill;
-               switch (g->image.buffer->format->bpp)
+               switch (g->texture.buffer->format->bpp)
                {
                  case 32:
                    rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_image_rgba8_normal);
@@ -3463,7 +3469,7 @@ static void ctx_fragment_image_GRAYAF (CtxRasterizer *rasterizer, float x, float
   uint8_t rgba[4];
   float rgbaf[4];
   CtxGState *gstate = &rasterizer->state->gstate;
-  CtxBuffer *buffer = gstate->source_fill.image.buffer;
+  CtxBuffer *buffer = gstate->source_fill.texture.buffer;
   switch (buffer->format->bpp)
     {
       case 1:  ctx_fragment_image_gray1_RGBA8 (rasterizer, x, y, rgba); break;
@@ -4364,7 +4370,7 @@ static void ctx_fragment_image_GRAYA8 (CtxRasterizer *rasterizer, float x, float
 {
   uint8_t rgba[4];
   CtxGState *gstate = &rasterizer->state->gstate;
-  CtxBuffer *buffer = gstate->source_fill.image.buffer;
+  CtxBuffer *buffer = gstate->source_fill.texture.buffer;
   switch (buffer->format->bpp)
     {
       case 1:  ctx_fragment_image_gray1_RGBA8 (rasterizer, x, y, rgba); break;
