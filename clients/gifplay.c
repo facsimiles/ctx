@@ -2,7 +2,8 @@
  * Copyright 2019, 2021 Øyvind Kolås <pippin@gimp.org>
  *
  *  plays a gif animation on loop using stb_image, originally written as
- *  a l0dable for card10 needs cleanup/dead-code removal
+ *  a l0dable for card10, decoding GIF with stb_image this way with
+ *  callbacks is efficient enough for use on a microcontroller.
  *
  */
 
@@ -20,9 +21,6 @@ static const char *extensions[]={
    ".gif", ".GIF", NULL
 };
 #endif
-static float slide_seconds = 5.0f;
-static int   slideshow = 0;
-static int   fit = 0;
 
 #define STBI_NO_STDIO
 //#define STBI_ONLY_PNG
@@ -83,13 +81,7 @@ typedef struct
 
 stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, int req_comp, stbi_uc *two_back);
 
-
 /////////////////////////////////////////////////////
-
-
-
-static int img_no = 0;
-static int slide_start = 0;
 
 static int quit = 0;
 static int file_size = 0;
@@ -117,94 +109,8 @@ static int eof_cb (void *user)
 
 static stbi_io_callbacks clbk = {read_cb, skip_cb, eof_cb};
 
-
-
-static char *stb_active_path = NULL;
-static uint8_t *stb_buffer = NULL;
 static int stb_w = -1;
 static int stb_h = -1;
-static int stb_c = 0;
-
-static void stb_clear_cache (void)
-{
-  if (stb_active_path)
-    free (stb_active_path);
-  stb_active_path = NULL;
-  if (stb_buffer)
-    free (stb_buffer);
-  stb_buffer = NULL;
-}
-
-void epicfb_stb (int         x0,
-                 int         y0,
-                 int         w,
-                 int         h,
-                 uint8_t     opacity,
-                 int         filter,
-                 int         cache,
-                 const char *path)
-{
-  uint8_t *buffer = NULL;
-  int imgw = 0, imgh = 0, c = 0;
-
-  if (!cache)
-  {
-    stb_clear_cache ();
-  }
-
-  if (cache)
-  {
-    if (stb_active_path)
-    {
-     if (!strcmp (stb_active_path, path))
-      {
-        buffer = stb_buffer;
-        stb_buffer = NULL;
-        free (stb_active_path);
-        stb_active_path = NULL;
-        imgw = stb_w;
-        imgh = stb_h;
-        c  = stb_c;
-      }
-      else
-      {
-        stb_clear_cache ();
-      }
-    }
-  }
-
-  if (!buffer)
-  {
-    FILE *f = fopen (path, "rb");
-    if (!f)
-      return;
-    fseek (f, 0, SEEK_END);
-    file_size = ftell (f);
-    fseek (f, 0, SEEK_SET);
-    buffer  = stbi_load_from_callbacks (&clbk, (void*)f, &imgw, &imgh, &c, 0);
-
-    fclose (f);
-    if (!buffer)
-    {
-      return;
-    }
-  }
-
-  // XXX blit!
-
-  if (cache)
-  {
-    stb_active_path = strdup (path);
-    stb_buffer = buffer;
-    stb_w = imgw;
-    stb_h = imgh;
-    stb_c = c;
-  }
-  else
-  {
-    free (buffer);
-  }
-}
 
 #ifdef STBI_ONLY_GIF
 
@@ -222,7 +128,6 @@ int frameno = 0;
 static void epicfb_stb_gif_stop (void);
 
 void stbi__start_callbacks(stbi__context *s, stbi_io_callbacks *c, void *user);
-
 
 static int epicfb_stb_gif_init (const char *path)
 {
@@ -298,9 +203,7 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
                                  int       x0,
                                  int       y0,
                                  int       w,
-                                 int       h,
-                                 uint8_t   opacity,
-                                 int       filter)
+                                 int       h)
 {
   if (!gifbuf)
     return;
@@ -312,7 +215,7 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
   float scaleh = ctx_height (ctx) * 1.0 / stb_h;
   if (scaleh < scale) scale = scaleh;
   ctx_scale (ctx, scale, scale);
-  //ctx_image_smoothing (ctx, 0);
+  ctx_image_smoothing (ctx, 0);
   ctx_define_texture (ctx, NULL, stb_w, stb_h, stb_w * 4, CTX_FORMAT_RGBA8,
                       gifbuf, eid);
   ctx_fill (ctx);
@@ -324,42 +227,26 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
 
 static void liberate_resources (void)
 {
-  stb_clear_cache ();
-#ifdef STBI_ONLY_GIF
-  if (gif_active_path)
-    epicfb_stb_gif_stop ();
-#endif
+  epicfb_stb_gif_stop ();
 }
-
-
-
 
 /****************************/
-
-
 char *path = NULL;
-
-static void cb_next_file (void *data)
-{
-}
-
-static void cb_prev_file (void *data)
-{
-}
-
-static void cb_toggle_slideshow (void *data)
-{
-  slideshow = !slideshow;
-  slide_start = ctx_ticks ();
-}
 
 int main(int argc, char *argv[])
 {
   Ctx *ctx;
   path = argv[1];
 
+  if (! (strstr (path, ".gif") || strstr (path, ".GIF")))
+  {
+    fprintf (stderr, "%s doesn't end in .gif or .GIF", path);
+    return 1;
+  }
+
   ctx = ctx_new_ui (-1, -1);
 
+  int frame_start = ctx_ticks ();
   while (!quit)
   {
 
@@ -368,32 +255,10 @@ int main(int argc, char *argv[])
     int y0 = 0;
     int  w = 160;
     int  h = 0;
-    int opacity = 255;
-    int filter  = 1;
-    int cache   = 1;
-
-    switch (fit)
-    {
-      case 0: // width
-        break;
-      case 1: // height
-        w = 0;
-        h = 80;
-        break;
-      case 2: // 1:1
-        w = 0;
-        h = 0;
-        break;
-    }
-    int frame_start = ctx_ticks ();
 
     if (path)
     {
-#ifdef STBI_ONLY_GIF
-      if (strstr (path, ".gif") ||
-          strstr (path, ".GIF"))
-      {
-repeat:
+      repeat:
         if (!gif_active_path ||
             (gif_active_path && strcmp (path, gif_active_path)))
         {
@@ -402,7 +267,7 @@ repeat:
             delay = epicfb_stb_gif_load_frame ();
             if (delay >= 0)
             {
-              epicfb_stb_gif_blit (ctx, x0, y0, w, h, opacity, filter);
+              epicfb_stb_gif_blit (ctx, x0, y0, w, h);
             }
           }
         }
@@ -413,7 +278,7 @@ repeat:
             delay = epicfb_stb_gif_load_frame ();
             if (delay >= 0)
             {
-              epicfb_stb_gif_blit (ctx, x0, y0, w, h, opacity, filter);
+              epicfb_stb_gif_blit (ctx, x0, y0, w, h);
             }
             else
             {
@@ -421,26 +286,7 @@ repeat:
             }
           }
         }
-      }
-      else
-#endif
-      {
-        epicfb_stb (x0, y0, w, h, opacity, filter, cache, path);
-      }
     }
-    else
-    {
-      if (img_no == 0)
-        return 0;
-      img_no = 0;
-      //path = epicfb_path_no (img_no, extensions);
-    }
-    //epicfb_update (pixels, EPICFB_CLEAR);
-    ctx_rectangle (ctx, 0,0,ctx_width (ctx), ctx_height (ctx));
-    ctx_rgb (ctx, 0,0,0);
-    ctx_fill (ctx);
-
-
 
     CtxEvent *event;
    
@@ -460,40 +306,11 @@ repeat:
     if (delay>=0) /* only gifs set it non-0 */
     {
       int now = ctx_ticks ();
-      //if (10 * delay > (now-frame_start))
-      if (1000 * (delay) > (now-frame_start) )
-      usleep (1000 * (delay) - (now-frame_start) );// - (now-frame_start)));
+      if (delay == 0) delay = 100;
+      if (1000 * (delay) - (now-frame_start) > 0)
+        usleep (1000 * (delay) - (now-frame_start) );
     }
-
-    if (slideshow)
-    {
-      if (ctx_ticks () > slide_start + slide_seconds * 1000)
-        cb_next_file (NULL);
-    }
-
-#if 0
-    epicfb_events ();
-
-    if (epicfb_event (BUTTON_RIGHT, LONG_PRESS))
-      cb_toggle_slideshow (NULL);
-
-    if (epicfb_event (BUTTON_RIGHT, PRESS))
-      cb_next_file (NULL);
-
-    if (epicfb_event (BUTTON_LEFT, PRESS))
-      cb_prev_file (NULL);
-
-    if (epicfb_event (BUTTON_SELECT, PRESS))
-    {
-      fit++;
-      if (fit > 2) fit = 0;
-    }
-
-    if (epicfb_event (BUTTON_QUIT, PRESS))
-    {
-      quit = 1;
-    }
-#endif
+    frame_start = ctx_ticks ();
   }
   liberate_resources (); /* to please valgrind */
   ctx_free (ctx);
