@@ -78,8 +78,80 @@ void ctx_term_set (CtxTerm *term,
   }
   if (col > line->maxcol) line->maxcol = col;
   strncpy (line->cells[col-1].utf8, (char*)utf8, 4);
-  memcpy  (line->cells[col-1].fg, fg, 3);
-  memcpy  (line->cells[col-1].bg, bg, 3);
+  memcpy  (line->cells[col-1].fg, fg, 4);
+  memcpy  (line->cells[col-1].bg, bg, 4);
+}
+
+static int _ctx_term256 = 0; // XXX TODO implement autodetect for this
+static long _ctx_curfg = -1;
+static long _ctx_curbg = -1;
+
+static long ctx_rgb_to_long (int r,int g, int b)
+{
+  return r * 256 * 256 + g * 256 + b;
+}
+
+
+static void ctx_term_set_fg (int red, int green, int blue)
+{
+  long lc = ctx_rgb_to_long (red, green, blue);
+  if (lc == _ctx_curfg)
+    return;
+  _ctx_curfg=lc;
+  if (_ctx_term256 == 0)
+  {
+    printf("\e[38;2;%i;%i;%im", red,green,blue);
+  }
+  else
+  {
+    int gray = (green /255.0) * 24 + 0.5;
+    int r    = (red/255.0)    * 6 + 0.5;
+    int g    = (green/255.0)  * 6 + 0.5;
+    int b    = (blue/255.0)   * 6 + 0.5;
+    if (gray > 23) gray = 23;
+
+    if (r > 5) r = 5;
+    if (g > 5) g = 5;
+    if (b > 5) b = 5;
+
+    if (((int)(r/1.66)== (int)(g/1.66)) && ((int)(g/1.66) == ((int)(b/1.66))))
+    {
+      printf("\e[38;5;%im", 16 + 216 + gray);
+    }
+    else
+      printf("\e[38;5;%im", 16 + r * 6 * 6 + g * 6  + b);
+  }
+}
+
+static void ctx_term_set_bg(int red, int green, int blue)
+{
+  long lc = ctx_rgb_to_long (red, green, blue);
+//if (lc == _ctx_curbg)
+//  return;
+  _ctx_curbg=lc;
+  if (_ctx_term256 == 0)
+  {
+    printf("\e[48;2;%i;%i;%im", red,green,blue);
+  }
+  else
+  {
+    int gray = (green /255.0) * 24 + 0.5;
+    int r    = (red/255.0)    * 6 + 0.5;
+    int g    = (green/255.0)  * 6 + 0.5;
+    int b    = (blue/255.0)   * 6 + 0.5;
+    if (gray > 23) gray = 23;
+
+    if (r > 5) r = 5;
+    if (g > 5) g = 5;
+    if (b > 5) b = 5;
+
+    if (((int)(r/1.66)== (int)(g/1.66)) && ((int)(g/1.66) == ((int)(b/1.66))))
+    {
+      printf("\e[48;5;%im", 16 + 216 + gray);
+    }
+    else
+      printf("\e[48;5;%im", 16 + r * 6 * 6 + g * 6  + b);
+  }
 }
 
 void ctx_term_scanout (CtxTerm *term)
@@ -88,8 +160,6 @@ void ctx_term_scanout (CtxTerm *term)
   printf ("\e[H");
 //  printf ("\e[?25l");
   printf ("\e[0m");
-  uint8_t rgba_bg[4]={0,0,0,0};
-  uint8_t rgba_fg[4]={255,255,255,255};
   for (CtxList *l = term->lines; l; l = l->next)
   {
     CtxTermLine *line = l->data;
@@ -101,16 +171,8 @@ void ctx_term_scanout (CtxTerm *term)
           memcmp(cell->fg, cell->prev_fg, 3) ||
           memcmp(cell->bg, cell->prev_bg, 3))
       {
-        if (memcmp (&cell->fg[0],  &rgba_fg[0], 3))
-        {
-          memcpy (&rgba_fg[0], &cell->fg[0], 3);
-          printf ("\e[38;2;%i;%i;%im", rgba_fg[0], rgba_fg[1], rgba_fg[2]);
-        }
-        if (memcmp (&cell->bg[0],  &rgba_bg[0], 3))
-        {
-          memcpy (&rgba_bg[0], &cell->bg[0], 3);
-          printf ("\e[48;2;%i;%i;%im", rgba_bg[0], rgba_bg[1], rgba_bg[2]);
-        }
+        ctx_term_set_fg (cell->fg[0], cell->fg[1], cell->fg[2]);
+        ctx_term_set_bg (cell->bg[0], cell->bg[1], cell->bg[2]);
         printf ("%s", cell->utf8);
       }
       else
@@ -120,6 +182,8 @@ void ctx_term_scanout (CtxTerm *term)
         printf ("\e[C");
       }
       strcpy (cell->prev_utf8, cell->utf8);
+      memcpy (cell->prev_fg, cell->fg, 3);
+      memcpy (cell->prev_bg, cell->bg, 3);
     }
     if (row != term->rows)
       printf ("\n\r");
