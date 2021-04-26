@@ -137,6 +137,16 @@ static int is_in_ctx (void)
 
 Ctx *ctx_new_ui (int width, int height)
 {
+  if (getenv ("CTX_HASH_CACHE"))
+  {
+    const char * val = getenv ("CTX_HASH_CACHE");
+    if (!strcmp (val, "0"))
+      _ctx_enable_hash_cache = 0;
+    if (!strcmp (val, "off"))
+      _ctx_enable_hash_cache = 0;
+  }
+
+
   if (getenv ("CTX_THREADS"))
   {
     int val = atoi (getenv ("CTX_THREADS"));
