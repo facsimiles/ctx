@@ -16,17 +16,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "ctx.h"
-#if 0
-static const char *extensions[]={
-   ".gif", ".GIF", NULL
-};
-#endif
 
 #define STBI_NO_STDIO
-//#define STBI_ONLY_PNG
-//#define STBI_ONLY_JPEG
-#define STBI_ONLY_GIF
-//#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 /* we need more defs, copied from internals */
@@ -111,8 +102,6 @@ static stbi_io_callbacks clbk = {read_cb, skip_cb, eof_cb};
 
 static int stb_w = -1;
 static int stb_h = -1;
-
-#ifdef STBI_ONLY_GIF
 
 static stbi__context s;
 unsigned char *result = 0;
@@ -222,8 +211,6 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
   ctx_restore (ctx);
   ctx_flush (ctx);
 }
-
-#endif
 
 static void liberate_resources (void)
 {
