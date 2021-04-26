@@ -182,12 +182,16 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         //
         if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE)
         {
-          ctx_sha1_process(&sha1, (unsigned char*)&rasterizer->state->gstate.source_fill, sizeof (CtxSource));//(unsigned char*)&color, 4);
+          ctx_sha1_process(&sha1, (uint8_t*)&rasterizer->state->gstate.source_fill, sizeof (CtxSource));//(unsigned char*)&color, 4);
           if (rasterizer->state->gstate.source_fill.texture.buffer->eid)
           {
-          ctx_sha1_process(&sha1, (unsigned char*)rasterizer->state->gstate.source_fill.texture.buffer->eid, 
-          strlen (rasterizer->state->gstate.source_fill.texture.buffer->eid));
-          fprintf (stderr, "%s:%i:%s\n", __FILE__, __LINE__, rasterizer->state->gstate.source_fill.texture.buffer->eid);
+            ctx_sha1_process(&sha1, (uint8_t*)rasterizer->state->gstate.source_fill.texture.buffer->eid, 
+            strlen (rasterizer->state->gstate.source_fill.texture.buffer->eid));
+
+            ctx_sha1_process(&sha1, (uint8_t *)&rasterizer->state->gstate.source_fill.transform,
+                          sizeof (CtxMatrix));
+
+//          fprintf (stderr, "%s:%i:%s\n", __FILE__, __LINE__, rasterizer->state->gstate.source_fill.texture.buffer->eid);
           }
                           
         }
@@ -389,7 +393,6 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
     }
 }
 
-
 static CtxRasterizer *
 ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width, int height, int cols, int rows)
 {
@@ -425,8 +428,8 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
 
 Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
 {
-  Ctx *ctx = ctx_new ();
-  CtxState    *state    = &ctx->state;
+  Ctx *ctx           = ctx_new ();
+  CtxState    *state = &ctx->state;
   CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_calloc (sizeof (CtxHasher), 1);
   ctx_hasher_init (rasterizer, ctx, state, width, height, cols, rows);
   ctx_set_renderer (ctx, (void*)rasterizer);

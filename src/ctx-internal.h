@@ -1030,6 +1030,9 @@ struct _CtxTiled
 #endif
 };
 
+void
+_ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
+                                      CtxBuffer     *buffer);
 
 #endif
 
