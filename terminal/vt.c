@@ -7126,6 +7126,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       break;
   }
   event->stop_propagate = 1;
+  vt->rev++;
 }
 
 static int scrollbar_focused = 0;
@@ -7579,6 +7580,7 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
 {
  char buf[64]="";
  int button_state = 0;
+ vt->rev++;
  ctx_ticks();
  if (! (vt->mouse | vt->mouse_all | vt->mouse_drag) )
    {

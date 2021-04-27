@@ -662,14 +662,13 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
   if (rasterizer->state->gstate.image_smoothing)
   {
     float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-    /* XXX : this test is expensive, and constant for a rigged 
-     *       transform, */
     if (factor < 0.5)
     {
       ctx_fragment_image_rgb8_RGBA8_box (rasterizer, x, y, out);
     }
     else if (factor > 0.99 && factor < 1.01)
     {
+      // XXX missing translate test
       ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer, x, y, out);
     }
     else
@@ -857,14 +856,13 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
   if (rasterizer->state->gstate.image_smoothing)
   {
     float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-    /* XXX : this test is expensive, and constant for a rigged 
-     *       transform, */
     if (factor < 0.5)
     {
       ctx_fragment_image_rgba8_RGBA8_box (rasterizer, x, y, out);
     }
     else if (factor > 0.99 && factor < 1.01)
     {
+      // XXX: also verify translate == 0 for this fast path to be valid
       ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, x, y, out);
     }
     else

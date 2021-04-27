@@ -799,6 +799,7 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
 
   client_move (client->id, new_x, new_y);
 
+  vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
 
   event->stop_propagate = 1;
@@ -938,7 +939,7 @@ static void client_close (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
-void draw_titlebar (Ctx *ctx, CtxClient *client,
+void draw_titlebar (ITK *itk, Ctx *ctx, CtxClient *client,
                     float x, float y, float width, float titlebar_height)
 {
 #if 0
@@ -968,7 +969,7 @@ void draw_titlebar (Ctx *ctx, CtxClient *client,
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
       }
       ctx_fill (ctx);
-      ctx_font_size (ctx, titlebar_height * 0.85);
+      ctx_font_size (ctx, itk->font_size);//titlebar_height);// * 0.85);
 
       if (client == active &&
           (client->maximized || y != titlebar_height))
@@ -1025,7 +1026,7 @@ static void key_press (CtxEvent *event, void *data1, void *data2)
   fprintf (stderr, "press %i %s\n", event->unicode, event->string);
 }
 
-static int draw_vts (Ctx *ctx)
+static int draw_vts (ITK *itk, Ctx *ctx)
 {
   float view_height = ctx_height (ctx);
   float titlebar_height = view_height/40;
@@ -1148,7 +1149,7 @@ static int draw_vts (Ctx *ctx)
 
       }
 
-      draw_titlebar (ctx, client, client->x, client->y, client->width, titlebar_height);
+      draw_titlebar (itk, ctx, client, client->x, client->y, client->width, titlebar_height);
 
       client->drawn_rev = vt_rev (vt);
     }
@@ -1638,7 +1639,7 @@ void ctx_popups (Ctx *ctx)
 #include <time.h>
 
 
-void draw_panel (Ctx *ctx)
+void draw_panel (ITK *itk, Ctx *ctx)
 {
   struct tm local_time_res;
   struct timeval tv;
@@ -1685,7 +1686,7 @@ void draw_panel (Ctx *ctx)
     if (client->maximized)
     {
       ctx_begin_path (ctx);
-      draw_titlebar (ctx, client, x, titlebar_height, tab_width, titlebar_height);
+      draw_titlebar (itk, ctx, client, x, titlebar_height, tab_width, titlebar_height);
     }
       x += tab_width;
   }
@@ -1888,17 +1889,17 @@ int terminal_main (int argc, char **argv)
       changes += vt_dirty_count ();
         static float avg_bytespeed = 0.0;
 
-      if (changes || ctx_is_dirty(ctx))//|| dirty) // || dirty || ctx_is_dirty (ctx))
+      if (changes) // || ctx_is_dirty(ctx))//|| dirty) // || dirty || ctx_is_dirty (ctx))
       {
         dirty = 0;
         itk_reset (itk);
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         itk_style_color (ctx, "wallpaper");
         ctx_fill (ctx);
-        draw_vts (ctx);
+        draw_vts (itk, ctx);
         ctx_popups (ctx);
         if ((n_clients != 1) || (clients && ((((CtxClient*)clients->data))->maximized == 0)))
-          draw_panel (ctx);
+          draw_panel (itk, ctx);
         else
           draw_mini_panel (ctx);
 

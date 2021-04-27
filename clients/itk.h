@@ -323,6 +323,11 @@ ITK *itk_new (Ctx *ctx)
   itk->focus_wraparound = 1;
   itk->scale            = 1.5;
   itk->font_size        = getenv("ITK_FONT_SIZE")?atoi(getenv("ITK_FONT_SIZE")):20;
+  if (ctx_renderer_is_term (ctx))
+  {
+    itk->scale     = 1.0;
+    itk->font_size = 3;
+  }
   itk->width            = itk->font_size * 15;
   itk->label_width      = 0.5;
   itk->rel_vmargin      = 0.5;
