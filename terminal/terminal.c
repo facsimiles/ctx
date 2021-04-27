@@ -499,7 +499,8 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
         }
     }
   else if (!strcmp (event, "shift-control-t") ||
-           (ctx_renderer_is_fb (ctx) &&   !strcmp (event, "control-t") ))
+           ((ctx_renderer_is_fb (ctx) || ctx_renderer_is_term (ctx))
+           &&   !strcmp (event, "control-t") ))
   {
     add_tab (vt_find_shell_command(), 1);
   }
