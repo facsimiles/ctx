@@ -4258,16 +4258,16 @@ static uint8_t palettes[][16][3]=
     {  0,  0,200}, // 4               blue
     { 90,  0,130}, // 5               magenta
     {  0,156,180}, // 6               cyan
-    {196,196,196},// 7                light-gray
-    { 85, 85, 85},// 8                dark gray
+    {196,196,196}, // 7                light-gray
+    { 85, 85, 85}, // 8                dark gray
 
-    {240, 60, 40},// 9                light red
-    {170,240, 80},// 10               light green
-    {248,248,  0},// 11               light yellow
-    {  0, 40,255},// 12               light blue
-    {204, 62,214},// 13               light magenta
-    { 10,234,254},// 14               light cyan
-    {255,255,255},// 15 - foreground (white)
+    {240, 60, 40}, // 9                light red
+    {170,240, 80}, // 10               light green
+    {248,248,  0}, // 11               light yellow
+    {  0, 40,255}, // 12               light blue
+    {204, 62,214}, // 13               light magenta
+    { 10,234,254}, // 14               light cyan
+    {255,255,255}, // 15 - foreground (white)
   },
   /* inspired by DEC */
   { {  0,  0,  0}, // 0 - background  black
@@ -6510,7 +6510,6 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
           uint32_t bitmask = (unichar - 0x1fb00) + 1;
           if (bitmask > 20) bitmask ++;
           if (bitmask > 41) bitmask ++;
-
           int bit = 0;
           for (int v = 0; v < 3; v ++)
           for (int u = 0; u < 2; u ++, bit ++)
@@ -6522,8 +6521,6 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
           }
           ctx_fill (ctx);
         }
-
-
         break;
 
     }
