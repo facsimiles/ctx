@@ -5098,9 +5098,10 @@ void vt_feed_keystring (VT *vt, const char *str)
 {
   if (vt->ctx_events)
   {
-    if (!strcmp (str, "shift-control-l") )
+    if (!strcmp (str, "control-l") )
     {
       vt->ctx_events = 0;
+      return;
     }
     vt_write (vt, str, strlen (str) );
     vt_write (vt, "\n", 1);
