@@ -1888,7 +1888,7 @@ int terminal_main (int argc, char **argv)
       changes += vt_dirty_count ();
         static float avg_bytespeed = 0.0;
 
-      if (changes || dirty || ctx_is_dirty (ctx))
+      if (changes || ctx_is_dirty(ctx))//|| dirty) // || dirty || ctx_is_dirty (ctx))
       {
         dirty = 0;
         itk_reset (itk);
