@@ -253,6 +253,14 @@ ctx_matrix_translate (CtxMatrix *matrix, float x, float y);
 int ctx_is_set_now (Ctx *ctx, uint64_t hash);
 void ctx_set_size (Ctx *ctx, int width, int height);
 
+static inline float ctx_matrix_get_scale (CtxMatrix *matrix)
+{
+   return ctx_maxf (ctx_maxf (ctx_fabsf (matrix->m[0][0]),
+                         ctx_fabsf (matrix->m[0][1]) ),
+               ctx_maxf (ctx_fabsf (matrix->m[1][0]),
+                         ctx_fabsf (matrix->m[1][1]) ) );
+}
+
 #if CTX_FONTS_FROM_FILE
 int   ctx_load_font_ttf_file (const char *name, const char *path);
 int

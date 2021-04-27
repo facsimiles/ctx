@@ -492,16 +492,15 @@ ctx_RGBAF_deassociate_alpha (float *rgba, float *dst)
 }
 
 static void
-ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out)
+ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
+                                    float x,
+                                    float y,
+                                    void *out)
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed;
-#if 0
-  ctx_assert (rasterizer);
-  ctx_assert (g);
-  ctx_assert (buffer);
-#endif
+
   int u = x - g->texture.x0;
   int v = y - g->texture.y0;
   if ( u < 0 || v < 0 ||
@@ -513,38 +512,28 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
   else
     {
       int bpp = 4;
-      if (rasterizer->state->gstate.image_smoothing)
-      {
-        uint8_t *src00 = (uint8_t *) buffer->data;
-        src00 += v * buffer->stride + u * bpp;
-        uint8_t *src01 = src00;
-        if ( u + 1 < buffer->width)
-        {
-          src01 = src00 + bpp;
-        }
-        uint8_t *src11 = src01;
-        uint8_t *src10 = src00;
-        if ( v + 1 < buffer->height)
-        {
-          src10 = src00 + buffer->stride;
-          src11 = src01 + buffer->stride;
-        }
-        float dx = (x-(int)(x)) * 255.9;
-        float dy = (y-(int)(y)) * 255.9;
-        for (int c = 0; c < bpp; c++)
-        {
-          rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
-                                 ctx_lerp_u8 (src10[c], src11[c], dx), dy);
-                
-        }
-      }
-      else
-      {
-        uint8_t *src00 = (uint8_t *) buffer->data;
-        src00 += v * buffer->stride + u * bpp;
-        for (int c = 0; c < bpp; c++)
-          { rgba[c] = src00[c]; }
-      }
+      float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+          int dim = (1.0 / factor) / 2;
+          uint64_t sum[4]={0,0,0,0};
+          int count = 0;
+          for (int ou = - dim; ou < dim; ou++)
+          for (int ov = - dim; ov < dim; ov++)
+          {
+            uint8_t *src = (uint8_t *) buffer->data;
+            int o = (v+ov) * buffer->width + (u + ou);
+
+            if (o>=0 && o < buffer->width * buffer->height)
+            {
+              src += o * bpp;
+
+              for (int c = 0; c < bpp; c++)
+                sum[c] += src[c];
+              count ++;
+            }
+          }
+          if (count)
+            for (int c = 0; c < bpp; c++)
+              rgba[c] = sum[c]/count;
 
       if (rasterizer->swap_red_green)
       {
@@ -554,6 +543,141 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
       }
     }
 #if CTX_DITHER
+//ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
+//                    rasterizer->format->dither_green);
+#endif
+}
+
+static void
+ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
+                                   float x,
+                                   float y,
+                                   void *out)
+{
+  uint8_t *rgba = (uint8_t *) out;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = g->texture.buffer->color_managed;
+
+  int u = x - g->texture.x0;
+  int v = y - g->texture.y0;
+  if ( u < 0 || v < 0 ||
+       u >= buffer->width ||
+       v >= buffer->height)
+    {
+      rgba[0] = rgba[1] = rgba[2] = rgba[3] = 0;
+    }
+  else
+    {
+      int bpp = 4;
+        {
+          x -= 0.5;
+          y -= 0.5;
+          u = x - g->texture.x0;
+          v = y - g->texture.y0;
+
+          uint8_t *src00 = (uint8_t *) buffer->data;
+          src00 += v * buffer->stride + u * bpp;
+          uint8_t *src01 = src00;
+          if ( u + 1 < buffer->width)
+          {
+            src01 = src00 + bpp;
+          }
+          uint8_t *src11 = src01;
+          uint8_t *src10 = src00;
+          if ( v + 1 < buffer->height)
+          {
+            src10 = src00 + buffer->stride;
+            src11 = src01 + buffer->stride;
+          }
+          float dx = (x-(int)(x)) * 255.9;
+          float dy = (y-(int)(y)) * 255.9;
+          for (int c = 0; c < bpp; c++)
+          {
+            rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
+                                   ctx_lerp_u8 (src10[c], src11[c], dx), dy);
+          }
+        }
+
+      if (rasterizer->swap_red_green)
+      {
+        uint8_t tmp = rgba[0];
+        rgba[0] = rgba[2];
+        rgba[2] = tmp;
+      }
+    }
+#if CTX_DITHER
+//ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
+//                    rasterizer->format->dither_green);
+#endif
+}
+
+
+static void
+ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
+                                        float x,
+                                        float y,
+                                        void *out)
+{
+  uint8_t *rgba = (uint8_t *) out;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = g->texture.buffer->color_managed;
+
+  int u = x - g->texture.x0;
+  int v = y - g->texture.y0;
+  if ( u < 0 || v < 0 ||
+       u >= buffer->width ||
+       v >= buffer->height)
+    {
+      rgba[0] = rgba[1] = rgba[2] = rgba[3] = 0;
+    }
+  else
+    {
+      int bpp = 4;
+      {
+        uint8_t *src00 = (uint8_t *) buffer->data;
+        src00 += v * buffer->stride + u * bpp;
+        for (int c = 0; c < bpp; c++)
+          { rgba[c] = src00[c]; }
+      }
+      if (rasterizer->swap_red_green)
+      {
+        uint8_t tmp = rgba[0];
+        rgba[0] = rgba[2];
+        rgba[2] = tmp;
+      }
+    }
+#if CTX_DITHER
+  //ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
+  //                    rasterizer->format->dither_green);
+#endif
+}
+
+static void
+ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
+                                float x,
+                                float y,
+                                void *out)
+{
+  if (rasterizer->state->gstate.image_smoothing)
+  {
+    float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+    /* XXX : this test is expensive, and constant for a rigged 
+     *       transform, */
+    if (factor < 0.5)
+    {
+      ctx_fragment_image_rgba8_RGBA8_box (rasterizer, x, y, out);
+    }
+    else
+    {
+      ctx_fragment_image_rgba8_RGBA8_bi (rasterizer, x, y, out);
+    }
+  }
+  else
+  {
+    ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, x, y, out);
+  }
+#if CTX_DITHER
+  uint8_t *rgba = out;
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
                       rasterizer->format->dither_green);
 #endif

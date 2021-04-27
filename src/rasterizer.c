@@ -1788,11 +1788,7 @@ ctx_rasterizer_stroke_1px (CtxRasterizer *rasterizer)
   int start = 0;
   int end = 0;
 #if 0
-  float factor = 
-     ctx_maxf (ctx_maxf (ctx_fabsf (state->gstate.transform.m[0][0]),
-                         ctx_fabsf (state->gstate.transform.m[0][1]) ),
-               ctx_maxf (ctx_fabsf (state->gstate.transform.m[1][0]),
-                         ctx_fabsf (state->gstate.transform.m[1][1]) ) );
+  float factor = ctx_matrix_get_scale (&state->gstate.transform);
 #endif
 
   while (start < count)
@@ -1856,10 +1852,8 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   CtxState *state = rasterizer->state;
   int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;
-  float factor = ctx_maxf (ctx_maxf (ctx_fabsf (state->gstate.transform.m[0][0]),
-                                  ctx_fabsf (state->gstate.transform.m[0][1]) ),
-                        ctx_maxf (ctx_fabsf (state->gstate.transform.m[1][0]),
-                                  ctx_fabsf (state->gstate.transform.m[1][1]) ) );
+  float factor = ctx_matrix_get_scale (&state->gstate.transform);
+
   int aa = rasterizer->aa;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
@@ -2902,12 +2896,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         {
           int n_dashes = rasterizer->state->gstate.n_dashes;
           float *dashes = rasterizer->state->gstate.dashes;
-
-          float factor = 
-              ctx_maxf (ctx_maxf (ctx_fabsf (state->gstate.transform.m[0][0]),
-                                  ctx_fabsf (state->gstate.transform.m[0][1]) ),
-                        ctx_maxf (ctx_fabsf (state->gstate.transform.m[1][0]),
-                                  ctx_fabsf (state->gstate.transform.m[1][1]) ) );
+          float factor = ctx_matrix_get_scale (&state->gstate.transform);
 
           int count = rasterizer->edge_list.count;
           int aa = rasterizer->aa;
