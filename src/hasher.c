@@ -178,7 +178,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         ctx_sha1_process(&sha1, (unsigned char*)&hash, 8);
 
           int is = rasterizer->state->gstate.image_smoothing;
-          ctx_sha1_process(&sha1, &is, sizeof(int));
+          ctx_sha1_process(&sha1, (uint8_t*)&is, sizeof(int));
         //
         //fprintf (stderr, "t:%i\n", rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE);
         //
