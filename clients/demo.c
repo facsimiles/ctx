@@ -1824,10 +1824,10 @@ static void card_textures (ITK *itk, int frame_no)
 
 Test tests[]=
 {
-  {"dots",       card_dots},
-  {"textures",   card_textures},
   {"sliders",    card_sliders},
   {"gradients",  card_gradients},
+  {"dots",       card_dots},
+  {"textures",   card_textures},
   {"drag",       card_drag},
   {"clock1",     card_clock1},
   {"files",      card_files},

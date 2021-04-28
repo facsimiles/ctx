@@ -1352,6 +1352,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
                                               (char*)c->colorspace.data,
                                               c->colorspace.data_len);
         break;
+      case CTX_IMAGE_SMOOTHING:
+        state->gstate.image_smoothing = c->entry.data.u8[0];
+        break;
 
       case CTX_COLOR:
         {

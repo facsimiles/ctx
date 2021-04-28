@@ -154,6 +154,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           ctx_rasterizer_reset (rasterizer);
          }
         break;
+
       case CTX_FILL:
         {
           CtxSHA1 sha1;
@@ -177,8 +178,6 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
         ctx_sha1_process(&sha1, (unsigned char*)&hash, 8);
 
-          int is = rasterizer->state->gstate.image_smoothing;
-          ctx_sha1_process(&sha1, (uint8_t*)&is, sizeof(int));
         //
         //fprintf (stderr, "t:%i\n", rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE);
         //
@@ -196,6 +195,12 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
 //          fprintf (stderr, "%s:%i:%s\n", __FILE__, __LINE__, rasterizer->state->gstate.source_fill.texture.buffer->eid);
           }
+
+        {
+          int is = rasterizer->state->gstate.image_smoothing;
+          ctx_sha1_process(&sha1, (uint8_t*)&is, sizeof(int));
+          fprintf (stderr, "%i\n", is);
+        }
                           
         }
         else if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
@@ -371,6 +376,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
                                          pixel_data);
 #endif
         hasher->salt = ctx_strhash (c->define_texture.eid, 0);
+        hasher->salt += state->gstate.image_smoothing;
+        // XXX : this is where texture transform is missing
         }
         break;
       case CTX_TEXTURE:
@@ -378,6 +385,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
     //  ctx_rasterizer_set_texture (rasterizer, c->texture.eid,
     //                              c->texture.x, c->texture.y);
         hasher->salt = ctx_strhash (c->texture.eid, 0);
+        hasher->salt += state->gstate.image_smoothing;
+        // XXX : this is where texture transform is missing
+        //       sopy local transform instead
         rasterizer->comp_op = NULL;
         break;
     }
