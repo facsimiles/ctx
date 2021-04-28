@@ -769,7 +769,7 @@ int ctx_nct_consume_events (Ctx *ctx)
       else if (!strcmp (event, "enter"))
         ctx_key_press (ctx, 0, "\n", 0);
       else if (!strcmp (event, "return"))
-        ctx_key_press (ctx, 0, "\n", 0);
+        ctx_key_press (ctx, 0, "return", 0);
       else
       ctx_key_press (ctx, 0, event, 0);
     }
