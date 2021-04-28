@@ -190,7 +190,7 @@ static void card_gradients (ITK *itk, int frame_no)
   Ctx *ctx = itk->ctx;
   int width  = ctx_width (ctx);
   int height = ctx_height(ctx);
-  frame_no %= 256;
+  frame_no %= (int)(ctx_width (ctx) /2);
 
   ctx_linear_gradient (ctx, 0.0, 0.0,  0.0, height);
   ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);

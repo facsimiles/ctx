@@ -154,6 +154,8 @@ static void ctx_term_set_bg(int red, int green, int blue)
   }
 }
 
+static int _ctx_term_force_full = 0;
+
 void ctx_term_scanout (CtxTerm *term)
 {
   int row = 1;
@@ -169,7 +171,7 @@ void ctx_term_scanout (CtxTerm *term)
 
       if (strcmp(cell->utf8, cell->prev_utf8) ||
           memcmp(cell->fg, cell->prev_fg, 3) ||
-          memcmp(cell->bg, cell->prev_bg, 3))
+          memcmp(cell->bg, cell->prev_bg, 3) || _ctx_term_force_full)
       {
         ctx_term_set_fg (cell->fg[0], cell->fg[1], cell->fg[2]);
         ctx_term_set_bg (cell->bg[0], cell->bg[1], cell->bg[2]);
@@ -827,6 +829,10 @@ Ctx *ctx_new_term (int width, int height)
                     " sextant ascii quarter braille braille-mono\n");
     exit (1);
   }
+
+  mode = getenv ("CTX_TERM_FORCE_FULL");
+  if (mode && strcmp (mode, "0") && strcmp (mode, "no"))
+    _ctx_term_force_full = 1;
 
   fprintf (stdout, "\e[?1049h");
   fprintf (stdout, "\e[?25l"); // cursor off

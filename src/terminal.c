@@ -770,6 +770,9 @@ int ctx_nct_consume_events (Ctx *ctx)
         ctx_key_press (ctx, 0, "\n", 0);
       else if (!strcmp (event, "return"))
         ctx_key_press (ctx, 0, "return", 0);
+      else if (!strcmp (event, "idle"))
+      {
+      }
       else
       ctx_key_press (ctx, 0, event, 0);
     }
