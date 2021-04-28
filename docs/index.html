@@ -379,16 +379,17 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
           <li>in_fill is using bounding box</li>
 
           <li>radial gradient is only using one center</li>
-          <li>dimensions of drop-shadow are not transformed</li>
+          <li>dimensions of drop-shadow are incorrectly transformed</li>
+
+          <li>changes in texture transform incorrectly picked up by hash-cache</li>
 
 	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
           <li>square line ends</li>
 
-          <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
           <li>palm supression during typing in drm/fbdev backend</li>
         
+          <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
           <li>missing terminal content rewrapping on resize</li>
-
           <li>hyperlink escape sequences</li>
           </ul>
         </li>
@@ -397,12 +398,12 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <h3>desirable improvements</h3>
 	<ul>
         <li>performance, there always seem to be room for improvement.</li>
-        <li>continued code refactoring</li>
+        <li>continued code clean-ups and refactoring</li>
 	<li>glyph fallbacks between fonts</li>
         <li>clipping of rectangles can be optimized, right now rectangular clips
         are detected - but the raster processing work of creating the clipping mask is still done, there is room for even faster path that knows all clips are rectangles and only update the clipping bounds.</li>
         <li>analytical instead of raster clipping</li>
-        <li>double-width glyphs, for emoji and asian scripts</li>
+        <li>double-width glyphs (terminal) - for non-terminal use this works, for emoji and asian scripts</li>
         <li>multi-head, both for DRM when plugging in HDMI/VGA and networked
         connect to ESP32 / html5 canvas clients.</li>
         <li>swap some uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx, pass ctx data
@@ -410,7 +411,7 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <li>binary search for glyphs in ctxf font backend, making it scale well for wide unicode coverage.</li>
         <li>websockets + js + HTML5 Canvas renderer/client for protocols</li>
         <li>wayland/libinput support</li>
-        <li>(optional) use of floating point instead of fixed point in rasterizer.</li>
+        <li>optional use of floating point instead of fixed point in rasterizer.</li>
         <li>faster and correctly transformed 1d-gaussian blur for shadow blur</li>
         <li>PDF/SVG generation (in addition to existing cairo integration)</li>
         <li>Add API for integrating device-N and spectral with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
@@ -422,7 +423,8 @@ href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
         <li>GPU renderer, the information needed for precomputation and
             spatial organization in many GPU rendering approaches is already
             present - alternatively backends sitting on top of exisitng
-            libraries.</li>
+            libraries like NanoVg.
+        </li>
 	</ul>
 <!--
         <h3 id='example'>example code</h3>
