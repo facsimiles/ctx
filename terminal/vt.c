@@ -7078,8 +7078,11 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       //if (event->device_no==1)
       {
         sprintf (buf, "mouse-motion %.0f %.0f %i", x, y, device_no);
+//      ctx_set_dirty (event->ctx, 1);
         vt_feed_keystring (vt, buf);
+//      vt->rev++;
       }
+      return;
       break;
     case CTX_DRAG_PRESS:
       if (event->device_no==2)
@@ -7099,32 +7102,39 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       }
       else if (event->device_no==3 && !vt->in_alt_screen)
       {
-        vt->rev++;
+//      vt->rev++;
         vt->popped = 1;
       }
       else
       {
+//      ctx_set_dirty (event->ctx, 1);
         sprintf (buf, "mouse-press %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, buf);
+//      vt->rev++;
       }
+      return;
       break;
     case CTX_DRAG_RELEASE:
       if (event->device_no==3 && !vt->in_alt_screen)
       {
         vt->popped = 0;
-        ctx_set_dirty (event->ctx, 1);
       }
+        ctx_set_dirty (event->ctx, 1);
       //if (event->device_no==1)
       {
         sprintf (buf, "mouse-release %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, buf);
+//      vt->rev++;
       }
+      return;
       break;
     default:
+      // we should not stop propagation
+      return;
       break;
   }
   event->stop_propagate = 1;
-  vt->rev++;
+//vt->rev++;
 }
 
 static int scrollbar_focused = 0;
@@ -7382,7 +7392,6 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
     //  y -= vt->ch;
       }
   }
-
 
   /* draw cursor */
   if (vt->cursor_visible)

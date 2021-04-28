@@ -754,6 +754,7 @@ static void client_drag_maximized (CtxEvent *event, void *data, void *data2)
     prev_drag_end_time = event->time;
   }
   ctx_set_dirty (event->ctx, 1);
+  vt_rev_inc (client->vt);
   event->stop_propagate = 1;
 }
 
@@ -770,12 +771,8 @@ static float client_max_y_pos (Ctx *ctx)
 
 static void client_drag (CtxEvent *event, void *data, void *data2)
 {
-  //Ctx *ctx = event->ctx;
   CtxClient *client = data;
-  //float titlebar_height = ctx_height (event->ctx)/40;
 
-//client->x += event->delta_x;
-//client->y += event->delta_y;
   if (event->type == CTX_DRAG_RELEASE)
   {
     static int prev_drag_end_time = 0;
@@ -791,6 +788,9 @@ static void client_drag (CtxEvent *event, void *data, void *data2)
   float new_y = client->y +  event->delta_y;
 
   float snap_threshold = 8;
+
+  if (ctx_renderer_is_term (event->ctx))
+     snap_threshold = 1;
 
   if (new_y < client_min_y_pos (ctx)) new_y = client_min_y_pos (ctx);
   if (new_y > client_max_y_pos (ctx)) new_y = client_max_y_pos (ctx);
