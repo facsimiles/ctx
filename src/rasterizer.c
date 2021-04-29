@@ -2108,6 +2108,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   int maxy = -5000;
   int prev_x = 0;
   int prev_y = 0;
+  int blit_width = rasterizer->blit_width;
+  int blit_height = rasterizer->blit_height;
   for (int i = 0; i < count; i++)
     {
       CtxEntry *entry = &edges[i+1];
@@ -2141,20 +2143,19 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
   if (!rasterizer->clip_buffer)
   {
-    rasterizer->clip_buffer = ctx_buffer_new (rasterizer->blit_width,
-                                              rasterizer->blit_height,
+    rasterizer->clip_buffer = ctx_buffer_new (blit_width,
+                                              blit_height,
                                               CTX_CLIP_FORMAT);
     clip_buffer = rasterizer->clip_buffer;
     we_made_it = 1;
     if (CTX_CLIP_FORMAT == CTX_FORMAT_GRAY1)
-    memset (rasterizer->clip_buffer->data, 0, rasterizer->blit_width * rasterizer->blit_height/8);
+    memset (rasterizer->clip_buffer->data, 0, blit_width * blit_height/8);
     else
-    memset (rasterizer->clip_buffer->data, 0, rasterizer->blit_width * rasterizer->blit_height);
+    memset (rasterizer->clip_buffer->data, 0, blit_width * blit_height);
   }
   else
   {
-    clip_buffer = ctx_buffer_new (rasterizer->blit_width,
-                                  rasterizer->blit_height,
+    clip_buffer = ctx_buffer_new (blit_width, blit_height,
                                   CTX_CLIP_FORMAT);
   }
 
@@ -2163,8 +2164,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   int prev_x = 0;
   int prev_y = 0;
 
-    Ctx *ctx = ctx_new_for_framebuffer (clip_buffer->data, rasterizer->blit_width, rasterizer->blit_height,
-       rasterizer->blit_width,
+    Ctx *ctx = ctx_new_for_framebuffer (clip_buffer->data, blit_width, blit_height,
+       blit_width,
        CTX_CLIP_FORMAT);
 
   for (int i = 0; i < count; i++)
@@ -2190,7 +2191,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
   if (CTX_CLIP_FORMAT == CTX_FORMAT_GRAY1)
   {
-    int count = rasterizer->blit_width * rasterizer->blit_height / 8;
+    int count = blit_width * blit_height / 8;
     for (int i = 0; i < count; i++)
     {
       ((uint8_t*)rasterizer->clip_buffer->data)[i] =
@@ -2200,7 +2201,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   }
   else
   {
-    int count = rasterizer->blit_width * rasterizer->blit_height;
+    int count = blit_width * blit_height;
 
     int maybe_rect = 1;
 
@@ -2214,23 +2215,21 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
     i=0;
     /* find upper left */
-    for (; i < count && !next_stage && maybe_rect; i++)
+    for (; i < count && maybe_rect && !next_stage; i++)
     {
       uint8_t val = (p_data[i] * data[i])/255;
       data[i] = val;
-
       switch (val)
       {
         case 255:
-                {
-                  x0 = i % rasterizer->blit_width;
-                  y0 = i / rasterizer->blit_width;
-                  next_stage = 1;
-                }
-                break;
+          x0 = i % blit_width;
+          y0 = i / blit_width;
+          next_stage = 1;
+          break;
         case 0: break;
-        default: maybe_rect = 0;
-                break;
+        default:
+          maybe_rect = 0;
+          break;
       }
     }
 
@@ -2238,8 +2237,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
     /* figure out with */
     for (; i < count && !next_stage && maybe_rect; i++)
     {
-      int x = i % rasterizer->blit_width;
-      int y = i / rasterizer->blit_width;
+      int x = i % blit_width;
+      int y = i / blit_width;
       uint8_t val = (p_data[i] * data[i])/255;
       data[i] = val;
 
@@ -2248,23 +2247,25 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
         switch (val)
         {
           case 255:
-                  width = x - x0 + 1;
-                  break;
-          case 0: next_stage = 1;
-                  break;
-          default: maybe_rect = 0;
-                  break;
+            width = x - x0 + 1;
+            break;
+          case 0:
+            next_stage = 1;
+            break;
+          default:
+            maybe_rect = 0;
+            break;
         }
-        if (x % rasterizer->blit_width == rasterizer->blit_width - 1) next_stage = 1;
+        if (x % blit_width == blit_width - 1) next_stage = 1;
       }
       else next_stage = 1;
     }
 
     next_stage = 0;
     /* body */
-    for (; i < count && !next_stage && maybe_rect; i++)
+    for (; i < count && maybe_rect && !next_stage; i++)
     {
-      int x = i % rasterizer->blit_width;
+      int x = i % blit_width;
       uint8_t val = (p_data[i] * data[i])/255;
       data[i] = val;
 
@@ -2281,7 +2282,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
     next_stage = 0;
     /* foot */
-    for (; i < count && !next_stage && maybe_rect; i++)
+    for (; i < count && maybe_rect && !next_stage; i++)
     {
       uint8_t val = (p_data[i] * data[i])/255;
       data[i] = val;
