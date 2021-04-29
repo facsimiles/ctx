@@ -74,6 +74,7 @@ void ctx_term_set (CtxTerm *term,
   {
      int new_size = ((col + 128)/128)*128;
      line->cells = realloc (line->cells, sizeof (CtxTermCell) * new_size);
+     memset (&line->cells[line->size], 0, sizeof (CtxTermCell) * (new_size - line->size) );
      line->size = new_size;
   }
   if (col > line->maxcol) line->maxcol = col;
@@ -211,7 +212,6 @@ static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   return diff;
 }
 
-
 static void ctx_term_output_buf_half (uint8_t *pixels,
                           int width,
                           int height,
@@ -219,12 +219,12 @@ static void ctx_term_output_buf_half (uint8_t *pixels,
 {
   int stride = width * 4;
   const char *sextants[]={
-   " ","▘","▝","▀","▖","▌", "▞", "▛", "▗", "▚", "▐", "▜","▄","▙","▟","█"
+   " ","▘","▝","▀","▖","▌", "▞", "▛", "▗", "▚", "▐", "▜","▄","▙","▟","█",
 
   };
   for (int row = 0; row < height/2; row++)
     {
-      for (int col = 0; col < width; col++)
+      for (int col = 0; col < width-3; col++)
         {
           int     unicode = 0;
           int     bitno = 0;
@@ -365,8 +365,8 @@ for (int y = y0; y < y0 + h; y++)
              rgbasum[0][i] = rgbasum[1][i]=0;
           sumcount[0] = sumcount[1] = 0;
 
-for (int y = y0; y < y0 + h; y++)
-  for (int x = x0; x < x0 + w; x++)
+          for (int y = y0; y < y0 + h; y++)
+            for (int x = x0; x < x0 + w; x++)
                 {
                   int noi = (y) * stride + (x) * 4;
 
@@ -450,15 +450,18 @@ static void ctx_term_output_buf_quarter (uint8_t *pixels,
     }
 }
 
+
 static void ctx_term_output_buf_sextant (uint8_t *pixels,
                           int width,
                           int height,
                           CtxTerm *term)
 {
   int stride = width * 4;
+
   const char *sextants[]={
    " ","🬀","🬁","🬂","🬃","🬄","🬅","🬆","🬇","🬈","🬉","🬊","🬋","🬌","🬍","🬎","🬏","🬐","🬑","🬒","🬓","▌","🬔","🬕","🬖","🬗","🬘","🬙","🬚","🬛","🬜","🬝","🬞","🬟","🬠","🬡","🬢","🬣","🬤","🬥","🬦","🬧","▐","🬨","🬩","🬪","🬫","🬬","🬭","🬮","🬯","🬰","🬱","🬲","🬳","🬴","🬵","🬶","🬷","🬸","🬹","🬺","🬻","█"
   };
+
   for (int row = 0; row < height/ctx_term_ch; row++)
     {
       for (int col = 0; col < width /ctx_term_cw; col++)
@@ -491,12 +494,12 @@ static void ctx_term_output_buf_sextant (uint8_t *pixels,
                   }
                 bitno++;
               }
-           if (pixels_set == 6)
-             ctx_term_set (term, col +1, row + 1, " ",
-                           rgba[1], rgba[0]);
-           else
-             ctx_term_set (term, col +1, row + 1, sextants[unicode],
-                           rgba[0], rgba[1]);
+
+          if (pixels_set == 6)
+            ctx_term_set (term, col +1, row + 1, " ",
+                          rgba[1], rgba[0]);
+          else
+            ctx_term_set (term, col +1, row + 1, sextants[unicode], rgba[0], rgba[1]);
         }
     }
 }
@@ -580,8 +583,6 @@ static void ctx_term_output_buf_ascii (uint8_t *pixels,
         }
     }
 }
-
-
 
 static void ctx_term_output_buf_braille (uint8_t *pixels,
                           int width,
