@@ -1082,15 +1082,41 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           )
 #endif
         {
-          for (int i = 0; i < rasterizer->aa; i++)
-            {
-              ctx_rasterizer_sort_active_edges (rasterizer);
-              ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, aa);
-              rasterizer->scanline ++;
-              ctx_rasterizer_increment_edges (rasterizer, 1);
-              ctx_rasterizer_feed_edges (rasterizer);
+          switch (aa)
+          {
+            case 5:
+              for (int i = 0; i < 5; i++)
+              {
+                ctx_rasterizer_sort_active_edges (rasterizer);
+                ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 5);
+                rasterizer->scanline ++;
+                ctx_rasterizer_increment_edges (rasterizer, 1);
+                ctx_rasterizer_feed_edges (rasterizer);
   ctx_rasterizer_discard_edges (rasterizer);
-            }
+              }
+              break;
+            case 15:
+              for (int i = 0; i < 15; i++)
+              {
+                ctx_rasterizer_sort_active_edges (rasterizer);
+                ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 15);
+                rasterizer->scanline ++;
+                ctx_rasterizer_increment_edges (rasterizer, 1);
+                ctx_rasterizer_feed_edges (rasterizer);
+  ctx_rasterizer_discard_edges (rasterizer);
+              }
+              break;
+            default:
+              for (int i = 0; i < aa; i++)
+              {
+                ctx_rasterizer_sort_active_edges (rasterizer);
+                ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, aa);
+                rasterizer->scanline ++;
+                ctx_rasterizer_increment_edges (rasterizer, 1);
+                ctx_rasterizer_feed_edges (rasterizer);
+  ctx_rasterizer_discard_edges (rasterizer);
+              }
+          }
         }
 #if CTX_RASTERIZER_FORCE_AA==0
       else
@@ -1099,7 +1125,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
           ctx_rasterizer_increment_edges (rasterizer, halfstep2);
-          rasterizer->scanline += rasterizer->aa;
+          rasterizer->scanline += aa;
           ctx_rasterizer_feed_edges (rasterizer);
   ctx_rasterizer_discard_edges (rasterizer);
         }

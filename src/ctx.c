@@ -570,7 +570,8 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
       {
         ctx_scale (ctx, width/tex_width, height/tex_height);
       }
-      ctx_texture (ctx, eid, x / (width/tex_width), y / (height/tex_height));
+      //ctx_texture (ctx, eid, x / (width/tex_width), y / (height/tex_height));
+      ctx_texture (ctx, eid, x, y);// / (width/tex_width), y / (height/tex_height));
       ctx_fill (ctx);
       ctx_restore (ctx);
     }
