@@ -589,13 +589,15 @@ static void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 
 static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
+  int scanline = rasterizer->scanline;
+  int aa = rasterizer->aa;
 #if CTX_RASTERIZER_FORCE_AA==0
   rasterizer->ending_edges = 0;
 #endif
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
       int edge_end =rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3];
-      if (edge_end < rasterizer->scanline)
+      if (edge_end < scanline)
         {
           int dx_dy = rasterizer->edges[i].dx;
           if (abs(dx_dy)> CTX_RASTERIZER_AA_SLOPE_LIMIT)
@@ -605,7 +607,7 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           i--;
         }
 #if CTX_RASTERIZER_FORCE_AA==0
-      else if (edge_end < rasterizer->scanline + rasterizer->aa)
+      else if (edge_end < scanline + aa)
         rasterizer->ending_edges = 1;
 #endif
     }
@@ -655,10 +657,14 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
         }
     }
 #endif
-  while (rasterizer->edge_pos < rasterizer->edge_list.count &&
-         (miny=entries[rasterizer->edge_pos].data.s16[1]) <= rasterizer->scanline 
+  int scanline = rasterizer->scanline;
 #if CTX_RASTERIZER_FORCE_AA==0
-         + rasterizer->aa
+  int aa = rasterizer->aa;
+#endif
+  while (rasterizer->edge_pos < rasterizer->edge_list.count &&
+         (miny=entries[rasterizer->edge_pos].data.s16[1]) <= scanline 
+#if CTX_RASTERIZER_FORCE_AA==0
+         + aa
 #endif
          
          )
@@ -669,7 +675,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
                     miny);
           if (dy) /* skipping horizontal edges */
             {
-              int yd = rasterizer->scanline - miny;
+              int yd = scanline - miny;
               int no = rasterizer->active_edges;
               rasterizer->active_edges++;
               rasterizer->edges[no].index = rasterizer->edge_pos;
@@ -708,7 +714,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
               if (abs(dx_dy)> CTX_RASTERIZER_AA_SLOPE_LIMIT)
                 { rasterizer->needs_aa ++; }
 
-              if ((miny > rasterizer->scanline) )
+              if ((miny > scanline) )
                 {
                   /* it is a pending edge - we add it to the end of the array
                      and keep a different count for items stored here, like
