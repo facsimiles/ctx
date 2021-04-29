@@ -689,13 +689,21 @@ struct _CtxRasterizer
 #endif
 };
 
+struct _CtxSHA1 {
+    uint64_t length;
+    uint32_t state[5], curlen;
+    unsigned char buf[64];
+};
+
+
 struct _CtxHasher
 {
   CtxRasterizer rasterizer;
   int           cols;
   int           rows;
   uint8_t      *hashes;
-  int           salt;
+  CtxSHA1       sha1_fill; 
+  CtxSHA1       sha1_stroke;
 };
 
 #if CTX_RASTERIZER

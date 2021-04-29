@@ -22,11 +22,6 @@
 #define __SHA1_H
 #include <inttypes.h>
 
-struct _CtxSHA1 {
-    uint64_t length;
-    uint32_t state[5], curlen;
-    unsigned char buf[64];
-};
 
 int ctx_sha1_init(CtxSHA1 * sha1);
 CtxSHA1 *ctx_sha1_new (void)

@@ -7202,7 +7202,8 @@ void vt_use_images (VT *vt, Ctx *ctx)
    *  clients to make sure their textures are kept alive
    *  in the server
    */
-  float x0=0; float y0=0;
+  //float x0=0;
+  float y0=0;
   //vt->has_blink = 0;
   //vt->blink_state++;
 

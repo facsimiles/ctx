@@ -14,7 +14,7 @@ do
     case "$1" in
      "--without-sdl") HAVE_SDL=0    ;;
      "--debug") CFLAGS=''    ;;
-     "--asan") CFLAGS="$CFLAGS -fsanitize=address";LIBS=' -lasan'  ;;
+     "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan'  ;;
      "--without-babl") HAVE_BABL=0 ;;
      "--without-libcurl") HAVE_LIBCURL=0 ;;
      *|"--help") 

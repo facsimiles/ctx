@@ -49,12 +49,16 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
   CtxState *state = rasterizer->state;
   CtxCommand *c = (CtxCommand *) entry;
   int aa = rasterizer->aa;
+
+  ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
+  ctx_interpret_style (rasterizer->state, entry, NULL);
+
   switch (c->code)
     {
       case CTX_TEXT:
         {
           CtxSHA1 sha1;
-          ctx_sha1_init (&sha1);
+          memcpy (&sha1, &hasher->sha1_fill, sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
           float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
 
@@ -81,11 +85,15 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
                    // XXX : doesn't take all text-alignments into account
           }
 
+#if 0
           uint32_t color;
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
+#endif
           ctx_sha1_process(&sha1, (const unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
+#if 0
           ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
+#endif
           ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, ctx_sha1_hash);
@@ -97,7 +105,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_STROKE_TEXT:
         {
           CtxSHA1 sha1;
-          ctx_sha1_init (&sha1);
+          memcpy (&sha1, &hasher->sha1_stroke, sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
           float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
           float height = ctx_get_font_size (rasterizer->ctx);
@@ -107,11 +115,15 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
               width, height * 2
            };
 
+#if 0
           uint32_t color;
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_stroke.color, (uint8_t*)(&color));
+#endif
           ctx_sha1_process(&sha1, (unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
+#if 0
           ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
+#endif
           ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, ctx_sha1_hash);
@@ -123,7 +135,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_GLYPH:
          {
           CtxSHA1 sha1;
-          ctx_sha1_init (&sha1);
+          memcpy (&sha1, &hasher->sha1_fill, sizeof (CtxSHA1));
 
           char ctx_sha1_hash[20];
           uint8_t string[8];
@@ -141,11 +153,15 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           CtxIntRectangle shape_rect = {tx,ty-th/2,tw,th};
 
 
+#if 0
           uint32_t color;
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
+#endif
           ctx_sha1_process(&sha1, string, strlen ((const char*)string));
+#if 0
           ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
+#endif
           ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, ctx_sha1_hash);
@@ -158,14 +174,14 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_FILL:
         {
           CtxSHA1 sha1;
-          ctx_sha1_init (&sha1);
+          memcpy (&sha1, &hasher->sha1_fill, sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
 
           /* we eant this hasher to be as good as possible internally,
            * since it is also used in the small shapes rasterization
            * cache
            */
-        uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer) + hasher->salt;
+        uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer); // + hasher->salt;
         CtxIntRectangle shape_rect = {
           rasterizer->col_min / CTX_SUBDIV,
           rasterizer->scan_min / aa,
@@ -174,40 +190,12 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         };
 
         hash ^= (rasterizer->state->gstate.fill_rule * 23);
-        hash ^= (rasterizer->state->gstate.source_fill.type * 117);
 
         ctx_sha1_process(&sha1, (unsigned char*)&hash, 8);
-
-        //
-        //fprintf (stderr, "t:%i\n", rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE);
-        //
-        if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE)
-        {
-          ctx_sha1_process(&sha1, (uint8_t*)&rasterizer->state->gstate.source_fill, sizeof (CtxSource));//(unsigned char*)&color, 4);
-          if (rasterizer->state->gstate.source_fill.texture.buffer->eid)
-          {
-            ctx_sha1_process(&sha1, (uint8_t*)rasterizer->state->gstate.source_fill.texture.buffer->eid, 
-            strlen (rasterizer->state->gstate.source_fill.texture.buffer->eid));
-
-            ctx_sha1_process(&sha1, (uint8_t *)&rasterizer->state->gstate.transform,
-                          sizeof (CtxMatrix));
-
-
-//          fprintf (stderr, "%s:%i:%s\n", __FILE__, __LINE__, rasterizer->state->gstate.source_fill.texture.buffer->eid);
-          }
 
         {
           int is = rasterizer->state->gstate.image_smoothing;
           ctx_sha1_process(&sha1, (uint8_t*)&is, sizeof(int));
-          fprintf (stderr, "%i\n", is);
-        }
-                          
-        }
-        else if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
-        {
-          uint32_t color;
-          ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
-          ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
         }
 
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
@@ -221,7 +209,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_STROKE:
         {
           CtxSHA1 sha1;
-          ctx_sha1_init (&sha1);
+          memcpy (&sha1, &hasher->sha1_stroke, sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
         uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
         CtxIntRectangle shape_rect = {
@@ -305,40 +293,6 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
                                   c->set_pixel.rgba[2],
                                   c->set_pixel.rgba[3]);
         break;
-#if 0
-      case CTX_TEXTURE:
-        hasher->salt++;
-#if 0
-        ctx_rasterizer_set_texture (rasterizer, c->texture.eid,
-                        c->texture.x, c->texture.y);
-#endif
-        break;
-#endif
-#if 0
-      case CTX_LOAD_IMAGE:
-        ctx_rasterizer_load_image (rasterizer, ctx_arg_string(),
-                                   ctx_arg_float (0), ctx_arg_float (1) );
-        break;
-#endif
-#if CTX_GRADIENTS
-      case CTX_GRADIENT_STOP:
-        {
-          float rgba[4]= {ctx_u8_to_float (ctx_arg_u8 (4) ),
-                          ctx_u8_to_float (ctx_arg_u8 (4+1) ),
-                          ctx_u8_to_float (ctx_arg_u8 (4+2) ),
-                          ctx_u8_to_float (ctx_arg_u8 (4+3) )
-                         };
-          ctx_rasterizer_gradient_add_stop (rasterizer,
-                                            ctx_arg_float (0), rgba);
-        }
-        break;
-      case CTX_LINEAR_GRADIENT:
-        ctx_state_gradient_clear_stops (rasterizer->state);
-        break;
-      case CTX_RADIAL_GRADIENT:
-        ctx_state_gradient_clear_stops (rasterizer->state);
-        break;
-#endif
       case CTX_PRESERVE:
         rasterizer->preserve = 1;
         break;
@@ -368,31 +322,63 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         break;
       case CTX_DEFINE_TEXTURE:
         {
-#if 0
-          uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
-          ctx_rasterizer_define_texture (rasterizer, c->define_texture.eid,
-                                         c->define_texture.width, c->define_texture.height,
-                                         c->define_texture.format,
-                                         pixel_data);
-#endif
-        hasher->salt = ctx_strhash (c->define_texture.eid, 0);
-        hasher->salt += state->gstate.image_smoothing;
-        // XXX : this is where texture transform is missing
+        ctx_sha1_init (&hasher->sha1_fill);
+        ctx_sha1_process (&hasher->sha1_fill, (uint8_t*)c->define_texture.eid, strlen (c->define_texture.eid));
+        ctx_sha1_process(&hasher->sha1_fill, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
+
+        rasterizer->comp_op = NULL; // why?
         }
         break;
       case CTX_TEXTURE:
-        //fprintf (stderr, "sett %s\n", c->texture.eid);
-    //  ctx_rasterizer_set_texture (rasterizer, c->texture.eid,
-    //                              c->texture.x, c->texture.y);
-        hasher->salt = ctx_strhash (c->texture.eid, 0);
-        hasher->salt += state->gstate.image_smoothing;
-        // XXX : this is where texture transform is missing
-        //       sopy local transform instead
-        rasterizer->comp_op = NULL;
+        ctx_sha1_init (&hasher->sha1_fill);
+        ctx_sha1_process (&hasher->sha1_fill, (uint8_t*)c->texture.eid, strlen (c->texture.eid));
+        ctx_sha1_process (&hasher->sha1_fill, (uint8_t*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
+        rasterizer->comp_op = NULL; // why?
         break;
+      case CTX_COLOR:
+        {
+          uint32_t color;
+          if (((int)(ctx_arg_float(0))&512))
+          {
+            ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_stroke.color, (uint8_t*)(&color));
+            ctx_sha1_init (&hasher->sha1_stroke);
+            ctx_sha1_process(&hasher->sha1_stroke, (unsigned char*)&color, 4);
+          }
+          else
+          {
+            ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
+            ctx_sha1_init (&hasher->sha1_fill);
+            ctx_sha1_process(&hasher->sha1_fill, (unsigned char*)&color, 4);
+          }
+        }
+        break;
+      case CTX_LINEAR_GRADIENT:
+          ctx_sha1_init (&hasher->sha1_fill);
+          ctx_sha1_process(&hasher->sha1_fill, 
+                           (uint8_t*)c, sizeof (c->linear_gradient));
+          ctx_sha1_process (&hasher->sha1_fill, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
+        break;
+      case CTX_RADIAL_GRADIENT:
+          ctx_sha1_init (&hasher->sha1_fill);
+          ctx_sha1_process(&hasher->sha1_fill, 
+                           (uint8_t*)c, sizeof (c->radial_gradient));
+          ctx_sha1_process (&hasher->sha1_fill, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
+        //ctx_state_gradient_clear_stops (rasterizer->state);
+        break;
+#if CTX_GRADIENTS
+      case CTX_GRADIENT_STOP:
+        {
+          float rgba[4]= {ctx_u8_to_float (ctx_arg_u8 (4) ),
+                          ctx_u8_to_float (ctx_arg_u8 (4+1) ),
+                          ctx_u8_to_float (ctx_arg_u8 (4+2) ),
+                          ctx_u8_to_float (ctx_arg_u8 (4+3) )
+                         };
+          ctx_sha1_process(&hasher->sha1_fill, 
+                           (uint8_t*) &rgba[0], sizeof(rgba));
+        }
+        break;
+#endif
     }
-  ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
-  ctx_interpret_style (rasterizer->state, entry, NULL);
   if (command->code == CTX_LINE_WIDTH)
     {
       float x = state->gstate.line_width;
@@ -435,6 +421,8 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   hasher->cols = cols;
 
   hasher->hashes = (uint8_t*)ctx_calloc (20, rows * cols);
+  ctx_sha1_init (&hasher->sha1_fill);
+  ctx_sha1_init (&hasher->sha1_stroke);
 
   return rasterizer;
 }
