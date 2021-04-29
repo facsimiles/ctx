@@ -1027,6 +1027,8 @@ static void key_press (CtxEvent *event, void *data1, void *data2)
   fprintf (stderr, "press %i %s\n", event->unicode, event->string);
 }
 
+void vt_use_images (VT *vt, Ctx *ctx);
+
 static int draw_vts (ITK *itk, Ctx *ctx)
 {
   float view_height = ctx_height (ctx);
@@ -1043,15 +1045,22 @@ static int draw_vts (ITK *itk, Ctx *ctx)
     return 0;
   }
 #endif
+
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (client == active_tab && client->maximized)
-    {
-      vt_draw (client->vt, ctx, 0, titlebar_height);
-    }
     if (client->maximized)
+    {
+      if (client == active_tab)
+      {
+        vt_draw (client->vt, ctx, 0, titlebar_height);
+      }
+      else
+      {
+        vt_use_images (client->vt, ctx);
+      }
       client->drawn_rev = vt_rev (client->vt);
+    }
   }
 
 #if 0
@@ -1074,7 +1083,11 @@ static int draw_vts (ITK *itk, Ctx *ctx)
     VT *vt = client->vt;
     if (vt && !client->maximized)
     {
-      if (!client->shaded)
+      if (client->shaded)
+      {
+        vt_use_images (vt, ctx);
+      }
+      else
       {
         vt_draw (vt, ctx, client->x, client->y);
       }
@@ -1852,11 +1865,13 @@ int terminal_main (int argc, char **argv)
                  ctx_pointer_is_down (ctx, 1)))
             {
               //if (client != clients->data)
+       #if 1
               if (!client->maximized)
               {
                 ctx_list_remove (&clients, client);
                 ctx_list_append (&clients, client);
               }
+#endif
             }
             changes ++;
           }

@@ -5110,6 +5110,7 @@ void vt_feed_keystring (VT *vt, const char *str)
   if (!strncmp (str, "keyup",   5)) return;
   if (!strncmp (str, "keydown", 7)) return;
 
+  if (!strcmp (str, "capslock")) return;
 
 #if 0
   if (!strstr (str, "-page"))
@@ -7194,6 +7195,48 @@ static void test_popup (Ctx *ctx, void *data)
 }
 
 void itk_style_color (Ctx *ctx, const char *name); // only itk fun used in vt
+
+void vt_use_images (VT *vt, Ctx *ctx)
+{
+  /*  this is a call intended for minimized/shaded fully obscured
+   *  clients to make sure their textures are kept alive
+   *  in the server
+   */
+  float x0=0; float y0=0;
+  //vt->has_blink = 0;
+  //vt->blink_state++;
+
+  ctx_begin_path (ctx);
+  ctx_save (ctx);
+  ctx_rectangle (ctx ,0,0,420,420);
+  ctx_clip (ctx);
+
+  {
+    /* draw graphics */
+     for (int row = ((vt->scroll!=0.0f)?vt->scroll:0); row < (vt->scroll) + vt->rows * 4; row ++)
+      {
+        CtxList *l = ctx_list_nth (vt->lines, row);
+        float y = y0 + vt->ch * (vt->rows - row);
+
+        if (row >= vt->rows && !vt->in_alt_screen)
+          {
+            l = ctx_list_nth (vt->scrollback, row-vt->rows);
+          }
+
+        if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
+          {
+            VtLine *line = l->data;
+            if (line->ctx_copy)
+              {
+                ctx_render_ctx (line->ctx_copy, ctx);
+                fprintf (stderr, "!");
+              }
+          }
+      }
+  }
+
+  ctx_restore (ctx);
+}
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
