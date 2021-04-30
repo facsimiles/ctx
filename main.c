@@ -149,6 +149,7 @@ void ctx_mkdir_ancestors (const char *path, unsigned int mode)
 
 int make_thumb (const char *src_path, const char *dst_path)
 {
+  /* XXX  does nearest neighbor which is horrid for thumbs  */
   int width, height, components, stride;
   uint8_t *data = stbi_load (src_path, &width, &height, &components, 4);
   int idim = 256; // largest width or height

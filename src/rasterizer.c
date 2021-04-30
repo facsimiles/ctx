@@ -914,7 +914,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 #endif
 
 #if CTX_ENABLE_CLIP
-  if (rasterizer->clip_buffer)
+  if (rasterizer->clip_buffer &&  !rasterizer->clip_rectangle)
   {
     /* perhaps not working right for clear? */
     int y = scanline / rasterizer->aa;
@@ -2167,7 +2167,9 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
       if (y > maxy) { maxy = y; }
     }
 
-  if (rasterizer->clip_rectangle || !rasterizer->clip_buffer)
+  if ((rasterizer->clip_rectangle==1 || !rasterizer->clip_buffer) && 0)
+  //  XXX  disabled, it makes clip test fail, a lot of unneded work
+  //  can be skipped here.
   {
     if (count == 6)
     {
@@ -2189,6 +2191,26 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
             ctx_mini (maxy, rasterizer->state->gstate.clip_max_y);
 
          rasterizer->clip_rectangle = 1;
+
+#if 0
+         if (!rasterizer->clip_buffer)
+           rasterizer->clip_buffer = ctx_buffer_new (blit_width,
+                                                     blit_height,
+                                                     CTX_CLIP_FORMAT);
+
+         memset (rasterizer->clip_buffer->data, 0, blit_width * blit_height);
+         int i = 0;
+         for (int y = rasterizer->state->gstate.clip_min_y;
+                  y <= rasterizer->state->gstate.clip_max_y;
+                  y++)
+         for (int x = rasterizer->state->gstate.clip_min_x;
+                  x <= rasterizer->state->gstate.clip_max_x;
+                  x++, i++)
+         {
+           ((uint8_t*)(rasterizer->clip_buffer->data))[i] = 255;
+         }
+#endif
+
          return;
       }
     }
@@ -2251,6 +2273,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
     ctx_free (ctx);
   }
 
+  int maybe_rect = 1;
   rasterizer->clip_rectangle = 0;
 
   if (CTX_CLIP_FORMAT == CTX_FORMAT_GRAY1)
@@ -2267,7 +2290,6 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   {
     int count = blit_width * blit_height;
 
-    int maybe_rect = 1;
 
     int i;
     int x0 = 0;
