@@ -39,6 +39,7 @@ Ctx *ctx = NULL; // initialized in main
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb (Ctx *ctx);
 int ctx_renderer_is_term (Ctx *ctx);
+float em = 14.0; // reset on each draw
 
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
@@ -292,7 +293,7 @@ static CtxClient *find_active (int x, int y)
 {
   CtxClient *ret = NULL;
   float view_height = ctx_height (ctx);
-  float titlebar_height = view_height/40;
+  float titlebar_height = em;
   int resize_border = titlebar_height/2;
 
   for (CtxList *l = clients; l; l = l->next)
@@ -760,7 +761,7 @@ static void client_drag_maximized (CtxEvent *event, void *data, void *data2)
 
 static float client_min_y_pos (Ctx *ctx)
 {
-  float titlebar_height = ctx_height (ctx)/40;
+  float titlebar_height = em;
   return titlebar_height * 2; // a titlebar and a panel
 }
 
@@ -1032,7 +1033,7 @@ void vt_use_images (VT *vt, Ctx *ctx);
 static int draw_vts (ITK *itk, Ctx *ctx)
 {
   float view_height = ctx_height (ctx);
-  float titlebar_height = view_height/40;
+  float titlebar_height = em;
   int n_clients = ctx_list_length (clients);
   //ctx_listen (ctx, CTX_KEY_DOWN, key_down, NULL, NULL);
   //ctx_listen (ctx, CTX_KEY_UP, key_up, NULL, NULL);
@@ -1660,7 +1661,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
   gettimeofday (&tv, NULL);
   localtime_r (&tv.tv_sec, &local_time_res);
 
-  float titlebar_height = ctx_height (ctx)/40;
+  float titlebar_height = em;
   float tab_width = ctx_width (ctx) - titlebar_height * 4 - titlebar_height * 2;
 
   ctx_save (ctx);
@@ -1709,7 +1710,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
 
 void draw_mini_panel (Ctx *ctx)
 {
-  float titlebar_height = ctx_height (ctx)/40;
+  float titlebar_height = em;
 
   ctx_save (ctx);
   ctx_font_size (ctx, titlebar_height * 0.9);
@@ -1882,6 +1883,8 @@ int terminal_main (int argc, char **argv)
 
       itk->scale = 1.0;
       itk->font_size = font_size;
+
+      em = itk->font_size;
 
       for (CtxList *l = clients; l; l = l->next)
       {
