@@ -1604,13 +1604,23 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                   parser->expected_args == CTX_ARG_STRING_OR_NUMBER)
                 {
                   int tmp1 = parser->n_numbers;
-                  //int tmp2 = parser->n_args;
+                  int tmp2 = parser->n_args;
                   int tmp3 = parser->command;
                   int tmp4 = parser->expected_args;
                   ctx_parser_dispatch_command (parser);
-                  parser->n_numbers = tmp1;
-                  //parser->n_args = tmp2;
                   parser->command = tmp3;
+                  switch (parser->command)
+                  {
+                    case CTX_DEFINE_TEXTURE:
+                    case CTX_TEXTURE:
+                      parser->n_numbers = tmp1;
+                      parser->n_args = tmp2;
+                      break;
+                          default:
+                      parser->n_numbers = 0;
+                      parser->n_args = 0;
+                      break;
+                  }
                   parser->expected_args = tmp4;
                 }
               if (parser->n_numbers > CTX_PARSER_MAX_ARGS)
