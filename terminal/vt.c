@@ -7388,7 +7388,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                 //  int rows = (image->height + (vt->ch-1) ) /vt->ch;
                 //
                 //
-                    if (v + image->height +vt->scroll * vt->ch > 0.0)
+                    if (v + image->height +vt->scroll * vt->ch > 0.0 &&
+                        image->width && image->height /* some ghost images appear with these */
+                        )
                     {
                     ctx_save (ctx);
                     ctx_rectangle (ctx, x0, y0 - vt->scroll * vt->ch, vt->cw * vt->cols,
@@ -7399,7 +7401,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                     sprintf (texture_n, "vtimg%i", image->eid_no);
                     ctx_rectangle (ctx, u, v, image->width, image->height);
                     ctx_translate (ctx, u, v);
-                     
+
                     //replace this texture_n with NULL to
                     // be content addressed - but bit slower
                     ctx_define_texture (ctx, texture_n, image->width,

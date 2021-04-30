@@ -1667,7 +1667,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
   ctx_rectangle (ctx, 0, 0, ctx_width (ctx), titlebar_height);
   ctx_gray (ctx, 0.0);
   ctx_fill (ctx);
-  ctx_font_size (ctx, titlebar_height * 0.9);
+  ctx_font_size (ctx, titlebar_height * 1.0);
   ctx_move_to (ctx, ctx_width (ctx), titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_END);
   ctx_gray (ctx, 0.9);
