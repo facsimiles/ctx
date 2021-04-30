@@ -85,7 +85,8 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile ../ctx.h
 
 clean:
 	rm -rf gray1 png gray8 png-640x240 png-480x640 png-320x240
-../ctx: ../ctx.h
+
+../ctx: ../ctx.h ../src/*.[ch]
 	make -C .. ctx
 
 gray1/%: %.ctx ../ctx Makefile
