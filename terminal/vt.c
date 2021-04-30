@@ -7230,7 +7230,6 @@ void vt_use_images (VT *vt, Ctx *ctx)
             if (line->ctx_copy)
               {
                 ctx_render_ctx (line->ctx_copy, ctx);
-                fprintf (stderr, "!");
               }
           }
       }

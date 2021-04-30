@@ -2140,6 +2140,10 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   int prev_y = 0;
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
+
+
+  float coords[6][2];
+
   for (int i = 0; i < count; i++)
     {
       CtxEntry *entry = &edges[i+1];
@@ -2155,11 +2159,41 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
         }
       x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
       y = entry->data.s16[3] * 1.0f / aa;
+      coords[i][0] = x;
+      coords[i][1] = y;
       if (x < minx) { minx = x; }
       if (y < miny) { miny = y; }
       if (x > maxx) { maxx = x; }
       if (y > maxy) { maxy = y; }
     }
+
+  if (rasterizer->clip_rectangle || !rasterizer->clip_buffer)
+  {
+    if (count == 6)
+    {
+      if (coords[3][0] == coords[5][0] &&
+          coords[3][1] == coords[5][1])
+      {
+#if 0
+        printf ("%d,%d %dx%d\n", minx, miny,
+                                       maxx-minx+1, maxy-miny+1);
+#endif
+
+         rasterizer->state->gstate.clip_min_x =
+            ctx_maxi (minx, rasterizer->state->gstate.clip_min_x);
+         rasterizer->state->gstate.clip_min_y =
+            ctx_maxi (miny, rasterizer->state->gstate.clip_min_y);
+         rasterizer->state->gstate.clip_max_x =
+            ctx_mini (maxx, rasterizer->state->gstate.clip_max_x);
+         rasterizer->state->gstate.clip_max_y =
+            ctx_mini (maxy, rasterizer->state->gstate.clip_max_y);
+
+         rasterizer->clip_rectangle = 1;
+         return;
+      }
+    }
+  }
+  rasterizer->clip_rectangle = 0;
 
 #if CTX_ENABLE_CLIP
   if ((minx == maxx) || (miny == maxy)) // XXX : reset hack

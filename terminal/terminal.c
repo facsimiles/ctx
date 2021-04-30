@@ -1973,7 +1973,7 @@ int terminal_main (int argc, char **argv)
         else if (avg_bytespeed > 0.5 * 1024 * 1024)
           sleep_time = 4000;
         else
-          sleep_time = 10;
+          sleep_time = 500;
       }
       else
       {
@@ -2007,7 +2007,7 @@ int terminal_main (int argc, char **argv)
         int timed = (time_end-time_start);
         float bytespeed = fetched_bytes / ((timed)/ (1000.0f * 1000.0f));
         avg_bytespeed = bytespeed * 0.2 + avg_bytespeed * 0.8;
-      //  fprintf (stderr, "%.2fmb/s %i/%i  %i                    \r", avg_bytespeed/1024/1024, fetched_bytes, timed, sleep_time);
+   //   fprintf (stderr, "%.2fmb/s %i/%i  %i                    \r", avg_bytespeed/1024/1024, fetched_bytes, timed, sleep_time);
       }
 
     }
