@@ -292,7 +292,6 @@ static int focus_follows_mouse = 0;
 static CtxClient *find_active (int x, int y)
 {
   CtxClient *ret = NULL;
-  float view_height = ctx_height (ctx);
   float titlebar_height = em;
   int resize_border = titlebar_height/2;
 
@@ -1032,7 +1031,6 @@ void vt_use_images (VT *vt, Ctx *ctx);
 
 static int draw_vts (ITK *itk, Ctx *ctx)
 {
-  float view_height = ctx_height (ctx);
   float titlebar_height = em;
   int n_clients = ctx_list_length (clients);
   //ctx_listen (ctx, CTX_KEY_DOWN, key_down, NULL, NULL);

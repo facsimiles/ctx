@@ -551,6 +551,7 @@ float
 ctx_glyph_width (Ctx *ctx, int unichar)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
+
   return font->engine->glyph_width (font, ctx, unichar);
 }
 
