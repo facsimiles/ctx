@@ -4317,9 +4317,11 @@ static void vt_state_osc (VT *vt, int byte)
             {
             int color_no = parse_int (vt->argument_buf + 2, 0);
             char *rest = vt->argument_buf + 3;
-            rest = strchr (rest, ';') + 1;
+            rest = strchr (rest, ';');
 
-            if (rest[0] == 'r' &&
+            if (rest++)
+            if (strlen(rest)>10 &&
+                rest[0] == 'r' &&
                 rest[1] == 'g' &&
                 rest[2] == 'b' &&
                 rest[3] == ':' &&

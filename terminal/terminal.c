@@ -1974,7 +1974,7 @@ int terminal_main (int argc, char **argv)
         else if (avg_bytespeed > 0.5 * 1024 * 1024)
           sleep_time = 4000;
         else
-          sleep_time = 500;
+          sleep_time = 1000;
       }
       else
       {
