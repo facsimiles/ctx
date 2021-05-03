@@ -1810,11 +1810,11 @@ int terminal_main (int argc, char **argv)
     if (((double)(width))/height < (16.0/9.0))
       cols = 80;
     else
-      cols = 160;
+      cols = 80;
   }
 
   if (font_size < 0)
-    font_size = floorf (2 * width / cols /2) * 3;
+    font_size = floorf (width / cols  * 2 / 2);
 
   if (!commandline)
     commandline = vt_find_shell_command();
