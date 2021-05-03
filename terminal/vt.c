@@ -6041,6 +6041,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_stroke (ctx);
         ctx_restore (ctx);
         return 0;
+        /*
       case 0x1fb70: // left triangular one quarter block
         ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
@@ -6071,6 +6072,7 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
         ctx_rel_line_to (ctx, cw, 0);
         ctx_fill (ctx);
         return 0;
+        */
       case 0x25E2: // VT_BLACK_LOWER_RIGHT_TRIANGLE:
         ctx_begin_path (ctx);
         ctx_move_to (ctx, x, y);
@@ -6523,8 +6525,734 @@ int vt_special_glyph (Ctx *ctx, VT *vt, float x, float y, int cw, int ch, int un
             }
           }
           ctx_fill (ctx);
+          return 0;
         }
         break;
+      case 0x1fb3c:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch / 3.0f);
+          ctx_rel_line_to (ctx, cw/2, ch/3.0f);
+          ctx_fill (ctx);
+          return 0;
+        }
+        break;
+      case 0x1fb3d:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch/3.0f);
+          ctx_rel_line_to (ctx, cw, ch/3.0f);
+          ctx_fill (ctx);
+          return 0;
+        }
+        break;
+      case 0x1fb3e:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0,   -ch/3.0f * 2);
+          ctx_rel_line_to (ctx, cw/2, ch/3.0f * 2);
+          ctx_fill (ctx);
+          return 0;
+        }
+        break;
+      case 0x1fb3f:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0,  -ch/3.0f * 2);
+          ctx_rel_line_to (ctx, cw, ch/3.0f * 2);
+          ctx_fill (ctx);
+          return 0;
+        }
+        break;
+      case 0x1fb40:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw/2, ch);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb41:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, cw/2, -ch/3.0);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, 0.0, ch);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb42:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, cw, -ch/3.0);
+          ctx_rel_line_to (ctx, 0.0, ch);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb43:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch/3.0f);
+          ctx_rel_line_to (ctx, cw/2, -ch/3.0f*2.0f);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, 0.0, ch);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb44:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch/3.0);
+          ctx_rel_line_to (ctx, cw, -ch/3.0 * 2);
+          ctx_rel_line_to (ctx, 0.0, ch);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb45:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, cw/2, -ch);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, 0.0, ch);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb46:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch/3.0);
+          ctx_rel_line_to (ctx, cw, -ch/3.0);
+          ctx_rel_line_to (ctx, 0.0, ch/3.0*2);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb47:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, cw/2, -ch/3.0);
+          ctx_rel_line_to (ctx, 0.0, ch/3.0);
+          ctx_rel_line_to (ctx, -cw/2, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb48:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, cw, -ch/3.0);
+          ctx_rel_line_to (ctx, 0.0, ch/3.0);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb49:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, cw/2, -ch/3.0*2);
+          ctx_rel_line_to (ctx, 0.0, ch/3.0*2);
+          ctx_rel_line_to (ctx, -cw/2, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb4a:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, cw, -ch/3.0*2);
+          ctx_rel_line_to (ctx, 0.0, ch/3.0*2);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb4b:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, cw/2, ch/3);
+          ctx_rel_line_to (ctx, 0, ch/3.0*2);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb4c:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, ch/3);
+          ctx_rel_line_to (ctx, 0, ch/3.0*2);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb4d:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, ch/3);
+          ctx_rel_line_to (ctx, 0, ch/3.0*2);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb4e:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, cw/2, ch/3 *  2);
+          ctx_rel_line_to (ctx, 0, ch/3.0);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb4f:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, ch/3 *  2);
+          ctx_rel_line_to (ctx, 0, ch/3.0);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb50:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, cw/2, ch);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb51:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, cw, ch/3.0);
+          ctx_rel_line_to (ctx, 0, ch/3.0);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb52:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3.0);
+          ctx_rel_line_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw/2, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb53:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3.0);
+          ctx_rel_line_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw, -ch/3.0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb54:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, 0, -ch/3.0);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw/2, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb55:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, 0, -ch/3.0);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw, -ch/3.0*2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb56:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw/2, 0);
+          ctx_rel_line_to (ctx, -cw/2, -ch);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb57:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, 0, -ch/3);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, -cw/2, ch/3);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb58:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, 0, -ch/3);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, -cw, ch/3);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb59:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3.0);
+          ctx_rel_line_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, -cw/2, ch/3 * 2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb5a:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3.0);
+          ctx_rel_line_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, -cw, ch/3 * 2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb5b:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, -cw/2, ch);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb5c:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3);
+
+          ctx_rel_line_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/3);
+          ctx_rel_line_to (ctx, -cw, ch/3);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb5d:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/3 * 2);
+          ctx_rel_line_to (ctx, -cw/2, ch/3);
+          ctx_rel_line_to (ctx, -cw/2, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb5e:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/3 * 2);
+          ctx_rel_line_to (ctx, -cw, ch/3);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb5f:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/3);
+          ctx_rel_line_to (ctx, -cw/2, ch/3*2);
+          ctx_rel_line_to (ctx, -cw/2, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb60:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/3);
+          ctx_rel_line_to (ctx, -cw, ch/3*2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb61:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, -cw/2, ch);
+          ctx_rel_line_to (ctx, -cw/2, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb62:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw/2, -ch);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, 0, ch/3);
+          ctx_rel_line_to (ctx, -cw/2, -ch/3);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb63:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/3);
+          ctx_rel_line_to (ctx, -cw, -ch/3);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb64:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw/2, -ch);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, 0, ch/3*2);
+          ctx_rel_line_to (ctx, -cw/2, -ch/3*2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb65:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/3*2);
+          ctx_rel_line_to (ctx, -cw, -ch/3*2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb66:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw/2, -ch);
+          ctx_rel_line_to (ctx, cw/2, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw/2, -ch);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb67:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/3.0*2);
+          ctx_rel_line_to (ctx, 0, -ch/3);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/3.0*2);
+          ctx_rel_line_to (ctx, -cw, -ch/3.0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb68:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, cw/2, -ch/2);
+          ctx_rel_line_to (ctx, -cw/2, -ch/2);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb69:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw/2, ch/2);
+          ctx_rel_line_to (ctx, cw/2, -ch/2);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb6a:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, -cw/2, ch/2);
+          ctx_rel_line_to (ctx, cw/2, ch/2);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb6b:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw/2, -ch/2);
+          ctx_rel_line_to (ctx, -cw/2, ch/2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb6c:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw/2, ch/2);
+          ctx_rel_line_to (ctx, -cw/2, ch/2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb6d:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, -cw/2, ch/2);
+          ctx_rel_line_to (ctx, -cw/2, -ch/2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb6e:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw, -ch);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw/2, -ch/2);
+          ctx_rel_line_to (ctx, cw/2, -ch/2);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb6f:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, cw/2, -ch/2);
+          ctx_rel_line_to (ctx, cw/2, ch/2);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb82:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/8 * 2);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_move_to (ctx, 0, ch/8 * 2);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb83:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/8 * 3);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_move_to (ctx, 0, ch/8 * 3);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb84:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/8 * 5);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_move_to (ctx, 0, ch/8 * 5);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb85:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/8 * 6);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_move_to (ctx, 0, ch/8 * 6);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb86:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, 0, -ch/8 * 7);
+          ctx_rel_line_to (ctx, cw, 0);
+          ctx_rel_move_to (ctx, 0, ch/8 * 7);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb87:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw/8*6, 0);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_move_to (ctx, cw/8*2, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_move_to (ctx, -cw/8*2, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb88:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw/8*5, 0);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_move_to (ctx, cw/8*3, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_move_to (ctx, -cw/8*3, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb89:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw/8*3, 0);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_move_to (ctx, cw/8*5, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_move_to (ctx, -cw/8*5, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb8a:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_move_to (ctx, cw/8*2, 0);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_move_to (ctx, cw/8*6, 0);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_move_to (ctx, -cw/8*6, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb97:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch/4);
+          ctx_rel_move_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/4);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_close_path (ctx);
+          ctx_move_to (ctx, 0, -ch/2);
+          ctx_rel_line_to (ctx, 0, -ch/4);
+          ctx_rel_move_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, 0, ch/4);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb9a:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, cw/2, -ch/2);
+          ctx_rel_line_to (ctx, -cw/2, -ch/2);
+          ctx_rel_move_to (ctx, cw, 0);
+          ctx_rel_line_to (ctx, -cw/2, ch/2);
+          ctx_rel_line_to (ctx, cw/2, ch/2);
+          ctx_rel_line_to (ctx, -cw, 0);
+          ctx_fill (ctx);
+          return 0;
+        }
+      case 0x1fb9b:
+        {
+          ctx_begin_path (ctx);
+          ctx_move_to (ctx, x, y);
+          ctx_rel_line_to (ctx, 0, -ch);
+          ctx_rel_line_to (ctx, cw/2, ch/2);
+          ctx_rel_line_to (ctx, cw/2, -ch/2);
+          ctx_rel_line_to (ctx, 0, ch);
+          ctx_rel_line_to (ctx, -cw/2, -ch/2);
+          ctx_rel_line_to (ctx, -cw/2, ch/2);
+          ctx_fill (ctx);
+          return 0;
+        }
 
     }
   return -1;
