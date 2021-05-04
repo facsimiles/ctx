@@ -59,6 +59,7 @@ static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 
 float ctx_shape_cache_rate = 0.0;
 #if CTX_SHAPE_CACHE
+int   _ctx_shape_cache_enabled = 1;
 
 //static CtxShapeCache ctx_cache = {{NULL,}, 0};
 
@@ -125,7 +126,6 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
     }
 
   misses ++;
-  
   rasterizer->shape_cache.size += size;
   rasterizer->shape_cache.entries[i]->hash=hash;
   rasterizer->shape_cache.entries[i]->width=width;
@@ -1449,7 +1449,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
           }
         if (y0 < clip_y_min || y1 >= clip_y_max)
           dont_cache = 1;
-        if (dont_cache)
+        if (dont_cache || !_ctx_shape_cache_enabled)
         {
           ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
 #if CTX_SHAPE_CACHE

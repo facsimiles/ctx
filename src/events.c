@@ -49,6 +49,9 @@ enum _CtxFlags {
 
 int _ctx_max_threads = 1;
 int _ctx_enable_hash_cache = 1;
+#if CTX_SHAPE_CACHE
+extern int _ctx_shape_cache_enabled;
+#endif
 
 static mtx_t _ctx_texture_mtx;
 
@@ -145,7 +148,16 @@ Ctx *ctx_new_ui (int width, int height)
     if (!strcmp (val, "off"))
       _ctx_enable_hash_cache = 0;
   }
-
+#if CTX_SHAPE_CACHE
+  if (getenv ("CTX_SHAPE_CACHE"))
+  {
+    const char * val = getenv ("CTX_SHAPE_CACHE");
+    if (!strcmp (val, "0"))
+      _ctx_shape_cache_enabled = 0;
+    if (!strcmp (val, "off"))
+      _ctx_shape_cache_enabled = 0;
+  }
+#endif
 
   if (getenv ("CTX_THREADS"))
   {
