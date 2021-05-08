@@ -36,8 +36,8 @@ Ctx *ctx = NULL; // initialized in main
 #define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
 //#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
-int ctx_renderer_is_sdl (Ctx *ctx);
-int ctx_renderer_is_fb (Ctx *ctx);
+int ctx_renderer_is_sdl  (Ctx *ctx);
+int ctx_renderer_is_fb   (Ctx *ctx);
 int ctx_renderer_is_term (Ctx *ctx);
 float em = 14.0; // reset on each draw
 
@@ -125,22 +125,23 @@ ssize_t vtpty_read (void  *data, void *buf, size_t count)
 
 struct
 _CtxClient {
-  VT           *vt;
-  char         *title;
-  int           x;
-  int           y;
-  int           width;
-  int           height;
-  int           shaded;
-  int           iconified;
-  int           maximized;
-  int           unmaximized_x;
-  int           unmaximized_y;
-  int           unmaximized_width;
-  int           unmaximized_height;
-  int           do_quit;
-  long          drawn_rev;
-  int           id;
+  VT    *vt;
+  char  *title;
+  int    x;
+  int    y;
+  int    width;
+  int    height;
+  int    shaded;
+  int    iconified;
+  int    maximized;
+  int    unmaximized_x;
+  int    unmaximized_y;
+  int    unmaximized_width;
+  int    unmaximized_height;
+  int    do_quit;
+  long   drawn_rev;
+  int    id;
+  int    is_settings; // render a settings window rather than a vt
 };
 
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
@@ -1745,7 +1746,7 @@ terminal_update_title (const char *title)
   ctx_set_title (ctx, set_title);
 }
 
-int ctx_input_pending (int timeout);
+int ctx_input_pending (Ctx *ctx, int timeout);
 
 int terminal_main (int argc, char **argv)
 {
@@ -1978,7 +1979,7 @@ int terminal_main (int argc, char **argv)
         ctx_flush (ctx);
       }
       long time_start = ctx_ticks ();
-      pending_data = ctx_input_pending (sleep_time);
+      pending_data = ctx_input_pending (ctx, sleep_time);
 
       fetched_bytes = 0;
       if (pending_data)

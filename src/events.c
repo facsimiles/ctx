@@ -1072,6 +1072,10 @@ int ctx_has_event (Ctx *ctx, int timeout)
   return 0;
 }
 
+#if CTX_FB
+static int ctx_fb_get_mice_fd (Ctx *ctx);
+#endif
+
 void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
 {
 #if CTX_SDL
@@ -1084,8 +1088,17 @@ void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
 #if CTX_FB
   if (ctx_fb_events)
   {
+    int mice_fd = ctx_fb_get_mice_fd (ctx);
     fd[0] = STDIN_FILENO;
-    *count = 1;
+    if (mice_fd)
+    {
+      fd[1] = mice_fd;
+      *count = 2;
+    }
+    else
+    {
+      *count = 1;
+    }
   }
   else
 #endif
@@ -1929,7 +1942,7 @@ void _ctx_remove_listen_fd (int fd)
   }
 }
 
-int ctx_input_pending (int timeout)
+int ctx_input_pending (Ctx *ctx, int timeout)
 {
   struct timeval tv;
   fd_set fdset;
@@ -1938,6 +1951,14 @@ int ctx_input_pending (int timeout)
   {
     FD_SET (_ctx_listen_fd[i], &fdset);
   }
+  int input_fds[5];
+  int n_fds;
+  ctx_get_event_fds (ctx, input_fds, &n_fds);
+  for (int i = 0; i < n_fds; i++)
+  {
+    FD_SET (input_fds[i], &fdset);
+  }
+
   tv.tv_sec = 0;
   tv.tv_usec = timeout;
   tv.tv_sec = timeout / 1000000;

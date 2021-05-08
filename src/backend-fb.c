@@ -875,6 +875,7 @@ typedef struct Mice
 } Mice;
 
 Mice *_mrg_evsrc_coord = NULL;
+static int _ctx_mice_fd = 0;
 
 void _mmm_get_coords (Ctx *ctx, double *x, double *y)
 {
@@ -905,6 +906,7 @@ static int mmm_evsource_mice_init ()
   {
     // might happen if we're a regular user with only read permission
   }
+  _ctx_mice_fd = mrg_mice_this->fd;
   _mrg_evsrc_coord = mrg_mice_this;
   return 0;
 }
@@ -1588,6 +1590,12 @@ static void vt_switch_cb (int sig)
       }
     }
   }
+}
+
+static int ctx_fb_get_mice_fd (Ctx *ctx)
+{
+  //CtxFb *fb = (void*)ctx->renderer;
+  return _ctx_mice_fd;
 }
 
 Ctx *ctx_new_fb (int width, int height, int drm)
