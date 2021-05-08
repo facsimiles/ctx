@@ -1837,7 +1837,8 @@ int terminal_main (int argc, char **argv)
 
   ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 
-  int sleep_time = 15000; // targeting 60fps
+  //int sleep_time = 1000000/10;
+  float target_fps = 20.0;
   int fetched_bytes = 1;
 
   int print_shape_cache_rate = 0;
@@ -1979,6 +1980,7 @@ int terminal_main (int argc, char **argv)
         ctx_flush (ctx);
       }
       long time_start = ctx_ticks ();
+      int sleep_time = 1000000/target_fps;
       pending_data = ctx_input_pending (ctx, sleep_time);
 
       fetched_bytes = 0;
@@ -2003,14 +2005,33 @@ int terminal_main (int argc, char **argv)
         }
       }
 
+      //int got_events = 0;
+
       while (ctx_get_event (ctx)) { }
+
+      if (changes || pending_data)
+      {
+        target_fps *= 2;
+        if (target_fps > 60) target_fps = 60;
+      }
+      else
+      {
+        target_fps = target_fps * 0.9 + 20.0 * 0.1;
+
+        // 20fps is the lowest where sun 8bit ulaw 8khz works reliably
+      }
+
+      if (avg_bytespeed > 1024 * 1024) target_fps = 10.0;
 
       long time_end = ctx_ticks ();
 
         int timed = (time_end-time_start);
         float bytespeed = fetched_bytes / ((timed)/ (1000.0f * 1000.0f));
+#
         avg_bytespeed = bytespeed * 0.2 + avg_bytespeed * 0.8;
-   //   fprintf (stderr, "%.2fmb/s %i/%i  %i                    \r", avg_bytespeed/1024/1024, fetched_bytes, timed, sleep_time);
+#if 0
+      fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", avg_bytespeed/1024/1024, fetched_bytes, timed, target_fps);
+#endif
 
     }
 
