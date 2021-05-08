@@ -1041,35 +1041,64 @@ void ctx_consume_events (Ctx *ctx)
     ctx_nct_consume_events (ctx);
 }
 
-int ctx_has_event (Ctx *ctx)
+int ctx_has_event (Ctx *ctx, int timeout)
 {
 #if CTX_SDL
   if (ctx_sdl_events)
   {
-    return SDL_PollEvent (NULL);
+    return SDL_WaitEventTimeout (NULL, timeout);
   }
   else
 #endif
 #if CTX_FB
   if (ctx_fb_events)
   {
-    return ctx_nct_has_event (ctx, 5);
+    return ctx_nct_has_event (ctx, timeout);
   }
   else
 #endif
   if (ctx_native_events)
   {
-    return ctx_nct_has_event (ctx, 5);
+    return ctx_nct_has_event (ctx, timeout);
   }
   else
   {
-    return ctx_nct_has_event (ctx, 5);
+    return ctx_nct_has_event (ctx, timeout);
   }
 
   ctx_consume_events (ctx);
   if (ctx->events.events)
     return 1;
   return 0;
+}
+
+void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
+{
+#if CTX_SDL
+  if (ctx_sdl_events)
+  {
+    *count = 0;
+  }
+  else
+#endif
+#if CTX_FB
+  if (ctx_fb_events)
+  {
+    fd[0] = STDIN_FILENO;
+    *count = 1;
+  }
+  else
+#endif
+  if (ctx_native_events)
+  {
+    fd[0] = STDIN_FILENO;
+    *count = 1;
+  }
+  else
+  {
+    fd[0] = STDIN_FILENO;
+    *count = 1;
+  }
 }
 
 CtxEvent *ctx_get_event (Ctx *ctx)
@@ -1874,9 +1903,10 @@ void ctx_set_dirty (Ctx *ctx, int dirty)
  * wake us up, this to remove sleeping and polling
  */
 
-#define CTX_MAX_LISTEN_FDS 8
+#define CTX_MAX_LISTEN_FDS 128 // becomes max clients..
+
 static int _ctx_listen_fd[CTX_MAX_LISTEN_FDS];
-static int _ctx_listen_fds = 0;
+static int _ctx_listen_fds    = 0;
 static int _ctx_listen_max_fd = 0;
 
 void _ctx_add_listen_fd (int fd)
@@ -1899,7 +1929,7 @@ void _ctx_remove_listen_fd (int fd)
   }
 }
 
-int _ctx_data_pending (int timeout)
+int ctx_input_pending (int timeout)
 {
   struct timeval tv;
   fd_set fdset;
@@ -1912,7 +1942,7 @@ int _ctx_data_pending (int timeout)
   tv.tv_usec = timeout;
   tv.tv_sec = timeout / 1000000;
   tv.tv_usec = timeout % 1000000;
-  int retval = select (_ctx_listen_max_fd, &fdset, NULL, NULL, &tv);
+  int retval = select (_ctx_listen_max_fd + 1, &fdset, NULL, NULL, &tv);
   if (retval == -1)
   {
     perror ("select");

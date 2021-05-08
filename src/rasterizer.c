@@ -2130,7 +2130,6 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
                            CtxEntry      *edges)
 {
   int count = edges[0].data.u32[0];
-  int aa = rasterizer->aa;
 
   int minx = 5000;
   int miny = 5000;
@@ -2141,7 +2140,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
 
-
+  int aa = rasterizer->aa;
   float coords[6][2];
 
   for (int i = 0; i < count; i++)
@@ -2167,7 +2166,11 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
       if (y > maxy) { maxy = y; }
     }
 
-  if ((rasterizer->clip_rectangle==1 || !rasterizer->clip_buffer) && 0)
+#if CTX_ENABLE_CLIP
+
+  if ((rasterizer->clip_rectangle==1
+                          || !rasterizer->clip_buffer) && 0
+                  )
   //  XXX  disabled, it makes clip test fail, a lot of unneded work
   //  can be skipped here.
   {
@@ -2217,7 +2220,6 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   }
   rasterizer->clip_rectangle = 0;
 
-#if CTX_ENABLE_CLIP
   if ((minx == maxx) || (miny == maxy)) // XXX : reset hack
   {
     ctx_rasterizer_clip_reset (rasterizer);
@@ -2388,6 +2390,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   }
   if (!we_made_it)
    ctx_buffer_free (clip_buffer);
+#else
+  if (coords[0][0]){};
 #endif
   
   rasterizer->state->gstate.clip_min_x = ctx_maxi (minx,

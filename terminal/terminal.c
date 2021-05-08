@@ -1727,6 +1727,7 @@ void draw_mini_panel (Ctx *ctx)
 }
 
 static char *set_title = NULL;
+void vt_audio_task (VT *vt, int click);
 
 static void
 terminal_update_title (const char *title)
@@ -1743,6 +1744,8 @@ terminal_update_title (const char *title)
   set_title = strdup (title);
   ctx_set_title (ctx, set_title);
 }
+
+int ctx_input_pending (int timeout);
 
 int terminal_main (int argc, char **argv)
 {
@@ -1840,6 +1843,14 @@ int terminal_main (int argc, char **argv)
   if (getenv ("CTX_DEBUG_SHAPE_CACHE"))
     print_shape_cache_rate = 1;
 
+  int fds[8];
+  int n_fds = 0;
+  ctx_get_event_fds (ctx, fds, &n_fds);
+  fprintf (stderr, "fds: ");
+  for (int i = 0; i < n_fds; i++)
+    fprintf (stderr, " %i ", fds[i]);
+  fprintf (stderr, "\n");
+
   while (clients && !ctx_has_quit (ctx))
     {
       CtxList *to_remove = NULL;
@@ -1908,6 +1919,8 @@ int terminal_main (int argc, char **argv)
 
       changes += vt_dirty_count ();
         static float avg_bytespeed = 0.0;
+
+      int pending_data = 0;
 
       if (changes) // || ctx_is_dirty(ctx))//|| dirty) // || dirty || ctx_is_dirty (ctx))
       {
@@ -1981,21 +1994,19 @@ int terminal_main (int argc, char **argv)
       }
       else
       {
-        usleep (sleep_time);
-        sleep_time     = 33333 * 0.01 + 0.99 * sleep_time;
+        //
+        //usleep (sleep_time);
+        //sleep_time     = 33333 * 0.01 + 0.99 * sleep_time;
       }
-      sleep_time = 500;
+      sleep_time = 15000;
+      pending_data = ctx_input_pending (sleep_time);
 
       //if (!ctx_is_dirty (ctx))
-      {
-      CtxEvent *event;
-      while ((event = ctx_get_event (ctx)))
-      {
-      }
 
 
       fetched_bytes = 0;
       long time_start = ctx_ticks ();
+      if (pending_data)
       {
         /* record amount of time spent - and adjust time of reading for
          * vts?
@@ -2007,6 +2018,21 @@ int terminal_main (int argc, char **argv)
           fetched_bytes += vt_poll (client->vt, fractional_sleep);
         }
       }
+      else
+      {
+        for (CtxList *l = clients; l; l = l->next)
+        {
+          vt_audio_task (client->vt, 0);
+        }
+      }
+
+
+      {
+      CtxEvent *event;
+      while ((event = ctx_get_event (ctx)))
+      {
+      }
+
       long time_end = ctx_ticks ();
 
         int timed = (time_end-time_start);
