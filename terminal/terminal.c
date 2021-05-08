@@ -2011,12 +2011,12 @@ int terminal_main (int argc, char **argv)
 
       if (changes || pending_data)
       {
-        target_fps *= 2;
+        target_fps *= 1.6;
         if (target_fps > 60) target_fps = 60;
       }
       else
       {
-        target_fps = target_fps * 0.9 + 20.0 * 0.1;
+        target_fps = target_fps * 0.95 + 20.0 * 0.05;
 
         // 20fps is the lowest where sun 8bit ulaw 8khz works reliably
       }
