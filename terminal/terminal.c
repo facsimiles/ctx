@@ -1836,7 +1836,7 @@ int terminal_main (int argc, char **argv)
 
   ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 
-  int sleep_time = 1000;
+  int sleep_time = 15000; // targeting 60fps
   int fetched_bytes = 1;
 
   int print_shape_cache_rate = 0;
@@ -1976,36 +1976,11 @@ int terminal_main (int argc, char **argv)
         ctx_listen (ctx, CTX_KEY_DOWN, terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_UP, terminal_key_any, NULL, NULL);
         ctx_flush (ctx);
-
-        //if (bytespeed > 200)
-        //if (avg_bytespeed > 8.0 * 1024 * 1024)
-        //  sleep_time = 250000;
-        //else
-        if (avg_bytespeed > 4.0 * 1024 * 1024)
-          sleep_time = 100000; /* at more than 4mb second ratelimit to 10 fps */
-        else if (avg_bytespeed > 2.0 * 1024 * 1024)
-          sleep_time = 33333;
-        else if (avg_bytespeed > 1.0 * 1024 * 1024)
-          sleep_time = 15000;
-        else if (avg_bytespeed > 0.5 * 1024 * 1024)
-          sleep_time = 4000;
-        else
-          sleep_time = 1000;
       }
-      else
-      {
-        //
-        //usleep (sleep_time);
-        //sleep_time     = 33333 * 0.01 + 0.99 * sleep_time;
-      }
-      sleep_time = 15000;
+      long time_start = ctx_ticks ();
       pending_data = ctx_input_pending (sleep_time);
 
-      //if (!ctx_is_dirty (ctx))
-
-
       fetched_bytes = 0;
-      long time_start = ctx_ticks ();
       if (pending_data)
       {
         /* record amount of time spent - and adjust time of reading for
@@ -2022,16 +1997,12 @@ int terminal_main (int argc, char **argv)
       {
         for (CtxList *l = clients; l; l = l->next)
         {
+          CtxClient *client = l->data;
           vt_audio_task (client->vt, 0);
         }
       }
 
-
-      {
-      CtxEvent *event;
-      while ((event = ctx_get_event (ctx)))
-      {
-      }
+      while (ctx_get_event (ctx)) { }
 
       long time_end = ctx_ticks ();
 
@@ -2039,7 +2010,6 @@ int terminal_main (int argc, char **argv)
         float bytespeed = fetched_bytes / ((timed)/ (1000.0f * 1000.0f));
         avg_bytespeed = bytespeed * 0.2 + avg_bytespeed * 0.8;
    //   fprintf (stderr, "%.2fmb/s %i/%i  %i                    \r", avg_bytespeed/1024/1024, fetched_bytes, timed, sleep_time);
-      }
 
     }
 
