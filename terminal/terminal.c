@@ -1452,6 +1452,12 @@ KeyBoard en_intl = {
 };
 
 
+  // 0.0 = full tilt
+  // 0.5 = balanced
+  // 1.0 = full saving
+
+static float _ctx_green = 0.5;
+
 
 void ctx_osk_draw (Ctx *ctx)
 {
@@ -1756,6 +1762,16 @@ int terminal_main (int argc, char **argv)
   int width = -1;
   int height = -1;
   int cols = -1;
+
+  const char *env_val = getenv ("CTX_GREEN");
+  if (env_val)
+  {
+    float val = atof (env_val);
+    _ctx_green = val;
+    if (_ctx_green > 1.0) _ctx_green = 1.0;
+    if (_ctx_green < 0.0) _ctx_green = 0.0;
+  }
+
   if (getpid () == 1)
   {
     int ign;
@@ -1844,14 +1860,6 @@ int terminal_main (int argc, char **argv)
   int print_shape_cache_rate = 0;
   if (getenv ("CTX_DEBUG_SHAPE_CACHE"))
     print_shape_cache_rate = 1;
-
-  int fds[8];
-  int n_fds = 0;
-  ctx_get_event_fds (ctx, fds, &n_fds);
-  fprintf (stderr, "fds: ");
-  for (int i = 0; i < n_fds; i++)
-    fprintf (stderr, " %i ", fds[i]);
-  fprintf (stderr, "\n");
 
   while (clients && !ctx_has_quit (ctx))
     {
@@ -2022,6 +2030,11 @@ int terminal_main (int argc, char **argv)
       }
 
       if (avg_bytespeed > 1024 * 1024) target_fps = 10.0;
+
+      if (_ctx_green < 0.5)
+        target_fps = 120.0;
+      else if (_ctx_green > 0.9)
+        target_fps = 15.0;
 
       long time_end = ctx_ticks ();
 
