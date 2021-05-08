@@ -183,10 +183,10 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
            */
         uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer); // + hasher->salt;
         CtxIntRectangle shape_rect = {
-          rasterizer->col_min / CTX_SUBDIV,
-          rasterizer->scan_min / aa,
-          (rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV,
-          (rasterizer->scan_max - rasterizer->scan_min + 1) / aa
+          rasterizer->col_min / CTX_SUBDIV - 2,
+          rasterizer->scan_min / aa - 2,
+          3+(rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV,
+          3+(rasterizer->scan_max - rasterizer->scan_min + 1) / aa
         };
 
         hash ^= (rasterizer->state->gstate.fill_rule * 23);

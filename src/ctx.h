@@ -827,6 +827,8 @@ void  ctx_listen_with_finalize (Ctx          *ctx,
 void ctx_init (int *argc, char ***argv); // is a no-op but could launch
                                          // terminal
 CtxEvent *ctx_get_event (Ctx *ctx);
+int       ctx_has_event (Ctx *ctx);
+void      ctx_get_event_fds (Ctx *ctx, int *fd, int count);
 
 int   ctx_pointer_is_down (Ctx *ctx, int no);
 float ctx_pointer_x (Ctx *ctx);

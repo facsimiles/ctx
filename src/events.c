@@ -1018,7 +1018,10 @@ int ctx_fb_consume_events (Ctx *ctx);
 #endif
 
 int ctx_nct_consume_events (Ctx *ctx);
+int ctx_nct_has_event (Ctx  *n, int delay_ms);
 int ctx_ctx_consume_events (Ctx *ctx);
+
+
 
 void ctx_consume_events (Ctx *ctx)
 {
@@ -1036,6 +1039,37 @@ void ctx_consume_events (Ctx *ctx)
     ctx_ctx_consume_events (ctx);
   else
     ctx_nct_consume_events (ctx);
+}
+
+int ctx_has_event (Ctx *ctx)
+{
+#if CTX_SDL
+  if (ctx_sdl_events)
+  {
+    return SDL_PollEvent (NULL);
+  }
+  else
+#endif
+#if CTX_FB
+  if (ctx_fb_events)
+  {
+    return ctx_nct_has_event (ctx, 5);
+  }
+  else
+#endif
+  if (ctx_native_events)
+  {
+    return ctx_nct_has_event (ctx, 5);
+  }
+  else
+  {
+    return ctx_nct_has_event (ctx, 5);
+  }
+
+  ctx_consume_events (ctx);
+  if (ctx->events.events)
+    return 1;
+  return 0;
 }
 
 CtxEvent *ctx_get_event (Ctx *ctx)

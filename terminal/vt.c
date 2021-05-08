@@ -7939,7 +7939,7 @@ void vt_use_images (VT *vt, Ctx *ctx)
 
   ctx_begin_path (ctx);
   ctx_save (ctx);
-  ctx_rectangle (ctx ,0,0,420,420);
+  ctx_rectangle (ctx ,0,0,4,4);
   ctx_clip (ctx);
 
   {

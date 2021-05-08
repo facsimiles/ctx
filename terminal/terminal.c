@@ -1057,6 +1057,9 @@ static int draw_vts (ITK *itk, Ctx *ctx)
       else
       {
         vt_use_images (client->vt, ctx);
+        // XXX  doing all use_images in one batch
+        //      with one clip would be a big performance improvement
+        //      while we have overhed for clipping
       }
       client->drawn_rev = vt_rev (client->vt);
     }
@@ -1981,6 +1984,7 @@ int terminal_main (int argc, char **argv)
         usleep (sleep_time);
         sleep_time     = 33333 * 0.01 + 0.99 * sleep_time;
       }
+      sleep_time = 500;
 
       //if (!ctx_is_dirty (ctx))
       {

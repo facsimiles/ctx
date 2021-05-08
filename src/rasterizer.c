@@ -2974,6 +2974,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_ROTATE:
       case CTX_SCALE:
       case CTX_TRANSLATE:
+      case CTX_IDENTITY:
       case CTX_SAVE:
         rasterizer->comp_op = NULL;
         rasterizer->uses_transforms = 1;

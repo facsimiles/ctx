@@ -518,7 +518,7 @@ static void nc_resize_term (int  dummy)
   size_changed = 1;
 }
 
-int ctx_has_event (Ctx  *n, int delay_ms)
+int ctx_nct_has_event (Ctx  *n, int delay_ms)
 {
   struct timeval tv;
   int retval;
@@ -565,7 +565,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
         }
       got_event = mouse_has_event (n);
       if (!got_event)
-        got_event = ctx_has_event (n, MIN(DELAY_MS, timeoutms-elapsed));
+        got_event = ctx_nct_has_event (n, MIN(DELAY_MS, timeoutms-elapsed));
       if (size_changed)
         {
           size_changed = 0;
@@ -805,7 +805,7 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
           size_changed = 0;
           return "size-changed";
         }
-      got_event = ctx_has_event (n, MIN(DELAY_MS, timeoutms-elapsed));
+      got_event = ctx_nct_has_event (n, MIN(DELAY_MS, timeoutms-elapsed));
       if (size_changed)
         {
           size_changed = 0;
@@ -838,7 +838,7 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
            return (const char*)buf;
          }
       }
-      got_event = ctx_has_event (n, 5);
+      got_event = ctx_nct_has_event (n, 5);
     }
   return NULL;
 }
