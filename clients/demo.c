@@ -18,6 +18,7 @@ int frame_no = 0;
 extern int _ctx_max_threads;
 extern int _ctx_enable_hash_cache;
 
+
 int main (int argc, char **argv)
 {
   Ctx *ctx = ctx_new_ui (-1, -1);
@@ -141,24 +142,7 @@ int main (int argc, char **argv)
 #endif
 
       itk_ctx_settings (itk);
-
-      static int itk_settings = 0;
-      if (itk_expander (itk, "ITK settings", &itk_settings))
-      {
-        itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
-        itk_toggle (itk, "enable keybindings", &enable_keybindings);
-        itk_toggle (itk, "light mode", &itk->light_mode);
-        itk_slider_float (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
-        itk_slider_float (itk, "font size ", &itk->font_size, 4.0, 60.0, 0.25);
-        itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
-        itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
-        itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);
-        itk_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
-        itk_slider_float (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
-        itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
-        itk_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
-        itk_slider_float (itk, "label width", &itk->label_width, 0.0, 40.0, 0.02);
-      }
+      itk_itk_settings (itk);
 
       itk_panel_end (itk);
 #endif

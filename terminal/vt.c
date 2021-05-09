@@ -607,19 +607,20 @@ static int vt_waitdata (VT *vt, int timeout)
 }
 static void vt_resize (VT *vt, int cols, int rows, int px_width, int px_height)
 {
-  if (vt->resize)
+  if (vt && vt->resize)
     { vt->resize (&vt->vtpty, cols, rows, px_width, px_height); }
 }
 
 
 void vt_rev_inc (VT *vt)
 {
-  vt->rev++;
+  if (vt)
+    vt->rev++;
 }
 
 long vt_rev (VT *vt)
 {
-  return vt->rev;
+  return vt?vt->rev:0;
 }
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
@@ -4855,6 +4856,7 @@ static void vt_state_neutral (VT *vt, int byte)
 
 int vt_poll (VT *vt, int timeout)
 {
+  if (!vt) return 0;
   int read_size = sizeof (vt->buf);
   int got_data = 0;
   int remaining_chars = read_size * 100;
@@ -7785,6 +7787,7 @@ bg_done:
 
 int vt_has_blink (VT *vt)
 {
+  if (!vt) return 0;
   return (vt->in_smooth_scroll ?  10 : 0);
   //return vt->has_blink + (vt->in_smooth_scroll ?  10 : 0);
 }

@@ -817,6 +817,11 @@ void itk_panel_start (ITK *itk, const char *title,
   float em = itk_em (itk);
   itk->x0 = itk->x = panel->x + em * itk->rel_hmargin;
   itk->y0 = itk->y = panel->y;
+  if (panel->width != 0)
+  {
+    panel->width = width;
+    panel->height = height;
+  }
   itk->width  = panel->width;
   itk->height = panel->height;
 
@@ -832,7 +837,8 @@ void itk_panel_start (ITK *itk, const char *title,
   ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
   ctx_fill (ctx);
 
-  itk_titlebar (itk, title);
+  if (title[0])
+    itk_titlebar (itk, title);
 
   itk_scroll_start (itk, panel->height - (itk->y - panel->y));
 }
@@ -2173,6 +2179,29 @@ itk_ctx_settings (ITK *itk)
       ctx_set_antialias (ctx, choice);
   }
 }
+
+void
+itk_itk_settings (ITK *itk)
+{
+      static int itk_settings = 0;
+      if (itk_expander (itk, "ITK settings", &itk_settings))
+      {
+        //itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
+        //itk_toggle (itk, "enable keybindings", &enable_keybindings);
+        //itk_toggle (itk, "light mode", &itk->light_mode);
+        itk_slider_float (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
+        itk_slider_float (itk, "font size ", &itk->font_size, 4.0, 60.0, 0.25);
+        itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
+        itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
+        itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);
+        itk_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
+        itk_slider_float (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
+        itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
+        itk_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
+        itk_slider_float (itk, "label width", &itk->label_width, 0.0, 40.0, 0.02);
+      }
+}
+
 
 void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 {

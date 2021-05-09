@@ -261,6 +261,7 @@ static void sdl_audio_init ()
 
 void vt_audio_task (VT *vt, int click)
 {
+  if (!vt) return;
   AudioState *audio = &vt->audio;
 #ifndef NO_SDL
 
