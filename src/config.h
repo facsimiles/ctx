@@ -544,6 +544,9 @@
 #define CTX_SCREENSHOT 0
 #endif
 
+#ifndef CTX_ALSA_AUDIO
+#define CTX_ALSA_AUDIO 0
+#endif
 
 #ifndef CTX_TILED
 #if CTX_SDL || CTX_FB

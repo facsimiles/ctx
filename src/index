@@ -13,6 +13,8 @@ libc.c
 ctx-internal.h
 sha1.c
 start-implementation
+audio.h
+audio.c
 thash.h
 base64.h
 drawlist.h
