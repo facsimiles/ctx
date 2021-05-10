@@ -788,7 +788,7 @@ extern float ctx_u8_float[256];
 
 static uint8_t ctx_float_to_u8 (float val_f)
 {
-   return (val_f * 255.99f);
+  return val_f < 0.0f ? 0 : val_f > 1.0f ? 0xff : 0xff * val_f +  0.5f;
 #if 0
   int val_i = val_f * 255.999f;
   if (val_i < 0) { return 0; }
