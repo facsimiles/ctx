@@ -414,11 +414,16 @@ Ctx *ctx_new_ctx (int width, int height)
   return ctx;
 }
 
+void ctx_ctx_pcm (Ctx *ctx);
+
 int ctx_ctx_consume_events (Ctx *ctx)
 {
   int ix, iy;
   CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
   const char *event = NULL;
+#if CTX_ALSA_AUDIO
+  ctx_ctx_pcm (ctx);
+#endif
   if (ctx_native_events)
     {
       float x = 0, y = 0;
