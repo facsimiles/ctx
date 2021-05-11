@@ -12,9 +12,10 @@ constants.h
 libc.c
 ctx-internal.h
 sha1.c
-start-implementation
 audio.h
+start-implementation
 audio.c
+a85.c
 thash.h
 base64.h
 drawlist.h
