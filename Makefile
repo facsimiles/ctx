@@ -112,7 +112,7 @@ ctx-avx2.o: ctx-avx2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/
 ctx-split.o: $(SRC_OBJS)
 
 ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts build.conf
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -DNO_ALSA=1
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
