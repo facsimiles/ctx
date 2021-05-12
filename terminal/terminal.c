@@ -507,6 +507,10 @@ void switch_to_tab (int desired_no)
   }
 }
 
+void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
+int ctx_sdl_get_fullscreen (Ctx *ctx);
+
+
 static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 {
   if (!active)
@@ -514,7 +518,17 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   if (active->internal)
     return;
   VT *vt = active->vt;
-  if (!strcmp (event, "shift-return"))
+
+  if (!strcmp (event, "F11"))
+  {
+#ifndef NO_SDL
+    if (ctx_renderer_is_sdl (ctx))
+    {
+      ctx_sdl_set_fullscreen (ctx, !ctx_sdl_get_fullscreen (ctx));
+    }
+#endif
+  }
+  else if (!strcmp (event, "shift-return"))
   {
     vt_feed_keystring (vt, "return");
   }
@@ -1100,7 +1114,7 @@ static void client_draw (ITK *itk, CtxClient *client, float x, float y)
 
       itk_panel_end (itk);
       itk_done (itk);
-      itk_key_bindings (itk);
+      //itk_key_bindings (itk);
 
       ctx_restore (ctx);
     }

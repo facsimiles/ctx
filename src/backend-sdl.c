@@ -23,6 +23,7 @@ struct _CtxSDL
 
 // cnd_t  cond;
 // mtx_t  mtx;
+   int           fullscreen;
 };
 
 #include "stb_image_write.h"
@@ -518,6 +519,27 @@ int ctx_renderer_is_sdl (Ctx *ctx)
   return 0;
 }
 
+void ctx_sdl_set_fullscreen (Ctx *ctx, int val)
+{
+  CtxSDL *sdl = (void*)ctx->renderer;
+
+  if (val)
+  {
+    SDL_SetWindowFullscreen (sdl->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+  }
+  else
+  {
+    SDL_SetWindowFullscreen (sdl->window, 0);
+  }
+  // XXX we're presuming success
+  sdl->fullscreen = val;
+}
+int ctx_sdl_get_fullscreen (Ctx *ctx)
+{
+  CtxSDL *sdl = (void*)ctx->renderer;
+  return sdl->fullscreen;
+}
+
 
 Ctx *ctx_new_sdl (int width, int height)
 {
@@ -544,6 +566,7 @@ Ctx *ctx_new_sdl (int width, int height)
 #if CTX_BABL
   babl_init ();
 #endif
+  sdl->fullscreen = 0;
 
   ctx_sdl_events = 1;
   sdl->texture = SDL_CreateTexture (sdl->renderer,
