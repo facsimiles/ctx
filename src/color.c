@@ -676,7 +676,7 @@ typedef struct ColorDef {
 #define CTX_transparent CTX_STRH('t','r','a','n','s','p','a','r','e','n','t',0,0,0)
 #endif
 
-static ColorDef colors[]={
+static ColorDef _ctx_colors[]={
   {CTX_black,    0, 0, 0, 1},
   {CTX_red,      1, 0, 0, 1},
   {CTX_green,    0, 1, 0, 1},
@@ -834,12 +834,12 @@ int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
     return 0;
   }
 
-  for (i = (sizeof(colors)/sizeof(colors[0]))-1; i>=0; i--)
+  for (i = (sizeof(_ctx_colors)/sizeof(_ctx_colors[0]))-1; i>=0; i--)
   {
-    if (hash == colors[i].name)
+    if (hash == _ctx_colors[i].name)
     {
       ctx_color_set_rgba (&(ctx->state), color,
-       colors[i].r, colors[i].g, colors[i].b, colors[i].a);
+       _ctx_colors[i].r, _ctx_colors[i].g, _ctx_colors[i].b, _ctx_colors[i].a);
       return 0;
     }
   }

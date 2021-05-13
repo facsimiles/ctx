@@ -844,7 +844,7 @@ static CtxGrab *device_add_grab (Ctx *ctx, int device_no, CtxItem *item, CtxEven
   return grab;
 }
 
-CtxList *device_get_grabs (Ctx *ctx, int device_no)
+static CtxList *_ctx_device_get_grabs (Ctx *ctx, int device_no)
 {
   CtxList *ret = NULL;
   CtxList *l;
@@ -1458,7 +1458,7 @@ int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t tim
   CtxGrab *grab;
 
   _ctx_update_item (ctx, device_no, x, y, CTX_RELEASE | CTX_DRAG_RELEASE, &hitlist);
-  grablist = device_get_grabs (ctx, device_no);
+  grablist = _ctx_device_get_grabs (ctx, device_no);
 
   for (g = grablist; g; g = g->next)
   {
@@ -1533,7 +1533,7 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
     ctx->events.pointer_y[0] = y;
   }
 
-  grablist = device_get_grabs (ctx, device_no);
+  grablist = _ctx_device_get_grabs (ctx, device_no);
   _ctx_update_item (ctx, device_no, x, y, CTX_MOTION, &hitlist);
 
   {

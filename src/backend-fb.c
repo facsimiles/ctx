@@ -460,15 +460,15 @@ ctx_swap_red_green2 (uint32_t orig)
   return green_alpha | red | blue;
 }
 
-static int       fb_cursor_drawn   = 0;
-static int       fb_cursor_drawn_x = 0;
-static int       fb_cursor_drawn_y = 0;
-static CtxCursor fb_cursor_drawn_shape = 0;
+static int       ctx_fb_cursor_drawn   = 0;
+static int       ctx_fb_cursor_drawn_x = 0;
+static int       ctx_fb_cursor_drawn_y = 0;
+static CtxCursor ctx_fb_cursor_drawn_shape = 0;
 
 
 #define CTX_FB_HIDE_CURSOR_FRAMES 200
 
-static int fb_cursor_same_pos = CTX_FB_HIDE_CURSOR_FRAMES;
+static int ctx_fb_cursor_same_pos = CTX_FB_HIDE_CURSOR_FRAMES;
 
 static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
 {
@@ -560,22 +560,22 @@ static void ctx_fb_undraw_cursor (CtxFb *fb)
     CtxTiled *tiled = (void*)fb;
     int cursor_size = ctx_height (tiled->ctx) / 28;
 
-    if (fb_cursor_drawn)
+    if (ctx_fb_cursor_drawn)
     {
       int no = 0;
       int startx = -cursor_size;
       int starty = -cursor_size;
-      if (fb_cursor_drawn_shape == CTX_CURSOR_ARROW)
+      if (ctx_fb_cursor_drawn_shape == CTX_CURSOR_ARROW)
         startx = starty = 0;
 
       for (int y = starty; y < cursor_size; y++)
       for (int x = startx; x < cursor_size; x++, no+=4)
       {
-        if (x + fb_cursor_drawn_x < tiled->width && y + fb_cursor_drawn_y < tiled->height)
+        if (x + ctx_fb_cursor_drawn_x < tiled->width && y + ctx_fb_cursor_drawn_y < tiled->height)
         {
-          if (ctx_is_in_cursor (x, y, cursor_size, fb_cursor_drawn_shape))
+          if (ctx_is_in_cursor (x, y, cursor_size, ctx_fb_cursor_drawn_shape))
           {
-            int o = ((fb_cursor_drawn_y + y) * tiled->width + (fb_cursor_drawn_x + x)) * 4;
+            int o = ((ctx_fb_cursor_drawn_y + y) * tiled->width + (ctx_fb_cursor_drawn_x + x)) * 4;
             fb->fb[o+0]^=0x88;
             fb->fb[o+1]^=0x88;
             fb->fb[o+2]^=0x88;
@@ -583,7 +583,7 @@ static void ctx_fb_undraw_cursor (CtxFb *fb)
         }
       }
 
-    fb_cursor_drawn = 0;
+    ctx_fb_cursor_drawn = 0;
     }
 }
 
@@ -596,16 +596,16 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
     CtxCursor cursor_shape = tiled->ctx->cursor;
     int no = 0;
 
-    if (cursor_x == fb_cursor_drawn_x &&
-        cursor_y == fb_cursor_drawn_y &&
-        cursor_shape == fb_cursor_drawn_shape)
-      fb_cursor_same_pos ++;
+    if (cursor_x == ctx_fb_cursor_drawn_x &&
+        cursor_y == ctx_fb_cursor_drawn_y &&
+        cursor_shape == ctx_fb_cursor_drawn_shape)
+      ctx_fb_cursor_same_pos ++;
     else
-      fb_cursor_same_pos = 0;
+      ctx_fb_cursor_same_pos = 0;
 
-    if (fb_cursor_same_pos >= CTX_FB_HIDE_CURSOR_FRAMES)
+    if (ctx_fb_cursor_same_pos >= CTX_FB_HIDE_CURSOR_FRAMES)
     {
-      if (fb_cursor_drawn)
+      if (ctx_fb_cursor_drawn)
         ctx_fb_undraw_cursor (fb);
       return;
     }
@@ -614,7 +614,7 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
      * by combining the previous and next position masks when a motion has
      * occured..
      */
-    if (fb_cursor_same_pos && fb_cursor_drawn)
+    if (ctx_fb_cursor_same_pos && ctx_fb_cursor_drawn)
       return;
 
     ctx_fb_undraw_cursor (fb);
@@ -641,10 +641,10 @@ static void ctx_fb_draw_cursor (CtxFb *fb)
           }
         }
       }
-    fb_cursor_drawn = 1;
-    fb_cursor_drawn_x = cursor_x;
-    fb_cursor_drawn_y = cursor_y;
-    fb_cursor_drawn_shape = cursor_shape;
+    ctx_fb_cursor_drawn = 1;
+    ctx_fb_cursor_drawn_x = cursor_x;
+    ctx_fb_cursor_drawn_y = cursor_y;
+    ctx_fb_cursor_drawn_shape = cursor_shape;
 }
 
 static void ctx_fb_show_frame (CtxFb *fb, int block)
@@ -834,7 +834,7 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
          break;
      }
     }
-    fb_cursor_drawn = 0;
+    ctx_fb_cursor_drawn = 0;
     ctx_fb_draw_cursor (fb);
     ctx_fb_flip (fb);
     tiled->shown_frame = tiled->render_frame;
@@ -856,7 +856,7 @@ static void mice_destroy ();
 static int mice_get_fd (EvSource *ev_source);
 static void mice_set_coord (EvSource *ev_source, double x, double y);
 
-static EvSource ev_src_mice = {
+static EvSource ctx_ev_src_mice = {
   NULL,
   (void*)mice_has_event,
   (void*)mice_get_event,
@@ -941,7 +941,7 @@ static char *mice_get_event ()
   double relx, rely;
   signed char buf[3];
   int n_read = 0;
-  CtxFb *fb = ev_src_mice.priv;
+  CtxFb *fb = ctx_ev_src_mice.priv;
   CtxTiled *tiled = (void*)fb;
   n_read = read (mrg_mice_this->fd, buf, 3);
   if (n_read == 0)
@@ -1054,9 +1054,6 @@ static char *mice_get_event ()
 
   mrg_mice_this->prev_state = buf[0];
 
-  //if (!is_active (ev_src_mice.priv))
-  //  return NULL;
-
   {
     char *r = malloc (64);
     sprintf (r, "%s %.0f %.0f %i", ret, mrg_mice_this->x, mrg_mice_this->y, button);
@@ -1077,13 +1074,13 @@ static void mice_set_coord (EvSource *ev_source, double x, double y)
   mrg_mice_this->y = y;
 }
 
-EvSource *evsource_mice_new (void)
+static EvSource *evsource_mice_new (void)
 {
   if (mmm_evsource_mice_init () == 0)
     {
       mrg_mice_this->x = 0;
       mrg_mice_this->y = 0;
-      return &ev_src_mice;
+      return &ctx_ev_src_mice;
     }
   return NULL;
 }
@@ -1094,7 +1091,7 @@ static void evsource_kb_destroy (int sign);
 static int evsource_kb_get_fd (void);
 
 /* kept out of struct to be reachable by atexit */
-static EvSource ev_src_kb = {
+static EvSource ctx_ev_src_kb = {
   NULL,
   (void*)evsource_kb_has_event,
   (void*)evsource_kb_get_event,
@@ -1105,10 +1102,6 @@ static EvSource ev_src_kb = {
 
 static struct termios orig_attr;
 
-int is_active (void *host)
-{
-  return 1;
-}
 static void real_evsource_kb_destroy (int sign)
 {
   static int done = 0;
@@ -1402,8 +1395,7 @@ static char *evsource_kb_get_event (void)
       {
         const MmmKeyCode *match = NULL;
 
-        if (!is_active (ev_src_kb.priv))
-           return NULL;
+        return NULL;
 
         /* special case ESC, so that we can use it alone in keybindings */
         if (length == 0 && buf[0] == 27)
@@ -1481,11 +1473,11 @@ static int evsource_kb_get_fd (void)
 }
 
 
-EvSource *evsource_kb_new (void)
+static EvSource *evsource_kb_new (void)
 {
   if (evsource_kb_init() == 0)
   {
-    return &ev_src_kb;
+    return &ctx_ev_src_kb;
   }
   return NULL;
 }

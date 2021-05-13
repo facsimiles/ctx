@@ -63,8 +63,8 @@ int   _ctx_shape_cache_enabled = 1;
 
 //static CtxShapeCache ctx_cache = {{NULL,}, 0};
 
-static long hits = 0;
-static long misses = 0;
+static long ctx_shape_cache_hits = 0;
+static long ctx_shape_cache_misses = 0;
 
 
 /* this returns the buffer to use for rendering, it always
@@ -80,10 +80,10 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
     i++;
     if (i>1000)
       {
-        ctx_shape_cache_rate = hits * 100.0  / (hits+misses);
+        ctx_shape_cache_rate = ctx_shape_cache_hits * 100.0  / (ctx_shape_cache_hits+ctx_shape_cache_misses);
         i = 0;
-        hits = 0;
-        misses = 0;
+        ctx_shape_cache_hits = 0;
+        ctx_shape_cache_misses = 0;
       }
   }
 // XXX : this 1 one is needed  to silence a false positive:
@@ -104,7 +104,7 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
         {
           if (entry->uses < 1<<30)
             { entry->uses++; }
-          hits ++;
+          ctx_shape_cache_hits ++;
           return entry;
         }
 
@@ -125,7 +125,7 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
         rasterizer->shape_cache.entries[i] = (CtxShapeEntry *) calloc (size, 1);
     }
 
-  misses ++;
+  ctx_shape_cache_misses ++;
   rasterizer->shape_cache.size              += size;
   rasterizer->shape_cache.entries[i]->hash   = hash;
   rasterizer->shape_cache.entries[i]->width  = width;

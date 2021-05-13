@@ -22,16 +22,16 @@ int ctx_pcm_bytes_per_frame (CtxPCM format)
   }
 }
 
-static float    host_freq     = 48000;
-static CtxPCM   host_format   = CTX_s16S;
+static float    ctx_host_freq     = 48000;
+static CtxPCM   ctx_host_format   = CTX_s16S;
 static float    client_freq   = 48000;
-static CtxPCM   client_format = CTX_s16S;
-static int      pcm_queued    = 0;
-static int      pcm_cur_left  = 0;
-static CtxList *pcm_list;                 /* data is a blob a 32bit uint first, followed by pcm-data */
+static CtxPCM   ctx_client_format = CTX_s16S;
+static int      ctx_pcm_queued    = 0;
+static int      ctx_pcm_cur_left  = 0;
+static CtxList *ctx_pcm_list;                 /* data is a blob a 32bit uint first, followed by pcm-data */
 
 
-//static long int pcm_queued_ticks = 0;  /*  the number of ticks into the future
+//static long int ctx_pcm_queued_ticks = 0;  /*  the number of ticks into the future
   //                                      *  we've queued audio for
                                        
 
@@ -104,7 +104,7 @@ static snd_pcm_t *alsa_open (char *dev, int rate, int channels)
 }
 
 static  snd_pcm_t *h = NULL;
-static void *alsa_audio_start(Ctx *ctx)
+static void *ctx_alsa_audio_start(Ctx *ctx)
 {
 //  Lyd *lyd = aux;
   int c;
@@ -115,12 +115,12 @@ static void *alsa_audio_start(Ctx *ctx)
    */
   for (;;)
   {
-    int client_channels = ctx_pcm_channels (client_format);
+    int client_channels = ctx_pcm_channels (ctx_client_format);
     int is_float = 0;
     int16_t data[81920*8]={0,};
 
-    if (client_format == CTX_f32 ||
-        client_format == CTX_f32S)
+    if (ctx_client_format == CTX_f32 ||
+        ctx_client_format == CTX_f32S)
       is_float = 1;
 
     c = snd_pcm_wait(h, 1000);
@@ -136,28 +136,28 @@ static void *alsa_audio_start(Ctx *ctx)
     if (c > 0)
     {
       int i;
-      for (i = 0; i < c && pcm_cur_left; i ++)
+      for (i = 0; i < c && ctx_pcm_cur_left; i ++)
       {
-        if (pcm_cur_left)  //  XXX  this line can be removed
+        if (ctx_pcm_cur_left)  //  XXX  this line can be removed
         {
-          uint32_t *packet_sizep = (pcm_list->data);
+          uint32_t *packet_sizep = (ctx_pcm_list->data);
           uint32_t packet_size = *packet_sizep;
           uint16_t left = 0, right = 0;
 
           if (is_float)
           {
-            float *packet = (pcm_list->data);
+            float *packet = (ctx_pcm_list->data);
             packet += 4;
-            packet += (packet_size - pcm_cur_left) * client_channels;
+            packet += (packet_size - ctx_pcm_cur_left) * client_channels;
             left = right = packet[0] * (1<<15);
             if (client_channels > 1)
               right = packet[0] * (1<<15);
           }
           else // s16
           {
-            uint16_t *packet = (pcm_list->data);
+            uint16_t *packet = (ctx_pcm_list->data);
             packet += 8;
-            packet += (packet_size - pcm_cur_left) * client_channels;
+            packet += (packet_size - ctx_pcm_cur_left) * client_channels;
 
             left = right = packet[0];
             if (client_channels > 1)
@@ -166,19 +166,19 @@ static void *alsa_audio_start(Ctx *ctx)
           data[i * 2 + 0] = left;
           data[i * 2 + 1] = right;
 
-          pcm_cur_left--;
-          pcm_queued --;
-          if (pcm_cur_left == 0)
+          ctx_pcm_cur_left--;
+          ctx_pcm_queued --;
+          if (ctx_pcm_cur_left == 0)
           {
-            void *old = pcm_list->data;
-            ctx_list_remove (&pcm_list, pcm_list->data);
+            void *old = ctx_pcm_list->data;
+            ctx_list_remove (&ctx_pcm_list, ctx_pcm_list->data);
             free (old);
-            pcm_cur_left = 0;
-            if (pcm_list)
+            ctx_pcm_cur_left = 0;
+            if (ctx_pcm_list)
             {
-              uint32_t *packet_sizep = (pcm_list->data);
+              uint32_t *packet_sizep = (ctx_pcm_list->data);
               uint32_t packet_size = *packet_sizep;
-              pcm_cur_left = packet_size;
+              ctx_pcm_cur_left = packet_size;
             }
           }
         }
@@ -244,13 +244,13 @@ static unsigned char LinearToMuLawSample(int16_t sample)
 
 void ctx_ctx_pcm (Ctx *ctx)
 {
-    int client_channels = ctx_pcm_channels (client_format);
+    int client_channels = ctx_pcm_channels (ctx_client_format);
     int is_float = 0;
     uint8_t data[81920*8]={0,};
     int c;
 
-    if (client_format == CTX_f32 ||
-        client_format == CTX_f32S)
+    if (ctx_client_format == CTX_f32 ||
+        ctx_client_format == CTX_f32S)
       is_float = 1;
 
     c = 2000;
@@ -258,28 +258,28 @@ void ctx_ctx_pcm (Ctx *ctx)
     if (c > 0)
     {
       int i;
-      for (i = 0; i < c && pcm_cur_left; i ++)
+      for (i = 0; i < c && ctx_pcm_cur_left; i ++)
       {
-        if (pcm_cur_left)  //  XXX  this line can be removed
+        if (ctx_pcm_cur_left)  //  XXX  this line can be removed
         {
-          uint32_t *packet_sizep = (pcm_list->data);
+          uint32_t *packet_sizep = (ctx_pcm_list->data);
           uint32_t packet_size = *packet_sizep;
           int left = 0, right = 0;
 
           if (is_float)
           {
-            float *packet = (pcm_list->data);
+            float *packet = (ctx_pcm_list->data);
             packet += 4;
-            packet += (packet_size - pcm_cur_left) * client_channels;
+            packet += (packet_size - ctx_pcm_cur_left) * client_channels;
             left = right = packet[0] * (1<<15);
             if (client_channels > 1)
               right = packet[0] * (1<<15);
           }
           else // s16
           {
-            uint16_t *packet = (pcm_list->data);
+            uint16_t *packet = (ctx_pcm_list->data);
             packet += 8;
-            packet += (packet_size - pcm_cur_left) * client_channels;
+            packet += (packet_size - ctx_pcm_cur_left) * client_channels;
 
             left = right = packet[0];
             if (client_channels > 1)
@@ -287,19 +287,19 @@ void ctx_ctx_pcm (Ctx *ctx)
           }
           data[i] = LinearToMuLawSample((left+right)/2);
 
-          pcm_cur_left--;
-          pcm_queued --;
-          if (pcm_cur_left == 0)
+          ctx_pcm_cur_left--;
+          ctx_pcm_queued --;
+          if (ctx_pcm_cur_left == 0)
           {
-            void *old = pcm_list->data;
-            ctx_list_remove (&pcm_list, pcm_list->data);
+            void *old = ctx_pcm_list->data;
+            ctx_list_remove (&ctx_pcm_list, ctx_pcm_list->data);
             free (old);
-            pcm_cur_left = 0;
-            if (pcm_list)
+            ctx_pcm_cur_left = 0;
+            if (ctx_pcm_list)
             {
-              uint32_t *packet_sizep = (pcm_list->data);
+              uint32_t *packet_sizep = (ctx_pcm_list->data);
               uint32_t packet_size = *packet_sizep;
-              pcm_cur_left = packet_size;
+              ctx_pcm_cur_left = packet_size;
             }
           }
         }
@@ -327,8 +327,8 @@ int ctx_pcm_init (Ctx *ctx)
 #endif
   if (ctx_renderer_is_ctx (ctx))
   {
-     host_freq = 8000;
-     host_format = CTX_s16;
+     ctx_host_freq = 8000;
+     ctx_host_format = CTX_s16;
 #if 0
      pthread_t tid;
      pthread_create(&tid, NULL, (void*)ctx_audio_start, ctx);
@@ -337,13 +337,13 @@ int ctx_pcm_init (Ctx *ctx)
   else
   {
      pthread_t tid;
-     h = alsa_open("default", host_freq, ctx_pcm_channels (host_format));
+     h = alsa_open("default", ctx_host_freq, ctx_pcm_channels (ctx_host_format));
   if (!h) {
     fprintf(stderr, "ctx unable to open ALSA device (%d channels, %f Hz), dying\n",
-            ctx_pcm_channels (host_format), host_freq);
+            ctx_pcm_channels (ctx_host_format), ctx_host_freq);
     return -1;
   }
-  pthread_create(&tid, NULL, (void*)alsa_audio_start, ctx);
+  pthread_create(&tid, NULL, (void*)ctx_alsa_audio_start, ctx);
   }
   return 0;
 }
@@ -365,11 +365,11 @@ int ctx_pcm_queue (Ctx *ctx, const int8_t *data, int frames)
       ctx_pcm_init (ctx);
       inited = 1;
     }
-    float factor = client_freq * 1.0 / host_freq;
+    float factor = client_freq * 1.0 / ctx_host_freq;
     int   scaled_frames = frames / factor;
-    int   bpf = ctx_pcm_bytes_per_frame (client_format);
+    int   bpf = ctx_pcm_bytes_per_frame (ctx_client_format);
 
-    uint8_t *packet = malloc (scaled_frames * ctx_pcm_bytes_per_frame (client_format) + 16);
+    uint8_t *packet = malloc (scaled_frames * ctx_pcm_bytes_per_frame (ctx_client_format) + 16);
     *((uint32_t *)packet) = scaled_frames;
 
     if (factor > 0.999 && factor < 1.0001)
@@ -386,11 +386,11 @@ int ctx_pcm_queue (Ctx *ctx, const int8_t *data, int frames)
         memcpy (packet + 16 + bpf * i, data + source_frame * bpf, bpf);
       }
     }
-    if (pcm_list == NULL)     // otherwise it is another frame at front
-      pcm_cur_left = scaled_frames;  // and current cur_left is valid
+    if (ctx_pcm_list == NULL)     // otherwise it is another frame at front
+      ctx_pcm_cur_left = scaled_frames;  // and current cur_left is valid
 
-    ctx_list_append (&pcm_list, packet);
-    pcm_queued += scaled_frames;
+    ctx_list_append (&ctx_pcm_list, packet);
+    ctx_pcm_queued += scaled_frames;
 
     return frames;
   }
@@ -406,7 +406,7 @@ static int ctx_pcm_get_queued_frames (Ctx *ctx)
     return mmm_pcm_get_queued_frames (ctx->backend_data);
   }
 #endif
-  return pcm_queued;
+  return ctx_pcm_queued;
 }
 
 int ctx_pcm_get_queued (Ctx *ctx)
@@ -416,7 +416,7 @@ int ctx_pcm_get_queued (Ctx *ctx)
 
 float ctx_pcm_get_queued_length (Ctx *ctx)
 {
-  return 1.0 * ctx_pcm_get_queued_frames (ctx) / host_freq;
+  return 1.0 * ctx_pcm_get_queued_frames (ctx) / ctx_host_freq;
 }
 
 int ctx_pcm_get_frame_chunk (Ctx *ctx)
@@ -475,7 +475,7 @@ void ctx_pcm_set_format (Ctx *ctx, CtxPCM format)
   }
   else
 #endif
-    client_format = format;
+    ctx_client_format = format;
 }
 
 CtxPCM ctx_pcm_get_format (Ctx *ctx)
@@ -487,7 +487,7 @@ CtxPCM ctx_pcm_get_format (Ctx *ctx)
     return mmm_pcm_get_format (ctx->backend_data);
   }
 #endif
-  return client_format;
+  return ctx_client_format;
 }
 
 int ctx_pcm_get_sample_rate (Ctx *ctx)
