@@ -8021,6 +8021,19 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   then draw all else,
 #endif
 
+  /* draw cursor */
+  if (vt->cursor_visible)
+    {
+    //  ctx_rgba (ctx, 0.9, 0.8, 0.0, 0.5333);
+      ctx_rgba (ctx, 1.0,1.0,1.0,1.0);
+      ctx_begin_path (ctx);
+      ctx_rectangle (ctx,
+                     cursor_x_px, cursor_y_px,
+                     cursor_w, cursor_h);
+      ctx_fill (ctx);
+    }
+
+
    {
      for (int row = (vt->scroll!=0.0f)?vt->scroll:0; row < (vt->scroll) + vt->rows; row ++)
        {
@@ -8171,16 +8184,6 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       }
   }
 
-  /* draw cursor */
-  if (vt->cursor_visible)
-    {
-      ctx_rgba (ctx, 0.9, 0.8, 0.0, 0.5333);
-      ctx_begin_path (ctx);
-      ctx_rectangle (ctx,
-                     cursor_x_px, cursor_y_px,
-                     cursor_w, cursor_h);
-      ctx_fill (ctx);
-    }
 
   for (int i = 0; i < 4; i++)
     {
