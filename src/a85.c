@@ -58,30 +58,32 @@ int ctx_a85dec (const char *src, char *dst, int count)
   uint32_t val = 0;
   int k = 0;
   int i = 0;
+  int p = 0;
   for (i = 0; i < count; i ++)
   {
+    p = src[i];
     val *= 85;
-    if (src[i] == '~')
+    if (p == '~')
     {
       break;
     }
 #if 0
-    else if (src[i] == 'z')
+    else if (p == 'z')
     {
       for (int j = 0; j < 4; j++)
         dst[out_len++] = 0;
       k = 0;
     }
-    else if (src[i] == 'y') /* lets support this extension */
+    else if (p == 'y') /* lets support this extension */
     {
       for (int j = 0; j < 4; j++)
         dst[out_len++] = 32;
       k = 0;
     }
 #endif
-    else if (src[i] >= '!' && src[i] <= 'u')
+    else if (p >= '!' && p <= 'u')
     {
-      val += src[i]-'!';
+      val += p-'!';
       if (k % 5 == 4)
       {
          for (int j = 0; j < 4; j++)
@@ -95,7 +97,7 @@ int ctx_a85dec (const char *src, char *dst, int count)
     }
     // we treat all other chars as whitespace
   }
-  if (src[i] != '~')
+  if (p != '~')
   { 
     val *= 85;
   }
