@@ -567,7 +567,7 @@ CTX_INLINE static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
   return i;
 }
 
-static void ctx_edge_qsort (CtxEntry *entries, int low, int high)
+static inline void ctx_edge_qsort (CtxEntry *entries, int low, int high)
 {
   {
     int p = ctx_edge_qsort_partition (entries, low, high);
@@ -613,7 +613,7 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
     }
 }
 
-static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
+inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
 {
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
@@ -763,7 +763,7 @@ CTX_INLINE static int ctx_edge2_qsort_partition (CtxEdge *A, int low, int high)
   return i;
 }
 
-static void ctx_edge2_qsort (CtxEdge *entries, int low, int high)
+static inline void ctx_edge2_qsort (CtxEdge *entries, int low, int high)
 {
   {
     int p = ctx_edge2_qsort_partition (entries, low, high);
