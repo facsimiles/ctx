@@ -273,7 +273,7 @@ void ctx_ctx_pcm (Ctx *ctx)
             packet += (packet_size - ctx_pcm_cur_left) * client_channels;
             left = right = packet[0] * (1<<15);
             if (client_channels > 1)
-              right = packet[0] * (1<<15);
+              right = packet[1] * (1<<15);
           }
           else // s16
           {
