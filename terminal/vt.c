@@ -656,6 +656,18 @@ static void vtcmd_clear (VT *vt, const char *sequence)
     }
   vt->lines = NULL;
   vt->line_count = 0;
+
+  if (1)
+  { /* TODO: detect if this is neccesary.. due to images present
+             in lines in scrollback */
+    for (int i=0; i<vt->rows; i++)
+    {
+      vt->current_line = vt_line_new_with_size ("", vt->cols);
+      ctx_list_prepend (&vt->scrollback, vt->current_line);
+      vt->scrollback_count++;
+    }
+  }
+
   /* populate lines */
   for (int i=0; i<vt->rows; i++)
     {
