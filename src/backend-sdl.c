@@ -508,6 +508,9 @@ void ctx_sdl_free (CtxSDL *sdl)
   SDL_DestroyWindow (sdl->window);
 
   ctx_tiled_free ((CtxTiled*)sdl);
+#if CTX_BABL
+  babl_exit ();
+#endif
 }
 
 

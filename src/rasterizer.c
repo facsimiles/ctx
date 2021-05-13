@@ -117,19 +117,19 @@ static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t 
         rasterizer->shape_cache.size -= entry->width * entry->height;
         rasterizer->shape_cache.size -= sizeof (CtxShapeEntry);
         free (entry);
-        rasterizer->shape_cache.entries[i] =(CtxShapeEntry *) calloc (size, 1);
+        rasterizer->shape_cache.entries[i] = (CtxShapeEntry *) calloc (size, 1);
       }
     }
   else
     {
-        rasterizer->shape_cache.entries[i] =(CtxShapeEntry *) calloc (size, 1);
+        rasterizer->shape_cache.entries[i] = (CtxShapeEntry *) calloc (size, 1);
     }
 
   misses ++;
-  rasterizer->shape_cache.size += size;
-  rasterizer->shape_cache.entries[i]->hash=hash;
-  rasterizer->shape_cache.entries[i]->width=width;
-  rasterizer->shape_cache.entries[i]->height=height;
+  rasterizer->shape_cache.size              += size;
+  rasterizer->shape_cache.entries[i]->hash   = hash;
+  rasterizer->shape_cache.entries[i]->width  = width;
+  rasterizer->shape_cache.entries[i]->height = height;
   rasterizer->shape_cache.entries[i]->uses = 0;
   return rasterizer->shape_cache.entries[i];
 }

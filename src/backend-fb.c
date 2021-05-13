@@ -1542,6 +1542,9 @@ void ctx_fb_free (CtxFb *fb)
   if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
   //free (fb);
+#if CTX_BABL
+  babl_exit ();
+#endif
 }
 
 //static unsigned char *fb_icc = NULL;
