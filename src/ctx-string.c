@@ -232,11 +232,11 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
     }
   memcpy (p, new_glyph, new_len);
   memcpy (p + new_len, rest, strlen (rest) + 1);
-  //string->length += new_len;
-  //string->length -= prev_len;
+  string->length += new_len;
+  string->length -= prev_len;
   free (rest);
-  string->length = strlen (string->str);
-  string->utf8_length = ctx_utf8_strlen (string->str);
+  //string->length = strlen (string->str);
+  //string->utf8_length = ctx_utf8_strlen (string->str);
 }
 
 void ctx_string_replace_unichar (CtxString *string, int pos, uint32_t unichar)
