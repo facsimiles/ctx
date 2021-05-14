@@ -1010,7 +1010,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
   uint8_t *coverage = &_coverage[0];
 
-  ctx_compositor_setup_default (rasterizer);
 
 #if CTX_SHAPE_CACHE
   if (shape)
@@ -1052,6 +1051,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     ctx_rasterizer_reset (rasterizer);
     return;
   }
+
+  ctx_compositor_setup_default (rasterizer);
   ctx_rasterizer_sort_edges (rasterizer);
   if (maxx>minx)
   {
