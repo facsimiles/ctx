@@ -105,7 +105,7 @@ app_t * app_create(const char *filename, int texture_mode) {
 		plm_get_duration(self->plm)
 	);
 
-        self->ctx = ctx_new_ui (1024, 768);
+        self->ctx = ctx_new_ui (-1, -1);
 	
 	plm_set_video_decode_callback(self->plm, app_on_video, self);
 	plm_set_audio_decode_callback(self->plm, app_on_audio, self);
@@ -224,6 +224,13 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
         if (frame_no % frame_drop != 0) return;
 	plm_frame_to_rgb(frame, self->rgb_data, frame->width * 3);
         ctx_reset (self->ctx);
+        ctx_save (self->ctx);
+        ctx_rectangle (self->ctx, 0, 0, ctx_width (self->ctx), ctx_height (self->ctx));
+  float scale = ctx_width (self->ctx) * 1.0 / frame->width;
+  float scaleh = ctx_height (self->ctx) * 1.0 / frame->height;
+  if (scaleh < scale) scale = scaleh;
+  ctx_scale (self->ctx, scale, scale);
+
         ctx_define_texture (self->ctx,
                            eid, // by passing in a unique eid
                                // we avoid having to hash
@@ -232,8 +239,9 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                                 CTX_FORMAT_RGB8,
                                 self->rgb_data,
                                 NULL);
-        ctx_rectangle (self->ctx, 0, 0, frame->width, frame->height);
+        ctx_image_smoothing (self->ctx, 0);
         ctx_fill (self->ctx);
+        ctx_restore (self->ctx);
         ctx_flush (self->ctx);
 }
 
