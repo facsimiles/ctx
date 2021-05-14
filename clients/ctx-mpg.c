@@ -158,28 +158,22 @@ void app_update(app_t *self) {
           switch (event->type)
           {
             case CTX_KEY_PRESS:
-              if (!strcmp (event->string, "q"))
-              {
+              if (!strcmp (event->string, "q")) {
                 self->wants_to_quit = TRUE;
               }
-              else if (!strcmp (event->string, "left"))
-              {
+              else if (!strcmp (event->string, "left")) {
 		 seek_to = plm_get_time(self->plm) - 2;
               }
-              else if (!strcmp (event->string, "right"))
-              {
+              else if (!strcmp (event->string, "right")) {
 		 seek_to = plm_get_time(self->plm) + 2;
               }
-              else if (!strcmp (event->string, "down"))
-              {
+              else if (!strcmp (event->string, "down")) {
 		 seek_to = plm_get_time(self->plm) - 10;
               }
-              else if (!strcmp (event->string, "up"))
-              {
+              else if (!strcmp (event->string, "up")) {
 		 seek_to = plm_get_time(self->plm) + 10;
               }
-              else if (!strcmp (event->string, "space"))
-              {
+              else if (!strcmp (event->string, "space")) {
 		 paused = !paused;
               }
               break;
@@ -239,7 +233,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                                 CTX_FORMAT_RGB8,
                                 self->rgb_data,
                                 NULL);
-        ctx_image_smoothing (self->ctx, 0);
+        ctx_image_smoothing (self->ctx, 1);
         ctx_fill (self->ctx);
         ctx_restore (self->ctx);
         ctx_flush (self->ctx);
