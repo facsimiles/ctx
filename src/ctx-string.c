@@ -49,12 +49,7 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
     {
       char *old = string->str;
       string->allocated_length = CTX_MAX (string->allocated_length * 2, string->length + 2);
-      string->str = (char*)malloc (string->allocated_length);
-      if (old)
-      {
-        memcpy (string->str, old, string->length);
-        free (old);
-      }
+      string->str = (char*)realloc (old, string->allocated_length);
     }
   string->str[string->length++] = val;
   string->str[string->length] = '\0';
