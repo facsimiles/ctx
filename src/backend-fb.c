@@ -1384,6 +1384,11 @@ static int fb_keyboard_match_keycode (const char *buf, int length, const MmmKeyC
   return matches==1?2:matches;
 }
 
+//int is_active (void *host)
+//{
+//        return 1;
+//}
+
 static char *evsource_kb_get_event (void)
 {
   unsigned char buf[20];
@@ -1395,7 +1400,8 @@ static char *evsource_kb_get_event (void)
       {
         const MmmKeyCode *match = NULL;
 
-        return NULL;
+        //if (!is_active (ctx_ev_src_kb.priv))
+        //  return NULL;
 
         /* special case ESC, so that we can use it alone in keybindings */
         if (length == 0 && buf[0] == 27)
