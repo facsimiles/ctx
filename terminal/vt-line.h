@@ -27,7 +27,7 @@ struct _VtLine
 {
   CtxString string;
   
-  /* the line should extend the string  */
+  /* line extends string, permitting string ops to operate on it  */
 
   uint64_t *style;
   int       style_size;
@@ -49,6 +49,7 @@ struct _VtLine
   float     y_offset;
   int       in_scrolling_region;
 
+  /*  XXX:  needs refactoring  */
   void     *images[4];
   int       image_col[4];
   float     image_X[4]; // 0.0 - 1.0 offset in cell
@@ -64,9 +65,10 @@ struct _VtLine
 
 static inline uint64_t vt_line_get_style (VtLine *string, int pos)
 {
-  if (string->string.is_line==0)return 0;
+  if (string->string.is_line==0)
+    return 0;
   if (pos < 0 || pos >= string->style_size)
-    { return 0; }
+    return 0;
   return string->style[pos];
 }
 
@@ -74,9 +76,10 @@ static inline uint64_t vt_line_get_style (VtLine *string, int pos)
 
 static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
 {
-  if (string->string.is_line==0)return;
+  if (string->string.is_line==0)
+    return;
   if (pos < 0 || pos >= 512)
-    { return; }
+    return;
   if (pos >= string->style_size)
     {
       int new_size = pos + 16;
@@ -98,6 +101,8 @@ static inline void        vt_line_free           (VtLine *line, int freealloc)
   //if (string->is_line)
   {
     VtLine *line = (VtLine*)string;
+    if (line->frame)
+      ctx_string_free (line->frame, 1);
     if (line->style)
       { free (line->style); }
     if (line->ctx)
