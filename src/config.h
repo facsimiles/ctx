@@ -553,6 +553,10 @@
 #define CTX_ALSA_AUDIO 0
 #endif
 
+#ifndef CTX_AUDIO
+#define CTX_AUDIO 1
+#endif
+
 #ifndef CTX_TILED
 #if CTX_SDL || CTX_FB
 #define CTX_TILED 1

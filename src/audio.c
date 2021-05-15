@@ -1,11 +1,13 @@
-#if CTX_ALSA_AUDIO
+#if CTX_AUDIO
 
 //#include <string.h>
 //#include "ctx-internal.h"
 //#include "mmm.h"
 
 #include <pthread.h>
+#if CTX_ALSA_AUDIO
 #include <alsa/asoundlib.h>
+#endif
 #include <alloca.h>
 
 #define DESIRED_PERIOD_SIZE 1000
@@ -56,6 +58,7 @@ ctx_pcm_channels (CtxPCM format)
  * and do better internal resampling for others?
  */
 
+#if CTX_ALSA_AUDIO
 static snd_pcm_t *alsa_open (char *dev, int rate, int channels)
 {
    snd_pcm_hw_params_t *hwp;
@@ -199,6 +202,7 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
     }
   }
 }
+#endif
 
 static char MuLawCompressTable[256] =
 {
@@ -336,6 +340,7 @@ int ctx_pcm_init (Ctx *ctx)
   }
   else
   {
+#if CTX_ALSA_AUDIO
      pthread_t tid;
      h = alsa_open("default", ctx_host_freq, ctx_pcm_channels (ctx_host_format));
   if (!h) {
@@ -344,6 +349,7 @@ int ctx_pcm_init (Ctx *ctx)
     return -1;
   }
   pthread_create(&tid, NULL, (void*)ctx_alsa_audio_start, ctx);
+#endif
   }
   return 0;
 }

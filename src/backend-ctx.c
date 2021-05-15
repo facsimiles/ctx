@@ -421,7 +421,7 @@ int ctx_ctx_consume_events (Ctx *ctx)
   int ix, iy;
   CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
   const char *event = NULL;
-#if CTX_ALSA_AUDIO
+#if CTX_AUDIO
   ctx_ctx_pcm (ctx);
 #endif
   if (ctx_native_events)
