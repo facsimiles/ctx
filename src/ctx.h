@@ -959,8 +959,8 @@ typedef enum
    * dedicated byte commands for the setters to keep the dispatch
    * simpler. There is no need for these to be human readable thus we go >128
    *
-   * unused/reserved: D!&<=>?#:.^_=/~%\'"
-   *
+   * unused/reserved: D!&<=>?:.=/\
+   * reserved: '"&   #  %_^@
    */
   CTX_FILL_RULE        = 128, // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
   CTX_BLEND_MODE       = 129, // kB mode - u8 , default=0

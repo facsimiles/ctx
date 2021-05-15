@@ -37,6 +37,8 @@ void ctx_tiled_free (CtxTiled *tiled)
   }
   // leak?
 }
+static unsigned char *sdl_icc = NULL;
+static long sdl_icc_length = 0;
 
 inline static void ctx_tiled_flush (CtxTiled *tiled)
 {
@@ -107,13 +109,39 @@ inline static void ctx_tiled_flush (CtxTiled *tiled)
 
     tiled->render_frame = ++tiled->frame;
 
+#if 0
+
+          //if (tiled->tile_affinity[hno]==no)
+          {
+            int x0 = ((tiled->width)/CTX_HASH_COLS) * 0;
+            int y0 = ((tiled->height)/CTX_HASH_ROWS) * 0;
+            int width = tiled->width / CTX_HASH_COLS;
+            int height = tiled->height / CTX_HASH_ROWS;
+            Ctx *host = tiled->host[0];
+
+            CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
+            int swap_red_green = ((CtxRasterizer*)(host->renderer))->swap_red_green;
+            ctx_rasterizer_init (rasterizer,
+                                 host, tiled->ctx, &host->state,
+                                 &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
+                                 0, 0, 1, 1,
+                                 tiled->width*4, CTX_FORMAT_RGBA8,
+                                 tiled->antialias);
+            //((CtxRasterizer*)(host->renderer))->swap_red_green = swap_red_green;
+            if (sdl_icc_length)
+              ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
+
+            ctx_translate (host, -x0, -y0);
+            ctx_render_ctx (tiled->ctx_copy, host);
+          }
+#endif
+
+
     mtx_lock (&tiled->mtx);
     cnd_broadcast (&tiled->cond);
     mtx_unlock (&tiled->mtx);
   }
 }
-static unsigned char *sdl_icc = NULL;
-static long sdl_icc_length = 0;
 
 static
 void ctx_tiled_render_fun (void **data)

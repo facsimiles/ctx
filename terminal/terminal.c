@@ -54,28 +54,6 @@ vt_screenshot (const char *output_path)
   ctx_screenshot (ctx, output_path);
 }
 
-int vtpty_waitdata (void  *data, int timeout)
-{
-  VtPty *vtpty = data;
-  struct timeval tv;
-  fd_set fdset;
-  FD_ZERO (&fdset);
-  FD_SET (vtpty->pty, &fdset);
-  tv.tv_sec = 0;
-  tv.tv_usec = timeout;
-  tv.tv_sec  = timeout / 1000000;
-  tv.tv_usec = timeout % 1000000;
-  if (select (vtpty->pty+1, &fdset, NULL, NULL, &tv) == -1)
-    {
-      perror ("select");
-      return 0;
-    }
-  if (FD_ISSET (vtpty->pty, &fdset) )
-    {
-      return 1;
-    }
-  return 0;
-}
 
 CtxList *vts = NULL;
 
@@ -100,28 +78,6 @@ static void signal_child (int signum)
     }
 }
 
-void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
-{
-  VtPty *vtpty = data;
-  struct winsize ws;
-  ws.ws_row = rows;
-  ws.ws_col = cols;
-  ws.ws_xpixel = px_width;
-  ws.ws_ypixel = px_height;
-  ioctl (vtpty->pty, TIOCSWINSZ, &ws);
-}
-
-ssize_t vtpty_write (void *data, const void *buf, size_t count)
-{
-  VtPty *vtpty = data;
-  return write (vtpty->pty, buf, count);
-}
-
-ssize_t vtpty_read (void  *data, void *buf, size_t count)
-{
-  VtPty *vtpty = data;
-  return read (vtpty->pty, buf, count);
-}
 
 struct
 _CtxClient {
@@ -777,7 +733,7 @@ static int dirty = 0;
 
 int ctx_count (Ctx *ctx);
 
-static int vt_dirty_count (void)
+static int client_dirty_count (void)
 {
   int changes = 0;
   for (CtxList *l = clients; l; l = l->next)
@@ -2027,7 +1983,7 @@ int terminal_main (int argc, char **argv)
         ctx_list_remove (&to_remove, to_remove->data);
       }
 
-      changes += vt_dirty_count ();
+      changes += client_dirty_count ();
         static float avg_bytespeed = 0.0;
 
       int pending_data = 0;
@@ -2097,10 +2053,12 @@ int terminal_main (int argc, char **argv)
 
       if (avg_bytespeed > 1024 * 1024) target_fps = 10.0;
 
-      if (_ctx_green < 0.5)
+      if (_ctx_green < 0.4)
         target_fps = 120.0;
-      else if (_ctx_green > 0.9)
-        target_fps = 15.0;
+      else if (_ctx_green > 0.6)
+        target_fps = 25.0;
+
+      //target_fps = 30.0;
 
       long time_end = ctx_ticks ();
 
