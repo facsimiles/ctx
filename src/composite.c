@@ -662,7 +662,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
   if (rasterizer->state->gstate.image_smoothing)
   {
     float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-    if (factor < 0.5)
+    if (factor <= 0.50f)
     {
       ctx_fragment_image_rgb8_RGBA8_box (rasterizer, x, y, out);
     }
@@ -856,7 +856,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
   if (rasterizer->state->gstate.image_smoothing)
   {
     float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-    if (factor < 0.5)
+    if (factor <= 0.50f)
     {
       ctx_fragment_image_rgba8_RGBA8_box (rasterizer, x, y, out);
     }
