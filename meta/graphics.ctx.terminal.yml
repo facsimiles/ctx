@@ -23,7 +23,7 @@ modules:
           buildsystem: simple
           build-commands:
                 - ./configure.sh
-                - make
+                - make -j4
                 - strip ctx
                 - install -D ctx /app/bin/ctx
                 - install -D -m644 -t /app/share/appdata meta/graphics.ctx.terminal.appdata.xml
