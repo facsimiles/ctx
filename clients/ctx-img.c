@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
       ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
       ctx_save (ctx);
       ctx_scale (ctx, scale, scale);
-      ctx_translate (ctx, floorf(ox0), floorf(oy0));
+      ctx_translate (ctx, ox0, oy0);
       if (eid[0])
         ctx_texture (ctx, eid, 0.0f, 0.0f);
       else
@@ -167,6 +167,14 @@ int main(int argc, char *argv[])
             ox0 -=  (ctx_width (ctx) / 2) / scale;
             oy0 -=  (ctx_height (ctx) / 2) / scale;
             scale = 2.0;
+            ox0 +=  (ctx_width (ctx) / 2) / scale;
+            oy0 +=  (ctx_height (ctx) / 2) / scale;
+          }
+          else if (!strcmp (event->string, "5"))
+          {
+            ox0 -=  (ctx_width (ctx) / 2) / scale;
+            oy0 -=  (ctx_height (ctx) / 2) / scale;
+            scale = 0.5;
             ox0 +=  (ctx_width (ctx) / 2) / scale;
             oy0 +=  (ctx_height (ctx) / 2) / scale;
           }
