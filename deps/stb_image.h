@@ -337,7 +337,9 @@ RECENT REVISION HISTORY:
 //    very big.
 
 #ifndef STBI_NO_STDIO
+#if !__COSMOPOLITAN__
 #include <stdio.h>
+#endif
 #endif // STBI_NO_STDIO
 
 #define STBI_VERSION 1
@@ -352,7 +354,9 @@ enum
    STBI_rgb_alpha  = 4
 };
 
+#if !__COSMOPOLITAN__
 #include <stdlib.h>
+#endif
 typedef unsigned char stbi_uc;
 typedef unsigned short stbi_us;
 
@@ -551,6 +555,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
 #endif
 
 
+#if !__COSMOPOLITAN__
 #include <stdarg.h>
 #include <stddef.h> // ptrdiff_t on osx
 #include <stdlib.h>
@@ -568,6 +573,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
 #ifndef STBI_ASSERT
 #include <assert.h>
 #define STBI_ASSERT(x) assert(x)
+#endif
 #endif
 
 #ifdef __cplusplus

@@ -124,12 +124,10 @@ __ctx_file_get_contents (const char     *path,
   return 0;
 }
 
+#if !__COSMOPOLITAN__
 #include <limits.h>
+#endif
 
-int
-ctx_get_contents (const char     *uri,
-                  unsigned char **contents,
-                  long           *length);
 
 
 

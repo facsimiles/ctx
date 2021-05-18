@@ -1,10 +1,12 @@
 #if CTX_EVENTS
 
 #include "ctx-split.h"
+#if !__COSMOPOLITAN__
 #include <termios.h>
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#endif
 
 int ctx_terminal_width (void)
 {
@@ -21,7 +23,11 @@ int ctx_terminal_width (void)
     return 0;
   fprintf (stderr, "\e[14t");
   //tcflush(STDIN_FILENO, 1);
+#if __COSMOPOLITAN__
+  /// XXX ?
+#else
   tcdrain(STDIN_FILENO);
+#endif
   int length = 0;
   usleep (1000 * 60); // to account for possibly lowish latency ssh,
                       // should be made configurable ; perhaps in
@@ -67,7 +73,9 @@ int ctx_terminal_height (void)
     return 0;
   fprintf (stderr, "\e[14t");
   //tcflush(STDIN_FILENO, 1);
+#if !__COSMOPOLITAN__
   tcdrain(STDIN_FILENO);
+#endif
   int length = 0;
   usleep (1000 * 60); // to account for possibly lowish latency ssh,
                       // should be made configurable ; perhaps in
@@ -128,9 +136,11 @@ int ctx_terminal_rows (void)
 
 /*************************** input handling *************************/
 
+#if !__COSMOPOLITAN__
 #include <termios.h>
 #include <errno.h>
 #include <signal.h>
+#endif
 
 #define DELAY_MS  100  
 
@@ -482,8 +492,10 @@ static int _nc_raw (void)
   if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
     return -1;
   nc_is_raw = 1;
+#if !__COSMOPOLITAN__
   tcdrain(STDIN_FILENO);
   tcflush(STDIN_FILENO, 1);
+#endif
   return 0;
 }
 

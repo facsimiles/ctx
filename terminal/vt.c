@@ -28,10 +28,12 @@
  *
  */
 
+#define _GNU_SOURCE
 #define _BSD_SOURCE
 #define _DEFAULT_SOURCE
 #define _XOPEN_SOURCE 600 // for posix_openpt
 
+#if !__COSMOPOLITAN__
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -51,6 +53,7 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <zlib.h>
+#endif
 
 #include "ctx.h"
 
@@ -5539,7 +5542,6 @@ vt_forkpty (int  *amaster,
   pid_t pid;
   int master = posix_openpt (O_RDWR|O_NOCTTY);
   int slave;
-  char *name = NULL;
 
   if (master < 0)
     return -1;
@@ -5547,8 +5549,15 @@ vt_forkpty (int  *amaster,
     return -1;
   if (unlockpt (master) != 0)
     return -1;
-  if ((name = ptsname (master)) == NULL)
+#if 1
+  char name[1024];
+  if (ptsname_r (master, name, sizeof(name)-1))
     return -1;
+#else
+  char *name = NULL;
+  if ((name = ptsname_r (master)) == NULL)
+    return -1;
+#endif
 
   slave = open(name, O_RDWR|O_NOCTTY);
 
@@ -7451,7 +7460,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
   int color = 0;
   int bold = (style & STYLE_BOLD) != 0;
   int dim = (style & STYLE_DIM) != 0;
-  int hidden = (style & STYLE_HIDDEN) != 0;
+  int is_hidden = (style & STYLE_HIDDEN) != 0;
   int proportional = (style & STYLE_PROPORTIONAL) != 0;
   int fg_set = (style & STYLE_FG_COLOR_SET) != 0;
   int bg_intensity = 0;
@@ -7731,9 +7740,9 @@ bg_done:
     }
 
   if (unichar == ' ' && !(underline || double_underline || curved_underline))
-    hidden = 1;
+    is_hidden = 1;
 
-  if (!hidden)
+  if (!is_hidden)
     {
       if (style & STYLE_FG24_COLOR_SET)
         {

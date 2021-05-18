@@ -222,8 +222,6 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 #endif
 }
 
-CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y);
-
 CTX_STATIC void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 {
   if (rasterizer->has_shape && rasterizer->has_prev)
@@ -1101,7 +1099,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
                 rasterizer->scanline ++;
                 ctx_rasterizer_increment_edges (rasterizer, 1);
                 ctx_rasterizer_feed_edges (rasterizer);
-  ctx_rasterizer_discard_edges (rasterizer);
+                ctx_rasterizer_discard_edges (rasterizer);
               }
               else
               for (int i = 0; i < 5; i++)
@@ -1111,7 +1109,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
                 rasterizer->scanline ++;
                 ctx_rasterizer_increment_edges (rasterizer, 1);
                 ctx_rasterizer_feed_edges (rasterizer);
-  ctx_rasterizer_discard_edges (rasterizer);
+                ctx_rasterizer_discard_edges (rasterizer);
               }
               break;
             case 15: /* */
@@ -1123,7 +1121,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
                 rasterizer->scanline ++;
                 ctx_rasterizer_increment_edges (rasterizer, 1);
                 ctx_rasterizer_feed_edges (rasterizer);
-  ctx_rasterizer_discard_edges (rasterizer);
+                ctx_rasterizer_discard_edges (rasterizer);
               }
               else
               for (int i = 0; i < 15; i++)
@@ -3187,10 +3185,7 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
   free (rasterizer);
 }
 
-int ctx_renderer_is_sdl (Ctx *ctx);
-int ctx_renderer_is_fb  (Ctx *ctx);
 
-int _ctx_is_rasterizer (Ctx *ctx);
 CtxAntialias ctx_get_antialias (Ctx *ctx)
 {
 #if CTX_EVENTS

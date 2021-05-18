@@ -1,5 +1,9 @@
+#if !__COSMOPOLITAN__
 #include <stdarg.h>
 #include <unistd.h>
+#include <math.h>
+
+#endif
 #include "ctx.h"
 
 /* A small immediate mode toolkit for ctx
@@ -1651,7 +1655,6 @@ void itk_focus (ITK *itk, int dir)
    }
 }
 
-#include <math.h>
 
 void itk_key_up (CtxEvent *event, void *data, void *data2)
 {

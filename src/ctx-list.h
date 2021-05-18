@@ -1,7 +1,9 @@
 #ifndef __CTX_LIST__
 #define __CTX_LIST__
 
+#if !__COSMOPOLITAN__
 #include <stdlib.h>
+#endif
 
 /* The whole ctx_list implementation is in the header and will be inlined
  * wherever it is used.

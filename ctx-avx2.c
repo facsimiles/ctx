@@ -4,10 +4,12 @@
  * conditional intrinsics based RGBA8 fast path.
  */
 
+#if !__COSMOPOLITAN__
 #include <stdint.h>
 #include <termios.h>
 #include <unistd.h>
 #include <math.h>
+#endif
 
 #ifndef NO_BABL
 #include <babl/babl.h>

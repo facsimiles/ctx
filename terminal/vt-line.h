@@ -72,7 +72,9 @@ static inline uint64_t vt_line_get_style (VtLine *string, int pos)
   return string->style[pos];
 }
 
+#if !__COSMOPOLITAN__
 #include <stdlib.h>
+#endif
 
 static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
 {

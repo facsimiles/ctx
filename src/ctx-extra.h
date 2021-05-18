@@ -190,7 +190,9 @@ ctx_expf (float x)
 /* define more trig based on having sqrt, sin and atan2 */
 
 #else
+#if !__COSMOPOLITAN__
 #include <math.h>
+#endif
 static inline float ctx_fabsf (float x)           { return fabsf (x); }
 static inline float ctx_floorf (float x)          { return floorf (x); }
 static inline float ctx_sinf (float x)            { return sinf (x); }

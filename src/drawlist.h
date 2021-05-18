@@ -9,24 +9,15 @@ ctx_iterator_init (CtxIterator      *iterator,
                    int               start_pos,
                    int               flags);
 
-CtxCommand *
-ctx_iterator_next (CtxIterator *iterator);
 int ctx_iterator_pos (CtxIterator *iterator);
 
-CTX_STATIC void ctx_drawlist_compact (CtxDrawlist *drawlist);
 CTX_STATIC void
 ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size);
 CTX_STATIC int
 ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry);
-int
-ctx_add_single (Ctx *ctx, void *entry);
 int ctx_drawlist_add_entry (CtxDrawlist *drawlist, CtxEntry *entry);
 int
 ctx_drawlist_insert_entry (CtxDrawlist *drawlist, int pos, CtxEntry *entry);
-int ctx_append_drawlist (Ctx *ctx, void *data, int length);
-int ctx_set_drawlist (Ctx *ctx, void *data, int length);
-int ctx_get_drawlist_count (Ctx *ctx);
-const CtxEntry *ctx_get_drawlist (Ctx *ctx);
 int
 ctx_add_data (Ctx *ctx, void *data, int length);
 
@@ -85,8 +76,6 @@ CTX_STATIC void
 ctx_drawlist_bitpack (CtxDrawlist *drawlist, int start_pos);
 #endif
 
-CTX_STATIC void
-ctx_drawlist_compact (CtxDrawlist *drawlist);
 CTX_STATIC void
 ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1);
 CTX_STATIC void

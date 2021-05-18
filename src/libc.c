@@ -1,7 +1,9 @@
 #ifndef __CTX_LIBC_H
 #define __CTX_LIBC_H
 
+#if !__COSMOPOLITAN__
 #include <stddef.h>
+#endif
 
 #if 0
 static inline void

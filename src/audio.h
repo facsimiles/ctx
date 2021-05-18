@@ -1,7 +1,9 @@
 #ifndef CTX_AUDIO_H
 #define CTX_AUDIO_H
 
+#if !__COSMOPOLITAN__
 #include <stdint.h>
+#endif
 
 /* This enum should be kept in sync with the corresponding mmm enum.
  */

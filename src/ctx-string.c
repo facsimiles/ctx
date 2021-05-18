@@ -2,10 +2,12 @@
 #define _DEFAULT_SOURCE
 #endif
 
+#if !__COSMOPOLITAN__
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#endif
 
 //#include "ctx.h"
 /* instead of including ctx.h we declare the few utf8

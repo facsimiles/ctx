@@ -206,9 +206,11 @@ void ctx_tiled_render_fun (void **data)
 
 #if CTX_EVENTS
 
+#if !__COSMOPOLITAN__
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <signal.h>
+#endif
 
 
 #if CTX_FB

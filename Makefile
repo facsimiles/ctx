@@ -171,6 +171,10 @@ afl/ctx: ctx.h
 	CC=../afl/afl-2.52b/afl-gcc make ctx -j5
 	cp ctx afl/ctx
 
+ctx.com: ctx.h Makefile ctx.c
+	gcc -g -Os -static -nostdlib -nostdinc -fno-pie -no-pie -mno-red-zone -fno-omit-frame-pointer -pg -mnop-mcount -o ctx.com.dbg  ctx.c terminal/*.c   -fuse-ld=bfd -Wl,-T,../cosmopolitan/ape.lds -include ../cosmopolitan/cosmopolitan.h ../cosmopolitan/crt.o ../cosmopolitan/ape.o ../cosmopolitan/cosmopolitan.a -DNO_LIBCURL -DNO_SDL -DNO_ALSA -DNO_BABL -Ifonts -Ideps -I. -Iterminal
+	objcopy -S -O binary ctx.com.dbg ctx.com
+
 flatpak:
 	rm -rf build-dir;flatpak-builder --user --install build-dir meta/graphics.ctx.terminal.yml
 

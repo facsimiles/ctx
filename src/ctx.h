@@ -44,9 +44,11 @@
 extern "C" {
 #endif
 
+#if !__COSMOPOLITAN__
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#endif
 
 typedef struct _Ctx            Ctx;
 
@@ -211,18 +213,6 @@ CtxGlyph *ctx_glyph_allocate (int n_glyphs);
 void gtx_glyph_free       (CtxGlyph *glyphs);
 
 int  ctx_glyph            (Ctx *ctx, uint32_t unichar, int stroke);
-
-void ctx_quad_to          (Ctx *ctx, float cx, float cy,
-                           float x, float y);
-
-void ctx_arc              (Ctx  *ctx,
-                           float x, float y,
-                           float radius,
-                           float angle1, float angle2,
-                           int   direction);
-
-void ctx_arc_to           (Ctx *ctx, float x1, float y1,
-                           float x2, float y2, float radius);
 
 void ctx_preserve         (Ctx *ctx);
 void ctx_fill             (Ctx *ctx);
@@ -649,7 +639,6 @@ int ctx_renderer_is_term (Ctx *ctx);
  * it provides the ability to register callbacks with the current path
  * that get delivered with transformed coordinates.
  */
-unsigned long ctx_ticks (void);
 int ctx_is_dirty (Ctx *ctx);
 void ctx_set_dirty (Ctx *ctx, int dirty);
 float ctx_get_float (Ctx *ctx, uint64_t hash);

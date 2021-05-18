@@ -1,5 +1,6 @@
 #define _DEFAULT_SOURCE
 
+#if !__COSMOPOLITAN__
 #include <unistd.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -13,6 +14,9 @@
 #include <pty.h>
 #include <math.h>
 #include <malloc.h>
+#include <sys/time.h>
+#include <time.h>
+#endif
 
 #include "vt-line.h"
 #include "terminal.h"
@@ -411,8 +415,11 @@ static CtxClient *client_by_id (int id)
 
 void client_remove (Ctx *ctx, CtxClient *client)
 {
-  if (client->vt)
-    vt_destroy (client->vt);
+  if (!client->internal)
+  {
+    if (client->vt)
+      vt_destroy (client->vt);
+  }
 
   if (client->title)
     free (client->title);
@@ -1709,8 +1716,6 @@ void ctx_popups (Ctx *ctx)
   _popup = NULL;
 }
 
-#include <sys/time.h>
-#include <time.h>
 
 void draw_panel (ITK *itk, Ctx *ctx)
 {

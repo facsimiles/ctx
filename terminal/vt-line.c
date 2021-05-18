@@ -21,10 +21,12 @@
 #define _DEFAULT_SOURCE
 #endif
 
+#if !__COSMOPOLITAN__
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#endif
 
 int ctx_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 #define mrg_unichar_to_utf8 ctx_unichar_to_utf8

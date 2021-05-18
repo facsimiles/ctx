@@ -20,7 +20,9 @@
  */
 #ifndef __SHA1_H
 #define __SHA1_H
+#if !__COSMOPOLITAN__
 #include <inttypes.h>
+#endif
 
 
 int ctx_sha1_init(CtxSHA1 * sha1);
@@ -42,16 +44,18 @@ void ctx_sha1_free (CtxSHA1 *sha1)
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
 #endif
 
-#ifdef FF0
-#undef FF0
+#ifdef SHA1_FF0
+#undef SHA1_FF0
 #endif
-#ifdef FF1
-#undef FF1
+#ifdef SHA1_FF1
+#undef SHA1_FF1
 #endif
 
 #ifdef SHA1_IMPLEMENTATION
+#if !__COSMOPOLITAN__
 #include <stdlib.h>
 #include <string.h>
+#endif
 
 #define STORE64H(x,                                                             y)                                                                     \
    { (y)[0] = (unsigned char)(((x)>>56)&255); (y)[1] = (unsigned                char)(((x)>>48)&255);     \
@@ -151,50 +155,50 @@ static int  ctx_sha1_compress(CtxSHA1 *sha1, unsigned char *buf)
 
     /* compress */
     /* round one */
-    #define FF0(a,b,c,d,e,i) e = (ROLc(a, 5) + F0(b,c,d) + e + W[i] + 0x5a827999UL); b = ROLc(b, 30);
-    #define FF1(a,b,c,d,e,i) e = (ROLc(a, 5) + F1(b,c,d) + e + W[i] + 0x6ed9eba1UL); b = ROLc(b, 30);
-    #define FF2(a,b,c,d,e,i) e = (ROLc(a, 5) + F2(b,c,d) + e + W[i] + 0x8f1bbcdcUL); b = ROLc(b, 30);
-    #define FF3(a,b,c,d,e,i) e = (ROLc(a, 5) + F3(b,c,d) + e + W[i] + 0xca62c1d6UL); b = ROLc(b, 30);
+    #define SHA1_FF0(a,b,c,d,e,i) e = (ROLc(a, 5) + F0(b,c,d) + e + W[i] + 0x5a827999UL); b = ROLc(b, 30);
+    #define SHA1_FF1(a,b,c,d,e,i) e = (ROLc(a, 5) + F1(b,c,d) + e + W[i] + 0x6ed9eba1UL); b = ROLc(b, 30);
+    #define SHA1_FF2(a,b,c,d,e,i) e = (ROLc(a, 5) + F2(b,c,d) + e + W[i] + 0x8f1bbcdcUL); b = ROLc(b, 30);
+    #define SHA1_FF3(a,b,c,d,e,i) e = (ROLc(a, 5) + F3(b,c,d) + e + W[i] + 0xca62c1d6UL); b = ROLc(b, 30);
  
     for (i = 0; i < 20; ) {
-       FF0(a,b,c,d,e,i++);
-       FF0(e,a,b,c,d,i++);
-       FF0(d,e,a,b,c,i++);
-       FF0(c,d,e,a,b,i++);
-       FF0(b,c,d,e,a,i++);
+       SHA1_FF0(a,b,c,d,e,i++);
+       SHA1_FF0(e,a,b,c,d,i++);
+       SHA1_FF0(d,e,a,b,c,i++);
+       SHA1_FF0(c,d,e,a,b,i++);
+       SHA1_FF0(b,c,d,e,a,i++);
     }
 
     /* round two */
     for (; i < 40; )  { 
-       FF1(a,b,c,d,e,i++);
-       FF1(e,a,b,c,d,i++);
-       FF1(d,e,a,b,c,i++);
-       FF1(c,d,e,a,b,i++);
-       FF1(b,c,d,e,a,i++);
+       SHA1_FF1(a,b,c,d,e,i++);
+       SHA1_FF1(e,a,b,c,d,i++);
+       SHA1_FF1(d,e,a,b,c,i++);
+       SHA1_FF1(c,d,e,a,b,i++);
+       SHA1_FF1(b,c,d,e,a,i++);
     }
 
     /* round three */
     for (; i < 60; )  { 
-       FF2(a,b,c,d,e,i++);
-       FF2(e,a,b,c,d,i++);
-       FF2(d,e,a,b,c,i++);
-       FF2(c,d,e,a,b,i++);
-       FF2(b,c,d,e,a,i++);
+       SHA1_FF2(a,b,c,d,e,i++);
+       SHA1_FF2(e,a,b,c,d,i++);
+       SHA1_FF2(d,e,a,b,c,i++);
+       SHA1_FF2(c,d,e,a,b,i++);
+       SHA1_FF2(b,c,d,e,a,i++);
     }
 
     /* round four */
     for (; i < 80; )  { 
-       FF3(a,b,c,d,e,i++);
-       FF3(e,a,b,c,d,i++);
-       FF3(d,e,a,b,c,i++);
-       FF3(c,d,e,a,b,i++);
-       FF3(b,c,d,e,a,i++);
+       SHA1_FF3(a,b,c,d,e,i++);
+       SHA1_FF3(e,a,b,c,d,i++);
+       SHA1_FF3(d,e,a,b,c,i++);
+       SHA1_FF3(c,d,e,a,b,i++);
+       SHA1_FF3(b,c,d,e,a,i++);
     }
 
-    #undef FF0
-    #undef FF1
-    #undef FF2
-    #undef FF3
+    #undef SHA1_FF0
+    #undef SHA1_FF1
+    #undef SHA1_FF2
+    #undef SHA1_FF3
 
     /* store */
     sha1->state[0] = sha1->state[0] + a;

@@ -186,9 +186,11 @@ void app_update(app_t *self) {
 	// 1/30th of a second
 	double current_time = (double)ctx_ticks() / 1000.0 / 1000.0;
 	double elapsed_time = current_time - self->last_time;
-	if (elapsed_time > 1.0 / 30.0) {
-		elapsed_time = 1.0 / 30.0;
+#if 1
+	if (elapsed_time > 1.0 / 25.0) {
+		elapsed_time = 1.0 / 25.0;
 	}
+#endif
         if (paused) elapsed_time = 0;
 	self->last_time = current_time;
 

@@ -1,6 +1,11 @@
+#if !__COSMOPOLITAN__
+
 #include <stdint.h>
 #include <termios.h>
 #include <unistd.h>
+#include <math.h>
+
+#endif
 
 #ifndef NO_BABL
 #include <babl/babl.h>
@@ -9,7 +14,6 @@
 #ifndef NO_SDL
 #include <SDL.h>
 #endif
-#include <math.h>
 
 #define _CTX_INTERNAL_FONT_ // drops ascii in favor of regular
 #include "ctx-font-regular.h"
@@ -22,8 +26,10 @@
 //#include "0xA000-Mono.h"
 //#include "unscii-16.h"
 
+#if !__COSMOPOLITAN__
 #include "stb_truetype.h"
 #include "stb_image.h"
+#endif
 
 #define CTX_DITHER               0 //
 #define CTX_DAMAGE_CONTROL       0// visualize damage in fb/sdl backends
@@ -86,7 +92,7 @@ void ctx_simd_setup ()
   done = 1;
   if(__builtin_cpu_supports("avx2"))
   {
-    ctx_pixel_formats = ctx_pixel_formats_avx2;
+    //ctx_pixel_formats = ctx_pixel_formats_avx2;
   }
 #ifndef NO_BABL
   babl_init ();

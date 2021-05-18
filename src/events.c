@@ -1,12 +1,16 @@
 #include "ctx-split.h"
 
+#if !__COSMOPOLITAN__
 #include <sys/time.h>
+#endif
 
 
 #define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
 #if CTX_EVENTS
+#if !__COSMOPOLITAN__
 #include <threads.h>
+#endif
 static struct timeval start_time;
 
 static void
@@ -108,7 +112,9 @@ static int is_in_ctx (void)
     return 0;
   fprintf (stderr, "\e[?200$p");
   //tcflush(STDIN_FILENO, 1);
+#if !__COSMOPOLITAN__
   tcdrain(STDIN_FILENO);
+#endif
   int length = 0;
   usleep (1000 * 60); // to account for possibly lowish latency ssh,
                       // should be made configurable ; perhaps in
@@ -1004,7 +1010,9 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
 
 #if CTX_EVENTS
 
+#if !__COSMOPOLITAN__
 #include <stdatomic.h>
+#endif
 
 int ctx_native_events = 0;
 #if CTX_SDL

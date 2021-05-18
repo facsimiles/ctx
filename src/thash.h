@@ -1,11 +1,13 @@
 #ifndef THASH_H
 #define THASH_H
 
+#if !__COSMOPOLITAN__
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
+#endif
 
 #define THASH_NO_INTERNING   // ctx doesn't make use of thash_decode
 
@@ -49,9 +51,9 @@ static int thash_is_in_jump_range_inc (uint32_t offset, uint32_t unichar)
   return thash_is_in_range (offset + THASH_JUMP_OFFSET, unichar);
 }
 
-uint32_t ctx_utf8_to_unichar (const char *input);
-int ctx_unichar_to_utf8      (uint32_t ch, uint8_t  *dest);
-int ctx_utf8_len             (const unsigned char first_byte);
+//uint32_t ctx_utf8_to_unichar (const char *input);
+//int ctx_unichar_to_utf8      (uint32_t ch, uint8_t  *dest);
+//int ctx_utf8_len             (const unsigned char first_byte);
 
 static int thash_utf5_length (uint32_t unichar)
 {

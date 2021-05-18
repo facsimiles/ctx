@@ -4,11 +4,13 @@
 #ifndef __CTX_INTERNAL_H
 #define __CTX_INTERNAL_H
 
+#if !__COSMOPOLITAN__
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
 #include <sys/select.h> 
+#endif
 
 typedef struct _CtxRasterizer CtxRasterizer;
 typedef struct _CtxGState     CtxGState;
@@ -990,7 +992,9 @@ const char *ctx_texture_init (
                       void *user_data);
 
 #if CTX_TILED
+#if !__COSMOPOLITAN__
 #include <threads.h>
+#endif
 #endif
 typedef struct _CtxTiled CtxTiled;
 

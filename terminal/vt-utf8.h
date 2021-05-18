@@ -1,8 +1,10 @@
 #ifndef MRG_UTF8_H
 #define MRG_UTF8_H
 
+#if !__COSMOPOLITAN__
 #include <string.h>
 #include <stdint.h>
+#endif
 
 static inline int mrg_utf8_len (const unsigned char first_byte)
 {

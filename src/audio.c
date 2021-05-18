@@ -4,11 +4,15 @@
 //#include "ctx-internal.h"
 //#include "mmm.h"
 
+#if !__COSMOPOLITAN__
+
 #include <pthread.h>
 #if CTX_ALSA_AUDIO
 #include <alsa/asoundlib.h>
 #endif
 #include <alloca.h>
+
+#endif
 
 #define DESIRED_PERIOD_SIZE 1000
 

@@ -2,8 +2,10 @@
 
 #if CTX_EVENTS
 
+#if !__COSMOPOLITAN__
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#endif
 
 typedef struct CtxTermCell
 {
