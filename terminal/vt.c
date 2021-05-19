@@ -4960,7 +4960,7 @@ int vt_poll (VT *vt, int timeout)
            remaining_chars = read_size * 2;
          }
       }
-      //audio_task (vt, 0);
+      vt_audio_task (vt, 0);
       ticks = ctx_ticks ();
     }
   if (got_data < 0)
@@ -5282,7 +5282,7 @@ void vt_feed_keystring (VT *vt, const char *str)
               if (s)
                 {
                   y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_MOTION, 0, x/cw + 1, y/ch + 1, x, y);
+                  vt_mouse (vt, VT_MOUSE_MOTION, 1, x/cw + 1, y/ch + 1, x, y);
                 }
             }
         }
@@ -7876,6 +7876,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
   char buf[128]="";
   switch (event->type)
   {
+    case CTX_MOTION:
     case CTX_DRAG_MOTION:
       //if (event->device_no==1)
       {
@@ -8290,6 +8291,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
    }
     ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
     ctx_listen (ctx, CTX_DRAG, vt_mouse_event, vt, NULL);
+    ctx_listen (ctx, CTX_MOTION, vt_mouse_event, vt, NULL);
     ctx_begin_path (ctx);
 
     /* scrollbar */
@@ -8605,6 +8607,7 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
    }
  if (type == VT_MOUSE_MOTION)
    { button_state = 3; }
+
  if (vt->unit_pixels && vt->mouse_decimal)
    {
      x = px_x;
@@ -8619,7 +8622,7 @@ void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, in
          return;
        vt->lastx = x;
        vt->lasty = y;
-//     sprintf (buf, "\033[<35;%i;%iM", x, y);
+   //  sprintf (buf, "\033[<35;%i;%iM", x, y);
        break;
      case VT_MOUSE_RELEASE:
        if (vt->mouse_decimal == 0)

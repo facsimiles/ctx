@@ -2074,7 +2074,6 @@ int terminal_main (int argc, char **argv)
 #if 0
       fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", avg_bytespeed/1024/1024, fetched_bytes, timed, target_fps);
 #endif
-
     }
 
   while (clients)
