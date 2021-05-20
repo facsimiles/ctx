@@ -8016,25 +8016,27 @@ void vt_use_images (VT *vt, Ctx *ctx)
 
   {
     /* draw graphics */
-     for (int row = ((vt->scroll!=0.0f)?vt->scroll:0); row < (vt->scroll) + vt->rows * 4; row ++)
-      {
-        CtxList *l = ctx_list_nth (vt->lines, row);
-        float y = y0 + vt->ch * (vt->rows - row);
+    for (int row = ((vt->scroll!=0.0f)?vt->scroll:0);
+         row < (vt->scroll) + vt->rows * 4;
+         row ++)
+    {
+       CtxList *l = ctx_list_nth (vt->lines, row);
+       float y = y0 + vt->ch * (vt->rows - row);
 
-        if (row >= vt->rows && !vt->in_alt_screen)
-          {
-            l = ctx_list_nth (vt->scrollback, row-vt->rows);
-          }
+       if (row >= vt->rows && !vt->in_alt_screen)
+         {
+           l = ctx_list_nth (vt->scrollback, row-vt->rows);
+         }
 
-        if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
-          {
-            VtLine *line = l->data;
-            if (line->ctx_copy)
-              {
-                ctx_render_ctx (line->ctx_copy, ctx);
-              }
-          }
-      }
+       if (l && y <= (vt->rows - vt->scroll) *  vt->ch)
+         {
+           VtLine *line = l->data;
+           if (line->ctx_copy)
+             {
+               ctx_render_ctx (line->ctx_copy, ctx);
+             }
+         }
+    }
   }
 
   ctx_restore (ctx);
@@ -8235,6 +8237,10 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 
             if (line->ctx_copy)
               {
+                fprintf (stderr, "%i %i\n", ctx_get_drawlist_count (line->ctx_copy),
+                                            ctx_get_drawlist_count (line->ctx));
+                ctx_render_stream (line->ctx_copy, stderr, 1);
+                fprintf (stderr, "\n");
                 ctx_begin_path (ctx);
                 ctx_save (ctx);
                 ctx_rectangle (ctx, x0, y0 - vt->scroll * vt->ch, vt->cw * vt->cols,

@@ -26,7 +26,6 @@ typedef struct _VtLine   VtLine;
 struct _VtLine
 {
   CtxString string;
-  
   /* line extends string, permitting string ops to operate on it  */
 
   uint64_t *style;
@@ -49,7 +48,7 @@ struct _VtLine
   float     y_offset;
   int       in_scrolling_region;
 
-  /*  XXX:  needs refactoring  */
+  /*  XXX:  needs refactoring to a CtxList of links/images */
   void     *images[4];
   int       image_col[4];
   float     image_X[4]; // 0.0 - 1.0 offset in cell

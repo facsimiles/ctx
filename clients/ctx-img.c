@@ -43,6 +43,19 @@ static void image_drag (CtxEvent *event, void *data0, void *data1)
    dirty++;
 }
 
+static void image_scroll (CtxEvent *event, void *data0, void *data1)
+{
+#if 0
+        if (1)
+        {
+   ox0 += event->delta_x / scale;
+   oy0 += event->delta_y / scale;
+        }
+#endif
+   scale *= 1.1;
+   dirty++;
+}
+
 int main(int argc, char *argv[])
 {
   Ctx *ctx;
@@ -78,8 +91,7 @@ int main(int argc, char *argv[])
       ctx_save (ctx);
       ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
       ctx_listen (ctx, CTX_DRAG_MOTION, image_drag, NULL, NULL);
-      ctx_begin_path (ctx);
-      ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
+      ctx_listen (ctx, CTX_SCROLL, image_scroll, NULL, NULL);
       ctx_gray (ctx, 0.0f);
       ctx_fill (ctx);
       ctx_begin_path (ctx);

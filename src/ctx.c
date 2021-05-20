@@ -252,23 +252,28 @@ ctx_put_image_data (Ctx *ctx, int w, int h, int stride, int format,
    ctx_restore (ctx);
 }
 
+/* checking if an eid is valid also sets the frame for it
+ */
 static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
 {
   ctx = ctx->texture_cache;
   CtxList *to_remove = NULL;
   int ret = 0;
+  fprintf (stderr, "{%i}\n", ctx->frame);
   for (CtxList *l = ctx->eid_db; l; l = l->next)
   {
     CtxEidInfo *eid_info = (CtxEidInfo*)l->data;
     if (ctx->frame - eid_info->frame >= 2)
+            /* XXX XXX XXX this breaks texture caching since
+             *   it is wrong in some cases where more frames
+             *   have passed?
+             */
     {
       ctx_list_prepend (&to_remove, eid_info);
     }
     else if (!strcmp (eid_info->eid, eid) &&
              ctx->frame - eid_info->frame < 2)
     {
-    //FILE  *f  = fopen ("/tmp/l", "a");
-    //  fprintf (f, "%i good:%i %i %s\n", getpid(), ctx->frame, eid_info->frame, eid);
     //fclose (f);
       eid_info->frame = ctx->frame;
       if (w) *w = eid_info->width;
@@ -294,6 +299,7 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
 {
   int eid_len = strlen (eid);
   char ascii[41]="";
+  fprintf (stderr, "tx %s\n", eid);
   if (eid_len > 50)
   {
     CtxSHA1 *sha1 = ctx_sha1_new ();
@@ -315,18 +321,18 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
   if (ctx_eid_valid (ctx, eid, 0, 0))
   {
     ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
-    //fprintf (f, "setting texture eid %s\n", eid);
+    fprintf (stderr, "setting texture eid %s\n", eid);
   }
   else
   {
-    //fprintf (f, "tried setting invalid texture eid %s\n", eid);
+    fprintf (stderr, "tried setting invalid texture eid %s\n", eid);
   }
     //fclose (f);
 }
 int
 _ctx_frame (Ctx *ctx)
 {
-        return ctx->frame;
+   return ctx->frame;
 }
 
 void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int stride, int format, void *data, char *ret_eid)
@@ -334,6 +340,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
   uint8_t hash[20]="";
   char ascii[41]="";
   int dst_stride = width;
+  fprintf (stderr, "df %s\n", eid);
 
   dst_stride = ctx_pixel_format_get_stride ((CtxPixelFormat)format, width);
   if (stride <= 0)
@@ -725,7 +732,8 @@ void ctx_reset (Ctx *ctx)
                      NULL, NULL);
 
     ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
-                     (CtxEventType)(CTX_PRESS|CTX_RELEASE|CTX_MOTION), ctx_collect_events, ctx, ctx,
+                     (CtxEventType)(CTX_PRESS|CTX_RELEASE|CTX_MOTION),
+                     ctx_collect_events, ctx, ctx,
                      NULL, NULL);
   }
 #endif
@@ -960,8 +968,8 @@ void ctx_round_rectangle (Ctx *ctx,
   CtxEntry command[3]=
   {
     ctx_f (CTX_ROUND_RECTANGLE, x0, y0),
-    ctx_f (CTX_CONT,      w, h),
-    ctx_f (CTX_CONT,      radius, 0)
+    ctx_f (CTX_CONT,            w, h),
+    ctx_f (CTX_CONT,            radius, 0)
   };
   ctx_process (ctx, command);
 }
@@ -1931,18 +1939,6 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
     {
-#if 0
-     //  if (command->entry.code == 'i' ||
-     //      command->entry.code == 'I')
-       {
-
-       if (command->entry.code < 32 ||
-           command->entry.code > '~')
-       fprintf (stderr, "[%i]", command->entry.code);
-       else
-       fprintf (stderr, "%c", command->entry.code);
-       }
-#endif
        ctx_process (d_ctx, &command->entry);
     }
 }
