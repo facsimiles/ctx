@@ -259,7 +259,7 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
   ctx = ctx->texture_cache;
   CtxList *to_remove = NULL;
   int ret = 0;
-  fprintf (stderr, "{%i}\n", ctx->frame);
+  //fprintf (stderr, "{%i}\n", ctx->frame);
   for (CtxList *l = ctx->eid_db; l; l = l->next)
   {
     CtxEidInfo *eid_info = (CtxEidInfo*)l->data;
@@ -299,7 +299,7 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
 {
   int eid_len = strlen (eid);
   char ascii[41]="";
-  fprintf (stderr, "tx %s\n", eid);
+  //fprintf (stderr, "tx %s\n", eid);
   if (eid_len > 50)
   {
     CtxSHA1 *sha1 = ctx_sha1_new ();
@@ -321,11 +321,11 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
   if (ctx_eid_valid (ctx, eid, 0, 0))
   {
     ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
-    fprintf (stderr, "setting texture eid %s\n", eid);
+    //fprintf (stderr, "setting texture eid %s\n", eid);
   }
   else
   {
-    fprintf (stderr, "tried setting invalid texture eid %s\n", eid);
+    //fprintf (stderr, "tried setting invalid texture eid %s\n", eid);
   }
     //fclose (f);
 }
@@ -334,13 +334,18 @@ _ctx_frame (Ctx *ctx)
 {
    return ctx->frame;
 }
+int
+_ctx_set_frame (Ctx *ctx, int frame)
+{
+   return ctx->frame = frame;
+}
 
 void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int stride, int format, void *data, char *ret_eid)
 {
   uint8_t hash[20]="";
   char ascii[41]="";
   int dst_stride = width;
-  fprintf (stderr, "df %s\n", eid);
+  //fprintf (stderr, "df %s\n", eid);
 
   dst_stride = ctx_pixel_format_get_stride ((CtxPixelFormat)format, width);
   if (stride <= 0)
