@@ -2184,6 +2184,9 @@ static void vt_ctx_exit (void *data)
   void *tmp = vt->current_line->ctx;
   vt->current_line->ctx = vt->current_line->ctx_copy;
   vt->current_line->ctx_copy = tmp;
+
+  _ctx_set_frame (vt->current_line->ctx, _ctx_frame (vt->current_line->ctx) + 1);
+  _ctx_set_frame (vt->current_line->ctx_copy, _ctx_frame (vt->current_line->ctx));
 #if 1
   if (vt->ctxp) // XXX: ugly hack to aid double buffering
     ((void**)vt->ctxp)[0]= vt->current_line->ctx;
@@ -2402,12 +2405,12 @@ qagain:
                   {
                     vt->current_line->ctx = ctx_new ();
                     vt->current_line->ctx_copy = ctx_new ();
-                    //ctx_set_texture_cache (vt->current_line->ctx_copy, vt->current_line->ctx);
+                    ctx_set_texture_cache (vt->current_line->ctx_copy, vt->current_line->ctx);
                     _ctx_set_transformation (vt->current_line->ctx, 0);
                     _ctx_set_transformation (vt->current_line->ctx_copy, 0);
 
-                    ctx_set_texture_cache (vt->current_line->ctx, vt->ctx);
-                    ctx_set_texture_cache (vt->current_line->ctx_copy, vt->ctx);
+                    //ctx_set_texture_cache (vt->current_line->ctx, vt->current_line->ctx_copy);
+                    //ctx_set_texture_cache (vt->current_line->ctx_copy, vt->current_line->ctx);
                   }
                 if (vt->ctxp)
                   ctx_parser_free (vt->ctxp);
@@ -8237,19 +8240,20 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 
             if (line->ctx_copy)
               {
-                fprintf (stderr, "%i %i\n", ctx_get_drawlist_count (line->ctx_copy),
-                                            ctx_get_drawlist_count (line->ctx));
-                ctx_render_stream (line->ctx_copy, stderr, 1);
-                fprintf (stderr, "\n");
+                //fprintf (stderr, " [%i]\n", _ctx_frame (ctx));
+                //ctx_render_stream (line->ctx_copy, stderr, 1);
+
                 ctx_begin_path (ctx);
                 ctx_save (ctx);
                 ctx_rectangle (ctx, x0, y0 - vt->scroll * vt->ch, vt->cw * vt->cols,
                                     vt->ch * vt->rows);
                 ctx_clip (ctx);
                 ctx_translate (ctx, 0.0, y - vt->ch);
+
                 //(vt->rows-row-1) * (vt->ch) );
                 //float factor = vt->cols * vt->cw / 1000.0;
                 //ctx_scale (ctx, factor, factor);
+                //
                 ctx_render_ctx (line->ctx_copy, ctx);
                 ctx_restore (ctx);
               }
