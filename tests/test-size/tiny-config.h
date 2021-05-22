@@ -36,3 +36,5 @@
 #define CTX_RENDERSTREAM_STATIC 1
 #define CTX_FONTS_FROM_FILE     0 /* leaves out code */
 #define CTX_RASTERIZER          1
+#define CTX_AUDIO               0
+

@@ -30,32 +30,29 @@
       <div id='page'>
       <img style='max-width:100%' src='tests/png-640x240/ctx.png'/>
 
-      <p>ctx is a media-rich terminal and a vector graphics stack, built
-      around a textual serialization <a href='protocol/'>protocol</a>. The
-      textual serialization has a corresponding binary representation that
-      is used by the core rasterizer as well as sharing data among threads.
-      The ctx protocol is available as an extension to ANSI escape sequences
-      in the ctx terminal - the terminal launched when running the ctx
-      binary with no arguments. This extension allows scripts in any
-      language to output vector graphics in addition to or instead of
-      monospace text in each tab/window, and also provides network
-      transparent rendering.</p>
+      <p>ctx is a text- and media terminal and accompanying interactive vector
+      graphics stack, built around a textual serialization vector <a
+      href='protocol/'>protocol</a>. The textual serialization has a
+      corresponding binary representation that is used by the core rasterizer
+      as well as sharing data among threads.  The ctx protocol is available as
+      an extension to ANSI escape sequences in the ctx terminal - the terminal
+      launched when running the ctx binary with no arguments. This extension
+      allows code in any language to output vector graphics via stdin/stdout
+      which by nature can be made network transparent over telnet or ssh.</p>
 
       <a href='pid1.png'><img style='max-width:100%' src='pid1.png'/></a>
       <p>
       The clock in the above screenshot is <a href='https://ctx.graphics/file/clients/clock.sh.html'>a shellscript</a>.
       </p>
 
-      <h3>Library</h3>
+      <h3>Library/SDK</h3>
       <p>
-      Ctx is usable as a single header library, to be dropped into a source
-      tree, <a href='ctx.h'>ctx header/library</a>, it can also be installed
-      system-wide.
-      </p>
-      
-      <p>Applications written using the C library can run either inside the
+      A reference implementation of the ctx protocol is provided as a single
+      header library, <a href='ctx.h'>ctx header/library</a>. Interactive
+      Applications written using the C library can run either inside the
       ctx terminal, or stand-alone using SDL2, fbdev/DRM or in-terminal
-      braille as output.
+      unicode quads/sextants/ascii as output.
+      </p>
 
       <p>Mouse and touch events are registered for the currently active path,
       with propagation control to earlier registered interactions.</p>
