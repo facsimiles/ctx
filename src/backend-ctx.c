@@ -387,6 +387,7 @@ Ctx *ctx_new_ctx (int width, int height)
   Ctx *ctx = ctx_new ();
   CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
   fprintf (stdout, "\e[?1049h");
+  fflush (stdout);
   //fprintf (stderr, "\e[H");
   //fprintf (stderr, "\e[2J");
   ctx_native_events = 1;
