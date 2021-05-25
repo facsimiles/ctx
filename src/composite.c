@@ -688,7 +688,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
     ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer, x, y, out);
   }
 #if CTX_DITHER
-  uint8_t *rgba = out;
+  uint8_t *rgba = (uint8_t*)out;
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
                       rasterizer->format->dither_green);
 #endif
@@ -885,7 +885,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
     ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, x, y, out);
   }
 #if CTX_DITHER
-  uint8_t *rgba = out;
+  uint8_t *rgba = (uint8_t*)out;
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
                       rasterizer->format->dither_green);
 #endif
@@ -2959,7 +2959,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
         rasterizer->color[components-1] = (rasterizer->color[components-1] * gstate->global_alpha_u8)/255;
       if (rasterizer->swap_red_green)
       {
-        uint8_t *rgba = &rasterizer->color[0];
+        uint8_t *rgba = (uint8_t*)&rasterizer->color[0];
         uint8_t tmp = rgba[0];
         rgba[0] = rgba[2];
         rgba[2] = tmp;

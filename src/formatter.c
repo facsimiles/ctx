@@ -468,6 +468,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         break;
 
       case CTX_DEFINE_TEXTURE:
+        {
         _ctx_print_name (formatter, entry->code);
         ctx_formatter_addstrf (formatter, "\"");
         ctx_print_escaped_string (formatter, c->define_texture.eid);
@@ -491,6 +492,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
 #endif
 
         _ctx_print_endcmd (formatter);
+        }
         break;
 
       case CTX_REL_ARC_TO:
