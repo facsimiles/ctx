@@ -224,8 +224,8 @@ static int interned_sorted = 1;
 
 static int interned_compare (const void *a, const void *b)
 {
-  const Interned *ia = a;
-  const Interned *ib = b;
+  const Interned *ia = (Interned*)a;
+  const Interned *ib = (Interned*)b;
   if (ia->hash < ib->hash ) return -1;
   else if (ia->hash > ib->hash ) return 1;
   return 0;
@@ -252,7 +252,7 @@ uint64_t thash (const char *utf8)
     {
        s_interned = (s_interned + 128)*1.5;
        //fprintf (stderr, "\r%p %i ", interned, s_interned);
-       interned = realloc (interned, s_interned * sizeof (Interned));
+       interned = (Interned*)realloc (interned, s_interned * sizeof (Interned));
     }
 
     {
@@ -282,7 +282,7 @@ typedef struct ThashUtf5DecDefaultData {
 
 static void thash_decode_utf5_append_unichar_as_utf8 (uint32_t unichar, void *write_data)
 {
-  ThashUtf5DecDefaultData *data = write_data;
+  ThashUtf5DecDefaultData *data = (ThashUtf5DecDefaultData*)write_data;
   unsigned char utf8[8]="";
   utf8[ctx_unichar_to_utf8 (unichar, utf8)]=0;
   for (int j = 0; utf8[j]; j++)

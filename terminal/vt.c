@@ -2154,6 +2154,9 @@ static void vtcmd_set_alternate_font (VT *vt, const char *sequence)
   vt->charset[0] = 1;
 }
 
+void _ctx_set_frame (Ctx *ctx, int frame);
+int _ctx_frame (Ctx *ctx);
+
 static void vt_ctx_exit (void *data)
 {
   VT *vt = data;
@@ -8044,6 +8047,7 @@ void vt_use_images (VT *vt, Ctx *ctx)
 
   ctx_restore (ctx);
 }
+
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {

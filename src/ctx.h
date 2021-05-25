@@ -509,6 +509,12 @@ typedef enum
   CTX_TEXT_DIRECTION_RTL
 } CtxTextDirection;
 
+typedef enum
+{
+  CTX_SOURCE_TARGET_FILL = 0,
+  CTX_SOURCE_TARGET_STROKE
+} CtxSourceTarget;
+
 struct
 _CtxGlyph
 {
@@ -973,6 +979,11 @@ typedef enum
   CTX_SHADOW_OFFSET_Y  = 143, // ky
   CTX_IMAGE_SMOOTHING  = 144, // kS
   CTX_LINE_DASH_OFFSET = 145, // kD lineDashOffset
+
+  CTX_SOURCE_TARGET    = 146, // kT = CTX_SOURCE_TARGET_FILL   
+                                  //  CTX_SOURCE_TARGET_STROKE
+                                  //  CTX_SOURCE_TARGET_TEXT
+
   // items marked with % are currently only for the parser
   // for instance for svg compatibility or simulated/converted color spaces
   // not the serialization/internal render stream

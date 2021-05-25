@@ -2090,7 +2090,7 @@ ctx_get_contents (const char     *uri,
 
   for (CtxList *l = registered_contents; l; l = l->next)
   {
-    CtxFileContent *c = l->data;
+    CtxFileContent *c = (CtxFileContent*)l->data;
     if (!strcmp (c->path, uri))
     {
       contents = malloc (c->length+1);

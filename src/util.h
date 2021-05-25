@@ -54,7 +54,7 @@ ctx_register_contents (const char *path,
   //   generic filesystem overrides..
   for (CtxList *l = registered_contents; l; l = l->next)
   {
-    CtxFileContent *c = l->data;
+    CtxFileContent *c = (CtxFileContent*)l->data;
     if (!strcmp (c->path, path))
     {
        if (c->free_data)
@@ -67,7 +67,7 @@ ctx_register_contents (const char *path,
        return;
     }
   }
-  CtxFileContent *c = calloc (sizeof (CtxFileContent), 1);
+  CtxFileContent *c = (CtxFileContent*)calloc (sizeof (CtxFileContent), 1);
   c->free_data = free_data;
   c->contents = (unsigned char*)contents;
   c->length    = length;

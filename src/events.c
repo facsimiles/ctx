@@ -9,7 +9,9 @@
 
 #if CTX_EVENTS
 #if !__COSMOPOLITAN__
+#if CTX_THREADS
 #include <threads.h>
+#endif
 #endif
 static struct timeval start_time;
 
@@ -57,16 +59,22 @@ int _ctx_enable_hash_cache = 1;
 extern int _ctx_shape_cache_enabled;
 #endif
 
+#if CTX_THREADS
 static mtx_t _ctx_texture_mtx;
+#endif
 
 void _ctx_texture_lock (void)
 {
+#if CTX_THREADS
   mtx_lock (&_ctx_texture_mtx);
+#endif
 }
 
 void _ctx_texture_unlock (void)
 {
+#if CTX_THREADS
   mtx_unlock (&_ctx_texture_mtx);
+#endif
 }
 
 
@@ -178,7 +186,7 @@ Ctx *ctx_new_ui (int width, int height)
 #endif
   }
   
-#if CTX_EVENTS
+#if CTX_THREADS
   mtx_init (&_ctx_texture_mtx, mtx_plain);
 #endif
 

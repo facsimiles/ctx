@@ -40,7 +40,7 @@ struct
   float      pcy;
   int        color_components;
   int        color_stroke; // 0 is fill source  1 is stroke source
-  int        color_model; // 1 gray 3 rgb 4 cmyk
+  CtxColorModel   color_model; // 1 gray 3 rgb 4 cmyk
   float      left_margin; // set by last user provided move_to
   int        width;       // <- maybe should be float
   int        height;
@@ -49,7 +49,7 @@ struct
   int        cursor_x;    // <- leaking in from terminal
   int        cursor_y;
 
-  int        color_space_slot;
+  CtxColorSpace   color_space_slot;
 
   void (*exit) (void *exit_data);
   void *exit_data;
@@ -700,12 +700,12 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_COLOR_SPACE:
         if (parser->n_numbers == 1)
         {
-          parser->color_space_slot = arg(0);
+          parser->color_space_slot = (CtxColorSpace) arg(0);
           parser->command = CTX_COLOR_SPACE; // did this work without?
         }
         else
         {
-          ctx_colorspace (ctx, parser->color_space_slot,
+          ctx_colorspace (ctx, (CtxColorSpace)parser->color_space_slot,
                                parser->holding, parser->pos);
         }
         break;
@@ -757,7 +757,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
              const char *eid = (char*)parser->texture_id;
              int width  = arg(0);
              int height = arg(1);
-             int format = arg(2);
+             CtxPixelFormat format = (CtxPixelFormat)arg(2);
              int stride = ctx_pixel_format_get_stride (format, width);
 
 
@@ -811,7 +811,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         else
         {
           int unichar = ctx_utf8_to_unichar ((char*)parser->holding);
-          parser->color_space_slot = unichar;
+          parser->color_space_slot = (CtxColorSpace)unichar;
         }
         parser->command = CTX_DEFINE_GLYPH;
         break;             
@@ -1164,7 +1164,7 @@ static void ctx_parser_holding_append (CtxParser *parser, int byte)
   {
     int new_len = parser->hold_len * 1.5;
     if (new_len < 512) new_len = 512;
-    parser->holding = realloc (parser->holding, new_len);
+    parser->holding = (uint8_t*)realloc (parser->holding, new_len);
     parser->hold_len = new_len;
   }
 #endif
@@ -1605,7 +1605,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
                 {
                   int tmp1 = parser->n_numbers;
                   int tmp2 = parser->n_args;
-                  int tmp3 = parser->command;
+                  CtxCode tmp3 = parser->command;
                   int tmp4 = parser->expected_args;
                   ctx_parser_dispatch_command (parser);
                   parser->command = tmp3;

@@ -565,3 +565,10 @@
 #endif
 #endif
 
+#if CTX_FB
+#define CTX_THREADS 1
+#else
+#define CTX_THREADS 0
+#endif
+
+

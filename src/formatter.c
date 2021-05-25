@@ -340,7 +340,7 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
 static void
 ctx_print_a85 (CtxFormatter *formatter, uint8_t *data, int length)
 {
-  char *tmp = malloc (ctx_a85enc_len (length));
+  char *tmp = (char*)malloc (ctx_a85enc_len (length));
   ctx_a85enc (data, tmp, length);
   ctx_formatter_addstr (formatter, " ~", 2);
   ctx_formatter_addstr (formatter, tmp, -1);
@@ -480,7 +480,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
 #if 1
 
-        int stride = ctx_pixel_format_get_stride (c->define_texture.format, c->define_texture.width);
+        int stride = ctx_pixel_format_get_stride ((CtxPixelFormat)c->define_texture.format, c->define_texture.width);
         //fprintf (stderr, "encoding %i bytes\n", c->define_texture.height *stride);
         ctx_print_a85 (formatter, pixel_data, c->define_texture.height * stride);
 #else
@@ -493,7 +493,6 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         _ctx_print_endcmd (formatter);
         break;
 
-        break;
       case CTX_REL_ARC_TO:
       case CTX_ARC_TO:
       case CTX_ROUND_RECTANGLE:
