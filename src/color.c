@@ -475,11 +475,11 @@ void ctx_source_stroke (Ctx *ctx)
 
 void ctx_color_raw (Ctx *ctx, CtxColorModel model, float *components, int stroke)
 {
+#if 0
   CtxSource *source = stroke?
           &ctx->state.gstate.source_stroke:
           &ctx->state.gstate.source_fill;
 
-#if 0
   if (model == CTX_RGB || model == CTX_RGBA)
   {
     float rgba[4];

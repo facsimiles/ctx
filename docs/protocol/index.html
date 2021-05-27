@@ -64,7 +64,7 @@ second_radians=`bc &lt;&lt;&lt;"scale=3;($(date +%S|sed 's/^0//')/60.0+0.75)*3.1
 radius=45
 echo -ne "\e[2J\e[H" # clear screen and go to top left corner
 echo -e "\e[?200h"   # enter ctx mode
-rgbaS 1 1 1 0.5
+_ rgba 1 1 1 0.5
 arc 50% 50% $radius% 0.0 6.4 0
 lineWidth $((radius/10))%
 stroke
@@ -77,7 +77,7 @@ stroke
 lineWidth $((radius/40))%
 moveTo 50% 50%
 arc 50% 50% $((radius * 90 / 100))%  $second_radians $second_radians 0
-rgbaS 1 0.1 0.1 1
+_ rgba 1 0.1 0.1 1
 stroke
 done "; sleep 0.1; done
 
@@ -112,7 +112,7 @@ done "; sleep 0.1; done
 <tr><td><tt>drgba</tt></td><td>r g b a</td><td>rgb alpha color source, in device space</td></tr>
 <tr><td><tt>dcmyk</tt></td><td>c m y k</td><td>cmyk color source, in device space</td></tr>
 <tr><td><tt>dcmyka</tt></td><td>c m y k a</td><td>cmyk alpha color source, in device space</td></tr>
-
+<!--
 <tr><td><tt>grayS</tt></td><td>gray</td><td>sets gray stroke source, and color model</td></tr>
 <tr><td><tt>grayaS</tt></td><td>gray alpha</td><td>sets gray alpha stroke source, and color model</td></tr>
 <tr><td><tt>rgbS</tt></td><td>r g b</td><td>sets rgb stroke source</td></tr>
@@ -124,7 +124,7 @@ done "; sleep 0.1; done
 <tr><td><tt>drgbaS</tt></td><td>r g b a</td><td>rgb alpha color stroke source, in device space</td></tr>
 <tr><td><tt>dcmykS</tt></td><td>c m y k</td><td>cmyk color stroke source, in device space</td></tr>
 <tr><td><tt>dcmykaS</tt></td><td>c m y k a</td><td>cmyk alpha color stroke source, in device space</td></tr>
-
+-->
 <!--
 <tr><td>lab</td><td></td>sets lab color source</tr>
 <tr><td>laba</td><td></td>sets lab alpha color source</tr>
