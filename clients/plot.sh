@@ -12,7 +12,7 @@ moveTo 1@ 1@
 lineTo 1@ 9@
 moveTo 1@ 5@
 lineTo 79@ 5@
-grayS 0.25
+strokeSource gray 0.25
 stroke
 
 save
@@ -36,7 +36,7 @@ lineTo 1 0.5
        16  0.0
 restore
 lineWidth 0.1@
-rgbS 1 0 0
+_ rgb 1 0 0
 stroke
 done ";
 echo -en "\e[10E"  # advance cursor to below drawn canvas

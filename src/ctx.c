@@ -1369,119 +1369,133 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       case CTX_IMAGE_SMOOTHING:
         state->gstate.image_smoothing = c->entry.data.u8[0];
         break;
+      case CTX_STROKE_SOURCE:
+        state->source = 1;
+        break;
 
       case CTX_COLOR:
         {
-          CtxColor *color = &state->gstate.source_fill.color;
+          int is_stroke = (state->source != 0);
+          CtxSource *source = is_stroke ?
+                                &state->gstate.source_stroke:
+                                &state->gstate.source_fill;
+          state->source = 0;
 
-          if ( ((int) ctx_arg_float (0)) & 512)
-          {
-             color = &state->gstate.source_stroke.color;
-             state->gstate.source_stroke.type = CTX_SOURCE_COLOR;
-          }
-          else
-          {
-             state->gstate.source_fill.type = CTX_SOURCE_COLOR;
-          }
+          source->type = CTX_SOURCE_COLOR;
+         
           //float components[5]={c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a};
-          switch ( ((int) ctx_arg_float (0)) & 511)
+          switch ( ((int) ctx_arg_float (0)) & 511) // XXX remove 511 after stroke source is complete
             {
               case CTX_RGB:
-                ctx_color_set_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, 1.0f);
+                ctx_color_set_rgba (state, &source->color, c->rgba.r, c->rgba.g, c->rgba.b, 1.0f);
                 break;
               case CTX_RGBA:
-                ctx_color_set_rgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+                ctx_color_set_rgba (state, &source->color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
                 break;
               case CTX_DRGBA:
-                ctx_color_set_drgba (state, color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+                ctx_color_set_drgba (state, &source->color, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
                 break;
 #if CTX_ENABLE_CMYK
               case CTX_CMYKA:
-                ctx_color_set_cmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
+                ctx_color_set_cmyka (state, &source->color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
                 break;
               case CTX_CMYK:
-                ctx_color_set_cmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, 1.0f);
+                ctx_color_set_cmyka (state, &source->color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, 1.0f);
                 break;
               case CTX_DCMYKA:
-                ctx_color_set_dcmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
+                ctx_color_set_dcmyka (state, &source->color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, c->cmyka.a);
                 break;
               case CTX_DCMYK:
-                ctx_color_set_dcmyka (state, color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, 1.0f);
+                ctx_color_set_dcmyka (state, &source->color, c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k, 1.0f);
                 break;
 #endif
               case CTX_GRAYA:
-                ctx_color_set_graya (state, color, c->graya.g, c->graya.a);
+                ctx_color_set_graya (state, &source->color, c->graya.g, c->graya.a);
                 break;
               case CTX_GRAY:
-                ctx_color_set_graya (state, color, c->graya.g, 1.0f);
+                ctx_color_set_graya (state, &source->color, c->graya.g, 1.0f);
                 break;
             }
         }
         break;
       case CTX_SET_RGBA_U8:
         //ctx_source_deinit (&state->gstate.source);
-        state->gstate.source_fill.type = CTX_SOURCE_COLOR;
-        ctx_color_set_RGBA8 (state, &state->gstate.source_fill.color,
-                             ctx_arg_u8 (0),
-                             ctx_arg_u8 (1),
-                             ctx_arg_u8 (2),
-                             ctx_arg_u8 (3) );
+        //state->gstate.source_fill.type = CTX_SOURCE_COLOR;
+        {
+          int is_stroke = (state->source != 0);
+          CtxSource *source = is_stroke ?
+                                &state->gstate.source_stroke:
+                                &state->gstate.source_fill;
+          state->source = 0;
+
+          source->type = CTX_SOURCE_COLOR;
+
+          ctx_color_set_RGBA8 (state, &source->color,
+                               ctx_arg_u8 (0),
+                               ctx_arg_u8 (1),
+                               ctx_arg_u8 (2),
+                               ctx_arg_u8 (3) );
+        }
         //for (int i = 0; i < 4; i ++)
         //  state->gstate.source.color.rgba[i] = ctx_arg_u8(i);
         break;
-#if 0
-      case CTX_SET_RGBA_STROKE:
-        //ctx_source_deinit (&state->gstate.source);
-        state->gstate.source_stroke = state->gstate.source;
-        state->gstate.source_stroke.type = CTX_SOURCE_COLOR;
-        for (int i = 0; i < 4; i ++)
-          { state->gstate.source_stroke.color.rgba[i] = ctx_arg_u8 (i); }
-        break;
-#endif
       //case CTX_TEXTURE:
       //  state->gstate.source.type = CTX_SOURCE_
       //  break;
       case CTX_LINEAR_GRADIENT:
         {
+          int is_stroke = (state->source != 0);
+          CtxSource *source = is_stroke ?
+                                &state->gstate.source_stroke:
+                                &state->gstate.source_fill;
+          state->source = is_stroke ? 2 : 0;
+
           float x0 = ctx_arg_float (0);
           float y0 = ctx_arg_float (1);
           float x1 = ctx_arg_float (2);
           float y1 = ctx_arg_float (3);
           float dx, dy, length, start, end;
+
           length = ctx_hypotf (x1-x0,y1-y0);
           dx = (x1-x0) / length;
           dy = (y1-y0) / length;
           start = (x0 * dx + y0 * dy) / length;
           end =   (x1 * dx + y1 * dy) / length;
-          state->gstate.source_fill.linear_gradient.length = length;
-          state->gstate.source_fill.linear_gradient.dx = dx;
-          state->gstate.source_fill.linear_gradient.dy = dy;
-          state->gstate.source_fill.linear_gradient.start = start;
-          state->gstate.source_fill.linear_gradient.end = end;
-          state->gstate.source_fill.linear_gradient.rdelta = (end-start)!=0.0?1.0f/(end - start):1.0;
-          state->gstate.source_fill.type = CTX_SOURCE_LINEAR_GRADIENT;
-          state->gstate.source_fill.transform = state->gstate.transform;
-          ctx_matrix_invert (&state->gstate.source_fill.transform);
+          source->linear_gradient.length = length;
+          source->linear_gradient.dx = dx;
+          source->linear_gradient.dy = dy;
+          source->linear_gradient.start = start;
+          source->linear_gradient.end = end;
+          source->linear_gradient.rdelta = (end-start)!=0.0?1.0f/(end - start):1.0;
+          source->type = CTX_SOURCE_LINEAR_GRADIENT;
+          source->transform = state->gstate.transform;
+          ctx_matrix_invert (&source->transform);
         }
         break;
       case CTX_RADIAL_GRADIENT:
         {
+          int is_stroke = (state->source != 0);
+          CtxSource *source = is_stroke ?
+                                &state->gstate.source_stroke:
+                                &state->gstate.source_fill;
+          state->source = is_stroke ? 2 : 0;
+
           float x0 = ctx_arg_float (0);
           float y0 = ctx_arg_float (1);
           float r0 = ctx_arg_float (2);
           float x1 = ctx_arg_float (3);
           float y1 = ctx_arg_float (4);
           float r1 = ctx_arg_float (5);
-          state->gstate.source_fill.radial_gradient.x0 = x0;
-          state->gstate.source_fill.radial_gradient.y0 = y0;
-          state->gstate.source_fill.radial_gradient.r0 = r0;
-          state->gstate.source_fill.radial_gradient.x1 = x1;
-          state->gstate.source_fill.radial_gradient.y1 = y1;
-          state->gstate.source_fill.radial_gradient.r1 = r1;
-          state->gstate.source_fill.radial_gradient.rdelta = (r1 - r0) != 0.0 ? 1.0f/(r1-r0):0.0;
-          state->gstate.source_fill.type      = CTX_SOURCE_RADIAL_GRADIENT;
-          state->gstate.source_fill.transform = state->gstate.transform;
-          ctx_matrix_invert (&state->gstate.source_fill.transform);
+          source->radial_gradient.x0 = x0;
+          source->radial_gradient.y0 = y0;
+          source->radial_gradient.r0 = r0;
+          source->radial_gradient.x1 = x1;
+          source->radial_gradient.y1 = y1;
+          source->radial_gradient.r1 = r1;
+          source->radial_gradient.rdelta = (r1 - r0) != 0.0 ? 1.0f/(r1-r0):0.0;
+          source->type      = CTX_SOURCE_RADIAL_GRADIENT;
+          source->transform = state->gstate.transform;
+          ctx_matrix_invert (&source->transform);
         }
         break;
     }

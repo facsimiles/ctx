@@ -49,6 +49,8 @@ struct
   int        cursor_x;    // <- leaking in from terminal
   int        cursor_y;
 
+  int        translate_origin;
+
   CtxColorSpace   color_space_slot;
 
   void (*exit) (void *exit_data);
@@ -259,6 +261,7 @@ static int ctx_arguments_for_code (CtxCode code)
         case CTX_FILL_MOVE_TO:
         case CTX_REL_QUAD_TO_REL_QUAD_TO:
         case CTX_REL_QUAD_TO_S16:
+        case CTX_STROKE_SOURCE:
 #endif
         return 0;
     }
@@ -475,6 +478,9 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_globalAlpha:
             return ctx_parser_set_command (parser, CTX_GLOBAL_ALPHA);
 
+          case CTX_strokeSource:
+            return ctx_parser_set_command (parser, CTX_STROKE_SOURCE);
+
           /* strings are handled directly here,
            * instead of in the one-char handler, using return instead of break
            */
@@ -586,8 +592,10 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
         }
     }
   if (ret == CTX_CLOSE_PATH2)
-    { ret = CTX_CLOSE_PATH; }
-  /* handling single char, and ret = foo; break;  in cases above*/
+   {
+     ret = CTX_CLOSE_PATH;
+   }
+
   return ctx_parser_set_command (parser, (CtxCode) ret);
 }
 
@@ -692,6 +700,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_STROKE:
         ctx_stroke (ctx);
+        break;
+      case CTX_STROKE_SOURCE:
+        ctx_source_stroke (ctx);
         break;
       case CTX_RESTORE:
         ctx_restore (ctx);
@@ -839,6 +850,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                */
               case CTX_CMYK:
               case CTX_CMYKA:
+              case CTX_DCMYKA:
                 {
                   float rgba[4] = {1,1,1,1.0f};
 
@@ -849,6 +861,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                 }
                 break;
 #endif
+              case CTX_LAB:
+              case CTX_LCH:
+              default:
+                break;
             }
         }
         break;
@@ -1148,9 +1164,12 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_RESET:
         ctx_reset (ctx);
-        ctx_translate (ctx,
-                       (parser->cursor_x-1) * parser->cell_width * 1.0,
-                       (parser->cursor_y-1) * parser->cell_height * 1.0);
+        if (parser->translate_origin)
+        {
+          ctx_translate (ctx,
+                         (parser->cursor_x-1) * parser->cell_width * 1.0,
+                         (parser->cursor_y-1) * parser->cell_height * 1.0);
+        }
         break;
     }
 #undef arg

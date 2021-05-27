@@ -3,6 +3,7 @@
 
 #define TOKENHASH(a)    ((uint64_t)a)
 
+#define CTX_strokeSource TOKENHASH(3061861651908008)
 #define CTX_add_stop 	TOKENHASH(1274978316678)
 #define CTX_addStop 	TOKENHASH(40799943078278)
 #define CTX_alphabetic 	TOKENHASH(2629359926678406)

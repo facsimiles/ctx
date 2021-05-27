@@ -94,6 +94,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_STROKE_TEXT:          return "strokeText"; break;
           case CTX_SAVE:                 return "save"; break;
           case CTX_RESTORE:              return "restore"; break;
+          case CTX_STROKE_SOURCE:        return "strokeSource"; break;
           case CTX_NEW_PAGE:             return "newPage"; break;
           case CTX_START_GROUP:          return "startGroup"; break;
           case CTX_END_GROUP:            return "endGroup"; break;
@@ -716,6 +717,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_NEW_PAGE:
       case CTX_END_GROUP:
       case CTX_RESTORE:
+      case CTX_STROKE_SOURCE:
         ctx_print_entry (formatter, entry, 0);
         break;
       case CTX_TEXT_ALIGN:

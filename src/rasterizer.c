@@ -19,6 +19,10 @@ ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
 CTX_STATIC void
 ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *rgba)
 {
+  /* FIXME XXX we only have one gradient, but might need separate gradients
+   * for fill/stroke !
+   * 
+   */
   CtxGradient *gradient = &rasterizer->state->gradient;
   CtxGradientStop *stop = &gradient->stops[gradient->n_stops];
   stop->pos = pos;
@@ -480,6 +484,12 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
                             float x,
                             float y)
 {
+  int is_stroke = (rasterizer->state->source != 0);
+  CtxSource *source = is_stroke ?
+                        &rasterizer->state->gstate.source_stroke:
+                        &rasterizer->state->gstate.source_fill;
+  rasterizer->state->source = 0;
+
   int no = ctx_rasterizer_find_texture (rasterizer, eid);
   if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
   if (rasterizer->texture_source->texture[no].data == NULL)
@@ -491,14 +501,13 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   {
     rasterizer->texture_source->texture[no].frame = rasterizer->texture_source->frame;
   }
-  rasterizer->state->gstate.source_fill.type = CTX_SOURCE_TEXTURE;
-  rasterizer->state->gstate.source_fill.texture.buffer = &rasterizer->texture_source->texture[no];
-  //ctx_user_to_device (rasterizer->state, &x, &y);
-  rasterizer->state->gstate.source_fill.texture.x0 = 0;
-  rasterizer->state->gstate.source_fill.texture.y0 = 0;
-  rasterizer->state->gstate.source_fill.transform = rasterizer->state->gstate.transform;
-  ctx_matrix_translate (&rasterizer->state->gstate.source_fill.transform, x, y);
-  ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);
+  source->type = CTX_SOURCE_TEXTURE;
+  source->texture.buffer = &rasterizer->texture_source->texture[no];
+  source->texture.x0 = 0;
+  source->texture.y0 = 0;
+  source->transform = rasterizer->state->gstate.transform;
+  ctx_matrix_translate (&source->transform, x, y);
+  ctx_matrix_invert (&source->transform);
 }
 
 

@@ -17,5 +17,3 @@ moveTo 25% 7% lineTo 50% 40% lineTo 75% 7%
 lineJoin miter
 stroke
 
-
-

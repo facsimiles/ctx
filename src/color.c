@@ -467,8 +467,19 @@ ctx_get_graya (Ctx *ctx, float *ya)
 }
 #endif
 
+void ctx_source_stroke (Ctx *ctx)
+{
+  CtxEntry set_stroke = ctx_void (CTX_STROKE_SOURCE);
+  ctx_process (ctx, &set_stroke);
+}
+
 void ctx_color_raw (Ctx *ctx, CtxColorModel model, float *components, int stroke)
 {
+  CtxSource *source = stroke?
+          &ctx->state.gstate.source_stroke:
+          &ctx->state.gstate.source_fill;
+
+#if 0
   if (model == CTX_RGB || model == CTX_RGBA)
   {
     float rgba[4];
@@ -476,16 +487,19 @@ void ctx_color_raw (Ctx *ctx, CtxColorModel model, float *components, int stroke
   // when it is intentional
     float a = 1.0f;
     if (model == CTX_RGBA) a = components[3];
-  if (stroke)
-    ctx_color_get_rgba (&ctx->state, &ctx->state.gstate.source_stroke.color, rgba);
-  else
-    ctx_color_get_rgba (&ctx->state, &ctx->state.gstate.source_fill.color, rgba);
-  if (rgba[0] == components[0] && rgba[1] == components[1] && rgba[2] == components[2] && rgba[3] == a)
+    ctx_color_get_rgba (&ctx->state, &source->color, rgba);
+    if (rgba[0] == components[0] && rgba[1] == components[1] && rgba[2] == components[2] && rgba[3] == a)
      return;
+  }
+#endif
+
+  if (stroke)
+  {
+    ctx_source_stroke (ctx);
   }
 
   CtxEntry command[3]= {
-  ctx_f (CTX_COLOR, model + stroke * 512, 0)
+  ctx_f (CTX_COLOR, model, 0)
   };
   switch (model)
   {

@@ -303,6 +303,13 @@ struct _CtxState
 #endif
   CtxKeyDbEntry keydb[CTX_MAX_KEYDB];
   char          stringpool[CTX_STRINGPOOL_SIZE];
+  int8_t        source; // used for the single-shifting to stroking
+                // 0  = fill
+                // 1  = start_stroke
+                // 2  = in_stroke
+                //
+                //   if we're at in_stroke at start of a source definition
+                //   we do filling
 };
 
 

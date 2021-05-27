@@ -236,6 +236,8 @@ float ctx_get_global_alpha (Ctx *ctx);
 void ctx_named_source (Ctx *ctx, const char *name);
 // followed by a color, gradient or pattern definition
 
+void ctx_source_strok  (Ctx *ctx); // next source definition is for stroking
+
 void ctx_rgba_stroke   (Ctx *ctx, float r, float g, float b, float a);
 void ctx_rgb_stroke    (Ctx *ctx, float r, float g, float b);
 void ctx_rgba8_stroke  (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -508,12 +510,6 @@ typedef enum
   CTX_TEXT_DIRECTION_LTR,
   CTX_TEXT_DIRECTION_RTL
 } CtxTextDirection;
-
-typedef enum
-{
-  CTX_SOURCE_TARGET_FILL = 0,
-  CTX_SOURCE_TARGET_STROKE
-} CtxSourceTarget;
 
 struct
 _CtxGlyph
@@ -913,6 +909,7 @@ typedef enum
   CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
 
   CTX_CLOSE_PATH2      = 'Z', //
+  CTX_STROKE_SOURCE    = '_', // next source definition applies to strokes
   CTX_KERNING_PAIR     = '[', // glA glB kerning, glA and glB in u16 kerning in s32
   CTX_COLOR_SPACE      = ']', // IccSlot  data  data_len,
                          //    data can be a string with a name,
@@ -954,9 +951,11 @@ typedef enum
    * dedicated byte commands for the setters to keep the dispatch
    * simpler. There is no need for these to be human readable thus we go >128
    *
-   * unused/reserved: D!&<=>?:.=/\
-   * reserved: '"&   #  %_^@
+   * unused:        !&<=>?:.=/\
+   * reserved:      '"&   #  %^@
    */
+
+
   CTX_FILL_RULE        = 128, // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
   CTX_BLEND_MODE       = 129, // kB mode - u8 , default=0
 
@@ -979,10 +978,6 @@ typedef enum
   CTX_SHADOW_OFFSET_Y  = 143, // ky
   CTX_IMAGE_SMOOTHING  = 144, // kS
   CTX_LINE_DASH_OFFSET = 145, // kD lineDashOffset
-
-  CTX_SOURCE_TARGET    = 146, // kT = CTX_SOURCE_TARGET_FILL   
-                                  //  CTX_SOURCE_TARGET_STROKE
-                                  //  CTX_SOURCE_TARGET_TEXT
 
   // items marked with % are currently only for the parser
   // for instance for svg compatibility or simulated/converted color spaces
