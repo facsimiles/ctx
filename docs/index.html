@@ -74,7 +74,7 @@
       </p>
       -->
 
-      <h3>multiplexing</h3>
+      <h3>Microcontrollers</h3>
 
       <p>The self-contained static builds are sufficient to run minimalistic
       desktop+shells only sessions with low RAM requirements. The rasterizer
@@ -83,7 +83,14 @@
       right defines a RGBA 8bit rasterizer can be made to fit in 32kb of code
       also for 64bit x86.</p>
 
+
       <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
+
+      <h3>Terminal</h3>
+
+      <p>
+      <span style='background:red;color:white;'>WARNING:</span> do not trust the ctx terminal with potentially hostile clients, the remote side can open the microphone and listen, as well as possibly use decoding of images. These capabilities will be made optional in the future.
+      </p>
 
       <!--
 good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
@@ -222,11 +229,12 @@ good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       <dl>
          <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, like xterm, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - and a growing subset of vt420 and other relevant terminal escape sequences.</dd>
 
-         <dt>Low-latency</dt><dd>The ctx terminal tries to re-render as
+         <!--
+         <dt>Decent-latency</dt><dd>The ctx terminal tries to re-render as
            little as possible, as fast as posisble using multiple
            threads, and SIMD when possible (AVX2 ands 64-bit-pseudo-SIMD
          implemented). Results of running typometer measuring latency under
-         a composited GNOME3, numers are average milliseconds per update, lower
+         a composited GNOME3, numbers are average milliseconds per update, lower
          is better:
 
            <table>
@@ -234,6 +242,7 @@ good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
               <tr><td>38.2</td><td>39.8</td><td>39.4</td><td>42.6</td><td>72.0</td></tr>
            </table>
          </dd>
+         -->
 
          <dt><a href='https://pippin.gimp.org/ametameric/' style='text-decoration:none; color: white; '>
 
@@ -319,7 +328,7 @@ to be combined with all compositing modes.
               <dt><a href='https://iterm2.com/documentation-images.html'>iterm2 inline images</a></dt><dd>iterm2 style raster grarphics transfer</dd>
 
          <dt><a href='https://github.com/hodefoting/atty/'>atty</a></dt>
-              <dd>audio recording and playback (only raw pcm for now, opus codec NYI)</dd>
+         <dd>audio recording and playback (only raw pcm for now, opus codec NYI) </dd>
 
          <dt><a href='https://github.com/nothings/stb/blob/master/stb_truetype.h'>stb_truetype.h</a></dt><dd>If the declarations for stb_truetype are
          included before ctx.h - functions to load fonts from TTF/OTF files

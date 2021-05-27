@@ -1,6 +1,6 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
-rgbS 0 0 0
+_ rgb 0 0 0
 lineWidth=10%
 
 moveTo 25% 30% lineTo 75% 30%
