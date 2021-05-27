@@ -467,7 +467,7 @@ ctx_get_graya (Ctx *ctx, float *ya)
 }
 #endif
 
-void ctx_source_stroke (Ctx *ctx)
+void ctx_stroke_source (Ctx *ctx)
 {
   CtxEntry set_stroke = ctx_void (CTX_STROKE_SOURCE);
   ctx_process (ctx, &set_stroke);
@@ -495,7 +495,7 @@ void ctx_color_raw (Ctx *ctx, CtxColorModel model, float *components, int stroke
 
   if (stroke)
   {
-    ctx_source_stroke (ctx);
+    ctx_stroke_source (ctx);
   }
 
   CtxEntry command[3]= {
@@ -869,23 +869,13 @@ int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
   return 0;
 }
 
-int ctx_color_fill (Ctx *ctx, const char *string)
+int ctx_color (Ctx *ctx, const char *string)
 {
   CtxColor color = {0,};
   ctx_color_set_from_string (ctx, &color, string);
   float rgba[4];
   ctx_color_get_rgba (&(ctx->state), &color, rgba);
   ctx_color_raw (ctx, CTX_RGBA, rgba, 0);
-  return 0;
-}
-
-int ctx_color_stroke (Ctx *ctx, const char *string)
-{
-  CtxColor color = {0,};
-  ctx_color_set_from_string (ctx, &color, string);
-  float rgba[4];
-  ctx_color_get_rgba (&(ctx->state), &color, rgba);
-  ctx_color_raw (ctx, CTX_RGBA, rgba, 1);
   return 0;
 }
 

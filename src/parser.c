@@ -702,7 +702,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_stroke (ctx);
         break;
       case CTX_STROKE_SOURCE:
-        ctx_source_stroke (ctx);
+        ctx_stroke_source (ctx);
         break;
       case CTX_RESTORE:
         ctx_restore (ctx);

@@ -236,7 +236,7 @@ float ctx_get_global_alpha (Ctx *ctx);
 void ctx_named_source (Ctx *ctx, const char *name);
 // followed by a color, gradient or pattern definition
 
-void ctx_source_strok  (Ctx *ctx); // next source definition is for stroking
+void ctx_stroke_source  (Ctx *ctx); // next source definition is for stroking
 
 void ctx_rgba_stroke   (Ctx *ctx, float r, float g, float b, float a);
 void ctx_rgb_stroke    (Ctx *ctx, float r, float g, float b);

@@ -7443,6 +7443,8 @@ void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity)
       r = g = b = val;
     }
   ctx_rgba8 (ctx, r, g, b, 255);
+  ctx_stroke_source (ctx);
+  ctx_rgba8 (ctx, r, g, b, 255);
 }
 
 int vt_keyrepeat (VT *vt)

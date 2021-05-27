@@ -89,7 +89,14 @@
       <h3>Terminal</h3>
 
       <p>
-      <span style='background:red;color:white;'>WARNING:</span> do not trust the ctx terminal with potentially hostile clients, the remote side can open the microphone and listen, as well as possibly use decoding of images. These capabilities will be made optional in the future.
+      <span style='background:red;color:white;'>WARNING:</span>
+      The ctx terminal undergoes fuzz testing and its internal fuzzer has
+      uncovered problems in screen, mlterm and more, there are capabilities
+      which should be optional which are not yet - like stb_image for image format
+      decoding and the ability to listen to the microphone that are a potential
+      security risk if you are using a system with programs that target the ctx
+      terminal - for now unlikely since the terminal is rather unknown; but
+      you've been warned.
       </p>
 
       <!--

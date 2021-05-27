@@ -223,8 +223,7 @@ struct
 };
 void ctx_get_matrix (Ctx *ctx, CtxMatrix *matrix);
 
-int ctx_color_fill (Ctx *ctx, const char *string);
-int ctx_color_stroke (Ctx *ctx, const char *string);
+int ctx_color (Ctx *ctx, const char *string);
 typedef struct _CtxState CtxState;
 CtxColor *ctx_color_new ();
 CtxState *ctx_get_state (Ctx *ctx);
@@ -233,7 +232,7 @@ void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, flo
 void ctx_color_free (CtxColor *color);
 void ctx_set_color (Ctx *ctx, uint64_t hash, CtxColor *color);
 int  ctx_get_color (Ctx *ctx, uint64_t hash, CtxColor *color);
-int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string);
+int  ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string);
 
 int ctx_color_is_transparent (CtxColor *color);
 int ctx_utf8_len (const unsigned char first_byte);

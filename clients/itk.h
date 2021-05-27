@@ -305,8 +305,9 @@ void itk_style_color (Ctx *ctx, const char *name)
    if (str)
    {
      while (*str == ' ')str++;
-     ctx_color_fill (ctx, str);
-     ctx_color_stroke (ctx, str);
+     ctx_color (ctx, str);
+     ctx_stroke_source (ctx);
+     ctx_color (ctx, str);
    }
    else
    {
