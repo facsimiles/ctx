@@ -13,6 +13,8 @@ ctx_tiled_threads_done (CtxTiled *tiled)
   return sum;
 }
 
+int _ctx_damage_control = 0;
+
 void ctx_tiled_free (CtxTiled *tiled)
 {
   tiled->quit = 1;
@@ -96,16 +98,13 @@ inline static void ctx_tiled_flush (CtxTiled *tiled)
         }
       }
 
-#if CTX_DAMAGE_CONTROL
-    for (int i = 0; i < tiled->width * tiled->height; i++)
+    if (_ctx_damage_control)
     {
-      int new_ = (tiled->pixels[i*4+0]+ tiled->pixels[i*4+1]+ tiled->pixels[i*4+2])/3;
-      //if (new_>1) new_--;
-      tiled->pixels[i*4]  = (tiled->pixels[i*4] + 255)/2;
-      tiled->pixels[i*4+1]= (tiled->pixels[i*4+1] + new_)/2;
-      tiled->pixels[i*4+2]= (tiled->pixels[i*4+1] + new_)/2;
+      for (int i = 0; i < tiled->width * tiled->height; i++)
+      {
+        tiled->pixels[i*4+2]  = (tiled->pixels[i*4+2] + 255)/2;
+      }
     }
-#endif
 
     tiled->render_frame = ++tiled->frame;
 
@@ -719,9 +718,10 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 
        int col_pre_skip = tiled->min_col * tiled->width/CTX_HASH_COLS;
        int col_post_skip = (CTX_HASH_COLS-tiled->max_col-1) * tiled->width/CTX_HASH_COLS;
-#if CTX_DAMAGE_CONTROL
-       pre_skip = post_skip = col_pre_skip = col_post_skip = 0;
-#endif
+       if (_ctx_damage_control)
+       {
+         pre_skip = post_skip = col_pre_skip = col_post_skip = 0;
+       }
 
        if (pre_skip < 0) pre_skip = 0;
        if (post_skip < 0) post_skip = 0;

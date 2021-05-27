@@ -152,8 +152,22 @@ static int is_in_ctx (void)
   return 0;
 }
 
+extern int _ctx_damage_control;
+
 Ctx *ctx_new_ui (int width, int height)
 {
+#if CTX_TILED
+  if (getenv ("CTX_DAMAGE_CONTROL"))
+  {
+    const char * val = getenv ("CTX_DAMAGE_CONTROL");
+    if (!strcmp (val, "0") ||
+        !strcmp (val, "off"))
+      _ctx_damage_control = 0;
+    else
+      _ctx_damage_control = 1;
+  }
+#endif
+
   if (getenv ("CTX_HASH_CACHE"))
   {
     const char * val = getenv ("CTX_HASH_CACHE");

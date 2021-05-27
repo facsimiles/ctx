@@ -32,7 +32,7 @@
 #endif
 
 #define CTX_DITHER               1 //
-#define CTX_DAMAGE_CONTROL       0// visualize damage in fb/sdl backends
+#define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl backends
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1
 #define CTX_EVENTS               1
