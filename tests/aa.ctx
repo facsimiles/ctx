@@ -1,0 +1,36 @@
+rgb 1 1 1 rectangle 0 0 100% 100% fill
+
+rgb 0 0 0
+
+rectangle 10 5 1 10
+fill
+
+rectangle 10 5 10 1
+fill
+
+rectangle 20.5 5.5 1 10
+fill
+
+rectangle 20.5 5.5 10 1
+fill
+
+_ rgb 0 0 0
+lineWidth 1
+moveTo 10 20
+lineTo 20 20
+stroke
+
+moveTo 25 20.5
+lineTo 35 20.5
+stroke
+
+moveTo 45 10
+lineTo 45 20
+stroke
+
+moveTo 55.5 10
+lineTo 55.5 20
+stroke
+
+
+
