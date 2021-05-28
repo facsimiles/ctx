@@ -7394,7 +7394,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
  */
 
 
-void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity)
+void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity, int set_stroke)
 {
   uint8_t r = 0, g = 0, b = 0;
   if (no < 16 && no >= 0)
@@ -7443,8 +7443,11 @@ void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity)
       r = g = b = val;
     }
   ctx_rgba8 (ctx, r, g, b, 255);
-  ctx_stroke_source (ctx);
-  ctx_rgba8 (ctx, r, g, b, 255);
+  if (set_stroke)
+  {
+    ctx_stroke_source (ctx);
+    ctx_rgba8 (ctx, r, g, b, 255);
+  }
 }
 
 int vt_keyrepeat (VT *vt)
@@ -7681,7 +7684,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
               bg_intensity = -1;
               if (color == 0)
                 goto bg_done;
-              vt_ctx_set_color (vt, ctx, color, bg_intensity);
+              vt_ctx_set_color (vt, ctx, color, bg_intensity, 0);
             }
           else
             {
@@ -7747,7 +7750,9 @@ bg_done:
         }
     }
 
-  if (unichar == ' ' && !(underline || double_underline || curved_underline))
+  int has_underline = (underline || double_underline || curved_underline);
+
+  if (unichar == ' ' && !has_underline)
     is_hidden = 1;
 
   if (!is_hidden)
@@ -7761,6 +7766,11 @@ bg_done:
           temp >>= 8;
           int b = temp & 0xff;
           ctx_rgba8 (ctx, r, g, b, 255);
+          if (has_underline)
+          {
+            ctx_stroke_source (ctx);
+            ctx_rgba8 (ctx, r, g, b, 255);
+          }
         }
       else
         {
@@ -7785,9 +7795,12 @@ bg_done:
                     for (int i = 0; i <3 ; i++)
                       { rgb[i] = vt->fg_color[i]; }
                 }
-              ctx_rgba8 (ctx, rgb[0],
-                             rgb[1],
-                             rgb[2], 255);
+              ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
+              if (has_underline)
+              {
+                ctx_stroke_source (ctx);
+                ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
+              }
             }
           else
             {
@@ -7796,7 +7809,7 @@ bg_done:
               else
                 { color = (style >> 16) & 255; }
               bg_intensity = -1;
-              vt_ctx_set_color (vt, ctx, color, fg_intensity);
+              vt_ctx_set_color (vt, ctx, color, fg_intensity, has_underline);
             }
         }
       if (italic)
