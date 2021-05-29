@@ -816,20 +816,20 @@ Ctx *ctx_new_term (int width, int height)
 
   if (!mode) term->mode = CTX_TERM_SEXTANT;
   else if (!strcmp (mode, "sextant")) term->mode = CTX_TERM_SEXTANT;
-  else if (!strcmp (mode, "ascii")) term->mode = CTX_TERM_ASCII;
-  else if (!strcmp (mode, "ascii-mono")) term->mode = CTX_TERM_ASCII_MONO;
+  else if (!strcmp (mode, "ascii")) term->mode = CTX_TERM_ASCII_MONO;
+  //else if (!strcmp (mode, "ascii-mono")) term->mode = CTX_TERM_ASCII_MONO;
   else if (!strcmp (mode, "quarter")) term->mode = CTX_TERM_QUARTER;
+  //else if (!strcmp (mode, "braille")){
+  //  term->mode = CTX_TERM_BRAILLE;
+  //  ctx_term_ch = 4;
+  //}
   else if (!strcmp (mode, "braille")){
-    term->mode = CTX_TERM_BRAILLE;
-    ctx_term_ch = 4;
-  }
-  else if (!strcmp (mode, "braille-mono")){
     term->mode = CTX_TERM_BRAILLE_MONO;
     ctx_term_ch = 4;
   }
   else {
     fprintf (stderr, "recognized values for CTX_TERM_MODE:\n"
-                    " sextant ascii quarter braille braille-mono\n");
+                    " sextant ascii quarter braille\n");
     exit (1);
   }
 

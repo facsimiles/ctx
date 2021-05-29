@@ -154,6 +154,22 @@ static int is_in_ctx (void)
 
 extern int _ctx_damage_control;
 
+static void ctx_list_backends()
+{
+    fprintf (stderr, "possible values for CTX_BACKEND:\n");
+    fprintf (stderr, " ctx");
+#if CTX_SDL
+    fprintf (stderr, " SDL");
+#endif
+#if CTX_FB
+    fprintf (stderr, " fb");
+    fprintf (stderr, " drm");
+#endif
+    fprintf (stderr, " term");
+    fprintf (stderr, " termimg");
+    fprintf (stderr, "\n");
+}
+
 Ctx *ctx_new_ui (int width, int height)
 {
 #if CTX_TILED
@@ -216,18 +232,7 @@ Ctx *ctx_new_ui (int width, int height)
     backend = NULL;
   if (backend && !strcmp (backend, "list"))
   {
-    fprintf (stderr, "possible values for CTX_BACKEND:\n");
-    fprintf (stderr, " ctx");
-#if CTX_SDL
-    fprintf (stderr, " SDL");
-#endif
-#if CTX_FB
-    fprintf (stderr, " fb");
-    fprintf (stderr, " drm");
-#endif
-    fprintf (stderr, " term");
-    fprintf (stderr, " termimg");
-    fprintf (stderr, "\n");
+    ctx_list_backends ();
     exit (-1);
   }
 
@@ -284,6 +289,7 @@ Ctx *ctx_new_ui (int width, int height)
   if (!ret)
   {
     fprintf (stderr, "no interactive ctx backend\n");
+    ctx_list_backends ();
     exit (2);
   }
   ctx_get_event (ret); // enables events
