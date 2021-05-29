@@ -374,6 +374,62 @@ to be combined with all compositing modes.
               <tr><td><a href='binaries/ctx-i486-static'>ctx-i486-static</a></td><td>32bit static linux binary - should work in many distros on framebuffer, /dev/fb0 and braille backends.</tr>
       </table>
 
+      <h3>Environment variables</h3>
+
+      <dl>
+        <dt>CTX_BACKEND</dt>
+        <dd>Override the backend used for interactive ctx applications,
+        possible values:
+          <dl>
+             <dt>auto (default)</dt><dd>try - in order: ctx, SDL2, drm, fb, term</dd>
+             <dt>ctx</dt><dd>use the ctx protocol, from inside a ctx terminal.</dd>
+             <dt>drm</dt><dd>linux DRM</dd>
+             <dt>fb</dt><dd>linux framebuffer opening /dev/fb or /dev/fb0</dd>
+             <dt>term</dt><dd>output by converting to terminal graphics, with text at default font size mapped to actual text.</dd>
+          </dl>
+        </dd>
+        <dt>CTX_THREADS</dt>
+        <dd>The number of rendering threads to use, defaults to number of
+        cores.</dd>
+
+        <dt>CTX_TERM_MODE</dt>
+        <dd>Controls the characters used for drawing in CTX_BACKEND=term mode,
+            possible values:
+           <dl>
+             <dt>sextant (default)</dt><dd>use teletext sextant mosaic characters</dd>
+             <dt>ascii</dt><dd>Use a subset of ascii characters</dd>
+             <dt>quarter</dt><dd>Use quarter pixels</dd>
+             <dt>braille</dt><dd>Use braille characters varying only foreground color</dd>
+           </dl>
+        </dd>
+        <dt>CTX_TERM_FORCE_FULL</dt>
+        <dd>if set to non 0/no always send the full frame instead of optimizing for lower bandwidth usage - should noe be needed apart for debugging.</dd>
+
+
+        <dt>CTX_DAMAGE_CONTROL</dt>
+        <dd>Visualize which cached pixels are pushed to display </dd>
+
+        <dt>CTX_HASH_CACHE</dt>
+        <dd>if set to 0 turns off the hash cache - this means that the full frame is rerendered every time, useful to verify if bugs involving non-updating bits of the screen is related to incompleteness of hashing.
+        </dd>
+
+        <dt>CTX_SHAPE_CACHE</dt>
+        <dd>if set to 0 turns off the shape caching.</dd>
+      </dl>
+
+      <dl>
+
+        <dt>CTX_DEBUG_SHAPE_CACHE</dt>
+        <dd>print statistics about hit and miss rate for shape cache</dd>
+<!--
+        <dt>TERM_ENQ_REPLY</dt>
+        <dd></dd>
+        <dt>SHELL</dt>
+        <dd></dd>
+-->
+      </dl>
+
+
 <h2 id='license'>license and funding</h2>
 <p> The terminal is available under <a
         href='https://www.gnu.org/licenses/gpl-3.0.en.html'>GPLv3+</a>, and
