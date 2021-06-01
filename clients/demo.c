@@ -18,6 +18,17 @@ int frame_no = 0;
 extern int _ctx_max_threads;
 extern int _ctx_enable_hash_cache;
 
+static void demo_next (CtxEvent *event, void *data1, void *data2)
+{
+        test_no ++;
+        ctx_set_dirty (event->ctx, 1);
+}
+
+static void demo_prev (CtxEvent *event, void *data1, void *data2)
+{
+        test_no --;
+        ctx_set_dirty (event->ctx, 1);
+}
 
 int main (int argc, char **argv)
 {
@@ -149,6 +160,8 @@ int main (int argc, char **argv)
 
       itk_done (itk);
 
+      ctx_add_key_binding (ctx, "page-up", NULL, "foo", demo_prev, NULL);
+      ctx_add_key_binding (ctx, "page-down", NULL, "foo", demo_next, NULL);
       ctx_add_key_binding (ctx, "control-q", NULL, "foo", itk_key_quit, NULL);
       ctx_add_key_binding (ctx, "q", NULL, "foo", itk_key_quit, NULL);
 
@@ -677,6 +690,8 @@ static int name_count = 2;
 
 static int name_ids = 2;
 static int selected_name = -1;
+
+
 static void select_name (CtxEvent *event, void *data1, void *data2)
 {
   Name *item = data1;

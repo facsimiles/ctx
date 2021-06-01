@@ -11,14 +11,16 @@ function cleanup {
 trap cleanup EXIT # restore terminal state on ctrl+c and regular exit
 
 while [ 1 == 1 ]; do # infinite loop
+
 hour_radians=`bc <<<"scale=3;(($(date +%H|sed 's/^0//')+($(date +%M|sed s'/^6//')/60.0))/12.0+0.75)*3.14152*2"`
 minute_radians=`bc <<<"scale=3;($(date +%M|sed 's/^0//')/60.0+0.75)*3.14152*2"`
 #second_radians=`bc <<<"scale=3;($(date +%S|sed 's/^0//')/60.0+0.75)*3.14152*2"`  # use this for "jumpy" second hand
 second_radians=`bc <<<"scale=3;(($(date +%N)/1000000000.0+$(date +%S|sed 's/^0//'))/60.0+0.75)*3.14152*2"`
 radius=45
+
 echo -ne "\e[H\e[?200h
 reset 
-rgbaS 1 1 1 0.5 # bbbb
+_ rgba 1 1 1 0.5 
 arc 50% 50% $radius% 0.0 6.4 0
 lineWidth $((radius/10))%
 stroke
@@ -31,12 +33,13 @@ stroke
 lineWidth $((radius/40))%
 moveTo 50% 50%
 arc 50% 50% $((radius * 90 / 100))%  $second_radians $second_radians 0
-rgbaS 1 0.1 0.1 1
+_ rgba 1 0.1 0.1 1
 stroke
 flush
 done ";
 
-echo -ne "\e[5n" # query terminal status, expect \e[0n back, wait for the n
-foo=x; while [ "x$foo" != "xn" ] ;do read -s -n 1 foo; done 
+#echo -ne "\e[5n" # query terminal status, expect \e[0n back, wait for the n
+#foo=x; while [ "x$foo" != "xn" ] ;do read -s -n 1 foo; done 
 
+sleep 0.1  # target ~10fps
 done

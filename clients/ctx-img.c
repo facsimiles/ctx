@@ -35,25 +35,19 @@ int stb_components = 0;
 
 static void image_drag (CtxEvent *event, void *data0, void *data1)
 {
-        if (1)
-        {
    ox0 += event->delta_x / scale;
    oy0 += event->delta_y / scale;
-        }
    dirty++;
 }
 
 static void image_scroll (CtxEvent *event, void *data0, void *data1)
 {
 #if 0
-        if (1)
-        {
    ox0 += event->delta_x / scale;
    oy0 += event->delta_y / scale;
-        }
-#endif
    scale *= 1.1;
    dirty++;
+#endif
 }
 
 int main(int argc, char *argv[])
@@ -86,7 +80,8 @@ int main(int argc, char *argv[])
   while (!quit)
   {
     CtxEvent *event;
-    if (dirty) {
+    if (dirty)
+    {
       ctx_reset (ctx);
       ctx_save (ctx);
       ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
@@ -157,14 +152,12 @@ int main(int argc, char *argv[])
             ox0 -= shift_cursor_translate / scale;
           else if (!strcmp (event->string, "f"))
           {
-
-  scale = ctx_width (ctx) * 1.0 / stb_w;
-  scaleh = ctx_height (ctx) * 1.0 / stb_h;
-  if (scaleh < scale)
-     scale = scaleh;
-  ox0 = (ctx_width(ctx)/scale-(stb_w)) / 2;
-  oy0 = (ctx_height(ctx)/scale-(stb_h)) / 2;
-
+            scale = ctx_width (ctx) * 1.0 / stb_w;
+            scaleh = ctx_height (ctx) * 1.0 / stb_h;
+            if (scaleh < scale)
+              scale = scaleh;
+            ox0 = (ctx_width(ctx)/scale-(stb_w)) / 2;
+            oy0 = (ctx_height(ctx)/scale-(stb_h)) / 2;
           }
           else if (!strcmp (event->string, "1"))
           {
