@@ -178,7 +178,7 @@ done "; sleep 0.1; done
 <tr><td><tt>I</tt> <tt>defineTexture</tt></td><td>"eid" width height format ~a85encodedpixels~</td><td>defines a texture, for now format is an integer that for 1-4 corresponds to GRAY8, GRAYA8, RGB8 and RGBA8, higher integer values correspond to the pixel formats used internally in ctx; but the protocol does as of yet not have a way to refer to pixelformat by a non-integer values.</td></tr>
 <tr><td><tt>J</tt> <tt>rotate</tt></td><td>radians</td></tr>
 <!--
-<tr><td>K color</td><td>model component0 [component1 [component2..]]><td>number of arguments depend on color model, this is normally nor used, instead of the commands rgb, rgba, drgb, cmyk etc.</td> -->
+<tr><td>K color</td><td>model component0 [component1 [component2..]]><td>number of arguments depend on color model, this representation is only used in the binary protocol - in text rgb, rgba, drgb, cmyk etc is used instead</td> -->
 
 <tr><td><tt>L</tt> <tt>lineTo</tt></td><td>x y</td></tr>
 <tr><td><tt>M</tt> <tt>moveTo</tt></td><td>x y</td></tr>
@@ -205,19 +205,22 @@ done "; sleep 0.1; done
                 and blends and composites it with the content before the group
                 using the now current compositing mode, blending mode and
 global alpha.</td></tr>
-
         </table>
 
         <h3>Detailed syntax description</h3>
         <p>The language consists of a stream of words, numbers and strings,
         optionally separated by white space.  The characters 
-        <tt>,</tt><tt>=</tt><tt>(</tt><tt>)</tt><tt>;</tt> are also treated as white-space.
+        <tt>,</tt><tt>=</tt><tt>(</tt><tt>)</tt><tt>;</tt> are also treated
+        as white-space.
         Words are substrings consisting of one or more characters in the ranges
-        <tt>a</tt>-<tt>z</tt> and <tt>A</tt>-<tt>Z</tt>. Numbers are sequences of <tt>0</tt>-<tt>9</tt>. Numbers can be followed by
-        the suffixes <tt>%</tt> or <tt>@</tt>, indicating that units of percent canvas width/height
-        should be used or a global em / cell-size. <tt>^</tt> is equivalent to CSS vh, and <tt>~</tt> vw,
-        this can be used to override the automatic choice done by <tt>%</tt>, which
-        favors height for dimensions that are independent of x/y like
+        <tt>a</tt>-<tt>z</tt> and <tt>A</tt>-<tt>Z</tt>.
+
+        Numbers are sequences of <tt>0</tt>-<tt>9</tt>. Numbers can be followed
+        by the suffixes <tt>%</tt> or <tt>@</tt>, indicating that units of
+        percent canvas width/height should be used or a global em / cell-size.
+        <tt>^</tt> is equivalent to CSS vh, and <tt>~</tt> vw, this can be used
+        to override the automatic choice done by <tt>%</tt>, which favors
+        height for dimensions that are independent of x/y like
         <tt>lineWidth</tt> and <tt>shadowBlur</tt>.
 
         Strings are raw binary UTF8 contained
@@ -225,8 +228,8 @@ global alpha.</td></tr>
         though they can also be directly included in the string.
         <tt>#</tt> introduces a comment and the rest of the line is ignored.</p>
 
-        <p>Blobs are represented as strings using a85 ~~ as quotemarks. (optional compression
-        makses sense to add here).</p>
+        <p>Blobs are represented as strings using a85 ~~ as quotemarks.
+        (optional compression makses sense to add here).</p>
 
            </div>
       </body>

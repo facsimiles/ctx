@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300.000000px" height="300.000000px" viewBox='95 10 320 320'>
+<defs>
+<linearGradient id='g1' x1="400" y1="0" x2="110" y2="0" gradientUnits="userSpaceOnUse">
+<stop offset="0.0" style="stop-color:#aa00ff;"/>
+<stop offset="0.5" style="stop-color:#ff0000;"/>
+<stop offset="0.8" style="stop-color:#ffaa00;"/>
+<stop offset="1.0" style="stop-color:#ffffaa;"/>
+</linearGradient>
+<linearGradient id='g2' x1="400" y1="100" x2="300" y2="300" gradientUnits="userSpaceOnUse">
+<stop offset="0.2" style="stop-color:#00ff55;stop-opacity:0.4;"/>
+<stop offset="0.8" style="stop-color:#0000ff;stop-opacity:0.6;"/>
+<stop offset="1.0" style="stop-color:#4444ff;stop-opacity:1.0;"/>
+</linearGradient>
+</defs>
+<path style="fill:white;opacity:0.4;" d="M220 30M220 260c0 41 30 41 45 25L388 132A115 115 0 0 1 220 30"/>
+<path style="fill:url(#g1)" d="M220 300H200A80 80 0 1 1 200 132h60l130 168"/>
+<path style="fill:url(#g2);" d="M220 30M220 260c0 41 30 41 45 25L388 132A115 115 0 0 1 220 30"/>
+</svg>
