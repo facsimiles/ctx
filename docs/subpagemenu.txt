@@ -1,5 +1,7 @@
        <div id='menu'>
-                <a href='https://ctx.graphics/'>ctx</a>
+              <a href='https://ctx.graphics/'>
+      <img style='max-width:6em' src='../graphics.ctx.terminal.svg' alt='ctx'/>
+              </a>
                 <a href='https://ctx.graphics/.git/'>git</a>
                 <a href='../#downloads'>code</a>
                 <br/>
