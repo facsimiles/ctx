@@ -1,33 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2021 Øyvind Kolås -->
 <component type="desktop">
-        <id>graphics.ctx.terminal</id>
-        <launchable type='desktop-id'>graphics.ctx.terminal.desktop</launchable>
+  <id>graphics.ctx.terminal</id>
+  <launchable type='desktop-id'>graphics.ctx.terminal.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>LGPL-2.1+</project_license>
   <content_rating type="oars-1.1" />
-
   <name>ctx terminal</name>
-  <categories>
-    <category>Utilty</category>
-  </categories>
-  <summary>media and vectors in the terminal revisited</summary>
+  <categories> <category>Utility</category> </categories>
+  <summary>terminal with raster and vector graphics and audio capabilities</summary>
   <description>
-    <p>A terminal emulator with UTF8 support, sixels, ctx vector graphics, kitty graphics, iterm2 graphics, VT102, VT220 and partial VT4xx escape code coverage.
-    </p>
+  <p>
+     A UTF8 based DEC family terminal emulator with full VT200 level, partial
+     VT300/VT400 levels, multiple tabs/clients, mouse events, underlining,
+     wordwrap justification, sixels, kitty graphics, iterm2 graphics, ctx vector
+     graphics.
+  </p>
   </description>
-
   <screenshots>
     <screenshot type="default">
        <image>https://ctx.graphics/pid1.png</image>
     </screenshot>
   </screenshots>
-
   <url type="homepage">https://ctx.graphics/</url>
-
   <developer_name>Øyvind Kolås</developer_name>
   <update_contact>pippin_at_gimp.org</update_contact>
-
   <launchable type="desktop-id">ctx.graphics.terminal.desktop</launchable>
   <releases>
     <release version="0.0.0" date="2021-02-08" />

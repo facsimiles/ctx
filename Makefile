@@ -86,10 +86,15 @@ clean:
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
 install: ctx
-	install -d $(DESTIDR)$(PREFIX)/bin
-	install -m755 ctx $(DESTIDR)$(PREFIX)/bin
+	install -D -m755 -t $(DESTIDR)$(PREFIX)/bin ctx
+	install -D -m644 -t $(DESTIR)$(PREFIX)/share/appdata meta/graphics.ctx.terminal.appdata.xml
+	install -D -m644 -t $(DESTIR)$(PREFIX)/share/applications meta/graphics.ctx.terminal.desktop
+	install -D -m644 -t $(DESTIR)$(PREFIX)/share/icons/hicolor/scalable/apps meta/graphics.ctx.terminal.svg
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/ctx
+	rm -f $(DESTIR)$(PREFIX)/share/appdata/graphics.ctx.terminal.appdata.xml
+	rm -f $(DESTIR)$(PREFIX)/share/applications/graphics.ctx.terminal.desktop
+	rm -f $(DESTIR)$(PREFIX)/share/icons/hicolor/scalable/apps/graphics.ctx.terminal.svg
 
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DNO_LIBCURL

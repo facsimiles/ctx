@@ -8,7 +8,6 @@ finish-args:
   - --socket=fallback-x11
   - --device=dri
   - --talk-name=org.freedesktop.Flatpak
-
 command: ctx
 modules:
         - name: babl
@@ -25,10 +24,7 @@ modules:
                 - ./configure.sh
                 - make -j4
                 - strip ctx
-                - install -D ctx /app/bin/ctx
-                - install -D -m644 -t /app/share/appdata meta/graphics.ctx.terminal.appdata.xml
-                - install -D -m644 -t /app/share/applications meta/graphics.ctx.terminal.desktop
-                - install -D -m644 -t /app/share/icons/hicolor/scalable/apps meta/graphics.ctx.terminal.svg
+                - PREFIX=/app/ make install
           sources:
            - type: git
              url: file:///home/pippin/src/ctx/.git
