@@ -2,15 +2,17 @@
               <a href='https://ctx.graphics/'>
       <img style='max-width:6em' src='../graphics.ctx.terminal.svg' alt='ctx'/>
               </a>
-                <a href='https://ctx.graphics/.git/'>git</a>
-                <a href='../#downloads'>code</a>
-                <br/>
-                <a href='../rasterizer/'>rasterizer</a>
+                <a href='../terminal/'>terminal</a>
                 <a href='../protocol/'>protocol</a>
+                <a href='../sdk/'>sdk</a>
+                <a href='../rasterizer/'>rasterizer</a>
+                <br/>
+                <a href='https://ctx.graphics/.git/'>git</a>
+
                 <a href='../#roadmap'>roadmap</a>
                 <a href='../#license'>license</a>
                 <br/>
-                <a href='../mcu/'>videos</a>
+                <a href='../mcu/'>mcu</a>
                 <a href='../eink/'>eink</a>
                 <a href='../tests/'>tests</a>
                 <a href='../glitch/'>glitch</a>

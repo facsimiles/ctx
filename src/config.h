@@ -510,6 +510,10 @@
 
 #ifdef CTX_RASTERIZER
 #if CTX_RASTERIZER==0
+#if CTX_SDL || CTX_FB
+#undef CTX_RASTERIZER
+#define CTX_RASTERIZER 1
+#endif
 #else
 #undef CTX_RASTERIZER
 #define CTX_RASTERIZER 1

@@ -15,24 +15,23 @@ img{image-rendering: -moz-crisp-edges; image-rendering:   -o-crisp-edges;       
                 <a href='https://ctx.graphics/'>
                  <img style='max-width:6em' src='../graphics.ctx.terminal.svg' alt='ctx'/>
                 </a>
-                <a href='https://ctx.graphics/.git/'>git</a>
-                <a href='../#downloads'>downloads</a>
-                <br/>
-                <a href='../rasterizer/'>rasterizer</a>
+                <a href='../terminal/'>terminal</a>
                 <a href='../protocol/'>protocol</a>
-                <a href='../#future'>future</a>
+                <a href='../sdk/'>sdk</a>
+                <a href='../rasterizer/'>rasterizer</a>
+
+                <br/>
+                <a href='https://ctx.graphics/.git/'>git</a>
                 <a href='../#license'>license</a>
                 <br/>
-                <a href='../mcu/'>videos</a>
-                <a href='../color/'>color</a>
-                <a href='../eink/'>eink</a>
+                <a href='../mcu/'>mcu</a>
                 <a href='../tests/'>tests</a>
                 <a href='../glitch/'>glitch</a>
         </div>
 
-           <div id='page'>
+        <div id='page'>
 
-        <h1 id='protocol'>the ctx protocol</h1>
+        <h1 id='protocol'>ctx protocol</h1>
 
         <p>The ctx text format is a direct serialization of the canvas API.
         This protocol permits sending rendering commands over serial, ptys and
@@ -46,7 +45,9 @@ img{image-rendering: -moz-crisp-edges; image-rendering:   -o-crisp-edges;       
         <tt>&nbsp;DONE&nbsp;</tt>.  </p>
 
         <p>The bash example <a href='ctx-clock.sh'>ctx-clock.sh</a>, renders an
-        analog clock that scales with the terminal window.</p>
+        analog clock that scales with the terminal window, for more
+        examples of the ctx syntax in practice see the <a href='../tests/'>rendering
+        test gallery.</a></p>
 
 <pre>
 #!/bin/bash
@@ -232,6 +233,7 @@ global alpha.</td></tr>
 
         <p>Blobs are represented as strings using a85 ~~ as quotemarks.
         (optional compression makses sense to add here).</p>
+
 
            </div>
       </body>

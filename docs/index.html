@@ -1,10 +1,9 @@
 <html>
-    <head><title>ctx – vector graphics terminal</title>
+    <head><title>vector graphics framework</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <link rel="icon" type="image/svg+xml" href="/graphics.ctx.terminal.svg"/>
     <style type='text/css'>
       @import url(ctx.css);
-      @import url(https://pippin.gimp.org/ametameric/ametamer.css?20200423);
       table { margin-top: .5em; }
       th { font-weight: normal; }
     </style>
@@ -15,93 +14,37 @@
               <a href='https://ctx.graphics/'>
       <img style='max-width:6em' src='graphics.ctx.terminal.svg' alt='ctx'/>
               </a>
-              <a href='https://ctx.graphics/.git/'>git</a>
-              <a href='#downloads'>downloads</a>
-              <br/>
-              <a href='rasterizer/'>rasterizer</a>
+              <a href='terminal/'>terminal</a>
               <a href='protocol/'>protocol</a>
-              <a href='#future'>future</a>
+              <a href='sdk/'>sdk</a>
+              <a href='rasterizer/'>rasterizer</a>
+              <br/>
+              <a href='https://ctx.graphics/.git/'>git</a>
               <a href='#license'>license</a>
               <br/>
-              <a href='mcu/'>videos</a>
-              <a href='color/'>color</a>
-              <a href='eink/'>eink</a>
+              <a href='mcu/'>mcu</a>
               <a href='tests/'>tests</a>
               <a href='glitch/'>glitch</a>
       </div>
 
       <div id='page'>
 
-      <h1>ctx – vector graphics terminal</h1>
+      <h1>vector graphics framework</h1>
 
       <p>ctx is a text- and media terminal and accompanying interactive vector
-      graphics stack, built around a textual serialization vector <a
-      href='protocol/'>protocol</a>. The textual serialization has a
-      corresponding binary representation that is used by the core rasterizer
-      as well as sharing data among threads.  The ctx protocol is available as
-      an extension to ANSI escape sequences in the ctx terminal - the terminal
-      launched when running the ctx binary with no arguments. This extension
-      allows code in any language to output vector graphics via stdin/stdout
-      which by nature can be made network transparent over telnet or ssh.</p>
-
-      <a href='pid1.png'><img style='max-width:100%' src='pid1.png'/></a>
-      <p>
-      The clock in the above screenshot is <a href='https://ctx.graphics/file/clients/clock.sh.html'>a shellscript</a>.
+      graphics stack, built around a serialization <a
+                                                                          href='protocol/'>protocol</a>. With this protocol clients in any language can draw vector
+      graphics inside the <a href='terminal/'>ctx terminal</a>.
+      A C <a href='sdk/'>SDK</a> provides backends for doing interactive ctx
+      applications as clients for the terminal, which itself is written with
+      the SDK. Programs using the ctx SDK can run on top of SDL2, directly on
+      linux framebuffer+alsa. Ctx can be configured to build to a tiny core,
+      suitable for doing raster graphics with framebuffers larger than RAM
+      on <a href='mcu/'>microcontrollers</a>.
       </p>
-
-      <h3>Library/SDK</h3>
-      <p>
-      A reference implementation of the ctx protocol is provided as a single
-      header library, <a href='ctx.h'>ctx header/library</a>. Interactive
-      Applications written using the C library can run either inside the
-      ctx terminal, or stand-alone using SDL2, fbdev/DRM or in-terminal
-      unicode quads/sextants/ascii as output.
-      </p>
-
-      <p>Mouse and touch events are registered for the currently active path,
-      with propagation control to earlier registered interactions.</p>
-
-      <p>Running directly with the SDL2 or framebuffer backends
-      has higher performance than going through the terminal abstraction,
-      reducing this gap through tuning and refactoring is a work in progress,
-      for applications the difference between 12fps and 120fps is smaller
-      and small rather than global updates are done.
-      </p>
-
-      <!--
-      <h3>javascript</h3>
-
-      <p>Through the inclusion of duktape, ctx is able to
-      execute some interactive HTML5 Canvases unmodified or with slight
-      adaptations as native applications. One example that runs
-      unmodified is <a href='https://github.com/rembound/Bubble-Shooter-HTML5'>github.com/rembound/Bubble-Shooter-HTML5</a>.
-      </p>
-      -->
-
-      <h3>Microcontrollers</h3>
-
-      <p>The self-contained static builds are sufficient to run minimalistic
-      desktop+shells only sessions with low RAM requirements. The rasterizer
-      which for multi-core use is used in parallell for multiple threads,
-      started off written to fit on <a href='mcu/'>microntrollers</a>, with the
-      right defines a RGBA 8bit rasterizer can be made to fit in 32kb of code
-      also for 64bit x86.</p>
 
 
       <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
-
-      <h3>Terminal</h3>
-
-      <p>
-      <span style='background:red;color:white;'>WARNING:</span>
-      The ctx terminal undergoes fuzz testing and its internal fuzzer has
-      uncovered problems in screen, mlterm and more, there are capabilities
-      which should be optional which are not yet - like stb_image for image format
-      decoding and the ability to listen to the microphone that are a potential
-      security risk if you are using a system with programs that target the ctx
-      terminal - for now unlikely since the terminal is rather unknown; but
-      you've been warned.
-      </p>
 
       <!--
 good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
@@ -237,202 +180,6 @@ good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
 
       <!--<h3>Features and references</h3>-->
 
-      <dl>
-         <dt>VT4xx, ECMA-48</dt><dd>Almost full vt100 and vt220 <a href='terminal/escape-sequences.html'>escape sequence handling</a>, scrollback, like xterm, dterm window manipulation (among tabs/clients), bracketed paste, 256 and 24bit colors are supported - and a growing subset of vt420 and other relevant terminal escape sequences.</dd>
-
-         <!--
-         <dt>Decent-latency</dt><dd>The ctx terminal tries to re-render as
-           little as possible, as fast as posisble using multiple
-           threads, and SIMD when possible (AVX2 ands 64-bit-pseudo-SIMD
-         implemented). Results of running typometer measuring latency under
-         a composited GNOME3, numbers are average milliseconds per update, lower
-         is better:
-
-           <table>
-              <tr><th>terminology</th><th>mlterm</th><th>ctx</th><th>kitty</th><th>gnome-terminal</th></tr>
-              <tr><td>38.2</td><td>39.8</td><td>39.4</td><td>42.6</td><td>72.0</td></tr>
-           </table>
-         </dd>
-         -->
-
-         <dt><a href='https://pippin.gimp.org/ametameric/' style='text-decoration:none; color: white; '>
-
- <span class='bg-red'>&nbsp;&nbsp;</span
-        ><span class='bg-bright-red'>Am</span
-        ><span class='bg-yellow'>et</span
-        ><span class='bg-bright-green'>am</span
-        ><span class='bg-green'>er</span
-        ><span class='bg-cyan'>ic</span
-        ><span class='bg-bright-cyan'>&nbsp;&nbsp;</span
-        ><span class='bg-bright-blue'>&nbsp;&nbsp;</span
-        ><span class='bg-blue'>&nbsp;&nbsp;</span
-        ><span class='bg-magenta'>&nbsp;&nbsp;</span
-        ><span class='bg-bright-magenta'>&nbsp;&nbsp;</span
-        ><span class='bg-white' style='border-top:1px solid gray;border-bottom:1px solid gray;'>&nbsp;&nbsp;</span
-        ><span class='bg-bright-gray'>&nbsp;&nbsp;</span
-        ><span class='bg-gray'>&nbsp;&nbsp;</span
-        ><span class='bg-brown'>&nbsp;&nbsp;</span
-        ><span class='bg-black'>&nbsp;&nbsp;</span>
-                 </a></dt>
-
-              <dd>
-                      The terminals 16 color palette called <a href='https://pippin.gimp.org/ametameric/'>ametameric</a> is optimized for legibility for both main varieties dichromats as well as trichromats.</dd>
-
-
-         <dt><a href='https://html.spec.whatwg.org/#2dcontext'>HTML5 canvas 2D context</a></dt><dd>Easily bindable C API and protocol builds directly on this standard.
-      Compositing and blending is according to <a
-      href='https://drafts.fxtf.org/compositing/'>compositing and blending
-level 2</a>; ctx goes further than the standard and permits all blending modes
-to be combined with all compositing modes.
-         </dd>
-
-         <dt>backends: ctx, DRM, fbdev, SDL2, braille<dt>
-         <dd>ctx comes with 5 interactive
-                 backends, the <em>ctx backend</em> renders the
-             ctx protocol to stdout, and reads input, this
-             provides the client interface for interactive vector
-             clients running in the ctx terminal.<br/>
-             <em>DRM and fbdev</em> backend takes
-             take keyboard input from stdin and tries to read mouse events are
-             from /dev/input/mice. 
-             The <em>SDL2</em> backend permits using ctx clients
-             under wayland/X11 and probably other platforms.
-         </dd>
-
-         <dt>RGB and CMYK, 8pc and 32bit floating point</dt><dd>
-         Supporting RGB332, RGB565 and grayscale + 1bit mode render targets.
-         ICC based color management of RGB user/device spaces through <a href='https://gegl.org/babl/'>babl</a> as an optional dependency. CMYK colors can be generated on the fly
-         from RGB or set and retained in CMYK mode - when set in CMYK mode the
-         colors correspond directly to the device colors in CMYK mode.
-         </p>
-
-         <dt>deferred rendering</dt><dd>
-         These drawlist representations are used for scanline/chunk-based
-         rendering on microcontrollers where framebuffer is to large to fit in
-         RAM and <a href='caching-and-threading/'>tiles and threaded rendering on multi-core systems</a>
-         with SDL2 and /dev/fb0 backends and network transparent rendering
-         inside ctx terminal. Another way to drive larger than RAM
-         is to re-render the frame for each segment instead of buffering it,
-         buffering is however useful when doing networked rendering, ctx
-         can be configured and adapted to deal with a wide range of scenarios.
-         .</dd>
-
-         <dt>text rendering</dt><dd>Three font loading backends, stb_truetype, native-ctx and ctx-fs. The ctx.h header ships with a built-in native-ctx font.
-
-          In following screenshot a text-file with the commands for the @ glyph
-          is being edited in vim, with instant update across all clients. This
-          massively slows down the UI but not enough to be unusuable. With
-          a simple visual vector editor working directly with the ctx-protocol
-          this provides for an almost complete live font-editor.
-          <br/>
-
-        <a href='ctx-wm.png'><img style='max-width:100%' src='ctx-wm.png'/></a>
-
-          The text-shaping is currently limited to horizontal advances +
-          horizontal kerning, no ligatures, RTL or vertical glyph advances -
-          interacting directly with harfbuzz could give us wider support.
-         </dd>
-
-
-              <dt><a href='https://en.wikipedia.org/wiki/Sixel'>sixels</a></dt><dd>DEC terminal family standard for raster graphics transfer</dd>
-              <dt><a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a></dt><dd>kitty style raster graphics transfer</dd> 
-              <dt><a href='https://iterm2.com/documentation-images.html'>iterm2 inline images</a></dt><dd>iterm2 style raster grarphics transfer</dd>
-
-         <dt><a href='https://github.com/hodefoting/atty/'>atty</a></dt>
-         <dd>audio recording and playback (only raw pcm for now, opus codec NYI) </dd>
-
-         <dt><a href='https://github.com/nothings/stb/blob/master/stb_truetype.h'>stb_truetype.h</a></dt><dd>If the declarations for stb_truetype are
-         included before ctx.h - functions to load fonts from TTF/OTF files
-         become available.</dd>
-
-         <dt><a href='https://libsdl.org/'>SDL2</a></dt><dd>Optional backend and support code that that gets build when SDL.h is included before ctx.h</dd>
-
-         <dt><a href='https://cairographics.org/'>cairo</a></dt><dd>support code to render to cairo contexts if cairo.h is included before ctx.h, useful for conformance verfication and SVG and PDF output.</dd>
-      </dl>
-
-      <h3 id='downloads'>downloads / sources</h3>
-
-      <p>The single header and static binaries for download are autogenerated
-      together with this website each time the git repository is synched.
-      </p>
-
-      <table>
-
-              <tr><td style='width:14em'><a href='ctx.h'>ctx.h</a><td>760K</td><td>The singleheader library ctx.</tr>
-
-              <tr><td><a href='https://ctx.graphics/.git/'>git repo</a></td><td>
-
-                                      <pre>$ git clone <a href='https://ctx.graphics/.git/'>https://ctx.graphics/.git</a>
-                                      </pre>
-                                      The repository contains the sources for
-                                      examples and tests, and the
-                                      implementation of 2D vector rasterization
-                                      and protocl parser and serializer.
-                                      </td>
-              </tr>
-
-              <tr><td><a href='ctx-font-regular.h'>ctx-font-regular.h</a><td>128K</td><td>Example font to use with ctx, to be a true single header solution - the ascii subset of this is already defined in ctx.h</td></tr>
-              <!--<tr><td><a href='test-size.c'>test-size.c</a></td><td>example</td></tr>-->
-              <!--<tr><td><a href='binaries/ctx-x86_64-SDL2'>ctx-x86_64-SDL2</a></td><td>ELF 64bit binary for linux dynamically linked against SDL2, should work in most distros.</tr>-->
-              <tr><td><a href='binaries/ctx-x86_64-static'>ctx-x86_64-static</a></td><td>64bit static linux binary - should work in many distros on framebuffer /dev/fb0 and braille backends</tr>
-              <tr><td><a href='binaries/ctx-i486-static'>ctx-i486-static</a></td><td>32bit static linux binary - should work in many distros on framebuffer, /dev/fb0 and braille backends.</tr>
-      </table>
-
-      <h3>Environment variables</h3>
-
-      <dl>
-        <dt>CTX_BACKEND</dt>
-        <dd>Override the backend used for interactive ctx applications,
-        possible values:
-          <dl>
-             <dt>auto (default)</dt><dd>try - in order: ctx, SDL2, drm, fb, term</dd>
-             <dt>ctx</dt><dd>use the ctx protocol, from inside a ctx terminal.</dd>
-             <dt>drm</dt><dd>linux DRM</dd>
-             <dt>fb</dt><dd>linux framebuffer opening /dev/fb or /dev/fb0</dd>
-             <dt>term</dt><dd>output by converting to terminal graphics, with text at default font size mapped to actual text.</dd>
-          </dl>
-        </dd>
-        <dt>CTX_THREADS</dt>
-        <dd>The number of rendering threads to use, defaults to number of
-        cores.</dd>
-
-        <dt>CTX_TERM_MODE</dt>
-        <dd>Controls the characters used for drawing in CTX_BACKEND=term mode,
-            possible values:
-           <dl>
-             <dt>sextant (default)</dt><dd>use teletext sextant mosaic characters</dd>
-             <dt>ascii</dt><dd>Use a subset of ascii characters</dd>
-             <dt>quarter</dt><dd>Use quarter pixels</dd>
-             <dt>braille</dt><dd>Use braille characters varying only foreground color</dd>
-           </dl>
-        </dd>
-        <dt>CTX_TERM_FORCE_FULL</dt>
-        <dd>if set to non 0/no always send the full frame instead of optimizing for lower bandwidth usage - should noe be needed apart for debugging.</dd>
-
-
-        <dt>CTX_DAMAGE_CONTROL</dt>
-        <dd>Visualize which cached pixels are pushed to display </dd>
-
-        <dt>CTX_HASH_CACHE</dt>
-        <dd>if set to 0 turns off the hash cache - this means that the full frame is rerendered every time, useful to verify if bugs involving non-updating bits of the screen is related to incompleteness of hashing.
-        </dd>
-
-        <dt>CTX_SHAPE_CACHE</dt>
-        <dd>if set to 0 turns off the shape caching.</dd>
-      </dl>
-
-      <dl>
-
-        <dt>CTX_DEBUG_SHAPE_CACHE</dt>
-        <dd>print statistics about hit and miss rate for shape cache</dd>
-<!--
-        <dt>TERM_ENQ_REPLY</dt>
-        <dd></dd>
-        <dt>SHELL</dt>
-        <dd></dd>
--->
-      </dl>
-
 
 <h2 id='license'>license and funding</h2>
 <p> The terminal is available under <a
@@ -448,71 +195,6 @@ financially supporting me, <a href='https://pippin.gimp.org'>Øyvind Kolås</a> 
           under the <a
 href='https://opensource.org/licenses/ISC'>ISC license</a>.  </p>
 
-        <h2 id='future'>future work</h2>
-        <h3 id='bugs'>pressing issues</h3>
-        <p>The current status of ctx is beyond proof of concept - but still
-        does not fully realize a minimal system demonstrating it's capabilities
-        - some features are also broken and need repair - and for third party
-        use probably more urgently than the following wishlist. When this list
-        is nearing 0 it is time for a tarball/versioned release of ctx. The
-        single header ctx.h linked from this page is a rolling release.
-        </p>
-        <ul>
-          <li>configure fonts</li>
-          <li>use separate configured fonts for mono/italic/bold
-              (keeping current fallback synthesizing code)</li>
-          <li>fonts with color emoji</li>
-          <li>clip does not clip event boxes/shapes</li>
-
-          <li>some low-level rasterizer glitches</li>
-          <li>in_fill is using bounding box</li>
-
-          <li>radial gradient is only using one center</li>
-          <li>dimensions of drop-shadow are incorrectly transformed</li>
-
-          <li>changes in texture transform incorrectly picked up by hash-cache</li>
-
-	  <li>miter limit (unless round joins are used, all corners are mitered now)</li>
-          <li>square line ends</li>
-
-          <li>palm supression during typing in drm/fbdev backend</li>
-        
-          <li>cursor keys incorrect (not passing vttest) in vt52 mode</li>
-          <li>missing terminal content rewrapping on resize</li>
-          <li>hyperlink escape sequences</li>
-          </ul>
-        </li>
-        </ul>
-
-        <h3>desirable improvements</h3>
-	<ul>
-        <li>performance, there always seem to be room for improvement.</li>
-        <li>continued code clean-ups and refactoring, making non-amalgated build work</li>
-	<li>glyph fallbacks between fonts</li>
-        <li>analytical instead of raster clipping.</li>
-        <li>double-width glyphs (terminal) - for non-terminal use this works, for emoji and asian scripts</li>
-        <li>multi-head, both for DRM when plugging in HDMI/VGA and networked
-        connect to ESP32 / html5 canvas clients.</li>
-        <li>swap some uses of cairo in <a href='http://gegl.org'>GEGL</a> with ctx, pass ctx data
-        as buffers, or have ctx backed buffers in GEGL.</li>
-        <li>binary search for glyphs in ctxf font backend, making it scale well for wide unicode coverage.</li>
-        <li>websockets + js + HTML5 Canvas renderer/client for protocols</li>
-        <li>wayland/libinput support</li>
-        <li>optional use of floating point instead of fixed point in rasterizer.</li>
-        <li>faster and correctly transformed 1d-gaussian blur for shadow blur</li>
-        <li>PDF/SVG generation (in addition to existing cairo integration)</li>
-        <li>Add API for integrating device-N and spectral with RGB/CMYK through <a href='http://pippin.gimp.org/color-simulator/'>coloritto</a></li>
-        <li>32bit float coverage from rasterizer - right now we support 32f images/color; but composite using 8bit alpha masks.</li>
-        <li>More SIMD code (the common RGBA8 cases for handled as manual
-            simulated 64bit SIMD and AVX2 are the only bits covered thus
-            far, for the floating point formats making the existing code more
-            autovectorizer friendly is a priority.)</li>
-        <li>GPU renderer, the information needed for precomputation and
-            spatial organization in many GPU rendering approaches is already
-            present - alternatively backends sitting on top of exisitng
-            libraries like NanoVg.
-        </li>
-	</ul>
 <!--
         <h3 id='example'>example code</h3>
 <pre>
