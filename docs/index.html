@@ -37,14 +37,13 @@
       href='sdk/'>SDK</a>.
 
       Ctx supports textures and can render to 8bit/32bit float buffers for RGB,
-      grayscale and CMYK, plus with 1/2/4bit grayscale and RGB565 and RGB332
-      for <a href='mcu/'>microcontrollers</a>/constrained memory.
+      grayscale and CMYK with 1/2/4bit as additions for grayscale and RGB565 and RGB332
+      for RGB useful for <a href='mcu/'>microcontrollers</a> and with constrained RAM.
 
       <p>
       Programs using ctx as a base can run on top of SDL2, directly on linux
       framebuffer+alsa. Ctx can be configured to build to a tiny core, suitable
-      for doing raster graphics with framebuffers larger than RAM on <a
-      href='mcu/'>microcontrollers</a>.
+      for memory contrained environments like <a href='mcu/'>microcontrollers</a>.
       </p>
 
 
@@ -71,7 +70,7 @@ good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       replaced with well-formed vector output - for /dev/fb0 usage fbterm is
       a *lot* faster - but lacks the richer media of ctx, which permits the terminal to
       run inside itself with minimal overhead. From within the terminal even
-      <a href='https://ctx.graphics/file/clients/clock.sh.html'>shell
+      <a href='https://ctx.graphics/file/demos/clock.sh.html'>shell
       scripts</a> get the ability to render vector graphics.
       </p>
 
@@ -107,7 +106,7 @@ good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       <tt>;</tt> are as a bonus treated as whitespace making
       some snippets almost copy pastable with javascript bits of code
       the parser for this format also supports suffixes, the
-      <a href='https://ctx.graphics/file/clients/clock.sh.html'>clock.sh</a>
+      <a href='https://ctx.graphics/file/demos/clock.sh.html'>clock.sh</a>
       example uses this to create a clock proportional to the size
       of the terminal.
       </p>

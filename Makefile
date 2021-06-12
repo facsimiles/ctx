@@ -2,7 +2,7 @@ DESTDIR ?=
 PREFIX  ?= /usr/local
 
 CCACHE=`which ccache`
-CLIENTS_CFILES = $(wildcard clients/*.c)
+CLIENTS_CFILES = $(wildcard demos/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
 all: build.conf tools/ctx-fontgen ctx $(CLIENTS_BINS)
@@ -45,7 +45,7 @@ build.conf:
 	@echo "!! now run Make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
-clients/%: clients/%.c build.conf Makefile build.conf ctx.o clients/itk.h libctx.a
+demos/%: demos/%.c build.conf Makefile build.conf ctx.o demos/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
@@ -122,7 +122,7 @@ ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts build.conf
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
-terminal/%.o: terminal/%.c ctx.h terminal/*.h clients/itk.h
+terminal/%.o: terminal/%.c ctx.h terminal/*.h demos/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o ctx-avx2.o deps.o build.conf Makefile
 	$(AR) rcs $@ $?

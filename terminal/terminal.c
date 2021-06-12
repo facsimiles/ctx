@@ -21,7 +21,7 @@
 #include "vt-line.h"
 #include "terminal.h"
 #include "vt.h"
-#include "../clients/itk.h"
+#include "../demos/itk.h"
 
 Ctx *ctx = NULL; // initialized in main
 
