@@ -1816,6 +1816,7 @@ ctx_state_init (CtxState *state)
   state->gstate.font_size       = 12;
   state->gstate.line_width      = 2.0;
   state->gstate.image_smoothing = 1;
+  state->gstate.source_stroke.type = CTX_SOURCE_INHERIT_FILL;
   ctx_state_set (state, CTX_line_spacing, 1.0f);
   state->min_x                  = 8192;
   state->min_y                  = 8192;
