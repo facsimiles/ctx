@@ -7443,11 +7443,6 @@ void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity, int set_stroke)
       r = g = b = val;
     }
   ctx_rgba8 (ctx, r, g, b, 255);
-  if (set_stroke)
-  {
-    ctx_stroke_source (ctx);
-    ctx_rgba8 (ctx, r, g, b, 255);
-  }
 }
 
 int vt_keyrepeat (VT *vt)
@@ -7766,11 +7761,6 @@ bg_done:
           temp >>= 8;
           int b = temp & 0xff;
           ctx_rgba8 (ctx, r, g, b, 255);
-          if (has_underline)
-          {
-            ctx_stroke_source (ctx);
-            ctx_rgba8 (ctx, r, g, b, 255);
-          }
         }
       else
         {
@@ -7796,11 +7786,6 @@ bg_done:
                       { rgb[i] = vt->fg_color[i]; }
                 }
               ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
-              if (has_underline)
-              {
-                ctx_stroke_source (ctx);
-                ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
-              }
             }
           else
             {
