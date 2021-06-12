@@ -22,11 +22,11 @@
        <image>https://ctx.graphics/pid1.png</image>
     </screenshot>
   </screenshots>
-  <url type="homepage">https://ctx.graphics/</url>
+  <url type="homepage">https://ctx.graphics/terminal/</url>
   <developer_name>Øyvind Kolås</developer_name>
   <update_contact>pippin_at_gimp.org</update_contact>
   <launchable type="desktop-id">ctx.graphics.terminal.desktop</launchable>
   <releases>
-    <release version="0.0.0" date="2021-02-08" />
+    <release version="0.0.1" date="2021-12-08" />
   </releases>
 </component>
