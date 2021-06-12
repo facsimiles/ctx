@@ -485,7 +485,7 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
                             float y)
 {
   int is_stroke = (rasterizer->state->source != 0);
-  CtxSource *source = is_stroke ?
+  CtxSource *source = is_stroke && (rasterizer->state->gstate.source_stroke.type != CTX_SOURCE_INHERIT_FILL)?
                         &rasterizer->state->gstate.source_stroke:
                         &rasterizer->state->gstate.source_fill;
   rasterizer->state->source = 0;
@@ -1912,7 +1912,8 @@ static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
   CtxSource source_backup = rasterizer->state->gstate.source_fill;
-  rasterizer->state->gstate.source_fill = rasterizer->state->gstate.source_stroke;
+  if (rasterizer->state->gstate.source_stroke.type != CTX_SOURCE_INHERIT_FILL)
+    rasterizer->state->gstate.source_fill = rasterizer->state->gstate.source_stroke;
   CtxState *state = rasterizer->state;
   int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;

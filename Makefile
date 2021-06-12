@@ -151,7 +151,7 @@ docs/ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile build.conf
 #git gc
 
 foo: ctx
-updateweb: all ctx.static test docs/ctx.h.html docs/ctx-font-regular.h.html 
+updateweb: all ctx.static test flatpak docs/ctx.h.html docs/ctx-font-regular.h.html 
 	(cd docs ; stagit .. )
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
@@ -181,8 +181,8 @@ ctx.com: ctx.h Makefile ctx.c
 	objcopy -S -O binary ctx.com.dbg ctx.com
 
 flatpak:
-	rm -rf build-dir;flatpak-builder --user --install build-dir meta/graphics.ctx.terminal.yml
-	flatpak-builder --repo=docs/flatpak --force-clean build-dir meta/graphics.ctx.terminal.yml
+	rm -rf build-dir;flatpak-builder --user build-dir meta/graphics.ctx.terminal.yml
+	flatpak-builder --collection-id=graphics.ctx --repo=docs/flatpak --force-clean build-dir meta/graphics.ctx.terminal.yml
 
 ctx.h: src/* fonts/ctx-font-ascii.h
 	(cd src;cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)

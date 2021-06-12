@@ -31,16 +31,20 @@
 
       <h1>vector graphics framework</h1>
 
-      <p>ctx is a text- and media terminal and accompanying interactive vector
-      graphics stack, built around a serialization <a
-                                                                          href='protocol/'>protocol</a>. With this protocol clients in any language can draw vector
-      graphics inside the <a href='terminal/'>ctx terminal</a>.
-      A C <a href='sdk/'>SDK</a> provides backends for doing interactive ctx
-      applications as clients for the terminal, which itself is written with
-      the SDK. Programs using the ctx SDK can run on top of SDL2, directly on
-      linux framebuffer+alsa. Ctx can be configured to build to a tiny core,
-      suitable for doing raster graphics with framebuffers larger than RAM
-      on <a href='mcu/'>microcontrollers</a>.
+      <p>ctx is a text- and media <a href='terminal/'>terminal</a>, with an
+      HTML5 Canvas 2D Context and SVG inspired <a href='protocol/'>vector
+      graphics protocol</a> and accompanying interactive vector graphics <a
+      href='sdk/'>SDK</a>.
+
+      Ctx supports textures and can render to 8bit/32bit float buffers for RGB,
+      grayscale and CMYK, plus with 1/2/4bit grayscale and RGB565 and RGB332
+      for <a href='mcu/'>microcontrollers</a>/constrained memory.
+
+      <p>
+      Programs using ctx as a base can run on top of SDL2, directly on linux
+      framebuffer+alsa. Ctx can be configured to build to a tiny core, suitable
+      for doing raster graphics with framebuffers larger than RAM on <a
+      href='mcu/'>microcontrollers</a>.
       </p>
 
 

@@ -89,6 +89,7 @@ enum _CtxSourceType
   CTX_SOURCE_TEXTURE,
   CTX_SOURCE_LINEAR_GRADIENT,
   CTX_SOURCE_RADIAL_GRADIENT,
+  CTX_SOURCE_INHERIT_FILL
 };
 
 typedef enum _CtxSourceType CtxSourceType;

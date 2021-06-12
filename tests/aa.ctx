@@ -2,35 +2,128 @@ rgb 1 1 1 rectangle 0 0 100% 100% fill
 
 rgb 0 0 0
 
-rectangle 10 5 1 10
+fontSize 10
+moveTo 2 10
+text 'expect sharp'
+
+rectangle 10 15 1 10
 fill
 
-rectangle 10 5 10 1
+rectangle 10 15 10 1
 fill
 
-rectangle 20.5 5.5 1 10
+moveTo    30  15
+relLineTo 10  0
+relLineTo 0   1
+relLineTo -10 0
 fill
 
-rectangle 20.5 5.5 10 1
+moveTo    25  15
+relLineTo 1   0
+relLineTo 0   1
+relLineTo -1  0
 fill
+
+moveTo    25  18
+relLineTo 2   0
+relLineTo 0   2
+relLineTo -2  0
+fill
+
+moveTo    30  18
+relLineTo 3   0
+relLineTo 0   3
+relLineTo -3  0
+fill
+
+moveTo    35  18
+relLineTo 2   0
+relLineTo 0   1
+relLineTo -2  0
+fill
+
+moveTo    40  18
+relLineTo 1   0
+relLineTo 0   2
+relLineTo -1  0
+fill
+
+moveTo    45  18
+relLineTo 1   0
+relLineTo 0   3
+relLineTo -1  0
+fill
+
+moveTo    50  18
+relLineTo 3   0
+relLineTo 0   1
+relLineTo -3  0
+fill
+
+moveTo    55 15
+relLineTo 0  10
+relLineTo 1   0
+relLineTo 0 -10
+fill
+
+
+moveTo 70 10
+text 'expect fuzzy'
+
+rectangle 70.5 15.5 1 10
+fill
+
+rectangle 70.5 15.5 10 1
+fill
+
+moveTo    100.5  15.5
+relLineTo 10  0
+relLineTo 0   1
+relLineTo -10 0
+fill
+
+moveTo    120.5 15
+relLineTo 0  10
+relLineTo 1   0
+relLineTo 0 -10
+fill
+
+
+lineWidth 2
 
 _ rgb 0 0 0
+moveTo 10 40
+lineTo 20 40
+stroke
+
+moveTo 45 30
+lineTo 45 40
+stroke
+
+moveTo 75.5 30.5
+lineTo 75.5 40.5
+stroke
+
+moveTo 90.5  40.5
+lineTo 100.5 40.5
+stroke
+
+translate 0 20.0
+
 lineWidth 1
-moveTo 10 20
-lineTo 20 20
+
+moveTo 10 40.5
+lineTo 20 40.5
 stroke
 
-moveTo 25 20.5
-lineTo 35 20.5
+moveTo 45.5 30
+lineTo 45.5 40
 stroke
 
-moveTo 45 10
-lineTo 45 20
+moveTo 75 30.5
+lineTo 75 40.5
 stroke
 
-moveTo 55.5 10
-lineTo 55.5 20
+moveTo 90.5  40
+lineTo 100.5 40
 stroke
-
-
-
