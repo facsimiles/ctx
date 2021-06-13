@@ -19,6 +19,7 @@
             margin-bottom: 0.4em;
           }
           tt { background: #ddd; padding-left: 0.3em; padding-right: 0.3em;border:.5px solid gray;}
+          pre { background: #ddd; padding:0.2em; border: .5px solid gray;}
           tt, pre { font-weight:normal; 
                   font-size: 9pt;
           }
