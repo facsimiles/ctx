@@ -7394,7 +7394,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
  */
 
 
-void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity, int set_stroke)
+void vt_ctx_get_color (VT *vt, int no, int intensity, uint8_t *rgba)
 {
   uint8_t r = 0, g = 0, b = 0;
   if (no < 16 && no >= 0)
@@ -7442,7 +7442,10 @@ void vt_ctx_set_color (VT *vt, Ctx *ctx, int no, int intensity, int set_stroke)
       float val = gray * 255 / 24;
       r = g = b = val;
     }
-  ctx_rgba8 (ctx, r, g, b, 255);
+  rgba[0]=r;
+  rgba[1]=g;
+  rgba[2]=b;
+  rgba[3]=255;
 }
 
 int vt_keyrepeat (VT *vt)
@@ -7455,7 +7458,6 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
                     float    x0, float y0, // for scrollback visible
                     uint64_t style,
                     uint32_t unichar,
-                    int      bg, int fg,
                     int      dw, int dh,
                     int      in_smooth_scroll,
                     int      in_select)
@@ -7566,8 +7568,6 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
      */
   if (on_white)
     {
-      if ( (reverse) == 0)
-        {
           if (bold)
             {
               bg_intensity =           2;
@@ -7587,30 +7587,9 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
             {
               fg_intensity = blink?2:3;
             }
-        }
-      else
-        {
-          if (bold)
-            {
-              bg_intensity = blink?2:  0;
-              fg_intensity = blink?0:  3;
-            }
-          else if (dim)
-            {
-              bg_intensity = blink?2:  0;
-              fg_intensity = blink?0:  1;
-            }
-          else
-            {
-              bg_intensity = blink?2:  0;
-              fg_intensity = blink?0:  2;
-            }
-        }
     }
   else /* bright on dark */
     {
-      if (reverse == 0)
-        {
           if (bold)
             {
               bg_intensity =           0;
@@ -7626,102 +7605,131 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
               bg_intensity =           0;
               fg_intensity = blink?1:  2;
             }
-        }
-      else
-        {
-          if (bold)
-            {
-              bg_intensity = blink?0:  2;
-              fg_intensity = blink?3:  0;
-            }
-          else if (dim)
-            {
-              bg_intensity = blink?0:  2;
-              fg_intensity = blink?1:  0;
-            }
-          else
-            {
-              bg_intensity = blink?0:  2;
-              fg_intensity = blink?2:  0;
-            }
-        }
     }
-  if (bg)
-    {
+  uint8_t bg_rgb[3]= {0,};
+  uint8_t fg_rgb[3]= {0,};
+  {
       //ctx_begin_path (ctx);
       if (style &  STYLE_BG24_COLOR_SET)
         {
-          // XXX - this case seem to be missing reverse handling
           uint64_t temp = style >> 40;
-          int r = temp & 0xff;
+          bg_rgb[0] = temp & 0xff;
           temp >>= 8;
-          int g = temp & 0xff;
+          bg_rgb[1] = temp & 0xff;
           temp >>= 8;
-          int b = temp & 0xff;
+          bg_rgb[2] = temp & 0xff;
+
           if (dh)
-            { r= g = b = 30; }
-          if (r == 0 && g == r && b == g)
-            goto bg_done;
-          ctx_rgba8 (ctx, r, g, b, 255);
+          {
+             bg_rgb[0] = 
+             bg_rgb[1] =
+             bg_rgb[2] = 30;
+
+          }
         }
       else
         {
           if (style & STYLE_BG_COLOR_SET)
             {
-              if (reverse)
-                {
-                  color = (style >> 16) & 255;
-                }
-              else
-                {
-                  color = (style >> 40) & 255;
-                }
+              color = (style >> 40) & 255;
               bg_intensity = -1;
-              if (color == 0)
-                goto bg_done;
-              vt_ctx_set_color (vt, ctx, color, bg_intensity, 0);
+              vt_ctx_get_color (vt, color, bg_intensity, bg_rgb);
             }
           else
             {
-              uint8_t rgb[3]= {0,};
               switch (bg_intensity)
                 {
                   case 0:
                     for (int i = 0; i <3 ; i++)
-                      { rgb[i] = vt->bg_color[i]; }
+                      { bg_rgb[i] = vt->bg_color[i]; }
                     break;
                   case 1:
                     for (int i = 0; i <3 ; i++)
-                      { rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
+                      { bg_rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
                     break;
                   case 2:
                     for (int i = 0; i <3 ; i++)
-                      { rgb[i] = vt->bg_color[i] * 0.05 + vt->fg_color[i] * 0.95; }
+                      { bg_rgb[i] = vt->bg_color[i] * 0.05 + vt->fg_color[i] * 0.95; }
                     break;
                   case 3:
                     for (int i = 0; i <3 ; i++)
-                      { rgb[i] = vt->fg_color[i]; }
+                      { bg_rgb[i] = vt->fg_color[i]; }
                     break;
                 }
-              if (rgb[0] == 0 && rgb[0] == rgb[1] && rgb[2] == rgb[1])
-                goto bg_done;
-              ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
             }
         }
-      if (dh)
+  }
+  if (style & STYLE_FG24_COLOR_SET)
+    {
+      uint64_t temp = style >> 16;
+      fg_rgb[0] = temp & 0xff;
+      temp >>= 8;
+      fg_rgb[1] = temp & 0xff;
+      temp >>= 8;
+      fg_rgb[2] = temp & 0xff;
+    }
+  else
+    {
+      if ( (style & STYLE_FG_COLOR_SET) == 0)
         {
-          ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - 1 - ch - ch * (vt->scroll_offset)), cw, ch + 1);
+          switch (fg_intensity)
+            {
+              case 0:
+                for (int i = 0; i <3 ; i++)
+                  { fg_rgb[i] = vt->bg_color[i] * 0.7 + vt->fg_color[i] * 0.3; }
+                break;
+              case 1:
+                for (int i = 0; i <3 ; i++)
+                  { fg_rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
+                break;
+              case 2:
+                for (int i = 0; i <3 ; i++)
+                  { fg_rgb[i] = vt->bg_color[i] * 0.20 + vt->fg_color[i] * 0.80; }
+                break;
+              case 3:
+                for (int i = 0; i <3 ; i++)
+                  { fg_rgb[i] = vt->fg_color[i]; }
+            }
         }
       else
         {
-          ctx_rectangle (ctx, x0, y0 - 1 - ch + ch * offset_y, cw, ch + 1);
+          color = (style >> 16) & 255;
+          vt_ctx_get_color (vt, color, fg_intensity, fg_rgb);
         }
-      ctx_fill (ctx);
-bg_done:
-      {
-      };
+  }
+
+  if (reverse)
+  {
+    for (int c = 0; c < 3; c ++)
+    {
+      int t = bg_rgb[c];
+      bg_rgb[c] = fg_rgb[c];
+      fg_rgb[c] = t;
     }
-  if (!fg) { return cw; }
+  }
+
+  if (
+      ((!on_white) && bg_rgb[0]==0 && bg_rgb[1]==0 && bg_rgb[2]==0) ||
+      ((on_white) && bg_rgb[0]==255 && bg_rgb[1]==255 && bg_rgb[2]==255))
+          /* these comparisons are not entirely correct, when on dark background we assume black to
+           * be default and non-set, even when theme might differ
+           */
+  {
+    /* skipping draw of background */
+  }
+  else
+  {
+    ctx_rgba8 (ctx, bg_rgb[0], bg_rgb[1], bg_rgb[2], 255);
+    if (dh)
+    {
+      ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - 1 - ch - ch * (vt->scroll_offset)), cw, ch + 1);
+    }
+    else
+    {
+      ctx_rectangle (ctx, x0, y0 - 1 - ch + ch * offset_y, cw, ch + 1);
+    }
+    ctx_fill (ctx);
+  }
   int italic        = (style & STYLE_ITALIC) != 0;
   int strikethrough = (style & STYLE_STRIKETHROUGH) != 0;
   int overline      = (style & STYLE_OVERLINE) != 0;
@@ -7752,51 +7760,10 @@ bg_done:
 
   if (!is_hidden)
     {
-      if (style & STYLE_FG24_COLOR_SET)
-        {
-          uint64_t temp = style >> 16;
-          int r = temp & 0xff;
-          temp >>= 8;
-          int g = temp & 0xff;
-          temp >>= 8;
-          int b = temp & 0xff;
-          ctx_rgba8 (ctx, r, g, b, 255);
-        }
-      else
-        {
-          if ( (style & STYLE_FG_COLOR_SET) == 0)
-            {
-              uint8_t rgb[3]= {0,};
-              switch (fg_intensity)
-                {
-                  case 0:
-                    for (int i = 0; i <3 ; i++)
-                      { rgb[i] = vt->bg_color[i] * 0.7 + vt->fg_color[i] * 0.3; }
-                    break;
-                  case 1:
-                    for (int i = 0; i <3 ; i++)
-                      { rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
-                    break;
-                  case 2:
-                    for (int i = 0; i <3 ; i++)
-                      { rgb[i] = vt->bg_color[i] * 0.20 + vt->fg_color[i] * 0.80; }
-                    break;
-                  case 3:
-                    for (int i = 0; i <3 ; i++)
-                      { rgb[i] = vt->fg_color[i]; }
-                }
-              ctx_rgba8 (ctx, rgb[0], rgb[1], rgb[2], 255);
-            }
-          else
-            {
-              if (reverse)
-                { color = (style >> 40) & 255; }
-              else
-                { color = (style >> 16) & 255; }
-              bg_intensity = -1;
-              vt_ctx_set_color (vt, ctx, color, fg_intensity, has_underline);
-            }
-        }
+
+      ctx_rgba8 (ctx, fg_rgb[0], fg_rgb[1], fg_rgb[2], 255);
+
+
       if (italic)
         {
           ctx_save (ctx);
@@ -8077,41 +8044,18 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      (vt->rows) * vt->ch);
       if (vt->reverse_video)
         {
-          //ctx_rgba (ctx, 1,1,1,0.8);
           itk_style_color (ctx, "terminal-bg-reverse");
           ctx_fill  (ctx);
-          ctx_rgba (ctx, 0,0,0,1);
         }
       else
         {
           itk_style_color (ctx, "terminal-bg");
-          //ctx_rgba (ctx, 0,0,0,0.8);
           ctx_fill  (ctx);
-          ctx_rgba (ctx, 1,1,1,1);
         }
       if (vt->scroll != 0.0f)
         ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
     }
   /* draw terminal lines */
-#if 0
-  when in scroll...
-  first draw things in scrolling region
-  then draw all else,
-#endif
-
-  /* draw cursor */
-  if (vt->cursor_visible)
-    {
-    //  ctx_rgba (ctx, 0.9, 0.8, 0.0, 0.5333);
-      ctx_rgba (ctx, 1.0,1.0,1.0,1.0);
-      ctx_begin_path (ctx);
-      ctx_rectangle (ctx,
-                     cursor_x_px, cursor_y_px,
-                     cursor_w, cursor_h);
-      ctx_fill (ctx);
-    }
-
-
    {
      for (int row = (vt->scroll!=0.0f)?vt->scroll:0; row < (vt->scroll) + vt->rows; row ++)
        {
@@ -8159,12 +8103,17 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                  if (vt->select_active == 0) in_selected_region = 0;
                  style = vt_line_get_style (line, col-1);
                  unichar = d?ctx_utf8_to_unichar (d) :' ';
-                 real_cw=vt_draw_cell (vt, ctx, r, c, x, y, style, unichar, 1, 1,
+
+                 int is_cursor = 0;
+                 if (vt->cursor_x == col && vt->cursor_y == vt->rows - row && vt->cursor_visible)
+                    is_cursor = 1;
+
+                 real_cw=vt_draw_cell (vt, ctx, r, c, x, y, style, unichar,
                                        line->double_width,
                                        line->double_height_top?1:
                                        line->double_height_bottom?-1:0,
                                        in_scrolling_region,
-                                       in_selected_region);
+                                       in_selected_region ^ is_cursor);
                  if (r == vt->cursor_y && col == vt->cursor_x)
                    {
                      cursor_x_px = x;
@@ -8185,6 +8134,23 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
           }
       }
   }
+
+#if 0
+  /* draw cursor (done inline with fg/bg reversing, some cursor styles might need
+   * additional drawing though
+   */
+  if (vt->cursor_visible)
+    {
+    //  ctx_rgba (ctx, 0.9, 0.8, 0.0, 0.5333);
+      ctx_rgba (ctx, 1.0,1.0,1.0,1.0);
+      ctx_begin_path (ctx);
+      ctx_rectangle (ctx,
+                     cursor_x_px, cursor_y_px,
+                     cursor_w, cursor_h);
+      ctx_fill (ctx);
+    }
+#endif
+
 
   {
     /* draw graphics */
