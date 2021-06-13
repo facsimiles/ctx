@@ -7606,8 +7606,8 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
               fg_intensity = blink?1:  2;
             }
     }
-  uint8_t bg_rgb[3]= {0,};
-  uint8_t fg_rgb[3]= {0,};
+  uint8_t bg_rgb[4]= {0,0,0,255};
+  uint8_t fg_rgb[4]= {255,255,255,255};
   {
       //ctx_begin_path (ctx);
       if (style &  STYLE_BG24_COLOR_SET)
@@ -7618,14 +7618,14 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
           bg_rgb[1] = temp & 0xff;
           temp >>= 8;
           bg_rgb[2] = temp & 0xff;
-
+#if 0
           if (dh)
           {
              bg_rgb[0] = 
              bg_rgb[1] =
              bg_rgb[2] = 30;
-
           }
+#endif
         }
       else
         {
