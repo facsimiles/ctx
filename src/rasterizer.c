@@ -1114,7 +1114,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
               for (int i = 0; i < 5; i++)
               {
                 ctx_rasterizer_sort_active_edges (rasterizer);
-                ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, 1, 5);
+                ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, 0, 5);
                 rasterizer->scanline ++;
                 ctx_rasterizer_increment_edges (rasterizer, 1);
                 ctx_rasterizer_feed_edges (rasterizer);
