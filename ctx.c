@@ -92,7 +92,7 @@ void ctx_simd_setup ()
   done = 1;
   if(__builtin_cpu_supports("avx2"))
   {
-    //ctx_pixel_formats = ctx_pixel_formats_avx2;
+    ctx_pixel_formats = ctx_pixel_formats_avx2;
   }
 #ifndef NO_BABL
   babl_init ();
