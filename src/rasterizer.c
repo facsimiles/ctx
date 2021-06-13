@@ -2167,12 +2167,16 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
         }
       x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
       y = entry->data.s16[3] * 1.0f / aa;
-      coords[i][0] = x;
-      coords[i][1] = y;
       if (x < minx) { minx = x; }
       if (y < miny) { miny = y; }
       if (x > maxx) { maxx = x; }
       if (y > maxy) { maxy = y; }
+
+      if (i < 6)
+      {
+        coords[i][0] = x;
+        coords[i][1] = y;
+      }
     }
 
 #if CTX_ENABLE_CLIP
