@@ -18,6 +18,37 @@ relLineTo 0   1
 relLineTo -10 0
 fill
 
+
+moveTo    100  25.2
+relLineTo 10  0
+relLineTo 0   1
+relLineTo -10 0
+fill
+
+moveTo    110  30.4
+relLineTo 10  0
+relLineTo 0   1
+relLineTo -10 0
+fill
+
+moveTo    110  35.5
+relLineTo 10  0
+relLineTo 0   1
+relLineTo -10 0
+fill
+
+moveTo    110  40.6
+relLineTo 10  0
+relLineTo 0   1
+relLineTo -10 0
+fill
+
+moveTo    110  45.8
+relLineTo 10  0
+relLineTo 0   1
+relLineTo -10 0
+fill
+
 moveTo    25  15
 relLineTo 1   0
 relLineTo 0   1
