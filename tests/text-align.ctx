@@ -13,7 +13,7 @@ stroke
 
 rgb 1 1 1
 
-fontSize 1@
+fontSize 1.5@
 moveTo 50% 20%
 textAlign start
 text "start"
