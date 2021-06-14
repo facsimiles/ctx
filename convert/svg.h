@@ -7807,7 +7807,7 @@ void mrg_xml_render (Mrg *mrg,
             float y = _ctx_str_get_float (vbox, 1);
             float width = _ctx_str_get_float (vbox, 2);
             float height = _ctx_str_get_float (vbox, 3);
-            fprintf (stderr, "viewBox:%s   %f %f %f %f\n", vbox, x, y, width, height);
+            //fprintf (stderr, "viewBox:%s   %f %f %f %f\n", vbox, x, y, width, height);
             ctx_view_box (mrg->ctx, x, y, width, height);
           }
         }
