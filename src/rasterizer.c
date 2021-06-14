@@ -250,7 +250,7 @@ CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, floa
     }
 
   tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
-  ty = ty * aa;
+  ty = ty * aa - 1;
 
   if (ty < rasterizer->scan_min)
     { rasterizer->scan_min = ty; }
@@ -278,7 +278,16 @@ CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, floa
 
   if (ty < MIN_Y) ty = MIN_Y;
   if (ty > MAX_Y) ty = MAX_Y;
-  ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * rasterizer->aa);
+  
+  ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * rasterizer->aa - 1);
+                                                                             /*  XXX this -1 adjustment
+                                                                              *  is incorrect and compensates
+                                                                              *  for corresponding shift in
+                                                                              *  the rasterizer - this might be the cause of
+                                                                              *  remaining aa error for pixel aligned vertical
+                                                                              *  strokes
+                                                                              */
+
   if (rasterizer->has_prev<=0)
     {
       if (rasterizer->uses_transforms)
@@ -293,7 +302,7 @@ CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, floa
   if (oy > MAX_Y) oy = MAX_Y;
 
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[0] = ox * CTX_SUBDIV;
-      rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[1] = oy * rasterizer->aa;
+      rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[1] = oy * rasterizer->aa - 1;
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].code = CTX_NEW_EDGE;
       rasterizer->has_prev = 1;
     }
@@ -614,7 +623,7 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           i--;
         }
 #if CTX_RASTERIZER_FORCE_AA==0
-      else if (edge_end < scanline + aa)
+      else if (edge_end <= scanline + aa)
         rasterizer->ending_edges = 1;
 #endif
     }
