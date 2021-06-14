@@ -43,7 +43,7 @@
 #define CTX_BITPACK_PACKER       0 // turned of due to asan report
 #define CTX_ENABLE_CMYK          1
 #define CTX_ENABLE_CM            1
-#define CTX_RASTERIZER_AA        5
+#define CTX_RASTERIZER_AA        15
 #define CTX_FORCE_AA             0
 #define CTX_ALSA_AUDIO           1
 #define CTX_MAX_TEXTURES         256
