@@ -250,7 +250,7 @@ CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, floa
     }
 
   tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
-  ty = ty * aa - 1;
+  ty = ty * aa;
 
   if (ty < rasterizer->scan_min)
     { rasterizer->scan_min = ty; }
@@ -261,6 +261,8 @@ CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, floa
   if (tx > rasterizer->col_max)
     { rasterizer->col_max = tx; }
 }
+
+
 
 CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
@@ -279,14 +281,7 @@ CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, floa
   if (ty < MIN_Y) ty = MIN_Y;
   if (ty > MAX_Y) ty = MAX_Y;
   
-  ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * rasterizer->aa - 1);
-                                                                             /*  XXX this -1 adjustment
-                                                                              *  is incorrect and compensates
-                                                                              *  for corresponding shift in
-                                                                              *  the rasterizer - this might be the cause of
-                                                                              *  remaining aa error for pixel aligned vertical
-                                                                              *  strokes
-                                                                              */
+  ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * rasterizer->aa);
 
   if (rasterizer->has_prev<=0)
     {
@@ -302,7 +297,7 @@ CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, floa
   if (oy > MAX_Y) oy = MAX_Y;
 
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[0] = ox * CTX_SUBDIV;
-      rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[1] = oy * rasterizer->aa - 1;
+      rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[1] = oy * rasterizer->aa;
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].code = CTX_NEW_EDGE;
       rasterizer->has_prev = 1;
     }
@@ -612,7 +607,7 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 #endif
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
-      int edge_end =rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3];
+      int edge_end =rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3]-1;
       if (edge_end < scanline)
         {
           int dx_dy = rasterizer->edges[i].dx;
@@ -658,7 +653,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 #if CTX_RASTERIZER_FORCE_AA==0
   for (int i = 0; i < rasterizer->pending_edges; i++)
     {
-      if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] <= rasterizer->scanline)
+      if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] - 1 <= rasterizer->scanline)
         {
           if (rasterizer->active_edges < CTX_MAX_EDGES-2)
             {
@@ -678,7 +673,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
   int aa = rasterizer->aa;
 #endif
   while (rasterizer->edge_pos < rasterizer->edge_list.count &&
-         (miny=entries[rasterizer->edge_pos].data.s16[1]) <= scanline 
+         (miny=entries[rasterizer->edge_pos].data.s16[1]-1)  <= scanline 
 #if CTX_RASTERIZER_FORCE_AA==0
          + aa
 #endif
@@ -687,7 +682,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     {
       if (rasterizer->active_edges < CTX_MAX_EDGES-2)
         {
-          int dy = (entries[rasterizer->edge_pos].data.s16[3] -
+          int dy = (entries[rasterizer->edge_pos].data.s16[3] - 1 -
                     miny);
           if (dy) /* skipping horizontal edges */
             {
@@ -850,7 +845,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
   int fraction = 255/aa_factor;
   coverage -= minx;
 #define CTX_EDGE(no)      entries[edges[no].index]
-#define CTX_EDGE_YMIN(no) CTX_EDGE(no).data.s16[1]
+#define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
 #define CTX_EDGE_X(no)     (rasterizer->edges[no].x)
   for (int t = 0; t < active_edges -1;)
     {
