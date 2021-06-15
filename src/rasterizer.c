@@ -1883,6 +1883,9 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   else
 #endif
     {
+      factor *= 0.96; /* this hack adjustment makes sharp 1px and 2px strokewidths
+                            end up sharp without erronious AA
+                       */
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
       CtxMatrix transform_backup = rasterizer->state->gstate.transform;
       ctx_matrix_identity (&rasterizer->state->gstate.transform);
