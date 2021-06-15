@@ -67,6 +67,12 @@ relLineTo 0   3
 relLineTo -3  0
 fill
 
+moveTo    130.5  48.5
+relLineTo 3   0
+relLineTo 0   3
+relLineTo -3  0
+fill
+
 moveTo    35  18
 relLineTo 2   0
 relLineTo 0   1

@@ -577,8 +577,17 @@ struct _VT
   int select_begin_y;
   int select_active;
 
-  
   int popped;
+
+  /* used to make runs of background on one line be drawn
+   * as a single filled rectangle
+   */
+  int   bg_active;
+  float bg_x0;
+  float bg_y0;
+  float bg_width;
+  float bg_height;
+  uint8_t bg_rgba[4];
 };
 
 
@@ -7453,6 +7462,43 @@ int vt_keyrepeat (VT *vt)
   return vt->keyrepeat;
 }
 
+static void vt_flush_bg (VT *vt, Ctx *ctx)
+{
+  if (vt->bg_active)
+  {
+    ctx_rgba8 (ctx, vt->bg_rgba[0], vt->bg_rgba[1], vt->bg_rgba[2], vt->bg_rgba[3]);
+    ctx_rectangle (ctx, vt->bg_x0, vt->bg_y0, vt->bg_width, vt->bg_height);
+    ctx_fill (ctx);
+    vt->bg_active = 0;
+  }
+}
+
+static void vt_draw_bg (VT *vt, Ctx *ctx,
+                        float x0, float y0,
+                        float width, float height,
+                        uint8_t *rgba)
+{
+   int same_color = !memcmp(rgba, vt->bg_rgba, 4);
+   if (vt->bg_active && !same_color)
+   {
+     vt_flush_bg (vt, ctx);
+   }
+
+   if (vt->bg_active && same_color)
+   {
+     vt->bg_width += width;
+   }
+   else
+   {
+     memcpy (vt->bg_rgba, rgba, 4);
+     vt->bg_active = 1;
+     vt->bg_x0 = x0;
+     vt->bg_y0 = y0;
+     vt->bg_width = width;
+     vt->bg_height = height;
+   }
+}
+
 float vt_draw_cell (VT      *vt, Ctx *ctx,
                     int      row, int col, // pass 0 to force draw - like
                     float    x0, float y0, // for scrollback visible
@@ -7460,7 +7506,8 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
                     uint32_t unichar,
                     int      dw, int dh,
                     int      in_smooth_scroll,
-                    int      in_select)
+                    int      in_select,
+                    int      is_fg)
 // dw is 0 or 1
 // dh is 0 1 or -1  1 is upper -1 is lower
 {
@@ -7708,7 +7755,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
     }
   }
 
-  if (
+  if (is_fg ||
       ((!on_white) && bg_rgb[0]==0 && bg_rgb[1]==0 && bg_rgb[2]==0) ||
       ((on_white) && bg_rgb[0]==255 && bg_rgb[1]==255 && bg_rgb[2]==255))
           /* these comparisons are not entirely correct, when on dark background we assume black to
@@ -7719,17 +7766,19 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
   }
   else
   {
-    ctx_rgba8 (ctx, bg_rgb[0], bg_rgb[1], bg_rgb[2], 255);
     if (dh)
     {
-      ctx_rectangle (ctx, ctx_floorf(x0), ctx_floorf(y0 - 1 - ch - ch * (vt->scroll_offset)), cw, ch + 1);
+      vt_draw_bg (vt, ctx, ctx_floorf(x0), ctx_floorf(y0 - 1 - ch - ch * (vt->scroll_offset)), cw, ch + 1, bg_rgb);
     }
     else
     {
-      ctx_rectangle (ctx, x0, y0 - 1 - ch + ch * offset_y, cw, ch + 1);
+      vt_draw_bg (vt, ctx, x0, y0 - 1 - ch + ch * offset_y, cw, ch + 1, bg_rgb);
     }
-    ctx_fill (ctx);
   }
+
+  if (!is_fg)
+    return cw;
+
   int italic        = (style & STYLE_ITALIC) != 0;
   int strikethrough = (style & STYLE_STRIKETHROUGH) != 0;
   int overline      = (style & STYLE_OVERLINE) != 0;
@@ -8070,67 +8119,75 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
              VtLine *line = l->data;
              int r = vt->rows - row;
              const char *data = line->string.str;
-             const char *d = data;
-             float x = x0;
-             uint64_t style = 0;
-             uint32_t unichar = 0;
-             int in_scrolling_region = vt->in_smooth_scroll && ( (r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
-             for (int col = 1; col <= vt->cols * 1.33 && x < vt->cols * vt->cw; col++)
-               {
-                 int c = col;
-                 int real_cw;
-                 int in_selected_region = 0;
-                 if (vt->in_alt_screen == 0)
+
+             vt->bg_active = 0;
+             for (int is_fg = 0; is_fg < 2; is_fg++)
+             {
+               const char *d = data;
+               float x = x0;
+               uint64_t style = 0;
+               uint32_t unichar = 0;
+               int in_scrolling_region = vt->in_smooth_scroll &&
+                   ((r >= vt->margin_top && r <= vt->margin_bottom) || r <= 0);
+               if (is_fg)
+                  vt_flush_bg (vt, ctx);
+  
+               for (int col = 1; col <= vt->cols * 1.33 && x < vt->cols * vt->cw; col++)
                  {
-                 if (r > vt->select_start_row && r < vt->select_end_row)
+                   int c = col;
+                   int real_cw;
+                   int in_selected_region = 0;
+                   if (vt->in_alt_screen == 0)
                    {
-                     in_selected_region = 1;
+                   if (r > vt->select_start_row && r < vt->select_end_row)
+                     {
+                       in_selected_region = 1;
+                     }
+                   else if (r == vt->select_start_row)
+                     {
+                       if (col >= vt->select_start_col) { in_selected_region = 1; }
+                       if (r == vt->select_end_row)
+                         {
+                           if (col > vt->select_end_col) { in_selected_region = 0; }
+                         }
+                     }
+                   else if (r == vt->select_end_row)
+                     {
+                       in_selected_region = 1;
+                       if (col > vt->select_end_col) { in_selected_region = 0; }
+                     }
                    }
-                 else if (r == vt->select_start_row)
-                   {
-                     if (col >= vt->select_start_col) { in_selected_region = 1; }
-                     if (r == vt->select_end_row)
-                       {
-                         if (col > vt->select_end_col) { in_selected_region = 0; }
-                       }
-                   }
-                 else if (r == vt->select_end_row)
-                   {
-                     in_selected_region = 1;
-                     if (col > vt->select_end_col) { in_selected_region = 0; }
-                   }
+                   if (vt->select_active == 0) in_selected_region = 0;
+                   style = vt_line_get_style (line, col-1);
+                   unichar = d?ctx_utf8_to_unichar (d) :' ';
+  
+                   int is_cursor = 0;
+                   if (vt->cursor_x == col && vt->cursor_y == vt->rows - row && vt->cursor_visible)
+                      is_cursor = 1;
+  
+                   real_cw=vt_draw_cell (vt, ctx, r, c, x, y, style, unichar,
+                                         line->double_width,
+                                         line->double_height_top?1:
+                                         line->double_height_bottom?-1:0,
+                                         in_scrolling_region,
+                                         in_selected_region ^ is_cursor, is_fg);
+                   if (r == vt->cursor_y && col == vt->cursor_x)
+                     {
+                       cursor_x_px = x;
+                     }
+                   x+=real_cw;
+                   if (style & STYLE_BLINK ||
+                       style & STYLE_BLINK_FAST)
+                     {
+                       vt->has_blink = 1;
+                     }
+                   if (d)
+                     {
+                       d = mrg_utf8_skip (d, 1);
+                       if (!*d) { d = NULL; }
+                     }
                  }
-                 if (vt->select_active == 0) in_selected_region = 0;
-                 style = vt_line_get_style (line, col-1);
-                 unichar = d?ctx_utf8_to_unichar (d) :' ';
-
-                 int is_cursor = 0;
-                 if (vt->cursor_x == col && vt->cursor_y == vt->rows - row && vt->cursor_visible)
-                    is_cursor = 1;
-
-                 real_cw=vt_draw_cell (vt, ctx, r, c, x, y, style, unichar,
-                                       line->double_width,
-                                       line->double_height_top?1:
-                                       line->double_height_bottom?-1:0,
-                                       in_scrolling_region,
-                                       in_selected_region ^ is_cursor);
-                 if (r == vt->cursor_y && col == vt->cursor_x)
-                   {
-                     cursor_x_px = x;
-                   }
-                 x+=real_cw;
-                 if (style & STYLE_BLINK ||
-                     style & STYLE_BLINK_FAST)
-                   {
-                     vt->has_blink = 1;
-                   }
-                 if (d)
-                   {
-                     d = mrg_utf8_skip (d, 1);
-                     if (!*d) { d = NULL; }
-                   }
-               }
-             ctx_begin_path (ctx);
+             }
           }
       }
   }
