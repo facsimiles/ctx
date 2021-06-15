@@ -2407,28 +2407,6 @@ ctx_rasterizer_load_image (CtxRasterizer *rasterizer,
 }
 #endif
 
-CTX_STATIC void
-ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
-                          uint16_t x,
-                          uint16_t y,
-                          uint8_t r,
-                          uint8_t g,
-                          uint8_t b,
-                          uint8_t a)
-{
-  rasterizer->state->gstate.source_fill.type = CTX_SOURCE_COLOR;
-  ctx_color_set_RGBA8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, r, g, b, a);
-#if 0
-  // XXX : doesn't take transforms into account
-  ctx_rasterizer_pset (rasterizer, x, y, 255);
-#else
-  ctx_rasterizer_move_to (rasterizer, x, y);
-  ctx_rasterizer_rel_line_to (rasterizer, 1, 0);
-  ctx_rasterizer_rel_line_to (rasterizer, 0, 1);
-  ctx_rasterizer_rel_line_to (rasterizer, -1, 0);
-  ctx_rasterizer_fill (rasterizer);
-#endif
-}
 
 CTX_STATIC void
 ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
@@ -2444,6 +2422,29 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_rel_line_to (rasterizer, 0, -height);
   ctx_rasterizer_rel_line_to (rasterizer, 0.3, 0);
   ctx_rasterizer_finish_shape (rasterizer);
+}
+
+CTX_STATIC void
+ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
+                          uint16_t x,
+                          uint16_t y,
+                          uint8_t r,
+                          uint8_t g,
+                          uint8_t b,
+                          uint8_t a)
+{
+  rasterizer->state->gstate.source_fill.type = CTX_SOURCE_COLOR;
+  ctx_color_set_RGBA8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, r, g, b, a);
+#if 0
+  // XXX : doesn't take transforms into account - and has
+  // received less testing than code paths part of protocol,
+  // using rectangle properly will trigger the fillrect fastpath
+  ctx_rasterizer_pset (rasterizer, x, y, 255);
+#else
+  ctx_rasterizer_rectangle (rasterizer, x, y, 1.0, 1.0);
+  ctx_rasterizer_fill (rasterizer);
+//  ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,  x, y, x+1, y+1); // XXX  compute coordinates correctly, and save some overhead
+#endif
 }
 
 #if CTX_ENABLE_SHADOW_BLUR
