@@ -602,6 +602,7 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline;
   int aa = rasterizer->aa;
+  int slope_limit = CTX_RASTERIZER_AA_SLOPE_LIMIT;
 #if CTX_RASTERIZER_FORCE_AA==0
   rasterizer->ending_edges = 0;
 #endif
@@ -611,7 +612,7 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (edge_end < scanline)
         {
           int dx_dy = rasterizer->edges[i].dx;
-          if (abs(dx_dy)> CTX_RASTERIZER_AA_SLOPE_LIMIT)
+          if (abs(dx_dy) > slope_limit)
             { rasterizer->needs_aa --; }
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
@@ -669,9 +670,8 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     }
 #endif
   int scanline = rasterizer->scanline;
-#if CTX_RASTERIZER_FORCE_AA==0
   int aa = rasterizer->aa;
-#endif
+  int slope_limit = CTX_RASTERIZER_AA_SLOPE_LIMIT;
   while (rasterizer->edge_pos < rasterizer->edge_list.count &&
          (miny=entries[rasterizer->edge_pos].data.s16[1]-1)  <= scanline 
 #if CTX_RASTERIZER_FORCE_AA==0
@@ -722,7 +722,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
                 }
 #endif
 #if CTX_RASTERIZER_FORCE_AA==0
-              if (abs(dx_dy)> CTX_RASTERIZER_AA_SLOPE_LIMIT)
+              if (abs(dx_dy)> slope_limit)
                 { rasterizer->needs_aa ++; }
 
               if ((miny > scanline) )
@@ -1072,10 +1072,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     int halfstep  = aa/2 + 1;
 #endif
     rasterizer->needs_aa = 0;
-    rasterizer->scanline = scan_start-aa*200;
+    rasterizer->scanline = scan_start-aa*400;
     ctx_rasterizer_feed_edges (rasterizer);
+    ctx_rasterizer_increment_edges (rasterizer, aa * 400);
     ctx_rasterizer_discard_edges (rasterizer);
-    ctx_rasterizer_increment_edges (rasterizer, aa * 200);
     rasterizer->scanline = scan_start;
     ctx_rasterizer_feed_edges (rasterizer);
     ctx_rasterizer_discard_edges (rasterizer);
