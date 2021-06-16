@@ -1,7 +1,6 @@
 SMALL_CFLAGS=-s -Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant -DNO_SDL -fno-stack-protector -fno-ident -Wl,--build-id=none -fno-semantic-interposition
-#SMALL_CFLAGS=-Ofast -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program 
-PERF_CFLAGS=-Ofast  -g
-CC=i686-linux-gnu-gcc
+PERF_CFLAGS=-Ofast -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -DCTX_AVX2=1 -mavx -mavx2 -mfpmath=sse -ftree-vectorize -funsafe-math-optimizations
+CC=gcc
 
 PROGRAMS=medium musl-static-medium tiny small baseline musl-static-tiny musl-static-small musl-static-baseline ctx-info-32bit
 
