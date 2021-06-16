@@ -797,29 +797,29 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
     case 1: break;
 #if CTX_BLOATY_FAST_PATHS
     case 2:
-#define COMPARE(a,b) \
+#define CTX_CMPSWP(a,b) \
       if (ctx_compare_edges2 (&edges[a], &edges[b])>0)\
       {\
         CtxEdge tmp = edges[a];\
         edges[a] = edges[b];\
         edges[b] = tmp;\
       }
-      COMPARE(0,1);
+      CTX_CMPSWP(0,1);
       break;
     case 3:
-      COMPARE(0,1); COMPARE(0,2); COMPARE(1,2);
+      CTX_CMPSWP(0,1); CTX_CMPSWP(0,2); CTX_CMPSWP(1,2);
       break;
     case 4:
-      COMPARE(0,1); COMPARE(2,3); COMPARE(0,2); COMPARE(1,3); COMPARE(1,2);
+      CTX_CMPSWP(0,1); CTX_CMPSWP(2,3); CTX_CMPSWP(0,2); CTX_CMPSWP(1,3); CTX_CMPSWP(1,2);
       break;
     case 5:
-      COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(3,4); COMPARE(0,3);
-      COMPARE(1,4); COMPARE(2,4); COMPARE(1,3); COMPARE(2,3);
+      CTX_CMPSWP(1,2); CTX_CMPSWP(0,2); CTX_CMPSWP(0,1); CTX_CMPSWP(3,4); CTX_CMPSWP(0,3);
+      CTX_CMPSWP(1,4); CTX_CMPSWP(2,4); CTX_CMPSWP(1,3); CTX_CMPSWP(2,3);
       break;
     case 6:
-      COMPARE(1,2); COMPARE(0,2); COMPARE(0,1); COMPARE(4,5);
-      COMPARE(3,5); COMPARE(3,4); COMPARE(0,3); COMPARE(1,4);
-      COMPARE(2,5); COMPARE(2,4); COMPARE(1,3); COMPARE(2,3);
+      CTX_CMPSWP(1,2); CTX_CMPSWP(0,2); CTX_CMPSWP(0,1); CTX_CMPSWP(4,5);
+      CTX_CMPSWP(3,5); CTX_CMPSWP(3,4); CTX_CMPSWP(0,3); CTX_CMPSWP(1,4);
+      CTX_CMPSWP(2,5); CTX_CMPSWP(2,4); CTX_CMPSWP(1,3); CTX_CMPSWP(2,3);
       break;
 #endif
     default:
@@ -827,6 +827,8 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
       break;
   }
 }
+
+#undef CTX_CMPSWP
 
 inline static void
 ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
@@ -876,7 +878,8 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
               graystart=255 - ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
             }
           if (CTX_UNLIKELY(last > maxx))
-            { last = maxx;
+            {
+              last = maxx;
               grayend=255;
             }
           else
