@@ -12,6 +12,16 @@
 #include <sys/select.h> 
 #endif
 
+#define CTX_BRANCH_HINTS  1
+
+#if CTX_BRANCH_HINTS
+#define CTX_LIKELY(x)      __builtin_expect(!!(x), 1)
+#define CTX_UNLIKELY(x)    __builtin_expect(!!(x), 0)
+#else
+#define CTX_LIKELY(x)      (x)
+#define CTX_UNLIKELY(x)    (x)
+#endif
+
 typedef struct _CtxRasterizer CtxRasterizer;
 typedef struct _CtxGState     CtxGState;
 typedef struct _CtxState      CtxState;
@@ -540,6 +550,7 @@ struct _CtxPixelFormatInfo
                           int count);
   void         (*setup) (CtxRasterizer *r);
 };
+
 
 CTX_STATIC void
 _ctx_user_to_device (CtxState *state, float *x, float *y);

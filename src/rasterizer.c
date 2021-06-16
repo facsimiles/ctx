@@ -609,7 +609,7 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
       int edge_end =rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3]-1;
-      if (edge_end < scanline)
+      if (CTX_UNLIKELY(edge_end < scanline))
         {
           int dx_dy = rasterizer->edges[i].dx;
           if (abs(dx_dy) > slope_limit)
@@ -656,7 +656,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     {
       if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] - 1 <= rasterizer->scanline)
         {
-          if (rasterizer->active_edges < CTX_MAX_EDGES-2)
+          if (CTX_LIKELY(rasterizer->active_edges < CTX_MAX_EDGES-2))
             {
               int no = rasterizer->active_edges;
               rasterizer->active_edges++;
@@ -672,15 +672,14 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
   int scanline = rasterizer->scanline;
   int aa = rasterizer->aa;
   int slope_limit = CTX_RASTERIZER_AA_SLOPE_LIMIT;
-  while (rasterizer->edge_pos < rasterizer->edge_list.count &&
+  while (CTX_LIKELY(rasterizer->edge_pos < rasterizer->edge_list.count &&
          (miny=entries[rasterizer->edge_pos].data.s16[1]-1)  <= scanline 
 #if CTX_RASTERIZER_FORCE_AA==0
          + aa
 #endif
-         
-         )
+         ))
     {
-      if (rasterizer->active_edges < CTX_MAX_EDGES-2)
+      if (CTX_LIKELY(rasterizer->active_edges < CTX_MAX_EDGES-2))
         {
           int dy = (entries[rasterizer->edge_pos].data.s16[3] - 1 -
                     miny);
@@ -865,50 +864,46 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           int first = x0 / CTX_RASTERIZER_EDGE_MULTIPLIER;
           int last  = x1 / CTX_RASTERIZER_EDGE_MULTIPLIER;
 
-          int graystart = 255 - ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
-          int grayend   = (x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff;
+          int graystart;
+          int grayend;
 
-          if (first < minx)
+          if (CTX_UNLIKELY(first < minx))
             { first = minx;
               graystart=255;
             }
-          if (last > maxx)
+          else
+            {
+              graystart=255 - ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
+            }
+          if (CTX_UNLIKELY(last > maxx))
             { last = maxx;
               grayend=255;
             }
-          if (first == last)
+          else
+            {
+              grayend = (x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff;
+            }
+          if (CTX_UNLIKELY(first == last))
           {
             coverage[first] += (graystart-(255-grayend))/ aa_factor;
           }
           else if (first < last)
           {
-                  /*
-            if (aa_factor == 1)
-            {
-              coverage[first] += graystart;
-              for (int x = first + 1; x < last; x++)
-                coverage[x] = 255;
-              coverage[last] = grayend;
-            }
-            else
-            */
-            {
               coverage[first] += graystart/ aa_factor;
               for (int x = first + 1; x < last; x++)
                 coverage[x] += fraction;
               coverage[last]  += grayend/ aa_factor;
-            }
           }
         }
       t = next_t;
     }
 
 #if CTX_ENABLE_SHADOW_BLUR
-  if (rasterizer->in_shadow)
+  if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
     float radius = rasterizer->state->gstate.shadow_blur;
     int dim = 2 * radius + 1;
-    if (dim > CTX_MAX_GAUSSIAN_KERNEL_DIM)
+    if (CTX_UNLIKELY (dim > CTX_MAX_GAUSSIAN_KERNEL_DIM))
       dim = CTX_MAX_GAUSSIAN_KERNEL_DIM;
     {
       uint16_t temp[maxx-minx+1];
@@ -925,7 +920,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 #endif
 
 #if CTX_ENABLE_CLIP
-  if (rasterizer->clip_buffer &&  !rasterizer->clip_rectangle)
+  if (CTX_UNLIKELY(rasterizer->clip_buffer &&  !rasterizer->clip_rectangle))
   {
     /* perhaps not working right for clear? */
     int y = scanline / rasterizer->aa;
@@ -940,7 +935,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 #endif
     }
   }
-  if (rasterizer->aa == 1)
+  if (CTX_UNLIKELY(rasterizer->aa == 1))
   {
     for (int x = minx; x <= maxx; x ++)
      coverage[x] = coverage[x] > 127?255:0;

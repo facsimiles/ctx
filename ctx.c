@@ -54,6 +54,7 @@
 //#define CTX_MIN_JOURNAL_SIZE     512         // ~4kb
 #define CTX_MAX_JOURNAL_SIZE     1024*1024*8 // 72mb
 #define CTX_MIN_EDGE_LIST_SIZE   4096*2
+//#define CTX_PARSER_MAXLEN  1024*1024*64
 
 //#define CTX_FONT_ENGINE_CTX_FS   1
 
