@@ -3548,8 +3548,12 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
   {
     float tsrc[components];
     float u0, v0, ud, vd;
-    ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-    if (blend == CTX_BLEND_NORMAL)
+
+    if (fragment)
+    {
+      ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+    }
+    else if (blend == CTX_BLEND_NORMAL)
       ctx_float_blend (components, blend, dstf, srcf, tsrc);
 
     while (count--)
@@ -3557,12 +3561,12 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
       int cov = *coverage;
 #if 1
       if (
-        (compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 1.0f)||
-        (compositing_mode == CTX_COMPOSITE_SOURCE_OVER      && cov == 0) ||
-        (compositing_mode == CTX_COMPOSITE_XOR              && cov == 0) ||
-        (compositing_mode == CTX_COMPOSITE_DESTINATION_OUT  && cov == 0) ||
-        (compositing_mode == CTX_COMPOSITE_SOURCE_ATOP      && cov == 0)
-        )
+        CTX_UNLIKELY((compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 1.0f)||
+        (cov == 0 && (compositing_mode == CTX_COMPOSITE_SOURCE_OVER ||
+        compositing_mode == CTX_COMPOSITE_XOR               ||
+        compositing_mode == CTX_COMPOSITE_DESTINATION_OUT   ||
+        compositing_mode == CTX_COMPOSITE_SOURCE_ATOP      
+        ))))
       {
         u0 += ud;
         v0 += vd;
@@ -3598,25 +3602,24 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
 
       for (int c = 0; c < components; c++)
       {
-        float res = 0.0f;
+        float res;
         /* these switches and this whole function disappear when
          * compiled when the enum values passed in are constants.
          */
         switch (f_s)
         {
-          case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] *       dstf[components-1]); break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (1.0f-dstf[components-1])); break;
+          case CTX_PORTER_DUFF_0: res = 0.0f; break;
+          case CTX_PORTER_DUFF_1:             res = (tsrc[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res = (tsrc[c] *       dstf[components-1]); break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res = (tsrc[c] * (1.0f-dstf[components-1])); break;
         }
         switch (f_d)
         {
-          case CTX_PORTER_DUFF_0: break;
-          case CTX_PORTER_DUFF_1:             res += (dstf[c]); break;
-          case CTX_PORTER_DUFF_ALPHA:         res += (dstf[c] *       tsrc[components-1]); break;
-          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dstf[c] * (1.0f-tsrc[components-1])); break;
+          case CTX_PORTER_DUFF_0: dstf[c] = res; break;
+          case CTX_PORTER_DUFF_1:             dstf[c] = res + (dstf[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         dstf[c] = res + (dstf[c] *       tsrc[components-1]); break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: dstf[c] = res + (dstf[c] * (1.0f-tsrc[components-1])); break;
         }
-        dstf[c] = res;
       }
       coverage ++;
       dstf+=components;
