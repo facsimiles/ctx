@@ -2440,8 +2440,7 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       }
       else
       {
-        if (blend != CTX_BLEND_NORMAL)
-          ctx_u8_blend (components, blend, dst, src, tsrc);
+        ctx_u8_blend (components, blend, dst, src, tsrc);
       }
 
       u0 += ud;
