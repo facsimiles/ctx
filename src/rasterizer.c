@@ -1,6 +1,8 @@
 #include "ctx-split.h"
 #if CTX_RASTERIZER
 
+#define CTX_RASTERIZER_NG 0
+
 void ctx_compositor_setup_default (CtxRasterizer *rasterizer);
 
 inline static void
@@ -620,7 +622,7 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
         }
 #if CTX_RASTERIZER_FORCE_AA==0
       else if (edge_end <= scanline + aa)
-        rasterizer->ending_edges = 1;
+        rasterizer->ending_edges = 1; // only used as a flag!
 #endif
     }
 }
@@ -830,6 +832,54 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 
 #undef CTX_CMPSWP
 
+void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, uint8_t *coverage)
+{
+  int scanline     = rasterizer->scanline;
+#if CTX_ENABLE_SHADOW_BLUR
+  if (CTX_UNLIKELY(rasterizer->in_shadow))
+  {
+    float radius = rasterizer->state->gstate.shadow_blur;
+    int dim = 2 * radius + 1;
+    if (CTX_UNLIKELY (dim > CTX_MAX_GAUSSIAN_KERNEL_DIM))
+      dim = CTX_MAX_GAUSSIAN_KERNEL_DIM;
+    {
+      uint16_t temp[maxx-minx+1];
+      memset (temp, 0, sizeof (temp));
+      for (int x = dim/2; x < maxx-minx + 1 - dim/2; x ++)
+        for (int u = 0; u < dim; u ++)
+        {
+            temp[x] += coverage[minx+x+u-dim/2] * rasterizer->kernel[u] * 256;
+        }
+      for (int x = 0; x < maxx-minx + 1; x ++)
+        coverage[minx+x] = temp[x] >> 8;
+    }
+  }
+#endif
+
+#if CTX_ENABLE_CLIP
+  if (CTX_UNLIKELY(rasterizer->clip_buffer &&  !rasterizer->clip_rectangle))
+  {
+    /* perhaps not working right for clear? */
+    int y = scanline / rasterizer->aa;
+    uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
+    // XXX SIMD candidate
+    for (int x = minx; x <= maxx; x ++)
+    {
+#if CTX_1BIT_CLIP
+        coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x%8)))?255:0))/255;
+#else
+        coverage[x] = (coverage[x] * clip_line[x])/255;
+#endif
+    }
+  }
+  if (CTX_UNLIKELY(rasterizer->aa == 1))
+  {
+    for (int x = minx; x <= maxx; x ++)
+     coverage[x] = coverage[x] > 127?255:0;
+  }
+#endif
+}
+
 inline static void
 ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   int            minx,
@@ -901,50 +951,146 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
       t = next_t;
     }
 
-#if CTX_ENABLE_SHADOW_BLUR
-  if (CTX_UNLIKELY(rasterizer->in_shadow))
-  {
-    float radius = rasterizer->state->gstate.shadow_blur;
-    int dim = 2 * radius + 1;
-    if (CTX_UNLIKELY (dim > CTX_MAX_GAUSSIAN_KERNEL_DIM))
-      dim = CTX_MAX_GAUSSIAN_KERNEL_DIM;
-    {
-      uint16_t temp[maxx-minx+1];
-      memset (temp, 0, sizeof (temp));
-      for (int x = dim/2; x < maxx-minx + 1 - dim/2; x ++)
-        for (int u = 0; u < dim; u ++)
-        {
-            temp[x] += coverage[minx+x+u-dim/2] * rasterizer->kernel[u] * 256;
-        }
-      for (int x = 0; x < maxx-minx + 1; x ++)
-        coverage[minx+x] = temp[x] >> 8;
-    }
-  }
+  ctx_coverage_post_process (rasterizer, minx, maxx, coverage);
+}
+
+#if 0
+
+          |\
+          | \           |  !
+          |  \          |    /                          /          \                     /
+------------------------|---/--------------------------/------------\----------------------------
+eeeeeeeeeeFIIIIfffffeeeeFFFFeeeeeeeeeeffffffffffffffffIIIIIIFFFFIIIIIfffffffffffffffffffIIIIIIIII
+          |     \       | /             X            /                \         22   2/20
+          X    X \ X    X/ X          X /-----------/       X  X       --------------/
+          |       \                   1/            X  X     --      X X        X------ X
+0         10   1   \0   11  10        /121         11       /  \       1        /    X \
+-----------------------------------------------------------/----\--------------------------------
+          |          \              /                     /      \
+                      \            /   
+          !    !    !  \          /
+                        \--------/
+ 
 #endif
 
-#if CTX_ENABLE_CLIP
-  if (CTX_UNLIKELY(rasterizer->clip_buffer &&  !rasterizer->clip_rectangle))
-  {
-    /* perhaps not working right for clear? */
-    int y = scanline / rasterizer->aa;
-    uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
-    // XXX SIMD candidate
-    for (int x = minx; x <= maxx; x ++)
+typedef enum CtxNgState {
+  CTX_NG_EMPTY = 0,        // e
+  CTX_NG_INSIDE = 1,       // I
+  CTX_NG_FUZZY_EMPTY  = 2, // f
+  CTX_NG_FUZZY_INSIDE = 3, // F
+} CtxNgState;
+
+inline static void
+ctx_rasterizer_generate_coverage_ng (CtxRasterizer *rasterizer,
+                                     int            minx,
+                                     int            maxx,
+                                     uint8_t       *coverage,
+                                     int            winding,
+                                     int            aa_factor)
+{
+  CtxEntry *entries = rasterizer->edge_list.entries;;
+  CtxEdge  *edges   = rasterizer->edges;
+  int scanline      = rasterizer->scanline;
+  int active_edges  = rasterizer->active_edges;
+
+  int parity = 0;
+  CtxNgState ng_state = CTX_NG_EMPTY;
+  coverage -= minx;
+#define CTX_EDGE(no)      entries[edges[no].index]
+#define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
+#define CTX_EDGE_YMAX(no) (CTX_EDGE(no).data.s16[3]-1)
+#define CTX_EDGE_X(no)     (rasterizer->edges[no].x)
+
+  int x = minx;
+
+  for (int t = 0; t < active_edges -1;)
     {
-#if CTX_1BIT_CLIP
-        coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x%8)))?255:0))/255;
-#else
-        coverage[x] = (coverage[x] * clip_line[x])/255;
-#endif
+      int ymin = CTX_EDGE_YMIN (t);
+      int ymax = CTX_EDGE_YMAX (t);
+      int next_t = t + 1;
+
+      if (scanline != ymin)
+      {
+      if (ymin < scanline)
+      {
+         switch (ng_state)
+         {
+           default:
+             break;
+         }
+      }
+      else
+      {
+         switch (ng_state)
+         {
+           default:
+             ng_state |= 2; // makes it fuzzy
+             break;
+         }
+      }
+      }
+
+
+      if (scanline >= ymin)
+      {
+
+      if (scanline != ymin)
+        {
+          if (winding)
+            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
+          else
+            { parity = 1 - parity; }
+        }
+      if (parity)
+        {
+          int x0 = CTX_EDGE_X (t)      / CTX_SUBDIV ;
+          int x1 = CTX_EDGE_X (next_t) / CTX_SUBDIV ;
+          int first = x0 / CTX_RASTERIZER_EDGE_MULTIPLIER;
+          int last  = x1 / CTX_RASTERIZER_EDGE_MULTIPLIER;
+
+          int graystart;
+          int grayend;
+
+          if (CTX_UNLIKELY(first < minx))
+            { first = minx;
+              graystart=255;
+            }
+          else
+            {
+              graystart=255 - ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
+            }
+          if (CTX_UNLIKELY(last > maxx))
+            {
+              last = maxx;
+              grayend=255;
+            }
+          else
+            {
+              grayend = (x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff;
+            }
+
+          //assert (first >= x);
+          x = last;
+
+          if (CTX_UNLIKELY(first == last))
+          {
+            coverage[first] += (graystart-(255-grayend));
+          }
+          else if (first < last)
+          {
+            coverage[first] += graystart;
+            for (int x = first + 1; x < last; x++)
+              coverage[x] = 255;
+            coverage[last]  += grayend;
+          }
+        }
+      }
+      t = next_t;
     }
-  }
-  if (CTX_UNLIKELY(rasterizer->aa == 1))
-  {
-    for (int x = minx; x <= maxx; x ++)
-     coverage[x] = coverage[x] > 127?255:0;
-  }
-#endif
+
+  ctx_coverage_post_process (rasterizer, minx, maxx, coverage);
 }
+
 
 #undef CTX_EDGE_Y0
 #undef CTX_EDGE
@@ -1089,6 +1235,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
       rasterizer->needs_aa = 1;
 #endif
 
+
+#if CTX_RASTERIZER_NG==0
 #if CTX_RASTERIZER_FORCE_AA==0
       if (rasterizer->needs_aa
         || rasterizer->pending_edges
@@ -1097,27 +1245,41 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
         || aa == 1
           )
 #endif
-     for (int i = 0; i < aa; i++)
-     {
-       ctx_rasterizer_sort_active_edges (rasterizer);
-       ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, aa);
-       rasterizer->scanline ++;
-       ctx_rasterizer_increment_edges (rasterizer, 1);
-       ctx_rasterizer_feed_edges (rasterizer);
-       ctx_rasterizer_discard_edges (rasterizer);
-     }
+      {
+        for (int i = 0; i < aa; i++)
+        {
+          ctx_rasterizer_sort_active_edges (rasterizer);
+          ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, aa);
+          rasterizer->scanline ++;
+          ctx_rasterizer_increment_edges (rasterizer, 1);
+          ctx_rasterizer_feed_edges (rasterizer);
+          ctx_rasterizer_discard_edges (rasterizer);
+        }
+      }
 #if CTX_RASTERIZER_FORCE_AA==0
       else
         {
-          ctx_rasterizer_increment_edges (rasterizer, halfstep);
           ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
-          ctx_rasterizer_increment_edges (rasterizer, halfstep2);
+          ctx_rasterizer_increment_edges (rasterizer, aa);
           rasterizer->scanline += aa;
           ctx_rasterizer_feed_edges (rasterizer);
-  ctx_rasterizer_discard_edges (rasterizer);
+          ctx_rasterizer_discard_edges (rasterizer);
         }
 #endif
+#else
+       /// new
+       ctx_rasterizer_sort_active_edges (rasterizer);
+       ctx_rasterizer_generate_coverage_ng (rasterizer, minx, maxx, coverage, winding, 1);
+       ctx_rasterizer_increment_edges (rasterizer, aa);
+       //ctx_rasterizer_increment_edges (rasterizer, aa);
+       rasterizer->scanline += aa;
+       ctx_rasterizer_feed_edges (rasterizer);
+       ctx_rasterizer_discard_edges (rasterizer);
+#endif
+
+
+
         {
 #if CTX_SHAPE_CACHE
           if (shape == NULL)

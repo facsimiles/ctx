@@ -633,6 +633,7 @@ struct _CtxRasterizer
   int        aa;          // level of vertical aa
   int        force_aa;    // force full AA
   int        active_edges;
+  int        active_edges2;
 #if CTX_RASTERIZER_FORCE_AA==0
   int        pending_edges;   // this-scanline
   int        ending_edges;    // count of edges ending this scanline
