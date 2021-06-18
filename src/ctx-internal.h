@@ -587,8 +587,8 @@ typedef struct CtxEdge
 #else
   uint16_t index;
 #endif
-  int32_t  x;     /* the center-line intersection      */
-  int32_t  dx;
+  int32_t  val;     /* the center-line intersection      */
+  int32_t  delta;
 } CtxEdge;
 
 typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out);
