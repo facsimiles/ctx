@@ -27,7 +27,8 @@
 /* when AA is not forced, the slope below which full AA get enabled.
  */
 
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (2125/CTX_SUBDIV/aa)
+//#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (2125/CTX_SUBDIV/aa)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (12425/CTX_SUBDIV/aa)
 
 #ifndef CTX_RASTERIZER_AA_SLOPE_DEBUG
 #define CTX_RASTERIZER_AA_SLOPE_DEBUG 0

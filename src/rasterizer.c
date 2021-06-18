@@ -973,135 +973,6 @@ eeeeeeeeeeFIIIIfffffeeeeFFFFeeeeeeeeeeffffffffffffffffIIIIIIFFFFIIIIIfffffffffff
  
 #endif
 
-typedef enum CtxNgState {
-  CTX_NG_EMPTY = 0,        // e
-  CTX_NG_INSIDE = 1,       // I
-  CTX_NG_FUZZY_EMPTY  = 2, // f
-  CTX_NG_FUZZY_INSIDE = 3, // F
-} CtxNgState;
-
-inline static void
-ctx_rasterizer_generate_coverage_ng (CtxRasterizer *rasterizer,
-                                     int            minx,
-                                     int            maxx,
-                                     uint8_t       *coverage,
-                                     int            winding,
-                                     int            aa_factor)
-{
-  CtxEntry *entries = rasterizer->edge_list.entries;;
-  CtxEdge  *edges   = rasterizer->edges;
-  int scanline      = rasterizer->scanline;
-  int active_edges  = rasterizer->active_edges;
-
-  /* TODO:
-   *    turn this algorithm into one that alternates
-   *    between full AA and not..
-   *
-   *    
-   *    asdf
-   *
-   *
-   * */
-
-  int parity = 0;
-  CtxNgState ng_state = CTX_NG_EMPTY;
-  coverage -= minx;
-#define CTX_EDGE(no)      entries[edges[no].index]
-#define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
-#define CTX_EDGE_YMAX(no) (CTX_EDGE(no).data.s16[3]-1)
-#define CTX_EDGE_X(no)     (rasterizer->edges[no].val)
-
-  int x = minx;
-
-  for (int t = 0; t < active_edges -1;)
-    {
-      int ymin = CTX_EDGE_YMIN (t);
-      int ymax = CTX_EDGE_YMAX (t);
-      int next_t = t + 1;
-
-      if (scanline != ymin)
-      {
-      if (ymin < scanline)
-      {
-         switch (ng_state)
-         {
-           default:
-             break;
-         }
-      }
-      else
-      {
-         switch (ng_state)
-         {
-           default:
-             ng_state |= 2; // makes it fuzzy
-             break;
-         }
-      }
-      }
-
-
-      if (scanline >= ymin)
-      {
-
-      if (scanline != ymin)
-        {
-          if (winding)
-            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
-          else
-            { parity = 1 - parity; }
-        }
-      if (parity)
-        {
-          int x0 = CTX_EDGE_X (t)      / CTX_SUBDIV ;
-          int x1 = CTX_EDGE_X (next_t) / CTX_SUBDIV ;
-          int first = x0 / CTX_RASTERIZER_EDGE_MULTIPLIER;
-          int last  = x1 / CTX_RASTERIZER_EDGE_MULTIPLIER;
-
-          int graystart;
-          int grayend;
-
-          if (CTX_UNLIKELY(first < minx))
-            { first = minx;
-              graystart=255;
-            }
-          else
-            {
-              graystart=255 - ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
-            }
-          if (CTX_UNLIKELY(last > maxx))
-            {
-              last = maxx;
-              grayend=255;
-            }
-          else
-            {
-              grayend = (x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff;
-            }
-
-          //assert (first >= x);
-          x = last;
-
-          if (CTX_UNLIKELY(first == last))
-          {
-            coverage[first] += (graystart-(255-grayend));
-          }
-          else if (first < last)
-          {
-            coverage[first] += graystart;
-            for (int x = first + 1; x < last; x++)
-              coverage[x] = 255;
-            coverage[last]  += grayend;
-          }
-        }
-      }
-      t = next_t;
-    }
-
-  ctx_coverage_post_process (rasterizer, minx, maxx, coverage);
-}
-
-
 #undef CTX_EDGE_Y0
 #undef CTX_EDGE
 
@@ -1246,7 +1117,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
 
 
-#if CTX_RASTERIZER_NG==0
 #if CTX_RASTERIZER_FORCE_AA==0
       if (rasterizer->needs_aa
         || rasterizer->pending_edges
@@ -1256,6 +1126,31 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           )
 #endif
       {
+#if CTX_RASTERIZER_NG
+        // make pending part of edges
+  for (int i = 0; i < rasterizer->pending_edges; i++)
+    {
+ //   if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] - 1 <= rasterizer->scanline + aa)
+        {
+          if (CTX_LIKELY(rasterizer->active_edges < CTX_MAX_EDGES-2))
+            {
+              int no = rasterizer->active_edges;
+              rasterizer->active_edges++;
+              rasterizer->edges[no] = rasterizer->edges[CTX_MAX_EDGES-1-i];
+              rasterizer->edges[CTX_MAX_EDGES-1-i] =
+                rasterizer->edges[CTX_MAX_EDGES-1-rasterizer->pending_edges + 1];
+              rasterizer->pending_edges--;
+              i--;
+            }
+        }
+    }
+    ctx_rasterizer_sort_active_edges (rasterizer);
+    //ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
+    ctx_rasterizer_feed_edges (rasterizer);
+    rasterizer->scanline += aa;
+    ctx_rasterizer_increment_edges (rasterizer, aa);
+    ctx_rasterizer_discard_edges (rasterizer);
+#else
         for (int i = 0; i < aa; i++)
         {
           ctx_rasterizer_feed_edges (rasterizer);
@@ -1265,6 +1160,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           rasterizer->scanline ++;
           ctx_rasterizer_increment_edges (rasterizer, 1);
         }
+#endif
       }
 #if CTX_RASTERIZER_FORCE_AA==0
       else
@@ -1289,19 +1185,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
        // ctx_rasterizer_discard_edges (rasterizer);
         }
 #endif
-#else
-          ctx_rasterizer_increment_edges (rasterizer, halfstep);
-          rasterizer->scanline += halfstep;
-          ctx_rasterizer_feed_edges (rasterizer);
-          ctx_rasterizer_discard_edges (rasterizer);
-          ctx_rasterizer_sort_active_edges (rasterizer);
-          ctx_rasterizer_generate_coverage_ng (rasterizer, minx, maxx, coverage, winding, 1);
-          rasterizer->scanline += halfstep2;
-          ctx_rasterizer_increment_edges (rasterizer, halfstep2);
-    //    ctx_rasterizer_feed_edges (rasterizer);
-    //    ctx_rasterizer_discard_edges (rasterizer);
 
-#endif
 
 
 
