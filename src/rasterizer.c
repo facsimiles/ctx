@@ -2023,7 +2023,35 @@ foo:
       ctx_rasterizer_finish_shape (rasterizer);
       switch (rasterizer->state->gstate.line_cap)
         {
-          case CTX_CAP_SQUARE: // XXX:NYI
+          case CTX_CAP_SQUARE: // XXX: incorrect - if rectangles were in
+                               //                  reverse order - rotation would be off
+                               //                  better implement correct here
+            {
+              float x = 0, y = 0;
+              int has_prev = 0;
+              for (int i = 0; i < count; i++)
+                {
+                  CtxEntry *entry = &temp[i];
+                  if (entry->code == CTX_NEW_EDGE)
+                    {
+                      if (has_prev)
+                        {
+                          ctx_rasterizer_rectangle (rasterizer, x - half_width_x, y - half_width_y, half_width_x, half_width_y);
+                          ctx_rasterizer_finish_shape (rasterizer);
+                        }
+                      x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
+                      y = entry->data.s16[1] * 1.0f / aa;
+                      ctx_rasterizer_rectangle (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
+                      ctx_rasterizer_finish_shape (rasterizer);
+                    }
+                  x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
+                  y = entry->data.s16[3] * 1.0f / aa;
+                  has_prev = 1;
+                }
+              ctx_rasterizer_rectangle (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
+              ctx_rasterizer_finish_shape (rasterizer);
+            }
+            break;
           case CTX_CAP_NONE: /* nothing to do */
             break;
           case CTX_CAP_ROUND:
