@@ -2449,29 +2449,29 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       if (global_alpha_u8 != 255)
         cov = (cov * global_alpha_u8)/255;
 
-        if (cov != 255)
+      if (cov != 255)
         for (int c = 0; c < components; c++)
           tsrc[c] = (tsrc[c] * cov)/255;
 
-        for (int c = 0; c < components; c++)
+      for (int c = 0; c < components; c++)
+      {
+        int res = 0;
+        switch (f_s)
         {
-          int res = 0;
-          switch (f_s)
-          {
-            case CTX_PORTER_DUFF_0: break;
-            case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
-            case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] * dst[components-1])/255; break;
-            case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (255-dst[components-1]))/255; break;
-          }
-          switch (f_d)
-          {
-            case CTX_PORTER_DUFF_0: break;
-            case CTX_PORTER_DUFF_1:             res += dst[c]; break;
-            case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1])/255; break;
-            case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (255-tsrc[components-1]))/255; break;
-          }
-          dst[c] = res;
+          case CTX_PORTER_DUFF_0: break;
+          case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] * dst[components-1])/255; break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (255-dst[components-1]))/255; break;
         }
+        switch (f_d)
+        {
+          case CTX_PORTER_DUFF_0: break;
+          case CTX_PORTER_DUFF_1:             res += dst[c]; break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1])/255; break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (255-tsrc[components-1]))/255; break;
+        }
+        dst[c] = res;
+      }
       coverage ++;
       dst+=components;
     }
@@ -3544,7 +3544,8 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
   
   {
     float tsrc[components];
-    float u0, v0, ud, vd;
+    float u0 = 0; float v0 = 0;
+    float ud = 0; float vd = 0;
 
     if (fragment)
     {
