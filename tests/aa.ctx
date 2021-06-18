@@ -148,7 +148,7 @@ stroke
 translate 0 20.0
 
 lineWidth 1
-rgb 1 0 0
+rgb 0 0 0
 
 moveTo 10 40.5
 lineTo 20 40.5
