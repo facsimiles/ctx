@@ -647,11 +647,6 @@ struct _CtxRasterizer
   int        col_min;
   int        col_max;
 
-
-  int        row_edge_count;
-  int        row_edge_pos;         // where we're at in iterating all edges
-  CtxEdge    row_edges[CTX_MAX_EDGES];
-
   CtxDrawlist edge_list;
 
   CtxState  *state;
