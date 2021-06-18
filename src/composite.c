@@ -1961,8 +1961,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
   return;
 #endif
     uint8_t *tsrc = src;
-    uint8_t a = 255;
-  {
     int x = 0;
 
 #if CTX_AVX2
@@ -2074,7 +2072,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
       }
     }
 #endif
-  }
 }
 
 static void
