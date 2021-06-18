@@ -920,56 +920,37 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 
           if (CTX_UNLIKELY(first < minx))
             { first = minx;
-              graystart=255;
+              graystart=fraction;
             }
           else
             {
-              graystart=255 - ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
+              graystart=fraction- ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff)/aa_factor;
             }
           if (CTX_UNLIKELY(last > maxx))
             {
               last = maxx;
-              grayend=255;
+              grayend=fraction;
             }
           else
             {
-              grayend = (x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff;
+              grayend = ((x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff)/aa_factor;
             }
           if (CTX_UNLIKELY(first == last))
           {
-            coverage[first] += (graystart-(255-grayend))/ aa_factor;
+            coverage[first] += (graystart-(fraction-grayend));
           }
           else if (first < last)
           {
-              coverage[first] += graystart/ aa_factor;
+              coverage[first] += graystart;
               for (int x = first + 1; x < last; x++)
                 coverage[x] += fraction;
-              coverage[last]  += grayend/ aa_factor;
+              coverage[last]  += grayend;
           }
         }
       t = next_t;
     }
 
 }
-
-#if 0
-
-          |\
-          | \           |  !
-          |  \          |    /                          /          \                     /
-------------------------|---/--------------------------/------------\----------------------------
-eeeeeeeeeeFIIIIfffffeeeeFFFFeeeeeeeeeeffffffffffffffffIIIIIIFFFFIIIIIfffffffffffffffffffIIIIIIIII
-          |     \       | /             X            /                \         22   2/20
-          X    X \ X    X/ X          X /-----------/       X  X       --------------/
-          |       \                   1/            X  X     --      X X        X------ X
-0         10   1   \0   11  10        /121         11       /  \       1        /    X \
------------------------------------------------------------/----\--------------------------------
-          |          \              /                     /      \
-                      \            /   
-          !    !    !  \          /
-                        \--------/
- 
-#endif
 
 #undef CTX_EDGE_Y0
 #undef CTX_EDGE
