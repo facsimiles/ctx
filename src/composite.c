@@ -1173,7 +1173,7 @@ ctx_init_uv (CtxRasterizer *rasterizer,
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   *u0 = x0;
-  *v0 = rasterizer->scanline / rasterizer->aa;
+  *v0 = rasterizer->scanline / 15;//rasterizer->aa;
   float u1 = *u0 + count;
   float v1 = *v0;
 

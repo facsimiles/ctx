@@ -48,7 +48,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
   CtxHasher *hasher = (CtxHasher*) user_data;
   CtxState *state = rasterizer->state;
   CtxCommand *c = (CtxCommand *) entry;
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
 
   ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
   ctx_interpret_style (rasterizer->state, entry, NULL);
@@ -414,7 +414,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   rasterizer->state->gstate.clip_max_y  = height - 1;
   rasterizer->scan_min    = 5000;
   rasterizer->scan_max    = -5000;
-  rasterizer->aa          = 5;
+  //rasterizer->aa          = 15;
   rasterizer->force_aa    = 0;
 
   hasher->rows = rows;

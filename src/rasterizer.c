@@ -176,7 +176,7 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   if (rasterizer->edge_list.count == 0)
      return 0;
 #if CTX_SHAPE_CACHE
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
   CtxEntry *entry = &rasterizer->edge_list.entries[0];
   int ox = entry->data.s16[2];
   int oy = entry->data.s16[3];
@@ -238,7 +238,7 @@ CTX_STATIC void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx = x; float ty = y;
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
   rasterizer->x        = x;
   rasterizer->y        = y;
   rasterizer->first_x  = x;
@@ -281,7 +281,7 @@ CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, floa
   if (ty < MIN_Y) ty = MIN_Y;
   if (ty > MAX_Y) ty = MAX_Y;
   
-  ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * rasterizer->aa);
+  ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * 15);//rasterizer->aa);
 
   if (rasterizer->has_prev<=0)
     {
@@ -297,7 +297,7 @@ CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, floa
   if (oy > MAX_Y) oy = MAX_Y;
 
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[0] = ox * CTX_SUBDIV;
-      rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[1] = oy * rasterizer->aa;
+      rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[1] = oy * 15;//rasterizer->aa;
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].code = CTX_NEW_EDGE;
       rasterizer->has_prev = 1;
     }
@@ -602,7 +602,7 @@ static void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline;
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
   int slope_limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3;
   int slope_limit5 = CTX_RASTERIZER_AA_SLOPE_LIMIT5;
   int slope_limit15 = CTX_RASTERIZER_AA_SLOPE_LIMIT15;
@@ -677,7 +677,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     }
 #endif
   int scanline = rasterizer->scanline;
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
   int slope_limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3;
   int slope_limit5 = CTX_RASTERIZER_AA_SLOPE_LIMIT5;
   int slope_limit15 = CTX_RASTERIZER_AA_SLOPE_LIMIT15;
@@ -899,7 +899,7 @@ void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, u
   if (CTX_UNLIKELY(rasterizer->clip_buffer &&  !rasterizer->clip_rectangle))
   {
     /* perhaps not working right for clear? */
-    int y = scanline / rasterizer->aa;
+    int y = scanline / 15;//rasterizer->aa;
     uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
     // XXX SIMD candidate
     for (int x = minx; x <= maxx; x ++)
@@ -1101,7 +1101,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
                                )
 {
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
+  int real_aa = rasterizer->aa;
 
   int scan_start = rasterizer->blit_y * aa;
   int scan_end   = scan_start + rasterizer->blit_height * aa;
@@ -1216,12 +1217,13 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 
 
 #if CTX_RASTERIZER_FORCE_AA==0
-      if (rasterizer->needs_aa15
+      if ((real_aa >= 15) &&
+      (
+           rasterizer->needs_aa15
         || rasterizer->pending_edges
         || rasterizer->ending_edges
         || rasterizer->force_aa
-        || aa == 1
-          )
+          ))
 #endif
       {
     for (int i = 0; i < aa; i++)
@@ -1237,7 +1239,13 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 
     }
 #if CTX_RASTERIZER_FORCE_AA==0
-    else if (rasterizer->needs_aa5)
+    else
+      if ((real_aa >= 5) &&
+      (
+           rasterizer->needs_aa5
+        || rasterizer->pending_edges
+        || rasterizer->ending_edges
+          ))
     {
       for (int i = 0; i < aa; i+=3)
       {
@@ -1250,7 +1258,12 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
         ctx_rasterizer_increment_edges (rasterizer, 3);
       }
     }
-    else if (rasterizer->needs_aa3)
+    else if ((real_aa >= 3) &&
+      (
+           rasterizer->needs_aa3
+        || rasterizer->pending_edges
+        || rasterizer->ending_edges
+          ))
     {
       for (int i = 0; i < aa; i+=5)
       {
@@ -1265,7 +1278,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     }
     else
     {
-#if 1 // slightly - higher quality - hard to tell from examining output..
       ctx_rasterizer_increment_edges (rasterizer, halfstep2);
       rasterizer->scanline += halfstep2;
       ctx_rasterizer_feed_edges (rasterizer);
@@ -1275,8 +1287,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
       ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, winding, 1);
       ctx_rasterizer_increment_edges (rasterizer, halfstep);
       rasterizer->scanline += halfstep;
-
-
 #else
       ctx_rasterizer_feed_edges (rasterizer);
       ctx_rasterizer_discard_edges (rasterizer);
@@ -1287,7 +1297,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
     }
   ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx);
-#endif
 
 
 
@@ -1398,7 +1407,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          x1,
                           int          y1)
 {
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
   if (x0>x1) { // && y0>y1) { 
      int tmp = x1;
      x1 = x0;
@@ -1466,7 +1475,7 @@ static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->preserve?rasterizer->edge_list.count:0;
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
 
   CtxEntry temp[count]; /* copy of already built up path's poly line
                           XXX - by building a large enough path
@@ -1972,7 +1981,7 @@ ctx_rasterizer_stroke_1px (CtxRasterizer *rasterizer)
   CtxEntry *temp = rasterizer->edge_list.entries;
   float prev_x = 0.0f;
   float prev_y = 0.0f;
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
   int start = 0;
   int end = 0;
 #if 0
@@ -2043,7 +2052,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   int preserved = rasterizer->preserve;
   float factor = ctx_matrix_get_scale (&state->gstate.transform);
 
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 #if 1
@@ -2304,7 +2313,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
 
-  int aa = rasterizer->aa;
+  int aa = 15;//rasterizer->aa;
   float coords[6][2];
 
   for (int i = 0; i < count; i++)
@@ -3183,7 +3192,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
           float factor = ctx_matrix_get_scale (&state->gstate.transform);
 
           int count = rasterizer->edge_list.count;
-          int aa = rasterizer->aa;
+          int aa = 15;//rasterizer->aa;
           CtxEntry temp[count]; /* copy of already built up path's poly line  */
           memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
           int start = 0;
