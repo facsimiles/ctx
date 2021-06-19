@@ -1369,8 +1369,10 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
 #endif
+#if 0/// disabling AVX part
 #if CTX_AVX2
     alignas(32)
+#endif
 #endif
     uint8_t tsrc[4 * 8];
     //*((uint32_t*)(tsrc)) = *((uint32_t*)(src));
@@ -1378,14 +1380,18 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
     //uint8_t a = src[3];
     int x = 0;
 
+#if 0/// disabling AVX part
 #if CTX_AVX2
     if ((size_t)(dst) & 31)
+#endif
 #endif
     {
     {
       for (; (x < count) 
+#if 0/// disabling AVX part
 #if CTX_AVX2
                       && ((size_t)(dst)&31)
+#endif
 #endif
                       ; 
                       x++)
@@ -1430,6 +1436,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
     }
     }
 
+#if 0/// disabling AVX part
 #if CTX_AVX2
                     
     for (; x <= count-8; x+=8)
@@ -1569,6 +1576,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
       }
     }
 #endif
+#endif
 }
 
 static void
@@ -1586,21 +1594,27 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
 #endif
+#if 0/// disabling AVX part
 #if CTX_AVX2
   alignas(32)
+#endif
 #endif
     uint8_t tsrc[4 * 8];
     int x = 0;
 
+#if 0/// disabling AVX part
 #if CTX_AVX2
 
     if ((size_t)(dst) & 31)
 #endif
+#endif
     {
     {
       for (; (x < count) 
+#if 0/// disabling AVX part
 #if CTX_AVX2
                       && ((size_t)(dst)&31)
+#endif
 #endif
                       ; 
                       x++)
@@ -1646,6 +1660,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
     }
     }
 
+#if 0/// disabling AVX part
 #if CTX_AVX2
                     
     for (; x <= count-8; x+=8)
@@ -1784,6 +1799,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
         v0 += vd;
       }
     }
+#endif
 #endif
 }
 #endif
