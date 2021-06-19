@@ -333,6 +333,11 @@
                                             // for a ~15% overall performance hit
 #endif
 
+#ifndef CTX_RGB332_ALPHA
+#define CTX_RGB332_ALPHA                0   // when enabled pure purple is transparent,
+                                            // for a ~15% overall performance hit
+#endif
+
 /* by including ctx-font-regular.h, or ctx-font-mono.h the
  * built-in fonts using ctx drawlist encoding is enabled
  */

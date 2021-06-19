@@ -4966,9 +4966,11 @@ ctx_RGB332_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t 
   while (count--)
     {
       ctx_332_unpack (*pixel, &rgba[0], &rgba[1], &rgba[2]);
+#if CTX_RGB332_ALPHA
       if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
         { rgba[3] = 0; }
       else
+#endif
         { rgba[3] = 255; }
       pixel+=1;
       rgba +=4;
@@ -4981,9 +4983,11 @@ ctx_RGBA8_to_RGB332 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
   uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
+#if CTX_RGB332_ALPHA
       if (rgba[3]==0)
         { pixel[0] = ctx_332_pack (255, 0, 255); }
       else
+#endif
         { pixel[0] = ctx_332_pack (rgba[0], rgba[1], rgba[2]); }
       pixel+=1;
       rgba +=4;
@@ -5050,7 +5054,6 @@ ctx_565_to_888 (uint16_t in, int byteswap)
 #endif
 #if CTX_ENABLE_RGB565
 
-#define CTX_RGB565_ALPHA 0
 
 static inline void
 ctx_RGB565_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
