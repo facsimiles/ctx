@@ -4076,6 +4076,7 @@ ctx_composite_BGRA8 (CTX_COMPOSITE_ARGUMENTS)
   ctx_BGRA8_to_RGBA8  (rasterizer, x0, &pixels[0], dst, count);
 }
 
+
 #endif
 #if CTX_ENABLE_CMYKAF
 
@@ -5060,6 +5061,16 @@ ctx_RGBA8_to_RGB565 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
     }
 }
 
+static void
+ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
+{
+  uint8_t pixels[count * 4];
+  ctx_RGB565_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
+  ctx_RGBA8_to_RGB565 (rasterizer, x0, &pixels[0], dst, count);
+}
+
+
 #endif
 #if CTX_ENABLE_RGB565_BYTESWAPPED
 
@@ -5092,6 +5103,16 @@ ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, v
       pixel+=1;
       rgba +=4;
     }
+}
+
+
+static void
+ctx_composite_RGB565_BS (CTX_COMPOSITE_ARGUMENTS)
+{
+  uint8_t pixels[count * 4];
+  ctx_RGB565_BS_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
+  ctx_RGBA8_to_RGB565_BS (rasterizer, x0, &pixels[0], dst, count);
 }
 
 #endif
@@ -5200,7 +5221,7 @@ CtxPixelFormatInfo CTX_COMPOSITE_SUFFIX(ctx_pixel_formats)[]=
   {
     CTX_FORMAT_RGB565, 3, 16, 4, 32, 64, CTX_FORMAT_RGBA8,
     ctx_RGB565_to_RGBA8, ctx_RGBA8_to_RGB565,
-    ctx_composite_convert, ctx_setup_RGBA8,
+    ctx_composite_RGB565, ctx_setup_RGBA8,
   },
 #endif
 #if CTX_ENABLE_RGB565_BYTESWAPPED
@@ -5208,7 +5229,7 @@ CtxPixelFormatInfo CTX_COMPOSITE_SUFFIX(ctx_pixel_formats)[]=
     CTX_FORMAT_RGB565_BYTESWAPPED, 3, 16, 4, 32, 64, CTX_FORMAT_RGBA8,
     ctx_RGB565_BS_to_RGBA8,
     ctx_RGBA8_to_RGB565_BS,
-    ctx_composite_convert, ctx_setup_RGBA8,
+    ctx_composite_RGB565_BS, ctx_setup_RGBA8,
   },
 #endif
 #if CTX_ENABLE_CMYKAF
