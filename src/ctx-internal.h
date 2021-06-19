@@ -581,9 +581,8 @@ typedef struct _CtxHasher CtxHasher;
 
 typedef struct CtxEdge
 {
-#if CTX_BLOATY_FAST_PATHS
-  uint32_t index;  // provide for more aligned memory accesses.
-  uint32_t pad;    //
+#if CTX_ALIGNED_STRUCTS==1
+  uint32_t index;
 #else
   uint16_t index;
 #endif

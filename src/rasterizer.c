@@ -796,7 +796,7 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
   {
     case 0:
     case 1: break;
-#if CTX_BLOATY_FAST_PATHS
+#if CTX_SORTING_NETWORKS
     case 2:
 #define CTX_CMPSWP(a,b) \
       if (ctx_compare_edges2 (&edges[a], &edges[b])>0)\
@@ -822,6 +822,34 @@ static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
       CTX_CMPSWP(3,5); CTX_CMPSWP(3,4); CTX_CMPSWP(0,3); CTX_CMPSWP(1,4);
       CTX_CMPSWP(2,5); CTX_CMPSWP(2,4); CTX_CMPSWP(1,3); CTX_CMPSWP(2,3);
       break;
+#if 1
+    case 7:
+      CTX_CMPSWP(1,2); CTX_CMPSWP(0,2); CTX_CMPSWP(0,1); CTX_CMPSWP(3,4);
+      CTX_CMPSWP(5,6); CTX_CMPSWP(3,5); CTX_CMPSWP(4,6); CTX_CMPSWP(4,5);
+      CTX_CMPSWP(0,4); CTX_CMPSWP(0,3); CTX_CMPSWP(1,5); CTX_CMPSWP(2,6);
+      CTX_CMPSWP(2,5); CTX_CMPSWP(1,3); CTX_CMPSWP(2,4); CTX_CMPSWP(2,3);
+      break;
+#endif
+#if 0
+    case 8: // buggy
+      CTX_CMPSWP(0,1); CTX_CMPSWP(2,3); CTX_CMPSWP(4,5); CTX_CMPSWP(6,7);
+      CTX_CMPSWP(0,2); CTX_CMPSWP(1,3); CTX_CMPSWP(4,6); CTX_CMPSWP(5,6);
+      CTX_CMPSWP(1,2); CTX_CMPSWP(5,6); CTX_CMPSWP(0,4); CTX_CMPSWP(3,7);
+      CTX_CMPSWP(1,5); CTX_CMPSWP(3,6); CTX_CMPSWP(1,4); CTX_CMPSWP(3,6);
+      CTX_CMPSWP(2,4); CTX_CMPSWP(3,5); CTX_CMPSWP(3,4);
+      break;
+#endif
+#if 1
+    case 9:
+      CTX_CMPSWP(0,1); CTX_CMPSWP(3,4); CTX_CMPSWP(6,7); CTX_CMPSWP(1,2);
+      CTX_CMPSWP(4,5); CTX_CMPSWP(7,8); CTX_CMPSWP(0,1); CTX_CMPSWP(3,4);
+      CTX_CMPSWP(6,7); CTX_CMPSWP(2,5); CTX_CMPSWP(0,3); CTX_CMPSWP(5,8);
+      CTX_CMPSWP(1,4); CTX_CMPSWP(2,5); CTX_CMPSWP(3,6); CTX_CMPSWP(4,7);
+      CTX_CMPSWP(0,3); CTX_CMPSWP(5,7); CTX_CMPSWP(1,4); CTX_CMPSWP(2,6);
+      CTX_CMPSWP(1,3); CTX_CMPSWP(2,4); CTX_CMPSWP(5,6); CTX_CMPSWP(2,3);
+      CTX_CMPSWP(4,5);
+      break;
+#endif
 #endif
     default:
       ctx_edge2_qsort (&edges[0], 0, rasterizer->active_edges-1);

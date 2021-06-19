@@ -18,7 +18,7 @@
 #define CTX_BACKEND_TEXT 1
 #endif
 
-/* force full antialising - turns of adaptive AA when set to 1 
+/* force full antialising - turns off adaptive AA when set to 1 
  */
 #ifndef CTX_RASTERIZER_FORCE_AA
 #define CTX_RASTERIZER_FORCE_AA  0
@@ -29,11 +29,6 @@
 
 //#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (2125/CTX_SUBDIV/aa)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT    (13425/CTX_SUBDIV/aa)
-
-#ifndef CTX_RASTERIZER_AA_SLOPE_DEBUG
-#define CTX_RASTERIZER_AA_SLOPE_DEBUG 0
-#endif
-
 
 /* subpixel-aa coordinates used in BITPACKing of drawlist
  */
@@ -130,8 +125,12 @@
 
 /* some optinal micro-optimizations that are known to increase code size
  */
-#ifndef CTX_BLOATY_FAST_PATHS
-#define CTX_BLOATY_FAST_PATHS     1
+#ifndef CTX_SORTING_NETWORKS
+#define CTX_SORTING_NETWORKS         1
+#endif
+
+#ifndef CTX_ALIGNED_STRUCTS
+#define CTX_ALIGNED_STRUCTS       1
 #endif
 
 #ifndef CTX_GRADIENT_CACHE
