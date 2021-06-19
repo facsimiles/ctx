@@ -590,7 +590,7 @@ typedef struct CtxEdge
   int32_t  delta;
 } CtxEdge;
 
-typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out);
+typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy);
 
 #define CTX_MAX_GAUSSIAN_KERNEL_DIM    512
 
