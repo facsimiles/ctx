@@ -992,6 +992,79 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 
 }
 
+inline static void
+ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
+                                  int            minx,
+                                  int            maxx,
+                                  uint8_t       *coverage,
+                                  int            winding,
+                                  int            aa_factor)
+{
+  CtxEntry *entries = rasterizer->edge_list.entries;;
+  CtxEdge  *edges = rasterizer->edges;
+  int scanline     = rasterizer->scanline;
+  int active_edges = rasterizer->active_edges;
+  int parity = 0;
+  int fraction = 255;
+  coverage -= minx;
+#define CTX_EDGE(no)      entries[edges[no].index]
+#define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
+#define CTX_EDGE_X(no)     (rasterizer->edges[no].val)
+  for (int t = 0; t < active_edges -1;)
+    {
+      int ymin = CTX_EDGE_YMIN (t);
+      int next_t = t + 1;
+      if (scanline != ymin)
+        {
+          if (winding)
+            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
+          else
+            { parity = 1 - parity; }
+        }
+      if (parity)
+        {
+          int x0 = CTX_EDGE_X (t)      / CTX_SUBDIV ;
+          int x1 = CTX_EDGE_X (next_t) / CTX_SUBDIV ;
+          int first = x0 / CTX_RASTERIZER_EDGE_MULTIPLIER;
+          int last  = x1 / CTX_RASTERIZER_EDGE_MULTIPLIER;
+
+          int graystart;
+          int grayend;
+
+          if (CTX_UNLIKELY(first < minx))
+            { first = minx;
+              graystart=fraction;
+            }
+          else
+            {
+              graystart=fraction- ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
+            }
+          if (CTX_UNLIKELY(last > maxx))
+            {
+              last = maxx;
+              grayend=fraction;
+            }
+          else
+            {
+              grayend = ((x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
+            }
+          if (CTX_UNLIKELY(first == last))
+          {
+            coverage[first] += (graystart-(fraction-grayend));
+          }
+          else if (first < last)
+          {
+              coverage[first] += graystart;
+              for (int x = first + 1; x < last; x++)
+                coverage[x] = fraction;
+              coverage[last]  += grayend;
+          }
+        }
+      t = next_t;
+    }
+
+}
+
 #undef CTX_EDGE_Y0
 #undef CTX_EDGE
 
@@ -1199,7 +1272,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
       ctx_rasterizer_discard_edges (rasterizer);
 
       ctx_rasterizer_sort_active_edges (rasterizer);
-      ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, 1);
+      ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, winding, 1);
       ctx_rasterizer_increment_edges (rasterizer, halfstep);
       rasterizer->scanline += halfstep;
 

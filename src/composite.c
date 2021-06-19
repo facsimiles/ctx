@@ -1806,6 +1806,62 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
 #endif
 
 static void
+ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
+{
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+  float radial_gradient_x0 = g->radial_gradient.x0;
+  float radial_gradient_y0 = g->radial_gradient.y0;
+  float radial_gradient_r0 = g->radial_gradient.r0;
+  float radial_gradient_rdelta = g->radial_gradient.rdelta;
+#if CTX_DITHER
+  int dither_red_blue = rasterizer->format->dither_red_blue;
+  int dither_green = rasterizer->format->dither_green;
+#endif
+  CtxFragment fragment = rasterizer->fragment;
+    uint8_t tsrc[4 * 8];
+    int x = 0;
+
+      for (; (x < count) 
+                      ; 
+                      x++)
+      {
+        int cov = *coverage;
+        if (cov)
+        {
+      fragment (rasterizer, u0, v0, tsrc);
+
+      ctx_RGBA8_associate_alpha (tsrc);
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
+#endif
+
+          uint32_t *sip = ((uint32_t*)(tsrc));
+          uint32_t si = *sip;
+          int si_a = si >> CTX_RGBA8_A_SHIFT;
+ 
+          uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
+          uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+
+          uint32_t *dip = ((uint32_t*)(dst));
+          uint32_t di = *dip;
+          uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
+          uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+          int ir_cov_si_a = 255-((cov*si_a)>>8);
+          *((uint32_t*)(dst)) = 
+           (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
+           (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
+        }
+        dst += 4;
+        coverage ++;
+        u0 += ud;
+        v0 += vd;
+      }
+}
+
+static void
 CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENTS)
 {
 #if 0
@@ -2133,7 +2189,7 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
 }
 
 /* branchless 8bit add that maxes out at 255 */
-CTX_INLINE uint8_t ctx_sadd8(uint8_t a, uint8_t b)
+static inline uint8_t ctx_sadd8(uint8_t a, uint8_t b)
 {
   uint16_t s = (uint16_t)a+b;
   return -(s>>8) | (uint8_t)s;
@@ -3010,27 +3066,6 @@ ctx_u8_porter_duff(RGBA8, 4,generic, rasterizer->fragment, rasterizer->state->gs
 
 //ctx_u8_porter_duff(comp_name, components,color_##blend_name,  NULL, blend_mode)
 
-#if CTX_INLINED_NORMAL
-
-#if CTX_GRADIENTS
-#define ctx_u8_porter_duff_blend(comp_name, components, blend_mode, blend_name)\
-ctx_u8_porter_duff(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
-ctx_u8_porter_duff(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_##comp_name, blend_mode)\
-ctx_u8_porter_duff(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_##comp_name, blend_mode)\
-ctx_u8_porter_duff(comp_name, components,image_rgb8_##blend_name, ctx_fragment_image_rgb8_##comp_name,      blend_mode)\
-ctx_u8_porter_duff(comp_name, components,image_rgba8_##blend_name,ctx_fragment_image_rgba8_##comp_name,     blend_mode)
-ctx_u8_porter_duff_blend(RGBA8, 4, CTX_BLEND_NORMAL, normal)
-#else
-
-#define ctx_u8_porter_duff_blend(comp_name, components, blend_mode, blend_name)\
-ctx_u8_porter_duff(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
-ctx_u8_porter_duff(comp_name, components,image_rgb8_##blend_name, ctx_fragment_image_rgb8_##comp_name,      blend_mode)\
-ctx_u8_porter_duff(comp_name, components,image_rgba8_##blend_name,ctx_fragment_image_rgba8_##comp_name,     blend_mode)
-ctx_u8_porter_duff_blend(RGBA8, 4, CTX_BLEND_NORMAL, normal)
-#endif
-#endif
-
-
 static void
 CTX_COMPOSITE_SUFFIX(ctx_RGBA8_nop) (CTX_COMPOSITE_ARGUMENTS)
 {
@@ -3053,6 +3088,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     return;
   }
 #endif
+
+
 #if CTX_INLINED_GRADIENTS
 #if CTX_GRADIENTS
   if (gstate->source_fill.type == CTX_SOURCE_LINEAR_GRADIENT &&
@@ -3117,49 +3154,20 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     return;
   }
 
-#if CTX_INLINED_NORMAL
-    if (gstate->blend_mode == CTX_BLEND_NORMAL)
-    {
-        switch (gstate->source_fill.type)
-        {
-          case CTX_SOURCE_COLOR:
-            return; // exhaustively handled above;
-#if CTX_GRADIENTS
-          case CTX_SOURCE_LINEAR_GRADIENT:
-            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_linear_gradient_normal);
-            break;
-          case CTX_SOURCE_RADIAL_GRADIENT:
-            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_radial_gradient_normal);
-            break;
-#endif
-          case CTX_SOURCE_TEXTURE:
-            {
-               CtxSource *g = &rasterizer->state->gstate.source_fill;
-               switch (g->texture.buffer->format->bpp)
-               {
-                 case 32:
-                   rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_image_rgba8_normal);
-                   break;
-                 case 24:
-                   rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_image_rgb8_normal);
-                 break;
-                 default:
-                   rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_generic_normal);
-                   break;
-               }
-            }
-            break;
-          default:
-            rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_generic_normal);
-            break;
-        }
-        return;
-    }
+
+#if 1
+  if (gstate->blend_mode == CTX_BLEND_NORMAL &&
+      gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
+      rasterizer->fragment)
+  {
+     rasterizer->comp_op = ctx_RGBA8_source_over_normal_fragment;
+     return;
+  }
 #endif
 }
 
 /*
- * we could use this instead of NULL - but then dispatch
+ * we could use this instead of NULL in the pixfmt table - but such dispatch
  * is slightly slower
  */
 inline static void
