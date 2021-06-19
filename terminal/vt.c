@@ -1127,6 +1127,7 @@ static void _vt_add_str (VT *vt, const char *str)
           int chars = 0;
           int old_x = vt->cursor_x;
           VtLine *old_line = vt->current_line;
+          old_line->wrapped=1;
           if (vt->justify && str[0] != ' ')
             {
               while (old_x-1-chars >1 && vt_line_get_unichar (vt->current_line,
@@ -8187,6 +8188,12 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                        if (!*d) { d = NULL; }
                      }
                  }
+             }
+             if (line->wrapped)
+             {
+               ctx_rectangle (ctx, x0, y, 10, 10);
+               ctx_rgb (ctx, 1,0,0);
+               ctx_fill (ctx);
              }
           }
       }

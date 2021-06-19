@@ -36,6 +36,8 @@ struct _VtLine
   int       prev_length;
   CtxString *frame;
 
+  int       wrapped;
+
   void     *ctx_copy; // each line can have an attached ctx context;
   // clearing should be brutal enough to unset the context of the current
   // at least in alt-screen mode
