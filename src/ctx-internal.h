@@ -666,7 +666,9 @@ struct _CtxRasterizer
 
   float      first_x;
   float      first_y;
-  int8_t     needs_aa; // count of how many edges implies antialiasing
+  int8_t     needs_aa3; // count of how many edges implies antialiasing
+  int8_t     needs_aa5; // count of how many edges implies antialiasing
+  int8_t     needs_aa15; // count of how many edges implies antialiasing
   int        has_shape:2;
   int        has_prev:2;
   int        preserve:1;

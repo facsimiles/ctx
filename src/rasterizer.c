@@ -603,7 +603,9 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline;
   int aa = rasterizer->aa;
-  int slope_limit = CTX_RASTERIZER_AA_SLOPE_LIMIT;
+  int slope_limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3;
+  int slope_limit5 = CTX_RASTERIZER_AA_SLOPE_LIMIT5;
+  int slope_limit15 = CTX_RASTERIZER_AA_SLOPE_LIMIT15;
 #if CTX_RASTERIZER_FORCE_AA==0
   rasterizer->ending_edges = 0;
 #endif
@@ -613,8 +615,12 @@ static void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (CTX_UNLIKELY(edge_end < scanline))
         {
           int dx_dy = rasterizer->edges[i].delta;
-          if (abs(dx_dy) > slope_limit)
-            { rasterizer->needs_aa --; }
+          if (abs(dx_dy) > slope_limit3)
+            { rasterizer->needs_aa3 --; }
+          if (abs(dx_dy) > slope_limit5)
+            { rasterizer->needs_aa5 --; }
+          if (abs(dx_dy) > slope_limit15)
+            { rasterizer->needs_aa15 --; }
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
           i--;
@@ -672,7 +678,9 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 #endif
   int scanline = rasterizer->scanline;
   int aa = rasterizer->aa;
-  int slope_limit = CTX_RASTERIZER_AA_SLOPE_LIMIT;
+  int slope_limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3;
+  int slope_limit5 = CTX_RASTERIZER_AA_SLOPE_LIMIT5;
+  int slope_limit15 = CTX_RASTERIZER_AA_SLOPE_LIMIT15;
   while (CTX_LIKELY(rasterizer->edge_pos < rasterizer->edge_list.count &&
          (miny=entries[rasterizer->edge_pos].data.s16[1]-1)  <= scanline 
 #if CTX_RASTERIZER_FORCE_AA==0
@@ -722,8 +730,12 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
                 }
 #endif
 #if CTX_RASTERIZER_FORCE_AA==0
-              if (abs(dx_dy)> slope_limit)
-                { rasterizer->needs_aa ++; }
+              if (abs(dx_dy)> slope_limit3)
+                { rasterizer->needs_aa3 ++; }
+              if (abs(dx_dy)> slope_limit5)
+                { rasterizer->needs_aa5 ++; }
+              if (abs(dx_dy)> slope_limit15)
+                { rasterizer->needs_aa15 ++; }
 
               if ((miny > scanline) )
                 {
@@ -994,7 +1006,9 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   rasterizer->has_prev        = 0;
   rasterizer->edge_list.count = 0; // ready for new edges
   rasterizer->edge_pos        = 0;
-  rasterizer->needs_aa        = 0;
+  rasterizer->needs_aa3       = 0;
+  rasterizer->needs_aa5       = 0;
+  rasterizer->needs_aa15      = 0;
   rasterizer->scanline        = 0;
   if (!rasterizer->preserve)
   {
@@ -1103,7 +1117,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     int halfstep2 = aa/2;
     int halfstep  = aa/2 + 1;
 #endif
-    rasterizer->needs_aa = 0;
+    rasterizer->needs_aa3 = 0;
+    rasterizer->needs_aa5 = 0;
+    rasterizer->needs_aa15 = 0;
     rasterizer->scanline = scan_start-aa*400;
     ctx_rasterizer_feed_edges (rasterizer);
     ctx_rasterizer_increment_edges (rasterizer, aa * 400);
@@ -1120,12 +1136,14 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
                   sizeof (_coverage) );
 #if CTX_RASTERIZER_FORCE_AA==1
-      rasterizer->needs_aa = 1;
+      rasterizer->needs_aa3 = 1;
+      rasterizer->needs_aa5 = 1;
+      rasterizer->needs_aa15 = 1;
 #endif
 
 
 #if CTX_RASTERIZER_FORCE_AA==0
-      if (rasterizer->needs_aa
+      if (rasterizer->needs_aa15
         || rasterizer->pending_edges
         || rasterizer->ending_edges
         || rasterizer->force_aa
@@ -1146,6 +1164,32 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 
     }
 #if CTX_RASTERIZER_FORCE_AA==0
+    else if (rasterizer->needs_aa5)
+    {
+      for (int i = 0; i < aa; i+=3)
+      {
+        ctx_rasterizer_feed_edges (rasterizer);
+        ctx_rasterizer_discard_edges (rasterizer);
+        ctx_rasterizer_sort_active_edges (rasterizer);
+        ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, aa/3);
+
+        rasterizer->scanline +=3;
+        ctx_rasterizer_increment_edges (rasterizer, 3);
+      }
+    }
+    else if (rasterizer->needs_aa3)
+    {
+      for (int i = 0; i < aa; i+=5)
+      {
+        ctx_rasterizer_feed_edges (rasterizer);
+        ctx_rasterizer_discard_edges (rasterizer);
+        ctx_rasterizer_sort_active_edges (rasterizer);
+        ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, aa/5);
+
+        rasterizer->scanline +=5;
+        ctx_rasterizer_increment_edges (rasterizer, 5);
+      }
+    }
     else
     {
 #if 1 // slightly - higher quality - hard to tell from examining output..
