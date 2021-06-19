@@ -14,7 +14,7 @@
 #define CTX_FORMATTER       0
 #define CTX_CURRENT_PATH    0
 #define CTX_SHAPE_CACHE     0
-
+#define CTX_SORTING_NETWORKS 0
 #define CTX_PARSER_FIXED_TEMP 1
 #define CTX_PARSER_MAXLEN     1024
 
