@@ -2010,63 +2010,6 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
 #endif
 
 static void
-ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
-{
-  float u0 = 0; float v0 = 0;
-  float ud = 0; float vd = 0;
-  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-#if CTX_DITHER
-  int dither_red_blue = rasterizer->format->dither_red_blue;
-  int dither_green = rasterizer->format->dither_green;
-#endif
-  CtxFragment fragment = rasterizer->fragment;
-  uint8_t _tsrc[4 * count];
-  uint8_t *tsrc = &_tsrc[0];
-
-  fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
-  for (int x = 0; x < count ; x++)
-  {
-    ctx_RGBA8_associate_alpha (tsrc);
-    tsrc += 4;
-  }
-  tsrc = &_tsrc[0];
-#if CTX_DITHER
-  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-#endif
-  for (int x = 0; x < count ; x++)
-  {
-    int cov = *coverage;
-    if (cov)
-    {
-      uint32_t *sip = ((uint32_t*)(tsrc));
-      uint32_t si = *sip;
-      int si_a = si >> CTX_RGBA8_A_SHIFT;
-      uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
-      uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
-      uint32_t *dip = ((uint32_t*)(dst));
-      uint32_t di = *dip;
-      uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
-      uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-      int ir_cov_si_a = 255-((cov*si_a)>>8);
-      uint32_t res = 
-       (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
-       (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
-#if CTX_DITHER
-      ctx_dither_rgba_u8 ((uint8_t*)(&res), u0, v0, dither_red_blue, dither_green);
-#endif
-      *((uint32_t*)(dst)) = res;
-    }
-    dst    += 4;
-    tsrc   += 4;
-    coverage ++;
-#if CTX_DITHER
-    u0 += ud;
-    v0 += vd;
-#endif
-  }
-}
-
-static void
 CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENTS)
 {
 #if 0
@@ -2229,6 +2172,64 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
 #endif
   }
 }
+
+static void
+CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_fragment) (CTX_COMPOSITE_ARGUMENTS)
+{
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+#if CTX_DITHER
+  int dither_red_blue = rasterizer->format->dither_red_blue;
+  int dither_green = rasterizer->format->dither_green;
+#endif
+  CtxFragment fragment = rasterizer->fragment;
+  uint8_t _tsrc[4 * count];
+  uint8_t *tsrc = &_tsrc[0];
+  fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
+  for (int x = 0; x < count ; x++)
+  {
+    ctx_RGBA8_associate_alpha (tsrc);
+    tsrc += 4;
+  }
+  tsrc = &_tsrc[0];
+#if CTX_DITHER
+  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+#endif
+  for (int x = 0; x < count ; x++)
+  {
+    int cov = *coverage;
+    if (cov)
+    {
+      uint32_t *sip = ((uint32_t*)(tsrc));
+      uint32_t si = *sip;
+      int si_a = si >> CTX_RGBA8_A_SHIFT;
+      uint64_t si_ga = si & CTX_RGBA8_GA_MASK;
+      uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+      uint32_t *dip = ((uint32_t*)(dst));
+      uint32_t di = *dip;
+      uint64_t di_ga = di & CTX_RGBA8_GA_MASK;
+      uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+      int ir_cov_si_a = 255-((cov*si_a)>>8);
+      uint32_t res = 
+       (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
+       (((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_GA_MASK);
+#if CTX_DITHER
+      ctx_dither_rgba_u8 ((uint8_t*)(&res), u0, v0, dither_red_blue, dither_green);
+#endif
+      *((uint32_t*)(dst)) = res;
+    }
+    dst    += 4;
+    tsrc   += 4;
+    coverage ++;
+#if CTX_DITHER
+    u0 += ud;
+    v0 += vd;
+#endif
+  }
+}
+
+
 
 static void
 CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_ARGUMENTS)
@@ -3365,7 +3366,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
       rasterizer->fragment)
   {
-     rasterizer->comp_op = ctx_RGBA8_source_over_normal_fragment;
+          // only really valid for image sources
+     rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_fragment);
      return;
   }
 #endif
