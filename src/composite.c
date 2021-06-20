@@ -1561,7 +1561,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
     int x = 0;
 
 #if CTX_AVX2
-    if (((size_t)(dst) & 31) || 1)
+    if (((size_t)(dst) & 31))
 #endif
     {
       for (; (x < count) 
@@ -1609,7 +1609,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
          coverage += 8;
          continue;
        }
-      x1_minus_cov_mul_a = _mm256_sub_epi16(x00ff, xcov);
       xcov  = _mm256_set_epi16((coverage[7]), (coverage[7]),
                                (coverage[6]), (coverage[6]),
                                (coverage[5]), (coverage[5]),
@@ -1618,6 +1617,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
                                (coverage[2]), (coverage[2]),
                                (coverage[1]), (coverage[1]),
                                (coverage[0]), (coverage[0]));
+      x1_minus_cov_mul_a = _mm256_sub_epi16(x00ff, xcov);
 
       __m256i xdst   = _mm256_load_si256((__m256i*)(dst));
       __m256i dst_lo = _mm256_and_si256 (xdst, lo_mask);
@@ -1641,7 +1641,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
       tsrc += 4 * 8;
       coverage += 8;
     }
-
     if (x < count)
     {
       for (; x < count; x++)
@@ -1739,7 +1738,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_linear_gradient) (CTX_COMPOSIT
 #endif
   uint8_t _tsrc[4 * (count + fudge)];
   uint8_t *tsrc = &_tsrc[fudge];
-  fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
   for (int x = 0; x < count ; x++)
   {
       float vv = ( ( (linear_gradient_dx * u0 + linear_gradient_dy * v0) / linear_gradient_length) -
@@ -1787,7 +1785,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_radial_gradient) (CTX_COMPOSIT
 #endif
   uint8_t _tsrc[4 * (count + fudge)];
   uint8_t *tsrc = &_tsrc[fudge];
-  fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
   for (int x = 0; x < count ; x++)
   {
       float vv = ctx_hypotf (radial_gradient_x0 - u0, radial_gradient_y0 - v0);
@@ -2036,19 +2033,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
      
      if (((uint64_t*)(coverage))[0])
      {
-       if (CTX_LIKELY(((uint64_t*)(coverage))[0] != 0xffffffffffffffff))
-       {
-         xcov  = _mm256_set_epi16((coverage[7]), (coverage[7]),
-                                  (coverage[6]), (coverage[6]),
-                                  (coverage[5]), (coverage[5]),
-                                  (coverage[4]), (coverage[4]),
-                                  (coverage[3]), (coverage[3]),
-                                  (coverage[2]), (coverage[2]),
-                                  (coverage[1]), (coverage[1]),
-                                  (coverage[0]), (coverage[0]));
-        x1_minus_cov_mul_a = _mm256_sub_epi16(x00ff, xcov);
-       }
-       else
+       if (CTX_UNLIKELY(((uint64_t*)(coverage))[0] == 0xffffffffffffffff))
        {
          _mm256_store_si256((__m256i*)dst, xsrc);
          dst += 4 * 8;
@@ -2061,6 +2046,16 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
       __m256i src_lo = _mm256_and_si256 (xsrc, lo_mask);
       __m256i src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
         
+      xcov  = _mm256_set_epi16((coverage[7]), (coverage[7]),
+                                (coverage[6]), (coverage[6]),
+                                (coverage[5]), (coverage[5]),
+                                (coverage[4]), (coverage[4]),
+                                (coverage[3]), (coverage[3]),
+                                (coverage[2]), (coverage[2]),
+                                (coverage[1]), (coverage[1]),
+                                  (coverage[0]), (coverage[0]));
+      x1_minus_cov_mul_a = _mm256_sub_epi16(x00ff, xcov);
+
       dst_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_hi,  x1_minus_cov_mul_a), x0080), x0101);
       dst_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_lo,  x1_minus_cov_mul_a), x0080), x0101);
 
