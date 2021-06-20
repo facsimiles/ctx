@@ -44,7 +44,6 @@
 #define CTX_ENABLE_CMYK          1
 #define CTX_ENABLE_CM            1
 #define CTX_RASTERIZER_AA        15
-#define CTX_FORCE_AA             0
 #define CTX_ALSA_AUDIO           1
 #define CTX_MAX_TEXTURES         256
 #define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/

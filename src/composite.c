@@ -2023,23 +2023,12 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   uint8_t _tsrc[4 * count];
   uint8_t *tsrc = &_tsrc[0];
 
-#if 0
-  for (int x = 0; x < count ; x++)
-  {
-    fragment (rasterizer, u0, v0, tsrc, 1, ud, vd);
-    ctx_RGBA8_associate_alpha (tsrc);
-    tsrc += 4;
-    u0 += ud;
-    v0 += vd;
-  }
-#else
   fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
   for (int x = 0; x < count ; x++)
   {
     ctx_RGBA8_associate_alpha (tsrc);
     tsrc += 4;
   }
-#endif
   tsrc = &_tsrc[0];
 #if CTX_DITHER
   ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
@@ -2067,8 +2056,8 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
 #endif
       *((uint32_t*)(dst)) = res;
     }
-    dst += 4;
-    tsrc += 4;
+    dst    += 4;
+    tsrc   += 4;
     coverage ++;
 #if CTX_DITHER
     u0 += ud;

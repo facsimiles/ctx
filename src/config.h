@@ -18,12 +18,6 @@
 #define CTX_BACKEND_TEXT 1
 #endif
 
-/* force full antialising - turns off adaptive AA when set to 1 
- */
-#ifndef CTX_RASTERIZER_FORCE_AA
-#define CTX_RASTERIZER_FORCE_AA  0
-#endif
-
 /* when AA is not forced, the slope below which full AA get enabled.
  */
 
