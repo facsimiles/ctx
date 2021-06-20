@@ -630,7 +630,6 @@ struct _CtxRasterizer
 #endif
 
   int        aa;          // level of vertical aa
-  int        force_aa;    // force full AA
   int        active_edges;
   int        active_edges2;
   int        pending_edges;   // this-scanline

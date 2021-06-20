@@ -18,13 +18,11 @@
 #define CTX_BACKEND_TEXT 1
 #endif
 
-/* when AA is not forced, the slope below which full AA get enabled.
- */
 
 //#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (2125/CTX_SUBDIV/aa)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT3    (13424/CTX_SUBDIV/aa)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT5    (30425/CTX_SUBDIV/aa)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT15   (60425/CTX_SUBDIV/aa)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3    (13424/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5    (20425/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT15   (50425/CTX_SUBDIV/15)
 
 /* subpixel-aa coordinates used in BITPACKing of drawlist
  */

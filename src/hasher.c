@@ -415,7 +415,6 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   rasterizer->scan_min    = 5000;
   rasterizer->scan_max    = -5000;
   //rasterizer->aa          = 15;
-  rasterizer->force_aa    = 0;
 
   hasher->rows = rows;
   hasher->cols = cols;

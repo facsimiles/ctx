@@ -6,7 +6,7 @@
 #ifdef CTX_AVX2
 #undef CTX_AVX2
 #endif
-#define CTX_AVX2            1
+#define CTX_AVX2            0
 #define CTX_ENABLE_CM       0
 #define CTX_PARSER          0
 #define CTX_DITHER          0
