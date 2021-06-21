@@ -615,7 +615,7 @@ ctx_s32 (CtxCode code, int32_t x, int32_t y)
 }
 #endif
 
-CtxEntry
+static inline CtxEntry
 ctx_s16 (CtxCode code, int x0, int y0, int x1, int y1)
 {
   CtxEntry command = ctx_void (code);
