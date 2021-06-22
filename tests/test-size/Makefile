@@ -1,6 +1,6 @@
 SMALL_CFLAGS=-s -Os -march=x86-64 -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant -DNO_SDL -fno-stack-protector -fno-ident -Wl,--build-id=none -fno-semantic-interposition
 PERF_CFLAGS=-Ofast -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -DCTX_AVX2=1 -mavx -mavx2 -mfpmath=sse -ftree-vectorize -funsafe-math-optimizations -mtune=native -march=native
-CC=gcc
+#CC=gcc
 
 PROGRAMS=medium musl-static-medium tiny small baseline musl-static-tiny musl-static-small musl-static-baseline ctx-info-32bit
 
@@ -28,7 +28,7 @@ musl-static-%: %.c ../../*.h ../../fonts/*.h Makefile tiny-config.h
 perf: perf-circ
 	./perf-circ
 perf-circ: perf-circ.c ../../*.h ../../fonts/*.h Makefile
-	gcc $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts `pkg-config cairo --cflags --libs` -lm
+	$(CC) $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts `pkg-config cairo --cflags --libs` -lm
 
 ctx-info-32bit: ctx-info.c ../../ctx.h tiny-config.h
 	i686-linux-gnu-gcc $< -o $@ -lm -I../.. -I../../fonts -Wall -lm -I../../deps
