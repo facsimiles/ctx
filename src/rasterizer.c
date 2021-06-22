@@ -1168,40 +1168,32 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 
   ctx_compositor_setup_default (rasterizer);
   ctx_rasterizer_sort_edges (rasterizer);
-  if (maxx>minx)
   {
     int halfstep2 = aa/2;
-    int halfstep  = aa/2 + 1;
+    int halfstep  = halfstep2 + 1;
     rasterizer->needs_aa3  = 0;
     rasterizer->needs_aa5  = 0;
     rasterizer->needs_aa15 = 0;
     rasterizer->scanline = scan_start-aa*400;
     ctx_rasterizer_feed_edges (rasterizer);
-    ctx_rasterizer_increment_edges (rasterizer, aa * 400);
     ctx_rasterizer_discard_edges (rasterizer);
+    ctx_rasterizer_increment_edges (rasterizer, aa * 400);
     rasterizer->scanline = scan_start;
     ctx_rasterizer_feed_edges (rasterizer);
     ctx_rasterizer_discard_edges (rasterizer);
 
   for (rasterizer->scanline = scan_start; rasterizer->scanline <= scan_end;)
     {
+      int contains_edge_end = rasterizer->pending_edges ||
+                              rasterizer->ending_edges;
       ctx_memset (coverage, 0,
 #if CTX_SHAPE_CACHE
                   shape?shape->width:
 #endif
                   sizeof (_coverage) );
-      /*
-      rasterizer->needs_aa3  = 0;
-      rasterizer->needs_aa5  = 0;
-      rasterizer->needs_aa15 = 0;
-      */
 
       if ((real_aa >= 15) &&
-      (
-           rasterizer->needs_aa15
-        || rasterizer->pending_edges
-        || rasterizer->ending_edges
-          ))
+      (rasterizer->needs_aa15 || contains_edge_end))
       {
         for (int i = 0; i < 15; i++)
         {
@@ -1212,16 +1204,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           rasterizer->scanline ++;
           ctx_rasterizer_increment_edges (rasterizer, 1);
         }
-        //for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.25;
     }
-    else
-            
-            if ((real_aa >= 5) &&
-      (
-           rasterizer->needs_aa5
-        || rasterizer->pending_edges
-        || rasterizer->ending_edges
-          ))
+    else if ((real_aa >= 5) &&
+            ( rasterizer->needs_aa5 || contains_edge_end))
     {
       for (int i = 0; i < aa; i+=3)
       {
@@ -1236,11 +1221,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
         //for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.5;
     }
     else if ((real_aa >= 3) &&
-      (
-           rasterizer->needs_aa3
-        || rasterizer->pending_edges
-        || rasterizer->ending_edges
-          ))
+            ( rasterizer->needs_aa3 || contains_edge_end))
     {
       for (int i = 0; i < aa; i+=5)
       {
@@ -1252,7 +1233,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
         rasterizer->scanline +=5;
         ctx_rasterizer_increment_edges (rasterizer, 5);
       }
-        //for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.75;
+      //for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.75;
     }
     else
     {
