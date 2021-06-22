@@ -264,7 +264,7 @@ CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, floa
 
 
 
-CTX_STATIC void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
+static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx = x;
   float ty = y;
@@ -329,7 +329,7 @@ ctx_bezier_sample (float x0, float y0,
   *y = ctx_bezier_sample_1d (y0, y1, y2, y3, dt);
 }
 
-static void
+static inline void
 ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
                               float ox, float oy,
                               float x0, float y0,
@@ -590,12 +590,9 @@ static inline void ctx_edge_qsort (CtxEntry *entries, int low, int high)
   }
 }
 
-static void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
+static inline void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 {
-  if (rasterizer->edge_list.count > 1)
-    {
-      ctx_edge_qsort (& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
-    }
+  ctx_edge_qsort (& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
 }
 
 

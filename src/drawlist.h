@@ -15,7 +15,7 @@ CTX_STATIC void
 ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size);
 CTX_STATIC int
 ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry);
-int ctx_drawlist_add_entry (CtxDrawlist *drawlist, CtxEntry *entry);
+CTX_STATIC int ctx_drawlist_add_entry (CtxDrawlist *drawlist, CtxEntry *entry);
 int
 ctx_drawlist_insert_entry (CtxDrawlist *drawlist, int pos, CtxEntry *entry);
 int
