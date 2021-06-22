@@ -667,19 +667,12 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
         }
     }
   int scanline = rasterizer->scanline;
-  int aa = 15;//rasterizer->aa;
-  int slope_limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3;
-  int slope_limit5 = CTX_RASTERIZER_AA_SLOPE_LIMIT5;
-  int slope_limit15 = CTX_RASTERIZER_AA_SLOPE_LIMIT15;
   while (CTX_LIKELY(rasterizer->edge_pos < rasterizer->edge_list.count &&
-         (miny=entries[rasterizer->edge_pos].data.s16[1]-1)  <= scanline 
-         + aa
-         ))
+         (miny=entries[rasterizer->edge_pos].data.s16[1]-1)  <= scanline + 15))
     {
       if (CTX_LIKELY(rasterizer->active_edges < CTX_MAX_EDGES-2))
         {
-          int dy = (entries[rasterizer->edge_pos].data.s16[3] - 1 -
-                    miny);
+          int dy = (entries[rasterizer->edge_pos].data.s16[3] - 1 - miny);
           if (dy) /* skipping horizontal edges */
             {
               int yd = scanline - miny;
@@ -691,38 +684,19 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
               int x1 = entries[index].data.s16[2];
               rasterizer->edges[no].val = x0 * CTX_RASTERIZER_EDGE_MULTIPLIER;
               int dx_dy;
-              //  if (dy)
               dx_dy = CTX_RASTERIZER_EDGE_MULTIPLIER * (x1 - x0) / dy;
-              //  else
-              //  dx_dy = 0;
               rasterizer->edges[no].delta = dx_dy;
               rasterizer->edges[no].val += (yd * dx_dy);
-              // XXX : even better minx and maxx can
-              //       be derived using y0 and y1 for scaling dx_dy
-              //       when ydelta to these are smaller than
-              //       ydelta to scanline
-#if 0
-              if (dx_dy < 0)
-                {
-                  rasterizer->edges[no].minx =
-                    rasterizer->edges[no].val + dx_dy/2;
-                  rasterizer->edges[no].maxx =
-                    rasterizer->edges[no].val - dx_dy/2;
-                }
-              else
-                {
-                  rasterizer->edges[no].minx =
-                    rasterizer->edges[no].val - dx_dy/2;
-                  rasterizer->edges[no].maxx =
-                    rasterizer->edges[no].val + dx_dy/2;
-                }
-#endif
-              if (abs(dx_dy)> slope_limit3)
-                { rasterizer->needs_aa3 ++; }
-              if (abs(dx_dy)> slope_limit5)
-                { rasterizer->needs_aa5 ++; }
-              if (abs(dx_dy)> slope_limit15)
-                { rasterizer->needs_aa15 ++; }
+
+              {
+                int abs_dx_dy = abs(dx_dy);
+                if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT3)
+                  { rasterizer->needs_aa3 ++; }
+                if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT5)
+                  { rasterizer->needs_aa5 ++; }
+                if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT15)
+                  { rasterizer->needs_aa15 ++; }
+              }
 
               if ((miny > scanline) )
                 {
