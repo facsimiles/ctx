@@ -1544,12 +1544,6 @@ ctx_u8_source_over_normal_color (int components,
 #endif
 
 #if CTX_AVX2
-#define lo_mask   _mm256_set1_epi32 (0x00FF00FF)
-#define hi_mask   _mm256_set1_epi32 (0xFF00FF00)
-#define a_mask    _mm256_set1_epi32 (0x000000FF)
-#define x00ff     _mm256_set1_epi16(255)
-#define x0101     _mm256_set1_epi16(0x0101)
-#define x0080     _mm256_set1_epi16(0x0080)
 
 #if !__COSMOPOLITAN__
 #include <stdalign.h>
@@ -1596,6 +1590,12 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
   }
 
 #if CTX_AVX2
+    __m256i a_mask = _mm256_set1_epi32 (0xFF000000);
+    __m256i lo_mask = _mm256_set1_epi32 (0x00FF00FF);
+    __m256i hi_mask = _mm256_set1_epi32 (0xFF00FF00);
+    __m256i x00ff =   _mm256_set1_epi16(255);
+    __m256i x0101 =   _mm256_set1_epi16(0x0101);
+    __m256i x0080 =   _mm256_set1_epi16(0x0080);
     for (; x <= count-8; x+=8)
     {
      if (((uint64_t*)(coverage))[0])
@@ -1604,14 +1604,8 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
        __m256i x1_minus_cov_mul_a;
        __m256i xsrc = _mm256_load_si256((__m256i*)(tsrc));
 
-       __m256i xsrc_a  = _mm256_set_epi32(tsrc[7*4+3],
-                                          tsrc[6*4+3], 
-                                          tsrc[5*4+3], 
-                                          tsrc[4*4+3], 
-                                          tsrc[3*4+3], 
-                                          tsrc[2*4+3], 
-                                          tsrc[1*4+3], 
-                                          tsrc[0*4+3]);
+       __m256i xsrc_a = _mm256_and_si256(xsrc, a_mask);
+       xsrc_a = _mm256_srli_epi32 (xsrc_a, 24);
        xsrc_a |= xsrc_a << 16;
        xcov  = _mm256_set_epi32(coverage[7],
                                 coverage[6],
@@ -1895,6 +1889,11 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
 #if CTX_AVX2
                     
     __m256i xsrc = _mm256_set1_epi32( *((uint32_t*)tsrc)) ;
+    __m256i lo_mask = _mm256_set1_epi32 (0x00FF00FF);
+    __m256i hi_mask = _mm256_set1_epi32 (0xFF00FF00);
+    __m256i x00ff =   _mm256_set1_epi16(255);
+    __m256i x0101 =   _mm256_set1_epi16(0x0101);
+    __m256i x0080 =   _mm256_set1_epi16(0x0080);
     for (; x <= count-8; x+=8)
     {
       __m256i xcov;
@@ -2035,6 +2034,11 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
     {
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
+    __m256i lo_mask = _mm256_set1_epi32 (0x00FF00FF);
+    __m256i hi_mask = _mm256_set1_epi32 (0xFF00FF00);
+    __m256i x00ff =   _mm256_set1_epi16(255);
+    __m256i x0101 =   _mm256_set1_epi16(0x0101);
+    __m256i x0080 =   _mm256_set1_epi16(0x0080);
      uint64_t cov = ((uint64_t*)(coverage))[0];
      if (cov)
      {
@@ -2534,6 +2538,11 @@ ctx_avx2_porter_duff (CtxRasterizer         *rasterizer,
   if (fragment)
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
+    __m256i lo_mask = _mm256_set1_epi32 (0x00FF00FF);
+    __m256i hi_mask = _mm256_set1_epi32 (0xFF00FF00);
+    __m256i x00ff =   _mm256_set1_epi16(255);
+    __m256i x0101 =   _mm256_set1_epi16(0x0101);
+    __m256i x0080 =   _mm256_set1_epi16(0x0080);
   for (; x < count; x+=n_pix)
   {
     __m256i xdst  = _mm256_loadu_si256((__m256i*)(dst)); 
