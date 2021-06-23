@@ -1596,7 +1596,10 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
     __m256i x00ff =   _mm256_set1_epi16(255);
     __m256i x0101 =   _mm256_set1_epi16(0x0101);
     __m256i x0080 =   _mm256_set1_epi16(0x0080);
-    for (; x <= count-8; x+=8)
+
+    int trailer = (count - x) % 8 + 1;
+
+    for (; x <= count-trailer; x+=8)
     {
      if (((uint64_t*)(coverage))[0])
      {
@@ -1631,7 +1634,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
        dst_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_lo,  x1_minus_cov_mul_a), x0080), x0101);
 
        src_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_lo, xcov), x0080), x0101);
-       src_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_hi,  xcov), x0080), x0101);
+       src_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_hi, xcov), x0080), x0101);
 
        dst_hi = _mm256_adds_epu16(dst_hi, src_hi);
        dst_lo = _mm256_adds_epu16(dst_lo, src_lo);
@@ -1894,7 +1897,10 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
     __m256i x00ff =   _mm256_set1_epi16(255);
     __m256i x0101 =   _mm256_set1_epi16(0x0101);
     __m256i x0080 =   _mm256_set1_epi16(0x0080);
-    for (; x <= count-8; x+=8)
+
+    int trailer = (count - x) % 8 + 1;
+
+    for (; x <= count-trailer; x+=8)
     {
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
@@ -2030,7 +2036,8 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
 #if CTX_AVX2
                     
     __m256i xsrc = _mm256_set1_epi32( *((uint32_t*)tsrc)) ;
-    for (; x <= count-8; x+=8)
+    int trailer = (count - x) % 8 + 1;
+    for (; x < count-trailer; x+=8)
     {
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
@@ -2446,10 +2453,6 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
     if (CTX_UNLIKELY(fragment))
       ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
-    if (blend == CTX_BLEND_NORMAL) // for normal we only need to do it once
-                                   // when there is no fragment
-      ctx_u8_blend (components, blend, dst, src, tsrc);
-
     while (count--)
     {
       int cov = *coverage;
@@ -2472,7 +2475,8 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       if (fragment)
       {
         fragment (rasterizer, u0, v0, tsrc, 1, ud, vd);
-        ctx_u8_blend (components, blend, dst, tsrc, tsrc);
+        if (blend != CTX_BLEND_NORMAL)
+          ctx_u8_blend (components, blend, dst, tsrc, tsrc);
       }
       else
       {
@@ -2538,11 +2542,11 @@ ctx_avx2_porter_duff (CtxRasterizer         *rasterizer,
   if (fragment)
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 
-    __m256i lo_mask = _mm256_set1_epi32 (0x00FF00FF);
-    __m256i hi_mask = _mm256_set1_epi32 (0xFF00FF00);
-    __m256i x00ff =   _mm256_set1_epi16(255);
-    __m256i x0101 =   _mm256_set1_epi16(0x0101);
-    __m256i x0080 =   _mm256_set1_epi16(0x0080);
+  __m256i lo_mask = _mm256_set1_epi32 (0x00FF00FF);
+  __m256i hi_mask = _mm256_set1_epi32 (0xFF00FF00);
+  __m256i x00ff =   _mm256_set1_epi16(255);
+  __m256i x0101 =   _mm256_set1_epi16(0x0101);
+  __m256i x0080 =   _mm256_set1_epi16(0x0080);
   for (; x < count; x+=n_pix)
   {
     __m256i xdst  = _mm256_loadu_si256((__m256i*)(dst)); 
