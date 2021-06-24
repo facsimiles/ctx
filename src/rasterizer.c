@@ -670,7 +670,9 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
   while (CTX_LIKELY(rasterizer->edge_pos < rasterizer->edge_list.count &&
          (miny=entries[rasterizer->edge_pos].data.s16[1]-1)  <= scanline + 15))
     {
-      if (CTX_LIKELY(rasterizer->active_edges < CTX_MAX_EDGES-2))
+      int maxy=entries[rasterizer->edge_pos].data.s16[3]-1;
+      if (CTX_LIKELY(rasterizer->active_edges < CTX_MAX_EDGES-2) &&
+          maxy >= scanline)
         {
           int dy = (entries[rasterizer->edge_pos].data.s16[3] - 1 - miny);
           if (dy) /* skipping horizontal edges */
