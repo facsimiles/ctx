@@ -501,7 +501,6 @@ ctx_RGBAF_deassociate_alpha (float *rgba, float *dst)
   ctx_float_deassociate_alpha (4, rgba, dst);
 }
 
-/**** rgb8 ***/
 
 static inline void ctx_swap_red_green_u8 (void *data)
 {
@@ -510,6 +509,18 @@ static inline void ctx_swap_red_green_u8 (void *data)
   rgba[0] = rgba[2];
   rgba[2] = tmp;
 }
+
+static void
+ctx_fragment_swap_red_green_u8 (uint8_t *rgba, int count)
+{
+  for (int x = 0; x < count; x++)
+  {
+    ctx_swap_red_green_u8 (rgba);
+    rgba += 4;
+  }
+}
+
+/**** rgb8 ***/
 
 static void
 ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
@@ -578,7 +589,7 @@ ctx_fragment_image_rgb8_RGBA8_box_swap_red_green (CtxRasterizer *rasterizer,
                                   void *out, int count, float dx, float dy)
 {
   ctx_fragment_image_rgb8_RGBA8_box (rasterizer, x, y, out, count, dx, dy);
-  ctx_swap_red_green_u8 (out);
+  ctx_fragment_swap_red_green_u8 (out, count);
 }
 
 static void
@@ -649,8 +660,7 @@ ctx_fragment_image_rgb8_RGBA8_bi_swap_red_green (CtxRasterizer *rasterizer,
                                   void *out, int count, float dx, float dy)
 {
   ctx_fragment_image_rgb8_RGBA8_bi_swap_red_green (rasterizer, x, y, out, count, dx, dy);
-  ctx_swap_red_green_u8 (out);
-
+  ctx_fragment_swap_red_green_u8 (out, count);
 }
 
 static CTX_INLINE void
@@ -750,7 +760,7 @@ ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green (CtxRasterizer *rasterizer,
                                                       void *out, int count, float dx, float dy)
 {
   ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer, x, y, out, count, dx, dy);
-  ctx_swap_red_green_u8 (out);
+  ctx_fragment_swap_red_green_u8 (out, count);
 }
 
 static void
@@ -985,7 +995,6 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
 #endif
 }
 
-
 static void
 ctx_fragment_image_rgba8_RGBA8_box_swap_red_green (CtxRasterizer *rasterizer,
                                     float x,
@@ -993,7 +1002,7 @@ ctx_fragment_image_rgba8_RGBA8_box_swap_red_green (CtxRasterizer *rasterizer,
                                     void *out, int count, float dx, float dy)
 {
   ctx_fragment_image_rgba8_RGBA8_box (rasterizer, x, y, out, count, dx, dy);
-  ctx_swap_red_green_u8 (out);
+  ctx_fragment_swap_red_green_u8 (out, count);
 }
 
 static void
@@ -1003,7 +1012,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_swap_red_green (CtxRasterizer *rasterizer,
                                     void *out, int count, float dx, float dy)
 {
   ctx_fragment_image_rgba8_RGBA8_bi (rasterizer, x, y, out, count, dx, dy);
-  ctx_swap_red_green_u8 (out);
+  ctx_fragment_swap_red_green_u8 (out, count);
 }
 
 static void
@@ -1013,7 +1022,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest_swap_red_green (CtxRasterizer *rasterizer
                                     void *out, int count, float dx, float dy)
 {
   ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, x, y, out, count, dx, dy);
-  ctx_swap_red_green_u8 (out);
+  ctx_fragment_swap_red_green_u8 (out, count);
 }
 
 static void
@@ -1055,6 +1064,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
     else
       ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, x, y, out, count, dx, dy);
   }
+  ctx_fragment_swap_red_green_u8 (out, count);
 #if CTX_DITHER
   uint8_t *rgba = (uint8_t*)out;
   ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -1242,16 +1252,21 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                   float factor = ctx_matrix_get_scale (&gstate->transform);
                           //fprintf (stderr, "{%.3f}", factor);
                   if (factor < 0.5f)
+                  {
+                    if (rasterizer->swap_red_green)
+                      return ctx_fragment_image_rgb8_RGBA8_box_swap_red_green;
                     return ctx_fragment_image_rgb8_RGBA8_box;
+                  }
                   else if (factor > 0.99f && factor < 1.01f)
                   {
                     if (rasterizer->swap_red_green)
                       return ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green;
-                    else
-                      return ctx_fragment_image_rgb8_RGBA8_nearest;
+                    return ctx_fragment_image_rgb8_RGBA8_nearest;
                   }
                   else
                   {
+                    if (rasterizer->swap_red_green)
+                      return ctx_fragment_image_rgb8_RGBA8_bi_swap_red_green;
                     return ctx_fragment_image_rgb8_RGBA8_bi;
                   }
                 }
@@ -1259,8 +1274,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                 {
                   if (rasterizer->swap_red_green)
                     return ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green;
-                  else
-                    return ctx_fragment_image_rgb8_RGBA8_nearest;
+                  return ctx_fragment_image_rgb8_RGBA8_nearest;
                 }
               }
               break;
@@ -1271,14 +1285,28 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                   float factor = ctx_matrix_get_scale (&gstate->transform);
                           //fprintf (stderr, "[%.3f]", factor);
                   if (factor < 0.5f)
+                  {
+                    if (rasterizer->swap_red_green)
+                      return ctx_fragment_image_rgba8_RGBA8_box_swap_red_green;
                     return ctx_fragment_image_rgba8_RGBA8_box;
+                  }
                   else if (factor > 0.99f && factor < 1.01f)
+                  {
+                    if (rasterizer->swap_red_green)
+                      return ctx_fragment_image_rgba8_RGBA8_nearest_swap_red_green;
                     return ctx_fragment_image_rgba8_RGBA8_nearest;
+                  }
                   else
+                  {
+                    if (rasterizer->swap_red_green)
+                      return ctx_fragment_image_rgba8_RGBA8_bi_swap_red_green;
                     return ctx_fragment_image_rgba8_RGBA8_bi;
+                  }
                 }
                 else
                 {
+                  if (rasterizer->swap_red_green)
+                    return ctx_fragment_image_rgba8_RGBA8_nearest_swap_red_green;
                   return ctx_fragment_image_rgba8_RGBA8_nearest;
                 }
               }
