@@ -5303,7 +5303,7 @@ CTX_COMPOSITE_SUFFIX(ctx_compositor_setup) (CtxRasterizer *rasterizer)
 
   if (rasterizer->format->setup)
   {
-    // event if _default is used we get to work
+    // this works also when _default is passed
     rasterizer->format->setup (rasterizer);
   }
 #if CTX_GRADIENTS

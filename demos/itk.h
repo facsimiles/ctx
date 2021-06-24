@@ -6,7 +6,7 @@
 #endif
 #include "ctx.h"
 
-/* A small immediate mode toolkit for ctx
+/* An immediate mode toolkit for ctx
  *
  * TODO/BUGS:
  *   - more than one scroll per panel

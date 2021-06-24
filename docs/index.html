@@ -34,16 +34,19 @@
       <p>ctx is a text- and media <a href='terminal/'>terminal</a>, with an
       HTML5 Canvas 2D Context and SVG inspired <a href='protocol/'>vector
       graphics protocol</a> and accompanying interactive vector graphics <a
-      href='sdk/'>SDK</a>.
+                                                                                 href='sdk/'>SDK</a>.
 
       Ctx supports textures and can render to 8bit/32bit float buffers for RGB,
-      grayscale and CMYK with 1/2/4bit as additions for grayscale and RGB565 and RGB332
-      for RGB useful for <a href='mcu/'>microcontrollers</a> and with constrained RAM.
+      grayscale and CMYK with 1/2/4bit as additions for grayscale and RGB565
+      and RGB332 for RGB useful for <a href='mcu/'>microcontrollers</a> and
+      with constrained RAM.
+      </p>
 
       <p>
       Programs using ctx as a base can run on top of SDL2, directly on linux
-      framebuffer+alsa. Ctx can be configured to build to a tiny core, suitable
-      for memory contrained environments like <a href='mcu/'>microcontrollers</a>.
+      framebuffer+alsa. When using these backends there is additional <a
+      href='caching-and-threading/'>caching and threading</a> that boost
+      performance.
       </p>
 
 
