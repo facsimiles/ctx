@@ -26,7 +26,7 @@
 
 /* subpixel-aa coordinates used in BITPACKing of drawlist
  */
-#define CTX_SUBDIV   4 // higher gives higher quality, but 4096wide rendering
+#define CTX_SUBDIV   8 // higher gives higher quality, but 4096wide rendering
                        // stops working
 
 // 8    12 68 40 24
