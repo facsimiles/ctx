@@ -137,6 +137,11 @@ const char *ctx_string_get (CtxString *string)
   return string->str;
 }
 
+int ctx_string_get_utf8length (CtxString *string)
+{
+  return string->utf8_length;
+}
+
 int ctx_string_get_length (CtxString *string)
 {
   return string->length;
@@ -303,8 +308,8 @@ void ctx_string_insert_utf8 (CtxString *string, int pos, const char *new_glyph)
     }
   memcpy (p, new_glyph, new_len);
   memcpy (p + new_len, rest, strlen (rest) + 1);
-  string->length += new_len;
   free (rest);
+  string->length = strlen (string->str);
   string->utf8_length = ctx_utf8_strlen (string->str);
 }
 
@@ -312,7 +317,7 @@ void ctx_string_insert_unichar (CtxString *string, int pos, uint32_t unichar)
 {
   uint8_t utf8[5]="";
   utf8[ctx_unichar_to_utf8(unichar, utf8)]=0;
-  ctx_string_insert_utf8 (string, pos, utf8);
+  ctx_string_insert_utf8 (string, pos, (char*)utf8);
 }
 
 void ctx_string_remove (CtxString *string, int pos)
@@ -328,11 +333,17 @@ void ctx_string_remove (CtxString *string, int pos)
   char *p = (char *) ctx_utf8_skip (string->str, pos);
   int prev_len = ctx_utf8_len (*p);
   char *rest;
-  if (*p == 0 || * (p+prev_len) == 0)
+#if 1
+  if (!p || *p == 0)
     {
+      return;
       rest = ctx_strdup ("");
       prev_len = 0;
     }
+  else if (* (p+prev_len) == 0)
+  {
+      rest = ctx_strdup ("");
+  }
   else
     {
       rest = ctx_strdup (p + prev_len);

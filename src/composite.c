@@ -511,8 +511,9 @@ static inline void ctx_swap_red_green_u8 (void *data)
 }
 
 static void
-ctx_fragment_swap_red_green_u8 (uint8_t *rgba, int count)
+ctx_fragment_swap_red_green_u8 (void *out, int count)
 {
+  uint8_t *rgba = (uint8_t*)out;
   for (int x = 0; x < count; x++)
   {
     ctx_swap_red_green_u8 (rgba);

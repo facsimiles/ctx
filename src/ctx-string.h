@@ -17,6 +17,7 @@ void        ctx_string_free           (CtxString *string, int freealloc);
 const char *ctx_string_get            (CtxString *string);
 uint32_t    ctx_string_get_unichar    (CtxString *string, int pos);
 int         ctx_string_get_length     (CtxString *string);
+int         ctx_string_get_utf8length (CtxString *string);
 void        ctx_string_set            (CtxString *string, const char *new_string);
 void        ctx_string_clear          (CtxString *string);
 void        ctx_string_append_str     (CtxString *string, const char *str);
