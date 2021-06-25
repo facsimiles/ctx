@@ -996,11 +996,104 @@ static int vt_trimlines (VT *vt, int max)
   return 0;
 }
 
+static void vt_rewrap_pair (VT *vt, VtLine *topline, VtLine *bottomline, int max_col)
+{
+  int toplen = 0;
+
+  while ((toplen = vt_line_get_length (topline)) > max_col)
+  {
+     uint32_t unichar = vt_line_get_unichar (topline, toplen-1);
+     uint32_t style =  vt_line_get_style (topline, toplen-1);
+     vt_line_insert_unichar (bottomline, 0, unichar);
+     vt_line_remove (topline, toplen-1);
+     vt_line_set_style (bottomline, 0, style);
+  }
+
+  while (vt_line_get_length (bottomline) &&
+         (toplen = vt_lineget_length (topline)) < max_col)
+  {
+     uint32_t unichar = vt_line_get_unichar (bottomline, 0);
+     uint32_t style =  vt_line_get_style (bottomline, 0);
+     vt_line_append_unichar (topline, unichar);
+     vt_line_set_style (topline, toplen, style);
+     vt_line_remove (bottomline, 0);
+  }
+}
+
+static void vt_rewrap (VT *vt, int max_col)
+{
+  CtxList *list = NULL;
+
+  for (CtxList *l = vt->lines; l;)
+  {
+    CtxList *next = l->next;
+    ctx_list_prepend (&list, l->data);
+    ctx_list_remove (&vt->lines, l->data);
+    l = next;
+  }
+  for (CtxList *l = vt->scrollback; l;)
+  {
+    CtxList *next = l->next;
+    ctx_list_prepend (&list, l->data);
+    ctx_list_remove (&vt->scrollback, l->data);
+    l = next;
+  }
+
+  for (CtxList *l = list; l; l = l->next)
+    {
+      VtLine *line = l->data;
+      VtLine *next = l->next ?l->next->data:NULL;
+
+      if (vt_line_get_length (line) > max_col || (next && next->wrapped))
+      {
+        if (!next)
+        {
+          ctx_list_append (&list, vt_line_new (""));
+          next = l->next->data;
+          next->wrapped = 1;
+        }
+        else if (!next->wrapped)
+        {
+          ctx_list_insert_before (&list, l->next, vt_line_new (""));
+          next = l->next->data;
+          next->wrapped = 1;
+        } 
+        vt_rewrap_pair (vt, line, next, max_col);
+        if (vt_line_get_length (next) == 0)
+          ctx_list_remove (&list, l->next->data);
+      }
+    }
+
+  int rows = vt->rows;
+  int total_rows = ctx_list_length (list);
+
+  int scrollback_rows = total_rows - rows;
+
+  int c = 0;
+  CtxList *l;
+  for (l = list; l && c < scrollback_rows;)
+  {
+    CtxList *next = l->next;
+    ctx_list_prepend (&vt->scrollback, l->data);
+    ctx_list_remove (&list, l->data);
+    l = next;
+    c++;
+  }
+  for (; l ;)
+  {
+    CtxList *next = l->next;
+    ctx_list_prepend (&vt->lines, l->data);
+    ctx_list_remove (&list, l->data);
+    l = next;
+    c++;
+  }
+}
 
 void vt_set_term_size (VT *vt, int icols, int irows)
 {
   if (vt->rows == irows && vt->cols == icols)
     return;
+
 
   if (vt->state == vt_state_ctx)
   {
@@ -1009,6 +1102,8 @@ void vt_set_term_size (VT *vt, int icols, int irows)
     // rendered frame is discarded?
     return;
   }
+
+  if(0)vt_rewrap (vt, icols);
 
   while (irows > vt->rows)
     {
@@ -1127,7 +1222,6 @@ static void _vt_add_str (VT *vt, const char *str)
           int chars = 0;
           int old_x = vt->cursor_x;
           VtLine *old_line = vt->current_line;
-          old_line->wrapped=1;
           if (vt->justify && str[0] != ' ')
             {
               while (old_x-1-chars >1 && vt_line_get_unichar (vt->current_line,
@@ -1147,6 +1241,7 @@ static void _vt_add_str (VT *vt, const char *str)
             {
               _vt_move_to (vt, vt->cursor_y+1, 1);
             }
+          vt->current_line->wrapped=1;
           vt_carriage_return (vt);
           for (int i = 0; i < chars; i++)
             {

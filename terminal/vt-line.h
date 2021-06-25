@@ -162,35 +162,45 @@ static inline void        vt_line_append_unichar (VtLine *line, unsigned int uni
   CtxString *string = (CtxString*)line;
   ctx_string_append_unichar (string, unichar);
 }
-static inline void        vt_line_append_data    (VtLine *line, const char *data, int len)
+static inline void vt_line_append_data    (VtLine *line, const char *data, int len)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_append_data (string, data, len);
 }
-static inline void        vt_line_append_utf8char (VtLine *line, const char *str)
+static inline void vt_line_append_utf8char (VtLine *line, const char *str)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_append_utf8char (string, str);
 }
-static inline void        vt_line_replace_utf8   (VtLine *line, int pos, const char *new_glyph)
+static inline void vt_line_replace_utf8   (VtLine *line, int pos, const char *new_glyph)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_replace_utf8 (string, pos, new_glyph);
 }
-static inline void        vt_line_insert_utf8    (VtLine *line, int pos, const char *new_glyph)
+static inline void vt_line_insert_utf8    (VtLine *line, int pos, const char *new_glyph)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_insert_utf8 (string, pos, new_glyph);
+  int len = vt_line_get_length (line);
+  for (int i = 1; i < len; i++)
+    vt_line_set_style (line, i, vt_line_get_style (line, i-1));
 }
-static inline void        vt_line_replace_unichar (VtLine *line, int pos, uint32_t unichar)
+
+static inline void vt_line_insert_unichar (VtLine *line, int pos, uint32_t new_glyph)
+{
+  CtxString *string = (CtxString*)line;
+  ctx_string_insert_unichar (string, pos, new_glyph);
+  int len = vt_line_get_length (line);
+  for (int i = 1; i < len; i++)
+    vt_line_set_style (line, i, vt_line_get_style (line, i-1));
+}
+static inline void vt_line_replace_unichar (VtLine *line, int pos, uint32_t unichar)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_replace_unichar (string, pos, unichar);
 }
-                                      /* bad naming, since it is encoding
-                                       * independent.
-                                      */
-static inline void        vt_line_remove (VtLine *line, int pos)
+
+static inline void vt_line_remove (VtLine *line, int pos)
 { 
   CtxString *string = (CtxString*)line;
   ctx_string_remove (string, pos);

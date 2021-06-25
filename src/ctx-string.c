@@ -256,6 +256,7 @@ uint32_t ctx_string_get_unichar (CtxString *string, int pos)
   return ctx_utf8_to_unichar (p);
 }
 
+
 void ctx_string_insert_utf8 (CtxString *string, int pos, const char *new_glyph)
 {
   int new_len = ctx_utf8_len (*new_glyph);
@@ -305,6 +306,13 @@ void ctx_string_insert_utf8 (CtxString *string, int pos, const char *new_glyph)
   string->length += new_len;
   free (rest);
   string->utf8_length = ctx_utf8_strlen (string->str);
+}
+
+void ctx_string_insert_unichar (CtxString *string, int pos, uint32_t unichar)
+{
+  uint8_t utf8[5]="";
+  utf8[ctx_unichar_to_utf8(unichar, utf8)]=0;
+  ctx_string_insert_utf8 (string, pos, utf8);
 }
 
 void ctx_string_remove (CtxString *string, int pos)

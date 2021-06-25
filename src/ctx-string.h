@@ -29,6 +29,8 @@ void        ctx_string_append_utf8char (CtxString *string, const char *str);
 void        ctx_string_append_printf  (CtxString *string, const char *format, ...);
 void        ctx_string_replace_utf8   (CtxString *string, int pos, const char *new_glyph);
 void        ctx_string_insert_utf8    (CtxString *string, int pos, const char *new_glyph);
+
+void        ctx_string_insert_unichar (CtxString *string, int pos, uint32_t unichar);
 void        ctx_string_replace_unichar (CtxString *string, int pos, uint32_t unichar);
 void        ctx_string_remove         (CtxString *string, int pos);
 char       *ctx_strdup_printf         (const char *format, ...);
