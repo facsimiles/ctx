@@ -132,6 +132,11 @@ static inline int         vt_line_get_length     (VtLine *line)
   CtxString *string = (CtxString*)line;
   return ctx_string_get_length (string);
 }
+static inline int         vt_line_get_utf8length     (VtLine *line)
+{
+  CtxString *string = (CtxString*)line;
+  return ctx_string_get_utf8length (string);
+}
 static inline void        vt_line_set            (VtLine *line, const char *new_string)
 {
   CtxString *string = (CtxString*)line;

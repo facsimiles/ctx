@@ -1000,7 +1000,7 @@ static void vt_rewrap_pair (VT *vt, VtLine *topline, VtLine *bottomline, int max
 {
   int toplen = 0;
 
-  while ((toplen = vt_line_get_length (topline)) > max_col)
+  while ((toplen = vt_line_get_utf8length (topline)) > max_col)
   {
      uint32_t unichar = vt_line_get_unichar (topline, toplen-1);
      uint32_t style =  vt_line_get_style (topline, toplen-1);
@@ -1010,7 +1010,7 @@ static void vt_rewrap_pair (VT *vt, VtLine *topline, VtLine *bottomline, int max
   }
 
   while (vt_line_get_length (bottomline) &&
-         (toplen = vt_lineget_length (topline)) < max_col)
+         (toplen = vt_line_get_utf8length (topline)) < max_col)
   {
      uint32_t unichar = vt_line_get_unichar (bottomline, 0);
      uint32_t style =  vt_line_get_style (bottomline, 0);
@@ -1044,7 +1044,7 @@ static void vt_rewrap (VT *vt, int max_col)
       VtLine *line = l->data;
       VtLine *next = l->next ?l->next->data:NULL;
 
-      if (vt_line_get_length (line) > max_col || (next && next->wrapped))
+      if (vt_line_get_utf8length (line) >= max_col || (next && next->wrapped))
       {
         if (!next)
         {
@@ -1059,7 +1059,7 @@ static void vt_rewrap (VT *vt, int max_col)
           next->wrapped = 1;
         } 
         vt_rewrap_pair (vt, line, next, max_col);
-        if (vt_line_get_length (next) == 0)
+        if (vt_line_get_utf8length (next) == 0)
           ctx_list_remove (&list, l->next->data);
       }
     }
@@ -1103,7 +1103,7 @@ void vt_set_term_size (VT *vt, int icols, int irows)
     return;
   }
 
-  if(0)vt_rewrap (vt, icols);
+  if(1)vt_rewrap (vt, icols);
 
   while (irows > vt->rows)
     {
@@ -8173,6 +8173,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   ctx_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
   vt->has_blink = 0;
   vt->blink_state++;
+#if 0
   int cursor_x_px = 0;
   int cursor_y_px = 0;
   int cursor_w = vt->cw;
@@ -8181,6 +8182,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   cursor_y_px = y0 + (vt->cursor_y - 1) * vt->ch;
   cursor_w = vt->cw;
   cursor_h = vt->ch;
+#endif
   ctx_save (ctx);
   //if (vt->scroll || full)
     {
@@ -8269,7 +8271,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                                          in_selected_region ^ is_cursor, is_fg);
                    if (r == vt->cursor_y && col == vt->cursor_x)
                      {
+#if 0
                        cursor_x_px = x;
+#endif
                      }
                    x+=real_cw;
                    if (style & STYLE_BLINK ||
