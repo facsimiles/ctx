@@ -333,7 +333,6 @@ void ctx_string_remove (CtxString *string, int pos)
   char *p = (char *) ctx_utf8_skip (string->str, pos);
   int prev_len = ctx_utf8_len (*p);
   char *rest;
-#if 1
   if (!p || *p == 0)
     {
       return;
