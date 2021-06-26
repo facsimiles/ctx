@@ -815,11 +815,10 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
   coverage -= minx;
 #define CTX_EDGE(no)      entries[edges[no].index]
 #define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
-#define CTX_EDGE_X(no)     (rasterizer->edges[no].val)
-  for (int t = 0; t < active_edges -1;)
+#define CTX_EDGE_X(no)    (edges[no].val)
+  for (int t = 0; t < active_edges -1;t++)
     {
       int ymin = CTX_EDGE_YMIN (t);
-      int next_t = t + 1;
       if (scanline != ymin)
         {
           if (winding)
@@ -827,37 +826,32 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           else
             { parity = 1 - parity; }
         }
-      if (parity)
-        {
-          int x0 = CTX_EDGE_X (t)      / CTX_SUBDIV ;
-          int x1 = CTX_EDGE_X (next_t) / CTX_SUBDIV ;
-          int first = x0 / CTX_RASTERIZER_EDGE_MULTIPLIER;
-          int last  = x1 / CTX_RASTERIZER_EDGE_MULTIPLIER;
 
-          int graystart;
-          int grayend;
+       if (parity)
+        {
+          int x0 = CTX_EDGE_X (t);
+          int x1 = CTX_EDGE_X (t+1);
+          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int first     = graystart / 256;
+          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int last      = grayend / 256;
 
           if (CTX_UNLIKELY(first < minx))
-            { first = minx;
-              graystart=fraction;
-            }
-          else
-            {
-              graystart=fraction- ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff)/aa_factor;
-            }
-          if (CTX_UNLIKELY(last > maxx))
-            {
-              last = maxx;
-              grayend=fraction;
-            }
-          else
-            {
-              grayend = ((x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff)/aa_factor;
-            }
-          if (CTX_UNLIKELY(first == last))
-          {
-            coverage[first] += (graystart-(fraction-grayend));
+          { 
+            first = minx;
+            graystart=0;//255;
           }
+          if (CTX_UNLIKELY(last > maxx))
+          {
+            last = maxx;
+            grayend=255;
+          }
+
+          graystart=fraction- (graystart&0xff)/aa_factor;
+          grayend = (grayend & 0xff) / aa_factor;
+
+          if (first == last)
+            coverage[first] += (graystart-(fraction-grayend));
           else if (first < last)
           {
               coverage[first] += graystart;
@@ -866,9 +860,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
               coverage[last]  += grayend;
           }
         }
-      t = next_t;
-    }
-
+   }
 }
 
 inline static void
@@ -884,15 +876,14 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
   int scanline     = rasterizer->scanline;
   int active_edges = rasterizer->active_edges;
   int parity = 0;
-  int fraction = 255;
+  int fraction = 255/aa_factor;
   coverage -= minx;
 #define CTX_EDGE(no)      entries[edges[no].index]
 #define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
-#define CTX_EDGE_X(no)     (rasterizer->edges[no].val)
-  for (int t = 0; t < active_edges -1;)
+#define CTX_EDGE_X(no)    (edges[no].val)
+  for (int t = 0; t < active_edges -1;t++)
     {
       int ymin = CTX_EDGE_YMIN (t);
-      int next_t = t + 1;
       if (scanline != ymin)
         {
           if (winding)
@@ -900,37 +891,32 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           else
             { parity = 1 - parity; }
         }
-      if (parity)
-        {
-          int x0 = CTX_EDGE_X (t)      / CTX_SUBDIV ;
-          int x1 = CTX_EDGE_X (next_t) / CTX_SUBDIV ;
-          int first = x0 / CTX_RASTERIZER_EDGE_MULTIPLIER;
-          int last  = x1 / CTX_RASTERIZER_EDGE_MULTIPLIER;
 
-          int graystart;
-          int grayend;
+       if (parity)
+        {
+          int x0 = CTX_EDGE_X (t);
+          int x1 = CTX_EDGE_X (t+1);
+          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int first     = graystart / 256;
+          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int last      = grayend / 256;
 
           if (CTX_UNLIKELY(first < minx))
-            { first = minx;
-              graystart=fraction;
-            }
-          else
-            {
-              graystart=fraction- ( (x0 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
-            }
-          if (CTX_UNLIKELY(last > maxx))
-            {
-              last = maxx;
-              grayend=fraction;
-            }
-          else
-            {
-              grayend = ((x1 * 256/CTX_RASTERIZER_EDGE_MULTIPLIER) & 0xff);
-            }
-          if (CTX_UNLIKELY(first == last))
-          {
-            coverage[first] += (graystart-(fraction-grayend));
+          { 
+            first = minx;
+            graystart=0;//255;
           }
+          if (CTX_UNLIKELY(last > maxx))
+          {
+            last = maxx;
+            grayend=255;
+          }
+
+          graystart=fraction- (graystart&0xff)/aa_factor;
+          grayend = (grayend & 0xff) / aa_factor;
+
+          if (first == last)
+            coverage[first] += (graystart-(fraction-grayend));
           else if (first < last)
           {
               coverage[first] += graystart;
@@ -939,9 +925,7 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
               coverage[last]  += grayend;
           }
         }
-      t = next_t;
-    }
-
+   }
 }
 
 #undef CTX_EDGE_Y0
@@ -1068,7 +1052,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     rasterizer->needs_aa5  = 0;
     rasterizer->needs_aa15 = 0;
     rasterizer->scanline = scan_start;
-    ctx_rasterizer_feed_edges (rasterizer); // with incremented scanline
+    ctx_rasterizer_feed_edges (rasterizer); 
 
   for (; rasterizer->scanline <= scan_end;)
     {
@@ -1092,7 +1076,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           ctx_rasterizer_increment_edges (rasterizer, CTX_FULL_AA/real_aa);
         }
     }
-    else if (!rasterizer->needs_aa3)
+    else if (!rasterizer->needs_aa3) // if it doesnt need aa3 it doesnt need aa5 or aa15 either
     {
       ctx_rasterizer_increment_edges (rasterizer, halfstep2);
       ctx_rasterizer_feed_edges (rasterizer);

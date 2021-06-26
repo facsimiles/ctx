@@ -6,18 +6,18 @@
 #ifdef CTX_AVX2
 #undef CTX_AVX2
 #endif
-#define CTX_AVX2            1
-#define CTX_ENABLE_CM       0
-#define CTX_PARSER          0
-#define CTX_DITHER          0
-#define CTX_NATIVE_GRAYA8   1
-#define CTX_FORMATTER       1
-#define CTX_RASTERIZER      1
-#define CTX_RASTERIZER_AA   15
+#define CTX_AVX2                  1
+#define CTX_ENABLE_CM             0
+#define CTX_PARSER                0
+#define CTX_DITHER                0
+#define CTX_NATIVE_GRAYA8         1
+#define CTX_FORMATTER             1
+#define CTX_RASTERIZER            1
+#define CTX_RASTERIZER_AA        15
 #define CTX_RASTERIZER_FORCE_AA   0
-#define CTX_BITPACK_PACKER  0
-#define CTX_RENDERSTREAM_STATIC 0
-#define CTX_FONTS_FROM_FILE     1 /* leaves out code */
+#define CTX_BITPACK_PACKER        0
+#define CTX_RENDERSTREAM_STATIC   0
+#define CTX_FONTS_FROM_FILE       1 /* leaves out code */
 #define CTX_IMPLEMENTATION
 #define NO_LIBCURL
 #include <immintrin.h>
