@@ -728,108 +728,24 @@ CTX_INLINE static int ctx_compare_edges2 (const void *ap, const void *bp)
   return a->val - b->val;
 }
 
-CTX_INLINE static int ctx_edge2_qsort_partition (CtxEdge *A, int low, int high)
+CTX_INLINE static void ctx_edge2_insertion_sort (CtxEdge *entries, int count)
 {
-  CtxEdge pivot = A[ (high+low) /2];
-  int i = low;
-  int j = high;
-  while (i <= j)
-    {
-      while (ctx_compare_edges2 (&A[i], &pivot) <0) { i ++; }
-      while (ctx_compare_edges2 (&pivot, &A[j]) <0) { j --; }
-      if (i <= j)
-        {
-          CtxEdge tmp = A[i];
-          A[i] = A[j];
-          A[j] = tmp;
-          i++;
-          j--;
-        }
-    }
-  return i;
+  for(int i=1; i<count; i++)
+   {
+     CtxEdge temp = entries[i];
+     int j = i-1;
+     while (j >= 0 && ctx_compare_edges2 (&temp, &entries[j])<0)
+     {
+       entries[j+1] = entries[j];
+       j--;
+     }
+     entries[j+1] = temp;
+   }
 }
 
-static inline void ctx_edge2_qsort (CtxEdge *entries, int low, int high)
+static inline void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 {
-  {
-    int p = ctx_edge2_qsort_partition (entries, low, high);
-    if (low < p -1 )
-      { ctx_edge2_qsort (entries, low, p - 1); }
-    if (low < high)
-      { ctx_edge2_qsort (entries, p, high); }
-  }
-}
-
-
-static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
-{
-  CtxEdge *edges = rasterizer->edges;
-  /* we use sort networks for the very frequent cases of few active edges
-   * the built in qsort is fast, but sort networks are even faster
-   */
-  switch (rasterizer->active_edges)
-  {
-    case 0:
-    case 1: break;
-#if CTX_SORTING_NETWORKS
-    case 2:
-#define CTX_CMPSWP(a,b) \
-      if (ctx_compare_edges2 (&edges[a], &edges[b])>0)\
-      {\
-        CtxEdge tmp = edges[a];\
-        edges[a] = edges[b];\
-        edges[b] = tmp;\
-      }
-      CTX_CMPSWP(0,1);
-      break;
-    case 3:
-      CTX_CMPSWP(0,1); CTX_CMPSWP(0,2); CTX_CMPSWP(1,2);
-      break;
-    case 4:
-      CTX_CMPSWP(0,1); CTX_CMPSWP(2,3); CTX_CMPSWP(0,2); CTX_CMPSWP(1,3); CTX_CMPSWP(1,2);
-      break;
-    case 5:
-      CTX_CMPSWP(1,2); CTX_CMPSWP(0,2); CTX_CMPSWP(0,1); CTX_CMPSWP(3,4); CTX_CMPSWP(0,3);
-      CTX_CMPSWP(1,4); CTX_CMPSWP(2,4); CTX_CMPSWP(1,3); CTX_CMPSWP(2,3);
-      break;
-    case 6:
-      CTX_CMPSWP(1,2); CTX_CMPSWP(0,2); CTX_CMPSWP(0,1); CTX_CMPSWP(4,5);
-      CTX_CMPSWP(3,5); CTX_CMPSWP(3,4); CTX_CMPSWP(0,3); CTX_CMPSWP(1,4);
-      CTX_CMPSWP(2,5); CTX_CMPSWP(2,4); CTX_CMPSWP(1,3); CTX_CMPSWP(2,3);
-      break;
-#if 1
-    case 7:
-      CTX_CMPSWP(1,2); CTX_CMPSWP(0,2); CTX_CMPSWP(0,1); CTX_CMPSWP(3,4);
-      CTX_CMPSWP(5,6); CTX_CMPSWP(3,5); CTX_CMPSWP(4,6); CTX_CMPSWP(4,5);
-      CTX_CMPSWP(0,4); CTX_CMPSWP(0,3); CTX_CMPSWP(1,5); CTX_CMPSWP(2,6);
-      CTX_CMPSWP(2,5); CTX_CMPSWP(1,3); CTX_CMPSWP(2,4); CTX_CMPSWP(2,3);
-      break;
-#endif
-#if 0
-    case 8: // buggy
-      CTX_CMPSWP(0,1); CTX_CMPSWP(2,3); CTX_CMPSWP(4,5); CTX_CMPSWP(6,7);
-      CTX_CMPSWP(0,2); CTX_CMPSWP(1,3); CTX_CMPSWP(4,6); CTX_CMPSWP(5,6);
-      CTX_CMPSWP(1,2); CTX_CMPSWP(5,6); CTX_CMPSWP(0,4); CTX_CMPSWP(3,7);
-      CTX_CMPSWP(1,5); CTX_CMPSWP(3,6); CTX_CMPSWP(1,4); CTX_CMPSWP(3,6);
-      CTX_CMPSWP(2,4); CTX_CMPSWP(3,5); CTX_CMPSWP(3,4);
-      break;
-#endif
-#if 1
-    case 9:
-      CTX_CMPSWP(0,1); CTX_CMPSWP(3,4); CTX_CMPSWP(6,7); CTX_CMPSWP(1,2);
-      CTX_CMPSWP(4,5); CTX_CMPSWP(7,8); CTX_CMPSWP(0,1); CTX_CMPSWP(3,4);
-      CTX_CMPSWP(6,7); CTX_CMPSWP(2,5); CTX_CMPSWP(0,3); CTX_CMPSWP(5,8);
-      CTX_CMPSWP(1,4); CTX_CMPSWP(2,5); CTX_CMPSWP(3,6); CTX_CMPSWP(4,7);
-      CTX_CMPSWP(0,3); CTX_CMPSWP(5,7); CTX_CMPSWP(1,4); CTX_CMPSWP(2,6);
-      CTX_CMPSWP(1,3); CTX_CMPSWP(2,4); CTX_CMPSWP(5,6); CTX_CMPSWP(2,3);
-      CTX_CMPSWP(4,5);
-      break;
-#endif
-#endif
-    default:
-      ctx_edge2_qsort (&edges[0], 0, rasterizer->active_edges-1);
-      break;
-  }
+  ctx_edge2_insertion_sort (rasterizer->edges, rasterizer->active_edges);
 }
 
 #undef CTX_CMPSWP
@@ -1329,63 +1245,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
   ctx_rasterizer_reset (rasterizer);
 }
 
-#if 0
-static int
-ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
-                          int          x0,
-                          int          y0,
-                          int          x1,
-                          int          y1)
-{
-  int aa = 15;//rasterizer->aa;
-  if (x0>x1) { // && y0>y1) { 
-     int tmp = x1;
-     x1 = x0;
-     x0 = tmp;
-     tmp = y1;
-     y1 = y0;
-     y0 = tmp;
-  }
-  if (x1 % CTX_SUBDIV ||
-      x0 % CTX_SUBDIV ||
-      y1 % aa ||
-      y0 % aa)
-    { return 0; }
-  x1 /= CTX_SUBDIV;
-  x0 /= CTX_SUBDIV;
-  y1 /= aa;
-  y0 /= aa;
-  uint8_t coverage[x1-x0 + 1];
-  uint8_t *dst = ( (uint8_t *) rasterizer->buf);
-  ctx_compositor_setup_default (rasterizer);
-  ctx_memset (coverage, 0xff, sizeof (coverage) );
-  if (x0 < rasterizer->blit_x)
-    { x0 = rasterizer->blit_x; }
-  if (y0 < rasterizer->blit_y)
-    { y0 = rasterizer->blit_y; }
-  if (y1 > rasterizer->blit_y + rasterizer->blit_height)
-    { y1 = rasterizer->blit_y + rasterizer->blit_height; }
-  if (x1 > rasterizer->blit_x + rasterizer->blit_width)
-    { x1 = rasterizer->blit_x + rasterizer->blit_width; }
-  dst += (y0 - rasterizer->blit_y) * rasterizer->blit_stride;
-  int width = x1 - x0;
-  if (width > 0)
-    {
-      rasterizer->scanline = y0 * aa;
-      for (int y = y0; y < y1; y++)
-        {
-          rasterizer->scanline += aa;
-          ctx_rasterizer_apply_coverage (rasterizer,
-                                         &dst[ (x0) * rasterizer->format->ebpp],
-                                         x0,
-                                         coverage, width);
-          dst += rasterizer->blit_stride;
-        }
-    }
-  return 1;
-}
-#endif
-
 inline static int
 ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
 {
@@ -1451,35 +1310,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / CTX_FULL_AA);
     rasterizer->state->max_y =
       ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / CTX_FULL_AA);
-#if 0
-    if (rasterizer->edge_list.count == 6)
-      {
-        CtxEntry *entry0 = &rasterizer->edge_list.entries[0];
-        CtxEntry *entry1 = &rasterizer->edge_list.entries[1];
-        CtxEntry *entry2 = &rasterizer->edge_list.entries[2];
-        CtxEntry *entry3 = &rasterizer->edge_list.entries[3];
-        if (!rasterizer->state->gstate.clipped &&
-             (entry0->data.s16[2] == entry1->data.s16[2]) &&
-             (entry0->data.s16[3] == entry3->data.s16[3]) &&
-             (entry1->data.s16[3] == entry2->data.s16[3]) &&
-             (entry2->data.s16[2] == entry3->data.s16[2]) &&
-             ((entry3->data.s16[2] & (CTX_SUBDIV-1)) == 0)  &&
-             ((entry3->data.s16[3] & (CTX_FULL_AA-1)) == 0) 
-#if CTX_ENABLE_SHADOW_BLUR
-             && !rasterizer->in_shadow
-#endif
-           )
-        if (ctx_rasterizer_fill_rect (rasterizer,
-                                      entry3->data.s16[2],
-                                      entry3->data.s16[3],
-                                      entry1->data.s16[2],
-                                      entry1->data.s16[3]) )
-          {
-            ctx_rasterizer_reset (rasterizer);
-            goto done;
-          }
-      }
-#endif
+
     ctx_rasterizer_finish_shape (rasterizer);
 
     uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
@@ -1601,7 +1432,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
                                    );
   }
-  done:
   if (rasterizer->preserve)
     {
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
@@ -2588,7 +2418,6 @@ ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
 #else
   ctx_rasterizer_rectangle (rasterizer, x, y, 1.0, 1.0);
   ctx_rasterizer_fill (rasterizer);
-//  ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,  x, y, x+1, y+1); // XXX  compute coordinates correctly, and save some overhead
 #endif
 }
 

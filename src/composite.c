@@ -3941,7 +3941,6 @@ ctx_float_porter_duff(GRAYAF, 2,color,   NULL,                 rasterizer->state
 ctx_float_porter_duff(GRAYAF, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_NORMAL
-
 ctx_float_porter_duff(GRAYAF, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
 ctx_float_porter_duff(GRAYAF, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
 
