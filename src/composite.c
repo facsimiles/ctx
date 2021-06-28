@@ -3086,6 +3086,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_porter_duff_generic);
 
+     rasterizer->comp_op = CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_fragment);
+     return;
 
 #if 1
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)

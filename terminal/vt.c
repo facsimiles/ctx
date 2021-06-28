@@ -1022,6 +1022,7 @@ static void vt_rewrap_pair (VT *vt, VtLine *topline, VtLine *bottomline, int max
 
 static void vt_rewrap (VT *vt, int max_col)
 {
+  if (max_col < 8) max_col = 8;
   CtxList *list = NULL;
 
   for (CtxList *l = vt->lines; l;)
@@ -8288,12 +8289,14 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      }
                  }
              }
+#if 0
              if (line->wrapped)
              {
                ctx_rectangle (ctx, x0, y, 10, 10);
                ctx_rgb (ctx, 1,0,0);
                ctx_fill (ctx);
              }
+#endif
           }
       }
   }
