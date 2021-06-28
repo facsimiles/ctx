@@ -1380,7 +1380,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                       composite[x] = val;
                     }
                     ctx_rasterizer_apply_coverage (rasterizer,
-                                                 ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->ebpp,
+                                                 ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->bpp/8,
                                                  x0, // is 0
                                                  composite,
                                                  ewidth );
@@ -1394,7 +1394,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
               if ( (y >= clip_y_min) && (y <= clip_y_max) )
                 {
                     ctx_rasterizer_apply_coverage (rasterizer,
-                                                 ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->ebpp,
+                                                 ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->bpp/8,
                                                  x0,
                                                  &shape->data[shape->width * (int) (y-ymin) + xo],
                                                  ewidth );
