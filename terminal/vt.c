@@ -5272,7 +5272,7 @@ static const char *keymap_general[][2]=
 
 };
 
-void vt_feed_keystring (VT *vt, const char *str)
+void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
 {
   if (vt->ctx_events)
   {
@@ -5394,7 +5394,7 @@ void vt_feed_keystring (VT *vt, const char *str)
               if (s)
                 {
                   y = atoi (s);
-                  vt_mouse (vt, VT_MOUSE_MOTION, 1, x/cw + 1, y/ch + 1, x, y);
+                  vt_mouse (vt, event, VT_MOUSE_MOTION, 1, x/cw + 1, y/ch + 1, x, y);
                 }
             }
         }
@@ -5414,7 +5414,7 @@ void vt_feed_keystring (VT *vt, const char *str)
                   {
                     b = atoi (s);
                   }
-                  vt_mouse (vt, VT_MOUSE_PRESS, b, x/cw + 1, y/ch + 1, x, y);
+                  vt_mouse (vt, event, VT_MOUSE_PRESS, b, x/cw + 1, y/ch + 1, x, y);
                 }
             }
           //clients[active].drawn_rev = 0;
@@ -5434,7 +5434,7 @@ void vt_feed_keystring (VT *vt, const char *str)
                   {
                     b = atoi (s);
                   }
-                  vt_mouse (vt, VT_MOUSE_DRAG, b, x/cw + 1, y/ch + 1, x, y);
+                  vt_mouse (vt, event, VT_MOUSE_DRAG, b, x/cw + 1, y/ch + 1, x, y);
                 }
             }
           //clients[active].drawn_rev = 0;
@@ -5455,7 +5455,7 @@ void vt_feed_keystring (VT *vt, const char *str)
                   {
                     b = atoi (s);
                   }
-                  vt_mouse (vt, VT_MOUSE_RELEASE, b, x/cw + 1, y/ch + 1, x, y);
+                  vt_mouse (vt, event, VT_MOUSE_RELEASE, b, x/cw + 1, y/ch + 1, x, y);
                 }
             }
           //clients[active].drawn_rev = 0;
@@ -5535,7 +5535,7 @@ void vt_paste (VT *vt, const char *str)
     {
       vt_write (vt, "\033[200~", 6);
     }
-  vt_feed_keystring (vt, str);
+  vt_feed_keystring (vt, NULL, str);
   if (vt->bracket_paste)
     {
       vt_write (vt, "\033[201~", 6);
@@ -8001,7 +8001,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       {
         sprintf (buf, "mouse-motion %.0f %.0f %i", x, y, device_no);
 //      ctx_set_dirty (event->ctx, 1);
-        vt_feed_keystring (vt, buf);
+        vt_feed_keystring (vt, event, buf);
 //      vt->rev++;
       }
       return;
@@ -8031,7 +8031,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       {
 //      ctx_set_dirty (event->ctx, 1);
         sprintf (buf, "mouse-press %.0f %.0f %i", x, y, device_no);
-        vt_feed_keystring (vt, buf);
+        vt_feed_keystring (vt, event, buf);
 //      vt->rev++;
       }
       return;
@@ -8045,7 +8045,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       //if (event->device_no==1)
       {
         sprintf (buf, "mouse-release %.0f %.0f %i", x, y, device_no);
-        vt_feed_keystring (vt, buf);
+        vt_feed_keystring (vt, event, buf);
 //      vt->rev++;
       }
       return;
@@ -8236,7 +8236,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                    int c = col;
                    int real_cw;
                    int in_selected_region = 0;
-                   if (vt->in_alt_screen == 0)
+                   //if (vt->in_alt_screen == 0)
                    {
                    if (r > vt->select_start_row && r < vt->select_end_row)
                      {
@@ -8580,13 +8580,14 @@ static int single_tap (Ctx *ctx, void *data)
   return 0;
 }
 
-void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, int px_y)
+void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, int y, int px_x, int px_y)
 {
  char buf[64]="";
  int button_state = 0;
  vt->rev++;
  ctx_ticks();
- if (! (vt->mouse | vt->mouse_all | vt->mouse_drag) )
+ if ((! (vt->mouse | vt->mouse_all | vt->mouse_drag)) ||
+     (event && (event->state & CTX_MODIFIER_STATE_SHIFT)))
    {
      // regular mouse select, this is incomplete
      // fully ignorant of scrollback for now

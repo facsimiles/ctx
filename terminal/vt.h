@@ -28,7 +28,7 @@ int         vt_has_blink (VT *vt);
 
 /* this is how mrg/mmm based key-events are fed into the vt engine
  */
-void        vt_feed_keystring     (VT *vt, const char *str);
+void        vt_feed_keystring     (VT *vt, CtxEvent *event, const char *str);
 
 void        vt_paste              (VT *vt, const char *str);
 
@@ -77,4 +77,4 @@ typedef enum VtMouseEvent
   VT_MOUSE_RELEASE,
 } VtMouseEvent;
 
-void vt_mouse (VT *vt, VtMouseEvent type, int button, int x, int y, int px_x, int px_y);
+void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, int y, int px_x, int px_y);

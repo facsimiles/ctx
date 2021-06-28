@@ -27,11 +27,13 @@
  *
  * powers of 2 is faster
  */
+#ifndef CTX_SUBDIV
 #define CTX_SUBDIV   8  //  max framebufer width 4095
 //#define CTX_SUBDIV    10  //  max framebufer width 3250
 //#define CTX_SUBDIV  16  //  max framebufer width 2047
 //#define CTX_SUBDIV  24  //  max framebufer width 1350
 //#define CTX_SUBDIV  32  //  max framebufer width 1023
+#endif
 
 
 // 8    12 68 40 24

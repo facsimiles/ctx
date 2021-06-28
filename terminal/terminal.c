@@ -896,7 +896,7 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   }
   else if (!strcmp (event, "shift-return"))
   {
-    vt_feed_keystring (vt, "return");
+    vt_feed_keystring (vt, ctx_event, "return");
   }
   else if (!strcmp (event, "shift-control-v") )
     {
@@ -960,7 +960,7 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
         char *sel = vt_get_selection (vt);
         if (sel)
         {
-          vt_feed_keystring (vt, sel);
+          vt_feed_keystring (vt, ctx_event, sel);
           free (sel);
         }
       }
@@ -968,7 +968,7 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   else
     {
       if (vt)
-        vt_feed_keystring (vt, event);
+        vt_feed_keystring (vt, ctx_event, event);
     }
 }
 
