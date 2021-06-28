@@ -19,15 +19,20 @@
 #endif
 
 
-//#define CTX_RASTERIZER_AA_SLOPE_LIMIT    (2125/CTX_SUBDIV/aa)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT3    (13424/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT5    (20425/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15   (50425/CTX_SUBDIV/15)
 
 /* subpixel-aa coordinates used in BITPACKing of drawlist
+ *
+ * powers of 2 is faster
  */
-#define CTX_SUBDIV   8 // higher gives higher quality, but 4096wide rendering
-                       // stops working
+#define CTX_SUBDIV   8  //  max framebufer width 4095
+//#define CTX_SUBDIV    10  //  max framebufer width 3250
+//#define CTX_SUBDIV  16  //  max framebufer width 2047
+//#define CTX_SUBDIV  24  //  max framebufer width 1350
+//#define CTX_SUBDIV  32  //  max framebufer width 1023
+
 
 // 8    12 68 40 24
 // 16   12 68 40 24
