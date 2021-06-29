@@ -5826,6 +5826,30 @@ const char *vt_get_line (VT *vt, int no)
   }
 }
 
+int vt_line_is_continuation (VT *vt, int no)
+{
+  if (no >= vt->rows)
+  {
+    CtxList *l = ctx_list_nth (vt->scrollback, no - vt->rows);
+    if (!l)
+      { 
+         return 1;
+      }
+    VtLine *line = l->data;
+    return line->wrapped;
+  }
+  else
+  {
+    CtxList *l = ctx_list_nth (vt->lines, no);
+    if (!l)
+      { 
+         return 1;
+      }
+    VtLine *line = l->data;
+    return line->wrapped;
+  }
+}
+
 int vt_get_cols (VT *vt)
 {
   return vt->cols;
@@ -8541,7 +8565,7 @@ vt_get_selection (VT *vt)
             { continue; }
           ctx_string_append_utf8char (str, c);
         }
-      if (row < vt->select_end_row)
+      if (row < vt->select_end_row && !vt_line_is_continuation (vt, vt->rows-row-1))
         ctx_string_append_byte (str, '\n');
     }
   ret = str->str;
