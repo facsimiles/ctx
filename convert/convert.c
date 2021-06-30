@@ -455,7 +455,7 @@ static int usage (void)
   return 0;
 }
 
-const char *get_suffix (const char *path)
+static const char *get_suffix (const char *path)
 {
   if (!path)
     { return ""; }

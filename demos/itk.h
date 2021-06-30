@@ -26,8 +26,13 @@ void itk_newline    (ITK *itk);
 void itk_sameline   (ITK *itk);
 void itk_seperator  (ITK *itk);
 void itk_label      (ITK *itk, const char *label);
+void itk_labelf (ITK *itk, const char *format, ...);
 void itk_titlebar   (ITK *itk, const char *label);
 void itk_slider     (ITK *itk, const char *label, float *val, float min, float max, float step);
+void itk_slider_int (ITK *itk, const char *label, int *val, int min, int max, int step);
+void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step);
+void itk_slider_uint8 (ITK *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step);
+
 void itk_entry      (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
                      void (*commit)(ITK *itk, void *commit_data), void *commit_data);
 void itk_toggle     (ITK *itk, const char *label, int *val);
@@ -36,6 +41,30 @@ int  itk_expander   (ITK *itk, const char *label, int *val);
 int  itk_button     (ITK *itk, const char *label);
 void itk_choice     (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data);
 void itk_choice_add (ITK *itk, int value, const char *label);
+void itk_done (ITK *itk);
+
+void itk_style_color (Ctx *ctx, const char *name);
+const char *itk_style_string (const char *name);
+float itk_style_float (char *name);
+
+float itk_em (ITK *itk);
+ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data);
+void itk_key_bindings (ITK *itk);
+void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2);
+typedef struct _CtxControl CtxControl;
+CtxControl *itk_focused_control(ITK *itk);
+CtxControl *itk_add_control (ITK *itk,
+                             int type,
+                             const char *label,
+                             float x, float y,
+                             float width, float height);
+void itk_set_flag (ITK *itk, int flag, int on);
+
+void
+itk_ctx_settings (ITK *itk);
+
+void
+itk_itk_settings (ITK *itk);
 
 enum {
   UI_SLIDER = 1,
@@ -107,7 +136,6 @@ typedef struct ITKPal{
   uint8_t a;
 } IKTPal;
 
-typedef struct _CtxControl CtxControl;
 struct _CtxControl{
   int no;
   int ref_count;
@@ -211,6 +239,9 @@ struct _ITK{
   int lines_drawn;
   int light_mode;
 };
+
+
+#ifdef ITK_IMPLEMENTATION
 
 void itk_begin_menu_bar (ITK *itk, const char *title)
 {
@@ -2241,3 +2272,5 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
   ctx_free (ctx);
   return NULL;
 }
+
+#endif

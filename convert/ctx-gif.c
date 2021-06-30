@@ -104,15 +104,14 @@ static int stb_w = -1;
 static int stb_h = -1;
 
 static stbi__context s;
-unsigned char *result = 0;
 
 static FILE *gf = NULL;
 
-char    *gif_active_path = NULL;
-uint8_t *gifbuf = NULL;
-  stbi__gif g;
+static char    *gif_active_path = NULL;
+static uint8_t *gifbuf = NULL;
+static stbi__gif g;
 
-int frameno = 0;
+static int frameno = 0;
 
 static void epicfb_stb_gif_stop (void);
 
@@ -218,9 +217,9 @@ static void liberate_resources (void)
 }
 
 /****************************/
-char *path = NULL;
+static char *path = NULL;
 
-int main(int argc, char *argv[])
+int ctx_gif_main (int argc, char *argv[])
 {
   Ctx *ctx;
   path = argv[1];

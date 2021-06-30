@@ -17,21 +17,18 @@ static int quit = 0;
 static int stb_w = -1;
 static int stb_h = -1;
 
-unsigned char *result = 0;
-
 static int image_smoothing = 1;
 
-static int frameno = 0;
 static float ox0 = 0;
 static float oy0 = 0;
 static float scale = 1.0;
-  int dirty = 1;
+static int dirty = 1;
 
 /****************************/
-char *path = NULL;
+static char *path = NULL;
 
-uint8_t *stb_pixels = NULL;
-int stb_components = 0;
+static uint8_t *stb_pixels = NULL;
+static int stb_components = 0;
 
 static void image_drag (CtxEvent *event, void *data0, void *data1)
 {
@@ -50,7 +47,7 @@ static void image_scroll (CtxEvent *event, void *data0, void *data1)
 #endif
 }
 
-int main(int argc, char *argv[])
+int ctx_img_main(int argc, char *argv[])
 {
   Ctx *ctx;
   path = argv[1];

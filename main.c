@@ -28,6 +28,11 @@ static int usage_main (int argc, char **argv)
 int terminal_main (int argc, char **argv);
 int convert_main (int argc, char **argv);
 
+int ctx_img_main (int argc, char **argv);
+int ctx_gif_main (int argc, char **argv);
+int ctx_dir_main (int argc, char **argv);
+int ctx_mpg_main (int argc, char **argv);
+
 int launch_main (int argc, char **argv)
 {
   // check that we have a term
@@ -246,6 +251,20 @@ int thumb_main (int argc, char **argv)
 static char *output_path = NULL;
 static char *commandline = NULL;
 
+static char *input_path = NULL;
+
+static const char *get_suffix (const char *path)
+{
+  if (!path)
+    { return ""; }
+  const char *p = strrchr (path, '.');
+  if (p && *p)
+    { return p; }
+  else
+    { return ""; }
+}
+
+
 int main (int argc, char **argv)
 {
   for (int i = 1; argv[i]; i++)
@@ -253,25 +272,58 @@ int main (int argc, char **argv)
     char *a = argv[i];
     if (!strcmp ( a, "--help"))
       return usage_main (argc, argv);
-    if (!strcmp (a, "-o"))
+    else if (!strcmp (a, "-o"))
     {
       output_path = argv[i+1];
       i++;
     }
-    if (!strcmp (a, "-e"))
+    else if (!strcmp (a, "-e"))
     {
       commandline = argv[i+1];
       i++;
+    } else {
+      if (!input_path && argv[i][0] != '-')
+        input_path = argv[i];
     }
   }
 
   if (output_path)
     return convert_main (argc, argv);
 
+
   if (argv[1] && !strcmp (argv[1], "thumb"))
     return thumb_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "launch"))
     return launch_main (argc-1, argv+1);
+
+  if (input_path)
+  {
+    if (!strchr (input_path, ':'))
+      {
+         char *path = malloc (strlen (input_path) + 10);
+         sprintf (path, "file://%s", input_path);
+         input_path = path;
+      }
+
+    if (!strcmp (get_suffix (input_path), ".gif"))
+    {
+      return ctx_gif_main (argc, argv);
+    }
+    if (!strcmp (get_suffix (input_path), ".jpg") ||
+        !strcmp (get_suffix (input_path), ".png"))
+    {
+      return ctx_img_main (argc, argv);
+    }
+    if (!strcmp (get_suffix (input_path), ".mpg"))
+    {
+      return ctx_mpg_main (argc, argv);
+    }
+    if (input_path[strlen(input_path)-1]=='/')
+    {
+      return ctx_dir_main (argc, argv);
+    }
+    return -1;
+  }
 
 #if 0
   if (argv[1])

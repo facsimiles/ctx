@@ -1,5 +1,6 @@
 /*
 PL_MPEG Example - Video player using SDL2/OpenGL for rendering
+refactored to use ctx for audio output/rendering by Øyvind Kolås, 2020
 
 Dominic Szablewski - https://phoboslab.org
 
@@ -246,9 +247,9 @@ void app_on_audio(plm_t *mpeg, plm_samples_t *samples, void *user) {
         ctx_pcm_queue (self->ctx, (const signed char*)(samples->interleaved), samples->count);
 }
 
-int main(int argc, char *argv[]) {
+int ctx_mpg_main(int argc, char *argv[]) {
 	if (argc < 2) {
-		SDL_Log("Usage: pl_mpeg_player <file.mpg>");
+		SDL_Log("Usage: ctx mpg <file.mpg>");
 		exit(1);
 	}
         if (getenv ("FRAMEDROP"))frame_drop = atoi (getenv("FRAMEDROP"));
