@@ -52,6 +52,13 @@ int ctx_img_main(int argc, char *argv[])
   Ctx *ctx;
   path = argv[1];
 
+  if (strchr (path, ':'))
+  {
+    path = strchr (path, ':');
+    if (path[1] == '/') path++;
+    if (path[1] == '/') path++;
+  }
+
   if (path) stb_pixels = stbi_load (path, &stb_w, &stb_h, &stb_components, 4);
 
   if (!stb_pixels) return 1;

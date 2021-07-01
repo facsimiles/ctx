@@ -511,7 +511,15 @@ extern int _ctx_enable_hash_cache;
 
 int ctx_dir_main (int argc, char **argv)
 {
-  dm_set_path (files, argv[1]?argv[1]:"./");
+  char *path = argv[1];
+  if (path && strchr (path, ':'))
+  {
+    path = strchr (path, ':');
+    if (path[1] == '/') path++;
+    if (path[1] == '/') path++;
+  }
+
+  dm_set_path (files, path?path:"./");
   itk_main (card_files, NULL);
   return 0;
 }

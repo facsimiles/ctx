@@ -230,6 +230,13 @@ int ctx_gif_main (int argc, char *argv[])
     return 1;
   }
 
+  if (strchr (path, ':'))
+  {
+    path = strchr (path, ':');
+    if (path[1] == '/') path++;
+    if (path[1] == '/') path++;
+  }
+
   ctx = ctx_new_ui (-1, -1);
 
   int frame_start = ctx_ticks ();

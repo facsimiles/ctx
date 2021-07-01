@@ -255,8 +255,16 @@ int ctx_mpg_main(int argc, char *argv[]) {
         if (getenv ("FRAMEDROP"))frame_drop = atoi (getenv("FRAMEDROP"));
         if (frame_drop < 1) frame_drop = 1;
         if (frame_drop > 32) frame_drop = 32;
+
+        char *path = argv[1];
+        if (path && strchr (path, ':'))
+        {
+          path = strchr (path, ':');
+          if (path[1] == '/') path++;
+          if (path[1] == '/') path++;
+        }
 	
-	app_t *app = app_create(argv[1], APP_TEXTURE_MODE_RGB); //_YCRCB);
+	app_t *app = app_create(path, APP_TEXTURE_MODE_RGB); //_YCRCB);
  //the GPU (default), or to do it on CPU. Just pass APP_TEXTURE_MODE_RGB to
 
 	while (!app->wants_to_quit) {
