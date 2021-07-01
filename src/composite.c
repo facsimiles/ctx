@@ -3732,14 +3732,14 @@ ctx_float_porter_duff(RGBAF, 4,image,           ctx_fragment_image_RGBAF,       
 
 #if CTX_GRADIENTS
 #define ctx_float_porter_duff_blend(comp_name, components, blend_mode, blend_name)\
-ctx_float_porter_duff(comp_name, components,color_##blend_name,            NULL,                               blend_mode)\
+ctx_float_porter_duff(comp_name, components,color_##blend_name,            rasterizer->fragment,                               blend_mode)\
 ctx_float_porter_duff(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
 ctx_float_porter_duff(comp_name, components,linear_gradient_##blend_name,  ctx_fragment_linear_gradient_RGBA8, blend_mode)\
 ctx_float_porter_duff(comp_name, components,radial_gradient_##blend_name,  ctx_fragment_radial_gradient_RGBA8, blend_mode)\
 ctx_float_porter_duff(comp_name, components,image_##blend_name,            ctx_fragment_image_RGBAF,           blend_mode)
 #else
 #define ctx_float_porter_duff_blend(comp_name, components, blend_mode, blend_name)\
-ctx_float_porter_duff(comp_name, components,color_##blend_name,            NULL,                               blend_mode)\
+ctx_float_porter_duff(comp_name, components,color_##blend_name,            rasterizer->fragment,                               blend_mode)\
 ctx_float_porter_duff(comp_name, components,generic_##blend_name,          rasterizer->fragment,               blend_mode)\
 ctx_float_porter_duff(comp_name, components,image_##blend_name,            ctx_fragment_image_RGBAF,           blend_mode)
 #endif
@@ -4872,12 +4872,12 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYA8 (CtxRasterizer *rasterizer
   return ctx_fragment_color_GRAYA8;
 }
 
-ctx_u8_porter_duff(GRAYA8, 2,color,   NULL,                 rasterizer->state->gstate.blend_mode)
+ctx_u8_porter_duff(GRAYA8, 2,color,   rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 ctx_u8_porter_duff(GRAYA8, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_NORMAL
 
-ctx_u8_porter_duff(GRAYA8, 2,color_normal,   NULL,                 CTX_BLEND_NORMAL)
+ctx_u8_porter_duff(GRAYA8, 2,color_normal,   rasterizer->fragment, CTX_BLEND_NORMAL)
 ctx_u8_porter_duff(GRAYA8, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
 
 static void
