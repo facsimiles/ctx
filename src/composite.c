@@ -3578,7 +3578,6 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
                        CtxBlend               blend)
 {
   float *dstf = (float*)dst;
-  float *srcf = (float*)src;
 
   CtxPorterDuffFactor f_s, f_d;
   ctx_porter_duff_factors (compositing_mode, &f_s, &f_d);
@@ -3631,8 +3630,9 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
       for (int c = 0; c < components; c++)
       {
         float res;
-        /* these switches and this whole function disappear when
-         * compiled when the enum values passed in are constants.
+        /* these switches and this whole function is written to be
+         * inlined when compiled when the enum values passed in are
+         * constants.
          */
         switch (f_s)
         {

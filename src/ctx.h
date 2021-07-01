@@ -519,14 +519,14 @@ _CtxGlyph
   float    y;
 };
 
-CtxTextAlign ctx_get_text_align (Ctx *ctx);
-CtxTextBaseline ctx_get_text_baseline (Ctx *ctx);
-CtxTextDirection ctx_get_text_direction (Ctx *ctx);
-CtxFillRule ctx_get_fill_rule (Ctx *ctx);
-CtxLineCap ctx_get_line_cap (Ctx *ctx);
-CtxLineJoin ctx_get_line_join (Ctx *ctx);
+CtxTextAlign       ctx_get_text_align (Ctx *ctx);
+CtxTextBaseline    ctx_get_text_baseline (Ctx *ctx);
+CtxTextDirection   ctx_get_text_direction (Ctx *ctx);
+CtxFillRule        ctx_get_fill_rule (Ctx *ctx);
+CtxLineCap         ctx_get_line_cap (Ctx *ctx);
+CtxLineJoin        ctx_get_line_join (Ctx *ctx);
 CtxCompositingMode ctx_get_compositing_mode (Ctx *ctx);
-CtxBlend ctx_get_blend_mode (Ctx *ctx);
+CtxBlend           ctx_get_blend_mode (Ctx *ctx);
 
 void ctx_gradient_add_stop_string (Ctx *ctx, float pos, const char *color);
 
@@ -1693,10 +1693,10 @@ typedef enum _CtxColorSpace CtxColorSpace;
  *
  * The set profiles follows the graphics state.
  */
-void ctx_color_space (Ctx           *ctx,
-                      CtxColorSpace  space_slot,
-                      unsigned char *data,
-                      int            data_length);
+void ctx_colorspace (Ctx           *ctx,
+                     CtxColorSpace  space_slot,
+                     unsigned char *data,
+                     int            data_length);
 
 void
 ctx_parser_set_size (CtxParser *parser,
