@@ -8009,6 +8009,8 @@ int vt_has_blink (VT *vt)
 void ctx_set_popup (Ctx *ctx, void (*popup)(Ctx *ctx, void *data), void *popup_data);
 
 static char *primary = NULL;
+static void scrollbar_drag (CtxEvent *event, void *data, void *data2);
+static int scrollbar_down = 0;
 
 void vt_mouse_event (CtxEvent *event, void *data, void *data2)
 {
@@ -8017,6 +8019,12 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
   float  y = event->y;
   int device_no = event->device_no;
   char buf[128]="";
+  if ((!vt->in_alt_screen) &&
+      (event->x > vt->width - vt->cw * 1.5 || scrollbar_down) &&
+      (event->type == CTX_DRAG_MOTION ||
+      event->type == CTX_DRAG_PRESS ||
+      event->type == CTX_DRAG_RELEASE))
+    return scrollbar_drag (event, data, data2);
   switch (event->type)
   {
     case CTX_MOTION:
@@ -8067,8 +8075,8 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 //vt->rev++;
 }
-
 static int scrollbar_focused = 0;
+#if 0
 static void scrollbar_enter (CtxEvent *event, void *data, void *data2)
 {
   VT *vt = data;
@@ -8082,8 +8090,9 @@ static void scrollbar_leave (CtxEvent *event, void *data, void *data2)
   vt->rev++;
   scrollbar_focused = 0;
 }
+#endif
 
-static void scrollbar_pressed (CtxEvent *event, void *data, void *data2)
+static void scrollbar_drag (CtxEvent *event, void *data, void *data2)
 {
   VT *vt = data;
   float disp_lines = vt->rows;
@@ -8092,9 +8101,21 @@ static void scrollbar_pressed (CtxEvent *event, void *data, void *data2)
   vt->scroll = tot_lines - disp_lines - (event->y*1.0/ client_height (vt->id)) * tot_lines + disp_lines/2;
   if (vt->scroll < 0) { vt->scroll = 0.0; }
   if (vt->scroll > vt->scrollback_count) { vt->scroll = vt->scrollback_count; }
-//vt->rev++;
+  vt->rev++;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
+
+  switch (event->type)
+  {
+    case CTX_DRAG_PRESS:
+      scrollbar_down = 1;
+      break;
+    case CTX_DRAG_RELEASE:
+      scrollbar_down = 0;
+      break;
+    default:
+      break;
+  }
 }
 
 #if 0
@@ -8444,10 +8465,6 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
            }
        }
    }
-    ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
-    ctx_listen (ctx, CTX_DRAG, vt_mouse_event, vt, NULL);
-    ctx_listen (ctx, CTX_MOTION, vt_mouse_event, vt, NULL);
-    ctx_begin_path (ctx);
 
     /* scrollbar */
     if (!vt->in_alt_screen)
@@ -8469,9 +8486,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       ctx_rectangle (ctx, (vt->width) - vt->cw * 1.5,
                      0, 1.5 * vt->cw,
                      vt->rows * vt->ch);
-      ctx_listen (ctx, CTX_DRAG, scrollbar_pressed, vt, NULL);
-      ctx_listen (ctx, CTX_ENTER, scrollbar_enter, vt, NULL);
-      ctx_listen (ctx, CTX_LEAVE, scrollbar_leave, vt, NULL);
+      //ctx_listen (ctx, CTX_DRAG,  scrollbar_drag, vt, NULL);
+      //ctx_listen (ctx, CTX_ENTER, scrollbar_enter, vt, NULL);
+      //ctx_listen (ctx, CTX_LEAVE, scrollbar_leave, vt, NULL);
       if (vt->scroll != 0 || scrollbar_focused)
         ctx_rgba (ctx, 0.5, 0.5, 0.5, .25);
       else
@@ -8488,6 +8505,12 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
         ctx_rgba (ctx, 1, 1, 1, .10);
       ctx_fill (ctx);
     }
+
+    ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
+    ctx_listen (ctx, CTX_DRAG,   vt_mouse_event, vt, NULL);
+    ctx_listen (ctx, CTX_MOTION, vt_mouse_event, vt, NULL);
+    ctx_begin_path (ctx);
+
     ctx_restore (ctx);
 
     if (vt->popped)
