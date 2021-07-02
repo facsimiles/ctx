@@ -758,6 +758,7 @@ static void client_draw (ITK *itk, CtxClient *client, float x, float y)
     else
     {
       vt_draw (client->vt, ctx, x, y);
+      vt_register_events (client->vt, ctx, x, y);
       client->drawn_rev = vt_rev (client->vt);
     }
 }
@@ -1523,12 +1524,9 @@ KeyBoard en_intl = {
    }
 };
 
-
   // 0.0 = full tilt
   // 0.5 = balanced
   // 1.0 = full saving
-
-
 
 void ctx_osk_draw (Ctx *ctx)
 {

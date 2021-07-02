@@ -8187,10 +8187,21 @@ void vt_use_images (VT *vt, Ctx *ctx)
          }
     }
   }
-
   ctx_restore (ctx);
 }
 
+
+void vt_register_events (VT *vt, Ctx *ctx, double x0, double y0)
+{
+  ctx_begin_path (ctx);
+  ctx_save (ctx);
+  ctx_translate (ctx, x0, y0);
+  ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
+  ctx_listen (ctx, CTX_DRAG,   vt_mouse_event, vt, NULL);
+  ctx_listen (ctx, CTX_MOTION, vt_mouse_event, vt, NULL);
+  ctx_begin_path (ctx);
+  ctx_restore (ctx);
+}
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
@@ -8518,6 +8529,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
        ctx_set_popup (ctx, test_popup, vt);
     }
 }
+
 
 int vt_is_done (VT *vt)
 {

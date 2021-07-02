@@ -63,11 +63,17 @@ int         vt_get_cursor_x         (VT *vt);
 int         vt_get_cursor_y         (VT *vt);
 
 void        vt_draw                 (VT *vt, Ctx *ctx, double x, double y);
-int         vt_get_local (VT *vt);
-void        vt_set_local (VT *vt, int local);
+void        vt_register_events      (VT *vt, Ctx *ctx, double x0, double y0);
+
 void        vt_rev_inc              (VT *vt);
-int vt_mic (VT *vt);
-void vt_set_ctx (VT *vt, Ctx *ctx);
+
+int         vt_mic (VT *vt);
+void        vt_set_ctx (VT *vt, Ctx *ctx);  /* XXX: rename, this sets the parent/global ctx  */
+
+
+int         vt_get_local (VT *vt);           // this is a hack for the settings tab
+void        vt_set_local (VT *vt, int local);
+
 
 typedef enum VtMouseEvent
 {
