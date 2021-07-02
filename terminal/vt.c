@@ -435,14 +435,14 @@ struct _VT
 
   ssize_t (*write)   (void *serial_obj, const void *buf, size_t count);
   ssize_t (*read)    (void *serial_obj, void *buf, size_t count);
-  int    (*waitdata) (void *serial_obj, int timeout);
-  void  (*resize)    (void *serial_obj, int cols, int rows, int px_width, int px_height);
+  int     (*waitdata)(void *serial_obj, int timeout);
+  void    (*resize)  (void *serial_obj, int cols, int rows, int px_width, int px_height);
 
 
   char     *title;
   void    (*state) (VT *vt, int byte);
 
-  AudioState audio; // < want to move this one up and share impl
+  AudioState audio; // < want to move this one level up and share impl
   GfxState   gfx;
 
   CtxList   *saved_lines;
@@ -559,7 +559,7 @@ struct _VT
   float      scale_y;
 
   int        ctx_pos;  // 1 is graphics above text, 0 or -1 is below text
-  Ctx       *ctx;
+  Ctx       *root_ctx; /* only used for knowledge of top-level dimensions */
 
   int        blink_state;
 
@@ -2761,8 +2761,8 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
     sscanf (sequence, "[4;%i;%ir", &height , &width);
     if (width < 0) width = vt->cols * vt->cw;
     if (height < 0) height = vt->rows * vt->ch;
-    if (width == 0) width = ctx_width (vt->ctx);
-    if (height == 0) height = ctx_height (vt->ctx);
+    if (width == 0) width = ctx_width (vt->root_ctx);
+    if (height == 0) height = ctx_height (vt->root_ctx);
     client_resize (vt->id, width, height);
   }
   else if (!strcmp (sequence, "[5t") ) { client_raise_top (vt->id); } 
@@ -2774,8 +2774,8 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
     sscanf (sequence, "[8;%i;%ir", &rows, &cols);
     if (cols < 0) cols = vt->cols;
     if (rows < 0) rows = vt->rows;
-    if (cols == 0) cols = ctx_width (vt->ctx) / vt->cw;
-    if (rows == 0) rows = ctx_height (vt->ctx) / vt->ch;
+    if (cols == 0) cols = ctx_width (vt->root_ctx) / vt->cw;
+    if (rows == 0) rows = ctx_height (vt->root_ctx) / vt->ch;
     client_resize (vt->id, cols * vt->cw, rows * vt->ch);
   }
   else if (!strcmp (sequence, "[9;0t") ) { client_unmaximize (vt->id); } 
@@ -2810,7 +2810,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   else if (!strcmp (sequence, "[15t") ) /* request root dimensions in px */
     {
       char buf[128];
-      sprintf (buf, "\033[5;%i;%it", ctx_height (vt->ctx), ctx_width(vt->ctx));
+      sprintf (buf, "\033[5;%i;%it", ctx_height (vt->root_ctx), ctx_width(vt->root_ctx));
       vt_write (vt, buf, strlen (buf) );
     }
   else if (!strcmp (sequence, "[16t") ) /* request char dimensions in px */
@@ -2828,7 +2828,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   else if (!strcmp (sequence, "[19t") ) /* request root window size in char */
     {
       char buf[128];
-      sprintf (buf, "\033[9;%i;%it", ctx_height(vt->ctx)/vt->ch, ctx_width (vt->ctx)/vt->cw);
+      sprintf (buf, "\033[9;%i;%it", ctx_height(vt->root_ctx)/vt->ch, ctx_width (vt->root_ctx)/vt->cw);
       vt_write (vt, buf, strlen (buf) );
     }
 
@@ -8012,9 +8012,9 @@ static char *primary = NULL;
 
 void vt_mouse_event (CtxEvent *event, void *data, void *data2)
 {
-  VT *vt = data;
-  float x = event->x;
-  float y = event->y;
+  VT   *vt = data;
+  float  x = event->x;
+  float  y = event->y;
   int device_no = event->device_no;
   char buf[128]="";
   switch (event->type)
@@ -8028,19 +8028,11 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
         vt_feed_keystring (vt, event, buf);
 //      vt->rev++;
       }
-      return;
       break;
     case CTX_DRAG_PRESS:
       if (event->device_no==2)
       {
-      //  vt_feed_keystring (vt, ""); // get selection
-#if 0
-      char *text = NULL;
-      if (0)
-        text = SDL_GetClipboardText ();
-      else
-#endif
-      if (primary)
+        if (primary)
         {
           if (vt)
             vt_paste (vt, primary);
@@ -8048,17 +8040,15 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       }
       else if (event->device_no==3 && !vt->in_alt_screen)
       {
-//      vt->rev++;
         vt->popped = 1;
       }
       else
       {
-//      ctx_set_dirty (event->ctx, 1);
         sprintf (buf, "mouse-press %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, event, buf);
+//      ctx_set_dirty (event->ctx, 1);
 //      vt->rev++;
       }
-      return;
       break;
     case CTX_DRAG_RELEASE:
       if (event->device_no==3 && !vt->in_alt_screen)
@@ -8066,13 +8056,8 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
         vt->popped = 0;
       }
         ctx_set_dirty (event->ctx, 1);
-      //if (event->device_no==1)
-      {
         sprintf (buf, "mouse-release %.0f %.0f %i", x, y, device_no);
         vt_feed_keystring (vt, event, buf);
-//      vt->rev++;
-      }
-      return;
       break;
     default:
       // we should not stop propagation
@@ -8628,7 +8613,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
          vt->select_active = 0;
          if (long_tap_cb_id)
            {
-             ctx_remove_idle (vt->ctx, long_tap_cb_id);
+             ctx_remove_idle (vt->root_ctx, long_tap_cb_id);
              long_tap_cb_id = 0;
            }
          
@@ -8704,8 +8689,8 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
          }
          else
          {
-           if (vt->ctx && short_count == 0)
-             long_tap_cb_id = ctx_add_timeout (vt->ctx, 1000, single_tap, vt);
+           if (vt->root_ctx && short_count == 0)
+             long_tap_cb_id = ctx_add_timeout (vt->root_ctx, 1000, single_tap, vt);
            short_count = 0;
            //vt->select_start_col = 
            //vt->select_end_col = vt->select_begin_col;
@@ -8719,7 +8704,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
        {
          if (long_tap_cb_id)
            {
-             ctx_remove_idle (vt->ctx, long_tap_cb_id);
+             ctx_remove_idle (vt->root_ctx, long_tap_cb_id);
              long_tap_cb_id = 0;
            }
          vt->cursor_down = 0;
@@ -8831,5 +8816,5 @@ pid_t vt_get_pid (VT *vt)
 
 void vt_set_ctx (VT *vt, Ctx *ctx)
 {
-  vt->ctx = ctx;
+  vt->root_ctx = ctx;
 }
