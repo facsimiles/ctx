@@ -2114,15 +2114,13 @@ ctx_get_contents (const char     *uri,
                   unsigned char **contents,
                   long           *length)
 {
-  char temp_uri[PATH_MAX]; // XXX XXX breaks with data uri's
+  char *temp_uri = NULL; // XXX XXX breaks with data uri's
+  int   success  = -1;
+
   if (uri[0] == '/')
   {
-    snprintf (temp_uri, sizeof (temp_uri)-1, "file://%s", uri);
-    uri = temp_uri;
-  }
-  else
-  {
-    snprintf (temp_uri, sizeof (temp_uri)-1, uri);
+    temp_uri = (char*) malloc (strlen (uri) + 8);
+    sprintf (temp_uri, "file://%s", uri);
     uri = temp_uri;
   }
 
@@ -2137,6 +2135,7 @@ ctx_get_contents (const char     *uri,
       contents = malloc (c->length+1);
       contents[c->length]=0;
       if (length) *length = c->length;
+      free (temp_uri);
       return 0;
     }
   }
@@ -2148,7 +2147,7 @@ ctx_get_contents (const char     *uri,
   }
 
   if (!strncmp (uri, "file://", 7))
-    return __ctx_file_get_contents (uri + 7, contents, length);
+    success = __ctx_file_get_contents (uri + 7, contents, length);
   else
   {
 #ifndef NO_LIBCURL
@@ -2178,13 +2177,14 @@ ctx_get_contents (const char     *uri,
      *length = string->length;
      ctx_string_free (string, 0);
      curl_easy_cleanup (curl);
-     return 0;
+     success = 0;
   }
 #else
-    return __ctx_file_get_contents (uri, contents, length);
+    success = __ctx_file_get_contents (uri, contents, length);
 #endif
   }
-  return -1;
+  free (temp_uri);
+  return success;
 }
 
 
