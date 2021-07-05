@@ -79,7 +79,7 @@ int server_accept(TcpServer* server)
   for (;;)
   {
     memset (buf, 0, sizeof (buf));
-    int count = read (server->fd, buf, sizeof(buf));
+    //int count = read (server->fd, buf, sizeof(buf));
     printf (buf);
     //if (count > 0)
     //   write (server->fd, &data, 1);

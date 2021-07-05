@@ -84,6 +84,15 @@ static void signal_child (int signum)
 
 #define VT_RECORD 0
 
+typedef enum ItkClientFlags {
+  ITK_CLIENT_UI_RESIZABLE = 1<<0,
+  ITK_CLIENT_CAN_LAUNCH   = 1<<1,
+  ITK_CLIENT_MAXIMIZED    = 1<<2,
+  ITK_CLIENT_ICONIFIED    = 1<<3,
+  ITK_CLIENT_SHADED       = 1<<4,
+  ITK_CLIENT_TITLEBAR     = 1<<5
+} ItkClientFlags;
+
 struct
 _CtxClient {
   VT    *vt;
@@ -92,9 +101,13 @@ _CtxClient {
   int    y;
   int    width;
   int    height;
+  ItkClientFlags flags;
+#if 0
   int    shaded;
   int    iconified;
   int    maximized;
+  int    resizable;
+#endif
   int    unmaximized_x;
   int    unmaximized_y;
   int    unmaximized_width;
@@ -214,7 +227,7 @@ CtxClient *vt_find_client (VT *vt)
 
 CtxClient *client_new (const char *commandline,
                        int x, int y, int width, int height,
-                       int can_launch)
+                       ItkClientFlags flags)
 {
   static int global_id = 0;
   CtxClient *client = calloc (sizeof (CtxClient), 1);
@@ -222,14 +235,15 @@ CtxClient *client_new (const char *commandline,
   client->id = global_id++;
   client->x = x;
   client->y = y;
+  client->flags = flags;
 
   client->width = width;
   client->height = height;
-  client->vt = vt_new (commandline, width, height, font_size, line_spacing, client->id, can_launch);
+  client->vt = vt_new (commandline, width, height, font_size, line_spacing, client->id, (flags & ITK_CLIENT_CAN_LAUNCH)!=0);
   return client;
 }
 
-CtxClient *client_new_argv (const char **argv, int x, int y, int width, int height, int can_launch)
+CtxClient *client_new_argv (const char **argv, int x, int y, int width, int height, ItkClientFlags flags)
 {
   CtxString *string = ctx_string_new ("");
   for (int i = 0; argv[i]; i++)
@@ -246,7 +260,7 @@ CtxClient *client_new_argv (const char **argv, int x, int y, int width, int heig
        }
     }
   }
-  CtxClient *ret = client_new (string->str, x, y, width, height, can_launch);
+  CtxClient *ret = client_new (string->str, x, y, width, height, flags);
   ctx_string_free (string, 1);
   return ret;
 }
@@ -265,7 +279,7 @@ static CtxClient *find_active (int x, int y)
   for (CtxList *l = clients; l; l = l->next)
   {
      CtxClient *c = l->data;
-     if (c->maximized && c == active_tab)
+     if ((c->flags & ITK_CLIENT_MAXIMIZED) && c == active_tab)
      if (x > c->x - resize_border && x < c->x+c->width + resize_border &&
          y > c->y - titlebar_height && y < c->y+c->height + resize_border)
      {
@@ -276,7 +290,7 @@ static CtxClient *find_active (int x, int y)
   for (CtxList *l = clients; l; l = l->next)
   {
      CtxClient *c = l->data;
-     if (!c->maximized)
+     if (!(c->flags &  ITK_CLIENT_MAXIMIZED))
      if (x > c->x - resize_border && x < c->x+c->width + resize_border &&
          y > c->y - titlebar_height && y < c->y+c->height + resize_border)
      {
@@ -317,7 +331,7 @@ void ensure_layout ()
   if (n_clients == 1)
   {
     CtxClient *client = clients->data;
-    if (client->maximized)
+    if (client->flags & ITK_CLIENT_MAXIMIZED)
     {
       client_move (client->id, 0, 0);
       client_resize (client->id, ctx_width (ctx), ctx_height(ctx));
@@ -329,7 +343,7 @@ void ensure_layout ()
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (client->maximized)
+    if (client->flags & ITK_CLIENT_MAXIMIZED)
     {
       client_move (client->id, 0, client_min_y_pos (ctx));
       client_resize (client->id, ctx_width (ctx), ctx_height(ctx) -
@@ -428,30 +442,30 @@ void client_iconify (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
-   client->iconified = 1;
+   client->flags |= ITK_CLIENT_ICONIFIED;
 }
 
 int client_is_iconified (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return -1;
-   return client->iconified;
+   return (client->flags & ITK_CLIENT_ICONIFIED) != 0;
 }
 
 void client_uniconify (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
-   client->iconified = 0;
+   client->flags &= ~ITK_CLIENT_ICONIFIED;
 }
 
 void client_maximize (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
-   if (client->maximized)
+   if (client->flags &  ITK_CLIENT_MAXIMIZED)
      return;
-   client->maximized = 1;
+   client->flags |= ITK_CLIENT_MAXIMIZED;
    client->unmaximized_x = client->x;
    client->unmaximized_y = client->y;
    client->unmaximized_width  = client->width;
@@ -468,16 +482,16 @@ int client_is_maximized (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return -1;
-   return client->maximized;
+   return (client->flags & ITK_CLIENT_MAXIMIZED) != 0;
 }
 
 void client_unmaximize (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
-   if (client->maximized == 0)
+   if ((client->flags & ITK_CLIENT_MAXIMIZED) == 0)
      return;
-   client->maximized = 0;
+   client->flags &= ~ITK_CLIENT_MAXIMIZED;
    client_resize (id, client->unmaximized_width, client->unmaximized_height);
    client_move (id, client->unmaximized_x, client->unmaximized_y);
    active_tab = NULL;
@@ -496,28 +510,28 @@ void client_shade (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
-   client->shaded = 1;
+   client->flags |= ITK_CLIENT_SHADED;
 }
 
 int client_is_shaded (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return -1;
-   return client->shaded;
+   return (client->flags & ITK_CLIENT_SHADED) != 0;
 }
 
 void client_unshade (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
-   client->shaded = 0;
+   client->flags &= ~ITK_CLIENT_SHADED;
 }
 
 void client_toggle_maximized (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
-   if (client->maximized)
+   if (client_is_maximized (id))
      client_unmaximize (id);
    else
      client_maximize (id);
@@ -527,7 +541,10 @@ void client_shade_toggle (int id)
 {
    CtxClient *client = client_by_id (id);
    if (!client) return;
-   client->shaded = !client->shaded;
+   if (client_is_shaded (id))
+    client_shade (id);
+   else
+    client_unshade (id);
 }
 
 void client_move (int id, int x, int y)
@@ -824,11 +841,15 @@ static void client_use_images (ITK *itk, CtxClient *client)
 
 /*****************/
 
+#define flag_is_set(a, f) (((a) & (f))!=0)
+#define flag_set(a, f)    ((a) |= (f));
+#define flag_unset(a, f)  ((a) &= ~(f));
+
 int add_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = 0;
-  if (active) was_maximized = active->maximized;
+  if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
 
   active = client_new (commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, can_launch);
@@ -855,7 +876,7 @@ int add_settings_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = 0;
-  if (active) was_maximized = active->maximized;
+  if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
 
   active = client_new (commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, can_launch);
@@ -909,7 +930,7 @@ void switch_to_tab (int desired_no)
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (client->maximized)
+    if (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED))
     {
       if (no == desired_no)
       {
@@ -1090,7 +1111,7 @@ void draw_titlebar (ITK *itk, Ctx *ctx, CtxClient *client,
       else
          itk_style_color (ctx, "titlebar-bg");
 
-      if (client->maximized || y == titlebar_height)
+      if (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED) || y == titlebar_height)
       {
         ctx_listen (ctx, CTX_DRAG, client_titlebar_drag_maximized, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
@@ -1104,7 +1125,7 @@ void draw_titlebar (ITK *itk, Ctx *ctx, CtxClient *client,
       ctx_font_size (ctx, itk->font_size);//titlebar_height);// * 0.85);
 
       if (client == active &&
-          (client->maximized || y != titlebar_height))
+          (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED) || y != titlebar_height))
       {
 
 #if 1
@@ -1163,7 +1184,7 @@ static int draw_vts (ITK *itk, Ctx *ctx)
   float titlebar_height = em;
   int n_clients = ctx_list_length (clients);
 
-  if (active && active->maximized && n_clients == 1)
+  if (active && flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED) && n_clients == 1)
   {
     client_draw (itk, active, 0, 0);
     return 0;
@@ -1172,7 +1193,7 @@ static int draw_vts (ITK *itk, Ctx *ctx)
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (client->maximized)
+    if (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED))
     {
       if (client == active_tab)
       {
@@ -1190,9 +1211,9 @@ static int draw_vts (ITK *itk, Ctx *ctx)
   {
     CtxClient *client = l->data;
     VT *vt = client->vt;
-    if (vt && !client->maximized)
+    if (vt && !flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED))
     {
-      if (client->shaded)
+      if (flag_is_set(client->flags, ITK_CLIENT_SHADED))
       {
         client_use_images (itk, client);
       }
@@ -1202,7 +1223,9 @@ static int draw_vts (ITK *itk, Ctx *ctx)
       }
 
       // resize regions
-      if (client == active && !client->shaded &&  !client->maximized)
+      if (client == active &&
+         !flag_is_set(client->flags, ITK_CLIENT_SHADED) &&
+         !flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED))
       {
         itk_style_color (ctx, "titlebar-focused-bg");
 
@@ -1787,7 +1810,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (client->maximized)
+    if (client->flags & ITK_CLIENT_MAXIMIZED)
     tabs ++;
   }
 
@@ -1806,7 +1829,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (client->maximized)
+    if (client->flags & ITK_CLIENT_MAXIMIZED)
     {
       ctx_begin_path (ctx);
       draw_titlebar (itk, ctx, client, x, titlebar_height,
@@ -1992,7 +2015,7 @@ int terminal_main (int argc, char **argv)
             {
               //if (client != clients->data)
        #if 1
-              if (!client->maximized)
+              if ((client->flags & ITK_CLIENT_MAXIMIZED)==0)
               {
                 ctx_list_remove (&clients, client);
                 ctx_list_append (&clients, client);
@@ -2041,7 +2064,7 @@ int terminal_main (int argc, char **argv)
         ctx_fill (ctx);
         draw_vts (itk, ctx);
         ctx_popups (ctx);
-        if ((n_clients != 1) || (clients && ((((CtxClient*)clients->data))->maximized == 0)))
+        if ((n_clients != 1) || (clients && !flag_is_set((((CtxClient*)clients->data))->flags, ITK_CLIENT_MAXIMIZED)))
           draw_panel (itk, ctx);
         else
           draw_mini_panel (ctx);
