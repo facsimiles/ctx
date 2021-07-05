@@ -2,10 +2,10 @@
 #include <cairo.h>
 
 #define CTX_LIMIT_FORMATS   0
-#define CTX_EVENTS          1
 #ifdef CTX_AVX2
 #undef CTX_AVX2
 #endif
+#define CTX_EVENTS                0
 #define CTX_AVX2                  1
 #define CTX_ENABLE_CM             0
 #define CTX_PARSER                0
@@ -16,6 +16,7 @@
 #define CTX_RASTERIZER_AA        15
 #define CTX_RASTERIZER_FORCE_AA   0
 #define CTX_BITPACK_PACKER        0
+#define CTX_AUDIO                 0
 #define CTX_RENDERSTREAM_STATIC   0
 #define CTX_FONTS_FROM_FILE       1 /* leaves out code */
 #define CTX_IMPLEMENTATION
