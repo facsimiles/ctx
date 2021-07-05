@@ -1,6 +1,6 @@
 #include "ctx-split.h"
 
-CTX_STATIC int
+CTX_STATIC inline int
 ctx_conts_for_entry (CtxEntry *entry)
 {
     switch (entry->code)
@@ -94,12 +94,15 @@ CTX_STATIC CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
 {
   int ret = iterator->pos;
   CtxEntry *entry = &iterator->drawlist->entries[ret];
-  if (ret >= iterator->end_pos)
+  if (CTX_UNLIKELY(ret >= iterator->end_pos))
     { return NULL; }
-  if (iterator->first_run == 0)
-    { iterator->pos += (ctx_conts_for_entry (entry) + 1); }
-  iterator->first_run = 0;
-  if (iterator->pos >= iterator->end_pos)
+
+  if (CTX_UNLIKELY(iterator->first_run))
+      iterator->first_run = 0;
+  else
+     iterator->pos += (ctx_conts_for_entry (entry) + 1);
+
+  if (CTX_UNLIKELY(iterator->pos >= iterator->end_pos))
     { return NULL; }
   return &iterator->drawlist->entries[iterator->pos];
 }
