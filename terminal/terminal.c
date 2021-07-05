@@ -849,10 +849,12 @@ int add_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = 0;
+  int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
   if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
+  if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
   active = client_new (commandline, add_x, add_y,
-                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, can_launch);
+                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, flags);
   vt_set_ctx (active->vt, ctx);
   add_y += ctx_height (ctx) / 20;
   add_x += ctx_height (ctx) / 20;
@@ -877,9 +879,11 @@ int add_settings_tab (const char *commandline, int can_launch)
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = 0;
   if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
+  int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
+  if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
   active = client_new (commandline, add_x, add_y,
-                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, can_launch);
+                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, flags);
 
   vt_set_ctx (active->vt, ctx);
   active->internal = 1;
@@ -1044,7 +1048,7 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 
 int ctx_count (Ctx *ctx);
 
-static int client_dirty_count (void)
+static int clients_dirty_count (void)
 {
   int changes = 0;
   for (CtxList *l = clients; l; l = l->next)
@@ -1179,7 +1183,7 @@ static void key_press (CtxEvent *event, void *data1, void *data2)
   fprintf (stderr, "press %i %s\n", event->unicode, event->string);
 }
 
-static int draw_vts (ITK *itk, Ctx *ctx)
+static int clients_draw (ITK *itk, Ctx *ctx)
 {
   float titlebar_height = em;
   int n_clients = ctx_list_length (clients);
@@ -1225,7 +1229,8 @@ static int draw_vts (ITK *itk, Ctx *ctx)
       // resize regions
       if (client == active &&
          !flag_is_set(client->flags, ITK_CLIENT_SHADED) &&
-         !flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED))
+         !flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED) &&
+         flag_is_set(client->flags, ITK_CLIENT_UI_RESIZABLE))
       {
         itk_style_color (ctx, "titlebar-focused-bg");
 
@@ -1295,11 +1300,11 @@ static int draw_vts (ITK *itk, Ctx *ctx)
 
       }
 
-      draw_titlebar (itk, ctx, client, client->x, client->y, client->width, titlebar_height);
+      if (client->flags & ITK_CLIENT_TITLEBAR)
+        draw_titlebar (itk, ctx, client, client->x, client->y, client->width, titlebar_height);
     }
   }
   }
-
   return 0;
 }
 
@@ -1878,6 +1883,71 @@ terminal_update_title (const char *title)
 
 int ctx_input_pending (Ctx *ctx, int timeout);
 
+int clients_need_redraw (Ctx *ctx)
+{
+  int changes = 0;
+  int follow_mouse = focus_follows_mouse;
+      CtxList *to_remove = NULL;
+  //ensure_layout ();
+
+//  if (print_shape_cache_rate)
+//    fprintf (stderr, "\r%f ", ctx_shape_cache_rate);
+
+   CtxClient *client = find_active (ctx_pointer_x (ctx),
+                                    ctx_pointer_y (ctx));
+
+   if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
+       ctx_pointer_is_down (ctx, 1) || (active==NULL))
+   {
+        if (client)
+        {
+          if (active != client)
+          {
+            active = client;
+            if (follow_mouse == 0 ||
+                (ctx_pointer_is_down (ctx, 0) ||
+                 ctx_pointer_is_down (ctx, 1)))
+            {
+              //if (client != clients->data)
+       #if 1
+              if ((client->flags & ITK_CLIENT_MAXIMIZED)==0)
+              {
+                ctx_list_remove (&clients, client);
+                ctx_list_append (&clients, client);
+              }
+#endif
+            }
+            changes ++;
+          }
+        }
+   }
+   if (active)
+     terminal_update_title (active->title);
+
+
+   for (CtxList *l = clients; l; l = l->next)
+   {
+     CtxClient *client = l->data;
+     if (client->vt)
+       {
+         if (vt_is_done (client->vt))
+           ctx_list_prepend (&to_remove, client);
+       }
+   }
+   for (CtxList *l = to_remove; l; l = l->next)
+   {
+     client_remove (ctx, l->data);
+     changes++;
+   }
+   while (to_remove)
+   {
+     ctx_list_remove (&to_remove, to_remove->data);
+   }
+
+   changes += clients_dirty_count ();
+   return changes != 0;
+}
+
 int terminal_main (int argc, char **argv)
 {
   execute_self = argv[0];
@@ -1986,83 +2056,24 @@ int terminal_main (int argc, char **argv)
     print_shape_cache_rate = 1;
   itk->scale = 1.0;
   itk->font_size = font_size;
+  em = itk->font_size;
 
   while (clients && !ctx_has_quit (ctx))
     {
-      CtxList *to_remove = NULL;
       int changes = 0;
       int n_clients = ctx_list_length (clients);
-      int follow_mouse = focus_follows_mouse;
       ensure_layout ();
 
       if (print_shape_cache_rate)
         fprintf (stderr, "\r%f ", ctx_shape_cache_rate);
 
-      CtxClient *client = find_active (ctx_pointer_x (ctx),
-                                         ctx_pointer_y (ctx));
-
-      if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
-          ctx_pointer_is_down (ctx, 1) || (active==NULL))
-      {
-        if (client)
-        {
-          if (active != client)
-          {
-            active = client;
-            if (follow_mouse == 0 ||
-                (ctx_pointer_is_down (ctx, 0) ||
-                 ctx_pointer_is_down (ctx, 1)))
-            {
-              //if (client != clients->data)
-       #if 1
-              if ((client->flags & ITK_CLIENT_MAXIMIZED)==0)
-              {
-                ctx_list_remove (&clients, client);
-                ctx_list_append (&clients, client);
-              }
-#endif
-            }
-            changes ++;
-          }
-        }
-      }
-      if (active)
-        terminal_update_title (active->title);
-
-
-      em = itk->font_size;
-
-      for (CtxList *l = clients; l; l = l->next)
-      {
-        CtxClient *client = l->data;
-        if (client->vt)
-          {
-            if (vt_is_done (client->vt))
-              ctx_list_prepend (&to_remove, client);
-          }
-      }
-      for (CtxList *l = to_remove; l; l = l->next)
-      {
-        client_remove (ctx, l->data);
-        changes++;
-      }
-      while (to_remove)
-      {
-        ctx_list_remove (&to_remove, to_remove->data);
-      }
-
-      changes += client_dirty_count ();
-        static float avg_bytespeed = 0.0;
-
-      int pending_data = 0;
-
-      if (changes)// || ctx_is_dirty(ctx))//|| dirty) // || dirty || ctx_is_dirty (ctx))
+      if (clients_need_redraw (ctx))
       {
         itk_reset (itk);
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         itk_style_color (ctx, "wallpaper");
         ctx_fill (ctx);
-        draw_vts (itk, ctx);
+        clients_draw (itk, ctx);
         ctx_popups (ctx);
         if ((n_clients != 1) || (clients && !flag_is_set((((CtxClient*)clients->data))->flags, ITK_CLIENT_MAXIMIZED)))
           draw_panel (itk, ctx);
@@ -2076,6 +2087,8 @@ int terminal_main (int argc, char **argv)
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
         ctx_flush (ctx);
       }
+      static float avg_bytespeed = 0.0;
+      int pending_data = 0;
       long time_start = ctx_ticks ();
       int sleep_time = 1000000/target_fps;
       pending_data = ctx_input_pending (ctx, sleep_time);
