@@ -1963,6 +1963,32 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
     }
 }
 
+void
+ctx_render_ctx_textures (Ctx *ctx, Ctx *d_ctx)
+{
+  CtxIterator iterator;
+  CtxCommand *command;
+  ctx_iterator_init (&iterator, &ctx->drawlist, 0,
+                     CTX_ITERATOR_EXPAND_BITPACK);
+  while ( (command = ctx_iterator_next (&iterator) ) )
+    {
+       switch (command->code)
+       {
+         default:
+                 //fprintf (stderr, "[%c]", command->code);
+                 break;
+         case CTX_TEXTURE:
+             fprintf (stderr, "t:%s\n", command->texture.eid);
+             ctx_process (d_ctx, &command->entry);
+             break;
+         case CTX_DEFINE_TEXTURE:
+             fprintf (stderr, "d:%s\n", command->define_texture.eid);
+             ctx_process (d_ctx, &command->entry);
+           break;
+       }
+    }
+}
+
 void ctx_quit (Ctx *ctx)
 {
 #if CTX_EVENTS

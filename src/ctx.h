@@ -413,6 +413,9 @@ char *ctx_render_string (Ctx *ctx, int longform, int *retlen);
 void ctx_render_stream  (Ctx *ctx, FILE *stream, int formatter);
 
 void ctx_render_ctx     (Ctx *ctx, Ctx *d_ctx);
+void ctx_render_ctx_textures (Ctx *ctx, Ctx *d_ctx); /* cycles through all
+                                                        used texture eids
+                                                      */
 
 void ctx_start_move     (Ctx *ctx);
 
@@ -1168,6 +1171,7 @@ struct
       uint8_t pad1;
       float a;
     } graya;
+
     struct
     {
       uint8_t code;
