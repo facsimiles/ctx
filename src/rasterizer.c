@@ -181,9 +181,9 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   int ox = entry->data.s16[2];
   int oy = entry->data.s16[3];
   uint32_t hash = rasterizer->edge_list.count;
-  hash = (ox % CTX_SUBDIV);
+  hash = (ox & CTX_SUBDIV);
   hash *= CTX_SHAPE_CACHE_PRIME1;
-  hash += (oy % CTX_FULL_AA);
+  hash += (oy & CTX_SUBDIV);
 #endif
   for (int i = 0; i < rasterizer->edge_list.count; i++)
     {
@@ -784,7 +784,7 @@ void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, u
     for (int x = minx; x <= maxx; x ++)
     {
 #if CTX_1BIT_CLIP
-        coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x%8)))?255:0))/255;
+        coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x&8)))?255:0))/255;
 #else
         coverage[x] = (coverage[x] * clip_line[x])/255;
 #endif

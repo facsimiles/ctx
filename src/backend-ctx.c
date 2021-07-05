@@ -218,12 +218,12 @@ again:
       {
         if (src[i] == CTX_CODEC_CHAR)
         {
-          ctx_string_append_byte (string, CTX_CODEC_CHAR);
-          ctx_string_append_byte (string, CTX_CODEC_CHAR);
+          char bytes[2]={CTX_CODEC_CHAR, CTX_CODEC_CHAR};
+          ctx_string_append_data (string, bytes, 2);
         }
         else
         {
-          ctx_string_append_byte (string, src[i]);
+          ctx_string_append_data (string, &src[i], 1);
         }
       }
     }
@@ -283,7 +283,7 @@ static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int
         }
       }
       else
-      ctx_string_append_byte (string, encoded[i]);
+      ctx_string_append_data (string, &encoded[i], 1);
     }
   }
   char *ret = string->str;
@@ -311,7 +311,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   if (ctx_native_events)
     fprintf (stdout, "\e[?201h");
   fprintf (stdout, "\e[H\e[?25l\e[?200h");
-#if 0
+#if 1
   fprintf (stdout, CTX_START_STRING);
   ctx_render_stream (ctxctx->ctx, stdout, 0);
   fprintf (stdout, CTX_END_STRING);

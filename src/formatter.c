@@ -12,12 +12,12 @@ struct _CtxFormatter
   void (*add_str)(CtxFormatter *formatter, const char *str, int len);
 };
 
-static void ctx_formatter_addstr (CtxFormatter *formatter, const char *str, int len)
+static inline void ctx_formatter_addstr (CtxFormatter *formatter, const char *str, int len)
 {
   formatter->add_str (formatter, str, len);
 }
 
-static void ctx_formatter_addstrf (CtxFormatter *formatter, const char *format, ...)
+static inline void ctx_formatter_addstrf (CtxFormatter *formatter, const char *format, ...)
 {
    va_list ap;
    size_t needed;

@@ -1709,7 +1709,7 @@ ctx_parser_set_size (CtxParser *parser,
                      float      cell_width,
                      float      cell_height);
 
-void ctx_parser_feed_byte (CtxParser *parser, int byte);
+void ctx_parser_feed_bytes (CtxParser *parser, const char *data, int count);
 
 int
 ctx_get_contents (const char     *path,

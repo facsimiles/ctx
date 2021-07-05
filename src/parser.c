@@ -1355,7 +1355,8 @@ static void ctx_parser_word_done (CtxParser *parser)
 
       // trigger transition from number
       parser->state = CTX_PARSER_NUMBER;
-      ctx_parser_feed_byte (parser, ',');
+      char c = ',';
+      ctx_parser_feed_bytes (parser, &c, 1);
     }
   else if (command > 0)
     {
@@ -1438,8 +1439,11 @@ static void ctx_parser_string_done (CtxParser *parser)
   }
 }
 
-void ctx_parser_feed_byte (CtxParser *parser, int byte)
+void ctx_parser_feed_bytes (CtxParser *parser, const char *data, int count)
 {
+  for (int i = 0; i < count; i++)
+  {
+    int byte = data[i];
   switch (byte)
     {
       case '\n':
@@ -1771,6 +1775,7 @@ void ctx_parser_feed_byte (CtxParser *parser, int byte)
           }
         break;
     }
+  }
 }
 
 void ctx_parse (Ctx *ctx, const char *string)
@@ -1782,8 +1787,7 @@ void ctx_parse (Ctx *ctx, const char *string)
                                            ctx_get_font_size(ctx),
                                            ctx_get_font_size(ctx),
                                            0, 0, NULL, NULL, NULL, NULL, NULL);
-  for (int i = 0; string[i]; i++)
-     ctx_parser_feed_byte (parser, string[i]);
+  ctx_parser_feed_bytes (parser, string, strlen (string));
   ctx_parser_free (parser);
 }
 

@@ -45,9 +45,9 @@ void ctx_string_clear (CtxString *string)
 
 static inline void _ctx_string_append_byte (CtxString *string, char  val)
 {
-  if ( (val & 0xC0) != 0x80)
+  if (CTX_LIKELY((val & 0xC0) != 0x80))
     { string->utf8_length++; }
-  if (string->length + 2 >= string->allocated_length)
+  if (CTX_UNLIKELY(string->length + 2 >= string->allocated_length))
     {
       char *old = string->str;
       string->allocated_length = CTX_MAX (string->allocated_length * 2, string->length + 2);
@@ -55,11 +55,6 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
     }
   string->str[string->length++] = val;
   string->str[string->length] = '\0';
-}
-
-void ctx_string_append_byte (CtxString *string, char  val)
-{
-  _ctx_string_append_byte (string, val);
 }
 
 void ctx_string_append_unichar (CtxString *string, unsigned int unichar)
