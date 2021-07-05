@@ -236,7 +236,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                                 CTX_FORMAT_RGB8,
                                 self->rgb_data,
                                 NULL);
-        ctx_image_smoothing (self->ctx, 1);
+        ctx_image_smoothing (self->ctx, 0);
         ctx_fill (self->ctx);
         ctx_restore (self->ctx);
         ctx_flush (self->ctx);

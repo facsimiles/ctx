@@ -1,4 +1,5 @@
-The ctx terminal is licensed under GPLv3+
+The ctx terminal is licensed under GPLv3+ while the renderer
+is licensed under LGPLv3+.
 
 ctx.h is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public

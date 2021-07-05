@@ -21,6 +21,14 @@
 #include "vt-utf8.h"
 #include "ctx.h"
 
+#ifndef CTX_UNLIKELY
+#define CTX_UNLIKELY(x)    __builtin_expect(!!(x), 0)
+#define CTX_LIKELY(x)      __builtin_expect(!!(x), 1)
+#endif
+#ifndef CTX_MAX
+#define CTX_MAX(a,b) (((a)>(b))?(a):(b))
+#endif
+
 typedef struct _VtLine   VtLine;
 
 struct _VtLine
@@ -152,10 +160,25 @@ static inline void        vt_line_append_str     (VtLine *line, const char *str)
   CtxString *string = (CtxString*)line;
   ctx_string_append_str (string, str);
 }
+
+static inline void _ctx_string_append_byte (CtxString *string, char  val)
+{
+  if (CTX_LIKELY((val & 0xC0) != 0x80))
+    { string->utf8_length++; }
+  if (CTX_UNLIKELY(string->length + 2 >= string->allocated_length))
+    {
+      char *old = string->str;
+      string->allocated_length = CTX_MAX (string->allocated_length * 2, string->length + 2);
+      string->str = (char*)realloc (old, string->allocated_length);
+    }
+  string->str[string->length++] = val;
+  string->str[string->length] = '\0';
+}
+
 static inline void        vt_line_append_byte    (VtLine *line, char  val)
 {
   CtxString *string = (CtxString*)line;
-  ctx_string_append_byte (string, val);
+  _ctx_string_append_byte (string, val);
 }
 static inline void        vt_line_append_string  (VtLine *line, CtxString *string2)
 {
@@ -167,6 +190,8 @@ static inline void        vt_line_append_unichar (VtLine *line, unsigned int uni
   CtxString *string = (CtxString*)line;
   ctx_string_append_unichar (string, unichar);
 }
+
+
 static inline void vt_line_append_data    (VtLine *line, const char *data, int len)
 {
   CtxString *string = (CtxString*)line;
@@ -215,6 +240,7 @@ static inline void vt_line_remove (VtLine *line, int pos)
     line->style[i] = line->style[i+1];
   }
 }
+
 
 #ifndef TRUE
 #define TRUE 1

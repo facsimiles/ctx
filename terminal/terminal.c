@@ -248,15 +248,16 @@ CtxClient *client_new_argv (const char **argv, int x, int y, int width, int heig
   CtxString *string = ctx_string_new ("");
   for (int i = 0; argv[i]; i++)
   {
+    char space = ' ';
     if (i > 0)
-      ctx_string_append_byte (string, ' ');
+      ctx_string_append_data (string, &space, 1);
     for (int c = 0; argv[i][c]; c++)
     {
        switch (argv[i][c])
        {
          case '"':ctx_string_append_str (string, "\\\"");break;
          case '\'':ctx_string_append_str (string, "\\\'");break;
-         default:ctx_string_append_byte (string, argv[i][c]);break;
+         default:ctx_string_append_data (string, &argv[i][c], 1);break;
        }
     }
   }

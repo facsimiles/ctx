@@ -57,6 +57,8 @@
 
 #include "ctx.h"
 
+
+
 //#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -4138,24 +4140,24 @@ static void vt_sixels (VT *vt, const char *sixels)
   vt->rev++;
 }
 
-static void vt_ctx_unrled (VT *vt, int byte)
+static inline void vt_ctx_unrled (VT *vt, char byte)
 {
   if (!vt->current_line->frame)
     vt->current_line->frame = ctx_string_new ("");
-  ctx_string_append_byte (vt->current_line->frame, byte);
+  _ctx_string_append_byte (vt->current_line->frame, byte);
 
   if (vt->ctxp)
   {
-    ctx_parser_feed_byte (vt->ctxp, byte);
+    ctx_parser_feed_bytes (vt->ctxp, &byte, 1);
   }
 }
 
 static void vt_state_ctx (VT *vt, int byte)
 {
   //fprintf (stderr, "%c", byte);
-  if (byte == CTX_CODEC_CHAR)
+  if (CTX_UNLIKELY(byte == CTX_CODEC_CHAR))
   {
-    if (vt->in_prev_match)
+    if (CTX_UNLIKELY(vt->in_prev_match))
     {
       char *prev = vt->current_line->prev;
       int prev_length = vt->current_line->prev_length;
@@ -4173,16 +4175,16 @@ static void vt_state_ctx (VT *vt, int byte)
 
       //fprintf (stderr, "%i-%i\n", start, len);
 
-      if (start == 0 && len == 0)
+      if (CTX_UNLIKELY (start == 0 && len == 0))
       {
         vt_ctx_unrled (vt, CTX_CODEC_CHAR);
       }
       else
       {
-        for (int i = 0; i < len; i++)
+        if (prev)
+        for (int i = 0; i < len && start + i < prev_length; i++)
         {
-           if (prev && start + i < prev_length) // XXX move out of loop
-             vt_ctx_unrled (vt, prev[start + i]);
+          vt_ctx_unrled (vt, prev[start + i]);
         }
       }
       vt->ref_len = 0;
@@ -4198,7 +4200,7 @@ static void vt_state_ctx (VT *vt, int byte)
   }
   else
   {
-    if (vt->in_prev_match)
+    if (CTX_UNLIKELY(vt->in_prev_match))
     {
       if (vt->ref_len < 15)
       {
@@ -8582,7 +8584,9 @@ vt_get_selection (VT *vt)
           ctx_string_append_utf8char (str, c);
         }
       if (row < vt->select_end_row && !vt_line_is_continuation (vt, vt->rows-row-1))
-        ctx_string_append_byte (str, '\n');
+      {
+        _ctx_string_append_byte (str, '\n');
+      }
     }
   ret = str->str;
   ctx_string_free (str, 0);

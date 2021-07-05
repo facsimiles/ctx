@@ -65,9 +65,9 @@ static int a85dec (const char *src, char *dst, int count)
   {
     val *= 85;
 
-    if (src[i] == '~')
+    if (CTX_UNLIKELY(src[i] == '~'))
       break;
-    else if (src[i] == 'z')
+    else if (CTX_UNLIKELY(src[i] == 'z'))
     {
       for (int j = 0; j < 4; j++)
         dst[out_len++] = 0;
@@ -76,7 +76,7 @@ static int a85dec (const char *src, char *dst, int count)
     else
     {
       val += src[i]-'!';
-      if (k % 5 == 4)
+      if (CYX_UNLIKELY(k % 5 == 4))
       {
          for (int j = 0; j < 4; j++)
          {
