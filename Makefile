@@ -130,17 +130,17 @@ libctx.so: ctx.o ctx-avx2.o deps.o
 	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
-ctx: main.c ctx.h  build.conf Makefile convert/*.[ch] $(TERMINAL_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
+ctx: main.c ctx.h  build.conf Makefile media-handlers/*.[ch] $(TERMINAL_OBJS) libctx.a
+	$(CCC) main.c $(TERMINAL_OBJS) media-handlers/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
 
 ctx-O0.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) -O0
 
-ctx.O0: main.c ctx.h  build.conf Makefile convert/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
-	$(CCC) main.c $(TERMINAL_OBJS) convert/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
+ctx.O0: main.c ctx.h  build.conf Makefile media-handlers/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
+	$(CCC) main.c $(TERMINAL_OBJS) media-handlers/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
 
-ctx.static: main.c ctx.h  build.conf Makefile convert/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o 
-	$(CCC) main.c terminal/*.c convert/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
+ctx.static: main.c ctx.h  build.conf Makefile media-handlers/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o 
+	$(CCC) main.c terminal/*.c media-handlers/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile build.conf

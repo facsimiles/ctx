@@ -32,6 +32,7 @@ int ctx_img_main (int argc, char **argv);
 int ctx_gif_main (int argc, char **argv);
 int ctx_dir_main (int argc, char **argv);
 int ctx_mpg_main (int argc, char **argv);
+//int ctx_tcp_main (int argc, char **argv);
 
 int launch_main (int argc, char **argv)
 {
@@ -264,7 +265,6 @@ static const char *get_suffix (const char *path)
     { return ""; }
 }
 
-
 int main (int argc, char **argv)
 {
   for (int i = 1; argv[i]; i++)
@@ -276,6 +276,10 @@ int main (int argc, char **argv)
     {
       output_path = argv[i+1];
       i++;
+    }
+    else if (!strcmp (a, "-p"))
+    {
+      //return ctx_tcp_main (argc, argv);
     }
     else if (!strcmp (a, "-e"))
     {
@@ -289,7 +293,6 @@ int main (int argc, char **argv)
 
   if (output_path)
     return convert_main (argc, argv);
-
 
   if (argv[1] && !strcmp (argv[1], "thumb"))
     return thumb_main (argc-1, argv+1);
