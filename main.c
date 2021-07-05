@@ -32,7 +32,7 @@ int ctx_img_main (int argc, char **argv);
 int ctx_gif_main (int argc, char **argv);
 int ctx_dir_main (int argc, char **argv);
 int ctx_mpg_main (int argc, char **argv);
-//int ctx_tcp_main (int argc, char **argv);
+int ctx_tcp_main (int argc, char **argv);
 
 int launch_main (int argc, char **argv)
 {
@@ -279,7 +279,7 @@ int main (int argc, char **argv)
     }
     else if (!strcmp (a, "-p"))
     {
-      //return ctx_tcp_main (argc, argv);
+       return ctx_tcp_main (argc, argv);
     }
     else if (!strcmp (a, "-e"))
     {

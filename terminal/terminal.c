@@ -82,6 +82,7 @@ static void signal_child (int signum)
     }
 }
 
+#define VT_RECORD 0
 
 struct
 _CtxClient {
@@ -100,6 +101,9 @@ _CtxClient {
   int    unmaximized_height;
   int    do_quit;
   long   drawn_rev;
+#if VT_RECORD
+  Ctx   *recording;
+#endif
   int    id;
   int    internal; // render a settings window rather than a vt
 };
@@ -358,6 +362,11 @@ void client_remove (Ctx *ctx, CtxClient *client)
   if (client->title)
     free (client->title);
 
+#if VT_RECORD
+  if (client->recording)
+    ctx_free (client->recording);
+#endif
+
   ctx_list_remove (&clients, client);
   if (clients == NULL)
     ctx_quit (ctx);//
@@ -524,9 +533,12 @@ void client_shade_toggle (int id)
 void client_move (int id, int x, int y)
 {
    CtxClient *client = client_by_id (id);
-   if (!client) return;
-   client->x = x;
-   client->y = y;
+   if (client && (client->x != x || client->y != y))
+   {
+     client->x = x;
+     client->y = y;
+     vt_rev_inc (client->vt);
+   }
 }
 
 int client_resize (int id, int width, int height)
@@ -575,7 +587,7 @@ static void client_titlebar_drag (CtxEvent *event, void *data, void *data2)
 
   client_move (client->id, new_x, new_y);
 
-  vt_rev_inc (client->vt);
+  //vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
 
   event->stop_propagate = 1;
@@ -716,8 +728,6 @@ static void client_close (CtxEvent *event, void *data, void *data2)
 }
 
 /********************/
-
-
 void vt_use_images (VT *vt, Ctx *ctx);
 static float _ctx_green = 0.5;
 
@@ -726,8 +736,6 @@ static void client_draw (ITK *itk, CtxClient *client, float x, float y)
     Ctx *ctx = itk->ctx;
     if (client->internal)
     {
-      //vt_draw (active->vt, ctx, 0, 0);//titlebar_height);
-      //active->drawn_rev = vt_rev (active->vt);
       ctx_save (ctx);
 
       ctx_translate (ctx, x, y);
@@ -757,9 +765,30 @@ static void client_draw (ITK *itk, CtxClient *client, float x, float y)
     }
     else
     {
+      int rev = vt_rev (client->vt);
+#if VT_RECORD
+      if (client->drawn_rev != rev)
+      {
+        if (!client->recording)
+          client->recording = ctx_new ();
+        else
+          ctx_reset (client->recording);
+        vt_draw (client->vt, client->recording, 0.0, 0.0);
+      }
+
+      if (client->recording)
+      {
+        ctx_save (ctx);
+        ctx_translate (ctx, x, y);
+        ctx_render_ctx (client->recording, ctx);
+        vt_register_events (client->vt, ctx, 0.0, 0.0);
+        ctx_restore (ctx);
+      }
+#else
       vt_draw (client->vt, ctx, x, y);
       vt_register_events (client->vt, ctx, x, y);
-      client->drawn_rev = vt_rev (client->vt);
+#endif
+      client->drawn_rev = rev;
     }
 }
 
@@ -768,8 +797,27 @@ static void client_use_images (ITK *itk, CtxClient *client)
   Ctx *ctx = itk->ctx;
   if (!client->internal)
   {
+      uint32_t rev = vt_rev (client->vt);
+#if VT_RECORD
+      if (client->drawn_rev != rev)
+      {
+        if (!client->recording)
+          client->recording = ctx_new ();
+        else
+          ctx_reset (client->recording);
+        vt_draw (client->vt, client->recording, 0.0, 0.0);
+      }
+
+      if (client->recording)
+      {
+        ctx_save (ctx);
+        ctx_render_ctx_textures (client->recording, ctx);
+        ctx_restore (ctx);
+      }
+#else
     vt_use_images (client->vt, ctx);
-    client->drawn_rev = vt_rev (client->vt);
+#endif
+    client->drawn_rev = rev;
   }
 }
 
@@ -973,8 +1021,6 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     }
 }
 
-static int dirty = 0;
-
 int ctx_count (Ctx *ctx);
 
 static int client_dirty_count (void)
@@ -1135,26 +1181,10 @@ static int draw_vts (ITK *itk, Ctx *ctx)
       else
       {
         client_use_images (itk, client);
-        // XXX  doing all use_images in one batch
-        //      with one clip would be a big performance improvement
-        //      while we have overhed for clipping
       }
     }
   }
 
-#if 0
-  //float px = ctx_pointer_x (ctx);
-  //float py = ctx_pointer_y (ctx);
-  if (clients &&  clients->next == NULL &&  ((CtxClient*)(clients->data))->maximized)
-  {
-    CtxClient *client = clients->data;
-    VT *vt = client->vt;
-    vt_draw (vt, ctx, client->x, client->y);
-    client->drawn_rev = vt_rev (vt);
-    //vt_draw (vt, ctx, 0, 0);
-  }
-  else
-#endif
   {
   for (CtxList *l = clients; l; l = l->next)
   {
@@ -1171,7 +1201,7 @@ static int draw_vts (ITK *itk, Ctx *ctx)
         client_draw (itk, client, client->x, client->y);
       }
 
-      // register resize regions
+      // resize regions
       if (client == active && !client->shaded &&  !client->maximized)
       {
         itk_style_color (ctx, "titlebar-focused-bg");
@@ -1182,7 +1212,7 @@ static int draw_vts (ITK *itk, Ctx *ctx)
                        client->width, titlebar_height);
         ctx_listen (ctx, CTX_DRAG, client_resize_n, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_N);
-        ctx_begin_path (ctx); //ctx_fill (ctx);
+        ctx_begin_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x,
@@ -1190,7 +1220,7 @@ static int draw_vts (ITK *itk, Ctx *ctx)
                        client->width, titlebar_height * 2);
         ctx_listen (ctx, CTX_DRAG, client_resize_s, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_S);
-        ctx_begin_path (ctx); //ctx_fill (ctx);
+        ctx_begin_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x + client->width,
@@ -1198,7 +1228,7 @@ static int draw_vts (ITK *itk, Ctx *ctx)
                        titlebar_height, client->height + titlebar_height);
         ctx_listen (ctx, CTX_DRAG, client_resize_e, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_E);
-        ctx_begin_path (ctx); //ctx_fill (ctx);
+        ctx_begin_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x - titlebar_height,
@@ -1206,7 +1236,7 @@ static int draw_vts (ITK *itk, Ctx *ctx)
                        titlebar_height, client->height + titlebar_height);
         ctx_listen (ctx, CTX_DRAG, client_resize_w, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_W);
-        ctx_begin_path (ctx); //ctx_fill (ctx);
+        ctx_begin_path (ctx); 
 
         ctx_rectangle (ctx,
                        client->x + client->width - titlebar_height,
@@ -1230,7 +1260,7 @@ static int draw_vts (ITK *itk, Ctx *ctx)
                        titlebar_height * 2, titlebar_height * 2);
         ctx_listen (ctx, CTX_DRAG, client_resize_sw, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_SW);
-        ctx_begin_path (ctx); //ctx_fill (ctx);
+        ctx_begin_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x + client->width - titlebar_height,
@@ -1238,7 +1268,7 @@ static int draw_vts (ITK *itk, Ctx *ctx)
                        titlebar_height * 2, titlebar_height * 2);
         ctx_listen (ctx, CTX_DRAG, client_resize_se, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_SE);
-        ctx_begin_path (ctx); //ctx_fill (ctx);
+        ctx_begin_path (ctx);
 
       }
 
@@ -1348,7 +1378,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
          key = cap;
          if (cap->hovered != 1)
          {
-           dirty ++;
+           ctx_set_dirty (ctx, 1);
          }
          cap->hovered = 1;
        }
@@ -1367,19 +1397,19 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
      default:
        break;
      case CTX_MOTION:
-         dirty ++;
+         ctx_set_dirty (ctx, 1);
        break;
      case CTX_DRAG_MOTION:
        if (!key)
-         dirty ++;
+         ctx_set_dirty (ctx, 1);
        break;
      case CTX_DRAG_PRESS:
        kb->down = 1;
-       dirty ++;
+       ctx_set_dirty (ctx, 1);
        break;
      case CTX_DRAG_RELEASE:
        kb->down = 0;
-        dirty ++;
+        ctx_set_dirty (ctx, 1);
        if (!key)
          return;
 
@@ -1679,7 +1709,7 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
       !strcmp (event->string, "resize-event"))
   {
     ensure_layout ();
-    dirty++;
+    ctx_set_dirty (ctx, 1);
   }
   else
   {
@@ -2003,9 +2033,8 @@ int terminal_main (int argc, char **argv)
 
       int pending_data = 0;
 
-      if (changes) // || ctx_is_dirty(ctx))//|| dirty) // || dirty || ctx_is_dirty (ctx))
+      if (changes)// || ctx_is_dirty(ctx))//|| dirty) // || dirty || ctx_is_dirty (ctx))
       {
-        dirty = 0;
         itk_reset (itk);
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         itk_style_color (ctx, "wallpaper");

@@ -8158,10 +8158,7 @@ void vt_use_images (VT *vt, Ctx *ctx)
   //vt->has_blink = 0;
   //vt->blink_state++;
 
-  ctx_begin_path (ctx);
   ctx_save (ctx);
-  ctx_rectangle (ctx ,0,0,4,4);
-  ctx_clip (ctx);
 
   {
     /* draw graphics */
@@ -8182,7 +8179,7 @@ void vt_use_images (VT *vt, Ctx *ctx)
            VtLine *line = l->data;
            if (line->ctx_copy)
              {
-               ctx_render_ctx (line->ctx_copy, ctx);
+               ctx_render_ctx_textures (line->ctx_copy, ctx);
              }
          }
     }
@@ -8492,7 +8489,6 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       ctx_rgb (ctx,1,0,0);
       ctx_fill (ctx);
 #endif
-
 
       ctx_rectangle (ctx, (vt->width) - vt->cw * 1.5,
                      0, 1.5 * vt->cw,
