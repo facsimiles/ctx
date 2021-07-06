@@ -29,7 +29,7 @@
  */
 #ifndef CTX_SUBDIV
 #define CTX_SUBDIV   8  //  max framebufer width 4095
-//#define CTX_SUBDIV    10  //  max framebufer width 3250
+//#define CTX_SUBDIV  10  //  max framebufer width 3250
 //#define CTX_SUBDIV  16  //  max framebufer width 2047
 //#define CTX_SUBDIV  24  //  max framebufer width 1350
 //#define CTX_SUBDIV  32  //  max framebufer width 1023
@@ -139,7 +139,7 @@
 #endif
 
 #ifndef CTX_FONTS_FROM_FILE
-#define CTX_FONTS_FROM_FILE 1
+#define CTX_FONTS_FROM_FILE  0
 #endif
 
 #ifndef CTX_FORMATTER
@@ -564,7 +564,7 @@
 #endif
 
 #ifndef CTX_AUDIO
-#define CTX_AUDIO 1
+#define CTX_AUDIO 0
 #endif
 
 #ifndef CTX_TILED
