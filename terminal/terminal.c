@@ -84,14 +84,14 @@ static void signal_child (int signum)
 
 #define VT_RECORD 0
 
-typedef enum ItkClientFlags {
+typedef enum CtxClientFlags {
   ITK_CLIENT_UI_RESIZABLE = 1<<0,
   ITK_CLIENT_CAN_LAUNCH   = 1<<1,
   ITK_CLIENT_MAXIMIZED    = 1<<2,
   ITK_CLIENT_ICONIFIED    = 1<<3,
   ITK_CLIENT_SHADED       = 1<<4,
   ITK_CLIENT_TITLEBAR     = 1<<5
-} ItkClientFlags;
+} CtxClientFlags;
 
 struct
 _CtxClient {
@@ -101,7 +101,7 @@ _CtxClient {
   int    y;
   int    width;
   int    height;
-  ItkClientFlags flags;
+  CtxClientFlags flags;
 #if 0
   int    shaded;
   int    iconified;
@@ -227,7 +227,7 @@ CtxClient *vt_find_client (VT *vt)
 
 CtxClient *client_new (const char *commandline,
                        int x, int y, int width, int height,
-                       ItkClientFlags flags)
+                       CtxClientFlags flags)
 {
   static int global_id = 0;
   CtxClient *client = calloc (sizeof (CtxClient), 1);
@@ -243,7 +243,7 @@ CtxClient *client_new (const char *commandline,
   return client;
 }
 
-CtxClient *client_new_argv (const char **argv, int x, int y, int width, int height, ItkClientFlags flags)
+CtxClient *client_new_argv (const char **argv, int x, int y, int width, int height, CtxClientFlags flags)
 {
   CtxString *string = ctx_string_new ("");
   for (int i = 0; argv[i]; i++)
@@ -1047,9 +1047,7 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     }
 }
 
-int ctx_count (Ctx *ctx);
-
-static int clients_dirty_count (void)
+static int ctx_clients_dirty_count (void)
 {
   int changes = 0;
   for (CtxList *l = clients; l; l = l->next)
@@ -1094,8 +1092,6 @@ static float client_max_y_pos (Ctx *ctx)
 {
   return ctx_height (ctx);
 }
-
-
 
 void draw_titlebar (ITK *itk, Ctx *ctx, CtxClient *client,
                     float x, float y, float width, float titlebar_height)
@@ -1866,6 +1862,7 @@ void draw_mini_panel (Ctx *ctx)
 static char *set_title = NULL;
 void vt_audio_task (VT *vt, int click);
 
+
 static void
 terminal_update_title (const char *title)
 {
@@ -1945,7 +1942,7 @@ int clients_need_redraw (Ctx *ctx)
      ctx_list_remove (&to_remove, to_remove->data);
    }
 
-   changes += clients_dirty_count ();
+   changes += ctx_clients_dirty_count ();
    return changes != 0;
 }
 
@@ -2049,7 +2046,7 @@ int terminal_main (int argc, char **argv)
   ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 
   //int sleep_time = 1000000/10;
-  float target_fps = 20.0;
+  float target_fps = 25.0;
   int fetched_bytes = 1;
 
   int print_shape_cache_rate = 0;
@@ -2127,7 +2124,7 @@ int terminal_main (int argc, char **argv)
       }
       else
       {
-        target_fps = target_fps * 0.95 + 20.0 * 0.05;
+        target_fps = target_fps * 0.95 + 30.0 * 0.05;
 
         // 20fps is the lowest where sun 8bit ulaw 8khz works reliably
       }
