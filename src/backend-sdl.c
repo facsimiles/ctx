@@ -65,9 +65,11 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
 #endif
 }
 
+int ctx_show_fps = 1;
 void ctx_sdl_set_title (void *self, const char *new_title)
 {
    CtxSDL *sdl = self;
+   if (!ctx_show_fps)
    SDL_SetWindowTitle (sdl->window, new_title);
 }
 
@@ -161,6 +163,7 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
       return;
   }
 
+
   if (tiled->min_row == 100)
   {
   }
@@ -188,6 +191,17 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     SDL_RenderClear (sdl->renderer);
     SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
     SDL_RenderPresent (sdl->renderer);
+
+
+  if (ctx_show_fps)
+  {
+    static uint64_t prev_time = 0;
+    static char tmp_title[1024];
+    uint64_t time = ctx_ticks ();
+    sprintf (tmp_title, "FPS: %.1f", 1000000.0/  (time - prev_time));
+    prev_time = time;
+    SDL_SetWindowTitle (sdl->window, tmp_title);
+  }
   }
   tiled->shown_frame = tiled->render_frame;
 }
@@ -570,6 +584,9 @@ Ctx *ctx_new_sdl (int width, int height)
   babl_init ();
 #endif
   sdl->fullscreen = 0;
+
+
+  ctx_show_fps = getenv ("CTX_SHOW_FPS")!=NULL;
 
   ctx_sdl_events = 1;
   sdl->texture = SDL_CreateTexture (sdl->renderer,
