@@ -30,6 +30,9 @@ LIBS  += -lz -lm -lpthread
 
 TERMINAL_CFILES = $(wildcard terminal/*.c)
 TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
+MEDIA_HANDLERS_CFILES = $(wildcard media-handlers/*.c)
+MEDIA_HANDLERS_OBJS   = $(MEDIA_HANDLERS_CFILES:.c=.o)
+
 
 
 SRC_CFILES = $(wildcard src/*.c)
@@ -82,6 +85,7 @@ clean:
 	rm -f libctx.a libctx.so
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
+	rm -f $(MEDIA_HANDLERS_OBJS)
 	rm -f $(SRC_OBJS)
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
@@ -124,20 +128,16 @@ src/%.o: src/%.c split/*.h
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h demos/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
+media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h demos/itk.h
+	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o ctx-avx2.o deps.o build.conf Makefile
 	$(AR) rcs $@ $?
 libctx.so: ctx.o ctx-avx2.o deps.o
 	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
-ctx: main.c ctx.h  build.conf Makefile media-handlers/*.[ch] $(TERMINAL_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) media-handlers/*.c -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
-
-ctx-O0.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctx-font-ascii.h
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) -O0
-
-ctx.O0: main.c ctx.h  build.conf Makefile media-handlers/*.[ch] ctx-O0.o $(TERMINAL_OBJS) deps.o
-	$(CCC) main.c $(TERMINAL_OBJS) media-handlers/*.c -o $@ $(CFLAGS) $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) ctx-O0.o deps.o -O0
+ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
+	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
 
 ctx.static: main.c ctx.h  build.conf Makefile media-handlers/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o 
 	$(CCC) main.c terminal/*.c media-handlers/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
@@ -175,10 +175,6 @@ afl/ctx: ctx.h
 	make clean
 	CC=../afl/afl-2.52b/afl-gcc make ctx -j5
 	cp ctx afl/ctx
-
-ctx.com: ctx.h Makefile ctx.c
-	gcc -g -Os -static -nostdlib -nostdinc -fno-pie -no-pie -mno-red-zone -fno-omit-frame-pointer -pg -mnop-mcount -o ctx.com.dbg  ctx.c terminal/*.c   -fuse-ld=bfd -Wl,-T,../cosmopolitan/ape.lds -include ../cosmopolitan/cosmopolitan.h ../cosmopolitan/crt.o ../cosmopolitan/ape.o ../cosmopolitan/cosmopolitan.a -DNO_LIBCURL -DNO_SDL -DNO_ALSA -DNO_BABL -Ifonts -Ideps -I. -Iterminal
-	objcopy -S -O binary ctx.com.dbg ctx.com
 
 flatpak:
 	rm -rf build-dir;flatpak-builder --user build-dir meta/graphics.ctx.terminal.yml
