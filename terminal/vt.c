@@ -65,21 +65,21 @@
 #include "vt-line.h"
 #include "vt.h"
 
-int client_height (int id);
-int client_x (int id);
-int client_y (int id);
-void client_move (int id, int x, int y);
-int client_resize (int id, int width, int height);
-void client_raise_top (int id);
-void client_lower_bottom (int id);
-void client_shade (int id);
-void client_unshade (int id);
-void client_iconify (int id);
-void client_deiconify (int id);
-void client_maximize (int id);
-void client_unmaximize (int id);
-void client_toggle_maximized (int id);
-int client_is_iconified (int id);
+int  ctx_client_height (int id);
+int  ctx_client_x (int id);
+int  ctx_client_y (int id);
+void ctx_client_move (int id, int x, int y);
+int  ctx_client_resize (int id, int width, int height);
+void ctx_client_raise_top (int id);
+void ctx_client_lower_bottom (int id);
+void ctx_client_shade (int id);
+void ctx_client_unshade (int id);
+void ctx_client_iconify (int id);
+void ctx_client_deiconify (int id);
+void ctx_client_maximize (int id);
+void ctx_client_unmaximize (int id);
+void ctx_client_toggle_maximized (int id);
+int  ctx_client_is_iconified (int id);
 
 
 #define VT_LOG_INFO     (1<<0)
@@ -2329,7 +2329,7 @@ static int vt_get_prop (VT *vt, const char *key, const char **val, int *len)
   uint32_t key_hash = ctx_strhash (key, 0);
   char str[4096]="";
   fprintf (stderr, "%s: %s %i\n", __FUNCTION__, key, key_hash);
-  CtxClient *client = client_by_id (ct->id);
+  CtxClient *client = ctx_client_by_id (ct->id);
   if (!client)
     return 0;
   switch (key_hash)
@@ -2750,12 +2750,12 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
 static void vtcmd_set_t (VT *vt, const char *sequence)
 {
   /* \e[21y is request title - allows inserting keychars */
-  if      (!strcmp (sequence,  "[1t")) { client_unshade (vt->id); }
-  else if (!strcmp (sequence,  "[2t")) { client_shade (vt->id); } 
+  if      (!strcmp (sequence,  "[1t")) { ctx_client_unshade (vt->id); }
+  else if (!strcmp (sequence,  "[2t")) { ctx_client_shade (vt->id); } 
   else if (!strncmp (sequence, "[3;", 3)) {
     int x=0,y=0;
     sscanf (sequence, "[3;%i;%ir", &y, &x);
-    client_move (vt->id, x, y);
+    ctx_client_move (vt->id, x, y);
   }
   else if (!strncmp (sequence, "[4;", 3))
   {
@@ -2765,10 +2765,10 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
     if (height < 0) height = vt->rows * vt->ch;
     if (width == 0) width = ctx_width (vt->root_ctx);
     if (height == 0) height = ctx_height (vt->root_ctx);
-    client_resize (vt->id, width, height);
+    ctx_client_resize (vt->id, width, height);
   }
-  else if (!strcmp (sequence, "[5t") ) { client_raise_top (vt->id); } 
-  else if (!strcmp (sequence, "[6t") ) { client_lower_bottom (vt->id); } 
+  else if (!strcmp (sequence, "[5t") ) { ctx_client_raise_top (vt->id); } 
+  else if (!strcmp (sequence, "[6t") ) { ctx_client_lower_bottom (vt->id); } 
   else if (!strcmp (sequence, "[7t") ) { vt->rev++; /* refresh */ }
   else if (!strncmp (sequence, "[8;", 3) )
   {
@@ -2778,20 +2778,20 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
     if (rows < 0) rows = vt->rows;
     if (cols == 0) cols = ctx_width (vt->root_ctx) / vt->cw;
     if (rows == 0) rows = ctx_height (vt->root_ctx) / vt->ch;
-    client_resize (vt->id, cols * vt->cw, rows * vt->ch);
+    ctx_client_resize (vt->id, cols * vt->cw, rows * vt->ch);
   }
-  else if (!strcmp (sequence, "[9;0t") ) { client_unmaximize (vt->id); } 
-  else if (!strcmp (sequence, "[9;1t") ) { client_maximize (vt->id);} 
+  else if (!strcmp (sequence, "[9;0t") ) { ctx_client_unmaximize (vt->id); } 
+  else if (!strcmp (sequence, "[9;1t") ) { ctx_client_maximize (vt->id);} 
 
   /* should actually be full-screen */
-  else if (!strcmp (sequence, "[10;0t") ) { client_unmaximize (vt->id); } 
-  else if (!strcmp (sequence, "[10;1t") ) { client_maximize (vt->id);} 
-  else if (!strcmp (sequence, "[10;2t") ) { client_toggle_maximized (vt->id);} 
+  else if (!strcmp (sequence, "[10;0t") ) { ctx_client_unmaximize (vt->id); } 
+  else if (!strcmp (sequence, "[10;1t") ) { ctx_client_maximize (vt->id);} 
+  else if (!strcmp (sequence, "[10;2t") ) { ctx_client_toggle_maximized (vt->id);} 
 
   else if (!strcmp (sequence, "[11t") )  /* report window state  */
     {
       char buf[128];
-      if (client_is_iconified (vt->id))
+      if (ctx_client_is_iconified (vt->id))
         sprintf (buf, "\033[2t");
       else
         sprintf (buf, "\033[1t");
@@ -2800,7 +2800,7 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   else if (!strcmp (sequence, "[13t") ) /* request terminal position */
     {
       char buf[128];
-      sprintf (buf, "\033[3;%i;%it", client_y (vt->id), client_x (vt->id));
+      sprintf (buf, "\033[3;%i;%it", ctx_client_y (vt->id), ctx_client_x (vt->id));
       vt_write (vt, buf, strlen (buf) );
     }
   else if (!strcmp (sequence, "[14t") ) /* request terminal dimensions in px */
@@ -8100,7 +8100,7 @@ static void scrollbar_drag (CtxEvent *event, void *data, void *data2)
   float disp_lines = vt->rows;
   float tot_lines = vt->line_count + vt->scrollback_count;
 
-  vt->scroll = tot_lines - disp_lines - (event->y*1.0/ client_height (vt->id)) * tot_lines + disp_lines/2;
+  vt->scroll = tot_lines - disp_lines - (event->y*1.0/ ctx_client_height (vt->id)) * tot_lines + disp_lines/2;
   if (vt->scroll < 0) { vt->scroll = 0.0; }
   if (vt->scroll > vt->scrollback_count) { vt->scroll = vt->scrollback_count; }
   vt->rev++;
@@ -8140,8 +8140,8 @@ static void test_popup (Ctx *ctx, void *data)
 {
   VT *vt = data;
 
-  float x = client_x (vt->id);
-  float y = client_y (vt->id);
+  float x = ctx_client_x (vt->id);
+  float y = ctx_client_y (vt->id);
   ctx_rectangle (ctx, x, y, 100, 100);
   ctx_rgb (ctx, 1,0,0);
   ctx_fill (ctx);

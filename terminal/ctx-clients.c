@@ -137,7 +137,7 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
   }
 #else
   float fval = strtod (val, NULL);
-  CtxClient *client = client_by_id (ct->id);
+  CtxClient *client = ctx_client_by_id (ct->id);
   uint32_t val_hash = ctx_strhash (val, 0);
   if (!client)
     return 0;
@@ -162,20 +162,20 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 
   switch (key_hash)
   {
-    case CTX_title:  client_set_title (ct->id, val); break;
+    case CTX_title:  ctx_client_set_title (ct->id, val); break;
     case CTX_x:      client->x = fval; break;
     case CTX_y:      client->y = fval; break;
-    case CTX_width:  client_resize (ct->id, fval, client->height); break;
-    case CTX_height: client_resize (ct->id, client->width, fval); break;
+    case CTX_width:  ctx_client_resize (ct->id, fval, client->height); break;
+    case CTX_height: ctx_client_resize (ct->id, client->width, fval); break;
     case CTX_action:
       switch (val_hash)
       {
-        case CTX_maximize:     client_maximize (client); break;
-        case CTX_unmaximize:   client_unmaximize (client); break;
-        case CTX_lower:        client_lower (client); break;
-        case CTX_lower_bottom: client_lower_bottom (client);  break;
-        case CTX_raise:        client_raise (client); break;
-        case CTX_raise_top:    client_raise_top (client); break;
+        case CTX_maximize:     ctx_client_maximize (client); break;
+        case CTX_unmaximize:   ctx_client_unmaximize (client); break;
+        case CTX_lower:        ctx_client_lower (client); break;
+        case CTX_lower_bottom: ctx_client_lower_bottom (client);  break;
+        case CTX_raise:        ctx_client_raise (client); break;
+        case CTX_raise_top:    ctx_client_raise_top (client); break;
       }
       break;
   }
@@ -191,10 +191,10 @@ CtxList *clients = NULL;
 CtxClient *active = NULL;
 CtxClient *active_tab = NULL;
 
-static CtxClient *client_by_id (int id);
+static CtxClient *ctx_client_by_id (int id);
 
-int client_resize (int id, int width, int height);
-void client_maximize (int id);
+int ctx_client_resize (int id, int width, int height);
+void ctx_client_maximize (int id);
 
 CtxClient *vt_find_client (VT *vt)
 {
@@ -207,9 +207,9 @@ CtxClient *vt_find_client (VT *vt)
   return NULL;
 }
 
-CtxClient *client_new (const char *commandline,
-                       int x, int y, int width, int height,
-                       CtxClientFlags flags)
+CtxClient *ctx_client_new (const char *commandline,
+                           int x, int y, int width, int height,
+                           CtxClientFlags flags)
 {
   static int global_id = 0;
   CtxClient *client = calloc (sizeof (CtxClient), 1);
@@ -225,7 +225,7 @@ CtxClient *client_new (const char *commandline,
   return client;
 }
 
-CtxClient *client_new_argv (const char **argv, int x, int y, int width, int height, CtxClientFlags flags)
+CtxClient *ctx_client_new_argv (const char **argv, int x, int y, int width, int height, CtxClientFlags flags)
 {
   CtxString *string = ctx_string_new ("");
   for (int i = 0; argv[i]; i++)
@@ -243,7 +243,7 @@ CtxClient *client_new_argv (const char **argv, int x, int y, int width, int heig
        }
     }
   }
-  CtxClient *ret = client_new (string->str, x, y, width, height, flags);
+  CtxClient *ret = ctx_client_new (string->str, x, y, width, height, flags);
   ctx_string_free (string, 1);
   return ret;
 }
@@ -298,11 +298,11 @@ int id_to_no (int id)
   return -1;
 }
 
-void client_move (int id, int x, int y);
-int client_resize (int id, int w, int h);
-void client_shade_toggle (int id);
-float client_min_y_pos (Ctx *ctx);
-float client_max_y_pos (Ctx *ctx);
+void ctx_client_move (int id, int x, int y);
+int ctx_client_resize (int id, int w, int h);
+void ctx_client_shade_toggle (int id);
+float ctx_client_min_y_pos (Ctx *ctx);
+float ctx_client_max_y_pos (Ctx *ctx);
 
 #if 0
 void ensure_layout ()
@@ -313,8 +313,8 @@ void ensure_layout ()
     CtxClient *client = clients->data;
     if (client->flags & ITK_CLIENT_MAXIMIZED)
     {
-      client_move (client->id, 0, 0);
-      client_resize (client->id, ctx_width (ctx), ctx_height(ctx));
+      ctx_client_move (client->id, 0, 0);
+      ctx_client_resize (client->id, ctx_width (ctx), ctx_height(ctx));
       if (active_tab == NULL)
         active_tab = client;
     }
@@ -325,9 +325,9 @@ void ensure_layout ()
     CtxClient *client = l->data;
     if (client->flags & ITK_CLIENT_MAXIMIZED)
     {
-      client_move   (client->id, 0, client_min_y_pos (ctx));
-      client_resize (client->id, ctx_width (ctx), ctx_height(ctx) -
-                      client_min_y_pos (ctx) / 2);   // /2 to counter the double titlebar of non-maximized
+      ctx_client_move   (client->id, 0, client_min_y_pos (ctx));
+      ctx_client_resize (client->id, ctx_width (ctx), ctx_height(ctx) -
+                      ctx_client_min_y_pos (ctx) / 2);   // /2 to counter the double titlebar of non-maximized
       if (active_tab == NULL)
         active_tab = client;
     }
@@ -335,7 +335,7 @@ void ensure_layout ()
 }
 #endif
 
-static CtxClient *client_by_id (int id)
+static CtxClient *ctx_client_by_id (int id)
 {
   for (CtxList *l = clients; l; l = l->next)
   {
@@ -346,7 +346,7 @@ static CtxClient *client_by_id (int id)
   return NULL;
 }
 
-void client_remove (Ctx *ctx, CtxClient *client)
+void ctx_client_remove (Ctx *ctx, CtxClient *client)
 {
   if (!client->internal)
   {
@@ -381,76 +381,76 @@ void client_remove (Ctx *ctx, CtxClient *client)
 }
 
 #if 0
-void client_remove_by_id (int id)
+void ctx_client_remove_by_id (int id)
 {
   int no = id_to_no (id);
   if (no>=0)
-    client_remove (no);
+    ctx_client_remove (no);
 }
 #endif
 
-int client_height (int id)
+int ctx_client_height (int id)
 {
-  CtxClient *client = client_by_id (id);
+  CtxClient *client = ctx_client_by_id (id);
   if (!client) return 0;
   return client->height;
 }
 
-int client_x (int id)
+int ctx_client_x (int id)
 {
-  CtxClient *client = client_by_id (id);
+  CtxClient *client = ctx_client_by_id (id);
   if (!client) return 0;
   return client->x;
 }
 
-int client_y (int id)
+int ctx_client_y (int id)
 {
-  CtxClient *client = client_by_id (id);
+  CtxClient *client = ctx_client_by_id (id);
   if (!client) return 0;
   return client->y;
 }
 
-void client_raise_top (int id)
+void ctx_client_raise_top (int id)
 {
-  CtxClient *client = client_by_id (id);
+  CtxClient *client = ctx_client_by_id (id);
   if (!client) return;
   ctx_list_remove (&clients, client);
   ctx_list_append (&clients, client);
 }
 
-void client_lower_bottom (int id)
+void ctx_client_lower_bottom (int id)
 {
-  CtxClient *client = client_by_id (id);
+  CtxClient *client = ctx_client_by_id (id);
   if (!client) return;
   ctx_list_remove (&clients, client);
   ctx_list_prepend (&clients, client);
 }
 
 
-void client_iconify (int id)
+void ctx_client_iconify (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return;
    client->flags |= ITK_CLIENT_ICONIFIED;
 }
 
-int client_is_iconified (int id)
+int ctx_client_is_iconified (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return -1;
    return (client->flags & ITK_CLIENT_ICONIFIED) != 0;
 }
 
-void client_uniconify (int id)
+void ctx_client_uniconify (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return;
    client->flags &= ~ITK_CLIENT_ICONIFIED;
 }
 
-void client_maximize (int id)
+void ctx_client_maximize (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return;
    if (client->flags &  ITK_CLIENT_MAXIMIZED)
      return;
@@ -461,84 +461,84 @@ void client_maximize (int id)
    client->unmaximized_height = client->height;
 
    // enforce_layout does the size
-   //client_resize (id, ctx_width (ctx), ctx_height(ctx) - client_min_y_pos (ctx));
+   //client_resize (id, ctx_width (ctx), ctx_height(ctx) - ctx_client_min_y_pos (ctx));
    
-   client_move (id, 0, client_min_y_pos (ctx));
+   ctx_client_move (id, 0, ctx_client_min_y_pos (ctx));
    active_tab = client;
 }
 
-int client_is_maximized (int id)
+int ctx_client_is_maximized (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return -1;
    return (client->flags & ITK_CLIENT_MAXIMIZED) != 0;
 }
 
-void client_unmaximize (int id)
+void ctx_client_unmaximize (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return;
    if ((client->flags & ITK_CLIENT_MAXIMIZED) == 0)
      return;
    client->flags &= ~ITK_CLIENT_MAXIMIZED;
-   client_resize (id, client->unmaximized_width, client->unmaximized_height);
-   client_move (id, client->unmaximized_x, client->unmaximized_y);
+   ctx_client_resize (id, client->unmaximized_width, client->unmaximized_height);
+   ctx_client_move (id, client->unmaximized_x, client->unmaximized_y);
    active_tab = NULL;
 }
 
-void client_maximized_toggle (int id)
+void ctx_client_maximized_toggle (int id)
 {
-  if (client_is_maximized (id))
-    client_unmaximize (id);
+  if (ctx_client_is_maximized (id))
+    ctx_client_unmaximize (id);
   else
-    client_maximize (id);
+    ctx_client_maximize (id);
 }
 
 
-void client_shade (int id)
+void ctx_client_shade (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return;
    client->flags |= ITK_CLIENT_SHADED;
 }
 
-int client_is_shaded (int id)
+int ctx_client_is_shaded (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return -1;
    return (client->flags & ITK_CLIENT_SHADED) != 0;
 }
 
-void client_unshade (int id)
+void ctx_client_unshade (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return;
    client->flags &= ~ITK_CLIENT_SHADED;
 }
 
-void client_toggle_maximized (int id)
+void ctx_client_toggle_maximized (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return;
-   if (client_is_maximized (id))
-     client_unmaximize (id);
+   if (ctx_client_is_maximized (id))
+     ctx_client_unmaximize (id);
    else
-     client_maximize (id);
+     ctx_client_maximize (id);
 }
 
-void client_shade_toggle (int id)
+void ctx_client_shade_toggle (int id)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (!client) return;
-   if (client_is_shaded (id))
-    client_shade (id);
+   if (ctx_client_is_shaded (id))
+    ctx_client_shade (id);
    else
-    client_unshade (id);
+    ctx_client_unshade (id);
 }
 
-void client_move (int id, int x, int y)
+void ctx_client_move (int id, int x, int y)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
    if (client && (client->x != x || client->y != y))
    {
      client->x = x;
@@ -547,9 +547,9 @@ void client_move (int id, int x, int y)
    }
 }
 
-int client_resize (int id, int width, int height)
+int ctx_client_resize (int id, int width, int height)
 {
-   CtxClient *client = client_by_id (id);
+   CtxClient *client = ctx_client_by_id (id);
 
    if (client && ((height != client->height) || (width != client->width) ))
    {
@@ -562,7 +562,7 @@ int client_resize (int id, int width, int height)
    return 0;
 }
 
-static void client_titlebar_drag (CtxEvent *event, void *data, void *data2)
+static void ctx_client_titlebar_drag (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
 
@@ -572,7 +572,7 @@ static void client_titlebar_drag (CtxEvent *event, void *data, void *data2)
     if (event->time - prev_drag_end_time < 500)
     {
       //client_shade_toggle (client->id);
-      client_maximized_toggle (client->id);
+      ctx_client_maximized_toggle (client->id);
     }
     prev_drag_end_time = event->time;
   }
@@ -585,13 +585,13 @@ static void client_titlebar_drag (CtxEvent *event, void *data, void *data2)
   if (ctx_renderer_is_term (event->ctx))
      snap_threshold = 1;
 
-  if (new_y < client_min_y_pos (ctx)) new_y = client_min_y_pos (ctx);
-  if (new_y > client_max_y_pos (ctx)) new_y = client_max_y_pos (ctx);
+  if (new_y < ctx_client_min_y_pos (ctx)) new_y = ctx_client_min_y_pos (ctx);
+  if (new_y > ctx_client_max_y_pos (ctx)) new_y = ctx_client_max_y_pos (ctx);
 
   if (fabs (new_x - 0) < snap_threshold) new_x = 0.0;
   if (fabs (ctx_width (event->ctx) - (new_x + client->width)) < snap_threshold) new_x = ctx_width (ctx) - client->width;
 
-  client_move (client->id, new_x, new_y);
+  ctx_client_move (client->id, new_x, new_y);
 
   //vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
@@ -601,59 +601,59 @@ static void client_titlebar_drag (CtxEvent *event, void *data, void *data2)
 
 static float min_win_dim = 32;
 
-static void client_resize_se (CtxEvent *event, void *data, void *data2)
+static void ctx_client_resize_se (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
   int new_w = client->width + event->delta_x;
   int new_h = client->height + event->delta_y;
   if (new_w <= min_win_dim) new_w = min_win_dim;
   if (new_h <= min_win_dim) new_h = min_win_dim;
-  client_resize (client->id, new_w, new_h);
+  ctx_client_resize (client->id, new_w, new_h);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
-static void client_resize_e (CtxEvent *event, void *data, void *data2)
+static void ctx_client_resize_e (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
   int new_w = client->width + event->delta_x;
   if (new_w <= min_win_dim) new_w = min_win_dim;
-  client_resize (client->id, new_w, client->height);
+  ctx_client_resize (client->id, new_w, client->height);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
-static void client_resize_s (CtxEvent *event, void *data, void *data2)
+static void ctx_client_resize_s (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
   int new_h = client->height + event->delta_y;
   if (new_h <= min_win_dim) new_h = min_win_dim;
-  client_resize (client->id, client->width, new_h);
+  ctx_client_resize (client->id, client->width, new_h);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
-static void client_resize_n (CtxEvent *event, void *data, void *data2)
+static void ctx_client_resize_n (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
   float new_y = client->y +  event->delta_y;
   int new_h = client->height - event->delta_y;
   if (new_h <= min_win_dim) new_h = min_win_dim;
-  client_resize (client->id, client->width, new_h);
-  client_move (client->id, client->x, new_y);
+  ctx_client_resize (client->id, client->width, new_h);
+  ctx_client_move (client->id, client->x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
-static void client_resize_ne (CtxEvent *event, void *data, void *data2)
+static void ctx_client_resize_ne (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
   float new_y = client->y +  event->delta_y;
@@ -661,15 +661,15 @@ static void client_resize_ne (CtxEvent *event, void *data, void *data2)
   int new_w = client->width + event->delta_x;
   if (new_h <= min_win_dim) new_h = min_win_dim;
   if (new_w <= min_win_dim) new_w = min_win_dim;
-  client_resize (client->id, new_w, new_h);
-  client_move (client->id, client->x, new_y);
+  ctx_client_resize (client->id, new_w, new_h);
+  ctx_client_move (client->id, client->x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
-static void client_resize_sw (CtxEvent *event, void *data, void *data2)
+static void ctx_client_resize_sw (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
 
@@ -679,15 +679,15 @@ static void client_resize_sw (CtxEvent *event, void *data, void *data2)
 
   if (new_h <= min_win_dim) new_h = min_win_dim;
   if (new_w <= min_win_dim) new_w = min_win_dim;
-  client_resize (client->id, new_w, new_h);
-  client_move (client->id, new_x, client->y);
+  ctx_client_resize (client->id, new_w, new_h);
+  ctx_client_move (client->id, new_x, client->y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
-static void client_resize_nw (CtxEvent *event, void *data, void *data2)
+static void ctx_client_resize_nw (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
   float new_x = client->x +  event->delta_x;
@@ -696,23 +696,23 @@ static void client_resize_nw (CtxEvent *event, void *data, void *data2)
   int new_h = client->height - event->delta_y;
   if (new_h <= min_win_dim) new_h = min_win_dim;
   if (new_w <= min_win_dim) new_w = min_win_dim;
-  client_resize (client->id, new_w, new_h);
-  client_move (client->id, new_x, new_y);
+  ctx_client_resize (client->id, new_w, new_h);
+  ctx_client_move (client->id, new_x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
-static void client_resize_w (CtxEvent *event, void *data, void *data2)
+static void ctx_client_resize_w (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
 
   float new_x = client->x +  event->delta_x;
   int new_w = client->width - event->delta_x;
   if (new_w <= min_win_dim) new_w = min_win_dim;
-  client_resize (client->id, new_w, client->height);
-  client_move (client->id, new_x, client->y);
+  ctx_client_resize (client->id, new_w, client->height);
+  ctx_client_move (client->id, new_x, client->y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
   ctx_set_dirty (event->ctx, 1);
@@ -720,14 +720,14 @@ static void client_resize_w (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
-static void client_close (CtxEvent *event, void *data, void *data2)
+static void ctx_client_close (CtxEvent *event, void *data, void *data2)
 {
   //Ctx *ctx = event->ctx;
   CtxClient *client = data;
 
  // client->do_quit = 1;
   
-  client_remove (event->ctx, client);
+  ctx_client_remove (event->ctx, client);
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
@@ -737,7 +737,7 @@ static void client_close (CtxEvent *event, void *data, void *data2)
 void vt_use_images (VT *vt, Ctx *ctx);
 static float _ctx_green = 0.5;
 
-static void client_draw (ITK *itk, CtxClient *client, float x, float y)
+static void ctx_client_draw (ITK *itk, CtxClient *client, float x, float y)
 {
     Ctx *ctx = itk->ctx;
     if (client->internal)
@@ -798,7 +798,7 @@ static void client_draw (ITK *itk, CtxClient *client, float x, float y)
     }
 }
 
-static void client_use_images (ITK *itk, CtxClient *client)
+static void ctx_client_use_images (ITK *itk, CtxClient *client)
 {
   Ctx *ctx = itk->ctx;
   if (!client->internal)
@@ -937,7 +937,7 @@ static int ctx_clients_dirty_count (void)
   return changes;
 }
 
-static void client_titlebar_drag_maximized (CtxEvent *event, void *data, void *data2)
+static void ctx_client_titlebar_drag_maximized (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
 
@@ -948,8 +948,8 @@ static void client_titlebar_drag_maximized (CtxEvent *event, void *data, void *d
     if (event->time - prev_drag_end_time < 500)
     {
       //client_shade_toggle (client->id);
-      client_unmaximize (client->id);
-      client_raise_top (client->id);
+      ctx_client_unmaximize (client->id);
+      ctx_client_raise_top (client->id);
       active_tab = NULL;
     }
     prev_drag_end_time = event->time;
@@ -959,13 +959,13 @@ static void client_titlebar_drag_maximized (CtxEvent *event, void *data, void *d
   event->stop_propagate = 1;
 }
 
-float client_min_y_pos (Ctx *ctx)
+float ctx_client_min_y_pos (Ctx *ctx)
 {
   float titlebar_height = em;
   return titlebar_height * 2; // a titlebar and a panel
 }
 
-float client_max_y_pos (Ctx *ctx)
+float ctx_client_max_y_pos (Ctx *ctx)
 {
   return ctx_height (ctx);
 }
@@ -991,12 +991,12 @@ static void draw_titlebar (ITK *itk, Ctx *ctx, CtxClient *client,
 
       if (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED) || y == titlebar_height)
       {
-        ctx_listen (ctx, CTX_DRAG, client_titlebar_drag_maximized, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_titlebar_drag_maximized, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
       }
       else
       {
-        ctx_listen (ctx, CTX_DRAG, client_titlebar_drag, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_titlebar_drag, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
       }
       ctx_fill (ctx);
@@ -1012,7 +1012,7 @@ static void draw_titlebar (ITK *itk, Ctx *ctx, CtxClient *client,
                       titlebar_height);
 #endif
       ctx_rgb (ctx, 1, 0,0);
-      ctx_listen (ctx, CTX_PRESS, client_close, client, NULL);
+      ctx_listen (ctx, CTX_PRESS, ctx_client_close, client, NULL);
       ctx_listen_set_cursor (ctx, CTX_CURSOR_ARROW);
       //ctx_fill (ctx);
       ctx_begin_path (ctx);
@@ -1059,7 +1059,7 @@ static void key_press (CtxEvent *event, void *data1, void *data2)
 }
 #endif
 
-int clients_draw (ITK *itk, Ctx *ctx)
+int ctx_clients_draw (ITK *itk, Ctx *ctx)
 {
   em = itk->font_size;
   float titlebar_height = em;
@@ -1067,7 +1067,7 @@ int clients_draw (ITK *itk, Ctx *ctx)
 
   if (active && flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED) && n_clients == 1)
   {
-    client_draw (itk, active, 0, 0);
+    ctx_client_draw (itk, active, 0, 0);
     return 0;
   }
 
@@ -1078,11 +1078,11 @@ int clients_draw (ITK *itk, Ctx *ctx)
     {
       if (client == active_tab)
       {
-        client_draw (itk, client, 0, titlebar_height);
+        ctx_client_draw (itk, client, 0, titlebar_height);
       }
       else
       {
-        client_use_images (itk, client);
+        ctx_client_use_images (itk, client);
       }
     }
   }
@@ -1096,11 +1096,11 @@ int clients_draw (ITK *itk, Ctx *ctx)
     {
       if (flag_is_set(client->flags, ITK_CLIENT_SHADED))
       {
-        client_use_images (itk, client);
+        ctx_client_use_images (itk, client);
       }
       else
       {
-        client_draw (itk, client, client->x, client->y);
+        ctx_client_draw (itk, client, client->x, client->y);
       }
 
       // resize regions
@@ -1115,7 +1115,7 @@ int clients_draw (ITK *itk, Ctx *ctx)
                        client->x,
                        client->y - titlebar_height * 2,
                        client->width, titlebar_height);
-        ctx_listen (ctx, CTX_DRAG, client_resize_n, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_resize_n, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_N);
         ctx_begin_path (ctx);
 
@@ -1123,7 +1123,7 @@ int clients_draw (ITK *itk, Ctx *ctx)
                        client->x,
                        client->y + client->height - titlebar_height,
                        client->width, titlebar_height * 2);
-        ctx_listen (ctx, CTX_DRAG, client_resize_s, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_resize_s, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_S);
         ctx_begin_path (ctx);
 
@@ -1131,7 +1131,7 @@ int clients_draw (ITK *itk, Ctx *ctx)
                        client->x + client->width,
                        client->y - titlebar_height,
                        titlebar_height, client->height + titlebar_height);
-        ctx_listen (ctx, CTX_DRAG, client_resize_e, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_resize_e, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_E);
         ctx_begin_path (ctx);
 
@@ -1139,7 +1139,7 @@ int clients_draw (ITK *itk, Ctx *ctx)
                        client->x - titlebar_height,
                        client->y - titlebar_height,
                        titlebar_height, client->height + titlebar_height);
-        ctx_listen (ctx, CTX_DRAG, client_resize_w, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_resize_w, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_W);
         ctx_begin_path (ctx); 
 
@@ -1147,7 +1147,7 @@ int clients_draw (ITK *itk, Ctx *ctx)
                        client->x + client->width - titlebar_height,
                        client->y - titlebar_height * 2,
                        titlebar_height * 2, titlebar_height * 2);
-        ctx_listen (ctx, CTX_DRAG, client_resize_ne, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_resize_ne, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_NE);
         ctx_begin_path (ctx);
 
@@ -1155,7 +1155,7 @@ int clients_draw (ITK *itk, Ctx *ctx)
                        client->x - titlebar_height,
                        client->y - titlebar_height * 2,
                        titlebar_height * 2, titlebar_height * 2);
-        ctx_listen (ctx, CTX_DRAG, client_resize_nw, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_resize_nw, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_NW);
         ctx_begin_path (ctx);
 
@@ -1163,7 +1163,7 @@ int clients_draw (ITK *itk, Ctx *ctx)
                        client->x - titlebar_height,
                        client->y + client->height - titlebar_height,
                        titlebar_height * 2, titlebar_height * 2);
-        ctx_listen (ctx, CTX_DRAG, client_resize_sw, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_resize_sw, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_SW);
         ctx_begin_path (ctx);
 
@@ -1171,7 +1171,7 @@ int clients_draw (ITK *itk, Ctx *ctx)
                        client->x + client->width - titlebar_height,
                        client->y + client->height - titlebar_height,
                        titlebar_height * 2, titlebar_height * 2);
-        ctx_listen (ctx, CTX_DRAG, client_resize_se, client, NULL);
+        ctx_listen (ctx, CTX_DRAG, ctx_client_resize_se, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_SE);
         ctx_begin_path (ctx);
 
@@ -1191,7 +1191,7 @@ void vt_audio_task (VT *vt, int click);
 
 int ctx_input_pending (Ctx *ctx, int timeout);
 
-int clients_need_redraw (Ctx *ctx)
+int ctx_clients_need_redraw (Ctx *ctx)
 {
   int changes = 0;
   int follow_mouse = focus_follows_mouse;
@@ -1244,7 +1244,7 @@ int clients_need_redraw (Ctx *ctx)
    }
    for (CtxList *l = to_remove; l; l = l->next)
    {
-     client_remove (ctx, l->data);
+     ctx_client_remove (ctx, l->data);
      changes++;
    }
    while (to_remove)
@@ -1256,7 +1256,7 @@ int clients_need_redraw (Ctx *ctx)
    return changes != 0;
 }
 
-void clients_handle_events (Ctx *ctx)
+void ctx_clients_handle_events (Ctx *ctx)
 {
   int n_clients = ctx_list_length (clients);
       static float avg_bytespeed = 0.0;
