@@ -53,15 +53,12 @@ static float target_fps = 25.0;
 static int fetched_bytes = 1;
 static float em = 14.0;
 
-void
-ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
-
 typedef struct _CtxClient CtxClient;
 CtxClient *vt_find_client (VT *vt);
 
 CtxList *vts = NULL;
 
-void signal_child (int signum)
+void ctx_clients_signal_child (int signum)
 {
   pid_t pid;
   int   status;
@@ -127,7 +124,6 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
   switch (key_hash)
   {
     case CTX_title:  
-  // ctx_set (ctx, CTX_title, val, strlen (val));
      {
        CtxClient *client = vt_find_client (vt);
        if (client)

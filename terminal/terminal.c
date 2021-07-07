@@ -59,7 +59,7 @@ vt_screenshot (const char *output_path)
 }
 
 
-void signal_child (int signum);
+void ctx_clients_signal_child (int signum);
 
 #define VT_RECORD 0
 
@@ -846,7 +846,7 @@ int terminal_main (int argc, char **argv)
 
   ITK *itk = itk_new (ctx);
 
-  signal (SIGCHLD,signal_child);
+  signal (SIGCHLD,ctx_clients_signal_child);
 
   ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 
@@ -861,7 +861,7 @@ int terminal_main (int argc, char **argv)
 
   while (clients && !ctx_has_quit (ctx))
     {
-      int changes = 0;
+      //int changes = 0;
       int n_clients = ctx_list_length (clients);
       ensure_layout ();
 
