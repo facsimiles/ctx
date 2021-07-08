@@ -49,7 +49,7 @@ int  ctx_renderer_is_fb     (Ctx *ctx);
 int  ctx_renderer_is_term   (Ctx *ctx);
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
 int  ctx_sdl_get_fullscreen (Ctx *ctx);
-static float target_fps = 25.0;
+float ctx_target_fps = 25.0;
 static int fetched_bytes = 1;
 static float em = 14.0;
 
@@ -1256,13 +1256,14 @@ int ctx_clients_need_redraw (Ctx *ctx)
    return changes != 0;
 }
 
+float ctx_avg_bytespeed = 0.0;
+
 void ctx_clients_handle_events (Ctx *ctx)
 {
   int n_clients = ctx_list_length (clients);
-      static float avg_bytespeed = 0.0;
       int pending_data = 0;
       long time_start = ctx_ticks ();
-      int sleep_time = 1000000/target_fps;
+      int sleep_time = 1000000/ctx_target_fps;
       pending_data = ctx_input_pending (ctx, sleep_time);
 
       fetched_bytes = 0;
@@ -1293,26 +1294,26 @@ void ctx_clients_handle_events (Ctx *ctx)
 #if 0
       if (changes /*|| pending_data */)
       {
-        target_fps *= 1.6;
-        if (target_fps > 60) target_fps = 60;
+        ctx_target_fps *= 1.6;
+        if (ctx_target_fps > 60) ctx_target_fps = 60;
       }
       else
       {
-        target_fps = target_fps * 0.95 + 30.0 * 0.05;
+        ctx_target_fps = ctx_target_fps * 0.95 + 30.0 * 0.05;
 
         // 20fps is the lowest where sun 8bit ulaw 8khz works reliably
       }
 
-      if (avg_bytespeed > 1024 * 1024) target_fps = 10.0;
+      if (ctx_avg_bytespeed > 1024 * 1024) ctx_target_fps = 10.0;
 
       if (_ctx_green < 0.4)
-        target_fps = 120.0;
+        ctx_target_fps = 120.0;
       else if (_ctx_green > 0.6)
-        target_fps = 25.0;
+        ctx_target_fps = 25.0;
 
-      //target_fps = 30.0;
+      //ctx_target_fps = 30.0;
 #else
-      target_fps = 25.0;
+      ctx_target_fps = 25.0 * 2;
 #endif
 
       long time_end = ctx_ticks ();
@@ -1320,9 +1321,9 @@ void ctx_clients_handle_events (Ctx *ctx)
       int timed = (time_end-time_start);
       float bytespeed = fetched_bytes / ((timed)/ (1000.0f * 1000.0f));
 
-      avg_bytespeed = bytespeed * 0.2 + avg_bytespeed * 0.8;
+      ctx_avg_bytespeed = bytespeed * 0.2 + ctx_avg_bytespeed * 0.8;
 #if 0
-      fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", avg_bytespeed/1024/1024, fetched_bytes, timed, target_fps);
+      fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", ctx_avg_bytespeed/1024/1024, fetched_bytes, timed, ctx_target_fps);
 #endif
 }
 
