@@ -7877,11 +7877,12 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
   {
     if (dh)
     {
-      vt_draw_bg (vt, ctx, ctx_floorf(x0), ctx_floorf(y0 - 1 - ch - ch * (vt->scroll_offset)), cw, ch + 1, bg_rgb);
+      vt_draw_bg (vt, ctx, ctx_floorf(x0),
+         ctx_floorf(y0 - ch - ch * (vt->scroll_offset)), cw, ch, bg_rgb);
     }
     else
     {
-      vt_draw_bg (vt, ctx, x0, y0 - 1 - ch + ch * offset_y, cw, ch + 1, bg_rgb);
+      vt_draw_bg (vt, ctx, x0, y0 - ch + ch * offset_y, cw, ch, bg_rgb);
     }
   }
 
