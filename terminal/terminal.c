@@ -43,7 +43,6 @@ Ctx *ctx = NULL; // initialized in main
 int ctx_renderer_is_sdl  (Ctx *ctx);
 int ctx_renderer_is_fb   (Ctx *ctx);
 int ctx_renderer_is_term (Ctx *ctx);
-float em = 14.0; // reset on each draw
 
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
@@ -650,7 +649,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
   gettimeofday (&tv, NULL);
   localtime_r (&tv.tv_sec, &local_time_res);
 
-  float titlebar_height = em;
+  float titlebar_height = font_size;
   float tab_width = ctx_width (ctx) - titlebar_height * 4 - titlebar_height * 2;
 
   ctx_save (ctx);
@@ -705,7 +704,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
 
 void draw_mini_panel (Ctx *ctx)
 {
-  float titlebar_height = em;
+  float titlebar_height = font_size;
 
   ctx_save (ctx);
   ctx_font_size (ctx, titlebar_height * 0.9);
@@ -859,7 +858,6 @@ int terminal_main (int argc, char **argv)
     print_shape_cache_rate = 1;
   itk->scale = 1.0;
   itk->font_size = font_size;
-  em = itk->font_size;
 
   while (clients && !ctx_has_quit (ctx))
     {

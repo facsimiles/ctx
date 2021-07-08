@@ -50,8 +50,7 @@ int  ctx_renderer_is_term   (Ctx *ctx);
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
 int  ctx_sdl_get_fullscreen (Ctx *ctx);
 float ctx_target_fps = 25.0;
-static int fetched_bytes = 1;
-static float em = 14.0;
+static int ctx_fetched_bytes = 1;
 
 typedef struct _CtxClient CtxClient;
 CtxClient *vt_find_client (VT *vt);
@@ -185,7 +184,6 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 }
 
 extern float font_size;
-static float line_spacing = 2.0;
 
 CtxList *clients = NULL;
 CtxClient *active = NULL;
@@ -221,6 +219,7 @@ CtxClient *ctx_client_new (const char *commandline,
 
   client->width = width;
   client->height = height;
+  float line_spacing = 2.0f;
   client->vt = vt_new (commandline, width, height, font_size, line_spacing, client->id, (flags & ITK_CLIENT_CAN_LAUNCH)!=0);
   return client;
 }
@@ -256,7 +255,7 @@ static int focus_follows_mouse = 0;
 static CtxClient *find_active (int x, int y)
 {
   CtxClient *ret = NULL;
-  float titlebar_height = em;
+  float titlebar_height = font_size;
   int resize_border = titlebar_height/2;
 
   for (CtxList *l = clients; l; l = l->next)
@@ -961,7 +960,7 @@ static void ctx_client_titlebar_drag_maximized (CtxEvent *event, void *data, voi
 
 float ctx_client_min_y_pos (Ctx *ctx)
 {
-  float titlebar_height = em;
+  float titlebar_height = font_size;
   return titlebar_height * 2; // a titlebar and a panel
 }
 
@@ -1061,8 +1060,8 @@ static void key_press (CtxEvent *event, void *data1, void *data2)
 
 int ctx_clients_draw (ITK *itk, Ctx *ctx)
 {
-  em = itk->font_size;
-  float titlebar_height = em;
+  font_size = itk->font_size;
+  float titlebar_height = font_size;
   int n_clients = ctx_list_length (clients);
 
   if (active && flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED) && n_clients == 1)
@@ -1266,7 +1265,7 @@ void ctx_clients_handle_events (Ctx *ctx)
       int sleep_time = 1000000/ctx_target_fps;
       pending_data = ctx_input_pending (ctx, sleep_time);
 
-      fetched_bytes = 0;
+      ctx_fetched_bytes = 0;
       if (pending_data)
       {
         /* record amount of time spent - and adjust time of reading for
@@ -1276,7 +1275,7 @@ void ctx_clients_handle_events (Ctx *ctx)
         for (CtxList *l = clients; l; l = l->next)
         {
           CtxClient *client = l->data;
-          fetched_bytes += vt_poll (client->vt, fractional_sleep);
+          ctx_fetched_bytes += vt_poll (client->vt, fractional_sleep);
         }
       }
       else
@@ -1319,11 +1318,11 @@ void ctx_clients_handle_events (Ctx *ctx)
       long time_end = ctx_ticks ();
 
       int timed = (time_end-time_start);
-      float bytespeed = fetched_bytes / ((timed)/ (1000.0f * 1000.0f));
+      float bytespeed = ctx_fetched_bytes / ((timed)/ (1000.0f * 1000.0f));
 
       ctx_avg_bytespeed = bytespeed * 0.2 + ctx_avg_bytespeed * 0.8;
 #if 0
-      fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", ctx_avg_bytespeed/1024/1024, fetched_bytes, timed, ctx_target_fps);
+      fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", ctx_avg_bytespeed/1024/1024, ctx_fetched_bytes, timed, ctx_target_fps);
 #endif
 }
 
