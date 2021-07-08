@@ -64,22 +64,8 @@
 
 #include "vt-line.h"
 #include "vt.h"
+#include "ctx-clients.h"
 
-int  ctx_client_height (int id);
-int  ctx_client_x (int id);
-int  ctx_client_y (int id);
-void ctx_client_move (int id, int x, int y);
-int  ctx_client_resize (int id, int width, int height);
-void ctx_client_raise_top (int id);
-void ctx_client_lower_bottom (int id);
-void ctx_client_shade (int id);
-void ctx_client_unshade (int id);
-void ctx_client_iconify (int id);
-void ctx_client_deiconify (int id);
-void ctx_client_maximize (int id);
-void ctx_client_unmaximize (int id);
-void ctx_client_toggle_maximized (int id);
-int  ctx_client_is_iconified (int id);
 
 
 #define VT_LOG_INFO     (1<<0)

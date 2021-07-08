@@ -23,6 +23,7 @@
 #include "vt.h"
 #include "../demos/itk.h"
 
+#define VT_RECORD 0
 extern Ctx *ctx;
 #define flag_is_set(a, f) (((a) & (f))!=0)
 #define flag_set(a, f)    ((a) |= (f));
@@ -52,7 +53,8 @@ int  ctx_sdl_get_fullscreen (Ctx *ctx);
 float ctx_target_fps = 25.0;
 static int ctx_fetched_bytes = 1;
 
-typedef struct _CtxClient CtxClient;
+#include "ctx-clients.h"
+
 CtxClient *vt_find_client (VT *vt);
 
 CtxList *vts = NULL;
@@ -78,44 +80,7 @@ void ctx_clients_signal_child (int signum)
     }
 }
 
-#define VT_RECORD 0
 
-typedef enum CtxClientFlags {
-  ITK_CLIENT_UI_RESIZABLE = 1<<0,
-  ITK_CLIENT_CAN_LAUNCH   = 1<<1,
-  ITK_CLIENT_MAXIMIZED    = 1<<2,
-  ITK_CLIENT_ICONIFIED    = 1<<3,
-  ITK_CLIENT_SHADED       = 1<<4,
-  ITK_CLIENT_TITLEBAR     = 1<<5
-} CtxClientFlags;
-
-struct
-_CtxClient {
-  VT    *vt;
-  char  *title;
-  int    x;
-  int    y;
-  int    width;
-  int    height;
-  CtxClientFlags flags;
-#if 0
-  int    shaded;
-  int    iconified;
-  int    maximized;
-  int    resizable;
-#endif
-  int    unmaximized_x;
-  int    unmaximized_y;
-  int    unmaximized_width;
-  int    unmaximized_height;
-  int    do_quit;
-  long   drawn_rev;
-#if VT_RECORD
-  Ctx   *recording;
-#endif
-  int    id;
-  int    internal; // render a settings window rather than a vt
-};
 
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 {
@@ -734,7 +699,7 @@ static void ctx_client_close (CtxEvent *event, void *data, void *data2)
 
 /********************/
 void vt_use_images (VT *vt, Ctx *ctx);
-static float _ctx_green = 0.5;
+float _ctx_green = 0.5;
 
 static void ctx_client_draw (ITK *itk, CtxClient *client, float x, float y)
 {
