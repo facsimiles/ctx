@@ -18,7 +18,7 @@ CFLAGS_warnings= -Wall \
 CFLAGS+= -g $(CFLAGS_warnings) -fPIC 
 #  -ffast-math   gets rejected by duktape
 
-CFLAGS+= -I. -Ifonts -Ideps
+CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers
 LIBS  += -lz -lm -lpthread
 
 #CFLAGS+= -fsanitize=address
@@ -48,7 +48,7 @@ build.conf:
 	@echo "!! now run Make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
-demos/%: demos/%.c build.conf Makefile build.conf ctx.o demos/itk.h libctx.a
+demos/%: demos/%.c build.conf Makefile build.conf ctx.o media-handlers/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
@@ -126,9 +126,9 @@ ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts build.conf
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
-terminal/%.o: terminal/%.c ctx.h terminal/*.h demos/itk.h
+terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h demos/itk.h
+media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o ctx-avx2.o deps.o build.conf Makefile
 	$(AR) rcs $@ $?
@@ -139,8 +139,8 @@ libctx.so: ctx.o ctx-avx2.o deps.o
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
 	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
 
-ctx.static: main.c ctx.h  build.conf Makefile media-handlers/*.[ch] ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o 
-	$(CCC) main.c terminal/*.c media-handlers/*.c -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
+ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) ctx-static.o deps.o terminal/*.[ch] ctx-avx2.o 
+	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) ctx-static.o ctx-avx2.o deps.o $(LIBS) -DNO_BABL=1 -DNO_SDL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile build.conf
