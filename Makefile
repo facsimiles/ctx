@@ -106,7 +106,7 @@ tools/%: tools/%.c ctx-nofont.h
 ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) $(OFLAGS_LIGHT)
 
-deps.o: deps.c build.conf Makefile ctx.h
+deps.o: deps.c build.conf Makefile ctx.h media-handlers/itk.h
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
 ctx-avx2.o: ctx-avx2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf

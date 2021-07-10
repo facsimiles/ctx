@@ -2267,6 +2267,10 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
       usleep (1000 * 10);
     }
     while ((event = ctx_get_event (ctx))){}
+
+    ctx_clients_handle_events (ctx);
+    if (ctx_clients_need_redraw (ctx))
+      ctx_set_dirty (ctx, 1);
   }
   itk_free (itk);
   ctx_free (ctx);

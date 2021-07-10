@@ -489,7 +489,8 @@ static int card_files (ITK *itk_, void *data)
   {
     ctx_add_timeout (ctx, 250, thumb_monitor, NULL);
   font_size = itk->font_size;
-  ctx_client_new ("./ctx media/traffic.gif",
+  //ctx_client_new ("./ctx media/traffic.gif",
+  ctx_client_new ("./ctx tig.png",
     ctx_width(ctx)/2, font_size*2, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
     first = 0;
   }
@@ -514,7 +515,7 @@ static int card_files (ITK *itk_, void *data)
   if (clients)
   {
     ctx_clients_draw (itk, ctx);
-    ctx_set_dirty (ctx, 1);
+    //ctx_set_dirty (ctx, 1);
     ctx_clients_handle_events (ctx);
   }
 

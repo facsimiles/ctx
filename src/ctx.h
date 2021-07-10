@@ -434,7 +434,7 @@ typedef enum
 
 typedef enum
 {
-#if 1
+#if 0
   CTX_COMPOSITE_SOURCE_OVER      = 0,
   CTX_COMPOSITE_COPY             = 32,
   CTX_COMPOSITE_SOURCE_IN        = 64,

@@ -800,8 +800,11 @@ int terminal_main (int argc, char **argv)
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
         ctx_flush (ctx);
       }
+     if (active)
+       terminal_update_title (active->title);
 
       ctx_clients_handle_events (ctx);
+      while (ctx_get_event (ctx)) { }
     }
 
   while (clients)

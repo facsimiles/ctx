@@ -1193,9 +1193,6 @@ int ctx_clients_need_redraw (Ctx *ctx)
           }
         }
    }
-   if (active)
-     terminal_update_title (active->title);
-
 
    for (CtxList *l = clients; l; l = l->next)
    {
@@ -1254,7 +1251,7 @@ void ctx_clients_handle_events (Ctx *ctx)
 
       //int got_events = 0;
 
-      while (ctx_get_event (ctx)) { }
+      //while (ctx_get_event (ctx)) { }
 #if 0
       if (changes /*|| pending_data */)
       {
