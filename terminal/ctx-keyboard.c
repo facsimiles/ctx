@@ -21,7 +21,7 @@
 #include "vt-line.h"
 #include "terminal.h"
 #include "vt.h"
-#include "../demos/itk.h"
+#include "itk.h"
 int   on_screen_keyboard = 0;
 
 typedef struct KeyCap {

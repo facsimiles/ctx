@@ -1251,7 +1251,6 @@ static void _vt_add_str (VT *vt, const char *str)
           vt->cursor_x = logical_margin_right;
         }
     }
-  vt_line_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
   if (vt->insert_mode)
     {
       vt_line_insert_utf8 (vt->current_line, vt->cursor_x - 1, str);
@@ -1262,6 +1261,7 @@ static void _vt_add_str (VT *vt, const char *str)
     {
       vt_line_replace_utf8 (vt->current_line, vt->cursor_x - 1, str);
     }
+  vt_line_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
   vt->cursor_x += 1;
   vt->at_line_home = 0;
   vt->rev++;
@@ -7865,7 +7865,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
   }
 
   if (is_fg ||
-      ((!on_white) && bg_rgb[0]==0 && bg_rgb[1]==0 && bg_rgb[2]==0) ||
+ //     ((!on_white) && bg_rgb[0]==0 && bg_rgb[1]==0 && bg_rgb[2]==0) ||
       ((on_white) && bg_rgb[0]==255 && bg_rgb[1]==255 && bg_rgb[2]==255))
           /* these comparisons are not entirely correct, when on dark background we assume black to
            * be default and non-set, even when theme might differ
@@ -8215,6 +8215,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   //if (vt->scroll || full)
     {
       ctx_begin_path (ctx);
+#if 0
       ctx_rectangle (ctx, 0, 0, vt->width, //(vt->cols) * vt->cw,
                      (vt->rows) * vt->ch);
       if (vt->reverse_video)
@@ -8227,6 +8228,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
           itk_style_color (ctx, "terminal-bg");
           ctx_fill  (ctx);
         }
+#endif
       if (vt->scroll != 0.0f)
         ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
     }

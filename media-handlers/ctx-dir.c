@@ -24,8 +24,10 @@
 #include <math.h>
 #include <ctype.h>
 #include "ctx.h"
-#include "../demos/itk.h"
+#include "itk.h"
 #include <signal.h>
+#include "../terminal/vt.h"
+#include "../terminal/ctx-clients.h"
 
 typedef struct _CtxSHA1 CtxSHA1;
 CtxSHA1 *ctx_sha1_new (void);
@@ -473,6 +475,9 @@ static int thumb_monitor (Ctx *ctx, void *data)
   return 1;
 }
 
+extern float font_size;
+int ctx_clients_draw (ITK *itk, Ctx *ctx);
+
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
@@ -483,8 +488,12 @@ static int card_files (ITK *itk_, void *data)
   if (first)
   {
     ctx_add_timeout (ctx, 250, thumb_monitor, NULL);
+  font_size = itk->font_size;
+  ctx_client_new ("./ctx media/traffic.gif",
+    ctx_width(ctx)/2, font_size*2, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
     first = 0;
   }
+
 
   itk_panel_start (itk, "files", 0,0, ctx_width(ctx), ctx_height (ctx));
   if (!files->n)
@@ -500,6 +509,13 @@ static int card_files (ITK *itk_, void *data)
       files_grid (itk, files);
     else
       files_list (itk, files);
+  }
+
+  if (clients)
+  {
+    ctx_clients_draw (itk, ctx);
+    ctx_set_dirty (ctx, 1);
+    ctx_clients_handle_events (ctx);
   }
 
   itk_panel_end (itk);

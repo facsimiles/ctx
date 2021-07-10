@@ -6,4 +6,5 @@
 #include "stb_image.h"
 
 #define ITK_IMPLEMENTATION
-#include "demos/itk.h"
+#include "itk.h"
+

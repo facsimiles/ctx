@@ -21,7 +21,7 @@
 #include "vt-line.h"
 #include "terminal.h"
 #include "vt.h"
-#include "../demos/itk.h"
+#include "itk.h"
 
 #define VT_RECORD 0
 extern Ctx *ctx;
