@@ -2505,8 +2505,8 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&save_command);
   CtxEntry set_state[3]=
   {
-    ctx_u8 (CTX_COMPOSITING_MODE, comp,  0,0,0,0,0,0,0),
-    ctx_u8 (CTX_BLEND_MODE,       blend, 0,0,0,0,0,0,0),
+    ctx_u32 (CTX_COMPOSITING_MODE, comp,  0),
+    ctx_u32 (CTX_BLEND_MODE,       blend, 0),
     ctx_f  (CTX_GLOBAL_ALPHA,     global_alpha, 0.0)
   };
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&set_state[0]);

@@ -1074,12 +1074,12 @@ void ctx_line_join (Ctx *ctx, CtxLineJoin join)
 void ctx_blend_mode (Ctx *ctx, CtxBlend mode)
 {
   if (ctx->state.gstate.blend_mode != mode)
-    CTX_PROCESS_U8 (CTX_BLEND_MODE, mode);
+    CTX_PROCESS_U32 (CTX_BLEND_MODE, mode, 0);
 }
 void ctx_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
 {
   if (ctx->state.gstate.compositing_mode != mode)
-    CTX_PROCESS_U8 (CTX_COMPOSITING_MODE, mode);
+    CTX_PROCESS_U32 (CTX_COMPOSITING_MODE, mode, 0);
 }
 void ctx_text_align (Ctx *ctx, CtxTextAlign text_align)
 {
@@ -1336,10 +1336,10 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.line_join = (CtxLineJoin) ctx_arg_u8 (0);
         break;
       case CTX_COMPOSITING_MODE:
-        state->gstate.compositing_mode = (CtxCompositingMode) ctx_arg_u8 (0);
+        state->gstate.compositing_mode = (CtxCompositingMode) ctx_arg_u32 (0);
         break;
       case CTX_BLEND_MODE:
-        state->gstate.blend_mode = (CtxBlend) ctx_arg_u8 (0);
+        state->gstate.blend_mode = (CtxBlend) ctx_arg_u32 (0);
         break;
       case CTX_TEXT_ALIGN:
         ctx_state_set (state, CTX_text_align, ctx_arg_u8 (0) );

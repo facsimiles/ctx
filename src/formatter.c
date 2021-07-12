@@ -280,6 +280,7 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
                   }
                 break;
               case CTX_BLEND_MODE:
+                val = ctx_arg_u32 (i);
                 switch (val)
                   {
             case CTX_BLEND_NORMAL:      str = "normal"; break;
@@ -301,6 +302,7 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
                   }
                 break;
               case CTX_COMPOSITING_MODE:
+                val = ctx_arg_u32 (i);
                 switch (val)
                   {
               case CTX_COMPOSITE_SOURCE_OVER: str = "sourceOver"; break;
