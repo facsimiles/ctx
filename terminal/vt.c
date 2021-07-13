@@ -2511,6 +2511,9 @@ qagain:
                   }
                 if (vt->ctxp)
                   ctx_parser_free (vt->ctxp);
+
+                if (!vt->current_line->frame)
+                  vt->current_line->frame = ctx_string_new ("");
                 vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                                            vt->cols * vt->cw, vt->rows * vt->ch,
                                            vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
@@ -4128,8 +4131,6 @@ static void vt_sixels (VT *vt, const char *sixels)
 
 static inline void vt_ctx_unrled (VT *vt, char byte)
 {
-  if (!vt->current_line->frame)
-    vt->current_line->frame = ctx_string_new ("");
   _ctx_string_append_byte (vt->current_line->frame, byte);
 
   if (vt->ctxp)
