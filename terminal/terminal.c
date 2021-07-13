@@ -325,6 +325,8 @@ static void ctx_client_close (CtxEvent *event, void *data, void *data2)
  // client->do_quit = 1;
   
   ctx_client_remove (event->ctx, client);
+  if (clients == NULL)
+    ctx_quit (ctx);//
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;

@@ -327,14 +327,13 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
 #endif
 
   ctx_list_remove (&clients, client);
-  if (clients == NULL)
-    ctx_quit (ctx);//
 
   if (client == active_tab)
   {
     active_tab = NULL;
   }
 
+  if (ctx)
   if (client == active)
   {
     active = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
