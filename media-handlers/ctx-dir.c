@@ -14,7 +14,6 @@
 // inserting a template, should be followed by newpage
 // permitting chapter start to be template,newpage,template full-chapter,
 // causing only the first bit of chapter to be styled this way.
-//
 
 #include <unistd.h>
 #include <dirent.h>
@@ -34,6 +33,8 @@ CtxSHA1 *ctx_sha1_new (void);
 void ctx_sha1_free    (CtxSHA1 *sha1);
 int  ctx_sha1_process (CtxSHA1 *sha1, const unsigned char * msg, unsigned long len);
 int  ctx_sha1_done    (CtxSHA1 *sha1, unsigned char *out);
+
+extern Ctx *ctx;
 
 typedef struct Item {
   char *label;
@@ -105,6 +106,8 @@ void ui_queue_thumb (const char *path)
   free (thumb_path);
 }
 
+void viewer_load_path (const char *path);
+
 static int custom_sort (const struct dirent **a,
                         const struct dirent **b)
 {
@@ -140,6 +143,15 @@ char *get_dirname (const char *path)
   char *ret;
   char *tmp = strdup (path);
   ret = strdup (dirname (tmp));
+  free (tmp);
+  return ret;
+}
+
+char *get_basename (const char *path)
+{
+  char *ret;
+  char *tmp = strdup (path);
+  ret = strdup (basename (tmp));
   free (tmp);
   return ret;
 }
@@ -198,8 +210,6 @@ static void print_curr (CtxEvent *e, void *d1, void *d2)
 
   ctx_set_dirty (e->ctx, 1);
 }
-
-
 
 static void files_list (ITK *itk, Files *files)
 {
@@ -377,7 +387,11 @@ static void files_grid (ITK *itk, Files *files)
       lstat (newpath, &stat_buf);
 
       if (c->no == itk->focus_no)
+      {
+        viewer_load_path (newpath);
+
         ctx_add_key_binding (ctx, "return", NULL, NULL, print_curr, (void*)((size_t)i));
+      }
 
       ctx_begin_path (ctx);
       ctx_gray (ctx, 0.0);
@@ -476,27 +490,93 @@ static int thumb_monitor (Ctx *ctx, void *data)
 }
 
 extern float font_size;
-int ctx_clients_draw (ITK *itk, Ctx *ctx);
+int  ctx_clients_draw (ITK *itk, Ctx *ctx);
+void ctx_clients_handle_events (Ctx *ctx);
+
+void viewer_load_path (const char *path)
+{
+  static char *loaded_path = NULL;
+  if (path && loaded_path && !strcmp (loaded_path, path))
+  {
+    return;
+  }
+  if (loaded_path)
+  {
+    while (clients)
+      ctx_client_remove (ctx, clients->data);
+    ctx_set_dirty (ctx, 1);
+    free (loaded_path);
+    loaded_path = NULL;
+  }
+  if (path)
+  {
+    loaded_path = strdup (path);
+    char *command = malloc (5 + strlen (path) + 16);
+    const char *suffix = get_suffix (path);
+    command[0]=0;
+    if (ctx_path_is_dir (path))
+    {
+       fprintf (stderr, "is dir\n");
+       return;
+    }
+
+    char *basname = get_basename (path);
+
+    if (!strcmp (suffix, "c")||
+        !strcmp (suffix, "txt")||
+        !strcmp (suffix, "h")||
+        !strcmp (suffix, "sh")||
+        !strcmp (suffix, "ctx")||
+        !strcmp (suffix, "md")||
+        !strcmp (basname, "Makefile")||
+        !strcmp (basname, "README")||
+        !strcmp (basname, "ReadMe")
+        )
+    {
+      sprintf (command, "vim -R %s", path);
+    }
+    free (basname);
+   
+
+    if (!strcmp (suffix, "png")||
+        !strcmp (suffix, "gif")||
+        !strcmp (suffix, "jpg")||
+        !strcmp (suffix, "mpg")||
+        !strcmp (suffix, "MPG")||
+        !strcmp (suffix, "JPG")||
+        !strcmp (suffix, "PNG")||
+        !strcmp (suffix, "GIF")
+        )
+    {
+      sprintf (command, "ctx %s", path);
+    }
+    if (command[0])
+    {
+      ctx_client_new (command,
+        ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
+      fprintf (stderr, "run:%s %i %i %i %i,   %i\n", command,
+        (int)ctx_width(ctx)/2, (int)0, (int)ctx_width(ctx)/2, (int)(ctx_height(ctx)-font_size*2), 0);
+    }
+  }
+}
 
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
-  Ctx *ctx = itk->ctx;
+  Ctx *_ctx = itk->ctx;
+  ctx = _ctx;
   //float em = itk_em (itk);
   //float row_height = em * 1.2;
   static int first = 1;
   if (first)
   {
     ctx_add_timeout (ctx, 250, thumb_monitor, NULL);
-  font_size = itk->font_size;
-  //ctx_client_new ("./ctx media/traffic.gif",
-  ctx_client_new ("./ctx tig.png",
-    ctx_width(ctx)/2, font_size*2, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
+    font_size = itk->font_size;
+    viewer_load_path ("/home/pippin/src/ctx/media/traffic.gif");
     first = 0;
   }
 
-
-  itk_panel_start (itk, "files", 0,0, ctx_width(ctx), ctx_height (ctx));
+  itk_panel_start (itk, "files", 0,0, ctx_width(ctx)/2, ctx_height (ctx));
   if (!files->n)
   {
     itk_labelf (itk, "no files\n");
@@ -512,6 +592,8 @@ static int card_files (ITK *itk_, void *data)
       files_list (itk, files);
   }
 
+  itk_panel_end (itk);
+
   if (clients)
   {
     ctx_clients_draw (itk, ctx);
@@ -519,7 +601,6 @@ static int card_files (ITK *itk_, void *data)
     ctx_clients_handle_events (ctx);
   }
 
-  itk_panel_end (itk);
   return 0;
 }
 
@@ -538,5 +619,7 @@ int ctx_dir_main (int argc, char **argv)
 
   dm_set_path (files, path?path:"./");
   itk_main (card_files, NULL);
+  while (clients)
+    ctx_client_remove (ctx, clients->data);
   return 0;
 }

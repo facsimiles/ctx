@@ -308,11 +308,14 @@ int main (int argc, char **argv)
          input_path = path;
       }
 
-    if (!strcmp (get_suffix (input_path), ".gif"))
+    if (!strcmp (get_suffix (input_path), ".gif")||
+        !strcmp (get_suffix (input_path), ".GIF"))
     {
       return ctx_gif_main (argc, argv);
     }
     if (!strcmp (get_suffix (input_path), ".jpg") ||
+        !strcmp (get_suffix (input_path), ".PNG") ||
+        !strcmp (get_suffix (input_path), ".JPG") ||
         !strcmp (get_suffix (input_path), ".png"))
     {
       return ctx_img_main (argc, argv);
