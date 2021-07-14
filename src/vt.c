@@ -4525,7 +4525,7 @@ static void vt_state_sixel (VT *vt, int byte)
     }
 }
 
-void add_tab (const char *commandline, int can_launch);
+//void add_tab (Ctx *ctx, const char *commandline, int can_launch);
 //void vt_screenshot (const char *output_path);
 
 static void vt_state_apc_generic (VT *vt, int byte)
@@ -4584,7 +4584,7 @@ static void vt_state_apc_generic (VT *vt, int byte)
             }
             else
             {
-              add_tab (sep + 1, can_launch);
+          //  add_tab (ctx, sep + 1, can_launch);
             }
           }
         }
@@ -7755,7 +7755,7 @@ int vt_has_blink (VT *vt)
 //extern int enable_terminal_menu;
 //
 
-void ctx_set_popup (Ctx *ctx, void (*popup)(Ctx *ctx, void *data), void *popup_data);
+//void ctx_set_popup (Ctx *ctx, void (*popup)(Ctx *ctx, void *data), void *popup_data);
 
 static char *primary = NULL;
 static void scrollbar_drag (CtxEvent *event, void *data, void *data2);
@@ -7883,6 +7883,7 @@ static void scroll_handle_drag (CtxEvent *event, void *data, void *data2)
 }
 #endif
 
+#if 0
 static void test_popup (Ctx *ctx, void *data)
 {
   VT *vt = data;
@@ -7893,6 +7894,7 @@ static void test_popup (Ctx *ctx, void *data)
   ctx_rgb (ctx, 1,0,0);
   ctx_fill (ctx);
 }
+#endif
 
 void itk_style_color (Ctx *ctx, const char *name); // only itk fun used in vt
 
@@ -8273,7 +8275,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 
     if (vt->popped)
     {
-       ctx_set_popup (ctx, test_popup, vt);
+       //ctx_set_popup (ctx, test_popup, vt);
     }
 }
 
@@ -8367,8 +8369,8 @@ void terminal_long_tap (Ctx *ctx, VT *vt);
 static int long_tap_cb_id = 0;
 static int single_tap (Ctx *ctx, void *data)
 {
-  VT *vt = data;
 #if 0 // XXX
+  VT *vt = data;
   if (short_count == 0 && !vt->select_active)
     terminal_long_tap (ctx, vt);
 #endif

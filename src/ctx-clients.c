@@ -422,7 +422,7 @@ void ctx_client_maximize (int id)
    // enforce_layout does the size
    //client_resize (id, ctx_width (ctx), ctx_height(ctx) - ctx_client_min_y_pos (ctx));
    
-   ctx_client_move (id, 0, ctx_client_min_y_pos (ctx));
+   ctx_client_move (id, 0, ctx_client_min_y_pos (client->ctx));
    active_tab = client;
 }
 
@@ -544,11 +544,11 @@ static void ctx_client_titlebar_drag (CtxEvent *event, void *data, void *data2)
   if (ctx_renderer_is_term (event->ctx))
      snap_threshold = 1;
 
-  if (new_y < ctx_client_min_y_pos (ctx)) new_y = ctx_client_min_y_pos (ctx);
-  if (new_y > ctx_client_max_y_pos (ctx)) new_y = ctx_client_max_y_pos (ctx);
+  if (new_y < ctx_client_min_y_pos (event->ctx)) new_y = ctx_client_min_y_pos (event->ctx);
+  if (new_y > ctx_client_max_y_pos (event->ctx)) new_y = ctx_client_max_y_pos (event->ctx);
 
   if (fabs (new_x - 0) < snap_threshold) new_x = 0.0;
-  if (fabs (ctx_width (event->ctx) - (new_x + client->width)) < snap_threshold) new_x = ctx_width (ctx) - client->width;
+  if (fabs (ctx_width (event->ctx) - (new_x + client->width)) < snap_threshold) new_x = ctx_width (event->ctx) - client->width;
 
   ctx_client_move (client->id, new_x, new_y);
 
