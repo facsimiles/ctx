@@ -736,6 +736,9 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
     }
     else
     {
+#if CTX_THREADS
+      mtx_lock (&client->mtx);
+#endif
       int rev = vt_rev (client->vt);
 #if VT_RECORD
       if (client->drawn_rev != rev)
@@ -756,8 +759,13 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
         ctx_restore (ctx);
       }
 #else
+
+
       vt_draw (client->vt, ctx, x, y);
       vt_register_events (client->vt, ctx, x, y);
+#if CTX_THREADS
+      mtx_unlock (&client->mtx);
+#endif
 #endif
       client->drawn_rev = rev;
     }
