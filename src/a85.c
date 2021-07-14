@@ -63,7 +63,7 @@ int ctx_a85dec (const char *src, char *dst, int count)
   {
     p = src[i];
     val *= 85;
-    if (p == '~')
+    if (CTX_UNLIKELY(p == '~'))
     {
       break;
     }
@@ -81,10 +81,10 @@ int ctx_a85dec (const char *src, char *dst, int count)
       k = 0;
     }
 #endif
-    else if (p >= '!' && p <= 'u')
+    else if (CTX_LIKELY(p >= '!' && p <= 'u'))
     {
       val += p-'!';
-      if (k % 5 == 4)
+      if (CTX_UNLIKELY (k % 5 == 4))
       {
          for (int j = 0; j < 4; j++)
          {
@@ -97,7 +97,7 @@ int ctx_a85dec (const char *src, char *dst, int count)
     }
     // we treat all other chars as whitespace
   }
-  if (p != '~')
+  if (CTX_LIKELY (p != '~'))
   { 
     val *= 85;
   }
