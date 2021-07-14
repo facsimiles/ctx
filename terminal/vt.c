@@ -58,6 +58,8 @@
 #include "ctx.h"
 
 
+#define CTX_VT_USE_FRAMEDIFF 0  // is a larger drain than neccesary when everything is per-byte?
+                                // is anyways currently disabled also in ctx
 
 //#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -2266,6 +2268,7 @@ static void vt_ctx_exit (void *data)
   fprintf (stderr, "--------\n");
 #endif
 
+#if CTX_VT_USE_FRAME_DIFF
   if (vt->current_line->prev)
     free (vt->current_line->prev);
   vt->current_line->prev = NULL;
@@ -2277,6 +2280,7 @@ static void vt_ctx_exit (void *data)
     ctx_string_free (vt->current_line->frame, 0);
     vt->current_line->frame = NULL;
   }
+#endif
 
   void *tmp = vt->current_line->ctx;
   vt->current_line->ctx = vt->current_line->ctx_copy;
@@ -2508,12 +2512,13 @@ qagain:
 
                     //ctx_set_texture_cache (vt->current_line->ctx, vt->current_line->ctx_copy);
                     //ctx_set_texture_cache (vt->current_line->ctx_copy, vt->current_line->ctx);
+#if CTX_VT_USE_FRAME_DIFF
+                    vt->current_line->frame = ctx_string_new ("");
+#endif
                   }
                 if (vt->ctxp)
                   ctx_parser_free (vt->ctxp);
 
-                if (!vt->current_line->frame)
-                  vt->current_line->frame = ctx_string_new ("");
                 vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                                            vt->cols * vt->cw, vt->rows * vt->ch,
                                            vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
@@ -4131,7 +4136,9 @@ static void vt_sixels (VT *vt, const char *sixels)
 
 static inline void vt_ctx_unrled (VT *vt, char byte)
 {
-  _ctx_string_append_byte (vt->current_line->frame, byte);
+#if CTX_VT_USE_FRAMEDIFF
+  ctx_string_append_byte (vt->current_line->frame, byte);
+#endif
 
   if (vt->ctxp)
   {
