@@ -579,10 +579,15 @@
 #endif
 #endif
 
+#ifndef CTX_THREADS
 #if CTX_FB
 #define CTX_THREADS 1
 #else
 #define CTX_THREADS 0
 #endif
+#endif
 
 
+#if CTX_THREADS
+#include <threads.h>
+#endif
