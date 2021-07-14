@@ -74,6 +74,8 @@ typedef struct {
         Ctx     *ctx;
 } app_t;
 
+int grayscale = 0;
+
 app_t * app_create(const char *filename, int texture_mode);
 void app_update(app_t *self);
 void app_destroy(app_t *self);
@@ -212,14 +214,6 @@ void app_update(app_t *self) {
 static int frame_no = 0;
 static int frame_drop = 1;
 
-#define GRAYSCALE 0  // set to 1 to only copy 8bit grayscale,
-                     // this already works smoothly
-                     // maybe gray ycbcr also works?
-                     // ... RGB reaches bottlenecks in vt layer
-                     // for the terminal - if those are removed, then higher res ycbcr becomes possible
-                     //
-                     // mmap'ed sharing of blobs should be a last resort - since it also has security implications
-
 void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
 	app_t *self = (app_t *)user;
 
@@ -227,9 +221,8 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
         char eid[16];
         sprintf (eid, "%i", frame_no);
         if (frame_no % frame_drop != 0) return;
-#if GRAYSCALE==0
+        if (grayscale == 0)
 	plm_frame_to_rgb(frame, self->rgb_data, frame->width * 3);
-#endif
         ctx_reset (self->ctx);
         ctx_save (self->ctx);
         ctx_rectangle (self->ctx, 0, 0, ctx_width (self->ctx), ctx_height (self->ctx));
@@ -238,7 +231,8 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
   if (scaleh < scale) scale = scaleh;
   ctx_scale (self->ctx, scale, scale);
 
-#if GRAYSCALE==0
+  if (grayscale == 0)
+  {
   ctx_define_texture (self->ctx,
                       eid, // by passing in a unique eid
                            // we avoid having to hash
@@ -247,7 +241,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                       CTX_FORMAT_RGB8,
                       self->rgb_data,
                       NULL);
-#else
+  } else {
   ctx_define_texture (self->ctx,
                       eid, // by passing in a unique eid
                            // we avoid having to hash
@@ -256,7 +250,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                       CTX_FORMAT_GRAY8,
                       frame->y.data,
                       NULL);
-#endif
+  }
   ctx_image_smoothing (self->ctx, 0);
   ctx_fill (self->ctx);
   ctx_restore (self->ctx);
@@ -269,6 +263,8 @@ void app_on_audio(plm_t *mpeg, plm_samples_t *samples, void *user) {
 }
 
 int ctx_mpg_main(int argc, char *argv[]) {
+        const char *path = NULL;
+
 	if (argc < 2) {
 		SDL_Log("Usage: ctx mpg <file.mpg>");
 		exit(1);
@@ -277,7 +273,23 @@ int ctx_mpg_main(int argc, char *argv[]) {
         if (frame_drop < 1) frame_drop = 1;
         if (frame_drop > 32) frame_drop = 32;
 
-        char *path = argv[1];
+        //char *path = NULL;
+       
+        for (int i = 1; i <  argc; i++)
+        {
+          if (argv[i][0] == '-')
+          {
+            if (argv[i][1] == 'g')
+            {
+              grayscale = 1;
+            }
+          }
+          else
+          {
+            path = argv[i];
+          }
+        }
+         //= argv[1];
         if (path && strchr (path, ':'))
         {
           path = strchr (path, ':');
@@ -285,7 +297,11 @@ int ctx_mpg_main(int argc, char *argv[]) {
           if (path[1] == '/') path++;
         }
 	
-	app_t *app = app_create(path, APP_TEXTURE_MODE_RGB); //_YCRCB);
+        app_t *app;
+        if (grayscale == 0)
+	  app = app_create(path, APP_TEXTURE_MODE_RGB); //_YCRCB);
+        else
+	  app = app_create(path, APP_TEXTURE_MODE_YCRCB);
  //the GPU (default), or to do it on CPU. Just pass APP_TEXTURE_MODE_RGB to
 
 	while (!app->wants_to_quit) {
