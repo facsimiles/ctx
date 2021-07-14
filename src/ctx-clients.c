@@ -1,4 +1,6 @@
+#ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
+#endif
 
 #if !__COSMOPOLITAN__
 #include <unistd.h>
@@ -179,6 +181,9 @@ CtxClient *ctx_client_new (Ctx *ctx,
   client->ctx = ctx;
   client->width = width;
   client->height = height;
+#if CTX_THREADS
+  mtx_init (&client->mtx, mtx_plain);
+#endif
   float line_spacing = 2.0f;
   client->vt = vt_new (commandline, width, height, font_size,line_spacing, client->id, (flags & ITK_CLIENT_CAN_LAUNCH)!=0);
   vt_set_ctx (client->vt, ctx);
@@ -1215,7 +1220,7 @@ float ctx_avg_bytespeed = 0.0;
 
 void ctx_clients_handle_events (Ctx *ctx)
 {
-  int n_clients = ctx_list_length (clients);
+  //int n_clients = ctx_list_length (clients);
       int pending_data = 0;
       long time_start = ctx_ticks ();
       int sleep_time = 1000000/ctx_target_fps;
@@ -1227,11 +1232,18 @@ void ctx_clients_handle_events (Ctx *ctx)
         /* record amount of time spent - and adjust time of reading for
          * vts?
          */
-        long int fractional_sleep = sleep_time / (n_clients?n_clients:1);
+        long int fractional_sleep = sleep_time / pending_data;
         for (CtxList *l = clients; l; l = l->next)
         {
           CtxClient *client = l->data;
+#if CTX_THREADS
+          mtx_lock (&client->mtx);
+#endif
           ctx_fetched_bytes += vt_poll (client->vt, fractional_sleep);
+          //ctx_fetched_bytes += vt_poll (client->vt, sleep_time); //fractional_sleep);
+#if CTX_THREADS
+          mtx_unlock (&client->mtx);
+#endif
         }
       }
       else

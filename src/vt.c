@@ -4572,7 +4572,7 @@ static void vt_state_apc_generic (VT *vt, int byte)
               height=atof(&vt->argument_buf[i]+strlen("height="));
           }
 
-          if (width + no_resize + layer + height + x + y + no_title + no_move + z) {};
+          if (width + no_resize + layer + height + x + y + no_title + no_move + z + can_launch) {};
 
           char *sep = strchr(vt->argument_buf, ';');
           if (sep)
@@ -5409,13 +5409,13 @@ vt_forkpty (int  *amaster,
     return -1;
   if (unlockpt (master) != 0)
     return -1;
-#if 1
+#if 0
   char name[1024];
   if (ptsname_r (master, name, sizeof(name)-1))
     return -1;
 #else
   char *name = NULL;
-  if ((name = ptsname_r (master)) == NULL)
+  if ((name = ptsname (master)) == NULL)
     return -1;
 #endif
 

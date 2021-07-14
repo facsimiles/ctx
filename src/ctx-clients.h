@@ -33,6 +33,9 @@ struct _CtxClient {
   long   drawn_rev;
   int    id;
   int    internal; // render a settings window rather than a vt
+#if CTX_THREADS
+  mtx_t  mtx;
+#endif
 #if VT_RECORD
   Ctx   *recording;
 #endif
