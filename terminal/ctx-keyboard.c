@@ -18,9 +18,6 @@
 #include <time.h>
 #endif
 
-#include "vt-line.h"
-#include "terminal.h"
-#include "vt.h"
 #include "itk.h"
 int   on_screen_keyboard = 0;
 

@@ -158,6 +158,10 @@
 #define CTX_XML             1
 #endif
 
+#ifndef CTX_VT
+#define CTX_VT              0
+#endif
+
 /* when ctx_math is defined, which it is by default, we use ctx' own
  * implementations of math functions, instead of relying on math.h
  * the possible inlining gives us a slight speed-gain, and on

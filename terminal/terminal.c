@@ -18,9 +18,8 @@
 #include <time.h>
 #endif
 
-#include "vt-line.h"
+#include "ctx.h"
 #include "terminal.h"
-#include "vt.h"
 #include "itk.h"
 
 Ctx *ctx = NULL; // initialized in main
@@ -64,8 +63,6 @@ void ctx_clients_signal_child (int signum);
 
 static char *execute_self = NULL;
 
-#include "ctx-clients.h"
-
 float font_size    = -1;
 float line_spacing = 2.0;
 
@@ -106,13 +103,14 @@ extern float _ctx_green;
 float add_x = 10;
 float add_y = 100;
 
+const char *vt_find_shell_command (void);
 /*****************/
 
 #define flag_is_set(a, f) (((a) & (f))!=0)
 #define flag_set(a, f)    ((a) |= (f));
 #define flag_unset(a, f)  ((a) &= ~(f));
 
-int add_tab (const char *commandline, int can_launch)
+int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = 0;
@@ -120,9 +118,8 @@ int add_tab (const char *commandline, int can_launch)
   if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
   if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
-  active = ctx_client_new (commandline, add_x, add_y,
+  active = ctx_client_new (ctx, commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, flags);
-  vt_set_ctx (active->vt, ctx);
   add_y += ctx_height (ctx) / 20;
   add_x += ctx_height (ctx) / 20;
 
@@ -149,10 +146,8 @@ int add_settings_tab (const char *commandline, int can_launch)
   int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
   if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
-  active = ctx_client_new (commandline, add_x, add_y,
+  active = ctx_client_new (ctx, commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, flags);
-
-  vt_set_ctx (active->vt, ctx);
   active->internal = 1;
 
   add_y += ctx_height (ctx) / 20;
@@ -176,7 +171,7 @@ int add_settings_tab (const char *commandline, int can_launch)
 static void add_tab_cb (CtxEvent *event, void *data, void *data2)
 {
   event->stop_propagate = 1;
-  add_tab (vt_find_shell_command(), 1);
+  add_tab (event->ctx, vt_find_shell_command(), 1);
 }
 
 static void add_settings_tab_cb (CtxEvent *event, void *data, void *data2)
@@ -197,7 +192,8 @@ void switch_to_tab (int desired_no)
       if (no == desired_no)
       {
         active = active_tab = client;
-        vt_rev_inc (active->vt);
+        //vt_rev_inc (active->vt);
+        ctx_set_dirty (active->ctx, 1);
         return;
       }
       no++;
@@ -209,7 +205,9 @@ void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
 int ctx_sdl_get_fullscreen (Ctx *ctx);
 
 
-static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
+static void handle_event (Ctx        *ctx,
+                          CtxEvent   *ctx_event,
+                          const char *event)
 {
   if (!active)
     return;
@@ -253,7 +251,7 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
            ((ctx_renderer_is_fb (ctx) || ctx_renderer_is_term (ctx))
            &&   !strcmp (event, "control-t") ))
   {
-    add_tab (vt_find_shell_command(), 1);
+    add_tab (ctx, vt_find_shell_command(), 1);
   }
   else if (!strcmp (event, "shift-control-n") )
     {
@@ -389,11 +387,11 @@ static void ctx_client_titlebar_drag_maximized (CtxEvent *event, void *data, voi
     prev_drag_end_time = event->time;
   }
   ctx_set_dirty (event->ctx, 1);
-  vt_rev_inc (client->vt);
+//  vt_rev_inc (client->vt);
   event->stop_propagate = 1;
 }
 
-int ctx_clients_draw (ITK *itk, Ctx *ctx);
+int ctx_clients_draw (Ctx *ctx);
 
 static float consume_float (char **argv, int *i)
 {
@@ -751,13 +749,13 @@ int terminal_main (int argc, char **argv)
   if (font_size < 0)
     font_size = floorf (width / cols  * 2 / 2);
 
+  ctx_font_size (ctx, font_size);
   if (!commandline)
     commandline = vt_find_shell_command();
-  ctx_client_maximize (add_tab (commandline, 1));
+  ctx_client_maximize (add_tab (ctx, commandline, 1));
 
   if (!active)
     return 1;
-  vt_set_ctx (active->vt, ctx);
 
   ITK *itk = itk_new (ctx);
 
@@ -788,7 +786,8 @@ int terminal_main (int argc, char **argv)
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         itk_style_color (ctx, "wallpaper");
         ctx_fill (ctx);
-        ctx_clients_draw (itk, ctx);
+        ctx_font_size (ctx, itk->font_size);
+        ctx_clients_draw (ctx);
         ctx_popups (ctx);
         if ((n_clients != 1) || (clients && !flag_is_set((((CtxClient*)clients->data))->flags, ITK_CLIENT_MAXIMIZED)))
           draw_panel (itk, ctx);

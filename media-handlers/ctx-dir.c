@@ -25,8 +25,6 @@
 #include "ctx.h"
 #include "itk.h"
 #include <signal.h>
-#include "../terminal/vt.h"
-#include "../terminal/ctx-clients.h"
 
 typedef struct _CtxSHA1 CtxSHA1;
 CtxSHA1 *ctx_sha1_new (void);
@@ -490,7 +488,7 @@ static int thumb_monitor (Ctx *ctx, void *data)
 }
 
 extern float font_size;
-int  ctx_clients_draw (ITK *itk, Ctx *ctx);
+int  ctx_clients_draw (Ctx *ctx);
 void ctx_clients_handle_events (Ctx *ctx);
 
 void viewer_load_path (const char *path)
@@ -552,7 +550,7 @@ void viewer_load_path (const char *path)
     }
     if (command[0])
     {
-      ctx_client_new (command,
+      ctx_client_new (ctx, command,
         ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
       fprintf (stderr, "run:%s %i %i %i %i,   %i\n", command,
         (int)ctx_width(ctx)/2, (int)0, (int)ctx_width(ctx)/2, (int)(ctx_height(ctx)-font_size*2), 0);
@@ -596,7 +594,8 @@ static int card_files (ITK *itk_, void *data)
 
   if (clients)
   {
-    ctx_clients_draw (itk, ctx);
+    ctx_font_size (ctx, itk->font_size);
+    ctx_clients_draw (ctx);
     //ctx_set_dirty (ctx, 1);
     ctx_clients_handle_events (ctx);
   }

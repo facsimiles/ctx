@@ -1748,6 +1748,22 @@ ctx_base642bin (const char    *ascii,
 float ctx_term_get_cell_width (Ctx *ctx);
 float ctx_term_get_cell_height (Ctx *ctx);
 
+
+#if 1 // CTX_VT
+
+typedef struct _VT VT;
+void vt_feed_keystring  (VT *vt, CtxEvent *event, const char *str);
+void vt_paste           (VT *vt, const char *str);
+char *vt_get_selection  (VT *vt);
+long vt_rev             (VT *vt);
+int  vt_has_blink       (VT *vt);
+
+int  ctx_clients_need_redraw   (Ctx *ctx);
+void ctx_clients_handle_events (Ctx *ctx);
+
+
+#endif
+
 #ifndef CTX_CODEC_CHAR
 //#define CTX_CODEC_CHAR '\035'
 //#define CTX_CODEC_CHAR 'a'

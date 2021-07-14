@@ -122,7 +122,7 @@ int ctx_a85dec (const char *src, char *dst, int count)
   return out_len;
 }
 
-#if 0
+#if 1
 int ctx_a85len (const char *src, int count)
 {
   int out_len = 0;

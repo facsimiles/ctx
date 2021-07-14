@@ -1,3 +1,5 @@
+#if CTX_VT
+
 /* mrg - MicroRaptor Gui
  * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
  *
@@ -18,7 +20,6 @@
 #ifndef VT_LINE_H
 #define VT_LINE_H
 
-#include "vt-utf8.h"
 #include "ctx.h"
 
 #ifndef CTX_UNLIKELY
@@ -161,6 +162,7 @@ static inline void        vt_line_append_str     (VtLine *line, const char *str)
   ctx_string_append_str (string, str);
 }
 
+#if 0
 static inline void _ctx_string_append_byte (CtxString *string, char  val)
 {
   if (CTX_LIKELY((val & 0xC0) != 0x80))
@@ -174,6 +176,7 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
   string->str[string->length++] = val;
   string->str[string->length] = '\0';
 }
+#endif
 
 static inline void        vt_line_append_byte    (VtLine *line, char  val)
 {

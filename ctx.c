@@ -1,5 +1,8 @@
 #if !__COSMOPOLITAN__
 
+#define _XOPEN_SOURCE 600
+#define _DEFAULT_SOURCE
+
 #include <stdint.h>
 #include <termios.h>
 #include <unistd.h>
@@ -47,6 +50,7 @@
 #define CTX_AUDIO                1
 #define CTX_FONTS_FROM_FILE      1
 #define CTX_ALSA_AUDIO           1
+#define CTX_VT                   1
 #define CTX_MAX_TEXTURES         256
 #define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/
                                        // variable size for each save|restore

@@ -12,6 +12,7 @@ typedef enum CtxClientFlags {
 
 struct _CtxClient {
   VT    *vt;
+  Ctx   *ctx;
   char  *title;
   int    x;
   int    y;
@@ -49,26 +50,21 @@ static CtxClient *ctx_client_by_id (int id);
 int ctx_client_resize (int id, int width, int height);
 void ctx_client_maximize (int id);
 
-
-CtxClient *vt_find_client (VT *vt);
-CtxClient *ctx_client_new (const char *commandline,
+CtxClient *vt_get_client (VT *vt);
+CtxClient *ctx_client_new (Ctx *ctx, const char *commandline,
                        int x, int y, int width, int height,
                        CtxClientFlags flags);
-CtxClient *ctx_client_new_argv (const char **argv, int x, int y, int width, int height, CtxClientFlags flags);
+CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, CtxClientFlags flags);
 int ctx_clients_need_redraw (Ctx *ctx);
 
 extern float ctx_shape_cache_rate;
 extern int _ctx_max_threads;
-
-
 
 void ctx_client_move (int id, int x, int y);
 int ctx_client_resize (int id, int w, int h);
 void ctx_client_shade_toggle (int id);
 float ctx_client_min_y_pos (Ctx *ctx);
 float ctx_client_max_y_pos (Ctx *ctx);
-
-
 
 CtxClient *client_by_id (int id);
 
@@ -94,5 +90,6 @@ void ctx_client_toggle_maximized (int id);
 void ctx_client_shade_toggle (int id);
 void ctx_client_move (int id, int x, int y);
 int ctx_client_resize (int id, int width, int height);
+
 
 #endif

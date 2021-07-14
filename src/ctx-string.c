@@ -1,6 +1,3 @@
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
 
 #if !__COSMOPOLITAN__
 #include <stdarg.h>

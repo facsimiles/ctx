@@ -18,11 +18,6 @@
 #include <time.h>
 #endif
 
-#include "vt-line.h"
-#include "terminal.h"
-#include "vt.h"
-#include "itk.h"
-
 #define VT_RECORD 0
 extern Ctx *ctx;
 #define flag_is_set(a, f) (((a) & (f))!=0)
@@ -53,9 +48,7 @@ int  ctx_sdl_get_fullscreen (Ctx *ctx);
 float ctx_target_fps = 25.0;
 static int ctx_fetched_bytes = 1;
 
-#include "ctx-clients.h"
-
-CtxClient *vt_find_client (VT *vt);
+CtxClient *vt_get_client (VT *vt);
 
 CtxList *vts = NULL;
 
@@ -89,7 +82,7 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
   {
     case CTX_title:  
      {
-       CtxClient *client = vt_find_client (vt);
+       CtxClient *client = vt_get_client (vt);
        if (client)
        {
          if (client->title) free (client->title);
@@ -148,7 +141,7 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
   return 0;
 }
 
-extern float font_size;
+static float _ctx_font_size = 10.0;
 
 CtxList *clients = NULL;
 CtxClient *active = NULL;
@@ -159,7 +152,7 @@ static CtxClient *ctx_client_by_id (int id);
 int ctx_client_resize (int id, int width, int height);
 void ctx_client_maximize (int id);
 
-CtxClient *vt_find_client (VT *vt)
+CtxClient *vt_get_client (VT *vt)
 {
   for (CtxList *l = clients; l; l =l->next)
   {
@@ -170,26 +163,29 @@ CtxClient *vt_find_client (VT *vt)
   return NULL;
 }
 
-CtxClient *ctx_client_new (const char *commandline,
+CtxClient *ctx_client_new (Ctx *ctx,
+                           const char *commandline,
                            int x, int y, int width, int height,
                            CtxClientFlags flags)
 {
   static int global_id = 0;
+  float font_size = ctx_get_font_size (ctx);
   CtxClient *client = calloc (sizeof (CtxClient), 1);
   ctx_list_append (&clients, client);
   client->id = global_id++;
   client->x = x;
   client->y = y;
   client->flags = flags;
-
+  client->ctx = ctx;
   client->width = width;
   client->height = height;
   float line_spacing = 2.0f;
-  client->vt = vt_new (commandline, width, height, font_size, line_spacing, client->id, (flags & ITK_CLIENT_CAN_LAUNCH)!=0);
+  client->vt = vt_new (commandline, width, height, font_size,line_spacing, client->id, (flags & ITK_CLIENT_CAN_LAUNCH)!=0);
+  vt_set_ctx (client->vt, ctx);
   return client;
 }
 
-CtxClient *ctx_client_new_argv (const char **argv, int x, int y, int width, int height, CtxClientFlags flags)
+CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, CtxClientFlags flags)
 {
   CtxString *string = ctx_string_new ("");
   for (int i = 0; argv[i]; i++)
@@ -207,7 +203,7 @@ CtxClient *ctx_client_new_argv (const char **argv, int x, int y, int width, int 
        }
     }
   }
-  CtxClient *ret = ctx_client_new (string->str, x, y, width, height, flags);
+  CtxClient *ret = ctx_client_new (ctx, string->str, x, y, width, height, flags);
   ctx_string_free (string, 1);
   return ret;
 }
@@ -220,7 +216,7 @@ static int focus_follows_mouse = 0;
 static CtxClient *find_active (int x, int y)
 {
   CtxClient *ret = NULL;
-  float titlebar_height = font_size;
+  float titlebar_height = _ctx_font_size;
   int resize_border = titlebar_height/2;
 
   for (CtxList *l = clients; l; l = l->next)
@@ -700,11 +696,11 @@ static void ctx_client_close (CtxEvent *event, void *data, void *data2)
 void vt_use_images (VT *vt, Ctx *ctx);
 float _ctx_green = 0.5;
 
-static void ctx_client_draw (ITK *itk, CtxClient *client, float x, float y)
+static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
 {
-    Ctx *ctx = itk->ctx;
     if (client->internal)
     {
+#if 0
       ctx_save (ctx);
 
       ctx_translate (ctx, x, y);
@@ -731,6 +727,7 @@ static void ctx_client_draw (ITK *itk, CtxClient *client, float x, float y)
       //itk_key_bindings (itk);
 
       ctx_restore (ctx);
+#endif
     }
     else
     {
@@ -761,9 +758,8 @@ static void ctx_client_draw (ITK *itk, CtxClient *client, float x, float y)
     }
 }
 
-static void ctx_client_use_images (ITK *itk, CtxClient *client)
+static void ctx_client_use_images (Ctx *ctx, CtxClient *client)
 {
-  Ctx *ctx = itk->ctx;
   if (!client->internal)
   {
       uint32_t rev = vt_rev (client->vt);
@@ -924,8 +920,7 @@ static void ctx_client_titlebar_drag_maximized (CtxEvent *event, void *data, voi
 
 float ctx_client_min_y_pos (Ctx *ctx)
 {
-  float titlebar_height = font_size;
-  return titlebar_height * 2; // a titlebar and a panel
+  return _ctx_font_size * 2; // a titlebar and a panel
 }
 
 float ctx_client_max_y_pos (Ctx *ctx)
@@ -933,7 +928,7 @@ float ctx_client_max_y_pos (Ctx *ctx)
   return ctx_height (ctx);
 }
 
-static void draw_titlebar (ITK *itk, Ctx *ctx, CtxClient *client,
+static void draw_titlebar (Ctx *ctx, CtxClient *client,
                     float x, float y, float width, float titlebar_height)
 {
 #if 0
@@ -963,7 +958,7 @@ static void draw_titlebar (ITK *itk, Ctx *ctx, CtxClient *client,
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
       }
       ctx_fill (ctx);
-      ctx_font_size (ctx, itk->font_size);//titlebar_height);// * 0.85);
+      //ctx_font_size (ctx, itk->font_size);//titlebar_height);// * 0.85);
 
       if (client == active &&
           (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED) || y != titlebar_height))
@@ -1022,15 +1017,15 @@ static void key_press (CtxEvent *event, void *data1, void *data2)
 }
 #endif
 
-int ctx_clients_draw (ITK *itk, Ctx *ctx)
+int ctx_clients_draw (Ctx *ctx)
 {
-  font_size = itk->font_size;
-  float titlebar_height = font_size;
+  _ctx_font_size = ctx_get_font_size (ctx);
+  float titlebar_height = _ctx_font_size;
   int n_clients = ctx_list_length (clients);
 
   if (active && flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED) && n_clients == 1)
   {
-    ctx_client_draw (itk, active, 0, 0);
+    ctx_client_draw (ctx, active, 0, 0);
     return 0;
   }
 
@@ -1041,11 +1036,11 @@ int ctx_clients_draw (ITK *itk, Ctx *ctx)
     {
       if (client == active_tab)
       {
-        ctx_client_draw (itk, client, 0, titlebar_height);
+        ctx_client_draw (ctx, client, 0, titlebar_height);
       }
       else
       {
-        ctx_client_use_images (itk, client);
+        ctx_client_use_images (ctx, client);
       }
     }
   }
@@ -1059,11 +1054,11 @@ int ctx_clients_draw (ITK *itk, Ctx *ctx)
     {
       if (flag_is_set(client->flags, ITK_CLIENT_SHADED))
       {
-        ctx_client_use_images (itk, client);
+        ctx_client_use_images (ctx, client);
       }
       else
       {
-        ctx_client_draw (itk, client, client->x, client->y);
+        ctx_client_draw (ctx, client, client->x, client->y);
       }
 
       // resize regions
@@ -1141,7 +1136,7 @@ int ctx_clients_draw (ITK *itk, Ctx *ctx)
       }
 
       if (client->flags & ITK_CLIENT_TITLEBAR)
-        draw_titlebar (itk, ctx, client, client->x, client->y, client->width, titlebar_height);
+        draw_titlebar (ctx, client, client->x, client->y, client->width, titlebar_height);
     }
   }
   }
@@ -1287,3 +1282,4 @@ void ctx_clients_handle_events (Ctx *ctx)
 #endif
 }
 
+#endif /* CTX_VT */

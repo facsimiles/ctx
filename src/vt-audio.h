@@ -18,7 +18,6 @@
 
 #ifndef NO_SDL
 #include <SDL.h>
-#endif
 #include <zlib.h>
 
 static int ydec (const void *srcp, void *dstp, int count)
@@ -85,6 +84,7 @@ int mic_device = 0;   // when non 0 we have an active mic device
 /*  https://jonathanhays.me/2018/11/14/mu-law-and-a-law-compression-tutorial/
  */
 
+#if 0
 static char MuLawCompressTable[256] =
 {
    0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
@@ -126,6 +126,7 @@ unsigned char LinearToMuLawSample(int16_t sample)
 
   return (unsigned char)compressedByte;
 }
+#endif
 
 void vt_feed_audio (VT *vt, void *samples, int bytes)
 {
@@ -155,7 +156,7 @@ void vt_feed_audio (VT *vt, void *samples, int bytes)
   encoded[0]=0;
   if (audio->encoding == 'a')
   {
-    a85enc (data, encoded, bytes);
+    ctx_a85enc (data, encoded, bytes);
   }
   else /* if (audio->encoding == 'b')  */
   {
@@ -1355,12 +1356,12 @@ void vt_audio (VT *vt, const char *command)
         int bin_length = audio->data_size;
         if (bin_length)
         {
-        uint8_t *data2 = malloc ((unsigned int)a85len ((char*)audio->data, audio->data_size) + 1);
+        uint8_t *data2 = malloc ((unsigned int)ctx_a85len ((char*)audio->data, audio->data_size) + 1);
         // a85len is inaccurate but gives an upper bound,
         // should be fixed.
-        bin_length = a85dec ((char*)audio->data,
-                                (void*)data2,
-                                bin_length);
+        bin_length = ctx_a85dec ((char*)audio->data,
+                                 (void*)data2,
+                                 bin_length);
         free (audio->data);
         audio->data = data2;
         audio->data_size = bin_length;
@@ -1544,3 +1545,4 @@ void vt_audio (VT *vt, const char *command)
     audio->data = NULL;
     audio->data_size=0;
 }
+#endif

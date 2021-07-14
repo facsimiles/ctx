@@ -1,4 +1,5 @@
-/* vt2020 - xterm and DEC terminal, with ANSI, utf8, graphics and audio
+/* DEC terminals/xterm family terminal with ANSI, utf8, vector graphics and
+ * audio.
  *
  * Copyright (c) 2014, 2016, 2018, 2020 Øyvind Kolås <pippin@gimp.org>
  *
@@ -30,8 +31,12 @@
 
 #define _GNU_SOURCE
 #define _BSD_SOURCE
+#ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
+#endif
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600 // for posix_openpt
+#endif
 
 #if !__COSMOPOLITAN__
 #include <sys/stat.h>
@@ -62,11 +67,11 @@
                                 // is anyways currently disabled also in ctx
 
 //#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+//#include "stb_image.h"
 
-#include "vt-line.h"
-#include "vt.h"
-#include "ctx-clients.h"
+//#include "vt-line.h"
+//#include "vt.h"
+//#include "ctx-clients.h"
 
 
 
@@ -220,7 +225,6 @@ ctx_list_insert_before (CtxList **list, CtxList *sibling,
 }
 #endif
 
-#define MAX_COLS 2048 // used for tabstops
 
 typedef enum
 {
@@ -303,60 +307,6 @@ static Image *image_add (int width,
   return image;
 }
 
-typedef struct AudioState
-{
-  int action;
-  int samplerate; // 8000
-  int channels;   // 1
-  int bits;       // 8
-  int type;       // 'u'    u-law  f-loat  s-igned u-nsigned
-  int buffer_size; // desired size of audiofragment in frames
-  // (both for feeding SDL and as desired chunking
-  //  size)
-
-
-  int mic;        // <- should
-  //    request permisson,
-  //    and if gotten, start streaming
-  //    audio packets in the incoming direction
-  //
-  int encoding;   // 'a' ascci85 'b' base64
-  int compression; // '0': none , 'z': zlib   'o': opus(reserved)
-
-  int frames;
-
-  uint8_t *data;
-  int      data_size;
-} AudioState;
-
-
-typedef struct GfxState
-{
-  int action;
-  int id;
-  int buf_width;
-  int buf_height;
-  int format;
-  int compression;
-  int transmission;
-  int multichunk;
-  int buf_size;
-  int x;
-  int y;
-  int w;
-  int h;
-  int x_cell_offset;
-  int y_cell_offset;
-  int columns;
-  int rows;
-  int z_index;
-  int delete;
-
-  uint8_t *data;
-  int   data_size;
-} GfxState;
-
-#include "terminal.h"
 
 
 void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
@@ -404,181 +354,6 @@ int vtpty_waitdata (void  *data, int timeout)
     }
   return 0;
 }
-
-struct _VT
-{
-  VtPty      vtpty;
-  int       id;
-  unsigned char buf[BUFSIZ]; // need one per vt
-  int keyrepeat;
-  int       lastx;
-  int       lasty;
-  int        result;
-  long       rev;
-  //SDL_Rect   dirty;
-  float  dirtpad;
-  float  dirtpad1;
-  float  dirtpad2;
-  float  dirtpad3;
-
-  void  *client;
-
-  ssize_t (*write)   (void *serial_obj, const void *buf, size_t count);
-  ssize_t (*read)    (void *serial_obj, void *buf, size_t count);
-  int     (*waitdata)(void *serial_obj, int timeout);
-  void    (*resize)  (void *serial_obj, int cols, int rows, int px_width, int px_height);
-
-
-  char     *title;
-  void    (*state) (VT *vt, int byte);
-
-  AudioState audio; // < want to move this one level up and share impl
-  GfxState   gfx;
-
-  CtxList   *saved_lines;
-  int       in_alt_screen;
-  int       saved_line_count;
-  CtxList   *lines;
-  int       line_count;
-  CtxList   *scrollback;
-  int       scrollback_count;
-  int       leds[4];
-  uint64_t  cstyle;
-
-  uint8_t   fg_color[3];
-  uint8_t   bg_color[3];
-
-  int       in_smooth_scroll;
-  int       smooth_scroll;
-  float     scroll_offset;
-  int       debug;
-  int       bell;
-  int       origin;
-  int       at_line_home;
-  int       charset[4];
-  int       saved_charset[4];
-  int       shifted_in;
-  int       reverse_video;
-  int       echo;
-  int       bracket_paste;
-  int       ctx_events;
-  int       font_is_mono;
-  int       palette_no;
-  int       has_blink; // if any of the set characters are blinking
-  // updated on each draw of the screen
-  
-  int can_launch;
-
-  int unit_pixels;
-  int mouse;
-  int mouse_drag;
-  int mouse_all;
-  int mouse_decimal;
-
-
-  uint8_t    utf8_holding[64]; /* only 4 needed for utf8 - but it's purpose
-                                 is also overloaded for ctx journal command
-                                 buffering , and the bigger sizes for the svg-like
-                                 ctx parsing mode */
-  int        utf8_expected_bytes;
-  int        utf8_pos;
-
-
-  int        ref_len;
-  char       reference[16];
-  int        in_prev_match;
-  CtxParser *ctxp;
-  // text related data
-  float      letter_spacing;
-
-  float      word_spacing;
-  float      font_stretch;  // horizontal expansion
-  float      font_size_adjust;
-  // font-variant
-  // font-weight
-  // text-decoration
-
-  int        encoding;  // 0 = utf8 1=pc vga 2=ascii
-
-  int        local_editing; /* terminal operates without pty  */
-
-  int        insert_mode;
-  int        autowrap;
-  int        justify;
-  float      cursor_x;
-  int        cursor_y;
-  int        cols;
-  int        rows;
-  VtLine    *current_line;
-
-
-  int        cr_on_lf;
-  int        cursor_visible;
-  int        saved_x;
-  int        saved_y;
-  uint32_t   saved_style;
-  int        saved_origin;
-  int        cursor_key_application;
-  int        margin_top;
-  int        margin_bottom;
-  int        margin_left;
-  int        margin_right;
-
-  int        left_right_margin_mode;
-
-  int        scrollback_limit;
-  float      scroll;
-  int        scroll_on_input;
-  int        scroll_on_output;
-
-  char       *argument_buf;
-  int        argument_buf_len;
-  int        argument_buf_cap;
-  uint8_t    tabs[MAX_COLS];
-  int        inert;
-
-  int        width;
-  int        height;
-
-  int        cw; // cell width
-  int        ch; // cell height
-  float      font_to_cell_scale;
-  float      font_size; // when set with set_font_size, cw and ch are recomputed
-  float      line_spacing; // using line_spacing
-  float      scale_x;
-  float      scale_y;
-
-  int        ctx_pos;  // 1 is graphics above text, 0 or -1 is below text
-  Ctx       *root_ctx; /* only used for knowledge of top-level dimensions */
-
-  int        blink_state;
-
-  FILE      *log;
-
-  int cursor_down;
-
-  int select_begin_col;
-  int select_begin_row;
-  int select_start_col;
-  int select_start_row;
-  int select_end_col;
-  int select_end_row;
-  int select_begin_x;
-  int select_begin_y;
-  int select_active;
-
-  int popped;
-
-  /* used to make runs of background on one line be drawn
-   * as a single filled rectangle
-   */
-  int   bg_active;
-  float bg_x0;
-  float bg_y0;
-  float bg_width;
-  float bg_height;
-  uint8_t bg_rgba[4];
-};
 
 
 /* on current line */
@@ -638,27 +413,6 @@ static int vt_margin_right (VT *vt)
 }
 
 #define VT_MARGIN_RIGHT vt_margin_right(vt)
-
-static ssize_t vt_write (VT *vt, const void *buf, size_t count)
-{
-  if (!vt->write) { return 0; }
-  return vt->write (&vt->vtpty, buf, count);
-}
-static ssize_t vt_read (VT *vt, void *buf, size_t count)
-{
-  if (!vt->read) { return 0; }
-  return vt->read (&vt->vtpty, buf, count);
-}
-static int vt_waitdata (VT *vt, int timeout)
-{
-  if (!vt->waitdata) { return 0; }
-  return vt->waitdata (&vt->vtpty, timeout);
-}
-static void vt_resize (VT *vt, int cols, int rows, int px_width, int px_height)
-{
-  if (vt && vt->resize)
-    { vt->resize (&vt->vtpty, cols, rows, px_width, px_height); }
-}
 
 
 void vt_rev_inc (VT *vt)
@@ -2250,7 +2004,7 @@ static void vtcmd_set_alternate_font (VT *vt, const char *sequence)
   vt->charset[0] = 1;
 }
 
-void _ctx_set_frame (Ctx *ctx, int frame);
+int _ctx_set_frame (Ctx *ctx, int frame);
 int _ctx_frame (Ctx *ctx);
 
 static void vt_ctx_exit (void *data)
@@ -3362,11 +3116,9 @@ static void vt_line_feed (VT *vt)
     { vt_carriage_return (vt); }
 }
 
-#include "vt-encodings.h"
+//#include "vt-encodings.h"
 
 #ifndef NO_SDL
-#include "vt-audio.h"
-
 static void vt_state_apc_audio (VT *vt, int byte)
 {
   if ( (byte < 32) && ( (byte < 8) || (byte > 13) ) )
@@ -4774,7 +4526,7 @@ static void vt_state_sixel (VT *vt, int byte)
 }
 
 void add_tab (const char *commandline, int can_launch);
-void vt_screenshot (const char *output_path);
+//void vt_screenshot (const char *output_path);
 
 static void vt_state_apc_generic (VT *vt, int byte)
 {
@@ -4828,7 +4580,7 @@ static void vt_state_apc_generic (VT *vt, int byte)
             //fprintf (stderr, "[%s]", sep +  1);
             if (!strncmp (sep + 1, "fbsave", 6))
             {
-              vt_screenshot (sep + 8);
+              // vt_screenshot (sep + 8);
             }
             else
             {
@@ -8616,8 +8368,10 @@ static int long_tap_cb_id = 0;
 static int single_tap (Ctx *ctx, void *data)
 {
   VT *vt = data;
+#if 0 // XXX
   if (short_count == 0 && !vt->select_active)
     terminal_long_tap (ctx, vt);
+#endif
   return 0;
 }
 

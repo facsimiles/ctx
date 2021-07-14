@@ -15,7 +15,6 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "vt-line.h"
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
