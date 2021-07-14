@@ -212,6 +212,14 @@ void app_update(app_t *self) {
 static int frame_no = 0;
 static int frame_drop = 1;
 
+#define GRAYSCALE 0  // set to 1 to only copy 8bit grayscale,
+                     // this already works smoothly
+                     // maybe gray ycbcr also works?
+                     // ... RGB reaches bottlenecks in vt layer
+                     // for the terminal - if those are removed, then higher res ycbcr becomes possible
+                     //
+                     // mmap'ed sharing of blobs should be a last resort - since it also has security implications
+
 void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
 	app_t *self = (app_t *)user;
 
@@ -219,7 +227,9 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
         char eid[16];
         sprintf (eid, "%i", frame_no);
         if (frame_no % frame_drop != 0) return;
+#if GRAYSCALE==0
 	plm_frame_to_rgb(frame, self->rgb_data, frame->width * 3);
+#endif
         ctx_reset (self->ctx);
         ctx_save (self->ctx);
         ctx_rectangle (self->ctx, 0, 0, ctx_width (self->ctx), ctx_height (self->ctx));
@@ -228,18 +238,29 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
   if (scaleh < scale) scale = scaleh;
   ctx_scale (self->ctx, scale, scale);
 
-        ctx_define_texture (self->ctx,
-                           eid, // by passing in a unique eid
-                               // we avoid having to hash
-                                frame->width, frame->height,
-                                frame->width * 3,
-                                CTX_FORMAT_RGB8,
-                                self->rgb_data,
-                                NULL);
-        ctx_image_smoothing (self->ctx, 0);
-        ctx_fill (self->ctx);
-        ctx_restore (self->ctx);
-        ctx_flush (self->ctx);
+#if GRAYSCALE==0
+  ctx_define_texture (self->ctx,
+                      eid, // by passing in a unique eid
+                           // we avoid having to hash
+                      frame->width, frame->height,
+                      frame->width * 3,
+                      CTX_FORMAT_RGB8,
+                      self->rgb_data,
+                      NULL);
+#else
+  ctx_define_texture (self->ctx,
+                      eid, // by passing in a unique eid
+                           // we avoid having to hash
+                      frame->width, frame->height,
+                      frame->width,
+                      CTX_FORMAT_GRAY8,
+                      frame->y.data,
+                      NULL);
+#endif
+  ctx_image_smoothing (self->ctx, 0);
+  ctx_fill (self->ctx);
+  ctx_restore (self->ctx);
+  ctx_flush (self->ctx);
 }
 
 void app_on_audio(plm_t *mpeg, plm_samples_t *samples, void *user) {
