@@ -313,8 +313,12 @@ static CtxClient *ctx_client_by_id (int id)
 
 void ctx_client_remove (Ctx *ctx, CtxClient *client)
 {
+#if CTX_THREADS
+      mtx_lock (&client->mtx);
+#endif
   if (!client->internal)
   {
+
     if (client->vt)
       vt_destroy (client->vt);
   }
@@ -340,6 +344,9 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
     active = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
     if (!active) active = clients?clients->data:NULL;
   }
+#if CTX_THREADS
+      mtx_unlock (&client->mtx);
+#endif
   free (client);
   //ensure_layout();
 }
@@ -1226,13 +1233,19 @@ int ctx_clients_need_redraw (Ctx *ctx)
 
 float ctx_avg_bytespeed = 0.0;
 
-void ctx_clients_handle_events (Ctx *ctx)
+static void ctx_client_handle_events_iteration (Ctx *ctx)
 {
+
   //int n_clients = ctx_list_length (clients);
       int pending_data = 0;
       long time_start = ctx_ticks ();
       int sleep_time = 1000000/ctx_target_fps;
+
+#if CTX_THREADS==0
       pending_data = ctx_input_pending (ctx, sleep_time);
+#else
+      pending_data = ctx_input_pending (ctx, sleep_time);
+#endif
 
       ctx_fetched_bytes = 0;
       if (pending_data)
@@ -1288,7 +1301,7 @@ void ctx_clients_handle_events (Ctx *ctx)
 
       //ctx_target_fps = 30.0;
 #else
-      ctx_target_fps = 30.0;
+      ctx_target_fps = 240.0;
 #endif
 
       long time_end = ctx_ticks ();
@@ -1299,6 +1312,30 @@ void ctx_clients_handle_events (Ctx *ctx)
       ctx_avg_bytespeed = bytespeed * 0.2 + ctx_avg_bytespeed * 0.8;
 #if 0
       fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", ctx_avg_bytespeed/1024/1024, ctx_fetched_bytes, timed, ctx_target_fps);
+#endif
+}
+
+
+static int ctx_clients_handle_events_fun (void *data)
+{
+  Ctx *ctx = data;
+  while (!ctx->quit)
+  {
+    ctx_client_handle_events_iteration (data);
+  }
+  return 0;
+}
+
+void ctx_clients_handle_events (Ctx *ctx)
+{
+#if CTX_THREADS==0
+    ctx_client_handle_events_iteration (ctx);
+#else
+    static thrd_t tid = 0;
+    if (tid == 0)
+    {
+      thrd_create (&tid, (void*)ctx_clients_handle_events_fun, ctx);
+    }
 #endif
 }
 
