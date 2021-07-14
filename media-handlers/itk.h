@@ -439,6 +439,8 @@ void itk_reset (ITK *itk)
 "wallpaper: #355\n"
 //"wallpaper: #677\n"
 "\n"
+"itk-font-size: 20.0;\n"
+
 "titlebar-bg:          #0007;\n"
 "titlebar-fg:          #999a\n"
 "titlebar-close:       #fff9\n"
@@ -446,7 +448,7 @@ void itk_reset (ITK *itk)
 "titlebar-focused-bg:  #333b;\n"
 "titlebar-focused-fg:  #ffff;\n"
 "\n"
-"terminal-bg:         #111e;\n"
+"terminal-bg:         #000f;\n"
 "terminal-bg-reverse: #ddde;\n"
 "terminal-active-bg:         #000b;\n"
 "terminal-active-bg-reverse: #dddb;\n"

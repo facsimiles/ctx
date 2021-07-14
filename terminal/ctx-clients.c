@@ -1273,7 +1273,7 @@ void ctx_clients_handle_events (Ctx *ctx)
 
       //ctx_target_fps = 30.0;
 #else
-      ctx_target_fps = 25.0 * 2;
+      ctx_target_fps = 30.0;
 #endif
 
       long time_end = ctx_ticks ();

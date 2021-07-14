@@ -7873,7 +7873,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
   }
 
   if (is_fg ||
- //     ((!on_white) && bg_rgb[0]==0 && bg_rgb[1]==0 && bg_rgb[2]==0) ||
+      ((!on_white) && bg_rgb[0]==0 && bg_rgb[1]==0 && bg_rgb[2]==0) ||
       ((on_white) && bg_rgb[0]==255 && bg_rgb[1]==255 && bg_rgb[2]==255))
           /* these comparisons are not entirely correct, when on dark background we assume black to
            * be default and non-set, even when theme might differ
@@ -8223,7 +8223,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   //if (vt->scroll || full)
     {
       ctx_begin_path (ctx);
-#if 0
+#if 1
       ctx_rectangle (ctx, 0, 0, vt->width, //(vt->cols) * vt->cw,
                      (vt->rows) * vt->ch);
       if (vt->reverse_video)
