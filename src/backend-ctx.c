@@ -384,6 +384,7 @@ void ctx_ctx_free (CtxCtx *ctx)
 
 Ctx *ctx_new_ctx (int width, int height)
 {
+  float font_size = 12.0;
   Ctx *ctx = ctx_new ();
   CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
   fprintf (stdout, "\e[?1049h");
@@ -397,6 +398,8 @@ Ctx *ctx_new_ctx (int width, int height)
     ctxctx->rows = ctx_terminal_rows ();
     width  = ctxctx->width  = ctx_terminal_width ();
     height = ctxctx->height = ctx_terminal_height ();
+    font_size = height / ctxctx->rows;
+    ctx_font_size (ctx, font_size);
   }
   else
   {
