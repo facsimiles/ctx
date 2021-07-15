@@ -550,6 +550,7 @@ void viewer_load_path (const char *path)
     }
     if (command[0])
     {
+      ctx_font_size (ctx, itk->font_size);
       ctx_client_new (ctx, command,
         ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
 #if 0

@@ -1235,21 +1235,18 @@ float ctx_avg_bytespeed = 0.0;
 
 static void ctx_client_handle_events_iteration (Ctx *ctx)
 {
-
+  static int fail_safe = 0;
   //int n_clients = ctx_list_length (clients);
       int pending_data = 0;
       long time_start = ctx_ticks ();
       int sleep_time = 1000000/ctx_target_fps;
 
-#if CTX_THREADS==0
       pending_data = ctx_input_pending (ctx, sleep_time);
-#else
-      pending_data = ctx_input_pending (ctx, sleep_time);
-#endif
 
       ctx_fetched_bytes = 0;
-      if (pending_data)
+      if (pending_data || fail_safe>100)
       {
+        if (!pending_data)pending_data = 1;
         /* record amount of time spent - and adjust time of reading for
          * vts?
          */
@@ -1266,9 +1263,11 @@ static void ctx_client_handle_events_iteration (Ctx *ctx)
           mtx_unlock (&client->mtx);
 #endif
         }
+        fail_safe = 0;
       }
       else
       {
+        fail_safe ++;
         for (CtxList *l = clients; l; l = l->next)
         {
           CtxClient *client = l->data;
@@ -1301,7 +1300,7 @@ static void ctx_client_handle_events_iteration (Ctx *ctx)
 
       //ctx_target_fps = 30.0;
 #else
-      ctx_target_fps = 25.0;
+      ctx_target_fps = 30.0;
 #endif
 
       long time_end = ctx_ticks ();

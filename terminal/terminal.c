@@ -100,6 +100,8 @@ static void ensure_layout ()
 /********************/
 extern float _ctx_green;
 
+static float start_font_size = 12.0;
+
 float add_x = 10;
 float add_y = 100;
 
@@ -118,6 +120,7 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
   if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
   if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
+  ctx_font_size (ctx, start_font_size);
   active = ctx_client_new (ctx, commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, flags);
   add_y += ctx_height (ctx) / 20;
@@ -749,6 +752,11 @@ int terminal_main (int argc, char **argv)
   if (font_size < 0)
     font_size = floorf (width / cols  * 2 / 2);
 
+  ITK *itk = itk_new (ctx);
+
+  itk->scale = 1.0;
+  itk->font_size = font_size;
+  start_font_size = font_size;
   ctx_font_size (ctx, font_size);
   if (!commandline)
     commandline = vt_find_shell_command();
@@ -757,7 +765,7 @@ int terminal_main (int argc, char **argv)
   if (!active)
     return 1;
 
-  ITK *itk = itk_new (ctx);
+
 
   signal (SIGCHLD,ctx_clients_signal_child);
 
@@ -768,8 +776,6 @@ int terminal_main (int argc, char **argv)
   int print_shape_cache_rate = 0;
   if (getenv ("CTX_DEBUG_SHAPE_CACHE"))
     print_shape_cache_rate = 1;
-  itk->scale = 1.0;
-  itk->font_size = font_size;
 
   while (clients && !ctx_has_quit (ctx))
     {
