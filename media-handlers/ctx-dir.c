@@ -261,7 +261,7 @@ static void draw_folder (Ctx *ctx, float x, float y, float w, float h)
   ctx_rel_line_to (ctx, w * 0.33, 0);
   ctx_rel_line_to (ctx, w * 0.016667, h * -.05);
   ctx_rel_line_to (ctx, w * 0.15, 0);
-  ctx_rel_line_to (ctx, 0, h * 0.62);
+  ctx_rel_line_to (ctx, 0, h * 0.55);
   ctx_rel_line_to (ctx, w * -0.5, 0);
   ctx_close_path (ctx);
   ctx_line_width (ctx, w * 0.0133);
@@ -359,7 +359,6 @@ static void files_grid (ITK *itk, Files *files)
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
 
-
   for (int i = 0; i < files->n; i++)
   {
     if ((files->namelist[i]->d_name[0] == '.' &&
@@ -383,9 +382,11 @@ static void files_grid (ITK *itk, Files *files)
       else
         sprintf (newpath, "%s%s%s", files->path, PATH_SEP, d_name);
       lstat (newpath, &stat_buf);
+      int focused = 0;
 
       if (c->no == itk->focus_no)
       {
+        focused = 1;
         viewer_load_path (newpath);
 
         ctx_add_key_binding (ctx, "return", NULL, NULL, print_curr, (void*)((size_t)i));
@@ -411,13 +412,39 @@ static void files_grid (ITK *itk, Files *files)
       }
       free (newpath);
 
-      ctx_move_to (itk->ctx, itk->x + em * 3, itk->y + em * 3.5);
-      ctx_font_size (itk->ctx, em * 0.6);// * 0.9);
-      ctx_gray (itk->ctx, 0.8);
-      ctx_save (itk->ctx);
-      ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_CENTER);
-      ctx_text (itk->ctx, files->namelist[i]->d_name);
-      ctx_restore (itk->ctx);
+      char *title = malloc (strlen (files->namelist[i]->d_name) + 32);
+      strcpy (title, files->namelist[i]->d_name);
+      int title_len = strlen (title);
+
+      {
+        int wraplen = 12;
+        int lines = (title_len + wraplen - 1)/ wraplen;
+
+        if (!focused &&  lines > 2) lines = 2;
+
+        for (int i = 0; i < lines; i++)
+        {
+        ctx_move_to (itk->ctx, itk->x + em * 3, itk->y + em * (4.0 + i) - lines/2.0 * em);
+        ctx_font_size (itk->ctx, em); //em * 0.6);// * 0.9);
+        ctx_gray (itk->ctx, 0.8);
+        ctx_save (itk->ctx);
+        ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_CENTER);
+
+        if (i * wraplen + wraplen < title_len)
+        {
+        int tmp = title[i * wraplen + wraplen];
+        title[i * wraplen + wraplen] = 0;
+        ctx_text (itk->ctx, &title[i * wraplen]);
+        title[i * wraplen + wraplen] = tmp;
+        }
+        else
+        {
+          ctx_text (itk->ctx, &title[i * wraplen]);
+        }
+        ctx_restore (itk->ctx);
+        }
+      }
+        free (title);
       }
       itk->x = saved_x + em * 6;
       if (itk->x + em * 5 > itk->panel->x + itk->panel->width)
@@ -509,20 +536,23 @@ void viewer_load_path (const char *path)
   if (path)
   {
     loaded_path = strdup (path);
-    char *command = malloc (5 + strlen (path) + 16);
+    char *command = malloc (32 + strlen (path) + 64);
     const char *suffix = get_suffix (path);
     command[0]=0;
     if (ctx_path_is_dir (path))
     {
        //fprintf (stderr, "is dir\n");
        return;
+       //sprintf (command, "du -h %s", path);
     }
 
     char *basname = get_basename (path);
 
+    if (!command[0])
     if (!strcmp (suffix, "c")||
         !strcmp (suffix, "txt")||
         !strcmp (suffix, "h")||
+        !strcmp (suffix, "html")||
         !strcmp (suffix, "sh")||
         !strcmp (suffix, "ctx")||
         !strcmp (suffix, "md")||
@@ -531,16 +561,15 @@ void viewer_load_path (const char *path)
         !strcmp (basname, "ReadMe")
         )
     {
-      sprintf (command, "vim -R %s", path);
+      sprintf (command, "vim +1 -R %s", path);
     }
     free (basname);
    
-
+    if (!command[0])
+    {
     if (!strcmp (suffix, "png")||
         !strcmp (suffix, "gif")||
         !strcmp (suffix, "jpg")||
-        !strcmp (suffix, "mpg")||
-        !strcmp (suffix, "MPG")||
         !strcmp (suffix, "JPG")||
         !strcmp (suffix, "PNG")||
         !strcmp (suffix, "GIF")
@@ -548,11 +577,25 @@ void viewer_load_path (const char *path)
     {
       sprintf (command, "ctx %s", path);
     }
+    else if (!strcmp (suffix, "mpg")||
+          !strcmp (suffix, "MPG"))
+    {
+      sprintf (command, "ctx -g -s %s", path);
+    }
+    }
+
+    if (!command[0])
+    {
+      sprintf (command, "sh -c 'xxd %s | vim -R -'", path);
+    }
+
     if (command[0])
     {
       ctx_font_size (ctx, itk->font_size);
+      //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
       ctx_client_new (ctx, command,
         ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
+       //fprintf (stderr, "[%s]\n", command);
 #if 0
       fprintf (stderr, "run:%s %i %i %i %i,   %i\n", command,
         (int)ctx_width(ctx)/2, (int)0, (int)ctx_width(ctx)/2, (int)(ctx_height(ctx)-font_size*2), 0);
@@ -573,6 +616,7 @@ static int card_files (ITK *itk_, void *data)
   {
     ctx_add_timeout (ctx, 250, thumb_monitor, NULL);
     font_size = itk->font_size;
+    //itk->font_size = font_size;
     viewer_load_path ("/home/pippin/src/ctx/media/traffic.gif");
     first = 0;
   }

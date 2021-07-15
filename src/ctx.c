@@ -1978,11 +1978,11 @@ ctx_render_ctx_textures (Ctx *ctx, Ctx *d_ctx)
                  //fprintf (stderr, "[%c]", command->code);
                  break;
          case CTX_TEXTURE:
-             fprintf (stderr, "t:%s\n", command->texture.eid);
+             //fprintf (stderr, "t:%s\n", command->texture.eid);
              ctx_process (d_ctx, &command->entry);
              break;
          case CTX_DEFINE_TEXTURE:
-             fprintf (stderr, "d:%s\n", command->define_texture.eid);
+             //fprintf (stderr, "d:%s\n", command->define_texture.eid);
              ctx_process (d_ctx, &command->entry);
            break;
        }

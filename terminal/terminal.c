@@ -750,7 +750,7 @@ int terminal_main (int argc, char **argv)
   }
 
   if (font_size < 0)
-    font_size = floorf (width / cols  * 2 / 2);
+    font_size = floorf (width / cols  * 2 / 1.5);
 
   ITK *itk = itk_new (ctx);
 

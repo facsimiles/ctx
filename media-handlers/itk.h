@@ -357,8 +357,8 @@ ITK *itk_new (Ctx *ctx)
   ITK *itk              = calloc (sizeof (ITK), 1);
   itk->ctx              = ctx;
   itk->focus_wraparound = 1;
-  itk->scale            = 1.5;
-  itk->font_size        = getenv("ITK_FONT_SIZE")?atoi(getenv("ITK_FONT_SIZE")):20;
+  itk->scale            = 1.0;
+  itk->font_size        = getenv("ITK_FONT_SIZE")?atoi(getenv("ITK_FONT_SIZE")):ctx_get_font_size(ctx);
   if (ctx_renderer_is_term (ctx))
   {
     itk->scale     = 1.0;
@@ -404,11 +404,11 @@ static inline void control_unref (CtxControl *control)
 
     if (control->finalize)
       control->finalize (control->data);
-
     if (w->label)
       free (w->label);
     if (w->fallback)
       free (w->fallback);
+
     free (w);
     return;
   }
@@ -2227,7 +2227,7 @@ itk_itk_settings (ITK *itk)
         //itk_toggle (itk, "enable keybindings", &enable_keybindings);
         //itk_toggle (itk, "light mode", &itk->light_mode);
         itk_slider_float (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
-        itk_slider_float (itk, "font size ", &itk->font_size, 4.0, 60.0, 0.25);
+        itk_slider_float (itk, "font size ", &itk->font_size, 3.0, 60.0, 0.25);
         itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
         itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
         itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);

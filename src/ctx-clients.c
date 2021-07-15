@@ -181,6 +181,13 @@ CtxClient *ctx_client_new (Ctx *ctx,
   client->ctx = ctx;
   client->width = width;
   client->height = height;
+
+  if (ctx_renderer_is_term (ctx))
+  {
+    font_size = 3;
+  }
+
+      //fprintf (stderr, "client new:%f\n", font_size);
 #if CTX_THREADS
   mtx_init (&client->mtx, mtx_plain);
 #endif
@@ -746,6 +753,13 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
 #if CTX_THREADS
       mtx_lock (&client->mtx);
 #endif
+
+          int found = 0;
+          for (CtxList *l2 = clients; l2; l2 = l2->next)
+            if (l2->data == client) found = 1;
+          if (found)
+          {
+
       int rev = vt_rev (client->vt);
 #if VT_RECORD
       if (client->drawn_rev != rev)
@@ -775,6 +789,7 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
 #endif
 #endif
       client->drawn_rev = rev;
+          }
     }
 }
 
@@ -1257,12 +1272,19 @@ static void ctx_client_handle_events_iteration (Ctx *ctx)
 #if CTX_THREADS
           mtx_lock (&client->mtx);
 #endif
+          int found = 0;
+          for (CtxList *l2 = clients; l2; l2 = l2->next)
+            if (l2->data == client) found = 1;
+          if (!found)
+            goto done;
+          
           ctx_fetched_bytes += vt_poll (client->vt, fractional_sleep);
           //ctx_fetched_bytes += vt_poll (client->vt, sleep_time); //fractional_sleep);
 #if CTX_THREADS
           mtx_unlock (&client->mtx);
 #endif
         }
+done:
         fail_safe = 0;
       }
       else
