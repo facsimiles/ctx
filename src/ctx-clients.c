@@ -320,9 +320,7 @@ static CtxClient *ctx_client_by_id (int id)
 
 void ctx_client_remove (Ctx *ctx, CtxClient *client)
 {
-#if CTX_THREADS
-  mtx_lock (&client->mtx);
-#endif
+  ctx_client_lock (client);
   if (!client->internal)
   {
 
@@ -351,9 +349,8 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
     active = find_active (ctx_pointer_x (ctx), ctx_pointer_y (ctx));
     if (!active) active = clients?clients->data:NULL;
   }
-#if CTX_THREADS
-      mtx_unlock (&client->mtx);
-#endif
+
+  ctx_client_unlock (client);
   free (client);
   //ensure_layout();
 }
@@ -750,9 +747,7 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
     }
     else
     {
-#if CTX_THREADS
-      mtx_lock (&client->mtx);
-#endif
+       ctx_client_lock (client);
 
           int found = 0;
           for (CtxList *l2 = clients; l2; l2 = l2->next)
@@ -784,9 +779,7 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
 
       vt_draw (client->vt, ctx, x, y);
       vt_register_events (client->vt, ctx, x, y);
-#if CTX_THREADS
-      mtx_unlock (&client->mtx);
-#endif
+      ctx_client_unlock (client);
 #endif
       client->drawn_rev = rev;
           }
@@ -821,14 +814,30 @@ static void ctx_client_use_images (Ctx *ctx, CtxClient *client)
   }
 }
 
+void ctx_client_lock (CtxClient *client)
+{
+#if CTX_THREADS
+    mtx_lock (&client->mtx);
+#endif
+}
 
-static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
+void ctx_client_unlock (CtxClient *client)
+{
+#if CTX_THREADS
+    mtx_unlock (&client->mtx);
+#endif
+}
+
+void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 {
   if (!active)
     return;
   if (active->internal)
     return;
   VT *vt = active->vt;
+  CtxClient *client = vt_get_client (vt);
+
+  ctx_client_lock (client);
 
   if (!strcmp (event, "F11"))
   {
@@ -916,6 +925,7 @@ static void handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
       if (vt)
         vt_feed_keystring (vt, ctx_event, event);
     }
+  ctx_client_unlock (client);
 }
 
 static int ctx_clients_dirty_count (void)
@@ -1269,9 +1279,7 @@ static void ctx_client_handle_events_iteration (Ctx *ctx)
         for (CtxList *l = clients; l; l = l->next)
         {
           CtxClient *client = l->data;
-#if CTX_THREADS
-          mtx_lock (&client->mtx);
-#endif
+          ctx_client_lock (client);
           int found = 0;
           for (CtxList *l2 = clients; l2; l2 = l2->next)
             if (l2->data == client) found = 1;
@@ -1280,9 +1288,7 @@ static void ctx_client_handle_events_iteration (Ctx *ctx)
           
           ctx_fetched_bytes += vt_poll (client->vt, fractional_sleep);
           //ctx_fetched_bytes += vt_poll (client->vt, sleep_time); //fractional_sleep);
-#if CTX_THREADS
-          mtx_unlock (&client->mtx);
-#endif
+          ctx_client_unlock (client);
         }
 done:
         fail_safe = 0;

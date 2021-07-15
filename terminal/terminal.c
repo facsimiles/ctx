@@ -56,6 +56,8 @@ vt_screenshot (const char *output_path)
   ctx_screenshot (ctx, output_path);
 }
 
+void ctx_client_lock (CtxClient *client);
+void ctx_client_unlock (CtxClient *client);
 
 void ctx_clients_signal_child (int signum);
 
@@ -100,7 +102,7 @@ static void ensure_layout ()
 /********************/
 extern float _ctx_green;
 
-static float start_font_size = 12.0;
+static float start_font_size = 22.0;
 
 float add_x = 10;
 float add_y = 100;
@@ -207,7 +209,6 @@ void switch_to_tab (int desired_no)
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
 int ctx_sdl_get_fullscreen (Ctx *ctx);
 
-
 static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
                           const char *event)
@@ -217,6 +218,10 @@ static void handle_event (Ctx        *ctx,
   if (active->internal)
     return;
   VT *vt = active->vt;
+
+  CtxClient *client = vt_get_client (vt);
+
+  ctx_client_lock (client);
 
   if (!strcmp (event, "F11"))
   {
@@ -303,6 +308,7 @@ static void handle_event (Ctx        *ctx,
       if (vt)
         vt_feed_keystring (vt, ctx_event, event);
     }
+  ctx_client_unlock (client);
 }
 
 static int ctx_clients_dirty_count (void)
