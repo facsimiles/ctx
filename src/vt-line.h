@@ -215,7 +215,7 @@ static inline void vt_line_insert_utf8    (VtLine *line, int pos, const char *ne
   CtxString *string = (CtxString*)line;
   ctx_string_insert_utf8 (string, pos, new_glyph);
   int len = vt_line_get_length (line);
-  for (int i = 1; i < len; i++)
+  for (int i = pos; i < len; i++)
     vt_line_set_style (line, i, vt_line_get_style (line, i-1));
 }
 
