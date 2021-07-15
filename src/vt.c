@@ -7774,6 +7774,7 @@ static int scrollbar_down = 0;
 void vt_mouse_event (CtxEvent *event, void *data, void *data2)
 {
   VT   *vt = data;
+  CtxClient *client = vt_get_client (vt);
   float  x = event->x;
   float  y = event->y;
   int device_no = event->device_no;
@@ -7792,7 +7793,9 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       {
         sprintf (buf, "mouse-motion %.0f %.0f %i", x, y, device_no);
 //      ctx_set_dirty (event->ctx, 1);
+        ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
+        ctx_client_unlock (client);
 //      vt->rev++;
       }
       break;
@@ -7812,7 +7815,9 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       else
       {
         sprintf (buf, "mouse-press %.0f %.0f %i", x, y, device_no);
+        ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
+        ctx_client_unlock (client);
 //      ctx_set_dirty (event->ctx, 1);
 //      vt->rev++;
       }
@@ -7824,7 +7829,9 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       }
         ctx_set_dirty (event->ctx, 1);
         sprintf (buf, "mouse-release %.0f %.0f %i", x, y, device_no);
+        ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
+        ctx_client_unlock (client);
       break;
     default:
       // we should not stop propagation
