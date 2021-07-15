@@ -800,12 +800,13 @@ int terminal_main (int argc, char **argv)
         ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
         ctx_flush (ctx);
+        //usleep (1000 * 25); // should wake up from vt poll thread instead.
       }
       else
       {
               // only needed when threads are enabled, when not
               // this causes unnecesary jag
-         usleep (1000 * 5); // should wake up from vt poll thread instead.
+        usleep (1000 * 5); // should wake up from vt poll thread instead.
       }
      if (active)
        terminal_update_title (active->title);

@@ -75,6 +75,7 @@ typedef struct {
 } app_t;
 
 int grayscale = 0;
+int smoothing = 0;
 
 app_t * app_create(const char *filename, int texture_mode);
 void app_update(app_t *self);
@@ -251,7 +252,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                       frame->y.data,
                       NULL);
   }
-  ctx_image_smoothing (self->ctx, 0);
+  ctx_image_smoothing (self->ctx, smoothing);
   ctx_fill (self->ctx);
   ctx_restore (self->ctx);
   ctx_flush (self->ctx);
@@ -282,6 +283,10 @@ int ctx_mpg_main(int argc, char *argv[]) {
             if (argv[i][1] == 'g')
             {
               grayscale = 1;
+            }
+            else if (argv[i][1] == 's')
+            {
+              smoothing = 1;
             }
           }
           else

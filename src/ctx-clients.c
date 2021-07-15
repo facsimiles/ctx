@@ -314,7 +314,7 @@ static CtxClient *ctx_client_by_id (int id)
 void ctx_client_remove (Ctx *ctx, CtxClient *client)
 {
 #if CTX_THREADS
-      mtx_lock (&client->mtx);
+  mtx_lock (&client->mtx);
 #endif
   if (!client->internal)
   {
@@ -1301,7 +1301,7 @@ static void ctx_client_handle_events_iteration (Ctx *ctx)
 
       //ctx_target_fps = 30.0;
 #else
-      ctx_target_fps = 240.0;
+      ctx_target_fps = 25.0;
 #endif
 
       long time_end = ctx_ticks ();
@@ -1321,7 +1321,20 @@ static int ctx_clients_handle_events_fun (void *data)
   Ctx *ctx = data;
   while (!ctx->quit)
   {
+    int n_clients = ctx_list_length (clients);
     ctx_client_handle_events_iteration (data);
+    switch (n_clients)
+    {
+      case 0:
+        usleep (1000 * 10);
+        break;
+      case 1:
+        usleep (1); // letting quit work - and also makes framerate for dump
+        break;
+      default:
+        usleep (0); // the switching between clients should be enough
+        break;
+    }
   }
   return 0;
 }

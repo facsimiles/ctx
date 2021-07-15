@@ -542,8 +542,8 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                      *  use
                      */
 
-  _ctx_texture_unlock ();
   ctx_rasterizer_set_texture (rasterizer, eid, 0.0, 0.0);
+  _ctx_texture_unlock ();
 }
 
 

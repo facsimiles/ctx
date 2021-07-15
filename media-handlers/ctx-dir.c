@@ -514,7 +514,7 @@ void viewer_load_path (const char *path)
     command[0]=0;
     if (ctx_path_is_dir (path))
     {
-       fprintf (stderr, "is dir\n");
+       //fprintf (stderr, "is dir\n");
        return;
     }
 
@@ -552,8 +552,10 @@ void viewer_load_path (const char *path)
     {
       ctx_client_new (ctx, command,
         ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
+#if 0
       fprintf (stderr, "run:%s %i %i %i %i,   %i\n", command,
         (int)ctx_width(ctx)/2, (int)0, (int)ctx_width(ctx)/2, (int)(ctx_height(ctx)-font_size*2), 0);
+#endif
     }
   }
 }

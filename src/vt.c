@@ -4781,7 +4781,14 @@ int vt_poll (VT *vt, int timeout)
   if (!vt) return 0;
   int read_size = sizeof (vt->buf);
   int got_data = 0;
-  int remaining_chars = read_size * 100;
+
+  // read_size 1m1.142s
+  // read_size*10  52s
+  // read_size*5   53.8s
+  // read_size*4   53.78s
+  // read_size*3   .....s
+  // read_size*2   56.99s
+  int remaining_chars = read_size * 3;// * 100;
   int len = 0;
   vt_audio_task (vt, 0);
 #if 1
