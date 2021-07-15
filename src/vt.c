@@ -5027,6 +5027,9 @@ static const char *keymap_general[][2]=
 
 };
 
+void ctx_client_lock (CtxClient *client);
+void ctx_client_unlock (CtxClient *client);
+
 void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
 {
   if (vt->ctx_events)

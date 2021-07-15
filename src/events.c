@@ -100,52 +100,6 @@ int ctx_count (Ctx *ctx)
 }
 
 
-static int is_in_ctx (void)
-{
-  char buf[1024];
-  struct termios orig_attr;
-  struct termios raw;
-  tcgetattr (STDIN_FILENO, &orig_attr);
-  raw = orig_attr;
-  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-  raw.c_oflag &= ~(OPOST);
-  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-  raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
-  if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
-    return 0;
-  fprintf (stderr, "\e[?200$p");
-  //tcflush(STDIN_FILENO, 1);
-#if !__COSMOPOLITAN__
-  tcdrain(STDIN_FILENO);
-#endif
-  int length = 0;
-  usleep (1000 * 60); // to account for possibly lowish latency ssh,
-                      // should be made configurable ; perhaps in
-                      // an env var
-  struct timeval tv = {0,0};
-  fd_set rfds;
-  
-  FD_ZERO(&rfds);
-  FD_SET(0, &rfds);
-  tv.tv_usec = 1000 * 5;
-
-  for (int n = 0; select(1, &rfds, NULL, NULL, &tv) && n < 20; n++)
-  {
-    length += read (STDIN_FILENO, &buf[length], 1);
-  }
-  tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
-  if (length == -1)
-  {
-    return 0;
-  }
-  char *semi = strchr (buf, ';');
-  buf[length]=0;
-  if (semi &&  semi[1] == '2')
-  {
-    return 1;
-  }
-  return 0;
-}
 
 extern int _ctx_damage_control;
 
@@ -165,6 +119,8 @@ static void ctx_list_backends()
     fprintf (stderr, "\n");
 }
 
+#if CTX_EVENTS
+static int is_in_ctx (void);
 Ctx *ctx_new_ui (int width, int height)
 {
 #if CTX_TILED
@@ -290,6 +246,7 @@ Ctx *ctx_new_ui (int width, int height)
   ctx_get_event (ret); // enables events
   return ret;
 }
+#endif
 #else
 void _ctx_texture_unlock (void)
 {
@@ -314,6 +271,55 @@ void ctx_set_size (Ctx *ctx, int width, int height)
 }
 
 #if CTX_EVENTS
+
+
+static int is_in_ctx (void)
+{
+  char buf[1024];
+  struct termios orig_attr;
+  struct termios raw;
+  tcgetattr (STDIN_FILENO, &orig_attr);
+  raw = orig_attr;
+  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+  raw.c_oflag &= ~(OPOST);
+  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+  raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
+  if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
+    return 0;
+  fprintf (stderr, "\e[?200$p");
+  //tcflush(STDIN_FILENO, 1);
+#if !__COSMOPOLITAN__
+  tcdrain(STDIN_FILENO);
+#endif
+  int length = 0;
+  usleep (1000 * 60); // to account for possibly lowish latency ssh,
+                      // should be made configurable ; perhaps in
+                      // an env var
+  struct timeval tv = {0,0};
+  fd_set rfds;
+  
+  FD_ZERO(&rfds);
+  FD_SET(0, &rfds);
+  tv.tv_usec = 1000 * 5;
+
+  for (int n = 0; select(1, &rfds, NULL, NULL, &tv) && n < 20; n++)
+  {
+    length += read (STDIN_FILENO, &buf[length], 1);
+  }
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
+  if (length == -1)
+  {
+    return 0;
+  }
+  char *semi = strchr (buf, ';');
+  buf[length]=0;
+  if (semi &&  semi[1] == '2')
+  {
+    return 1;
+  }
+  return 0;
+}
+
 typedef struct CtxIdleCb {
   int (*cb) (Ctx *ctx, void *idle_data);
   void *idle_data;
