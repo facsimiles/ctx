@@ -24,30 +24,11 @@
 
 Ctx *ctx = NULL; // initialized in main
 
-//#define CTX_x            CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
-//#define CTX_y            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_lower_bottom CTX_STRH('l','o','w','e','r','-','b','o','t','t','o','m',0,0)
-#define CTX_lower        CTX_STRH('l','o','w','e','r',0,0,0,0,0,0,0,0,0)
-#define CTX_raise        CTX_STRH('r','a','i','s','e',0,0,0,0,0,0,0,0,0)
-#define CTX_raise_top    CTX_STRH('r','a','i','s','e','-','t','o','p',0,0,0,0,0)
-#define CTX_terminate    CTX_STRH('t','e','r','m','i','n','a','t','e',0,0,0,0,0)
-#define CTX_maximize     CTX_STRH('m','a','x','i','m','i','z','e',0,0,0,0,0,0)
-#define CTX_unmaximize   CTX_STRH('u','n','m','a','x','i','m','i','z','e',0,0,0,0)
-//#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
-//#define CTX_title        CTX_STRH('t','i','t','l','e',0,0,0,0,0,0,0,0,0)
-#define CTX_title        15643372
-#define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
-//#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
-
 int ctx_renderer_is_sdl  (Ctx *ctx);
 int ctx_renderer_is_fb   (Ctx *ctx);
 int ctx_renderer_is_term (Ctx *ctx);
 
-void
-ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
-
 typedef struct _CtxClient CtxClient;
-CtxClient *vt_find_client (VT *vt);
 
 void ctx_screenshot (Ctx *ctx, const char *path);
 void
@@ -67,8 +48,6 @@ static char *execute_self = NULL;
 
 float font_size    = -1;
 float line_spacing = 2.0;
-
-
 
 static void ensure_layout ()
 {
@@ -471,24 +450,6 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
 
 extern int _ctx_enable_hash_cache;
 
-static void (*_popup)(Ctx *ctx, void *data) = NULL;
-static void *_popup_data = NULL;
-
-void ctx_set_popup (Ctx *ctx, void (*popup)(Ctx *ctx, void *data), void *popup_data)
-{
-  _popup = popup;
-  _popup_data = popup_data;
-}
-
-void ctx_popups (Ctx *ctx)
-{
-  if (_popup)
-  {
-    _popup (ctx, _popup_data);
-  }
-  _popup = NULL;
-}
-
 void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
                                float x, float y, float width, float titlebar_height);
 
@@ -729,7 +690,6 @@ int terminal_main (int argc, char **argv)
         ctx_fill (ctx);
         ctx_font_size (ctx, itk->font_size);
         ctx_clients_draw (ctx);
-        ctx_popups (ctx);
         if ((n_clients != 1) || (clients && !flag_is_set((((CtxClient*)clients->data))->flags, ITK_CLIENT_MAXIMIZED)))
           draw_panel (itk, ctx);
         else
