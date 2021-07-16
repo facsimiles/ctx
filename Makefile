@@ -91,6 +91,7 @@ clean:
 
 install: ctx
 	install -D -m755 -t $(DESTIDR)$(PREFIX)/bin ctx
+	install -D -m755 -t $(DESTIDR)$(PREFIX)/bin tools/ctx-audioplayer
 	install -D -m644 -t $(DESTIR)$(PREFIX)/share/appdata meta/graphics.ctx.terminal.appdata.xml
 	install -D -m644 -t $(DESTIR)$(PREFIX)/share/applications meta/graphics.ctx.terminal.desktop
 	install -D -m644 -t $(DESTIR)$(PREFIX)/share/icons/hicolor/scalable/apps meta/graphics.ctx.terminal.svg

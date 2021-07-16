@@ -582,6 +582,11 @@ void viewer_load_path (const char *path)
     {
       sprintf (command, "ctx -g -s %s", path);
     }
+    else if (!strcmp (suffix, "mp3")||
+          !strcmp (suffix, "MP3"))
+    {
+      sprintf (command, "ctx-audioplayer %s", path);
+    }
     }
 
     if (!command[0])
