@@ -31,31 +31,33 @@
 
       <h1>vector graphics framework</h1>
 
-      <p>ctx is a text- and media <a href='terminal/'>terminal</a>, with an
-      HTML5 Canvas 2D Context and SVG inspired <a href='protocol/'>vector
-      graphics protocol</a> and accompanying interactive vector graphics <a
-                                                                                 href='sdk/'>SDK</a>.
-
-      Ctx supports textures and can render to 8bit/32bit float buffers for RGB,
-      grayscale and CMYK with 1/2/4bit as additions for grayscale and RGB565
-      and RGB332 for RGB useful for <a href='mcu/'>microcontrollers</a> and
-      with constrained RAM.
+      <p>ctx is an interactive 2D vector graphics, audio, text- canvas and <a
+        href='terminal/'>terminal</a>, with an 2D vector drawing API
+      directly mapping to a on-wire/multithreading <a href='protocol/'>vector
+      graphics protocol</a>.
       </p>
 
       <p>
-      Programs using ctx as a base can run on top of SDL2, directly on linux
-      framebuffer+alsa. When using these backends there is additional <a
+      The <a href='rasterizer/'>ctx rasterizer</a> supports some pixel encodings
+      directly with varying level of optimization RGBA8, GRAYA8, GRAYAF, RGBAF and
+      CMYKAF which has started being by used by <a href='https://gegl.org/'>GEGL</a>
+      for color managed vector graphics. For <a href='mcu/'>micocontrollers</a>
+      implicit conversions tend to be used for RGB565/bitmap/4-level gray, though
+      </p>
+
+      <p>
+      Programs using the <a href='sdk/'>ctx SDK</a> are able to run as clients of
+      the ctx terminal/other ctx applications or can run directly on top of SDL2,
+      linux framebuffer/DRM and alsa. When using these backends there is additional <a
       href='caching-and-threading/'>caching and threading</a> that boost
       performance.
       </p>
-
 
       <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
 
       <!--
 good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
       -->
-
       <!--
       <p>ctx is a configurable and <a href='mcu/'>lightweight</a> 2D vector
       graphics stack with focus on remote and deferred rendering building on
