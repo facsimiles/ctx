@@ -359,12 +359,6 @@ ITK *itk_new (Ctx *ctx)
   itk->focus_wraparound = 1;
   itk->scale            = 1.0;
   itk->font_size        = getenv("ITK_FONT_SIZE")?atoi(getenv("ITK_FONT_SIZE")):ctx_get_font_size(ctx);
-  if (ctx_renderer_is_term (ctx))
-  {
-    itk->scale     = 1.0;
-    itk->font_size = 3;
-  }
-  itk->width            = itk->font_size * 15;
   itk->label_width      = 0.5;
   itk->rel_vmargin      = 0.5;
   itk->rel_hmargin      = 0.5;
@@ -377,6 +371,16 @@ ITK *itk_new (Ctx *ctx)
   itk->scroll_speed     = 4.0;
   itk->light_mode       = 1;
   ctx_set_dirty (ctx, 1);
+  if (ctx_renderer_is_term (ctx))
+  {
+    itk->scale     = 1.0;
+    itk->font_size = 3;
+    itk->rel_vgap = 0.0;
+    itk->rel_ver_advance = 1.0;
+    itk->rel_hgap = 0.0;
+    itk->rel_hpad = 0.0;
+  }
+  itk->width = itk->font_size * 15;
 
   return itk;
 }
