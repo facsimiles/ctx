@@ -340,7 +340,10 @@ _ctx_set_frame (Ctx *ctx, int frame)
    return ctx->frame = frame;
 }
 
-void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int stride, int format, void *data, char *ret_eid)
+void ctx_define_texture (Ctx *ctx,
+                         const char *eid,
+                         int width, int height, int stride, int format, void *data,
+                         char *ret_eid)
 {
   uint8_t hash[20]="";
   char ascii[41]="";
@@ -356,21 +359,18 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
   if (eid == NULL)
   {
     CtxSHA1 *sha1 = ctx_sha1_new ();
-
+    uint8_t *src = (uint8_t*)data;
+    for (int y = 0; y < height; y++)
     {
-      uint8_t *src = (uint8_t*)data;
-      for (int y = 0; y < height; y++)
-      {
-         ctx_sha1_process (sha1, src, dst_stride);
-         src += stride;
-      }
+       ctx_sha1_process (sha1, src, dst_stride);
+       src += stride;
     }
     ctx_sha1_done (sha1, hash);
     ctx_sha1_free (sha1);
     const char *hex="0123456789abcdef";
     for (int i = 0; i < 20; i ++)
     {
-       ascii[i*2]=hex[hash[i]/16];
+       ascii[i*2]  =hex[hash[i]/16];
        ascii[i*2+1]=hex[hash[i]%16];
     }
     ascii[40]=0;
@@ -389,7 +389,7 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     const char *hex="0123456789abcdef";
     for (int i = 0; i < 20; i ++)
     {
-       ascii[i*2]=hex[hash[i]/16];
+       ascii[i*2]  =hex[hash[i]/16];
        ascii[i*2+1]=hex[hash[i]%16];
     }
     ascii[40]=0;
@@ -461,11 +461,11 @@ void ctx_define_texture (Ctx *ctx, const char *eid, int width, int height, int s
     }
 
     CtxEidInfo *eid_info = (CtxEidInfo*)calloc (sizeof (CtxEidInfo), 1);
-    eid_info->eid        = strdup (eid);
     eid_info->width      = width;
     eid_info->height     = height;
     eid_info->frame      = ctx->texture_cache->frame;
     //fprintf (stderr, "%i\n", eid_info->frame);
+    eid_info->eid        = strdup (eid);
     ctx_list_prepend (&ctx->texture_cache->eid_db, eid_info);
   }
 
@@ -509,7 +509,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
   }
 
 #ifdef STBI_INCLUDE_STB_IMAGE_H
-    CtxPixelFormat pixel_format = CTX_FORMAT_RGBA8;
+  CtxPixelFormat pixel_format = CTX_FORMAT_RGBA8;
   int w, h, components;
   unsigned char *pixels = NULL;
 
@@ -540,8 +540,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     }
     if (tw) *tw = w;
     if (th) *th = h;
-    ctx_define_texture (ctx, eid, w, h, w * components, pixel_format, pixels, 
-                             reid);
+    ctx_define_texture (ctx, eid, w, h, w * components, pixel_format, pixels, reid);
     free (pixels);
   }
   else
@@ -643,7 +642,6 @@ ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0, float x1, float y1,
   };
   ctx_process (ctx, command);
 }
-
 
 void ctx_preserve (Ctx *ctx)
 {

@@ -489,79 +489,8 @@ void ctx_popups (Ctx *ctx)
   _popup = NULL;
 }
 
-void draw_titlebar (ITK *itk, Ctx *ctx, CtxClient *client,
-                    float x, float y, float width, float titlebar_height)
-{
-#if 0
-  ctx_move_to (ctx, x, y + height * 0.8);
-  if (client == active)
-    ctx_rgba (ctx, 1, 1,0.4, 1.0);
-  else
-    ctx_rgba (ctx, 1, 1,1, 0.8);
-  ctx_text (ctx, client->title);
-#else
-
-      ctx_rectangle (ctx, x, y - titlebar_height,
-                     width, titlebar_height);
-      if (client == active)
-         itk_style_color (ctx, "titlebar-focused-bg");
-      else
-         itk_style_color (ctx, "titlebar-bg");
-
-      if (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED) || y == titlebar_height)
-      {
-        ctx_listen (ctx, CTX_DRAG, ctx_client_titlebar_drag_maximized, client, NULL);
-        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
-      }
-      else
-      {
-        ctx_listen (ctx, CTX_DRAG, ctx_client_titlebar_drag, client, NULL);
-        ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
-      }
-      ctx_fill (ctx);
-      ctx_font_size (ctx, itk->font_size);//titlebar_height);// * 0.85);
-
-      if (client == active &&
-          (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED) || y != titlebar_height))
-      {
-
-#if 1
-      ctx_rectangle (ctx, x + width - titlebar_height,
-                      y - titlebar_height, titlebar_height,
-                      titlebar_height);
-#endif
-      ctx_rgb (ctx, 1, 0,0);
-      ctx_listen (ctx, CTX_PRESS, ctx_client_close, client, NULL);
-      ctx_listen_set_cursor (ctx, CTX_CURSOR_ARROW);
-      //ctx_fill (ctx);
-      ctx_begin_path (ctx);
-      ctx_move_to (ctx, x + width - titlebar_height * 0.8, y - titlebar_height * 0.22);
-      if (client == active)
-        itk_style_color (ctx, "titlebar-focused-close");
-      else
-        itk_style_color (ctx, "titlebar-close");
-      ctx_text (ctx, "X");
-      }
-
-      ctx_move_to (ctx, x +  width/2, y - titlebar_height * 0.22);
-      if (client == active)
-        itk_style_color (ctx, "titlebar-focused-fg");
-      else
-        itk_style_color (ctx, "titlebar-fg");
-
-      ctx_save (ctx);
-      ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-      if (client->title)
-      {
-        ctx_text (ctx, client->title);
-      }
-      else
-      {
-        ctx_text (ctx, "untitled");
-      }
-      ctx_restore (ctx);
-#endif
-}
+void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
+                               float x, float y, float width, float titlebar_height);
 
 void draw_panel (ITK *itk, Ctx *ctx)
 {
@@ -615,7 +544,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
     if (client->flags & ITK_CLIENT_MAXIMIZED)
     {
       ctx_begin_path (ctx);
-      draw_titlebar (itk, ctx, client, x, titlebar_height,
+      ctx_client_titlebar_draw (ctx, client, x, titlebar_height,
                      tab_width, titlebar_height);
     }
     x += tab_width;
