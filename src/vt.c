@@ -3891,11 +3891,12 @@ static inline void vt_ctx_unrled (VT *vt, char byte)
 #if CTX_VT_USE_FRAMEDIFF
   ctx_string_append_byte (vt->current_line->frame, byte);
 #endif
-  ctx_parser_feed_bytes (vt->ctxp, &byte, 1);
+  ctx_parser_feed_byte (vt->ctxp, byte);
 }
 
 static void vt_state_ctx (VT *vt, int byte)
 {
+#if 0
   //fprintf (stderr, "%c", byte);
   if (CTX_UNLIKELY(byte == CTX_CODEC_CHAR))
   {
@@ -3955,6 +3956,9 @@ static void vt_state_ctx (VT *vt, int byte)
       vt_ctx_unrled (vt, byte);
     }
   }
+#else
+      vt_ctx_unrled (vt, byte);
+#endif
 }
 
 static int vt_decoder_feed (VT *vt, int byte)

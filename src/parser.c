@@ -1187,7 +1187,7 @@ static void ctx_parser_holding_append (CtxParser *parser, int byte)
 #if !CTX_PARSER_FIXED_TEMP
   if (parser->hold_len < parser->pos + 1 + 1)
   {
-    int new_len = parser->hold_len * 1.5;
+    int new_len = parser->hold_len * 2;
     if (new_len < 512) new_len = 512;
     parser->holding = (uint8_t*)realloc (parser->holding, new_len);
     parser->hold_len = new_len;
@@ -1458,6 +1458,24 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
         parser->col++;
     }
 #endif
+    if (CTX_LIKELY(parser->state == CTX_PARSER_STRING_A85))
+    {
+        /* since these are our largest bulk transfers, minimize
+         * overhead for this case. */
+        if (CTX_LIKELY(byte!='~'))
+        {
+          ctx_parser_holding_append (parser, byte);
+        }
+        else
+        {
+          parser->state = CTX_PARSER_NEUTRAL;
+                 //   fprintf (stderr, "got %i\n", parser->pos);
+          parser->pos = ctx_a85dec ((char*)parser->holding, (char*)parser->holding, parser->pos);
+                 //   fprintf (stderr, "dec got %i\n", parser->pos);
+          ctx_parser_string_done (parser);
+        }
+        return;
+    }
   switch (parser->state)
     {
       case CTX_PARSER_NEUTRAL:
@@ -1699,19 +1717,18 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
           }
         break;
       case CTX_PARSER_STRING_A85:
-        switch (byte)
-          {
-            case '~':
-              parser->state = CTX_PARSER_NEUTRAL;
+        if (CTX_LIKELY(byte!='~'))
+        {
+          ctx_parser_holding_append (parser, byte);
+        }
+        else
+        {
+          parser->state = CTX_PARSER_NEUTRAL;
                  //   fprintf (stderr, "got %i\n", parser->pos);
-              parser->pos = ctx_a85dec ((char*)parser->holding, (char*)parser->holding, parser->pos);
+          parser->pos = ctx_a85dec ((char*)parser->holding, (char*)parser->holding, parser->pos);
                  //   fprintf (stderr, "dec got %i\n", parser->pos);
-              ctx_parser_string_done (parser);
-              break;
-            default:
-              ctx_parser_holding_append (parser, byte);
-              break;
-          }
+          ctx_parser_string_done (parser);
+        }
         break;
       case CTX_PARSER_STRING_APOS:
         switch (byte)
