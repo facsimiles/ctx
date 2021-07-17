@@ -198,7 +198,12 @@ _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
 #ifndef NO_BABL
 #if CTX_BABL
      case CTX_FORMAT_RGBA8:
-        {
+       if (buffer->space == rasterizer->state->gstate.device_space)
+       {
+         buffer->color_managed = buffer;
+       }
+       else
+       {
           buffer->color_managed = ctx_buffer_new (buffer->width, buffer->height,
                                                   CTX_FORMAT_RGBA8);
           babl_process (
@@ -210,15 +215,20 @@ _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
        }
        break;
      case CTX_FORMAT_RGB8:
+       if (buffer->space == rasterizer->state->gstate.device_space)
        {
-       buffer->color_managed = ctx_buffer_new (buffer->width, buffer->height,
+         buffer->color_managed = buffer;
+       }
+       else
+       {
+         buffer->color_managed = ctx_buffer_new (buffer->width, buffer->height,
                                                CTX_FORMAT_RGB8);
-          babl_process (
-             babl_fish (babl_format_with_space ("R'G'B' u8", buffer->space),
-                        babl_format_with_space ("R'G'B' u8", rasterizer->state->gstate.device_space)),
-             buffer->data, buffer->color_managed->data,
-             buffer->width * buffer->height
-             );
+         babl_process (
+            babl_fish (babl_format_with_space ("R'G'B' u8", buffer->space),
+                       babl_format_with_space ("R'G'B' u8", rasterizer->state->gstate.device_space)),
+            buffer->data, buffer->color_managed->data,
+            buffer->width * buffer->height
+          );
        }
        break;
 #endif
