@@ -1722,8 +1722,11 @@ void itk_key_up (CtxEvent *event, void *data, void *data2)
     for (CtxList *iter = itk->controls; iter; iter=iter->next)
     {
       CtxControl *candidate = iter->data;
-      float dist = hypotf (candidate->x - control->x,
-                           candidate->y - control->y);
+
+#define ITK_SPACE_WARP 1.5
+#define POW2(a) ((a)*(a))
+      float dist = sqrtf ( POW2(candidate->x - control->x) * ITK_SPACE_WARP +
+                           POW2(candidate->y - control->y));
       if ((candidate != control) && 
           (dist < best_dist) &&
           (candidate->y < control->y))
@@ -1770,8 +1773,8 @@ void itk_key_down (CtxEvent *event, void *data, void *data2)
     for (CtxList *iter = itk->controls; iter; iter=iter->next)
     {
       CtxControl *candidate = iter->data;
-      float dist = hypotf (candidate->x - control->x,
-                           candidate->y - control->y);
+      float dist = sqrtf ( POW2(candidate->x - control->x) * ITK_SPACE_WARP +
+                           POW2(candidate->y - control->y));
       if ((candidate != control) && 
           (dist < best_dist) &&
           (candidate->y > control->y))
@@ -1917,8 +1920,9 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
     for (CtxList *iter = itk->controls; iter; iter=iter->next)
     {
       CtxControl *candidate = iter->data;
-      float dist = hypotf (candidate->x - control->x,
-                           candidate->y - control->y);
+      float dist = sqrtf ( POW2(candidate->x - control->x)  +
+                           POW2(candidate->y - control->y) * ITK_SPACE_WARP);
+
       if ((candidate != control) && 
           (dist < best_dist) &&
           (candidate->x < control->x))
@@ -1976,8 +1980,9 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
     for (CtxList *iter = itk->controls; iter; iter=iter->next)
     {
       CtxControl *candidate = iter->data;
-      float dist = hypotf (candidate->x - control->x,
-                           candidate->y - control->y);
+      float dist = sqrtf ( POW2(candidate->x - control->x)  +
+                           POW2(candidate->y - control->y) * ITK_SPACE_WARP);
+#undef POW2
       if ((candidate != control) && 
           (dist < best_dist) &&
           (candidate->x > control->x))
@@ -2073,6 +2078,7 @@ void itk_key_bindings (ITK *itk)
 
   ctx_add_key_binding (ctx, "right", NULL, "",          itk_key_right,     itk);
   ctx_add_key_binding (ctx, "left", NULL, "",           itk_key_left,      itk);
+
   ctx_add_key_binding (ctx, "return", NULL, "",         itk_key_return,    itk);
   ctx_add_key_binding (ctx, "backspace", NULL, "",      itk_key_backspace, itk);
   ctx_add_key_binding (ctx, "delete", NULL, "",         itk_key_delete,    itk);
