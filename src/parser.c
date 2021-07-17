@@ -9,6 +9,8 @@
                          // to offer headroom for multiplexing
 
 
+#define CTX_REPORT_COL_ROW 0
+
 struct
   _CtxParser
 {
@@ -23,9 +25,10 @@ struct
   int        hold_len;
   int        pos;
 
-
+#if CTX_REPORT_COL_ROW
   int        line; /*  for error reporting */
   int        col;  /*  for error reporting */
+#endif
   float      numbers[CTX_PARSER_MAX_ARGS+1];
   int        n_numbers;
   int        decimal;
@@ -94,7 +97,9 @@ ctx_parser_init (CtxParser *parser,
                 )
 {
   ctx_memset (parser, 0, sizeof (CtxParser) );
+#if CTX_REPORT_COL_ROW
   parser->line             = 1;
+#endif
   parser->ctx              = ctx;
   parser->cell_width       = cell_width;
   parser->cell_height      = cell_height;
@@ -664,17 +669,18 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
   Ctx *ctx = parser->ctx;
-#if 1
+
   if (parser->expected_args != CTX_ARG_STRING_OR_NUMBER &&
       parser->expected_args != CTX_ARG_COLLECT_NUMBERS &&
       parser->expected_args != parser->n_numbers)
     {
-      if (0)
+#if CTX_REPORT_COL_ROW
          fprintf (stderr, "ctx:%i:%i %c got %i instead of %i args\n",
                parser->line, parser->col,
                cmd, parser->n_numbers, parser->expected_args);
-    }
 #endif
+      //return;
+    }
 
 #define arg(a)  (parser->numbers[a])
   parser->command = CTX_NOP;
@@ -1439,20 +1445,19 @@ static void ctx_parser_string_done (CtxParser *parser)
   }
 }
 
-void ctx_parser_feed_bytes (CtxParser *parser, const char *data, int count)
+static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
 {
-  for (int i = 0; i < count; i++)
-  {
-    int byte = data[i];
-  switch (byte)
+#if CTX_REPORT_COL_ROW
+    if (CTX_UNLIKELY(byte == '\n'))
     {
-      case '\n':
         parser->col=0;
         parser->line++;
-        break;
-      default:
+    }
+    else
+    {
         parser->col++;
     }
+#endif
   switch (parser->state)
     {
       case CTX_PARSER_NEUTRAL:
@@ -1775,7 +1780,12 @@ void ctx_parser_feed_bytes (CtxParser *parser, const char *data, int count)
           }
         break;
     }
-  }
+}
+
+void ctx_parser_feed_bytes (CtxParser *parser, const char *data, int count)
+{
+  for (int i = 0; i < count; i++)
+    ctx_parser_feed_byte (parser, data[i]);
 }
 
 void ctx_parse (Ctx *ctx, const char *string)
