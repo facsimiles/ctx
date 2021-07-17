@@ -4715,65 +4715,64 @@ static void vt_state_esc (VT *vt, int byte)
 
 static void vt_state_neutral (VT *vt, int byte)
 {
-  if (_vt_handle_control (vt, byte) != 0)
+  if (CTX_UNLIKELY(_vt_handle_control (vt, byte) != 0))
     return;
-  switch (byte)
-    {
-      case 27: /* ESCape */
-        vt->state = vt_state_esc;
-        break;
-      default:
-        if (vt_decoder_feed (vt, byte) )
-          return;
-        if (vt->charset[vt->shifted_in] != 0 &&
-            vt->charset[vt->shifted_in] != 'B')
+  if (CTX_LIKELY(byte != 27))
+  {
+    if (vt_decoder_feed (vt, byte) )
+      return;
+    if (vt->charset[vt->shifted_in] != 0 &&
+        vt->charset[vt->shifted_in] != 'B')
+      {
+        char **charmap;
+        switch (vt->charset[vt->shifted_in])
           {
-            char **charmap;
-            switch (vt->charset[vt->shifted_in])
-              {
-                case 'A':
-                  charmap = charmap_uk;
-                  break;
-                case 'B':
-                  charmap = charmap_ascii;
-                  break;
-                case '0':
-                  charmap = charmap_graphics;
-                  break;
-                case '1':
-                  charmap = charmap_cp437;
-                  break;
-                case '2':
-                  charmap = charmap_graphics;
-                  break;
-                default:
-                  charmap = charmap_ascii;
-                  break;
-              }
-            if ( (vt->utf8_holding[0] >= ' ') && (vt->utf8_holding[0] <= '~') )
-              {
-                _vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
-              }
+            case 'A':
+              charmap = charmap_uk;
+              break;
+            case 'B':
+              charmap = charmap_ascii;
+              break;
+            case '0':
+              charmap = charmap_graphics;
+              break;
+            case '1':
+              charmap = charmap_cp437;
+              break;
+            case '2':
+              charmap = charmap_graphics;
+              break;
+            default:
+              charmap = charmap_ascii;
+              break;
           }
-        else
+        if ( (vt->utf8_holding[0] >= ' ') && (vt->utf8_holding[0] <= '~') )
           {
-            // ensure vt->utf8_holding contains a valid utf8
-            uint32_t codepoint;
-            uint32_t state = 0;
-            for (int i = 0; vt->utf8_holding[i]; i++)
-              { utf8_decode (&state, &codepoint, vt->utf8_holding[i]); }
-            if (state != UTF8_ACCEPT)
-              {
-                /* otherwise mangle it so that it does */
-                vt->utf8_holding[0] &= 127;
-                vt->utf8_holding[1] = 0;
-                if (vt->utf8_holding[0] == 0)
-                  { vt->utf8_holding[0] = 32; }
-              }
-            _vt_add_str (vt, (char *) vt->utf8_holding);
+            _vt_add_str (vt, charmap[vt->utf8_holding[0]-' ']);
           }
-        break;
-    }
+      }
+    else
+      {
+        // ensure vt->utf8_holding contains a valid utf8
+        uint32_t codepoint;
+        uint32_t state = 0;
+        for (int i = 0; vt->utf8_holding[i]; i++)
+          { utf8_decode (&state, &codepoint, vt->utf8_holding[i]); }
+        if (state != UTF8_ACCEPT)
+          {
+            /* otherwise mangle it so that it does */
+            vt->utf8_holding[0] &= 127;
+            vt->utf8_holding[1] = 0;
+            if (vt->utf8_holding[0] == 0)
+              { vt->utf8_holding[0] = 32; }
+          }
+        _vt_add_str (vt, (char *) vt->utf8_holding);
+      }
+  }
+  else // ESCape
+  {
+    vt->state = vt_state_esc;
+  }
 }
 
 int vt_poll (VT *vt, int timeout)
