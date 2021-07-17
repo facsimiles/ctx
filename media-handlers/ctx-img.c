@@ -52,7 +52,7 @@ int ctx_img_main(int argc, char *argv[])
   Ctx *ctx;
   path = argv[1];
 
-  if (strchr (path, ':'))
+  if (strchr (path, ':') && (strchr(path,':')-path) < 6)
   {
     path = strchr (path, ':');
     if (path[1] == '/') path++;

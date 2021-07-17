@@ -536,14 +536,36 @@ void viewer_load_path (const char *path)
   if (path)
   {
     loaded_path = strdup (path);
-    char *command = malloc (32 + strlen (path) + 64);
+    char *escaped_path = malloc (strlen (path) * 2 + 2);
+    char *command = malloc (32 + strlen (path) * 2 + 64);
+    int j = 0;
+    for (int i = 0; path[i]; i++)
+    {
+      switch (path[i])
+      {
+        case ' ':
+        case '`':
+        case '$':
+        case '[':
+        case ']':
+        case '\'':
+        case '"':
+          escaped_path[j++]='\\';
+          escaped_path[j++]=path[i];
+          break;
+        default:
+          escaped_path[j++]=path[i];
+          break;
+      }
+    }
+    escaped_path[j]=0;
     const char *suffix = get_suffix (path);
     command[0]=0;
     if (ctx_path_is_dir (path))
     {
        //fprintf (stderr, "is dir\n");
        return;
-       //sprintf (command, "du -h %s", path);
+       //sprintf (command, "du -h '%s'", path);
     }
 
     char *basname = get_basename (path);
@@ -561,7 +583,7 @@ void viewer_load_path (const char *path)
         !strcmp (basname, "ReadMe")
         )
     {
-      sprintf (command, "vim +1 -R %s", path);
+      sprintf (command, "vim +1 -R %s", escaped_path);
     }
     free (basname);
    
@@ -575,23 +597,27 @@ void viewer_load_path (const char *path)
         !strcmp (suffix, "GIF")
         )
     {
-      sprintf (command, "ctx %s", path);
+      sprintf (command, "ctx %s", escaped_path);
     }
     else if (!strcmp (suffix, "mpg")||
           !strcmp (suffix, "MPG"))
     {
-      sprintf (command, "ctx -g -s %s", path);
+      sprintf (command, "ctx -s %s", escaped_path);
     }
     else if (!strcmp (suffix, "mp3")||
-          !strcmp (suffix, "MP3"))
+          !strcmp (suffix, "MP3") ||
+          !strcmp (suffix, "ogg") ||
+          !strcmp (suffix, "OGG") ||
+          !strcmp (suffix, "WAV") ||
+          !strcmp (suffix, "wav"))
     {
-      sprintf (command, "ctx-audioplayer %s", path);
+      sprintf (command, "ctx-audioplayer %s", escaped_path);
     }
     }
 
     if (!command[0])
     {
-      sprintf (command, "sh -c 'xxd %s | vim -R -'", path);
+      sprintf (command, "sh -c 'xxd %s | vim -R -'", escaped_path);
     }
 
     if (command[0])
@@ -600,12 +626,15 @@ void viewer_load_path (const char *path)
       //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
       ctx_client_new (ctx, command,
         ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
-       //fprintf (stderr, "[%s]\n", command);
+    fprintf (stderr, "[%s]\n", command);
 #if 0
       fprintf (stderr, "run:%s %i %i %i %i,   %i\n", command,
         (int)ctx_width(ctx)/2, (int)0, (int)ctx_width(ctx)/2, (int)(ctx_height(ctx)-font_size*2), 0);
 #endif
     }
+
+    free (escaped_path);
+    free (command);
   }
 }
 

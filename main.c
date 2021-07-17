@@ -301,7 +301,8 @@ int main (int argc, char **argv)
 
   if (input_path)
   {
-    if (!strchr (input_path, ':'))
+    if (!strchr (input_path, ':') ||
+         ((strchr (input_path, ':') - input_path) > 6))
       {
          char *path = malloc (strlen (input_path) + 10);
          sprintf (path, "file://%s", input_path);
