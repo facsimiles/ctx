@@ -230,6 +230,8 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
   float scale = ctx_width (self->ctx) * 1.0 / frame->width;
   float scaleh = ctx_height (self->ctx) * 1.0 / frame->height;
   if (scaleh < scale) scale = scaleh;
+  ctx_translate (self->ctx, (ctx_width(self->ctx)-frame->width*scale)/2.0, 
+                      (ctx_height(self->ctx)-frame->height*scale)/2.0);
   ctx_scale (self->ctx, scale, scale);
 
   if (grayscale == 0)
