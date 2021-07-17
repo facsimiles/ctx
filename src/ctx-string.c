@@ -179,18 +179,19 @@ CTX_STATIC char *ctx_strdup (const char *str)
 
 void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
 {
-  int new_len = ctx_utf8_len (*new_glyph);
 #if 1
   int old_len = string->utf8_length;
 #else
   int old_len = ctx_utf8_strlen (string->str);// string->utf8_length;
 #endif
-  char tmpg[3]=" ";
-  if (pos == old_len)
+  if (CTX_LIKELY(pos == old_len))
     {
       _ctx_string_append_str (string, new_glyph);
       return;
     }
+
+  char tmpg[3]=" ";
+  int new_len = ctx_utf8_len (*new_glyph);
   if (new_len <= 1 && new_glyph[0] < 32)
     {
       new_len = 1;

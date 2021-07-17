@@ -3163,7 +3163,7 @@ static int _vt_handle_control (VT *vt, int byte)
   /* the big difference between ANSI-BBS mode and VT100+ mode is that
    * most C0 characters are printable
    */
-  if (vt->encoding == 1) // this codepage is for ansi-bbs use
+  if (CTX_UNLIKELY(vt->encoding == 1)) // this codepage is for ansi-bbs use
     switch (byte)
       {
         case '\0':
@@ -3265,8 +3265,9 @@ static int _vt_handle_control (VT *vt, int byte)
       case 31: /* US unit separator */
       case 127: /* DEL */
         return 1;
+      default:
+        return 0;
     }
-  return 0;
 }
 
 void vt_open_log (VT *vt, const char *path)
