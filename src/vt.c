@@ -3891,11 +3891,7 @@ static inline void vt_ctx_unrled (VT *vt, char byte)
 #if CTX_VT_USE_FRAMEDIFF
   ctx_string_append_byte (vt->current_line->frame, byte);
 #endif
-
-  if (vt->ctxp)
-  {
-    ctx_parser_feed_bytes (vt->ctxp, &byte, 1);
-  }
+  ctx_parser_feed_bytes (vt->ctxp, &byte, 1);
 }
 
 static void vt_state_ctx (VT *vt, int byte)
