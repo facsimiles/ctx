@@ -197,11 +197,14 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
     return;
   ctx_reset (ctx);
   char eid[65];
+
   ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
   ctx_save (ctx);
   float scale = ctx_width (ctx) * 1.0 / stb_w;
   float scaleh = ctx_height (ctx) * 1.0 / stb_h;
   if (scaleh < scale) scale = scaleh;
+  ctx_translate (ctx, (ctx_width(ctx)-stb_w*scale)/2.0, 
+                      (ctx_height(ctx)-stb_h*scale)/2.0);
   ctx_scale (ctx, scale, scale);
   //ctx_image_smoothing (ctx, 0);
   ctx_define_texture (ctx, NULL, stb_w, stb_h, stb_w * 4, CTX_FORMAT_RGBA8,
