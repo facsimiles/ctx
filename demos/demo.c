@@ -199,7 +199,7 @@ static void card_gradients (ITK *itk, int frame_no)
                             width * 0.4 + frame_no, height * 0.4, height * 0.4);
   ctx_gradient_add_stop (ctx, 0, 1, 1, 1, 1);
   ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
-  ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 1.9 * CTX_PI, 0);
+  ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 2.0 * CTX_PI, 0);
   ctx_fill (ctx);
   ctx_set_dirty (ctx, 1);
 }
@@ -256,7 +256,7 @@ static void slider (Ctx *ctx, float x0, float y0, float width, float pos)
   ctx_move_to (ctx, x0, y0);
   ctx_line_to (ctx, x0 + width, y0);
   ctx_stroke (ctx);
-  ctx_arc (ctx, x0 + width * pos, y0, height * 0.05, 0.0, CTX_PI*1.95, 0);
+  ctx_arc (ctx, x0 + width * pos, y0, height * 0.05, 0.0, CTX_PI*2, 0);
   ctx_fill (ctx);
 }
 
@@ -541,7 +541,7 @@ static void card_drag (ITK *itk, int frame_no)
       case 7:
         ctx_arc (ctx, objects[i].x+objects[i].width/2, objects[i].y+objects[i].width/2,
                       objects[i].width/2,
-                      0.0, CTX_PI *  1.9, 0);
+                      0.0, CTX_PI *  2.0, 0);
         break;
     }
     ctx_rgba (ctx, objects[i].red, objects[i].green, objects[i].blue, objects[i].alpha);
