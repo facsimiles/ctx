@@ -18,6 +18,7 @@ audio.c
 a85.c
 thash.h
 base64.h
+ctx-yenc.c
 drawlist.h
 util.h
 drawlist.c
@@ -44,7 +45,6 @@ ctx.c
 end-implementation
 composite.c
 ctx-clients.h
-
 vt-utf8.h
 vt-line.h
 vt-line.c

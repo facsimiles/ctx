@@ -61,6 +61,7 @@ struct
   int   (*set_prop)(void *prop_data, uint64_t key, const char *data,  int len);
   int   (*get_prop)(void *prop_data, const char *key, char **data, int *len);
   void *prop_data;
+  int   prev_byte;
 };
 
 void
@@ -616,6 +617,7 @@ enum
   CTX_PARSER_STRING_APOS_ESCAPED,
   CTX_PARSER_STRING_QUOT_ESCAPED,
   CTX_PARSER_STRING_A85,
+  CTX_PARSER_STRING_YENC,
 } CTX_STATE;
 
 static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_model, int stroke)
@@ -1458,11 +1460,37 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
         parser->col++;
     }
 #endif
-    if (CTX_LIKELY(parser->state == CTX_PARSER_STRING_A85))
+
+    if (CTX_LIKELY(parser->state == CTX_PARSER_STRING_YENC))
+    {
+        if (CTX_UNLIKELY((parser->prev_byte == '=') && (byte == 'y')))
+        {
+          parser->state = CTX_PARSER_NEUTRAL;
+                 //   fprintf (stderr, "got %i\n", parser->pos);
+          parser->pos = ctx_ydec ((uint8_t*)parser->holding, (char*)parser->holding, parser->pos) - 1;
+#if 0
+          if (parser->pos > 5)
+                    fprintf (stderr, "dec got %i %c %c %c %c\n", parser->pos,
+                                    parser->holding[0],
+                                    parser->holding[1],
+                                    parser->holding[2],
+                                    parser->holding[3]
+                                    );
+#endif
+          ctx_parser_string_done (parser);
+        }
+        else
+        {
+          ctx_parser_holding_append (parser, byte);
+        }
+        parser->prev_byte = byte;
+        return;
+    }
+    else if (CTX_LIKELY(parser->state == CTX_PARSER_STRING_A85))
     {
         /* since these are our largest bulk transfers, minimize
          * overhead for this case. */
-        if (CTX_LIKELY(byte!='~'))
+        if (CTX_LIKELY(byte!='~')) 
         {
           ctx_parser_holding_append (parser, byte);
         }
@@ -1491,13 +1519,18 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
             case ';': case ',':
             case '(': case ')':
             case '{': case '}':
-            case '=':
+            //case '=':
               break;
             case '#':
               parser->state = CTX_PARSER_COMMENT;
               break;
             case '\'':
               parser->state = CTX_PARSER_STRING_APOS;
+              parser->pos = 0;
+              parser->holding[0] = 0;
+              break;
+            case '=':
+              parser->state = CTX_PARSER_STRING_YENC;
               parser->pos = 0;
               parser->holding[0] = 0;
               break;

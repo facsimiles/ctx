@@ -352,6 +352,18 @@ ctx_print_a85 (CtxFormatter *formatter, uint8_t *data, int length)
 }
 
 static void
+ctx_print_yenc (CtxFormatter *formatter, uint8_t *data, int length)
+{
+  char *tmp = (char*)malloc (length * 2 + 2);// worst case scenario
+  int enclength = ctx_yenc (data, tmp, length);
+  data[enclength]=0;
+  ctx_formatter_addstr (formatter, " =", 2);
+  ctx_formatter_addstr (formatter, tmp, enclength);
+  ctx_formatter_addstr (formatter, "=y ", 2);
+  free (tmp);
+}
+
+static void
 ctx_print_escaped_string (CtxFormatter *formatter, const char *string)
 {
   if (!string) { return; }
@@ -486,7 +498,8 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
 
         int stride = ctx_pixel_format_get_stride ((CtxPixelFormat)c->define_texture.format, c->define_texture.width);
         //fprintf (stderr, "encoding %i bytes\n", c->define_texture.height *stride);
-        ctx_print_a85 (formatter, pixel_data, c->define_texture.height * stride);
+        //ctx_print_a85 (formatter, pixel_data, c->define_texture.height * stride);
+        ctx_print_yenc (formatter, pixel_data, c->define_texture.height * stride);
 #else
         ctx_formatter_addstrf (formatter, "\"");
         ctx_print_escaped_string (formatter, pixel_data);

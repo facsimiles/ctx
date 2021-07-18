@@ -74,6 +74,7 @@ enum _CtxPixelFormat
   CTX_FORMAT_CMYK8,  //15
   CTX_FORMAT_CMYKA8, //16 
   CTX_FORMAT_CMYKAF, //17
+  CTX_FORMAT_YUV420, //18
 };
 typedef enum   _CtxPixelFormat CtxPixelFormat;
 
