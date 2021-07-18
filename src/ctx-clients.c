@@ -776,12 +776,11 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
       }
 #else
 
-
       vt_draw (client->vt, ctx, x, y);
       vt_register_events (client->vt, ctx, x, y);
-      ctx_client_unlock (client);
 #endif
       client->drawn_rev = rev;
+      ctx_client_unlock (client);
           }
     }
 }
