@@ -39,8 +39,6 @@ extern int ctx_gradient_cache_valid;
 //{
 //  ctx_gradient_cache_valid = 0;
 //}
-
-
 #endif
 
 CTX_INLINE static void
@@ -4203,7 +4201,6 @@ ctx_float_porter_duff (CMYKAF, 5,color,           rasterizer->fragment, rasteriz
 ctx_float_porter_duff (CMYKAF, 5,generic,         rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_NORMAL
-
 ctx_float_porter_duff (CMYKAF, 5,color_normal,            rasterizer->fragment, CTX_BLEND_NORMAL)
 ctx_float_porter_duff (CMYKAF, 5,generic_normal,          rasterizer->fragment, CTX_BLEND_NORMAL)
 
