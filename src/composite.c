@@ -1619,11 +1619,11 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
         uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
         uint32_t *dip = ((uint32_t*)(dst));
-        int      si_a  = si >> CTX_RGBA8_A_SHIFT;
+        uint32_t si_a  = si >> CTX_RGBA8_A_SHIFT;
         uint32_t di = *dip;
         uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-        int ir_cov_si_a = 255-((cov*si_a)/255);
+        uint32_t ir_cov_si_a = 255-((cov*si_a)/255);
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
          ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
@@ -1694,7 +1694,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
     for (; x < count; x++)
     {
       int cov = coverage[0];
-      if (cov)
+      if (CTX_LIKELY(cov))
       {
         uint32_t *sip = ((uint32_t*)(tsrc));
         uint32_t si = *sip;
@@ -1703,11 +1703,11 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
 
         uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
-        int      si_a  = si >> CTX_RGBA8_A_SHIFT;
+        uint32_t si_a  = si >> CTX_RGBA8_A_SHIFT;
 
         uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-        int ir_cov_si_a = 255-((cov*si_a)/255);
+        uint32_t ir_cov_si_a = 255-((cov*si_a)/255);
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
          ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
@@ -1895,13 +1895,14 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
       int cov = coverage[0];
       if (cov)
       {
-        int r_cov = 255-cov;
+        uint32_t r_cov = 255-cov;
         uint32_t di = *((uint32_t*)(dst));
         uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-        *((uint32_t*)(dst)) = 
+        uint32_t res = 
          (((si_rb * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
          ((((si_ga * cov + di_ga * r_cov) >> 8) & CTX_RGBA8_RB_MASK) << 8);
+        *((uint32_t*)(dst)) = res;
       }
       dst += 4;
       coverage ++;
@@ -1923,7 +1924,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
           uint32_t di = *((uint32_t*)(dst));
           uint32_t di_ga = (di & CTX_RGBA8_GA_MASK)>>8;
           uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-          int ir_cov_si_a = 255-((cov*si_a)>>8);
+          uint32_t ir_cov_si_a = 255-((cov*si_a)>>8);
 
           *((uint32_t*)(dst)) = 
            (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
@@ -2012,7 +2013,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
       uint32_t si = *sip;
       uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
       uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
-      int si_a = si >> CTX_RGBA8_A_SHIFT;
+      uint32_t si_a = si >> CTX_RGBA8_A_SHIFT;
       for (; x < count; x++)
       {
         int cov = *coverage;
@@ -2022,7 +2023,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
           uint32_t di = *dip;
           uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
           uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-          int ir_cov_si_a = 255-((cov*si_a)>>8);
+          uint32_t ir_cov_si_a = 255-((cov*si_a)>>8);
           *((uint32_t*)(dst)) = 
            (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
            ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
@@ -2066,7 +2067,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
       int cov = coverage[0];
       if (cov)
       {
-        int r_cov = 255-cov;
+        uint32_t r_cov = 255-cov;
         uint32_t di = *((uint32_t*)(dst));
         uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
@@ -2143,7 +2144,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
       uint32_t si = *sip;
       uint32_t si_ga = (si & CTX_RGBA8_GA_MASK)>>8;
       uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
-      int si_a = si >> CTX_RGBA8_A_SHIFT;
+      uint32_t si_a = si >> CTX_RGBA8_A_SHIFT;
       for (; x < count; x++)
       {
         int cov = *coverage;
@@ -2153,7 +2154,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
           uint32_t di = *dip;
           uint32_t di_ga = (di & CTX_RGBA8_GA_MASK)>>8;
           uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-          int ir_cov_si_a = 255-((cov*si_a)>>8);
+          uint32_t ir_cov_si_a = 255-((cov*si_a)>>8);
           *((uint32_t*)(dst)) = 
            (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
            ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
