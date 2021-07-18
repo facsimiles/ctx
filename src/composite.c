@@ -1951,7 +1951,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
      
-     if (((uint64_t*)(coverage))[0])
+     if (CTX_LIKELY(((uint64_t*)(coverage))[0]))
      {
        if (CTX_LIKELY(((uint64_t*)(coverage))[0] != 0xffffffffffffffff))
        {
@@ -5336,11 +5336,13 @@ static inline void ctx_RGB565_BS_source_over_normal_color_solid (CTX_COMPOSITE_A
   ctx_RGB565_source_over_normal_color_solid_gen (rasterizer, dst, rasterizer->color, x0, coverage, count, 1);
 }
 
-
 static void
 ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 {
-  if (CTX_LIKELY(rasterizer->comp_op == CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid)))
+  if (CTX_UNLIKELY(rasterizer->comp_op == CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) && 0)) // practically tied
+                                // for performance
+                                // without AVX on x64
+                                // so do conversion instead
   {
     ctx_RGB565_source_over_normal_color_solid (rasterizer, dst, rasterizer->color, x0, coverage, count);
   }
@@ -5395,7 +5397,7 @@ ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, v
 static void
 ctx_composite_RGB565_BS (CTX_COMPOSITE_ARGUMENTS)
 {
-  if (CTX_LIKELY(rasterizer->comp_op == CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid)))
+  if (CTX_LIKELY(rasterizer->comp_op == CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid)) && 0)
   {
     ctx_RGB565_BS_source_over_normal_color_solid (rasterizer, dst, rasterizer->color, x0, coverage, count);
   }
