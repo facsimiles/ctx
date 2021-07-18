@@ -5,7 +5,7 @@
 #ifdef CTX_AVX2
 #undef CTX_AVX2
 #endif
-#define CTX_AVX2                  1
+#define CTX_AVX2                  0
 #define CTX_EVENTS                1
 #define CTX_ENABLE_CM             0
 #define CTX_PARSER                0
@@ -140,7 +140,6 @@ static void run_test_set_cairo (cairo_t *cr)
   }
   report_result (count, elapsed);
 
-  start = ctx_ticks ();
   count = 0;
   {
     cairo_pattern_t *pat = cairo_pattern_create_radial (100.0, 100.0, 40.4, 100.0, 100.0, 100.0);
