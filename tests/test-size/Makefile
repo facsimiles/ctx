@@ -25,9 +25,12 @@ text: text.c ../../*.h ../../fonts/*.h Makefile
 musl-static-%: %.c ../../*.h ../../fonts/*.h Makefile tiny-config.h
 	musl-gcc $(SMALL_CFLAGS) $< -o $@ -I../.. -I../../fonts -static
 
-perf: perf-circ
+perf: perf-circ perf-circ-nosimd
+	./perf-circ-nosimd
 	./perf-circ
 perf-circ: perf-circ.c ../../*.h ../../fonts/*.h Makefile
+	$(CC) $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts `pkg-config cairo --cflags --libs` -lm
+perf-circ-nosimd: perf-circ-nosimd.c ../../*.h ../../fonts/*.h Makefile
 	$(CC) $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts `pkg-config cairo --cflags --libs` -lm
 
 ctx-info-32bit: ctx-info.c ../../ctx.h tiny-config.h

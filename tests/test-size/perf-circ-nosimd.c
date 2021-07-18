@@ -5,7 +5,7 @@
 #ifdef CTX_AVX2
 #undef CTX_AVX2
 #endif
-#define CTX_AVX2                  1
+#define CTX_AVX2                  0
 #define CTX_EVENTS                1
 #define CTX_ENABLE_CM             0
 #define CTX_PARSER                0
@@ -41,23 +41,25 @@ typedef struct Fmt {
 } Fmt;
 
 Fmt formats[]={
-   {"RGBA8",     CTX_FORMAT_RGBA8,  4, 1},
-   {"RGB565",    CTX_FORMAT_RGB565, 2,   1},
+   {"RGBA8-nosimd",     CTX_FORMAT_RGBA8,  4, 1},
+   {"RGB565-nosimd",    CTX_FORMAT_RGB565, 2, 1},
+   {"GRAYA8-nosimd",    CTX_FORMAT_GRAYA8, 2, 1},
+   {"GRAY1-nosimd",     CTX_FORMAT_GRAY1,  1, 8},
+   {"GRAY8-nosimd",     CTX_FORMAT_GRAY8,  1, 1},
+#if 0
    {"BGRA8",     CTX_FORMAT_BGRA8,  4, 1},
-   {"GRAYA8",    CTX_FORMAT_GRAYA8, 2, 1},
    {"RGBAF",     CTX_FORMAT_RGBAF,  4*4, 1},
    {"RGB332",    CTX_FORMAT_RGB332, 1,   1},
    {"RGB565_BS", CTX_FORMAT_RGB565_BYTESWAPPED,   2,   1},
    {"GRAYAF",    CTX_FORMAT_GRAYAF, 2*4, 1},
    {"CMYKAF",    CTX_FORMAT_CMYKAF, 5*4, 1},
    {"CMYKA8",    CTX_FORMAT_CMYKA8, 5, 1},
-   {"GRAY1",     CTX_FORMAT_GRAY1,  1, 8},
    {"GRAY2",     CTX_FORMAT_GRAY2,  1, 4},
    {"GRAY4",     CTX_FORMAT_GRAY4,  1, 2},
-   {"GRAY8",     CTX_FORMAT_GRAY8,  1, 1},
    {"GRAYF",     CTX_FORMAT_GRAYF,  4*1, 1},
    {"RGB8",      CTX_FORMAT_RGB8,   3,   1},
    {"CMYK8",     CTX_FORMAT_CMYK8, 4, 1},
+#endif
 };
 
 static void report_result (int count, float elapsed)
@@ -326,7 +328,7 @@ static void run_tests (Ctx *ctx)
 
 int main (int argc, char **argv)
 {
-  if (1)
+  if (0)
   {
    fprintf (stdout, "<tr><td>cairo</td>");
    int stride = WIDTH * 4;
