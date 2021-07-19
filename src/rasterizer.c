@@ -1,7 +1,31 @@
 #include "ctx-split.h"
 #if CTX_RASTERIZER
 
-void ctx_compositor_setup_default (CtxRasterizer *rasterizer);
+static void
+ctx_gradient_cache_prime (CtxRasterizer *rasterizer);
+
+static void
+_ctx_setup_compositor (CtxRasterizer *rasterizer)
+{
+  rasterizer->format->setup (rasterizer);
+#if CTX_GRADIENTS
+#if CTX_GRADIENT_CACHE
+  CtxGState *gstate = &rasterizer->state->gstate;
+  switch (gstate->source_fill.type)
+  {
+    case CTX_SOURCE_LINEAR_GRADIENT:
+    case CTX_SOURCE_RADIAL_GRADIENT:
+      ctx_gradient_cache_prime (rasterizer);
+      break;
+    case CTX_SOURCE_TEXTURE:
+      if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
+        _ctx_texture_prepare_color_management (rasterizer,
+        rasterizer->state->gstate.source_fill.texture.buffer);
+      break;
+  }
+#endif
+#endif
+}
 
 #define CTX_FULL_AA 15
 inline static void
@@ -1275,7 +1299,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   y1 /= CTX_FULL_AA;
   y0 /= CTX_FULL_AA;
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
-  ctx_compositor_setup_default (rasterizer);
+  _ctx_setup_compositor (rasterizer);
   if (x0 < rasterizer->blit_x)
     { x0 = rasterizer->blit_x; }
   if (y0 < rasterizer->blit_y)
@@ -1309,9 +1333,8 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       {
         uint8_t coverage[x1-x0 + 1];
         ctx_memset (coverage, 0xff, sizeof (coverage) );
-
-      rasterizer->scanline = y0 * CTX_FULL_AA;
-      for (int y = y0; y < y1; y++)
+        rasterizer->scanline = y0 * CTX_FULL_AA;
+        for (int y = y0; y < y1; y++)
         {
           rasterizer->scanline += CTX_FULL_AA;
           ctx_rasterizer_apply_coverage (rasterizer,
@@ -1365,7 +1388,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   else
   {
     if (rasterizer->comp_op == NULL)
-      ctx_compositor_setup_default (rasterizer);
+      _ctx_setup_compositor (rasterizer);
 
     rasterizer->state->min_x =
       ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);

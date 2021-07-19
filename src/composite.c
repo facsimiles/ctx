@@ -5544,33 +5544,4 @@ CtxPixelFormatInfo CTX_COMPOSITE_SUFFIX(ctx_pixel_formats)[]=
   }
 };
 
-
-void
-CTX_COMPOSITE_SUFFIX(ctx_compositor_setup) (CtxRasterizer *rasterizer)
-{
-  if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_TEXTURE)
-  {
-    if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
-      _ctx_texture_prepare_color_management (rasterizer,
-        rasterizer->state->gstate.source_fill.texture.buffer);
-  }
-
-  if (rasterizer->format->setup)
-  {
-    // this works also when _default is passed
-    rasterizer->format->setup (rasterizer);
-  }
-#if CTX_GRADIENTS
-#if CTX_GRADIENT_CACHE
-  CtxGState *gstate = &rasterizer->state->gstate;
-  switch (gstate->source_fill.type)
-  {
-    case CTX_SOURCE_LINEAR_GRADIENT:
-    case CTX_SOURCE_RADIAL_GRADIENT:
-      ctx_gradient_cache_prime (rasterizer);
-  }
-#endif
-#endif
-}
-
 #endif
