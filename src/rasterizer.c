@@ -2095,8 +2095,6 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   if ((rasterizer->clip_rectangle==1
                           || !rasterizer->clip_buffer)
                   )
-  //  XXX  disabled, it makes clip test fail, a lot of unneded work
-  //  can be skipped here.
   {
     if (count == 6)
     {
