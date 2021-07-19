@@ -41,11 +41,11 @@ uint32_t ctx_ms (Ctx *ctx)
 }
 
 
-typedef enum _CtxFlags CtxFlags;
 
 enum _CtxFlags {
    CTX_FLAG_DIRECT = (1<<0),
 };
+typedef enum _CtxFlags CtxFlags;
 
 
 int _ctx_max_threads = 1;

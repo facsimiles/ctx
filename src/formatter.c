@@ -355,7 +355,7 @@ static void
 ctx_print_yenc (CtxFormatter *formatter, uint8_t *data, int length)
 {
   char *tmp = (char*)malloc (length * 2 + 2);// worst case scenario
-  int enclength = ctx_yenc (data, tmp, length);
+  int enclength = ctx_yenc ((char*)data, tmp, length);
   data[enclength]=0;
   ctx_formatter_addstr (formatter, " =", 2);
   ctx_formatter_addstr (formatter, tmp, enclength);

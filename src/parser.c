@@ -1467,7 +1467,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
         {
           parser->state = CTX_PARSER_NEUTRAL;
                  //   fprintf (stderr, "got %i\n", parser->pos);
-          parser->pos = ctx_ydec ((uint8_t*)parser->holding, (char*)parser->holding, parser->pos) - 1;
+          parser->pos = ctx_ydec ((char*)parser->holding, (char*)parser->holding, parser->pos) - 1;
 #if 0
           if (parser->pos > 5)
                     fprintf (stderr, "dec got %i %c %c %c %c\n", parser->pos,

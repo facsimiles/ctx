@@ -1898,7 +1898,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
         uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
         uint32_t res = 
-         (((si_rb * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
+         (((si_rb  * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
          ((((si_ga * cov + di_ga * r_cov) >> 8) & CTX_RGBA8_RB_MASK) << 8);
         *((uint32_t*)(dst)) = res;
       }
@@ -1925,7 +1925,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
           uint32_t ir_cov_si_a = 255-((cov*si_a)>>8);
 
           *((uint32_t*)(dst)) = 
-           (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
+           (((si_rb  * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
            ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
         }
         dst += 4;
@@ -1975,7 +1975,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
           if (a == 255)
           {
             _mm256_store_si256((__m256i*)dst, xsrc);
-            dst += 4 * 8;
+            dst      += 4 * 8;
             coverage += 8;
             continue;
           }
@@ -2004,6 +2004,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
       dst += 4 * 8;
       coverage += 8;
     }
+#endif
 
     if (x < count)
     {
@@ -2030,7 +2031,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
         coverage ++;
       }
     }
-#endif
+
   }
 }
 
