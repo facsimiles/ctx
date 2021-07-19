@@ -1245,6 +1245,87 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
   return 0;
 }
 
+#define CTX_RECT_FILL 0
+
+#if CTX_RECT_FILL
+static int
+ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
+                          int          x0,
+                          int          y0,
+                          int          x1,
+                          int          y1)
+{
+  if (x0>x1) {
+     int tmp = x1;
+     x1 = x0;
+     x0 = tmp;
+     tmp = y1;
+     y1 = y0;
+     y0 = tmp;
+  }
+#if 0
+  if (x1 % CTX_SUBDIV ||
+      x0 % CTX_SUBDIV ||
+      y1 % CTX_FULL_AA ||
+      y0 % CTX_FULL_AA)
+    { return 0; }
+#endif
+  x1 /= CTX_SUBDIV;
+  x0 /= CTX_SUBDIV;
+  y1 /= CTX_FULL_AA;
+  y0 /= CTX_FULL_AA;
+  uint8_t *dst = ( (uint8_t *) rasterizer->buf);
+  ctx_compositor_setup_default (rasterizer);
+  if (x0 < rasterizer->blit_x)
+    { x0 = rasterizer->blit_x; }
+  if (y0 < rasterizer->blit_y)
+    { y0 = rasterizer->blit_y; }
+  if (y1 > rasterizer->blit_y + rasterizer->blit_height)
+    { y1 = rasterizer->blit_y + rasterizer->blit_height; }
+  if (x1 > rasterizer->blit_x + rasterizer->blit_width)
+    { x1 = rasterizer->blit_x + rasterizer->blit_width; }
+  dst += (y0 - rasterizer->blit_y) * rasterizer->blit_stride;
+  int width = x1 - x0;
+
+  if (width > 0)
+    {
+      if (rasterizer->format->components == 4 &&
+          rasterizer->color[3]==255 &&
+          rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
+          rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
+          rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
+          rasterizer->format->bpp == 32)
+      {
+        uint8_t colorrow[4*(width+1)];
+        for (int i = 0; i < width + 1; i++)
+          memcpy(&colorrow[i*4], rasterizer->color, 4);
+        for (int y = y0; y < y1; y++)
+        {
+          memcpy (&dst[(x0)*4], colorrow, 4 * (width+1));
+          dst += rasterizer->blit_stride;
+        }
+      }
+      else
+      {
+        uint8_t coverage[x1-x0 + 1];
+        ctx_memset (coverage, 0xff, sizeof (coverage) );
+
+      rasterizer->scanline = y0 * CTX_FULL_AA;
+      for (int y = y0; y < y1; y++)
+        {
+          rasterizer->scanline += CTX_FULL_AA;
+          ctx_rasterizer_apply_coverage (rasterizer,
+                                         &dst[ (x0) * rasterizer->format->bpp/8],
+                                         x0,
+                                         coverage, width);
+          dst += rasterizer->blit_stride;
+        }
+      }
+    }
+  return 1;
+}
+#endif
+
 static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
@@ -1295,6 +1376,37 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     rasterizer->state->max_y =
       ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / CTX_FULL_AA);
 
+#if CTX_RECT_FILL
+    if (rasterizer->edge_list.count == 6)
+      {
+        CtxEntry *entry0 = &rasterizer->edge_list.entries[0];
+        CtxEntry *entry1 = &rasterizer->edge_list.entries[1];
+        CtxEntry *entry2 = &rasterizer->edge_list.entries[2];
+        CtxEntry *entry3 = &rasterizer->edge_list.entries[3];
+        if (!rasterizer->state->gstate.clipped &&
+            (entry0->data.s16[2] == entry1->data.s16[2]) &&
+            (entry0->data.s16[3] == entry3->data.s16[3]) &&
+            (entry1->data.s16[3] == entry2->data.s16[3]) &&
+            (entry2->data.s16[2] == entry3->data.s16[2]) &&
+            ((entry1->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
+            ((entry1->data.s16[3] % (CTX_FULL_AA)) == 0) &&
+            ((entry3->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
+            ((entry3->data.s16[3] % (CTX_FULL_AA)) == 0) 
+#if CTX_ENABLE_SHADOW_BLUR
+             && !rasterizer->in_shadow
+#endif
+           )
+        if (ctx_rasterizer_fill_rect (rasterizer,
+                                      entry3->data.s16[2],
+                                      entry3->data.s16[3],
+                                      entry1->data.s16[2],
+                                      entry1->data.s16[3]) )
+          {
+            ctx_rasterizer_reset (rasterizer);
+            goto done;
+          }
+      }
+#endif
     ctx_rasterizer_finish_shape (rasterizer);
 
     uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
@@ -1416,6 +1528,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
                                    );
   }
+done:
   if (rasterizer->preserve)
     {
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
@@ -1574,12 +1687,12 @@ ctx_rasterizer_set_font (CtxRasterizer *rasterizer, const char *font_name)
 
 CTX_STATIC void
 ctx_rasterizer_arc (CtxRasterizer *rasterizer,
-                    float        x,
-                    float        y,
-                    float        radius,
-                    float        start_angle,
-                    float        end_angle,
-                    int          anticlockwise)
+                    float          x,
+                    float          y,
+                    float          radius,
+                    float          start_angle,
+                    float          end_angle,
+                    int            anticlockwise)
 {
   int full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS;
   full_segments = radius * CTX_PI * 2;
@@ -1799,7 +1912,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   int preserved = rasterizer->preserve;
   float factor = ctx_matrix_get_scale (&state->gstate.transform);
 
-  int aa = 15;//rasterizer->aa;
+  int aa = CTX_FULL_AA;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 #if 1
