@@ -1624,7 +1624,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
         uint32_t ir_cov_si_a = 255-((cov*si_a)/255);
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
-         ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
+         ((((si_ga * cov + di_ga * ir_cov_si_a)) & CTX_RGBA8_GA_MASK));
       }
       dst += 4;
       tsrc += 4;
@@ -1708,7 +1708,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
         uint32_t ir_cov_si_a = 255-((cov*si_a)/255);
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
-         ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
+         ((((si_ga * cov + di_ga * ir_cov_si_a)) & CTX_RGBA8_GA_MASK));
       }
       dst  += 4;
       tsrc += 4;
@@ -1880,6 +1880,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
       uint32_t si = *sip;
       uint32_t si_ga = (si & CTX_RGBA8_GA_MASK)>>8;
       uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+#if 0
       if (a==255)
       {
 
@@ -1899,7 +1900,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
         uint32_t res = 
          (((si_rb  * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
-         ((((si_ga * cov + di_ga * r_cov) >> 8) & CTX_RGBA8_RB_MASK) << 8);
+         ((((si_ga * cov + di_ga * r_cov)) & CTX_RGBA8_GA_MASK));
         *((uint32_t*)(dst)) = res;
       }
       dst += 4;
@@ -1907,6 +1908,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
     }
   }
     else
+#endif
     {
       int si_a = si >> CTX_RGBA8_A_SHIFT;
       for (; (x < count) 
@@ -1926,7 +1928,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
 
           *((uint32_t*)(dst)) = 
            (((si_rb  * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
-           ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
+           ((((si_ga * cov + di_ga * ir_cov_si_a)) & CTX_RGBA8_GA_MASK));
         }
         dst += 4;
         coverage ++;
@@ -2025,7 +2027,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
           uint32_t ir_cov_si_a = 255-((cov*si_a)>>8);
           *((uint32_t*)(dst)) = 
            (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
-           ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
+           ((((si_ga * cov + di_ga * ir_cov_si_a)) & CTX_RGBA8_GA_MASK));
         }
         dst      += 4;
         coverage ++;
@@ -2052,9 +2054,23 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
 #endif
     {
       uint32_t *sip = ((uint32_t*)(tsrc));
+#if 1
       uint32_t si = *sip;
       uint32_t si_ga = (si & CTX_RGBA8_GA_MASK)>>8;
       uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+#else
+      uint64_t si = *sip;
+//        uint64_t si64 = 
+//                ((si) & 0xff) |
+//                (((si >> 8) &0xff) << 16) |
+//                (((si >> 16) &0xff) << 32) |
+//               (((si >> 24) &0xff) << 48);
+        uint64_t si64 = 
+                ((si & CTX_RGBA8_R_MASK)) |
+                ((si & CTX_RGBA8_G_MASK)<<8) |
+                ((si & CTX_RGBA8_B_MASK)<<16) |
+                ((si & CTX_RGBA8_A_MASK)<<24);
+#endif
 
       for (; (x < count) 
 #if CTX_AVX2
@@ -2063,6 +2079,29 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
                       ; 
                       x++)
     {
+#if 0
+      int cov = coverage[0];
+      if (cov)
+      {
+        uint32_t r_cov = 255-cov;
+        uint64_t di = *((uint32_t*)(dst));
+        uint64_t di64 = 
+                ((di & CTX_RGBA8_R_MASK)) |
+                ((di & CTX_RGBA8_G_MASK)<<8) |
+                ((di & CTX_RGBA8_B_MASK)<<16) |
+                ((di & CTX_RGBA8_A_MASK)<<24);
+
+        uint64_t res64 = (si64 * cov + di * r_cov);
+          
+        uint32_t res = 
+             ((res64 >> (0+8)) & CTX_RGBA8_R_MASK) |
+             ((res64 >> (8+8)) & CTX_RGBA8_G_MASK) |
+             ((res64 >> (16+8)) & CTX_RGBA8_B_MASK) |
+             ((res64 >> (24+8)) & CTX_RGBA8_A_MASK);
+
+        *((uint32_t*)(dst)) =  res;
+      }
+#else
       int cov = coverage[0];
       if (cov)
       {
@@ -2072,8 +2111,9 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
-         ((((si_ga * cov + di_ga * r_cov) >> 8) & CTX_RGBA8_RB_MASK) << 8);
+         (((si_ga * cov + di_ga * r_cov)) & CTX_RGBA8_GA_MASK);
       }
+#endif
       dst += 4;
       coverage ++;
     }
@@ -2155,8 +2195,8 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
           uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
           uint32_t ir_cov_si_a = 255-((cov*si_a)>>8);
           *((uint32_t*)(dst)) = 
-           (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
-           ((((si_ga * cov + di_ga * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) << 8);
+           (((si_rb * cov + di_rb * ir_cov_si_a) & CTX_RGBA8_GA_MASK) >> 8) |
+           ((((si_ga * cov + di_ga * ir_cov_si_a)) & CTX_RGBA8_GA_MASK));
         }
         dst += 4;
         coverage ++;
