@@ -2039,8 +2039,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
       uint8_t cov = coverage[0];
       if (CTX_LIKELY (cov))
       {
-        if (CTX_LIKELY (cov != 255))
-        {
           uint8_t r_cov = 255-cov;
           uint32_t di = *((uint32_t*)(dst));
           uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
@@ -2048,11 +2046,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
           *((uint32_t*)(dst)) = 
            (((si_rb * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
            (((si_ga * cov + di_ga * r_cov)) & CTX_RGBA8_GA_MASK);
-        }
-        else
-        {
-          *((uint32_t*)(dst)) = si;
-        }
       }
       dst += 4;
       coverage ++;
