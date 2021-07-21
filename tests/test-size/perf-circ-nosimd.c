@@ -31,7 +31,7 @@
 #define WIDTH    512
 #define HEIGHT   512
 
-#define ITERATIONS     1000
+#define ITERATIONS     200
 
 typedef struct Fmt { 
    char *name;
@@ -65,6 +65,12 @@ Fmt formats[]={
 static void report_result (int count, float elapsed)
 {
   fprintf (stdout, "<td>%1.0f</td>", elapsed * 1000.0 * 1000.0 / ITERATIONS);
+ // (1000.0)/(count/elapsed));
+}
+
+static void report_min_result (float elapsed)
+{
+  fprintf (stdout, "<td>%1.0f</td>", elapsed);
  // (1000.0)/(count/elapsed));
 }
 
@@ -222,16 +228,18 @@ static void run_test_set (Ctx *ctx)
   //ctx_compositing_mode (ctx, CTX_COMPOSITE_SOURCE_ATOP);
   //ctx_compositing_mode (ctx, CTX_COMPOSITE_DESTINATION_OVER);
  
-  start = ctx_ticks ();
   count = 0;
+  float min_elapsed = 100000.0;
   do {
+    start = ctx_ticks ();
     ctx_shape (ctx);
     ctx_rgba (ctx, 0.5, 0.5, 0.5, 1.0);
     ctx_fill (ctx);
     count ++;
+    elapsed = (ctx_ticks() - start);
+    if (elapsed < min_elapsed) min_elapsed = elapsed;
   } while (count < ITERATIONS);
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  report_result (count, elapsed);
+  report_min_result (min_elapsed);
 #if 0
   start = ctx_ticks ();
   count = 0;
@@ -245,20 +253,23 @@ static void run_test_set (Ctx *ctx)
   fprintf (stdout, "<td>%.0f</td>", count/elapsed);
 #endif
 
-  start = ctx_ticks ();
   count = 0;
+  min_elapsed = 100000.0;
   do {
+    start = ctx_ticks ();
     ctx_shape (ctx);
     ctx_rgba (ctx, 0.5, 0.5, 0.5, 0.75);
     ctx_fill (ctx);
     count ++;
+    elapsed = (ctx_ticks() - start);
+    if (elapsed < min_elapsed) min_elapsed = elapsed;
   } while (count < ITERATIONS);
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  report_result (count, elapsed);
+  report_min_result (min_elapsed);
 
-  start = ctx_ticks ();
   count = 0;
+  min_elapsed = 100000.0;
   do {
+    start = ctx_ticks ();
     ctx_shape (ctx);
     ctx_linear_gradient (ctx, 30.0, 3.0, 500.0, 500.0);
     ctx_gradient_add_stop (ctx, 0.0, 1.0, 1.0, 1.0, 0.5);
@@ -266,13 +277,16 @@ static void run_test_set (Ctx *ctx)
     ctx_gradient_add_stop (ctx, 1.0, 1.0, 1.0, 1.0, 0.5);
     ctx_fill (ctx);
     count ++;
+    elapsed = (ctx_ticks() - start);
+    if (elapsed < min_elapsed) min_elapsed = elapsed;
   } while (count < ITERATIONS);
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  report_result (count, elapsed);
+    elapsed = (ctx_ticks() - start);
+  report_min_result (min_elapsed);
 
-  start = ctx_ticks ();
   count = 0;
+  min_elapsed = 100000.0;
   do {
+    start = ctx_ticks ();
     ctx_shape (ctx);
     ctx_radial_gradient (ctx, 100.0, 100.0, 40.4, 100.0, 100.0, 100.0);
     ctx_gradient_add_stop (ctx, 0.0, 1.0, 1.0, 1.0, 0.5);
@@ -280,9 +294,10 @@ static void run_test_set (Ctx *ctx)
     ctx_gradient_add_stop (ctx, 1.0, 1.0, 1.0, 1.0, 0.5);
     ctx_fill (ctx);
     count ++;
+    elapsed = (ctx_ticks() - start);
+    if (elapsed < min_elapsed) min_elapsed = elapsed;
   } while (count < ITERATIONS);
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  report_result (count, elapsed);
+  report_min_result (min_elapsed);
 
 char eid[1024]="";
 ctx_rgb (ctx,1,0,0);
@@ -290,14 +305,17 @@ ctx_rgb (ctx,1,0,0);
 ctx_texture_load (ctx, "/home/pippin/src/ctx/tests/test-size/img.png", NULL, NULL, eid);
   start = ctx_ticks ();
   count = 0;
+  min_elapsed = 100000.0;
   do {
+    start = ctx_ticks ();
     ctx_shape (ctx);
     ctx_texture (ctx, eid, 0.0, 0.0);
     ctx_fill (ctx);
     count ++;
+    elapsed = (ctx_ticks() - start);
+    if (elapsed < min_elapsed) min_elapsed = elapsed;
   } while (count < ITERATIONS);
-    elapsed = (ctx_ticks() - start) / 1000.0 / 1000.0;
-  report_result (count, elapsed);
+    report_min_result (min_elapsed);
 
   }
 
