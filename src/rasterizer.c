@@ -635,9 +635,9 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           int dx_dy = abs(rasterizer->edges[i].delta);
           if (dx_dy > slope_limit15)
             { rasterizer->needs_aa15 --; }
-          else if (dx_dy > slope_limit5)
+          if (dx_dy > slope_limit5)
             { rasterizer->needs_aa5 --; }
-          else if (dx_dy > slope_limit3)
+          if (dx_dy > slope_limit3)
             { rasterizer->needs_aa3 --; }
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
@@ -1090,8 +1090,22 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #endif
                   sizeof (_coverage) );
 
-    if (contains_edge_end)
+#if 0
+      if (1)
+      {
+      for (int i = 0; i < CTX_FULL_AA; i+=3)
+      {
+        ctx_rasterizer_feed_edges (rasterizer);
+        ctx_rasterizer_sort_active_edges (rasterizer);
+        ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, CTX_FULL_AA/3);
+        ctx_rasterizer_increment_edges (rasterizer, 3);
+      }
+      }
+      else 
+#endif
+              if (contains_edge_end)
     {
+
         for (int i = 0; i < real_aa; i++)
         {
           ctx_rasterizer_feed_edges (rasterizer);
@@ -1099,6 +1113,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, real_aa);
           ctx_rasterizer_increment_edges (rasterizer, CTX_FULL_AA/real_aa);
         }
+#define CTX_VIS_AA 0
+#if CTX_VIS_AA
+      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 1.0;
+#endif
     }
     else if (!rasterizer->needs_aa3) // if it doesnt need aa3 it doesnt need aa5 or aa15 either
     {
@@ -1108,8 +1126,12 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
       ctx_rasterizer_sort_active_edges (rasterizer);
       ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, winding, 1);
       ctx_rasterizer_increment_edges (rasterizer, halfstep);
+#if CTX_VIS_AA
+      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.10;
+#endif
     }
-    else  if (rasterizer->needs_aa15)
+#if 1
+    else if (rasterizer->needs_aa15)
       {
         for (int i = 0; i < CTX_FULL_AA; i++)
         {
@@ -1118,7 +1140,11 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, CTX_FULL_AA);
           ctx_rasterizer_increment_edges (rasterizer, 1);
         }
+#if CTX_VIS_AA
+        for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.90;
+#endif
     }
+#endif
     else if (rasterizer->needs_aa5)
     {
       for (int i = 0; i < CTX_FULL_AA; i+=3)
@@ -1128,7 +1154,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
         ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, CTX_FULL_AA/3);
         ctx_rasterizer_increment_edges (rasterizer, 3);
       }
-        //for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.5;
+#if CTX_VIS_AA
+        for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.5;
+#endif
     }
     else if (rasterizer->needs_aa3)
     {
@@ -1139,7 +1167,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
         ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, winding, CTX_FULL_AA/5);
         ctx_rasterizer_increment_edges (rasterizer, 5);
       }
-      //for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.75;
+#if CTX_VIS_AA
+      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.25;
+#endif
     }
     else
     {
@@ -1149,6 +1179,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
       ctx_rasterizer_sort_active_edges (rasterizer);
       ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, winding, 1);
       ctx_rasterizer_increment_edges (rasterizer, halfstep);
+#if CTX_VIS_AA
+      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.30;
+#endif
     }
   ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx);
 
