@@ -1380,7 +1380,8 @@ ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
   {
     uint8_t cov = *coverage;
     for (int c = 0; c < components; c++)
-      dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
+      dst[c] = dst[c]+(((src[c]-dst[c]) * cov) >> 8);
+      //dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
     coverage ++;
     dst+=components;
   }
@@ -1558,7 +1559,8 @@ ctx_u8_source_over_normal_color (int components,
 #endif
       {
         for (int c = 0; c < components; c++)
-          dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
+          //dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
+          dst[c] = ((tsrc[c] * cov)>>8) + (dst[c] * (((65536)-(tsrc[components-1] * cov)))>>16);
       }
       coverage ++;
       dst+=components;
@@ -1846,7 +1848,7 @@ static void
 CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENTS)
 {
 #if 0
-  ctx_u8_source_over_normal_color (4, rasterizer, dst, src, clip, x0, coverage, count);
+  ctx_u8_source_over_normal_color (4, rasterizer, dst, src, x0, coverage, count);
   return;
 #endif
   {
@@ -2003,7 +2005,7 @@ static void
 CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_ARGUMENTS)
 {
 #if 0
-  ctx_u8_source_over_normal_color (4, rasterizer, dst, src, clip, x0, coverage, count);
+  ctx_u8_source_over_normal_color (4, rasterizer, dst, src, x0, coverage, count);
   return;
 #endif
     uint8_t *tsrc = src;
