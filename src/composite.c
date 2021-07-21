@@ -1,5 +1,9 @@
 #include "ctx-split.h"
 
+#define CTX_COMPOSITE_IF_COV  0 // maybe setting this to 1
+                                // is faster on embedded with
+                                // less branch prediction?
+
 #if CTX_COMPOSITE
 
 
@@ -1375,26 +1379,8 @@ ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
     uint8_t cov = *coverage;
-    if (cov)
-    {
-    if (cov == 255)
-    {
-        switch (components)
-        {
-          case 4:
-            *((uint32_t*)(dst)) = *((uint32_t*)(src));
-            break;
-          default:
-            for (int c = 0; c < components; c++)
-              dst[c] = src[c];
-        }
-    }
-    else
-    {
-        for (int c = 0; c < components; c++)
-          dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
-    }
-    }
+    for (int c = 0; c < components; c++)
+      dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
     coverage ++;
     dst+=components;
   }
@@ -1427,17 +1413,17 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
         u0+=ud;
         v0+=vd;
       }
-    if (cov == 255)
-    {
-      for (int c = 0; c < components; c++)
-        dst[c] = src[c];
-    }
-    else
-    {
-      uint8_t ralpha = 255 - cov;
-      for (int c = 0; c < components; c++)
-        { dst[c] = (src[c]*cov + 0 * ralpha) / 255; }
-    }
+      if (cov == 255)
+      {
+        for (int c = 0; c < components; c++)
+          dst[c] = src[c];
+      }
+      else
+      {
+        uint8_t ralpha = 255 - cov;
+        for (int c = 0; c < components; c++)
+          { dst[c] = (src[c]*cov + 0 * ralpha) / 255; }
+      }
     }
     dst += components;
     coverage ++;
@@ -1567,18 +1553,12 @@ ctx_u8_source_over_normal_color (int components,
     while (count--)
     {
       uint8_t cov = *coverage;
+#if CTX_COMPOSITE_IF_COV
       if (cov)
+#endif
       {
-        if (cov == 255)
-        {
         for (int c = 0; c < components; c++)
-          dst[c] = (tsrc[c]) + (dst[c] * (255-(tsrc[components-1])))/(255);
-        }
-        else
-        {
-          for (int c = 0; c < components; c++)
-            dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
-         }
+          dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
       }
       coverage ++;
       dst+=components;
@@ -1610,7 +1590,9 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
                       x++)
     {
       uint8_t cov = coverage[0];
+#if CTX_COMPOSITE_IF_COV
       if (cov)
+#endif
       {
         uint32_t *sip = ((uint32_t*)(tsrc));
         uint32_t si = *sip;
@@ -1621,7 +1603,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
         uint32_t di = *dip;
         uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-        uint8_t ir_cov_si_a = 255-((cov*si_a)/255);
+        uint8_t ir_cov_si_a = 255-((cov*si_a)>>8);
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
          ((((si_ga * cov + di_ga * ir_cov_si_a)) & CTX_RGBA8_GA_MASK));
@@ -1692,7 +1674,9 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
     for (; x < count; x++)
     {
       uint8_t cov = coverage[0];
+#if CTX_COMPOSITE_IF_COV
       if (CTX_LIKELY(cov))
+#endif
       {
         uint32_t *sip = ((uint32_t*)(tsrc));
         uint32_t si = *sip;
@@ -1705,7 +1689,7 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
 
         uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-        uint8_t ir_cov_si_a = 255-((cov*si_a)/255);
+        uint8_t ir_cov_si_a = 255-((cov*si_a)>>8);
         *((uint32_t*)(dst)) = 
          (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
          ((((si_ga * cov + di_ga * ir_cov_si_a)) & CTX_RGBA8_GA_MASK));
@@ -1890,7 +1874,9 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
                       x++)
       {
         uint8_t cov = *coverage;
+#if CTX_COMPOSITE_IF_COV
         if (CTX_LIKELY (cov))
+#endif
         {
           uint32_t di = *((uint32_t*)(dst));
           uint32_t di_ga = (di & CTX_RGBA8_GA_MASK)>>8;
@@ -1922,10 +1908,11 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
     {
       __m256i xcov;
       __m256i x1_minus_cov_mul_a;
+      uint64_t cov = ((uint64_t*)(coverage))[0];
      
-     if (CTX_LIKELY(((uint64_t*)(coverage))[0]))
+     if (CTX_LIKELY(cov))
      {
-       if (CTX_LIKELY(((uint64_t*)(coverage))[0] != 0xffffffffffffffff))
+       if (CTX_LIKELY(cov != 0xffffffffffffffff))
        {
          xcov  = _mm256_set_epi32(coverage[7],
                                   coverage[6],
@@ -1989,7 +1976,9 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
       for (; x < count; x++)
       {
         uint8_t cov = *coverage;
+#if CTX_COMPOSITE_IF_COV
         if (cov)
+#endif
         {
           uint32_t *dip = ((uint32_t*)(dst));
           uint32_t di = *dip;
@@ -2037,7 +2026,9 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
                       x++)
     {
       uint8_t cov = coverage[0];
+#if CTX_COMPOSITE_IF_COV
       if (CTX_LIKELY (cov))
+#endif
       {
           uint8_t r_cov = 255-cov;
           uint32_t di = *((uint32_t*)(dst));
@@ -2120,7 +2111,9 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
       for (; x < count; x++)
       {
         uint8_t cov = *coverage;
-        if (cov)
+#if CTX_COMPOSITE_IF_COV
+      if (cov)
+#endif
         {
           uint32_t *dip = ((uint32_t*)(dst));
           uint32_t di = *dip;
