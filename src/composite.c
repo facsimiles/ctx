@@ -5075,22 +5075,6 @@ ctx_565_unpack_32 (const uint16_t pixel,
   return blue +  (green << 8) + (red << 16) + (0xff << 24);
 }
 
-static inline void
-ctx_565_unpack_32b (const uint16_t pixel,
-                    const int byteswap,
-                    uint32_t *ga,
-                    uint32_t *rb)
-{
-  uint16_t byteswapped;
-  if (byteswap)
-    { byteswapped = (pixel>>8) | (pixel<<8); }
-  else
-    { byteswapped  = pixel; }
-  *rb    = ((byteswapped & 31) <<3) + // blue
-           (( (byteswapped>>11) & 31) << (3+16)); // red
-  *ga    = ( (byteswapped>>5) & 63) << (2+8);  // green
-}
-
 static inline uint16_t
 ctx_565_pack (const uint8_t  red,
               const uint8_t  green,
@@ -5135,13 +5119,11 @@ ctx_RGB565_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t 
   const uint16_t *pixel = (uint16_t *) buf;
   while (count--)
     {
-      ctx_565_unpack (*pixel, &rgba[0], &rgba[1], &rgba[2], 0);
+      ((uint32_t*)(rgba))[0] = ctx_565_unpack_32 (*pixel, 0);
 #if CTX_RGB565_ALPHA
       if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
         { rgba[3] = 0; }
-      else
 #endif
-        { rgba[3] = 255; }
       pixel+=1;
       rgba +=4;
     }
@@ -5268,14 +5250,9 @@ static inline void ctx_RGB565_source_over_normal_color_solid_gen (CTX_COMPOSITE_
       else
       {
         uint16_t *dip16 = ((uint16_t*)(dst));
-#if 1
         uint32_t di = ctx_565_unpack_32 (*dip16, byteswap);
         uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
         uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-#else
-        uint32_t di_ga, di_rb;
-        ctx_565_unpack_32b (*dip16, byteswap, &di_ga, &di_rb);
-#endif
         uint8_t r_cov = 255-cov;
         uint32_t dval =
          (((si_rb * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
@@ -5301,6 +5278,7 @@ static inline void ctx_RGB565_BS_source_over_normal_color_solid (CTX_COMPOSITE_A
 static void
 ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 {
+#if 0
   if (CTX_UNLIKELY(rasterizer->comp_op == CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) && 0)) // practically tied
                                 // for performance
                                 // without AVX on x64
@@ -5309,6 +5287,7 @@ ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
     ctx_RGB565_source_over_normal_color_solid (rasterizer, dst, rasterizer->color, x0, coverage, count);
   }
   else
+#endif
   {
     uint8_t pixels[count * 4];
     ctx_RGB565_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
@@ -5327,13 +5306,14 @@ ctx_RGB565_BS_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8
   const uint16_t *pixel = (uint16_t *) buf;
   while (count--)
     {
-      ctx_565_unpack (*pixel, &rgba[0], &rgba[1], &rgba[2], 1);
+      //ctx_565_unpack (*pixel, &rgba[0], &rgba[1], &rgba[2], 1);
+      ((uint32_t*)(rgba))[0] = ctx_565_unpack_32 (*pixel, 1);
 #if CTX_RGB565_ALPHA
       if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
         { rgba[3] = 0; }
       else
-#endif
         { rgba[3] = 255; }
+#endif
       pixel+=1;
       rgba +=4;
     }
