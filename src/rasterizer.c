@@ -7,6 +7,8 @@ ctx_gradient_cache_prime (CtxRasterizer *rasterizer);
 static void
 _ctx_setup_compositor (CtxRasterizer *rasterizer)
 {
+  if (CTX_LIKELY (rasterizer->comp_op))
+    return;
   rasterizer->format->setup (rasterizer);
 #if CTX_GRADIENTS
 #if CTX_GRADIENT_CACHE
@@ -975,7 +977,9 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
     rasterizer->col_min       = 5000;
     rasterizer->col_max       = -5000;
   }
-  //rasterizer->comp_op       = NULL;
+  //rasterizer->comp_op       = NULL; // keep comp_op cached 
+  //     between rasterizations where rendering attributes are
+  //     nonchanging
 }
 
 static void
@@ -1103,9 +1107,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
       }
       else 
 #endif
-              if (contains_edge_end)
+    if (contains_edge_end)
     {
-
         for (int i = 0; i < real_aa; i++)
         {
           ctx_rasterizer_feed_edges (rasterizer);
@@ -1302,7 +1305,7 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
   return 0;
 }
 
-#define CTX_RECT_FILL 0
+#define CTX_RECT_FILL 1
 
 #if CTX_RECT_FILL
 static int
@@ -1312,7 +1315,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          x1,
                           int          y1)
 {
-  if (x0>x1) {
+  if (CTX_UNLIKELY(x0>x1)) {
      int tmp = x1;
      x1 = x0;
      x0 = tmp;
@@ -1333,13 +1336,13 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   y0 /= CTX_FULL_AA;
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
   _ctx_setup_compositor (rasterizer);
-  if (x0 < rasterizer->blit_x)
+  if (CTX_UNLIKELY(x0 < rasterizer->blit_x))
     { x0 = rasterizer->blit_x; }
-  if (y0 < rasterizer->blit_y)
+  if (CTX_UNLIKELY(y0 < rasterizer->blit_y))
     { y0 = rasterizer->blit_y; }
-  if (y1 > rasterizer->blit_y + rasterizer->blit_height)
+  if (CTX_UNLIKELY(y1 > rasterizer->blit_y + rasterizer->blit_height))
     { y1 = rasterizer->blit_y + rasterizer->blit_height; }
-  if (x1 > rasterizer->blit_x + rasterizer->blit_width)
+  if (CTX_UNLIKELY(x1 > rasterizer->blit_x + rasterizer->blit_width))
     { x1 = rasterizer->blit_x + rasterizer->blit_width; }
   dst += (y0 - rasterizer->blit_y) * rasterizer->blit_stride;
   int width = x1 - x0;
@@ -1391,11 +1394,11 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                           XXX - by building a large enough path
                           the stack can be smashed!
                          */
-  if (rasterizer->preserve)
+  if (CTX_UNLIKELY(rasterizer->preserve))
     { memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) ); }
 
 #if CTX_ENABLE_SHADOW_BLUR
-  if (rasterizer->in_shadow)
+  if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
   for (int i = 0; i < rasterizer->edge_list.count; i++)
     {
@@ -1410,18 +1413,17 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   }
 #endif
 
-  if (ctx_is_transparent (rasterizer, 0) ||
+  if (CTX_UNLIKELY(ctx_is_transparent (rasterizer, 0) ||
       rasterizer->scan_min / CTX_FULL_AA > rasterizer->blit_y + rasterizer->blit_height ||
       rasterizer->scan_max / CTX_FULL_AA < rasterizer->blit_y ||
       rasterizer->col_min / CTX_SUBDIV > rasterizer->blit_x + rasterizer->blit_width ||
-      rasterizer->col_max / CTX_SUBDIV < rasterizer->blit_x)
+      rasterizer->col_max / CTX_SUBDIV < rasterizer->blit_x))
     {
       ctx_rasterizer_reset (rasterizer);
     }
   else
   {
-    if (rasterizer->comp_op == NULL)
-      _ctx_setup_compositor (rasterizer);
+    _ctx_setup_compositor (rasterizer);
 
     rasterizer->state->min_x =
       ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
@@ -1493,18 +1495,18 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
         int clip_y_max = rasterizer->blit_y + rasterizer->blit_height - 1;
 
         int dont_cache = 0;
-        if (x1 >= clip_x_max)
+        if (CTX_UNLIKELY(x1 >= clip_x_max))
           { x1 = clip_x_max;
             dont_cache = 1;
           }
         int xo = 0;
-        if (x0 < clip_x_min)
+        if (CTX_UNLIKELY(x0 < clip_x_min))
           {
             xo = clip_x_min - x0;
             x0 = clip_x_min;
             dont_cache = 1;
           }
-        if (y0 < clip_y_min || y1 >= clip_y_max)
+        if (CTX_UNLIKELY(y0 < clip_y_min || y1 >= clip_y_max))
           dont_cache = 1;
         if (dont_cache || !_ctx_shape_cache_enabled)
         {
@@ -1516,7 +1518,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
         }
         else
         {
-
         rasterizer->scanline = scan_min;
         CtxShapeEntry *shape = ctx_shape_entry_find (rasterizer, hash, width, height); 
 
@@ -1559,7 +1560,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
           else
           for (int y = y0; y < y1; y++)
             {
-              if ( (y >= clip_y_min) && (y <= clip_y_max) )
+              if (CTX_LIKELY((y >= clip_y_min) && (y <= clip_y_max) ))
                 {
                     ctx_rasterizer_apply_coverage (rasterizer,
                                                  ( (uint8_t *) rasterizer->buf) + (y-rasterizer->blit_y) * rasterizer->blit_stride + (int) (x0) * rasterizer->format->bpp/8,
@@ -1585,13 +1586,13 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                                    );
   }
 done:
-  if (rasterizer->preserve)
+  if (CTX_UNLIKELY(rasterizer->preserve))
     {
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
       rasterizer->edge_list.count = count;
     }
 #if CTX_ENABLE_SHADOW_BLUR
-  if (rasterizer->in_shadow)
+  if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
     rasterizer->scan_min -= rasterizer->shadow_y * CTX_FULL_AA;
     rasterizer->scan_max -= rasterizer->shadow_y * CTX_FULL_AA;
@@ -3049,6 +3050,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_COMPOSITING_MODE:
       case CTX_BLEND_MODE:
         rasterizer->comp_op = NULL;
+        _ctx_setup_compositor (rasterizer);
         break;
 #if CTX_COMPOSITING_GROUPS
       case CTX_START_GROUP:
