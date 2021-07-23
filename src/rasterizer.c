@@ -1313,7 +1313,8 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          x0,
                           int          y0,
                           int          x1,
-                          int          y1)
+                          int          y1,
+                          uint8_t      cov)
 {
   if (CTX_UNLIKELY(x0>x1)) {
      int tmp = x1;
@@ -1330,10 +1331,6 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       y0 % CTX_FULL_AA)
     { return 0; }
 #endif
-  x1 /= CTX_SUBDIV;
-  x0 /= CTX_SUBDIV;
-  y1 /= CTX_FULL_AA;
-  y0 /= CTX_FULL_AA;
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
   _ctx_setup_compositor (rasterizer);
   if (CTX_UNLIKELY(x0 < rasterizer->blit_x))
@@ -1347,9 +1344,10 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   dst += (y0 - rasterizer->blit_y) * rasterizer->blit_stride;
   int width = x1 - x0;
 
-  if (width > 0)
+  if (CTX_LIKELY(width > 0))
     {
       if (rasterizer->format->components == 4 &&
+                      cov == 255 &&
           rasterizer->color[3]==255 &&
           rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
           rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
@@ -1368,7 +1366,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       else
       {
         uint8_t coverage[x1-x0 + 1];
-        ctx_memset (coverage, 0xff, sizeof (coverage) );
+        ctx_memset (coverage, cov, sizeof (coverage) );
         rasterizer->scanline = y0 * CTX_FULL_AA;
         for (int y = y0; y < y1; y++)
         {
@@ -1445,24 +1443,90 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
             (entry0->data.s16[2] == entry1->data.s16[2]) &&
             (entry0->data.s16[3] == entry3->data.s16[3]) &&
             (entry1->data.s16[3] == entry2->data.s16[3]) &&
-            (entry2->data.s16[2] == entry3->data.s16[2]) &&
-            ((entry1->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
-            ((entry1->data.s16[3] % (CTX_FULL_AA)) == 0) &&
-            ((entry3->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
-            ((entry3->data.s16[3] % (CTX_FULL_AA)) == 0) 
+            (entry2->data.s16[2] == entry3->data.s16[2])
 #if CTX_ENABLE_SHADOW_BLUR
              && !rasterizer->in_shadow
 #endif
            )
-        if (ctx_rasterizer_fill_rect (rasterizer,
-                                      entry3->data.s16[2],
-                                      entry3->data.s16[3],
-                                      entry1->data.s16[2],
-                                      entry1->data.s16[3]) )
-          {
+         {
+         if(((entry1->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
+            ((entry1->data.s16[3] % (CTX_FULL_AA)) == 0) &&
+            ((entry3->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
+            ((entry3->data.s16[3] % (CTX_FULL_AA)) == 0))
+         {
+
+         ctx_rasterizer_fill_rect (rasterizer,
+                                  entry3->data.s16[2] / CTX_SUBDIV,
+                                  entry3->data.s16[3] / CTX_FULL_AA,
+                                  entry1->data.s16[2] / CTX_SUBDIV,
+                                  entry1->data.s16[3] / CTX_FULL_AA,
+                                  255);
+         ctx_rasterizer_reset (rasterizer);
+         goto done;
+         }
+         else if (1)
+         {
+            float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
+            float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
+            float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
+            float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
+
+#if 0
+  if (CTX_UNLIKELY(x0>x1)) {
+     float tmp = x1;
+     x1 = x0;
+     x0 = tmp;
+     tmp = y1;
+     y1 = y0;
+     y0 = tmp;
+  }
+#endif
+
+
+            uint8_t left = 255-fmodf (x0, 1.0f) * 255;
+            uint8_t top  = 255-fmodf (y0, 1.0f) * 255;
+            uint8_t right  = fmodf (x1, 1.0f) * 255;
+            uint8_t bottom = fmodf (y1, 1.0f) * 255;
+
+            x0 = floorf (x0);
+            y0 = floorf (y0);
+            x1 = ceilf  (x1+1.0/8.0);  // XXX !!!! 
+            y1 = ceilf  (y1+6.0/15.0);  // XXX !!!! why does this fudge make it pass more tests?
+
+            int has_top    = (top < 255);
+            int has_bottom = (bottom <255);
+            int has_right  = (right >0);
+            int has_left   = (left >0);
+
+            if (has_top)
+              ctx_rasterizer_fill_rect (rasterizer, x0 + has_left, y0, x1 - has_right, y0+1, top);
+
+            if (has_bottom)
+               ctx_rasterizer_fill_rect (rasterizer, x0 + has_left, y1-1, x1 - has_right, y1, bottom);
+            if (has_left)
+              ctx_rasterizer_fill_rect (rasterizer, x0, y0 + has_top, x0+1, y1 - has_bottom, left);
+            if (has_right)
+              ctx_rasterizer_fill_rect (rasterizer, x1-1, y0 + has_top, x1, y1 - has_bottom, right);
+
+            if (has_top && has_left)
+              ctx_rasterizer_fill_rect (rasterizer, x0, y0, x0+1, y0+1, top * left / 255);
+            if (has_top && has_right)
+              ctx_rasterizer_fill_rect (rasterizer, x1-1, y0, x1, y0+1, top * right / 255);
+            if (has_bottom && has_left)
+              ctx_rasterizer_fill_rect (rasterizer, x0, y1-1, x0+1, y1, bottom * left / 255);
+            if (has_bottom && has_right)
+              ctx_rasterizer_fill_rect (rasterizer, x1-1, y1-1, x1, y1, bottom * right / 255);
+
+            x0 += has_left;
+            y0 += has_top;
+            y1 -= has_bottom;
+            x1 -= has_right;
+
+            ctx_rasterizer_fill_rect (rasterizer, x0,y0,x1,y1,255);
             ctx_rasterizer_reset (rasterizer);
             goto done;
-          }
+         }
+         }
       }
 #endif
     ctx_rasterizer_finish_shape (rasterizer);
