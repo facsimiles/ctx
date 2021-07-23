@@ -1359,7 +1359,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
           memcpy(&colorrow[i*4], rasterizer->color, 4);
         for (int y = y0; y < y1; y++)
         {
-          memcpy (&dst[(x0)*4], colorrow, 4 * (width+1));
+          memcpy (&dst[(x0)*4], colorrow, 4 * (width));
           dst += rasterizer->blit_stride;
         }
       }
@@ -1447,6 +1447,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #if CTX_ENABLE_SHADOW_BLUR
              && !rasterizer->in_shadow
 #endif
+             && 1
            )
          {
          if(((entry1->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
@@ -1454,14 +1455,13 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
             ((entry3->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
             ((entry3->data.s16[3] % (CTX_FULL_AA)) == 0))
          {
+            float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
+            float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
+            float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
+            float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
 
-         ctx_rasterizer_fill_rect (rasterizer,
-                                  entry3->data.s16[2] / CTX_SUBDIV,
-                                  entry3->data.s16[3] / CTX_FULL_AA,
-                                  entry1->data.s16[2] / CTX_SUBDIV,
-                                  entry1->data.s16[3] / CTX_FULL_AA,
-                                  255);
-         ctx_rasterizer_reset (rasterizer);
+            ctx_rasterizer_fill_rect (rasterizer, x0, y0, x1, y1, 255);
+            ctx_rasterizer_reset (rasterizer);
          goto done;
          }
          else if (1)
@@ -1470,7 +1470,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
             float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
             float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
             float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
-
 #if 0
   if (CTX_UNLIKELY(x0>x1)) {
      float tmp = x1;
@@ -1482,7 +1481,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   }
 #endif
 
-
             uint8_t left = 255-fmodf (x0, 1.0f) * 255;
             uint8_t top  = 255-fmodf (y0, 1.0f) * 255;
             uint8_t right  = fmodf (x1, 1.0f) * 255;
@@ -1490,8 +1488,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 
             x0 = floorf (x0);
             y0 = floorf (y0);
-            x1 = ceilf  (x1+1.0/8.0);  // XXX !!!! 
-            y1 = ceilf  (y1+6.0/15.0);  // XXX !!!! why does this fudge make it pass more tests?
+            x1 = floorf  (x1+7/8.0);
+            y1 = floorf  (y1+14/15.0);
 
             int has_top    = (top < 255);
             int has_bottom = (bottom <255);
@@ -3114,7 +3112,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_COMPOSITING_MODE:
       case CTX_BLEND_MODE:
         rasterizer->comp_op = NULL;
-        _ctx_setup_compositor (rasterizer);
+        //_ctx_setup_compositor (rasterizer);
         break;
 #if CTX_COMPOSITING_GROUPS
       case CTX_START_GROUP:
