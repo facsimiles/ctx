@@ -1427,29 +1427,53 @@ ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 {
-  float u0 = 0; float v0 = 0;
-  float ud = 0; float vd = 0;
-  if (rasterizer->fragment)
+  if (CTX_UNLIKELY(rasterizer->fragment))
     {
+      float u0 = 0; float v0 = 0;
+      float ud = 0; float vd = 0;
       ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+      while (count--)
+      {
+        uint8_t cov = *coverage;
+        if (CTX_UNLIKELY(cov == 0))
+        {
+          for (int c = 0; c < components; c++)
+          { dst[c] = 0; }
+        u0+=ud;
+        v0+=vd;
+        }
+        else
+        {
+          rasterizer->fragment (rasterizer, u0, v0, src, 1, ud, vd);
+          u0+=ud;
+          v0+=vd;
+          if (cov == 255)
+          {
+            for (int c = 0; c < components; c++)
+              dst[c] = src[c];
+          }
+          else
+          {
+            for (int c = 0; c < components; c++)
+              { dst[c] = (src[c]*cov) / 255; }
+          }
+        }
+        dst += components;
+        coverage ++;
+      }
+      return;
     }
 
   while (count--)
   {
     uint8_t cov = *coverage;
-    if (cov == 0)
+    if (CTX_UNLIKELY(cov == 0))
     {
       for (int c = 0; c < components; c++)
         { dst[c] = 0; }
     }
     else
     {
-      if (rasterizer->fragment)
-      {
-        rasterizer->fragment (rasterizer, u0, v0, src, 1, ud, vd);
-        u0+=ud;
-        v0+=vd;
-      }
       if (cov == 255)
       {
         for (int c = 0; c < components; c++)
@@ -1457,9 +1481,8 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
       }
       else
       {
-        uint8_t ralpha = 255 - cov;
         for (int c = 0; c < components; c++)
-          { dst[c] = (src[c]*cov + 0 * ralpha) / 255; }
+          { dst[c] = (src[c]*cov) / 255; }
       }
     }
     dst += components;
@@ -2169,12 +2192,75 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
 #endif
 }
 
-
-
 static void
 CTX_COMPOSITE_SUFFIX(ctx_RGBA8_copy_normal) (CTX_COMPOSITE_ARGUMENTS)
 {
+#if 0
   ctx_u8_copy_normal (4, rasterizer, dst, src, x0, coverage, count);
+#else
+  int components = 4;
+  int has_fragment = rasterizer->fragment != NULL;
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  if (has_fragment)
+    {
+      ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+      while (count--)
+      {
+        uint8_t cov = *coverage;
+    if (cov == 0)
+    {
+      ((uint32_t*)dst)[0] = 0;
+      u0+=ud;
+      v0+=vd;
+    }
+    else
+    {
+      rasterizer->fragment (rasterizer, u0, v0, src, 1, ud, vd);
+      u0+=ud;
+      v0+=vd;
+      if (cov == 255)
+      {
+        ((uint32_t*)dst)[0] = ((uint32_t*)src)[0];
+      }
+      else
+      {
+        for (int c = 0; c < components; c++)
+          { dst[c] = (src[c]*cov ) >> 8; }
+      }
+    }
+    dst += components;
+    coverage ++;
+  }
+      return;
+    }
+
+  while (count--)
+  {
+    uint8_t cov = *coverage;
+    if (CTX_UNLIKELY(cov == 0))
+    {
+      for (int c = 0; c < components; c++)
+        { dst[c] = 0; }
+      ((uint32_t*)dst)[0] = 0;
+    }
+    else
+    {
+      if (cov == 255)
+      {
+        ((uint32_t*)dst)[0] = ((uint32_t*)src)[0];
+      }
+      else
+      {
+        for (int c = 0; c < components; c++)
+          //{ dst[c] = (src[c]*cov ) / 255; }
+          { dst[c] = (src[c]*cov ) >> 8; }
+      }
+    }
+    dst += components;
+    coverage ++;
+  }
+#endif
 }
 
 static void
@@ -5395,7 +5481,7 @@ CtxPixelFormatInfo CTX_COMPOSITE_SUFFIX(ctx_pixel_formats)[]=
 #if CTX_ENABLE_RGBA8
   {
     CTX_FORMAT_RGBA8, 4, 32, 4, 0, 0, CTX_FORMAT_RGBA8,
-    NULL, NULL, NULL, ctx_setup_RGBA8
+    NULL, NULL, ctx_composite_direct, ctx_setup_RGBA8
   },
 #endif
 #if CTX_ENABLE_BGRA8
@@ -5413,13 +5499,13 @@ CtxPixelFormatInfo CTX_COMPOSITE_SUFFIX(ctx_pixel_formats)[]=
 #if CTX_ENABLE_GRAYAF
   {
     CTX_FORMAT_GRAYAF, 2, 64, 4 * 2, 0, 0, CTX_FORMAT_GRAYAF,
-    NULL, NULL, NULL, ctx_setup_GRAYAF,
+    NULL, NULL, ctx_composite_direct, ctx_setup_GRAYAF,
   },
 #endif
 #if CTX_ENABLE_RGBAF
   {
     CTX_FORMAT_RGBAF, 4, 128, 4 * 4, 0, 0, CTX_FORMAT_RGBAF,
-    NULL, NULL, NULL, ctx_setup_RGBAF,
+    NULL, NULL, ctx_composite_direct, ctx_setup_RGBAF,
   },
 #endif
 #if CTX_ENABLE_RGB8
@@ -5508,7 +5594,7 @@ CtxPixelFormatInfo CTX_COMPOSITE_SUFFIX(ctx_pixel_formats)[]=
 #if CTX_ENABLE_CMYKAF
   {
     CTX_FORMAT_CMYKAF, 5, 160, 4 * 5, 0, 0, CTX_FORMAT_CMYKAF,
-    NULL, NULL, NULL, ctx_setup_CMYKAF,
+    NULL, NULL, ctx_composite_direct, ctx_setup_CMYKAF,
   },
 #endif
 #if CTX_ENABLE_CMYKA8
