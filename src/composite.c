@@ -890,12 +890,46 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 
   int u = x - g->texture.x0;
   int v = y - g->texture.y0;
-  if ( u < 0 || v < 0 ||
+  int ut = x - g->texture.x0 + 1.5;
+  int vt = y - g->texture.y0 + 1.5;
+  if ( ut  <= 0 ||
+       vt  <= 0 ||
        u >= buffer->width ||
        v >= buffer->height)
     {
       *((uint32_t*)(rgba))= 0;
     }
+  else if (u < 0 || v < 0) // default to next sample down and to right
+  {
+          /* XXX XXX XXX this is still incorrect, fix it here - and
+           * then fix the other formats
+           */
+      int bpp        = 4;
+      uint8_t *src11 = (uint8_t *) buffer->data;
+      int stride     = buffer->stride;
+      src11          += (v+1) * stride + (u+1) * bpp;
+      uint8_t *src10 = src11;
+      if ( u >= 0)
+      {
+        src10 = src11 - bpp;
+      }
+      uint8_t *src01 = src11;
+      uint8_t *src00 = src10;
+      if ( v  >=0)
+      {
+        src01 = src11 - stride;
+        src00 = src10 - stride;
+      }
+      float dx = (x-(int)(x)) * 255.9;
+      float dy = (y-(int)(y)) * 255.9;
+      dy = 0.0f;
+      for (int c = 0; c < bpp; c++)
+      {
+        rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
+                               ctx_lerp_u8 (src10[c], src11[c], dx), dy);
+      }
+      //*((uint32_t*)(rgba))= 0;
+  }
   else
     {
       int bpp = 4;
@@ -922,7 +956,6 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
                                ctx_lerp_u8 (src10[c], src11[c], dx), dy);
       }
     }
-
 
     x += dx;
     y += dy;
@@ -966,12 +999,15 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
   
     int u = x - g->texture.x0;
     int v = y - g->texture.y0;
-    if ( u < 0 || v < 0 ||
-         u >= bwidth ||
-         v >= bheight)
-      {
-        *((uint32_t*)(rgba))= 0;
-      }
+
+  int ut = x - g->texture.x0 - 1.0f;
+  int vt = y - g->texture.y0 - 1.0f;
+  if ( ut < 0 || vt < 0 ||
+       u >= buffer->width ||
+       v >= buffer->height)
+    {
+      *((uint32_t*)(rgba))= 0;
+    }
     else
       {
         int      i = (v * bwidth + u);
