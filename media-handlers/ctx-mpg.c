@@ -52,6 +52,7 @@ steps combined.
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 //#include <SDL2/SDL.h>
 

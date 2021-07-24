@@ -3484,20 +3484,10 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
 }
 #endif
 
-CtxPixelFormatInfo *ctx_pixel_formats = NULL;
-
-extern CtxPixelFormatInfo ctx_pixel_formats_default[];
-
-
+CtxPixelFormatInfo ctx_pixel_formats[];
 CtxPixelFormatInfo *
 ctx_pixel_format_info (CtxPixelFormat format)
 {
-  if (!ctx_pixel_formats)
-  {
-    ctx_pixel_formats = ctx_pixel_formats_default;
-
-  }
-
   for (unsigned int i = 0; ctx_pixel_formats[i].pixel_format; i++)
     {
       if (ctx_pixel_formats[i].pixel_format == format)
