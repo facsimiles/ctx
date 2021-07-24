@@ -632,12 +632,17 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (CTX_UNLIKELY(edge_end < scanline))
         {
           int dx_dy = abs(rasterizer->edges[i].delta);
+          if (dx_dy > slope_limit3)
+            { rasterizer->needs_aa3 --;
+            
           if (dx_dy > slope_limit15)
-            { rasterizer->needs_aa15 --; }
+            { rasterizer->needs_aa15 --;
           if (dx_dy > slope_limit5)
             { rasterizer->needs_aa5 --; }
-          if (dx_dy > slope_limit3)
-            { rasterizer->needs_aa3 --; }
+            
+            }
+            
+            }
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
           i--;
@@ -715,11 +720,13 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
               {
                 int abs_dx_dy = abs(dx_dy);
                 if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT3)
-                  { rasterizer->needs_aa3 ++; }
-                if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT5)
-                  { rasterizer->needs_aa5 ++; }
-                if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT15)
-                  { rasterizer->needs_aa15 ++; }
+                  { rasterizer->needs_aa3 ++;
+                    if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT5)
+                    { rasterizer->needs_aa5 ++; 
+                      if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT15)
+                      { rasterizer->needs_aa15 ++; }
+                    }
+                  }
               }
 
               if ((miny > scanline) )
