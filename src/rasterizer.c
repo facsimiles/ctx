@@ -37,10 +37,7 @@ ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
                                uint8_t * __restrict__ coverage,
                                int            count)
 {
-  if (rasterizer->format->apply_coverage)
-    rasterizer->format->apply_coverage(rasterizer, dst, rasterizer->color, x, coverage, count);
-  else
-    rasterizer->comp_op (rasterizer, dst, rasterizer->color, x, coverage, count);
+  rasterizer->format->apply_coverage(rasterizer, dst, rasterizer->color, x, coverage, count);
 }
 
 CTX_STATIC void
@@ -1350,7 +1347,8 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                       cov == 255 &&
           rasterizer->color[3]==255 &&
           rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
-          rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
+          ((rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER) ||
+          (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY)  )&&
           rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
           rasterizer->format->bpp == 32)
       {
