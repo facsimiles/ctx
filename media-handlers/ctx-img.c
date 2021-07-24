@@ -128,6 +128,8 @@ int ctx_img_main(int argc, char *argv[])
       ctx_flush (ctx);
       dirty = 0;
     }
+    else
+      usleep (1000);
    
     while ((event = ctx_get_event (ctx)))
     {

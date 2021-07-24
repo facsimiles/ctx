@@ -194,6 +194,8 @@ void app_update(app_t *self) {
 	if (elapsed_time > 1.0 / 25.0) {
 		elapsed_time = 1.0 / 25.0;
 	}
+
+        if (elapsed_time < 1.0 / 60.0) usleep (1000);
 #endif
         if (paused) elapsed_time = 0;
 	self->last_time = current_time;
