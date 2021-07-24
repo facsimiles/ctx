@@ -932,7 +932,7 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
             first = minx;
             graystart=0;
           }
-          if (CTX_UNLIKELY(last >= maxx))
+          if (CTX_UNLIKELY(last > maxx))
           {
             last = maxx;
             grayend=255;
