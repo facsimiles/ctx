@@ -28,8 +28,8 @@
 #include "../../deps/stb_image.h"
 
 #include "ctx.h"
-#define WIDTH    128
-#define HEIGHT   128
+#define WIDTH    64
+#define HEIGHT   64
 
 #define ITERATIONS     200
 

@@ -844,10 +844,10 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
       int ymin = CTX_EDGE_YMIN (t);
       if (scanline != ymin)
         {
-          if (winding)
-            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
-          else
+          if (!winding)
             { parity = 1 - parity; }
+          else
+            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
         }
 
        if (parity)
@@ -855,9 +855,9 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           int x0 = CTX_EDGE_X (t);
           int x1 = CTX_EDGE_X (t+1);
           int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int first     = graystart / 256;
           int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int last      = grayend / 256;
+          int first     = graystart >> 8;
+          int last      = grayend   >> 8;
 
           if (CTX_UNLIKELY(first < minx))
           { 
@@ -873,15 +873,15 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           graystart=fraction- (graystart&0xff)/aa_factor;
           grayend = (grayend & 0xff) / aa_factor;
 
-          if (first == last)
-            coverage[first] += (graystart-(fraction-grayend));
-          else if (first < last)
+          if (first < last)
           {
               coverage[first] += graystart;
               for (int x = first + 1; x < last; x++)
                 coverage[x] += fraction;
               coverage[last]  += grayend;
           }
+          else if (first == last)
+            coverage[first] += (graystart-(fraction-grayend));
         }
    }
 }
@@ -907,12 +907,12 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
   for (int t = 0; t < active_edges -1;t++)
     {
       int ymin = CTX_EDGE_YMIN (t);
-      if (CTX_LIKELY(scanline != ymin))
+      if (scanline != ymin)
         {
-          if (winding)
-            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
-          else
+          if (!winding)
             { parity = 1 - parity; }
+          else
+            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
         }
 
        if (parity)
@@ -920,9 +920,9 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           int x0 = CTX_EDGE_X (t);
           int x1 = CTX_EDGE_X (t+1);
           int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int first     = graystart / 256;
+          int first     = graystart >> 8;
           int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int last      = grayend / 256;
+          int last      = grayend >> 8;
 
           if (CTX_UNLIKELY(first < minx))
           { 
@@ -935,18 +935,18 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
             grayend=255;
           }
 
-          graystart=fraction- (graystart&0xff)/aa_factor;
+          graystart=fraction - (graystart&0xff)/aa_factor;
           grayend = (grayend & 0xff) / aa_factor;
 
-          if (CTX_UNLIKELY(first == last))
-            coverage[first] += (graystart-(fraction-grayend));
-          else if (CTX_LIKELY(first < last))
+          if (first < last)
           {
               coverage[first] += graystart;
               for (int x = first + 1; x < last; x++)
                 coverage[x] = fraction;
               coverage[last]  += grayend;
           }
+          else if (CTX_UNLIKELY(first == last))
+            coverage[first] += (graystart-(fraction-grayend));
         }
    }
 }
