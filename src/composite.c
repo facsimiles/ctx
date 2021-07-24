@@ -1627,26 +1627,13 @@ ctx_u8_source_over_normal_color (int components,
 }
 #endif
 
-#if CTX_AVX2
-
-#if !__COSMOPOLITAN__
-#include <stdalign.h>
-#endif
-#endif
-
 static void
 CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 {
     int x = 0;
 
-#if CTX_AVX2
-    if (((size_t)(dst) & 31))
-#endif
     {
       for (; (x < count) 
-#if CTX_AVX2
-                        && ((size_t)(dst)&31)
-#endif
                       ; 
                       x++)
     {
@@ -1675,91 +1662,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_buf) (CTX_COMPOSITE_ARGUMENTS,
     }
   }
 
-#if CTX_AVX2
-    __m256i a_mask = _mm256_set1_epi32 (0xFF000000);
-    __m256i lo_mask = _mm256_set1_epi32 (0x00FF00FF);
-    __m256i hi_mask = _mm256_set1_epi32 (0xFF00FF00);
-    __m256i x00ff =   _mm256_set1_epi16(255);
-    __m256i x0101 =   _mm256_set1_epi16(0x0101);
-    __m256i x0080 =   _mm256_set1_epi16(0x0080);
-
-    int trailer = (count - x) % 8 + 1;
-
-    for (; x <= count-trailer; x+=8)
-    {
-     if (((uint64_t*)(coverage))[0])
-     {
-       __m256i xcov;
-       __m256i x1_minus_cov_mul_a;
-       __m256i xsrc = _mm256_load_si256((__m256i*)(tsrc));
-
-       __m256i xsrc_a = _mm256_and_si256(xsrc, a_mask);
-       xsrc_a = _mm256_srli_epi32 (xsrc_a, 24);
-       xsrc_a |= xsrc_a << 16;
-       xcov  = _mm256_set_epi32(coverage[7],
-                                coverage[6],
-                                coverage[5],
-                                coverage[4],
-                                coverage[3],
-                                coverage[2],
-                                coverage[1],
-                                coverage[0]
-                                );
-       xcov |= xcov << 16;
-       __m256i xcov_mul_a  =
-         _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(xcov,  xsrc_a), x0080), x0101);
-       x1_minus_cov_mul_a = _mm256_sub_epi16(x00ff, xcov_mul_a);
-
-       __m256i xdst   = _mm256_load_si256((__m256i*)(dst));
-       __m256i dst_lo = _mm256_and_si256 (xdst, lo_mask);
-       __m256i dst_hi = _mm256_srli_epi16 (_mm256_and_si256 (xdst, hi_mask), 8);
-       __m256i src_lo = _mm256_and_si256 (xsrc, lo_mask);
-       __m256i src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
-        
-       dst_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_hi,  x1_minus_cov_mul_a), x0080), x0101);
-       dst_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_lo,  x1_minus_cov_mul_a), x0080), x0101);
-
-       src_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_lo, xcov), x0080), x0101);
-       src_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_hi, xcov), x0080), x0101);
-
-       dst_hi = _mm256_adds_epu16(dst_hi, src_hi);
-       dst_lo = _mm256_adds_epu16(dst_lo, src_lo);
-
-       _mm256_store_si256((__m256i*)dst, _mm256_slli_epi16 (dst_hi,8)|dst_lo);
-     }
-
-      dst  += 4 * 8;
-      tsrc += 4 * 8;
-      coverage += 8;
-    }
-    for (; x < count; x++)
-    {
-      uint8_t cov = coverage[0];
-#if CTX_COMPOSITE_IF_COV
-      if (CTX_LIKELY(cov))
-#endif
-      {
-        uint32_t *sip = ((uint32_t*)(tsrc));
-        uint32_t si = *sip;
-        uint32_t *dip = ((uint32_t*)(dst));
-        uint32_t di = *dip;
-
-        uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
-        uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
-        uint32_t si_a  = si >> CTX_RGBA8_A_SHIFT;
-
-        uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
-        uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-        uint8_t ir_cov_si_a = 255-((cov*si_a)>>8);
-        *((uint32_t*)(dst)) = 
-         (((si_rb * cov + di_rb * ir_cov_si_a) >> 8) & CTX_RGBA8_RB_MASK) |
-         ((((si_ga * cov + di_ga * ir_cov_si_a)) & CTX_RGBA8_GA_MASK));
-      }
-      dst  += 4;
-      tsrc += 4;
-      coverage ++;
-    }
-#endif
 }
 
 static void
@@ -1774,9 +1676,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_fragment) (CTX_COMPOSITE_ARGUM
 #endif
   CtxFragment fragment = rasterizer->fragment;
   int fudge = ((size_t)(dst) & 31);
-#if CTX_AVX2
-  alignas(32)
-#endif
   uint8_t _tsrc[4 * (count + fudge)];
   uint8_t *tsrc = &_tsrc[fudge];
   fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
@@ -1822,9 +1721,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_linear_gradient) (CTX_COMPOSIT
   int dither_green = rasterizer->format->dither_green;
 #endif
   int fudge = ((size_t)(dst) & 31);
-#if CTX_AVX2
-  alignas(32)
-#endif
   uint8_t _tsrc[4 * (count + fudge)];
   uint8_t *tsrc = &_tsrc[fudge];
   for (int x = 0; x < count ; x++)
@@ -1868,9 +1764,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_radial_gradient) (CTX_COMPOSIT
   int dither_green = rasterizer->format->dither_green;
 #endif
   int fudge = ((size_t)(dst) & 31);
-#if CTX_AVX2
-  alignas(32)
-#endif
   uint8_t _tsrc[4 * (count + fudge)];
   uint8_t *tsrc = &_tsrc[fudge];
   for (int x = 0; x < count ; x++)
@@ -1917,9 +1810,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
     uint8_t a = src[3];
     int x = 0;
 
-#if CTX_AVX2
-    if ((size_t)(dst) & 31)
-#endif
     {
       uint32_t *sip = ((uint32_t*)(tsrc));
       uint32_t si = *sip;
@@ -1928,9 +1818,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
     {
       //int si_a = si >> CTX_RGBA8_A_SHIFT;
       for (; (x < count) 
-#if CTX_AVX2
-                      && ((size_t)(dst)&31)
-#endif
                       ; 
                       x++)
       {
@@ -1954,78 +1841,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color) (CTX_COMPOSITE_ARGUMENT
     }
     }
 
-#if CTX_AVX2
-                    
-    __m256i xsrc = _mm256_set1_epi32( *((uint32_t*)tsrc)) ;
-    __m256i lo_mask = _mm256_set1_epi32 (0x00FF00FF);
-    __m256i hi_mask = _mm256_set1_epi32 (0xFF00FF00);
-    __m256i x00ff =   _mm256_set1_epi16(255);
-    __m256i x0101 =   _mm256_set1_epi16(0x0101);
-    __m256i x0080 =   _mm256_set1_epi16(0x0080);
-
-    int trailer = (count - x) % 8 + 1;
-
-    for (; x <= count-trailer; x+=8)
-    {
-      __m256i xcov;
-      __m256i x1_minus_cov_mul_a;
-      uint64_t cov = ((uint64_t*)(coverage))[0];
-     
-     if (CTX_LIKELY(cov))
-     {
-       if (CTX_LIKELY(cov != 0xffffffffffffffff))
-       {
-         xcov  = _mm256_set_epi32(coverage[7],
-                                  coverage[6],
-                                  coverage[5],
-                                  coverage[4],
-                                  coverage[3],
-                                  coverage[2],
-                                  coverage[1],
-                                  coverage[0]
-                                  );
-         xcov |= xcov << 16;
-
-        x1_minus_cov_mul_a = 
-           _mm256_sub_epi16(x00ff, _mm256_mulhi_epu16 (
-                   _mm256_adds_epu16 (_mm256_mullo_epi16(xcov,
-                                      _mm256_set1_epi16(a)), x0080), x0101));
-       }
-       else
-       {
-          if (a == 255)
-          {
-            _mm256_store_si256((__m256i*)dst, xsrc);
-            dst      += 4 * 8;
-            coverage += 8;
-            continue;
-          }
-
-          xcov = x00ff;
-          x1_minus_cov_mul_a = _mm256_set1_epi16(255-a);
-       }
-      __m256i xdst   = _mm256_load_si256((__m256i*)(dst));
-      __m256i dst_lo = _mm256_and_si256 (xdst, lo_mask);
-      __m256i dst_hi = _mm256_srli_epi16 (_mm256_and_si256 (xdst, hi_mask), 8);
-      __m256i src_lo = _mm256_and_si256 (xsrc, lo_mask);
-      __m256i src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
-        
-      dst_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_hi,  x1_minus_cov_mul_a), x0080), x0101);
-      dst_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_lo,  x1_minus_cov_mul_a), x0080), x0101);
-
-      src_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_lo, xcov), x0080), x0101);
-      src_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_hi,  xcov), x0080), x0101);
-
-      dst_hi = _mm256_adds_epu16(dst_hi, src_hi);
-      dst_lo = _mm256_adds_epu16(dst_lo, src_lo);
-
-      _mm256_store_si256((__m256i*)dst, _mm256_slli_epi16 (dst_hi,8)|dst_lo);
-     }
-
-      dst += 4 * 8;
-      coverage += 8;
-    }
-#endif
 
     if (x < count)
     {
@@ -2069,10 +1884,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
 #endif
     uint8_t *tsrc = src;
     int x = 0;
-
-#if CTX_AVX2
-    if ((size_t)(dst) & 31)
-#endif
     {
       uint32_t *sip = ((uint32_t*)(tsrc));
       uint32_t si = *sip;
@@ -2080,9 +1891,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
       uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
 
       for (; (x < count) 
-#if CTX_AVX2
-                      && ((size_t)(dst)&31)
-#endif
                       ; 
                       x++)
     {
@@ -2103,93 +1911,6 @@ CTX_COMPOSITE_SUFFIX(ctx_RGBA8_source_over_normal_color_solid) (CTX_COMPOSITE_AR
       coverage ++;
     }
   }
-
-#if CTX_AVX2
-                    
-    __m256i xsrc = _mm256_set1_epi32( *((uint32_t*)tsrc)) ;
-    int trailer = (count - x) % 8 + 1;
-    for (; x < count-trailer; x+=8)
-    {
-      __m256i xcov;
-      __m256i x1_minus_cov_mul_a;
-    __m256i lo_mask = _mm256_set1_epi32 (0x00FF00FF);
-    __m256i hi_mask = _mm256_set1_epi32 (0xFF00FF00);
-    __m256i x00ff =   _mm256_set1_epi16(255);
-    __m256i x0101 =   _mm256_set1_epi16(0x0101);
-    __m256i x0080 =   _mm256_set1_epi16(0x0080);
-     uint64_t cov = ((uint64_t*)(coverage))[0];
-     if (cov)
-     {
-       if (CTX_UNLIKELY(cov == 0xffffffffffffffff))
-       {
-         _mm256_store_si256((__m256i*)dst, xsrc);
-       }
-       else
-       {
-          __m256i xdst   = _mm256_load_si256((__m256i*)(dst));
-          __m256i dst_lo = _mm256_and_si256 (xdst, lo_mask);
-          __m256i dst_hi = _mm256_srli_epi16 (_mm256_and_si256 (xdst, hi_mask), 8);
-          __m256i src_lo = _mm256_and_si256 (xsrc, lo_mask);
-          __m256i src_hi = _mm256_srli_epi16 (_mm256_and_si256 (xsrc, hi_mask), 8);
-            
-          xcov  = _mm256_set_epi32(coverage[7],
-                                   coverage[6],
-                                   coverage[5],
-                                   coverage[4],
-                                   coverage[3],
-                                   coverage[2],
-                                   coverage[1],
-                                   coverage[0]
-                                   );
-          xcov |= xcov << 16;
-
-          x1_minus_cov_mul_a = _mm256_sub_epi16(x00ff, xcov);
-    
-          dst_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_hi,  x1_minus_cov_mul_a), x0080), x0101);
-          dst_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(dst_lo,  x1_minus_cov_mul_a), x0080), x0101);
-    
-          src_lo  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_lo, xcov), x0080), x0101);
-          src_hi  = _mm256_mulhi_epu16(_mm256_adds_epu16(_mm256_mullo_epi16(src_hi,  xcov), x0080), x0101);
-    
-          dst_hi = _mm256_adds_epu16(dst_hi, src_hi);
-          dst_lo = _mm256_adds_epu16(dst_lo, src_lo);
-    
-          _mm256_store_si256((__m256i*)dst, _mm256_slli_epi16 (dst_hi,8)|dst_lo);
-        }
-      }
-
-      dst += 4 * 8;
-      coverage += 8;
-    }
-
-    if (x < count)
-    {
-      uint32_t *sip = ((uint32_t*)(tsrc));
-      uint32_t si = *sip;
-      uint32_t si_ga = (si & CTX_RGBA8_GA_MASK)>>8;
-      uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
-      uint32_t si_a = si >> CTX_RGBA8_A_SHIFT;
-      for (; x < count; x++)
-      {
-        uint8_t cov = *coverage;
-#if CTX_COMPOSITE_IF_COV
-      if (cov)
-#endif
-        {
-          uint32_t *dip = ((uint32_t*)(dst));
-          uint32_t di = *dip;
-          uint32_t di_ga = (di & CTX_RGBA8_GA_MASK)>>8;
-          uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-          uint32_t ir_cov_si_a = 255-((cov*si_a)>>8);
-          *((uint32_t*)(dst)) = 
-           (((si_rb * cov + di_rb * ir_cov_si_a) & CTX_RGBA8_GA_MASK) >> 8) |
-           ((((si_ga * cov + di_ga * ir_cov_si_a)) & CTX_RGBA8_GA_MASK));
-        }
-        dst += 4;
-        coverage ++;
-      }
-    }
-#endif
 }
 
 static void
@@ -5138,7 +4859,7 @@ CtxPixelFormatInfo CTX_COMPOSITE_SUFFIX(ctx_pixel_formats)[]=
   {
 #if CTX_NATIVE_GRAYA8
     CTX_FORMAT_GRAYA8, 2, 16, 2, 0, 0, CTX_FORMAT_GRAYA8,
-    ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, NULL, ctx_setup_GRAYA8,
+    ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_direct, ctx_setup_GRAYA8,
 #else
     CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0, CTX_FORMAT_RGBA8,
     ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_convert, ctx_setup_RGBA8,

@@ -56,10 +56,10 @@
                                        // variable size for each save|restore
 #define CTX_MATH                 1
 
-//#define CTX_MIN_JOURNAL_SIZE     512         // ~4kb
+//#define CTX_MIN_JOURNAL_SIZE   512         // ~4kb
 #define CTX_MAX_JOURNAL_SIZE     1024*1024*8 // 72mb
 #define CTX_MIN_EDGE_LIST_SIZE   4096*2
-//#define CTX_PARSER_MAXLEN  1024*1024*64
+//#define CTX_PARSER_MAXLEN      1024*1024*64
 
 //#define CTX_FONT_ENGINE_CTX_FS   1
 
@@ -74,33 +74,9 @@
 #define CTX_SCREENSHOT           0  // it brings in stb_save_image dep so is not default,
                                     // rewrite as ppm?
 
-#ifndef CTX_AVX2
-#define CTX_AVX2 0 
-#else
-#include <immintrin.h> // is detected by ctx, and enables AVX2
-#endif
-
-#define CTX_HAVE_SIMD      1 // makes ctx call our SIMD-setup dispatcher
-
 #define CTX_IMPLEMENTATION 1
 #define CTX_RASTERIZER     1
 
-
 #include "ctx.h"
 
-extern CtxPixelFormatInfo *ctx_pixel_formats;
-extern CtxPixelFormatInfo  ctx_pixel_formats_avx2[];
 
-void ctx_simd_setup ()
-{
-  static int done = 0;
-  if (done) return;
-  done = 1;
-  if(__builtin_cpu_supports("avx2"))
-  {
-    ctx_pixel_formats = ctx_pixel_formats_avx2;
-  }
-#ifndef NO_BABL
-  babl_init ();
-#endif
-}

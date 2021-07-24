@@ -1936,15 +1936,8 @@ Ctx *ctx_new_for_drawlist (void *data, size_t length)
   return ctx;
 }
 
-#ifdef CTX_HAVE_SIMD
-void ctx_simd_setup ();
-#endif
-
 static void ctx_setup ()
 {
-#ifdef CTX_HAVE_SIMD
-  ctx_simd_setup ();
-#endif
   ctx_font_setup ();
 }
 
