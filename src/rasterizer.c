@@ -994,14 +994,14 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 {
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
 
-  int real_aa = rasterizer->aa;
+  unsigned int real_aa = rasterizer->aa;
 
-  int scan_start = rasterizer->blit_y * CTX_FULL_AA;
-  int scan_end   = scan_start + rasterizer->blit_height * CTX_FULL_AA;
-  int blit_width = rasterizer->blit_width;
-  int blit_max_x = rasterizer->blit_x + blit_width;
-  int minx       = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
-  int maxx       = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - rasterizer->blit_x;
+  unsigned int scan_start = rasterizer->blit_y * CTX_FULL_AA;
+  unsigned int scan_end   = scan_start + rasterizer->blit_height * CTX_FULL_AA;
+  unsigned int blit_width = rasterizer->blit_width;
+  unsigned int blit_max_x = rasterizer->blit_x + blit_width;
+  unsigned int minx       = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
+  unsigned int maxx       = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - rasterizer->blit_x;
 
 #if 1
   if (
