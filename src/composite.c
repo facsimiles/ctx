@@ -153,7 +153,7 @@ ctx_u8_associate_alpha (int components, uint8_t *u8)
             break;
           default:
   for (int c = 0; c < components-1; c++)
-    u8[c] = (u8[c] * u8[components-1]) /255;
+    u8[c] = (u8[c] * u8[components-1])/255;
   }
 }
 
@@ -1416,7 +1416,7 @@ ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
   {
     uint8_t cov = *coverage;
     for (int c = 0; c < components; c++)
-      dst[c] = dst[c]+(((src[c]-dst[c]) * cov) >> 8);
+      dst[c] = dst[c]+((src[c]-dst[c]) * cov)/255;
       //dst[c] = dst[c]+((src[c]-dst[c]) * cov) / 255;
     coverage ++;
     dst+=components;
@@ -1437,10 +1437,8 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
         uint8_t cov = *coverage;
         if (CTX_UNLIKELY(cov == 0))
         {
-          for (int c = 0; c < components; c++)
-          { dst[c] = 0; }
-        u0+=ud;
-        v0+=vd;
+          u0+=ud;
+          v0+=vd;
         }
         else
         {
@@ -1456,7 +1454,7 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
           {
             uint8_t rcov = 255 - cov;
             for (int c = 0; c < components; c++)
-              { dst[c] = (src[c]*cov + dst[c]*rcov) / 255; }
+              { dst[c] = (src[c]*cov + dst[c]*rcov)/255; }
           }
         }
         dst += components;
@@ -1483,7 +1481,7 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
       else
       {
         for (int c = 0; c < components; c++)
-          { dst[c] = (src[c]*cov) / 255; }
+          { dst[c] = (src[c]*cov)/255; }
       }
     }
     dst += components;
@@ -1587,7 +1585,7 @@ ctx_porter_duff_factors(mode, foo, bar)\
        break;\
      case CTX_COMPOSITE_COPY:\
         f_s = CTX_PORTER_DUFF_1;\
-        f_d = CTX_PORTER_DUFF_0;\
+        f_d = CTX_PORTER_DUFF_1_MINUS_ALPHA;\
        break;\
      default:\
      case CTX_COMPOSITE_CLEAR:\
@@ -1631,12 +1629,7 @@ ctx_u8_source_over_normal_color (int components,
 static void
 ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 {
-    int x = 0;
-
-    {
-      for (; (x < count) 
-                      ; 
-                      x++)
+    while (count--)
     {
       uint8_t cov = coverage[0];
 #if CTX_COMPOSITE_IF_COV
@@ -1661,16 +1654,11 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
       tsrc += 4;
       coverage ++;
     }
-  }
 }
 
 static void
 ctx_RGBA8_source_copy_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 {
-  uint32_t *sip = ((uint32_t*)(tsrc));
-  uint32_t si = *sip;
-  uint32_t si_ga = (si & CTX_RGBA8_GA_MASK)>>8;
-  uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
 
   while (count--)
   {
@@ -1682,16 +1670,20 @@ ctx_RGBA8_source_copy_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
     }
     else
     {
+      uint32_t *sip = ((uint32_t*)(tsrc));
+      uint32_t si = *sip;
+      uint32_t si_ga = (si & CTX_RGBA8_GA_MASK)>>8;
+      uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
       uint8_t rcov = 255 - cov;
       uint32_t di = *((uint32_t*)(dst));
       uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
       uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
       *((uint32_t*)(dst)) = 
       (((si_rb * cov + di_rb * rcov) >> 8) & CTX_RGBA8_RB_MASK) |
-      (((si_ga * cov + di_rb * rcov)) & CTX_RGBA8_GA_MASK);
+      ((si_ga * cov + di_ga * rcov) & CTX_RGBA8_GA_MASK);
     }
 
-    dst += 4;
+    dst  += 4;
     tsrc += 4;
     coverage ++;
   }
@@ -1769,8 +1761,6 @@ ctx_RGBA8_source_copy_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   ctx_RGBA8_source_copy_normal_buf (rasterizer,
                        dst, src, x0, coverage, count, tsrc);
 }
-
-
 
 #if CTX_GRADIENTS
 #if CTX_INLINED_GRADIENTS
@@ -1956,7 +1946,6 @@ ctx_RGBA8_copy_normal (CTX_COMPOSITE_ARGUMENTS)
         uint8_t cov = *coverage;
     if (cov == 0)
     {
-      ((uint32_t*)dst)[0] = 0;
       u0+=ud;
       v0+=vd;
     }
@@ -1971,8 +1960,9 @@ ctx_RGBA8_copy_normal (CTX_COMPOSITE_ARGUMENTS)
       }
       else
       {
+        uint8_t rcov = 255 - cov;
         for (int c = 0; c < components; c++)
-          { dst[c] = (src[c]*cov ) >> 8; }
+          { dst[c] = (src[c]*cov + dst[c] * rcov)/255; }
       }
     }
     dst += components;
@@ -1999,8 +1989,7 @@ ctx_RGBA8_copy_normal (CTX_COMPOSITE_ARGUMENTS)
       else
       {
         for (int c = 0; c < components; c++)
-          //{ dst[c] = (src[c]*cov ) / 255; }
-          { dst[c] = (src[c]*cov ) >> 8; }
+          { dst[c] = (src[c]*cov )/255; }
       }
     }
     dst += components;
@@ -2059,14 +2048,17 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
   {
      case 3:
        ((uint8_t*)(blended))[2] = ((uint8_t*)(src))[2];
-      /* FALLTHROUGH */
+       *((uint16_t*)(blended)) = *((uint16_t*)(src));
+       break;
      case 2:
        *((uint16_t*)(blended)) = *((uint16_t*)(src));
        ctx_u8_associate_alpha (components, blended);
        break;
      case 5:
+       *((uint32_t*)(blended)) = *((uint32_t*)(src));
        ((uint8_t*)(blended))[4] = ((uint8_t*)(src))[4];
-       /* FALLTHROUGH */
+       ctx_u8_associate_alpha (components, blended);
+       break;
      case 4:
        *((uint32_t*)(blended)) = *((uint32_t*)(src));
        ctx_RGBA8_associate_alpha (blended);
@@ -2382,6 +2374,7 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       if (CTX_UNLIKELY(
         (compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 255)||
         (compositing_mode == CTX_COMPOSITE_SOURCE_OVER      && cov == 0) ||
+        (compositing_mode == CTX_COMPOSITE_COPY             && cov == 0) ||
         (compositing_mode == CTX_COMPOSITE_XOR              && cov == 0) ||
         (compositing_mode == CTX_COMPOSITE_DESTINATION_OUT  && cov == 0) ||
         (compositing_mode == CTX_COMPOSITE_SOURCE_ATOP      && cov == 0)
@@ -2397,8 +2390,7 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       if ((fragment))
       {
         fragment (rasterizer, u0, v0, tsrc, 1, ud, vd);
-        if (blend != CTX_BLEND_NORMAL)
-          ctx_u8_blend (components, blend, dst, tsrc, tsrc);
+        ctx_u8_blend (components, blend, dst, tsrc, tsrc);
         u0 += ud;
         v0 += vd;
       }
@@ -2413,13 +2405,14 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       if (cov != 255)
         for (int c = 0; c < components; c++)
           tsrc[c] = (tsrc[c] * cov)/255;
+
       for (int c = 0; c < components; c++)
       {
         uint32_t res = 0;
         switch (f_s)
         {
           case CTX_PORTER_DUFF_0:             break;
-          case CTX_PORTER_DUFF_1:             res += (tsrc[c]); break;
+          case CTX_PORTER_DUFF_1:             res += (tsrc[c] ); break;
           case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] * dst[components-1])/255; break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (255-dst[components-1]))/255; break;
         }
@@ -2536,6 +2529,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   rasterizer->comp_op  = ctx_RGBA8_porter_duff_generic;
 
+
 #if 1
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
   {
@@ -2608,15 +2602,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     return;
   }
 
-
-#if 1
-  if (gstate->blend_mode == CTX_BLEND_NORMAL &&
-      gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
-      rasterizer->fragment)
-  {
-     rasterizer->comp_op = ctx_RGBA8_source_over_normal_fragment;
-     return;
-  }
   if (gstate->blend_mode == CTX_BLEND_NORMAL &&
       gstate->compositing_mode == CTX_COMPOSITE_COPY &&
       rasterizer->fragment)
@@ -2624,7 +2609,15 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
      rasterizer->comp_op = ctx_RGBA8_source_copy_normal_fragment;
      return;
   }
-#endif
+
+  if (gstate->blend_mode == CTX_BLEND_NORMAL &&
+      gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
+      rasterizer->fragment)
+  {
+     rasterizer->comp_op = ctx_RGBA8_source_over_normal_fragment;
+     return;
+  }
+
 }
 
 /*
@@ -4315,7 +4308,6 @@ ctx_u8_porter_duff(GRAYA8, 2,color,   rasterizer->fragment, rasterizer->state->g
 ctx_u8_porter_duff(GRAYA8, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_NORMAL
-
 ctx_u8_porter_duff(GRAYA8, 2,color_normal,   rasterizer->fragment, CTX_BLEND_NORMAL)
 ctx_u8_porter_duff(GRAYA8, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
 
@@ -4725,7 +4717,7 @@ static inline void ctx_RGB565_source_over_normal_color_solid_gen (CTX_COMPOSITE_
         uint8_t r_cov = 255-cov;
         uint32_t dval =
          (((si_rb * cov + di_rb * r_cov) >> 8) & CTX_RGBA8_RB_MASK) |
-         ((((si_ga * cov + di_ga * r_cov) >> 8) & CTX_RGBA8_RB_MASK) << 8);
+         ((((si_ga * cov + di_ga * r_cov) ) & CTX_RGBA8_GA_MASK));
         *((uint16_t*)(dst)) = ctx_888_to_565 (dval, byteswap);
       }
     }
