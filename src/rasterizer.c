@@ -920,12 +920,12 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
 
        if (parity)
         {
-          uint32_t x0 = CTX_EDGE_X (t);
-          uint32_t x1 = CTX_EDGE_X (t+1);
-          uint32_t graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          uint32_t grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          uint32_t first     = graystart >> 8;
-          uint32_t last      = grayend   >> 8;
+          int x0 = CTX_EDGE_X (t);
+          int x1 = CTX_EDGE_X (t+1);
+          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int first     = graystart >> 8;
+          int last      = grayend   >> 8;
 
           if (CTX_UNLIKELY(first < minx))
           { 
