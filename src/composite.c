@@ -1408,7 +1408,6 @@ ctx_init_uv (CtxRasterizer *rasterizer,
   *vd = (v1-*v0) / (count);
 }
 
-#if 1
 static void
 ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
@@ -1421,7 +1420,6 @@ ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
     dst+=components;
   }
 }
-#endif
 
 static void
 ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
@@ -1628,6 +1626,7 @@ ctx_u8_source_over_normal_color (int components,
 static void
 ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 {
+#if 0
     int components = 4;
     while (count--)
     {
@@ -1640,6 +1639,33 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
       tsrc += 4;
       coverage ++;
     }
+#endif
+
+  int components = 4;
+  //uint8_t tsrc[5];
+  //*((uint32_t*)tsrc) = *((uint32_t*)src);
+  //ctx_u8_associate_alpha (components, tsrc);
+
+  while (count--)
+  {
+     uint32_t *sip = ((uint32_t*)(tsrc));
+     uint32_t si = *sip;
+     uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
+     uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+     uint32_t si_a  = si >> CTX_RGBA8_A_SHIFT;
+
+     uint32_t *dip = ((uint32_t*)(dst));
+     uint32_t di = *dip;
+     uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
+     uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+     *((uint32_t*)(dst)) =
+     ((((si_rb * *coverage) + (di_rb * (((256)-(((si_a) * *coverage)>>8))))) >> 8) & CTX_RGBA8_RB_MASK) |
+     ((((si_ga * *coverage) + (di_ga * (((256)-(((si_a) * *coverage)>>8)))))) & CTX_RGBA8_GA_MASK);
+     coverage ++;
+     tsrc +=components;
+     dst+=components;
+  }
+
 }
 
 static void
@@ -1854,13 +1880,32 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
+#if 0
   ctx_u8_source_over_normal_color (4, rasterizer, dst, src, x0, coverage, count);
-}
+#else
+  int components = 4;
+  uint8_t tsrc[5];
+  *((uint32_t*)tsrc) = *((uint32_t*)src);
+  ctx_u8_associate_alpha (components, tsrc);
+  uint32_t *sip = ((uint32_t*)(tsrc));
+  uint32_t si = *sip;
+  uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
+  uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
+  uint32_t si_a  = si >> CTX_RGBA8_A_SHIFT;
 
-static void
-ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
-{
-  ctx_u8_source_over_normal_opaque_color (4, rasterizer, dst, src, x0, coverage, count);
+  while (count--)
+  {
+     uint32_t *dip = ((uint32_t*)(dst));
+     uint32_t di = *dip;
+     uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
+     uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+     *((uint32_t*)(dst)) =
+     ((((si_rb * *coverage) + (di_rb * (((256)-(((si_a) * *coverage)>>8))))) >> 8) & CTX_RGBA8_RB_MASK) |
+     ((((si_ga * *coverage) + (di_ga * (((256)-(((si_a) * *coverage)>>8)))))) & CTX_RGBA8_GA_MASK);
+     coverage ++;
+     dst+=components;
+  }
+#endif
 }
 
 static void
@@ -2514,8 +2559,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           {
              if (rasterizer->color[components-1] == 0)
                  rasterizer->comp_op = ctx_RGBA8_nop;
-             else if (rasterizer->color[components-1] == 255)
-                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
              else
                  rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
          }
