@@ -1412,18 +1412,11 @@ ctx_init_uv (CtxRasterizer *rasterizer,
 static void
 ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
-  uint8_t tsrc[5];
-  *((uint32_t*)tsrc) = *((uint32_t*)src);
   while (count--)
   {
-      uint8_t cov = *coverage;
-#if CTX_COMPOSITE_IF_COV
-      if (cov)
-#endif
-      {
-        for (int c = 0; c < components; c++)
-          dst[c] = ((tsrc[c] * cov)>>8) + (dst[c] * (((255)-(cov)))>>8);
-      }
+    uint32_t part = 256-coverage[0];
+    for (int c = 0; c < components; c++)
+      dst[c] = ((src[c] * coverage[0]) + dst[c] * ((part))) >> 8;
     coverage ++;
     dst+=components;
   }
@@ -1618,14 +1611,13 @@ ctx_u8_source_over_normal_color (int components,
 
   while (count--)
   {
-      uint8_t cov = *coverage;
 #if CTX_COMPOSITE_IF_COV
       if (cov)
 #endif
       {
         for (int c = 0; c < components; c++)
-          //dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
-          dst[c] = ((tsrc[c] * cov)>>8) + (dst[c] * (((65536)-(tsrc[components-1] * cov)))>>16);
+          //dst[c] =  ((tsrc[c] * *coverage)>>8) + (dst[c] * (((65536)-(tsrc[components-1] * *coverage)))>>16);
+          dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((256)-((tsrc[components-1] * *coverage)>>8)))))>>8);
       }
     coverage ++;
     dst+=components;
@@ -1639,14 +1631,10 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
     int components = 4;
     while (count--)
     {
-      uint8_t cov = coverage[0];
-#if CTX_COMPOSITE_IF_COV
-      if (cov)
-#endif
       {
         for (int c = 0; c < components; c++)
           //dst[c] = (tsrc[c] * cov)/255 + (dst[c] * ((255*255)-(tsrc[components-1] * cov)))/(255*255);
-          dst[c] = ((tsrc[c] * cov)>>8) + (dst[c] * (((65536)-(tsrc[components-1] * cov)))>>16);
+          dst[c] = ((tsrc[c] * coverage[0])>>8) + (dst[c] * (((65536)-(tsrc[components-1] * coverage[0])))>>16);
       }
       dst += 4;
       tsrc += 4;
@@ -2526,8 +2514,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           {
              if (rasterizer->color[components-1] == 0)
                  rasterizer->comp_op = ctx_RGBA8_nop;
-             //else if (rasterizer->color[components-1] == 255)
-             //    rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
+             else if (rasterizer->color[components-1] == 255)
+                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
              else
                  rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
          }
