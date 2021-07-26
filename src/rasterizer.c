@@ -33,9 +33,9 @@ _ctx_setup_compositor (CtxRasterizer *rasterizer)
 inline static void
 ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
                                uint8_t * __restrict__ dst,
-                               int            x,
+                               int       x,
                                uint8_t * __restrict__ coverage,
-                               int            count)
+                               int       count)
 {
   rasterizer->format->apply_coverage(rasterizer, dst, rasterizer->color, x, coverage, count);
 }
@@ -776,7 +776,7 @@ static inline void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 
 #undef CTX_CMPSWP
 
-void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, uint8_t *coverage)
+void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, uint8_t *coverage, int *first_col, int *last_col)
 {
   int scanline     = rasterizer->scanline;
 #if CTX_ENABLE_SHADOW_BLUR
@@ -820,6 +820,20 @@ void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, u
   {
     for (int x = minx; x <= maxx; x ++)
      coverage[x] = coverage[x] > 127?255:0;
+  }
+  if (CTX_UNLIKELY(rasterizer->in_line_stroke == 1))
+  {
+    int first = minx;
+    int last = maxx;
+    for (int x = minx; (x <= maxx) && (coverage[x] == 0); x ++)
+      first = x;
+    for (int x = maxx; x >= first && coverage[x] == 0; x --)
+      last = x;
+    if (first == last)
+       last ++;
+    if (last > maxx)last = maxx;
+    *first_col = first; 
+    *last_col = last; 
   }
 #endif
 }
@@ -991,7 +1005,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 {
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
 
-  unsigned int real_aa = rasterizer->aa;
+  int real_aa = rasterizer->aa;
 
   int scan_start = rasterizer->blit_y * CTX_FULL_AA;
   int scan_end   = scan_start + rasterizer->blit_height * CTX_FULL_AA;
@@ -1186,8 +1200,19 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
       for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.30;
 #endif
     }
-  ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx);
+  int first_col = minx;
+  int last_col = maxx;
 
+  ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx,
+                  &first_col, &last_col);
+  if (CTX_LIKELY(rasterizer->in_line_stroke == 0))
+  {
+    first_col = minx;
+    last_col = maxx;
+  }
+  else
+  {
+  }
 
 
 
@@ -1204,9 +1229,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
               }
 #endif
               ctx_rasterizer_apply_coverage (rasterizer,
-                                             &dst[(minx * rasterizer->format->bpp) /8],
-                                             minx,
-                                             coverage, maxx-minx + 1);
+                                             &dst[(first_col * rasterizer->format->bpp) /8],
+                                             first_col,
+                                             coverage + (first_col-minx),
+                                             last_col-first_col+ 1);
             }
         }
 #if CTX_SHAPE_CACHE
@@ -3166,13 +3192,16 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
             !rasterizer->in_text)
           ctx_rasterizer_shadow_stroke (rasterizer);
 #endif
+        {
+        int count = rasterizer->edge_list.count;
+        if (count < 2)
+          rasterizer->in_line_stroke++;
         if (rasterizer->state->gstate.n_dashes)
         {
           int n_dashes = rasterizer->state->gstate.n_dashes;
           float *dashes = rasterizer->state->gstate.dashes;
           float factor = ctx_matrix_get_scale (&state->gstate.transform);
 
-          int count = rasterizer->edge_list.count;
           int aa = 15;//rasterizer->aa;
           CtxEntry temp[count]; /* copy of already built up path's poly line  */
           memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
@@ -3276,8 +3305,11 @@ foo:
         }
       rasterizer->state->gstate.transform = transform_backup;
         }
-
         ctx_rasterizer_stroke (rasterizer);
+        if (count < 2)
+          rasterizer->in_line_stroke--;
+        }
+
         break;
       case CTX_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
