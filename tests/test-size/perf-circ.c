@@ -42,15 +42,15 @@ typedef struct Fmt {
 
 Fmt formats[]={
    {"RGBA8",     CTX_FORMAT_RGBA8,  4, 1},
+   {"BGRA8",     CTX_FORMAT_BGRA8,  4, 1},
    {"RGB565",    CTX_FORMAT_RGB565, 2, 1},
+   {"RGB565_BS", CTX_FORMAT_RGB565_BYTESWAPPED,   2,   1},
+   {"RGBAF",     CTX_FORMAT_RGBAF,  4*4, 1},
    {"GRAYA8",    CTX_FORMAT_GRAYA8, 2, 1},
    {"GRAY1",     CTX_FORMAT_GRAY1,  1, 8},
    {"GRAY8",     CTX_FORMAT_GRAY8,  1, 1},
 #if 1
-   {"BGRA8",     CTX_FORMAT_BGRA8,  4, 1},
-   {"RGBAF",     CTX_FORMAT_RGBAF,  4*4, 1},
    {"RGB332",    CTX_FORMAT_RGB332, 1,   1},
-   {"RGB565_BS", CTX_FORMAT_RGB565_BYTESWAPPED,   2,   1},
    {"GRAYAF",    CTX_FORMAT_GRAYAF, 2*4, 1},
    {"CMYKAF",    CTX_FORMAT_CMYKAF, 5*4, 1},
    {"CMYKA8",    CTX_FORMAT_CMYKA8, 5, 1},
