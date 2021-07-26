@@ -1776,6 +1776,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
   float linear_gradient_rdelta = g->linear_gradient.rdelta;
   float linear_gradient_start = g->linear_gradient.start;
   float linear_gradient_length = g->linear_gradient.length;
+  float linear_gradient_length_recip = 1.0f/linear_gradient_length;
 #if CTX_DITHER
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
@@ -1783,10 +1784,25 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
   int fudge = ((size_t)(dst) & 31);
   uint8_t _tsrc[4 * (count + fudge)];
   uint8_t *tsrc = &_tsrc[fudge];
+
+
+  linear_gradient_dx *=linear_gradient_length_recip;
+  linear_gradient_dy *=linear_gradient_length_recip;
+
+  u0 *= linear_gradient_dx;
+  v0 *= linear_gradient_dy;
+  ud *= linear_gradient_dx;
+  vd *= linear_gradient_dy;
+
+  u0 *= linear_gradient_rdelta;
+  v0 *= linear_gradient_rdelta;
+  ud *= linear_gradient_rdelta;
+  vd *= linear_gradient_rdelta;
+  linear_gradient_start *= linear_gradient_rdelta;
+
   for (int x = 0; x < count ; x++)
   {
-      float vv = ( ( (linear_gradient_dx * u0 + linear_gradient_dy * v0) / linear_gradient_length) -
-            linear_gradient_start) * (linear_gradient_rdelta);
+      float vv = ((u0 + v0) - linear_gradient_start);
       uint32_t *tsrci = (uint32_t*)tsrc;
 #if CTX_GRADIENT_CACHE
       uint32_t *cachei = ((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
