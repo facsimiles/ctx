@@ -403,25 +403,22 @@ ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 {
   int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = drawlist->count;
-  if (drawlist->flags & CTX_DRAWLIST_EDGE_LIST)
+  if ((drawlist->flags & CTX_DRAWLIST_EDGE_LIST ||
+       drawlist->flags & CTX_DRAWLIST_CURRENT_PATH))
     {
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  else if (drawlist->flags & CTX_DRAWLIST_CURRENT_PATH)
-    {
-      max_size = CTX_MAX_EDGE_LIST_SIZE;
-    }
-  if (drawlist->flags & CTX_DRAWLIST_DOESNT_OWN_ENTRIES)
+  if (CTX_UNLIKELY(drawlist->flags & CTX_DRAWLIST_DOESNT_OWN_ENTRIES))
     {
       return ret;
     }
-  if (ret + 1024 >= drawlist->size - 40)
+  if (CTX_UNLIKELY(ret + 1024 >= drawlist->size - 40))
     {
       int new_ = CTX_MAX (drawlist->size * 2, ret + 1024);
       ctx_drawlist_resize (drawlist, new_);
     }
 
-  if (drawlist->count >= max_size - 20)
+  if (CTX_UNLIKELY(drawlist->count >= max_size - 20))
     {
       return 0;
     }
@@ -504,7 +501,7 @@ int ctx_set_drawlist (Ctx *ctx, void *data, int length)
     {
       return -1;
     }
-  if (length % 9) return -1;
+  if (CTX_UNLIKELY(length % 9)) return -1;
   ctx_drawlist_resize (drawlist, length/9);
   memcpy (drawlist->entries, data, length);
   drawlist->count = length / 9;
@@ -524,7 +521,7 @@ const CtxEntry *ctx_get_drawlist (Ctx *ctx)
 int
 ctx_add_data (Ctx *ctx, void *data, int length)
 {
-  if (length % sizeof (CtxEntry) )
+  if (CTX_UNLIKELY(length % sizeof (CtxEntry) ))
     {
       //ctx_log("err\n");
       return -1;
@@ -552,14 +549,14 @@ int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
   entry.data.u32[0] = 0;
   entry.data.u32[1] = 0;
   int ret = ctx_drawlist_add_single (drawlist, &entry);
-  if (!data) { return -1; }
+  if (CTX_UNLIKELY(!data)) { return -1; }
   int length_in_blocks;
   if (length <= 0) { length = strlen ( (char *) data) + 1; }
   length_in_blocks = length / sizeof (CtxEntry);
   length_in_blocks += (length % sizeof (CtxEntry) ) ?1:0;
   if (drawlist->count + length_in_blocks + 4 > drawlist->size)
     { ctx_drawlist_resize (drawlist, drawlist->count * 1.2 + length_in_blocks + 32); }
-  if (drawlist->count >= drawlist->size)
+  if (CTX_UNLIKELY(drawlist->count >= drawlist->size))
     { return -1; }
   drawlist->count += length_in_blocks;
   drawlist->entries[ret].data.u32[0] = length;
