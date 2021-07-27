@@ -147,7 +147,7 @@ ctx_iterator_next (CtxIterator *iterator)
 #if CTX_BITPACK
   int expand_bitpack = iterator->flags & CTX_ITERATOR_EXPAND_BITPACK;
 again:
-  if (iterator->bitpack_length)
+  if (CTX_UNLIKELY(iterator->bitpack_length))
     {
       ret = &iterator->bitpack_command[iterator->bitpack_pos];
       iterator->bitpack_pos += (ctx_conts_for_entry (ret) + 1);

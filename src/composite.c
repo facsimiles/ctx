@@ -1889,22 +1889,20 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
 {
-#if 1
+#if 0
   ctx_u8_source_over_normal_opaque_color (4, rasterizer, dst, src, x0, coverage, count);
 #else
   uint8_t tsrc[5];
   *((uint32_t*)tsrc) = *((uint32_t*)src);
-  ctx_u8_associate_alpha (components, tsrc);
+  ctx_u8_associate_alpha (4, tsrc);
 
 
-  uint32_t *sip = ((uint32_t*)(tsrc));
-  uint32_t si = *sip;
+  uint32_t si = *((uint32_t*)(tsrc));
   uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
   uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
   while (count--)
   {
-     uint32_t *dip = ((uint32_t*)(dst));
-     uint32_t di = *dip;
+     uint32_t di = *((uint32_t*)(dst));
      uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
      uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
      *((uint32_t*)(dst)) =
