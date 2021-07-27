@@ -2536,6 +2536,12 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     //rasterizer->comp_op = ctx_RGBA8_porter_duff_color; // XXX overide to make all go
     //                                                   // through generic code path
     rasterizer->fragment = NULL;
+
+  if (rasterizer->format->pixel_format == CTX_FORMAT_RGBA8)
+  {
+ // rasterizer->format->apply_coverage = rasterizer->comp_op;
+  }
+
   }
 
   else if (gstate->blend_mode == CTX_BLEND_NORMAL &&
@@ -2553,9 +2559,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 
   if (rasterizer->format->pixel_format == CTX_FORMAT_RGBA8)
   {
-    /* avoid one function call dispatch when RGBA8 is the native format,
-     */
-    rasterizer->format->apply_coverage = rasterizer->comp_op;
+    //rasterizer->format->apply_coverage = rasterizer->comp_op;
   }
 }
 
