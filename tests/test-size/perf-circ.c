@@ -28,8 +28,8 @@
 #include "../../deps/stb_image.h"
 
 #include "ctx.h"
-#define WIDTH    512
-#define HEIGHT   512
+#define WIDTH    256
+#define HEIGHT   256
 
 #define ITERATIONS     200
 
@@ -339,7 +339,7 @@ static void run_tests (Ctx *ctx)
 
   run_test_set (ctx);
 #if 1
-  ctx_compositing_mode (ctx, CTX_COMPOSITE_SOURCE_ATOP);
+  ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
   run_test_set (ctx);
 #endif
 #if 0
@@ -372,7 +372,7 @@ int main (int argc, char **argv)
 
    run_test_set_cairo (cr);
 #if 1
-   cairo_set_operator (cr, CAIRO_OPERATOR_ATOP);
+   cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
    run_test_set_cairo (cr);
 #endif
    cairo_destroy (cr);
