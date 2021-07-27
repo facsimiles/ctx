@@ -1653,7 +1653,7 @@ ctx_RGBA8_source_copy_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
   while (count--)
   {
     for (int c = 0; c < 4; c++)
-      dst[c] = ((src[c] * coverage[0]) + dst[c] * ((256-coverage[0]))) >> 8;
+      dst[c] = ((tsrc[c] * coverage[0]) + dst[c] * ((256-coverage[0]))) >> 8;
     coverage ++;
     tsrc += 4;
     dst+=4;
@@ -1873,7 +1873,6 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
   }
 #endif
 }
-
 
 static void
 ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
