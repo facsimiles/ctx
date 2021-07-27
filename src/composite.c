@@ -1685,6 +1685,8 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   int dither_green = rasterizer->format->dither_green;
 #endif
   CtxFragment fragment = rasterizer->fragment;
+  if (!fragment)
+          return;
   int fudge = ((size_t)(dst) & 31);
   uint8_t _tsrc[4 * (count + fudge)];
   uint8_t *tsrc = &_tsrc[fudge];
