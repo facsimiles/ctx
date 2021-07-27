@@ -1687,9 +1687,8 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   CtxFragment fragment = rasterizer->fragment;
   if (!fragment)
           return;
-  int fudge = ((size_t)(dst) & 31);
-  uint8_t _tsrc[4 * (count + fudge)];
-  uint8_t *tsrc = &_tsrc[fudge];
+  uint8_t _tsrc[4 * (count)];
+  uint8_t *tsrc = &_tsrc[0];
   fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
 #if CTX_DITHER
   ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
@@ -1706,7 +1705,7 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
     v0 += vd;
 #endif
   }
-  tsrc = &_tsrc[fudge];
+  tsrc = &_tsrc[0];
 
   ctx_RGBA8_source_over_normal_buf (rasterizer,
                        dst, src, x0, coverage, count, tsrc);
@@ -1724,9 +1723,8 @@ ctx_RGBA8_source_copy_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   int dither_green = rasterizer->format->dither_green;
 #endif
   CtxFragment fragment = rasterizer->fragment;
-  int fudge = ((size_t)(dst) & 31);
-  uint8_t _tsrc[4 * (count + fudge)];
-  uint8_t *tsrc = &_tsrc[fudge];
+  uint8_t _tsrc[4 * (count)];
+  uint8_t *tsrc = &_tsrc[0];
   fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
 #if CTX_DITHER
   ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
@@ -1743,7 +1741,7 @@ ctx_RGBA8_source_copy_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
     v0 += vd;
 #endif
   }
-  tsrc = &_tsrc[fudge];
+  tsrc = &_tsrc[0];
 
   ctx_RGBA8_source_copy_normal_buf (rasterizer,
                        dst, src, x0, coverage, count, tsrc);
@@ -1768,9 +1766,8 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
 #endif
-  int fudge = ((size_t)(dst) & 31);
-  uint8_t _tsrc[4 * (count + fudge)];
-  uint8_t *tsrc = &_tsrc[fudge];
+  uint8_t _tsrc[4 * (count)];
+  uint8_t *tsrc = &_tsrc[0];
 
 
   linear_gradient_dx *=linear_gradient_length_recip;
@@ -1806,7 +1803,7 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
     u0 += ud;
     v0 += vd;
   }
-  tsrc = &_tsrc[fudge];
+  tsrc = &_tsrc[0];
   ctx_RGBA8_source_over_normal_buf (rasterizer,
                dst, src, x0, coverage, count, tsrc);
 }
@@ -1826,9 +1823,8 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
 #endif
-  int fudge = ((size_t)(dst) & 31);
-  uint8_t _tsrc[4 * (count + fudge)];
-  uint8_t *tsrc = &_tsrc[fudge];
+  uint8_t _tsrc[4 * (count)];
+  uint8_t *tsrc = &_tsrc[0];
   for (int x = 0; x < count ; x++)
   {
       float vv = ctx_hypotf (radial_gradient_x0 - u0, radial_gradient_y0 - v0);
@@ -1852,7 +1848,7 @@ ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
   }
 
   ctx_RGBA8_source_over_normal_buf (rasterizer,
-               dst, src, x0, coverage, count, &_tsrc[fudge]);
+               dst, src, x0, coverage, count, &_tsrc[0]);
 }
 
 
