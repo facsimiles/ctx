@@ -2504,8 +2504,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           {
              if (rasterizer->color[components-1] == 0)
                  rasterizer->comp_op = ctx_RGBA8_nop;
-             else if (rasterizer->color[components-1] == 255)
-                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
+        //   else if (rasterizer->color[components-1] == 255)
+        //       rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
              else
                  rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
          }

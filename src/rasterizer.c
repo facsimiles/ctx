@@ -1210,31 +1210,16 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
     first_col = minx;
     last_col = maxx;
   }
-  else
-  {
-  }
-
-
-
-        {
 #if CTX_SHAPE_CACHE
-          if (shape == NULL)
+  if (shape == NULL)
 #endif
-            {
-#if 0
-              if (CTX_FULL_AA==1)
-              {
-                for (int x = 0; x < maxx-minx; x++)
-                  coverage
-              }
-#endif
-              ctx_rasterizer_apply_coverage (rasterizer,
-                                             &dst[(first_col * rasterizer->format->bpp) /8],
-                                             first_col,
-                                             coverage + (first_col-minx),
-                                             last_col-first_col+ 1);
-            }
-        }
+  {
+    ctx_rasterizer_apply_coverage (rasterizer,
+                         &dst[(first_col * rasterizer->format->bpp) /8],
+                         first_col,
+                         coverage + (first_col-minx),
+                         last_col-first_col+ 1);
+  }
 #if CTX_SHAPE_CACHE
       if (shape)
         {
