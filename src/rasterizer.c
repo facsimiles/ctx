@@ -1381,17 +1381,42 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
           rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
           rasterizer->format->bpp == 32)
       {
-        uint8_t colorrow[4*(width+1)];
-        for (int i = 0; i < width + 1; i++)
-          memcpy(&colorrow[i*4], rasterizer->color, 4);
-        for (int y = y0; y < y1; y++)
+        if (CTX_UNLIKELY(width == 1))
         {
-          memcpy (&dst[(x0)*4], colorrow, 4 * (width));
-          dst += rasterizer->blit_stride;
+          for (int y = y0; y < y1; y++)
+          {
+            memcpy (&dst[(x0)*4], rasterizer->color, 4);
+            dst += rasterizer->blit_stride;
+          }
+        }
+        else
+        {
+          uint8_t colorrow[4*(width+1)];
+          for (int i = 0; i < width + 1; i++)
+            memcpy(&colorrow[i*4], rasterizer->color, 4);
+          for (int y = y0; y < y1; y++)
+          {
+            memcpy (&dst[(x0)*4], colorrow, 4 * (width));
+            dst += rasterizer->blit_stride;
+          }
         }
       }
       else
       {
+        if (CTX_UNLIKELY(width == 1))
+        {
+          uint8_t coverage[1]={cov};
+          for (int y = y0; y < y1; y++)
+          {
+            ctx_rasterizer_apply_coverage (rasterizer,
+                                         &dst[ (x0) * rasterizer->format->bpp/8],
+                                         x0,
+                                         coverage, 1);
+            dst += rasterizer->blit_stride;
+          }
+        }
+        else
+        {
         uint8_t coverage[x1-x0 + 1];
         ctx_memset (coverage, cov, sizeof (coverage) );
         rasterizer->scanline = y0 * CTX_FULL_AA;
@@ -1403,6 +1428,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                                          x0,
                                          coverage, width);
           dst += rasterizer->blit_stride;
+        }
         }
       }
     }
