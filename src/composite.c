@@ -1408,17 +1408,6 @@ ctx_init_uv (CtxRasterizer *rasterizer,
   *vd = (v1-*v0) / (count);
 }
 
-static void
-ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
-{
-  while (count--)
-  {
-    for (int c = 0; c < components; c++)
-      dst[c] = ((src[c] * coverage[0]) + dst[c] * ((255-coverage[0]))) >> 8;
-    coverage ++;
-    dst+=components;
-  }
-}
 
 static void
 ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
@@ -1591,7 +1580,6 @@ ctx_porter_duff_factors(mode, foo, bar)\
   }\
 }
 
-#if 1
 static void
 ctx_u8_source_over_normal_color (int components,
                                  CtxRasterizer         *rasterizer,
@@ -1619,7 +1607,33 @@ ctx_u8_source_over_normal_color (int components,
     dst+=components;
   }
 }
+
+static void
+ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
+{
+#if 0
+  ctx_u8_source_over_normal_color (4, rasterizer, dst, src, x0, coverage, count);
+  return;
+#else
+  uint8_t tsrc[5];
+  *((uint32_t*)tsrc) = *((uint32_t*)src);
+  ctx_u8_associate_alpha (components, tsrc);
+  while (count--)
+  {
+#if CTX_COMPOSITE_IF_COV
+      uint8_t cov = coverage[0];
+      if (cov)
 #endif
+      {
+        for (int c = 0; c < components; c++)
+          dst[c] =  ctx_lerp_u8(dst[c],tsrc[c],coverage[0]);
+      }
+    coverage ++;
+    dst+=components;
+  }
+#endif
+}
+
 
 static void
 ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
@@ -1877,11 +1891,14 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
 {
-#if 0
+#if 1
   ctx_u8_source_over_normal_opaque_color (4, rasterizer, dst, src, x0, coverage, count);
 #else
-  int components = 4;
-  uint8_t *tsrc = src;
+  uint8_t tsrc[5];
+  *((uint32_t*)tsrc) = *((uint32_t*)src);
+  ctx_u8_associate_alpha (components, tsrc);
+
+
   uint32_t *sip = ((uint32_t*)(tsrc));
   uint32_t si = *sip;
   uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
@@ -1896,7 +1913,7 @@ ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
      ((((si_rb * *coverage) + (di_rb * ((256)-(*coverage)))) >> 8) & CTX_RGBA8_RB_MASK) |
      (((si_ga * *coverage) + (di_ga * ((256)-(*coverage)))) & CTX_RGBA8_GA_MASK);
      coverage ++;
-     dst+=components;
+     dst+=4;
   }
 #endif
 }
@@ -2504,8 +2521,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           {
              if (rasterizer->color[components-1] == 0)
                  rasterizer->comp_op = ctx_RGBA8_nop;
-        //   else if (rasterizer->color[components-1] == 255)
-        //       rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
+             //else if (rasterizer->color[components-1] == 255)
+             //    rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
              else
                  rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
          }
