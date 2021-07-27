@@ -58,14 +58,13 @@ ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *r
 static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 {
   CtxEntry entry = {CTX_EDGE, {{0},}};
-  if (y1 < rasterizer->scan_min)
+  if (CTX_UNLIKELY(y1 < rasterizer->scan_min))
     { rasterizer->scan_min = y1; }
-  if (y1 > rasterizer->scan_max)
+  if (CTX_UNLIKELY(y1 > rasterizer->scan_max))
     { rasterizer->scan_max = y1; }
-
-  if (x1 < rasterizer->col_min)
+  if (CTX_UNLIKELY(x1 < rasterizer->col_min))
     { rasterizer->col_min = x1; }
-  if (x1 > rasterizer->col_max)
+  if (CTX_UNLIKELY(x1 > rasterizer->col_max))
     { rasterizer->col_max = x1; }
 
   entry.data.s16[2]=x1;
@@ -267,7 +266,7 @@ CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, floa
   rasterizer->first_x  = x;
   rasterizer->first_y  = y;
   rasterizer->has_prev = -1;
-  if (rasterizer->uses_transforms)
+  if (CTX_UNLIKELY(rasterizer->uses_transforms))
     {
       _ctx_user_to_device (rasterizer->state, &tx, &ty);
     }
@@ -275,13 +274,13 @@ CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, floa
   tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
   ty = ty * aa;
 
-  if (ty < rasterizer->scan_min)
+  if (CTX_UNLIKELY(ty < rasterizer->scan_min))
     { rasterizer->scan_min = ty; }
-  if (ty > rasterizer->scan_max)
+  if (CTX_UNLIKELY(ty > rasterizer->scan_max))
     { rasterizer->scan_max = ty; }
-  if (tx < rasterizer->col_min)
+  if (CTX_UNLIKELY(tx < rasterizer->col_min))
     { rasterizer->col_min = tx; }
-  if (tx > rasterizer->col_max)
+  if (CTX_UNLIKELY(tx > rasterizer->col_max))
     { rasterizer->col_max = tx; }
 }
 
@@ -293,7 +292,7 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
   float ty = y;
   float ox = rasterizer->x;
   float oy = rasterizer->y;
-  if (rasterizer->uses_transforms)
+  if (CTX_UNLIKELY(rasterizer->uses_transforms))
     {
       _ctx_user_to_device (rasterizer->state, &tx, &ty);
     }
@@ -301,14 +300,14 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
 #define MIN_Y -1000
 #define MAX_Y 1400
 
-  if (ty < MIN_Y) ty = MIN_Y;
-  if (ty > MAX_Y) ty = MAX_Y;
+  if (CTX_UNLIKELY(ty < MIN_Y)) ty = MIN_Y;
+  if (CTX_UNLIKELY(ty > MAX_Y)) ty = MAX_Y;
   
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * 15);//rasterizer->aa);
 
   if (rasterizer->has_prev<=0)
     {
-      if (rasterizer->uses_transforms)
+      if (CTX_UNLIKELY(rasterizer->uses_transforms))
       {
         // storing transformed would save some processing for a tiny
         // amount of runtime RAM XXX
@@ -316,8 +315,8 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
       }
       ox -= rasterizer->blit_x;
 
-  if (oy < MIN_Y) oy = MIN_Y;
-  if (oy > MAX_Y) oy = MAX_Y;
+  if (CTX_UNLIKELY(oy < MIN_Y)) oy = MIN_Y;
+  if (CTX_UNLIKELY(oy > MAX_Y)) oy = MAX_Y;
 
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[0] = ox * CTX_SUBDIV;
       rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[1] = oy * 15;//rasterizer->aa;
@@ -365,7 +364,7 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
                               int   iteration,
                               float tolerance)
 {
-  if (iteration > 8)
+  if (CTX_UNLIKELY(iteration > 8))
     { return; }
   float t = (s + e) * 0.5f;
   float x, y, lx, ly, dx, dy;
@@ -376,13 +375,13 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
       ly = ctx_lerpf (sy, ey, t);
       dx = lx - x;
       dy = ly - y;
-      if ( (dx*dx+dy*dy) < tolerance)
+      if (CTX_UNLIKELY( (dx*dx+dy*dy) < tolerance))
         /* bailing - because for the mid-point straight line difference is
            tiny */
         { return; }
       dx = sx - ex;
       dy = ey - ey;
-      if ( (dx*dx+dy*dy) < tolerance)
+      if (CTX_UNLIKELY( (dx*dx+dy*dy) < tolerance))
         /* bailing on tiny segments */
         { return; }
     }
@@ -460,7 +459,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
 CTX_STATIC void
 ctx_rasterizer_rel_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
-  if (x == 0.f && y == 0.f)
+  if (CTX_UNLIKELY(x == 0.f && y == 0.f))
     { return; }
   x += rasterizer->x;
   y += rasterizer->y;
@@ -470,7 +469,7 @@ ctx_rasterizer_rel_move_to (CtxRasterizer *rasterizer, float x, float y)
 CTX_STATIC void
 ctx_rasterizer_rel_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
-  if (x== 0.f && y==0.f)
+  if (CTX_UNLIKELY(x== 0.f && y==0.f))
     { return; }
   x += rasterizer->x;
   y += rasterizer->y;
@@ -629,7 +628,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (CTX_UNLIKELY(edge_end < scanline))
         {
           int dx_dy = abs(rasterizer->edges[i].delta);
-          if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3)
+          if (CTX_UNLIKELY(dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3))
             { rasterizer->needs_aa3 --;
               if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5)
               { rasterizer->needs_aa5 --;
@@ -643,7 +642,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           rasterizer->active_edges--;
           i--;
         }
-      else if (edge_end < scanline + CTX_FULL_AA)
+      else if (CTX_UNLIKELY(edge_end < scanline + CTX_FULL_AA))
         rasterizer->ending_edges = 1; // only used as a flag!
     }
 }
@@ -2709,14 +2708,15 @@ ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, flo
   float radius  = corner_radius / aspect;
   float degrees = CTX_PI / 180.0f;
 
-  if (radius > width/2) radius = width/2;
-  if (radius > height/2) radius = height/2;
+  if (radius > width*0.5f) radius = width/2;
+  if (radius > height*0.5f) radius = height/2;
 
   ctx_rasterizer_finish_shape (rasterizer);
   ctx_rasterizer_arc (rasterizer, x + width - radius, y + radius, radius, -90 * degrees, 0 * degrees, 0);
   ctx_rasterizer_arc (rasterizer, x + width - radius, y + height - radius, radius, 0 * degrees, 90 * degrees, 0);
   ctx_rasterizer_arc (rasterizer, x + radius, y + height - radius, radius, 90 * degrees, 180 * degrees, 0);
   ctx_rasterizer_arc (rasterizer, x + radius, y + radius, radius, 180 * degrees, 270 * degrees, 0);
+
   ctx_rasterizer_finish_shape (rasterizer);
 }
 
