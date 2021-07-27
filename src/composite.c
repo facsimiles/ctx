@@ -2444,34 +2444,30 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   rasterizer->comp_op  = ctx_RGBA8_porter_duff_generic;
 
 
-#if 1
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
   {
     rasterizer->comp_op = ctx_RGBA8_clear_normal;
-    return;
+    rasterizer->fragment = NULL;
   }
-#endif
 
 #if CTX_INLINED_GRADIENTS
 #if CTX_GRADIENTS
-  if (gstate->source_fill.type == CTX_SOURCE_LINEAR_GRADIENT &&
+  else if (gstate->source_fill.type == CTX_SOURCE_LINEAR_GRADIENT &&
       gstate->blend_mode       == CTX_BLEND_NORMAL &&
       gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
   {
      rasterizer->comp_op = ctx_RGBA8_source_over_normal_linear_gradient;
-     return;
   }
-  if (gstate->source_fill.type == CTX_SOURCE_RADIAL_GRADIENT &&
+  else if (gstate->source_fill.type == CTX_SOURCE_RADIAL_GRADIENT &&
       gstate->blend_mode       == CTX_BLEND_NORMAL &&
       gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
   {
      rasterizer->comp_op = ctx_RGBA8_source_over_normal_radial_gradient;
-     return;
   }
 #endif
 #endif
 
-  if (gstate->source_fill.type == CTX_SOURCE_COLOR)
+  else if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       ctx_color_get_rgba8 (rasterizer->state, &gstate->source_fill.color, rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
@@ -2511,25 +2507,25 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     //rasterizer->comp_op = ctx_RGBA8_porter_duff_color; // XXX overide to make all go
     //                                                   // through generic code path
     rasterizer->fragment = NULL;
-    return;
   }
 
-  if (gstate->blend_mode == CTX_BLEND_NORMAL &&
+  else if (gstate->blend_mode == CTX_BLEND_NORMAL &&
       gstate->compositing_mode == CTX_COMPOSITE_COPY &&
       rasterizer->fragment)
   {
      rasterizer->comp_op = ctx_RGBA8_source_copy_normal_fragment;
-     return;
   }
-
-  if (gstate->blend_mode == CTX_BLEND_NORMAL &&
+  else if (gstate->blend_mode == CTX_BLEND_NORMAL &&
       gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
       rasterizer->fragment)
   {
      rasterizer->comp_op = ctx_RGBA8_source_over_normal_fragment;
-     return;
   }
 
+  if (rasterizer->format->pixel_format == CTX_FORMAT_RGBA8)
+  {
+    rasterizer->format->apply_coverage = rasterizer->comp_op;
+  }
 }
 
 /*
