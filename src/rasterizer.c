@@ -2661,6 +2661,7 @@ ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
 {
   rasterizer->state->gstate.source_fill.type = CTX_SOURCE_COLOR;
   ctx_color_set_RGBA8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, r, g, b, a);
+  rasterizer->comp_op = NULL;
 #if 0
   // XXX : doesn't take transforms into account - and has
   // received less testing than code paths part of protocol,
