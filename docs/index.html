@@ -33,24 +33,47 @@
 
       <p>ctx is an interactive 2D vector graphics, audio, text- canvas and <a
         href='terminal/'>terminal</a>, with an 2D vector drawing API
-      directly mapping to a on-wire/multithreading <a href='protocol/'>vector
-      graphics protocol</a>.
+      directly mapping to a <a href='protocol/'>vector
+      graphics protocol</a> for terminal/network support and deferred 
+      multi-threaded rendering. The rendering API/protocol aims to be a
+      superset of the capabilities/needs of <a
+      href='https://gegl.org/'>GEGL</a>, SVG, HTML5 Canvas 2D context, and
+      cairo.</p>
+
+      <p>
+      The <a href='rasterizer/'>ctx rasterizer</a> is fast, and supports
+      compositing color managed results directly to RGBA8, GRAYA8, GRAYAF,
+      RGBAF and CMYKAF pixel formats, the 8bit formats are presumed to be for
+      display and does some performance sacrifices, while the floating point
+      code yields accurate math with natrual expression of the compositing
+      math.  For <a href='mcu/'>micocontrollers</a> rendering to lower bitdepth
+      RGB332, RGB565 variants as well as 1,2 and 4 bit per pixel grayscale is
+      handled.</p>
+
+      <p>The ctx renderer is written in portable C, without inline assembly or
+      SIMD intrinsics - but is still fast. The single threaded rendering
+      performance for 8bit RGBA is comparable with and often faster than the
+      rendering engines in Qt/cairo that are using SIMD like SSE2/AVX/Neon for
+      compositing. The next parts of ctx to be refactored for performance while
+      trying to keep the code mictrocontroller friendly, is anyways not the
+      compositing - but the rasterizer itself.</p>
+
+      <p>
+      The most optimized code in ctx is for the normal source-over combination
+      with all possible paint sources, color, linear and radial gradients and
+      textures. For most other blending and compositing modes, slower runtime
+      code is used. Combinations of blend mode+compositing mode + texture
+      source can be inlined and compiled into pre-compiled functions. Trading
+      of compiliation time and resulting code-size for performance. 
       </p>
 
       <p>
-      The <a href='rasterizer/'>ctx rasterizer</a> supports some pixel encodings
-      directly with varying level of optimization RGBA8, GRAYA8, GRAYAF, RGBAF and
-      CMYKAF which has started being by used by <a href='https://gegl.org/'>GEGL</a>
-      for color managed vector graphics. For <a href='mcu/'>micocontrollers</a>
-      implicit conversions tend to be used for RGB565/bitmap/4-level gray, though
-      </p>
-
-      <p>
-      Programs using the <a href='sdk/'>ctx SDK</a> are able to run as clients of
-      the ctx terminal/other ctx applications or can run directly on top of SDL2,
-      linux framebuffer/DRM and alsa. When using these backends there is additional <a
-      href='caching-and-threading/'>caching and threading</a> that boost
-      performance.
+      Programs using the <a href='sdk/'>ctx SDK</a> are able to run as clients
+      of the ctx terminal/other ctx applications or can run directly on top of
+      SDL2, linux framebuffer/DRM and alsa. When using these backends there is
+      additional 
+      <a href='caching-and-threading/'>caching and threading</a>
+      that helps boost performance.
       </p>
 
       <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
