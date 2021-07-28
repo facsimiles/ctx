@@ -4585,8 +4585,6 @@ ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
     ctx_RGBA8_to_RGB565 (rasterizer, x0, &pixels[0], dst, count);
   }
 }
-
-
 #endif
 #if CTX_ENABLE_RGB565_BYTESWAPPED
 

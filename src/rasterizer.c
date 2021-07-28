@@ -775,7 +775,7 @@ static inline void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 
 #undef CTX_CMPSWP
 
-void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, uint8_t *coverage, int *first_col, int *last_col)
+static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, uint8_t *coverage, int *first_col, int *last_col)
 {
   int scanline     = rasterizer->scanline;
 #if CTX_ENABLE_SHADOW_BLUR
