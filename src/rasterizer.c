@@ -601,7 +601,7 @@ CTX_INLINE static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
   return i;
 }
 
-static void ctx_edge_qsort (CtxEntry *entries, int low, int high)
+static inline void ctx_edge_qsort (CtxEntry *entries, int low, int high)
 {
   {
     int p = ctx_edge_qsort_partition (entries, low, high);
@@ -1232,7 +1232,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
   if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OUT ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_IN ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_DESTINATION_IN ||
-      rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_DESTINATION_ATOP ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_CLEAR)
   {
