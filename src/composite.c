@@ -4465,7 +4465,7 @@ ctx_565_unpack_32 (const uint16_t pixel,
   if (*green > 248) { *green = 255; }
   if (*red > 248) { *red = 255; }
 #endif
-  return blue +  (green << 8) + (red << 16) + (0xff << 24);
+  return red +  (green << 8) + (blue << 16) + (0xff << 24);
 }
 
 static inline uint16_t
