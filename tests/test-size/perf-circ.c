@@ -10,7 +10,7 @@
 #define CTX_ENABLE_CM             0
 #define CTX_PARSER                0
 #define CTX_DITHER                0
-#define CTX_NATIVE_GRAYA8         0  // the native gray8 is better for code-size, worse for
+#define CTX_NATIVE_GRAYA8         1  // the native gray8 is better for code-size, worse for
                                      // performance
 #define CTX_FORMATTER             1
 #define CTX_RASTERIZER            1

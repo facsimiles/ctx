@@ -173,7 +173,7 @@ flatpak:
 	flatpak-builder --collection-id=graphics.ctx --repo=docs/flatpak --force-clean build-dir meta/graphics.ctx.terminal.yml
 
 ctx.h: src/* fonts/ctx-font-ascii.h
-	(cd src;cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
+	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@)
 
 ctx-nofont.h: src/*
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
