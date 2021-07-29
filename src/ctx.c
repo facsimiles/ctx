@@ -145,7 +145,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
 #endif
 
 
-static void
+static inline void
 ctx_gstate_push (CtxState *state)
 {
   if (state->gstate_no + 1 >= CTX_MAX_STATES)
@@ -156,7 +156,7 @@ ctx_gstate_push (CtxState *state)
   state->has_clipped=0;
 }
 
-static void
+static inline void
 ctx_gstate_pop (CtxState *state)
 {
   if (state->gstate_no <= 0)

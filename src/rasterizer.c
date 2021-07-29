@@ -97,7 +97,7 @@ static long ctx_shape_cache_misses = 0;
 /* this returns the buffer to use for rendering, it always
    succeeds..
  */
-static CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t hash, int width, int height)
+static inline CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, uint32_t hash, int width, int height)
 {
   /* use both some high and some low bits  */
   int entry_no = ( (hash >> 10) ^ (hash & 1023) ) % CTX_SHAPE_CACHE_ENTRIES;
