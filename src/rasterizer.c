@@ -3213,7 +3213,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 #endif
         {
         int count = rasterizer->edge_list.count;
-        if (count < 2)
+        if (count <= 3)
           rasterizer->in_line_stroke++;
         if (rasterizer->state->gstate.n_dashes)
         {
@@ -3325,7 +3325,7 @@ foo:
       rasterizer->state->gstate.transform = transform_backup;
         }
         ctx_rasterizer_stroke (rasterizer);
-        if (count < 2)
+        if (count <= 3)
           rasterizer->in_line_stroke--;
         }
 
