@@ -124,12 +124,6 @@
 #define CTX_GRADIENTS             1
 #endif
 
-/* some optinal micro-optimizations that are known to increase code size
- */
-#ifndef CTX_SORTING_NETWORKS
-#define CTX_SORTING_NETWORKS         1
-#endif
-
 #ifndef CTX_ALIGNED_STRUCTS
 #define CTX_ALIGNED_STRUCTS       1
 #endif
@@ -239,7 +233,8 @@
 #define CTX_FORCE_INLINES               1
 #endif
 
-/* create one-off inlined inner loop for normal blend mode
+/* create one-off inlined inner loop for normal blend mode (for floating point,
+ * for RGBA8 manual loops overrrides
  */
 #ifndef CTX_INLINED_NORMAL     
 #define CTX_INLINED_NORMAL      1
@@ -253,24 +248,11 @@
 #define CTX_BRAILLE_TEXT        0
 #endif
 
-/* including immintrin.h triggers building of AVX2 code paths, if - like
- * sometimes when including SDL one does want it at all do a
- * #define CTX_AVX2 0  before including ctx.h for implementation.
- */
-#ifndef CTX_AVX2
-#ifdef _IMMINTRIN_H_INCLUDED
-#define CTX_AVX2         1
-#else
-#define CTX_AVX2         0
-#endif
-#endif
-
-/* Build code paths for grayscale rasterization, normally this is handled
- * by the RGBA8 codepaths; on microcontrollers with eink this might be
- * a better option.
+/* Build code paths for grayscale rasterization, this makes clipping
+ * faster.
  */
 #ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       0
+#define CTX_NATIVE_GRAYA8       1
 #endif
 
 /* enable CMYK rasterization targets
@@ -295,7 +277,7 @@
 #endif
 
 #ifndef CTX_ENABLE_FLOAT
-#define CTX_ENABLE_FLOAT 0
+#define CTX_ENABLE_FLOAT        0
 #endif
 
 /* by default ctx includes all pixel formats, on microcontrollers

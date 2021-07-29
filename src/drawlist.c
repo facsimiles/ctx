@@ -45,7 +45,6 @@ ctx_conts_for_entry (CtxEntry *entry)
           int pix_len = entry[2 + eid_len + 1].data.u32[1];
           return eid_len + pix_len + 2 + 1;
         }
-
       default:
         return 0;
     }
@@ -160,7 +159,7 @@ again:
 #endif
   ret = _ctx_iterator_next (iterator);
 #if CTX_BITPACK
-  if (ret && expand_bitpack)
+  if (CTX_UNLIKELY(ret && expand_bitpack))
     switch ((CtxCode)(ret->code))
       {
         case CTX_REL_CURVE_TO_REL_LINE_TO:
