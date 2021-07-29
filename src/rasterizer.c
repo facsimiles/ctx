@@ -37,9 +37,12 @@ ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
                                uint8_t * coverage,
                                int       count)
 {
-  if (rasterizer->format->apply_coverage)
+  if (CTX_UNLIKELY(rasterizer->format->apply_coverage))
     rasterizer->format->apply_coverage(rasterizer, dst, rasterizer->color, x, coverage, count);
   else
+    /* it is faster to dispatch in this condition, than using a shared
+     * direct trampoline
+     */
     rasterizer->comp_op (rasterizer, dst, rasterizer->color, x, coverage, count);
 }
 
