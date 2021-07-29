@@ -318,10 +318,10 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
       if (CTX_UNLIKELY(oy < MIN_Y)) oy = MIN_Y;
       if (CTX_UNLIKELY(oy > MAX_Y)) oy = MAX_Y;
 
-      int entry_no = rasterizer->edge_list.count-1;
-      rasterizer->edge_list.entries[entry_no].data.s16[0] = ox * CTX_SUBDIV;
-      rasterizer->edge_list.entries[entry_no].data.s16[1] = oy * 15;
-      rasterizer->edge_list.entries[entry_no].code = CTX_NEW_EDGE;
+      CtxEntry *entry = &rasterizer->edge_list.entries[rasterizer->edge_list.count-1];
+      entry->data.s16[0] = ox * CTX_SUBDIV;
+      entry->data.s16[1] = oy * 15;
+      entry->code = CTX_NEW_EDGE;
       rasterizer->has_prev = 1;
     }
   rasterizer->has_shape = 1;
