@@ -125,15 +125,15 @@ CTX_INLINE static void
 ctx_RGBA8_associate_alpha (uint8_t *u8)
 {
   uint32_t val = *((uint32_t*)(u8));
-  int a = val >> CTX_RGBA8_A_SHIFT;
+  uint8_t a = u8[3];
   if (a!=255)
   {
-    if (a)
-    {
+  if (a)
+  {
       uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
       uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
       *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
-    }
+  }
     else
     {
       *((uint32_t*)(u8)) = 0;
@@ -144,17 +144,8 @@ ctx_RGBA8_associate_alpha (uint8_t *u8)
 CTX_INLINE static void
 ctx_u8_associate_alpha (int components, uint8_t *u8)
 {
-  switch (u8[components-1])
-  {
-          case 255:break;
-          case 0: 
-            for (int c = 0; c < components-1; c++)
-             u8[c] = 0;
-            break;
-          default:
   for (int c = 0; c < components-1; c++)
     u8[c] = (u8[c] * u8[components-1])/255;
-  }
 }
 
 #if CTX_GRADIENTS
@@ -1864,7 +1855,8 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
   int components = 4;
   uint8_t tsrc[5];
   *((uint32_t*)tsrc) = *((uint32_t*)src);
-  ctx_u8_associate_alpha (components, tsrc);
+  //ctx_u8_associate_alpha (components, tsrc);
+  ctx_RGBA8_associate_alpha (tsrc);
   uint32_t *sip = ((uint32_t*)(tsrc));
   uint32_t si = *sip;
   uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
@@ -1894,9 +1886,7 @@ ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
 #else
   uint8_t tsrc[5];
   *((uint32_t*)tsrc) = *((uint32_t*)src);
-  ctx_u8_associate_alpha (4, tsrc);
-
-
+  ctx_RGBA8_associate_alpha (tsrc);
   uint32_t si = *((uint32_t*)(tsrc));
   uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
   uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
