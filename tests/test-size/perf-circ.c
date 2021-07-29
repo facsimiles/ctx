@@ -32,7 +32,7 @@
 #define WIDTH    512
 #define HEIGHT   512
 
-#define ITERATIONS     200
+#define ITERATIONS     50
 
 typedef struct Fmt { 
    char *name;

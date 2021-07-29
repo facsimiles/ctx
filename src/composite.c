@@ -1592,7 +1592,7 @@ ctx_u8_source_over_normal_color (int components,
       {
         for (int c = 0; c < components; c++)
           //dst[c] =  ((tsrc[c] * *coverage)>>8) + (dst[c] * (((65536)-(tsrc[components-1] * *coverage)))>>16);
-          dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((256)-((tsrc[components-1] * *coverage)>>8)))))>>8);
+          dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((255)-(255+(tsrc[components-1] * *coverage)>>8)))))>>8);
       }
     coverage ++;
     dst+=components;
@@ -1637,8 +1637,8 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
      uint32_t si_a  = si_ga >> 16;
 
      *((uint32_t*)(dst)) =
-     ((((si_rb * *coverage) + (((*((uint32_t*)(dst))) & 0x00ff00ff) * (((256)-(((si_a) * *coverage)>>8))))) >> 8) & 0x00ff00ff) |
-     ((((si_ga * *coverage) + ((((*((uint32_t*)(dst))) & 0xff00ff00) >> 8) * (((256)-(((si_a) * *coverage)>>8)))))) & 0xff00ff00);
+     ((((si_rb * *coverage) + (((*((uint32_t*)(dst))) & 0x00ff00ff) * (((256)-((255+(si_a) * *coverage)>>8))))) >> 8) & 0x00ff00ff) |
+     ((((si_ga * *coverage) + ((((*((uint32_t*)(dst))) & 0xff00ff00) >> 8) * (((256)-((255+(si_a) * *coverage)>>8)))))) & 0xff00ff00);
 
      coverage ++;
      tsrc +=components;
@@ -1881,8 +1881,8 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
      *((uint32_t*)(dst)) =
-     ((((si_rb * *coverage) + (((*((uint32_t*)(dst))) & 0x00ff00ff) * (((256)-(((si_a) * *coverage)>>8))))) >> 8) & 0x00ff00ff) |
-     ((((si_ga * *coverage) + ((((*((uint32_t*)(dst))) & 0xff00ff00) >> 8) * (((256)-(((si_a) * *coverage)>>8)))))) & 0xff00ff00);
+     ((((si_rb * *coverage) + (((*((uint32_t*)(dst))) & 0x00ff00ff) * ((256-((255+si_a * *coverage)>>8))))) >> 8) & 0x00ff00ff) |
+     ((((si_ga * *coverage) + ((((*((uint32_t*)(dst))) & 0xff00ff00) >> 8) * ((256-((255+si_a * *coverage)>>8)))))) & 0xff00ff00);
      coverage ++;
      dst+=4;
   }
@@ -4529,35 +4529,31 @@ ctx_RGBA8_to_RGB565 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
 
 static void
 ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS);
+static void
+ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS);
 
 static void
 ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 {
 #if 0
-  /* this takes twice as long as converting */
-  if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color) && 0)
+  /* this takes more than twice as long as converting */
+  if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color ||
+                 rasterizer->comp_op == ctx_RGBA8_source_over_normal_opaque_color
+                          ))
   {
     int byteswap = 0;
-    int components = 4;
-    uint8_t tsrc[5];
-    *((uint32_t*)tsrc) = *((uint32_t*)src);
-    ctx_u8_associate_alpha (components, tsrc);
-    uint32_t *sip = ((uint32_t*)(tsrc));
-    uint32_t si = *sip;
+    uint32_t si    = *((uint32_t*)(src));
     uint16_t si_16 = ctx_888_to_565 (si, byteswap);
     uint32_t si_ga = (si & CTX_RGBA8_GA_MASK) >> 8;
     uint32_t si_rb = si & CTX_RGBA8_RB_MASK;
-    uint32_t si_a  = si >> CTX_RGBA8_A_SHIFT;
+    uint32_t si_a  = si_ga >> 16;
   
     while (count--)
     {
-       uint16_t *dip16 = ((uint16_t*)(dst));
-       uint32_t di = ctx_565_unpack_32 (*dip16, byteswap);
-       uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
-       uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
-               uint32_t dval =
-       ((((si_rb * *coverage) + (di_rb * (((256)-(((si_a) * *coverage)>>8))))) >> 8) & CTX_RGBA8_RB_MASK) |
-       ((((si_ga * *coverage) + (di_ga * (((256)-(((si_a) * *coverage)>>8)))))) & CTX_RGBA8_GA_MASK);
+       uint32_t di = ctx_565_unpack_32 ( *((uint16_t*)(dst)), byteswap);
+       uint32_t dval =
+       ((((si_rb * *coverage) + ((di&CTX_RGBA8_RB_MASK) * (((256)-((255+(si_a) * *coverage)>>8))))) >> 8) & CTX_RGBA8_RB_MASK) |
+       ((((si_ga * *coverage) + (((di&CTX_RGBA8_GA_MASK)>>8)* (((256)-((255+(si_a) * *coverage)>>8)))))) & CTX_RGBA8_GA_MASK);
        *((uint16_t*)(dst)) = ctx_888_to_565 (dval, byteswap);
        coverage ++;
        dst+=2;
