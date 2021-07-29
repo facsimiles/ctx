@@ -55,7 +55,7 @@ ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *r
     { gradient->n_stops++; }
 }
 
-static int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
+static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 {
   CtxEntry entry = {CTX_EDGE, {{0},}};
   if (CTX_UNLIKELY(y1 < rasterizer->scan_min))

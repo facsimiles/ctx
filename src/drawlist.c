@@ -398,13 +398,13 @@ ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
 #endif
 }
 
-CTX_STATIC int
+CTX_STATIC inline int
 ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 {
   int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = drawlist->count;
-  if ((drawlist->flags & CTX_DRAWLIST_EDGE_LIST ||
-       drawlist->flags & CTX_DRAWLIST_CURRENT_PATH))
+  if (CTX_LIKELY((drawlist->flags & CTX_DRAWLIST_EDGE_LIST ||
+       drawlist->flags & CTX_DRAWLIST_CURRENT_PATH)))
     {
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
