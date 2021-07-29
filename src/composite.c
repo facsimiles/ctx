@@ -1852,6 +1852,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 #if 0
   ctx_u8_source_over_normal_color (4, rasterizer, dst, src, x0, coverage, count);
 #else
+#if 0
   int components = 4;
   uint8_t tsrc[5];
   *((uint32_t*)tsrc) = *((uint32_t*)src);
@@ -1867,14 +1868,32 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
   {
      uint32_t *dip = ((uint32_t*)(dst));
      uint32_t di = *dip;
-     uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
      uint32_t di_rb = di & CTX_RGBA8_RB_MASK;
+     uint32_t di_ga = (di & CTX_RGBA8_GA_MASK) >> 8;
      *((uint32_t*)(dst)) =
      ((((si_rb * *coverage) + (di_rb * (((256)-(((si_a) * *coverage)>>8))))) >> 8) & CTX_RGBA8_RB_MASK) |
      ((((si_ga * *coverage) + (di_ga * (((256)-(((si_a) * *coverage)>>8)))))) & CTX_RGBA8_GA_MASK);
      coverage ++;
      dst+=components;
   }
+#else
+    uint8_t tsrc[5];
+  *((uint32_t*)tsrc) = *((uint32_t*)src);
+  //ctx_RGBA8_associate_alpha (tsrc);
+  uint32_t si_ga = (*((uint32_t*)tsrc) & 0xff00ff00) >> 8;
+  uint32_t si_rb = *((uint32_t*)tsrc) & 0x00ff00ff;
+  uint32_t si_a  = si_ga >> 24;//CTX_RGBA8_A_SHIFT;
+
+  while (count--)
+  {
+     uint32_t di = *((uint32_t*)(dst));
+     *((uint32_t*)(dst)) =
+     ((((si_rb * *coverage) + ((di & 0x00ff00ff) * (((256)-(((si_a) * *coverage)>>8))))) >> 8) & 0x00ff00ff) |
+     ((((si_ga * *coverage) + (((di & 0xff00ff00) >> 8) * (((256)-(((si_a) * *coverage)>>8)))))) & 0xff00ff00);
+     coverage ++;
+     dst+=4;
+  }
+#endif
 #endif
 }
 
@@ -2506,8 +2525,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           {
              if (rasterizer->color[components-1] == 0)
                  rasterizer->comp_op = ctx_RGBA8_nop;
-             //else if (rasterizer->color[components-1] == 255)
-             //    rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
+             else if (rasterizer->color[components-1] == 255)
+                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
              else
                  rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
          }
@@ -4629,7 +4648,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_RGBA8
   {
     CTX_FORMAT_RGBA8, 4, 32, 4, 0, 0, CTX_FORMAT_RGBA8,
-    NULL, NULL, ctx_composite_direct, ctx_setup_RGBA8
+    NULL, NULL, NULL, ctx_setup_RGBA8
   },
 #endif
 #if CTX_ENABLE_BGRA8
@@ -4647,13 +4666,13 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_GRAYAF
   {
     CTX_FORMAT_GRAYAF, 2, 64, 4 * 2, 0, 0, CTX_FORMAT_GRAYAF,
-    NULL, NULL, ctx_composite_direct, ctx_setup_GRAYAF,
+    NULL, NULL, NULL, ctx_setup_GRAYAF,
   },
 #endif
 #if CTX_ENABLE_RGBAF
   {
     CTX_FORMAT_RGBAF, 4, 128, 4 * 4, 0, 0, CTX_FORMAT_RGBAF,
-    NULL, NULL, ctx_composite_direct, ctx_setup_RGBAF,
+    NULL, NULL, NULL, ctx_setup_RGBAF,
   },
 #endif
 #if CTX_ENABLE_RGB8
@@ -4710,7 +4729,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
 #if CTX_NATIVE_GRAYA8
     CTX_FORMAT_GRAYA8, 2, 16, 2, 0, 0, CTX_FORMAT_GRAYA8,
-    ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_direct, ctx_setup_GRAYA8,
+    ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, NULL, ctx_setup_GRAYA8,
 #else
     CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0, CTX_FORMAT_RGBA8,
     ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_convert, ctx_setup_RGBA8,
@@ -4742,7 +4761,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_CMYKAF
   {
     CTX_FORMAT_CMYKAF, 5, 160, 4 * 5, 0, 0, CTX_FORMAT_CMYKAF,
-    NULL, NULL, ctx_composite_direct, ctx_setup_CMYKAF,
+    NULL, NULL, NULL, ctx_setup_CMYKAF,
   },
 #endif
 #if CTX_ENABLE_CMYKA8

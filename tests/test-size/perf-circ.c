@@ -18,6 +18,7 @@
 #define CTX_RASTERIZER_FORCE_AA   0
 #define CTX_BITPACK_PACKER        0
 #define CTX_FORCE_INLINES         0
+#define CTX_SHAPE_CACHE           0
 #define CTX_AUDIO                 0
 #define CTX_RENDERSTREAM_STATIC   0
 #define CTX_FONTS_FROM_FILE       1 /* leaves out code */

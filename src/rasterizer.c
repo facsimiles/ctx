@@ -32,12 +32,15 @@ _ctx_setup_compositor (CtxRasterizer *rasterizer)
 #define CTX_FULL_AA 15
 inline static void
 ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
-                               uint8_t * __restrict__ dst,
+                               uint8_t * dst,
                                int       x,
-                               uint8_t * __restrict__ coverage,
+                               uint8_t * coverage,
                                int       count)
 {
-  rasterizer->format->apply_coverage(rasterizer, dst, rasterizer->color, x, coverage, count);
+  if (rasterizer->format->apply_coverage)
+    rasterizer->format->apply_coverage(rasterizer, dst, rasterizer->color, x, coverage, count);
+  else
+    rasterizer->comp_op (rasterizer, dst, rasterizer->color, x, coverage, count);
 }
 
 CTX_STATIC void
