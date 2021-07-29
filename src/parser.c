@@ -1184,7 +1184,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 //  parser->n_numbers = 0;
 }
 
-static void ctx_parser_holding_append (CtxParser *parser, int byte)
+static inline void ctx_parser_holding_append (CtxParser *parser, int byte)
 {
 #if !CTX_PARSER_FIXED_TEMP
   if (CTX_UNLIKELY(parser->hold_len < parser->pos + 1 + 1))

@@ -1466,14 +1466,15 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   {
     _ctx_setup_compositor (rasterizer);
 
-    rasterizer->state->min_x =
-      ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
-    rasterizer->state->max_x =
-      ctx_maxi (rasterizer->state->max_x, rasterizer->col_max / CTX_SUBDIV);
-    rasterizer->state->min_y =
-      ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / CTX_FULL_AA);
-    rasterizer->state->max_y =
-      ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / CTX_FULL_AA);
+    if (CTX_UNLIKELY ( rasterizer->col_min / CTX_SUBDIV < rasterizer->state->min_x))
+       rasterizer->state->min_x = rasterizer->col_min / CTX_SUBDIV;
+    if (CTX_UNLIKELY ( rasterizer->col_min / CTX_SUBDIV > rasterizer->state->max_x))
+       rasterizer->state->min_x = rasterizer->col_min / CTX_SUBDIV;
+
+    if (CTX_UNLIKELY ( rasterizer->scan_min / CTX_FULL_AA < rasterizer->state->min_y))
+       rasterizer->state->min_y = rasterizer->scan_min / CTX_FULL_AA;
+    if (CTX_UNLIKELY ( rasterizer->scan_min / CTX_FULL_AA > rasterizer->state->max_y))
+       rasterizer->state->max_y = rasterizer->scan_max / CTX_FULL_AA;
 
 #if CTX_RECT_FILL
     if (rasterizer->edge_list.count == 6)
