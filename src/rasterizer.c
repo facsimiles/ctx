@@ -315,12 +315,13 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
       }
       ox -= rasterizer->blit_x;
 
-  if (CTX_UNLIKELY(oy < MIN_Y)) oy = MIN_Y;
-  if (CTX_UNLIKELY(oy > MAX_Y)) oy = MAX_Y;
+      if (CTX_UNLIKELY(oy < MIN_Y)) oy = MIN_Y;
+      if (CTX_UNLIKELY(oy > MAX_Y)) oy = MAX_Y;
 
-      rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[0] = ox * CTX_SUBDIV;
-      rasterizer->edge_list.entries[rasterizer->edge_list.count-1].data.s16[1] = oy * 15;//rasterizer->aa;
-      rasterizer->edge_list.entries[rasterizer->edge_list.count-1].code = CTX_NEW_EDGE;
+      int entry_no = rasterizer->edge_list.count-1;
+      rasterizer->edge_list.entries[entry_no].data.s16[0] = ox * CTX_SUBDIV;
+      rasterizer->edge_list.entries[entry_no].data.s16[1] = oy * 15;
+      rasterizer->edge_list.entries[entry_no].code = CTX_NEW_EDGE;
       rasterizer->has_prev = 1;
     }
   rasterizer->has_shape = 1;
@@ -369,7 +370,7 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
   float t = (s + e) * 0.5f;
   float x, y, lx, ly, dx, dy;
   ctx_bezier_sample (ox, oy, x0, y0, x1, y1, x2, y2, t, &x, &y);
-  if (iteration)
+  if (CTX_LIKELY(iteration))
     {
       lx = ctx_lerpf (sx, ex, t);
       ly = ctx_lerpf (sy, ey, t);
@@ -2427,9 +2428,9 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
     clip_buffer = rasterizer->clip_buffer;
     we_made_it = 1;
     if (CTX_CLIP_FORMAT == CTX_FORMAT_GRAY1)
-    memset (rasterizer->clip_buffer->data, 0, blit_width * blit_height/8);
+      memset (rasterizer->clip_buffer->data, 0, blit_width * blit_height/8);
     else
-    memset (rasterizer->clip_buffer->data, 0, blit_width * blit_height);
+      memset (rasterizer->clip_buffer->data, 0, blit_width * blit_height);
   }
   else
   {
