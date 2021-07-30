@@ -2126,8 +2126,8 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 #if 1
-  if (gstate->line_width * factor <= 0.0f &&
-      gstate->line_width * factor > -10.0f)
+  if (CTX_UNLIKELY(gstate->line_width * factor <= 0.0f &&
+      gstate->line_width * factor > -10.0f))
     {
       ctx_rasterizer_stroke_1px (rasterizer);
     }
@@ -2144,8 +2144,8 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       float prev_y = 0.0f;
       float half_width_x = gstate->line_width * factor/2;
       float half_width_y = gstate->line_width * factor/2;
-      if (gstate->line_width <= 0.0f)
-        {
+      if (CTX_UNLIKELY(gstate->line_width <= 0.0f))
+        { // makes 0 width be hairline
           half_width_x = .5f;
           half_width_y = .5f;
         }
@@ -2159,7 +2159,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
             {
               CtxEntry *entry = &temp[i];
               float x, y;
-              if (entry->code == CTX_NEW_EDGE)
+              if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                 {
                   if (started)
                     {
@@ -2180,7 +2180,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
                 {
                   dx = dx/length * half_width_x;
                   dy = dy/length * half_width_y;
-                  if (entry->code == CTX_NEW_EDGE)
+                  if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                     {
                       ctx_rasterizer_finish_shape (rasterizer);
                       ctx_rasterizer_move_to (rasterizer, prev_x+dy, prev_y-dx);
@@ -2221,7 +2221,7 @@ foo:
                 }
               prev_x = x;
               prev_y = y;
-              if (entry->code == CTX_NEW_EDGE)
+              if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                 {
                   x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
                   y = entry->data.s16[1] * 1.0f / aa;
@@ -2256,7 +2256,7 @@ foo:
               for (int i = 0; i < count; i++)
                 {
                   CtxEntry *entry = &temp[i];
-                  if (entry->code == CTX_NEW_EDGE)
+                  if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                     {
                       if (has_prev)
                         {
@@ -2285,7 +2285,7 @@ foo:
               for (int i = 0; i < count; i++)
                 {
                   CtxEntry *entry = &temp[i];
-                  if (entry->code == CTX_NEW_EDGE)
+                  if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                     {
                       if (has_prev)
                         {
@@ -2320,7 +2320,7 @@ foo:
                   CtxEntry *entry = &temp[i];
                   x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
                   y = entry->data.s16[3] * 1.0f / aa;
-                  if (entry[1].code == CTX_EDGE)
+                  if (CTX_UNLIKELY(entry[1].code == CTX_EDGE))
                     {
                       ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*2, 0, 1);
                       ctx_rasterizer_finish_shape (rasterizer);
