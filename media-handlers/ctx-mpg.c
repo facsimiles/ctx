@@ -258,6 +258,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                       NULL);
   }
   ctx_image_smoothing (self->ctx, smoothing);
+  ctx_compositing_mode (self->ctx, CTX_COMPOSITE_COPY);
   ctx_fill (self->ctx);
   ctx_restore (self->ctx);
   ctx_flush (self->ctx);

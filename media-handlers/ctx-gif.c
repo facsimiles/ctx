@@ -209,6 +209,7 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
   //ctx_image_smoothing (ctx, 0);
   ctx_define_texture (ctx, NULL, stb_w, stb_h, stb_w * 4, CTX_FORMAT_RGBA8,
                       gifbuf, eid);
+  ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
   ctx_fill (ctx);
   ctx_restore (ctx);
   ctx_flush (ctx);
