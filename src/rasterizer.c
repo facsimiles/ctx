@@ -1371,9 +1371,9 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     {
       if (rasterizer->format->components == 4 &&
                       cov == 255 &&
-          rasterizer->color[3]==255 &&
           rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
-          ((rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER) ||
+          ((rasterizer->color[3]==255 &&
+            rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER) ||
           (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY)  )&&
           rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
           rasterizer->format->bpp == 32)
