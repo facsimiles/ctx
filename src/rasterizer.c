@@ -2114,10 +2114,10 @@ foo:
 static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
-  CtxSource source_backup = rasterizer->state->gstate.source_fill;
-  if (rasterizer->state->gstate.source_stroke.type != CTX_SOURCE_INHERIT_FILL)
-    rasterizer->state->gstate.source_fill = rasterizer->state->gstate.source_stroke;
   CtxGState *gstate = &rasterizer->state->gstate;
+  CtxSource source_backup = gstate->source_fill;
+  if (gstate->source_stroke.type != CTX_SOURCE_INHERIT_FILL)
+    gstate->source_fill = rasterizer->state->gstate.source_stroke;
   int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;
   float factor = ctx_matrix_get_scale (&gstate->transform);
@@ -2342,7 +2342,8 @@ foo:
       rasterizer->edge_list.count = count;
       rasterizer->preserve = 0;
     }
-  gstate->source_fill = source_backup;
+  if (gstate->source_stroke.type != CTX_SOURCE_INHERIT_FILL)
+    gstate->source_fill = source_backup;
 }
 
 #if CTX_1BIT_CLIP
