@@ -126,19 +126,19 @@ ctx_RGBA8_associate_alpha (uint8_t *u8)
 {
   uint32_t val = *((uint32_t*)(u8));
   uint8_t a = u8[3];
-  if (a!=255)
-  {
-  if (a)
-  {
+ // if (a!=255)
+ // {
+ // if (a)
+ // {
       uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
       uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
       *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
-  }
-    else
-    {
-      *((uint32_t*)(u8)) = 0;
-    }
-  }
+  //}
+ //   else
+ //   {
+ //     *((uint32_t*)(u8)) = 0;
+ //   }
+ // }
 }
 
 CTX_INLINE static void
@@ -1635,11 +1635,7 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
      uint32_t si_rb = (*((uint32_t*)tsrc)) & 0x00ff00ff;
      uint32_t si_a  = si_ga >> 16;
      uint32_t cov = *coverage;
-#if 1
      uint32_t racov = (256-((255+si_a*cov)>>8));
-#else
-     uint32_t racov = (si_a*cov)/255;
-#endif
      *((uint32_t*)(dst)) =
      (((si_rb*cov+(((*((uint32_t*)(dst)))&0x00ff00ff)*racov))>>8)&0x00ff00ff)|
      ((si_ga*cov+((((*((uint32_t*)(dst)))&0xff00ff00)>>8)*racov))&0xff00ff00);
