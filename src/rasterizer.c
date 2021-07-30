@@ -1002,7 +1002,14 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   //     nonchanging
 }
 
-static void
+#define CTX_INLINE_FILL_RULE 1
+
+
+static 
+#if CTX_INLINE_FILL_RULE
+inline 
+#endif
+        void
 ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, int winding
 #if CTX_SHAPE_CACHE
                                 ,CtxShapeEntry *shape
@@ -1616,11 +1623,26 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
           dont_cache = 1;
         if (dont_cache || !_ctx_shape_cache_enabled)
         {
+#if CTX_INLINE_FILL_RULE
+          if (rasterizer->state->gstate.fill_rule)
+          ctx_rasterizer_rasterize_edges (rasterizer, 1
+#if CTX_SHAPE_CACHE
+                                        , NULL
+#endif
+                                       );
+          else
+          ctx_rasterizer_rasterize_edges (rasterizer, 0
+#if CTX_SHAPE_CACHE
+                                        , NULL
+#endif
+                                       );
+#else
           ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
 #if CTX_SHAPE_CACHE
                                         , NULL
 #endif
                                        );
+#endif
         }
         else
         {
@@ -1631,7 +1653,14 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
           {
             CtxBuffer *buffer_backup = rasterizer->clip_buffer;
             rasterizer->clip_buffer = NULL;
+#if CTX_INLINE_FILL_RULE
+            if(rasterizer->state->gstate.fill_rule)
+            ctx_rasterizer_rasterize_edges (rasterizer, 1, shape);
+            else
+            ctx_rasterizer_rasterize_edges (rasterizer, 0, shape);
+#else
             ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule, shape);
+#endif
             rasterizer->clip_buffer = buffer_backup;
           }
         rasterizer->scanline = scan_min;
@@ -1685,11 +1714,29 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       }
     else
 #endif
+    {
+            
+#if CTX_INLINE_FILL_RULE
+    if(rasterizer->state->gstate.fill_rule)
+    ctx_rasterizer_rasterize_edges (rasterizer, 1
+#if CTX_SHAPE_CACHE
+                                    , NULL
+#endif
+                                   );
+    else
+    ctx_rasterizer_rasterize_edges (rasterizer, 0
+#if CTX_SHAPE_CACHE
+                                    , NULL
+#endif
+                                   );
+#else
     ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
 #if CTX_SHAPE_CACHE
                                     , NULL
 #endif
                                    );
+#endif
+    }
   }
 done:
   if (CTX_UNLIKELY(rasterizer->preserve))
