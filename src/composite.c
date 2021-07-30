@@ -145,7 +145,7 @@ CTX_INLINE static void
 ctx_u8_associate_alpha (int components, uint8_t *u8)
 {
   for (int c = 0; c < components-1; c++)
-    u8[c] = (u8[c] * u8[components-1])/255;
+    u8[c] = (u8[c] * u8[components-1] + 255)>>8;
 }
 
 #if CTX_GRADIENTS

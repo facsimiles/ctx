@@ -2117,17 +2117,17 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   CtxSource source_backup = rasterizer->state->gstate.source_fill;
   if (rasterizer->state->gstate.source_stroke.type != CTX_SOURCE_INHERIT_FILL)
     rasterizer->state->gstate.source_fill = rasterizer->state->gstate.source_stroke;
-  CtxState *state = rasterizer->state;
+  CtxGState *gstate = &rasterizer->state->gstate;
   int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;
-  float factor = ctx_matrix_get_scale (&state->gstate.transform);
+  float factor = ctx_matrix_get_scale (&gstate->transform);
 
   int aa = CTX_FULL_AA;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 #if 1
-  if (rasterizer->state->gstate.line_width * factor <= 0.0f &&
-      rasterizer->state->gstate.line_width * factor > -10.0f)
+  if (gstate->line_width * factor <= 0.0f &&
+      gstate->line_width * factor > -10.0f)
     {
       ctx_rasterizer_stroke_1px (rasterizer);
     }
@@ -2138,16 +2138,16 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
                             end up sharp without erronious AA
                        */
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
-      CtxMatrix transform_backup = rasterizer->state->gstate.transform;
-      ctx_matrix_identity (&rasterizer->state->gstate.transform);
+      CtxMatrix transform_backup = gstate->transform;
+      ctx_matrix_identity (&gstate->transform);
       float prev_x = 0.0f;
       float prev_y = 0.0f;
-      float half_width_x = rasterizer->state->gstate.line_width * factor/2;
-      float half_width_y = rasterizer->state->gstate.line_width * factor/2;
-      if (rasterizer->state->gstate.line_width <= 0.0f)
+      float half_width_x = gstate->line_width * factor/2;
+      float half_width_y = gstate->line_width * factor/2;
+      if (gstate->line_width <= 0.0f)
         {
-          half_width_x = .5;
-          half_width_y = .5;
+          half_width_x = .5f;
+          half_width_y = .5f;
         }
       int start = 0;
       int end   = 0;
@@ -2245,7 +2245,7 @@ foo:
           start = end+1;
         }
       ctx_rasterizer_finish_shape (rasterizer);
-      switch (rasterizer->state->gstate.line_cap)
+      switch (gstate->line_cap)
         {
           case CTX_CAP_SQUARE: // XXX: incorrect - if rectangles were in
                                //                  reverse order - rotation would be off
@@ -2307,7 +2307,7 @@ foo:
               break;
             }
         }
-      switch (rasterizer->state->gstate.line_join)
+      switch (gstate->line_join)
         {
           case CTX_JOIN_BEVEL:
           case CTX_JOIN_MITER:
@@ -2329,13 +2329,12 @@ foo:
               break;
             }
         }
-      CtxFillRule rule_backup = rasterizer->state->gstate.fill_rule;
-      rasterizer->state->gstate.fill_rule = CTX_FILL_RULE_WINDING;
+      CtxFillRule rule_backup = gstate->fill_rule;
+      gstate->fill_rule = CTX_FILL_RULE_WINDING;
       rasterizer->preserve = 0; // so fill isn't tripped
       ctx_rasterizer_fill (rasterizer);
-      rasterizer->state->gstate.fill_rule = rule_backup;
-      //rasterizer->state->gstate.source = source_backup;
-      rasterizer->state->gstate.transform = transform_backup;
+      gstate->fill_rule = rule_backup;
+      gstate->transform = transform_backup;
     }
   if (preserved)
     {
@@ -2343,7 +2342,7 @@ foo:
       rasterizer->edge_list.count = count;
       rasterizer->preserve = 0;
     }
-  rasterizer->state->gstate.source_fill = source_backup;
+  gstate->source_fill = source_backup;
 }
 
 #if CTX_1BIT_CLIP
