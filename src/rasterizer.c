@@ -2176,7 +2176,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
               float dx = x - prev_x;
               float dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
-              if (length>0.001f)
+              if (CTX_LIKELY(length>0.001f))
                 {
                   dx = dx/length * half_width_x;
                   dy = dy/length * half_width_y;
@@ -2212,7 +2212,7 @@ foo:
               float length = ctx_fast_hypotf (dx, dy);
               dx = dx/length * half_width_x;
               dy = dy/length * half_width_y;
-              if (length>0.001f)
+              if (CTX_LIKELY(length>0.001f))
                 {
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
                   // XXX possible miter line-to
@@ -2228,7 +2228,7 @@ foo:
                   dx = x - prev_x;
                   dy = y - prev_y;
                   length = ctx_fast_hypotf (dx, dy);
-                  if (length>0.001f)
+                  if (CTX_LIKELY(length>0.001f))
                     {
                       dx = dx / length * half_width_x;
                       dy = dy / length * half_width_y;
