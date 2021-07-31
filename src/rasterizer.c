@@ -1436,6 +1436,12 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
 }
 #endif
 
+static inline float ctx_fmod1f (float val)
+{
+  int vali = val;
+  return val - vali;
+}
+
 static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
@@ -1501,7 +1507,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #if CTX_ENABLE_SHADOW_BLUR
            && !rasterizer->in_shadow
 #endif
-           && 1
          )
        {
          if(((entry1->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
@@ -1535,15 +1540,15 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
            if (CTX_UNLIKELY(x1 > rasterizer->blit_x + rasterizer->blit_width))
              { x1 = rasterizer->blit_x + rasterizer->blit_width; }
 
-           uint8_t left = 255-fmodf (x0, 1.0f) * 255;
-           uint8_t top  = 255-fmodf (y0, 1.0f) * 255;
-           uint8_t right  = fmodf (x1, 1.0f) * 255;
-           uint8_t bottom = fmodf (y1, 1.0f) * 255;
+           uint8_t left = 255-ctx_fmod1f (x0) * 255;
+           uint8_t top  = 255-ctx_fmod1f (y0) * 255;
+           uint8_t right  = ctx_fmod1f (x1) * 255;
+           uint8_t bottom = ctx_fmod1f (y1) * 255;
 
-           x0 = floorf (x0);
-           y0 = floorf (y0);
-           x1 = floorf (x1+7/8.0);
-           y1 = floorf (y1+14/15.0);
+           x0 = ctx_floorf (x0);
+           y0 = ctx_floorf (y0);
+           x1 = ctx_floorf (x1+7/8.0);
+           y1 = ctx_floorf (y1+14/15.0);
 
            int has_top    = (top < 255);
            int has_bottom = (bottom <255);
