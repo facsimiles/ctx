@@ -113,8 +113,7 @@ CTX_INLINE static void
 ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
 {
 #if CTX_GRADIENT_CACHE
-  uint32_t* rgbap = ((uint32_t*)(&ctx_gradient_cache_u8[ctx_grad_index(x)][0]));
-  *((uint32_t*)rgba) = *rgbap;
+  *((uint32_t*)rgba) = *((uint32_t*)(&ctx_gradient_cache_u8[ctx_grad_index(x)][0]));
 #else
  _ctx_fragment_gradient_1d_RGBA8 (rasterizer, x, y, rgba);
 #endif
@@ -1768,9 +1767,11 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
   vd *= linear_gradient_rdelta;
   linear_gradient_start *= linear_gradient_rdelta;
 
+  float vv = ((u0 + v0) - linear_gradient_start);
+  float ud_plus_vd = ud + vd;
   for (int x = 0; x < count ; x++)
   {
-      float vv = ((u0 + v0) - linear_gradient_start);
+  //    float vv = ((u0 + v0) - linear_gradient_start);
       uint32_t *tsrci = (uint32_t*)tsrc;
 #if CTX_GRADIENT_CACHE
       uint32_t *cachei = ((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
@@ -1784,8 +1785,9 @@ ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
 #endif
 
     tsrc += 4;
-    u0 += ud;
-    v0 += vd;
+  //  u0 += ud;
+  //  v0 += vd;
+    vv += ud_plus_vd;
   }
   tsrc = &_tsrc[0];
   ctx_RGBA8_source_over_normal_buf (rasterizer,
