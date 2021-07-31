@@ -927,12 +927,6 @@ ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
                           uint8_t b,
                           uint8_t a);
 CTX_STATIC void
-ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
-                          float x,
-                          float y,
-                          float width,
-                          float height);
-CTX_STATIC void
 ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, float width, float height, float corner_radius);
 
 #endif
