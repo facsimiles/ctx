@@ -1301,7 +1301,7 @@ ctx_flush (Ctx *ctx)
 
 ////////////////////////////////////////
 
-void
+static void
 ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
 {
   CtxCommand *c = (CtxCommand *) entry;
@@ -1547,7 +1547,7 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
 /*
  * this transforms the contents of entry according to ctx->transformation
  */
-void
+static void
 ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 {
   CtxCommand *c = (CtxCommand *) entry;
@@ -1724,7 +1724,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
     }
 }
 
-void
+static void
 ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
 {
   switch (entry->code)
@@ -1788,7 +1788,7 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
     }
 }
 
-void
+static void
 ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data)
 {
   if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_SCREEN_SPACE) ||
@@ -1887,7 +1887,7 @@ ctx_new (void)
   return ctx;
 }
 
-void
+ void
 ctx_drawlist_deinit (CtxDrawlist *drawlist)
 {
 #if !CTX_DRAWLIST_STATIC

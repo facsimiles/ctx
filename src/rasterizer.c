@@ -1339,7 +1339,9 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          y1,
                           uint8_t      cov)
 {
-  if (CTX_UNLIKELY(x0>x1)) {
+  if (CTX_UNLIKELY(x0>=x1)) {
+          return 1;
+
      int tmp = x1;
      x1 = x0;
      x0 = tmp;
@@ -3718,7 +3720,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
         break;
     }
 #endif
-  if (ctx->renderer && ctx->renderer->process)
+  if (CTX_LIKELY(ctx->renderer && ctx->renderer->process))
     {
       ctx->renderer->process (ctx->renderer, (CtxCommand *) entry);
     }

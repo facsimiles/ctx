@@ -515,10 +515,10 @@ void ctx_buffer_free (CtxBuffer *buffer);
 void
 ctx_state_gradient_clear_stops (CtxState *state);
 
-void ctx_interpret_style         (CtxState *state, CtxEntry *entry, void *data);
-void ctx_interpret_transforms    (CtxState *state, CtxEntry *entry, void *data);
-void ctx_interpret_pos           (CtxState *state, CtxEntry *entry, void *data);
-void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
+static void ctx_interpret_style         (CtxState *state, CtxEntry *entry, void *data);
+static void ctx_interpret_transforms    (CtxState *state, CtxEntry *entry, void *data);
+static void ctx_interpret_pos           (CtxState *state, CtxEntry *entry, void *data);
+static void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
 
 struct _CtxInternalFsEntry
 {
@@ -556,7 +556,7 @@ _ctx_user_to_device (CtxState *state, float *x, float *y);
 CTX_STATIC void
 _ctx_user_to_device_distance (CtxState *state, float *x, float *y);
 CTX_STATIC void ctx_state_init (CtxState *state);
-void
+static void
 ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data);
 void
 ctx_drawlist_deinit (CtxDrawlist *drawlist);
