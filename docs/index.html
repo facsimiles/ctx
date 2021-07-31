@@ -44,10 +44,11 @@
       The <a href='rasterizer/'>ctx rasterizer</a> is fast, and supports
       compositing color managed results directly to RGBA8, GRAYA8, GRAYAF,
       RGBAF and CMYKAF pixel formats, the 8bit formats are presumed to be for
-      display and does some performance sacrifices, while the floating point
-      code yields accurate math with natrual expression of the compositing
-      math.  For <a href='mcu/'>micocontrollers</a> rendering to lower bitdepth
-      RGB332, RGB565 variants as well as 1,2 and 4 bit per pixel grayscale is
+      display and allows; though tries to avoid; small sacrifices of precision
+      for performance, while the floating point code yields accurate math with
+      natrual expression of the compositing math.  For <a
+      href='mcu/'>micocontrollers</a> rendering to lower bitdepth RGB332,
+      RGB565 variants as well as 1,2 and 4 bit per pixel grayscale is
       handled.</p>
 
       <p>The ctx renderer is written in portable C, without inline assembly or
