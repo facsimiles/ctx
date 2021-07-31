@@ -1574,7 +1574,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                                                  x0,
                                                  coverage, width);
                  dst += rasterizer->blit_stride;
-           }
+               }
 
            if (!(rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY &&
              rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
@@ -1621,7 +1621,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
              coverage[i++]= bottom * right / 255;
 
              ctx_rasterizer_apply_coverage (rasterizer,dst, x0, coverage, width);
-             dst += rasterizer->blit_stride;
            }
            }
 
