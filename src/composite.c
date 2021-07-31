@@ -650,7 +650,7 @@ ctx_fragment_image_rgb8_RGBA8_bi_swap_red_green (CtxRasterizer *rasterizer,
                                   float y,
                                   void *out, int count, float dx, float dy)
 {
-  ctx_fragment_image_rgb8_RGBA8_bi_swap_red_green (rasterizer, x, y, out, count, dx, dy);
+  ctx_fragment_image_rgb8_RGBA8_bi (rasterizer, x, y, out, count, dx, dy);
   ctx_fragment_swap_red_green_u8 (out, count);
 }
 
