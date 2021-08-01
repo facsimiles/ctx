@@ -89,6 +89,10 @@ typedef struct _CtxGlyph       CtxGlyph;
  */
 Ctx *ctx_new (void);
 
+
+
+
+
 /**
  * ctx_new_for_framebuffer:
  *
@@ -1761,6 +1765,14 @@ int  vt_has_blink       (VT *vt);
 
 int  ctx_clients_need_redraw   (Ctx *ctx);
 void ctx_clients_handle_events (Ctx *ctx);
+
+
+typedef struct _CtxBuffer CtxBuffer;
+CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
+                                    int stride,
+                                    CtxPixelFormat pixel_format,
+                                    void (*freefunc) (void *pixels, void *user_data),
+                                    void *user_data);
 
 
 #endif

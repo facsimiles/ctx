@@ -213,7 +213,6 @@ static inline float _ctx_parse_float (const char *str, char **endptr)
 const char *ctx_get_string (Ctx *ctx, uint64_t hash);
 void ctx_set_string (Ctx *ctx, uint64_t hash, const char *value);
 typedef struct _CtxColor CtxColor;
-typedef struct _CtxBuffer CtxBuffer;
 
 typedef struct _CtxMatrix     CtxMatrix;
 struct

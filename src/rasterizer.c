@@ -1547,8 +1547,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 
            x0 = ctx_floorf (x0);
            y0 = ctx_floorf (y0);
-           x1 = ctx_floorf (x1+7/8.0);
-           y1 = ctx_floorf (y1+14/15.0);
+           x1 = ctx_floorf (x1+7/8.0f);
+           y1 = ctx_floorf (y1+14/15.0f);
 
            int has_top    = (top < 255);
            int has_bottom = (bottom <255);
