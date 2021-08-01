@@ -921,20 +921,44 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed;
+  int i = 0;
+  float tx0 = g->texture.x0;
+  float ty0 = g->texture.y0;
 
-  for (int i = 0; i < count; i ++)
+    for (; i < count; i ++)
+    {
+  int u = x - tx0;
+  int v = y - ty0;
+  int ut = x - tx0 + 1.5;
+  int vt = y - ty0 + 1.5;
+  if ( ut  <= 0 ||
+       vt  <= 0 ||
+       u >= buffer->width ||
+       v >= buffer->height)
+      {
+        *((uint32_t*)(rgba))= 0;
+      }
+      else
+      {
+        break;
+      }
+      x += dx;
+      y += dy;
+      rgba += 4;
+    }
+  for (; i < count; i ++)
   {
 
-  int u = x - g->texture.x0;
-  int v = y - g->texture.y0;
-  int ut = x - g->texture.x0 + 1.5;
-  int vt = y - g->texture.y0 + 1.5;
+  int u = x - tx0;
+  int v = y - ty0;
+  int ut = x - tx0 + 1.5;
+  int vt = y - ty0 + 1.5;
   if ( ut  <= 0 ||
        vt  <= 0 ||
        u >= buffer->width ||
        v >= buffer->height)
     {
-      *((uint32_t*)(rgba))= 0;
+      break;
     }
   else if (u < 0 || v < 0) // default to next sample down and to right
   {
@@ -1000,6 +1024,11 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     y += dy;
     rgba += 4;
   }
+  for (; i < count; i ++)
+  {
+    *((uint32_t*)(rgba))= 0;
+    rgba += 4;
+  }
 #if CTX_DITHER
 //ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
 //                    rasterizer->format->dither_green);
@@ -1021,7 +1050,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
   x += 0.5f;
   y += 0.5f;
 
-  if (CTX_UNLIKELY(dy == 0.0f && dx > 0.999f && dx < 1.001f) && 0)
+  if (CTX_UNLIKELY(dy == 0.0f && dx > 0.999f && dx < 1.001f))
   {
     int u = x - g->texture.x0;
     int v = y - g->texture.y0;
