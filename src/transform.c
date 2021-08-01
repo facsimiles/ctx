@@ -2,17 +2,32 @@
 #define __CTX_TRANSFORM
 #include "ctx-split.h"
 
+static inline void
+_ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
+{
+  float x_in = *x;
+  float y_in = *y;
+  *x = ( (x_in * m->m[0][0]) + (y_in * m->m[1][0]) + m->m[2][0]);
+  *y = ( (y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
+}
+
+void
+ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
+{
+  _ctx_matrix_apply_transform (m, x, y);
+}
+
 CTX_STATIC void
 _ctx_user_to_device (CtxState *state, float *x, float *y)
 {
-  ctx_matrix_apply_transform (&state->gstate.transform, x, y);
+  _ctx_matrix_apply_transform (&state->gstate.transform, x, y);
 }
 
 CTX_STATIC void
 _ctx_user_to_device_distance (CtxState *state, float *x, float *y)
 {
   const CtxMatrix *m = &state->gstate.transform;
-  ctx_matrix_apply_transform (m, x, y);
+  _ctx_matrix_apply_transform (m, x, y);
   *x -= m->m[2][0];
   *y -= m->m[2][1];
 }
@@ -237,14 +252,6 @@ ctx_matrix_invert (CtxMatrix *m)
   m->m[2][1] = (t.m[0][1] * t.m[2][0] - t.m[0][0] * t.m[2][1]) * invdet ;
 }
 
-void
-ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
-{
-  float x_in = *x;
-  float y_in = *y;
-  *x = ( (x_in * m->m[0][0]) + (y_in * m->m[1][0]) + m->m[2][0]);
-  *y = ( (y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
-}
 
 
 #endif

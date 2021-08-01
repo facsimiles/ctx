@@ -932,7 +932,7 @@ CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
     float u, v;
     u = x;
     v = y;
-    ctx_matrix_apply_transform (&item->inv_matrix, &u, &v);
+    _ctx_matrix_apply_transform (&item->inv_matrix, &u, &v);
 
     if (u >= item->x0 && v >= item->y0 &&
         u <  item->x1 && v <  item->y1 && 
@@ -995,7 +995,7 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
     float tx, ty;
     tx = transformed_event.x;
     ty = transformed_event.y;
-    ctx_matrix_apply_transform (&item->inv_matrix, &tx, &ty);
+    _ctx_matrix_apply_transform (&item->inv_matrix, &tx, &ty);
     transformed_event.x = tx;
     transformed_event.y = ty;
 
@@ -1007,7 +1007,7 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
     {
       tx = transformed_event.start_x;
       ty = transformed_event.start_y;
-      ctx_matrix_apply_transform (&item->inv_matrix, &tx, &ty);
+      _ctx_matrix_apply_transform (&item->inv_matrix, &tx, &ty);
       transformed_event.start_x = tx;
       transformed_event.start_y = ty;
     }
@@ -1015,7 +1015,7 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
 
     tx = transformed_event.delta_x;
     ty = transformed_event.delta_y;
-    ctx_matrix_apply_transform (&item->inv_matrix, &tx, &ty);
+    _ctx_matrix_apply_transform (&item->inv_matrix, &tx, &ty);
     transformed_event.delta_x = tx;
     transformed_event.delta_y = ty;
   }
@@ -1908,7 +1908,7 @@ void _ctx_debug_overlays (Ctx *ctx)
     CtxItem *item = a->data;
     CtxMatrix matrix = item->inv_matrix;
 
-    ctx_matrix_apply_transform (&matrix, &current_x, &current_y);
+    _ctx_matrix_apply_transform (&matrix, &current_x, &current_y);
 
     if (current_x >= item->x0 && current_x < item->x1 &&
         current_y >= item->y0 && current_y < item->y1)

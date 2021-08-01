@@ -1022,25 +1022,24 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
     }
   }
 
-#if 0
+#if 1
   {
     int tx0 = g->texture.x0;
     int ty0 = g->texture.y0;
     for (int i = 0; i < count; i ++)
     {
-  
-    int u = x - tx0;
-    int v = y - ty0;
-
-    int ut = x - tx0 - 1.0f;
-    int vt = y - ty0 - 1.0f;
-    if (CTX_UNLIKELY(ut < 0 || vt < 0 || u >= bwidth || v >= bheight))
-    {
-      *((uint32_t*)(rgba))= 0;
-    }
-    else
+      int u = x - tx0;
+      int v = y - ty0;
+      int ut = x - tx0 - 1.0f;
+      int vt = y - ty0 - 1.0f;
+      if (CTX_UNLIKELY(ut < 0 || vt < 0 || u >= bwidth || v >= bheight))
+      {
+        *((uint32_t*)(rgba))= 0;
+      }
+      else
       {
         *((uint32_t*)(rgba))= src[v * bwidth + u];
+        ctx_RGBA8_associate_alpha (rgba);
       }
   
       x += dx;
@@ -1048,6 +1047,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       rgba += 4;
     }
   }
+  return;
 #endif
 
 
@@ -1475,8 +1475,8 @@ ctx_init_uv (CtxRasterizer *rasterizer,
   float u1 = *u0 + count;
   float v1 = *v0;
 
-  ctx_matrix_apply_transform (&gstate->source_fill.transform, u0, v0);
-  ctx_matrix_apply_transform (&gstate->source_fill.transform, &u1, &v1);
+  _ctx_matrix_apply_transform (&gstate->source_fill.transform, u0, v0);
+  _ctx_matrix_apply_transform (&gstate->source_fill.transform, &u1, &v1);
 
   *ud = (u1-*u0) / (count);
   *vd = (v1-*v0) / (count);
@@ -1716,12 +1716,16 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
   {
      uint32_t si_ga = ((*((uint32_t*)tsrc)) & 0xff00ff00) >> 8;
      uint32_t si_rb = (*((uint32_t*)tsrc)) & 0x00ff00ff;
+     uint32_t di_ga = ((*((uint32_t*)dst)) & 0xff00ff00) >> 8;
+     uint32_t di_rb = (*((uint32_t*)dst)) & 0x00ff00ff;
      uint32_t si_a  = si_ga >> 16;
      uint32_t cov = *coverage;
      uint32_t racov = (256-((255+si_a*cov)>>8));
      *((uint32_t*)(dst)) =
+
      (((si_rb*cov+(((*((uint32_t*)(dst)))&0x00ff00ff)*racov))>>8)&0x00ff00ff)|
      ((si_ga*cov+((((*((uint32_t*)(dst)))&0xff00ff00)>>8)*racov))&0xff00ff00);
+
      coverage ++;
      tsrc += 4;
      dst  += 4;
@@ -1939,8 +1943,11 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
      uint32_t di_ga = ( di & 0xff00ff00) >> 8;
      uint32_t di_rb = di & 0x00ff00ff;
      *((uint32_t*)(dst)) =
+#if 1
+     *((uint32_t*)(dst)) =
      ((((si_rb * cov) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
       (((si_ga * cov) + (di_ga * rcov)) & 0xff00ff00);
+#endif
      coverage ++;
      dst+=4;
   }
@@ -1954,6 +1961,8 @@ ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
         // will not work due to pre-associated alpha
   ctx_u8_source_over_normal_opaque_color (4, rasterizer, dst, src, x0, coverage, count);
 #else
+  //ctx_RGBA8_source_over_normal_color (rasterizer, dst, src, x0, coverage, count);
+  //return;
   uint32_t si_ga = ((*((uint32_t*)src)) & 0xff00ff00) >> 8;
   uint32_t si_rb = (*((uint32_t*)src)) & 0x00ff00ff;
 
@@ -1970,6 +1979,7 @@ ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
      uint32_t di_ga = ( di & 0xff00ff00) >> 8;
      uint32_t di_rb = di & 0x00ff00ff;
      *((uint32_t*)(dst)) =
+
      ((((si_rb * cov) + (di_rb * ((256)-(cov)))) & 0xff00ff00) >> 8)  |
       (((si_ga * cov) + (di_ga * ((256)-(cov)))) & 0xff00ff00);
      }

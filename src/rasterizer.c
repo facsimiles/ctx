@@ -3220,12 +3220,14 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
                                          c->define_texture.format,
                                          pixel_data);
           rasterizer->comp_op = NULL;
+          rasterizer->fragment = NULL;
         }
         break;
       case CTX_TEXTURE:
         ctx_rasterizer_set_texture (rasterizer, c->texture.eid,
                                     c->texture.x, c->texture.y);
         rasterizer->comp_op = NULL;
+        rasterizer->fragment = NULL;
         break;
 #if 0
       case CTX_LOAD_IMAGE:
