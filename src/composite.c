@@ -1021,7 +1021,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
   x += 0.5f;
   y += 0.5f;
 
-  if (CTX_UNLIKELY(dy == 0.0f && dx > 0.999f && dx < 1.001f))
+  if (CTX_UNLIKELY(dy == 0.0f && dx > 0.999f && dx < 1.001f) && 0)
   {
     int u = x - g->texture.x0;
     int v = y - g->texture.y0;
@@ -1029,9 +1029,10 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
     {
       memcpy (out, &src[v * bwidth + u], count * 4);
       uint8_t *dst = (uint8_t*)out;
-      for (int i = 0 ; i < count; i++)
+      for (int i = 0 ; i < count; i+=4)
       {
-        ctx_RGBA8_associate_alpha_probably_opaque (&dst[i*4]);
+        //dst[i] = ((uint32_t*)src)[i];
+        ctx_RGBA8_associate_alpha_probably_opaque (&dst[i]);
       }
       return;
     }
@@ -1039,79 +1040,53 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
 
 #if 1
   {
-    int tx0 = g->texture.x0;
-    int ty0 = g->texture.y0;
-    for (int i = 0; i < count; i ++)
+    float tx0 = g->texture.x0;
+    float ty0 = g->texture.y0;
+
+    int x = 0;
+
+    for (; x < count; x ++)
     {
       int u = x - tx0;
       int v = y - ty0;
-      int ut = x - tx0 - 1.0f;
-      int vt = y - ty0 - 1.0f;
-      if (CTX_UNLIKELY(ut < 0 || vt < 0 || u >= bwidth || v >= bheight))
+      if ((u < 0 || v < 0 || u >= bwidth || v >= bheight))
       {
         *((uint32_t*)(rgba))= 0;
       }
       else
       {
+        break;
+      }
+      x += dx;
+      y += dy;
+      rgba += 4;
+    }
+
+    for (; x < count; x ++)
+    {
+      int u = x - tx0;
+      int v = y - ty0;
+      if (u >= 0 && v >= 0 && u < bwidth && v < bheight)
+      {
         *((uint32_t*)(rgba))= src[v * bwidth + u];
         ctx_RGBA8_associate_alpha_probably_opaque (rgba);
       }
-  
+      else
+      {
+        break;
+      }
       x += dx;
       y += dy;
+      rgba += 4;
+    }
+
+    for (; x < count; x++)
+    {
+      *((uint32_t*)(rgba))= 0;
       rgba += 4;
     }
   }
   return;
-#endif
-
-
-  {
-    int tx0 = g->texture.x0;
-    int ty0 = g->texture.y0;
-    int u = x - tx0;
-    int v = y - ty0;
-    int i;
-    for (i = 0; i < count && u < bwidth && u <0; i++)
-    {
-      u = x - tx0;
-      v = y - ty0;
-      *((uint32_t*)(rgba))= 0;
-      x += dx;
-      y += dy;
-      rgba += 4;
-    }
-    for (; i < count && u < bwidth; i++)
-    {
-      u = x - tx0;
-      v = y - ty0;
-      int i;
-    if (CTX_UNLIKELY(v < 0 || v >= bheight))
-      {
-        *((uint32_t*)(rgba))= 0;
-      }
-    else
-      {
-        int o = v * bwidth + u;
-        *((uint32_t*)(rgba))= src[o];
-        ctx_RGBA8_associate_alpha_probably_opaque (rgba);
-      }
-  
-      rgba += 4;
-      x += dx;
-      y += dy;
-    }
-      for (; i < count; i++)
-      {
-        *((uint32_t*)(rgba))= 0;
-        rgba += 4;
-      }
-  }
-
-
-#if CTX_DITHER
-  //ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
-  //                    rasterizer->format->dither_green);
 #endif
 
 
