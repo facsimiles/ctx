@@ -4537,23 +4537,20 @@ static inline uint32_t
 ctx_565_unpack_32 (const uint16_t pixel,
                    const int byteswap)
 {
-  uint32_t byteswapped;
+  uint16_t byteswapped;
   if (byteswap)
     { byteswapped = (pixel>>8) | (pixel<<8); }
   else
-    { byteswapped = pixel; }
-  uint32_t blue = (byteswapped & 31) <<3;
-  byteswapped >>= 5;
-  uint32_t green = ((byteswapped) & 63) <<2;
-  byteswapped >>= 6; // on some archs bigger shifts take longer,
-                     // so reuse the already shifted
-  uint32_t red = ((byteswapped) & 31) <<3;
+    { byteswapped  = pixel; }
+  uint8_t blue   = (byteswapped & 31) <<3;
+  uint8_t green = ( (byteswapped>>5) & 63) <<2;
+  uint8_t red   = ( (byteswapped>>11) & 31) <<3;
 #if 0
   if (*blue > 248) { *blue = 255; }
   if (*green > 248) { *green = 255; }
   if (*red > 248) { *red = 255; }
 #endif
-  return red | (green << 8) | (blue << 16) | (0xff << 24);
+  return red +  (green << 8) + (blue << 16) + (0xff << 24);
 }
 
 static inline uint16_t
@@ -4652,7 +4649,8 @@ ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
         uint32_t cov = (*coverage) >> 3;
         uint32_t racov = (32-((31+si_a*cov)>>5));
         uint32_t dval = (di_16 & ( (31 << 11 ) | 31));
-        uint32_t dg = (di_16 >> 5) & 63;
+        uint32_t dg = (di_16 >> 5) & 63; // faster outside than
+                                         // remerged as part of dval
         *((uint16_t*)(dst)) =
                 ((               
                   (((sval * cov) + (dval * racov)) >> 5)
