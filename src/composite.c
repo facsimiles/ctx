@@ -671,7 +671,7 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
   x += 0.5f;
   y += 0.5f;
 
-  if (dy == 0.0f && dx > 0.999f && dx < 1.001f)
+  if (CTX_UNLIKELY (dy == 0.0f && dx > 0.999f && dx < 1.001f))
   {
     int v = y - g->texture.y0;
     int u = x - g->texture.x0;
@@ -992,7 +992,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
   x += 0.5f;
   y += 0.5f;
 
-  if (dy == 0.0f && dx > 0.999f && dx < 1.001f)
+  if (CTX_UNLIKELY(dy == 0.0f && dx > 0.999f && dx < 1.001f))
   {
     int u = x - g->texture.x0;
     int v = y - g->texture.y0;
@@ -1753,10 +1753,9 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
     v0 += vd;
 #endif
   }
-  tsrc = &_tsrc[0];
 
   ctx_RGBA8_source_over_normal_buf (rasterizer,
-                       dst, src, x0, coverage, count, tsrc);
+                       dst, src, x0, coverage, count, &_tsrc[0]);
 }
 
 static void
@@ -1773,9 +1772,6 @@ ctx_RGBA8_source_copy_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   uint8_t _tsrc[4 * (count)];
   uint8_t *tsrc = &_tsrc[0];
   fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
-#if CTX_DITHER
-  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-#endif
   for (int x = 0; x < count ; x++)
   {
     ctx_RGBA8_associate_alpha (tsrc);
