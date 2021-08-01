@@ -43,6 +43,21 @@ ctx_RGBA8_associate_alpha (uint8_t *u8)
  // }
 }
 
+CTX_INLINE static void
+ctx_RGBA8_associate_alpha_probably_opaque (uint8_t *u8)
+{
+  uint32_t val = *((uint32_t*)(u8));
+  uint8_t a = u8[3];
+  //if (CTX_UNLIKELY(a==0))
+  //   *((uint32_t*)(u8)) = 0;
+  if (CTX_UNLIKELY(a!=255))
+  {
+     uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
+     uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
+     *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+  }
+}
+
 
 #if CTX_GRADIENTS
 #if CTX_GRADIENT_CACHE
@@ -388,7 +403,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
       }
     }
     rgba += 4;
-    ctx_RGBA8_associate_alpha (rgba);
+    ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     x += dx;
     y += dy;
   }
@@ -571,7 +586,7 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
           if (count)
             for (int c = 0; c < bpp; c++)
               rgba[c] = sum[c]/count;
-          ctx_RGBA8_associate_alpha (rgba);
+          ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
     rgba += 4;
     x += dx;
@@ -643,7 +658,7 @@ ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
         rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
                                ctx_lerp_u8 (src10[c], src11[c], dx), dy);
       }
-      ctx_RGBA8_associate_alpha (rgba);
+      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
     x += dx;
     y += dy;
@@ -884,7 +899,7 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
           if (count)
             for (int c = 0; c < bpp; c++)
               rgba[c] = sum[c]/count;
-          ctx_RGBA8_associate_alpha (rgba);
+          ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
     rgba += 4;
     x += dx;
@@ -950,7 +965,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
         rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
                                ctx_lerp_u8 (src10[c], src11[c], dx), dy);
       }
-      ctx_RGBA8_associate_alpha (rgba);
+      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
       //*((uint32_t*)(rgba))= 0;
   }
   else
@@ -978,7 +993,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
         rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
                                ctx_lerp_u8 (src10[c], src11[c], dx), dy);
       }
-      ctx_RGBA8_associate_alpha (rgba);
+      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
 
     x += dx;
@@ -1016,7 +1031,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       uint8_t *dst = (uint8_t*)out;
       for (int i = 0 ; i < count; i++)
       {
-        ctx_RGBA8_associate_alpha (&dst[i*4]);
+        ctx_RGBA8_associate_alpha_probably_opaque (&dst[i*4]);
       }
       return;
     }
@@ -1039,7 +1054,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       else
       {
         *((uint32_t*)(rgba))= src[v * bwidth + u];
-        ctx_RGBA8_associate_alpha (rgba);
+        ctx_RGBA8_associate_alpha_probably_opaque (rgba);
       }
   
       x += dx;
@@ -1079,7 +1094,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       {
         int o = v * bwidth + u;
         *((uint32_t*)(rgba))= src[o];
-        ctx_RGBA8_associate_alpha (rgba);
+        ctx_RGBA8_associate_alpha_probably_opaque (rgba);
       }
   
       rgba += 4;
@@ -1755,16 +1770,16 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
 #endif
-  CtxFragment fragment = rasterizer->fragment;
-  if (CTX_UNLIKELY(!fragment))
-    return;
+  //CtxFragment fragment = rasterizer->fragment;
+  //if (CTX_UNLIKELY(!fragment))
+  //  return;
   uint8_t _tsrc[4 * (count)];
   uint8_t *tsrc = &_tsrc[0];
-  fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
+  rasterizer->fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
 #if CTX_DITHER
   ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
 #endif
-  if (0)
+#if 0 
   for (int x = 0; x < count ; x++)
   {
     //ctx_RGBA8_associate_alpha (tsrc);
@@ -1777,7 +1792,7 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
     v0 += vd;
 #endif
   }
-
+#endif
   ctx_RGBA8_source_over_normal_buf (rasterizer,
                        dst, src, x0, coverage, count, &_tsrc[0]);
 }
@@ -1792,10 +1807,11 @@ ctx_RGBA8_source_copy_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green = rasterizer->format->dither_green;
 #endif
-  CtxFragment fragment = rasterizer->fragment;
+  //CtxFragment fragment = rasterizer->fragment;
   uint8_t _tsrc[4 * (count)];
   uint8_t *tsrc = &_tsrc[0];
-  fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
+  rasterizer->fragment (rasterizer, u0, v0, &_tsrc[0], count, ud, vd);
+#if 0
   if(0)
   for (int x = 0; x < count ; x++)
   {
@@ -1809,6 +1825,7 @@ ctx_RGBA8_source_copy_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
     v0 += vd;
 #endif
   }
+#endif
 
   ctx_RGBA8_source_copy_normal_buf (rasterizer,
                        dst, src, x0, coverage, count, &_tsrc[0]);
