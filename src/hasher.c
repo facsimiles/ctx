@@ -111,8 +111,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           float height = ctx_get_font_size (rasterizer->ctx);
 
            CtxIntRectangle shape_rect = {
-              rasterizer->x, rasterizer->y - height,
-              width, height * 2
+              (int)rasterizer->x, (int)(rasterizer->y - height),
+              (int)width, (int)(height * 2)
            };
 
 #if 0
@@ -150,7 +150,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
 
           _ctx_user_to_device (rasterizer->state, &tx, &ty);
           _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
-          CtxIntRectangle shape_rect = {tx,ty-th/2,tw,th};
+          CtxIntRectangle shape_rect = {(int)tx,(int)(ty-th/2),(int)tw,(int)th};
 
 
 #if 0
@@ -183,10 +183,10 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
            */
         uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer); // + hasher->salt;
         CtxIntRectangle shape_rect = {
-          rasterizer->col_min / CTX_SUBDIV - 2,
-          rasterizer->scan_min / aa - 2,
-          3+(rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV,
-          3+(rasterizer->scan_max - rasterizer->scan_min + 1) / aa
+          (int)(rasterizer->col_min / CTX_SUBDIV - 2),
+          (int)(rasterizer->scan_min / aa - 2),
+          (int)(3+(rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV),
+          (int)(3+(rasterizer->scan_max - rasterizer->scan_min + 1) / aa)
         };
 
         hash ^= (rasterizer->state->gstate.fill_rule * 23);

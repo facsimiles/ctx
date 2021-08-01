@@ -183,7 +183,7 @@ static inline float
 ctx_expf (float x)
 {
   union { uint32_t i; float f; } v =
-    { (1 << 23) * (x + 183.1395965) };
+    {  (uint32_t)( (1 << 23) * (x + 183.1395965f)) };
   return v.f;
 }
 
