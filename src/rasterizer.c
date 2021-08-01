@@ -2911,7 +2911,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
                   (uint8_t*)rasterizer->group[no]->data,
                   NULL, NULL);
   {
-     char *eid = ".ctx-group";
+     const char *eid = ".ctx-group";
      int   eid_len = strlen (eid);
 
      CtxEntry commands[4] =
