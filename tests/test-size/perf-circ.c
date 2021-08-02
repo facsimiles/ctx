@@ -182,7 +182,7 @@ static void run_test_set_cairo (cairo_t *cr)
           cairo_image_surface_create_from_png ("img.png");
   cairo_set_source_rgba (cr ,1,1,1,1);
   cairo_save (cr);
-  cairo_scale (cr, 1.01, 1.01);
+  cairo_rotate (cr, 1.2);//01, 1.01);
   cairo_set_source_surface (cr, surf, 0.4, 0.4);
   cairo_restore (cr);
   //cairo_set_set_filter (cr, CAIRO_FILTER_NEAREST);
@@ -327,8 +327,8 @@ ctx_texture_load (ctx, "/home/pippin/src/ctx/tests/test-size/img.png", NULL, NUL
     start = ctx_ticks ();
     ctx_shape (ctx);
     ctx_save (ctx);
-    ctx_scale (ctx, 1.01, 1.01);
-    ctx_image_smoothing (ctx, 0);
+    ctx_rotate (ctx, 1.1f);
+    ctx_image_smoothing (ctx, 1);
     ctx_texture (ctx, eid, 0.4, 0.4);
     ctx_restore (ctx);
     ctx_fill (ctx);
