@@ -20,7 +20,7 @@
 
 
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT3    (10424/CTX_SUBDIV/15)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT5    (35425/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5    (85425/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15   (230425/CTX_SUBDIV/15)
 
 /* subpixel-aa coordinates used in BITPACKing of drawlist
@@ -252,7 +252,7 @@
  * faster.
  */
 #ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       1
+#define CTX_NATIVE_GRAYA8       0
 #endif
 
 /* enable CMYK rasterization targets
