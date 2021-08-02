@@ -59,6 +59,39 @@ ctx_invsqrtf (float x)
   return x;
 }
 
+static inline float
+ctx_invsqrtf_fast (float x)
+{
+  void *foo = &x;
+  float xhalf = 0.5f * x;
+  int i=* (int *) foo;
+  void *bar = &i;
+  i = 0x5f3759df - (i >> 1);
+  x = * (float *) bar;
+  x *= (1.5f - xhalf * x * x);
+  return x;
+}
+
+CTX_INLINE static float ctx_sqrtf (float a)
+{
+  return 1.0f/ctx_invsqrtf (a);
+}
+
+CTX_INLINE static float ctx_sqrtf_fast (float a)
+{
+  return 1.0f/ctx_invsqrtf_fast (a);
+}
+
+CTX_INLINE static float ctx_hypotf (float a, float b)
+{
+  return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
+}
+
+CTX_INLINE static float ctx_hypotf_fast (float a, float b)
+{
+  return ctx_sqrtf_fast (ctx_pow2 (a)+ctx_pow2 (b) );
+}
+
 CTX_INLINE static float
 ctx_sinf (float x)
 {
@@ -140,15 +173,6 @@ static inline float ctx_atan2f (float y, float x)
   return atan;
 }
 
-CTX_INLINE static float ctx_sqrtf (float a)
-{
-  return 1.0f/ctx_invsqrtf (a);
-}
-
-CTX_INLINE static float ctx_hypotf (float a, float b)
-{
-  return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
-}
 
 static inline float ctx_atanf (float a)
 {
