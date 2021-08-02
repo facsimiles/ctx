@@ -759,7 +759,6 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
     {
       u = x - tx0;
       v = y - ty0;
-      int i;
     if (CTX_UNLIKELY(v < 0 || v >= bheight))
       {
         *((uint32_t*)(rgba))= 0;
@@ -1694,7 +1693,7 @@ ctx_u8_source_over_normal_color (int components,
       {
         for (int c = 0; c < components; c++)
           //dst[c] =  ((tsrc[c] * *coverage)>>8) + (dst[c] * (((65536)-(tsrc[components-1] * *coverage)))>>16);
-          dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((255)-(255+(tsrc[components-1] * *coverage)>>8)))))>>8);
+          dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((255)-(((255+(tsrc[components-1] * *coverage))>>8))))))>>8);
       }
     coverage ++;
     dst+=components;
