@@ -1251,7 +1251,7 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   for (int i = 0; i <  count; i ++)
   {
-    float v = (ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y) -
+    float v = (ctx_hypotf_fast (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y) -
               g->radial_gradient.r0) * (g->radial_gradient.rdelta);
 #if CTX_GRADIENT_CACHE
     uint32_t *rgbap = (uint32_t*)&ctx_gradient_cache_u8_a[ctx_grad_index(v)][0];
@@ -1272,6 +1272,7 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 static void
 ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy)
 {
+#if 0
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   for (int i = 0; i <  count; i ++)
@@ -1293,6 +1294,58 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
     x += dx;
     y += dy;
   }
+#else
+  uint8_t *rgba = (uint8_t *) out;
+
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  float u0 = x; float v0 = y;
+  float ud = dx; float vd = dy;
+  float linear_gradient_dx = g->linear_gradient.dx;
+  float linear_gradient_dy = g->linear_gradient.dy;
+  float linear_gradient_rdelta = g->linear_gradient.rdelta;
+  float linear_gradient_start = g->linear_gradient.start;
+  float linear_gradient_length = g->linear_gradient.length;
+  float linear_gradient_length_recip = 1.0f/linear_gradient_length;
+#if CTX_DITHER
+  int dither_red_blue = rasterizer->format->dither_red_blue;
+  int dither_green = rasterizer->format->dither_green;
+#endif
+  linear_gradient_dx *=linear_gradient_length_recip;
+  linear_gradient_dy *=linear_gradient_length_recip;
+
+  u0 *= linear_gradient_dx;
+  v0 *= linear_gradient_dy;
+  ud *= linear_gradient_dx;
+  vd *= linear_gradient_dy;
+
+  u0 *= linear_gradient_rdelta;
+  v0 *= linear_gradient_rdelta;
+  ud *= linear_gradient_rdelta;
+  vd *= linear_gradient_rdelta;
+  linear_gradient_start *= linear_gradient_rdelta;
+
+  float vv = ((u0 + v0) - linear_gradient_start);
+  float ud_plus_vd = ud + vd;
+  for (int x = 0; x < count ; x++)
+  {
+  //    float vv = ((u0 + v0) - linear_gradient_start);
+#if CTX_GRADIENT_CACHE
+  uint32_t*rgbap = ((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
+  *((uint32_t*)rgba) = *rgbap;
+#else
+  _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, rgba);
+#endif
+
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (rgba, u0, v0, dither_red_blue, dither_green);
+#endif
+
+    rgba+= 4;
+  //  u0 += ud;
+  //  v0 += vd;
+    vv += ud_plus_vd;
+  }
+#endif
 }
 
 #endif
@@ -1701,15 +1754,8 @@ ctx_u8_source_over_normal_color (int components,
 }
 
 static void
-ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
+ctx_u8_source_copy_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
-#if CTX_REFERENCE
-  ctx_u8_source_over_normal_color (4, rasterizer, dst, src, x0, coverage, count);
-  return;
-#else
-  uint8_t tsrc[5];
-  *((uint32_t*)tsrc) = *((uint32_t*)src);
-  //ctx_u8_associate_alpha (components, tsrc);
   while (count--)
   {
 #if CTX_COMPOSITE_IF_COV
@@ -1718,14 +1764,12 @@ ctx_u8_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
 #endif
       {
         for (int c = 0; c < components; c++)
-          dst[c] =  ctx_lerp_u8(dst[c],tsrc[c],coverage[0]);
+          dst[c] =  ctx_lerp_u8(dst[c],src[c],coverage[0]);
       }
     coverage ++;
     dst+=components;
   }
-#endif
 }
-
 
 static inline void
 ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
@@ -1734,8 +1778,8 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
   {
      uint32_t si_ga = ((*((uint32_t*)tsrc)) & 0xff00ff00) >> 8;
      uint32_t si_rb = (*((uint32_t*)tsrc)) & 0x00ff00ff;
-     uint32_t di_ga = ((*((uint32_t*)dst)) & 0xff00ff00) >> 8;
-     uint32_t di_rb = (*((uint32_t*)dst)) & 0x00ff00ff;
+//     uint32_t di_ga = ((*((uint32_t*)dst)) & 0xff00ff00) >> 8;
+//     uint32_t di_rb = (*((uint32_t*)dst)) & 0x00ff00ff;
      uint32_t si_a  = si_ga >> 16;
      uint32_t cov = *coverage;
      uint32_t racov = (256-((255+si_a*cov)>>8));
@@ -1806,150 +1850,17 @@ ctx_RGBA8_source_copy_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
   ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-#if CTX_DITHER
-  int dither_red_blue = rasterizer->format->dither_red_blue;
-  int dither_green = rasterizer->format->dither_green;
-#endif
-  //CtxFragment fragment = rasterizer->fragment;
   uint8_t _tsrc[4 * (count)];
-  uint8_t *tsrc = &_tsrc[0];
   rasterizer->fragment (rasterizer, u0, v0, &_tsrc[0], count, ud, vd);
-#if 0
-  if(0)
-  for (int x = 0; x < count ; x++)
-  {
-    //ctx_RGBA8_associate_alpha (tsrc);
-#if CTX_DITHER
-    ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
-#endif
-    tsrc += 4;
-#if CTX_DITHER
-    u0 += ud;
-    v0 += vd;
-#endif
-  }
-#endif
-
   ctx_RGBA8_source_copy_normal_buf (rasterizer,
                        dst, src, x0, coverage, count, &_tsrc[0]);
 }
 
-#if CTX_GRADIENTS
-#if CTX_INLINED_GRADIENTS
-static void
-ctx_RGBA8_source_over_normal_linear_gradient (CTX_COMPOSITE_ARGUMENTS)
-{
-  CtxSource *g = &rasterizer->state->gstate.source_fill;
-  float u0 = 0; float v0 = 0;
-  float ud = 0; float vd = 0;
-  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-  float linear_gradient_dx = g->linear_gradient.dx;
-  float linear_gradient_dy = g->linear_gradient.dy;
-  float linear_gradient_rdelta = g->linear_gradient.rdelta;
-  float linear_gradient_start = g->linear_gradient.start;
-  float linear_gradient_length = g->linear_gradient.length;
-  float linear_gradient_length_recip = 1.0f/linear_gradient_length;
-#if CTX_DITHER
-  int dither_red_blue = rasterizer->format->dither_red_blue;
-  int dither_green = rasterizer->format->dither_green;
-#endif
-  uint8_t _tsrc[4 * (count)];
-  uint8_t *tsrc = &_tsrc[0];
-
-
-  linear_gradient_dx *=linear_gradient_length_recip;
-  linear_gradient_dy *=linear_gradient_length_recip;
-
-  u0 *= linear_gradient_dx;
-  v0 *= linear_gradient_dy;
-  ud *= linear_gradient_dx;
-  vd *= linear_gradient_dy;
-
-  u0 *= linear_gradient_rdelta;
-  v0 *= linear_gradient_rdelta;
-  ud *= linear_gradient_rdelta;
-  vd *= linear_gradient_rdelta;
-  linear_gradient_start *= linear_gradient_rdelta;
-
-  float vv = ((u0 + v0) - linear_gradient_start);
-  float ud_plus_vd = ud + vd;
-  for (int x = 0; x < count ; x++)
-  {
-  //    float vv = ((u0 + v0) - linear_gradient_start);
-      uint32_t *tsrci = (uint32_t*)tsrc;
-#if CTX_GRADIENT_CACHE
-      uint32_t *cachei = ((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
-      *tsrci = *cachei;
-#else
-      ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, tsrc);
-      //ctx_RGBA8_associate_alpha (tsrc);
-#endif
-#if CTX_DITHER
-      ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
-#endif
-
-    tsrc += 4;
-  //  u0 += ud;
-  //  v0 += vd;
-    vv += ud_plus_vd;
-  }
-  tsrc = &_tsrc[0];
-  ctx_RGBA8_source_over_normal_buf (rasterizer,
-               dst, src, x0, coverage, count, tsrc);
-}
-
-static void
-ctx_RGBA8_source_over_normal_radial_gradient (CTX_COMPOSITE_ARGUMENTS)
-{
-  CtxSource *g = &rasterizer->state->gstate.source_fill;
-  float u0 = 0; float v0 = 0;
-  float ud = 0; float vd = 0;
-  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-  float radial_gradient_x0 = g->radial_gradient.x0;
-  float radial_gradient_y0 = g->radial_gradient.y0;
-  float radial_gradient_r0 = g->radial_gradient.r0;
-  float radial_gradient_rdelta = g->radial_gradient.rdelta;
-#if CTX_DITHER
-  int dither_red_blue = rasterizer->format->dither_red_blue;
-  int dither_green = rasterizer->format->dither_green;
-#endif
-  uint8_t _tsrc[4 * (count)];
-  uint8_t *tsrc = &_tsrc[0];
-  for (int x = 0; x < count ; x++)
-  {
-      float vv = ctx_hypotf (radial_gradient_x0 - u0, radial_gradient_y0 - v0);
-            vv = (vv - radial_gradient_r0) * (radial_gradient_rdelta);
-#if CTX_GRADIENT_CACHE
-      uint32_t *tsrcp = (uint32_t*)tsrc;
-      uint32_t *cp = ((uint32_t*)(&ctx_gradient_cache_u8_a[ctx_grad_index(vv)][0]));
-      *tsrcp = *cp;
-#else
-      ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, tsrc);
-      //ctx_RGBA8_associate_alpha (tsrc);
-#endif
-
-#if CTX_DITHER
-      ctx_dither_rgba_u8 (tsrc, u0, v0, dither_red_blue, dither_green);
-#endif
-
-    tsrc += 4;
-    u0 += ud;
-    v0 += vd;
-  }
-
-  ctx_RGBA8_source_over_normal_buf (rasterizer,
-               dst, src, x0, coverage, count, &_tsrc[0]);
-}
-
-
-#endif
-#endif
 
 static void
 ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
 #if CTX_REFERENCE
-        // will not work due to pre-associated alpha
   ctx_u8_source_over_normal_color (4, rasterizer, dst, src, x0, coverage, count);
 #else
   uint32_t si_ga = ((*((uint32_t*)src)) & 0xff00ff00) >> 8;
@@ -1963,11 +1874,8 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
      uint32_t di_ga = ( di & 0xff00ff00) >> 8;
      uint32_t di_rb = di & 0x00ff00ff;
      *((uint32_t*)(dst)) =
-#if 1
-     *((uint32_t*)(dst)) =
      ((((si_rb * cov) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
       (((si_ga * cov) + (di_ga * rcov)) & 0xff00ff00);
-#endif
      coverage ++;
      dst+=4;
   }
@@ -1975,14 +1883,11 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 }
 
 static void
-ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
+ctx_RGBA8_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
 #if CTX_REFERENCE
-        // will not work due to pre-associated alpha
-  ctx_u8_source_over_normal_opaque_color (4, rasterizer, dst, src, x0, coverage, count);
+  ctx_u8_source_copy_normal_color (4, rasterizer, dst, src, x0, coverage, count);
 #else
-  //ctx_RGBA8_source_over_normal_color (rasterizer, dst, src, x0, coverage, count);
-  //return;
   uint32_t si_ga = ((*((uint32_t*)src)) & 0xff00ff00) >> 8;
   uint32_t si_rb = (*((uint32_t*)src)) & 0x00ff00ff;
 
@@ -2563,22 +2468,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
     rasterizer->comp_op = ctx_RGBA8_clear_normal;
     rasterizer->fragment = NULL;
   }
-#if CTX_INLINED_GRADIENTS
-#if CTX_GRADIENTS
-  else if (gstate->source_fill.type == CTX_SOURCE_LINEAR_GRADIENT &&
-      gstate->blend_mode       == CTX_BLEND_NORMAL &&
-      gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-  {
-     rasterizer->comp_op = ctx_RGBA8_source_over_normal_linear_gradient;
-  }
-  else if (gstate->source_fill.type == CTX_SOURCE_RADIAL_GRADIENT &&
-      gstate->blend_mode       == CTX_BLEND_NORMAL &&
-      gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-  {
-     rasterizer->comp_op = ctx_RGBA8_source_over_normal_radial_gradient;
-  }
-#endif
-#endif
 
   else if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
@@ -2612,7 +2501,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
              if (rasterizer->color[components-1] == 0)
                  rasterizer->comp_op = ctx_RGBA8_nop;
              else
-                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
+                 rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
             break;
           }
           else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
@@ -2620,7 +2509,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
              if (rasterizer->color[components-1] == 0)
                  rasterizer->comp_op = ctx_RGBA8_nop;
              else if (rasterizer->color[components-1] == 255)
-                 rasterizer->comp_op = ctx_RGBA8_source_over_normal_opaque_color;
+                 rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
              else
                  rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
          }
@@ -2748,7 +2637,7 @@ ctx_float_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 }
 
 static void
-ctx_float_source_over_normal_opaque_color (int components, CTX_COMPOSITE_ARGUMENTS)
+ctx_float_source_copy_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   float *dstf = (float*)dst;
   float *srcf = (float*)src;
@@ -3215,7 +3104,7 @@ ctx_RGBAF_clear_normal (CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_RGBAF_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
-  ctx_float_source_over_normal_opaque_color (4, rasterizer, dst, rasterizer->color, x0, coverage, count);
+  ctx_float_source_copy_normal_color (4, rasterizer, dst, rasterizer->color, x0, coverage, count);
 }
 #endif
 #endif
@@ -3432,9 +3321,9 @@ ctx_GRAYAF_clear_normal (CTX_COMPOSITE_ARGUMENTS)
 }
 
 static void
-ctx_GRAYAF_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
+ctx_GRAYAF_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
-  ctx_float_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
+  ctx_float_source_copy_normal_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
 }
 #endif
 
@@ -3481,7 +3370,7 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
                 rasterizer->comp_op = ctx_RGBA8_nop;
 #if 1
               else //if (((float*)rasterizer->color)[components-1] == 0.0f)
-                rasterizer->comp_op = ctx_GRAYAF_source_over_normal_opaque_color;
+                rasterizer->comp_op = ctx_GRAYAF_source_copy_normal_color;
 #endif
               //else
           //      rasterizer->comp_op = ctx_GRAYAF_porter_duff_color_normal;
@@ -3672,9 +3561,9 @@ ctx_CMYKAF_clear_normal (CTX_COMPOSITE_ARGUMENTS)
 }
 
 static void
-ctx_CMYKAF_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
+ctx_CMYKAF_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
-  ctx_float_source_over_normal_opaque_color (5, rasterizer, dst, rasterizer->color, x0, coverage, count);
+  ctx_float_source_copy_normal_color (5, rasterizer, dst, rasterizer->color, x0, coverage, count);
 }
 #endif
 
@@ -3722,7 +3611,7 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
                 rasterizer->comp_op = ctx_RGBA8_nop;
 #if 1
               else //if (((float*)rasterizer->color)[components-1] == 1.0f)
-                rasterizer->comp_op = ctx_CMYKAF_source_over_normal_opaque_color;
+                rasterizer->comp_op = ctx_CMYKAF_source_copy_normal_color;
    //           else
    //             rasterizer->comp_op = ctx_CMYKAF_porter_duff_color_normal;
               rasterizer->fragment = NULL;
@@ -4350,9 +4239,9 @@ ctx_GRAYA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 }
 
 static void
-ctx_GRAYA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS)
+ctx_GRAYA8_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
-  ctx_u8_source_over_normal_opaque_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
+  ctx_u8_source_copy_normal_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
 }
 #endif
 
@@ -4415,7 +4304,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
               if (rasterizer->color[components-1] == 0)
                 rasterizer->comp_op = ctx_RGBA8_nop;
               else if (rasterizer->color[components-1] == 255)
-                rasterizer->comp_op = ctx_GRAYA8_source_over_normal_opaque_color;
+                rasterizer->comp_op = ctx_GRAYA8_source_copy_normal_color;
               else
                 rasterizer->comp_op = ctx_GRAYA8_source_over_normal_color;
               rasterizer->fragment = NULL;
@@ -4630,15 +4519,13 @@ ctx_RGBA8_to_RGB565 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
 static void
 ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS);
 static void
-ctx_RGBA8_source_over_normal_opaque_color (CTX_COMPOSITE_ARGUMENTS);
+ctx_RGBA8_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS);
 
 static void
 ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 {
 #if 0
-  if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color
-      || rasterizer->comp_op == ctx_RGBA8_source_over_normal_opaque_color 
-      ))
+  if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color))
   {
      int byteswap = 0;
      uint32_t si    = *((uint32_t*)(src));

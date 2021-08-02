@@ -3389,7 +3389,6 @@ again:
               float dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
 
-
               if (dash_lpos + length >= dashes[dash_no] * factor)
               {
                 float p = (dashes[dash_no] * factor - dash_lpos) / length;

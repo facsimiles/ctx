@@ -63,12 +63,12 @@ static inline float
 ctx_invsqrtf_fast (float x)
 {
   void *foo = &x;
-  float xhalf = 0.5f * x;
+//float xhalf = 0.5f * x;
   int i=* (int *) foo;
   void *bar = &i;
   i = 0x5f3759df - (i >> 1);
   x = * (float *) bar;
-  x *= (1.5f - xhalf * x * x);
+//x *= (1.5f - xhalf * x * x);
   return x;
 }
 
