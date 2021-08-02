@@ -253,7 +253,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                            // we avoid having to hash
                       frame->width, frame->height,
                       frame->width,
-                      CTX_FORMAT_GRAY8,
+                      CTX_FORMAT_YUV420,//GRAY8,
                       frame->y.data,
                       NULL);
   }

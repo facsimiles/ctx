@@ -3754,7 +3754,5 @@ ctx_state_gradient_clear_stops (CtxState *state)
   state->gradient.n_stops = 0;
 }
 
-uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
-uint8_t ctx_gradient_cache_u8_a[CTX_GRADIENT_CACHE_ELEMENTS][4];
 
 /****  end of engine ****/
