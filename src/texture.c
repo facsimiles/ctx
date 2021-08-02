@@ -49,7 +49,11 @@ CtxBuffer *ctx_buffer_new (int width, int height,
   //CtxPixelFormatInfo *info = ctx_pixel_format_info (pixel_format);
   CtxBuffer *buffer = ctx_buffer_new_bare ();
   int stride = ctx_pixel_format_get_stride (pixel_format, width);
-  uint8_t *pixels = (uint8_t*)ctx_calloc (stride, height + 1);
+  int data_len = stride * height;
+  if (pixel_format == CTX_FORMAT_YUV420)
+    data_len = width * height + ((width/2) * (height/2)) * 2;
+
+  uint8_t *pixels = (uint8_t*)ctx_calloc (data_len, 1);
 
   ctx_buffer_set_data (buffer, pixels, width, height, stride, pixel_format,
                        ctx_buffer_pixels_free, NULL);

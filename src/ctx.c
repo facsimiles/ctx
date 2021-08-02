@@ -354,7 +354,12 @@ void ctx_define_texture (Ctx *ctx,
   if (stride <= 0)
     stride = dst_stride;
 
-  int data_len = height * dst_stride;
+  int data_len;
+ 
+  if (format == CTX_FORMAT_YUV420)
+  data_len = width * height + ((width/2) * (height/2)) * 2;
+  else
+  data_len = height * dst_stride;
 
   if (eid == NULL)
   {
@@ -441,12 +446,16 @@ void ctx_define_texture (Ctx *ctx,
     {
       uint8_t *src = (uint8_t*)data;
       uint8_t *dst = &commands[pos+1].data.u8[0];
+#if 1
+      memcpy (dst, src, data_len);
+#else
       for (int y = 0; y < height; y++)
       {
          memcpy (dst, src, dst_stride);
          src += stride;
          dst += dst_stride;
       }
+#endif
     }
     ((char *) &commands[pos+1].data.u8[0])[data_len]=0;
 
