@@ -850,14 +850,14 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   int            maxx,
                                   uint8_t       *coverage,
                                   const int      fill_rule,
-                                  int            aa_factor)
+                                  uint8_t        aa_factor)
 {
   CtxEntry *entries = rasterizer->edge_list.entries;;
   CtxEdge  *edges = rasterizer->edges;
   int scanline     = rasterizer->scanline;
   int active_edges = rasterizer->active_edges;
   int parity = 0;
-  int fraction = 255/aa_factor;
+  uint8_t fraction = 255/aa_factor;
   coverage -= minx;
 #define CTX_EDGE(no)      entries[edges[no].index]
 #define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
