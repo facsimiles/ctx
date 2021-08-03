@@ -2141,10 +2141,63 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;
   float factor = ctx_matrix_get_scale (&gstate->transform);
+  float line_width = gstate->line_width * factor;
 
-  int aa = CTX_FULL_AA;
   CtxEntry temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
+
+#if 0 // needs more case testing
+  if (rasterizer->edge_list.count == 6)
+    {
+      CtxEntry *entry0 = &rasterizer->edge_list.entries[0];
+      CtxEntry *entry1 = &rasterizer->edge_list.entries[1];
+      CtxEntry *entry2 = &rasterizer->edge_list.entries[2];
+      CtxEntry *entry3 = &rasterizer->edge_list.entries[3];
+      float lwmod = ctx_fmod1f (line_width);
+      int lw = ctx_floorf (line_width + 0.5f);
+      int is_compat = (lw % 2 == 0) && (lwmod < 0.001); // only even linewidths implemented properly
+      //fprintf (stderr, "{%i %.2f %.2f}", lw, lwmod, line_width);
+
+      is_compat = (lw == 2);
+      if (!rasterizer->state->gstate.clipped &&
+          (entry0->data.s16[2] == entry1->data.s16[2]) &&
+          (entry0->data.s16[3] == entry3->data.s16[3]) &&
+          (entry1->data.s16[3] == entry2->data.s16[3]) &&
+          (entry2->data.s16[2] == entry3->data.s16[2]) &&
+          is_compat
+#if CTX_ENABLE_SHADOW_BLUR
+           && !rasterizer->in_shadow
+#endif
+         )
+       {
+         if((((entry1->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
+            ((entry1->data.s16[3] % (CTX_FULL_AA)) == 0) &&
+            ((entry3->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
+            ((entry3->data.s16[3] % (CTX_FULL_AA)) == 0)) || 1)
+         {
+           /* best-case axis aligned rectangle */
+           float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
+           float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
+           float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
+           float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
+
+           int bw = lw/2;
+           ctx_rasterizer_fill_rect (rasterizer, x0-bw, y0-bw, x1+bw, y0+bw, 255);
+           ctx_rasterizer_fill_rect (rasterizer, x0-bw, y1-bw, x1-bw, y1+bw, 255);
+           ctx_rasterizer_fill_rect (rasterizer, x0-bw, y0, x0+bw, y1, 255);
+           ctx_rasterizer_fill_rect (rasterizer, x1-bw, y0, x1+bw, y1, 255);
+           ctx_rasterizer_reset (rasterizer);
+           goto done;
+         }
+       }
+    }
+#else
+  if(0)goto done;
+#endif
+  
+    {
+
+  int aa = CTX_FULL_AA;
 #if 1
   if (CTX_UNLIKELY(gstate->line_width * factor <= 0.0f &&
       gstate->line_width * factor > -10.0f))
@@ -2157,14 +2210,15 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       factor *= 0.86; /* this hack adjustment makes sharp 1px and 2px strokewidths
                             end up sharp without erronious AA
                        */
+      line_width *= 0.86f;
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
       CtxMatrix transform_backup = gstate->transform;
       ctx_matrix_identity (&gstate->transform);
       float prev_x = 0.0f;
       float prev_y = 0.0f;
-      float half_width_x = gstate->line_width * factor/2;
-      float half_width_y = gstate->line_width * factor/2;
-      if (CTX_UNLIKELY(gstate->line_width <= 0.0f))
+      float half_width_x = line_width/2;
+      float half_width_y = line_width/2;
+      if (CTX_UNLIKELY(line_width <= 0.0f))
         { // makes 0 width be hairline
           half_width_x = .5f;
           half_width_y = .5f;
@@ -2356,6 +2410,8 @@ foo:
       gstate->fill_rule = rule_backup;
       gstate->transform = transform_backup;
     }
+  }
+done:
   if (preserved)
     {
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
