@@ -849,7 +849,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   int            minx,
                                   int            maxx,
                                   uint8_t       *coverage,
-                                  int            winding,
+                                  const int      winding,
                                   int            aa_factor)
 {
   CtxEntry *entries = rasterizer->edge_list.entries;;
@@ -896,14 +896,14 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           graystart=fraction- (graystart&0xff)/aa_factor;
           grayend = (grayend & 0xff) / aa_factor;
 
-          if (CTX_LIKELY(first < last))
+          if (first < last)
           {
               coverage[first] += graystart;
               for (int x = first + 1; x < last; x++)
                 coverage[x] += fraction;
               coverage[last]  += grayend;
           }
-          else if (CTX_LIKELY(first == last))
+          else if (first == last)
             coverage[first] += (graystart-(fraction-grayend));
         }
    }
@@ -959,14 +959,14 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           graystart = 255 - (graystart&0xff);
           grayend   = (grayend & 0xff);
 
-          if (CTX_LIKELY(first < last))
+          if (first < last)
           {
               coverage[first] += graystart;
               for (int x = first + 1; x < last; x++)
                 coverage[x] = 255;
               coverage[last]  += grayend;
           }
-          else if (CTX_LIKELY(first == last))
+          else if (first == last)
             coverage[first] += (graystart-(255-grayend));
         }
    }
