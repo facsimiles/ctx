@@ -567,6 +567,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
 
           /* words that correspond to low integer constants
           */
+          case CTX_nonzero:     return CTX_FILL_RULE_WINDING;
+          case CTX_non_zero:    return CTX_FILL_RULE_WINDING;
           case CTX_winding:     return CTX_FILL_RULE_WINDING;
           case CTX_evenOdd:
           case CTX_even_odd:    return CTX_FILL_RULE_EVEN_ODD;

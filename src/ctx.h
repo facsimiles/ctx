@@ -433,8 +433,8 @@ int      ctx_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 
 typedef enum
 {
-  CTX_FILL_RULE_EVEN_ODD,
-  CTX_FILL_RULE_WINDING
+  CTX_FILL_RULE_WINDING,
+  CTX_FILL_RULE_EVEN_ODD
 } CtxFillRule;
 
 typedef enum
