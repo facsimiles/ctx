@@ -3615,6 +3615,13 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->blit_stride = stride;
   rasterizer->scan_min    = 5000;
   rasterizer->scan_max    = -5000;
+
+  if (pixel_format == CTX_FORMAT_BGRA8)
+  {
+    pixel_format = CTX_FORMAT_RGBA8;
+    rasterizer->swap_red_green = 1;
+  }
+
   rasterizer->format = ctx_pixel_format_info (pixel_format);
 
   return rasterizer;

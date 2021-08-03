@@ -124,9 +124,9 @@ inline static void ctx_tiled_flush (CtxTiled *tiled)
                                  host, tiled->ctx, &host->state,
                                  &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
                                  0, 0, 1, 1,
-                                 tiled->width*4, CTX_FORMAT_RGBA8,
+                                 tiled->width*4, CTX_FORMAT_BGRA8,
                                  tiled->antialias);
-            //((CtxRasterizer*)(host->renderer))->swap_red_green = swap_red_green;
+            ((CtxRasterizer*)(host->renderer))->swap_red_green = swap_red_green;
             if (sdl_icc_length)
               ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
 
@@ -184,7 +184,7 @@ void ctx_tiled_render_fun (void **data)
                                  host, tiled->ctx, &host->state,
                                  &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
-                                 tiled->width*4, CTX_FORMAT_RGBA8,
+                                 tiled->width*4, CTX_FORMAT_BGRA8,
                                  tiled->antialias);
             ((CtxRasterizer*)(host->renderer))->swap_red_green = swap_red_green;
             if (sdl_icc_length)
@@ -1769,7 +1769,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   {
     tiled->host[i] = ctx_new_for_framebuffer (tiled->pixels,
                    tiled->width/CTX_HASH_COLS, tiled->height/CTX_HASH_ROWS,
-                   tiled->width * 4, CTX_FORMAT_RGBA8); // this format
+                   tiled->width * 4, CTX_FORMAT_BGRA8); // this format
                                   // is overriden in  thread
     ((CtxRasterizer*)(tiled->host[i]->renderer))->swap_red_green = 1;
     ctx_set_texture_source (tiled->host[i], tiled->ctx);
