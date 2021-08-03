@@ -2014,12 +2014,6 @@ ctx_RGBA8_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
      uint32_t cov = *coverage;
-     if (CTX_UNLIKELY (cov == 255))
-     {
-       *((uint32_t*)(dst)) = *((uint32_t*)src);
-     }
-     else
-     {
      uint32_t di =*((uint32_t*)dst);
      uint32_t di_ga = ( di & 0xff00ff00) >> 8;
      uint32_t di_rb = di & 0x00ff00ff;
@@ -2027,62 +2021,8 @@ ctx_RGBA8_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS)
 
      ((((si_rb * cov) + (di_rb * ((256)-(cov)))) & 0xff00ff00) >> 8)  |
       (((si_ga * cov) + (di_ga * ((256)-(cov)))) & 0xff00ff00);
-     }
      coverage ++;
      dst+=4;
-  }
-#endif
-}
-
-static void
-ctx_RGBA8_copy_normal (CTX_COMPOSITE_ARGUMENTS)
-{
-#if CTX_REFERENCE
-  ctx_u8_copy_normal (4, rasterizer, dst, src, x0, coverage, count);
-#else
-  int components = 4;
-  int has_fragment = rasterizer->fragment != NULL;
-  float u0 = 0; float v0 = 0;
-  float ud = 0; float vd = 0;
-  if (CTX_LIKELY(has_fragment))
-    {
-      ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-      while (count--)
-      {
-        uint8_t cov = *coverage;
-    if (cov == 0)
-    {
-      u0+=ud;
-      v0+=vd;
-    }
-    else
-    {
-      rasterizer->fragment (rasterizer, u0, v0, src, 1, ud, vd);
-      u0+=ud;
-      v0+=vd;
-      if (cov == 255)
-      {
-        ((uint32_t*)dst)[0] = ((uint32_t*)src)[0];
-      }
-      else
-      {
-        uint8_t rcov = 255 - cov;
-        for (int c = 0; c < components; c++)
-          { dst[c] = (src[c]*cov + dst[c] * rcov)>>8; }
-      }
-    }
-    dst += components;
-    coverage ++;
-  }
-      return;
-    }
-
-  while (count--)
-  {
-    for (int c = 0; c < 4; c++)
-      dst[c] = ((src[c] * coverage[0]) + dst[c] * ((256-coverage[0]))) >> 8;
-    dst += 4;
-    coverage ++;
   }
 #endif
 }
