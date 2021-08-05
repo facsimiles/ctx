@@ -2015,12 +2015,16 @@ ctx_RGBA8_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS)
   {
      uint32_t cov = *coverage;
      uint32_t di =*((uint32_t*)dst);
-     uint32_t di_ga = ( di & 0xff00ff00) >> 8;
-     uint32_t di_rb = di & 0x00ff00ff;
+     uint32_t di_ga = ( di & 0xff00ff00);
+     uint32_t di_rb = ( di & 0x00ff00ff);
+
+     uint32_t d_rb = si_rb - di_rb;
+     uint32_t d_ga = si_ga - (di_ga>>8);
+
      *((uint32_t*)(dst)) =
 
-     ((((si_rb * cov) + (di_rb * ((256)-(cov)))) & 0xff00ff00) >> 8)  |
-      (((si_ga * cov) + (di_ga * ((256)-(cov)))) & 0xff00ff00);
+     (((di_rb + ((d_rb * cov)>>8)) & 0x00ff00ff))  |
+      ((di_ga + ((d_ga * cov) & 0xff00ff00)));
      coverage ++;
      dst+=4;
   }
