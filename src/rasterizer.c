@@ -1199,6 +1199,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.25;
 #endif
     }
+#if 0 // redundant
     else
     {
       ctx_rasterizer_increment_edges (rasterizer, halfstep2);
@@ -1211,6 +1212,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.30;
 #endif
     }
+#endif
   int first_col = minx;
   int last_col = maxx;
 
