@@ -957,10 +957,11 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           if (first < last)
           {
               coverage[first] += graystart;
-#if 0
+#if 1
               for (int x = first + 1; x < last; x++)
                 coverage[x] = 255;
 #else
+              memset(&coverage[first+1], 255, last-(first+1));
 #endif
               coverage[last]  += grayend;
           }

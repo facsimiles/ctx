@@ -68,7 +68,8 @@ CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 #endif
 }
 #endif
-CTX_INLINE static uint32_t ctx_lerp_RGBA8 (uint32_t v0, uint32_t v1, uint8_t dx)
+
+CTX_INLINE static uint32_t ctx_lerp_RGBA8 (const uint32_t v0, const uint32_t v1, const uint8_t dx)
 {
 #if 0
   char bv0[4];
@@ -80,14 +81,16 @@ CTX_INLINE static uint32_t ctx_lerp_RGBA8 (uint32_t v0, uint32_t v1, uint8_t dx)
     res [c] = ctx_lerp_u8 (bv0[c], bv1[c], dx);
   return ((uint32_t*)(&res[0]))[0];
 #else
-  uint32_t cov = dx;
-  uint32_t si_ga = (v1 & 0xff00ff00) >> 8;
-  uint32_t si_rb = v1 & 0x00ff00ff;
-  uint32_t di_ga = ( v0 & 0xff00ff00) >> 8;
-  uint32_t di_rb = v0 & 0x00ff00ff;
+  const uint32_t cov = dx;
+  const uint32_t si_ga = (v1 & 0xff00ff00) >> 8;
+  const uint32_t si_rb = v1 & 0x00ff00ff;
+  const uint32_t di_ga = ( v0 & 0xff00ff00);
+  const uint32_t di_rb = v0 & 0x00ff00ff;
+  const uint32_t d_rb = si_rb - di_rb;
+  const uint32_t d_ga = si_ga - (di_ga>>8);
   return
-  ((((si_rb * cov) + (di_rb * ((256)-(cov)))) & 0xff00ff00) >> 8)  |
-  (((si_ga * cov) + (di_ga * ((256)-(cov)))) & 0xff00ff00);
+     (((di_rb + ((d_rb * cov)>>8)) & 0x00ff00ff))  |
+      ((di_ga + ((d_ga * cov)      & 0xff00ff00)));
 
 #endif
 }
@@ -1942,6 +1945,9 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 static void
 ctx_RGBA8_source_copy_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 {
+
+
+
   while (count--)
   {
     ((uint32_t*)dst)[0]=ctx_lerp_RGBA8 (((uint32_t*)dst)[0],
@@ -2024,7 +2030,7 @@ ctx_RGBA8_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS)
      *((uint32_t*)(dst)) =
 
      (((di_rb + ((d_rb * cov)>>8)) & 0x00ff00ff))  |
-      ((di_ga + ((d_ga * cov) & 0xff00ff00)));
+      ((di_ga + ((d_ga * cov)      & 0xff00ff00)));
      coverage ++;
      dst+=4;
   }
