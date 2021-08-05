@@ -1071,16 +1071,14 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           dst += (rasterizer->blit_stride * (rasterizer->scan_min-scan_start) / CTX_FULL_AA);
           scan_start = rasterizer->scan_min;
         }
-      if (rasterizer->scan_max < scan_end)
-        { scan_end = rasterizer->scan_max; }
+      scan_end = ctx_mini (rasterizer->scan_max, scan_end);
     }
   if (rasterizer->state->gstate.clip_min_y * CTX_FULL_AA > scan_start )
     { 
        dst += (rasterizer->blit_stride * (rasterizer->state->gstate.clip_min_y * CTX_FULL_AA -scan_start) / CTX_FULL_AA);
        scan_start = rasterizer->state->gstate.clip_min_y * CTX_FULL_AA; 
     }
-  if (rasterizer->state->gstate.clip_max_y * CTX_FULL_AA < scan_end)
-    { scan_end = rasterizer->state->gstate.clip_max_y * CTX_FULL_AA; }
+  scan_end = ctx_mini (rasterizer->state->gstate.clip_max_y * CTX_FULL_AA, scan_end);
   if (scan_start > scan_end ||
       (scan_start > (rasterizer->blit_y + rasterizer->blit_height) * CTX_FULL_AA) ||
       (scan_end < (rasterizer->blit_y) * CTX_FULL_AA))
