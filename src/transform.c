@@ -17,7 +17,7 @@ ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
   _ctx_matrix_apply_transform (m, x, y);
 }
 
-CTX_STATIC void
+CTX_STATIC inline void
 _ctx_user_to_device (CtxState *state, float *x, float *y)
 {
   _ctx_matrix_apply_transform (&state->gstate.transform, x, y);

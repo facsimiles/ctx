@@ -948,7 +948,7 @@ ctx_get_font (Ctx *ctx)
 
 void ctx_line_to (Ctx *ctx, float x, float y)
 {
-  if (!ctx->state.has_moved)
+  if (CTX_UNLIKELY(!ctx->state.has_moved))
     { CTX_PROCESS_F (CTX_MOVE_TO, x, y); }
   else
     { CTX_PROCESS_F (CTX_LINE_TO, x, y); }
@@ -1310,7 +1310,7 @@ ctx_flush (Ctx *ctx)
 
 ////////////////////////////////////////
 
-static void
+static inline void
 ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
 {
   CtxCommand *c = (CtxCommand *) entry;
@@ -1508,7 +1508,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
     }
 }
 
-void
+static inline void
 ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
 {
   switch (entry->code)
@@ -1556,7 +1556,7 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
 /*
  * this transforms the contents of entry according to ctx->transformation
  */
-static void
+static inline void
 ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 {
   CtxCommand *c = (CtxCommand *) entry;
@@ -1733,7 +1733,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
     }
 }
 
-static void
+static inline void
 ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
 {
   switch (entry->code)
@@ -1797,7 +1797,7 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
     }
 }
 
-static void
+static inline void
 ctx_interpret_pos (CtxState *state, CtxEntry *entry, void *data)
 {
   if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_SCREEN_SPACE) ||
@@ -1896,7 +1896,7 @@ ctx_new (void)
   return ctx;
 }
 
- void
+static inline void
 ctx_drawlist_deinit (CtxDrawlist *drawlist)
 {
 #if !CTX_DRAWLIST_STATIC

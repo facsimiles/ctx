@@ -1,5 +1,6 @@
 #include "ctx-split.h"
 
+
 CTX_STATIC inline int
 ctx_conts_for_entry (CtxEntry *entry)
 {
@@ -325,14 +326,15 @@ CTX_STATIC void ctx_drawlist_compact (CtxDrawlist *drawlist);
 CTX_STATIC void
 ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
 {
+  int flags=drawlist->flags;
 #if CTX_DRAWLIST_STATIC
-  if (drawlist->flags & CTX_DRAWLIST_EDGE_LIST)
+  if (flags & CTX_DRAWLIST_EDGE_LIST)
     {
-      static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
-      drawlist->entries = &sbuf[0];
+      static CtxSegment sbuf[CTX_MAX_EDGE_LIST_SIZE];
+      drawlist->entries = (CtxEntry*)&sbuf[0];
       drawlist->size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  else if (drawlist->flags & CTX_DRAWLIST_CURRENT_PATH)
+  else if (flags & CTX_DRAWLIST_CURRENT_PATH)
     {
       static CtxEntry sbuf[CTX_MAX_EDGE_LIST_SIZE];
       drawlist->entries = &sbuf[0];
@@ -349,47 +351,49 @@ ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
   int new_size = desired_size;
   int min_size = CTX_MIN_JOURNAL_SIZE;
   int max_size = CTX_MAX_JOURNAL_SIZE;
-  if ((drawlist->flags & CTX_DRAWLIST_EDGE_LIST))
+  if ((flags & CTX_DRAWLIST_EDGE_LIST))
     {
       min_size = CTX_MIN_EDGE_LIST_SIZE;
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  else if (drawlist->flags & CTX_DRAWLIST_CURRENT_PATH)
+  else if (flags & CTX_DRAWLIST_CURRENT_PATH)
     {
       min_size = CTX_MIN_EDGE_LIST_SIZE;
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
   else
     {
+#if 0
       ctx_drawlist_compact (drawlist);
+#endif
     }
 
-  if (new_size < drawlist->size)
+  if (CTX_UNLIKELY(new_size < drawlist->size))
     { return; }
-  if (drawlist->size == max_size)
+  if (CTX_UNLIKELY(drawlist->size == max_size))
     { return; }
-  if (new_size < min_size)
-    { new_size = min_size; }
-  if (new_size < drawlist->count)
-    { new_size = drawlist->count + 4; }
-  if (new_size >= max_size)
-    { new_size = max_size; }
+  new_size = ctx_maxi (new_size, min_size);
+  //if (new_size < drawlist->count)
+  //  { new_size = drawlist->count + 4; }
+  new_size = ctx_mini (new_size, max_size);
   if (new_size != drawlist->size)
     {
-      //fprintf (stderr, "growing drawlist %p %i to %d from %d\n", drawlist, drawlist->flags, new_size, drawlist->size);
+      int item_size = sizeof (CtxEntry);
+      if (flags & CTX_DRAWLIST_EDGE_LIST) item_size = sizeof (CtxSegment);
+      //fprintf (stderr, "growing drawlist %p %i to %d from %d\n", drawlist, flags, new_size, drawlist->size);
   if (drawlist->entries)
     {
       //printf ("grow %p to %d from %d\n", drawlist, new_size, drawlist->size);
-      CtxEntry *ne =  (CtxEntry *) malloc (sizeof (CtxEntry) * new_size);
-      memcpy (ne, drawlist->entries, drawlist->size * sizeof (CtxEntry) );
+      CtxEntry *ne =  (CtxEntry *) malloc (item_size * new_size);
+      memcpy (ne, drawlist->entries, drawlist->size * item_size );
       free (drawlist->entries);
       drawlist->entries = ne;
-      //drawlist->entries = (CtxEntry*)malloc (drawlist->entries, sizeof (CtxEntry) * new_size);
+      //drawlist->entries = (CtxEntry*)malloc (drawlist->entries, item_size * new_size);
     }
   else
     {
       //fprintf (stderr, "allocating for %p %d\n", drawlist, new_size);
-      drawlist->entries = (CtxEntry *) malloc (sizeof (CtxEntry) * new_size);
+      drawlist->entries = (CtxEntry *) malloc (item_size * new_size);
     }
   drawlist->size = new_size;
     }
@@ -402,16 +406,17 @@ ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 {
   int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = drawlist->count;
-  if (CTX_LIKELY((drawlist->flags & CTX_DRAWLIST_EDGE_LIST ||
-       drawlist->flags & CTX_DRAWLIST_CURRENT_PATH)))
+  int flags = drawlist->flags;
+  if (CTX_LIKELY((flags & CTX_DRAWLIST_EDGE_LIST ||
+       flags & CTX_DRAWLIST_CURRENT_PATH)))
     {
       max_size = CTX_MAX_EDGE_LIST_SIZE;
     }
-  if (CTX_UNLIKELY(drawlist->flags & CTX_DRAWLIST_DOESNT_OWN_ENTRIES))
+  if (CTX_UNLIKELY(flags & CTX_DRAWLIST_DOESNT_OWN_ENTRIES))
     {
       return ret;
     }
-  if (CTX_UNLIKELY(ret + 1024 >= drawlist->size - 40))
+  if (CTX_UNLIKELY(ret + 64 >= drawlist->size - 40))
     {
       int new_ = CTX_MAX (drawlist->size * 2, ret + 1024);
       ctx_drawlist_resize (drawlist, new_);
@@ -421,7 +426,10 @@ ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
     {
       return 0;
     }
-  drawlist->entries[drawlist->count] = *entry;
+  if ((flags & CTX_DRAWLIST_EDGE_LIST))
+    ((CtxSegment*)(drawlist->entries))[drawlist->count] = *(CtxSegment*)entry;
+  else
+    drawlist->entries[drawlist->count] = *entry;
   ret = drawlist->count;
   drawlist->count++;
   return ret;
@@ -575,20 +583,19 @@ int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
   return ret;
 }
 
-CTX_STATIC CtxEntry
+CTX_STATIC inline CtxEntry
 ctx_void (CtxCode code)
 {
   CtxEntry command;
   command.code = code;
-  command.data.u32[0] = 0;
-  command.data.u32[1] = 0;
   return command;
 }
 
-CTX_STATIC CtxEntry
+CTX_STATIC inline CtxEntry
 ctx_f (CtxCode code, float x, float y)
 {
-  CtxEntry command = ctx_void (code);
+  CtxEntry command;
+  command.code = code;
   command.data.f[0] = x;
   command.data.f[1] = y;
   return command;
@@ -617,7 +624,20 @@ ctx_s32 (CtxCode code, int32_t x, int32_t y)
 static inline CtxEntry
 ctx_s16 (CtxCode code, int x0, int y0, int x1, int y1)
 {
-  CtxEntry command = ctx_void (code);
+  CtxEntry command;
+  command.code = code;
+  command.data.s16[0] = x0;
+  command.data.s16[1] = y0;
+  command.data.s16[2] = x1;
+  command.data.s16[3] = y1;
+  return command;
+}
+
+static inline CtxSegment
+ctx_segment_s16 (CtxCode code, int x0, int y0, int x1, int y1)
+{
+  CtxSegment command;
+  command.code = code;
   command.data.s16[0] = x0;
   command.data.s16[1] = y0;
   command.data.s16[2] = x1;
@@ -630,7 +650,8 @@ ctx_u8 (CtxCode code,
         uint8_t a, uint8_t b, uint8_t c, uint8_t d,
         uint8_t e, uint8_t f, uint8_t g, uint8_t h)
 {
-  CtxEntry command = ctx_void (code);
+  CtxEntry command;
+  command.code = code;
   command.data.u8[0] = a;
   command.data.u8[1] = b;
   command.data.u8[2] = c;
@@ -1025,3 +1046,4 @@ uint8_t *ctx_define_texture_pixel_data (CtxEntry *entry)
 {
   return &entry[2 + 1 + 1 + ctx_conts_for_entry (&entry[2])].data.u8[0];
 }
+

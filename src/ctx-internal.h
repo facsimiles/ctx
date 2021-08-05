@@ -507,7 +507,7 @@ struct _Ctx
 };
 
 
-void ctx_process (Ctx *ctx, CtxEntry *entry);
+static void ctx_process (Ctx *ctx, CtxEntry *entry);
 CtxBuffer *ctx_buffer_new (int width, int height,
                            CtxPixelFormat pixel_format);
 void ctx_buffer_free (CtxBuffer *buffer);
@@ -515,10 +515,10 @@ void ctx_buffer_free (CtxBuffer *buffer);
 void
 ctx_state_gradient_clear_stops (CtxState *state);
 
-static void ctx_interpret_style         (CtxState *state, CtxEntry *entry, void *data);
-static void ctx_interpret_transforms    (CtxState *state, CtxEntry *entry, void *data);
-static void ctx_interpret_pos           (CtxState *state, CtxEntry *entry, void *data);
-static void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
+static inline void ctx_interpret_style         (CtxState *state, CtxEntry *entry, void *data);
+static inline void ctx_interpret_transforms    (CtxState *state, CtxEntry *entry, void *data);
+static inline void ctx_interpret_pos           (CtxState *state, CtxEntry *entry, void *data);
+static inline void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
 
 struct _CtxInternalFsEntry
 {
@@ -551,14 +551,14 @@ struct _CtxPixelFormatInfo
 };
 
 
-CTX_STATIC void
+CTX_STATIC inline void
 _ctx_user_to_device (CtxState *state, float *x, float *y);
 CTX_STATIC void
 _ctx_user_to_device_distance (CtxState *state, float *x, float *y);
 CTX_STATIC void ctx_state_init (CtxState *state);
-static void
+static inline void
 ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data);
-void
+static inline void
 ctx_drawlist_deinit (CtxDrawlist *drawlist);
 
 CtxPixelFormatInfo *

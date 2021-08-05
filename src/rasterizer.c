@@ -63,7 +63,7 @@ ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *r
 
 static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 {
-  CtxEntry entry = {CTX_EDGE, {{0},}};
+  CtxSegment entry = {CTX_EDGE, {{0},}};
   rasterizer->scan_min = ctx_mini (y1, rasterizer->scan_min);
   rasterizer->scan_max = ctx_maxi (y1, rasterizer->scan_max);
 
@@ -72,7 +72,7 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
 
   entry.data.s16[2]=x1;
   entry.data.s16[3]=y1;
-  return ctx_drawlist_add_single (&rasterizer->edge_list, &entry);
+  return ctx_drawlist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 }
 
 #if 0
@@ -171,7 +171,8 @@ CTX_STATIC uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
   int16_t x = 0;
   int16_t y = 0;
 
-  CtxEntry *entry = &rasterizer->edge_list.entries[0];
+  CtxSegment *entry = (CtxSegment*)&rasterizer->edge_list.entries[0];
+
   int ox = entry->data.s16[2];
   int oy = entry->data.s16[3];
   uint32_t hash = rasterizer->edge_list.count;
@@ -180,7 +181,7 @@ CTX_STATIC uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
   hash += oy; //(oy % CTX_RASTERIZER_AA);
   for (int i = 0; i < rasterizer->edge_list.count; i++)
     {
-      CtxEntry *entry = &rasterizer->edge_list.entries[i];
+      CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[i];
       x = entry->data.s16[2];
       y = entry->data.s16[3];
       int dx = x-ox;
@@ -202,7 +203,7 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   if (rasterizer->edge_list.count == 0)
      return 0;
 #if CTX_SHAPE_CACHE
-  CtxEntry *entry = &rasterizer->edge_list.entries[0];
+  CtxSegment *entry = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int ox = entry->data.s16[2];
   int oy = entry->data.s16[3];
   uint32_t hash = rasterizer->edge_list.count;
@@ -212,7 +213,7 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 #endif
   for (int i = 0; i < rasterizer->edge_list.count; i++)
     {
-      CtxEntry *entry = &rasterizer->edge_list.entries[i];
+      CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[i];
       if (entry->code == CTX_NEW_EDGE)
         {
           entry->code = CTX_EDGE;
@@ -239,7 +240,7 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 #endif
       if (entry->data.s16[3] < entry->data.s16[1])
         {
-          *entry = ctx_s16 (CTX_EDGE_FLIPPED,
+          *entry = ctx_segment_s16 (CTX_EDGE_FLIPPED,
                             entry->data.s16[2], entry->data.s16[3],
                             entry->data.s16[0], entry->data.s16[1]);
         }
@@ -251,7 +252,7 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 #endif
 }
 
-CTX_STATIC void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
+CTX_STATIC inline void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 {
   if (rasterizer->has_shape && rasterizer->has_prev)
     {
@@ -260,7 +261,7 @@ CTX_STATIC void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
     }
 }
 
-CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
+CTX_STATIC inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx = x; float ty = y;
   int aa = 15;//rasterizer->aa;
@@ -269,7 +270,7 @@ CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, floa
   rasterizer->first_x  = x;
   rasterizer->first_y  = y;
   rasterizer->has_prev = -1;
-  if (CTX_UNLIKELY(rasterizer->uses_transforms))
+  if ((rasterizer->uses_transforms))
     {
       _ctx_user_to_device (rasterizer->state, &tx, &ty);
     }
@@ -285,15 +286,13 @@ CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, floa
 
 }
 
-
-
 static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx = x;
   float ty = y;
   float ox = rasterizer->x;
   float oy = rasterizer->y;
-  if (CTX_UNLIKELY(rasterizer->uses_transforms))
+  if ((rasterizer->uses_transforms))
     {
       _ctx_user_to_device (rasterizer->state, &tx, &ty);
     }
@@ -307,9 +306,9 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
   
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * 15);//rasterizer->aa);
 
-  if (rasterizer->has_prev<=0)
+  if (CTX_UNLIKELY(rasterizer->has_prev<=0))
     {
-      if (CTX_UNLIKELY(rasterizer->uses_transforms))
+      if ((rasterizer->uses_transforms))
       {
         // storing transformed would save some processing for a tiny
         // amount of runtime RAM XXX
@@ -320,7 +319,8 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
       oy = ctx_maxf (oy, MIN_Y);
       oy = ctx_minf (oy, MAX_Y);
 
-      CtxEntry *entry = &rasterizer->edge_list.entries[rasterizer->edge_list.count-1];
+      CtxSegment *entry = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->edge_list.count-1];
+
       entry->data.s16[0] = ox * CTX_SUBDIV;
       entry->data.s16[1] = oy * 15;
       entry->code = CTX_NEW_EDGE;
@@ -411,7 +411,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
   tolerance = 1.0f/tolerance * 2;
-#if 1 // skipping this to preserve hash integrity
+#if 0 // skipping this to preserve hash integrity
   if (tolerance == 1.0f || 1)
   {
   float maxx = ctx_maxf (x1,x2);
@@ -574,8 +574,8 @@ static void ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
 
 CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
 {
-  const CtxEntry *a = (const CtxEntry *) ap;
-  const CtxEntry *b = (const CtxEntry *) bp;
+  const CtxSegment *a = (const CtxSegment *) ap;
+  const CtxSegment *b = (const CtxSegment *) bp;
   int ycompare = a->data.s16[1] - b->data.s16[1];
   if (ycompare)
     { return ycompare; }
@@ -583,9 +583,9 @@ CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
   return xcompare;
 }
 
-CTX_INLINE static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
+CTX_INLINE static int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
 {
-  CtxEntry pivot = A[ (high+low) /2];
+  CtxSegment pivot = A[ (high+low) /2];
   int i = low;
   int j = high;
   while (i <= j)
@@ -594,7 +594,7 @@ CTX_INLINE static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
       while (ctx_compare_edges (&pivot, &A[j]) <0) { j --; }
       if (i <= j)
         {
-          CtxEntry tmp = A[i];
+          CtxSegment tmp = A[i];
           A[i] = A[j];
           A[j] = tmp;
           i++;
@@ -604,7 +604,7 @@ CTX_INLINE static int ctx_edge_qsort_partition (CtxEntry *A, int low, int high)
   return i;
 }
 
-static inline void ctx_edge_qsort (CtxEntry *entries, int low, int high)
+static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
 {
   {
     int p = ctx_edge_qsort_partition (entries, low, high);
@@ -617,7 +617,7 @@ static inline void ctx_edge_qsort (CtxEntry *entries, int low, int high)
 
 static CTX_INLINE void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 {
-  ctx_edge_qsort (& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
+  ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
 }
 
 
@@ -627,8 +627,8 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
   rasterizer->ending_edges = 0;
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
-      int edge_end =rasterizer->edge_list.entries[rasterizer->edges[i].index].data.s16[3]-1;
-      if (CTX_UNLIKELY(edge_end < scanline))
+      int edge_end = ((CtxSegment*)(rasterizer->edge_list.entries))[rasterizer->edges[i].index].data.s16[3]-1;
+      if (CTX_LIKELY(edge_end < scanline))
         {
           int dx_dy = abs(rasterizer->edges[i].delta);
           rasterizer->needs_aa3 -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
@@ -638,7 +638,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           rasterizer->active_edges--;
           i--;
         }
-      else if (CTX_UNLIKELY(edge_end < scanline + CTX_FULL_AA))
+      else if (edge_end < scanline + CTX_FULL_AA)
         rasterizer->ending_edges = 1; // only used as a flag!
     }
 }
@@ -667,7 +667,7 @@ inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, in
 inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
   int miny;
-  CtxEntry *entries = rasterizer->edge_list.entries;
+  CtxSegment *entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   for (int i = 0; i < rasterizer->pending_edges; i++)
     {
       if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] - 1 <= rasterizer->scanline)
@@ -836,7 +836,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   const int      fill_rule,
                                   uint8_t        aa_factor)
 {
-  CtxEntry *entries = rasterizer->edge_list.entries;;
+  CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   CtxEdge  *edges = rasterizer->edges;
   int scanline     = rasterizer->scanline;
   int active_edges = rasterizer->active_edges;
@@ -900,7 +900,7 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
                                   uint8_t       *coverage,
                                   int            fill_rule)
 {
-  CtxEntry *entries = rasterizer->edge_list.entries;;
+  CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   CtxEdge  *edges = rasterizer->edges;
   int scanline     = rasterizer->scanline;
   int active_edges = rasterizer->active_edges;
@@ -1430,7 +1430,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->preserve?rasterizer->edge_list.count:0;
 
-  CtxEntry temp[count]; /* copy of already built up path's poly line
+  CtxSegment temp[count]; /* copy of already built up path's poly line
                           XXX - by building a large enough path
                           the stack can be smashed!
                          */
@@ -1478,10 +1478,11 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #if CTX_RECT_FILL
   if (rasterizer->edge_list.count == 6)
     {
-      CtxEntry *entry0 = &rasterizer->edge_list.entries[0];
-      CtxEntry *entry1 = &rasterizer->edge_list.entries[1];
-      CtxEntry *entry2 = &rasterizer->edge_list.entries[2];
-      CtxEntry *entry3 = &rasterizer->edge_list.entries[3];
+      CtxSegment *entry0 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[0];
+      CtxSegment *entry1 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[1];
+      CtxSegment *entry2 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[2];
+      CtxSegment *entry3 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[3];
+
       if (!rasterizer->state->gstate.clipped &&
           (entry0->data.s16[2] == entry1->data.s16[2]) &&
           (entry0->data.s16[3] == entry3->data.s16[3]) &&
@@ -2051,7 +2052,7 @@ static void
 ctx_rasterizer_stroke_1px (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->edge_list.count;
-  CtxEntry *temp = rasterizer->edge_list.entries;
+  CtxSegment *temp = (CtxSegment*)rasterizer->edge_list.entries;
   float prev_x = 0.0f;
   float prev_y = 0.0f;
   int aa = 15;//rasterizer->aa;
@@ -2067,7 +2068,7 @@ ctx_rasterizer_stroke_1px (CtxRasterizer *rasterizer)
       int i;
       for (i = start; i < count; i++)
         {
-          CtxEntry *entry = &temp[i];
+          CtxSegment *entry = &temp[i];
           float x, y;
           if (entry->code == CTX_NEW_EDGE)
             {
@@ -2118,15 +2119,18 @@ static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
-  CtxSource source_backup = gstate->source_fill;
+  CtxSource source_backup;
   if (gstate->source_stroke.type != CTX_SOURCE_INHERIT_FILL)
+  {
+    source_backup = gstate->source_fill;
     gstate->source_fill = rasterizer->state->gstate.source_stroke;
+  }
   int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;
   float factor = ctx_matrix_get_scale (&gstate->transform);
   float line_width = gstate->line_width * factor;
 
-  CtxEntry temp[count]; /* copy of already built up path's poly line  */
+  CtxSegment temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 
 #if 0 // needs more case testing
@@ -2214,7 +2218,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
           int i;
           for (i = start; i < count; i++)
             {
-              CtxEntry *entry = &temp[i];
+              CtxSegment *entry = &temp[i];
               float x, y;
               if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                 {
@@ -2260,7 +2264,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 foo:
           for (int i = end; i >= start; i--)
             {
-              CtxEntry *entry = &temp[i];
+              CtxSegment *entry = &temp[i];
               float x, y, dx, dy;
               x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
               y = entry->data.s16[3] * 1.0f / aa;
@@ -2312,7 +2316,7 @@ foo:
               int has_prev = 0;
               for (int i = 0; i < count; i++)
                 {
-                  CtxEntry *entry = &temp[i];
+                  CtxSegment *entry = &temp[i];
                   if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                     {
                       if (has_prev)
@@ -2341,7 +2345,7 @@ foo:
               int has_prev = 0;
               for (int i = 0; i < count; i++)
                 {
-                  CtxEntry *entry = &temp[i];
+                  CtxSegment *entry = &temp[i];
                   if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                     {
                       if (has_prev)
@@ -2374,7 +2378,7 @@ foo:
               float x = 0, y = 0;
               for (int i = 0; i < count-1; i++)
                 {
-                  CtxEntry *entry = &temp[i];
+                  CtxSegment *entry = &temp[i];
                   x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
                   y = entry->data.s16[3] * 1.0f / aa;
                   if (CTX_UNLIKELY(entry[1].code == CTX_EDGE))
@@ -3695,7 +3699,7 @@ float ctx_y (Ctx *ctx)
   return y;
 }
 
-void
+static void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
 #if CTX_CURRENT_PATH
