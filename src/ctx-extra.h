@@ -3,10 +3,10 @@
 
 
 #define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
-static inline int   ctx_mini (int a, int b)     { if (a < b) return a; return b; }
-static inline float ctx_minf (float a, float b) { if (a < b) return a; return b; }
-static inline int   ctx_maxi (int a, int b)     { if (a > b) return a; return b; }
-static inline float ctx_maxf (float a, float b) { if (a > b) return a; return b; }
+static inline int   ctx_mini (int a, int b)     { return (a < b) * a + (a >= b) * b; }
+static inline float ctx_minf (float a, float b) { return (a < b) * a + (a >= b) * b; }
+static inline int   ctx_maxi (int a, int b)     { return (a > b) * a + (a <= b) * b; }
+static inline float ctx_maxf (float a, float b) { return (a > b) * a + (a <= b) * b; }
 
 
 typedef enum CtxOutputmode

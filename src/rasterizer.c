@@ -64,14 +64,11 @@ ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *r
 static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 {
   CtxEntry entry = {CTX_EDGE, {{0},}};
-  if (CTX_UNLIKELY(y1 < rasterizer->scan_min))
-    { rasterizer->scan_min = y1; }
-  if (CTX_UNLIKELY(y1 > rasterizer->scan_max))
-    { rasterizer->scan_max = y1; }
-  if (CTX_UNLIKELY(x1 < rasterizer->col_min))
-    { rasterizer->col_min = x1; }
-  if (CTX_UNLIKELY(x1 > rasterizer->col_max))
-    { rasterizer->col_max = x1; }
+  rasterizer->scan_min = ctx_mini (y1, rasterizer->scan_min);
+  rasterizer->scan_max = ctx_maxi (y1, rasterizer->scan_max);
+
+  rasterizer->col_min = ctx_mini (x1, rasterizer->col_min);
+  rasterizer->col_max = ctx_maxi (x1, rasterizer->col_max);
 
   entry.data.s16[2]=x1;
   entry.data.s16[3]=y1;
@@ -280,14 +277,12 @@ CTX_STATIC void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, floa
   tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
   ty = ty * aa;
 
-  if (CTX_UNLIKELY(ty < rasterizer->scan_min))
-    { rasterizer->scan_min = ty; }
-  if (CTX_UNLIKELY(ty > rasterizer->scan_max))
-    { rasterizer->scan_max = ty; }
-  if (CTX_UNLIKELY(tx < rasterizer->col_min))
-    { rasterizer->col_min = tx; }
-  if (CTX_UNLIKELY(tx > rasterizer->col_max))
-    { rasterizer->col_max = tx; }
+  rasterizer->scan_min = ctx_mini (ty, rasterizer->scan_min);
+  rasterizer->scan_max = ctx_maxi (ty, rasterizer->scan_max);
+
+  rasterizer->col_min = ctx_mini (tx, rasterizer->col_min);
+  rasterizer->col_max = ctx_maxi (tx, rasterizer->col_max);
+
 }
 
 
@@ -306,8 +301,9 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
 #define MIN_Y -1000
 #define MAX_Y 1400
 
-  if (CTX_UNLIKELY(ty < MIN_Y)) ty = MIN_Y;
-  if (CTX_UNLIKELY(ty > MAX_Y)) ty = MAX_Y;
+  ty = ctx_maxf (MIN_Y, ty);
+  ty = ctx_minf (MAX_Y, ty);
+
   
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * 15);//rasterizer->aa);
 
@@ -321,8 +317,8 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
       }
       ox -= rasterizer->blit_x;
 
-      if (CTX_UNLIKELY(oy < MIN_Y)) oy = MIN_Y;
-      if (CTX_UNLIKELY(oy > MAX_Y)) oy = MAX_Y;
+      oy = ctx_maxf (oy, MIN_Y);
+      oy = ctx_minf (oy, MAX_Y);
 
       CtxEntry *entry = &rasterizer->edge_list.entries[rasterizer->edge_list.count-1];
       entry->data.s16[0] = ox * CTX_SUBDIV;
@@ -635,16 +631,9 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (CTX_UNLIKELY(edge_end < scanline))
         {
           int dx_dy = abs(rasterizer->edges[i].delta);
-          if (CTX_UNLIKELY(dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3))
-            { rasterizer->needs_aa3 --;
-              if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5)
-              { rasterizer->needs_aa5 --;
-                if (CTX_UNLIKELY(dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15))
-                  {
-                    rasterizer->needs_aa15 --;
-                  }
-              }
-            }
+          rasterizer->needs_aa3 -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
+          rasterizer->needs_aa5 -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
+          rasterizer->needs_aa15 -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
           i--;
