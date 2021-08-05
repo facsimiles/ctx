@@ -721,16 +721,11 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 
               {
                 int abs_dx_dy = abs(dx_dy);
-                if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT3)
-                  { rasterizer->needs_aa3 ++;
-                    if (abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT5)
-                    { rasterizer->needs_aa5 ++; 
-                      if (CTX_UNLIKELY(abs_dx_dy> CTX_RASTERIZER_AA_SLOPE_LIMIT15))
-                      { rasterizer->needs_aa15 ++;
-                      }
-                    }
-                  }
+               rasterizer->needs_aa3 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
+               rasterizer->needs_aa5 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
+               rasterizer->needs_aa15 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
               }
+
 
               if ((miny > scanline) )
                 {
@@ -962,8 +957,11 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           if (first < last)
           {
               coverage[first] += graystart;
+#if 0
               for (int x = first + 1; x < last; x++)
                 coverage[x] = 255;
+#else
+#endif
               coverage[last]  += grayend;
           }
           else if (first == last)
@@ -1027,15 +1025,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
     { maxx = blit_max_x - 1; }
 #endif
 #if 1
-  if (rasterizer->state->gstate.clip_min_x>
-      minx)
-    { minx = rasterizer->state->gstate.clip_min_x; }
-  if (rasterizer->state->gstate.clip_max_x <
-      maxx)
-    { maxx = rasterizer->state->gstate.clip_max_x; }
+  minx = ctx_maxi (rasterizer->state->gstate.clip_min_x, minx);
+  maxx = ctx_mini (rasterizer->state->gstate.clip_max_x, maxx);
 #endif
-  if (minx < 0)
-    { minx = 0; }
+  minx = ctx_maxi (0, minx); // redundant?
   if (minx >= maxx)
     {
       ctx_rasterizer_reset (rasterizer);
