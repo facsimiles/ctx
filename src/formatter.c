@@ -497,9 +497,13 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
 #if 1
 
         int stride = ctx_pixel_format_get_stride ((CtxPixelFormat)c->define_texture.format, c->define_texture.width);
+        int data_len = stride * c->define_texture.height;
+        if (c->define_texture.format == CTX_FORMAT_YUV420)
+          data_len = c->define_texture.height * c->define_texture.width +
+                       2*(c->define_texture.height/2) * (c->define_texture.width/2);
         //fprintf (stderr, "encoding %i bytes\n", c->define_texture.height *stride);
         //ctx_print_a85 (formatter, pixel_data, c->define_texture.height * stride);
-        ctx_print_yenc (formatter, pixel_data, c->define_texture.height * stride);
+        ctx_print_yenc (formatter, pixel_data, data_len);
 #else
         ctx_formatter_addstrf (formatter, "\"");
         ctx_print_escaped_string (formatter, pixel_data);

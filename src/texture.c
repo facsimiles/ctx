@@ -152,10 +152,15 @@ const char* ctx_texture_init (Ctx           *ctx,
     stride = ctx_pixel_format_get_stride ((CtxPixelFormat)format, width);
   }
 
+  int data_len = stride * height;
+  if (format == CTX_FORMAT_YUV420)
+          data_len = width * height +
+                  2 * ((width/2)*(height/2));
+
   if (freefunc == ctx_buffer_pixels_free && user_data == (void*)23)
   {
-     uint8_t *tmp = (uint8_t*)malloc (height * stride);
-     memcpy (tmp, pixels, height * stride);
+     uint8_t *tmp = (uint8_t*)malloc (data_len);
+     memcpy (tmp, pixels, data_len);
      pixels = tmp;
   }
 

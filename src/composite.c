@@ -1198,8 +1198,8 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
   CtxBuffer *buffer = g->texture.buffer->color_managed;
   uint8_t *src = (uint8_t *) buffer->data;
   int bwidth  = buffer->width;
-  int bwidth_div_2  = bwidth/2;
   int bheight = buffer->height;
+  int bwidth_div_2  = bwidth/2;
   int bheight_div_2  = bheight/2;
   x += 0.5f;
   y += 0.5f;
@@ -1208,9 +1208,9 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
     float tx0 = g->texture.x0;
     float ty0 = g->texture.y0;
 
-    int x = 0;
+    int i = 0;
 
-    for (; x < count; x ++)
+    for (; i < count; i ++)
     {
       int u = x - tx0;
       int v = y - ty0;
@@ -1230,7 +1230,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
     uint32_t u_offset = bheight * bwidth;
     uint32_t v_offset = u_offset + bheight_div_2 * bwidth_div_2;
 
-    for (; x < count; x ++)
+    for (; i < count; i ++)
     {
       int u = x - tx0;
       int v = y - ty0;
@@ -1238,9 +1238,9 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       {
         uint32_t y  = v * bwidth + u;
         uint32_t uv = (v / 2) * bwidth_div_2 + (u / 2);
-        *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y], //127, 127);
-                                                 src[u_offset+uv],
-                                                 src[v_offset+uv]);
+        *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y],
+                        //127, 127);
+                        src[u_offset+uv], src[v_offset+uv]);
         ctx_RGBA8_associate_alpha_probably_opaque (rgba);
 #if CTX_DITHER
        ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -1256,7 +1256,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       rgba += 4;
     }
 
-    for (; x < count; x++)
+    for (; i < count; i++)
     {
       *((uint32_t*)(rgba))= 0;
       rgba += 4;
@@ -4806,8 +4806,8 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   },
 #endif
   {
-    CTX_FORMAT_YUV420, 3, 8, 2, 0, 0, CTX_FORMAT_RGBA8,
-    NULL, NULL, ctx_composite_convert, ctx_setup_RGBA8,
+    CTX_FORMAT_YUV420, 1, 8, 4, 0, 0, CTX_FORMAT_RGBA8,
+    ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGBA8,
   },
   {
     CTX_FORMAT_NONE

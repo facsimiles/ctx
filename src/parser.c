@@ -780,9 +780,12 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
              int height = arg(1);
              CtxPixelFormat format = (CtxPixelFormat)arg(2);
              int stride = ctx_pixel_format_get_stride (format, width);
+             int data_len = stride * height;
+             if (format == CTX_FORMAT_YUV420)
+                 data_len = height * width + 2*(height/2) * (width/2);
 
 
-             if (parser->pos != stride * height)
+             if (parser->pos != data_len)
              {
              fprintf (stderr, "unexpected datasize for define texture %s %ix%i\n size:%i != expected:%i - start of data: %i %i %i %i\n", eid, width, height,
                                parser->pos,
