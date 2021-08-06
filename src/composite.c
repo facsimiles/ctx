@@ -4805,10 +4805,12 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     NULL, NULL, ctx_composite_CMYK8, ctx_setup_CMYKAF,
   },
 #endif
+#if CTX_ENABLE_YUV420
   {
     CTX_FORMAT_YUV420, 1, 8, 4, 0, 0, CTX_FORMAT_RGBA8,
     ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGBA8,
   },
+#endif
   {
     CTX_FORMAT_NONE
   }

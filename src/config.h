@@ -307,6 +307,7 @@
 #undef CTX_ENABLE_FLOAT
 #endif
 #define CTX_ENABLE_FLOAT                1
+#define CTX_ENABLE_YUV420               1
 
 #if CTX_ENABLE_CMYK
 #define CTX_ENABLE_CMYK8                1
