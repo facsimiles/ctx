@@ -367,8 +367,6 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
                               int   iteration,
                               float tolerance)
 {
-  if (CTX_UNLIKELY(iteration > 8))
-    { return; }
   float t = (s + e) * 0.5f;
   float x, y, lx, ly, dx, dy;
   ctx_bezier_sample (ox, oy, x0, y0, x1, y1, x2, y2, t, &x, &y);
@@ -388,6 +386,8 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
         /* bailing on tiny segments */
         { return; }
     }
+  if (iteration < 8)
+  {
   ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
                                 sx, sy, x, y, s, t, iteration + 1,
                                 tolerance);
@@ -395,6 +395,7 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
   ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
                                 x, y, ex, ey, t, e, iteration + 1,
                                 tolerance);
+  }
 }
 
 CTX_STATIC void
@@ -404,13 +405,15 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x2, float y2)
 {
   float tolerance =
-    ctx_pow2 (rasterizer->state->gstate.transform.m[0][0]) +
-    ctx_pow2 (rasterizer->state->gstate.transform.m[1][1]);
+    3.0f/(ctx_pow2 (rasterizer->state->gstate.transform.m[0][0]) +
+    ctx_pow2 (rasterizer->state->gstate.transform.m[1][1]));
+  //float tolerance = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   float ox = rasterizer->x;
   float oy = rasterizer->y;
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
-  tolerance = 1.0f/tolerance * 2;
+  //tolerance = 10.0/(tolerance*tolerance);
+  //tolerance = 10.0f/tolerance;
 #if 0 // skipping this to preserve hash integrity
   if (tolerance == 1.0f || 1)
   {
@@ -1125,9 +1128,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           ctx_rasterizer_increment_edges (rasterizer, increment);
         }
 #define CTX_VIS_AA 0
-#if CTX_VIS_AA
-      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 1.0;
-#endif
     }
     else if (!rasterizer->needs_aa3) // if it doesnt need aa3 it doesnt need aa5 or aa15 either
     {
@@ -1138,7 +1138,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
       ctx_rasterizer_increment_edges (rasterizer, halfstep);
 #if CTX_VIS_AA
-      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.10;
+      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= (1.0/15);
 #endif
     }
 #if 1
@@ -1152,7 +1152,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           ctx_rasterizer_increment_edges (rasterizer, 1);
         }
 #if CTX_VIS_AA
-        for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.90;
 #endif
     }
 #endif
@@ -1166,7 +1165,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
         ctx_rasterizer_increment_edges (rasterizer, 3);
       }
 #if CTX_VIS_AA
-        for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.5;
+      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= (1.0/3);
 #endif
     }
     else if (rasterizer->needs_aa3)
@@ -1179,7 +1178,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
         ctx_rasterizer_increment_edges (rasterizer, 5);
       }
 #if CTX_VIS_AA
-      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= 0.25;
+      for (int x = minx; x <= maxx; x++) coverage[x-minx] *= (1.0/5);
 #endif
     }
 #if 0 // redundant
@@ -1909,9 +1908,10 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
                     int            anticlockwise)
 {
   int full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS;
-  full_segments = radius * CTX_PI * 2;
+  full_segments = radius * CTX_PI * 2 / 7.0;
   if (full_segments > CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS)
     { full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS; }
+  if (full_segments < 24) full_segments = 24;
   float step = CTX_PI*2.0/full_segments;
   int steps;
 

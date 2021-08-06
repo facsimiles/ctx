@@ -48,7 +48,6 @@ extern CtxList *clients;
 extern CtxClient *active;
 extern CtxClient *active_tab;
 
-static CtxClient *ctx_client_by_id (int id);
 
 int ctx_client_resize (int id, int width, int height);
 void ctx_client_maximize (int id);
