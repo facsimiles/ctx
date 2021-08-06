@@ -2635,6 +2635,24 @@ ctx_float_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
   }
 }
 
+
+static void
+ctx_float_source_over_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
+{
+  float *dstf = (float*)dst;
+  float *srcf = (float*)src;
+  while (count--)
+  {
+    uint8_t cov = *coverage;
+    float fcov = ctx_u8_to_float (cov);
+    float ralpha = 1.0f - fcov * srcf[components-1];
+    for (int c = 0; c < components-1; c++)
+      dstf[c] = (srcf[c]*fcov + dstf[c] * ralpha);
+    coverage ++;
+    dstf+= components;
+  }
+}
+
 static void
 ctx_float_source_copy_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
@@ -3092,7 +3110,7 @@ ctx_RGBAF_clear_normal (CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_RGBAF_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
-  ctx_float_source_copy_normal_color (4, rasterizer, dst, rasterizer->color, x0, coverage, count);
+  ctx_float_source_over_normal_color (4, rasterizer, dst, rasterizer->color, x0, coverage, count);
 }
 #endif
 #endif
