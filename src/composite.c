@@ -1,9 +1,5 @@
 #include "ctx-split.h"
 
-#define CTX_COMPOSITE_IF_COV  0 // maybe setting this to 1
-                                // is faster on embedded with
-                                // less branch prediction?
-
 #if CTX_COMPOSITE
 
 #define CTX_REFERENCE 0
@@ -1744,25 +1740,9 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
     uint8_t cov = *coverage;
-    if (CTX_UNLIKELY(cov == 0))
-    {
-      for (int c = 0; c < components; c++)
-        { dst[c] = 0; }
-    }
-    else
-    {
-      if (cov == 255)
-      {
-        for (int c = 0; c < components; c++)
-          dst[c] = src[c];
-      }
-      else
-      {
-        uint8_t rcov = 255-cov;
-        for (int c = 0; c < components; c++)
-          { dst[c] = (src[c]*cov+dst[c]*rcov)/255; }
-      }
-    }
+    uint8_t rcov = 255-cov;
+    for (int c = 0; c < components; c++)
+      { dst[c] = (src[c]*cov+dst[c]*rcov)/255; }
     dst += components;
     coverage ++;
   }
@@ -1773,38 +1753,10 @@ ctx_u8_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   while (count--)
   {
-#if 1
     uint8_t cov = *coverage;
-    if (cov)
-    {
-      if (cov == 255)
-      {
-#endif
-           //__attribute__ ((fallthrough));
-        switch (components)
-        {
-          case 1: dst[0] = 0; break;
-          case 3: dst[2] = 0;
-           /* FALLTHROUGH */
-          case 2: *((uint16_t*)(dst)) = 0; break;
-          case 5: dst[4] = 0;
-           /* FALLTHROUGH */
-          case 4: *((uint32_t*)(dst)) = 0; break;
-          default:
-            for (int c = 0; c < components; c ++)
-              dst[c] = 0;
-            break;
-        }
-#if 1
-      }
-      else
-      {
-        for (int c = 0; c < components; c++)
-          { dst[c] = (dst[c] * (255-cov)) / 255; }
-      }
-    }
+    for (int c = 0; c < components; c++)
+      { dst[c] = (dst[c] * (256-cov)) >> 8; }
     coverage ++;
-#endif
     dst += components;
   }
 }
@@ -1888,14 +1840,9 @@ ctx_u8_source_over_normal_color (int components,
 
   while (count--)
   {
-#if CTX_COMPOSITE_IF_COV
-      if (cov)
-#endif
-      {
-        for (int c = 0; c < components; c++)
-          //dst[c] =  ((tsrc[c] * *coverage)>>8) + (dst[c] * (((65536)-(tsrc[components-1] * *coverage)))>>16);
-          dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((255)-(((255+(tsrc[components-1] * *coverage))>>8))))))>>8);
-      }
+    for (int c = 0; c < components; c++)
+      //dst[c] =  ((tsrc[c] * *coverage)>>8) + (dst[c] * (((65536)-(tsrc[components-1] * *coverage)))>>16);
+      dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((255)-(((255+(tsrc[components-1] * *coverage))>>8))))))>>8);
     coverage ++;
     dst+=components;
   }
@@ -1906,14 +1853,8 @@ ctx_u8_source_copy_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   while (count--)
   {
-#if CTX_COMPOSITE_IF_COV
-      uint8_t cov = coverage[0];
-      if (cov)
-#endif
-      {
-        for (int c = 0; c < components; c++)
-          dst[c] =  ctx_lerp_u8(dst[c],src[c],coverage[0]);
-      }
+    for (int c = 0; c < components; c++)
+      dst[c] =  ctx_lerp_u8(dst[c],src[c],coverage[0]);
     coverage ++;
     dst+=components;
   }
@@ -1945,9 +1886,6 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 static void
 ctx_RGBA8_source_copy_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 {
-
-
-
   while (count--)
   {
     ((uint32_t*)dst)[0]=ctx_lerp_RGBA8 (((uint32_t*)dst)[0],
@@ -2403,13 +2341,28 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
       if (global_alpha_u8 != 255)
         cov = (cov * global_alpha_u8)/255;
 
-      if (cov != 255)
-        for (int c = 0; c < components; c++)
-          tsrc[c] = (tsrc[c] * cov)/255;
+      for (int c = 0; c < components; c++)
+        tsrc[c] = (tsrc[c] * cov + 255) >> 8;
 
       for (int c = 0; c < components; c++)
       {
         uint32_t res = 0;
+#if 1
+        switch (f_s)
+        {
+          case CTX_PORTER_DUFF_0:             break;
+          case CTX_PORTER_DUFF_1:             res += (tsrc[c] ); break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (tsrc[c] * dst[components-1] + 255) >> 8; break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (tsrc[c] * (256-dst[components-1])) >> 8; break;
+        }
+        switch (f_d)
+        {
+          case CTX_PORTER_DUFF_0: break;
+          case CTX_PORTER_DUFF_1:             res += dst[c]; break;
+          case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1] + 255) >> 8; break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (256-tsrc[components-1])) >> 8; break;
+        }
+#else
         switch (f_s)
         {
           case CTX_PORTER_DUFF_0:             break;
@@ -2424,6 +2377,7 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
           case CTX_PORTER_DUFF_ALPHA:         res += (dst[c] * tsrc[components-1])/255; break;
           case CTX_PORTER_DUFF_1_MINUS_ALPHA: res += (dst[c] * (255-tsrc[components-1]))/255; break;
         }
+#endif
         dst[c] = res;
       }
       coverage ++;
@@ -2632,31 +2586,9 @@ ctx_float_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
     uint8_t cov = *coverage;
-    if (cov == 0)
-    {
-      for (int c = 0; c < components; c++)
-        { dst[c] = 0; }
-    }
-    else
-    {
-      if (rasterizer->fragment)
-      {
-        rasterizer->fragment (rasterizer, u0, v0, src, 1, ud, vd);
-        u0+=ud;
-        v0+=vd;
-      }
-    if (cov == 255)
-    {
-      for (int c = 0; c < components; c++)
-        dstf[c] = srcf[c];
-    }
-    else
-    {
-      float covf = ctx_u8_to_float (cov);
-      for (int c = 0; c < components; c++)
-        dstf[c] = srcf[c]*covf;
-    }
-    }
+    float covf = ctx_u8_to_float (cov);
+    for (int c = 0; c < components; c++)
+      dstf[c] = dstf[c]*(1.0-covf) + srcf[c]*covf;
     dstf += components;
     coverage ++;
   }
@@ -2712,21 +2644,10 @@ ctx_float_source_copy_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
     uint8_t cov = *coverage;
-    if (cov)
-    {
-      if (cov == 255)
-      {
-        for (int c = 0; c < components; c++)
-          dstf[c] = srcf[c];
-      }
-      else
-      {
-        float fcov = ctx_u8_to_float (cov);
-        float ralpha = 1.0f - fcov;
-        for (int c = 0; c < components-1; c++)
-          dstf[c] = (srcf[c]*fcov + dstf[c] * ralpha);
-      }
-    }
+    float fcov = ctx_u8_to_float (cov);
+    float ralpha = 1.0f - fcov;
+    for (int c = 0; c < components-1; c++)
+      dstf[c] = (srcf[c]*fcov + dstf[c] * ralpha);
     coverage ++;
     dstf+= components;
   }
@@ -4808,7 +4729,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_YUV420
   {
     CTX_FORMAT_YUV420, 1, 8, 4, 0, 0, CTX_FORMAT_RGBA8,
-    ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGBA8,
+    NULL, NULL, ctx_composite_convert, ctx_setup_RGBA8,
   },
 #endif
   {
