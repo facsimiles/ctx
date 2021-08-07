@@ -627,7 +627,6 @@ static CTX_INLINE void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline;
-  rasterizer->ending_edges = 0;
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
       int edge_end = ((CtxSegment*)(rasterizer->edge_list.entries))[rasterizer->edges[i].index].data.s16[3]-1;
@@ -641,8 +640,6 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           rasterizer->active_edges--;
           i--;
         }
-      else if (edge_end < scanline + CTX_FULL_AA)
-        rasterizer->ending_edges = 1; // only used as a flag!
     }
 }
 
@@ -1009,6 +1006,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
   int minx       = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
   int maxx       = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - rasterizer->blit_x;
 
+  rasterizer->prev_active_edges = -1;
 #if 1
   if (
 #if CTX_SHAPE_CACHE
@@ -1090,8 +1088,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
   for (; rasterizer->scanline <= scan_end;)
     {
-      int contains_edge_end = rasterizer->pending_edges ||
-                              rasterizer->ending_edges;
+      int contains_edge_end = (rasterizer->active_edges != rasterizer->prev_active_edges);
 
       // check if all pending edges are scanline aligned at start
       ctx_memset (coverage, 0,
@@ -1222,6 +1219,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
         }
 #endif
       dst += rasterizer->blit_stride;
+      rasterizer->prev_active_edges = rasterizer->active_edges;
     }
   }
 

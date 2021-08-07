@@ -629,10 +629,10 @@ struct _CtxRasterizer
 #endif
 
   int        aa;          // level of vertical aa
+  int        prev_active_edges;
   int        active_edges;
   int        active_edges2;
   int        pending_edges;   // this-scanline
-  int        ending_edges;    // count of edges ending this scanline
   int        edge_pos;         // where we're at in iterating all edges
   CtxEdge    edges[CTX_MAX_EDGES];
 
