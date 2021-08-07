@@ -2302,19 +2302,28 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
 {
   CtxPorterDuffFactor f_s, f_d;
   ctx_porter_duff_factors (compositing_mode, &f_s, &f_d);
-  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  CtxGState *gstate = &rasterizer->state->gstate;
+  uint8_t global_alpha_u8 = gstate->global_alpha_u8;
   uint8_t tsrc[components * count];
   int src_step = 0;
-  src = &tsrc[0];
 
-  if (fragment)
+  if (gstate->source_fill.type == CTX_SOURCE_COLOR)
+  {
+    src = &tsrc[0];
+    fragment (rasterizer, 0, 0, src, 1, 0, 0);
+    if (blend != CTX_BLEND_NORMAL)
+      ctx_u8_blend (components, blend, dst, src, src, 1);
+  }
+  else
   {
     float u0 = 0; float v0 = 0;
     float ud = 0; float vd = 0;
+    src = &tsrc[0];
+
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-    fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
+    fragment (rasterizer, u0, v0, src, count, ud, vd);
     if (blend != CTX_BLEND_NORMAL)
-      ctx_u8_blend (components, blend, dst, tsrc, tsrc, count);
+      ctx_u8_blend (components, blend, dst, src, src, count);
     src_step = components;
   }
 
@@ -3782,18 +3791,9 @@ ctx_GRAY1_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t 
   const uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      if (*pixel & (1<< (x&7) ) )
-        {
-          rgba[0] = 255;
-          rgba[1] = 255;
-        }
-      else
-        {
-          rgba[0] = 0;
-          rgba[1] = 255;
-        }
-      if ( (x&7) ==7)
-        { pixel+=1; }
+      rgba[0] = 255 * (*pixel & (1<< (x&7) ) );
+      rgba[1] = 255;
+      pixel+= ( (x&7) ==7);
       x++;
       rgba +=2;
     }
@@ -3803,20 +3803,19 @@ inline static void
 ctx_GRAYA8_to_GRAY1 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
 {
   uint8_t *pixel = (uint8_t *) buf;
+  *pixel = 0;
   while (count--)
     {
       int gray = rgba[0];
       //gray += ctx_dither_mask_a (x, rasterizer->scanline/aa, 0, 127);
-      if (gray < 127)
+      if (gray >= 127)
         {
-          *pixel = *pixel & (~ (1<< (x&7) ) );
-        }
-      else
-        {
-          *pixel = *pixel | (1<< (x&7) );
+          *pixel = *pixel | (1<< (x&7) ) * (gray >= 127);
         }
       if ( (x&7) ==7)
-        { pixel+=1; }
+        { pixel+=1;
+          if(count>0)*pixel = 0;
+        }
       x++;
       rgba +=2;
     }
@@ -3830,16 +3829,8 @@ ctx_GRAY1_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *
   const uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      if (*pixel & (1<< (x&7) ) )
-        {
-          *((uint32_t*)(rgba))=0xffffffff;
-        }
-      else
-        {
-          *((uint32_t*)(rgba))=0xff000000;
-        }
-      if ( (x&7) ==7)
-        { pixel+=1; }
+      *((uint32_t*)(rgba))=0xff000000 + 0x00ffffff * ((*pixel & (1<< (x&7) ) )!=0);
+      pixel+= ( (x&7) ==7);
       x++;
       rgba +=4;
     }
@@ -4220,11 +4211,11 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYA8 (CtxRasterizer *rasterizer
   return ctx_fragment_color_GRAYA8;
 }
 
-ctx_u8_porter_duff(GRAYA8, 2,color,   rasterizer->fragment, rasterizer->state->gstate.blend_mode)
+//ctx_u8_porter_duff(GRAYA8, 2,color,   rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 ctx_u8_porter_duff(GRAYA8, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_NORMAL
-ctx_u8_porter_duff(GRAYA8, 2,color_normal,   rasterizer->fragment, CTX_BLEND_NORMAL)
+//ctx_u8_porter_duff(GRAYA8, 2,color_normal,   rasterizer->fragment, CTX_BLEND_NORMAL)
 ctx_u8_porter_duff(GRAYA8, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
 
 static void
@@ -4272,20 +4263,15 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   int components = 2;
+  rasterizer->fragment = ctx_rasterizer_get_fragment_GRAYA8 (rasterizer);
+  rasterizer->comp_op  = ctx_GRAYA8_porter_duff_generic;
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
-      rasterizer->comp_op = ctx_GRAYA8_porter_duff_color;
-      rasterizer->fragment = NULL;
-      ctx_color_get_rgba8 (rasterizer->state, &gstate->source_fill.color, rasterizer->color);
+      ctx_fragment_color_GRAYA8 (rasterizer, 0,0, rasterizer->color, 1, 0,0);
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
           rasterizer->color[c] = (rasterizer->color[c] * gstate->global_alpha_u8)/255;
     }
-  else
-  {
-    rasterizer->fragment = ctx_rasterizer_get_fragment_GRAYA8 (rasterizer);
-    rasterizer->comp_op  = ctx_GRAYA8_porter_duff_generic;
-  }
 
 #if CTX_INLINED_NORMAL
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
@@ -4312,12 +4298,10 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
                 rasterizer->comp_op = ctx_GRAYA8_source_copy_normal_color;
               else
                 rasterizer->comp_op = ctx_GRAYA8_source_over_normal_color;
-              rasterizer->fragment = NULL;
             }
             else
             {
-              rasterizer->comp_op = ctx_GRAYA8_porter_duff_color_normal;
-              rasterizer->fragment = NULL;
+              rasterizer->comp_op = ctx_GRAYA8_porter_duff_generic_normal;
             }
             break;
           default:
@@ -4326,16 +4310,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
         }
         break;
       default:
-        switch (gstate->source_fill.type)
-        {
-          case CTX_SOURCE_COLOR:
-            rasterizer->comp_op = ctx_GRAYA8_porter_duff_color;
-            rasterizer->fragment = NULL;
-            break;
-          default:
-            rasterizer->comp_op = ctx_GRAYA8_porter_duff_generic;
-            break;
-        }
+        rasterizer->comp_op = ctx_GRAYA8_porter_duff_generic;
         break;
     }
 #endif
