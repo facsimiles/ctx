@@ -75,7 +75,7 @@ typedef struct {
         Ctx     *ctx;
 } app_t;
 
-int grayscale = 0;
+int grayscale = 1;
 int smoothing = 0;
 
 app_t * app_create(const char *filename, int texture_mode);
@@ -294,9 +294,9 @@ int ctx_mpg_main(int argc, char *argv[]) {
         {
           if (argv[i][0] == '-')
           {
-            if (argv[i][1] == 'g')
+            if (argv[i][1] == 'r')
             {
-              grayscale = 1;
+              grayscale = 0;
             }
             else if (argv[i][1] == 's')
             {

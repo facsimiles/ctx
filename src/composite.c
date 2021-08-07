@@ -1160,7 +1160,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
 }
 
 #define ctx_clampi(val,min,max) \
-     ctx_mini (ctx_maxi ((val), (min)), (max));
+     ctx_mini (ctx_maxi ((val), (min)), (max))
 
 static inline uint32_t ctx_yuv_to_rgba32 (uint8_t y, uint8_t u, uint8_t v)
 {
@@ -1172,7 +1172,8 @@ static inline uint32_t ctx_yuv_to_rgba32 (uint8_t y, uint8_t u, uint8_t v)
   int blue = cy + ((cb * 132201) >> 16);
   return  ctx_clampi (red, 0, 255) |
           (ctx_clampi (green, 0, 255) << 8) |
-          (ctx_clampi (blue, 0, 255) << 16) | (0xff << 24);
+          (ctx_clampi (blue, 0, 255) << 16) |
+          (0xff << 24);
 }
 
 static void
