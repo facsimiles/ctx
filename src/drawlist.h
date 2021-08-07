@@ -83,23 +83,16 @@ ctx_process_cmd_str_float (Ctx *ctx, CtxCode code, const char *string, float arg
 CTX_STATIC void
 ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1, int len);
 
-
-
-#pragma pack(push,1)
-typedef struct
+typedef struct /* it has the same structure as CtxEntry, but should be given better names,
+                  now that it is refactored to be a multiple of 4 bytes
+                */
 CtxSegment {
-  uint8_t code;
+  uint32_t code;
   union {
-   float f[2];
-   uint8_t u8[8];
-   int8_t s8[8];
-   uint16_t u16[4];
    int16_t s16[4];
    uint32_t u32[2];
-   int32_t s32[2];
   } data;
 } CtxSegment;
-#pragma pack(pop)
 
 #endif
 

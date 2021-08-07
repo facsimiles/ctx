@@ -1441,7 +1441,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   {
   for (int i = 0; i < rasterizer->edge_list.count; i++)
     {
-      CtxEntry *entry = &rasterizer->edge_list.entries[i];
+      CtxSegment *entry = &((CtxSegment*)rasterizer->edge_list.entries)[i];
       entry->data.s16[2] += rasterizer->shadow_x * CTX_SUBDIV;
       entry->data.s16[3] += rasterizer->shadow_y * CTX_FULL_AA;
     }
@@ -2433,7 +2433,7 @@ ctx_rasterizer_clip_reset (CtxRasterizer *rasterizer)
 
 CTX_STATIC void
 ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
-                           CtxEntry      *edges)
+                           CtxSegment    *edges)
 {
   int count = edges[0].data.u32[0];
 
@@ -2451,7 +2451,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
   for (int i = 0; i < count; i++)
     {
-      CtxEntry *entry = &edges[i+1];
+      CtxSegment *entry = &edges[i+1];
       float x, y;
       if (entry->code == CTX_NEW_EDGE)
         {
@@ -2566,7 +2566,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
   for (int i = 0; i < count; i++)
     {
-      CtxEntry *entry = &edges[i+1];
+      CtxSegment *entry = &edges[i+1];
       float x, y;
       if (entry->code == CTX_NEW_EDGE)
         {
@@ -2716,7 +2716,7 @@ CTX_STATIC void
 ctx_rasterizer_clip (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->edge_list.count;
-  CtxEntry temp[count+1]; /* copy of already built up path's poly line  */
+  CtxSegment temp[count+1]; /* copy of already built up path's poly line  */
   rasterizer->state->has_clipped=1;
   rasterizer->state->gstate.clipped=1;
   //if (rasterizer->preserve)
@@ -3310,7 +3310,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
             int idx = ctx_float_to_string_index (state->keydb[i].value);
             if (idx >=0)
             {
-              CtxEntry *edges = (CtxEntry*)&state->stringpool[idx];
+              CtxSegment *edges = (CtxSegment*)&state->stringpool[idx];
               ctx_rasterizer_clip_apply (rasterizer, edges);
             }
           }
