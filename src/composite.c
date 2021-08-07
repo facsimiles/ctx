@@ -22,21 +22,18 @@
 CTX_INLINE static void
 ctx_RGBA8_associate_alpha (uint8_t *u8)
 {
+#if 1
   uint32_t val = *((uint32_t*)(u8));
   uint8_t a = u8[3];
- // if (a!=255)
- // {
- // if (a)
- // {
-      uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
-      uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
-      *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
-  //}
- //   else
- //   {
- //     *((uint32_t*)(u8)) = 0;
- //   }
- // }
+  uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
+  uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
+  *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+#else
+  uint32_t a = u8[3];
+  u8[0] = (u8[0] * a + 255) >> 8;
+  u8[1] = (u8[1] * a + 255) >> 8;
+  u8[2] = (u8[2] * a + 255) >> 8;
+#endif
 }
 
 CTX_INLINE static void
@@ -53,17 +50,6 @@ ctx_RGBA8_associate_alpha_probably_opaque (uint8_t *u8)
      *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
   }
 }
-
-#if 0
-CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
-{
-#if 0
-  return v0 + ((v1-v0) * dx)/255;
-#else
-  return ( ( ( ( (v0) <<8) + (dx) * ( (v1) - (v0) ) ) ) >>8);
-#endif
-}
-#endif
 
 CTX_INLINE static uint32_t ctx_lerp_RGBA8 (const uint32_t v0, const uint32_t v1, const uint8_t dx)
 {

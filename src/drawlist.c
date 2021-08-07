@@ -441,7 +441,7 @@ ctx_add_single (Ctx *ctx, void *entry)
   return ctx_drawlist_add_single (&ctx->drawlist, (CtxEntry *) entry);
 }
 
-CTX_STATIC int
+CTX_STATIC inline int
 ctx_drawlist_add_entry (CtxDrawlist *drawlist, CtxEntry *entry)
 {
   int length = ctx_conts_for_entry (entry) + 1;
