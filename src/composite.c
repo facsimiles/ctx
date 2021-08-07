@@ -1982,8 +1982,10 @@ ctx_RGBA8_clear_normal (CTX_COMPOSITE_ARGUMENTS)
 }
 
 static void
-ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
+ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended, int count)
 {
+  for (int j = 0; j < count; j++)
+  {
   switch (components)
   {
      case 3:
@@ -2002,14 +2004,13 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
        break;
      default:
        {
-        // uint8_t alpha = src[components-1];
-        // for (int i = 0; i<components - 1;i++)
-        //   blended[i] = (src[i] * alpha)/255;
-        // blended[components-1]=alpha;
         for (int i = 0; i<components;i++)
            blended[i] = src[i];
        }
        break;
+  }
+    blended+=components;
+    src+=components;
   }
 }
 
@@ -2024,13 +2025,18 @@ static inline uint8_t ctx_sadd8(uint8_t a, uint8_t b)
 
 #define ctx_u8_blend_define(name, CODE) \
 static void \
-ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)\
+ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended, int count)\
 {\
+  for (int j = 0; j < count; j++) { \
   uint8_t *s=src; uint8_t b[components];\
   ctx_u8_deassociate_alpha (components, dst, b);\
     CODE;\
   blended[components-1] = src[components-1];\
   ctx_u8_associate_alpha (components, blended);\
+  src += components;\
+  dst += components;\
+  blended += components;\
+  }\
 }
 
 #define ctx_u8_blend_define_seperable(name, CODE) \
@@ -2248,35 +2254,35 @@ ctx_u8_blend_define(luminosity,
 #endif
 
 CTX_INLINE static void
-ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended)
+ctx_u8_blend (int components, CtxBlend blend, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended, int count)
 {
 #if CTX_BLENDING_AND_COMPOSITING
   switch (blend)
   {
-    case CTX_BLEND_NORMAL:      ctx_u8_blend_normal      (components, dst, src, blended); break;
-    case CTX_BLEND_MULTIPLY:    ctx_u8_blend_multiply    (components, dst, src, blended); break;
-    case CTX_BLEND_SCREEN:      ctx_u8_blend_screen      (components, dst, src, blended); break;
-    case CTX_BLEND_OVERLAY:     ctx_u8_blend_overlay     (components, dst, src, blended); break;
-    case CTX_BLEND_DARKEN:      ctx_u8_blend_darken      (components, dst, src, blended); break;
-    case CTX_BLEND_LIGHTEN:     ctx_u8_blend_lighten     (components, dst, src, blended); break;
-    case CTX_BLEND_COLOR_DODGE: ctx_u8_blend_color_dodge (components, dst, src, blended); break;
-    case CTX_BLEND_COLOR_BURN:  ctx_u8_blend_color_burn  (components, dst, src, blended); break;
-    case CTX_BLEND_HARD_LIGHT:  ctx_u8_blend_hard_light  (components, dst, src, blended); break;
-    case CTX_BLEND_SOFT_LIGHT:  ctx_u8_blend_soft_light  (components, dst, src, blended); break;
-    case CTX_BLEND_DIFFERENCE:  ctx_u8_blend_difference  (components, dst, src, blended); break;
-    case CTX_BLEND_EXCLUSION:   ctx_u8_blend_exclusion   (components, dst, src, blended); break;
-    case CTX_BLEND_COLOR:       ctx_u8_blend_color       (components, dst, src, blended); break;
-    case CTX_BLEND_HUE:         ctx_u8_blend_hue         (components, dst, src, blended); break;
-    case CTX_BLEND_SATURATION:  ctx_u8_blend_saturation  (components, dst, src, blended); break;
-    case CTX_BLEND_LUMINOSITY:  ctx_u8_blend_luminosity  (components, dst, src, blended); break;
-    case CTX_BLEND_ADDITION:    ctx_u8_blend_addition    (components, dst, src, blended); break;
-    case CTX_BLEND_DIVIDE:      ctx_u8_blend_divide      (components, dst, src, blended); break;
-    case CTX_BLEND_SUBTRACT:    ctx_u8_blend_subtract    (components, dst, src, blended); break;
+    case CTX_BLEND_NORMAL:      ctx_u8_blend_normal      (components, dst, src, blended, count); break;
+    case CTX_BLEND_MULTIPLY:    ctx_u8_blend_multiply    (components, dst, src, blended, count); break;
+    case CTX_BLEND_SCREEN:      ctx_u8_blend_screen      (components, dst, src, blended, count); break;
+    case CTX_BLEND_OVERLAY:     ctx_u8_blend_overlay     (components, dst, src, blended, count); break;
+    case CTX_BLEND_DARKEN:      ctx_u8_blend_darken      (components, dst, src, blended, count); break;
+    case CTX_BLEND_LIGHTEN:     ctx_u8_blend_lighten     (components, dst, src, blended, count); break;
+    case CTX_BLEND_COLOR_DODGE: ctx_u8_blend_color_dodge (components, dst, src, blended, count); break;
+    case CTX_BLEND_COLOR_BURN:  ctx_u8_blend_color_burn  (components, dst, src, blended, count); break;
+    case CTX_BLEND_HARD_LIGHT:  ctx_u8_blend_hard_light  (components, dst, src, blended, count); break;
+    case CTX_BLEND_SOFT_LIGHT:  ctx_u8_blend_soft_light  (components, dst, src, blended, count); break;
+    case CTX_BLEND_DIFFERENCE:  ctx_u8_blend_difference  (components, dst, src, blended, count); break;
+    case CTX_BLEND_EXCLUSION:   ctx_u8_blend_exclusion   (components, dst, src, blended, count); break;
+    case CTX_BLEND_COLOR:       ctx_u8_blend_color       (components, dst, src, blended, count); break;
+    case CTX_BLEND_HUE:         ctx_u8_blend_hue         (components, dst, src, blended, count); break;
+    case CTX_BLEND_SATURATION:  ctx_u8_blend_saturation  (components, dst, src, blended, count); break;
+    case CTX_BLEND_LUMINOSITY:  ctx_u8_blend_luminosity  (components, dst, src, blended, count); break;
+    case CTX_BLEND_ADDITION:    ctx_u8_blend_addition    (components, dst, src, blended, count); break;
+    case CTX_BLEND_DIVIDE:      ctx_u8_blend_divide      (components, dst, src, blended, count); break;
+    case CTX_BLEND_SUBTRACT:    ctx_u8_blend_subtract    (components, dst, src, blended, count); break;
   }
 #else
   switch (blend)
   {
-    default:                    ctx_u8_blend_normal      (components, dst, src, blended); break;
+    default:                    ctx_u8_blend_normal      (components, dst, src, blended, count); break;
   }
 
 #endif
@@ -2308,10 +2314,7 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
     ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
     fragment (rasterizer, u0, v0, tsrc, count, ud, vd);
     if (blend != CTX_BLEND_NORMAL)
-    for (int i = 0; i < count; i ++)
-    {
-      ctx_u8_blend (components, blend, &dst[i*components], &tsrc[i*components], &tsrc[i*components]);
-    }
+      ctx_u8_blend (components, blend, dst, tsrc, tsrc, count);
     src_step = components;
   }
 
@@ -2448,7 +2451,6 @@ ctx_##comp_format##_porter_duff_##source (CTX_COMPOSITE_ARGUMENTS) \
 }
 
 ctx_u8_porter_duff(RGBA8, 4,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
-
 //ctx_u8_porter_duff(comp_name, components,color_##blend_name,  NULL, blend_mode)
 
 static void
