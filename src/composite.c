@@ -1218,6 +1218,11 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
 
     uint32_t u_offset = bheight * bwidth;
     uint32_t v_offset = u_offset + bheight_div_2 * bwidth_div_2;
+    if (rasterizer->swap_red_green)
+    {
+      v_offset = bheight * bwidth;
+      u_offset = v_offset + bheight_div_2 * bwidth_div_2;
+    }
 
     for (; i < count; i ++)
     {
@@ -1227,6 +1232,9 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       {
         uint32_t y  = v * bwidth + u;
         uint32_t uv = (v / 2) * bwidth_div_2 + (u / 2);
+
+
+
         *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y],
                         //127, 127);
                         src[u_offset+uv], src[v_offset+uv]);
@@ -2483,13 +2491,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       {
         for (int c = 0; c < 4; c ++)
           rasterizer->color[c] = (rasterizer->color[c] * gstate->global_alpha_u8)/255;
-      }
-      if (rasterizer->swap_red_green)
-      {
-        uint8_t *rgba = (uint8_t*)&rasterizer->color[0];
-        uint8_t tmp = rgba[0];
-        rgba[0] = rgba[2];
-        rgba[2] = tmp;
       }
 
       switch (gstate->blend_mode)
