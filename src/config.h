@@ -19,8 +19,8 @@
 #endif
 
 
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT3    (60424/CTX_SUBDIV/15)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT5    (120425/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3    (65536/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5    (140425/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15   (260425/CTX_SUBDIV/15)
 
 /* subpixel-aa coordinates used in BITPACKing of drawlist
@@ -564,6 +564,10 @@
 #else
 #define CTX_THREADS 0
 #endif
+#endif
+
+#ifndef CTX_VIS_AA
+#define CTX_VIS_AA 0
 #endif
 
 

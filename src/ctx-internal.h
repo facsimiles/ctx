@@ -628,15 +628,14 @@ struct _CtxRasterizer
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
 
-  int        aa;          // level of vertical aa
-  int        prev_active_edges;
-  int        active_edges;
-  int        active_edges2;
-  int        pending_edges;   // this-scanline
-  int        edge_pos;         // where we're at in iterating all edges
+  unsigned int aa;          // level of vertical aa
+  unsigned int prev_active_edges;
+  unsigned int active_edges;
+  unsigned int pending_edges;   // this-scanline
+  unsigned int edge_pos;         // where we're at in iterating all edges
   CtxEdge    edges[CTX_MAX_EDGES];
 
-  int        scanline;
+  unsigned int scanline;
   int        scan_min;
   int        scan_max;
   int        col_min;
@@ -662,13 +661,14 @@ struct _CtxRasterizer
 
   float      first_x;
   float      first_y;
-  int8_t     needs_aa3; // count of how many edges implies antialiasing
-  int8_t     needs_aa5; // count of how many edges implies antialiasing
-  int8_t     needs_aa15; // count of how many edges implies antialiasing
+  unsigned int needs_aa3; // count of how many edges implies antialiasing
+  unsigned int needs_aa5; // count of how many edges implies antialiasing
+  unsigned int needs_aa15; // count of how many edges implies antialiasing
+  int        do_full_aa;
+  int        uses_transforms;
   int        has_shape:2;
   int        has_prev:2;
   int        preserve:1;
-  int        uses_transforms:1;
 
   int16_t    blit_x;
   int16_t    blit_y;

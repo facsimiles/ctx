@@ -668,6 +668,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
   int miny;
   CtxSegment *entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
+  rasterizer->do_full_aa = 0;
   for (int i = 0; i < rasterizer->pending_edges; i++)
     {
       if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] - 1 <= rasterizer->scanline)
@@ -731,6 +732,8 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
                   }
                 }
             }
+          else
+              rasterizer->do_full_aa = 1;
         }
       rasterizer->edge_pos++;
     }
@@ -1072,6 +1075,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
     return;
   }
 
+  rasterizer->do_full_aa = 0;
   ctx_rasterizer_sort_edges (rasterizer);
   {
     const int halfstep2 = CTX_FULL_AA/2;
@@ -1088,7 +1092,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
   for (; rasterizer->scanline <= scan_end;)
     {
-      int contains_edge_end = (rasterizer->active_edges != rasterizer->prev_active_edges);
+      int contains_edge_end = (rasterizer->active_edges != rasterizer->prev_active_edges || rasterizer->do_full_aa);
 
       // check if all pending edges are scanline aligned at start
       ctx_memset (coverage, 0,
@@ -1124,7 +1128,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, fill_rule, real_aa);
           ctx_rasterizer_increment_edges (rasterizer, increment);
         }
-#define CTX_VIS_AA 0
     }
     else if (!rasterizer->needs_aa3) // if it doesnt need aa3 it doesnt need aa5 or aa15 either
     {
@@ -1338,27 +1341,23 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
 #endif
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
   _ctx_setup_compositor (rasterizer);
-  if (CTX_UNLIKELY(x0 < rasterizer->blit_x))
-    { x0 = rasterizer->blit_x; }
-  if (CTX_UNLIKELY(y0 < rasterizer->blit_y))
-    { y0 = rasterizer->blit_y; }
-  if (CTX_UNLIKELY(y1 > rasterizer->blit_y + rasterizer->blit_height))
-    { y1 = rasterizer->blit_y + rasterizer->blit_height; }
-  if (CTX_UNLIKELY(x1 > rasterizer->blit_x + rasterizer->blit_width))
-    { x1 = rasterizer->blit_x + rasterizer->blit_width; }
+  x0 = ctx_maxi (x0, rasterizer->blit_x);
+  y0 = ctx_maxi (y0, rasterizer->blit_y);
+  x1 = ctx_mini (x1, rasterizer->blit_x + rasterizer->blit_width);
+  y1 = ctx_mini (y1, rasterizer->blit_y + rasterizer->blit_height);
+
   dst += (y0 - rasterizer->blit_y) * rasterizer->blit_stride;
   int width = x1 - x0;
 
   if (CTX_LIKELY(width > 0))
     {
-      if (rasterizer->format->components == 4 &&
-                      cov == 255 &&
+      if (cov == 255 && rasterizer->format->components == 4 &&
           rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
-          rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
           (
            (rasterizer->color[3]==255 &&
             rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER) ||
           (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY)  )&&
+          rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
           rasterizer->format->bpp == 32)
       {
         if (CTX_UNLIKELY(width == 1))
@@ -1389,26 +1388,25 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
           for (int y = y0; y < y1; y++)
           {
             ctx_rasterizer_apply_coverage (rasterizer,
-                                         &dst[ (x0) * rasterizer->format->bpp/8],
-                                         x0,
-                                         coverage, 1);
+                  &dst[ (x0) * rasterizer->format->bpp/8],
+                  x0, coverage, 1);
             dst += rasterizer->blit_stride;
           }
         }
         else
         {
-        uint8_t coverage[x1-x0 + 1];
-        ctx_memset (coverage, cov, sizeof (coverage) );
-        rasterizer->scanline = y0 * CTX_FULL_AA;
-        for (int y = y0; y < y1; y++)
-        {
-          rasterizer->scanline += CTX_FULL_AA;
-          ctx_rasterizer_apply_coverage (rasterizer,
+          uint8_t coverage[width + 1];
+          ctx_memset (coverage, cov, sizeof (coverage) );
+          rasterizer->scanline = y0 * CTX_FULL_AA;
+          for (int y = y0; y < y1; y++)
+          {
+            rasterizer->scanline += CTX_FULL_AA;
+            ctx_rasterizer_apply_coverage (rasterizer,
                                          &dst[ (x0) * rasterizer->format->bpp/8],
                                          x0,
                                          coverage, width);
-          dst += rasterizer->blit_stride;
-        }
+            dst += rasterizer->blit_stride;
+          }
         }
       }
     }

@@ -54,6 +54,7 @@
 #define CTX_MAX_TEXTURES         256
 #define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/
                                        // variable size for each save|restore
+#define CTX_VIS_AA               0 // visualize amount of rounds/work for AA
 #define CTX_MATH                 1
 
 //#define CTX_MIN_JOURNAL_SIZE   512         // ~4kb
