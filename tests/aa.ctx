@@ -182,6 +182,10 @@ stroke
 rectangle 25 70 4 4
 stroke
 
+lineWidth 2.5
+rgb 0 0 0
+rectangle 110 50 10 10
+stroke
 
 lineWidth 2
 
