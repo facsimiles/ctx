@@ -631,7 +631,8 @@ struct _CtxRasterizer
   unsigned int aa;          // level of vertical aa
   int prev_active_edges;
   int active_edges;
-  int pending_edges;   // this-scanline
+  int pending_edges;
+  int ending_edges;
   int edge_pos;         // where we're at in iterating all edges
   CtxEdge    edges[CTX_MAX_EDGES];
 
@@ -664,7 +665,7 @@ struct _CtxRasterizer
   unsigned int needs_aa3; // count of how many edges implies antialiasing
   unsigned int needs_aa5; // count of how many edges implies antialiasing
   unsigned int needs_aa15; // count of how many edges implies antialiasing
-  int        do_full_aa;
+  int        horizontal_edges;
   int        uses_transforms;
   int        has_shape:2;
   int        has_prev:2;

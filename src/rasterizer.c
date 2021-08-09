@@ -640,7 +640,18 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           rasterizer->active_edges--;
           i--;
         }
+      else if (edge_end < scanline + CTX_FULL_AA)
+        rasterizer->ending_edges++;
     }
+#if 0
+  // we should - but for 99% of the cases we do not need to, so we skip it
+  for (int i = 0; i < rasterizer->pending_edges; i++)
+    {
+      int edge_end = ((CtxSegment*)(rasterizer->edge_list.entries))[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[3]-1;
+      if (edge_end < scanline + CTX_FULL_AA)
+        rasterizer->ending_edges++;
+    }
+#endif
 }
 
 inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
@@ -668,7 +679,8 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
   int miny;
   CtxSegment *entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
-  rasterizer->do_full_aa = 0;
+  rasterizer->horizontal_edges = 0;
+  rasterizer->ending_edges = 0;
   for (int i = 0; i < rasterizer->pending_edges; i++)
     {
       if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i].index].data.s16[1] - 1 <= rasterizer->scanline)
@@ -694,7 +706,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
           maxy >= scanline)
         {
           int dy = (entries[rasterizer->edge_pos].data.s16[3] - 1 - miny);
-          if (dy) /* skipping horizontal edges */
+          if (dy)
             {
               int yd = scanline - miny;
               int no = rasterizer->active_edges;
@@ -733,7 +745,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
                 }
             }
           else
-              rasterizer->do_full_aa = 1;
+            rasterizer->horizontal_edges ++;
         }
       rasterizer->edge_pos++;
     }
@@ -949,7 +961,7 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           if (first < last)
           {
               coverage[first] += graystart;
-#if 1
+#if 0
               for (int x = first + 1; x < last; x++)
                 coverage[x] = 255;
 #else
@@ -1075,7 +1087,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
     return;
   }
 
-  rasterizer->do_full_aa = 0;
+  rasterizer->horizontal_edges = 0;
   ctx_rasterizer_sort_edges (rasterizer);
   {
     const int halfstep2 = CTX_FULL_AA/2;
@@ -1092,7 +1104,11 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
   for (; rasterizer->scanline <= scan_end;)
     {
-      int contains_edge_end = (rasterizer->active_edges != rasterizer->prev_active_edges || rasterizer->do_full_aa);
+      int needs_full_aa =
+          (rasterizer->horizontal_edges!=0) 
+          || (rasterizer->active_edges != rasterizer->prev_active_edges
+          || (rasterizer->active_edges + rasterizer->pending_edges == rasterizer->ending_edges)
+          );
 
       // check if all pending edges are scanline aligned at start
       ctx_memset (coverage, 0,
@@ -1118,7 +1134,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       }
       else 
 #endif
-    if (contains_edge_end)
+    if (needs_full_aa)
     {
         int increment = CTX_FULL_AA/real_aa;
         for (int i = 0; i < real_aa; i++)
@@ -1904,7 +1920,7 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
                     int            anticlockwise)
 {
   int full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS;
-  full_segments = radius * CTX_PI * 2 / 7.0;
+  full_segments = radius * CTX_PI * 2 / 4.0;
   if (full_segments > CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS)
     { full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS; }
   if (full_segments < 24) full_segments = 24;
