@@ -826,20 +826,6 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
     for (int x = minx; x <= maxx; x ++)
      coverage[x] = coverage[x] > 127?255:0;
   }
-  if (CTX_UNLIKELY(rasterizer->in_line_stroke == 1))
-  {
-    int first = minx;
-    int last = maxx;
-    for (int x = minx; (x <= maxx) && (coverage[x] == 0); x ++)
-      first = x;
-    for (int x = maxx; x >= first && coverage[x] == 0; x --)
-      last = x;
-    if (first == last)
-       last ++;
-    if (last > maxx)last = maxx;
-    *first_col = first; 
-    *last_col = last; 
-  }
 #endif
 }
 
@@ -1104,6 +1090,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
   for (; rasterizer->scanline <= scan_end;)
     {
+  int first_col = minx;
+  int last_col = maxx;
       int needs_full_aa =
           (rasterizer->horizontal_edges!=0) 
           || (rasterizer->active_edges != rasterizer->prev_active_edges
@@ -1111,7 +1099,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           );
 
       // check if all pending edges are scanline aligned at start
-      ctx_memset (coverage, 0,
+      memset (coverage, 0,
 #if CTX_SHAPE_CACHE
                   shape?shape->width:
 #endif
@@ -1150,9 +1138,23 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       ctx_rasterizer_increment_edges (rasterizer, halfstep2);
       ctx_rasterizer_feed_edges (rasterizer);
 
+      if (CTX_LIKELY(rasterizer->active_edges))
+      {
       ctx_rasterizer_sort_active_edges (rasterizer);
+      first_col = rasterizer->edges[0].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+      last_col = rasterizer->edges[rasterizer->active_edges-1].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+      first_col = ctx_maxi (first_col, minx);
+      first_col = ctx_mini (first_col, maxx);
+      last_col = ctx_maxi (last_col, minx);
+      last_col = ctx_mini (last_col, maxx);
+
       ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
       ctx_rasterizer_increment_edges (rasterizer, halfstep);
+      }
+      else
+      {
+        first_col = last_col = minx;
+      }
 #if CTX_VIS_AA
       for (int x = minx; x <= maxx; x++) coverage[x-minx] *= (1.0/15);
 #endif
@@ -1211,16 +1213,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 #endif
     }
 #endif
-  int first_col = minx;
-  int last_col = maxx;
 
   ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx,
-                  &first_col, &last_col);
-  if (CTX_LIKELY(rasterizer->in_line_stroke == 0))
-  {
-    first_col = minx;
-    last_col = maxx;
-  }
+                  NULL, NULL);
 #if CTX_SHAPE_CACHE
   if (shape == NULL)
 #endif
@@ -1412,7 +1407,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         else
         {
           uint8_t coverage[width + 1];
-          ctx_memset (coverage, cov, sizeof (coverage) );
+          memset (coverage, cov, sizeof (coverage) );
           rasterizer->scanline = y0 * CTX_FULL_AA;
           for (int y = y0; y < y1; y++)
           {
@@ -3354,8 +3349,6 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 #endif
         {
         int count = rasterizer->edge_list.count;
-        if (count <= 3)
-          rasterizer->in_line_stroke++;
         if (rasterizer->state->gstate.n_dashes)
         {
           int n_dashes = rasterizer->state->gstate.n_dashes;
@@ -3465,8 +3458,6 @@ foo:
       rasterizer->state->gstate.transform = transform_backup;
         }
         ctx_rasterizer_stroke (rasterizer);
-        if (count <= 3)
-          rasterizer->in_line_stroke--;
         }
 
         break;
@@ -3610,7 +3601,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   if (rasterizer->edge_list.size)
     ctx_drawlist_deinit (&rasterizer->edge_list);
 
-  ctx_memset (rasterizer, 0, sizeof (CtxRasterizer) );
+  memset (rasterizer, 0, sizeof (CtxRasterizer) );
   rasterizer->vfuncs.process = ctx_rasterizer_process;
   rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
   rasterizer->edge_list.flags |= CTX_DRAWLIST_EDGE_LIST;

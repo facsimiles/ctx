@@ -683,7 +683,6 @@ struct _CtxRasterizer
   int in_shadow;
 #endif
   int in_text;
-  int in_line_stroke;
   int shadow_x;
   int shadow_y;
 
