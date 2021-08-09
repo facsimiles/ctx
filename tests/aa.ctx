@@ -126,7 +126,7 @@ fill
 rectangle 70.5 15.5 10 1
 fill
 
-rectangle 60 30 3 3.5
+rectangle 90 30 3 3.5
 fill
 
 rectangle 80 30 3.5 3.5
@@ -153,6 +153,34 @@ relLineTo 0  10
 relLineTo 1   0
 relLineTo 0 -10
 fill
+
+lineWidth 1
+
+rectangle 10.5 50.5 1 1
+stroke
+
+rectangle 13.5 50.5 2 2
+stroke
+
+rectangle 17.5 50.5 3 3
+stroke
+
+rectangle 22.5 50.5 4 4
+stroke
+
+lineWidth 2
+
+rectangle 10 70 1 1
+stroke
+
+rectangle 14 70 2 2
+stroke
+
+rectangle 19 70 3 3
+stroke
+
+rectangle 25 70 4 4
+stroke
 
 
 lineWidth 2
