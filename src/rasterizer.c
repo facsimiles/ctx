@@ -2129,54 +2129,67 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   CtxSegment temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 
-#if 0 // needs more case testing
   if (rasterizer->edge_list.count == 6)
     {
-      CtxEntry *entry0 = &rasterizer->edge_list.entries[0];
-      CtxEntry *entry1 = &rasterizer->edge_list.entries[1];
-      CtxEntry *entry2 = &rasterizer->edge_list.entries[2];
-      CtxEntry *entry3 = &rasterizer->edge_list.entries[3];
-      float lwmod = ctx_fmod1f (line_width);
-      int lw = ctx_floorf (line_width + 0.5f);
-      int is_compat = (lw % 2 == 0) && (lwmod < 0.001); // only even linewidths implemented properly
+      CtxSegment *entry0 = &((CtxSegment*)rasterizer->edge_list.entries)[0];
+      CtxSegment *entry1 = &((CtxSegment*)rasterizer->edge_list.entries)[1];
+      CtxSegment *entry2 = &((CtxSegment*)rasterizer->edge_list.entries)[2];
+      CtxSegment *entry3 = &((CtxSegment*)rasterizer->edge_list.entries)[3];
       //fprintf (stderr, "{%i %.2f %.2f}", lw, lwmod, line_width);
 
-      is_compat = (lw == 2);
       if (!rasterizer->state->gstate.clipped &&
           (entry0->data.s16[2] == entry1->data.s16[2]) &&
           (entry0->data.s16[3] == entry3->data.s16[3]) &&
           (entry1->data.s16[3] == entry2->data.s16[3]) &&
-          (entry2->data.s16[2] == entry3->data.s16[2]) &&
-          is_compat
+          (entry2->data.s16[2] == entry3->data.s16[2])
 #if CTX_ENABLE_SHADOW_BLUR
            && !rasterizer->in_shadow
 #endif
          )
        {
-         if((((entry1->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
-            ((entry1->data.s16[3] % (CTX_FULL_AA)) == 0) &&
-            ((entry3->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
-            ((entry3->data.s16[3] % (CTX_FULL_AA)) == 0)) || 1)
-         {
-           /* best-case axis aligned rectangle */
-           float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
-           float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
-           float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
-           float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
+      float lwmod = ctx_fmod1f (line_width);
+      int lw = ctx_floorf (line_width + 0.5f);
+      int is_compat_even = (lw % 2 == 0) && (lwmod < 0.1); // only even linewidths implemented properly
+      int is_compat_odd = (lw % 2 == 1) && (lwmod < 0.1); // only even linewidths implemented properly
 
-           int bw = lw/2;
-           ctx_rasterizer_fill_rect (rasterizer, x0-bw, y0-bw, x1+bw, y0+bw, 255);
-           ctx_rasterizer_fill_rect (rasterizer, x0-bw, y1-bw, x1-bw, y1+bw, 255);
-           ctx_rasterizer_fill_rect (rasterizer, x0-bw, y0, x0+bw, y1, 255);
-           ctx_rasterizer_fill_rect (rasterizer, x1-bw, y0, x1+bw, y1, 255);
-           ctx_rasterizer_reset (rasterizer);
-           goto done;
-         }
+      int off_x = 0;
+      int off_y = 0;
+
+
+      if (is_compat_odd)
+      {
+        off_x = CTX_SUBDIV/2;
+        off_y = CTX_FULL_AA/2;
+      }
+
+      if((is_compat_odd || is_compat_even) &&
+         (((entry1->data.s16[2]-off_x) % (CTX_SUBDIV))  == 0)  &&
+         (((entry1->data.s16[3]-off_y) % (CTX_FULL_AA)) == 0) &&
+         (((entry3->data.s16[2]-off_x) % (CTX_SUBDIV))  == 0)  &&
+         (((entry3->data.s16[3]-off_y) % (CTX_FULL_AA)) == 0))
+      {
+        float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
+        float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
+        float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
+        float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
+
+        int bw = lw/2+1;
+        int bwb = lw/2;
+
+        if (is_compat_even)
+        {
+          bw = lw/2;
+        }
+        ctx_rasterizer_fill_rect (rasterizer, x0-bwb, y0-bwb, x1+bw, y0+bw, 255);
+
+        ctx_rasterizer_fill_rect (rasterizer, x0-bwb, y1-bwb, x1-bwb, y1+bw, 255);
+        ctx_rasterizer_fill_rect (rasterizer, x0-bwb, y0, x0+bw, y1, 255);
+        ctx_rasterizer_fill_rect (rasterizer, x1-bwb, y0, x1+bw, y1+bw, 255);
+        ctx_rasterizer_reset (rasterizer);
+        goto done;
+      }
        }
     }
-#else
-  if(0)goto done;
-#endif
   
     {
 
