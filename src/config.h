@@ -454,6 +454,10 @@
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  400
 #endif
 
+#ifndef CTX_MAX_FRAMEBUFFER_WIDTH
+#define CTX_MAX_FRAMEBUFFER_WIDTH 2560
+#endif
+
 #ifndef CTX_MAX_FONTS
 #define CTX_MAX_FONTS            3
 #endif

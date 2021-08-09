@@ -961,6 +961,89 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
    }
 }
 
+inline static void
+ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
+                                  int            minx,
+                                  int            maxx,
+                                  uint8_t       *coverage,
+                                  int            fill_rule)
+{
+  CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
+  CtxEdge  *edges = rasterizer->edges;
+  int scanline     = rasterizer->scanline;
+  int active_edges = rasterizer->active_edges;
+  uint8_t *dst = ( (uint8_t *) rasterizer->buf);
+  dst += (rasterizer->blit_stride * (rasterizer->scanline / CTX_FULL_AA));
+  int parity = 0;
+  coverage -= minx;
+#define CTX_EDGE(no)      entries[edges[no].index]
+#define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
+#define CTX_EDGE_X(no)    (edges[no].val)
+  for (int t = 0; t < active_edges -1;t++)
+    {
+      int ymin = CTX_EDGE_YMIN (t);
+      if (scanline != ymin)
+        {
+          if (fill_rule == CTX_FILL_RULE_WINDING)
+            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
+          else
+            { parity = 1 - parity; }
+        }
+
+       if (parity)
+        {
+          int x0        = CTX_EDGE_X (t);
+          int x1        = CTX_EDGE_X (t+1);
+          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int first     = graystart >> 8;
+          int last      = grayend   >> 8;
+
+          if (CTX_UNLIKELY(first < minx))
+          { 
+            first = minx;
+            graystart=0;
+          }
+          if (CTX_UNLIKELY(last > maxx))
+          {
+            last = maxx;
+            grayend=255;
+          }
+
+          graystart = 255 - (graystart&0xff);
+          grayend   = (grayend & 0xff);
+
+          if (first < last)
+          {
+            rasterizer->opaque[0] = graystart;
+            rasterizer->opaque[last-first] = grayend;
+            ctx_rasterizer_apply_coverage (rasterizer,
+                         &dst[(first * rasterizer->format->bpp) /8],
+                         first,
+                         rasterizer->opaque,
+                         last-first+1);
+            rasterizer->opaque[0] = 255;
+            rasterizer->opaque[last-first] = 255;
+          }
+          else if (first == last)
+          {
+            uint8_t cov[2];
+            cov[0] = (graystart-(255-grayend));
+            ctx_rasterizer_apply_coverage (rasterizer,
+                         &dst[(first * rasterizer->format->bpp) /8],
+                         first, cov, 1);
+          ;
+
+          //ctx_coverage_post_process (rasterizer, first, last, coverage - first,
+          //        NULL, NULL);
+
+
+          }
+        }
+   }
+}
+
+
 #undef CTX_EDGE_Y0
 #undef CTX_EDGE
 
@@ -1140,19 +1223,31 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
       if (CTX_LIKELY(rasterizer->active_edges))
       {
-      ctx_rasterizer_sort_active_edges (rasterizer);
-      first_col = rasterizer->edges[0].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
-      last_col = rasterizer->edges[rasterizer->active_edges-1].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
-      first_col = ctx_maxi (first_col, minx);
-      first_col = ctx_mini (first_col, maxx);
-      last_col = ctx_maxi (last_col, minx);
-      last_col = ctx_mini (last_col, maxx);
+        ctx_rasterizer_sort_active_edges (rasterizer);
 
-      ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
-      ctx_rasterizer_increment_edges (rasterizer, halfstep);
+#if CTX_SHAPE_CACHE
+        if (shape != NULL)
+        {
+        first_col = rasterizer->edges[0].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+        last_col = rasterizer->edges[rasterizer->active_edges-1].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+        first_col = ctx_maxi (first_col, minx);
+        first_col = ctx_mini (first_col, maxx);
+        last_col = ctx_maxi (last_col, minx);
+        last_col = ctx_mini (last_col, maxx);
+          ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
+          ctx_rasterizer_increment_edges (rasterizer, halfstep);
+        }
+        else
+#endif
+        {
+          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule);
+          ctx_rasterizer_increment_edges (rasterizer, halfstep);
+          goto cont;
+        }
       }
       else
       {
+        goto cont;
         first_col = last_col = minx;
       }
 #if CTX_VIS_AA
@@ -1232,16 +1327,17 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           coverage += shape->width;
         }
 #endif
+      cont:
       dst += rasterizer->blit_stride;
       rasterizer->prev_active_edges = rasterizer->active_edges;
     }
   }
 
-  if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OUT ||
+  if (CTX_UNLIKELY(rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OUT ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_IN ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_DESTINATION_IN ||
       rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_DESTINATION_ATOP ||
-      rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_CLEAR)
+      rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_CLEAR))
   {
      /* fill in the rest of the blitrect when compositing mode permits it */
      uint8_t nocoverage[rasterizer->blit_width];
@@ -1276,6 +1372,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
        dst += rasterizer->blit_stride;
      }
      }
+
      if (endx > maxx)
      {
      dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_start / CTX_FULL_AA);
@@ -1290,6 +1387,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
        dst += rasterizer->blit_stride;
      }
      }
+#if 0
      dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_end / CTX_FULL_AA);
      // XXX valgrind/asan this
      if(0)for (rasterizer->scanline = scan_end; rasterizer->scanline/CTX_FULL_AA < gscan_end-1;)
@@ -1302,6 +1400,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
        rasterizer->scanline += CTX_FULL_AA;
        dst += rasterizer->blit_stride;
      }
+#endif
   }
   ctx_rasterizer_reset (rasterizer);
 }
@@ -3523,6 +3622,8 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
     }
 
 #endif
+  if (rasterizer->opaque)
+    free (rasterizer->opaque);
   free (rasterizer);
 }
 
@@ -3630,6 +3731,12 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   }
 
   rasterizer->format = ctx_pixel_format_info (pixel_format);
+
+  if (rasterizer->opaque==NULL)
+  {
+    rasterizer->opaque=(uint8_t*)malloc(CTX_MAX_FRAMEBUFFER_WIDTH);
+    memset (rasterizer->opaque, 255, CTX_MAX_FRAMEBUFFER_WIDTH);
+  }
 
   return rasterizer;
 }

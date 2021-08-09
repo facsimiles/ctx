@@ -666,6 +666,7 @@ struct _CtxRasterizer
   unsigned int needs_aa5; // count of how many edges implies antialiasing
   unsigned int needs_aa15; // count of how many edges implies antialiasing
   int        horizontal_edges;
+  uint8_t   *opaque; // fully opaque-scanline
   int        uses_transforms;
   int        has_shape:2;
   int        has_prev:2;
