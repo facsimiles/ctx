@@ -958,6 +958,33 @@ CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 #endif
 }
 
+CTX_INLINE static uint32_t ctx_lerp_RGBA8 (const uint32_t v0, const uint32_t v1, const uint8_t dx)
+{
+#if 0
+  char bv0[4];
+  char bv1[4];
+  char res[4];
+  memcpy (&bv0[0], &v0, 4);
+  memcpy (&bv1[0], &v1, 4);
+  for (int c = 0; c < 4; c++)
+    res [c] = ctx_lerp_u8 (bv0[c], bv1[c], dx);
+  return ((uint32_t*)(&res[0]))[0];
+#else
+  const uint32_t cov = dx;
+  const uint32_t si_ga = (v1 & 0xff00ff00) >> 8;
+  const uint32_t si_rb = v1 & 0x00ff00ff;
+  const uint32_t di_ga = ( v0 & 0xff00ff00);
+  const uint32_t di_rb = v0 & 0x00ff00ff;
+  const uint32_t d_rb = si_rb - di_rb;
+  const uint32_t d_ga = si_ga - (di_ga>>8);
+  return
+     (((di_rb + ((d_rb * cov)>>8)) & 0x00ff00ff))  |
+      ((di_ga + ((d_ga * cov)      & 0xff00ff00)));
+
+#endif
+}
+
+
 CTX_INLINE static float
 ctx_lerpf (float v0, float v1, float dx)
 {

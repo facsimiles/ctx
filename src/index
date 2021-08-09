@@ -25,6 +25,7 @@ drawlist.c
 transform.c
 color.c
 keyvaldb.c
+composite.c
 rasterizer.c
 texture.c
 utf8.c
@@ -43,7 +44,6 @@ backend-termimg.c
 formatter.c
 ctx.c
 end-implementation
-composite.c
 ctx-clients.h
 vt-utf8.h
 vt-line.h
