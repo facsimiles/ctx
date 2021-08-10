@@ -1341,7 +1341,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
         ctx_rasterizer_sort_active_edges (rasterizer);
 
 #if CTX_SHAPE_CACHE
-        if (shape != NULL)
+        if (shape != NULL || rasterizer->clip_buffer)
         {
         first_col = rasterizer->edges[0].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
         last_col = rasterizer->edges[rasterizer->active_edges-1].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
