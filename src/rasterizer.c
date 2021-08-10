@@ -1619,12 +1619,15 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         }
         else
         {
-          uint8_t colorrow[4*(width+1)];
-          for (int i = 0; i < width + 1; i++)
-            memcpy(&colorrow[i*4], rasterizer->color, 4);
+          uint32_t color;
+          memcpy(&color, rasterizer->color, 4);
           for (int y = y0; y < y1; y++)
           {
-            memcpy (&dst[(x0)*4], colorrow, 4 * (width));
+            uint32_t *dst_i = (uint32_t*)&dst[(x0)*4];
+            for (int i = 0; i < width; i++)
+            {
+              dst_i[i] = color;
+            }
             dst += rasterizer->blit_stride;
           }
         }
