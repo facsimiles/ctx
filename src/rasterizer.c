@@ -1011,7 +1011,8 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
 #define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
 #define CTX_EDGE_X(no)    (edges[no].val)
 
-#if 0
+  int accumulator_x=0;
+  uint8_t accumulated = 0;
   for (int t = 0; t < active_edges -1;t++)
     {
       int ymin = CTX_EDGE_YMIN (t);
@@ -1046,11 +1047,39 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
           graystart = 255 - (graystart&0xff);
           grayend   = (grayend & 0xff);
 
+          if (accumulator_x == first)
+          {
+            graystart += accumulated;
+            accumulated = 0;
+          }
+          else if (accumulated)
+          {
+            if (fast_source_copy)
+            {
+              uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
+              *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, accumulated);
+            }
+            else if (fast_source_over)
+            {
+              uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
+              *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, accumulated);
+            }
+            else
+            {
+              ctx_rasterizer_apply_coverage (rasterizer,
+                          &dst[(accumulator_x * bpp)],
+                          accumulator_x,
+                          &accumulated,
+                          1);
+            }
+            accumulated = 0;
+          }
+
           if (fast_source_copy)
           {
+            uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
             if (first < last)
             {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
               *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, graystart);
 
               dst_pix++;
@@ -1059,20 +1088,20 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 *dst_pix = src_pix;
                 dst_pix++;
               }
-              *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, grayend);
+              accumulator_x = last;
+              accumulated = grayend;
             }
             else if (first == last)
             {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
-              *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, 
-                                        graystart-(255-grayend));
+              accumulator_x = last;
+              accumulated = (graystart-(255-grayend));
             }
           }
           else if (fast_source_over)
           {
+            uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
             if (first < last)
             {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
               *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, graystart);
               dst_pix++;
               for (int i = first + 1; i < last; i++)
@@ -1080,13 +1109,13 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, 255);
                 dst_pix++;
               }
-              *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, grayend);
+              accumulator_x = last;
+              accumulated = grayend;
             }
             else if (first == last)
             {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
-              *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, 
-                                        graystart-(255-grayend));
+              accumulator_x = last;
+              accumulated = (graystart-(255-grayend));
             }
           }
           else
@@ -1094,207 +1123,47 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             if (first < last)
             {
               rasterizer->opaque[0] = graystart;
-              rasterizer->opaque[last-first] = grayend;
               ctx_rasterizer_apply_coverage (rasterizer,
                           &dst[(first * bpp)],
                           first,
                           rasterizer->opaque,
-                          last-first+1);
+                          last-first);
               rasterizer->opaque[0] = 255;
-              rasterizer->opaque[last-first] = 255;
+              accumulator_x = last;
+              accumulated = grayend;
             }
             else if (first == last)
             {
-              uint8_t cov=(graystart-(255-grayend));
+              accumulator_x = last;
+              accumulated = (graystart-(255-grayend));
+            }
+          }
+        }
+   }
+
+          if (accumulated)
+          {
+            if (fast_source_copy)
+            {
+              uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
+              *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, accumulated);
+            }
+            else if (fast_source_over)
+            {
+              uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
+              *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, accumulated);
+            }
+            else
+            {
               ctx_rasterizer_apply_coverage (rasterizer,
-                           &dst[(first * bpp)],
-                           first, &cov, 1);
+                          &dst[(accumulator_x * bpp)],
+                          accumulator_x,
+                          &accumulated,
+                          1);
             }
-          }
-        }
-   }
-#else
-   if (fast_source_copy)
-   {
-  for (int t = 0; t < active_edges -1;t++)
-    {
-      int ymin = CTX_EDGE_YMIN (t);
-      if (scanline != ymin)
-        {
-          if (fill_rule == CTX_FILL_RULE_WINDING)
-            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
-          else
-            { parity = 1 - parity; }
-        }
-
-       if (parity)
-        {
-          int x0        = CTX_EDGE_X (t);
-          int x1        = CTX_EDGE_X (t+1);
-          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int first     = graystart >> 8;
-          int last      = grayend   >> 8;
-
-          if (CTX_UNLIKELY(first < minx))
-          { 
-            first = minx;
-            graystart=0;
-          }
-          if (CTX_UNLIKELY(last > maxx))
-          {
-            last = maxx;
-            grayend=255;
+            accumulated = 0;
           }
 
-          graystart = 255 - (graystart&0xff);
-          grayend   = (grayend & 0xff);
-
-            if (first < last)
-            {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
-              *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, graystart);
-
-              dst_pix++;
-              for (int i = first + 1; i < last; i++)
-              {
-                *dst_pix = src_pix;
-                dst_pix++;
-              }
-              *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, grayend);
-            }
-            else if (first == last)
-            {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
-              *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, 
-                                        graystart-(255-grayend));
-            }
-        }
-   }
-   }
-   else if (fast_source_over)
-   {
-     const uint32_t si_ga = (src_pix & 0xff00ff00) >> 8;
-     const uint32_t si_rb = src_pix & 0x00ff00ff;
-     const uint32_t si_a  = rasterizer->color[3];//si_ga >> 16;
-  for (int t = 0; t < active_edges -1;t++)
-    {
-      int ymin = CTX_EDGE_YMIN (t);
-      if (scanline != ymin)
-        {
-          if (fill_rule == CTX_FILL_RULE_WINDING)
-            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
-          else
-            { parity = 1 - parity; }
-        }
-
-       if (parity)
-        {
-          int x0        = CTX_EDGE_X (t);
-          int x1        = CTX_EDGE_X (t+1);
-          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int first     = graystart >> 8;
-          int last      = grayend   >> 8;
-
-          if (CTX_UNLIKELY(first < minx))
-          { 
-            first = minx;
-            graystart=0;
-          }
-          if (CTX_UNLIKELY(last > maxx))
-          {
-            last = maxx;
-            grayend=255;
-          }
-
-          graystart = 255 - (graystart&0xff);
-          grayend   = (grayend & 0xff);
-
-          {
-            if (first < last)
-            {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
-              *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, graystart);
-              dst_pix++;
-              for (int i = first + 1; i < last; i++)
-              {
-                *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, 255);
-                dst_pix++;
-              }
-              *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, grayend);
-            }
-            else if (first == last)
-            {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
-              *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, 
-                                        graystart-(255-grayend));
-            }
-          }
-        }
-   }
-   }
-   else
-   {
-  for (int t = 0; t < active_edges -1;t++)
-    {
-      int ymin = CTX_EDGE_YMIN (t);
-      if (scanline != ymin)
-        {
-          if (fill_rule == CTX_FILL_RULE_WINDING)
-            { parity += ( (CTX_EDGE (t).code == CTX_EDGE_FLIPPED) ?1:-1); }
-          else
-            { parity = 1 - parity; }
-        }
-
-       if (parity)
-        {
-          int x0        = CTX_EDGE_X (t);
-          int x1        = CTX_EDGE_X (t+1);
-          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int first     = graystart >> 8;
-          int last      = grayend   >> 8;
-
-          if (CTX_UNLIKELY(first < minx))
-          { 
-            first = minx;
-            graystart=0;
-          }
-          if (CTX_UNLIKELY(last > maxx))
-          {
-            last = maxx;
-            grayend=255;
-          }
-
-          graystart = 255 - (graystart&0xff);
-          grayend   = (grayend & 0xff);
-
-          {
-            if (first < last)
-            {
-              rasterizer->opaque[0] = graystart;
-              rasterizer->opaque[last-first] = grayend;
-              ctx_rasterizer_apply_coverage (rasterizer,
-                          &dst[(first * bpp)],
-                          first,
-                          rasterizer->opaque,
-                          last-first+1);
-              rasterizer->opaque[0] = 255;
-              rasterizer->opaque[last-first] = 255;
-            }
-            else if (first == last)
-            {
-              uint8_t cov=(graystart-(255-grayend));
-              ctx_rasterizer_apply_coverage (rasterizer,
-                           &dst[(first * bpp)],
-                           first, &cov, 1);
-            }
-          }
-        }
-   }
-   }
-#endif
 }
 
 
