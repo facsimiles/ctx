@@ -975,6 +975,19 @@ ctx_over_RGBA8 (uint32_t dst, uint32_t src, uint8_t cov)
       (((si_ga * cov) + (di_ga * rcov)) & 0xff00ff00);
 }
 
+
+static inline uint32_t
+ctx_over_RGBA8_2 (uint32_t dst, uint32_t si_ga, uint32_t si_rb, uint32_t si_a, uint8_t cov)
+{
+  uint32_t rcov = (256-((si_a * cov)/255));
+  uint32_t di_ga = ( dst & 0xff00ff00) >> 8;
+  uint32_t di_rb = dst & 0x00ff00ff;
+  return
+     ((((si_rb * cov) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
+      (((si_ga * cov) + (di_ga * rcov)) & 0xff00ff00);
+}
+
+
 inline static void
 ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                                   int            minx,
@@ -1161,6 +1174,9 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
    }
    else if (fast_source_over)
    {
+     const uint32_t si_ga = (src_pix & 0xff00ff00) >> 8;
+     const uint32_t si_rb = src_pix & 0x00ff00ff;
+     const uint32_t si_a  = rasterizer->color[3];//si_ga >> 16;
   for (int t = 0; t < active_edges -1;t++)
     {
       int ymin = CTX_EDGE_YMIN (t);
@@ -1199,19 +1215,19 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             if (first < last)
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
-              *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, graystart);
+              *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, graystart);
               dst_pix++;
               for (int i = first + 1; i < last; i++)
               {
-                *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, 255);
+                *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, 255);
                 dst_pix++;
               }
-              *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, grayend);
+              *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, grayend);
             }
             else if (first == last)
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
-              *dst_pix = ctx_lerp_RGBA8(*dst_pix, src_pix, 
+              *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, 
                                         graystart-(255-grayend));
             }
           }
