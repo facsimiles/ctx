@@ -18,6 +18,7 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
       case CTX_APPLY_TRANSFORM:
+      case CTX_SOURCE_TRANSFORM:
       case CTX_COLOR:
       case CTX_ROUND_RECTANGLE:
       case CTX_SHADOW_COLOR:
@@ -246,6 +247,7 @@ again:
         case CTX_CURVE_TO:
         case CTX_REL_CURVE_TO:
         case CTX_APPLY_TRANSFORM:
+        case CTX_SOURCE_TRANSFORM:
         case CTX_ROUND_RECTANGLE:
         case CTX_TEXT:
         case CTX_STROKE_TEXT:

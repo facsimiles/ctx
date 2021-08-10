@@ -962,6 +962,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_APPLY_TRANSFORM:
         ctx_apply_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
         break;
+      case CTX_SOURCE_TRANSFORM:
+        ctx_source_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
+        break;
       case CTX_CURVE_TO:
         ctx_curve_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
         parser->pcx = arg(2);

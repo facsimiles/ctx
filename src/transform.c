@@ -157,6 +157,8 @@ ctx_identity (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_IDENTITY);
 }
 
+
+
 void
 ctx_apply_transform (Ctx *ctx, float a, float b,  // hscale, hskew
                      float c, float d,  // vskew,  vscale
@@ -182,6 +184,20 @@ ctx_get_transform  (Ctx *ctx, float *a, float *b,
   if (d) { *d = ctx->state.gstate.transform.m[1][1]; }
   if (e) { *e = ctx->state.gstate.transform.m[2][0]; }
   if (f) { *f = ctx->state.gstate.transform.m[2][1]; }
+}
+
+void
+ctx_source_transform (Ctx *ctx, float a, float b,  // hscale, hskew
+                      float c, float d,  // vskew,  vscale
+                      float e, float f)  // htran,  vtran
+{
+  CtxEntry command[3]=
+  {
+    ctx_f (CTX_SOURCE_TRANSFORM, a, b),
+    ctx_f (CTX_CONT,             c, d),
+    ctx_f (CTX_CONT,             e, f)
+  };
+  ctx_process (ctx, command);
 }
 
 void ctx_apply_matrix (Ctx *ctx, CtxMatrix *matrix)

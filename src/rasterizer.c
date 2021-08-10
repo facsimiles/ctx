@@ -1571,16 +1571,6 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          y1,
                           uint8_t      cov)
 {
-  if (CTX_UNLIKELY(x0>=x1)) {
-          return 1;
-
-     int tmp = x1;
-     x1 = x0;
-     x0 = tmp;
-     tmp = y1;
-     y1 = y0;
-     y0 = tmp;
-  }
 #if 0
   if (x1 % CTX_SUBDIV ||
       x0 % CTX_SUBDIV ||
@@ -1589,7 +1579,6 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     { return 0; }
 #endif
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
-  _ctx_setup_compositor (rasterizer);
   x0 = ctx_maxi (x0, rasterizer->blit_x);
   y0 = ctx_maxi (y0, rasterizer->blit_y);
   x1 = ctx_mini (x1, rasterizer->blit_x + rasterizer->blit_width);
@@ -1600,15 +1589,17 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
 
   if (CTX_UNLIKELY(width <=0))
     return 1;
+  _ctx_setup_compositor (rasterizer);
 
   if (cov == 255 && rasterizer->format->components == 4 &&
+      rasterizer->format->bpp == 32 &&
       rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
-      (
-       (rasterizer->color[3]==255 &&
-        rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER) ||
-      (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY)  )&&
-      rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
-      rasterizer->format->bpp == 32)
+      rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL)
+  {
+  }
+  if (  (rasterizer->color[3]==255 && rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+      ||(rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY)
+        )
   {
     if (CTX_UNLIKELY(width == 1))
     {
@@ -1632,12 +1623,9 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         dst += rasterizer->blit_stride;
       }
     }
+    return 1;
   }
-  else if (cov == 255 && rasterizer->format->components == 4 &&
-      rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
-      rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
-      rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
-      rasterizer->format->bpp == 32)
+  else if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
   {
     if (CTX_UNLIKELY(width == 1))
     {
@@ -1660,34 +1648,33 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         dst += rasterizer->blit_stride;
       }
     }
+    return 1;
+  }
+
+  if (CTX_UNLIKELY(width == 1))
+  {
+    uint8_t coverage[1]={cov};
+    for (int y = y0; y < y1; y++)
+    {
+      ctx_rasterizer_apply_coverage (rasterizer,
+            &dst[ (x0) * rasterizer->format->bpp/8],
+            x0, coverage, 1);
+      dst += rasterizer->blit_stride;
+    }
   }
   else
   {
-    if (CTX_UNLIKELY(width == 1))
+    uint8_t coverage[width + 1];
+    memset (coverage, cov, sizeof (coverage) );
+    rasterizer->scanline = y0 * CTX_FULL_AA;
+    for (int y = y0; y < y1; y++)
     {
-      uint8_t coverage[1]={cov};
-      for (int y = y0; y < y1; y++)
-      {
-        ctx_rasterizer_apply_coverage (rasterizer,
-              &dst[ (x0) * rasterizer->format->bpp/8],
-              x0, coverage, 1);
-        dst += rasterizer->blit_stride;
-      }
-    }
-    else
-    {
-      uint8_t coverage[width + 1];
-      memset (coverage, cov, sizeof (coverage) );
-      rasterizer->scanline = y0 * CTX_FULL_AA;
-      for (int y = y0; y < y1; y++)
-      {
-        rasterizer->scanline += CTX_FULL_AA;
-        ctx_rasterizer_apply_coverage (rasterizer,
-                                     &dst[ (x0) * rasterizer->format->bpp/8],
-                                     x0,
-                                     coverage, width);
-        dst += rasterizer->blit_stride;
-      }
+      rasterizer->scanline += CTX_FULL_AA;
+      ctx_rasterizer_apply_coverage (rasterizer,
+                                   &dst[ (x0) * rasterizer->format->bpp/8],
+                                   x0,
+                                   coverage, width);
+      dst += rasterizer->blit_stride;
     }
   }
   return 1;

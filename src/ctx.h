@@ -941,7 +941,6 @@ typedef enum
                          //    data can be a string with a name,
                          //    icc data or perhaps our own serialization
                          //    of profile data
-  CTX_EDGE_FLIPPED     = '`', // x0 y0 x1 y1 - s16
   CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius
   CTX_CLIP             = 'b',
   CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y
@@ -971,13 +970,16 @@ typedef enum
   CTX_CLOSE_PATH       = 'z', //
   CTX_START_GROUP      = '{',
   CTX_END_GROUP        = '}',
-  CTX_EDGE             = ',',
+  CTX_SOURCE_TRANSFORM = '`',
+
+  CTX_EDGE             = '&',                        // will not occur in commandstream
+  CTX_EDGE_FLIPPED     = '^', // x0 y0 x1 y1 - s16   // thus these use reserved entries as code
 
   /* though expressed as two chars in serialization we have
    * dedicated byte commands for the setters to keep the dispatch
    * simpler. There is no need for these to be human readable thus we go >128
    *
-   * unused:        !&<=>?:.=/\
+   * unused:        !&<=>?:.=/\`,
    * reserved:      '"&   #  %^@
    */
 

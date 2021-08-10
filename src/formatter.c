@@ -112,6 +112,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_FILL:                 return "fill"; break;
           case CTX_EXIT:                 return "exit"; break;
           case CTX_APPLY_TRANSFORM:      return "transform"; break;
+          case CTX_SOURCE_TRANSFORM:     return "sourceTransform"; break;
           case CTX_REL_ARC_TO:           return "relArcTo"; break;
           case CTX_GLYPH:                return "glyph"; break;
           case CTX_TEXTURE:              return "texture"; break;
@@ -525,6 +526,9 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_ARC:
       case CTX_RADIAL_GRADIENT:
       case CTX_APPLY_TRANSFORM:
+        ctx_print_entry (formatter, entry, 6);
+        break;
+      case CTX_SOURCE_TRANSFORM:
         ctx_print_entry (formatter, entry, 6);
         break;
       case CTX_QUAD_TO:
