@@ -1116,6 +1116,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
           {
             accumulated = (graystart-(255-grayend));
           }
+          accumulator_x = last;
         }
     }
 
