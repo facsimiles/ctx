@@ -215,7 +215,7 @@
 /* whether we dither or not for gradients
  */
 #ifndef CTX_DITHER
-#define CTX_DITHER 1
+#define CTX_DITHER 0
 #endif
 
 /*  only source-over clear and copy will work, the API still

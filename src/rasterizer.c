@@ -1001,6 +1001,17 @@ ctx_over_RGBA8_2 (uint32_t dst, uint32_t si_ga, uint32_t si_rb, uint32_t si_a, u
       (((si_ga * cov) + (di_ga * rcov)) & 0xff00ff00);
 }
 
+static inline uint32_t
+ctx_over_RGBA8_full_2 (uint32_t dst, uint32_t si_ga_full, uint32_t si_rb_full, uint32_t si_a)
+{
+  uint32_t rcov = (256-si_a);
+  uint32_t di_ga = ( dst & 0xff00ff00) >> 8;
+  uint32_t di_rb = dst & 0x00ff00ff;
+  return
+     ((((si_rb_full) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
+      (((si_ga_full) + (di_ga * rcov)) & 0xff00ff00);
+}
+
 
 inline static void
 ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
@@ -1017,6 +1028,11 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
   int bpp = rasterizer->format->bpp/8;
   int active_edges = rasterizer->active_edges;
   uint32_t  src_pix = ((uint32_t*)rasterizer->color)[0];
+  uint32_t si_ga_full = (src_pix & 0xff00ff00);
+  uint32_t si_ga = si_ga_full >> 8;
+  uint32_t si_rb = src_pix & 0x00ff00ff;
+  uint32_t si_rb_full = si_rb << 8;
+  uint32_t si_a  = si_ga >> 16;
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
   dst += (rasterizer->blit_stride * (rasterizer->scanline / CTX_FULL_AA));
   int parity = 0;
@@ -1106,11 +1122,11 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             else if (fast_source_over)
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
-              *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, graystart);
+              *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, graystart);
               dst_pix++;
               for (int i = first + 1; i < last; i++)
               {
-                *dst_pix = ctx_over_RGBA8_full(*dst_pix, src_pix);
+                *dst_pix = ctx_over_RGBA8_full_2(*dst_pix, si_ga_full, si_rb_full, si_a);
                 dst_pix++;
               }
             }
@@ -1144,7 +1160,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
       else if (fast_source_over)
       {
         uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
-        *dst_pix = ctx_over_RGBA8(*dst_pix, src_pix, accumulated);
+        *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, accumulated);
       }
       else
       {
