@@ -57,8 +57,6 @@ CTX_INLINE static uint32_t ctx_bi_RGBA8 (uint32_t src00, uint32_t src01, uint32_
                          ctx_lerp_RGBA8 (src10, src11, dx), dy);
 }
 
-
-
 #if CTX_GRADIENTS
 #if CTX_GRADIENT_CACHE
 static uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];

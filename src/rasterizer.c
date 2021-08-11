@@ -703,7 +703,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
           maxy >= scanline)
         {
           int dy = (entries[rasterizer->edge_pos].data.s16[3] - 1 - miny);
-          if (dy)
+          if (CTX_LIKELY(dy))
             {
               int yd = scanline - miny;
               int no = rasterizer->active_edges;
@@ -720,11 +720,10 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 
               {
                 int abs_dx_dy = abs(dx_dy);
-               rasterizer->needs_aa3  += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
-               rasterizer->needs_aa5  += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
-               rasterizer->needs_aa15 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
+                rasterizer->needs_aa3  += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
+                rasterizer->needs_aa5  += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
+                rasterizer->needs_aa15 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
               }
-
 
               if ((miny > scanline) )
                 {
@@ -750,20 +749,13 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     ctx_rasterizer_sort_active_edges (rasterizer);
 }
 
-CTX_INLINE static int ctx_compare_edges2 (const void *ap, const void *bp)
-{
-  const CtxEdge *a = (const CtxEdge *) ap;
-  const CtxEdge *b = (const CtxEdge *) bp;
-  return a->val - b->val;
-}
-
 CTX_INLINE static void ctx_edge2_insertion_sort (CtxEdge *entries, int count)
 {
   for(int i=1; i<count; i++)
    {
      CtxEdge temp = entries[i];
      int j = i-1;
-     while (j >= 0 && ctx_compare_edges2 (&temp, &entries[j])<0)
+     while (j >= 0 && temp.val - entries[j].val < 0)
      {
        entries[j+1] = entries[j];
        j--;
@@ -795,7 +787,7 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
       for (int x = dim/2; x < maxx-minx + 1 - dim/2; x ++)
         for (int u = 0; u < dim; u ++)
         {
-            temp[x] += coverage[minx+x+u-dim/2] * rasterizer->kernel[u] * 256;
+          temp[x] += coverage[minx+x+u-dim/2] * rasterizer->kernel[u] * 256;
         }
       for (int x = 0; x < maxx-minx + 1; x ++)
         coverage[minx+x] = temp[x] >> 8;
@@ -813,9 +805,9 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
     for (int x = minx; x <= maxx; x ++)
     {
 #if CTX_1BIT_CLIP
-        coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x&8)))?255:0))/255;
+       coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x&8)))?255:0))/255;
 #else
-        coverage[x] = (coverage[x] * clip_line[x])/255;
+       coverage[x] = (255 + coverage[x] * clip_line[x])>>8;
 #endif
     }
   }
@@ -876,15 +868,15 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
             grayend=255;
           }
 
-          graystart=fraction- (graystart&0xff)/aa_factor;
-          grayend = (grayend & 0xff) / aa_factor;
+          graystart = fraction- (graystart&0xff)/aa_factor;
+          grayend   = (grayend & 0xff) / aa_factor;
 
           if (first < last)
           {
               coverage[first] += graystart;
               for (int x = first + 1; x < last; x++)
-                coverage[x] += fraction;
-              coverage[last]  += grayend;
+                coverage[x]  += fraction;
+              coverage[last] += grayend;
           }
           else if (first == last)
             coverage[first] += (graystart-(fraction-grayend));
@@ -1010,22 +1002,44 @@ ctx_over_RGBA8_full_2 (uint32_t dst, uint32_t si_ga_full, uint32_t si_rb_full, u
       (((si_ga_full) + (di_ga * rcov)) & 0xff00ff00);
 }
 
+#if 0
+  \                                    .
+   \                                 .
+------------------------------------------------------
+     \                       . '
+      \                  . ' 
+       \             . '
+        \        . '
+------------------------------------------------------
+          \
+           \
+
+how to check for no intersections within line?
+
+  iterate through edges and check that order is still increasing after increment
+  bail at first that isn't
+
+compute the horizontal coverage of each intersection as if it was a slow intersect,
+process this with one dispatch
+
+
+#endif
 
 inline static void
 ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
-                                  int            minx,
-                                  int            maxx,
-                                  uint8_t       *coverage,
-                                  int            fill_rule,
-                                  int            fast_source_copy,
-                                  int            fast_source_over)
+                                        int            minx,
+                                        int            maxx,
+                                        uint8_t       *coverage,
+                                        int            fill_rule,
+                                        int            fast_source_copy,
+                                        int            fast_source_over)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
-  CtxEdge  *edges = rasterizer->edges;
-  int scanline     = rasterizer->scanline;
-  int bpp = rasterizer->format->bpp/8;
-  int active_edges = rasterizer->active_edges;
-  int parity = 0;
+  CtxEdge     *edges  = rasterizer->edges;
+  int scanline        = rasterizer->scanline;
+  int bpp             = rasterizer->format->bpp/8;
+  int active_edges    = rasterizer->active_edges;
+  int parity        = 0;
 #define CTX_EDGE(no)      entries[edges[no].index]
 #define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
 #define CTX_EDGE_X(no)    (edges[no].val)
@@ -1076,28 +1090,27 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
 
           if (accumulated)
           {
-          if (accumulator_x == first)
-          {
-            graystart += accumulated;
-            accumulated = 0;
-          }
-          else
-          {
-            uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
-            if (fast_source_copy)
+            if (accumulator_x == first)
             {
-              *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, accumulated);
-            }
-            else if (fast_source_over)
-            {
-              *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, accumulated);
+              graystart += accumulated;
             }
             else
             {
-              ctx_rasterizer_apply_coverage (rasterizer, (uint8_t*)dst_pix, accumulator_x, &accumulated, 1);
+              uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
+              if (fast_source_copy)
+              {
+                *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, accumulated);
+              }
+              else if (fast_source_over)
+              {
+                *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, accumulated);
+              }
+              else
+              {
+                ctx_rasterizer_apply_coverage (rasterizer, (uint8_t*)dst_pix, accumulator_x, &accumulated, 1);
+              }
             }
             accumulated = 0;
-          }
           }
 
           if (first < last)
@@ -1356,8 +1369,12 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       if (CTX_LIKELY(rasterizer->active_edges))
       {
 
-#if CTX_SHAPE_CACHE
-        if (shape != NULL || rasterizer->clip_buffer)
+#if CTX_SHAPE_CACHE || CTX_VIS_AA
+        if (shape != NULL || rasterizer->clip_buffer
+#if CTX_VIS_AA
+                        || 1
+#endif
+                        )
         {
           ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
           ctx_rasterizer_increment_edges (rasterizer, halfstep);
