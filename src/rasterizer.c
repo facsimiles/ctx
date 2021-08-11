@@ -270,7 +270,7 @@ CTX_STATIC inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float 
   rasterizer->first_x  = x;
   rasterizer->first_y  = y;
   rasterizer->has_prev = -1;
-  if ((rasterizer->uses_transforms))
+  if (rasterizer->uses_transforms)
     {
       _ctx_user_to_device (rasterizer->state, &tx, &ty);
     }
@@ -842,8 +842,8 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
   int scanline     = rasterizer->scanline;
   int active_edges = rasterizer->active_edges;
   int parity = 0;
-  uint8_t fraction = 255/aa_factor;
   coverage -= minx;
+  uint8_t fraction = 255/aa_factor;
 #define CTX_EDGE(no)      entries[edges[no].index]
 #define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
 #define CTX_EDGE_X(no)    (edges[no].val)
@@ -1027,20 +1027,20 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
   int scanline     = rasterizer->scanline;
   int bpp = rasterizer->format->bpp/8;
   int active_edges = rasterizer->active_edges;
-  uint32_t  src_pix = ((uint32_t*)rasterizer->color)[0];
-  uint32_t si_ga_full = (src_pix & 0xff00ff00);
-  uint32_t si_ga = si_ga_full >> 8;
-  uint32_t si_rb = src_pix & 0x00ff00ff;
-  uint32_t si_rb_full = si_rb << 8;
-  uint32_t si_a  = si_ga >> 16;
-  uint8_t *dst = ( (uint8_t *) rasterizer->buf);
-  dst += (rasterizer->blit_stride * (rasterizer->scanline / CTX_FULL_AA));
   int parity = 0;
   coverage -= minx;
 #define CTX_EDGE(no)      entries[edges[no].index]
 #define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
 #define CTX_EDGE_X(no)    (edges[no].val)
 
+  uint32_t src_pix = ((uint32_t*)rasterizer->color)[0];
+  uint32_t si_ga_full = (src_pix & 0xff00ff00);
+  uint32_t si_ga = si_ga_full >> 8;
+  uint32_t si_rb = src_pix & 0x00ff00ff;
+  uint32_t si_rb_full = si_rb << 8;
+  uint32_t si_a  = si_ga >> 16;
+  uint8_t *dst = ( (uint8_t *) rasterizer->buf) +
+         (rasterizer->blit_stride * (scanline / CTX_FULL_AA));
   int accumulator_x=0;
   uint8_t accumulated = 0;
   for (int t = 0; t < active_edges -1;t++)
@@ -1252,6 +1252,11 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 #endif
   uint8_t *coverage = &_coverage[0];
 
+  int coverage_size = 
+#if CTX_SHAPE_CACHE
+                  shape?shape->width:
+#endif
+                  sizeof (_coverage);
 
 #if CTX_SHAPE_CACHE
   if (shape)
@@ -1317,17 +1322,12 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           || (rasterizer->active_edges + rasterizer->pending_edges == rasterizer->ending_edges)
           );
 
-      // check if all pending edges are scanline aligned at start
-      memset (coverage, 0,
-#if CTX_SHAPE_CACHE
-                  shape?shape->width:
-#endif
-                  sizeof (_coverage) );
 
       rasterizer->needs_aa3  *= enable_aa3;
       rasterizer->needs_aa5  *= enable_aa5;
       rasterizer->needs_aa15 *= enable_aa15;
 
+    memset (coverage, 0, coverage_size);
 #if 0
       if (1)
       {
@@ -1341,7 +1341,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       }
       else 
 #endif
-    if (needs_full_aa)
+    if (CTX_UNLIKELY (needs_full_aa))
     {
         int increment = CTX_FULL_AA/real_aa;
         for (int i = 0; i < real_aa; i++)
@@ -1642,7 +1642,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       for (int y = y0; y < y1; y++)
       {
         ((uint32_t*)(dst))[(x0)] = ctx_over_RGBA8_full_2 (
-           ((uint32_t*)(dst))[(x0)], si_ga, si_rb);
+           ((uint32_t*)(dst))[(x0)], si_ga, si_rb, si_a);
         dst += rasterizer->blit_stride;
       }
     }
@@ -1653,7 +1653,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         uint32_t *dst_i = (uint32_t*)&dst[(x0)*4];
         for (int i = 0; i < width; i++)
         {
-          dst_i[i] = ctx_over_RGBA8_full_2 (dst_i[i], si_ga, si_rb);
+          dst_i[i] = ctx_over_RGBA8_full_2 (dst_i[i], si_ga, si_rb, si_a);
         }
         dst += rasterizer->blit_stride;
       }
