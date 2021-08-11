@@ -579,11 +579,7 @@ CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
 {
   const CtxSegment *a = (const CtxSegment *) ap;
   const CtxSegment *b = (const CtxSegment *) bp;
-  int ycompare = a->data.s16[1] - b->data.s16[1];
-  if (ycompare)
-    { return ycompare; }
-  int xcompare = a->data.s16[0] - b->data.s16[0];
-  return xcompare;
+  return a->data.s16[1] - b->data.s16[1];
 }
 
 CTX_INLINE static int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
@@ -593,8 +589,8 @@ CTX_INLINE static int ctx_edge_qsort_partition (CtxSegment *A, int low, int high
   int j = high;
   while (i <= j)
     {
-      while (ctx_compare_edges (&A[i], &pivot) <0) { i ++; }
-      while (ctx_compare_edges (&pivot, &A[j]) <0) { j --; }
+      while (ctx_compare_edges (&A[i], &pivot) < 0) { i ++; }
+      while (ctx_compare_edges (&pivot, &A[j]) < 0) { j --; }
       if (i <= j)
         {
           CtxSegment tmp = A[i];
@@ -633,8 +629,8 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (CTX_LIKELY(edge_end < scanline))
         {
           int dx_dy = abs(rasterizer->edges[i].delta);
-          rasterizer->needs_aa3 -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
-          rasterizer->needs_aa5 -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
+          rasterizer->needs_aa3  -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
+          rasterizer->needs_aa5  -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
           rasterizer->needs_aa15 -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
@@ -675,6 +671,7 @@ inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, in
    again feed_edges until middle of scanline if doing non-AA
    or directly render when doing AA
 */
+static inline void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer);
 inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
   int miny;
@@ -723,8 +720,8 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 
               {
                 int abs_dx_dy = abs(dx_dy);
-               rasterizer->needs_aa3 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
-               rasterizer->needs_aa5 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
+               rasterizer->needs_aa3  += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
+               rasterizer->needs_aa5  += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
                rasterizer->needs_aa15 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
               }
 
@@ -750,6 +747,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
       rasterizer->edge_pos++;
     }
     ctx_rasterizer_discard_edges (rasterizer);
+    ctx_rasterizer_sort_active_edges (rasterizer);
 }
 
 CTX_INLINE static int ctx_compare_edges2 (const void *ap, const void *bp)
@@ -962,12 +960,12 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
 }
 
 static inline uint32_t
-ctx_over_RGBA8 (uint32_t dst, uint32_t src, uint8_t cov)
+ctx_over_RGBA8 (uint32_t dst, uint32_t src, uint32_t cov)
 {
   uint32_t si_ga = (src & 0xff00ff00) >> 8;
   uint32_t si_rb = src & 0x00ff00ff;
   uint32_t si_a  = si_ga >> 16;
-  uint32_t rcov = (256-((255+si_a * cov)>>8));
+  uint32_t rcov  = (256-((255+si_a * cov)>>8));
   uint32_t di_ga = ( dst & 0xff00ff00) >> 8;
   uint32_t di_rb = dst & 0x00ff00ff;
   return
@@ -982,8 +980,8 @@ ctx_over_RGBA8_full (uint32_t dst, uint32_t src)
   uint32_t si_ga = (src & 0xff00ff00) >> 8;
   uint32_t si_rb = src & 0x00ff00ff;
   uint32_t si_a  = si_ga >> 16;
-  uint32_t rcov = (256-si_a);
-  uint32_t di_ga = ( dst & 0xff00ff00) >> 8;
+  uint32_t rcov  = (256-si_a);
+  uint32_t di_ga = (dst & 0xff00ff00) >> 8;
   uint32_t di_rb = dst & 0x00ff00ff;
   return
      ((((si_rb << 8) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
@@ -991,10 +989,10 @@ ctx_over_RGBA8_full (uint32_t dst, uint32_t src)
 }
 
 static inline uint32_t
-ctx_over_RGBA8_2 (uint32_t dst, uint32_t si_ga, uint32_t si_rb, uint32_t si_a, uint8_t cov)
+ctx_over_RGBA8_2 (uint32_t dst, uint32_t si_ga, uint32_t si_rb, uint32_t si_a, uint32_t cov)
 {
-  uint32_t rcov = (256-((si_a * cov)/255));
-  uint32_t di_ga = ( dst & 0xff00ff00) >> 8;
+  uint32_t rcov  = (256-((si_a * cov)/255));
+  uint32_t di_ga = (dst & 0xff00ff00) >> 8;
   uint32_t di_rb = dst & 0x00ff00ff;
   return
      ((((si_rb * cov) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
@@ -1028,17 +1026,16 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
   int bpp = rasterizer->format->bpp/8;
   int active_edges = rasterizer->active_edges;
   int parity = 0;
-  coverage -= minx;
 #define CTX_EDGE(no)      entries[edges[no].index]
 #define CTX_EDGE_YMIN(no) (CTX_EDGE(no).data.s16[1]-1)
 #define CTX_EDGE_X(no)    (edges[no].val)
 
-  uint32_t src_pix = ((uint32_t*)rasterizer->color)[0];
+  uint32_t src_pix    = ((uint32_t*)rasterizer->color)[0];
   uint32_t si_ga_full = (src_pix & 0xff00ff00);
-  uint32_t si_ga = si_ga_full >> 8;
-  uint32_t si_rb = src_pix & 0x00ff00ff;
+  uint32_t si_ga      = si_ga_full >> 8;
+  uint32_t si_rb      = src_pix & 0x00ff00ff;
   uint32_t si_rb_full = si_rb << 8;
-  uint32_t si_a  = si_ga >> 16;
+  uint32_t si_a       = si_ga >> 16;
   uint8_t *dst = ( (uint8_t *) rasterizer->buf) +
          (rasterizer->blit_stride * (scanline / CTX_FULL_AA));
   int accumulator_x=0;
@@ -1077,12 +1074,14 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
           graystart = 255 - (graystart&0xff);
           grayend   = (grayend & 0xff);
 
+          if (accumulated)
+          {
           if (accumulator_x == first)
           {
             graystart += accumulated;
             accumulated = 0;
           }
-          else if (accumulated)
+          else
           {
             uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
             if (fast_source_copy)
@@ -1098,6 +1097,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               ctx_rasterizer_apply_coverage (rasterizer, (uint8_t*)dst_pix, accumulator_x, &accumulated, 1);
             }
             accumulated = 0;
+          }
           }
 
           if (first < last)
@@ -1314,8 +1314,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
   for (; rasterizer->scanline <= scan_end;)
     {
-  int first_col = minx;
-  int last_col = maxx;
       int needs_full_aa =
           (rasterizer->horizontal_edges!=0) 
           || (rasterizer->active_edges != rasterizer->prev_active_edges
@@ -1334,7 +1332,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       for (int i = 0; i < CTX_FULL_AA; i+=3)
       {
         ctx_rasterizer_feed_edges (rasterizer);
-        ctx_rasterizer_sort_active_edges (rasterizer);
         ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, fill_rule, CTX_FULL_AA/3);
         ctx_rasterizer_increment_edges (rasterizer, 3);
       }
@@ -1347,7 +1344,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
         for (int i = 0; i < real_aa; i++)
         {
           ctx_rasterizer_feed_edges (rasterizer);
-          ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, fill_rule, real_aa);
           ctx_rasterizer_increment_edges (rasterizer, increment);
         }
@@ -1359,17 +1355,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
       if (CTX_LIKELY(rasterizer->active_edges))
       {
-        ctx_rasterizer_sort_active_edges (rasterizer);
 
 #if CTX_SHAPE_CACHE
         if (shape != NULL || rasterizer->clip_buffer)
         {
-        first_col = rasterizer->edges[0].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
-        last_col = rasterizer->edges[rasterizer->active_edges-1].val / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
-        first_col = ctx_maxi (first_col, minx);
-        first_col = ctx_mini (first_col, maxx);
-        last_col = ctx_maxi (last_col, minx);
-        last_col = ctx_mini (last_col, maxx);
           ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
           ctx_rasterizer_increment_edges (rasterizer, halfstep);
         }
@@ -1393,7 +1382,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       else
       {
         goto cont;
-        first_col = last_col = minx;
       }
 #if CTX_VIS_AA
       for (int x = minx; x <= maxx; x++) coverage[x-minx] *= (1.0/15);
@@ -1405,7 +1393,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
         for (int i = 0; i < CTX_FULL_AA; i++)
         {
           ctx_rasterizer_feed_edges (rasterizer);
-          ctx_rasterizer_sort_active_edges (rasterizer);
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, fill_rule, CTX_FULL_AA);
           ctx_rasterizer_increment_edges (rasterizer, 1);
         }
@@ -1418,7 +1405,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       for (int i = 0; i < CTX_FULL_AA; i+=3)
       {
         ctx_rasterizer_feed_edges (rasterizer);
-        ctx_rasterizer_sort_active_edges (rasterizer);
         ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, fill_rule, CTX_FULL_AA/3);
         ctx_rasterizer_increment_edges (rasterizer, 3);
       }
@@ -1431,7 +1417,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       for (int i = 0; i < CTX_FULL_AA; i+=5)
       {
         ctx_rasterizer_feed_edges (rasterizer);
-        ctx_rasterizer_sort_active_edges (rasterizer);
         ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, fill_rule, CTX_FULL_AA/5);
         ctx_rasterizer_increment_edges (rasterizer, 5);
       }
@@ -1445,7 +1430,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       ctx_rasterizer_increment_edges (rasterizer, halfstep2);
       ctx_rasterizer_feed_edges (rasterizer);
 
-      ctx_rasterizer_sort_active_edges (rasterizer);
       ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
       ctx_rasterizer_increment_edges (rasterizer, halfstep);
 #if CTX_VIS_AA
@@ -1461,10 +1445,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 #endif
   {
     ctx_rasterizer_apply_coverage (rasterizer,
-                         &dst[(first_col * rasterizer->format->bpp) /8],
-                         first_col,
-                         coverage + (first_col-minx),
-                         last_col-first_col+ 1);
+                         &dst[(minx * rasterizer->format->bpp) /8],
+                         minx,
+                         coverage,
+                         maxx-minx+ 1);
   }
 #if CTX_SHAPE_CACHE
       if (shape)
@@ -1674,7 +1658,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   }
   else
   {
-    uint8_t coverage[width + 1];
+    uint8_t coverage[width];
     memset (coverage, cov, sizeof (coverage) );
     rasterizer->scanline = y0 * CTX_FULL_AA;
     for (int y = y0; y < y1; y++)
