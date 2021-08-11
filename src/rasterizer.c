@@ -1780,21 +1780,17 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
            ctx_rasterizer_reset (rasterizer);
            goto done;
          }
-         else if (1)
+         else
          {
            float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
            float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
            float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
            float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
 
-           if (CTX_UNLIKELY(x0 < rasterizer->blit_x))
-             { x0 = rasterizer->blit_x; }
-           if (CTX_UNLIKELY(y0 < rasterizer->blit_y))
-             { y0 = rasterizer->blit_y; }
-           if (CTX_UNLIKELY(y1 > rasterizer->blit_y + rasterizer->blit_height))
-             { y1 = rasterizer->blit_y + rasterizer->blit_height; }
-           if (CTX_UNLIKELY(x1 > rasterizer->blit_x + rasterizer->blit_width))
-             { x1 = rasterizer->blit_x + rasterizer->blit_width; }
+           x0 = ctx_maxf (x0, rasterizer->blit_x);
+           y0 = ctx_maxf (y0, rasterizer->blit_y);
+           x1 = ctx_minf (x1, rasterizer->blit_x + rasterizer->blit_width);
+           y1 = ctx_minf (y1, rasterizer->blit_y + rasterizer->blit_height);
 
            uint8_t left = 255-ctx_fmod1f (x0) * 255;
            uint8_t top  = 255-ctx_fmod1f (y0) * 255;
