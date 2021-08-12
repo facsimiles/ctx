@@ -1247,14 +1247,12 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
   uint8_t *coverage=_coverage - minx;
   memset(_coverage,0, sizeof(_coverage));
 
-  int accumulator_x=0;
-  uint8_t accumulated = 0;
-
   int minx_ = minx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
   int maxx_ = maxx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
 
   for (int t = 0; t < active_edges -1;t++)
     {
+      int delta0    = CTX_EDGE_DELTA (t);
       if (scanline != CTX_EDGE_YMIN(t))
         {
           if (fill_rule == CTX_FILL_RULE_WINDING)
@@ -1266,7 +1264,6 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
        if (parity)
         {
           int x0        = CTX_EDGE_X (t);
-          int delta0    = CTX_EDGE_DELTA (t);
           int x1        = CTX_EDGE_X (t+1);
           int delta1    = CTX_EDGE_DELTA (t+1);
 
@@ -1368,7 +1365,6 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                           count);
           }
 #endif
-
             if (fast_source_copy)
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
@@ -1401,9 +1397,14 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           else if (first == last)
           {
             coverage[last]+=(graystart-(255-grayend));
+            ctx_rasterizer_apply_coverage (rasterizer,
+                          &dst[((first) * bpp)],
+                          first,
+                          &coverage[last],
+                          1);
           }
         }
-      edges[t].val += edges[t].delta * CTX_FULL_AA;
+      edges[t].val += delta0 * CTX_FULL_AA;
    }
   edges[active_edges -1].val += edges[active_edges-1].delta * CTX_FULL_AA;
 
@@ -1604,7 +1605,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
 
 
-        if (rasterizer->clip_buffer
+        if (0 
+#if CTX_ENABLE_CLIP
+         || rasterizer->clip_buffer
+#endif
 #if CTX_SHAPE_CACHE
          || shape != NULL
 #endif
@@ -1650,7 +1654,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       if (CTX_LIKELY(rasterizer->active_edges))
       {
 
-        if (rasterizer->clip_buffer
+        if (0
+#if CTX_ENABLE_CLIP
+         || rasterizer->clip_buffer
+#endif
 #if CTX_SHAPE_CACHE
          || shape != NULL
 #endif
