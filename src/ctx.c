@@ -1945,9 +1945,27 @@ Ctx *ctx_new_for_drawlist (void *data, size_t length)
   return ctx;
 }
 
+int _ctx_fast_aa = 0;
+
 static void ctx_setup ()
 {
   ctx_font_setup ();
+
+  if (getenv ("CTX_FAST_AA"))
+  {
+    if (!strcmp (getenv ("CTX_FAST_AA"), "0") ||
+        !strcmp (getenv ("CTX_FAST_AA"), "disabled") ||
+        !strcmp (getenv ("CTX_FAST_AA"), "false") ||
+        !strcmp (getenv ("CTX_FAST_AA"), "off") ||
+        !strcmp (getenv ("CTX_FAST_AA"), "no"))
+     _ctx_fast_aa = 0;
+    if (!strcmp (getenv ("CTX_FAST_AA"), "1") ||
+        !strcmp (getenv ("CTX_FAST_AA"), "enabled") ||
+        !strcmp (getenv ("CTX_FAST_AA"), "on") ||
+        !strcmp (getenv ("CTX_FAST_AA"), "true") ||
+        !strcmp (getenv ("CTX_FAST_AA"), "yes"))
+     _ctx_fast_aa = 1;
+  }
 }
 
 void
