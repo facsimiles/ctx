@@ -954,10 +954,10 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   int v = y - ty0;
   int ut = x - tx0 + 1.5;
   int vt = y - ty0 + 1.5;
-  if ( ut  <= 0 ||
+  if (CTX_UNLIKELY(ut  <= 0 ||
        vt  <= 0 ||
        u >= buffer->width ||
-       v >= buffer->height)
+       v >= buffer->height))
     {
       break;
     }
@@ -1062,6 +1062,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
   x += 0.5f;
   y += 0.5f;
 
+#if 0
   if (CTX_UNLIKELY(dy == 0.0f && dx > 0.999f && dx < 1.001f))
   {
     int u = x - g->texture.x0;
@@ -1078,6 +1079,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       return;
     }
   }
+#endif
 
   {
     float tx0 = g->texture.x0;
@@ -1106,7 +1108,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
     {
       int u = x - tx0;
       int v = y - ty0;
-      if (u >= 0 && v >= 0 && u < bwidth && v < bheight)
+      if (CTX_LIKELY(u >= 0 && v >= 0 && u < bwidth && v < bheight))
       {
         *((uint32_t*)(rgba))= src[v * bwidth + u];
         ctx_RGBA8_associate_alpha_probably_opaque (rgba);
