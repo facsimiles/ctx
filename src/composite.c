@@ -404,8 +404,8 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
         rgba[2] = tmp;
       }
     }
-    rgba += 4;
     ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+    rgba += 4;
     x += dx;
     y += dy;
   }
