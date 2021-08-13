@@ -1250,6 +1250,9 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
   int minx_ = minx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
   int maxx_ = maxx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
 
+  int accumulated_x0 = -1;
+  int accumulated_x1 = -1;
+
   for (int t = 0; t < active_edges -1;t++)
     {
       int delta0    = CTX_EDGE_DELTA (t);
@@ -1297,11 +1300,16 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           if (abs(delta0) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
           {
              coverage[first] += graystart;
+
+            accumulated_x1 = first;
+            accumulated_x0 == ctx_maxi (accumulated_x0, first);
+#if 0
              ctx_rasterizer_apply_coverage (rasterizer,
                           &dst[((first) * bpp)],
                           first,
                           &coverage[first],
                           1);
+#endif
           }
           else
           {
@@ -1318,25 +1326,34 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             int count = 0;
             for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] += (u - u0 * 1.0) / (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 0.5) * 255;
+              coverage[us + count] += (u - u0 * 1.0 + graystart*CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255.0) / (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 1.0) * 255;
               count++;
             }
             pre =   (us+count-1)-first+1;//(count+1)/2;
-            ctx_rasterizer_apply_coverage (rasterizer,
-                          &dst[((us) * bpp)],
-                          us,
-                          &coverage[us],
-                          count);
+
+
+            accumulated_x1 = us + count - 1;
+            accumulated_x0 == ctx_maxi (accumulated_x0, us);
           }
+
+
+   if (accumulated_x0 != -1 && accumulated_x1-accumulated_x0+1>0)
+          {
+             ctx_rasterizer_apply_coverage (rasterizer,
+                          &dst[((accumulated_x0) * bpp)],
+                          accumulated_x0,
+                          &coverage[accumulated_x0],
+                          accumulated_x1-accumulated_x0+1);
+             accumulated_x0 = -1;
+             accumulated_x1 = -1;
+          }
+
 #if 1
           if (abs(delta1) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
           {
              coverage[last] += grayend;
-             ctx_rasterizer_apply_coverage (rasterizer,
-                          &dst[((last) * bpp)],
-                          last,
-                          &coverage[last],
-                          1);
+             accumulated_x1 = last;
+             accumulated_x0 = last;
           }
           else
           {
@@ -1353,16 +1370,15 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             int count = 0;
             for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] += 255-(u - u0 * 1.0) / (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 0.5) * 255;
+              //coverage[us + count] += 255-(u - u0 * 1.0) / (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * (grayend/255.0)) * 255;
+              coverage[us + count] += 255-(u - u0 * 1.0 + ((255-grayend)/255.0)*(CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)) / (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 1.0) * 255;
               count++;
             }
             post = count/2;
             post = last-us+1;//
-            ctx_rasterizer_apply_coverage (rasterizer,
-                          &dst[((us) * bpp)],
-                          us,
-                          &coverage[us],
-                          count);
+
+            accumulated_x1 = us + count;
+            accumulated_x0 = us;
           }
 #endif
             if (fast_source_copy)
@@ -1397,15 +1413,23 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           else if (first == last)
           {
             coverage[last]+=(graystart-(255-grayend));
-            ctx_rasterizer_apply_coverage (rasterizer,
-                          &dst[((first) * bpp)],
-                          first,
-                          &coverage[last],
-                          1);
+
+            accumulated_x1 = last;
+            accumulated_x0 == ctx_maxi (accumulated_x0, last);
           }
         }
       edges[t].val += delta0 * CTX_FULL_AA;
    }
+
+   if (accumulated_x0 != -1 && accumulated_x1-accumulated_x0+1>0)
+   {
+      ctx_rasterizer_apply_coverage (rasterizer,
+                   &dst[((accumulated_x0) * bpp)],
+                   accumulated_x0,
+                   &coverage[accumulated_x0],
+                   accumulated_x1-accumulated_x0+1);
+   }
+
   edges[active_edges -1].val += edges[active_edges-1].delta * CTX_FULL_AA;
 
 }
