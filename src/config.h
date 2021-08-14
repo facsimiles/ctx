@@ -25,6 +25,11 @@
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT5         (140425/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15        (260425/CTX_SUBDIV/15)
 
+
+#ifndef CTX_ONLY_FAST_AA
+#define CTX_ONLY_FAST_AA 0
+#endif
+
 /* subpixel-aa coordinates used in BITPACKing of drawlist
  *
  * powers of 2 is faster

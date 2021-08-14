@@ -632,10 +632,13 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       int edge_end = ((CtxSegment*)(rasterizer->edge_list.entries))[rasterizer->edges[i].index].data.s16[3]-1;
       if (CTX_LIKELY(edge_end < scanline))
         {
+
           int dx_dy = abs(rasterizer->edges[i].delta);
           rasterizer->needs_aa3  -= (dx_dy > limit3);
+#if CTX_ONLY_FAST_AA==0
           rasterizer->needs_aa5  -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
           rasterizer->needs_aa15 -= (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
+#endif
           rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
           rasterizer->active_edges--;
           i--;
@@ -766,8 +769,10 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
               {
                 int abs_dx_dy = abs(dx_dy);
                 rasterizer->needs_aa3  += (abs_dx_dy > limit3);
+#if CTX_ONLY_FAST_AA==0
                 rasterizer->needs_aa5  += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
                 rasterizer->needs_aa15 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
+#endif
               }
 
               if ((miny > scanline) )
@@ -1053,7 +1058,10 @@ process this with one dispatch
 
 inline static int ctx_rasterizer_is_simple (CtxRasterizer *rasterizer)
 {
-  return rasterizer->fast_aa != 0;
+  return rasterizer->fast_aa != 0 &&
+         rasterizer->ending_edges == 0 &&
+         rasterizer->pending_edges == 0
+         ;
 }
 
 inline static void
@@ -1458,8 +1466,10 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   rasterizer->edge_list.count = 0; // ready for new edges
   rasterizer->edge_pos        = 0;
   rasterizer->needs_aa3       = 0;
+#if CTX_ONLY_FAST_AA==0
   rasterizer->needs_aa5       = 0;
   rasterizer->needs_aa15      = 0;
+#endif
   rasterizer->scanline        = 0;
   if (!rasterizer->preserve)
   {
@@ -1472,6 +1482,7 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   //     between rasterizations where rendering attributes are
   //     nonchanging
 }
+
 
 static void
 ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule 
@@ -1584,14 +1595,18 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
     const int halfstep2 = CTX_FULL_AA/2;
     const int halfstep  = halfstep2 + 1;
     rasterizer->needs_aa3  = 0;
+#if CTX_ONLY_FAST_AA==0
     rasterizer->needs_aa5  = 0;
     rasterizer->needs_aa15 = 0;
+#endif
     rasterizer->scanline = scan_start;
     ctx_rasterizer_feed_edges (rasterizer, 0); 
 
     int enable_aa3 = (real_aa >= 3);
+#if CTX_ONLY_FAST_AA==0
     int enable_aa5 = (real_aa >= 5);
     int enable_aa15 = (real_aa >= 15);
+#endif
 
   for (; rasterizer->scanline <= scan_end;)
     {
@@ -1601,10 +1616,11 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           || (rasterizer->active_edges + rasterizer->pending_edges == rasterizer->ending_edges)
           );
 
-
+#if CTX_ONLY_FAST_AA==0
       rasterizer->needs_aa3  *= enable_aa3;
       rasterizer->needs_aa5  *= enable_aa5;
       rasterizer->needs_aa15 *= enable_aa15;
+#endif
 
     memset (coverage, 0, coverage_size);
 #if 0
@@ -1731,6 +1747,17 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
     }
 #endif
+#if CTX_ONLY_FAST_AA==1
+    else {
+        int increment = CTX_FULL_AA/real_aa;
+        for (int i = 0; i < real_aa; i++)
+        {
+          ctx_rasterizer_feed_edges (rasterizer, 0);
+          ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, fill_rule, real_aa);
+          ctx_rasterizer_increment_edges (rasterizer, increment);
+        }
+    }
+#else
 #if 1
     else if (rasterizer->needs_aa15)
       {
@@ -1768,6 +1795,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       for (int x = minx; x <= maxx; x++) coverage[x-minx] *= (1.0/5);
 #endif
     }
+#endif
 #if 0 // redundant
     else
     {
