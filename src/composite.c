@@ -1095,19 +1095,28 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
 #if 1
   if (CTX_UNLIKELY(dy == 0.0f && dx > 0.99f && dx < 1.01f))
   {
+    int i = 0;
     int u = x - g->texture.x0;
     int v = y - g->texture.y0;
-    if (u >= 0 && v >= 0 && u + count < bwidth && v < bheight)
+    uint32_t *dst = (uint32_t*)out;
+    src += bwidth * v + u;
+    while (count && !(u >= 0 && v >= 0 && u + count < bwidth && v < bheight))
     {
-      memcpy (out, &src[v * bwidth + u], count * 4);
-      uint8_t *dst = (uint8_t*)out;
-      for (int i = 0 ; i < count; i+=4)
-      {
-        //dst[i] = ((uint32_t*)src)[i];
-        ctx_RGBA8_associate_alpha_probably_opaque (&dst[i]);
-      }
-      return;
+      dst[0] = 0;
+      dst++;
+      src ++;
+      u++;
+      count--;
     }
+      for (i = 0 ; i < count && u < bwidth; i++)
+      {
+        dst[i] = ((uint32_t*)src)[i];
+        ctx_RGBA8_associate_alpha_probably_opaque ((uint8_t*)&dst[i]);
+        u++;
+      }
+      for (;i < count; i++)
+        dst[i] = 0;
+      return;
   }
 #endif
 

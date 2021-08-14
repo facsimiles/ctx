@@ -919,10 +919,10 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 
 inline static void
 ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
-                                  int            minx,
-                                  int            maxx,
-                                  uint8_t       *coverage,
-                                  int            fill_rule)
+                                      int            minx,
+                                      int            maxx,
+                                      uint8_t       *coverage,
+                                      int            fill_rule)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   CtxEdge  *edges = rasterizer->edges;
@@ -1218,6 +1218,7 @@ inline static int ctx_rasterizer_is_simple (CtxRasterizer *rasterizer)
 #if 0
   // crossing edges is what we do worst, perhaps we should do better on
   // them specifically? just ignoring them also works
+  //
   CtxEdge     *edges  = rasterizer->edges;
 
   int active_edges = rasterizer->active_edges;
@@ -1229,7 +1230,8 @@ inline static int ctx_rasterizer_is_simple (CtxRasterizer *rasterizer)
       int x1        = CTX_EDGE_X (t+1);
       int x0_end   = x0 + delta0 * (CTX_FULL_AA/2)+1;
       int x1_end   = x1 + delta1 * (CTX_FULL_AA/2)+1;
-      if (x1_end < x0_end) return 0;
+      if (x1_end < x0_end)
+         return 0;
     }
 #endif
   return 1;
