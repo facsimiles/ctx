@@ -951,11 +951,18 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 
       float dx = (x-(int)(x)) * 255.9;
       float dy = (y-(int)(y)) * 255.9;
+#if 1
+      ((uint32_t*)(&rgba[0]))[0] =
+              ctx_bi_RGBA8 (((uint32_t*)src00)[0], ((uint32_t*)src01)[0],
+                            ((uint32_t*)src10)[0], ((uint32_t*)src11)[0], dx, dy);
+
+#else
       for (int c = 0; c < bpp; c++)
       {
         rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
                                ctx_lerp_u8 (src10[c], src11[c], dx), dy);
       }
+#endif
     }
 #if CTX_DITHER
 //ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -971,7 +978,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     }
 
 
-    for (; i < count; i ++)
+    for (i= 0; i < count; i ++)
     {
   int u = x - tx0;
   int v = y - ty0;
@@ -994,7 +1001,6 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     }
   for (; i < count; i ++)
   {
-
   int u = x - tx0;
   int v = y - ty0;
   int ut = x - tx0 + 1.5;
@@ -1009,9 +1015,6 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     }
   else if (u < 0 || v < 0) // default to next sample down and to right
   {
-          /* XXX XXX XXX this is still incorrect, fix it here - and
-           * then fix the other formats
-           */
       int bpp        = 4;
       uint8_t *src11 = (uint8_t *) buffer->data;
       int stride     = buffer->stride;
@@ -1054,11 +1057,17 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
       uint8_t *src10 = src00 + stride * got_next_row;
       float dx = (x-(int)(x)) * 255.9;
       float dy = (y-(int)(y)) * 255.9;
+#if 0
       for (int c = 0; c < bpp; c++)
       {
         rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
                                ctx_lerp_u8 (src10[c], src11[c], dx), dy);
       }
+#else
+      ((uint32_t*)(&rgba[0]))[0] =
+              ctx_bi_RGBA8 (((uint32_t*)src00)[0], ((uint32_t*)src01)[0],
+                            ((uint32_t*)src10)[0], ((uint32_t*)src11)[0], dx, dy);
+#endif
 #if CTX_DITHER
 //ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
 //                    rasterizer->format->dither_green);
