@@ -619,13 +619,13 @@ static CTX_INLINE void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
 }
 
-extern int _ctx_fast_aa;
+//extern int _ctx_fast_aa;
 
 static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline;
   int limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3;
-  if (_ctx_fast_aa)
+  if (rasterizer->fast_aa)
     limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA;
   for (int i = 0; i < rasterizer->active_edges; i++)
     {
@@ -737,7 +737,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
         }
     }
   int limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3;
-  if (_ctx_fast_aa)
+  if (rasterizer->fast_aa)
     limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA;
   int scanline = rasterizer->scanline;
   while (CTX_LIKELY(rasterizer->edge_pos < rasterizer->edge_list.count &&
@@ -1053,7 +1053,7 @@ process this with one dispatch
 
 inline static int ctx_rasterizer_is_simple (CtxRasterizer *rasterizer)
 {
-  return _ctx_fast_aa != 0;
+  return rasterizer->fast_aa != 0;
 }
 
 inline static void
@@ -1427,7 +1427,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             coverage[last]+=(graystart-(255-grayend));
 
             accumulated_x1 = last;
-            accumulated_x0 == ctx_maxi (accumulated_x0, last);
+            accumulated_x0 = ctx_maxi (accumulated_x0, last);
           }
         }
       edges[t].val += delta0 * CTX_FULL_AA;
@@ -4181,14 +4181,10 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 
   ((CtxRasterizer*)(ctx->renderer))->aa = 
      _ctx_antialias_to_aa (antialias);
-/* vertical level of supersampling at full/forced AA.
- *
- * 1 is none, 3 is fast 5 is good 15 or 17 is best for 8bit
- *
- * valid values:  - for other values we do not add up to 255
- * 3 5 15 17 51
- *
- */
+  ((CtxRasterizer*)(ctx->renderer))->fast_aa = 0;
+  if (antialias == CTX_ANTIALIAS_DEFAULT||
+      antialias == CTX_ANTIALIAS_FAST)
+    ((CtxRasterizer*)(ctx->renderer))->fast_aa = 1;
 }
 
 CtxRasterizer *
@@ -4208,7 +4204,9 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->state       = state;
   rasterizer->ctx         = ctx;
   rasterizer->texture_source = texture_source?texture_source:ctx;
+
   rasterizer->aa          = _ctx_antialias_to_aa (antialias);
+  rasterizer->fast_aa = (antialias == CTX_ANTIALIAS_DEFAULT||antialias == CTX_ANTIALIAS_FAST);
   ctx_state_init (rasterizer->state);
   rasterizer->buf         = data;
   rasterizer->blit_x      = x;

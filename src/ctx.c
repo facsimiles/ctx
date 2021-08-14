@@ -1945,12 +1945,12 @@ Ctx *ctx_new_for_drawlist (void *data, size_t length)
   return ctx;
 }
 
-int _ctx_fast_aa = 0;
+//int _ctx_fast_aa = 0;
 
 static void ctx_setup ()
 {
   ctx_font_setup ();
-
+#if 0
   if (getenv ("CTX_FAST_AA"))
   {
     if (!strcmp (getenv ("CTX_FAST_AA"), "0") ||
@@ -1966,6 +1966,7 @@ static void ctx_setup ()
         !strcmp (getenv ("CTX_FAST_AA"), "yes"))
      _ctx_fast_aa = 1;
   }
+#endif
 }
 
 void

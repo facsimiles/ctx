@@ -629,6 +629,7 @@ struct _CtxRasterizer
 #endif
 
   unsigned int aa;          // level of vertical aa
+  int fast_aa;
   int prev_active_edges;
   int active_edges;
   int pending_edges;

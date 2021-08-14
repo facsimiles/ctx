@@ -1638,11 +1638,11 @@ typedef enum
 
 enum _CtxAntialias
 {
-  CTX_ANTIALIAS_DEFAULT,
+  CTX_ANTIALIAS_DEFAULT, // fast - suitable for realtime UI
   CTX_ANTIALIAS_NONE, // non-antialiased
-  CTX_ANTIALIAS_FAST, // aa 3
-  CTX_ANTIALIAS_GOOD, // aa 5
-  CTX_ANTIALIAS_BEST  // aa 17
+  CTX_ANTIALIAS_FAST, // aa 3    // deprected or is default equal to this now?
+  CTX_ANTIALIAS_GOOD, // aa 5    // this should perhaps still be 5?
+  CTX_ANTIALIAS_BEST  // aa 17   // accurate-suitable for saved assets
 };
 typedef enum _CtxAntialias CtxAntialias;
 
