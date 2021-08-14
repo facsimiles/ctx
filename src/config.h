@@ -293,6 +293,10 @@
  * manually add CTX_ENABLE_ flags for each of them.
  */
 #if CTX_LIMIT_FORMATS
+#if CTX_NATIVE_GRAYA8
+#define CTX_ENABLE_GRAYA8               1
+#define CTX_ENABLE_GRAY8                1
+#endif
 #else
 
 #define CTX_ENABLE_GRAY1                1
