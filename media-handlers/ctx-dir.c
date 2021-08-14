@@ -626,7 +626,7 @@ void viewer_load_path (const char *path)
       //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
       ctx_client_new (ctx, command,
         ctx_width(ctx)/2, 0, ctx_width(ctx)/2, ctx_height(ctx)-font_size*2, 0);
-    fprintf (stderr, "[%s]\n", command);
+    //fprintf (stderr, "[%s]\n", command);
 #if 0
       fprintf (stderr, "run:%s %i %i %i %i,   %i\n", command,
         (int)ctx_width(ctx)/2, (int)0, (int)ctx_width(ctx)/2, (int)(ctx_height(ctx)-font_size*2), 0);
