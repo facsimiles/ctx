@@ -999,9 +999,10 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   int v = y - ty0;
   int ut = x - tx0 + 1.5;
   int vt = y - ty0 + 1.5;
-  if (CTX_UNLIKELY(ut  <= 0 ||
-       vt  <= 0 ||
+  if (CTX_UNLIKELY(
        u >= buffer->width ||
+       vt  <= 0 ||
+       ut  <= 0 ||
        v >= buffer->height))
     {
       break;
@@ -1165,7 +1166,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
     {
       int u = x - tx0;
       int v = y - ty0;
-      if (CTX_LIKELY(u >= 0 && v >= 0 && u < bwidth && v < bheight))
+      if (CTX_LIKELY(u < bwidth && u >= 0 && v >= 0 && v < bheight))
       {
         *((uint32_t*)(rgba))= src[v * bwidth + u];
         ctx_RGBA8_associate_alpha_probably_opaque (rgba);
