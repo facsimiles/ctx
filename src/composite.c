@@ -817,6 +817,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
       else
         ctx_fragment_image_rgb8_RGBA8_box (rasterizer, x, y, out, count, dx, dy);
     }
+#if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
     else if (factor > 0.99f && factor < 1.01f)
     {
       // XXX missing translate test
@@ -825,6 +826,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
       else
         ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer, x, y, out, count, dx, dy);
     }
+#endif
     else
     {
       if (rasterizer->swap_red_green)
@@ -1357,6 +1359,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
       else
         ctx_fragment_image_rgba8_RGBA8_box (rasterizer, x, y, out, count, dx, dy);
     }
+#if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
     else if (factor > 0.99f && factor < 1.01f)
     {
       // XXX: also verify translate == 0 for this fast path to be valid
@@ -1365,6 +1368,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
       else
         ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, x, y, out, count, dx, dy);
     }
+#endif
     else
     {
       if (rasterizer->swap_red_green)
@@ -1666,12 +1670,14 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                       return ctx_fragment_image_rgb8_RGBA8_box_swap_red_green;
                     return ctx_fragment_image_rgb8_RGBA8_box;
                   }
+#if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
                   else if (factor > 0.99f && factor < 1.01f)
                   {
                     if (rasterizer->swap_red_green)
                       return ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green;
                     return ctx_fragment_image_rgb8_RGBA8_nearest;
                   }
+#endif
                   else
                   {
                     if (rasterizer->swap_red_green)
@@ -1699,12 +1705,14 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                       return ctx_fragment_image_rgba8_RGBA8_box_swap_red_green;
                     return ctx_fragment_image_rgba8_RGBA8_box;
                   }
+#if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
                   else if (factor > 0.99f && factor < 1.01f)
                   {
                     if (rasterizer->swap_red_green)
                       return ctx_fragment_image_rgba8_RGBA8_nearest_swap_red_green;
                     return ctx_fragment_image_rgba8_RGBA8_nearest;
                   }
+#endif
                   else
                   {
                     if (rasterizer->swap_red_green)

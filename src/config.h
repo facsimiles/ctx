@@ -369,6 +369,9 @@
 #define CTX_BABL 0
 #endif
 
+#ifndef CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
+#define CTX_ALWAYS_USE_NEAREST_FOR_SCALE1 1
+#endif
 
 /* force add format if we have shape cache */
 #if CTX_SHAPE_CACHE
