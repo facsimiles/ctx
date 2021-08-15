@@ -2535,14 +2535,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   rasterizer->comp_op  = ctx_RGBA8_porter_duff_generic;
 
-  if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
-  {
-    rasterizer->comp_op = ctx_RGBA8_clear_normal;
-    rasterizer->fragment = NULL;
-  }
-
-
-  else if (gstate->source_fill.type == CTX_SOURCE_COLOR)
+  if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       ctx_fragment_color_RGBA8 (rasterizer, 0,0, rasterizer->color, 1, 0,0);
       if (gstate->global_alpha_u8 != 255)
@@ -2551,6 +2544,12 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           rasterizer->color[c] = (rasterizer->color[c] * gstate->global_alpha_u8)/255;
       }
 
+  if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
+  {
+    rasterizer->comp_op = ctx_RGBA8_clear_normal;
+    rasterizer->fragment = NULL;
+  }
+  else
       switch (gstate->blend_mode)
       {
         case CTX_BLEND_NORMAL:
@@ -2560,17 +2559,12 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           }
           else if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
           {
-             if (rasterizer->color[components-1] == 0)
-                 rasterizer->comp_op = ctx_RGBA8_nop;
-             else
-                 rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
+            rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
             break;
           }
           else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
           {
-             if (rasterizer->color[components-1] == 0)
-                 rasterizer->comp_op = ctx_RGBA8_nop;
-             else if (rasterizer->color[components-1] == 255)
+             if (rasterizer->color[components-1] == 255)
                  rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
              else
                  rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
@@ -2585,6 +2579,11 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 //  rasterizer->fragment = NULL;
 
 
+  }
+  else if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
+  {
+    rasterizer->comp_op = ctx_RGBA8_clear_normal;
+    rasterizer->fragment = NULL;
   }
 
   else if (gstate->blend_mode == CTX_BLEND_NORMAL &&

@@ -666,7 +666,7 @@ ctx_u8 (CtxCode code,
 }
 
 #define CTX_PROCESS_VOID(cmd) do {\
-  CtxEntry command = ctx_void (cmd); \
+  CtxEntry command = {cmd};\
   ctx_process (ctx, &command);}while(0) \
 
 #define CTX_PROCESS_F(cmd, x, y) do {\
