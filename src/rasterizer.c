@@ -1526,26 +1526,23 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
        rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
        rasterizer->format->bpp == 32);
 
-  if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
-      rasterizer->color[3]==255 && fast_source_over)
+  if (fast_source_over && rasterizer->color[3]==255)
   {
     fast_source_over = 0;
     fast_source_copy = 1;
   }
 
   rasterizer->prev_active_edges = -1;
-#if 1
   if (
 #if CTX_SHAPE_CACHE
     !shape &&
 #endif
     maxx > blit_max_x - 1)
     { maxx = blit_max_x - 1; }
-#endif
-#if 1
+
+
   minx = ctx_maxi (rasterizer->state->gstate.clip_min_x, minx);
   maxx = ctx_mini (rasterizer->state->gstate.clip_max_x, maxx);
-#endif
   minx = ctx_maxi (0, minx); // redundant?
   if (minx >= maxx)
     {
@@ -1571,7 +1568,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       coverage = &shape->data[0];
     }
 #endif
-  ctx_assert (coverage);
+  //ctx_assert (coverage);
   rasterizer->scan_min -= (rasterizer->scan_min % CTX_FULL_AA);
 #if CTX_SHAPE_CACHE
   if (shape)
@@ -1589,15 +1586,15 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
         }
       scan_end = ctx_mini (rasterizer->scan_max, scan_end);
     }
-  if (rasterizer->state->gstate.clip_min_y * CTX_FULL_AA > scan_start )
+  if (CTX_UNLIKELY(rasterizer->state->gstate.clip_min_y * CTX_FULL_AA > scan_start ))
     { 
        dst += (rasterizer->blit_stride * (rasterizer->state->gstate.clip_min_y * CTX_FULL_AA -scan_start) / CTX_FULL_AA);
        scan_start = rasterizer->state->gstate.clip_min_y * CTX_FULL_AA; 
     }
   scan_end = ctx_mini (rasterizer->state->gstate.clip_max_y * CTX_FULL_AA, scan_end);
-  if (scan_start > scan_end ||
+  if (CTX_UNLIKELY(scan_start > scan_end ||
       (scan_start > (rasterizer->blit_y + rasterizer->blit_height) * CTX_FULL_AA) ||
-      (scan_end < (rasterizer->blit_y) * CTX_FULL_AA))
+      (scan_end < (rasterizer->blit_y) * CTX_FULL_AA)))
   { 
     /* not affecting this rasterizers scanlines */
     ctx_rasterizer_reset (rasterizer);
@@ -1636,8 +1633,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
   for (; rasterizer->scanline <= scan_end;)
     {
 
-#if CTX_ONLY_FAST_AA==0
       rasterizer->needs_aa3  *= enable_aa3;
+#if CTX_ONLY_FAST_AA==0
       rasterizer->needs_aa5  *= enable_aa5;
       rasterizer->needs_aa15 *= enable_aa15;
 #endif
@@ -1648,7 +1645,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           || (rasterizer->active_edges + rasterizer->pending_edges == rasterizer->ending_edges)
          // || rasterizer->needs_aa15
           );
-
 
     memset (coverage, 0, coverage_size);
 #if 0
