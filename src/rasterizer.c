@@ -7,7 +7,7 @@ ctx_gradient_cache_prime (CtxRasterizer *rasterizer);
 static inline void
 _ctx_setup_compositor (CtxRasterizer *rasterizer)
 {
-  if (CTX_LIKELY (rasterizer->comp_op))
+  if (CTX_LIKELY (rasterizer->comp_op && rasterizer->fragment))
     return;
   rasterizer->format->setup (rasterizer);
 #if CTX_GRADIENTS
@@ -1689,6 +1689,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
         }
         else
         {
+          memset (coverage, 0, coverage_size);
           ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
           ctx_rasterizer_increment_edges (rasterizer, halfstep);
         }
