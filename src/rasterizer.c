@@ -1057,8 +1057,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                                         uint8_t       *coverage,
                                         int            fill_rule,
                                         int            fast_source_copy,
-                                        int            fast_source_over,
-                                        int            run_fragment)
+                                        int            fast_source_over)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   CtxEdge     *edges  = rasterizer->edges;
@@ -1514,15 +1513,15 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
   int minx       = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
   int maxx       = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - rasterizer->blit_x;
 
-  int run_fragment = 0;
-
   int fast_source_copy =
       (rasterizer->format->components == 4 &&
+       rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
        rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY &&
        rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
        rasterizer->format->bpp == 32);
   int fast_source_over =
       (rasterizer->format->components == 4 &&
+       rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
        rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
        rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
        rasterizer->format->bpp == 32);
@@ -1533,7 +1532,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
     fast_source_over = 0;
     fast_source_copy = 1;
   }
-  run_fragment = (rasterizer->state->gstate.source_fill.type != CTX_SOURCE_COLOR);
 
   rasterizer->prev_active_edges = -1;
 #if 1
@@ -1691,20 +1689,14 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
         {
 #if CTX_RASTERIZER_INLINED_FAST_COPY_OVER
 
-          if (run_fragment && fast_source_copy)
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 1, 0, 1);
-          else if (run_fragment && fast_source_over)
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 0, 1, 1);
-          else if (run_fragment)
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 0, 0, 1);
-          else if (fast_source_copy)
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 1, 0, 0);
+          if (fast_source_copy)
+          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 1, 0);
           else if (fast_source_over)
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 0, 1, 0);
+          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 0, 1);
           else
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 0, 0, 0);
+          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 0, 0);
 #else
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, fast_source_copy, fast_source_over, run_fragment);
+          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, fast_source_copy, fast_source_over);
 #endif
           ctx_rasterizer_increment_edges (rasterizer, halfstep);
           goto cont;
