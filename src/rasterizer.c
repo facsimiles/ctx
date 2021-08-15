@@ -9,9 +9,10 @@ ctx_gradient_cache_prime (CtxRasterizer *rasterizer);
 static inline void
 _ctx_setup_compositor (CtxRasterizer *rasterizer)
 {
-  if (CTX_LIKELY (rasterizer->comp_op))
-    return;
-  rasterizer->format->setup (rasterizer);
+  if (CTX_UNLIKELY (rasterizer->comp_op==0))
+  {
+    rasterizer->format->setup (rasterizer);
+  }
 #if CTX_GRADIENTS
 #if CTX_GRADIENT_CACHE
   switch (rasterizer->state->gstate.source_fill.type)
