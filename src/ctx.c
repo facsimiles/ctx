@@ -1520,7 +1520,7 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
         ctx_gstate_pop (state);
         break;
       case CTX_IDENTITY:
-        ctx_matrix_identity (&state->gstate.transform);
+        _ctx_matrix_identity (&state->gstate.transform);
         break;
       case CTX_TRANSLATE:
         ctx_matrix_translate (&state->gstate.transform,
@@ -1540,8 +1540,8 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
                           ctx_arg_float (0), ctx_arg_float (1),
                           ctx_arg_float (2), ctx_arg_float (3),
                           ctx_arg_float (4), ctx_arg_float (5) );
-          ctx_matrix_multiply (&state->gstate.transform,
-                               &state->gstate.transform, &m); // XXX verify order
+          _ctx_matrix_multiply (&state->gstate.transform,
+                                &state->gstate.transform, &m); // XXX verify order
         }
 #if 0
         ctx_matrix_set (&state->gstate.transform,
@@ -1816,7 +1816,7 @@ ctx_state_init (CtxState *state)
   state->min_y                  = 8192;
   state->max_x                  = -8192;
   state->max_y                  = -8192;
-  ctx_matrix_identity (&state->gstate.transform);
+  _ctx_matrix_identity (&state->gstate.transform);
 #if CTX_CM
 #if CTX_BABL
   //ctx_colorspace_babl (state, CTX_COLOR_SPACE_USER_RGB,   babl_space ("sRGB"));
@@ -1932,28 +1932,9 @@ Ctx *ctx_new_for_drawlist (void *data, size_t length)
   return ctx;
 }
 
-//int _ctx_fast_aa = 0;
-
 static void ctx_setup ()
 {
   ctx_font_setup ();
-#if 0
-  if (getenv ("CTX_FAST_AA"))
-  {
-    if (!strcmp (getenv ("CTX_FAST_AA"), "0") ||
-        !strcmp (getenv ("CTX_FAST_AA"), "disabled") ||
-        !strcmp (getenv ("CTX_FAST_AA"), "false") ||
-        !strcmp (getenv ("CTX_FAST_AA"), "off") ||
-        !strcmp (getenv ("CTX_FAST_AA"), "no"))
-     _ctx_fast_aa = 0;
-    if (!strcmp (getenv ("CTX_FAST_AA"), "1") ||
-        !strcmp (getenv ("CTX_FAST_AA"), "enabled") ||
-        !strcmp (getenv ("CTX_FAST_AA"), "on") ||
-        !strcmp (getenv ("CTX_FAST_AA"), "true") ||
-        !strcmp (getenv ("CTX_FAST_AA"), "yes"))
-     _ctx_fast_aa = 1;
-  }
-#endif
 }
 
 void

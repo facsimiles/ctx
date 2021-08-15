@@ -1,6 +1,6 @@
 #include "ctx-split.h"
 
-float ctx_state_get (CtxState *state, uint64_t hash)
+static float ctx_state_get (CtxState *state, uint64_t hash)
 {
   for (int i = state->gstate.keydb_pos-1; i>=0; i--)
     {
@@ -10,7 +10,7 @@ float ctx_state_get (CtxState *state, uint64_t hash)
   return -0.0;
 }
 
-void ctx_state_set (CtxState *state, uint64_t key, float value)
+static void ctx_state_set (CtxState *state, uint64_t key, float value)
 {
   if (key != CTX_new_state)
     {

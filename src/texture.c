@@ -198,7 +198,7 @@ const char* ctx_texture_init (Ctx           *ctx,
   return ctx->texture[id].eid;
 }
 
-void
+static void
 _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
                                       CtxBuffer     *buffer)
 {

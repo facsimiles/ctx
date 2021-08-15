@@ -52,8 +52,8 @@ ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, 
   matrix->m[2][1] = f;
 }
 
-void
-ctx_matrix_identity (CtxMatrix *matrix)
+static inline void
+_ctx_matrix_identity (CtxMatrix *matrix)
 {
   matrix->m[0][0] = 1.0f;
   matrix->m[0][1] = 0.0f;
@@ -64,9 +64,15 @@ ctx_matrix_identity (CtxMatrix *matrix)
 }
 
 void
-ctx_matrix_multiply (CtxMatrix       *result,
-                     const CtxMatrix *t,
-                     const CtxMatrix *s)
+ctx_matrix_identity (CtxMatrix *matrix)
+{
+  _ctx_matrix_identity (matrix);
+}
+
+static void
+_ctx_matrix_multiply (CtxMatrix       *result,
+                      const CtxMatrix *t,
+                      const CtxMatrix *s)
 {
   CtxMatrix r;
   r.m[0][0] = t->m[0][0] * s->m[0][0] + t->m[0][1] * s->m[1][0];
@@ -78,6 +84,13 @@ ctx_matrix_multiply (CtxMatrix       *result,
   *result = r;
 }
 
+void
+ctx_matrix_multiply (CtxMatrix       *result,
+                     const CtxMatrix *t,
+                     const CtxMatrix *s)
+{
+  _ctx_matrix_multiply (result, t, s);
+}
 
 void
 ctx_matrix_translate (CtxMatrix *matrix, float x, float y)
@@ -89,7 +102,7 @@ ctx_matrix_translate (CtxMatrix *matrix, float x, float y)
   transform.m[1][1] = 1.0f;
   transform.m[2][0] = x;
   transform.m[2][1] = y;
-  ctx_matrix_multiply (matrix, &transform, matrix);
+  _ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
 void
@@ -102,7 +115,7 @@ ctx_matrix_scale (CtxMatrix *matrix, float x, float y)
   transform.m[1][1] = y;
   transform.m[2][0] = 0.0f;
   transform.m[2][1] = 0.0f;
-  ctx_matrix_multiply (matrix, &transform, matrix);
+  _ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
 void
@@ -117,7 +130,7 @@ ctx_matrix_rotate (CtxMatrix *matrix, float angle)
   transform.m[1][1] = val_cos;
   transform.m[2][0] =     0.0f;
   transform.m[2][1] = 0.0f;
-  ctx_matrix_multiply (matrix, &transform, matrix);
+  _ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
 #if 0
@@ -132,7 +145,7 @@ ctx_matrix_skew_x (CtxMatrix *matrix, float angle)
   transform.m[1][1] = 1.0f;
   transform.m[2][0] =    0.0f;
   transform.m[2][1] = 0.0f;
-  ctx_matrix_multiply (matrix, &transform, matrix);
+  _ctx_matrix_multiply (matrix, &transform, matrix);
 }
 
 static void
@@ -146,7 +159,7 @@ ctx_matrix_skew_y (CtxMatrix *matrix, float angle)
   transform.m[1][1] = 1.0f;
   transform.m[2][0] =    0.0f;
   transform.m[2][1] = 0.0f;
-  ctx_matrix_multiply (matrix, &transform, matrix);
+  _ctx_matrix_multiply (matrix, &transform, matrix);
 }
 #endif
 

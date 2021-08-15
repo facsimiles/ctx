@@ -1544,19 +1544,18 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 static void
 ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy)
 {
-  uint8_t  rgba[4];
   uint8_t *rgba_out = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  ctx_color_get_rgba8 (rasterizer->state, &g->color, rgba);
-  ctx_RGBA8_associate_alpha (rgba);
+  _ctx_color_get_rgba8 (rasterizer->state, &g->color, rgba_out);
+  ctx_RGBA8_associate_alpha (rgba_out);
   if (rasterizer->swap_red_green)
   {
-    int tmp = rgba[0];
-    rgba[0] = rgba[2];
-    rgba[2] = tmp;
+    int tmp = rgba_out[0];
+    rgba_out[0] = rgba_out[2];
+    rgba_out[2] = tmp;
   }
-  for (int i = 0; i < count; i++, rgba_out+=4)
-    memcpy (rgba_out, rgba, 4);
+  for (int i = 1; i < count; i++, rgba_out+=4)
+    memcpy (rgba_out + count * 4, rgba_out, 4);
 }
 #if CTX_ENABLE_FLOAT
 

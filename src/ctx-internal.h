@@ -585,8 +585,8 @@ typedef struct CtxEdge
 #else
   uint16_t index;
 #endif
-  int32_t  val;     /* the center-line intersection      */
   int32_t  delta;
+  int32_t  val;     /* the center-line intersection      */
 } CtxEdge;
 
 typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy);
@@ -843,7 +843,7 @@ uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb);
 void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
 #endif
 CTX_STATIC void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-static void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
+void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
 CTX_STATIC void ctx_color_set_drgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
 void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
 CTX_STATIC void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a);
@@ -852,11 +852,11 @@ CTX_STATIC void ctx_color_set_graya (CtxState *state, CtxColor *color, float gra
 
 int ctx_color_model_get_components (CtxColorModel model);
 
-void ctx_state_set (CtxState *state, uint64_t key, float value);
+static void ctx_state_set (CtxState *state, uint64_t key, float value);
 CTX_STATIC void
 ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f);
 CTX_STATIC void ctx_font_setup ();
-float ctx_state_get (CtxState *state, uint64_t hash);
+static float ctx_state_get (CtxState *state, uint64_t hash);
 
 #if CTX_RASTERIZER
 
@@ -1095,7 +1095,7 @@ struct _CtxTiled
 #endif
 };
 
-void
+static void
 _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
                                       CtxBuffer     *buffer);
 

@@ -282,7 +282,6 @@ CTX_STATIC inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float 
 
   rasterizer->col_min = ctx_mini (tx, rasterizer->col_min);
   rasterizer->col_max = ctx_maxi (tx, rasterizer->col_max);
-
 }
 
 static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
@@ -314,7 +313,6 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
         _ctx_user_to_device (rasterizer->state, &ox, &oy);
       }
       ox -= rasterizer->blit_x;
-
       oy = ctx_maxf (oy, MIN_Y);
       oy = ctx_minf (oy, MAX_Y);
 
@@ -404,7 +402,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x2, float y2)
 {
   float tolerance =
-    3.0f/(ctx_pow2 (rasterizer->state->gstate.transform.m[0][0]) +
+    2.0f/(ctx_pow2 (rasterizer->state->gstate.transform.m[0][0]) +
     ctx_pow2 (rasterizer->state->gstate.transform.m[1][1]));
   //float tolerance = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   float ox = rasterizer->x;
@@ -464,8 +462,8 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
 CTX_STATIC void
 ctx_rasterizer_rel_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
-  if (CTX_UNLIKELY(x == 0.f && y == 0.f))
-    { return; }
+  //if (CTX_UNLIKELY(x == 0.f && y == 0.f))
+  //{ return; }
   x += rasterizer->x;
   y += rasterizer->y;
   ctx_rasterizer_move_to (rasterizer, x, y);
@@ -474,8 +472,8 @@ ctx_rasterizer_rel_move_to (CtxRasterizer *rasterizer, float x, float y)
 CTX_STATIC void
 ctx_rasterizer_rel_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
-  if (CTX_UNLIKELY(x== 0.f && y==0.f))
-    { return; }
+  //if (CTX_UNLIKELY(x== 0.f && y==0.f))
+  //  { return; }
   x += rasterizer->x;
   y += rasterizer->y;
   ctx_rasterizer_line_to (rasterizer, x, y);
@@ -757,11 +755,11 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
               int index = rasterizer->edges[no].index;
               int x0 = entries[index].data.s16[0];
               int x1 = entries[index].data.s16[2];
-              rasterizer->edges[no].val = x0 * CTX_RASTERIZER_EDGE_MULTIPLIER;
               int dx_dy;
               dx_dy = CTX_RASTERIZER_EDGE_MULTIPLIER * (x1 - x0) / dy;
               rasterizer->edges[no].delta = dx_dy;
-              rasterizer->edges[no].val += (yd * dx_dy);
+              rasterizer->edges[no].val = x0 * CTX_RASTERIZER_EDGE_MULTIPLIER +
+                                         (yd * dx_dy);
 
               {
                 int abs_dx_dy = abs(dx_dy);
@@ -778,7 +776,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
                      and keep a different count for items stored here, like
                      a heap and stack growing against each other
                   */
-                  if (rasterizer->pending_edges < CTX_MAX_PENDING-1)
+                  if (CTX_LIKELY(rasterizer->pending_edges < CTX_MAX_PENDING-1))
                   {
                     rasterizer->edges[CTX_MAX_EDGES-1-rasterizer->pending_edges] =
                     rasterizer->edges[no];
@@ -2816,7 +2814,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       }
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
       CtxMatrix transform_backup = gstate->transform;
-      ctx_matrix_identity (&gstate->transform);
+      _ctx_matrix_identity (&gstate->transform);
       float prev_x = 0.0f;
       float prev_y = 0.0f;
       float half_width_x = line_width/2;
@@ -2855,8 +2853,9 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
               float length = ctx_fast_hypotf (dx, dy);
               if (CTX_LIKELY(length>0.001f))
                 {
-                  dx = dx/length * half_width_x;
-                  dy = dy/length * half_width_y;
+                  float recip_length = 1.0/length;
+                  dx = dx * recip_length * half_width_x;
+                  dy = dy * recip_length * half_width_y;
                   if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                     {
                       ctx_rasterizer_finish_shape (rasterizer);
@@ -2887,8 +2886,9 @@ foo:
               dx = x - prev_x;
               dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
-              dx = dx/length * half_width_x;
-              dy = dy/length * half_width_y;
+              float recip_length = 1.0f/length;
+              dx = dx * recip_length * half_width_x;
+              dy = dy * recip_length * half_width_y;
               if (CTX_LIKELY(length>0.001f))
                 {
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
@@ -2905,10 +2905,11 @@ foo:
                   dx = x - prev_x;
                   dy = y - prev_y;
                   length = ctx_fast_hypotf (dx, dy);
+                  recip_length = 1.0f/length;
                   if (CTX_LIKELY(length>0.001f))
                     {
-                      dx = dx / length * half_width_x;
-                      dy = dy / length * half_width_y;
+                      dx = dx * recip_length * half_width_x;
+                      dy = dy * recip_length * half_width_y;
                       ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
                       ctx_rasterizer_line_to (rasterizer, x-dy, y+dx);
                     }
@@ -3953,7 +3954,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
           int start = 0;
           int end   = 0;
       CtxMatrix transform_backup = state->gstate.transform;
-      ctx_matrix_identity (&state->gstate.transform);
+      _ctx_matrix_identity (&state->gstate.transform);
       ctx_rasterizer_reset (rasterizer); /* for dashing we create
                                             a dashed path to stroke */
       float prev_x = 0.0f;
@@ -4139,9 +4140,9 @@ CtxAntialias ctx_get_antialias (Ctx *ctx)
   {
     case 1: return CTX_ANTIALIAS_NONE;
     case 3: return CTX_ANTIALIAS_FAST;
-    case 5: return CTX_ANTIALIAS_GOOD;
+    //case 5: return CTX_ANTIALIAS_GOOD;
     default:
-    case 15: return CTX_ANTIALIAS_DEFAULT;
+    case 5: return CTX_ANTIALIAS_DEFAULT;
     case 17: return CTX_ANTIALIAS_BEST;
   }
 }
@@ -4358,6 +4359,13 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
       default:
         break;
     }
+#endif
+#if CTX_RASTERIZER
+  if (CTX_LIKELY(ctx->renderer && ctx->renderer->process == ctx_rasterizer_process))
+    {
+      ctx_rasterizer_process (ctx->renderer, (CtxCommand *) entry);
+    }
+  else
 #endif
   if (CTX_LIKELY(ctx->renderer && ctx->renderer->process))
     {
