@@ -251,7 +251,7 @@ typedef struct _CtxState CtxState;
 CtxColor *ctx_color_new ();
 CtxState *ctx_get_state (Ctx *ctx);
 void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out);
-void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
+static void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
 void ctx_color_free (CtxColor *color);
 void ctx_set_color (Ctx *ctx, uint64_t hash, CtxColor *color);
 int  ctx_get_color (Ctx *ctx, uint64_t hash, CtxColor *color);

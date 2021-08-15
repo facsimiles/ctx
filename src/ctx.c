@@ -1749,32 +1749,19 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
         break;
       case CTX_MOVE_TO:
       case CTX_LINE_TO:
-        {
-          float x = ctx_arg_float (0);
-          float y = ctx_arg_float (1);
-          state->x = x;
-          state->y = y;
-          if (!state->has_moved)
-            {
-              state->has_moved = 1;
-            }
-        }
+        state->x = ctx_arg_float (0);
+        state->y = ctx_arg_float (1);
+        state->has_moved = 1;
         break;
       case CTX_CURVE_TO:
         state->x = ctx_arg_float (4);
         state->y = ctx_arg_float (5);
-        if (!state->has_moved)
-          {
-            state->has_moved = 1;
-          }
+        state->has_moved = 1;
         break;
       case CTX_QUAD_TO:
         state->x = ctx_arg_float (2);
         state->y = ctx_arg_float (3);
-        if (!state->has_moved)
-          {
-            state->has_moved = 1;
-          }
+        state->has_moved = 1;
         break;
       case CTX_ARC:
         state->x = ctx_arg_float (0) + ctx_cosf (ctx_arg_float (4) ) * ctx_arg_float (2);

@@ -843,7 +843,7 @@ uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb);
 void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
 #endif
 CTX_STATIC void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
+static void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
 CTX_STATIC void ctx_color_set_drgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
 void ctx_color_get_cmyka (CtxState *state, CtxColor *color, float *out);
 CTX_STATIC void ctx_color_set_cmyka (CtxState *state, CtxColor *color, float c, float m, float y, float k, float a);

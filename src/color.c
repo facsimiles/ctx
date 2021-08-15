@@ -93,7 +93,7 @@ static void ctx_color_set_graya_ (CtxColor *color, const float *in)
 }
 #endif
 
-void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a)
+static void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a)
 {
 #if CTX_ENABLE_CM
   color->original = color->valid = CTX_VALID_RGBA;

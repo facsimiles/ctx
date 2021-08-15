@@ -3732,7 +3732,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
   CtxState *state = rasterizer->state;
   CtxCommand *c = (CtxCommand *) entry;
   int clear_clip = 0;
-  ctx_interpret_style (rasterizer->state, entry, NULL);
+  ctx_interpret_style (state, entry, NULL);
   switch (c->code)
     {
 #if CTX_ENABLE_SHADOW_BLUR
@@ -3871,11 +3871,11 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         }
         break;
       case CTX_LINEAR_GRADIENT:
-        ctx_state_gradient_clear_stops (rasterizer->state);
+        ctx_state_gradient_clear_stops (state);
         rasterizer->comp_op = NULL;
         break;
       case CTX_RADIAL_GRADIENT:
-        ctx_state_gradient_clear_stops (rasterizer->state);
+        ctx_state_gradient_clear_stops (state);
         rasterizer->comp_op = NULL;
         break;
 #endif
@@ -3914,7 +3914,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       case CTX_SAVE:
         rasterizer->comp_op = NULL;
         rasterizer->uses_transforms = 1;
-        ctx_interpret_transforms (rasterizer->state, entry, NULL);
+        ctx_interpret_transforms (state, entry, NULL);
         if (clear_clip)
         {
           ctx_rasterizer_clip_reset (rasterizer);
@@ -3935,16 +3935,16 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
         break;
       case CTX_STROKE:
 #if CTX_ENABLE_SHADOW_BLUR
-        if (rasterizer->state->gstate.shadow_blur > 0.0 &&
+        if (state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)
           ctx_rasterizer_shadow_stroke (rasterizer);
 #endif
         {
         int count = rasterizer->edge_list.count;
-        if (rasterizer->state->gstate.n_dashes)
+        if (state->gstate.n_dashes)
         {
-          int n_dashes = rasterizer->state->gstate.n_dashes;
-          float *dashes = rasterizer->state->gstate.dashes;
+          int n_dashes = state->gstate.n_dashes;
+          float *dashes = state->gstate.dashes;
           float factor = ctx_matrix_get_scale (&state->gstate.transform);
 
           int aa = 15;//rasterizer->aa;
@@ -3952,8 +3952,8 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
           memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
           int start = 0;
           int end   = 0;
-      CtxMatrix transform_backup = rasterizer->state->gstate.transform;
-      ctx_matrix_identity (&rasterizer->state->gstate.transform);
+      CtxMatrix transform_backup = state->gstate.transform;
+      ctx_matrix_identity (&state->gstate.transform);
       ctx_rasterizer_reset (rasterizer); /* for dashing we create
                                             a dashed path to stroke */
       float prev_x = 0.0f;
@@ -3961,7 +3961,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
       float pos = 0.0;
 
       int   dash_no  = 0.0;
-      float dash_lpos = rasterizer->state->gstate.line_dash_offset * factor;
+      float dash_lpos = state->gstate.line_dash_offset * factor;
       int   is_down = 0;
 
           while (start < count)
@@ -4047,7 +4047,7 @@ again:
 foo:
           start = end+1;
         }
-      rasterizer->state->gstate.transform = transform_backup;
+        state->gstate.transform = transform_backup;
         }
         ctx_rasterizer_stroke (rasterizer);
         }
@@ -4059,7 +4059,7 @@ foo:
       case CTX_TEXT:
         rasterizer->in_text++;
 #if CTX_ENABLE_SHADOW_BLUR
-        if (rasterizer->state->gstate.shadow_blur > 0.0)
+        if (state->gstate.shadow_blur > 0.0)
           ctx_rasterizer_shadow_text (rasterizer, ctx_arg_string ());
 #endif
         ctx_rasterizer_text (rasterizer, ctx_arg_string(), 0);
@@ -4075,7 +4075,7 @@ foo:
         break;
       case CTX_FILL:
 #if CTX_ENABLE_SHADOW_BLUR
-        if (rasterizer->state->gstate.shadow_blur > 0.0 &&
+        if (state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)
           ctx_rasterizer_shadow_fill (rasterizer);
 #endif
@@ -4095,7 +4095,7 @@ foo:
         rasterizer->comp_op = NULL;
         break;
     }
-  ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
+  ctx_interpret_pos_bare (state, entry, NULL);
 }
 
 void
