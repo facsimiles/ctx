@@ -1301,19 +1301,10 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
           int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
 
-          // compute delta per horizontal pixel
-          // values around -1.0 to 1.0 are the ones handled by single pixel
-          //
-          // -2 to 2 generates 2 pixels
-          // -3 to 3 generates 3 pixels
-          // -4 to 4 generates 4 pixels etc.
-          //
           int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
           int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
-          graystart = 255 - (graystart&0xff);
-          grayend   = (grayend & 0xff);
 
           first = ctx_maxi (first, minx);
           last = ctx_mini (last, maxx);
@@ -1325,6 +1316,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 
           if (abs(delta0) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
           {
+          graystart = 255 - (graystart&0xff);
+          //grayend   = (grayend & 0xff);
              coverage[first] += graystart;
 
             accumulated_x1 = first;
@@ -1389,6 +1382,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 #if 1
           if (abs(delta1) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
           {
+          //graystart = 255 - (graystart&0xff);
+          grayend   = (grayend & 0xff);
              coverage[last] += grayend;
              accumulated_x1 = last;
              accumulated_x0 = last;
@@ -1450,6 +1445,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           }
           else if (first == last)
           {
+            graystart = 255 - (graystart&0xff);
+            grayend   = (grayend & 0xff);
             coverage[last]+=(graystart-(255-grayend));
 
             accumulated_x1 = last;
