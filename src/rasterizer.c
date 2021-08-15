@@ -168,8 +168,8 @@ static inline CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, ui
 
 CTX_STATIC uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
 {
-  int16_t x = 0;
-  int16_t y = 0;
+  int x = 0;
+  int y = 0;
 
   CtxSegment *entry = (CtxSegment*)&rasterizer->edge_list.entries[0];
 
@@ -198,8 +198,8 @@ CTX_STATIC uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
 
 static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {
-  int16_t x = 0;
-  int16_t y = 0;
+  int x = 0;
+  int y = 0;
   if (rasterizer->edge_list.count == 0)
      return 0;
 #if CTX_SHAPE_CACHE
@@ -214,7 +214,7 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   for (int i = 0; i < rasterizer->edge_list.count; i++)
     {
       CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[i];
-      if (entry->code == CTX_NEW_EDGE)
+      if (CTX_UNLIKELY (entry->code == CTX_NEW_EDGE))
         {
           entry->code = CTX_EDGE;
 #if CTX_SHAPE_CACHE
@@ -2058,6 +2058,12 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   {
     _ctx_setup_compositor (rasterizer);
 
+#if 1
+    rasterizer->state->min_x = ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
+    rasterizer->state->max_x = ctx_maxi (rasterizer->state->min_x, rasterizer->col_max / CTX_SUBDIV);
+    rasterizer->state->min_y = ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / CTX_FULL_AA);
+    rasterizer->state->max_y = ctx_maxi (rasterizer->state->min_y, rasterizer->scan_max / CTX_FULL_AA);
+#else
     if (CTX_UNLIKELY ( rasterizer->col_min / CTX_SUBDIV < rasterizer->state->min_x))
        rasterizer->state->min_x = rasterizer->col_min / CTX_SUBDIV;
     if (CTX_UNLIKELY ( rasterizer->col_min / CTX_SUBDIV > rasterizer->state->max_x))
@@ -2067,6 +2073,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
        rasterizer->state->min_y = rasterizer->scan_min / CTX_FULL_AA;
     if (CTX_UNLIKELY ( rasterizer->scan_min / CTX_FULL_AA > rasterizer->state->max_y))
        rasterizer->state->max_y = rasterizer->scan_max / CTX_FULL_AA;
+#endif
 
 #if CTX_RECT_FILL
   if (rasterizer->edge_list.count == 6)
