@@ -40,7 +40,7 @@ CTX_INLINE static void
 ctx_RGBA8_associate_alpha_probably_opaque (uint8_t *u8)
 {
   uint32_t val = *((uint32_t*)(u8));
-  uint8_t a = u8[3];
+  uint32_t a = val>>24;//u8[3];
   //if (CTX_UNLIKELY(a==0))
   //   *((uint32_t*)(u8)) = 0;
   if (CTX_UNLIKELY(a!=255))
@@ -51,10 +51,24 @@ ctx_RGBA8_associate_alpha_probably_opaque (uint8_t *u8)
   }
 }
 
-CTX_INLINE static uint32_t ctx_bi_RGBA8 (uint32_t src00, uint32_t src01, uint32_t src10, uint32_t src11, uint8_t dx, uint8_t dy)
+CTX_INLINE static uint32_t ctx_bi_RGBA8 (uint32_t isrc00, uint32_t isrc01, uint32_t isrc10, uint32_t isrc11, uint8_t dx, uint8_t dy)
 {
-  return ctx_lerp_RGBA8 (ctx_lerp_RGBA8 (src00, src01, dx),
-                         ctx_lerp_RGBA8 (src10, src11, dx), dy);
+#if 0
+  uint8_t ret[4];
+  uint8_t *src00 = (uint8_t*)&isrc00;
+  uint8_t *src10 = (uint8_t*)&isrc10;
+  uint8_t *src01 = (uint8_t*)&isrc01;
+  uint8_t *src11 = (uint8_t*)&isrc11;
+  for (int c = 0; c < 4; c++)
+  {
+    ret[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
+                         ctx_lerp_u8 (src10[c], src11[c], dx), dy);
+  }
+  return  ((uint32_t*)&ret[0])[0];
+#else
+  return ctx_lerp_RGBA8 (ctx_lerp_RGBA8 (isrc00, isrc01, dx),
+                         ctx_lerp_RGBA8 (isrc10, isrc11, dx), dy);
+#endif
 }
 
 #if CTX_GRADIENTS
