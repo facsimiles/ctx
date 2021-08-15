@@ -588,11 +588,6 @@
 #endif
 #endif
 
-#ifndef CTX_VIS_AA
-#define CTX_VIS_AA 0
-#endif
-
-
 #if CTX_THREADS
 #include <threads.h>
 #endif

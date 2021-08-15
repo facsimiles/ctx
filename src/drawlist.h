@@ -26,7 +26,7 @@ int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length);
 
 CTX_STATIC CtxEntry
 ctx_void (CtxCode code);
-CTX_STATIC CtxEntry
+CTX_STATIC inline CtxEntry
 ctx_f (CtxCode code, float x, float y);
 CTX_STATIC CtxEntry
 ctx_u32 (CtxCode code, uint32_t x, uint32_t y);
