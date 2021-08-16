@@ -948,11 +948,11 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 
     int u0 = x - tx0;
     int v0 = y - ty0;
-    int u1 = x - tx0 + dx * count;
-    int v1 = y - ty0 + dy * count;
+    int u1 = x - tx0 + dx * (count-1);
+    int v1 = y - ty0 + dy * (count-1);
 
-    if (u0 >= 0 && v0 >= 0 && u0 < bwidth-1 && v0 < bheight-1 &&
-        u1 >= 0 && v1 >= 0 && u1 < bwidth-1 && v1 < bheight-1)
+    if (u0 >= 0 && v0 >= 0 && u0 < bwidth && v0 < bheight &&
+        u1 >= 0 && v1 >= 0 && u1 < bwidth && v1 < bheight)
     {
             for (i = 0; i < count;i++)
             {
@@ -1157,8 +1157,8 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
 
     int u0 = x - tx0;
     int v0 = y - ty0;
-    int u1 = x - tx0 + dx * count;
-    int v1 = y - ty0 + dy * count;
+    int u1 = x - tx0 + dx * (count-1);
+    int v1 = y - ty0 + dy * (count-1);
 
 
     if (u0 >= 0 && v0 >= 0 && u0 < bwidth && v0 < bheight &&
