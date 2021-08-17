@@ -1949,11 +1949,11 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 //     uint32_t di_rb = (*((uint32_t*)dst)) & 0x00ff00ff;
      uint32_t si_a  = si_ga >> 16;
      uint32_t cov = *coverage;
-     uint32_t racov = (256-((255+si_a*cov)>>8));
+     uint32_t racov = (255-((255+si_a*cov)>>8));
      *((uint32_t*)(dst)) =
 
-     (((si_rb*cov+(((*((uint32_t*)(dst)))&0x00ff00ff)*racov))>>8)&0x00ff00ff)|
-     ((si_ga*cov+((((*((uint32_t*)(dst)))&0xff00ff00)>>8)*racov))&0xff00ff00);
+     (((si_rb*cov+0xff00ff+(((*((uint32_t*)(dst)))&0x00ff00ff)*racov))>>8)&0x00ff00ff)|
+     ((si_ga*cov+0xff00ff+((((*((uint32_t*)(dst)))&0xff00ff00)>>8)*racov))&0xff00ff00);
 
      coverage ++;
      tsrc += 4;
@@ -2012,13 +2012,13 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
      uint32_t cov   = *coverage++;
-     uint32_t rcov  = (256-((255+si_a * cov)>>8));
+     uint32_t rcov  = (255-((255+si_a * cov)>>8));
      uint32_t di    = *((uint32_t*)dst);
      uint32_t di_ga = ((di & 0xff00ff00) >> 8);
      uint32_t di_rb = (di & 0x00ff00ff);
      *((uint32_t*)(dst)) =
-     (((si_rb * cov + di_rb * rcov) & 0xff00ff00) >> 8)  |
-      ((si_ga * cov + di_ga * rcov) & 0xff00ff00);
+     (((si_rb * cov + 0xff00ff + di_rb * rcov) & 0xff00ff00) >> 8)  |
+      ((si_ga * cov + 0xff00ff + di_ga * rcov) & 0xff00ff00);
      dst+=4;
   }
 #endif
