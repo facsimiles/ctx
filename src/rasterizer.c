@@ -1675,17 +1675,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       {
         if (!avoid_direct)
         {
-#if CTX_RASTERIZER_INLINED_FAST_COPY_OVER
-
-          if (fast_source_copy)
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 1, 0);
-          else if (fast_source_over)
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 0, 1);
-          else
-          ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, 0, 0);
-#else
           ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, coverage, fill_rule, fast_source_copy, fast_source_over);
-#endif
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
           dst += rasterizer->blit_stride;
           rasterizer->prev_active_edges = rasterizer->active_edges;
@@ -1714,16 +1704,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
       if (CTX_LIKELY(rasterizer->active_edges))
       {
-#if CTX_RASTERIZER_INLINED_FAST_COPY_OVER
-          if (fast_source_copy)
-          ctx_rasterizer_generate_coverage_apply2 (rasterizer, minx, maxx, coverage, fill_rule, 1, 0);
-          else if (fast_source_over)
-          ctx_rasterizer_generate_coverage_apply2 (rasterizer, minx, maxx, coverage, fill_rule, 0, 1);
-          else
-          ctx_rasterizer_generate_coverage_apply2 (rasterizer, minx, maxx, coverage, fill_rule, 0, 0);
-#else
           ctx_rasterizer_generate_coverage_apply2 (rasterizer, minx, maxx, coverage, fill_rule, fast_source_copy, fast_source_over);
-#endif
       }
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
           dst += rasterizer->blit_stride;
