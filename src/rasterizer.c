@@ -1891,7 +1891,7 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
 #define CTX_RECT_FILL 1
 
 #if CTX_RECT_FILL
-static int
+static void
 ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          x0,
                           int          y0,
@@ -1899,14 +1899,9 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          y1,
                           uint8_t      cov)
 {
-#if 0
-  if (x1 % CTX_SUBDIV ||
-      x0 % CTX_SUBDIV ||
-      y1 % CTX_FULL_AA ||
-      y0 % CTX_FULL_AA)
-    { return 0; }
-#endif
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
+  CtxGState *gstate = &rasterizer->state->gstate;
+  int blit_stride = rasterizer->blit_stride;
   x0 = ctx_maxi (x0, rasterizer->blit_x);
   y0 = ctx_maxi (y0, rasterizer->blit_y);
   x1 = ctx_mini (x1, rasterizer->blit_x + rasterizer->blit_width);
@@ -1916,16 +1911,16 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   int width = x1 - x0;
 
   if (CTX_UNLIKELY(width <=0))
-    return 1;
+    return;
   _ctx_setup_compositor (rasterizer);
 
   if (cov == 255 && rasterizer->format->components == 4 &&
+      gstate->source_fill.type == CTX_SOURCE_COLOR &&
       rasterizer->format->bpp == 32 &&
-      rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR &&
-      rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL)
+      gstate->blend_mode == CTX_BLEND_NORMAL)
   {
-  if (  (rasterizer->color[3]==255 && rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-      ||(rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY)
+  if (  (rasterizer->color[3]==255 && gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+      ||(gstate->compositing_mode == CTX_COMPOSITE_COPY)
         )
   {
     if (CTX_UNLIKELY(width == 1))
@@ -1933,26 +1928,27 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       for (int y = y0; y < y1; y++)
       {
         memcpy (&dst[(x0)*4], rasterizer->color, 4);
-        dst += rasterizer->blit_stride;
+        dst += blit_stride;
       }
     }
     else
     {
       uint32_t color;
       memcpy(&color, rasterizer->color, 4);
+      dst += x0 * 4;
       for (int y = y0; y < y1; y++)
       {
-        uint32_t *dst_i = (uint32_t*)&dst[(x0)*4];
+        uint32_t *dst_i = (uint32_t*)&dst[0];
         for (int i = 0; i < width; i++)
         {
           dst_i[i] = color;
         }
-        dst += rasterizer->blit_stride;
+        dst += blit_stride;
       }
     }
-    return 1;
+    return;
   }
-  else if (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+  else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
   {
     uint32_t *src = (uint32_t*)&rasterizer->color[0];
     uint32_t si_ga_full = (*src & 0xff00ff00);
@@ -1961,40 +1957,42 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     uint32_t si_ga = si_ga_full >> 8;
     uint32_t si_rb_full = si_rb << 8;
     uint32_t si_a  = si_ga >> 16;
+    dst += x0 * 4;
     if (CTX_UNLIKELY(width == 1))
     {
       for (int y = y0; y < y1; y++)
       {
-        ((uint32_t*)(dst))[(x0)] = ctx_over_RGBA8_full_2 (
-           ((uint32_t*)(dst))[(x0)], si_ga_full, si_rb_full, si_a);
-        dst += rasterizer->blit_stride;
+        ((uint32_t*)(dst))[0] = ctx_over_RGBA8_full_2 (
+           ((uint32_t*)(dst))[0], si_ga_full, si_rb_full, si_a);
+        dst += blit_stride;
       }
     }
     else
     {
       for (int y = y0; y < y1; y++)
       {
-        uint32_t *dst_i = (uint32_t*)&dst[(x0)*4];
+        uint32_t *dst_i = (uint32_t*)&dst[0];
         for (int i = 0; i < width; i++)
         {
           dst_i[i] = ctx_over_RGBA8_full_2 (dst_i[i], si_ga_full, si_rb_full, si_a);
         }
-        dst += rasterizer->blit_stride;
+        dst += blit_stride;
       }
     }
-    return 1;
+    return;
   }
   }
 
   if (CTX_UNLIKELY(width == 1))
   {
     uint8_t coverage[1]={cov};
+    dst += (x0) * rasterizer->format->bpp/8;
     for (int y = y0; y < y1; y++)
     {
       ctx_rasterizer_apply_coverage (rasterizer,
-            &dst[ (x0) * rasterizer->format->bpp/8],
+            &dst[0],
             x0, coverage, 1);
-      dst += rasterizer->blit_stride;
+      dst += blit_stride;
     }
   }
   else
@@ -2002,17 +2000,18 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     uint8_t coverage[width];
     memset (coverage, cov, sizeof (coverage) );
     rasterizer->scanline = y0 * CTX_FULL_AA;
+    dst += (x0) * rasterizer->format->bpp/8;
     for (int y = y0; y < y1; y++)
     {
       rasterizer->scanline += CTX_FULL_AA;
       ctx_rasterizer_apply_coverage (rasterizer,
-                                   &dst[ (x0) * rasterizer->format->bpp/8],
+                                   &dst[0],
                                    x0,
                                    coverage, width);
-      dst += rasterizer->blit_stride;
+      dst += blit_stride;
     }
   }
-  return 1;
+  return;
 }
 #endif
 
