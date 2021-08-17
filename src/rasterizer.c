@@ -1346,12 +1346,12 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             int count = 0;
             for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] += (u - u0 + (0.5f)*CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV) / (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 1.0) * 255;
+              coverage[us + count] += 
+               (u - u0 + (0.5f)*CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV) /
+               (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 1.0) * 255;
               count++;
             }
-            pre =   (us+count-1)-first+1;
-
-
+            pre = (us+count-1)-first+1;
 
           if (accumulated_x1 != 65536 && us - accumulated_x1 > 4 &&
               accumulated_x1-accumulated_x0+1>0
@@ -1368,7 +1368,6 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             accumulated_x1 = us + count - 1;
           }
 
-
    if (accumulated_x0 != 65536 && accumulated_x1-accumulated_x0+1>0)
           {
              ctx_rasterizer_apply_coverage (rasterizer,
@@ -1384,7 +1383,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           if (abs(delta1) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
           {
           //graystart = 255 - (graystart&0xff);
-          grayend   = (grayend & 0xff);
+             grayend   = (grayend & 0xff);
              coverage[last] += grayend;
              accumulated_x1 = last;
              accumulated_x0 = last;
@@ -1404,11 +1403,11 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             int count = 0;
             for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] += 255-(u - u0 * 1.0 + ((127)/255.0)*(CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)) / (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 0.5) * 255;
+              coverage[us + count] += (1.0-
+    (u - u0 * 1.0 + ((127)/255.0)*(CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV))/     (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 0.5)) * 255;
               count++;
             }
-            post = count/2;
-            post = last-us+1;//
+            post = last-us+1;
 
             accumulated_x1 = us + count;
             accumulated_x0 = us;
