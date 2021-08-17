@@ -1910,7 +1910,7 @@ void mrg_start_with_style (Mrg        *mrg,
                            const char *style);
 void mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
                             const char *format, ...);
-uint64_t ctx_strhash(const char *str, int ignored) ;
+uint64_t ctx_strhash(const char *str) ;
 
 static void mrg_parse_style_id (Mrg          *mrg,
                                 const char   *style_id,
@@ -1942,7 +1942,7 @@ static void mrg_parse_style_id (Mrg          *mrg,
               {
                 int i = 0;
                 for (i = 0; node->classes_hash[i]; i++);
-                node->classes_hash[i] = ctx_strhash (&temp[1], 0);
+                node->classes_hash[i] = ctx_strhash (&temp[1]);
               }
               break;
             case ':':
@@ -1951,15 +1951,15 @@ static void mrg_parse_style_id (Mrg          *mrg,
                 for (i = 0; node->pseudo[i]; i++);
                 node->pseudo[i] = mrg_intern_string (&temp[1]);
                 for (i = 0; node->pseudo_hash[i]; i++);
-                node->pseudo_hash[i] = ctx_strhash (&temp[1], 0);
+                node->pseudo_hash[i] = ctx_strhash (&temp[1]);
               }
               break;
             case '#':
               node->id = mrg_intern_string (&temp[1]);
-              node->id_hash = ctx_strhash (&temp[1], 0);
+              node->id_hash = ctx_strhash (&temp[1]);
               break;
             default:
-              node->element_hash = ctx_strhash (temp, 0);
+              node->element_hash = ctx_strhash (temp);
               break;
           }
           temp_l = 0;
@@ -2205,17 +2205,17 @@ static void mrg_parse_selector (Mrg *mrg, const char *selector, StyleEntry *entr
           switch (type)
           {
             case ' ':
-              entry->parsed[entry->sel_len].element_hash = ctx_strhash (section, 0);
+              entry->parsed[entry->sel_len].element_hash = ctx_strhash (section);
               break;
             case '#':
               entry->parsed[entry->sel_len].id = mrg_intern_string (section);
-              entry->parsed[entry->sel_len].id_hash = ctx_strhash (section, 0);
+              entry->parsed[entry->sel_len].id_hash = ctx_strhash (section);
               break;
             case '.':
               {
                 int i = 0;
                 for (i = 0; entry->parsed[entry->sel_len].classes_hash[i]; i++);
-                entry->parsed[entry->sel_len].classes_hash[i] = ctx_strhash (section, 0);
+                entry->parsed[entry->sel_len].classes_hash[i] = ctx_strhash (section);
               }
               break;
             case ':':
@@ -2224,7 +2224,7 @@ static void mrg_parse_selector (Mrg *mrg, const char *selector, StyleEntry *entr
                 for (i = 0; entry->parsed[entry->sel_len].pseudo[i]; i++);
                 entry->parsed[entry->sel_len].pseudo[i] = mrg_intern_string (section);
                 for (i = 0; entry->parsed[entry->sel_len].pseudo_hash[i]; i++);
-                entry->parsed[entry->sel_len].pseudo_hash[i] = ctx_strhash (section, 0);
+                entry->parsed[entry->sel_len].pseudo_hash[i] = ctx_strhash (section);
               }
               break;
           }
@@ -2698,7 +2698,7 @@ static inline int match_nodes (Mrg *mrg, MrgStyleNode *sel_node, MrgStyleNode *s
   }
   for (j = 0; sel_node->pseudo[j]; j++)
   {
-    if (ctx_strhash (sel_node->pseudo[j], 0) == CTX_first_child)
+    if (ctx_strhash (sel_node->pseudo[j]) == CTX_first_child)
     {
       if (!(_mrg_child_no (mrg) == 1))
         return 0;
@@ -3195,7 +3195,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
                                            const char *value)
 {
   MrgStyle *s = mrg_style (mrg);
-  uint64_t val_hash = ctx_strhash (value, 0);
+  uint64_t val_hash = ctx_strhash (value);
 
   switch (key)
   {
@@ -3379,7 +3379,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
             case '\0':
               if (w)
               {
-                uint64_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word);
                 if ((word[0] >= '0' && word[0]<='9') || word[0] == '.')
                 {
                   float valf = mrg_parse_px_y (mrg, word, NULL);
@@ -3429,7 +3429,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
             case '\0':
               if (w)
               {
-                uint64_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
@@ -3473,7 +3473,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
             case '\0':
               if (w)
               {
-                uint64_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
@@ -3517,7 +3517,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
             case '\0':
               if (w)
               {
-                uint64_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
@@ -3561,7 +3561,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
             case '\0':
               if (w)
               {
-                uint64_t word_hash = ctx_strhash (word, 0);
+                uint64_t word_hash = ctx_strhash (word);
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
@@ -3901,7 +3901,7 @@ static void mrg_css_handle_property_pass1med (Mrg *mrg, uint64_t key,
 
   if (key == CTX_width)
   {
-    if (ctx_strhash (value, 0) == CTX_auto)
+    if (ctx_strhash (value) == CTX_auto)
     {
       s->width_auto = 1;
       SET_PROP(width, 42);
@@ -4007,7 +4007,7 @@ static void css_parse_properties (Mrg *mrg, const char *style,
         switch (*p)
         {
           case ';':
-            handle_property (mrg, ctx_strhash (name, 0), string);
+            handle_property (mrg, ctx_strhash (name), string);
             state = MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL;
             name_l = 0;
             name[0] = 0;
@@ -4023,7 +4023,7 @@ static void css_parse_properties (Mrg *mrg, const char *style,
     }
   }
   if (name[0])
-  handle_property (mrg, ctx_strhash (name, 0), string);
+  handle_property (mrg, ctx_strhash (name), string);
 }
 
 
@@ -7578,7 +7578,7 @@ void mrg_xml_render (Mrg *mrg,
           }
           else
           {
-            uint64_t hash = ctx_strhash (data, 0);
+            uint64_t hash = ctx_strhash (data);
           for (i = 0; entities[i].name && !dealt_with; i++)
             if (hash == entities[i].name)
             {
@@ -7650,7 +7650,7 @@ void mrg_xml_render (Mrg *mrg,
       case t_att:
         //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
         //  strncpy (htmlctx->attribute[htmlctx->attributes], data, MRG_XML_MAX_ATTRIBUTE_LEN-1);
-        att = ctx_strhash (data, 0);
+        att = ctx_strhash (data);
         //fprintf (stderr, "  %s:%i\n", data, att);
         break;
       case t_val:
@@ -7705,7 +7705,7 @@ void mrg_xml_render (Mrg *mrg,
         break;
       case t_endtag:
         {
-          uint64_t data_hash = ctx_strhash (data, 0);
+          uint64_t data_hash = ctx_strhash (data);
 
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
@@ -7929,7 +7929,7 @@ void mrg_xml_render (Mrg *mrg,
       case t_closetag:
         if (!should_be_empty)
         {
-          uint64_t data_hash = ctx_strhash (data, 0);
+          uint64_t data_hash = ctx_strhash (data);
           if (!strcmp (data, "a"))
           {
             mrg_text_listen_done (mrg);
@@ -8167,7 +8167,7 @@ _mr_get_contents (const char  *referer,
 
   uri_dup = strdup (uri);
   split_uri (uri_dup, &protocol, &host, &port, &path, &fragment);
-  protocol_hash = protocol?ctx_strhash (protocol, 0):0;
+  protocol_hash = protocol?ctx_strhash (protocol):0;
 #if 0
   if (protocol && protocol_hash == CTX_http)
   {

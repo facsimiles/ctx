@@ -333,7 +333,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
         }
       if ( (str[0] == 's' && str[1] == 'e' && str[2] == 't' && str[3] == '_') )
         { str += 4; }
-      str_hash = ctx_strhash ( (char *) str, 0);
+      str_hash = ctx_strhash ( (char *) str);
       switch (str_hash)
         {
           /* first a list of mappings to one_char hashes, handled in a

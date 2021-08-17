@@ -35,11 +35,6 @@ ctx_ticks (void)
   return _ctx_ticks ();
 }
 
-uint32_t ctx_ms (Ctx *ctx)
-{
-  return _ctx_ticks () / 1000;
-}
-
 
 
 enum _CtxFlags {
@@ -94,12 +89,13 @@ ctx_init (int *argc, char ***argv)
 #endif
 }
 
+
+#if 0
 int ctx_count (Ctx *ctx)
 {
   return ctx->drawlist.count;
 }
-
-
+#endif
 
 extern int _ctx_damage_control;
 
@@ -120,6 +116,13 @@ static void ctx_list_backends()
 }
 
 #if CTX_EVENTS
+
+static uint32_t ctx_ms (Ctx *ctx)
+{
+  return _ctx_ticks () / 1000;
+}
+
+
 static int is_in_ctx (void);
 Ctx *ctx_new_ui (int width, int height)
 {

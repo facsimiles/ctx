@@ -911,7 +911,7 @@ ctx_get (Ctx *ctx, const char *key)
 {
   static char retbuf[32];
   int len = 0;
-  CTX_PROCESS_U32(CTX_GET, ctx_strhash (key, 0), 0);
+  CTX_PROCESS_U32(CTX_GET, ctx_strhash (key), 0);
   while (read (STDIN_FILENO, &retbuf[len], 1) != -1)
     {
       if(retbuf[len]=='\n')

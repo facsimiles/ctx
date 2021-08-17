@@ -428,7 +428,7 @@ long vt_rev (VT *vt)
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val);
-uint64_t ctx_strhash (const char *utf8, int ignored);
+uint64_t ctx_strhash (const char *utf8);
 
 static void vt_set_title (VT *vt, const char *new_title)
 {
@@ -437,7 +437,7 @@ static void vt_set_title (VT *vt, const char *new_title)
   if (vt->title)
     { free (vt->title); }
   vt->title = strdup (new_title);
-  vt_set_prop (vt, ctx_strhash ("title", 0), (char*)new_title);
+  vt_set_prop (vt, ctx_strhash ("title"), (char*)new_title);
 }
 
 const char *vt_get_title (VT *vt)
@@ -2070,7 +2070,7 @@ static void vt_ctx_exit (void *data)
 static int vt_get_prop (VT *vt, const char *key, const char **val, int *len)
 {
 #if 0
-  uint32_t key_hash = ctx_strhash (key, 0);
+  uint32_t key_hash = ctx_strhash (key);
   char str[4096]="";
   fprintf (stderr, "%s: %s %i\n", __FUNCTION__, key, key_hash);
   CtxClient *client = ctx_client_by_id (ct->id);

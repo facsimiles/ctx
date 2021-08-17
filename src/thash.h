@@ -74,8 +74,8 @@ typedef struct EncodeUtf5 {
   uint32_t current;
 } EncodeUtf5;
 
-void thash_encode_utf5 (const char *input, int inlen,
-                   char *output, int *r_outlen)
+static void thash_encode_utf5 (const char *input, int inlen,
+                               char *output, int *r_outlen)
 {
   uint32_t offset = THASH_START_OFFSET;
 
@@ -172,7 +172,7 @@ void thash_encode_utf5 (const char *input, int inlen,
   *r_outlen = len;
 }
 
-uint64_t _thash (const char *utf8)
+static inline uint64_t _thash (const char *utf8)
 {
   char encoded[4096]="";
   int  encoded_len=0;
@@ -231,7 +231,6 @@ static int interned_compare (const void *a, const void *b)
   return 0;
 }
 
-
 uint64_t thash (const char *utf8)
 {
   uint64_t hash = _thash (utf8);
@@ -265,7 +264,9 @@ uint64_t thash (const char *utf8)
   }
   return hash;
 }
-uint64_t ctx_strhash(const char *str, int ignored) { return thash (str);}
+uint64_t ctx_strhash(const char *str) {
+  return thash (str);
+}
 
 typedef struct ThashUtf5Dec {
   int      is_utf5;
@@ -290,7 +291,7 @@ static void thash_decode_utf5_append_unichar_as_utf8 (uint32_t unichar, void *wr
   data->buf[data->length]=0;
 }
 
-void thash_decode_utf5 (ThashUtf5Dec *dec, uint8_t in)
+static void thash_decode_utf5 (ThashUtf5Dec *dec, uint8_t in)
 {
   if (dec->is_utf5)
   {
@@ -332,7 +333,7 @@ void thash_decode_utf5 (ThashUtf5Dec *dec, uint8_t in)
   }
 }
 
-void thash_decode_utf5_bytes (int is_utf5, 
+static void thash_decode_utf5_bytes (int is_utf5, 
                         const unsigned char *input, int inlen,
                         char *output, int *r_outlen)
 {

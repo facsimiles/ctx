@@ -14,8 +14,7 @@ uint32_t ctx_utf8_to_unichar (const char *input);
 int ctx_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 int ctx_utf8_strlen (const char *s);
 
-
-void ctx_string_init (CtxString *string, int initial_size)
+static void ctx_string_init (CtxString *string, int initial_size)
 {
   string->allocated_length = initial_size;
   string->length = 0;

@@ -97,11 +97,11 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 #else
   float fval = strtod (val, NULL);
   CtxClient *client = ctx_client_by_id (ct->id);
-  uint32_t val_hash = ctx_strhash (val, 0);
+  uint32_t val_hash = ctx_strhash (val);
   if (!client)
     return 0;
 
-  if (key_hash == ctx_strhash("start_move", 0))
+  if (key_hash == ctx_strhash("start_move"))
   {
     start_moving (client);
     moving_client = 1;

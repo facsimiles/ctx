@@ -329,6 +329,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   return ctx_glyph_drawlist (font, ctx, &drawlist, unichar, stroke);
 }
 
+#if 0
 uint32_t ctx_glyph_no (Ctx *ctx, int no)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
@@ -336,6 +337,7 @@ uint32_t ctx_glyph_no (Ctx *ctx, int no)
     { return 0; }
   return font->ctx.index[no*2];
 }
+#endif
 
 static void ctx_font_init_ctx (CtxFont *font)
 {
@@ -772,7 +774,7 @@ int ctx_resolve_font (const char *name)
   return 0;
 }
 
-CTX_STATIC void ctx_font_setup ()
+CTX_STATIC void ctx_font_setup (void)
 {
   static int initialized = 0;
   if (initialized) { return; }

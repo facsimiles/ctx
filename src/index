@@ -11,6 +11,7 @@ ctx-extra.h
 constants.h
 libc.c
 ctx-internal.h
+ctx-decls.h
 sha1.c
 audio.h
 start-implementation
