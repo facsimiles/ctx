@@ -2012,7 +2012,7 @@ ctx_RGBA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
   while (count--)
   {
      uint32_t cov   = *coverage++;
-     uint32_t rcov  = (255-((255+si_a * cov)>>8));
+     uint32_t rcov  = (((255+si_a * cov)>>8))^255;
      uint32_t di    = *((uint32_t*)dst);
      uint32_t di_ga = ((di & 0xff00ff00) >> 8);
      uint32_t di_rb = (di & 0x00ff00ff);

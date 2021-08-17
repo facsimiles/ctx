@@ -999,12 +999,12 @@ ctx_over_RGBA8 (uint32_t dst, uint32_t src, uint32_t cov)
   uint32_t si_ga = (src & 0xff00ff00) >> 8;
   uint32_t si_rb = src & 0x00ff00ff;
   uint32_t si_a  = si_ga >> 16;
-  uint32_t rcov  = (256-((255+si_a * cov)>>8));
+  uint32_t rcov  = ((255+si_a * cov)>>8)^255;
   uint32_t di_ga = ( dst & 0xff00ff00) >> 8;
   uint32_t di_rb = dst & 0x00ff00ff;
   return
-     ((((si_rb * cov) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
-      (((si_ga * cov) + (di_ga * rcov)) & 0xff00ff00);
+     ((((si_rb * cov) + 0xff00ff + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
+      (((si_ga * cov) + 0xff00ff + (di_ga * rcov)) & 0xff00ff00);
 }
 
 
@@ -1014,34 +1014,34 @@ ctx_over_RGBA8_full (uint32_t dst, uint32_t src)
   uint32_t si_ga = (src & 0xff00ff00) >> 8;
   uint32_t si_rb = src & 0x00ff00ff;
   uint32_t si_a  = si_ga >> 16;
-  uint32_t rcov  = (256-si_a);
+  uint32_t rcov  = si_a^255;
   uint32_t di_ga = (dst & 0xff00ff00) >> 8;
   uint32_t di_rb = dst & 0x00ff00ff;
   return
-     ((((si_rb << 8) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
-      (((si_ga << 8) + (di_ga * rcov)) & 0xff00ff00);
+     ((((si_rb * 255) + 0xff00ff + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
+      (((si_ga * 255) + 0xff00ff + (di_ga * rcov)) & 0xff00ff00);
 }
 
 static inline uint32_t
 ctx_over_RGBA8_2 (uint32_t dst, uint32_t si_ga, uint32_t si_rb, uint32_t si_a, uint32_t cov)
 {
-  uint32_t rcov  = (256-((si_a * cov)/255));
+  uint32_t rcov  = ((si_a * cov)/255)^255;
   uint32_t di_ga = (dst & 0xff00ff00) >> 8;
   uint32_t di_rb = dst & 0x00ff00ff;
   return
-     ((((si_rb * cov) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
-      (((si_ga * cov) + (di_ga * rcov)) & 0xff00ff00);
+     ((((si_rb * cov) + 0xff00ff + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
+      (((si_ga * cov) + 0xff00ff + (di_ga * rcov)) & 0xff00ff00);
 }
 
 static inline uint32_t
 ctx_over_RGBA8_full_2 (uint32_t dst, uint32_t si_ga_full, uint32_t si_rb_full, uint32_t si_a)
 {
-  uint32_t rcov = (256-si_a);
+  uint32_t rcov = si_a^255;
   uint32_t di_ga = ( dst & 0xff00ff00) >> 8;
   uint32_t di_rb = dst & 0x00ff00ff;
   return
-     ((((si_rb_full) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
-      (((si_ga_full) + (di_ga * rcov)) & 0xff00ff00);
+     ((((si_rb_full) + 0xff00ff + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
+      (((si_ga_full) + 0xff00ff + (di_ga * rcov)) & 0xff00ff00);
 }
 
 #if 0
@@ -2012,7 +2012,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     rasterizer->state->min_x = ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
     rasterizer->state->max_x = ctx_maxi (rasterizer->state->min_x, rasterizer->col_max / CTX_SUBDIV);
     rasterizer->state->min_y = ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / CTX_FULL_AA);
-    rasterizer->state->max_y = ctx_maxi (rasterizer->state->min_y, rasterizer->scan_max / CTX_FULL_AA);
+    rasterizer->state->max_y = ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / CTX_FULL_AA);
 #else
     if (CTX_UNLIKELY ( rasterizer->col_min / CTX_SUBDIV < rasterizer->state->min_x))
        rasterizer->state->min_x = rasterizer->col_min / CTX_SUBDIV;
