@@ -92,6 +92,8 @@ CtxSegment {
    int16_t s16[4];
    uint32_t u32[2];
   } data;
+  int32_t val;
+  int32_t delta;
 } CtxSegment;
 
 #endif

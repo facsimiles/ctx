@@ -578,17 +578,6 @@ ctx_utf8_to_unichar (const char *input);
 
 typedef struct _CtxHasher CtxHasher;
 
-typedef struct CtxEdge
-{
-#if CTX_ALIGNED_STRUCTS==1
-  uint32_t index;
-#else
-  uint16_t index;
-#endif
-  int32_t  delta;
-  int32_t  val;     /* the center-line intersection      */
-} CtxEdge;
-
 typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy);
 
 #define CTX_MAX_GAUSSIAN_KERNEL_DIM    512
@@ -635,7 +624,7 @@ struct _CtxRasterizer
   int pending_edges;
   int ending_edges;
   int edge_pos;         // where we're at in iterating all edges
-  CtxEdge    edges[CTX_MAX_EDGES];
+  int edges[CTX_MAX_EDGES]; // integer position in edge array
 
   int scanline;
   int        scan_min;
