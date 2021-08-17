@@ -3910,7 +3910,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
           float factor = ctx_matrix_get_scale (&state->gstate.transform);
 
           int aa = 15;//rasterizer->aa;
-          CtxEntry temp[count]; /* copy of already built up path's poly line  */
+          CtxSegment temp[count]; /* copy of already built up path's poly line  */
           memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
           int start = 0;
           int end   = 0;
@@ -3934,7 +3934,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 
             if (!is_down)
             {
-              CtxEntry *entry = &temp[0];
+              CtxSegment *entry = &temp[0];
               prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
               prev_y = entry->data.s16[1] * 1.0f / aa;
               ctx_rasterizer_move_to (rasterizer, prev_x, prev_y);
@@ -3944,7 +3944,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
 
             for (i = start; i < count; i++)
             {
-              CtxEntry *entry = &temp[i];
+              CtxSegment *entry = &temp[i];
               float x, y;
               if (entry->code == CTX_NEW_EDGE)
                 {
