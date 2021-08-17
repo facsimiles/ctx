@@ -303,7 +303,6 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
 
   ty = ctx_maxf (MIN_Y, ty);
   ty = ctx_minf (MAX_Y, ty);
-
   
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * CTX_FULL_AA);//rasterizer->aa);
 
@@ -318,9 +317,7 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
       ox -= rasterizer->blit_x;
       oy = ctx_maxf (oy, MIN_Y);
       oy = ctx_minf (oy, MAX_Y);
-
       CtxSegment *entry = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->edge_list.count-1];
-
       entry->data.s16[0] = ox * CTX_SUBDIV;
       entry->data.s16[1] = oy * CTX_FULL_AA;
       entry->code = CTX_NEW_EDGE;
@@ -1047,8 +1044,8 @@ ctx_over_RGBA8_full_2 (uint32_t dst, uint32_t si_ga_full, uint32_t si_rb_full, u
   uint32_t di_ga = ( dst & 0xff00ff00) >> 8;
   uint32_t di_rb = dst & 0x00ff00ff;
   return
-     ((((si_rb_full) + 0xff00ff + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
-      (((si_ga_full) + 0xff00ff + (di_ga * rcov)) & 0xff00ff00);
+     ((((si_rb_full) + (di_rb * rcov)) & 0xff00ff00) >> 8)  |
+      (((si_ga_full) + (di_ga * rcov)) & 0xff00ff00);
 }
 
 #if 0
@@ -1082,11 +1079,13 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
   int parity        = 0;
 
   uint32_t src_pix    = ((uint32_t*)rasterizer->color)[0];
-  uint32_t si_ga_full = (src_pix & 0xff00ff00);
-  uint32_t si_ga      = si_ga_full >> 8;
+  uint32_t si_ga      = (src_pix & 0xff00ff00) >> 8;
+  uint32_t si_ga_full = si_ga * 255;
   uint32_t si_rb      = src_pix & 0x00ff00ff;
-  uint32_t si_rb_full = si_rb << 8;
+  uint32_t si_rb_full = si_rb * 255;
   uint32_t si_a       = si_ga >> 16;
+
+
   uint8_t *dst = ( (uint8_t *) rasterizer->buf) +
          (rasterizer->blit_stride * (scanline / CTX_FULL_AA));
   int accumulator_x=0;
@@ -1264,11 +1263,12 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
   int parity        = 0;
 
   uint32_t src_pix    = ((uint32_t*)rasterizer->color)[0];
-  uint32_t si_ga_full = (src_pix & 0xff00ff00);
-  uint32_t si_ga      = si_ga_full >> 8;
+  uint32_t si_ga      = (src_pix & 0xff00ff00) >> 8;
+  uint32_t si_ga_full = si_ga * 255;
   uint32_t si_rb      = src_pix & 0x00ff00ff;
-  uint32_t si_rb_full = si_rb << 8;
+  uint32_t si_rb_full = si_rb * 255;
   uint32_t si_a       = si_ga >> 16;
+
   uint8_t *dst = ( (uint8_t *) rasterizer->buf) +
          (rasterizer->blit_stride * (scanline / CTX_FULL_AA));
 
@@ -1346,6 +1346,9 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             }
             u0 = ctx_maxi (u0, minx_);
             u1 = ctx_mini (u1, maxx_);
+            u1 = ctx_maxi (u1, minx_);
+            u0 = ctx_mini (u0, maxx_);
+
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
             int count = 0;
             for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
@@ -1403,6 +1406,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             }
             u0 = ctx_maxi (u0, minx_);
             u1 = ctx_mini (u1, maxx_);
+            u1 = ctx_maxi (u1, minx_);
+            u0 = ctx_mini (u0, maxx_);
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
             int count = 0;
             for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
