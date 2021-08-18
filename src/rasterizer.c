@@ -1253,6 +1253,142 @@ inline static int ctx_rasterizer_is_simple (CtxRasterizer *rasterizer)
 
 
 inline static void
+ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
+                                         int            minx,
+                                         int            maxx,
+                                         uint8_t       *coverage,
+                                         int            fill_rule,
+                                         int            fast_source_copy,
+                                         int            fast_source_over)
+{
+  CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
+  int *edges  = rasterizer->edges;
+  int scanline        = rasterizer->scanline;
+  int bpp             = rasterizer->format->bpp/8;
+  int active_edges    = rasterizer->active_edges;
+  int parity        = 0;
+
+  coverage -= minx;
+
+  int minx_ = minx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
+  int maxx_ = maxx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
+
+  for (int t = 0; t < active_edges -1;t++)
+    {
+      CtxSegment   *segment = &entries[edges[t]];
+      if (scanline != CTX_EDGE_YMIN)
+        {
+          if (fill_rule == CTX_FILL_RULE_WINDING)
+            { parity += ( (segment->code == CTX_EDGE_FLIPPED) ?1:-1); }
+          else
+            { parity = 1 - parity; }
+        }
+
+       if (parity)
+        {
+          CtxSegment   *next_segment = &entries[edges[t+1]];
+          int x0        = segment->val;
+          int x1        = next_segment->val;
+          int delta0    = segment->delta;
+          int delta1    = next_segment->delta;
+
+          int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
+          int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
+          int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
+          int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
+
+          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int first     = graystart >> 8;
+          int last      = grayend   >> 8;
+
+          first = ctx_maxi (first, minx);
+          last = ctx_mini (last, maxx);
+
+          if (first < last)
+          {
+            int pre = 1;
+            int post = 1;
+
+          if (abs(delta0) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
+          {
+            graystart = 255 - (graystart&0xff);
+            //grayend   = (grayend & 0xff);
+            coverage[first] += graystart;
+          }
+          else
+          {
+            int u0 = x0_start;
+            int u1 = x0_end;
+            if (u0 > u1)
+            {
+               int tmp = u0;
+               u0 = u1;u1=tmp;
+            }
+            u0 = ctx_maxi (u0, minx_);
+            u1 = ctx_mini (u1, maxx_);
+            u1 = ctx_maxi (u1, minx_);
+            u0 = ctx_mini (u0, maxx_);
+
+            int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+            int count = 0;
+            for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+            {
+              coverage[us + count] = 
+               (u - u0 + (0.5f)*CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV) /
+               (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 1.0) * 255;
+              count++;
+            }
+            pre = (us+count-1)-first+1;
+          }
+
+#if 1
+          if (abs(delta1) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
+          {
+             grayend   = (grayend & 0xff);
+             coverage[last] += grayend;
+          }
+          else
+          {
+            int u0 = x1_start;
+            int u1 = x1_end;
+            if (u0 > u1)
+            {
+               int tmp = u0;
+               u0 = u1;u1=tmp;
+            }
+            u0 = ctx_maxi (u0, minx_);
+            u1 = ctx_mini (u1, maxx_);
+            u1 = ctx_maxi (u1, minx_);
+            u0 = ctx_mini (u0, maxx_);
+            int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+            int count = 0;
+            for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+            {
+              coverage[us + count] = (1.0-
+    (u - u0 * 1.0 + ((127)/255.0)*(CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV))/     (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 0.5)) * 255;
+              count++;
+            }
+            post = last-us+1;
+          }
+#endif
+              for (int i = first + pre; i <= last - post; i++)
+              {
+                coverage[i] = 255;
+              }
+          }
+          else if (first == last)
+          {
+            graystart = 255 - (graystart&0xff);
+            grayend   = (grayend & 0xff);
+            coverage[last]+=(graystart-(255-grayend));
+          }
+        }
+   }
+}
+
+
+inline static void
 ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                                          int            minx,
                                          int            maxx,
