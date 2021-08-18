@@ -909,12 +909,12 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          if (CTX_UNLIKELY(first < minx))
+          if ((first < minx))
           { 
             first = minx;
             graystart=0;
           }
-          if (CTX_UNLIKELY(last > maxx))
+          if ((last > maxx))
           {
             last = maxx;
             grayend=255;
@@ -972,12 +972,12 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          if (CTX_UNLIKELY(first < minx))
+          if ((first < minx))
           { 
             first = minx;
             graystart=0;
           }
-          if (CTX_UNLIKELY(last > maxx))
+          if ((last > maxx))
           {
             last = maxx;
             grayend=255;
@@ -1117,12 +1117,12 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          if (CTX_UNLIKELY(first < minx))
+          if ((first < minx))
           { 
             first = minx;
             graystart=0;
           }
-          if (CTX_UNLIKELY(last > maxx))
+          if ((last > maxx))
           {
             last = maxx;
             grayend=255;
@@ -1867,7 +1867,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       ||(gstate->compositing_mode == CTX_COMPOSITE_COPY)
         )
   {
-    if (CTX_UNLIKELY(width == 1))
+    if ((width == 1))
     {
       for (int y = y0; y < y1; y++)
       {
@@ -1902,7 +1902,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     uint32_t si_rb_full = si_rb << 8;
     uint32_t si_a  = si_ga >> 16;
     dst += x0 * 4;
-    if (CTX_UNLIKELY(width == 1))
+    if ((width == 1))
     {
       for (int y = y0; y < y1; y++)
       {
