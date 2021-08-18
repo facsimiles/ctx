@@ -238,12 +238,10 @@ const char *ctx_get_string (Ctx *ctx, uint64_t hash);
 void ctx_set_string (Ctx *ctx, uint64_t hash, const char *value);
 typedef struct _CtxColor CtxColor;
 
-typedef struct _CtxMatrix     CtxMatrix;
-struct
-  _CtxMatrix
-{
-  float m[3][2];
-};
+void
+ctx_matrix_translate (CtxMatrix *matrix, float x, float y);
+
+
 void ctx_get_matrix (Ctx *ctx, CtxMatrix *matrix);
 
 int ctx_color (Ctx *ctx, const char *string);
@@ -263,17 +261,6 @@ int ctx_utf8_len (const unsigned char first_byte);
 void ctx_user_to_device          (Ctx *ctx, float *x, float *y);
 void ctx_user_to_device_distance (Ctx *ctx, float *x, float *y);
 const char *ctx_utf8_skip (const char *s, int utf8_length);
-void ctx_apply_matrix (Ctx *ctx, CtxMatrix *matrix);
-void ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y);
-void ctx_matrix_invert (CtxMatrix *m);
-void ctx_matrix_identity (CtxMatrix *matrix);
-void ctx_matrix_scale (CtxMatrix *matrix, float x, float y);
-void ctx_matrix_rotate (CtxMatrix *matrix, float angle);
-void ctx_matrix_multiply (CtxMatrix       *result,
-                          const CtxMatrix *t,
-                          const CtxMatrix *s);
-void
-ctx_matrix_translate (CtxMatrix *matrix, float x, float y);
 int ctx_is_set_now (Ctx *ctx, uint64_t hash);
 void ctx_set_size (Ctx *ctx, int width, int height);
 

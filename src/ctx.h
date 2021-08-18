@@ -301,6 +301,14 @@ void ctx_define_texture (Ctx *ctx,
                          char       *ret_eid);
 
 void
+ctx_source_transform (Ctx *ctx, float a, float b,  // hscale, hskew
+                      float c, float d,  // vskew,  vscale
+                      float e, float f);  // htran,  vtran
+typedef struct _CtxMatrix     CtxMatrix;
+void
+ctx_source_transform_matrix (Ctx *ctx, CtxMatrix *matrix);
+
+void
 ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
                     CtxPixelFormat format, int dst_stride,
                     uint8_t *dst_data);
@@ -1752,8 +1760,32 @@ int
 ctx_base642bin (const char    *ascii,
                 int           *length,
                 unsigned char *bin);
+
+
+struct
+  _CtxMatrix
+{
+  float m[3][2];
+};
+
+void ctx_apply_matrix (Ctx *ctx, CtxMatrix *matrix);
+void ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y);
+void ctx_matrix_invert (CtxMatrix *m);
+void ctx_matrix_identity (CtxMatrix *matrix);
+void ctx_matrix_scale (CtxMatrix *matrix, float x, float y);
+void ctx_matrix_rotate (CtxMatrix *matrix, float angle);
+void ctx_matrix_multiply (CtxMatrix       *result,
+                          const CtxMatrix *t,
+                          const CtxMatrix *s);
+
+
+
+
 float ctx_term_get_cell_width (Ctx *ctx);
 float ctx_term_get_cell_height (Ctx *ctx);
+
+
+
 
 
 #if 1 // CTX_VT
@@ -1777,7 +1809,13 @@ CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     void *user_data);
 
 
+
+
+
+
+
 #endif
+
 
 #ifndef CTX_CODEC_CHAR
 //#define CTX_CODEC_CHAR '\035'

@@ -12,7 +12,6 @@ _ctx_setup_compositor (CtxRasterizer *rasterizer)
   if (CTX_UNLIKELY (rasterizer->comp_op==0))
   {
     rasterizer->format->setup (rasterizer);
-  }
 #if CTX_GRADIENTS
 #if CTX_GRADIENT_CACHE
   switch (rasterizer->state->gstate.source_fill.type)
@@ -22,6 +21,13 @@ _ctx_setup_compositor (CtxRasterizer *rasterizer)
       ctx_gradient_cache_prime (rasterizer);
       break;
     case CTX_SOURCE_TEXTURE:
+
+      _ctx_matrix_multiply (&rasterizer->state->gstate.source_fill.transform,
+                            &rasterizer->state->gstate.source_fill.set_transform,
+                            &rasterizer->state->gstate.transform);
+
+      ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);
+
       if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
         _ctx_texture_prepare_color_management (rasterizer,
         rasterizer->state->gstate.source_fill.texture.buffer);
@@ -29,6 +35,7 @@ _ctx_setup_compositor (CtxRasterizer *rasterizer)
   }
 #endif
 #endif
+  }
 }
 
 #define CTX_FULL_AA 15
@@ -535,9 +542,8 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   source->texture.buffer = &rasterizer->texture_source->texture[no];
   source->texture.x0 = 0;
   source->texture.y0 = 0;
-  source->transform = rasterizer->state->gstate.transform;
-  ctx_matrix_translate (&source->transform, x, y);
-  ctx_matrix_invert (&source->transform);
+  ctx_matrix_identity (&source->set_transform);
+  ctx_matrix_translate (&source->set_transform, -x, -y);
 }
 
 
@@ -3812,6 +3818,13 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
                                     c->texture.x, c->texture.y);
         rasterizer->comp_op = NULL;
         rasterizer->fragment = NULL;
+        break;
+      case CTX_SOURCE_TRANSFORM:
+        ctx_matrix_set (&state->gstate.source_fill.set_transform,
+                        ctx_arg_float (0), ctx_arg_float (1),
+                        ctx_arg_float (2), ctx_arg_float (3),
+                        ctx_arg_float (4), ctx_arg_float (5));
+        rasterizer->comp_op = NULL;
         break;
 #if 0
       case CTX_LOAD_IMAGE:

@@ -146,6 +146,7 @@ struct _CtxGradient
 struct _CtxSource
 {
   int type;
+  CtxMatrix  set_transform;
   CtxMatrix  transform;
   union
   {
