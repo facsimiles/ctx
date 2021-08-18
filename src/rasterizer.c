@@ -877,21 +877,21 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   const int      fill_rule,
                                   uint8_t        aa_factor)
 {
-  CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
-  int      *edges = rasterizer->edges;
-  int scanline     = rasterizer->scanline;
-  int active_edges = rasterizer->active_edges;
-  int parity = 0;
+  CtxSegment *entries      = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
+  int        *edges        = rasterizer->edges;
+  int         scanline     = rasterizer->scanline;
+  int         active_edges = rasterizer->active_edges;
+  int         parity       = 0;
   coverage -= minx;
   uint8_t fraction = 255/aa_factor;
 #define CTX_EDGE(no)      entries[edges[no]]
-#define CTX_EDGE_YMIN(no) segment->data.s16[1]-1
+#define CTX_EDGE_YMIN     segment->data.s16[1]-1
   if (!active_edges)
     return;
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment *segment = &entries[edges[t]];
-      if (scanline != CTX_EDGE_YMIN(t))
+      if (scanline != CTX_EDGE_YMIN)
         {
           if (fill_rule == CTX_FILL_RULE_WINDING)
             { parity += ( (segment->code == CTX_EDGE_FLIPPED) ?1:-1); }
@@ -899,7 +899,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
             { parity = 1 - parity; }
         }
 
-       if (parity)
+      if (parity)
         {
           CtxSegment *next_segment = &entries[edges[t+1]];
           int x0 = segment->val;
@@ -954,7 +954,7 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment *segment = &entries[edges[t]];
-      if (scanline != CTX_EDGE_YMIN(t))
+      if (scanline != CTX_EDGE_YMIN)
         {
           if (fill_rule == CTX_FILL_RULE_WINDING)
             { parity += ( (segment->code == CTX_EDGE_FLIPPED) ?1:-1); }
@@ -1099,7 +1099,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment *segment = &entries[edges[t]];
-      if (scanline != CTX_EDGE_YMIN(t))
+      if (scanline != CTX_EDGE_YMIN)
         {
           if (fill_rule == CTX_FILL_RULE_WINDING)
             { parity += ( (segment->code == CTX_EDGE_FLIPPED) ?1:-1); }
@@ -1291,7 +1291,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment   *segment = &entries[edges[t]];
-      if (scanline != CTX_EDGE_YMIN(t))
+      if (scanline != CTX_EDGE_YMIN)
         {
           if (fill_rule == CTX_FILL_RULE_WINDING)
             { parity += ( (segment->code == CTX_EDGE_FLIPPED) ?1:-1); }
@@ -1556,7 +1556,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
     maxx > blit_max_x - 1)
     { maxx = blit_max_x - 1; }
 
-
   minx = ctx_maxi (rasterizer->state->gstate.clip_min_x, minx);
   maxx = ctx_mini (rasterizer->state->gstate.clip_max_x, maxx);
   minx = ctx_maxi (0, minx); // redundant?
@@ -1618,13 +1617,13 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
   }
 
   rasterizer->horizontal_edges = 0;
-  ctx_rasterizer_sort_edges (rasterizer);
   {
     rasterizer->needs_aa3  = 0;
 #if CTX_ONLY_FAST_AA==0
     rasterizer->needs_aa5  = 0;
     rasterizer->needs_aa15 = 0;
 #endif
+    ctx_rasterizer_sort_edges (rasterizer);
     rasterizer->scanline = scan_start;
     ctx_rasterizer_feed_edges (rasterizer, 0); 
 
@@ -1642,11 +1641,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
   for (; rasterizer->scanline <= scan_end;)
     {
-      //rasterizer->needs_aa3  *= enable_aa3;
-#if CTX_ONLY_FAST_AA==0
-      //rasterizer->needs_aa5  *= enable_aa5;
-      //rasterizer->needs_aa15 *= enable_aa15;
-#endif
       int aa = 0;
       if (rasterizer->needs_aa15 && real_aa >=15) aa = 15;
       if (rasterizer->needs_aa5 && real_aa >=5) aa = 5;
@@ -1656,21 +1650,8 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           (rasterizer->horizontal_edges!=0) 
           || (rasterizer->active_edges != rasterizer->prev_active_edges
           || (rasterizer->active_edges + rasterizer->pending_edges == rasterizer->ending_edges)
-         // || rasterizer->needs_aa15
           );
 
-#if 0
-      if (1)
-      {
-      for (int i = 0; i < CTX_FULL_AA; i+=3)
-      {
-        ctx_rasterizer_feed_edges (rasterizer, 0);
-        ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, fill_rule, CTX_FULL_AA/3);
-        ctx_rasterizer_increment_edges (rasterizer, 3);
-      }
-      }
-      else 
-#endif
     if (CTX_UNLIKELY (needs_full_aa))
     {
         int increment = CTX_FULL_AA/real_aa;
@@ -1682,7 +1663,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           ctx_rasterizer_increment_edges (rasterizer, increment);
         }
     }
-    else if (CTX_LIKELY(!rasterizer->needs_aa3)) // if it doesnt need aa3 it doesnt need aa5 or aa15 either
+    else if (CTX_LIKELY(aa < 3))
     {
       ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
       ctx_rasterizer_feed_edges (rasterizer, 0);
@@ -1715,6 +1696,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 #if 1
     else if (!avoid_direct && ctx_rasterizer_is_simple (rasterizer))
     {
+      /* TODO : add non-direct variant of this rasterizer */
       ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
       ctx_rasterizer_feed_edges (rasterizer, 1);
 
