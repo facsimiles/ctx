@@ -1228,26 +1228,28 @@ inline static int ctx_rasterizer_is_simple (CtxRasterizer *rasterizer)
       rasterizer->ending_edges ||
       rasterizer->pending_edges)
    return 0;
-#if 0
-  // crossing edges is what we do worst, perhaps we should do better on
-  // them specifically? just ignoring them also works
-  //
   int *edges  = rasterizer->edges;
+  CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
 
   int active_edges = rasterizer->active_edges;
   for (int t = 0; t < active_edges -1;t++)
     {
-      int delta0    = CTX_EDGE_DELTA (t);
-      int delta1    = CTX_EDGE_DELTA (t+1);
-      int x0        = CTX_EDGE_X (t);
-      int x1        = CTX_EDGE_X (t+1);
-      // reverse the edge for other side proper?
+      CtxSegment *segment0 = segments + edges[t];
+      CtxSegment *segment1 = segments + edges[t+1];
+      int delta0    = segment0->delta;
+      int delta1    = segment1->delta;
+      int x0        = segment0->val;
+      int x1        = segment1->val;
       int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
       int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
-      if (x1_end < x0_end)
+      int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
+      int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
+      if (x1_end < x0_end   ||
+          x1_start < x0_end ||
+          x1_end < x0_start
+         )
          return 0;
     }
-#endif
   return 1;
 }
 
