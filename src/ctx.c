@@ -572,7 +572,6 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
   {
     if (width > 0.0 && height > 0.0)
     {
-      ctx_save (ctx);
 #if 0
       if (clip_width > 0.0f)
       {
@@ -581,19 +580,27 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
       }
 #endif
       ctx_rectangle (ctx, x, y, width, height);
+      CtxMatrix matrix;
+      ctx_matrix_identity (&matrix);
+      
+      ctx_texture (ctx, eid, 0, 0);// / (width/tex_width), y / (height/tex_height));
+      //ctx_rgba (ctx, 1, 0,0,0.5);
+#if 0
       if (clip_width > 0.0f)
       {
-        ctx_translate (ctx, -clip_x, -clip_y);
-        ctx_scale (ctx, width/clip_width, height/clip_height);
+        ctx_matrix_translate (&matrix, -clip_x, -clip_y);
+        ctx_matrix_scale (&matrix, width/clip_width, height/clip_height);
       }
       else
       {
-        ctx_scale (ctx, width/tex_width, height/tex_height);
+        ctx_matrix_scale (&matrix, width/tex_width, height/tex_height);
       }
+#endif
+      //ctx_matrix_invert (&matrix);
+      ctx_matrix_translate (&matrix, -x, -y);
+      ctx_source_transform_matrix (ctx, &matrix);
       //ctx_texture (ctx, eid, x / (width/tex_width), y / (height/tex_height));
-      ctx_texture (ctx, eid, x, y);// / (width/tex_width), y / (height/tex_height));
       ctx_fill (ctx);
-      ctx_restore (ctx);
     }
   }
 }

@@ -622,8 +622,6 @@ static CTX_INLINE void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
 }
 
-//extern int _ctx_fast_aa;
-
 static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline;
@@ -1361,7 +1359,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             int count = 0;
             for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] += 
+              coverage[us + count] = 
                (u - u0 + (0.5f)*CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV) /
                (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 1.0) * 255;
               count++;
@@ -1420,7 +1418,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             int count = 0;
             for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] += (1.0-
+              coverage[us + count] = (1.0-
     (u - u0 * 1.0 + ((127)/255.0)*(CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV))/     (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 0.5)) * 255;
               count++;
             }
@@ -1644,9 +1642,16 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
   for (; rasterizer->scanline <= scan_end;)
     {
       int aa = 0;
-      if (rasterizer->needs_aa15 && real_aa >=15) aa = 15;
-      if (rasterizer->needs_aa5 && real_aa >=5) aa = 5;
-      if (rasterizer->needs_aa3 && real_aa >=3) aa = 3;
+      if (rasterizer->needs_aa3 && real_aa >=3)
+      {
+        aa = 3;
+        if (rasterizer->needs_aa5 && real_aa >=5)
+        {
+           aa = 5;
+           if (rasterizer->needs_aa15 && real_aa >=15)
+             aa = 15;
+        }
+      }
 
       int needs_full_aa =
           (rasterizer->horizontal_edges!=0) 
@@ -3994,7 +3999,7 @@ CtxAntialias ctx_get_antialias (Ctx *ctx)
     case 3: return CTX_ANTIALIAS_FAST;
     //case 5: return CTX_ANTIALIAS_GOOD;
     default:
-    case 5: return CTX_ANTIALIAS_DEFAULT;
+    case 15: return CTX_ANTIALIAS_DEFAULT;
     case 17: return CTX_ANTIALIAS_BEST;
   }
 }
