@@ -685,7 +685,7 @@ void itk_seperator (ITK *itk)
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
 //itk_base (itk, NULL, itk->x0, itk->y, itk->width, em * itk->rel_ver_advance / 4, 0);
-  ctx_rectangle (ctx, itk->x0 - em * itk->rel_hmargin, itk->y, itk->width, em * itk->rel_ver_advance/4);
+  ctx_rectangle (ctx, itk->x0 - em * itk->rel_hmargin, itk->y, itk->width - em * itk->rel_hmargin*2, em * itk->rel_ver_advance/4);
   ctx_gray (ctx, 0.5);
   ctx_fill (ctx);
   itk_newline (itk);
@@ -972,7 +972,7 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
   itk_text (itk, label);
   itk->x = new_x;
 
-  CtxControl *control = itk_add_control (itk, UI_SLIDER, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width), em * itk->rel_ver_advance);
+  CtxControl *control = itk_add_control (itk, UI_SLIDER, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width) - em * 1.5, em * itk->rel_ver_advance);
   control->data = data;
   control->set_val = set_val;
   control->get_val = get_val;
@@ -1009,9 +1009,9 @@ void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double m
 
   float rel_val = ((fval) - min) / (max-min);
   itk_style_color (itk->ctx, "itk-slider-cursor");
-  ctx_rectangle (ctx, itk->x + (itk->width*(1.0-itk->label_width)-em/8) * rel_val, itk->y, em/8, control->height);
+  ctx_rectangle (ctx, itk->x + control->width * rel_val, itk->y, em/8, control->height);
   ctx_fill (ctx);
-  ctx_rectangle (ctx, itk->x, itk->y + em*5/6, itk->width * (1.0-itk->label_width), em/8);
+  ctx_rectangle (ctx, itk->x, itk->y + em*5/6, control->width, em/8);
   ctx_fill (ctx);
 
   itk->x += (1.0 - itk->label_width) * itk->width;
