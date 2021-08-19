@@ -418,7 +418,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
         rgba[2] = tmp;
       }
     }
-    ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+    ctx_RGBA8_associate_alpha_probably_opaque (rgba); // XXX: really?
     rgba += 4;
     x += dx;
     y += dy;
@@ -937,7 +937,6 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
                                         float y,
                                         void *out, int count, float dx, float dy)
 {
-  uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer;
   if (buffer->color_managed)
@@ -955,8 +954,13 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
     int i = 0;
     int u = x - g->texture.x0;
     int v = y - g->texture.y0;
+
     if (!(v >= 0 && v < bheight))
+    {
+      for (i = 0 ; i < count; i++)
+        *dst++ = 0;
       return;
+    }
     src += bwidth * v + u;
     while (count && !(u >= 0 && u < bwidth))
     {
@@ -966,14 +970,20 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       count--;
     }
     
-      for (i = 0 ; i < count && u < bwidth; i++)
+      int limit = ctx_mini (count, bwidth - u);
+#if 0
+      for (i = 0 ; i < limit; i++)
       {
-        *dst = *src++;
-        /* with associated alpha - this loop can become a memcpy*/
-        //ctx_RGBA8_associate_alpha_probably_opaque ((uint8_t*)dst);
-        dst++;
-        u++;
+        *dst++ = *src++;
       }
+#else
+      if (limit>0)
+      {
+        memcpy (dst, src, limit * 4);
+        dst += limit;
+        i = limit;
+      }
+#endif
       for (;i < count; i++)
         *dst++ = 0;
       return;
@@ -999,14 +1009,11 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
     {
       int u = x - tx0;
       int v = y - ty0;
-      {
-        *dst = src[v * bwidth + u];
-        //ctx_RGBA8_associate_alpha_probably_opaque ((uint8_t*)dst);
+      *dst = src[v * bwidth + u];
 #if CTX_DITHER
-        ctx_dither_rgba_u8 ((uint8_t*)dst, x, y, rasterizer->format->dither_red_blue,
-                            rasterizer->format->dither_green);
+      ctx_dither_rgba_u8 ((uint8_t*)dst, x, y, rasterizer->format->dither_red_blue,
+                          rasterizer->format->dither_green);
 #endif
-      }
       x += dx;
       y += dy;
       dst++;
@@ -1038,7 +1045,6 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       if (CTX_LIKELY(u < bwidth && u >= 0 && v >= 0 && v < bheight))
       {
         *dst = src[v * bwidth + u];
-        //ctx_RGBA8_associate_alpha_probably_opaque ((uint8_t*)dst);
 #if CTX_DITHER
         ctx_dither_rgba_u8 ((uint8_t*)dst, x, y, rasterizer->format->dither_red_blue,
                             rasterizer->format->dither_green);
@@ -1928,7 +1934,6 @@ ctx_u8_source_over_normal_color (int components,
 {
   uint8_t tsrc[5];
   *((uint32_t*)tsrc) = *((uint32_t*)src);
-  //ctx_u8_associate_alpha (components, tsrc);
 
   while (count--)
   {
