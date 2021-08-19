@@ -1980,6 +1980,23 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
   }
 }
 
+static inline void
+ctx_RGBA8_source_over_normal_full_cov_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
+{
+  while (count--)
+  {
+     uint32_t si_ga = ((*((uint32_t*)tsrc)) & 0xff00ff00) >> 8;
+     uint32_t si_rb = (*((uint32_t*)tsrc)) & 0x00ff00ff;
+     uint32_t si_a  = si_ga >> 16;
+     uint32_t racov = (255-si_a);
+     *((uint32_t*)(dst)) =
+     (((si_rb*255+0xff00ff+(((*((uint32_t*)(dst)))&0x00ff00ff)*racov))>>8)&0x00ff00ff)|
+     ((si_ga*255+0xff00ff+((((*((uint32_t*)(dst)))&0xff00ff00)>>8)*racov))&0xff00ff00);
+     tsrc += 4;
+     dst  += 4;
+  }
+}
+
 static void
 ctx_RGBA8_source_copy_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 {
@@ -2002,6 +2019,18 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
   uint8_t _tsrc[4 * (count)];
   rasterizer->fragment (rasterizer, u0, v0, &_tsrc[0], count, ud, vd);
   ctx_RGBA8_source_over_normal_buf (rasterizer,
+                       dst, src, x0, coverage, count, &_tsrc[0]);
+}
+
+static inline void
+ctx_RGBA8_source_over_normal_full_cov_fragment (CTX_COMPOSITE_ARGUMENTS)
+{
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+  uint8_t _tsrc[4 * (count)];
+  rasterizer->fragment (rasterizer, u0, v0, &_tsrc[0], count, ud, vd);
+  ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
                        dst, src, x0, coverage, count, &_tsrc[0]);
 }
 
