@@ -1048,20 +1048,6 @@ ctx_over_RGBA8_full_2 (uint32_t dst, uint32_t si_ga_full, uint32_t si_rb_full, u
       (((si_ga_full) + (di_ga * rcov)) & 0xff00ff00);
 }
 
-#if 0
-
-how to check for no intersections within line?
-
-  iterate through edges and check that order is still increasing after increment
-  bail at first that isnt
-
-compute the horizontal coverage of each intersection as if it was a slow intersect,
-process this with one dispatch
-
-
-#endif
-
-
 inline static void
 ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                                         int            minx,
@@ -1084,7 +1070,6 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
   uint32_t si_rb      = src_pix & 0x00ff00ff;
   uint32_t si_rb_full = si_rb * 255;
   uint32_t si_a       = si_ga >> 16;
-
 
   uint8_t *dst = ( (uint8_t *) rasterizer->buf) +
          (rasterizer->blit_stride * (scanline / CTX_FULL_AA));
@@ -1154,7 +1139,6 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
           {
             if (fast_source_copy)
             {
-#if 1
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
               *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, graystart);
 
@@ -1164,7 +1148,6 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 *dst_pix = src_pix;
                 dst_pix++;
               }
-#endif
             }
             else if (fast_source_over)
             {
@@ -1357,7 +1340,7 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
               for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
                 coverage[us + count] = (1.0-
-      (u - u0 + 0.5f*(CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV))/     (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 0.5)) * 255;
+      (u - u0 + 0.5f*(CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV))/ (u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 0.5)) * 255;
                 count++;
               }
               post = last-us+1;
@@ -1822,18 +1805,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       rasterizer->prev_active_edges = rasterizer->active_edges;
       continue;
     }
-    else if (!avoid_direct && ctx_rasterizer_is_simple (rasterizer))
-    {
-      ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
-      ctx_rasterizer_feed_edges (rasterizer, 1);
-
-      ctx_rasterizer_generate_coverage_apply2 (rasterizer, minx, maxx, coverage, fill_rule, fast_source_copy, fast_source_over);
-      ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
-
-      dst += blit_stride;
-      rasterizer->prev_active_edges = rasterizer->active_edges;
-      continue;
-    }
     else if (avoid_direct && aa < 3)
     {
       ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
@@ -1843,8 +1814,20 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
       ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
     }
-    else if (avoid_direct && ctx_rasterizer_is_simple (rasterizer))
+    else if (ctx_rasterizer_is_simple (rasterizer))
     {
+      if (!avoid_direct)
+      {
+        ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
+        ctx_rasterizer_feed_edges (rasterizer, 1);
+
+        ctx_rasterizer_generate_coverage_apply2 (rasterizer, minx, maxx, coverage, fill_rule, fast_source_copy, fast_source_over);
+        ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
+
+        dst += blit_stride;
+        rasterizer->prev_active_edges = rasterizer->active_edges;
+        continue;
+      }
       ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
       ctx_rasterizer_feed_edges (rasterizer, 1);
 
