@@ -235,9 +235,15 @@ static void files_list (ITK *itk, Files *files)
         sprintf (newpath, "%s%s%s", files->path, PATH_SEP, files->namelist[i]->d_name);
       lstat (newpath, &stat_buf);
 
-      free (newpath);
+
       if (c->no == itk->focus_no)
-        ctx_add_key_binding (itk->ctx, "return", NULL, NULL, print_curr, (void*)((size_t)i));
+      {
+        viewer_load_path (newpath);
+
+        ctx_add_key_binding (ctx, "return", NULL, NULL, print_curr, (void*)((size_t)i));
+      }
+      free (newpath);
+
       itk_labelf (itk, "%s\n", files->namelist[i]->d_name);
       itk_sameline (itk);
       itk->x = itk->x0 + itk_em (itk) * 10;
