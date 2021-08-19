@@ -1736,8 +1736,13 @@ void itk_key_up (CtxEvent *event, void *data, void *data2)
 
 #define ITK_SPACE_WARP 1.5
 #define POW2(a) ((a)*(a))
-      float dist = sqrtf ( POW2(candidate->x - control->x) * ITK_SPACE_WARP +
+#define ITK_SPACE_MATCH_WARP 0.4
+
+      float dist = sqrtf ( POW2((candidate->x - control->x) * ITK_SPACE_WARP) +
                            POW2(candidate->y - control->y));
+
+      if (candidate->x - control->x == 0) dist *= ITK_SPACE_MATCH_WARP;
+
       if ((candidate != control) && 
           (dist < best_dist) &&
           (candidate->y < control->y))
@@ -1784,8 +1789,9 @@ void itk_key_down (CtxEvent *event, void *data, void *data2)
     for (CtxList *iter = itk->controls; iter; iter=iter->next)
     {
       CtxControl *candidate = iter->data;
-      float dist = sqrtf ( POW2(candidate->x - control->x) * ITK_SPACE_WARP +
+      float dist = sqrtf ( POW2((candidate->x - control->x) * ITK_SPACE_WARP) +
                            POW2(candidate->y - control->y));
+      if (candidate->x - control->x == 0) dist *= ITK_SPACE_MATCH_WARP;
       if ((candidate != control) && 
           (dist < best_dist) &&
           (candidate->y > control->y))
@@ -1932,7 +1938,8 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
     {
       CtxControl *candidate = iter->data;
       float dist = sqrtf ( POW2(candidate->x - control->x)  +
-                           POW2(candidate->y - control->y) * ITK_SPACE_WARP);
+                           POW2((candidate->y - control->y) * ITK_SPACE_WARP));
+      if (candidate->y == control->y) dist *= ITK_SPACE_MATCH_WARP;
 
       if ((candidate != control) && 
           (dist < best_dist) &&
@@ -1992,7 +1999,8 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
     {
       CtxControl *candidate = iter->data;
       float dist = sqrtf ( POW2(candidate->x - control->x)  +
-                           POW2(candidate->y - control->y) * ITK_SPACE_WARP);
+                           POW2((candidate->y - control->y) * ITK_SPACE_WARP));
+      if (candidate->y == control->y) dist *= ITK_SPACE_MATCH_WARP;
 #undef POW2
       if ((candidate != control) && 
           (dist < best_dist) &&
