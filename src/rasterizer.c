@@ -1258,7 +1258,6 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   int *edges  = rasterizer->edges;
   int scanline        = rasterizer->scanline;
-  int bpp             = rasterizer->format->bpp/8;
   int active_edges    = rasterizer->active_edges;
   int parity        = 0;
 
@@ -1766,7 +1765,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
   for (; rasterizer->scanline <= scan_end;)
     {
-      int aa = 0;
+      int aa = 1;
       if (rasterizer->needs_aa3 && real_aa >=3)
       {
         aa = 3;
@@ -1790,6 +1789,12 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       ctx_rasterizer_increment_edges (rasterizer, CTX_FULL_AA);
       ctx_rasterizer_feed_edges (rasterizer, 0);
 
+#if CTX_SHAPE_CACHE
+      if (shape)
+        {
+          coverage += shape->width;
+        }
+#endif
       dst += blit_stride;
       rasterizer->prev_active_edges = rasterizer->active_edges;
       continue;
@@ -1817,15 +1822,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       rasterizer->prev_active_edges = rasterizer->active_edges;
       continue;
     }
-    else if (avoid_direct && aa < 3)
-    {
-      ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
-      ctx_rasterizer_feed_edges (rasterizer, 0);
-
-      memset (coverage, 0, coverage_size);
-      ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
-      ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
-    }
     else if (!avoid_direct && ctx_rasterizer_is_simple (rasterizer))
     {
       ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
@@ -1837,6 +1833,15 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
       dst += blit_stride;
       rasterizer->prev_active_edges = rasterizer->active_edges;
       continue;
+    }
+    else if (avoid_direct && aa < 3)
+    {
+      ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
+      ctx_rasterizer_feed_edges (rasterizer, 0);
+
+      memset (coverage, 0, coverage_size);
+      ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, fill_rule);
+      ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
     }
     else if (avoid_direct && ctx_rasterizer_is_simple (rasterizer))
     {
