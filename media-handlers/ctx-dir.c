@@ -171,7 +171,7 @@ static int ctx_path_is_dir (const char *path)
 }
 
 ITK *itk = NULL;
-static void print_curr (CtxEvent *e, void *d1, void *d2)
+static void item_activate (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
 
@@ -240,7 +240,7 @@ static void files_list (ITK *itk, Files *files)
       {
         viewer_load_path (newpath);
 
-        ctx_add_key_binding (ctx, "return", NULL, NULL, print_curr, (void*)((size_t)i));
+        ctx_add_key_binding (ctx, "return", NULL, NULL, item_activate, (void*)((size_t)i));
       }
       free (newpath);
 
@@ -395,7 +395,7 @@ static void files_grid (ITK *itk, Files *files)
         focused = 1;
         viewer_load_path (newpath);
 
-        ctx_add_key_binding (ctx, "return", NULL, NULL, print_curr, (void*)((size_t)i));
+        ctx_add_key_binding (ctx, "return", NULL, NULL, item_activate, (void*)((size_t)i));
       }
 
       ctx_begin_path (ctx);
@@ -524,9 +524,10 @@ extern float font_size;
 int  ctx_clients_draw (Ctx *ctx);
 void ctx_clients_handle_events (Ctx *ctx);
 
+static char *loaded_path = NULL;
+
 void viewer_load_path (const char *path)
 {
-  static char *loaded_path = NULL;
   if (path && loaded_path && !strcmp (loaded_path, path))
   {
     return;
@@ -686,6 +687,10 @@ static int card_files (ITK *itk_, void *data)
     //ctx_set_dirty (ctx, 1);
     ctx_clients_handle_events (ctx);
   }
+
+  itk_panel_start (itk, "prop", ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*4);
+  itk_labelf (itk, "foo %s", loaded_path);
+  itk_panel_end (itk);
 
   return 0;
 }
