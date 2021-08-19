@@ -1160,6 +1160,19 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 dst_pix++;
               }
             }
+            else if (rasterizer->comp_op == ctx_RGBA8_source_copy_normal_fragment)
+            {
+              float u0 = 0; float v0 = 0;
+              float ud = 0; float vd = 0;
+              uint8_t gs = graystart;
+              ctx_rasterizer_apply_coverage (rasterizer,
+                          &dst[(first * bpp)],
+                          first,
+                          &gs,
+                          1);
+              ctx_init_uv (rasterizer, first+1, last-first-1, &u0, &v0, &ud, &vd);
+              rasterizer->fragment (rasterizer, u0, v0, &dst[(first+1)*bpp], last-first-1, ud, vd);
+            }
             else
             {
               rasterizer->opaque[0] = graystart;
