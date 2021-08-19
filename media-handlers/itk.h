@@ -1587,8 +1587,21 @@ void itk_set_focus (ITK *itk, int pos)
 {
    if (itk->focus_no != pos)
    {
-     entry_commit (itk);
      itk->focus_no = pos;
+     if (itk->focus_label){
+       free (itk->focus_label);
+       itk->focus_label = NULL;
+     }
+
+     int n_controls = ctx_list_length (itk->controls);
+     CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
+     if (iter)
+     {
+       CtxControl *control = iter->data;
+       if (control->label)
+         itk->focus_label = strdup (control->label);
+     }
+     entry_commit (itk);
      ctx_set_dirty (itk->ctx, 1);
    }
 }
@@ -1651,12 +1664,10 @@ void itk_focus (ITK *itk, int dir)
      return;
    }
    itk->focus_no += dir;
-#if 1
    if (itk->focus_label){
      free (itk->focus_label);
      itk->focus_label = NULL;
    }
-#endif
 
    int n_controls = ctx_list_length (itk->controls);
    CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
@@ -1736,7 +1747,7 @@ void itk_key_up (CtxEvent *event, void *data, void *data2)
       }
     }
     entry_commit (itk);
-    itk->focus_no = best->no;
+    itk_set_focus (itk, best->no);
     itk->active = 0;
   }
   ctx_set_dirty (event->ctx, 1);
@@ -1784,7 +1795,7 @@ void itk_key_down (CtxEvent *event, void *data, void *data2)
       }
     }
     entry_commit (itk);
-    itk->focus_no = best->no;
+    itk_set_focus (itk, best->no);
     itk->active = 0;
   }
   event->stop_propagate = 1;
@@ -1932,7 +1943,7 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
       }
     }
     entry_commit (itk);
-    itk->focus_no = best->no;
+    itk_set_focus (itk, best->no);
     itk->active = 0;
   }
 
@@ -1992,7 +2003,7 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
       }
     }
     entry_commit (itk);
-    itk->focus_no = best->no;
+    itk_set_focus (itk, best->no);
     itk->active = 0;
   }
 
