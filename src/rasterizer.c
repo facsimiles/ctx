@@ -2021,6 +2021,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
 
   y0 = ctx_maxi (y0, rasterizer->blit_y);
   y1 = ctx_mini (y1, rasterizer->blit_y + rasterizer->blit_height);
+  rasterizer->scanline = y0 * CTX_FULL_AA;
   dst += (y0 - rasterizer->blit_y) * rasterizer->blit_stride;
   _ctx_setup_compositor (rasterizer);
 

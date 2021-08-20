@@ -586,18 +586,20 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
       ctx_texture (ctx, eid, 0, 0);// / (width/tex_width), y / (height/tex_height));
       //ctx_rgba (ctx, 1, 0,0,0.5);
 #if 1
-      ctx_matrix_translate (&matrix, -x, -y);
       if (clip_width > 0.0f)
       {
-        ctx_matrix_translate (&matrix, clip_x, clip_y);
-        ctx_matrix_scale (&matrix, width/clip_width, height/clip_height);
+              // XXX scale is not yet determined to be correct
+              // in relation to the translate!
+        ctx_matrix_scale (&matrix, clip_width/width, clip_height/height);
+        ctx_matrix_translate (&matrix, -clip_x, -clip_y);
       }
       else
       {
-        ctx_matrix_scale (&matrix, width/tex_width, height/tex_height);
+        ctx_matrix_scale (&matrix, tex_width/width, tex_height/height);
       }
+      ctx_matrix_translate (&matrix, x, y);
 #endif
-      ctx_matrix_invert (&matrix);
+      //ctx_matrix_invert (&matrix);
       ctx_source_transform_matrix (ctx, &matrix);
       //ctx_texture (ctx, eid, x / (width/tex_width), y / (height/tex_height));
       ctx_fill (ctx);
