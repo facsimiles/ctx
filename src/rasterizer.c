@@ -540,8 +540,6 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   }
   source->type = CTX_SOURCE_TEXTURE;
   source->texture.buffer = &rasterizer->texture_source->texture[no];
-  source->texture.x0 = 0;
-  source->texture.y0 = 0;
   ctx_matrix_identity (&source->set_transform);
   ctx_matrix_translate (&source->set_transform, x, y);
 }

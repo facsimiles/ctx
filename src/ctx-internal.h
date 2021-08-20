@@ -155,8 +155,6 @@ struct _CtxSource
     {
       uint8_t rgba[4]; // shares data with set color
       uint8_t pad;
-      float x0;
-      float y0;
       CtxBuffer *buffer;
     } texture;
     struct
