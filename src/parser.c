@@ -227,6 +227,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
       case CTX_APPLY_TRANSFORM:
+      case CTX_SOURCE_TRANSFORM:
       case CTX_RADIAL_GRADIENT:
         return 6;
       case CTX_STROKE_TEXT:
@@ -416,6 +417,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_text:           ret = CTX_TEXT; break;
           case CTX_identity:       ret = CTX_IDENTITY; break;
           case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
+          case CTX_sourceTransform: ret = CTX_SOURCE_TRANSFORM; break;
           case CTX_texture:        ret = CTX_TEXTURE; break;
           case CTX_defineTexture:  ret = CTX_DEFINE_TEXTURE; break;
 #if 0
