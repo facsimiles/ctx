@@ -2255,6 +2255,115 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
            ctx_rasterizer_reset (rasterizer);
            goto done;
          }
+        else
+         {
+           float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
+           float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
+           float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
+           float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
+
+           x0 = ctx_maxf (x0, rasterizer->blit_x);
+           y0 = ctx_maxf (y0, rasterizer->blit_y);
+           x1 = ctx_minf (x1, rasterizer->blit_x + rasterizer->blit_width);
+           y1 = ctx_minf (y1, rasterizer->blit_y + rasterizer->blit_height);
+
+           uint8_t left = 255-ctx_fmod1f (x0) * 255;
+           uint8_t top  = 255-ctx_fmod1f (y0) * 255;
+           uint8_t right  = ctx_fmod1f (x1) * 255;
+           uint8_t bottom = ctx_fmod1f (y1) * 255;
+
+           x0 = ctx_floorf (x0);
+           y0 = ctx_floorf (y0);
+           x1 = ctx_floorf (x1+7/8.0f);
+           y1 = ctx_floorf (y1+14/15.0f);
+
+           int has_top    = (top < 255);
+           int has_bottom = (bottom <255);
+           int has_right  = (right >0);
+           int has_left   = (left >0);
+
+           int width = x1 - x0;
+
+           if (CTX_LIKELY(width >0))
+           {
+              uint8_t *dst = ( (uint8_t *) rasterizer->buf);
+              uint8_t coverage[width+2];
+              dst += (((int)y0) - rasterizer->blit_y) * rasterizer->blit_stride;
+              dst += ((int)x0) * rasterizer->format->bpp/8;
+
+              if (has_top)
+              {
+                int i = 0;
+                if (has_left)
+                {
+                  coverage[i++] = top * left / 255;
+                }
+                for (int x = x0 + has_left; x < x1 - has_right; x++)
+                  coverage[i++] = top;
+                coverage[i++]= top * right / 255;
+
+                  ctx_rasterizer_apply_coverage (rasterizer,dst,
+                                                 x0,
+                                                 coverage, width);
+                 dst += rasterizer->blit_stride;
+               }
+
+#if 0
+           if (!(
+            (rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_COPY||
+             rasterizer->state->gstate.compositing_mode == CTX_COMPOSITE_SOURCE_OVER) &&
+             rasterizer->state->gstate.blend_mode == CTX_BLEND_NORMAL &&
+             rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR
+             ))
+           {
+             int i = 0;
+             if (has_left)
+             {
+               coverage[i++] = left;
+             }
+             for (int x = x0 + has_left; x < x1 - has_right; x++)
+               coverage[i++] = 255;
+             coverage[i++] = right;
+
+             for (int ty = y0+has_top; ty < y1-has_bottom; ty++)
+             {
+               ctx_rasterizer_apply_coverage (rasterizer, dst, x0, coverage, width);
+               dst += rasterizer->blit_stride;
+             }
+           }
+           else
+#endif
+           {
+             if (has_left)
+               ctx_rasterizer_fill_rect (rasterizer, x0, y0 + has_top, x0+1, y1 - has_bottom, left);
+             if (has_right)
+               ctx_rasterizer_fill_rect (rasterizer, x1-1, y0 + has_top, x1, y1 - has_bottom, right);
+             x0 += has_left;
+             y0 += has_top;
+             y1 -= has_bottom;
+             x1 -= has_right;
+             ctx_rasterizer_fill_rect (rasterizer, x0,y0,x1,y1,255);
+
+             dst += rasterizer->blit_stride * ((((int)y1)-has_bottom) - (((int)y0)+has_top));
+           }
+
+           if (has_bottom)
+           {
+             int i = 0;
+             if (has_left)
+               coverage[i++] = bottom * left / 255;
+             for (int x = x0 + has_left; x < x1 - has_right; x++)
+               coverage[i++] = bottom;
+             coverage[i++]= bottom * right / 255;
+
+             ctx_rasterizer_apply_coverage (rasterizer,dst, x0, coverage, width);
+           }
+           }
+
+           ctx_rasterizer_reset (rasterizer);
+           goto done;
+         }
+
        }
     }
 #endif
