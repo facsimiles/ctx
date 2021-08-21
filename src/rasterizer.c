@@ -2131,7 +2131,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     }
     else if (compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
     {
-      uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[2];
+      uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[3];
       uint32_t si_rb_full = ((uint32_t*)rasterizer->color)[4];
       uint32_t si_a  = alpha;
 
