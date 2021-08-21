@@ -1166,28 +1166,16 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               float u0 = 0; float v0 = 0;
               float ud = 0; float vd = 0;
               uint8_t gs = graystart;
-              ctx_rasterizer_apply_coverage (rasterizer,
-                          &dst[(first * bpp)],
-                          first,
-                          &gs,
-                          1);
+              ctx_RGBA8_source_copy_normal_fragment (rasterizer, &dst[(first * bpp)], NULL, first, &gs, 1);
               ctx_init_uv (rasterizer, first+1, last-first-1, &u0, &v0, &ud, &vd);
               rasterizer->fragment (rasterizer, u0, v0, &dst[(first+1)*bpp], last-first-1, ud, vd);
             }
             else if (rgba8_source_over)
             {
               uint8_t gs = graystart;
-              ctx_rasterizer_apply_coverage (rasterizer,
-                          &dst[(first * bpp)],
-                          first,
-                          &gs,
-                          1);
+              ctx_RGBA8_source_over_normal_fragment (rasterizer, &dst[(first * bpp)], NULL, first, &gs, 1);
               ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
-                              &dst[((first+1)*bpp)],
-                              NULL,
-                              first + 1,
-                              NULL,
-                              last-first-1);
+                                                     &dst[((first+1)*bpp)], NULL, first + 1, NULL, last-first-1);
             }
             else
             {
@@ -1195,10 +1183,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               memset (opaque, 255, sizeof (opaque));
               opaque[0] = graystart;
               ctx_rasterizer_apply_coverage (rasterizer,
-                          &dst[(first * bpp)],
-                          first,
-                          opaque,
-                          last-first);
+                                             &dst[(first * bpp)], first, opaque, last-first);
             }
             accumulated = grayend;
           }
@@ -1210,23 +1195,22 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
         }
    }
 
-    if (accumulated)
-    {
-      uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
-      if (fast_source_copy)
-      {
-        *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, accumulated);
-      }
-      else if (fast_source_over)
-      {
-        *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, accumulated);
-      }
-      else
-      {
-        ctx_rasterizer_apply_coverage (rasterizer, (uint8_t*)dst_pix, accumulator_x, &accumulated, 1);
-      }
-      accumulated = 0;
-    }
+   if (accumulated)
+   {
+     uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
+     if (fast_source_copy)
+     {
+       *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, accumulated);
+     }
+     else if (fast_source_over)
+     {
+       *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, accumulated);
+     }
+     else
+     {
+       ctx_rasterizer_apply_coverage (rasterizer, (uint8_t*)dst_pix, accumulator_x, &accumulated, 1);
+     }
+   }
 }
 
 inline static int ctx_rasterizer_is_simple (CtxRasterizer *rasterizer)
