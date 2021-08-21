@@ -408,12 +408,14 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x1, float y1,
                          float x2, float y2)
 {
-  float tolerance =
-    2.0f/(ctx_pow2 (rasterizer->state->gstate.transform.m[0][0]) +
-    ctx_pow2 (rasterizer->state->gstate.transform.m[1][1]));
-  //float tolerance = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  //float tolerance =
+  //  1.0f*(ctx_pow2 (rasterizer->state->gstate.transform.m[0][0]) +
+  //  ctx_pow2 (rasterizer->state->gstate.transform.m[1][1]));
+  float tolerance = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   float ox = rasterizer->x;
   float oy = rasterizer->y;
+  //tolerance *= tolerance;
+  tolerance = 2.0/(tolerance*tolerance);
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
   //tolerance = 10.0/(tolerance*tolerance);
@@ -1632,14 +1634,15 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 dst_pix++;
               }
             }
-            else if (last-first-pre>0)
+            else if (last-first-pre-post+1>0)
             {
+              int width = last-first-pre-post+1;
               if (rgba8_source_copy)
               {
                 float u0 = 0; float v0 = 0;
                 float ud = 0; float vd = 0;
-                ctx_init_uv (rasterizer, first+pre, last-first-pre, &u0, &v0, &ud, &vd);
-                rasterizer->fragment (rasterizer, u0, v0, &dst[(first+pre)*bpp], last-first-pre, ud, vd);
+                ctx_init_uv (rasterizer, first+pre, width, &u0, &v0, &ud, &vd);
+                rasterizer->fragment (rasterizer, u0, v0, &dst[(first+pre)*bpp],                                      width, ud, vd);
               }
               else if (rgba8_source_over)
               {
@@ -1648,17 +1651,17 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                                NULL,
                                first + pre,
                                NULL,
-                               last-first-pre);
+                               width);
               }
               else
               {
-                uint8_t opaque[last-first-pre];
+                uint8_t opaque[width];
                 memset (opaque, 255, sizeof (opaque));
                 ctx_rasterizer_apply_coverage (rasterizer,
                             &dst[((first + pre) * bpp)],
                             first + pre,
                             opaque,
-                            last-first-pre);
+                            width);
               }
             }
           }
@@ -1667,7 +1670,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             coverage[last]+=(graystart-(255-grayend));
 
             accumulated_x1 = last;
-            accumulated_x0 = ctx_maxi (accumulated_x0, last);
+            accumulated_x0 = ctx_mini (accumulated_x0, last);
           }
         }
    }
