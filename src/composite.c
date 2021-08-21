@@ -2590,6 +2590,9 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   int components       = 4;
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   rasterizer->comp_op  = ctx_RGBA8_porter_duff_generic;
+  int type             = gstate->source_fill.type;
+  int blend_mode       = gstate->blend_mode;
+  int compositing_mode = gstate->compositing_mode;
 
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
@@ -2611,31 +2614,31 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       ((uint32_t*)rasterizer->color)[3] = si_ga_full;
       ((uint32_t*)rasterizer->color)[4] = si_rb_full;
 
-      if (gstate->blend_mode == CTX_BLEND_NORMAL &&
-           gstate->compositing_mode == CTX_COMPOSITE_COPY)
+      if (blend_mode == CTX_BLEND_NORMAL &&
+           compositing_mode == CTX_COMPOSITE_COPY)
       {
         rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
       }
-      else if (gstate->blend_mode == CTX_BLEND_NORMAL &&
-          gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+      else if (blend_mode == CTX_BLEND_NORMAL &&
+          compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
      {
        if (rasterizer->color[components-1] == 255)
         rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
        else
         rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
      }
-     else if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
+     else if (compositing_mode == CTX_COMPOSITE_CLEAR)
      {
        rasterizer->comp_op = ctx_RGBA8_clear_normal;
      }
   }
-  else if (gstate->blend_mode == CTX_BLEND_NORMAL &&
-           gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+  else if (blend_mode == CTX_BLEND_NORMAL &&
+           compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
   {
      rasterizer->comp_op = ctx_RGBA8_source_over_normal_fragment;
   }
-  else if (gstate->blend_mode == CTX_BLEND_NORMAL &&
-           gstate->compositing_mode == CTX_COMPOSITE_COPY)
+  else if (blend_mode == CTX_BLEND_NORMAL &&
+           compositing_mode == CTX_COMPOSITE_COPY)
   {
      rasterizer->comp_op = ctx_RGBA8_source_copy_normal_fragment;
   }
