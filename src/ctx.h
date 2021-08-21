@@ -75,6 +75,7 @@ enum _CtxPixelFormat
   CTX_FORMAT_CMYKA8, //16 
   CTX_FORMAT_CMYKAF, //17
   CTX_FORMAT_YUV420, //18
+  CTX_FORMAT_RGBA8_SEPARATE_ALPHA, // 19
 };
 typedef enum   _CtxPixelFormat CtxPixelFormat;
 
@@ -88,10 +89,6 @@ typedef struct _CtxGlyph       CtxGlyph;
  * render contexts.
  */
 Ctx *ctx_new (void);
-
-
-
-
 
 /**
  * ctx_new_for_framebuffer:
