@@ -1411,6 +1411,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
   int rgba8_source_copy = (rasterizer->comp_op == ctx_RGBA8_source_copy_normal_fragment);
   int rgba8_source_over = (rasterizer->comp_op == ctx_RGBA8_source_over_normal_fragment);
   uint32_t src_pix    = ((uint32_t*)rasterizer->color)[0];
+  uint32_t si_ga      = ((uint32_t*)rasterizer->color)[1];
+  uint32_t si_rb      = ((uint32_t*)rasterizer->color)[2];
   uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[3];
   uint32_t si_rb_full = ((uint32_t*)rasterizer->color)[4];
   uint32_t si_a  = src_pix >> 24;
@@ -1512,6 +1514,25 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               accumulated_x1-accumulated_x0+1>0
                           )
           {
+             if (fast_source_over)
+             {
+               uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+               for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+               {
+                 *dst_i = ctx_over_RGBA8_2 (*dst_i, si_ga, si_rb, si_a, coverage[accumulated_x0+i]);
+                 dst_i++;
+               }
+             }
+      else if (fast_source_copy)
+      {
+        uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+        for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+        {
+          *dst_i = ctx_lerp_RGBA8_2 (*dst_i, si_ga, si_rb, coverage[accumulated_x0+i]);
+          dst_i++;
+        }
+      }
+             else
              ctx_rasterizer_apply_coverage (rasterizer,
                           &dst[((accumulated_x0) * bpp)],
                           accumulated_x0,
@@ -1525,6 +1546,25 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 
    if (accumulated_x0 != 65536 && accumulated_x1-accumulated_x0+1>0)
           {
+             if (fast_source_over)
+             {
+               uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+               for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+               {
+                 *dst_i = ctx_over_RGBA8_2 (*dst_i, si_ga, si_rb, si_a, coverage[accumulated_x0+i]);
+                 dst_i++;
+               }
+             }
+      else if (fast_source_copy)
+      {
+        uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+        for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+        {
+          *dst_i = ctx_lerp_RGBA8_2 (*dst_i, si_ga, si_rb, coverage[accumulated_x0+i]);
+          dst_i++;
+        }
+      }
+             else
              ctx_rasterizer_apply_coverage (rasterizer,
                           &dst[((accumulated_x0) * bpp)],
                           accumulated_x0,
@@ -1634,6 +1674,25 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 
    if (accumulated_x0 != 65536 && accumulated_x1-accumulated_x0+1>0)
    {
+      if (fast_source_over)
+      {
+        uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+        for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+        {
+          *dst_i = ctx_over_RGBA8_2 (*dst_i, si_ga, si_rb, si_a, coverage[accumulated_x0+i]);
+          dst_i++;
+        }
+      }
+      else if (fast_source_copy)
+      {
+        uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+        for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+        {
+          *dst_i = ctx_lerp_RGBA8_2 (*dst_i, si_ga, si_rb, coverage[accumulated_x0+i]);
+          dst_i++;
+        }
+      }
+      else
       ctx_rasterizer_apply_coverage (rasterizer,
                    &dst[((accumulated_x0) * bpp)],
                    accumulated_x0,
