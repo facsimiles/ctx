@@ -54,6 +54,7 @@ ctx_RGBA8_associate_alpha_probably_opaque (uint8_t *u8)
 CTX_INLINE static uint32_t ctx_bi_RGBA8 (uint32_t isrc00, uint32_t isrc01, uint32_t isrc10, uint32_t isrc11, uint8_t dx, uint8_t dy)
 {
 #if 0
+#if 0
   uint8_t ret[4];
   uint8_t *src00 = (uint8_t*)&isrc00;
   uint8_t *src10 = (uint8_t*)&isrc10;
@@ -69,6 +70,12 @@ CTX_INLINE static uint32_t ctx_bi_RGBA8 (uint32_t isrc00, uint32_t isrc01, uint3
   return ctx_lerp_RGBA8 (ctx_lerp_RGBA8 (isrc00, isrc01, dx),
                          ctx_lerp_RGBA8 (isrc10, isrc11, dx), dy);
 #endif
+#else
+  uint32_t s0_ga, s0_rb, s1_ga, s1_rb;
+  ctx_lerp_RGBA8_split (isrc00, isrc01, dx, &s0_ga, &s0_rb);
+  ctx_lerp_RGBA8_split (isrc10, isrc11, dx, &s1_ga, &s1_rb);
+  return ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, dy);
+#endif
 }
 
 #if CTX_GRADIENTS
@@ -79,7 +86,7 @@ extern int ctx_gradient_cache_valid;
 
 inline static int ctx_grad_index (float v)
 {
-  int ret = v * (CTX_GRADIENT_CACHE_ELEMENTS - 1.0f) + 0.5f;
+  int ret = v * (CTX_GRADIENT_CACHE_ELEMENTS - 1) + 0.5f;
   if (CTX_UNLIKELY(ret >= CTX_GRADIENT_CACHE_ELEMENTS))
     return CTX_GRADIENT_CACHE_ELEMENTS - 1;
   if (CTX_LIKELY(ret >= 0 && ret < CTX_GRADIENT_CACHE_ELEMENTS))
@@ -1083,57 +1090,8 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   CtxBuffer *buffer = g->texture.buffer->color_managed;
   int bwidth = buffer->width;
   int bheight = buffer->height;
+  int stride = buffer->stride;
   int i = 0;
-
-    int u0 = x;
-    int v0 = y;
-    int u1 = x + dx * (count-1);
-    int v1 = y + dy * (count-1);
-
-    if (u0 >= 0 && v0 >= 0 && u0 < bwidth && v0 < bheight &&
-        u1 >= 0 && v1 >= 0 && u1 < bwidth && v1 < bheight)
-    {
-            for (i = 0; i < count;i++)
-            {
-  int u = x;
-  int v = y;
-    {
-      int bpp = 4;
-      int stride = buffer->stride;
-      uint8_t *src00 = ((uint8_t *) buffer->data) + v * stride + u * bpp;
-      uint8_t *src01 = src00 + bpp * (u + 1 < bwidth);
-      int got_next_row = ( v + 1 < bheight);
-      uint8_t *src11 = src01 + stride * got_next_row;
-      uint8_t *src10 = src00 + stride * got_next_row;
-
-      float dx = (x-(int)(x)) * 255.9;
-      float dy = (y-(int)(y)) * 255.9;
-#if 1
-      ((uint32_t*)(&rgba[0]))[0] =
-              ctx_bi_RGBA8 (((uint32_t*)src00)[0], ((uint32_t*)src01)[0],
-                            ((uint32_t*)src10)[0], ((uint32_t*)src11)[0], dx, dy);
-
-#else
-      for (int c = 0; c < bpp; c++)
-      {
-        rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
-                               ctx_lerp_u8 (src10[c], src11[c], dx), dy);
-      }
-#endif
-    }
-#if CTX_DITHER
-//ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
-//                    rasterizer->format->dither_green);
-#endif
-      //ctx_RGBA8_associate_alpha_probably_opaque (rgba);
-
-    x += dx;
-    y += dy;
-    rgba += 4;
-    }
-            return;
-    }
-
 
     for (i= 0; i < count; i ++)
     {
@@ -1156,6 +1114,93 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
       y += dy;
       rgba += 4;
     }
+
+  if (dy == 0.0f)
+  {
+
+  int v = y;
+  int vt = y + 1.5;
+  int got_prev_row = (v>=0);
+  int got_next_row = ( v + 1 < bheight);
+  float dv = (y-(int)(y)) * 255.9;
+  uint8_t *data = ((uint8_t*)buffer->data) + v * stride;
+
+
+  if (!(vt  <= 0 || v >= buffer->height))
+  for (; i < count; i ++)
+  {
+  int u = x;
+  int ut = x + 1.5;
+  float du = (x-(int)(x)) * 255.9;
+  //uint32_t s00, s01, s10, s11;
+  uint32_t s0_ga, s0_rb, s1_ga, s1_rb;
+
+  int loaded = -5;
+  if (CTX_UNLIKELY( u >= buffer->width || ut  <= 0))
+    {
+      break;
+    }
+  else if (u < 0 || v < 0) // default to next sample down and to right
+  {
+      int bpp        = 4;
+      uint8_t *src11 = (uint8_t *) data + 1 * stride + (u+1) * bpp;
+      int got_prev_pix = (u >= 0);
+      uint8_t *src10 = src11;
+      src10 = src11 - bpp * got_prev_pix;
+      uint8_t *src01 = src11 - stride * got_prev_row;
+      uint8_t *src00 = src10 - stride * got_prev_row;
+      uint32_t s00 = ((uint32_t*)src00)[0];
+      uint32_t s01 = ((uint32_t*)src01)[0];
+      uint32_t s10 = ((uint32_t*)src10)[0];
+      uint32_t s11 = ((uint32_t*)src11)[0];
+      ctx_lerp_RGBA8_split (s00, s10, dv, &s0_ga, &s0_rb);
+      ctx_lerp_RGBA8_split (s01, s11, dv, &s0_ga, &s0_rb);
+      loaded = u;
+  }
+  else if (loaded + 1 == u)
+  {
+      int bpp = 4;
+      int got_next_pix = (u + 1 < bwidth);
+      uint8_t *src00 = ((uint8_t *) data) + u * bpp;
+      uint8_t *src01 = src00 + bpp * got_next_pix;
+      uint8_t *src11 = src01 + stride * got_next_row;
+      uint8_t *src10 = src00 + stride * got_next_row;
+      uint32_t s01 = ((uint32_t*)src01)[0];
+      uint32_t s11 = ((uint32_t*)src11)[0];
+      s0_ga = s1_ga;
+      s0_rb = s1_rb;
+      ctx_lerp_RGBA8_split (s01, s11, dv, &s0_ga, &s0_rb);
+      loaded = u;
+  }
+  else if (loaded != u)
+  {
+      int bpp = 4;
+      int got_next_pix = (u + 1 < bwidth);
+      uint8_t *src00 = ((uint8_t *) data) + u * bpp;
+      uint8_t *src01 = src00 + bpp * got_next_pix;
+      uint8_t *src11 = src01 + stride * got_next_row;
+      uint8_t *src10 = src00 + stride * got_next_row;
+      uint32_t s00 = ((uint32_t*)src00)[0];
+      uint32_t s01 = ((uint32_t*)src01)[0];
+      uint32_t s10 = ((uint32_t*)src10)[0];
+      uint32_t s11 = ((uint32_t*)src11)[0];
+      ctx_lerp_RGBA8_split (s00, s10, dv, &s0_ga, &s0_rb);
+      ctx_lerp_RGBA8_split (s01, s11, dv, &s0_ga, &s0_rb);
+      loaded = u;
+    }
+
+    ((uint32_t*)(&rgba[0]))[0] = ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, du);
+
+    x += dx;
+    rgba += 4;
+  }
+
+  }
+  else
+  {
+
+  uint32_t *data = ((uint32_t*)buffer->data);
+
   for (; i < count; i ++)
   {
   int u = x;
@@ -1172,70 +1217,41 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     }
   else if (u < 0 || v < 0) // default to next sample down and to right
   {
-      int bpp        = 4;
-      uint8_t *src11 = (uint8_t *) buffer->data;
-      int stride     = buffer->stride;
-      src11          += (v+1) * stride + (u+1) * bpp;
-      uint8_t *src10 = src11;
       int got_prev_pix = (u >= 0);
-      src10 = src11 - bpp * got_prev_pix;
       int got_prev_row = (v>=0);
-      uint8_t *src01 = src11 - stride * got_prev_row;
-      uint8_t *src00 = src10 - stride * got_prev_row;
+      uint32_t *src11 = data  + (v+1) * bwidth + (u+1);
+      uint32_t *src10 = src11 - got_prev_pix;
+      uint32_t *src01 = src11 - bwidth * got_prev_row;
+      uint32_t *src00 = src10 - bwidth * got_prev_row;
       float dx = (x-(int)(x)) * 255.9;
       float dy = (y-(int)(y)) * 255.9;
-#if 1
       ((uint32_t*)(&rgba[0]))[0] =
               ctx_bi_RGBA8 (((uint32_t*)src00)[0], ((uint32_t*)src01)[0],
                             ((uint32_t*)src10)[0], ((uint32_t*)src11)[0], dx, dy);
 
-#else
-      for (int c = 0; c < bpp; c++)
-      {
-        rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
-                               ctx_lerp_u8 (src10[c], src11[c], dx), dy);
-      }
-#endif
-#if CTX_DITHER
-//ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
-//                    rasterizer->format->dither_green);
-#endif
-      //ctx_RGBA8_associate_alpha_probably_opaque (rgba);
-      //*((uint32_t*)(rgba))= 0;
   }
   else
     {
-      int bpp = 4;
-      int stride = buffer->stride;
-      uint8_t *src00 = ((uint8_t *) buffer->data) + v * stride + u * bpp;
-      uint8_t *src01 = src00 + bpp * (u + 1 < bwidth);
       int got_next_row = ( v + 1 < bheight);
-      uint8_t *src11 = src01 + stride * got_next_row;
-      uint8_t *src10 = src00 + stride * got_next_row;
+      int got_next_pix = (u + 1 < bwidth);
+      uint32_t *src00 = data  + v * bwidth + u;
+      uint32_t *src01 = src00 + got_next_pix;
+      uint32_t *src11 = src01 + bwidth * got_next_row;
+      uint32_t *src10 = src00 + bwidth * got_next_row;
       float dx = (x-(int)(x)) * 255.9;
       float dy = (y-(int)(y)) * 255.9;
-#if 0
-      for (int c = 0; c < bpp; c++)
-      {
-        rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
-                               ctx_lerp_u8 (src10[c], src11[c], dx), dy);
-      }
-#else
       ((uint32_t*)(&rgba[0]))[0] =
               ctx_bi_RGBA8 (((uint32_t*)src00)[0], ((uint32_t*)src01)[0],
                             ((uint32_t*)src10)[0], ((uint32_t*)src11)[0], dx, dy);
-#endif
-#if CTX_DITHER
-//ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
-//                    rasterizer->format->dither_green);
-#endif
-      //ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
 
     x += dx;
     y += dy;
     rgba += 4;
   }
+
+  }
+
   for (; i < count; i ++)
   {
     *((uint32_t*)(rgba))= 0;
@@ -1535,17 +1551,12 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 
   u0 *= linear_gradient_dx;
   v0 *= linear_gradient_dy;
-  ud *= linear_gradient_dx;
-  vd *= linear_gradient_dy;
 
-  u0 *= linear_gradient_rdelta;
-  v0 *= linear_gradient_rdelta;
-  ud *= linear_gradient_rdelta;
-  vd *= linear_gradient_rdelta;
-  linear_gradient_start *= linear_gradient_rdelta;
+  float vv = ((u0 + v0) - linear_gradient_start) * linear_gradient_rdelta;
 
-  float vv = ((u0 + v0) - linear_gradient_start);
-  float ud_plus_vd = ud + vd;
+
+  float ud_plus_vd = (ud + vd) * linear_gradient_dy * linear_gradient_rdelta;
+
   for (int x = 0; x < count ; x++)
   {
   //    float vv = ((u0 + v0) - linear_gradient_start);

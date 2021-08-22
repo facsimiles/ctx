@@ -197,5 +197,12 @@ if [ `basename $0` == ctx.bash ];then
    moveTo 0 12%
    text "hello"
    endFrame
-   sleep 4
+   sleep 2
+   startFrame
+   rgba 1 1 1 1
+   fontSize 10%
+   moveTo 0 12%
+   text "this is ctx"
+   endFrame
+   sleep 3
 fi
