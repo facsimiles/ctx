@@ -1048,6 +1048,26 @@ ctx_over_RGBA8_full_2 (uint32_t dst, uint32_t si_ga_full, uint32_t si_rb_full, u
       (((si_ga_full) + (di_ga * rcov)) & 0xff00ff00);
 }
 
+static inline void ctx_span_set_color (uint32_t *dst_pix, uint32_t val, int count)
+{
+#if 0 // .. 21 ms srcopy solid fillrect
+  int len = 1;
+  if (count > 0)
+  {
+  dst_pix[0] = val;
+  while (len < count/2)
+  {
+    memcpy (&dst_pix[len], &dst_pix[0], len*4);
+    len*=2;
+  }
+  if (len < count)
+    memcpy (&dst_pix[len], dst_pix, (count-len)*4);
+  }
+#else // vs 16ms srcopy solid fillrectA
+  for (int i = 0; i < count; i++) dst_pix[i]=val;
+#endif
+}
+
 inline static void
 ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                                         int            minx,
@@ -1144,11 +1164,14 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, graystart);
 
               dst_pix++;
+              ctx_span_set_color (dst_pix, src_pix, last - first - 1);
+#if 0
               for (int i = first + 1; i < last; i++)
               {
                 *dst_pix = src_pix;
                 dst_pix++;
               }
+#endif
             }
             else if (fast_source_over)
             {
@@ -1378,6 +1401,7 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
 }
 
 
+
 inline static void
 ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                                          int            minx,
@@ -1602,11 +1626,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
               dst_pix+=pre;
-              for (int i = first + pre; i <= last - post; i++)
-              {
-                *dst_pix = src_pix;
-                dst_pix++;
-              }
+              ctx_span_set_color (dst_pix, src_pix, last-first-pre-post + 1);
             }
             else if (fast_source_over)
             {
@@ -2093,9 +2113,12 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     {
       if ((width == 1))
       {
+        uint32_t color;
+        memcpy(&color, rasterizer->color, 4);
         for (int y = y0; y < y1; y++)
         {
-          memcpy (&dst[0], rasterizer->color, 4);
+          uint32_t *dst_i = (uint32_t*)&dst[0];
+          *dst_i = color;
           dst += blit_stride;
         }
         return;
@@ -2107,10 +2130,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         for (int y = y0; y < y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
-          for (int i = 0; i < width; i++)
-          {
-            dst_i[i] = color;
-          }
+          ctx_span_set_color (dst_i, color, width);
           dst += blit_stride;
         }
         return;

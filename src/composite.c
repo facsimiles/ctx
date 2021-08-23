@@ -96,7 +96,6 @@ inline static int ctx_grad_index (float v)
 #endif
 
 
-
 CTX_INLINE static void
 _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
 {
