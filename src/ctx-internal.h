@@ -602,6 +602,13 @@ struct _CtxShapeCache
 
 typedef struct _CtxShapeCache CtxShapeCache;
 
+typedef enum {
+   CTX_COV_PATH_FALLBACK =0,
+   CTX_COV_PATH_OVER,
+   CTX_COV_PATH_COPY,
+   CTX_COV_PATH_COPY_FRAGMENT,
+   CTX_COV_PATH_OVER_FRAGMENT
+} CtxCovPath;
 
 struct _CtxRasterizer
 {
@@ -682,6 +689,8 @@ struct _CtxRasterizer
 #define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ coverage, int count
 
   void (*comp_op)(CTX_COMPOSITE_ARGUMENTS);
+  CtxCovPath  comp;
+
 #if CTX_ENABLE_CLIP
   CtxBuffer *clip_buffer;
 #endif

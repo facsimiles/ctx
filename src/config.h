@@ -22,10 +22,9 @@
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT3          (65536/CTX_SUBDIV/15)
 //#define CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA  (65536/CTX_SUBDIV/15)
 //#define CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA (120536/CTX_SUBDIV/15)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA (100000/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA (105000/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT5         (140425/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15        (260425/CTX_SUBDIV/15)
-
 
 #ifndef CTX_ONLY_FAST_AA
 #define CTX_ONLY_FAST_AA 0
@@ -512,7 +511,9 @@
 
 
 #define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
-
+                                        // increasing this to 2048
+                                        // removes artifacts in top half of res-diagram -
+                                        // but reduces maximum available buffer width
 #ifndef CTX_IMPLEMENTATION
 #define CTX_IMPLEMENTATION 0
 #else
