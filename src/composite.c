@@ -1087,8 +1087,8 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   uint32_t xi = x * 65536;
   int xi_delta = dx * 65536;
   int loaded = -4;
-  uint32_t s0_ga, s0_rb, s1_ga, s1_rb;
-
+  uint32_t s0_ga = 0, s0_rb = 0, s1_ga = 0, s1_rb = 0;
+ 
   int v = yi >> 16;
   data += bwidth * v;
   int dv = (yi >> 8) & 0xff;
@@ -1176,7 +1176,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   int xi_delta = dx * 65536;
 
   int loaded = -4;
-  uint32_t s00, s01, s10, s11;
+  uint32_t s00 = 0, s01 = 0, s10 = 0, s11 = 0;
 
   for (; i < count; i ++)
   {
