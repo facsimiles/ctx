@@ -875,9 +875,9 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
 
 #define UPDATE_PARITY \
         { int handle = (scanline!=CTX_EDGE_YMIN);\
-          if ((handle) && (fill_rule == CTX_FILL_RULE_WINDING)) \
+          if ((handle) & (fill_rule == CTX_FILL_RULE_WINDING)) \
              parity += -1+2*(segment->code == CTX_EDGE_FLIPPED);\
-          else if ((handle) | (fill_rule == CTX_FILL_RULE_EVEN_ODD))\
+          else if ((handle) & (fill_rule == CTX_FILL_RULE_EVEN_ODD))\
              parity = (1 - parity); \
         }
 
@@ -1850,11 +1850,11 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
       int needs_full_aa =
           (rasterizer->horizontal_edges!=0) 
-          || (rasterizer->active_edges != rasterizer->prev_active_edges
-          || (rasterizer->active_edges + rasterizer->pending_edges == rasterizer->ending_edges)
+          | (rasterizer->active_edges != rasterizer->prev_active_edges
+          | (rasterizer->active_edges + rasterizer->pending_edges == rasterizer->ending_edges)
           );
 
-    if (CTX_UNLIKELY (needs_full_aa))
+    if ((needs_full_aa))
     {
         int increment = CTX_FULL_AA/real_aa;
         memset (coverage, 0, coverage_size);
@@ -2049,7 +2049,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
 
   int width = x1 - x0;
 
-  if (CTX_UNLIKELY(width <=0 || cov == 0))
+  if (CTX_UNLIKELY(width <=0))
     return;
 
   CtxGState *gstate = &rasterizer->state->gstate;
@@ -2291,10 +2291,10 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       CtxSegment *entry2 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[2];
       CtxSegment *entry3 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[3];
 
-      if (!rasterizer->state->gstate.clipped &&
-          (entry0->data.s16[2] == entry1->data.s16[2]) &&
-          (entry0->data.s16[3] == entry3->data.s16[3]) &&
-          (entry1->data.s16[3] == entry2->data.s16[3]) &&
+      if (!rasterizer->state->gstate.clipped != 0 &
+          (entry0->data.s16[2] == entry1->data.s16[2]) &
+          (entry0->data.s16[3] == entry3->data.s16[3]) &
+          (entry1->data.s16[3] == entry2->data.s16[3]) &
           (entry2->data.s16[2] == entry3->data.s16[2])
 #if CTX_ENABLE_SHADOW_BLUR
            && !rasterizer->in_shadow
