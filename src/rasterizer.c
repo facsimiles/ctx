@@ -2301,9 +2301,9 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
          )
        {
-         if(((entry1->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
-            ((entry1->data.s16[3] % (CTX_FULL_AA)) == 0) &&
-            ((entry3->data.s16[2] % (CTX_SUBDIV))  == 0)  &&
+         if(((entry1->data.s16[2] % (CTX_SUBDIV))  == 0) &
+            ((entry1->data.s16[3] % (CTX_FULL_AA)) == 0) &
+            ((entry3->data.s16[2] % (CTX_SUBDIV))  == 0) &
             ((entry3->data.s16[3] % (CTX_FULL_AA)) == 0))
          {
            /* best-case axis aligned rectangle */
@@ -2318,10 +2318,10 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
          }
         else
          {
-           float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
-           float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
-           float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
-           float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
+           float x0 = entry3->data.s16[2] * (1.0f / CTX_SUBDIV);
+           float y0 = entry3->data.s16[3] * (1.0f / CTX_FULL_AA);
+           float x1 = entry1->data.s16[2] * (1.0f / CTX_SUBDIV);
+           float y1 = entry1->data.s16[3] * (1.0f / CTX_FULL_AA);
 
            x0 = ctx_maxf (x0, blit_x);
            y0 = ctx_maxf (y0, blit_y);
