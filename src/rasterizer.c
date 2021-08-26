@@ -870,6 +870,17 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
 #endif
 }
 
+#define CTX_EDGE(no)      entries[edges[no]]
+#define CTX_EDGE_YMIN     (segment->data.s16[1]-1)
+
+#define UPDATE_PARITY \
+        { int handle = (scanline!=CTX_EDGE_YMIN);\
+          if ((handle) && (fill_rule == CTX_FILL_RULE_WINDING)) \
+             parity += -1+2*(segment->code == CTX_EDGE_FLIPPED);\
+          else if ((handle) | (fill_rule == CTX_FILL_RULE_EVEN_ODD))\
+             parity = (1 - parity); \
+        }
+
 inline static void
 ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   int            minx,
@@ -885,18 +896,10 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
   int         parity       = 0;
   coverage -= minx;
   uint8_t fraction = 255/aa_factor;
-#define CTX_EDGE(no)      entries[edges[no]]
-#define CTX_EDGE_YMIN     segment->data.s16[1]-1
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment *segment = &entries[edges[t]];
-      if (scanline != CTX_EDGE_YMIN)
-        {
-          if (fill_rule == CTX_FILL_RULE_WINDING)
-             parity = (parity + ((segment->code == CTX_EDGE_FLIPPED) ?1:-1));
-          else
-             parity = (1 - parity);
-        }
+      UPDATE_PARITY;
 
       if (parity)
         {
@@ -951,13 +954,7 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment *segment = &entries[edges[t]];
-      if (scanline != CTX_EDGE_YMIN)
-        {
-          if (fill_rule == CTX_FILL_RULE_WINDING)
-             parity = (parity + ((segment->code == CTX_EDGE_FLIPPED) ?1:-1));
-          else
-             parity = (1 - parity);
-        }
+      UPDATE_PARITY;
 
        if (parity)
         {
@@ -1053,22 +1050,7 @@ ctx_over_RGBA8_full_2 (uint32_t dst, uint32_t si_ga_full, uint32_t si_rb_full, u
 
 static inline void ctx_span_set_color (uint32_t *dst_pix, uint32_t val, int count)
 {
-#if 0 // .. 21 ms srcopy solid fillrect
-  int len = 1;
-  if (count > 0)
-  {
-  dst_pix[0] = val;
-  while (len < count/2)
-  {
-    memcpy (&dst_pix[len], &dst_pix[0], len*4);
-    len*=2;
-  }
-  if (len < count)
-    memcpy (&dst_pix[len], dst_pix, (count-len)*4);
-  }
-#else // vs 16ms srcopy solid fillrectA
   for (int i = 0; i < count; i++) dst_pix[i]=val;
-#endif
 }
 
 inline static void
@@ -1099,13 +1081,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment *segment = &entries[edges[t]];
-      if (scanline != CTX_EDGE_YMIN)
-        {
-          if (fill_rule == CTX_FILL_RULE_WINDING)
-             parity = (parity + ((segment->code == CTX_EDGE_FLIPPED) ?1:-1));
-          else
-             parity = (1 - parity);
-        }
+      UPDATE_PARITY;
 
        if (parity)
         {
@@ -1294,13 +1270,7 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment   *segment = &entries[edges[t]];
-      if (scanline != CTX_EDGE_YMIN)
-        {
-          if (fill_rule == CTX_FILL_RULE_WINDING)
-             parity = (parity + ((segment->code == CTX_EDGE_FLIPPED) ?1:-1));
-          else
-             parity = (1 - parity);
-        }
+      UPDATE_PARITY;
 
        if (parity)
         {
@@ -1442,13 +1412,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment   *segment = &entries[edges[t]];
-      if (scanline != CTX_EDGE_YMIN)
-        {
-          if (fill_rule == CTX_FILL_RULE_WINDING)
-             parity = (parity + ((segment->code == CTX_EDGE_FLIPPED) ?1:-1));
-          else
-             parity = (1 - parity);
-        }
+      UPDATE_PARITY;
 
        if (parity)
         {
