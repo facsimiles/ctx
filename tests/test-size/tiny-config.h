@@ -4,9 +4,10 @@
 #define CTX_MATH            1
 #define CTX_LIMIT_FORMATS   1
 #define CTX_ENABLE_RGBA8    1
-#define CTX_ENABLE_RGB565_BS  1
+#define CTX_ENABLE_RGB565_BS  0
 #define CTX_ENABLE_CMYK     0
 #define CTX_ENABLE_CM       0
+#define CTX_NATIVE_GRAYA8   0
 #define CTX_PARSER          0
 #define CTX_MAX_TEXTURES    1
 #define CTX_EVENTS          0
