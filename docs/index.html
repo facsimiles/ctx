@@ -53,20 +53,11 @@
 
       <p>The ctx renderer is written in portable C, without inline assembly or
       SIMD intrinsics - but is still fast. The single threaded rendering
-      performance for 8bit RGBA is comparable with and often faster than the
-      rendering engines in Qt/cairo that are using SIMD like SSE2/AVX/Neon for
-      compositing. The next parts of ctx to be refactored for performance while
-      trying to keep the code mictrocontroller friendly, is anyways not the
-      compositing - but the rasterizer itself.</p>
-
-      <p>
-      The most optimized code in ctx is for the normal source-over combination
-      with all possible paint sources, color, linear and radial gradients and
-      textures. For most other blending and compositing modes, slower runtime
-      code is used. Combinations of blend mode+compositing mode + texture
-      source can be inlined and compiled into pre-compiled functions. Trading
-      of compiliation time and resulting code-size for performance. 
-      </p>
+      performance for 8bit RGBA is comparable with and for most cases quite a
+      bit faster than the rendering engines in Qt/cairo that are using SIMD
+      like SSE2/AVX/Neon for compositing. The next parts of ctx to be
+      refactored for performance while trying to keep the code mictrocontroller
+      friendly, is anyways not the compositing - but the rasterizer itself.</p>
 
       <p>
       Programs using the <a href='sdk/'>ctx SDK</a> are able to run as clients
