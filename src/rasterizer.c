@@ -1038,7 +1038,9 @@ ctx_over_RGBA8_full_2 (uint32_t dst, uint32_t si_ga_full, uint32_t si_rb_full, u
 
 static inline void ctx_span_set_color (uint32_t *dst_pix, uint32_t val, int count)
 {
-  for (int i = 0; i < count; i++) dst_pix[i]=val;
+  if (count>0)
+  while(count--)
+    *dst_pix++=val;
 }
 
 inline static void
