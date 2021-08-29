@@ -944,7 +944,7 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
       CtxSegment *segment = &entries[edges[t]];
       UPDATE_PARITY;
 
-       if (parity)
+      if (parity)
         {
           CtxSegment *next_segment = &entries[edges[t+1]];
           const int x0        = segment->val;
@@ -1466,10 +1466,14 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             }
             pre = (us+count-1)-first+1;
 
-          if (
-              accumulated_x1-accumulated_x0>=0 &&
-              us - accumulated_x1 > 4
-                          )
+#if 0 // the CTX_UNLIKELY helps - but this is a big constant overhead
+      // which ends up penalizing us in benchmarks, it needs to be
+      // a shape with really large interior emptiness for this
+      // to be worthwhile
+          if (CTX_UNLIKELY(
+              us - accumulated_x1 > 16 &&
+              accumulated_x1-accumulated_x0>=0
+                          ))
           {
              switch (comp)
              {
@@ -1501,6 +1505,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                           accumulated_x1-accumulated_x0+1);
              }
           }
+#endif
 
             accumulated_x0 = ctx_mini (accumulated_x0, us);
             accumulated_x1 = us + count - 1;
@@ -1717,9 +1722,10 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
                                )
 {
   int      is_winding = fill_rule == CTX_FILL_RULE_WINDING;
+  const CtxCovPath comp = rasterizer->comp;
+  const int real_aa = rasterizer->aa;
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
 
-  const int real_aa = rasterizer->aa;
 
   int scan_start = rasterizer->blit_y * CTX_FULL_AA;
   int scan_end   = scan_start + rasterizer->blit_height * CTX_FULL_AA;
@@ -1728,7 +1734,6 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
   int minx       = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
   int maxx       = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - rasterizer->blit_x;
   const int blit_stride = rasterizer->blit_stride;
-  const CtxCovPath comp = rasterizer->comp;
 
   rasterizer->prev_active_edges = -1;
   if (
