@@ -1295,13 +1295,8 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
             }
             else
             {
-              int u0 = x0_start;
-              int u1 = x0_end;
-              if (u0 > u1)
-              {
-                 int tmp = u0;
-                 u0 = u1;u1=tmp;
-              }
+              int u0 = ctx_mini (x0_start, x0_end);
+              int u1 = ctx_maxi (x0_start, x0_end);
               u0 = ctx_maxi (u0, minx_);
               u1 = ctx_mini (u1, maxx_);
               u1 = ctx_maxi (u1, minx_);
@@ -1329,13 +1324,8 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
             }
             else
             {
-              int u0 = x1_start;
-              int u1 = x1_end;
-              if (u0 > u1)
-              {
-                 int tmp = u0;
-                 u0 = u1;u1=tmp;
-              }
+              int u0 = ctx_mini (x1_start, x1_end);
+              int u1 = ctx_maxi (x1_start, x1_end);
               u0 = ctx_maxi (u0, minx_);
               u1 = ctx_mini (u1, maxx_);
               u1 = ctx_maxi (u1, minx_);
@@ -1441,13 +1431,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           }
           else
           {
-            int u0 = x0_start;
-            int u1 = x0_end;
-            if (u0 > u1)
-            {
-               int tmp = u0;
-               u0 = u1;u1=tmp;
-            }
+            int u0 = ctx_mini (x0_start, x0_end);
+            int u1 = ctx_maxi (x0_start, x0_end);
             u0 = ctx_maxi (u0, minx_);
             u1 = ctx_mini (u1, maxx_);
             u1 = ctx_maxi (u1, minx_);
@@ -1554,13 +1539,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           }
           else
           {
-            int u0 = x1_start;
-            int u1 = x1_end;
-            if (u0 > u1)
-            {
-               int tmp = u0;
-               u0 = u1;u1=tmp;
-            }
+            int u0 = ctx_mini (x1_start, x1_end);
+            int u1 = ctx_maxi (x1_start, x1_end);
             u0 = ctx_maxi (u0, minx_);
             u1 = ctx_mini (u1, maxx_);
             u1 = ctx_maxi (u1, minx_);
