@@ -3212,6 +3212,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
   CtxGState *gstate = &rasterizer->state->gstate;
   int components = 4;
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBAF (rasterizer);
+  rasterizer->comp = CTX_COV_PATH_FALLBACK;
 #if 1
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
@@ -3430,6 +3431,7 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
   CtxGState *gstate = &rasterizer->state->gstate;
   int components = 2;
   rasterizer->fragment = ctx_rasterizer_get_fragment_GRAYAF (rasterizer);
+  rasterizer->comp = CTX_COV_PATH_FALLBACK;
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       rasterizer->comp_op = ctx_GRAYAF_porter_duff_color;
@@ -3670,6 +3672,7 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
   CtxGState *gstate = &rasterizer->state->gstate;
   int components = 5;
   rasterizer->fragment = ctx_rasterizer_get_fragment_CMYKAF (rasterizer);
+  rasterizer->comp = CTX_COV_PATH_FALLBACK;
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       rasterizer->comp_op = ctx_CMYKAF_porter_duff_color;
@@ -4384,6 +4387,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
   int components = 2;
   rasterizer->fragment = ctx_rasterizer_get_fragment_GRAYA8 (rasterizer);
   rasterizer->comp_op  = ctx_GRAYA8_porter_duff_generic;
+  rasterizer->comp = CTX_COV_PATH_FALLBACK;
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       ctx_fragment_color_GRAYA8 (rasterizer, 0,0, rasterizer->color, 1, 0,0);
