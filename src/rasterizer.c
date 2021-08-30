@@ -87,6 +87,15 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
 
   rasterizer->inner_x = x1;
   rasterizer->inner_y = y1;
+#if 0
+  if (entry.data.s16[3] < entry.data.s16[1])
+  {
+    entry = ctx_segment_s16 (CTX_EDGE_FLIPPED,
+                            entry.data.s16[2], entry.data.s16[3],
+                            entry.data.s16[0], entry.data.s16[1]);
+  }
+#endif
+
   return ctx_drawlist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 }
 
@@ -218,9 +227,9 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   int count = rasterizer->edge_list.count;
   if (CTX_UNLIKELY (count == 0))
      return 0;
-#if CTX_SHAPE_CACHE
-#if 0
   CtxSegment *entry = (CtxSegment*)&rasterizer->edge_list.entries[0];
+#if CTX_SHAPE_CACHE
+#if 1
   int ox = entry->data.s16[2];
   int oy = entry->data.s16[3];
 #endif
@@ -229,10 +238,9 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   hash *= CTX_SHAPE_CACHE_PRIME1;
   hash += (oy & CTX_SUBDIV);
 #endif
+  //CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[0];
   for (int i = 0; i < count; i++)
     {
-      CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[i];
-
 #if CTX_SHAPE_CACHE
       x = entry->data.s16[2];
       y = entry->data.s16[3];
@@ -245,12 +253,15 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
       hash *= CTX_SHAPE_CACHE_PRIME4;
       hash += dy;
 #endif
+#if 1
       if (entry->data.s16[3] < entry->data.s16[1])
         {
           *entry = ctx_segment_s16 (CTX_EDGE_FLIPPED,
                             entry->data.s16[2], entry->data.s16[3],
                             entry->data.s16[0], entry->data.s16[1]);
         }
+#endif
+      entry++;
     }
 #if CTX_SHAPE_CACHE
   return hash;
@@ -2253,7 +2264,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
 
 #if CTX_RECT_FILL
-  if (rasterizer->edge_list.count == 6)
+  if (rasterizer->edge_list.count == 5)
     {
       CtxSegment *entry0 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[0];
       CtxSegment *entry1 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[1];
@@ -2916,7 +2927,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 
 #if CTX_RECT_FILL
-  if (rasterizer->edge_list.count == 6)
+  if (rasterizer->edge_list.count == 5)
     {
       CtxSegment *entry0 = &((CtxSegment*)rasterizer->edge_list.entries)[0];
       CtxSegment *entry1 = &((CtxSegment*)rasterizer->edge_list.entries)[1];
@@ -3566,7 +3577,7 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_rel_line_to (rasterizer, 0, height);
   ctx_rasterizer_rel_line_to (rasterizer, -width, 0);
   ctx_rasterizer_rel_line_to (rasterizer, 0, -height);
-  ctx_rasterizer_rel_line_to (rasterizer, width/2, 0);
+  //ctx_rasterizer_rel_line_to (rasterizer, width/2, 0);
   ctx_rasterizer_finish_shape (rasterizer);
 }
 
