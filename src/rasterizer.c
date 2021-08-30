@@ -96,7 +96,7 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
   }
 #endif
 
-  return ctx_drawlist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
+  return ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 }
 
 #if 0

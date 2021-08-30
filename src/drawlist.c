@@ -403,6 +403,55 @@ ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
 #endif
 }
 
+CTX_STATIC void
+ctx_edgelist_resize (CtxDrawlist *drawlist, int desired_size)
+{
+#if CTX_DRAWLIST_STATIC
+    {
+      static CtxSegment sbuf[CTX_MAX_EDGE_LIST_SIZE];
+      drawlist->entries = (CtxEntry*)&sbuf[0];
+      drawlist->size = CTX_MAX_EDGE_LIST_SIZE;
+    }
+#else
+  int new_size = desired_size;
+  int min_size = CTX_MIN_JOURNAL_SIZE;
+  int max_size = CTX_MAX_JOURNAL_SIZE;
+    {
+      min_size = CTX_MIN_EDGE_LIST_SIZE;
+      max_size = CTX_MAX_EDGE_LIST_SIZE;
+    }
+
+  if (CTX_UNLIKELY(drawlist->size == max_size))
+    { return; }
+  new_size = ctx_maxi (new_size, min_size);
+  //if (new_size < drawlist->count)
+  //  { new_size = drawlist->count + 4; }
+  new_size = ctx_mini (new_size, max_size);
+  if (new_size != drawlist->size)
+    {
+      int item_size = item_size = sizeof (CtxSegment);
+      //fprintf (stderr, "growing drawlist %p %i to %d from %d\n", drawlist, flags, new_size, drawlist->size);
+  if (drawlist->entries)
+    {
+      //printf ("grow %p to %d from %d\n", drawlist, new_size, drawlist->size);
+      CtxEntry *ne =  (CtxEntry *) malloc (item_size * new_size);
+      memcpy (ne, drawlist->entries, drawlist->size * item_size );
+      free (drawlist->entries);
+      drawlist->entries = ne;
+      //drawlist->entries = (CtxEntry*)malloc (drawlist->entries, item_size * new_size);
+    }
+  else
+    {
+      //fprintf (stderr, "allocating for %p %d\n", drawlist, new_size);
+      drawlist->entries = (CtxEntry *) malloc (item_size * new_size);
+    }
+  drawlist->size = new_size;
+    }
+  //fprintf (stderr, "drawlist %p is %d\n", drawlist, drawlist->size);
+#endif
+}
+
+
 CTX_STATIC inline int
 ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 {
@@ -432,6 +481,27 @@ ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
     ((CtxSegment*)(drawlist->entries))[drawlist->count] = *(CtxSegment*)entry;
   else
     drawlist->entries[drawlist->count] = *entry;
+  ret = drawlist->count;
+  drawlist->count++;
+  return ret;
+}
+
+CTX_STATIC inline int
+ctx_edgelist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
+{
+  int max_size = CTX_MAX_EDGE_LIST_SIZE;
+  int ret = drawlist->count;
+  if ((ret + 64 >= drawlist->size - 40))
+    {
+      int new_ = CTX_MAX (drawlist->size * 2, ret + 1024);
+      ctx_edgelist_resize (drawlist, new_);
+    }
+
+  if (CTX_UNLIKELY(drawlist->count >= max_size - 20))
+    {
+      return 0;
+    }
+  ((CtxSegment*)(drawlist->entries))[drawlist->count] = *(CtxSegment*)entry;
   ret = drawlist->count;
   drawlist->count++;
   return ret;
