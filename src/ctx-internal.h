@@ -656,6 +656,9 @@ struct _CtxRasterizer
   float      x;  // < redundant? use state instead?
   float      y;
 
+  int        inner_x;
+  int        inner_y;
+
   float      first_x;
   float      first_y;
   unsigned int needs_aa3; // count of how many edges implies antialiasing

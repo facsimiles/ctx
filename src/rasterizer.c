@@ -79,8 +79,14 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
   rasterizer->col_min = ctx_mini (x1, rasterizer->col_min);
   rasterizer->col_max = ctx_maxi (x1, rasterizer->col_max);
 
+  entry.data.s16[0]=rasterizer->inner_x;
+  entry.data.s16[1]=rasterizer->inner_y;
+
   entry.data.s16[2]=x1;
   entry.data.s16[3]=y1;
+
+  rasterizer->inner_x = x1;
+  rasterizer->inner_y = y1;
   return ctx_drawlist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 }
 
@@ -213,9 +219,11 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   if (CTX_UNLIKELY (count == 0))
      return 0;
 #if CTX_SHAPE_CACHE
+#if 0
   CtxSegment *entry = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int ox = entry->data.s16[2];
   int oy = entry->data.s16[3];
+#endif
   uint32_t hash = rasterizer->edge_list.count;
   hash = (ox & CTX_SUBDIV);
   hash *= CTX_SHAPE_CACHE_PRIME1;
@@ -224,21 +232,10 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   for (int i = 0; i < count; i++)
     {
       CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[i];
-      if (entry->code != CTX_NEW_EDGE)
-        {
-          entry->data.s16[0] = x;
-          entry->data.s16[1] = y;
-        }
-      else
-        {
-          entry->code = CTX_EDGE;
+
 #if CTX_SHAPE_CACHE
-          hash *= CTX_SHAPE_CACHE_PRIME2;
-#endif
-        }
       x = entry->data.s16[2];
       y = entry->data.s16[3];
-#if CTX_SHAPE_CACHE
       int dx = x-ox;
       int dy = y-oy;
       ox = x;
@@ -288,6 +285,9 @@ CTX_STATIC inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float 
   tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
   ty = ty * aa;
 
+  rasterizer->inner_x = tx;
+  rasterizer->inner_y = ty;
+
   rasterizer->scan_min = ctx_mini (ty, rasterizer->scan_min);
   rasterizer->scan_max = ctx_maxi (ty, rasterizer->scan_max);
 
@@ -299,8 +299,8 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
 {
   float tx = x;
   float ty = y;
-  float ox = rasterizer->x;
-  float oy = rasterizer->y;
+  //float ox = rasterizer->x;
+  //float oy = rasterizer->y;
   if ((rasterizer->uses_transforms))
     {
       _ctx_user_to_device (rasterizer->state, &tx, &ty);
@@ -316,18 +316,20 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
 
   if (CTX_UNLIKELY(rasterizer->has_prev<=0))
     {
+#if 0
       if ((rasterizer->uses_transforms))
       {
         // storing transformed would save some processing for a tiny
         // amount of runtime RAM XXX
         _ctx_user_to_device (rasterizer->state, &ox, &oy);
       }
-      ox -= rasterizer->blit_x;
-      oy = ctx_maxf (oy, MIN_Y);
-      oy = ctx_minf (oy, MAX_Y);
+#endif
+      //ox -= rasterizer->blit_x;
+      //oy = ctx_maxf (oy, MIN_Y);
+      //oy = ctx_minf (oy, MAX_Y);
       CtxSegment *entry = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->edge_list.count-1];
-      entry->data.s16[0] = ox * CTX_SUBDIV;
-      entry->data.s16[1] = oy * CTX_FULL_AA;
+      //entry->data.s16[0] = ox * CTX_SUBDIV;
+      //entry->data.s16[1] = oy * CTX_FULL_AA;
       entry->code = CTX_NEW_EDGE;
       rasterizer->has_prev = 1;
     }
