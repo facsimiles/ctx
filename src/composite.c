@@ -1093,6 +1093,66 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   data += bwidth * v;
   int dv = (yi >> 8) & 0xff;
   if (y < bheight && y >= 0)
+  {
+     if (xi_delta == 65536)
+     {
+        int u = xi >> 16;
+        int du = (xi >> 8) & 0xff;
+  for (; i < count; i ++)
+  {
+
+  if (u >= buffer->width)
+    {
+      break;
+    }
+  else if (u < 0 || v < 0) // default to next sample down and to right
+  {
+      int got_prev_pix = (u >= 0);
+      int got_prev_row = (v>=0);
+      uint32_t *src11 = data  + u + bwidth + 1;
+      uint32_t *src10 = src11 - got_prev_pix;
+      uint32_t *src01 = src11 - bwidth * got_prev_row;
+      uint32_t *src00 = src10 - bwidth * got_prev_row;
+      uint32_t s00 = *src00;
+      uint32_t s01 = *src01;
+      uint32_t s10 = *src10;
+      uint32_t s11 = *src11;
+      ctx_lerp_RGBA8_split (s00,s10, dv, &s0_ga, &s0_rb);
+      ctx_lerp_RGBA8_split (s01,s11, dv, &s1_ga, &s1_rb);
+  }
+  else if (loaded + 1 == u)
+  {
+      int next_row = ( v + 1 < bheight) * bwidth;
+      int next_pix = (u + 1 < bwidth);
+      uint32_t *src00 = data  + u;
+      uint32_t s01 = ((uint32_t*)src00)[next_pix];
+      uint32_t s11 = ((uint32_t*)src00)[next_row + next_pix];
+      s0_ga = s1_ga;
+      s0_rb = s1_rb;
+      ctx_lerp_RGBA8_split (s01,s11, dv, &s1_ga, &s1_rb);
+  }
+  else if (loaded != u)
+  {
+      int next_row = (v + 1 < bheight) * bwidth;
+      int next_pix = (u + 1 < bwidth);
+      uint32_t *src00 = data  + u;
+      uint32_t s00 = ((uint32_t*)src00)[0];
+      uint32_t s01 = ((uint32_t*)src00)[next_pix];
+      uint32_t s10 = ((uint32_t*)src00)[next_row];
+      uint32_t s11 = ((uint32_t*)src00)[next_row + next_pix];
+      ctx_lerp_RGBA8_split (s00,s10, dv, &s0_ga, &s0_rb);
+      ctx_lerp_RGBA8_split (s01,s11, dv, &s1_ga, &s1_rb);
+  }
+    ((uint32_t*)(&rgba[0]))[0] = 
+      ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, du);
+    loaded = u;
+    u++;
+    rgba += 4;
+  }
+
+     }
+     else
+     {
   for (; i < count; i ++)
   {
   int u = xi >> 16;
@@ -1144,6 +1204,9 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     loaded = u;
     xi += xi_delta;
     rgba += 4;
+  }
+     }
+
   }
 
   }
