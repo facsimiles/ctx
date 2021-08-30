@@ -619,18 +619,28 @@ struct _CtxRasterizer
      would be yet another refinement on top.
    */
 
-#if CTX_ENABLE_SHADOW_BLUR
-  float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
-#endif
+
+#define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ coverage, int count
+  void (*comp_op)(CTX_COMPOSITE_ARGUMENTS);
+  CtxFragment fragment;
+  Ctx       *ctx;
+  CtxState  *state;
+  void      *buf;
+  int fast_aa;
+  CtxCovPath  comp;
+  float      x;  // < redundant? use state instead?
+  float      y;
 
   unsigned int aa;          // level of vertical aa
-  int fast_aa;
   int prev_active_edges;
   int active_edges;
   int pending_edges;
   int ending_edges;
   int edge_pos;         // where we're at in iterating all edges
-  int edges[CTX_MAX_EDGES]; // integer position in edge array
+  unsigned int needs_aa3; // count of how many edges implies antialiasing
+  unsigned int needs_aa5; // count of how many edges implies antialiasing
+  unsigned int needs_aa15; // count of how many edges implies antialiasing
+  int        horizontal_edges;
 
   int scanline;
   int        scan_min;
@@ -638,33 +648,12 @@ struct _CtxRasterizer
   int        col_min;
   int        col_max;
 
-  CtxDrawlist edge_list;
-
-  CtxState  *state;
-  Ctx       *ctx;
-  Ctx       *texture_source; /* normally same as ctx */
-
-  void      *buf;
-
-
-#if CTX_COMPOSITING_GROUPS
-  void      *saved_buf; // when group redirected
-  CtxBuffer *group[CTX_GROUP_MAX];
-#endif
-
-
-  float      x;  // < redundant? use state instead?
-  float      y;
 
   int        inner_x;
   int        inner_y;
 
   float      first_x;
   float      first_y;
-  unsigned int needs_aa3; // count of how many edges implies antialiasing
-  unsigned int needs_aa5; // count of how many edges implies antialiasing
-  unsigned int needs_aa15; // count of how many edges implies antialiasing
-  int        horizontal_edges;
   int        uses_transforms;
   int        has_shape:2;
   int        has_prev:2;
@@ -677,6 +666,14 @@ struct _CtxRasterizer
   int16_t    blit_stride;
 
   CtxPixelFormatInfo *format;
+  Ctx       *texture_source; /* normally same as ctx */
+
+  int edges[CTX_MAX_EDGES]; // integer position in edge array
+  CtxDrawlist edge_list;
+
+
+
+
 
 #if CTX_ENABLE_SHADOW_BLUR
   int in_shadow;
@@ -685,20 +682,23 @@ struct _CtxRasterizer
   int shadow_x;
   int shadow_y;
 
-  CtxFragment         fragment;
   int swap_red_green;
   uint8_t             color[4*5];
 
-#define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ coverage, int count
-
-  void (*comp_op)(CTX_COMPOSITE_ARGUMENTS);
-  CtxCovPath  comp;
+  int clip_rectangle;
 
 #if CTX_ENABLE_CLIP
   CtxBuffer *clip_buffer;
 #endif
 
-  int clip_rectangle;
+
+#if CTX_COMPOSITING_GROUPS
+  void      *saved_buf; // when group redirected
+  CtxBuffer *group[CTX_GROUP_MAX];
+#endif
+#if CTX_ENABLE_SHADOW_BLUR
+  float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
+#endif
 
 #if CTX_SHAPE_CACHE
   CtxShapeCache shape_cache;
