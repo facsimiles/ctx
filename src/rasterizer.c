@@ -3296,13 +3296,17 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 #if CTX_ENABLE_CLIP
 
   if ((rasterizer->clip_rectangle==1
-                          || !rasterizer->clip_buffer)
-                  )
+       || !rasterizer->clip_buffer)
+      )
   {
-    if (count == 6)
+    if (count == 5)
     {
-      if (coords[3][0] == coords[5][0] &&
-          coords[3][1] == coords[5][1])
+      if (coords[0][0] == coords[1][0] &&
+          coords[0][1] == coords[4][1] &&
+          coords[0][1] == coords[3][1] &&
+          coords[1][1] == coords[2][1] &&
+          coords[3][0] == coords[4][0]
+          )
       {
 #if 0
         printf ("%d,%d %dx%d\n", minx, miny,
@@ -3341,6 +3345,20 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
          return;
       }
+#if 0
+      else
+      {
+        printf ("%d,%d %dx%d  0,0:%.2f 0,1:%.2f 1,0:%.2f 11:%.2f 20:%.2f 21:%2.f 30:%.2f 31:%.2f 40:%.2f 41:%.2f\n", minx, miny,
+                                       maxx-minx+1, maxy-miny+1
+                                       
+         ,coords[0][0] ,  coords[0][1]
+         ,coords[1][0] ,  coords[1][1]
+         ,coords[2][0] ,  coords[2][1]
+         ,coords[3][0] ,  coords[3][1]
+         ,coords[4][0] ,  coords[4][1]
+         );
+      }
+#endif
     }
   }
   rasterizer->clip_rectangle = 0;
