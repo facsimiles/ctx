@@ -1,7 +1,7 @@
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
-CCACHE=`which ccache`
+#CCACHE=`which ccache`
 CLIENTS_CFILES = $(wildcard demos/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 

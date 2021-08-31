@@ -62,7 +62,7 @@ fi
 echo "CFLAGS=$CFLAGS" >> build.conf
 echo "LIBS=$LIBS" >> build.conf
 
-echo CCACHE=`which ccache` >> build.conf
+#echo CCACHE=`which ccache` >> build.conf
 
 #rm -f build.deps
 #echo "Generating build.deps"

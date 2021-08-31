@@ -598,10 +598,10 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
           for (int ov = - dim; ov < dim; ov++)
           {
             uint8_t *src = (uint8_t *) buffer->data;
-            int o = (v+ov) * width + (u + ou);
 
-            if (o>=0 && o < width * height)
+            if (v+ov >= 0 && u+ou >=0 && u + ou < width && v + ov < height)
             {
+              int o = (v+ov) * width + (u + ou);
               src += o * bpp;
 
               for (int c = 0; c < bpp; c++)
@@ -610,8 +610,11 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
             }
           }
           if (count)
+          {
+            int recip = 65536/count;
             for (int c = 0; c < bpp; c++)
-              rgba[c] = sum[c]/count;
+              rgba[c] = sum[c] * recip >> 16;
+          }
           ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
     rgba += 4;
@@ -911,12 +914,11 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
           for (int ou = - dim; ou < dim; ou++)
           for (int ov = - dim; ov < dim; ov++)
           {
-            uint8_t *src = (uint8_t *) buffer->data;
-            int o = (v+ov) * width + (u + ou);
 
-            if (o>=0 && o < width * height)
+            if (v+ov >= 0 && u+ou >=0 && u + ou < width && v + ov < height)
             {
-              src += o * bpp;
+              int o = (v+ov) * width + (u + ou);
+              uint8_t *src = (uint8_t *) buffer->data + o * bpp;
 
               for (int c = 0; c < bpp; c++)
                 sum[c] += src[c];
@@ -924,8 +926,11 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
             }
           }
           if (count)
+          {
+            int recip = 65536/count;
             for (int c = 0; c < bpp; c++)
-              rgba[c] = sum[c]/count;
+              rgba[c] = sum[c]*recip>>16;
+          }
           ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
     rgba += 4;
@@ -1063,6 +1068,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
                                    x, y, out, count, dx, dy);
       return;
     }
+    x+=1; // XXX off by one somewhere? ,, needed for alignment with nearest
 
     uint32_t *data = ((uint32_t*)buffer->data);
     uint32_t yi = y * 65536;
@@ -1075,11 +1081,11 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
       if ( u  < 0 || u >= buffer->width-1)
       {
         *((uint32_t*)(rgba))= 0;
+      xi += xi_delta;
+      rgba += 4;
       }
       else
         break;
-      xi += xi_delta;
-      rgba += 4;
     }
 
   int loaded = -4;
