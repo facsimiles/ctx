@@ -1056,7 +1056,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   if (dy == 0.0f && dx > 0.0f)
   {
     if ((dx > 0.99f && dx < 1.01f && 
-         ox < 0.01 && oy < 0.01))
+         ox < 0.01 && oy < 0.01) || y < 0 || y > bheight-1)
     {
       ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer,
                                    x, y, out, count, dx, dy);
@@ -1064,144 +1064,94 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     }
 
     uint32_t *data = ((uint32_t*)buffer->data);
-
+  uint32_t yi = y * 65536;
+  uint32_t xi = x * 65536;
+  int xi_delta = dx * 65536;
 
     for (i= 0; i < count; i ++)
     {
-      int u = x;
-      int v = y;
-      int ut = x + 1.5;
-      int vt = y + 1.5;
-      if ( ut  <= 0 || vt  <= 0 || u >= buffer->width || v >= buffer->height)
+      int u = xi >> 16;
+      int v = yi >> 16;
+      if ( u  < 0 || u >= buffer->width-1)
       {
         *((uint32_t*)(rgba))= 0;
       }
       else
         break;
-      x += dx;
-      y += dy;
+      xi += xi_delta;
       rgba += 4;
     }
 
-  uint32_t yi = y * 65536;
-  uint32_t xi = x * 65536;
-  int xi_delta = dx * 65536;
   int loaded = -4;
   uint32_t s0_ga = 0, s0_rb = 0, s1_ga = 0, s1_rb = 0;
  
   int v = yi >> 16;
   data += bwidth * v;
   int dv = (yi >> 8) & 0xff;
-  if (y < bheight && y >= 0)
+
   {
-     if (xi_delta == 65536)
+     if (xi_delta == 65536 && 0)
      {
         int u = xi >> 16;
+        if (u<0) u=0;
         int du = (xi >> 8) & 0xff;
+  uint32_t *src0 = data  + u;
+  uint32_t *src1 = src0 + bwidth;
+  if (v >= bheight-1) src1 = src0;
+  ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s1_ga, &s1_rb);
+        
   for (; i < count; i ++)
   {
 
-  if (u >= buffer->width)
+  if (CTX_UNLIKELY(u >= buffer->width-2))
     {
       break;
     }
-  else if (u < 0 || v < 0) // default to next sample down and to right
-  {
-      int got_prev_pix = (u >= 0);
-      int got_prev_row = (v>=0);
-      uint32_t *src11 = data  + u + bwidth + 1;
-      uint32_t *src10 = src11 - got_prev_pix;
-      uint32_t *src01 = src11 - bwidth * got_prev_row;
-      uint32_t *src00 = src10 - bwidth * got_prev_row;
-      uint32_t s00 = *src00;
-      uint32_t s01 = *src01;
-      uint32_t s10 = *src10;
-      uint32_t s11 = *src11;
-      ctx_lerp_RGBA8_split (s00,s10, dv, &s0_ga, &s0_rb);
-      ctx_lerp_RGBA8_split (s01,s11, dv, &s1_ga, &s1_rb);
-  }
-  else if (loaded + 1 == u)
-  {
-      int next_row = ( v + 1 < bheight) * bwidth;
-      int next_pix = (u + 1 < bwidth);
-      uint32_t *src00 = data  + u;
-      uint32_t s01 = ((uint32_t*)src00)[next_pix];
-      uint32_t s11 = ((uint32_t*)src00)[next_row + next_pix];
-      s0_ga = s1_ga;
-      s0_rb = s1_rb;
-      ctx_lerp_RGBA8_split (s01,s11, dv, &s1_ga, &s1_rb);
-  }
-  else if (loaded != u)
-  {
-      int next_row = (v + 1 < bheight) * bwidth;
-      int next_pix = (u + 1 < bwidth);
-      uint32_t *src00 = data  + u;
-      uint32_t s00 = ((uint32_t*)src00)[0];
-      uint32_t s01 = ((uint32_t*)src00)[next_pix];
-      uint32_t s10 = ((uint32_t*)src00)[next_row];
-      uint32_t s11 = ((uint32_t*)src00)[next_row + next_pix];
-      ctx_lerp_RGBA8_split (s00,s10, dv, &s0_ga, &s0_rb);
-      ctx_lerp_RGBA8_split (s01,s11, dv, &s1_ga, &s1_rb);
-  }
-    ((uint32_t*)(&rgba[0]))[0] = 
-      ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, du);
-    loaded = u;
+    s0_ga = s1_ga;
+    s0_rb = s1_rb;
+    //ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
+    ((uint32_t*)(&rgba[0]))[0] = ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, du);
+    //loaded = u;
     u++;
+    src0 ++;
+    src1 ++;
     rgba += 4;
   }
 
      }
      else
      {
+
+
+  int u = xi >> 16;
+
+  uint32_t *src0, *src1;
+ 
   for (; i < count; i ++)
   {
   int u = xi >> 16;
-
-  if (u >= buffer->width)
+  if (CTX_UNLIKELY(u >= buffer->width-1))
     {
       break;
     }
-  else if (u < 0 || v < 0) // default to next sample down and to right
+  else if (CTX_LIKELY(loaded + 1 == u))
   {
-      int got_prev_pix = (u >= 0);
-      int got_prev_row = (v>=0);
-      uint32_t *src11 = data  + u + bwidth + 1;
-      uint32_t *src10 = src11 - got_prev_pix;
-      uint32_t *src01 = src11 - bwidth * got_prev_row;
-      uint32_t *src00 = src10 - bwidth * got_prev_row;
-      uint32_t s00 = *src00;
-      uint32_t s01 = *src01;
-      uint32_t s10 = *src10;
-      uint32_t s11 = *src11;
-      ctx_lerp_RGBA8_split (s00,s10, dv, &s0_ga, &s0_rb);
-      ctx_lerp_RGBA8_split (s01,s11, dv, &s1_ga, &s1_rb);
-  }
-  else if (loaded + 1 == u)
-  {
-      int next_row = ( v + 1 < bheight) * bwidth;
-      int next_pix = (u + 1 < bwidth);
-      uint32_t *src00 = data  + u;
-      uint32_t s01 = ((uint32_t*)src00)[next_pix];
-      uint32_t s11 = ((uint32_t*)src00)[next_row + next_pix];
-      s0_ga = s1_ga;
-      s0_rb = s1_rb;
-      ctx_lerp_RGBA8_split (s01,s11, dv, &s1_ga, &s1_rb);
+    s0_ga = s1_ga;
+    s0_rb = s1_rb;
+    ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
+    src0 ++;
+    src1 ++;
   }
   else if (loaded != u)
   {
-      int next_row = (v + 1 < bheight) * bwidth;
-      int next_pix = (u + 1 < bwidth);
-      uint32_t *src00 = data  + u;
-      uint32_t s00 = ((uint32_t*)src00)[0];
-      uint32_t s01 = ((uint32_t*)src00)[next_pix];
-      uint32_t s10 = ((uint32_t*)src00)[next_row];
-      uint32_t s11 = ((uint32_t*)src00)[next_row + next_pix];
-      ctx_lerp_RGBA8_split (s00,s10, dv, &s0_ga, &s0_rb);
-      ctx_lerp_RGBA8_split (s01,s11, dv, &s1_ga, &s1_rb);
+    src0 = data + u;
+    src1 = data + u+ bwidth;
+    ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s0_ga, &s0_rb);
+    ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
   }
+    loaded = u;
     ((uint32_t*)(&rgba[0]))[0] = 
       ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, (xi>>8));
-    loaded = u;
     xi += xi_delta;
     rgba += 4;
   }
@@ -1250,7 +1200,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 
   int offset = bwidth * v + u;
 
-  if ((
+  if (CTX_UNLIKELY(
        u >= buffer->width ||
        v  <= -65536 ||
        u  <= -65536 ||
@@ -1258,7 +1208,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     {
       break;
     }
-  else if (u < 0 || v < 0) // default to next sample down and to right
+  else if (CTX_UNLIKELY(u < 0 || v < 0)) // default to next sample down and to right
   {
       int got_prev_pix = (u >= 0);
       int got_prev_row = (v>=0);
