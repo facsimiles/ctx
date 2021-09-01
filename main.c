@@ -33,6 +33,7 @@ int ctx_gif_main (int argc, char **argv);
 int ctx_dir_main (int argc, char **argv);
 int ctx_mpg_main (int argc, char **argv);
 int ctx_tcp_main (int argc, char **argv);
+int ctx_text_main (int argc, char **argv);
 
 int launch_main (int argc, char **argv)
 {
@@ -262,7 +263,12 @@ static const char *get_suffix (const char *path)
   if (p && *p)
     { return p; }
   else
-    { return ""; }
+    {
+      p = strrchr (path, '/');
+      if (p && p[0] && p[1])
+        return p+1;
+      return "";
+    }
 }
 
 int main (int argc, char **argv)
@@ -329,6 +335,19 @@ int main (int argc, char **argv)
     {
       return ctx_dir_main (argc, argv);
     }
+
+    if (!strcmp (get_suffix (input_path), ".txt") ||
+        !strcmp (get_suffix (input_path), ".c") ||
+        !strcmp (get_suffix (input_path), ".h") ||
+        !strcmp (get_suffix (input_path), "README") ||
+        !strcmp (get_suffix (input_path), "Makefile"))
+    {
+            fprintf (stderr, "a");
+      return ctx_text_main (argc, argv);
+    }
+
+
+
     return -1;
   }
 
