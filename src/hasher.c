@@ -39,6 +39,13 @@ _ctx_add_hash (CtxHasher *hasher, CtxIntRectangle *shape_rect, char *hash)
     }
 }
 
+static int ctx_str_count_lines (const char *str)
+{
+  int count = 0;
+  for (const char *p = str; *p; p++)
+    if (*p == '\n') count ++;
+  return count;
+}
 
 static void
 ctx_hasher_process (void *user_data, CtxCommand *command)
@@ -69,7 +76,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
            shape_rect.x=rasterizer->x;
            shape_rect.y=rasterizer->y - height,
            shape_rect.width = width;
-           shape_rect.height = height * 2;
+           shape_rect.height = height * (ctx_str_count_lines (ctx_arg_string()) + 1);
           switch ((int)ctx_state_get (rasterizer->state, CTX_text_align))
           {
           case CTX_TEXT_ALIGN_LEFT:
