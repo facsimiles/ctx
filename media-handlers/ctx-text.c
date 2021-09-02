@@ -19,7 +19,7 @@ static float font_size = 50.0;
 float line_height = 1.2;
 int n_lines = 0;
 
-static int target_line_no = -1;
+static int cursor_line_no = 0;
 
 static float velocity = 0.0000;
 
@@ -66,7 +66,6 @@ static void image_drag (CtxEvent *event, void *data0, void *data1)
 
    dirty++;
    convert_scroll_offset ();
-   target_line_no = -1;
 }
 
 static void image_scroll (CtxEvent *event, void *data0, void *data1)
@@ -142,17 +141,8 @@ int ctx_text_main(int argc, char *argv[])
 
 
     uint64_t ticks = ctx_ticks ();
-    if (target_line_no >=0 && target_line_no < line_no)
-    {
-       velocity = 0.0003;
-    }
-    else if (target_line_no >=0 && target_line_no > line_no)
-    {
-       velocity = -0.0003;
-    }
 
-
-      uint64_t delta = 0;
+    uint64_t delta = 0;
     if (fabsf(velocity) > 0.000000000000001)
     {
       dirty = 1;
@@ -160,20 +150,16 @@ int ctx_text_main(int argc, char *argv[])
       if (prev_ticks)
       {
         delta =  (ticks - prev_ticks);
-        oy0 += velocity * delta;
+        if (delta < 10000)
+        {
+          oy0 += velocity * delta;
+          convert_scroll_offset ();
+        }
       }
 
-      convert_scroll_offset ();
       prev_ticks = ticks;
     }
 
-
-    if (target_line_no != -1 && fabs(target_line_no - oy0/font_size - line_no) < 0.2)//velocity * delta)
-    {
-       velocity = 0.0;
-       line_no = target_line_no;
-       target_line_no = -1;
-    }
 
     ctx_font (ctx, "mono");
     if (dirty)
@@ -197,15 +183,13 @@ int ctx_text_main(int argc, char *argv[])
         if (i >=0)
         {
           float margin_left = font_size * 0.5;
-          ctx_move_to (ctx, margin_left, oy0 + y);
-          int highlight_line = line_no;
-          if (target_line_no >= 0) highlight_line = target_line_no;
-          if (i == highlight_line)
+          ctx_move_to (ctx, margin_left, (oy0 + y));
+          if (i == cursor_line_no)
             {
-                    ctx_save (ctx);
-                    ctx_rgb (ctx, 1,0,0);
-            ctx_text (ctx, (char*)lines[i]);
-                    ctx_restore (ctx);
+               ctx_save (ctx);
+               ctx_rgb (ctx, 1,0,0);
+               ctx_text (ctx, (char*)lines[i]);
+               ctx_restore (ctx);
             }
           else
           {
@@ -218,6 +202,21 @@ int ctx_text_main(int argc, char *argv[])
       ctx_restore (ctx);
       ctx_flush (ctx);
       dirty = 0;
+
+
+      float target_y = 0.0 + (cursor_line_no + 1 - line_no) * line_height * font_size;
+
+      if (target_y < font_size * line_height * 2)
+      {
+        velocity = +0.008;
+      }
+      else if (target_y > height - font_size * line_height * 2)
+      {
+        velocity = -0.008;
+      }
+      else
+        velocity = 0.000;
+      usleep (50);
     }
     else
       usleep (1000);
@@ -238,31 +237,27 @@ int ctx_text_main(int argc, char *argv[])
             font_size -= 1;
           else if (!strcmp (event->string, "down"))
           {
-            if (target_line_no != -1)
-              target_line_no++;
-            else
-              target_line_no = line_no + 1;
+            cursor_line_no ++;
+            if (cursor_line_no > n_lines-1)
+              cursor_line_no = n_lines-1;
           }
           else if (!strcmp (event->string, "up"))
           {
-            if (target_line_no != -1)
-              target_line_no --;
-            else
-              target_line_no = line_no - 1;
+            cursor_line_no --;
+            if (cursor_line_no < 0)
+              cursor_line_no = 0;
           }
           else if (!strcmp (event->string, "page-down"))
           {
-            if (target_line_no != -1)
-              target_line_no+= 10;
-            else
-              target_line_no = line_no + 10;
+            cursor_line_no +=10;
+            if (cursor_line_no > n_lines-1)
+              cursor_line_no = n_lines-1;
           }
           else if (!strcmp (event->string, "page-up"))
           {
-            if (target_line_no != -1)
-              target_line_no -= 10;
-            else
-              target_line_no = line_no - 10;
+            cursor_line_no -=10;
+            if (cursor_line_no < 0)
+              cursor_line_no = 0;
           }
           else if (!strcmp (event->string, "left"))
             ox0 += cursor_translate / scale;
