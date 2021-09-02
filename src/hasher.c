@@ -76,7 +76,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
            shape_rect.x=rasterizer->x;
            shape_rect.y=rasterizer->y - height,
            shape_rect.width = width;
-           shape_rect.height = height * (ctx_str_count_lines (ctx_arg_string()) + 1);
+           shape_rect.height = height * (ctx_str_count_lines (ctx_arg_string()) + 1.5);
           switch ((int)ctx_state_get (rasterizer->state, CTX_text_align))
           {
           case CTX_TEXT_ALIGN_LEFT:

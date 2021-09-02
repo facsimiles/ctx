@@ -1054,8 +1054,8 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed;
-  int bwidth = buffer->width;
-  int bheight = buffer->height;
+  const int bwidth = buffer->width;
+  const int bheight = buffer->height;
   int i = 0;
 
   if (dy == 0.0f && dx > 0.0f)
@@ -1078,11 +1078,11 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     for (i= 0; i < count; i ++)
     {
       int u = xi >> 16;
-      if ( u  < 0 || u >= buffer->width-1)
+      if ( u  < 0 || u >= bwidth-1)
       {
         *((uint32_t*)(rgba))= 0;
-      xi += xi_delta;
-      rgba += 4;
+        xi += xi_delta;
+        rgba += 4;
       }
       else
         break;
