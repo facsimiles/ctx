@@ -342,7 +342,6 @@ int main (int argc, char **argv)
         !strcmp (get_suffix (input_path), "README") ||
         !strcmp (get_suffix (input_path), "Makefile"))
     {
-            fprintf (stderr, "a");
       return ctx_text_main (argc, argv);
     }
 

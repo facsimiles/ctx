@@ -51,7 +51,11 @@ static void image_drag (CtxEvent *event, void *data0, void *data1)
    uint64_t ticks = ctx_ticks ();
 
 
-   if (event->type == CTX_DRAG_RELEASE)
+   if (event->type == CTX_DRAG_PRESS)
+   {
+   cursor_line_no = event->y / (font_size * line_height) + line_no;
+   }
+   else if (event->type == CTX_DRAG_RELEASE)
    {
      if (prev_event_ticks)
         velocity = event->delta_y * 1.0 / (ticks - prev_event_ticks);
@@ -61,6 +65,7 @@ static void image_drag (CtxEvent *event, void *data0, void *data1)
      oy0 += event->delta_y / scale;
      velocity = 0;
    }
+
 
    prev_event_ticks = ticks;
 
@@ -216,7 +221,7 @@ int ctx_text_main(int argc, char *argv[])
       }
       else
         velocity = 0.000;
-      usleep (50);
+      usleep (1000);
     }
     else
       usleep (1000);
