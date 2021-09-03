@@ -68,11 +68,11 @@
 /* size (in pixels, w*h) that we cache rasterization for
  */
 #ifndef CTX_SHAPE_CACHE_DIM
-#define CTX_SHAPE_CACHE_DIM      (16*16)
+#define CTX_SHAPE_CACHE_DIM      (16*8)
 #endif
 
 #ifndef CTX_SHAPE_CACHE_MAX_DIM
-#define CTX_SHAPE_CACHE_MAX_DIM  32
+#define CTX_SHAPE_CACHE_MAX_DIM  20
 #endif
 
 /* maximum number of entries in shape cache
