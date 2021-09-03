@@ -828,7 +828,9 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
 
 static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, uint8_t *coverage, int *first_col, int *last_col)
 {
-  int scanline     = rasterizer->scanline;
+  int scanline     = rasterizer->scanline - CTX_FULL_AA; // we do the
+                                                 // post process after
+                                                 // coverage generation icnrement
 #if CTX_ENABLE_SHADOW_BLUR
   if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
@@ -854,7 +856,7 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
   if (CTX_UNLIKELY(rasterizer->clip_buffer &&  !rasterizer->clip_rectangle))
   {
     /* perhaps not working right for clear? */
-    int y = scanline / 15;//rasterizer->aa;
+    int y = scanline / CTX_FULL_AA;//rasterizer->aa;
     uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
     // XXX SIMD candidate
     for (int x = minx; x <= maxx; x ++)
@@ -862,7 +864,7 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
 #if CTX_1BIT_CLIP
        coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x&8)))?255:0))/255;
 #else
-       coverage[x] = (255 + coverage[x] * clip_line[x])>>8;
+       coverage[x] = (255 + coverage[x] * clip_line[x-rasterizer->blit_x])>>8;
 #endif
     }
   }
@@ -1724,7 +1726,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
 
 
   int scan_start = rasterizer->blit_y * CTX_FULL_AA;
-  int scan_end   = scan_start + rasterizer->blit_height * CTX_FULL_AA;
+  int scan_end   = scan_start + (rasterizer->blit_height - 1) * CTX_FULL_AA;
   const int blit_width = rasterizer->blit_width;
   const int blit_max_x = rasterizer->blit_x + blit_width;
   int minx       = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
@@ -1791,7 +1793,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
     }
   scan_end = ctx_mini (rasterizer->state->gstate.clip_max_y * CTX_FULL_AA, scan_end);
   if (CTX_UNLIKELY(scan_start > scan_end ||
-      (scan_start > (rasterizer->blit_y + rasterizer->blit_height) * CTX_FULL_AA) ||
+      (scan_start > (rasterizer->blit_y + (rasterizer->blit_height-1)) * CTX_FULL_AA) ||
       (scan_end < (rasterizer->blit_y) * CTX_FULL_AA)))
   { 
     /* not affecting this rasterizers scanlines */
