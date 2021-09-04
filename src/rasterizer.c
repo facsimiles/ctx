@@ -222,8 +222,10 @@ CTX_STATIC uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
 
 static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {
+#if CTX_SHAPE_CACHE
   int x = 0;
   int y = 0;
+#endif
   int count = rasterizer->edge_list.count;
   if (CTX_UNLIKELY (count == 0))
      return 0;

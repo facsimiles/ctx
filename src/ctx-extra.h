@@ -311,5 +311,6 @@ int _ctx_frame (Ctx *ctx);
 
 void ctx_exit (Ctx *ctx);
 void ctx_list_backends(void);
+int ctx_pixel_format_ebpp (CtxPixelFormat format);
 
 #endif
