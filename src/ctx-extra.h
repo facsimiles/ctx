@@ -272,12 +272,15 @@ static inline float ctx_matrix_get_scale (CtxMatrix *matrix)
                          ctx_fabsf (matrix->m[1][1]) ) );
 }
 
-#if CTX_FONTS_FROM_FILE
-int   ctx_load_font_ttf_file (const char *name, const char *path);
+#if CTX_GET_CONTENTS
 int
 _ctx_file_get_contents (const char     *path,
                         unsigned char **contents,
                         long           *length);
+#endif
+
+#if CTX_FONTS_FROM_FILE
+int   ctx_load_font_ttf_file (const char *name, const char *path);
 #endif
 
 #endif

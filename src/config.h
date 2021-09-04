@@ -139,6 +139,14 @@
 #define CTX_FONTS_FROM_FILE  0
 #endif
 
+#ifndef CTX_GET_CONTENTS
+#if CTX_FONTS_FROM_FILE
+#define CTX_GET_CONTENTS    1
+#else
+#define CTX_GET_CONTENTS    0
+#endif
+#endif
+
 #ifndef CTX_FORMATTER
 #define CTX_FORMATTER       1
 #endif

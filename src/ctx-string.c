@@ -53,6 +53,11 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
   string->str[string->length] = '\0';
 }
 
+void ctx_string_append_byte (CtxString *string, char  val)
+{
+  _ctx_string_append_byte (string, val);
+}
+
 void ctx_string_append_unichar (CtxString *string, unsigned int unichar)
 {
   char *str;
@@ -158,6 +163,13 @@ ctx_string_free (CtxString *string, int freealloc)
   }
 #endif
   free (string);
+}
+
+char       *ctx_string_dissolve       (CtxString *string)
+{
+  char *ret = string->str;
+  ctx_string_free (string, 0);
+  return ret;
 }
 
 void

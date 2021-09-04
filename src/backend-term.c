@@ -210,7 +210,7 @@ static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
   int diff = 0;
   for (c = 0; c<3;c++)
     diff += ctx_pow2(a[c]-b[c]);
-  return sqrtf(diff);
+  return ctx_sqrtf(diff);
   return diff;
 }
 

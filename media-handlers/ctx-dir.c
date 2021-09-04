@@ -104,7 +104,7 @@ void ui_queue_thumb (const char *path)
   free (thumb_path);
 }
 
-void viewer_load_path (const char *path);
+void viewer_load_path (const char *path, const char *name);
 
 static int custom_sort (const struct dirent **a,
                         const struct dirent **b)
@@ -115,6 +115,10 @@ static int custom_sort (const struct dirent **a,
   }
   return strcmp ((*a)->d_name , (*b)->d_name);
 }
+
+#define METADATA_NOTEST 1
+#include "metadata/metadata.c"
+
 
 void dm_set_path (Files *files, const char *path)
 {
@@ -127,6 +131,8 @@ void dm_set_path (Files *files, const char *path)
   files->namelist = NULL;
   files->path = resolved_path;
   files->n = scandir (files->path, &files->namelist, NULL, custom_sort);
+
+  metadata_load (resolved_path);
 }
 
 Files file_state;
@@ -238,7 +244,7 @@ static void files_list (ITK *itk, Files *files)
 
       if (c->no == itk->focus_no)
       {
-        viewer_load_path (newpath);
+        viewer_load_path (newpath, files->namelist[i]->d_name);
 
         ctx_add_key_binding (ctx, "return", NULL, NULL, item_activate, (void*)((size_t)i));
       }
@@ -393,7 +399,7 @@ static void files_grid (ITK *itk, Files *files)
       if (c->no == itk->focus_no)
       {
         focused = 1;
-        viewer_load_path (newpath);
+        viewer_load_path (newpath, files->namelist[i]->d_name);
 
         ctx_add_key_binding (ctx, "return", NULL, NULL, item_activate, (void*)((size_t)i));
       }
@@ -524,25 +530,31 @@ extern float font_size;
 int  ctx_clients_draw (Ctx *ctx);
 void ctx_clients_handle_events (Ctx *ctx);
 
-static char *loaded_path = NULL;
+static char *viewer_loaded_path = NULL;
+static char *viewer_loaded_name = NULL;
 
-void viewer_load_path (const char *path)
+
+void viewer_load_path (const char *path, const char *name)
 {
-  if (path && loaded_path && !strcmp (loaded_path, path))
+  if (path && viewer_loaded_path && !strcmp (viewer_loaded_path, path))
   {
     return;
   }
-  if (loaded_path)
+  if (viewer_loaded_path)
   {
     while (clients)
       ctx_client_remove (ctx, clients->data);
     ctx_set_dirty (ctx, 1);
-    free (loaded_path);
-    loaded_path = NULL;
+    free (viewer_loaded_path);
+    viewer_loaded_path = NULL;
   }
+
+  if (viewer_loaded_name) free (viewer_loaded_name);
+  viewer_loaded_name = strdup (name);
+
   if (path)
   {
-    loaded_path = strdup (path);
+    viewer_loaded_path = strdup (path);
     char *escaped_path = malloc (strlen (path) * 2 + 2);
     char *command = malloc (32 + strlen (path) * 2 + 64);
     int j = 0;
@@ -658,7 +670,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_timeout (ctx, 250, thumb_monitor, NULL);
     font_size = itk->font_size;
     //itk->font_size = font_size;
-    viewer_load_path ("/home/pippin/src/ctx/media/traffic.gif");
+    viewer_load_path ("/home/pippin/src/ctx/media/traffic.gif", "traffic.gif");
     first = 0;
   }
 
@@ -688,8 +700,23 @@ static int card_files (ITK *itk_, void *data)
     ctx_clients_handle_events (ctx);
   }
 
-  itk_panel_start (itk, "prop", ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*4);
-  itk_labelf (itk, "foo %s", loaded_path);
+  itk_panel_start (itk, "prop", ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*8);
+  int keys = metadata_item_key_count (viewer_loaded_name);
+  itk_labelf (itk, "%s - %i", viewer_loaded_name, keys);
+  for (int k = 0; k < keys; k++)
+  {
+    char *key = metadata_key_name (viewer_loaded_name, k);
+    if (key)
+    {
+      char *val = metadata_key_string (viewer_loaded_name, key);
+      if (val)
+      {
+        itk_labelf (itk, "%s=%s", key, val);
+        free (val);
+      }
+      free (key);
+    }
+  }
   itk_panel_end (itk);
 
   return 0;

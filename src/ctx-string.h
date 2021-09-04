@@ -20,6 +20,7 @@ struct _CtxString
 
 CtxString   *ctx_string_new_with_size  (const char *initial, int initial_size);
 CtxString   *ctx_string_new            (const char *initial);
+char       *ctx_string_dissolve       (CtxString *string);
 void        ctx_string_free           (CtxString *string, int freealloc);
 const char *ctx_string_get            (CtxString *string);
 uint32_t    ctx_string_get_unichar    (CtxString *string, int pos);

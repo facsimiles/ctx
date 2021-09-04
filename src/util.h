@@ -31,7 +31,7 @@ static int ctx_str_is_number (const char *str)
   return 0;
 }
 
-#if CTX_FONTS_FROM_FILE
+#if CTX_GET_CONTENTS
 
 typedef struct CtxFileContent
 {

@@ -2093,6 +2093,11 @@ void ctx_set_transform (Ctx *ctx, float a, float b, float c, float d, float e, f
   ctx_identity (ctx);
   ctx_apply_transform (ctx, a, b, c, d, e, f);
 }
+
+#endif
+
+#if CTX_GET_CONTENTS
+
 #ifndef NO_LIBCURL
 #include <curl/curl.h>
 static size_t
@@ -2182,6 +2187,4 @@ ctx_get_contents (const char     *uri,
   free (temp_uri);
   return success;
 }
-
-
 #endif
