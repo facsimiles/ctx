@@ -1644,6 +1644,8 @@ ctx_fragment_color_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out
   {
     CtxSource *g = &rasterizer->state->gstate.source_fill;
     ctx_color_get_rgba (rasterizer->state, &g->color, rgba);
+    for (int c = 0; c < 3; c++)
+      rgba[c] *= rgba[3];
     rgba += 4;
   }
 }
@@ -3228,7 +3230,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       rasterizer->comp_op = ctx_RGBAF_porter_duff_color;
-      ctx_color_get_rgba (rasterizer->state, &gstate->source_fill.color, (float*)rasterizer->color);
+      ctx_fragment_color_RGBAF (rasterizer, 0,0, rasterizer->color, 1, 0,0);
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
           ((float*)rasterizer->color)[c] *= gstate->global_alpha_f;
@@ -3260,12 +3262,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
           case CTX_SOURCE_COLOR:
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
-              if (((float*)(rasterizer->color))[components-1] == 0.0f)
-                rasterizer->comp_op = ctx_RGBA8_nop;
-        //      else if (((float*)(rasterizer->color))[components-1] == 0.0f)
-              else
-                 rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
-                //rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
+              rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
             }
             else
             {
