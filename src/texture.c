@@ -60,7 +60,7 @@ CtxBuffer *ctx_buffer_new (int width, int height,
   return buffer;
 }
 
-void ctx_buffer_deinit (CtxBuffer *buffer)
+static void ctx_buffer_deinit (CtxBuffer *buffer)
 {
   if (buffer->free_func)
     buffer->free_func (buffer->data, buffer->user_data);

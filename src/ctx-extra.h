@@ -243,6 +243,8 @@ ctx_matrix_translate (CtxMatrix *matrix, float x, float y);
 
 
 void ctx_get_matrix (Ctx *ctx, CtxMatrix *matrix);
+void ctx_set_matrix (Ctx *ctx, CtxMatrix *matrix);
+int _ctx_is_rasterizer (Ctx *ctx);
 
 int ctx_color (Ctx *ctx, const char *string);
 typedef struct _CtxState CtxState;
@@ -282,5 +284,32 @@ _ctx_file_get_contents (const char     *path,
 #if CTX_FONTS_FROM_FILE
 int   ctx_load_font_ttf_file (const char *name, const char *path);
 #endif
+
+#if CTX_BABL
+void ctx_rasterizer_colorspace_babl (CtxState      *state,
+                                     CtxColorSpace  space_slot,
+                                     const Babl    *space);
+#endif
+void ctx_rasterizer_colorspace_icc (CtxState      *state,
+                                    CtxColorSpace  space_slot,
+                                    char          *icc_data,
+                                    int            icc_length);
+
+
+CtxBuffer *ctx_buffer_new_bare (void);
+
+void ctx_buffer_set_data (CtxBuffer *buffer,
+                          void *data, int width, int height,
+                          int stride,
+                          CtxPixelFormat pixel_format,
+                          void (*freefunc) (void *pixels, void *user_data),
+                          void *user_data);
+
+int _ctx_set_frame (Ctx *ctx, int frame);
+int _ctx_frame (Ctx *ctx);
+
+
+void ctx_exit (Ctx *ctx);
+void ctx_list_backends(void);
 
 #endif

@@ -2004,8 +2004,6 @@ static void vtcmd_set_alternate_font (VT *vt, const char *sequence)
   vt->charset[0] = 1;
 }
 
-int _ctx_set_frame (Ctx *ctx, int frame);
-int _ctx_frame (Ctx *ctx);
 
 static void vt_ctx_exit (void *data)
 {

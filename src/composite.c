@@ -3260,11 +3260,11 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
         switch (gstate->source_fill.type)
         {
           case CTX_SOURCE_COLOR:
-            if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-            {
-              rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
-            }
-            else
+            //if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+            //{
+            //  rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
+           // }
+           // else
             {
               rasterizer->comp_op = ctx_RGBAF_porter_duff_color_normal;
             }

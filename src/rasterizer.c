@@ -4372,7 +4372,7 @@ CtxAntialias ctx_get_antialias (Ctx *ctx)
   }
 }
 
-int _ctx_antialias_to_aa (CtxAntialias antialias)
+static int _ctx_antialias_to_aa (CtxAntialias antialias)
 {
   switch (antialias)
   {

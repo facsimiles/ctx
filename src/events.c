@@ -99,7 +99,10 @@ int ctx_count (Ctx *ctx)
 
 extern int _ctx_damage_control;
 
-static void ctx_list_backends()
+
+#if CTX_EVENTS
+
+void ctx_list_backends(void)
 {
     fprintf (stderr, "possible values for CTX_BACKEND:\n");
     fprintf (stderr, " ctx");
@@ -114,8 +117,6 @@ static void ctx_list_backends()
     fprintf (stderr, " termimg");
     fprintf (stderr, "\n");
 }
-
-#if CTX_EVENTS
 
 static uint32_t ctx_ms (Ctx *ctx)
 {

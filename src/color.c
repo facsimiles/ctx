@@ -487,7 +487,8 @@ void ctx_stroke_source (Ctx *ctx)
   ctx_process (ctx, &set_stroke);
 }
 
-void ctx_color_raw (Ctx *ctx, CtxColorModel model, float *components, int stroke)
+
+static void ctx_color_raw (Ctx *ctx, CtxColorModel model, float *components, int stroke)
 {
 #if 0
   CtxSource *source = stroke?

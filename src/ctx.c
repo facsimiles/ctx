@@ -171,7 +171,6 @@ ctx_close_path (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_CLOSE_PATH);
 }
 
-int _ctx_is_rasterizer (Ctx *ctx);
 
 void
 ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
@@ -1859,7 +1858,7 @@ _ctx_init (Ctx *ctx)
   ctx->texture_cache = ctx;
 }
 
-static void ctx_setup ();
+static void ctx_setup (void);
 
 #if CTX_DRAWLIST_STATIC
 static Ctx ctx_state;
@@ -1941,7 +1940,7 @@ Ctx *ctx_new_for_drawlist (void *data, size_t length)
   return ctx;
 }
 
-static void ctx_setup ()
+static void ctx_setup (void)
 {
   ctx_font_setup ();
 }

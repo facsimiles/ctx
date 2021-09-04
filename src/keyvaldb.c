@@ -58,7 +58,7 @@ CTX_STATIC float ctx_string_index_to_float (int index)
   return CTX_KEYDB_STRING_START + index;
 }
 
-void *ctx_state_get_blob (CtxState *state, uint64_t key)
+static void *ctx_state_get_blob (CtxState *state, uint64_t key)
 {
   float stored = ctx_state_get (state, key);
   int idx = ctx_float_to_string_index (stored);
@@ -72,7 +72,7 @@ void *ctx_state_get_blob (CtxState *state, uint64_t key)
   return NULL;
 }
 
-const char *ctx_state_get_string (CtxState *state, uint64_t key)
+static const char *ctx_state_get_string (CtxState *state, uint64_t key)
 {
   const char *ret = (char*)ctx_state_get_blob (state, key);
   if (ret && ret[0] == 127)
