@@ -1361,7 +1361,7 @@ static int ctx_clients_handle_events_fun (void *data)
 
 void ctx_clients_handle_events (Ctx *ctx)
 {
-#if CTX_THREADS==0
+#if 1 //#if CTX_THREADS==0
     ctx_client_handle_events_iteration (ctx);
 #else
     static thrd_t tid = 0;
