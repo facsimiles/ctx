@@ -226,9 +226,7 @@ static int metadata_key_int (const char *item, const char *key)
   return metadata_key_float (item, key);
 }
 
-#ifndef METADATA_NOTEST
-
-void metadata_swap (int no_a, int no_b)
+static void metadata_swap (int no_a, int no_b)
 {
    if (no_b < no_a)
    {
@@ -453,6 +451,7 @@ void metadata_dump (void)
   }
 }
 
+#ifndef METADATA_NOTEST
 int main (int argc, char **argv)
 {
   if (argv[1])

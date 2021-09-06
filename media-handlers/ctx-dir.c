@@ -43,6 +43,9 @@ typedef struct Files {
   char   *path;
   struct  dirent **namelist;
   int     n;
+
+  char  **items;
+  int     count;
 } Files;
 #define PATH_SEP "/"
 
@@ -126,13 +129,44 @@ void dm_set_path (Files *files, const char *path)
 
   if (files->path)
     free (files->path);
+  files->path = resolved_path;
+
   if (files->namelist)
     free (files->namelist);
   files->namelist = NULL;
-  files->path = resolved_path;
   files->n = scandir (files->path, &files->namelist, NULL, custom_sort);
-
   metadata_load (resolved_path);
+
+  if (files->items)
+  {
+     for (int i = 0; i < files->count; i++)
+       free (files->items[i]);
+     free (files->items);
+  }
+  int meta_count = metadata_count ();
+  files->count = 0;
+  files->items = calloc (sizeof (char*), files->n + meta_count + 1);
+  int pos;
+  for (pos = 0; pos < meta_count; pos++)
+  {
+    files->items[files->count++] = metadata_item_name (pos);
+  }
+  for (int i = 0; i < files->n; i++)
+  {
+    int found = 0;
+    const char *name = files->namelist[i]->d_name;
+    for (int j = 0; j < files->count; j++)
+    {
+      if (!strcmp (name, files->items[j]))
+      { found = 1;
+      }
+    }
+    if (!found && (name[0] != '.' || (name[0] == '.' && name[1]=='.')))
+    {
+      metadata_insert(-1, name);
+      files->items[files->count++] = strdup (name);
+    }
+  }
 }
 
 Files file_state;
@@ -183,14 +217,14 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
 
   char *new_path;
  
-  if (!strcmp (files->namelist[no]->d_name, ".."))
+  if (!strcmp (files->items[no], ".."))
   {
     new_path = get_dirname (files->path);
   }
   else
   {
     new_path = ctx_strdup_printf ("%s/%s", files->path, 
-                                  files->namelist[no]->d_name);
+                                  files->items[no]);
   }
   if (ctx_path_is_dir (new_path))
   {
@@ -215,14 +249,43 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
+static int metadata_dirty = 0;
+
+static void move_item_down (CtxEvent *e, void *d1, void *d2)
+{
+  int no = (size_t)(d1);
+  char *new_path;
+  //if (!strcmp (files->items[no], ".."))dd
+  if (no<files->count-1)
+  {
+    metadata_swap (no, no+1);
+    metadata_dirty ++;
+    ctx_set_dirty (e->ctx, 1);
+    itk_focus (itk, 1);
+  }
+}
+
+static void move_item_up (CtxEvent *e, void *d1, void *d2)
+{
+  int no = (size_t)(d1);
+  char *new_path;
+  if (no>0)
+  {
+    metadata_swap (no, no-1);
+    metadata_dirty ++;
+    ctx_set_dirty (e->ctx, 1);
+    itk_focus (itk, -1);
+  }
+}
+
 static void files_list (ITK *itk, Files *files)
 {
   float em = itk_em (itk);
-  for (int i = 0; i < files->n; i++)
+  for (int i = 0; i < files->count; i++)
   {
-    if ((files->namelist[i]->d_name[0] == '.' &&
-         files->namelist[i]->d_name[1] == '.') ||
-        (files->namelist[i]->d_name[0] != '.')
+    if ((files->items[i][0] == '.' &&
+         files->items[i][1] == '.') ||
+        (files->items[i][0] != '.')
        )
     {
       struct stat stat_buf;
@@ -234,23 +297,27 @@ static void files_list (ITK *itk, Files *files)
       if (sy > 0 && sy < ctx_height (itk->ctx))
       {
 
-      char *newpath = malloc (strlen(files->path)+strlen(files->namelist[i]->d_name) + 2);
+      char *newpath = malloc (strlen(files->path)+strlen(files->items[i]) + 2);
       if (!strcmp (files->path, PATH_SEP))
-        sprintf (newpath, "%s%s", PATH_SEP, files->namelist[i]->d_name);
+        sprintf (newpath, "%s%s", PATH_SEP, files->items[i]);
       else
-        sprintf (newpath, "%s%s%s", files->path, PATH_SEP, files->namelist[i]->d_name);
+        sprintf (newpath, "%s%s%s", files->path, PATH_SEP, files->items[i]);
       lstat (newpath, &stat_buf);
 
 
       if (c->no == itk->focus_no)
       {
-        viewer_load_path (newpath, files->namelist[i]->d_name);
+        viewer_load_path (newpath, files->items[i]);
 
         ctx_add_key_binding (ctx, "return", NULL, NULL, item_activate, (void*)((size_t)i));
+        ctx_add_key_binding (ctx, "control-down", NULL, NULL, move_item_down, 
+                         (void*)((size_t)i));
+        ctx_add_key_binding (ctx, "control-up", NULL, NULL, move_item_up, 
+                         (void*)((size_t)i));
       }
       free (newpath);
 
-      itk_labelf (itk, "%s\n", files->namelist[i]->d_name);
+      itk_labelf (itk, "%s\n", files->items[i]);
       itk_sameline (itk);
       itk->x = itk->x0 + itk_em (itk) * 10;
       if (S_ISDIR (stat_buf.st_mode))
@@ -313,7 +380,10 @@ static void draw_img (Ctx *ctx, float x, float y, float w, float h, const char *
   {
     ctx_save (ctx);
     ctx_arc (ctx, x + w * 0.5, y + h * 0.3, w * 0.2, 0.0, 6.3, 0);
-    ctx_gray (ctx, 1);
+    static float a = 0.4;
+    a += 0.6124*0.2;
+    if (a >= 0.6) a-=0.2;
+    ctx_rgba (ctx, 1, 1, 1, a);
     ctx_fill (ctx);
     ctx_restore (ctx);
   }
@@ -352,17 +422,17 @@ static void set_grid (CtxEvent *e, void *d1, void *d2)
 
 static int filename_is_image (const char *filename)
 {
-  if (strstr (filename, ".png")) return 1;
-  if (strstr (filename, ".jpg")) return 1;
-  if (strstr (filename, ".JPG")) return 1;
+  if (strstr (filename, ".png"))  return 1;
+  if (strstr (filename, ".jpg"))  return 1;
+  if (strstr (filename, ".JPG"))  return 1;
   if (strstr (filename, ".JPEG")) return 1;
-  if (strstr (filename, ".gif")) return 1;
-  if (strstr (filename, ".GIF")) return 1;
+  if (strstr (filename, ".gif"))  return 1;
+  if (strstr (filename, ".GIF"))  return 1;
   //if (strstr (filename, ".tif")) return 1;
   //if (strstr (filename, ".tiff")) return 1;
   //if (strstr (filename, ".TIF")) return 1;
   if (strstr (filename, ".jpeg")) return 1;
-  if (strstr (filename, ".PNG")) return 1;
+  if (strstr (filename, ".PNG"))  return 1;
   return 0;
 }
 
@@ -371,11 +441,11 @@ static void files_grid (ITK *itk, Files *files)
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
 
-  for (int i = 0; i < files->n; i++)
+  for (int i = 0; i < files->count; i++)
   {
-    if ((files->namelist[i]->d_name[0] == '.' &&
-         files->namelist[i]->d_name[1] == '.') ||
-        (files->namelist[i]->d_name[0] != '.')
+    if ((files->items[i][0] == '.' &&
+         files->items[i][1] == '.') ||
+        (files->items[i][0] != '.')
        )
     {
       float sx = itk->x,sy = itk->y;
@@ -387,7 +457,7 @@ static void files_grid (ITK *itk, Files *files)
 
 
       struct stat stat_buf;
-      const char *d_name = files->namelist[i]->d_name;
+      const char *d_name = files->items[i];
       char *newpath = malloc (strlen(files->path)+strlen(d_name) + 2);
       if (!strcmp (files->path, PATH_SEP))
         sprintf (newpath, "%s%s", PATH_SEP, d_name);
@@ -399,9 +469,13 @@ static void files_grid (ITK *itk, Files *files)
       if (c->no == itk->focus_no)
       {
         focused = 1;
-        viewer_load_path (newpath, files->namelist[i]->d_name);
+        viewer_load_path (newpath, files->items[i]);
 
         ctx_add_key_binding (ctx, "return", NULL, NULL, item_activate, (void*)((size_t)i));
+        ctx_add_key_binding (ctx, "control-down", NULL, NULL, move_item_down, 
+                         (void*)((size_t)i));
+        ctx_add_key_binding (ctx, "control-up", NULL, NULL, move_item_up, 
+                         (void*)((size_t)i));
       }
 
       ctx_begin_path (ctx);
@@ -424,8 +498,8 @@ static void files_grid (ITK *itk, Files *files)
       }
       free (newpath);
 
-      char *title = malloc (strlen (files->namelist[i]->d_name) + 32);
-      strcpy (title, files->namelist[i]->d_name);
+      char *title = malloc (strlen (files->items[i]) + 32);
+      strcpy (title, files->items[i]);
       int title_len = strlen (title);
 
       {
@@ -670,8 +744,16 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_timeout (ctx, 250, thumb_monitor, NULL);
     font_size = itk->font_size;
     //itk->font_size = font_size;
-    viewer_load_path ("/home/pippin/src/ctx/media/traffic.gif", "traffic.gif");
+    //viewer_load_path ("/home/pippin/src/ctx/media/traffic.gif", "traffic.gif");
     first = 0;
+  }
+  thumb_monitor (ctx, NULL);
+
+  if (metadata_dirty)
+  {
+    metadata_save ();
+    dm_set_path (files, files->path);
+    metadata_dirty = 0;
   }
 
   itk_panel_start (itk, "files", 0,0, ctx_width(ctx)/2, ctx_height (ctx));
