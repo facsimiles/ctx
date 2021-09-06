@@ -1060,8 +1060,16 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 
   if (dy == 0.0f && dx > 0.0f)
   {
+    if (!(y >= 0 && y < bheight))
+    {
+      uint32_t *dst = (uint32_t*)rgba;
+      for (i = 0 ; i < count; i++)
+        *dst++ = 0;
+      return;
+    }
+
     if ((dx > 0.99f && dx < 1.01f && 
-         ox < 0.01 && oy < 0.01) || y < 0 || y > bheight-1)
+         ox < 0.01 && oy < 0.01))
     {
       /* TODO: this could have been rigged up in composite_setup */
       ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer,
