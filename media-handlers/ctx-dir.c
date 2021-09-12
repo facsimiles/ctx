@@ -407,16 +407,29 @@ static void draw_doc (Ctx *ctx, float x, float y, float w, float h)
   ctx_restore (ctx);
 }
 
-int is_grid = 1;
+typedef enum {
+  CTX_DIR_LIST,
+  CTX_DIR_GRID,
+  CTX_DIR_LAYOUT
+}
+CtxDirView;
 
+static CtxDirView view_type = 1;
+
+
+static void set_layout (CtxEvent *e, void *d1, void *d2)
+{
+  view_type = CTX_DIR_LAYOUT;
+  ctx_set_dirty (e->ctx, 1);
+}
 static void set_list (CtxEvent *e, void *d1, void *d2)
 {
-  is_grid = 0;
+  view_type = CTX_DIR_LIST;
   ctx_set_dirty (e->ctx, 1);
 }
 static void set_grid (CtxEvent *e, void *d1, void *d2)
 {
-  is_grid = 1;
+  view_type = CTX_DIR_GRID;
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -542,6 +555,113 @@ static void files_grid (ITK *itk, Files *files)
   }
 }
 
+static void files_layout (ITK *itk, Files *files)
+{
+  Ctx *ctx = itk->ctx;
+  float em = itk_em (itk);
+
+  for (int i = 0; i < files->count; i++)
+  {
+    if ((files->items[i][0] == '.' &&
+         files->items[i][1] == '.') ||
+        (files->items[i][0] != '.')
+       )
+    {
+      float sx = itk->x,sy = itk->y;
+      ctx_user_to_device (itk->ctx, &sx, &sy);
+      CtxControl *c = itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, em * 6, em * 4);
+      float saved_x = itk->x;
+      if (sy + em * 4 > 0 && sy < ctx_height (itk->ctx))
+      {
+
+
+      struct stat stat_buf;
+      const char *d_name = files->items[i];
+      char *newpath = malloc (strlen(files->path)+strlen(d_name) + 2);
+      if (!strcmp (files->path, PATH_SEP))
+        sprintf (newpath, "%s%s", PATH_SEP, d_name);
+      else
+        sprintf (newpath, "%s%s%s", files->path, PATH_SEP, d_name);
+      lstat (newpath, &stat_buf);
+      int focused = 0;
+
+      if (c->no == itk->focus_no)
+      {
+        focused = 1;
+        viewer_load_path (newpath, files->items[i]);
+
+        ctx_add_key_binding (ctx, "return", NULL, NULL, item_activate, (void*)((size_t)i));
+        ctx_add_key_binding (ctx, "control-down", NULL, NULL, move_item_down, 
+                         (void*)((size_t)i));
+        ctx_add_key_binding (ctx, "control-up", NULL, NULL, move_item_up, 
+                         (void*)((size_t)i));
+      }
+
+      ctx_begin_path (ctx);
+      ctx_gray (ctx, 0.0);
+
+      if (S_ISDIR(stat_buf.st_mode))
+      {
+        draw_folder (ctx, itk->x, itk->y, em * 6, em * 4);
+      }
+      else
+      {
+        if (filename_is_image (d_name))
+        {
+          draw_img (ctx, itk->x, itk->y, em * 6, em * 4, newpath);
+        }
+        else
+        {
+          draw_doc (ctx, itk->x, itk->y, em * 6, em *  4);
+        }
+      }
+      free (newpath);
+
+      char *title = malloc (strlen (files->items[i]) + 32);
+      strcpy (title, files->items[i]);
+      int title_len = strlen (title);
+
+      {
+        int wraplen = 12;
+        int lines = (title_len + wraplen - 1)/ wraplen;
+
+        if (!focused &&  lines > 2) lines = 2;
+
+        for (int i = 0; i < lines; i++)
+        {
+        ctx_move_to (itk->ctx, itk->x + em * 3, itk->y + em * (4.0 + i) - lines/2.0 * em);
+        ctx_font_size (itk->ctx, em); //em * 0.6);// * 0.9);
+        ctx_gray (itk->ctx, 0.8);
+        ctx_save (itk->ctx);
+        ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_CENTER);
+
+        if (i * wraplen + wraplen < title_len)
+        {
+        int tmp = title[i * wraplen + wraplen];
+        title[i * wraplen + wraplen] = 0;
+        ctx_text (itk->ctx, &title[i * wraplen]);
+        title[i * wraplen + wraplen] = tmp;
+        }
+        else
+        {
+          ctx_text (itk->ctx, &title[i * wraplen]);
+        }
+        ctx_restore (itk->ctx);
+        }
+      }
+        free (title);
+      }
+      //itk->x = saved_x + em * 6;
+      //if (itk->x + em * 5 > itk->panel->x + itk->panel->width)
+      {
+        itk->x = itk->x0;
+        itk->y += em * 4;
+      }
+    }
+  }
+}
+
+
 static void empty_thumb_queue (void)
 {
   while (thumb_queue)
@@ -565,7 +685,7 @@ static int thumb_monitor (Ctx *ctx, void *data)
 
   if (thumb_pid == 0 || kill (thumb_pid, 0) == -1)
   {
-    int batch_size = 5;
+    int batch_size = 16;
     int count = initial_args;
     for (CtxList *iter = thumb_queue;iter && count < batch_size + initial_args; iter = iter->next)
     {
@@ -741,13 +861,13 @@ static int card_files (ITK *itk_, void *data)
   static int first = 1;
   if (first)
   {
-    ctx_add_timeout (ctx, 250, thumb_monitor, NULL);
+    ctx_add_timeout (ctx, 1000, thumb_monitor, NULL);
     font_size = itk->font_size;
     //itk->font_size = font_size;
     //viewer_load_path ("/home/pippin/src/ctx/media/traffic.gif", "traffic.gif");
     first = 0;
   }
-  thumb_monitor (ctx, NULL);
+  //thumb_monitor (ctx, NULL);
 
   if (metadata_dirty)
   {
@@ -757,6 +877,7 @@ static int card_files (ITK *itk_, void *data)
   }
 
   itk_panel_start (itk, "files", 0,0, ctx_width(ctx)/2, ctx_height (ctx));
+
   if (!files->n)
   {
     itk_labelf (itk, "no files\n");
@@ -765,11 +886,20 @@ static int card_files (ITK *itk_, void *data)
   {
     ctx_add_key_binding (ctx, "F1", NULL, NULL, set_list, NULL);
     ctx_add_key_binding (ctx, "F2", NULL, NULL, set_grid, NULL);
+    ctx_add_key_binding (ctx, "F3", NULL, NULL, set_layout, NULL);
 
-    if (is_grid)
-      files_grid (itk, files);
-    else
-      files_list (itk, files);
+    switch (view_type)
+    {
+      case CTX_DIR_GRID:
+        files_grid (itk, files);
+        break;
+      case CTX_DIR_LIST:
+        files_list (itk, files);
+        break;
+      case CTX_DIR_LAYOUT:
+        files_layout (itk, files);
+        break;
+    }
   }
 
   itk_panel_end (itk);
@@ -782,6 +912,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_clients_handle_events (ctx);
   }
 
+#if 0
   itk_panel_start (itk, "prop", ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*8);
   int keys = metadata_item_key_count (viewer_loaded_name);
   itk_labelf (itk, "%s - %i", viewer_loaded_name, keys);
@@ -800,6 +931,7 @@ static int card_files (ITK *itk_, void *data)
     }
   }
   itk_panel_end (itk);
+#endif
 
   return 0;
 }

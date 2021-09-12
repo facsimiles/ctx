@@ -355,8 +355,8 @@ void _ctx_idle_iteration (Ctx *ctx)
   static unsigned long prev_ticks = 0;
   CtxList *l;
   CtxList *to_remove = NULL;
-  unsigned long ticks = _ctx_ticks ();
-  unsigned long tick_delta = (prev_ticks == 0) ? 0 : ticks - prev_ticks;
+  unsigned long ticks = ctx_ticks ();
+  long tick_delta = (prev_ticks == 0) ? 0 : ticks - prev_ticks;
   prev_ticks = ticks;
 
   if (!ctx->events.idles)
@@ -367,10 +367,24 @@ void _ctx_idle_iteration (Ctx *ctx)
   {
     CtxIdleCb *item = l->data;
 
+    long rem = item->ticks_remaining;
     if (item->ticks_remaining >= 0)
-      item->ticks_remaining -= tick_delta;
+    {
+      rem -= tick_delta;
 
-    if (item->ticks_remaining < 0)
+      item->ticks_remaining -= tick_delta / 100;
+
+    if (rem < 0)
+    {
+      if (item->cb (ctx, item->idle_data) == 0)
+        ctx_list_prepend (&to_remove, item);
+      else
+        item->ticks_remaining = item->ticks_full;
+    }
+    else
+        item->ticks_remaining = rem;
+    }
+    else
     {
       if (item->cb (ctx, item->idle_data) == 0)
         ctx_list_prepend (&to_remove, item);
