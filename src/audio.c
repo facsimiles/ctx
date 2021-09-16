@@ -10,7 +10,10 @@
 #if CTX_ALSA_AUDIO
 #include <alsa/asoundlib.h>
 #endif
-#include <alloca.h>
+
+
+
+//#include <alloca.h>
 
 #endif
 

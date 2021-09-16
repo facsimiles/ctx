@@ -1069,7 +1069,7 @@ const char *ctx_texture_init (
 
 #if CTX_TILED
 #if !__COSMOPOLITAN__
-#include <threads.h>
+//#include <threads.h>
 #endif
 #endif
 typedef struct _CtxTiled CtxTiled;

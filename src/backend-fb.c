@@ -217,7 +217,7 @@ void ctx_tiled_render_fun (void **data)
   #include <linux/vt.h>
   #include <linux/kd.h>
   #include <sys/mman.h>
-  #include <threads.h>
+  //#include <threads.h>
   #include <libdrm/drm.h>
   #include <libdrm/drm_mode.h>
 
