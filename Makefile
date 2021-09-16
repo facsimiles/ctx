@@ -143,7 +143,7 @@ docs/ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile build.conf
 #git gc
 
 foo: ctx
-updateweb: all ctx.static test flatpak docs/ctx.h.html docs/ctx-font-regular.h.html 
+updateweb: all ctx.static test docs/ctx.h.html docs/ctx-font-regular.h.html 
 	(cd docs ; stagit .. )
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
