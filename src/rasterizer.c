@@ -2211,14 +2211,14 @@ static inline float ctx_fmod1f (float val)
 static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
-  int count = rasterizer->preserve?rasterizer->edge_list.count:0;
+  int preserved_count = rasterizer->preserve?rasterizer->edge_list.count:1;
   int blit_x = rasterizer->blit_x;
   int blit_y = rasterizer->blit_y;
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
   int blit_stride = rasterizer->blit_stride;
 
-  CtxSegment temp[count]; /* copy of already built up path's poly line
+  CtxSegment temp[preserved_count]; /* copy of already built up path's poly line
                           XXX - by building a large enough path
                           the stack can be smashed!
                          */
@@ -2545,7 +2545,7 @@ done:
   if (CTX_UNLIKELY(rasterizer->preserve))
     {
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
-      rasterizer->edge_list.count = count;
+      rasterizer->edge_list.count = preserved_count;
     }
 #if CTX_ENABLE_SHADOW_BLUR
   if (CTX_UNLIKELY(rasterizer->in_shadow))
