@@ -213,9 +213,9 @@ void ctx_tiled_render_fun (void **data)
 
 
 #if CTX_FB
-  #include <linux/fb.h>
-  #include <linux/vt.h>
-  #include <linux/kd.h>
+  //#include <linux/fb.h>
+  //#include <linux/vt.h>
+  //#include <linux/kd.h>
   #include <sys/mman.h>
   //#include <threads.h>
   #include <libdrm/drm.h>
@@ -302,8 +302,8 @@ struct _CtxFb
    int          fb_bits;
    int          fb_bpp;
    int          fb_mapped_size;
-   struct       fb_var_screeninfo vinfo;
-   struct       fb_fix_screeninfo finfo;
+   //struct       fb_var_screeninfo vinfo;
+   //struct       fb_fix_screeninfo finfo;
    int          vt;
    int          tty;
    int          vt_active;
@@ -475,8 +475,10 @@ static void ctx_fb_flip (CtxFb *fb)
 {
   if (fb->is_drm)
     ctx_fbdrm_flip (fb);
+#if 0
   else
     ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
+#endif
 }
 
 inline static uint32_t
@@ -726,13 +728,15 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
        if (pre_skip < 0) pre_skip = 0;
        if (post_skip < 0) post_skip = 0;
 
-     __u32 dummy = 0;
 
        if (tiled->min_row == 100){
           pre_skip = 0;
           post_skip = 0;
           // not when drm ?
+#if 0
+     __u32 dummy = 0;
           ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
+#endif
           ctx_fb_undraw_cursor (fb);
        }
        else
@@ -744,7 +748,10 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
       tiled->max_col = 0;
 
      // not when drm ?
+ #if 0
+     __u32 dummy = 0;
      ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
+#endif
      ctx_fb_undraw_cursor (fb);
      switch (fb->fb_bits)
      {
@@ -1565,8 +1572,9 @@ void ctx_fb_free (CtxFb *fb)
   {
     ctx_fbdrm_close (fb);
   }
-
+#if 0
   ioctl (0, KDSETMODE, KD_TEXT);
+#endif
   if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
   //free (fb);
@@ -1587,6 +1595,7 @@ int ctx_renderer_is_fb (Ctx *ctx)
 }
 
 static CtxFb *ctx_fb = NULL;
+#if 0
 static void vt_switch_cb (int sig)
 {
   CtxTiled *tiled = (void*)ctx_fb;
@@ -1596,7 +1605,9 @@ static void vt_switch_cb (int sig)
       ioctl(ctx_fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
     ioctl (0, VT_RELDISP, 1);
     ctx_fb->vt_active = 0;
+#if 0
     ioctl (0, KDSETMODE, KD_TEXT);
+#endif
   }
   else
   {
@@ -1604,7 +1615,9 @@ static void vt_switch_cb (int sig)
     ctx_fb->vt_active = 1;
     // queue draw
     tiled->render_frame = ++tiled->frame;
+#if 0
     ioctl (0, KDSETMODE, KD_GRAPHICS);
+#endif
     if (ctx_fb->is_drm)
     {
       ioctl(ctx_fb->fb_fd, DRM_IOCTL_SET_MASTER, 0);
@@ -1622,6 +1635,7 @@ static void vt_switch_cb (int sig)
     }
   }
 }
+#endif
 
 static int ctx_fb_get_mice_fd (Ctx *ctx)
 {
@@ -1654,6 +1668,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   }
   else
   {
+#if 0
   fb->fb_fd = open ("/dev/fb0", O_RDWR);
   if (fb->fb_fd > 0)
     fb->fb_path = strdup ("/dev/fb0");
@@ -1735,6 +1750,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   fb->fb_mapped_size = fb->finfo.smem_len;
                                               
   fb->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
+#endif
   }
   if (!fb->fb)
     return NULL;
@@ -1819,9 +1835,11 @@ Ctx *ctx_new_fb (int width, int height, int drm)
   }
 
   fb->vt_active = 1;
+#if 0
   ioctl(0, KDSETMODE, KD_GRAPHICS);
   signal (SIGUSR1, vt_switch_cb);
   signal (SIGUSR2, vt_switch_cb);
+
   struct vt_stat st;
   if (ioctl (0, VT_GETSTATE, &st) == -1)
   {
@@ -1840,6 +1858,7 @@ Ctx *ctx_new_fb (int width, int height, int drm)
     ctx_log ("VT_SET_MODE on vt %i failed\n", fb->vt);
     return NULL;
   }
+#endif
 
   return tiled->ctx;
 #else

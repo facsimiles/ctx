@@ -16,7 +16,8 @@ CFLAGS_warnings= -Wall \
 		 -Wno-missing-field-initializers 
 
 CFLAGS+= -g $(CFLAGS_warnings) -fPIC
-CFLAGS+= -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=600
+CFLAGS+= -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=600 \
+	 -I/usr/X11R6/include
 #  -ffast-math   gets rejected by duktape
 
 CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers

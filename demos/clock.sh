@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 echo -ne "\e[?1049h" # alt-screen on
 echo -ne "\e[?25l"   # text-cursor off
 echo -ne "\e[2J\e[H" # clear and home
