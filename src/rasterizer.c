@@ -314,7 +314,7 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
   float ty = y;
   //float ox = rasterizer->x;
   //float oy = rasterizer->y;
-  if ((rasterizer->uses_transforms))
+  if (rasterizer->uses_transforms)
     {
       _ctx_user_to_device (rasterizer->state, &tx, &ty);
     }
@@ -330,7 +330,7 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
   if (CTX_UNLIKELY(rasterizer->has_prev<=0))
     {
 #if 0
-      if ((rasterizer->uses_transforms))
+      if (rasterizer->uses_transforms)
       {
         // storing transformed would save some processing for a tiny
         // amount of runtime RAM XXX
@@ -651,7 +651,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
     {
       CtxSegment *segment = segments + edges[i];
       int edge_end = segment->data.s16[3]-1;
-      if ((edge_end < scanline))
+      if (edge_end < scanline)
         {
 
           int dx_dy = abs(segment->delta);
@@ -773,11 +773,11 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
          (miny=entries[edge_pos].data.s16[1]-1)  <= next_scanline))
     {
       int maxy=entries[edge_pos].data.s16[3]-1;
-      if ((rasterizer->active_edges < CTX_MAX_EDGES-2 &&
-          maxy >= scanline))
+      if (rasterizer->active_edges < CTX_MAX_EDGES-2 &&
+          maxy >= scanline)
         {
           int dy = (entries[edge_pos].data.s16[3] - 1 - miny);
-          if ((dy))
+          if (dy)
             {
               int yd = scanline - miny;
               int no = rasterizer->active_edges;
@@ -797,13 +797,13 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
                 rasterizer->needs_aa15 += (abs_dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
               }
 
-              if ((miny > scanline) )
+              if (miny > scanline)
                 {
                   /* it is a pending edge - we add it to the end of the array
                      and keep a different count for items stored here, like
                      a heap and stack growing against each other
                   */
-                  if ((rasterizer->pending_edges < CTX_MAX_PENDING-1))
+                  if (rasterizer->pending_edges < CTX_MAX_PENDING-1)
                   {
                     edges[CTX_MAX_EDGES-1-rasterizer->pending_edges] =
                     rasterizer->edges[no];
@@ -919,12 +919,12 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          if ((first < minx))
+          if (first < minx)
           { 
             first = minx;
             graystart=0;
           }
-          if ((last > maxx))
+          if (last > maxx)
           {
             last = maxx;
             grayend=255;
@@ -974,12 +974,12 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          if ((first < minx))
+          if (first < minx)
           { 
             first = minx;
             graystart=0;
           }
-          if ((last > maxx))
+          if (last > maxx)
           {
             last = maxx;
             grayend=255;
@@ -1103,12 +1103,12 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          if ((first < minx))
+          if (first < minx)
           { 
             first = minx;
             graystart=0;
           }
-          if ((last > maxx))
+          if (last > maxx)
           {
             last = maxx;
             grayend=255;
@@ -1833,7 +1833,7 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
           | (rasterizer->active_edges + rasterizer->pending_edges == rasterizer->ending_edges)
           );
 
-    if ((needs_full_aa))
+    if (needs_full_aa)
     {
         int increment = CTX_FULL_AA/real_aa;
         memset (coverage, 0, coverage_size);
@@ -2056,7 +2056,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     if (comp_op == ctx_RGBA8_source_copy_normal_color)
     {
       uint32_t color = *((uint32_t*)rasterizer->color);
-      if ((width == 1))
+      if (width == 1)
       {
         for (int y = y0; y < y1; y++)
         {
@@ -2082,7 +2082,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       uint32_t si_rb_full = ((uint32_t*)rasterizer->color)[4];
       uint32_t si_a  = rasterizer->color[3];
 
-      if ((width == 1))
+      if (width == 1)
       {
         for (int y = y0; y < y1; y++)
         {
@@ -2136,7 +2136,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   if (comp_op == ctx_RGBA8_source_copy_normal_color)
     {
       uint32_t color = *((uint32_t*)rasterizer->color);
-      if ((width == 1))
+      if (width == 1)
       {
         for (int y = y0; y < y1; y++)
         {
@@ -2163,7 +2163,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     else if (comp_op == ctx_RGBA8_source_over_normal_color)
     {
       uint32_t color = *((uint32_t*)rasterizer->color);
-      if ((width == 1))
+      if (width == 1)
       {
         for (int y = y0; y < y1; y++)
         {
@@ -2278,7 +2278,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       CtxSegment *entry2 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[2];
       CtxSegment *entry3 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[3];
 
-      if ((!rasterizer->state->gstate.clipped != 0) &
+      if ((!(rasterizer->state->gstate.clipped != 0)) &
           (entry0->data.s16[2] == entry1->data.s16[2]) &
           (entry0->data.s16[3] == entry3->data.s16[3]) &
           (entry1->data.s16[3] == entry2->data.s16[3]) &
