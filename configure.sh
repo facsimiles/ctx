@@ -18,6 +18,7 @@ do
      "--without-sdl") HAVE_SDL=0    ;;
      "--debug") CFLAGS=''    ;;
      "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan'  ;;
+     "--ubsan") CFLAGS=" -fsanitize=undefined";LIBS=' -lasan'  ;;
      "--without-babl") HAVE_BABL=0 ;;
      "--without-alsa") HAVE_ALSA=0 ;;
      "--without-libcurl") HAVE_LIBCURL=0 ;;
