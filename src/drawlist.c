@@ -575,11 +575,13 @@ int ctx_append_drawlist (Ctx *ctx, void *data, int length)
 int ctx_set_drawlist (Ctx *ctx, void *data, int length)
 {
   CtxDrawlist *drawlist = &ctx->drawlist;
-  ctx->drawlist.count = 0;
   if (drawlist->flags & CTX_DRAWLIST_DOESNT_OWN_ENTRIES)
     {
       return -1;
     }
+  ctx->drawlist.count = 0;
+  if (!data || length == 0)
+    return 0;
   if (CTX_UNLIKELY(length % 9)) return -1;
   ctx_drawlist_resize (drawlist, length/9);
   memcpy (drawlist->entries, data, length);
