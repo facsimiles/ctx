@@ -17,7 +17,7 @@ static void ctx_state_set (CtxState *state, uint64_t key, float value)
       if (ctx_state_get (state, key) == value)
         { return; }
       for (int i = state->gstate.keydb_pos-1;
-           state->keydb[i].key != CTX_new_state && i >=0;
+           i >= 0 && state->keydb[i].key != CTX_new_state;
            i--)
         {
           if (state->keydb[i].key == key)
