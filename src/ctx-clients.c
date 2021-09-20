@@ -13,9 +13,7 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <signal.h>
-#include <pty.h>
 #include <math.h>
-#include <malloc.h>
 #include <sys/time.h>
 #include <time.h>
 #endif

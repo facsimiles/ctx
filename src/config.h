@@ -1,4 +1,3 @@
-
 /* definitions that determine which features are included and their settings,
  * for particular platforms - in particular microcontrollers ctx might need
  * tuning for different quality/performance/resource constraints.
@@ -591,5 +590,20 @@
 #endif
 
 #if CTX_THREADS
-#include <threads.h>
+#include <pthread.h>
+#define mtx_lock pthread_mutex_lock
+#define mtx_unlock pthread_mutex_unlock
+#define mtx_t pthread_mutex_t
+#define cnd_t pthread_cond_t
+#define mtx_plain NULL
+#define mtx_init pthread_mutex_init
+#define cnd_init(a) pthread_cond_init(a,NULL)
+#define cnd_wait pthread_cond_wait
+#define cnd_broadcast pthread_cond_broadcast
+#define thrd_create(tid, tiled_render_fun, args) pthread_create(tid, NULL, tiled_render_fun, args)
+#define thrd_t pthread_t
+
+
 #endif
+
+

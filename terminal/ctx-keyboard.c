@@ -1,4 +1,3 @@
-#define _DEFAULT_SOURCE
 
 #if !__COSMOPOLITAN__
 #include <unistd.h>

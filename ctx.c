@@ -1,12 +1,8 @@
 #if !__COSMOPOLITAN__
 
-#define _XOPEN_SOURCE 600
-#define _DEFAULT_SOURCE
-
 #include <stdint.h>
 #include <termios.h>
 #include <unistd.h>
-#include <math.h>
 
 #endif
 
