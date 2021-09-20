@@ -24,7 +24,7 @@ ctx_RGBA8_associate_alpha (uint8_t *u8)
 {
 #if 1
   uint32_t val = *((uint32_t*)(u8));
-  uint8_t a = u8[3];
+  uint32_t a = u8[3];
   uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
   uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
   *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
