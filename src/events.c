@@ -218,12 +218,12 @@ Ctx *ctx_new_ui (int width, int height)
   if (!ret && !getenv ("DISPLAY"))
   {
     if ((backend==NULL) || (!strcmp (backend, "drm")))
-    ret = ctx_new_fb (width, height, 1);
+      ret = ctx_new_drm (width, height);
 
     if (!ret)
     {
       if ((backend==NULL) || (!strcmp (backend, "fb")))
-        ret = ctx_new_fb (width, height, 0);
+        ret = ctx_new_fb (width, height);
     }
   }
 #endif

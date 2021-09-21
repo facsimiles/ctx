@@ -793,7 +793,8 @@ ctx_get (Ctx *ctx, const char *key);
 
 int ctx_renderer_is_term (Ctx *ctx);
 Ctx *ctx_new_ctx (int width, int height);
-Ctx *ctx_new_fb (int width, int height, int drm);
+Ctx *ctx_new_fb (int width, int height);
+Ctx *ctx_new_drm (int width, int height);
 Ctx *ctx_new_sdl (int width, int height);
 Ctx *ctx_new_term (int width, int height);
 Ctx *ctx_new_termimg (int width, int height);
@@ -1074,6 +1075,33 @@ const char *ctx_texture_init (
 #endif
 typedef struct _CtxTiled CtxTiled;
 
+
+typedef struct _EvSource EvSource;
+struct _EvSource
+{
+  void   *priv; /* private storage  */
+
+  /* returns non 0 if there is events waiting */
+  int   (*has_event) (EvSource *ev_source);
+
+  /* get an event, the returned event should be freed by the caller  */
+  char *(*get_event) (EvSource *ev_source);
+
+  /* destroy/unref this instance */
+  void  (*destroy)   (EvSource *ev_source);
+
+  /* get the underlying fd, useful for using select on  */
+  int   (*get_fd)    (EvSource *ev_source);
+
+
+  void  (*set_coord) (EvSource *ev_source, double x, double y);
+  /* set_coord is needed to warp relative cursors into normalized range,
+   * like normal mice/trackpads/nipples - to obey edges and more.
+   */
+
+  /* if this returns non-0 select can be used for non-blocking.. */
+};
+
 struct _CtxTiled
 {
    void (*render)    (void *term, CtxCommand *command);
@@ -1112,6 +1140,10 @@ struct _CtxTiled
    int           pointer_down[3];
 
    CtxCursor     shown_cursor;
+   int          vt_active;
+   EvSource    *evsource[4];
+   int          evsource_count;
+   uint8_t      *fb;
 #if CTX_TILED
    cnd_t  cond;
    mtx_t  mtx;

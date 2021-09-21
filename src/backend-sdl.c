@@ -21,8 +21,6 @@ struct _CtxSDL
    SDL_Renderer *renderer;
    SDL_Texture  *texture;
 
-// cnd_t  cond;
-// mtx_t  mtx;
    int           fullscreen;
 };
 
@@ -148,9 +146,9 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     int count = 0;
     while (ctx_tiled_threads_done (tiled) != _ctx_max_threads)
     {
-      usleep (50);
+      usleep (500);
       count ++;
-      if (count > 2000)
+      if (count > 100)
       {
         tiled->shown_frame = tiled->render_frame;
         return;
