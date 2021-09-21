@@ -1070,6 +1070,8 @@ int ctx_sdl_consume_events (Ctx *ctx);
 #if CTX_FB
 int ctx_fb_events = 0;
 int ctx_fb_consume_events (Ctx *ctx);
+int ctx_drm_events = 0;
+int ctx_drm_consume_events (Ctx *ctx);
 #endif
 
 int ctx_nct_consume_events (Ctx *ctx);
@@ -1088,6 +1090,9 @@ void ctx_consume_events (Ctx *ctx)
 #if CTX_FB
   if (ctx_fb_events)
     ctx_fb_consume_events (ctx);
+  else
+  if (ctx_drm_events)
+    ctx_drm_consume_events (ctx);
   else
 #endif
   if (ctx_native_events)

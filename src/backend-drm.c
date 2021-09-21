@@ -1,5 +1,6 @@
 #include "ctx-split.h"
 
+
 #if CTX_EVENTS
 
 #if !__COSMOPOLITAN__
@@ -11,14 +12,18 @@
 
 #if CTX_FB
 #ifdef __linux__
-  #include <linux/fb.h>
-  #include <linux/vt.h>
   #include <linux/kd.h>
 #endif
+  //#include <linux/fb.h>
+  //#include <linux/vt.h>
   #include <sys/mman.h>
+  //#include <threads.h>
+  #include <libdrm/drm.h>
+  #include <libdrm/drm_mode.h>
 
-typedef struct _CtxFb CtxFb;
-struct _CtxFb
+
+typedef struct _CtxDRM CtxDRM;
+struct _CtxDRM
 {
    CtxTiled tiled;
 #if 0
@@ -62,19 +67,38 @@ struct _CtxFb
    int           lalt;
    int           rctrl;
 
-
    int          fb_fd;
    char        *fb_path;
    int          fb_bits;
    int          fb_bpp;
    int          fb_mapped_size;
+   //struct       fb_var_screeninfo vinfo;
+   //struct       fb_fix_screeninfo finfo;
    int          vt;
    int          tty;
+   int          is_drm;
    cnd_t        cond;
    mtx_t        mtx;
-   struct       fb_var_screeninfo vinfo;
-   struct       fb_fix_screeninfo finfo;
+   struct drm_mode_crtc crtc;
 };
+
+static char *ctx_fb_clipboard = NULL;
+static void ctx_fb_set_clipboard (CtxDRM *fb, const char *text)
+{
+  if (ctx_fb_clipboard)
+    free (ctx_fb_clipboard);
+  ctx_fb_clipboard = NULL;
+  if (text)
+  {
+    ctx_fb_clipboard = strdup (text);
+  }
+}
+
+static char *ctx_fb_get_clipboard (CtxDRM *sdl)
+{
+  if (ctx_fb_clipboard) return strdup (ctx_fb_clipboard);
+  return strdup ("");
+}
 
 #if UINTPTR_MAX == 0xffFFffFF
   #define fbdrmuint_t uint32_t
@@ -82,21 +106,167 @@ struct _CtxFb
   #define fbdrmuint_t uint64_t
 #endif
 
-
-static void ctx_fb_flip (CtxFb *fb)
+void *ctx_fbdrm_new (CtxDRM *fb, int *width, int *height)
 {
-  ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
+   int got_master = 0;
+   fb->fb_fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+   if (!fb->fb_fd)
+     return NULL;
+   static fbdrmuint_t res_conn_buf[20]={0}; // this is static since its contents
+                                         // are used by the flip callback
+   fbdrmuint_t res_fb_buf[20]={0};
+   fbdrmuint_t res_crtc_buf[20]={0};
+   fbdrmuint_t res_enc_buf[20]={0};
+   struct   drm_mode_card_res res={0};
+
+   if (ioctl(fb->fb_fd, DRM_IOCTL_SET_MASTER, 0))
+     goto cleanup;
+   got_master = 1;
+
+   if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETRESOURCES, &res))
+     goto cleanup;
+   res.fb_id_ptr=(fbdrmuint_t)res_fb_buf;
+   res.crtc_id_ptr=(fbdrmuint_t)res_crtc_buf;
+   res.connector_id_ptr=(fbdrmuint_t)res_conn_buf;
+   res.encoder_id_ptr=(fbdrmuint_t)res_enc_buf;
+   if(ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETRESOURCES, &res))
+      goto cleanup;
+
+
+   unsigned int i;
+   for (i=0;i<res.count_connectors;i++)
+   {
+     struct drm_mode_modeinfo conn_mode_buf[20]={0};
+     fbdrmuint_t conn_prop_buf[20]={0},
+                     conn_propval_buf[20]={0},
+                     conn_enc_buf[20]={0};
+
+     struct drm_mode_get_connector conn={0};
+
+     conn.connector_id=res_conn_buf[i];
+
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCONNECTOR, &conn))
+       goto cleanup;
+
+     conn.modes_ptr=(fbdrmuint_t)conn_mode_buf;
+     conn.props_ptr=(fbdrmuint_t)conn_prop_buf;
+     conn.prop_values_ptr=(fbdrmuint_t)conn_propval_buf;
+     conn.encoders_ptr=(fbdrmuint_t)conn_enc_buf;
+
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCONNECTOR, &conn))
+       goto cleanup;
+
+     //Check if the connector is OK to use (connected to something)
+     if (conn.count_encoders<1 || conn.count_modes<1 || !conn.encoder_id || !conn.connection)
+       continue;
+
+//------------------------------------------------------------------------------
+//Creating a dumb buffer
+//------------------------------------------------------------------------------
+     struct drm_mode_create_dumb create_dumb={0};
+     struct drm_mode_map_dumb    map_dumb={0};
+     struct drm_mode_fb_cmd      cmd_dumb={0};
+     create_dumb.width  = conn_mode_buf[0].hdisplay;
+     create_dumb.height = conn_mode_buf[0].vdisplay;
+     create_dumb.bpp   = 32;
+     create_dumb.flags = 0;
+     create_dumb.pitch = 0;
+     create_dumb.size  = 0;
+     create_dumb.handle = 0;
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb) ||
+         !create_dumb.handle)
+       goto cleanup;
+
+     cmd_dumb.width =create_dumb.width;
+     cmd_dumb.height=create_dumb.height;
+     cmd_dumb.bpp   =create_dumb.bpp;
+     cmd_dumb.pitch =create_dumb.pitch;
+     cmd_dumb.depth =24;
+     cmd_dumb.handle=create_dumb.handle;
+     if (ioctl(fb->fb_fd,DRM_IOCTL_MODE_ADDFB,&cmd_dumb))
+       goto cleanup;
+
+     map_dumb.handle=create_dumb.handle;
+     if (ioctl(fb->fb_fd,DRM_IOCTL_MODE_MAP_DUMB,&map_dumb))
+       goto cleanup;
+
+     void *base = mmap(0, create_dumb.size, PROT_READ | PROT_WRITE, MAP_SHARED,
+                       fb->fb_fd, map_dumb.offset);
+     if (!base)
+     {
+       goto cleanup;
+     }
+     *width  = create_dumb.width;
+     *height = create_dumb.height;
+
+     struct drm_mode_get_encoder enc={0};
+     enc.encoder_id=conn.encoder_id;
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETENCODER, &enc))
+        goto cleanup;
+
+     fb->crtc.crtc_id=enc.crtc_id;
+     if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCRTC, &fb->crtc))
+        goto cleanup;
+
+     fb->crtc.fb_id=cmd_dumb.fb_id;
+     fb->crtc.set_connectors_ptr=(fbdrmuint_t)&res_conn_buf[i];
+     fb->crtc.count_connectors=1;
+     fb->crtc.mode=conn_mode_buf[0];
+     fb->crtc.mode_valid=1;
+     return base;
+   }
+cleanup:
+   if (got_master)
+     ioctl(fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
+   fb->fb_fd = 0;
+   return NULL;
 }
 
-static void ctx_fb_show_frame (CtxFb *fb, int block)
+void ctx_fbdrm_flip (CtxDRM *fb)
+{
+  if (!fb->fb_fd)
+    return;
+  ioctl(fb->fb_fd, DRM_IOCTL_MODE_SETCRTC, &fb->crtc);
+}
+
+void ctx_fbdrm_close (CtxDRM *fb)
+{
+  if (!fb->fb_fd)
+    return;
+  ioctl(fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
+  close (fb->fb_fd);
+  fb->fb_fd = 0;
+}
+
+static void ctx_drm_flip (CtxDRM *fb)
+{
+  if (fb->is_drm)
+    ctx_fbdrm_flip (fb);
+#if 0
+  else
+    ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
+#endif
+}
+
+inline static uint32_t
+ctx_swap_red_green2 (uint32_t orig)
+{
+  uint32_t  green_alpha = (orig & 0xff00ff00);
+  uint32_t  red_blue    = (orig & 0x00ff00ff);
+  uint32_t  red         = red_blue << 16;
+  uint32_t  blue        = red_blue >> 16;
+  return green_alpha | red | blue;
+}
+
+static void ctx_drm_show_frame (CtxDRM *fb, int block)
 {
   CtxTiled *tiled = (void*)fb;
   if (tiled->shown_frame == tiled->render_frame)
   {
     if (block == 0) // consume event call
     {
-      ctx_tiled_draw_cursor (tiled);
-      ctx_fb_flip (fb);
+      ctx_tiled_draw_cursor ((CtxTiled*)fb);
+      ctx_drm_flip (fb);
     }
     return;
   }
@@ -138,13 +308,16 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
        if (pre_skip < 0) pre_skip = 0;
        if (post_skip < 0) post_skip = 0;
 
-     __u32 dummy = 0;
 
        if (tiled->min_row == 100){
           pre_skip = 0;
           post_skip = 0;
+          // not when drm ?
+#if 0
+     __u32 dummy = 0;
           ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
-          ctx_tiled_undraw_cursor (tiled);
+#endif
+          ctx_tiled_undraw_cursor ((CtxTiled*)fb);
        }
        else
        {
@@ -154,8 +327,12 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
       tiled->min_col = 100;
       tiled->max_col = 0;
 
+     // not when drm ?
+ #if 0
+     __u32 dummy = 0;
      ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
-     ctx_tiled_undraw_cursor (tiled);
+#endif
+     ctx_tiled_undraw_cursor ((CtxTiled*)fb);
      switch (fb->fb_bits)
      {
        case 32:
@@ -275,34 +452,37 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
      }
     }
     ctx_tiled_cursor_drawn = 0;
-    ctx_tiled_draw_cursor (tiled);
-    ctx_fb_flip (fb);
+    ctx_tiled_draw_cursor (&fb->tiled);
+    ctx_drm_flip (fb);
     tiled->shown_frame = tiled->render_frame;
   }
 }
 
-int ctx_fb_consume_events (Ctx *ctx)
+int ctx_drm_consume_events (Ctx *ctx)
 {
-  CtxFb *fb = (void*)ctx->renderer;
-  ctx_fb_show_frame (fb, 0);
+  CtxDRM *fb = (void*)ctx->renderer;
+  ctx_drm_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
   return 0;
 }
 
-inline static void ctx_fb_reset (CtxFb *fb)
+inline static void ctx_drm_reset (CtxDRM *fb)
 {
-  ctx_fb_show_frame (fb, 1);
+  ctx_drm_show_frame (fb, 1);
 }
 
-inline static void ctx_fb_flush (CtxFb *fb)
+inline static void ctx_drm_flush (CtxDRM *fb)
 {
   ctx_tiled_flush ((CtxTiled*)fb);
 }
 
-void ctx_fb_free (CtxFb *fb)
+void ctx_drm_free (CtxDRM *fb)
 {
+  if (fb->is_drm)
+  {
+    ctx_fbdrm_close (fb);
+  }
 #ifdef __linux__
-  ioctl (0, KDSETMODE, KD_GRAPHICS);
   ioctl (0, KDSETMODE, KD_TEXT);
 #endif
   if (system("stty sane")){};
@@ -316,23 +496,25 @@ void ctx_fb_free (CtxFb *fb)
 //static unsigned char *fb_icc = NULL;
 //static long fb_icc_length = 0;
 
-int ctx_renderer_is_fb (Ctx *ctx)
+int ctx_renderer_is_drm (Ctx *ctx)
 {
   if (ctx->renderer &&
-      ctx->renderer->free == (void*)ctx_fb_free)
+      ctx->renderer->free == (void*)ctx_drm_free)
           return 1;
   return 0;
 }
 
-static CtxFb *ctx_fb = NULL;
-#if 1
+#if 0
+static CtxDRM *ctx_fb = NULL;
 static void vt_switch_cb (int sig)
 {
   CtxTiled *tiled = (void*)ctx_fb;
   if (sig == SIGUSR1)
   {
+    if (ctx_fb->is_drm)
+      ioctl(ctx_fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
     ioctl (0, VT_RELDISP, 1);
-    tiled->vt_active = 0;
+    ctx_fb->vt_active = 0;
 #if 0
     ioctl (0, KDSETMODE, KD_TEXT);
 #endif
@@ -340,12 +522,18 @@ static void vt_switch_cb (int sig)
   else
   {
     ioctl (0, VT_RELDISP, VT_ACKACQ);
-    tiled->vt_active = 1;
+    ctx_fb->vt_active = 1;
     // queue draw
     tiled->render_frame = ++tiled->frame;
 #if 0
     ioctl (0, KDSETMODE, KD_GRAPHICS);
 #endif
+    if (ctx_fb->is_drm)
+    {
+      ioctl(ctx_fb->fb_fd, DRM_IOCTL_SET_MASTER, 0);
+      ctx_drm_flip (ctx_fb);
+    }
+    else
     {
       tiled->ctx->dirty=1;
 
@@ -359,108 +547,37 @@ static void vt_switch_cb (int sig)
 }
 #endif
 
-static int ctx_fb_get_mice_fd (Ctx *ctx)
+static int ctx_drm_get_mice_fd (Ctx *ctx)
 {
-  //CtxFb *fb = (void*)ctx->renderer;
+  //CtxDRM *fb = (void*)ctx->renderer;
   return _ctx_mice_fd;
 }
 
-Ctx *ctx_new_fb (int width, int height)
+Ctx *ctx_new_drm (int width, int height)
 {
 #if CTX_RASTERIZER
-  CtxFb *fb = calloc (sizeof (CtxFb), 1);
+  CtxDRM *fb = calloc (sizeof (CtxDRM), 1);
 
   CtxTiled *tiled = (void*)fb;
-  ctx_fb = fb;
+  tiled->fb = ctx_fbdrm_new (fb, &tiled->width, &tiled->height);
+  if (tiled->fb)
   {
-#if 1
-  fb->fb_fd = open ("/dev/fb0", O_RDWR);
-  if (fb->fb_fd > 0)
-    fb->fb_path = strdup ("/dev/fb0");
-  else
-  {
-    fb->fb_fd = open ("/dev/graphics/fb0", O_RDWR);
-    if (fb->fb_fd > 0)
-    {
-      fb->fb_path = strdup ("/dev/graphics/fb0");
-    }
-    else
-    {
-      free (fb);
-      return NULL;
-    }
-  }
-
-  if (ioctl(fb->fb_fd, FBIOGET_FSCREENINFO, &fb->finfo))
-    {
-      fprintf (stderr, "error getting fbinfo\n");
-      close (fb->fb_fd);
-      free (fb->fb_path);
-      free (fb);
-      return NULL;
-    }
-
-   if (ioctl(fb->fb_fd, FBIOGET_VSCREENINFO, &fb->vinfo))
-     {
-       fprintf (stderr, "error getting fbinfo\n");
-      close (fb->fb_fd);
-      free (fb->fb_path);
-      free (fb);
-      return NULL;
-     }
-
-//fprintf (stderr, "%s\n", fb->fb_path);
-  width = tiled->width = fb->vinfo.xres;
-  height = tiled->height = fb->vinfo.yres;
-
-  fb->fb_bits = fb->vinfo.bits_per_pixel;
-//fprintf (stderr, "fb bits: %i\n", fb->fb_bits);
-
-  if (fb->fb_bits == 16)
-    fb->fb_bits =
-      fb->vinfo.red.length +
-      fb->vinfo.green.length +
-      fb->vinfo.blue.length;
-
-   else if (fb->fb_bits == 8)
-  {
-    unsigned short red[256],  green[256],  blue[256];
-    unsigned short original_red[256];
-    unsigned short original_green[256];
-    unsigned short original_blue[256];
-    struct fb_cmap cmap = {0, 256, red, green, blue, NULL};
-    struct fb_cmap original_cmap = {0, 256, original_red, original_green, original_blue, NULL};
-    int i;
-
-    /* do we really need to restore it ? */
-    if (ioctl (fb->fb_fd, FBIOPUTCMAP, &original_cmap) == -1)
-    {
-      fprintf (stderr, "palette initialization problem %i\n", __LINE__);
-    }
-
-    for (i = 0; i < 256; i++)
-    {
-      red[i]   = ((( i >> 5) & 0x7) << 5) << 8;
-      green[i] = ((( i >> 2) & 0x7) << 5) << 8;
-      blue[i]  = ((( i >> 0) & 0x3) << 6) << 8;
-    }
-
-    if (ioctl (fb->fb_fd, FBIOPUTCMAP, &cmap) == -1)
-    {
-      fprintf (stderr, "palette initialization problem %i\n", __LINE__);
-    }
-  }
-
-  fb->fb_bpp = fb->vinfo.bits_per_pixel / 8;
-  fb->fb_mapped_size = fb->finfo.smem_len;
-                                              
-  tiled->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
-#endif
+    fb->is_drm         = 1;
+    width              = tiled->width;
+    height             = tiled->height;
+    /*
+       we're ignoring the input width and height ,
+       maybe turn them into properties - for
+       more generic handling.
+     */
+    fb->fb_mapped_size = tiled->width * tiled->height * 4;
+    fb->fb_bits        = 32;
+    fb->fb_bpp         = 4;
   }
   if (!tiled->fb)
     return NULL;
   tiled->pixels = calloc (fb->fb_mapped_size, 1);
-  ctx_fb_events = 1;
+  ctx_drm_events = 1;
 
 #if CTX_BABL
   babl_init ();
@@ -480,9 +597,9 @@ Ctx *ctx_new_fb (int width, int height)
   ctx_set_size (tiled->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
-  tiled->flush = (void*)ctx_fb_flush;
-  tiled->reset = (void*)ctx_fb_reset;
-  tiled->free  = (void*)ctx_fb_free;
+  tiled->flush = (void*)ctx_drm_flush;
+  tiled->reset = (void*)ctx_drm_reset;
+  tiled->free  = (void*)ctx_drm_free;
   tiled->set_clipboard = (void*)ctx_fb_set_clipboard;
   tiled->get_clipboard = (void*)ctx_fb_get_clipboard;
 
@@ -540,8 +657,10 @@ Ctx *ctx_new_fb (int width, int height)
   }
 
   tiled->vt_active = 1;
-#if 1
+#ifdef __linux__
   ioctl(0, KDSETMODE, KD_GRAPHICS);
+#endif
+#if 0
   signal (SIGUSR1, vt_switch_cb);
   signal (SIGUSR2, vt_switch_cb);
 
@@ -572,9 +691,10 @@ Ctx *ctx_new_fb (int width, int height)
 }
 #else
 
-int ctx_renderer_is_fb (Ctx *ctx)
+int ctx_renderer_is_drm (Ctx *ctx)
 {
   return 0;
 }
+
 #endif
 #endif

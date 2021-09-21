@@ -25,6 +25,7 @@ Ctx *ctx = NULL; // initialized in main
 
 int ctx_renderer_is_sdl  (Ctx *ctx);
 int ctx_renderer_is_fb   (Ctx *ctx);
+int ctx_renderer_is_drm  (Ctx *ctx);
 int ctx_renderer_is_term (Ctx *ctx);
 
 typedef struct _CtxClient CtxClient;
@@ -234,7 +235,8 @@ static void handle_event (Ctx        *ctx,
         }
     }
   else if (!strcmp (event, "shift-control-t") ||
-           ((ctx_renderer_is_fb (ctx) || ctx_renderer_is_term (ctx))
+           ((ctx_renderer_is_fb (ctx) || ctx_renderer_is_term (ctx) ||
+             ctx_renderer_is_drm (ctx))
            &&   !strcmp (event, "control-t") ))
   {
     add_tab (ctx, vt_find_shell_command(), 1);

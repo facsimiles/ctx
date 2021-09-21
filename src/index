@@ -39,6 +39,7 @@ ctx-string.c
 renderer-cairo.c
 backend-ctx.c
 backend-tiled.c
+backend-drm.c
 backend-fb.c
 backend-sdl.c
 backend-term.c

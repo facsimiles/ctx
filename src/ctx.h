@@ -665,6 +665,8 @@ void *ctx_get_renderer (Ctx *ctx);
 
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb (Ctx *ctx);
+int ctx_renderer_is_drm (Ctx *ctx);
+int ctx_renderer_is_tiled (Ctx *ctx);
 int ctx_renderer_is_ctx (Ctx *ctx);
 int ctx_renderer_is_term (Ctx *ctx);
 

@@ -4355,7 +4355,7 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
 CtxAntialias ctx_get_antialias (Ctx *ctx)
 {
 #if CTX_EVENTS
-  if (ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx))
+  if (ctx_renderer_is_tiled (ctx))
   {
      CtxTiled *fb = (CtxTiled*)(ctx->renderer);
      return fb->antialias;
@@ -4391,7 +4391,7 @@ void
 ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 {
 #if CTX_EVENTS
-  if (ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx))
+  if (ctx_renderer_is_tiled (ctx))
   {
      CtxTiled *fb = (CtxTiled*)(ctx->renderer);
      fb->antialias = antialias;

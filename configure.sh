@@ -11,7 +11,6 @@ pkg-config alsa && HAVE_ALSA=1
 
 CFLAGS='-O3'
 
-
 while test $# -gt 0
 do
     case "$1" in
@@ -23,7 +22,7 @@ do
      "--without-alsa") HAVE_ALSA=0 ;;
      "--without-libcurl") HAVE_LIBCURL=0 ;;
      *|"--help") 
-       echo "usage: ./configure [--without-sdl] [--without-babl] [--without-libcurl] [--debug] [--asan]"
+       echo "usage: ./configure [--without-sdl] [--without-babl] [--without-libcurl] [--without-alsa] [--debug|--asan|--ubsan]"
        exit 0
        ;;
     esac
