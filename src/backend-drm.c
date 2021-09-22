@@ -1,6 +1,5 @@
 #include "ctx-split.h"
 
-
 #if CTX_EVENTS
 
 #if !__COSMOPOLITAN__
@@ -9,8 +8,28 @@
 #include <signal.h>
 #endif
 
+#if CTX_DRM || CTX_FB
+static char *ctx_fb_clipboard = NULL;
+static void ctx_fb_set_clipboard (void *fb, const char *text)
+{
+  if (ctx_fb_clipboard)
+    free (ctx_fb_clipboard);
+  ctx_fb_clipboard = NULL;
+  if (text)
+  {
+    ctx_fb_clipboard = strdup (text);
+  }
+}
 
-#if CTX_FB
+static char *ctx_fb_get_clipboard (void *sdl)
+{
+  if (ctx_fb_clipboard) return strdup (ctx_fb_clipboard);
+  return strdup ("");
+}
+#endif
+
+
+#if CTX_DRM
 #ifdef __linux__
   #include <linux/kd.h>
 #endif
@@ -82,23 +101,6 @@ struct _CtxDRM
    struct drm_mode_crtc crtc;
 };
 
-static char *ctx_fb_clipboard = NULL;
-static void ctx_fb_set_clipboard (CtxDRM *fb, const char *text)
-{
-  if (ctx_fb_clipboard)
-    free (ctx_fb_clipboard);
-  ctx_fb_clipboard = NULL;
-  if (text)
-  {
-    ctx_fb_clipboard = strdup (text);
-  }
-}
-
-static char *ctx_fb_get_clipboard (CtxDRM *sdl)
-{
-  if (ctx_fb_clipboard) return strdup (ctx_fb_clipboard);
-  return strdup ("");
-}
 
 #if UINTPTR_MAX == 0xffFFffFF
   #define fbdrmuint_t uint32_t

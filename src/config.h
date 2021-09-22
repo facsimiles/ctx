@@ -574,7 +574,7 @@
 #endif
 
 #ifndef CTX_TILED
-#if CTX_SDL || CTX_FB
+#if CTX_SDL || CTX_FB || CTX_DRM
 #define CTX_TILED 1
 #else
 #define CTX_TILED 0
@@ -582,7 +582,7 @@
 #endif
 
 #ifndef CTX_THREADS
-#if CTX_FB
+#if CTX_TILED
 #define CTX_THREADS 1
 #else
 #define CTX_THREADS 0

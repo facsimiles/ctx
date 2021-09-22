@@ -36,12 +36,25 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
 #if CTX_FB
   if (ctx_renderer_is_fb  (ctx)) valid = 1;
 #endif
+#if CTX_DRM
+  if (ctx_renderer_is_drm (ctx)) valid = 1;
+#endif
 
   if (!valid)
     return;
 
-#if CTX_FB
-  // we rely on the same layout
+  // we rely on the same struxt layout XXX !
+  for (int i = 0; i < sdl->width * sdl->height; i++)
+  {
+    int tmp = sdl->pixels[i*4];
+    sdl->pixels[i*4] = sdl->pixels[i*4 + 2];
+    sdl->pixels[i*4 + 2] = tmp;
+  }
+
+  stbi_write_png (output_path, sdl->width, sdl->height, 4, sdl->pixels, sdl->width*4);
+
+#if 0
+#if CTX_FB || CTX_DRM
   for (int i = 0; i < sdl->width * sdl->height; i++)
   {
     int tmp = sdl->pixels[i*4];
@@ -49,16 +62,6 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
     sdl->pixels[i*4 + 2] = tmp;
   }
 #endif
-
-  stbi_write_png (output_path, sdl->width, sdl->height, 4, sdl->pixels, sdl->width*4);
-
-#if CTX_FB
-  for (int i = 0; i < sdl->width * sdl->height; i++)
-  {
-    int tmp = sdl->pixels[i*4];
-    sdl->pixels[i*4] = sdl->pixels[i*4 + 2];
-    sdl->pixels[i*4 + 2] = tmp;
-  }
 #endif
 #endif
 }

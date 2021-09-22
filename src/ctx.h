@@ -379,18 +379,20 @@ int ctx_utf8_strlen (const char *s);
 #define CTX_CAIRO 0
 #endif
 
+#ifndef CTX_SDL
 #ifdef SDL_h_
 #define CTX_SDL 1
 #else
 #define CTX_SDL 0
 #endif
+#endif
 
 #ifndef CTX_FB
-#if CTX_SDL
-#define CTX_FB 1
-#else
 #define CTX_FB 0
 #endif
+
+#ifndef CTX_DRM
+#define CTX_DRM 0
 #endif
 
 #if CTX_SDL

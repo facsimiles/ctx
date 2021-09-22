@@ -29,15 +29,6 @@
  *
  */
 
-#define _GNU_SOURCE
-#define _BSD_SOURCE
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600 // for posix_openpt
-#endif
-
 #if !__COSMOPOLITAN__
 #include <sys/stat.h>
 #include <sys/types.h>

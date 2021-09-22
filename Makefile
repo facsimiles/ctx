@@ -16,7 +16,7 @@ CFLAGS_warnings= -Wall \
 		 -Wno-missing-field-initializers 
 
 CFLAGS+= -g $(CFLAGS_warnings) -fPIC
-CFLAGS+= -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=600 \
+CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include
 #  -ffast-math   gets rejected by duktape
 
@@ -115,7 +115,7 @@ deps.o: deps.c build.conf Makefile ctx.h media-handlers/itk.h
 ctx-split.o: $(SRC_OBJS)
 
 ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts build.conf
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -DNO_ALSA=1
+	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DNO_SDL=1 -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -DNO_ALSA=1 
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)

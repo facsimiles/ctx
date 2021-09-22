@@ -111,6 +111,8 @@ void ctx_list_backends(void)
 #endif
 #if CTX_FB
     fprintf (stderr, " fb");
+#endif
+#if CTX_DRM
     fprintf (stderr, " drm");
 #endif
     fprintf (stderr, " term");
@@ -214,18 +216,20 @@ Ctx *ctx_new_ui (int width, int height)
   }
 #endif
 
-#if CTX_FB
+#if CTX_DRM
   if (!ret && !getenv ("DISPLAY"))
   {
     if ((backend==NULL) || (!strcmp (backend, "drm")))
       ret = ctx_new_drm (width, height);
+  }
+#endif
 
-    if (!ret)
+#if CTX_FB
+  if (!ret && !getenv ("DISPLAY"))
     {
       if ((backend==NULL) || (!strcmp (backend, "fb")))
         ret = ctx_new_fb (width, height);
     }
-  }
 #endif
 
 #if CTX_RASTERIZER
@@ -1067,9 +1071,11 @@ int ctx_sdl_events = 0;
 int ctx_sdl_consume_events (Ctx *ctx);
 #endif
 
-#if CTX_FB
+#if CTX_FB 
 int ctx_fb_events = 0;
 int ctx_fb_consume_events (Ctx *ctx);
+#endif
+#if CTX_DRM
 int ctx_drm_events = 0;
 int ctx_drm_consume_events (Ctx *ctx);
 #endif
@@ -1091,6 +1097,8 @@ void ctx_consume_events (Ctx *ctx)
   if (ctx_fb_events)
     ctx_fb_consume_events (ctx);
   else
+#endif
+#if CTX_DRM
   if (ctx_drm_events)
     ctx_drm_consume_events (ctx);
   else

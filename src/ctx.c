@@ -202,10 +202,14 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
      }
    }
 #endif
-#if CTX_FB
    else if (format == CTX_FORMAT_RGBA8 &&
-                   (
-                   ctx_renderer_is_fb (ctx)
+                   ( 1
+#if CTX_FB
+                   || ctx_renderer_is_fb (ctx)
+#endif
+#if CTX_DRM
+                   || ctx_renderer_is_drm (ctx)
+#endif
 #if CTX_SDL
                    || ctx_renderer_is_sdl (ctx)
 #endif
@@ -228,7 +232,6 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
        return;
      }
    }
-#endif
 }
 
 void
