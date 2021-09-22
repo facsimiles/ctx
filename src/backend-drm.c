@@ -280,7 +280,7 @@ static void ctx_drm_show_frame (CtxDRM *fb, int block)
     {
       usleep (500);
       count ++;
-      if (count > 2000)
+      if (count > 500)
       {
         tiled->shown_frame = tiled->render_frame;
         return;
@@ -643,7 +643,6 @@ Ctx *ctx_new_drm (int width, int height)
   start_thread(15);
 #undef start_thread
 
-  ctx_flush (tiled->ctx);
 
   EvSource *kb = evsource_kb_new ();
   if (kb)
@@ -662,6 +661,8 @@ Ctx *ctx_new_drm (int width, int height)
 #ifdef __linux__
   ioctl(0, KDSETMODE, KD_GRAPHICS);
 #endif
+  tiled->shown_frame = tiled->render_frame;
+  //ctx_flush (tiled->ctx);
 #if 0
   signal (SIGUSR1, vt_switch_cb);
   signal (SIGUSR2, vt_switch_cb);

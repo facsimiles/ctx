@@ -524,7 +524,7 @@ Ctx *ctx_new_fb (int width, int height)
   start_thread(15);
 #undef start_thread
 
-  ctx_flush (tiled->ctx);
+  //ctx_flush (tiled->ctx);
 
   EvSource *kb = evsource_kb_new ();
   if (kb)

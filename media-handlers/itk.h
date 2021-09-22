@@ -1235,10 +1235,10 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
 
-  if (control->flags && ITK_FLAG_ACTIVE)
+  if (control->flags & ITK_FLAG_ACTIVE)
   {
-  ctx_listen_with_finalize (ctx, CTX_CLICK, entry_clicked, control, itk, control_finalize, NULL);
-  control_ref (control);
+    ctx_listen_with_finalize (ctx, CTX_CLICK, entry_clicked, control, itk, control_finalize, NULL);
+    control_ref (control);
   }
 
   ctx_begin_path (ctx);

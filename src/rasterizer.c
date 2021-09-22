@@ -2743,7 +2743,6 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
        ( (anticlockwise && fabsf((start_angle - end_angle) - CTX_PI*2) < 0.01f ) ) 
   ||   (anticlockwise && fabsf((end_angle - start_angle) - CTX_PI*2) < 0.01f)  ||  (!anticlockwise && fabsf((start_angle - end_angle) - CTX_PI*2) < 0.01f )  )
     {
-      start_angle = start_angle;
       steps = full_segments - 1;
     }
   else

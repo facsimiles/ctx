@@ -655,7 +655,7 @@ Ctx *ctx_new_sdl (int width, int height)
   start_thread(15);
 #undef start_thread
 
-  ctx_flush (tiled->ctx);
+  //ctx_flush (tiled->ctx);
   return tiled->ctx;
 #else
   return NULL;
