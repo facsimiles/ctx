@@ -659,6 +659,17 @@ typedef struct LayoutConfig
   int fill_width;  // of view
   int fill_height; // of view
   int show_label;
+
+  // sort order
+
+  float item_width; // in em
+  float item_height; // in em
+  float item_border; // in .. em ?
+  float item_padding;// ..
+  float item_margin; // .. collapsed for inner
+  float border_radius; // ..
+
+
 } LayoutConfig;
 
 LayoutConfig layout_config = {0,};
