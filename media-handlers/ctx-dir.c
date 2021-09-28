@@ -26,6 +26,40 @@
 #include "itk.h"
 #include <signal.h>
 
+typedef enum ImageZoom
+{
+  IMAGE_ZOOM_NONE = 0,
+  IMAGE_ZOOM_STRETCH,
+  IMAGE_ZOOM_FIT,
+  IMAGE_ZOOM_FILL,
+};
+
+typedef struct LayoutConfig
+{
+  int stack_horizontal;
+  int stack_vertical;
+  int fill_width;  // of view
+  int fill_height; // of view
+  int label;
+  int zoom;
+
+  // sort order
+
+  float width; // in em
+  float height; // in em
+  float border; // in .. em ?
+  float padding;// ..
+  float margin; // .. collapsed for inner
+
+  int fixed_size;
+  int fixed_pos;
+  int list_data;
+} LayoutConfig;
+
+LayoutConfig layout_config = {1,1,0,0, 1,0,
+    4, 4, 0, 0.5, 0, 0, 0};
+
+
 typedef struct _CtxSHA1 CtxSHA1;
 CtxSHA1 *ctx_sha1_new (void);
 void ctx_sha1_free    (CtxSHA1 *sha1);
@@ -376,7 +410,7 @@ static void move_item_up (CtxEvent *e, void *d1, void *d2)
   }
 }
 
-static void files_list (ITK *itk, Files *files)
+static void dir_list (ITK *itk, Files *files)
 {
   float em = itk_em (itk);
   for (int i = 0; i < files->count; i++)
@@ -447,9 +481,12 @@ static void draw_folder (Ctx *ctx, float x, float y, float w, float h)
   ctx_restore (ctx);
 }
 
-static void draw_img (Ctx *ctx, float x, float y, float w, float h, const char *path)
+static void draw_img (ITK *itk, float x, float y, float w, float h, const char *path)
 {
+  Ctx *ctx = itk->ctx;
+  float em = itk_em (itk);
   int imgw, imgh;
+  ctx_begin_path (ctx);
   char *thumb_path = ctx_get_thumb_path (path);
   if (access (thumb_path, F_OK) != -1)
   {
@@ -460,10 +497,11 @@ static void draw_img (Ctx *ctx, float x, float y, float w, float h, const char *
 #if 0
       ctx_draw_texture (ctx, reteid, x, y, w, h);
 #else
-      ctx_rectangle (ctx, x + w * 0.2, y + h * 0.1, w * 0.5, h * 0.7);
+      ctx_rectangle (ctx, x + layout_config.padding * em, y + layout_config.padding*em, w - layout_config.padding * 2 * em, h - layout_config.padding * 2 * em);
       ctx_save (ctx);
-      ctx_translate (ctx, x + w * 0.2, y + h * 0.1);
-      ctx_scale (ctx, w * 0.5/ imgw, h * 0.5 / imgh);
+      ctx_translate (ctx, x + layout_config.padding * em, y + layout_config.padding * em);
+      ctx_scale (ctx, (w - layout_config.padding * em * 2)/ imgw,
+                      (h - layout_config.padding *em *2) / imgh);
       ctx_texture (ctx, reteid, 0,0);
       ctx_fill (ctx);
       ctx_restore (ctx);
@@ -506,8 +544,6 @@ static void draw_doc (Ctx *ctx, float x, float y, float w, float h)
 }
 
 typedef enum {
-  CTX_DIR_LIST,
-  CTX_DIR_GRID,
   CTX_DIR_LAYOUT
 }
 CtxDirView;
@@ -519,16 +555,39 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
 {
   view_type = CTX_DIR_LAYOUT;
   ctx_set_dirty (e->ctx, 1);
-}
+  layout_config.stack_horizontal = 1;
+  layout_config.stack_vertical = 1;
+  layout_config.fill_width = 0;
+  layout_config.fill_height = 0;
+  layout_config.zoom = 0;
+  layout_config.width = 5;
+  layout_config.height = 5;
+  layout_config.border = 0;
+  layout_config.padding = 0.5;
+  layout_config.margin = 0.0;
+  layout_config.fixed_size = 0;
+  layout_config.fixed_pos = 0;
+  layout_config.label = 0;
+
+} LayoutConfig;
+
 static void set_list (CtxEvent *e, void *d1, void *d2)
 {
-  view_type = CTX_DIR_LIST;
   ctx_set_dirty (e->ctx, 1);
+  set_layout (e, d1, d2);
+  layout_config.fixed_size = 1;
+  layout_config.fixed_pos = 1;
+  layout_config.stack_horizontal = 0;
+  layout_config.label = 1;
+  layout_config.list_data = 1;
 }
+
 static void set_grid (CtxEvent *e, void *d1, void *d2)
 {
-  view_type = CTX_DIR_GRID;
-  ctx_set_dirty (e->ctx, 1);
+  set_layout (e, d1, d2);
+  layout_config.fixed_size = 1;
+  layout_config.fixed_pos = 1;
+  layout_config.label = 1;
 }
 
 static int filename_is_image (const char *filename)
@@ -547,134 +606,7 @@ static int filename_is_image (const char *filename)
   return 0;
 }
 
-static void files_grid (ITK *itk, Files *files)
-{
-  Ctx *ctx = itk->ctx;
-  float em = itk_em (itk);
-
-  for (int i = 0; i < files->count; i++)
-  {
-    if ((files->items[i][0] == '.' &&
-         files->items[i][1] == '.') ||
-        (files->items[i][0] != '.')
-       )
-    {
-      float sx = itk->x,sy = itk->y;
-      ctx_user_to_device (itk->ctx, &sx, &sy);
-      CtxControl *c = itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, em * 6, em * 4);
-      float saved_x = itk->x;
-      if (sy + em * 4 > 0 && sy < ctx_height (itk->ctx))
-      {
-
-      struct stat stat_buf;
-      const char *d_name = files->items[i];
-      char *newpath = malloc (strlen(files->path)+strlen(d_name) + 2);
-      if (!strcmp (files->path, PATH_SEP))
-        sprintf (newpath, "%s%s", PATH_SEP, d_name);
-      else
-        sprintf (newpath, "%s%s%s", files->path, PATH_SEP, d_name);
-      lstat (newpath, &stat_buf);
-      int focused = 0;
-
-      if (c->no == itk->focus_no)
-      {
-        focused = 1;
-        viewer_load_path (newpath, files->items[i]);
-
-        ctx_add_key_binding (ctx, "return", NULL, NULL, item_activate, (void*)((size_t)i));
-        ctx_add_key_binding (ctx, "control-down", NULL, NULL, move_item_down, 
-                         (void*)((size_t)i));
-        ctx_add_key_binding (ctx, "control-up", NULL, NULL, move_item_up, 
-                         (void*)((size_t)i));
-      }
-
-      ctx_begin_path (ctx);
-      ctx_gray (ctx, 0.0);
-
-      if (S_ISDIR(stat_buf.st_mode))
-      {
-        draw_folder (ctx, itk->x, itk->y, em * 6, em * 4);
-      }
-      else
-      {
-        if (filename_is_image (d_name))
-        {
-          draw_img (ctx, itk->x, itk->y, em * 6, em * 4, newpath);
-        }
-        else
-        {
-          draw_doc (ctx, itk->x, itk->y, em * 6, em *  4);
-        }
-      }
-      free (newpath);
-
-      char *title = malloc (strlen (files->items[i]) + 32);
-      strcpy (title, files->items[i]);
-      int title_len = strlen (title);
-
-      {
-        int wraplen = 12;
-        int lines = (title_len + wraplen - 1)/ wraplen;
-
-        if (!focused &&  lines > 2) lines = 2;
-
-        for (int i = 0; i < lines; i++)
-        {
-        ctx_move_to (itk->ctx, itk->x + em * 3, itk->y + em * (4.0 + i) - lines/2.0 * em);
-        ctx_font_size (itk->ctx, em); //em * 0.6);// * 0.9);
-        ctx_gray (itk->ctx, 0.8);
-        ctx_save (itk->ctx);
-        ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_CENTER);
-
-        if (i * wraplen + wraplen < title_len)
-        {
-        int tmp = title[i * wraplen + wraplen];
-        title[i * wraplen + wraplen] = 0;
-        ctx_text (itk->ctx, &title[i * wraplen]);
-        title[i * wraplen + wraplen] = tmp;
-        }
-        else
-        {
-          ctx_text (itk->ctx, &title[i * wraplen]);
-        }
-        ctx_restore (itk->ctx);
-        }
-      }
-        free (title);
-      }
-      itk->x = saved_x + em * 6;
-      if (itk->x + em * 5 > itk->panel->x + itk->panel->width)
-      {
-        itk->x = itk->x0;
-        itk->y += em * 4;
-      }
-    }
-  }
-}
-
-typedef struct LayoutConfig
-{
-  int stack_horizontal;
-  int stack_vertical;
-  int fill_width;  // of view
-  int fill_height; // of view
-  int show_label;
-
-  // sort order
-
-  float item_width; // in em
-  float item_height; // in em
-  float item_border; // in .. em ?
-  float item_padding;// ..
-  float item_margin; // .. collapsed for inner
-  float border_radius; // ..
-
-
-} LayoutConfig;
-
-LayoutConfig layout_config = {0,};
-
-static void files_layout (ITK *itk, Files *files)
+static void dir_layout (ITK *itk, Files *files)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
@@ -691,8 +623,8 @@ static void files_layout (ITK *itk, Files *files)
       float height = 0;
 
       int gotpos = 0;
-      const char *xstr = metadata_key_string (d_name, "x");
-      const char *ystr = metadata_key_string (d_name, "y");
+      char *xstr = metadata_key_string (d_name, "x");
+      char *ystr = metadata_key_string (d_name, "y");
 
       float x = metadata_key_float (d_name, "x");
       float y = metadata_key_float (d_name, "y");
@@ -710,28 +642,30 @@ static void files_layout (ITK *itk, Files *files)
       float saved_x = itk->x;
       float saved_y = itk->y;
 
-      float sx = itk->x,sy = itk->y;
+      if (layout_config.fixed_pos)
+        gotpos = 0;
       if (gotpos)
       {
         itk->x = x;
         itk->y = y;
       }
+      float sx = itk->x,sy = itk->y;
       ctx_user_to_device (itk->ctx, &sx, &sy);
-
-
 
 
 //    if (width <= 0)
       {
         width  = metadata_key_float (d_name, "width");
-        if (width < 4) width = 
-          layout_config.fill_width? itk->width * 1.0: em * 6;
+        if (width < 4 || layout_config.fixed_size) width = 
+          layout_config.fill_width? itk->width * 1.0:
+          layout_config.width * em;
       }
 //    if (height <= 0)
       {
         height = metadata_key_float (d_name, "height");
-        if (height < 4)  height =
-          layout_config.fill_height? itk->height * 1.0: em * 4;
+        if (height < 4 || layout_config.fixed_size)  height =
+          layout_config.fill_height? itk->height * 1.0:
+          layout_config.height * em;
       }
 
       CtxControl *c = itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, width, height);
@@ -789,18 +723,25 @@ static void files_layout (ITK *itk, Files *files)
       }
       else
       {
+
         if (filename_is_image (d_name))
         {
-          draw_img (ctx, itk->x, itk->y, width, height, newpath);
+          draw_img (itk, itk->x, itk->y, width, height, newpath);
         }
         else
         {
           draw_doc (ctx, itk->x, itk->y, width, height);
         }
+        if (layout_config.list_data)
+        {
+          itk_labelf (itk, "%i %i", stat_buf.st_size, files->namelist[i]->d_type);
+        }
+
+
       }
       free (newpath);
 
-      if (layout_config.show_label)
+      if (layout_config.label)
       {
       char *title = malloc (strlen (files->items[i]) + 32);
       strcpy (title, files->items[i]);
@@ -837,7 +778,12 @@ static void files_layout (ITK *itk, Files *files)
       }
       }
 
-      if (!gotpos)
+      if (gotpos)
+      {
+        itk->x = saved_x;
+        itk->y = saved_y;
+      }
+      else
       {
         itk->x = saved_x + width;
         if (!layout_config.stack_horizontal ||
@@ -847,11 +793,6 @@ static void files_layout (ITK *itk, Files *files)
           if (layout_config.stack_vertical)
             itk->y += height;
         }
-      }
-      else
-      {
-        itk->x = saved_x;
-        itk->y = saved_y;
       }
     }
   }
@@ -1084,22 +1025,11 @@ static int card_files (ITK *itk_, void *data)
   }
   else
   {
-    ctx_add_key_binding (ctx, "F1", NULL, NULL, set_list, NULL);
-    ctx_add_key_binding (ctx, "F2", NULL, NULL, set_grid, NULL);
-    ctx_add_key_binding (ctx, "F3", NULL, NULL, set_layout, NULL);
+    ctx_add_key_binding (ctx, "F2", NULL, NULL, set_list, NULL);
+    ctx_add_key_binding (ctx, "F3", NULL, NULL, set_grid, NULL);
+    ctx_add_key_binding (ctx, "F4", NULL, NULL, set_layout, NULL);
 
-    switch (view_type)
-    {
-      case CTX_DIR_GRID:
-        files_grid (itk, files);
-        break;
-      case CTX_DIR_LIST:
-        files_list (itk, files);
-        break;
-      case CTX_DIR_LAYOUT:
-        files_layout (itk, files);
-        break;
-    }
+    dir_layout (itk, files);
   }
 
   itk_panel_end (itk);
@@ -1113,7 +1043,11 @@ static int card_files (ITK *itk_, void *data)
     itk_toggle (itk, "fill width", &layout_config.fill_width);
     itk_sameline (itk);
     itk_toggle (itk, "fill height", &layout_config.fill_height);
-    itk_toggle (itk, "label", &layout_config.show_label);
+    itk_toggle (itk, "fixed size", &layout_config.fixed_size);
+    itk_sameline (itk);
+    itk_toggle (itk, "fixed pos", &layout_config.fixed_pos);
+    itk_sameline (itk);
+    itk_toggle (itk, "label", &layout_config.label);
 
     itk_panel_end (itk);
   }
@@ -1126,7 +1060,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_clients_handle_events (ctx);
   }
 
-#if 0
+#if 1
   itk_panel_start (itk, "prop", ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*8);
   int keys = metadata_item_key_count (viewer_loaded_name);
   itk_labelf (itk, "%s - %i", viewer_loaded_name, keys);

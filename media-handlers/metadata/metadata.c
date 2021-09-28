@@ -22,7 +22,7 @@ static void metadata_load (const char *path)
   metadata = NULL;
   metadata_len = 0;
   snprintf (metadata_path, strlen(path)+10, "%s/ctx.idx", path);
-  ctx_get_contents (metadata_path, &metadata, &metadata_size);
+  ctx_get_contents (metadata_path, (uint8_t**)&metadata, &metadata_size);
   metadata_len = metadata_size;
 }
 
@@ -75,9 +75,9 @@ static char *metadata_item_name (int no)
 }
 
 
-static const char *metadata_find_no (int no)
+static char *metadata_find_no (int no)
 {
-  const char *m = metadata;
+  char *m = metadata;
   int count = 0;
   while (m && *m)
   {
@@ -360,7 +360,7 @@ void metadata_insert (int pos, const char *item)
   {
     m = metadata + metadata_len;
   }
-  char *tmp[strlen (item) + 3];
+  char tmp[strlen (item) + 3];
   snprintf (tmp, sizeof(tmp), "%s\n", item);
 
   _metadata_insert (m-metadata, tmp, strlen (tmp));
@@ -368,7 +368,7 @@ void metadata_insert (int pos, const char *item)
 
 void metadata_rename (int pos, const char *new_name)
 {
-  const char *m = metadata_find_no (pos);
+  char *m = metadata_find_no (pos);
   if (m)
   {
     char *name = metadata_item_name (pos);
@@ -383,7 +383,7 @@ void metadata_rename (int pos, const char *new_name)
   {
     return;
   }
-  char *tmp[strlen (new_name) + 3];
+  char tmp[strlen (new_name) + 3];
   snprintf (tmp, sizeof(tmp), "%s\n", new_name);
 
   _metadata_insert (m-metadata, tmp, strlen (tmp));
