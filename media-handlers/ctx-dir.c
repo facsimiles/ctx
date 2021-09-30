@@ -486,7 +486,35 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   int imgw, imgh;
+    float target_width = 
+      (w - layout_config.padding * em * 2);
+    float target_height = 
+      (h - layout_config.padding * em * 2);
   ctx_begin_path (ctx);
+
+  if ( w > 300 || h > 300)
+  {
+    char reteid[65]="";
+    ctx_texture_load (ctx, path, &imgw, &imgh, reteid);
+    if (reteid[0])
+    {
+#if 0
+      ctx_draw_texture (ctx, reteid, x, y, w, h);
+#else
+      ctx_rectangle (ctx, x + layout_config.padding * em, y + layout_config.padding*em, w - layout_config.padding * 2 * em, h - layout_config.padding * 2 * em);
+      ctx_save (ctx);
+      ctx_translate (ctx, x + layout_config.padding * em, y + layout_config.padding * em);
+      ctx_scale (ctx, (target_width)/ imgw,
+                      (target_height) / imgh);
+      ctx_texture (ctx, reteid, 0,0);
+      ctx_fill (ctx);
+      ctx_restore (ctx);
+     #endif
+    }
+    return;
+  }
+  else
+  {
   char *thumb_path = ctx_get_thumb_path (path);
   if (access (thumb_path, F_OK) != -1)
   {
@@ -500,12 +528,13 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
       ctx_rectangle (ctx, x + layout_config.padding * em, y + layout_config.padding*em, w - layout_config.padding * 2 * em, h - layout_config.padding * 2 * em);
       ctx_save (ctx);
       ctx_translate (ctx, x + layout_config.padding * em, y + layout_config.padding * em);
-      ctx_scale (ctx, (w - layout_config.padding * em * 2)/ imgw,
-                      (h - layout_config.padding *em *2) / imgh);
+      ctx_scale (ctx, (target_width)/ imgw,
+                      (target_height) / imgh);
       ctx_texture (ctx, reteid, 0,0);
       ctx_fill (ctx);
       ctx_restore (ctx);
      #endif
+  //  free (thumb_path);
       return;
     }
   }
@@ -513,6 +542,8 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
   {
     queue_thumb (path, thumb_path);
   }
+  }
+
   {
     ctx_save (ctx);
     ctx_arc (ctx, x + w * 0.5, y + h * 0.3, w * 0.2, 0.0, 6.3, 0);
