@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 echo -ne "\e[?1049h" # alt-screen on
 echo -ne "\e[?25l"   # text-cursor off
 echo -ne "\e[2J\e[H" # clear and home
@@ -8,6 +8,7 @@ function cleanup {
   echo -ne "\e[?1049l"  # alt-screen off
   echo -ne "\e[?25h"    # text-cursor on
 }
+
 trap cleanup EXIT # restore terminal state on ctrl+c and regular exit
 
 while [ 1 == 1 ]; do # infinite loop
