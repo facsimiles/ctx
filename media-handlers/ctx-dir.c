@@ -51,13 +51,16 @@ typedef struct LayoutConfig
   float padding;// ..
   float margin; // .. collapsed for inner
 
-  int fixed_size;
-  int fixed_pos;
-  int list_data;
+  int   fixed_size;
+  int   fixed_pos;
+  int   list_data;
 } LayoutConfig;
 
-LayoutConfig layout_config = {1,1,0,0, 1,0,
-    4, 4, 0, 0.5, 0, 0, 0};
+LayoutConfig layout_config = {
+  1,1,0,0, 1,0,
+  4, 4, 0, 0.5,
+  0, 0, 0
+};
 
 
 typedef struct _CtxSHA1 CtxSHA1;
@@ -156,6 +159,57 @@ static int custom_sort (const struct dirent **a,
 #define METADATA_NOTEST 1
 #include "metadata/metadata.c"
 
+typedef enum {
+  CTX_DIR_LAYOUT,
+  CTX_DIR_IMAGE
+}
+CtxDirView;
+
+static CtxDirView view_type = CTX_DIR_LAYOUT;
+
+static void set_layout (CtxEvent *e, void *d1, void *d2)
+{
+  view_type = CTX_DIR_LAYOUT;
+  if (e)
+  ctx_set_dirty (e->ctx, 1);
+  layout_config.stack_horizontal = 1;
+  layout_config.stack_vertical = 1;
+  layout_config.fill_width = 0;
+  layout_config.fill_height = 0;
+  layout_config.zoom = 0;
+  layout_config.width = 5;
+  layout_config.height = 5;
+  layout_config.border = 0;
+  layout_config.padding = 0.5;
+  layout_config.margin = 0.0;
+  layout_config.fixed_size = 0;
+  layout_config.fixed_pos = 0;
+  layout_config.label = 0;
+  layout_config.list_data = 0;
+
+};
+
+static void set_list (CtxEvent *e, void *d1, void *d2)
+{
+  ctx_set_dirty (e->ctx, 1);
+  set_layout (e, d1, d2);
+  layout_config.fixed_size = 1;
+  layout_config.fixed_pos = 1;
+  layout_config.stack_horizontal = 0;
+  layout_config.label = 1;
+  layout_config.list_data = 1;
+}
+
+static void set_grid (CtxEvent *e, void *d1, void *d2)
+{
+  set_layout (e, d1, d2);
+  layout_config.fixed_size = 1;
+  layout_config.fixed_pos = 1;
+  layout_config.stack_horizontal = 1;
+  layout_config.stack_vertical = 1;
+  layout_config.label = 1;
+}
+
 
 void dm_set_path (Files *files, const char *path)
 {
@@ -171,6 +225,7 @@ void dm_set_path (Files *files, const char *path)
   files->n = scandir (files->path, &files->namelist, NULL, custom_sort);
   metadata_load (resolved_path);
 
+
   if (files->items)
   {
      for (int i = 0; i < files->count; i++)
@@ -185,6 +240,34 @@ void dm_set_path (Files *files, const char *path)
   {
     files->items[files->count++] = metadata_item_name (pos);
   }
+
+
+  {
+    //view_type = CTX_VIEW_GRID;
+    if (1)
+    {
+    set_grid (NULL, NULL, NULL);
+    char *v_type = metadata_key_string (".", "view");
+    if (v_type)
+    {
+      if (!strcmp (v_type, "layout"))
+      {
+         set_layout (NULL, NULL, NULL);
+      }
+      else if (!strcmp (v_type, "list"))
+      {
+         set_list (NULL, NULL, NULL);
+      }
+      else if (!strcmp (v_type, "grid"))
+      {
+         set_grid (NULL, NULL, NULL);
+      }
+      free (v_type);
+    }
+    }
+  }
+
+
   for (int i = 0; i < files->n; i++)
   {
     int found = 0;
@@ -244,9 +327,28 @@ static int ctx_path_is_dir (const char *path)
   return S_ISDIR (stat_buf.st_mode);
 }
 
+static int filename_is_image (const char *filename)
+{
+  if (strstr (filename, ".png"))  return 1;
+  if (strstr (filename, ".jpg"))  return 1;
+  if (strstr (filename, ".JPG"))  return 1;
+  if (strstr (filename, ".JPEG")) return 1;
+  if (strstr (filename, ".gif"))  return 1;
+  if (strstr (filename, ".GIF"))  return 1;
+  //if (strstr (filename, ".tif")) return 1;
+  //if (strstr (filename, ".tiff")) return 1;
+  //if (strstr (filename, ".TIF")) return 1;
+  if (strstr (filename, ".jpeg")) return 1;
+  if (strstr (filename, ".PNG"))  return 1;
+  return 0;
+}
+
+int ctx_handle_img (Ctx *ctx, const char *path);
+
 ITK *itk = NULL;
 static void item_activate (CtxEvent *e, void *d1, void *d2)
 {
+  //CtxEvent *e = &event; // we make a copy to permit recursion
   int no = (size_t)(d1);
 
   char *new_path;
@@ -281,6 +383,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   free (new_path);
 
   ctx_set_dirty (e->ctx, 1);
+  e->stop_propagate = 1;
 }
 
 static int metadata_dirty = 0;
@@ -288,7 +391,7 @@ static int metadata_dirty = 0;
 static void move_item_down (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
-  char *new_path;
+  //char *new_path;
   //if (!strcmp (files->items[no], ".."))dd
   if (no<files->count-1)
   {
@@ -490,16 +593,17 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
       (w - layout_config.padding * em * 2);
     float target_height = 
       (h - layout_config.padding * em * 2);
-  ctx_begin_path (ctx);
+  //ctx_begin_path (ctx);
 
-  if ( w > 300 || h > 300)
+  if ((target_width > 250 || target_height > 250))
   {
     char reteid[65]="";
     ctx_texture_load (ctx, path, &imgw, &imgh, reteid);
+    //fprintf (stderr, "%f %f %i %i %s\n", target_width, target_height, imgw, imgh, reteid);
     if (reteid[0])
     {
 #if 0
-      ctx_draw_texture (ctx, reteid, x, y, w, h);
+      ctx_draw_texture (ctx, reteid, x, y, target_width, target_height);
 #else
       ctx_rectangle (ctx, x + layout_config.padding * em, y + layout_config.padding*em, w - layout_config.padding * 2 * em, h - layout_config.padding * 2 * em);
       ctx_save (ctx);
@@ -519,6 +623,7 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
   if (access (thumb_path, F_OK) != -1)
   {
     char reteid[65]="";
+      ctx_save (ctx);
     ctx_texture_load (ctx, thumb_path, &imgw, &imgh, reteid);
     if (reteid[0])
     {
@@ -526,17 +631,16 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
       ctx_draw_texture (ctx, reteid, x, y, w, h);
 #else
       ctx_rectangle (ctx, x + layout_config.padding * em, y + layout_config.padding*em, w - layout_config.padding * 2 * em, h - layout_config.padding * 2 * em);
-      ctx_save (ctx);
       ctx_translate (ctx, x + layout_config.padding * em, y + layout_config.padding * em);
       ctx_scale (ctx, (target_width)/ imgw,
                       (target_height) / imgh);
       ctx_texture (ctx, reteid, 0,0);
       ctx_fill (ctx);
-      ctx_restore (ctx);
      #endif
   //  free (thumb_path);
-      return;
     }
+      ctx_restore (ctx);
+    return;
   }
   else
   {
@@ -574,68 +678,8 @@ static void draw_doc (Ctx *ctx, float x, float y, float w, float h)
   ctx_restore (ctx);
 }
 
-typedef enum {
-  CTX_DIR_LAYOUT
-}
-CtxDirView;
-
-static CtxDirView view_type = 1;
 
 
-static void set_layout (CtxEvent *e, void *d1, void *d2)
-{
-  view_type = CTX_DIR_LAYOUT;
-  ctx_set_dirty (e->ctx, 1);
-  layout_config.stack_horizontal = 1;
-  layout_config.stack_vertical = 1;
-  layout_config.fill_width = 0;
-  layout_config.fill_height = 0;
-  layout_config.zoom = 0;
-  layout_config.width = 5;
-  layout_config.height = 5;
-  layout_config.border = 0;
-  layout_config.padding = 0.5;
-  layout_config.margin = 0.0;
-  layout_config.fixed_size = 0;
-  layout_config.fixed_pos = 0;
-  layout_config.label = 0;
-
-} LayoutConfig;
-
-static void set_list (CtxEvent *e, void *d1, void *d2)
-{
-  ctx_set_dirty (e->ctx, 1);
-  set_layout (e, d1, d2);
-  layout_config.fixed_size = 1;
-  layout_config.fixed_pos = 1;
-  layout_config.stack_horizontal = 0;
-  layout_config.label = 1;
-  layout_config.list_data = 1;
-}
-
-static void set_grid (CtxEvent *e, void *d1, void *d2)
-{
-  set_layout (e, d1, d2);
-  layout_config.fixed_size = 1;
-  layout_config.fixed_pos = 1;
-  layout_config.label = 1;
-}
-
-static int filename_is_image (const char *filename)
-{
-  if (strstr (filename, ".png"))  return 1;
-  if (strstr (filename, ".jpg"))  return 1;
-  if (strstr (filename, ".JPG"))  return 1;
-  if (strstr (filename, ".JPEG")) return 1;
-  if (strstr (filename, ".gif"))  return 1;
-  if (strstr (filename, ".GIF"))  return 1;
-  //if (strstr (filename, ".tif")) return 1;
-  //if (strstr (filename, ".tiff")) return 1;
-  //if (strstr (filename, ".TIF")) return 1;
-  if (strstr (filename, ".jpeg")) return 1;
-  if (strstr (filename, ".PNG"))  return 1;
-  return 0;
-}
 
 static void dir_layout (ITK *itk, Files *files)
 {
@@ -718,7 +762,9 @@ static void dir_layout (ITK *itk, Files *files)
           focused = 1;
           viewer_load_path (newpath, files->items[i]);
 
-          ctx_add_key_binding (ctx, "return", NULL, NULL, item_activate, (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "return", NULL, NULL,
+                          item_activate,
+                          (void*)((size_t)i));
           ctx_add_key_binding (ctx, "control-page-down", NULL, NULL, move_item_down, 
                          (void*)((size_t)i));
           ctx_add_key_binding (ctx, "control-page-up", NULL, NULL, move_item_up, 
@@ -894,6 +940,8 @@ void ctx_clients_handle_events (Ctx *ctx);
 
 static char *viewer_loaded_path = NULL;
 static char *viewer_loaded_name = NULL;
+
+
 
 
 void viewer_load_path (const char *path, const char *name)
@@ -1091,7 +1139,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_clients_handle_events (ctx);
   }
 
-#if 1
+#if 0
   itk_panel_start (itk, "prop", ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*8);
   int keys = metadata_item_key_count (viewer_loaded_name);
   itk_labelf (itk, "%s - %i", viewer_loaded_name, keys);
@@ -1129,6 +1177,7 @@ int ctx_dir_main (int argc, char **argv)
   }
 
   view_type = CTX_DIR_LAYOUT;
+  set_layout (NULL, NULL, NULL);
   dm_set_path (files, path?path:"./");
   itk_main (card_files, NULL);
   while (clients)

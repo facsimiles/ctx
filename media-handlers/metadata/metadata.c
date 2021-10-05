@@ -183,7 +183,7 @@ static char *metadata_key_string (const char *item, const char *key)
 {
   const char *m = metadata_find_item (item);
   CtxString *str = ctx_string_new ("");
-  if (!m) return "";
+  if (!m) return NULL;
   if (m[0] == ' ')
   do {
      ctx_string_set (str, "");

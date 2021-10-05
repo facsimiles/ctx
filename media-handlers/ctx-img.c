@@ -12,7 +12,6 @@
 //#define STBI_NO_STDIO
 #include "stb_image.h"
 
-static int quit = 0;
 
 static int stb_w = -1;
 static int stb_h = -1;
@@ -47,23 +46,15 @@ static void image_scroll (CtxEvent *event, void *data0, void *data1)
 #endif
 }
 
-int ctx_img_main(int argc, char *argv[])
+int ctx_handle_img (Ctx *ctx, const char *path)
 {
-  Ctx *ctx;
-  path = argv[1];
-
-  if (strchr (path, ':') && (strchr(path,':')-path) < 6)
-  {
-    path = strchr (path, ':');
-    if (path[1] == '/') path++;
-    if (path[1] == '/') path++;
-  }
+  static int quit = 0;
+  if (!path) return 1;
 
   if (path) stb_pixels = stbi_load (path, &stb_w, &stb_h, &stb_components, 4);
 
   if (!stb_pixels) return 1;
 
-  ctx = ctx_new_ui (-1, -1);
 
   scale  = ctx_width (ctx) * 1.0 / stb_w;
   float scaleh = ctx_height (ctx) * 1.0 / stb_h;
@@ -81,6 +72,7 @@ int ctx_img_main(int argc, char *argv[])
   float cursor_translate = ctx_height (ctx) * 0.25;
   float shift_cursor_translate = 1;//cursor_translate / 8;
 
+  quit = 0;
   while (!quit)
   {
     CtxEvent *event;
@@ -230,6 +222,23 @@ int ctx_img_main(int argc, char *argv[])
       }
     }
   }
+}
+
+int ctx_img_main(int argc, char *argv[])
+{
+  Ctx *ctx;
+  path = argv[1];
+
+  if (strchr (path, ':') && (strchr(path,':')-path) < 6)
+  {
+    path = strchr (path, ':');
+    if (path[1] == '/') path++;
+    if (path[1] == '/') path++;
+  }
+
+  ctx = ctx_new_ui (-1, -1);
+  ctx_handle_img (ctx, path);
   ctx_free (ctx);
   return 0;
 }
+
