@@ -575,7 +575,7 @@ static void card_files (ITK *itk, int frame_no)
   struct dirent **namelist;
   char *path = "./";///home/pippin/src/ctx";
 #define PATH_SEP "/"
-  int n = scandir (path, &namelist, NULL, alphasort);
+  int n = scandir (path, &namelist, NULL, NULL);//alphasort);
   if (!n)
   {
     itk_labelf (itk, "no files\n");

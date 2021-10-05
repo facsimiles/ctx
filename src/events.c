@@ -1071,10 +1071,11 @@ int ctx_sdl_events = 0;
 int ctx_sdl_consume_events (Ctx *ctx);
 #endif
 
-#if CTX_FB 
+#if CTX_FB
 int ctx_fb_events = 0;
 int ctx_fb_consume_events (Ctx *ctx);
 #endif
+
 #if CTX_DRM
 int ctx_drm_events = 0;
 int ctx_drm_consume_events (Ctx *ctx);

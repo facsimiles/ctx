@@ -31,7 +31,7 @@ do
      "--without-alsa") HAVE_ALSA=0 ;;
      "--without-libcurl") HAVE_LIBCURL=0 ;;
      *|"--help") 
-       echo "usage: ./configure [--without-sdl] [--without-babl] [--without-libcurl] [--without-alsa] [--debug|--asan|--ubsan] [--without-drm] [--enable-fb]"
+       echo "usage: ./configure [--without-sdl] [--without-babl] [--without-libcurl] [--without-alsa] [--debug|--asan|--ubsan] [--without-drm] [--enable-fb] "
        exit 0
        ;;
     esac

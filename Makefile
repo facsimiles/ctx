@@ -30,8 +30,10 @@ LIBS  += -lz -lm -lpthread
 #OFLAGS_LIGHT =-O2
 
 
-TERMINAL_CFILES = $(wildcard terminal/*.c)
-TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
+#TERMINAL_CFILES = $(wildcard terminal/*.c)
+TERMINAL_C_FILES = terminal/terminal.c terminal/ctx-keyboard.c
+TERMINAL_OBJS = terminal/terminal.o terminal/ctx-keyboard.o
+#TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
 MEDIA_HANDLERS_CFILES = $(wildcard media-handlers/*.c)
 MEDIA_HANDLERS_OBJS   = $(MEDIA_HANDLERS_CFILES:.c=.o)
 
