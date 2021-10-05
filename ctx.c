@@ -10,7 +10,7 @@
 #include <babl/babl.h>
 #endif
 
-#ifndef NO_SDL
+#if CTX_SDL
 #include <SDL.h>
 #endif
 

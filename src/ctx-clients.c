@@ -841,7 +841,7 @@ void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 
   if (!strcmp (event, "F11"))
   {
-#ifndef NO_SDL
+#if CTX_SDL
     if (ctx_renderer_is_sdl (ctx))
     {
       ctx_sdl_set_fullscreen (ctx, !ctx_sdl_get_fullscreen (ctx));

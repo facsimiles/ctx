@@ -16,7 +16,7 @@
  */
 
 
-#ifndef NO_SDL
+#if CTX_SDL
 #include <SDL.h>
 #include <zlib.h>
 
@@ -50,7 +50,7 @@ static int ydec (const void *srcp, void *dstp, int count)
   return out_len;
 }
 
-#ifndef NO_SDL
+#if CTX_SDL
 static SDL_AudioDeviceID speaker_device = 0;
 #endif
 
@@ -250,7 +250,7 @@ static void sdl_audio_init ()
   static int done = 0;
   if (!done)
   {
-#ifndef NO_SDL
+#if CTX_SDL
   if (SDL_Init(SDL_INIT_AUDIO) < 0)
   {
     fprintf (stderr, "sdl audio init fail\n");
@@ -264,7 +264,7 @@ void vt_audio_task (VT *vt, int click)
 {
   if (!vt) return;
   AudioState *audio = &vt->audio;
-#ifndef NO_SDL
+#if CTX_SDL
 
   if (audio->mic)
   {

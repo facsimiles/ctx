@@ -3107,7 +3107,7 @@ static void vt_line_feed (VT *vt)
 
 //#include "vt-encodings.h"
 
-#ifndef NO_SDL
+#if CTX_SDL
 static void vt_state_apc_audio (VT *vt, int byte)
 {
   if ( (byte < 32) && ( (byte < 8) || (byte > 13) ) )
