@@ -398,7 +398,6 @@ Ctx *ctx_new_fb (int width, int height)
   CtxTiled *tiled = (void*)fb;
   ctx_fb = fb;
   {
-#if 1
 #ifdef __linux__
   const char *dev_path = "/dev/fb0";
 #endif
@@ -458,22 +457,21 @@ Ctx *ctx_new_fb (int width, int height)
       fb->vinfo.red.length +
       fb->vinfo.green.length +
       fb->vinfo.blue.length;
-#ifdef __linux__
    else if (fb->fb_bits == 8)
   {
     unsigned short red[256],  green[256],  blue[256];
-    unsigned short original_red[256];
-    unsigned short original_green[256];
-    unsigned short original_blue[256];
+  //  unsigned short original_red[256];
+  //  unsigned short original_green[256];
+  //  unsigned short original_blue[256];
     struct fb_cmap cmap = {0, 256, red, green, blue, NULL};
-    struct fb_cmap original_cmap = {0, 256, original_red, original_green, original_blue, NULL};
+  //  struct fb_cmap original_cmap = {0, 256, original_red, original_green, original_blue, NULL};
     int i;
 
     /* do we really need to restore it ? */
-    if (ioctl (fb->fb_fd, FBIOPUTCMAP, &original_cmap) == -1)
-    {
-      fprintf (stderr, "palette initialization problem %i\n", __LINE__);
-    }
+   // if (ioctl (fb->fb_fd, FBIOPUTCMAP, &original_cmap) == -1)
+   // {
+   //   fprintf (stderr, "palette initialization problem %i\n", __LINE__);
+   // }
 
     for (i = 0; i < 256; i++)
     {
@@ -487,14 +485,12 @@ Ctx *ctx_new_fb (int width, int height)
       fprintf (stderr, "palette initialization problem %i\n", __LINE__);
     }
   }
-#endif
 
   fb->fb_bpp = fb->vinfo.bits_per_pixel / 8;
   fb->fb_mapped_size = fb->finfo.smem_len;
 #endif
 
 #ifdef __NetBSD__
-  fprintf (stderr, "ooops\n");
   struct wsdisplay_fbinfo finfo;
 
   int mode = WSDISPLAYIO_MODE_DUMBFB;
@@ -512,10 +508,30 @@ Ctx *ctx_new_fb (int width, int height)
   fb->fb_bits = finfo.depth;
   fb->fb_bpp = (fb->fb_bits + 1) / 8;
   fb->fb_mapped_size = width * height * fb->fb_bpp;
+
+
+  if (fb->fb_bits == 8)
+  {
+    unsigned uint8_t red[256],  green[256],  blue[256];
+    struct wsdisplay_cmap cmap;
+    cmap.red = red;
+    cmap.green = red;
+    cmap.blue = red;
+    cmap.colors = 256;
+    cmap.index = 0;
+    for (i = 0; i < 256; i++)
+    {
+      red[i]   = ((( i >> 5) & 0x7) << 5);
+      green[i] = ((( i >> 2) & 0x7) << 5);
+      blue[i]  = ((( i >> 0) & 0x3) << 6);
+    }
+
+    ioctl (fb->fb_fd, WSDISPLAYIO_PUTCMAP, &cmap);
+  }
 #endif
+
                                               
   tiled->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
-#endif
   }
   if (!tiled->fb)
     return NULL;
