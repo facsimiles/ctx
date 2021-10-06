@@ -2113,9 +2113,10 @@ ctx_string_append_callback (void *contents, size_t size, size_t nmemb, void *use
 #endif
 
 int
-ctx_get_contents (const char     *uri,
-                  unsigned char **contents,
-                  long           *length)
+ctx_get_contents2 (const char     *uri,
+                   unsigned char **contents,
+                   long           *length,
+                   long            max_len)
 {
   char *temp_uri = NULL; // XXX XXX breaks with data uri's
   int   success  = -1;
@@ -2150,7 +2151,7 @@ ctx_get_contents (const char     *uri,
   }
 
   if (!strncmp (uri, "file://", 7))
-    success = __ctx_file_get_contents (uri + 7, contents, length);
+    success = ___ctx_file_get_contents (uri + 7, contents, length, max_len);
   else
   {
 #ifndef NO_LIBCURL
@@ -2183,10 +2184,19 @@ ctx_get_contents (const char     *uri,
      success = 0;
   }
 #else
-    success = __ctx_file_get_contents (uri, contents, length);
+    success = ___ctx_file_get_contents (uri, contents, length, max_len);
 #endif
   }
   free (temp_uri);
   return success;
+}
+
+
+int
+ctx_get_contents (const char     *uri,
+                  unsigned char **contents,
+                  long           *length)
+{
+  return ctx_get_contents2 (uri, contents, length, 1024*1024*1024);
 }
 #endif

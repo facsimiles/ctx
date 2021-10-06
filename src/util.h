@@ -89,9 +89,10 @@ _ctx_file_set_contents (const char     *path,
 }
 
 static int
-__ctx_file_get_contents (const char     *path,
-                        unsigned char **contents,
-                        long           *length)
+___ctx_file_get_contents (const char     *path,
+                          unsigned char **contents,
+                          long           *length,
+                          long            max_len)
 {
   FILE *file;
   long  size;
@@ -102,6 +103,12 @@ __ctx_file_get_contents (const char     *path,
     { return -1; }
   fseek (file, 0, SEEK_END);
   size = remaining = ftell (file);
+
+  if (size > max_len)
+  {
+     size = remaining = max_len;
+  }
+
   if (length)
     { *length =size; }
   rewind (file);
@@ -122,6 +129,14 @@ __ctx_file_get_contents (const char     *path,
   *contents = (unsigned char*) buffer;
   buffer[size] = 0;
   return 0;
+}
+
+static int
+__ctx_file_get_contents (const char     *path,
+                        unsigned char **contents,
+                        long           *length)
+{
+  return ___ctx_file_get_contents (path, contents, length, 1024*1024*1024);
 }
 
 #if !__COSMOPOLITAN__

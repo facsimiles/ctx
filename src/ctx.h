@@ -1750,6 +1750,11 @@ int
 ctx_get_contents (const char     *path,
                    unsigned char **contents,
                    long           *length);
+int
+ctx_get_contents2 (const char     *path,
+                   unsigned char **contents,
+                   long           *length,
+                   long            max_len);
 
 void ctx_parser_free (CtxParser *parser);
 typedef struct _CtxSHA1 CtxSHA1;
