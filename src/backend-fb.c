@@ -14,10 +14,7 @@ static int ctx_fb_get_mice_fd (Ctx *ctx)
   //CtxFb *fb = (void*)ctx->renderer;
   return _ctx_mice_fd;
 }
-#endif
 
-
-#if CTX_FB
 #ifdef __linux__
   #include <linux/fb.h>
   #include <linux/vt.h>
@@ -461,7 +458,7 @@ Ctx *ctx_new_fb (int width, int height)
       fb->vinfo.red.length +
       fb->vinfo.green.length +
       fb->vinfo.blue.length;
-#if 0
+#ifdef __linux__
    else if (fb->fb_bits == 8)
   {
     unsigned short red[256],  green[256],  blue[256];
