@@ -1,4 +1,6 @@
 #include "ctx-split.h"
+#include <ctype.h>
+#include <sys/stat.h>
 
 #if CTX_EVENTS
 int ctx_width (Ctx *ctx)
@@ -2199,4 +2201,139 @@ ctx_get_contents (const char     *uri,
 {
   return ctx_get_contents2 (uri, contents, length, 1024*1024*1024);
 }
+
+
+typedef struct CtxMagicEntry {
+  const char *mime_type;
+  const char *ext1;
+  int len;
+  uint8_t magic[16];
+} CtxMagicEntry;
+
+static CtxMagicEntry ctx_magics[]={
+  {"image/bmp",  ".bmp", 0, {0}},
+  {"image/png",  ".png", 8, {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}},
+  {"image/jpeg", ".jpg", 8, {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
+  {"image/jpeg", ".jpeg", 8, {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
+  {"image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x37, 0x61}},
+  {"image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x39, 0x61}},
+  {"image/exr",  ".exr", 4, {0x76, 0x2f, 0x31, 0x01}},
+  {"video/mpeg", ".mpg", 4, {0x00, 0x00, 0x01, 0xba}},
+  {"application/blender", ".blend", 8, {0x42, 0x4c,0x45,0x4e,0x44,0x45,0x52}},
+  {"image/xcf",  ".xcf", 8, {0x67, 0x69,0x6d,0x70,0x20,0x78,0x63,0x66}},
+  {"application/bzip2", ".bz2", 3, {0x42, 0x5a, 0x68}},
+  {"application/gzip", ".gz", 0, {0x0}},
+  {"text/x-csrc", ".c", 0, {0,}},
+  {"text/x-chdr", ".h", 0, {0,}},
+  {"text/css", ".css", 0, {0x0}},
+  {"text/csv", ".csv", 0, {0x0}},
+  {"text/html", ".htm", 0, {0x0}},
+  {"text/html", ".html", 0, {0x0}},
+  {"application/atom+xml", ".atom", 0, {0x0}},
+  {"application/rdf+xml", ".rdf", 0, {0x0}},
+  {"application/javascript", ".js", 0, {0x0}},
+  {"application/json", ".json", 0, {0x0}},
+  {"application/octet-stream", ".bin", 0, {0x0}},
+  {"application/pdf", ".pdf", 0, {0x0}},
+  {"text/xml", ".xml", 0, {0x0}},
+  {"video/mp4", ".mp4", 0, {0x0}},
+  {"video/ogg", ".ogv", 0, {0x0}},
+  {"audio/sp-midi", ".mid",  {0x0}},
+  {"audio/x-wav", ".wav",  {0x0}},
+  {"audio/ogg", ".ogg",  {0x0}},
+  {"audio/ogg", ".opus",  {0x0}},
+  {"audio/ogg", ".oga",  {0x0}},
+  {"audio/mpeg", ".mp1",  {0x0}},
+  {"audio/m3u", ".m3u",  {0x0}},
+  {"audio/mpeg", ".mp2", 0, {0x0}},
+  {"audio/mpeg", ".mp3", 0, {0x0}},
+  {"audio/mpeg", ".m4a", 0, {0x0}},
+  {"audio/mpeg", ".mpga", 0, {0x0}},
+  {"audio/mpeg", ".mpega", 0, {0x0}},
+  {"font/otf", ".otf", 0,{0x0}},
+  {"font/ttf", ".ttf", 0,{0x0}},
+  // inode-directory
+};
+
+const char *ctx_guess_media_type (const char *path, const char *content, int len)
+{
+  const char *extension_match = NULL;
+  if (path && strrchr (path, '.'))
+  {
+    char *pathdup = strdup (strrchr(path, '.'));
+    for (int i = 0; pathdup[i]; i++) pathdup[i]=tolower(pathdup[i]);
+    for (int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
+    {
+      if (ctx_magics[i].ext1 && !strcmp (ctx_magics[i].ext1, pathdup))
+      {
+        extension_match = ctx_magics[i].mime_type;
+      }
+    }
+    free (pathdup);
+  }
+
+  if (len > 16)
+  {
+    for (int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
+    {
+       if (ctx_magics[i].len) // skip extension only matches
+       if (!memcmp (content, ctx_magics[i].magic, ctx_magics[i].len))
+       {
+         return ctx_magics[i].mime_type;
+       }
+    }
+  }
+  if (extension_match) return extension_match;
+  int non_ascii=0;
+  for (int i = 0; i < len; i++)
+  {
+    int p = content[i];
+    if (p > 127) non_ascii = 1;
+    if (p == 0) non_ascii = 1;
+  }
+  if (non_ascii)
+    return "application/octet-stream";
+  return "text/plain";
+}
+
+static int ctx_path_is_dir (const char *path)
+{
+  struct stat stat_buf;
+  lstat (path, &stat_buf);
+  return S_ISDIR (stat_buf.st_mode);
+}
+
+const char *ctx_path_get_media_type (const char *path)
+{
+  char *content = NULL;
+  long length = 0;
+
+  /* XXX : code duplication, factor out in separate fun */
+  if (path && strrchr (path, '.'))
+  {
+    char *pathdup = strdup (strrchr(path, '.'));
+    for (int i = 0; pathdup[i]; i++) pathdup[i]=tolower(pathdup[i]);
+    for (int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
+    {
+      if (ctx_magics[i].ext1 && !strcmp (ctx_magics[i].ext1, pathdup))
+      {
+        free (pathdup);
+        return ctx_magics[i].mime_type;
+      }
+    }
+    free (pathdup);
+  }
+  if (ctx_path_is_dir (path))
+    return "inode/directory";
+
+  ctx_get_contents2 (path, &content, &length, 32);
+  if (content)
+  {
+  const char *guess = ctx_guess_media_type (path, content, length);
+  free (content);
+  return guess;
+  }
+  return "application/none";
+}
+
 #endif

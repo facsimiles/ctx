@@ -212,18 +212,25 @@ static char *metadata_key_string (const char *item, const char *key)
 static float metadata_key_float (const char *item, const char *key)
 {
    char *value = metadata_key_string (item, key);
+   float ret = -1234.0f;
    if (value)
    {
-     float ret = atof (value);
+     ret = atof (value);
      free (value);
-     return ret;
    }
-   return 0.0f;
+   return ret;
 }
 
 static int metadata_key_int (const char *item, const char *key)
 {
-  return metadata_key_float (item, key);
+   char *value = metadata_key_string (item, key);
+   int ret = -1234; // special magic value for unset
+   if (value)
+   {
+     ret = atoi (value);
+     free (value);
+   }
+   return ret;
 }
 
 static void metadata_swap (int no_a, int no_b)

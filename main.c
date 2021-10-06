@@ -314,6 +314,7 @@ int main (int argc, char **argv)
          sprintf (path, "file://%s", input_path);
          input_path = path;
       }
+    const char *media_type = ctx_path_get_media_type (input_path);
 
     if (!strcmp (get_suffix (input_path), ".gif")||
         !strcmp (get_suffix (input_path), ".GIF"))

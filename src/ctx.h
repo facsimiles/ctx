@@ -1786,6 +1786,16 @@ void ctx_matrix_multiply (CtxMatrix       *result,
                           const CtxMatrix *s);
 
 
+/* we already have the start of the file available which disambiguates some
+ * of our important supported formats, give preference to magic, then extension
+ * then text plain vs binary.
+ */
+const char *ctx_guess_media_type (const char *path, const char *content, int len);
+
+/* get media-type, with preference towards using extension of path and
+ * not reading the data at all.
+ */
+const char *ctx_path_get_media_type (const char *path);
 
 
 float ctx_term_get_cell_width (Ctx *ctx);
