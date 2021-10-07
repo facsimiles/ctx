@@ -315,20 +315,19 @@ int main (int argc, char **argv)
          input_path = path;
       }
     const char *media_type = ctx_path_get_media_type (input_path);
+    CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
 
-    if (!strcmp (get_suffix (input_path), ".gif")||
-        !strcmp (get_suffix (input_path), ".GIF"))
+    if (!strcmp (media_type, "image/gif"))
     {
       return ctx_gif_main (argc, argv);
     }
-    if (!strcmp (get_suffix (input_path), ".jpg") ||
-        !strcmp (get_suffix (input_path), ".PNG") ||
-        !strcmp (get_suffix (input_path), ".JPG") ||
-        !strcmp (get_suffix (input_path), ".png"))
+    if (!strcmp (media_type, "image/jpeg") ||
+        !strcmp (media_type, "image/exr") ||
+        !strcmp (media_type, "image/png"))
     {
       return ctx_img_main (argc, argv);
     }
-    if (!strcmp (get_suffix (input_path), ".mpg"))
+    if (!strcmp (media_type, "video/mpeg"))
     {
       return ctx_mpg_main (argc, argv);
     }
@@ -337,16 +336,10 @@ int main (int argc, char **argv)
       return ctx_dir_main (argc, argv);
     }
 
-    if (!strcmp (get_suffix (input_path), ".txt") ||
-        !strcmp (get_suffix (input_path), ".c") ||
-        !strcmp (get_suffix (input_path), ".h") ||
-        !strcmp (get_suffix (input_path), "README") ||
-        !strcmp (get_suffix (input_path), "Makefile"))
+    if (media_type_class == CTX_MEDIA_TYPE_TEXT)
     {
       return ctx_text_main (argc, argv);
     }
-
-
 
     return -1;
   }

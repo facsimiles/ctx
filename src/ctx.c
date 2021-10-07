@@ -2336,4 +2336,63 @@ const char *ctx_path_get_media_type (const char *path)
   return "application/none";
 }
 
+CtxMediaTypeClass ctx_media_type_class (const char *media_type)
+{
+  CtxMediaTypeClass ret = CTX_MEDIA_TYPE_NONE;
+  if (!media_type) return ret;
+  if (!ret){
+    ret = CTX_MEDIA_TYPE_IMAGE;
+    if (media_type[0]!='i')ret = 0;
+    if (media_type[1]!='m')ret = 0;
+    /*
+    if (media_type[2]!='a')ret = 0;
+    if (media_type[3]!='g')ret = 0;
+    if (media_type[4]!='e')ret = 0;*/
+  }
+  if (!ret){
+    ret = CTX_MEDIA_TYPE_VIDEO;
+    if (media_type[0]!='v')ret = 0;
+    if (media_type[1]!='i')ret = 0;
+    /*
+    if (media_type[2]!='d')ret = 0;
+    if (media_type[3]!='e')ret = 0;
+    if (media_type[4]!='o')ret = 0;*/
+  }
+  if (!ret){
+    ret = CTX_MEDIA_TYPE_AUDIO;
+    if (media_type[0]!='a')ret = 0;
+    if (media_type[1]!='u')ret = 0;
+    /*
+    if (media_type[2]!='d')ret = 0;
+    if (media_type[3]!='i')ret = 0;
+    if (media_type[4]!='o')ret = 0;*/
+  }
+  if (!ret){
+    ret = CTX_MEDIA_TYPE_TEXT;
+    if (media_type[0]!='t')ret = 0;
+    if (media_type[1]!='e')ret = 0;
+    /*
+    if (media_type[2]!='x')ret = 0;
+    if (media_type[3]!='t')ret = 0;*/
+  }
+  if (!ret){
+    ret = CTX_MEDIA_TYPE_APPLICATION;
+    if (media_type[0]!='a')ret = 0;
+    if (media_type[1]!='p')ret = 0;
+    /*
+    if (media_type[2]!='p')ret = 0;
+    if (media_type[3]!='l')ret = 0;*/
+  }
+  if (!ret){
+    ret = CTX_MEDIA_TYPE_INODE;
+    if (media_type[0]!='i')ret = 0;
+    if (media_type[1]!='n')ret = 0;
+    /*
+    if (media_type[2]!='o')ret = 0;
+    if (media_type[3]!='d')ret = 0;
+    if (media_type[4]!='e')ret = 0;*/
+  }
+  return ret;
+}
+
 #endif

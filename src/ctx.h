@@ -1797,6 +1797,18 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
  */
 const char *ctx_path_get_media_type (const char *path);
 
+typedef enum {
+  CTX_MEDIA_TYPE_NONE=0,
+  CTX_MEDIA_TYPE_TEXT,
+  CTX_MEDIA_TYPE_IMAGE,
+  CTX_MEDIA_TYPE_VIDEO,
+  CTX_MEDIA_TYPE_AUDIO,
+  CTX_MEDIA_TYPE_INODE,
+  CTX_MEDIA_TYPE_APPLICATION,
+} CtxMediaTypeClass;
+
+CtxMediaTypeClass ctx_media_type_class (const char *media_type);
+
 
 float ctx_term_get_cell_width (Ctx *ctx);
 float ctx_term_get_cell_height (Ctx *ctx);

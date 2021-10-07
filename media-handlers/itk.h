@@ -25,6 +25,9 @@ void itk_panel_end   (ITK *itk);
 void itk_newline    (ITK *itk);
 void itk_sameline   (ITK *itk);
 void itk_seperator  (ITK *itk);
+
+void itk_hgap (ITK *itk, float amount);
+
 void itk_label      (ITK *itk, const char *label);
 void itk_labelf (ITK *itk, const char *format, ...);
 void itk_titlebar   (ITK *itk, const char *label);
@@ -242,6 +245,14 @@ struct _ITK{
 
 
 #ifdef ITK_IMPLEMENTATION
+
+void itk_hgap (ITK *itk, float amount)
+{
+  /* NYI: but with retaiing of actual layout/draw of widgets
+   * for one built up horizontal run, this would permit building
+   * extended paragraph layouting into the itk model
+   */
+}
 
 void itk_begin_menu_bar (ITK *itk, const char *title)
 {
@@ -962,7 +973,10 @@ static void itk_slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2
     control->set_val (control->val, new_val, control->data);
 }
 
-void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double max, double step, void *data, double(*get_val)(void *val, void *data), void(*set_val)(void *valp, double val, void *data), void(*finalize)(void *data))
+void itk_slider_cb (ITK *itk, const char *label, void *val, double min, double max, double step, void *data,
+                double(*get_val)(void *val, void *data),
+                void(*set_val)(void *valp, double val, void *data),
+                void(*finalize)(void *data))
 {
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
@@ -1110,47 +1124,65 @@ static void itk_slider_set_double (void *valp, double val, void *data)
 
 void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step)
 {
-  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_float, itk_slider_set_float, NULL);
+  itk_slider_cb (itk, label, val, min, max, step, NULL,
+                 itk_slider_get_float,
+                 itk_slider_set_float, NULL);
 }
 
 void itk_slider_int (ITK *itk, const char *label, int *val, int min, int max, int step)
 {
-  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_int, itk_slider_set_int, NULL);
+  itk_slider_cb (itk, label, val, min, max, step, NULL,
+                 itk_slider_get_int,
+                 itk_slider_set_int, NULL);
 }
 
 void itk_slider_double (ITK *itk, const char *label, double *val, double min, double max, double step)
 {
-  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_double, itk_slider_set_double, NULL);
+  itk_slider_cb (itk, label, val, min, max, step, NULL,
+                 itk_slider_get_double,
+                 itk_slider_set_double, NULL);
 }
 
 void itk_slider_uint8 (ITK *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step)
 {
-  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_uint8, itk_slider_set_uint8, NULL);
+  itk_slider_cb (itk, label, val, min, max, step, NULL,
+                 itk_slider_get_uint8,
+                 itk_slider_set_uint8, NULL);
 }
 
 void itk_slider_uint16 (ITK *itk, const char *label, uint16_t *val, uint16_t min, uint16_t max, uint16_t step)
 {
-  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_uint16, itk_slider_set_uint16, NULL);
+  itk_slider_cb (itk, label, val, min, max, step, NULL,
+                 itk_slider_get_uint16,
+                 itk_slider_set_uint16, NULL);
 }
 
 void itk_slider_uint32 (ITK *itk, const char *label, uint32_t *val, uint32_t min, uint32_t max, uint32_t step)
 {
-  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_uint32, itk_slider_set_uint32, NULL);
+  itk_slider_cb (itk, label, val, min, max, step, NULL,
+                 itk_slider_get_uint32,
+                 itk_slider_set_uint32, NULL);
 }
 
 void itk_slider_int8 (ITK *itk, const char *label, int8_t *val, int8_t min, int8_t max, int8_t step)
 {
-  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_int8, itk_slider_set_int8, NULL);
+  itk_slider_cb (itk, label, val, min, max, step, NULL,
+                 itk_slider_get_int8,
+                 itk_slider_set_int8, NULL);
 }
 
 void itk_slider_int16 (ITK *itk, const char *label, int16_t *val, int16_t min, int16_t max, int16_t step)
 {
-  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_int16, itk_slider_set_int16, NULL);
+  itk_slider_cb (itk, label, val, min, max, step, NULL,
+                 itk_slider_get_int16,
+                 itk_slider_set_int16, NULL);
 }
 
 void itk_slider_int32 (ITK *itk, const char *label, int32_t *val, int32_t min, int32_t max, int32_t step)
 {
-  itk_slider_cb (itk, label, val, min, max, step, NULL, itk_slider_get_int32, itk_slider_set_int32, NULL);
+  itk_slider_cb (itk, label, val, min, max, step, NULL,
+                 itk_slider_get_int32,
+                 itk_slider_set_int32, NULL);
 }
 
 void entry_commit (ITK *itk)
