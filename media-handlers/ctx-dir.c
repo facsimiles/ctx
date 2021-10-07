@@ -198,6 +198,7 @@ static void set_list (CtxEvent *e, void *d1, void *d2)
   layout_config.fixed_pos = 1;
   layout_config.stack_horizontal = 0;
   layout_config.label = 0;
+  layout_config.padding = 0.1;
   layout_config.list_data = 1;
 }
 
@@ -639,6 +640,7 @@ static int dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   {
     ctx_client_unlock (client);
     //itk->focus_no ++;
+    itk->focus_no ++;
     item_activate (NULL, viewer_no+1, NULL);
     ctx_set_dirty (ctx, 1);
 
@@ -648,7 +650,7 @@ static int dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
       media_class == CTX_MEDIA_TYPE_VIDEO)&& (!strcmp (event, "page-down")))
   {
     ctx_client_unlock (client);
-    //itk->focus_no ++;
+    itk->focus_no ++;
     item_activate (NULL, viewer_no+1, NULL);
     ctx_set_dirty (ctx, 1);
 
@@ -659,6 +661,7 @@ static int dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   {
     ctx_client_unlock (client);
     //itk->focus_no ++;
+    itk->focus_no --;
     item_activate (NULL, viewer_no-1, NULL);
     ctx_set_dirty (ctx, 1);
 
@@ -843,11 +846,12 @@ static void dir_layout (ITK *itk, Files *files)
         {
           draw_doc (ctx, itk->x, itk->y, width, height);
         }
+      }
         if (layout_config.list_data)
         {
           char buf[1024];
           ctx_move_to (itk->ctx, itk->x + width, itk->y + em * (1 + layout_config.padding) );
-          sprintf (buf, "%s %i %i", d_name, stat_buf.st_size, files->namelist[i]->d_type);
+          sprintf (buf, "%s %i %i %s", d_name, stat_buf.st_size, files->namelist[i]->d_type, media_type);
           ctx_font_size (itk->ctx, em);
           ctx_gray (itk->ctx, 1.0);
           ctx_save (itk->ctx);
@@ -856,8 +860,6 @@ static void dir_layout (ITK *itk, Files *files)
 
         }
 
-
-      }
       free (newpath);
 
       if (label)
