@@ -46,14 +46,14 @@ static void image_scroll (CtxEvent *event, void *data0, void *data1)
 #endif
 }
 
-int ctx_handle_img (Ctx *ctx, const char *path)
+void ctx_handle_img (Ctx *ctx, const char *path)
 {
   static int quit = 0;
-  if (!path) return 1;
+  if (!path) return;
 
   if (path) stb_pixels = stbi_load (path, &stb_w, &stb_h, &stb_components, 4);
 
-  if (!stb_pixels) return 1;
+  if (!stb_pixels) return;
 
 
   scale  = ctx_width (ctx) * 1.0 / stb_w;

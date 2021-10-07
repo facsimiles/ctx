@@ -30,7 +30,7 @@ typedef enum ImageZoom
   IMAGE_ZOOM_STRETCH,
   IMAGE_ZOOM_FIT,
   IMAGE_ZOOM_FILL,
-};
+} ImageZoom;
 
 typedef struct LayoutConfig
 {
@@ -376,6 +376,8 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
 
 static int metadata_dirty = 0;
 
+void itk_focus (ITK *itk, int dir);
+
 static void move_item_down (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
@@ -499,7 +501,6 @@ static void move_down (CtxEvent *e, void *d1, void *d2)
 static void move_item_up (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
-  char *new_path;
   if (no>0)
   {
     metadata_swap (no, no-1);
@@ -621,7 +622,10 @@ static void draw_doc (Ctx *ctx, float x, float y, float w, float h)
 
 const char *viewer_media_type = NULL;
 
-static int dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
+void ctx_client_lock (CtxClient *client);
+void ctx_client_unlock (CtxClient *client);
+
+static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 {
   if (!active)
     return;
@@ -641,7 +645,7 @@ static int dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     ctx_client_unlock (client);
     //itk->focus_no ++;
     itk->focus_no ++;
-    item_activate (NULL, viewer_no+1, NULL);
+    item_activate (NULL, (void*)(size_t)(viewer_no+1), NULL);
     ctx_set_dirty (ctx, 1);
 
     return;
@@ -651,7 +655,7 @@ static int dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   {
     ctx_client_unlock (client);
     itk->focus_no ++;
-    item_activate (NULL, viewer_no+1, NULL);
+    item_activate (NULL, (void*)(size_t)viewer_no+1, NULL);
     ctx_set_dirty (ctx, 1);
 
     return;
@@ -662,7 +666,7 @@ static int dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     ctx_client_unlock (client);
     //itk->focus_no ++;
     itk->focus_no --;
-    item_activate (NULL, viewer_no-1, NULL);
+    item_activate (NULL, (void*)(size_t)viewer_no-1, NULL);
     ctx_set_dirty (ctx, 1);
 
     return;
@@ -704,7 +708,7 @@ static void dir_key_any (CtxEvent *event, void *userdata, void *userdata2)
 static void dir_select_item (CtxEvent *event, void *data1, void *data2)
 {
    fprintf (stderr, "select item %p\n", data1);
-   itk->focus_no = data1;
+   itk->focus_no = (size_t)data1;
    ctx_set_dirty (event->ctx, 1);
 }
 
@@ -826,7 +830,7 @@ static void dir_layout (ITK *itk, Files *files)
         }
         else
         {
-          ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, c->no, NULL);
+          ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
         }
 
       ctx_begin_path (ctx);
@@ -851,7 +855,7 @@ static void dir_layout (ITK *itk, Files *files)
         {
           char buf[1024];
           ctx_move_to (itk->ctx, itk->x + width, itk->y + em * (1 + layout_config.padding) );
-          sprintf (buf, "%s %i %i %s", d_name, stat_buf.st_size, files->namelist[i]->d_type, media_type);
+          sprintf (buf, "%s %i %i %s", d_name, (int)stat_buf.st_size, files->namelist[i]->d_type, media_type);
           ctx_font_size (itk->ctx, em);
           ctx_gray (itk->ctx, 1.0);
           ctx_save (itk->ctx);
@@ -1038,7 +1042,6 @@ void viewer_load_path (const char *path, const char *name)
       }
     }
     escaped_path[j]=0;
-    const char *suffix = get_suffix (path);
     command[0]=0;
     if (!strcmp (media_type, "inode/directory"))
     {

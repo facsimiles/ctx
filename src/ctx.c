@@ -2235,20 +2235,20 @@ static CtxMagicEntry ctx_magics[]={
   {"application/json", ".json", 0, {0x0}},
   {"application/octet-stream", ".bin", 0, {0x0}},
   {"application/pdf", ".pdf", 0, {0x0}},
-  {"text/xml", ".xml", 0, {0x0}},
-  {"video/mp4", ".mp4", 0, {0x0}},
-  {"video/ogg", ".ogv", 0, {0x0}},
-  {"audio/sp-midi", ".mid",  {0x0}},
-  {"audio/x-wav", ".wav",  {0x0}},
-  {"audio/ogg", ".ogg",  {0x0}},
-  {"audio/ogg", ".opus",  {0x0}},
-  {"audio/ogg", ".oga",  {0x0}},
-  {"audio/mpeg", ".mp1",  {0x0}},
-  {"audio/m3u", ".m3u",  {0x0}},
-  {"audio/mpeg", ".mp2", 0, {0x0}},
-  {"audio/mpeg", ".mp3", 0, {0x0}},
-  {"audio/mpeg", ".m4a", 0, {0x0}},
-  {"audio/mpeg", ".mpga", 0, {0x0}},
+  {"text/xml", ".xml",     0, {0x0}},
+  {"video/mp4", ".mp4",    0, {0x0}},
+  {"video/ogg", ".ogv",    0, {0x0}},
+  {"audio/sp-midi", ".mid",  0, {0x0}},
+  {"audio/x-wav", ".wav",  0, {0x0}},
+  {"audio/ogg", ".ogg",    0, {0x0}},
+  {"audio/ogg", ".opus",   0, {0x0}},
+  {"audio/ogg", ".oga",    0, {0x0}},
+  {"audio/mpeg", ".mp1",   0, {0x0}},
+  {"audio/m3u", ".m3u",    0, {0x0}},
+  {"audio/mpeg", ".mp2",   0, {0x0}},
+  {"audio/mpeg", ".mp3",   0, {0x0}},
+  {"audio/mpeg", ".m4a",   0, {0x0}},
+  {"audio/mpeg", ".mpga",  0, {0x0}},
   {"audio/mpeg", ".mpega", 0, {0x0}},
   {"font/otf", ".otf", 0,{0x0}},
   {"font/ttf", ".ttf", 0,{0x0}},
@@ -2262,7 +2262,7 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
   {
     char *pathdup = strdup (strrchr(path, '.'));
     for (int i = 0; pathdup[i]; i++) pathdup[i]=tolower(pathdup[i]);
-    for (int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
+    for (unsigned int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
     {
       if (ctx_magics[i].ext1 && !strcmp (ctx_magics[i].ext1, pathdup))
       {
@@ -2274,7 +2274,7 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
 
   if (len > 16)
   {
-    for (int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
+    for (unsigned int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
     {
        if (ctx_magics[i].len) // skip extension only matches
        if (!memcmp (content, ctx_magics[i].magic, ctx_magics[i].len))
@@ -2313,7 +2313,7 @@ const char *ctx_path_get_media_type (const char *path)
   {
     char *pathdup = strdup (strrchr(path, '.'));
     for (int i = 0; pathdup[i]; i++) pathdup[i]=tolower(pathdup[i]);
-    for (int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
+    for (unsigned int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
     {
       if (ctx_magics[i].ext1 && !strcmp (ctx_magics[i].ext1, pathdup))
       {

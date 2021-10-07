@@ -90,18 +90,18 @@ echo "LIBS=$LIBS" >> build.conf
 #make build.deps 2>/dev/null
 
 echo "configuration summary:"
-if [ $HAVE_SDL = 1 ];  then echo "    SDL2 yes";
-                       else echo "    SDL2 no";fi
-if [ $HAVE_BABL = 1 ]; then echo "    babl yes";
-                       else echo "    babl no";fi
-if [ $HAVE_ALSA = 1 ]; then echo "    alsa yes";
-                       else echo "    alsa no";fi
+if [ $HAVE_SDL = 1 ];    then echo "    SDL2 yes";
+                         else echo "    SDL2 no";fi
+if [ $HAVE_BABL = 1 ];   then echo "    babl yes";
+                         else echo "    babl no";fi
+if [ $HAVE_ALSA = 1 ];   then echo "    alsa yes";
+                         else echo "    alsa no";fi
 if [ $HAVE_LIBCURL = 1 ];then echo " libcurl yes";
-                       else echo " libcurl no";fi
-if [ $ENABLE_KMS = 1 ];then echo "     kms yes";
-                       else echo "     kms no";fi
-if [ $ENABLE_FB = 1 ];then echo "       fb yes";
-                       else echo "      fb no";fi
+                         else echo " libcurl no";fi
+if [ $ENABLE_KMS = 1 ];  then echo "     kms yes";
+                         else echo "     kms no";fi
+if [ $ENABLE_FB = 1 ];   then echo "      fb yes";
+                         else echo "      fb no";fi
 echo
 echo
 
