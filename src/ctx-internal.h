@@ -794,7 +794,7 @@ ctx_get (Ctx *ctx, const char *key);
 int ctx_renderer_is_term (Ctx *ctx);
 Ctx *ctx_new_ctx (int width, int height);
 Ctx *ctx_new_fb (int width, int height);
-Ctx *ctx_new_drm (int width, int height);
+Ctx *ctx_new_kms (int width, int height);
 Ctx *ctx_new_sdl (int width, int height);
 Ctx *ctx_new_term (int width, int height);
 Ctx *ctx_new_termimg (int width, int height);

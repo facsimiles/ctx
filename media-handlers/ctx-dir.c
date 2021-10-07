@@ -635,11 +635,31 @@ static int dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     deactivate_viewer (ctx_event, NULL, NULL);
     return;
   } 
-  if (media_class == CTX_MEDIA_TYPE_IMAGE && !strcmp (event, "space"))
+  if (media_class == CTX_MEDIA_TYPE_IMAGE && (!strcmp (event, "space")))
   {
     ctx_client_unlock (client);
     //itk->focus_no ++;
     item_activate (NULL, viewer_no+1, NULL);
+    ctx_set_dirty (ctx, 1);
+
+    return;
+  }
+  if ((media_class == CTX_MEDIA_TYPE_IMAGE || 
+      media_class == CTX_MEDIA_TYPE_VIDEO)&& (!strcmp (event, "page-down")))
+  {
+    ctx_client_unlock (client);
+    //itk->focus_no ++;
+    item_activate (NULL, viewer_no+1, NULL);
+    ctx_set_dirty (ctx, 1);
+
+    return;
+  }
+  if ((media_class == CTX_MEDIA_TYPE_IMAGE || 
+      media_class == CTX_MEDIA_TYPE_VIDEO)&& (!strcmp (event, "page-up")))
+  {
+    ctx_client_unlock (client);
+    //itk->focus_no ++;
+    item_activate (NULL, viewer_no-1, NULL);
     ctx_set_dirty (ctx, 1);
 
     return;

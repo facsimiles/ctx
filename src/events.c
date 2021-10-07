@@ -112,8 +112,8 @@ void ctx_list_backends(void)
 #if CTX_FB
     fprintf (stderr, " fb");
 #endif
-#if CTX_DRM
-    fprintf (stderr, " drm");
+#if CTX_KMS
+    fprintf (stderr, " kms");
 #endif
     fprintf (stderr, " term");
     fprintf (stderr, " termimg");
@@ -216,11 +216,11 @@ Ctx *ctx_new_ui (int width, int height)
   }
 #endif
 
-#if CTX_DRM
+#if CTX_KMS
   if (!ret && !getenv ("DISPLAY"))
   {
-    if ((backend==NULL) || (!strcmp (backend, "drm")))
-      ret = ctx_new_drm (width, height);
+    if ((backend==NULL) || (!strcmp (backend, "kms")))
+      ret = ctx_new_kms (width, height);
   }
 #endif
 
@@ -1076,9 +1076,9 @@ int ctx_fb_events = 0;
 int ctx_fb_consume_events (Ctx *ctx);
 #endif
 
-#if CTX_DRM
-int ctx_drm_events = 0;
-int ctx_drm_consume_events (Ctx *ctx);
+#if CTX_KMS
+int ctx_kms_events = 0;
+int ctx_kms_consume_events (Ctx *ctx);
 #endif
 
 int ctx_nct_consume_events (Ctx *ctx);
@@ -1099,9 +1099,9 @@ void ctx_consume_events (Ctx *ctx)
     ctx_fb_consume_events (ctx);
   else
 #endif
-#if CTX_DRM
-  if (ctx_drm_events)
-    ctx_drm_consume_events (ctx);
+#if CTX_KMS
+  if (ctx_kms_events)
+    ctx_kms_consume_events (ctx);
   else
 #endif
   if (ctx_native_events)

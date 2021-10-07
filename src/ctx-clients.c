@@ -42,7 +42,7 @@ extern Ctx *ctx;
 void terminal_update_title  (const char *title);
 int  ctx_renderer_is_sdl    (Ctx *ctx);
 int  ctx_renderer_is_fb     (Ctx *ctx);
-int  ctx_renderer_is_drm    (Ctx *ctx);
+int  ctx_renderer_is_kms    (Ctx *ctx);
 int  ctx_renderer_is_tiled  (Ctx *ctx);
 int  ctx_renderer_is_term   (Ctx *ctx);
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
@@ -872,7 +872,7 @@ void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
         }
     }
   else if (!strcmp (event, "shift-control-t") ||
-           ((ctx_renderer_is_fb (ctx) || ctx_renderer_is_term (ctx) || ctx_renderer_is_drm (ctx))
+           ((ctx_renderer_is_fb (ctx) || ctx_renderer_is_term (ctx) || ctx_renderer_is_kms (ctx))
            &&   !strcmp (event, "control-t") ))
   {
     //XXX add_tab (vt_find_shell_command(), 1);

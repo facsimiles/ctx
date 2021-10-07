@@ -391,8 +391,8 @@ int ctx_utf8_strlen (const char *s);
 #define CTX_FB 0
 #endif
 
-#ifndef CTX_DRM
-#define CTX_DRM 0
+#ifndef CTX_KMS
+#define CTX_KMS 0
 #endif
 
 #if CTX_SDL
@@ -667,7 +667,7 @@ void *ctx_get_renderer (Ctx *ctx);
 
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb (Ctx *ctx);
-int ctx_renderer_is_drm (Ctx *ctx);
+int ctx_renderer_is_kms (Ctx *ctx);
 int ctx_renderer_is_tiled (Ctx *ctx);
 int ctx_renderer_is_ctx (Ctx *ctx);
 int ctx_renderer_is_term (Ctx *ctx);

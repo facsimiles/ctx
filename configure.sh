@@ -9,7 +9,7 @@ pkg-config libcurl && HAVE_LIBCURL=1
 HAVE_ALSA=0
 pkg-config alsa && HAVE_ALSA=1
 
-ENABLE_DRM=1
+ENABLE_KMS=1
 ENABLE_FB=0
 
 CFLAGS='-O3'
@@ -23,15 +23,15 @@ do
      "--debug") CFLAGS=''    ;;
      "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan'  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined";LIBS=' -lasan'  ;;
-     "--enable-drm") ENABLE_DRM=1 ;;
-     "--without-drm") ENABLE_DRM=0 ;;
+     "--enable-kms") ENABLE_KMS=1 ;;
+     "--without-kms") ENABLE_KMS=0 ;;
      "--enable-fb") ENABLE_FB=1 ;;
      "--without-fb") ENABLE_FB=0 ;;
      "--without-babl") HAVE_BABL=0 ;;
      "--without-alsa") HAVE_ALSA=0 ;;
      "--without-libcurl") HAVE_LIBCURL=0 ;;
      *|"--help") 
-       echo "usage: ./configure [--without-sdl] [--without-babl] [--without-libcurl] [--without-alsa] [--debug|--asan|--ubsan] [--without-drm] [--enable-fb] "
+       echo "usage: ./configure [--without-sdl] [--without-babl] [--without-libcurl] [--without-alsa] [--debug|--asan|--ubsan] [--without-kms] [--enable-fb] "
        exit 0
        ;;
     esac
@@ -68,10 +68,10 @@ else
   echo "PKG_CFLAGS+= -DNO_ALSA" >> build.conf
 fi
 
-if [ $ENABLE_DRM = 1 ];then
-  echo "PKG_CFLAGS+= -DCTX_DRM=1 " >> build.conf
+if [ $ENABLE_KMS = 1 ];then
+  echo "PKG_CFLAGS+= -DCTX_KMS=1 " >> build.conf
 else
-  echo "PKG_CFLAGS+= -DCTX_DRM=0 " >> build.conf
+  echo "PKG_CFLAGS+= -DCTX_KMS=0 " >> build.conf
 fi
 
 if [ $ENABLE_FB = 1 ];then
@@ -98,8 +98,8 @@ if [ $HAVE_ALSA = 1 ]; then echo "    alsa yes";
                        else echo "    alsa no";fi
 if [ $HAVE_LIBCURL = 1 ];then echo " libcurl yes";
                        else echo " libcurl no";fi
-if [ $ENABLE_DRM = 1 ];then echo "     drm yes";
-                       else echo "     drm no";fi
+if [ $ENABLE_KMS = 1 ];then echo "     kms yes";
+                       else echo "     kms no";fi
 if [ $ENABLE_FB = 1 ];then echo "       fb yes";
                        else echo "      fb no";fi
 echo

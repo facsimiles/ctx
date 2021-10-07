@@ -209,8 +209,8 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
 #if CTX_FB
                    || ctx_renderer_is_fb (ctx)
 #endif
-#if CTX_DRM
-                   || ctx_renderer_is_drm (ctx)
+#if CTX_KMS
+                   || ctx_renderer_is_kms (ctx)
 #endif
 #if CTX_SDL
                    || ctx_renderer_is_sdl (ctx)

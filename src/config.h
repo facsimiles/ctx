@@ -574,7 +574,7 @@
 #endif
 
 #ifndef CTX_TILED
-#if CTX_SDL || CTX_FB || CTX_DRM
+#if CTX_SDL || CTX_FB || CTX_KMS
 #define CTX_TILED 1
 #else
 #define CTX_TILED 0
