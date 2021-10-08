@@ -332,6 +332,8 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   viewer_no = no;
 
+  fprintf (stderr, "!!!%i\n", no);
+
   char *new_path;
 
   if (!strcmp (files->items[no], ".."))
@@ -790,14 +792,23 @@ static void dir_layout (ITK *itk, Files *files)
           sprintf (newpath, "%s%s", PATH_SEP, d_name);
         else
           sprintf (newpath, "%s%s%s", files->path, PATH_SEP, d_name);
-        lstat (newpath, &stat_buf);
         int focused = 0;
-        const char *media_type = ctx_path_get_media_type (newpath);
+
+        const char *media_type = "inline/text";
+        
+        if (lstat (newpath, &stat_buf) == 0)
+          media_type = ctx_path_get_media_type (newpath);
 
         if (c->no == itk->focus_no)
         {
           focused = 1;
           //viewer_load_path (newpath, files->items[i]);
+          ctx_begin_path (itk->ctx);
+          ctx_rectangle (itk->ctx, c->x, c->y, c->width, c->height);
+          ctx_listen (itk->ctx, CTX_CLICK, item_activate, (void*)(size_t)i, NULL);
+          ctx_begin_path (itk->ctx);
+          //ctx_rgb(itk->ctx,1,0,0);
+          //ctx_fill(itk->ctx);
 
           ctx_add_key_binding (ctx, "return", NULL, NULL,
                           item_activate,
@@ -851,18 +862,33 @@ static void dir_layout (ITK *itk, Files *files)
           draw_doc (ctx, itk->x, itk->y, width, height);
         }
       }
-        if (layout_config.list_data)
+      if (layout_config.list_data)
+      {
+
+        ctx_save (itk->ctx);
+        ctx_font_size (itk->ctx, em);
+        ctx_gray (itk->ctx, 1.0);
+
+        ctx_move_to (itk->ctx, itk->x + width + em * 0.5, itk->y + em * (1 + layout_config.padding) );
+        ctx_text (itk->ctx, d_name);
+
+        if (strcmp (media_type, "inode/directory"))
         {
           char buf[1024];
-          ctx_move_to (itk->ctx, itk->x + width, itk->y + em * (1 + layout_config.padding) );
-          sprintf (buf, "%s %i %i %s", d_name, (int)stat_buf.st_size, files->namelist[i]->d_type, media_type);
-          ctx_font_size (itk->ctx, em);
-          ctx_gray (itk->ctx, 1.0);
+          ctx_move_to (itk->ctx, itk->x + itk->width - em * 15.5, itk->y + em * (1 + layout_config.padding) );
           ctx_save (itk->ctx);
+          ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_RIGHT);
+          sprintf (buf, "%li", (long int)stat_buf.st_size);
           ctx_text (itk->ctx, buf);
           ctx_restore (itk->ctx);
-
         }
+
+        ctx_move_to (itk->ctx, itk->x + itk->width - em * 15.0, itk->y + em * (1 + layout_config.padding) );
+        ctx_text (itk->ctx, media_type);
+
+        ctx_restore (itk->ctx);
+
+      }
 
       free (newpath);
 

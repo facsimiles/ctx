@@ -2229,11 +2229,17 @@ static CtxMagicEntry ctx_magics[]={
   {"text/csv", ".csv", 0, {0x0}},
   {"text/html", ".htm", 0, {0x0}},
   {"text/html", ".html", 0, {0x0}},
+  {"text/x-makefile", "makefile", 0, {0x0}},
   {"application/atom+xml", ".atom", 0, {0x0}},
   {"application/rdf+xml", ".rdf", 0, {0x0}},
   {"application/javascript", ".js", 0, {0x0}},
   {"application/json", ".json", 0, {0x0}},
   {"application/octet-stream", ".bin", 0, {0x0}},
+  {"application/x-object", ".o", 0, {0x0}},
+  {"text/x-sh", ".sh", 0, {0x0}},
+  {"text/x-python", ".py", 0, {0x0}},
+  {"text/x-perl", ".pl", 0, {0x0}},
+  {"text/x-perl", ".pm", 0, {0x0}},
   {"application/pdf", ".pdf", 0, {0x0}},
   {"text/xml", ".xml",     0, {0x0}},
   {"video/mp4", ".mp4",    0, {0x0}},
@@ -2326,7 +2332,7 @@ const char *ctx_path_get_media_type (const char *path)
   if (ctx_path_is_dir (path))
     return "inode/directory";
 
-  ctx_get_contents2 (path, &content, &length, 32);
+  ctx_get_contents2 (path, (uint8_t**)&content, &length, 32);
   if (content)
   {
   const char *guess = ctx_guess_media_type (path, content, length);

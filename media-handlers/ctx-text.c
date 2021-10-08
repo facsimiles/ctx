@@ -113,7 +113,7 @@ int ctx_text_main(int argc, char *argv[])
 
   if (!contents) return 1;
 
-  n_lines = _ctx_str_count_lines (contents);
+  n_lines = _ctx_str_count_lines ((char*)contents);
   lines = calloc (sizeof (char *) * (n_lines+1), 1);
   if(1){
     int line_no = 0;
