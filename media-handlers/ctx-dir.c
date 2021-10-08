@@ -778,6 +778,8 @@ static void dir_layout (ITK *itk, Files *files)
           layout_config.fill_height? itk->height * 1.0:
           layout_config.height * em;
       }
+      int virtual = metadata_key_int (d_name, "virtual");
+      if (virtual < 0) virtual = 0;
 
       CtxControl *c = itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, width, height);
 
@@ -847,6 +849,48 @@ static void dir_layout (ITK *itk, Files *files)
       ctx_begin_path (ctx);
       ctx_gray (ctx, 0.0);
 
+        if (virtual)
+        {
+          ctx_save (itk->ctx);
+          ctx_font_size (itk->ctx, em);
+          //ctx_move_to (itk->ctx, itk->x, itk->y + em);
+          float x0 = itk->x;
+          float x = itk->x;
+          float y = itk->y + em;
+
+          {
+            ctx_rgb (itk->ctx, 1,1,1);
+            char word[1024]="";
+            int wlen = 0;
+            char *p;
+            for (p = d_name; p == d_name || p[-1]; p++)
+            {
+              if (*p == ' ' || *p == '\0')
+              {
+                word[wlen]=0;
+                float word_width = ctx_text_width (itk->ctx, word);
+
+                if (x + word_width - x0 > width)
+                {
+                  x = x0;
+                  y = y + em;
+                }
+                ctx_move_to (itk->ctx, x, y);
+                ctx_text (itk->ctx, word);
+                x += word_width + em/3;
+                wlen=0;
+              }
+              else {
+                if (wlen < 1000)
+                word[wlen++]=*p;
+              }
+            }
+          }
+          //ctx_rgb (itk->ctx, 1,0,0);
+          //ctx_text (itk->ctx, d_name);
+          ctx_restore (itk->ctx);
+        }
+        else
       if (S_ISDIR(stat_buf.st_mode))
       {
         draw_folder (ctx, itk->x, itk->y, width, height);

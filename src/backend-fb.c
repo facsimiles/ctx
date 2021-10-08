@@ -329,10 +329,9 @@ inline static void ctx_fb_flush (CtxFb *fb)
 
 void ctx_fb_free (CtxFb *fb)
 {
-#ifdef __linux__
-  ioctl (0, KDSETMODE, KD_GRAPHICS);
+//#ifdef __linux__
   ioctl (0, KDSETMODE, KD_TEXT);
-#endif
+//#endif
 #ifdef __NetBSD__
   {
    int mode = WSDISPLAYIO_MODE_EMUL;
@@ -444,6 +443,7 @@ Ctx *ctx_new_fb (int width, int height)
       free (fb);
       return NULL;
      }
+  ioctl (0, KDSETMODE, KD_GRAPHICS);
 
 //fprintf (stderr, "%s\n", fb->fb_path);
   width = tiled->width = fb->vinfo.xres;
@@ -512,14 +512,14 @@ Ctx *ctx_new_fb (int width, int height)
 
   if (fb->fb_bits == 8)
   {
-    unsigned uint8_t red[256],  green[256],  blue[256];
+    uint8_t red[256],  green[256],  blue[256];
     struct wsdisplay_cmap cmap;
     cmap.red = red;
-    cmap.green = red;
-    cmap.blue = red;
-    cmap.colors = 256;
+    cmap.green = green;
+    cmap.blue = blue;
+    cmap.count = 256;
     cmap.index = 0;
-    for (i = 0; i < 256; i++)
+    for (int i = 0; i < 256; i++)
     {
       red[i]   = ((( i >> 5) & 0x7) << 5);
       green[i] = ((( i >> 2) & 0x7) << 5);
