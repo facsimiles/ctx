@@ -399,8 +399,8 @@ static void grow_height (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   char *item_name = metadata_item_name (no);
   float height = metadata_key_float (item_name, "height");
-  if (height < 1) height = 100;
-  height += 20;
+  height += 0.01;
+  if (height > 1.2) height = 1.2;
   metadata_set_float (item_name, "height", height);
   fprintf (stderr, "%f\n", height);
   metadata_dirty ++;
@@ -412,8 +412,8 @@ static void shrink_height (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   char *item_name = metadata_item_name (no);
   float height = metadata_key_float (item_name, "height");
-  height -= 20;
-  if (height < 1) height = 20;
+  height -= 0.01;
+  if (height < 0.01) height = 0.01;
   metadata_set_float (item_name, "height", height);
   metadata_dirty ++;
   ctx_set_dirty (e->ctx, 1);
@@ -424,8 +424,8 @@ static void grow_width (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   char *item_name = metadata_item_name (no);
   float width = metadata_key_float (item_name, "width");
-  if (width < 1) width = 100;
-  width += 20;
+  width += 0.01;
+  if (width > 1.5) width = 1.5;
   metadata_set_float (item_name, "width", width);
   fprintf (stderr, "%f\n", width);
   metadata_dirty ++;
@@ -437,8 +437,8 @@ static void shrink_width (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   char *item_name = metadata_item_name (no);
   float width = metadata_key_float (item_name, "width");
-  width -= 20;
-  if (width < 1) width = 20;
+  width -= 0.01;
+  if (width < 0.0) width = 0.01;
   metadata_set_float (item_name, "width", width);
   metadata_dirty ++;
   ctx_set_dirty (e->ctx, 1);
@@ -449,8 +449,8 @@ static void move_left (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   char *item_name = metadata_item_name (no);
   float x = metadata_key_float (item_name, "x");
-  x -= 20;
-  if (x < 1) x = 20;
+  x -= 0.01;
+  if (x < 0.0) x = 0.0;
   metadata_set_float (item_name, "x", x);
   metadata_dirty ++;
   ctx_set_dirty (e->ctx, 1);
@@ -461,8 +461,8 @@ static void move_right (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   char *item_name = metadata_item_name (no);
   float x = metadata_key_float (item_name, "x");
-  x += 20;
-  if (x < 1) x = 20;
+  x += 0.01;
+  if (x < 0) x = 0;
   metadata_set_float (item_name, "x", x);
   metadata_dirty ++;
   ctx_set_dirty (e->ctx, 1);
@@ -473,8 +473,8 @@ static void move_up (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   char *item_name = metadata_item_name (no);
   float y = metadata_key_float (item_name, "y");
-  y -= 20;
-  if (y< 1) y = 20;
+  y -= 0.01;
+  if (y< 0) y = 0.01;
   metadata_set_float (item_name, "y", y);
   metadata_dirty ++;
   ctx_set_dirty (e->ctx, 1);
@@ -493,8 +493,8 @@ static void move_down (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   char *item_name = metadata_item_name (no);
   float y = metadata_key_float (item_name, "y");
-  y += 20;
-  if (y< 1) y = 20;
+  y += 0.01;
+  if (y< 0) y = 0.01;
   metadata_set_float (item_name, "y", y);
   metadata_dirty ++;
   ctx_set_dirty (e->ctx, 1);
@@ -759,6 +759,8 @@ static void dir_layout (ITK *itk, Files *files)
         gotpos = 0;
       if (gotpos)
       {
+        x *= itk->width;
+        y *= itk->width;
         itk->x = x;
         itk->y = y;
       }
@@ -768,15 +770,21 @@ static void dir_layout (ITK *itk, Files *files)
 
       {
         width  = metadata_key_float (d_name, "width");
-        if (width < 4 || layout_config.fixed_size) width = 
-          layout_config.fill_width? itk->width * 1.0:
-          layout_config.width * em;
+        if (width < 0 || layout_config.fixed_size)
+          width = 
+            layout_config.fill_width? itk->width * 1.0:
+            layout_config.width * em;
+        else {
+          width *= itk->width;
+        }
       }
       {
         height = metadata_key_float (d_name, "height");
-        if (height < 4 || layout_config.fixed_size)  height =
+        if (height < 0 || layout_config.fixed_size)  height =
           layout_config.fill_height? itk->height * 1.0:
           layout_config.height * em;
+        else
+          height *= itk->width;
       }
       int virtual = metadata_key_int (d_name, "virtual");
       if (virtual < 0) virtual = 0;
