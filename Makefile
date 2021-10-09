@@ -124,7 +124,7 @@ src/%.o: src/%.c split/*.h
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h
+media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o deps.o build.conf Makefile
 	$(AR) rcs $@ $?

@@ -338,6 +338,15 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
 
   fprintf (stderr, "!!!%i\n", no);
 
+  int virtual = metadata_key_int (files->items[no], "virtual");
+  if (virtual <0) virtual = 0;
+
+  if (virtual)
+  {
+     fprintf (stderr ," YEP!\n");
+     return;
+  }
+
   char *new_path;
 
   if (!strcmp (files->items[no], ".."))
@@ -765,6 +774,7 @@ static void dir_layout (ITK *itk, Files *files)
   float em = itk_em (itk);
 
   float prev_height = layout_config.height;
+  float row_max_height = 0;
 
   for (int i = 0; i < files->count; i++)
   {
@@ -847,8 +857,10 @@ static void dir_layout (ITK *itk, Files *files)
           width = itk->width;
           ctx_font_size (itk->ctx, itk->font_size);
           layout_text (itk->ctx, 0,0, d_name, em * 0.25, width, em, 0, NULL, &height);
-          if (layout_config.stack_vertical)
-            itk->y += prev_height;
+          height += em * 0.5;
+          if (layout_config.stack_vertical && itk->x != itk->x0)
+            itk->y += row_max_height;
+          row_max_height = height;
           itk->x = itk->x0;
         }
         fprintf (stderr, "%f\n", height);
@@ -930,7 +942,6 @@ static void dir_layout (ITK *itk, Files *files)
 
         if (virtual)
         {
-
           ctx_save (itk->ctx);
           ctx_font_size (itk->ctx, em);
           ctx_rgb (itk->ctx, 1,0,1);
@@ -1020,6 +1031,10 @@ static void dir_layout (ITK *itk, Files *files)
       }
       }
 
+      prev_height = height;
+      if (prev_height > row_max_height)
+        row_max_height = prev_height;
+
       if (gotpos)
       {
         itk->x = saved_x;
@@ -1034,10 +1049,9 @@ static void dir_layout (ITK *itk, Files *files)
         {
           itk->x = itk->x0;
           if (layout_config.stack_vertical)
-            itk->y += height;
+            itk->y += row_max_height;
         }
       }
-      prev_height = height;
     }
   }
 
