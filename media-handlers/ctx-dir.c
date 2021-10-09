@@ -1,10 +1,9 @@
 //
 // todo
 //   custom order , size / time orders
-//      .ctxindex - with attributes as well
-//                - skip per file meta-data
 //   layout view
 //      paginated mode
+//      
 //      flow templates
 //
 // a file called ctx-template , searched in cur dir,
@@ -12,6 +11,11 @@
 // inserting a template, should be followed by newpage
 // permitting chapter start to be template,newpage,template full-chapter,
 // causing only the first bit of chapter to be styled this way.
+//
+// for runs of templates - instantiate or embed the following style of pages
+//
+// newpage can be issued or done manually
+//
 
 #include <unistd.h>
 #include <dirent.h>
@@ -808,6 +812,11 @@ static void dir_layout (ITK *itk, Files *files)
         
         if (lstat (newpath, &stat_buf) == 0)
           media_type = ctx_path_get_media_type (newpath);
+
+        if (!strcmp (media_type, "inode/directory"))
+        {
+          label = 1;
+        }
 
         if (c->no == itk->focus_no)
         {
