@@ -793,6 +793,15 @@ static void dir_layout (ITK *itk, Files *files)
       int virtual = metadata_key_int (d_name, "virtual");
       if (virtual < 0) virtual = 0;
 
+          if (virtual &&  !gotpos)
+          {
+            itk->x = itk->x0;
+            if (layout_config.stack_vertical)
+            itk->y += height;
+            width = itk->width;
+          }
+
+
       CtxControl *c = itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, width, height);
 
 
@@ -868,6 +877,7 @@ static void dir_layout (ITK *itk, Files *files)
 
         if (virtual)
         {
+
           ctx_save (itk->ctx);
           ctx_font_size (itk->ctx, em);
           //ctx_move_to (itk->ctx, itk->x, itk->y + em);
@@ -907,7 +917,7 @@ static void dir_layout (ITK *itk, Files *files)
           //ctx_text (itk->ctx, d_name);
           ctx_restore (itk->ctx);
         }
-        else
+      else
       if (S_ISDIR(stat_buf.st_mode))
       {
         draw_folder (ctx, itk->x, itk->y, width, height);
