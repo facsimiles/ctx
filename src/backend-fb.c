@@ -329,6 +329,8 @@ inline static void ctx_fb_flush (CtxFb *fb)
 
 void ctx_fb_free (CtxFb *fb)
 {
+  CtxTiled*tiled=(CtxTiled*)fb;
+
 //#ifdef __linux__
   ioctl (0, KDSETMODE, KD_TEXT);
 //#endif
@@ -338,6 +340,8 @@ void ctx_fb_free (CtxFb *fb)
    ioctl (fb->fb_fd, WSDISPLAYIO_SMODE, &mode);
   }
 #endif
+  munmap (tiled->fb, fb->fb_mapped_size);
+  close (fb->fb_fd);
   if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
   //free (fb);
