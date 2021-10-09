@@ -403,8 +403,10 @@ static void grow_height (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   char *item_name = metadata_item_name (no);
   float height = metadata_key_float (item_name, "height");
+  //float height = metadata_key_float2 (no, "height");
   height += 0.01;
   if (height > 1.2) height = 1.2;
+  //metadata_set_float2 (no, "height", height);
   metadata_set_float (item_name, "height", height);
   fprintf (stderr, "%f\n", height);
   metadata_dirty ++;
@@ -718,10 +720,51 @@ static void dir_select_item (CtxEvent *event, void *data1, void *data2)
    ctx_set_dirty (event->ctx, 1);
 }
 
+
+static void layout_text (Ctx *ctx, float x, float y, const char *d_name, float space_width, float wrap_width, float line_height, int print,
+                float *ret_x, float *ret_y)
+{
+  char word[1024]="";
+  int wlen = 0;
+  char *p;
+float x0 = x;
+y += line_height;
+
+  for (p = d_name; p == d_name || p[-1]; p++)
+  {
+    if (*p == ' ' || *p == '\0')
+    {
+      word[wlen]=0;
+      float word_width = ctx_text_width (itk->ctx, word);
+
+      if (x + word_width - x0 > wrap_width)
+      {
+        x = x0;
+        y = y + line_height;
+      }
+      if (print)
+      {
+        ctx_move_to (itk->ctx, x, y);
+        ctx_text (itk->ctx, word);
+      }
+      x += word_width + space_width;
+      wlen=0;
+    }
+    else {
+      if (wlen < 1000)
+      word[wlen++]=*p;
+    }
+  }
+  if (ret_x) *ret_x = x;
+  if (ret_y) *ret_y = y;
+}
+
 static void dir_layout (ITK *itk, Files *files)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
+
+  float prev_height = layout_config.height;
 
   for (int i = 0; i < files->count; i++)
   {
@@ -793,13 +836,23 @@ static void dir_layout (ITK *itk, Files *files)
       int virtual = metadata_key_int (d_name, "virtual");
       if (virtual < 0) virtual = 0;
 
-          if (virtual &&  !gotpos)
-          {
-            itk->x = itk->x0;
-            if (layout_config.stack_vertical)
-            itk->y += height;
-            width = itk->width;
-          }
+
+      if (virtual &&  !gotpos)
+      {
+      }
+      if (virtual)
+      {
+        if (!gotpos)
+        {
+          width = itk->width;
+          ctx_font_size (itk->ctx, itk->font_size);
+          layout_text (itk->ctx, 0,0, d_name, em * 0.25, width, em, 0, NULL, &height);
+          if (layout_config.stack_vertical)
+            itk->y += prev_height;
+          itk->x = itk->x0;
+        }
+        fprintf (stderr, "%f\n", height);
+      }
 
 
       CtxControl *c = itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, width, height);
@@ -822,7 +875,7 @@ static void dir_layout (ITK *itk, Files *files)
         if (lstat (newpath, &stat_buf) == 0)
           media_type = ctx_path_get_media_type (newpath);
 
-        if (!strcmp (media_type, "inode/directory"))
+        if (!strcmp (media_type, "inode/directory") && !layout_config.list_data)
         {
           label = 1;
         }
@@ -880,41 +933,8 @@ static void dir_layout (ITK *itk, Files *files)
 
           ctx_save (itk->ctx);
           ctx_font_size (itk->ctx, em);
-          //ctx_move_to (itk->ctx, itk->x, itk->y + em);
-          float x0 = itk->x;
-          float x = itk->x;
-          float y = itk->y + em;
-
-          {
-            ctx_rgb (itk->ctx, 1,1,1);
-            char word[1024]="";
-            int wlen = 0;
-            char *p;
-            for (p = d_name; p == d_name || p[-1]; p++)
-            {
-              if (*p == ' ' || *p == '\0')
-              {
-                word[wlen]=0;
-                float word_width = ctx_text_width (itk->ctx, word);
-
-                if (x + word_width - x0 > width)
-                {
-                  x = x0;
-                  y = y + em;
-                }
-                ctx_move_to (itk->ctx, x, y);
-                ctx_text (itk->ctx, word);
-                x += word_width + em/3;
-                wlen=0;
-              }
-              else {
-                if (wlen < 1000)
-                word[wlen++]=*p;
-              }
-            }
-          }
-          //ctx_rgb (itk->ctx, 1,0,0);
-          //ctx_text (itk->ctx, d_name);
+          ctx_rgb (itk->ctx, 1,0,1);
+          layout_text (itk->ctx, itk->x, itk->y, d_name, em * 0.25, width, em, 1, NULL, NULL);
           ctx_restore (itk->ctx);
         }
       else
@@ -999,12 +1019,6 @@ static void dir_layout (ITK *itk, Files *files)
         free (title);
       }
       }
-      if (active)
-      {
-          ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
-          ctx_listen (ctx, CTX_KEY_DOWN, dir_key_any, NULL, NULL);
-          ctx_listen (ctx, CTX_KEY_UP, dir_key_any, NULL, NULL);
-      }
 
       if (gotpos)
       {
@@ -1014,7 +1028,8 @@ static void dir_layout (ITK *itk, Files *files)
       else
       {
         itk->x = saved_x + width;
-        if (!layout_config.stack_horizontal ||
+        if ((virtual) || 
+            !layout_config.stack_horizontal ||
             itk->x + em * 5 > itk->panel->x + itk->panel->width)
         {
           itk->x = itk->x0;
@@ -1022,8 +1037,16 @@ static void dir_layout (ITK *itk, Files *files)
             itk->y += height;
         }
       }
+      prev_height = height;
     }
   }
+
+      if (active)
+      {
+          ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
+          ctx_listen (ctx, CTX_KEY_DOWN, dir_key_any, NULL, NULL);
+          ctx_listen (ctx, CTX_KEY_UP, dir_key_any, NULL, NULL);
+      }
 }
 
 
