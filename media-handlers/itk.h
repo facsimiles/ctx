@@ -15,6 +15,7 @@
 
 typedef struct _ITK ITK;
 
+extern int _itk_key_bindings_active;
 ITK *itk_new   (Ctx *ctx);
 void itk_free  (ITK *itk);
 void itk_reset (ITK *itk);
@@ -591,17 +592,7 @@ CtxControl *itk_add_control (ITK *itk,
 
   if (itk->focus_no == control->no)
   {
-     if (itk->y - itk->panel->scroll +  control->height > itk->panel->y + itk->panel->height - em * 2)
-     {
-        itk->panel->scroll += itk->scroll_speed * em;
-#if 0
-        if (itk->panel->scroll > itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y)) - em * itk->rel_ver_advance;
-            itk->panel->scroll = itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y) - em * itk->rel_ver_advance;
-#endif
-
-        ctx_set_dirty (itk->ctx, 1);
-     }
-     else if (itk->y - itk->panel->scroll < em * 2)
+     if (itk->y - itk->panel->scroll < em * 2)// && control->height < itk->panel->height -em * 2)
      {
         if (itk->panel->scroll != 0.0f)
         {
@@ -610,6 +601,16 @@ CtxControl *itk_add_control (ITK *itk,
             itk->panel->scroll=0.0;
           ctx_set_dirty (itk->ctx, 1);
         }
+     }
+     else if (itk->y - itk->panel->scroll +  control->height > itk->panel->y + itk->panel->height - em * 2 && control->height < itk->panel->height - em * 2)
+     {
+        itk->panel->scroll += itk->scroll_speed * em;
+#if 0
+        if (itk->panel->scroll > itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y)) - em * itk->rel_ver_advance;
+            itk->panel->scroll = itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y) - em * itk->rel_ver_advance;
+#endif
+
+        ctx_set_dirty (itk->ctx, 1);
      }
 
   }
@@ -2121,6 +2122,7 @@ void itk_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
 void itk_key_bindings (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
+
   ctx_add_key_binding (ctx, "up", NULL, "focus prev",   itk_key_up,        itk);
   ctx_add_key_binding (ctx, "down", NULL, "focus next", itk_key_down,      itk);
 
@@ -2306,6 +2308,8 @@ void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
   ctx_quit (event->ctx);
 }
 
+int _itk_key_bindings_active = 1;
+
 ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
 {
   Ctx *ctx = ctx_new_ui (-1, -1);
@@ -2318,6 +2322,7 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
     if (ctx_is_dirty (ctx))
     {
       itk_reset (itk);
+      if (_itk_key_bindings_active)
       itk_key_bindings (itk);
       ret_val = ui_fun (itk, ui_data);
       ctx_add_key_binding (itk->ctx, "control-q", NULL, "foo", itk_key_quit, NULL);

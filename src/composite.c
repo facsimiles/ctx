@@ -1321,13 +1321,15 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
 
     uint32_t u_offset = bheight * bwidth;
     uint32_t v_offset = u_offset + bheight_div_2 * bwidth_div_2;
+
     if (rasterizer->swap_red_green)
     {
       v_offset = bheight * bwidth;
       u_offset = v_offset + bheight_div_2 * bwidth_div_2;
     }
 
-    int ix = x * 65536;
+    // XXX this is incorrect- but fixes some bug!
+    int ix = 65536;//x * 65536;
     int iy = y * 65536;
 
     int ideltax = dx * 65536;
@@ -1975,8 +1977,8 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
   {
      uint32_t si_ga = ((*((uint32_t*)tsrc)) & 0xff00ff00) >> 8;
      uint32_t si_rb = (*((uint32_t*)tsrc)) & 0x00ff00ff;
-//     uint32_t di_ga = ((*((uint32_t*)dst)) & 0xff00ff00) >> 8;
-//     uint32_t di_rb = (*((uint32_t*)dst)) & 0x00ff00ff;
+//   uint32_t di_ga = ((*((uint32_t*)dst)) & 0xff00ff00) >> 8;
+//   uint32_t di_rb = (*((uint32_t*)dst)) & 0x00ff00ff;
      uint32_t si_a  = si_ga >> 16;
      uint32_t cov = *coverage;
      uint32_t racov = (255-((255+si_a*cov)>>8));
