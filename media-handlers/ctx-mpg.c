@@ -75,7 +75,7 @@ typedef struct {
         Ctx     *ctx;
 } app_t;
 
-int grayscale = 1;
+int yuv420 = 1; 
 int smoothing = 0;
 
 app_t * app_create(const char *filename, int texture_mode);
@@ -225,8 +225,6 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
         char eid[16];
         sprintf (eid, "%i", frame_no);
         if (frame_no % frame_drop != 0) return;
-        if (grayscale == 0)
-	plm_frame_to_rgb(frame, self->rgb_data, frame->width * 3);
         ctx_reset (self->ctx);
         ctx_save (self->ctx);
         ctx_rectangle (self->ctx, 0, 0, ctx_width (self->ctx), ctx_height (self->ctx));
@@ -237,17 +235,8 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                       (ctx_height(self->ctx)-frame->height*scale)/2.0);
   ctx_scale (self->ctx, scale, scale);
 
-  if (grayscale == 0)
+  if (yuv420)
   {
-  ctx_define_texture (self->ctx,
-                      eid, // by passing in a unique eid
-                           // we avoid having to hash
-                      frame->width, frame->height,
-                      frame->width * 3,
-                      CTX_FORMAT_RGB8,
-                      self->rgb_data,
-                      NULL);
-  } else {
      int data_len = frame->width *  frame->height +
                  2 *((frame->width/2) * (frame->height/2));
      uint8_t *data=malloc (data_len);
@@ -260,10 +249,21 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
                            // we avoid having to hash
                       frame->width, frame->height,
                       frame->width,
-                      CTX_FORMAT_YUV420,//GRAY8,
+                      CTX_FORMAT_YUV420,
                       data,
                       NULL);
     free (data);
+  }
+  else {
+    plm_frame_to_rgb(frame, self->rgb_data, frame->width * 3);
+    ctx_define_texture (self->ctx,
+                        eid, // by passing in a unique eid
+                             // we avoid having to hash
+                        frame->width, frame->height,
+                        frame->width * 3,
+                        CTX_FORMAT_RGB8,
+                        self->rgb_data,
+                        NULL);
   }
   ctx_image_smoothing (self->ctx, smoothing);
   ctx_compositing_mode (self->ctx, CTX_COMPOSITE_COPY);
@@ -296,7 +296,7 @@ int ctx_mpg_main(int argc, char *argv[]) {
           {
             if (argv[i][1] == 'r')
             {
-              grayscale = 0;
+              yuv420 = 0;
             }
             else if (argv[i][1] == 's')
             {
@@ -316,12 +316,8 @@ int ctx_mpg_main(int argc, char *argv[]) {
           if (path[1] == '/') path++;
         }
 	
-        app_t *app;
-        if (grayscale == 0)
-	  app = app_create(path, APP_TEXTURE_MODE_RGB); //_YCRCB);
-        else
-	  app = app_create(path, APP_TEXTURE_MODE_YCRCB);
- //the GPU (default), or to do it on CPU. Just pass APP_TEXTURE_MODE_RGB to
+        app_t *app = app_create(path,
+                         yuv420?APP_TEXTURE_MODE_YCRCB:APP_TEXTURE_MODE_RGB);
 
 	while (!app->wants_to_quit) {
 		app_update(app);
