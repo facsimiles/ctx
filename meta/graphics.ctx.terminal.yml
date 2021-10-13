@@ -17,7 +17,7 @@ modules:
           sources:
            - type: git
              url: https://gitlab.gnome.org/GNOME/babl.git
-             branch: BABL_0_1_86
+             branch: BABL_0_1_88
         - name: ctx
           buildsystem: simple
           build-commands:
