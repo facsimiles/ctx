@@ -2274,7 +2274,6 @@ itk_ctx_settings (ITK *itk)
     itk_choice_add (itk, CTX_ANTIALIAS_FAST,    "fast = 3");
     itk_choice_add (itk, CTX_ANTIALIAS_GOOD,    "good = 5");
     itk_choice_add (itk, CTX_ANTIALIAS_DEFAULT, "default");
-    itk_choice_add (itk, CTX_ANTIALIAS_BEST,    "best = 17");
     if (set != choice)
       ctx_set_antialias (ctx, choice);
   }

@@ -4369,7 +4369,6 @@ CtxAntialias ctx_get_antialias (Ctx *ctx)
     //case 5: return CTX_ANTIALIAS_GOOD;
     default:
     case 15: return CTX_ANTIALIAS_DEFAULT;
-    case 17: return CTX_ANTIALIAS_BEST;
   }
 }
 
@@ -4382,7 +4381,6 @@ static int _ctx_antialias_to_aa (CtxAntialias antialias)
     case CTX_ANTIALIAS_GOOD: return 5;
     default:
     case CTX_ANTIALIAS_DEFAULT: return CTX_RASTERIZER_AA;
-    case CTX_ANTIALIAS_BEST: return 17;
   }
 }
 
