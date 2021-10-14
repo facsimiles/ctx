@@ -8,6 +8,9 @@
                 min-width: 20em;
                 max-width: 38em;
                 margin-top: 0em;
+                hyphens: auto;
+                hyphenate-limit-chars: 6 3 2;
+
           }
           h1 { font-size: 2.0rem; font-weight:normal;}
           h2 { font-size: 1.8rem; font-weight:normal;}
@@ -31,10 +34,11 @@
           dl dt {
                   font-weight: bold;
           }
+          dd { text-align: justify;}
           body pre {
             font-family: 'Courier';line-height:1em;
           }
-          .content p { 
+          p { 
   text-align: justify;
 /*  -moz-column-width: 17em; 
   column-width: 17em;*/
