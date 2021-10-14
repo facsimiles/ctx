@@ -1101,10 +1101,31 @@ static void dir_layout (ITK *itk, Files *files)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
-
   float prev_height = layout_config.height;
   float row_max_height = 0;
+  float cbox_x = metadata_key_float ("contentBox", "x");
+  float cbox_y = metadata_key_float ("contentBox", "y");
+  float cbox_width = metadata_key_float ("contentBox", "width");
+  float cbox_height = metadata_key_float ("contentBox", "height");
+
+  if (cbox_x < 0)
+  {
+    cbox_x = 0.0f;
+    cbox_y = 0.0f;
+    cbox_width = 1.0f;
+    cbox_height= 1000.0f;
+  }
+
   focused_no = -1;
+
+  //fprintf (stderr, "%f,%f %fx%f", cbox_x, cbox_y, cbox_width, cbox_height);
+
+  float saved_x0 = itk->x0;
+  float saved_width = itk->width;
+  float saved_y = itk->y;
+  itk->x0 = itk->x = cbox_x * itk->width;
+  itk->y = cbox_y * itk->width;
+  itk->width = itk->width * cbox_width;
 
   for (int i = 0; i < files->count; i++)
   {
@@ -1409,7 +1430,7 @@ static void dir_layout (ITK *itk, Files *files)
         itk->x = saved_x + width;
         if ((virtual) || 
             !layout_config.stack_horizontal ||
-            itk->x + em * 5 > itk->panel->x + itk->panel->width)
+            itk->x + em * 5 > itk->width) //panel->x + itk->panel->width)
         {
           itk->x = itk->x0;
           if (layout_config.stack_vertical)
@@ -1421,6 +1442,10 @@ static void dir_layout (ITK *itk, Files *files)
       }
     }
   }
+
+  itk->x0 = saved_x0;
+  itk->width = saved_width;
+  itk->y = saved_y;
 
       if (active)
       {
