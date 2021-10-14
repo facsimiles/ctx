@@ -1147,7 +1147,7 @@ static void dir_layout (ITK *itk, Files *files)
 
   focused_no = -1;
 
-  fprintf (stderr, "%f,%f %fx%f", cbox_x, cbox_y, cbox_width, cbox_height);
+  //fprintf (stderr, "%f,%f %fx%f", cbox_x, cbox_y, cbox_width, cbox_height);
 
   float saved_x0 = itk->x0;
   float saved_width = itk->width;
@@ -1286,7 +1286,7 @@ static void dir_layout (ITK *itk, Files *files)
         {
           focused = 1;
           focused_no = i;
-          fprintf (stderr, "\n{%i %i %i}\n", c->no, itk->focus_no, i);
+          //fprintf (stderr, "\n{%i %i %i}\n", c->no, itk->focus_no, i);
           //viewer_load_path (newpath, files->items[i]);
           ctx_begin_path (itk->ctx);
           ctx_rectangle (itk->ctx, c->x, c->y, c->width, c->height);
@@ -1295,6 +1295,8 @@ static void dir_layout (ITK *itk, Files *files)
           //ctx_rgb(itk->ctx,1,0,0);
           //ctx_fill(itk->ctx);
 
+          if (!active)
+          {
           if (text_edit < 0)
           {
             ctx_add_key_binding (ctx, "alt-return", NULL, NULL,
@@ -1334,6 +1336,7 @@ static void dir_layout (ITK *itk, Files *files)
                          (void*)((size_t)i));
           ctx_add_key_binding (ctx, "control-down", NULL, NULL, move_down, 
                          (void*)((size_t)i));
+          }
           //itk_labelf (itk, "%s\n", ctx_path_get_media_type (newpath));
         }
         else
@@ -1482,12 +1485,6 @@ static void dir_layout (ITK *itk, Files *files)
   itk->width = saved_width;
   itk->y = saved_y;
 
-      if (active)
-      {
-          ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
-          ctx_listen (ctx, CTX_KEY_DOWN, dir_key_any, NULL, NULL);
-          ctx_listen (ctx, CTX_KEY_UP, dir_key_any, NULL, NULL);
-      }
 }
 
 
@@ -1566,6 +1563,7 @@ void viewer_load_path (const char *path, const char *name)
   {
     while (clients)
       ctx_client_remove (ctx, clients->data);
+    active = NULL;
     ctx_set_dirty (ctx, 1);
     free (viewer_loaded_path);
     viewer_loaded_path = NULL;
@@ -1704,9 +1702,13 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_key_binding (ctx, "F3", NULL, NULL, set_layout, NULL);
 
     dir_layout (itk, files);
+
+
   }
+
+
 #if 1
-      if (text_edit>TEXT_EDIT_OFF)
+      if (!active && text_edit>TEXT_EDIT_OFF)
       {
           ctx_add_key_binding (ctx, "left", NULL, NULL,
                           text_edit_left,
@@ -1767,6 +1769,12 @@ static int card_files (ITK *itk_, void *data)
     itk_panel_end (itk);
   }
 
+      if (active)
+      {
+          ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
+          ctx_listen (ctx, CTX_KEY_DOWN,  dir_key_any, NULL, NULL);
+          ctx_listen (ctx, CTX_KEY_UP,    dir_key_any, NULL, NULL);
+      }
   if (clients && active)
   {
     ctx_font_size (ctx, itk->font_size);
