@@ -784,7 +784,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
       word[wlen]=0;
       float word_width = ctx_text_width (itk->ctx, word);
 
-      if (text_edit == TEXT_EDIT_FIND_CURSOR_FIRST_ROW)
+      if (sel_start == TEXT_EDIT_FIND_CURSOR_FIRST_ROW)
       {
         if (pot_cursor < 0 && x + word_width > text_edit_desired_x)
         {
@@ -798,11 +798,13 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
               removed ++;
            }
            pot_cursor = pos - removed;
-           text_edit = pot_cursor;
-           //if (text_edit > strlen (d_name)) text_edit = strlen (d_name);
+           fprintf (stderr, "{%s}", d_name);
+           if (pot_cursor > strlen (d_name))
+              pot_cursor=strlen(d_name);
+           sel_start = text_edit = pot_cursor;
         }
       }
-      if (text_edit == TEXT_EDIT_FIND_CURSOR_LAST_ROW)
+      if (sel_start == TEXT_EDIT_FIND_CURSOR_LAST_ROW)
       {
         if (pot_cursor < 0 && x + word_width > text_edit_desired_x)
         {
@@ -848,33 +850,38 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
         }
       }
 
-
       if (x + word_width - x0 > wrap_width)
       {
         x = x0;
         y = y + line_height;
         pot_cursor = -10;
       }
-      if (print)
       {
         if (!cursor_drawn && pos >= sel_start)
         {
           int seg = wlen - (pos-sel_start);
           char tmp[seg+10];
+      if (print)
           ctx_save (ctx);
           memcpy (tmp, word, seg);
           tmp[seg]=0;
+      if (print)
           ctx_rgb (itk->ctx, 1,0,0);
           float cursor_x = x + ctx_text_width (itk->ctx, tmp);
           if (text_edit_desired_x < 0)
             text_edit_desired_x = cursor_x;
+      if (print)
           ctx_rectangle (itk->ctx,
                     cursor_x-1, y - line_height, 2, line_height * 1.2);
+      if (print)
           ctx_fill (itk->ctx);
           cursor_drawn = 1;
+      if (print)
           ctx_restore (ctx);
         }
+      if (print)
         ctx_move_to (itk->ctx, x, y);
+      if (print)
         ctx_text (itk->ctx, word);
       }
 
@@ -888,11 +895,11 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
     }
   }
 
-  if (text_edit == TEXT_EDIT_FIND_CURSOR_FIRST_ROW)
+  if (sel_start == TEXT_EDIT_FIND_CURSOR_FIRST_ROW)
   {
       text_edit = strlen (d_name);
   }
-  if (text_edit == TEXT_EDIT_FIND_CURSOR_LAST_ROW)
+  if (sel_start == TEXT_EDIT_FIND_CURSOR_LAST_ROW)
   {
     if (best_end_cursor >=0)
       text_edit = best_end_cursor;
@@ -995,8 +1002,8 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
     metadata_rename (focused_no, str->str);
     ctx_string_free (str, 1);
     metadata_dirty ++;
+    save_metadata();
   }
-  save_metadata();
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -1077,8 +1084,20 @@ void text_edit_end (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+int prev_line_pos = 0;
+int next_line_pos = 0;
+
 void text_edit_up (CtxEvent *event, void *a, void *b)
 {
+  if (prev_line_pos >= 0)
+  {
+    text_edit = prev_line_pos;
+    ctx_set_dirty (event->ctx, 1);
+    event->stop_propagate=1;
+    return;
+  }
+
+
   if (metadata_key_int2 (focused_no-1, "virtual")<=0)
   {
     event->stop_propagate=1;
@@ -1095,6 +1114,14 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
 
 void text_edit_down (CtxEvent *event, void *a, void *b)
 {
+  if (next_line_pos >= 0)
+  {
+    text_edit = next_line_pos;
+    ctx_set_dirty (event->ctx, 1);
+    event->stop_propagate=1;
+    return;
+  }
+
   if (metadata_key_int2 (focused_no+1, "virtual")<=0)
   {
     event->stop_propagate=1;
@@ -1110,6 +1137,7 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
 
 int item_props = 0;
 
+
 void item_properties (CtxEvent *event, void *a, void *b)
 {
   item_props = 1;
@@ -1123,11 +1151,13 @@ static void dir_layout (ITK *itk, Files *files)
   float em = itk_em (itk);
   float prev_height = layout_config.height;
   float row_max_height = 0;
-  float cbox_x = metadata_key_float ("contentBox", "x");
-  float cbox_y = metadata_key_float ("contentBox", "y");
-  float cbox_width = metadata_key_float ("contentBox", "width");
-  float cbox_height = metadata_key_float ("contentBox", "height");
+  float cbox_x = metadata_key_float (".contentBox0", "x");
+  float cbox_y = metadata_key_float (".contentBox0", "y");
+  float cbox_width = metadata_key_float (".contentBox0", "width");
+  float cbox_height = metadata_key_float (".contentBox0", "height");
 
+  prev_line_pos = -1;
+  next_line_pos = -1;
 
   if (cbox_x < 0)
   {
@@ -1165,6 +1195,10 @@ static void dir_layout (ITK *itk, Files *files)
     {
       //if (!strcmp (files->items[i], "contentBox"))
       //  continue;
+        if (itk->control_no == itk->focus_no)
+        {
+          focused_no = i;
+        }
 
       ctx_begin_path (itk->ctx);
       const char *d_name = files->items[i];
@@ -1240,8 +1274,8 @@ static void dir_layout (ITK *itk, Files *files)
           /* measure height, and snap cursor */
           layout_text (itk->ctx, itk->x + layout_config.padding_left * em, itk->y, d_name,
                        em * 0.25, width, em,
-                       focused_no == itk->control_no ? text_edit : -1,
-                       focused_no == itk->control_no ? text_edit + 2: -1,
+                       i == focused_no ? text_edit : -1,
+                       i == focused_no ? text_edit + 2: -1,
                        text_edit_desired_x, NULL, &height,
                        0, NULL, NULL);
           height = height - itk->y + em * 0.5;
@@ -1282,10 +1316,10 @@ static void dir_layout (ITK *itk, Files *files)
           label = 1;
         }
 
+
         if (c->no == itk->focus_no)
         {
           focused = 1;
-          focused_no = i;
           //fprintf (stderr, "\n{%i %i %i}\n", c->no, itk->focus_no, i);
           //viewer_load_path (newpath, files->items[i]);
           ctx_begin_path (itk->ctx);
@@ -1358,17 +1392,26 @@ static void dir_layout (ITK *itk, Files *files)
           //  ctx_rgb (itk->ctx, 1, 0, 1);
           ctx_gray (itk->ctx, 0.95);
 
-          int prev_line;
-          int next_line;
+
+          if (c->no == itk->focus_no)
+          {
+          layout_text (itk->ctx, itk->x + layout_config.padding_left * em, itk->y, d_name,
+                       em * 0.25, width, em,
+                       text_edit,text_edit,
+                       1, NULL, NULL,
+                       text_edit_desired_x, &prev_line_pos, &next_line_pos);
+          }
+          else
+          {
 
           layout_text (itk->ctx, itk->x + layout_config.padding_left * em, itk->y, d_name,
                        em * 0.25, width, em,
-                       c->no == itk->focus_no ? text_edit : -1,
-                       c->no == itk->focus_no ? text_edit + 2: -1,
+                       -1, -1,
                        1, NULL, NULL,
-                       text_edit_desired_x, &prev_line, &next_line);
-          if (c->no == itk->focus_no)
-          fprintf (stderr, "%f %i %i %i\n", text_edit_desired_x, text_edit, prev_line, next_line);
+                       text_edit_desired_x, NULL, NULL);
+          }
+          //if (c->no == itk->focus_no)
+          //fprintf (stderr, "%f %i %i %i\n", text_edit_desired_x, text_edit, prev_line, next_line);
 
           ctx_restore (itk->ctx);
         }
