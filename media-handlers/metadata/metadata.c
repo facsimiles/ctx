@@ -13,8 +13,12 @@ static long  metadata_len  = 0;
 static long  metadata_size = 0;
 static char *metadata_path = NULL;
 
+static char *metadata_cache = NULL;
+static int metadata_cache_no = -1;
+
 static void metadata_load (const char *path)
 {
+  metadata_cache_no = -1;
   if (metadata_path) free (metadata_path);
   metadata_path = malloc (strlen (path) + 10);
   if (metadata)
@@ -74,9 +78,9 @@ static char *metadata_item_name (int no)
   return NULL;
 }
 
-
 static char *metadata_find_no (int no)
 {
+  if (metadata_cache_no == no) return metadata_cache;
   char *m = metadata;
   int count = 0;
   while (m && *m)
@@ -86,7 +90,11 @@ static char *metadata_find_no (int no)
       while (m && *m && *m != '\n') m++;
       if (m && *m == '\n') m++;
       if (count == no)
+      {
+        metadata_cache = m;
+        metadata_cache_no = no;
         return m;
+      }
       count++;
     }
     else
