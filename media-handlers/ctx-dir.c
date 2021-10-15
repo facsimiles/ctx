@@ -1152,8 +1152,15 @@ int item_props = 0;
 
 void item_properties (CtxEvent *event, void *a, void *b)
 {
-  item_props = 1;
-  fprintf (stderr, "item props!\n");
+  if (item_props)
+  {
+    item_props = 0;
+  }
+  else
+  {
+    item_props = 1;
+  }
+  fprintf (stderr, "item props %i\n", item_props);
   event->stop_propagate = 1;
 }
 

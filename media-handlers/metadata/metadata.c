@@ -83,7 +83,7 @@ static char *metadata_find_no (int no)
   {
     if (m[0] != ' ')
     {
-      while (m && *m != '\n') m++;
+      while (m && *m && *m != '\n') m++;
       if (m && *m == '\n') m++;
       if (count == no)
         return m;
@@ -461,6 +461,7 @@ static void _metadata_insert (int pos, const char *data, int len)
 
 void metadata_insert (int pos, const char *item)
 {
+  if (pos == -1) pos = metadata_len;
   const char *m = metadata_find_no (pos);
   if (m)
   {
