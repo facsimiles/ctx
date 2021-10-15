@@ -395,7 +395,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
           if (strlen (name)
               &&(event.key.keysym.mod & (KMOD_CTRL) ||
                  event.key.keysym.mod & (KMOD_ALT) ||
-                 strlen (name) >= 2))
+                 ctx_utf8_strlen (name) >= 2))
           {
             if (event.key.keysym.mod & (KMOD_CTRL) )
               {
