@@ -1219,7 +1219,6 @@ static void dir_layout (ITK *itk, Files *files)
         }
 
 
-      //ctx_begin_path (itk->ctx);
       const char *d_name = files->items[i];
       float width = 0;
       float height = 0;
@@ -1317,12 +1316,11 @@ static void dir_layout (ITK *itk, Files *files)
         }
         //fprintf (stderr, "%f\n", height);
       }
+      ctx_begin_path (itk->ctx);
       CtxControl *c = itk_add_control (itk, UI_LABEL, "foo",
         itk->x, itk->y,
         width + em * (padding_left+padding_right),
         height);
-
-
 
       if (!active && sy + height > 0 && sy < ctx_height (itk->ctx))
       {
@@ -1758,7 +1756,7 @@ static int card_files (ITK *itk_, void *data)
   itk_panel_start (itk, "files", 0,0, ctx_width(ctx),
                   
     view_type == CTX_DIR_LAYOUT ?
-                  ctx_height (ctx) * 0.8 :
+                  ctx_height (ctx) * 1.0 :
                   ctx_height (ctx));
 
   if (!files->n)
@@ -1821,6 +1819,7 @@ static int card_files (ITK *itk_, void *data)
 
   itk_panel_end (itk);
 
+#if 0
   if (view_type == CTX_DIR_LAYOUT)
   {
     itk_panel_start (itk, "layout_config", 0,ctx_height(ctx)*0.8, ctx_width(ctx)/2, ctx_height (ctx) * 0.2);
@@ -1838,6 +1837,7 @@ static int card_files (ITK *itk_, void *data)
 
     itk_panel_end (itk);
   }
+#endif
 
       if (active)
       {
