@@ -287,7 +287,6 @@ void dm_set_path (Files *files, const char *path)
     }
   }
 
-
   for (int i = 0; i < files->n; i++)
   {
     int found = 0;
@@ -1219,20 +1218,32 @@ static void dir_layout (ITK *itk, Files *files)
           focused_no = i;
         }
 
-      ctx_begin_path (itk->ctx);
+
+      //ctx_begin_path (itk->ctx);
       const char *d_name = files->items[i];
       float width = 0;
       float height = 0;
       int label = metadata_key_int2 (i, "label");
+      int level = metadata_key_int2 (i, "level");
+      if (level == -1234) level = 0;
       if (label == -1234) label = layout_config.label;
 
       int gotpos = 0;
       char *xstr = metadata_key_string2 (i, "x");
       char *ystr = metadata_key_string2 (i, "y");
 
+      float padding_left = metadata_key_float2 (i, "padding-left");
+      if (padding_left == -1234.0f) padding_left = layout_config.padding_left;
+      float padding_right = metadata_key_float2 (i, "padding-right");
+      if (padding_right == -1234.0f) padding_right = layout_config.padding_right;
+
+
+      padding_left += level * 3;
+
       float x = metadata_key_float2 (i, "x");
       float y = metadata_key_float2 (i, "y");
       float opacity = metadata_key_float2 (i, "opacity");
+
       if (opacity == -1234.0f) opacity = 1.0f;
 
       if (xstr)
@@ -1288,10 +1299,10 @@ static void dir_layout (ITK *itk, Files *files)
       {
         if (!gotpos)
         {
-          width = itk->width - (layout_config.padding_left+layout_config.padding_right)*em;
+          width = itk->width - (padding_left+padding_right)*em;
           ctx_font_size (itk->ctx, itk->font_size);
           /* measure height, and snap cursor */
-          layout_text (itk->ctx, itk->x + layout_config.padding_left * em, itk->y, d_name,
+          layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
                        em * 0.25, width, em,
                        i == focused_no ? text_edit : -1,
                        i == focused_no ? text_edit + 2: -1,
@@ -1308,7 +1319,7 @@ static void dir_layout (ITK *itk, Files *files)
       }
       CtxControl *c = itk_add_control (itk, UI_LABEL, "foo",
         itk->x, itk->y,
-        width + em * (layout_config.padding_left+layout_config.padding_right),
+        width + em * (padding_left+padding_right),
         height);
 
 
@@ -1414,7 +1425,7 @@ static void dir_layout (ITK *itk, Files *files)
 
           if (c->no == itk->focus_no)
           {
-          layout_text (itk->ctx, itk->x + layout_config.padding_left * em, itk->y, d_name,
+          layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
                        em * 0.25, width, em,
                        text_edit,text_edit,
                        1, NULL, NULL,
@@ -1423,7 +1434,7 @@ static void dir_layout (ITK *itk, Files *files)
           else
           {
 
-          layout_text (itk->ctx, itk->x + layout_config.padding_left * em, itk->y, d_name,
+          layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
                        em * 0.25, width, em,
                        -1, -1,
                        1, NULL, NULL,
