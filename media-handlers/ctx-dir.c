@@ -777,11 +777,12 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
   int pot_cursor=-10;
   int best_end_cursor=-10;
 
-  for (p = d_name; p == d_name || p[-1]; p++, pos++)
+  for (p = d_name; p == d_name || p[-1]; p++)
   {
     if (*p == ' ' || *p == '\0')
     {
       word[wlen]=0;
+      int wlen_utf8 = ctx_utf8_strlen (word);
       float word_width = ctx_text_width (itk->ctx, word);
 
       if (sel_start == TEXT_EDIT_FIND_CURSOR_FIRST_ROW)
@@ -859,12 +860,19 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
       {
         if (!cursor_drawn && pos >= sel_start)
         {
-          int seg = wlen - (pos-sel_start);
-          char tmp[seg+10];
-      if (print)
+          int seg = wlen_utf8 - (pos-sel_start);
+          char tmp[seg*2+10];
+          if (print)
           ctx_save (ctx);
-          memcpy (tmp, word, seg);
-          tmp[seg]=0;
+          int o = 0;
+          for (int i = 0; i < seg; i++)
+          {
+            int ul = ctx_utf8_len (word[o]);
+            memcpy (&tmp[o], &word[o], ul);
+            o+=ul;
+          }
+          tmp[o]=0;
+          //memcpy (tmp, word, seg);
       if (print)
           ctx_rgb (itk->ctx, 1,0,0);
           float cursor_x = x + ctx_text_width (itk->ctx, tmp);
@@ -893,6 +901,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
       if (wlen < 1000)
         word[wlen++]=*p;
     }
+    if ((*p & 0xc0) != 0x80) pos++;
   }
 
   if (sel_start == TEXT_EDIT_FIND_CURSOR_FIRST_ROW)
@@ -1027,9 +1036,11 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
 
 void text_edit_right (CtxEvent *event, void *a, void *b)
 {
-  int len = strlen (files->items[focused_no]);
+  int len = ctx_utf8_strlen (files->items[focused_no]);
   text_edit_desired_x = -100;
-  text_edit++;
+
+  text_edit ++;
+
   if (text_edit>len)
   {
     if (metadata_key_int2 (focused_no+1, "virtual")>0)
@@ -1050,12 +1061,14 @@ void text_edit_right (CtxEvent *event, void *a, void *b)
 void text_edit_left (CtxEvent *event, void *a, void *b)
 {
   text_edit_desired_x = -100;
+
   text_edit--;
+
   if (text_edit < 0)
   {
     if (metadata_key_int2 (focused_no-1, "virtual")>0)
     {
-      text_edit=strlen(files->items[focused_no-1]);
+      text_edit=ctx_utf8_strlen(files->items[focused_no-1]);
       focused_no--;
       itk->focus_no--;
     }
@@ -1079,7 +1092,7 @@ void text_edit_home (CtxEvent *event, void *a, void *b)
 void text_edit_end (CtxEvent *event, void *a, void *b)
 {
   text_edit_desired_x = -100;
-  text_edit = strlen (files->items[focused_no]);
+  text_edit = ctx_utf8_strlen (files->items[focused_no]);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -1096,7 +1109,6 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
     event->stop_propagate=1;
     return;
   }
-
 
   if (metadata_key_int2 (focused_no-1, "virtual")<=0)
   {
@@ -1712,8 +1724,7 @@ void viewer_load_path (const char *path, const char *name)
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
-  Ctx *_ctx = itk->ctx;
-  ctx = _ctx;
+  ctx = itk->ctx;
   //float em = itk_em (itk);
   //float row_height = em * 1.2;
   static int first = 1;
@@ -1721,8 +1732,6 @@ static int card_files (ITK *itk_, void *data)
   {
     ctx_add_timeout (ctx, 1000, thumb_monitor, NULL);
     font_size = itk->font_size;
-    //itk->font_size = font_size;
-    //viewer_load_path ("/home/pippin/src/ctx/media/traffic.gif", "traffic.gif");
     first = 0;
   }
   //thumb_monitor (ctx, NULL);
