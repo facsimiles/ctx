@@ -1164,10 +1164,11 @@ void item_properties (CtxEvent *event, void *a, void *b)
   {
     item_props = 1;
   }
-  fprintf (stderr, "item props %i\n", item_props);
+  ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
 
+static CtxControl *focused_control = NULL;
 static void dir_layout (ITK *itk, Files *files)
 {
   Ctx *ctx = itk->ctx;
@@ -1179,6 +1180,7 @@ static void dir_layout (ITK *itk, Files *files)
   float cbox_width = metadata_key_float (".contentBox0", "width");
   float cbox_height = metadata_key_float (".contentBox0", "height");
 
+
   metadata_cache_no = -1;
   prev_line_pos = -1;
   next_line_pos = -1;
@@ -1186,7 +1188,7 @@ static void dir_layout (ITK *itk, Files *files)
   if (cbox_x < 0)
   {
     cbox_x = 0.0f;
-    cbox_y = 0.0f;
+    cbox_y = 0.02f;
     cbox_width = 1.0f;
     cbox_height= 1000.0f;
   }
@@ -1326,6 +1328,7 @@ static void dir_layout (ITK *itk, Files *files)
         itk->x, itk->y,
         width + em * (padding_left+padding_right),
         height);
+      if (focused_no == i) focused_control = c;
 
       if (!active && sy + height > 0 && sy < ctx_height (itk->ctx))
       {
@@ -1567,9 +1570,9 @@ static void dir_layout (ITK *itk, Files *files)
     }
   }
 
-  itk->x0 = saved_x0;
+  itk->x0    = saved_x0;
   itk->width = saved_width;
-  itk->y = saved_y;
+  itk->y     = saved_y;
 
 }
 
@@ -1834,6 +1837,40 @@ static int card_files (ITK *itk_, void *data)
 
   itk_panel_end (itk);
 
+  if (item_props && focused_control)
+  {
+    ctx_rgb(itk->ctx, 0,1,0);
+    ctx_rectangle (itk->ctx, focused_control->x + focused_control->width, focused_control->y, 200, 200);
+
+#if 1
+  itk_panel_start (itk, "prop",
+                  
+       focused_control->x + focused_control->width, focused_control->y, 200, 200);
+                  
+       //           ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*8);
+  int keys = metadata_item_key_count (files->items[focused_no]);
+  itk_labelf (itk, "%s - %i", files->items[focused_no], keys);
+  for (int k = 0; k < keys; k++)
+  {
+    char *key = metadata_key_name (files->items[focused_no], k);
+    if (key)
+    {
+      char *val = metadata_key_string (files->items[focused_no], key);
+      if (val)
+      {
+        itk_labelf (itk, "%s=%s", key, val);
+        free (val);
+      }
+      free (key);
+    }
+  }
+  itk_panel_end (itk);
+#endif
+
+    ctx_fill (itk->ctx);
+  }
+
+
 #if 0
   if (view_type == CTX_DIR_LAYOUT)
   {
@@ -1872,26 +1909,6 @@ static int card_files (ITK *itk_, void *data)
     //viewer_active = 0;
   }
 
-#if 0
-  itk_panel_start (itk, "prop", ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*8);
-  int keys = metadata_item_key_count (viewer_loaded_name);
-  itk_labelf (itk, "%s - %i", viewer_loaded_name, keys);
-  for (int k = 0; k < keys; k++)
-  {
-    char *key = metadata_key_name (viewer_loaded_name, k);
-    if (key)
-    {
-      char *val = metadata_key_string (viewer_loaded_name, key);
-      if (val)
-      {
-        itk_labelf (itk, "%s=%s", key, val);
-        free (val);
-      }
-      free (key);
-    }
-  }
-  itk_panel_end (itk);
-#endif
 
   return 0;
 }
