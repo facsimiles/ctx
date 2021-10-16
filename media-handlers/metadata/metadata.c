@@ -80,7 +80,7 @@ static char *metadata_item_name (int no)
 
 static char *metadata_find_no (int no)
 {
-  if (metadata_cache_no == no) return metadata_cache;
+  //if (metadata_cache_no == no) return metadata_cache;
   char *m = metadata;
   int count = 0;
   while (m && *m)

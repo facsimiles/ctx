@@ -401,6 +401,11 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
 }
 
 static int metadata_dirty = 0;
+static void metadata_dirt(void)
+{
+  metadata_dirty++;
+  metadata_cache_no=-1;
+}
 
 static void item_delete (CtxEvent *e, void *d1, void *d2)
 {
@@ -413,7 +418,7 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
   {
     metadata_remove (no);
     text_edit = TEXT_EDIT_OFF;
-    metadata_dirty++;
+    metadata_dirt();
     ctx_set_dirty (e->ctx, 1);
     e->stop_propagate = 1;
     return;
@@ -437,7 +442,7 @@ static void move_item_down (CtxEvent *e, void *d1, void *d2)
   if (no<files->count-1)
   {
     metadata_swap (no, no+1);
-    metadata_dirty ++;
+    metadata_dirt();
     ctx_set_dirty (e->ctx, 1);
     itk_focus (itk, 1);
   }
@@ -451,7 +456,7 @@ static void grow_height (CtxEvent *e, void *d1, void *d2)
   if (height > 1.2) height = 1.2;
   metadata_set_float2 (no, "height", height);
   fprintf (stderr, "%f\n", height);
-  metadata_dirty ++;
+  metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -462,7 +467,7 @@ static void shrink_height (CtxEvent *e, void *d1, void *d2)
   height -= 0.01;
   if (height < 0.01) height = 0.01;
   metadata_set_float2 (no, "height", height);
-  metadata_dirty ++;
+  metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -473,7 +478,7 @@ static void grow_width (CtxEvent *e, void *d1, void *d2)
   width += 0.01;
   if (width > 1.5) width = 1.5;
   metadata_set_float2 (no, "width", width);
-  metadata_dirty ++;
+  metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -484,7 +489,7 @@ static void shrink_width (CtxEvent *e, void *d1, void *d2)
   width -= 0.01;
   if (width < 0.0) width = 0.01;
   metadata_set_float2 (no, "width", width);
-  metadata_dirty ++;
+  metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -495,7 +500,7 @@ static void move_left (CtxEvent *e, void *d1, void *d2)
   x -= 0.01;
   if (x < 0.0) x = 0.0;
   metadata_set_float2 (no, "x", x);
-  metadata_dirty ++;
+  metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -506,7 +511,7 @@ static void move_right (CtxEvent *e, void *d1, void *d2)
   x += 0.01;
   if (x < 0) x = 0;
   metadata_set_float2 (no, "x", x);
-  metadata_dirty ++;
+  metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -517,7 +522,7 @@ static void move_up (CtxEvent *e, void *d1, void *d2)
   y -= 0.01;
   if (y< 0) y = 0.01;
   metadata_set_float2 (no, "y", y);
-  metadata_dirty ++;
+  metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -528,7 +533,7 @@ static void move_down (CtxEvent *e, void *d1, void *d2)
   y += 0.01;
   if (y< 0) y = 0.01;
   metadata_set_float2 (no, "y", y);
-  metadata_dirty ++;
+  metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -538,7 +543,7 @@ static void move_item_up (CtxEvent *e, void *d1, void *d2)
   if (no>0)
   {
     metadata_swap (no, no-1);
-    metadata_dirty ++;
+    metadata_dirt ();
     ctx_set_dirty (e->ctx, 1);
     itk_focus (itk, -1);
   }
@@ -943,7 +948,7 @@ void text_edit_return (CtxEvent *event, void *a, void *b)
   char *str = strdup (files->items[focused_no]);
   metadata_insert (focused_no+1, files->items[focused_no]);
   metadata_set_float2 (focused_no+1, "virtual", 1);
-  metadata_dirty ++;
+  metadata_dirt ();
 
   metadata_rename (focused_no+1, str + text_edit);
   str[text_edit]=0;
@@ -969,7 +974,7 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
       metadata_rename (focused_no, str->str);
       ctx_string_free (str, 1);
       text_edit--;
-      metadata_dirty ++;
+      metadata_dirt ();
     }
     else if (text_edit == 0 && focused_no > 0 &&
              (metadata_key_int2 (focused_no-1, "virtual")>0)
@@ -983,7 +988,7 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
       metadata_remove (focused_no);
       focused_no--;
       itk->focus_no--;
-      metadata_dirty ++;
+      metadata_dirt ();
     }
     save_metadata();
   }
@@ -1009,7 +1014,7 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
     }
     metadata_rename (focused_no, str->str);
     ctx_string_free (str, 1);
-    metadata_dirty ++;
+    metadata_dirt ();
     save_metadata();
   }
   ctx_set_dirty (event->ctx, 1);
@@ -1027,7 +1032,7 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
     ctx_string_free (str, 1);
     text_edit++;
   }
-  metadata_dirty ++;
+  metadata_dirt ();
   save_metadata();
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -1174,6 +1179,7 @@ static void dir_layout (ITK *itk, Files *files)
   float cbox_width = metadata_key_float (".contentBox0", "width");
   float cbox_height = metadata_key_float (".contentBox0", "height");
 
+  metadata_cache_no = -1;
   prev_line_pos = -1;
   next_line_pos = -1;
 
