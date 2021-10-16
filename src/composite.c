@@ -1040,8 +1040,6 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
   }
 }
 
-
-
 static void
 ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
                                    float x,
@@ -1113,7 +1111,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 
   if (xi_delta == 65536 && u < bwidth -1)
   {
-    int du = (xi >> 8);
+    int du = (xi >> 8) & 0xff;
 
     src0 = data + u;
     src1 = ndata + u;
@@ -1161,7 +1159,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     }
     loaded = u;
     ((uint32_t*)(&rgba[0]))[0] = 
-      ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, (xi>>8));
+      ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, ((xi>>8)&0xff));
     xi += xi_delta;
     rgba += 4;
     u = xi >> 16;
@@ -1169,7 +1167,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   }
 
   }
-  else
+  else // //
   {
     uint32_t *data = ((uint32_t*)buffer->data);
     for (i= 0; i < count; i ++)

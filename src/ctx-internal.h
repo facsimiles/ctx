@@ -989,10 +989,10 @@ CTX_INLINE static void ctx_lerp_RGBA8_split (const uint32_t v0, const uint32_t v
                                              uint32_t *dest_ga, uint32_t *dest_rb)
 {
   const uint32_t cov = dx;
-  const uint32_t si_ga = (v1 & 0xff00ff00);
+  const uint32_t si_ga = v1 & 0xff00ff00;
   const uint32_t si_rb = v1 & 0x00ff00ff;
-  const uint32_t di_rb = v0 & 0x00ff00ff;
   const uint32_t di_ga = v0 & 0xff00ff00;
+  const uint32_t di_rb = v0 & 0x00ff00ff;
   const uint32_t d_rb = si_rb - di_rb;
   const uint32_t d_ga = (si_ga >>8) - (di_ga >> 8);
   *dest_rb = (((di_rb + ((0xff00ff + d_rb * cov)>>8)) & 0x00ff00ff));
@@ -1003,7 +1003,7 @@ CTX_INLINE static uint32_t ctx_lerp_RGBA8_merge (uint32_t di_ga, uint32_t di_rb,
 {
   const uint32_t cov = dx;
   const uint32_t d_rb = si_rb - di_rb;
-  const uint32_t d_ga = (si_ga - di_ga) >> 8;
+  const uint32_t d_ga = (si_ga >> 8) - (di_ga >> 8);
   return
      (((di_rb + ((0xff00ff + d_rb * cov)>>8)) & 0x00ff00ff))  |
       ((di_ga + ((0xff00ff + d_ga * cov)      & 0xff00ff00)));
