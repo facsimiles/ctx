@@ -1236,7 +1236,6 @@ static void dir_layout (ITK *itk, Files *files)
       float padding_right = metadata_key_float2 (i, "padding-right");
       if (padding_right == -1234.0f) padding_right = layout_config.padding_right;
 
-
       padding_left += level * 3;
 
       float x = metadata_key_float2 (i, "x");
@@ -1389,15 +1388,25 @@ static void dir_layout (ITK *itk, Files *files)
           ctx_add_key_binding (ctx, "shift-control-right", NULL, NULL, grow_width, 
                          (void*)((size_t)i));
 
+          if (gotpos)
+          {
           ctx_add_key_binding (ctx, "control-left", NULL, NULL, move_left, 
                          (void*)((size_t)i));
           ctx_add_key_binding (ctx, "control-right", NULL, NULL, move_right, 
                          (void*)((size_t)i));
-
           ctx_add_key_binding (ctx, "control-up", NULL, NULL, move_up, 
                          (void*)((size_t)i));
           ctx_add_key_binding (ctx, "control-down", NULL, NULL, move_down, 
                          (void*)((size_t)i));
+          }
+          else
+          {
+            ctx_add_key_binding (ctx, "control-down", NULL, NULL, move_item_down, 
+                           (void*)((size_t)i));
+            ctx_add_key_binding (ctx, "control-up", NULL, NULL, move_item_up, 
+                           (void*)((size_t)i));
+          }
+
           }
           //itk_labelf (itk, "%s\n", ctx_path_get_media_type (newpath));
         }
