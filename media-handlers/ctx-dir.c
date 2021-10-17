@@ -154,7 +154,6 @@ void ui_queue_thumb (const char *path)
   free (rp);
   free (thumb_path);
 }
-//int viewer_active = 0;
 
 void viewer_load_path (const char *path, const char *name);
 
@@ -392,8 +391,15 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   }
 }
 
+static int viewer_load_next_handler = 0;
+
 static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
 {
+
+  if (viewer_load_next_handler!=0)
+    ctx_remove_idle (ctx, viewer_load_next_handler);
+  viewer_load_next_handler = 0;
+
   while (clients)
     ctx_client_remove (ctx, clients->data);
   active = NULL;
@@ -1657,6 +1663,17 @@ void ctx_clients_handle_events (Ctx *ctx);
 static char *viewer_loaded_path = NULL;
 static char *viewer_loaded_name = NULL;
 
+int viewer_load_next (Ctx *ctx, void *data1)
+{
+  if (viewer_no+1 >= metadata_count())
+    return 0;
+  fprintf (stderr, "next!\n");
+  itk->focus_no ++;
+  item_activate (NULL, (void*)(size_t)(viewer_no+1), NULL);
+  ctx_set_dirty (ctx, 1);
+  return 0;
+}
+
 void viewer_load_path (const char *path, const char *name)
 {
   if (path && viewer_loaded_path && !strcmp (viewer_loaded_path, path) && clients)
@@ -1675,6 +1692,21 @@ void viewer_load_path (const char *path, const char *name)
 
   if (viewer_loaded_name) free (viewer_loaded_name);
   viewer_loaded_name = strdup (name);
+
+  float duration = 10.0;
+  float in = metadata_key_float (name, "in");
+  float out = metadata_key_float (name, "out");
+  if (out > 0 && in > 0)
+  {
+    duration = out - in;
+  }
+
+  if (viewer_load_next_handler!=0)
+    ctx_remove_idle (ctx, viewer_load_next_handler);
+  viewer_load_next_handler = 0;
+
+  fprintf (stderr, "%f\n", duration);
+  viewer_load_next_handler = ctx_add_timeout (ctx, 1000 * duration, viewer_load_next, NULL);
 
   if (path)
   {
@@ -1906,24 +1938,25 @@ static int card_files (ITK *itk_, void *data)
   }
 #endif
 
-      if (active)
-      {
-          ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
-          ctx_listen (ctx, CTX_KEY_DOWN,  dir_key_any, NULL, NULL);
-          ctx_listen (ctx, CTX_KEY_UP,    dir_key_any, NULL, NULL);
-      }
+  if (active)
+  {
+    ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
+    ctx_listen (ctx, CTX_KEY_DOWN,  dir_key_any, NULL, NULL);
+    ctx_listen (ctx, CTX_KEY_UP,    dir_key_any, NULL, NULL);
+  }
+  else
+  {
+    if (viewer_load_next_handler!=0)
+      ctx_remove_idle (ctx, viewer_load_next_handler);
+    viewer_load_next_handler=0;
+  }
+
   if (clients && active)
   {
     ctx_font_size (ctx, itk->font_size);
     ctx_clients_draw (ctx);
-    //ctx_set_dirty (ctx, 1);
     ctx_clients_handle_events (ctx);
   }
-  else
-  {
-    //viewer_active = 0;
-  }
-
 
   return 0;
 }
