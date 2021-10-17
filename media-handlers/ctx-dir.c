@@ -767,7 +767,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
                          int sel_start, 
                          int sel_end, 
                          int print, float *ret_x, float *ret_y,
-                         float desired_x, int *prev_line, int *next_line)
+                         int *prev_line, int *next_line)
 {
   char word[1024]="";
   int wlen = 0;
@@ -797,7 +797,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
 
       if (sel_start == TEXT_EDIT_FIND_CURSOR_FIRST_ROW)
       {
-        if (pot_cursor < 0 && x + word_width > text_edit_desired_x)
+        if (pot_cursor < 0 && (x + word_width > text_edit_desired_x || *p == '\0'))
         {
            float excess =  (x + word_width) - text_edit_desired_x;
            int removed = 0;
@@ -809,7 +809,6 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
               removed ++;
            }
            pot_cursor = pos - removed;
-           fprintf (stderr, "{%s}", d_name);
            if (pot_cursor > strlen (d_name))
               pot_cursor=strlen(d_name);
            sel_start = text_edit = pot_cursor;
@@ -817,7 +816,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
       }
       if (sel_start == TEXT_EDIT_FIND_CURSOR_LAST_ROW)
       {
-        if (pot_cursor < 0 && x + word_width > text_edit_desired_x)
+        if (pot_cursor < 0 && (x + word_width > text_edit_desired_x || *p == '\0'))
         {
            float excess =  (x + word_width) - text_edit_desired_x;
            int removed = 0;
@@ -835,7 +834,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
 
       if (compute_neighbor_lines && text_edit_desired_x > 0)
       {
-        if (pot_cursor < 0 && x + word_width > text_edit_desired_x)
+        if (pot_cursor < 0 && (x + word_width > text_edit_desired_x || *p == '\0'))
         {
            float excess =  (x + word_width) - text_edit_desired_x;
            int removed = 0;
@@ -848,12 +847,12 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
            }
            pot_cursor = pos - removed;
 
-          if (pot_cursor < sel_start - 3)
+          if (pot_cursor < sel_start - 1)
           {
             *prev_line = pot_cursor;
             *next_line = -1;
           }
-          else if (pot_cursor > sel_start + 3)
+          else if (pot_cursor > sel_start + 1)
           {
             *next_line = pot_cursor;
             compute_neighbor_lines = 0;
@@ -925,7 +924,6 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
     else
       text_edit = strlen (d_name);
   }
-
 
   if (ret_x)
     *ret_x = x;
@@ -1335,7 +1333,7 @@ static void dir_layout (ITK *itk, Files *files)
                        i == focused_no ? text_edit : -1,
                        i == focused_no ? text_edit + 2: -1,
                        0, NULL, &height,
-                       0, NULL, NULL);
+                       NULL, NULL);
           height = height - itk->y + em * 0.5;
            
           if (layout_config.stack_vertical && itk->x != itk->x0)
@@ -1467,7 +1465,7 @@ static void dir_layout (ITK *itk, Files *files)
                        em * 0.25, width, em,
                        text_edit,text_edit,
                        1, NULL, NULL,
-                       text_edit_desired_x, &prev_line_pos, &next_line_pos);
+                       &prev_line_pos, &next_line_pos);
           }
           else
           {
@@ -1476,7 +1474,7 @@ static void dir_layout (ITK *itk, Files *files)
                        em * 0.25, width, em,
                        -1, -1,
                        1, NULL, NULL,
-                       text_edit_desired_x, NULL, NULL);
+                       NULL, NULL);
           }
           //if (c->no == itk->focus_no)
           //fprintf (stderr, "%f %i %i %i\n", text_edit_desired_x, text_edit, prev_line, next_line);
