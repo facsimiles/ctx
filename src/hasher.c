@@ -97,9 +97,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
 #endif
           ctx_sha1_process(&sha1, (const unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
-#if 0
-          ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
-          ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
+#if 1
+        ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
+    //      ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
 #endif
           ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
@@ -127,9 +127,9 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_stroke.color, (uint8_t*)(&color));
 #endif
           ctx_sha1_process(&sha1, (unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
-#if 0
+#if 1
           ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
-          ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
+    //    ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
 #endif
           ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
@@ -165,8 +165,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
 #endif
           ctx_sha1_process(&sha1, string, strlen ((const char*)string));
-#if 0
           ctx_sha1_process(&sha1, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
+#if 0
           ctx_sha1_process(&sha1, (unsigned char*)&color, 4);
 #endif
           ctx_sha1_process(&sha1, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
