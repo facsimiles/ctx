@@ -1334,7 +1334,7 @@ static void dir_layout (ITK *itk, Files *files)
                        em * 0.25, width, em,
                        i == focused_no ? text_edit : -1,
                        i == focused_no ? text_edit + 2: -1,
-                       text_edit_desired_x, NULL, &height,
+                       0, NULL, &height,
                        0, NULL, NULL);
           height = height - itk->y + em * 0.5;
            
