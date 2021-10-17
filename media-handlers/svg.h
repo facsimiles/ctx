@@ -417,13 +417,13 @@ static void mrg_queue_draw (Mrg *mrg, CtxIntRectangle *rect)
 {
 }
 
-typedef struct _MrgStyleNode MrgStyleNode;
+typedef struct _CtxStyleNode CtxStyleNode;
 typedef struct _MrgHtmlState MrgHtmlState;
 
 #define MRG_STYLE_MAX_CLASSES 8
 #define MRG_STYLE_MAX_PSEUDO  8
 
-struct _MrgStyleNode
+struct _CtxStyleNode
 {
   int         is_direct_parent; /* for use in selector chains with > */
   const char *id;
@@ -528,12 +528,6 @@ typedef enum
   MRG_FONT_WEIGHT_BOLD
 } MrgFontWeight;
 
-typedef enum
-{
-  MRG_FILL_RULE_NONZERO = 0,
-  MRG_FILL_RULE_EVEN_ODD
-} MrgFillRule;
-
 /* matches cairo order */
 typedef enum
 {
@@ -546,7 +540,7 @@ typedef enum
 {
   MRG_BOX_SIZING_CONTENT_BOX = 0,
   MRG_BOX_SIZING_BORDER_BOX
-} MrgBoxSizing;
+} CtxBoxSizing;
 
 /* matching nchanterm definitions */
 
@@ -566,7 +560,7 @@ typedef enum {
   MRG_POSITION_RELATIVE,
   MRG_POSITION_FIXED,
   MRG_POSITION_ABSOLUTE
-} MrgPosition;
+} CtxPosition;
 
 typedef enum {
   MRG_OVERFLOW_VISIBLE = 0,
@@ -580,7 +574,7 @@ typedef enum {
   MRG_CLEAR_LEFT,
   MRG_CLEAR_RIGHT,
   MRG_CLEAR_BOTH
-} MrgClear;
+} CtxClear;
 
 typedef enum {
   MRG_TEXT_ALIGN_LEFT = 0,
@@ -595,7 +589,7 @@ typedef enum {
   MRG_WHITE_SPACE_PRE,
   MRG_WHITE_SPACE_PRE_LINE,
   MRG_WHITE_SPACE_PRE_WRAP
-} MrgWhiteSpace;
+} CtxWhiteSpace;
 
 typedef enum {
   MRG_VERTICAL_ALIGN_BASELINE = 0,
@@ -604,7 +598,7 @@ typedef enum {
   MRG_VERTICAL_ALIGN_TOP,
   MRG_VERTICAL_ALIGN_SUB,
   MRG_VERTICAL_ALIGN_SUPER
-} MrgVerticalAlign;
+} CtxVerticalAlign;
 
 typedef enum {
   MRG_CURSOR_AUTO = 0,
@@ -647,17 +641,12 @@ typedef enum {
   MRG_UNICODE_BIDI_NORMAL = 0,
   MRG_UNICODE_BIDI_EMBED,
   MRG_UNICODE_BIDI_BIDI_OVERRIDE
-} MrgUnicodeBidi;
-
-typedef enum {
-  MRG_DIRECTION_LTR = 0,
-  MRG_DIRECTION_RTL
-} MrgDirection;
+} CtxUnicodeBidi;
 
 typedef enum {
   MRG_VISIBILITY_VISIBLE = 0,
   MRG_VISIBILITY_HIDDEN
-} MrgVisibility;
+} CtxVisibility;
 
 typedef enum {
   MRG_LIST_STYLE_OUTSIDE = 0,
@@ -667,7 +656,7 @@ typedef enum {
 /* This style class should be able to grow to contain some color names with
  * semantic meaning.
  */
-struct _MrgStyle {
+struct _CtxStyle {
   /* text-related, we could potentially store *all* variables in keydb
    * that would both be slower and more bloatful than tightly packed bits,
    * some things currently in keydb should maybe be moved out for
@@ -675,21 +664,21 @@ struct _MrgStyle {
    */
   float               font_size; // used for mrg_em() should be direct
   float               line_height;
-  MrgVisibility       visibility:1;
-  MrgFillRule         fill_rule:1;
+  CtxVisibility       visibility:1;
+  CtxFillRule         fill_rule:1;
   MrgFontStyle        font_style:3;
   MrgFontWeight       font_weight:4;
   CtxLineCap          stroke_linecap:2;
   CtxLineJoin         stroke_linejoin:2;
   MrgTextAlign        text_align:2;
-  MrgPosition         position:2;
-  MrgBoxSizing        box_sizing:1;
-  MrgVerticalAlign    vertical_align:3;
-  MrgWhiteSpace       white_space:3;
-  MrgUnicodeBidi      unicode_bidi:2;
-  MrgDirection        direction:2;
+  CtxPosition         position:2;
+  CtxBoxSizing        box_sizing:1;
+  CtxVerticalAlign    vertical_align:3;
+  CtxWhiteSpace       white_space:3;
+  CtxUnicodeBidi      unicode_bidi:2;
+  CtxTextDirection    direction:2;
   CtxListStyle        list_style:1;
-  MrgClear            clear:2;
+  CtxClear            clear:2;
   unsigned char       fill:1;
   MrgCursor           cursor:6;
   MrgTextDecoration   text_decoration:7;
@@ -705,7 +694,7 @@ struct _MrgStyle {
 };
 
 typedef struct _MrgString MrgString;
-typedef struct _MrgStyle MrgStyle;
+typedef struct _CtxStyle CtxStyle;
 
 typedef struct MrgState {
   float      (*wrap_edge_left)  (Mrg *mrg, void *data);
@@ -722,8 +711,8 @@ typedef struct MrgState {
   int          max_lines;   /* better with max-y in ems? ? */
 
   char        *style_id;
-  MrgStyleNode style_node;
-  MrgStyle     style;
+  CtxStyleNode style_node;
+  CtxStyle     style;
 
   int          children;
   int          overflowed:1;
@@ -1814,13 +1803,13 @@ static void clear_right (MrgHtml *ctx)
 }
 
 /**
- * mrg_style:
+ * ctx_style:
  * @mrg the mrg-context
  *
  * Returns the currently 
  *
  */
-MrgStyle *mrg_style (Mrg *mrg)
+CtxStyle *ctx_style (Mrg *mrg)
 {
   return &mrg->state->style;
 }
@@ -1846,7 +1835,7 @@ static void clear_both (MrgHtml *ctx)
         }
       }
   }
-  y += mrg_em (mrg) * mrg_style(mrg)->line_height;
+  y += mrg_em (mrg) * ctx_style(mrg)->line_height;
   mrg_set_xy (mrg, mrg_x (mrg), y);
   //_mrg_draw_background_increment (mrg, &mrg->html, 0);
 #endif
@@ -1914,7 +1903,7 @@ uint64_t ctx_strhash(const char *str) ;
 
 static void mrg_parse_style_id (Mrg          *mrg,
                                 const char   *style_id,
-                                MrgStyleNode *node)
+                                CtxStyleNode *node)
 {
   const char *p;
   char temp[128] = "";
@@ -1924,7 +1913,7 @@ static void mrg_parse_style_id (Mrg          *mrg,
     return; // XXX: why does this happen?
   }
 
-  memset (node, 0, sizeof (MrgStyleNode));
+  memset (node, 0, sizeof (CtxStyleNode));
 
   for (p = style_id; ; p++)
   {
@@ -1978,7 +1967,7 @@ static void mrg_parse_style_id (Mrg          *mrg,
 
 void _mrg_init_style (Mrg *mrg)
 {
-  MrgStyle *s = mrg_style (mrg);
+  CtxStyle *s = ctx_style (mrg);
 
   /* things not set here, are inherited from the parent style context,
    * more properly would be to rig up a fresh context, and copy inherited
@@ -2135,7 +2124,7 @@ const char * html_css =
 
 typedef struct StyleEntry {
   char        *selector;
-  MrgStyleNode parsed[MRG_MAX_SELECTOR_LENGTH];
+  CtxStyleNode parsed[MRG_MAX_SELECTOR_LENGTH];
   int          sel_len;
   char        *css;
   int          specificity;
@@ -2148,7 +2137,7 @@ static void free_entry (StyleEntry *entry)
   free (entry);
 }
 
-static int compute_specificity (const char *selector, int priority)
+static int ctx_css_compute_specifity (const char *selector, int priority)
 {
   const char *p;
   int n_id = 0;
@@ -2187,7 +2176,7 @@ static int compute_specificity (const char *selector, int priority)
   return priority * 100000 + n_pseudo * 10000 + n_id * 1000 + n_class * 100 + n_tag * 10;
 }
 
-static void mrg_parse_selector (Mrg *mrg, const char *selector, StyleEntry *entry)
+static void ctx_css_parse_selector (Mrg *mrg, const char *selector, StyleEntry *entry)
 {
   const char *p = selector;
   char section[256];
@@ -2246,13 +2235,13 @@ static void mrg_parse_selector (Mrg *mrg, const char *selector, StyleEntry *entr
   }
 }
 
-static void mrg_stylesheet_add_selector (Mrg *mrg, const char *selector, const char *css, int priority)
+static void ctx_stylesheet_add_selector (Mrg *mrg, const char *selector, const char *css, int priority)
 {
   StyleEntry *entry = calloc (sizeof (StyleEntry), 1);
   entry->selector = strdup (selector);
   entry->css = strdup (css);
-  entry->specificity = compute_specificity (selector, priority);
-  mrg_parse_selector (mrg, selector, entry);
+  entry->specificity = ctx_css_compute_specifity (selector, priority);
+  ctx_css_parse_selector (mrg, selector, entry);
   ctx_list_prepend_full (&mrg->stylesheet, entry, (void*)free_entry, NULL);
 }
 
@@ -2267,9 +2256,9 @@ static void mrg_stylesheet_add_selector (Mrg *mrg, const char *selector, const c
  }
 
 
-typedef struct _MrgCssParseState MrgCssParseState;
+typedef struct _CtxCssParseState CtxCssParseState;
 
-struct _MrgCssParseState {
+struct _CtxCssParseState {
   int   state;
   char  rule[MRG_MAX_CSS_RULES][MRG_MAX_CSS_RULELEN];
   int   rule_no ;
@@ -2334,12 +2323,12 @@ mrg_get_contents (Mrg         *mrg,
   }
 }
 
-static void _mrg_stylesheet_add (MrgCssParseState *ps, Mrg *mrg, const char *css, const char *uri_base,
+static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css, const char *uri_base,
                          int priority, char **error)
 {
   const char *p;
   if (!ps)
-    ps = mrg->css_parse_state = calloc (sizeof (MrgCssParseState), 1);
+    ps = mrg->css_parse_state = calloc (sizeof (CtxCssParseState), 1);
 
   if (!css)
     return;
@@ -2447,8 +2436,8 @@ static void _mrg_stylesheet_add (MrgCssParseState *ps, Mrg *mrg, const char *css
               mrg_get_contents (mrg, uri_base, uri, &contents, &length);
               if (contents)
               {
-                MrgCssParseState child_parser = {0,};
-                _mrg_stylesheet_add (&child_parser, mrg, contents, uri, priority, error);
+                CtxCssParseState child_parser = {0,};
+                _ctx_stylesheet_add (&child_parser, mrg, contents, uri, priority, error);
                 free (contents);
               }
             }
@@ -2551,7 +2540,7 @@ static void _mrg_stylesheet_add (MrgCssParseState *ps, Mrg *mrg, const char *css
                 ps->rule_l[no]--;
               ps->rule[no][ps->rule_l[no]]=0;
 
-              mrg_stylesheet_add_selector (mrg, ps->rule[no], ps->val, priority);
+              ctx_stylesheet_add_selector (mrg, ps->rule[no], ps->val, priority);
               ps->rule[no][ps->rule_l[no]=0] = 0;
             }
 
@@ -2572,11 +2561,11 @@ static void _mrg_stylesheet_add (MrgCssParseState *ps, Mrg *mrg, const char *css
   }
 }
 
-void mrg_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
+void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
                          int priority, char **error)
 {
-  MrgCssParseState *ps = mrg->css_parse_state;
-  _mrg_stylesheet_add (ps, mrg, css, uri_base, priority, error);
+  CtxCssParseState *ps = mrg->css_parse_state;
+  _ctx_stylesheet_add (ps, mrg, css, uri_base, priority, error);
 }
 #define MRG_STYLE_INTERNAL 10
 #define MRG_STYLE_GLOBAL   15
@@ -2588,13 +2577,13 @@ void mrg_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
 void mrg_css_default (Mrg *mrg)
 {
   char *error = NULL;
-  mrg_stylesheet_add (mrg, html_css, NULL, MRG_STYLE_INTERNAL, &error);
+  ctx_stylesheet_add (mrg, html_css, NULL, MRG_STYLE_INTERNAL, &error);
   if (error)
   {
     fprintf (stderr, "Mrg css parsing error: %s\n", error);
   }
 
-  mrg_stylesheet_add (mrg,
+  ctx_stylesheet_add (mrg,
 "bold{font-weight:bold;}"
 "dim*,dim{opacity:0.5;}"
 "underline*,underline{text-decoration:underline;}"
@@ -2611,7 +2600,7 @@ void mrg_css_default (Mrg *mrg)
   }
 }
 
-void mrg_stylesheet_clear (Mrg *mrg)
+void ctx_stylesheet_clear (Mrg *mrg)
 {
   if (mrg->stylesheet)
     ctx_list_free (&mrg->stylesheet);
@@ -2673,7 +2662,7 @@ int _mrg_child_no (Mrg *mrg)
   return mrg->states[mrg->state_no-1].children;
 }
 
-static inline int match_nodes (Mrg *mrg, MrgStyleNode *sel_node, MrgStyleNode *subject)
+static inline int match_nodes (Mrg *mrg, CtxStyleNode *sel_node, CtxStyleNode *subject)
 {
   int j, k;
 
@@ -2726,7 +2715,7 @@ static inline int match_nodes (Mrg *mrg, MrgStyleNode *sel_node, MrgStyleNode *s
 
 static int mrg_selector_vs_ancestry (Mrg *mrg,
                                      StyleEntry *entry,
-                                     MrgStyleNode **ancestry,
+                                     CtxStyleNode **ancestry,
                                      int a_depth)
 {
   int s = entry->sel_len - 1;
@@ -2767,7 +2756,7 @@ static int mrg_selector_vs_ancestry (Mrg *mrg,
   return 1;
 }
 
-static int mrg_css_selector_match (Mrg *mrg, StyleEntry *entry, MrgStyleNode **ancestry, int a_depth)
+static int mrg_css_selector_match (Mrg *mrg, StyleEntry *entry, CtxStyleNode **ancestry, int a_depth)
 {
   if (entry->selector[0] == '*' &&
       entry->selector[1] == 0)
@@ -2782,7 +2771,7 @@ static int mrg_css_selector_match (Mrg *mrg, StyleEntry *entry, MrgStyleNode **a
   return 0;
 }
 
-static char *_mrg_css_compute_style (Mrg *mrg, MrgStyleNode **ancestry, int a_depth)
+static char *_mrg_css_compute_style (Mrg *mrg, CtxStyleNode **ancestry, int a_depth)
 {
   CtxList *l;
   CtxList *matches = NULL;
@@ -2827,7 +2816,7 @@ static char *_mrg_css_compute_style (Mrg *mrg, MrgStyleNode **ancestry, int a_de
   return ret;
 }
 
-static int _mrg_get_ancestry (Mrg *mrg, MrgStyleNode **ancestry)
+static int _mrg_get_ancestry (Mrg *mrg, CtxStyleNode **ancestry)
 {
   int i, j;
   for (i = 0, j = 0; i <= mrg->state_no; i++)
@@ -2839,9 +2828,9 @@ static int _mrg_get_ancestry (Mrg *mrg, MrgStyleNode **ancestry)
   return j;
 }
 
-char *_mrg_stylesheet_collate_style (Mrg *mrg)
+char *_ctx_stylesheet_collate_style (Mrg *mrg)
 {
-  MrgStyleNode *ancestry[MRG_MAX_STYLE_DEPTH];
+  CtxStyleNode *ancestry[MRG_MAX_STYLE_DEPTH];
   int ancestors = _mrg_get_ancestry (mrg, ancestry);
   char *ret = _mrg_css_compute_style (mrg, ancestry, ancestors);
   return ret;
@@ -2849,12 +2838,12 @@ char *_mrg_stylesheet_collate_style (Mrg *mrg)
 
 void  mrg_set_line_height (Mrg *mrg, float line_height)
 {
-  mrg_style (mrg)->line_height = line_height;
+  ctx_style (mrg)->line_height = line_height;
 }
 
 float mrg_line_height (Mrg *mrg)
 {
-  return mrg_style (mrg)->line_height;
+  return ctx_style (mrg)->line_height;
 }
 
 void  mrg_set_rem         (Mrg *mrg, float em)
@@ -2913,7 +2902,7 @@ void mrg_start_with_style (Mrg        *mrg,
     ctx_save (mrg_cr (mrg));
 
   {
-    char *collated_style = _mrg_stylesheet_collate_style (mrg);
+    char *collated_style = _ctx_stylesheet_collate_style (mrg);
     if (collated_style)
     {
       mrg_set_style (mrg, collated_style);
@@ -2968,8 +2957,8 @@ void mrg_end (Mrg *mrg)
 
 void mrg_end       (Mrg *mrg);
 
-void mrg_stylesheet_clear (Mrg *mrg);
-void mrg_stylesheet_add (Mrg *mrg, const char *css, const char *uri,
+void ctx_stylesheet_clear (Mrg *mrg);
+void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri,
                          int priority,
                          char **error);
 
@@ -3194,7 +3183,7 @@ static inline void mrg_css_handle_property_pass0 (Mrg *mrg, uint64_t key,
 static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
                                            const char *value)
 {
-  MrgStyle *s = mrg_style (mrg);
+  CtxStyle *s = ctx_style (mrg);
   uint64_t val_hash = ctx_strhash (value);
 
   switch (key)
@@ -3752,10 +3741,10 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
       switch (val_hash)
       { 
         default:
-        case  CTX_evenodd: s->fill_rule = MRG_FILL_RULE_EVEN_ODD; break;
-        case  CTX_nonzero: s->fill_rule = MRG_FILL_RULE_NONZERO; break;
+        case  CTX_evenodd: s->fill_rule = CTX_FILL_RULE_EVEN_ODD; break;
+        case  CTX_nonzero: s->fill_rule = CTX_FILL_RULE_WINDING; break;
       }
-      if (s->fill_rule == MRG_FILL_RULE_EVEN_ODD)
+      if (s->fill_rule == CTX_FILL_RULE_EVEN_ODD)
         ctx_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_EVEN_ODD);
       else
         ctx_fill_rule (mrg_cr (mrg), CTX_FILL_RULE_WINDING);
@@ -3853,9 +3842,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
     case CTX_direction:
       switch (val_hash)
       {
-        case CTX_rtl: s->direction = MRG_DIRECTION_RTL; break;
-        case CTX_ltr: s->direction = MRG_DIRECTION_LTR; break;
-        default:      s->direction = MRG_DIRECTION_LTR;
+        case CTX_rtl: s->direction = CTX_TEXT_DIRECTION_RTL; break;
+        case CTX_ltr: s->direction = CTX_TEXT_DIRECTION_LTR; break;
+        default:      s->direction = CTX_TEXT_DIRECTION_LTR;
       }
       break;
     case CTX_unicode_bidi:
@@ -3897,7 +3886,7 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
 static void mrg_css_handle_property_pass1med (Mrg *mrg, uint64_t key,
                                               const char *value)
 {
-  MrgStyle *s = mrg_style (mrg);
+  CtxStyle *s = ctx_style (mrg);
 
   if (key == CTX_width)
   {
@@ -4033,7 +4022,7 @@ static void mrg_css_handle_property_pass2 (Mrg *mrg, uint64_t key,
   /* this pass contains things that might depend on values
    * generated by the previous pass.
    */
-  MrgStyle *s = mrg_style (mrg);
+  CtxStyle *s = ctx_style (mrg);
 
   if (key == CTX_right)
   {
@@ -4086,13 +4075,13 @@ static float deco_width (Mrg *mrg)
 
 void mrg_set_style (Mrg *mrg, const char *style)
 {
-  MrgStyle *s;
+  CtxStyle *s;
 
   css_parse_properties (mrg, style, mrg_css_handle_property_pass0);
   css_parse_properties (mrg, style, mrg_css_handle_property_pass1);
   css_parse_properties (mrg, style, mrg_css_handle_property_pass1med);
 
-  s = mrg_style (mrg);
+  s = ctx_style (mrg);
 
   if (s->position == MRG_POSITION_STATIC &&
       !s->float_)
@@ -4452,7 +4441,7 @@ static void mrg_box (Mrg *mrg, int x, int y, int width, int height)
   _mrg_border_bottom (mrg, x, y, width, height);
 }
 
-static void mrg_box_fill (Mrg *mrg, MrgStyle *style, float x, float y, float width, float height)
+static void mrg_box_fill (Mrg *mrg, CtxStyle *style, float x, float y, float width, float height)
 {
   Ctx *ctx = mrg_cr (mrg);
   CtxColor *background_color = ctx_color_new ();
@@ -4496,7 +4485,7 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
 {
   MrgHtml *html = &mrg->html;
   Ctx *ctx = mrg_cr (mrg);
-  MrgStyle *style = &state->style;
+  CtxStyle *style = &state->style;
   float gap = ctx_get_font_size (ctx) * mrg->state->style.line_height;
 
   int width = PROP(width);
@@ -4604,7 +4593,7 @@ void _mrg_get_ascent_descent (Mrg *mrg, float *ascent, float *descent)
 
   if (mrg->in_paint)
   {
-    cairo_set_font_size (mrg_cr(mrg), mrg_style(mrg)->font_size);
+    cairo_set_font_size (mrg_cr(mrg), ctx_style(mrg)->font_size);
     scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
   }
   cairo_scaled_font_extents (scaled_font, &extents);
@@ -4612,7 +4601,7 @@ void _mrg_get_ascent_descent (Mrg *mrg, float *ascent, float *descent)
   if (ascent)  *ascent  = extents.ascent;
   if (descent) *descent = extents.descent;
 #else
-  if (ascent)  *ascent  = mrg_style(mrg)->font_size;
+  if (ascent)  *ascent  = ctx_style(mrg)->font_size;
   if (descent) *descent = 0.0;
 #endif
 }
@@ -4620,7 +4609,7 @@ void _mrg_get_ascent_descent (Mrg *mrg, float *ascent, float *descent)
 
 static float _mrg_text_shift (Mrg *mrg)
 {
-  //MrgStyle *style = mrg_style (mrg);
+  //CtxStyle *style = ctx_style (mrg);
   float ascent, descent;
   _mrg_get_ascent_descent (mrg, &ascent, &descent);
   return (descent * 0.9); // XXX
@@ -4849,7 +4838,7 @@ void ctx_listen (Ctx     *ctx,
 
 
 /* x and y in cairo user units ; returns x advance in user units  */
-float mrg_draw_string (Mrg *mrg, MrgStyle *style, 
+float mrg_draw_string (Mrg *mrg, CtxStyle *style, 
                       float x, float y,
                       const char *string,
                       int utf8_len)
@@ -5017,7 +5006,7 @@ float mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_lengt
 float paint_span_bg_final (Mrg   *mrg, float x, float y,
                            float  width)
 {
-  MrgStyle *style = mrg_style (mrg);
+  CtxStyle *style = ctx_style (mrg);
   Ctx *cr = mrg_cr (mrg);
   if (style->display != MRG_DISPLAY_INLINE)
     return 0.0;
@@ -5048,7 +5037,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
 float paint_span_bg (Mrg   *mrg, float x, float y,
                      float  width)
 {
-  MrgStyle *style = mrg_style (mrg);
+  CtxStyle *style = ctx_style (mrg);
   Ctx *cr = mrg_cr (mrg);
   if (!cr)
     return 0.0;
@@ -5415,7 +5404,7 @@ static int mrg_print_wrap (Mrg        *mrg,
       if (mrg->scaled_font)
         cairo_scaled_font_destroy (mrg->scaled_font);
 #endif
-      ctx_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
+      ctx_font_size (mrg_cr (mrg), ctx_style(mrg)->font_size);
       //mrg->scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
       //cairo_scaled_font_reference (mrg->scaled_font);
     }
@@ -5609,7 +5598,7 @@ static int mrg_print_wrap2 (Mrg        *mrg,
       if (mrg->scaled_font)
         cairo_scaled_font_destroy (mrg->scaled_font);
 #endif
-      ctx_font_size (mrg_cr (mrg), mrg_style(mrg)->font_size);
+      ctx_font_size (mrg_cr (mrg), ctx_style(mrg)->font_size);
 #if 0
       mrg->scaled_font = cairo_get_scaled_font (mrg_cr (mrg));
       cairo_scaled_font_reference (mrg->scaled_font);
@@ -5752,7 +5741,7 @@ CtxList *mrg_print_get_coords (Mrg *mrg, const char *string)
 int mrg_print (Mrg *mrg, const char *string)
 {
   float ret;
-  MrgStyle *style = mrg_style (mrg);
+  CtxStyle *style = ctx_style (mrg);
 
 #ifdef SNAP
   float em = mrg_em (mrg);  /* XXX: a global body-line spacing 
@@ -6239,14 +6228,14 @@ void  mrg_edit_end (Mrg *mrg)
 
 void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 {
-  MrgStyle *style;
+  CtxStyle *style;
   float dynamic_edge_left, dynamic_edge_right;
 
   html->state_no++;
   html->state = &html->states[html->state_no];
   *html->state = html->states[html->state_no-1];
 
-  style = mrg_style (mrg);
+  style = ctx_style (mrg);
 
   html->state->original_x = mrg_x (mrg);
   html->state->original_y = mrg_y (mrg);
@@ -6488,7 +6477,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 static void mrg_css_add_class (Mrg *mrg, const char *class_name)
 {
   int i;
-  MrgStyleNode *node = &mrg->state->style_node;
+  CtxStyleNode *node = &mrg->state->style_node;
   for (i = 0; node->classes[i]; i++);
   node->classes[i] = mrg_intern_string (class_name);
 }
@@ -6496,7 +6485,7 @@ static void mrg_css_add_class (Mrg *mrg, const char *class_name)
 static void mrg_css_add_pseudo_class (Mrg *mrg, const char *pseudo_class)
 {
   int i;
-  MrgStyleNode *node = &mrg->state->style_node;
+  CtxStyleNode *node = &mrg->state->style_node;
   for (i = 0; node->pseudo[i]; i++);
   node->pseudo[i] = mrg_intern_string (pseudo_class);
 }
@@ -6525,7 +6514,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
 {
   Ctx *ctx = mrg->ctx;
   float vmarg = 0;
-  MrgStyle *style = mrg_style (mrg);
+  CtxStyle *style = ctx_style (mrg);
   float height = PROP(height);
   float width = PROP(width);
   
@@ -7597,7 +7586,7 @@ void mrg_xml_render (Mrg *mrg,
       case t_word:
         if (in_style)
         {
-          mrg_stylesheet_add (mrg, data, uri_base, MRG_STYLE_XML, NULL);
+          ctx_stylesheet_add (mrg, data, uri_base, MRG_STYLE_XML, NULL);
         }
         else
         {
@@ -7609,11 +7598,11 @@ void mrg_xml_render (Mrg *mrg,
       case t_whitespace:
         if (in_style)
         {
-          mrg_stylesheet_add (mrg, data, uri_base, MRG_STYLE_XML, NULL);
+          ctx_stylesheet_add (mrg, data, uri_base, MRG_STYLE_XML, NULL);
         }
         else
         {
-          switch (mrg_style (mrg)->white_space)
+          switch (ctx_style (mrg)->white_space)
           {
             case MRG_WHITE_SPACE_PRE: /* handles as pre-wrap for now */
             case MRG_WHITE_SPACE_PRE_WRAP:
@@ -7762,7 +7751,7 @@ void mrg_xml_render (Mrg *mrg,
             }
           }
 
-          //if (mrg_style(mrg)->id_ptr)
+          //if (ctx_style(mrg)->id_ptr)
           { // XXX : perhaps do this a tiny bit differently?
             MrgGeoCache *geo = _mrg_get_cache (htmlctx, (void*)(size_t)(tagpos));
             if (geo && geo->hover)
@@ -7864,7 +7853,7 @@ void mrg_xml_render (Mrg *mrg,
             mrg_get_contents (mrg, uri_base, ctx_get_string (mrg->ctx, CTX_href), &contents, &length);
             if (contents)
             {
-              mrg_stylesheet_add (mrg, contents, uri_base, MRG_STYLE_XML, NULL);
+              ctx_stylesheet_add (mrg, contents, uri_base, MRG_STYLE_XML, NULL);
               free (contents);
             }
           }
@@ -8336,7 +8325,7 @@ void _mrg_init (Mrg *mrg, int width, int height)
   }
 }
 
-void mrg_style_defaults (Mrg *mrg)
+void ctx_style_defaults (Mrg *mrg)
 {
   Ctx *ctx = mrg->ctx;
   float em = 16;
@@ -8362,16 +8351,16 @@ void mrg_style_defaults (Mrg *mrg)
     ctx_color_free (color);
   }
 
-  mrg_stylesheet_clear (mrg);
+  ctx_stylesheet_clear (mrg);
   _mrg_init_style (mrg);
 
   if (mrg->style_global->length)
   {
-    mrg_stylesheet_add (mrg, mrg->style_global->str, NULL, MRG_STYLE_GLOBAL, NULL);
+    ctx_stylesheet_add (mrg, mrg->style_global->str, NULL, MRG_STYLE_GLOBAL, NULL);
   }
 
   if (mrg->style->length)
-    mrg_stylesheet_add (mrg, mrg->style->str, NULL, MRG_STYLE_GLOBAL, NULL);
+    ctx_stylesheet_add (mrg, mrg->style->str, NULL, MRG_STYLE_GLOBAL, NULL);
 }
 
 
@@ -8385,16 +8374,16 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   mrg->do_clip = 1;
   _mrg_init (mrg, width, height);
   mrg_set_size (mrg, width, height);
-  mrg_style_defaults (mrg);
+  ctx_style_defaults (mrg);
 
 #if 0
   printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
   printf ("sizeof(Mrg) %li (was: 1142496)\n", sizeof(Mrg));
   printf ("sizeof(MrgState) %li\n", sizeof(MrgState));
-  printf ("sizeof(MrgStyle) %li\n", sizeof(MrgStyle));
+  printf ("sizeof(CtxStyle) %li\n", sizeof(CtxStyle));
   printf ("sizeof(MrgHtmlState) %li\n", sizeof(MrgHtmlState));
   printf ("sizeof(MrgHtml) %li\n", sizeof(MrgHtml));
-  printf ("sizeof(MrgCssParseState) %li\n", sizeof(MrgCssParseState));
+  printf ("sizeof(CtxCssParseState) %li\n", sizeof(CtxCssParseState));
 #endif
 
   return mrg;
