@@ -54,7 +54,7 @@ static int metadata_count (void)
   return count;
 }
 
-static char *metadata_item_name (int no)
+static char *metadata_item_name_escaped (int no)
 {
   const char *m = metadata;
   if (!m) return NULL;
@@ -78,9 +78,65 @@ static char *metadata_item_name (int no)
   return NULL;
 }
 
+
+
+static char *metadata_item_name (int no)
+{
+  const char *m = metadata;
+  if (!m) return NULL;
+  int count = 0;
+  do {
+     if (m && m[0] != ' '){
+        if (count == no)
+        {
+          CtxString *str = ctx_string_new ("");
+          for (int i = 0; m[i] && (m[i]!='\n'); i++)
+          {
+            switch (m[i])
+            {
+              case '\\':
+                if (m[i+1])
+                {
+                  switch (m[i+1])
+                  {
+                    case 'n':
+                      ctx_string_append_byte (str, '\n');
+                      break;
+                    case ' ':
+                      ctx_string_append_byte (str, ' ');
+                      break;
+                    case '.':
+                      ctx_string_append_byte (str, '.');
+                      break;
+                    //case '-': // soft-hyphen
+                    //  ctx_string_append_byte (str, '.');
+                    //  break;
+                    default:
+                      ctx_string_append_byte (str, m[i+1]);
+                  }
+                  i++;
+                }
+                else
+                {
+                  ctx_string_append_byte (str, m[i]);
+                }
+                break;
+              default:
+                ctx_string_append_byte (str, m[i]);
+            }
+          }
+          return ctx_string_dissolve (str);
+        }
+        count ++;
+     }
+     while (m && *m && *m != '\n') m++;
+     if (*m == '\n') m++;
+  } while (m && m[0]);
+  return NULL;
+}
+
 static char *metadata_find_no (int no)
 {
-  //if (metadata_cache_no == no) return metadata_cache;
   char *m = metadata;
   int count = 0;
   while (m && *m)
@@ -117,35 +173,75 @@ static int _metadata_metalen (const char *m)
   return len;
 }
 
+char *metadata_escape_item (const char *item)
+{
+  CtxString *str = ctx_string_new ("");
+  for (int i = 0; item[i]; i++)
+  {
+    switch (item[i])
+    {
+      //case '.': // TODO: remove hack depending on it not being done
+      case ' ':
+        if (i != 0)
+        {
+          ctx_string_append_byte (str, item[i]);
+        }
+        else
+        {
+          ctx_string_append_byte (str, '\\');
+          ctx_string_append_byte (str, item[i]);
+        }
+        break;
+      case '\n':
+        ctx_string_append_byte (str, '\\');
+        ctx_string_append_byte (str, 'n');
+        break;
+      default:
+        ctx_string_append_byte (str, item[i]);
+    }
+  }
+  return ctx_string_dissolve (str);
+}
+
 static const char *metadata_find_item (const char *item)
 {
-  int item_len = strlen (item);
+  char *escaped_item = metadata_escape_item (item);
+  int item_len = strlen (escaped_item);
   const char *m = metadata;
 
   while (m && *m)
   {
-    if (m && !strncmp (m, item, item_len) && m[item_len]=='\n')
+    if (m && !strncmp (m, escaped_item, item_len) && m[item_len]=='\n')
+    {
+      free (escaped_item);
       return m + item_len + 1;
+    }
     while (m && *m && *m != '\n') m++;
     if (m && *m == '\n') m++;
   }
+  free (escaped_item);
   return NULL;
 }
 
 int metadata_item_to_no (const char *item)
 {
-  int item_len = strlen (item);
+  char *escaped_item = metadata_escape_item (item);
+  int item_len = strlen (escaped_item);
   const char *m = metadata;
   int no = 0;
 
   while (m && *m)
   {
-    if (m && !strncmp (m, item, item_len) && m[item_len]=='\n')
+    if (m && !strncmp (m, escaped_item, item_len) && m[item_len]=='\n')
+    {
+      free (escaped_item);
       return no;
+    }
     while (m && *m && *m != '\n') m++;
     if (m && *m == '\n') m++;
     if (m[0] != ' ') no ++;
   }
+  free (escaped_item);
   return -1;
 }
 
@@ -305,8 +401,8 @@ static void metadata_swap (int no_a, int no_b)
      no_a = no_b; no_b = tmp;
    }
 
-   char *a_name = metadata_item_name (no_a);
-   char *b_name = metadata_item_name (no_b);
+   char *a_name = metadata_item_name_escaped (no_a);
+   char *b_name = metadata_item_name_escaped (no_b);
    int a_name_len = strlen (a_name);
    int b_name_len = strlen (b_name);
    const char *a_meta = metadata_find_no (no_a);
@@ -344,7 +440,7 @@ static void metadata_swap (int no_a, int no_b)
 
 void metadata_remove (int no)
 {
-   char *a_name = metadata_item_name (no);
+   char *a_name = metadata_item_name_escaped (no);
    int a_name_len = strlen (a_name);
    const char *a_meta = metadata_find_no (no);
 
@@ -473,7 +569,7 @@ void metadata_insert (int pos, const char *item)
   const char *m = metadata_find_no (pos);
   if (m)
   {
-    char *name = metadata_item_name (pos);
+    char *name = metadata_item_name_escaped (pos);
     m -= strlen (name) + 1;
     free (name);
   }
@@ -481,8 +577,10 @@ void metadata_insert (int pos, const char *item)
   {
     m = metadata + metadata_len;
   }
-  char tmp[strlen (item) + 3];
-  snprintf (tmp, sizeof(tmp), "%s\n", item);
+  char *escaped_item = metadata_escape_item (item);
+  char tmp[strlen (escaped_item) + 3];
+  snprintf (tmp, sizeof(tmp), "%s\n", escaped_item);
+  free (escaped_item);
 
   _metadata_insert (m-metadata, tmp, strlen (tmp));
 }
@@ -492,7 +590,7 @@ void metadata_rename (int pos, const char *new_name)
   char *m = metadata_find_no (pos);
   if (m)
   {
-    char *name = metadata_item_name (pos);
+    char *name = metadata_item_name_escaped (pos);
     int name_len = strlen (name);
     free (name);
 
@@ -504,8 +602,12 @@ void metadata_rename (int pos, const char *new_name)
   {
     return;
   }
-  char tmp[strlen (new_name) + 3];
-  snprintf (tmp, sizeof(tmp), "%s\n", new_name);
+
+  char *new_escaped = metadata_escape_item (new_name);
+
+  char tmp[strlen (new_escaped) + 3];
+  snprintf (tmp, sizeof(tmp), "%s\n", new_escaped);
+  free (new_escaped);
 
   _metadata_insert (m-metadata, tmp, strlen (tmp));
 }
@@ -528,8 +630,10 @@ void metadata_add (const char *item, const char *key, const char *value)
   }
   else
   {
-    ctx_string_append_str (str, item);
+    char *escaped_item = metadata_escape_item (item);
+    ctx_string_append_str (str, escaped_item);
     ctx_string_append_byte (str, '\n');
+    free (escaped_item);
   }
   ctx_string_append_str (str, key);
   ctx_string_append_byte (str, '=');
