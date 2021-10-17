@@ -1262,20 +1262,9 @@ static void dir_layout (ITK *itk, Files *files)
         free (ystr);
         gotpos = 1;
       }
-      float saved_x = itk->x;
-      float saved_y = itk->y;
 
       if (layout_config.fixed_pos)
         gotpos = 0;
-      if (gotpos)
-      {
-        x *= saved_width;
-        y *= saved_width;
-        itk->x = x;
-        itk->y = y;
-      }
-      float sx = itk->x,sy = itk->y;
-      ctx_user_to_device (itk->ctx, &sx, &sy);
 
       {
         width  = metadata_key_float2 (i, "width");
@@ -1287,6 +1276,33 @@ static void dir_layout (ITK *itk, Files *files)
           width *= saved_width;
         }
       }
+
+
+      if (layout_config.stack_horizontal && layout_config.stack_vertical)
+      {
+      if (itk->x + width  > itk->x0 + itk->width) //panel->x + itk->panel->width)
+      {
+          itk->x = itk->x0;
+          if (layout_config.stack_vertical)
+          {
+            itk->y += row_max_height;
+            row_max_height = 0;
+          }
+      }
+      }
+      float saved_x = itk->x;
+      float saved_y = itk->y;
+      if (gotpos)
+      {
+        x *= saved_width;
+        y *= saved_width;
+        itk->x = x;
+        itk->y = y;
+      }
+
+      float sx = itk->x,sy = itk->y;
+      ctx_user_to_device (itk->ctx, &sx, &sy);
+
       {
         height = metadata_key_float2 (i, "height");
         if (height < 0 || layout_config.fixed_size)  height =
@@ -1556,8 +1572,7 @@ static void dir_layout (ITK *itk, Files *files)
       {
         itk->x = saved_x + width;
         if ((virtual) || 
-            !layout_config.stack_horizontal ||
-            itk->x + em * 5 > itk->x0 + itk->width) //panel->x + itk->panel->width)
+            !layout_config.stack_horizontal)
         {
           itk->x = itk->x0;
           if (layout_config.stack_vertical)
