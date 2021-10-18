@@ -14,11 +14,11 @@ static long  metadata_size = 0;
 static char *metadata_path = NULL;
 
 static char *metadata_cache = NULL;
-static int metadata_cache_no = -1;
+static int metadata_cache_no = -3;
 
 static void metadata_load (const char *path)
 {
-  metadata_cache_no = -1;
+  metadata_cache_no = -3;
   if (metadata_path) free (metadata_path);
   metadata_path = malloc (strlen (path) + 10);
   if (metadata)
@@ -450,6 +450,7 @@ void metadata_remove (int no)
    memmove (metadata + a_start, metadata + a_start + a_len, metadata_len - a_start - a_len);
    metadata_len -= a_len;
    metadata[metadata_len]=0;
+   metadata_cache_no = -3;
 }
 
 void metadata_unset (const char *item, const char *key)
@@ -561,6 +562,7 @@ static void _metadata_insert (int pos, const char *data, int len)
   memmove (metadata + pos + len, metadata + pos, metadata_len - pos);
   memcpy (metadata + pos, data, len);
   metadata_len += len;
+  metadata_cache_no = -3;
 }
 
 void metadata_insert (int pos, const char *item)

@@ -410,7 +410,7 @@ static int metadata_dirty = 0;
 static void metadata_dirt(void)
 {
   metadata_dirty++;
-  metadata_cache_no=-1;
+  metadata_cache_no=-3;
 }
 
 static void item_delete (CtxEvent *e, void *d1, void *d2)
@@ -1185,7 +1185,7 @@ static void dir_layout (ITK *itk, Files *files)
   float cbox_height = metadata_key_float (".contentBox0", "height");
 
 
-  metadata_cache_no = -1;
+  metadata_cache_no = -3;
   prev_line_pos = -1;
   next_line_pos = -1;
 

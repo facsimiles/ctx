@@ -3,7 +3,6 @@
 #if CTX_RASTERIZER
 
 
-
 static int
 ctx_rect_intersect (const CtxIntRectangle *a, const CtxIntRectangle *b)
 {
@@ -39,7 +38,8 @@ _ctx_add_hash (CtxHasher *hasher, CtxIntRectangle *shape_rect, char *hash)
     }
 }
 
-static int ctx_str_count_lines (const char *str)
+static int
+ctx_str_count_lines (const char *str)
 {
   int count = 0;
   for (const char *p = str; *p; p++)
@@ -442,6 +442,7 @@ Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
   ctx_set_renderer (ctx, (void*)rasterizer);
   return ctx;
 }
+
 uint8_t *ctx_hasher_get_hash (Ctx *ctx, int col, int row)
 {
   CtxHasher *hasher = (CtxHasher*)ctx->renderer;
