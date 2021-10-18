@@ -109,11 +109,11 @@ void ctx_list_backends(void)
 #if CTX_SDL
     fprintf (stderr, " SDL");
 #endif
-#if CTX_FB
-    fprintf (stderr, " fb");
-#endif
 #if CTX_KMS
     fprintf (stderr, " kms");
+#endif
+#if CTX_FB
+    fprintf (stderr, " fb");
 #endif
     fprintf (stderr, " term");
     fprintf (stderr, " termimg");
