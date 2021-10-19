@@ -1237,9 +1237,16 @@ static void dir_layout (ITK *itk, Files *files)
   float saved_width = itk->width;
   float saved_y = itk->y;
 
-  itk->x0 = itk->x = layout_box[0].x * saved_width;
-  itk->y           = layout_box[0].y * saved_width;
-  itk->width       = layout_box[0].width * saved_width ;
+  float y0, y1;
+  layout_box_no = 0;
+
+  itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
+  itk->y           = layout_box[layout_box_no].y * saved_width;
+  itk->width       = layout_box[layout_box_no].width * saved_width ;
+  y0 = layout_box[layout_box_no].y * saved_width;
+  y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
+
+  if (y1 < 100) y1 = itk->height;
 
   for (int i = 0; i < files->count; i++)
   {
@@ -1317,6 +1324,15 @@ static void dir_layout (ITK *itk, Files *files)
         }
       }
 
+      {
+        height = metadata_key_float2 (i, "height");
+        if (height < 0 || layout_config.fixed_size)  height =
+          layout_config.fill_height? itk->height * 1.0:
+          layout_config.height * em;
+        else
+          height *= saved_width;
+      }
+
 
       if (layout_config.stack_horizontal && layout_config.stack_vertical)
       {
@@ -1327,6 +1343,20 @@ static void dir_layout (ITK *itk, Files *files)
           {
             itk->y += row_max_height;
             row_max_height = 0;
+          }
+             fprintf (stderr, "{%f\n", y1);
+          if (itk->y > y1 && 0)
+          {
+            if (layout_box_count > layout_box_no+1)
+            {
+              layout_box_no++;
+
+             itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
+             itk->y           = layout_box[layout_box_no].y * saved_width;
+             itk->width       = layout_box[layout_box_no].width * saved_width ;
+             y0 = layout_box[layout_box_no].y * saved_width;
+             y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
+            }
           }
       }
       }
@@ -1344,9 +1374,12 @@ static void dir_layout (ITK *itk, Files *files)
 
            if (layout_box_count == 1)
            {
-             itk->x0 = itk->x = layout_box[0].x * saved_width;
-             itk->y           = layout_box[0].y * saved_width;
-             itk->width       = layout_box[0].width * saved_width ;
+             layout_box_no = 0;
+             itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
+             itk->y           = layout_box[layout_box_no].y * saved_width;
+             itk->width       = layout_box[layout_box_no].width * saved_width ;
+             y0 = layout_box[layout_box_no].y * saved_width;
+             y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
            }
          }
       }
@@ -1364,14 +1397,6 @@ static void dir_layout (ITK *itk, Files *files)
       float sx = itk->x,sy = itk->y;
       ctx_user_to_device (itk->ctx, &sx, &sy);
 
-      {
-        height = metadata_key_float2 (i, "height");
-        if (height < 0 || layout_config.fixed_size)  height =
-          layout_config.fill_height? itk->height * 1.0:
-          layout_config.height * em;
-        else
-          height *= saved_width;
-      }
       int virtual = metadata_key_int2 (i, "virtual");
       if (virtual < 0) virtual = 0;
 
@@ -1642,6 +1667,21 @@ static void dir_layout (ITK *itk, Files *files)
             itk->y += row_max_height;
             row_max_height = 0;
           }
+          if (itk->y > y1 )
+          {
+            fprintf (stderr, "%f %f\n", itk->y, y1);
+            if (layout_box_count > layout_box_no+1)
+            {
+              layout_box_no++;
+
+             itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
+             itk->y           = layout_box[layout_box_no].y * saved_width;
+             itk->width       = layout_box[layout_box_no].width * saved_width ;
+             y0 = layout_box[layout_box_no].y * saved_width;
+             y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
+            }
+          }
+
         }
       }
     }
