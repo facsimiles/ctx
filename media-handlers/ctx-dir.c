@@ -461,7 +461,6 @@ static void grow_height (CtxEvent *e, void *d1, void *d2)
   height += 0.01;
   if (height > 1.2) height = 1.2;
   metadata_set_float2 (no, "height", height);
-  fprintf (stderr, "%f\n", height);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1155,22 +1154,35 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
   // -- - //
 }
 
-int item_props = 0;
+int item_context_active = 0;
 
 
 void item_properties (CtxEvent *event, void *a, void *b)
 {
-  if (item_props)
+  if (item_context_active)
   {
-    item_props = 0;
+    item_context_active = 0;
   }
   else
   {
-    item_props = 1;
+    item_context_active = 1;
   }
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate = 1;
 }
+#define CTX_MAX_LAYOUT_BOXES    16
+
+typedef struct CtxRectangle
+{
+  float x;
+  float y;
+  float width;
+  float height;
+} CtxRectangle;
+
+static CtxRectangle layout_box[CTX_MAX_LAYOUT_BOXES];
+int layout_box_count = 0;
+int layout_box_no = 0;
 
 static CtxControl *focused_control = NULL;
 static void dir_layout (ITK *itk, Files *files)
@@ -1179,16 +1191,25 @@ static void dir_layout (ITK *itk, Files *files)
   float em = itk_em (itk);
   float prev_height = layout_config.height;
   float row_max_height = 0;
+
+  layout_box_count = 0;
+  layout_box_no = 0;
+  layout_box[0].x = 0.05;
+  layout_box[0].y = 0.02;
+  layout_box[0].width = 0.9;
+  layout_box[0].height = 20.0;
+#if 0
   float cbox_x = metadata_key_float (".contentBox0", "x");
   float cbox_y = metadata_key_float (".contentBox0", "y");
   float cbox_width = metadata_key_float (".contentBox0", "width");
   float cbox_height = metadata_key_float (".contentBox0", "height");
-
+#endif
 
   metadata_cache_no = -3;
   prev_line_pos = -1;
   next_line_pos = -1;
 
+#if 0
   if (cbox_x < 0)
   {
     cbox_x = 0.0f;
@@ -1196,7 +1217,9 @@ static void dir_layout (ITK *itk, Files *files)
     cbox_width = 1.0f;
     cbox_height= 1000.0f;
   }
+#endif
 
+#if 0
   ctx_save (itk->ctx);
   ctx_begin_path (itk->ctx);
   ctx_rectangle (itk->ctx, cbox_x * itk->width, cbox_y * itk->width,
@@ -1204,6 +1227,7 @@ static void dir_layout (ITK *itk, Files *files)
   ctx_rgba (itk->ctx, 0.4, 0.0, 0.0,0.3);
   ctx_fill (itk->ctx);
   ctx_restore (itk->ctx);
+#endif
 
   focused_no = -1;
 
@@ -1212,9 +1236,10 @@ static void dir_layout (ITK *itk, Files *files)
   float saved_x0 = itk->x0;
   float saved_width = itk->width;
   float saved_y = itk->y;
-  itk->x0 = itk->x = cbox_x * itk->width;
-  itk->y = cbox_y * itk->width;
-  itk->width = itk->width * cbox_width;
+
+  itk->x0 = itk->x = layout_box[0].x * saved_width;
+  itk->y           = layout_box[0].y * saved_width;
+  itk->width       = layout_box[0].width * saved_width ;
 
   for (int i = 0; i < files->count; i++)
   {
@@ -1223,8 +1248,6 @@ static void dir_layout (ITK *itk, Files *files)
         (files->items[i][0] != '.')
        )
     {
-      //if (!strcmp (files->items[i], "contentBox"))
-      //  continue;
         if (itk->control_no == itk->focus_no)
         {
           focused_no = i;
@@ -1234,10 +1257,23 @@ static void dir_layout (ITK *itk, Files *files)
       const char *d_name = files->items[i];
       float width = 0;
       float height = 0;
+      
+      int is_contentbox = 0;
+      {
+      const char *tmp = metadata_key_string2 (i, "type");
+      if (tmp)
+      {
+         if (!strcmp (tmp, "ctx/contentbox"));
+           is_contentbox = 1;
+         free (tmp);
+      }
+      }
+
       int label = metadata_key_int2 (i, "label");
       int level = metadata_key_int2 (i, "level");
       if (level == -1234) level = 0;
       if (label == -1234) label = layout_config.label;
+
 
       int gotpos = 0;
       char *xstr = metadata_key_string2 (i, "x");
@@ -1294,6 +1330,27 @@ static void dir_layout (ITK *itk, Files *files)
           }
       }
       }
+
+
+      if (is_contentbox)
+      {
+         if (layout_box_count < CTX_MAX_LAYOUT_BOXES)
+         {
+           layout_box[layout_box_count].x = x;
+           layout_box[layout_box_count].y = y;
+           layout_box[layout_box_count].width = width / saved_width;
+           layout_box[layout_box_count].height = height / saved_width;
+           layout_box_count++;
+
+           if (layout_box_count == 1)
+           {
+             itk->x0 = itk->x = layout_box[0].x * saved_width;
+             itk->y           = layout_box[0].y * saved_width;
+             itk->width       = layout_box[0].width * saved_width ;
+           }
+         }
+      }
+
       float saved_x = itk->x;
       float saved_y = itk->y;
       if (gotpos)
@@ -1327,6 +1384,11 @@ static void dir_layout (ITK *itk, Files *files)
         {
           width = itk->width - (padding_left+padding_right)*em;
           ctx_font_size (itk->ctx, itk->font_size);
+           
+          if (layout_config.stack_vertical && itk->x != itk->x0)
+            itk->y += row_max_height;
+
+          itk->x = itk->x0;
           /* measure height, and snap cursor */
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
                        em * 0.25, width, em,
@@ -1335,11 +1397,7 @@ static void dir_layout (ITK *itk, Files *files)
                        0, NULL, &height,
                        NULL, NULL);
           height = height - itk->y + em * 0.5;
-           
-          if (layout_config.stack_vertical && itk->x != itk->x0)
-            itk->y += row_max_height;
           row_max_height = height;
-          itk->x = itk->x0;
         }
         //fprintf (stderr, "%f\n", height);
       }
@@ -1880,14 +1938,51 @@ static int card_files (ITK *itk_, void *data)
       }
 #endif
 
-  itk_panel_end (itk);
-
-  if (item_props && focused_control)
+  if (item_context_active && focused_control && focused_no>=0)
   {
-    ctx_rgb(itk->ctx, 0,1,0);
-    ctx_rectangle (itk->ctx, focused_control->x + focused_control->width, focused_control->y, 200, 200);
+    char *choices[]={
+    "make absolute positioned (ctrl-space)",
+    "move up (ctrl-up)",
+    "move down (ctrl-down)",
+    "indent (ctrl-right)",
+    "outdent (ctrl-left)",
+            NULL
+    };
 
-#if 1
+    float em = itk->font_size;
+    float width = em * 20;
+    float x = focused_control->x + focused_control->width;
+    float y = focused_control->y;
+    float height = em * 9;
+
+    if (width < focused_control->width) x-= width;
+    else
+    {
+       if (x + width > itk->width)
+       {
+         x = focused_control->x - width;
+       }
+    }
+
+    ctx_begin_path (itk->ctx);
+    ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.6);
+    ctx_rectangle (itk->ctx, x, y, width, height);
+
+    ctx_fill (itk->ctx);
+
+    for (int i =0; choices[i]; i++)
+    {
+      if (i + 1 == item_context_active)
+         ctx_rgb(itk->ctx, 1,1,1);
+      else
+         ctx_rgb(itk->ctx, 0.7,0.7,0.7);
+      y+=em;
+      ctx_move_to (itk->ctx, x+em, y);
+      ctx_text( itk->ctx, choices[i]);
+    }
+
+
+#if 0
   itk_panel_start (itk, "prop",
                   
        focused_control->x + focused_control->width, focused_control->y, 200, 200);
@@ -1914,6 +2009,8 @@ static int card_files (ITK *itk_, void *data)
 
     ctx_fill (itk->ctx);
   }
+
+  itk_panel_end (itk);
 
 
 #if 0
