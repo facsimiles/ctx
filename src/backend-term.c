@@ -165,6 +165,10 @@ void ctx_term_scanout (CtxTerm *term)
   printf ("\e[H");
 //  printf ("\e[?25l");
   printf ("\e[0m");
+
+  int cur_fg[3]={-1,-1,-1};
+  int cur_bg[3]={-1,-1,-1};
+
   for (CtxList *l = term->lines; l; l = l->next)
   {
     CtxTermLine *line = l->data;
@@ -176,8 +180,24 @@ void ctx_term_scanout (CtxTerm *term)
           memcmp(cell->fg, cell->prev_fg, 3) ||
           memcmp(cell->bg, cell->prev_bg, 3) || _ctx_term_force_full)
       {
-        ctx_term_set_fg (cell->fg[0], cell->fg[1], cell->fg[2]);
-        ctx_term_set_bg (cell->bg[0], cell->bg[1], cell->bg[2]);
+        if (cell->fg[0] != cur_fg[0] ||
+            cell->fg[1] != cur_fg[1] ||
+            cell->fg[2] != cur_fg[2])
+        {
+          ctx_term_set_fg (cell->fg[0], cell->fg[1], cell->fg[2]);
+          cur_fg[0]=cell->fg[0];
+          cur_fg[1]=cell->fg[1];
+          cur_fg[2]=cell->fg[2];
+        }
+        if (cell->bg[0] != cur_bg[0] ||
+            cell->bg[1] != cur_bg[1] ||
+            cell->bg[2] != cur_bg[2])
+        {
+          ctx_term_set_bg (cell->bg[0], cell->bg[1], cell->bg[2]);
+          cur_bg[0]=cell->bg[0];
+          cur_bg[1]=cell->bg[1];
+          cur_bg[2]=cell->bg[2];
+        }
         printf ("%s", cell->utf8);
       }
       else
