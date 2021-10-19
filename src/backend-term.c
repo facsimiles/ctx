@@ -202,8 +202,9 @@ void ctx_term_scanout (CtxTerm *term)
       }
       else
       {
-        // TODO: accumulate succesive such, and compress them
-        // into one
+        // TODO: accumulate succesive such to be ignored items,
+        // and compress them into one, making us compress largely
+        // reused screens well
         printf ("\e[C");
       }
       strcpy (cell->prev_utf8, cell->utf8);

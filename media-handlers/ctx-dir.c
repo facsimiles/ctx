@@ -1703,7 +1703,7 @@ void viewer_load_path (const char *path, const char *name)
     ctx_remove_idle (ctx, viewer_load_next_handler);
   viewer_load_next_handler = 0;
 
-  fprintf (stderr, "%f\n", duration);
+  //fprintf (stderr, "%f\n", duration);
   viewer_load_next_handler = ctx_add_timeout (ctx, 1000 * duration, viewer_load_next, NULL);
 
   if (path)
