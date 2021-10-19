@@ -1333,6 +1333,8 @@ static void dir_layout (ITK *itk, Files *files)
           height *= saved_width;
       }
 
+      int virtual = metadata_key_int2 (i, "virtual");
+      if (virtual < 0) virtual = 0;
 
       if (layout_config.stack_horizontal && layout_config.stack_vertical)
       {
@@ -1344,8 +1346,7 @@ static void dir_layout (ITK *itk, Files *files)
             itk->y += row_max_height;
             row_max_height = 0;
           }
-             fprintf (stderr, "{%f\n", y1);
-          if (itk->y > y1 && 0)
+          if (itk->y > y1)
           {
             if (layout_box_count > layout_box_no+1)
             {
@@ -1356,6 +1357,10 @@ static void dir_layout (ITK *itk, Files *files)
              itk->width       = layout_box[layout_box_no].width * saved_width ;
              y0 = layout_box[layout_box_no].y * saved_width;
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
+            }
+            else
+            {
+              goto done;
             }
           }
       }
@@ -1397,8 +1402,6 @@ static void dir_layout (ITK *itk, Files *files)
       float sx = itk->x,sy = itk->y;
       ctx_user_to_device (itk->ctx, &sx, &sy);
 
-      int virtual = metadata_key_int2 (i, "virtual");
-      if (virtual < 0) virtual = 0;
 
       if (virtual &&  !gotpos)
       {
@@ -1667,9 +1670,9 @@ static void dir_layout (ITK *itk, Files *files)
             itk->y += row_max_height;
             row_max_height = 0;
           }
+#if 1
           if (itk->y > y1 )
           {
-            fprintf (stderr, "%f %f\n", itk->y, y1);
             if (layout_box_count > layout_box_no+1)
             {
               layout_box_no++;
@@ -1680,12 +1683,15 @@ static void dir_layout (ITK *itk, Files *files)
              y0 = layout_box[layout_box_no].y * saved_width;
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
             }
+            else goto done;
           }
 
+#endif
         }
       }
     }
   }
+done:
 
   itk->x0    = saved_x0;
   itk->width = saved_width;
