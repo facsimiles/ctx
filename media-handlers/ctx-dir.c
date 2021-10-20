@@ -561,6 +561,28 @@ static void move_item_up (CtxEvent *e, void *d1, void *d2)
   }
 }
 
+void item_toggle_todo (CtxEvent *event, void *a, void *b)
+{
+  int todo = metadata_key_int2 (focused_no, "todo");
+  switch (todo)
+  {
+    default:
+      metadata_set_float2 (focused_no, "todo", 0);
+      break;
+    case 0:
+      metadata_set_float2 (focused_no, "todo", 1);
+      break;
+    case 1:
+      metadata_unset2 (focused_no, "todo");
+      break;
+  }
+  metadata_dirt ();
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+
 static void draw_folder (Ctx *ctx, float x, float y, float w, float h)
 {
   ctx_save (ctx);
@@ -1138,6 +1160,7 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+
 float dir_scale = 1.0f;
 
 void dir_zoom_in (CtxEvent *event, void *a, void *b)
@@ -1690,6 +1713,10 @@ static void dir_layout (ITK *itk, Files *files)
             ctx_add_key_binding (ctx, "control-x", NULL, NULL,
                           item_delete,
                           (void*)((size_t)i));
+
+            ctx_add_key_binding (ctx, "control-t", NULL, NULL,
+                          item_toggle_todo,
+                          (void*)((size_t)i));
           }
           ctx_add_key_binding (ctx, "control-page-down", NULL, NULL, move_item_down, 
                          (void*)((size_t)i));
@@ -1764,6 +1791,21 @@ static void dir_layout (ITK *itk, Files *files)
                        -1, -1,
                        1, NULL, NULL,
                        NULL, NULL);
+          }
+
+          int todo = metadata_key_int2 (i, "todo");
+          if (todo >= 0)
+          {
+             if (todo)
+             {
+               ctx_move_to (itk->ctx, itk->x - em * 0.5, itk->y + em);
+               ctx_text (itk->ctx, "X");
+             }
+             else
+             {
+               ctx_move_to (itk->ctx, itk->x - em * 0.5, itk->y + em);
+               ctx_text (itk->ctx, "O");
+             }
           }
           //if (c->no == itk->focus_no)
           //fprintf (stderr, "%f %i %i %i\n", text_edit_desired_x, text_edit, prev_line, next_line);
