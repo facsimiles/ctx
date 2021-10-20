@@ -361,7 +361,10 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   if (virtual)
   {
     text_edit = 0;
+    ctx_set_dirty (e->ctx, 1);
     //_itk_key_bindings_active = 0;
+    if (e)
+      e->stop_propagate = 1;
     return;
   }
 
@@ -1176,7 +1179,7 @@ void dir_prev_page (CtxEvent *event, void *a, void *b)
 void dir_next_page (CtxEvent *event, void *a, void *b)
 {
   layout_show_page ++;
-  if (layout_show_page > layout_last_page) layout_show_page = layout_last_page;
+  //if (layout_show_page > layout_last_page) layout_show_page = layout_last_page;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
