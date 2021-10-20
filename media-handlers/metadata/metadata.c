@@ -141,10 +141,11 @@ static char *metadata_find_no (int no)
   char *m = metadata;
   int count = 0;
 
-  if (metadata_cache_no + 1 < no && metadata_cache_no > 0)
+  if (metadata_cache_no < no && metadata_cache_no > 0)
   {
     m = metadata_cache;
     count = metadata_cache_no;
+    m-= 1;
   }
 
   while (m && *m)
