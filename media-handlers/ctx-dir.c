@@ -60,12 +60,15 @@ typedef struct LayoutConfig
   float padding_right;
   float padding_top;
   float padding_bottom;
+
+  int use_layout_boxes;
 } LayoutConfig;
 
 LayoutConfig layout_config = {
   1,1,0,0, 1,0,
   4, 4, 0, 0.5,
-  0, 0, 0
+  0, 0, 0,
+  1
 };
 
 int focused_no = -1;
@@ -179,11 +182,8 @@ typedef enum {
 }
 CtxDirView;
 
-static CtxDirView view_type = CTX_DIR_LAYOUT;
-
 static void set_layout (CtxEvent *e, void *d1, void *d2)
 {
-  view_type = CTX_DIR_LAYOUT;
   if (e)
   ctx_set_dirty (e->ctx, 1);
   layout_config.stack_horizontal = 1;
@@ -203,6 +203,7 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.padding_right = 0.5f;
   layout_config.padding_top = 0.5f;
   layout_config.padding_bottom = 0.5f;
+  layout_config.use_layout_boxes = 1;
 };
 
 
@@ -221,6 +222,7 @@ static void set_list (CtxEvent *e, void *d1, void *d2)
   layout_config.padding_right = 0.1f;
   layout_config.padding_top = 0.1f;
   layout_config.padding_bottom = 0.1f;
+  layout_config.use_layout_boxes = 0;
 }
 
 static void set_grid (CtxEvent *e, void *d1, void *d2)
@@ -231,6 +233,7 @@ static void set_grid (CtxEvent *e, void *d1, void *d2)
   layout_config.stack_horizontal = 1;
   layout_config.stack_vertical = 1;
   layout_config.label = 1;
+  layout_config.use_layout_boxes = 0;
 }
 
 void dm_set_path (Files *files, const char *path)
@@ -265,7 +268,6 @@ void dm_set_path (Files *files, const char *path)
 
 
   {
-    //view_type = CTX_VIEW_GRID;
     if (0)
     {
     //set_grid (NULL, NULL, NULL);
@@ -1134,6 +1136,22 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+float dir_scale = 1.0f;
+
+void dir_zoom_in (CtxEvent *event, void *a, void *b)
+{
+  dir_scale *= 1.1f;
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+void dir_zoom_out (CtxEvent *event, void *a, void *b)
+{
+  dir_scale /= 1.1f;
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
 void dir_font_up (CtxEvent *event, void *a, void *b)
 {
   itk->font_size *= 1.1f;
@@ -1159,6 +1177,7 @@ void dir_prev_page (CtxEvent *event, void *a, void *b)
 void dir_next_page (CtxEvent *event, void *a, void *b)
 {
   layout_show_page ++;
+  if (layout_show_page > layout_last_page) layout_show_page = layout_last_page;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -1230,7 +1249,7 @@ static void dir_layout (ITK *itk, Files *files)
   layout_box[0].x = 0.05;
   layout_box[0].y = 0.02;
   layout_box[0].width = 0.9;
-  layout_box[0].height = 20.0;
+  layout_box[0].height = 0.4;
 #if 0
   float cbox_x = metadata_key_float (".contentBox0", "x");
   float cbox_y = metadata_key_float (".contentBox0", "y");
@@ -1298,7 +1317,7 @@ static void dir_layout (ITK *itk, Files *files)
       float height = 0;
       
       int is_contentbox = 0;
-      {
+      if (layout_config.use_layout_boxes) {
       const char *tmp = metadata_key_string2 (i, "type");
       if (tmp)
       {
@@ -1378,7 +1397,7 @@ static void dir_layout (ITK *itk, Files *files)
             itk->y += row_max_height;
             row_max_height = 0;
           }
-          if (itk->y > y1)
+          if (itk->y + height > y1)
           {
             if (layout_box_count > layout_box_no+1)
             {
@@ -1980,10 +1999,10 @@ static int card_files (ITK *itk_, void *data)
   save_metadata();
 
   itk_panel_start (itk, "files", 0,0, ctx_width(ctx),
-                  
-    view_type == CTX_DIR_LAYOUT ?
-                  ctx_height (ctx) * 1.0 :
                   ctx_height (ctx));
+
+  if (dir_scale != 1.0f)
+     ctx_scale (itk->ctx, dir_scale, dir_scale);
 
   if (!files->n)
   {
@@ -2004,6 +2023,7 @@ static int card_files (ITK *itk_, void *data)
   if (!active && text_edit <= TEXT_EDIT_OFF)
   {
 
+#if 0
           ctx_add_key_binding (ctx, "+", NULL, NULL,
                           dir_font_up,
                           NULL);
@@ -2013,6 +2033,17 @@ static int card_files (ITK *itk_, void *data)
           ctx_add_key_binding (ctx, "-", NULL, NULL,
                           dir_font_down,
                           NULL);
+#else
+          ctx_add_key_binding (ctx, "+", NULL, NULL,
+                          dir_zoom_in,
+                          NULL);
+          ctx_add_key_binding (ctx, "=", NULL, NULL,
+                          dir_zoom_in,
+                          NULL);
+          ctx_add_key_binding (ctx, "-", NULL, NULL,
+                          dir_zoom_out,
+                          NULL);
+#endif
 
           ctx_add_key_binding (ctx, "page-down", NULL, NULL,
                           dir_next_page,
@@ -2142,7 +2173,6 @@ static int card_files (ITK *itk_, void *data)
 
 
 #if 0
-  if (view_type == CTX_DIR_LAYOUT)
   {
     itk_panel_start (itk, "layout_config", 0,ctx_height(ctx)*0.8, ctx_width(ctx)/2, ctx_height (ctx) * 0.2);
     itk_toggle (itk, "stack horizontal", &layout_config.stack_horizontal);
@@ -2201,7 +2231,6 @@ int ctx_dir_main (int argc, char **argv)
 
   signal (SIGCHLD, ctx_clients_signal_child);
 
-  view_type = CTX_DIR_LAYOUT;
   set_layout (NULL, NULL, NULL);
   dm_set_path (files, path?path:"./");
   itk_main (card_files, NULL);
