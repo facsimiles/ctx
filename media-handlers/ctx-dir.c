@@ -1444,14 +1444,21 @@ static void dir_layout (ITK *itk, Files *files)
       float width = 0;
       float height = 0;
       
+      int hidden = 0;
       int is_contentbox = 0;
-      if (layout_config.use_layout_boxes) {
-      const char *tmp = metadata_key_string2 (i, "type");
-      if (tmp)
+      int is_newpage = 0;
       {
-         if (!strcmp (tmp, "ctx/contentbox"))
+      const char *type = metadata_key_string2 (i, "type");
+      if (type)
+      {
+         if (!strcmp (type, "ctx/contentbox") && layout_config.use_layout_boxes)
            is_contentbox = 1;
-         free (tmp);
+         if (!strcmp (type, "ctx/newpage"))
+         {
+           is_newpage = 1;
+           hidden = 1;
+         }
+         free (type);
       }
       }
 
@@ -1517,7 +1524,7 @@ static void dir_layout (ITK *itk, Files *files)
 
       if (layout_config.stack_horizontal && layout_config.stack_vertical)
       {
-      if (itk->x + width  > itk->x0 + itk->width) //panel->x + itk->panel->width)
+      if (itk->x + width  > itk->x0 + itk->width || is_newpage) //panel->x + itk->panel->width)
       {
           itk->x = itk->x0;
           if (layout_config.stack_vertical)
@@ -1525,9 +1532,9 @@ static void dir_layout (ITK *itk, Files *files)
             itk->y += row_max_height;
             row_max_height = 0;
           }
-          if (itk->y + height > y1)
+          if (itk->y + height > y1 || is_newpage)
           {
-            if (layout_box_count > layout_box_no+1)
+            if (layout_box_count > layout_box_no+1 && ! is_newpage)
             {
               layout_box_no++;
 
@@ -1578,6 +1585,8 @@ static void dir_layout (ITK *itk, Files *files)
          }
       }
 
+      if (!hidden)
+      {
       float saved_x = itk->x;
       float saved_y = itk->y;
       if (gotpos)
@@ -1896,6 +1905,7 @@ static void dir_layout (ITK *itk, Files *files)
 
 #endif
         }
+      }
       }
     }
   }
@@ -2269,7 +2279,10 @@ static int card_files (ITK *itk_, void *data)
     }
 
     ctx_begin_path (itk->ctx);
-    ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.6);
+    ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.4);
+    ctx_rectangle (itk->ctx, 0, 0, ctx_width (itk->ctx), ctx_height (itk->ctx));
+    ctx_fill (itk->ctx);
+    ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.8);
     ctx_rectangle (itk->ctx, x, y, width, height);
 
     ctx_fill (itk->ctx);
