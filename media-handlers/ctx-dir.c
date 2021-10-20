@@ -69,6 +69,9 @@ LayoutConfig layout_config = {
 };
 
 int focused_no = -1;
+int layout_page_no = 0;
+int layout_show_page = 0;
+int layout_last_page = 0;
 
 typedef struct _CtxSHA1 CtxSHA1;
 CtxSHA1 *ctx_sha1_new (void);
@@ -576,9 +579,9 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
   float em = itk_em (itk);
   int imgw, imgh;
     float target_width = 
-      (w - (layout_config.padding_left + layout_config.padding_right) * em * 2);
+      (w - (layout_config.padding_left + layout_config.padding_right) * em );
     float target_height = 
-      (h - (layout_config.padding_top + layout_config.padding_bottom) * em * 2);
+      (h - (layout_config.padding_top + layout_config.padding_bottom) * em );
   //ctx_begin_path (ctx);
 
   if ((target_width > 250 || target_height > 250))
@@ -1131,6 +1134,35 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+void dir_font_up (CtxEvent *event, void *a, void *b)
+{
+  itk->font_size *= 1.1f;
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+void dir_font_down (CtxEvent *event, void *a, void *b)
+{
+  itk->font_size /= 1.1f;
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+void dir_prev_page (CtxEvent *event, void *a, void *b)
+{
+  layout_show_page --;
+  if (layout_show_page < 0) layout_show_page = 0;
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+void dir_next_page (CtxEvent *event, void *a, void *b)
+{
+  layout_show_page ++;
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
 void text_edit_down (CtxEvent *event, void *a, void *b)
 {
   if (next_line_pos >= 0)
@@ -1184,8 +1216,6 @@ static CtxRectangle layout_box[CTX_MAX_LAYOUT_BOXES];
 int layout_box_count = 0;
 int layout_box_no = 0;
 
-int layout_page_no = 0;
-int layout_show_page = 0;
 
 static CtxControl *focused_control = NULL;
 static void dir_layout (ITK *itk, Files *files)
@@ -1272,7 +1302,7 @@ static void dir_layout (ITK *itk, Files *files)
       const char *tmp = metadata_key_string2 (i, "type");
       if (tmp)
       {
-         if (!strcmp (tmp, "ctx/contentbox"));
+         if (!strcmp (tmp, "ctx/contentbox"))
            is_contentbox = 1;
          free (tmp);
       }
@@ -1372,6 +1402,7 @@ static void dir_layout (ITK *itk, Files *files)
 
              layout_page_no++;
              printing = (layout_page_no == layout_show_page);
+             layout_last_page = layout_page_no;
             }
           }
       }
@@ -1699,7 +1730,21 @@ static void dir_layout (ITK *itk, Files *files)
              y0 = layout_box[layout_box_no].y * saved_width;
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
             }
-            else goto done;
+            else
+            {
+              layout_box_no = 0;
+
+             itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
+             itk->y           = layout_box[layout_box_no].y * saved_width;
+             itk->width       = layout_box[layout_box_no].width * saved_width ;
+             y0 = layout_box[layout_box_no].y * saved_width;
+             y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
+
+             layout_page_no++;
+             layout_last_page = layout_page_no;
+             printing = (layout_page_no == layout_show_page);
+            }
+
           }
 
 #endif
@@ -1707,7 +1752,6 @@ static void dir_layout (ITK *itk, Files *files)
       }
     }
   }
-done:
 
   itk->x0    = saved_x0;
   itk->width = saved_width;
@@ -1957,6 +2001,28 @@ static int card_files (ITK *itk_, void *data)
   }
 
 
+  if (!active && text_edit <= TEXT_EDIT_OFF)
+  {
+
+          ctx_add_key_binding (ctx, "+", NULL, NULL,
+                          dir_font_up,
+                          NULL);
+          ctx_add_key_binding (ctx, "=", NULL, NULL,
+                          dir_font_up,
+                          NULL);
+          ctx_add_key_binding (ctx, "-", NULL, NULL,
+                          dir_font_down,
+                          NULL);
+
+          ctx_add_key_binding (ctx, "page-down", NULL, NULL,
+                          dir_next_page,
+                          NULL);
+          ctx_add_key_binding (ctx, "page-up", NULL, NULL,
+                          dir_prev_page,
+                          NULL);
+  }
+
+
 #if 1
       if (!active && text_edit>TEXT_EDIT_OFF)
       {
@@ -1966,6 +2032,7 @@ static int card_files (ITK *itk_, void *data)
           ctx_add_key_binding (ctx, "up", NULL, NULL,
                           text_edit_up,
                           NULL);
+
           ctx_add_key_binding (ctx, "down", NULL, NULL,
                           text_edit_down,
                           NULL);
