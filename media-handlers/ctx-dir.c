@@ -356,8 +356,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   //CtxEvent *e = &event; // we make a copy to permit recursion
   int no = (size_t)(d1);
   viewer_no = no;
-  int virtual = metadata_key_int2 (no, "virtual");
-  if (virtual <0) virtual = 0;
+  int virtual = (metadata_key_int2 (no, "virtual") > 0);
 
   if (virtual)
   {
@@ -1205,8 +1204,134 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
   // -- - //
 }
 
+
 int item_context_active = 0;
 
+int item_outliner = 0; // with 0 only virtual items get outliner event handling
+
+/* */
+static void
+item_outliner_down (CtxEvent *event, void *a, void *b)
+{
+  int start_level = metadata_key_int2 (focused_no, "level");
+  if (start_level <0)start_level = 0;
+
+  int start_no = focused_no;
+  int start_focus = itk->focus_no;
+  
+  int level;
+  focused_no++;
+  itk->focus_no++;
+  level = metadata_key_int2 (focused_no, "level");
+  if (level < 0) level = 0;
+  while (level > start_level)
+  {
+    focused_no++;
+    itk->focus_no++;
+    level = metadata_key_int2 (focused_no, "level");
+    if (level < 0) level = 0;
+  }
+  if (level < start_level)
+  {
+     focused_no = start_no;
+     itk->focus_no = start_focus;
+  }
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+static void
+item_outliner_up (CtxEvent *event, void *a, void *b)
+{
+  int start_level = metadata_key_int2 (focused_no, "level");
+  if (start_level <0)start_level = 0;
+
+  int start_no = focused_no;
+  int start_focus = itk->focus_no;
+  
+  int level;
+  focused_no--;
+  itk->focus_no--;
+  level = metadata_key_int2 (focused_no, "level");
+  if (level < 0) level = 0;
+  while (level > start_level)
+  {
+    focused_no--;
+    itk->focus_no--;
+    level = metadata_key_int2 (focused_no, "level");
+    if (level < 0) level = 0;
+  }
+  if (level < start_level)
+  {
+     focused_no = start_no;
+     itk->focus_no = start_focus;
+  }
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+static void
+item_outliner_left (CtxEvent *event, void *a, void *b)
+{
+  int start_level = metadata_key_int2 (focused_no, "level");
+  if (start_level <0)start_level = 0;
+
+  int start_no = focused_no;
+  int start_focus = itk->focus_no;
+  
+  int level;
+  focused_no--;
+  itk->focus_no--;
+  level = metadata_key_int2 (focused_no, "level");
+  if (level < 0) level = 0;
+  while (level > start_level - 1 && focused_no >= 0)
+  {
+    focused_no--;
+    itk->focus_no--;
+    level = metadata_key_int2 (focused_no, "level");
+    if (level < 0) level = 0;
+  }
+  if (level < start_level - 1 || focused_no < 0)
+  {
+     focused_no = start_no;
+     itk->focus_no = start_focus;
+  }
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+static void
+item_outliner_right (CtxEvent *event, void *a, void *b)
+{
+  int start_level = metadata_key_int2 (focused_no, "level");
+  if (start_level <0)start_level = 0;
+
+  int start_no = focused_no;
+  int start_focus = itk->focus_no;
+  
+  int level;
+  focused_no++;
+  itk->focus_no++;
+  level = metadata_key_int2 (focused_no, "level");
+  if (level < 0) level = 0;
+
+  if (level == start_level + 1)
+  {
+          
+  }
+  else
+  {
+          focused_no = start_no;
+          itk->focus_no = start_focus;
+          // create empty place holder node
+  }
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
 
 void item_properties (CtxEvent *event, void *a, void *b)
 {
@@ -2051,6 +2176,23 @@ static int card_files (ITK *itk_, void *data)
           ctx_add_key_binding (ctx, "page-up", NULL, NULL,
                           dir_prev_page,
                           NULL);
+
+          int virtual = (metadata_key_int2 (focused_no, "virtual") > 0);
+          if (item_outliner || virtual)
+          {
+          ctx_add_key_binding (ctx, "up", NULL, NULL,
+                          item_outliner_up,
+                          NULL);
+          ctx_add_key_binding (ctx, "down", NULL, NULL,
+                          item_outliner_down,
+                          NULL);
+          ctx_add_key_binding (ctx, "left", NULL, NULL,
+                          item_outliner_left,
+                          NULL);
+          ctx_add_key_binding (ctx, "right", NULL, NULL,
+                          item_outliner_right,
+                          NULL);
+          }
   }
 
 
