@@ -1184,6 +1184,9 @@ static CtxRectangle layout_box[CTX_MAX_LAYOUT_BOXES];
 int layout_box_count = 0;
 int layout_box_no = 0;
 
+int layout_page_no = 0;
+int layout_show_page = 0;
+
 static CtxControl *focused_control = NULL;
 static void dir_layout (ITK *itk, Files *files)
 {
@@ -1231,14 +1234,13 @@ static void dir_layout (ITK *itk, Files *files)
 
   focused_no = -1;
 
-  //fprintf (stderr, "%f,%f %fx%f", cbox_x, cbox_y, cbox_width, cbox_height);
-
   float saved_x0 = itk->x0;
   float saved_width = itk->width;
   float saved_y = itk->y;
 
   float y0, y1;
   layout_box_no = 0;
+  layout_page_no = 0;
 
   itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
   itk->y           = layout_box[layout_box_no].y * saved_width;
@@ -1248,18 +1250,18 @@ static void dir_layout (ITK *itk, Files *files)
 
   if (y1 < 100) y1 = itk->height;
 
+  int printing = (layout_page_no == layout_show_page);
+
   for (int i = 0; i < files->count; i++)
   {
-    if ((files->items[i][0] == '.' &&
-         files->items[i][1] == '.') ||
-        (files->items[i][0] != '.')
+    if ((files->items[i][0] == '.' && files->items[i][1] == '.') ||
+        (files->items[i][0] != '.') // skipping dot files
        )
     {
-        if (itk->control_no == itk->focus_no)
-        {
-          focused_no = i;
-        }
-
+      if (itk->control_no == itk->focus_no)
+      {
+        focused_no = i;
+      }
 
       const char *d_name = files->items[i];
       float width = 0;
@@ -1360,7 +1362,16 @@ static void dir_layout (ITK *itk, Files *files)
             }
             else
             {
-              goto done;
+              layout_box_no = 0;
+
+             itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
+             itk->y           = layout_box[layout_box_no].y * saved_width;
+             itk->width       = layout_box[layout_box_no].width * saved_width ;
+             y0 = layout_box[layout_box_no].y * saved_width;
+             y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
+
+             layout_page_no++;
+             printing = (layout_page_no == layout_show_page);
             }
           }
       }
@@ -1429,14 +1440,19 @@ static void dir_layout (ITK *itk, Files *files)
         }
         //fprintf (stderr, "%f\n", height);
       }
-      ctx_begin_path (itk->ctx);
-      CtxControl *c = itk_add_control (itk, UI_LABEL, "foo",
+      CtxControl *c = NULL;
+      if (printing)
+      {
+        ctx_begin_path (itk->ctx);
+        c = itk_add_control (itk, UI_LABEL, "foo",
         itk->x, itk->y,
         width + em * (padding_left+padding_right),
         height);
-      if (focused_no == i) focused_control = c;
+        if (focused_no == i)
+           focused_control = c;
+      }
 
-      if (!active && sy + height > 0 && sy < ctx_height (itk->ctx))
+      if (!active && printing && sy + height > 0 && sy < ctx_height (itk->ctx))
       {
               //ctx_rgb(itk->ctx,1,0,0);
               //ctx_fill(itk->ctx);
@@ -1696,7 +1712,6 @@ done:
   itk->x0    = saved_x0;
   itk->width = saved_width;
   itk->y     = saved_y;
-
 }
 
 
