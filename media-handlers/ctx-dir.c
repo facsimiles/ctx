@@ -60,14 +60,14 @@ typedef struct LayoutConfig
   float padding_right;
   float padding_top;
   float padding_bottom;
-
+  float level_indent;
   int use_layout_boxes;
 } LayoutConfig;
 
 LayoutConfig layout_config = {
   1,1,0,0, 1,0,
   4, 4, 0, 0.5,
-  0, 0, 0,
+  0, 0, 0, 3,
   1
 };
 
@@ -204,6 +204,7 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.padding_top = 0.5f;
   layout_config.padding_bottom = 0.5f;
   layout_config.use_layout_boxes = 1;
+  layout_config.level_indent = 2.5;
 };
 
 
@@ -234,6 +235,38 @@ static void set_grid (CtxEvent *e, void *d1, void *d2)
   layout_config.stack_vertical = 1;
   layout_config.label = 1;
   layout_config.use_layout_boxes = 0;
+}
+
+typedef enum CtxAtom {
+ CTX_ATOM_NONE = 0,
+ CTX_ATOM_LAYOUTBOX,
+ CTX_ATOM_NEWPAGE,
+ CTX_ATOM_STARTGROUP,
+ CTX_ATOM_ENDGROUP,
+} CtxAtom;
+
+CtxAtom item_get_type_atom (int i)
+{
+char *type = metadata_key_string2 (i, "type");
+if (type)
+{
+   if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
+     return CTX_ATOM_LAYOUTBOX;
+   else if (!strcmp (type, "ctx/newpage"))
+   {
+     return CTX_ATOM_NEWPAGE;
+   }
+   else if (!strcmp (type, "ctx/startgroup"))
+   {
+     return CTX_ATOM_STARTGROUP;
+   }
+   else if (!strcmp (type, "ctx/endgroup"))
+   {
+     return CTX_ATOM_ENDGROUP;
+   }
+   free (type);
+}
+  return CTX_ATOM_NONE;
 }
 
 void dm_set_path (Files *files, const char *path)
@@ -429,8 +462,22 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
 
   if (virtual)
   {
-    metadata_remove (no);
+    CtxAtom pre_atom = item_get_type_atom (no-1);
+    CtxAtom post_atom = item_get_type_atom (no+1);
+
+    if (pre_atom == CTX_ATOM_STARTGROUP &&
+        post_atom == CTX_ATOM_ENDGROUP)
+    {
+      metadata_remove (no-1);
+      metadata_remove (no-1);
+      metadata_remove (no-1);
+    }
+    else
+    {
+      metadata_remove (no);
+    }
     text_edit = TEXT_EDIT_OFF;
+
     metadata_dirt();
     ctx_set_dirty (e->ctx, 1);
     e->stop_propagate = 1;
@@ -778,6 +825,13 @@ static void dir_key_any (CtxEvent *event, void *userdata, void *userdata2)
   }
 }
 
+
+static void dir_revert (CtxEvent *event, void *data1, void *data2)
+{
+  // XXX: NYI
+  metadata_dirt();
+}
+
 static void dir_select_item (CtxEvent *event, void *data1, void *data2)
 {
    itk->focus_no = (size_t)data1;
@@ -799,7 +853,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
 {
   char word[1024]="";
   int wlen = 0;
-  char *p;
+  const char *p;
   int pos = 0;
   float x0 = x;
 
@@ -817,7 +871,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
 
   for (p = d_name; p == d_name || p[-1]; p++)
   {
-    if (*p == ' ' || *p == '\0')
+    if (*p == ' ' || *p == '\0' || *p == '\n')
     {
       word[wlen]=0;
       int wlen_utf8 = ctx_utf8_strlen (word);
@@ -837,7 +891,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
               removed ++;
            }
            pot_cursor = pos - removed;
-           if (pot_cursor > strlen (d_name))
+           if (pot_cursor > (int)strlen (d_name))
               pot_cursor=strlen(d_name);
            sel_start = text_edit = pot_cursor;
         }
@@ -910,28 +964,35 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
           }
           tmp[o]=0;
           //memcpy (tmp, word, seg);
-      if (print)
-          ctx_rgb (itk->ctx, 1,0,0);
+          if (print)
+            ctx_rgb (itk->ctx, 1,0,0);
           float cursor_x = x + ctx_text_width (itk->ctx, tmp);
           if (text_edit_desired_x < 0)
             text_edit_desired_x = cursor_x;
       if (print)
+      {
           ctx_rectangle (itk->ctx,
                     cursor_x-1, y - line_height, 2, line_height * 1.2);
-      if (print)
           ctx_fill (itk->ctx);
-          cursor_drawn = 1;
-      if (print)
           ctx_restore (ctx);
+      }
+       cursor_drawn = 1;
         }
       if (print)
+      {
         ctx_move_to (itk->ctx, x, y);
-      if (print)
         ctx_text (itk->ctx, word);
+      }
       }
 
       x += word_width + space_width;
       wlen=0;
+      if (*p == '\n')
+      {
+        x = x0;
+        y = y + line_height;
+        pot_cursor = -10;
+      }
     }
     else
     {
@@ -974,6 +1035,7 @@ static void save_metadata(void)
    }
 
 }
+
 
 void text_edit_return (CtxEvent *event, void *a, void *b)
 {
@@ -1032,7 +1094,7 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
 {
   if (focused_no>=0){
     CtxString *str = ctx_string_new (files->items[focused_no]);
-    if (text_edit == strlen(str->str))
+    if (text_edit == (int)strlen(str->str))
     {
       if ((metadata_key_int2 (focused_no+1, "virtual")>0))
       {
@@ -1049,6 +1111,25 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
     metadata_dirt ();
     save_metadata();
   }
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+
+void text_edit_shift_return (CtxEvent *event, void *a, void *b)
+{
+  if (focused_no>=0){
+    const char *insertedA = "\\";
+    const char *insertedB = "n";
+    CtxString *str = ctx_string_new (files->items[focused_no]);
+    ctx_string_insert_utf8 (str, text_edit, insertedB);
+    ctx_string_insert_utf8 (str, text_edit, insertedA);
+    metadata_rename (focused_no, str->str);
+    ctx_string_free (str, 1);
+    text_edit++;
+  }
+  metadata_dirt ();
+  save_metadata();
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -1113,6 +1194,54 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
       text_edit = 0;
     }
   }
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+void text_edit_control_left (CtxEvent *event, void *a, void *b)
+{
+  text_edit_desired_x = -100;
+
+  if (text_edit == 0)
+  {
+    if (metadata_key_int2 (focused_no-1, "virtual")>0)
+    {
+      text_edit=ctx_utf8_strlen(files->items[focused_no-1]);
+      focused_no--;
+      itk->focus_no--;
+    }
+    else
+    {
+      text_edit = 0;
+    }
+  }
+  else
+  {
+    char *text = metadata_item_name (focused_no); 
+    if (text_edit >0 && text[text_edit-1]==' ')  // XXX should be utf8 aware
+      text_edit--;
+    while (text_edit>0 && text[text_edit-1]!=' ') 
+      text_edit--;
+    free (text);
+  }
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+void text_edit_control_right (CtxEvent *event, void *a, void *b)
+{
+  text_edit_desired_x = -100;
+
+  {
+    char *text = metadata_item_name (focused_no); 
+    if (text[text_edit]==' ')  // XXX should be utf8 aware
+      text_edit++;
+    while (text[text_edit] && text[text_edit]!=' ') 
+      text_edit++;
+    free (text);
+  }
+
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -1239,23 +1368,36 @@ int item_outliner = 0; // with 0 only virtual items get outliner event handling
 static void
 item_outliner_down (CtxEvent *event, void *a, void *b)
 {
-  int start_level = metadata_key_int2 (focused_no, "level");
-  if (start_level <0)start_level = 0;
-
   int start_no = focused_no;
   int start_focus = itk->focus_no;
   
-  int level;
+  int level = 0;
+  int start_level = 0;
+
   focused_no++;
   itk->focus_no++;
-  level = metadata_key_int2 (focused_no, "level");
-  if (level < 0) level = 0;
+  int atom = item_get_type_atom (focused_no);
+  if (atom == CTX_ATOM_ENDGROUP)
+     level--;
+  else if (atom == CTX_ATOM_STARTGROUP)
+     level++;
+
   while (level > start_level)
   {
     focused_no++;
-    itk->focus_no++;
-    level = metadata_key_int2 (focused_no, "level");
-    if (level < 0) level = 0;
+    atom = item_get_type_atom (focused_no);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level++;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level--;
+      }
+    else
+    {
+      itk->focus_no++;
+    }
   }
   if (level < start_level)
   {
@@ -1270,23 +1412,37 @@ item_outliner_down (CtxEvent *event, void *a, void *b)
 static void
 item_outliner_up (CtxEvent *event, void *a, void *b)
 {
-  int start_level = metadata_key_int2 (focused_no, "level");
-  if (start_level <0)start_level = 0;
-
   int start_no = focused_no;
   int start_focus = itk->focus_no;
   
-  int level;
+  int level = 0;
+  int start_level = 0;
+
+
   focused_no--;
   itk->focus_no--;
-  level = metadata_key_int2 (focused_no, "level");
-  if (level < 0) level = 0;
+  int atom = item_get_type_atom (focused_no);
+  if (atom == CTX_ATOM_ENDGROUP)
+     level++;
+  else if (atom == CTX_ATOM_STARTGROUP)
+     level--;
+
   while (level > start_level)
   {
     focused_no--;
-    itk->focus_no--;
-    level = metadata_key_int2 (focused_no, "level");
-    if (level < 0) level = 0;
+    atom = item_get_type_atom (focused_no);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level--;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level++;
+      }
+    else
+    {
+      itk->focus_no--;
+    }
   }
   if (level < start_level)
   {
@@ -1301,25 +1457,31 @@ item_outliner_up (CtxEvent *event, void *a, void *b)
 static void
 item_outliner_left (CtxEvent *event, void *a, void *b)
 {
-  int start_level = metadata_key_int2 (focused_no, "level");
-  if (start_level <0)start_level = 0;
-
   int start_no = focused_no;
   int start_focus = itk->focus_no;
   
-  int level;
-  focused_no--;
-  itk->focus_no--;
-  level = metadata_key_int2 (focused_no, "level");
-  if (level < 0) level = 0;
-  while (level > start_level - 1 && focused_no >= 0)
+  int level = 1;
+
+  CtxAtom atom;
+  while (level > 0 && focused_no >= 0)
   {
     focused_no--;
-    itk->focus_no--;
-    level = metadata_key_int2 (focused_no, "level");
-    if (level < 0) level = 0;
+    atom = item_get_type_atom (focused_no);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level--;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level++;
+      }
+    else
+    {
+      itk->focus_no--;
+    }
   }
-  if (level < start_level - 1 || focused_no < 0)
+  itk->focus_no--;
+  if (focused_no < 0)
   {
      focused_no = start_no;
      itk->focus_no = start_focus;
@@ -1332,27 +1494,33 @@ item_outliner_left (CtxEvent *event, void *a, void *b)
 static void
 item_outliner_right (CtxEvent *event, void *a, void *b)
 {
-  int start_level = metadata_key_int2 (focused_no, "level");
-  if (start_level <0)start_level = 0;
-
   int start_no = focused_no;
   int start_focus = itk->focus_no;
   
-  int level;
   focused_no++;
-  itk->focus_no++;
-  level = metadata_key_int2 (focused_no, "level");
-  if (level < 0) level = 0;
+  CtxAtom  atom = item_get_type_atom (focused_no);
 
-  if (level == start_level + 1)
+  if (atom == CTX_ATOM_STARTGROUP)
   {
-          
+    itk->focus_no++;
   }
   else
   {
-          focused_no = start_no;
-          itk->focus_no = start_focus;
-          // create empty place holder node
+     focused_no = start_no;
+     itk->focus_no = start_focus;
+
+     metadata_insert(focused_no+1, "startGroup");
+     metadata_set2(focused_no+1, "type", "ctx/startgroup");
+
+     metadata_insert(focused_no+2, "");
+     metadata_set_float2(focused_no+2, "virtual", 1);
+     text_edit = 0;
+
+     metadata_insert(focused_no+3, "endGroup");
+     metadata_set2(focused_no+3, "type", "ctx/endgroup");
+     metadata_dirt();
+     itk->focus_no++;
+     // create empty place holder node
   }
 
   ctx_set_dirty (event->ctx, 1);
@@ -1388,19 +1556,22 @@ int layout_box_no = 0;
 
 
 static CtxControl *focused_control = NULL;
+
+
 static void dir_layout (ITK *itk, Files *files)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   float prev_height = layout_config.height;
   float row_max_height = 0;
+  int level = 0;
 
   layout_box_count = 0;
   layout_box_no = 0;
   layout_box[0].x = 0.05;
   layout_box[0].y = 0.02;
   layout_box[0].width = 0.9;
-  layout_box[0].height = 0.4;
+  layout_box[0].height = 4000.0;
 #if 0
   float cbox_x = metadata_key_float (".contentBox0", "x");
   float cbox_y = metadata_key_float (".contentBox0", "y");
@@ -1438,14 +1609,13 @@ static void dir_layout (ITK *itk, Files *files)
   float saved_width = itk->width;
   float saved_y = itk->y;
 
-  float y0, y1;
+  float y1;
   layout_box_no = 0;
   layout_page_no = 0;
 
   itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
   itk->y           = layout_box[layout_box_no].y * saved_width;
   itk->width       = layout_box[layout_box_no].width * saved_width ;
-  y0 = layout_box[layout_box_no].y * saved_width;
   y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
 
   if (y1 < 100) y1 = itk->height;
@@ -1468,28 +1638,29 @@ static void dir_layout (ITK *itk, Files *files)
       float height = 0;
       
       int hidden = 0;
-      int is_contentbox = 0;
-      int is_newpage = 0;
+      CtxAtom atom = item_get_type_atom (i);
+
+      switch (atom)
       {
-      const char *type = metadata_key_string2 (i, "type");
-      if (type)
-      {
-         if (!strcmp (type, "ctx/contentbox") && layout_config.use_layout_boxes)
-           is_contentbox = 1;
-         if (!strcmp (type, "ctx/newpage"))
-         {
-           is_newpage = 1;
-           hidden = 1;
-         }
-         free (type);
-      }
+        case CTX_ATOM_NONE:
+          break;
+        case CTX_ATOM_LAYOUTBOX:
+          break;
+        case CTX_ATOM_STARTGROUP:
+          hidden = 1;
+          level ++;
+          break;
+        case CTX_ATOM_ENDGROUP:
+          hidden = 1;
+          level --;
+          break;
+        case CTX_ATOM_NEWPAGE:
+          hidden = 1;
+          break;
       }
 
       int label = metadata_key_int2 (i, "label");
-      int level = metadata_key_int2 (i, "level");
-      if (level == -1234) level = 0;
       if (label == -1234) label = layout_config.label;
-
 
       int gotpos = 0;
       char *xstr = metadata_key_string2 (i, "x");
@@ -1500,12 +1671,11 @@ static void dir_layout (ITK *itk, Files *files)
       float padding_right = metadata_key_float2 (i, "padding-right");
       if (padding_right == -1234.0f) padding_right = layout_config.padding_right;
 
-      padding_left += level * 3;
+      padding_left += level * layout_config.level_indent;
 
       float x = metadata_key_float2 (i, "x");
       float y = metadata_key_float2 (i, "y");
       float opacity = metadata_key_float2 (i, "opacity");
-
       if (opacity == -1234.0f) opacity = 1.0f;
 
       if (xstr)
@@ -1547,7 +1717,7 @@ static void dir_layout (ITK *itk, Files *files)
 
       if (layout_config.stack_horizontal && layout_config.stack_vertical)
       {
-      if (itk->x + width  > itk->x0 + itk->width || is_newpage) //panel->x + itk->panel->width)
+      if (itk->x + width  > itk->x0 + itk->width || atom == CTX_ATOM_NEWPAGE) //panel->x + itk->panel->width)
       {
           itk->x = itk->x0;
           if (layout_config.stack_vertical)
@@ -1555,16 +1725,15 @@ static void dir_layout (ITK *itk, Files *files)
             itk->y += row_max_height;
             row_max_height = 0;
           }
-          if (itk->y + height > y1 || is_newpage)
+          if (itk->y + height > y1 || atom == CTX_ATOM_NEWPAGE)
           {
-            if (layout_box_count > layout_box_no+1 && ! is_newpage)
+            if (layout_box_count > layout_box_no+1 && atom != CTX_ATOM_NEWPAGE)
             {
               layout_box_no++;
 
              itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
              itk->y           = layout_box[layout_box_no].y * saved_width;
              itk->width       = layout_box[layout_box_no].width * saved_width ;
-             y0 = layout_box[layout_box_no].y * saved_width;
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
             }
             else
@@ -1574,7 +1743,6 @@ static void dir_layout (ITK *itk, Files *files)
              itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
              itk->y           = layout_box[layout_box_no].y * saved_width;
              itk->width       = layout_box[layout_box_no].width * saved_width ;
-             y0 = layout_box[layout_box_no].y * saved_width;
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
 
              layout_page_no++;
@@ -1585,8 +1753,7 @@ static void dir_layout (ITK *itk, Files *files)
       }
       }
 
-
-      if (is_contentbox)
+      if (atom == CTX_ATOM_LAYOUTBOX)
       {
          if (layout_box_count < CTX_MAX_LAYOUT_BOXES)
          {
@@ -1602,7 +1769,6 @@ static void dir_layout (ITK *itk, Files *files)
              itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
              itk->y           = layout_box[layout_box_no].y * saved_width;
              itk->width       = layout_box[layout_box_no].width * saved_width ;
-             y0 = layout_box[layout_box_no].y * saved_width;
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
            }
          }
@@ -1650,6 +1816,9 @@ static void dir_layout (ITK *itk, Files *files)
         }
         //fprintf (stderr, "%f\n", height);
       }
+
+
+
       CtxControl *c = NULL;
       if (printing)
       {
@@ -1796,14 +1965,15 @@ static void dir_layout (ITK *itk, Files *files)
           int todo = metadata_key_int2 (i, "todo");
           if (todo >= 0)
           {
+             float x = itk->x - em * 0.5 + level * em * layout_config.level_indent;
              if (todo)
              {
-               ctx_move_to (itk->ctx, itk->x - em * 0.5, itk->y + em);
+               ctx_move_to (itk->ctx, x, itk->y + em);
                ctx_text (itk->ctx, "X");
              }
              else
              {
-               ctx_move_to (itk->ctx, itk->x - em * 0.5, itk->y + em);
+               ctx_move_to (itk->ctx, x, itk->y + em);
                ctx_text (itk->ctx, "O");
              }
           }
@@ -1925,7 +2095,6 @@ static void dir_layout (ITK *itk, Files *files)
              itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
              itk->y           = layout_box[layout_box_no].y * saved_width;
              itk->width       = layout_box[layout_box_no].width * saved_width ;
-             y0 = layout_box[layout_box_no].y * saved_width;
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
             }
             else
@@ -1935,7 +2104,6 @@ static void dir_layout (ITK *itk, Files *files)
              itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
              itk->y           = layout_box[layout_box_no].y * saved_width;
              itk->width       = layout_box[layout_box_no].width * saved_width ;
-             y0 = layout_box[layout_box_no].y * saved_width;
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
 
              layout_page_no++;
@@ -2178,7 +2346,7 @@ static int card_files (ITK *itk_, void *data)
   //thumb_monitor (ctx, NULL);
   save_metadata();
 
-  itk_panel_start (itk, "files", 0,0, ctx_width(ctx),
+  itk_panel_start (itk, "", 0,0, ctx_width(ctx),
                   ctx_height (ctx));
 
   if (dir_scale != 1.0f)
@@ -2254,6 +2422,13 @@ static int card_files (ITK *itk_, void *data)
 #if 1
       if (!active && text_edit>TEXT_EDIT_OFF)
       {
+
+          ctx_add_key_binding (ctx, "control-left", NULL, NULL,
+                          text_edit_control_left,
+                          NULL);
+          ctx_add_key_binding (ctx, "control-right", NULL, NULL,
+                          text_edit_control_right,
+                          NULL);
           ctx_add_key_binding (ctx, "left", NULL, NULL,
                           text_edit_left,
                           NULL);
@@ -2270,6 +2445,10 @@ static int card_files (ITK *itk_, void *data)
           ctx_add_key_binding (ctx, "escape", NULL, NULL,
                           text_edit_stop,
                           NULL);
+          ctx_add_key_binding (ctx, "shift-return", NULL, NULL,
+                            text_edit_shift_return,
+                            NULL);
+
           ctx_add_key_binding (ctx, "unhandled", NULL, NULL,
                           text_edit_any,
                           NULL);

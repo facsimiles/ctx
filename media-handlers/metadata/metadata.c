@@ -137,16 +137,18 @@ static char *metadata_item_name (int no)
 
 static char *metadata_find_no (int no)
 {
-  if (metadata_cache_no == no) return metadata_cache;
   char *m = metadata;
   int count = 0;
 
+#if 1
+  if (metadata_cache_no == no) return metadata_cache;
   if (metadata_cache_no < no && metadata_cache_no > 0)
   {
     m = metadata_cache;
     count = metadata_cache_no;
     m-= 1;
   }
+#endif
 
   while (m && *m)
   {
