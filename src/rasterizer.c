@@ -2919,12 +2919,14 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   CtxSource source_backup;
+  int count = rasterizer->edge_list.count;
+  if (count <= 0)
+    return;
   if (gstate->source_stroke.type != CTX_SOURCE_INHERIT_FILL)
   {
     source_backup = gstate->source_fill;
     gstate->source_fill = rasterizer->state->gstate.source_stroke;
   }
-  int count = rasterizer->edge_list.count;
   int preserved = rasterizer->preserve;
   float factor = ctx_matrix_get_scale (&gstate->transform);
   float line_width = gstate->line_width * factor;
