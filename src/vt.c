@@ -2604,7 +2604,7 @@ static void _vt_rev_htab (VT *vt)
     {
       vt->cursor_x--;
     }
-  while ( ! vt->tabs[ (int) vt->cursor_x-1] && vt->cursor_x > 1);
+  while ( vt->cursor_x > 1 && ! vt->tabs[ (int) vt->cursor_x-1]);
   if (vt->cursor_x < VT_MARGIN_LEFT)
     { vt_carriage_return (vt); }
 }
