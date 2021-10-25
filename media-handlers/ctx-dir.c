@@ -596,6 +596,7 @@ static void move_down (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
+#if 0
 static void move_item_up (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
@@ -607,7 +608,61 @@ static void move_item_up (CtxEvent *e, void *d1, void *d2)
     itk_focus (itk, -1);
   }
 }
+#endif
 
+static void
+move_item_up (CtxEvent *event, void *a, void *b)
+{
+  int start_no = focused_no;
+  int start_focus = itk->focus_no;
+  
+  int level = 0;
+  int start_level = 0;
+  int did_skips = 0;
+
+  focused_no--;
+  itk->focus_no--;
+  int atom = item_get_type_atom (focused_no);
+  if (atom == CTX_ATOM_ENDGROUP)
+     level++;
+  else if (atom == CTX_ATOM_STARTGROUP)
+     level--;
+
+  while (level > start_level)
+  {
+    focused_no--;
+    atom = item_get_type_atom (focused_no);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level--;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level++;
+      }
+    else
+    {
+      itk->focus_no--;
+      did_skips = 1;
+    }
+  }
+  if (level < start_level)
+  {
+     focused_no = start_no;
+     itk->focus_no = start_focus;
+  }
+  else
+  {
+    if (!did_skips) focused_no++;
+    metadata_insert (focused_no-1, "");
+    metadata_swap (start_no+1, focused_no-1);
+    metadata_remove (start_no+1);
+    metadata_dirt ();
+  }
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
 
 static int item_get_level (int no)
 {
@@ -682,7 +737,7 @@ static void move_item_right (CtxEvent *e, void *d1, void *d2)
     int atom = item_get_type_atom (target);
     if (atom == CTX_ATOM_ENDGROUP)
     {
-      metadata_insert (target, "fnord");
+      metadata_insert (target, "");
       metadata_swap (no+1, target);
       metadata_remove (no+1);
     }
@@ -690,10 +745,10 @@ static void move_item_right (CtxEvent *e, void *d1, void *d2)
     {
       // insert new group
       target = no;
-      metadata_insert (target, "b");
+      metadata_insert (target, " ");
       metadata_set2 (target, "type", "ctx/endgroup");
-      metadata_insert (target, "fnord");
-      metadata_insert (target, "a");
+      metadata_insert (target, "");
+      metadata_insert (target, "");
       metadata_set2 (target, "type", "ctx/startgroup");
       metadata_swap (no+3, target+1);
       metadata_remove (no+3);
@@ -1535,7 +1590,6 @@ item_outliner_up (CtxEvent *event, void *a, void *b)
   int level = 0;
   int start_level = 0;
 
-
   focused_no--;
   itk->focus_no--;
   int atom = item_get_type_atom (focused_no);
@@ -1570,6 +1624,9 @@ item_outliner_up (CtxEvent *event, void *a, void *b)
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
+
+
+
 
 static void
 item_outliner_left (CtxEvent *event, void *a, void *b)
@@ -1626,14 +1683,14 @@ item_outliner_right (CtxEvent *event, void *a, void *b)
      focused_no = start_no;
      itk->focus_no = start_focus;
 
-     metadata_insert(focused_no+1, "startGroup");
+     metadata_insert(focused_no+1, "");
      metadata_set2(focused_no+1, "type", "ctx/startgroup");
 
      metadata_insert(focused_no+2, "");
      metadata_set_float2(focused_no+2, "virtual", 1);
      text_edit = 0;
 
-     metadata_insert(focused_no+3, "endGroup");
+     metadata_insert(focused_no+3, "");
      metadata_set2(focused_no+3, "type", "ctx/endgroup");
      metadata_dirt();
      itk->focus_no++;
@@ -1725,6 +1782,8 @@ static void dir_layout (ITK *itk, Files *files)
   float saved_x0 = itk->x0;
   float saved_width = itk->width;
   float saved_y = itk->y;
+  float space_width = ctx_text_width (itk->ctx, " ");
+
 
   float y1;
   layout_box_no = 0;
@@ -1734,6 +1793,8 @@ static void dir_layout (ITK *itk, Files *files)
   itk->y           = layout_box[layout_box_no].y * saved_width;
   itk->width       = layout_box[layout_box_no].width * saved_width ;
   y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
+  ctx_save (itk->ctx);
+  ctx_font_size (itk->ctx, itk->font_size);
 
   if (y1 < 100) y1 = itk->height;
 
@@ -1915,7 +1976,6 @@ static void dir_layout (ITK *itk, Files *files)
         if (!gotpos)
         {
           width = itk->width - (padding_left+padding_right)*em;
-          ctx_font_size (itk->ctx, itk->font_size);
            
           if (layout_config.stack_vertical && itk->x != itk->x0)
             itk->y += row_max_height;
@@ -1923,7 +1983,7 @@ static void dir_layout (ITK *itk, Files *files)
           itk->x = itk->x0;
           /* measure height, and snap cursor */
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
-                       em * 0.25, width, em,
+                       space_width, width, em,
                        i == focused_no ? text_edit : -1,
                        i == focused_no ? text_edit + 2: -1,
                        0, NULL, &height,
@@ -2059,7 +2119,6 @@ static void dir_layout (ITK *itk, Files *files)
         if (virtual)
         {
           ctx_save (itk->ctx);
-          ctx_font_size (itk->ctx, em);
 
           //if (c->no == itk->focus_no)
           //  ctx_rgb (itk->ctx, 1, 0, text_edit>=0?0:1);
@@ -2071,7 +2130,7 @@ static void dir_layout (ITK *itk, Files *files)
           if (c->no == itk->focus_no)
           {
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
-                       em * 0.25, width, em,
+                       space_width, width, em,
                        text_edit,text_edit,
                        1, NULL, NULL,
                        &prev_line_pos, &next_line_pos);
@@ -2080,7 +2139,7 @@ static void dir_layout (ITK *itk, Files *files)
           {
 
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
-                       em * 0.25, width, em,
+                       space_width, width, em,
                        -1, -1,
                        1, NULL, NULL,
                        NULL, NULL);
@@ -2125,7 +2184,6 @@ static void dir_layout (ITK *itk, Files *files)
       {
 
         ctx_save (itk->ctx);
-        ctx_font_size (itk->ctx, em);
         ctx_gray (itk->ctx, 1.0);
 
         ctx_move_to (itk->ctx, itk->x + width + em * 0.5, itk->y + em * (1 + layout_config.padding_top) );
@@ -2165,7 +2223,6 @@ static void dir_layout (ITK *itk, Files *files)
         for (int i = 0; i < lines; i++)
         {
           ctx_move_to (itk->ctx, itk->x + em * 3, itk->y + height + em * i - lines/2.0 * em);
-          ctx_font_size (itk->ctx, em); //em * 0.6);// * 0.9);
           ctx_gray (itk->ctx, 0.8);
           ctx_save (itk->ctx);
           ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_CENTER);
@@ -2243,6 +2300,7 @@ static void dir_layout (ITK *itk, Files *files)
       }
     }
   }
+  ctx_restore (itk->ctx);
 
   itk->x0    = saved_x0;
   itk->width = saved_width;
@@ -2429,7 +2487,6 @@ void viewer_load_path (const char *path, const char *name)
 
     if (command[0])
     {
-      ctx_font_size (ctx, itk->font_size);
       //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
       active = ctx_client_new (ctx, command,
         0, 0, ctx_width(ctx), ctx_height(ctx), 0);
