@@ -633,7 +633,6 @@ static void move_item_left (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
   int level = item_get_level (no);
-    fprintf (stderr, "mil %i\n", level);
   if (level>0)
   {
     int target = no;
@@ -1477,15 +1476,20 @@ item_outliner_down (CtxEvent *event, void *a, void *b)
   int start_no = focused_no;
   int start_focus = itk->focus_no;
   
-  int level = 0;
   int start_level = 0;
+  int level = 0;
 
   focused_no++;
   itk->focus_no++;
   int atom = item_get_type_atom (focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
-     level--;
-  else if (atom == CTX_ATOM_STARTGROUP)
+  {
+    itk->focus_no--;
+    focused_no--;
+    event->stop_propagate=1;
+    return;
+  }
+  if (atom == CTX_ATOM_STARTGROUP)
      level++;
 
   while (level > start_level)
@@ -1505,6 +1509,13 @@ item_outliner_down (CtxEvent *event, void *a, void *b)
       itk->focus_no++;
     }
   }
+  level++;
+  while (item_get_type_atom (focused_no) == CTX_ATOM_ENDGROUP)
+  {
+    level--;
+    focused_no++;
+  }
+
   if (level < start_level)
   {
      focused_no = start_no;
