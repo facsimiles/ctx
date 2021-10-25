@@ -447,6 +447,8 @@ static void metadata_swap (int no_a, int no_b)
 
    free (a_temp);
    free (b_temp);
+
+   metadata_cache_no = -3;
 }
 
 void metadata_remove (int no)

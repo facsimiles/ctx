@@ -608,6 +608,103 @@ static void move_item_up (CtxEvent *e, void *d1, void *d2)
   }
 }
 
+
+static int item_get_level (int no)
+{
+  int level = 0;
+  for (int i = 0; i <= no; i++)
+  {
+    int atom = item_get_type_atom (i);
+    switch (atom)
+    {
+      case CTX_ATOM_STARTGROUP:
+        level++;
+        break;
+      case CTX_ATOM_ENDGROUP:
+        level--;
+        break;
+      default:
+    }
+  }
+  return level;
+}
+
+static void move_item_left (CtxEvent *e, void *d1, void *d2)
+{
+  int no = (size_t)(d1);
+  int level = item_get_level (no);
+    fprintf (stderr, "mil %i\n", level);
+  if (level>0)
+  {
+    int target = no;
+    int target_level;
+    int count = 0;
+    do {
+      target++;
+      count++;
+      target_level = item_get_level (target);
+    } while (target_level >= level);
+
+
+    int remove_level = 0;
+    
+    if (item_get_type_atom (no-1) == CTX_ATOM_STARTGROUP &&
+        item_get_type_atom (no+1) == CTX_ATOM_ENDGROUP)
+      remove_level = 1;
+
+    metadata_insert (target+1, "");
+    metadata_cache_no = -3;
+    metadata_swap (no, target+1);
+    if (remove_level)
+    {
+      metadata_cache_no = -3;
+      metadata_remove (no-1);
+    metadata_cache_no = -3;
+      metadata_remove (no-1);
+    metadata_cache_no = -3;
+      metadata_remove (no-1);
+    }
+    else
+    metadata_remove (no);
+
+    metadata_dirt ();
+    ctx_set_dirty (e->ctx, 1);
+    itk->focus_no += count-1;
+  }
+}
+
+static void move_item_right (CtxEvent *e, void *d1, void *d2)
+{
+  int no = (size_t)(d1);
+  if (no < 1)
+    return;
+  {
+    int target = no-1;
+    int atom = item_get_type_atom (target);
+    if (atom == CTX_ATOM_ENDGROUP)
+    {
+      metadata_insert (target, "fnord");
+      metadata_swap (no+1, target);
+      metadata_remove (no+1);
+    }
+    else
+    {
+      // insert new group
+      target = no;
+      metadata_insert (target, "b");
+      metadata_set2 (target, "type", "ctx/endgroup");
+      metadata_insert (target, "fnord");
+      metadata_insert (target, "a");
+      metadata_set2 (target, "type", "ctx/startgroup");
+      metadata_swap (no+3, target+1);
+      metadata_remove (no+3);
+    }
+
+    metadata_dirt ();
+    ctx_set_dirty (e->ctx, 1);
+  }
+}
+
 void item_toggle_todo (CtxEvent *event, void *a, void *b)
 {
   int todo = metadata_key_int2 (focused_no, "todo");
@@ -1183,7 +1280,16 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
 
   if (text_edit < 0)
   {
-    if (metadata_key_int2 (focused_no-1, "virtual")>0)
+    if (files->items[focused_no][0]==0 &&
+        item_get_type_atom (focused_no-1) == CTX_ATOM_STARTGROUP &&
+        item_get_type_atom (focused_no+1) == CTX_ATOM_ENDGROUP)
+    {
+      text_edit = 0;
+      item_delete (event, (void*)focused_no, NULL);
+      itk->focus_no--;
+      metadata_dirt();
+    }
+    else if (metadata_key_int2 (focused_no-1, "virtual")>0)
     {
       text_edit=ctx_utf8_strlen(files->items[focused_no-1]);
       focused_no--;
@@ -1919,6 +2025,13 @@ static void dir_layout (ITK *itk, Files *files)
                            (void*)((size_t)i));
             ctx_add_key_binding (ctx, "control-up", NULL, NULL, move_item_up, 
                            (void*)((size_t)i));
+
+            ctx_add_key_binding (ctx, "control-left", NULL, NULL, move_item_left, 
+                           (void*)((size_t)i));
+
+            ctx_add_key_binding (ctx, "control-right", NULL, NULL, move_item_right, 
+                           (void*)((size_t)i));
+
           }
 
           }
