@@ -494,6 +494,7 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
 
 void itk_focus (ITK *itk, int dir);
 
+#if 0
 static void move_item_down (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
@@ -507,6 +508,86 @@ static void move_item_down (CtxEvent *e, void *d1, void *d2)
     itk_focus (itk, 1);
   }
 }
+#endif
+
+static void
+move_item_down (CtxEvent *event, void *a, void *b)
+{
+  int skip = 0;
+
+  //for (int i = 0; i < count; i++)
+  {
+  int start_no    = focused_no;
+  int start_focus = itk->focus_no;
+  
+  int start_level = 0;
+  int level = 0;
+  int did_skips = 0;
+  if (item_get_type_atom (focused_no + 2) == CTX_ATOM_STARTGROUP &&
+      item_get_type_atom (focused_no + 1) == CTX_ATOM_NONE)
+  {
+    focused_no++;
+  }
+
+  focused_no++;
+  itk->focus_no++;
+  int atom = item_get_type_atom (focused_no);
+  if (atom == CTX_ATOM_ENDGROUP)
+  {
+    itk->focus_no--;
+    focused_no--;
+    event->stop_propagate=1;
+    return;
+  }
+  if (atom == CTX_ATOM_STARTGROUP)
+     level++;
+
+  while (level > start_level)
+  {
+    focused_no++;
+    atom = item_get_type_atom (focused_no);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level++;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level--;
+      }
+    else
+    {
+      itk->focus_no++;
+      did_skips = 1;
+    }
+  }
+  //if (item_get_type_atom (focused_no) == CTX_ATOM_ENDGROUP)
+    level++;
+  while (item_get_type_atom (focused_no) == CTX_ATOM_ENDGROUP)
+  {
+    level--;
+    focused_no++;
+  }
+  focused_no++;
+
+  if (level < start_level)
+  {
+     focused_no = start_no;
+     itk->focus_no = start_focus;
+  }
+  else
+  {
+    if (did_skips) focused_no--;
+    metadata_insert (focused_no, "fnord");
+    metadata_swap (focused_no, start_no);
+    metadata_remove (start_no);
+    metadata_dirt ();
+  }
+  }
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
 
 static void grow_height (CtxEvent *e, void *d1, void *d2)
 {
@@ -737,7 +818,7 @@ static void move_item_right (CtxEvent *e, void *d1, void *d2)
     int atom = item_get_type_atom (target);
     if (atom == CTX_ATOM_ENDGROUP)
     {
-      metadata_insert (target, "");
+      metadata_insert (target, "a");
       metadata_swap (no+1, target);
       metadata_remove (no+1);
     }
@@ -745,10 +826,10 @@ static void move_item_right (CtxEvent *e, void *d1, void *d2)
     {
       // insert new group
       target = no;
-      metadata_insert (target, " ");
+      metadata_insert (target, "a");
       metadata_set2 (target, "type", "ctx/endgroup");
-      metadata_insert (target, "");
-      metadata_insert (target, "");
+      metadata_insert (target, "b");
+      metadata_insert (target, "c");
       metadata_set2 (target, "type", "ctx/startgroup");
       metadata_swap (no+3, target+1);
       metadata_remove (no+3);

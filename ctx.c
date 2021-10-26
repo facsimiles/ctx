@@ -14,6 +14,10 @@
 #include <SDL.h>
 #endif
 
+#if CTX_CAIRO
+#include <cairo.h>
+#endif
+
 #define _CTX_INTERNAL_FONT_ // drops ascii in favor of regular
 #include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
