@@ -1565,6 +1565,7 @@ void dir_prev_page (CtxEvent *event, void *a, void *b)
 {
   layout_show_page --;
   if (layout_show_page < 0) layout_show_page = 0;
+  itk->focus_no = 0;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -1572,6 +1573,7 @@ void dir_prev_page (CtxEvent *event, void *a, void *b)
 void dir_next_page (CtxEvent *event, void *a, void *b)
 {
   layout_show_page ++;
+  itk->focus_no = 0;
   //if (layout_show_page > layout_last_page) layout_show_page = layout_last_page;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
