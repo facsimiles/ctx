@@ -374,9 +374,9 @@ int ctx_utf8_strlen (const char *s);
 /* If cairo.h is included before ctx.h add cairo integration code
  */
 #ifdef CAIRO_H
+#ifndef CTX_CAIRO
 #define CTX_CAIRO 1
-#else
-#define CTX_CAIRO 0
+#endif
 #endif
 
 #ifndef CTX_SDL

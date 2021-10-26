@@ -301,7 +301,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
 #endif
       case CTX_TEXT:
         /* XXX: implement some linebreaking/wrap, positioning
-         *      behavior here
+         *      behavior here?
          */
         cairo_show_text (cr, ctx_arg_string () );
         break;
