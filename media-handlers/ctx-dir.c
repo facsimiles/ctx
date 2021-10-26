@@ -1645,7 +1645,8 @@ int item_context_active = 0;
 
 int item_outliner = 0; // with 0 only virtual items get outliner event handling
 
-/* */
+static int layout_find_item = -1;
+
 static void
 item_outliner_down (CtxEvent *event, void *a, void *b)
 {
@@ -1656,11 +1657,9 @@ item_outliner_down (CtxEvent *event, void *a, void *b)
   int level = 0;
 
   focused_no++;
-  itk->focus_no++;
   int atom = item_get_type_atom (focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
   {
-    itk->focus_no--;
     focused_no--;
     event->stop_propagate=1;
     return;
@@ -1682,7 +1681,6 @@ item_outliner_down (CtxEvent *event, void *a, void *b)
       }
     else
     {
-      itk->focus_no++;
     }
   }
   level++;
@@ -1695,8 +1693,10 @@ item_outliner_down (CtxEvent *event, void *a, void *b)
   if (level < start_level)
   {
      focused_no = start_no;
-     itk->focus_no = start_focus;
   }
+
+  layout_find_item = focused_no;
+  itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -1927,7 +1927,16 @@ static void dir_layout (ITK *itk, Files *files)
         (files->items[i][0] != '.') // skipping dot files
        )
     {
-      if (itk->control_no == itk->focus_no)
+      if (layout_find_item == i)
+      {
+         itk->focus_no = itk->control_no;
+         focused_no = i;
+         layout_find_item = -1;
+
+         // if we are on a nonprinting page, queue page change
+      }
+
+      if (itk->control_no == itk->focus_no && layout_find_item < 0)
       {
         focused_no = i;
       }
@@ -2172,8 +2181,7 @@ static void dir_layout (ITK *itk, Files *files)
            }
         }
 
-
-        if (c->no == itk->focus_no)
+        if (c->no == itk->focus_no && layout_find_item < 0)
         {
           focused = 1;
           //fprintf (stderr, "\n{%i %i %i}\n", c->no, itk->focus_no, i);
@@ -2273,7 +2281,7 @@ static void dir_layout (ITK *itk, Files *files)
           ctx_gray (itk->ctx, 0.95);
 
 
-          if (c->no == itk->focus_no)
+          if (c->no == itk->focus_no && layout_find_item < 0)
           {
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
                        space_width, width, em,
