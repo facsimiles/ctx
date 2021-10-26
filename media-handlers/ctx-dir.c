@@ -2958,9 +2958,6 @@ static int card_files (ITK *itk_, void *data)
   return 0;
 }
 
-extern int _ctx_max_threads;
-extern int _ctx_enable_hash_cache;
-
 void ctx_clients_signal_child (int signum);
 
 int ctx_dir_main (int argc, char **argv)
