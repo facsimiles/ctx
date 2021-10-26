@@ -243,6 +243,10 @@ typedef enum CtxAtom {
  CTX_ATOM_NEWPAGE,
  CTX_ATOM_STARTGROUP,
  CTX_ATOM_ENDGROUP,
+
+ CTX_ATOM_RECTANGLE,
+ CTX_ATOM_CTX,
+ CTX_ATOM_TEXT
 } CtxAtom;
 
 CtxAtom item_get_type_atom (int i)
@@ -263,6 +267,18 @@ if (type)
    else if (!strcmp (type, "ctx/endgroup"))
    {
      return CTX_ATOM_ENDGROUP;
+   }
+   else if (!strcmp (type, "ctx/rectangle"))
+   {
+     return CTX_ATOM_RECTANGLE;
+   }
+   else if (!strcmp (type, "ctx/text"))
+   {
+     return CTX_ATOM_TEXT;
+   }
+   else if (!strcmp (type, "ctx/ctx"))
+   {
+     return CTX_ATOM_CTX;
    }
    free (type);
 }
@@ -429,6 +445,28 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
     ctx_set_dirty (e->ctx, 1);
     e->stop_propagate = 1;
   }
+}
+
+
+static void item_drag (CtxEvent *e, void *d1, void *d2)
+{
+  fprintf (stderr, "drag %i\n", e->type);
+  switch (e->type)
+  {
+    case CTX_DRAG_PRESS:
+    case CTX_DRAG_MOTION:
+    //case CTX_DRAG_RELEASE:
+      e->stop_propagate = 1;
+      break;
+    default:
+      break;
+  }
+}
+
+static void item_tap_and_hold (CtxEvent *e, void *d1, void *d2)
+{
+  fprintf (stderr, "tap and hold %i\n", e->type);
+  e->stop_propagate = 1;
 }
 
 static int viewer_load_next_handler = 0;
@@ -1904,6 +1942,9 @@ static void dir_layout (ITK *itk, Files *files)
       switch (atom)
       {
         case CTX_ATOM_NONE:
+        case CTX_ATOM_RECTANGLE:
+        case CTX_ATOM_TEXT:
+        case CTX_ATOM_CTX:
           break;
         case CTX_ATOM_LAYOUTBOX:
           break;
@@ -1975,6 +2016,9 @@ static void dir_layout (ITK *itk, Files *files)
 
       int virtual = metadata_key_int2 (i, "virtual");
       if (virtual < 0) virtual = 0;
+
+      if (virtual)
+        atom = CTX_ATOM_TEXT;
 
       if (layout_config.stack_horizontal && layout_config.stack_vertical)
       {
@@ -2113,6 +2157,21 @@ static void dir_layout (ITK *itk, Files *files)
           label = 1;
         }
 
+        if (!strcmp (media_type, "inline/text"))
+        {
+           if (atom == CTX_ATOM_RECTANGLE)
+           {
+             media_type = "ctx/rectangle";
+           }
+           else if (atom == CTX_ATOM_CTX)
+           {
+             media_type = "ctx/ctx";
+           }
+           else if (atom == CTX_ATOM_TEXT)
+           {
+           }
+        }
+
 
         if (c->no == itk->focus_no)
         {
@@ -2121,7 +2180,11 @@ static void dir_layout (ITK *itk, Files *files)
           //viewer_load_path (newpath, files->items[i]);
           ctx_begin_path (itk->ctx);
           ctx_rectangle (itk->ctx, c->x, c->y, c->width, c->height);
-          ctx_listen (itk->ctx, CTX_CLICK, item_activate, (void*)(size_t)i, NULL);
+          ctx_listen (itk->ctx, CTX_DRAG, item_drag, (void*)(size_t)i, NULL);
+          ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_activate, (void*)(size_t)i, NULL);
+          //ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_tap_and_hold, (void*)(size_t)i, NULL);
+
+
           ctx_begin_path (itk->ctx);
           //ctx_rgb(itk->ctx,1,0,0);
           //ctx_fill(itk->ctx);
@@ -2199,7 +2262,7 @@ static void dir_layout (ITK *itk, Files *files)
       ctx_begin_path (ctx);
       ctx_gray (ctx, 0.0);
 
-        if (virtual)
+        if (atom == CTX_ATOM_TEXT)
         {
           ctx_save (itk->ctx);
 
@@ -2248,21 +2311,59 @@ static void dir_layout (ITK *itk, Files *files)
 
           ctx_restore (itk->ctx);
         }
-      else if (!strcmp (media_type, "inode/directory"))
-      {
-        draw_folder (ctx, itk->x, itk->y, width, height);
-      }
       else
-      {
-        if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
+        if (atom == CTX_ATOM_RECTANGLE)
+        {
+          char *fill = metadata_key_string2(i, "fill");
+          char *stroke = metadata_key_string2(i, "stroke");
+          float line_width = metadata_key_float2(i, "line-width");
+          float opacity = metadata_key_float2(i, "opacity");
+
+          if (opacity < 0) opacity = 1.0;
+          if (line_width < 0) line_width = 1.0;
+
+          ctx_rectangle (itk->ctx, itk->x, itk->y, width, height);
+          if (fill)
+          {
+            ctx_color (itk->ctx, fill);
+            if (stroke)
+              ctx_preserve (itk->ctx);
+            ctx_fill (itk->ctx);
+            free (fill);
+          }
+        
+
+          if (stroke)
+          {
+            ctx_color (itk->ctx, stroke);
+            ctx_line_width (itk->ctx, line_width);
+            ctx_stroke (itk->ctx);
+            free (stroke);
+          }
+        }
+        else if (atom == CTX_ATOM_LAYOUTBOX)
+        {
+        }
+        else if (atom == CTX_ATOM_CTX)
+        {
+          ctx_save (itk->ctx);
+          ctx_translate (itk->ctx, itk->x, itk->y);
+          ctx_parse (itk->ctx, d_name);
+          ctx_restore (itk->ctx);
+        }
+        else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
         {
           draw_img (itk, itk->x, itk->y, width, height, newpath);
+        }
+        else if (!strcmp (media_type, "inode/directory"))
+        {
+          draw_folder (ctx, itk->x, itk->y, width, height);
         }
         else
         {
           draw_doc (ctx, itk->x, itk->y, width, height);
         }
-      }
+
       if (layout_config.list_data)
       {
 

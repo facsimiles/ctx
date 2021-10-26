@@ -2305,6 +2305,7 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
 static int ctx_path_is_dir (const char *path)
 {
   struct stat stat_buf;
+  if (!path || path[0]==0) return 0;
   lstat (path, &stat_buf);
   return S_ISDIR (stat_buf.st_mode);
 }
