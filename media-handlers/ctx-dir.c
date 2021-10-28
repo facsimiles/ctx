@@ -578,12 +578,19 @@ move_item_down (CtxEvent *event, void *a, void *b)
   //for (int i = 0; i < count; i++)
   {
   int start_no    = focused_no;
-    int count = items_to_move (start_no);
+  int count = items_to_move (start_no);
   
   int start_level = 0;
   int level = 0;
   int did_skips = 0;
   int did_foo =0;
+
+  if (item_get_type_atom (focused_no + count) == CTX_ATOM_ENDGROUP)
+  {
+    event->stop_propagate=1;
+    return;
+  }
+
   if (item_get_type_atom (focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
       item_get_type_atom (focused_no + count) == CTX_ATOM_TEXT)
   {
