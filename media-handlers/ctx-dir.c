@@ -824,6 +824,9 @@ static void move_item_left (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
   int level = item_get_level (no);
+
+  int count = items_to_move (no);
+
   if (level>0)
   {
     int target = no;
@@ -836,26 +839,26 @@ static void move_item_left (CtxEvent *e, void *d1, void *d2)
     int remove_level = 0;
     
     if (item_get_type_atom (no-1) == CTX_ATOM_STARTGROUP &&
-        item_get_type_atom (no+1) == CTX_ATOM_ENDGROUP)
+        item_get_type_atom (no+count) == CTX_ATOM_ENDGROUP)
       remove_level = 1;
 
-    metadata_insert (target+1, "");
-    metadata_cache_no = -3;
-    metadata_swap (no, target+1);
+    for (int i = 0; i < count; i ++)
+    {
+      metadata_insert (target+1+i, "a");
+      metadata_swap (no+i, target+1+i);
+    }
+
     if (remove_level)
     {
-      metadata_cache_no = -3;
-      metadata_remove (no-1);
-      metadata_cache_no = -3;
-      metadata_remove (no-1);
-      metadata_cache_no = -3;
-      metadata_remove (no-1);
+      for (int i = 0; i < count + 2; i++)
+        metadata_remove (no-1);
       layout_find_item = no - 1;
     }
     else
     {
-      metadata_remove (no);
-      layout_find_item = target;
+      for (int i = 0; i < count; i++)
+        metadata_remove (no);
+      layout_find_item = target - count;
     }
 
     itk->focus_no = -1;
@@ -873,15 +876,19 @@ static void move_item_right (CtxEvent *e, void *d1, void *d2)
     return;
 
   {
+    int count = items_to_move (no);
     int target = no-1;
     int atom = item_get_type_atom (target);
     if (atom == CTX_ATOM_STARTGROUP)
        return;
     if (atom == CTX_ATOM_ENDGROUP)
     {
-      metadata_insert (target, "a");
-      metadata_swap (no+1, target);
-      metadata_remove (no+1);
+      for (int i = 0; i < count; i++)
+      {
+        metadata_insert (target+i, "a");
+        metadata_swap (no+1+i, target+i);
+        metadata_remove (no+1+i);
+      }
     }
     else
     {
@@ -889,11 +896,17 @@ static void move_item_right (CtxEvent *e, void *d1, void *d2)
       target = no;
       metadata_insert (target, "a");
       metadata_set2 (target, "type", "ctx/endgroup");
+      for (int i = 0; i <count;i++)
       metadata_insert (target, "b");
+
       metadata_insert (target, "c");
       metadata_set2 (target, "type", "ctx/startgroup");
-      metadata_swap (no+3, target+1);
-      metadata_remove (no+3);
+
+      for (int i = 0; i < count; i++)
+      {
+        metadata_swap (no+count+2, target+1+i);
+        metadata_remove (no+count+2);
+      }
     }
 
     layout_find_item = target;
