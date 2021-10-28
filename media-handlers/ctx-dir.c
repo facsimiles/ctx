@@ -799,6 +799,7 @@ static int item_get_level (int no)
         level--;
         break;
       default:
+        break;
     }
   }
   return level;
