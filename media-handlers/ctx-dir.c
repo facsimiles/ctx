@@ -548,6 +548,8 @@ static void move_item_down (CtxEvent *e, void *d1, void *d2)
 }
 #endif
 
+static int layout_find_item = -1;
+
 static void
 move_item_down (CtxEvent *event, void *a, void *b)
 {
@@ -556,7 +558,6 @@ move_item_down (CtxEvent *event, void *a, void *b)
   //for (int i = 0; i < count; i++)
   {
   int start_no    = focused_no;
-  int start_focus = itk->focus_no;
   
   int start_level = 0;
   int level = 0;
@@ -568,11 +569,9 @@ move_item_down (CtxEvent *event, void *a, void *b)
   }
 
   focused_no++;
-  itk->focus_no++;
   int atom = item_get_type_atom (focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
   {
-    itk->focus_no--;
     focused_no--;
     event->stop_propagate=1;
     return;
@@ -594,7 +593,6 @@ move_item_down (CtxEvent *event, void *a, void *b)
       }
     else
     {
-      itk->focus_no++;
       did_skips = 1;
     }
   }
@@ -610,7 +608,6 @@ move_item_down (CtxEvent *event, void *a, void *b)
   if (level < start_level)
   {
      focused_no = start_no;
-     itk->focus_no = start_focus;
   }
   else
   {
@@ -619,8 +616,12 @@ move_item_down (CtxEvent *event, void *a, void *b)
     metadata_swap (focused_no, start_no);
     metadata_remove (start_no);
     metadata_dirt ();
+    focused_no--;
   }
   }
+
+  layout_find_item = focused_no;
+  itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -733,14 +734,12 @@ static void
 move_item_up (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
-  int start_focus = itk->focus_no;
   
   int level = 0;
   int start_level = 0;
   int did_skips = 0;
 
   focused_no--;
-  itk->focus_no--;
   int atom = item_get_type_atom (focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
      level++;
@@ -761,14 +760,12 @@ move_item_up (CtxEvent *event, void *a, void *b)
       }
     else
     {
-      itk->focus_no--;
       did_skips = 1;
     }
   }
   if (level < start_level)
   {
      focused_no = start_no;
-     itk->focus_no = start_focus;
   }
   else
   {
@@ -777,7 +774,11 @@ move_item_up (CtxEvent *event, void *a, void *b)
     metadata_swap (start_no+1, focused_no-1);
     metadata_remove (start_no+1);
     metadata_dirt ();
+    focused_no--;
   }
+
+  layout_find_item = focused_no;
+  itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -811,13 +812,10 @@ static void move_item_left (CtxEvent *e, void *d1, void *d2)
   {
     int target = no;
     int target_level;
-    int count = 0;
     do {
       target++;
-      count++;
       target_level = item_get_level (target);
     } while (target_level >= level);
-
 
     int remove_level = 0;
     
@@ -832,17 +830,23 @@ static void move_item_left (CtxEvent *e, void *d1, void *d2)
     {
       metadata_cache_no = -3;
       metadata_remove (no-1);
-    metadata_cache_no = -3;
+      metadata_cache_no = -3;
       metadata_remove (no-1);
-    metadata_cache_no = -3;
+      metadata_cache_no = -3;
       metadata_remove (no-1);
+      layout_find_item = no - 1;
     }
     else
-    metadata_remove (no);
+    {
+      metadata_remove (no);
+      layout_find_item = target;
+    }
+
+    itk->focus_no = -1;
 
     metadata_dirt ();
     ctx_set_dirty (e->ctx, 1);
-    itk->focus_no += count-1;
+
   }
 }
 
@@ -872,6 +876,9 @@ static void move_item_right (CtxEvent *e, void *d1, void *d2)
       metadata_swap (no+3, target+1);
       metadata_remove (no+3);
     }
+
+    layout_find_item = target;
+    itk->focus_no = -1;
 
     metadata_dirt ();
     ctx_set_dirty (e->ctx, 1);
@@ -1640,18 +1647,15 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
   // -- - //
 }
 
-
 int item_context_active = 0;
 
 int item_outliner = 0; // with 0 only virtual items get outliner event handling
 
-static int layout_find_item = -1;
 
 static void
 item_outliner_down (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
-  int start_focus = itk->focus_no;
   
   int start_level = 0;
   int level = 0;
@@ -1706,13 +1710,11 @@ static void
 item_outliner_up (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
-  int start_focus = itk->focus_no;
   
   int level = 0;
   int start_level = 0;
 
   focused_no--;
-  itk->focus_no--;
   int atom = item_get_type_atom (focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
      level++;
@@ -1733,14 +1735,20 @@ item_outliner_up (CtxEvent *event, void *a, void *b)
       }
     else
     {
-      itk->focus_no--;
     }
+  }
+  while (atom == CTX_ATOM_STARTGROUP)
+  {
+    focused_no--;
+    atom = item_get_type_atom (focused_no);
   }
   if (level < start_level)
   {
      focused_no = start_no;
-     itk->focus_no = start_focus;
   }
+
+  layout_find_item = focused_no;
+  itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -1753,7 +1761,6 @@ static void
 item_outliner_left (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
-  int start_focus = itk->focus_no;
   
   int level = 1;
 
@@ -1772,15 +1779,16 @@ item_outliner_left (CtxEvent *event, void *a, void *b)
       }
     else
     {
-      itk->focus_no--;
     }
   }
-  itk->focus_no--;
+  focused_no--;
   if (focused_no < 0)
   {
      focused_no = start_no;
-     itk->focus_no = start_focus;
   }
+
+  layout_find_item = focused_no;
+  itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -1790,19 +1798,17 @@ static void
 item_outliner_right (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
-  int start_focus = itk->focus_no;
   
   focused_no++;
   CtxAtom  atom = item_get_type_atom (focused_no);
 
   if (atom == CTX_ATOM_STARTGROUP)
   {
-    itk->focus_no++;
+    focused_no++;
   }
   else
   {
      focused_no = start_no;
-     itk->focus_no = start_focus;
 
      metadata_insert(focused_no+1, "");
      metadata_set2(focused_no+1, "type", "ctx/startgroup");
@@ -1814,9 +1820,11 @@ item_outliner_right (CtxEvent *event, void *a, void *b)
      metadata_insert(focused_no+3, "");
      metadata_set2(focused_no+3, "type", "ctx/endgroup");
      metadata_dirt();
-     itk->focus_no++;
-     // create empty place holder node
+     focused_no++;
   }
+
+  layout_find_item = focused_no;
+  itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
