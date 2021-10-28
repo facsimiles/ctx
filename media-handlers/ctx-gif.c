@@ -11,6 +11,10 @@
 #define _DEFAULT_SOURCE
 #endif
 
+#if CTX_CAIRO
+#include <cairo.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

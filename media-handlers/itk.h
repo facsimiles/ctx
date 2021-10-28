@@ -1,6 +1,3 @@
-#if CTX_CAIRO
-#include <cairo.h>
-#endif
 
 #if !__COSMOPOLITAN__
 #include <stdarg.h>

@@ -408,6 +408,9 @@ int ctx_utf8_strlen (const char *s);
 #endif
 
 #if CTX_CAIRO
+#ifndef CAIRO_H
+typedef struct _cairo_t cairo_t;
+#endif
 
 /* render the deferred commands of a ctx context to a cairo
  * context

@@ -54,6 +54,10 @@ steps combined.
 #include <stdio.h>
 #include <unistd.h>
 
+#if CTX_CAIRO
+#include <cairo.h>
+#endif
+
 //#include <SDL2/SDL.h>
 
 //#define CTX_RASTERIZER  1
