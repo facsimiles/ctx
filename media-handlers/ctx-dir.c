@@ -238,14 +238,13 @@ static void set_grid (CtxEvent *e, void *d1, void *d2)
 }
 
 typedef enum CtxAtom {
- CTX_ATOM_NONE = 0,
+ CTX_ATOM_TEXT = 0,
  CTX_ATOM_LAYOUTBOX,
  CTX_ATOM_NEWPAGE,
  CTX_ATOM_STARTGROUP,
  CTX_ATOM_ENDGROUP,
  CTX_ATOM_RECTANGLE,
  CTX_ATOM_CTX,
- CTX_ATOM_TEXT,
  CTX_ATOM_FILE
 } CtxAtom;
 
@@ -265,7 +264,7 @@ if (type)
    else if (!strcmp (type, "ctx/file"))       return CTX_ATOM_FILE;
    free (type);
 }
-  return CTX_ATOM_NONE;
+  return CTX_ATOM_TEXT;
 }
 
 void dm_set_path (Files *files, const char *path)
@@ -389,7 +388,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   //CtxEvent *e = &event; // we make a copy to permit recursion
   int no = (size_t)(d1);
   viewer_no = no;
-  int virtual = (metadata_key_int2 (no, "virtual") > 0);
+  int virtual = (item_get_type_atom (no) == CTX_ATOM_TEXT);
 
   if (virtual)
   {
@@ -475,14 +474,14 @@ static void metadata_dirt(void)
   metadata_cache_no=-3;
 }
 
+static int layout_find_item = -1;
+
 static void item_delete (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
 
-  int virtual = metadata_key_int2 (no, "virtual");
-  if (virtual <0) virtual = 0;
-
-  if (virtual)
+  //int virtual = (item_get_type_atom (no) == CTX_ATOM_TEXT);
+  //if (virtual)
   {
     CtxAtom pre_atom = item_get_type_atom (no-1);
     CtxAtom post_atom = item_get_type_atom (no+1);
@@ -492,13 +491,15 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
     {
       metadata_remove (no-1);
       metadata_remove (no-1);
-      metadata_remove (no-1);
+      layout_find_item = no-2;
     }
     else
     {
       metadata_remove (no);
+      layout_find_item = no;
     }
     text_edit = TEXT_EDIT_OFF;
+    itk->focus_no = -1;
 
     metadata_dirt();
     ctx_set_dirty (e->ctx, 1);
@@ -532,7 +533,6 @@ static void move_item_down (CtxEvent *e, void *d1, void *d2)
 }
 #endif
 
-static int layout_find_item = -1;
 
 static void
 move_item_down (CtxEvent *event, void *a, void *b)
@@ -547,7 +547,7 @@ move_item_down (CtxEvent *event, void *a, void *b)
   int level = 0;
   int did_skips = 0;
   if (item_get_type_atom (focused_no + 2) == CTX_ATOM_STARTGROUP &&
-      item_get_type_atom (focused_no + 1) == CTX_ATOM_NONE)
+      item_get_type_atom (focused_no + 1) == CTX_ATOM_TEXT)
   {
     focused_no++;
   }
@@ -1303,7 +1303,6 @@ void text_edit_return (CtxEvent *event, void *a, void *b)
 {
   char *str = strdup (files->items[focused_no]);
   metadata_insert (focused_no+1, files->items[focused_no]);
-  metadata_set_float2 (focused_no+1, "virtual", 1);
   metadata_dirt ();
 
   metadata_rename (focused_no+1, str + text_edit);
@@ -1333,7 +1332,7 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
       metadata_dirt ();
     }
     else if (text_edit == 0 && focused_no > 0 &&
-             (metadata_key_int2 (focused_no-1, "virtual")>0)
+            (item_get_type_atom (focused_no-1) == CTX_ATOM_TEXT)
             )
     {
       CtxString *str = ctx_string_new (files->items[focused_no-1]);
@@ -1358,7 +1357,7 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
     CtxString *str = ctx_string_new (files->items[focused_no]);
     if (text_edit == (int)strlen(str->str))
     {
-      if ((metadata_key_int2 (focused_no+1, "virtual")>0))
+      if (item_get_type_atom (focused_no+1) == CTX_ATOM_TEXT)
       {
         ctx_string_append_str (str, files->items[focused_no+1]);
         metadata_remove (focused_no+1);
@@ -1422,7 +1421,7 @@ void text_edit_right (CtxEvent *event, void *a, void *b)
 
   if (text_edit>len)
   {
-    if (metadata_key_int2 (focused_no+1, "virtual")>0)
+    if (item_get_type_atom (focused_no+1) == CTX_ATOM_TEXT)
     {
       text_edit=0;
       focused_no++;
@@ -1451,10 +1450,13 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
     {
       text_edit = 0;
       item_delete (event, (void*)focused_no, NULL);
-      itk->focus_no--;
+
+      //layout_find_item = focused_no-1;
+      //itk->focus_no = -1;
       metadata_dirt();
     }
-    else if (metadata_key_int2 (focused_no-1, "virtual")>0)
+    else if (item_get_type_atom (focused_no-1) == CTX_ATOM_TEXT)
+
     {
       text_edit=ctx_utf8_strlen(files->items[focused_no-1]);
       focused_no--;
@@ -1475,7 +1477,7 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
 
   if (text_edit == 0)
   {
-    if (metadata_key_int2 (focused_no-1, "virtual")>0)
+    if (item_get_type_atom (focused_no-1) == CTX_ATOM_TEXT)
     {
       text_edit=ctx_utf8_strlen(files->items[focused_no-1]);
       focused_no--;
@@ -1546,7 +1548,7 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
     return;
   }
 
-  if (metadata_key_int2 (focused_no-1, "virtual")<=0)
+  if (item_get_type_atom (focused_no-1) != CTX_ATOM_TEXT)
   {
     event->stop_propagate=1;
     return;
@@ -1619,7 +1621,7 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
     return;
   }
 
-  if (metadata_key_int2 (focused_no+1, "virtual")<=0)
+  if (item_get_type_atom (focused_no+1) != CTX_ATOM_TEXT)
   {
     event->stop_propagate=1;
     return;
@@ -1799,7 +1801,6 @@ item_outliner_right (CtxEvent *event, void *a, void *b)
      metadata_set2(focused_no+1, "type", "ctx/startgroup");
 
      metadata_insert(focused_no+2, "");
-     metadata_set_float2(focused_no+2, "virtual", 1);
      text_edit = 0;
 
      metadata_insert(focused_no+3, "");
@@ -1925,8 +1926,9 @@ static void dir_layout (ITK *itk, Files *files)
 
          if (!printing)
          {
-           layout_show_page = layout_page_no;
-           ctx_set_dirty (itk->ctx, 1);
+           layout_show_page = layout_page_no; // change to right page
+           ctx_set_dirty (itk->ctx, 1); // queue another redraw
+                                        // of the right page we'll find it then
          }
          else
          {
@@ -1934,7 +1936,6 @@ static void dir_layout (ITK *itk, Files *files)
            focused_no = i;
            layout_find_item = -1;
          }
-         // if we are on a nonprinting page, queue page change
       }
 
       if (itk->control_no == itk->focus_no && layout_find_item < 0)
@@ -1951,7 +1952,6 @@ static void dir_layout (ITK *itk, Files *files)
 
       switch (atom)
       {
-        case CTX_ATOM_NONE:
         case CTX_ATOM_RECTANGLE:
         case CTX_ATOM_TEXT:
         case CTX_ATOM_FILE:
@@ -2025,8 +2025,7 @@ static void dir_layout (ITK *itk, Files *files)
           height *= saved_width;
       }
 
-      int virtual = metadata_key_int2 (i, "virtual");
-      if (virtual < 0) virtual = 0;
+      int virtual = (item_get_type_atom (i) == CTX_ATOM_TEXT);
 
       if (virtual)
         atom = CTX_ATOM_TEXT;
@@ -2778,8 +2777,7 @@ static int card_files (ITK *itk_, void *data)
                           dir_prev_page,
                           NULL);
 
-          int virtual = (metadata_key_int2 (focused_no, "virtual") > 0);
-          if (item_outliner || virtual)
+          if (item_outliner || item_get_type_atom (focused_no) == CTX_ATOM_TEXT)
           {
           ctx_add_key_binding (ctx, "up", NULL, NULL,
                           item_outliner_up,
