@@ -578,14 +578,17 @@ move_item_down (CtxEvent *event, void *a, void *b)
   //for (int i = 0; i < count; i++)
   {
   int start_no    = focused_no;
+    int count = items_to_move (start_no);
   
   int start_level = 0;
   int level = 0;
   int did_skips = 0;
-  if (item_get_type_atom (focused_no + 2) == CTX_ATOM_STARTGROUP &&
-      item_get_type_atom (focused_no + 1) == CTX_ATOM_TEXT)
+  int did_foo =0;
+  if (item_get_type_atom (focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
+      item_get_type_atom (focused_no + count) == CTX_ATOM_TEXT)
   {
-    focused_no++;
+    focused_no+=count;
+    did_foo = 1;
   }
 
   focused_no++;
@@ -630,9 +633,7 @@ move_item_down (CtxEvent *event, void *a, void *b)
   }
   else
   {
-    int count = items_to_move (start_no);
-
-    //if (did_skips) focused_no--;
+    if (did_skips && did_foo) focused_no--;
 
     //focused_no++;
 
@@ -2791,13 +2792,13 @@ static int card_files (ITK *itk_, void *data)
                           dir_font_down,
                           NULL);
 #else
-          ctx_add_key_binding (ctx, "+", NULL, NULL,
+          ctx_add_key_binding (ctx, "control-+", NULL, NULL,
                           dir_zoom_in,
                           NULL);
-          ctx_add_key_binding (ctx, "=", NULL, NULL,
+          ctx_add_key_binding (ctx, "control-=", NULL, NULL,
                           dir_zoom_in,
                           NULL);
-          ctx_add_key_binding (ctx, "-", NULL, NULL,
+          ctx_add_key_binding (ctx, "control--", NULL, NULL,
                           dir_zoom_out,
                           NULL);
 #endif
