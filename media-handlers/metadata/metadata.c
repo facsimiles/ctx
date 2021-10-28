@@ -578,7 +578,7 @@ static void _metadata_insert (int pos, const char *data, int len)
   metadata_cache_no = -3;
 }
 
-void metadata_insert (int pos, const char *item)
+int metadata_insert (int pos, const char *item)
 {
   if (pos == -1) pos = metadata_len;
   const char *m = metadata_find_no (pos);
@@ -598,6 +598,7 @@ void metadata_insert (int pos, const char *item)
   free (escaped_item);
 
   _metadata_insert (m-metadata, tmp, strlen (tmp));
+  return pos;
 }
 
 void metadata_rename (int pos, const char *new_name)

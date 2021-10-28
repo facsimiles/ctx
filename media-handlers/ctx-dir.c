@@ -243,10 +243,10 @@ typedef enum CtxAtom {
  CTX_ATOM_NEWPAGE,
  CTX_ATOM_STARTGROUP,
  CTX_ATOM_ENDGROUP,
-
  CTX_ATOM_RECTANGLE,
  CTX_ATOM_CTX,
- CTX_ATOM_TEXT
+ CTX_ATOM_TEXT,
+ CTX_ATOM_FILE
 } CtxAtom;
 
 CtxAtom item_get_type_atom (int i)
@@ -256,30 +256,13 @@ if (type)
 {
    if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
      return CTX_ATOM_LAYOUTBOX;
-   else if (!strcmp (type, "ctx/newpage"))
-   {
-     return CTX_ATOM_NEWPAGE;
-   }
-   else if (!strcmp (type, "ctx/startgroup"))
-   {
-     return CTX_ATOM_STARTGROUP;
-   }
-   else if (!strcmp (type, "ctx/endgroup"))
-   {
-     return CTX_ATOM_ENDGROUP;
-   }
-   else if (!strcmp (type, "ctx/rectangle"))
-   {
-     return CTX_ATOM_RECTANGLE;
-   }
-   else if (!strcmp (type, "ctx/text"))
-   {
-     return CTX_ATOM_TEXT;
-   }
-   else if (!strcmp (type, "ctx/ctx"))
-   {
-     return CTX_ATOM_CTX;
-   }
+   else if (!strcmp (type, "ctx/newpage"))    return CTX_ATOM_NEWPAGE;
+   else if (!strcmp (type, "ctx/startgroup")) return CTX_ATOM_STARTGROUP;
+   else if (!strcmp (type, "ctx/endgroup"))   return CTX_ATOM_ENDGROUP;
+   else if (!strcmp (type, "ctx/rectangle"))  return CTX_ATOM_RECTANGLE;
+   else if (!strcmp (type, "ctx/text"))       return CTX_ATOM_TEXT;
+   else if (!strcmp (type, "ctx/ctx"))        return CTX_ATOM_CTX;
+   else if (!strcmp (type, "ctx/file"))       return CTX_ATOM_FILE;
    free (type);
 }
   return CTX_ATOM_NONE;
@@ -352,7 +335,8 @@ void dm_set_path (Files *files, const char *path)
     }
     if (!found && (name[0] != '.' || (name[0] == '.' && name[1]=='.')))
     {
-      metadata_insert(-1, name);
+      int n = metadata_insert(-1, name);
+      metadata_set2 (n, "type", "ctx/file");
       files->items[files->count++] = strdup (name);
     }
   }
@@ -1738,12 +1722,12 @@ item_outliner_up (CtxEvent *event, void *a, void *b)
     {
     }
   }
-  while (atom == CTX_ATOM_STARTGROUP)
+  while (atom == CTX_ATOM_STARTGROUP || atom == CTX_ATOM_LAYOUTBOX)
   {
     focused_no--;
     atom = item_get_type_atom (focused_no);
   }
-  if (level < start_level)
+  if (level < start_level || focused_no <= 0)
   {
      focused_no = start_no;
   }
@@ -1962,6 +1946,7 @@ static void dir_layout (ITK *itk, Files *files)
         case CTX_ATOM_NONE:
         case CTX_ATOM_RECTANGLE:
         case CTX_ATOM_TEXT:
+        case CTX_ATOM_FILE:
         case CTX_ATOM_CTX:
           break;
         case CTX_ATOM_LAYOUTBOX:
@@ -2186,6 +2171,9 @@ static void dir_layout (ITK *itk, Files *files)
              media_type = "ctx/ctx";
            }
            else if (atom == CTX_ATOM_TEXT)
+           {
+           }
+           else if (atom == CTX_ATOM_FILE)
            {
            }
         }
