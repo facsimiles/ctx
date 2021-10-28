@@ -1922,10 +1922,18 @@ static void dir_layout (ITK *itk, Files *files)
     {
       if (layout_find_item == i)
       {
-         itk->focus_no = itk->control_no;
-         focused_no = i;
-         layout_find_item = -1;
 
+         if (!printing)
+         {
+           layout_show_page = layout_page_no;
+           ctx_set_dirty (itk->ctx, 1);
+         }
+         else
+         {
+           itk->focus_no = itk->control_no;
+           focused_no = i;
+           layout_find_item = -1;
+         }
          // if we are on a nonprinting page, queue page change
       }
 
