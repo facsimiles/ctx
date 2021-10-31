@@ -25,9 +25,13 @@ static void metadata_load (const char *path)
     free (metadata);
   metadata = NULL;
   metadata_len = 0;
+  metadata_size = 0;
+  metadata_cache = NULL;
   snprintf (metadata_path, strlen(path)+10, "%s/ctx.idx", path);
   ctx_get_contents (metadata_path, (uint8_t**)&metadata, &metadata_size);
   metadata_len = metadata_size;
+
+  fprintf (stderr, "%s loaded len: %i %p\n", path, metadata_len, metadata);
 }
 
 #if 1
@@ -574,6 +578,7 @@ static void _metadata_insert (int pos, const char *data, int len)
   }
   memmove (metadata + pos + len, metadata + pos, metadata_len - pos);
   memcpy (metadata + pos, data, len);
+  metadata[pos+len]=0;
   metadata_len += len;
   metadata_cache_no = -3;
 }
