@@ -76,6 +76,8 @@ int layout_page_no = 0;
 int layout_show_page = 0;
 int layout_last_page = 0;
 
+int tool_no = -1;
+
 typedef struct _CtxSHA1 CtxSHA1;
 CtxSHA1 *ctx_sha1_new (void);
 void ctx_sha1_free    (CtxSHA1 *sha1);
@@ -1646,22 +1648,22 @@ void dir_font_down (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
-void dir_prev_page (CtxEvent *event, void *a, void *b)
+void dir_set_page (CtxEvent *event, void *a, void *b)
 {
-  layout_show_page --;
+  layout_show_page = (size_t)a;
   if (layout_show_page < 0) layout_show_page = 0;
   itk->focus_no = 0;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
 
+void dir_prev_page (CtxEvent *event, void *a, void *b)
+{
+   dir_set_page (event, (void*)(layout_show_page-1), NULL);
+}
 void dir_next_page (CtxEvent *event, void *a, void *b)
 {
-  layout_show_page ++;
-  itk->focus_no = 0;
-  //if (layout_show_page > layout_last_page) layout_show_page = layout_last_page;
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+   dir_set_page (event, (void*)(layout_show_page+1), NULL);
 }
 
 void text_edit_down (CtxEvent *event, void *a, void *b)
@@ -1713,7 +1715,7 @@ item_outliner_down (CtxEvent *event, void *a, void *b)
      level++;
   focused_no++;
 
-  while (level > start_level)
+  while (level > start_level && focused_no < files->count)
   {
     focused_no++;
     atom = item_get_type_atom (focused_no);
@@ -1794,6 +1796,13 @@ item_outliner_up (CtxEvent *event, void *a, void *b)
 }
 
 
+static void
+set_tool_no (CtxEvent *event, void *a, void *b)
+{
+  tool_no = (size_t)(a);
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
 
 
 static void
@@ -2943,6 +2952,7 @@ static int card_files (ITK *itk_, void *data)
       else
          ctx_rgb(itk->ctx, 0.7,0.7,0.7);
       y+=em;
+
       ctx_move_to (itk->ctx, x+em, y);
       ctx_text( itk->ctx, choices[i]);
     }
@@ -3011,9 +3021,49 @@ static int card_files (ITK *itk_, void *data)
     viewer_load_next_handler=0;
   }
 
-  ctx_rectangle (ctx, 0, 0, itk->font_size * 3, ctx_height (ctx));
-  ctx_rgba (ctx, 1,1,1, 0.1);
-  ctx_fill (ctx);
+  // toolbar
+  {
+    float em = itk->font_size;
+    ctx_rectangle (ctx, 0, 0, 3 * em, ctx_height (ctx));
+    ctx_rgba (ctx, 1,1,1, 0.1);
+    ctx_fill (ctx);
+
+    for (int i = 0; i < 5; i ++)
+    {
+      ctx_rectangle (ctx, 0.5 * em, (3 * i + 0.5) * em,  2 * em, 2 * em);
+      ctx_listen (ctx, CTX_CLICK, set_tool_no, (void*)((size_t)i), NULL);
+      if (i == tool_no)
+        ctx_rgba (ctx, 1,1,1, 0.3);
+      else
+        ctx_rgba (ctx, 1,1,1, 0.05);
+      ctx_fill (ctx);
+    }
+  }
+
+  // pages
+  {
+    float em = itk->font_size * 1.4;
+/*
+    ctx_rectangle (ctx, ctx_width (ctx) - 3 * em, 0, 3 * em, ctx_height (ctx));
+    ctx_rgba (ctx, 1,1,1, 0.1);
+    ctx_fill (ctx);
+    */
+
+    for (int i = 0; i < layout_last_page + 1; i ++)
+    {
+      ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * i + 0.5) * em,  2 * em, 2 * em);
+      ctx_listen (ctx, CTX_CLICK, dir_set_page, (void*)((size_t)i), NULL);
+      if (i == layout_show_page)
+        ctx_rgba (ctx, 1,1,1, 0.3);
+      else
+        ctx_rgba (ctx, 1,1,1, 0.05);
+      ctx_fill (ctx);
+    }
+
+    ctx_rgba (ctx, 1,1,1, 0.025);
+    ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * (layout_last_page+1) + 0.5) * em,  2 * em, 2 * em);
+      ctx_fill (ctx);
+  }
 
 
   if (clients && active)
