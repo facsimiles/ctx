@@ -281,7 +281,6 @@ void dm_set_path (Files *files, const char *path)
   files->n = scandir (files->path, &files->namelist, NULL, custom_sort);
   metadata_load (resolved_path);
 
-
   if (files->items)
   {
      for (int i = 0; i < files->count; i++)
@@ -2784,7 +2783,7 @@ static int card_files (ITK *itk_, void *data)
 
   if (!files->n)
   {
-    itk_labelf (itk, "no files\n");
+    itk_labelf (itk, "no items\n");
   }
   else
   {
@@ -3011,6 +3010,11 @@ static int card_files (ITK *itk_, void *data)
       ctx_remove_idle (ctx, viewer_load_next_handler);
     viewer_load_next_handler=0;
   }
+
+  ctx_rectangle (ctx, 0, 0, itk->font_size * 3, ctx_height (ctx));
+  ctx_rgba (ctx, 1,1,1, 0.1);
+  ctx_fill (ctx);
+
 
   if (clients && active)
   {
