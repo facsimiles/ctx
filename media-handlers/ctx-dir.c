@@ -383,7 +383,30 @@ int ctx_handle_img (Ctx *ctx, const char *path);
 static int text_edit = TEXT_EDIT_OFF;
 static float text_edit_desired_x = -123;
 
+static int layout_find_item = -1;
 ITK *itk = NULL;
+static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
+{
+  char *old_path = strdup (files->path);
+  char *new_path = get_dirname (files->path);
+  const char *media_type = ctx_path_get_media_type (new_path); 
+  dm_set_path (files, new_path);
+
+  layout_find_item = metadata_item_to_no (strrchr (old_path, '/')+1);
+  fprintf (stderr, "%i, %s\n", layout_find_item, strrchr (old_path, '/')+1);
+
+
+  free (old_path);
+
+  itk->focus_no = -1;
+  free (new_path);
+  if (e)
+  {
+    ctx_set_dirty (e->ctx, 1);
+    e->stop_propagate = 1;
+  }
+}
+
 static void item_activate (CtxEvent *e, void *d1, void *d2)
 {
   //CtxEvent *e = &event; // we make a copy to permit recursion
@@ -405,7 +428,8 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
 
   if (!strcmp (files->items[no], ".."))
   {
-    new_path = get_dirname (files->path);
+    dir_go_parent (e, d1, d2);
+    return;
   }
   else
   {
@@ -475,7 +499,6 @@ static void metadata_dirt(void)
   metadata_cache_no=-3;
 }
 
-static int layout_find_item = -1;
 
 static void item_delete (CtxEvent *e, void *d1, void *d2)
 {
@@ -1634,6 +1657,13 @@ void dir_zoom_out (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+void dir_zoom_reset (CtxEvent *event, void *a, void *b)
+{
+  dir_scale = 1.0f;
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
 void dir_font_up (CtxEvent *event, void *a, void *b)
 {
   itk->font_size *= 1.1f;
@@ -2269,6 +2299,16 @@ static void dir_layout (ITK *itk, Files *files)
             ctx_add_key_binding (ctx, "alt-return", NULL, NULL,
                           item_properties,
                           (void*)((size_t)i));
+
+            ctx_add_key_binding (ctx, "alt-up", NULL, NULL,
+                          dir_go_parent,
+                          (void*)((size_t)i));
+
+
+            ctx_add_key_binding (ctx, "alt-down", NULL, NULL,
+                          item_activate,
+                          (void*)((size_t)i));
+
             ctx_add_key_binding (ctx, "return", NULL, NULL,
                           item_activate,
                           (void*)((size_t)i));
@@ -2828,6 +2868,9 @@ static int card_files (ITK *itk_, void *data)
                           NULL);
           ctx_add_key_binding (ctx, "control--", NULL, NULL,
                           dir_zoom_out,
+                          NULL);
+          ctx_add_key_binding (ctx, "control-0", NULL, NULL,
+                          dir_zoom_reset,
                           NULL);
 #endif
 
