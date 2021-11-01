@@ -50,7 +50,7 @@ typedef struct LayoutConfig
   float width; // in em
   float height; // in em
   float border; // in .. em ?
-  float margin; // .. collapsed for inner
+  float margin; // .. folded for inner
 
   int   fixed_size;
   int   fixed_pos;
@@ -389,7 +389,6 @@ static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
 {
   char *old_path = strdup (files->path);
   char *new_path = get_dirname (files->path);
-  const char *media_type = ctx_path_get_media_type (new_path); 
   dm_set_path (files, new_path);
 
   layout_find_item = metadata_item_to_no (strrchr (old_path, '/')+1);
@@ -405,6 +404,38 @@ static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
     ctx_set_dirty (e->ctx, 1);
     e->stop_propagate = 1;
   }
+}
+
+static int metadata_dirty = 0;
+static void metadata_dirt(void)
+{
+  metadata_dirty++;
+  metadata_cache_no=-3;
+}
+
+static void outline_expand (CtxEvent *e, void *d1, void *d2)
+{
+  int no = (size_t)(d1);
+  e->stop_propagate = 1;
+  if (item_get_type_atom (no+1) != CTX_ATOM_STARTGROUP)
+    return;
+
+  metadata_unset2 (no+1, "folded");
+  metadata_dirt ();
+  ctx_set_dirty (e->ctx, 1);
+}
+
+static void outline_collapse (CtxEvent *e, void *d1, void *d2)
+{
+  e->stop_propagate = 1;
+  int no = (size_t)(d1);
+  e->stop_propagate = 1;
+  if (item_get_type_atom (no+1) != CTX_ATOM_STARTGROUP)
+    return;
+
+  metadata_set_float2 (no+1, "folded", 1);
+  metadata_dirt ();
+  ctx_set_dirty (e->ctx, 1);
 }
 
 static void item_activate (CtxEvent *e, void *d1, void *d2)
@@ -492,12 +523,6 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
-static int metadata_dirty = 0;
-static void metadata_dirt(void)
-{
-  metadata_dirty++;
-  metadata_cache_no=-3;
-}
 
 
 static void item_delete (CtxEvent *e, void *d1, void *d2)
@@ -1528,7 +1553,7 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
         item_get_type_atom (focused_no+1) == CTX_ATOM_ENDGROUP)
     {
       text_edit = 0;
-      item_delete (event, (void*)focused_no, NULL);
+      item_delete (event, (void*)(size_t)focused_no, NULL);
 
       //layout_find_item = focused_no-1;
       //itk->focus_no = -1;
@@ -1690,11 +1715,11 @@ void dir_set_page (CtxEvent *event, void *a, void *b)
 
 void dir_prev_page (CtxEvent *event, void *a, void *b)
 {
-   dir_set_page (event, (void*)(layout_show_page-1), NULL);
+   dir_set_page (event, (void*)(size_t)(layout_show_page-1), NULL);
 }
 void dir_next_page (CtxEvent *event, void *a, void *b)
 {
-   dir_set_page (event, (void*)(layout_show_page+1), NULL);
+   dir_set_page (event, (void*)(size_t)(layout_show_page+1), NULL);
 }
 
 void text_edit_down (CtxEvent *event, void *a, void *b)
@@ -1946,6 +1971,7 @@ static void dir_layout (ITK *itk, Files *files)
   float prev_height = layout_config.height;
   float row_max_height = 0;
   int level = 0;
+  int is_folded = 0;
 
   layout_box_count = 0;
   layout_box_no = 0;
@@ -2054,8 +2080,18 @@ static void dir_layout (ITK *itk, Files *files)
         case CTX_ATOM_STARTGROUP:
           hidden = 1;
           level ++;
+          {
+            int folded = metadata_key_int2(i, "folded");
+            if (folded < 0) folded = 0;
+
+            if (folded && ! is_folded) is_folded = level;
+          }
           break;
         case CTX_ATOM_ENDGROUP:
+          if (is_folded == level)
+          {
+            is_folded = 0;
+          }
           hidden = 1;
           level --;
           break;
@@ -2063,6 +2099,9 @@ static void dir_layout (ITK *itk, Files *files)
           hidden = 1;
           break;
       }
+
+      if (is_folded)
+        hidden = 1;
 
       int label = metadata_key_int2 (i, "label");
       if (label == -1234) {
@@ -2303,6 +2342,17 @@ static void dir_layout (ITK *itk, Files *files)
           {
           if (text_edit < 0)
           {
+
+          ctx_add_key_binding (ctx, "+", NULL, NULL,
+                          outline_expand,
+                          (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "=", NULL, NULL,
+                          outline_expand,
+                          (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "-", NULL, NULL,
+                          outline_collapse,
+                          (void*)((size_t)i));
+
             ctx_add_key_binding (ctx, "alt-return", NULL, NULL,
                           item_properties,
                           (void*)((size_t)i));
@@ -2426,6 +2476,17 @@ static void dir_layout (ITK *itk, Files *files)
                ctx_text (itk->ctx, "O");
              }
           }
+          {
+            int folded = metadata_key_int2 (i+1, "folded");
+            if (folded > 0)
+            {
+               float x = itk->x - em * 0.5 + level * em * layout_config.level_indent;
+               ctx_move_to (itk->ctx, x, itk->y + em);
+               ctx_text (itk->ctx, "-");
+            }
+          }
+
+
           //if (c->no == itk->focus_no)
           //fprintf (stderr, "%f %i %i %i\n", text_edit_desired_x, text_edit, prev_line, next_line);
 
@@ -2867,6 +2928,8 @@ static int card_files (ITK *itk_, void *data)
                           dir_font_down,
                           NULL);
 #else
+
+
           ctx_add_key_binding (ctx, "control-+", NULL, NULL,
                           dir_zoom_in,
                           NULL);
@@ -3071,6 +3134,14 @@ static int card_files (ITK *itk_, void *data)
     viewer_load_next_handler=0;
   }
 
+  if (tool_no == 0)
+  {
+    float em = itk->font_size;
+    ctx_rectangle (ctx, 3 * em, 0, ctx_width (ctx) - 3 * em, 3 * em);
+    ctx_rgba (ctx, 1,1,1, 0.1);
+    ctx_fill (ctx);
+  }
+
   // toolbar
   {
     float em = itk->font_size;
@@ -3091,6 +3162,7 @@ static int card_files (ITK *itk_, void *data)
   }
 
   // pages
+  if (tool_no == 0)
   {
     float em = itk->font_size * 1.4;
 /*
@@ -3101,7 +3173,7 @@ static int card_files (ITK *itk_, void *data)
 
     for (int i = 0; i < layout_last_page + 1; i ++)
     {
-      ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * i + 0.5) * em,  2 * em, 2 * em);
+      ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * (1+i) + 0.5) * em,  2 * em, 2 * em);
       ctx_listen (ctx, CTX_CLICK, dir_set_page, (void*)((size_t)i), NULL);
       if (i == layout_show_page)
         ctx_rgba (ctx, 1,1,1, 0.3);
@@ -3111,7 +3183,7 @@ static int card_files (ITK *itk_, void *data)
     }
 
     ctx_rgba (ctx, 1,1,1, 0.025);
-    ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * (layout_last_page+1) + 0.5) * em,  2 * em, 2 * em);
+    ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * (layout_last_page+1+1) + 0.5) * em,  2 * em, 2 * em);
       ctx_fill (ctx);
   }
 
