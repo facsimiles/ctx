@@ -1094,7 +1094,8 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   ctx_client_lock (client);
   int media_class = ctx_media_type_class (viewer_media_type);
 
-  if (!strcmp (event, "control-escape"))
+  if (!strcmp (event, "control-escape") ||
+      !strcmp (event, "alt-up"))
   {
     ctx_client_unlock (client);
     deactivate_viewer (ctx_event, NULL, NULL);
