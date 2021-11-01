@@ -76,7 +76,7 @@ int layout_page_no = 0;
 int layout_show_page = 0;
 int layout_last_page = 0;
 
-int tool_no = -1;
+int tool_no = 0;
 
 typedef struct _CtxSHA1 CtxSHA1;
 CtxSHA1 *ctx_sha1_new (void);
@@ -333,7 +333,7 @@ void dm_set_path (Files *files, const char *path)
       { found = 1;
       }
     }
-    if (!found && (name[0] != '.' || (name[0] == '.' && name[1]=='.')))
+    if (!found && (name[0] != '.'))// || (name[0] == '.' && name[1]=='.')))
     {
       int n = metadata_insert(-1, name);
       metadata_set2 (n, "type", "ctx/file");
@@ -2875,6 +2875,21 @@ void viewer_load_path (const char *path, const char *name)
   }
 }
 
+CtxString *commandline = NULL;
+
+static void dir_any (CtxEvent *e, void *d1, void *d2)
+{
+  if (!strcmp (e->string, "space"))
+  {
+    ctx_string_append_str (commandline, " ");
+  }
+  else
+  if (ctx_utf8_strlen (e->string) >= 1)
+  {
+    ctx_string_append_str (commandline, e->string);
+    ctx_set_dirty (e->ctx, 1);
+  }
+}
 
 static int card_files (ITK *itk_, void *data)
 {
@@ -2949,6 +2964,10 @@ static int card_files (ITK *itk_, void *data)
                           NULL);
           ctx_add_key_binding (ctx, "page-up", NULL, NULL,
                           dir_prev_page,
+                          NULL);
+
+          ctx_add_key_binding (ctx, "unhandled", NULL, NULL,
+                          dir_any,
                           NULL);
 
           if (item_outliner || item_get_type_atom (focused_no) == CTX_ATOM_TEXT)
@@ -3140,6 +3159,11 @@ static int card_files (ITK *itk_, void *data)
     ctx_rectangle (ctx, 3 * em, 0, ctx_width (ctx) - 3 * em, 3 * em);
     ctx_rgba (ctx, 1,1,1, 0.1);
     ctx_fill (ctx);
+    ctx_save (ctx);
+    ctx_move_to (ctx, 3.4 * em, 1.1 * em);
+    ctx_rgba (ctx, 1,1,1, 0.6);
+    ctx_text (ctx, commandline->str);
+    ctx_restore (ctx);
   }
 
   // toolbar
@@ -3209,12 +3233,16 @@ int ctx_dir_main (int argc, char **argv)
     if (path[1] == '/') path++;
     if (path[1] == '/') path++;
   }
+  commandline = ctx_string_new ("");
 
   signal (SIGCHLD, ctx_clients_signal_child);
 
   set_layout (NULL, NULL, NULL);
   dm_set_path (files, path?path:"./");
   itk_main (card_files, NULL);
+
+  ctx_string_free (commandline, 1);
+
   while (clients)
     ctx_client_remove (ctx, clients->data);
   return 0;
