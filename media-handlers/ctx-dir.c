@@ -199,7 +199,7 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.margin = 0.0;
   layout_config.fixed_size = 0;
   layout_config.fixed_pos = 0;
-  layout_config.label = 0;
+  layout_config.label = 1;
   layout_config.list_data = 0;
   layout_config.padding_left = 0.5f;
   layout_config.padding_right = 0.5f;
@@ -2065,7 +2065,13 @@ static void dir_layout (ITK *itk, Files *files)
       }
 
       int label = metadata_key_int2 (i, "label");
-      if (label == -1234) label = layout_config.label;
+      if (label == -1234) {
+        if (atom == CTX_ATOM_TEXT)
+          label = 0;
+        else
+          label = layout_config.label;
+      }
+
 
       int gotpos = 0;
       char *xstr = metadata_key_string2 (i, "x");
