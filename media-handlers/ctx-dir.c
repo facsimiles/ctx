@@ -62,6 +62,7 @@ typedef struct LayoutConfig
   float padding_bottom;
   float level_indent;
   int use_layout_boxes;
+  int outliner;
 } LayoutConfig;
 
 LayoutConfig layout_config = {
@@ -207,8 +208,14 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.padding_bottom = 0.5f;
   layout_config.use_layout_boxes = 1;
   layout_config.level_indent = 2.5;
+  layout_config.outliner = 0;
 };
 
+static void set_outline (CtxEvent *e, void *d1, void *d2)
+{
+  set_layout (e, d1, d2);
+  layout_config.outliner = 1;
+}
 
 static void set_list (CtxEvent *e, void *d1, void *d2)
 {
@@ -242,6 +249,7 @@ static void set_grid (CtxEvent *e, void *d1, void *d2)
 typedef enum CtxAtom {
  CTX_ATOM_TEXT = 0,
  CTX_ATOM_LAYOUTBOX,
+ CTX_ATOM_STARTPAGE, // for layout purposes, alse causes a newpage
  CTX_ATOM_NEWPAGE,
  CTX_ATOM_STARTGROUP,
  CTX_ATOM_ENDGROUP,
@@ -258,6 +266,7 @@ if (type)
    if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
      return CTX_ATOM_LAYOUTBOX;
    else if (!strcmp (type, "ctx/newpage"))    return CTX_ATOM_NEWPAGE;
+   else if (!strcmp (type, "ctx/startpage"))    return CTX_ATOM_STARTPAGE;
    else if (!strcmp (type, "ctx/startgroup")) return CTX_ATOM_STARTGROUP;
    else if (!strcmp (type, "ctx/endgroup"))   return CTX_ATOM_ENDGROUP;
    else if (!strcmp (type, "ctx/rectangle"))  return CTX_ATOM_RECTANGLE;
@@ -1749,9 +1758,6 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
 
 int item_context_active = 0;
 
-int item_outliner = 0; // with 0 only virtual items get outliner event handling
-
-
 static void
 item_outliner_down (CtxEvent *event, void *a, void *b)
 {
@@ -2096,6 +2102,16 @@ static void dir_layout (ITK *itk, Files *files)
           level --;
           break;
         case CTX_ATOM_NEWPAGE:
+        case CTX_ATOM_STARTPAGE:
+
+
+  layout_box_count = 0;
+  layout_box_no = 0;
+  layout_box[0].x = 0.05;
+  layout_box[0].y = 0.02;
+  layout_box[0].width = 0.9;
+  layout_box[0].height = 4000.0;
+
           hidden = 1;
           break;
       }
@@ -2169,7 +2185,7 @@ static void dir_layout (ITK *itk, Files *files)
 
       if (layout_config.stack_horizontal && layout_config.stack_vertical)
       {
-      if (itk->x + width  > itk->x0 + itk->width || atom == CTX_ATOM_NEWPAGE) //panel->x + itk->panel->width)
+      if (itk->x + width  > itk->x0 + itk->width || atom == CTX_ATOM_NEWPAGE || atom == CTX_ATOM_STARTPAGE) //panel->x + itk->panel->width)
       {
           itk->x = itk->x0;
           if (layout_config.stack_vertical)
@@ -2177,9 +2193,9 @@ static void dir_layout (ITK *itk, Files *files)
             itk->y += row_max_height;
             row_max_height = 0;
           }
-          if (itk->y + height > y1 || atom == CTX_ATOM_NEWPAGE)
+          if (itk->y + height > y1 || atom == CTX_ATOM_NEWPAGE || atom == CTX_ATOM_STARTPAGE)
           {
-            if (layout_box_count > layout_box_no+1 && atom != CTX_ATOM_NEWPAGE)
+            if (layout_box_count > layout_box_no+1 && atom != CTX_ATOM_NEWPAGE && atom != CTX_ATOM_STARTPAGE)
             {
               layout_box_no++;
 
@@ -2580,15 +2596,20 @@ static void dir_layout (ITK *itk, Files *files)
       strcpy (title, files->items[i]);
       int title_len = strlen (title);
       {
-        int wraplen = 12;
+        int wraplen = 10;
         int lines = (title_len + wraplen - 1)/ wraplen;
 
         if (!focused &&  lines > 2) lines = 2;
 
+        ctx_rectangle (itk->ctx, itk->x, itk->y + height - em * lines,
+                        width, em * lines);
+        ctx_rgba (itk->ctx, 0,0,0,0.4);
+        ctx_fill (itk->ctx);
+
         for (int i = 0; i < lines; i++)
         {
-          ctx_move_to (itk->ctx, itk->x + em * 3, itk->y + height + em * i - lines/2.0 * em);
-          ctx_gray (itk->ctx, 0.8);
+          ctx_move_to (itk->ctx, itk->x + em * 3, itk->y + height + em * i - lines/2.0 * em + em * 0.2);
+          ctx_rgba (itk->ctx, 1,1,1,0.4);
           ctx_save (itk->ctx);
           ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_CENTER);
 
@@ -2877,6 +2898,13 @@ void viewer_load_path (const char *path, const char *name)
 
 CtxString *commandline = NULL;
 
+static void dir_backspace (CtxEvent *e, void *d1, void *d2)
+{
+  ctx_string_remove (commandline, ctx_string_get_length (commandline)-1);
+  ctx_set_dirty (e->ctx, 1);
+  e->stop_propagate = 1;
+}
+
 static void dir_any (CtxEvent *e, void *d1, void *d2)
 {
   if (!strcmp (e->string, "space"))
@@ -2889,6 +2917,7 @@ static void dir_any (CtxEvent *e, void *d1, void *d2)
     ctx_string_append_str (commandline, e->string);
     ctx_set_dirty (e->ctx, 1);
   }
+  e->stop_propagate = 1;
 }
 
 static int card_files (ITK *itk_, void *data)
@@ -2919,9 +2948,10 @@ static int card_files (ITK *itk_, void *data)
   }
   else
   {
-    ctx_add_key_binding (ctx, "F1", NULL, NULL, set_list, NULL);
-    ctx_add_key_binding (ctx, "F2", NULL, NULL, set_grid, NULL);
-    ctx_add_key_binding (ctx, "F3", NULL, NULL, set_layout, NULL);
+    ctx_add_key_binding (ctx, "control-1", NULL, NULL, set_outline, NULL);
+    ctx_add_key_binding (ctx, "control-2", NULL, NULL, set_layout, NULL);
+    ctx_add_key_binding (ctx, "control-3", NULL, NULL, set_list, NULL);
+    ctx_add_key_binding (ctx, "control-4", NULL, NULL, set_grid, NULL);
 
     dir_layout (itk, files);
 
@@ -2966,11 +2996,15 @@ static int card_files (ITK *itk_, void *data)
                           dir_prev_page,
                           NULL);
 
+          ctx_add_key_binding (ctx, "backspace", NULL, NULL,
+                          dir_backspace,
+                          NULL);
+
           ctx_add_key_binding (ctx, "unhandled", NULL, NULL,
                           dir_any,
                           NULL);
 
-          if (item_outliner || item_get_type_atom (focused_no) == CTX_ATOM_TEXT)
+          if (item_get_type_atom (focused_no) == CTX_ATOM_TEXT)
           {
           ctx_add_key_binding (ctx, "up", NULL, NULL,
                           item_outliner_up,
