@@ -144,10 +144,13 @@ static char *metadata_find_no (int no)
   char *m = metadata;
   int count = 0;
 
+  int update_cache = 1;
 #if 1
   if (metadata_cache_no == no) return metadata_cache;
   if (metadata_cache_no < no && metadata_cache_no > 0)
   {
+    if (no - metadata_cache_no < 4) /* keep a small look-ahead */
+      update_cache = 0;
     m = metadata_cache;
     count = metadata_cache_no;
     m-= 1;
@@ -162,8 +165,11 @@ static char *metadata_find_no (int no)
       if (m && *m == '\n') m++;
       if (count == no)
       {
-        metadata_cache = m;
-        metadata_cache_no = no;
+        if (update_cache)
+        {
+          metadata_cache = m;
+          metadata_cache_no = no;
+        }
         return m;
       }
       count++;
