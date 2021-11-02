@@ -424,7 +424,7 @@ static void metadata_dirt(void)
 
 static void outline_expand (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   e->stop_propagate = 1;
   if (item_get_type_atom (no+1) != CTX_ATOM_STARTGROUP)
     return;
@@ -437,7 +437,7 @@ static void outline_expand (CtxEvent *e, void *d1, void *d2)
 static void outline_collapse (CtxEvent *e, void *d1, void *d2)
 {
   e->stop_propagate = 1;
-  int no = (size_t)(d1);
+  int no = focused_no;
   e->stop_propagate = 1;
   if (item_get_type_atom (no+1) != CTX_ATOM_STARTGROUP)
     return;
@@ -450,7 +450,7 @@ static void outline_collapse (CtxEvent *e, void *d1, void *d2)
 static void item_activate (CtxEvent *e, void *d1, void *d2)
 {
   //CtxEvent *e = &event; // we make a copy to permit recursion
-  int no = (size_t)(d1);
+  int no = focused_no;
   viewer_no = no;
   int virtual = (item_get_type_atom (no) == CTX_ATOM_TEXT);
 
@@ -536,7 +536,7 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
 
 static void item_delete (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
 
   //int virtual = (item_get_type_atom (no) == CTX_ATOM_TEXT);
   //if (virtual)
@@ -724,7 +724,7 @@ move_item_down (CtxEvent *event, void *a, void *b)
 
 static void grow_height (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   float height = metadata_key_float2 (no, "height");
   height += 0.01;
   if (height > 1.2) height = 1.2;
@@ -735,7 +735,7 @@ static void grow_height (CtxEvent *e, void *d1, void *d2)
 
 static void shrink_height (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   float height = metadata_key_float2 (no, "height");
   height -= 0.01;
   if (height < 0.01) height = 0.01;
@@ -746,7 +746,7 @@ static void shrink_height (CtxEvent *e, void *d1, void *d2)
 
 static void grow_width (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   float width = metadata_key_float2 (no, "width");
   width += 0.01;
   if (width > 1.5) width = 1.5;
@@ -757,7 +757,7 @@ static void grow_width (CtxEvent *e, void *d1, void *d2)
 
 static void shrink_width (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   float width = metadata_key_float2 (no, "width");
   width -= 0.01;
   if (width < 0.0) width = 0.01;
@@ -768,7 +768,7 @@ static void shrink_width (CtxEvent *e, void *d1, void *d2)
 
 static void move_left (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   float x = metadata_key_float2 (no, "x");
   x -= 0.01;
   if (x < 0.0) x = 0.0;
@@ -779,7 +779,7 @@ static void move_left (CtxEvent *e, void *d1, void *d2)
 
 static void move_right (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   float x = metadata_key_float2 (no, "x");
   x += 0.01;
   if (x < 0) x = 0;
@@ -790,7 +790,7 @@ static void move_right (CtxEvent *e, void *d1, void *d2)
 
 static void move_up (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   float y = metadata_key_float2 (no, "y");
   y -= 0.01;
   if (y< 0) y = 0.01;
@@ -801,7 +801,7 @@ static void move_up (CtxEvent *e, void *d1, void *d2)
 
 static void move_down (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   float y = metadata_key_float2 (no, "y");
   y += 0.01;
   if (y< 0) y = 0.01;
@@ -813,7 +813,7 @@ static void move_down (CtxEvent *e, void *d1, void *d2)
 #if 0
 static void move_item_up (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   if (no>0)
   {
     metadata_swap (no, no-1);
@@ -887,7 +887,7 @@ move_item_up (CtxEvent *event, void *a, void *b)
 
 static void move_item_left (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   int level = item_get_level (no);
 
   int count = items_to_move (no);
@@ -936,7 +936,7 @@ static void move_item_left (CtxEvent *e, void *d1, void *d2)
 
 static void move_item_right (CtxEvent *e, void *d1, void *d2)
 {
-  int no = (size_t)(d1);
+  int no = focused_no;
   if (no < 1)
     return;
 
@@ -2338,6 +2338,9 @@ static void dir_layout (ITK *itk, Files *files)
            }
         }
 
+        switch (tool_no)
+        {
+                case 0:
         if (c->no == itk->focus_no && layout_find_item < 0)
         {
           focused = 1;
@@ -2444,6 +2447,8 @@ static void dir_layout (ITK *itk, Files *files)
         {
           ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
         }
+        break;
+        }
 
       ctx_begin_path (ctx);
       ctx_gray (ctx, 0.0);
@@ -2498,7 +2503,7 @@ static void dir_layout (ITK *itk, Files *files)
             {
                float x = itk->x - em * 0.5 + level * em * layout_config.level_indent;
                ctx_move_to (itk->ctx, x, itk->y + em);
-               ctx_text (itk->ctx, "-");
+               ctx_text (itk->ctx, "▶");//▷▽▼");
             }
           }
 
