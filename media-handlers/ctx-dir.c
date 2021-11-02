@@ -394,6 +394,23 @@ static float text_edit_desired_x = -123;
 
 static int layout_find_item = -1;
 ITK *itk = NULL;
+
+static int metadata_dirty = 0;
+static void metadata_dirt(void)
+{
+  metadata_dirty++;
+  metadata_cache_no=-3;
+}
+
+static void dir_insert (CtxEvent *e, void *d1, void *d2)
+{
+  metadata_insert (focused_no, "");
+  text_edit = 0;
+  metadata_dirt ();
+  ctx_set_dirty (e->ctx, 1);
+  e->stop_propagate = 1;
+}
+
 static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
 {
   char *old_path = strdup (files->path);
@@ -415,12 +432,6 @@ static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
   }
 }
 
-static int metadata_dirty = 0;
-static void metadata_dirt(void)
-{
-  metadata_dirty++;
-  metadata_cache_no=-3;
-}
 
 static void outline_expand (CtxEvent *e, void *d1, void *d2)
 {
@@ -1845,7 +1856,7 @@ item_outliner_up (CtxEvent *event, void *a, void *b)
     focused_no--;
     atom = item_get_type_atom (focused_no);
   }
-  if (level < start_level || focused_no <= 0)
+  if (level < start_level || focused_no < 0)
   {
      focused_no = start_no;
   }
@@ -2398,6 +2409,10 @@ static void dir_layout (ITK *itk, Files *files)
             ctx_add_key_binding (ctx, "control-t", NULL, NULL,
                           item_toggle_todo,
                           (void*)((size_t)i));
+
+
+            ctx_add_key_binding (ctx, "insert", NULL, NULL,
+                          dir_insert, NULL);
           }
           ctx_add_key_binding (ctx, "control-page-down", NULL, NULL, move_item_down, 
                          (void*)((size_t)i));
