@@ -506,15 +506,34 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   }
 }
 
-
 static void item_drag (CtxEvent *e, void *d1, void *d2)
 {
   fprintf (stderr, "drag %i\n", e->type);
   switch (e->type)
   {
     case CTX_DRAG_PRESS:
+      e->stop_propagate = 1;
+      break;
     case CTX_DRAG_MOTION:
-    //case CTX_DRAG_RELEASE:
+      float x = metadata_key_float2 (focused_no, "x");
+      if (x >=0)
+      {
+        x = metadata_key_float2 (focused_no, "x");
+        x += e->delta_x / ctx_width (e->ctx);
+        metadata_set_float2 (focused_no, "x", x);
+        ctx_set_dirty (e->ctx, 1);
+      }
+      float y = metadata_key_float2 (focused_no, "y");
+      if (y >=0)
+      {
+        y = metadata_key_float2 (focused_no, "y");
+        y += e->delta_y / ctx_width (e->ctx);
+        metadata_set_float2 (focused_no, "y", y);
+        ctx_set_dirty (e->ctx, 1);
+      }
+      e->stop_propagate = 1;
+      break;
+    case CTX_DRAG_RELEASE:
       e->stop_propagate = 1;
       break;
     default:
@@ -1868,6 +1887,61 @@ item_outliner_up (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+static void
+tool_rect_drag (CtxEvent *e, void *d1, void *d2)
+{
+  static float x0 = 0;
+  static float y0 = 0;
+  /* we default to adding new items at end of page, with layers dialog open
+   * a cursor for specifying location is more easily seen.
+   *
+   * This cursor is different from flow cursor/position.
+   */
+  switch (e->type)
+  {
+    case CTX_DRAG_PRESS:
+       fprintf (stderr, "rect drag %f %f\n", e->x, e->y);
+       metadata_insert (focused_no, "");
+       metadata_set2 (focused_no, "type", "ctx/rectangle");
+       x0 = e->x;
+       y0 = e->y;
+       metadata_set_float2 (focused_no, "x", x0 / itk->width);
+       metadata_set_float2 (focused_no, "y", y0 / itk->width);
+       metadata_dirt ();
+       break;
+    case CTX_DRAG_MOTION:
+
+       if (e->x > x0)
+       {
+         metadata_set_float2 (focused_no, "x", x0 / itk->width);
+         metadata_set_float2 (focused_no, "width", (e->x-x0) / itk->width);
+       }
+       else
+       {
+         metadata_set_float2 (focused_no, "x", e->x / itk->width);
+         metadata_set_float2 (focused_no, "width", (x0-e->x) / itk->width);
+       }
+
+       if (e->y > y0)
+       {
+         metadata_set_float2 (focused_no, "y", y0 / itk->width);
+         metadata_set_float2 (focused_no, "height", (e->y-y0) / itk->width);
+       }
+       else
+       {
+         metadata_set_float2 (focused_no, "y", e->y / itk->width);
+         metadata_set_float2 (focused_no, "height", (y0-e->y) / itk->width);
+       }
+
+       metadata_dirt ();
+       ctx_set_dirty (e->ctx, 1);
+       break;
+    case CTX_DRAG_RELEASE:
+       metadata_dirt ();
+       break;
+  }
+  e->stop_propagate = 1;
+}
 
 static void
 set_tool_no (CtxEvent *event, void *a, void *b)
@@ -2046,6 +2120,15 @@ static void dir_layout (ITK *itk, Files *files)
   ctx_save (itk->ctx);
   ctx_font_size (itk->ctx, itk->font_size);
 
+
+  if (tool_no == 1)
+  {
+    ctx_rectangle (itk->ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+    ctx_listen (itk->ctx, CTX_DRAG, tool_rect_drag, NULL, NULL);
+
+    ctx_begin_path (itk->ctx);
+  }
+
   if (y1 < 100) y1 = itk->height;
 
   int printing = (layout_page_no == layout_show_page);
@@ -2147,6 +2230,10 @@ static void dir_layout (ITK *itk, Files *files)
       if (padding_left == -1234.0f) padding_left = layout_config.padding_left;
       float padding_right = metadata_key_float2 (i, "padding-right");
       if (padding_right == -1234.0f) padding_right = layout_config.padding_right;
+      float padding_top = metadata_key_float2 (i, "padding-top");
+      if (padding_top == -1234.0f) padding_top = layout_config.padding_top;
+      float padding_bottom = metadata_key_float2 (i, "padding-bottom");
+      if (padding_bottom == -1234.0f) padding_bottom = layout_config.padding_bottom;
 
       padding_left += level * layout_config.level_indent;
 
@@ -2302,9 +2389,9 @@ static void dir_layout (ITK *itk, Files *files)
       {
         ctx_begin_path (itk->ctx);
         c = itk_add_control (itk, UI_LABEL, "foo",
-        itk->x, itk->y,
+        itk->x - em * padding_left, itk->y - em * padding_top,
         width + em * (padding_left+padding_right),
-        height);
+        height + em * (padding_top+padding_bottom));
         if (focused_no == i)
            focused_control = c;
       }
@@ -2359,8 +2446,8 @@ static void dir_layout (ITK *itk, Files *files)
           //viewer_load_path (newpath, files->items[i]);
           ctx_begin_path (itk->ctx);
           ctx_rectangle (itk->ctx, c->x, c->y, c->width, c->height);
-          ctx_listen (itk->ctx, CTX_DRAG, item_drag, (void*)(size_t)i, NULL);
           ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_activate, (void*)(size_t)i, NULL);
+          ctx_listen (itk->ctx, CTX_DRAG, item_drag, (void*)(size_t)i, NULL);
           //ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_tap_and_hold, (void*)(size_t)i, NULL);
 
 
@@ -2621,15 +2708,15 @@ static void dir_layout (ITK *itk, Files *files)
 
         if (!focused &&  lines > 2) lines = 2;
 
-        ctx_rectangle (itk->ctx, itk->x, itk->y + height - em * lines,
-                        width, em * lines);
-        ctx_rgba (itk->ctx, 0,0,0,0.4);
+        ctx_rectangle (itk->ctx, itk->x, itk->y + height - em * (lines + 1),
+                        width, em * (lines + 0.5));
+        ctx_rgba (itk->ctx, 0,0,0,0.6);
         ctx_fill (itk->ctx);
 
         for (int i = 0; i < lines; i++)
         {
-          ctx_move_to (itk->ctx, itk->x + em * 3, itk->y + height + em * i - lines/2.0 * em + em * 0.2);
-          ctx_rgba (itk->ctx, 1,1,1,0.4);
+          ctx_move_to (itk->ctx, itk->x + em * 3, itk->y + height + em * i - lines * em);
+          ctx_rgba (itk->ctx, 1,1,1,0.6);
           ctx_save (itk->ctx);
           ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_CENTER);
 
@@ -2706,6 +2793,8 @@ static void dir_layout (ITK *itk, Files *files)
       }
     }
   }
+
+
   ctx_restore (itk->ctx);
 
   itk->x0    = saved_x0;
