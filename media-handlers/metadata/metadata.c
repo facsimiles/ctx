@@ -280,6 +280,20 @@ static int metadata_item_key_count (const char *item)
   return count;
 }
 
+static int metadata_item_key_count2 (int no)
+{
+  const char *m = metadata_find_no (no);
+  if (!m) return -1;
+  int count = 0;
+  if (m[0] == ' ')
+  do {
+     while (m && *m && *m != '\n') m++;
+     if (*m == '\n') m++;
+     count ++;
+  } while (m[0] == ' ');
+  return count;
+}
+
 static char *metadata_key_name (const char *item, int no)
 {
   const char *m = metadata_find_item (item);
@@ -303,6 +317,31 @@ static char *metadata_key_name (const char *item, int no)
   } while (m[0] == ' ');
   return NULL;
 }
+
+static char *metadata_key_name2 (int ino, int no)
+{
+  const char *m = metadata_find_no (ino);
+  CtxString *str = ctx_string_new ("");
+  if (!m) return NULL;
+  int count = 0;
+  if (m[0] == ' ')
+  do {
+     if (count == no)
+     {
+     while (*m && m[0] == ' ') m++;
+     while (*m && m[0] != '=') {
+       ctx_string_append_byte (str, m[0]);
+       m++;
+     }
+       return ctx_string_dissolve (str);
+     }
+     while (m && *m && *m != '\n') m++;
+     if (*m == '\n') m++;
+     count ++;
+  } while (m[0] == ' ');
+  return NULL;
+}
+
 
 static char *metadata_key_string2 (int no, const char *key)
 {

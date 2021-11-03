@@ -2124,20 +2124,20 @@ void itk_key_bindings (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
 
-  ctx_add_key_binding (ctx, "up", NULL, "focus prev",   itk_key_up,        itk);
-  ctx_add_key_binding (ctx, "down", NULL, "focus next", itk_key_down,      itk);
+  ctx_add_key_binding (ctx, "up", NULL, "spatial focus up",   itk_key_up,        itk);
+  ctx_add_key_binding (ctx, "down", NULL, "spatical focus down", itk_key_down,      itk);
 
   // XXX simplify callbacks, and do binding based on selected control
   //     (with per control-type vfunc)
 
-  ctx_add_key_binding (ctx, "right", NULL, "",          itk_key_right,     itk);
-  ctx_add_key_binding (ctx, "left", NULL, "",           itk_key_left,      itk);
+  ctx_add_key_binding (ctx, "right", NULL, "spatial focus right",          itk_key_right,     itk);
+  ctx_add_key_binding (ctx, "left", NULL, "spatial focus left",           itk_key_left,      itk);
 
   ctx_add_key_binding (ctx, "return", NULL, "",         itk_key_return,    itk);
   ctx_add_key_binding (ctx, "backspace", NULL, "",      itk_key_backspace, itk);
   ctx_add_key_binding (ctx, "delete", NULL, "",         itk_key_delete,    itk);
-  ctx_add_key_binding (ctx, "tab", NULL, "",            itk_key_tab,       itk);
-  ctx_add_key_binding (ctx, "shift-tab", NULL, "",      itk_key_shift_tab, itk);
+  ctx_add_key_binding (ctx, "tab", NULL, "focus next",            itk_key_tab,       itk);
+  ctx_add_key_binding (ctx, "shift-tab", NULL, "focus previous",      itk_key_shift_tab, itk);
   ctx_add_key_binding (ctx, "unhandled", NULL, "",      itk_key_unhandled, itk);
 }
 

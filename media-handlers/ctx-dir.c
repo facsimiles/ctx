@@ -72,6 +72,7 @@ LayoutConfig layout_config = {
   1
 };
 
+int show_keybindings = 0;
 int focused_no = -1;
 int layout_page_no = 0;
 int layout_show_page = 0;
@@ -402,6 +403,14 @@ int ctx_handle_img (Ctx *ctx, const char *path);
 static int text_edit = TEXT_EDIT_OFF;
 static float text_edit_desired_x = -123;
 
+CtxString *commandline = NULL;
+
+static inline int is_text_editing (void)
+{
+  return (text_edit != TEXT_EDIT_OFF) ||
+         (commandline->str[0]!=0);
+}
+
 
 static int metadata_dirty = 0;
 static void metadata_dirt(void)
@@ -440,6 +449,12 @@ static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
   }
 }
 
+
+static void toggle_keybindings_display (CtxEvent *e, void *d1, void *d2)
+{
+  show_keybindings = !show_keybindings;
+  ctx_set_dirty (e->ctx, 1);
+}
 
 static void outline_expand (CtxEvent *e, void *d1, void *d2)
 {
@@ -1546,11 +1561,19 @@ void text_edit_shift_return (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+void text_edit_ignore (CtxEvent *event, void *a, void *b)
+{
+  event->stop_propagate=1;
+}
+
 void text_edit_any (CtxEvent *event, void *a, void *b)
 {
   const char *inserted = event->string;
   if (!strcmp (inserted, "space")) inserted = " ";
+  if (ctx_utf8_strlen (inserted) > 1)
+    return;
   if (focused_no>=0){
+
     CtxString *str = ctx_string_new (files->items[focused_no]);
     ctx_string_insert_utf8 (str, text_edit, inserted);
     metadata_rename (focused_no, str->str);
@@ -2451,7 +2474,9 @@ static void dir_layout (ITK *itk, Files *files)
         if (lstat (newpath, &stat_buf) == 0)
           media_type = ctx_path_get_media_type (newpath);
 
-        if (!strcmp (media_type, "inode/directory") && !layout_config.list_data)
+        if (!strcmp (media_type, "inode/directory") &&
+                      !layout_config.list_data &&
+                      !layout_config.outliner)
         {
           label = 1;
         }
@@ -2495,90 +2520,121 @@ static void dir_layout (ITK *itk, Files *files)
 
           if (!active)
           {
-          if (text_edit < 0)
+          if (!is_text_editing())
           {
 
-          ctx_add_key_binding (ctx, "+", NULL, NULL,
-                          outline_expand,
-                          (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "=", NULL, NULL,
-                          outline_expand,
-                          (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "-", NULL, NULL,
-                          outline_collapse,
-                          (void*)((size_t)i));
-
-            ctx_add_key_binding (ctx, "alt-return", NULL, NULL,
-                          item_properties,
-                          (void*)((size_t)i));
-
-            ctx_add_key_binding (ctx, "alt-up", NULL, NULL,
+            ctx_add_key_binding (ctx, "alt-up", "go to parent", NULL,
                           dir_go_parent,
                           (void*)((size_t)i));
 
-
-            ctx_add_key_binding (ctx, "alt-down", NULL, NULL,
+            ctx_add_key_binding (ctx, "alt-down", "enter item", NULL,
                           item_activate,
                           (void*)((size_t)i));
 
-            ctx_add_key_binding (ctx, "return", NULL, NULL,
-                          item_activate,
-                          (void*)((size_t)i));
-            ctx_add_key_binding (ctx, "delete", NULL, NULL,
+
+            ctx_add_key_binding (ctx, "delete", "remove item", NULL,
                           item_delete,
                           (void*)((size_t)i));
-            ctx_add_key_binding (ctx, "control-x", NULL, NULL,
+            ctx_add_key_binding (ctx, "control-x", "remove item", NULL,
                           item_delete,
                           (void*)((size_t)i));
 
-            ctx_add_key_binding (ctx, "control-t", NULL, NULL,
+            if (!layout_config.outliner)
+            {
+               ctx_add_key_binding (ctx, "alt-return", "item properties", NULL,
+                          item_properties,
+                          (void*)((size_t)i));
+
+
+            ctx_add_key_binding (ctx, "return", "activate/edit", NULL,
+                          item_activate,
+                          (void*)((size_t)i));
+            
+
+            {
+              int todo = metadata_key_int2 (i, "todo");
+              const char *label = "toggle todo";
+              switch (todo)
+              {
+                case 0: label = "mark done"; break;
+                case 1: label = "no bullet"; break;
+                default: label = "make todo"; break;
+              }
+              ctx_add_key_binding (ctx, "control-t", label, NULL,
                           item_toggle_todo,
                           (void*)((size_t)i));
+            }
 
 
-            ctx_add_key_binding (ctx, "insert", NULL, NULL,
+            ctx_add_key_binding (ctx, "insert", "insert text", NULL,
                           dir_insert, NULL);
+            }
           }
-          ctx_add_key_binding (ctx, "control-page-down", NULL, NULL, move_item_down, 
-                         (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-page-up", NULL, NULL, move_item_up, 
-                         (void*)((size_t)i));
 
-          ctx_add_key_binding (ctx, "shift-control-down", NULL, NULL, grow_height, 
-                         (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "shift-control-up", NULL, NULL, shrink_height, 
-                         (void*)((size_t)i));
 
-          ctx_add_key_binding (ctx, "shift-control-left", NULL, NULL, shrink_width, 
+          if (!layout_config.outliner && !is_text_editing ())
+          {
+
+          ctx_add_key_binding (ctx, "control-page-down", "move item down", NULL, move_item_down, 
                          (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "shift-control-right", NULL, NULL, grow_width, 
+          ctx_add_key_binding (ctx, "control-page-up", "move item up", NULL, move_item_up, 
                          (void*)((size_t)i));
 
           if (gotpos)
           {
-          ctx_add_key_binding (ctx, "control-left", NULL, NULL, move_left, 
+          ctx_add_key_binding (ctx, "shift-control-down", "grow height", NULL, grow_height, 
                          (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-right", NULL, NULL, move_right, 
+          ctx_add_key_binding (ctx, "shift-control-up", "shrink height", NULL, shrink_height, 
                          (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-up", NULL, NULL, move_up, 
+
+          ctx_add_key_binding (ctx, "shift-control-left", "shrink width", NULL, shrink_width, 
                          (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-down", NULL, NULL, move_down, 
+          ctx_add_key_binding (ctx, "shift-control-right", "grow width", NULL, grow_width, 
+                         (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "control-left", "move left", NULL, move_left, 
+                         (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "control-right", "move right", NULL, move_right, 
+                         (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "control-up", "move up", NULL, move_up, 
+                         (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "control-down", "move down", NULL, move_down, 
                          (void*)((size_t)i));
           }
           else
           {
-            ctx_add_key_binding (ctx, "control-down", NULL, NULL, move_item_down, 
+            ctx_add_key_binding (ctx, "control-down", "move below next sibling", NULL, move_item_down, 
                            (void*)((size_t)i));
-            ctx_add_key_binding (ctx, "control-up", NULL, NULL, move_item_up, 
-                           (void*)((size_t)i));
-
-            ctx_add_key_binding (ctx, "control-left", NULL, NULL, move_item_left, 
+            ctx_add_key_binding (ctx, "control-up", "move above previous sibling", NULL, move_item_up, 
                            (void*)((size_t)i));
 
-            ctx_add_key_binding (ctx, "control-right", NULL, NULL, move_item_right, 
+            ctx_add_key_binding (ctx, "control-left", "make current item sibling of parent", NULL, move_item_left, 
+                           (void*)((size_t)i));
+
+            ctx_add_key_binding (ctx, "control-right", "make current item last child of parent", NULL, move_item_right, 
                            (void*)((size_t)i));
 
           }
+          }
+
+
+           if (!is_text_editing())
+           {
+               if (metadata_key_int2(i + 1, "folded")>0)
+               {
+               ctx_add_key_binding (ctx, "+", "expand", NULL,
+                          outline_expand,
+                          (void*)((size_t)i));
+               ctx_add_key_binding (ctx, "=", "expand", NULL,
+                          outline_expand,
+                          (void*)((size_t)i));
+               }
+               else if (item_get_type_atom (i + 1) == CTX_ATOM_STARTGROUP)
+               {
+               ctx_add_key_binding (ctx, "-", "fold", NULL,
+                          outline_collapse,
+                          (void*)((size_t)i));
+               }
+           }
 
           }
           //itk_labelf (itk, "%s\n", ctx_path_get_media_type (newpath));
@@ -2781,10 +2837,6 @@ static void dir_layout (ITK *itk, Files *files)
         row_max_height = prev_height;
 
 
-      if (layout_config.outliner && !strcmp (d_name, "startgroup"))
-      {
-        level++;
-      }
 
       if (gotpos)
       {
@@ -2834,6 +2886,33 @@ static void dir_layout (ITK *itk, Files *files)
 #endif
         }
       }
+
+
+      if (layout_config.outliner)
+      {
+  int keys = metadata_item_key_count2 (i);
+  for (int k = 0; k < keys; k++)
+  {
+    char *key = metadata_key_name2 (i, k);
+    if (key)
+    {
+      char *val = metadata_key_string2 (i, key);
+      if (val)
+      {
+        itk->x += level * em * 3 + em;
+        itk_labelf (itk, "%s=%s", key, val);
+        free (val);
+      }
+      free (key);
+    }
+  }
+
+      if (!strcmp (d_name, "startgroup"))
+      {
+        level++;
+      }
+      }
+
       }
     }
   }
@@ -2843,6 +2922,8 @@ static void dir_layout (ITK *itk, Files *files)
   itk->x0    = saved_x0;
   itk->width = saved_width;
   itk->y     = saved_y;
+
+
 }
 
 static void empty_thumb_queue (void)
@@ -3047,7 +3128,6 @@ void viewer_load_path (const char *path, const char *name)
   }
 }
 
-CtxString *commandline = NULL;
 
 static void dir_backspace (CtxEvent *e, void *d1, void *d2)
 {
@@ -3058,17 +3138,17 @@ static void dir_backspace (CtxEvent *e, void *d1, void *d2)
 
 static void dir_any (CtxEvent *e, void *d1, void *d2)
 {
+  e->stop_propagate = 1;
+
   if (!strcmp (e->string, "space"))
   {
     ctx_string_append_str (commandline, " ");
   }
-  else
-  if (ctx_utf8_strlen (e->string) >= 1)
+  if (ctx_utf8_strlen (e->string) <= 1)
   {
     ctx_string_append_str (commandline, e->string);
     ctx_set_dirty (e->ctx, 1);
   }
-  e->stop_propagate = 1;
 }
 
 static int card_files (ITK *itk_, void *data)
@@ -3087,33 +3167,15 @@ static int card_files (ITK *itk_, void *data)
   //thumb_monitor (ctx, NULL);
   save_metadata();
 
+  ctx_add_key_binding (ctx, "F1", "toggle keybinding help", NULL,
+                       toggle_keybindings_display,
+                       NULL);
+
   itk_panel_start (itk, "", 0,0, ctx_width(ctx),
                   ctx_height (ctx));
 
   if (dir_scale != 1.0f)
      ctx_scale (itk->ctx, dir_scale, dir_scale);
-
-  if (!files->n)
-  {
-    itk_labelf (itk, "no items\n");
-  }
-  else
-  {
-    ctx_add_key_binding (ctx, "control-1", NULL, NULL, set_outline, NULL);
-    ctx_add_key_binding (ctx, "control-2", NULL, NULL, set_layout, NULL);
-    ctx_add_key_binding (ctx, "control-3", NULL, NULL, set_list, NULL);
-    ctx_add_key_binding (ctx, "control-4", NULL, NULL, set_grid, NULL);
-
-    //if (layout_config.outliner)
-    //  outliner_layout (itk, files);
-    //else
-      dir_layout (itk, files);
-
-  }
-
-
-  if (!active && text_edit <= TEXT_EDIT_OFF)
-  {
 
 #if 0
           ctx_add_key_binding (ctx, "+", NULL, NULL,
@@ -3127,48 +3189,78 @@ static int card_files (ITK *itk_, void *data)
                           NULL);
 #else
 
-
-          ctx_add_key_binding (ctx, "control-+", NULL, NULL,
+          ctx_add_key_binding (ctx, "control-+", "zoom in", NULL,
                           dir_zoom_in,
                           NULL);
-          ctx_add_key_binding (ctx, "control-=", NULL, NULL,
+          ctx_add_key_binding (ctx, "control-=", "zoom in", NULL,
                           dir_zoom_in,
                           NULL);
-          ctx_add_key_binding (ctx, "control--", NULL, NULL,
+          ctx_add_key_binding (ctx, "control--", "zoom out", NULL,
                           dir_zoom_out,
                           NULL);
-          ctx_add_key_binding (ctx, "control-0", NULL, NULL,
+          ctx_add_key_binding (ctx, "control-0", "zoom reset", NULL,
                           dir_zoom_reset,
                           NULL);
 #endif
 
-          ctx_add_key_binding (ctx, "page-down", NULL, NULL,
+          if (!is_text_editing())
+          {
+          ctx_add_key_binding (ctx, "page-down", "next page", NULL,
                           dir_next_page,
                           NULL);
-          ctx_add_key_binding (ctx, "page-up", NULL, NULL,
+          if (layout_show_page > 0)
+          ctx_add_key_binding (ctx, "page-up", "previous page", NULL,
                           dir_prev_page,
                           NULL);
+          }
 
-          ctx_add_key_binding (ctx, "backspace", NULL, NULL,
+  if (!files->n)
+  {
+    itk_labelf (itk, "no items\n");
+  }
+  else
+  {
+    if (!is_text_editing())
+    {
+    ctx_add_key_binding (ctx, "control-1", "debug outline", NULL, set_outline, NULL);
+    ctx_add_key_binding (ctx, "control-2", "layout view", NULL, set_layout, NULL);
+    ctx_add_key_binding (ctx, "control-3", "list view", NULL, set_list, NULL);
+    ctx_add_key_binding (ctx, "control-4", "grid view", NULL, set_grid, NULL);
+    }
+
+    //if (layout_config.outliner)
+    //  outliner_layout (itk, files);
+    //else
+      dir_layout (itk, files);
+
+  }
+
+
+  if (!active && text_edit <= TEXT_EDIT_OFF && !layout_config.outliner)
+  {
+
+
+          if (commandline->str[0])
+          ctx_add_key_binding (ctx, "backspace", "remove from commandline", NULL,
                           dir_backspace,
                           NULL);
 
-          ctx_add_key_binding (ctx, "unhandled", NULL, NULL,
+          ctx_add_key_binding (ctx, "unhandled", "add char to commandline", NULL,
                           dir_any,
                           NULL);
 
           if (item_get_type_atom (focused_no) == CTX_ATOM_TEXT)
           {
-          ctx_add_key_binding (ctx, "up", NULL, NULL,
+          ctx_add_key_binding (ctx, "up", "previous sibling", NULL,
                           item_outliner_up,
                           NULL);
-          ctx_add_key_binding (ctx, "down", NULL, NULL,
+          ctx_add_key_binding (ctx, "down", "next sibling", NULL,
                           item_outliner_down,
                           NULL);
-          ctx_add_key_binding (ctx, "left", NULL, NULL,
+          ctx_add_key_binding (ctx, "left", "move to parent", NULL,
                           item_outliner_left,
                           NULL);
-          ctx_add_key_binding (ctx, "right", NULL, NULL,
+          ctx_add_key_binding (ctx, "right", "enter children", NULL,
                           item_outliner_right,
                           NULL);
           }
@@ -3178,51 +3270,63 @@ static int card_files (ITK *itk_, void *data)
 #if 1
       if (!active && text_edit>TEXT_EDIT_OFF)
       {
+          ctx_add_key_binding (ctx, "tab", NULL, NULL,
+                          text_edit_ignore,
+                          NULL);
+          ctx_add_key_binding (ctx, "shift-tab", NULL, NULL,
+                          text_edit_ignore,
+                          NULL);
 
-          ctx_add_key_binding (ctx, "control-left", NULL, NULL,
+          ctx_add_key_binding (ctx, "control-left", "previous word", NULL,
                           text_edit_control_left,
                           NULL);
-          ctx_add_key_binding (ctx, "control-right", NULL, NULL,
+          ctx_add_key_binding (ctx, "control-right", "next word", NULL,
                           text_edit_control_right,
                           NULL);
-          ctx_add_key_binding (ctx, "left", NULL, NULL,
+          ctx_add_key_binding (ctx, "left", "previous char", NULL,
                           text_edit_left,
                           NULL);
-          ctx_add_key_binding (ctx, "up", NULL, NULL,
+          ctx_add_key_binding (ctx, "up", "previous line", NULL,
                           text_edit_up,
                           NULL);
 
-          ctx_add_key_binding (ctx, "down", NULL, NULL,
+          ctx_add_key_binding (ctx, "down", "next line", NULL,
                           text_edit_down,
                           NULL);
-          ctx_add_key_binding (ctx, "right", NULL, NULL,
+          ctx_add_key_binding (ctx, "right", "next char", NULL,
                           text_edit_right,
                           NULL);
-          ctx_add_key_binding (ctx, "escape", NULL, NULL,
+          ctx_add_key_binding (ctx, "escape", "stop editing", NULL,
                           text_edit_stop,
                           NULL);
-          ctx_add_key_binding (ctx, "shift-return", NULL, NULL,
+          ctx_add_key_binding (ctx, "shift-return", "hard newline", NULL,
                             text_edit_shift_return,
                             NULL);
 
-          ctx_add_key_binding (ctx, "unhandled", NULL, NULL,
+          ctx_add_key_binding (ctx, "unhandled", "insert character", NULL,
                           text_edit_any,
                           NULL);
 
-          ctx_add_key_binding (ctx, "home", NULL, NULL,
+          ctx_add_key_binding (ctx, "home", "go to start of paragraph", NULL,
                           text_edit_home,
                           NULL);
-          ctx_add_key_binding (ctx, "end", NULL, NULL,
+          ctx_add_key_binding (ctx, "end", "go to end of paragraph", NULL,
                           text_edit_end,
                           NULL);
 
-          ctx_add_key_binding (ctx, "return", NULL, NULL,
+          ctx_add_key_binding (ctx, "return", "split paragraph", NULL,
                           text_edit_return,
                           NULL);
-          ctx_add_key_binding (ctx, "backspace", NULL, NULL,
+
+          if (text_edit == 0)
+          ctx_add_key_binding (ctx, "backspace", "merge with preceding paragraph", NULL,
                           text_edit_backspace,
                           NULL);
-          ctx_add_key_binding (ctx, "delete", NULL, NULL,
+          else
+          ctx_add_key_binding (ctx, "backspace", "remove preceding character", NULL,
+                          text_edit_backspace,
+                          NULL);
+          ctx_add_key_binding (ctx, "delete", "remove character", NULL,
                           text_edit_delete,
                           NULL);
 
@@ -3406,6 +3510,52 @@ static int card_files (ITK *itk_, void *data)
     ctx_clients_handle_events (ctx);
   }
 
+
+  if (show_keybindings)
+  {
+    float bindings_height = ctx_height (ctx) * 0.3;
+    float bindings_pos = ctx_height (ctx) - bindings_height;
+    float em = itk->font_size;
+    ctx_save (ctx);
+    ctx_font_size (ctx, em);
+    ctx_rgba (ctx, 0,0,0,0.6);
+    ctx_rectangle (ctx, 0, bindings_pos, ctx_width (ctx), bindings_height);
+    ctx_fill (ctx);
+    float x = em;
+    float y = bindings_pos + em;
+    ctx_rgba (ctx, 1,1,1,0.6);
+    ctx_move_to (ctx, x, y);
+    CtxBinding *binding = ctx_get_bindings (ctx);
+    for (int i = 0; binding[i].nick; i++)
+    {
+      int found = 0;
+      for (int j = i + 1; binding[j].nick; j++)
+        if (!strcmp (binding[j].nick, binding[i].nick))
+          found = 1;
+      if (found)
+        continue;
+      if (binding[i].command)
+      {
+
+              float w = ctx_text_width (ctx, binding[i].nick);
+        ctx_move_to (ctx, x, y);
+        ctx_rgba (ctx, 1,1,0,0.6);
+        ctx_text (ctx, binding[i].nick);
+        ctx_rgba (ctx, 1,1,1,0.6);
+        ctx_move_to (ctx, x + w + em, y);
+        ctx_text (ctx, binding[i].command);
+        y += em;
+
+        if (y > ctx_height (ctx) - em)
+        {
+           x = x + em * 20;
+           y = bindings_pos + em;
+        }
+      }
+    }
+    ctx_restore (ctx);
+  }
+
   return 0;
 }
 
@@ -3424,8 +3574,8 @@ int ctx_dir_main (int argc, char **argv)
 
   signal (SIGCHLD, ctx_clients_signal_child);
 
-  //set_layout (NULL, NULL, NULL);
-  set_outline (NULL, NULL, NULL);
+  set_layout (NULL, NULL, NULL);
+  //set_outline (NULL, NULL, NULL);
   dm_set_path (files, path?path:"./");
   itk_main (card_files, NULL);
 
