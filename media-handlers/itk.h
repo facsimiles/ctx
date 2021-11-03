@@ -2325,7 +2325,7 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
       if (_itk_key_bindings_active)
       itk_key_bindings (itk);
       ret_val = ui_fun (itk, ui_data);
-      ctx_add_key_binding (itk->ctx, "control-q", NULL, "foo", itk_key_quit, NULL);
+      ctx_add_key_binding (itk->ctx, "control-q", "quit", NULL, itk_key_quit, NULL);
 
       itk_done (itk);
       ctx_flush (ctx);
