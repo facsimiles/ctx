@@ -863,7 +863,7 @@ void _ctX_bindings_key_down (CtxEvent *event, void *data1, void *data2)
     }
   if (!handled)
   for (i = mrg->n_bindings-1; i>=0; i--)
-    if (!strcmp (mrg->bindings[i].nick, "unhandled"))
+    if (!strcmp (mrg->bindings[i].nick, "any"))
     {
       if (mrg->bindings[i].cb)
       {
@@ -6140,7 +6140,7 @@ void mrg_text_edit_bindings (Mrg *mrg)
   ctx_add_key_binding (mrg->ctx, "page-down", NULL, "cursor down",     cmd_page_down, mrg);
   ctx_add_key_binding (mrg->ctx, "backspace", NULL, "remove preceding character", cmd_backspace, mrg);
   ctx_add_key_binding (mrg->ctx, "delete",    NULL, "remove character under cursor", cmd_delete, mrg);
-  ctx_add_key_binding (mrg->ctx, "unhandled", NULL, "add if key name is 1 char long", cmd_unhandled, mrg);
+  ctx_add_key_binding (mrg->ctx, "any", NULL, "add if key name is 1 char long", cmd_unhandled, mrg);
 }
 
 #if 1

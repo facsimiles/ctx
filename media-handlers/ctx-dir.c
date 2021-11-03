@@ -3189,6 +3189,8 @@ static int card_files (ITK *itk_, void *data)
                           NULL);
 #else
 
+    if (!is_text_editing())
+    {
           ctx_add_key_binding (ctx, "control-+", "zoom in", NULL,
                           dir_zoom_in,
                           NULL);
@@ -3201,18 +3203,22 @@ static int card_files (ITK *itk_, void *data)
           ctx_add_key_binding (ctx, "control-0", "zoom reset", NULL,
                           dir_zoom_reset,
                           NULL);
+
+          ctx_add_key_binding (ctx, "shift-control-+", "increase font size", NULL,
+                          dir_font_up,
+                          NULL);
+          ctx_add_key_binding (ctx, "shift-control-=", "increase font size", NULL,
+                          dir_font_up,
+                          NULL);
+          ctx_add_key_binding (ctx, "shift-control--", "decrease font size", NULL,
+                          dir_font_down,
+                          NULL);
+          //ctx_add_key_binding (ctx, "control-0", "reset font size", NULL,
+         //                 dir_zoom_reset,
+         //                 NULL);
+    }
 #endif
 
-          if (!is_text_editing())
-          {
-          ctx_add_key_binding (ctx, "page-down", "next page", NULL,
-                          dir_next_page,
-                          NULL);
-          if (layout_show_page > 0)
-          ctx_add_key_binding (ctx, "page-up", "previous page", NULL,
-                          dir_prev_page,
-                          NULL);
-          }
 
   if (!files->n)
   {
@@ -3235,6 +3241,17 @@ static int card_files (ITK *itk_, void *data)
 
   }
 
+          if (!is_text_editing())
+          {
+          ctx_add_key_binding (ctx, "page-down", "next page", NULL,
+                          dir_next_page,
+                          NULL);
+          if (layout_show_page > 0)
+          ctx_add_key_binding (ctx, "page-up", "previous page", NULL,
+                          dir_prev_page,
+                          NULL);
+          }
+
 
   if (!active && text_edit <= TEXT_EDIT_OFF && !layout_config.outliner)
   {
@@ -3245,7 +3262,7 @@ static int card_files (ITK *itk_, void *data)
                           dir_backspace,
                           NULL);
 
-          ctx_add_key_binding (ctx, "unhandled", "add char to commandline", NULL,
+          ctx_add_key_binding (ctx, "any", "add char to commandline", NULL,
                           dir_any,
                           NULL);
 
@@ -3303,7 +3320,7 @@ static int card_files (ITK *itk_, void *data)
                             text_edit_shift_return,
                             NULL);
 
-          ctx_add_key_binding (ctx, "unhandled", "insert character", NULL,
+          ctx_add_key_binding (ctx, "any", "insert character", NULL,
                           text_edit_any,
                           NULL);
 
@@ -3523,7 +3540,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_fill (ctx);
     float x = em;
     float y = bindings_pos + em;
-    ctx_rgba (ctx, 1,1,1,0.6);
+    ctx_rgba (ctx, 1,1,1,0.5);
     ctx_move_to (ctx, x, y);
     CtxBinding *binding = ctx_get_bindings (ctx);
     for (int i = 0; binding[i].nick; i++)
@@ -3537,18 +3554,69 @@ static int card_files (ITK *itk_, void *data)
       if (binding[i].command)
       {
 
-              float w = ctx_text_width (ctx, binding[i].nick);
-        ctx_move_to (ctx, x, y);
-        ctx_rgba (ctx, 1,1,0,0.6);
-        ctx_text (ctx, binding[i].nick);
-        ctx_rgba (ctx, 1,1,1,0.6);
-        ctx_move_to (ctx, x + w + em, y);
+        float tx = x;
+        ctx_rgba (ctx, 1,1,0,0.9);
+        {
+          char name[64];
+          char *n = &binding[i].nick[0];
+
+          if (!strncmp (n, "alt-", 4))
+          {
+            n+= 4;
+            ctx_move_to (ctx, tx, y);
+            ctx_text (ctx, "Alt");
+            tx += ctx_text_width (ctx, "Alt") + em;
+
+          }
+
+          if (!strncmp (n, "shift-", 6))
+          {
+            n+= 6;
+            ctx_move_to (ctx, tx, y);
+            ctx_text (ctx, "Shift");
+            tx += ctx_text_width (ctx, "Shift") + em;
+
+          }
+
+          if (!strncmp (n, "control-", 8))
+          {
+            n+= 8;
+            ctx_move_to (ctx, tx, y);
+            ctx_text (ctx, "Ctrl");
+            tx += ctx_text_width (ctx, "Ctrl") + em;
+
+          }
+
+          if (!strcmp (n, "up")) { n = "↑"; }
+          else if (!strcmp (n, "down"))    { n = "↓"; }
+          else if (!strcmp (n, "left"))    { n = "←"; }
+          else if (!strcmp (n, "right"))   { n = "→"; }
+          else if (!strcmp (n, "tab"))     { n = "Tab"; }
+          //else if (!strcmp (n, "return"))  { n = "⏎"; }
+          else if (!strcmp (n, "return"))  { n = "Enter"; }
+          //else if (!strcmp (n, "backspace")) { n = "⌫"; }
+          else if (!strcmp (n, "backspace")) { n = "Backspace"; }
+          else if (!strcmp (n, "page-down")) { n = "PgDn"; }
+          else if (!strcmp (n, "page-up")) { n = "PgUpn"; }
+          else if (!strcmp (n, "delete"))  { n = "Delete"; }
+          else if (!strcmp (n, "insert"))  { n = "Insert"; }
+          else if (!strcmp (n, "home"))    { n = "Home"; }
+          else if (!strcmp (n, "end"))     { n = "End"; }
+          else if (!strcmp (n, "space"))   { n = "Space"; }
+          else if (!strcmp (n, "escape"))  { n = "Esc"; }
+
+          ctx_move_to (ctx, tx, y);
+          ctx_text (ctx, n);
+          tx += ctx_text_width (ctx, n) + em;
+        }
+        ctx_rgba (ctx, 1,1,1,0.9);
+        ctx_move_to (ctx, tx, y);
         ctx_text (ctx, binding[i].command);
         y += em;
 
         if (y > ctx_height (ctx) - em)
         {
-           x = x + em * 20;
+           x = x + em * 16;
            y = bindings_pos + em;
         }
       }

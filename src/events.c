@@ -485,7 +485,7 @@ static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2)
     }
   if (!handled)
   for (i = events->n_bindings-1; i>=0; i--)
-    if (!strcmp (events->bindings[i].nick, "unhandled"))
+    if (!strcmp (events->bindings[i].nick, "any"))
     {
       if (events->bindings[i].cb)
       {

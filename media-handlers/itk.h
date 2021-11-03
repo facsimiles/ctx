@@ -2138,7 +2138,7 @@ void itk_key_bindings (ITK *itk)
   ctx_add_key_binding (ctx, "delete", NULL, "",         itk_key_delete,    itk);
   ctx_add_key_binding (ctx, "tab", NULL, "focus next",            itk_key_tab,       itk);
   ctx_add_key_binding (ctx, "shift-tab", NULL, "focus previous",      itk_key_shift_tab, itk);
-  ctx_add_key_binding (ctx, "unhandled", NULL, "",      itk_key_unhandled, itk);
+  ctx_add_key_binding (ctx, "any", NULL, "",            itk_key_unhandled, itk);
 }
 
 void ctx_choice_set (CtxEvent *event, void *data, void *data2)
