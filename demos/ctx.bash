@@ -31,7 +31,7 @@ function ctx_init()
   terminal_response="$terminal_response$ch"
   # expected response is "\e?200;2$y", we only check 7th char
   if [ x${terminal_response:7:1} != x2 ];then
-     echo "needs to run in ctx terminal";
+     echo "This scrip/program needs to run in ctx terminal";
      exit
   fi
   echo -ne "\e[?1049h" # alt-screen on
@@ -203,6 +203,9 @@ if [ `basename $0` == ctx.bash ];then
    fontSize 10%
    moveTo 0 12%
    text "this is ctx"
+   rgb 1 1 0
+   rectangle 10 10 100 100
+   fill
    endFrame
    sleep 3
 fi
