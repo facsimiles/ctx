@@ -359,7 +359,6 @@ void dm_set_path (Files *files, const char *path)
        found = 1;
     if (!found && (name[0] != '.'))
     {
-            fprintf (stderr, "must add %s\n", name);
       ctx_list_prepend (&to_add, strdup (name));
     }
   }
@@ -373,8 +372,8 @@ void dm_set_path (Files *files, const char *path)
     ctx_list_remove (&to_add, name);
     added++;
   }
-  if (added)
-    metadata_dirt();
+  //if (added)
+  //  metadata_dirt();
 }
 
 Files file_state;
@@ -1829,7 +1828,7 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
 int item_context_active = 0;
 
 static void
-item_outliner_down (CtxEvent *event, void *a, void *b)
+dir_next_sibling (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
   
@@ -1880,7 +1879,7 @@ item_outliner_down (CtxEvent *event, void *a, void *b)
 }
 
 static void
-item_outliner_up (CtxEvent *event, void *a, void *b)
+dir_previous_sibling (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
   
@@ -1993,7 +1992,7 @@ set_tool_no (CtxEvent *event, void *a, void *b)
 
 
 static void
-item_outliner_left (CtxEvent *event, void *a, void *b)
+dir_parent (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
   
@@ -2030,7 +2029,7 @@ item_outliner_left (CtxEvent *event, void *a, void *b)
 }
 
 static void
-item_outliner_right (CtxEvent *event, void *a, void *b)
+dir_enter_children (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
   
@@ -2106,16 +2105,10 @@ static void dir_layout (ITK *itk, Files *files)
 
   layout_box_count = 0;
   layout_box_no = 0;
-  layout_box[0].x = 0.05;
+  layout_box[0].x = 0.1;
   layout_box[0].y = 0.02;
-  layout_box[0].width = 0.9;
+  layout_box[0].width = 0.8;
   layout_box[0].height = 4000.0;
-#if 0
-  float cbox_x = metadata_key_float (".contentBox0", "x");
-  float cbox_y = metadata_key_float (".contentBox0", "y");
-  float cbox_width = metadata_key_float (".contentBox0", "width");
-  float cbox_height = metadata_key_float (".contentBox0", "height");
-#endif
 
   metadata_cache_no = -3;
   prev_line_pos = -1;
@@ -2542,9 +2535,6 @@ static void dir_layout (ITK *itk, Files *files)
 
 
             ctx_add_key_binding (ctx, "delete", NULL, "remove item",
-                          item_delete,
-                          (void*)((size_t)i));
-            ctx_add_key_binding (ctx, "control-x", NULL, "remove item",
                           item_delete,
                           (void*)((size_t)i));
 
@@ -3284,18 +3274,19 @@ static int card_files (ITK *itk_, void *data)
           if (item_get_type_atom (focused_no) == CTX_ATOM_TEXT &&
               metadata_key_float2(focused_no, "x") == -1234.0)
           {
-          ctx_add_key_binding (ctx, "up", NULL, "previous sibling",
-                          item_outliner_up,
+            ctx_add_key_binding (ctx, "up", NULL, "previous sibling",
+                          dir_previous_sibling,
                           NULL);
-          ctx_add_key_binding (ctx, "down", NULL, "next sibling",
-                          item_outliner_down,
+            ctx_add_key_binding (ctx, "down", NULL, "next sibling",
+                          dir_next_sibling,
                           NULL);
 
-          ctx_add_key_binding (ctx, "left", NULL, "move to parent",
-                          item_outliner_left,
+            ctx_add_key_binding (ctx, "left", NULL, "move to parent",
+                          dir_parent,
                           NULL);
-          ctx_add_key_binding (ctx, "right", NULL, "enter children",
-                          item_outliner_right,
+
+            ctx_add_key_binding (ctx, "right", NULL, "enter children",
+                          dir_enter_children,
                           NULL);
           }
   }
@@ -3551,6 +3542,7 @@ static int card_files (ITK *itk_, void *data)
     float em = itk->font_size;
     ctx_save (ctx);
     ctx_font_size (ctx, em);
+    ctx_line_width (ctx, em*0.05);
     ctx_rgba (ctx, 0,0,0,0.6);
     ctx_rectangle (ctx, 0, bindings_pos, ctx_width (ctx), bindings_height);
     ctx_fill (ctx);
@@ -3579,28 +3571,38 @@ static int card_files (ITK *itk_, void *data)
           if (!strncmp (n, "alt-", 4))
           {
             n+= 4;
+            const char *str = "Alt";
+            float w = ctx_text_width (ctx, str);
             ctx_move_to (ctx, tx, y);
-            ctx_text (ctx, "Alt");
-            tx += ctx_text_width (ctx, "Alt") + 0.5 * em;
-
+            ctx_text (ctx, str);
+            ctx_rectangle (ctx, tx- 0.1 * em , y - 0.9 * em, w + 0.3*em, 1.1*em);
+            ctx_stroke (ctx);
+            tx += w + 0.7 * em;
           }
 
           if (!strncmp (n, "shift-", 6))
           {
             n+= 6;
+            const char *str = "Shift";
+            float w = ctx_text_width (ctx, str);
             ctx_move_to (ctx, tx, y);
-            ctx_text (ctx, "Shift");
-            tx += ctx_text_width (ctx, "Shift") + 0.5 * em;
+            ctx_text (ctx, str);
+            ctx_rectangle (ctx, tx- 0.1 * em , y - 0.9 * em, w + 0.3*em, 1.1*em);
+            ctx_stroke (ctx);
+            tx += w + 0.7 * em;
 
           }
 
           if (!strncmp (n, "control-", 8))
           {
             n+= 8;
+            const char *str = "Ctrl";
+            float w = ctx_text_width (ctx, str);
             ctx_move_to (ctx, tx, y);
-            ctx_text (ctx, "Ctrl");
-            tx += ctx_text_width (ctx, "Ctrl") + 0.5 * em;
-
+            ctx_text (ctx, str);
+            ctx_rectangle (ctx, tx- 0.1 * em , y - 0.9 * em, w + 0.3*em, 1.1*em);
+            ctx_stroke (ctx);
+            tx += w + 0.7 * em;
           }
 
           if (!strcmp (n, "up")) { n = "↑"; }
@@ -3610,25 +3612,41 @@ static int card_files (ITK *itk_, void *data)
           else if (!strcmp (n, "tab"))     { n = "Tab"; }
           //else if (!strcmp (n, "return"))  { n = "⏎"; }
           else if (!strcmp (n, "return"))  { n = "Enter"; }
-          //else if (!strcmp (n, "backspace")) { n = "⌫"; }
-          else if (!strcmp (n, "backspace")) { n = "Backspace"; }
+          else if (!strcmp (n, "backspace")) { n = "⌫"; }
+          //else if (!strcmp (n, "backspace")) { n = "Backspace"; }
           else if (!strcmp (n, "page-down")) { n = "PgDn"; }
           else if (!strcmp (n, "page-up")) { n = "PgUpn"; }
-          else if (!strcmp (n, "delete"))  { n = "Delete"; }
-          else if (!strcmp (n, "insert"))  { n = "Insert"; }
+          else if (!strcmp (n, "delete"))  { n = "Del"; }
+          else if (!strcmp (n, "insert"))  { n = "Ins"; }
           else if (!strcmp (n, "home"))    { n = "Home"; }
           else if (!strcmp (n, "end"))     { n = "End"; }
           else if (!strcmp (n, "space"))   { n = "Space"; }
           else if (!strcmp (n, "escape"))  { n = "Esc"; }
 
-          ctx_move_to (ctx, tx, y);
-          ctx_text (ctx, n);
-          tx += ctx_text_width (ctx, n) + em;
+          {
+            char *str = strdup (n);
+
+            if (str[1]==0)
+            {
+               if (str[0]>='a' && str[0]<='z')
+                 str[0] += ('A'-'a');
+
+            }
+            float w = ctx_text_width (ctx, str);
+
+            ctx_move_to (ctx, tx, y);
+            ctx_text (ctx, str);
+            ctx_rectangle (ctx, tx- 0.1 * em , y - 0.9 * em, w + 0.3*em, 1.1*em);
+            ctx_stroke (ctx);
+            tx += w + 0.7 * em;
+            free (str);
+          }
+
         }
         ctx_rgba (ctx, 1,1,1,0.9);
         ctx_move_to (ctx, tx, y);
         ctx_text (ctx, binding[i].label);
-        y += em;
+        y += 1.4 * em;
 
         if (y > ctx_height (ctx) - em)
         {
