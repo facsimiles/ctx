@@ -3219,10 +3219,10 @@ static int card_files (ITK *itk_, void *data)
   {
     if (!is_text_editing())
     {
-    ctx_add_key_binding (ctx, "control-1", NULL, "debug outline", set_outline, NULL);
+    ctx_add_key_binding (ctx, "control-1", NULL, "debug outline view", set_outline, NULL);
     ctx_add_key_binding (ctx, "control-2", NULL, "layout view", set_layout, NULL);
     ctx_add_key_binding (ctx, "control-3", NULL, "list view", set_list, NULL);
-    ctx_add_key_binding (ctx, "control-4", NULL, "grid view", set_grid, NULL);
+    ctx_add_key_binding (ctx, "control-4", NULL, "folder view", set_grid, NULL);
     }
 
     //if (layout_config.outliner)
@@ -3547,10 +3547,13 @@ static int card_files (ITK *itk_, void *data)
     ctx_rectangle (ctx, 0, bindings_pos, ctx_width (ctx), bindings_height);
     ctx_fill (ctx);
     float x = em;
-    float y = bindings_pos + em;
+    float y = bindings_pos + 1.4 * em;
     ctx_rgba (ctx, 1,1,1,0.5);
     ctx_move_to (ctx, x, y);
     CtxBinding *binding = ctx_get_bindings (ctx);
+
+    float max_x = x;
+
     for (int i = 0; binding[i].nick; i++)
     {
       int found = 0;
@@ -3642,16 +3645,21 @@ static int card_files (ITK *itk_, void *data)
             free (str);
           }
 
+
         }
         ctx_rgba (ctx, 1,1,1,0.9);
         ctx_move_to (ctx, tx, y);
         ctx_text (ctx, binding[i].label);
+
+        tx += ctx_text_width (ctx, binding[i].label);
+        if (tx > max_x) max_x = tx;
+
         y += 1.4 * em;
 
         if (y > ctx_height (ctx) - em)
         {
-           x = x + em * 16;
-           y = bindings_pos + em;
+           x = max_x + 1.0 * em;
+           y = bindings_pos + 1.4 * em;
         }
       }
     }
