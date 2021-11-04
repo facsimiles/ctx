@@ -3177,6 +3177,11 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
       }
     }
   }
+  else
+  {
+     system (commandline->str);
+     metadata_dirt();
+  }
 
   ctx_string_set (commandline, "");
   ctx_string_free (word, 1);
