@@ -3139,6 +3139,49 @@ static void dir_backspace (CtxEvent *e, void *d1, void *d2)
   e->stop_propagate = 1;
 }
 
+static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
+{
+  CtxString *word = ctx_string_new ("");
+  ctx_set_dirty (e->ctx, 1);
+  e->stop_propagate = 1;
+
+  for (int i = 0; commandline->str[i] && commandline->str[i] != ' '; i++)
+  {
+    ctx_string_append_byte (word, commandline->str[i]);
+  }
+
+  if (!strcmp (word->str, "cd"))
+  {
+    char *arg = &commandline->str[2];
+    if (*arg) arg++;
+
+    if (*arg == 0)
+    {
+      dm_set_path (files, "/home/pippin");
+    }
+    else if (!strcmp (arg, ".."))
+    {
+      dir_go_parent (e, d1, d2);
+    }
+    else
+    {
+      if (arg[0] == '/')
+      {
+        dm_set_path (files, arg);
+      }
+      else
+      {
+        char *new_path = ctx_strdup_printf ("%s/%s", files->path, arg);
+        dm_set_path (files, new_path);
+        free (new_path);
+      }
+    }
+  }
+
+  ctx_string_set (commandline, "");
+  ctx_string_free (word, 1);
+}
+
 static void dir_any (CtxEvent *e, void *d1, void *d2)
 {
   e->stop_propagate = 1;
@@ -3252,6 +3295,9 @@ static int card_files (ITK *itk_, void *data)
           {
             ctx_add_key_binding (ctx, "backspace", NULL, "remove from commandline",
                             dir_backspace,
+                            NULL);
+            ctx_add_key_binding (ctx, "return", NULL, "run commandline",
+                            dir_run_commandline,
                             NULL);
             ctx_add_key_binding (ctx, "left", NULL, NULL,
                             dir_ignore,
@@ -3613,8 +3659,8 @@ static int card_files (ITK *itk_, void *data)
           else if (!strcmp (n, "left"))    { n = "←"; }
           else if (!strcmp (n, "right"))   { n = "→"; }
           else if (!strcmp (n, "tab"))     { n = "Tab"; }
-          //else if (!strcmp (n, "return"))  { n = "⏎"; }
           else if (!strcmp (n, "return"))  { n = "Enter"; }
+          //else if (!strcmp (n, "return"))  { n = "⏎"; }
           else if (!strcmp (n, "backspace")) { n = "⌫"; }
           //else if (!strcmp (n, "backspace")) { n = "Backspace"; }
           else if (!strcmp (n, "page-down")) { n = "PgDn"; }
