@@ -3176,6 +3176,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
         free (new_path);
       }
     }
+    itk_panels_reset_scroll (itk);
   }
   else
   {
@@ -3318,9 +3319,7 @@ static int card_files (ITK *itk_, void *data)
                             NULL);
           }
 
-          ctx_add_key_binding (ctx, "any", NULL, "add char to commandline",
-                          dir_any,
-                          NULL);
+          ctx_add_key_binding (ctx, "any", NULL, "add char to commandline", dir_any, NULL);
 
           if (item_get_type_atom (focused_no) == CTX_ATOM_TEXT &&
               metadata_key_float2(focused_no, "x") == -1234.0)
@@ -3529,7 +3528,9 @@ static int card_files (ITK *itk_, void *data)
     ctx_save (ctx);
     ctx_move_to (ctx, 3.4 * em, 1.1 * em);
     ctx_rgba (ctx, 1,1,1, 0.6);
+
     ctx_text (ctx, commandline->str);
+
     ctx_restore (ctx);
   }
 
