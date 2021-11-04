@@ -39,6 +39,15 @@ void ctx_string_clear (CtxString *string)
   string->str[string->length]=0;
 }
 
+
+void ctx_string_pre_alloc (CtxString *string, int size)
+{
+  char *old = string->str;
+  string->allocated_length = CTX_MAX (size + 2, string->length + 2);
+  string->str = (char*)realloc (old, string->allocated_length);
+}
+
+
 static inline void _ctx_string_append_byte (CtxString *string, char  val)
 {
   if (CTX_LIKELY((val & 0xC0) != 0x80))
@@ -264,7 +273,6 @@ uint32_t ctx_string_get_unichar (CtxString *string, int pos)
     { return 0; }
   return ctx_utf8_to_unichar (p);
 }
-
 
 void ctx_string_insert_utf8 (CtxString *string, int pos, const char *new_glyph)
 {

@@ -34,6 +34,7 @@ void        ctx_string_append_string  (CtxString *string, CtxString *string2);
 void        ctx_string_append_unichar (CtxString *string, unsigned int unichar);
 void        ctx_string_append_data    (CtxString *string, const char *data, int len);
 
+void        ctx_string_pre_alloc       (CtxString *string, int size);
 void        ctx_string_append_utf8char (CtxString *string, const char *str);
 void        ctx_string_append_printf  (CtxString *string, const char *format, ...);
 void        ctx_string_replace_utf8   (CtxString *string, int pos, const char *new_glyph);
