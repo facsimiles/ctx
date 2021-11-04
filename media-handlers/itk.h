@@ -64,6 +64,7 @@ CtxControl *itk_add_control (ITK *itk,
                              float x, float y,
                              float width, float height);
 void itk_set_flag (ITK *itk, int flag, int on);
+void itk_panels_reset_scroll (ITK *itk);
 
 void
 itk_ctx_settings (ITK *itk);
@@ -369,6 +370,7 @@ ITK *itk_new (Ctx *ctx)
 {
   ITK *itk              = calloc (sizeof (ITK), 1);
   itk->ctx              = ctx;
+  //itk->panels = NULL;
   itk->focus_wraparound = 1;
   itk->scale            = 1.0;
   itk->font_size        = getenv("ITK_FONT_SIZE")?atoi(getenv("ITK_FONT_SIZE")):ctx_get_font_size(ctx);
@@ -554,6 +556,17 @@ ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width,
   return panel;
 }
 
+void
+itk_panels_reset_scroll (ITK *itk)
+{
+  if (!itk || !itk->panels)
+          return;
+  for (CtxList *l = itk->panels; l; l = l->next)
+  {
+    ITKPanel *panel = l->data;
+    panel->scroll = 0.0;
+  }
+}
 
 
 /* adds a control - should be done before the drawing of the
