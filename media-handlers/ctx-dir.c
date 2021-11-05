@@ -77,8 +77,10 @@ int focused_no = -1;
 int layout_page_no = 0;
 int layout_show_page = 0;
 int layout_last_page = 0;
-
+float dir_scale = 1.0f;
 int tool_no = 0;
+
+// TODO global variables that should be enclosed in a struct
 
 typedef struct _CtxSHA1 CtxSHA1;
 CtxSHA1 *ctx_sha1_new (void);
@@ -1091,8 +1093,9 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
     float target_height = 
       (h - (layout_config.padding_top + layout_config.padding_bottom) * em );
   //ctx_begin_path (ctx);
+  //
 
-  if ((target_width > 250 || target_height > 250))
+  if ((target_width * dir_scale > 250 || target_height * dir_scale > 250))
   {
     char reteid[65]="";
     ctx_texture_load (ctx, path, &imgw, &imgh, reteid);
@@ -1745,7 +1748,6 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
 }
 
 
-float dir_scale = 1.0f;
 
 void dir_zoom_in (CtxEvent *event, void *a, void *b)
 {
