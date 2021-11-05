@@ -639,7 +639,7 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
 void itk_focus (ITK *itk, int dir);
 
 #if 0
-static void move_item_down (CtxEvent *e, void *d1, void *d2)
+static void move_after_next_sibling (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
   //char *new_path;
@@ -692,7 +692,7 @@ static int items_to_move (int no)
 }
 
 static void
-move_item_down (CtxEvent *event, void *a, void *b)
+move_after_next_sibling (CtxEvent *event, void *a, void *b)
 {
   //for (int i = 0; i < count; i++)
   {
@@ -872,7 +872,7 @@ static void move_down (CtxEvent *e, void *d1, void *d2)
 }
 
 #if 0
-static void move_item_up (CtxEvent *e, void *d1, void *d2)
+static void move_before_previous_sibling (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
   if (no>0)
@@ -888,7 +888,7 @@ static void move_item_up (CtxEvent *e, void *d1, void *d2)
 
 
 static void
-move_item_up (CtxEvent *event, void *a, void *b)
+move_before_previous_sibling (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
   
@@ -946,7 +946,7 @@ move_item_up (CtxEvent *event, void *a, void *b)
 }
 
 
-static void move_item_left (CtxEvent *e, void *d1, void *d2)
+static void make_sibling_of_parent (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
   int level = item_get_level (no);
@@ -995,7 +995,7 @@ static void move_item_left (CtxEvent *e, void *d1, void *d2)
   }
 }
 
-static void move_item_right (CtxEvent *e, void *d1, void *d2)
+static void make_child_of_previous (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
   if (no < 1)
@@ -2573,9 +2573,9 @@ static void dir_layout (ITK *itk, Files *files)
           if (!layout_config.outliner && !is_text_editing ())
           {
 
-          ctx_add_key_binding (ctx, "control-page-down", NULL, "move item down", move_item_down, 
+          ctx_add_key_binding (ctx, "control-page-down", NULL, "move after next sibling", move_after_next_sibling, 
                          (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-page-up", NULL, "move item up", move_item_up, 
+          ctx_add_key_binding (ctx, "control-page-up", NULL, "move before previous sibling", move_before_previous_sibling, 
                          (void*)((size_t)i));
 
           if (gotpos)
@@ -2600,15 +2600,17 @@ static void dir_layout (ITK *itk, Files *files)
           }
           else
           {
-            ctx_add_key_binding (ctx, "control-down", NULL, "move below next sibling", move_item_down, 
-                           (void*)((size_t)i));
-            ctx_add_key_binding (ctx, "control-up", NULL, "move above previous sibling", move_item_up, 
+            ctx_add_key_binding (ctx, "control-down", NULL,
+                            "move after next sibling", move_after_next_sibling, (void*)((size_t)i));
+            ctx_add_key_binding (ctx, "control-up", NULL,
+                            "move before previous sibling", move_before_previous_sibling, (void*)((size_t)i));
+
+            ctx_add_key_binding (ctx, "control-left", NULL,
+                            "make sibling of parent", make_sibling_of_parent, 
                            (void*)((size_t)i));
 
-            ctx_add_key_binding (ctx, "control-left", NULL, "make current item sibling of parent", move_item_left, 
-                           (void*)((size_t)i));
-
-            ctx_add_key_binding (ctx, "control-right", NULL, "make current item last child of parent", move_item_right, 
+            ctx_add_key_binding (ctx, "control-right", NULL,
+                            "make child of previous", make_child_of_previous, 
                            (void*)((size_t)i));
 
           }
