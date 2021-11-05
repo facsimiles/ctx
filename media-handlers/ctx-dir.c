@@ -2517,6 +2517,7 @@ static void dir_layout (ITK *itk, Files *files)
            }
         }
 
+
         switch (tool_no)
         {
                 case 0:
@@ -2764,11 +2765,12 @@ static void dir_layout (ITK *itk, Files *files)
         }
         else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
         {
+          if (gotpos) label = 0;
           draw_img (itk, itk->x, itk->y, width, height, newpath);
-          if (c->no == itk->focus_no && layout_find_item < 0)
+          if (c->no == itk->focus_no && layout_find_item < 0 && gotpos)
           {
              float em = itk->font_size;
-             int resize_dim = 2;
+             int resize_dim = 4;
 
              ctx_arc (itk->ctx, itk->x + width * origin_x,
                            itk->y + height * origin_y,
@@ -2782,6 +2784,12 @@ static void dir_layout (ITK *itk, Files *files)
              ctx_rgba (itk->ctx, 0,0,0, 0.5);
              ctx_fill (itk->ctx);
 
+
+             ctx_rectangle (itk->ctx, itk->x + width - resize_dim * em,
+                                      itk->y + height - resize_dim * em,
+                                      resize_dim * em, resize_dim * em);
+             ctx_rgba (itk->ctx, 0,0,0, 0.5);
+             ctx_fill (itk->ctx);
           }
         }
         else if (!strcmp (media_type, "inode/directory"))
@@ -3405,6 +3413,9 @@ static int card_files (ITK *itk_, void *data)
                           text_edit_right,
                           NULL);
           ctx_add_key_binding (ctx, "escape", NULL, "stop editing",
+                          text_edit_stop,
+                          NULL);
+          ctx_add_key_binding (ctx, "control-return", NULL, "stop editing",
                           text_edit_stop,
                           NULL);
           ctx_add_key_binding (ctx, "shift-return", NULL, "hard newline",
