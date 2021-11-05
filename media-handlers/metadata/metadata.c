@@ -415,10 +415,10 @@ static float metadata_key_float (const char *item, const char *key)
    return ret;
 }
 
-static float metadata_key_float2 (int no, const char *key)
+static float metadata_key_float2 (int no, const char *key, float def_val)
 {
    char *value = metadata_key_string2 (no, key);
-   float ret = -1234.0f;
+   float ret = def_val;//-1234.0f;
    if (value)
    {
      ret = atof (value);
@@ -428,10 +428,10 @@ static float metadata_key_float2 (int no, const char *key)
 }
 
 
-static int metadata_key_int (const char *item, const char *key)
+static int metadata_key_int (const char *item, const char *key, int def_val)
 {
    char *value = metadata_key_string (item, key);
-   int ret = -1234; // special magic value for unset
+   int ret = def_val;
    if (value)
    {
      ret = atoi (value);
@@ -440,10 +440,10 @@ static int metadata_key_int (const char *item, const char *key)
    return ret;
 }
 
-static int metadata_key_int2 (int no, const char *key)
+static int metadata_key_int2 (int no, const char *key, int def_val)
 {
    char *value = metadata_key_string2 (no, key);
-   int ret = -1234; // special magic value for unset
+   int ret = def_val;
    if (value)
    {
      ret = atoi (value);

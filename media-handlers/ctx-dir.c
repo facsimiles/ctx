@@ -548,18 +548,18 @@ static void item_drag (CtxEvent *e, void *d1, void *d2)
       e->stop_propagate = 1;
       break;
     case CTX_DRAG_MOTION:
-      float x = metadata_key_float2 (focused_no, "x");
+      float x = metadata_key_float2 (focused_no, "x", -10000);
       if (x >=0)
       {
-        x = metadata_key_float2 (focused_no, "x");
+        x = metadata_key_float2 (focused_no, "x", 0.0f);
         x += e->delta_x / ctx_width (e->ctx);
         metadata_set_float2 (focused_no, "x", x);
         ctx_set_dirty (e->ctx, 1);
       }
-      float y = metadata_key_float2 (focused_no, "y");
+      float y = metadata_key_float2 (focused_no, "y", -10000);
       if (y >=0)
       {
-        y = metadata_key_float2 (focused_no, "y");
+        y = metadata_key_float2 (focused_no, "y", 0.0f);
         y += e->delta_y / ctx_width (e->ctx);
         metadata_set_float2 (focused_no, "y", y);
         ctx_set_dirty (e->ctx, 1);
@@ -694,8 +694,6 @@ static int items_to_move (int no)
 static void
 move_item_down (CtxEvent *event, void *a, void *b)
 {
-  int skip = 0;
-
   //for (int i = 0; i < count; i++)
   {
   int start_no    = focused_no;
@@ -788,7 +786,7 @@ move_item_down (CtxEvent *event, void *a, void *b)
 static void grow_height (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float height = metadata_key_float2 (no, "height");
+  float height = metadata_key_float2 (no, "height", -100.0);
   height += 0.01;
   if (height > 1.2) height = 1.2;
   metadata_set_float2 (no, "height", height);
@@ -799,7 +797,7 @@ static void grow_height (CtxEvent *e, void *d1, void *d2)
 static void shrink_height (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float height = metadata_key_float2 (no, "height");
+  float height = metadata_key_float2 (no, "height", -100.0);
   height -= 0.01;
   if (height < 0.01) height = 0.01;
   metadata_set_float2 (no, "height", height);
@@ -810,7 +808,7 @@ static void shrink_height (CtxEvent *e, void *d1, void *d2)
 static void grow_width (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float width = metadata_key_float2 (no, "width");
+  float width = metadata_key_float2 (no, "width", -100.0);
   width += 0.01;
   if (width > 1.5) width = 1.5;
   metadata_set_float2 (no, "width", width);
@@ -821,7 +819,7 @@ static void grow_width (CtxEvent *e, void *d1, void *d2)
 static void shrink_width (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float width = metadata_key_float2 (no, "width");
+  float width = metadata_key_float2 (no, "width", -100.0);
   width -= 0.01;
   if (width < 0.0) width = 0.01;
   metadata_set_float2 (no, "width", width);
@@ -832,7 +830,7 @@ static void shrink_width (CtxEvent *e, void *d1, void *d2)
 static void move_left (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float x = metadata_key_float2 (no, "x");
+  float x = metadata_key_float2 (no, "x", -100.0);
   x -= 0.01;
   if (x < 0.0) x = 0.0;
   metadata_set_float2 (no, "x", x);
@@ -843,7 +841,7 @@ static void move_left (CtxEvent *e, void *d1, void *d2)
 static void move_right (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float x = metadata_key_float2 (no, "x");
+  float x = metadata_key_float2 (no, "x", -100.0);
   x += 0.01;
   if (x < 0) x = 0;
   metadata_set_float2 (no, "x", x);
@@ -854,7 +852,7 @@ static void move_right (CtxEvent *e, void *d1, void *d2)
 static void move_up (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float y = metadata_key_float2 (no, "y");
+  float y = metadata_key_float2 (no, "y", -100.0);
   y -= 0.01;
   if (y< 0) y = 0.01;
   metadata_set_float2 (no, "y", y);
@@ -865,7 +863,7 @@ static void move_up (CtxEvent *e, void *d1, void *d2)
 static void move_down (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float y = metadata_key_float2 (no, "y");
+  float y = metadata_key_float2 (no, "y", -100.0);
   y += 0.01;
   if (y< 0) y = 0.01;
   metadata_set_float2 (no, "y", y);
@@ -1047,7 +1045,7 @@ static void move_item_right (CtxEvent *e, void *d1, void *d2)
 
 void item_toggle_todo (CtxEvent *event, void *a, void *b)
 {
-  int todo = metadata_key_int2 (focused_no, "todo");
+  int todo = metadata_key_int2 (focused_no, "todo", -10);
   switch (todo)
   {
     default:
@@ -1980,6 +1978,8 @@ tool_rect_drag (CtxEvent *e, void *d1, void *d2)
     case CTX_DRAG_RELEASE:
        metadata_dirt ();
        break;
+    default:
+       break;
   }
   e->stop_propagate = 1;
 }
@@ -2221,8 +2221,7 @@ static void dir_layout (ITK *itk, Files *files)
           hidden = 1;
           level ++;
           {
-            int folded = metadata_key_int2(i, "folded");
-            if (folded < 0) folded = 0;
+            int folded = metadata_key_int2(i, "folded", 0);
 
             if (folded && ! is_folded) is_folded = level;
           }
@@ -2253,7 +2252,7 @@ static void dir_layout (ITK *itk, Files *files)
       if (is_folded)
         hidden = 1;
 
-      int label = metadata_key_int2 (i, "label");
+      int label = metadata_key_int2 (i, "label", -1234);
       if (label == -1234) {
         if (atom == CTX_ATOM_TEXT)
           label = 0;
@@ -2285,22 +2284,20 @@ static void dir_layout (ITK *itk, Files *files)
       int gotpos = 0;
       char *xstr = metadata_key_string2 (i, "x");
       char *ystr = metadata_key_string2 (i, "y");
+      float xorigin = metadata_key_float2(i, "x-origin", 0.0);
+      float yorigin = metadata_key_float2(i, "y-origin", 0.0);
 
-      float padding_left = metadata_key_float2 (i, "padding-left");
-      if (padding_left == -1234.0f) padding_left = layout_config.padding_left;
-      float padding_right = metadata_key_float2 (i, "padding-right");
-      if (padding_right == -1234.0f) padding_right = layout_config.padding_right;
-      float padding_top = metadata_key_float2 (i, "padding-top");
-      if (padding_top == -1234.0f) padding_top = layout_config.padding_top;
-      float padding_bottom = metadata_key_float2 (i, "padding-bottom");
-      if (padding_bottom == -1234.0f) padding_bottom = layout_config.padding_bottom;
+
+      float padding_left = metadata_key_float2 (i, "padding-left", layout_config.padding_left);
+      float padding_right = metadata_key_float2 (i, "padding-right", layout_config.padding_right);
+      float padding_top = metadata_key_float2 (i, "padding-top", layout_config.padding_top);
+      float padding_bottom = metadata_key_float2 (i, "padding-bottom", layout_config.padding_bottom);
 
       padding_left += level * layout_config.level_indent;
 
-      float x = metadata_key_float2 (i, "x");
-      float y = metadata_key_float2 (i, "y");
-      float opacity = metadata_key_float2 (i, "opacity");
-      if (opacity == -1234.0f) opacity = 1.0f;
+      float x = metadata_key_float2 (i, "x", 0.0);
+      float y = metadata_key_float2 (i, "y", 0.0);
+      float opacity = metadata_key_float2 (i, "opacity", 1.0f);
 
       if (xstr)
       {
@@ -2317,7 +2314,7 @@ static void dir_layout (ITK *itk, Files *files)
         gotpos = 0;
 
       {
-        width  = metadata_key_float2 (i, "width");
+        width  = metadata_key_float2 (i, "width", -1000.0);
         if (width < 0 || layout_config.fixed_size)
           width = 
             layout_config.fill_width? itk->width * 1.0:
@@ -2328,7 +2325,7 @@ static void dir_layout (ITK *itk, Files *files)
       }
 
       {
-        height = metadata_key_float2 (i, "height");
+        height = metadata_key_float2 (i, "height", -1000.0);
         if (height < 0 || layout_config.fixed_size)  height =
           layout_config.fill_height? itk->height * 1.0:
           layout_config.height * em;
@@ -2553,7 +2550,7 @@ static void dir_layout (ITK *itk, Files *files)
             
 
             {
-              int todo = metadata_key_int2 (i, "todo");
+              int todo = metadata_key_int2 (i, "todo", -3);
               const char *label = "toggle todo";
               switch (todo)
               {
@@ -2620,7 +2617,7 @@ static void dir_layout (ITK *itk, Files *files)
 
            if (!is_text_editing())
            {
-               if (metadata_key_int2(i + 1, "folded")>0)
+               if (metadata_key_int2(i + 1, "folded", -1)>0)
                {
                ctx_add_key_binding (ctx, "+", NULL, "expand",
                           outline_expand,
@@ -2679,7 +2676,7 @@ static void dir_layout (ITK *itk, Files *files)
                        NULL, NULL);
           }
 
-          int todo = metadata_key_int2 (i, "todo");
+          int todo = metadata_key_int2 (i, "todo", -3);
           if (todo >= 0)
           {
              float x = itk->x - em * 0.5 + level * em * layout_config.level_indent;
@@ -2695,7 +2692,7 @@ static void dir_layout (ITK *itk, Files *files)
              }
           }
           {
-            int folded = metadata_key_int2 (i+1, "folded");
+            int folded = metadata_key_int2 (i+1, "folded", -3);
             if (folded > 0)
             {
                float x = itk->x - em * 0.5 + level * em * layout_config.level_indent;
@@ -2713,13 +2710,10 @@ static void dir_layout (ITK *itk, Files *files)
       else
         if (atom == CTX_ATOM_RECTANGLE)
         {
-          char *fill = metadata_key_string2(i, "fill");
-          char *stroke = metadata_key_string2(i, "stroke");
-          float line_width = metadata_key_float2(i, "line-width");
-          float opacity = metadata_key_float2(i, "opacity");
-
-          if (opacity < 0) opacity = 1.0;
-          if (line_width < 0) line_width = 1.0;
+          char *fill       = metadata_key_string2(i, "fill");
+          char *stroke     = metadata_key_string2(i, "stroke");
+          float line_width = metadata_key_float2(i, "line-width", 1.0);
+          float opacity    = metadata_key_float2(i, "opacity", 1.0);
 
           ctx_rectangle (itk->ctx, itk->x, itk->y, width, height);
           if (fill)
@@ -2731,7 +2725,6 @@ static void dir_layout (ITK *itk, Files *files)
             free (fill);
           }
         
-
           if (stroke)
           {
             ctx_color (itk->ctx, stroke);
@@ -3178,6 +3171,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
         free (new_path);
       }
     }
+    layout_show_page = 0;
     itk_panels_reset_scroll (itk);
   }
   else
@@ -3324,7 +3318,7 @@ static int card_files (ITK *itk_, void *data)
           ctx_add_key_binding (ctx, "any", NULL, "add char to commandline", dir_any, NULL);
 
           if (item_get_type_atom (focused_no) == CTX_ATOM_TEXT &&
-              metadata_key_float2(focused_no, "x") == -1234.0)
+              metadata_key_float2(focused_no, "x", -1234.0) == -1234.0)
           {
             ctx_add_key_binding (ctx, "up", NULL, "previous sibling",
                           dir_previous_sibling,
